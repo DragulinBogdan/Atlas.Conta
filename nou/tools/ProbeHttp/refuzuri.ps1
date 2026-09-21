@@ -1,4 +1,4 @@
-#requires -Version 7
+﻿#requires -Version 7
 <#
 ═══════════════════════════════════════════════════════════════════════════════
   refuzuri.ps1 — matricea de refuzuri de ACCES, măsurată pe HTTP (felia 22, F22-D9)
@@ -39,7 +39,8 @@ CEI PATRU UTILIZATORI (F22-D7, 83h)
 
 FĂRĂ URME
   Tot ce scrie pe `Admin` (un NIR draft, iar de la felia 23 un partener și un
-  rând de politică) se șterge în `finally`. `Configurator` are rândul LUI, pe o
+  rând de politică) se șterge în `finally`; `Societate.ContBancarId`, schimbat de
+  proba F28-D, se pune la loc. `Configurator` are rândul LUI, pe o
   cheie proprie: dacă ar reface PATCH-ul pe rândul lui `Admin`, cererea ar putea
   fi un no-op și proba ar trece din alt motiv decât cel probat.
   `POST api/itv/genereaza` se probează DOAR ca `Cititor`/`User`/`Configurator`:
@@ -288,6 +289,20 @@ try {
         }.GetNewClosure())
     Write-Host "  nir draft: $idNir" -ForegroundColor DarkGray
 
+    # O împerechere EXISTENTĂ, ca subiect VIZIBIL al probei de desfacere (review
+    # advers F27, 10). `Imperechere` nu e set OData, deci se descoperă prin
+    # panoul de stingeri al documentelor: prima plată care poartă o legătură.
+    # Doar citită — proba pe ea se oprește la 403, deci nu lasă urme.
+    $idImperechere = $null
+    foreach ($plata in ((Invoke-Cerere -Metoda GET -Cale '/api/plt?take=60' -Token $tokenAdmin).Corp | ConvertFrom-Json).data) {
+        $stingeri = (Invoke-Cerere -Metoda GET -Cale "/api/imperecheri/$($plata.Id)/stingeri" -Token $tokenAdmin).Corp | ConvertFrom-Json
+        if (@($stingeri.Imperecheri).Count -gt 0) { $idImperechere = @($stingeri.Imperecheri)[0].Id; break }
+    }
+    if (-not $idImperechere) {
+        throw 'Nicio împerechere pe primele 60 de plăți — proba `desfa` cu subiect vizibil n-are subiect.'
+    }
+    Write-Host "  imperechere: $idImperechere" -ForegroundColor DarkGray
+
     $idInexistent = [guid]::NewGuid()
 
     # ═══ 3. Matricea ════════════════════════════════════════════════════════
@@ -446,13 +461,47 @@ try {
     # de mai sus ar putea ascunde o ușă care nu ajunge niciodată la regulă.
     Proba -Cerere 'operare DVI fără MRN' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "/api/dvi/$idDvi/opereaza" -Contine 'MRN' -Nota 'domeniul rămâne' | Out-Null
 
+    # F27-D4: ordinea celor două date ale documentului e regulă de CULEGERE, deci
+    # refuzul e de domeniu (422) pe `Admin`, pe ambele uși de scriere ale
+    # agregatului. Nimic de curățat: POST-ul refuzat nu comite, iar PUT-ul lasă
+    # draftul creat mai sus, pe care `finally` îl șterge oricum.
+    $corpDviDataInversata = @{
+        Numar            = ''
+        Data             = '2026-06-15'
+        DataInregistrare = '2026-06-10'
+        PredatorId       = $partener.ID
+        PrimitorId       = $unitate.ID
+        Linii            = @()
+        FacturiIds       = @()
+    }
+    Proba -Cerere 'creare DVI cu data înregistrării înaintea datei' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/dvi' -Corp $corpDviDataInversata -Contine 'Data înregistrării nu poate preceda data documentului' -Nota 'F27-D4' | Out-Null
+    Proba -Cerere 'modificare DVI cu data înregistrării înaintea datei' -User 'Admin' -Asteptat 422 -Metoda PUT -Cale "/api/dvi/$idDvi" -Corp $corpDviDataInversata -Contine 'Data înregistrării nu poate preceda data documentului' -Nota 'F27-D4' | Out-Null
+
     # `facturi-candidate` cere DOUĂ drepturi (DVI-D5): declarația din rută, dacă
     # vine, și CITIREA pe facturi — panoul arată facturi, nu declarații, iar o
     # listă filtrată tăcut ar propune legături pe care operatorul nu le poate face.
     $perioadaDvi = 'dataStart=2026-01-01&dataEnd=2026-12-31'
-    # Perioada LARGĂ, pentru proba de plafon: pe baza Privat 2026 are doar
-    # patru facturi operate, 2025 are peste 19.000.
-    $perioadaLargaDvi = 'dataStart=2025-01-01&dataEnd=2026-12-31'
+    # Perioada LARGĂ, pentru proba de plafon: pe baza Privat 2025 are peste
+    # 19.000 de facturi operate. Sfârșitul ei = ziua celei mai recente candidate
+    # a unui furnizor `NeinregistratRo`, găsită mergând înapoi pe paginile rutei
+    # (plafonul taie pe dată, descrescător) — altfel cele 500 pot fi toate RO.
+    $inceputLargDvi = '2025-01-01'
+    $sfarsitCautare = [datetime]'2026-12-31'
+    $ziNeinregistrat = $null
+    for ($pagina = 0; $pagina -lt 100 -and -not $ziNeinregistrat; $pagina++) {
+        $caleCautare = "/api/dvi/facturi-candidate?dataStart=$inceputLargDvi&dataEnd=$($sfarsitCautare.ToString('yyyy-MM-dd'))&toate=true"
+        $rCautare = Invoke-Cerere -Metoda GET -Cale $caleCautare -Token $tokenAdmin
+        if ($rCautare.Status -ne 200) { throw "Descoperirea candidaților DVI a picat: HTTP $($rCautare.Status)" }
+        $plicCautare = $rCautare.Corp | ConvertFrom-Json
+        $neinregistrat = @($plicCautare.Candidati | Where-Object ClasaFiscala -eq 'NeinregistratRo') | Select-Object -First 1
+        if ($neinregistrat) { $ziNeinregistrat = ([datetime]$neinregistrat.Data).ToString('yyyy-MM-dd'); break }
+        if (-not $plicCautare.MaiSunt) { break }
+        $ceaMaiVeche = @($plicCautare.Candidati | ForEach-Object { [datetime]$_.Data } | Sort-Object)[0]
+        $sfarsitCautare = if ($ceaMaiVeche -lt $sfarsitCautare) { $ceaMaiVeche } else { $sfarsitCautare.AddDays(-1) }
+    }
+    if (-not $ziNeinregistrat) { throw 'Nicio factură candidată DVI a unui furnizor NeinregistratRo — proba de plafon n-are subiect.' }
+    $perioadaLargaDvi = "dataStart=$inceputLargDvi&dataEnd=$ziNeinregistrat"
+    Write-Host "  candidați DVI: fereastra largă $inceputLargDvi … $ziNeinregistrat (cea mai recentă candidată NeinregistratRo, pagina $($pagina + 1))" -ForegroundColor DarkGray
     Proba -Cerere 'candidați DVI' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" -Contine '"Candidati":[]', '"MaiSunt":false' -Nota 'plic, nu tablou' | Out-Null
     Proba -Cerere 'candidați DVI' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" -Nota 'Read pe tot' | Out-Null
     Proba -Cerere 'candidați DVI' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" | Out-Null
@@ -488,6 +537,181 @@ try {
     $stergereDvi = Proba -Cerere 'ștergere DVI' -User 'Admin' -Asteptat 204 -Metoda DELETE -Cale "/api/dvi/$idDvi" -FaraJson -Nota 'curățenie'
     if ($stergereDvi.Verdict -eq 'PASS') { $curatenie.RemoveAt($curatenie.Count - 1) }
 
+    # ── Felia 26: imobilizări — PIF / CAS / AMO, fișa și catalogul (F26-D10) ─
+    # Ce probează blocul, în ordinea contractului:
+    #   * nomenclatorul `Imobilizare` e pe OData, ca `Gestiune` — pe REST NU
+    #     există a doua ușă de citire (F2-D4), iar câmpurile server-owned ale
+    #     fișei le refuză GARDIANUL, pe ușa comună, nu o regulă dublată în Apply;
+    #   * catalogul HG 2139 e ReadOnly (lege seed-uită, ca `RandD300`);
+    #   * cele două politici noi sunt citite de `Configurator` și refuzate
+    #     `Cititor`-ului la scriere;
+    #   * `fisa`/`registru`/`previzualizare` cer, pe lângă dreptul pe subiect, și
+    #     citirea pe `RegistruImobilizari` (F22-D5) — de aceea `User` ia 404 pe
+    #     instanță (ordinea 80a) și 403 pe rutele fără subiect;
+    #   * `genereaza` NU se cheamă niciodată ca `Admin` (capcana 79: scrie ori de
+    #     câte ori luna e liberă), iar perechea `Admin → 422` de domeniu se ia pe
+    #     `opereaza`, ca cele trei 403-uri să nu poată ascunde o ușă care nu
+    #     ajunge niciodată la regulă.
+    # Fișa cere un tip de clasă de imobilizări (87a).
+    $tipImo = Get-PrimaEntitate 'TipMaterial' "Clasa/Natura eq 'Imobilizare'"
+    $corpFisa = @{
+        NumarInventar = "PROBA-F26-$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+        Denumire      = 'Fisa proba F26 (refuzuri)'
+        TipMaterialId = $tipImo.ID
+        LocId         = $gestiune.ID
+    }
+    $creareFisa = Proba -Cerere 'creare Imobilizare' -User 'Admin' -Asteptat 201 -Metoda POST -Cale '/api/odata/Imobilizare' -Corp $corpFisa -Nota 'nomenclator VIU, pe OData'
+    if ($creareFisa.Verdict -ne 'PASS') { throw "Nu s-a putut crea fisa de proba: $($creareFisa.CorpIntreg)" }
+    $idFisaImo = ($creareFisa.CorpIntreg | ConvertFrom-Json).ID
+    $curatenie.Add({
+            $sters = Invoke-Cerere -Metoda DELETE -Cale "/api/odata/Imobilizare($idFisaImo)" -Token $tokenAdmin
+            Write-Host "curățenie: DELETE /api/odata/Imobilizare($idFisaImo) → $($sters.Status)" -ForegroundColor DarkGray
+        }.GetNewClosure())
+    Write-Host "  fisa imobilizare: $idFisaImo" -ForegroundColor DarkGray
+
+    Proba -Cerere 'creare Imobilizare' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/odata/Imobilizare' -Corp $corpFisa -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare Imobilizare' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/odata/Imobilizare' -Corp $corpFisa -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare Imobilizare' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/odata/Imobilizare' -Corp $corpFisa -Contine 'crea' -Nota 'fisa nu e configurabila' | Out-Null
+    Proba -Cerere 'citire Imobilizare' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/odata/Imobilizare($idFisaImo)" | Out-Null
+    Proba -Cerere 'citire Imobilizare' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/odata/Imobilizare($idFisaImo)" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'listă Imobilizare' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/odata/Imobilizare?$top=5' -Contine '"value":[]' -Nota '200 filtrat' | Out-Null
+    # Starea si datele fisei sunt ale MOTORULUI (F26-D1): Admin trece de
+    # permisiune si ajunge la gardian, pe aceeasi usa comuna ca XAF si REST.
+    Proba -Cerere 'modificare stare pe Imobilizare' -User 'Admin' -Asteptat 422 -Metoda PATCH -Cale "/api/odata/Imobilizare($idFisaImo)" -Corp @{ Stare = 'InFunctiune' } -Contine 'le scrie doar motorul' -Nota 'F26-D1: usa nu dubleaza regula' | Out-Null
+    Proba -Cerere 'modificare Imobilizare' -User 'Cititor' -Asteptat 403 -Metoda PATCH -Cale "/api/odata/Imobilizare($idFisaImo)" -Corp @{ Denumire = 'Redenumita de Cititor' } -Contine 'modifica' | Out-Null
+    Proba -Cerere 'modificare Imobilizare' -User 'User' -Asteptat 404 -Metoda PATCH -Cale "/api/odata/Imobilizare($idFisaImo)" -Corp @{ Denumire = 'Redenumita de User' } -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'ștergere Imobilizare' -User 'Cititor' -Asteptat 403 -Metoda DELETE -Cale "/api/odata/Imobilizare($idFisaImo)" -Contine 'șterge' | Out-Null
+    Proba -Cerere 'ștergere Imobilizare' -User 'User' -Asteptat 404 -Metoda DELETE -Cale "/api/odata/Imobilizare($idFisaImo)" -Contine 'nu există sau nu e vizibil' | Out-Null
+    # F28-D (89, regula (o)): `ResponsabilId` țintește frunza `Angajat`; o `Gestiune`
+    # e alt rând al aceleiași tabele `Repartitori` — refuz la creare și la modificare.
+    $angajat = Get-PrimaEntitate 'Angajat'
+    $corpFisaResponsabilGestiune = $corpFisa.Clone()
+    $corpFisaResponsabilGestiune['NumarInventar'] = "$($corpFisa.NumarInventar)-F28"
+    $corpFisaResponsabilGestiune['ResponsabilId'] = $gestiune.ID
+    Proba -Cerere 'creare Imobilizare cu responsabil = gestiune' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/Imobilizare' -Corp $corpFisaResponsabilGestiune -Contine 'rândul ales', "($($gestiune.ID)) e ", ', nu ' -Nota 'F28-D: rând nou' | Out-Null
+    Proba -Cerere 'responsabil Imobilizare = gestiune' -User 'Admin' -Asteptat 422 -Metoda PATCH -Cale "/api/odata/Imobilizare($idFisaImo)" -Corp @{ ResponsabilId = $gestiune.ID } -Contine 'rândul ales', "($($gestiune.ID)) e ", ', nu ' -Nota 'F28-D: FK schimbat' | Out-Null
+    Proba -Cerere 'responsabil Imobilizare = angajat' -User 'Admin' -Asteptat 204 -Metoda PATCH -Cale "/api/odata/Imobilizare($idFisaImo)" -Corp @{ ResponsabilId = $angajat.ID } -FaraJson -Nota 'F28-D: ținta de tipul cerut trece; fișa se șterge la final' | Out-Null
+
+    # Catalogul HG 2139/2004: LEGE seed-uita, deci ReadOnly — scrierea n-are ruta.
+    Proba -Cerere 'listă ClasificareImobilizari' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/odata/ClasificareImobilizari?$top=1' -Contine '"Cod"' | Out-Null
+    Proba -Cerere 'creare ClasificareImobilizari' -User 'Admin' -Asteptat 405 -Metoda POST -Cale '/api/odata/ClasificareImobilizari' -Corp @{ Cod = 'X'; Denumire = 'X' } -FaraJson -Nota 'ReadOnly: catalogul e lege' | Out-Null
+
+    # Cele doua politici ale feliei: deja in `TipuriConfigurabile`, deci
+    # `Configurator` le citeste si le scrie; usa OData le lipsea pana acum.
+    Proba -Cerere 'listă PoliticaAmortizare' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale '/api/odata/PoliticaAmortizare?$top=5' -Nota 'cine configureaza, citeste' | Out-Null
+    Proba -Cerere 'listă RegulaDeductibilitate' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale '/api/odata/RegulaDeductibilitate?$top=5' | Out-Null
+    Proba -Cerere 'creare PoliticaAmortizare' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaAmortizare' -Corp @{ TipMaterialId = $tipImo.ID } -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare PoliticaAmortizare' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaAmortizare' -Corp @{ TipMaterialId = $tipImo.ID } -Contine 'crea' | Out-Null
+    $corpRegula = @{ Categorie = 'Standard'; Fel = 'Procent'; Valoare = 0; DeLa = '2099-01-01'; Temei = 'PROBA-F26' }
+    Proba -Cerere 'creare RegulaDeductibilitate' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/odata/RegulaDeductibilitate' -Corp $corpRegula -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare RegulaDeductibilitate' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/odata/RegulaDeductibilitate' -Corp $corpRegula -Contine 'crea' | Out-Null
+
+    # ── PIF: agregat cules, ca DVI ─────────────────────────────────────────
+    # Draftul pleaca FARA linii, ca `opereaza` pe Admin sa ajunga la DOMENIU
+    # (422) fara sa poata scrie vreun registru sau vreo stare de fisa.
+    $corpPif = @{
+        Data       = (Get-Date -Format 'yyyy-MM-dd')
+        PredatorId = $unitate.ID
+        PrimitorId = $gestiune.ID
+        Linii      = @()
+    }
+    $crearePif = Proba -Cerere 'creare PIF' -User 'Admin' -Asteptat 201 -Metoda POST -Cale '/api/pif' -Corp $corpPif -Nota 'draftul de lucru'
+    if ($crearePif.Verdict -ne 'PASS') { throw "Nu s-a putut crea punerea in functiune de lucru: $($crearePif.CorpIntreg)" }
+    $idPif = ($crearePif.CorpIntreg | ConvertFrom-Json).Id
+    $curatenie.Add({
+            $sters = Invoke-Cerere -Metoda DELETE -Cale "/api/pif/$idPif" -Token $tokenAdmin
+            Write-Host "curățenie: DELETE /api/pif/$idPif → $($sters.Status)" -ForegroundColor DarkGray
+        }.GetNewClosure())
+    Write-Host "  pif draft: $idPif" -ForegroundColor DarkGray
+
+    Proba -Cerere 'creare PIF' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/pif' -Corp $corpPif -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare PIF' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/pif' -Corp $corpPif -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare PIF' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/pif' -Corp $corpPif -Contine 'crea' -Nota 'documentele nu-s configurabile' | Out-Null
+    Proba -Cerere 'citire PIF' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/pif/$idPif" | Out-Null
+    Proba -Cerere 'citire PIF' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/pif/$idPif" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'listă PIF' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/pif?take=5' -Contine '"data":[]' -Nota '200 filtrat' | Out-Null
+    Proba -Cerere 'modificare PIF' -User 'Cititor' -Asteptat 403 -Metoda PUT -Cale "/api/pif/$idPif" -Corp $corpPif -Contine 'modifica' | Out-Null
+    Proba -Cerere 'modificare PIF' -User 'User' -Asteptat 404 -Metoda PUT -Cale "/api/pif/$idPif" -Corp $corpPif -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'ștergere PIF' -User 'Cititor' -Asteptat 403 -Metoda DELETE -Cale "/api/pif/$idPif" -Contine 'șterge' | Out-Null
+    Proba -Cerere 'ștergere PIF' -User 'User' -Asteptat 404 -Metoda DELETE -Cale "/api/pif/$idPif" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'operare PIF' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/pif/$idPif/opereaza" -Contine 'modifica' | Out-Null
+    Proba -Cerere 'operare PIF' -User 'User' -Asteptat 404 -Metoda POST -Cale "/api/pif/$idPif/opereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'operare PIF fără linii' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "/api/pif/$idPif/opereaza" -Contine 'nicio linie' -Nota 'domeniul rămâne' | Out-Null
+
+    # `linii-sursa`: 400 (cererea) → 403 (dreptul pe FACTURI) → 200.
+    $perioadaPif = 'dataStart=2020-01-01&dataEnd=2020-12-31'
+    Proba -Cerere 'linii sursă PIF fără perioadă' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/pif/linii-sursa' -Contine 'obligatoriu' | Out-Null
+    Proba -Cerere 'linii sursă PIF fără perioadă' -User 'User' -Asteptat 400 -Metoda GET -Cale '/api/pif/linii-sursa' -Contine 'obligatoriu' -Nota 'cererea, înaintea dreptului' | Out-Null
+    Proba -Cerere 'linii sursă PIF' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/pif/linii-sursa?$perioadaPif" | Out-Null
+    Proba -Cerere 'linii sursă PIF' -User 'User' -Asteptat 403 -Metoda GET -Cale "/api/pif/linii-sursa?$perioadaPif" -Contine 'citi' -Nota 'F26-D5: dreptul pe FACTURI' | Out-Null
+
+    # ── CAS: antetul si multimea de fise; liniile le produce serverul ───────
+    $corpCas = @{
+        Data       = (Get-Date -Format 'yyyy-MM-dd')
+        Cauza      = 'Casare'
+        PredatorId = $gestiune.ID
+        PrimitorId = $unitate.ID
+        Fise       = @()
+    }
+    $creareCas = Proba -Cerere 'creare CAS' -User 'Admin' -Asteptat 201 -Metoda POST -Cale '/api/cas' -Corp $corpCas -Nota 'draftul de lucru'
+    if ($creareCas.Verdict -ne 'PASS') { throw "Nu s-a putut crea iesirea de lucru: $($creareCas.CorpIntreg)" }
+    $idCas = ($creareCas.CorpIntreg | ConvertFrom-Json).Id
+    $curatenie.Add({
+            $sters = Invoke-Cerere -Metoda DELETE -Cale "/api/cas/$idCas" -Token $tokenAdmin
+            Write-Host "curățenie: DELETE /api/cas/$idCas → $($sters.Status)" -ForegroundColor DarkGray
+        }.GetNewClosure())
+    Write-Host "  cas draft: $idCas" -ForegroundColor DarkGray
+
+    Proba -Cerere 'creare CAS' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/cas' -Corp $corpCas -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare CAS' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/cas' -Corp $corpCas -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare CAS' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/cas' -Corp $corpCas -Contine 'crea' | Out-Null
+    Proba -Cerere 'citire CAS' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/cas/$idCas" | Out-Null
+    Proba -Cerere 'citire CAS' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/cas/$idCas" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'modificare CAS' -User 'Cititor' -Asteptat 403 -Metoda PUT -Cale "/api/cas/$idCas" -Corp $corpCas -Contine 'modifica' | Out-Null
+    Proba -Cerere 'modificare CAS' -User 'User' -Asteptat 404 -Metoda PUT -Cale "/api/cas/$idCas" -Corp $corpCas -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'ștergere CAS' -User 'Cititor' -Asteptat 403 -Metoda DELETE -Cale "/api/cas/$idCas" -Contine 'șterge' | Out-Null
+    Proba -Cerere 'operare CAS fără linii' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "/api/cas/$idCas/opereaza" -Contine 'nicio linie' -Nota 'domeniul rămâne' | Out-Null
+
+    # ── AMO: oglinda ITV; `genereaza` NUMAI pe cei fara drept (capcana 79) ──
+    $corpAmo = @{ An = 2001; Luna = 1; UnitateId = $unitate.ID }
+    Proba -Cerere 'generare AMO' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/amo/genereaza' -Corp $corpAmo -Contine 'crea' | Out-Null
+    Proba -Cerere 'generare AMO' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/amo/genereaza' -Corp $corpAmo -Contine 'crea' | Out-Null
+    Proba -Cerere 'generare AMO' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/amo/genereaza' -Corp $corpAmo -Contine 'crea' -Nota 'nu scrie: gate-ul e pe TIP' | Out-Null
+    Proba -Cerere 'previzualizare AMO' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/amo/previzualizare?an=2001&luna=1' | Out-Null
+    Proba -Cerere 'previzualizare AMO' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/amo/previzualizare?an=2001&luna=1' -Nota 'Read pe tot, inclusiv registru' | Out-Null
+    Proba -Cerere 'previzualizare AMO' -User 'User' -Asteptat 403 -Metoda GET -Cale '/api/amo/previzualizare?an=2001&luna=1' -Contine 'citi' -Nota 'F22-D5: sume peste registru' | Out-Null
+    Proba -Cerere 'previzualizare AMO fără lună' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/amo/previzualizare?an=2001' -Contine 'obligatoriu' | Out-Null
+    Proba -Cerere 'listă AMO' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/amo?take=5' -Contine '"data":[]' -Nota '200 filtrat' | Out-Null
+    Proba -Cerere 'regenerare AMO inexistentă' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/amo/$idInexistent/regenereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+
+    # ── Fisa si registrul: cifre peste `RegistruImobilizari` (F22-D5) ───────
+    Proba -Cerere 'fișa imobilizării' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/imobilizari/$idFisaImo/fisa" | Out-Null
+    Proba -Cerere 'fișa imobilizării' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/imobilizari/$idFisaImo/fisa" -Nota 'Read pe tot, inclusiv registru' | Out-Null
+    Proba -Cerere 'fișa imobilizării' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/imobilizari/$idFisaImo/fisa" -Contine 'nu există sau nu e vizibil' -Nota '404 înaintea lui 403' | Out-Null
+    Proba -Cerere 'fișa unei imobilizări inexistente' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/imobilizari/$idInexistent/fisa" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'registrul imobilizărilor' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/imobilizari/registru' | Out-Null
+    Proba -Cerere 'registrul imobilizărilor' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/imobilizari/registru' | Out-Null
+    Proba -Cerere 'registrul imobilizărilor' -User 'User' -Asteptat 403 -Metoda GET -Cale '/api/imobilizari/registru' -Contine 'citi' -Nota 'F22-D5: sume peste registru' | Out-Null
+    # A doua usa de citire pe acelasi nomenclator NU exista (F2-D4): ruta lipseste.
+    Proba -Cerere 'listă REST de imobilizări' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/imobilizari' -FaraJson -Nota 'F2-D4: nomenclatorul e pe OData' | Out-Null
+
+    # ── Usile celorlalte felii pe id-uri ale feliei 26 ──────────────────────
+    # PIF/CAS/AMO deriva DIRECT din `Document`, deci `GetObjectByKey<NotaContabila>`
+    # nu le vede: 404 pe toate verbele, fara niciun predicat de felie de scris.
+    Proba -Cerere 'citire id PIF pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/ntc/$idPif" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'operare id PIF pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/ntc/$idPif/opereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'citire id CAS pe ușa NTC' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/ntc/$idCas" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'citire id NIR pe ușa PIF' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/pif/$idNir" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'citire id PIF pe ușa CAS' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/cas/$idPif" -Contine 'nu există sau nu e vizibil' | Out-Null
+
+    # Curatenia, ca PROBE, in ordinea inversa a crearii (documentele inaintea fisei).
+    $stergereCas = Proba -Cerere 'ștergere CAS' -User 'Admin' -Asteptat 204 -Metoda DELETE -Cale "/api/cas/$idCas" -FaraJson -Nota 'curățenie'
+    if ($stergereCas.Verdict -eq 'PASS') { $curatenie.RemoveAt($curatenie.Count - 1) }
+    $stergerePif = Proba -Cerere 'ștergere PIF' -User 'Admin' -Asteptat 204 -Metoda DELETE -Cale "/api/pif/$idPif" -FaraJson -Nota 'curățenie'
+    if ($stergerePif.Verdict -eq 'PASS') { $curatenie.RemoveAt($curatenie.Count - 1) }
+    $stergereFisa = Proba -Cerere 'ștergere Imobilizare' -User 'Admin' -Asteptat 200 -Metoda DELETE -Cale "/api/odata/Imobilizare($idFisaImo)" -FaraJson -Nota 'curățenie: fișa Nouă, fără rânduri de registru'
+    if ($stergereFisa.Verdict -eq 'PASS') { $curatenie.RemoveAt($curatenie.Count - 1) }
+
     # ── Imperecheri: aceeași formă ca feliile de document ───────────────────
     # Corpul e deliberat MINIM: gate-ul de creare e pe TIP și vine ÎNAINTEA
     # Apply-ului, deci un corp care n-ar trece domeniul tot 403 trebuie să dea.
@@ -496,6 +720,31 @@ try {
     Proba -Cerere 'creare împerechere' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/imperecheri' -Corp $corpImperechere -Contine 'crea' | Out-Null
     Proba -Cerere 'creare împerechere' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/imperecheri' -Corp $corpImperechere -Contine 'crea' | Out-Null
     Proba -Cerere 'ștergere împerechere inexistentă' -User 'Admin' -Asteptat 404 -Metoda DELETE -Cale "/api/imperecheri/$idInexistent" -Contine 'nu există sau nu e vizibil' | Out-Null
+
+    # ── F27-D8: desfacerea prin rând invers ────────────────────────────────
+    # Desfacerea SCRIE un rând, deci gate-ul e Write pe instanță (nu Delete):
+    # 404 pentru cine nu vede legătura, 403 pentru cine o vede fără drept de
+    # scriere. Subiectul e un id inexistent, deci `Admin` rămâne pe 404 —
+    # matricea nu creează împerecheri, ca să nu lase urme.
+    $corpDesfa = @{ Data = (Get-Date -Format 'yyyy-MM-dd') }
+    Proba -Cerere 'desfacere împerechere inexistentă' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'desfacere împerechere' -User 'User' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'desfacere împerechere' -User 'Cititor' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' -Nota 'inexistentul răspunde înaintea dreptului' | Out-Null
+    Proba -Cerere 'desfacere împerechere' -User 'Configurator' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' | Out-Null
+    # Review advers F27 (10): pe un id INEXISTENT 404-ul ascunde întrebarea de
+    # drept. Pe o împerechere pe care `Cititor` O VEDE, refuzul trebuie să fie
+    # 403 „modifica" — desfacerea scrie. Subiectul e un rând EXISTENT, descoperit
+    # prin OData: proba nu creează nimic, iar 403-ul nu scrie nimic.
+    Proba -Cerere 'desfacere împerechere vizibilă' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/imperecheri/$idImperechere/desfa" -Corp $corpDesfa -Contine 'modifica' -Nota 'Write pe instanță: desfacerea scrie' | Out-Null
+
+    # ── F27-D7: proiecțiile noi de sold și restul la o dată ────────────────
+    Proba -Cerere 'solduri pe repartitor' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/sold-parteneri' -Contine '"data"' -Nota 'citirea e permisă rolului Cititori' | Out-Null
+    Proba -Cerere 'solduri pe repartitor la o dată' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/sold-parteneri?laData=2026-12-31' -Contine '"totalCount"' | Out-Null
+    Proba -Cerere 'solduri pe repartitor cu dată invalidă' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/sold-parteneri?laData=nu-e-data' -Contine 'laData', 'not valid' -Nota 'binding-ul refuză înaintea domeniului; mesajul lui rămâne cel generic' | Out-Null
+    Proba -Cerere 'solduri pe repartitor' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/sold-parteneri' -Contine '"data":[]' -Nota 'registrul invizibil ⇒ listă goală, nu 403' | Out-Null
+    Proba -Cerere 'documente cu rest la o dată' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/documente-cu-rest?laData=2026-12-31' -Contine '"totalCount"' | Out-Null
+    Proba -Cerere 'documente cu rest la o dată' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/documente-cu-rest?laData=2026-12-31' -Contine '"data":[]' -Nota 'documentele invizibile ⇒ listă goală' | Out-Null
+    Proba -Cerere 'documente cu rest cu dată invalidă' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/documente-cu-rest?laData=nu-e-data' -Contine 'laData' | Out-Null
 
     # ── F23: politicile, implicitele și auditul (F23-D10 + F23-D9) ─────────
     # Ce a schimbat măsurătoarea pasului 2 față de tabelul din contract, și de
@@ -600,6 +849,35 @@ try {
     # diferită de cea din bază, altfel n-ar ajunge nici la plasa de permisiuni.
     $societate = Get-PrimaEntitate 'Societate'
     Proba -Cerere 'modificare Societate' -User 'Configurator' -Asteptat 403 -Metoda PATCH -Cale "/api/odata/Societate($($societate.ID))" -Corp @{ Localitate = 'Probă F24' } -Contine 'modifica' | Out-Null
+
+    # ── F28-D pe calea reală: FK spre o frunză TPH (89, regula (o) a gardianului) ─
+    # Sub TPH `ContBancarId` ține doar id-ul rădăcinii `Repartitor`; tipul țintei îl
+    # ține gardianul. Fiecare PATCH schimbă valoarea din bază (altfel e no-op).
+    $caleSocietate = "/api/odata/Societate($($societate.ID))"
+    $contBancarInitial = $societate.ContBancarId
+    $filtruCont = if ($contBancarInitial) { "ID ne $contBancarInitial" } else { $null }
+    $contPropriuAlt = Get-PrimaEntitate 'ContPropriu' $filtruCont
+    Write-Host "  societate: cont bancar $(if ($contBancarInitial) { $contBancarInitial } else { '(gol)' }) → probă pe $($contPropriuAlt.ID)" -ForegroundColor DarkGray
+    Proba -Cerere 'cont bancar al societății = partener' -User 'Configurator' -Asteptat 403 -Metoda PATCH -Cale $caleSocietate -Corp @{ ContBancarId = $partener.ID } -Contine 'modifica' -Nota '80c: dreptul înaintea domeniului' | Out-Null
+    Proba -Cerere 'cont bancar al societății = partener' -User 'Admin' -Asteptat 422 -Metoda PATCH -Cale $caleSocietate -Corp @{ ContBancarId = $partener.ID } -Contine 'rândul ales', "($($partener.ID)) e ", ', nu ' -Nota 'F28-D: ținta e Partener, nu ContPropriu' | Out-Null
+    Proba -Cerere 'cont bancar al societății = id inexistent' -User 'Admin' -Asteptat 422 -Metoda PATCH -Cale $caleSocietate -Corp @{ ContBancarId = $idInexistent } -Contine "($idInexistent)", 'nu există sau nu e vizibil' -Nota 'F28-D: referința invizibilă, nu violare de FK' | Out-Null
+    $curatenie.Add({
+            $pus = Invoke-Cerere -Metoda PATCH -Cale $caleSocietate -Token $tokenAdmin -Corp @{ ContBancarId = $contBancarInitial }
+            Write-Host "curățenie: PATCH $caleSocietate ContBancarId → $($pus.Status)" -ForegroundColor DarkGray
+        }.GetNewClosure())
+    Proba -Cerere 'cont bancar al societății = cont propriu' -User 'Admin' -Asteptat 204 -Metoda PATCH -Cale $caleSocietate -Corp @{ ContBancarId = $contPropriuAlt.ID } -FaraJson -Nota 'F28-D: ținta de tipul cerut trece' | Out-Null
+    $contBancarRefacut = Proba -Cerere 'cont bancar al societății refăcut' -User 'Admin' -Asteptat 204 -Metoda PATCH -Cale $caleSocietate -Corp @{ ContBancarId = $contBancarInitial } -FaraJson -Nota 'curățenie: valoarea inițială'
+    if ($contBancarRefacut.Verdict -eq 'PASS') { $curatenie.RemoveAt($curatenie.Count - 1) }
+
+    # Referința REST spre o frunză cu id-ul altei frunze deja urmărite (prefetch): refuz de domeniu, nu cast.
+    $corpFclTip = @{
+        Data                 = (Get-Date -Format 'yyyy-MM-dd')
+        PredatorId           = $gestiune.ID
+        PrimitorId           = $partener.ID
+        GestiuneDescarcareId = $partener.ID
+        Linii                = @()
+    }
+    Proba -Cerere 'FCL cu gestiunea de descărcare = clientul' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/fcl' -Corp $corpFclTip -Contine 'rândul ales', "($($partener.ID)) e ", ', nu ' -Nota '89: nu 500 (InvalidCastException)' | Out-Null
 
     # Gardianul pe politici (F23-D5): trei refuzuri de DOMENIU pe care le ating
     # doar cei cu DREPT de scriere (`Admin` și `Configurator`) — pentru
@@ -747,6 +1025,137 @@ try {
     Proba -Cerere 'ștergere politică de probă' -User 'Admin' -Asteptat 200 -Metoda DELETE -Cale "/api/odata/PoliticaTvaImplicit($idImplicitProba)" -FaraJson -Nota 'curățenie' | Out-Null
     Proba -Cerere 'ștergere partener de probă' -User 'Admin' -Asteptat 200 -Metoda DELETE -Cale "/api/odata/Partener($idPartenerUe)" -FaraJson -Nota 'curățenie' | Out-Null
     Proba -Cerere 'verificare profil (după curățenie)' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/politici/verificare' -Contine '[]' -Nota 'fără urme' | Out-Null
+
+    # ── Perioadele: lanțul și comenzile lui (felia 27, F27-D1/D2) ──────────
+    # Nimic nu se SCRIE aici, prin construcție: comanda cerută lui `Admin` e una
+    # pe care lanțul o refuză oricum (luna aleasă are precedenta DESCHISĂ), iar
+    # redeschiderea se cere pe o perioadă care nu e închisă. Capcana ocolită e
+    # cea a lui `itv/genereaza` (felia 21): un gate picat n-are voie să scrie.
+    $lantRasp = Invoke-Cerere -Metoda GET -Cale '/api/perioade' -Token $tokenAdmin
+    if ($lantRasp.Status -ne 200) { throw "Descoperirea lanțului de perioade a picat: HTTP $($lantRasp.Status)" }
+    $lant = @($lantRasp.Corp | ConvertFrom-Json)
+    $perioadaBlocata = $null
+    $precedentaDeschisa = $null
+    for ($i = $lant.Count - 1; $i -ge 1; $i--) {
+        $pv = $lant[$i]
+        $qv = $lant[$i - 1]
+        $anPrecedent = if ($pv.Luna -eq 1) { $pv.An - 1 } else { $pv.An }
+        $lunaPrecedenta = if ($pv.Luna -eq 1) { 12 } else { $pv.Luna - 1 }
+        if ($qv.An -eq $anPrecedent -and $qv.Luna -eq $lunaPrecedenta -and -not $qv.Inchisa -and -not $pv.Inchisa) {
+            $perioadaBlocata = $pv
+            $precedentaDeschisa = $qv
+            break
+        }
+    }
+    if (-not $perioadaBlocata) { throw 'Nicio lună cu precedenta DESCHISĂ — proba de 422 pe lanț ar putea SCRIE.' }
+    $calePerioada = "/api/perioade/$($perioadaBlocata.An)/$($perioadaBlocata.Luna)"
+    $etichetaPrecedenta = '{0:00}/{1}' -f $precedentaDeschisa.Luna, $precedentaDeschisa.An
+    Write-Host "  perioade: $($lant.Count) verigi; blocată $($perioadaBlocata.Luna)/$($perioadaBlocata.An) (precedenta $etichetaPrecedenta deschisă)" -ForegroundColor DarkGray
+
+    # Lista e o CITIRE pe tip: `Cititor` o are, `User` nu — iar verdictul lui e
+    # 403, nu 200 gol, fiindcă lanțul filtrat ar fi un răspuns FALS (80e).
+    Proba -Cerere 'lanțul perioadelor' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/perioade' -Contine '"An":' | Out-Null
+    Proba -Cerere 'lanțul perioadelor' -User 'User' -Asteptat 403 -Metoda GET -Cale '/api/perioade' -Contine 'citi' -Nota 'lanț filtrat = lanț fals' | Out-Null
+    # Comanda: 403 pentru cine vede perioada dar n-o poate scrie; `Configurator`
+    # are Write DOAR pe politici, iar perioada nu e politică (83i).
+    Proba -Cerere 'închide perioada' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @() } -Contine 'modifica' | Out-Null
+    Proba -Cerere 'închide perioada' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @() } -Contine 'modifica' -Nota 'perioada nu e politică' | Out-Null
+    # `User` nu vede perioada ⇒ 404, aceeași frază ca pe orice subiect invizibil.
+    Proba -Cerere 'închide perioada' -User 'User' -Asteptat 404 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @() } -Contine 'nu există sau nu e vizibil' | Out-Null
+    # Luna nedefinită: tot 404, fiindcă subiectul rutei e LUNA, nu un `{id}`.
+    Proba -Cerere 'închide o lună nedefinită' -User 'Admin' -Asteptat 404 -Metoda POST -Cale '/api/perioade/2099/12/inchide' -Corp @{ Acceptate = @() } -Contine 'nu există sau nu e vizibil' | Out-Null
+    # 400 de SINTAXĂ, înaintea oricărei întrebări de drept.
+    Proba -Cerere 'închide luna 13' -User 'Admin' -Asteptat 400 -Metoda POST -Cale '/api/perioade/2026/13/inchide' -Corp @{ Acceptate = @() } -Contine 'trebuie să fie' | Out-Null
+    # 422 pe `Admin`: are dreptul, îl refuză LANȚUL — și nu scrie nimic.
+    Proba -Cerere 'închide o lună cu precedenta deschisă' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @() } -Contine 'precedent', $etichetaPrecedenta, 'Blocant:', '[PRECEDENTA-DESCHISA' -Nota 'F27-D1/D2: lanțul, cu lista în forma `Severitate: text [cheie]`' | Out-Null
+    # Blocanta nu se acceptă: aceeași cerere cu cheia ei în `Acceptate` iese tot 422.
+    Proba -Cerere 'închide acceptând blocanta' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/inchide" -Corp @{ Acceptate = @("PRECEDENTA-DESCHISA:$($precedentaDeschisa.An)-$('{0:00}' -f $precedentaDeschisa.Luna)") } -Contine 'Blocant:' -Nota 'F27-D2: blocanta nu se acceptă' | Out-Null
+    Proba -Cerere 'redeschide o perioadă deschisă' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/redeschide" -Corp @{ Motiv = 'probă' } -Contine 'nu are ce redeschide' | Out-Null
+    Proba -Cerere 'redeschide fără motiv' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$calePerioada/redeschide" -Corp @{ Motiv = '' } -Contine 'motiv' -Nota 'regulă a motorului, nu de sintaxă' | Out-Null
+    # Verificarea e un VERDICT: gate de citire pe instanță, apoi dreptul de
+    # citire pe TOT ce însumează (documente, ITV, AMO, imperecheri, politica
+    # severităților — 80e), abia apoi constatările.
+    Proba -Cerere 'verificarea închiderii' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA', '"Severitate":"Blocant"' | Out-Null
+    Proba -Cerere 'verificarea închiderii' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA' -Nota 'citește tot ce însumează verdictul' | Out-Null
+    Proba -Cerere 'verificarea închiderii' -User 'User' -Asteptat 404 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'verificarea unei luni nedefinite' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/perioade/2099/12/verificare' -Contine 'nu există sau nu e vizibil' | Out-Null
+    # Istoricul (F27-D2): citire, cu același subiect — luna. Pe o lună niciodată
+    # închisă e o listă GOALĂ, adică un răspuns adevărat, nu un refuz.
+    Proba -Cerere 'istoricul perioadei' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$calePerioada/istoric" -Contine '[]' -Nota 'lună niciodată închisă' | Out-Null
+    Proba -Cerere 'istoricul perioadei' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "$calePerioada/istoric" -Contine '[]' | Out-Null
+    Proba -Cerere 'istoricul perioadei' -User 'User' -Asteptat 404 -Metoda GET -Cale "$calePerioada/istoric" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'istoricul unei luni nedefinite' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/perioade/2099/12/istoric' -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'istoricul lunii 13' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/perioade/2026/13/istoric' -Contine 'trebuie să fie' | Out-Null
+    # Severitatea constatărilor e POLITICĂ, deci trece pe ușa comună a
+    # politicilor: `Configurator` o scrie, `Cititor` și `User` nu (83i).
+    Proba -Cerere 'listă PoliticaInchidere' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale '/api/odata/PoliticaInchidere' -Contine 'ItvLipsa' -Nota 'cine configurează, citește' | Out-Null
+    Proba -Cerere 'creare PoliticaInchidere' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaInchidere' -Corp @{ Fel = 'ItvLipsa'; Severitate = 'Avertisment' } -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare PoliticaInchidere' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaInchidere' -Corp @{ Fel = 'ItvLipsa'; Severitate = 'Avertisment' } -Contine 'crea' | Out-Null
+    # Al doilea rând pe același fel: gardianul îl refuză ca DOMENIU, înaintea
+    # indexului unic — `Admin` are dreptul, îl oprește regula.
+    Proba -Cerere 'al doilea rând pe același fel' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/PoliticaInchidere' -Corp @{ Fel = 'ItvLipsa'; Severitate = 'Avertisment' } -Contine 'o singură severitate' -Nota 'F27-D2: gardianul înaintea indexului' | Out-Null
+    # Reconstrucția soldurilor (F27-D3): comandă FĂRĂ subiect (rescrie toate
+    # perioadele de referință), deci gate-ul ei e pe TIP — `Write` pe
+    # `PerioadaFiscala`, același drept ca `inchide`. Pe baza vie nu există nicio
+    # perioadă închisă (verificat pe lanț mai sus), deci `Admin` primește un
+    # raport GOL și comanda NU scrie nimic — aceeași disciplină ca la `inchide`.
+    Proba -Cerere 'reconstruiește soldurile' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/perioade/reconstruieste' -Contine 'modifica' -Nota 'citirea nu dă dreptul de a rescrie' | Out-Null
+    Proba -Cerere 'reconstruiește soldurile' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/perioade/reconstruieste' -Contine 'modifica' -Nota 'perioada nu e politică' | Out-Null
+    Proba -Cerere 'reconstruiește soldurile' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/perioade/reconstruieste' -Contine 'modifica' -Nota 'gate pe TIP, nu pe instanță' | Out-Null
+    Proba -Cerere 'reconstruiește soldurile' -User 'Admin' -Asteptat 200 -Metoda POST -Cale '/api/perioade/reconstruieste' -Contine '"Referinte":[]' -Nota 'nicio perioadă închisă ⇒ nimic de reconstruit' | Out-Null
+
+    # ── Conținutul de rectificativă (F27-D5) ────────────────────────
+    # Proiecție, ca jurnalul — dar cu gate DUBLU: perioada dă 404-ul (subiectul
+    # rutei e luna), registrul fiscal dă 403-ul. `User` nu vede perioada, deci
+    # se oprește la 404 — ordinea 400 → 404 → 403 a deciziei 80, pe o rută cu
+    # două tipuri. Nimic nu se scrie: e GET.
+    $caleRect = "/api/proiectii/rectificativa-tva?an=$($perioadaBlocata.An)&luna=$($perioadaBlocata.Luna)"
+    Proba -Cerere 'conținut de rectificativă' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale $caleRect -Contine '"EsteRectificativa":false' -Nota 'perioadă nicio dată închisă ⇒ fără reper' | Out-Null
+    Proba -Cerere 'conținut de rectificativă' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleRect -Contine '"Randuri":[]' | Out-Null
+    Proba -Cerere 'conținut de rectificativă' -User 'User' -Asteptat 404 -Metoda GET -Cale $caleRect -Contine 'nu există sau nu e vizibil' -Nota 'perioada invizibilă răspunde înaintea registrului' | Out-Null
+    Proba -Cerere 'rectificativă pe luna 13' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/rectificativa-tva?an=2026&luna=13' -Contine 'trebuie să fie' | Out-Null
+    Proba -Cerere 'rectificativă fără lună' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/rectificativa-tva?an=2026' -Contine 'obligatoriu' | Out-Null
+    Proba -Cerere 'rectificativă pe o lună nedefinită' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/proiectii/rectificativa-tva?an=2099&luna=12' -Contine 'nu există sau nu e vizibil' | Out-Null
+
+    # ── Corecția unui document operat (F27-D6) ──────────────────────
+    # Comandă a BAZEI, nu a unei felii: ruta e `api/documente/{id}/corecteaza`,
+    # documentul se rezolvă POLIMORF. Ordinea de pe sârmă se vede pe patru
+    # răspunsuri diferite pentru ACELAȘI id: 400 (motiv necunoscut — enum pe
+    # NUME, 57a) înaintea oricărei întrebări de drept, 404 pentru cine nu vede
+    # documentul, 403 pentru cine îl vede fără drept de scriere, 422 pentru cine
+    # are dreptul și îl refuză domeniul. Subiectul e draftul de NIR al matricei,
+    # deci refuzul de domeniu e chiar „nu e operat" — și nu scrie nimic.
+    $corpCorectie = @{ Data = (Get-Date -Format 'yyyy-MM-dd'); Motiv = 'EroareMateriala' }
+    Proba -Cerere 'corectează documentul' -User 'Admin' -Asteptat 400 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp @{ Data = (Get-Date -Format 'yyyy-MM-dd'); Motiv = 'Habar' } -Contine 'nu există', 'EroareMateriala' -Nota 'sintaxa, înaintea dreptului' | Out-Null
+    Proba -Cerere 'corectează documentul' -User 'Admin' -Asteptat 400 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp @{ Data = (Get-Date -Format 'yyyy-MM-dd') } -Contine 'nu e cules' -Nota 'motivul lipsă e tot 400' | Out-Null
+    Proba -Cerere 'corectează documentul' -User 'User' -Asteptat 404 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp $corpCorectie -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'corectează documentul' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp $corpCorectie -Contine 'modifica' -Nota 'vede documentul, n-are dreptul de scriere' | Out-Null
+    Proba -Cerere 'corectează documentul' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp $corpCorectie -Contine 'modifica' | Out-Null
+    Proba -Cerere 'corectează un document inexistent' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/documente/$idInexistent/corecteaza" -Corp $corpCorectie -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'corectează un DRAFT' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "/api/documente/$idNir/corecteaza" -Corp $corpCorectie -Contine 'doar un document operat' -Nota 'F27-D6: are dreptul, îl refuză domeniul' | Out-Null
+
+    # Lanțul a rămas NEATINS: nicio perioadă închisă de matrice.
+    $lantDupa = @((Invoke-Cerere -Metoda GET -Cale '/api/perioade' -Token $tokenAdmin).Corp | ConvertFrom-Json)
+    $inchiseDupa = @($lantDupa | Where-Object { $_.Inchisa }).Count
+    $script:Numar++
+    $verdictLant = 'PASS'
+    $motivLant = ''
+    if ($lantDupa.Count -ne $lant.Count -or $inchiseDupa -ne @($lant | Where-Object { $_.Inchisa }).Count) {
+        $verdictLant = 'FAIL'
+        $motivLant = "lanțul s-a schimbat: $($lant.Count) → $($lantDupa.Count) verigi, închise $inchiseDupa"
+    }
+    $script:Rezultate.Add([pscustomobject]@{
+            Nr         = $script:Numar
+            Cerere     = '`GET /api/perioade` (după scena perioadelor)'
+            User       = 'Admin'
+            Asteptat   = 'lanț neatins'
+            Primit     = "$($lantDupa.Count) verigi, $inchiseDupa închise"
+            Corp       = ''
+            Ms         = 0
+            Verdict    = $verdictLant
+            Motive     = $motivLant
+            CorpIntreg = ''
+        })
 
     # ── Neautentificat: 401 rămâne primul (F22-D11) ────────────────────────
     $anonim = Invoke-Cerere -Metoda GET -Cale "/api/nir/$idNir"

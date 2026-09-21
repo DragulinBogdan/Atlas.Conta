@@ -29,7 +29,7 @@ public static class InchidereTvaApply {
     // ═══════════════════════ Citire ═══════════════════════
 
     // `IQueryable` — DataSourceLoader îi pune deasupra filtrarea/sortarea/
-    // paginarea clientului (43c). DOAR `InchidereTva`: sub TPT interogarea pe
+    // paginarea clientului (43c). DOAR `InchidereTva`: interogarea pe
     // frunză NU întoarce alte note (perechea lui F21-D5, unde felia NTC le
     // exclude explicit pe astea).
     //
@@ -68,16 +68,15 @@ public static class InchidereTvaApply {
         var h = os.GetObjectsQuery<InchidereTva>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, UnitateDenumire = d.Predator.Denumire
             })
             .FirstOrDefault();
         if (h == null)
             return null;
 
-        // Liniile pe BAZA detaliului cu frunza prin `as` (TPT ⇒ LEFT JOIN), ca la
-        // NTC: o închidere importată/istorică ar putea purta linii de tip bază, iar
-        // pe frunză singură ar fi ieșit `Linii: []` cu `Total` nenul.
+        // Pe BAZA detaliului: liniile de tip bază (import, istoric) apar în `Linii`, cu valorile frunzei null.
+        // `as` nu filtrează pe tip; sigur fiindcă liniile unui document sunt frunza lui sau baza (F28-H, 89).
         var linii = os.GetObjectsQuery<DocumentDetaliu>()
             .Where(l => l.DocumentId == id)
             .OrderBy(l => l.ID)
@@ -131,6 +130,7 @@ public static class InchidereTvaApply {
 
         return new ItvReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             An = h.Data.Year, Luna = h.Data.Month,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             UnitateId = h.PredatorId, UnitateDenumire = h.UnitateDenumire,
@@ -141,6 +141,7 @@ public static class InchidereTvaApply {
             PoateOpera = h.Stare == StareDocument.Draft,
             PoateSterge = h.Stare == StareDocument.Draft,
             PoateRegenera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
             Linii = linii.Select(l => new ItvLinieReadDto {
@@ -203,9 +204,12 @@ public static class InchidereTvaApply {
     public static GenerareItvRezultatDto Genereaza(IObjectSpace os, GenerareItvRequestDto cerere) {
         if (cerere == null)
             throw new OperareException("Lipsește corpul cererii.");
+        using var tx = TranzactieComanda.Incepe(os);
         var r = InchidereTvaService.Incearca(os, cerere.An, cerere.Luna, cerere.UnitateId);
+        DocumentApply.Generat(r.Document);
         if (r.Document != null)
             os.CommitChanges();
+        tx.Commit();
         return Rezultat(r);
     }
 
@@ -227,6 +231,7 @@ public static class InchidereTvaApply {
     // documentelor ei) e LEGITIM: draftul vechi e depășit și se șterge, iar
     // raportul iese cu `DocumentId = null`.
     public static GenerareItvRezultatDto Regenereaza(IObjectSpace os, Guid id) {
+        using var tx = TranzactieComanda.Incepe(os);
         var doc = Rezolva.Cere<InchidereTva>(os, id, "Închiderea de TVA");
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
@@ -235,10 +240,12 @@ public static class InchidereTvaApply {
 
         var r = InchidereTvaService.Incearca(os, doc.Data.Year, doc.Data.Month, doc.PredatorId,
             inlocuieste: doc.ID);
+        DocumentApply.Generat(r.Document);
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
         os.CommitChanges();
+        tx.Commit();
         return Rezultat(r);
     }
 

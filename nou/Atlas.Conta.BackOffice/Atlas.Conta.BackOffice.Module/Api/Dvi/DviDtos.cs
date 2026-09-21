@@ -8,6 +8,8 @@ public sealed class DviWriteDto {
     /// <summary>MRN-ul declarației — cules (DVI n-are politică de numerotare).</summary>
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     public Guid PredatorId { get; set; }
     public Guid PrimitorId { get; set; }
     public List<DviLinieWriteDto> Linii { get; set; } = new();
@@ -34,6 +36,7 @@ public sealed class DviReadDto {
     public Guid Id { get; set; }
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
     public Guid PredatorId { get; set; }
@@ -49,6 +52,8 @@ public sealed class DviReadDto {
     public bool PoateEdita { get; set; }
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
+    // F27-D6 — legătura de corecție (null = documentul nu corectează nimic).
+    public CorectieDto Corectie { get; set; }
     public bool PoateStorna { get; set; }
 }
 

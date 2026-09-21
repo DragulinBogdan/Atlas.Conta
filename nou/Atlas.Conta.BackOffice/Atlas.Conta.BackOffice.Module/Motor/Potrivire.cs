@@ -33,7 +33,8 @@ public readonly record struct PoliticaConexFapt(Guid Id, Guid TipDocumentTintaId
 public readonly record struct PoliticaTvaImplicitFapt(Guid Id, ClasaFiscalaPartener? ClasaFiscala,
     DateOnly? ValabilDeLa, Guid TipTvaId, bool DinSeed);
 
-public readonly record struct TipTvaFapt(Guid Id, string Cod, RegimTva Regim, bool Activ);
+public readonly record struct TipTvaFapt(Guid Id, string Cod, RegimTva Regim, bool Activ,
+    decimal Cota, Guid? ContTvaDeductibilId, Guid? ContTvaColectatId);
 
 // `Motiv` null = câștigătorul.
 public readonly record struct CandidatContare(RegulaContareFapt Regula, MotivEliminare? Motiv);

@@ -28,6 +28,7 @@ public class TipDocument : BaseObject, ICuCautare, ICuProvenienta {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
     // Numele CLR al clasei derivate corespunzătoare (ex. "FacturaIntrare").
+    [ModelDefault("AllowEdit", "False")]
     public virtual string ClrType { get; set; }
 
     // Datoria P1 (design §8): default TipTva per tip de document, aplicat la
@@ -37,6 +38,16 @@ public class TipDocument : BaseObject, ICuCautare, ICuProvenienta {
     // vine în pașii următori.
     public virtual Guid? TipTvaImplicitId { get; set; }
     public virtual TipTva TipTvaImplicit { get; set; }
+
+    // S-D3 — regimul dual al strangler-ului: documentele acestui tip scriu ȘI
+    // cubul de postări, în aceeași tranzacție cu registrele.
+    [XafDisplayName("Postează în cub")]
+    public virtual bool PosteazaInCub { get; set; }
+
+    // B-r2 — latura pe care stă contul propriu al trezoreriei (plata: predator;
+    // încasarea: primitor); `null` pe tipurile care n-au cont propriu.
+    [XafDisplayName("Latura contului propriu")]
+    public virtual LaturaDocument? LaturaContPropriu { get; set; }
 
     // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
     // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
@@ -313,6 +324,16 @@ public class PoliticaTva : BaseObject, ICuProvenienta {
     public virtual SursaCont SursaContrapartida { get; set; }
     public virtual Guid? ContrapartidaFallbackId { get; set; }
     public virtual Cont ContrapartidaFallback { get; set; }
+    // F27-D5 — perioada în care se declară un fapt fiscal a cărui perioadă e
+    // deja închisă. Inert cât timp toate perioadele atinse sunt deschise.
+    [XafDisplayName("Declararea faptului întârziat")]
+    public virtual DeclarareIntarziata DeclarareIntarziata { get; set; }
+
+    // B-r1/S-D15 — pragul abaterii dintre taxa CULEASĂ și taxa calculată de
+    // nucleu, per linie a cotei; peste el linia se refuză
+    // (TVA_IN_AFARA_TOLERANTEI). `null` = taxa culeasă rămâne autoritară fără gard.
+    [XafDisplayName("Toleranța taxei culese")]
+    public virtual decimal? TolerantaTaxa { get; set; }
 }
 
 // Conturile închiderii lunare de TVA (FAZA 1C §6) — DATE per profil, nu
@@ -696,4 +717,86 @@ public class PoliticaTvaImplicit : BaseObject, ICuProvenienta {
     [RuleRequiredField("PoliticaTvaImplicit_TipTva_Necesar", DefaultContexts.Save,
         CustomMessageTemplate = "Tipul de TVA este obligatoriu.")]
     public virtual TipTva TipTva { get; set; }
+}
+
+// Conturile amortizării per tip material de clasă F (F26-D4).
+[NavigationItem("Politici")]
+[XafDisplayName("Politică de amortizare")]
+public class PoliticaAmortizare : BaseObject, ICuProvenienta, IVerificabilLaCommit {
+    // F23-D4
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
+    public void Verifica(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
+        if (os.IsObjectToDelete(this) || os.IsDeletedObject(this))
+            return;
+        var natura = Imobilizare.NaturaTipului(os, TipMaterialId);
+        if (natura != NaturaClasa.Imobilizare)
+            erori.Add("Politica de amortizare se leagă de un tip material de clasă de imobilizări "
+                + $"(natura „{natura}”).");
+    }
+
+    public virtual Guid TipMaterialId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Tip (cont/clasă)")]
+    [RuleRequiredField("PoliticaAmortizare_TipMaterial_Necesar", DefaultContexts.Save,
+        CustomMessageTemplate = "Tipul de material este obligatoriu.")]
+    public virtual TipMaterial TipMaterial { get; set; }
+
+    public virtual Guid? ContAmortizareId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cont de amortizare")]
+    public virtual Cont ContAmortizare { get; set; }
+    public virtual Guid? ContCheltuialaAmortizareId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cont de cheltuială cu amortizarea")]
+    public virtual Cont ContCheltuialaAmortizare { get; set; }
+    public virtual Guid? ContCheltuialaCedareId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cont de cheltuială cu cedarea")]
+    public virtual Cont ContCheltuialaCedare { get; set; }
+}
+
+// Limitarea fiscală a amortizării, ca date cu valabilitate în timp (F26-D4/D16).
+[NavigationItem("Politici")]
+[XafDisplayName("Regulă de deductibilitate")]
+public class RegulaDeductibilitate : BaseObject, ICuProvenienta {
+    // F23-D4
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
+    [XafDisplayName("Categorie fiscală")]
+    public virtual CategorieFiscala Categorie { get; set; }
+    [XafDisplayName("Doar la utilizare neexclusivă")]
+    public virtual bool DoarNeexclusiv { get; set; }
+    [XafDisplayName("Fel")]
+    public virtual FelDeductibilitate Fel { get; set; }
+    // Lei/lună la `PlafonLunar`, procent la `Procent` (0 = nedeductibil).
+    public virtual decimal Valoare { get; set; }
+    [XafDisplayName("De la")]
+    public virtual DateOnly DeLa { get; set; }
+    [XafDisplayName("Până la")]
+    public virtual DateOnly? PanaLa { get; set; }
+    [XafDisplayName("Temei")]
+    public virtual string Temei { get; set; }
+}
+
+// Severitatea constatărilor DE CONȚINUT ale închiderii de perioadă (F27-D2): un
+// rând per fel, cu `Ignorat` ca „nu mă interesa cu asta". Blocantele STRUCTURALE
+// ale lanțului nu sunt aici — ele nu se configurează.
+[NavigationItem("Politici")]
+[XafDisplayName("Politică de închidere de perioadă")]
+public class PoliticaInchidere : BaseObject, ICuProvenienta {
+    // F23-D4
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
+    [XafDisplayName("Fel")]
+    public virtual FelConstatareInchidere Fel { get; set; }
+
+    [XafDisplayName("Severitate")]
+    public virtual SeveritateConstatare Severitate { get; set; }
 }

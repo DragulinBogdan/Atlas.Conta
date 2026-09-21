@@ -15,7 +15,9 @@
 2. **Testul bazei** → pe inventarul real, lista finală de câmpuri pentru
    `Document` / `DocumentDetaliu` de bază (criteriul de la decizia 2).
 3. **Modelul nou** → clase XAF (bază + 6 derivate, TPT), validare declarativă,
-   tabelele de politică.
+   tabelele de politică. *(Notă 2026-09-18: maparea TPT e depășită — din
+   felia 28 cele trei ierarhii sunt TPH cu discriminatorul `ClrType`, decizia 89;
+   textul de aici e istoric.)*
 4. **Migrarea datelor** (EXECUTAT, decizia 34) → green-field la graniță de
    ciclu (decizia 12): nomenclatoare, politici, solduri de deschidere.
    Reconciliere: soldurile de deschidere în sistemul nou = soldurile de
@@ -543,3 +545,215 @@ detaliat în jurnal):
   import, legătura n→m cu facturile (`DviFactura` + `IVerificabilLaCommit`),
   DVI nu e document stins, `api/dvi` + `felii/dvi`, smoke React și XAF.
   Închide 83-r4.
+- **Felia 26** (2026-09-14/15, decizia 87) — imobilizări și amortizare,
+  contabil și fiscal: fișa ca nomenclator subțire cu parametrii ca fapte
+  datate, registrul al patrulea `RegistruImobilizari` scris prin
+  `IDocumentCuRegistruPropriu` (trei dispecere în motor), PIF (intrare,
+  modernizare, revizuire; nu postează), CAS (două note per fișă din
+  politică, liniile produse de server), AMO generată lunar pe tiparul ITV
+  cu trei cifre din `Motor/AmortizareService.cs` (cota fixată la ultimul
+  eveniment, baza la sfârșitul lunii evenimentului — formula confirmată pe
+  118 active din Flax, 99,49 %), `PoliticaAmortizare` + `RegulaDeductibilitate`
+  versionată + catalogul HG 2139/2004 ca date, `CodEconomic` ca dimensiune
+  pe fișă (F26-r16), nomenclatoarele pe OData, `api/pif|cas|amo` +
+  `felii/imobilizari|pif|cas|amo`, smoke React și XAF, Import1C integral cu
+  raport identic; defectul de cronologie a lunilor (anularea AMO sub CAS
+  operată) găsit la smoke-ul XAF și fixat. Concretizează 9.
+- **Felia 27** (2026-09-16/17, decizia 88, contract
+  `docs/api/p5-felia27-perioade-solduri-contract.md`, F27-D1…D10) — perioada
+  ca lanț, închiderea ca comandă, soldurile materializate. Nouă pași, un agent
+  per pas, commit per pas: **0** spike-ul cursei și al costului snapshot-ului
+  (F1 probat pe calea reală XAF; `SUM` integral 300 ms azi / ~1,5 s la 5 ani ⇒
+  două amendamente: tranzacția e a comenzii, snapshot doar pe perioadele de
+  REFERINȚĂ); **1** lanțul și comenzile `inchide`/`redeschide` cu istoric
+  append-only și gardianul pe `Inchisa`; **2a** tranzacția comenzii +
+  `FOR SHARE`/`FOR UPDATE` + cele două tabele de snapshot, **2b**
+  `SolduriService` la citire cu toți consumatorii mutați (o oprire: inițialul
+  de stoc al SAF-T rămâne pe registrul integral, F27-r10); **3**
+  `Document.DataInregistrare` cu implicitul la trei seam-uri, registrele și
+  lotul la data înregistrării; **4a** `PerioadaDeclarare` + `ScrisLa` pe
+  `RegistruTva` cu rectificativa ca derivat (o oprire: perioada fiscală E luna,
+  deci o probă pe fereastră de zile nu mai e exprimabilă), **4b** recuperarea
+  amortizării întârziate cu `Luni` pe linie și pe registru; **5** corecția ca
+  storno legat + document nou cu motiv, cu culegerea copiată generic prin
+  metadata EF; **6** `TotalStingere` la operare, `PartidaDeschisa` la
+  închidere, împerecherea datată cu desfacere prin rând invers,
+  `DocumenteCuRest` rescris, `sold-parteneri` (constatarea de produs: dimensiunea
+  `Repartitor` urmează laturile, nu contul de terț — F27-r11); **7**
+  `PoliticaInchidere` (al 20-lea tip configurabil), cele patru constatări de
+  conținut, acceptarea conștientă, dialogul XAF și `/perioade` în React (o
+  oprire: severitatea se coboară în POLITICĂ pe durata închiderilor de scenă,
+  calea operatorului real); **8a** probele supreme, integritatea soldurilor și
+  perf-ul, **8b** două runde de review advers (pașii 0–6: 0 MAJOR, 3 MEDIU,
+  5 MINOR, 7 observații; pasul 7: rezumatul plafonat ca acceptare în bloc și
+  „un fapt, o constatare"), **8c** decizia 88 și restanțele.
+  **Ce a ieșit la 8a**: Import1C integral pe Flax CU lunile închise pe parcurs
+  (2026-09-17, 12:12 → 14:27, exit 0; 12/12 luni, 0 constatări, 0,7 → 5,2 s per
+  lună) ⇒ importul citește peste snapshot-uri, iar raportul de reconciliere e
+  IDENTIC pe conținut cu baseline-ul feliei 26 — proba supremă a feliei;
+  reconstrucția soldurilor cu **0 diferențe** pe toate trei materializările
+  (184.780 contabil / 7.914 stoc / 201.046 partide). A/B-ul pe ACEEAȘI bază
+  (lanțul desfăcut prin 11 redeschideri, apoi re-închis cronologic cu aceleași
+  cifre la rând) a INFIRMAT bănuiala de regresie a partidelor: fișa `4111`
+  187 → 122 ms, balanța analitică 254 → 210 ms, soldul de stoc 153 → 50 ms,
+  operarea unei FCT cu 49 de linii 411 → 394 ms, iar `documente-cu-rest`
+  171 → 181 ms, adică neschimbat cu și fără partide. Fixul de formă al
+  proiecției (corelarea legăturii pe fereastră) a fost MĂSURAT ȘI RESPINS
+  motivat, nu omis: duce panoul filtrat la 82 ms, dar calea neplafonată a
+  constatării de rest scadent de la 220 ms la 1,02 s — nu se plătește, deci
+  felia rămâne pe forma existentă (F27-r16). Au rămas neatinse două ținte,
+  NEoptimizate conform regulii de oprire (F27-r14 cadrul cererii, F27-r15
+  cardinalitatea balanței analitice). Închidere: ModelCheck bugetar 1278/0, privat 1434/0;
+  `refuzuri.ps1` 285/285. Amendează 31d; închide 79-r3.
+- **Felia 28** (2026-09-18, decizia 89, contract
+  `docs/api/p5-felia28-tph-contract.md`, F28-D1…D8) — TPH cu discriminatorul
+  mapat `ClrType` pe `Document`, `DocumentDetaliu` și `Repartitor`, tipul ca
+  dată. Cinci pași, un agent per pas: **0** spike-ul de mapare (coloanele
+  partajate fără prefix, 37 / 45 / 28 coloane; gardianul coliziunilor pe
+  tipul de STOCARE — `Directie` și `Fel` sunt enumuri diferite peste
+  `integer`; FK-ul discriminator → `TipDocument.ClrType` a căzut pe calea XAF
+  și fallback-ul declarat s-a ratificat; indexul compus
+  `(ClrType, DocumentId)` respins pe EXPLAIN A/B; cele 45 de migrații șterse,
+  un singur `InitialCreate`; Import1C pe luna 01/2025 identic cu baseline-ul);
+  **1** bazele recreate și probele dependente de TPT rescrise pe intenție,
+  F28-A/B/C/F/G (defect latent scos la iveală: D4-V2 și D16-V2 își luau
+  premisa dintr-un draft orfan istoric); **2** `CititorTipDocument` cu
+  consumatorii mutați (`CoduriTipPeTipuri` dispare, 75-r2 închisă),
+  `GardianEditare` regula (o) pe FK-urile spre frunze (9, descoperite din
+  metadata), F28-D/E; **3** probele supreme: Import1C integral pe `3c4193f`
+  (15:45 → 19:06, exit 0, 3 h 21 min cu o pauză de ~1 h 20 min pusă pe
+  presiunea de memorie a mașinii; ritmul pe lună identic cu F27), raportul
+  `reconciliere-20260918-154628.txt` IDENTIC pe conținut sortat cu
+  baseline-ul, 12/12 luni închise fără constatări (0,7 → 5,4 s),
+  `Reconstruieste` 0 diferențe (10,4 s), integritatea TPH pe Flax 0 încălcări
+  în 103 interogări (14,2 M rânduri), drift și `pnpm build` verzi,
+  `refuzuri.ps1` 294/294. Perf A/B TPT → TPH pe aceeași bază de conținut:
+  fișa `4111` −57 %, operarea FCT −48 %, `CoduriTip` ≈ 10× pe HTTP,
+  `RegistruTva` Server ≈ 60× (42 → 4 JOIN-uri), restul în zgomot; singura
+  regresie, D406 S la rece +0,2 s, e cost per proces (F28-r5); **4**
+  review advers (0 MAJOR, 2 MEDIU, 2 MINOR, 3 observații: contractul greșea —
+  `as`/cast pe frunză NU filtrează pe tip, doar `is ? :` emite `CASE`; ușa
+  de sistem probată prin F28-H/I/J din `IntegritateTph.cs`; F28-K pe
+  ierarhia utilizatorilor XAF), apoi defectul PREEXISTENT scos de o
+  investigație pornită din review (`GetObjectByKey<Frunza>` pe un id urmărit
+  ca altă frunză: 500 sau obiectul greșit, fiindcă identity map-ul EF e per
+  rădăcină și prefetch-ul XAF nu verifică tipul) ⇒ `RandDupaCheie` + fraza
+  unică `RandDeAltTip`, F28-L/M/N, 9 probe noi în `refuzuri.ps1`; docs.
+  Închidere: ModelCheck bugetar 1294/0, privat 1450/0. Amendează 3, 16 și
+  IM-D10; închide 75-r2.
+- **Nucleul cub** (2026-09-19/20, decizia 90, `docs/nucleu/`) — sesiune de
+  arhitectură fără constrângerile proiectului, convergentă pe un singur cub
+  de postări în locul celor patru registre (`nucleu-cub-design.md`), apoi
+  trei pași probați, câte unul per sesiune, fiecare cu review advers de
+  agent separat: **1** coordonatele contra rapoartelor reale
+  (`nucleu-coordonate-rapoarte.md`, patru inventare cu `fișier:linie`;
+  patru amendamente structurale: `Latura` D/C, stornoul ca tranzacție
+  distinctă, taxa per linie, partenerul pe postarea de terț); **2** fizica
+  măsurată pe clonele `Atlas.Conta.Nucleu.Fizica.x1/.x10`
+  (`nucleu-fizica.md`, FZ-D1…D9: LIST pe `Spatiu` ales pe structură, 9 FK
+  în loc de 24, scrierea 1,7 contra 5,3 ms, 8/13 rapoarte identice, `Sold`
+  4–9× cub contra cub dar 2,1× snapshot-ul; FZ-r2 măsurată: fișa 348 contra
+  248 ms); **3** transferul (`nucleu-transfer.md`, TR-D1…D4 pe cifre:
+  partida = unitate pe cont de terț, împerecherea = nominalizare +
+  `Împerechere` cu `Transfer`, FCT postează recepția, o singură postare de
+  stoc; §3 transferă / rescrie / dispare; §4 ordinea TR-D5…D10; §4.1
+  propunerea de execuție acceptată de owner 2026-09-20), `nucleu-bilant.md`
+  ca sinteză. **Decizia 90** scrisă 2026-09-20 (pasul 0, TR-D5): regula
+  durabilă (a)–(m), invarianții I/III/VI amendați, contractul IM depășit,
+  IM-r re-evaluate, TR-r/FZ-r în restanțe. Fără cod. Următorul pas: TR-D6a
+  (nucleul pur, `nou/Atlas.Conta.Nucleu`), cu contract propriu în
+  `docs/nucleu/`.
+- **Felia 29 — TR-D6a, nucleul pur** (2026-09-20, branch
+  `tr-d6a-nucleu-pur`, contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`
+  cu N-D1…N-D12; `main` adus fast-forward la 090 înainte). Patru pași cu un
+  agent per pas și verificare independentă: **1** scheletul BCL-only
+  (xunit.v3), cubul, `Scara`/`Rotunjire` cu instanță și contor,
+  `Conservare` C1–C6, testul de arhitectură; **2** `Repartizare` (Hamilton
+  ierarhic) și `Tva` (per document × cotă, Hamilton per linie, toleranță);
+  **3** `Unitate` (partida cu id determinist), `Fifo` (pin-uri întâi),
+  `Evaluare` (raportul curent, ultima ia restul), `Sold`/`Cub`, `Storno`,
+  invarianții 3–5 cu contra-proba prețului înghețat; **4** `Declaratie`/
+  `Motor`/`Contract`, `Decizie`/`Ipoteza` închise, invarianții 2 și 6.
+  Amendamente ale main-ului la pași: `Sold` cu gardian de scară, cauza
+  străină permisă în storno doar pe postarea cu `Atribuit`. Review advers
+  (agent separat): 1 MAJOR (semnul taxei per linie pe grupuri cu semne
+  mixte — Hamilton pe fiecare semn), 2 MEDII (unitatea pe contul postării;
+  postările datate ca tranzacția), minore (fără aliasing al listelor, pin
+  ≤ 0 refuzat, tranzacția fără postări, C1 per `Carte`, cantitate ⇒
+  produs) — toate aplicate. Închidere: `dotnet test` 152/152, 0
+  avertismente; diff pe BackOffice/tools/Client gol; ModelCheck nerulat
+  (nimic atins din ce probează). N-r1…N-r9 în restanțe; invariantul 7 e al
+  lui TR-D7/D10. Următorul pas: TR-D6b (declarația fluxului BCS/PLT/FCT).
+- **Felia 30 — TR-D6b, declarația fluxului per tip (pilot BCS, PLT, FCT)**
+  (2026-09-20, branch `tr-d6b-declaratia-fluxului` tăiat din `main` după
+  fast-forward-ul feliei 29; contractul
+  `docs/nucleu/tr-d6b-declaratia-fluxului-contract.md` cu B-D1…B-D10).
+  Cinci pași cu un agent per pas și verificare independentă (ModelCheck pe
+  ambele profiluri după fiecare): **1** scheletul — Module referă nucleul,
+  `Declaratii/` (`IDeclarant`, `Operand` + faptele, `Contractare`),
+  `Fapte.Operand` pe seturi, `Document.Declarant()` (metodă: o proprietate
+  intra în metadata clientului); **2** oracolul în ModelCheck —
+  `CubDinRegistre` (portul mapării fizicii), `Normalizari` (lista închisă
+  B-D8), `Comparabil`, `ProbeNucleu`, auto-probele NUC-ORACOL; **3** BCS
+  (N-r3 măsurat: Δ = +25 pe lotul corectat); **4** PLT/INC într-o singură
+  clasă, nominalizarea partidei sursei prin `Fifo`, splitul liniei, scena
+  privată cu partide; **5** FCT — recepția TR-D3, taxa per document × cotă
+  (N-r4 măsurat: Δ = 0,01), capitalizatul ca bază + taxă, `GestiuniVirtuale`
+  mutate în nucleu cu C5 amendat (N-r2 confirmat). Constatările pilotului
+  au amendat contractul: partida doar pe cont cu `RolTert` (bugetarul n-are
+  niciunul), „repartitorul pe piciorul propriu" (azi nota pune pe fiecare
+  picior repartitorul contrapartidei), linia nominalizată parțial sparge și
+  piciorul de bani. Egalitate EXACTĂ cu registrele normalizate pe toate
+  documentele celor trei tipuri, pe ambele profiluri. Review advers (agent
+  separat, tier-ul main-ului): 1 MAJOR (nominalizarea PLT afirma restul
+  DOCUMENTULUI ca sold al partidei de pe contul liniei — pe o factură cu
+  404 + 401 nominaliza peste ce ține partida; oracolul avea același unghi
+  mort) — operandul poartă soldul sursei per cont, plafon = min(rest,
+  sold), oracolul plafonează la fel; 4 MEDII (taxa culeasă autoritară per
+  linie, nu per cotă; `Sold.Din` adună cantitatea doar pe spațiul Stoc —
+  capătul virtual conservă, nu se citește; ordinea liniilor `OrderBy(ID)`;
+  toleranța per cotă) și 7 minore, toate aplicate; verdictul 090l: forma
+  mai simplă în citire per tip, ≈2× mai lungă, echivalentă azi — condiția
+  (helperii `Fiscal`/`Partide` înainte de al patrulea declarant) îndeplinită
+  în felie. Închidere: ModelCheck privat 1573/0, bugetar 1389/0; nucleu
+  156/156; diff pe WebApi/Blazor.Server/Client gol; `MotorOperare` și
+  hook-urile neatinse. B-r1…B-r11 în restanțe. Următorul pas: TR-D7 (strangler per tip: `PosteazaInCub`,
+  entitatea `Postare`, materializarea).
+- **Felia 31 — TR-D7a, cubul persistat și strangler-ul primelor patru tipuri**
+  (2026-09-20/21, branch `tr-d7-strangler` tăiat din `main` după felia 30;
+  contractul `docs/nucleu/tr-d7a-strangler-contract.md` cu S-D1…S-D16).
+  Șapte pași cu un agent per pas și verificare independentă a main-ului:
+  **1** entitățile `Postare`/`Tranzactie` (POCO fără `BaseObject`: convențiile
+  XAF se aplică pe interfețe, deci nu cer excludere), migrația cu
+  partiționarea LIST pe `Spatiu` și FK-urile per partiție scrise în SQL, cele
+  patru coloane de politică, probele `STR-SCHEMA-*`/`STR-POZITIE`;
+  **2** materializarea în tranzacția de comandă (refuzul declarației = refuzul
+  operației), cititorul rândurilor, stornoul ca a doua tranzacție cu perioada
+  fiscală re-ștampilată, anularea ca ștergere, `Pozitie` citită de ambele
+  motoare; **3** cele două unelte de gate și măsurătoarea read-only pe o clonă
+  a bazei Flax (53.449 de documente, 23:32 min): 25.488 neegale, cu PATRU
+  cauze, toate ale formei — pe Flax niciun document de trezorerie n-are sursă,
+  stingerea trăiește doar în `Imperecheri`, create DUPĂ operare; B-r1 măsurată
+  (275 refuzuri la 0,01/linie, maxim 55,87), B-r10 infirmată pe date, B-r7
+  confirmată pe FCT, B-r5 căutată în motor și negăsită; **4** BCS și FCT pe
+  cub (valoarea negativă admisă în `Operare` ca linie „în roșu”, toleranța
+  taxei opțională, partidă pe fiecare cont cu `RolTert`, FCT-urile fără rânduri
+  proprii ca excepție declarată a oracolului); **5** PLT/INC cu împerecherea
+  ulterioară ca tranzacție `Transfer` pe partide, cu două amendamente ale
+  ORACOLULUI (rândul invers citit algebric, spargerea piciorului de bani doar
+  pe împerecherile de la operare); **6** proba supremă pe Import1C integral;
+  **7** review advers (agent separat, read-only): 3 MAJOR — plafonul unei
+  împerecheri e RESTUL partidei stinsului cu conexul autogenerat absorbit și
+  transferurile deja primite (cele 14.498 „trunchiate” și 1.168 „sărite” erau
+  trunchierea REFERINȚEI, nu fapt de date: după fix 709 plafonate legitim și 1
+  sărită), `Transfer.Data` = `Imperechere.Data` (`max(DataInregistrare)`
+  rescria perioade închise la desfacere și storno), corecția cu
+  `EroareMateriala` re-ștampilează perioada și pe postările de storno — plus 6
+  MEDII și minorele, toate aplicate sau declarate ca regulă. Închidere:
+  ModelCheck privat 1674/0, bugetar 1410/0, nucleu 159/159,
+  `--reconciliere-cub` 0 Δ pe (a)…(g) pe ambele profiluri; gate-ul pe clona
+  Flax BCS 544 egale + 3 explicate, FCT 19.022 egale + 13 excepție declarată,
+  PLT 2.486/2.486 și INC 31.381/31.381; drift zero; diff gol pe
+  Blazor.Server/WebApi/Client. Import1C integral: Import1C integral pe Flax (`--recreeaza --cititori --inchide-lunile`, 2026-09-21): exit 0, 1 h 57 min (3 h 21 min la felia 28), raportul `nou/tools/Import1C/reconciliere-20260921-035646.txt` IDENTIC pe conținut sortat cu baseline-ul feliei 28, ZERO refuzuri ale declarației, 12/12 luni închise cu 0 constatări, `--reconciliere-cub` 0 rânduri Δ pe (a)–(g) — (f) vacuă: cele 9 conturi cu rol de terț sunt atinse și de tipuri nemigrate —, integritatea TPH 0 încălcări în 107 interogări, cubul cu 70.373 tranzacții / 252.092 postări / 16.924 transferuri (PLT → FCT; INC → FCL fără transfer, FCL fiind nemigrat), `refuzuri.ps1` 294/294 PASS pe `Atlas.Conta.BackOffice.Privat` refăcută din import cu perioadele redeschise. B-r1, B-r2, B-r7,
+  B-r9, B-r10 și B-r11 închise; S-r1…S-r10 în restanțe. Următorul pas: TR-D7b
+  (tipurile rămase pe cub, în ordinea volumului pe Flax).

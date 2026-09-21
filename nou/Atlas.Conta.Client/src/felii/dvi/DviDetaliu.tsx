@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData, CampText } from '../../nucleu/campuri';
@@ -31,7 +32,7 @@ import { PanouFacturi } from './PanouFacturi';
 // agregatul poartă o a doua colecție — `FacturiIds`, legăturile cu facturile de
 // import, trimise ÎNTREGI la fiecare salvare.
 
-const CAMPURI_ANTET: (keyof DviWrite & string)[] = ['Numar', 'Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof DviWrite & string)[] = ['Numar', 'Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capAntet = (m: string) => campMeta(TIP_ANTET, m, SCHEMA_ANTET).caption;
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
@@ -247,6 +248,7 @@ export function DviDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Declarație vamală de import — nouă' : `Declarație vamală ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} baza={doc?.Baza} tva={doc?.Tva} modificat={modificat || nou} />}
@@ -278,6 +280,7 @@ export function DviDetaliu() {
               {/* `Numar` E MRN-ul declarației, cules — nu o serie proprie. */}
               <CampText<DviWrite> camp="Numar" obligatoriu />
               <CampData<DviWrite> camp="Data" />
+              <CampData<DviWrite> camp="DataInregistrare" />
               {/* Predatorul e PARTENERUL căruia i se datorează taxa (biroul
                   vamal, cu cont implicit 446): 129k parteneri ⇒ lookup cu grilă,
                   căutare server-side. */}

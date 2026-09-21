@@ -36,11 +36,13 @@ public sealed class JurnalTvaRand : IRandCuDocument {
     public Guid DocumentId { get; set; }
     Guid? IRandCuDocument.DocumentId => DocumentId;
     public string DocumentNumar { get; set; }
-    // Nu vine din SQL (sub TPT nu există discriminator, iar ancora `TipDocument`
-    // se caută după numele clasei CLR — R-D8/60b): se completează în memorie
-    // peste pagină, prin `ContabilProiectii.CompleteazaTipDocument`.
+    // Se completează peste pagină, prin `ContabilProiectii.CompleteazaTipDocument`.
     public string DocumentTip { get; set; }
     public DateOnly Data { get; set; }
+    // Perioada de DECLARARE (F27-D5) — cea pe care jurnalul FILTREAZĂ. Diferă de
+    // `Data` doar pentru faptele înregistrate după închiderea lunii lor.
+    public int PerioadaAn { get; set; }
+    public int PerioadaLuna { get; set; }
 
     // Contrapartida laturii cerute de politică. Nullable din același motiv ca pe
     // registru (riscul 4 din design: `SursaContrapartida` care nu e o latură ⇒
@@ -48,8 +50,8 @@ public sealed class JurnalTvaRand : IRandCuDocument {
     // `Decont` e chiar ANGAJATUL — jurnalul arată onest ce știe modelul.
     public Guid? PartenerId { get; set; }
     public string PartenerDenumire { get; set; }
-    // Doar `Partener` are cod fiscal (`Repartitor` e baza TPT) — as-cast, adică
-    // LEFT JOIN pe frunză: un angajat sau o gestiune îl lasă gol, nu rupe rândul.
+    // Doar `Partener` are cod fiscal — as-cast: un angajat sau o gestiune îl lasă
+    // gol, nu rupe rândul.
     public string PartenerCodFiscal { get; set; }
 
     public Guid TipTvaId { get; set; }
@@ -90,7 +92,69 @@ public sealed class DecontTvaRand {
     public decimal Tva { get; set; }
 }
 
+// Un rând al conținutului de rectificativă: fapt fiscal declarat în perioada P,
+// dar scris după ce P fusese închisă prima oară (F27-D5).
+public sealed class RectificativaTvaRand {
+    public Guid DocumentId { get; set; }
+    public string DocumentNumar { get; set; }
+    public DateOnly DocumentData { get; set; }
+    // Data faptului fiscal (a documentului, ori a stornării pe rândul invers).
+    public DateOnly Data { get; set; }
+    public string Sens { get; set; }
+    public Guid TipTvaId { get; set; }
+    public string TipTvaCod { get; set; }
+    public string TipTvaDenumire { get; set; }
+    public string Regim { get; set; }
+    public decimal Cota { get; set; }
+    public decimal Baza { get; set; }
+    public decimal Tva { get; set; }
+    public bool Storno { get; set; }
+    public DateTime ScrisLa { get; set; }
+}
+
+// Conținutul de rectificativă al unei perioade — DERIVAT, nu flag (F27-D5).
+public sealed class RectificativaTva {
+    public int An { get; set; }
+    public int Luna { get; set; }
+    // Reperul: momentul primei închideri. Redeschiderea NU îl șterge, deci ce a
+    // fost declarat o dată rămâne reperul.
+    public DateTime? InchisaPrimaOara { get; set; }
+    // Perioada e DESCHISĂ acum (redeschisă după prima declarare, ori încă
+    // nedefinită ca închidere): conținutul de mai jos devine rectificativă abia
+    // la re-închidere, iar ecranul o spune.
+    public bool PerioadaDeschisa { get; set; }
+    public bool EsteRectificativa { get; set; }
+    public List<RectificativaTvaRand> Randuri { get; set; } = [];
+    // Pe cheia DECONTULUI (Sens × TipTva × Regim × Cotă) — „diferențele față de
+    // declarat" se citesc în aceleași coordonate ca decontul depus.
+    public List<DecontTvaRand> Agregat { get; set; } = [];
+}
+
 public static class TvaProiectii {
+
+    // ── Filtrul de perioadă al TUTUROR consumatorilor fiscali (F27-D5) ──────
+    //
+    // Jurnalele, decontul, D300, D394 și SAF-T filtrează pe PERIOADA DE
+    // DECLARARE, nu pe data faptului: un fapt înregistrat după închiderea lunii
+    // lui se declară acolo unde spune politica, iar raportul lunii trebuie să-l
+    // conțină. Capetele rămân DATE (perioada cerută de ecran e tot un interval
+    // de zile) și se reduc la luna lor; ambele opționale, ca la jurnal.
+    //
+    // `An * 100 + Luna` e aritmetică pe două coloane `int`, deci se traduce
+    // integral în SQL — spre deosebire de orice construcție `DateOnly` peste ele.
+    public static IQueryable<RegistruTva> IntreLuni(
+        IQueryable<RegistruTva> randuri, DateOnly? dataStart, DateOnly? dataEnd) {
+
+        if (dataStart is DateOnly ds) {
+            var de = ds.Year * 100 + ds.Month;
+            randuri = randuri.Where(r => r.PerioadaAn * 100 + r.PerioadaLuna >= de);
+        }
+        if (dataEnd is DateOnly df) {
+            var panaLa = df.Year * 100 + df.Month;
+            randuri = randuri.Where(r => r.PerioadaAn * 100 + r.PerioadaLuna <= panaLa);
+        }
+        return randuri;
+    }
 
     // ── Jurnalul de cumpărări / de vânzări (JT-D7) ──────────────────────────
     //
@@ -108,9 +172,8 @@ public static class TvaProiectii {
     public static IQueryable<JurnalTvaRand> JurnalTva(
         IObjectSpace os, SensTva sens, DateOnly? dataStart = null, DateOnly? dataEnd = null) {
 
-        var randuri = os.GetObjectsQuery<RegistruTva>().Where(r => r.Sens == sens);
-        if (dataStart is DateOnly ds) randuri = randuri.Where(r => r.Data >= ds);
-        if (dataEnd is DateOnly de) randuri = randuri.Where(r => r.Data <= de);
+        var randuri = IntreLuni(
+            os.GetObjectsQuery<RegistruTva>().Where(r => r.Sens == sens), dataStart, dataEnd);
 
         // ═══ Cheia de grupare: (Document × TipTva) — plus snapshot-urile ═══
         // Contractul JT-D7 e „un rând per (Document × TipTva)". `PartenerId`,
@@ -140,8 +203,16 @@ public static class TvaProiectii {
         // Corolar: `Data = Min` redevine EXACTĂ. Într-un grup, toate rândurile
         // originale poartă `doc.Data` și toate inversele `dataStorno`, deci minimul
         // e chiar data grupului, nu o alegere între două date diferite.
+        //
+        // `PerioadaAn`/`PerioadaLuna` intră în cheie din același motiv ca `Storno`
+        // (F27-D5): jurnalul filtrează pe ele, iar un grup care ar amesteca două
+        // perioade de declarare (corecția cu motiv, F27-D6) ar cădea întreg în
+        // fereastra oricăreia dintre ele.
         var agregate = randuri
-            .GroupBy(r => new { r.DocumentId, r.TipTvaId, r.PartenerId, r.Regim, r.Cota, r.Storno })
+            .GroupBy(r => new {
+                r.DocumentId, r.TipTvaId, r.PartenerId, r.Regim, r.Cota, r.Storno,
+                r.PerioadaAn, r.PerioadaLuna
+            })
             .Select(g => new {
                 g.Key.DocumentId,
                 g.Key.TipTvaId,
@@ -149,6 +220,8 @@ public static class TvaProiectii {
                 g.Key.Regim,
                 g.Key.Cota,
                 g.Key.Storno,
+                g.Key.PerioadaAn,
+                g.Key.PerioadaLuna,
                 Data = g.Min(r => r.Data),
                 Baza = g.Sum(r => r.Baza),
                 Tva = g.Sum(r => r.Tva)
@@ -181,6 +254,8 @@ public static class TvaProiectii {
                    // Se completează în memorie peste pagină (R-D8) — vezi mai sus.
                    DocumentTip = null,
                    Data = a.Data,
+                   PerioadaAn = a.PerioadaAn,
+                   PerioadaLuna = a.PerioadaLuna,
                    PartenerId = a.PartenerId,
                    PartenerDenumire = p == null ? null : p.Denumire,
                    PartenerCodFiscal = p == null ? null : (p as Partener).CodFiscal,
@@ -248,9 +323,7 @@ public static class TvaProiectii {
     public static IQueryable<DecontTvaRand> DecontTva(
         IObjectSpace os, DateOnly? dataStart = null, DateOnly? dataEnd = null) {
 
-        var randuri = os.GetObjectsQuery<RegistruTva>();
-        if (dataStart is DateOnly ds) randuri = randuri.Where(r => r.Data >= ds);
-        if (dataEnd is DateOnly de) randuri = randuri.Where(r => r.Data <= de);
+        var randuri = IntreLuni(os.GetObjectsQuery<RegistruTva>(), dataStart, dataEnd);
 
         // Snapshot-urile intră în cheie din același motiv tehnic ca la jurnal
         // (enum și decimal, nu agregate) — dar aici cu o nuanță semantică proprie,
@@ -309,4 +382,100 @@ public static class TvaProiectii {
         OrdineLista.Crescator(nameof(DecontTvaRand.Cota)),
         OrdineLista.Crescator(nameof(DecontTvaRand.Regim))
     };
+
+    // ── Conținutul de rectificativă (F27-D5) ────────────────────────────────
+    //
+    // Nu există flag de rectificativă nicăieri: e DIFERENȚA dintre două
+    // timestamp-uri. Un rând declarat în P și scris după ce P a fost închisă
+    // prima oară e, prin definiție, o cifră pe care declarația depusă n-o
+    // conținea. Perioada niciodată închisă n-are reper, deci n-are rectificativă.
+    //
+    // Redeschiderea NU stinge `InchisaPrimaOara` (F27-D1), deci un P redeschis
+    // și reînchis își păstrează reperul original — altfel toată corecția lui ar
+    // fi devenit tăcut „declarație inițială".
+    //
+    // Întoarce liste MATERIALIZATE, ca D300/D394: e un raport, nu o grilă.
+    public static RectificativaTva Rectificativa(IObjectSpace os, int an, int luna) {
+        var rezultat = new RectificativaTva { An = an, Luna = luna };
+        var perioada = os.GetObjectsQuery<PerioadaFiscala>()
+            .Where(p => p.An == an && p.Luna == luna)
+            .Select(p => new { p.InchisaPrimaOara, p.Inchisa })
+            .FirstOrDefault();
+        rezultat.InchisaPrimaOara = perioada?.InchisaPrimaOara;
+        rezultat.PerioadaDeschisa = perioada is { Inchisa: false };
+        if (rezultat.InchisaPrimaOara is not DateTime reper)
+            return rezultat;
+
+        var randuri = os.GetObjectsQuery<RegistruTva>()
+            .Where(r => r.PerioadaAn == an && r.PerioadaLuna == luna && r.ScrisLa > reper);
+
+        // LEFT pe amândouă, ca peste tot: un rând nu iese dintr-un raport fiscal
+        // fiindcă i-a dispărut eticheta.
+        rezultat.Randuri = (from r in randuri
+                            join d in os.GetObjectsQuery<Document>() on r.DocumentId equals d.ID into grupDoc
+                            from d in grupDoc.DefaultIfEmpty()
+                            join t in os.GetObjectsQuery<TipTva>() on r.TipTvaId equals t.ID into grupTip
+                            from t in grupTip.DefaultIfEmpty()
+                            select new RectificativaTvaRand {
+                                DocumentId = r.DocumentId,
+                                DocumentNumar = d == null ? null : d.Numar,
+                                DocumentData = d == null ? default : d.Data,
+                                Data = r.Data,
+                                Sens = r.Sens == SensTva.Achizitie ? "Achizitie" : "Livrare",
+                                TipTvaId = r.TipTvaId,
+                                TipTvaCod = t == null ? null : t.Cod,
+                                TipTvaDenumire = t == null ? null : t.Denumire,
+                                Regim = r.Regim == RegimTva.Normal ? "Normal"
+                                    : r.Regim == RegimTva.Capitalizat ? "Capitalizat"
+                                    : r.Regim == RegimTva.TaxareInversa ? "TaxareInversa"
+                                    : r.Regim == RegimTva.Scutit ? "Scutit"
+                                    : "Neimpozabil",
+                                Cota = r.Cota,
+                                Baza = r.Baza,
+                                Tva = r.Tva,
+                                Storno = r.Storno,
+                                ScrisLa = r.ScrisLa
+                            })
+            .OrderBy(x => x.ScrisLa).ThenBy(x => x.DocumentId).ThenBy(x => x.TipTvaId)
+            .ToList();
+        rezultat.EsteRectificativa = rezultat.Randuri.Count > 0;
+
+        rezultat.Agregat = (from a in randuri
+                                .GroupBy(r => new { r.Sens, r.TipTvaId, r.Regim, r.Cota })
+                                .Select(g => new {
+                                    g.Key.Sens, g.Key.TipTvaId, g.Key.Regim, g.Key.Cota,
+                                    Randuri = g.Count(), Baza = g.Sum(r => r.Baza), Tva = g.Sum(r => r.Tva)
+                                })
+                            join t in os.GetObjectsQuery<TipTva>() on a.TipTvaId equals t.ID into grupTip
+                            from t in grupTip.DefaultIfEmpty()
+                            select new DecontTvaRand {
+                                Sens = a.Sens == SensTva.Achizitie ? "Achizitie" : "Livrare",
+                                TipTvaId = a.TipTvaId,
+                                TipTvaCod = t == null ? null : t.Cod,
+                                TipTvaDenumire = t == null ? null : t.Denumire,
+                                Regim = a.Regim == RegimTva.Normal ? "Normal"
+                                    : a.Regim == RegimTva.Capitalizat ? "Capitalizat"
+                                    : a.Regim == RegimTva.TaxareInversa ? "TaxareInversa"
+                                    : a.Regim == RegimTva.Scutit ? "Scutit"
+                                    : "Neimpozabil",
+                                Cota = a.Cota,
+                                CodSafT = t == null ? null
+                                    : (a.Sens == SensTva.Achizitie ? t.CodSafTAchizitie : t.CodSafTLivrare),
+                                Randuri = a.Randuri,
+                                Baza = a.Baza,
+                                Tva = a.Tva
+                            })
+            .OrderBy(x => x.Sens).ThenBy(x => x.TipTvaId).ThenBy(x => x.Cota).ThenBy(x => x.Regim)
+            .ToList();
+        return rezultat;
+    }
+
+    // Perioada cerută de un raport ACOPERĂ EXACT o lună calendaristică — condiția
+    // sub care „rectificativă?" are înțeles (F27-D5): întrebarea e despre O
+    // declarație depusă, iar un interval de mai multe luni n-are una.
+    public static (int An, int Luna)? LunaExacta(DateOnly dataStart, DateOnly dataEnd) =>
+        dataStart.Day == 1 && dataStart.Year == dataEnd.Year && dataStart.Month == dataEnd.Month
+            && dataEnd.Day == DateTime.DaysInMonth(dataEnd.Year, dataEnd.Month)
+            ? (dataStart.Year, dataStart.Month)
+            : null;
 }

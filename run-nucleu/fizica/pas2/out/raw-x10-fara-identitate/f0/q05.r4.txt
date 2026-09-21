@@ -1,0 +1,49 @@
+                                                                                                                   QUERY PLAN                                                                                                                    
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Right Join  (cost=2954.08..3815.12 rows=199 width=230) (actual time=2.728..6.008 rows=1584.00 loops=1)
+   Hash Cond: (rp."ID" = sp."RepartitorId")
+   Buffers: shared hit=2153
+   ->  Seq Scan on "Repartitori" rp  (cost=0.00..779.05 rows=20404 width=35) (actual time=0.008..2.058 rows=20404.00 loops=1)
+         Filter: ("GCRecord" = 0)
+         Buffers: shared hit=524
+   ->  Hash  (cost=2951.60..2951.60 rows=199 width=147) (actual time=2.708..2.712 rows=1584.00 loops=1)
+         Buckets: 2048 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 152kB
+         Buffers: shared hit=1629
+         ->  Hash Right Join  (cost=2923.14..2951.60 rows=199 width=147) (actual time=2.466..2.537 rows=1584.00 loops=1)
+               Hash Cond: (c."ID" = sp."ContId")
+               Buffers: shared hit=1629
+               ->  Seq Scan on "Conturi" c  (cost=0.00..24.05 rows=644 width=67) (actual time=0.011..0.063 rows=644.00 loops=1)
+                     Filter: ("GCRecord" = 0)
+                     Buffers: shared hit=16
+               ->  Hash  (cost=2920.65..2920.65 rows=199 width=96) (actual time=2.375..2.376 rows=1584.00 loops=1)
+                     Buckets: 2048 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 130kB
+                     Buffers: shared hit=1613
+                     ->  HashAggregate  (cost=2916.65..2920.65 rows=199 width=96) (actual time=1.941..2.253 rows=1584.00 loops=1)
+                           Group Key: sp."RepartitorId"
+                           Filter: ((COALESCE(sum(sp."Debit"), 0.0) - COALESCE(sum(sp."Credit"), 0.0)) <> 0.0)
+                           Batches: 1  Memory Usage: 1217kB
+                           Rows Removed by Filter: 7
+                           Buffers: shared hit=1613
+                           ->  Append  (cost=0.42..2903.84 rows=1708 width=41) (actual time=0.017..1.285 rows=1591.00 loops=1)
+                                 Buffers: shared hit=1613
+                                 ->  Index Scan using "IX_SolduriPerioadaContabil_An_Luna_ContId_RepartitorId_Materia~" on "SolduriPerioadaContabil" sp  (cost=0.42..2861.32 rows=1706 width=41) (actual time=0.016..1.218 rows=1591.00 loops=1)
+                                       Index Cond: (("An" = 2025) AND ("Luna" = 12) AND ("ContId" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Filter: ("GCRecord" = 0)
+                                       Index Searches: 1
+                                       Buffers: shared hit=1607
+                                 ->  Index Scan using "IX_RegistruContabil_Data" on "RegistruContabil" r  (cost=0.43..8.45 rows=1 width=70) (actual time=0.006..0.006 rows=0.00 loops=1)
+                                       Index Cond: (("Data" > '2025-12-31'::date) AND ("Data" <= '2025-12-31'::date))
+                                       Filter: ("ContDebitId" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                                       Index Searches: 1
+                                       Buffers: shared hit=3
+                                 ->  Index Scan using "IX_RegistruContabil_Data" on "RegistruContabil" r0  (cost=0.43..8.45 rows=1 width=70) (actual time=0.002..0.003 rows=0.00 loops=1)
+                                       Index Cond: (("Data" > '2025-12-31'::date) AND ("Data" <= '2025-12-31'::date))
+                                       Filter: ("ContCreditId" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                                       Index Searches: 1
+                                       Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=843
+ Planning Time: 1.047 ms
+ Execution Time: 6.167 ms
+(45 rows)
+

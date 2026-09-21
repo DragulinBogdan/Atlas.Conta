@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { CampShell } from '../../nucleu/CampShell';
 import { campMeta, labelEnum } from '../../nucleu/campMeta';
 import { eroriDin } from '../../nucleu/http';
@@ -84,6 +85,7 @@ export function DscDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={`Descărcare de gestiune ${doc?.Numar ?? ''}`}
       sumar={
@@ -100,6 +102,7 @@ export function DscDetaliu() {
         <div className="grila-campuri">
           <Static membru="Numar" valoare={doc?.Numar} />
           <Static membru="Data" valoare={doc?.Data} />
+          <Static membru="DataInregistrare" valoare={doc?.DataInregistrare} />
           <Static membru="Stare" valoare={labelEnum('StareDocument', doc?.Stare)} />
           <Static membru="PredatorId" eticheta="Gestiune" valoare={doc?.PredatorDenumire} />
           <Static membru="PrimitorId" eticheta="Client" valoare={doc?.PrimitorDenumire} />

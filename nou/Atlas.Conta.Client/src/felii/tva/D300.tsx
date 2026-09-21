@@ -10,6 +10,7 @@ import { eroriDin, ia } from '../../nucleu/http';
 import { PanouErori } from '../../nucleu/PanouErori';
 import { urlCu, useUrlStare } from '../../nucleu/urlStare';
 import { CasetaPerioada, lunaCurenta } from '../raportare/comune';
+import { BandaRectificativa } from './BandaRectificativa';
 
 // D300 — decontul de TVA (felia 12, D3-D7): cele 55 de poziții ale formularului
 // OPANAF 174/2026, alimentate din `RegistruTva`.
@@ -182,6 +183,12 @@ export function D300() {
           mapare — dar când există, arată cifrele lor, nu un număr. Un gard care
           tace devine capcană (62f); aici tăcerea ar fi însemnat un decont care
           pare complet și nu e. */}
+      <BandaRectificativa
+        rectificativa={citit.data?.Rectificativa}
+        perioadaDeschisa={citit.data?.PerioadaDeschisa}
+        diferente={citit.data?.DiferenteDeclarat}
+      />
+
       {nemapate.length > 0 && (
         <div className="d300__neincluse">
           <h3>Operațiuni neincluse în decont</h3>

@@ -48,8 +48,13 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
     // Descărcarea de gestiune (P2 §5): la operarea FCL se generează DSC-ul conex
     // (spargere pe loturi din liniile de stoc). Serviciu propriu, NU clona
     // PoliticaConex; motorul îl marchează la fel ca orice copil autogenerat.
-    public override Document GenereazaSecundar(DevExpress.ExpressApp.IObjectSpace os) =>
-        Motor.DescarcareService.Genereaza(os, this, Data);
+    public override Document GenereazaSecundar(DevExpress.ExpressApp.IObjectSpace os) {
+        var dsc = Motor.DescarcareService.Genereaza(os, this, Data);
+        // F27-D4: descărcarea intră în evidență odată cu factura care o naște.
+        if (dsc != null)
+            dsc.DataInregistrare = DataInregistrare;
+        return dsc;
+    }
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);

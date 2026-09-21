@@ -1,10 +1,43 @@
 # Izolarea motorului de `IObjectSpace` — plan independent de ORM, contracte economice de citire (contract)
 
-Data: 2026-09-10. Stare: deschisă, **prioritate nedecisă** (se decide pe
-contractul ăsta, nu pe discuție). Pleacă din analiza de arhitectură din
+Data: 2026-09-10. Stare: **DEPĂȘITĂ de decizia 90** (2026-09-20,
+`docs/decizii/090-nucleu-cub-de-postari.md` §„Raportul cu contractul IM”):
+pașii 0a–0c și 1–7 NU se mai execută ca felie proprie; ce s-a livrat deja
+(precedentele pure, `SolduriService`, `RandDupaCheie`, `TranzactieComanda`,
+`CititorTipDocument`) se preia de TR-D6a/b și TR-D7; IM-r1…r7 sunt
+re-evaluate acolo. Textul rămâne ca istoric. Pleacă din analiza de arhitectură din
 2026-09-09 (inventarul cuplajului + propunerea sintetizată din consultul
-extern GPT-6, cu corecturile de context). Decizia rezultată se scrie la
-închidere (numărul următor liber).
+extern GPT-6, cu corecturile de context). Decizia rezultată e 90, pe
+forma nouă, nu pe aceasta.
+
+> **Amendament 2026-09-18 (felia 28, decizia 89).** Contractul a fost scris pe
+> maparea TPT; felia 28 a trecut cele trei ierarhii pe TPH cu discriminatorul
+> mapat `ClrType`. Consecințele pentru felia asta:
+> - **IM-D10** e amendat: „ZERO schimbare de schemă” a devenit „schimbările de
+>   schemă intră doar prin decizie proprie, reanalizată la momentul ei”;
+>   cifrele de ModelCheck de la deschidere sunt cele de la închiderea feliei 28.
+> - **IM-D4 „Relații” și „Politici”** se scriu și se MĂSOARĂ pe maparea finală:
+>   o interogare pe `Document` nu mai plătește 20 de LEFT JOIN-uri + `CASE`,
+>   iar „tipul documentului (ancora)” se citește ca dată
+>   (`Api/CititorTipDocument`: proiecția `{ID, ClrType}`, `Clasa` =
+>   discriminator → tip concret, cache static), fără materializare polimorfă.
+>   Adaptorul peste `IObjectSpace` reutilizează cititorul; nu inventează un
+>   al doilea.
+> - **Regula de citire a coloanelor de frunză** (89b) se aplică și
+>   adaptorului: o coloană de frunză se citește doar pe o mulțime restrânsă
+>   pe tip sau prin `is ? :`; `as`/cast pe frunză nu filtrează pe tip.
+> - **Căutarea după cheie** (89i): adaptorul și contractele de citire caută un
+>   rând al unui tip ne-rădăcină prin `Motor/RandDupaCheie` (pe rădăcina
+>   ierarhiei, cu tipul verificat după), niciodată prin
+>   `GetObjectByKey<Frunza>`. Identity map-ul EF e per rădăcină, iar F28-N
+>   scanează sursa.
+> - **Tabelul „Scop”, rândul `GenereazaConex`**: rezoluția
+>   `TipDocument.ClrType → Type` există deja o dată, în
+>   `CititorTipDocument.Clasa`; IM-D9 o poate consuma în loc de
+>   `Assembly.GetTypes()` repetat.
+> - Cifrele din „Scop” sunt de la 2026-09-10; re-măsurarea pe codul de după
+>   feliile 24–28 și consecințele ei pe decizii, pași și criteriul de
+>   prioritate stau în §„Reanaliza 2026-09-18”.
 
 ## Scop
 
@@ -43,6 +76,154 @@ redeschide (51a), clasele per profil sunt respinse (54d). Dacă produsul cere
 vreodată tipuri per client, e decizie proprie, testată întâi contra
 invarianților, iar blocajul ei real e `DbContext`-ul monolitic + migrațiile
 canonice (23a), nu `IObjectSpace`.
+
+## Reanaliza 2026-09-18 (după feliile 24–28)
+
+Măsurat cu grep/wc pe `HEAD` (`p5-f28-tph`), aceleași categorii ca în §Scop:
+
+| Locul | 2026-09-10 | 2026-09-18 |
+|---|---|---|
+| `Motor/*` | 13 fișiere, ~3.950 linii; `GetObjectsQuery` 87, `GetObjectByKey` 15, `CreateObject` 13, `Delete` 8, `CommitChanges` 4 | 21 fișiere, 6.249 linii; 111 / 23 / 23 / 8 / **8** (`MotorOperare` 3, `PerioadaService` 2, `ImperechereService` 2, `CorectieService` 1) |
+| Hook-uri cu `IObjectSpace` | 12 pe `Document` | 11 pe `Document` (`PregatesteOperare` 13 override-uri, `ValideazaOperare` 20, `SensDeStins` 7, `PoateFiStins` 5…) + 4 pe interfețe noi: `IVerificabilLaCommit.Verifica` (86e), `IDocumentCuRegistruPropriu.Materializeaza/Elimina/StorneazaRegistrul` (87c) = **15** |
+| Frunzele | 11 fișiere; `GetObjectByKey` 44, `GetObjectsQuery` 34, `CreateObject` 6 | 15 fișiere, 3.698 linii; 51 / 43 / 10; `RandDupaCheie` 5 (doar `Dvi`, `Trezorerie`) |
+| `PlanOperare` | referă entități vii | neschimbat: clasă `sealed` internă lui `MotorOperare`; `Miscari`/`Note` țin `DocumentDetaliu` + `MiscareStoc` |
+| `Valideaza` scrie pe linii | da („ATENȚIE”) | da: `Cantitate`/`Valoare` la 358–369, 563–564, 654–666 |
+| `GenereazaConex` | `Assembly.GetTypes()` | neschimbat; `CititorTipDocument.Clasa` (89f) există și NU e consumat |
+| `GardianEditare` | change-tracking | 1.312 linii; `ModifiedObjects` 7, `IsNewObject` 11, `IsObjectToDelete` 2; regula (o) pe tracker (89e) |
+| Pure (0 `IObjectSpace`) | — | `Potrivire.cs` (244), `DimensiuniResolver.cs` (26); `Fapte.cs` NU e pur — e adaptorul entitate → fapt (84e), rămâne așa |
+
+Citirea cifrelor: cuplajul a crescut cu ~58 % în opt zile prin felii fără
+legătură cu IM (imobilizări, perioade/solduri, corecție, TPH). Niciuna n-a
+contrazis contractul; fiecare l-a lungit: patru servicii noi amestecă citirea
+cu scrierea în aceeași metodă (`AmortizareService.Genereaza`,
+`PerioadaService.Inchide/Redeschide`, `CorectieService`, `ImperechereService`),
+commit-urile din motor s-au dublat, suprafața de hook-uri a crescut cu trei.
+
+### Ce s-a livrat deja din contract, în afara feliei (precedente, nu implementare)
+
+- **Faza pură are precedente în casă**: `Potrivire.cs` (84e), `DimensiuniResolver`,
+  `AmortizareService.CotaLunara` (87g), `InchidereTvaService.CalculeazaLinii`,
+  `PerioadaService.Verifica` (constatări pe date încărcate). IM nu inventează
+  forma „citire în lot → calcul pur → materializare”; o generalizează la
+  `MotorOperare`.
+- **IM-D4 „Stoc” are primul adaptor**: `SolduriService` (88e) — întrebări
+  economice (chei + dată → solduri), scriere prin SQL brut. E adaptorul
+  SOLDURILOR DE REFERINȚĂ, nu al loturilor: prefix-sum-ul pe (Lot × Repartitor ×
+  TipStoc) din fereastra afectată (25d) rămâne partea grea, neatinsă.
+- **IM-D4 „Politici”**: potrivirea consumă fapte plate (`record struct`, F24-D5).
+  84-r10 (`Import1C/Catalog.IncarcaContare`) rămâne a doua definiție a
+  potrivirii; pasul 2 o închide.
+- **IM-D9**: rezoluția `ClrType → Type` e centralizată în
+  `CititorTipDocument.Clasa` (cache static, 89f). `GenereazaConex` n-o consumă:
+  schimbare de trei linii, fără felie.
+- **IM-D3, jumătate**: tranzacția e DEJA a apelantului (`Motor/TranzactieComanda`,
+  F27-D1 — o deschid `OperareApi` (3×), `AmoApply`, `InchidereTvaApply`,
+  `PerioadeApply`, `CorectieService`, `ImperechereService`); commit-ul e încă al
+  motorului (8 apeluri), înrolat în tranzacția apelantului. Mutarea lui la
+  pasul 4 e mecanică: tranzacția stă deja unde trebuie să ajungă commit-ul, iar
+  secvența conex/secundar (42b) se păstrează — apelantul înlănțuie pe valoarea
+  întoarsă de `Opereaza`. Apelanții direcți ai motorului care preiau commit-ul:
+  `OperareApi`, `AsamblareApply`, `CorectieService`, `ImperechereService`,
+  `Import1C/Bucla` + `Reluare`, `ModelCheck`.
+- **IM-D8, precondiție nouă**: identity map-ul EF e per RĂDĂCINĂ în orice
+  strategie de moștenire (89i); orice adaptor caută prin `RandDupaCheie`,
+  niciodată `GetObjectByKey<Frunza>` (F28-N scanează sursa).
+
+### Ce contractul nu cunoștea și acoperă de acum
+
+- **D4 „Persistență” + D6 — `IDocumentCuRegistruPropriu` (87c)**: al patrulea
+  registru (`RegistruImobilizari`), trei metode care primesc `os`, apelate de
+  `MotorOperare` prin trei dispecere. Sunt punct de extensie al MATERIALIZĂRII,
+  nu al calculului: primesc portul de persistență, nu `ContextOperare`.
+  Contractul de persistență scrie patru registre, nu trei.
+- **D7 — `IVerificabilLaCommit` (86e) și regula (o) (89e)**: `IVerificabilLaCommit`
+  e al gardianului, nu al motorului: regula de pe entitate primește lista de
+  schimbări + întrebările de citire, în aceeași mișcare cu D7. Regula (o)
+  depinde de tracker (ținta unui FK spre frunză poate fi un obiect NOU din
+  același commit — F28-K), deci „lista de schimbări” din D7 conține obiectele
+  noi ca ținte de rezolvare, cu `RandDupaCheie` drept fallback pe citire. E
+  cazul greu concret al lui D7, deja probat (F28-D/K). F28-r4 (dezproxarea în
+  patru copii) se închide la aceeași atingere.
+- **D3 — `GardianPerioada` (88l)**: citirea `FOR SHARE` a verigii e I/O în faza
+  de validare. Sub IM se mută în `Incarca` ca fapt („perioada de la
+  `DataInregistrare` e deschisă și blocată”), ținut de tranzacția apelantului;
+  faza 2 rămâne pură.
+- **D4 „Politici”, lista extinsă**: `PoliticaAmortizare`, `RegulaDeductibilitate`,
+  `ClasificareImobilizari` (87d), `PoliticaInchidere`, `PoliticaTva.DeclarareIntarziata`
+  (88b).
+- **D4 „Relații”**: perioada e LANȚ cu `DataInregistrare` reper (88a/c);
+  împerecherea e fapt datat cu invariant de ordine — `Data` ≥ înregistrarea
+  ambelor documente (88j). Spike-ul D5 (perechea 581 cu imperecherea automată)
+  primește și regula de dată, nu doar efectul nesalvat.
+- **D6, cazul care rezistă proiecției (89f)**: hook-ul care are nevoie de
+  INSTANȚĂ — `SensDeStins`, chemat de `ImperechereService.AsignatFataDe` pe
+  contrapartide (76-r3). Contractul „Relații” dă restul per contrapartidă în
+  lot; sensul rămâne al frunzei, deci contrapartida se materializează și sub
+  IM. 76-r3 se închide doar dacă sensul devine fapt scris la operare — decizie
+  proprie, în afara IM.
+- **Suprafața de hook-uri pentru pasul 3**: 11 pe `Document` + cele 3 ale
+  registrului propriu (pe port); `IVerificabilLaCommit` trece la pasul 6.
+
+### IM-D10, corectat
+
+- Import1C: IDENTIC pe CONȚINUT SORTAT (standardul feliilor 27–28, 89h;
+  `dezvoltare-si-validare.md`), nu „byte-cu-byte”. Textul lui D10 și al
+  pasului 4 e corectat mai jos.
+- Gate nou: după orice atingere a frunzelor sau a FK-urilor spre frunze, SQL-ul
+  din `--dump-integritate-tph` pe baza de import întoarce zero rânduri (89e/h).
+- **Perf: `valideaza`/dry-run NU are cifră** în `p5-perf-masuratori.md` (grep:
+  0). Pragul „perf ≤” al lui D10 nu e verificabil azi pe exact calea pe care
+  felia o schimbă ⇒ pasul 0a o măsoară înainte de orice schimbare (A/B pe
+  aceeași bază, 59). Cifrele actuale de reper (F28): operarea FCT cu 49 de
+  linii 230/199 ms, fișa 4111 61/55 ms, `CoduriTip` 23 ms.
+
+### Criteriul de prioritate, azi
+
+Niciunul din cele trei semnale nu e real: „Explică” s-a consumat în varianta
+pe CONFIGURAȚIE (84g: câștigător, candidați, surse, rezerve pe o linie
+ipotetică), nu pe planul unui document — lacuna e declarată în 84 §Scop
+(„rezolvarea motorului se vede DOAR prin dry-run `valideaza`”); dry-run-ul
+n-are cifră; niciun host fără XAF. Deciziile 86 și 87 au trecut explicit
+peste IM pe criteriul ăsta.
+
+Ce s-a schimbat fără a fi semnal, dar mută costul:
+
+1. **Felia s-a ieftinit** prin 88/89: taxa de join pe citirile pe bază a
+   dispărut, tipul se citește ca dată, tranzacția e deja la apelant, faza pură
+   are precedente, „Stoc” are un adaptor.
+2. **Felia se scumpește cu fiecare felie de motor**: în opt zile +24
+   `GetObjectsQuery`, +4 commit-uri, +3 hook-uri, +4 servicii amestecate.
+   „Tech-debt cu prag”: pragul a fost atins prin recurență, nu printr-un
+   semnal de produs.
+
+Propunere, de decis de owner: **al patrulea semnal**, măsurabil — o felie nouă
+care ADAUGĂ un serviciu în `Motor/*` cu citirea și scrierea în aceeași metodă
+declanșează IM înaintea ei; până atunci, orice serviciu nou de motor se scrie
+de la început pe forma precedentelor (citire în lot → calcul pur →
+materializare), ca să nu mărească ce IM are de mutat.
+
+### Pașii, replanificați
+
+- **0a (nou)** — cifra de dry-run: `valideaza` și `opereaza` pe HTTP, A/B pe
+  aceeași bază; devine pragul lui D10.
+- **0b** — spike-ul D5, neschimbat, plus regula de dată 88j pe perechea 581.
+- **0c (nou, gratuit, înaintea feliei)** — `GenereazaConex` pe
+  `CititorTipDocument.Clasa` (D9): commit separat, ModelCheck pe ambele
+  profiluri, fără Import1C.
+- **1** — planul POCO, neschimbat.
+- **2** — contractele: politici (lista extinsă) → stoc (loturi + prefix-sum;
+  `SolduriService` rămâne adaptorul soldurilor de referință) → relații (lanț
+  de perioade, împerecheri datate) → persistență (patru registre,
+  `IDocumentCuRegistruPropriu` pe port). Închide 84-r10.
+- **3** — hook-urile: 11 + 3 pe port; `IVerificabilLaCommit` NU aici.
+- **4** — materializarea și commit-ul la apelant: ieftinit (tranzacția e deja
+  acolo); lista apelanților direcți de mai sus. Oprire: `refuzuri.ps1`
+  294/294, Import1C identic pe conținut sortat, integritate-tph zero.
+- **5** — explicația, neschimbată; 84-r6 și 86-r8 rămân separate.
+- **6** — `GardianEditare` pur + adaptor, acum cu regula (o), `IVerificabilLaCommit`
+  și F28-r4; rămâne OPȚIONAL, decis la pasul 4.
+- **7** — review advers + docs; IM-r1…r7 intră în `restante.md` odată cu
+  decizia de închidere (azi stau doar aici).
 
 ## Testul contra invarianților
 
@@ -170,15 +351,21 @@ motor.
 Felia e închisă când, pe codul final:
 
 - ModelCheck e verde pe AMBELE profiluri cu TOATE probele existente
-  neschimbate în text (cifrele ≥ cele de la deschidere: privat 978 /
-  bugetar 927) plus probele pure noi;
-- raportul de reconciliere Import1C pe Flax e IDENTIC byte-cu-byte cu
-  baseline-ul (precedentul DIM-4; 12 luni / 0 FAIL, DUK ok);
-- `refuzuri.ps1` 80/80 (nicio schimbare de comportament pe securitate);
-- perf pe HTTP ≤ cifrele din `p5-perf-masuratori.md` (59) — niciun contract
-  de citire nu introduce o interogare per linie;
-- ZERO schimbare de schemă, ZERO schimbare de sârmă în DTO-urile existente;
-  explicația din plan intră ADITIV în răspunsul lui `valideaza`;
+  neschimbate în text (cifrele ≥ cele de la deschidere: bugetar 1294 /
+  privat 1450, la închiderea feliei 28 — amendament 89; cifrele inițiale
+  ale contractului erau privat 978 / bugetar 927) plus probele pure noi;
+- raportul de reconciliere Import1C pe Flax e IDENTIC pe conținut sortat cu
+  baseline-ul (standardul feliilor 27–28, 89h; textul inițial: „byte-cu-byte”;
+  precedentul DIM-4; 12 luni / 0 FAIL, DUK ok) și SQL-ul din
+  `--dump-integritate-tph` pe baza de import întoarce zero rânduri;
+- `refuzuri.ps1` 294/294 (nicio schimbare de comportament pe securitate; cifra inițială a contractului era 80/80, actualizată la închiderea feliei 28);
+- perf pe HTTP ≤ cifrele din `p5-perf-masuratori.md` (59), inclusiv cifra
+  de dry-run măsurată la pasul 0a — niciun contract de citire nu introduce o
+  interogare per linie;
+- schimbările de schemă intră doar prin decizie proprie, reanalizată la
+  momentul ei (amendament 89; textul inițial: „ZERO schimbare de schemă”);
+  ZERO schimbare de sârmă în DTO-urile existente; explicația din plan intră
+  ADITIV în răspunsul lui `valideaza`;
 - `openapi.json`/`api-types.ts` regenerate fără drift, `metadata.json` la zi.
 
 ## Pașii (un agent per pas, regulă de oprire per pas, verificare independentă)
@@ -204,7 +391,8 @@ Felia e închisă când, pe codul final:
 4. **Materializarea și comenzile** (D3): `Materializeaza` peste contractul de
    persistență; anulare, storno, stingerea automată, conex/secundar ca efecte
    ale planului; `CommitChanges` iese din `Motor/*`. Oprire: ModelCheck
-   identic; Import1C byte-cu-byte; `refuzuri.ps1` 80/80.
+   identic; Import1C identic pe conținut sortat; `refuzuri.ps1` 294/294
+   (cifra inițială 80/80).
 5. **Explicația** (D2, aditiv): planul poartă regula/lotul/sursa dimensiunii;
    `valideaza` le expune în DTO (aditiv); clientul le arată pe ASM (76h) și
    pe panourile de stingere. Oprire: drift zero, smoke în browser.

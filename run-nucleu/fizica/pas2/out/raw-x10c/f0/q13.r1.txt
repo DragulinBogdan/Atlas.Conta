@@ -1,0 +1,49 @@
+                                                               QUERY PLAN                                                                
+-----------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on "RegistruStoc" r  (cost=4.82..200.72 rows=50 width=107) (actual time=4.110..4.111 rows=0.00 loops=1)
+   Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   Filter: ("GCRecord" = 0)
+   Buffers: shared read=3
+   ->  Bitmap Index Scan on "IX_RegistruStoc_DocumentId"  (cost=0.00..4.80 rows=50 width=0) (actual time=4.105..4.105 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared read=3
+ Planning:
+   Buffers: shared hit=215 read=1
+ Planning Time: 0.356 ms
+ Execution Time: 4.138 ms
+(12 rows)
+
+                                                                    QUERY PLAN                                                                     
+---------------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on "RegistruContabil" r  (cost=31.30..8316.42 rows=2435 width=387) (actual time=0.800..1.167 rows=2280.00 loops=1)
+   Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   Filter: ("GCRecord" = 0)
+   Heap Blocks: exact=60
+   Buffers: shared hit=6 read=59
+   ->  Bitmap Index Scan on "IX_RegistruContabil_DocumentId"  (cost=0.00..30.69 rows=2435 width=0) (actual time=0.782..0.783 rows=2280.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared read=5
+ Planning:
+   Buffers: shared hit=392
+ Planning Time: 0.353 ms
+ Execution Time: 1.218 ms
+(13 rows)
+
+                                                               QUERY PLAN                                                               
+----------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on "RegistruTva" r  (cost=4.57..79.07 rows=19 width=134) (actual time=0.640..0.641 rows=0.00 loops=1)
+   Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   Filter: ("GCRecord" = 0)
+   Buffers: shared read=3
+   ->  Bitmap Index Scan on "IX_RegistruTva_DocumentId"  (cost=0.00..4.57 rows=19 width=0) (actual time=0.632..0.633 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared read=3
+ Planning:
+   Buffers: shared hit=151
+ Planning Time: 0.136 ms
+ Execution Time: 0.651 ms
+(12 rows)
+

@@ -125,3 +125,13 @@ public interface IDocumentCuIesireFiscala { }
 public interface IVerificabilLaCommit {
     void Verifica(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori);
 }
+
+// Documentul cu registru PROPRIU, în afara celor trei ale nucleului (F26-D3).
+public interface IDocumentCuRegistruPropriu {
+    /// <summary>Scrie rândurile proprii, la operare, după registrele nucleului.</summary>
+    void MaterializeazaRegistrul(DevExpress.ExpressApp.IObjectSpace os);
+    /// <summary>Șterge rândurile proprii, la anularea operării.</summary>
+    void EliminaRegistrul(DevExpress.ExpressApp.IObjectSpace os);
+    /// <summary>Adaugă rândurile inverse, la data stornării.</summary>
+    void StorneazaRegistrul(DevExpress.ExpressApp.IObjectSpace os, DateOnly data);
+}

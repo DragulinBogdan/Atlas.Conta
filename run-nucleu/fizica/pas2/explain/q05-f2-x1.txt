@@ -1,0 +1,46 @@
+                                                                                          QUERY PLAN                                                                                          
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Left Join  (cost=26539.52..26936.35 rows=9257 width=230) (actual time=56.144..64.947 rows=2517.00 loops=1)
+   Hash Cond: (p."Partener" = rp."ID")
+   Buffers: shared hit=14980 read=1029, temp read=321 written=717
+   ->  Hash Left Join  (cost=25505.42..25715.95 rows=9257 width=147) (actual time=52.456..60.599 rows=2517.00 loops=1)
+         Hash Cond: (p."Cont" = c."ID")
+         Buffers: shared hit=14456 read=1029, temp read=321 written=717
+         ->  Finalize HashAggregate  (cost=25473.32..25659.40 rows=9257 width=96) (actual time=52.317..60.279 rows=2517.00 loops=1)
+               Group Key: p."Partener"
+               Filter: ((COALESCE(sum(CASE WHEN (p."Latura" = 1) THEN p."Valoare" ELSE 0.0 END), 0.0) - COALESCE(sum(CASE WHEN (p."Latura" = 2) THEN p."Valoare" ELSE 0.0 END), 0.0)) <> 0.0)
+               Batches: 5  Memory Usage: 9009kB  Disk Usage: 3448kB
+               Rows Removed by Filter: 17267
+               Buffers: shared hit=14440 read=1029, temp read=321 written=717
+               ->  Gather  (cost=22821.63..25194.19 rows=22330 width=96) (actual time=28.848..35.440 rows=34664.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=14440 read=1029, temp read=32 written=77
+                     ->  Partial HashAggregate  (cost=21821.63..21961.19 rows=9304 width=96) (actual time=27.303..33.175 rows=11554.67 loops=3)
+                           Group Key: p."Partener"
+                           Batches: 5  Memory Usage: 8241kB  Disk Usage: 240kB
+                           Buffers: shared hit=14440 read=1029, temp read=32 written=77
+                           Worker 0:  Batches: 5  Memory Usage: 8241kB  Disk Usage: 208kB
+                           Worker 1:  Batches: 1  Memory Usage: 7953kB
+                           ->  Parallel Seq Scan on "Postare_Contabil" p  (cost=0.00..20556.10 rows=72316 width=40) (actual time=0.016..17.201 rows=48080.33 loops=3)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                 Rows Removed by Filter: 184473
+                                 Buffers: shared hit=14440 read=1029
+         ->  Hash  (cost=24.05..24.05 rows=644 width=67) (actual time=0.128..0.129 rows=644.00 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 71kB
+               Buffers: shared hit=16
+               ->  Seq Scan on "Conturi" c  (cost=0.00..24.05 rows=644 width=67) (actual time=0.020..0.076 rows=644.00 loops=1)
+                     Filter: ("GCRecord" = 0)
+                     Buffers: shared hit=16
+   ->  Hash  (cost=779.05..779.05 rows=20404 width=35) (actual time=3.587..3.587 rows=20404.00 loops=1)
+         Buckets: 32768  Batches: 1  Memory Usage: 1610kB
+         Buffers: shared hit=524
+         ->  Seq Scan on "Repartitori" rp  (cost=0.00..779.05 rows=20404 width=35) (actual time=0.005..1.913 rows=20404.00 loops=1)
+               Filter: ("GCRecord" = 0)
+               Buffers: shared hit=524
+ Planning:
+   Buffers: shared hit=595
+ Planning Time: 0.764 ms
+ Execution Time: 65.860 ms
+(42 rows)
+

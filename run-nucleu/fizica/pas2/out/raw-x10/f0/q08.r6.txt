@@ -1,0 +1,25 @@
+                                                                           QUERY PLAN                                                                           
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=30804.25..31502.80 rows=4537 width=130) (actual time=14.949..17.890 rows=4725.00 loops=1)
+   Group Key: "DocumentId", "Storno", "PartenerId", "Sens", "TipTvaId", "Cota"
+   Buffers: shared hit=3222 read=16203
+   ->  Gather Merge  (cost=30804.25..31332.66 rows=4537 width=70) (actual time=14.936..16.259 rows=6980.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=3222 read=16203
+         ->  Sort  (cost=29804.23..29808.96 rows=1890 width=70) (actual time=13.536..13.588 rows=2326.67 loops=3)
+               Sort Key: "DocumentId", "Storno", "PartenerId", "Sens", "TipTvaId", "Cota"
+               Sort Method: quicksort  Memory: 327kB
+               Buffers: shared hit=3222 read=16203
+               Worker 0:  Sort Method: quicksort  Memory: 25kB
+               Worker 1:  Sort Method: quicksort  Memory: 615kB
+               ->  Parallel Seq Scan on "RegistruTva" r  (cost=0.00..29701.38 rows=1890 width=70) (actual time=5.057..13.182 rows=2326.67 loops=3)
+                     Filter: (("GCRecord" = 0) AND ((("PerioadaAn" * 100) + "PerioadaLuna") >= 202506) AND ((("PerioadaAn" * 100) + "PerioadaLuna") <= 202506))
+                     Rows Removed by Filter: 300113
+                     Buffers: shared hit=3102 read=16203
+ Planning:
+   Buffers: shared hit=266
+ Planning Time: 0.402 ms
+ Execution Time: 18.052 ms
+(21 rows)
+

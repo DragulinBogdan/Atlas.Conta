@@ -1,0 +1,55 @@
+===== B1.1 per ClrType =====
+        ClrType         | operate | cu_tert | ct_1  | ct_2 | ct_3plus | part_0 | part_1 | part_2plus 
+------------------------+---------+---------+-------+------+----------+--------+--------+------------
+ NotaTransfer           |   45552 |       0 |     0 |    0 |        0 |  45552 |      0 |          0
+ FacturaIesire          |   40535 |   40535 | 38499 | 2036 |        0 |      0 |  40535 |          0
+ DescarcareGestiune     |   36696 |       0 |     0 |    0 |        0 |  36696 |      0 |          0
+ Incasare               |   31381 |   31381 | 31381 |    0 |        0 |      0 |  31381 |          0
+ FacturaIntrare         |   19035 |   17806 | 17781 |   25 |        0 |   1229 |  17806 |          0
+ NIR                    |   17814 |   17814 | 17814 |    0 |        0 |      0 |  17814 |          0
+ NotaContabila          |    7818 |    4269 |  2323 | 1937 |        9 |   6816 |    997 |          5
+ Plata                  |    2486 |    2486 |  2486 |    0 |        0 |      0 |   2486 |          0
+ ReturClient            |    1666 |    1631 |  1631 |    0 |        0 |     35 |   1631 |          0
+ Asamblare              |    1228 |       0 |     0 |    0 |        0 |   1228 |      0 |          0
+ BonConsum              |     547 |       0 |     0 |    0 |        0 |    547 |      0 |          0
+ ReturFurnizor          |     398 |     398 |   398 |    0 |        0 |      0 |    398 |          0
+ ListaDiferenteInventar |      18 |       0 |     0 |    0 |        0 |     18 |      0 |          0
+ InchidereTva           |      12 |       0 |     0 |    0 |        0 |     12 |      0 |          0
+
+
+===== B1.2 total =====
+ operate | cu_tert |  ct_1  | ct_2 | ct_3plus | part_0 | part_1 | part_2plus 
+---------+---------+--------+------+----------+--------+--------+------------
+  205186 |  116320 | 112313 | 3998 |        9 |  92133 | 113048 |          5
+
+
+===== B1.3 ce conturi de tert, pe tip (simbol x latura) =====
+    ClrType     | ContSimbol | RolTert | documente | si_debit_si_credit |  net_debitor  
+----------------+------------+---------+-----------+--------------------+---------------
+ FacturaIesire  | 4111       |       1 |     40535 |                  0 |  113460744.77
+ FacturaIesire  | 419        |       1 |      2036 |                  0 |   -8392226.59
+ FacturaIntrare | 401        |       2 |     17806 |                  0 |  -10918717.84
+ FacturaIntrare | 408        |       2 |        17 |                  0 |     835488.22
+ FacturaIntrare | 4091       |       2 |         7 |                  0 |       3249.59
+ FacturaIntrare | 4092       |       2 |         1 |                  0 |       8264.46
+ Incasare       | 4111       |       1 |     31381 |                  0 | -101080904.01
+ NIR            | 401        |       2 |     17814 |                  0 |  -83593304.48
+ NotaContabila  | 401        |       2 |       958 |                 14 |    -864205.98
+ NotaContabila  | 404        |       2 |        27 |                  0 |       7976.02
+ NotaContabila  | 408        |       2 |        18 |                  0 |    -770617.98
+ NotaContabila  | 4091       |       2 |         6 |                  0 |     -21434.93
+ NotaContabila  | 4092       |       2 |         1 |                  0 |      -8264.46
+ NotaContabila  | 4111       |       1 |      2744 |                 12 |   -7370140.65
+ NotaContabila  | 4118       |       1 |         1 |                  0 |      -9644.59
+ NotaContabila  | 418        |       1 |       471 |                  0 |        925.87
+ NotaContabila  | 419        |       1 |      1998 |                  1 |    8251208.88
+ Plata          | 401        |       2 |      2486 |                  0 |   87696090.46
+ ReturClient    | 4111       |       1 |      1631 |                  0 |   -4360087.08
+ ReturFurnizor  | 401        |       2 |       398 |                  0 |    3023554.25
+
+
+===== B1.4 stari (control) =====
+ Stare | count  
+-------+--------
+     1 | 205186
+

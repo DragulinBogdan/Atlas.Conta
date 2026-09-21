@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using DevExtreme.AspNet.Data;
@@ -99,6 +100,25 @@ public sealed class BalantaRand {
     public decimal SoldFinalCredit { get; set; }
 }
 
+// Soldul unui cont pe un repartitor, la o dată (F27-D7). E balanța ANALITICĂ
+// redusă la ce întreabă un contabil despre partenerii lui: „cât are de dat /
+// de luat fiecare, azi". Cheia e aceeași — `Cont × Repartitor` —, iar cifrele
+// vin din aceiași atomi cumulați, deci rândurile coincid la cent cu balanța.
+public sealed class SoldPartenerRand {
+    public Guid ContId { get; set; }
+    public string ContSimbol { get; set; }
+    public string ContDenumire { get; set; }
+    // Null = grupul „fără repartitor", rând legitim ca în balanța analitică.
+    public Guid? RepartitorId { get; set; }
+    public string RepartitorDenumire { get; set; }
+
+    // Brutele cumulate până la dată, separat pe laturi (netarea nu e aditivă — 66d).
+    public decimal Debit { get; set; }
+    public decimal Credit { get; set; }
+    public decimal SoldDebitor { get; set; }
+    public decimal SoldCreditor { get; set; }
+}
+
 // Un nod al balanței pliate pe planul de conturi (BP-D1). Aceleași opt cifre ca
 // `BalantaRand` — deliberat, ca ecranul să se citească la fel la orice nivel —
 // plus poziția în arbore.
@@ -137,10 +157,8 @@ public sealed class BalantaPlanRand {
     public decimal SoldFinalCredit { get; set; }
 }
 
-// Contractul rândurilor care poartă un document-sursă. Codul de tip NU poate veni
-// din SQL — sub TPT nu există discriminator, iar ancora `TipDocument` se caută
-// după numele clasei CLR (R-D8/60b) — deci se completează în memorie, peste
-// pagina deja materializată. Interfața există ca aceeași completare să se scrie
+// Contractul rândurilor care poartă un document-sursă. Codul de tip se completează
+// peste pagina deja materializată (`CititorTipDocument`, 89). Interfața există ca aceeași completare să se scrie
 // O SINGURĂ dată pentru fișă și jurnal: două copii ar diverge tăcut (regula care
 // a urcat `CoduriTip` în `ApiProiectii`).
 public interface IRandCuDocument {
@@ -306,8 +324,11 @@ public static class ContabilProiectii {
         Guid? proiectId = null, Guid? centruCostId = null) {
 
         // Tot ce s-a întâmplat până la sfârșitul perioadei: soldul inițial e
-        // partea de dinainte de `dataStart`, nu o a doua interogare.
-        var atomi = Atomi(os).Where(a => a.Data <= dataEnd);
+        // partea de dinainte de `dataStart`, nu o a doua interogare. Sursa
+        // pornește de la ultima perioadă DE REFERINȚĂ care se termină până la
+        // `dataStart − 1` (F27-D3), ca inițialul să rămână separabil prin
+        // `SUM(CASE)`; fără referință e exact `Atomi(os)` de azi.
+        var atomi = SolduriService.AtomiCumulati(os, dataEnd, dataStart.AddDays(-1));
 
         // Filtrele, aplicate PE ATOMI, deci ÎNAINTE de agregare și fiecare pe
         // LATURA LUI: atomul de debit poartă dimensiunile de debit, cel de
@@ -460,6 +481,69 @@ public static class ContabilProiectii {
             OrdineLista.Crescator(nameof(BalantaRand.ContSimbol)),
             OrdineLista.Crescator(nameof(BalantaRand.ContId))
         };
+
+    // Soldurile pe (cont × repartitor) la o dată (F27-D7): partea de SOLD a
+    // balanței analitice, fără noțiunea de perioadă. `laData` e parametru al
+    // PROIECȚIEI (granița cumulului), nu filtru de grilă; filtrele de dimensiune
+    // se aplică pe atomi, înaintea agregării, exact ca la balanță. Rândurile cu
+    // sold net zero se omit — echivalentul lui `Rest > 0` din partidele deschise.
+    public static IQueryable<SoldPartenerRand> SoldParteneri(
+        IObjectSpace os, DateOnly laData, Guid? contId = null,
+        Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
+        Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
+        Guid? proiectId = null, Guid? centruCostId = null) {
+
+        var atomi = SolduriService.AtomiCumulati(os, laData);
+        if (contId is Guid vCont) atomi = atomi.Where(a => a.ContId == vCont);
+        if (repartitorId is Guid vRep) atomi = atomi.Where(a => a.RepartitorId == vRep);
+        if (materialId is Guid vMat) atomi = atomi.Where(a => a.MaterialId == vMat);
+        if (codFunctionalId is Guid vCf) atomi = atomi.Where(a => a.CodFunctionalId == vCf);
+        if (codEconomicId is Guid vCe) atomi = atomi.Where(a => a.CodEconomicId == vCe);
+        if (sursaFinantareId is Guid vSf) atomi = atomi.Where(a => a.SursaFinantareId == vSf);
+        if (unitateId is Guid vUn) atomi = atomi.Where(a => a.UnitateId == vUn);
+        if (proiectId is Guid vPr) atomi = atomi.Where(a => a.ProiectId == vPr);
+        if (centruCostId is Guid vCc) atomi = atomi.Where(a => a.CentruCostId == vCc);
+
+        var agregate = atomi
+            .GroupBy(a => new { a.ContId, a.RepartitorId })
+            .Select(g => new {
+                g.Key.ContId,
+                g.Key.RepartitorId,
+                Debit = g.Sum(a => a.Debit),
+                Credit = g.Sum(a => a.Credit)
+            });
+
+        // LEFT pe ambele etichete, ca la balanța analitică: un atom nu se pierde
+        // fiindcă i-a dispărut numele (cont șters logic, repartitor absent).
+        var etichetate =
+            from a in agregate
+            join c in os.GetObjectsQuery<Cont>() on a.ContId equals c.ID into grupCont
+            from c in grupCont.DefaultIfEmpty()
+            join r in os.GetObjectsQuery<Repartitor>()
+                on a.RepartitorId equals (Guid?)r.ID into grupRep
+            from r in grupRep.DefaultIfEmpty()
+            let net = a.Debit - a.Credit
+            select new SoldPartenerRand {
+                ContId = a.ContId,
+                ContSimbol = c == null ? null : c.Simbol,
+                ContDenumire = c == null ? null : c.Denumire,
+                RepartitorId = a.RepartitorId,
+                RepartitorDenumire = r == null ? null : r.Denumire,
+                Debit = a.Debit,
+                Credit = a.Credit,
+                SoldDebitor = net > 0m ? net : 0m,
+                SoldCreditor = net < 0m ? -net : 0m
+            };
+        return etichetate.Where(x => x.SoldDebitor != 0m || x.SoldCreditor != 0m);
+    }
+
+    // Ordine TOTALĂ, ca la balanța analitică: cheia de grupare e `Cont ×
+    // Repartitor`, deci simbolul singur nu paginează stabil.
+    public static SortingInfo[] OrdineSoldParteneri() => new[] {
+        OrdineLista.Crescator(nameof(SoldPartenerRand.ContSimbol)),
+        OrdineLista.Crescator(nameof(SoldPartenerRand.ContId)),
+        OrdineLista.Crescator(nameof(SoldPartenerRand.RepartitorId))
+    };
 
     // ── Balanța pliată pe planul de conturi (BP-D1…BP-D5) ───────────────────
     //
@@ -640,7 +724,9 @@ public static class ContabilProiectii {
     // ═══ Forma: trei niveluri, fiecare cu un motiv ═══
     //   (a) unpivot-ul (R-D1) pe UN cont: `ContDebitId = @cont` ⇒ sens „D",
     //       `ContCreditId = @cont` ⇒ sens „C". Un rând cu ACELAȘI cont pe ambele
-    //       laturi produce, corect, două rânduri. Tăiat aici la `Data <= dataEnd`.
+    //       laturi produce, corect, două rânduri. Tăiat aici la `Data <= dataEnd`
+    //       și, când există o perioadă de referință, la `Data > sfârșitul ei`:
+    //       restul vine ca a TREIA ramură, rândul sintetic din snapshot (F27-D3).
     //   (b) fereastra, peste TOT ce e `<= dataEnd` — de asta soldul curent
     //       include soldul inițial fără o a doua interogare scalară. Filtrele de
     //       dimensiune se aplică la ACEST nivel, adică ÎNAINTE de fereastră: „fișa
@@ -700,9 +786,22 @@ public static class ContabilProiectii {
             "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId",
             "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId"
         };
+        var valoriDimensiuni = new Dictionary<string, Guid?> {
+            ["RepartitorId"] = repartitorId, ["MaterialId"] = materialId,
+            ["CodFunctionalId"] = codFunctionalId, ["CodEconomicId"] = codEconomicId,
+            ["SursaFinantareId"] = sursaFinantareId, ["UnitateId"] = unitateId,
+            ["ProiectId"] = proiectId, ["CentruCostId"] = centruCostId
+        };
         string Dimensiuni(string prefix) =>
             string.Concat(dimensiuni.Select(d =>
                 $",\n            r.\"Dimensiuni{prefix}_{d}\" AS \"{d}\""));
+
+        // F27-D3: rândurile de dinaintea ultimei perioade DE REFERINȚĂ nu se mai
+        // citesc — vin ca UN SINGUR rând sintetic din snapshot-ul ei, datat la
+        // sfârșitul referinței. Fereastra îl cumulează (deci soldul curent al
+        // primului rând afișat e același), iar nivelul (c) îl exclude prin
+        // `Data >= dataStart`. Fără referință, SQL-ul e cel de dinainte.
+        var referinta = SolduriService.Referinta(os, dataStart.AddDays(-1));
 
         var latura = new StringBuilder();
         foreach (var (semn, contPropriu, contOpus, debit, credit) in new[] {
@@ -724,6 +823,41 @@ public static class ContabilProiectii {
                             r."Storno" AS "Storno"{Dimensiuni(semn == "D" ? "Debit" : "Credit")}
                         FROM "RegistruContabil" r
                         WHERE r."GCRecord" = 0 AND r."{contPropriu}" = {P(contId)} AND r."Data" <= {P(dataEnd)}
+                """);
+            if (referinta is { } rr)
+                latura.Append($" AND r.\"Data\" > {P(rr.Sfarsit)}");
+        }
+
+        if (referinta is { } r) {
+            // Cheia snapshot-ului e cea COMPLETĂ a atomului, deci filtrele de
+            // dimensiune se aplică ÎNĂUNTRU, înaintea sumei; rândul sintetic
+            // poartă apoi exact coordonatele filtrului, ca să treacă neschimbat
+            // prin filtrele nivelului (b), care rămân scrise o singură dată.
+            var coloaneSnapshot = string.Concat(dimensiuni.Select(d =>
+                valoriDimensiuni[d] is Guid vd
+                    ? $",\n            {P(vd)}::uuid AS \"{d}\""
+                    : $",\n            CAST(NULL AS uuid) AS \"{d}\""));
+            var undeSnapshot = new StringBuilder();
+            foreach (var d in dimensiuni)
+                if (valoriDimensiuni[d] is Guid vd)
+                    undeSnapshot.Append($"\n              AND s.\"{d}\" = {P(vd)}");
+            if (repartitorNul)
+                undeSnapshot.Append("\n              AND s.\"RepartitorId\" IS NULL");
+            latura.Append("\n        UNION ALL\n");
+            latura.Append($"""
+                        SELECT
+                            '00000000-0000-0000-0000-000000000000'::uuid AS "Id",
+                            {P(r.Sfarsit)}::date AS "Data",
+                            CAST(NULL AS text) AS "NumarNota",
+                            CAST('S' AS text) AS "Sens",
+                            COALESCE(SUM(s."Debit"), CAST(0 AS numeric(18,2))) AS "Debit",
+                            COALESCE(SUM(s."Credit"), CAST(0 AS numeric(18,2))) AS "Credit",
+                            CAST(NULL AS uuid) AS "ContrapartidaId",
+                            CAST(NULL AS uuid) AS "DocumentId",
+                            CAST(false AS boolean) AS "Storno"{coloaneSnapshot}
+                        FROM "SolduriPerioadaContabil" s
+                        WHERE s."GCRecord" = 0 AND s."An" = {P(r.An)} AND s."Luna" = {P(r.Luna)}
+                          AND s."ContId" = {P(contId)}{undeSnapshot}
                 """);
         }
 
@@ -856,6 +990,13 @@ public static class ContabilProiectii {
     // căi sunt egale prin construcție, deci un check ar trece și cu gate-ul șters.
     // Proba lui e HTTP, cu token, pe doi utilizatori cu drepturi diferite (vezi
     // contractul feliei).
+    //
+    // Fereastra comparată rămâne TOT istoricul contului, deși fișa nu-l mai
+    // citește rând cu rând (F27-D3): soldul de dinaintea referinței îi vine din
+    // snapshot, iar snapshot-ul NU trece prin `SecurityQueryCompiler`. Îngustată
+    // la rulajele de după referință, numărătoarea ar da 0 = 0 pentru un
+    // utilizator fără drept pe registru care cere o lună fără mișcări — și i-ar
+    // servi totuși soldul inițial agregat. Costul e un index scan pe cont.
     public static bool CaleaBrutaEchivalenta(IObjectSpace os, Guid contId, DateOnly dataEnd) {
         var securizat = os.GetObjectsQuery<RegistruContabil>()
             .Count(r => (r.ContDebitId == contId || r.ContCreditId == contId) && r.Data <= dataEnd);
@@ -944,14 +1085,11 @@ public static class ContabilProiectii {
     };
 
     // ── Codul de tip al documentului, peste pagina materializată (R-D8) ─────
-    // Partajat de fișă și jurnal: ambele afișează documentul-sursă cu link, iar
-    // sub TPT codul de tip nu e o coloană (ancora `TipDocument` se caută după
-    // numele clasei CLR — 60b). O SINGURĂ implementare; două ar diverge tăcut.
+    // Partajat de fișă și jurnal: ambele afișează documentul-sursă cu link. O
+    // SINGURĂ implementare; două ar diverge tăcut.
     //
     // Se apelează DUPĂ `Incarca`, adică pe pagină (max. 500 de rânduri), nu pe
-    // toată perioada — `CoduriTip` face un singur query polimorf pe mulțime
-    // (varianta `GetObjectByKey` în buclă a fost măsurată la ~11s pe 335 de
-    // rânduri, 60b). Rândurile de deschidere (`DocumentId == null`) se sar din
+    // toată perioada. Rândurile de deschidere (`DocumentId == null`) se sar din
     // start: n-au document și nu trebuie să pice pe nimic.
     public static void CompleteazaTipDocument(IObjectSpace os, IEnumerable<IRandCuDocument> randuri) {
         var cuDocument = randuri?.Where(r => r?.DocumentId != null).ToList();

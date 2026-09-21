@@ -1,0 +1,32 @@
+                                                                        QUERY PLAN                                                                        
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Append  (cost=60.07..17917.27 rows=5205 width=304) (actual time=0.053..0.534 rows=4560.00 loops=1)
+   Buffers: shared hit=124
+   ->  Bitmap Heap Scan on "Postare_Contabil" p_1  (cost=60.07..17528.66 rows=5115 width=304) (actual time=0.052..0.350 rows=4560.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Heap Blocks: exact=111
+         Buffers: shared hit=118
+         ->  Bitmap Index Scan on "Postare_Contabil_DocumentId_idx"  (cost=0.00..58.79 rows=5115 width=0) (actual time=0.041..0.042 rows=4560.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=7
+   ->  Bitmap Heap Scan on "Postare_Stoc" p_2  (cost=4.83..209.15 rows=52 width=306) (actual time=0.010..0.010 rows=0.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Buffers: shared hit=3
+         ->  Bitmap Index Scan on "Postare_Stoc_DocumentId_idx"  (cost=0.00..4.82 rows=52 width=0) (actual time=0.006..0.006 rows=0.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+   ->  Bitmap Heap Scan on "Postare_Fiscal" p_3  (cost=4.72..153.44 rows=38 width=304) (actual time=0.007..0.007 rows=0.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Buffers: shared hit=3
+         ->  Bitmap Index Scan on "Postare_Fiscal_DocumentId_idx"  (cost=0.00..4.71 rows=38 width=0) (actual time=0.005..0.005 rows=0.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=853
+ Planning Time: 0.914 ms
+ Execution Time: 0.668 ms
+(28 rows)
+

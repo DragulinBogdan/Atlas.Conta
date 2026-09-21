@@ -1,0 +1,38 @@
+                                                                           QUERY PLAN                                                                            
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=378830.67..378885.53 rows=21947 width=84) (actual time=282.013..286.734 rows=508.00 loops=1)
+   Sort Key: (min("Data")), "Unitate"
+   Sort Method: quicksort  Memory: 49kB
+   Buffers: shared hit=14858 read=241992, temp read=2860 written=2869
+   ->  Finalize GroupAggregate  (cost=353205.97..377248.10 rows=21947 width=84) (actual time=213.128..286.595 rows=508.00 loops=1)
+         Group Key: "Unitate"
+         Filter: (COALESCE(sum("Cantitate"), 0.0) > 0.0)
+         Rows Removed by Filter: 27386
+         Buffers: shared hit=14855 read=241992, temp read=2860 written=2869
+         ->  Gather Merge  (cost=353205.97..373725.66 rows=158016 width=84) (actual time=213.004..263.148 rows=83437.00 loops=1)
+               Workers Planned: 2
+               Workers Launched: 2
+               Buffers: shared hit=14855 read=241992, temp read=2860 written=2869
+               ->  Partial GroupAggregate  (cost=352205.94..354486.67 rows=65840 width=84) (actual time=201.204..237.361 rows=27812.33 loops=3)
+                     Group Key: "Unitate"
+                     Buffers: shared hit=14855 read=241992, temp read=2860 written=2869
+                     ->  Sort  (cost=352205.94..352464.57 rows=103450 width=29) (actual time=201.160..212.839 rows=184614.33 loops=3)
+                           Sort Key: "Unitate"
+                           Sort Method: external merge  Disk: 8320kB
+                           Buffers: shared hit=14855 read=241992, temp read=2860 written=2869
+                           Worker 0:  Sort Method: external merge  Disk: 7200kB
+                           Worker 1:  Sort Method: external merge  Disk: 7360kB
+                           ->  Parallel Seq Scan on "Postare" p  (cost=0.00..341111.29 rows=103450 width=29) (actual time=6.372..170.053 rows=184614.33 loops=3)
+                                 Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+                                 Rows Removed by Filter: 3669567
+                                 Buffers: shared hit=14779 read=241992
+ Planning:
+   Buffers: shared hit=407
+ Planning Time: 0.551 ms
+ JIT:
+   Functions: 31
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 1.328 ms (Deform 0.641 ms), Inlining 0.000 ms, Optimization 1.244 ms, Emission 14.751 ms, Total 17.322 ms
+ Execution Time: 297.275 ms
+(34 rows)
+

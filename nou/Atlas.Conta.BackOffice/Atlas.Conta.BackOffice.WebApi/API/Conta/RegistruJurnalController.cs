@@ -36,8 +36,7 @@ public class RegistruJurnalController : ContaApiController {
         // Aici e doar un DEFAULT: `sort=` de la client are prioritate (R-D9).
         var rezultat = Incarca(ContabilProiectii.RegistruJurnal(os, dataStart, dataEnd),
             loadOptions, ContabilProiectii.OrdineJurnal());
-        // Aceeași completare ca la fișă, aceeași implementare (R-D8): codul de tip
-        // nu e o coloană sub TPT. Vezi limitarea documentată pe `Randuri<T>` pentru
+        // Aceeași completare ca la fișă, aceeași implementare (R-D8). Vezi limitarea documentată pe `Randuri<T>` pentru
         // modul grupat.
         ContabilProiectii.CompleteazaTipDocument(os, Randuri<JurnalRand>(rezultat));
         return Ok(rezultat);

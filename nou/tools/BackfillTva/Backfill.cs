@@ -21,7 +21,7 @@ public sealed class RezultatBackfill {
 }
 
 public static class Backfill {
-    // Documentele se materializează în LOTURI, polimorf (tiparul 60b): sub TPT un
+    // Documentele se materializează în LOTURI, polimorf (tiparul 60b): un
     // singur query pe bază întoarce tipul derivat corect. `GetObjectByKey` în
     // buclă e interzis — măsurat 11,3s pentru 335 de documente (decizia 60b), pe
     // 200.000 ar fi ore.
@@ -251,6 +251,11 @@ public static class Backfill {
             return;
         var rand = os.CreateObject<RegistruTva>();
         rand.Data = data;
+        // Backfill-ul repară un TRECUT deja operat: perioada de declarare e a
+        // faptului, iar momentul scrierii e cel al operării documentului (F27-D5).
+        rand.PerioadaAn = data.Year;
+        rand.PerioadaLuna = data.Month;
+        rand.ScrisLa = doc.DataOperare ?? DateTime.UtcNow;
         rand.Document = doc;
         rand.DetaliuId = t.DetaliuId;
         rand.Sens = t.Sens;

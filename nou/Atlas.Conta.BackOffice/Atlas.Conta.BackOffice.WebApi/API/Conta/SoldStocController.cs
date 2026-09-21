@@ -17,8 +17,13 @@ public class SoldStocController : ContaApiController {
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginaDto<SoldStocRand>), StatusCodes.Status200OK)]
-    public object Get(DataSourceLoadOptions loadOptions) {
+    // `laData` e PARAMETRU AL PROIECȚIEI, ca perioada balanței: fără el soldul e
+    // cel de azi (comportamentul de dinaintea feliei 27), cu el e soldul la
+    // sfârșitul zilei cerute. O valoare imposibilă cade pe 400-ul unic al
+    // tierului (`[ApiController]` + `InvalidModelStateResponseFactory`), în forma
+    // `EroriDto`, ca orice eșec de model binding.
+    public object Get(DataSourceLoadOptions loadOptions, [FromQuery] DateOnly? laData = null) {
         using var os = Secured(typeof(RegistruStoc));
-        return Incarca(StocProiectii.SoldStoc(os), loadOptions);
+        return Incarca(StocProiectii.SoldStoc(os, laData), loadOptions);
     }
 }

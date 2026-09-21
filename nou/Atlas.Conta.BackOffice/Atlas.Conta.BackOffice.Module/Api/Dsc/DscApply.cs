@@ -21,7 +21,7 @@ public static class DscApply {
         var h = os.GetObjectsQuery<DescarcareGestiune>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
                 d.Autogenerat, d.DocumentSursaId,
@@ -76,6 +76,7 @@ public static class DscApply {
 
         return new DscReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
@@ -87,6 +88,7 @@ public static class DscApply {
             // affordance de editare ar minți contractul (precedentul NIR, F2-D5).
             PoateEdita = false,
             PoateOpera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
             Linii = linii.Select(l => new DscLinieReadDto {

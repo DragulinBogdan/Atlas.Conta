@@ -1,0 +1,34 @@
+===== B3b.1 proba M5 refacuta pe cub."_TertDoc" (per PICIOR) =====
+ total | cont_diferit | fara_tert_pe_stins | cont_diferit_real 
+-------+--------------+--------------------+-------------------
+ 44448 |         1200 |               1179 |                21
+
+
+===== B3b.2 cele care ies diferite pe PICIOR dar nu pe CONT-agregat =====
+   tip_stins    | tip_stingator | dif_pe_picior | dif_pe_cont_agregat | numar |   suma    
+----------------+---------------+---------------+---------------------+-------+-----------
+ FacturaIntrare | Plata         | t             | f                   |    20 | 923989.54
+ FacturaIesire  | NotaContabila | t             | f                   |     1 |      0.45
+
+
+===== B3b.3 imperecherile cu AMBELE parti pe aceeasi latura =====
+   tip_stins    | tip_stingator | cont_stins | lat_stins | cont_stingator | lat_sting | numar |   suma    
+----------------+---------------+------------+-----------+----------------+-----------+-------+-----------
+ FacturaIesire  | NotaContabila | 4111       |         1 | 4111           |         1 |    24 |  58554.55
+ FacturaIntrare | Plata         | 401        |         1 | 401            |         1 |     8 | 346534.47
+
+
+===== B3b.4 partener diferit intre stins si stingator: pe tip =====
+   tip_stins    | tip_stingator | stins_fara_tert | numar |    suma     
+----------------+---------------+-----------------+-------+-------------
+ FacturaIntrare | Plata         | t               |  1168 | 25585026.06
+ FacturaIesire  | NotaContabila | f               |    13 |    44389.69
+ FacturaIntrare | NotaContabila | t               |    11 |      349.06
+ FacturaIntrare | NotaContabila | f               |     1 |     5251.00
+
+
+===== B3b.5 cele 1.085 de FCT stinse fara postare de tert: au NIR? =====
+ documente | cu_nir | total_stingere | c401_pe_nir 
+-----------+--------+----------------+-------------
+      1085 |   1085 |    33651583.30 | 28085433.47
+

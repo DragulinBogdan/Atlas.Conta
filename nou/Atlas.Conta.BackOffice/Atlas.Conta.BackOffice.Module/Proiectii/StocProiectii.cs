@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Proiectii;
@@ -44,8 +45,15 @@ public static class StocProiectii {
     // subquery corelat per rând și nu navigație lazy per instanță (25b/41c).
     // Rândurile de storno sunt incluse deliberat: registrul e append-only, iar
     // soldul E suma lui algebrică (rândurile inverse se anulează singure).
-    public static IQueryable<SoldStocRand> SoldStoc(IObjectSpace os) {
-        var agregate = os.GetObjectsQuery<RegistruStoc>()
+    //
+    // `laData` null = soldul „de azi", peste tot istoricul (comportamentul de
+    // dinaintea feliei 27). Sursa e `SolduriService.MiscariCumulate` (F27-D3):
+    // snapshot-ul ultimei perioade de referință plus rulajele de după ea. De
+    // acolo vine și filtrul de mai jos: cheia cu cantitate ȘI valoare zero se
+    // omite din snapshot, deci se omite peste tot — „absentă" și „zero" sunt
+    // același răspuns, iar un lot consumat integral nu e o poziție de stoc.
+    public static IQueryable<SoldStocRand> SoldStoc(IObjectSpace os, DateOnly? laData = null) {
+        var agregate = SolduriService.MiscariCumulate(os, laData)
             .GroupBy(r => new { r.LotId, r.RepartitorId, r.TipStoc })
             .Select(g => new {
                 g.Key.LotId,
@@ -53,7 +61,8 @@ public static class StocProiectii {
                 g.Key.TipStoc,
                 Cantitate = g.Sum(r => r.Cantitate),
                 Valoare = g.Sum(r => r.Valoare)
-            });
+            })
+            .Where(a => a.Cantitate != 0m || a.Valoare != 0m);
 
         return from a in agregate
                join l in os.GetObjectsQuery<Lot>() on a.LotId equals l.ID

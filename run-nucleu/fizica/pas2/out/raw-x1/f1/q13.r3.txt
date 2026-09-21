@@ -1,0 +1,12 @@
+                                                               QUERY PLAN                                                               
+----------------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using ix_f1_document on "Postare" p  (cost=0.43..1677.06 rows=465 width=304) (actual time=0.012..0.042 rows=456.00 loops=1)
+   Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   Index Searches: 1
+   Buffers: shared hit=15
+ Planning:
+   Buffers: shared hit=412
+ Planning Time: 0.453 ms
+ Execution Time: 0.076 ms
+(8 rows)
+

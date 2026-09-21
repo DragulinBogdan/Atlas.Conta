@@ -3,6 +3,9 @@ using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Actions;
+using DevExpress.ExpressApp.DC;
+using DevExpress.ExpressApp.Model;
+using DevExpress.ExpressApp.Security;
 using DevExpress.Persistent.Base;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,6 +27,7 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
     readonly SimpleAction opereaza;
     readonly SimpleAction anuleaza;
     readonly ParametrizedAction storneaza;
+    readonly PopupWindowShowAction corecteaza;
 
     public DocumentOperareController() {
         opereaza = new SimpleAction(this, "Document.Opereaza", PredefinedCategory.RecordEdit) {
@@ -94,6 +98,75 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
             Executa((os, id) => OperareApi.Storneaza(os, id, data));
             Informeaza(new List<string> { $"Stornat la {data:dd.MM.yyyy}." });
         };
+
+        // F27-D6: corecția peste graniță. Doi parametri (data + motivul) ⇒
+        // dialog pe obiect non-persistent (tiparul 79-r1), nu editor în toolbar.
+        corecteaza = new PopupWindowShowAction(this, "Document.Corecteaza", PredefinedCategory.RecordEdit) {
+            Caption = "Corectează",
+            ToolTip = "Stornează documentul la data indicată și deschide un draft nou cu aceeași culegere.",
+            AcceptButtonCaption = "Corectează",
+            CancelButtonCaption = "Renunță",
+            ConfirmationMessage = "Corectați documentul? Se stornează la data indicată și se creează un "
+                + "draft nou, legat de el, cu aceeași culegere.",
+        };
+        corecteaza.CustomizePopupWindowParams += Corecteaza_CustomizePopupWindowParams;
+        corecteaza.Execute += Corecteaza_Execute;
+    }
+
+    void Corecteaza_CustomizePopupWindowParams(object sender, CustomizePopupWindowParamsEventArgs e) {
+        // Fără lookup ⇒ fără spațiu compus (tiparul `RedeschiderePerioadaParametri`).
+        var os = Application.CreateObjectSpace(typeof(CorectieParametri));
+        var parametri = os.CreateObject<CorectieParametri>();
+        parametri.Data = DateTime.Today;
+        parametri.Motiv = MotivCorectie.EroareMateriala;
+        e.View = Application.CreateDetailView(os, parametri);
+        e.View.Caption = "Corectează documentul";
+    }
+
+    void Corecteaza_Execute(object sender, PopupWindowShowActionExecuteEventArgs e) {
+        var parametri = (CorectieParametri)e.PopupWindowViewCurrentObject;
+        var data = DateOnly.FromDateTime(parametri.Data == default ? DateTime.Today : parametri.Data);
+        var documentId = ViewCurrentObject.ID;
+
+        // Gate-ul comenzii, în forma de pe `POST api/documente/{id}/corecteaza`:
+        // Write pe INSTANȚĂ (ca la operare/storno) plus Create ȘI Write pe TIPUL
+        // CONCRET — comanda produce un document nou.
+        var tip = MotorOperare.ClasaReala(ViewCurrentObject);
+        if (Application.Security is not IRequestSecurityStrategy cerinte
+                || !IsGrantedExtensions.CanWrite(cerinte, ObjectSpace, (object)ViewCurrentObject))
+            throw new UserFriendlyException(
+                "Nu aveți dreptul de scriere necesar pentru comenzile de operare pe acest document.");
+        if (!cerinte.CanCreate(tip, ObjectSpace) || !cerinte.CanWrite(tip, ObjectSpace))
+            throw new UserFriendlyException(Refuzuri.FaraDrept(OperatieAcces.Creare, tip));
+
+        // Culegerea se comite ÎNAINTE de comandă (aceeași secvență ca `Executa`).
+        ObjectSpace.CommitChanges();
+
+        CorectieRezultat rezultat;
+        var fabrica = Application.ServiceProvider.GetRequiredService<INonSecuredObjectSpaceFactory>();
+        using (var osMotor = fabrica.CreateNonSecuredObjectSpace(typeof(Document))) {
+            try {
+                rezultat = OperareApi.Corecteaza(osMotor, documentId, data, parametri.Motiv);
+            }
+            catch (OperareException ex) {
+                throw new UserFriendlyException(ex.Message);
+            }
+        }
+
+        // Draftul s-a născut în ALT DbContext. `TargetWindow.NewWindow` — tab nou
+        // cu controllerele lui, ca la generarea închiderii de TVA (79-r1): pe MDI,
+        // `Default` cât timp dialogul e deschis devine `NewModalWindow`.
+        ObjectSpace.Refresh();
+        ActualizeazaDisponibilitatea();
+        var osView = Application.CreateObjectSpace(typeof(Document));
+        var draft = osView.GetObjectByKey<Document>(rezultat.CorectieId);
+        if (draft != null) {
+            e.ShowViewParameters.CreatedView = Application.CreateDetailView(osView, draft);
+            e.ShowViewParameters.TargetWindow = TargetWindow.NewWindow;
+        }
+        Informeaza(new List<string> {
+            $"Stornat la {data:dd.MM.yyyy}. Draftul de corecție e deschis alături."
+        });
     }
 
     OperareRezultat Executa(Func<IObjectSpace, Guid, OperareRezultat> comanda) {
@@ -194,5 +267,32 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
         opereaza.Enabled["Stare"] = stare == StareDocument.Draft;
         anuleaza.Enabled["Stare"] = stare == StareDocument.Operat;
         storneaza.Enabled["Stare"] = stare == StareDocument.Operat;
+        corecteaza.Enabled["Stare"] = stare == StareDocument.Operat;
+    }
+}
+
+// Parametrii dialogului de corecție — cererea `CorecteazaRequestDto`, cu motivul
+// ca enum (editorul îi arată `[XafDisplayName]`-urile). Non-persistent: trăiește
+// cât dialogul, n-are tabel și nu intră în `metadata.json`. `SetPropertyValue`,
+// nu auto-proprietăți: altfel `INotifyPropertyChanged` tace și precompletarea
+// nu se vede.
+[DomainComponent]
+[XafDisplayName("Corectează documentul")]
+public class CorectieParametri : NonPersistentBaseObject {
+    DateTime data;
+    MotivCorectie motiv;
+
+    [XafDisplayName("Data corecției")]
+    [ModelDefault("DisplayFormat", "{0:dd.MM.yyyy}")]
+    [ModelDefault("EditMask", "d")]
+    public DateTime Data {
+        get => data;
+        set => SetPropertyValue(ref data, value);
+    }
+
+    [XafDisplayName("Motivul corecției")]
+    public MotivCorectie Motiv {
+        get => motiv;
+        set => SetPropertyValue(ref motiv, value);
     }
 }

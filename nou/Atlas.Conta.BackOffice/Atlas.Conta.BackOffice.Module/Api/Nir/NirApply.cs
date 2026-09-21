@@ -46,7 +46,7 @@ public static class NirApply {
         // `Numar` NU se atinge (F5-D8): seria „NIR-" e server-owned, asignată la
         // MATERIALIZARE, în propria operare (GATE XAF D6) — gardianul de
         // Committing o și păzește pe tipurile cu politică de numerotare.
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         // NAVIGAȚIA, nu FK-ul scalar (ca la FCT/BTR): rezolvarea validează
         // existența cu mesaj de domeniu, iar pe o entitate urmărită navigația
         // încărcată ar rescrie la fixup un FK setat direct. TIPUL laturilor
@@ -267,7 +267,7 @@ public static class NirApply {
         var h = os.GetObjectsQuery<NIR>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
                 d.Autogenerat, d.DocumentSursaId,
@@ -278,12 +278,8 @@ public static class NirApply {
         if (h == null)
             return null;
 
-        // Citirea liniilor merge pe BAZA detaliului, cu frunza NIR (DIM-2) adusă
-        // prin `as` (TPT ⇒ LEFT JOIN în SQL): clona conexă generată azi se naște
-        // pe `NirDetaliu` ([TipDetaliu]), dar NIR-urile ISTORICE (importul/clonele
-        // pre-DIM-2) poartă linii de tip BAZĂ — pe frunză singură ar fi ieșit
-        // `Linii: []` cu `Total` nenul (constatarea pasului 3 al feliei).
-        // Dimensiunile sunt null pe liniile de bază — exact ce poartă.
+        // Pe BAZA detaliului: liniile de tip bază (import, istoric) apar în `Linii`, cu valorile frunzei null.
+        // `as` nu filtrează pe tip; sigur fiindcă liniile unui document sunt frunza lui sau baza (F28-H, 89).
         var linii = os.GetObjectsQuery<DocumentDetaliu>()
             .Where(l => l.DocumentId == id)
             .OrderBy(l => l.ID)
@@ -302,7 +298,7 @@ public static class NirApply {
                 // nu s-a născut din linia asta. Comparația se face pe `LinieIntrareId`
                 // (coloană fără FK — 26e), nu pe prezența produsului.
                 LotLinieIntrareId = l.Lot.LinieIntrareId,
-                // NULLABLE explicit: pe o linie de tip BAZĂ cast-ul TPT dă null,
+                // NULLABLE explicit: pe o linie de tip BAZĂ cast-ul dă null,
                 // iar un `decimal` non-nullable ar pica la materializare.
                 l.Cantitate, PretUnitar = (decimal?)(l as NirDetaliu).PretUnitar,
                 l.Valoare, l.ValoareTva,
@@ -337,6 +333,7 @@ public static class NirApply {
 
         return new NirReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
@@ -358,6 +355,7 @@ public static class NirApply {
             // flux de producție, nu accident.
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
             Linii = linii.Select(l => new NirLinieReadDto {

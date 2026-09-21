@@ -1,0 +1,41 @@
+                                                                          QUERY PLAN                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "Tranzactie"  (cost=0.43..38.50 rows=0 width=0) (actual time=0.064..0.064 rows=0.00 loops=1)
+   Buffers: shared hit=15
+   ->  Subquery Scan on "*SELECT*"  (cost=0.43..38.50 rows=1 width=46) (actual time=0.017..0.018 rows=1.00 loops=1)
+         Buffers: shared hit=4
+         ->  Limit  (cost=0.43..38.49 rows=1 width=62) (actual time=0.017..0.017 rows=1.00 loops=1)
+               Buffers: shared hit=4
+               ->  Index Scan using ix_tranzactie_document on "Tranzactie" t  (cost=0.43..76.55 rows=2 width=62) (actual time=0.016..0.016 rows=1.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: (("Data" >= '2025-01-01'::date) AND ("Fel" = 1))
+                     Index Searches: 1
+                     Buffers: shared hit=4
+ Planning:
+   Buffers: shared hit=137
+ Planning Time: 0.323 ms
+ Execution Time: 0.083 ms
+(15 rows)
+
+                                                                 QUERY PLAN                                                                  
+---------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "Postare"  (cost=35.66..11348.72 rows=0 width=0) (actual time=3.841..3.842 rows=0.00 loops=1)
+   Buffers: shared hit=8541 read=121 dirtied=131 written=7
+   ->  Subquery Scan on "*SELECT*"  (cost=35.66..11348.72 rows=348 width=304) (actual time=0.084..0.585 rows=198.00 loops=1)
+         Buffers: shared hit=342
+         ->  Bitmap Heap Scan on "Postare" p  (cost=35.66..11345.24 rows=348 width=320) (actual time=0.083..0.566 rows=198.00 loops=1)
+               Recheck Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+               Filter: ("Data" >= '2025-01-01'::date)
+               Rows Removed by Filter: 1782
+               Heap Blocks: exact=336
+               Buffers: shared hit=342
+               ->  Bitmap Index Scan on ix_f1_document  (cost=0.00..35.57 rows=3085 width=0) (actual time=0.047..0.047 rows=2772.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Index Searches: 1
+                     Buffers: shared hit=6
+ Planning:
+   Buffers: shared hit=343
+ Planning Time: 0.295 ms
+ Execution Time: 3.864 ms
+(18 rows)
+

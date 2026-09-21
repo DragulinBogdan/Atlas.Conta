@@ -1,0 +1,180 @@
+                                                                                      QUERY PLAN                                                                                      
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Append  (cost=12.67..17053.25 rows=5228 width=304) (actual time=0.022..0.729 rows=4560.00 loops=1)
+   Buffers: shared hit=202
+   ->  Bitmap Heap Scan on "Postare_Contabil_2016" p_1  (cost=12.67..1851.52 rows=548 width=304) (actual time=0.022..0.050 rows=456.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Heap Blocks: exact=11
+         Buffers: shared hit=14
+         ->  Bitmap Index Scan on "Postare_Contabil_2016_DocumentId_idx"  (cost=0.00..12.54 rows=548 width=0) (actual time=0.013..0.013 rows=456.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+   ->  Bitmap Heap Scan on "Postare_Contabil_2017" p_2  (cost=8.75..1901.37 rows=558 width=304) (actual time=0.016..0.042 rows=456.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Heap Blocks: exact=11
+         Buffers: shared hit=14
+         ->  Bitmap Index Scan on "Postare_Contabil_2017_DocumentId_idx"  (cost=0.00..8.61 rows=558 width=0) (actual time=0.012..0.012 rows=456.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+   ->  Bitmap Heap Scan on "Postare_Contabil_2018" p_3  (cost=12.93..1974.99 rows=581 width=304) (actual time=0.016..0.039 rows=456.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Heap Blocks: exact=11
+         Buffers: shared hit=14
+         ->  Bitmap Index Scan on "Postare_Contabil_2018_DocumentId_idx"  (cost=0.00..12.78 rows=581 width=0) (actual time=0.013..0.013 rows=456.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+   ->  Bitmap Heap Scan on "Postare_Contabil_2019" p_4  (cost=7.49..1389.89 rows=395 width=304) (actual time=0.017..0.042 rows=456.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Heap Blocks: exact=11
+         Buffers: shared hit=14
+         ->  Bitmap Index Scan on "Postare_Contabil_2019_DocumentId_idx"  (cost=0.00..7.39 rows=395 width=0) (actual time=0.013..0.013 rows=456.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+   ->  Bitmap Heap Scan on "Postare_Contabil_2020" p_5  (cost=7.85..1537.72 rows=442 width=304) (actual time=0.018..0.046 rows=456.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Heap Blocks: exact=11
+         Buffers: shared hit=14
+         ->  Bitmap Index Scan on "Postare_Contabil_2020_DocumentId_idx"  (cost=0.00..7.74 rows=442 width=0) (actual time=0.014..0.014 rows=456.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+   ->  Bitmap Heap Scan on "Postare_Contabil_2021" p_6  (cost=8.57..1828.20 rows=535 width=304) (actual time=0.015..0.039 rows=456.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Heap Blocks: exact=11
+         Buffers: shared hit=14
+         ->  Bitmap Index Scan on "Postare_Contabil_2021_DocumentId_idx"  (cost=0.00..8.44 rows=535 width=0) (actual time=0.012..0.012 rows=456.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+   ->  Bitmap Heap Scan on "Postare_Contabil_2022" p_7  (cost=13.47..2184.80 rows=651 width=304) (actual time=0.018..0.042 rows=456.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Heap Blocks: exact=11
+         Buffers: shared hit=14
+         ->  Bitmap Index Scan on "Postare_Contabil_2022_DocumentId_idx"  (cost=0.00..13.31 rows=651 width=0) (actual time=0.014..0.014 rows=456.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+   ->  Bitmap Heap Scan on "Postare_Contabil_2023" p_8  (cost=7.85..1537.72 rows=442 width=304) (actual time=0.019..0.043 rows=456.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Heap Blocks: exact=11
+         Buffers: shared hit=14
+         ->  Bitmap Index Scan on "Postare_Contabil_2023_DocumentId_idx"  (cost=0.00..7.74 rows=442 width=0) (actual time=0.016..0.016 rows=456.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+   ->  Bitmap Heap Scan on "Postare_Contabil_2024" p_9  (cost=8.03..1612.60 rows=465 width=304) (actual time=0.015..0.042 rows=456.00 loops=1)
+         Recheck Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Heap Blocks: exact=11
+         Buffers: shared hit=14
+         ->  Bitmap Index Scan on "Postare_Contabil_2024_DocumentId_idx"  (cost=0.00..7.91 rows=465 width=0) (actual time=0.011..0.011 rows=456.00 loops=1)
+               Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+               Index Searches: 1
+               Buffers: shared hit=3
+   ->  Index Scan using "Postare_Contabil_2025_DocumentId_idx" on "Postare_Contabil_2025" p_10  (cost=0.42..785.10 rows=512 width=304) (actual time=0.009..0.037 rows=456.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=14
+   ->  Index Scan using "Postare_Contabil_2026_DocumentId_idx" on "Postare_Contabil_2026" p_11  (cost=0.29..10.19 rows=4 width=304) (actual time=0.006..0.006 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=2
+   ->  Seq Scan on "Postare_Contabil_rest" p_12  (cost=0.00..0.00 rows=1 width=352) (actual time=0.004..0.004 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Index Scan using "Postare_Stoc_2016_DocumentId_idx" on "Postare_Stoc_2016" p_13  (cost=0.42..23.44 rows=5 width=306) (actual time=0.006..0.006 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Stoc_2017_DocumentId_idx" on "Postare_Stoc_2017" p_14  (cost=0.42..23.49 rows=5 width=306) (actual time=0.006..0.006 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Stoc_2018_DocumentId_idx" on "Postare_Stoc_2018" p_15  (cost=0.42..23.42 rows=5 width=306) (actual time=0.008..0.008 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Stoc_2019_DocumentId_idx" on "Postare_Stoc_2019" p_16  (cost=0.42..23.45 rows=5 width=306) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Stoc_2020_DocumentId_idx" on "Postare_Stoc_2020" p_17  (cost=0.42..23.45 rows=5 width=306) (actual time=0.007..0.007 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Stoc_2021_DocumentId_idx" on "Postare_Stoc_2021" p_18  (cost=0.42..23.54 rows=5 width=306) (actual time=0.004..0.004 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Stoc_2022_DocumentId_idx" on "Postare_Stoc_2022" p_19  (cost=0.42..23.47 rows=5 width=306) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Stoc_2023_DocumentId_idx" on "Postare_Stoc_2023" p_20  (cost=0.42..23.45 rows=5 width=306) (actual time=0.007..0.007 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Stoc_2024_DocumentId_idx" on "Postare_Stoc_2024" p_21  (cost=0.42..23.47 rows=5 width=305) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Stoc_2025_DocumentId_idx" on "Postare_Stoc_2025" p_22  (cost=0.42..8.51 rows=5 width=306) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Seq Scan on "Postare_Stoc_2026" p_23  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Stoc_rest" p_24  (cost=0.00..0.00 rows=1 width=352) (actual time=0.004..0.004 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Index Scan using "Postare_Fiscal_2016_DocumentId_idx" on "Postare_Fiscal_2016" p_25  (cost=0.42..20.00 rows=4 width=304) (actual time=0.008..0.008 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Fiscal_2017_DocumentId_idx" on "Postare_Fiscal_2017" p_26  (cost=0.42..20.02 rows=4 width=304) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Fiscal_2018_DocumentId_idx" on "Postare_Fiscal_2018" p_27  (cost=0.42..20.02 rows=4 width=304) (actual time=0.006..0.006 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Fiscal_2019_DocumentId_idx" on "Postare_Fiscal_2019" p_28  (cost=0.42..20.03 rows=4 width=304) (actual time=0.006..0.006 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Fiscal_2020_DocumentId_idx" on "Postare_Fiscal_2020" p_29  (cost=0.42..20.00 rows=4 width=304) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Fiscal_2021_DocumentId_idx" on "Postare_Fiscal_2021" p_30  (cost=0.42..19.99 rows=4 width=304) (actual time=0.007..0.007 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Fiscal_2022_DocumentId_idx" on "Postare_Fiscal_2022" p_31  (cost=0.42..20.00 rows=4 width=304) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Fiscal_2023_DocumentId_idx" on "Postare_Fiscal_2023" p_32  (cost=0.42..20.03 rows=4 width=304) (actual time=0.004..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Fiscal_2024_DocumentId_idx" on "Postare_Fiscal_2024" p_33  (cost=0.42..20.02 rows=4 width=304) (actual time=0.006..0.006 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Index Scan using "Postare_Fiscal_2025_DocumentId_idx" on "Postare_Fiscal_2025" p_34  (cost=0.42..13.19 rows=4 width=304) (actual time=0.005..0.005 rows=0.00 loops=1)
+         Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+         Index Searches: 1
+         Buffers: shared hit=3
+   ->  Seq Scan on "Postare_Fiscal_2026" p_35  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   ->  Seq Scan on "Postare_Fiscal_rest" p_36  (cost=0.00..0.00 rows=1 width=352) (actual time=0.002..0.002 rows=0.00 loops=1)
+         Filter: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+ Planning:
+   Buffers: shared hit=7992
+ Planning Time: 6.165 ms
+ Execution Time: 1.099 ms
+(176 rows)
+

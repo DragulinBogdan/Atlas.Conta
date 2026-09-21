@@ -1,0 +1,43 @@
+                                                                              QUERY PLAN                                                                              
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Left Join  (cost=69471.96..76189.56 rows=959 width=205) (actual time=67.510..71.152 rows=3034.00 loops=1)
+   Buffers: shared hit=26446
+   ->  Subquery Scan on f  (cost=69471.54..69875.60 rows=959 width=180) (actual time=67.484..68.529 rows=3034.00 loops=1)
+         Filter: (f."Data" >= '2025-01-01'::date)
+         Rows Removed by Filter: 27306
+         Buffers: shared hit=14310
+         ->  WindowAgg  (cost=69471.54..69769.26 rows=8507 width=180) (actual time=59.947..67.740 rows=30340.00 loops=1)
+               Window: w1 AS (ORDER BY p."Data", p."TranzactieId", p."ID" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+               Storage: Memory  Maximum Storage: 17kB
+               Buffers: shared hit=14310
+               ->  Sort  (cost=69471.51..69492.78 rows=8507 width=60) (actual time=59.931..60.616 rows=30340.00 loops=1)
+                     Sort Key: p."Data", p."TranzactieId", p."ID"
+                     Sort Method: quicksort  Memory: 3139kB
+                     Buffers: shared hit=14310
+                     ->  Bitmap Heap Scan on "Postare" p  (cost=22468.18..68916.24 rows=8507 width=60) (actual time=41.154..54.981 rows=30340.00 loops=1)
+                           Recheck Cond: (("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                           Rows Removed by Index Recheck: 20889
+                           Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                           Heap Blocks: exact=12529
+                           Buffers: shared hit=14304
+                           ->  BitmapAnd  (cost=22468.18..22468.18 rows=14380 width=0) (actual time=40.152..40.153 rows=0.00 loops=1)
+                                 Buffers: shared hit=1775
+                                 ->  Bitmap Index Scan on ix_f1_partener  (cost=0.00..925.71 rows=84437 width=0) (actual time=2.573..2.574 rows=78640.00 loops=1)
+                                       Index Cond: ("Partener" = '01a0b48c-a9fe-73e1-89f8-2908bb52cd65'::uuid)
+                                       Index Searches: 1
+                                       Buffers: shared hit=70
+                                 ->  Bitmap Index Scan on ix_f1_cont  (cost=0.00..21537.97 rows=1969804 width=0) (actual time=36.730..36.730 rows=1991752.00 loops=1)
+                                       Index Cond: ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid)
+                                       Index Searches: 1
+                                       Buffers: shared hit=1705
+   ->  Index Scan using "PK_Documente" on "Documente" doc  (cost=0.42..6.58 rows=1 width=41) (actual time=0.001..0.001 rows=1.00 loops=3034)
+         Index Cond: ("ID" = f."DocumentId")
+         Filter: ("GCRecord" = 0)
+         Index Searches: 3034
+         Buffers: shared hit=12136
+ Planning:
+   Buffers: shared hit=599
+ Planning Time: 0.885 ms
+ Execution Time: 71.350 ms
+(39 rows)
+

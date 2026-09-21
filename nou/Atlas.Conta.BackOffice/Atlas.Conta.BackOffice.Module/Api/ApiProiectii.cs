@@ -1,5 +1,4 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
-using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Api;
@@ -17,14 +16,30 @@ internal static class ApiProiectii {
     public static string EtichetaLot(string produs, DateOnly? data, decimal? pretUnitar)
         => data == null ? null : Lot.EtichetaLot(produs, data.Value, pretUnitar ?? 0m);
 
-    // Grupul conex al unui document. Coloanele plate vin dintr-o proiecție;
-    // CODUL TIPULUI nu poate veni din SQL — sub TPT nu există discriminator, iar
-    // ancora `TipDocument` se găsește după NUMELE CLASEI CLR
-    // (`MotorOperare.GasesteTipDocument`), care nu e o coloană. Alternativa
-    // traductibilă (`d is NIR ? "NIR" : …`) ar îngheța lista tipurilor în cod,
-    // exact ce evită ancora. Rezolvarea se face deci în memorie, pe o mulțime
-    // MĂRGINITĂ prin construcție: grupul conex al unui document are 0–2 copii
-    // (clona conexă + secundarul autogenerat).
+    // F27-D6 — legătura de corecție a unui document, ca DTO partajat: o singură
+    // proiecție pentru toate cele 18 `*Apply`, nu 18 copii ale aceluiași join.
+    // `null` = documentul nu corectează nimic (cazul majoritar, o citire pe
+    // indexul filtrat).
+    public static CorectieDto Corectie(IObjectSpace os, Guid id) {
+        var rand = os.GetObjectsQuery<Document>()
+            .Where(d => d.ID == id && d.CorecteazaId != null)
+            .Select(d => new {
+                OriginalId = d.CorecteazaId.Value, d.MotivCorectie,
+                d.Corecteaza.Numar, Data = (DateOnly?)d.Corecteaza.Data
+            })
+            .FirstOrDefault();
+        if (rand == null)
+            return null;
+        return new CorectieDto {
+            OriginalId = rand.OriginalId,
+            Eticheta = string.IsNullOrWhiteSpace(rand.Numar)
+                ? rand.Data?.ToString("dd.MM.yyyy")
+                : $"{rand.Numar} din {rand.Data:dd.MM.yyyy}",
+            Motiv = rand.MotivCorectie?.ToString()
+        };
+    }
+
+    // Grupul conex al unui document (0–2 copii: clona conexă + secundarul autogenerat).
     public static List<DocumentCopilDto> Copii(IObjectSpace os, Guid id) {
         var randuri = os.GetObjectsQuery<Document>()
             .Where(d => d.DocumentSursaId == id)
@@ -41,52 +56,10 @@ internal static class ApiProiectii {
         }).ToList();
     }
 
-    // Codul ancorei `TipDocument` pentru o mulțime de documente (grupul conex —
-    // 0–2 copii; stingerile unui document — panoul de imperecheri, unde extrasul
-    // de trezorerie din import poate purta SUTE de rânduri). Ancora se caută
-    // după NUMELE CLASEI CLR, deci o singură căutare per CLASĂ, memoizată.
-    //
-    // Documentele se materializează POLIMORF într-un SINGUR query pe bază: sub
-    // TPT, EF întoarce instanța tipului derivat corect (aceleași join-uri pe
-    // frunze ca `GetObjectByKey`, o singură dată pentru toată mulțimea).
-    // Varianta per-id (`GetObjectByKey` în buclă) a fost măsurată la ~11s pe un
-    // extras cu 335 de stingeri pe baza de import (N × interogarea TPT completă)
-    // — presupunerea „mulțime mărginită" nu ține pe documentele de trezorerie.
-    public static Dictionary<Guid, string> CoduriTip(IObjectSpace os, IReadOnlyCollection<Guid> ids) {
-        var rezultat = new Dictionary<Guid, string>();
-        if (ids == null || ids.Count == 0)
-            return rezultat;
-        var cerute = ids.Distinct().ToList();
-        var documente = os.GetObjectsQuery<Document>()
-            .Where(d => cerute.Contains(d.ID))
-            .ToList();
-        var perClasa = new Dictionary<string, string>();
-        foreach (var doc in documente) {
-            // EF Core dă proxy-uri de change-tracking — numele CLR real e pe
-            // tipul de bază (aceeași de-proxificare ca în MotorOperare).
-            var clr = doc.GetType();
-            while (clr.Assembly.IsDynamic || clr.Name.EndsWith("Proxy"))
-                clr = clr.BaseType;
-            if (!perClasa.TryGetValue(clr.Name, out var cod)) {
-                try {
-                    cod = MotorOperare.GasesteTipDocument(os, clr.Name).Cod;
-                }
-                catch (OperareException) {
-                    // Ancoră de seed lipsă: nu e motiv să pice CITIREA documentului.
-                    cod = clr.Name;
-                }
-                perClasa[clr.Name] = cod;
-            }
-            rezultat[doc.ID] = cod;
-        }
-        // Id-urile nerezolvate (inexistente/invizibile) rămân în contract: null.
-        foreach (var id in cerute)
-            rezultat.TryAdd(id, null);
-        return rezultat;
-    }
+    public static Dictionary<Guid, string> CoduriTip(IObjectSpace os, IReadOnlyCollection<Guid> ids) =>
+        CititorTipDocument.Coduri(os, ids);
 
-    // Codul de tip al UNUI document (documentul-sursă din „Generat din"):
-    // aceeași rezolvare polimorfă ca `CoduriTip`, pe mulțimea de un element.
+    // Codul de tip al UNUI document (documentul-sursă din „Generat din").
     // Clientul rutează prin `rutaTip` (vocabular închis) — un tip fără felie
     // rămâne text, dar link-ul nu mai e hardcodat pe `/fct/` (D-6b).
     public static string CodTip(IObjectSpace os, Guid? documentId) =>

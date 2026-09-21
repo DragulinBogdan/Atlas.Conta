@@ -54,10 +54,12 @@ public static class VerificareProfilService {
         // care categoria (b) îl caută.
         var coduriTip = CoduriCuSterse<TipDocument>(os, t => t.Cod);
         var coduriTva = CoduriCuSterse<TipTva>(os, t => t.Cod);
+        var coduriMaterial = CoduriCuSterse<TipMaterial>(os, t => t.Cod);
         string CodTip(Guid id) => coduriTip.GetValueOrDefault(id) ?? "(tip necunoscut)";
         string CodTva(Guid id) => coduriTva.GetValueOrDefault(id) ?? "(tip TVA necunoscut)";
+        string CodMaterial(Guid id) => coduriMaterial.GetValueOrDefault(id) ?? "(tip material necunoscut)";
 
-        RanduriManuale(os, constatari, CodTip, CodTva);
+        RanduriManuale(os, constatari, CodTip, CodTva, CodMaterial);
         ReferinteSterse(os, constatari, CodTip, CodTva);
         TipuriInactiveReferite(os, constatari, CodTip);
         AncoreLipsa(os, constatari, CodTip);
@@ -84,8 +86,8 @@ public static class VerificareProfilService {
     // nici nu trebuie: pentru raport amândouă înseamnă „aici baza s-a abătut de
     // la profilul livrat".
     static void RanduriManuale(IObjectSpace os, List<ConstatareProfil> constatari,
-            Func<Guid, string> codTip, Func<Guid, string> codTva) {
-        var etichete = Etichete(codTip, codTva);
+            Func<Guid, string> codTip, Func<Guid, string> codTva, Func<Guid, string> codMaterial) {
+        var etichete = Etichete(codTip, codTva, codMaterial);
         foreach (var tip in Politici.TipuriConfigurabile) {
             if (!etichete.TryGetValue(tip, out var tabel))
                 throw new InvalidOperationException(
@@ -110,7 +112,7 @@ public static class VerificareProfilService {
     // (83i). Un tip din `TipuriConfigurabile` care lipsește de aici oprește
     // raportul — cheia unui rând nu se inventează dintr-un `ToString()`.
     static Dictionary<Type, (string Nume, Func<object, string> Eticheta)> Etichete(
-            Func<Guid, string> codTip, Func<Guid, string> codTva) => new() {
+            Func<Guid, string> codTip, Func<Guid, string> codTva, Func<Guid, string> codMaterial) => new() {
         [typeof(TipDocument)] = Tabel<TipDocument>("Tipuri de document",
             t => t.Cod ?? t.Denumire ?? "(fără cod)"),
         [typeof(TipTva)] = Tabel<TipTva>("Tipuri de TVA", t => t.Cod ?? t.Denumire ?? "(fără cod)"),
@@ -140,6 +142,12 @@ public static class VerificareProfilService {
             m => $"{codTva(m.TipTvaId)} / {m.Sens}"),
         [typeof(MapareD394)] = Tabel<MapareD394>("Mapări D394",
             m => $"{codTva(m.TipTvaId)} / {m.Sens}"),
+        [typeof(PoliticaAmortizare)] = Tabel<PoliticaAmortizare>("Politici de amortizare",
+            p => codMaterial(p.TipMaterialId)),
+        [typeof(RegulaDeductibilitate)] = Tabel<RegulaDeductibilitate>("Reguli de deductibilitate",
+            r => $"{r.Categorie} de la {r.DeLa:dd.MM.yyyy}"),
+        [typeof(PoliticaInchidere)] = Tabel<PoliticaInchidere>("Politici de închidere de perioadă",
+            p => p.Fel.ToString()),
     };
 
     static string Cheia(Func<Guid, string> codTip, PoliticaTvaImplicit p) =>

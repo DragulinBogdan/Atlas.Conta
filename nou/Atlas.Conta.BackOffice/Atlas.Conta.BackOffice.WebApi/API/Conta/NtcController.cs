@@ -65,7 +65,7 @@ public class NtcController : ContaApiController {
         return dto == null ? Invizibil() : Ok(dto);
     }
 
-    // Ce servește ușa asta (review 80 M1): sub TPT `GetObjectByKey<NotaContabila>`
+    // Ce servește ușa asta (review 80 M1): `RandDupaCheie.Ca<NotaContabila>`
     // găsește și `InchidereTva`, dar felia NTC îl EXCLUDE la citire (79c,
     // `NotaContabilaApply.Citeste`). Gate-ul primește același criteriu, altfel
     // aceeași ușă ar spune 404 pe GET și 403/422 pe PUT/DELETE/comenzi — două

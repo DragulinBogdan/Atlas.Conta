@@ -1,0 +1,21 @@
+                                                                      QUERY PLAN                                                                       
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=39.49..39.53 rows=1 width=48) (actual time=2.717..2.727 rows=30.00 loops=1)
+   Group Key: p."Unitate"
+   Filter: (COALESCE(sum(p."Cantitate"), 0.0) > 0.0)
+   Buffers: shared hit=34 read=3
+   ->  Sort  (cost=39.49..39.49 rows=2 width=20) (actual time=2.705..2.707 rows=31.00 loops=1)
+         Sort Key: p."Unitate"
+         Sort Method: quicksort  Memory: 26kB
+         Buffers: shared hit=34 read=3
+         ->  Index Scan using ix_f2s_produs_data on "Postare_Stoc" p  (cost=0.42..39.48 rows=2 width=20) (actual time=2.600..2.678 rows=31.00 loops=1)
+               Index Cond: (("Produs" = '01a0b48d-78b6-754c-92e9-c3250a37995b'::uuid) AND ("Data" <= '2025-06-30'::date))
+               Filter: (("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+               Index Searches: 1
+               Buffers: shared hit=31 read=3
+ Planning:
+   Buffers: shared hit=398
+ Planning Time: 0.571 ms
+ Execution Time: 2.762 ms
+(17 rows)
+

@@ -126,12 +126,14 @@ public static class Cautare {
 
     /// <summary>
     /// Numele proprietății de cod a unui nomenclator căutabil: <c>Cod</c>,
-    /// altfel <c>Simbol</c> (planul de conturi), altfel <c>null</c>. O singură
-    /// deducere, consumată de configurarea EF, de gardian și de ModelCheck.
+    /// altfel <c>Simbol</c> (planul de conturi), altfel <c>NumarInventar</c>
+    /// (fișa de imobilizare), altfel <c>null</c>. O singură deducere, consumată
+    /// de configurarea EF, de gardian și de ModelCheck.
     /// </summary>
     public static string NumeCod(Type entitate) =>
         entitate.GetProperty("Cod") != null ? "Cod" :
-        entitate.GetProperty("Simbol") != null ? "Simbol" : null;
+        entitate.GetProperty("Simbol") != null ? "Simbol" :
+        entitate.GetProperty("NumarInventar") != null ? "NumarInventar" : null;
 
     /// <summary>
     /// Numele constraint-ului CHECK „coloana nu e goală” (77-r2) — apare în
@@ -161,9 +163,9 @@ public static class Cautare {
 /// <para>
 /// Declarativă: prezența interfeței e TOT ce cere configurarea generică din
 /// <c>BackOfficeEFCoreDbContext.AplicaColoanaCautare</c> — numele coloanei de
-/// cod se deduce din entitate (`Cod`, altfel `Simbol`), iar sub TPT coloana se
-/// așază pe tipul care DECLARĂ proprietatea (deci pe tabelul bazei
-/// <c>Repartitor</c>, o singură coloană pentru toate frunzele).
+/// cod se deduce din entitate (`Cod`, altfel `Simbol`), iar coloana se așază pe
+/// tipul care DECLARĂ proprietatea (deci o singură coloană pe <c>Repartitori</c>
+/// pentru toate frunzele).
 /// </para>
 /// <para>
 /// Get-only pe contract: valoarea e a BAZEI de date. Proprietatea concretă are

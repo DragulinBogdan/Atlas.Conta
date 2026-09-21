@@ -1,0 +1,233 @@
+===== A.1 ReguliContare pe tipurile cu cont de tert =====
+ Cod |    ClrType     | NaturaFiltru |                tip_material                | SursaContDebit | cont_debit | SursaContCredit | cont_credit | PastreazaSemn | SemnFiltru 
+-----+----------------+--------------+--------------------------------------------+----------------+------------+-----------------+-------------+---------------+------------
+ DEC | Decont         |              |                                            |              1 |            |               2 | 542         | f             |           
+ FCL | FacturaIesire  |              | Alte materiale consumabile                 |              3 | 4111       |               0 | 708         | f             |           
+ FCL | FacturaIesire  |              | Ambalaje                                   |              3 | 4111       |               0 | 708         | f             |           
+ FCL | FacturaIesire  |              | Mărfuri                                    |              3 | 4111       |               0 | 707         | f             |           
+ FCL | FacturaIesire  |              | Materiale auxiliare                        |              3 | 4111       |               0 | 708         | f             |           
+ FCL | FacturaIesire  |              | Materiale consumabile                      |              3 | 4111       |               0 | 708         | f             |           
+ FCL | FacturaIesire  |              | Materiale de natura obiectelor de inventar |              3 | 4111       |               0 | 708         | f             |           
+ FCL | FacturaIesire  |              | Materii prime                              |              3 | 4111       |               0 | 708         | f             |           
+ FCL | FacturaIesire  |              | Piese de schimb                            |              3 | 4111       |               0 | 708         | f             |           
+ FCL | FacturaIesire  |              | Produse finite                             |              3 | 4111       |               0 | 701         | f             |           
+ FCL | FacturaIesire  |              |                                            |              3 | 4111       |               1 |             | f             |           
+ FCT | FacturaIntrare |            2 |                                            |              1 |            |               2 | 401         | f             |           
+ FCT | FacturaIntrare |            3 |                                            |              1 |            |               2 | 401         | f             |           
+ FCT | FacturaIntrare |            4 |                                            |              1 |            |               2 | 404         | f             |           
+ INC | Incasare       |              | Virament intern                            |              3 |            |               1 |             | f             |           
+ INC | Incasare       |              |                                            |              3 |            |               2 | 4111        | f             |           
+ NIR | NIR            |            1 |                                            |              1 |            |               2 | 401         | f             |           
+ PLT | Plata          |              | Virament intern                            |              1 |            |               2 |             | f             |           
+ PLT | Plata          |              |                                            |              3 | 401        |               2 |             | f             |           
+ RDC | ReturClient    |            2 |                                            |              2 | 4111       |               1 |             | t             |           
+ RDC | ReturClient    |              | Alte materiale consumabile                 |              0 | 6028       |               1 |             | t             |           
+ RDC | ReturClient    |              | Ambalaje                                   |              0 | 608        |               1 |             | t             |           
+ RDC | ReturClient    |              | Mărfuri                                    |              0 | 607        |               1 |             | t             |           
+ RDC | ReturClient    |              | Materiale auxiliare                        |              0 | 6021       |               1 |             | t             |           
+ RDC | ReturClient    |              | Materiale consumabile                      |              0 | 602        |               1 |             | t             |           
+ RDC | ReturClient    |              | Materiale de natura obiectelor de inventar |              0 | 603        |               1 |             | t             |           
+ RDC | ReturClient    |              | Materii prime                              |              0 | 601        |               1 |             | t             |           
+ RDC | ReturClient    |              | Piese de schimb                            |              0 | 6024       |               1 |             | t             |           
+ RDC | ReturClient    |              | Produse finite                             |              0 | 711        |               1 |             | t             |           
+ RLF | ReturFurnizor  |            1 |                                            |              1 |            |               3 | 401         | t             |           
+
+
+===== A.2 PoliticiTva: sursa contrapartidei pe tipuri =====
+ Cod |    ClrType     | Directie | SursaContrapartida | fallback 
+-----+----------------+----------+--------------------+----------
+ DEC | Decont         |        1 |                  2 | 542
+ DVI | Dvi            |        1 |                  2 | 446
+ FCL | FacturaIesire  |        2 |                  3 | 4111
+ FCT | FacturaIntrare |        1 |                  2 | 401
+ RDC | ReturClient    |        2 |                  2 | 4111
+ RLF | ReturFurnizor  |        1 |                  3 | 401
+
+
+===== A.3 PoliticiConex (FCT -> NIR) =====
+ sursa | tinta | NaturaFiltru | InverseazaLaturi 
+-------+-------+--------------+------------------
+ FCT   | NIR   |            1 | f
+
+
+===== A.4 corespondentele REALE (perechi D/C) pe tipurile de trezorerie si lant =====
+    ClrType     | debit | credit | randuri |   valoare   
+----------------+-------+--------+---------+-------------
+ FacturaIesire  | 4111  | 4427   |   51394 | 17445197.19
+ FacturaIesire  | 4111  | 707    |   36457 | 85828595.74
+ FacturaIesire  | 4111  | 704    |    9821 |  2402421.09
+ FacturaIesire  | 4111  | 767    |    3234 |  -799362.42
+ FacturaIesire  | 4111  | 419    |    2036 |  8392226.59
+ FacturaIesire  | 4111  | 7588   |      13 |   188638.20
+ FacturaIesire  | 4111  | 7581   |       9 |     3028.38
+ FacturaIntrare | 4426  | 401    |   28504 |  8836201.16
+ FacturaIntrare | 4426  | 4427   |    8284 |  8120612.12
+ FacturaIntrare | 624   | 401    |     839 |   127884.83
+ FacturaIntrare | 628   | 401    |     727 |  1942078.09
+ FacturaIntrare | 613   | 401    |     265 |    29676.60
+ FacturaIntrare | 667   | 401    |     204 | -1336563.20
+ FacturaIntrare | 6051  | 401    |      85 |    12348.37
+ FacturaIntrare | 626   | 401    |      66 |    20724.73
+ FacturaIntrare | 6022  | 401    |      64 |    88913.66
+ FacturaIntrare | 6232  | 401    |      63 |   864575.08
+ FacturaIntrare | 473   | 401    |      60 |  -960264.20
+ FacturaIntrare | 604   | 401    |      51 |    16981.68
+ FacturaIntrare | 6231  | 401    |      44 |    29226.82
+ FacturaIntrare | 635   | 401    |      39 |     3172.64
+ FacturaIntrare | 6053  | 401    |      37 |    22857.21
+ FacturaIntrare | 611   | 401    |      30 |    17157.32
+ FacturaIntrare | 6651  | 401    |      24 |     2082.32
+ FacturaIntrare | 408   | 401    |      19 |   835488.22
+ FacturaIntrare | 625   | 401    |      18 |     6338.95
+ FacturaIntrare | 6581  | 401    |      14 |       29.49
+ FacturaIntrare | 627   | 401    |      13 |    23665.87
+ FacturaIntrare | 6052  | 401    |      11 |     1906.78
+ FacturaIntrare | 5328  | 401    |       8 |   243120.00
+ FacturaIntrare | 4091  | 401    |       7 |     3249.59
+ FacturaIntrare | 447   | 401    |       4 |    20143.29
+ FacturaIntrare | 622   | 401    |       3 |     3101.22
+ FacturaIntrare | 6028  | 401    |       3 |     1626.38
+ FacturaIntrare | 6422  | 401    |       2 |     4400.00
+ FacturaIntrare | 6458  | 401    |       2 |     4150.00
+ FacturaIntrare | 6021  | 401    |       2 |      -39.52
+ FacturaIntrare | 4092  | 401    |       1 |     8264.46
+ FacturaIntrare | 612   | 401    |       1 |    46200.00
+ FacturaIntrare | 371   | 401    |       1 |       20.00
+ Incasare       | 5121  | 4111   |   22400 | 96502595.01
+ Incasare       | 5311  | 4111   |    4918 |  1727831.81
+ Incasare       | 5125  | 4111   |    4003 |  2082372.79
+ Incasare       | 5124  | 4111   |      60 |   768104.40
+ NIR            | 371   | 401    |   33793 | 83507010.00
+ NIR            | 3028  | 401    |     399 |    58069.87
+ NIR            | 3024  | 401    |      59 |    17539.80
+ NIR            | 381   | 401    |      29 |     2874.93
+ NIR            | 303   | 401    |       9 |     7809.88
+ Plata          | 401   | 5121   |    2043 | 75850253.48
+ Plata          | 401   | 5124   |     271 | 11787268.87
+ Plata          | 401   | 5311   |     172 |    58568.11
+
+
+===== A.5 LinieSursaId: exista pe liniile de NIR? =====
+ linii_nir | cu_linie_sursa 
+-----------+----------------
+     34289 |              0
+
+ ClrType | linii | cu_linie_sursa 
+---------+-------+----------------
+
+
+===== A.6 stingerea automata: cate imperecheri sunt Autogenerat =====
+ Autogenerat | count |     sum      
+-------------+-------+--------------
+ f           | 44448 | 167559955.76
+
+
+===== A.7 un stingator acopera cate partide =====
+ nr  | stingatori 
+-----+------------
+   1 |      22045
+   2 |       1257
+   3 |        491
+   4 |        248
+   5 |        164
+   6 |        124
+   7 |         98
+   8 |         48
+   9 |         41
+  10 |         46
+  11 |         38
+  12 |         28
+  13 |         27
+  14 |         31
+  15 |         25
+  16 |         19
+  17 |         33
+  18 |         18
+  19 |         10
+  20 |         14
+  21 |         12
+  22 |         16
+  23 |         13
+  24 |          9
+  25 |         14
+  26 |          8
+  27 |          9
+  28 |         11
+  29 |         10
+  30 |          4
+  31 |          6
+  32 |         13
+  33 |          9
+  34 |          8
+  35 |          5
+  36 |          1
+  37 |          3
+  38 |          1
+  39 |          3
+  40 |          1
+  41 |          2
+  42 |          3
+  43 |          1
+  44 |          4
+  45 |          3
+  46 |          4
+  47 |          3
+  49 |          2
+  51 |          3
+  52 |          3
+  53 |          1
+  54 |          1
+  55 |          4
+  56 |          2
+  57 |          1
+  58 |          1
+  60 |          5
+  61 |          1
+  63 |          2
+  64 |          1
+  65 |          1
+  66 |          1
+  72 |          2
+  73 |          1
+  74 |          2
+  75 |          1
+  77 |          1
+  78 |          1
+  82 |          1
+  83 |          2
+  85 |          3
+  86 |          1
+  90 |          1
+  92 |          2
+  94 |          1
+  95 |          1
+  96 |          1
+  98 |          1
+  99 |          1
+ 102 |          1
+ 104 |          1
+ 106 |          1
+ 110 |          1
+ 111 |          1
+ 112 |          1
+ 113 |          1
+ 117 |          1
+ 122 |          2
+ 138 |          1
+ 335 |          1
+
+
+===== A.8 plati/incasari partiale: suma imperecherii contra totalul stingatorului =====
+    ClrType    | stingatori | consumat_integral | partial | peste_total 
+---------------+------------+-------------------+---------+-------------
+ Incasare      |      22748 |             22571 |     177 |           0
+ NotaContabila |         38 |                14 |       6 |          18
+ Plata         |       2259 |              1969 |     290 |           0
+
+
+===== A.9 documente stinse: suma imperecherii contra TotalStingere =====
+    ClrType     | documente | stins_integral | partial 
+----------------+-----------+----------------+---------
+ FacturaIesire  |     27048 |          26725 |     323
+ FacturaIntrare |     16256 |          14384 |    1872
+

@@ -47,7 +47,7 @@ public abstract class TrezorerieControllerBase<T> : ContaApiController
     }
 
     // `Citeste<T>` întoarce null și când id-ul există dar e de CELĂLALT tip
-    // (sub TPT filtrarea e în SQL) — o încasare cerută pe `/api/plt/{id}` dă
+    // (filtrarea e în SQL) — o încasare cerută pe `/api/plt/{id}` dă
     // 404, nu documentul altcuiva.
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(TrezorerieReadDto), StatusCodes.Status200OK)]

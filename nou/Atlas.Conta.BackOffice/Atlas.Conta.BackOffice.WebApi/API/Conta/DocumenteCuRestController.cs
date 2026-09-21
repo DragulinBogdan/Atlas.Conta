@@ -16,9 +16,9 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 // remote — cele două nu se ating (ASP.NET leagă `loadOptions` din query string
 // prin binder-ul DevExtreme și `contrapartidaId` ca simplu parametru).
 //
-// `ReturClient` lipsește DELIBERAT din proiecție (override-ul `LiniiCreanta` ar
-// diverge tăcut de `ImperechereService.Total`) — motivul complet e în antetul
-// lui `ImperecheriProiectii`.
+// `laData` (F27-D7) e tot parametru al PROIECȚIEI: restul se citește la o dată,
+// pornind de la partidele deschise ale ultimei perioade de referință. Absent =
+// „tot", exact comportamentul de dinainte.
 [Route("api/proiectii/documente-cu-rest")]
 public class DocumenteCuRestController : ContaApiController {
     public DocumenteCuRestController(IObjectSpaceFactory secured, INonSecuredObjectSpaceFactory nonSecured,
@@ -28,7 +28,7 @@ public class DocumenteCuRestController : ContaApiController {
     [HttpGet]
     [ProducesResponseType(typeof(PaginaDto<DocumentCuRestRand>), StatusCodes.Status200OK)]
     public object Get(DataSourceLoadOptions loadOptions, [FromQuery] Guid? contrapartidaId = null,
-        [FromQuery] string sens = null) {
+        [FromQuery] string sens = null, [FromQuery] DateOnly? laData = null) {
         // `sens` = A DOUA jumătate a filtrului de candidați (F19-D16, review F3).
         // Fără el panourile CLASICE (trezorerie/FCT/FCL/DEC) filtrau DOAR pe TIP,
         // ceea ce n-are legătură cu sensul: măsurat pe baza Privat, 87 din 353 de
@@ -49,6 +49,7 @@ public class DocumenteCuRestController : ContaApiController {
             sensCerut = parsat;
         }
         using var os = Secured(typeof(Document));
-        return Incarca(ImperecheriProiectii.DocumenteCuRest(os, contrapartidaId, sensCerut), loadOptions);
+        return Incarca(ImperecheriProiectii.DocumenteCuRest(os, contrapartidaId, sensCerut, laData),
+            loadOptions);
     }
 }

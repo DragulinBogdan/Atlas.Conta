@@ -1,0 +1,28 @@
+                                                                    QUERY PLAN                                                                     
+---------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=29609.89..29619.77 rows=3951 width=84) (actual time=33.768..33.776 rows=309.00 loops=1)
+   Sort Key: (min("Data")), "Unitate"
+   Sort Method: quicksort  Memory: 39kB
+   Buffers: shared hit=12603, temp read=29 written=52
+   ->  HashAggregate  (cost=29166.45..29373.86 rows=3951 width=84) (actual time=29.801..33.660 rows=309.00 loops=1)
+         Group Key: "Unitate"
+         Filter: (COALESCE(sum("Cantitate"), 0.0) > 0.0)
+         Batches: 5  Memory Usage: 8241kB  Disk Usage: 248kB
+         Rows Removed by Filter: 12792
+         Buffers: shared hit=12597, temp read=29 written=52
+         ->  Bitmap Heap Scan on "Postare" p  (cost=1237.16..29038.04 rows=12841 width=29) (actual time=13.836..21.361 rows=27460.00 loops=1)
+               Recheck Cond: ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid)
+               Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 2))
+               Rows Removed by Filter: 88963
+               Heap Blocks: exact=12495
+               Buffers: shared hit=12597
+               ->  Bitmap Index Scan on ix_f1_gestiune  (cost=0.00..1233.95 rows=112736 width=0) (actual time=2.141..2.141 rows=116423.00 loops=1)
+                     Index Cond: ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid)
+                     Index Searches: 1
+                     Buffers: shared hit=102
+ Planning:
+   Buffers: shared hit=376
+ Planning Time: 0.669 ms
+ Execution Time: 34.363 ms
+(24 rows)
+

@@ -54,6 +54,7 @@ export function antetGol(): BtrWrite {
 export function spreWrite(citit: BtrRead): BtrWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     NumarPV: citit.NumarPV,

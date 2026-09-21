@@ -21,6 +21,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Btr;
 // ── Scriere: agregatul per document (PUT header + linii, 42d) ──────────────
 public sealed class NotaTransferWriteDto {
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     public Guid PredatorId { get; set; }
     public Guid PrimitorId { get; set; }
     public string NumarPV { get; set; }
@@ -43,6 +45,7 @@ public sealed class NotaTransferReadDto {
     public Guid Id { get; set; }
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
@@ -63,6 +66,8 @@ public sealed class NotaTransferReadDto {
     public bool PoateEdita { get; set; }
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
+    // F27-D6 — legătura de corecție (null = documentul nu corectează nimic).
+    public CorectieDto Corectie { get; set; }
     public bool PoateStorna { get; set; }
 }
 

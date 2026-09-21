@@ -256,6 +256,7 @@ public abstract class DocumentTrezorerie : Document {
 
         var pereche = CreeazaPereche(os);
         pereche.Data = Data;
+        pereche.DataInregistrare = DataInregistrare;
         // Legătura se scrie pe COPIL (F8-D6): el e Draft, deci partea scriibilă.
         pereche.LaturaPerecheId = ID;
         pereche.TipInstrument = TipInstrument;
@@ -347,9 +348,12 @@ public abstract class DocumentTrezorerie : Document {
             erori.Add("Latura pereche există doar la viramentul intern (ambele laturi conturi proprii) — "
                 + "ștergeți legătura sau corectați laturile.");
 
-        var tinta = os.GetObjectByKey<DocumentTrezorerie>(LaturaPerecheId.Value);
-        if (tinta == null) {
-            erori.Add("Documentul indicat ca latură pereche nu există (a fost șters?) — ștergeți legătura.");
+        var gasit = Motor.RandDupaCheie.Oricare(os, typeof(DocumentTrezorerie), LaturaPerecheId.Value);
+        if (gasit is not DocumentTrezorerie tinta) {
+            erori.Add(gasit == null
+                ? "Documentul indicat ca latură pereche nu există (a fost șters?) — ștergeți legătura."
+                : Motor.RandDupaCheie.Refuz(gasit, typeof(DocumentTrezorerie),
+                    Motor.RandDupaCheie.RolFk(GetType(), nameof(LaturaPereche)), LaturaPerecheId.Value));
             return;
         }
 
@@ -484,7 +488,7 @@ public abstract class DocumentTrezorerie : Document {
                     // predicatului e în `CandidatiPereche`; autoritatea, în
                     // `ValideazaLaturaPereche`.
                     && !(x.Autogenerat && x.DocumentSursaId != null));
-            // Tipul OPUS, filtrat ÎN SQL (sub TPT: LEFT JOIN + IS NOT NULL), dar
+            // Tipul OPUS, filtrat ÎN SQL (discriminator), dar
             // tot din CONTRACTUL domeniului: `Expression.TypeIs` peste
             // `TipLaturaPereche()` — nici `is` pe tip în clasa de bază
             // (invariantul II), nici materializarea tuturor viramentelor dintre
@@ -555,6 +559,8 @@ public abstract class DocumentTrezorerie : Document {
 [GardContare(NaturaClasa.Virament, NivelContare.Natura,
     "Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class Plata : DocumentTrezorerie {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantTrezorerie.Instanta;
+
     public override Guid GetContrapartidaId() => PrimitorId;
 
     // Plata debitează contul contrapartidei ⇒ stinge DATORII (FCT, DEC, avansul
@@ -582,6 +588,8 @@ public class Plata : DocumentTrezorerie {
 [GardContare(NaturaClasa.Virament, NivelContare.Natura,
     "Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class Incasare : DocumentTrezorerie {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantTrezorerie.Instanta;
+
     public override Guid GetContrapartidaId() => PredatorId;
 
     // Oglinda plății: încasarea creditează contrapartida ⇒ stinge CREANȚE (FCL,
@@ -653,6 +661,18 @@ public class Imperechere : BaseObject {
     public virtual Guid DocumentId { get; set; }
     public virtual Document Document { get; set; }
     public virtual decimal Suma { get; set; }
+    // F27-D8: imperecherea e fapt DATAT — automat = data înregistrării
+    // stingătorului, manual = data cerută, în perioadă deschisă și nu înaintea
+    // înregistrării niciunuia dintre documente. Partidele deschise și
+    // `DocumenteCuRest` taie pe ea.
+    [XafDisplayName("Data")]
+    public virtual DateOnly Data { get; set; }
+    // F27-D8: rândul INVERS care desface o imperechere dintr-o perioadă închisă
+    // (`Suma` negativă, aceleași documente). Legătura e 1:1 și e a motorului.
+    public virtual Guid? InverseazaId { get; set; }
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Inversează împerecherea")]
+    public virtual Imperechere Inverseaza { get; set; }
     // Marcaj de proveniență (creată de motor la plata autogenerată) — nu se culege
     // de operator, deci read-only în UI.
     [ModelDefault("AllowEdit", "False")]

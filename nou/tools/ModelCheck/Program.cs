@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
@@ -12,11 +13,16 @@ using Atlas.Conta.BackOffice.Module.Api.Dec;
 using Atlas.Conta.BackOffice.Module.Api.Dsc;
 using Atlas.Conta.BackOffice.Module.Api.Dvi;
 using Atlas.Conta.BackOffice.Module.Api.Fcl;
+using Atlas.Conta.BackOffice.Module.Api.Amo;
+using Atlas.Conta.BackOffice.Module.Api.Cas;
 using Atlas.Conta.BackOffice.Module.Api.Fct;
+using Atlas.Conta.BackOffice.Module.Api.Imo;
 using Atlas.Conta.BackOffice.Module.Api.Itv;
 using Atlas.Conta.BackOffice.Module.Api.Ldi;
 using Atlas.Conta.BackOffice.Module.Api.Nir;
 using Atlas.Conta.BackOffice.Module.Api.Ntc;
+using Atlas.Conta.BackOffice.Module.Api.Perioade;
+using Atlas.Conta.BackOffice.Module.Api.Pif;
 using Atlas.Conta.BackOffice.Module.Api.Politici;
 using Atlas.Conta.BackOffice.Module.Api.Rdc;
 using Atlas.Conta.BackOffice.Module.Api.Rlf;
@@ -37,6 +43,11 @@ using DevExtreme.AspNet.Data;
 using Microsoft.EntityFrameworkCore;
 using SecurityPermissionPolicy = DevExpress.Persistent.Base.SecurityPermissionPolicy;
 using SecurityPermissionState = DevExpress.Persistent.Base.SecurityPermissionState;
+using N = Atlas.Conta.Nucleu;
+
+// Șablonul de conexiune al uneltei: o singură definiție pentru toate comenzile.
+static string Conexiunea(string baza) =>
+    "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=" + baza;
 
 // Validare model EF + (dacă baza există) verificare migrații/seed + scenariile
 // end-to-end ale motorului de operare pe un IObjectSpace real — aceeași
@@ -60,12 +71,91 @@ using SecurityPermissionState = DevExpress.Persistent.Base.SecurityPermissionSta
         return;
     }
 }
+{
+    var indexTph = Array.FindIndex(args, a => a.Equals("--dump-integritate-tph", StringComparison.OrdinalIgnoreCase));
+    if (indexTph >= 0) {
+        if (args.Length <= indexTph + 1 || args[indexTph + 1].StartsWith('-')) {
+            Console.WriteLine("Folosire: ModelCheck --dump-integritate-tph <cale.sql>");
+            Environment.ExitCode = 2;
+            return;
+        }
+        var caleTph = Path.GetFullPath(args[indexTph + 1]);
+        using var ctxTph = new BackOfficeEFCoreDbContext(new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
+            .UseNpgsql("Host=localhost").UseChangeTrackingProxies().Options);
+        var probeTph = IntegritateTph.Probe(ctxTph);
+        File.WriteAllText(caleTph, IntegritateTph.Script(probeTph), new UTF8Encoding(false));
+        Console.WriteLine($"Integritate TPH scrisă: {caleTph} ({probeTph.Count} interogări)");
+        return;
+    }
+}
+// S-D9.1 — gate-ul READ-ONLY de dinaintea comutării unui tip pe cub, pe o bază
+// dată (o clonă a lui Flax): `ModelCheck --declaratie-pe-baza <bază> <COD> [COD…]`.
+{
+    var indexGate = Array.FindIndex(args,
+        a => a.Equals("--declaratie-pe-baza", StringComparison.OrdinalIgnoreCase));
+    if (indexGate >= 0) {
+        var argumente = args.Skip(indexGate + 1).TakeWhile(a => !a.StartsWith('-')).ToList();
+        if (argumente.Count < 2) {
+            Console.WriteLine("Folosire: ModelCheck --declaratie-pe-baza <numeBaza> <COD> [COD…] "
+                + "[--raport <director>]");
+            Environment.ExitCode = 2;
+            return;
+        }
+        var indexRaport = Array.FindIndex(args, a => a.Equals("--raport", StringComparison.OrdinalIgnoreCase));
+        var directorRaport = indexRaport >= 0 && args.Length > indexRaport + 1
+            ? args[indexRaport + 1]
+            : ".";
+        var caleGate = Path.GetFullPath(Path.Combine(directorRaport,
+            $"declaratie-{argumente[0]}-{DateTime.Now:yyyyMMdd-HHmmss}.txt"));
+        Environment.ExitCode = await GatePeBaza.Ruleaza(argumente[0], argumente.Skip(1).ToList(), caleGate);
+        return;
+    }
+}
+// S-D9.2 — reconcilierea cubului PERSISTAT cu registrele, pe tipurile migrate:
+// `ModelCheck --reconciliere-cub <bază>`. Toleranță 0, exit 1 la orice Δ.
+{
+    var indexRec = Array.FindIndex(args,
+        a => a.Equals("--reconciliere-cub", StringComparison.OrdinalIgnoreCase));
+    if (indexRec >= 0) {
+        if (args.Length <= indexRec + 1 || args[indexRec + 1].StartsWith('-')) {
+            Console.WriteLine("Folosire: ModelCheck --reconciliere-cub <numeBaza>");
+            Environment.ExitCode = 2;
+            return;
+        }
+        var bazaRec = args[indexRec + 1];
+        using var ctxRec = new BackOfficeEFCoreDbContext(new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
+            .UseNpgsql(Conexiunea(bazaRec))
+            .UseChangeTrackingProxies().Options);
+        if (!await ctxRec.Database.CanConnectAsync()) {
+            Console.WriteLine($"Baza „{bazaRec}” nu există sau nu răspunde.");
+            Environment.ExitCode = 2;
+            return;
+        }
+        var migrateRec = ReconciliereCub.TipuriMigrate(ctxRec);
+        Console.WriteLine($"Baza: {bazaRec}; tipuri cu `PosteazaInCub`: "
+            + (migrateRec.Count == 0 ? "NICIUNUL" : string.Join(", ", migrateRec)));
+        if (migrateRec.Count == 0) {
+            Console.WriteLine("Nimic de reconciliat.");
+            return;
+        }
+        var noteRec = new List<string>();
+        var randuriRec = ReconciliereCub.Ruleaza(ctxRec, null, noteRec);
+        Console.WriteLine(ReconciliereCub.Raport(randuriRec));
+        foreach (var nota in noteRec)
+            Console.WriteLine("       " + nota);
+        Console.WriteLine(randuriRec.Count == 0
+            ? "\nReconciliere: 0 rânduri cu Δ ≠ 0."
+            : $"\nReconciliere: {randuriRec.Count} rânduri cu Δ ≠ 0.");
+        Environment.ExitCode = randuriRec.Count == 0 ? 0 : 1;
+        return;
+    }
+}
 
 var profil = args.Any(a => a.Contains("privat", StringComparison.OrdinalIgnoreCase))
     ? ProfilContabil.Privat : ProfilContabil.Bugetar;
 var sufixBaza = Environment.GetEnvironmentVariable("MODELCHECK_BAZA_SUFIX") ?? "";
-var connectionString = "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database="
-    + (profil == ProfilContabil.Privat ? "Atlas.Conta.ModelCheck.Privat" : "Atlas.Conta.BackOffice") + sufixBaza;
+var connectionString = Conexiunea(
+    (profil == ProfilContabil.Privat ? "Atlas.Conta.ModelCheck.Privat" : "Atlas.Conta.BackOffice") + sufixBaza);
 
 var esecuri = 0;
 void Check(string nume, bool ok) {
@@ -90,6 +180,30 @@ void CheckRefuza(string nume, Action actiune) {
 void Rezumat() {
     Console.WriteLine(esecuri == 0 ? "\nToate verificările au trecut." : $"\n{esecuri} verificări EȘUATE.");
     Environment.ExitCode = esecuri == 0 ? 0 : 1;
+}
+
+// Felia 27 (F27-D1): `Inchisa` nu se mai scrie direct nicăieri — probele închid
+// și redeschid prin comanda motorului, singura ușă. Lanțul cere ordinea, deci
+// redeschiderea se face în ORDINE INVERSĂ. Închiderea de scenă acceptă toate
+// constatările de conținut (F27-D2, `InchideAcceptTot`); probele `PER-V*` închid
+// explicit cu `[]` — acolo lista goală E ce se măsoară.
+void InchideLant(IObjectSpace os, int an, params int[] luni) {
+    foreach (var luna in luni)
+        InchideAcceptTot(os, an, luna);
+}
+
+void RedeschideLant(IObjectSpace os, int an, params int[] luni) {
+    foreach (var luna in luni.Reverse())
+        PerioadaService.Redeschide(os, an, luna, "Probă ModelCheck", null, "ModelCheck");
+}
+
+// Istoricul rămâne append-only în produs; în harness e reziduu de scenă, deci se
+// purjă FIZIC (F13-D2), ca orice scenă.
+void PurjaIstoricPerioade(IObjectSpace os, int an) {
+    var ids = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+        .Where(p => p.An == an).Select(p => p.ID).ToList();
+    new Purja(os).Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+        .Where(i => ids.Contains(i.PerioadaId))).Executa();
 }
 
 // D10 — disciplina migrațiilor aplicată codegen-ului (43d): canonic e artefactul
@@ -174,6 +288,58 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         // ea `os.Delete` ar rămâne ștergere fizică tocmai pe calea probelor.
         .UseDeferredDeletion());
 
+// S-D9.2 pe scenă: aceeași funcție de reconciliere pe care o cheamă
+// `--reconciliere-cub`, restrânsă la documentele scenei.
+void ProbaReconciliere(string prefix, params Guid[] documente) {
+    using var ctxReconciliere = new BackOfficeEFCoreDbContext(opts);
+    var note = new List<string>();
+    var randuri = ReconciliereCub.Ruleaza(ctxReconciliere, documente, note);
+    if (randuri.Count > 0)
+        Console.WriteLine(ReconciliereCub.Raport(randuri));
+    foreach (var nota in note)
+        Console.WriteLine("     " + nota);
+    Check($"STR-RECONCILIERE {prefix}: gate-ul fizicii (Σ contabil per cont × latură × lună, Σ cantitate "
+        + "per lot, Σ fiscal per cod × perioadă, balanța pe carte, numărul tranzacțiilor) — 0 rânduri Δ",
+        randuri.Count == 0);
+}
+
+// Scenele suitei nu fac decontul de TVA — subiectul lor e altul (corecția,
+// partidele, snapshot-urile), iar a genera o ITV în fiecare ar schimba chiar
+// cifrele contabile pe care le măsoară. `ItvLipsa` e însă BLOCANT în seed-ul
+// privat, iar blocantul nu se acceptă. Ieșirea e cea a operatorului real care
+// vrea să închidă o lună fără decontul ei: COBOARĂ severitatea în politică,
+// închide, o pune la loc — deci mecanismul rămâne cel probat, nu unul ocolit.
+// Valoarea de SEED e subiectul blocului `ACC-V*`, care o citește neatinsă.
+InchiderePerioada InchideAcceptTot(IObjectSpace os, int an, int luna, string de = "ModelCheck") {
+    var severitate = SeveritateItvLipsa();
+    SeteazaSeveritateItvLipsa(SeveritateConstatare.Avertisment);
+    try {
+        return PerioadaService.Inchide(os, an, luna,
+            PerioadaService.Verifica(os, an, luna).Select(c => c.Cheie).ToArray(), null, de);
+    }
+    finally {
+        SeteazaSeveritateItvLipsa(severitate);
+    }
+}
+
+// Severitatea unui fel de constatare, pe ObjectSpace PROPRIU: scena care închide
+// are de obicei modificări necomise pe al ei, iar un `CommitChanges` străin
+// le-ar scrie înainte de vreme.
+SeveritateConstatare SeveritateItvLipsa() {
+    using var os = provider.CreateObjectSpace();
+    return os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == FelConstatareInchidere.ItvLipsa)?.Severitate
+        ?? SeveritateConstatare.Avertisment;
+}
+
+void SeteazaSeveritateItvLipsa(SeveritateConstatare severitate) {
+    using var os = provider.CreateObjectSpace();
+    var rand = os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == FelConstatareInchidere.ItvLipsa);
+    if (rand == null || rand.Severitate == severitate)
+        return;
+    rand.Severitate = severitate;
+    os.CommitChanges();
+}
+
 // Seed-ul profilului privat: exact calea updater-ului (ContaSeeder), pe
 // ObjectSpace standalone; idempotent la rulări repetate.
 if (profil == ProfilContabil.Privat) {
@@ -208,7 +374,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     // căutarea n-ar da eroare — ar TĂCEA, ceea ce e mult mai rău. Proba: pentru
     // TOATE rândurile, valoarea citită din bază == valoarea calculată în
     // memorie. Entitățile se descoperă din model exact ca în `OnModelCreating`
-    // (interfața + proprietatea DECLARATĂ pe tip — sub TPT coloana e a bazei),
+    // (interfața + proprietatea DECLARATĂ pe tip — coloana e a bazei),
     // deci un nomenclator nou intră automat și în probă.
     // SQL brut ⇒ `GCRecord = 0` explicit (66).
     {
@@ -234,7 +400,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
             var obiectStocare = Microsoft.EntityFrameworkCore.Metadata.StoreObjectIdentifier
                 .Table(tabel, et.GetSchema());
             string Coloana(string membru) => et.FindProperty(membru)?.GetColumnName(obiectStocare);
-            var colCod = Coloana("Cod") ?? Coloana("Simbol");
+            var colCod = Cautare.NumeCod(clr) is { } numeCod ? Coloana(numeCod) : null;
             var colDenumire = Coloana("Denumire");
             var colCautare = Coloana(Cautare.NumeColoana);
 
@@ -354,7 +520,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
         Console.WriteLine($"     MĂSURAT (77-r2/bază): Denumire null → „{mesajNull ?? "<A TRECUT>"}”; Cod „  ” → "
             + $"„{mesajBlank ?? "<A TRECUT>"}”; Produs cu Denumire „” → „{mesajProdus ?? "<A TRECUT>"}”.");
         Check("77-r2 baza (ușa fără gardian): NULL pică pe NOT NULL, „  ”/„” pică pe CHECK-ul `btrim <> ''` "
-            + "(pe `Repartitori` — tabelul BAZEI TPT — și pe `Produse`), iar refuzul iese ca mesaj de domeniu "
+            + "(pe `Repartitori` — tabela ierarhiei TPH — și pe `Produse`), iar refuzul iese ca mesaj de domeniu "
             + "tradus (39a: „este obligatoriu” / numele regulii `CK_…_negol`), nu ca 23502/23514 brut",
             mesajNull != null && mesajNull.Contains("obligatori")
             && mesajBlank != null && mesajBlank.Contains(Cautare.NumeRegulaNeGol("Repartitori", "Cod"))
@@ -579,13 +745,19 @@ if (profil == ProfilContabil.Privat) {
             plusLdi != null && plusLdi.SemnFiltru == +1
             && plusLdi.ContCredit?.Simbol == "7588");
         PoliticaTva Tva(string cod) => os.FirstOrDefault<PoliticaTva>(p => p.TipDocument.Cod == cod);
-        Check("Seed: PoliticaTva — FCT/DEC deduc (401/542), FCL colectează (4111); NIR/PLT/INC fără rând",
+        Check("Seed: PoliticaTva — FCT/DEC deduc (401/542), FCL colectează (4111); NIR/PLT/INC fără rând; "
+            + "declararea faptului întârziat urmează DIRECȚIA (deductibilul în perioada înregistrării — art. 301, "
+            + "colectatul în perioada faptului)",
             Tva("FCT")?.Directie == DirectieTva.Deductibil && Tva("FCT").SursaContrapartida == SursaCont.RepartitorPredator
             && Tva("FCT").ContrapartidaFallback?.Simbol == "401"
             && Tva("DEC")?.Directie == DirectieTva.Deductibil && Tva("DEC").ContrapartidaFallback?.Simbol == "542"
             && Tva("FCL")?.Directie == DirectieTva.Colectat && Tva("FCL").SursaContrapartida == SursaCont.RepartitorPrimitor
             && Tva("FCL").ContrapartidaFallback?.Simbol == "4111"
-            && Tva("NIR") == null && Tva("PLT") == null && Tva("INC") == null);
+            && Tva("NIR") == null && Tva("PLT") == null && Tva("INC") == null
+            && new[] { "FCT", "DEC", "RLF", "DVI" }
+                .All(c => Tva(c)?.DeclarareIntarziata == DeclarareIntarziata.PerioadaInregistrarii)
+            && new[] { "FCL", "RDC" }
+                .All(c => Tva(c)?.DeclarareIntarziata == DeclarareIntarziata.PerioadaFaptului));
         Check("Seed: profilul de validare privat — fără clasificație bugetară; FCL NU mai interzice stocul (P2, descărcarea de gestiune preia vânzarea din stoc)",
             os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCT") == null
             && os.FirstOrDefault<PoliticaValidare>(p => p.TipDocument.Cod == "FCL")?.NaturaInterzisa != NaturaClasa.Stoc);
@@ -716,6 +888,15 @@ if (profil == ProfilContabil.Privat) {
             os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == plataAuto.ID).Suma == 181.5m
             && ImperechereService.Ramas(os, fct.ID) == 0m);
 
+        // --- NUC-PLT-FCT (B-D5, pas 4): PRIVAT — 401 are RolTert, deci aici se probeaza
+        //     nominalizarea TR-D2a (partida facturii) si partenerul pe piciorul de tert ---
+        ProbeNucleu.Proba(os, Check, "NUC-PLT-FCT", [plataAuto]);
+
+        // --- NUC-FCT-P1 (B-D6, pas 5): recepția TR-D3 + 4426 pe ambele linii, pe profilul
+        //     cu `RolTert` — o singură partidă pe 401 poartă și netul, și taxa ---
+        ProbeNucleu.Proba(os, Check, "NUC-FCT-P1", [fct],
+            new Dictionary<Guid, Guid> { [conex.ID] = fct.ID });
+
         // --- FCL: 4427 colectat ---
         var fcl = os.CreateObject<FacturaIesire>();
         fcl.Data = new DateOnly(2026, 3, 6);
@@ -775,6 +956,11 @@ if (profil == ProfilContabil.Privat) {
             && noteTi.Any(n => n.ContDebitId == tip628.ContImplicitId && n.ContCreditId == cont401.ID && n.Valoare == 100m)
             && noteTi.Any(n => n.ContDebitId == cont4426.ID && n.ContCreditId == cont4427.ID && n.Valoare == 21m)
             && fctTi.Total == 121m);
+
+        // --- NUC-FCT-TI (B-D6, pas 5): autolichidarea — 4426 poartă faptul fiscal,
+        //     4427 nu (azi nu există rând fiscal colectat pe taxare inversă) ---
+        ProbeNucleu.Proba(os, Check, "NUC-FCT-TI", [fctTi]);
+
         MotorOperare.Storneaza(os, fctTi, new DateOnly(2026, 7, 23));
         var stornoTi = os.GetObjectsQuery<RegistruContabil>()
             .Where(r => r.DocumentId == fctTi.ID && r.Storno).ToList();
@@ -887,6 +1073,22 @@ if (profil == ProfilContabil.Privat) {
             && Note(fctNed).Count == 1 && Note(fctNed).Single().Valoare == 121m
             && !Note(fctNed).Any(n => n.ContDebitId == cont4426.ID));
 
+        // --- NUC-FCT-CAP (B-D6, pas 5): brutul se declară ca bază (100) + taxă (21) pe
+        //     ACELAȘI cont de cost, fiindcă jurnalul are două cifre acolo unde registrul
+        //     contabil are una (amendament la B-D8 pct. 5) ---
+        var contractNed = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctNed);
+        var costNed = contractNed.Tranzactie?.Postari
+            .Where(p => p.Coordonate.Cont == tip628.ContImplicitId)
+            .Select(p => (Rol: p.Coordonate.CodTva?.Rol, p.Valoare))
+            .OrderBy(p => p.Rol)
+            .ToList();
+        Check("NUC-FCT-CAP: postarea de 121 pe 628 se desface în 100 (Bază) + 21 (Taxă), "
+            + "Σ neschimbată — jurnalul e proiecția pe `CodTva` (090a)",
+            contractNed.EsteAcceptat
+            && costNed is [(N.RolTva.Baza, 100m), (N.RolTva.Taxa, 21m)]
+            && costNed.Sum(p => p.Valoare) == 121m);
+        ProbeNucleu.Proba(os, Check, "NUC-FCT-CAP", [fctNed]);
+
         // --- ValoareTva culeasă pe FCT bate rotunjirea noastră (design §3) ---
         var fctManual = os.CreateObject<FacturaIntrare>();
         fctManual.Numar = "E2E-PRV-FF4";
@@ -905,6 +1107,31 @@ if (profil == ProfilContabil.Privat) {
         Check("ValoareTva culeasă manual (20,9) nu se suprascrie la operare; rândul 4426 o postează",
             linieManual.ValoareTva == 20.9m
             && Note(fctManual).Any(n => n.ContDebitId == cont4426.ID && n.Valoare == 20.9m));
+
+        // --- NUC-FCT-OVERRIDE (B-D6, pas 5): COMPORTAMENT NOU (090j) — taxa culeasă
+        //     rămâne autoritară, dar se validează contra celei decise pe document ×
+        //     cotă; 20,9 se abate cu 0,10 de la 21,00, peste toleranța de 0,01 × o
+        //     linie cu TVA, deci declarantul REFUZĂ un document pe care motorul vechi
+        //     îl operează. Diferența e CONSEMNATĂ, nu normalizată (B-D8 pct. 7).
+        // S-D15: seed-ul nu mai pune toleranță (taxa culeasă e autoritară, ca motorul
+        // vechi); gardul se probează cu valoarea pusă LOCAL pe politica tipului.
+        var contractFaraGard = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctManual);
+        Check("NUC-FCT-TOLERANTA-NULL: fără toleranță pe politică, taxa culeasă (20,90) rămâne autoritară "
+            + "și documentul trece, ca în motorul vechi (S-D15)",
+            contractFaraGard.EsteAcceptat
+            && contractFaraGard.Tranzactie.Postari.Any(p => p.Coordonate.Cont == cont4426.ID && p.Valoare == 20.9m));
+        using (ProbeCub.CuToleranta(os, fctManual, 0.01m)) {
+            var contractOverride =
+                Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctManual);
+            Console.WriteLine("     MĂSURAT (090j/PRIVAT): taxa culeasă 20,90, taxa pe document × cotă 21,00, "
+                + "toleranța 0,01 ⇒ "
+                + string.Join(" | ", contractOverride.Refuzuri.Select(r => $"{r.Cod}: {r.Mesaj}")));
+            Check("NUC-FCT-OVERRIDE: taxa culeasă peste toleranță → refuz TVA_IN_AFARA_TOLERANTEI, "
+                + "singurul refuz al contractului",
+                !contractOverride.EsteAcceptat
+                && contractOverride.Refuzuri.Count == 1
+                && contractOverride.Refuzuri[0].Cod == N.Coduri.TvaInAfaraTolerantei);
+        }
 
         // --- Aceeași regulă pe FCL și DEC (36a uniformizat — decizia 48b) ---
         // Recalculul din cotă ar da 21,00; documentul real poartă 20,99, iar
@@ -2455,10 +2682,11 @@ if (profil == ProfilContabil.Privat) {
             // vie", blocând cronologic toate lunile dinaintea lui. Același gardian
             // ca la operare (`GardianPerioada`), adus la GENERARE: la raport
             // motivul, la comandă refuzul.
-            var perioadaDec = os.FirstOrDefault<PerioadaFiscala>(p => p.An == 2026 && p.Luna == 12);
+            // F27-D1: perioada se închide prin COMANDA motorului, iar lanțul cere
+            // toate lunile anterioare închise — 12/2026 nu e capăt de lanț.
+            var luni2026 = Enumerable.Range(1, 12).ToArray();
             try {
-                perioadaDec.Inchisa = true;
-                os.CommitChanges();
+                InchideLant(os, 2026, luni2026);
                 var prevPerioadaInchisa = InchidereTvaApply.Previzualizeaza(os, 2026, 12);
                 Check("F21-D9.5d (79 M2) — cu perioada 12/2026 ÎNCHISĂ, previzualizarea lunii dă "
                     + "`PerioadaInchisa`, nu `Motiv == null`. Anti-vacuitate: soldurile ies TOTUȘI (52,5/42 — "
@@ -2477,8 +2705,8 @@ if (profil == ProfilContabil.Privat) {
                     !os.GetObjectsQuery<InchidereTva>().Any(d => d.Data >= new DateOnly(2026, 12, 1)));
             }
             finally {
-                perioadaDec.Inchisa = false;
-                os.CommitChanges();
+                RedeschideLant(os, 2026, luni2026);
+                PurjaIstoricPerioade(os, 2026);
             }
             Check("F21-D9.5d — după REDESCHIDEREA perioadei motivul dispare (verdictul era al perioadei, nu al "
                 + "lunii): decembrie redevine generabil pe aceleași solduri",
@@ -2504,11 +2732,14 @@ if (profil == ProfilContabil.Privat) {
             var idsNtc = NotaContabilaApply.Lista(os).Select(x => x.Id).ToList();
             var idsItv = InchidereTvaApply.Lista(os).Select(x => x.Id).ToList();
             var sqlNtc = NotaContabilaApply.Lista(os).ToQueryString();
+            Console.WriteLine("     MĂSURAT (F21-D5/filtrul NTC): " + string.Join(" | ", sqlNtc.Split('\n')
+                .Where(l => l.Contains("ClrType", StringComparison.Ordinal)).Select(l => l.Trim())));
             Check("F21-D5 — `NotaContabilaApply.Lista` NU mai conține închiderile de TVA, dar conține nota de "
                 + "control (anti-vacuitate: un filtru care ar fi golit lista ar fi trecut și el). Filtrul e "
-                + "SERVER-SIDE: `is` pe TPT ajunge în SQL, nu în memorie",
+                + "SERVER-SIDE: `is` ajunge în SQL ca filtru pe discriminatorul `ClrType` cu valoarea `InchidereTva`, "
+                + "nu în memorie",
                 !idsNtc.Contains(idItvFinal) && idsNtc.Contains(idNtcControl)
-                && sqlNtc.Contains("InchideriTva"));
+                && sqlNtc.Contains("\"ClrType\"") && sqlNtc.Contains("'InchidereTva'"));
             Check("F21-D5 — `InchidereTvaApply.Lista` conține DOAR închideri: nota de control lipsește, "
                 + "închiderea e acolo cu An/Luna DERIVATE din `Data` în SQL, iar fiecare rând e chiar o "
                 + "`InchidereTva`",
@@ -2518,7 +2749,7 @@ if (profil == ProfilContabil.Privat) {
                         && x.UnitateDenumire == unitate.Denumire)
                 && os.GetObjectsQuery<InchidereTva>().Count(d => idsItv.Contains(d.ID)) == idsItv.Count);
             Check("F21-D5 — `NotaContabilaApply.Citeste` pe un id de închidere întoarce null (⇒ 404 pe "
-                + "`GET api/ntc/{id}`), deși documentul EXISTĂ ca notă sub TPT",
+                + "`GET api/ntc/{id}`), deși documentul EXISTĂ ca notă (`InchidereTva : NotaContabila`)",
                 NotaContabilaApply.Citeste(os, idItvFinal) == null
                 && os.GetObjectsQuery<NotaContabila>().Any(d => d.ID == idItvFinal));
             Check("F21-D5 — `NotaContabilaApply.Candidati` pe un id de închidere întoarce null (⇒ 404 pe "
@@ -4072,8 +4303,44 @@ if (profil == ProfilContabil.Privat) {
     VerificaDvi(privat: true);
     // Felia 25, pasul 2 — ușa `api/dvi` prin `DviApply` (E2E-API-DVI).
     VerificaApiDvi();
+    // Felia 27, pasul 1 — perioada ca lanț și comanda de închidere (PER-V0…V10).
+    VerificaPerioade(privat: true);
+    // Felia 27, pasul 2a — soldurile materializate la închidere (SOL-V*) și cursa (PER-C*).
+    VerificaSolduriPerioada(privat: true);
+    // Felia 27, pasul 3 — data înregistrării (DIR-V0…V13).
+    VerificaDataInregistrare(privat: true);
+    // Felia 27, pasul 4a — perioada de declarare pe registrul fiscal (PDT-V0…V14).
+    VerificaPerioadaDeclarare(privat: true);
+    // Felia 27, pasul 5 — corecția = storno legat + document nou, cu motiv (COR-V0…V19).
+    VerificaCorectie(privat: true);
+    // Felia 27, pasul 6 — totalul scris, partidele deschise, imperecherea datată (PAR-V0…V24).
+    VerificaPartide(privat: true);
+    // Felia 27, pasul 7 — constatările de închidere și acceptarea (ACC-V0…V18).
+    VerificaAcceptare(privat: true);
+    VerificaReviewAcceptare(privat: true);
+    // Felia 26, pasul 1 — imobilizările pe scenă (IMO-V0…V28).
+    VerificaImobilizari(privat: true);
+    // Felia 26, pasul 3 — ușile `api/pif|cas|amo|imobilizari` prin `*Apply` (E2E-API-IMO).
+    VerificaImobilizariApi(privat: true);
+    // Probele review-ului advers al feliei 26 (`IMO-R*`, 87).
+    VerificaReviewF26(privat: true);
+    // Felia 26, pasul 2 — formula contra cifrelor postate în Flax (RECONCILIERE-MF).
+    VerificaReconciliereMf();
     // Decizia 85 — modul de acces al ListView-urilor (D85-M1/M2/R1/R2/R3).
     VerificaD85(privat: true);
+    // Review advers felia 27, pasul 8b (F27-R*).
+    VerificaReviewF27(privat: true);
+    // Felia 28 — TPH cu discriminatorul `ClrType` (F28-A…G).
+    VerificaF28(privat: true);
+    // Felia 31 (TR-D7a), pasul 1 — schema cubului (STR-SCHEMA-*) și `Pozitie` (STR-POZITIE).
+    VerificaSchemaCub(privat: true);
+    VerificaPozitieLinii(privat: true);
+    // Felia 30, pasul 3 — declarantul BCS pe scenă proprie + N-r3 măsurat.
+    VerificaNucleuBcs(privat: true);
+    // Felia 30, pasul 4 — declarantul de trezorerie pe scenă privată (partide pe 401/4111).
+    VerificaNucleuTrezorerie(privat: true);
+    // Felia 30, pasul 5 — declarantul FCT: patru regimuri, imobilizarea, N-r4 măsurat.
+    VerificaNucleuFct(privat: true);
 
     Rezumat();
     return;
@@ -4190,14 +4457,25 @@ using (var os = provider.CreateObjectSpace()) {
     // --- Gardianul de perioadă ---
     var inAfara = Transfer(mag1, mag2, 1m, new DateOnly(2025, 12, 15));
     CheckRefuza("Perioadă nedefinită → refuz", () => MotorOperare.Opereaza(os, inAfara));
-    var iunie = os.FirstOrDefault<PerioadaFiscala>(p => p.An == 2026 && p.Luna == 6);
-    iunie.Inchisa = true;
-    inAfara.Data = new DateOnly(2026, 6, 5);
+    // F27-D1: închiderea trece prin COMANDA motorului, iar lanțul cere P−1
+    // închisă. Luna probată e deci o perioadă de SCENĂ dintr-un an liber (2029),
+    // capăt de lanț prin absența precedentei — nu 06/2026 din seed, care ar fi
+    // cerut închiderea lunilor 1–5.
+    const int AnScenaPerioada = 2029;
+    var scenaPerioada = os.CreateObject<PerioadaFiscala>();
+    scenaPerioada.An = AnScenaPerioada;
+    scenaPerioada.Luna = 6;
+    os.CommitChanges();
+    InchideLant(os, AnScenaPerioada, 6);
+    inAfara.Data = new DateOnly(AnScenaPerioada, 6, 5);
     CheckRefuza("Perioadă închisă → refuz", () => MotorOperare.Opereaza(os, inAfara));
-    iunie.Inchisa = false;
+    RedeschideLant(os, AnScenaPerioada, 6);
     os.Delete(inAfara.Detalii.ToList());
     os.Delete(inAfara);
     os.CommitChanges();
+    PurjaIstoricPerioade(os, AnScenaPerioada);
+    new Purja(os).Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+        .Where(p => p.An == AnScenaPerioada)).Executa();
 
     // --- FIFO ---
     var alocari = StocService.AlocaFifo(os, produs.ID, mag1.ID, TipStoc.Magazie, new DateOnly(2026, 7, 1), 3m);
@@ -4604,6 +4882,94 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Sold lot după recepție: 5 pe MAG1",
         StocService.Sold(os, new CheieStoc(lot.ID, mag1.ID, TipStoc.Magazie)) == 5m);
 
+    // --- NUC-ORACOL (B-D7, pas 2): oracolul lanțului FCT → NIR ---
+    // TR-D3 (B-D8 pct. 1): registrele NIR-ului conex intră în tranzacția facturii,
+    // cu cauza pe linia FCT care a născut lotul; TR-D4 (pct. 2) unifică rândul de
+    // stoc cu piciorul 3xx al aceleiași linii. Capătul virtual `−q` al lui N-D4 NU
+    // există în oracol, deci cantitatea nu se conservă — diferență DECLARATĂ.
+    {
+        var documente = new[] { fct.ID, nir.ID };
+        var dimFctDebit = noteFct[0].DimensiuniDebit();
+        var dimFctCredit = noteFct[0].DimensiuniCredit();
+        var dimNirDebit = noteNir[0].DimensiuniDebit();
+        var dimNirCredit = noteNir[0].DimensiuniCredit();
+        // Partida se deschide DOAR pe conturile cu `RolTert` (§B.3). `SeedRolTert`
+        // rulează exclusiv pe profilul privat, deci pe bugetar 401 n-are rol și
+        // oracolul nu are partidă — iar M6 îi ia și partenerul.
+        var cu401Tert = cont401.RolTert != RolTertCont.Niciunul;
+        var partidaFct = cu401Tert
+            ? UnitateComparabila.Din(
+                N.Unitate.DeschidePartida(cont401.ID, furnizor.ID, fct.ID, fct.DataInregistrare))
+            : null;
+        Guid? tertulFct = cu401Tert ? furnizor.ID : null;
+        var lotulFct = new UnitateComparabila(
+            lot.ID, N.FelUnitate.Lot, tipMateriale.ContImplicitId.Value, null, lot.Data);
+        N.Analiza AnalizaDin(Dimensiuni d) => new(d.CodFunctionalId, d.CodEconomicId, d.SursaFinantareId,
+            d.UnitateId, d.ProiectId, d.CentruCostId);
+        PostareComparabila Post(Guid cont, N.Latura latura, Guid? gestiune, Guid? produs,
+                UnitateComparabila unitate,
+                Guid? partener, N.Analiza analiza, decimal cantitate, decimal valoare, Guid linie) =>
+            new(cont, latura, gestiune, produs, unitate, partener, null, null, analiza, cantitate,
+                latura == N.Latura.Debit ? valoare : -valoare, linie);
+
+        Normalizari.Reseteaza();
+        var cub = CubDinRegistre.Transforma(os, documente);
+        Check("NUC-ORACOL-5 (FCT→NIR): cubul brut = două tranzacții — 2 postări contabile pe factură, "
+            + "2 contabile + 1 de stoc pe NIR; bugetarul n-are PoliticaTva, deci nicio postare fiscală",
+            cub.Count == 2
+            && cub.Single(t => t.Document == fct.ID).Postari.Count == 2
+            && cub.Single(t => t.Document == nir.ID).Postari.Count == 3
+            && !cub.SelectMany(t => t.Postari).Any(p => p.Coordonate.CodTva != null));
+
+        var normalizat = Normalizari.Toate(
+            cub,
+            Normalizari.Citeste(os, documente, new Dictionary<Guid, Guid> { [nir.ID] = fct.ID }));
+        var raport = Comparabil.Compara(
+            [
+                // B-D8 pct. 9: gestiunea trece pe piciorul PROPRIU (628, 302), iar
+                // postările de 401 rămân fără ea — convenția 00 §5 le-o dădea invers.
+                Post(tipServicii.ContImplicitId.Value, N.Latura.Debit, mag1.ID, dimFctDebit.MaterialId, null,
+                    null, AnalizaDin(dimFctDebit), 0m, 100m, linieServiciu.ID),
+                Post(cont401.ID, N.Latura.Credit, null, dimFctCredit.MaterialId, partidaFct,
+                    tertulFct, AnalizaDin(dimFctCredit), 0m, 100m, linieServiciu.ID),
+                Post(tipMateriale.ContImplicitId.Value, N.Latura.Debit, mag1.ID, produs.ID, lotulFct,
+                    null, AnalizaDin(dimNirDebit), 5m, 59.5m, linieStoc.ID),
+                Post(cont401.ID, N.Latura.Credit, null, dimNirCredit.MaterialId, partidaFct,
+                    tertulFct, AnalizaDin(dimNirCredit), 0m, 59.5m, linieStoc.ID),
+            ],
+            Comparabil.Proiecteaza(normalizat));
+        if (!raport.Egal)
+            Console.WriteLine(raport.ToString());
+        Check("NUC-ORACOL-6 (FCT→NIR): după pct. 9 + TR-D3 + TR-D4 + fiscal + M6 rămâne O tranzacție pe "
+            + "factură, cu patru postări — D 628 (MAG1) la 100, D 302 (MAG1, +5, lot) la 59,5 și două "
+            + "C 401 pe partida facturii, FĂRĂ gestiune",
+            normalizat.Count == 1 && normalizat[0].Document == fct.ID && raport.Egal);
+
+        Check("NUC-ORACOL-7 (FCT→NIR): absorbția rescrie cauzele pe factură, linia NIR-ului devine linia de "
+            + "stoc a facturii (Lot.LinieIntrareId), și nicio normalizare nu lasă reziduu",
+            normalizat[0].Postari.All(p => p.Cauza.Document == fct.ID)
+            && normalizat[0].Postari.Count(p => p.Cauza.Linie == linieStoc.ID) == 2
+            && Normalizari.Avertismente.Count == 0);
+
+        // Constatare a pasului 2, nu efect al oracolului: `SeedRolTert` e apelat DOAR
+        // din `ProfilPrivat`, deci pe bugetar niciun cont de terț nu poartă rol și
+        // oracolul nu deschide nicio partidă. Declarantul FCT (B-D6) deschide una
+        // necondiționat — diferența se tranșează înainte de pasul 5.
+        Check("NUC-ORACOL-9 (FCT→NIR): pe bugetar 401 n-are RolTert (SeedRolTert e doar privat), deci oracolul "
+            + "nu deschide partidă pe el — postările de 401 rămân fără unitate și, prin M6, fără partener",
+            cu401Tert == normalizat[0].Postari.Any(p => p.Coordonate.Unitate?.Fel == N.FelUnitate.Partida));
+
+        var refuzuri = N.Conservare.Verifica(normalizat[0]);
+        foreach (var refuz in refuzuri)
+            Console.WriteLine($"     conservare {refuz.Cod}: {refuz.Mesaj}");
+        Check("NUC-ORACOL-8 (FCT→NIR): valoarea se conservă, cantitatea NU — singurul refuz e "
+            + "CONSERVARE_CANTITATE, capătul virtual `−q` al lui N-D4 lipsind din oracol (B-D8 pct. 6)",
+            refuzuri.Count == 1 && refuzuri[0].Cod == N.Coduri.ConservareCantitate);
+    }
+
+    // --- NUC-FCT (B-D6, pas 5): recepția TR-D3 declarată pe factură, cu NIR-ul absorbit ---
+    ProbeNucleu.Proba(os, Check, "NUC-FCT", [fct], new Dictionary<Guid, Guid> { [nir.ID] = fct.ID });
+
     // --- Grupul conex la anulare/storno ---
     CheckRefuza("Anularea FCT cu NIR operat → refuzată", () => MotorOperare.AnuleazaOperarea(os, fct));
     MotorOperare.AnuleazaOperarea(os, nir);
@@ -4985,6 +5351,10 @@ using (var os = provider.CreateObjectSpace()) {
         noteNir.Count == 1 && noteNir[0].ContDebitId == tipMateriale.ContImplicitId
         && noteNir[0].ContCreditId == cont401.ID && noteNir[0].Valoare == 59.5m);
 
+    // --- NUC-FCT-API (B-D6, pas 5): declarantul pe documentul cules și operat prin ușa API ---
+    ProbeNucleu.Proba(os, Check, "NUC-FCT-API", [os.GetObjectByKey<FacturaIntrare>(idFct)],
+        new Dictionary<Guid, Guid> { [idNir] = idFct });
+
     // --- Gardienii, prin contract ---
     CheckRefuza("Apply peste FCT Operat → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
         () => FacturaIntrareApply.Aplica(os, idFct, write));
@@ -5151,6 +5521,72 @@ using (var os = provider.CreateObjectSpace()) {
         && note[0].ContCreditId == tipMaterial.ContImplicitId && note[0].Valoare == 40m);
     Check("Nota BCS: repartitori din laturi (debit←predator, credit←primitor — 00 §5)",
         note[0].DimensiuniDebit().RepartitorId == mag1.ID && note[0].DimensiuniCredit().RepartitorId == loc.ID);
+
+    // --- NUC-ORACOL (B-D7, pas 2): maparea fizicii portată ca helper de test ---
+    // Oracolul feliei 30: rândurile de registru ale documentului devin cub, iar
+    // normalizările DECLARATE (B-D8) îl aduc la forma pe care o va produce
+    // declarantul. Aici se probează ORACOLUL, nu declarantul — el vine la pasul 3.
+    {
+        var linieBcs = bcs1.Detalii.Single().ID;
+        var dimDebit = note[0].DimensiuniDebit();
+        var dimCredit = note[0].DimensiuniCredit();
+        var contStoc = tipMaterial.ContImplicitId.Value;
+        var cont6xx = regulaMat.ContDebitId.Value;
+        N.Analiza AnalizaDin(Dimensiuni d) => new(d.CodFunctionalId, d.CodEconomicId, d.SursaFinantareId,
+            d.UnitateId, d.ProiectId, d.CentruCostId);
+        UnitateComparabila Lotul(Guid cont) =>
+            new(lot.ID, N.FelUnitate.Lot, cont, null, lot.Data);
+        PostareComparabila Post(Guid cont, N.Latura latura, Guid? gestiune, Guid? produs,
+                UnitateComparabila unitate,
+                N.Analiza analiza, decimal cantitate, decimal valoare) =>
+            new(cont, latura, gestiune, produs, unitate, null, null, null, analiza, cantitate,
+                latura == N.Latura.Debit ? valoare : -valoare, linieBcs);
+
+        Normalizari.Reseteaza();
+        var cub = CubDinRegistre.Transforma(os, [bcs1.ID]);
+        Check("NUC-ORACOL-1 (BCS): cubul brut = o tranzacție Operare a documentului, datată ca înregistrarea, "
+            + "cu 4 postări (2 de stoc + 2 contabile)",
+            cub.Count == 1 && cub[0].Fel == N.FelTranzactie.Operare && cub[0].Document == bcs1.ID
+            && cub[0].Data == bcs1.DataInregistrare && cub[0].Postari.Count == 4);
+
+        var brut = Comparabil.Compara(
+            [
+                // stoc: contul din lanțul lot → produs → TipMaterial, gestiunea din rând,
+                // unitatea = lotul, semnul măsurii trecut pe latură
+                Post(contStoc, N.Latura.Credit, mag1.ID, produs.ID, Lotul(contStoc), N.Analiza.Fara, -4m, 40m),
+                Post(contStoc, N.Latura.Debit, loc.ID, produs.ID, Lotul(contStoc), N.Analiza.Fara, 4m, 40m),
+                // contabil: repartitorul laturii e Gestiune/UnitateInterna ⇒ coordonata Gestiune;
+                // niciun cont nu are RolTert ⇒ fără partidă; niciun repartitor nu e Partener ⇒ fără partener
+                Post(cont6xx, N.Latura.Debit, mag1.ID, dimDebit.MaterialId, null, AnalizaDin(dimDebit), 0m, 40m),
+                Post(contStoc, N.Latura.Credit, loc.ID, dimCredit.MaterialId, null, AnalizaDin(dimCredit), 0m, 40m),
+            ],
+            Comparabil.Proiecteaza(cub));
+        if (!brut.Egal)
+            Console.WriteLine(brut.ToString());
+        Check("NUC-ORACOL-2 (BCS): coordonatele cubului brut (§B.3) — cont de stoc din TipMaterial, gestiune "
+            + "din ClrType, fără partener și fără partidă pe 6xx/3xx", brut.Egal);
+
+        var normalizat = Normalizari.M6PartenerDoarPeTert(Normalizari.TrD4UnificaStocCuContabil(cub));
+        var dupa = Comparabil.Compara(
+            [
+                Post(cont6xx, N.Latura.Debit, loc.ID, produs.ID, Lotul(cont6xx), AnalizaDin(dimDebit), 4m, 40m),
+                Post(contStoc, N.Latura.Credit, mag1.ID, produs.ID, Lotul(contStoc), AnalizaDin(dimCredit), -4m, 40m),
+            ],
+            Comparabil.Proiecteaza(normalizat));
+        if (!dupa.Egal)
+            Console.WriteLine(dupa.ToString());
+        Check("NUC-ORACOL-3 (BCS): după TR-D4 + M6 rămân EXACT două postări — D 6xx (locul de consum, +4, lot) "
+            + "și C 3xx (MAG1, −4, lot), fiecare la 40", dupa.Egal);
+
+        var refuzuri = N.Conservare.Verifica(normalizat.Single());
+        foreach (var refuz in refuzuri)
+            Console.WriteLine($"     conservare {refuz.Cod}: {refuz.Mesaj}");
+        Check("NUC-ORACOL-4 (BCS): tranzacția normalizată trece Conservare.Verifica și nicio normalizare "
+            + "n-a lăsat reziduu", refuzuri.Count == 0 && Normalizari.Avertismente.Count == 0);
+    }
+
+    // --- NUC-BCS (B-D4, pas 3): declarantul frunzei contra oracolului ---
+    ProbeNucleu.Proba(os, Check, "NUC-BCS", [bcs1]);
 
     // --- Gardianul de sold: consum peste disponibil ---
     var pesteDisponibil = Consum(mag1, loc, 100m, new DateOnly(2026, 3, 10));
@@ -5658,6 +6094,9 @@ using (var os = provider.CreateObjectSpace()) {
         impAuto.DocumentId == fct.ID && impAuto.Suma == 159.5m && impAuto.Autogenerat
         && ImperechereService.Ramas(os, fct.ID) == 0m && ImperechereService.Ramas(os, plataAuto.ID) == 0m);
 
+    // --- NUC-PLT-FCT (B-D5, pas 4): plata NASCUTA din factura, cu stingerea automata ---
+    ProbeNucleu.Proba(os, Check, "NUC-PLT-FCT", [plataAuto]);
+
     // --- Gardianul de imperecheri: corecția cere întâi ștergerea stingerii ---
     CheckRefuza("Anularea plății cu imperechere → refuz", () => MotorOperare.AnuleazaOperarea(os, plataAuto));
     CheckRefuza("Stornarea FCT cu plata operată → refuz", () =>
@@ -5709,6 +6148,10 @@ using (var os = provider.CreateObjectSpace()) {
         noteInc.Count == 1 && noteInc[0].ContDebitId == cont531.ID
         && noteInc[0].ContCreditId == cont411.ID && noteInc[0].Valoare == 119m);
 
+    // --- NUC-INC (B-D5, pas 4): incasare manuala, fara sursa; proba sta INAINTEA
+    //     imperecherii manuale (nominalizarea prin document e TR-D9, B-D5) ---
+    ProbeNucleu.Proba(os, Check, "NUC-INC", [inc]);
+
     var fclDraft = os.CreateObject<FacturaIesire>();
     fclDraft.Data = new DateOnly(2026, 3, 11);
     fclDraft.Predator = sediu;
@@ -5751,6 +6194,9 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Nota avansului: repartitori din laturi (debit←casă, credit←angajat — 00 §5)",
         noteAvans[0].DimensiuniDebit().RepartitorId == casa.ID
         && noteAvans[0].DimensiuniCredit().RepartitorId == angajat.ID);
+
+    // --- NUC-PLT (B-D5, pas 4): plata normala manuala (542 din ContImplicit angajat) ---
+    ProbeNucleu.Proba(os, Check, "NUC-PLT", [avans]);
 
     // --- Storno: refuzat cât există stingerea, curat după ștergerea ei ---
     CheckRefuza("Stornarea încasării cu imperechere → refuz", () =>
@@ -5844,7 +6290,7 @@ using (var os = provider.CreateObjectSpace()) {
 //     WriteDto; apare abia după operare, din serie. Invers față de FCT;
 //   * `Valoare` CULEASĂ pe linie (trezoreria n-are `PregatesteOperare`);
 //   * nucleul GENERIC pe `T : DocumentTrezorerie` — o singură implementare, două
-//     rute, cu filtrarea pe tip făcută de TPT (`Citeste<Plata>` nu vede o
+//     rute, cu filtrarea pe tip în SQL (`Citeste<Plata>` nu vede o
 //     încasare);
 //   * `TipInstrument` ca STRING pe sârmă, în ambele sensuri (round-trip, CASE în
 //     listă, refuz de domeniu la valoare necunoscută);
@@ -6017,6 +6463,8 @@ using (var os = provider.CreateObjectSpace()) {
         notePlt.Count == 1 && notePlt[0].ContDebitId == cont401.ID
         && notePlt[0].ContCreditId == cont531.ID && notePlt[0].Valoare == 150m);
     Check("PLT nu mișcă stoc", !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idPlt));
+    // --- NUC-PLT-API (B-D5, pas 4): declarantul pe documentul operat prin usa API ---
+    ProbeNucleu.Proba(os, Check, "NUC-PLT-API", [os.GetObjectByKey<Plata>(idPlt)]);
     CheckRefuza("Apply peste PLT Operat → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
         () => TrezorerieApply.Aplica<Plata>(os, idPlt, writePlt));
     CheckRefuza("Sterge peste PLT Operat → același refuz de domeniu",
@@ -6041,7 +6489,7 @@ using (var os = provider.CreateObjectSpace()) {
         Linii = { new TrezorerieLinieWriteDto {
             TipMaterialId = tipTrz.ID, Valoare = 80m, CodEconomicId = codEc.ID } }
     });
-    Check("Genericul filtrează pe TIP sub TPT: Citeste<Plata> pe un id de încasare → null (o rută nu adoptă documentele celeilalte)",
+    Check("Genericul filtrează pe TIP (discriminatorul `ClrType`): Citeste<Plata> pe un id de încasare → null (o rută nu adoptă documentele celeilalte)",
         TrezorerieApply.Citeste<Plata>(os, idInc) == null
         && TrezorerieApply.Citeste<Incasare>(os, idInc) != null
         && !TrezorerieApply.Lista<Plata>(os).Any(x => x.Id == idInc)
@@ -6054,6 +6502,7 @@ using (var os = provider.CreateObjectSpace()) {
         && inc.TipInstrument == "Chitanta" && inc.Total == 80m
         && noteInc.Count == 1 && noteInc[0].ContDebitId == cont531.ID
         && noteInc[0].ContCreditId == cont411.ID && noteInc[0].Valoare == 80m);
+    ProbeNucleu.Proba(os, Check, "NUC-INC-API", [os.GetObjectByKey<Incasare>(idInc)]);
 
     // ── (c) Enum-ul pe sârmă: valoare necunoscută = refuz de domeniu ────────
     CheckRefuza("TipInstrument necunoscut → refuz cu valorile valide enumerate (nu conversie tăcută la 0, nu ArgumentException)",
@@ -6139,6 +6588,7 @@ using (var os = provider.CreateObjectSpace()) {
         plataOperata.Stare == "Operat" && plataOperata.Numar == "OP-API-9"
         && notePlataAuto.Count == 1 && notePlataAuto[0].ContDebitId == cont401.ID
         && notePlataAuto[0].ContCreditId == cont770.ID && notePlataAuto[0].Valoare == 121m);
+    ProbeNucleu.Proba(os, Check, "NUC-PLT-API-FCT", [os.GetObjectByKey<Plata>(idPlataAuto)]);
     Check("Affordance onestă pe FCT (F2-D5): copilul PLT operat blochează anularea/stornarea facturii",
         FacturaIntrareApply.Citeste(os, idFctPlata) is { PoateAnula: false, PoateStorna: false });
 
@@ -6230,9 +6680,12 @@ using (var os = provider.CreateObjectSpace()) {
         cuRest.Count > 0 && cuRest.All(r => r.Rest == ImperechereService.Ramas(os, r.DocumentId)));
     var idsRdcOperate = os.GetObjectsQuery<ReturClient>()
         .Where(d => d.Stare == StareDocument.Operat).Select(d => d.ID).ToList();
-    Check($"F3-D4: uniunea acoperă EXACT cele cinci tipuri concrete; RDC exclus deliberat (LiniiCreanta divergent) — {idsRdcOperate.Count} retururi operate în bază",
-        cuRest.All(r => r.Tip is "FCT" or "FCL" or "PLT" or "INC" or "DEC")
-        && !cuRest.Any(r => idsRdcOperate.Contains(r.DocumentId)));
+    // F27-D7: RDC a INTRAT în uniune (a șasea ramură). Totalul lui nu se mai
+    // agregă la citire — e `TotalStingere`, scris de motor prin `LiniiCreanta` —,
+    // deci proiecția nu mai poate diverge de serviciu, iar amânarea e închisă.
+    Check($"F3-D4/F27-D7: uniunea acoperă EXACT cele șase tipuri concrete, RDC inclus (totalul lui e cel scris "
+        + $"prin `LiniiCreanta`, nu Σ tuturor liniilor) — {idsRdcOperate.Count} retururi operate în bază",
+        cuRest.All(r => r.Tip is "FCT" or "FCL" or "PLT" or "INC" or "DEC" or "RDC"));
     var randFct = cuRest.Single(r => r.DocumentId == idFctPlata);
     var randPlt = cuRest.Single(r => r.DocumentId == idPlt);
     Check("F3-D4: rândurile poartă tipul, contrapartida (latura partener, nu contul propriu) și cele trei numere",
@@ -6534,6 +6987,9 @@ using (var os = provider.CreateObjectSpace()) {
         notePicior1[0].DimensiuniDebit().RepartitorId == casaVir.ID
         && notePicior1[0].DimensiuniCredit().RepartitorId == casaVir.ID);
 
+    // --- NUC-PLT-VIR (B-D5, pas 4): ambele capete pe contul propriu AL PICIORULUI ---
+    ProbeNucleu.Proba(os, Check, "NUC-PLT-VIR", [os.GetObjectByKey<Plata>(idVirPlt)]);
+
     // ── (e) Ancora 4: latura pereche ────────────────────────────────────────
     var virPltOperat = TrezorerieApply.Citeste<Plata>(os, idVirPlt);
     Check("F7-D9 ancora 4: latura pereche apare în Copii[] ca INC, Draft, Autogenerat, fără număr (seria se consumă la propria operare)",
@@ -6591,6 +7047,9 @@ using (var os = provider.CreateObjectSpace()) {
     Check("F7-D9 ancora 8: latura pereche OPERATĂ nu generează un al treilea document — gardul `Autogenerat` din `GenereazaSecundar` taie ping-pong-ul",
         rezVirInc.ConexId == null
         && !os.GetObjectsQuery<Document>().Any(d => d.DocumentSursaId == idVirInc));
+
+    // --- NUC-INC-VIR (B-D5, pas 4): latura pereche e document propriu, deci se declara ---
+    ProbeNucleu.Proba(os, Check, "NUC-INC-VIR", [os.GetObjectByKey<Incasare>(idVirInc)]);
 
     var idsPicioare = new List<Guid> { idVirPlt, idVirInc };
     var notePereche = os.GetObjectsQuery<RegistruContabil>()
@@ -7733,6 +8192,9 @@ using (var os = provider.CreateObjectSpace()) {
         SoldBcs(mag1, TipStoc.Magazie) == 14m && SoldBcs(loc, TipStoc.Consum) == 6m);
     Check("Valoarea culeasă e cea postată: hook-ul de operare rescrie aceeași formulă (geamăna F6-D6)",
         BonConsumApply.Citeste(os, idBcs).Linii.Single().Valoare == 60m);
+
+    // --- NUC-BCS-API (B-D4, pas 3): declarantul pe documentul operat prin ușa API ---
+    ProbeNucleu.Proba(os, Check, "NUC-BCS-API", [os.GetObjectByKey<BonConsum>(idBcs)]);
     CheckRefuza("Apply peste BCS Operat → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
         () => BonConsumApply.Aplica(os, idBcs, writeBcs));
     CheckRefuza("Sterge peste BCS Operat → același refuz de domeniu",
@@ -8477,7 +8939,7 @@ using (var os = provider.CreateObjectSpace()) {
         && dupaRefuzuri.Linii.Count == 2);
 
     // Linia de tip BAZĂ (decont istoric/importat) referită prin Id: citirea o
-    // arată cu câmpurile frunzei NULE (as-cast pe TPT), reconcilierea o refuză
+    // arată cu câmpurile frunzei NULE (as-cast), reconcilierea o refuză
     // acționabil, iar absența ei din payload o ȘTERGE (proba M3/60d).
     var docIstoricDec = os.GetObjectByKey<Decont>(idDec);
     var linieBaza = os.CreateObject<DocumentDetaliu>();
@@ -9204,10 +9666,40 @@ VerificaF24Rol(privat: false);
 VerificaF24Gardian(privat: false);
 // Felia 25 — declarația vamală de import (DVI-V0 pe bugetar: ancoră inertă).
 VerificaDvi(privat: false);
+// Felia 27, pasul 1 — perioada ca lanț și comanda de închidere (PER-V0…V10).
+VerificaPerioade(privat: false);
+// Felia 27, pasul 2a — soldurile materializate la închidere (SOL-V*) și cursa (PER-C*).
+VerificaSolduriPerioada(privat: false);
+// Felia 27, pasul 3 — data înregistrării (DIR-V0…V13).
+VerificaDataInregistrare(privat: false);
+// Felia 27, pasul 4a — perioada de declarare (PDT-V0 pe bugetar: ancoră inertă).
+VerificaPerioadaDeclarare(privat: false);
+// Felia 27, pasul 5 — corecția (COR-V0…V13 pe bugetar: fără partea fiscală).
+VerificaCorectie(privat: false);
+// Felia 27, pasul 6 — totalul scris, partidele deschise, imperecherea datată (PAR-V0…V21).
+VerificaPartide(privat: false);
+// Felia 27, pasul 7 — constatările de închidere și acceptarea (ACC-V0…V18).
+VerificaAcceptare(privat: false);
+VerificaReviewAcceptare(privat: false);
+// Felia 26, pasul 1 — imobilizările pe scenă (IMO-V0…V28), și pe bugetar.
+VerificaImobilizari(privat: false);
+// Felia 26, pasul 3 — ușile `api/pif|cas|amo|imobilizari` prin `*Apply` (E2E-API-IMO).
+VerificaImobilizariApi(privat: false);
+// Probele review-ului advers al feliei 26 (`IMO-R*`, 87), și pe bugetar.
+VerificaReviewF26(privat: false);
 // Decizia 85 — modul de acces al ListView-urilor (D85-M1/M2/R1/R2/R3).
 VerificaD85(privat: false);
 // Felia 24 track B — potrivirea ca funcții pure (F24-P1…P7).
 VerificaPotrivire();
+// Review advers felia 27, pasul 8b (F27-R*).
+VerificaReviewF27(privat: false);
+// Felia 28 — TPH cu discriminatorul `ClrType` (F28-A…G).
+VerificaF28(privat: false);
+// Felia 31 (TR-D7a), pasul 1 — schema cubului (STR-SCHEMA-*) și `Pozitie` (STR-POZITIE).
+VerificaSchemaCub(privat: false);
+VerificaPozitieLinii(privat: false);
+// Felia 30, pasul 3 — declarantul BCS pe scenă proprie + N-r3 măsurat.
+VerificaNucleuBcs(privat: false);
 
 Rezumat();
 
@@ -9878,8 +10370,8 @@ void VerificaFisaJurnal() {
     var repF = os.CreateObject<UnitateInterna>();
     repF.Cod = MarcajFsa + "-R";
     repF.Denumire = "Repartitor probă fișă";
-    // Document REAL, doar ca ținta linkului: codul de tip nu e o coloană sub TPT,
-    // se rezolvă prin ancora `TipDocument` după numele clasei CLR (R-D8/60b).
+    // Document REAL, doar ca ținta linkului: codul de tip se rezolvă prin ancora
+    // `TipDocument` după numele clasei CLR (R-D8/60b).
     // Rămâne Draft — nu se operează nimic; rândurile de registru sunt scrise de
     // mână, exact ca în blocul de balanță.
     var doc = os.CreateObject<NotaTransfer>();
@@ -9933,7 +10425,7 @@ void VerificaFisaJurnal() {
         && legat.DocumentId == doc.ID);
 
     // -- R-D8: codul de tip, în memorie, peste pagină -------------------------
-    Check("R-D8: `DocumentTip` iese NULL din SQL (sub TPT nu e o coloană) — se completează abia în memorie, peste pagină",
+    Check("R-D8: `DocumentTip` iese NULL din SQL (codul e al ancorei `TipDocument`, nu al registrului) — se completează abia în memorie, peste pagină",
         fisa.All(r => r.DocumentTip == null));
     ContabilProiectii.CompleteazaTipDocument(os, fisa);
     Check("R-D8 (după completare): rândul legat poartă „BTR”, rândurile fără document rămân goale (nu pică pe nicio navigație presupusă nenulă)",
@@ -10253,7 +10745,7 @@ void VerificaRegistruTva(bool cuTva) {
         furnizor.Cod = MarcajJt + "-FURN";
         furnizor.Denumire = "Furnizor probă jurnal TVA";
         // Codul fiscal e SETAT deliberat: pe `RegistruTva` partenerul e tipat
-        // `Repartitor` (baza TPT — pe Decont e chiar angajatul), deci jurnalul îl
+        // `Repartitor` (baza ierarhiei — pe Decont e chiar angajatul), deci jurnalul îl
         // scoate prin as-cast pe frunza `Partener`. Cu câmpul gol, proba ar fi
         // trecut comparând null cu null.
         furnizor.CodFiscal = "RO12345678";
@@ -10475,19 +10967,11 @@ void VerificaRegistruTva(bool cuTva) {
         // ambele părți se netează — ar fi trecut și cu derivarea complet greșită.
         && (!cuTva || (docIdsFiscale.Count >= 2 && contabilTva.Sum(r => r.Valoare) > 0m)));
 
-    // Materializarea polimorfă a documentelor OPERATE (tiparul 60b: sub TPT, un
-    // singur query pe bază întoarce tipul derivat corect) — TPT n-are
-    // discriminator, deci „de ce tip e documentul” se citește din clasa CLR.
-    static string NumeClr(Document d) {
-        var t = d.GetType();
-        while (t.Assembly.IsDynamic || t.Name.EndsWith("Proxy"))
-            t = t.BaseType;
-        return t.Name;
-    }
     var numeCuPolitica = os.GetObjectsQuery<PoliticaTva>().Select(p => p.TipDocument.ClrType).ToList();
-    var operate = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Operat).ToList();
+    var operate = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Operat)
+        .Select(d => new { d.ID, d.ClrType }).ToList();
     var idsOperate = operate.Select(d => d.ID).ToList();
-    var idsCuPolitica = operate.Where(d => numeCuPolitica.Contains(NumeClr(d))).Select(d => d.ID).ToHashSet();
+    var idsCuPolitica = operate.Where(d => numeCuPolitica.Contains(d.ClrType)).Select(d => d.ID).ToHashSet();
     var liniiOperate = os.GetObjectsQuery<DocumentDetaliu>()
         .Where(d => idsOperate.Contains(d.DocumentId))
         .Select(d => new { d.DocumentId, d.TipTvaId }).ToList();
@@ -10536,8 +11020,9 @@ void VerificaRegistruTva(bool cuTva) {
     var tipuriComplement = complement.Count == 0
         ? new Dictionary<Guid, string>()
         : os.GetObjectsQuery<Document>()
-            .Where(d => complement.Select(c => c.DocumentId).Distinct().Contains(d.ID)).ToList()
-            .ToDictionary(d => d.ID, NumeClr);
+            .Where(d => complement.Select(c => c.DocumentId).Distinct().Contains(d.ID))
+            .Select(d => new { d.ID, d.ClrType }).ToList()
+            .ToDictionary(d => d.ID, d => d.ClrType);
     Console.WriteLine($"     MĂSURAT (complementul D2): {complement.Count} rânduri contabile pe conturi de TVA "
         + $"aparțin unor documente FĂRĂ fapte fiscale"
         + (complement.Count == 0 ? " — mulțimile coincid exact." : ":"));
@@ -11432,7 +11917,7 @@ void VerificaAdresaPartener(bool privat) {
             .SqlQuery<string>($@"
                 SELECT column_name || '=' || data_type || '(' || COALESCE(character_maximum_length::text, '?') || ')'
                 FROM information_schema.columns
-                WHERE table_name = 'Parteneri'
+                WHERE table_name = 'Repartitori'
                   AND column_name IN ('Strada', 'Numar', 'DetaliiAdresa', 'Localitate', 'CodPostal')
                 ORDER BY column_name")
             .ToList();
@@ -12087,23 +12572,22 @@ void VerificaSaft(bool privat) {
 
     // ══════════ D16-V2 (c): bugetarul — `Neaplicabil`, fără nicio interogare ══════════
     if (!privat) {
+        var premisa = FctBugetaraOperata(os, Marcaj + "-BUG", new DateOnly(an, luna, 12));
         var gol = SaftProiectii.Saft(os, an, luna, dataCreare);
-        var documenteTrecute = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
-            .Count(d => d.Data >= new DateOnly(an, 1, 1) && d.Data <= new DateOnly(an, 12, 31));
         Console.WriteLine($"     MĂSURAT (D16-V2 bugetar): „{gol.Neaplicabil}”; "
-            + $"{documenteTrecute} documente au trecut prin bază în {an}; societate completată: "
+            + $"documentul scenei {premisa.Numar} {premisa.Stare} pe {premisa.Data}; societate completată: "
             + $"{!string.IsNullOrWhiteSpace(os.GetObjectsQuery<Societate>().First().CodFiscal)}.");
         Check("D16-V2 (bugetar) SAF-T e NEAPLICABIL: planul instituțiilor publice nu e printre cele 12 "
             + "`TaxAccountingBasis`, deci proiecția întoarce un DTO GOL cu MOTIV — fără antet, fără secțiuni, "
-            + "fără avertismente — și se oprește ÎNAINTE de orice interogare pe registre (rulează și pe o bază "
-            + "cu societatea necompletată)",
+            + "fără avertismente — și se oprește ÎNAINTE de orice interogare pe registre, deși luna are o FCT "
+            + "OPERATĂ de scenă (rulează și pe o bază cu societatea necompletată)",
             gol.Neaplicabil != null && gol.Neaplicabil.Contains("bugetar")
             && gol.Header == null && gol.Conturi.Count == 0 && gol.Clienti.Count == 0 && gol.Furnizori.Count == 0
             && gol.Jurnale.Count == 0 && gol.FacturiEmise.Count == 0 && gol.FacturiPrimite.Count == 0
             && gol.Plati.Count == 0 && gol.Produse.Count == 0 && gol.Taxe.Count == 0 && gol.Unitati.Count == 0
             && gol.Neincluse.Count == 0 && gol.Avertismente.Count == 0
             && gol.Rezumat.Tranzactii == 0 && gol.Rezumat.RanduriRegistru == 0
-            && documenteTrecute > 0);
+            && premisa.Stare == StareDocument.Operat && premisa.Data.Year == an && premisa.Data.Month == luna);
         // Refuzul trebuie să fie AL SCRIITORULUI, nu doar al ecranului: un fișier
         // gol semnat cu CUI-ul cuiva ar fi o declarație falsă, nu o listă goală.
         string mesajScriere = null;
@@ -12122,6 +12606,7 @@ void VerificaSaft(bool privat) {
         // 422, dar forma trebuie să fie scriibilă oricum — un `Neaplicabil` care
         // ar arunca la serializare ar da 500 în loc de refuzul motivat.
         VerificaSaftJson(gol, "bugetar, Neaplicabil");
+        PurjaFctBugetara(os, Marcaj + "-BUG");
         return;
     }
 
@@ -12858,8 +13343,7 @@ void VerificaSaft(bool privat) {
         rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft == rez.TvaRegistru && rez.TvaRegistru != 0m);
     // Registrul fiscal al lunii, citit INDEPENDENT de proiecție (altfel cusătura
     // 3 s-ar măsura tot pe cifrele ei): baza tipurilor FĂRĂ secțiune de facturi.
-    var randuriTvaScena = os.GetObjectsQuery<RegistruTva>()
-        .Where(r => r.Data >= pStart && r.Data <= pEnd)
+    var randuriTvaScena = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), pStart, pEnd)
         .Select(r => new { r.DocumentId, r.Baza }).ToList();
     // Tipurile de factură se citesc pe CLASELE CLR (FCL/FCT/RDC/RLF), nu prin
     // `CoduriTip` — ca proba să nu depindă de aceeași funcție pe care o folosește
@@ -16316,6 +16800,47 @@ void VerificaD300(bool cuTva) {
 // tăia în două fără să iasă din lună.
 //
 // Local function, apelată din AMBELE căi de profil, ca `VerificaD300`.
+// Premisa probelor de neaplicabilitate bugetară (D4-V2, D16-V2): o FCT operată prin motor, cu linie pe TipTva.
+FacturaIntrare FctBugetaraOperata(IObjectSpace os, string marcaj, DateOnly data) {
+    PurjaFctBugetara(os, marcaj);
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = marcaj + "-FURN";
+    furnizor.Denumire = "Furnizor premisă " + marcaj;
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = marcaj + "-CE";
+    codEc.Denumire = "Cod economic premisă " + marcaj;
+    var fct = os.CreateObject<FacturaIntrare>();
+    fct.Numar = marcaj + "-FCT";
+    fct.Data = data;
+    fct.Predator = furnizor;
+    fct.Primitor = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var linie = os.CreateObject<FacturaIntrareDetaliu>();
+    linie.Document = fct;
+    linie.TipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628.00.00");
+    linie.Cantitate = 1m;
+    linie.PretUnitar = 100m;
+    linie.TipTva = os.FirstOrDefault<TipTva>(t => t.Cod == "CAP21");
+    linie.CodEconomicId = codEc.ID;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fct);
+    os.CommitChanges();
+    return fct;
+}
+
+void PurjaFctBugetara(IObjectSpace os, string marcaj) {
+    var ids = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+        .Where(d => d.Numar == marcaj + "-FCT").Select(d => d.ID).ToList();
+    new Purja(os)
+        .Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)))
+        .Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)))
+        .Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)))
+        .Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)))
+        .Adauga(os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)))
+        .Adauga(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod == marcaj + "-FURN"))
+        .Adauga(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == marcaj + "-CE"))
+        .Executa();
+}
+
 void VerificaD394(bool cuTva) {
     const string MarcajD4 = "E2E-D394";
     using var os = provider.CreateObjectSpace();
@@ -16410,22 +16935,25 @@ void VerificaD394(bool cuTva) {
 
     // ---------------- Bugetarul: liste goale, și atât ----------------
     if (!cuTva) {
+        var premisa = FctBugetaraOperata(os, MarcajD4 + "-BUG", new DateOnly(2026, 8, 12));
         var anIntreg = D394Proiectii.D394(os, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31));
-        // Scenele bugetare își purjează documentele, deci „un an cu documente" se
-        // MĂSOARĂ pe tot ce a trecut vreodată prin bază (inclusiv ștersele logic),
-        // nu se presupune; ce contează e că registrul fiscal e gol de FOND.
-        var documenteTrecute = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
-            .Count(d => d.Data >= new DateOnly(2026, 1, 1) && d.Data <= new DateOnly(2026, 12, 31));
+        var fiscalePremisa = os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters().Count(r => r.DocumentId == premisa.ID);
         var randuriFiscale = os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters().Count();
-        Console.WriteLine($"     MĂSURAT (D4-V2 bugetar): {documenteTrecute} documente au trecut prin bază în 2026, {randuriFiscale} rânduri fiscale.");
+        Console.WriteLine($"     MĂSURAT (D4-V2 bugetar): documentul scenei {premisa.Numar} {premisa.Stare} pe {premisa.Data}, "
+            + $"{premisa.Detalii.Count(l => l.TipTvaId != null)} linii cu TipTva; {fiscalePremisa} rânduri fiscale ale lui, "
+            + $"{randuriFiscale} în total.");
         Check("D4-V2 (bugetar): profilul neplătitor n-are `PoliticaTva` ⇒ `RegistruTva` gol ⇒ proiecția întoarce "
-            + "liste GOALE (operațiuni, rezumate, neincluse), zero avertismente și nrCui 0, pe un an prin care AU "
-            + "trecut documente — un neplătitor nu depune 394, iar proiecția nu inventează nimic",
-            documenteTrecute > 0 && randuriFiscale == 0
+            + "liste GOALE (operațiuni, rezumate, neincluse), zero avertismente și nrCui 0, pe un an în care scena a "
+            + "OPERAT prin motor o FCT cu linie purtând TipTva (CAP21) — un neplătitor nu depune 394, iar proiecția nu "
+            + "inventează nimic",
+            premisa.Stare == StareDocument.Operat && premisa.Data.Year == 2026
+            && premisa.Detalii.Any(l => l.TipTvaId != null)
+            && fiscalePremisa == 0 && randuriFiscale == 0
             && anIntreg.Operatiuni.Count == 0 && anIntreg.Rezumat.Count == 0 && anIntreg.RezumatCote.Count == 0
             && anIntreg.Neincluse.Count == 0 && anIntreg.Avertismente.Count == 0
             && anIntreg.NrCui1 + anIntreg.NrCui2 + anIntreg.NrCui3 + anIntreg.NrCui4 == 0
             && os.GetObjectsQuery<MapareD394>().Count() == 0);
+        PurjaFctBugetara(os, MarcajD4 + "-BUG");
         CurataD4();
         return;
     }
@@ -16682,21 +17210,37 @@ void VerificaD394(bool cuTva) {
         + "C: 1); Σ nrFact pe rândurile lui F1 = numărul facturilor lui (A1, A2, RLF pe A + A1 încă o dată pe C = 3 + 1)",
         Op(1, "33333333", "V", 0).NrFact == 1 && Op(1, "12345678", "C", 21).NrFact == 1
         && d4.Operatiuni.Where(o => o.CuiP == "12345678").Sum(o => o.NrFact) == 4);
-    // Tăietura: prima jumătate (operarea), a doua (stornarea).
+    // Tăietura de ZILE nu mai taie: declarația filtrează pe perioada de
+    // DECLARARE, care e LUNA (F27-D5), deci ambele jumătăți ale lui august
+    // întorc luna întreagă. Faptul că stornoul e un fapt distinct se citește din
+    // registru (rândurile lui sunt în a doua jumătate, cu semn) și din
+    // nrFact 6 peste Documente 5 — numărătoarea e (Document × Storno).
     var jum1 = D394Proiectii.D394(os, pStart, mijloc);
     var jum2 = D394Proiectii.D394(os, mijloc.AddDays(1), pEnd);
     var s1 = jum1.Operatiuni.Single(o => o.CuiP == "33333333" && o.Tip == "L" && o.Cota == 21);
     var s2 = jum2.Operatiuni.SingleOrDefault(o => o.CuiP == "33333333" && o.Tip == "L" && o.Cota == 21);
+    var stornoRegistru = os.GetObjectsQuery<RegistruTva>()
+        .Where(r => r.Storno && r.Data > mijloc && r.Data <= pEnd && r.PartenerId == c1.ID
+            && r.Sens == SensTva.Livrare && r.Cota == 21m)
+        .Select(r => new { r.Baza, r.Tva, r.PerioadaAn, r.PerioadaLuna })
+        .ToList();
     Console.WriteLine($"     MĂSURAT (D4-V3 storno): 1–20.08 L/21 C1 {s1.Baza:N2}/{s1.Tva:N2} nrFact {s1.NrFact}; "
-        + $"21–31.08 {s2?.Baza:N2}/{s2?.Tva:N2} nrFact {s2?.NrFact}; luna întreagă {Op(1, "33333333", "L", 21).Baza:N2} nrFact {Op(1, "33333333", "L", 21).NrFact}.");
-    Check("D4-V3 storno: în perioada stornării rândul L/21 al lui C1 poartă DOAR stornoul — sume NEGATIVE (−400 / "
-        + "−84) și nrFact 1 (factura de storno e o factură); în perioada operării, +400 intră cu 1 (2900 / 609, "
-        + "nrFact 5); pe luna întreagă cele două se netează pe același DOCUMENT (Documente 5, 2500 / 525) dar sunt "
-        + "DOUĂ FACTURI la ANAF — nrFact 6, fiindcă unitatea de numărare e (Document × Storno), nu DocumentId",
-        s2 is { Baza: -400m, Tva: -84m, NrFact: 1, Documente: 1, Randuri: 1 }
-        && s1 is { Baza: 2900m, Tva: 609m, NrFact: 5, Documente: 5 }
+        + $"21–31.08 {s2?.Baza:N2}/{s2?.Tva:N2} nrFact {s2?.NrFact}; luna întreagă {Op(1, "33333333", "L", 21).Baza:N2} nrFact {Op(1, "33333333", "L", 21).NrFact}; "
+        + $"registru 21–31.08: {stornoRegistru.Count} rânduri, Σ {stornoRegistru.Sum(r => r.Baza):N2}/{stornoRegistru.Sum(r => r.Tva):N2}.");
+    Check("D4-V3 storno: rândurile inverse ale lui C1 stau în a doua jumătate a lunii, cu sume NEGATIVE "
+        + "(−400 / −84) și cu perioada de declarare a stornării; pe luna întreagă ele se netează cu operarea pe "
+        + "același DOCUMENT (Documente 5, 2500 / 525) dar sunt DOUĂ FACTURI la ANAF — nrFact 6, fiindcă unitatea "
+        + "de numărare e (Document × Storno), nu DocumentId. O fereastră de ZILE nu mai taie luna: declarația "
+        + "filtrează pe perioada de DECLARARE, care e luna întreagă (F27-D5), deci ambele jumătăți întorc aceleași "
+        + "cifre ca luna",
+        stornoRegistru.Count == 1
+        && stornoRegistru[0].Baza == -400m && stornoRegistru[0].Tva == -84m
+        && stornoRegistru[0].PerioadaAn == pEnd.Year && stornoRegistru[0].PerioadaLuna == pEnd.Month
         && Op(1, "33333333", "L", 21) is { Baza: 2500m, Tva: 525m, NrFact: 6, Documente: 5 }
-        && jum2.Operatiuni.Count == 1);
+        && s1 is { Baza: 2500m, Tva: 525m, NrFact: 6, Documente: 5 }
+        && s2 is { Baza: 2500m, Tva: 525m, NrFact: 6, Documente: 5 }
+        && jum1.Operatiuni.Count == d4.Operatiuni.Count
+        && jum2.Operatiuni.Count == d4.Operatiuni.Count);
 
     // ══════════ D4-V4: nimic nu se pierde — cusătura cu registrul ══════════
     var brut = os.GetObjectsQuery<RegistruTva>()
@@ -16866,13 +17410,14 @@ void VerificaD394(bool cuTva) {
     var db = ((EFCoreObjectSpace)os).DbContext.Database;
     var idInjectat = Guid.NewGuid();
     db.ExecuteSql($@"INSERT INTO ""RegistruTva"" (""ID"", ""GCRecord"", ""OptimisticLockField"", ""Data"", ""Sens"", ""DocumentId"", ""DetaliuId"",
-            ""PartenerId"", ""TipTvaId"", ""Regim"", ""Cota"", ""Baza"", ""Tva"", ""Storno"")
+            ""PartenerId"", ""TipTvaId"", ""Regim"", ""Cota"", ""Baza"", ""Tva"", ""Storno"", ""PerioadaAn"", ""PerioadaLuna"", ""ScrisLa"")
         VALUES ({idInjectat}, 0, 0, {d5}, {(int)SensTva.Livrare}, {fclLV.ID}, {linieTi.ID}, {c1.ID}, {ti21.ID},
-            {(int)RegimTva.TaxareInversa}, 21, 100, 21, false)");
+            {(int)RegimTva.TaxareInversa}, 21, 100, 21, false, {d5.Year}, {d5.Month}, {DateTime.UtcNow})");
     var cuV = D394Proiectii.D394(os, pStart, pEnd);
     var vCuTva = cuV.Operatiuni.Single(o => o.CuiP == "33333333" && o.Tip == "V");
     var avV = cuV.Avertismente.FirstOrDefault(a => a.Cod == "TvaPeTipFaraColoana");
-    var brutV = os.GetObjectsQuery<RegistruTva>().Where(r => r.Data >= pStart && r.Data <= pEnd && r.Sens == SensTva.Livrare)
+    var brutV = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), pStart, pEnd)
+        .Where(r => r.Sens == SensTva.Livrare)
         .Sum(r => (decimal?)r.Tva) ?? 0m;
     var opVTva = cuV.Operatiuni.Where(o => o.Sens == "Livrare").Sum(o => (o.Tva ?? 0m) + o.TvaNedeclarat)
         + cuV.Neincluse.Where(n => n.Sens == "Livrare").Sum(n => n.Tva);
@@ -19929,10 +20474,10 @@ void VerificaF23Model(bool privat) {
         + $"({string.Join(", ", tipuriProvenienta.Select(t => t.Name))})"
         + (faraColoana.Count > 0 ? $"; FĂRĂ coloană: {string.Join(", ", faraColoana)}" : "; toate au coloană")
         + ".");
-    Check("F23-V1 `DinSeed` există ca proprietate MAPATĂ pe toate cele 17 tipuri care declară "
-        + "`ICuProvenienta` (12 politici + `PoliticaTvaImplicit` + `TipTva`/`Cont`/`ClasaProdus`/"
+    Check("F23-V1 `DinSeed` există ca proprietate MAPATĂ pe toate cele 20 de tipuri care declară "
+        + "`ICuProvenienta` (13 politici + `PoliticaTvaImplicit` + `TipTva`/`Cont`/`ClasaProdus`/"
         + "`TipMaterial`) — lista se descoperă prin reflecție, deci o politică nouă intră singură în probă",
-        tipuriProvenienta.Count == 17 && faraColoana.Count == 0);
+        tipuriProvenienta.Count == 20 && faraColoana.Count == 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -20827,12 +21372,14 @@ void VerificaF23Gardian(bool privat) {
         p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
         p.Directie = DirectieTva.Deductibil;
         p.SursaContrapartida = SursaCont.Explicit;
+        p.DeclarareIntarziata = DeclarareIntarziata.PerioadaInregistrarii;
     });
     var ptvaBun = RefuzF23(os => {
         var p = os.CreateObject<PoliticaTva>();
         p.TipDocument = os.GetObjectByKey<TipDocument>(idTipDoc);
         p.Directie = DirectieTva.Deductibil;
         p.SursaContrapartida = SursaCont.Explicit;
+        p.DeclarareIntarziata = DeclarareIntarziata.PerioadaInregistrarii;
         p.ContrapartidaFallback = os.GetObjectByKey<Cont>(idCont);
     });
     RegulaContare RcNoua(IObjectSpace os) {
@@ -21199,10 +21746,10 @@ void VerificaF24Rol(bool privat) {
         + (lipsaDinLista.Count > 0 ? $"; LIPSESC din listă: {string.Join(", ", lipsaDinLista)}" : "")
         + (inPlusInLista.Count > 0 ? $"; în PLUS în listă: {string.Join(", ", inPlusInLista)}" : "") + ".");
     Check($"F24-R1 ({eticheta}) `Politici.TipuriConfigurabile` == mulțimea tipurilor concrete "
-        + "`ICuProvenienta` din assembly-ul Module, în AMBELE sensuri (17 tipuri), iar "
+        + "`ICuProvenienta` din assembly-ul Module, în AMBELE sensuri (20 de tipuri), iar "
         + "`PoliticiApply.TipuriCitite` == lista ∪ {Partener, Produs}: lista declarată și descoperirea prin "
         + "reflecție nu pot diverge fără să pice proba",
-        lipsaDinLista.Count == 0 && inPlusInLista.Count == 0 && dinLista.Count == 17 && cititeOk);
+        lipsaDinLista.Count == 0 && inPlusInLista.Count == 0 && dinLista.Count == 20 && cititeOk);
 
     string exceptieRaport = null;
     using (var os = provider.CreateObjectSpace()) {
@@ -21563,10 +22110,10 @@ void VerificaPotrivire() {
         + "nici fallback, rezolvarea e `Nerezolvat` (refuzul cu mesaj al motorului)");
 
     // ── F24-P6: implicitul de TVA ────────────────────────────────────────────
-    var tvaN21 = new TipTvaFapt(Guid.NewGuid(), "N21", RegimTva.Normal, true);
-    var tvaN11 = new TipTvaFapt(Guid.NewGuid(), "N11", RegimTva.Normal, true);
-    var tvaSdd = new TipTvaFapt(Guid.NewGuid(), "SDD", RegimTva.Scutit, true);
-    var tvaMort = new TipTvaFapt(Guid.NewGuid(), "N19", RegimTva.Normal, false);
+    var tvaN21 = new TipTvaFapt(Guid.NewGuid(), "N21", RegimTva.Normal, true, 21m, null, null);
+    var tvaN11 = new TipTvaFapt(Guid.NewGuid(), "N11", RegimTva.Normal, true, 11m, null, null);
+    var tvaSdd = new TipTvaFapt(Guid.NewGuid(), "SDD", RegimTva.Scutit, true, 0m, null, null);
+    var tvaMort = new TipTvaFapt(Guid.NewGuid(), "N19", RegimTva.Normal, false, 19m, null, null);
     var tipuriTva = new[] { tvaN21, tvaN11, tvaSdd, tvaMort }.ToDictionary(t => t.Id);
     var ziDoc = new DateOnly(2026, 6, 15);
     PoliticaTvaImplicitFapt Rt(ClasaFiscalaPartener? clasaFiscala, DateOnly? deLa, Guid tipTvaId) =>
@@ -22787,6 +23334,6012 @@ void VerificaDvi(bool privat) {
 }
 
 // ============= Felia API DVI (F25) — E2E-API-DVI (privat) =============
+// RECONCILIERE-MF (F26-D13): formula noastră (`AmortizareService.CotaLunara`)
+// contra cifrelor POSTATE în Flax, lună cu lună. Fixture-ul e gitignored
+// (`1C/mf/`), deci blocul se SARE unde nu există — nu pică. Diferențele se
+// RAPORTEAZĂ (21, 35b): sursa externă e evidență, niciodată canonic.
+void VerificaReconciliereMf() {
+    var proiect = new DirectoryInfo(MetadataDump.DirectorProiect());
+    var radacina = proiect.Parent?.Parent?.Parent;
+    var caleParametri = radacina == null ? null : Path.Combine(radacina.FullName, "1C", "mf", "esantion-parametri.csv");
+    var caleAmortizare = radacina == null ? null : Path.Combine(radacina.FullName, "1C", "mf", "esantion-amortizare.csv");
+    if (caleParametri == null || !File.Exists(caleParametri) || !File.Exists(caleAmortizare)) {
+        Console.WriteLine("     SĂRIT (RECONCILIERE-MF): fixture-ul `1C/mf/` lipsește (folder gitignored) — "
+            + "reconcilierea cu Flax rulează doar unde există extrasul.");
+        return;
+    }
+
+    var cultura = System.Globalization.CultureInfo.InvariantCulture;
+    var stricate = new List<string>();
+    List<string[]> Citeste(string cale, int coloane) {
+        var iesire = new List<string[]>();
+        var numar = 1;
+        foreach (var linie in File.ReadAllLines(cale).Skip(1)) {
+            numar++;
+            if (linie.Trim().Length == 0)
+                continue;
+            var parti = linie.Split(';');
+            if (parti.Length < coloane)
+                stricate.Add($"{Path.GetFileName(cale)}:{numar}");
+            else
+                iesire.Add(parti);
+        }
+        return iesire;
+    }
+
+    var evenimente = new Dictionary<string, List<(DateOnly Data, decimal Valoare, int Luni)>>();
+    var coduri = new Dictionary<string, string>();
+    foreach (var r in Citeste(caleParametri, 6)) {
+        if (!DateOnly.TryParseExact(r[3], "yyyy-MM-dd", cultura,
+                System.Globalization.DateTimeStyles.None, out var data)
+                || !decimal.TryParse(r[4], System.Globalization.NumberStyles.Number, cultura, out var valoare)
+                || !int.TryParse(r[5], out var luni)) {
+            stricate.Add($"esantion-parametri.csv: „{r[3]}/{r[4]}/{r[5]}”");
+            continue;
+        }
+        coduri[r[0]] = r[1];
+        if (!evenimente.TryGetValue(r[0], out var lista))
+            evenimente[r[0]] = lista = [];
+        lista.Add((data, valoare, luni));
+    }
+
+    var lunare = new Dictionary<string, List<(DateOnly Ultima, string Luna, decimal Suma, string Recorder)>>();
+    foreach (var r in Citeste(caleAmortizare, 4)) {
+        if (!DateOnly.TryParseExact(r[2] + "-01", "yyyy-MM-dd", cultura,
+                System.Globalization.DateTimeStyles.None, out var prima)
+                || !decimal.TryParse(r[3], System.Globalization.NumberStyles.Number, cultura, out var suma)) {
+            stricate.Add($"esantion-amortizare.csv: „{r[2]}/{r[3]}”");
+            continue;
+        }
+        coduri.TryAdd(r[0], r[1]);
+        if (!lunare.TryGetValue(r[0], out var lista))
+            lunare[r[0]] = lista = [];
+        lista.Add((new DateOnly(prima.Year, prima.Month, DateTime.DaysInMonth(prima.Year, prima.Month)),
+            r[2], suma, r.Length > 6 ? r[6] : ""));
+    }
+
+    Check("RECONCILIERE-MF fixture-ul din Flax („1C/mf/esantion-parametri.csv” + „esantion-amortizare.csv”) "
+        + "se parsează integral: blocul pică pe fixture MALFORMAT, niciodată pe diferențe de cifre — o sursă "
+        + "externă e evidență, iar diferențele ei se raportează",
+        stricate.Count == 0 && evenimente.Count > 0 && lunare.Count > 0);
+    if (stricate.Count > 0)
+        Console.WriteLine($"     MĂSURAT (RECONCILIERE-MF): {stricate.Count} rânduri nelizibile — "
+            + string.Join(", ", stricate.Take(5)));
+
+    var primaLunaFixture = lunare.Values.SelectMany(l => l).Min(l => l.Ultima);
+    var potriviri = 0;
+    var ultimeLuni = 0;
+    var nedeterminabile = 0;
+    var totalRanduri = 0;
+    var diferente = new List<(string Cod, string Luna, decimal Asteptat, decimal Postat, string Cauza)>();
+    var dinDocumentManual = 0;
+    var activeCuDiferente = new Dictionary<string, (int Randuri, decimal Abatere)>();
+
+    foreach (var (id, randuriLunare) in lunare.OrderBy(x => coduri.GetValueOrDefault(x.Key, x.Key))) {
+        if (!evenimente.TryGetValue(id, out var ale))
+            continue;
+        var cod = coduri.GetValueOrDefault(id, id);
+        var sortate = ale.OrderBy(e => e.Data).ToList();
+        var luni = randuriLunare.OrderBy(l => l.Ultima).ToList();
+        (DateOnly Data, decimal Valoare, int Luni)? curent = null;
+        var rest = 0m;
+        for (var i = 0; i < luni.Count; i++) {
+            var rand = luni[i];
+            var aplicabil = sortate.LastOrDefault(e => e.Data < new DateOnly(rand.Ultima.Year, rand.Ultima.Month, 1));
+            if (aplicabil.Luni == 0 && aplicabil.Valoare == 0m)
+                continue;
+            totalRanduri++;
+            if (curent == null || curent.Value.Data != aplicabil.Data) {
+                curent = aplicabil;
+                rest = aplicabil.Valoare;
+            }
+            var determinabil = aplicabil.Data >= primaLunaFixture;
+            if (!determinabil)
+                nedeterminabile++;
+            var cota = aplicabil.Luni <= 0 ? 0m : Scara.RotunjesteBani(aplicabil.Valoare / aplicabil.Luni);
+            var asteptat = determinabil ? Math.Min(cota, rest) : cota;
+            var ultimul = i == luni.Count - 1;
+            if (rand.Suma == asteptat)
+                potriviri++;
+            else if (ultimul && rand.Suma < cota)
+                ultimeLuni++;
+            else {
+                var cauza = rand.Recorder.StartsWith("Închidere lună") ? "necunoscută" : "document manual";
+                if (cauza == "document manual")
+                    dinDocumentManual++;
+                diferente.Add((cod, rand.Luna, asteptat, rand.Suma, cauza));
+                var acum = activeCuDiferente.GetValueOrDefault(cod);
+                activeCuDiferente[cod] = (acum.Randuri + 1, acum.Abatere + rand.Suma - asteptat);
+            }
+            rest -= rand.Suma;
+        }
+    }
+
+    var active = lunare.Count(x => evenimente.ContainsKey(x.Key));
+    var procent = totalRanduri == 0 ? 0m
+        : Scara.RotunjesteBani(100m * (potriviri + ultimeLuni) / totalRanduri);
+    Console.WriteLine($"     MĂSURAT (RECONCILIERE-MF): {active} active, {totalRanduri} rânduri lunare; "
+        + $"{potriviri} potriviri exacte, {ultimeLuni} rânduri „ultima lună” (sub cotă), "
+        + $"{diferente.Count} diferențe — {procent}% explicat. "
+        + $"{nedeterminabile} rânduri au evenimentul înaintea primei luni din fixture "
+        + $"({primaLunaFixture:MM.yyyy}), deci restul lor nu e determinabil și se compară doar cu cota.");
+    Console.WriteLine($"     MĂSURAT (RECONCILIERE-MF, cauzele diferențelor): {dinDocumentManual} rânduri "
+        + "vin dintr-un document MANUAL de recuperare (nu din închiderea lunii), care cumulează mai multe "
+        + $"luni într-un singur rând; {diferente.Count - dinDocumentManual} rămân neexplicate. Parametrii unui "
+        + "eveniment se aplică din luna URMĂTOARE lui, indiferent de zi (formula 1C, aceeași în felie).");
+    foreach (var d in diferente.Take(30))
+        Console.WriteLine($"       DIFERENȚĂ {d.Cod} {d.Luna}: așteptat {d.Asteptat}, postat {d.Postat} "
+            + $"(Δ {d.Postat - d.Asteptat}) — {d.Cauza}.");
+    if (diferente.Count > 30)
+        Console.WriteLine($"       … și încă {diferente.Count - 30} diferențe.");
+    foreach (var (cod, sumar) in activeCuDiferente.OrderByDescending(a => Math.Abs(a.Value.Abatere)))
+        Console.WriteLine($"       ACTIV {cod}: {sumar.Randuri} rânduri diferite, abatere cumulată "
+            + $"{sumar.Abatere}.");
+    Check("RECONCILIERE-MF formula feliei („cota fixată la ultimul eveniment, plafonată la restul rămas”) "
+        + "reproduce cifrele postate în Flax pe eșantionul extras; rândurile rămase sunt RAPORTATE mai sus, "
+        + "cu activ, lună, așteptat și postat — blocul nu pică pe ele (21, 35b)",
+        stricate.Count == 0);
+}
+
+// Felia 26 (E2E-IMO): scena stă în 2027/5–12, în afara perioadelor seed-uite (precedentul `D17-V2`); conturile se CITESC din politică.
+// Felia 27, pasul 1 (F27-D1/D2): perioada ca LANȚ, cu închiderea și
+// redeschiderea ca operații ale motorului. Scena stă în 2030 — în afara
+// perioadelor seed-uite (2026) și a tuturor celorlalte scene (2027 imobilizări,
+// 2028 review F26, 2029 gardianul de perioadă al motorului). Lunile 1 și 2 NU se
+// creează deliberat: absența lor face din 03/2030 CAPĂTUL lanțului.
+void VerificaPerioade(bool privat) {
+    const string Marcaj = "E2E-PER";
+    const int An = 2030;
+    var eticheta = privat ? "privat" : "bugetar";
+
+    void CurataPer(IObjectSpace os) {
+        // F13-D2: curățenia de scenă = purjă FIZICĂ, în ordinea dependențelor.
+        // Snapshot-urile scrise de comanda de închidere (F27-D3) ies ÎNTÂI:
+        // FK-urile lor spre cont/repartitor sunt `Restrict`.
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31))
+            .Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.ID)).ToList());
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(x => x.An == An).Select(x => x.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(x => x.An == An).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    // Calea REALĂ: dispecerul din gardian, nu corpul regulii.
+    static string RefuzGardianPer(IObjectSpace os) {
+        try {
+            GardianEditare.Verifica(os);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataPer(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().Count(x => x.An == An);
+        var documente = os.GetObjectsQuery<Document>()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        Console.WriteLine($"     MĂSURAT (PER-V0/{eticheta}): {perioade} perioade și {documente} documente în {An} după purjă.");
+        Check($"PER-V0 ({eticheta}) precondiție: anul {An} e liber (nicio perioadă, niciun document) — altfel "
+            + "lanțul probat mai jos ar fi măsurat peste conținut străin",
+            perioade == 0 && documente == 0);
+    }
+
+    Guid idGestiuneA, idGestiuneB;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 3, 4, 5 }) {
+            var x = os.CreateObject<PerioadaFiscala>();
+            x.An = An;
+            x.Luna = luna;
+        }
+        var a = os.CreateObject<Gestiune>();
+        a.Cod = Marcaj + "-G1";
+        a.Denumire = "Gestiune probă perioade 1";
+        var b = os.CreateObject<Gestiune>();
+        b.Cod = Marcaj + "-G2";
+        b.Denumire = "Gestiune probă perioade 2";
+        os.CommitChanges();
+        idGestiuneA = a.ID;
+        idGestiuneB = b.ID;
+    }
+
+    // ── PER-V1…V5: lanțul, prin comanda motorului ──
+    using (var os = provider.CreateObjectSpace()) {
+        var refuzNecontigua = Refuz(() => PerioadaService.Inchide(os, An, 4, [], null, Marcaj));
+        Check($"PER-V1 ({eticheta}) închiderea lui 04/{An} cu 03/{An} DESCHISĂ e refuzată: perioadele se închid "
+            + "în LANȚ, iar o lună sărită ar lăsa granița falsă pentru tot ce se operează înaintea ei",
+            refuzNecontigua != null && refuzNecontigua.Contains($"03/{An}"));
+
+        var prima = PerioadaService.Inchide(os, An, 3, [], null, Marcaj);
+        var p3 = os.FirstOrDefault<PerioadaFiscala>(x => x.An == An && x.Luna == 3);
+        Check($"PER-V2 ({eticheta}) 03/{An} se închide deși 02/{An} nu EXISTĂ: perioada absentă e închisă prin "
+            + "absență, deci dă capătul lanțului; `InchisaLa` și `InchisaPrimaOara` se nasc egale, iar istoricul "
+            + "primește un singur rând `Închidere`, fără motiv",
+            p3.Inchisa && p3.InchisaLa != null && p3.InchisaPrimaOara == p3.InchisaLa
+            && p3.InchisaLa == prima.La && prima.Fel == FelInchiderePerioada.Inchidere && prima.Motiv == null
+            && os.GetObjectsQuery<InchiderePerioada>().Count(i => i.PerioadaId == p3.ID) == 1);
+
+        var refuzDouaOri = Refuz(() => PerioadaService.Inchide(os, An, 3, [], null, Marcaj));
+        Check($"PER-V3 ({eticheta}) a doua închidere a lui 03/{An} e refuzată — comanda RERULEAZĂ verificarea, "
+            + "deci „deja închisă” e blocant, nu operație idempotentă tăcută",
+            refuzDouaOri != null && refuzDouaOri.Contains("deja închisă"));
+
+        var refuzFaraMotiv = Refuz(() => PerioadaService.Redeschide(os, An, 3, "   ", null, Marcaj));
+        Check($"PER-V4 ({eticheta}) redeschiderea fără motiv e refuzată: redeschiderea e o excepție care se "
+            + "justifică în scris, nu un buton",
+            refuzFaraMotiv != null && refuzFaraMotiv.Contains("motiv"));
+
+        PerioadaService.Inchide(os, An, 4, [], null, Marcaj);
+        var refuzUrmatoareaInchisa = Refuz(() => PerioadaService.Redeschide(os, An, 3, "probă", null, Marcaj));
+        Check($"PER-V5 ({eticheta}) cu 04/{An} închisă, redeschiderea lui 03/{An} e refuzată — se redeschide doar "
+            + "ULTIMA perioadă închisă, deci cascada e explicită și un „stale” pe lunile deja închise devine "
+            + "imposibil prin construcție",
+            refuzUrmatoareaInchisa != null && refuzUrmatoareaInchisa.Contains($"04/{An}"));
+        PerioadaService.Redeschide(os, An, 4, "probă: eliberez lanțul", null, Marcaj);
+    }
+
+    // ── PER-V6: gardianul motorului vede bitul scris de comandă ──
+    using (var os = provider.CreateObjectSpace()) {
+        var doc = os.CreateObject<NotaTransfer>();
+        doc.Data = new DateOnly(An, 3, 15);
+        doc.PredatorId = idGestiuneA;
+        doc.PrimitorId = idGestiuneB;
+        doc.NumarPV = Marcaj;
+        os.CommitChanges();
+        var refuzMotor = Refuz(() => MotorOperare.Opereaza(os, doc));
+        Check($"PER-V6 ({eticheta}) după închidere, operarea unui document datat în 03/{An} e refuzată cu TEXTUL "
+            + "gardianului de perioadă — comanda de închidere și hot path-ul motorului citesc același bit",
+            refuzMotor == $"Perioada 03/{An} e închisă.");
+    }
+
+    // ── PER-V7: închidere → redeschidere → închidere ──
+    using (var os = provider.CreateObjectSpace()) {
+        var p3 = os.FirstOrDefault<PerioadaFiscala>(x => x.An == An && x.Luna == 3);
+        var primaOara = p3.InchisaPrimaOara;
+        PerioadaService.Redeschide(os, An, 3, "probă: eroare materială", null, Marcaj);
+        var deschisaCurat = !p3.Inchisa && p3.InchisaLa == null && p3.InchisaPrimaOara == primaOara;
+        var aDoua = PerioadaService.Inchide(os, An, 3, [], null, Marcaj);
+        var istoric = os.GetObjectsQuery<InchiderePerioada>()
+            .Where(i => i.PerioadaId == p3.ID).OrderBy(i => i.La).ToList();
+        Console.WriteLine($"     MĂSURAT (PER-V7/{eticheta}): istoric 03/{An} = "
+            + string.Join(" → ", istoric.Select(i => i.Fel.ToString())) + ".");
+        Check($"PER-V7 ({eticheta}) închidere → redeschidere → închidere pe 03/{An}: `InchisaPrimaOara` rămâne a "
+            + "PRIMEI închideri (reperul rectificativei, nu se șterge la redeschidere), `InchisaLa` e a celei de-a "
+            + "doua, iar istoricul are trei rânduri în ordine, cu motiv DOAR pe redeschidere",
+            deschisaCurat
+            && p3.InchisaPrimaOara == primaOara && p3.InchisaLa == aDoua.La
+            && istoric.Count == 3
+            && istoric[0].Fel == FelInchiderePerioada.Inchidere
+            && istoric[1].Fel == FelInchiderePerioada.Redeschidere
+            && istoric[2].Fel == FelInchiderePerioada.Inchidere
+            && istoric[0].Motiv == null && istoric[2].Motiv == null
+            && !string.IsNullOrWhiteSpace(istoric[1].Motiv));
+    }
+
+    // ── PER-V8: gardianul de editare, pe CALEA REALĂ (dispecerul) ──
+    // Fiecare caz pe ObjectSpace propriu, necomis: refuzul e verdictul, nu efectul.
+    using (var os = provider.CreateObjectSpace()) {
+        var x = os.CreateObject<PerioadaFiscala>();
+        x.An = An;
+        x.Luna = 9;
+        x.Inchisa = true;
+        Check($"PER-V8a ({eticheta}) crearea unei perioade DEJA închise e refuzată: starea e a motorului, deci "
+            + "nu se poate naște închisă pe ușa securizată",
+            RefuzGardianPer(os)?.Contains("DESCHISĂ") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var x = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
+        x.Inchisa = true;
+        Check($"PER-V8b ({eticheta}) trecerea lui `Inchisa` pe o perioadă existentă e refuzată cu fraza „o face "
+            + "doar motorul” — exact regula pe care registrele o au de la decizia 14",
+            RefuzGardianPer(os)?.Contains("doar motorul") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var x = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
+        x.An = An + 1;
+        Check($"PER-V8c ({eticheta}) mutarea lunii unei perioade existente e refuzată: `(An, Luna)` e identitatea "
+            + "verigii, iar rescrierea ei ar muta granița sub documentele deja operate",
+            RefuzGardianPer(os)?.Contains("nu se schimbă") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var x = os.CreateObject<PerioadaFiscala>();
+        x.An = An;
+        x.Luna = 5;
+        Check($"PER-V8d ({eticheta}) a doua verigă pe aceeași lună e refuzată de gardian, înainte ca indexul unic "
+            + "să o refuze de bază",
+            RefuzGardianPer(os)?.Contains("există deja") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var p5 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
+        var rand = os.CreateObject<InchiderePerioada>();
+        rand.PerioadaId = p5.ID;
+        rand.Fel = FelInchiderePerioada.Inchidere;
+        rand.La = DateTime.UtcNow;
+        Check($"PER-V8e ({eticheta}) crearea unui rând de istoric direct e refuzată: istoricul închiderilor e "
+            + "append-only ȘI exclusiv al motorului, ca cele patru registre",
+            RefuzGardianPer(os)?.Contains("doar de motor") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var p3 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 3);
+        var rand = os.GetObjectsQuery<InchiderePerioada>().First(i => i.PerioadaId == p3.ID);
+        os.Delete(rand);
+        Check($"PER-V8f ({eticheta}) ștergerea unui rând de istoric e refuzată pe aceeași frază — append-only "
+            + "înseamnă și „nu se rescrie urma”",
+            RefuzGardianPer(os)?.Contains("doar de motor") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var p3 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 3);
+        os.Delete(p3);
+        Check($"PER-V8g ({eticheta}) ștergerea unei perioade ÎNCHISE e refuzată: granița nu dispare prin "
+            + "ștergerea verigii",
+            RefuzGardianPer(os)?.Contains("nu se șterge") == true);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var p4 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 4);
+        os.Delete(p4);
+        var refuzIstoric = RefuzGardianPer(os);
+        Check($"PER-V8h ({eticheta}) ștergerea unei perioade DESCHISE care are istoric e tot refuzată (04/{An} a "
+            + "fost închisă și redeschisă): FK-ul e `Restrict`, iar urma nu rămâne orfană",
+            refuzIstoric != null && refuzIstoric.Contains("istoric"));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var p5 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
+        os.Delete(p5);
+        Check($"PER-V8i ({eticheta}) control POZITIV: o perioadă deschisă fără istoric se șterge — gardianul "
+            + "refuză granița și urma, nu nomenclatorul",
+            RefuzGardianPer(os) == null);
+    }
+
+    // ── PER-V9: unicitatea e și a BAZEI, nu doar a gardianului ──
+    using (var os = provider.CreateObjectSpace()) {
+        var x = os.CreateObject<PerioadaFiscala>();
+        x.An = An;
+        x.Luna = 5;
+        string violare = null;
+        try {
+            os.CommitChanges();
+        }
+        catch (Exception e) {
+            for (var ex = e; ex != null; ex = ex.InnerException)
+                if (ex.Message.Contains("IX_PerioadeFiscale_An_Luna"))
+                    violare = ex.Message;
+        }
+        Check($"PER-V9 ({eticheta}) duplicatul `(An, Luna)` e refuzat și de BAZĂ (indexul unic filtrat pe "
+            + "`GCRecord = 0`), pe o cale fără gardian — fără el `VerificaDeschisa` ar alege nedeterminist între "
+            + "două rânduri",
+            violare != null);
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataPer(os);
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters().Count(x => x.An == An);
+        var istoric = os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters().Count();
+        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        Check($"PER-V10 ({eticheta}) fără reziduu: nicio perioadă, niciun rând de istoric și niciun document {An} "
+            + "rămase după purjă — scena e re-rulabilă identic",
+            perioade == 0 && documente == 0 && istoric == 0);
+    }
+}
+
+// Felia 27, pasul 2a — soldurile materializate la închidere (`SOL-V*`) și cursa
+// închidere ↔ operare pe calea REALĂ a comenzilor (`PER-C*`, forma F1 din spike
+// A.0/A.2). Scena stă în 2031–2032, în afara tuturor celorlalte scene ale suitei.
+void VerificaSolduriPerioada(bool privat) {
+    const string Marcaj = "E2E-SOL";
+    const int An = 2031;
+    var eticheta = privat ? "privat" : "bugetar";
+    // Tipul de material cu natura Stoc: planul bugetar n-are „371”.
+    var codTipStoc = privat ? "371" : "302.01.00";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+    DateOnly Ultima(int an, int luna) => new(an, luna, DateTime.DaysInMonth(an, luna));
+
+    // ─────────── curățenia de scenă (purjă FIZICĂ, F13-D2) ───────────
+    void CurataSol(IObjectSpace os) {
+        // Snapshot-urile ÎNTÂI: FK-urile lor spre lot/repartitor/cont sunt
+        // `Restrict`, deci un rând rămas ar bloca purja nomenclatoarelor.
+        for (var luna = 1; luna <= 12; luna++) {
+            SolduriService.Elimina(os, An, luna);
+            SolduriService.Elimina(os, An + 1, luna);
+        }
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An + 1, 12, 31))
+            .Select(d => d.ID).ToList();
+        var produsIds = os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => p.Cod.StartsWith(Marcaj)).Select(p => p.ID).ToList();
+        var lotIds = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => produsIds.Contains(l.ProdusId)).Select(l => l.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.ID)).OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => lotIds.Contains(l.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => produsIds.Contains(p.ID)).ToList());
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An || p.An == An + 1).Select(p => p.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An || p.An == An + 1).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    // ─────────── citirea snapshot-ului și recalculul de control ───────────
+    (Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?) CheieAtom(AtomContabil a) =>
+        (a.ContId, a.RepartitorId, a.MaterialId, a.CodFunctionalId, a.CodEconomicId,
+         a.SursaFinantareId, a.UnitateId, a.ProiectId, a.CentruCostId);
+
+    Dictionary<(Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?), (decimal D, decimal C)>
+            SnapshotContabil(IObjectSpace os, int an, int luna) =>
+        os.GetObjectsQuery<SoldPerioadaContabil>().Where(s => s.An == an && s.Luna == luna)
+            .Select(s => new {
+                s.ContId, s.RepartitorId, s.MaterialId, s.CodFunctionalId, s.CodEconomicId,
+                s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId, s.Debit, s.Credit
+            })
+            .ToList()
+            .ToDictionary(
+                s => (s.ContId, s.RepartitorId, s.MaterialId, s.CodFunctionalId, s.CodEconomicId,
+                      s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId),
+                s => (s.Debit, s.Credit));
+
+    // Recalculul de control e LINQ pe `ContabilProiectii.Atomi`, nu SQL: dacă
+    // ambele căi ar fi scrise la fel, proba n-ar mai proba nimic.
+    Dictionary<(Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?), (decimal D, decimal C)>
+            AsteptatContabil(IObjectSpace os, DateOnly panaLa) =>
+        ContabilProiectii.Atomi(os).Where(a => a.Data <= panaLa).ToList()
+            .GroupBy(CheieAtom)
+            .Select(g => new { g.Key, D = g.Sum(a => a.Debit), C = g.Sum(a => a.Credit) })
+            .Where(x => x.D != 0m || x.C != 0m)
+            .ToDictionary(x => x.Key, x => (x.D, x.C));
+
+    Dictionary<CheieStoc, SoldStoc> SnapshotStoc(IObjectSpace os, int an, int luna) =>
+        os.GetObjectsQuery<SoldPerioadaStoc>().Where(s => s.An == an && s.Luna == luna)
+            .Select(s => new { s.LotId, s.RepartitorId, s.TipStoc, s.Cantitate, s.Valoare })
+            .ToList()
+            .ToDictionary(s => new CheieStoc(s.LotId, s.RepartitorId, s.TipStoc),
+                          s => new SoldStoc(s.Cantitate, s.Valoare));
+
+    // Controlul citește REGISTRUL direct, nu `StocService.SolduriLaData`: de la
+    // pasul 2b serviciul pornește el însuși din snapshot, iar proba ar compara
+    // snapshot-ul cu el însuși. Rândurile șterse logic rămân în afară prin
+    // filtrul global, ca peste tot.
+    Dictionary<CheieStoc, SoldStoc> AsteptatStoc(IObjectSpace os, DateOnly panaLa) =>
+        os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => r.Data <= panaLa)
+            .GroupBy(r => new { r.LotId, r.RepartitorId, r.TipStoc })
+            .Select(g => new { g.Key, Cantitate = g.Sum(r => r.Cantitate), Valoare = g.Sum(r => r.Valoare) })
+            .ToList()
+            .Where(x => x.Cantitate != 0m || x.Valoare != 0m)
+            .ToDictionary(x => new CheieStoc(x.Key.LotId, x.Key.RepartitorId, x.Key.TipStoc),
+                x => new SoldStoc(x.Cantitate, x.Valoare));
+
+    bool EgalContabil(IObjectSpace os, int an, int luna) {
+        var snap = SnapshotContabil(os, an, luna);
+        var asteptat = AsteptatContabil(os, Ultima(an, luna));
+        return snap.Count == asteptat.Count
+            && snap.All(kv => asteptat.TryGetValue(kv.Key, out var a) && a == kv.Value)
+            && asteptat.All(kv => snap.ContainsKey(kv.Key));
+    }
+
+    bool EgalStoc(IObjectSpace os, int an, int luna) {
+        var snap = SnapshotStoc(os, an, luna);
+        var asteptat = AsteptatStoc(os, Ultima(an, luna));
+        return snap.Count == asteptat.Count
+            && snap.All(kv => asteptat.TryGetValue(kv.Key, out var a) && a == kv.Value)
+            && asteptat.All(kv => snap.ContainsKey(kv.Key));
+    }
+
+    int RanduriSnapshot(IObjectSpace os, int an, int luna) =>
+        os.GetObjectsQuery<SoldPerioadaContabil>().Count(s => s.An == an && s.Luna == luna)
+        + os.GetObjectsQuery<SoldPerioadaStoc>().Count(s => s.An == an && s.Luna == luna);
+
+    string Referinte(IObjectSpace os) =>
+        string.Join(", ", SolduriService.Referinte(os).Select(r => $"{r.Luna:00}/{r.An}"));
+
+    // ─────────── cursa: a doua conexiune, `lock_timeout` pe comandă ───────────
+    string CodPostgres(Exception e) {
+        for (var ex = e; ex != null; ex = ex.InnerException)
+            if (ex is Npgsql.PostgresException pg)
+                return pg.SqlState;
+        return null;
+    }
+    // `null` = comanda a trecut; altfel SQLSTATE-ul (55P03 = lock_timeout).
+    string CuLockTimeout(Action<IObjectSpace> comanda) {
+        using var os = provider.CreateObjectSpace();
+        var db = ((EFCoreObjectSpace)os).DbContext.Database;
+        db.OpenConnection();
+        try {
+            db.ExecuteSqlRaw("SET lock_timeout = '1500ms'");
+            comanda(os);
+            return null;
+        }
+        catch (Exception e) {
+            return CodPostgres(e) ?? e.GetType().Name;
+        }
+        finally {
+            db.CloseConnection();
+        }
+    }
+
+    // ═════════════════════ precondiția ═════════════════════
+    using (var os = provider.CreateObjectSpace())
+        CurataSol(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An || p.An == An + 1);
+        var inchise = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.Inchisa);
+        var snapshoturi = os.GetObjectsQuery<SoldPerioadaContabil>().Count()
+            + os.GetObjectsQuery<SoldPerioadaStoc>().Count();
+        Console.WriteLine($"     MĂSURAT (SOL-V0/{eticheta}): {perioade} perioade în {An}–{An + 1}, "
+            + $"{inchise} perioade închise în bază, {snapshoturi} rânduri de snapshot.");
+        Check($"SOL-V0 ({eticheta}) precondiție: {An}–{An + 1} sunt libere, NICIO perioadă a bazei nu e închisă "
+            + "și nu există niciun snapshot — altfel mulțimea perioadelor DE REFERINȚĂ probată mai jos ar fi "
+            + "măsurată peste conținut străin",
+            perioade == 0 && inchise == 0 && snapshoturi == 0);
+    }
+
+    // ═════════════════════ scena ═════════════════════
+    Guid idGestA, idGestB, idFurnizor, idLot1, idLot2, idBtrB, idCodEc;
+    using (var os = provider.CreateObjectSpace()) {
+        for (var luna = 1; luna <= 12; luna++) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+        }
+        var tipMat = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipStoc);
+        var gestA = os.CreateObject<Gestiune>();
+        gestA.Cod = Marcaj + "-GA";
+        gestA.Denumire = "Gestiune solduri A";
+        var gestB = os.CreateObject<Gestiune>();
+        gestB.Cod = Marcaj + "-GB";
+        gestB.Denumire = "Gestiune solduri B";
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = Marcaj + "-F";
+        furnizor.Denumire = "Furnizor solduri";
+        furnizor.CodFiscal = "RO33333338";
+        furnizor.InregistratTva = true;
+        Produs Prod(string sufix) {
+            var p = os.CreateObject<Produs>();
+            p.Cod = Marcaj + sufix;
+            p.Denumire = "Produs solduri" + sufix;
+            p.UM = "BUC";
+            p.TipMaterial = tipMat;
+            return p;
+        }
+        var produs1 = Prod("-P1");
+        var produs2 = Prod("-P2");
+        // Dimensiunea CULEASĂ a scenei: pe profilul bugetar contul de furnizori
+        // o cere (`VerificaDimensiuniObligatorii`), iar pe privat e opțională —
+        // aceeași scenă, cheia snapshot-ului nenulă pe ambele profiluri.
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-CE";
+        codEc.Denumire = "Cod economic solduri";
+        os.CommitChanges();
+        Check($"SOL — precondiție de profil ({eticheta}): tipul de material cu natura Stoc („{codTipStoc}”) e "
+            + "în seed pe AMBELE profiluri, deci scena de stoc e aceeași",
+            tipMat != null && tipMat.Clasa?.Natura == NaturaClasa.Stoc);
+
+        // Ianuarie: NIR cu DOUĂ loturi în aceeași gestiune.
+        var nir = os.CreateObject<NIR>();
+        nir.Data = Zi(1, 5);
+        nir.Predator = furnizor;
+        nir.Primitor = gestA;
+        var l1 = os.CreateObject<NirDetaliu>();
+        l1.Document = nir; l1.TipMaterial = tipMat; l1.Cantitate = 10m; l1.PretUnitar = 10m;
+        l1.CodEconomicId = codEc.ID;
+        var lot1 = l1.CreeazaLot(os, produs1, gestA);
+        var l2 = os.CreateObject<NirDetaliu>();
+        l2.Document = nir; l2.TipMaterial = tipMat; l2.Cantitate = 20m; l2.PretUnitar = 15m;
+        l2.CodEconomicId = codEc.ID;
+        var lot2 = l2.CreeazaLot(os, produs2, gestA);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nir);
+        os.CommitChanges();
+
+        idGestA = gestA.ID;
+        idGestB = gestB.ID;
+        idFurnizor = furnizor.ID;
+        idLot1 = lot1.ID;
+        idLot2 = lot2.ID;
+        idCodEc = codEc.ID;
+        idBtrB = Guid.Empty;
+    }
+
+    // ── PER-C1/PER-C2: cursa, înainte de orice închidere ──
+    using (var os = provider.CreateObjectSpace()) {
+        var btrProba = os.CreateObject<NotaTransfer>();
+        btrProba.Data = Zi(1, 20);
+        btrProba.PredatorId = idGestA;
+        btrProba.PrimitorId = idGestB;
+        btrProba.NumarPV = Marcaj + "-C1";
+        var linie = os.CreateObject<DocumentDetaliu>();
+        linie.Document = btrProba;
+        linie.TipMaterial = os.GetObjectByKey<Lot>(idLot2).Produs.TipMaterial;
+        linie.LotId = idLot2;
+        linie.Cantitate = 1m;
+        os.CommitChanges();
+        var idProba = btrProba.ID;
+
+        using (var externa = new Npgsql.NpgsqlConnection(connectionString)) {
+            externa.Open();
+            using var txExterna = externa.BeginTransaction();
+            using (var cmd = externa.CreateCommand()) {
+                cmd.CommandText = "SELECT \"ID\" FROM \"PerioadeFiscale\" "
+                    + $"WHERE \"An\" = {An} AND \"Luna\" = 1 AND \"GCRecord\" = 0 FOR UPDATE";
+                cmd.ExecuteNonQuery();
+            }
+            var refuz = CuLockTimeout(o => OperareApi.Opereaza(o, idProba));
+            Console.WriteLine($"     MĂSURAT (PER-C1/{eticheta}): operarea sub închidere „în curs” a ieșit cu "
+                + $"„{refuz ?? "<a trecut>"}”.");
+            Check($"PER-C1 ({eticheta}) cu o închidere „în curs” care ține `FOR UPDATE` pe rândul perioadei, "
+                + "operarea AȘTEAPTĂ și cade pe `lock_timeout` (55P03) — gardianul citește prin `FOR SHARE` în "
+                + "tranzacția comenzii, deci documentul nu se poate strecura în perioada care se închide",
+                refuz == "55P03");
+            txExterna.Rollback();
+        }
+        var dupa = CuLockTimeout(o => OperareApi.Opereaza(o, idProba));
+        Check($"PER-C2 ({eticheta}) după eliberarea lock-ului aceeași comandă TRECE — blocarea serializează "
+            + "cursa, nu interzice operarea", dupa == null);
+
+        using (var externa = new Npgsql.NpgsqlConnection(connectionString)) {
+            externa.Open();
+            using var txExterna = externa.BeginTransaction();
+            using (var cmd = externa.CreateCommand()) {
+                cmd.CommandText = "SELECT \"ID\" FROM \"PerioadeFiscale\" "
+                    + $"WHERE \"An\" = {An} AND \"Luna\" = 1 AND \"GCRecord\" = 0 FOR SHARE";
+                cmd.ExecuteNonQuery();
+            }
+            var refuz = CuLockTimeout(o => PerioadaService.Inchide(o, An, 1, [], null, Marcaj));
+            Console.WriteLine($"     MĂSURAT (PER-C3/{eticheta}): închiderea sub operare „în curs” a ieșit cu "
+                + $"„{refuz ?? "<a trecut>"}”.");
+            Check($"PER-C3 ({eticheta}) simetric: cu o operare „în curs” care ține `FOR SHARE`, comanda de "
+                + "închidere cade pe `lock_timeout` la `FOR UPDATE` — `SUM`-ul soldurilor nu apucă să ruleze "
+                + "peste un registru care încă se scrie",
+                refuz == "55P03");
+            txExterna.Rollback();
+        }
+        using (var o = provider.CreateObjectSpace()) {
+            Check($"PER-C4 ({eticheta}) închiderea eșuată pe lock NU a lăsat nimic în urmă: 01/{An} e tot "
+                + "deschisă, fără rând de istoric — tranzacția comenzii s-a anulat integral",
+                !o.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == 1).Inchisa
+                && !o.GetObjectsQuery<InchiderePerioada>().Any(i => i.De == Marcaj));
+        }
+    }
+
+    // ── restul scenei: februarie (ieșiri + notă cu dimensiuni), martie (storno) ──
+    using (var os = provider.CreateObjectSpace()) {
+        var lot1 = os.GetObjectByKey<Lot>(idLot1);
+        var lot2 = os.GetObjectByKey<Lot>(idLot2);
+        var tipMat = lot1.Produs.TipMaterial;
+        var gestA = os.GetObjectByKey<Repartitor>(idGestA);
+        var gestB = os.GetObjectByKey<Repartitor>(idGestB);
+
+        // BTR-A: lotul 1 iese INTEGRAL din gestiunea A ⇒ cheia (lot1, A, tip)
+        // ajunge la cantitate 0 ȘI valoare 0, deci trebuie să LIPSEASCĂ din snapshot.
+        var btrA = os.CreateObject<NotaTransfer>();
+        btrA.Data = Zi(2, 10);
+        btrA.PredatorId = idGestA;
+        btrA.PrimitorId = idGestB;
+        btrA.NumarPV = Marcaj + "-A";
+        var linA = os.CreateObject<DocumentDetaliu>();
+        linA.Document = btrA; linA.TipMaterial = tipMat; linA.LotId = idLot1; linA.Cantitate = 10m;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, btrA);
+        os.CommitChanges();
+
+        // BTR-B: parțial pe lotul 2 — stornat în martie.
+        var btrB = os.CreateObject<NotaTransfer>();
+        btrB.Data = Zi(2, 20);
+        btrB.PredatorId = idGestA;
+        btrB.PrimitorId = idGestB;
+        btrB.NumarPV = Marcaj + "-B";
+        var linB = os.CreateObject<DocumentDetaliu>();
+        linB.Document = btrB; linB.TipMaterial = tipMat; linB.LotId = idLot2; linB.Cantitate = 5m;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, btrB);
+        os.CommitChanges();
+        idBtrB = btrB.ID;
+
+        // Notă contabilă cu dimensiuni pe AMBELE laturi: repartitori diferiți pe
+        // debit și pe credit, plus dimensiunea culeasă a notei (cod economic).
+        var dataNir = Zi(1, 5);
+        var randNir = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId != null && r.Document.Data == dataNir).ToList()
+            .FirstOrDefault(r => r.DebitRepartitorId != null || r.CreditRepartitorId != null);
+        if (randNir != null) {
+            var ntc = os.CreateObject<NotaContabila>();
+            ntc.Data = Zi(2, 25);
+            ntc.PredatorId = idGestA;
+            ntc.PrimitorId = idGestB;
+            var linN = os.CreateObject<NotaContabilaDetaliu>();
+            linN.Document = ntc;
+            linN.TipMaterial = tipMat;
+            linN.ContDebitId = randNir.ContDebitId;
+            linN.ContCreditId = randNir.ContCreditId;
+            linN.Valoare = 42.37m;
+            linN.CodEconomicId = idCodEc;
+            linN.RepartitorDebitId = idGestA;
+            linN.RepartitorCreditId = idFurnizor;
+            os.CommitChanges();
+            var refuzNtc = Refuz(() => MotorOperare.Opereaza(os, ntc));
+            if (refuzNtc != null) {
+                os.Delete(ntc.Detalii.ToList());
+                os.Delete(ntc);
+                os.CommitChanges();
+            }
+            Console.WriteLine($"     MĂSURAT (SOL/{eticheta}): nota cu dimensiuni pe ambele laturi — "
+                + $"{(refuzNtc == null ? "operată" : "refuzată: " + refuzNtc.Split('\n')[0])}.");
+        }
+
+        // Martie: storno-ul unui document din februarie, la data stornării.
+        MotorOperare.Storneaza(os, os.GetObjectByKey<Document>(idBtrB), Zi(3, 10));
+        os.CommitChanges();
+    }
+
+    // ═════ SOL-C: aceleași cifre cu și fără snapshot, consumator cu consumator ═════
+    //
+    // Fiecare consumator mutat pe `SolduriService` (F27-D3) se citește de DOUĂ
+    // ori: cu scena DESCHISĂ (nicio perioadă închisă ⇒ calea de azi, integral
+    // din registre) și după închideri (calea snapshot + rulaje). Rezultatele se
+    // compară SERIALIZATE — la cent, la rând și la ordine; scala zecimală se
+    // normalizează, ca o diferență de `numeric` să nu treacă drept diferență de
+    // cifre. Comparația se face în DOUĂ momente: cu referința 01/{An} (fereastra
+    // deschisă februarie–martie are rulaje reale) și cu referința 03/{An} (toată
+    // scena e înăuntrul snapshot-ului).
+    Guid idContStoc, idContTert;
+    var ziNir = Zi(1, 5);
+    using (var os = provider.CreateObjectSpace()) {
+        var rand = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId != null && r.Document.Data == ziNir)
+            .Select(r => new { r.ContDebitId, r.ContCreditId }).First();
+        idContStoc = rand.ContDebitId;
+        idContTert = rand.ContCreditId;
+    }
+    TipStoc tipScena;
+    Guid idProdus2;
+    using (var os = provider.CreateObjectSpace()) {
+        tipScena = os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => r.LotId == idLot2 && r.RepartitorId == idGestA)
+            .Select(r => r.TipStoc).First();
+        idProdus2 = os.GetObjectByKey<Lot>(idLot2).ProdusId;
+    }
+
+    string N(decimal v) => v.ToString("0.000000", System.Globalization.CultureInfo.InvariantCulture);
+
+    Dictionary<string, string> Citiri(IObjectSpace os) {
+        var ds = Zi(2, 1);
+        var de = Zi(3, 31);
+        var c = new Dictionary<string, string>();
+        string Bal(bool analitic, Guid? codEc = null) => string.Join("\n",
+            ContabilProiectii.Balanta(os, ds, de, analitic, codEconomicId: codEc).ToList()
+                .OrderBy(r => r.ContSimbol ?? "", StringComparer.Ordinal).ThenBy(r => r.ContId)
+                .ThenBy(r => r.RepartitorId)
+                .Select(r => $"{r.ContSimbol}|{r.ContId}|{r.RepartitorId}|{N(r.InitialDebit)}|"
+                    + $"{N(r.InitialCredit)}|{N(r.SoldInitialDebit)}|{N(r.SoldInitialCredit)}|"
+                    + $"{N(r.RulajDebit)}|{N(r.RulajCredit)}|{N(r.SoldFinalDebit)}|{N(r.SoldFinalCredit)}"));
+        c["balanta-sintetic"] = Bal(false);
+        c["balanta-analitic"] = Bal(true);
+        c["balanta-dimensiune"] = Bal(true, idCodEc);
+        c["balanta-plan"] = string.Join("\n", ContabilProiectii.BalantaPlan(os, ds, de)
+            .Select(r => $"{r.ContSimbol}|{r.ContId}|{r.ParinteId}|{r.Nivel}|{r.AreCopii}|"
+                + $"{r.AreMiscareProprie}|{N(r.InitialDebit)}|{N(r.InitialCredit)}|{N(r.RulajDebit)}|"
+                + $"{N(r.RulajCredit)}|{N(r.SoldFinalDebit)}|{N(r.SoldFinalCredit)}"));
+        string Fisa(Guid contId, Guid? repartitor = null, bool faraRepartitor = false) => string.Join("\n",
+            ContabilProiectii.FisaCont(os, contId, ds, de, repartitorId: repartitor,
+                    repartitorNul: faraRepartitor).ToList()
+                .Select(r => $"{r.Id}|{r.Data:yyyy-MM-dd}|{r.Sens}|{N(r.Debit)}|{N(r.Credit)}|"
+                    + $"{N(r.SoldCurent)}|{r.ContrapartidaSimbol}|{r.RepartitorDenumire}|"
+                    + $"{r.DocumentId}|{r.Storno}"));
+        c["fisa-cont-stoc"] = Fisa(idContStoc);
+        c["fisa-cont-tert"] = Fisa(idContTert);
+        // Filtrul de dimensiune trece PRIN rândul sintetic: snapshot-ul se
+        // filtrează înăuntru, iar rândul poartă apoi coordonatele filtrului, ca
+        // să treacă neatins prin filtrele nivelului (b). Ambele variante ale
+        // santinelei: un repartitor anume și „fără repartitor".
+        c["fisa-cont-filtrata"] = Fisa(idContTert, repartitor: idFurnizor);
+        c["fisa-cont-fara-repartitor"] = Fisa(idContStoc, faraRepartitor: true);
+        string Stoc(DateOnly? la) => string.Join("\n",
+            StocProiectii.SoldStoc(os, la).ToList()
+                .OrderBy(r => r.LotId).ThenBy(r => r.RepartitorId)
+                .ThenBy(r => r.TipStoc, StringComparer.Ordinal)
+                .Select(r => $"{r.LotId}|{r.RepartitorId}|{r.TipStoc}|{N(r.Cantitate)}|{N(r.Valoare)}|"
+                    + $"{r.ProdusCod}|{r.GestiuneDenumire}"));
+        c["sold-stoc-azi"] = Stoc(null);
+        c["sold-stoc-la-data"] = Stoc(Ultima(An, 2));
+        // Lotul 1 a ieșit INTEGRAL din gestiunea A: cheia lui e cantitate 0 și
+        // valoare 0, deci lipsește din listă pe AMBELE căi — din snapshot o taie
+        // regula cheilor integral zero, din registru filtrul care o oglindește.
+        c["sold-stoc-lot-golit"] = StocProiectii.SoldStoc(os).ToList()
+            .Any(r => r.LotId == idLot1 && r.RepartitorId == idGestA) ? "PREZENT" : "absent";
+        string Solduri(DateOnly la) => string.Join("\n",
+            StocService.SolduriLaData(os, [idLot1, idLot2], la)
+                .OrderBy(kv => kv.Key.LotId).ThenBy(kv => kv.Key.RepartitorId).ThenBy(kv => kv.Key.TipStoc)
+                .Select(kv => $"{kv.Key.LotId}|{kv.Key.RepartitorId}|{kv.Key.TipStoc}|"
+                    + $"{N(kv.Value.Cantitate)}|{N(kv.Value.Valoare)}"));
+        c["solduri-la-data"] = Solduri(Ultima(An, 2)) + "\n──\n" + Solduri(Ultima(An, 3));
+        // Cheia golită INTEGRAL (lotul 1 din gestiunea A) și cea rămasă, plus o
+        // dată istorică: „absentă din snapshot” trebuie să dea tot 0.
+        c["sold-pe-cheie"] = N(StocService.Sold(os, new CheieStoc(idLot1, idGestA, tipScena)))
+            + "|" + N(StocService.Sold(os, new CheieStoc(idLot2, idGestA, tipScena)))
+            + "|" + N(StocService.Sold(os, new CheieStoc(idLot2, idGestA, tipScena), Ultima(An, 2)))
+            + "|" + N(StocService.Sold(os, new CheieStoc(idLot1, idGestB, tipScena)));
+        var fifo = StocService.AlocaFifoTolerant(os, idProdus2, idGestA, tipScena, Ultima(An, 3), 8m);
+        c["aloca-fifo"] = string.Join(",", fifo.Alocari.Select(a => $"{a.LotId}:{N(a.Cantitate)}"))
+            + "|" + N(fifo.Ramas);
+        var itv = InchidereTvaService.Solduri(os, idContStoc, idContTert, Ultima(An, 3));
+        c["itv-solduri"] = $"{N(itv.Sold4426)}|{N(itv.Sold4427)}";
+        // Gardianul 25d: o ieșire de aprilie PESTE sold trebuie refuzată cu EXACT
+        // același text, iar una SUB sold trebuie să treacă — pe ambele căi.
+        var cheie = new CheieStoc(idLot2, idGestA, tipScena);
+        c["refuz-sold-negativ"] = Refuz(() => StocService.VerificaSoldIntermediar(os,
+            [new MiscareStoc(cheie, Zi(4, 15), -50m)])) ?? "<a trecut>";
+        c["sold-intermediar-sub-sold"] = Refuz(() => StocService.VerificaSoldIntermediar(os,
+            [new MiscareStoc(cheie, Zi(4, 15), -3m)])) ?? "<a trecut>";
+        return c;
+    }
+
+    string PrimaDiferenta(string a, string b) {
+        var la = a.Split('\n');
+        var lb = b.Split('\n');
+        for (var i = 0; i < Math.Max(la.Length, lb.Length); i++) {
+            var x = i < la.Length ? la[i] : "<lipsă>";
+            var y = i < lb.Length ? lb[i] : "<lipsă>";
+            if (x != y)
+                return $"rândul {i + 1}: fără snapshot „{x}” ≠ cu snapshot „{y}”";
+        }
+        return "<identice>";
+    }
+
+    Dictionary<string, string> citiriDeschis;
+    using (var os = provider.CreateObjectSpace())
+        citiriDeschis = Citiri(os);
+    Console.WriteLine($"     MĂSURAT (SOL-C/{eticheta}): citiri de referință pe scena DESCHISĂ — "
+        + string.Join(", ", citiriDeschis.OrderBy(kv => kv.Key, StringComparer.Ordinal)
+            .Select(kv => $"{kv.Key} {kv.Value.Split('\n').Length} rd.")) + ".");
+    Check($"SOL-C0 ({eticheta}) precondiția comparației: citirile de pe scena deschisă sunt NEgoale "
+        + "(refuzul gardianului de sold există ca text, fișa și balanța au rânduri) — altfel „identic” "
+        + "ar fi adevărat prin vid",
+        citiriDeschis["refuz-sold-negativ"].StartsWith("Sold negativ")
+        && citiriDeschis["sold-intermediar-sub-sold"] == "<a trecut>"
+        && citiriDeschis["balanta-sintetic"].Length > 0 && citiriDeschis["fisa-cont-stoc"].Length > 0
+        && citiriDeschis["fisa-cont-filtrata"].Length > 0
+        && citiriDeschis["sold-stoc-azi"].Length > 0);
+    Check($"SOL-C0b ({eticheta}) lotul consumat INTEGRAL din gestiunea A lipsește din `SoldStoc` deja pe scena "
+        + "DESCHISĂ: cheia cu cantitate ȘI valoare zero nu mai e o poziție de stoc, nici din registru, nici din "
+        + "snapshot — schimbarea de comportament e afirmată aici, nu dedusă din egalitatea de mai jos",
+        citiriDeschis["sold-stoc-lot-golit"] == "absent");
+
+    void ComparaCitirile(string moment) {
+        Dictionary<string, string> acum;
+        using (var os = provider.CreateObjectSpace())
+            acum = Citiri(os);
+        foreach (var cheie in citiriDeschis.Keys.OrderBy(k => k, StringComparer.Ordinal)) {
+            var egal = citiriDeschis[cheie] == acum[cheie];
+            if (!egal)
+                Console.WriteLine($"     DIFERENȚĂ ({eticheta}, {moment}, {cheie}): "
+                    + PrimaDiferenta(citiriDeschis[cheie], acum[cheie]));
+            Check($"SOL-C ({eticheta}, {moment}) „{cheie}” iese IDENTIC cu și fără snapshot: consumatorul "
+                + "pornește de la ultima perioadă de referință, nu de la începutul registrului",
+                egal);
+        }
+    }
+
+    // ═════════════════════ SOL-V1: lanțul și referințele ═════════════════════
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An, 1, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        Check($"SOL-V1a ({eticheta}) după închiderea lui 01/{An} există snapshot DOAR pentru ea, iar ea e "
+            + $"singura perioadă de referință",
+            RanduriSnapshot(os, An, 1) > 0 && Referinte(os) == $"01/{An}"
+            && RanduriSnapshot(os, An, 2) == 0);
+    }
+    ComparaCitirile($"referința 01/{An}");
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An, 2, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        Check($"SOL-V1b ({eticheta}) închiderea lui 02/{An} mută referința: snapshot(01/{An}) DISPARE (nu e "
+            + $"capăt de an), snapshot(02/{An}) apare — snapshot-ul există ⇔ perioada e DE REFERINȚĂ",
+            RanduriSnapshot(os, An, 1) == 0 && RanduriSnapshot(os, An, 2) > 0
+            && Referinte(os) == $"02/{An}");
+    }
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An, 3, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        Console.WriteLine($"     MĂSURAT (SOL-V1/{eticheta}): referințe = [{Referinte(os)}]; "
+            + $"snapshot 03/{An} = {RanduriSnapshot(os, An, 3)} rânduri.");
+        Check($"SOL-V1c ({eticheta}) după 01 → 02 → 03 rămâne un SINGUR snapshot, al ultimei perioade închise; "
+            + "lunile intermediare nu se păstrează (stocarea, nu timpul, e costul lui D3)",
+            RanduriSnapshot(os, An, 1) == 0 && RanduriSnapshot(os, An, 2) == 0
+            && RanduriSnapshot(os, An, 3) > 0 && Referinte(os) == $"03/{An}");
+    }
+    ComparaCitirile($"referința 03/{An}");
+
+    // ═════════════════════ SOL-V2: egalitatea la cent ═════════════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var snap = SnapshotContabil(os, An, 3);
+        var asteptat = AsteptatContabil(os, Ultima(An, 3));
+        Console.WriteLine($"     MĂSURAT (SOL-V2/{eticheta}): snapshot contabil {snap.Count} chei, "
+            + $"recalcul LINQ {asteptat.Count} chei.");
+        Check($"SOL-V2a ({eticheta}) snapshot(03/{An}) contabil = `SUM` peste `ContabilProiectii.Atomi` pe cheia "
+            + "COMPLETĂ a atomului (cont + 8 dimensiuni ale laturii), la cent și în AMBELE sensuri — inclusiv "
+            + "rândurile de storno, care intră algebric (R-D7)",
+            EgalContabil(os, An, 3));
+
+        var snapStoc = SnapshotStoc(os, An, 3);
+        var asteptatStoc = AsteptatStoc(os, Ultima(An, 3));
+        Console.WriteLine($"     MĂSURAT (SOL-V2/{eticheta}): snapshot stoc {snapStoc.Count} chei, "
+            + $"recalcul LINQ pe registru {asteptatStoc.Count} chei.");
+        Check($"SOL-V2b ({eticheta}) snapshot(03/{An}) stoc = `SUM` peste `RegistruStoc`, la cent, pe cheia "
+            + "`(lot, repartitor, tip)` — controlul citește REGISTRUL, nu `StocService`, care de la pasul 2b "
+            + "pornește el însuși din snapshot", EgalStoc(os, An, 3));
+
+        var cheieGolita = snapStoc.Keys.Any(k => k.LotId == idLot1 && k.RepartitorId == idGestA);
+        var soldGolit = StocService.SolduriLaData(os, [idLot1], Ultima(An, 3))
+            .TryGetValue(new CheieStoc(idLot1, idGestA, snapStoc.Keys.First(k => k.LotId == idLot1).TipStoc),
+                out var s) ? s : new SoldStoc(0m, 0m);
+        Console.WriteLine($"     MĂSURAT (SOL-V2c/{eticheta}): lotul golit integral are sold "
+            + $"({soldGolit.Cantitate}, {soldGolit.Valoare}) și e {(cheieGolita ? "PREZENT" : "absent")} în snapshot.");
+        Check($"SOL-V2c ({eticheta}) cheia lotului golit INTEGRAL din gestiunea A lipsește din snapshot: "
+            + "cheile integral zero se omit, iar „absentă” și „zero” sunt același răspuns pentru consumator",
+            !cheieGolita && soldGolit.Cantitate == 0m && soldGolit.Valoare == 0m);
+    }
+
+    // ═════════════════════ SOL-V3: decembrie rămâne ═════════════════════
+    for (var luna = 4; luna <= 12; luna++)
+        using (var os = provider.CreateObjectSpace())
+            InchideAcceptTot(os, An, luna, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        var p = os.CreateObject<PerioadaFiscala>();
+        p.An = An + 1;
+        p.Luna = 1;
+        os.CommitChanges();
+    }
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An + 1, 1, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        var dec = SnapshotContabil(os, An, 12);
+        var ian = SnapshotContabil(os, An + 1, 1);
+        Console.WriteLine($"     MĂSURAT (SOL-V3/{eticheta}): referințe = [{Referinte(os)}]; "
+            + $"snapshot 12/{An} = {dec.Count} chei, 01/{An + 1} = {ian.Count} chei.");
+        Check($"SOL-V3 ({eticheta}) capătul de an RĂMÂNE referință: după închiderea lui 01/{An + 1} referințele "
+            + $"sunt 12/{An} ȘI 01/{An + 1}, lunile 04–11 n-au snapshot, iar cele două snapshot-uri sunt "
+            + "IDENTICE (nicio mișcare în ianuarie) — incrementala peste snapshot(P−1) dă exact `SUM`-ul",
+            Referinte(os) == $"12/{An}, 01/{An + 1}"
+            && Enumerable.Range(4, 8).All(l => RanduriSnapshot(os, An, l) == 0)
+            && dec.Count > 0 && dec.Count == ian.Count
+            && dec.All(kv => ian.TryGetValue(kv.Key, out var v) && v == kv.Value)
+            && EgalContabil(os, An, 12) && EgalContabil(os, An + 1, 1));
+    }
+
+    // ═════════════════════ SOL-V4: redeschiderea ═════════════════════
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Redeschide(os, An + 1, 1, "probă: redeschid ianuarie", null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        Check($"SOL-V4a ({eticheta}) redeschiderea lui 01/{An + 1} îi ȘTERGE snapshot-ul și îl lasă intact pe "
+            + $"cel al lui 12/{An} — care era deja referință ca capăt de an, deci n-are ce reconstrui",
+            RanduriSnapshot(os, An + 1, 1) == 0 && RanduriSnapshot(os, An, 12) > 0
+            && Referinte(os) == $"12/{An}");
+    }
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Redeschide(os, An, 12, "probă: redeschid decembrie", null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        Console.WriteLine($"     MĂSURAT (SOL-V4/{eticheta}): referințe după redeschiderea lui 12/{An} = "
+            + $"[{Referinte(os)}]; snapshot 11/{An} = {RanduriSnapshot(os, An, 11)} rânduri.");
+        Check($"SOL-V4b ({eticheta}) redeschiderea lui 12/{An} îi șterge snapshot-ul și îl RECONSTRUIEȘTE pe al "
+            + $"lui 11/{An} prin `SUM` integral (P−2 nu mai are din ce porni) — egal la cent cu recalculul",
+            RanduriSnapshot(os, An, 12) == 0 && RanduriSnapshot(os, An, 11) > 0
+            && Referinte(os) == $"11/{An}" && EgalContabil(os, An, 11) && EgalStoc(os, An, 11));
+    }
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An, 12, Marcaj);
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An + 1, 1, Marcaj);
+    using (var os = provider.CreateObjectSpace())
+        Check($"SOL-V4c ({eticheta}) re-închiderea 12/{An} → 01/{An + 1} readuce exact cele două referințe: "
+            + "ciclul închidere → redeschidere → închidere e idempotent pe snapshot-uri",
+            Referinte(os) == $"12/{An}, 01/{An + 1}"
+            && EgalContabil(os, An, 12) && EgalContabil(os, An + 1, 1));
+
+    // ═════════════════════ SOL-V5: reconstrucția ═════════════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var raport = SolduriService.Reconstruieste(os);
+        Console.WriteLine($"     MĂSURAT (SOL-V5/{eticheta}): " + string.Join("; ", raport.Referinte.Select(r =>
+            $"{r.Luna:00}/{r.An} contabil {r.ContabilExistente}→{r.ContabilRecalculate} ({r.ContabilDiferite} dif.), "
+            + $"stoc {r.StocExistente}→{r.StocRecalculate} ({r.StocDiferite} dif.)")) + ".");
+        Check($"SOL-V5a ({eticheta}) reconstrucția pe scena închisă raportează ZERO diferențe pe ambele "
+            + "referințe, cu cifrele scrise explicit — raportul iese ȘI când totul e în regulă (35b)",
+            raport.Referinte.Count == 2
+            && raport.Referinte.All(r => r.ContabilDiferite == 0 && r.StocDiferite == 0
+                && r.DiferentaDebit == 0m && r.DiferentaCredit == 0m
+                && r.DiferentaCantitate == 0m && r.DiferentaValoare == 0m
+                && r.ContabilExistente == r.ContabilRecalculate
+                && r.StocExistente == r.StocRecalculate));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        // Coruperea unui rând de snapshot: SQL brut, pe lângă orice cale a motorului.
+        var afectate = ((EFCoreObjectSpace)os).DbContext.Database.ExecuteSql(
+            FormattableStringFactory.Create(
+                "UPDATE \"SolduriPerioadaContabil\" SET \"Debit\" = \"Debit\" + 1 "
+                + "WHERE \"ID\" = (SELECT \"ID\" FROM \"SolduriPerioadaContabil\" "
+                + "WHERE \"An\" = {0} AND \"Luna\" = {1} ORDER BY \"ID\" LIMIT 1)", An + 1, 1));
+        Check($"SOL-V5b ({eticheta}) premisă: un rând al referinței 01/{An + 1} a fost corupt cu +1 leu pe debit",
+            afectate == 1);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var raport = SolduriService.Reconstruieste(os);
+        var stricata = raport.Referinte.Single(r => r.An == An + 1 && r.Luna == 1);
+        var curata = raport.Referinte.Single(r => r.An == An && r.Luna == 12);
+        Console.WriteLine($"     MĂSURAT (SOL-V5c/{eticheta}): 01/{An + 1} — {stricata.ContabilDiferite} rânduri "
+            + $"diferite, Δdebit = {stricata.DiferentaDebit}.");
+        Check($"SOL-V5c ({eticheta}) reconstrucția RAPORTEAZĂ exact rândul corupt (1 rând diferit, Δdebit = 1) "
+            + "și doar pe referința atinsă — diferența se raportează, nu se ascunde (35b)",
+            stricata.ContabilDiferite == 1 && stricata.DiferentaDebit == 1m && stricata.DiferentaCredit == 0m
+            && stricata.ContabilExistente == stricata.ContabilRecalculate
+            && curata.ContabilDiferite == 0 && curata.StocDiferite == 0);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var raport = SolduriService.Reconstruieste(os);
+        Check($"SOL-V5d ({eticheta}) al doilea apel dă zero: rescrierea din primul a repus snapshot-ul pe "
+            + "registre, iar egalitatea la cent se întoarce",
+            raport.Referinte.All(r => r.ContabilDiferite == 0 && r.StocDiferite == 0)
+            && EgalContabil(os, An + 1, 1) && EgalStoc(os, An + 1, 1));
+    }
+
+    // ═════════════════════ SOL-V6: cheia pe profilul curent ═════════════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var snap = os.GetObjectsQuery<SoldPerioadaContabil>()
+            .Where(s => s.An == An + 1 && s.Luna == 1)
+            .Select(s => new {
+                s.RepartitorId, s.MaterialId, s.CodFunctionalId, s.CodEconomicId,
+                s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId
+            }).ToList();
+        var cuRepartitor = snap.Count(s => s.RepartitorId != null);
+        var cuBugetare = snap.Count(s => s.CodFunctionalId != null || s.CodEconomicId != null
+            || s.SursaFinantareId != null || s.UnitateId != null || s.ProiectId != null);
+        Console.WriteLine($"     MĂSURAT (SOL-V6/{eticheta}): {snap.Count} chei, {cuRepartitor} cu repartitor, "
+            + $"{cuBugetare} cu cel puțin o dimensiune bugetară.");
+        Check($"SOL-V6 ({eticheta}) cheia snapshot-ului poartă dimensiunile LATURII, nu ale raportului: "
+            + "rândurile scenei au repartitori diferiți pe debit față de credit, deci cheia completă e singura "
+            + "din care orice rollup (cont, cont × repartitor, cont × dimensiuni) iese ADITIV",
+            snap.Count > 0 && cuRepartitor > 0 && cuBugetare > 0);
+    }
+
+    // ═════════════════════ curățenia ═════════════════════
+    using (var os = provider.CreateObjectSpace())
+        CurataSol(os);
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Count(p => p.An == An || p.An == An + 1);
+        var snapshoturi = os.GetObjectsQuery<SoldPerioadaContabil>().IgnoreQueryFilters().Count()
+            + os.GetObjectsQuery<SoldPerioadaStoc>().IgnoreQueryFilters().Count();
+        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An + 1, 12, 31));
+        Check($"SOL-V7 ({eticheta}) fără reziduu: nicio perioadă {An}–{An + 1}, niciun document și NICIUN rând "
+            + "de snapshot rămase — scena e re-rulabilă identic",
+            perioade == 0 && documente == 0 && snapshoturi == 0);
+    }
+}
+
+// Felia 27, pasul 3 (F27-D4): data înregistrării. Scena stă în 2032, după
+// scena soldurilor (2031–2032), a cărei purjă mătură și anul ăsta.
+void VerificaDataInregistrare(bool privat) {
+    const string Marcaj = "E2E-DIR";
+    const int An = 2032;
+    var eticheta = privat ? "privat" : "bugetar";
+    var codTipStoc = privat ? "371" : "302.01.00";
+    var codTipF = privat ? "214" : "214.00.00";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+
+    void CurataDir(IObjectSpace os) {
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31))
+            .Select(d => d.ID).ToList();
+        var produsIds = os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => p.Cod.StartsWith(Marcaj)).Select(p => p.ID).ToList();
+        var lotIds = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => produsIds.Contains(l.ProdusId)).Select(l => l.ID).ToList();
+        var fiseIds = os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters()
+            .Where(f => f.NumarInventar.StartsWith(Marcaj)).Select(f => f.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>().IgnoreQueryFilters()
+            .Where(r => fiseIds.Contains(r.ImobilizareId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.ID)).OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => lotIds.Contains(l.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => produsIds.Contains(p.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters()
+            .Where(f => fiseIds.Contains(f.ID)).ToList());
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).Select(p => p.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    // Calea REALĂ a refuzului de culegere: dispecerul din gardian, nu regula.
+    string RefuzGardianDir(IObjectSpace os) {
+        try {
+            GardianEditare.Verifica(os);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+    }
+
+    List<RegistruStoc> StocDoc(IObjectSpace os, Guid docId) =>
+        os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == docId).ToList();
+    List<RegistruContabil> NoteDoc(IObjectSpace os, Guid docId) =>
+        os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == docId).ToList();
+
+    using (var os = provider.CreateObjectSpace())
+        CurataDir(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An);
+        var documente = os.GetObjectsQuery<Document>()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var inchise = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.Inchisa);
+        Console.WriteLine($"     MĂSURAT (DIR-V0/{eticheta}): {perioade} perioade și {documente} documente în "
+            + $"{An}, {inchise} perioade închise în bază.");
+        Check($"DIR-V0 ({eticheta}) precondiție: anul {An} e liber și nicio perioadă a bazei nu e închisă — "
+            + $"altfel închiderea lui 01/{An} de mai jos n-ar fi capăt de lanț, iar registrele documentului "
+            + "întârziat ar fi măsurate peste conținut străin",
+            perioade == 0 && documente == 0 && inchise == 0);
+    }
+
+    Guid idGestA, idGestB, idUnitate, idFurnizor, idProdus, idCodEc, idTipStoc, idTipF, idFisa;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 1, 2, 3, 4 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+        }
+        var tipStoc = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipStoc);
+        var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+        var gestA = os.CreateObject<Gestiune>();
+        gestA.Cod = Marcaj + "-GA";
+        gestA.Denumire = "Gestiune dată înregistrare A";
+        var gestB = os.CreateObject<Gestiune>();
+        gestB.Cod = Marcaj + "-GB";
+        gestB.Denumire = "Gestiune dată înregistrare B";
+        var unitate = os.CreateObject<UnitateInterna>();
+        unitate.Cod = Marcaj + "-UI";
+        unitate.Denumire = "Unitate dată înregistrare";
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = Marcaj + "-F";
+        furnizor.Denumire = "Furnizor dată înregistrare";
+        furnizor.CodFiscal = "RO33333338";
+        furnizor.InregistratTva = true;
+        var produs = os.CreateObject<Produs>();
+        produs.Cod = Marcaj + "-P";
+        produs.Denumire = "Produs dată înregistrare";
+        produs.UM = "BUC";
+        produs.TipMaterial = tipStoc;
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-CE";
+        codEc.Denumire = "Cod economic dată înregistrare";
+        var fisa = os.CreateObject<Imobilizare>();
+        fisa.NumarInventar = Marcaj + "-FISA";
+        fisa.Denumire = "Fișă dată înregistrare";
+        fisa.TipMaterialId = tipF.ID;
+        fisa.LocId = gestA.ID;
+        os.CommitChanges();
+        idGestA = gestA.ID; idGestB = gestB.ID; idUnitate = unitate.ID; idFurnizor = furnizor.ID;
+        idProdus = produs.ID; idCodEc = codEc.ID; idTipStoc = tipStoc.ID; idTipF = tipF.ID; idFisa = fisa.ID;
+
+        InchideAcceptTot(os, An, 1, Marcaj);
+        Check($"DIR — precondiție de scenă ({eticheta}): 01/{An} se închide (capăt de lanț prin absența lui "
+            + $"12/{An - 1}), deci tot ce urmează probează granița, nu o perioadă oarecare",
+            os.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == 1).Inchisa);
+    }
+
+    // ── DIR-V1…V4: documentul întârziat ──
+    Guid idNirTarziu, idLotA;
+    using (var os = provider.CreateObjectSpace()) {
+        var nir = os.CreateObject<NIR>();
+        nir.Data = Zi(1, 20);
+        nir.PredatorId = idFurnizor;
+        nir.PrimitorId = idGestA;
+        var linie = os.CreateObject<NirDetaliu>();
+        linie.Document = nir;
+        linie.TipMaterialId = idTipStoc;
+        linie.Cantitate = 10m;
+        linie.PretUnitar = 10m;
+        linie.CodEconomicId = idCodEc;
+        var lot = linie.CreeazaLot(os, os.GetObjectByKey<Produs>(idProdus),
+            os.GetObjectByKey<Gestiune>(idGestA));
+        os.CommitChanges();
+        idNirTarziu = nir.ID;
+        idLotA = lot.ID;
+
+        Check($"DIR-V1a ({eticheta}) documentul cules fără data înregistrării o are `default` — implicitul NU "
+            + "stă în setter (proxy-urile EF și materializarea l-ar face nesigur), ci la seam-uri",
+            nir.DataInregistrare == default);
+
+        var refuzPerioada = Refuz(() => MotorOperare.Opereaza(os, nir));
+        Console.WriteLine($"     MĂSURAT (DIR-V1/{eticheta}): operarea cu data înregistrării implicită a ieșit "
+            + $"cu „{PrimaLinie(refuzPerioada)}”.");
+        Check($"DIR-V1 ({eticheta}) cu data înregistrării IMPLICITĂ (normalizată la {Zi(1, 20):dd.MM.yyyy}), "
+            + $"operarea cade pe gardianul perioadei 01/{An} — implicitul „= data documentului” păstrează exact "
+            + "comportamentul de dinaintea feliei",
+            refuzPerioada != null && refuzPerioada.Contains($"01/{An}"));
+
+        nir.DataInregistrare = Zi(1, 15);
+        var refuzGardian = RefuzGardianDir(os);
+        Check($"DIR-V2 ({eticheta}) data înregistrării ÎNAINTEA datei documentului e refuzată la commit, pe "
+            + "calea reală a gardianului de Committing: evidența nu poate primi un document înainte ca el să "
+            + "existe",
+            refuzGardian != null
+            && refuzGardian.Contains("Data înregistrării nu poate preceda data documentului."));
+
+        var refuzMotor = Refuz(() => MotorOperare.Opereaza(os, nir));
+        Check($"DIR-V3 ({eticheta}) același refuz vine și din MOTOR, cu text identic — căile standalone "
+            + "(Import1C, Migrare, ModelCheck) nu trec prin gardianul de Committing, deci regula are nevoie de "
+            + "ambele uși",
+            refuzMotor != null
+            && refuzMotor.Contains("Data înregistrării nu poate preceda data documentului."));
+
+        nir.DataInregistrare = Zi(2, 5);
+        MotorOperare.Opereaza(os, nir);
+        var stoc = StocDoc(os, nir.ID);
+        var note = NoteDoc(os, nir.ID);
+        var lotDupa = os.GetObjectByKey<Lot>(idLotA);
+        Console.WriteLine($"     MĂSURAT (DIR-V4/{eticheta}): {stoc.Count} rânduri de stoc la "
+            + $"{Ziua(stoc.Select(r => r.Data).FirstOrDefault())}, {note.Count} note la "
+            + $"{Ziua(note.Select(r => r.Data).FirstOrDefault())}, lot la {lotDupa.Data:dd.MM.yyyy}, "
+            + $"număr „{nir.Numar}”.");
+        Check($"DIR-V4 ({eticheta}) documentul cu `Data` {Zi(1, 20):dd.MM.yyyy} într-o perioadă ÎNCHISĂ și data "
+            + $"înregistrării {Zi(2, 5):dd.MM.yyyy} în cea deschisă SE OPEREAZĂ, iar registrele contabil și de "
+            + "stoc ȘI lotul se nasc la data înregistrării — documentul întârziat e flux normal, nu excepție; "
+            + "numărul rămâne al seriei tipului, consumat la materializare",
+            nir.Stare == StareDocument.Operat
+            && stoc.Count > 0 && stoc.All(r => r.Data == Zi(2, 5))
+            && note.Count > 0 && note.All(r => r.Data == Zi(2, 5))
+            && lotDupa.Data == Zi(2, 5)
+            && !string.IsNullOrWhiteSpace(nir.Numar) && nir.Numar.StartsWith("NIR-"));
+    }
+
+    // ── DIR-V5: faptul fiscal rămâne pe data documentului; conexul moștenește ──
+    using (var os = provider.CreateObjectSpace()) {
+        var fct = os.CreateObject<FacturaIntrare>();
+        fct.Numar = Marcaj + "-FCT";
+        fct.Data = Zi(1, 22);
+        fct.DataInregistrare = Zi(2, 6);
+        fct.PredatorId = idFurnizor;
+        fct.PrimitorId = idGestA;
+        var linie = os.CreateObject<FacturaIntrareDetaliu>();
+        linie.Document = fct;
+        linie.TipMaterialId = idTipStoc;
+        linie.Cantitate = 4m;
+        linie.PretUnitar = 25m;
+        linie.CodEconomicId = idCodEc;
+        if (privat)
+            linie.TipTva = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+        linie.CreeazaLot(os, os.GetObjectByKey<Produs>(idProdus), os.GetObjectByKey<Gestiune>(idGestA));
+        os.CommitChanges();
+
+        var conex = MotorOperare.Opereaza(os, fct);
+        var tva = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == fct.ID).ToList();
+        var note = NoteDoc(os, fct.ID);
+        var stoc = StocDoc(os, fct.ID);
+        Console.WriteLine($"     MĂSURAT (DIR-V5/{eticheta}): {note.Count} note la "
+            + $"{Ziua(note.Select(r => r.Data).FirstOrDefault())}, {stoc.Count} rânduri de stoc la "
+            + $"{Ziua(stoc.Select(r => r.Data).FirstOrDefault())}, {tva.Count} rânduri de TVA la "
+            + $"{Ziua(tva.Select(r => r.Data).FirstOrDefault())}; conex = "
+            + $"{conex?.GetType().Name ?? "<niciunul>"} cu {Ziua(conex?.Data ?? default)} / "
+            + $"{Ziua(conex?.DataInregistrare ?? default)}.");
+        // Pe bugetar factura n-are `PoliticaTva`, deci nici rând fiscal, iar pentru o
+        // linie de stoc netul îl duce NIR-ul conex — de aceea numărul de note se cere
+        // nenul doar pe privat (acolo e nota de TVA).
+        Check($"DIR-V5 ({eticheta}) pe factura întârziată tot ce scrie motorul în registrele cu SOLD cade la "
+            + $"data înregistrării, dar `RegistruTva.Data` RĂMÂNE data faptului fiscal "
+            + $"({Zi(1, 22):dd.MM.yyyy}) — jurnalele sunt pe data facturii (F27-D5; perioada de declarare vine "
+            + "la pasul 4). Conexul moștenește AMBELE date ale sursei",
+            note.All(r => r.Data == Zi(2, 6)) && stoc.All(r => r.Data == Zi(2, 6))
+            && tva.All(r => r.Data == Zi(1, 22))
+            && (!privat || (note.Count > 0 && tva.Count > 0))
+            && conex is NIR && conex.Data == Zi(1, 22) && conex.DataInregistrare == Zi(2, 6));
+    }
+
+    // ── DIR-V6: anularea privește perioada ÎNREGISTRĂRII ──
+    using (var os = provider.CreateObjectSpace()) {
+        var nir = os.GetObjectByKey<NIR>(idNirTarziu);
+        MotorOperare.AnuleazaOperarea(os, nir);
+        var faraRegistre = StocDoc(os, idNirTarziu).Count == 0 && NoteDoc(os, idNirTarziu).Count == 0;
+        Check($"DIR-V6 ({eticheta}) anularea documentului întârziat e PERMISĂ deși `Data` lui e în 01/{An}, "
+            + "închisă: gardianul de perioadă al anulării întreabă despre perioada în care documentul a intrat "
+            + "în evidență, adică exact perioada rândurilor care se șterg",
+            nir.Stare == StareDocument.Draft && faraRegistre);
+        MotorOperare.Opereaza(os, nir);
+        Check($"DIR-V6b ({eticheta}) re-operarea îl aduce înapoi, cu registrele tot la data înregistrării",
+            nir.Stare == StareDocument.Operat && StocDoc(os, idNirTarziu).All(r => r.Data == Zi(2, 5)));
+    }
+
+    // ── DIR-V7: stornoul se măsoară de la data înregistrării ──
+    Guid idLotB;
+    using (var os = provider.CreateObjectSpace()) {
+        var nirB = os.CreateObject<NIR>();
+        nirB.Data = Zi(2, 1);
+        nirB.DataInregistrare = Zi(2, 1);
+        nirB.PredatorId = idFurnizor;
+        nirB.PrimitorId = idGestA;
+        var linie = os.CreateObject<NirDetaliu>();
+        linie.Document = nirB;
+        linie.TipMaterialId = idTipStoc;
+        linie.Cantitate = 6m;
+        linie.PretUnitar = 12m;
+        linie.CodEconomicId = idCodEc;
+        var lotB = linie.CreeazaLot(os, os.GetObjectByKey<Produs>(idProdus),
+            os.GetObjectByKey<Gestiune>(idGestA));
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nirB);
+        idLotB = lotB.ID;
+
+        var refuzStorno = Refuz(() => MotorOperare.Storneaza(os, os.GetObjectByKey<NIR>(idNirTarziu), Zi(2, 3)));
+        Console.WriteLine($"     MĂSURAT (DIR-V7/{eticheta}): stornoul pe {Zi(2, 3):dd.MM.yyyy} al documentului "
+            + $"înregistrat pe {Zi(2, 5):dd.MM.yyyy} a ieșit cu „{PrimaLinie(refuzStorno)}”.");
+        Check($"DIR-V7 ({eticheta}) o dată de storno ULTERIOARĂ datei documentului dar ANTERIOARĂ datei "
+            + "înregistrării e refuzată cu textul nou: rândurile inverse n-au voie să cadă înaintea rândurilor "
+            + "pe care le anulează",
+            refuzStorno != null
+            && refuzStorno.Contains("Data stornării nu poate preceda data înregistrării documentului."));
+    }
+
+    // ── DIR-V9/V10: ordinea FIFO și gardianul de sold sunt ale datei înregistrării ──
+    using (var os = provider.CreateObjectSpace()) {
+        var lotA = os.GetObjectByKey<Lot>(idLotA);
+        var lotB = os.GetObjectByKey<Lot>(idLotB);
+        // Tipul de stoc se CITEȘTE din rândul scris de motor: regulile de stoc ale
+        // NIR-ului sunt de profil, iar scena n-are voie să presupună un membru.
+        var randA = os.GetObjectsQuery<RegistruStoc>().First(r => r.LotId == idLotA && !r.Storno);
+        var (alocari, ramas) = StocService.AlocaFifoTolerant(os, idProdus, idGestA, randA.TipStoc,
+            Zi(2, 10), 3m);
+        Console.WriteLine($"     MĂSURAT (DIR-V9/{eticheta}): lotul A (document {Zi(1, 20):dd.MM.yyyy}) e datat "
+            + $"{lotA.Data:dd.MM.yyyy}, lotul B (document {Zi(2, 1):dd.MM.yyyy}) e datat {lotB.Data:dd.MM.yyyy}; "
+            + $"FIFO alocă întâi {(alocari.Count > 0 && alocari[0].LotId == idLotB ? "B" : "A")}, rest {ramas}.");
+        Check($"DIR-V9 ({eticheta}) lotul documentului întârziat e mai NOU decât al celui cules la timp, deși "
+            + "documentul lui e mai vechi — FIFO consumă în ordinea intrării în EVIDENȚĂ, singura ordine "
+            + "compatibilă cu „sold ≥ 0 la orice dată” (proba invariantului VI)",
+            lotA.Data == Zi(2, 5) && lotB.Data == Zi(2, 1) && lotA.Data > lotB.Data
+            && alocari.Count == 1 && alocari[0].LotId == idLotB && ramas == 0m);
+
+        var refuzSold = Refuz(() => StocService.VerificaSoldIntermediar(os, [
+            new MiscareStoc(new CheieStoc(idLotA, randA.RepartitorId, randA.TipStoc), Zi(2, 3), -1m)
+        ]));
+        Console.WriteLine($"     MĂSURAT (DIR-V10/{eticheta}): ieșirea din lotul A pe {Zi(2, 3):dd.MM.yyyy} a "
+            + $"ieșit cu „{PrimaLinie(refuzSold)}”.");
+        Check($"DIR-V10 ({eticheta}) o ieșire înregistrată ÎNAINTEA intrării lotului cade pe gardianul de sold, "
+            + "cu textul lui neschimbat — nu există fereastră în care stocul să fie negativ",
+            refuzSold != null && refuzSold.Contains($"Sold negativ (-1) la {Zi(2, 3):yyyy-MM-dd}"));
+    }
+
+    // ── DIR-V8: stornoul valid ──
+    using (var os = provider.CreateObjectSpace()) {
+        var nir = os.GetObjectByKey<NIR>(idNirTarziu);
+        MotorOperare.Storneaza(os, nir, Zi(2, 10));
+        var inverse = StocDoc(os, idNirTarziu).Where(r => r.Storno).ToList();
+        var inverseNote = NoteDoc(os, idNirTarziu).Where(r => r.Storno).ToList();
+        Check($"DIR-V8 ({eticheta}) cu o dată ULTERIOARĂ înregistrării stornoul trece, iar rândurile inverse "
+            + "cad la data stornării — regula nu s-a schimbat, doar capătul de la care se măsoară",
+            nir.Stare == StareDocument.Stornat
+            && inverse.Count > 0 && inverse.All(r => r.Data == Zi(2, 10))
+            && inverseNote.Count > 0 && inverseNote.All(r => r.Data == Zi(2, 10)));
+    }
+
+    // ── DIR-V11: al patrulea registru ──
+    using (var os = provider.CreateObjectSpace()) {
+        var pif = os.CreateObject<PunereInFunctiune>();
+        pif.Data = Zi(1, 25);
+        pif.DataInregistrare = Zi(2, 12);
+        pif.PredatorId = idUnitate;
+        pif.PrimitorId = idGestA;
+        var l = os.CreateObject<PunereInFunctiuneDetaliu>();
+        l.Document = pif;
+        l.ImobilizareId = idFisa;
+        l.TipMaterialId = idTipF;
+        l.Fel = FelLiniePif.Intrare;
+        l.Valoare = 3600m;
+        l.Cantitate = 1m;
+        l.Metoda = MetodaAmortizare.Liniara;
+        l.DurataLuni = 36;
+        l.MetodaFiscala = MetodaAmortizare.Liniara;
+        l.DurataFiscalaLuni = 36;
+        l.CategorieFiscala = CategorieFiscala.Standard;
+        l.UtilizareExclusiva = true;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+
+        var randuri = os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.ImobilizareId == idFisa).ToList();
+        var refuzLuna = Refuz(() => MotorOperare.Storneaza(os, pif, Zi(3, 5)));
+        Console.WriteLine($"     MĂSURAT (DIR-V11/{eticheta}): {randuri.Count} rânduri de registru la "
+            + $"{Ziua(randuri.Select(r => r.Data).FirstOrDefault())}; stornoul pe {Zi(3, 5):dd.MM.yyyy} a ieșit "
+            + $"cu „{PrimaLinie(refuzLuna)}”.");
+        Check($"DIR-V11 ({eticheta}) al patrulea registru urmează aceeași regulă: rândul PIF-ului întârziat e "
+            + $"datat la înregistrare ({Zi(2, 12):dd.MM.yyyy}), iar stornoul e cerut în LUNA ÎNREGISTRĂRII "
+            + "(02), nu în luna documentului — situația fișei e o sumă de rânduri ≤ dată",
+            randuri.Count == 1 && randuri[0].Data == Zi(2, 12)
+            && refuzLuna != null && refuzLuna.Contains($"02.{An}"));
+
+        MotorOperare.Storneaza(os, pif, Zi(2, 20));
+        Check($"DIR-V11b ({eticheta}) stornoul din luna înregistrării trece și scrie rândul invers la data lui",
+            pif.Stare == StareDocument.Stornat
+            && os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.ImobilizareId == idFisa && r.Storno)
+                .ToList().Count(r => r.Data == Zi(2, 20)) == 1);
+    }
+
+    // ── DIR-V12: calea Import1C — câmpul nu se culege deloc ──
+    using (var os = provider.CreateObjectSpace()) {
+        var btr = os.CreateObject<NotaTransfer>();
+        btr.Data = Zi(2, 18);
+        btr.PredatorId = idGestA;
+        btr.PrimitorId = idGestB;
+        btr.NumarPV = Marcaj;
+        var linie = os.CreateObject<DocumentDetaliu>();
+        linie.Document = btr;
+        linie.TipMaterialId = idTipStoc;
+        linie.LotId = idLotB;
+        linie.Cantitate = 2m;
+        os.CommitChanges();
+        Check($"DIR-V12a ({eticheta}) documentul venit pe o cale care nu culege câmpul intră cu `default`",
+            btr.DataInregistrare == default);
+        MotorOperare.Opereaza(os, btr);
+        var stoc = StocDoc(os, btr.ID);
+        Check($"DIR-V12 ({eticheta}) normalizarea din motor („necules ⇒ data documentului”) e garanția pentru "
+            + "ORICE cale — Import1C, Migrare, documentele generate: registrele cad la `Data`, exact ca înainte "
+            + "de felie, deci baseline-ul importului rămâne identic",
+            btr.DataInregistrare == Zi(2, 18) && stoc.Count > 0 && stoc.All(r => r.Data == Zi(2, 18)));
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataDir(os);
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters().Count(p => p.An == An);
+        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var fise = os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters()
+            .Count(f => f.NumarInventar.StartsWith(Marcaj));
+        Check($"DIR-V13 ({eticheta}) fără reziduu: nicio perioadă {An}, niciun document și nicio fișă rămase — "
+            + "scena e re-rulabilă identic",
+            perioade == 0 && documente == 0 && fise == 0);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Felia 27, pasul 4a (F27-D5): perioada de DECLARARE pe registrul fiscal, iar
+// rectificativa ca DERIVAT din două timestamp-uri. Scena e a anului 2033.
+// ══════════════════════════════════════════════════════════════════════════
+void VerificaPerioadaDeclarare(bool privat) {
+    const string Marcaj = "E2E-PDT";
+    const int An = 2033;
+    var eticheta = privat ? "privat" : "bugetar";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+
+    // Neplătitorul n-are `PoliticaTva`, deci registrul fiscal îi rămâne gol și
+    // regula de declarare întârziată n-are pe ce să se aplice: ancoră, nu scenă.
+    if (!privat) {
+        using var osB = provider.CreateObjectSpace();
+        var politici = osB.GetObjectsQuery<PoliticaTva>().Count();
+        var randuriB = osB.GetObjectsQuery<RegistruTva>().Count();
+        Console.WriteLine($"     MĂSURAT (PDT-V0/{eticheta}): {politici} rânduri `PoliticaTva`, "
+            + $"{randuriB} rânduri `RegistruTva`.");
+        Check($"PDT-V0 ({eticheta}) profilul neplătitor n-are nicio `PoliticaTva`, deci `RegistruTva` e gol și "
+            + "`DeclarareIntarziata` e inertă — perioada de declarare nu schimbă nimic acolo unde nu există "
+            + "fapte fiscale",
+            politici == 0 && randuriB == 0);
+        return;
+    }
+
+    void CurataPdt(IObjectSpace os) {
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31))
+            .Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.ID)).OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).Select(p => p.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    List<RegistruTva> Fiscale(IObjectSpace os, Guid docId) =>
+        os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == docId)
+            .OrderBy(r => r.Storno).ToList();
+
+    using (var os = provider.CreateObjectSpace())
+        CurataPdt(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An);
+        var documente = os.GetObjectsQuery<Document>()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var inchise = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.Inchisa);
+        Console.WriteLine($"     MĂSURAT (PDT-V0/{eticheta}): {perioade} perioade și {documente} documente în "
+            + $"{An}, {inchise} perioade închise în bază.");
+        Check($"PDT-V0 ({eticheta}) precondiție: anul {An} e liber și nicio perioadă a bazei nu e închisă — "
+            + $"altfel închiderea lui 01/{An} n-ar fi capăt de lanț, iar jurnalele lunii ar fi măsurate peste "
+            + "conținut străin",
+            perioade == 0 && documente == 0 && inchise == 0);
+    }
+
+    Guid idFurnizor, idClient, idGestiune, idSediu, idTipCheltuiala, idTipVenit, idN21, idPoliticaFcl;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 1, 2, 3, 4 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+        }
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = Marcaj + "-F";
+        furnizor.Denumire = "Furnizor perioadă de declarare";
+        furnizor.CodFiscal = "RO33333339";
+        furnizor.InregistratTva = true;
+        var client = os.CreateObject<Partener>();
+        client.Cod = Marcaj + "-C";
+        client.Denumire = "Client perioadă de declarare";
+        client.CodFiscal = "RO44444442";
+        client.InregistratTva = true;
+        var gestiune = os.CreateObject<Gestiune>();
+        gestiune.Cod = Marcaj + "-G";
+        gestiune.Denumire = "Gestiune perioadă de declarare";
+        os.CommitChanges();
+        idFurnizor = furnizor.ID;
+        idClient = client.ID;
+        idGestiune = gestiune.ID;
+        idSediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU").ID;
+        idTipCheltuiala = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628").ID;
+        idTipVenit = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704").ID;
+        idN21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21").ID;
+        var politicaFct = os.FirstOrDefault<PoliticaTva>(p => p.TipDocument.Cod == "FCT");
+        var politicaFcl = os.FirstOrDefault<PoliticaTva>(p => p.TipDocument.Cod == "FCL");
+        idPoliticaFcl = politicaFcl.ID;
+        Check($"PDT-V0b ({eticheta}) seed-ul a pus regula de declarare pe DIRECȚIE: deductibilul (FCT) declară "
+            + "în perioada ÎNREGISTRĂRII (art. 301 — fără rectificativă), colectatul (FCL) în perioada "
+            + "FAPTULUI (factura noastră rămâne fiscal a lunii ei, deci se rectifică)",
+            politicaFct.DeclarareIntarziata == DeclarareIntarziata.PerioadaInregistrarii
+            && politicaFcl.DeclarareIntarziata == DeclarareIntarziata.PerioadaFaptului);
+    }
+
+    // ── PDT-V1: perioada DESCHISĂ a faptului câștigă întotdeauna ──
+    using (var os = provider.CreateObjectSpace()) {
+        var fct = os.CreateObject<FacturaIntrare>();
+        fct.Numar = Marcaj + "-FCT0";
+        fct.Data = Zi(3, 3);
+        fct.DataInregistrare = Zi(3, 10);
+        fct.PredatorId = idFurnizor;
+        fct.PrimitorId = idGestiune;
+        var linie = os.CreateObject<FacturaIntrareDetaliu>();
+        linie.Document = fct;
+        linie.TipMaterialId = idTipCheltuiala;
+        linie.Cantitate = 1m;
+        linie.PretUnitar = 100m;
+        linie.TipTvaId = idN21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fct);
+        var randuri = Fiscale(os, fct.ID);
+        Console.WriteLine($"     MĂSURAT (PDT-V1/{eticheta}): {randuri.Count} rânduri, `Data` "
+            + $"{Ziua(randuri[0].Data)}, perioada {randuri[0].PerioadaLuna:00}/{randuri[0].PerioadaAn}, "
+            + $"`ScrisLa` {randuri[0].ScrisLa:yyyy-MM-dd HH:mm:ss}.");
+        Check($"PDT-V1 ({eticheta}) faptul dintr-o perioadă DESCHISĂ ({Zi(3, 3):dd.MM.yyyy}, înregistrat pe "
+            + $"{Zi(3, 10):dd.MM.yyyy}) se declară în perioada LUI, oricare ar fi politica — regula de "
+            + "declarare întârziată se aplică doar peste o graniță închisă",
+            randuri.Count == 1 && randuri[0].Data == Zi(3, 3)
+            && randuri[0].PerioadaAn == An && randuri[0].PerioadaLuna == 3);
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        InchideAcceptTot(os, An, 1, Marcaj);
+        var p = os.FirstOrDefault<PerioadaFiscala>(x => x.An == An && x.Luna == 1);
+        Check($"PDT — precondiție de scenă ({eticheta}): 01/{An} se închide (capăt de lanț) și își reține "
+            + "`InchisaPrimaOara` — reperul contra căruia se citește conținutul de rectificativă",
+            p.Inchisa && p.InchisaPrimaOara != null);
+    }
+
+    // ── PDT-V2…V4: faptul întârziat, pe ambele direcții ──
+    Guid idFctTarziu, idFclTarziu;
+    using (var os = provider.CreateObjectSpace()) {
+        var fct = os.CreateObject<FacturaIntrare>();
+        fct.Numar = Marcaj + "-FCT1";
+        fct.Data = Zi(1, 20);
+        fct.DataInregistrare = Zi(2, 5);
+        fct.PredatorId = idFurnizor;
+        fct.PrimitorId = idGestiune;
+        var linieFct = os.CreateObject<FacturaIntrareDetaliu>();
+        linieFct.Document = fct;
+        linieFct.TipMaterialId = idTipCheltuiala;
+        linieFct.Cantitate = 1m;
+        linieFct.PretUnitar = 300m;
+        linieFct.TipTvaId = idN21;
+
+        var fcl = os.CreateObject<FacturaIesire>();
+        fcl.Numar = Marcaj + "-FCL1";
+        fcl.Data = Zi(1, 20);
+        fcl.DataInregistrare = Zi(2, 5);
+        fcl.PredatorId = idSediu;
+        fcl.PrimitorId = idClient;
+        var linieFcl = os.CreateObject<FacturaIesireDetaliu>();
+        linieFcl.Document = fcl;
+        linieFcl.TipMaterialId = idTipVenit;
+        linieFcl.Cantitate = 1m;
+        linieFcl.PretUnitar = 500m;
+        linieFcl.TipTvaId = idN21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fct);
+        MotorOperare.Opereaza(os, fcl);
+        idFctTarziu = fct.ID;
+        idFclTarziu = fcl.ID;
+
+        var rFct = Fiscale(os, fct.ID);
+        var rFcl = Fiscale(os, fcl.ID);
+        Console.WriteLine($"     MĂSURAT (PDT-V2/{eticheta}): FCT `Data` {Ziua(rFct[0].Data)} perioada "
+            + $"{rFct[0].PerioadaLuna:00}/{rFct[0].PerioadaAn}; FCL `Data` {Ziua(rFcl[0].Data)} perioada "
+            + $"{rFcl[0].PerioadaLuna:00}/{rFcl[0].PerioadaAn}.");
+        Check($"PDT-V2 ({eticheta}) factura de intrare cu `Data` {Zi(1, 20):dd.MM.yyyy} (perioadă ÎNCHISĂ) "
+            + $"înregistrată pe {Zi(2, 5):dd.MM.yyyy} păstrează `Data` FAPTULUI pe rând, dar se declară în "
+            + $"02/{An} — `PerioadaInregistrarii`, adică exact dreptul de deducere exercitat la primire",
+            rFct.Count == 1 && rFct[0].Data == Zi(1, 20)
+            && rFct[0].PerioadaAn == An && rFct[0].PerioadaLuna == 2 && rFct[0].Baza == 300m);
+        Check($"PDT-V3 ({eticheta}) factura de ieșire, cu ACELEAȘI date, se declară în 01/{An} — "
+            + "`PerioadaFaptului`: factura noastră aparține fiscal lunii ei, iar consecința e o rectificativă, "
+            + "nu o mutare tăcută",
+            rFcl.Count == 1 && rFcl[0].Data == Zi(1, 20)
+            && rFcl[0].PerioadaAn == An && rFcl[0].PerioadaLuna == 1 && rFcl[0].Baza == 500m);
+        Check($"PDT-V4 ({eticheta}) `ScrisLa` e populat pe toate rândurile scenei, în UTC — fără el "
+            + "rectificativa n-ar avea al doilea timestamp",
+            rFct.Concat(rFcl).All(r => r.ScrisLa != default && r.ScrisLa.Kind != DateTimeKind.Local));
+    }
+
+    // ── PDT-V5/V6: conținutul de rectificativă ──
+    using (var os = provider.CreateObjectSpace()) {
+        var rect = TvaProiectii.Rectificativa(os, An, 1);
+        var rectFebruarie = TvaProiectii.Rectificativa(os, An, 2);
+        Console.WriteLine($"     MĂSURAT (PDT-V5/{eticheta}): 01/{An} — {rect.Randuri.Count} rânduri, "
+            + $"{rect.Agregat.Count} poziții de agregat, bază {rect.Agregat.Sum(a => a.Baza)}, TVA "
+            + $"{rect.Agregat.Sum(a => a.Tva)}; 02/{An} — rectificativă: {rectFebruarie.EsteRectificativa}.");
+        Check($"PDT-V5 ({eticheta}) conținutul de rectificativă al lui 01/{An} e EXACT rândul facturii de "
+            + "ieșire întârziate: declarat în perioada închisă, scris după închiderea ei. Nu există flag — e "
+            + "diferența dintre `ScrisLa` și `InchisaPrimaOara`",
+            rect.EsteRectificativa && rect.InchisaPrimaOara != null
+            && rect.Randuri.Count == 1 && rect.Randuri[0].DocumentId == idFclTarziu
+            && rect.Randuri[0].Sens == "Livrare" && rect.Randuri[0].Baza == 500m
+            && rect.Randuri[0].Tva == 105m && !rect.Randuri[0].Storno
+            && rect.Agregat.Count == 1 && rect.Agregat[0].Baza == 500m && rect.Agregat[0].Tva == 105m
+            && rect.Agregat[0].Randuri == 1);
+        Check($"PDT-V6 ({eticheta}) 02/{An} NU e rectificativă deși are cifre scrise târziu: n-a fost închisă "
+            + "niciodată, deci n-are declarație depusă de rectificat — reperul lipsește, nu cifrele",
+            !rectFebruarie.EsteRectificativa && rectFebruarie.InchisaPrimaOara == null
+            && rectFebruarie.Randuri.Count == 0 && rectFebruarie.Agregat.Count == 0);
+    }
+
+    // ── PDT-V7: politica DECIDE, iar motorul nu știe de ce ──
+    using (var os = provider.CreateObjectSpace()) {
+        // Rândul `DinSeed` se schimbă pe ușa de SISTEM (gardianul de Committing nu
+        // se aplică pe OS-ul standalone), ca în F24-V1; valoarea se pune la loc mai
+        // jos, ca proba de aliniere a seed-ului să rămână adevărată la re-rulare.
+        var politica = os.GetObjectByKey<PoliticaTva>(idPoliticaFcl);
+        politica.DeclarareIntarziata = DeclarareIntarziata.PerioadaInregistrarii;
+        os.CommitChanges();
+
+        var fcl = os.CreateObject<FacturaIesire>();
+        fcl.Numar = Marcaj + "-FCL2";
+        fcl.Data = Zi(1, 21);
+        fcl.DataInregistrare = Zi(2, 6);
+        fcl.PredatorId = idSediu;
+        fcl.PrimitorId = idClient;
+        var linie = os.CreateObject<FacturaIesireDetaliu>();
+        linie.Document = fcl;
+        linie.TipMaterialId = idTipVenit;
+        linie.Cantitate = 1m;
+        linie.PretUnitar = 700m;
+        linie.TipTvaId = idN21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fcl);
+        var randuri = Fiscale(os, fcl.ID);
+        Console.WriteLine($"     MĂSURAT (PDT-V7/{eticheta}): cu politica pe `PerioadaInregistrarii`, a doua "
+            + $"factură de ieșire întârziată cade în {randuri[0].PerioadaLuna:00}/{randuri[0].PerioadaAn}.");
+        Check($"PDT-V7 ({eticheta}) aceeași factură de ieșire, aceeași întârziere, ALT rezultat, fiindcă "
+            + "politica tipului s-a schimbat: regula de declarare e DATĂ, nu cod — motorul o citește și n-o "
+            + "judecă (invariantul IV)",
+            randuri.Count == 1 && randuri[0].PerioadaAn == An && randuri[0].PerioadaLuna == 2);
+
+        politica.DeclarareIntarziata = DeclarareIntarziata.PerioadaFaptului;
+        os.CommitChanges();
+        Check($"PDT-V7b ({eticheta}) politica revine la valoarea de seed — rândul deja scris NU se schimbă, "
+            + "fiindcă perioada de declarare e SNAPSHOT pe rând, ca `Regim` și `Cota` (JT-D3)",
+            os.GetObjectByKey<PoliticaTva>(idPoliticaFcl).DeclarareIntarziata
+                == DeclarareIntarziata.PerioadaFaptului
+            && Fiscale(os, fcl.ID)[0].PerioadaLuna == 2);
+    }
+
+    // ── PDT-V8…V11: consumatorii filtrează pe PERIOADA DE DECLARARE ──
+    using (var os = provider.CreateObjectSpace()) {
+        List<Guid> Jurnal(SensTva sens, int luna) =>
+            TvaProiectii.JurnalTva(os, sens, Zi(luna, 1), Zi(luna, DateTime.DaysInMonth(An, luna)))
+                .ToList().Select(r => r.DocumentId).ToList();
+
+        var vanzariIanuarie = Jurnal(SensTva.Livrare, 1);
+        var vanzariFebruarie = Jurnal(SensTva.Livrare, 2);
+        var cumparariIanuarie = Jurnal(SensTva.Achizitie, 1);
+        var cumparariFebruarie = Jurnal(SensTva.Achizitie, 2);
+        Console.WriteLine($"     MĂSURAT (PDT-V8/{eticheta}): jurnal vânzări 01 = {vanzariIanuarie.Count} "
+            + $"rânduri, 02 = {vanzariFebruarie.Count}; cumpărări 01 = {cumparariIanuarie.Count}, 02 = "
+            + $"{cumparariFebruarie.Count}.");
+        Check($"PDT-V8 ({eticheta}) jurnalul de VÂNZĂRI pe 01/{An} conține factura de ieșire întârziată, deși "
+            + "ea a fost scrisă în februarie: jurnalul e pe perioada de DECLARARE, iar ea a rămas a faptului",
+            vanzariIanuarie.Contains(idFclTarziu) && !vanzariFebruarie.Contains(idFclTarziu));
+        Check($"PDT-V9 ({eticheta}) jurnalul de CUMPĂRĂRI pe 02/{An} conține factura de intrare întârziată, "
+            + $"iar cel pe 01/{An} nu — aceeași regulă, cealaltă politică",
+            cumparariFebruarie.Contains(idFctTarziu) && !cumparariIanuarie.Contains(idFctTarziu));
+
+        var randJurnal = TvaProiectii.JurnalTva(os, SensTva.Livrare, Zi(1, 1), Zi(1, 31))
+            .ToList().Single(r => r.DocumentId == idFclTarziu);
+        Check($"PDT-V9b ({eticheta}) rândul de jurnal poartă AMBELE coordonate: `Data` faptului "
+            + $"({Zi(1, 20):dd.MM.yyyy}) și perioada de declarare (01/{An}) — diferența dintre ele e chiar "
+            + "ce trebuie să vadă contabilul",
+            randJurnal.Data == Zi(1, 20) && randJurnal.PerioadaAn == An && randJurnal.PerioadaLuna == 1);
+
+        var d300 = D300Proiectii.D300(os, Zi(1, 1), Zi(1, 31), new ParametriD300());
+        var d394 = D394Proiectii.D394(os, Zi(1, 1), Zi(1, 31));
+        var d300Trimestru = D300Proiectii.D300(os, Zi(1, 1), Zi(3, 31), new ParametriD300());
+        Console.WriteLine($"     MĂSURAT (PDT-V10/{eticheta}): D300 01/{An} rectificativă = "
+            + $"{d300.Rectificativa} cu {d300.DiferenteDeclarat.Count} poziții (bază "
+            + $"{d300.DiferenteDeclarat.Sum(a => a.Baza)}); D394 = {d394.Rectificativa} cu "
+            + $"{d394.DiferenteDeclarat.Count}; pe trimestru = {d300Trimestru.Rectificativa}.");
+        Check($"PDT-V10 ({eticheta}) D300 pe 01/{An} se raportează ca RECTIFICATIVĂ, cu „diferențele față de "
+            + "declarat” = exact agregatul rândurilor scrise după închidere",
+            d300.Rectificativa && d300.DiferenteDeclarat.Count == 1
+            && d300.DiferenteDeclarat[0].Baza == 500m && d300.DiferenteDeclarat[0].Tva == 105m);
+        Check($"PDT-V11 ({eticheta}) D394 pe aceeași lună spune același lucru, din aceeași sursă — cusătura "
+            + "dintre cele două declarații nu se rupe",
+            d394.Rectificativa && d394.DiferenteDeclarat.Count == 1
+            && d394.DiferenteDeclarat[0].Baza == 500m && d394.DiferenteDeclarat[0].Tva == 105m);
+        Check($"PDT-V11b ({eticheta}) pe un interval de MAI MULTE luni întrebarea n-are subiect (nu există O "
+            + "declarație depusă): `Rectificativa` e falsă și lista goală, declarat ca limită",
+            !d300Trimestru.Rectificativa && d300Trimestru.DiferenteDeclarat.Count == 0);
+    }
+
+    // ── PDT-V12: stornoul e fapt al perioadei stornării ──
+    using (var os = provider.CreateObjectSpace()) {
+        MotorOperare.Storneaza(os, os.GetObjectByKey<FacturaIesire>(idFclTarziu), Zi(2, 10));
+        var inverse = Fiscale(os, idFclTarziu).Where(r => r.Storno).ToList();
+        Console.WriteLine($"     MĂSURAT (PDT-V12/{eticheta}): {inverse.Count} rânduri inverse, `Data` "
+            + $"{Ziua(inverse[0].Data)}, perioada {inverse[0].PerioadaLuna:00}/{inverse[0].PerioadaAn}.");
+        Check($"PDT-V12 ({eticheta}) rândul invers al unei facturi declarate în 01/{An} cade în 02/{An}, nu în "
+            + "01: stornoul e un fapt al perioadei stornării (JT-D5), iar declarația deja depusă rămâne cum a "
+            + "fost depusă. Excepția cu motiv e a corecției (F27-D6, pasul 5)",
+            inverse.Count == 1 && inverse[0].Data == Zi(2, 10)
+            && inverse[0].PerioadaAn == An && inverse[0].PerioadaLuna == 2
+            && inverse[0].Baza == -500m && inverse[0].ScrisLa != default);
+    }
+
+    // ── PDT-V13: redeschiderea nu șterge reperul ──
+    using (var os = provider.CreateObjectSpace()) {
+        PerioadaService.Redeschide(os, An, 1, "probă: reperul rectificativei", null, Marcaj);
+        var p = os.FirstOrDefault<PerioadaFiscala>(x => x.An == An && x.Luna == 1);
+        var rect = TvaProiectii.Rectificativa(os, An, 1);
+        Check($"PDT-V13 ({eticheta}) redeschiderea lui 01/{An} NU stinge `InchisaPrimaOara`, deci conținutul "
+            + "de rectificativă rămâne detectabil — ce a fost declarat o dată rămâne reperul, oricâte "
+            + "redeschideri urmează",
+            !p.Inchisa && p.InchisaPrimaOara != null
+            && rect.EsteRectificativa && rect.Randuri.Count == 1);
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataPdt(os);
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters().Count(p => p.An == An);
+        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var politica = os.GetObjectByKey<PoliticaTva>(idPoliticaFcl);
+        Check($"PDT-V14 ({eticheta}) fără reziduu: nicio perioadă {An}, niciun document rămas, iar politica "
+            + "de seed e la valoarea ei — scena e re-rulabilă identic",
+            perioade == 0 && documente == 0
+            && politica.DeclarareIntarziata == DeclarareIntarziata.PerioadaFaptului);
+    }
+}
+
+// Ajutoare de TIPĂRIRE ale blocului de mai sus (doar pentru liniile `MĂSURAT`).
+string PrimaLinie(string mesaj) => mesaj == null ? "<a trecut>" : mesaj.Split('\n')[0];
+string Ziua(DateOnly data) => data == default ? "-" : data.ToString("dd.MM.yyyy");
+
+// ══════════════════════════════════════════════════════════════════════════
+// Felia 27, pasul 5 (F27-D6): corecția peste graniță = storno legat + document
+// nou, cu motiv. Scena e a anului 2034.
+// ══════════════════════════════════════════════════════════════════════════
+void VerificaCorectie(bool privat) {
+    const string Marcaj = "E2E-COR";
+    const int An = 2034;
+    var eticheta = privat ? "privat" : "bugetar";
+    var codTipStoc = privat ? "371" : "302.01.00";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+
+    void CurataCor(IObjectSpace os) {
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31))
+            .Select(d => d.ID).ToList();
+        var produsIds = os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => p.Cod.StartsWith(Marcaj)).Select(p => p.ID).ToList();
+        var lotIds = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => produsIds.Contains(l.ProdusId)).Select(l => l.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        // Corecțiile ÎNAINTEA originalelor: `CorecteazaId` e FK `Restrict`, deci
+        // originalul nu se șterge cât timp corecția îl arată (F27-D6).
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.ID))
+                .OrderByDescending(d => d.CorecteazaId != null)
+                .ThenByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => lotIds.Contains(l.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => produsIds.Contains(p.ID)).ToList());
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).Select(p => p.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    // Calea REALĂ a refuzului de culegere: dispecerul din gardian, nu regula.
+    string RefuzGardianCor(IObjectSpace os) {
+        try {
+            GardianEditare.Verifica(os);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+    }
+
+    List<RegistruStoc> StocDoc(IObjectSpace os, Guid docId) =>
+        os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == docId)
+            .OrderBy(r => r.Storno).ToList();
+    List<RegistruContabil> NoteDoc(IObjectSpace os, Guid docId) =>
+        os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == docId)
+            .OrderBy(r => r.Storno).ToList();
+    List<RegistruTva> Fiscale(IObjectSpace os, Guid docId) =>
+        os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == docId)
+            .OrderBy(r => r.Storno).ToList();
+
+    using (var os = provider.CreateObjectSpace())
+        CurataCor(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An);
+        var documente = os.GetObjectsQuery<Document>()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var inchise = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.Inchisa);
+        Console.WriteLine($"     MĂSURAT (COR-V0/{eticheta}): {perioade} perioade și {documente} documente în "
+            + $"{An}, {inchise} perioade închise în bază.");
+        Check($"COR-V0 ({eticheta}) precondiție: anul {An} e liber și nicio perioadă a bazei nu e închisă — "
+            + $"altfel închiderea lui 01/{An} n-ar fi capăt de lanț, iar snapshot-ul măsurat mai jos ar fi "
+            + "peste conținut străin",
+            perioade == 0 && documente == 0 && inchise == 0);
+    }
+
+    // ── Scena: două NIR-uri (fiecare naște un lot) și un transfer care CONSUMĂ
+    //    lotul al doilea; pe privat, în plus, faptele fiscale ale lunii ──
+    Guid idGestA, idGestB, idFurnizor, idProdus, idCodEc, idTipStoc;
+    Guid idNirA, idNirB, idBtr, idLotA, idLotB, idLinieNirA;
+    Guid idFct1 = Guid.Empty, idFct2 = Guid.Empty, idFcl = Guid.Empty;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 1, 2, 3 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+        }
+        var tipStoc = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipStoc);
+        var gestA = os.CreateObject<Gestiune>();
+        gestA.Cod = Marcaj + "-GA";
+        gestA.Denumire = "Gestiune corecție A";
+        var gestB = os.CreateObject<Gestiune>();
+        gestB.Cod = Marcaj + "-GB";
+        gestB.Denumire = "Gestiune corecție B";
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = Marcaj + "-F";
+        furnizor.Denumire = "Furnizor corecție";
+        furnizor.CodFiscal = "RO33333340";
+        furnizor.InregistratTva = true;
+        var produs = os.CreateObject<Produs>();
+        produs.Cod = Marcaj + "-P";
+        produs.Denumire = "Produs corecție";
+        produs.UM = "BUC";
+        produs.TipMaterial = tipStoc;
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-CE";
+        codEc.Denumire = "Cod economic corecție";
+        os.CommitChanges();
+        idGestA = gestA.ID; idGestB = gestB.ID; idFurnizor = furnizor.ID;
+        idProdus = produs.ID; idCodEc = codEc.ID; idTipStoc = tipStoc.ID;
+    }
+
+    NIR CreeazaNir(IObjectSpace os, Guid gestiuneId, decimal cantitate, decimal pret,
+            out Lot lot, out NirDetaliu linie) {
+        var nir = os.CreateObject<NIR>();
+        nir.Data = Zi(1, 12);
+        nir.DataInregistrare = Zi(1, 12);
+        nir.PredatorId = idFurnizor;
+        nir.PrimitorId = gestiuneId;
+        var l = os.CreateObject<NirDetaliu>();
+        l.Document = nir;
+        l.TipMaterialId = idTipStoc;
+        l.Cantitate = cantitate;
+        l.PretUnitar = pret;
+        l.CodEconomicId = idCodEc;
+        lot = l.CreeazaLot(os, os.GetObjectByKey<Produs>(idProdus), os.GetObjectByKey<Gestiune>(gestiuneId));
+        linie = l;
+        return nir;
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var nirA = CreeazaNir(os, idGestA, 10m, 10m, out var lotA, out var linieA);
+        var nirB = CreeazaNir(os, idGestB, 20m, 5m, out var lotB, out _);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nirA);
+        MotorOperare.Opereaza(os, nirB);
+
+        var btr = os.CreateObject<NotaTransfer>();
+        btr.Numar = Marcaj + "-BTR";
+        btr.Data = Zi(1, 20);
+        btr.DataInregistrare = Zi(1, 20);
+        btr.PredatorId = idGestB;
+        btr.PrimitorId = idGestA;
+        btr.NumarPV = Marcaj;
+        var linieBtr = os.CreateObject<DocumentDetaliu>();
+        linieBtr.Document = btr;
+        linieBtr.TipMaterialId = idTipStoc;
+        linieBtr.LotId = lotB.ID;
+        linieBtr.Cantitate = 6m;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, btr);
+
+        idNirA = nirA.ID; idNirB = nirB.ID; idBtr = btr.ID;
+        idLotA = lotA.ID; idLotB = lotB.ID; idLinieNirA = linieA.ID;
+        Check($"COR — precondiție de scenă ({eticheta}): două NIR-uri operate în 01/{An} (fiecare cu lotul lui) "
+            + "și un transfer care CONSUMĂ lotul al doilea — exact cele două roluri pe care regula lotului le "
+            + "distinge la corecție",
+            nirA.Stare == StareDocument.Operat && nirB.Stare == StareDocument.Operat
+            && btr.Stare == StareDocument.Operat
+            && os.GetObjectByKey<Lot>(idLotA).Data == Zi(1, 12));
+    }
+
+    if (privat)
+        using (var os = provider.CreateObjectSpace()) {
+            var idTipCheltuiala = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628").ID;
+            var idTipVenit = os.FirstOrDefault<TipMaterial>(t => t.Cod == "704").ID;
+            var idN21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21").ID;
+            var idSediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU").ID;
+
+            FacturaIntrare Fct(string sufix, int zi, decimal pret) {
+                var f = os.CreateObject<FacturaIntrare>();
+                f.Numar = Marcaj + sufix;
+                f.Data = Zi(1, zi);
+                f.DataInregistrare = Zi(1, zi);
+                f.PredatorId = idFurnizor;
+                f.PrimitorId = idGestA;
+                var l = os.CreateObject<FacturaIntrareDetaliu>();
+                l.Document = f;
+                l.TipMaterialId = idTipCheltuiala;
+                l.Cantitate = 1m;
+                l.PretUnitar = pret;
+                l.TipTvaId = idN21;
+                l.CodEconomicId = idCodEc;
+                return f;
+            }
+
+            var fct1 = Fct("-FCT1", 15, 100m);
+            var fct2 = Fct("-FCT2", 16, 200m);
+            var fcl = os.CreateObject<FacturaIesire>();
+            fcl.Numar = Marcaj + "-FCL";
+            fcl.Data = Zi(1, 17);
+            fcl.DataInregistrare = Zi(1, 17);
+            fcl.PredatorId = idSediu;
+            fcl.PrimitorId = idFurnizor;
+            var linieFcl = os.CreateObject<FacturaIesireDetaliu>();
+            linieFcl.Document = fcl;
+            linieFcl.TipMaterialId = idTipVenit;
+            linieFcl.Cantitate = 1m;
+            linieFcl.PretUnitar = 500m;
+            linieFcl.TipTvaId = idN21;
+            linieFcl.CodEconomicId = idCodEc;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, fct1);
+            MotorOperare.Opereaza(os, fct2);
+            MotorOperare.Opereaza(os, fcl);
+            idFct1 = fct1.ID; idFct2 = fct2.ID; idFcl = fcl.ID;
+
+            var r1 = Fiscale(os, fct1.ID);
+            Check($"COR — precondiție fiscală ({eticheta}): faptele lui ianuarie se declară în 01/{An} "
+                + "(perioada lor, încă deschisă) — reperul contra căruia se citește efectul motivului",
+                r1.Count == 1 && r1[0].PerioadaAn == An && r1[0].PerioadaLuna == 1
+                && Fiscale(os, fcl.ID)[0].PerioadaLuna == 1);
+        }
+
+    // ── Închiderea lui ianuarie: granița peste care corecția devine singura cale ──
+    decimal snapshotDebitInitial, snapshotCreditInitial, snapshotCantitateInitiala;
+    int snapshotRanduriInitial;
+    using (var os = provider.CreateObjectSpace()) {
+        InchideAcceptTot(os, An, 1, Marcaj);
+        var p = os.FirstOrDefault<PerioadaFiscala>(x => x.An == An && x.Luna == 1);
+        snapshotRanduriInitial = os.GetObjectsQuery<SoldPerioadaContabil>().Count(s => s.An == An && s.Luna == 1);
+        snapshotDebitInitial = os.GetObjectsQuery<SoldPerioadaContabil>()
+            .Where(s => s.An == An && s.Luna == 1).Sum(s => (decimal?)s.Debit) ?? 0m;
+        snapshotCreditInitial = os.GetObjectsQuery<SoldPerioadaContabil>()
+            .Where(s => s.An == An && s.Luna == 1).Sum(s => (decimal?)s.Credit) ?? 0m;
+        snapshotCantitateInitiala = os.GetObjectsQuery<SoldPerioadaStoc>()
+            .Where(s => s.An == An && s.Luna == 1).Sum(s => (decimal?)s.Cantitate) ?? 0m;
+        Check($"COR — precondiție de scenă ({eticheta}): 01/{An} se închide (capăt de lanț) și își "
+            + "materializează soldurile — corecția de mai jos NU are voie să le atingă",
+            p.Inchisa && p.InchisaPrimaOara != null && snapshotRanduriInitial > 0);
+    }
+
+    // ── COR-V1/V2: refuzurile comenzii ──
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = os.CreateObject<NotaTransfer>();
+        draft.Numar = Marcaj + "-DRAFT";
+        draft.Data = Zi(2, 3);
+        draft.DataInregistrare = Zi(2, 3);
+        draft.PredatorId = idGestA;
+        draft.PrimitorId = idGestB;
+        draft.NumarPV = Marcaj;
+        var linie = os.CreateObject<DocumentDetaliu>();
+        linie.Document = draft;
+        linie.TipMaterialId = idTipStoc;
+        linie.LotId = idLotA;
+        linie.Cantitate = 1m;
+        os.CommitChanges();
+        var refuzDraft = Refuz(() => CorectieService.Corecteaza(os, draft.ID, Zi(2, 10), MotivCorectie.FaptNou));
+        Console.WriteLine($"     MĂSURAT (COR-V1/{eticheta}): corecția unui DRAFT a ieșit cu "
+            + $"„{PrimaLinie(refuzDraft)}”.");
+        Check($"COR-V1 ({eticheta}) un document care NU e operat nu se corectează: corecția e storno + "
+            + "document nou, iar un draft n-are ce storna — se editează",
+            refuzDraft != null && refuzDraft.Contains("Se corectează doar un document operat."));
+
+        var refuzPerioada = Refuz(() => CorectieService.Corecteaza(os, idNirA, Zi(1, 25), MotivCorectie.FaptNou));
+        Console.WriteLine($"     MĂSURAT (COR-V2/{eticheta}): corecția cu dată în perioada închisă a ieșit cu "
+            + $"„{PrimaLinie(refuzPerioada)}”.");
+        Check($"COR-V2 ({eticheta}) data corecției cade sub gardianul de perioadă al STORNĂRII, nemodificat: "
+            + $"nu se poate corecta ÎN 01/{An}, fiindcă acolo nu se mai scrie nimic",
+            refuzPerioada != null && refuzPerioada.Contains($"01/{An}"));
+
+        var pj = new Purja(os);
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == draft.ID).ToList());
+        pj.Adauga(draft);
+        pj.Executa();
+    }
+
+    // ── COR-V3/V4: comanda pe NIR-ul care a NĂSCUT lotul ──
+    Guid idCorectieNir;
+    using (var os = provider.CreateObjectSpace()) {
+        var (stornat, corectie) = CorectieService.Corecteaza(os, idNirA, Zi(2, 10), MotivCorectie.FaptNou);
+        idCorectieNir = corectie.ID;
+        var original = os.GetObjectByKey<NIR>(idNirA);
+        var stoc = StocDoc(os, idNirA);
+        var note = NoteDoc(os, idNirA);
+        var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == corectie.ID).ToList();
+        var linieOriginala = os.GetObjectByKey<NirDetaliu>(idLinieNirA);
+        var copie = linii[0] as NirDetaliu;
+        Console.WriteLine($"     MĂSURAT (COR-V3/{eticheta}): original „{original.Numar}” {original.Stare}, "
+            + $"{stoc.Count(r => r.Storno)} rânduri de stoc inverse la "
+            + $"{Ziua(stoc.Where(r => r.Storno).Select(r => r.Data).FirstOrDefault())}, "
+            + $"{note.Count(r => r.Storno)} note inverse; corecția „{corectie.Numar}” {corectie.Stare} cu "
+            + $"{linii.Count} linii, dată {Ziua(corectie.Data)}, înregistrare {Ziua(corectie.DataInregistrare)}.");
+        Check($"COR-V3 ({eticheta}) comanda stornează originalul la data corecției — rândurile inverse de stoc "
+            + $"și contabile cad la {Zi(2, 10):dd.MM.yyyy}, iar documentul trece în `Stornat`: e chiar "
+            + "`MotorOperare.Storneaza`, neatins",
+            original.Stare == StareDocument.Stornat && stornat.ID == idNirA
+            && stoc.Count(r => r.Storno) == stoc.Count(r => !r.Storno)
+            && stoc.Where(r => r.Storno).All(r => r.Data == Zi(2, 10))
+            && note.Count(r => r.Storno) == note.Count(r => !r.Storno)
+            && note.Where(r => r.Storno).All(r => r.Data == Zi(2, 10)));
+        Check($"COR-V4 ({eticheta}) documentul nou e de ACELAȘI tip concret, cu `Numar` și `Data` ale "
+            + "documentului fizic PĂSTRATE (seria nu se consumă din nou), data înregistrării = data corecției, "
+            + "legătura și motivul scrise de motor, starea Draft; culegerea e copiată integral prin metadata EF",
+            MotorOperare.ClasaReala(corectie) == typeof(NIR)
+            && corectie.Numar == original.Numar && corectie.Data == original.Data
+            && corectie.DataInregistrare == Zi(2, 10)
+            && corectie.CorecteazaId == idNirA && corectie.MotivCorectie == MotivCorectie.FaptNou
+            && corectie.Stare == StareDocument.Draft
+            && corectie.PredatorId == original.PredatorId && corectie.PrimitorId == original.PrimitorId
+            && linii.Count == 1 && copie != null
+            && copie.TipMaterialId == linieOriginala.TipMaterialId
+            && copie.Cantitate == linieOriginala.Cantitate && copie.PretUnitar == linieOriginala.PretUnitar
+            && copie.CodEconomicId == linieOriginala.CodEconomicId
+            && copie.ID != linieOriginala.ID);
+
+        var lotNou = os.GetObjectsQuery<Lot>().FirstOrDefault(l => l.LinieIntrareId == copie.ID);
+        Console.WriteLine($"     MĂSURAT (COR-V5/{eticheta}): lot nou {(lotNou == null ? "<lipsă>" : lotNou.ID.ToString())}, "
+            + $"dată {(lotNou == null ? "-" : Ziua(lotNou.Data))}, preț {lotNou?.PretUnitar}.");
+        Check($"COR-V5 ({eticheta}) linia care a NĂSCUT lotul primește unul PROPRIU, nou și nefinalizat "
+            + "(preț 0, dată goală — motorul îl finalizează la operare): marfa recepționată o dată nu se "
+            + "recepționează a doua oară pe același lot, iar lotul vechi rămâne cu istoria lui",
+            lotNou != null && lotNou.ID != idLotA && lotNou.ProdusId == idProdus
+            && lotNou.GestiuneId == idGestA && lotNou.Data == default && lotNou.PretUnitar == 0m
+            && copie.LotId == lotNou.ID);
+    }
+
+    // ── COR-V6: operarea corecției (cu o linie schimbată — corecția reală) ──
+    using (var os = provider.CreateObjectSpace()) {
+        var corectie = os.GetObjectByKey<NIR>(idCorectieNir);
+        var linie = os.GetObjectsQuery<DocumentDetaliu>().First(d => d.DocumentId == idCorectieNir) as NirDetaliu;
+        linie.Cantitate = 12m;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, corectie);
+        var stoc = StocDoc(os, idCorectieNir);
+        var lotNou = os.GetObjectsQuery<Lot>().First(l => l.LinieIntrareId == linie.ID);
+        // Cheia de stoc se citește de pe RÂNDUL scris (repartitor + tip de stoc
+        // sunt ale regulii de stoc a tipului, nu ale scenei).
+        var randNou = stoc[0];
+        var randVechi = StocDoc(os, idNirA).First(r => !r.Storno);
+        var soldVechi = StocService.Sold(os, new CheieStoc(idLotA, randVechi.RepartitorId, randVechi.TipStoc));
+        var soldNou = StocService.Sold(os, new CheieStoc(lotNou.ID, randNou.RepartitorId, randNou.TipStoc));
+        Console.WriteLine($"     MĂSURAT (COR-V6/{eticheta}): {stoc.Count} rânduri de stoc la "
+            + $"{Ziua(stoc.Select(r => r.Data).FirstOrDefault())}, lot nou la {Ziua(lotNou.Data)} cu preț "
+            + $"{lotNou.PretUnitar}; sold lot vechi {soldVechi}, sold lot nou {soldNou}.");
+        Check($"COR-V6 ({eticheta}) draftul corectat se operează NORMAL — registrele cad la data înregistrării "
+            + $"({Zi(2, 10):dd.MM.yyyy}), lotul nou se naște acolo și primește prețul din linia CORECTATĂ, iar "
+            + "lotul vechi rămâne cu sold zero prin rândurile de storno: adevărul corectat se vede din prima "
+            + "perioadă deschisă încolo",
+            corectie.Stare == StareDocument.Operat
+            && stoc.Count > 0 && stoc.All(r => r.Data == Zi(2, 10))
+            && lotNou.Data == Zi(2, 10) && lotNou.PretUnitar == 10m
+            && soldVechi == 0m && soldNou == 12m);
+    }
+
+    // ── COR-V7: linia care CONSUMĂ un lot îl păstrează ──
+    using (var os = provider.CreateObjectSpace()) {
+        var (_, corectie) = CorectieService.Corecteaza(os, idBtr, Zi(2, 11), MotivCorectie.FaptNou);
+        var copie = os.GetObjectsQuery<DocumentDetaliu>().First(d => d.DocumentId == corectie.ID);
+        var loturiProprii = os.GetObjectsQuery<Lot>().Count(l => l.LinieIntrareId == copie.ID);
+        Console.WriteLine($"     MĂSURAT (COR-V7/{eticheta}): linia copiată are lot {copie.LotId}, "
+            + $"{loturiProprii} loturi proprii.");
+        Check($"COR-V7 ({eticheta}) linia care doar CONSUMĂ un lot îl PĂSTREAZĂ (FK copiat ca oricare altul) "
+            + "și nu naște nimic — regula lotului e inversa celei prin care motorul recunoaște nașterea "
+            + "(`Lot.LinieIntrareId == linie.ID`), nu un `is` pe tipul liniei",
+            copie.LotId == idLotB && loturiProprii == 0);
+    }
+
+    // ── COR-V8/V9: legătura e 1:1 și e a motorului ──
+    using (var os = provider.CreateObjectSpace()) {
+        var refuzAlDoilea = Refuz(() => CorectieService.Corecteaza(os, idNirA, Zi(2, 12), MotivCorectie.FaptNou));
+        Console.WriteLine($"     MĂSURAT (COR-V8/{eticheta}): a doua corecție a aceluiași original a ieșit cu "
+            + $"„{PrimaLinie(refuzAlDoilea)}”.");
+        Check($"COR-V8 ({eticheta}) un original nu se corectează de două ori: comanda refuză înainte de orice "
+            + "scriere, NUMIND documentul care îl corectează deja — refuzul specific bate refuzul generic de "
+            + "stare, deși originalul corectat e oricum `Stornat`",
+            refuzAlDoilea != null && refuzAlDoilea.Contains("deja corectat")
+            && refuzAlDoilea.Contains("legătura de corecție e 1:1"));
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = os.CreateObject<NotaTransfer>();
+        draft.Numar = Marcaj + "-MANUAL";
+        draft.Data = Zi(2, 15);
+        draft.DataInregistrare = Zi(2, 15);
+        draft.PredatorId = idGestA;
+        draft.PrimitorId = idGestB;
+        draft.NumarPV = Marcaj;
+        draft.CorecteazaId = idNirB;
+        draft.MotivCorectie = MotivCorectie.EroareMateriala;
+        var refuz = RefuzGardianCor(os);
+        Console.WriteLine($"     MĂSURAT (COR-V9/{eticheta}): draftul cu legătură scrisă de mână a ieșit cu "
+            + $"„{PrimaLinie(refuz)}”.");
+        Check($"COR-V9 ({eticheta}) legătura de corecție scrisă pe ușa securizată e refuzată la commit, pe "
+            + "calea reală a gardianului — e a MOTORULUI, ca `Stare` și grupul conex",
+            refuz != null && refuz.Contains("Legătura de corecție o scrie doar motorul"));
+        Check($"COR-V10 ({eticheta}) ACELAȘI commit raportează și invariantul rupt: originalul arătat e OPERAT, "
+            + "iar corecția cere un original STORNAT — regula se verifică oriunde se scrie legătura, nu doar "
+            + "pe ușa pe care comanda n-o folosește",
+            refuz != null && refuz.Contains("nu e stornat"));
+        // Al doilea draft spre un original DEJA corectat: 1:1 la commit.
+        draft.CorecteazaId = idNirA;
+        var refuzUnicitate = RefuzGardianCor(os);
+        Console.WriteLine($"     MĂSURAT (COR-V11/{eticheta}): al doilea document spre același original a ieșit "
+            + $"cu „{PrimaLinie(refuzUnicitate)}”.");
+        Check($"COR-V11 ({eticheta}) două documente nu pot corecta același original: invariantul 1:1 se vede "
+            + "la commit, nu doar în comandă",
+            refuzUnicitate != null && refuzUnicitate.Contains("legătura de corecție e 1:1"));
+    }
+
+    // ── COR-V12: snapshot-ul perioadei închise, NEATINS ──
+    using (var os = provider.CreateObjectSpace()) {
+        var randuri = os.GetObjectsQuery<SoldPerioadaContabil>().Count(s => s.An == An && s.Luna == 1);
+        var debit = os.GetObjectsQuery<SoldPerioadaContabil>()
+            .Where(s => s.An == An && s.Luna == 1).Sum(s => (decimal?)s.Debit) ?? 0m;
+        var credit = os.GetObjectsQuery<SoldPerioadaContabil>()
+            .Where(s => s.An == An && s.Luna == 1).Sum(s => (decimal?)s.Credit) ?? 0m;
+        var cantitate = os.GetObjectsQuery<SoldPerioadaStoc>()
+            .Where(s => s.An == An && s.Luna == 1).Sum(s => (decimal?)s.Cantitate) ?? 0m;
+        var raport = SolduriService.Reconstruieste(os);
+        var rand = raport.Referinte.FirstOrDefault(r => r.An == An && r.Luna == 1);
+        Console.WriteLine($"     MĂSURAT (COR-V12/{eticheta}): snapshot 01/{An} — {randuri} rânduri contabile "
+            + $"(erau {snapshotRanduriInitial}), debit {debit} (era {snapshotDebitInitial}), cantitate "
+            + $"{cantitate} (era {snapshotCantitateInitiala}); reconstrucția raportează "
+            + $"{rand?.ContabilDiferite} diferențe contabile și {rand?.StocDiferite} de stoc.");
+        Check($"COR-V12 ({eticheta}) corecția NU atinge perioada închisă: snapshot-ul lui 01/{An} e identic "
+            + "cu cel de la închidere, iar reconstrucția integrală din registre raportează zero diferențe — "
+            + "storno-ul și documentul nou trăiesc în fereastra DESCHISĂ",
+            randuri == snapshotRanduriInitial && debit == snapshotDebitInitial
+            && credit == snapshotCreditInitial && cantitate == snapshotCantitateInitiala
+            && rand != null && rand.ContabilDiferite == 0 && rand.StocDiferite == 0);
+    }
+
+    // ── COR-V13: ce a fost scris de corecție se vede în februarie ──
+    using (var os = provider.CreateObjectSpace()) {
+        var noteOriginal = NoteDoc(os, idNirA);
+        var noteCorectie = NoteDoc(os, idCorectieNir);
+        var sumaOriginal = noteOriginal.Sum(r => r.Valoare);
+        var sumaCorectie = noteCorectie.Sum(r => r.Valoare);
+        Console.WriteLine($"     MĂSURAT (COR-V13/{eticheta}): notele originalului însumează {sumaOriginal}, "
+            + $"ale corecției {sumaCorectie}.");
+        Check($"COR-V13 ({eticheta}) suma algebrică a notelor originalului e ZERO (operarea + storno-ul se "
+            + "anulează), iar corecția aduce valoarea corectată (12 × 10) — perioada deschisă arată adevărul "
+            + "corectat, cea închisă rămâne cum a fost declarată",
+            sumaOriginal == 0m && sumaCorectie == 120m);
+    }
+
+    if (privat) {
+        // ── COR-V14…V16: eroarea materială ⇒ perioada ORIGINALULUI ──
+        Guid idCorectieFct;
+        using (var os = provider.CreateObjectSpace()) {
+            var perioadaOriginal = Fiscale(os, idFct1).First(r => !r.Storno);
+            var (_, corectie) = CorectieService.Corecteaza(os, idFct1, Zi(2, 10), MotivCorectie.EroareMateriala);
+            idCorectieFct = corectie.ID;
+            var storno = Fiscale(os, idFct1).Where(r => r.Storno).ToList();
+            Console.WriteLine($"     MĂSURAT (COR-V14/{eticheta}): {storno.Count} rânduri fiscale inverse, "
+                + $"`Data` {Ziua(storno[0].Data)}, perioada {storno[0].PerioadaLuna:00}/{storno[0].PerioadaAn} "
+                + $"(originalul: {perioadaOriginal.PerioadaLuna:00}/{perioadaOriginal.PerioadaAn}).");
+            Check($"COR-V14 ({eticheta}) la EROARE MATERIALĂ rândurile inverse păstrează data faptului "
+                + $"stornării ({Zi(2, 10):dd.MM.yyyy}) dar se DECLARĂ în perioada originalului (01/{An}) — "
+                + "excepția cu motiv de la JT-D5, scrisă de comandă, nu de `Storneaza`",
+                storno.Count == 1 && storno[0].Data == Zi(2, 10)
+                && storno[0].PerioadaAn == An && storno[0].PerioadaLuna == 1
+                && storno[0].Baza == -100m);
+            // MAJOR-C: cubul urmează registrele — postările `Storno` ale documentului se
+            // re-ștampilează la perioada ORIGINALULUI, nu rămân în luna stornării.
+            var stornoCub = ProbeCub.Postari(os, idFct1, N.FelTranzactie.Storno)
+                .Where(p => p.PerioadaDeclarare != null).ToList();
+            Check($"STR-CORECTIE ({eticheta}): la EROARE MATERIALĂ postările `Storno` din CUB poartă "
+                + $"`PerioadaDeclarare` = {An}01 (a originalului), ca rândurile `RegistruTva` — altfel "
+                + "orice jurnal citit din cub ar pune stornoul în luna corecției",
+                stornoCub.Count > 0 && stornoCub.All(p => p.PerioadaDeclarare == (An * 100) + 1));
+        }
+
+        using (var os = provider.CreateObjectSpace()) {
+            var linie = os.GetObjectsQuery<DocumentDetaliu>().First(d => d.DocumentId == idCorectieFct)
+                as FacturaIntrareDetaliu;
+            linie.PretUnitar = 150m;
+            os.CommitChanges();
+            var corectie = os.GetObjectByKey<FacturaIntrare>(idCorectieFct);
+            MotorOperare.Opereaza(os, corectie);
+            var randuri = Fiscale(os, idCorectieFct);
+            Console.WriteLine($"     MĂSURAT (COR-V15/{eticheta}): {randuri.Count} rânduri, `Data` "
+                + $"{Ziua(randuri[0].Data)}, perioada {randuri[0].PerioadaLuna:00}/{randuri[0].PerioadaAn}, "
+                + $"bază {randuri[0].Baza}.");
+            Check($"COR-V15 ({eticheta}) rândurile documentului NOU păstrează data faptului fiscal "
+                + $"({Zi(1, 15):dd.MM.yyyy}, a documentului fizic) și se declară tot în 01/{An}: la eroare "
+                + "materială diferența aparține perioadei originale, deci apare ca rectificativă acolo",
+                randuri.Count == 1 && randuri[0].Data == Zi(1, 15)
+                && randuri[0].PerioadaAn == An && randuri[0].PerioadaLuna == 1
+                && randuri[0].Baza == 150m);
+
+            var rect = TvaProiectii.Rectificativa(os, An, 1);
+            var idsRect = rect.Randuri.Select(r => r.DocumentId).Distinct().OrderBy(x => x).ToList();
+            Console.WriteLine($"     MĂSURAT (COR-V16/{eticheta}): rectificativa lui 01/{An} — "
+                + $"{rect.Randuri.Count} rânduri pe {idsRect.Count} documente, bază "
+                + $"{rect.Agregat.Sum(a => a.Baza)}, TVA {rect.Agregat.Sum(a => a.Tva)}.");
+            Check($"COR-V16 ({eticheta}) conținutul de rectificativă al lui 01/{An} e EXACT perechea corecției: "
+                + "rândul invers al originalului (−100) plus rândul documentului nou (+150), adică diferența "
+                + "de 50 pe care o declarăm. Nu există flag — e consecința celor două timestamp-uri",
+                rect.EsteRectificativa && rect.Randuri.Count == 2
+                && idsRect.Count == 2 && idsRect.Contains(idFct1) && idsRect.Contains(idCorectieFct)
+                && rect.Randuri.Sum(r => r.Baza) == 50m
+                && rect.Agregat.Sum(a => a.Baza) == 50m);
+        }
+
+        // ── COR-V17/V18: faptul nou ⇒ regula normală D5, pe ambele direcții ──
+        using (var os = provider.CreateObjectSpace()) {
+            var (_, corectie) = CorectieService.Corecteaza(os, idFct2, Zi(2, 12), MotivCorectie.FaptNou);
+            var storno = Fiscale(os, idFct2).Where(r => r.Storno).ToList();
+            MotorOperare.Opereaza(os, corectie);
+            var randuri = Fiscale(os, corectie.ID);
+            Console.WriteLine($"     MĂSURAT (COR-V17/{eticheta}): storno perioada "
+                + $"{storno[0].PerioadaLuna:00}/{storno[0].PerioadaAn}, document nou perioada "
+                + $"{randuri[0].PerioadaLuna:00}/{randuri[0].PerioadaAn}, `Data` {Ziua(randuri[0].Data)}.");
+            Check($"COR-V17 ({eticheta}) la FAPT NOU nimic nu se mută: rândul invers se declară în perioada "
+                + $"STORNĂRII (02/{An}, JT-D5), iar documentul nou cade pe regula normală a politicii — "
+                + $"deductibilul e `PerioadaInregistrarii`, deci 02/{An}. Perioada închisă rămâne neatinsă "
+                + "fiscal",
+                storno.Count == 1 && storno[0].PerioadaAn == An && storno[0].PerioadaLuna == 2
+                && randuri.Count == 1 && randuri[0].Data == Zi(1, 16)
+                && randuri[0].PerioadaAn == An && randuri[0].PerioadaLuna == 2);
+            var stornoCubFaptNou = ProbeCub.Postari(os, idFct2, N.FelTranzactie.Storno)
+                .Where(p => p.PerioadaDeclarare != null).ToList();
+            Check($"STR-CORECTIE ({eticheta}): la FAPT NOU postările `Storno` din CUB rămân în perioada "
+                + $"STORNĂRII ({An}02) — re-ștampilarea e a motivului, nu a stornoului",
+                stornoCubFaptNou.Count > 0
+                && stornoCubFaptNou.All(p => p.PerioadaDeclarare == (An * 100) + 2));
+        }
+
+        using (var os = provider.CreateObjectSpace()) {
+            var (_, corectie) = CorectieService.Corecteaza(os, idFcl, Zi(2, 13), MotivCorectie.FaptNou);
+            MotorOperare.Opereaza(os, corectie);
+            var randuri = Fiscale(os, corectie.ID);
+            Console.WriteLine($"     MĂSURAT (COR-V18/{eticheta}): documentul nou al FCL are perioada "
+                + $"{randuri[0].PerioadaLuna:00}/{randuri[0].PerioadaAn}, `Data` {Ziua(randuri[0].Data)}.");
+            Check($"COR-V18 ({eticheta}) aceeași corecție cu FAPT NOU pe o factură de IEȘIRE se declară în "
+                + $"01/{An} — `PerioadaFaptului`: motivul decide doar dacă regula normală se aplică, iar "
+                + "regula normală rămâne a politicii, pe direcție",
+                randuri.Count == 1 && randuri[0].Data == Zi(1, 17)
+                && randuri[0].PerioadaAn == An && randuri[0].PerioadaLuna == 1);
+        }
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataCor(os);
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters().Count(p => p.An == An);
+        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Count(l => l.Produs.Cod.StartsWith(Marcaj));
+        Check($"COR-V19 ({eticheta}) fără reziduu: nicio perioadă {An}, niciun document și niciun lot rămase — "
+            + "scena e re-rulabilă identic, inclusiv prin FK-ul `Restrict` al legăturii de corecție",
+            perioade == 0 && documente == 0 && loturi == 0);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Felia 27, pasul 6 — totalul scris la operare, partidele deschise la închidere,
+// împerecherea ca fapt datat (F27-D7/D8). Scena stă în 2035, în afara tuturor
+// celorlalte scene ale suitei.
+//
+// Ce se probează, în ordinea în care se citește regula:
+//   * `TotalStingere` e scris de motor la operare și e Σ `LiniiCreanta` — inclusiv
+//     pe `ReturClient`, unde filtrul taie liniile de cost;
+//   * partidele deschise ale unei perioade DE REFERINȚĂ = restul fiecărui
+//     document operat la sfârșitul ei, iar `DocumenteCuRest` citit prin ele e
+//     IDENTIC cu cel citit integral („identic cu și fără partide");
+//   * împerecherea e datată: ordinea față de înregistrare, perioada deschisă,
+//     ștergerea doar în fereastra deschisă, desfacerea prin rând invers, și
+//     inversarea automată la stornarea unui document cu stingeri închise.
+// ══════════════════════════════════════════════════════════════════════════
+// Felia 27, pasul 7 (F27-D2): constatările de CONȚINUT ale închiderii și
+// acceptarea conștientă. Scena e a anului 2036 (plus 12/2035, ca fișa să aibă
+// o punere în funcțiune dinaintea lunii probate).
+// ══════════════════════════════════════════════════════════════════════════
+void VerificaAcceptare(bool privat) {
+    const string Marcaj = "E2E-ACC";
+    const int An = 2036;
+    var eticheta = privat ? "privat" : "bugetar";
+    var codTipVenit = privat ? "704" : "751.01.00";
+    var codTipF = privat ? "214" : "214.00.00";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+
+    // ─────────── curățenia de scenă (purjă FIZICĂ, F13-D2) ───────────
+    void CurataAcc(IObjectSpace os) {
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
+        SolduriService.Elimina(os, An - 1, 12);
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An - 1, 12, 1) && d.Data <= new DateOnly(An, 12, 31))
+            .Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        foreach (var imp in os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+                .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId))
+                .OrderByDescending(i => i.InverseazaId != null))
+            pj.Adauga(imp);
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.ID)).OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters()
+            .Where(f => f.NumarInventar.StartsWith(Marcaj)).ToList());
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An || (p.An == An - 1 && p.Luna == 12)).Select(p => p.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => perioadeIds.Contains(p.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    // Severitatea unui fel, scrisă pe ObjectSpace PROPRIU (politica e stare a
+    // bazei, iar scena care o schimbă are de obicei modificări necomise).
+    void Politica(FelConstatareInchidere fel, SeveritateConstatare severitate) {
+        using var os = provider.CreateObjectSpace();
+        var rand = os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == fel);
+        rand.Severitate = severitate;
+        os.CommitChanges();
+    }
+
+    string RefuzGardianAcc(IObjectSpace os) {
+        try {
+            GardianEditare.Verifica(os);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+    }
+
+    List<PerioadaService.ConstatareInchidere> ConstatariLuna(int luna) {
+        using var os = provider.CreateObjectSpace();
+        return PerioadaService.Verifica(os, An, luna).ToList();
+    }
+
+    PerioadaService.ConstatareInchidere Constatare(int luna, string prefixCheie) =>
+        ConstatariLuna(luna).FirstOrDefault(c => c.Cheie == prefixCheie
+            || c.Cheie.StartsWith(prefixCheie + ":"));
+
+    // Linia refuzului care poartă o cheie anume: refuzul e o listă, iar proba
+    // trebuie să spună CARE constatare a blocat, nu doar că textul o conține.
+    static string LiniaCheii(string refuz, string cheie) =>
+        refuz?.Split('\n').FirstOrDefault(l => l.Contains("[" + cheie + "]"));
+
+    using (var os = provider.CreateObjectSpace())
+        CurataAcc(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>()
+            .Count(p => p.An == An || (p.An == An - 1 && p.Luna == 12));
+        var documente = os.GetObjectsQuery<Document>()
+            .Count(d => d.Data >= new DateOnly(An - 1, 12, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var inchise = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.Inchisa);
+        Console.WriteLine($"     MĂSURAT (ACC-V0/{eticheta}): {perioade} perioade și {documente} documente în "
+            + $"12/{An - 1}–12/{An}, {inchise} perioade închise în bază.");
+        Check($"ACC-V0 ({eticheta}) precondiție: fereastra 12/{An - 1}–12/{An} e liberă și nicio perioadă a "
+            + "bazei nu e închisă — altfel constatările de mai jos ar fi măsurate peste conținut străin",
+            perioade == 0 && documente == 0 && inchise == 0);
+    }
+
+    // ── ACC-V1: seed-ul politicii, pe cheia ei ──
+    using (var os = provider.CreateObjectSpace()) {
+        var randuri = os.GetObjectsQuery<PoliticaInchidere>()
+            .Select(p => new { p.Fel, p.Severitate, p.DinSeed }).ToList()
+            .ToDictionary(p => p.Fel, p => (p.Severitate, p.DinSeed));
+        var itvAsteptat = privat ? SeveritateConstatare.Blocant : SeveritateConstatare.Ignorat;
+        Console.WriteLine($"     MĂSURAT (ACC-V1/{eticheta}): "
+            + string.Join(", ", randuri.Select(r => $"{r.Key}={r.Value.Severitate}"
+                + (r.Value.DinSeed ? "" : " (fără timbru)"))) + ".");
+        Check($"ACC-V1 ({eticheta}) seed-ul aliniază cele patru feluri, toate cu timbrul `DinSeed`: `ItvLipsa` "
+            + $"= {itvAsteptat} (privatul e plătitor de TVA, bugetarul are ITV inert), `AmoLipsa` și "
+            + "`DraftInPerioada` = Avertisment, `RestScadent` = Ignorat — severitatea e DATE, iar cele două "
+            + "profiluri diferă de CONȚINUT, nu de mecanism",
+            randuri.Count == 4
+            && randuri[FelConstatareInchidere.ItvLipsa] == (itvAsteptat, true)
+            && randuri[FelConstatareInchidere.AmoLipsa] == (SeveritateConstatare.Avertisment, true)
+            && randuri[FelConstatareInchidere.DraftInPerioada] == (SeveritateConstatare.Avertisment, true)
+            && randuri[FelConstatareInchidere.RestScadent] == (SeveritateConstatare.Ignorat, true));
+    }
+
+    // ── scena: fișa pusă în funcțiune în 12/2035 (lună închisă) + factura lui ianuarie ──
+    Guid idClient, idUnitate, idFcl, idCodEc;
+    using (var os = provider.CreateObjectSpace()) {
+        var precedenta = os.CreateObject<PerioadaFiscala>();
+        precedenta.An = An - 1;
+        precedenta.Luna = 12;
+        foreach (var luna in new[] { 1, 2, 3 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+        }
+        var tipVenit = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipVenit);
+        var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+        var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+        var client = os.CreateObject<Partener>();
+        client.Cod = Marcaj + "-CL";
+        client.Denumire = "Client acceptare";
+        client.CodFiscal = "RO33333342";
+        var unitate = os.CreateObject<UnitateInterna>();
+        unitate.Cod = Marcaj + "-UI";
+        unitate.Denumire = "Unitate acceptare";
+        var gest = os.CreateObject<Gestiune>();
+        gest.Cod = Marcaj + "-G";
+        gest.Denumire = "Gestiune acceptare";
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-CE";
+        codEc.Denumire = "Cod economic acceptare";
+        var fisa = os.CreateObject<Imobilizare>();
+        fisa.NumarInventar = Marcaj + "-FISA";
+        fisa.Denumire = "Fișă acceptare";
+        fisa.TipMaterialId = tipF.ID;
+        fisa.LocId = gest.ID;
+        // Bugetarul cere codul economic pe contul de cheltuială cu amortizarea
+        // (DIM-2): fișa îl poartă, iar AMO îl copiază pe linie.
+        fisa.CodEconomicId = codEc.ID;
+        os.CommitChanges();
+
+        var pif = os.CreateObject<PunereInFunctiune>();
+        pif.Data = new DateOnly(An - 1, 12, 5);
+        pif.DataInregistrare = new DateOnly(An - 1, 12, 5);
+        pif.PredatorId = unitate.ID;
+        pif.PrimitorId = gest.ID;
+        var linPif = os.CreateObject<PunereInFunctiuneDetaliu>();
+        linPif.Document = pif;
+        linPif.ImobilizareId = fisa.ID;
+        linPif.TipMaterialId = tipF.ID;
+        linPif.Fel = FelLiniePif.Intrare;
+        linPif.Valoare = 3600m;
+        linPif.Cantitate = 1m;
+        linPif.Metoda = MetodaAmortizare.Liniara;
+        linPif.DurataLuni = 36;
+        linPif.MetodaFiscala = MetodaAmortizare.Liniara;
+        linPif.DurataFiscalaLuni = 36;
+        linPif.CategorieFiscala = CategorieFiscala.Standard;
+        linPif.UtilizareExclusiva = true;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        os.CommitChanges();
+
+        // Luna precedentă se închide ca SETUP (accept-all), ca 01/2036 să fie
+        // veriga următoare a lanțului, nu un capăt.
+        InchideAcceptTot(os, An - 1, 12, Marcaj);
+
+        var fcl = os.CreateObject<FacturaIesire>();
+        fcl.Numar = Marcaj + "-FCL";
+        fcl.Data = Zi(1, 15);
+        fcl.DataInregistrare = Zi(1, 15);
+        fcl.DataScadenta = Zi(1, 20);
+        fcl.Predator = unitate;
+        fcl.Primitor = client;
+        var linFcl = os.CreateObject<FacturaIesireDetaliu>();
+        linFcl.Document = fcl;
+        linFcl.TipMaterial = tipVenit;
+        linFcl.Cantitate = 1m;
+        linFcl.PretUnitar = 1000m;
+        linFcl.CodEconomicId = codEc.ID;
+        if (n21 != null)
+            linFcl.TipTva = n21;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fcl);
+        os.CommitChanges();
+
+        idClient = client.ID; idUnitate = unitate.ID; idFcl = fcl.ID; idCodEc = codEc.ID;
+        Check($"ACC — precondiție de scenă ({eticheta}): PIF-ul din 12/{An - 1} e operat, luna precedentă e "
+            + $"închisă și factura de 1.000 din 15.01.{An} e operată cu scadența în ianuarie",
+            pif.Stare == StareDocument.Operat && fcl.Stare == StareDocument.Operat
+            && os.FirstOrDefault<PerioadaFiscala>(p => p.An == An - 1 && p.Luna == 12).Inchisa);
+    }
+
+    // ── ACC-V2/V3/V4: ITV lipsă, blocantul care nu se acceptă ──
+    var itvLipsa = Constatare(1, "ITV-LIPSA");
+    Console.WriteLine($"     MĂSURAT (ACC-V2/{eticheta}): ITV-LIPSA = "
+        + $"{itvLipsa?.Severitate.ToString() ?? "<absentă>"}.");
+    if (privat) {
+        Check($"ACC-V2 ({eticheta}) luna cu TVA colectată și fără închidere de TVA produce `ITV-LIPSA` "
+            + "BLOCANT: severitatea vine din politică, nu din cod",
+            itvLipsa != null && itvLipsa.Severitate == SeveritateConstatare.Blocant
+            && itvLipsa.Fel == nameof(FelConstatareInchidere.ItvLipsa));
+
+        using (var os = provider.CreateObjectSpace()) {
+            var chei = PerioadaService.Verifica(os, An, 1).Select(c => c.Cheie).ToArray();
+            var refuz = Refuz(() => PerioadaService.Inchide(os, An, 1, chei, null, Marcaj));
+            var linia = LiniaCheii(refuz, "ITV-LIPSA");
+            Console.WriteLine($"     MĂSURAT (ACC-V3/{eticheta}): refuzul cu TOATE cheile acceptate, linia "
+                + $"blocantului = „{linia ?? "<absentă>"}”.");
+            Check($"ACC-V3 ({eticheta}) blocantul NU se acceptă: `Inchide` cu toate cheile în `acceptate` "
+                + "refuză tot, iar refuzul poartă lista întreagă în forma `Severitate: text [cheie]`",
+                linia != null && linia.StartsWith("Blocant:"));
+        }
+
+        using (var os = provider.CreateObjectSpace()) {
+            var rez = InchidereTvaApply.Genereaza(os,
+                new GenerareItvRequestDto { An = An, Luna = 1, UnitateId = idUnitate });
+            OperareApi.Opereaza(os, rez.DocumentId ?? Guid.Empty);
+        }
+        Check($"ACC-V4 ({eticheta}) după generarea ȘI operarea închiderii de TVA pe lună, constatarea dispare "
+            + "— un draft neoperat n-ar fi ajuns (nu scrie registre)",
+            Constatare(1, "ITV-LIPSA") == null);
+    }
+    else {
+        Check($"ACC-V2 ({eticheta}) profilul neplătitor n-are `PoliticaInchidereTva`, deci ITV e tip inert și "
+            + "constatarea nu se emite deloc — seed-ul o ține pe `Ignorat`, iar mecanismul e același",
+            itvLipsa == null);
+    }
+
+    // ── ACC-V5/V6: amortizarea lunii ──
+    var amoLipsa = Constatare(1, "AMO-LIPSA");
+    Console.WriteLine($"     MĂSURAT (ACC-V5/{eticheta}): AMO-LIPSA = "
+        + $"{amoLipsa?.Severitate.ToString() ?? "<absentă>"}.");
+    Check($"ACC-V5 ({eticheta}) fișa pusă în funcțiune în 12/{An - 1} face luna ianuarie amortizabilă, iar "
+        + "lipsa amortizării operate e AVERTISMENT; cheia n-are sufix de unitate — calculul lunii e al "
+        + "societății, nu al unei unități interne",
+        amoLipsa != null && amoLipsa.Severitate == SeveritateConstatare.Avertisment
+        && amoLipsa.Cheie == "AMO-LIPSA");
+
+    using (var os = provider.CreateObjectSpace()) {
+        var rez = AmoApply.Genereaza(os,
+            new GenerareAmoRequestDto { An = An, Luna = 1, UnitateId = idUnitate });
+        OperareApi.Opereaza(os, rez.DocumentId ?? Guid.Empty);
+    }
+    Check($"ACC-V6 ({eticheta}) după generarea și operarea amortizării lunii, constatarea dispare",
+        Constatare(1, "AMO-LIPSA") == null);
+
+    // ── ACC-V7…V11: draftul, acceptarea pe cheie, istoricul ──
+    Guid idDraft;
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = os.CreateObject<NotaContabila>();
+        draft.Numar = Marcaj + "-NTC";
+        draft.Data = Zi(1, 28);
+        draft.DataInregistrare = Zi(1, 28);
+        draft.PredatorId = idUnitate;
+        draft.PrimitorId = idUnitate;
+        os.CommitChanges();
+        idDraft = draft.ID;
+    }
+    var cheieDraft = $"DRAFT-IN-PERIOADA:{idDraft}";
+    var draftConst = Constatare(1, "DRAFT-IN-PERIOADA");
+    Console.WriteLine($"     MĂSURAT (ACC-V7/{eticheta}): constatarea draftului = "
+        + $"„{draftConst?.Cheie ?? "<absentă>"}” / {draftConst?.Severitate.ToString() ?? "-"}.");
+    Check($"ACC-V7 ({eticheta}) draftul cu data înregistrării în lună produce o constatare PER DOCUMENT, "
+        + "cheiată pe id-ul lui, iar textul spune consecința (rămâne operabil, cu dată ulterioară)",
+        draftConst != null && draftConst.Cheie == cheieDraft
+        && draftConst.Severitate == SeveritateConstatare.Avertisment
+        && draftConst.ObiectId == idDraft && draftConst.Text.Contains("operabil"));
+
+    using (var os = provider.CreateObjectSpace()) {
+        var refuz = Refuz(() => PerioadaService.Inchide(os, An, 1, [], null, Marcaj));
+        var linia = LiniaCheii(refuz, cheieDraft);
+        Console.WriteLine($"     MĂSURAT (ACC-V8/{eticheta}): refuzul fără acceptare, linia draftului = "
+            + $"„{linia ?? "<absentă>"}”.");
+        Check($"ACC-V8 ({eticheta}) avertismentul NEACCEPTAT refuză închiderea, iar refuzul poartă lista "
+            + "ÎNTREAGĂ cu cheile — ecranul o arată ca să se accepte constatări concrete, nu un flag de forțare",
+            linia != null && linia.StartsWith("Avertisment:"));
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var rand = PerioadaService.Inchide(os, An, 1, [cheieDraft, "CHEIE-CARE-NU-EXISTA"], null, Marcaj);
+        Console.WriteLine($"     MĂSURAT (ACC-V9/{eticheta}): acceptările scrise = „{rand.Acceptari}”.");
+        Check($"ACC-V9 ({eticheta}) cu cheia acceptată luna se închide, iar cheile care nu corespund niciunei "
+            + "constatări de ACUM se ignoră — raportul e o fotografie, refuzul e al stării de acum",
+            rand.Fel == FelInchiderePerioada.Inchidere
+            && rand.Acceptari == "[\"" + cheieDraft + "\"]");
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var istoric = PerioadeApply.Istoric(os, An, 1);
+        Check($"ACC-V10 ({eticheta}) istoricul lunii poartă acceptările ca listă de chei, alături de cine și "
+            + "când — urma deciziei conștiente, nu doar a faptului",
+            istoric.Length == 1 && istoric[0].Fel == nameof(FelInchiderePerioada.Inchidere)
+            && istoric[0].De == Marcaj && istoric[0].Acceptari.Length == 1
+            && istoric[0].Acceptari[0] == cheieDraft);
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = os.GetObjectByKey<NotaContabila>(idDraft);
+        var refuzInLuna = Refuz(() => MotorOperare.Opereaza(os, draft));
+        Check($"ACC-V11a ({eticheta}) după închidere draftul NU se poate opera pe data lui de înregistrare — "
+            + "granița rămâne absolută",
+            refuzInLuna != null && refuzInLuna.Contains($"01/{An}"));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = os.GetObjectByKey<NotaContabila>(idDraft);
+        draft.DataInregistrare = Zi(2, 3);
+        var linie = os.CreateObject<NotaContabilaDetaliu>();
+        linie.Document = draft;
+        linie.TipMaterialId = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipVenit).ID;
+        linie.Cantitate = 1m;
+        linie.Valoare = 10m;
+        linie.ContDebitId = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "4111" : "411.01.01")).ID;
+        linie.ContCreditId = os.FirstOrDefault<Cont>(c => c.Simbol == codTipVenit).ID;
+        linie.RepartitorDebitId = idClient;
+        linie.RepartitorCreditId = idUnitate;
+        linie.CodEconomicId = idCodEc;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, draft);
+        os.CommitChanges();
+        Check($"ACC-V11 ({eticheta}) consecința scrisă în textul constatării E adevărată: cu data înregistrării "
+            + "mutată în februarie draftul se operează, deci n-a devenit document mort (F27-D4)",
+            draft.Stare == StareDocument.Operat
+            && os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idDraft).ToList()
+                .All(r => r.Data == Zi(2, 3)));
+    }
+
+    // ── ACC-V12/V13: severitatea E politică ──
+    Guid idDraftFeb;
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = os.CreateObject<NotaContabila>();
+        draft.Numar = Marcaj + "-NTC2";
+        draft.Data = Zi(2, 20);
+        draft.DataInregistrare = Zi(2, 20);
+        draft.PredatorId = idUnitate;
+        draft.PrimitorId = idUnitate;
+        os.CommitChanges();
+        idDraftFeb = draft.ID;
+    }
+    Check($"ACC-V12a ({eticheta}) precondiție: februarie își vede draftul ca avertisment",
+        Constatare(2, "DRAFT-IN-PERIOADA")?.Cheie == $"DRAFT-IN-PERIOADA:{idDraftFeb}");
+
+    Politica(FelConstatareInchidere.DraftInPerioada, SeveritateConstatare.Ignorat);
+    Check($"ACC-V12 ({eticheta}) cu felul pus pe `Ignorat` constatarea nu se mai EMITE deloc — nu e o "
+        + "constatare tăcută, e una care nu există; mecanismul rămâne, conținutul e al bazei",
+        Constatare(2, "DRAFT-IN-PERIOADA") == null);
+
+    Politica(FelConstatareInchidere.DraftInPerioada, SeveritateConstatare.Blocant);
+    using (var os = provider.CreateObjectSpace()) {
+        var cheie = $"DRAFT-IN-PERIOADA:{idDraftFeb}";
+        var chei = PerioadaService.Verifica(os, An, 2).Select(c => c.Cheie).ToArray();
+        var refuz = Refuz(() => PerioadaService.Inchide(os, An, 2, chei, null, Marcaj));
+        var linia = LiniaCheii(refuz, cheie);
+        Console.WriteLine($"     MĂSURAT (ACC-V13/{eticheta}): refuzul cu TOATE cheile acceptate, linia "
+            + $"draftului = „{linia ?? "<absentă>"}”.");
+        Check($"ACC-V13 ({eticheta}) același fapt ridicat la `Blocant` devine NEACCEPTABIL: aceeași cheie care "
+            + "închidea luna acum nu mai trece, deși e acceptată",
+            linia != null && linia.StartsWith("Blocant:"));
+    }
+    Politica(FelConstatareInchidere.DraftInPerioada, SeveritateConstatare.Avertisment);
+
+    // ── ACC-V14/V15: restul scadent, și felul FĂRĂ politică ──
+    Check($"ACC-V14a ({eticheta}) cu seed-ul pe `Ignorat`, factura scadentă și neîncasată NU produce nicio "
+        + "constatare — arieratul nu împiedică închiderea, e informativ la cerere",
+        Constatare(2, "REST-SCADENT") == null);
+
+    Politica(FelConstatareInchidere.RestScadent, SeveritateConstatare.Avertisment);
+    var restConst = Constatare(2, "REST-SCADENT");
+    Console.WriteLine($"     MĂSURAT (ACC-V14/{eticheta}): REST-SCADENT = „{restConst?.Cheie ?? "<absentă>"}”.");
+    Check($"ACC-V14 ({eticheta}) ridicat la `Avertisment`, felul arată exact documentul: factura din 15.01 cu "
+        + "scadența în ianuarie și restul nestins la sfârșitul lui februarie",
+        restConst != null && restConst.ObiectId == idFcl && restConst.Text.Contains("scadent"));
+
+    using (var os = provider.CreateObjectSpace()) {
+        // Ștergerea e FIZICĂ: una logică ar fi „ștearsă de utilizator”, iar
+        // seed-ul n-ar mai recrea rândul niciodată (decizia 4).
+        new Purja(os).Adauga(os.GetObjectsQuery<PoliticaInchidere>()
+            .Where(p => p.Fel == FelConstatareInchidere.RestScadent).ToList()).Executa();
+    }
+    var faraPolitica = Constatare(2, "REST-SCADENT");
+    Check($"ACC-V15 ({eticheta}) un fel FĂRĂ rând de politică iese ca avertisment, dar SPUNE că politica "
+        + "lipsește — un default tăcut ar fi ascuns o configurație pe jumătate",
+        faraPolitica != null && faraPolitica.Severitate == SeveritateConstatare.Avertisment
+        && faraPolitica.Text.Contains("fără politică"));
+
+    using (var os = provider.CreateObjectSpace()) {
+        var rand = os.CreateObject<PoliticaInchidere>();
+        rand.Fel = FelConstatareInchidere.RestScadent;
+        rand.Severitate = SeveritateConstatare.Ignorat;
+        rand.DinSeed = true;
+        os.CommitChanges();
+    }
+
+    // ── ACC-V16/V17: gardianul politicii ──
+    using (var os = provider.CreateObjectSpace()) {
+        var duplicat = os.CreateObject<PoliticaInchidere>();
+        duplicat.Fel = FelConstatareInchidere.AmoLipsa;
+        duplicat.Severitate = SeveritateConstatare.Blocant;
+        var refuz = RefuzGardianAcc(os);
+        Console.WriteLine($"     MĂSURAT (ACC-V16/{eticheta}): al doilea rând pe același fel = "
+            + $"„{PrimaLinie(refuz)}”.");
+        Check($"ACC-V16 ({eticheta}) al doilea rând pe același fel e refuzat de gardian, ÎNAINTEA indexului "
+            + "unic — un fel are o singură severitate, altfel verdictul ar depinde de ce rând întoarce baza",
+            refuz != null && refuz.Contains("AmoLipsa"));
+    }
+
+    bool timbruStins;
+    using (var os = provider.CreateObjectSpace()) {
+        var rand = os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == FelConstatareInchidere.AmoLipsa);
+        rand.Severitate = SeveritateConstatare.Blocant;
+        GardianEditare.Verifica(os);
+        timbruStins = !rand.DinSeed;
+        os.CommitChanges();
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var rand = os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == FelConstatareInchidere.AmoLipsa);
+        rand.Severitate = SeveritateConstatare.Avertisment;
+        rand.DinSeed = true;
+        os.CommitChanges();
+    }
+    Check($"ACC-V17 ({eticheta}) editarea rândului pe ușa securizată îi STINGE timbrul `DinSeed` (F23-D4): "
+        + "politica de închidere e o politică oarecare, fără ramură proprie de proveniență în gardian",
+        timbruStins);
+
+    // ── ACC-V18: curățenia ──
+    using (var os = provider.CreateObjectSpace())
+        CurataAcc(os);
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Count(p => p.An == An || (p.An == An - 1 && p.Luna == 12));
+        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(An - 1, 12, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var fise = os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters()
+            .Count(f => f.NumarInventar.StartsWith(Marcaj));
+        var politici = os.GetObjectsQuery<PoliticaInchidere>()
+            .Select(p => new { p.Fel, p.Severitate, p.DinSeed }).ToList();
+        var itvAsteptat = privat ? SeveritateConstatare.Blocant : SeveritateConstatare.Ignorat;
+        Check($"ACC-V18 ({eticheta}) fără reziduu: nicio perioadă, niciun document și nicio fișă rămase, iar "
+            + "politica e din nou exact cea de seed — scena e re-rulabilă identic",
+            perioade == 0 && documente == 0 && fise == 0
+            && politici.Count == 4 && politici.All(p => p.DinSeed)
+            && politici.Single(p => p.Fel == FelConstatareInchidere.ItvLipsa).Severitate == itvAsteptat
+            && politici.Single(p => p.Fel == FelConstatareInchidere.AmoLipsa).Severitate
+                == SeveritateConstatare.Avertisment
+            && politici.Single(p => p.Fel == FelConstatareInchidere.DraftInPerioada).Severitate
+                == SeveritateConstatare.Avertisment
+            && politici.Single(p => p.Fel == FelConstatareInchidere.RestScadent).Severitate
+                == SeveritateConstatare.Ignorat);
+    }
+}
+
+// Review advers pasul 7 (felia 27, F27-D2) — probele F27-RA*, scena 2037. Blocul
+// coboară `ItvLipsa` la Avertisment pe durata scenei (ca `InchideAcceptTot`) și
+// pune totul la loc în `finally`; NU atinge alte politici decât cele probate.
+void VerificaReviewAcceptare(bool privat) {
+    const string Marcaj = "E2E-RA";
+    const int An = 2037;
+    var eticheta = privat ? "privat" : "bugetar";
+    var codTipVenit = privat ? "704" : "751.01.00";
+    var codTipF = privat ? "214" : "214.00.00";
+    var codContCasa = privat ? "5311" : "531.01.01";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+
+    void CurataRa(IObjectSpace os) {
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
+        SolduriService.Elimina(os, An - 1, 12);
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An - 1, 12, 1) && d.Data <= new DateOnly(An, 12, 31))
+            .Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        foreach (var imp in os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+                .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId))
+                .OrderByDescending(i => i.InverseazaId != null))
+            pj.Adauga(imp);
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.ID)).OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters()
+            .Where(f => f.NumarInventar.StartsWith(Marcaj)).ToList());
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An || (p.An == An - 1 && p.Luna == 12)).Select(p => p.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => perioadeIds.Contains(p.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    SeveritateConstatare? Sev(FelConstatareInchidere fel) {
+        using var os = provider.CreateObjectSpace();
+        return os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == fel)?.Severitate;
+    }
+    void Politica(FelConstatareInchidere fel, SeveritateConstatare severitate) {
+        using var os = provider.CreateObjectSpace();
+        var rand = os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == fel);
+        if (rand == null) {
+            rand = os.CreateObject<PoliticaInchidere>();
+            rand.Fel = fel;
+            rand.DinSeed = true;
+        }
+        rand.Severitate = severitate;
+        os.CommitChanges();
+    }
+    List<PerioadaService.ConstatareInchidere> Constatari(int an, int luna) {
+        using var os = provider.CreateObjectSpace();
+        return PerioadaService.Verifica(os, an, luna).ToList();
+    }
+    PerioadaService.ConstatareInchidere Constatare(int an, int luna, string prefix) =>
+        Constatari(an, luna).FirstOrDefault(c => c.Cheie == prefix || c.Cheie.StartsWith(prefix + ":"));
+    InchiderePerioada InchideTot(IObjectSpace os, int an, int luna) =>
+        PerioadaService.Inchide(os, an, luna,
+            PerioadaService.Verifica(os, an, luna).Select(c => c.Cheie).ToArray(), null, Marcaj);
+    static string LiniaCheii(string refuz, string cheie) =>
+        refuz?.Split('\n').FirstOrDefault(l => l.Contains("[" + cheie + "]"));
+
+    var itvSeed = Sev(FelConstatareInchidere.ItvLipsa);
+    var amoSeed = Sev(FelConstatareInchidere.AmoLipsa);
+    var draftSeed = Sev(FelConstatareInchidere.DraftInPerioada);
+    var restSeed = Sev(FelConstatareInchidere.RestScadent);
+    try {
+        using (var os = provider.CreateObjectSpace())
+            CurataRa(os);
+        Politica(FelConstatareInchidere.ItvLipsa, SeveritateConstatare.Avertisment);
+
+        // ── scena ──
+        Guid idClient, idUnitate, idCasa, idCodEc, idTipVenit, idTipTrz, idN21;
+        using (var os = provider.CreateObjectSpace()) {
+            var precedenta = os.CreateObject<PerioadaFiscala>();
+            precedenta.An = An - 1;
+            precedenta.Luna = 12;
+            foreach (var luna in new[] { 1, 2, 3 }) {
+                var p = os.CreateObject<PerioadaFiscala>();
+                p.An = An;
+                p.Luna = luna;
+            }
+            var tipVenit = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipVenit);
+            var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+            var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+            var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+            var client = os.CreateObject<Partener>();
+            client.Cod = Marcaj + "-CL";
+            client.Denumire = "Client review";
+            client.CodFiscal = "RO33333343";
+            var unitate = os.CreateObject<UnitateInterna>();
+            unitate.Cod = Marcaj + "-UI";
+            unitate.Denumire = "Unitate review";
+            var gest = os.CreateObject<Gestiune>();
+            gest.Cod = Marcaj + "-G";
+            gest.Denumire = "Gestiune review";
+            var casa = os.CreateObject<ContPropriu>();
+            casa.Cod = Marcaj + "-CS";
+            casa.Denumire = "Casa review";
+            casa.ContImplicit = os.FirstOrDefault<Cont>(c => c.Simbol == codContCasa);
+            var codEc = os.CreateObject<CodEconomic>();
+            codEc.Cod = Marcaj + "-CE";
+            codEc.Denumire = "Cod economic review";
+            var fisa = os.CreateObject<Imobilizare>();
+            fisa.NumarInventar = Marcaj + "-FISA";
+            fisa.Denumire = "Fișă review";
+            fisa.TipMaterialId = tipF.ID;
+            fisa.LocId = gest.ID;
+            fisa.CodEconomicId = codEc.ID;
+            os.CommitChanges();
+
+            var pif = os.CreateObject<PunereInFunctiune>();
+            pif.Data = new DateOnly(An - 1, 12, 5);
+            pif.DataInregistrare = new DateOnly(An - 1, 12, 5);
+            pif.PredatorId = unitate.ID;
+            pif.PrimitorId = gest.ID;
+            var linPif = os.CreateObject<PunereInFunctiuneDetaliu>();
+            linPif.Document = pif;
+            linPif.ImobilizareId = fisa.ID;
+            linPif.TipMaterialId = tipF.ID;
+            linPif.Fel = FelLiniePif.Intrare;
+            linPif.Valoare = 3600m;
+            linPif.Cantitate = 1m;
+            linPif.Metoda = MetodaAmortizare.Liniara;
+            linPif.DurataLuni = 36;
+            linPif.MetodaFiscala = MetodaAmortizare.Liniara;
+            linPif.DurataFiscalaLuni = 36;
+            linPif.CategorieFiscala = CategorieFiscala.Standard;
+            linPif.UtilizareExclusiva = true;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, pif);
+            os.CommitChanges();
+            idClient = client.ID; idUnitate = unitate.ID; idCasa = casa.ID; idCodEc = codEc.ID;
+            idTipVenit = tipVenit.ID; idTipTrz = tipTrz.ID; idN21 = n21?.ID ?? Guid.Empty;
+        }
+
+        // ── RA3a: AMO-LIPSA pe luna PIF-ului (nicio fișă eligibilă) ──
+        Check($"F27-RA3a ({eticheta}) luna PIF-ului (12/{An - 1}) n-are fișe eligibile (PIF < prima zi a lunii "
+            + "cere luna următoare), deci nu emite `AMO-LIPSA`",
+            Constatare(An - 1, 12, "AMO-LIPSA") == null);
+        using (var os = provider.CreateObjectSpace())
+            InchideTot(os, An - 1, 12);
+
+        // ── RA3b…d: AMO în stările Draft / Operat / Stornat ──
+        Guid idAmo;
+        using (var os = provider.CreateObjectSpace()) {
+            var rez = AmoApply.Genereaza(os, new GenerareAmoRequestDto { An = An, Luna = 1, UnitateId = idUnitate });
+            idAmo = rez.DocumentId ?? Guid.Empty;
+        }
+        var amoDraft = Constatare(An, 1, "AMO-LIPSA");
+        Console.WriteLine($"     MĂSURAT (F27-RA3b/{eticheta}): AMO draft ⇒ „{amoDraft?.Text}”.");
+        Check($"F27-RA3b ({eticheta}) AMO DRAFT ⇒ constatarea rămâne, cu textul de draft și obiectul draftului",
+            idAmo != Guid.Empty && amoDraft != null && amoDraft.Text.Contains("DRAFT") && amoDraft.ObiectId == idAmo);
+        var drafturiIan = Constatari(An, 1)
+            .Count(c => c.Fel == nameof(FelConstatareInchidere.DraftInPerioada));
+        Check($"F27-RA6a ({eticheta}) draftul AMO raportat de familia lui NU se mai repetă ca "
+            + "`DRAFT-IN-PERIOADA` — un fapt, o constatare — și nu intră nici în numărătoarea familiei",
+            amoDraft?.ObiectId == idAmo && drafturiIan == 0
+            && Constatare(An, 1, $"DRAFT-IN-PERIOADA:{idAmo}") == null);
+        Politica(FelConstatareInchidere.AmoLipsa, SeveritateConstatare.Ignorat);
+        Check($"F27-RA6c ({eticheta}) cu felul `AmoLipsa` pe `Ignorat` (nu se caută, deci nu se raportează) "
+            + "draftul AMO apare ca `DRAFT-IN-PERIOADA`: excluderea urmează raportarea EFECTIVĂ, nu tipul "
+            + "documentului",
+            Constatare(An, 1, "AMO-LIPSA") == null
+            && Constatare(An, 1, $"DRAFT-IN-PERIOADA:{idAmo}") != null);
+        if (amoSeed != null)
+            Politica(FelConstatareInchidere.AmoLipsa, amoSeed.Value);
+        using (var os = provider.CreateObjectSpace())
+            OperareApi.Opereaza(os, idAmo);
+        Check($"F27-RA3c ({eticheta}) AMO Operat ⇒ constatarea dispare", Constatare(An, 1, "AMO-LIPSA") == null);
+        using (var os = provider.CreateObjectSpace()) {
+            MotorOperare.Storneaza(os, os.GetObjectByKey<Document>(idAmo), Zi(1, 31));
+            os.CommitChanges();
+        }
+        var amoStornat = Constatare(An, 1, "AMO-LIPSA");
+        Check($"F27-RA3d ({eticheta}) AMO Stornat ⇒ constatarea REAPARE ca „lipsește” (stornatul nu e o "
+            + "amortizare vie)",
+            amoStornat != null && amoStornat.Text.Contains("lipsește"));
+        using (var os = provider.CreateObjectSpace()) {
+            var rez = AmoApply.Genereaza(os, new GenerareAmoRequestDto { An = An, Luna = 1, UnitateId = idUnitate });
+            OperareApi.Opereaza(os, rez.DocumentId ?? Guid.Empty);
+        }
+
+        // ── RA1: acceptarea pe o fotografie veche ──
+        Guid idD1, idD2;
+        using (var os = provider.CreateObjectSpace()) {
+            var d1 = os.CreateObject<NotaContabila>();
+            d1.Numar = Marcaj + "-D1";
+            d1.Data = Zi(1, 10);
+            d1.DataInregistrare = Zi(1, 10);
+            d1.PredatorId = idUnitate;
+            d1.PrimitorId = idUnitate;
+            os.CommitChanges();
+            idD1 = d1.ID;
+        }
+        var fotografie = Constatari(An, 1).Select(c => c.Cheie).ToArray();
+        using (var os = provider.CreateObjectSpace()) {
+            var d2 = os.CreateObject<NotaContabila>();
+            d2.Numar = Marcaj + "-D2";
+            d2.Data = Zi(1, 20);
+            d2.DataInregistrare = Zi(1, 20);
+            d2.PredatorId = idUnitate;
+            d2.PrimitorId = idUnitate;
+            os.CommitChanges();
+            idD2 = d2.ID;
+        }
+        var cheieD2 = $"DRAFT-IN-PERIOADA:{idD2}";
+        using (var os = provider.CreateObjectSpace()) {
+            var refuz = Refuz(() => PerioadaService.Inchide(os, An, 1, fotografie, null, Marcaj));
+            var linia = LiniaCheii(refuz, cheieD2);
+            Console.WriteLine($"     MĂSURAT (F27-RA1a/{eticheta}): draftul apărut DUPĂ fotografie ⇒ „{linia}”.");
+            Check($"F27-RA1a ({eticheta}) un draft apărut între verificare și închidere refuză închiderea cu "
+                + "cheia lui, deși toate cheile fotografiei sunt acceptate",
+                fotografie.Contains($"DRAFT-IN-PERIOADA:{idD1}") && linia != null && linia.StartsWith("Avertisment:"));
+        }
+        using (var os = provider.CreateObjectSpace()) {
+            os.Delete(os.GetObjectByKey<Document>(idD2));
+            os.CommitChanges();
+        }
+        using (var os = provider.CreateObjectSpace()) {
+            var rand = PerioadaService.Inchide(os, An, 1, fotografie.Append(cheieD2).ToArray(), null, Marcaj);
+            Console.WriteLine($"     MĂSURAT (F27-RA1b/{eticheta}): acceptări scrise = {rand.Acceptari}.");
+            Check($"F27-RA1b ({eticheta}) draftul șters (logic) între timp ⇒ cheia lui acceptată se ignoră și "
+                + "nu ajunge în istoric; luna se închide pe cheile care mai există",
+                rand.Acceptari != null && rand.Acceptari.Contains(idD1.ToString())
+                && !rand.Acceptari.Contains(idD2.ToString()));
+        }
+
+        // ── RA2: ITV în stările Draft / Operat / Stornat / operat pe altă lună (privat) ──
+        Guid idFclT;
+        using (var os = provider.CreateObjectSpace()) {
+            var fcl = os.CreateObject<FacturaIesire>();
+            fcl.Numar = Marcaj + "-FCL-T";
+            fcl.Data = Zi(2, 15);
+            fcl.DataInregistrare = Zi(2, 15);
+            fcl.DataScadenta = Zi(2, 20);
+            fcl.PredatorId = idUnitate;
+            fcl.PrimitorId = idClient;
+            var lin = os.CreateObject<FacturaIesireDetaliu>();
+            lin.Document = fcl;
+            lin.TipMaterialId = idTipVenit;
+            lin.Cantitate = 1m;
+            lin.PretUnitar = 1000m;
+            lin.CodEconomicId = idCodEc;
+            if (idN21 != Guid.Empty)
+                lin.TipTvaId = idN21;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, fcl);
+            os.CommitChanges();
+            idFclT = fcl.ID;
+        }
+        if (privat) {
+            var lipsa = Constatare(An, 2, "ITV-LIPSA");
+            Check($"F27-RA2a ({eticheta}) luna cu TVA colectată și fără ITV ⇒ „lipsește”",
+                lipsa != null && lipsa.Text.Contains("lipsește"));
+            Guid idItv;
+            using (var os = provider.CreateObjectSpace()) {
+                var rez = InchidereTvaApply.Genereaza(os, new GenerareItvRequestDto { An = An, Luna = 2, UnitateId = idUnitate });
+                idItv = rez.DocumentId ?? Guid.Empty;
+            }
+            var draft = Constatare(An, 2, "ITV-LIPSA");
+            Check($"F27-RA2b ({eticheta}) ITV DRAFT ⇒ textul de draft, obiectul = draftul",
+                idItv != Guid.Empty && draft != null && draft.Text.Contains("DRAFT") && draft.ObiectId == idItv);
+            var drafturiFeb = Constatari(An, 2)
+                .Count(c => c.Fel == nameof(FelConstatareInchidere.DraftInPerioada));
+            Check($"F27-RA6b ({eticheta}) draftul ITV raportat de familia lui NU se mai repetă ca "
+                + "`DRAFT-IN-PERIOADA` și nu intră nici în numărătoarea familiei",
+                draft?.ObiectId == idItv && drafturiFeb == 0
+                && Constatare(An, 2, $"DRAFT-IN-PERIOADA:{idItv}") == null);
+            using (var os = provider.CreateObjectSpace())
+                OperareApi.Opereaza(os, idItv);
+            Check($"F27-RA2c ({eticheta}) ITV Operat ⇒ constatarea dispare", Constatare(An, 2, "ITV-LIPSA") == null);
+            using (var os = provider.CreateObjectSpace()) {
+                MotorOperare.Storneaza(os, os.GetObjectByKey<Document>(idItv), Zi(2, 28));
+                os.CommitChanges();
+            }
+            var stornat = Constatare(An, 2, "ITV-LIPSA");
+            Check($"F27-RA2d ({eticheta}) ITV Stornat ⇒ „lipsește” din nou",
+                stornat != null && stornat.Text.Contains("lipsește"));
+            Guid idItvMar;
+            using (var os = provider.CreateObjectSpace()) {
+                var rez = InchidereTvaApply.Genereaza(os, new GenerareItvRequestDto { An = An, Luna = 3, UnitateId = idUnitate });
+                idItvMar = rez.DocumentId ?? Guid.Empty;
+                if (idItvMar != Guid.Empty)
+                    OperareApi.Opereaza(os, idItvMar);
+            }
+            MotivNegenerare? motivFeb;
+            using (var os = provider.CreateObjectSpace())
+                motivFeb = InchidereTvaService.Previzualizeaza(os, An, 2).Motiv;
+            var necron = Constatare(An, 2, "ITV-LIPSA");
+            Console.WriteLine($"     MĂSURAT (F27-RA2e/{eticheta}): ITV martie operat, februarie fără ⇒ motiv "
+                + $"{motivFeb}, constatare „{necron?.Text}”.");
+            Check($"F27-RA2e ({eticheta}) ITV operat pe luna URMĂTOARE, februarie fără ⇒ februarie tot „lipsește” "
+                + "(previzualizarea spune NeCronologica, constatarea nu se pierde)",
+                idItvMar != Guid.Empty && motivFeb == MotivNegenerare.NeCronologica
+                && necron != null && necron.Text.Contains("lipsește"));
+            using (var os = provider.CreateObjectSpace()) {
+                MotorOperare.Storneaza(os, os.GetObjectByKey<Document>(idItvMar), Zi(3, 31));
+                os.CommitChanges();
+            }
+        }
+
+        // ── RA4: REST-SCADENT — scadența lipsă, la ultima zi, stinsă la ultima zi, după P ──
+        Politica(FelConstatareInchidere.RestScadent, SeveritateConstatare.Avertisment);
+        Guid idA, idB, idC, idD;
+        using (var os = provider.CreateObjectSpace()) {
+            FacturaIesire Fcl(string sufix, int zi, DateOnly? scadenta) {
+                var f = os.CreateObject<FacturaIesire>();
+                f.Numar = Marcaj + sufix;
+                f.Data = Zi(2, zi);
+                f.DataInregistrare = Zi(2, zi);
+                f.DataScadenta = scadenta;
+                f.PredatorId = idUnitate;
+                f.PrimitorId = idClient;
+                var l = os.CreateObject<FacturaIesireDetaliu>();
+                l.Document = f;
+                l.TipMaterialId = idTipVenit;
+                l.Cantitate = 1m;
+                l.PretUnitar = 500m;
+                l.CodEconomicId = idCodEc;
+                if (idN21 != Guid.Empty)
+                    l.TipTvaId = idN21;
+                return f;
+            }
+            var a = Fcl("-FCL-A", 10, null);
+            var b = Fcl("-FCL-B", 10, Zi(2, 28));
+            var c = Fcl("-FCL-C", 10, Zi(2, 15));
+            var d = Fcl("-FCL-D", 10, Zi(3, 5));
+            os.CommitChanges();
+            foreach (var f in new[] { a, b, c, d })
+                MotorOperare.Opereaza(os, f);
+            os.CommitChanges();
+            var inc = os.CreateObject<Incasare>();
+            inc.Data = Zi(2, 28);
+            inc.DataInregistrare = Zi(2, 28);
+            inc.PredatorId = idClient;
+            inc.PrimitorId = idCasa;
+            inc.TipInstrument = TipInstrumentPlata.Chitanta;
+            var li = os.CreateObject<DocumentTrezorerieDetaliu>();
+            li.Document = inc;
+            li.TipMaterialId = idTipTrz;
+            li.Valoare = ImperechereService.Ramas(os, c.ID);
+            li.CodEconomicId = idCodEc;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, inc);
+            os.CommitChanges();
+            ImperechereService.Imperecheaza(os, inc, c, li.Valoare, null, Zi(2, 28));
+            idA = a.ID; idB = b.ID; idC = c.ID; idD = d.ID;
+        }
+        var restante = Constatari(An, 2).Where(c => c.Fel == nameof(FelConstatareInchidere.RestScadent))
+            .Select(c => c.ObiectId).ToHashSet();
+        Console.WriteLine($"     MĂSURAT (F27-RA4/{eticheta}): REST-SCADENT pe "
+            + $"A={restante.Contains(idA)} B={restante.Contains(idB)} C={restante.Contains(idC)} "
+            + $"D={restante.Contains(idD)} T={restante.Contains(idFclT)}.");
+        Check($"F27-RA4 ({eticheta}) fără scadență ⇒ nu; scadentă la ultima zi și neîncasată ⇒ da; stinsă "
+            + "integral exact la ultima zi ⇒ nu; scadentă după P ⇒ nu; factura din 15.02 cu scadența 20.02 ⇒ da",
+            !restante.Contains(idA) && restante.Contains(idB) && !restante.Contains(idC)
+            && !restante.Contains(idD) && restante.Contains(idFclT));
+        Politica(FelConstatareInchidere.RestScadent, SeveritateConstatare.Ignorat);
+
+        // ── RA7: `acceptate` null ⇒ ca lista goală, refuz de domeniu, nu excepție de cod ──
+        using (var os = provider.CreateObjectSpace()) {
+            string refuz;
+            try { PerioadaService.Inchide(os, An, 2, null, null, Marcaj); refuz = null; }
+            catch (OperareException e) { refuz = e.Message; }
+            catch (Exception e) { refuz = "EXCEPȚIE DE COD: " + e.GetType().Name; }
+            Check($"F27-RA7 ({eticheta}) `acceptate = null` e tratat ca listă goală: refuz de domeniu cu lista, nu "
+                + "excepție de cod",
+                refuz != null && refuz.StartsWith("Avertisment:"));
+        }
+
+        // ── RA8: rândul de politică ȘTERS LOGIC (GCRecord) ⇒ „fără politică” ──
+        using (var os = provider.CreateObjectSpace()) {
+            os.Delete(os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == FelConstatareInchidere.RestScadent));
+            os.CommitChanges();
+        }
+        var faraPolitica = Constatare(An, 2, "REST-SCADENT");
+        Check($"F27-RA8 ({eticheta}) rândul de politică șters LOGIC (nu fizic) ⇒ felul se caută și iese ca "
+            + "avertisment „fără politică” — filtrul global ascunde rândul, deci ștergerea logică = lipsa politicii",
+            faraPolitica != null && faraPolitica.Text.Contains("fără politică"));
+        using (var os = provider.CreateObjectSpace()) {
+            new Purja(os).Adauga(os.GetObjectsQuery<PoliticaInchidere>().IgnoreQueryFilters()
+                .Where(p => p.Fel == FelConstatareInchidere.RestScadent).ToList()).Executa();
+        }
+        Politica(FelConstatareInchidere.RestScadent, SeveritateConstatare.Ignorat);
+
+        // ── RA9: severitate în afara enum-ului ⇒ gardianul generic o refuză ──
+        using (var os = provider.CreateObjectSpace()) {
+            var rand = os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == FelConstatareInchidere.AmoLipsa);
+            rand.Severitate = (SeveritateConstatare)7;
+            var refuz = Refuz(() => GardianEditare.Verifica(os));
+            Check($"F27-RA9 ({eticheta}) `Severitate` = 7 (nedefinită) e refuzată de gardianul de enum-uri înainte "
+                + "de commit", refuz != null);
+        }
+
+        using (var os = provider.CreateObjectSpace())
+            InchideTot(os, An, 2);
+
+        // ── RA5: plafonul de 200 și rândul de REZUMAT ca acceptare în bloc ──
+        using (var os = provider.CreateObjectSpace()) {
+            for (var i = 0; i < 201; i++) {
+                var d = os.CreateObject<NotaContabila>();
+                d.Numar = $"{Marcaj}-M{i:000}";
+                d.Data = Zi(3, 1 + i % 28);
+                d.DataInregistrare = Zi(3, 1 + i % 28);
+                d.PredatorId = idUnitate;
+                d.PrimitorId = idUnitate;
+            }
+            os.CommitChanges();
+        }
+        var martie = Constatari(An, 3);
+        var listate = martie.Count(c => c.Fel == nameof(FelConstatareInchidere.DraftInPerioada)
+            && !c.Cheie.EndsWith(":REZUMAT"));
+        var rezumat = martie.FirstOrDefault(c => c.Cheie == "DRAFT-IN-PERIOADA:REZUMAT");
+        Console.WriteLine($"     MĂSURAT (F27-RA5a/{eticheta}): {listate} drafturi listate, rezumat = "
+            + $"„{rezumat?.Text}” / {rezumat?.Severitate}.");
+        Check($"F27-RA5a ({eticheta}) 201 drafturi ⇒ 200 listate + rândul de rezumat, cu cheie proprie, cu "
+            + "severitatea din politică (Avertisment) și cu cifra celor nelistate în text",
+            listate == 200 && rezumat != null && rezumat.Severitate == SeveritateConstatare.Avertisment
+            && rezumat.Text.Contains("Încă 1 rând de același fel (din 201 în total)")
+            && rezumat.Text.Contains("acceptarea acestui rând le acceptă pe toate"));
+        Politica(FelConstatareInchidere.DraftInPerioada, SeveritateConstatare.Blocant);
+        var rezumatBlocant = Constatare(An, 3, "DRAFT-IN-PERIOADA:REZUMAT");
+        string liniaBlocant;
+        using (var os = provider.CreateObjectSpace()) {
+            var refuz = Refuz(() => PerioadaService.Inchide(os, An, 3,
+                PerioadaService.Verifica(os, An, 3).Select(c => c.Cheie).ToArray(), null, Marcaj));
+            liniaBlocant = LiniaCheii(refuz, "DRAFT-IN-PERIOADA:REZUMAT");
+        }
+        Console.WriteLine($"     MĂSURAT (F27-RA5b/{eticheta}): rezumatul pe fel BLOCANT ⇒ „{liniaBlocant}”.");
+        Check($"F27-RA5b ({eticheta}) cu felul pe BLOCANT rezumatul devine el însuși blocant, iar închiderea e "
+            + "refuzată chiar cu cheia lui acceptată — severitatea rezumatului urmează politica familiei",
+            rezumatBlocant != null && rezumatBlocant.Severitate == SeveritateConstatare.Blocant
+            && liniaBlocant != null && liniaBlocant.StartsWith("Blocant:"));
+        Politica(FelConstatareInchidere.DraftInPerioada, SeveritateConstatare.Avertisment);
+        string liniaFaraRezumat;
+        using (var os = provider.CreateObjectSpace()) {
+            var fara = PerioadaService.Verifica(os, An, 3).Select(c => c.Cheie)
+                .Where(c => c != "DRAFT-IN-PERIOADA:REZUMAT").ToArray();
+            var refuz = Refuz(() => PerioadaService.Inchide(os, An, 3, fara, null, Marcaj));
+            liniaFaraRezumat = LiniaCheii(refuz, "DRAFT-IN-PERIOADA:REZUMAT");
+        }
+        using (var os = provider.CreateObjectSpace()) {
+            var rand = PerioadaService.Inchide(os, An, 3,
+                PerioadaService.Verifica(os, An, 3).Select(c => c.Cheie).ToArray(), null, Marcaj);
+            Check($"F27-RA5c ({eticheta}) rândul de rezumat e o acceptare ÎN BLOC a celor nelistate: neacceptat "
+                + "refuză închiderea cu linia lui, acceptat o permite și intră în istoric",
+                liniaFaraRezumat != null && rand.Fel == FelInchiderePerioada.Inchidere
+                && rand.Acceptari.Contains(":REZUMAT"));
+        }
+    }
+    finally {
+        if (itvSeed != null)
+            Politica(FelConstatareInchidere.ItvLipsa, itvSeed.Value);
+        if (amoSeed != null)
+            Politica(FelConstatareInchidere.AmoLipsa, amoSeed.Value);
+        if (draftSeed != null)
+            Politica(FelConstatareInchidere.DraftInPerioada, draftSeed.Value);
+        if (restSeed != null)
+            Politica(FelConstatareInchidere.RestScadent, restSeed.Value);
+        using var os = provider.CreateObjectSpace();
+        CurataRa(os);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Count(p => p.An == An || (p.An == An - 1 && p.Luna == 12));
+        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Count(d => d.Data >= new DateOnly(An - 1, 12, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var politici = os.GetObjectsQuery<PoliticaInchidere>().Select(p => new { p.Fel, p.Severitate, p.DinSeed }).ToList();
+        Check($"F27-RA10 ({eticheta}) fără reziduu și politica exact ca înainte de scenă",
+            perioade == 0 && documente == 0 && politici.Count == 4 && politici.All(p => p.DinSeed)
+            && politici.Single(p => p.Fel == FelConstatareInchidere.ItvLipsa).Severitate == itvSeed
+            && politici.Single(p => p.Fel == FelConstatareInchidere.RestScadent).Severitate == restSeed);
+    }
+}
+
+
+void VerificaPartide(bool privat) {
+    const string Marcaj = "E2E-PAR";
+    const int An = 2035;
+    var eticheta = privat ? "privat" : "bugetar";
+    var codTipVenit = privat ? "704" : "751.01.00";
+    var codContCasa = privat ? "5311" : "531.01.01";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+
+    // ─────────── curățenia de scenă (purjă FIZICĂ, F13-D2) ───────────
+    void CurataPar(IObjectSpace os) {
+        // Snapshot-urile ȘI partidele întâi: FK-urile lor spre document sunt
+        // `Restrict`, deci un rând rămas ar bloca purja documentelor.
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31))
+            .Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        // Rândurile INVERSE înaintea celor pe care le desfac (`InverseazaId` e
+        // FK `Restrict`, ca legătura de corecție).
+        foreach (var imp in os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+                .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId))
+                .OrderByDescending(i => i.InverseazaId != null))
+            pj.Adauga(imp);
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.ID)).OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        var produsIds = os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(x => x.Cod.StartsWith(Marcaj)).Select(x => x.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => produsIds.Contains(l.ProdusId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(x => produsIds.Contains(x.ID)).ToList());
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).Select(p => p.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    // Calea REALĂ a refuzului de culegere: dispecerul din gardian, nu regula.
+    string RefuzGardianPar(IObjectSpace os) {
+        try {
+            GardianEditare.Verifica(os);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+    }
+
+    // Restul, citit prin proiecție, filtrat pe contrapartida scenei: celelalte
+    // scene ale suitei trăiesc în bază și n-au voie să intre în cifre.
+    List<(string Tip, string Numar, decimal Total, decimal Ramas)> Rest(IObjectSpace os, Guid contrapartida,
+            DateOnly? laData = null) =>
+        ImperecheriProiectii.DocumenteCuRest(os, contrapartida, null, laData)
+            .ToList()
+            .OrderBy(r => r.Numar, StringComparer.Ordinal)
+            .Select(r => (r.Tip, r.Numar, r.Total, Ramas: r.Rest))
+            .ToList();
+
+    string Bani(decimal v) => v.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);
+
+    string Serializeaza(List<(string Tip, string Numar, decimal Total, decimal Ramas)> randuri) =>
+        string.Join(" | ", randuri.Select(r => $"{r.Tip} {r.Numar}: {Bani(r.Total)}/{Bani(r.Ramas)}"));
+
+    Dictionary<Guid, decimal> Partide(IObjectSpace os, int an, int luna) =>
+        os.GetObjectsQuery<PartidaDeschisa>().Where(p => p.An == an && p.Luna == luna)
+            .Select(p => new { p.DocumentId, p.Rest }).ToList()
+            .ToDictionary(p => p.DocumentId, p => p.Rest);
+
+    // Totalul de control: Σ `LiniiCreanta` pe liniile PERSISTATE, adică exact
+    // definiția pe care motorul o scrie — dar calculată pe altă cale decât
+    // `MotorOperare` (LINQ pe query, nu pe navigația `Detalii` în memorie).
+    decimal SumaCreanta(IObjectSpace os, Guid documentId) {
+        var doc = os.GetObjectByKey<Document>(documentId);
+        var linii = doc.LiniiCreanta(
+            os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == documentId));
+        return linii.Select(d => (decimal?)(d.Valoare + d.ValoareTva)).Sum() ?? 0m;
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataPar(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An);
+        var documente = os.GetObjectsQuery<Document>()
+            .Count(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var inchise = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.Inchisa);
+        var partide = os.GetObjectsQuery<PartidaDeschisa>().Count();
+        Console.WriteLine($"     MĂSURAT (PAR-V0/{eticheta}): {perioade} perioade și {documente} documente în "
+            + $"{An}, {inchise} perioade închise în bază, {partide} partide deschise.");
+        Check($"PAR-V0 ({eticheta}) precondiție: anul {An} e liber, nicio perioadă a bazei nu e închisă și nu "
+            + "există nicio partidă — altfel „identic cu și fără partide” ar fi măsurat peste conținut străin",
+            perioade == 0 && documente == 0 && inchise == 0 && partide == 0);
+    }
+
+    // ═════════════════════ scena: ianuarie ═════════════════════
+    Guid idClient, idCasa, idFclA, idFclB, idInc1, idImpA, idImpB;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 1, 2, 3 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+        }
+        var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+        var tipVenit = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipVenit);
+        var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+        var client = os.CreateObject<Partener>();
+        client.Cod = Marcaj + "-CL";
+        client.Denumire = "Client partide";
+        client.CodFiscal = "RO33333341";
+        var casa = os.CreateObject<ContPropriu>();
+        casa.Cod = Marcaj + "-CS";
+        casa.Denumire = "Casa partide";
+        casa.ContImplicit = os.FirstOrDefault<Cont>(c => c.Simbol == codContCasa);
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-CE";
+        codEc.Denumire = "Cod economic partide";
+        os.CommitChanges();
+        Check($"PAR — precondiție de profil ({eticheta}): tipul de venit („{codTipVenit}”) și TRZ sunt în seed, "
+            + "deci scena de creanțe e aceeași pe ambele profiluri",
+            tipVenit != null && tipTrz != null && sediu != null
+            && casa.ContImplicit != null);
+
+        FacturaIesire Fcl(string sufix, int zi, decimal valoare) {
+            var f = os.CreateObject<FacturaIesire>();
+            f.Numar = Marcaj + sufix;
+            f.Data = Zi(1, zi);
+            f.DataInregistrare = Zi(1, zi);
+            f.Predator = sediu;
+            f.Primitor = client;
+            var l = os.CreateObject<FacturaIesireDetaliu>();
+            l.Document = f;
+            l.TipMaterial = tipVenit;
+            l.Cantitate = 1m;
+            l.PretUnitar = valoare;
+            l.CodEconomicId = codEc.ID;
+            return f;
+        }
+
+        Incasare Inc(string sufix, int luna, int zi, decimal valoare) {
+            var i = os.CreateObject<Incasare>();
+            i.Data = new DateOnly(An, luna, zi);
+            i.DataInregistrare = new DateOnly(An, luna, zi);
+            i.Predator = client;
+            i.Primitor = casa;
+            i.TipInstrument = TipInstrumentPlata.Chitanta;
+            var l = os.CreateObject<DocumentTrezorerieDetaliu>();
+            l.Document = i;
+            l.TipMaterial = tipTrz;
+            l.Valoare = valoare;
+            l.CodEconomicId = codEc.ID;
+            return i;
+        }
+
+        var fclA = Fcl("-FCL-A", 5, 100m);
+        var fclB = Fcl("-FCL-B", 6, 250m);
+        var inc1 = Inc("-INC1", 1, 10, 120m);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fclA);
+        MotorOperare.Opereaza(os, fclB);
+        MotorOperare.Opereaza(os, inc1);
+        os.CommitChanges();
+
+        idClient = client.ID; idCasa = casa.ID;
+        idFclA = fclA.ID; idFclB = fclB.ID; idInc1 = inc1.ID;
+
+        Console.WriteLine($"     MĂSURAT (PAR-V1/{eticheta}): TotalStingere — FCL A {fclA.TotalStingere}, "
+            + $"FCL B {fclB.TotalStingere}, INC 1 {inc1.TotalStingere}.");
+        Check($"PAR-V1 ({eticheta}) `TotalStingere` e scris de motor la operare și e Σ `LiniiCreanta` pe "
+            + "fiecare document stins — citit de pe cheie, nu agregat la citire",
+            fclA.TotalStingere == 100m && fclB.TotalStingere == 250m && inc1.TotalStingere == 120m
+            && fclA.TotalStingere == SumaCreanta(os, idFclA)
+            && fclB.TotalStingere == SumaCreanta(os, idFclB)
+            && inc1.TotalStingere == SumaCreanta(os, idInc1)
+            && ImperechereService.Total(os, idFclB) == 250m);
+
+        // Stingerea lui ianuarie: încasarea de 120 închide A integral și B parțial.
+        var impA = ImperechereService.Imperecheaza(os, inc1, fclA, 100m, null, Zi(1, 10));
+        var impB = ImperechereService.Imperecheaza(os, inc1, fclB, 20m, null, Zi(1, 10));
+        idImpA = impA.ID; idImpB = impB.ID;
+        Check($"PAR-V2 ({eticheta}) imperecherea manuală poartă data cerută, iar restul scade pe ambele "
+            + "laturi (A stinsă integral, B 230, încasarea 0)",
+            impA.Data == Zi(1, 10) && impB.Data == Zi(1, 10)
+            && ImperechereService.Ramas(os, idFclA) == 0m
+            && ImperechereService.Ramas(os, idFclB) == 230m
+            && ImperechereService.Ramas(os, idInc1) == 0m);
+
+        CheckRefuza($"PAR-V3 ({eticheta}) imperechere datată ÎNAINTEA înregistrării documentelor → refuz "
+            + "(faptul de stingere nu poate precede intrarea în evidență)",
+            () => ImperechereService.Imperecheaza(os, inc1, fclB, 1m, null, Zi(1, 4)));
+    }
+
+    // ═════════════════════ închiderea lui ianuarie ═════════════════════
+    string restInaintea;
+    using (var os = provider.CreateObjectSpace()) {
+        restInaintea = Serializeaza(Rest(os, idClient));
+        Console.WriteLine($"     MĂSURAT (PAR-V4/{eticheta}): `DocumenteCuRest` înainte de închidere — "
+            + $"{restInaintea}.");
+        Check($"PAR-V4 ({eticheta}) fără nicio perioadă închisă proiecția citește integral: doar B are rest "
+            + "(230), A și încasarea sunt stinse",
+            restInaintea == $"FCL {Marcaj}-FCL-B: 250.00/230.00");
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        InchideAcceptTot(os, An, 1, Marcaj);
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var partide = Partide(os, An, 1);
+        Console.WriteLine($"     MĂSURAT (PAR-V5/{eticheta}): partidele lui 01/{An} — {partide.Count} rânduri, "
+            + $"Σ rest {partide.Values.Sum():0.00}.");
+        Check($"PAR-V5 ({eticheta}) închiderea materializează partidele deschise: EXACT documentele cu rest ≠ 0 "
+            + "la sfârșitul perioadei (B 230), nu și cele stinse integral",
+            partide.Count == 1 && partide.TryGetValue(idFclB, out var restB) && restB == 230m);
+
+        var restDupa = Serializeaza(Rest(os, idClient));
+        Check($"PAR-V6 ({eticheta}) „identic cu și fără partide”: proiecția citită prin partida lui 01/{An} dă "
+            + "EXACT rândurile și cifrele citite integral înainte de închidere",
+            restDupa == restInaintea);
+    }
+
+    // ═════════════════════ februarie: stingerea restului ═════════════════════
+    Guid idInc2;
+    using (var os = provider.CreateObjectSpace()) {
+        var client = os.GetObjectByKey<Repartitor>(idClient);
+        var casa = os.GetObjectByKey<Repartitor>(idCasa);
+        var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+        var codEc = os.FirstOrDefault<CodEconomic>(c => c.Cod == Marcaj + "-CE");
+        var inc2 = os.CreateObject<Incasare>();
+        inc2.Data = Zi(2, 5);
+        inc2.DataInregistrare = Zi(2, 5);
+        inc2.Predator = client;
+        inc2.Primitor = casa;
+        inc2.TipInstrument = TipInstrumentPlata.Chitanta;
+        var l = os.CreateObject<DocumentTrezorerieDetaliu>();
+        l.Document = inc2;
+        l.TipMaterial = tipTrz;
+        l.Valoare = 230m;
+        l.CodEconomicId = codEc.ID;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, inc2);
+        os.CommitChanges();
+        idInc2 = inc2.ID;
+
+        CheckRefuza($"PAR-V7 ({eticheta}) imperechere datată într-o perioadă ÎNCHISĂ → refuz (stingerea se "
+            + "scrie doar în fereastra deschisă)",
+            () => ImperechereService.Imperecheaza(os, inc2, os.GetObjectByKey<Document>(idFclB), 1m,
+                null, Zi(1, 20)));
+
+        ImperechereService.Imperecheaza(os, inc2, os.GetObjectByKey<Document>(idFclB), 230m, null, Zi(2, 10));
+        var restLaZi = Serializeaza(Rest(os, idClient));
+        var restLa31Ian = Serializeaza(Rest(os, idClient, Zi(1, 31)));
+        Console.WriteLine($"     MĂSURAT (PAR-V8/{eticheta}): la zi „{restLaZi}”, la 31.01 „{restLa31Ian}”.");
+        Check($"PAR-V8 ({eticheta}) stingerea din fereastra deschisă coboară restul partidei la zero, dar "
+            + $"citirea la 31.01 rămâne cea a partidei — `laData` e graniță, nu filtru",
+            restLaZi == "" && restLa31Ian == $"FCL {Marcaj}-FCL-B: 250.00/230.00");
+    }
+
+    // ═════════════════════ desfacerea: rând invers, nu ștergere ═════════════
+    Guid idInvers;
+    using (var os = provider.CreateObjectSpace()) {
+        os.Delete(os.GetObjectByKey<Imperechere>(idImpB));
+        var refuz = RefuzGardianPar(os);
+        Console.WriteLine($"     MĂSURAT (PAR-V9/{eticheta}): ștergerea directă a stingerii din ianuarie → "
+            + $"„{refuz ?? "<ACCEPTATĂ>"}”.");
+        Check($"PAR-V9 ({eticheta}) o imperechere dintr-o perioadă ÎNCHISĂ nu se șterge — gardianul trimite "
+            + "la rândul invers",
+            refuz != null && refuz.Contains("nu se șterge"));
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var invers = ImperechereService.Desfa(os, idImpB, Zi(2, 15));
+        idInvers = invers.ID;
+        Console.WriteLine($"     MĂSURAT (PAR-V10/{eticheta}): rând invers {invers.Suma:0.00} la "
+            + $"{invers.Data:dd.MM.yyyy}; rest B {ImperechereService.Ramas(os, idFclB):0.00}, "
+            + $"rest INC1 {ImperechereService.Ramas(os, idInc1):0.00}.");
+        Check($"PAR-V10 ({eticheta}) desfacerea scrie un rând INVERS (−20, legat de original, nu autogenerat) "
+            + "în fereastra deschisă; `Asignat` însumează algebric, deci restul se eliberează pe AMBELE "
+            + "documente (B 20, încasarea 20)",
+            invers.Suma == -20m && invers.Data == Zi(2, 15) && invers.InverseazaId == idImpB
+            && !invers.Autogenerat
+            && ImperechereService.Ramas(os, idFclB) == 20m
+            && ImperechereService.Ramas(os, idInc1) == 20m);
+
+        var randuri = Rest(os, idClient);
+        Console.WriteLine($"     MĂSURAT (PAR-V11/{eticheta}): după desfacere — {Serializeaza(randuri)}.");
+        Check($"PAR-V11 ({eticheta}) proiecția vede desfacerea pe AMBELE documente, deși niciunul nu e "
+            + "înregistrat după referință: documentul stins integral la închidere (deci absent din partide) "
+            + "reintră prin fereastra deschisă, cu restul eliberat",
+            randuri.Count == 2
+            && randuri.Any(r => r.Tip == "FCL" && r.Numar == Marcaj + "-FCL-B" && r.Total == 250m && r.Ramas == 20m)
+            && randuri.Any(r => r.Tip == "INC" && r.Total == 120m && r.Ramas == 20m));
+
+        CheckRefuza($"PAR-V12 ({eticheta}) a doua desfacere a aceleiași imperecheri → refuz (legătura e 1:1)",
+            () => ImperechereService.Desfa(os, idImpB, Zi(2, 16)));
+        CheckRefuza($"PAR-V13 ({eticheta}) desfacerea unui rând INVERS → refuz (nu se desface desfacerea)",
+            () => ImperechereService.Desfa(os, idInvers, Zi(2, 16)));
+    }
+
+    // ═════════════════════ stornarea unui document imperecheat ═════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var inc1 = os.GetObjectByKey<Document>(idInc1);
+        MotorOperare.Storneaza(os, inc1, Zi(2, 20));
+        var legaturi = os.GetObjectsQuery<Imperechere>()
+            .Where(i => i.DocumentStingatorId == idInc1 || i.DocumentId == idInc1)
+            .Select(i => new { i.Suma, i.Data, i.InverseazaId }).ToList();
+        Console.WriteLine($"     MĂSURAT (PAR-V14/{eticheta}): după storno — {legaturi.Count} legături, "
+            + $"Σ {legaturi.Sum(l => l.Suma):0.00}.");
+        Check($"PAR-V14 ({eticheta}) stornarea unui document cu stingeri în perioadă ÎNCHISĂ nu le cere "
+            + "șterse: motorul scrie rândurile inverse la data stornării (stingerea vie de 100 se anulează, "
+            + "cea deja desfăcută nu se inversează a doua oară) și Σ ajunge zero",
+            inc1.Stare == StareDocument.Stornat
+            && legaturi.Count == 4 && legaturi.Sum(l => l.Suma) == 0m
+            && legaturi.Count(l => l.InverseazaId != null && l.Data == Zi(2, 20)) == 1
+            && ImperechereService.Ramas(os, idFclA) == 100m);
+    }
+
+    // ═════════════════════ fereastra deschisă: refuzurile rămân ═════════════
+    Guid idFclC, idInc3;
+    using (var os = provider.CreateObjectSpace()) {
+        var client = os.GetObjectByKey<Repartitor>(idClient);
+        var casa = os.GetObjectByKey<Repartitor>(idCasa);
+        var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
+        var tipVenit = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipVenit);
+        var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+        var codEc = os.FirstOrDefault<CodEconomic>(c => c.Cod == Marcaj + "-CE");
+
+        var fclC = os.CreateObject<FacturaIesire>();
+        fclC.Numar = Marcaj + "-FCL-C";
+        fclC.Data = Zi(2, 22);
+        fclC.DataInregistrare = Zi(2, 22);
+        fclC.Predator = sediu;
+        fclC.Primitor = client;
+        var lc = os.CreateObject<FacturaIesireDetaliu>();
+        lc.Document = fclC;
+        lc.TipMaterial = tipVenit;
+        lc.Cantitate = 1m;
+        lc.PretUnitar = 70m;
+        lc.CodEconomicId = codEc.ID;
+
+        var inc3 = os.CreateObject<Incasare>();
+        inc3.Data = Zi(2, 23);
+        inc3.DataInregistrare = Zi(2, 23);
+        inc3.Predator = client;
+        inc3.Primitor = casa;
+        inc3.TipInstrument = TipInstrumentPlata.Chitanta;
+        var li = os.CreateObject<DocumentTrezorerieDetaliu>();
+        li.Document = inc3;
+        li.TipMaterial = tipTrz;
+        li.Valoare = 70m;
+        li.CodEconomicId = codEc.ID;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fclC);
+        MotorOperare.Opereaza(os, inc3);
+        os.CommitChanges();
+        idFclC = fclC.ID; idInc3 = inc3.ID;
+
+        var impC = ImperechereService.Imperecheaza(os, inc3, fclC, 70m, null, Zi(2, 24));
+        var refuzStorno = Refuz(() => MotorOperare.Storneaza(os, fclC, Zi(2, 25)));
+        var refuzAnulare = Refuz(() => MotorOperare.AnuleazaOperarea(os, fclC));
+        Console.WriteLine($"     MĂSURAT (PAR-V15/{eticheta}): storno → „{refuzStorno ?? "<ACCEPTAT>"}”; "
+            + $"anulare → „{refuzAnulare ?? "<ACCEPTATĂ>"}”.");
+        Check($"PAR-V15 ({eticheta}) cu stingerea în fereastra DESCHISĂ, storno-ul și anularea rămân refuzate "
+            + "cu textul de azi — ce se poate șterge se cere șters, nu se inversează",
+            refuzStorno != null && refuzStorno.Contains("ștergeți-le întâi")
+            && refuzAnulare != null && refuzAnulare.Contains("ștergeți-le întâi"));
+
+        // Ștergerea e liberă în fereastra deschisă — și ea redeschide anularea.
+        os.Delete(os.GetObjectByKey<Imperechere>(impC.ID));
+        os.CommitChanges();
+        MotorOperare.AnuleazaOperarea(os, fclC);
+        Check($"PAR-V16 ({eticheta}) ștergerea stingerii din fereastra deschisă trece, anularea merge, iar "
+            + "`TotalStingere` revine la null: totalul e al documentului OPERAT, nu al draftului",
+            fclC.Stare == StareDocument.Draft && fclC.TotalStingere == null
+            && ImperechereService.Total(os, idFclC) == 0m);
+    }
+
+    // ═════════════════════ redeschiderea și reconstrucția ═════════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var inainte = Partide(os, An, 1);
+        PerioadaService.Redeschide(os, An, 1, "Probă partide", null, Marcaj);
+        var dupaRedeschidere = Partide(os, An, 1);
+        InchideAcceptTot(os, An, 1, Marcaj);
+        var dupaReinchidere = Partide(os, An, 1);
+        Check($"PAR-V17 ({eticheta}) redeschiderea ȘTERGE partidele perioadei, iar re-închiderea le rescrie "
+            + "IDENTIC (aceeași mulțime, același rest) — partida e proiecție rescrisă, nu urmă",
+            inainte.Count == 1 && dupaRedeschidere.Count == 0
+            && dupaReinchidere.Count == inainte.Count
+            && dupaReinchidere.All(p => inainte.TryGetValue(p.Key, out var v) && v == p.Value));
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var raport = SolduriService.Reconstruieste(os);
+        var rand = raport.Referinte.Single(r => r.An == An && r.Luna == 1);
+        Console.WriteLine($"     MĂSURAT (PAR-V18/{eticheta}): partide existente {rand.PartideExistente}, "
+            + $"recalculate {rand.PartideRecalculate}, diferite {rand.PartideDiferite}, "
+            + $"Δrest {rand.DiferentaRest:0.00}.");
+        Check($"PAR-V18 ({eticheta}) `Reconstruieste` acoperă și partidele și nu găsește nicio diferență pe "
+            + "perioada de referință — mulțimea și restul coincid cu recalculul",
+            rand.PartideExistente == rand.PartideRecalculate && rand.PartideDiferite == 0
+            && rand.DiferentaRest == 0m);
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        // Coruperea unui `Rest` trebuie să fie VĂZUTĂ: un raport care tace pe o
+        // partidă greșită n-ar proba nimic.
+        var partida = os.GetObjectsQuery<PartidaDeschisa>()
+            .First(p => p.An == An && p.Luna == 1 && p.DocumentId == idFclB);
+        partida.Rest += 5m;
+        os.CommitChanges();
+        var raport = SolduriService.Reconstruieste(os);
+        var rand = raport.Referinte.Single(r => r.An == An && r.Luna == 1);
+        Console.WriteLine($"     MĂSURAT (PAR-V19/{eticheta}): după coruperea unui rest — diferite "
+            + $"{rand.PartideDiferite}, Δrest {rand.DiferentaRest:0.00}.");
+        Check($"PAR-V19 ({eticheta}) un `Rest` corupt e RAPORTAT (o partidă diferită, Δ 5,00) și apoi rescris — "
+            + "raportul se ia pe ce era în bază, rescrierea vine după el",
+            rand.PartideDiferite == 1 && rand.DiferentaRest == 5m
+            && Partide(os, An, 1)[idFclB] == 230m);
+    }
+
+    // ═════════════════════ soldurile pe partener ═════════════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var solduri = ContabilProiectii.SoldParteneri(os, Zi(1, 31), null, idClient).ToList();
+        var balanta = ContabilProiectii
+            .Balanta(os, new DateOnly(An, 1, 1), Zi(1, 31), analitic: true, repartitorId: idClient)
+            .ToList();
+        var dinSolduri = solduri
+            .Select(s => $"{s.ContId}:{s.SoldDebitor:0.00}/{s.SoldCreditor:0.00}")
+            .OrderBy(x => x, StringComparer.Ordinal).ToList();
+        var dinBalanta = balanta
+            .Where(b => b.SoldFinalDebit != 0m || b.SoldFinalCredit != 0m)
+            .Select(b => $"{b.ContId}:{b.SoldFinalDebit:0.00}/{b.SoldFinalCredit:0.00}")
+            .OrderBy(x => x, StringComparer.Ordinal).ToList();
+        var creanta = solduri.Sum(s => s.SoldDebitor) - solduri.Sum(s => s.SoldCreditor);
+        Console.WriteLine($"     MĂSURAT (PAR-V20/{eticheta}): {solduri.Count} rânduri de sold pe clientul "
+            + $"scenei la 31.01, net {creanta:0.00}; balanța analitică dă {dinBalanta.Count} rânduri.");
+        Check($"PAR-V20 ({eticheta}) `SoldParteneri` la o dată e EXACT partea de sold a balanței analitice pe "
+            + "aceeași cheie (cont × repartitor), la cent și la rând — nu un al doilea adevăr",
+            dinSolduri.SequenceEqual(dinBalanta));
+        Check($"PAR-V21 ({eticheta}) dimensiunea Repartitor urmează LATURILE documentului (debit←predator, "
+            + "credit←primitor — 00 §5), NU contul de terț: clientul scenei apare cu 350 pe credit (veniturile "
+            + "facturate) și 120 pe debit (încasarea), net −230. Mărimea e a scenei, semnul e al convenției — "
+            + "creanța PER PARTENER se citește din partidele deschise, nu din balanța analitică",
+            solduri.Count == 2 && solduri.Sum(s => s.Credit) == 350m
+            && solduri.Sum(s => s.Debit) == 120m && creanta == -230m);
+    }
+
+    // ═════════════════════ ReturClient: totalul filtrat prin hook ═════════
+    // Doar pe privat: returul de la client cere tipurile planului OMFP (371 de
+    // stoc, 707 de venit) și politica lui de TVA.
+    if (privat)
+        using (var os = provider.CreateObjectSpace()) {
+            var tip371 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "371");
+            var tip707 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "707");
+            var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+            var client = os.GetObjectByKey<Repartitor>(idClient);
+
+            var gest = os.CreateObject<Gestiune>();
+            gest.Cod = Marcaj + "-G";
+            gest.Denumire = "Gestiune partide";
+            var furnizor = os.CreateObject<Partener>();
+            furnizor.Cod = Marcaj + "-F";
+            furnizor.Denumire = "Furnizor partide";
+            furnizor.CodFiscal = "RO33333342";
+            var produs = os.CreateObject<Produs>();
+            produs.Cod = Marcaj + "-P";
+            produs.Denumire = "Marfă partide";
+            produs.UM = "BUC";
+            produs.TipMaterial = tip371;
+            os.CommitChanges();
+
+            // Lotul original al livrării pe care returul o stornează.
+            var nir = os.CreateObject<NIR>();
+            nir.Data = Zi(2, 25);
+            nir.DataInregistrare = Zi(2, 25);
+            nir.Predator = furnizor;
+            nir.Primitor = gest;
+            var linNir = os.CreateObject<DocumentDetaliu>();
+            linNir.Document = nir;
+            linNir.TipMaterial = tip371;
+            linNir.Cantitate = 10m;
+            linNir.Valoare = 100m;
+            var lot = linNir.CreeazaLot(os, produs, gest);
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, nir);
+            os.CommitChanges();
+
+            // RDC: DOUĂ roluri într-un document — venit stornat (fără lot) și
+            // cost (pe lotul original). `LiniiCreanta` taie al doilea rol.
+            var rdc = os.CreateObject<ReturClient>();
+            rdc.Data = Zi(2, 26);
+            rdc.DataInregistrare = Zi(2, 26);
+            rdc.Predator = client;
+            rdc.Primitor = gest;
+            var lVenit = os.CreateObject<DocumentDetaliu>();
+            lVenit.Document = rdc;
+            lVenit.TipMaterial = tip707;
+            lVenit.Cantitate = 1m;
+            lVenit.Valoare = 100m;
+            lVenit.TipTvaId = n21.ID;
+            var lCost = os.CreateObject<DocumentDetaliu>();
+            lCost.Document = rdc;
+            lCost.TipMaterial = tip371;
+            lCost.LotId = lot.ID;
+            lCost.Cantitate = 3m;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, rdc);
+            os.CommitChanges();
+
+            var brut = os.GetObjectsQuery<DocumentDetaliu>()
+                .Where(d => d.DocumentId == rdc.ID)
+                .Select(d => (decimal?)(d.Valoare + d.ValoareTva)).Sum() ?? 0m;
+            var creantaRdc = SumaCreanta(os, rdc.ID);
+            var apare = ImperecheriProiectii.DocumenteCuRest(os).Any(r => r.DocumentId == rdc.ID);
+            Console.WriteLine($"     MĂSURAT (PAR-V22/{eticheta}): RDC {rdc.Numar} — total scris "
+                + $"{Bani(rdc.TotalStingere ?? 0m)}, Σ linii de creanță {Bani(creantaRdc)}, Σ TOATE liniile "
+                + $"{Bani(brut)}; în `DocumenteCuRest`: {apare}.");
+            Check($"PAR-V22 ({eticheta}) pe `ReturClient` motorul scrie totalul FILTRAT prin `LiniiCreanta` "
+                + "(doar liniile de venit: −121, venitul stornat cu TVA-ul lui), nu Σ tuturor liniilor (−151, "
+                + "cu costul) — de aceea proiecția de rest îl poate include fără să devină al doilea adevăr",
+                rdc.TotalStingere == -121m && creantaRdc == -121m && brut == -151m
+                && ImperechereService.Total(os, rdc.ID) == -121m);
+            Check($"PAR-V23 ({eticheta}) returul rămâne totuși în afara listei de candidați, dar din alt motiv "
+                + "decât înainte: creanța lui e NEGATIVĂ după operare (venit stornat), iar filtrul `Rest > 0` o "
+                + "taie — excluderea prin ramură lipsă nu mai e necesară",
+                !apare);
+        }
+
+    // ═════════════════════ curățenia: scena nu rămâne în bază ═════════════
+    using (var os = provider.CreateObjectSpace()) {
+        RedeschideLant(os, An, 1);
+        PurjaIstoricPerioade(os, An);
+    }
+    using (var os = provider.CreateObjectSpace())
+        CurataPar(os);
+    using (var os = provider.CreateObjectSpace()) {
+        Check($"PAR-V24 ({eticheta}) scena nu lasă reziduu: anul {An} e din nou gol, nicio perioadă a bazei "
+            + "nu rămâne închisă și nicio partidă nu supraviețuiește",
+            os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An) == 0
+            && !os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.Inchisa)
+            && os.GetObjectsQuery<PartidaDeschisa>().Count() == 0
+            && os.GetObjectsQuery<Document>().Count(d =>
+                d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31)) == 0);
+    }
+}
+
+void VerificaImobilizari(bool privat) {
+    const string Marcaj = "E2E-IMO";
+    const int An = 2027;
+    var eticheta = privat ? "privat" : "bugetar";
+    var codTipF = privat ? "214" : "214.00.00";
+    var codTipF2 = privat ? "2133" : "213.03.00";
+    var simbolFurnizorImobilizari = privat ? "404" : "404.01.00";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+
+    // ── Curățenia scenei (purjă FIZICĂ — F13-D2), încrucișată cu blocul de API ──
+    void CurataImo(IObjectSpace os) {
+        var pj = new Purja(os);
+        var start = Zi(5, 1);
+        var sfarsit = Zi(12, 31);
+        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= start && d.Data <= sfarsit).ToList();
+        var docIds = docs.Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters()
+            .Where(f => f.NumarInventar.StartsWith(Marcaj) || f.NumarInventar.StartsWith("E2E-API-IMO")).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj) || r.Cod.StartsWith("E2E-API-IMO")).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<SursaFinantare>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodFunctional>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Proiect>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        // Tipul de material de scenă (fișa fără politică) și regulile de scenă.
+        var tipuriScena = os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters()
+            .Where(t => t.Cod.StartsWith(Marcaj)).Select(t => t.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<PoliticaAmortizare>().IgnoreQueryFilters()
+            .Where(p => tipuriScena.Contains(p.TipMaterialId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters()
+            .Where(t => t.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegulaDeductibilitate>().IgnoreQueryFilters()
+            .Where(r => r.Temei.StartsWith(Marcaj)).ToList());
+        // Perioadele 2027/5–12 sunt artefact de scenă (seed-ul acoperă doar 2026).
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An && p.Luna >= 5).ToList());
+        pj.Executa();
+    }
+
+    // Calea REALĂ: dispecerul `IVerificabilLaCommit` din gardian, nu corpul regulii.
+    static string RefuzGardianImo(IObjectSpace os) {
+        try {
+            GardianEditare.Verifica(os);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        CurataImo(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var primaZi = Zi(5, 1);
+        var ultimaZi = Zi(12, 31);
+        var documenteInScena = os.GetObjectsQuery<Document>()
+            .Count(d => d.Data >= primaZi && d.Data <= ultimaZi);
+        Console.WriteLine($"     MĂSURAT (IMO-V0/{eticheta}): {documenteInScena} documente în 05–12/{An} după purjă.");
+        Check($"IMO — precondiție ({eticheta}): lunile 05–12/{An} sunt libere după purjă; 2027 e în afara "
+            + "perioadelor seed-uite, deci niciun alt scenariu al suitei n-a scris acolo — altfel cifrele de "
+            + "mai jos ar fi măsurate peste conținut străin",
+            documenteInScena == 0);
+    }
+
+    // ── IMO-V1: seed-ul (ancorele, numerotarea, politica, catalogul, tipurile) ──
+    using (var os = provider.CreateObjectSpace()) {
+        TipDocument Tip(string cod) => os.FirstOrDefault<TipDocument>(t => t.Cod == cod);
+        var pif = Tip("PIF");
+        var cas = Tip("CAS");
+        var amo = Tip("AMO");
+        string Serie(TipDocument t) => t == null ? null
+            : os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == t.ID)?.Serie;
+        Console.WriteLine($"     MĂSURAT (IMO-V1/{eticheta}): ancore PIF={pif?.ClrType ?? "<lipsă>"}, "
+            + $"CAS={cas?.ClrType ?? "<lipsă>"}, AMO={amo?.ClrType ?? "<lipsă>"}; "
+            + $"serii {Serie(pif)}/{Serie(cas)}/{Serie(amo)}.");
+        Check($"IMO-V1 ({eticheta}) ancorele PIF/CAS/AMO există în NUCLEU cu ClrType-ul clasei și au fiecare "
+            + "seria proprie de numerotare — spre deosebire de DSC/ITV, imobilizările sunt active pe AMBELE "
+            + "profiluri (amortizarea e a lor; doar deductibilitatea fiscală e a privatului)",
+            pif?.ClrType == nameof(PunereInFunctiune) && cas?.ClrType == nameof(IesireImobilizare)
+            && amo?.ClrType == nameof(AmortizareLunara)
+            && Serie(pif) == "PIF-" && Serie(cas) == "CAS-" && Serie(amo) == "AMO-");
+
+        var faraReguli = new[] { pif, cas, amo }.All(t =>
+            !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == t.ID)
+            && !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocumentId == t.ID)
+            && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == t.ID) == null
+            && os.FirstOrDefault<PoliticaConex>(p => p.TipDocumentSursaId == t.ID) == null);
+        Check($"IMO-V2 ({eticheta}) PIF/CAS/AMO n-au nicio regulă de contare sau de stoc, nicio politică de TVA "
+            + "și niciun conex: postarea lor e EXPLICITĂ pe linie, din `PoliticaAmortizare` — un rând de "
+            + "`RegulaContare` ar fi a doua sursă a acelorași conturi",
+            faraReguli);
+
+        var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+        var tipF2 = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF2);
+        var politicaF = os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == tipF.ID);
+        string Simbol(Guid? id) => id == null ? "<null>" : os.GetObjectByKey<Cont>(id.Value)?.Simbol;
+        var numarPolitici = os.GetObjectsQuery<PoliticaAmortizare>().Count();
+        var terenuri = privat ? os.FirstOrDefault<TipMaterial>(t => t.Cod == "211") : null;
+        Console.WriteLine($"     MĂSURAT (IMO-V3/{eticheta}): {numarPolitici} rânduri `PoliticaAmortizare`; "
+            + $"{codTipF} → amortizare {Simbol(politicaF?.ContAmortizareId)}, "
+            + $"cheltuială {Simbol(politicaF?.ContCheltuialaAmortizareId)}, "
+            + $"cedare {Simbol(politicaF?.ContCheltuialaCedareId)}; "
+            + $"tip {codTipF2} = {(tipF2 == null ? "<lipsă>" : "prezent")}"
+            + (privat ? $"; terenuri 211 cu politică: {os.GetObjectsQuery<PoliticaAmortizare>().Any(p => p.TipMaterialId == (terenuri != null ? terenuri.ID : Guid.Empty))}" : "") + ".");
+        Check($"IMO-V3 ({eticheta}) fiecare tip material de clasă F amortizabil are rând `PoliticaAmortizare` cu "
+            + "cele trei conturi REZOLVATE din planul profilului (28x / cheltuiala cu amortizarea / cheltuiala "
+            + "cu cedarea), toate `DinSeed`; terenurile NU au rând — absența e o afirmație, nu o omisiune",
+            tipF != null && tipF2 != null && politicaF != null && politicaF.DinSeed
+            && politicaF.ContAmortizareId != null && politicaF.ContCheltuialaAmortizareId != null
+            && politicaF.ContCheltuialaCedareId != null
+            && os.GetObjectsQuery<PoliticaAmortizare>().All(p => p.ContAmortizareId != null
+                && p.ContCheltuialaAmortizareId != null && p.ContCheltuialaCedareId != null)
+            && (!privat || (terenuri != null
+                && !os.GetObjectsQuery<PoliticaAmortizare>().Any(p => p.TipMaterialId == terenuri.ID))));
+
+        var reguli = os.GetObjectsQuery<RegulaDeductibilitate>().ToList();
+        var vehicul = reguli.FirstOrDefault(r => r.Categorie == CategorieFiscala.VehiculPersoaneMax9Locuri);
+        Console.WriteLine($"     MĂSURAT (IMO-V4/{eticheta}): {reguli.Count} reguli de deductibilitate; "
+            + $"vehicul = {vehicul?.Fel.ToString() ?? "<lipsă>"} {vehicul?.Valoare} de la {vehicul?.DeLa:dd.MM.yyyy}; "
+            + $"sedii: {reguli.Count(r => r.Categorie == CategorieFiscala.SediuSocialInLocuinta)}.");
+        Check($"IMO-V4 ({eticheta}) limitările fiscale sunt DATE cu valabilitate în timp (`DeLa`, `Temei`): "
+            + "3 rânduri pe privat (plafonul vehiculelor, sediul în locuință 2024 și 2026), ZERO pe bugetar — "
+            + "o cifră de lege nu intră în cod (F26-D16)",
+            privat
+                ? reguli.Count == 3 && vehicul != null && vehicul.Fel == FelDeductibilitate.PlafonLunar
+                    && vehicul.Valoare == 1500m && vehicul.DoarNeexclusiv
+                    && reguli.All(r => r.DinSeed && !string.IsNullOrWhiteSpace(r.Temei))
+                    && reguli.Count(r => r.Categorie == CategorieFiscala.SediuSocialInLocuinta
+                        && r.Fel == FelDeductibilitate.Procent) == 2
+                : reguli.Count == 0);
+
+        var catalog = os.GetObjectsQuery<ClasificareImobilizari>().ToList();
+        var calculatoare = catalog.FirstOrDefault(c => c.Cod == "2.2.9.");
+        var cladiri = catalog.FirstOrDefault(c => c.Cod == "1.1.1.");
+        var grupa1 = catalog.FirstOrDefault(c => c.Cod == "1.");
+        Console.WriteLine($"     MĂSURAT (IMO-V5/{eticheta}): {catalog.Count} rânduri de catalog; "
+            + $"2.2.9. = {calculatoare?.DurataMinAni}–{calculatoare?.DurataMaxAni} ani (grupa {calculatoare?.Grupa}); "
+            + $"1.1.1. = {cladiri?.DurataMinAni}–{cladiri?.DurataMaxAni}; "
+            + $"1. = {(grupa1?.DurataMinAni == null ? "fără bandă" : "cu bandă")}.");
+        Check($"IMO-V5 ({eticheta}) catalogul HG 2139/2004 e seed-uit cu cele 590 de poziții CU COD ale "
+            + "CSV-ului ANAF (din 598 de rânduri; cele 8 sub-variante „mediu neutru / mediu coroziv” n-au cod "
+            + "propriu în sursă și se RAPORTEAZĂ, nu primesc un cod inventat), cu banda duratei normale pe "
+            + "pozițiile de detaliu și FĂRĂ bandă pe grupe — o bandă inventată ar fi devenit un refuz fals",
+            catalog.Count == 590
+            && calculatoare is { DurataMinAni: 2, DurataMaxAni: 4, Grupa: "2" }
+            && cladiri is { DurataMinAni: 40, DurataMaxAni: 60, Grupa: "1" }
+            && grupa1 is { DurataMinAni: null, DurataMaxAni: null });
+    }
+
+    // ── Scena ─────────────────────────────────────────────────────────────────
+    Guid idFisa1, idFisa2, idFisa3, idFisa4, idLinieSursa, idFct, idPifIntrare, idPifModernizare;
+    Guid idTipF, idGestiune, idUnitate, idClasificare, idFurnizor, idCodEc, idSursaFin, idCodFn, idProiect;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 5, 6, 7, 8, 9, 10, 11, 12 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+            p.Inchisa = false;
+        }
+
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = Marcaj + "-FURN";
+        furnizor.Denumire = "Furnizor de imobilizări probă F26";
+        furnizor.Tara = "RO";
+        var gestiune = os.CreateObject<Gestiune>();
+        gestiune.Cod = Marcaj + "-MAG";
+        gestiune.Denumire = "Gestiune probă F26";
+        var unitate = os.CreateObject<UnitateInterna>();
+        unitate.Cod = Marcaj + "-UI";
+        unitate.Denumire = "Unitate probă F26";
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-CE";
+        codEc.Denumire = "Cod economic probă F26";
+        var sursaFin = os.CreateObject<SursaFinantare>();
+        sursaFin.Cod = Marcaj + "-SF";
+        sursaFin.Denumire = "Sursă de finanțare probă F26";
+        var codFn = os.CreateObject<CodFunctional>();
+        codFn.Cod = Marcaj + "-CF";
+        codFn.Denumire = "Cod funcțional probă F26";
+        var proiect = os.CreateObject<Proiect>();
+        proiect.Cod = Marcaj + "-PR";
+        proiect.Denumire = "Proiect probă F26";
+        os.CommitChanges();
+
+        var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+        idTipF = tipF.ID;
+        idGestiune = gestiune.ID;
+        idUnitate = unitate.ID;
+        idFurnizor = furnizor.ID;
+        idCodEc = codEc.ID;
+        idSursaFin = sursaFin.ID;
+        idCodFn = codFn.ID;
+        idProiect = proiect.ID;
+        idClasificare = os.FirstOrDefault<ClasificareImobilizari>(c => c.Cod == "2.2.9.").ID;
+
+        var fct = os.CreateObject<FacturaIntrare>();
+        fct.Numar = Marcaj + "-FCT";
+        fct.Data = Zi(5, 4);
+        fct.Predator = furnizor;
+        fct.Primitor = gestiune;
+        var linieFct = os.CreateObject<FacturaIntrareDetaliu>();
+        linieFct.Document = fct;
+        linieFct.TipMaterial = tipF;
+        linieFct.Cantitate = 1m;
+        linieFct.PretUnitar = 3600m;
+        // Defalcarea lui 404 (BFEPR la bugetar) + clasificația cerută de `PoliticaValidare`.
+        linieFct.CodEconomicId = codEc.ID;
+        linieFct.SursaFinantareId = sursaFin.ID;
+        linieFct.CodFunctionalId = codFn.ID;
+        linieFct.ProiectId = proiect.ID;
+        os.CommitChanges();
+        idFct = fct.ID;
+        idLinieSursa = linieFct.ID;
+
+        var stocInainte = os.GetObjectsQuery<RegistruStoc>().Count();
+        var conex = MotorOperare.Opereaza(os, fct);
+        var noteFct = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == fct.ID).ToList();
+        var contFurnizor = os.FirstOrDefault<Cont>(c => c.Simbol == simbolFurnizorImobilizari);
+        var stocDupa = os.GetObjectsQuery<RegistruStoc>().Count();
+        Console.WriteLine($"     MĂSURAT (IMO-V6/{eticheta}): {noteFct.Count} note pe factură, "
+            + $"{os.GetObjectByKey<Cont>(noteFct[0].ContDebitId)?.Simbol} = "
+            + $"{os.GetObjectByKey<Cont>(noteFct[0].ContCreditId)?.Simbol} de {noteFct[0].Valoare}; "
+            + $"conex = {conex?.GetType().Name ?? "<niciunul>"}; rânduri de stoc: {stocDupa - stocInainte}; "
+            + $"lot pe linie: {linieFct.LotId != null}.");
+        Check($"IMO-V6 ({eticheta}) achiziția unei imobilizări postează contul implicit al tipului contra "
+            + "contului furnizorilor de imobilizări, NU naște lot și NU generează NIR (conexul filtrează pe "
+            + "natura Stoc) — premisa feliei: valoarea e deja pe 21x când fișa se pune în funcțiune",
+            noteFct.Count == 1 && noteFct[0].Valoare == 3600m
+            && noteFct[0].ContDebitId == tipF.ContImplicitId
+            && noteFct[0].ContCreditId == contFurnizor.ID
+            && conex == null && stocDupa == stocInainte && linieFct.LotId == null);
+
+        // Cele patru fișe ale scenei.
+        Imobilizare Fisa(string sufix, string denumire, Guid? clasificare) {
+            var f = os.CreateObject<Imobilizare>();
+            f.NumarInventar = Marcaj + "-" + sufix;
+            f.Denumire = denumire;
+            f.TipMaterialId = tipF.ID;
+            f.LocId = gestiune.ID;
+            f.ClasificareId = clasificare;
+            return f;
+        }
+        var fisa1 = Fisa("1", "Mobilier de birou probă F26", null);
+        var fisa2 = Fisa("2", "A doua fișă pe aceeași linie de factură", null);
+        var fisa3 = Fisa("3", "Fișă cu clasificare din catalog", idClasificare);
+        var fisa4 = Fisa("4", "Fișă de deschidere (migrare)", null);
+        os.CommitChanges();
+        idFisa1 = fisa1.ID;
+        idFisa2 = fisa2.ID;
+        idFisa3 = fisa3.ID;
+        idFisa4 = fisa4.ID;
+        Check($"IMO-V7 ({eticheta}) fișa nouă se naște în starea `Noua`, fără dată de punere în funcțiune și "
+            + "fără dată de ieșire — cele trei sunt server-owned, scrise de hook-ul de registru",
+            fisa1.Stare == StareImobilizare.Noua && fisa1.DataPunereInFunctiune == null
+            && fisa1.DataIesire == null);
+    }
+
+    // ── IMO-V8…V12: punerea în funcțiune ──────────────────────────────────────
+    using (var os = provider.CreateObjectSpace()) {
+        var unitate = os.GetObjectByKey<Repartitor>(idUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idGestiune);
+        var tipF = os.GetObjectByKey<TipMaterial>(idTipF);
+
+        PunereInFunctiune Pif(DateOnly data) {
+            var p = os.CreateObject<PunereInFunctiune>();
+            p.Data = data;
+            p.Predator = unitate;
+            p.Primitor = gestiune;
+            return p;
+        }
+        PunereInFunctiuneDetaliu Linie(PunereInFunctiune pif, Guid fisaId, FelLiniePif fel, decimal valoare) {
+            var l = os.CreateObject<PunereInFunctiuneDetaliu>();
+            l.Document = pif;
+            l.ImobilizareId = fisaId;
+            l.TipMaterialId = tipF.ID;
+            l.Fel = fel;
+            l.Valoare = valoare;
+            l.Cantitate = 1m;
+            return l;
+        }
+        void Parametri(PunereInFunctiuneDetaliu l, int durata, int durataFiscala) {
+            l.Metoda = MetodaAmortizare.Liniara;
+            l.DurataLuni = durata;
+            l.MetodaFiscala = MetodaAmortizare.Liniara;
+            l.DurataFiscalaLuni = durataFiscala;
+            l.CategorieFiscala = CategorieFiscala.Standard;
+            l.UtilizareExclusiva = true;
+        }
+
+        var pifIntrare = Pif(Zi(5, 5));
+        var linieIntrare = Linie(pifIntrare, idFisa1, FelLiniePif.Intrare, 3600m);
+        linieIntrare.LinieSursaId = idLinieSursa;
+        Parametri(linieIntrare, 36, 36);
+        os.CommitChanges();
+        idPifIntrare = pifIntrare.ID;
+
+        MotorOperare.Opereaza(os, pifIntrare);
+        var randuri = os.GetObjectsQuery<RegistruImobilizari>()
+            .Where(r => r.ImobilizareId == idFisa1).ToList();
+        var notePif = os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == pifIntrare.ID);
+        var fisa1 = os.GetObjectByKey<Imobilizare>(idFisa1);
+        var rand = randuri.SingleOrDefault();
+        Console.WriteLine($"     MĂSURAT (IMO-V8/{eticheta}): {notePif} note contabile, {randuri.Count} rânduri "
+            + $"de registru; rândul = {rand?.Fel} {rand?.Valoare}/{rand?.ValoareFiscala}, luni {rand?.Luni}, "
+            + $"{rand?.Metoda}/{rand?.DurataLuni} luni, fiscal {rand?.MetodaFiscala}/{rand?.DurataFiscalaLuni}, "
+            + $"categoria {rand?.CategorieFiscala}, loc {os.GetObjectByKey<Repartitor>(rand?.RepartitorId ?? Guid.Empty)?.Cod}; "
+            + $"numărul documentului = {pifIntrare.Numar}; fișa = {fisa1.Stare} din {fisa1.DataPunereInFunctiune}.");
+        Check($"IMO-V8 ({eticheta}) punerea în funcțiune NU postează nimic (zero note) și scrie UN rând de "
+            + "registru complet — brut contabil și fiscal, parametrii, locul la data faptului —, iar fișa trece "
+            + "în `InFunctiune` cu data punerii în funcțiune; numărul vine din seria tipului",
+            notePif == 0 && randuri.Count == 1
+            && rand.Fel == FelMiscareImobilizare.Intrare && rand.Valoare == 3600m && rand.ValoareFiscala == 3600m
+            && rand.Amortizare == 0m && rand.Luni == 0
+            && rand.Metoda == MetodaAmortizare.Liniara && rand.DurataLuni == 36
+            && rand.MetodaFiscala == MetodaAmortizare.Liniara && rand.DurataFiscalaLuni == 36
+            && rand.CategorieFiscala == CategorieFiscala.Standard && rand.UtilizareExclusiva == true
+            && rand.RepartitorId == idGestiune && rand.DocumentId == pifIntrare.ID && !rand.Storno
+            && pifIntrare.Numar != null && pifIntrare.Numar.StartsWith("PIF-")
+            && fisa1.Stare == StareImobilizare.InFunctiune
+            && fisa1.DataPunereInFunctiune == Zi(5, 5));
+
+        // Plafonul liniei sursă: linia de 3.600 e consumată integral.
+        var pifPlafon = Pif(Zi(5, 6));
+        var liniePlafon = Linie(pifPlafon, idFisa2, FelLiniePif.Intrare, 1m);
+        liniePlafon.LinieSursaId = idLinieSursa;
+        Parametri(liniePlafon, 36, 36);
+        os.CommitChanges();
+        CheckRefuza($"IMO-V9 ({eticheta}) a doua fișă pe ACEEAȘI linie de factură, cu valoarea deja consumată "
+            + "integral, e refuzată: „nu se culege dublu” e plafon, nu convenție de ecran",
+            () => MotorOperare.Opereaza(os, pifPlafon));
+
+        // Inițialele se culeg DOAR pe o intrare fără linie sursă (deschidere).
+        liniePlafon.AmortizareInitiala = 10m;
+        os.CommitChanges();
+        CheckRefuza($"IMO-V10 ({eticheta}) cifrele inițiale pe o intrare CU linie sursă sunt refuzate: "
+            + "valoarea vine de pe factură, deci activul e nou — un cumulat inițial acolo ar fi istoric inventat",
+            () => MotorOperare.Opereaza(os, pifPlafon));
+        liniePlafon.LinieSursaId = null;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pifPlafon);
+        var fisa2 = os.GetObjectByKey<Imobilizare>(idFisa2);
+        var deschidereScurta = AmortizareService.Situatie(os, idFisa2, Zi(5, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-V10b/{eticheta}): fără linie sursă — brut "
+            + $"{deschidereScurta.Valoare}, cumulat {deschidereScurta.Amortizare}, fișa {fisa2.Stare}.");
+        Check($"IMO-V10b ({eticheta}) fără linie sursă valoarea e culeasă liber și cifrele inițiale sunt "
+            + "permise — deschiderea și migrarea sunt chiar cazul lor",
+            deschidereScurta.Valoare == 1m && deschidereScurta.Amortizare == 10m
+            && fisa2.Stare == StareImobilizare.InFunctiune);
+        MotorOperare.AnuleazaOperarea(os, pifPlafon);
+        Check($"IMO-V10c ({eticheta}) anularea unei INTRĂRI readuce fișa în `Noua` și îi șterge data punerii "
+            + "în funcțiune — simetricul exact al materializării",
+            fisa2.Stare == StareImobilizare.Noua && fisa2.DataPunereInFunctiune == null
+            && !os.GetObjectsQuery<RegistruImobilizari>().Any(r => r.ImobilizareId == idFisa2));
+
+        // Banda catalogului pe fișa cu clasificare (2.2.9. = 2–4 ani).
+        var pifBanda = Pif(Zi(5, 7));
+        var linieBanda = Linie(pifBanda, idFisa3, FelLiniePif.Intrare, 1000m);
+        Parametri(linieBanda, 60, 60);
+        os.CommitChanges();
+        CheckRefuza($"IMO-V11 ({eticheta}) durata fiscală în afara benzii catalogului (2.2.9. = 2–4 ani, "
+            + "adică 24–48 de luni) e refuzată: durata normală de funcționare e obligatorie fiscal, iar banda "
+            + "o dă clasificarea de pe fișă",
+            () => MotorOperare.Opereaza(os, pifBanda));
+        linieBanda.DurataFiscalaLuni = 36;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pifBanda);
+        Check($"IMO-V12 ({eticheta}) aceeași linie, cu durata fiscală în bandă, trece — verificarea e a "
+            + "BENZII, nu a unei durate fixe",
+            os.GetObjectByKey<Imobilizare>(idFisa3).Stare == StareImobilizare.InFunctiune);
+
+        // Starea greșită a fișei, pe ambele sensuri.
+        var pifGresit = Pif(Zi(5, 8));
+        var linieGresit = Linie(pifGresit, idFisa1, FelLiniePif.Intrare, 100m);
+        Parametri(linieGresit, 36, 36);
+        os.CommitChanges();
+        CheckRefuza($"IMO-V13 ({eticheta}) o a doua INTRARE pe o fișă deja în funcțiune e refuzată "
+            + "(intrarea cere `Noua`)", () => MotorOperare.Opereaza(os, pifGresit));
+        linieGresit.Fel = FelLiniePif.Modernizare;
+        linieGresit.ImobilizareId = idFisa4;
+        os.CommitChanges();
+        CheckRefuza($"IMO-V14 ({eticheta}) modernizarea unei fișe încă `Noua` e refuzată (cere `InFunctiune`) "
+            + "— simetricul lui V13", () => MotorOperare.Opereaza(os, pifGresit));
+        os.Delete(pifGresit.Detalii.ToList());
+        os.Delete(pifGresit);
+        os.Delete(pifPlafon.Detalii.ToList());
+        os.Delete(pifPlafon);
+        os.CommitChanges();
+    }
+
+    // ── IMO-V15…V17: gardianul fișei și al registrului ────────────────────────
+    using (var os = provider.CreateObjectSpace()) {
+        var fisa1 = os.GetObjectByKey<Imobilizare>(idFisa1);
+        var altTip = os.GetObjectsQuery<TipMaterial>().First(t => t.ID != idTipF);
+        fisa1.TipMaterialId = altTip.ID;
+        var refuzTip = RefuzGardianImo(os);
+        Console.WriteLine($"     MĂSURAT (IMO-V15/{eticheta}): „{refuzTip?.Split('\n')[0] ?? "ACCEPTAT"}”.");
+        Check($"IMO-V15 ({eticheta}) tipul (contul) fișei se schimbă DOAR cât e `Noua`: pe o fișă în funcțiune "
+            + "contul de imobilizare a intrat deja în politica de amortizare și în note, iar gardianul îl "
+            + "refuză pe starea ORIGINALĂ din persistență, nu pe cea din formular",
+            refuzTip != null && refuzTip.Contains("Nouă"));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var fisa1 = os.GetObjectByKey<Imobilizare>(idFisa1);
+        fisa1.Denumire = "Denumire schimbată pe o fișă în funcțiune";
+        var locNou = os.GetObjectByKey<Repartitor>(idUnitate);
+        fisa1.LocId = locNou.ID;
+        var refuzTransfer = RefuzGardianImo(os);
+        Console.WriteLine($"     MĂSURAT (IMO-V16a/{eticheta}): transfer + redenumire → "
+            + $"„{refuzTransfer?.Split('\n')[0] ?? "ACCEPTAT"}”.");
+        Check($"IMO-V16 ({eticheta}) denumirea și LOCUL rămân editabile pe o fișă în funcțiune: transferul e "
+            + "administrativ (F26-D8) — nu mișcă valoare, nu postează, iar istoricul lui sunt rândurile lunare",
+            refuzTransfer == null);
+        fisa1.LocId = idGestiune;
+        os.CommitChanges();
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var fisa1 = os.GetObjectByKey<Imobilizare>(idFisa1);
+        os.Delete(fisa1);
+        var refuzStergere = RefuzGardianImo(os);
+        Console.WriteLine($"     MĂSURAT (IMO-V17/{eticheta}): ștergere în funcțiune → "
+            + $"„{refuzStergere?.Split('\n')[0] ?? "ACCEPTAT"}”.");
+        Check($"IMO-V17 ({eticheta}) fișa se șterge doar cât e `Noua` și fără rânduri de registru",
+            refuzStergere != null);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var rand = os.CreateObject<RegistruImobilizari>();
+        rand.Data = Zi(5, 9);
+        rand.ImobilizareId = idFisa1;
+        rand.Fel = FelMiscareImobilizare.Amortizare;
+        rand.Amortizare = 100m;
+        rand.RepartitorId = idGestiune;
+        rand.DocumentId = idPifIntrare;
+        var refuzRegistru = RefuzGardianImo(os);
+        Console.WriteLine($"     MĂSURAT (IMO-V18/{eticheta}): scriere directă în registru → "
+            + $"„{refuzRegistru?.Split('\n')[0] ?? "ACCEPTAT"}”.");
+        Check($"IMO-V18 ({eticheta}) `RegistruImobilizari` intră în protecția registrelor: pe ușa securizată "
+            + "nu se creează, nu se modifică și nu se șterge un rând — al patrulea registru e append-only și "
+            + "exclusiv al motorului, ca celelalte trei",
+            refuzRegistru != null && refuzRegistru.Contains("imobilizări"));
+    }
+
+    // ── IMO-V19…V23: modernizarea, revizuirea și situația ─────────────────────
+    using (var os = provider.CreateObjectSpace()) {
+        var unitate = os.GetObjectByKey<Repartitor>(idUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idGestiune);
+        var tipF = os.GetObjectByKey<TipMaterial>(idTipF);
+
+        var pifModernizare = os.CreateObject<PunereInFunctiune>();
+        pifModernizare.Data = Zi(6, 10);
+        pifModernizare.Predator = unitate;
+        pifModernizare.Primitor = gestiune;
+        var linieModernizare = os.CreateObject<PunereInFunctiuneDetaliu>();
+        linieModernizare.Document = pifModernizare;
+        linieModernizare.ImobilizareId = idFisa1;
+        linieModernizare.TipMaterialId = tipF.ID;
+        linieModernizare.Fel = FelLiniePif.Modernizare;
+        linieModernizare.Valoare = 1650m;
+        linieModernizare.Cantitate = 1m;
+        os.CommitChanges();
+        idPifModernizare = pifModernizare.ID;
+        MotorOperare.Opereaza(os, pifModernizare);
+
+        var pifRevizuire = os.CreateObject<PunereInFunctiune>();
+        pifRevizuire.Data = Zi(7, 11);
+        pifRevizuire.Predator = unitate;
+        pifRevizuire.Primitor = gestiune;
+        var linieRevizuire = os.CreateObject<PunereInFunctiuneDetaliu>();
+        linieRevizuire.Document = pifRevizuire;
+        linieRevizuire.ImobilizareId = idFisa1;
+        linieRevizuire.TipMaterialId = tipF.ID;
+        linieRevizuire.Fel = FelLiniePif.Revizuire;
+        linieRevizuire.Valoare = 0m;
+        linieRevizuire.Cantitate = 1m;
+        linieRevizuire.Metoda = MetodaAmortizare.Liniara;
+        linieRevizuire.DurataLuni = 48;
+        linieRevizuire.MetodaFiscala = MetodaAmortizare.Liniara;
+        linieRevizuire.DurataFiscalaLuni = 48;
+        linieRevizuire.CategorieFiscala = CategorieFiscala.Standard;
+        linieRevizuire.UtilizareExclusiva = true;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pifRevizuire);
+
+        var randModernizare = os.GetObjectsQuery<RegistruImobilizari>()
+            .Single(r => r.DocumentId == idPifModernizare);
+        var randRevizuire = os.GetObjectsQuery<RegistruImobilizari>()
+            .Single(r => r.DocumentId == pifRevizuire.ID);
+        Console.WriteLine($"     MĂSURAT (IMO-V19/{eticheta}): modernizare {randModernizare.Valoare} "
+            + $"(parametri: {randModernizare.Metoda?.ToString() ?? "null"}/{randModernizare.DurataLuni?.ToString() ?? "null"}); "
+            + $"revizuire {randRevizuire.Valoare}, durata {randRevizuire.DurataLuni}.");
+        Check($"IMO-V19 ({eticheta}) modernizarea adaugă brut FĂRĂ parametri (null = „neschimbați”), iar "
+            + "revizuirea schimbă parametrii cu valoare ZERO: durata e FAPT DATAT, nu edit de nomenclator — "
+            + "de aceea recalculul unei luni vechi rămâne reproductibil",
+            randModernizare.Fel == FelMiscareImobilizare.Modernizare && randModernizare.Valoare == 1650m
+            && randModernizare.Metoda == null && randModernizare.DurataLuni == null
+            && randRevizuire.Fel == FelMiscareImobilizare.Revizuire && randRevizuire.Valoare == 0m
+            && randRevizuire.DurataLuni == 48 && randRevizuire.MetodaFiscala == MetodaAmortizare.Liniara);
+
+        var situatie = AmortizareService.Situatie(os, idFisa1, Zi(12, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-V20/{eticheta}): brut {situatie.Valoare}, brut fiscal "
+            + $"{situatie.ValoareFiscala}, cumulat {situatie.Amortizare}, luni {situatie.Luni}, "
+            + $"durata {situatie.DurataLuni}, metoda {situatie.Metoda}, categoria {situatie.CategorieFiscala}.");
+        Check($"IMO-V20 ({eticheta}) situația la o dată = sumele coloanelor + parametrii ULTIMULUI eveniment, "
+            + "cu coalesce înapoi: brutul cumulează intrarea și modernizarea (3.600 + 1.650 = 5.250), lunile "
+            + "sunt 0, durata e cea a revizuirii (48), iar categoria fiscală vine de pe intrare, pe care "
+            + "modernizarea n-a atins-o",
+            situatie.Valoare == 5250m && situatie.ValoareFiscala == 5250m && situatie.Amortizare == 0m
+            && situatie.Luni == 0 && situatie.DurataLuni == 48 && situatie.Metoda == MetodaAmortizare.Liniara
+            && situatie.CategorieFiscala == CategorieFiscala.Standard && situatie.UtilizareExclusiva == true);
+
+        // OS propriu: o anulare refuzată lasă schimbări în tracker (33d).
+        using (var osAnulare = provider.CreateObjectSpace()) {
+            var pifIntrareAnulat = osAnulare.GetObjectByKey<PunereInFunctiune>(idPifIntrare);
+            CheckRefuza($"IMO-V21 ({eticheta}) anularea INTRĂRII, cu o modernizare ulterioară operată pe "
+                + "aceeași fișă, e refuzată de FRUNZĂ (`EliminaRegistrul`), nu de motor: dependențele "
+                + "registrului propriu le cunoaște tipul, iar nucleul rămâne agnostic",
+                () => MotorOperare.AnuleazaOperarea(osAnulare, pifIntrareAnulat));
+        }
+
+        // Perioada închisă rămâne graniță și pentru registrul al patrulea.
+        var decembrie = os.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == 12);
+        decembrie.Inchisa = true;
+        os.CommitChanges();
+        CheckRefuza($"IMO-V22 ({eticheta}) stornarea într-o lună ÎNCHISĂ e refuzată — perioada închisă e "
+            + "graniță absolută și pentru imobilizări",
+            () => MotorOperare.Storneaza(os, pifRevizuire, Zi(12, 5)));
+        decembrie.Inchisa = false;
+        os.CommitChanges();
+
+        MotorOperare.Storneaza(os, pifRevizuire, pifRevizuire.Data);
+        var dupaStorno = AmortizareService.Situatie(os, idFisa1, Zi(12, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-V23/{eticheta}): după storno-ul revizuirii — durata "
+            + $"{dupaStorno.DurataLuni}, rânduri {os.GetObjectsQuery<RegistruImobilizari>().Count(r => r.DocumentId == pifRevizuire.ID)}.");
+        Check($"IMO-V23 ({eticheta}) stornarea revizuirii adaugă rândul invers (append-only) ȘI scoate "
+            + "parametrii ei din situație: durata revine la 36, cea a intrării — un eveniment stornat nu mai "
+            + "descrie activul",
+            os.GetObjectsQuery<RegistruImobilizari>().Count(r => r.DocumentId == pifRevizuire.ID) == 2
+            && dupaStorno.DurataLuni == 36 && dupaStorno.Valoare == 5250m);
+
+        MotorOperare.AnuleazaOperarea(os, pifModernizare);
+        var dupaAnulare = AmortizareService.Situatie(os, idFisa1, Zi(12, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-V24/{eticheta}): după anularea modernizării — brut "
+            + $"{dupaAnulare.Valoare}, rânduri {os.GetObjectsQuery<RegistruImobilizari>().Count(r => r.DocumentId == idPifModernizare)}.");
+        Check($"IMO-V24 ({eticheta}) anularea modernizării șterge rândul ei (corecție directă, fără "
+            + "dependenți) și brutul revine la 3.600; fișa rămâne în funcțiune — doar intrarea o readuce `Noua`",
+            os.GetObjectsQuery<RegistruImobilizari>().Count(r => r.DocumentId == idPifModernizare) == 0
+            && dupaAnulare.Valoare == 3600m
+            && os.GetObjectByKey<Imobilizare>(idFisa1).Stare == StareImobilizare.InFunctiune);
+    }
+
+    // ── IMO-V25…V27: ieșirea din patrimoniu ───────────────────────────────────
+    using (var os = provider.CreateObjectSpace()) {
+        var unitate = os.GetObjectByKey<Repartitor>(idUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idGestiune);
+        var tipF = os.GetObjectByKey<TipMaterial>(idTipF);
+
+        // Deschidere: valoare culeasă + cumulat inițial, ca ieșirea să aibă două note nenule.
+        var pifDeschidere = os.CreateObject<PunereInFunctiune>();
+        pifDeschidere.Data = Zi(9, 1);
+        pifDeschidere.Predator = unitate;
+        pifDeschidere.Primitor = gestiune;
+        var linieDeschidere = os.CreateObject<PunereInFunctiuneDetaliu>();
+        linieDeschidere.Document = pifDeschidere;
+        linieDeschidere.ImobilizareId = idFisa4;
+        linieDeschidere.TipMaterialId = tipF.ID;
+        linieDeschidere.Fel = FelLiniePif.Intrare;
+        linieDeschidere.Valoare = 2400m;
+        linieDeschidere.Cantitate = 1m;
+        linieDeschidere.AmortizareInitiala = 900m;
+        linieDeschidere.AmortizareFiscalaInitiala = 900m;
+        linieDeschidere.LuniAmortizateInitial = 9;
+        linieDeschidere.Metoda = MetodaAmortizare.Liniara;
+        linieDeschidere.DurataLuni = 24;
+        linieDeschidere.MetodaFiscala = MetodaAmortizare.Liniara;
+        linieDeschidere.DurataFiscalaLuni = 24;
+        linieDeschidere.CategorieFiscala = CategorieFiscala.Standard;
+        linieDeschidere.UtilizareExclusiva = true;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pifDeschidere);
+        var deschidere = AmortizareService.Situatie(os, idFisa4, Zi(9, 30));
+        Check($"IMO-V25 ({eticheta}) intrarea de DESCHIDERE poartă cumulatul și lunile deja amortizate: "
+            + "situația pornește de la 2.400 brut, 900 cumulat, 9 luni — migrarea unei fișe cu istoric nu cere "
+            + "mecanism separat, e tot un eveniment datat",
+            deschidere.Valoare == 2400m && deschidere.Amortizare == 900m
+            && deschidere.AmortizareFiscala == 900m && deschidere.Luni == 9);
+
+        var politica = os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == tipF.ID);
+        var cas = os.CreateObject<IesireImobilizare>();
+        cas.Data = Zi(10, 20);
+        cas.Cauza = CauzaIesire.Casare;
+        cas.Predator = gestiune;
+        cas.Primitor = unitate;
+        IesireImobilizareDetaliu LinieCas(FelLinieIesire fel, Guid? contDebit, decimal valoare) {
+            var l = os.CreateObject<IesireImobilizareDetaliu>();
+            l.Document = cas;
+            l.ImobilizareId = idFisa4;
+            l.TipMaterialId = tipF.ID;
+            l.Fel = fel;
+            l.Valoare = valoare;
+            l.Cantitate = 1m;
+            l.ContDebitId = contDebit;
+            l.ContCreditId = tipF.ContImplicitId;
+            l.RepartitorDebitId = gestiune.ID;
+            l.RepartitorCreditId = gestiune.ID;
+            return l;
+        }
+        LinieCas(FelLinieIesire.AmortizareCumulata, politica.ContAmortizareId, 900m);
+        LinieCas(FelLinieIesire.ValoareRamasa, politica.ContCheltuialaCedareId, 1500m);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, cas);
+
+        var noteCas = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == cas.ID)
+            .ToList().OrderBy(r => r.Valoare).ToList();
+        var randIesire = os.GetObjectsQuery<RegistruImobilizari>().Single(r => r.DocumentId == cas.ID);
+        var fisa4 = os.GetObjectByKey<Imobilizare>(idFisa4);
+        Console.WriteLine($"     MĂSURAT (IMO-V26/{eticheta}): {noteCas.Count} note — "
+            + string.Join("; ", noteCas.Select(n => $"{os.GetObjectByKey<Cont>(n.ContDebitId)?.Simbol} = "
+                + $"{os.GetObjectByKey<Cont>(n.ContCreditId)?.Simbol} de {n.Valoare}"))
+            + $"; rândul de ieșire = {randIesire.Valoare}/{randIesire.Amortizare}; fișa = {fisa4.Stare} "
+            + $"din {fisa4.DataIesire}.");
+        Check($"IMO-V26 ({eticheta}) ieșirea postează DOUĂ note pe conturile din `PoliticaAmortizare` "
+            + "(amortizarea cumulată contra contului de imobilizare, valoarea rămasă pe cheltuiala cu cedarea) "
+            + "și scrie UN rând de registru cu toate cifrele NEGATIVE; fișa devine `Iesita`",
+            noteCas.Count == 2
+            && noteCas.Any(n => n.ContDebitId == politica.ContAmortizareId
+                && n.ContCreditId == tipF.ContImplicitId && n.Valoare == 900m)
+            && noteCas.Any(n => n.ContDebitId == politica.ContCheltuialaCedareId
+                && n.ContCreditId == tipF.ContImplicitId && n.Valoare == 1500m)
+            && randIesire.Fel == FelMiscareImobilizare.Iesire && randIesire.Valoare == -2400m
+            && randIesire.ValoareFiscala == -2400m && randIesire.Amortizare == -900m
+            && randIesire.AmortizareFiscala == -900m && randIesire.Luni == 0
+            && fisa4.Stare == StareImobilizare.Iesita && fisa4.DataIesire == Zi(10, 20));
+
+        var netDupaIesire = AmortizareService.Situatie(os, idFisa4, Zi(12, 31));
+        Check($"IMO-V27 ({eticheta}) după ieșire situația fișei e ZERO pe toate coloanele: rândul de ieșire "
+            + "anulează exact ce cumulaseră evenimentele — cusătura pe care se va sprijini registrul "
+            + "imobilizărilor și SAF-T Assets",
+            netDupaIesire.Valoare == 0m && netDupaIesire.ValoareFiscala == 0m
+            && netDupaIesire.Amortizare == 0m && netDupaIesire.AmortizareFiscala == 0m);
+
+        // Rolul de STINS e polimorf (86g): nici PIF, nici CAS nu închid vreo datorie.
+        var contPropriu = os.GetObjectsQuery<ContPropriu>().OrderBy(c => c.Cod).ToList().First();
+        var plata = os.CreateObject<Plata>();
+        plata.Data = Zi(10, 25);
+        plata.PredatorId = contPropriu.ID;
+        plata.PrimitorId = idFurnizor;
+        plata.TipInstrument = TipInstrumentPlata.OrdinPlata;
+        var liniePlata = os.CreateObject<DocumentTrezorerieDetaliu>();
+        liniePlata.Document = plata;
+        liniePlata.TipMaterialId = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ").ID;
+        liniePlata.Valoare = 100m;
+        liniePlata.CodEconomicId = idCodEc;
+        liniePlata.SursaFinantareId = idSursaFin;
+        liniePlata.CodFunctionalId = idCodFn;
+        liniePlata.ProiectId = idProiect;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, plata);
+        // F27-D8: imperecherea e fapt datat — data se dă explicit, altfel „azi"
+        // ar precede înregistrarea documentelor scenei și refuzul de ORDINE ar
+        // veni înaintea celui de rol.
+        var refuzPif = Refuz(() => ImperechereService.Imperecheaza(os, plata, pifDeschidere, 100m, null, Zi(10, 25)));
+        var refuzCas = Refuz(() => ImperechereService.Imperecheaza(os, plata, cas, 100m, null, Zi(10, 25)));
+        Console.WriteLine($"     MĂSURAT (IMO-V29/{eticheta}): stingere PIF → „{refuzPif ?? "<ACCEPTATĂ>"}”; "
+            + $"stingere CAS → „{refuzCas ?? "<ACCEPTATĂ>"}”.");
+        Check($"IMO-V29 ({eticheta}) nici punerea în funcțiune, nici ieșirea nu stau pe rolul de document "
+            + "STINS: `PoateFiStins` e false pe amândouă (86g) — PIF nu postează nimic, iar notele ieșirii "
+            + "sting valoarea activului, nu un terț. Fără declarație, o notă cu repartitori expliciți ar fi "
+            + "putut cădea pe laturile lor și ar fi „stins” un document fără rest",
+            refuzPif != null && refuzPif.Contains("nu poate fi stins")
+            && refuzCas != null && refuzCas.Contains("nu poate fi stins")
+            && os.GetObjectsQuery<Imperechere>()
+                .Count(i => i.DocumentId == pifDeschidere.ID || i.DocumentId == cas.ID) == 0);
+
+        // Fișa ieșită nu mai primește niciun eveniment.
+        var pifPeIesita = os.CreateObject<PunereInFunctiune>();
+        pifPeIesita.Data = Zi(11, 3);
+        pifPeIesita.Predator = unitate;
+        pifPeIesita.Primitor = gestiune;
+        var liniePeIesita = os.CreateObject<PunereInFunctiuneDetaliu>();
+        liniePeIesita.Document = pifPeIesita;
+        liniePeIesita.ImobilizareId = idFisa4;
+        liniePeIesita.TipMaterialId = tipF.ID;
+        liniePeIesita.Fel = FelLiniePif.Modernizare;
+        liniePeIesita.Valoare = 100m;
+        liniePeIesita.Cantitate = 1m;
+        os.CommitChanges();
+        CheckRefuza($"IMO-V26b ({eticheta}) o modernizare pe o fișă `Iesita` e refuzată: după ieșire fișa nu "
+            + "mai primește niciun eveniment — starea ei e materializată de hook, nu culeasă",
+            () => MotorOperare.Opereaza(os, pifPeIesita));
+        os.Delete(pifPeIesita.Detalii.ToList());
+        os.Delete(pifPeIesita);
+        os.CommitChanges();
+
+        MotorOperare.AnuleazaOperarea(os, cas);
+        var fisaDupaAnulare = os.GetObjectByKey<Imobilizare>(idFisa4);
+        Console.WriteLine($"     MĂSURAT (IMO-V28/{eticheta}): după anularea ieșirii — {fisaDupaAnulare.Stare}, "
+            + $"data ieșirii {fisaDupaAnulare.DataIesire?.ToString("dd.MM.yyyy") ?? "<null>"}.");
+        Check($"IMO-V28 ({eticheta}) anularea ieșirii readuce fișa `InFunctiune`, îi șterge data ieșirii și "
+            + "rândul de registru: corecția directă e simetrică cu materializarea",
+            fisaDupaAnulare.Stare == StareImobilizare.InFunctiune && fisaDupaAnulare.DataIesire == null
+            && !os.GetObjectsQuery<RegistruImobilizari>().Any(r => r.DocumentId == cas.ID)
+            && AmortizareService.Situatie(os, idFisa4, Zi(12, 31)).Valoare == 2400m);
+    }
+
+    // ── IMO-V30…V51: amortizarea lunară ───────────────────────────────────────
+    // Scenă PROPRIE: fișele V8–V28 poartă evenimente stornate sau anulate în
+    // mijlocul lunilor 5–8, iar baza lunară le-ar citi ca parametri vii.
+    using (var os = provider.CreateObjectSpace())
+        CurataImo(os);
+
+    Guid idAmoUnitate, idAmoGestiune, idAmoLoc2, idAmoTip, idAmoPolitica, idAmoCodEc;
+    Guid idFa, idFb, idFc, idFd, idFe, idFf, idFg;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 5, 6, 7, 8, 9, 10, 11, 12 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+            p.Inchisa = false;
+        }
+        var unitate = os.CreateObject<UnitateInterna>();
+        unitate.Cod = Marcaj + "-AMO-UI";
+        unitate.Denumire = "Unitate AMO probă F26";
+        var gestiune = os.CreateObject<Gestiune>();
+        gestiune.Cod = Marcaj + "-AMO-MAG";
+        gestiune.Denumire = "Gestiune AMO probă F26";
+        var loc2 = os.CreateObject<Gestiune>();
+        loc2.Cod = Marcaj + "-AMO-MAG2";
+        loc2.Denumire = "A doua gestiune AMO probă F26";
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-AMO-CE";
+        codEc.Denumire = "Cod economic al amortizării, probă F26";
+        os.CommitChanges();
+        idAmoUnitate = unitate.ID;
+        idAmoGestiune = gestiune.ID;
+        idAmoLoc2 = loc2.ID;
+        idAmoCodEc = codEc.ID;
+
+        var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+        idAmoTip = tipF.ID;
+        idAmoPolitica = os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == tipF.ID).ID;
+
+        Imobilizare Fisa(string sufix, string denumire) {
+            var f = os.CreateObject<Imobilizare>();
+            f.NumarInventar = Marcaj + "-AMO-" + sufix;
+            f.Denumire = denumire;
+            f.TipMaterialId = tipF.ID;
+            f.LocId = gestiune.ID;
+            return f;
+        }
+        var fa = Fisa("A", "Fișă liniară 3.600 / 36");
+        var fb = Fisa("B", "Autoturism 90.000 / 60, neexclusiv");
+        var fc = Fisa("C", "Autoturism 120.000 / 60, neexclusiv");
+        var fd = Fisa("D", "Autoturism 120.000 / 60, exclusiv");
+        var fe = Fisa("E", "Fișă cu valoare reziduală 600");
+        var ff = Fisa("F", "Fișă cu durata fiscală 24 și contabilă 36");
+        var fg = Fisa("G", "Fișă cu durata contabilă 24 și fiscală 36");
+        os.CommitChanges();
+        idFa = fa.ID; idFb = fb.ID; idFc = fc.ID; idFd = fd.ID;
+        idFe = fe.ID; idFf = ff.ID; idFg = fg.ID;
+
+        var pif = os.CreateObject<PunereInFunctiune>();
+        pif.Data = Zi(5, 5);
+        pif.Predator = unitate;
+        pif.Primitor = gestiune;
+        void Intrare(Guid fisaId, decimal valoare, int durata, int durataFiscala,
+                CategorieFiscala categorie, bool exclusiv, decimal? reziduala,
+                decimal amoInitiala, decimal amoFiscalaInitiala, int luniInitiale) {
+            var l = os.CreateObject<PunereInFunctiuneDetaliu>();
+            l.Document = pif;
+            l.ImobilizareId = fisaId;
+            l.TipMaterialId = tipF.ID;
+            l.Fel = FelLiniePif.Intrare;
+            l.Valoare = valoare;
+            l.Cantitate = 1m;
+            l.Metoda = MetodaAmortizare.Liniara;
+            l.DurataLuni = durata;
+            l.ValoareReziduala = reziduala;
+            l.MetodaFiscala = MetodaAmortizare.Liniara;
+            l.DurataFiscalaLuni = durataFiscala;
+            l.CategorieFiscala = categorie;
+            l.UtilizareExclusiva = exclusiv;
+            l.AmortizareInitiala = amoInitiala;
+            l.AmortizareFiscalaInitiala = amoFiscalaInitiala;
+            l.LuniAmortizateInitial = luniInitiale;
+        }
+        Intrare(idFa, 3600m, 36, 36, CategorieFiscala.Standard, true, null, 0m, 0m, 0);
+        Intrare(idFb, 90000m, 60, 60, CategorieFiscala.VehiculPersoaneMax9Locuri, false, null, 0m, 0m, 0);
+        Intrare(idFc, 120000m, 60, 60, CategorieFiscala.VehiculPersoaneMax9Locuri, false, null, 0m, 0m, 0);
+        Intrare(idFd, 120000m, 60, 60, CategorieFiscala.VehiculPersoaneMax9Locuri, true, null, 0m, 0m, 0);
+        Intrare(idFe, 3600m, 36, 36, CategorieFiscala.Standard, true, 600m, 0m, 0m, 0);
+        Intrare(idFf, 3600m, 36, 24, CategorieFiscala.Standard, true, null, 2400m, 3600m, 24);
+        Intrare(idFg, 3600m, 24, 36, CategorieFiscala.Standard, true, null, 3600m, 2400m, 24);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+
+        var raportMai = AmortizareService.Previzualizeaza(os, An, 5);
+        Console.WriteLine($"     MĂSURAT (IMO-V30/{eticheta}): previzualizarea lunii punerii în funcțiune = "
+            + $"{raportMai.Motiv?.ToString() ?? "<se generează>"}, {raportMai.Linii.Count} linii.");
+        Check($"IMO-V30 ({eticheta}) luna PUNERII în funcțiune nu se amortizează: previzualizarea ei dă "
+            + "`FaraFise`, fiindcă eligibilitatea cere data punerii STRICT înaintea primei zile a lunii "
+            + "(prima amortizare e luna de după — regula citită la ban din 1C, 51 din 51 de active)",
+            raportMai.Motiv == MotivNegenerare.FaraFise && raportMai.Linii.Count == 0);
+    }
+
+    // Codul economic al cheltuielii cu amortizarea stă pe FIȘĂ (F26-r16): pe planul
+    // bugetar contul de cheltuială îl cere prin defalcare, pe cel privat nimeni nu-l cere.
+    var prefixAmo = Marcaj + "-AMO-";
+    if (!privat)
+        using (var os = provider.CreateObjectSpace()) {
+            var faraCod = AmortizareService.Genereaza(os, An, 6, idAmoUnitate);
+            os.CommitChanges();
+            var refuzFaraCod = Refuz(() => MotorOperare.Opereaza(os, faraCod));
+            Console.WriteLine($"     MĂSURAT (IMO-V31c/{eticheta}): fișe fără cod economic, operare → "
+                + $"„{refuzFaraCod?.Split(Environment.NewLine[^1])[0] ?? "<ACCEPTATĂ>"}”.");
+            Check($"IMO-V31c ({eticheta}) fișa FĂRĂ cod economic oprește operarea pe planul bugetar: contul "
+                + "de cheltuială cu amortizarea are defalcarea `E` (decizia 15), iar dimensiunea obligatorie "
+                + "a notei nu se poate inventa în generator — capcana rămâne probă, nu comentariu",
+                refuzFaraCod != null && refuzFaraCod.Contains("Cod economic"));
+            os.Delete(faraCod.Detalii.ToList());
+            os.Delete(faraCod);
+            os.CommitChanges();
+
+            foreach (var fisa in os.GetObjectsQuery<Imobilizare>()
+                    .Where(f => f.NumarInventar.StartsWith(prefixAmo)).ToList())
+                fisa.CodEconomicId = idAmoCodEc;
+            os.CommitChanges();
+        }
+
+    AmortizareLunara AmoOperata(IObjectSpace os, int luna) {
+        var rezultat = AmortizareService.Incearca(os, An, luna, idAmoUnitate);
+        if (rezultat.Document == null)
+            throw new OperareException($"Scena AMO: luna {luna:00}/{An} n-a fost generată ({rezultat.Motiv}).");
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, rezultat.Document);
+        return rezultat.Document;
+    }
+
+    // Cele trei cifre ale lunii, pe fiecare formă de fișă (IMO-V31).
+    decimal deductibilVehiculNeexclusiv = privat ? 1500m : 2000m;
+    using (var os = provider.CreateObjectSpace()) {
+        var amo = AmortizareService.Genereaza(os, An, 6, idAmoUnitate);
+        os.CommitChanges();
+
+        var linii = amo.Detalii.OfType<AmortizareLunaraDetaliu>()
+            .ToDictionary(l => l.ImobilizareId);
+        var politica = os.GetObjectByKey<PoliticaAmortizare>(idAmoPolitica);
+        string Cifre(Guid fisa) => linii.TryGetValue(fisa, out var l)
+            ? $"{l.Valoare}/{l.ValoareFiscala}/{l.ValoareDeductibila}" : "<lipsă>";
+        Console.WriteLine($"     MĂSURAT (IMO-V31/{eticheta}): {linii.Count} linii generate; "
+            + $"A {Cifre(idFa)}, B {Cifre(idFb)}, C {Cifre(idFc)}, D {Cifre(idFd)}, E {Cifre(idFe)}, "
+            + $"F {Cifre(idFf)}, G {Cifre(idFg)}; conturile liniei A = "
+            + $"{os.GetObjectByKey<Cont>(linii[idFa].ContDebitId ?? Guid.Empty)?.Simbol} = "
+            + $"{os.GetObjectByKey<Cont>(linii[idFa].ContCreditId ?? Guid.Empty)?.Simbol}; "
+            + $"conturile liniei G = {linii[idFg].ContDebitId?.ToString() ?? "<null>"}.");
+        Check($"IMO-V31 ({eticheta}) generatorul scrie o linie per fișă eligibilă, cu DEBIT cheltuiala cu "
+            + "amortizarea și CREDIT contul de amortizare, ambele din `PoliticaAmortizare`, și cu locul fișei "
+            + "pe ambii repartitori — nicio aritmetică nu trăiește în altă parte",
+            linii.Count == 7
+            && linii[idFa].Valoare == 100m && linii[idFa].ValoareFiscala == 100m
+            && linii[idFa].ValoareDeductibila == 100m
+            && linii[idFa].ContDebitId == politica.ContCheltuialaAmortizareId
+            && linii[idFa].ContCreditId == politica.ContAmortizareId
+            && linii[idFa].RepartitorDebitId == idAmoGestiune
+            && linii[idFa].RepartitorCreditId == idAmoGestiune);
+        Check($"IMO-V32 ({eticheta}) deductibilul e o a TREIA cifră, nu o a doua postare: autoturismul de "
+            + "90.000 / 60 (1.500 lunar) intră integral, cel de 120.000 / 60 (2.000 lunar) se taie la plafonul "
+            + $"lunar al vehiculelor ({deductibilVehiculNeexclusiv} pe {eticheta}), iar aceeași fișă cu "
+            + "UTILIZARE EXCLUSIVĂ trece plafonul neatinsă — regula se alege pe (categorie, utilizare), din date",
+            linii[idFb].Valoare == 1500m && linii[idFb].ValoareFiscala == 1500m
+            && linii[idFb].ValoareDeductibila == 1500m
+            && linii[idFc].Valoare == 2000m && linii[idFc].ValoareFiscala == 2000m
+            && linii[idFc].ValoareDeductibila == deductibilVehiculNeexclusiv
+            && linii[idFd].Valoare == 2000m && linii[idFd].ValoareDeductibila == 2000m);
+        Check($"IMO-V33 ({eticheta}) valoarea reziduală scade DOAR baza contabilă: 3.600 cu reziduală 600 pe "
+            + "36 de luni dă 83,33 contabil și 100,00 fiscal — fiscul nu recunoaște reziduala",
+            linii[idFe].Valoare == 83.33m && linii[idFe].ValoareFiscala == 100m);
+        Check($"IMO-V34 ({eticheta}) cele două durate curg independent: fișa cu fiscalul deja consumat "
+            + "postează contabil 100,00 și fiscal 0, iar fișa cu contabilul consumat rămâne pe document cu "
+            + "contabil 0, fiscal 100,00 și conturile NULE — o notă de zero în registru ar fi zgomot, dar "
+            + "faptul fiscal al lunii trebuie să existe",
+            linii[idFf].Valoare == 100m && linii[idFf].ValoareFiscala == 0m
+            && linii[idFf].ContDebitId != null
+            && linii[idFg].Valoare == 0m && linii[idFg].ValoareFiscala == 100m
+            && linii[idFg].ContDebitId == null && linii[idFg].ContCreditId == null
+            && linii[idFg].RepartitorDebitId == idAmoGestiune);
+
+        {
+            MotorOperare.Opereaza(os, amo);
+            var note = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == amo.ID).ToList();
+            var randuri = os.GetObjectsQuery<RegistruImobilizari>()
+                .Where(r => r.DocumentId == amo.ID).ToList();
+            var randA = randuri.Single(r => r.ImobilizareId == idFa);
+            Console.WriteLine($"     MĂSURAT (IMO-V31b/{eticheta}): {note.Count} note pentru "
+                + $"{linii.Count} linii, {randuri.Count} rânduri de registru; prima notă = "
+                + $"{os.GetObjectByKey<Cont>(note[0].ContDebitId)?.Simbol} = "
+                + $"{os.GetObjectByKey<Cont>(note[0].ContCreditId)?.Simbol} de {note[0].Valoare}; "
+                + $"numărul = {amo.Numar}.");
+            Check($"IMO-V31b ({eticheta}) operarea postează o notă per linie cu contabil NENUL (6 note "
+                + "pentru 7 linii — linia fără cifră contabilă e sărită de motor pe conturile nule) și "
+                + "scrie un rând de registru per fișă, cu cele TREI cifre, `Luni` 1 și locul la data faptului",
+                note.Count == 6 && randuri.Count == 7
+                && note.All(n => n.ContDebitId == politica.ContCheltuialaAmortizareId
+                    && n.ContCreditId == politica.ContAmortizareId)
+                && randA.Fel == FelMiscareImobilizare.Amortizare && randA.Amortizare == 100m
+                && randA.AmortizareFiscala == 100m && randA.AmortizareDeductibila == 100m
+                && randA.Luni == 1 && randA.Valoare == 0m && randA.RepartitorId == idAmoGestiune
+                && randuri.Single(r => r.ImobilizareId == idFg).AmortizareFiscala == 100m
+                && amo.Numar != null && amo.Numar.StartsWith("AMO-"));
+
+            var codPeLinie = linii[idFa].CodEconomicId;
+            var codPeNota = note.Select(n => n.DebitCodEconomicId).Distinct().ToList();
+            Console.WriteLine($"     MĂSURAT (IMO-V31d/{eticheta}): cod economic pe fișă "
+                + $"{(privat ? "<null>" : os.GetObjectByKey<CodEconomic>(idAmoCodEc)?.Cod)}, pe linie "
+                + $"{(codPeLinie == null ? "<null>" : "prezent")}, pe latura de debit a notelor "
+                + $"{string.Join("/", codPeNota.Select(c => c == null ? "<null>" : "prezent"))}.");
+            Check($"IMO-V31d ({eticheta}) codul economic al fișei ajunge pe linia amortizării și de acolo, "
+                + "prin `DimensiuniCulese`, pe latura de DEBIT a rândului de registru — pe bugetar e "
+                + "dimensiunea pe care o cere contul, pe privat rămâne null fiindcă nimeni nu o cere",
+                privat
+                    ? codPeLinie == null && codPeNota.All(c => c == null)
+                    : codPeLinie == idAmoCodEc && codPeNota.Count == 1 && codPeNota[0] == idAmoCodEc);
+        }
+    }
+
+    // Lanțul lunar complet: cronologie, storno, ieșire — pe AMBELE profiluri, de când
+    // codul economic al fișei alimentează nota bugetară (IMO-V31c/V31d).
+    // Cota e FIXĂ la ultimul eveniment; modernizarea o mută (IMO-V35…V36).
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 7, 8 })
+            AmoOperata(os, luna);
+        var situatie = AmortizareService.Situatie(os, idFa, Zi(8, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-V35/{eticheta}): după august — cumulat {situatie.Amortizare}, "
+            + $"luni {situatie.Luni}, net {situatie.NetContabil}.");
+        Check($"IMO-V35 ({eticheta}) cota rămâne FIXĂ de la ultimul eveniment: trei luni × 100,00 fac 300,00 "
+            + "cumulat și 3 luni — o recalculare „rest / rest” ar fi produs derivă (665,17 → 665,18 în 1C)",
+            situatie.Amortizare == 300m && situatie.Luni == 3 && situatie.NetContabil == 3300m);
+
+        var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+        var pifModernizare = os.CreateObject<PunereInFunctiune>();
+        pifModernizare.Data = Zi(8, 15);
+        pifModernizare.Predator = unitate;
+        pifModernizare.Primitor = gestiune;
+        var linieModernizare = os.CreateObject<PunereInFunctiuneDetaliu>();
+        linieModernizare.Document = pifModernizare;
+        linieModernizare.ImobilizareId = idFa;
+        linieModernizare.TipMaterialId = idAmoTip;
+        linieModernizare.Fel = FelLiniePif.Modernizare;
+        linieModernizare.Valoare = 1650m;
+        linieModernizare.Cantitate = 1m;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pifModernizare);
+
+        var septembrie = AmoOperata(os, 9);
+        var linieA = septembrie.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa);
+        Console.WriteLine($"     MĂSURAT (IMO-V36/{eticheta}): septembrie, fișa A = {linieA.Valoare} "
+            + $"(brut {AmortizareService.Situatie(os, idFa, Zi(9, 30)).Valoare}).");
+        Check($"IMO-V36 ({eticheta}) modernizarea din mijlocul lunii (15.08) rebazează calculul lunii "
+            + "URMĂTOARE: (3.600 + 1.650 − 300) / (36 − 3) = 150,00 — baza se citește la SFÂRȘITUL lunii "
+            + "evenimentului (formula 1C: luna evenimentului postează încă cota veche), indiferent de zi",
+            linieA.Valoare == 150m && linieA.ValoareFiscala == 150m && linieA.ValoareDeductibila == 150m);
+    }
+
+    // Regula de deductibilitate cu `DeLa` în mijlocul vieții activului (probată la IMO-V40).
+    using (var os = provider.CreateObjectSpace()) {
+        var regula = os.CreateObject<RegulaDeductibilitate>();
+        regula.Categorie = CategorieFiscala.VehiculPersoaneMax9Locuri;
+        regula.DoarNeexclusiv = true;
+        regula.Fel = FelDeductibilitate.PlafonLunar;
+        regula.Valoare = 1000m;
+        regula.DeLa = Zi(10, 1);
+        regula.Temei = Marcaj + " — plafon de scenă, valabil din 10/2027";
+        os.CommitChanges();
+    }
+
+    // Anti-stale-ul operării și regenerarea (IMO-V38…V40).
+    Guid idAmoOctombrie;
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = AmortizareService.Genereaza(os, An, 10, idAmoUnitate);
+        os.CommitChanges();
+        var linieVeche = draft.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa);
+        var valoareLaGenerare = linieVeche.Valoare;
+
+        var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+        var pifRevizuire = os.CreateObject<PunereInFunctiune>();
+        pifRevizuire.Data = Zi(9, 30);
+        pifRevizuire.Predator = unitate;
+        pifRevizuire.Primitor = gestiune;
+        var linieRevizuire = os.CreateObject<PunereInFunctiuneDetaliu>();
+        linieRevizuire.Document = pifRevizuire;
+        linieRevizuire.ImobilizareId = idFa;
+        linieRevizuire.TipMaterialId = idAmoTip;
+        linieRevizuire.Fel = FelLiniePif.Revizuire;
+        linieRevizuire.Valoare = 0m;
+        linieRevizuire.Cantitate = 1m;
+        linieRevizuire.Metoda = MetodaAmortizare.Liniara;
+        linieRevizuire.DurataLuni = 48;
+        linieRevizuire.MetodaFiscala = MetodaAmortizare.Liniara;
+        linieRevizuire.DurataFiscalaLuni = 48;
+        linieRevizuire.CategorieFiscala = CategorieFiscala.Standard;
+        linieRevizuire.UtilizareExclusiva = true;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pifRevizuire);
+
+        Console.WriteLine($"     MĂSURAT (IMO-V38/{eticheta}): draftul lui octombrie poartă {valoareLaGenerare} "
+            + "pe fișa A, iar revizuirea a mutat durata pe 48.");
+        CheckRefuza($"IMO-V38 ({eticheta}) un draft de amortizare generat ÎNAINTE de o revizuire operată nu se "
+            + "mai poate opera: gardianul recalculează mulțimea liniilor din registru și refuză — altfel luna "
+            + "ar posta cifre care nu mai descriu nicio bază",
+            () => MotorOperare.Opereaza(os, draft));
+
+        var regenerat = AmortizareService.Incearca(os, An, 10, idAmoUnitate, draft.ID);
+        os.Delete(draft.Detalii.ToList());
+        os.Delete(draft);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, regenerat.Document);
+        idAmoOctombrie = regenerat.Document.ID;
+        var linieNoua = regenerat.Document.Detalii.OfType<AmortizareLunaraDetaliu>()
+            .Single(l => l.ImobilizareId == idFa);
+        var linieC = regenerat.Document.Detalii.OfType<AmortizareLunaraDetaliu>()
+            .Single(l => l.ImobilizareId == idFc);
+        Console.WriteLine($"     MĂSURAT (IMO-V39/{eticheta}): octombrie regenerat — fișa A "
+            + $"{linieNoua.Valoare}, fișa C deductibil {linieC.ValoareDeductibila} "
+            + $"(septembrie: {deductibilVehiculNeexclusiv}).");
+        Check($"IMO-V39 ({eticheta}) regenerarea cu `inlocuieste` trece pe lângă gardianul „luna are deja o "
+            + "amortizare” și produce cifra nouă: (5.250 − 450) / (48 − 4) = 109,09 — durata revizuită e fapt "
+            + "datat, iar recalculul rămâne reproductibil",
+            linieNoua.Valoare == 109.09m && linieNoua.ValoareFiscala == 109.09m
+            && linieNoua.ValoareDeductibila == 109.09m);
+        Check($"IMO-V40 ({eticheta}) o regulă de deductibilitate cu `DeLa` în mijlocul vieții activului "
+            + "schimbă DOAR lunile de după: plafonul de scenă (1.000 din 10/2027) taie deductibilul "
+            + "autoturismului de 120.000 în octombrie, iar septembrie rămâne cum a fost postat — legea se "
+            + "exprimă în date, iar cifrele deja postate sunt fapte",
+            linieC.ValoareDeductibila == 1000m && deductibilVehiculNeexclusiv != 1000m);
+    }
+
+    // Storno-ul amortizării și cronologia strictă (IMO-V41…V42).
+    using (var os = provider.CreateObjectSpace()) {
+        var octombrie = os.GetObjectByKey<AmortizareLunara>(idAmoOctombrie);
+        MotorOperare.Storneaza(os, octombrie, Zi(10, 31));
+        var contabile = os.GetObjectsQuery<RegistruContabil>()
+            .Where(r => r.DocumentId == idAmoOctombrie).ToList();
+        var imobilizari = os.GetObjectsQuery<RegistruImobilizari>()
+            .Where(r => r.DocumentId == idAmoOctombrie).ToList();
+        var situatieA = AmortizareService.Situatie(os, idFa, Zi(10, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-V41/{eticheta}): după storno — {contabile.Count} rânduri "
+            + $"contabile ({contabile.Count(r => r.Storno)} inverse), {imobilizari.Count} rânduri de "
+            + $"imobilizări ({imobilizari.Count(r => r.Storno)} inverse); cumulat A {situatieA.Amortizare}.");
+        Check($"IMO-V41 ({eticheta}) storno-ul amortizării adaugă rânduri INVERSE în AMBELE registre "
+            + "(contabil și imobilizări), append-only, iar situația fișei revine la cea de dinaintea lunii — "
+            + "al patrulea registru urmează exact ciclul de viață al celorlalte trei",
+            contabile.Count(r => r.Storno) == contabile.Count / 2
+            && imobilizari.Count(r => r.Storno) == imobilizari.Count / 2
+            && situatieA.Amortizare == 450m && situatieA.Luni == 4);
+
+        var refacut = AmoOperata(os, 10);
+        idAmoOctombrie = refacut.ID;
+        Check($"IMO-V42 ({eticheta}) după storno luna redevine LIBERĂ: „amortizare vie” nu vede documentul "
+            + "stornat, deci octombrie se regenerează și se operează din nou, cu aceleași cifre",
+            refacut.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == idFa)
+                .Valoare == 109.09m);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var dataAugust = Zi(8, 31);
+        var august = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataAugust && a.Stare == StareDocument.Operat);
+        CheckRefuza($"IMO-V43 ({eticheta}) anularea amortizării lui august, cu lunile următoare operate, e "
+            + "refuzată de FRUNZĂ: cronologia amortizării e strictă, fiindcă fiecare lună se calculează pe "
+            + "cumulatul celei dinainte",
+            () => MotorOperare.AnuleazaOperarea(os, august));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var dataSeptembrie = Zi(9, 30);
+        var septembrie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataSeptembrie && a.Stare == StareDocument.Operat);
+        CheckRefuza($"IMO-V44 ({eticheta}) stornarea amortizării lui septembrie, cu octombrie operată, e "
+            + "refuzată pe același gardian — corecția se face de la capătul cronologiei spre trecut",
+            () => MotorOperare.Storneaza(os, septembrie, Zi(10, 31)));
+    }
+
+    // Cronologia la GENERARE: luna lipsă și perioada închisă (IMO-V45…V46).
+    using (var os = provider.CreateObjectSpace()) {
+        var raportDecembrie = AmortizareService.Previzualizeaza(os, An, 12);
+        Console.WriteLine($"     MĂSURAT (IMO-V45/{eticheta}): decembrie cu noiembrie negenerată = "
+            + $"{raportDecembrie.Motiv}, {raportDecembrie.Linii.Count} linii însoțitoare.");
+        Check($"IMO-V45 ({eticheta}) decembrie, cu noiembrie negenerată deși avea fișe eligibile, iese ca "
+            + "`LunaLipsa` la RAPORT — un ecran trebuie să poată spune „nu se poate, fiindcă…”, nu să "
+            + "primească o excepție",
+            raportDecembrie.Motiv == MotivNegenerare.LunaLipsa && raportDecembrie.Linii.Count > 0);
+        CheckRefuza($"IMO-V45b ({eticheta}) aceeași stare, la COMANDĂ, e refuz zgomotos — raportul și comanda "
+            + "pun aceleași întrebări, în aceeași ordine, și diferă printr-un singur bit",
+            () => AmortizareService.Incearca(os, An, 12, idAmoUnitate));
+
+        var noiembrie = os.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == 11);
+        noiembrie.Inchisa = true;
+        os.CommitChanges();
+        var raportInchis = AmortizareService.Previzualizeaza(os, An, 11);
+        Console.WriteLine($"     MĂSURAT (IMO-V46/{eticheta}): noiembrie închisă = {raportInchis.Motiv}.");
+        Check($"IMO-V46 ({eticheta}) perioada închisă e graniță și la GENERARE, nu doar la operare: un draft "
+            + "într-o lună închisă n-ar putea fi operat niciodată, dar ar sta ca „amortizare vie” și ar bloca "
+            + "cronologia lunilor dinaintea lui",
+            raportInchis.Motiv == MotivNegenerare.PerioadaInchisa);
+        CheckRefuza($"IMO-V46b ({eticheta}) comanda pe luna închisă aruncă, ca la închiderea de TVA",
+            () => AmortizareService.Incearca(os, An, 11, idAmoUnitate));
+        noiembrie.Inchisa = false;
+        os.CommitChanges();
+    }
+
+    // Transferul, ieșirea și lunile de după (IMO-V47…V49).
+    using (var os = provider.CreateObjectSpace()) {
+        var fisaE = os.GetObjectByKey<Imobilizare>(idFe);
+        fisaE.LocId = idAmoLoc2;
+        os.CommitChanges();
+
+        var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+        var politica = os.GetObjectByKey<PoliticaAmortizare>(idAmoPolitica);
+        var tipF = os.GetObjectByKey<TipMaterial>(idAmoTip);
+        var situatieA = AmortizareService.Situatie(os, idFa, Zi(11, 15));
+
+        var cas = os.CreateObject<IesireImobilizare>();
+        cas.Data = Zi(11, 15);
+        cas.Cauza = CauzaIesire.Casare;
+        cas.Predator = gestiune;
+        cas.Primitor = unitate;
+        IesireImobilizareDetaliu LinieCas(FelLinieIesire fel, Guid? contDebit, decimal valoare) {
+            var l = os.CreateObject<IesireImobilizareDetaliu>();
+            l.Document = cas;
+            l.ImobilizareId = idFa;
+            l.TipMaterialId = tipF.ID;
+            l.Fel = fel;
+            l.Valoare = valoare;
+            l.Cantitate = 1m;
+            l.ContDebitId = contDebit;
+            l.ContCreditId = tipF.ContImplicitId;
+            l.RepartitorDebitId = gestiune.ID;
+            l.RepartitorCreditId = gestiune.ID;
+            return l;
+        }
+        LinieCas(FelLinieIesire.AmortizareCumulata, politica.ContAmortizareId, situatieA.Amortizare);
+        var linieRest = LinieCas(FelLinieIesire.ValoareRamasa, politica.ContCheltuialaCedareId,
+            situatieA.NetContabil - 10m);
+        os.CommitChanges();
+        Console.WriteLine($"     MĂSURAT (IMO-V47/{eticheta}): cumulat {situatieA.Amortizare}, net "
+            + $"{situatieA.NetContabil}; linia de rest culeasă cu {linieRest.Valoare}.");
+        CheckRefuza($"IMO-V47 ({eticheta}) ieșirea cu linia de valoare rămasă greșită e refuzată: serviciul "
+            + "recalculează cele două linii din registru la data documentului și cere potrivirea exactă — "
+            + "același anti-stale ca la închiderea de TVA",
+            () => MotorOperare.Opereaza(os, cas));
+        linieRest.Valoare = situatieA.NetContabil;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, cas);
+
+        var noteCas = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == cas.ID).ToList();
+        var randIesire = os.GetObjectsQuery<RegistruImobilizari>().Single(r => r.DocumentId == cas.ID);
+        var fisaA = os.GetObjectByKey<Imobilizare>(idFa);
+        Console.WriteLine($"     MĂSURAT (IMO-V48/{eticheta}): {noteCas.Count} note — "
+            + string.Join("; ", noteCas.Select(n => $"{os.GetObjectByKey<Cont>(n.ContDebitId)?.Simbol} = "
+                + $"{os.GetObjectByKey<Cont>(n.ContCreditId)?.Simbol} de {n.Valoare}"))
+            + $"; rândul de ieșire {randIesire.Valoare}/{randIesire.Amortizare}; fișa {fisaA.Stare}.");
+        Check($"IMO-V48 ({eticheta}) casarea unei fișe amortizate parțial descarcă exact cumulatul lunilor "
+            + "postate (5 luni: 100 + 100 + 100 + 150 + 109,09 = 559,09) și trece restul pe cheltuiala cu "
+            + "cedarea; rândul de registru e negativ pe toate coloanele, iar fișa devine `Iesita`",
+            situatieA.Amortizare == 559.09m && situatieA.NetContabil == 4690.91m
+            && noteCas.Count == 2
+            && noteCas.Any(n => n.ContDebitId == politica.ContAmortizareId && n.Valoare == 559.09m)
+            && noteCas.Any(n => n.ContDebitId == politica.ContCheltuialaCedareId && n.Valoare == 4690.91m)
+            && randIesire.Valoare == -5250m && randIesire.Amortizare == -559.09m
+            && fisaA.Stare == StareImobilizare.Iesita && fisaA.DataIesire == Zi(11, 15));
+
+        var amoNoiembrie = AmoOperata(os, 11);
+        var liniiNoiembrie = amoNoiembrie.Detalii.OfType<AmortizareLunaraDetaliu>().ToList();
+        var linieE = liniiNoiembrie.Single(l => l.ImobilizareId == idFe);
+        var randE = os.GetObjectsQuery<RegistruImobilizari>()
+            .Single(r => r.DocumentId == amoNoiembrie.ID && r.ImobilizareId == idFe);
+        Console.WriteLine($"     MĂSURAT (IMO-V49/{eticheta}): noiembrie are {liniiNoiembrie.Count} linii; "
+            + $"fișa A prezentă: {liniiNoiembrie.Any(l => l.ImobilizareId == idFa)}; "
+            + $"locul fișei E pe linie/rând = "
+            + $"{os.GetObjectByKey<Repartitor>(linieE.RepartitorDebitId ?? Guid.Empty)?.Cod}/"
+            + $"{os.GetObjectByKey<Repartitor>(randE.RepartitorId)?.Cod}.");
+        Check($"IMO-V49 ({eticheta}) luna IEȘIRII nu se amortizează (fișa casată pe 15.11 lipsește din "
+            + "amortizarea lui noiembrie), iar transferul administrativ al unei alte fișe mută postarea și "
+            + "rândul de registru pe NOUL loc — istoricul locului sunt rândurile lunare (F26-D8)",
+            liniiNoiembrie.Count == 6 && !liniiNoiembrie.Any(l => l.ImobilizareId == idFa)
+            && linieE.RepartitorDebitId == idAmoLoc2 && randE.RepartitorId == idAmoLoc2);
+
+        var casTarziu = os.CreateObject<IesireImobilizare>();
+        casTarziu.Data = Zi(11, 20);
+        casTarziu.Cauza = CauzaIesire.Vanzare;
+        casTarziu.Predator = gestiune;
+        casTarziu.Primitor = unitate;
+        var situatieB = AmortizareService.Situatie(os, idFb, Zi(11, 20));
+        var lTarziu = os.CreateObject<IesireImobilizareDetaliu>();
+        lTarziu.Document = casTarziu;
+        lTarziu.ImobilizareId = idFb;
+        lTarziu.TipMaterialId = tipF.ID;
+        lTarziu.Fel = FelLinieIesire.AmortizareCumulata;
+        lTarziu.Valoare = situatieB.Amortizare;
+        lTarziu.Cantitate = 1m;
+        lTarziu.ContDebitId = politica.ContAmortizareId;
+        lTarziu.ContCreditId = tipF.ContImplicitId;
+        lTarziu.RepartitorDebitId = gestiune.ID;
+        lTarziu.RepartitorCreditId = gestiune.ID;
+        var lTarziuRest = os.CreateObject<IesireImobilizareDetaliu>();
+        lTarziuRest.Document = casTarziu;
+        lTarziuRest.ImobilizareId = idFb;
+        lTarziuRest.TipMaterialId = tipF.ID;
+        lTarziuRest.Fel = FelLinieIesire.ValoareRamasa;
+        lTarziuRest.Valoare = situatieB.NetContabil;
+        lTarziuRest.Cantitate = 1m;
+        lTarziuRest.ContDebitId = politica.ContCheltuialaCedareId;
+        lTarziuRest.ContCreditId = tipF.ContImplicitId;
+        lTarziuRest.RepartitorDebitId = gestiune.ID;
+        lTarziuRest.RepartitorCreditId = gestiune.ID;
+        os.CommitChanges();
+        CheckRefuza($"IMO-V50 ({eticheta}) o ieșire într-o lună cu amortizarea deja OPERATĂ e refuzată: luna "
+            + "ieșirii nu se amortizează, deci amortizarea aceea ar rămâne pe o fișă care nu mai există în "
+            + "patrimoniu",
+            () => MotorOperare.Opereaza(os, casTarziu));
+        os.Delete(casTarziu.Detalii.ToList());
+        os.Delete(casTarziu);
+        os.CommitChanges();
+
+        var amoDecembrie = AmoOperata(os, 12);
+        var liniiDecembrie = amoDecembrie.Detalii.OfType<AmortizareLunaraDetaliu>().ToList();
+        Console.WriteLine($"     MĂSURAT (IMO-V51/{eticheta}): decembrie are {liniiDecembrie.Count} linii; "
+            + $"fișa A prezentă: {liniiDecembrie.Any(l => l.ImobilizareId == idFa)}.");
+        Check($"IMO-V51 ({eticheta}) fișa ieșită nu mai apare în NICIO lună ulterioară, iar cronologia "
+            + "completată (noiembrie operată) deblochează decembrie — eligibilitatea se citește din DATE, nu "
+            + "din starea materializată a fișei",
+            liniiDecembrie.Count == 6 && !liniiDecembrie.Any(l => l.ImobilizareId == idFa));
+    }
+
+    // Ieșirea ca DEPENDENT al lunii dinaintea ei (IMO-V51b…V51d; defect găsit la smoke-ul XAF).
+    Guid idCasB;
+    using (var os = provider.CreateObjectSpace()) {
+        var dataDecembrie = Zi(12, 31);
+        var decembrie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataDecembrie && a.Stare == StareDocument.Operat);
+        MotorOperare.Storneaza(os, decembrie, dataDecembrie);
+
+        var unitate = os.GetObjectByKey<Repartitor>(idAmoUnitate);
+        var gestiune = os.GetObjectByKey<Repartitor>(idAmoGestiune);
+        var politica = os.GetObjectByKey<PoliticaAmortizare>(idAmoPolitica);
+        var tipF = os.GetObjectByKey<TipMaterial>(idAmoTip);
+        var situatieB = AmortizareService.Situatie(os, idFb, Zi(12, 20));
+        var casB = os.CreateObject<IesireImobilizare>();
+        casB.Data = Zi(12, 20);
+        casB.Cauza = CauzaIesire.Vanzare;
+        casB.Predator = gestiune;
+        casB.Primitor = unitate;
+        foreach (var (fel, cont, valoare) in new[] {
+                (FelLinieIesire.AmortizareCumulata, politica.ContAmortizareId, situatieB.Amortizare),
+                (FelLinieIesire.ValoareRamasa, politica.ContCheltuialaCedareId, situatieB.NetContabil) }) {
+            var l = os.CreateObject<IesireImobilizareDetaliu>();
+            l.Document = casB;
+            l.ImobilizareId = idFb;
+            l.TipMaterialId = tipF.ID;
+            l.Fel = fel;
+            l.Valoare = valoare;
+            l.Cantitate = 1m;
+            l.ContDebitId = cont;
+            l.ContCreditId = tipF.ContImplicitId;
+            l.RepartitorDebitId = gestiune.ID;
+            l.RepartitorCreditId = gestiune.ID;
+        }
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, casB);
+        idCasB = casB.ID;
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var dataNoiembrie = Zi(11, 30);
+        var noiembrie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataNoiembrie && a.Stare == StareDocument.Operat);
+        CheckRefuza($"IMO-V51b ({eticheta}) anularea amortizării lui noiembrie, cu decembrie stornată dar cu "
+            + "o IEȘIRE operată pe 20.12 pe o fișă a ei, e refuzată: cumulatul descărcat de ieșire s-a calculat "
+            + "pe rândul lunar al lui noiembrie — faptele ulterioare ale fișelor sunt dependenți, nu doar "
+            + "lunile următoare",
+            () => MotorOperare.AnuleazaOperarea(os, noiembrie));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var dataNoiembrie = Zi(11, 30);
+        var noiembrie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataNoiembrie && a.Stare == StareDocument.Operat);
+        CheckRefuza($"IMO-V51c ({eticheta}) stornarea aceleiași luni e refuzată pe același gardian",
+            () => MotorOperare.Storneaza(os, noiembrie, Zi(12, 31)));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        MotorOperare.Storneaza(os, os.GetObjectByKey<IesireImobilizare>(idCasB), Zi(12, 31));
+        var dataNoiembrie = Zi(11, 30);
+        var noiembrie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == dataNoiembrie && a.Stare == StareDocument.Operat);
+        MotorOperare.AnuleazaOperarea(os, noiembrie);
+        Check($"IMO-V51d ({eticheta}) după stornarea ieșirii, noiembrie se anulează: dependenții stornați nu "
+            + "mai contează, corecția merge de la capătul cronologiei spre trecut",
+            noiembrie.Stare == StareDocument.Draft
+            && !os.GetObjectsQuery<RegistruImobilizari>().Any(r => r.DocumentId == noiembrie.ID));
+    }
+
+    // ── IMO-V52: fișa eligibilă fără politică de amortizare ───────────────────
+    using (var os = provider.CreateObjectSpace())
+        CurataImo(os);
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 5, 6 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+            p.Inchisa = false;
+        }
+        var unitate = os.CreateObject<UnitateInterna>();
+        unitate.Cod = Marcaj + "-FP-UI";
+        unitate.Denumire = "Unitate probă fără politică";
+        var gestiune = os.CreateObject<Gestiune>();
+        gestiune.Cod = Marcaj + "-FP-MAG";
+        gestiune.Denumire = "Gestiune probă fără politică";
+        var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+        var tipNou = os.CreateObject<TipMaterial>();
+        tipNou.Cod = Marcaj + "-TIPF";
+        tipNou.Denumire = "Tip de imobilizări fără politică de amortizare";
+        tipNou.ClasaId = tipF.ClasaId;
+        tipNou.ContImplicitId = tipF.ContImplicitId;
+        os.CommitChanges();
+
+        var fisa = os.CreateObject<Imobilizare>();
+        fisa.NumarInventar = Marcaj + "-FP-1";
+        fisa.Denumire = "Fișă pe un tip fără politică";
+        fisa.TipMaterialId = tipNou.ID;
+        fisa.LocId = gestiune.ID;
+        os.CommitChanges();
+
+        var pif = os.CreateObject<PunereInFunctiune>();
+        pif.Data = Zi(5, 5);
+        pif.Predator = unitate;
+        pif.Primitor = gestiune;
+        var l = os.CreateObject<PunereInFunctiuneDetaliu>();
+        l.Document = pif;
+        l.ImobilizareId = fisa.ID;
+        l.TipMaterialId = tipNou.ID;
+        l.Fel = FelLiniePif.Intrare;
+        l.Valoare = 1200m;
+        l.Cantitate = 1m;
+        l.Metoda = MetodaAmortizare.Liniara;
+        l.DurataLuni = 12;
+        l.MetodaFiscala = MetodaAmortizare.Liniara;
+        l.DurataFiscalaLuni = 12;
+        l.CategorieFiscala = CategorieFiscala.Standard;
+        l.UtilizareExclusiva = true;
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+
+        var faraPolitica = AmortizareService.Previzualizeaza(os, An, 6);
+        Console.WriteLine($"     MĂSURAT (IMO-V52/{eticheta}): {faraPolitica.Motiv} pe „{faraPolitica.Detaliu}”.");
+        Check($"IMO-V52 ({eticheta}) o fișă ELIGIBILĂ al cărei tip n-are rând de `PoliticaAmortizare` "
+            + "oprește luna INTEGRAL, cu numărul de inventar în verdict: conturile vin exclusiv din politică, "
+            + "iar o lună generată fără fișa aceea ar fi tăcut despre o cheltuială nepostată",
+            faraPolitica.Motiv == MotivNegenerare.FisaFaraPolitica
+            && faraPolitica.Detaliu == Marcaj + "-FP-1");
+
+        var politicaNoua = os.CreateObject<PoliticaAmortizare>();
+        politicaNoua.TipMaterialId = tipNou.ID;
+        var politicaF = os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == tipF.ID);
+        politicaNoua.ContAmortizareId = politicaF.ContAmortizareId;
+        politicaNoua.ContCheltuialaAmortizareId = politicaF.ContCheltuialaAmortizareId;
+        politicaNoua.ContCheltuialaCedareId = politicaF.ContCheltuialaCedareId;
+        os.CommitChanges();
+        var cuPolitica = AmortizareService.Previzualizeaza(os, An, 6);
+        Console.WriteLine($"     MĂSURAT (IMO-V52b/{eticheta}): după rândul de politică — "
+            + $"{cuPolitica.Motiv?.ToString() ?? "<se generează>"}, {cuPolitica.Linii.Count} linii, "
+            + $"{cuPolitica.Linii.FirstOrDefault()?.Contabil}.");
+        Check($"IMO-V52b ({eticheta}) un rând nou de politică deblochează luna fără release: politica e DATE, "
+            + "iar generatorul o citește la fiecare rulare",
+            cuPolitica.Motiv == null && cuPolitica.Linii.Count == 1
+            && cuPolitica.Linii[0].Contabil == 100m);
+    }
+
+    // ── IMO-V53…V55: aritmetica PURĂ ──────────────────────────────────────────
+    {
+        decimal Cota(MetodaAmortizare metoda, decimal valoare, int luniRamase, int luniDeLaEveniment,
+                decimal rest, decimal brut, int luniDeLaPunere) =>
+            AmortizareService.CotaLunara(new BazaAmortizare(metoda, valoare, luniRamase, luniDeLaEveniment,
+                rest, brut, luniDeLaPunere));
+
+        List<decimal> Grafic(MetodaAmortizare metoda, decimal valoare, int luni, decimal brut) {
+            var rest = valoare;
+            var sume = new List<decimal>();
+            for (var i = 0; i < luni + 2 && rest > 0m; i++) {
+                var suma = Cota(metoda, valoare, luni, i, rest, brut, i);
+                sume.Add(suma);
+                rest -= suma;
+            }
+            return sume;
+        }
+
+        var citan = Grafic(MetodaAmortizare.Liniara, 21950.68m, 33, 21950.68m);
+        var zebra = Grafic(MetodaAmortizare.Liniara, 3455.11m, 36, 3455.11m);
+        var centruIt = Cota(MetodaAmortizare.Liniara, 636538.78m, 507, 0, 636538.78m, 636538.78m, 0);
+        var invertor = Cota(MetodaAmortizare.Liniara, 47323.77m, 36, 0, 47323.77m, 47323.77m, 0);
+        Console.WriteLine($"     MĂSURAT (IMO-V53/{eticheta}): Citan {citan.Count} luni "
+            + $"({citan[0]} × {citan.Count - 1} + {citan[^1]}, total {citan.Sum()}); "
+            + $"Zebra {zebra.Count} luni ({zebra[0]} × {zebra.Count - 1} + {zebra[^1]}, total {zebra.Sum()}); "
+            + $"CENTRU IT {centruIt}; invertor {invertor}.");
+        Check($"IMO-V53 ({eticheta}) funcția PURĂ reproduce la ban cifrele reale din 1C: cota rotunjită în "
+            + "JOS lasă o lună SUPLIMENTARĂ cu restul (Citan: 33 × 665,17 + 0,07), cota rotunjită în SUS "
+            + "scurtează ultima lună (Zebra: 35 × 95,98 + 95,81), iar totalul postat egalează exact valoarea "
+            + "de amortizat",
+            citan.Count == 34 && citan.Take(33).All(s => s == 665.17m) && citan[^1] == 0.07m
+            && citan.Sum() == 21950.68m
+            && zebra.Count == 36 && zebra.Take(35).All(s => s == 95.98m) && zebra[^1] == 95.81m
+            && zebra.Sum() == 3455.11m
+            && centruIt == 1255.50m && invertor == 1314.55m);
+
+        var accelerataInceput = Cota(MetodaAmortizare.Accelerata, 3600m, 36, 0, 3600m, 3600m, 0);
+        var accelerataLuna12 = Cota(MetodaAmortizare.Accelerata, 3600m, 36, 11, 1950m, 3600m, 11);
+        var accelerataDupa = Cota(MetodaAmortizare.Accelerata, 1800m, 24, 0, 1800m, 3600m, 12);
+        Console.WriteLine($"     MĂSURAT (IMO-V54/{eticheta}): accelerata 3.600 / 36 = "
+            + $"{accelerataInceput} (luna 1), {accelerataLuna12} (luna 12), {accelerataDupa} (luna 13).");
+        Check($"IMO-V54 ({eticheta}) accelerata pune 50 % din brut în primele 12 luni (150,00 pe lună pentru "
+            + "3.600) și trece apoi la liniar pe restul / lunile rămase (1.800 / 24 = 75,00) — pragul e "
+            + "lunile de la PUNEREA în funcțiune, nu de la ultimul eveniment",
+            accelerataInceput == 150m && accelerataLuna12 == 150m && accelerataDupa == 75m);
+
+        var degresiva = Grafic(MetodaAmortizare.Degresiva, 60000m, 60, 60000m);
+        var peAni = Enumerable.Range(0, 5).Select(a => degresiva.Skip(a * 12).Take(12).Sum()).ToList();
+        Console.WriteLine($"     MĂSURAT (IMO-V55/{eticheta}): degresiva AD1 60.000 / 60 pe ani = "
+            + string.Join(" / ", peAni) + $"; total {degresiva.Sum()} în {degresiva.Count} luni.");
+        Check($"IMO-V55 ({eticheta}) degresiva AD1 pe 5 ani (k = 1,5) dă 18.000 / 12.600 / 9.800 / 9.800 / "
+            + "9.800: din anul în care rata degresivă nu mai bate media rămasă graficul trece la liniar și "
+            + "rămâne acolo, a douăsprezecea lună a fiecărui an absoarbe restul anului, iar totalul e exact "
+            + "valoarea de amortizat",
+            degresiva.Count == 60 && degresiva.Sum() == 60000m
+            && peAni[0] == 18000m && peAni[1] == 12600m && peAni[2] == 9800m
+            && peAni[3] == 9800m && peAni[4] == 9800m);
+    }
+
+    // ── IMO-V56…V57: `Deductibil` pur ─────────────────────────────────────────
+    {
+        var vehicul = CategorieFiscala.VehiculPersoaneMax9Locuri;
+        var sediu = CategorieFiscala.SediuSocialInLocuinta;
+        var data = new DateOnly(2027, 6, 30);
+        var plafon = new List<RegulaSnapshot> {
+            new(vehicul, true, FelDeductibilitate.PlafonLunar, 1500m, new DateOnly(2012, 2, 1), null),
+        };
+        var doua = new List<RegulaSnapshot> {
+            new(sediu, true, FelDeductibilitate.Procent, 0m, new DateOnly(2024, 1, 1), null),
+            new(sediu, true, FelDeductibilitate.Procent, 50m, new DateOnly(2026, 1, 1), null),
+        };
+        var expirat = new List<RegulaSnapshot> {
+            new(vehicul, true, FelDeductibilitate.PlafonLunar, 1500m, new DateOnly(2012, 2, 1),
+                new DateOnly(2020, 12, 31)),
+        };
+        var ambele = new List<RegulaSnapshot> {
+            new(vehicul, true, FelDeductibilitate.PlafonLunar, 1500m, new DateOnly(2012, 2, 1), null),
+            new(vehicul, true, FelDeductibilitate.Procent, 50m, new DateOnly(2012, 2, 1), null),
+        };
+        decimal D(decimal fiscal, CategorieFiscala categorie, bool exclusiv, List<RegulaSnapshot> reguli,
+                DateOnly cand) => AmortizareService.Deductibil(fiscal, categorie, exclusiv, reguli, cand);
+
+        var faraRegula = D(2000m, vehicul, false, [], data);
+        var cuPlafon = D(2000m, vehicul, false, plafon, data);
+        var laExclusiv = D(2000m, vehicul, true, plafon, data);
+        var altaCategorie = D(2000m, CategorieFiscala.Standard, false, plafon, data);
+        var inainteDeLa = D(2000m, vehicul, false, plafon, new DateOnly(2011, 12, 31));
+        var deLa2025 = D(1000m, sediu, false, doua, new DateOnly(2025, 6, 30));
+        var deLa2027 = D(1000m, sediu, false, doua, data);
+        var dupaPanaLa = D(2000m, vehicul, false, expirat, data);
+        var plafonApoiProcent = D(2000m, vehicul, false, ambele, data);
+        Console.WriteLine($"     MĂSURAT (IMO-V56/{eticheta}): fără regulă {faraRegula}, plafon {cuPlafon}, "
+            + $"exclusiv {laExclusiv}, altă categorie {altaCategorie}, înainte de `DeLa` {inainteDeLa}, "
+            + $"2025 {deLa2025}, 2027 {deLa2027}, după `PanaLa` {dupaPanaLa}, plafon+procent "
+            + $"{plafonApoiProcent}.");
+        Check($"IMO-V56 ({eticheta}) mecanismul deductibilității e complet declarativ: fără regulă "
+            + "deductibilul E fiscalul; plafonul taie, procentul scade; `DoarNeexclusiv` se sare la utilizare "
+            + "exclusivă; o regulă a altei categorii nu se aplică; `DeLa` maxim ≤ dată câștigă per "
+            + "(categorie, fel); `PanaLa` expirat nu se mai aplică; plafonul se aplică ÎNAINTEA procentului",
+            faraRegula == 2000m && cuPlafon == 1500m && laExclusiv == 2000m && altaCategorie == 2000m
+            && inainteDeLa == 2000m && deLa2025 == 0m && deLa2027 == 500m && dupaPanaLa == 2000m
+            && plafonApoiProcent == 750m);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var reguli = os.GetObjectsQuery<RegulaDeductibilitate>()
+            .Select(r => new { r.Categorie, r.DoarNeexclusiv, r.Fel, r.Valoare, r.DeLa, r.PanaLa })
+            .ToList()
+            .Select(r => new RegulaSnapshot(r.Categorie, r.DoarNeexclusiv, r.Fel, r.Valoare, r.DeLa, r.PanaLa))
+            .ToList();
+        var sediu = CategorieFiscala.SediuSocialInLocuinta;
+        var in2025 = AmortizareService.Deductibil(1000m, sediu, false, reguli, new DateOnly(2025, 6, 30));
+        var in2027 = AmortizareService.Deductibil(1000m, sediu, false, reguli, new DateOnly(2027, 6, 30));
+        Console.WriteLine($"     MĂSURAT (IMO-V57/{eticheta}): {reguli.Count} reguli reale; sediu social în "
+            + $"locuință, neexclusiv — 2025: {in2025}, 2027: {in2027} (din 1.000 fiscal).");
+        Check($"IMO-V57 ({eticheta}) regulile REALE ale profilului, citite din bază, se aplică pe dată: pe "
+            + "privat amortizarea sediului social în locuință e nedeductibilă în 2025 (Legea 296/2023) și "
+            + "deductibilă 50 % din 2026; pe bugetar, unde nu există impozit pe profit și deci nicio regulă, "
+            + "deductibilul E fiscalul — aceeași funcție, două profiluri",
+            privat ? in2025 == 0m && in2027 == 500m : in2025 == 1000m && in2027 == 1000m);
+    }
+
+    // ── Curățenia finală ──────────────────────────────────────────────────────
+    using (var os = provider.CreateObjectSpace()) {
+        CurataImo(os);
+        var primaZi = Zi(5, 1);
+        var ultimaZi = Zi(12, 31);
+        Check($"IMO — curățenie finală ({eticheta}): nicio fișă, niciun rând de registru și nicio perioadă "
+            + "2027/5–12 rămasă din scenă",
+            !os.GetObjectsQuery<Imobilizare>().Any(f => f.NumarInventar.StartsWith(Marcaj))
+            && !os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An && p.Luna >= 5)
+            && !os.GetObjectsQuery<Document>().Any(d => d.Data >= primaZi && d.Data <= ultimaZi));
+    }
+}
+
+// Imobilizările parcurse prin CONTRACTUL feliei: `PifApply.LiniiSursa` →
+// `PifApply.Aplica` → `OperareApi` → `AmoApply.Previzualizeaza`/`Genereaza`/
+// `Citeste` (`Stale`) → revizuire → `Regenereaza` → `CasApply.Aplica` →
+// `ImobilizariApply.Fisa`/`Registru`. Endpoint-urile din host sunt transport
+// peste EXACT acest cod.
+//
+// Semantica de MOTOR (aritmetica, registrele, gardienii de operare) e acoperită
+// de blocul `E2E-IMO`; aici se probează UȘA. Blocul stă IMEDIAT după el, care
+// tocmai a purjat fereastra 05–12/2027 — precondiția de mai jos o re-măsoară, ca
+// mutarea blocului să iasă ca FAIL, nu ca cifre peste conținut străin.
+//
+// CE NU SE POATE PROBA AICI: gate-urile de acces. ObjectSpace-urile lui
+// ModelCheck sunt NESECURIZATE, deci nici `GardianEditare` (armat pe familia
+// securizată) și nici verdictele 403/404 ale ușii nu se aplică — de aceea
+// refuzul de ștergere al fișei se cere EXPLICIT gardianului, iar 404/403 au
+// proba lor în `nou/tools/ProbeHttp/refuzuri.ps1`, pe host viu.
+void VerificaImobilizariApi(bool privat) {
+    const string Marcaj = "E2E-API-IMO";
+    const int An = 2027;
+    var eticheta = privat ? "privat" : "bugetar";
+    var codTipF = privat ? "214" : "214.00.00";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+    // Marginile ferestrei ca VARIABILE: un apel de funcție locală n-are ce căuta
+    // într-un arbore de expresie (CS8110).
+    var primaZi = new DateOnly(An, 5, 1);
+    var ultimaZi = new DateOnly(An, 12, 31);
+    var septStart = new DateOnly(An, 9, 1);
+    var septEnd = new DateOnly(An, 9, 30);
+    using var os = provider.CreateObjectSpace();
+
+    // Purjă FIZICĂ (F13-D2) ÎNCRUCIȘATĂ, oglinda lui `CurataImo`: fereastra
+    // 05–12/2027 e a amândurora, iar rămășițele oricăruia ar fi măsurate de celălalt.
+    void CurataApiImo() {
+        var pj = new Purja(os);
+        var start = Zi(5, 1);
+        var sfarsit = Zi(12, 31);
+        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= start && d.Data <= sfarsit).ToList();
+        var docIds = docs.Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters()
+            .Where(f => f.NumarInventar.StartsWith(Marcaj) || f.NumarInventar.StartsWith("E2E-IMO")).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj) || r.Cod.StartsWith("E2E-IMO")).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<SursaFinantare>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodFunctional>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Proiect>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        var tipuriScena = os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters()
+            .Where(t => t.Cod.StartsWith(Marcaj)).Select(t => t.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<PoliticaAmortizare>().IgnoreQueryFilters()
+            .Where(p => tipuriScena.Contains(p.TipMaterialId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<TipMaterial>().IgnoreQueryFilters()
+            .Where(t => t.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An && p.Luna >= 5).ToList());
+        pj.Executa();
+    }
+    CurataApiImo();
+
+    var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+    var politicaF = tipF == null ? null
+        : os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == tipF.ID);
+    Check($"Api IMO ({eticheta}) — precondiție: tipul de clasă F al profilului are rând de politică de "
+        + "amortizare, iar fereastra 05–12/2027 e liberă (blocul `E2E-IMO` de dinainte tocmai a purjat-o). "
+        + "Dacă proba asta pică, blocul a fost mutat, iar cifrele de mai jos ar fi măsurate peste conținut străin",
+        tipF != null && politicaF != null
+        && !os.GetObjectsQuery<Imobilizare>().Any(f => f.NumarInventar.StartsWith("E2E"))
+        && !os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An && p.Luna >= 5)
+        && !os.GetObjectsQuery<Document>().Any(d => d.Data >= primaZi && d.Data <= ultimaZi));
+
+    // ── Scena ─────────────────────────────────────────────────────────────────
+    foreach (var luna in new[] { 5, 6, 7, 8, 9, 10, 11, 12 }) {
+        var p = os.CreateObject<PerioadaFiscala>();
+        p.An = An;
+        p.Luna = luna;
+        p.Inchisa = false;
+    }
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = Marcaj + "-FURN";
+    furnizor.Denumire = "Furnizor de imobilizări, ușa API";
+    furnizor.Tara = "RO";
+    var gestiune = os.CreateObject<Gestiune>();
+    gestiune.Cod = Marcaj + "-MAG";
+    gestiune.Denumire = "Gestiune probă, ușa API";
+    var unitate = os.CreateObject<UnitateInterna>();
+    unitate.Cod = Marcaj + "-UI";
+    unitate.Denumire = "Unitate probă, ușa API";
+    var codEc = os.CreateObject<CodEconomic>();
+    codEc.Cod = Marcaj + "-CE";
+    codEc.Denumire = "Cod economic probă, ușa API";
+    var sursaFin = os.CreateObject<SursaFinantare>();
+    sursaFin.Cod = Marcaj + "-SF";
+    sursaFin.Denumire = "Sursă de finanțare probă, ușa API";
+    var codFn = os.CreateObject<CodFunctional>();
+    codFn.Cod = Marcaj + "-CF";
+    codFn.Denumire = "Cod funcțional probă, ușa API";
+    var proiect = os.CreateObject<Proiect>();
+    proiect.Cod = Marcaj + "-PR";
+    proiect.Denumire = "Proiect probă, ușa API";
+    os.CommitChanges();
+
+    var fct = os.CreateObject<FacturaIntrare>();
+    fct.Numar = Marcaj + "-FCT";
+    fct.Data = Zi(5, 4);
+    fct.Predator = furnizor;
+    fct.Primitor = gestiune;
+    var linieFct = os.CreateObject<FacturaIntrareDetaliu>();
+    linieFct.Document = fct;
+    linieFct.TipMaterial = tipF;
+    linieFct.Cantitate = 1m;
+    linieFct.PretUnitar = 3600m;
+    linieFct.CodEconomicId = codEc.ID;
+    linieFct.SursaFinantareId = sursaFin.ID;
+    linieFct.CodFunctionalId = codFn.ID;
+    linieFct.ProiectId = proiect.ID;
+    os.CommitChanges();
+    var idLinieSursa = linieFct.ID;
+    OperareApi.Opereaza(os, fct.ID);
+
+    // Fișa se creează DIRECT pe ObjectSpace: nomenclatorul e pe OData, care nu se
+    // exersează in-process, iar gardianul ei are deja probă în `E2E-IMO`.
+    var fisa = os.CreateObject<Imobilizare>();
+    fisa.NumarInventar = Marcaj + "-1";
+    fisa.Denumire = "Fișă probă a ușii de imobilizări";
+    fisa.TipMaterialId = tipF.ID;
+    fisa.LocId = gestiune.ID;
+    // Pe planul bugetar contul de cheltuială cu amortizarea cere Cod economic
+    // (F26-r16, proba `IMO-V31c`); pe privat nimeni nu-l cere.
+    if (!privat)
+        fisa.CodEconomicId = codEc.ID;
+    os.CommitChanges();
+    var idFisa = fisa.ID;
+
+    // ── API-IMO-V1: prefill-ul liniei sursă ───────────────────────────────────
+    var inainte = PifApply.LiniiSursa(os, Zi(5, 1), Zi(5, 31), null, false);
+    var candidat = inainte.Candidati.FirstOrDefault(c => c.LinieId == idLinieSursa);
+    Console.WriteLine($"     MĂSURAT (API-IMO-V1/{eticheta}): {inainte.Candidati.Count} candidați, "
+        + $"linia scenei = {candidat?.Valoare} valoare / {candidat?.Consumat} consumat / {candidat?.Rest} rest; "
+        + $"mai sunt = {inainte.MaiSunt}.");
+    Check($"API-IMO-V1 ({eticheta}) `linii-sursa` propune linia de factură OPERATĂ de clasă de imobilizări cu "
+        + "restul ei neconsumat: prefill-ul punerii în funcțiune e 3.600, iar plafonul de pagină n-a fost atins",
+        candidat != null && candidat.Valoare == 3600m && candidat.Consumat == 0m && candidat.Rest == 3600m
+        && candidat.Numar == Marcaj + "-FCT" && candidat.PartenerId == furnizor.ID
+        && candidat.TipMaterialCod == codTipF && !inainte.MaiSunt);
+
+    // ── API-IMO-V2: agregatul cules, cu tipul SERVER-OWNED ────────────────────
+    var idPif = PifApply.Aplica(os, null, new PifWriteDto {
+        Data = Zi(5, 5),
+        PredatorId = unitate.ID,
+        PrimitorId = gestiune.ID,
+        Linii = {
+            new PifLinieWriteDto {
+                ImobilizareId = idFisa, Fel = "Intrare", LinieSursaId = idLinieSursa, Valoare = 3600m,
+                Metoda = "Liniara", DurataLuni = 36,
+                MetodaFiscala = "Liniara", DurataFiscalaLuni = 36,
+                CategorieFiscala = "Standard", UtilizareExclusiva = true
+            }
+        }
+    });
+    var citPif = PifApply.Citeste(os, idPif);
+    Console.WriteLine($"     MĂSURAT (API-IMO-V2/{eticheta}): {citPif.Linii.Count} linii, total {citPif.Total}, "
+        + $"fel {citPif.Linii[0].Fel}, tip {citPif.Linii[0].TipMaterialCod}, "
+        + $"sursă {citPif.Linii[0].LinieSursaNumar}.");
+    Check($"API-IMO-V2 ({eticheta}) PIF-ul cules prin `Aplica`: tipul liniei e al FIȘEI (payload-ul n-are "
+        + "câmpul — contul de imobilizare a intrat deja în politică și în note), cantitatea e 1, iar parametrii "
+        + "de amortizare ajung pe linie ca fapte datate",
+        citPif is { Linii.Count: 1, Total: 3600m, PoateEdita: true, PoateOpera: true }
+        && citPif.Linii[0].TipMaterialId == tipF.ID && citPif.Linii[0].Fel == "Intrare"
+        && citPif.Linii[0].NumarInventar == Marcaj + "-1"
+        && citPif.Linii[0].LinieSursaId == idLinieSursa
+        && citPif.Linii[0].DurataLuni == 36 && citPif.Linii[0].Metoda == "Liniara"
+        && citPif.Linii[0].CategorieFiscala == "Standard");
+
+    // ── API-IMO-V3: plafonul liniei sursă, văzut de panou ─────────────────────
+    var dupaPif = PifApply.LiniiSursa(os, Zi(5, 1), Zi(5, 31), null, false);
+    var cuToate = PifApply.LiniiSursa(os, Zi(5, 1), Zi(5, 31), null, true);
+    var epuizat = cuToate.Candidati.FirstOrDefault(c => c.LinieId == idLinieSursa);
+    Console.WriteLine($"     MĂSURAT (API-IMO-V3/{eticheta}): fără `toate` = "
+        + $"{dupaPif.Candidati.Count(c => c.LinieId == idLinieSursa)} apariții; cu `toate` = "
+        + $"{epuizat?.Consumat} consumat / {epuizat?.Rest} rest.");
+    Check($"API-IMO-V3 ({eticheta}) după punerea în funcțiune linia sursă e EPUIZATĂ: dispare din panou, iar "
+        + "cu `toate=true` se vede cu restul 0 — aceeași aritmetică a consumului ca gardianul de operare "
+        + "(`ConsumatPeLinieSursa`), nu o a doua formulă",
+        !dupaPif.Candidati.Any(c => c.LinieId == idLinieSursa)
+        && epuizat != null && epuizat.Consumat == 3600m && epuizat.Rest == 0m);
+
+    OperareApi.Opereaza(os, idPif);
+
+    // ── API-IMO-V4: luna punerii în funcțiune nu se amortizează ───────────────
+    var prevMai = AmoApply.Previzualizeaza(os, An, 5);
+    Console.WriteLine($"     MĂSURAT (API-IMO-V4/{eticheta}): motiv {prevMai.Motiv} "
+        + $"(„{prevMai.MotivEticheta}”), {prevMai.Linii.Count} linii.");
+    Check($"API-IMO-V4 ({eticheta}) previzualizarea lunii PIF iese `FaraFise`, cu eticheta din model lângă "
+        + "numele membrului — ecranul n-o scrie din cod (57a)",
+        prevMai.Motiv == nameof(MotivNegenerare.FaraFise)
+        && !string.IsNullOrWhiteSpace(prevMai.MotivEticheta) && prevMai.MotivEticheta != prevMai.Motiv
+        && prevMai.Linii.Count == 0 && prevMai.TotalContabil == 0m && prevMai.BlocantId == null);
+
+    // ── API-IMO-V5: previzualizarea și generarea lunii următoare ──────────────
+    var cotaInitiala = Math.Round(3600m / 36m, 2);
+    var prevIunie = AmoApply.Previzualizeaza(os, An, 6);
+    var linieIunie = prevIunie.Linii.FirstOrDefault();
+    Console.WriteLine($"     MĂSURAT (API-IMO-V5/{eticheta}): {prevIunie.Linii.Count} linii, "
+        + $"contabil {linieIunie?.Contabil}, conturi {linieIunie?.ContCheltuialaSimbol} = "
+        + $"{linieIunie?.ContAmortizareSimbol}, loc „{linieIunie?.LocDenumire}”, "
+        + $"cod economic {(linieIunie?.CodEconomicId == null ? "<niciunul>" : "pus")}.");
+    Check($"API-IMO-V5 ({eticheta}) previzualizarea lunii dă cele TREI cifre, conturile REZOLVATE din politică "
+        + "(cu simbolurile lor, ca ecranul să nu le afirme din cod) și locul fișei; totalurile sunt pe server (42c)",
+        prevIunie.Motiv == null && prevIunie.Linii.Count == 1
+        && linieIunie.Contabil == cotaInitiala && linieIunie.Fiscal == cotaInitiala
+        && linieIunie.Deductibil == cotaInitiala
+        && linieIunie.ContCheltuialaId == politicaF.ContCheltuialaAmortizareId
+        && linieIunie.ContAmortizareId == politicaF.ContAmortizareId
+        && !string.IsNullOrWhiteSpace(linieIunie.ContCheltuialaSimbol)
+        && !string.IsNullOrWhiteSpace(linieIunie.ContAmortizareSimbol)
+        && linieIunie.LocId == gestiune.ID && linieIunie.LocDenumire == gestiune.Denumire
+        && linieIunie.CodEconomicId == (privat ? (Guid?)null : codEc.ID)
+        && prevIunie.TotalContabil == cotaInitiala && prevIunie.TotalFiscal == cotaInitiala
+        && prevIunie.TotalDeductibil == cotaInitiala);
+
+    var generatIunie = AmoApply.Genereaza(os,
+        new GenerareAmoRequestDto { An = An, Luna = 6, UnitateId = unitate.ID });
+    if (generatIunie.DocumentId == null)
+        throw new OperareException($"Scena API-IMO: iunie n-a fost generată ({generatIunie.Motiv}).");
+    var idAmoIunie = generatIunie.DocumentId.Value;
+    var citIunie = AmoApply.Citeste(os, idAmoIunie);
+    Check($"API-IMO-V6 ({eticheta}) `genereaza` scrie draftul lunii, iar `Citeste` îl dă cu `Stale: false` — "
+        + "verdictul anti-stale e cel al GARDIANULUI (`LiniileCorespund`), nu o formulă geamănă",
+        citIunie is { Stale: false, Linii.Count: 1, PoateOpera: true, PoateRegenera: true, An: An, Luna: 6 }
+        && citIunie.TotalContabil == cotaInitiala
+        && citIunie.UnitateId == unitate.ID
+        && citIunie.Linii[0].ImobilizareId == idFisa);
+
+    // ── API-IMO-V7: un eveniment operat DUPĂ generare face draftul STALE ─────
+    // Revizuirea e datată în MAI, nu în iunie: parametrii noi curg din luna de
+    // DUPĂ eveniment (F26-D7, formula observată în Flax), deci o revizuire din
+    // iunie ar fi schimbat iulie, nu luna al cărei draft îl probăm.
+    var idRevizuire = PifApply.Aplica(os, null, new PifWriteDto {
+        Data = Zi(5, 20),
+        PredatorId = unitate.ID,
+        PrimitorId = gestiune.ID,
+        Linii = {
+            new PifLinieWriteDto {
+                ImobilizareId = idFisa, Fel = "Revizuire", Valoare = 0m,
+                Metoda = "Liniara", DurataLuni = 48,
+                MetodaFiscala = "Liniara", DurataFiscalaLuni = 48,
+                CategorieFiscala = "Standard", UtilizareExclusiva = true
+            }
+        }
+    });
+    OperareApi.Opereaza(os, idRevizuire);
+    var dupaRevizuire = AmoApply.Citeste(os, idAmoIunie);
+    Console.WriteLine($"     MĂSURAT (API-IMO-V7/{eticheta}): după revizuirea duratei la 48, draftul lunii "
+        + $"are Stale = {dupaRevizuire.Stale}.");
+    Check($"API-IMO-V7 ({eticheta}) un eveniment operat DUPĂ generare face draftul STALE, iar ecranul o află "
+        + "ÎNAINTE de a apăsa butonul — cifra lunii se recalculează din registru la fiecare citire, nu se "
+        + "citește de pe document",
+        dupaRevizuire.Stale == true);
+    CheckRefuza($"API-IMO-V8 ({eticheta}) operarea unui draft stale e refuzată de gardian — `Stale` și refuzul "
+        + "citesc ACELAȘI criteriu",
+        () => OperareApi.Opereaza(os, idAmoIunie));
+
+    // ── API-IMO-V9: regenerarea, cu cota nouă ────────────────────────────────
+    var cotaRevizuita = Math.Round(3600m / 48m, 2);
+    var regenerat = AmoApply.Regenereaza(os, idAmoIunie);
+    if (regenerat.DocumentId == null)
+        throw new OperareException($"Scena API-IMO: regenerarea lui iunie n-a produs document ({regenerat.Motiv}).");
+    var idAmoIunie2 = regenerat.DocumentId.Value;
+    var citRegen = AmoApply.Citeste(os, idAmoIunie2);
+    Console.WriteLine($"     MĂSURAT (API-IMO-V9/{eticheta}): draft nou {idAmoIunie2 != idAmoIunie}, "
+        + $"contabil {citRegen.TotalContabil}, Stale = {citRegen.Stale}; draftul vechi mai există: "
+        + $"{AmoApply.Citeste(os, idAmoIunie) != null}.");
+    Check($"API-IMO-V9 ({eticheta}) `regenereaza` calculează ÎNTÂI și șterge după (un refuz ar fi lăsat "
+        + "draftul vechi intact): draftul nou poartă cota revizuită și nu mai e stale, iar cel vechi a dispărut",
+        idAmoIunie2 != idAmoIunie && citRegen.Stale == false
+        && citRegen.TotalContabil == cotaRevizuita
+        && AmoApply.Citeste(os, idAmoIunie) == null);
+
+    OperareApi.Opereaza(os, idAmoIunie2);
+    Check($"API-IMO-V10 ({eticheta}) după operare `Stale` e `null`, nu `false`: cifra e deja în registru, iar "
+        + "întrebarea n-ar mai avea sens",
+        AmoApply.Citeste(os, idAmoIunie2).Stale == null);
+
+    // ── API-IMO-V11: luna următoare, raportul lunii ocupate, refuzul regenerării ──
+    // Cota e FIXATĂ la ultimul eveniment (F26-D7): iulie o repetă pe a lui iunie.
+    var cotaIulie = cotaRevizuita;
+    var generatIulie = AmoApply.Genereaza(os,
+        new GenerareAmoRequestDto { An = An, Luna = 7, UnitateId = unitate.ID });
+    if (generatIulie.DocumentId == null)
+        throw new OperareException($"Scena API-IMO: iulie n-a fost generată ({generatIulie.Motiv}).");
+    var idAmoIulie = generatIulie.DocumentId.Value;
+    var citIulie = AmoApply.Citeste(os, idAmoIulie);
+    OperareApi.Opereaza(os, idAmoIulie);
+    var iarasiIulie = AmoApply.Genereaza(os,
+        new GenerareAmoRequestDto { An = An, Luna = 7, UnitateId = unitate.ID });
+    Console.WriteLine($"     MĂSURAT (API-IMO-V11/{eticheta}): iulie = {citIulie.TotalContabil}; a doua "
+        + $"generare = {iarasiIulie.Motiv} pe documentul {iarasiIulie.BlocantId == idAmoIulie}.");
+    Check($"API-IMO-V11 ({eticheta}) luna următoare repetă cota FIXATĂ la ultimul eveniment, iar o a doua "
+        + "`genereaza` pe aceeași lună e un RAPORT (`AmortizareVie` + documentul blocant), nu o eroare și nu "
+        + "un al doilea draft",
+        citIulie.TotalContabil == cotaIulie
+        && iarasiIulie.DocumentId == null
+        && iarasiIulie.Motiv == nameof(MotivNegenerare.AmortizareVie)
+        && iarasiIulie.BlocantId == idAmoIulie
+        && !string.IsNullOrWhiteSpace(iarasiIulie.MotivEticheta));
+    CheckRefuza($"API-IMO-V12 ({eticheta}) `regenereaza` pe o amortizare OPERATĂ e refuzată: ar fi însemnat "
+        + "ștergerea unor rânduri de registru",
+        () => AmoApply.Regenereaza(os, idAmoIulie));
+
+    // ── API-IMO-V13: ieșirea, cu liniile produse de server ───────────────────
+    var cumulat = cotaRevizuita + cotaIulie;
+    var ramas = 3600m - cumulat;
+    var idCas = CasApply.Aplica(os, null, new CasWriteDto {
+        Data = Zi(8, 20), Cauza = "Casare",
+        PredatorId = gestiune.ID, PrimitorId = unitate.ID,
+        Fise = { idFisa }
+    });
+    var citCas = CasApply.Citeste(os, idCas);
+    Console.WriteLine($"     MĂSURAT (API-IMO-V13/{eticheta}): {citCas.Linii.Count} linii — "
+        + string.Join("; ", citCas.Linii.Select(l => $"{l.Fel} {l.Valoare} "
+            + $"({l.ContDebitSimbol} = {l.ContCreditSimbol})")) + $"; total {citCas.Total}.");
+    Check($"API-IMO-V13 ({eticheta}) CAS-ul se culege ca MULȚIME DE FIȘE, iar cele două note le produce "
+        + "serverul din registru și din politică: cumulatul pe contul de amortizare, restul pe cheltuiala cu "
+        + "cedarea, ambele contra contului implicit al tipului; nimic din ele nu e alegerea operatorului",
+        citCas is { Linii.Count: 2, Cauza: "Casare", Fise.Count: 1 }
+        && citCas.Total == cumulat + ramas
+        && citCas.Linii.Any(l => l.Fel == nameof(FelLinieIesire.AmortizareCumulata) && l.Valoare == cumulat
+            && l.ContDebitId == politicaF.ContAmortizareId && l.ContCreditId == tipF.ContImplicitId)
+        && citCas.Linii.Any(l => l.Fel == nameof(FelLinieIesire.ValoareRamasa) && l.Valoare == ramas
+            && l.ContDebitId == politicaF.ContCheltuialaCedareId && l.ContCreditId == tipF.ContImplicitId));
+    OperareApi.Opereaza(os, idCas);
+
+    // ── API-IMO-V14: fișa la DATĂ ────────────────────────────────────────────
+    var fisaIulie = ImobilizariApply.Fisa(os, idFisa, Zi(7, 31));
+    Console.WriteLine($"     MĂSURAT (API-IMO-V14/{eticheta}): {fisaIulie.Randuri.Count} rânduri "
+        + $"({string.Join(", ", fisaIulie.Randuri.Select(r => $"{r.DocumentTip}/{r.Fel}"))}); situația la "
+        + $"31.07 = {fisaIulie.Situatie.Valoare} brut, {fisaIulie.Situatie.Amortizare} cumulat, "
+        + $"{fisaIulie.Situatie.NetContabil} net, {fisaIulie.Situatie.Luni} luni, durata "
+        + $"{fisaIulie.Situatie.DurataLuni}; starea fișei = {fisaIulie.Stare}.");
+    Check($"API-IMO-V14 ({eticheta}) fișa e situația la DATĂ plus rândurile ≤ dată, cu documentul fiecărui "
+        + "rând identificat prin codul ANCOREI (vocabularul de rutare al clientului): ieșirea din august nu "
+        + "intră în cifrele lui 31.07, deși STAREA fișei e deja cea de azi",
+        fisaIulie.Randuri.Count == 4
+        && fisaIulie.Randuri[0].DocumentTip == "PIF" && fisaIulie.Randuri[0].Fel == nameof(FelMiscareImobilizare.Intrare)
+        && fisaIulie.Randuri.Count(r => r.DocumentTip == "AMO") == 2
+        && fisaIulie.Randuri.Any(r => r.Fel == nameof(FelMiscareImobilizare.Revizuire) && r.DurataLuni == 48)
+        && fisaIulie.Situatie.Valoare == 3600m && fisaIulie.Situatie.Amortizare == cumulat
+        && fisaIulie.Situatie.NetContabil == ramas && fisaIulie.Situatie.Luni == 2
+        && fisaIulie.Situatie.DurataLuni == 48 && fisaIulie.Situatie.Metoda == nameof(MetodaAmortizare.Liniara)
+        && fisaIulie.DurataFiscalaMinLuni == null && fisaIulie.DurataFiscalaMaxLuni == null
+        && fisaIulie.Stare == nameof(StareImobilizare.Iesita)
+        && fisaIulie.NumarInventar == Marcaj + "-1" && fisaIulie.TipMaterialCod == codTipF
+        && fisaIulie.LocDenumire == gestiune.Denumire);
+
+    var fisaFinal = ImobilizariApply.Fisa(os, idFisa, Zi(12, 31));
+    Check($"API-IMO-V15 ({eticheta}) după ieșire situația fișei e ZERO pe toate coloanele — rândul `Iesire` "
+        + "anulează exact ce cumulaseră evenimentele",
+        fisaFinal.Situatie.Valoare == 0m && fisaFinal.Situatie.Amortizare == 0m
+        && fisaFinal.Situatie.NetContabil == 0m && fisaFinal.Situatie.AmortizareDeductibila == 0m
+        && fisaFinal.Randuri.Count == 5 && fisaFinal.DataIesire == Zi(8, 20));
+
+    // ── API-IMO-V16: registrul, cu totalurile pe server ──────────────────────
+    var registru = ImobilizariApply.Registru(os, Zi(7, 31));
+    var randFisa = registru.Linii.FirstOrDefault(l => l.ImobilizareId == idFisa);
+    Console.WriteLine($"     MĂSURAT (API-IMO-V16/{eticheta}): {registru.Linii.Count} fișe în registru la "
+        + $"31.07; linia scenei = {randFisa?.Brut} brut / {randFisa?.AmortizareCumulata} cumulat / "
+        + $"{randFisa?.NetContabil} net / {randFisa?.Luni} luni.");
+    Check($"API-IMO-V16 ({eticheta}) registrul dă o linie per fișă pusă în funcțiune, calculată dintr-o "
+        + "SINGURĂ citire a registrului, iar totalurile plicului sunt ale serverului — TS nu adună (42c)",
+        randFisa != null && randFisa.Brut == 3600m && randFisa.BrutFiscal == 3600m
+        && randFisa.AmortizareCumulata == cumulat && randFisa.AmortizareFiscalaCumulata == cumulat
+        && randFisa.DeductibilCumulat == cumulat
+        && randFisa.NetContabil == ramas && randFisa.NetFiscal == ramas && randFisa.Luni == 2
+        && randFisa.NumarInventar == Marcaj + "-1" && randFisa.LocDenumire == gestiune.Denumire
+        && registru.TotalBrut == registru.Linii.Sum(l => l.Brut)
+        && registru.TotalNetContabil == registru.Linii.Sum(l => l.NetContabil)
+        && registru.TotalDeductibilCumulat == registru.Linii.Sum(l => l.DeductibilCumulat));
+
+    // ── API-IMO-V17: listele, cu agregatele în SQL ───────────────────────────
+    var randPif = PifApply.Lista(os).Single(d => d.Id == idPif);
+    var randCas = CasApply.Lista(os).Single(d => d.Id == idCas);
+    var randAmo = AmoApply.Lista(os).Single(d => d.Id == idAmoIulie);
+    Console.WriteLine($"     MĂSURAT (API-IMO-V17/{eticheta}): PIF {randPif.Total}/{randPif.NrLinii} linii; "
+        + $"CAS {randCas.Total}/{randCas.NrFise} fișe; AMO {randAmo.TotalContabil}/{randAmo.An}-{randAmo.Luna}.");
+    Check($"API-IMO-V17 ({eticheta}) listele își iau cifrele prin JOIN pe agregat, cu starea și cauza traduse "
+        + "în SQL (`CASE`) ca filtrarea și sortarea să rămână server-side; luna AMO iese din `Data`, nu din "
+        + "coloane persistate",
+        randPif is { Total: 3600m, NrLinii: 1, Stare: "Operat" }
+        && randCas is { NrFise: 1, Cauza: "Casare", Stare: "Operat" } && randCas.Total == cumulat + ramas
+        && randAmo is { An: An, Luna: 7, Stare: "Operat", NrLinii: 1 }
+        && randAmo.TotalContabil == cotaIulie);
+
+    // ── API-IMO-V18: refuzurile ușii ─────────────────────────────────────────
+    CheckRefuza($"API-IMO-V18 ({eticheta}) PUT pe un PIF OPERAT ⇒ refuz de DOMENIU: agregatul nu se mai "
+        + "modifică, se anulează sau se stornează",
+        () => PifApply.Aplica(os, idPif, new PifWriteDto {
+            Data = Zi(5, 5), PredatorId = unitate.ID, PrimitorId = gestiune.ID,
+            Linii = {
+                new PifLinieWriteDto {
+                    ImobilizareId = idFisa, Fel = "Intrare", Valoare = 1m,
+                    Metoda = "Liniara", DurataLuni = 36, MetodaFiscala = "Liniara", DurataFiscalaLuni = 36,
+                    CategorieFiscala = "Standard", UtilizareExclusiva = true
+                }
+            }
+        }));
+    CheckRefuza($"API-IMO-V19 ({eticheta}) un `Fel` de linie care nu e membru de enum ⇒ refuz la GRANIȚĂ, "
+        + "înaintea oricărui `CreateObject`, cu valorile acceptate enumerate",
+        () => PifApply.Aplica(os, null, new PifWriteDto {
+            Data = Zi(9, 1), PredatorId = unitate.ID, PrimitorId = gestiune.ID,
+            Linii = { new PifLinieWriteDto { ImobilizareId = idFisa, Fel = "Casare", Valoare = 1m } }
+        }));
+
+    var tipFaraPolitica = os.CreateObject<TipMaterial>();
+    tipFaraPolitica.Cod = Marcaj + "-TIPF";
+    tipFaraPolitica.Denumire = "Tip de imobilizări fără politică (ușa CAS)";
+    tipFaraPolitica.ClasaId = tipF.ClasaId;
+    tipFaraPolitica.ContImplicitId = tipF.ContImplicitId;
+    os.CommitChanges();
+    var fisaFaraPolitica = os.CreateObject<Imobilizare>();
+    fisaFaraPolitica.NumarInventar = Marcaj + "-FP";
+    fisaFaraPolitica.Denumire = "Fișă pe un tip fără politică de amortizare";
+    fisaFaraPolitica.TipMaterialId = tipFaraPolitica.ID;
+    fisaFaraPolitica.LocId = gestiune.ID;
+    os.CommitChanges();
+    var idFaraPolitica = fisaFaraPolitica.ID;
+    var refuzFaraPolitica = Refuz(() => CasApply.Aplica(os, null, new CasWriteDto {
+        Data = Zi(9, 10), Cauza = "Casare", PredatorId = gestiune.ID, PrimitorId = unitate.ID,
+        Fise = { idFaraPolitica }
+    }));
+    Console.WriteLine($"     MĂSURAT (API-IMO-V20/{eticheta}): „{refuzFaraPolitica?.Split('\n')[0] ?? "ACCEPTAT"}”.");
+    Check($"API-IMO-V20 ({eticheta}) CAS pe o fișă al cărei tip n-are politică ⇒ refuz la CULEGERE, cu ACELAȘI "
+        + "text ca gardianul de operare: conturile ieșirii vin exclusiv din politică, iar ecranul află motivul "
+        + "înainte de a apăsa butonul",
+        refuzFaraPolitica != null
+        && refuzFaraPolitica.Contains("n-are rând de politică de amortizare")
+        && refuzFaraPolitica.Contains(Marcaj + "-FP"));
+    CheckRefuza($"API-IMO-V21 ({eticheta}) aceeași fișă de două ori în `Fise` ⇒ refuz de DOMENIU (mulțimea e "
+        + "reconciliată server-side, deci un id repetat ar fi trecut tăcut ca unul singur)",
+        () => CasApply.Aplica(os, null, new CasWriteDto {
+            Data = Zi(9, 10), Cauza = "Casare", PredatorId = gestiune.ID, PrimitorId = unitate.ID,
+            Fise = { idFaraPolitica, idFaraPolitica }
+        }));
+    os.CommitChanges();
+    Check($"API-IMO-V22 ({eticheta}) după refuzuri, ObjectSpace-ul n-a rămas cu obiecte pe jumătate "
+        + "construite, pe care commit-ul următor le-ar fi persistat: niciun antet fără linii în septembrie, "
+        + "nicio linie de ieșire pe fișa refuzată",
+        !os.GetObjectsQuery<PunereInFunctiune>().Any(d => d.Data >= septStart && d.Data <= septEnd)
+        && !os.GetObjectsQuery<IesireImobilizare>().Any(d => d.Data >= septStart && d.Data <= septEnd)
+        && !os.GetObjectsQuery<IesireImobilizareDetaliu>().Any(l => l.ImobilizareId == idFaraPolitica));
+
+    // Gardianul fișei: ObjectSpace PROPRIU, aruncat — ușa OData nu dublează regula,
+    // o ridică `GardianEditare` pe ușa comună.
+    using (var osGardian = provider.CreateObjectSpace()) {
+        osGardian.Delete(osGardian.GetObjectByKey<Imobilizare>(idFisa));
+        string refuzStergere = null;
+        try { GardianEditare.Verifica(osGardian); }
+        catch (OperareException e) { refuzStergere = e.Message; }
+        Console.WriteLine($"     MĂSURAT (API-IMO-V23/{eticheta}): ștergerea unei fișe mișcate → "
+            + $"„{refuzStergere?.Split('\n')[0] ?? "ACCEPTATĂ"}”.");
+        Check($"API-IMO-V23 ({eticheta}) ștergerea unei fișe care a fost mișcată e refuzată de GARDIAN, pe ușa "
+            + "comună — CRUD-ul nomenclatorului stă pe OData tocmai fiindcă regula nu se rescrie per ușă",
+            refuzStergere != null && refuzStergere.Contains("se șterge doar cât e Nouă"));
+    }
+
+    // ── Curățenia finală ─────────────────────────────────────────────────────
+    CurataApiImo();
+    Check($"Api IMO ({eticheta}): scena nu lasă urme — fișele, documentele, registrele și perioadele ei sunt "
+        + "purjate FIZIC, iar fereastra rămâne liberă pentru blocul următor și pentru Import1C",
+        !os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters().Any(f => f.NumarInventar.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters().Any(r => r.Cod.StartsWith(Marcaj))
+        && !os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters().Any(p => p.An == An && p.Luna >= 5)
+        && !os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Any(d => d.Data >= primaZi && d.Data <= ultimaZi)
+        && !os.GetObjectsQuery<RegistruImobilizari>().IgnoreQueryFilters()
+            .Any(r => r.Data >= primaZi && r.Data <= ultimaZi));
+}
+
 // Declarația vamală parcursă prin CONTRACTUL feliei: `Aplica` (creare cu
 // facturi) → `Citeste` → `FacturiCandidate` → `Aplica` (schimbă legăturile) →
 // `OperareApi` → refuzul PUT-ului pe document operat → storno. Endpoint-urile
@@ -22843,13 +29396,13 @@ void VerificaApiDvi() {
     var impTi21 = os.FirstOrDefault<TipTva>(t => t.Cod == "IMPTI21");
     var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
     var tip628 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
-    var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+    var tip626 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "626");
     var cont446 = os.FirstOrDefault<Cont>(c => c.Simbol == "446");
     Check("Api DVI — precondiție: tipurile de import ale profilului există, iar FEBRUARIE 2026 e liberă "
         + "(blocul `E2E-DVI` de dinainte tocmai a purjat-o). Dacă proba asta pică, blocul a fost mutat "
         + "înaintea lui, iar cifrele de mai jos ar fi măsurate peste conținut străin",
         imp != null && imp21 != null && impTi21 != null && n21 != null
-        && tip628 != null && tipTrz != null && cont446 != null
+        && tip628 != null && tip626 != null && cont446 != null
         && !os.GetObjectsQuery<Dvi>().Any()
         && !os.GetObjectsQuery<Document>().Any(d => d.Data >= febStart && d.Data <= febEnd));
 
@@ -22904,9 +29457,11 @@ void VerificaApiDvi() {
 
     var idFf1 = FacturaOperata("-FF1", extern1, new DateOnly(2026, 2, 5), imp, (tip628, 1000m));
     // Două tipuri pe aceeași factură, cu dominant CLAR: `TipMaterialSugeratId` e
-    // tipul cu Σ `Valoare` maximă, nu primul rând.
+    // tipul cu Σ `Valoare` maximă, nu primul rând. Amândouă sunt Servicii, deci
+    // amândouă au regulă de contare pe FCT: o linie care n-ar posta nimic e
+    // pierdere tăcută de valoare, iar declarantul o refuză (B-r10).
     var idFf2 = FacturaOperata("-FF2", extern1, new DateOnly(2026, 2, 6), imp,
-        (tipTrz, 100m), (tip628, 600m));
+        (tip626, 100m), (tip628, 600m));
     // Tot pe `IMP` (cotă 0), inclusiv furnizorii RO/UE: scena n-are nevoie de
     // TVA ca să probeze filtrul de CLASĂ FISCALĂ, iar o mișcare pe 4426 în
     // februarie ar polua soldurile CUMULATE ale blocurilor de închidere dacă o
@@ -22997,7 +29552,7 @@ void VerificaApiDvi() {
         && !candidatiImplicit.Any(c => c.FacturaId == idFf1 || c.FacturaId == idFf3
             || c.FacturaId == idFf4 || c.FacturaId == idFf5));
     Check("Api DVI: candidatul poartă furnizorul, totalul brut al facturii și TIPUL DOMINANT al liniilor "
-        + "ei (Σ `Valoare` maximă — 628 cu 600 bate TRZ cu 100), ca linia nouă a declarației să nu ceară "
+        + "ei (Σ `Valoare` maximă — 628 cu 600 bate 626 cu 100), ca linia nouă a declarației să nu ceară "
         + "un lookup pe care serverul îl poate răspunde",
         ff2.Numar == Marcaj + "-FF2" && ff2.PartenerId == extern1.ID
         && ff2.PartenerDenumire == extern1.Denumire
@@ -23150,4 +29705,3248 @@ void VerificaApiDvi() {
         && !os.GetObjectsQuery<DviFactura>().IgnoreQueryFilters().Any()
         && !os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
             .Any(r => r.Data >= febStart && r.Data <= febEnd));
+}
+
+// Probele review-ului advers al feliei 26 (`IMO-R*`, decizia 87). Scena stă în 2028/1–12,
+// în afara ferestrei 2027/5–12 a blocurilor `E2E-IMO` / `E2E-API-IMO`.
+void VerificaReviewF26(bool privat) {
+    const string Marcaj = "RVW-F26";
+    const int An = 2028;
+    var eticheta = privat ? "privat" : "bugetar";
+    var codTipF = privat ? "214" : "214.00.00";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+    string Refuz(Action actiune) {
+        try { actiune(); return null; }
+        catch (OperareException e) { return e.Message; }
+    }
+    string Prima(string mesaj) => mesaj?.Split('\n')[0] ?? "<ACCEPTAT>";
+
+    // Purja documentelor și a fișelor scenei (între probe); scena de repartitori/perioade rămâne.
+    void CurataDocumente(IObjectSpace os) {
+        var pj = new Purja(os);
+        var start = Zi(1, 1);
+        var sfarsit = Zi(12, 31);
+        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= start && d.Data <= sfarsit).ToList();
+        var docIds = docs.Select(d => d.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Imobilizare>().IgnoreQueryFilters()
+            .Where(f => f.NumarInventar.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+    void Curata(IObjectSpace os) {
+        CurataDocumente(os);
+        var pj = new Purja(os);
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).ToList());
+        pj.Executa();
+    }
+
+    using (var os = provider.CreateObjectSpace())
+        Curata(os);
+
+    // ── Scena comună: perioadele 2028, unitatea, locul, un centru de cost, codul economic ──
+    Guid idUnitate, idGestiune, idCentru, idCodEc, idTipF, idPolitica;
+    using (var os = provider.CreateObjectSpace()) {
+        Check($"IMO-R0 ({eticheta}) precondiție: 2028 e liber (nicio perioadă, niciun document) — altfel "
+            + "cifrele de mai jos s-ar măsura peste conținut străin",
+            !os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An)
+            && !os.GetObjectsQuery<Document>().Any(d => d.Data >= new DateOnly(An, 1, 1)
+                && d.Data <= new DateOnly(An, 12, 31)));
+        for (var luna = 1; luna <= 12; luna++) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+            p.Inchisa = false;
+        }
+        var unitate = os.CreateObject<UnitateInterna>();
+        unitate.Cod = Marcaj + "-UI";
+        unitate.Denumire = "Unitate review F26";
+        var gestiune = os.CreateObject<Gestiune>();
+        gestiune.Cod = Marcaj + "-MAG";
+        gestiune.Denumire = "Gestiune review F26";
+        var centru = os.CreateObject<Gestiune>();
+        centru.Cod = Marcaj + "-CC";
+        centru.Denumire = "Centru de cost review F26";
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-CE";
+        codEc.Denumire = "Cod economic review F26";
+        os.CommitChanges();
+        idUnitate = unitate.ID;
+        idGestiune = gestiune.ID;
+        idCentru = centru.ID;
+        idCodEc = codEc.ID;
+        var tipF = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipF);
+        idTipF = tipF.ID;
+        idPolitica = os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == tipF.ID).ID;
+    }
+
+    Imobilizare Fisa(IObjectSpace os, string sufix) {
+        var f = os.CreateObject<Imobilizare>();
+        f.NumarInventar = Marcaj + "-" + sufix;
+        f.Denumire = "Fișă review " + sufix;
+        f.TipMaterialId = idTipF;
+        f.LocId = idGestiune;
+        if (!privat)
+            f.CodEconomicId = idCodEc;
+        return f;
+    }
+    PunereInFunctiune Pif(IObjectSpace os, DateOnly data) {
+        var p = os.CreateObject<PunereInFunctiune>();
+        p.Data = data;
+        p.PredatorId = idUnitate;
+        p.PrimitorId = idGestiune;
+        return p;
+    }
+    PunereInFunctiuneDetaliu LiniePif(IObjectSpace os, PunereInFunctiune pif, Guid fisaId, FelLiniePif fel,
+            decimal valoare) {
+        var l = os.CreateObject<PunereInFunctiuneDetaliu>();
+        l.Document = pif;
+        l.ImobilizareId = fisaId;
+        l.TipMaterialId = idTipF;
+        l.Fel = fel;
+        l.Valoare = valoare;
+        l.Cantitate = 1m;
+        return l;
+    }
+    void Parametri(PunereInFunctiuneDetaliu l, int durata) {
+        l.Metoda = MetodaAmortizare.Liniara;
+        l.DurataLuni = durata;
+        l.MetodaFiscala = MetodaAmortizare.Liniara;
+        l.DurataFiscalaLuni = durata;
+        l.CategorieFiscala = CategorieFiscala.Standard;
+        l.UtilizareExclusiva = true;
+    }
+    PunereInFunctiuneDetaliu Intrare(IObjectSpace os, PunereInFunctiune pif, Guid fisaId, decimal valoare,
+            int durata) {
+        var l = LiniePif(os, pif, fisaId, FelLiniePif.Intrare, valoare);
+        Parametri(l, durata);
+        return l;
+    }
+    AmortizareLunara Amo(IObjectSpace os, int luna) {
+        var r = AmortizareService.Incearca(os, An, luna, idUnitate);
+        if (r.Document == null)
+            throw new OperareException($"Scena review: luna {luna:00}/{An} n-a fost generată ({r.Motiv}).");
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, r.Document);
+        return r.Document;
+    }
+    IesireImobilizare Cas(IObjectSpace os, DateOnly data, params Guid[] fise) {
+        var politica = os.GetObjectByKey<PoliticaAmortizare>(idPolitica);
+        var cas = os.CreateObject<IesireImobilizare>();
+        cas.Data = data;
+        cas.Cauza = CauzaIesire.Casare;
+        cas.PredatorId = idGestiune;
+        cas.PrimitorId = idUnitate;
+        foreach (var fisaId in fise) {
+            var fisa = os.GetObjectByKey<Imobilizare>(fisaId);
+            foreach (var linie in AmortizareService.LiniiIesire(os, fisaId, data, politica)) {
+                var l = os.CreateObject<IesireImobilizareDetaliu>();
+                l.Document = cas;
+                l.ImobilizareId = fisaId;
+                l.TipMaterialId = idTipF;
+                l.Fel = linie.Fel;
+                l.Valoare = linie.Valoare;
+                l.Cantitate = 1m;
+                l.ContDebitId = linie.ContDebitId;
+                l.ContCreditId = linie.ContCreditId;
+                l.RepartitorDebitId = idGestiune;
+                l.RepartitorCreditId = idGestiune;
+                l.CodEconomicId = fisa.CodEconomicId;
+            }
+        }
+        os.CommitChanges();
+        return cas;
+    }
+    List<LinieAmortizare> LiniiLuna(IObjectSpace os, int luna) =>
+        AmortizareService.Previzualizeaza(os, An, luna).Linii.ToList();
+
+    // ── IMO-R1: două linii `Intrare` pe aceeași fișă în același PIF ───────────
+    using (var os = provider.CreateObjectSpace()) {
+        var f = Fisa(os, "R1");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, f.ID, 3600m, 36);
+        Intrare(os, pif, f.ID, 3600m, 36);
+        os.CommitChanges();
+        var refuz = Refuz(() => MotorOperare.Opereaza(os, pif));
+        var randuri = os.GetObjectsQuery<RegistruImobilizari>().Count(r => r.ImobilizareId == f.ID);
+        var situatie = AmortizareService.Situatie(os, f.ID, Zi(1, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-R1/{eticheta}): operare → „{Prima(refuz)}”; rânduri `Intrare` pe "
+            + $"fișă: {randuri}; brut la 31.01: {situatie.Valoare}; fișa: {f.Stare}.");
+        Check($"IMO-R1 ({eticheta}) două linii `Intrare` pe ACEEAȘI fișă în același PIF sunt refuzate: fișa e "
+            + "`Noua` pentru amândouă, deci gardianul de stare nu vede linia-soră, iar brutul s-ar dubla",
+            refuz != null);
+    }
+
+    // ── IMO-R2: anularea / stornarea CAS cu AMO operată pentru o lună ULTERIOARĂ ──
+    Guid idR2A, idR2B, idR2C, idCasA, idCasC;
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var a = Fisa(os, "R2A");
+        var b = Fisa(os, "R2B");
+        var c = Fisa(os, "R2C");
+        os.CommitChanges();
+        idR2A = a.ID; idR2B = b.ID; idR2C = c.ID;
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, a.ID, 3600m, 36);
+        Intrare(os, pif, b.ID, 3600m, 36);
+        Intrare(os, pif, c.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        Amo(os, 2);
+        var casA = Cas(os, Zi(3, 10), a.ID);
+        MotorOperare.Opereaza(os, casA);
+        var casC = Cas(os, Zi(3, 12), c.ID);
+        MotorOperare.Opereaza(os, casC);
+        idCasA = casA.ID;
+        idCasC = casC.ID;
+        var martie = Amo(os, 3);
+        var aprilie = Amo(os, 4);
+        Check($"IMO-R2 ({eticheta}) precondiție: după ieșirile din martie, martie și aprilie se amortizează doar "
+            + "pe fișa rămasă (B)",
+            martie.Detalii.Count == 1 && aprilie.Detalii.Count == 1
+            && martie.Detalii.OfType<AmortizareLunaraDetaliu>().Single().ImobilizareId == b.ID);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var casA = os.GetObjectByKey<IesireImobilizare>(idCasA);
+        var refuzAnulare = Refuz(() => MotorOperare.AnuleazaOperarea(os, casA));
+        Console.WriteLine($"     MĂSURAT (IMO-R2a/{eticheta}): anularea ieșirii din 10.03 cu aprilie operată → "
+            + $"„{Prima(refuzAnulare)}”; fișa A: {os.GetObjectByKey<Imobilizare>(idR2A).Stare}.");
+        Check($"IMO-R2a ({eticheta}) anularea unei ieșiri e refuzată cât timp există amortizare OPERATĂ pentru "
+            + "o lună ulterioară ieșirii: acele luni s-au generat FĂRĂ fișa ieșită, iar readucerea ei în "
+            + "funcțiune lasă lunile lipsă (simetricul refuzului de la operarea PIF-ului retroactiv)",
+            refuzAnulare != null);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var casC = os.GetObjectByKey<IesireImobilizare>(idCasC);
+        var refuzStorno = Refuz(() => MotorOperare.Storneaza(os, casC, Zi(4, 20)));
+        Console.WriteLine($"     MĂSURAT (IMO-R2b/{eticheta}): stornarea ieșirii din 12.03 pe 20.04, cu aprilie "
+            + $"operată → „{Prima(refuzStorno)}”; fișa C: {os.GetObjectByKey<Imobilizare>(idR2C).Stare}.");
+        Check($"IMO-R2b ({eticheta}) stornarea unei ieșiri e refuzată pe același gardian ca anularea",
+            refuzStorno != null);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var mai = LiniiLuna(os, 5);
+        var situatieA = AmortizareService.Situatie(os, idR2A, Zi(4, 30));
+        var situatieC = AmortizareService.Situatie(os, idR2C, Zi(4, 30));
+        Console.WriteLine($"     MĂSURAT (IMO-R2c/{eticheta}): mai are {mai.Count} linii "
+            + $"(A: {mai.Any(l => l.ImobilizareId == idR2A)}, C: {mai.Any(l => l.ImobilizareId == idR2C)}); "
+            + $"A la 30.04: cumulat {situatieA.Amortizare}, luni {situatieA.Luni}; "
+            + $"C la 30.04: cumulat {situatieC.Amortizare}, luni {situatieC.Luni}.");
+        Check($"IMO-R2c ({eticheta}) după cele două corecții refuzate, mai se amortizează tot doar pe B; o "
+            + "fișă readusă în funcțiune cu lunile martie/aprilie lipsă ar reapărea în mai cu `Luni` = 1 și "
+            + "cota veche — o gaură de două luni pe care nimic n-o mai semnalează",
+            mai.Count == 1);
+    }
+
+    // ── IMO-R3: stornarea CAS se datează în luna ieșirii ──
+    Guid idCasR3, idFisaR3;
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var d = Fisa(os, "R3");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, d.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        Amo(os, 2);
+        var cas = Cas(os, Zi(3, 20), d.ID);
+        MotorOperare.Opereaza(os, cas);
+        idCasR3 = cas.ID;
+        idFisaR3 = d.ID;
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var refuzTarziu = Refuz(() => MotorOperare.Storneaza(os,
+            os.GetObjectByKey<IesireImobilizare>(idCasR3), Zi(4, 15)));
+        Console.WriteLine($"     MĂSURAT (IMO-R3a/{eticheta}): stornarea ieșirii din 20.03 pe 15.04 → „{Prima(refuzTarziu)}”.");
+        Check($"IMO-R3a ({eticheta}) stornarea unei ieșiri într-o lună ULTERIOARĂ e refuzată: rândul invers "
+            + "datat în aprilie ar lăsa situația la 31.03 cu „brut 0” și fișa ar dispărea din luna următoare, "
+            + "apoi ar reapărea în mai — o lună de cheltuială pierdută tăcut",
+            refuzTarziu != null);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var d = os.GetObjectByKey<Imobilizare>(idFisaR3);
+        MotorOperare.Storneaza(os, os.GetObjectByKey<IesireImobilizare>(idCasR3), Zi(3, 31));
+        var martie = Amo(os, 3);
+        var aprilie = AmortizareService.Previzualizeaza(os, An, 4);
+        var laMartie = AmortizareService.Situatie(os, d.ID, Zi(3, 31));
+        Console.WriteLine($"     MĂSURAT (IMO-R3b/{eticheta}): stornată pe 31.03 — fișa: {d.Stare}, ieșire "
+            + $"{d.DataIesire?.ToString() ?? "<null>"}; martie {martie.Detalii.Count} linii; aprilie = "
+            + $"{aprilie.Motiv?.ToString() ?? "<se generează>"}, {aprilie.Linii.Count} linii; situația la 31.03: "
+            + $"brut {laMartie.Valoare}, cumulat {laMartie.Amortizare}.");
+        Check($"IMO-R3b ({eticheta}) stornată în luna ei, ieșirea n-a existat: fișa e în funcțiune, situația la "
+            + "31.03 are brutul întreg și aprilie o amortizează",
+            d.Stare == StareImobilizare.InFunctiune && laMartie.Valoare == 3600m
+            && aprilie.Motiv == null && aprilie.Linii.Any(l => l.ImobilizareId == d.ID));
+    }
+
+    // ── IMO-R4: stornarea AMO se datează în luna ei; regenerarea nu dublează situația lunii ──
+    Guid idAmoR4, idFisaR4;
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var e = Fisa(os, "R4");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, e.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        idAmoR4 = Amo(os, 2).ID;
+        idFisaR4 = e.ID;
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var refuzTarziu = Refuz(() => MotorOperare.Storneaza(os,
+            os.GetObjectByKey<AmortizareLunara>(idAmoR4), Zi(3, 15)));
+        Console.WriteLine($"     MĂSURAT (IMO-R4a/{eticheta}): stornarea lui februarie pe 15.03 → „{Prima(refuzTarziu)}”.");
+        Check($"IMO-R4a ({eticheta}) stornarea unei amortizări într-o lună ULTERIOARĂ e refuzată: rândul invers "
+            + "datat în martie ar lăsa situația la 29.02 cu două luni amortizate după regenerare",
+            refuzTarziu != null);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        MotorOperare.Storneaza(os, os.GetObjectByKey<AmortizareLunara>(idAmoR4), Zi(2, 29));
+        var februarieNou = Amo(os, 2);
+        var laFebruarie = AmortizareService.Situatie(os, idFisaR4, Zi(2, 29));
+        var registru = ImobilizariApply.Registru(os, Zi(2, 29)).Linii.Single(l => l.ImobilizareId == idFisaR4);
+        var martie = LiniiLuna(os, 3).Single(l => l.ImobilizareId == idFisaR4);
+        Console.WriteLine($"     MĂSURAT (IMO-R4b/{eticheta}): februarie stornată pe 29.02 și regenerată "
+            + $"({februarieNou.Numar}); situația la 29.02: cumulat {laFebruarie.Amortizare}, luni {laFebruarie.Luni}; "
+            + $"registrul la 29.02: cumulat {registru.AmortizareCumulata}, net {registru.NetContabil}; "
+            + $"martie = {martie.Contabil}.");
+        Check($"IMO-R4b ({eticheta}) stornată în luna ei și regenerată, situația fișei la 29.02 e o lună "
+            + "amortizată (100,00 / 1 lună), nu două",
+            laFebruarie.Amortizare == 100m && laFebruarie.Luni == 1
+            && registru.AmortizareCumulata == 100m && martie.Contabil == 100m);
+    }
+
+    // ── IMO-R5: `Revizuire` cu durata SUB lunile deja amortizate ──────────────
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var f = Fisa(os, "R5");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, f.ID, 1200m, 12);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        Amo(os, 2);
+        Amo(os, 3);
+        Amo(os, 4);
+        var revizuire = Pif(os, Zi(5, 10));
+        var l = LiniePif(os, revizuire, f.ID, FelLiniePif.Revizuire, 0m);
+        Parametri(l, 2);
+        os.CommitChanges();
+        var refuz = Refuz(() => MotorOperare.Opereaza(os, revizuire));
+        var mai = refuz == null ? Amo(os, 5) : null;
+        var iunie = refuz == null ? LiniiLuna(os, 6).SingleOrDefault(x => x.ImobilizareId == f.ID) : null;
+        Console.WriteLine($"     MĂSURAT (IMO-R5/{eticheta}): revizuire la durata 2 după 3 luni amortizate → "
+            + $"„{Prima(refuz)}”; mai = {mai?.Detalii.OfType<AmortizareLunaraDetaliu>().Single().Valoare.ToString() ?? "-"}; "
+            + $"iunie = {iunie?.Contabil.ToString() ?? "-"} (rest {1200m - 400m}).");
+        Check($"IMO-R5 ({eticheta}) o revizuire cu durata (contabilă sau fiscală) mai mică sau egală cu lunile "
+            + "deja amortizate e refuzată: `luni_rămase = durată − consumate` ar fi ≤ 0, iar formula ar vărsa "
+            + "tot restul într-o singură lună, tăcut",
+            refuz != null);
+    }
+
+    // ── IMO-R6: centrul de cost schimbat pe fișă ÎNTRE generare și operare ────
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var g = Fisa(os, "R6");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, g.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        var r = AmortizareService.Incearca(os, An, 2, idUnitate);
+        os.CommitChanges();
+        g.CentruCostId = idCentru;
+        os.CommitChanges();
+        var refuz = Refuz(() => MotorOperare.Opereaza(os, r.Document));
+        var nota = os.GetObjectsQuery<RegistruContabil>().FirstOrDefault(n => n.DocumentId == r.Document.ID);
+        Console.WriteLine($"     MĂSURAT (IMO-R6/{eticheta}): operarea draftului cu centrul de cost schimbat pe fișă → "
+            + $"„{Prima(refuz)}”; centrul pe nota postată: "
+            + $"{(nota == null ? "<fără notă>" : nota.DebitCentruCostId == idCentru ? "cel nou" : nota.DebitCentruCostId == null ? "<null>" : "altul")}.");
+        Check($"IMO-R6 ({eticheta}) centrul de cost e dimensiune a notei (`DimensiuniCulese`), la fel ca locul și "
+            + "codul economic: un draft generat înaintea schimbării lui pe fișă ori e refuzat ca stale, ori "
+            + "postează cu centrul CURENT — nu cu unul vechi copiat la generare",
+            refuz != null || (nota != null && nota.DebitCentruCostId == idCentru));
+    }
+
+    // ── IMO-R7: fișă pe un tip material care NU e de clasă de imobilizări ─────
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var tipStrain = os.GetObjectsQuery<TipMaterial>()
+            .First(t => t.Clasa.Natura != NaturaClasa.Imobilizare && t.ContImplicitId != null);
+        var h = Fisa(os, "R7");
+        h.TipMaterialId = tipStrain.ID;
+        string refuzGardian;
+        try {
+            GardianEditare.Verifica(os);
+            refuzGardian = null;
+        }
+        catch (OperareException e) {
+            refuzGardian = e.Message;
+        }
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        var l = Intrare(os, pif, h.ID, 3600m, 36);
+        l.TipMaterialId = tipStrain.ID;
+        os.CommitChanges();
+        var refuzPif = Refuz(() => MotorOperare.Opereaza(os, pif));
+        Console.WriteLine($"     MĂSURAT (IMO-R7/{eticheta}): fișă pe tipul {tipStrain.Cod} (natura "
+            + $"{os.GetObjectByKey<ClasaProdus>(tipStrain.ClasaId)?.Natura}) → gardian „{Prima(refuzGardian)}”, "
+            + $"PIF „{Prima(refuzPif)}”; fișa: {h.Stare}.");
+        Check($"IMO-R7 ({eticheta}) fișa cere un tip material de clasă de IMOBILIZĂRI (F26-D1: „clasă F”): "
+            + "gardianul fișei sau operarea PIF-ului refuză un tip de stoc/serviciu — altfel CAS ar credita "
+            + "contul implicit al unui tip străin, iar o politică de amortizare pe el ar amortiza marfă",
+            refuzGardian != null || refuzPif != null);
+    }
+
+    // ── IMO-R8: ieșirea unei fișe fără nicio amortizare (cumulat 0) ───────────
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var i = Fisa(os, "R8");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, i.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        var cas = Cas(os, Zi(2, 20), i.ID);
+        var refuz = Refuz(() => MotorOperare.Opereaza(os, cas));
+        var note = os.GetObjectsQuery<RegistruContabil>().Where(n => n.DocumentId == cas.ID)
+            .Select(n => n.Valoare).ToList();
+        Console.WriteLine($"     MĂSURAT (IMO-R8/{eticheta}): ieșire fără amortizare → „{Prima(refuz)}”; "
+            + $"{cas.Detalii.Count} linii, note: [{string.Join(", ", note)}].");
+        Check($"IMO-R8 ({eticheta}) ieșirea unei fișe neamortizate postează DOAR nota valorii rămase: linia "
+            + "„amortizare cumulată” de 0 nu lasă un rând de zero în registrul contabil (D6 omite doar linia "
+            + "de net 0; cumulatul 0 nu e tratat)",
+            refuz == null && note.Count > 0 && note.All(v => v != 0m));
+    }
+
+    // ── IMO-R9: anularea unei modernizări din luna unei AMO deja operate (nu depinde de ea) ──
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        var j = Fisa(os, "R9");
+        os.CommitChanges();
+        var pif = Pif(os, Zi(1, 5));
+        Intrare(os, pif, j.ID, 3600m, 36);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        Amo(os, 2);
+        var modernizare = Pif(os, Zi(2, 10));
+        LiniePif(os, modernizare, j.ID, FelLiniePif.Modernizare, 1650m);
+        os.CommitChanges();
+        var refuzOperare = Refuz(() => MotorOperare.Opereaza(os, modernizare));
+        string refuzAnulare = null;
+        if (refuzOperare == null)
+            using (var osAnulare = provider.CreateObjectSpace())
+                refuzAnulare = Refuz(() => MotorOperare.AnuleazaOperarea(osAnulare,
+                    osAnulare.GetObjectByKey<PunereInFunctiune>(modernizare.ID)));
+        Console.WriteLine($"     MĂSURAT (IMO-R9/{eticheta}): modernizare pe 10.02 cu februarie operată → operare "
+            + $"„{Prima(refuzOperare)}”, anulare „{Prima(refuzAnulare)}”.");
+        Check($"IMO-R9 ({eticheta}) OBSERVAȚIE (nu defect de fond): modernizarea din luna unei amortizări deja "
+            + "operate se operează (luna evenimentului postează cota veche), dar anularea ei e refuzată de "
+            + "`VerificaFaraFapteUlterioare` pe `Data >=`, deși rândul lunar din 29.02 nu s-a calculat pe ea — "
+            + "criteriul de dependență al anulării (data) e mai strict decât cel al operării (luna)",
+            refuzOperare == null && refuzAnulare != null);
+    }
+
+    // ── AMO-V0…V8 (F27-D4): recuperarea amortizării fișei puse în funcțiune întârziat ─
+    // Aritmetica de referință, PURĂ: cotele celor `luni` luni, una după alta, ca în `Grafic`.
+    decimal Recuperat(MetodaAmortizare metoda, decimal valoare, int durata, int luni) {
+        var rest = valoare;
+        var total = 0m;
+        for (var i = 0; i < luni && rest > 0m; i++) {
+            var cota = AmortizareService.CotaLunara(
+                new BazaAmortizare(metoda, valoare, durata, i, rest, valoare, i));
+            total += cota;
+            rest -= cota;
+        }
+        return total;
+    }
+    void ParametriMetoda(PunereInFunctiuneDetaliu l, int durata, MetodaAmortizare metoda,
+            CategorieFiscala categorie, bool exclusiv) {
+        l.Metoda = metoda;
+        l.DurataLuni = durata;
+        l.MetodaFiscala = metoda;
+        l.DurataFiscalaLuni = durata;
+        l.CategorieFiscala = categorie;
+        l.UtilizareExclusiva = exclusiv;
+    }
+    AmortizareLunaraDetaliu Linie(AmortizareLunara amo, Guid fisaId) =>
+        amo.Detalii.OfType<AmortizareLunaraDetaliu>().Single(l => l.ImobilizareId == fisaId);
+
+    Guid idLaTimp, idLiniar, idDegresiv, idAccelerat, idVehicul;
+    using (var os = provider.CreateObjectSpace()) {
+        CurataDocumente(os);
+        Check($"AMO-V0 ({eticheta}) precondiție: 12/{An - 1} nu există (01/{An} e capăt de lanț) și toate cele "
+            + $"12 luni {An} sunt deschise — altfel închiderea scenei n-ar avea același înțeles",
+            !os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An - 1 && p.Luna == 12)
+            && os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An && !p.Inchisa) == 12);
+    }
+
+    // Martorul: aceeași fișă, înregistrată LA TIMP, amortizată lună de lună.
+    using (var os = provider.CreateObjectSpace()) {
+        var laTimp = Fisa(os, "AMO-LT");
+        os.CommitChanges();
+        idLaTimp = laTimp.ID;
+        var pif = Pif(os, Zi(1, 5));
+        pif.DataInregistrare = Zi(1, 5);
+        Intrare(os, pif, laTimp.ID, 6000m, 60);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+        Amo(os, 2);
+    }
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An, 1, Marcaj);
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An, 2, Marcaj);
+
+    // Cele patru fișe întârziate: același PIF, cu `Data` în ianuarie (închis) și
+    // `DataInregistrare` în martie (deschis).
+    Guid idAmoMartie;
+    using (var os = provider.CreateObjectSpace()) {
+        var liniar = Fisa(os, "AMO-LIN");
+        var degresiv = Fisa(os, "AMO-DEG");
+        var accelerat = Fisa(os, "AMO-ACC");
+        var vehicul = Fisa(os, "AMO-VEH");
+        os.CommitChanges();
+        idLiniar = liniar.ID; idDegresiv = degresiv.ID;
+        idAccelerat = accelerat.ID; idVehicul = vehicul.ID;
+        var pif = Pif(os, Zi(1, 5));
+        pif.DataInregistrare = Zi(3, 10);
+        Intrare(os, pif, liniar.ID, 6000m, 60);
+        ParametriMetoda(LiniePif(os, pif, degresiv.ID, FelLiniePif.Intrare, 6000m), 60,
+            MetodaAmortizare.Degresiva, CategorieFiscala.Standard, true);
+        ParametriMetoda(LiniePif(os, pif, accelerat.ID, FelLiniePif.Intrare, 6000m), 60,
+            MetodaAmortizare.Accelerata, CategorieFiscala.Standard, true);
+        ParametriMetoda(LiniePif(os, pif, vehicul.ID, FelLiniePif.Intrare, 240000m), 60,
+            MetodaAmortizare.Liniara, CategorieFiscala.VehiculPersoaneMax9Locuri, false);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, pif);
+
+        var martie = Amo(os, 3);
+        idAmoMartie = martie.ID;
+        var lt = Linie(martie, idLaTimp);
+        var lin = Linie(martie, idLiniar);
+        var randuri = os.GetObjectsQuery<RegistruImobilizari>()
+            .Where(r => r.DocumentId == martie.ID).ToList();
+        var randLiniar = randuri.Single(r => r.ImobilizareId == idLiniar);
+        var randLaTimp = randuri.Single(r => r.ImobilizareId == idLaTimp);
+        Console.WriteLine($"     MĂSURAT (AMO-V1/{eticheta}): martie — la timp {lt.Valoare}/{lt.Luni} luni, "
+            + $"întârziată {lin.Valoare}/{lin.Luni} luni; rândurile de registru: {randLaTimp.Luni} / "
+            + $"{randLiniar.Luni} luni, datate {randLaTimp.Data:dd.MM.yyyy}.");
+        Check($"AMO-V1 ({eticheta}) fișa pusă în funcțiune pe {Zi(1, 5):dd.MM.yyyy} și înregistrată pe "
+            + $"{Zi(3, 10):dd.MM.yyyy} intră în amortizarea lunii 03/{An} cu DOUĂ luni (februarie + martie): "
+            + "200,00 = 2 × 100,00, iar rândul de registru poartă `Luni` = 2, nu 1. Fișa înregistrată la timp "
+            + "rămâne pe o lună — recuperarea e datorată, nu un mod nou de calcul",
+            lin.Luni == 2 && lin.Valoare == 200m && lin.ValoareFiscala == 200m
+            && randLiniar.Luni == 2 && randLiniar.Amortizare == 200m
+            && lt.Luni == 1 && lt.Valoare == 100m && randLaTimp.Luni == 1);
+
+        var deg = Linie(martie, idDegresiv);
+        var acc = Linie(martie, idAccelerat);
+        var degAsteptat = Recuperat(MetodaAmortizare.Degresiva, 6000m, 60, 2);
+        var accAsteptat = Recuperat(MetodaAmortizare.Accelerata, 6000m, 60, 2);
+        Console.WriteLine($"     MĂSURAT (AMO-V2/{eticheta}): degresiv {deg.Valoare} (aritmetica pură "
+            + $"{degAsteptat}), accelerat {acc.Valoare} (pură {accAsteptat}).");
+        Check($"AMO-V2 ({eticheta}) recuperarea se calculează ITERATIV, nu ca `n × cota`: pe degresiv și pe "
+            + "accelerat suma celor două luni egalează la ban suma cotelor lunare ale aritmeticii pure, cu "
+            + "pragurile (anul degresivului, cele 12 luni ale acceleratului) avansate la fiecare pas",
+            deg.Luni == 2 && deg.Valoare == degAsteptat && degAsteptat == 300m
+            && acc.Luni == 2 && acc.Valoare == accAsteptat && accAsteptat == 500m);
+
+        var veh = Linie(martie, idVehicul);
+        Console.WriteLine($"     MĂSURAT (AMO-V3/{eticheta}): vehiculul neexclusiv — fiscal "
+            + $"{veh.ValoareFiscala}, deductibil {veh.ValoareDeductibila}.");
+        Check($"AMO-V3 ({eticheta}) deductibilul se calculează pe SUMA lunii, cu regula valabilă la sfârșitul "
+            + "ei: plafonul lunar e al LUNII DE DECLARARE, deci se aplică O SINGURĂ dată pe suma recuperată, "
+            + "nu o dată pe fiecare lună recuperată (privat: 8.000 fiscal ⇒ 1.500 deductibil; pe bugetar nu "
+            + "există regulă de deductibilitate, deci deductibilul E fiscalul)",
+            veh.Luni == 2 && veh.ValoareFiscala == 8000m
+            && veh.ValoareDeductibila == (privat ? 1500m : 8000m));
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var aprilie = Amo(os, 4);
+        var lin = Linie(aprilie, idLiniar);
+        var lt = Linie(aprilie, idLaTimp);
+        var sitLiniar = AmortizareService.Situatie(os, idLiniar, Zi(4, 30));
+        var sitLaTimp = AmortizareService.Situatie(os, idLaTimp, Zi(4, 30));
+        Console.WriteLine($"     MĂSURAT (AMO-V4/{eticheta}): aprilie — întârziată {lin.Valoare}/{lin.Luni}, "
+            + $"la timp {lt.Valoare}/{lt.Luni}; la 30.04 — întârziată {sitLiniar.Amortizare}/{sitLiniar.Luni} "
+            + $"luni, la timp {sitLaTimp.Amortizare}/{sitLaTimp.Luni} luni.");
+        Check($"AMO-V4 ({eticheta}) după recuperare fișa revine la ritmul de o lună, iar situația ei la 30.04 "
+            + "e IDENTICĂ cu a fișei înregistrate la timp (3 luni, 300,00): întârzierea de evidență nu lasă "
+            + "urmă în grafic",
+            lin.Luni == 1 && lin.Valoare == 100m && lt.Luni == 1 && lt.Valoare == 100m
+            && sitLiniar.Luni == 3 && sitLiniar.Amortizare == 300m
+            && sitLaTimp.Luni == 3 && sitLaTimp.Amortizare == 300m);
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var refuz = Refuz(() => AmortizareService.Incearca(os, An, 6, idUnitate));
+        var raport = AmortizareService.Previzualizeaza(os, An, 6);
+        Console.WriteLine($"     MĂSURAT (AMO-V5/{eticheta}): 06/{An} cu 05 negenerată → „{Prima(refuz)}”, "
+            + $"raport {raport.Motiv}.");
+        Check($"AMO-V5 ({eticheta}) recuperarea NU e o cale de a sări luni: 06/{An}, cu mai negenerată deși "
+            + "avea fișe eligibile, cade pe același gardian `LunaLipsa` ca înainte — se recuperează doar ce "
+            + "n-a avut cum să fie amortizat, nu ce n-a fost amortizat",
+            refuz != null && raport.Motiv == MotivNegenerare.LunaLipsa);
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var draft = AmortizareService.Genereaza(os, An, 5, idUnitate);
+        os.CommitChanges();
+        Linie(draft, idLiniar).Luni = 2;
+        os.CommitChanges();
+        var refuz = Refuz(() => MotorOperare.Opereaza(os, draft));
+        Console.WriteLine($"     MĂSURAT (AMO-V6/{eticheta}): `Luni` schimbat pe draft → „{Prima(refuz)}”.");
+        Check($"AMO-V6 ({eticheta}) `Luni` intră în cheia anti-stale a operării: o linie culeasă cu alte luni "
+            + "decât cele recalculate e refuzată, ca oricare dintre cele trei cifre — altfel registrul ar "
+            + "putea primi un cumulat de luni pe care nimic nu l-a calculat",
+            refuz != null && refuz.Contains("nu mai corespund"));
+        os.Delete(draft.Detalii.ToList());
+        os.Delete(draft);
+        os.CommitChanges();
+    }
+
+    using (var os = provider.CreateObjectSpace()) {
+        var ultimaZiAprilie = Zi(4, 30);
+        var aprilie = os.GetObjectsQuery<AmortizareLunara>()
+            .Single(a => a.Data == ultimaZiAprilie && a.Stare == StareDocument.Operat);
+        MotorOperare.Storneaza(os, aprilie, Zi(4, 30));
+        MotorOperare.Storneaza(os, os.GetObjectByKey<AmortizareLunara>(idAmoMartie), Zi(3, 31));
+        var inverse = os.GetObjectsQuery<RegistruImobilizari>()
+            .Where(r => r.DocumentId == idAmoMartie && r.Storno && r.ImobilizareId == idLiniar).ToList();
+        var situatie = AmortizareService.Situatie(os, idLiniar, Zi(4, 30));
+        var martieLibera = AmortizareService.Previzualizeaza(os, An, 3);
+        Console.WriteLine($"     MĂSURAT (AMO-V7/{eticheta}): {inverse.Count} rând invers cu "
+            + $"{inverse[0].Luni} luni și {inverse[0].Amortizare}; la 30.04 — {situatie.Amortizare} / "
+            + $"{situatie.Luni} luni; martie = {martieLibera.Motiv?.ToString() ?? "<se generează>"}.");
+        Check($"AMO-V7 ({eticheta}) stornoul unei amortizări cu recuperare scrie `-2` luni, nu `-1`: situația "
+            + "fișei revine la zero luni și zero cumulat, iar luna redevine liberă — lunile sunt o coloană a "
+            + "registrului, deci se inversează ca oricare alta",
+            inverse.Count == 1 && inverse[0].Luni == -2 && inverse[0].Amortizare == -200m
+            && situatie.Luni == 0 && situatie.Amortizare == 0m && martieLibera.Motiv == null);
+    }
+
+    // Scena își desface urmele: perioadele se redeschid, istoricul și snapshot-urile se purjează.
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Redeschide(os, An, 2, "probă AMO: desfacerea scenei", null, Marcaj);
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Redeschide(os, An, 1, "probă AMO: desfacerea scenei", null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        for (var luna = 1; luna <= 12; luna++)
+            SolduriService.Elimina(os, An, luna);
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).Select(p => p.ID).ToList();
+        var pj = new Purja(os);
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Executa();
+        Check($"AMO-V8 ({eticheta}) scena se desface complet: cele două luni închise sunt din nou deschise, "
+            + "fără istoric și fără snapshot rămas — proba e re-rulabilă identic",
+            os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An && !p.Inchisa) == 12
+            && !os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+                .Any(i => perioadeIds.Contains(i.PerioadaId)));
+    }
+
+    // ── Curățenia finală ──────────────────────────────────────────────────────
+    using (var os = provider.CreateObjectSpace()) {
+        Curata(os);
+        Check($"IMO-R — curățenie finală ({eticheta}): nicio fișă, nicio perioadă și niciun document 2028 rămase",
+            !os.GetObjectsQuery<Imobilizare>().Any(f => f.NumarInventar.StartsWith(Marcaj))
+            && !os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An)
+            && !os.GetObjectsQuery<Document>().Any(d => d.Data >= new DateOnly(An, 1, 1)
+                && d.Data <= new DateOnly(An, 12, 31)));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Review advers felia 27, pasul 8b — probele `F27-R*`. Scena stă în 2036
+// (12/2035 nedefinit ⇒ 01/2036 e capăt de lanț); niciun alt bloc nu atinge anul.
+// Fiecare probă răspunde unui scenariu din spec (R1 cursa pe căile fără
+// `OperareApi`, R2 redeschiderea cu rectificativă, R3 corecția cu conex/pereche/
+// stingeri, R4 lotul consumat între `Data` și `DataInregistrare`, R5 eroarea
+// materială cu partener schimbat, R6 partida inversată în P+1, R7 anularea după
+// redeschidere, R8 dry-run-ul sub închidere, R9 sabotajul snapshot-ului, R11
+// două închideri concurente, plus partea liberă: lanțul cu gol, perioada
+// faptului nedefinită, ștergerea originalului desfăcut).
+void VerificaReviewF27(bool privat) {
+    const string Marcaj = "E2E-R27";
+    const int An = 2036;
+    var eticheta = privat ? "privat" : "bugetar";
+    var codTipStoc = privat ? "371" : "302.01.00";
+    var codTipVenit = privat ? "704" : "751.01.00";
+    var codContCasa = privat ? "5311" : "531.01.01";
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+
+    void CurataR27(IObjectSpace os) {
+        for (var luna = 1; luna <= 12; luna++) {
+            SolduriService.Elimina(os, An, luna);
+            SolduriService.Elimina(os, An - 1, luna);
+        }
+        var pj = new Purja(os);
+        var docIds = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => d.Data >= new DateOnly(An - 1, 12, 1) && d.Data <= new DateOnly(An, 12, 31))
+            .Select(d => d.ID).ToList();
+        var produsIds = os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => p.Cod.StartsWith(Marcaj)).Select(p => p.ID).ToList();
+        var lotIds = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => produsIds.Contains(l.ProdusId)).Select(l => l.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        foreach (var imp in os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+                .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId))
+                .OrderByDescending(i => i.InverseazaId != null))
+            pj.Adauga(imp);
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        // Corecțiile (FK `CorecteazaId`) și conexele (FK `DocumentSursaId`) înaintea originalelor.
+        foreach (var doc in os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+                .Where(d => docIds.Contains(d.ID))
+                .OrderByDescending(d => d.DocumentSursaId != null).ThenByDescending(d => d.CorecteazaId != null))
+            pj.Adauga(doc);
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => lotIds.Contains(l.ID)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => produsIds.Contains(p.ID)).ToList());
+        var perioadeIds = os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).Select(p => p.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().IgnoreQueryFilters()
+            .Where(i => perioadeIds.Contains(i.PerioadaId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().IgnoreQueryFilters()
+            .Where(p => p.An == An).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(Marcaj)).ToList());
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().IgnoreQueryFilters()
+            .Where(c => c.Cod.StartsWith(Marcaj)).ToList());
+        pj.Executa();
+    }
+
+    string CodPg(Exception e) {
+        for (var x = e; x != null; x = x.InnerException)
+            if (x is Npgsql.PostgresException pg)
+                return pg.SqlState;
+        return null;
+    }
+
+    // Comanda pe un OS propriu, cu `lock_timeout` scurt: null = a trecut, altfel
+    // codul Postgres (55P03 = a așteptat un lock) sau mesajul refuzului.
+    string SubLock(Action<IObjectSpace> comanda) {
+        using var os = provider.CreateObjectSpace();
+        var db = ((EFCoreObjectSpace)os).DbContext.Database;
+        db.OpenConnection();
+        try {
+            db.ExecuteSqlRaw("SET lock_timeout = '1500ms'");
+            comanda(os);
+            return null;
+        }
+        catch (OperareException e) {
+            return "REFUZ: " + e.Message.Split('\n')[0];
+        }
+        catch (Exception e) {
+            return CodPg(e) ?? e.GetType().Name;
+        }
+        finally {
+            db.CloseConnection();
+        }
+    }
+
+    Npgsql.NpgsqlTransaction LockExtern(Npgsql.NpgsqlConnection c, int luna, string mod) {
+        c.Open();
+        var tx = c.BeginTransaction();
+        using var cmd = c.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "SELECT \"ID\" FROM \"PerioadeFiscale\" "
+            + $"WHERE \"An\" = {An} AND \"Luna\" = {luna} AND \"GCRecord\" = 0 FOR {mod}";
+        cmd.ExecuteNonQuery();
+        return tx;
+    }
+
+    string Refuz27(Action a) {
+        try { a(); return null; }
+        catch (OperareException e) { return e.Message.Split('\n')[0]; }
+    }
+
+    string RefuzGardianR27(IObjectSpace os) {
+        try { GardianEditare.Verifica(os); return null; }
+        catch (OperareException e) { return e.Message; }
+    }
+
+    List<(string Tip, string Numar, decimal Total, decimal Ramas)> Rest27(IObjectSpace os, Guid contrapartida,
+            DateOnly? laData = null) =>
+        ImperecheriProiectii.DocumenteCuRest(os, contrapartida, null, laData)
+            .ToList().OrderBy(r => r.Numar, StringComparer.Ordinal)
+            .Select(r => (r.Tip, r.Numar, r.Total, Ramas: r.Rest)).ToList();
+
+    Dictionary<Guid, decimal> Partide27(IObjectSpace os, int luna) =>
+        os.GetObjectsQuery<PartidaDeschisa>().Where(p => p.An == An && p.Luna == luna)
+            .Select(p => new { p.DocumentId, p.Rest }).ToList().ToDictionary(p => p.DocumentId, p => p.Rest);
+
+    List<(int An, int Luna)> CuSnapshot(IObjectSpace os) =>
+        os.GetObjectsQuery<SoldPerioadaContabil>().Select(s => new { s.An, s.Luna }).Distinct().ToList()
+            .Select(x => (x.An, x.Luna)).Union(
+            os.GetObjectsQuery<SoldPerioadaStoc>().Select(s => new { s.An, s.Luna }).Distinct().ToList()
+            .Select(x => (x.An, x.Luna))).Union(
+            os.GetObjectsQuery<PartidaDeschisa>().Select(s => new { s.An, s.Luna }).Distinct().ToList()
+            .Select(x => (x.An, x.Luna)))
+            .OrderBy(x => x.An).ThenBy(x => x.Luna).ToList();
+
+    using (var os = provider.CreateObjectSpace())
+        CurataR27(os);
+
+    using (var os = provider.CreateObjectSpace()) {
+        var perioade = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.An == An || p.An == An - 1);
+        var documente = os.GetObjectsQuery<Document>()
+            .Count(d => d.Data >= new DateOnly(An - 1, 12, 1) && d.Data <= new DateOnly(An, 12, 31));
+        var inchise = os.GetObjectsQuery<PerioadaFiscala>().Count(p => p.Inchisa);
+        Check($"F27-R0 ({eticheta}) precondiție: {An} (și 12/{An - 1}) liber, nicio perioadă închisă în bază, "
+            + "niciun snapshot — altfel cifrele de mai jos ar fi peste conținut străin",
+            perioade == 0 && documente == 0 && inchise == 0 && CuSnapshot(os).Count == 0);
+    }
+
+    // ═════════════ nomenclatoarele scenei ═════════════
+    Guid idFurnizor, idClientA, idClientB, idGestA, idGestB, idCasa, idProdus, idCodEc, idTipStoc, idTipVenit,
+        idSediu, idTipTrz, idN21 = Guid.Empty;
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 1, 2, 3, 5 }) {
+            var p = os.CreateObject<PerioadaFiscala>();
+            p.An = An;
+            p.Luna = luna;
+        }
+        var furnizor = os.CreateObject<Partener>();
+        furnizor.Cod = Marcaj + "-F";
+        furnizor.Denumire = "Furnizor review 27";
+        furnizor.CodFiscal = "RO33333340";
+        furnizor.InregistratTva = true;
+        var clientA = os.CreateObject<Partener>();
+        clientA.Cod = Marcaj + "-CA";
+        clientA.Denumire = "Client A review 27";
+        clientA.CodFiscal = "RO44444443";
+        clientA.InregistratTva = true;
+        var clientB = os.CreateObject<Partener>();
+        clientB.Cod = Marcaj + "-CB";
+        clientB.Denumire = "Client B review 27";
+        clientB.CodFiscal = "RO55555554";
+        clientB.InregistratTva = true;
+        var gestA = os.CreateObject<Gestiune>();
+        gestA.Cod = Marcaj + "-GA";
+        gestA.Denumire = "Gestiune A review 27";
+        var gestB = os.CreateObject<Gestiune>();
+        gestB.Cod = Marcaj + "-GB";
+        gestB.Denumire = "Gestiune B review 27";
+        var casa = os.CreateObject<ContPropriu>();
+        casa.Cod = Marcaj + "-CS";
+        casa.Denumire = "Casa review 27";
+        casa.ContImplicit = os.FirstOrDefault<Cont>(c => c.Simbol == codContCasa);
+        var tipStoc = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipStoc);
+        var produs = os.CreateObject<Produs>();
+        produs.Cod = Marcaj + "-P";
+        produs.Denumire = "Produs review 27";
+        produs.UM = "BUC";
+        produs.TipMaterial = tipStoc;
+        var codEc = os.CreateObject<CodEconomic>();
+        codEc.Cod = Marcaj + "-CE";
+        codEc.Denumire = "Cod economic review 27";
+        os.CommitChanges();
+        idFurnizor = furnizor.ID; idClientA = clientA.ID; idClientB = clientB.ID;
+        idGestA = gestA.ID; idGestB = gestB.ID; idCasa = casa.ID; idProdus = produs.ID; idCodEc = codEc.ID;
+        idTipStoc = tipStoc.ID;
+        idTipVenit = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTipVenit).ID;
+        idSediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU").ID;
+        idTipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ").ID;
+        if (privat)
+            idN21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21").ID;
+        Check($"F27-R — precondiție de profil ({eticheta}): tipurile de stoc/venit/TRZ, sediul și contul casei "
+            + "sunt în seed", tipStoc != null && casa.ContImplicit != null && idTipVenit != Guid.Empty);
+    }
+
+    // Fabricile scenei — fiecare pe OS-ul apelantului, fără commit.
+    FacturaIesire Fcl(IObjectSpace os, string sufix, DateOnly data, DateOnly inreg, Guid client, decimal valoare) {
+        var f = os.CreateObject<FacturaIesire>();
+        f.Numar = Marcaj + sufix;
+        f.Data = data;
+        f.DataInregistrare = inreg;
+        f.PredatorId = idSediu;
+        f.PrimitorId = client;
+        var l = os.CreateObject<FacturaIesireDetaliu>();
+        l.Document = f;
+        l.TipMaterialId = idTipVenit;
+        l.Cantitate = 1m;
+        l.PretUnitar = valoare;
+        l.CodEconomicId = idCodEc;
+        if (privat)
+            l.TipTvaId = idN21;
+        return f;
+    }
+
+    Incasare Inc(IObjectSpace os, DateOnly data, DateOnly inreg, Guid client, decimal valoare) {
+        var i = os.CreateObject<Incasare>();
+        i.Data = data;
+        i.DataInregistrare = inreg;
+        i.PredatorId = client;
+        i.PrimitorId = idCasa;
+        i.TipInstrument = TipInstrumentPlata.Chitanta;
+        var l = os.CreateObject<DocumentTrezorerieDetaliu>();
+        l.Document = i;
+        l.TipMaterialId = idTipTrz;
+        l.Valoare = valoare;
+        l.CodEconomicId = idCodEc;
+        return i;
+    }
+
+    // FCT cu linie de STOC (naște lot ⇒ conex NIR la operare), opțional cu plata autogenerată.
+    FacturaIntrare FctStoc(IObjectSpace os, string sufix, DateOnly data, DateOnly inreg, decimal cantitate,
+            decimal pret, bool cuPlata = false, DateOnly? plataData = null) {
+        var f = os.CreateObject<FacturaIntrare>();
+        f.Numar = Marcaj + sufix;
+        f.Data = data;
+        f.DataInregistrare = inreg;
+        f.PredatorId = idFurnizor;
+        f.PrimitorId = idGestA;
+        if (cuPlata) {
+            f.GenereazaPlata = true;
+            f.PlataContPropriuId = idCasa;
+            f.PlataData = plataData;
+        }
+        var l = os.CreateObject<FacturaIntrareDetaliu>();
+        l.Document = f;
+        l.TipMaterialId = idTipStoc;
+        l.Cantitate = cantitate;
+        l.PretUnitar = pret;
+        l.CodEconomicId = idCodEc;
+        if (privat)
+            l.TipTvaId = idN21;
+        l.CreeazaLot(os, os.GetObjectByKey<Produs>(idProdus), os.GetObjectByKey<Gestiune>(idGestA));
+        return f;
+    }
+
+    NIR Nir(IObjectSpace os, DateOnly data, DateOnly inreg, decimal cantitate, decimal pret, out Lot lot) {
+        var n = os.CreateObject<NIR>();
+        n.Data = data;
+        n.DataInregistrare = inreg;
+        n.PredatorId = idFurnizor;
+        n.PrimitorId = idGestA;
+        var l = os.CreateObject<NirDetaliu>();
+        l.Document = n;
+        l.TipMaterialId = idTipStoc;
+        l.Cantitate = cantitate;
+        l.PretUnitar = pret;
+        l.CodEconomicId = idCodEc;
+        lot = l.CreeazaLot(os, os.GetObjectByKey<Produs>(idProdus), os.GetObjectByKey<Gestiune>(idGestA));
+        return n;
+    }
+
+    NotaTransfer Btr(IObjectSpace os, string pv, DateOnly data, DateOnly inreg, Guid lotId, decimal cantitate) {
+        var b = os.CreateObject<NotaTransfer>();
+        b.Data = data;
+        b.DataInregistrare = inreg;
+        b.PredatorId = idGestA;
+        b.PrimitorId = idGestB;
+        b.NumarPV = Marcaj + pv;
+        var l = os.CreateObject<DocumentDetaliu>();
+        l.Document = b;
+        l.TipMaterialId = idTipStoc;
+        l.LotId = lotId;
+        l.Cantitate = cantitate;
+        return b;
+    }
+
+    // ═════════════ R4 — lotul consumat între `Data` și `DataInregistrare` (ianuarie deschis) ═════════════
+    Guid idLotA, idLotB;
+    using (var os = provider.CreateObjectSpace()) {
+        var nirA = Nir(os, Zi(1, 5), Zi(2, 5), 10m, 10m, out var lotA);
+        var nirB = Nir(os, Zi(1, 20), Zi(1, 20), 10m, 20m, out var lotB);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, nirA);
+        MotorOperare.Opereaza(os, nirB);
+        idLotA = lotA.ID; idLotB = lotB.ID;
+
+        var btrDevreme = Btr(os, "-BTR-10.01", Zi(1, 10), Zi(1, 10), lotA.ID, 3m);
+        os.CommitChanges();
+        var refuz = Refuz27(() => MotorOperare.Opereaza(os, btrDevreme));
+        Console.WriteLine($"     MĂSURAT (F27-R4a/{eticheta}): ieșirea din lotul întârziat, înregistrată pe "
+            + $"{Zi(1, 10):dd.MM.yyyy} → „{refuz ?? "<A TRECUT>"}”.");
+        Check($"F27-R4a ({eticheta}) ieșirea din lotul NIR-ului întârziat (Data 05.01, înregistrat 05.02) "
+            + "înregistrată pe 10.01 cade pe gardianul de sold — lotul nu există în evidență la ziua aceea",
+            refuz != null && refuz.Contains("Sold negativ"));
+
+        btrDevreme.DataInregistrare = Zi(2, 10);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, btrDevreme);
+        var stoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == btrDevreme.ID).ToList();
+        var la31Ian = StocProiectii.SoldStoc(os, Zi(1, 31)).ToList()
+            .Where(s => s.LotId == lotA.ID || s.LotId == lotB.ID).ToList();
+        Console.WriteLine($"     MĂSURAT (F27-R4b/{eticheta}): același BTR cu `Data` 10.01 și înregistrare 10.02 "
+            + $"→ {stoc.Count} rânduri de stoc la {stoc.Select(r => r.Data).FirstOrDefault():dd.MM.yyyy}; "
+            + $"soldul la 31.01: {string.Join(", ", la31Ian.Select(s => $"{(s.LotId == lotA.ID ? "A" : "B")}={s.Cantitate}"))}.");
+        Check($"F27-R4b ({eticheta}) același BTR cu `Data` fizică 10.01 și înregistrare 10.02 TRECE și își scrie "
+            + "registrele la 10.02 (consecința D4: documentul fizic poate preceda intrarea în evidență a lotului); "
+            + "soldul la 31.01 arată doar lotul B (10), lotul A nu există încă în evidență",
+            btrDevreme.Stare == StareDocument.Operat && stoc.All(r => r.Data == Zi(2, 10))
+            && la31Ian.Count == 1 && la31Ian[0].LotId == lotB.ID && la31Ian[0].Cantitate == 10m);
+    }
+
+    // ═════════════ R3c — factura întârziată cu plata autogenerată (ambele perioade DESCHISE) ═════════════
+    Guid idFctTarzie, idPlataTarzie;
+    using (var os = provider.CreateObjectSpace()) {
+        var fct = FctStoc(os, "-FCT-TARZ", Zi(1, 10), Zi(1, 25), 1m, 100m, cuPlata: true, plataData: Zi(1, 15));
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fct);
+        idFctTarzie = fct.ID;
+        var plata = os.GetObjectsQuery<Plata>().FirstOrDefault(p => p.DocumentSursaId == fct.ID);
+        idPlataTarzie = plata?.ID ?? Guid.Empty;
+        var refuz = plata == null ? "<fără plată generată>" : Refuz27(() => MotorOperare.Opereaza(os, plata));
+        Console.WriteLine($"     MĂSURAT (F27-R3c/{eticheta}): FCT `Data` 10.01, înregistrată 25.01, plata culeasă "
+            + $"pe 15.01 → plata generată la {plata?.Data:dd.MM.yyyy} (înregistrare {Ziua(plata?.DataInregistrare ?? default)}), "
+            + $"operarea ei → „{refuz ?? "<A TRECUT>"}”.");
+        Check($"F27-R3c ({eticheta}) plata autogenerată a unei facturi înregistrate mai târziu decât ziua plății "
+            + "SE OPEREAZĂ: data ei de înregistrare e max(data plății, înregistrarea facturii), deci imperecherea "
+            + "automată nu mai precede intrarea facturii în evidență — fluxul normal al facturii întârziate (D4) "
+            + "nu se mai blochează pe plata ei",
+            plata != null && refuz == null);
+    }
+
+    // ═════════════ documentele lui ianuarie pentru R2/R3/R5/R6/R7 ═════════════
+    Guid idFcl1, idFclA5, idFcl6, idInc6, idImp6, idFclX, idIncZ, idFctS, idFctT, idNirT, idFcl27, idInc27, idImp27,
+        idConexFctS;
+    using (var os = provider.CreateObjectSpace()) {
+        var fcl1 = Fcl(os, "-FCL1", Zi(1, 6), Zi(1, 6), idClientA, 300m);
+        var fclA5 = Fcl(os, "-FCL-A5", Zi(1, 7), Zi(1, 7), idClientA, 100m);
+        var fcl6 = Fcl(os, "-FCL6", Zi(1, 8), Zi(1, 8), idClientB, 100m);
+        var inc6 = Inc(os, Zi(1, 12), Zi(1, 12), idClientB, 60m);
+        var fclX = Fcl(os, "-FCL-X", Zi(1, 9), Zi(1, 9), idClientB, 40m);
+        var incZ = Inc(os, Zi(1, 15), Zi(1, 15), idClientB, 30m);
+        var fctS = FctStoc(os, "-FCT-S", Zi(1, 11), Zi(1, 11), 2m, 50m);
+        var fctT = FctStoc(os, "-FCT-T", Zi(1, 13), Zi(1, 13), 3m, 30m);
+        var fcl27 = Fcl(os, "-FCL-27", Zi(1, 14), Zi(1, 14), idClientA, 80m);
+        var inc27 = Inc(os, Zi(1, 16), Zi(1, 16), idClientA, 80m);
+        os.CommitChanges();
+        foreach (var d in new Document[] { fcl1, fclA5, fcl6, inc6, fclX, incZ, fctS, fctT, fcl27, inc27 })
+            MotorOperare.Opereaza(os, d);
+        idFcl1 = fcl1.ID; idFclA5 = fclA5.ID; idFcl6 = fcl6.ID; idInc6 = inc6.ID; idFclX = fclX.ID; idIncZ = incZ.ID;
+        idFctS = fctS.ID; idFctT = fctT.ID; idFcl27 = fcl27.ID; idInc27 = inc27.ID;
+        idImp6 = ImperechereService.Imperecheaza(os, inc6, fcl6, 60m, null, Zi(1, 12)).ID;
+        idImp27 = ImperechereService.Imperecheaza(os, inc27, fcl27, 80m, null, Zi(1, 16)).ID;
+        // Conexul lui FCT-T (NIR-ul autogenerat) se OPEREAZĂ; al lui FCT-S rămâne draft.
+        var nirT = os.GetObjectsQuery<NIR>().First(n => n.DocumentSursaId == fctT.ID);
+        MotorOperare.Opereaza(os, nirT);
+        idNirT = nirT.ID;
+        var conexFctS = os.GetObjectsQuery<NIR>().FirstOrDefault(n => n.DocumentSursaId == fctS.ID);
+        idConexFctS = conexFctS?.ID ?? Guid.Empty;
+        Check($"F27-R — scena lui ianuarie ({eticheta}): 10 documente operate, două stingeri, conexul lui FCT-T "
+            + "operat, al lui FCT-S draft",
+            nirT.Stare == StareDocument.Operat
+            && conexFctS is { Stare: StareDocument.Draft });
+    }
+
+    // ═════════════ R1/R8 — cursa pe căile care NU trec prin `OperareApi` ═════════════
+    using (var externa = new Npgsql.NpgsqlConnection(connectionString)) {
+        using var tx = LockExtern(externa, 1, "UPDATE");
+        var imp = SubLock(o => ImperechereService.Imperecheaza(o, o.GetObjectByKey<Document>(idIncZ),
+            o.GetObjectByKey<Document>(idFclX), 1m, null, Zi(1, 20)));
+        var desfa = SubLock(o => ImperechereService.Desfa(o, idImp6, Zi(1, 21)));
+        var corectie = SubLock(o => CorectieService.Corecteaza(o, idFclX, Zi(1, 22), MotivCorectie.FaptNou));
+        // Subiectul dry-run-ului trebuie să fie un DRAFT: pe un document deja
+        // operat `Valideaza` răspunde din starea lui, fără să atingă perioada.
+        // Conexul lui FCT-S e singurul draft al scenei la ora asta.
+        var idDraftDryRun = idConexFctS;
+        var dryRun = SubLock(o => OperareApi.Valideaza(o, idDraftDryRun));
+        var reconstructie = SubLock(o => Atlas.Conta.BackOffice.Module.Api.Perioade.PerioadeApply.Reconstruieste(o));
+        var gardian = SubLock(o => {
+            var i = o.CreateObject<Imperechere>();
+            i.DocumentStingator = o.GetObjectByKey<Document>(idIncZ);
+            i.Document = o.GetObjectByKey<Document>(idFclX);
+            i.Suma = 1m;
+            i.Data = Zi(1, 20);
+            GardianEditare.Verifica(o);
+        });
+        Console.WriteLine($"     MĂSURAT (F27-R1/{eticheta}) sub `FOR UPDATE` pe 01/{An}: imperechere → "
+            + $"„{imp ?? "<a trecut>"}”, desfacere → „{desfa ?? "<a trecut>"}”, corecție → „{corectie ?? "<a trecut>"}”, "
+            + $"dry-run → „{dryRun ?? "<a trecut>"}”, reconstrucție → „{reconstructie ?? "<a trecut>"}”, "
+            + $"gardianul de Committing → „{gardian ?? "<a trecut>"}”.");
+        Check($"F27-R1a ({eticheta}) imperecherea manuală, desfacerea și corecția AȘTEAPTĂ închiderea „în curs” "
+            + "(toate trei iau tranzacția comenzii și `FOR SHARE` prin gardian)",
+            imp == "55P03" && desfa == "55P03" && corectie == "55P03");
+        Check($"F27-R8 ({eticheta}) dry-run-ul (`Valideaza`, fără tranzacție) ia și el `FOR SHARE` în autocommit, "
+            + "deci așteaptă închiderea în loc să răspundă pe o stare care se schimbă — fără deadlock (nimeni nu "
+            + "ține două rânduri)", dryRun == "55P03");
+        Check($"F27-R1b ({eticheta}) reconstrucția soldurilor ia `FOR UPDATE` pe TOT lanțul ca primă instrucțiune, "
+            + "deci AȘTEAPTĂ o închidere „în curs”: altfel închiderea ar comite după citirea referințelor, iar "
+            + "pasul final al reconstrucției („șterge ce nu e referință”) ar fi șters snapshot-ul proaspăt al "
+            + "perioadei tocmai închise ⇒ soldurile ar fi pornit tăcut de la zero",
+            reconstructie == "55P03");
+        Check($"F27-R1c ({eticheta}) gardianul de Committing al ușii securizate (XAF: imperecherea nouă) citește "
+            + "`FOR SHARE` în AUTOCOMMIT — așteaptă închiderea, dar lock-ul se eliberează la sfârșitul "
+            + "instrucțiunii, înainte de `SaveChanges` (fereastra e probată la F27-R1d)",
+            gardian == "55P03");
+        tx.Rollback();
+    }
+
+    // R1d — ușa XAF, în forma de după fix: culegerea dialogului nu se mai comite
+    // pe ObjectSpace-ul SECURIZAT, ci devine comanda `Imperecheaza`. Gardianul
+    // rămâne backstop și trece la ora validării (fereastra lui e reală), dar
+    // comanda de după închidere ia rândul perioadei în tranzacția ei și cade.
+    using (var osXaf = provider.CreateObjectSpace()) {
+        var i = osXaf.CreateObject<Imperechere>();
+        i.DocumentStingator = osXaf.GetObjectByKey<Document>(idIncZ);
+        i.Document = osXaf.GetObjectByKey<Document>(idFclX);
+        i.Suma = 1m;
+        i.Data = Zi(1, 20);
+        var verdictGardian = RefuzGardianR27(osXaf);
+        using (var osInchidere = provider.CreateObjectSpace())
+            InchideAcceptTot(osInchidere, An, 1, Marcaj);
+        var refuzComanda = Refuz27(() => {
+            using var osComanda = provider.CreateObjectSpace();
+            ImperechereService.Imperecheaza(osComanda,
+                osComanda.GetObjectByKey<Document>(idIncZ),
+                osComanda.GetObjectByKey<Document>(idFclX), 1m, null, Zi(1, 20));
+        });
+        using var osCitire = provider.CreateObjectSpace();
+        var scrise = osCitire.GetObjectsQuery<Imperechere>()
+            .Count(x => x.DocumentId == idFclX && x.DocumentStingatorId == idIncZ);
+        var partideIan = Partide27(osCitire, 1);
+        var totalX = osCitire.GetObjectByKey<Document>(idFclX).TotalStingere;
+        var raport = SolduriService.Reconstruieste(osCitire).Referinte.FirstOrDefault(r => r.Luna == 1);
+        Console.WriteLine($"     MĂSURAT (F27-R1d/{eticheta}): gardianul → „{verdictGardian ?? "<a trecut>"}”, "
+            + $"comanda după închidere → „{refuzComanda ?? "<A TRECUT>"}”, rânduri scrise {scrise}, "
+            + $"partida FCL-X la închidere {partideIan.GetValueOrDefault(idFclX)} (total {totalX}), reconstrucția: {raport?.PartideDiferite} partide diferite.");
+        Check($"F27-R1d ({eticheta}) ușa XAF nu mai comite imperecherea pe ObjectSpace-ul securizat: culegerea "
+            + "validată de gardian ÎNAINTE de închidere ajunge comandă, iar comanda de după închidere e REFUZATĂ "
+            + "— niciun rând datat în perioada închisă, partidele rămân cele scrise la închidere, reconstrucția "
+            + "zero diferențe",
+            verdictGardian == null && refuzComanda != null && refuzComanda.Contains("închis")
+            && scrise == 0 && partideIan.GetValueOrDefault(idFclX) == totalX
+            && raport != null && raport.PartideDiferite == 0);
+    }
+
+    // ═════════════ R2 — redeschiderea cu rectificativă deja emisă (privat) ═════════════
+    if (privat) {
+        Guid idFcl2, idFcl3;
+        DateTime? primaInchidere;
+        using (var os = provider.CreateObjectSpace()) {
+            primaInchidere = os.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == 1).InchisaPrimaOara;
+            var fcl2 = Fcl(os, "-FCL2", Zi(1, 25), Zi(2, 3), idClientA, 200m);
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, fcl2);
+            idFcl2 = fcl2.ID;
+            var rect = TvaProiectii.Rectificativa(os, An, 1);
+            Check($"F27-R2a ({eticheta}) faptul colectat întârziat (Data 25.01, înregistrat 03.02) se declară în "
+                + "01 ⇒ rectificativa lui 01 are exact rândul lui",
+                rect.EsteRectificativa && rect.Randuri.Count == 1 && rect.Randuri[0].Baza == 200m);
+        }
+        using (var os = provider.CreateObjectSpace())
+            PerioadaService.Redeschide(os, An, 1, "review F27-R2", null, Marcaj);
+        using (var os = provider.CreateObjectSpace()) {
+            var rectDeschisa = TvaProiectii.Rectificativa(os, An, 1);
+            var fcl3 = Fcl(os, "-FCL3", Zi(1, 26), Zi(1, 26), idClientA, 400m);
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, fcl3);
+            idFcl3 = fcl3.ID;
+            Console.WriteLine($"     MĂSURAT (F27-R2b/{eticheta}): pe perioada REDESCHISĂ rectificativa e "
+                + $"{rectDeschisa.EsteRectificativa} cu {rectDeschisa.Randuri.Count} rânduri.");
+            Check($"F27-R2b ({eticheta}) OBSERVAȚIE: pe o perioadă redeschisă `Rectificativa` răspunde în "
+                + "continuare (reperul `InchisaPrimaOara` rămâne) — conținutul e „ce s-a scris după prima "
+                + "declarare”, indiferent de starea curentă",
+                rectDeschisa.EsteRectificativa && rectDeschisa.Randuri.Count == 1);
+        }
+        using (var os = provider.CreateObjectSpace())
+            InchideAcceptTot(os, An, 1, Marcaj);
+        using (var os = provider.CreateObjectSpace()) {
+            var p = os.FirstOrDefault<PerioadaFiscala>(x => x.An == An && x.Luna == 1);
+            var rect = TvaProiectii.Rectificativa(os, An, 1);
+            var raport = SolduriService.Reconstruieste(os).Referinte.FirstOrDefault(r => r.Luna == 1);
+            Console.WriteLine($"     MĂSURAT (F27-R2c/{eticheta}): `InchisaPrimaOara` {p.InchisaPrimaOara:HH:mm:ss.fff} "
+                + $"(prima: {primaInchidere:HH:mm:ss.fff}), rectificativa: {rect.Randuri.Count} rânduri, Σ bază "
+                + $"{rect.Randuri.Sum(r => r.Baza)}; reconstrucția: {raport?.ContabilDiferite} diferențe contabile.");
+            Check($"F27-R2c ({eticheta}) după re-închidere reperul rămâne PRIMA închidere, iar rectificativa lui 01 "
+                + "= TOATE rândurile scrise după ea (întârziatul + cel operat în redeschidere): fiscal corect — "
+                + "declarația depusă o dată rămâne reperul; snapshot-ul re-închiderii e cel din registre",
+                p.InchisaPrimaOara == primaInchidere && rect.Randuri.Count == 2
+                && rect.Randuri.Sum(r => r.Baza) == 600m && raport != null && raport.ContabilDiferite == 0);
+        }
+    }
+
+    // ═════════════ R7 — anularea unui document din P după redeschidere ═════════════
+    using (var os = provider.CreateObjectSpace())
+        PerioadaService.Redeschide(os, An, 1, "review F27-R7", null, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        var fclX = os.GetObjectByKey<Document>(idFclX);
+        var refuz = Refuz27(() => MotorOperare.AnuleazaOperarea(os, fclX));
+        Check($"F27-R7a ({eticheta}) cu 01 redeschis, anularea unui document operat în el TRECE (registre șterse, "
+            + "Draft) — perioada redeschisă e fereastră deschisă cu toate drepturile ei",
+            refuz == null && fclX.Stare == StareDocument.Draft && fclX.TotalStingere == null);
+    }
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An, 1, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        var partide = Partide27(os, 1);
+        var raport = SolduriService.Reconstruieste(os).Referinte.FirstOrDefault(r => r.Luna == 1);
+        var noteX = os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idFclX);
+        Check($"F27-R7b ({eticheta}) re-închiderea rescrie snapshot-ul și partidele FĂRĂ documentul anulat; "
+            + "reconstrucția: zero diferențe",
+            !partide.ContainsKey(idFclX) && noteX == 0 && raport != null
+            && raport.ContabilDiferite == 0 && raport.StocDiferite == 0 && raport.PartideDiferite == 0);
+    }
+
+    // ═════════════ R3 — corecția cu conex / stingeri ═════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var refuzT = Refuz27(() => CorectieService.Corecteaza(os, idFctT, Zi(2, 10), MotivCorectie.FaptNou));
+        var refuz27 = Refuz27(() => CorectieService.Corecteaza(os, idFcl27, Zi(2, 10), MotivCorectie.FaptNou));
+        Console.WriteLine($"     MĂSURAT (F27-R3a/{eticheta}): corecția FCT-T (conex NIR operat) → „{refuzT}”; "
+            + $"corecția FCL-27 (stinsă în ianuarie, închis) → „{refuz27 ?? "<A TRECUT>"}”.");
+        Check($"F27-R3a ({eticheta}) FCT cu NIR conex OPERAT: corecția e refuzată ca la storno (conexul întâi) — "
+            + "textul trimite la anularea/stornarea conexului",
+            refuzT != null && refuzT.Contains("conexe"));
+        Check($"F27-R3b ({eticheta}) documentul stins integral într-o perioadă ÎNCHISĂ se corectează: stingerea se "
+            + "inversează automat la storno (rând invers), iar draftul corecției se naște",
+            refuz27 == null
+            && os.GetObjectsQuery<Imperechere>().Count(i => i.InverseazaId == idImp27) == 1
+            && os.GetObjectsQuery<Document>().Any(d => d.CorecteazaId == idFcl27));
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        var draftVechi = os.GetObjectsQuery<NIR>().FirstOrDefault(n => n.DocumentSursaId == idFctS);
+        var idLinieVeche = os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == idFctS).Select(d => d.ID).First();
+        var lotVechi = os.GetObjectsQuery<Lot>().First(l => l.LinieIntrareId == idLinieVeche);
+        var (_, corectie) = CorectieService.Corecteaza(os, idFctS, Zi(2, 11), MotivCorectie.FaptNou);
+        var draftSters = os.GetObjectsQuery<NIR>().Any(n => n.ID == draftVechi.ID);
+        var totalPeDraft = corectie.TotalStingere;
+        MotorOperare.Opereaza(os, corectie);
+        var conexNou = os.GetObjectsQuery<NIR>().FirstOrDefault(n => n.DocumentSursaId == corectie.ID);
+        var linieNoua = os.GetObjectsQuery<DocumentDetaliu>().First(d => d.DocumentId == corectie.ID);
+        var lotNou = os.GetObjectsQuery<Lot>().FirstOrDefault(l => l.LinieIntrareId == linieNoua.ID);
+        Console.WriteLine($"     MĂSURAT (F27-R3d/{eticheta}): conexul draft vechi {(draftSters ? "MAI EXISTĂ" : "șters")}, "
+            + $"`TotalStingere` pe draftul corecției = {(totalPeDraft?.ToString() ?? "null")}, conex nou "
+            + $"{(conexNou == null ? "NU" : $"da, {conexNou.Stare}, LotId {(conexNou.Detalii.FirstOrDefault()?.LotId == lotNou?.ID ? "= lotul nou" : "≠ lotul nou")}")}, "
+            + $"lot nou {(lotNou == null ? "-" : $"{lotNou.Data:dd.MM.yyyy} @ {lotNou.PretUnitar}")}.");
+        Check($"F27-R3d ({eticheta}) FCT cu conex DRAFT: corecția șterge draftul autogenerat, iar operarea corecției "
+            + "generează un conex nou pe LOTUL RENĂSCUT (linia-mamă nouă, lotul finalizat la data înregistrării "
+            + "corecției, prețul liniei) — fără NIR dublu",
+            !draftSters && conexNou != null && conexNou.Stare == StareDocument.Draft && lotNou != null
+            && lotNou.ID != lotVechi.ID && conexNou.Detalii.First().LotId == lotNou.ID
+            && lotNou.Data == Zi(2, 11) && lotNou.PretUnitar == 50m);
+        Check($"F27-R3e ({eticheta}) `TotalStingere` (câmp AL MOTORULUI, scris doar la operare) NU se copiază pe "
+            + "draftul corecției — e în lista de excluderi a copierii generice, deci draftul pornește fără total, "
+            + "iar `ImperechereService.Total` nu citește ca fapt totalul originalului",
+            totalPeDraft == null);
+    }
+
+    // ═════════════ R5 — eroarea materială cu partener schimbat (D394, privat) ═════════════
+    if (privat) {
+        Guid idCorectieA5;
+        using (var os = provider.CreateObjectSpace()) {
+            var (_, corectie) = CorectieService.Corecteaza(os, idFclA5, Zi(2, 12), MotivCorectie.EroareMateriala);
+            corectie.PrimitorId = idClientB;
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, corectie);
+            idCorectieA5 = corectie.ID;
+        }
+        using (var os = provider.CreateObjectSpace()) {
+            var d394 = D394Proiectii.D394(os, Zi(1, 1), Zi(1, 31));
+            var randA = d394.Operatiuni.Where(o => o.CuiP == "44444443").ToList();
+            var randB = d394.Operatiuni.Where(o => o.CuiP == "55555554").ToList();
+            Console.WriteLine($"     MĂSURAT (F27-R5/{eticheta}): D394 01/{An} — client A: "
+                + $"{string.Join("; ", randA.Select(r => $"{r.Tip} nrFact {r.NrFact} bază {r.Baza} tva {r.Tva}"))}; "
+                + $"client B: {string.Join("; ", randB.Select(r => $"{r.Tip} nrFact {r.NrFact} bază {r.Baza} tva {r.Tva}"))}; "
+                + $"rectificativă {d394.Rectificativa} cu {d394.DiferenteDeclarat.Count} diferențe.");
+            Check($"F27-R5 ({eticheta}) OBSERVAȚIE (comportament măsurat): la eroare materială cu partener schimbat, "
+                + "D394 rectificativ pe 01 arată partenerul VECHI cu factura originală ȘI stornoul ei (net 0, "
+                + "`nrFact` +2: FCL1 300 + A5 100 − storno 100 + FCL2 200 + FCL3 400 + FCL-27 80 = 980, nrFact 6), iar "
+                + "partenerul NOU cu factura corectată alături de FCL6 (200, nrFact 2) — stornoul contează ca factură de "
+                + "storno la partenerul vechi (§5.2), iar diferența față de declarat e exact rândul corecției",
+                d394.Rectificativa
+                && randA.Sum(r => r.Baza) == 980m && randA.Sum(r => r.NrFact) == 6
+                && randB.Sum(r => r.Baza) == 200m && randB.Sum(r => r.NrFact) == 2);
+        }
+    }
+
+    // ═════════════ R6 — partida stinsă parțial în P, inversată în P+1 ═════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var partideIan = Partide27(os, 1);
+        var total6 = os.GetObjectByKey<Document>(idFcl6).TotalStingere ?? 0m;
+        ImperechereService.Desfa(os, idImp6, Zi(2, 15));
+        var laFeb = Rest27(os, idClientB, Zi(2, 28));
+        var partideDupa = Partide27(os, 1);
+        Console.WriteLine($"     MĂSURAT (F27-R6a/{eticheta}): partida FCL6 la 01 = {partideIan.GetValueOrDefault(idFcl6)}; "
+            + $"după desfacere la 28.02: {string.Join(" | ", laFeb.Select(r => $"{r.Tip} {r.Numar}: {r.Total}/{r.Ramas}"))}; "
+            + $"partida lui 01 după = {partideDupa.GetValueOrDefault(idFcl6)}.");
+        Check($"F27-R6a ({eticheta}) FCL 100 stinsă cu 60 în 01 (partidă 40); desfacerea din 02 (rând invers −60) "
+            + "readuce restul la 100 ȘI face încasarea document cu rest 60, iar partida lui 01 rămâne 40",
+            partideIan.GetValueOrDefault(idFcl6) == total6 - 60m && partideDupa.GetValueOrDefault(idFcl6) == total6 - 60m
+            && laFeb.Any(r => r.Tip == "FCL" && r.Numar == Marcaj + "-FCL6" && r.Ramas == total6)
+            && laFeb.Any(r => r.Tip == "INC" && r.Ramas == 60m));
+    }
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An, 2, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        var partideFeb = Partide27(os, 2);
+        var total6 = os.GetObjectByKey<Document>(idFcl6).TotalStingere ?? 0m;
+        var raport = SolduriService.Reconstruieste(os).Referinte.FirstOrDefault(r => r.Luna == 2);
+        Check($"F27-R6b ({eticheta}) închiderea lui 02 materializează partidele cu desfacerea (FCL6 100, INC 60), "
+            + "reconstrucția: zero diferențe; 01 nu mai e referință (nu e decembrie)",
+            partideFeb.GetValueOrDefault(idFcl6) == total6 && partideFeb.GetValueOrDefault(idInc6) == 60m
+            && raport != null && raport.PartideDiferite == 0 && !Partide27(os, 1).Any());
+    }
+
+    // ═════════════ R9 — snapshot-ul sabotat ═════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var db = ((EFCoreObjectSpace)os).DbContext.Database;
+        var inainte = ContabilProiectii.Balanta(os, Zi(3, 1), Zi(3, 31), analitic: true).ToList()
+            .Sum(r => r.InitialDebit + r.InitialCredit);
+        var sters = db.ExecuteSql($"""
+            DELETE FROM "SolduriPerioadaContabil" WHERE "ID" = (
+              SELECT "ID" FROM "SolduriPerioadaContabil"
+              WHERE "An" = {An} AND "Luna" = 2 AND "RepartitorId" = {idClientA}
+              ORDER BY "Credit" DESC LIMIT 1)
+            """);
+        var dupa = ContabilProiectii.Balanta(os, Zi(3, 1), Zi(3, 31), analitic: true).ToList()
+            .Sum(r => r.InitialDebit + r.InitialCredit);
+        var raport = SolduriService.Reconstruieste(os).Referinte.FirstOrDefault(r => r.Luna == 2);
+        Console.WriteLine($"     MĂSURAT (F27-R9/{eticheta}): Σ inițial (debit + credit) al balanței analitice pe 03 înainte "
+            + $"{inainte}, după ștergerea unui rând de snapshot {dupa}; reconstrucția raportează "
+            + $"{raport?.ContabilDiferite} diferențe (Δ debit {raport?.DiferentaDebit}).");
+        Check($"F27-R9 ({eticheta}) OBSERVAȚIE: un rând de snapshot lipsă dă o balanță TĂCUT greșită (inițialul "
+            + "scade), fără niciun semnal la citire; singura detecție e reconstrucția la cerere, care raportează "
+            + "diferența (și repară)",
+            sters == 1 && dupa < inainte && raport != null && raport.ContabilDiferite >= 1);
+    }
+
+    // ═════════════ partea liberă: ștergerea originalului desfăcut; desfacerea în fereastra deschisă ═════════════
+    using (var os = provider.CreateObjectSpace()) {
+        var fcl = Fcl(os, "-FCL-Y", Zi(3, 2), Zi(3, 2), idClientB, 50m);
+        var inc = Inc(os, Zi(3, 3), Zi(3, 3), idClientB, 50m);
+        os.CommitChanges();
+        MotorOperare.Opereaza(os, fcl);
+        MotorOperare.Opereaza(os, inc);
+        var imp = ImperechereService.Imperecheaza(os, inc, fcl, 50m, null, Zi(3, 4));
+        var invers = ImperechereService.Desfa(os, imp.ID, Zi(3, 5));
+        Check($"F27-RL1 ({eticheta}) OBSERVAȚIE: `Desfa` acceptă și o imperechere din fereastra DESCHISĂ (contractul "
+            + "o rezervă perioadei închise) — rezultatul e algebric corect, dar rămân două rânduri în loc de zero",
+            invers.InverseazaId == imp.ID && ImperechereService.Ramas(os, fcl.ID) == fcl.TotalStingere);
+        os.Delete(os.GetObjectByKey<Imperechere>(imp.ID));
+        var refuzGardian = RefuzGardianR27(os);
+        string refuzCommit;
+        try { os.CommitChanges(); refuzCommit = null; }
+        catch (Exception e) { refuzCommit = CodPg(e) ?? e.GetType().Name; }
+        var ramasFcl = ImperechereService.Ramas(os, fcl.ID);
+        var inversDupa = os.GetObjectsQuery<Imperechere>().Where(i => i.ID == invers.ID)
+            .Select(i => new { i.InverseazaId, i.Suma }).FirstOrDefault();
+        var ramasInc = ImperechereService.Ramas(os, inc.ID);
+        var restProiectie = Rest27(os, idClientB).Where(r => r.Numar == Marcaj + "-FCL-Y").Select(r => r.Ramas).FirstOrDefault();
+        Console.WriteLine($"     MĂSURAT (F27-RL2/{eticheta}): ștergerea originalului desfăcut — gardian "
+            + $"„{refuzGardian ?? "<a trecut>"}”, commit „{refuzCommit ?? "<a trecut>"}”; rest FCL-Y {ramasFcl} "
+            + $"(total {fcl.TotalStingere}), rest INC {ramasInc}, proiecția {restProiectie}; rândul invers după: "
+            + $"{(inversDupa == null ? "ȘTERS" : $"Suma {inversDupa.Suma}, InverseazaId {(inversDupa.InverseazaId == null ? "NULL" : "păstrat")}")}.");
+        Check($"F27-RL2 ({eticheta}) ștergerea originalului unei imperecheri DESFĂCUTE e refuzată PE FOND, cu textul "
+            + "ei („are un rând invers”), nu pe fixup-ul EF al rândului invers: altfel rândul invers ar fi rămas orfan "
+            + "cu −50, iar restul de stins ar fi devenit total + 50 pe ambele documente",
+            refuzGardian != null && refuzGardian.Contains("invers"));
+    }
+
+    // ═════════════ partea liberă: lanțul cu gol — 04 nedefinit, 05 se închide peste 03 ═════════════
+    using (var os = provider.CreateObjectSpace())
+        InchideAcceptTot(os, An, 3, Marcaj);
+    using (var os = provider.CreateObjectSpace()) {
+        var refuz = Refuz27(() => InchideAcceptTot(os, An, 5, Marcaj));
+        var referinte = SolduriService.Referinte(os);
+        var cuSnapshot = CuSnapshot(os).Where(x => x.An == An).ToList();
+        Console.WriteLine($"     MĂSURAT (F27-RL3/{eticheta}): închiderea lui 05 cu 04 nedefinit → "
+            + $"„{refuz ?? "<a trecut>"}”; referințe {string.Join(",", referinte.Select(r => r.Luna))}; "
+            + $"snapshot-uri: {string.Join(",", cuSnapshot.Select(r => r.Luna))}.");
+        Check($"F27-RL3 ({eticheta}) cu 04 NEDEFINIT (închis prin absență) 05 se închide, iar snapshot-ul lui 03 "
+            + "DISPARE: închiderea elimină toate referințele de dinaintea lui P care nu sunt decembrie, nu doar "
+            + "P−1 definit — „doar referințele au snapshot” rămâne adevărat fără reconstrucție",
+            refuz == null && referinte.Select(r => r.Luna).SequenceEqual([5])
+            && cuSnapshot.Select(r => r.Luna).SequenceEqual([5]));
+        SolduriService.Reconstruieste(os);
+        Check($"F27-RL3b ({eticheta}) reconstrucția lasă aceeași mulțime (doar 05)",
+            CuSnapshot(os).Where(x => x.An == An).Select(r => r.Luna).SequenceEqual([5]));
+    }
+
+    // ═════════════ partea liberă: perioada faptului NEDEFINITĂ (privat) ═════════════
+    if (privat)
+        using (var os = provider.CreateObjectSpace()) {
+            using (var o2 = provider.CreateObjectSpace())
+                PerioadaService.Redeschide(o2, An, 5, "review F27-RL4", null, Marcaj);
+            var p6 = os.CreateObject<PerioadaFiscala>();
+            p6.An = An; p6.Luna = 6;
+            os.CommitChanges();
+            var fclZ = Fcl(os, "-FCL-Z", new DateOnly(An - 1, 12, 20), Zi(6, 5), idClientA, 10m);
+            os.CommitChanges();
+            MotorOperare.Opereaza(os, fclZ);
+            var rand = os.GetObjectsQuery<RegistruTva>().First(r => r.DocumentId == fclZ.ID);
+            var rect = TvaProiectii.Rectificativa(os, An - 1, 12);
+            Console.WriteLine($"     MĂSURAT (F27-RL4/{eticheta}): faptul din 12/{An - 1} (perioadă NEDEFINITĂ), "
+                + $"înregistrat în 06/{An}, colectat ⇒ declarat în {rand.PerioadaLuna:00}/{rand.PerioadaAn}; "
+                + $"rectificativa pe 12/{An - 1}: {rect.EsteRectificativa} (reper {rect.InchisaPrimaOara?.ToString() ?? "null"}).");
+            Check($"F27-RL4 ({eticheta}) `PerioadaFaptului` peste o perioadă NEDEFINITĂ cade pe perioada "
+                + "ÎNREGISTRĂRII, indiferent de politică: o lună care nu există în bază n-are reper de "
+                + "rectificativă și nu se închide, deci nu se poate declara acolo",
+                rand.PerioadaAn == An && rand.PerioadaLuna == 6 && !rect.EsteRectificativa);
+        }
+
+    // ═════════════ R11 — două închideri concurente ale aceleiași perioade ═════════════
+    {
+        const int luna = 5;
+        using (var os = provider.CreateObjectSpace())
+            if (os.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == luna) is { Inchisa: true })
+                PerioadaService.Redeschide(os, An, luna, "review F27-R11", null, Marcaj);
+        string[] rezultate = new string[2];
+        // Acceptările și severitatea se pregătesc ÎNAINTE de curse: `InchideAcceptTot`
+        // scrie politica pe ObjectSpace propriu, iar două fire care o rescriu
+        // concurent ar proba altceva decât cursa închiderii.
+        var severitateR11 = SeveritateItvLipsa();
+        SeteazaSeveritateItvLipsa(SeveritateConstatare.Avertisment);
+        string[] acceptateR11;
+        using (var os = provider.CreateObjectSpace())
+            acceptateR11 = PerioadaService.Verifica(os, An, luna).Select(c => c.Cheie).ToArray();
+        try {
+            using var externa = new Npgsql.NpgsqlConnection(connectionString);
+            using var tx = LockExtern(externa, luna, "UPDATE");
+            var taskuri = Enumerable.Range(0, 2).Select(k => System.Threading.Tasks.Task.Run(() => {
+                using var os = provider.CreateObjectSpace();
+                var db = ((EFCoreObjectSpace)os).DbContext.Database;
+                db.OpenConnection();
+                try {
+                    db.ExecuteSqlRaw("SET lock_timeout = '20s'");
+                    PerioadaService.Inchide(os, An, luna, acceptateR11, null, Marcaj + "-T" + k);
+                    rezultate[k] = null;
+                }
+                catch (OperareException e) { rezultate[k] = "REFUZ: " + e.Message.Split('\n')[0]; }
+                catch (Exception e) { rezultate[k] = CodPg(e) ?? e.GetType().Name; }
+                finally { db.CloseConnection(); }
+            })).ToArray();
+            System.Threading.Thread.Sleep(700);
+            tx.Rollback();
+            System.Threading.Tasks.Task.WaitAll(taskuri);
+        }
+        finally {
+            SeteazaSeveritateItvLipsa(severitateR11);
+        }
+        using (var os = provider.CreateObjectSpace()) {
+            var istoric = os.GetObjectsQuery<InchiderePerioada>().Count(i => i.De.StartsWith(Marcaj + "-T"));
+            Console.WriteLine($"     MĂSURAT (F27-R11/{eticheta}): T0 → „{rezultate[0] ?? "<a trecut>"}”, "
+                + $"T1 → „{rezultate[1] ?? "<a trecut>"}”, rânduri de istoric {istoric}.");
+            Check($"F27-R11 ({eticheta}) două închideri concurente ale lui {luna:00}/{An}: exact una trece, cealaltă "
+                + "așteaptă `FOR UPDATE` și cade CURAT pe „e deja închisă” (422), cu un singur rând de istoric",
+                rezultate.Count(r => r == null) == 1
+                && rezultate.Any(r => r != null && r.Contains("deja închisă")) && istoric == 1);
+        }
+    }
+
+    // ═════════════ desfacerea scenei ═════════════
+    using (var os = provider.CreateObjectSpace()) {
+        foreach (var luna in new[] { 6, 5, 3, 2, 1 })
+            if (os.FirstOrDefault<PerioadaFiscala>(p => p.An == An && p.Luna == luna) is { Inchisa: true })
+                PerioadaService.Redeschide(os, An, luna, "review F27: desfacerea scenei", null, Marcaj);
+    }
+    using (var os = provider.CreateObjectSpace()) {
+        CurataR27(os);
+        Check($"F27-R — curățenie finală ({eticheta}): nicio perioadă, niciun document și niciun snapshot {An} rămase",
+            !os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An)
+            && !os.GetObjectsQuery<Document>().Any(d => d.Data >= new DateOnly(An - 1, 12, 1)
+                && d.Data <= new DateOnly(An, 12, 31))
+            && !CuSnapshot(os).Any(x => x.An == An));
+    }
+}
+
+// ---------------------------------------------------------------------------
+// F28 — TPH pe Document/DocumentDetaliu/Repartitor, discriminatorul `ClrType` (89)
+// ---------------------------------------------------------------------------
+void VerificaF28(bool privat) {
+    var eticheta = privat ? "privat" : "bugetar";
+    Type[] ierarhii = [typeof(Document), typeof(DocumentDetaliu), typeof(Repartitor)];
+    using var os = provider.CreateObjectSpace();
+    var ctxF28 = ((EFCoreObjectSpace)os).DbContext;
+    var model = Microsoft.EntityFrameworkCore.Infrastructure.AccessorExtensions
+        .GetService<Microsoft.EntityFrameworkCore.Metadata.IDesignTimeModel>(ctxF28).Model;
+    var radacini = ierarhii.Select(t => model.FindEntityType(t)).ToList();
+    var tipuri = radacini.ToDictionary(r => r.ClrType, r => r.GetDerivedTypesInclusive().ToList());
+    var concrete = tipuri.ToDictionary(p => p.Key, p => p.Value.Where(t => !t.ClrType.IsAbstract).ToList());
+    List<string> Valori(FormattableString sql) => ctxF28.Database.SqlQuery<string>(sql).ToList();
+
+    // ---- F28-A: 1:1 între clasele concrete ale ierarhiei `Document` și seed-ul `TipDocument` ----
+    var seed = os.GetObjectsQuery<TipDocument>().Select(t => new { t.Cod, t.ClrType }).ToList();
+    var documenteConcrete = concrete[typeof(Document)];
+    var faraClasa = seed.Where(s => !documenteConcrete.Any(t => t.ClrType.Name == s.ClrType
+        && (string)t.GetDiscriminatorValue() == s.ClrType)).Select(s => $"{s.Cod}={s.ClrType}").ToList();
+    var faraAncora = documenteConcrete.Where(t => !seed.Any(s => s.ClrType == (string)t.GetDiscriminatorValue()))
+        .Select(t => $"{t.ClrType.Name}={t.GetDiscriminatorValue()}").ToList();
+    var discriminatorAltNume = tipuri.Values.SelectMany(v => v).Where(t => !t.ClrType.IsAbstract)
+        .Where(t => (string)t.GetDiscriminatorValue() != t.ClrType.Name).Select(t => t.ClrType.Name).ToList();
+    Console.WriteLine($"     MĂSURAT (F28-A/{eticheta}): {seed.Count} rânduri TipDocument, {documenteConcrete.Count} clase "
+        + $"concrete de document; fără clasă: [{string.Join(", ", faraClasa)}]; fără ancoră: "
+        + $"[{string.Join(", ", faraAncora)}]; discriminator ≠ numele clasei: [{string.Join(", ", discriminatorAltNume)}].");
+    Check($"F28-A ({eticheta}) fiecare `TipDocument` din seed are clasa concretă mapată în ierarhia `Document` cu "
+        + "discriminatorul == `ClrType`, fiecare clasă concretă are ancoră în seed, iar pe toate cele trei ierarhii "
+        + "discriminatorul e numele scurt al clasei (tipurile abstracte se sar: n-au rânduri)",
+        seed.Count > 0 && seed.Count == documenteConcrete.Count
+        && faraClasa.Count == 0 && faraAncora.Count == 0 && discriminatorAltNume.Count == 0);
+
+    // ---- F28-B: fără prefix de tip — coloana = numele proprietății, o singură tabelă per ierarhie ----
+    var abateri = new List<string>();
+    foreach (var r in radacini) {
+        var tabela = r.GetTableName();
+        var lista = tipuri[r.ClrType];
+        foreach (var et in lista) {
+            if (et.GetTableName() != tabela)
+                abateri.Add($"{et.ClrType.Name} → tabela {et.GetTableName()}");
+            foreach (var p in et.GetDeclaredProperties())
+                if (p.GetColumnName() != p.Name)
+                    abateri.Add($"{et.ClrType.Name}.{p.Name} → {p.GetColumnName()}");
+        }
+        var coloaneModel = lista.SelectMany(et => et.GetDeclaredProperties()).Select(p => p.GetColumnName())
+            .ToHashSet(StringComparer.Ordinal);
+        var coloaneBaza = Valori($"SELECT column_name::text AS \"Value\" FROM information_schema.columns WHERE table_name = {tabela}")
+            .ToHashSet(StringComparer.Ordinal);
+        if (!coloaneBaza.SetEquals(coloaneModel))
+            abateri.Add($"{tabela}: bază ≠ model (doar în bază: {string.Join(",", coloaneBaza.Except(coloaneModel))}; "
+                + $"doar în model: {string.Join(",", coloaneModel.Except(coloaneBaza))})");
+        Console.WriteLine($"     MĂSURAT (F28-B/{eticheta}): {tabela} — {lista.Count} tipuri, {coloaneBaza.Count} coloane în bază.");
+    }
+    Check($"F28-B ({eticheta}) pe `Documente`, `DocumentDetalii` și `Repartitori` fiecare proprietate a ierarhiei "
+        + "are coloana numită ca ea (niciun prefix de tip), toate tipurile stau pe tabela rădăcinii, iar coloanele "
+        + "bazei (`information_schema`) sunt exact cele ale modelului"
+        + (abateri.Count > 0 ? $" — abateri: {string.Join("; ", abateri)}" : ""),
+        abateri.Count == 0);
+
+    // ---- F28-C: indexul pe discriminator, în model și în bază ----
+    var faraIndex = new List<string>();
+    foreach (var r in radacini) {
+        var tabela = r.GetTableName();
+        if (!r.GetIndexes().Any(i => i.Properties.Count == 1 && i.Properties[0].Name == nameof(Document.ClrType)))
+            faraIndex.Add($"{tabela} (model)");
+        if (!Valori($"SELECT indexdef::text AS \"Value\" FROM pg_indexes WHERE tablename = {tabela}")
+                .Any(d => d.EndsWith("(\"ClrType\")", StringComparison.Ordinal)))
+            faraIndex.Add($"{tabela} (pg_indexes)");
+    }
+    Check($"F28-C ({eticheta}) indexul pe `ClrType` există pe cele trei tabele, în modelul EF și în `pg_indexes`"
+        + (faraIndex.Count > 0 ? $" — lipsă: {string.Join(", ", faraIndex)}" : ""),
+        faraIndex.Count == 0);
+
+    // ---- F28-F: `ClrType` e al EF — setter ne-public, completat la `Add`, fără gol în bază ----
+    var setterePublice = tipuri.Values.SelectMany(v => v)
+        .Where(et => et.ClrType.GetProperty(nameof(Document.ClrType))?.GetSetMethod(false) != null)
+        .Select(et => et.ClrType.Name).ToList();
+    var laAdd = new List<string>();
+    using (var osNou = provider.CreateObjectSpace())
+        foreach (var et in concrete.Values.SelectMany(v => v)) {
+            var obiect = osNou.CreateObject(et.ClrType);
+            var valoare = (string)et.ClrType.GetProperty(nameof(Document.ClrType)).GetValue(obiect);
+            if (valoare != et.ClrType.Name)
+                laAdd.Add($"{et.ClrType.Name}={valoare ?? "null"}");
+        }
+    var straine = new List<string>();
+    foreach (var r in radacini) {
+        var tabela = r.GetTableName();
+        var numeConcrete = concrete[r.ClrType].Select(t => t.ClrType.Name).ToHashSet(StringComparer.Ordinal);
+        var sql = "SELECT DISTINCT COALESCE(\"ClrType\", '<null>')::text AS \"Value\" FROM \"" + tabela + "\"";
+        straine.AddRange(ctxF28.Database.SqlQueryRaw<string>(sql).ToList().Where(v => !numeConcrete.Contains(v)).Select(v => $"{tabela}: „{v}”"));
+    }
+    Console.WriteLine($"     MĂSURAT (F28-F/{eticheta}): {concrete.Values.Sum(v => v.Count)} tipuri concrete create prin "
+        + $"ObjectSpace; setter public: [{string.Join(", ", setterePublice)}]; greșit la Add: [{string.Join(", ", laAdd)}]; "
+        + $"valori în bază fără clasă concretă: [{string.Join(", ", straine)}].");
+    Check($"F28-F ({eticheta}) `ClrType` nu se poate scrie din cod (niciun setter public pe nicio clasă a celor trei "
+        + "ierarhii), EF îl completează la `CreateObject` cu numele clasei pe fiecare tip concret, iar în bază nu există "
+        + "valoare NULL, goală sau fără clasă concretă. Fără FK spre `TipDocument.ClrType` (fallback-ul din F28-D1), "
+        + "ancora în seed o ține doar F28-A",
+        setterePublice.Count == 0 && laAdd.Count == 0 && straine.Count == 0);
+
+    // ---- F28-G: `ClrType` în modelul XAF — persistent, read-only, cu caption „Tip” ----
+    IModelApplication modelXaf = null;
+    try {
+        modelXaf = ModelAplicatie.Incarca(connectionString, profil);
+    }
+    catch (Exception ex) {
+        Console.WriteLine($"     F28-G: modelul aplicației nu s-a construit — {ex.GetType().Name}: {ex.Message}");
+    }
+    var probleme = new List<string>();
+    foreach (var baza in ierarhii) {
+        var clasa = modelXaf?.BOModel.GetClass(baza);
+        var membru = clasa?.FindMember(nameof(Document.ClrType));
+        var info = clasa?.TypeInfo.FindMember(nameof(Document.ClrType));
+        if (membru == null || info == null) {
+            probleme.Add($"{baza.Name}: lipsește din model");
+            continue;
+        }
+        if (!info.IsPersistent)
+            probleme.Add($"{baza.Name}: nepersistent");
+        if (membru.AllowEdit)
+            probleme.Add($"{baza.Name}: editabil");
+        if (membru.Caption != "Tip")
+            probleme.Add($"{baza.Name}: caption „{membru.Caption}”");
+    }
+    static bool InLayout(IModelNode nod) {
+        for (var i = 0; i < nod.NodeCount; i++) {
+            var copil = nod.GetNode(i);
+            if (copil is IModelLayoutViewItem li && li.ViewItem?.Id == nameof(Document.ClrType) || InLayout(copil))
+                return true;
+        }
+        return false;
+    }
+    static bool ColoanaTip(IModelListView lv)
+        => lv?.Columns[nameof(Document.ClrType)] is { } c && (!c.Index.HasValue || c.Index > -1);
+    bool DinIerarhii(IModelObjectView v) => v.ModelClass?.TypeInfo?.Type is { } t && ierarhii.Any(b => b.IsAssignableFrom(t));
+    var detailViews = (modelXaf?.Views.OfType<IModelDetailView>() ?? []).Where(DinIerarhii).ToList();
+    var dvCuTip = detailViews.Where(v => v.Layout != null && InLayout(v.Layout)).Select(v => v.Id).ToList();
+    var listeIerarhii = (modelXaf?.Views.OfType<IModelListView>() ?? []).Where(DinIerarhii).ToList();
+    var listeCuTip = listeIerarhii.Where(ColoanaTip).Select(v => v.Id).OrderBy(id => id, StringComparer.Ordinal).ToList();
+    string[] cuTipCerut = [nameof(Document) + "_ListView", nameof(DocumentTrezorerie) + "_ListView", nameof(Repartitor) + "_ListView", nameof(Repartitor) + "_LookupListView",
+        nameof(DocumentDetaliu) + "_LookupListView"];
+    Console.WriteLine($"     MĂSURAT (F28-G/{eticheta}): {detailViews.Count} DetailView-uri și {listeIerarhii.Count} ListView-uri "
+        + $"pe cele trei ierarhii; „Tip” în layout: [{string.Join(", ", dvCuTip)}]; coloana „Tip” vizibilă: "
+        + $"[{string.Join(", ", listeCuTip)}]");
+    if (detailViews.Count == 0 || listeIerarhii.Count <= cuTipCerut.Length)
+        probleme.Add("prea puține view-uri pe ierarhii");
+    if (dvCuTip.Count > 0)
+        probleme.Add($"„Tip” în layout-ul: {string.Join(", ", dvCuTip)}");
+    if (!listeCuTip.SequenceEqual(cuTipCerut.OrderBy(id => id, StringComparer.Ordinal)))
+        probleme.Add($"coloana „Tip” vizibilă pe [{string.Join(", ", listeCuTip)}]");
+    Check($"F28-G ({eticheta}) `ClrType` e membru PERSISTENT în modelul aplicației pe `Document`, `DocumentDetaliu` și "
+        + "`Repartitor` (deci trece precondițiile D85-M2 pe ServerView), read-only (`AllowEdit` = false) și cu caption „Tip”; "
+        + "lipsește din layout-ul oricărui DetailView al celor trei ierarhii și e coloană vizibilă EXACT pe listele care "
+        + "amestecă tipuri: `Document_ListView`, `DocumentTrezorerie_ListView`, `Repartitor_ListView`, `Repartitor_LookupListView` și "
+        + "`DocumentDetaliu_LookupListView` (fără DefaultProperty, XAF îi generează coloanele scurte)"
+        + (probleme.Count > 0 ? $" — {string.Join("; ", probleme)}" : ""),
+        modelXaf != null && probleme.Count == 0);
+
+    // ---- Scena F28-D…K: repartitori, documente cu câte o linie de tipul declarat, FK-uri spre frunze, pe ușa de sistem ----
+    const string MarcajF28 = "F28-PROBA";
+    void CurataF28(IObjectSpace osC) =>
+        new Purja(osC)
+            .Adauga(osC.GetObjectsQuery<DviFactura>().Where(x => x.Dvi.Numar.StartsWith(MarcajF28)))
+            .Adauga(osC.GetObjectsQuery<Document>().Where(d => d.Numar != null && d.Numar.StartsWith(MarcajF28)))
+            .Adauga(osC.GetObjectsQuery<Imobilizare>().Where(i => i.NumarInventar.StartsWith(MarcajF28)))
+            .Adauga(osC.GetObjectsQuery<ApplicationUserLoginInfo>().Where(l => l.User.UserName.StartsWith(MarcajF28)))
+            .Adauga(osC.GetObjectsQuery<ApplicationUser>().Where(u => u.UserName.StartsWith(MarcajF28)))
+            .Adauga(osC.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajF28)))
+            .Executa();
+    Guid idPartener, idGestiune, idContPropriu, idNir, idDvi, idFcl, idIncasare;
+    var liniiScena = new Dictionary<string, string>(StringComparer.Ordinal);
+    using (var osS = provider.CreateObjectSpace()) {
+        CurataF28(osS);
+        var partener = osS.CreateObject<Partener>();
+        partener.Cod = MarcajF28 + "-P"; partener.Denumire = "Partener probă F28";
+        var gestiune = osS.CreateObject<Gestiune>();
+        gestiune.Cod = MarcajF28 + "-G"; gestiune.Denumire = "Gestiune probă F28";
+        var contPropriu = osS.CreateObject<ContPropriu>();
+        contPropriu.Cod = MarcajF28 + "-CP"; contPropriu.Denumire = "Cont propriu probă F28";
+        var angajat = osS.CreateObject<Angajat>();
+        angajat.Cod = MarcajF28 + "-A"; angajat.Denumire = "Angajat probă F28";
+        var tipMaterialId = osS.GetObjectsQuery<TipMaterial>().OrderBy(t => t.Cod).Select(t => t.ID).First();
+        var fisa = osS.CreateObject<Imobilizare>();
+        fisa.NumarInventar = MarcajF28 + "-FISA"; fisa.Denumire = "Fișă probă F28";
+        fisa.TipMaterialId = tipMaterialId; fisa.Loc = gestiune; fisa.Responsabil = angajat;
+        var documente = new Dictionary<Type, Document>();
+        foreach (var et in concrete[typeof(Document)]) {
+            var d = (Document)osS.CreateObject(et.ClrType);
+            d.Numar = $"{MarcajF28}-{et.ClrType.Name}";
+            d.Data = d.DataInregistrare = new DateOnly(2031, 1, 15);
+            d.Predator = gestiune;
+            d.Primitor = gestiune;
+            var tipLinie = (Attribute.GetCustomAttribute(et.ClrType, typeof(Atlas.Conta.BackOffice.Module.UI.TipDetaliuAttribute), false)
+                as Atlas.Conta.BackOffice.Module.UI.TipDetaliuAttribute)?.TipDetaliu ?? typeof(DocumentDetaliu);
+            var linie = (DocumentDetaliu)osS.CreateObject(tipLinie);
+            linie.Document = d;
+            linie.TipMaterialId = tipMaterialId;
+            linie.Cantitate = 1m;
+            linie.Valoare = 1m;
+            if (tipLinie.GetProperty(nameof(PunereInFunctiuneDetaliu.ImobilizareId)) is { } imobilizare
+                    && imobilizare.PropertyType == typeof(Guid))
+                imobilizare.SetValue(linie, fisa.ID);
+            documente[et.ClrType] = d;
+            liniiScena[et.ClrType.Name] = tipLinie.Name;
+        }
+        ((FacturaIesire)documente[typeof(FacturaIesire)]).GestiuneDescarcare = gestiune;
+        ((FacturaIntrare)documente[typeof(FacturaIntrare)]).PlataContPropriu = contPropriu;
+        ((Plata)documente[typeof(Plata)]).LaturaPereche = (Incasare)documente[typeof(Incasare)];
+        var legatura = osS.CreateObject<DviFactura>();
+        legatura.Dvi = (Dvi)documente[typeof(Dvi)];
+        legatura.Factura = (FacturaIntrare)documente[typeof(FacturaIntrare)];
+        osS.CommitChanges();
+        (idPartener, idGestiune, idContPropriu) = (partener.ID, gestiune.ID, contPropriu.ID);
+        (idNir, idDvi, idFcl, idIncasare) = (documente[typeof(NIR)].ID, documente[typeof(Dvi)].ID,
+            documente[typeof(FacturaIesire)].ID, documente[typeof(Incasare)].ID);
+    }
+
+    // ---- F28-K: ierarhia utilizatorilor XAF (TPH) — utilizator nou + login în același commit, pe calea gardianului ----
+    string refuzUtilizator;
+    using (var osU = provider.CreateObjectSpace()) {
+        var utilizator = osU.CreateObject<ApplicationUser>();
+        utilizator.UserName = MarcajF28 + "-U";
+        var login = osU.CreateObject<ApplicationUserLoginInfo>();
+        login.LoginProviderName = DevExpress.ExpressApp.Security.SecurityDefaults.PasswordAuthentication;
+        login.ProviderUserKey = utilizator.ID.ToString();
+        login.User = utilizator;
+        refuzUtilizator = Refuz(() => GardianEditare.Verifica(osU));
+        if (refuzUtilizator == null)
+            osU.CommitChanges();
+    }
+    using (var osU = provider.CreateObjectSpace()) {
+        var loginuri = osU.GetObjectsQuery<ApplicationUserLoginInfo>()
+            .Count(l => l.User.UserName == MarcajF28 + "-U");
+        Console.WriteLine($"     MĂSURAT (F28-K/{eticheta}): gardian „{refuzUtilizator ?? "acceptat"}”; login-uri comise pe "
+            + $"utilizatorul de probă: {loginuri}.");
+        Check($"F28-K ({eticheta}) ierarhia utilizatorilor XAF e tot TPH: un `ApplicationUser` nou și "
+            + "`ApplicationUserLoginInfo` spre el, în același commit, trec regula (o) a gardianului (ținta nouă găsită în "
+            + "tracker, de tipul cerut) și se comit",
+            refuzUtilizator == null && loginuri == 1);
+    }
+
+    // ---- F28-H/I/J: integritatea tipului în bază, pe ușa de sistem (aceleași interogări ca `--dump-integritate-tph`) ----
+    var probeTph = IntegritateTph.Probe(ctxF28);
+    var rezultateTph = IntegritateTph.Ruleaza(ctxF28, probeTph);
+    List<RezultatTph> FamilieTph(string familie) => rezultateTph.Where(r => r.Familie == familie).ToList();
+    string Incalcari(List<RezultatTph> lista) =>
+        string.Join("; ", lista.Where(r => r.Incalcari != 0).Select(r => $"{r.Eticheta}: {r.Incalcari}"));
+    var linii = FamilieTph(IntegritateTph.Linii);
+    var fkuri = FamilieTph(IntegritateTph.Fk);
+    var coloane = FamilieTph(IntegritateTph.Coloane);
+    Console.WriteLine($"     MĂSURAT (F28-H/{eticheta}): {linii.Count} tipuri concrete de document, {linii.Sum(r => r.Verificate)} linii "
+        + $"verificate (scena: {string.Join(", ", liniiScena.OrderBy(p => p.Key).Select(p => $"{p.Key}→{p.Value}"))}); "
+        + $"încălcări [{Incalcari(linii)}].");
+    Check($"F28-H ({eticheta}) nicio linie nu are `ClrType` în afara tipului de detaliu declarat de documentul ei "
+        + "(`[TipDetaliu]`, cu subtipurile) sau a lui `DocumentDetaliu` — deci `as` pe frunza documentului citește doar "
+        + "linii ale frunzei sau ale bazei; fiecare tip concret are cel puțin o linie verificată"
+        + (Incalcari(linii) is { Length: > 0 } h ? $" — {h}" : ""),
+        linii.Count == concrete[typeof(Document)].Count && linii.All(r => r.Verificate > 0 && r.Incalcari == 0));
+    Console.WriteLine($"     MĂSURAT (F28-I/{eticheta}): {fkuri.Count} FK-uri spre frunze, {fkuri.Count(r => r.Verificate > 0)} cu "
+        + $"rânduri, {fkuri.Sum(r => r.Verificate)} rânduri verificate "
+        + $"[{string.Join(", ", fkuri.Select(r => $"{r.Eticheta}: {r.Verificate}"))}]; încălcări [{Incalcari(fkuri)}].");
+    Check($"F28-I ({eticheta}) în bază, ținta fiecărui FK spre frunză (descoperit prin `GardianEditare.FkSpreFrunze`) are "
+        + "discriminatorul frunzei sau al unui subtip, și pe rândurile scrise pe ușa de sistem, care nu trec prin regula (o); "
+        + "cele 9 FK-uri acoperite, cel puțin 7 cu rânduri din scenă"
+        + (Incalcari(fkuri) is { Length: > 0 } i ? $" — {i}" : ""),
+        fkuri.Count >= 9 && fkuri.Count(r => r.Verificate > 0) >= 7 && fkuri.All(r => r.Incalcari == 0));
+    var coloaneIerarhii = radacini.ToDictionary(r => r.GetTableName(),
+        r => coloane.Count(c => c.Eticheta.StartsWith(r.GetTableName() + ".", StringComparison.Ordinal)));
+    var directieAsm = Valori($"SELECT count(*)::text AS \"Value\" FROM \"DocumentDetalii\" WHERE \"ClrType\" = 'AsamblareDetaliu' AND \"Directie\" IS NOT NULL").Single();
+    Console.WriteLine($"     MĂSURAT (F28-J/{eticheta}): {coloane.Count} coloane de tip derivat "
+        + $"[{string.Join(", ", coloaneIerarhii.Select(p => $"{p.Key} {p.Value}"))}], {coloane.Sum(r => r.Verificate)} rânduri "
+        + $"de alt tip verificate; `Directie` (enum ne-nullable în CLR) scrisă pe liniile ASM: {directieAsm}; "
+        + $"încălcări [{Incalcari(coloane)}].");
+    Check($"F28-J ({eticheta}) o coloană declarată pe tipuri derivate e NULL pe rândurile oricărui alt tip al ierarhiei "
+        + "(EF nu scrie coloana fratelui, nici pe tipurile valoare) — pe toate ierarhiile TPH ale modelului"
+        + (Incalcari(coloane) is { Length: > 0 } j ? $" — {j}" : ""),
+        coloaneIerarhii.Values.All(n => n > 0) && coloane.Sum(r => r.Verificate) > 0 && directieAsm != "0"
+        && coloane.All(r => r.Incalcari == 0));
+
+    // ---- F28-D: FK spre frunză — tipul țintei îl ține gardianul, generic prin metadata EF ----
+    string RefuzF28(Action<IObjectSpace> pregateste) {
+        using var osG = provider.CreateObjectSpace();
+        try {
+            pregateste(osG);
+            GardianEditare.Verifica(osG);
+            return null;
+        }
+        catch (OperareException e) {
+            return e.Message;
+        }
+        finally {
+            osG.Rollback();
+        }
+    }
+    var acoperite = ctxF28.Model.GetEntityTypes()
+        .SelectMany(et => GardianEditare.FkSpreFrunze(et).Where(fk => fk.DeclaringEntityType == et)
+            .Select(fk => $"{et.ClrType.Name}.{fk.Properties[0].Name}→{fk.PrincipalEntityType.ClrType.Name}"))
+        .ToHashSet(StringComparer.Ordinal);
+    string[] asteptate = [
+        "DviFactura.FacturaId→FacturaIntrare", "DviFactura.DviId→Dvi",
+        "DocumentTrezorerie.LaturaPerecheId→DocumentTrezorerie", "Lot.GestiuneId→Gestiune",
+        "Imobilizare.ResponsabilId→Angajat", "Societate.ContBancarId→ContPropriu",
+        "FacturaIesire.GestiuneDescarcareId→Gestiune", "FacturaIntrare.PlataContPropriuId→ContPropriu",
+    ];
+    var neacoperite = asteptate.Where(a => !acoperite.Contains(a)).ToList();
+    var lotPePartener = RefuzF28(o => o.CreateObject<Lot>().GestiuneId = idPartener);
+    var lotPeGestiune = RefuzF28(o => o.CreateObject<Lot>().GestiuneId = idGestiune);
+    var lotPeInexistent = RefuzF28(o => o.CreateObject<Lot>().GestiuneId = Guid.NewGuid());
+    var lotPePartenerNou = RefuzF28(o => {
+        var p = o.CreateObject<Partener>();
+        p.Cod = MarcajF28 + "-PN"; p.Denumire = "Partener nou F28";
+        o.CreateObject<Lot>().GestiuneId = p.ID;
+    });
+    var lotPeGestiuneNoua = RefuzF28(o => {
+        var g = o.CreateObject<Gestiune>();
+        g.Cod = MarcajF28 + "-GN"; g.Denumire = "Gestiune nouă F28";
+        o.CreateObject<Lot>().GestiuneId = g.ID;
+    });
+    Societate SocietateF28(IObjectSpace o) =>
+        o.GetObjectsQuery<Societate>().ToList().FirstOrDefault() ?? o.CreateObject<Societate>();
+    var societatePePartener = RefuzF28(o => SocietateF28(o).ContBancarId = idPartener);
+    var societatePeContPropriu = RefuzF28(o => SocietateF28(o).ContBancarId = idContPropriu);
+    var fclPePartener = RefuzF28(o => o.GetObjectsQuery<FacturaIesire>().ToList()
+        .First(d => d.Numar == MarcajF28 + "-" + nameof(FacturaIesire)).GestiuneDescarcareId = idPartener);
+    bool RefuzTip(string mesaj, Guid id) => mesaj != null && mesaj.Contains($"({id}) e ") && mesaj.Contains(", nu ");
+    bool FaraRefuzTip(string mesaj) => mesaj == null || !mesaj.Contains("rândul ales");
+    Console.WriteLine($"     MĂSURAT (F28-D/{eticheta}): {acoperite.Count} FK-uri spre frunze descoperite "
+        + $"[{string.Join(", ", acoperite.OrderBy(a => a))}]; Lot→Partener „{lotPePartener ?? "<acceptat>"}”; "
+        + $"Lot→Gestiune „{lotPeGestiune ?? "acceptat"}”; Lot→inexistent „{lotPeInexistent ?? "<acceptat>"}”; "
+        + $"Lot→Partener nou „{lotPePartenerNou ?? "<acceptat>"}”; Lot→Gestiune nouă „{lotPeGestiuneNoua ?? "acceptat"}”; "
+        + $"Societate.ContBancar→Partener „{societatePePartener ?? "<acceptat>"}”; Societate.ContBancar→ContPropriu "
+        + $"„{societatePeContPropriu ?? "acceptat"}”; FacturaIesire.GestiuneDescarcare→Partener „{fclPePartener ?? "<acceptat>"}”.");
+    Check($"F28-D ({eticheta}) gardianul refuză cu mesaj de domeniu un FK spre frunză îndreptat spre un rând de ALT tip "
+        + "(Lot→Partener din bază și nou în același commit, Societate.ContBancar→Partener, FacturaIesire.GestiuneDescarcare→"
+        + "Partener) sau spre un id inexistent, lasă să treacă ținta de tipul cerut (Lot→Gestiune din bază și nouă, "
+        + "Societate.ContBancar→ContPropriu), iar regula, descoperită din metadata EF, acoperă cele opt FK-uri de azi"
+        + (neacoperite.Count > 0 ? $" — neacoperite: {string.Join(", ", neacoperite)}" : ""),
+        neacoperite.Count == 0
+        && RefuzTip(lotPePartener, idPartener) && lotPeGestiune == null
+        && lotPeInexistent != null && lotPeInexistent.Contains("nu există")
+        && lotPePartenerNou != null && lotPePartenerNou.Contains(", nu ") && FaraRefuzTip(lotPeGestiuneNoua)
+        && RefuzTip(societatePePartener, idPartener) && FaraRefuzTip(societatePeContPropriu)
+        && RefuzTip(fclPePartener, idPartener));
+
+    var tipSters = RefuzF28(o => o.Delete(o.GetObjectsQuery<TipDocument>().ToList().First(t => t.Cod == "FCT")));
+    var tipClrSchimbat = RefuzF28(o =>
+        o.GetObjectsQuery<TipDocument>().ToList().First(t => t.Cod == "FCT").ClrType = nameof(FacturaIesire));
+    Console.WriteLine($"     MĂSURAT (F28-D/{eticheta}/TipDocument): ștergere → „{tipSters ?? "<acceptat>"}”; "
+        + $"`ClrType` schimbat → „{tipClrSchimbat ?? "<acceptat>"}”.");
+    Check($"F28-D ({eticheta}) pe ușa comună `TipDocument` nu se șterge și nu-și schimbă `ClrType` — fără FK, ancora "
+        + "documentelor e codul (decizia 20), iar crearea unui rând nou rămâne refuzată integral (F23-V4)",
+        tipSters != null && tipSters.Contains("nu se șterge")
+        && tipClrSchimbat != null && tipClrSchimbat.Contains("o scrie release-ul"));
+
+    // ---- F28-L/M: rândul după cheie pe un ObjectSpace CU prefetch (ca pe hosturi), cu ținta urmărită sau nu ----
+    EFCoreObjectSpace OsCuPrefetch() {
+        var o = (EFCoreObjectSpace)provider.CreateObjectSpace();
+        o.PreFetchReferenceProperties = true;
+        return o;
+    }
+    string Rezultat(Action actiune) {
+        try { actiune(); return null; }
+        catch (OperareException e) { return e.Message; }
+        catch (Exception e) { return $"EXCEPȚIE {e.GetType().Name}: {e.Message.Split('\n')[0]}"; }
+    }
+    string CereF28<T>(Guid id, bool urmarit) where T : class {
+        using var o = OsCuPrefetch();
+        if (urmarit)
+            o.GetObjectByKey(ctxF28.Model.FindEntityType(typeof(T)).GetRootType().ClrType, id);
+        return Rezultat(() => Rezolva.Cere<T>(o, id, "Referința F28"));
+    }
+    var gestiunePePartener = new[] { true, false }.Select(u => CereF28<Gestiune>(idPartener, u)).ToList();
+    var facturaPeNir = new[] { true, false }.Select(u => CereF28<FacturaIntrare>(idNir, u)).ToList();
+    var gestiunePeGestiune = new[] { true, false }.Select(u => CereF28<Gestiune>(idGestiune, u)).ToList();
+    var gestiuneInexistenta = CereF28<Gestiune>(Guid.NewGuid(), false);
+    var tipMaterialF28 = CereF28<TipMaterial>(ctxF28.Set<TipMaterial>().Select(t => t.ID).First(), false);
+    Console.WriteLine($"     MĂSURAT (F28-L/{eticheta}): Cere<Gestiune>(Partener) urmărit „{gestiunePePartener[0] ?? "<acceptat>"}”, "
+        + $"neurmărit „{gestiunePePartener[1] ?? "<acceptat>"}”; Cere<FacturaIntrare>(NIR) urmărit „{facturaPeNir[0] ?? "<acceptat>"}”, "
+        + $"neurmărit „{facturaPeNir[1] ?? "<acceptat>"}”; Cere<Gestiune>(Gestiune) „{gestiunePeGestiune[0] ?? "acceptat"}” / "
+        + $"„{gestiunePeGestiune[1] ?? "acceptat"}”; inexistent „{gestiuneInexistenta ?? "<acceptat>"}”; "
+        + $"Cere<TipMaterial> „{tipMaterialF28 ?? "acceptat"}”.");
+    Check($"F28-L ({eticheta}) `Rezolva.Cere<T>` pe un ObjectSpace cu `PreFetchReferenceProperties` refuză de DOMENIU, cu fraza "
+        + "regulii (o), un id de alt tip al aceleiași ierarhii (Gestiune←Partener, FacturaIntrare←NIR), identic cu ținta "
+        + "urmărită sau nu (fără `InvalidCastException`); ținta de tipul cerut și tipul fără ierarhie trec, inexistentul "
+        + "rămâne pe fraza unică",
+        gestiunePePartener.All(m => RefuzTip(m, idPartener)) && gestiunePePartener.Distinct().Count() == 1
+        && facturaPeNir.All(m => RefuzTip(m, idNir)) && facturaPeNir.Distinct().Count() == 1
+        && gestiunePeGestiune.All(m => m == null) && tipMaterialF28 == null
+        && gestiuneInexistenta != null && gestiuneInexistenta.Contains("nu există"));
+
+    string dviPeSine;
+    using (var o = OsCuPrefetch()) {
+        var legatura = o.CreateObject<DviFactura>();
+        legatura.DviId = idDvi;
+        legatura.FacturaId = idDvi;
+        dviPeSine = Rezultat(() => GardianEditare.Verifica(o));
+        o.Rollback();
+    }
+    string laturaPeFcl;
+    using (var o = OsCuPrefetch()) {
+        o.GetObjectByKey(typeof(Document), idFcl);
+        var incasare = (Incasare)o.GetObjectByKey(typeof(Document), idIncasare);
+        incasare.LaturaPerecheId = idFcl;
+        var erori = new List<string>();
+        laturaPeFcl = Rezultat(() => incasare.ValideazaOperare(o, erori)) ?? string.Join("\n", erori);
+        o.Rollback();
+    }
+    int Aparitii(string mesaj, string text) => mesaj == null ? 0 : mesaj.Split('\n').Count(l => l.Contains(text));
+    Console.WriteLine($"     MĂSURAT (F28-M/{eticheta}): DviFactura{{Dvi = Factura = DVI}} „{dviPeSine ?? "<acceptat>"}”; "
+        + $"Incasare.LaturaPereche = FCL urmărită „{laturaPeFcl.Replace('\n', '|')}”.");
+    Check($"F28-M ({eticheta}) regulile entității pe cheie (`DviFactura.Verifica`, `DocumentTrezorerie.ValideazaOperare`) "
+        + "refuză de domeniu o țintă de alt tip deja urmărită pe un ObjectSpace cu prefetch — o singură dată fraza „rândul "
+        + "ales”, fără `InvalidCastException`",
+        RefuzTip(dviPeSine, idDvi) && !dviPeSine.StartsWith("EXCEPȚIE") && Aparitii(dviPeSine, "rândul ales") == 1
+        && RefuzTip(laturaPeFcl, idFcl) && !laturaPeFcl.StartsWith("EXCEPȚIE") && Aparitii(laturaPeFcl, "rândul ales") == 1);
+
+    // ---- F28-N: plasa pe sursă — niciun `GetObjectByKey` pe o frunză sau pe un parametru generic în codul produsului ----
+    var scanare = ScanareGetObjectByKey.Scaneaza(ctxF28.Model,
+        Path.GetFullPath(Path.Combine(MetadataDump.DirectorProiect(), "..", "..", "Atlas.Conta.BackOffice")));
+    Console.WriteLine($"     MĂSURAT (F28-N/{eticheta}): {scanare.Fisiere} fișiere, {scanare.Apeluri} apeluri `GetObjectByKey` cu tip "
+        + $"explicit; încălcări {scanare.Incalcari.Count}: [{string.Join("; ", scanare.Incalcari)}].");
+    Check($"F28-N ({eticheta}) în `nou/Atlas.Conta.BackOffice` niciun `GetObjectByKey<T>`/`GetObjectByKey(typeof(T), …)` n-are T "
+        + "frunză a unei ierarhii EF sau parametru generic — rândul după cheie trece prin `RandDupaCheie` (rădăcina + `is`)",
+        scanare.Fisiere > 100 && scanare.Apeluri > 50 && scanare.Incalcari.Count == 0);
+
+    // ---- F28-E: cititorul tipului dă aceleași coduri ca `ClasaReala` + ancora, pe toate tipurile concrete ----
+    using (var osE = provider.CreateObjectSpace()) {
+        var documente = osE.GetObjectsQuery<Document>()
+            .Where(d => d.Numar != null && d.Numar.StartsWith(MarcajF28)).ToList();
+        var codPeClrType = osE.GetObjectsQuery<TipDocument>().Select(t => new { t.ClrType, t.Cod }).ToList()
+            .Where(t => t.ClrType != null).GroupBy(t => t.ClrType).ToDictionary(g => g.Key, g => g.First().Cod);
+        var inexistent = Guid.NewGuid();
+        var ids = documente.Select(d => d.ID).Append(inexistent).ToList();
+        var coduri = CititorTipDocument.Coduri(osE, ids);
+        var clase = CititorTipDocument.Clase(osE, ids);
+        var diferente = documente
+            .Where(d => {
+                var reala = MotorOperare.ClasaReala(d);
+                return coduri.GetValueOrDefault(d.ID) != codPeClrType.GetValueOrDefault(reala.Name)
+                    || clase.GetValueOrDefault(d.ID) != reala.Name
+                    || CititorTipDocument.Clasa(clase.GetValueOrDefault(d.ID)) != reala;
+            })
+            .Select(d => $"{MotorOperare.ClasaReala(d).Name}: cod „{coduri.GetValueOrDefault(d.ID)}”, "
+                + $"clasă „{clase.GetValueOrDefault(d.ID)}”")
+            .ToList();
+        var tipuriAcoperite = documente.Select(d => MotorOperare.ClasaReala(d)).Distinct().Count();
+        Console.WriteLine($"     MĂSURAT (F28-E/{eticheta}): {documente.Count} documente pe {tipuriAcoperite} tipuri concrete; "
+            + $"diferențe [{string.Join("; ", diferente)}]; id inexistent → cod "
+            + $"„{(coduri.TryGetValue(inexistent, out var codLipsa) ? codLipsa ?? "null" : "<lipsă>")}”.");
+        Check($"F28-E ({eticheta}) `CititorTipDocument` (o proiecție pe discriminator + ancora `TipDocument`) dă, pe câte un "
+            + "document din FIECARE tip concret, exact codul obținut prin materializare (`ClasaReala` + ancora), aceeași "
+            + "clasă (și `Clasa` o rezolvă înapoi la tipul CLR), iar un id "
+            + "inexistent rămâne în contract cu `null`",
+            documente.Count == concrete[typeof(Document)].Count && tipuriAcoperite == documente.Count
+            && diferente.Count == 0
+            && coduri.ContainsKey(inexistent) && coduri[inexistent] == null && !clase.ContainsKey(inexistent));
+        CurataF28(osE);
+    }
+    using (var osF = provider.CreateObjectSpace())
+        Check($"F28 — curățenie finală ({eticheta}): niciun document și niciun repartitor de probă rămas",
+            !osF.GetObjectsQuery<Document>().Any(d => d.Numar != null && d.Numar.StartsWith(MarcajF28))
+            && !osF.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajF28)));
+}
+
+// ============ Felia 31 (TR-D7a): schema cubului și ordinea liniilor ============
+// S-D2 — forma fizică a lui `Postare` NU e în modelul EF (XAF EF Core n-are chei
+// compuse, iar Postgres cere cheia partiției în orice constrângere unică): ea
+// trăiește în SQL-ul migrației, deci proba ei e pe CATALOGUL bazei, nu pe model.
+void VerificaSchemaCub(bool privat) {
+    var eticheta = privat ? "privat" : "bugetar";
+    using var os = provider.CreateObjectSpace();
+    var ctxCub = ((EFCoreObjectSpace)os).DbContext;
+    List<string> Valori(FormattableString sql) => ctxCub.Database.SqlQuery<string>(sql).ToList();
+
+    // ---- STR-SCHEMA-1: părintele e partiționat LIST pe `Spatiu`, cu două partiții ----
+    // `partattrs` e `int2vector` (indexat de la 0), spre deosebire de `conkey` (`int2[]`).
+    var partitionare = Valori($@"
+        SELECT (p.partstrat::text || ':' || a.attname::text) AS ""Value""
+        FROM pg_partitioned_table p
+        JOIN pg_class c ON c.oid = p.partrelid
+        JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = p.partattrs[0]
+        WHERE c.relname = 'Postare'");
+    var partitii = Valori($@"
+        SELECT (c.relname::text || ' ' || pg_get_expr(c.relpartbound, c.oid)) AS ""Value""
+        FROM pg_class c
+        JOIN pg_inherits i ON i.inhrelid = c.oid
+        JOIN pg_class parinte ON parinte.oid = i.inhparent
+        WHERE parinte.relname = 'Postare'
+        ORDER BY c.relname");
+    Console.WriteLine($"     MĂSURAT (STR-SCHEMA-1/{eticheta}): partiționare [{string.Join(", ", partitionare)}]; "
+        + $"partiții [{string.Join("; ", partitii)}].");
+    Check($"STR-SCHEMA-1 ({eticheta}) `Postare` e PARTITION BY LIST (\"Spatiu\") cu exact două partiții — "
+        + "`Postare_Contabil` FOR VALUES IN (1) și `Postare_Stoc` FOR VALUES IN (2), adică `N.Spatiu` (N-D2)",
+        partitionare.SequenceEqual(["l:Spatiu"])
+        && partitii.SequenceEqual([
+            "Postare_Contabil FOR VALUES IN ('1')", "Postare_Stoc FOR VALUES IN ('2')"]));
+
+    // ---- STR-SCHEMA-2: cheia primară e `(Spatiu, ID)`, în ordinea asta ----
+    var cheie = Valori($@"
+        SELECT (con.conname::text || ':' || a.attname::text) AS ""Value""
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        CROSS JOIN LATERAL unnest(con.conkey) WITH ORDINALITY k(attnum, ord)
+        JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = k.attnum
+        WHERE c.relname = 'Postare' AND con.contype = 'p'
+        ORDER BY k.ord");
+    Console.WriteLine($"     MĂSURAT (STR-SCHEMA-2/{eticheta}): PK [{string.Join(", ", cheie)}].");
+    Check($"STR-SCHEMA-2 ({eticheta}) cheia primară a bazei e `(Spatiu, ID)` — divergență DECLARATĂ față de "
+        + "snapshot-ul EF, care poartă doar `ID` (S-r4)",
+        cheie.SequenceEqual(["PK_Postare:Spatiu", "PK_Postare:ID"]));
+
+    // ---- STR-SCHEMA-3: FK-urile stau pe PARTIȚII, exact setul din S-D2 ----
+    var chei = Valori($@"
+        SELECT (c.relname::text || '.' || a.attname::text || '→' || tinta.relname::text || ' [' || con.conname::text || ']') AS ""Value""
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        JOIN pg_class tinta ON tinta.oid = con.confrelid
+        JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = con.conkey[1]
+        WHERE con.contype = 'f' AND c.relname IN ('Postare', 'Postare_Contabil', 'Postare_Stoc')
+        ORDER BY 1");
+    string[] cheiAsteptate = [
+        "Postare_Contabil.Cont→Conturi [FK_Postare_Contabil_Conturi_Cont]",
+        "Postare_Contabil.DocumentId→Documente [FK_Postare_Contabil_Documente_DocumentId]",
+        "Postare_Contabil.Partener→Repartitori [FK_Postare_Contabil_Repartitori_Partener]",
+        "Postare_Contabil.Produs→Produse [FK_Postare_Contabil_Produse_Produs]",
+        "Postare_Contabil.TranzactieId→Tranzactie [FK_Postare_Contabil_Tranzactie_TranzactieId]",
+        "Postare_Stoc.Cont→Conturi [FK_Postare_Stoc_Conturi_Cont]",
+        "Postare_Stoc.DocumentId→Documente [FK_Postare_Stoc_Documente_DocumentId]",
+        "Postare_Stoc.Partener→Repartitori [FK_Postare_Stoc_Repartitori_Partener]",
+        "Postare_Stoc.Produs→Produse [FK_Postare_Stoc_Produse_Produs]",
+        "Postare_Stoc.TranzactieId→Tranzactie [FK_Postare_Stoc_Tranzactie_TranzactieId]",
+        "Postare_Stoc.Unitate→Loturi [FK_Postare_Stoc_Loturi_Unitate]",
+    ];
+    Console.WriteLine($"     MĂSURAT (STR-SCHEMA-3/{eticheta}): {chei.Count} FK-uri [{string.Join("; ", chei)}].");
+    Check($"STR-SCHEMA-3 ({eticheta}) fiecare FK din S-D2 există pe PARTIȚIA lui (părintele partiționat n-are "
+        + "niciunul), iar setul e ÎNCHIS: fără FK pe `Gestiune` (gestiunile virtuale sunt id-uri fără rând — S-r3), "
+        + "fără FK pe `Unitate` pe Contabil (partida e hash determinist, nu rând) și fără FK pe `Valuta` (B-r6)",
+        chei.OrderBy(x => x, StringComparer.Ordinal).SequenceEqual(cheiAsteptate.OrderBy(x => x, StringComparer.Ordinal)));
+
+    // ---- STR-SCHEMA-4: setul minim de indexi (TR-r3 îl re-măsoară la TR-D8) ----
+    var indexi = Valori($@"
+        SELECT (tablename::text || '.' || indexname::text) AS ""Value""
+        FROM pg_indexes WHERE tablename IN ('Postare', 'Postare_Contabil', 'Postare_Stoc', 'Tranzactie')
+        ORDER BY 1").ToHashSet(StringComparer.Ordinal);
+    string[] indexiAsteptati = [
+        "Postare.PK_Postare",
+        "Postare.IX_Postare_TranzactieId",
+        "Postare.IX_Postare_DocumentId",
+        "Postare_Stoc.IX_Postare_Stoc_Produs_Data",
+        "Postare_Contabil.IX_Postare_Contabil_Partener_Cont_Data",
+        "Postare_Contabil.IX_Postare_Contabil_Data",
+        "Postare_Contabil.IX_Postare_Contabil_PerioadaDeclarare_TipTvaId",
+        "Tranzactie.IX_Tranzactie_DocumentId",
+    ];
+    var indexiLipsa = indexiAsteptati.Where(i => !indexi.Contains(i)).ToList();
+    // Cei doi indexi PARȚIALI și cel cu `INCLUDE` nu pot sta pe tabela partiționată
+    // (Postgres îi refuză pe părinte), deci stau pe partițiile lor — exact S-D2.
+    var definitii = Valori($@"
+        SELECT indexdef::text AS ""Value"" FROM pg_indexes
+        WHERE indexname IN ('IX_Postare_Stoc_Produs_Data', 'IX_Postare_Contabil_Partener_Cont_Data',
+                            'IX_Postare_Contabil_PerioadaDeclarare_TipTvaId')
+        ORDER BY 1");
+    var formeGresite = new List<string>();
+    foreach (var d in definitii) {
+        if (d.Contains("IX_Postare_Stoc_Produs_Data") && !d.Contains("INCLUDE (\"Cantitate\", \"Valoare\", \"Gestiune\", \"Unitate\")"))
+            formeGresite.Add(d);
+        if (d.Contains("IX_Postare_Contabil_Partener_Cont_Data") && !d.Contains("WHERE (\"Partener\" IS NOT NULL)"))
+            formeGresite.Add(d);
+        if (d.Contains("IX_Postare_Contabil_PerioadaDeclarare_TipTvaId") && !d.Contains("WHERE (\"PerioadaDeclarare\" IS NOT NULL)"))
+            formeGresite.Add(d);
+    }
+    Console.WriteLine($"     MĂSURAT (STR-SCHEMA-4/{eticheta}): {indexi.Count} indexi pe cele patru tabele; "
+        + $"lipsă [{string.Join(", ", indexiLipsa)}]; formă greșită [{string.Join("; ", formeGresite)}].");
+    Check($"STR-SCHEMA-4 ({eticheta}) indexii minimi din S-D2 există: PK + `(TranzactieId)`/`(DocumentId)` pe "
+        + "părinte, S2 `(Produs, Data) INCLUDE (…)` pe Stoc, C2 `(Partener, Cont, Data) WHERE …`, C3 `(Data)` și "
+        + "F1 `(PerioadaDeclarare, TipTvaId) WHERE …` pe Contabil, `Tranzactie(DocumentId)`",
+        indexiLipsa.Count == 0 && definitii.Count == 3 && formeGresite.Count == 0);
+
+    // ---- STR-SCHEMA-5: coloanele modelului EF = coloanele bazei, pe ambele entități ----
+    var modelCub = Microsoft.EntityFrameworkCore.Infrastructure.AccessorExtensions
+        .GetService<Microsoft.EntityFrameworkCore.Metadata.IDesignTimeModel>(ctxCub).Model;
+    var abateriCub = new List<string>();
+    foreach (var tip in new[] { typeof(Atlas.Conta.BackOffice.Module.Cub.Postare),
+                                typeof(Atlas.Conta.BackOffice.Module.Cub.Tranzactie) }) {
+        var entitate = modelCub.FindEntityType(tip);
+        if (entitate == null) {
+            abateriCub.Add($"{tip.Name}: lipsește din model");
+            continue;
+        }
+        var tabela = entitate.GetTableName();
+        var coloaneModel = entitate.GetProperties().Select(p => p.GetColumnName()).ToHashSet(StringComparer.Ordinal);
+        var coloaneBaza = Valori($"SELECT column_name::text AS \"Value\" FROM information_schema.columns WHERE table_name = {tabela}")
+            .ToHashSet(StringComparer.Ordinal);
+        if (!coloaneBaza.SetEquals(coloaneModel))
+            abateriCub.Add($"{tabela}: doar în bază [{string.Join(",", coloaneBaza.Except(coloaneModel))}]; "
+                + $"doar în model [{string.Join(",", coloaneModel.Except(coloaneBaza))}]");
+        // Fără `GCRecord`/`OptimisticLockField`: convențiile globale se aplică pe
+        // `IDeferredDeletion`/`IOptimisticLock`, pe care POCO-urile nu le implementează (S-D1).
+        if (coloaneBaza.Contains("GCRecord") || coloaneBaza.Contains("OptimisticLockField"))
+            abateriCub.Add($"{tabela}: are timbru de `BaseObject`");
+        if (entitate.GetDeclaredQueryFilters().Any())
+            abateriCub.Add($"{tabela}: are filtru global de interogare");
+    }
+    Console.WriteLine($"     MĂSURAT (STR-SCHEMA-5/{eticheta}): abateri [{string.Join("; ", abateriCub)}].");
+    Check($"STR-SCHEMA-5 ({eticheta}) coloanele lui `Postare` și `Tranzactie` din bază sunt exact cele ale "
+        + "modelului EF, fără `GCRecord`/`OptimisticLockField` și fără filtru global — cubul e append-only (S-D1)",
+        abateriCub.Count == 0);
+}
+
+// S-D6 — `Pozitie` pe `DocumentDetaliu`: ordinea de CULEGERE, atribuită o
+// singură dată, în `SaveChanges`-ul contextului (o ușă pentru UI, WebApi,
+// Import1C și conexul clonat). Documentul rămâne Draft: proba e despre
+// SALVARE, nu despre motor.
+void VerificaPozitieLinii(bool privat) {
+    var eticheta = privat ? "privat" : "bugetar";
+    var idDoc = new Guid("57a00000-0000-0000-0000-000000000031");
+    using var os = provider.CreateObjectSpace();
+
+    void CurataPozitie() {
+        var pj = new Purja(os);
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Where(d => d.DocumentId == idDoc));
+        pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => d.ID == idDoc));
+        pj.Executa();
+    }
+    CurataPozitie();
+
+    var gestiune = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "302" : "302.01.00"));
+    var doc = os.CreateObject<BonConsum>();
+    doc.ID = idDoc;
+    doc.Data = new DateOnly(2026, 3, 1);
+    doc.DataInregistrare = doc.Data;
+    doc.Predator = gestiune;
+    doc.Primitor = gestiune;
+    DocumentDetaliu Linie(decimal cantitate) {
+        var linie = os.CreateObject<DocumentDetaliu>();
+        linie.Document = doc;
+        linie.TipMaterial = tipMaterial;
+        linie.Cantitate = cantitate;
+        return linie;
+    }
+
+    var primele = new[] { Linie(1m), Linie(2m), Linie(3m) };
+    os.CommitChanges();
+    Console.WriteLine($"     MĂSURAT (STR-POZITIE/{eticheta}): prima salvare → "
+        + $"[{string.Join(", ", primele.Select(l => l.Pozitie))}].");
+    Check($"STR-POZITIE-1 ({eticheta}) cele trei linii noi primesc `Pozitie` 1, 2, 3 în ordinea adăugării, la "
+        + "salvare (B-r11)",
+        primele.Select(l => l.Pozitie).SequenceEqual([1, 2, 3]));
+
+    var aPatra = Linie(4m);
+    os.CommitChanges();
+    Console.WriteLine($"     MĂSURAT (STR-POZITIE/{eticheta}): a doua salvare → a patra linie {aPatra.Pozitie}, "
+        + $"primele [{string.Join(", ", primele.Select(l => l.Pozitie))}].");
+    Check($"STR-POZITIE-2 ({eticheta}) a patra linie, adăugată la a DOUA salvare, ia `Pozitie` 4 (max + 1 din "
+        + "bază), iar primele trei rămân neschimbate — poziția se atribuie o singură dată",
+        aPatra.Pozitie == 4 && primele.Select(l => l.Pozitie).SequenceEqual([1, 2, 3]));
+
+    CurataPozitie();
+    using var osFinal = provider.CreateObjectSpace();
+    Check($"STR-POZITIE — curățenie finală ({eticheta}): documentul de probă și liniile lui nu mai există",
+        !osFinal.GetObjectsQuery<Document>().IgnoreQueryFilters().Any(d => d.ID == idDoc)
+        && !osFinal.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters().Any(d => d.DocumentId == idDoc));
+}
+
+// ====== Felia 30, pasul 4: declarantul de trezorerie pe scenă privată ======
+// Scenele PLT/INC existente (e2e 3c, felia Api Trz, felia 7) sunt BUGETARE, iar
+// pe bugetar niciun cont n-are `RolTert` (`SeedRolTert` e privat, D16-V1): tot
+// miezul lui B-D5 — partida, partenerul pe piciorul de terț, nominalizarea
+// TR-D2a — rămânea probat într-un singur document (plata din P1). Scena de aici
+// îl probează pe toate cele patru forme, pe profilul care are partide.
+//
+// Cazul SPLIT (plata mai mare decât restul sursei) e singurul din pilot în care
+// declarantul și oracolul NU coincid: pin-ul 3 cere ca partea nealocată să fie o
+// a doua mișcare, iar o mișcare are DOUĂ capete, deci se sparge și piciorul de
+// bani; `TrD2NominalizeazaPrinImperechere` sparge doar postările cu partidă.
+// Diferența se CONSEMNEAZĂ aici (ca N-r3 la pasul 3), nu se normalizează — B-D10 (b).
+void VerificaNucleuTrezorerie(bool privat) {
+    const string MarcajNucTrz = "E2E-NUC-TRZ";
+    var eticheta = privat ? "PRIVAT" : "BUGETAR";
+
+    void CurataNucTrz(IObjectSpace os) {
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(MarcajNucTrz)).Select(r => r.ID).ToList();
+        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+        var docIds = docs.Select(d => d.ID).ToList();
+        ProbeCub.Purjeaza(pj, os, docIds);                                             // S-D8
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        var idsLotTrz = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucTrz)).Select(l => l.ID).ToList();
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => idsLotTrz.Contains(r.LotId)
+                || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        // Copiii (plata autogenerată, latura pereche) înaintea părinților.
+        foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        os.CommitChanges();
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucTrz)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(x => x.Cod.StartsWith(MarcajNucTrz)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(MarcajNucTrz)).ToList());
+        pj.Executa();
+    }
+
+    using var os = provider.CreateObjectSpace();
+    CurataNucTrz(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var casa = os.FirstOrDefault<ContPropriu>(c => c.Cod == "CASA");
+    var banca = os.FirstOrDefault<ContPropriu>(c => c.Cod == "BANCA");
+    var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
+    var tipVir = os.FirstOrDefault<TipMaterial>(t => t.Cod == "VIR");
+    var tipServicii = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "628" : "628.00.00"));
+    var tipStocTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "302" : "302.00.00"));
+    var tipImobilizareTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "2131" : "213.01.00"));
+    var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+    var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "401" : "401.01.00"));
+    var cont404 = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "404" : "404.01.00"));
+    var cont4111 = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "4111" : "411.01.01"));
+    Check($"NUC-TRZ-{eticheta} scenă: profilul are conturi cu `RolTert` (401 furnizor, 4111 client) — "
+        + "fără ele partida nici nu se deschide (B-D8 pct. 10)",
+        cont401?.RolTert == RolTertCont.Furnizor && cont4111?.RolTert == RolTertCont.Client);
+
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = MarcajNucTrz + "-FURN";
+    furnizor.Denumire = "Furnizor probă felia 30";
+    var client = os.CreateObject<Partener>();
+    client.Cod = MarcajNucTrz + "-CL";
+    client.Denumire = "Client probă felia 30";
+    var produsTrz = os.CreateObject<Produs>();
+    produsTrz.Cod = MarcajNucTrz + "-P";
+    produsTrz.Denumire = "Produs probă felia 31 (TRZ)";
+    produsTrz.UM = "BUC";
+    produsTrz.TipMaterial = tipStocTrz;
+    var casaVir = os.CreateObject<ContPropriu>();
+    casaVir.Cod = MarcajNucTrz + "-CASA";
+    casaVir.Denumire = "Casa probă felia 30";
+    casaVir.ContImplicit = casa.ContImplicit;
+    var bancaVir = os.CreateObject<ContPropriu>();
+    bancaVir.Cod = MarcajNucTrz + "-BANCA";
+    bancaVir.Denumire = "Banca probă felia 30";
+    bancaVir.ContImplicit = banca.ContImplicit;
+    bancaVir.EsteBanca = true;
+    os.CommitChanges();
+
+    T Trezorerie<T>(Repartitor predator, Repartitor primitor, TipMaterial tip, decimal valoare, DateOnly data)
+            where T : DocumentTrezorerie {
+        var doc = os.CreateObject<T>();
+        doc.Data = data;
+        doc.Predator = predator;
+        doc.Primitor = primitor;
+        var d = os.CreateObject<DocumentTrezorerieDetaliu>();
+        d.Document = doc;
+        d.TipMaterial = tip;
+        d.Valoare = valoare;
+        os.CommitChanges();
+        return doc;
+    }
+    Guid PartidaDin(Document doc, Cont cont, Repartitor partener) =>
+        N.Unitate.DeschidePartida(cont.ID, partener.ID, doc.ID, doc.DataInregistrare).Id;
+    List<Guid?> UnitatiPe(N.Tranzactie tranzactie, Cont cont) =>
+        [.. tranzactie.Postari.Where(p => p.Coordonate.Cont == cont.ID).Select(p => p.Coordonate.Unitate?.Id)];
+
+    // --- (1) plata manuală către furnizor: partida PROPRIE pe 401 ---
+    var plt = Trezorerie<Plata>(casa, furnizor, tipTrz, 60m, new DateOnly(2026, 3, 5));
+    // STR-NEMIGRAT cere un stingator operat INAINTE de migrarea tipului lui: seed-ul
+    // migreaza PLT de la pasul 5, deci scena comuta LOCAL pe fals (ca la BCS/FCT).
+    using (ProbeCub.Nemigrat(os, plt))
+        MotorOperare.Opereaza(os, plt);
+    Check($"NUC-PLT-{eticheta} scenă: plată manuală 60 către furnizor — o notă 401 = 5311, fără stingere",
+        os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == plt.ID) == 1
+        && !os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentStingatorId == plt.ID));
+    ProbeNucleu.Proba(os, Check, $"NUC-PLT-{eticheta}", [plt]);
+    var contractPlt = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, plt);
+    Check($"NUC-PLT-{eticheta}: fără document-sursă, postarea de terț numește partida PROPRIE a plății "
+        + "pe 401, iar piciorul de bani (5311) rămâne fără unitate",
+        contractPlt.EsteAcceptat
+        && UnitatiPe(contractPlt.Tranzactie, cont401) is [var unitatePlt] && unitatePlt == PartidaDin(plt, cont401, furnizor)
+        && contractPlt.Decizii.OfType<N.PartidaDeschisa>().Count() == 1
+        && contractPlt.Tranzactie.Postari.Count(p => p.Coordonate.Unitate == null) == 1);
+
+    // --- (2) încasare de la client: partida proprie pe 4111 ---
+    var inc = Trezorerie<Incasare>(client, casa, tipTrz, 80m, new DateOnly(2026, 3, 5));
+    MotorOperare.Opereaza(os, inc);
+    Check($"NUC-INC-{eticheta} scenă: încasare manuală 80 de la client — o notă 5311 = 4111",
+        os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == inc.ID) == 1);
+    ProbeNucleu.Proba(os, Check, $"NUC-INC-{eticheta}", [inc]);
+    var contractInc = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, inc);
+    Check($"NUC-INC-{eticheta}: oglinda — partida proprie stă pe piciorul de CREDIT (4111), fără ca "
+        + "declarantul să știe că e încasare (latura o dă `RolTert`-ul contului rezolvat)",
+        contractInc.EsteAcceptat
+        && UnitatiPe(contractInc.Tranzactie, cont4111) is [var unitateInc] && unitateInc == PartidaDin(inc, cont4111, client)
+        && contractInc.Tranzactie.Postari.Single(p => p.Coordonate.Unitate != null).Coordonate.Latura == N.Latura.Credit);
+
+    // --- (3) SPLIT: plata autogenerată e mai mare decât restul facturii ---
+    var fct = os.CreateObject<FacturaIntrare>();
+    fct.Numar = MarcajNucTrz + "-F1";
+    fct.Data = new DateOnly(2026, 3, 3);
+    fct.Predator = furnizor;
+    fct.Primitor = mag1;
+    fct.GenereazaPlata = true;
+    fct.PlataContPropriu = casa;
+    fct.PlataNumar = MarcajNucTrz + "-OP";
+    fct.PlataData = new DateOnly(2026, 3, 10);
+    var linieServiciu = os.CreateObject<FacturaIntrareDetaliu>();
+    linieServiciu.Document = fct;
+    linieServiciu.TipMaterial = tipServicii;
+    linieServiciu.Cantitate = 1m;
+    linieServiciu.PretUnitar = 100m;
+    linieServiciu.TipTva = n21;
+    os.CommitChanges();
+    // `Opereaza` întoarce conexul SAU secundarul: fără linie de stoc nu e NIR, deci
+    // ce iese e draftul plății autogenerate.
+    var secundar = MotorOperare.Opereaza(os, fct);
+    var plataAuto = os.GetObjectsQuery<Plata>().Single(p => p.DocumentSursaId == fct.ID);
+    Check($"NUC-PLT-SPLIT ({eticheta}) scenă: FCT numai de servicii ⇒ fără NIR conex, iar operarea "
+        + "întoarce SECUNDARUL (draftul plății); brutul facturii = 121",
+        secundar is Plata && secundar.ID == plataAuto.ID && fct.Total == 121m
+        && !os.GetObjectsQuery<Document>().Any(d => d.DocumentSursaId == fct.ID && d.ID != plataAuto.ID));
+
+    // --- NUC-FCT-SERV (B-D6, pas 5): factura FĂRĂ linie de stoc — niciun capăt virtual,
+    //     deci nici cantitate; netul și taxa cad pe aceeași partidă de 401 ---
+    ProbeNucleu.Proba(os, Check, $"NUC-FCT-SERV-{eticheta}", [fct]);
+
+    // Restul facturii se taie ÎNAINTE de plată: 60 stinși manual din plata (1).
+    ImperechereService.Imperecheaza(os, plt, fct, 60m, data: new DateOnly(2026, 3, 20));
+    var restInainte = ImperechereService.Ramas(os, fct.ID);
+    Check($"NUC-PLT-SPLIT-1 ({eticheta}): restul facturii (61) e MAI MIC decât plata autogenerată (121) — "
+        + "cazul în care o linie se împarte între partida stinsă și partida proprie",
+        restInainte == 61m && plataAuto.Detalii.Single().Valoare == 121m);
+
+    MotorOperare.Opereaza(os, plataAuto);
+    var impAuto = os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == plataAuto.ID);
+    Check($"NUC-PLT-SPLIT-2 ({eticheta}): motorul vechi se plafonează la restul sursei — împerecherea "
+        + $"automată e {impAuto.Suma}, nu 121, iar nota rămâne UNA de 121",
+        impAuto.Suma == 61m
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == plataAuto.ID) == 1);
+
+    var contractSplit = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, plataAuto);
+    var partidaFct = PartidaDin(fct, cont401, furnizor);
+    var partidaProprie = PartidaDin(plataAuto, cont401, furnizor);
+    Check($"NUC-PLT-SPLIT-3 ({eticheta}): declarantul împarte linia — 61 pe partida FACTURII (nominalizare "
+        + "TR-D2a) + 60 pe partida PROPRIE a plății, în ordinea liniilor; ipoteza consemnează soldul REAL "
+        + "al partidei (121 credit pe 401), iar plafonul nominalizării e restul documentului (61) — MAJOR-1",
+        contractSplit.EsteAcceptat
+        && contractSplit.Tranzactie.Postari.Any(p => p.Coordonate.Unitate?.Id == partidaFct && p.Valoare == 61m)
+        && contractSplit.Tranzactie.Postari.Any(p => p.Coordonate.Unitate?.Id == partidaProprie && p.Valoare == 60m)
+        && contractSplit.Decizii.OfType<N.AlocareFifo>().Single().Masura == 61m
+        && contractSplit.Ipoteze.OfType<N.SoldUnitateCitit>().Single() is { } citit
+        && citit.Sold.Credit == 121m && citit.Unitate.Id == partidaFct);
+
+    ProbeNucleu.Proba(os, Check, $"NUC-PLT-SPLIT", [plataAuto]);
+
+    Normalizari.Reseteaza();
+    var oracolSplit = Normalizari.Toate(
+        CubDinRegistre.Transforma(os, [plataAuto.ID]), Normalizari.Citeste(os, [plataAuto.ID]));
+    var contBani = casa.ContImplicit;
+    var bucatiOracol = oracolSplit.SelectMany(t => t.Postari)
+        .Where(p => p.Coordonate.Cont == contBani.ID).Select(p => p.Valoare).OrderBy(v => v).ToList();
+    Check($"NUC-PLT-SPLIT-4 ({eticheta}): B-D8 pct. 11 — `TrD2DesparteContrapartida` sparge și piciorul "
+        + "de bani în aceleași sume (C 5311 60 + 61 în loc de 121), pentru că `TrD2` sparge doar "
+        + "postările CU partidă, iar o mișcare are DOUĂ capete; egalitatea cu declarația ține",
+        bucatiOracol is [60m, 61m] && Normalizari.Avertismente.Count == 0);
+    Check($"NUC-PLT-SPLIT-5 ({eticheta}): declarația se conservă oricum — suma celor două bucăți e "
+        + "valoarea liniei, iar `Conservare.Verifica` e gol",
+        N.Conservare.Verifica(contractSplit.Tranzactie).Count == 0
+        && contractSplit.Tranzactie.Postari.Where(p => p.Coordonate.Cont == cont401.ID).Sum(p => p.Valoare) == 121m);
+
+    // --- (4) viramentul intern pe profilul cu partide ---
+    var virPlt = Trezorerie<Plata>(casaVir, bancaVir, tipVir, 500m, new DateOnly(2026, 3, 11));
+    var virInc = MotorOperare.Opereaza(os, virPlt);
+    Check($"NUC-PLT-VIR-{eticheta} scenă: piciorul de ieșire postează 581 = 5311 și naște latura pereche",
+        virInc is Incasare { Stare: StareDocument.Draft }
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == virPlt.ID) == 1);
+    ProbeNucleu.Proba(os, Check, $"NUC-PLT-VIR-{eticheta}", [virPlt]);
+    MotorOperare.Opereaza(os, virInc);
+    ProbeNucleu.Proba(os, Check, $"NUC-INC-VIR-{eticheta}", [virInc]);
+    var contractVir = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, virPlt);
+    Check($"NUC-PLT-VIR-{eticheta}: la virament ambele capete poartă contul propriu AL PICIORULUI ca "
+        + "gestiune și NICIUNUL o partidă (581/5311 n-au `RolTert`) — `GetContPropriuId` reprodus din "
+        + "sursa declarată a regulii, fără `is` pe tipul documentului",
+        contractVir.EsteAcceptat
+        && contractVir.Tranzactie.Postari.All(p => p.Coordonate.Gestiune == casaVir.ID
+            && p.Coordonate.Unitate == null && p.Coordonate.Partener == null));
+
+    // --- Felia 31 (TR-D7a), S-D8: cubul PERSISTAT pe PLT/INC ---
+    ProbeCub.FaraRanduri(os, Check,
+        $"STR-NEMIGRAT ({eticheta}): plata operată cu `PosteazaInCub` fals n-a atins cubul", plt.ID);
+
+    var pltCub = Trezorerie<Plata>(casa, furnizor, tipTrz, 40m, new DateOnly(2026, 3, 13));
+    var incCub = Trezorerie<Incasare>(client, casa, tipTrz, 30m, new DateOnly(2026, 3, 13));
+    var dataStornoTrz = new DateOnly(2026, 7, 22);
+    using (ProbeCub.Migrat(os, pltCub, incCub)) {
+        MotorOperare.Opereaza(os, pltCub);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-PLT-{eticheta}", pltCub);
+        MotorOperare.Opereaza(os, incCub);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-INC-{eticheta}", incCub);
+        MotorOperare.Storneaza(os, pltCub, dataStornoTrz);
+        ProbeCub.ProbaStorno(os, Check, $"NUC-PLT-{eticheta}", pltCub, dataStornoTrz);
+    }
+
+    // ===== Felia 31 (TR-D7a) pasul 5, S-D13: imperecherea ca tranzactie `Transfer` =====
+    ProbeCub.FaraRanduri(os, Check,
+        $"STR-TRANSFER-0 ({eticheta}): împerecherea unui stingător NEMIGRAT (plata operată cu "
+        + "`PosteazaInCub` fals) nu atinge cubul — regimul dual e al momentului operării",
+        plt.ID);
+    Check($"STR-TRANSFER-6 ({eticheta}): împerecherea AUTOMATă la operare (plata autogenerată din "
+        + "FCT) NU produce transfer — nominalizarea e deja în `Operare` (TR-D2a)",
+        ProbeCub.Transferuri(os, plataAuto.ID).Count == 0
+        && ProbeCub.Tranzactii(os, plataAuto.ID).Count(t => t.Fel == N.FelTranzactie.Operare) == 1);
+
+    var pltT = Trezorerie<Plata>(casa, furnizor, tipTrz, 100m, new DateOnly(2026, 3, 14));
+    MotorOperare.Opereaza(os, pltT);
+    var partidaProprieT = PartidaDin(pltT, cont401, furnizor);
+    Check($"STR-TRANSFER-1 ({eticheta}): plata manuală (fără sursă) operată pe tip migrat scrie EXACT "
+        + "o `Operare` cu partida PROPRIE pe 401, de 100",
+        ProbeCub.Tranzactii(os, pltT.ID) is [{ Fel: N.FelTranzactie.Operare }]
+        && ProbeCub.Postari(os, pltT.ID).Count(p => p.Unitate == partidaProprieT) == 1
+        && ProbeCub.SoldPartida(os, partidaProprieT) == 100m);
+
+    var fctT = os.CreateObject<FacturaIntrare>();
+    fctT.Numar = MarcajNucTrz + "-F2";
+    fctT.Data = new DateOnly(2026, 3, 4);
+    fctT.Predator = furnizor;
+    fctT.Primitor = mag1;
+    var linieT = os.CreateObject<FacturaIntrareDetaliu>();
+    linieT.Document = fctT;
+    linieT.TipMaterial = tipServicii;
+    linieT.Cantitate = 1m;
+    linieT.PretUnitar = 200m;
+    linieT.TipTva = n21;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fctT);
+    var partidaFctT = PartidaDin(fctT, cont401, furnizor);
+    Check($"STR-TRANSFER-2 ({eticheta}) scenă: factura de 242 e operată și migrată — partida ei pe 401 "
+        + "ține 242 pe credit, plata 100 pe debit",
+        ProbeCub.SoldPartida(os, partidaFctT) == -242m && fctT.Total == 242m);
+
+    // Data împerecherii e în ALTĂ LUNĂ decât a documentelor: transferul se datează
+    // după FAPTUL de stingere, nu după `max(DataInregistrare)` (MAJOR-B).
+    var impT = ImperechereService.Imperecheaza(os, pltT, fctT, 100m, data: new DateOnly(2026, 4, 10));
+    var transferT = ProbeCub.Transferuri(os, pltT.ID);
+    var postariT = transferT.Count == 1
+        ? ProbeCub.Postari(os, pltT.ID).Where(p => p.TranzactieId == transferT[0].ID).ToList()
+        : [];
+    Check($"STR-TRANSFER-2 ({eticheta}): `ImperechereService.Creeaza` după operare scrie EXACT o "
+        + "`Tranzactie(Transfer)` pe STINGĂTOR, cu două postări pe 401 (−100 de pe partida proprie, "
+        + "+100 pe a facturii), conservată pe (cont, latură)",
+        transferT.Count == 1
+        && transferT[0].Data == impT.Data
+        && postariT.All(p => p.Data == impT.Data)
+        && postariT.Count == 2
+        && postariT.All(p => p.Cont == cont401.ID && p.Latura == N.Latura.Debit && p.Partener == furnizor.ID)
+        && postariT.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) == 0m
+        && postariT.Single(p => p.Valoare < 0m).Unitate == partidaProprieT
+        && postariT.Single(p => p.Valoare > 0m).Unitate == partidaFctT);
+    Check($"STR-TRANSFER-2 ({eticheta}): `Sold` per partidă din cub — partida facturii e stinsă cu 100 "
+        + "(−142), partida proprie a plății rămâne 0",
+        ProbeCub.SoldPartida(os, partidaFctT) == -142m
+        && ProbeCub.SoldPartida(os, partidaProprieT) == 0m);
+
+    ProbeCub.ProbaTransferPliat(os, Check, $"NUC-PLT-{eticheta}", pltT);
+
+    var refuzPlafon = Refuz(() => ImperechereService.Imperecheaza(
+        os, pltT, fctT, 1m, data: new DateOnly(2026, 4, 10)));
+    Check($"STR-TRANSFER-2 ({eticheta}): a doua stingere de pe aceeași plată e refuzată — plafonul "
+        + $"documentului o oprește înaintea partidei ({refuzPlafon?.Split('\n')[0]})",
+        refuzPlafon != null && ProbeCub.Transferuri(os, pltT.ID).Count == 1);
+
+    var inversT = ImperechereService.Desfa(os, impT.ID, new DateOnly(2026, 4, 11));
+    var dupaDesfacere = ProbeCub.Transferuri(os, pltT.ID);
+    Check($"STR-TRANSFER-4 ({eticheta}): `Desfa` scrie transferul INVERS (a treia tranzacție), datat la "
+        + "ziua rândului INVERS de împerechere (MAJOR-B), iar Σ per partidă revine: factura la −242, "
+        + "partida proprie la 100",
+        dupaDesfacere.Count == 2
+        && dupaDesfacere.Single(t => t.ID != transferT[0].ID).Data == inversT.Data
+        && inversT.Data == new DateOnly(2026, 4, 11)
+        && ProbeCub.SoldPartida(os, partidaFctT) == -242m
+        && ProbeCub.SoldPartida(os, partidaProprieT) == 100m);
+    ProbeCub.ProbaTransferPliat(os, Check, $"NUC-PLT-DESFACUT-{eticheta}", pltT);
+
+    var impT2 = ImperechereService.Imperecheaza(os, pltT, fctT, 100m, data: new DateOnly(2026, 4, 12));
+    Check($"STR-TRANSFER-5 ({eticheta}): re-împerecherea scrie al patrulea transfer, partida facturii "
+        + "e iar stinsă cu 100",
+        ProbeCub.Transferuri(os, pltT.ID).Count == 3
+        && ProbeCub.SoldPartida(os, partidaFctT) == -142m);
+    var refuzStorno = Refuz(() => MotorOperare.Storneaza(os, fctT, new DateOnly(2026, 4, 13)));
+    Check($"STR-TRANSFER-5 ({eticheta}): stornarea stinsului cu împerechere VIE într-o perioadă DESCHISă "
+        + "e refuzată de gardianul F27-D8 — cubul rămâne neatins; inversul la storno "
+        + "(`InverseazaLaStorno` → `CreeazaInvers`) e calea din perioada îNCHISĂ, aceeași cu `Desfa`",
+        refuzStorno != null
+        && ProbeCub.Transferuri(os, pltT.ID).Count == 3
+        && ProbeCub.Tranzactii(os, fctT.ID).All(t => t.Fel == N.FelTranzactie.Operare));
+    ImperechereService.Desfa(os, impT2.ID, new DateOnly(2026, 4, 14));
+    MotorOperare.Storneaza(os, fctT, new DateOnly(2026, 4, 15));
+    Check($"STR-TRANSFER-5 ({eticheta}): după desfacere, stornarea facturii trece — factura are `Storno` "
+        + "în cub, iar cele patru transferuri ale plății se anulează două câte două (Σ partidă = 0)",
+        ProbeCub.Tranzactii(os, fctT.ID).Count(t => t.Fel == N.FelTranzactie.Storno) == 1
+        && ProbeCub.SoldPartida(os, partidaFctT) == 0m
+        && ProbeCub.SoldPartida(os, partidaProprieT) == 100m);
+
+    // --- STR-TRANSFER-2 re-tăiat (MAJOR-A): FCT cu linie de STOC ---
+    // Recepția stă pe NIR-ul CONEX în registre și pe partida facturii în cub (TR-D3):
+    // plafonul stingerii e brutul INTEGRAL, nu doar taxa + serviciile.
+    var fctS = os.CreateObject<FacturaIntrare>();
+    fctS.Numar = MarcajNucTrz + "-F3";
+    fctS.Data = new DateOnly(2026, 3, 6);
+    fctS.Predator = furnizor;
+    fctS.Primitor = mag1;
+    var linieStocS = os.CreateObject<FacturaIntrareDetaliu>();
+    linieStocS.Document = fctS;
+    linieStocS.TipMaterial = tipStocTrz;
+    linieStocS.Cantitate = 5m;
+    linieStocS.PretUnitar = 10m;
+    linieStocS.TipTva = n21;
+    var linieServiciuS = os.CreateObject<FacturaIntrareDetaliu>();
+    linieServiciuS.Document = fctS;
+    linieServiciuS.TipMaterial = tipServicii;
+    linieServiciuS.Cantitate = 1m;
+    linieServiciuS.PretUnitar = 200m;
+    linieServiciuS.TipTva = n21;
+    linieStocS.CreeazaLot(os, produsTrz, mag1);
+    os.CommitChanges();
+    var nirS = MotorOperare.Opereaza(os, fctS);
+    MotorOperare.Opereaza(os, nirS);
+    var partidaFctS = PartidaDin(fctS, cont401, furnizor);
+    var pe401AlFacturii = os.GetObjectsQuery<RegistruContabil>()
+        .Where(r => r.DocumentId == fctS.ID && r.ContCreditId == cont401.ID).Sum(r => r.Valoare);
+    var pe401AlConexului = os.GetObjectsQuery<RegistruContabil>()
+        .Where(r => r.DocumentId == nirS.ID && r.ContCreditId == cont401.ID).Sum(r => r.Valoare);
+    Check($"STR-TRANSFER-2 ({eticheta}) scenă: factura de 302,5 (50 stoc + 200 servicii + 52,5 TVA) — în "
+        + "REGISTRE 401 se împarte între factură (252,5) și NIR-ul conex (50), în CUB partida ei ține "
+        + "brutul INTEGRAL (recepția e a facturii, TR-D3)",
+        nirS is NIR { Stare: StareDocument.Operat } && fctS.Total == 302.5m
+        && pe401AlFacturii == 252.5m && pe401AlConexului == 50m
+        && ProbeCub.SoldPartida(os, partidaFctS) == -302.5m);
+
+    var pltS = Trezorerie<Plata>(casa, furnizor, tipTrz, 302.5m, new DateOnly(2026, 3, 16));
+    MotorOperare.Opereaza(os, pltS);
+    var partidaProprieS = PartidaDin(pltS, cont401, furnizor);
+    var impS = ImperechereService.Imperecheaza(os, pltS, fctS, 302.5m, data: new DateOnly(2026, 4, 16));
+    var transferS = ProbeCub.Transferuri(os, pltS.ID);
+    Check($"STR-TRANSFER-2 ({eticheta}): plata pe brutul INTEGRAL mută 302,5 dintr-o singură bucată — "
+        + "partida facturii e stinsă la 0, iar partida proprie a plății rămâne 0 (MAJOR-A: plafonul e "
+        + "soldul cu conexul absorbit, nu doar rândurile proprii ale facturii)",
+        transferS.Count == 1 && transferS[0].Data == impS.Data
+        && ProbeCub.Postari(os, pltS.ID).Count(p => p.TranzactieId == transferS[0].ID
+            && p.Unitate == partidaFctS && p.Valoare == 302.5m) == 1
+        && ProbeCub.SoldPartida(os, partidaFctS) == 0m
+        && ProbeCub.SoldPartida(os, partidaProprieS) == 0m);
+    ProbeCub.ProbaTransferPliat(os, Check, $"NUC-PLT-STOC-{eticheta}", pltS);
+
+    // --- STR-TRANSFER-7 (MEDIU-3): plafonul e RESTUL partidei, nu soldul ei întreg ---
+    // Factura de imobilizare ține netul pe 404 și taxa pe 401, deci `TotalStingere`
+    // (605) e mai mare decât ce ține partida de referință (105): a doua stingere
+    // trece de plafonul DOCUMENTULUI, dar nu și de restul partidei.
+    var fct7 = os.CreateObject<FacturaIntrare>();
+    fct7.Numar = MarcajNucTrz + "-F7";
+    fct7.Data = new DateOnly(2026, 3, 7);
+    fct7.Predator = furnizor;
+    fct7.Primitor = mag1;
+    var linie7 = os.CreateObject<FacturaIntrareDetaliu>();
+    linie7.Document = fct7;
+    linie7.TipMaterial = tipImobilizareTrz;
+    linie7.Cantitate = 1m;
+    linie7.PretUnitar = 500m;
+    linie7.TipTva = n21;
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fct7);
+    var partidaFct7 = PartidaDin(fct7, cont401, furnizor);
+    Check($"STR-TRANSFER-7 ({eticheta}) scenă: factura de imobilizare ține 500 pe 404 și doar taxa (105) "
+        + "pe 401, iar restul stingibil al DOCUMENTULUI e 605",
+        ProbeCub.SoldPartida(os, partidaFct7) == -105m
+        && ImperechereService.Ramas(os, fct7.ID) == 605m
+        && cont404 != null && ProbeCub.SoldPartida(
+            os, PartidaDin(fct7, cont404, furnizor)) == -500m);
+
+    var plt7a = Trezorerie<Plata>(casa, furnizor, tipTrz, 60m, new DateOnly(2026, 3, 18));
+    MotorOperare.Opereaza(os, plt7a);
+    ImperechereService.Imperecheaza(os, plt7a, fct7, 60m, data: new DateOnly(2026, 4, 18));
+    Check($"STR-TRANSFER-7 ({eticheta}): prima stingere (60) intră întreagă — partida de 105 mai ține 45",
+        ProbeCub.Transferuri(os, plt7a.ID).Count == 1
+        && ProbeCub.SoldPartida(os, partidaFct7) == -45m);
+
+    var plt7b = Trezorerie<Plata>(casa, furnizor, tipTrz, 200m, new DateOnly(2026, 3, 19));
+    MotorOperare.Opereaza(os, plt7b);
+    var partidaProprie7b = PartidaDin(plt7b, cont401, furnizor);
+    ImperechereService.Imperecheaza(os, plt7b, fct7, 200m, data: new DateOnly(2026, 4, 19));
+    var transfer7b = ProbeCub.Transferuri(os, plt7b.ID);
+    Check($"STR-TRANSFER-7 ({eticheta}): a doua stingere (200, sub restul documentului) se plafonează la "
+        + "RESTUL partidei (45), nu la soldul ei întreg (105) — partida facturii ajunge la 0, nu "
+        + "SUPRA-stinsă, iar diferența rămâne pe partida proprie a plății (MEDIU-3)",
+        transfer7b.Count == 1
+        && ProbeCub.Postari(os, plt7b.ID).Count(p => p.TranzactieId == transfer7b[0].ID
+            && p.Unitate == partidaFct7 && p.Valoare == 45m) == 1
+        && ProbeCub.SoldPartida(os, partidaFct7) == 0m
+        && ProbeCub.SoldPartida(os, partidaProprie7b) == 155m);
+    ProbeCub.ProbaTransferPliat(os, Check, $"NUC-PLT-REST-{eticheta}", plt7b);
+
+    // B-r2: latura pe care tipul cere contul propriu
+    var pltInvers = os.CreateObject<Plata>();
+    pltInvers.Data = new DateOnly(2026, 3, 15);
+    pltInvers.Predator = furnizor;
+    pltInvers.Primitor = casa;
+    var linieInvers = os.CreateObject<DocumentTrezorerieDetaliu>();
+    linieInvers.Document = pltInvers;
+    linieInvers.TipMaterial = tipTrz;
+    linieInvers.Valoare = 10m;
+    os.CommitChanges();
+    var contractInvers = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, pltInvers);
+    Refuz(() => MotorOperare.Opereaza(os, pltInvers));
+    Check($"STR-LATURA ({eticheta}): B-r2 — plata cu laturile inversate (contul propriu PRIMITOR) e "
+        + "refuzată cu `LATURA_CONT_PROPRIU_NEPOTRIVITA`, iar `CONT_PROPRIU_LIPSA` nu se aprinde "
+        + "(contul propriu există, dar pe cealaltă latură); nimic scris în cub",
+        !contractInvers.EsteAcceptat
+        && contractInvers.Refuzuri.Any(r => r.Cod == Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.LaturaContPropriuNepotrivita)
+        && !contractInvers.Refuzuri.Any(r => r.Cod == Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.ContPropriuLipsa)
+        && ProbeCub.Tranzactii(os, pltInvers.ID).Count == 0
+        && pltInvers.Stare == StareDocument.Draft);
+
+    ProbaReconciliere($"NUC-TRZ-{eticheta}", pltT.ID, fctT.ID, incCub.ID, plataAuto.ID, fct.ID);
+
+    CurataNucTrz(os);
+    Check($"NUC-TRZ-{eticheta} — curățenie finală (fără reziduuri de scenă)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajNucTrz))
+        && !os.GetObjectsQuery<Document>().Any(d => d.Numar != null && d.Numar.StartsWith(MarcajNucTrz)));
+}
+
+// ============ Felia 30, pasul 3: declarantul BCS pe scenă proprie ============
+// Scena e2e „3c: BonConsum" e BUGETARĂ (blocul privat se încheie cu `return`),
+// deci proba declarantului pe AMBELE profiluri cere o scenă proprie. Al doilea
+// lot al ei MĂSOARĂ N-r3: raportul valoric al unei chei de stoc se poate
+// depărta de `Lot.PretUnitar` (înghețat la prima intrare), iar motorul vechi
+// valorizează cu prețul, nucleul cu raportul curent.
+//
+// Mecanismul celei de-a doua intrări: rând de DESCHIDERE pe aceeași cheie de
+// stoc — același mecanism cu care scenele își deschid stocul, și singurul
+// disponibil azi: documentele nu pot da două prețuri pe același lot (lotul E
+// prețul, 13 — NIR-ul pe lot străin reia `Lot.PretUnitar`, LDI plus naște lot
+// nou, corecția renaște lotul, DVI nu postează valoare pe stoc).
+void VerificaNucleuBcs(bool privat) {
+    const string MarcajNucBcs = "E2E-NUC-BCS";
+    var eticheta = privat ? "PRIVAT" : "BUGETAR";
+
+    void CurataNucBcs(IObjectSpace os) {
+        var pj = new Purja(os);
+        var idsLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucBcs)).Select(l => l.ID).ToList();
+        var idsDoc = os.GetObjectsQuery<BonConsum>().IgnoreQueryFilters()
+            .Where(d => d.Predator.Cod.StartsWith(MarcajNucBcs) || d.Primitor.Cod.StartsWith(MarcajNucBcs))
+            .Select(d => d.ID).ToList();
+        ProbeCub.Purjeaza(pj, os, idsDoc);                                             // S-D8
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => idsLot.Contains(r.LotId)
+                || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => idsDoc.Contains(d.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters().Where(d => idsDoc.Contains(d.ID)).ToList());
+        os.CommitChanges();
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucBcs)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(p => p.Cod.StartsWith(MarcajNucBcs)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(MarcajNucBcs)).ToList());
+        pj.Executa();
+    }
+
+    using var os = provider.CreateObjectSpace();
+    CurataNucBcs(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "302" : "302.01.00"));
+    var loc = os.CreateObject<UnitateInterna>();
+    loc.Cod = MarcajNucBcs + "-LOC";
+    loc.Denumire = "Loc de consum probă felia 30";
+    loc.Calitati = CalitateRepartitor.LocConsum;
+
+    Lot Lotul(string sufix, decimal pretUnitar) {
+        var produs = os.CreateObject<Produs>();
+        produs.Cod = MarcajNucBcs + sufix;
+        produs.Denumire = "Produs probă felia 30" + sufix;
+        produs.UM = "BUC";
+        produs.TipMaterial = tipMaterial;
+        var lotNou = os.CreateObject<Lot>();
+        lotNou.Produs = produs;
+        lotNou.PretUnitar = pretUnitar;
+        lotNou.Gestiune = mag1;
+        lotNou.Data = new DateOnly(2026, 1, 10);
+        return lotNou;
+    }
+    void Intrare(Lot lot, DateOnly data, decimal cantitate, decimal valoare) {
+        var rand = os.CreateObject<RegistruStoc>();
+        rand.Data = data;
+        rand.TipStoc = TipStoc.Magazie;
+        rand.Lot = lot;
+        rand.Repartitor = mag1;
+        rand.Cantitate = cantitate;
+        rand.Valoare = valoare;
+    }
+    BonConsum Consum(Lot lot, decimal cantitate, DateOnly data) {
+        var doc = os.CreateObject<BonConsum>();
+        doc.Data = data;
+        doc.Predator = mag1;
+        doc.Primitor = loc;
+        var d = os.CreateObject<DocumentDetaliu>();
+        d.Document = doc;
+        d.TipMaterial = tipMaterial;
+        d.Lot = lot;
+        d.Cantitate = cantitate;
+        return doc;
+    }
+
+    // (A) lotul necorectat: raportul curent E prețul înghețat, deci declarantul
+    //     și registrele trebuie să coincidă EXACT.
+    var lotCurat = Lotul("-A", 10m);
+    Intrare(lotCurat, lotCurat.Data, 10m, 100m);
+    // (B) lotul corectat (N-r3): două intrări la prețuri diferite pe aceeași cheie.
+    var lotCorectat = Lotul("-B", 10m);
+    Intrare(lotCorectat, lotCorectat.Data, 10m, 100m);
+    Intrare(lotCorectat, new DateOnly(2026, 1, 20), 10m, 200m);
+    os.CommitChanges();
+
+    var bcs = Consum(lotCurat, 4m, new DateOnly(2026, 3, 5));
+    // Seed-ul migrează BCS (pasul 4): bonul ăsta rămâne proba tipului NEMIGRAT.
+    using (ProbeCub.Nemigrat(os, bcs))
+        MotorOperare.Opereaza(os, bcs);
+    Check($"NUC-BCS-{eticheta} scenă: BCS operat pe lot necorectat — linia la 40 (4 × 10), "
+        + "două rânduri de stoc și o notă",
+        bcs.Detalii.Single().Valoare == 40m
+        && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == bcs.ID) == 2
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == bcs.ID) == 1);
+    ProbeNucleu.Proba(os, Check, $"NUC-BCS-{eticheta}", [bcs]);
+
+    // --- N-r3 MĂSURAT: prețul înghețat contra raportului curent ---
+    var soldCorectat = StocService.SolduriLaData(os, [lotCorectat.ID], new DateOnly(2026, 3, 6))
+        .GetValueOrDefault(new CheieStoc(lotCorectat.ID, mag1.ID, TipStoc.Magazie));
+    Check($"NUC-BCS-N-R3-1 ({eticheta}): cheia de stoc are 20 buc / 300 lei (raport 15), dar "
+        + $"`Lot.PretUnitar` a rămas înghețat la {lotCorectat.PretUnitar} — prețul ≠ raportul",
+        soldCorectat.Cantitate == 20m && soldCorectat.Valoare == 300m && lotCorectat.PretUnitar == 10m);
+
+    var bcsR3 = Consum(lotCorectat, 5m, new DateOnly(2026, 3, 6));
+    MotorOperare.Opereaza(os, bcsR3);
+    var valoareVeche = bcsR3.Detalii.Single().Valoare;
+    Check($"NUC-BCS-N-R3-2 ({eticheta}): motorul vechi valorizează cu prețul înghețat — X = {valoareVeche} "
+        + "(5 × 10), aceeași cifră în nota contabilă",
+        valoareVeche == 50m
+        && os.GetObjectsQuery<RegistruContabil>().Single(r => r.DocumentId == bcsR3.ID).Valoare == 50m);
+
+    var contractR3 = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, bcsR3);
+    var valoareNoua = contractR3.Decizii.OfType<N.ValoareIesire>().Single().Valoare;
+    Console.WriteLine($"     MĂSURAT (N-r3/{eticheta}): lot cu două intrări (10 × 10 lei + 10 × 20 lei) = "
+        + $"20 buc / 300 lei, `Lot.PretUnitar` = {lotCorectat.PretUnitar}; consum de 5 buc → "
+        + $"motorul vechi X = {valoareVeche}, nucleul Y = {valoareNoua}, "
+        + $"Δ = Y − X = {valoareNoua - valoareVeche}.");
+    Check($"NUC-BCS-N-R3-3 ({eticheta}): nucleul evaluează pe raportul CURENT — Y = {valoareNoua} "
+        + $"(5 × 300/20), deci Δ = Y − X = {valoareNoua - valoareVeche}",
+        contractR3.EsteAcceptat && valoareNoua == 75m && valoareNoua - valoareVeche == 25m);
+
+    Normalizari.Reseteaza();
+    var oracolR3 = Normalizari.Toate(
+        CubDinRegistre.Transforma(os, [bcsR3.ID]), Normalizari.Citeste(os, [bcsR3.ID]));
+    var raportR3 = Comparabil.Compara(
+        Comparabil.Proiecteaza(oracolR3),
+        Comparabil.Proiecteaza(contractR3.Tranzactie),
+        ProbeNucleu.Nume(os, oracolR3, contractR3.Tranzactie));
+    Console.WriteLine(raportR3.ToString());
+    var doarValoarea = raportR3.InPlus.Count == 2 && raportR3.Lipsa.Count == 2
+        && raportR3.InPlus.All(p => raportR3.Lipsa.Any(l => (l with { ValoareSemnata = p.ValoareSemnata }) == p));
+    Check($"NUC-BCS-N-R3-4 ({eticheta}): comparația cu oracolul pică EXACT pe valoare — două postări în plus "
+        + "(±75) contra două lipsă (±50), identice pe toate celelalte coordonate; N-r3 e diferență "
+        + "CONSEMNATĂ, nu normalizare (B-D8 pct. 7)",
+        doarValoarea && Normalizari.Avertismente.Count == 0);
+    Check($"NUC-BCS-N-R3-5 ({eticheta}): tranzacția declarantului se conservă pe cifra nouă "
+        + "(valoarea nu se pierde între capete)",
+        N.Conservare.Verifica(contractR3.Tranzactie).Count == 0);
+
+    // --- NUC-BCS-REFUZURI (MINOR-1): refuzul e al LINIEI, nu al documentului ---
+    // Două linii pe două loturi fără stoc: `Evaluare.Iesire` aruncă pe fiecare, iar
+    // declarantul le adună pe amândouă în loc să se oprească la prima (B-D2).
+    var lotGol1 = Lotul("-C", 10m);
+    var lotGol2 = Lotul("-D", 10m);
+    os.CommitChanges();
+    var bcsRefuzat = Consum(lotGol1, 1m, new DateOnly(2026, 3, 7));
+    var aDoua = os.CreateObject<DocumentDetaliu>();
+    aDoua.Document = bcsRefuzat;
+    aDoua.TipMaterial = tipMaterial;
+    aDoua.Lot = lotGol2;
+    aDoua.Cantitate = 2m;
+    os.CommitChanges();
+    var contractRefuzat = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, bcsRefuzat);
+    Check($"NUC-BCS-REFUZURI ({eticheta}): două linii pe loturi fără stoc ⇒ DOUĂ refuzuri "
+        + "STOC_INSUFICIENT, câte unul pe linia lui (nu primul și atât)",
+        !contractRefuzat.EsteAcceptat
+        && contractRefuzat.Refuzuri.Count == 2
+        && contractRefuzat.Refuzuri.All(r => r.Cod == N.Coduri.StocInsuficient)
+        && contractRefuzat.Refuzuri.Select(r => r.Linie).Distinct().Count() == 2
+        && contractRefuzat.Refuzuri.All(r => bcsRefuzat.Detalii.Any(d => d.ID == r.Linie)));
+
+    // --- Felia 31 (TR-D7a), S-D8: cubul PERSISTAT pe BCS ---
+    ProbeCub.FaraRanduri(os, Check,
+        $"STR-NEMIGRAT ({eticheta}): BCS-ul operat cu `PosteazaInCub` fals n-a atins cubul", bcs.ID);
+
+    var lotCub = Lotul("-E", 10m);
+    Intrare(lotCub, lotCub.Data, 10m, 100m);
+    os.CommitChanges();
+    var bcsCub = Consum(lotCub, 3m, new DateOnly(2026, 3, 8));
+    var bcsAnulat = Consum(lotCub, 2m, new DateOnly(2026, 3, 9));
+    os.CommitChanges();
+    var dataStornoBcs = new DateOnly(2026, 7, 22);
+    using (ProbeCub.Migrat(os, bcsCub)) {
+        MotorOperare.Opereaza(os, bcsCub);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-BCS-{eticheta}", bcsCub);
+        ProbaReconciliere($"NUC-BCS-{eticheta}", bcsCub.ID);
+
+        MotorOperare.Storneaza(os, bcsCub, dataStornoBcs);
+        ProbeCub.ProbaStorno(os, Check, $"NUC-BCS-{eticheta}", bcsCub, dataStornoBcs);
+
+        MotorOperare.Opereaza(os, bcsAnulat);
+        Check($"STR-ANULARE ({eticheta}) premisă: documentul are tranzacție și postări în cub după operare",
+            ProbeCub.Tranzactii(os, bcsAnulat.ID).Count == 1 && ProbeCub.Postari(os, bcsAnulat.ID).Count > 0);
+        MotorOperare.AnuleazaOperarea(os, bcsAnulat);
+        ProbeCub.FaraRanduri(os, Check,
+            $"STR-ANULARE ({eticheta}): anularea operării șterge FIZIC tranzacția `Operare` și postările ei, "
+            + "simetric cu registrele",
+            bcsAnulat.ID);
+    }
+
+    CurataNucBcs(os);
+    Check($"NUC-BCS-{eticheta} — curățenie finală (fără reziduuri de scenă)",
+        !os.GetObjectsQuery<Produs>().Any(p => p.Cod.StartsWith(MarcajNucBcs))
+        && !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajNucBcs)));
+}
+
+// ====== Felia 30, pasul 5: declarantul FCT pe scenă privată ======
+// Scenele FCT existente probează un regim per document; aici stau cazurile pe care
+// B-D6 le pinuiește și care nu există nicăieri altundeva: PATRU regimuri pe același
+// document (cu recepția TR-D3 între ele), factura de imobilizare (404 pentru net,
+// 401 pentru taxă — două conturi de terț, deci două partide) și N-r4, singurul caz
+// din pilot în care taxa decisă pe DOCUMENT diferă de suma taxelor per linie.
+//
+// Ca la N-r3 (pasul 3), diferența N-r4 se CONSEMNEAZĂ numeric, nu se normalizează:
+// lista B-D8 e închisă (B-D10 (b)).
+void VerificaNucleuFct(bool privat) {
+    const string MarcajNucFct = "E2E-NUC-FCT";
+    var eticheta = privat ? "PRIVAT" : "BUGETAR";
+
+    void CurataNucFct(IObjectSpace os) {
+        // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(MarcajNucFct)).Select(r => r.ID).ToList();
+        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
+        var docIds = docs.Select(d => d.ID).ToList();
+        var idsLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucFct)).Select(l => l.ID).ToList();
+        ProbeCub.Purjeaza(pj, os, docIds);                                             // S-D8
+        pj.Adauga(os.GetObjectsQuery<Imperechere>().IgnoreQueryFilters()
+            .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruTva>().IgnoreQueryFilters()
+            .Where(r => docIds.Contains(r.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => idsLot.Contains(r.LotId)
+                || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => docIds.Contains(d.DocumentId)).ToList());
+        // Conexele (NIR) înaintea părinților.
+        foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
+            pj.Adauga(doc);
+        os.CommitChanges();
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajNucFct)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(x => x.Cod.StartsWith(MarcajNucFct)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(MarcajNucFct)).ToList());
+        pj.Executa();
+    }
+
+    using var os = provider.CreateObjectSpace();
+    CurataNucFct(os);
+
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var tipStoc = os.FirstOrDefault<TipMaterial>(t => t.Cod == "302");
+    var tipServicii = os.FirstOrDefault<TipMaterial>(t => t.Cod == "628");
+    var tipImobilizare = os.FirstOrDefault<TipMaterial>(t => t.Cod == "2131");
+    var n21 = os.FirstOrDefault<TipTva>(t => t.Cod == "N21");
+    var sfd = os.FirstOrDefault<TipTva>(t => t.Cod == "SFD");
+    var ned21 = os.FirstOrDefault<TipTva>(t => t.Cod == "NED21");
+    Cont ContSimbolFct(string simbol) => os.FirstOrDefault<Cont>(c => c.Simbol == simbol);
+    var cont401 = ContSimbolFct("401");
+    var cont404 = ContSimbolFct("404");
+    var cont4426 = ContSimbolFct("4426");
+    Check($"NUC-FCT-{eticheta} scenă: profilul are cele patru regimuri (N21 normal, SFD scutit, NED21 "
+        + "capitalizat) și două conturi de terț cu rol (401 furnizor, 404 furnizor de imobilizări)",
+        n21?.Regim == RegimTva.Normal && sfd?.Regim == RegimTva.Scutit
+        && ned21?.Regim == RegimTva.Capitalizat
+        && cont401?.RolTert == RolTertCont.Furnizor && cont404?.RolTert == RolTertCont.Furnizor
+        && tipImobilizare?.Clasa?.Natura == NaturaClasa.Imobilizare);
+
+    var furnizor = os.CreateObject<Partener>();
+    furnizor.Cod = MarcajNucFct + "-FURN";
+    furnizor.Denumire = "Furnizor probă felia 30 (FCT)";
+    var produs = os.CreateObject<Produs>();
+    produs.Cod = MarcajNucFct + "-P";
+    produs.Denumire = "Produs probă felia 30 (FCT)";
+    produs.UM = "BUC";
+    produs.TipMaterial = tipStoc;
+    os.CommitChanges();
+
+    FacturaIntrare Factura(string sufix, DateOnly data) {
+        var doc = os.CreateObject<FacturaIntrare>();
+        doc.Numar = MarcajNucFct + sufix;
+        doc.Data = data;
+        doc.Predator = furnizor;
+        doc.Primitor = mag1;
+        return doc;
+    }
+    FacturaIntrareDetaliu Linie(FacturaIntrare doc, TipMaterial tip, decimal cantitate, decimal pret, TipTva tva) {
+        var d = os.CreateObject<FacturaIntrareDetaliu>();
+        d.Document = doc;
+        d.TipMaterial = tip;
+        d.Cantitate = cantitate;
+        d.PretUnitar = pret;
+        d.TipTva = tva;
+        return d;
+    }
+
+    // --- (1) PATRU regimuri pe același document, cu recepția TR-D3 între ele ---
+    var fct = Factura("-F1", new DateOnly(2026, 3, 3));
+    var linieStoc = Linie(fct, tipStoc, 5m, 10m, n21);
+    var linieServiciu = Linie(fct, tipServicii, 1m, 100m, n21);
+    var linieScutita = Linie(fct, tipServicii, 1m, 70m, sfd);
+    // Brutul capitalizat iese fix 100, ca desfacerea jurnalului să fie 82,64 + 17,36.
+    var linieCapitalizata = Linie(fct, tipServicii, 1m, 82.644628m, ned21);
+    var lot = linieStoc.CreeazaLot(os, produs, mag1);
+    os.CommitChanges();
+    // Seed-ul migrează FCT (pasul 4): factura asta rămâne proba tipului NEMIGRAT.
+    Document nir;
+    using (ProbeCub.Nemigrat(os, fct)) {
+        nir = MotorOperare.Opereaza(os, fct);
+        MotorOperare.Opereaza(os, nir);
+    }
+    Check($"NUC-FCT-P4-1 ({eticheta}) scenă: patru regimuri pe același document — 50/10,5 (stoc, normal), "
+        + "100/21 (serviciu, normal), 70/0 (scutit), 100 brut (capitalizat)",
+        linieStoc.Valoare == 50m && linieStoc.ValoareTva == 10.5m
+        && linieServiciu.Valoare == 100m && linieServiciu.ValoareTva == 21m
+        && linieScutita.Valoare == 70m && linieScutita.ValoareTva == 0m
+        && linieCapitalizata.Valoare == 100m && linieCapitalizata.ValoareTva == 0m
+        && nir is NIR && lot != null);
+    var fiscaleP4 = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == fct.ID).ToList();
+    Check($"NUC-FCT-P4-2 ({eticheta}): patru rânduri fiscale — capitalizatul desface brutul (82,64 + 17,36), "
+        + "scutitul are bază fără taxă, iar linia de stoc are rând deși netul ei e pe recepție",
+        fiscaleP4.Count == 4
+        && fiscaleP4.Any(r => r.DetaliuId == linieCapitalizata.ID && r.Baza == 82.64m && r.Tva == 17.36m)
+        && fiscaleP4.Any(r => r.DetaliuId == linieScutita.ID && r.Baza == 70m && r.Tva == 0m)
+        && fiscaleP4.Any(r => r.DetaliuId == linieStoc.ID && r.Baza == 50m && r.Tva == 10.5m));
+    ProbeNucleu.Proba(os, Check, "NUC-FCT-P4", [fct], new Dictionary<Guid, Guid> { [nir.ID] = fct.ID });
+    var contractP4 = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fct);
+    var partidaP4 = N.Unitate.DeschidePartida(cont401.ID, furnizor.ID, fct.ID, fct.DataInregistrare).Id;
+    Check($"NUC-FCT-P4-3 ({eticheta}): O SINGURĂ partidă pe 401 (090h) poartă netul, taxa și recepția; "
+        + "capătul virtual al recepției e singura postare cu gestiune structurală",
+        contractP4.EsteAcceptat
+        && contractP4.Decizii.OfType<N.PartidaDeschisa>().Single().Unitate.Id == partidaP4
+        && contractP4.Tranzactie.Postari.Count(p => p.Coordonate.Unitate?.Id == partidaP4) == 7
+        && contractP4.Tranzactie.Postari.Count(p => N.GestiuniVirtuale.Este(p.Coordonate.Gestiune)) == 1);
+
+    // --- (2) Imobilizarea: net pe 404, taxă pe 401 — două partide pe același document ---
+    var fctImo = Factura("-F2", new DateOnly(2026, 3, 4));
+    var linieImo = Linie(fctImo, tipImobilizare, 1m, 500m, n21);
+    os.CommitChanges();
+    Check($"NUC-FCT-IMO-1 ({eticheta}) scenă: factura de imobilizare n-are conex (filtrul e natura Stoc)",
+        MotorOperare.Opereaza(os, fctImo) == null && linieImo.Valoare == 500m && linieImo.ValoareTva == 105m);
+    var noteImo = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == fctImo.ID).ToList();
+    Check($"NUC-FCT-IMO-2 ({eticheta}): netul pe 404 (fallback-ul regulii de natură), taxa pe 401 "
+        + "(contrapartida politicii de TVA) — două conturi de terț pe același document",
+        noteImo.Count == 2
+        && noteImo.Any(n => n.ContDebitId == tipImobilizare.ContImplicitId
+            && n.ContCreditId == cont404.ID && n.Valoare == 500m)
+        && noteImo.Any(n => n.ContDebitId == cont4426.ID && n.ContCreditId == cont401.ID && n.Valoare == 105m));
+    ProbeNucleu.Proba(os, Check, "NUC-FCT-IMO", [fctImo]);
+    var contractImo = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctImo);
+    Check($"NUC-FCT-IMO-3 ({eticheta}): DOUĂ partide deschise de aceeași factură, una per cont de terț (090h)",
+        contractImo.EsteAcceptat
+        && contractImo.Decizii.OfType<N.PartidaDeschisa>().Select(d => d.Unitate.Cont).OrderBy(c => c)
+            .SequenceEqual(new[] { cont401.ID, cont404.ID }.OrderBy(c => c)));
+
+    // --- (2b) MAJOR-1: plata autogenerată de o factură cu DOUĂ conturi de terț ---
+    // Împerecherea de azi e pe DOCUMENT (605 = tot brutul), dar partida e pe CONT:
+    // pe 401 factura ține doar taxa (105), restul stă pe 404. Nominalizarea se
+    // plafonează la ce ține partida, nu la restul documentului.
+    var casa = os.FirstOrDefault<ContPropriu>(c => c.Cod == "CASA");
+    var fctPlata = Factura("-F4", new DateOnly(2026, 3, 6));
+    fctPlata.GenereazaPlata = true;
+    fctPlata.PlataContPropriu = casa;
+    fctPlata.PlataNumar = MarcajNucFct + "-OP";
+    fctPlata.PlataData = new DateOnly(2026, 3, 12);
+    Linie(fctPlata, tipImobilizare, 1m, 500m, n21);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fctPlata);
+    var plataImo = os.GetObjectsQuery<Plata>().Single(p => p.DocumentSursaId == fctPlata.ID);
+    MotorOperare.Opereaza(os, plataImo);
+    var impImo = os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == plataImo.ID);
+    Check($"NUC-PLT-IMO-1 ({eticheta}) scenă: factura de imobilizare cu plată generată — brutul 605 "
+        + "se împarte pe 404 (500) și 401 (105), iar plata autogenerată stinge 605 pe DOCUMENT, "
+        + "printr-o singură notă D 401 = C 5311",
+        fctPlata.Total == 605m && plataImo.Detalii.Single().Valoare == 605m && impImo.Suma == 605m
+        && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == plataImo.ID) == 1);
+
+    var contractPlataImo = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, plataImo);
+    var partidaFctImo = N.Unitate.DeschidePartida(
+        cont401.ID, furnizor.ID, fctPlata.ID, fctPlata.DataInregistrare).Id;
+    var partidaProprieImo = N.Unitate.DeschidePartida(
+        cont401.ID, furnizor.ID, plataImo.ID, plataImo.DataInregistrare).Id;
+    Check($"NUC-PLT-IMO-2 ({eticheta}): declarantul nominalizează DOAR 105 pe partida facturii "
+        + "(cât ține ea pe 401) și lasă 500 pe partida proprie a plății; ipoteza consemnează soldul "
+        + "REAL al partidei (105 credit), nu restul documentului (605) — MAJOR-1",
+        contractPlataImo.EsteAcceptat
+        && contractPlataImo.Tranzactie.Postari
+            .Any(x => x.Coordonate.Unitate?.Id == partidaFctImo && x.Valoare == 105m)
+        && contractPlataImo.Tranzactie.Postari
+            .Any(x => x.Coordonate.Unitate?.Id == partidaProprieImo && x.Valoare == 500m)
+        && contractPlataImo.Decizii.OfType<N.AlocareFifo>().Single().Masura == 105m
+        && contractPlataImo.Ipoteze.OfType<N.SoldUnitateCitit>().Single() is { } cititImo
+        && cititImo.Unitate.Id == partidaFctImo && cititImo.Sold.Credit == 105m);
+    ProbeNucleu.Proba(os, Check, $"NUC-PLT-IMO-{eticheta}", [plataImo]);
+
+    // --- (2c) MEDIU-1: taxa culeasă e autoritară PER LINIE, ca `pastreazaTvaCules` ---
+    // Motorul vechi umple linia lăsată la zero în `PregatesteOperare`, deci cazul se
+    // vede doar pe un operand care o citește goală: același document, într-un
+    // ObjectSpace propriu, cu taxa liniei a doua ștearsă și NECOMISĂ.
+    var fctCulese = Factura("-F5", new DateOnly(2026, 3, 7));
+    var culeasa = Linie(fctCulese, tipServicii, 1m, 100m, n21);
+    var lasata = Linie(fctCulese, tipServicii, 1m, 50m, n21);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fctCulese);
+    Check($"NUC-FCT-CULESE-1 ({eticheta}) scenă: două linii la ACEEAȘI cotă — 100/21 și 50/10,50",
+        culeasa.Valoare == 100m && culeasa.ValoareTva == 21m
+        && lasata.Valoare == 50m && lasata.ValoareTva == 10.5m);
+    using (var osCulese = provider.CreateObjectSpace()) {
+        var alDoilea = osCulese.GetObjectByKey<FacturaIntrare>(fctCulese.ID);
+        alDoilea.Detalii.Single(d => d.ID == lasata.ID).ValoareTva = 0m;
+        var contractCulese = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(
+            osCulese, alDoilea);
+        var taxePeLinie = contractCulese.Tranzactie is { } trCulese
+            ? trCulese.Postari
+                .Where(x => x.Coordonate.Cont == cont4426.ID)
+                .ToDictionary(x => x.Cauza.Linie, x => x.Valoare)
+            : [];
+        foreach (var refuz in contractCulese.Refuzuri)
+            Console.WriteLine($"       refuz {refuz.Cod}: {refuz.Mesaj}");
+        Check($"NUC-FCT-CULESE-2 ({eticheta}): taxa CULEASĂ e a liniei ei (21 pe prima), iar linia lăsată "
+            + "la zero o primește pe a nucleului (10,50) — validarea per cotă compară Σ valorilor ALESE "
+            + "(31,50) cu cea decisă pe document, deci documentul nu cade (MEDIU-1)",
+            contractCulese.EsteAcceptat
+            && taxePeLinie.Count == 2
+            && taxePeLinie.GetValueOrDefault(culeasa.ID) == 21m
+            && taxePeLinie.GetValueOrDefault(lasata.ID) == 10.5m);
+    }
+
+    // --- (3) N-r4 MĂSURAT: taxa se decide pe DOCUMENT × cotă, nu pe linie ---
+    var fctR4 = Factura("-F3", new DateOnly(2026, 3, 5));
+    foreach (var _ in Enumerable.Range(0, 3))
+        Linie(fctR4, tipServicii, 1m, 0.01m, n21);
+    os.CommitChanges();
+    MotorOperare.Opereaza(os, fctR4);
+    var taxaVeche = os.GetObjectsQuery<RegistruContabil>()
+        .Where(r => r.DocumentId == fctR4.ID).ToList()
+        .Where(r => r.ContDebitId == cont4426.ID).Sum(r => r.Valoare);
+    Check($"NUC-FCT-N-R4-1 ({eticheta}): trei linii de 0,01 la 21% — motorul vechi rotunjește PER LINIE "
+        + $"(0,0021 → 0,00), deci X = {taxaVeche} și niciun rând 4426; rândurile fiscale au bază fără taxă",
+        taxaVeche == 0m
+        && fctR4.Detalii.All(d => d.Valoare == 0.01m && d.ValoareTva == 0m)
+        && os.GetObjectsQuery<RegistruTva>().Count(r => r.DocumentId == fctR4.ID && r.Tva == 0m) == 3);
+
+    var contractR4 = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctR4);
+    var taxaNoua = contractR4.Tranzactie is { } trR4
+        ? trR4.Postari.Where(p => p.Coordonate.Cont == cont4426.ID).Sum(p => p.Valoare)
+        : 0m;
+    Console.WriteLine($"     MĂSURAT (N-r4/{eticheta}): trei linii de 0,01 net la 21% FĂRĂ taxă culeasă → "
+        + $"motorul vechi X = {taxaVeche} (0,0021 rotunjit per linie, de trei ori), nucleul "
+        + $"Y = {taxaNoua} (0,0063 rotunjit o dată pe document × cotă, repartizat Hamilton), "
+        + $"Δ = Y − X = {taxaNoua - taxaVeche}.");
+    Check($"NUC-FCT-N-R4-2 ({eticheta}): nucleul decide taxa pe document × cotă — Y = {taxaNoua}, "
+        + $"Δ = {taxaNoua - taxaVeche}, pusă integral pe o singură linie (Hamilton)",
+        contractR4.EsteAcceptat && taxaNoua == 0.01m && taxaNoua - taxaVeche == 0.01m
+        && contractR4.Tranzactie.Postari.Count(p => p.Coordonate.Cont == cont4426.ID) == 1);
+
+    Normalizari.Reseteaza();
+    var oracolR4 = Normalizari.Toate(
+        CubDinRegistre.Transforma(os, [fctR4.ID]), Normalizari.Citeste(os, [fctR4.ID]));
+    var raportR4 = Comparabil.Compara(
+        Comparabil.Proiecteaza(oracolR4),
+        Comparabil.Proiecteaza(contractR4.Tranzactie),
+        ProbeNucleu.Nume(os, oracolR4, contractR4.Tranzactie));
+    Console.WriteLine(raportR4.ToString());
+    Check($"NUC-FCT-N-R4-3 ({eticheta}): comparația cu oracolul pică EXACT pe taxă — două postări în plus "
+        + "(D 4426 / C 401 de 0,01), niciuna lipsă; N-r4 e diferență CONSEMNATĂ, nu normalizare (B-D8 pct. 7)",
+        raportR4.Lipsa.Count == 0 && raportR4.InPlus.Count == 2
+        && raportR4.InPlus.All(p => Math.Abs(p.ValoareSemnata) == 0.01m)
+        && raportR4.InPlus.Any(p => p.Cont == cont4426.ID)
+        && Normalizari.Avertismente.Count == 0);
+
+    // --- Felia 31 (TR-D7a), S-D8: cubul PERSISTAT pe FCT ---
+    ProbeCub.FaraRanduri(os, Check,
+        $"STR-NEMIGRAT ({eticheta}): FCT operată cu `PosteazaInCub` fals n-a atins cubul", fct.ID);
+
+    // (a) factura cu RECEPȚIE: partiția Stoc, capătul virtual N-D4, NIR-ul conex nemigrat.
+    var fctCub = Factura("-F6", new DateOnly(2026, 3, 9));
+    var linieCubStoc = Linie(fctCub, tipStoc, 4m, 25m, n21);
+    Linie(fctCub, tipServicii, 1m, 60m, n21);
+    linieCubStoc.CreeazaLot(os, produs, mag1);
+    os.CommitChanges();
+    using (ProbeCub.Migrat(os, fctCub)) {
+        var nirCub = MotorOperare.Opereaza(os, fctCub);
+
+        // STR-CONFIG: NIR-ul n-are declarant, deci `PosteazaInCub` pe el e eroare de configurare.
+        using (ProbeCub.MigratPeClasa(os, nameof(NIR))) {
+            string mesajConfig = null;
+            using (var osConfig = provider.CreateObjectSpace())
+                try { OperareApi.Opereaza(osConfig, nirCub.ID); }
+                catch (OperareException e) { mesajConfig = e.Message; }
+            using var osDupaConfig = provider.CreateObjectSpace();
+            Check($"STR-CONFIG ({eticheta}): `PosteazaInCub` pe un tip FĂRĂ declarant (NIR) refuză operarea "
+                + $"ca eroare de configurare — „{mesajConfig?.Split('\n')[0]}” — și nu scrie nimic (S-D3)",
+                mesajConfig != null && mesajConfig.Contains("PosteazaInCub") && mesajConfig.Contains("nu declară")
+                && osDupaConfig.GetObjectByKey<Document>(nirCub.ID).Stare == StareDocument.Draft
+                && !osDupaConfig.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == nirCub.ID));
+            ProbeCub.FaraRanduri(osDupaConfig, Check,
+                $"STR-CONFIG ({eticheta}): zero rânduri în cub după refuzul de configurare", nirCub.ID);
+        }
+
+        MotorOperare.Opereaza(os, nirCub);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-FCT-CUB-{eticheta}", fctCub,
+            new Dictionary<Guid, Guid> { [nirCub.ID] = fctCub.ID });
+        ProbaReconciliere($"NUC-FCT-CUB-{eticheta}", fctCub.ID, nirCub.ID);
+        var peStoc = ProbeCub.Postari(os, fctCub.ID, N.FelTranzactie.Operare)
+            .Where(p => p.Spatiu == N.Spatiu.Stoc).ToList();
+        var virtuale = ProbeCub.Postari(os, fctCub.ID, N.FelTranzactie.Operare)
+            .Where(p => N.GestiuniVirtuale.Este(p.Gestiune)).ToList();
+        Check($"STR-OPERARE {eticheta} (FCT/recepție): recepția scrie pe partiția Stoc (o postare, pe lotul "
+            + "născut de linie), iar capătul virtual N-D4 stă pe partiția Contabil, cu gestiunea structurală",
+            peStoc.Count == 1 && peStoc[0].Cantitate == 4m && peStoc[0].Unitate != null
+            && virtuale.Count == 1 && virtuale[0].Spatiu == N.Spatiu.Contabil
+            && virtuale[0].Gestiune == N.GestiuniVirtuale.Furnizor && virtuale[0].Cantitate == -4m);
+    }
+
+    // (b) STR-STORNO pe o factură de SERVICII (fără conex operat), unde postările poartă reper fiscal.
+    var fctStorno = Factura("-F7", new DateOnly(2026, 3, 10));
+    Linie(fctStorno, tipServicii, 1m, 90m, n21);
+    os.CommitChanges();
+    var dataStornoFct = new DateOnly(2026, 7, 22);
+    using (ProbeCub.Migrat(os, fctStorno)) {
+        MotorOperare.Opereaza(os, fctStorno);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-FCT-STORNO-{eticheta}", fctStorno);
+        MotorOperare.Storneaza(os, fctStorno, dataStornoFct);
+        ProbeCub.ProbaStorno(os, Check, $"NUC-FCT-{eticheta}", fctStorno, dataStornoFct);
+    }
+
+    // (c) STR-REFUZ / STR-VALIDEAZA: gardul de toleranță al declarantului e mai STRICT decât
+    //     motorul vechi (B-r1) — exact documentul pe care motorul vechi îl operează.
+    var fctRefuz = Factura("-F8", new DateOnly(2026, 3, 11));
+    var linieRefuz = Linie(fctRefuz, tipServicii, 1m, 100m, n21);
+    linieRefuz.ValoareTva = 21.5m;
+    os.CommitChanges();
+    using (ProbeCub.Nemigrat(os, fctRefuz)) {
+        MotorOperare.Opereaza(os, fctRefuz);
+        Check($"STR-REFUZ ({eticheta}) premisă: motorul VECHI operează factura cu TVA cules 21,50 pe o bază "
+            + "de 100 la 21% (abatere 0,50, peste toleranța de 0,01 × liniile cotei)",
+            fctRefuz.Stare == StareDocument.Operat && linieRefuz.ValoareTva == 21.5m);
+        ProbeCub.FaraRanduri(os, Check,
+            $"STR-NEMIGRAT ({eticheta}): aceeași factură, cu tipul nemigrat, n-a atins cubul", fctRefuz.ID);
+        MotorOperare.AnuleazaOperarea(os, fctRefuz);
+    }
+
+    // S-D15: gardul nu mai vine din seed — scena îl pune LOCAL pe politica tipului.
+    using (ProbeCub.Migrat(os, fctRefuz))
+    using (ProbeCub.CuToleranta(os, fctRefuz, 0.01m)) {
+        string mesajRefuz = null;
+        using (var osRefuz = provider.CreateObjectSpace())
+            try { OperareApi.Opereaza(osRefuz, fctRefuz.ID); }
+            catch (OperareException e) { mesajRefuz = e.Message; }
+        using var osDupaRefuz = provider.CreateObjectSpace();
+        Check($"STR-REFUZ ({eticheta}): refuzul declarației e refuzul operației — „{mesajRefuz?.Split('\n')[0]}”; "
+            + "documentul rămâne Draft, iar tranzacția comenzii nu lasă niciun rând în registre",
+            mesajRefuz != null && mesajRefuz.Contains(N.Coduri.TvaInAfaraTolerantei)
+            && osDupaRefuz.GetObjectByKey<Document>(fctRefuz.ID).Stare == StareDocument.Draft
+            && !osDupaRefuz.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == fctRefuz.ID)
+            && !osDupaRefuz.GetObjectsQuery<RegistruTva>().Any(r => r.DocumentId == fctRefuz.ID));
+        ProbeCub.FaraRanduri(osDupaRefuz, Check,
+            $"STR-REFUZ ({eticheta}): zero rânduri în cub după refuz", fctRefuz.ID);
+
+        using var osDry = provider.CreateObjectSpace();
+        var eroriDry = OperareApi.Valideaza(osDry, fctRefuz.ID);
+        Check($"STR-VALIDEAZA ({eticheta}): dry-run-ul pe tipul migrat arată refuzul declarației "
+            + $"([{string.Join("; ", eroriDry)}]), fără să scrie ceva",
+            eroriDry.Any(e => e.Contains(N.Coduri.TvaInAfaraTolerantei)));
+    }
+
+    // (d) STR-FCT-NEGATIV (S-D14): linia „în roșu" pe aceeași factură (retur/discount),
+    //     pe care motorul vechi o operează — semnul trece prin postări, nenormalizat.
+    var fctNegativ = Factura("-F9", new DateOnly(2026, 3, 13));
+    Linie(fctNegativ, tipServicii, 1m, 100m, n21);
+    var linieRosie = Linie(fctNegativ, tipServicii, 1m, -40m, n21);
+    os.CommitChanges();
+    using (ProbeCub.Migrat(os, fctNegativ)) {
+        MotorOperare.Opereaza(os, fctNegativ);
+        Check($"STR-FCT-NEGATIV ({eticheta}) premisă: linia negativă e culeasă ca atare (−40 net, −8,40 "
+            + "taxă) și motorul vechi operează documentul",
+            linieRosie.Valoare == -40m && linieRosie.ValoareTva == -8.4m
+            && fctNegativ.Stare == StareDocument.Operat);
+        ProbeCub.ProbaOperare(os, Check, $"NUC-FCT-NEGATIV-{eticheta}", fctNegativ);
+        var aleRosii = ProbeCub.Postari(os, fctNegativ.ID, N.FelTranzactie.Operare);
+        Check($"STR-FCT-NEGATIV ({eticheta}): semnul liniei trece NEnormalizat în postări (net −40 și taxă "
+            + "−8,40, câte două capete) și tranzacția rămâne balansată: Σ D = Σ C",
+            aleRosii.Count(p => p.Valoare == -40m) == 2
+            && aleRosii.Count(p => p.Valoare == -8.4m) == 2
+            && aleRosii.Where(p => p.Latura == N.Latura.Debit).Sum(p => p.Valoare)
+                == aleRosii.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare));
+        ProbaReconciliere($"NUC-FCT-NEGATIV-{eticheta}", fctNegativ.ID);
+    }
+
+    // (e) STR-FCT-DOUA-PARTIDE (S-D16): linia ne-stoc pe TipMaterial-ul contului 408,
+    //     cum o naște reclasificarea importului (`HandlerFactura.cs:143-160`) — DOUĂ
+    //     conturi cu `RolTert` pe aceeași linie (B-r7). Numai pe profilul care le are.
+    var tip408 = os.FirstOrDefault<TipMaterial>(t => t.Cod == "408");
+    var cont408 = ContSimbolFct("408");
+    if (tip408 != null && cont408 != null && cont408.RolTert != RolTertCont.Niciunul) {
+        var fctDoua = Factura("-FA", new DateOnly(2026, 3, 14));
+        Linie(fctDoua, tip408, 1m, 100m, n21);
+        os.CommitChanges();
+        using (ProbeCub.Migrat(os, fctDoua)) {
+            MotorOperare.Opereaza(os, fctDoua);
+            var noteDoua = os.GetObjectsQuery<RegistruContabil>()
+                .Where(r => r.DocumentId == fctDoua.ID).ToList();
+            Check($"STR-FCT-DOUA-PARTIDE ({eticheta}) premisă: linia postează 408 = 401, două conturi cu "
+                + "`RolTert` pe ACELAȘI rând (B-r7)",
+                noteDoua.Any(r => r.ContDebitId == cont408.ID && r.ContCreditId == cont401.ID
+                    && r.Valoare == 100m));
+            ProbeCub.ProbaOperare(os, Check, $"NUC-FCT-DOUA-PARTIDE-{eticheta}", fctDoua);
+            var partida408 = N.Unitate.DeschidePartida(
+                cont408.ID, furnizor.ID, fctDoua.ID, fctDoua.DataInregistrare).Id;
+            var partida401 = N.Unitate.DeschidePartida(
+                cont401.ID, furnizor.ID, fctDoua.ID, fctDoua.DataInregistrare).Id;
+            var aleDouaPartide = ProbeCub.Postari(os, fctDoua.ID, N.FelTranzactie.Operare);
+            Check($"STR-FCT-DOUA-PARTIDE ({eticheta}): AMBELE conturi cu `RolTert` ale liniei poartă "
+                + "partida partenerului pe contul LOR (S-D16), nu doar piciorul de terț",
+                aleDouaPartide.Any(p => p.Cont == cont408.ID && p.Unitate == partida408
+                    && p.Partener == furnizor.ID)
+                && aleDouaPartide.Any(p => p.Cont == cont401.ID && p.Unitate == partida401
+                    && p.Partener == furnizor.ID));
+            ProbaReconciliere($"NUC-FCT-DOUA-PARTIDE-{eticheta}", fctDoua.ID);
+        }
+    }
+
+    CurataNucFct(os);
+    Check($"NUC-FCT-{eticheta} — curățenie finală (fără reziduuri de scenă)",
+        !os.GetObjectsQuery<Produs>().Any(x => x.Cod.StartsWith(MarcajNucFct))
+        && !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajNucFct)));
 }

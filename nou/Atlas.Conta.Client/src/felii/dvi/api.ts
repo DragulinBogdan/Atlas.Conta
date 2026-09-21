@@ -106,6 +106,7 @@ export function spreWrite(citit: DviRead): DviWrite {
   return {
     Numar: citit.Numar,
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

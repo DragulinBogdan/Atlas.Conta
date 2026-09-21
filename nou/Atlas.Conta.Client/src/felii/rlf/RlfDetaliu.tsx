@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
@@ -40,7 +41,7 @@ import { RlfEditorLinie, type EticheteCulese } from './RlfEditorLinie';
 // stinge. Calea de compensare a unui retur cu factura originală e NOTA CONTABILĂ
 // (`/ntc`, felia 19) — de aceea nu montăm `PanouStingeri` aici.
 
-const CAMPURI_ANTET: (keyof RlfWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof RlfWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function RlfDetaliu() {
@@ -208,6 +209,7 @@ export function RlfDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Retur la furnizor — nou' : `Retur la furnizor ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
@@ -254,6 +256,7 @@ export function RlfDetaliu() {
                   WriteDto (F19-D6). */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<RlfWrite> camp="Data" />
+              <CampData<RlfWrite> camp="DataInregistrare" />
               <Lookup<RlfWrite>
                 camp="PredatorId"
                 entitate="Gestiune"

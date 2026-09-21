@@ -88,6 +88,7 @@ export function linieGoala(): NtcLinieWrite {
 export function spreWrite(citit: NtcRead): NtcWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

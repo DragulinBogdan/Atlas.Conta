@@ -1,0 +1,27 @@
+Index Scan using "IX_RegistruStoc_DocumentId" on "RegistruStoc" r  (cost=0.42..8.52 rows=5 width=107) (actual time=0.011..0.012 rows=0.00 loops=1)
+  Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+  Filter: ("GCRecord" = 0)
+  Index Searches: 1
+  Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=210 read=2
+Planning Time: 1.764 ms
+Execution Time: 0.040 ms
+Index Scan using "IX_RegistruContabil_DocumentId" on "RegistruContabil" r  (cost=0.42..16.48 rows=203 width=366) (actual time=0.145..0.926 rows=228.00 loops=1)
+  Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+  Filter: ("GCRecord" = 0)
+  Index Searches: 1
+  Buffers: shared hit=3 read=6
+Planning:
+  Buffers: shared hit=381 read=5
+Planning Time: 1.041 ms
+Execution Time: 0.938 ms
+Index Scan using "IX_RegistruTva_DocumentId" on "RegistruTva" r  (cost=0.29..8.33 rows=2 width=134) (actual time=0.006..0.006 rows=0.00 loops=1)
+  Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+  Filter: ("GCRecord" = 0)
+  Index Searches: 1
+  Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=143 read=3
+Planning Time: 0.574 ms
+Execution Time: 0.013 ms

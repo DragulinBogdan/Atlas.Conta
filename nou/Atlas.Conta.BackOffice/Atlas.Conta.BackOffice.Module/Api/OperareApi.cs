@@ -19,6 +19,15 @@ public sealed record OperareRezultat(
     Guid? ConexId,
     IReadOnlyList<string> Mesaje);
 
+// Rezultatul comenzii de CORECȚIE (F27-D6), tot ca date: originalul (acum
+// `Stornat`) și draftul nou, plus codul tipului — apelantul deschide draftul,
+// iar codul îi spune pe ce ecran.
+public sealed record CorectieRezultat(
+    Guid OriginalId,
+    Guid CorectieId,
+    StareDocument StareOriginal,
+    string TipCod);
+
 // Adaptorul „comandă prin ID" peste MotorOperare (decizia 42b): puntea dintre
 // tierul apelant (Web API la pasul 5, DocumentOperareController azi) și motor e
 // ID-ul în ambele sensuri — nicio entitate nu trece granița.
@@ -32,7 +41,11 @@ public sealed record OperareRezultat(
 // motorului. Căile standalone (ModelCheck/Import1C/Migrare) pot folosi orice
 // ObjectSpace — gardianul nu e activ acolo.
 public static class OperareApi {
+    // F27-D1: tranzacția comenzii ține blocarea luată de `GardianPerioada` peste
+    // `CommitChanges`, deci închiderea unei perioade nu se poate strecura între
+    // verificare și scrierea registrelor. `MotorOperare` rămâne neatins.
     public static OperareRezultat Opereaza(IObjectSpace os, Guid documentId) {
+        using var tx = TranzactieComanda.Incepe(os);
         var doc = Incarca(os, documentId);
         var conex = MotorOperare.Opereaza(os, doc);
         var mesaje = new List<string>();
@@ -43,19 +56,33 @@ public static class OperareApi {
         // nu aruncă — o operare cu registre deja comise nu poate eșua din cauza
         // unui mesaj.
         mesaje.AddRange(doc.MesajeDupaOperare(os));
+        tx.Commit();
         return new OperareRezultat(doc.ID, doc.Stare, conex?.ID, mesaje);
     }
 
     public static OperareRezultat AnuleazaOperarea(IObjectSpace os, Guid documentId) {
+        using var tx = TranzactieComanda.Incepe(os);
         var doc = Incarca(os, documentId);
         MotorOperare.AnuleazaOperarea(os, doc);
+        tx.Commit();
         return new OperareRezultat(doc.ID, doc.Stare, null, Array.Empty<string>());
     }
 
     public static OperareRezultat Storneaza(IObjectSpace os, Guid documentId, DateOnly dataStorno) {
+        using var tx = TranzactieComanda.Incepe(os);
         var doc = Incarca(os, documentId);
         MotorOperare.Storneaza(os, doc, dataStorno);
+        tx.Commit();
         return new OperareRezultat(doc.ID, doc.Stare, null, Array.Empty<string>());
+    }
+
+    // F27-D6: corecția are tranzacția în serviciu (storno + draft nou sunt o
+    // singură comandă); adaptorul traduce entitățile în chei, ca surorile lui.
+    public static CorectieRezultat Corecteaza(IObjectSpace os, Guid documentId, DateOnly dataCorectie,
+            MotivCorectie motiv) {
+        var (storno, corectie) = CorectieService.Corecteaza(os, documentId, dataCorectie, motiv);
+        return new CorectieRezultat(storno.ID, corectie.ID, storno.Stare,
+            MotorOperare.GasesteTipDocument(os, corectie).Cod);
     }
 
     // Dry-run (D3): fazele calculează+validează, fără materializare și fără
@@ -67,9 +94,7 @@ public static class OperareApi {
         return MotorOperare.Valideaza(os, doc);
     }
 
-    // Încărcarea POLIMORFĂ pe baza TPT: `GetObjectByKey<Document>` întoarce
-    // instanța tipului derivat real (același apel îl face motorul pe
-    // `DocumentSursaId` la imperecherea automată — MotorOperare.Opereaza).
+    // Încărcarea POLIMORFĂ: `GetObjectByKey<Document>` întoarce instanța tipului derivat real.
     static Document Incarca(IObjectSpace os, Guid documentId) =>
         Rezolva.Cere<Document>(os, documentId, "Documentul");
 
@@ -82,7 +107,7 @@ public static class OperareApi {
             return MotorOperare.GasesteTipDocument(os, doc).Cod;
         }
         catch (OperareException) {
-            return doc.GetType().Name;
+            return doc.ClrType;
         }
     }
 }

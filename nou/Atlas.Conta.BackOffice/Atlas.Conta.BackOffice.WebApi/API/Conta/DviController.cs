@@ -9,7 +9,7 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 // Felia DVI (decizia 86, DVI-D5): declarația vamală de import. Transport pur —
 // regulile sunt în `DviApply`/motor/gardian, o singură sursă pentru toate
 // tierele (42a). `Dvi` derivă direct din `Document`, deci un id de DVI cerut pe
-// ușa NTC/FCT nu trece gate-ul lor (TPT): 404, fără predicat de felie.
+// ușa NTC/FCT nu trece gate-ul lor: 404, fără predicat de felie.
 [Route("api/dvi")]
 public class DviController : ContaApiController {
     public DviController(IObjectSpaceFactory secured, INonSecuredObjectSpaceFactory nonSecured,

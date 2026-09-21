@@ -1,0 +1,22 @@
+                                                                                                                                                                                                                                                                                                                               QUERY PLAN                                                                                                                                                                                                                                                                                                                               
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ HashAggregate  (cost=44776.10..47248.93 rows=62865 width=98) (actual time=75.140..83.853 rows=22343.00 loops=1)
+   Group Key: "Partener", "Cont", "Latura"
+   Planned Partitions: 8  Batches: 9  Memory Usage: 8273kB  Disk Usage: 3368kB
+   Buffers: shared hit=6268 read=9256, temp read=242 written=625
+   ->  Bitmap Heap Scan on "Postare" p  (cost=3327.68..35392.96 rows=87032 width=44) (actual time=6.578..48.562 rows=111202.00 loops=1)
+         Recheck Cond: ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[]))
+         Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 1))
+         Rows Removed by Filter: 200520
+         Heap Blocks: exact=15254
+         Buffers: shared hit=6268 read=9256
+         ->  Bitmap Index Scan on ix_f1_cont  (cost=0.00..3305.88 rows=311864 width=0) (actual time=5.178..5.179 rows=311722.00 loops=1)
+               Index Cond: ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[]))
+               Index Searches: 1
+               Buffers: shared read=270
+ Planning:
+   Buffers: shared hit=417
+ Planning Time: 0.561 ms
+ Execution Time: 85.177 ms
+(18 rows)
+

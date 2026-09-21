@@ -1,0 +1,25 @@
+GroupAggregate  (cost=1365.55..1365.57 rows=1 width=48) (actual time=0.683..0.692 rows=30.00 loops=1)
+  Group Key: r."LotId"
+  Filter: (COALESCE(sum(r."Cantitate"), 0.0) > 0.0)
+  Buffers: shared hit=288 read=58
+  ->  Sort  (cost=1365.55..1365.55 rows=1 width=20) (actual time=0.676..0.677 rows=31.00 loops=1)
+        Sort Key: r."LotId"
+        Sort Method: quicksort  Memory: 26kB
+        Buffers: shared hit=288 read=58
+        ->  Nested Loop  (cost=0.71..1365.54 rows=1 width=20) (actual time=0.075..0.656 rows=31.00 loops=1)
+              Buffers: shared hit=285 read=58
+              ->  Index Scan using "IX_Loturi_ProdusId" on "Loturi" l  (cost=0.29..148.84 rows=66 width=16) (actual time=0.048..0.178 rows=61.00 loops=1)
+                    Index Cond: ("ProdusId" = '01a0b48d-78b6-754c-92e9-c3250a37995b'::uuid)
+                    Filter: ("GCRecord" = 0)
+                    Index Searches: 1
+                    Buffers: shared hit=44 read=1
+              ->  Index Scan using "IX_RegistruStoc_LotId" on "RegistruStoc" r  (cost=0.42..18.42 rows=1 width=20) (actual time=0.007..0.008 rows=0.51 loops=61)
+                    Index Cond: ("LotId" = l."ID")
+                    Filter: (("Data" <= '2025-06-30'::date) AND ("GCRecord" = 0) AND ("RepartitorId" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid) AND ("TipStoc" = 1))
+                    Rows Removed by Filter: 2
+                    Index Searches: 61
+                    Buffers: shared hit=241 read=57
+Planning:
+  Buffers: shared hit=329
+Planning Time: 0.681 ms
+Execution Time: 0.732 ms

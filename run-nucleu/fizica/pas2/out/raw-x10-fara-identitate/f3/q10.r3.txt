@@ -1,0 +1,67 @@
+                                                                                 QUERY PLAN                                                                                 
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize GroupAggregate  (cost=271259.88..363588.17 rows=275860 width=96) (actual time=450.172..571.011 rows=12839.00 loops=1)
+   Group Key: p."Gestiune", p."Unitate"
+   Filter: (COALESCE(sum(p."Cantitate"), 0.0) <> 0.0)
+   Rows Removed by Filter: 97947
+   Buffers: shared hit=8886 read=58666, temp read=26072 written=48940
+   ->  Gather Merge  (cost=271259.88..348755.51 rows=665390 width=96) (actual time=450.101..499.500 rows=329568.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=8886 read=58666, temp read=26072 written=48940
+         ->  Sort  (cost=270259.86..270952.97 rows=277246 width=96) (actual time=435.078..447.331 rows=109856.00 loops=3)
+               Sort Key: p."Gestiune", p."Unitate"
+               Sort Method: external merge  Disk: 17896kB
+               Buffers: shared hit=8886 read=58666, temp read=26072 written=48940
+               Worker 0:  Sort Method: external merge  Disk: 18144kB
+               Worker 1:  Sort Method: external merge  Disk: 17864kB
+               ->  Partial HashAggregate  (cost=206515.06..230978.70 rows=277246 width=96) (actual time=274.710..383.498 rows=109856.00 loops=3)
+                     Group Key: p."Gestiune", p."Unitate"
+                     Planned Partitions: 32  Batches: 33  Memory Usage: 8209kB  Disk Usage: 63040kB
+                     Buffers: shared hit=8872 read=58666, temp read=19334 written=42187
+                     Worker 0:  Batches: 33  Memory Usage: 8209kB  Disk Usage: 63104kB
+                     Worker 1:  Batches: 33  Memory Usage: 8209kB  Disk Usage: 62976kB
+                     ->  Parallel Append  (cost=0.00..90641.49 rows=1155126 width=43) (actual time=16.798..130.271 rows=924152.33 loops=3)
+                           Buffers: shared hit=8872 read=58666
+                           ->  Parallel Seq Scan on "Postare_Stoc_2024" p_9  (cost=0.00..8650.86 rows=118118 width=42) (actual time=16.054..37.954 rows=283498.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                                 Buffers: shared hit=800 read=6079
+                           ->  Parallel Seq Scan on "Postare_Stoc_2016" p_1  (cost=0.00..8468.44 rows=115223 width=43) (actual time=15.962..37.757 rows=276551.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                                 Buffers: shared hit=786 read=5954
+                           ->  Parallel Seq Scan on "Postare_Stoc_2017" p_2  (cost=0.00..8468.44 rows=115223 width=43) (actual time=0.123..21.427 rows=276551.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                                 Buffers: shared hit=786 read=5954
+                           ->  Parallel Seq Scan on "Postare_Stoc_2018" p_3  (cost=0.00..8468.44 rows=115223 width=43) (actual time=0.030..21.186 rows=276551.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                                 Buffers: shared hit=786 read=5954
+                           ->  Parallel Seq Scan on "Postare_Stoc_2019" p_4  (cost=0.00..8468.44 rows=115223 width=43) (actual time=0.136..20.308 rows=276551.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                                 Buffers: shared hit=786 read=5954
+                           ->  Parallel Seq Scan on "Postare_Stoc_2020" p_5  (cost=0.00..8468.44 rows=115223 width=43) (actual time=0.131..20.347 rows=276551.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                                 Buffers: shared hit=786 read=5954
+                           ->  Parallel Seq Scan on "Postare_Stoc_2021" p_6  (cost=0.00..8468.44 rows=115223 width=43) (actual time=0.077..9.314 rows=92183.67 loops=3)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                                 Buffers: shared hit=1801 read=4939
+                           ->  Parallel Seq Scan on "Postare_Stoc_2022" p_7  (cost=0.00..8468.44 rows=115223 width=43) (actual time=0.135..19.813 rows=276551.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                                 Buffers: shared hit=786 read=5954
+                           ->  Parallel Seq Scan on "Postare_Stoc_2023" p_8  (cost=0.00..8468.44 rows=115223 width=43) (actual time=0.089..21.516 rows=276551.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                                 Buffers: shared hit=786 read=5954
+                           ->  Parallel Seq Scan on "Postare_Stoc_2025" p_10  (cost=0.00..8467.44 rows=115223 width=43) (actual time=18.374..39.377 rows=276551.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                                 Buffers: shared hit=769 read=5970
+                           ->  Parallel Seq Scan on "Postare_Stoc_rest" p_11  (cost=0.00..0.00 rows=1 width=72) (actual time=0.002..0.002 rows=0.00 loops=1)
+                                 Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+ Planning:
+   Buffers: shared hit=1748
+ Planning Time: 2.178 ms
+ JIT:
+   Functions: 166
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 6.976 ms (Deform 4.652 ms), Inlining 0.000 ms, Optimization 5.394 ms, Emission 50.823 ms, Total 63.193 ms
+ Execution Time: 588.575 ms
+(63 rows)
+

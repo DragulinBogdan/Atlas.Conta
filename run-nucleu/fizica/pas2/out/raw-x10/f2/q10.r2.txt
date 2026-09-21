@@ -1,0 +1,36 @@
+                                                                          QUERY PLAN                                                                           
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize GroupAggregate  (cost=265454.79..357780.85 rows=275853 width=96) (actual time=442.717..584.792 rows=12839.00 loops=1)
+   Group Key: p."Gestiune", p."Unitate"
+   Filter: (COALESCE(sum(p."Cantitate"), 0.0) <> 0.0)
+   Rows Removed by Filter: 97947
+   Buffers: shared hit=2358 read=65174, temp read=25475 written=48349
+   ->  Gather Merge  (cost=265454.79..342948.56 rows=665374 width=96) (actual time=442.673..497.209 rows=328176.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=2358 read=65174, temp read=25475 written=48349
+         ->  Sort  (cost=264454.77..265147.87 rows=277239 width=96) (actual time=428.619..442.610 rows=109392.00 loops=3)
+               Sort Key: p."Gestiune", p."Unitate"
+               Sort Method: external merge  Disk: 18168kB
+               Buffers: shared hit=2358 read=65174, temp read=25475 written=48349
+               Worker 0:  Sort Method: external merge  Disk: 18072kB
+               Worker 1:  Sort Method: external merge  Disk: 18008kB
+               ->  Partial HashAggregate  (cost=200711.99..225174.30 rows=277239 width=96) (actual time=256.651..377.280 rows=109392.00 loops=3)
+                     Group Key: p."Gestiune", p."Unitate"
+                     Planned Partitions: 32  Batches: 33  Memory Usage: 8209kB  Disk Usage: 63064kB
+                     Buffers: shared hit=2344 read=65174, temp read=18694 written=41553
+                     Worker 0:  Batches: 33  Memory Usage: 8209kB  Disk Usage: 62920kB
+                     Worker 1:  Batches: 33  Memory Usage: 8209kB  Disk Usage: 62952kB
+                     ->  Parallel Seq Scan on "Postare_Stoc" p  (cost=0.00..84845.44 rows=1155056 width=43) (actual time=5.357..88.835 rows=924152.33 loops=3)
+                           Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+                           Buffers: shared hit=2344 read=65174
+ Planning:
+   Buffers: shared hit=410
+ Planning Time: 0.678 ms
+ JIT:
+   Functions: 46
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 2.336 ms (Deform 0.763 ms), Inlining 0.000 ms, Optimization 1.665 ms, Emission 20.287 ms, Total 24.288 ms
+ Execution Time: 606.403 ms
+(32 rows)
+

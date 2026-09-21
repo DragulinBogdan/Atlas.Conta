@@ -89,14 +89,6 @@ public static class ImpliciteService {
     /// partener INVIZIBIL pe ușa securizată — exact ce vrea rezolvarea (80a: fără
     /// oracol de existență). Dacă AMBELE laturi ar fi parteneri (nu există azi),
     /// câștigă predatorul.
-    ///
-    /// Întrebarea se pune prin INTEROGARE, nu prin `GetObjectByKey&lt;Partener&gt;`:
-    /// măsurat pe host (F23 pas 2), `BaseObjectSpace.GetObjectByKey&lt;T&gt;` CASTEAZĂ
-    /// rândul găsit, deci pe un id de `UnitateInterna` aruncă
-    /// `InvalidCastException` („Castle.Proxies.UnitateInternaProxy … to
-    /// Partener") în loc să întoarcă null. Cum predatorul e intern pe FCL/RLF/RDC,
-    /// varianta cu `GetObjectByKey` scotea 500 pe TOATE scrierile celor cinci
-    /// felii cu TVA. `Any` pe nomenclator răspunde la aceeași întrebare fără cast.
     /// </summary>
     public static Guid? PartenerulDocumentului(IObjectSpace os, Document doc) {
         if (doc == null)

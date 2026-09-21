@@ -199,6 +199,8 @@ public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteL
 // ieșiri de EVALUARE (BCS, BTR, DSC, LDI−, ASM consum); RLF declară
 // `IDocumentCuIesireFiscala` și rămâne la `preț × cantitate` (review F5).
 public class BonConsum : Document {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantBonConsum.Instanta;
+
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         foreach (var d in Detalii.Where(d => d.LotId != null)) {
             var lot = os.GetObjectByKey<Lot>(d.LotId.Value);

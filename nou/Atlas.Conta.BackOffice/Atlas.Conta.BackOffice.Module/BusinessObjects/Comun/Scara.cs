@@ -97,7 +97,19 @@ public static class Scara {
         // rândului de `RegistruTva` (baza impozabilă + TVA-ul ei — JT-D4). Baza
         // e bani, nu preț: la `Capitalizat` se desface din valoarea BRUTĂ deja
         // rotunjită, iar jurnalele o adună server-side pe perioade întregi.
-        "Valoare" or "ValoareTva" or "Suma" or "Baza" or "Tva" => Bani,
+        // Cifrele imobilizărilor sunt tot bani postați sau derivați din ei (F26-D2).
+        // `Debit`/`Credit` sunt cumulatele pe laturi ale snapshot-ului de
+        // perioadă (F27-D3): suma unor valori de postare, deci tot bani.
+        // `TotalStingere` (F27-D7) e Σ valorilor de postare ale liniilor de
+        // creanță, iar `Rest` al partidei deschise e diferența lui față de
+        // stingeri — amândouă bani postați.
+        // `ValoareValuta` (a doua valoare a postării din cub) și `TolerantaTaxa`
+        // (pragul abaterii taxei culese, per linie a cotei) sunt tot bani (S-D1).
+        "Valoare" or "ValoareTva" or "Suma" or "Baza" or "Tva" or "Debit" or "Credit"
+            or "TotalStingere" or "Rest" or "ValoareValuta" or "TolerantaTaxa"
+            or "ValoareFiscala" or "ValoareDeductibila" or "ValoareReziduala"
+            or "Amortizare" or "AmortizareFiscala" or "AmortizareDeductibila"
+            or "AmortizareInitiala" or "AmortizareFiscalaInitiala" => Bani,
         // Prețuri unitare + cursul valutar (BNR dă 4 zecimale, 6 lasă loc).
         "PretUnitar" or "PretEvaluare" or "Curs" => Pret,
         "Cantitate" => Cantitate,

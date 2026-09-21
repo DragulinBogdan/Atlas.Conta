@@ -1,0 +1,17 @@
+                                                                           QUERY PLAN                                                                            
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ HashAggregate  (cost=22921.11..23132.22 rows=14074 width=124) (actual time=5.369..6.684 rows=4725.00 loops=1)
+   Group Key: p."DocumentId", p."TranzactieId", p."Partener", p."CodTvaId"
+   Batches: 1  Memory Usage: 4113kB
+   Buffers: shared hit=625
+   ->  Index Scan using ix_f2f_perioada_codtva on "Postare_Fiscal" p  (cost=0.43..22596.68 rows=14419 width=60) (actual time=0.015..2.109 rows=13960.00 loops=1)
+         Index Cond: ("PerioadaDeclarare" = 202506)
+         Filter: ("Spatiu" = 3)
+         Index Searches: 1
+         Buffers: shared hit=625
+ Planning:
+   Buffers: shared hit=401
+ Planning Time: 0.628 ms
+ Execution Time: 7.390 ms
+(13 rows)
+

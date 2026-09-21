@@ -1,0 +1,31 @@
+== B2.3 perechi 1:1 -- |stoc.Valoare| contra contabil.Valoare ==
+          tip           | TipStoc | egale_abs | diferite | delta_total | total 
+------------------------+---------+-----------+----------+-------------+-------
+ DescarcareGestiune     |       5 |     62063 |        0 |           0 | 62063
+ NIR                    |       5 |     33793 |        0 |           0 | 33793
+ ReturClient            |       5 |      2010 |        0 |           0 |  2010
+ NIR                    |       1 |       496 |        0 |           0 |   496
+ ListaDiferenteInventar |       5 |        22 |        0 |           0 |    22
+ ReturFurnizor          |       5 |         1 |        0 |           0 |     1
+(6 rows)
+
+== B2.3b exemple de perechi 1:1 cu valoare diferita (max 10) ==
+ tip | Numar | v_stoc | v_nota | delta 
+-----+-------+--------+--------+-------
+(0 rows)
+
+== B2.4 perechi 1:2 -- linia are 2 note (net + TVA) ==
+      tip      | TipStoc | linii | are_nota_egala 
+---------------+---------+-------+----------------
+ ReturFurnizor |       5 |   474 |            474
+ ReturFurnizor |       1 |     2 |              2
+(2 rows)
+
+ rows)
+
+== B2.5 perechi 2:1 (BCS) -- suma algebrica a celor doua randuri de stoc contra notei ==
+    tip    | linii | suma_stoc_zero | nota_egala_cu_max | suma_stoc | suma_nota 
+-----------+-------+----------------+-------------------+-----------+-----------
+ BonConsum |  1471 |           1471 |              1471 |      0.00 | 340618.38
+(1 row)
+

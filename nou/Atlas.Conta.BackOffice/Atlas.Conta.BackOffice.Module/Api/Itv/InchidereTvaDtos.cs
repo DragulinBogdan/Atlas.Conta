@@ -58,6 +58,7 @@ public sealed class ItvReadDto {
     public Guid Id { get; set; }
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     public int An { get; set; }
     public int Luna { get; set; }
     public string Stare { get; set; }
@@ -94,6 +95,8 @@ public sealed class ItvReadDto {
     // gardianul (`ApiProiectii.AreImperecheri`).
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
+    // F27-D6 — legătura de corecție (null = documentul nu corectează nimic).
+    public CorectieDto Corectie { get; set; }
     public bool PoateStorna { get; set; }
     public bool PoateSterge { get; set; }
     public bool PoateRegenera { get; set; }

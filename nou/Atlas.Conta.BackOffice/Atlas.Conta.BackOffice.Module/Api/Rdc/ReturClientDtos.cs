@@ -32,6 +32,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Rdc;
 // ── Scriere: agregatul per document (PUT header + linii, 42d) ──────────────
 public sealed class RdcWriteDto {
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     // Clientul care returnează → gestiunea în care revine marfa. Tipul laturilor
     // rămâne invariant al OPERĂRII; `Aplica` verifică doar existența.
     public Guid PredatorId { get; set; }
@@ -71,6 +73,7 @@ public sealed class RdcReadDto {
     // pe draft e null.
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
@@ -91,6 +94,8 @@ public sealed class RdcReadDto {
     public bool PoateEdita { get; set; }
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
+    // F27-D6 — legătura de corecție (null = documentul nu corectează nimic).
+    public CorectieDto Corectie { get; set; }
     public bool PoateStorna { get; set; }
 }
 

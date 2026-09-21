@@ -201,7 +201,22 @@ public class RegistruContabil : BaseObject {
 [NavigationItem("Registre")]
 [ForbidCRUD("ListView", "DetailView")]
 public class RegistruTva : BaseObject {
+    // Data FAPTULUI fiscal (data documentului; data stornării pe rândul invers)
+    // — jurnalele sunt pe data facturii. Perioada în care faptul se DECLARĂ e
+    // perechea de mai jos, care poate fi alta (F27-D5).
     public virtual DateOnly Data { get; set; }
+    // Perioada de DECLARARE (F27-D5): pe ea filtrează jurnalele, D300, D394 și
+    // SAF-T. Scalari, nu dată: perioada fiscală e o lună, iar comparația
+    // `An * 100 + Luna` se traduce în SQL fără funcții de dată.
+    [XafDisplayName("Perioada (an)")]
+    public virtual int PerioadaAn { get; set; }
+    [XafDisplayName("Perioada (luna)")]
+    public virtual int PerioadaLuna { get; set; }
+    // Momentul scrierii RÂNDULUI (UTC). Comparat cu `PerioadaFiscala.InchisaPrimaOara`
+    // dă conținutul de rectificativă, fără flag (F27-D5). Pe rând, nu pe document:
+    // stornoul scris mai târziu e alt fapt decât operarea originalului.
+    [XafDisplayName("Scris la")]
+    public virtual DateTime ScrisLa { get; set; }
     // Snapshot al laturii (vezi `SensTva`): derivat din `PoliticaTva.Directie`.
     public virtual SensTva Sens { get; set; }
     // NENULE — vezi mai sus: registrul n-are rânduri de deschidere.

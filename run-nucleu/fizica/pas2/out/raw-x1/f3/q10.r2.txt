@@ -1,0 +1,40 @@
+                                                                   QUERY PLAN                                                                    
+-------------------------------------------------------------------------------------------------------------------------------------------------
+ HashAggregate  (cost=40986.72..47210.66 rows=70542 width=96) (actual time=78.490..144.437 rows=7782.00 loops=1)
+   Group Key: p."Gestiune", p."Unitate"
+   Filter: (COALESCE(sum(p."Cantitate"), 0.0) <> 0.0)
+   Planned Partitions: 8  Batches: 41  Memory Usage: 8273kB  Disk Usage: 16904kB
+   Rows Removed by Filter: 103004
+   Buffers: shared hit=3226 read=3653, temp read=2346 written=4192
+   ->  Append  (cost=0.00..12548.93 rows=283492 width=43) (actual time=0.027..35.296 rows=283498.00 loops=1)
+         Buffers: shared hit=3226 read=3653
+         ->  Seq Scan on "Postare_Stoc_2016" p_1  (cost=0.00..0.00 rows=1 width=72) (actual time=0.004..0.004 rows=0.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+         ->  Seq Scan on "Postare_Stoc_2017" p_2  (cost=0.00..0.00 rows=1 width=72) (actual time=0.002..0.002 rows=0.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+         ->  Seq Scan on "Postare_Stoc_2018" p_3  (cost=0.00..0.00 rows=1 width=72) (actual time=0.002..0.002 rows=0.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+         ->  Seq Scan on "Postare_Stoc_2019" p_4  (cost=0.00..0.00 rows=1 width=72) (actual time=0.002..0.002 rows=0.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+         ->  Seq Scan on "Postare_Stoc_2020" p_5  (cost=0.00..0.00 rows=1 width=72) (actual time=0.003..0.003 rows=0.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+         ->  Seq Scan on "Postare_Stoc_2021" p_6  (cost=0.00..0.00 rows=1 width=72) (actual time=0.002..0.002 rows=0.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+         ->  Seq Scan on "Postare_Stoc_2022" p_7  (cost=0.00..0.00 rows=1 width=72) (actual time=0.002..0.002 rows=0.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+         ->  Seq Scan on "Postare_Stoc_2023" p_8  (cost=0.00..0.00 rows=1 width=72) (actual time=0.001..0.002 rows=0.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+         ->  Seq Scan on "Postare_Stoc_2024" p_9  (cost=0.00..244.20 rows=6947 width=42) (actual time=0.009..0.604 rows=6947.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+               Buffers: shared hit=140
+         ->  Seq Scan on "Postare_Stoc_2025" p_10  (cost=0.00..10887.26 rows=276536 width=43) (actual time=0.013..24.488 rows=276551.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+               Buffers: shared hit=3086 read=3653
+         ->  Seq Scan on "Postare_Stoc_rest" p_11  (cost=0.00..0.00 rows=1 width=72) (actual time=0.007..0.007 rows=0.00 loops=1)
+               Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 2))
+ Planning:
+   Buffers: shared hit=2135
+ Planning Time: 2.162 ms
+ Execution Time: 146.226 ms
+(36 rows)
+

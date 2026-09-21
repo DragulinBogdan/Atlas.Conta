@@ -1,0 +1,40 @@
+DROP TABLE
+psql:/tmp/02-b2-fct-nir.sql:6: NOTICE:  table "FctNir" does not exist, skipping
+SELECT 17814
+CREATE INDEX
+CREATE INDEX
+ANALYZE
+===== B2.1 acoperirea conexului =====
+ fct_operate | fct_cu_nir | nir_operate | nir_cu_fct | nir_fara_fct | fct_cu_mai_multe_nir | nir_cu_mai_multe_fct 
+-------------+------------+-------------+------------+--------------+----------------------+----------------------
+       19035 |      17814 |       17814 |      17814 |            0 |                    0 |                    0
+
+
+===== B2.2 cati NIR per FCT =====
+ nr_nir | facturi 
+--------+---------
+      1 |   17814
+
+
+===== B2.3 pe perechi: 401 al FCT, 401 al NIR, TotalStingere al FCT =====
+ perechi_fct | suma_401_fct | suma_401_nir | suma_totalstingere | suma_401_fct_plus_nir | exact | diferit | abs_diferenta 
+-------------+--------------+--------------+--------------------+-----------------------+-------+---------+---------------
+       17814 |   8949652.58 |  83593304.48 |       100417152.95 |           92542957.06 | 16017 |    1797 |    7874195.89
+
+
+===== B2.4 FCT fara NIR (servicii): ce posteaza pe 401 =====
+ fct_fara_nir | cu_postare_tert | fara_postare_tert | suma_tert  | suma_totalstingere | exact 
+--------------+-----------------+-------------------+------------+--------------------+-------
+         1221 |            1221 |                 0 | 1124497.95 |         2215481.49 |  1084
+
+
+===== B2.5 pe FCT cu NIR: raportul TVA / net (linia de TVA a facturii) =====
+ fct_cu_nir | c401_egal_tva | c401_egal_brut | c401_zero | suma_c401  |  suma_tva   |  suma_baza  
+------------+---------------+----------------+-----------+------------+-------------+-------------
+      17814 |         15619 |             13 |      1229 | 8949652.58 | 16674305.11 | 83690551.70
+
+
+===== B2.6 3 exemple de FCT cu mai multe NIR =====
+ fct_numar | Data | nr_nir | nir_numere 
+-----------+------+--------+------------
+

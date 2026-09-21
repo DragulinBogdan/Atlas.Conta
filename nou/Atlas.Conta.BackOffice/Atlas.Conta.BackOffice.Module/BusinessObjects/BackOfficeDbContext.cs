@@ -1,10 +1,11 @@
-﻿using DevExpress.ExpressApp.Design;
+using DevExpress.ExpressApp.Design;
 using DevExpress.ExpressApp.EFCore.DesignTime;
 using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.BaseImpl.EF.PermissionPolicy;
 using DevExpress.Persistent.BaseImpl.EF.StateMachine;
 using DevExpress.Persistent.BaseImpl.EFCore.AuditTrail;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
 // Numele DbSet-ului `RegistruContabil` umbrește tipul în interiorul contextului —
@@ -61,6 +62,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<Unitate> Unitati { get; set; }
         public DbSet<Angajament> Angajamente { get; set; }
         public DbSet<PerioadaFiscala> PerioadeFiscale { get; set; }
+        // Istoricul închiderilor/redeschiderilor de perioadă (F27-D1), append-only.
+        public DbSet<InchiderePerioada> InchideriPerioade { get; set; }
         public DbSet<TipTva> TipuriTva { get; set; }
         // Nomenclatorul de județe (felia 15, D15-D1): ISO 3166-2:RO, seed-uit tot
         // în NUCLEU (împărțirea administrativă nu ține de planul de conturi).
@@ -75,7 +78,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // formularului 300 din OPANAF 174/2026, seed-uit în NUCLEU (e lege, nu profil).
         public DbSet<RandD300> RanduriD300 { get; set; }
 
-        // Documente (TPT)
+        // Documente
         public DbSet<Document> Documente { get; set; }
         public DbSet<DocumentDetaliu> DocumentDetalii { get; set; }
         public DbSet<FacturaIntrare> FacturiIntrare { get; set; }
@@ -99,8 +102,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<NotaContabila> NoteContabile { get; set; }
         public DbSet<NotaContabilaDetaliu> NoteContabileDetalii { get; set; }
         // Al 13-lea derivat (FAZA 1C §6): închiderea lunară de TVA — notă
-        // contabilă GENERATĂ (TPT pe două niveluri: Documente → NoteContabile →
-        // InchideriTva); detaliul rămâne NotaContabilaDetaliu.
+        // contabilă GENERATĂ (`InchidereTva : NotaContabila`); detaliul rămâne
+        // NotaContabilaDetaliu.
         public DbSet<InchidereTva> InchideriTva { get; set; }
         // Al 14-lea derivat (FAZA 1C §7): asamblarea/kitting n→m pe stoc
         // (BPR rămâne rezervat — decizia 19).
@@ -114,6 +117,13 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // de BAZĂ (fără tabelă de detaliu) și cu legătura n→m spre facturi.
         public DbSet<Dvi> Dvi { get; set; }
         public DbSet<DviFactura> DviFacturi { get; set; }
+        // Cele trei derivate ale imobilizărilor (F26-D5/D6/D7).
+        public DbSet<PunereInFunctiune> PuneriInFunctiune { get; set; }
+        public DbSet<PunereInFunctiuneDetaliu> PuneriInFunctiuneDetalii { get; set; }
+        public DbSet<IesireImobilizare> IesiriImobilizari { get; set; }
+        public DbSet<IesireImobilizareDetaliu> IesiriImobilizariDetalii { get; set; }
+        public DbSet<AmortizareLunara> AmortizariLunare { get; set; }
+        public DbSet<AmortizareLunaraDetaliu> AmortizariLunareDetalii { get; set; }
         public DbSet<Imperechere> Imperecheri { get; set; }
 
         // Registre + politici
@@ -129,6 +139,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Bonus: numele DbSet-ului poate coincide cu al clasei fără să ceară
         // alias-ul `using ...Entitate =` de care are nevoie `RegistruContabil`.
         public DbSet<RegistruTva> RegistruTva { get; set; }
+        public DbSet<RegistruImobilizari> RegistruImobilizari { get; set; }
+        public DbSet<SoldPerioadaContabil> SolduriPerioadaContabil { get; set; }
+        public DbSet<SoldPerioadaStoc> SolduriPerioadaStoc { get; set; }
+        public DbSet<PartidaDeschisa> PartideDeschise { get; set; }
+        public DbSet<Imobilizare> Imobilizari { get; set; }
+        public DbSet<ClasificareImobilizari> ClasificariImobilizari { get; set; }
+        public DbSet<PoliticaAmortizare> PoliticiAmortizare { get; set; }
+        public DbSet<RegulaDeductibilitate> ReguliDeductibilitate { get; set; }
         public DbSet<TipDocument> TipuriDocument { get; set; }
         public DbSet<RegulaStoc> ReguliStoc { get; set; }
         public DbSet<RegulaContare> ReguliContare { get; set; }
@@ -138,6 +156,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaValidare> PoliticiValidare { get; set; }
         public DbSet<PoliticaTva> PoliticiTva { get; set; }
         public DbSet<PoliticaInchidereTva> PoliticiInchidereTva { get; set; }
+        // Severitatea constatărilor de închidere de perioadă (F27-D2): un rând per fel.
+        public DbSet<PoliticaInchidere> PoliticiInchidere { get; set; }
         // Politica de așezare pe decont (D3-D2): (TipTva × Sens) → rând, n rânduri.
         public DbSet<MapareD300> MapariD300 { get; set; }
         // Politica D394 (D4-D2): (TipTva × Sens) → tip de operațiune, UNA per pereche.
@@ -154,6 +174,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
         // Infrastructura migrării (pasul 4): corelare legacy → nou.
         public DbSet<MigrareLegatura> MigrareLegaturi { get; set; }
+
+        // Cubul de postări (S-D1): tabele proprii, în afara `BaseObject`.
+        public DbSet<Cub.Tranzactie> Tranzactii { get; set; }
+        public DbSet<Cub.Postare> Postari { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             base.OnModelCreating(modelBuilder);
@@ -186,18 +210,19 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .WithOne(t => t.Owner)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Deciziile 1/3/16: TPT pe cele trei ierarhii.
-            modelBuilder.Entity<Document>().UseTptMappingStrategy();
-            modelBuilder.Entity<DocumentDetaliu>().UseTptMappingStrategy();
-            modelBuilder.Entity<Repartitor>().UseTptMappingStrategy();
-
-            // Nivelul abstract intermediar al trezoreriei se declară EXPLICIT:
-            // până la decizia 48b el intra în model doar fiindcă navigația
-            // `Imperechere.DocumentTrezorerie` îl referea; odată relaxată la
-            // `Document`, EF nu-l mai descoperea, iar Plata/Incasare ar fi
-            // moștenit direct din Document — cu tabela `DocumentTrezorerie`
-            // ștearsă și coloanele ei (TipInstrument/NumarExtras/DataExtras)
-            // recreate goale pe frunze. Declarația ține schema neatinsă.
+            // 89: TPH cu discriminatorul mapat `ClrType` = numele scurt al clasei (valoarea implicită EF).
+            modelBuilder.Entity<Document>(b => {
+                b.UseTphMappingStrategy();
+                b.HasDiscriminator(d => d.ClrType);
+            });
+            modelBuilder.Entity<DocumentDetaliu>(b => {
+                b.UseTphMappingStrategy();
+                b.HasDiscriminator(d => d.ClrType);
+            });
+            modelBuilder.Entity<Repartitor>(b => {
+                b.UseTphMappingStrategy();
+                b.HasDiscriminator(r => r.ClrType);
+            });
             modelBuilder.Entity<DocumentTrezorerie>();
 
             // F8-D6: latura pereche a viramentului — FK REAL self-referencing pe
@@ -237,6 +262,161 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<DviFactura>()
                 .HasOne(f => f.Factura).WithMany().HasForeignKey(f => f.FacturaId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // F27-D1: perioada e verigă de lanț, deci `(An, Luna)` e IDENTITATE, nu
+            // o coincidență. Filtrat pe rândurile vii ca toate unicitățile de pe
+            // tipuri cu ștergere amânată (60a) — altfel o perioadă ștearsă ar
+            // bloca recrearea aceleiași luni. Fără index, `VerificaDeschisa`
+            // (`FirstOrDefault`) ar fi ales nedeterminist între două rânduri.
+            modelBuilder.Entity<PerioadaFiscala>()
+                .HasIndex(p => new { p.An, p.Luna }).IsUnique()
+                .HasFilter("\"GCRecord\" = 0");
+            // Istoricul nu dispare cu perioada (Restrict) și nu e agregat al ei:
+            // e registrul închiderilor, nu o colecție de culegere.
+            modelBuilder.Entity<InchiderePerioada>(b => {
+                b.HasOne(i => i.Perioada).WithMany(p => p.Istoric).HasForeignKey(i => i.PerioadaId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasIndex(i => i.PerioadaId);
+            });
+
+            // F27-D3: snapshot-urile perioadelor de referință. Cheia completă e
+            // UNICĂ per perioadă, cu `NULLS NOT DISTINCT` (Postgres 15+) —
+            // dimensiunile sunt nullable, iar semantica cerută e „aceleași
+            // dimensiuni lipsă = aceeași cheie", nu „fiecare NULL e altceva".
+            // Fără filtru pe `GCRecord`: rândurile se șterg FIZIC (nu e
+            // nomenclator, e proiecție rescrisă la fiecare închidere).
+            // FK-uri `Restrict` și fără `AutoInclude`: consumatorii agregă, nu
+            // afișează — spre deosebire de `RegistruContabil` (41c).
+            modelBuilder.Entity<SoldPerioadaContabil>(b => {
+                b.HasIndex(s => new {
+                    s.An, s.Luna, s.ContId, s.RepartitorId, s.MaterialId, s.CodFunctionalId,
+                    s.CodEconomicId, s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId
+                }).IsUnique().AreNullsDistinct(false);
+                b.HasIndex(s => new { s.An, s.Luna });
+                b.HasOne(s => s.Cont).WithMany().HasForeignKey(s => s.ContId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.Repartitor).WithMany().HasForeignKey(s => s.RepartitorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.Material).WithMany().HasForeignKey(s => s.MaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.CodFunctional).WithMany().HasForeignKey(s => s.CodFunctionalId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.CodEconomic).WithMany().HasForeignKey(s => s.CodEconomicId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.SursaFinantare).WithMany().HasForeignKey(s => s.SursaFinantareId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.Unitate).WithMany().HasForeignKey(s => s.UnitateId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.Proiect).WithMany().HasForeignKey(s => s.ProiectId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.CentruCost).WithMany().HasForeignKey(s => s.CentruCostId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<SoldPerioadaStoc>(b => {
+                b.HasIndex(s => new { s.An, s.Luna, s.LotId, s.RepartitorId, s.TipStoc }).IsUnique();
+                b.HasIndex(s => new { s.An, s.Luna });
+                b.HasOne(s => s.Lot).WithMany().HasForeignKey(s => s.LotId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(s => s.Repartitor).WithMany().HasForeignKey(s => s.RepartitorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // F27-D7: partidele deschise ale perioadelor de referință. Un rând
+            // per (perioadă × document), rescris la fiecare închidere — aceeași
+            // ștergere FIZICĂ ca snapshot-urile, deci unicitate fără filtru pe
+            // `GCRecord`. FK `Restrict`: documentul nu dispare de sub partida lui.
+            modelBuilder.Entity<PartidaDeschisa>(b => {
+                b.HasIndex(p => new { p.An, p.Luna, p.DocumentId }).IsUnique();
+                b.HasIndex(p => new { p.An, p.Luna });
+                b.HasOne(p => p.Document).WithMany().HasForeignKey(p => p.DocumentId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // F27-D8: imperecherea e fapt datat — proiecția de rest taie fereastra
+            // deschisă pe `Data`, iar rândul invers arată spre cel pe care îl
+            // desface. Legătura e 1:1 (unicitate filtrată pe rândurile vii, ca la
+            // corecție) și `Restrict`: originalul nu dispare de sub inversul lui.
+            modelBuilder.Entity<Imperechere>(b => {
+                b.HasIndex(i => i.Data).HasFilter("\"GCRecord\" = 0");
+                b.HasIndex(i => i.InverseazaId).IsUnique().HasFilter("\"GCRecord\" = 0");
+                b.HasOne(i => i.Inverseaza).WithMany().HasForeignKey(i => i.InverseazaId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Rulajele unei luni se citesc pe `Data` (spike B.4: 70,6 → 37,9 ms
+            // pe contabil, 16,2 → 14,1 pe stoc, plan de index scan în loc de
+            // parallel seq scan). Filtrat pe rândurile vii, ca toate citirile.
+            modelBuilder.Entity<RegistruContabil>()
+                .HasIndex(r => r.Data).HasFilter("\"GCRecord\" = 0");
+            modelBuilder.Entity<RegistruStoc>()
+                .HasIndex(r => r.Data).HasFilter("\"GCRecord\" = 0");
+
+            // F27-D4: consumatorii de perioadă filtrează documentele pe data înregistrării.
+            modelBuilder.Entity<Document>()
+                .HasIndex(d => d.DataInregistrare).HasFilter("\"GCRecord\" = 0");
+
+            // F27-D6: corecția arată spre originalul stornat. `WithMany()` fără
+            // colecție (ca `LaturaPereche`): legătura e 1:1 și se verifică la
+            // commit, iar o colecție ar sugera „mai multe corecții". Restrict —
+            // originalul nu dispare de sub corecția care îl explică.
+            modelBuilder.Entity<Document>()
+                .HasOne(d => d.Corecteaza).WithMany().HasForeignKey(d => d.CorecteazaId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Document>()
+                .HasIndex(d => d.CorecteazaId).HasFilter("\"GCRecord\" = 0");
+
+            // F27-D5: jurnalele, decontul, D300, D394 și SAF-T filtrează registrul
+            // fiscal pe PERIOADA DE DECLARARE, nu pe data faptului.
+            modelBuilder.Entity<RegistruTva>()
+                .HasIndex(r => new { r.PerioadaAn, r.PerioadaLuna }).HasFilter("\"GCRecord\" = 0");
+
+            // FK-uri `Restrict`: convenția globală `SetNull`/`Cascade` ar goli tăcut fișa sau linia-sursă (F26-D1/D2/D5).
+            modelBuilder.Entity<Imobilizare>(b => {
+                b.HasOne(f => f.TipMaterial).WithMany().HasForeignKey(f => f.TipMaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(f => f.Clasificare).WithMany().HasForeignKey(f => f.ClasificareId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(f => f.Loc).WithMany().HasForeignKey(f => f.LocId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(f => f.CentruCost).WithMany().HasForeignKey(f => f.CentruCostId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(f => f.CodEconomic).WithMany().HasForeignKey(f => f.CodEconomicId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(f => f.Responsabil).WithMany().HasForeignKey(f => f.ResponsabilId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<RegistruImobilizari>(b => {
+                b.HasOne(r => r.Imobilizare).WithMany().HasForeignKey(r => r.ImobilizareId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(r => r.Repartitor).WithMany().HasForeignKey(r => r.RepartitorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(r => r.Document).WithMany().HasForeignKey(r => r.DocumentId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(r => r.Detaliu).WithMany().HasForeignKey(r => r.DetaliuId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<PunereInFunctiuneDetaliu>(b => {
+                b.HasOne(d => d.Imobilizare).WithMany().HasForeignKey(d => d.ImobilizareId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(d => d.LinieSursa).WithMany().HasForeignKey(d => d.LinieSursaId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+            modelBuilder.Entity<IesireImobilizareDetaliu>()
+                .HasOne(d => d.Imobilizare).WithMany().HasForeignKey(d => d.ImobilizareId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<AmortizareLunaraDetaliu>()
+                .HasOne(d => d.Imobilizare).WithMany().HasForeignKey(d => d.ImobilizareId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<PoliticaAmortizare>(b => {
+                b.HasOne(p => p.TipMaterial).WithMany().HasForeignKey(p => p.TipMaterialId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(p => p.ContAmortizare).WithMany().HasForeignKey(p => p.ContAmortizareId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(p => p.ContCheltuialaAmortizare).WithMany()
+                    .HasForeignKey(p => p.ContCheltuialaAmortizareId).OnDelete(DeleteBehavior.Restrict);
+                b.HasOne(p => p.ContCheltuialaCedare).WithMany()
+                    .HasForeignKey(p => p.ContCheltuialaCedareId).OnDelete(DeleteBehavior.Restrict);
+            });
 
             // Trasabilitatea acoperirii per linie FCL (design P2 §3): linia DSC
             // referă linia FCL sursă printr-un FK real cross-document. Restrict —
@@ -371,7 +551,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // inițializatorul `= true` de pe proprietate, pentru rândurile noi.
             modelBuilder.Entity<TipTva>().Property(t => t.Activ).HasDefaultValue(true);
 
+            AplicaCub(modelBuilder);
             AplicaScaraNumerica(modelBuilder);
+            AplicaColoanePartajate(modelBuilder);
             AplicaColoanaCautare(modelBuilder);
             AplicaFunctiaFaraDiacritice(modelBuilder);
         }
@@ -402,7 +584,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         //     (77k).
         //
         // Ce NU intră, declarat: `Repartitor.Cod`. Spațiul de coduri e PARTAJAT
-        // pe TPT între parteneri, gestiuni, angajați și conturi proprii, iar
+        // între parteneri, gestiuni, angajați și conturi proprii, iar
         // bazele de import au coliziuni legitime între familii — restanță cu
         // nume, nu o unicitate impusă pe tăcute.
         private static void AplicaUnicitatiPolitici(ModelBuilder modelBuilder) {
@@ -422,6 +604,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
             modelBuilder.Entity<PoliticaInchidereTva>()
                 .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<PoliticaInchidere>()
+                .HasIndex(p => p.Fel).IsUnique().HasFilter(viu);
 
             // (2) Regulile de alimentare — cheia lor e cheia de POTRIVIRE a
             // motorului, cu nullable-uri pe trepte (`ClasaId`, `TipMaterialId`,
@@ -458,6 +642,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasIndex(c => c.Cod).IsUnique().HasFilter(viu);
             modelBuilder.Entity<TipMaterial>()
                 .HasIndex(t => t.Cod).IsUnique().HasFilter(viu);
+
+            // (5) Identitatea fișei, cheia de seed a catalogului, un rând de politică per tip (F26-D4).
+            modelBuilder.Entity<Imobilizare>()
+                .HasIndex(f => f.NumarInventar).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<ClasificareImobilizari>()
+                .HasIndex(c => c.Cod).IsUnique().HasFilter(viu);
+            modelBuilder.Entity<PoliticaAmortizare>()
+                .HasIndex(p => p.TipMaterialId).IsUnique().HasFilter(viu);
         }
 
         // Căutarea fără diacritice pe PROIECȚII (decizia 78): `Cautare.
@@ -497,7 +689,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         //
         // Trei reguli, toate deduse din model (nicio listă de tipuri aici):
         //   * coloana aparține ENTITĂȚII EF care declară proprietatea, nu clasei
-        //     CLR: sub TPT o singură coloană pe `Repartitor` acoperă Partener/
+        //     CLR: o singură coloană pe `Repartitor` acoperă Partener/
         //     Gestiune/Angajat/UnitateInterna/ContPropriu; o bază CLR nemapată
         //     (`Dimensiune`) lasă coloana pe fiecare derivată.
         //   * numele coloanei de cod se citește din entitate: `Cod`, altfel
@@ -510,7 +702,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // care se caută după (cod, denumire) le are pe amândouă. NOT NULL +
         // CHECK `btrim(...) <> ''` (NOT NULL singur lasă să treacă `''` și
         // `'   '`) pe coloana de cod și pe `Denumire`, în tabelul care le
-        // DECLARĂ (sub TPT: `Repartitori`, o dată pentru toate frunzele). Ușa
+        // DECLARĂ (`Repartitori`, o dată pentru toate frunzele). Ușa
         // de sistem (Import1C, seed, motor) e apărată aici, de schemă; ușa
         // secured primește mesajul de domeniu din `GardianEditare` înaintea
         // bazei, iar violarea de constraint — dacă totuși ajunge — iese tot
@@ -543,6 +735,46 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             }
         }
 
+        // 89: pe ierarhiile TPH proprietățile omonime ale frunzelor-surori împart coloana, numită ca
+        // proprietatea; două omonime cu tip de stocare sau facete diferite nu se împacă tăcut.
+        private static void AplicaColoanePartajate(ModelBuilder modelBuilder) {
+            var coliziuni = new List<string>();
+            foreach (var radacina in modelBuilder.Model.GetEntityTypes()) {
+                if (radacina.BaseType != null || radacina.GetMappingStrategy() != RelationalAnnotationNames.TphMappingStrategy
+                    || radacina.ClrType?.Namespace?.StartsWith("Atlas.Conta.") != true)
+                    continue;
+                var coloane = new Dictionary<string, IMutableProperty>();
+                foreach (var derivat in radacina.GetDerivedTypes())
+                    foreach (var proprietate in derivat.GetDeclaredProperties()) {
+                        proprietate.SetColumnName(proprietate.Name);
+                        if (coloane.TryAdd(proprietate.Name, proprietate))
+                            continue;
+                        var prima = coloane[proprietate.Name];
+                        if (Fateta(prima) != Fateta(proprietate))
+                            coliziuni.Add($"{radacina.ClrType.Name}.{proprietate.Name}: " +
+                                $"{prima.DeclaringType.ClrType.Name} {Fateta(prima)} ≠ " +
+                                $"{proprietate.DeclaringType.ClrType.Name} {Fateta(proprietate)}");
+                    }
+                var discriminator = radacina.FindDiscriminatorProperty();
+                if (discriminator != null && !radacina.GetIndexes().Any(i => i.Properties[0] == discriminator))
+                    radacina.AddIndex(discriminator);
+            }
+            if (coliziuni.Count > 0)
+                throw new InvalidOperationException(
+                    "Omonimele frunzelor-surori împart coloana doar cu tip de stocare și facete identice:" +
+                    string.Concat(coliziuni.Select(c => Environment.NewLine + "  " + c)));
+
+            static (Type, bool, int?, int?, int?, string, bool?, bool?) Fateta(IMutableProperty p) =>
+                (TipStocare(p), p.IsNullable, p.GetMaxLength(), p.GetPrecision(), p.GetScale(), p.GetColumnType(),
+                    p.IsUnicode(), p.IsFixedLength());
+
+            static Type TipStocare(IMutableProperty p) {
+                var tip = p.GetValueConverter()?.ProviderClrType ?? p.GetProviderClrType() ?? p.ClrType;
+                tip = Nullable.GetUnderlyingType(tip) ?? tip;
+                return tip.IsEnum ? Enum.GetUnderlyingType(tip) : tip;
+            }
+        }
+
         // Scara fixă pe TOATE coloanele zecimale ale modelului (vezi `Scara`
         // pentru motiv: `numeric` fără scară moștenește scara împărțirii care a
         // produs valoarea, iar SUM-ul server-side peste ea depășește mantisa lui
@@ -560,8 +792,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
                 if (entityType.ClrType?.Namespace?.StartsWith("Atlas.Conta.") != true)
                     continue;
-                // Declarate, nu moștenite: sub TPT proprietatea bazei apare pe
-                // fiecare derivată, dar aparține (și se configurează) o dată.
+                // Declarate, nu moștenite: proprietatea bazei apare pe fiecare
+                // derivată, dar aparține (și se configurează) o dată.
                 foreach (var proprietate in entityType.GetDeclaredProperties()) {
                     var tip = Nullable.GetUnderlyingType(proprietate.ClrType) ?? proprietate.ClrType;
                     if (tip != typeof(decimal))
@@ -576,6 +808,67 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     proprietate.SetScale(scara);
                 }
             }
+        }
+
+        // Indexii și restul FK-urilor lui `Postare` stau pe PARTIȚII, în SQL. // S-D2, S-r4
+        private static void AplicaCub(ModelBuilder modelBuilder) {
+            modelBuilder.Entity<Cub.Tranzactie>(b => {
+                b.ToTable("Tranzactie");
+                b.HasKey(t => t.ID);
+                b.Property(t => t.Fel).HasConversion<short>();
+                b.HasOne<Document>().WithMany().HasForeignKey(t => t.DocumentId)
+                    .OnDelete(DeleteBehavior.NoAction);
+                b.HasIndex(t => t.DocumentId);
+            });
+            modelBuilder.Entity<Cub.Postare>(b => {
+                b.ToTable("Postare");
+                b.HasKey(p => p.ID);
+                b.Property(p => p.Spatiu).HasConversion<short>();
+                b.Property(p => p.Latura).HasConversion<short>();
+                b.Property(p => p.Carte).HasConversion<short>();
+                b.Property(p => p.SensTva).HasConversion<short>();
+                b.Property(p => p.RolTva).HasConversion<short>();
+                b.HasOne(p => p.Tranzactie).WithMany(t => t.Postari).HasForeignKey(p => p.TranzactieId)
+                    .OnDelete(DeleteBehavior.NoAction);
+                b.HasIndex(p => p.DocumentId);
+            });
+        }
+
+        // O interogare per salvare, grupată pe document — nu una per linie. // S-D6
+        private void AtribuiePozitii() {
+            var noi = ChangeTracker.Entries<DocumentDetaliu>()
+                .Where(e => e.State == EntityState.Added && e.Entity.Pozitie == 0)
+                .ToList();
+            if (noi.Count == 0)
+                return;
+            var documente = noi.Select(e => e.Entity.DocumentId).Distinct().ToList();
+            var maxime = Set<DocumentDetaliu>().IgnoreQueryFilters()
+                .Where(d => documente.Contains(d.DocumentId))
+                .GroupBy(d => d.DocumentId)
+                .Select(g => new { Document = g.Key, Maxim = g.Max(d => d.Pozitie) })
+                .ToDictionary(x => x.Document, x => x.Maxim);
+            // Liniile deja urmărite (salvate în aceeași sesiune, sau modificate)
+            // nu sunt neapărat în bază — maximul le include pe amândouă.
+            foreach (var urmarita in ChangeTracker.Entries<DocumentDetaliu>())
+                if (documente.Contains(urmarita.Entity.DocumentId))
+                    maxime[urmarita.Entity.DocumentId] =
+                        Math.Max(maxime.GetValueOrDefault(urmarita.Entity.DocumentId), urmarita.Entity.Pozitie);
+            foreach (var intrare in noi) {
+                var maxim = maxime.GetValueOrDefault(intrare.Entity.DocumentId) + 1;
+                intrare.Entity.Pozitie = maxim;
+                maxime[intrare.Entity.DocumentId] = maxim;
+            }
+        }
+
+        public override int SaveChanges(bool acceptAllChangesOnSuccess) {
+            AtribuiePozitii();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+                CancellationToken cancellationToken = default) {
+            AtribuiePozitii();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
         }
 
     }

@@ -1,0 +1,27 @@
+                                                                   QUERY PLAN                                                                   
+------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=695.65..696.48 rows=12 width=48) (actual time=0.682..0.747 rows=16.00 loops=1)
+   Group Key: p."Unitate"
+   Filter: (COALESCE(sum(p."Cantitate"), 0.0) > 0.0)
+   Rows Removed by Filter: 43
+   Buffers: shared hit=402
+   ->  Sort  (cost=695.65..695.74 rows=37 width=20) (actual time=0.661..0.682 rows=976.00 loops=1)
+         Sort Key: p."Unitate"
+         Sort Method: quicksort  Memory: 63kB
+         Buffers: shared hit=402
+         ->  Bitmap Heap Scan on "Postare_Stoc" p  (cost=10.33..694.69 rows=37 width=20) (actual time=0.093..0.558 rows=976.00 loops=1)
+               Recheck Cond: (("Produs" = '01a0b48d-78b6-754c-92e9-c3250a37995b'::uuid) AND ("Data" <= '2025-06-30'::date))
+               Filter: (("Spatiu" = 2) AND ("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid))
+               Rows Removed by Filter: 342
+               Heap Blocks: exact=382
+               Buffers: shared hit=399
+               ->  Bitmap Index Scan on ix_f2s_produs_data  (cost=0.00..10.32 rows=177 width=0) (actual time=0.064..0.065 rows=1318.00 loops=1)
+                     Index Cond: (("Produs" = '01a0b48d-78b6-754c-92e9-c3250a37995b'::uuid) AND ("Data" <= '2025-06-30'::date))
+                     Index Searches: 1
+                     Buffers: shared hit=17
+ Planning:
+   Buffers: shared hit=378
+ Planning Time: 0.550 ms
+ Execution Time: 0.784 ms
+(23 rows)
+

@@ -1,0 +1,32 @@
+== B2.0 acoperirea cheii ==
+            k            |   v    
+-------------------------+--------
+ contabil fara DetaliuId |     64
+ stoc fara DetaliuId     |   6947
+ stoc cu DetaliuId       | 276551
+ contabil cu DetaliuId   | 304318
+(4 rows)
+
+== B2.1 cardinalitatea pe DetaliuId (cate randuri de stoc x cate randuri contabile) ==
+ randuri_stoc | randuri_contabil | linii 
+--------------+------------------+-------
+            0 |                1 | 91428
+            0 |                2 | 56041
+            1 |                0 |  4694
+            1 |                1 | 98385
+            1 |                2 |   476
+            2 |                0 | 85027
+            2 |                1 |  1471
+(7 rows)
+
+== B2.2 randuri de stoc fara NICIUN rand contabil pe acelasi DetaliuId, pe tip ==
+     tip      | TipStoc | randuri | suma_valoare 
+--------------+---------+---------+--------------
+ NotaTransfer |       5 |  169376 |         0.00
+ (deschidere) |       5 |    6907 |   9507303.40
+ Asamblare    |       5 |    4142 |    -88712.43
+ NotaTransfer |       1 |     678 |         0.00
+ Asamblare    |       1 |     552 |     88712.43
+ (deschidere) |       1 |      40 |     13568.62
+(6 rows)
+

@@ -1,0 +1,54 @@
+          k          |                          v                           
+---------------------+------------------------------------------------------
+ clrtype_repartitori | Angajat,ContPropriu,Gestiune,Partener,UnitateInterna
+(1 row)
+
+         k          | v 
+--------------------+---
+ clrtype_necunoscut | 0
+(1 row)
+
+          k          | v 
+---------------------+---
+ imperecheri_inverse | 0
+(1 row)
+
+             k             | v 
+---------------------------+---
+ imperecheri_suma_negativa | 0
+(1 row)
+
+        k        | v 
+-----------------+---
+ storno_tva      | 0
+ storno_stoc     | 0
+ storno_contabil | 0
+(3 rows)
+
+            k            | v 
+-------------------------+---
+ gcrecord_nenul_tva      | 0
+ gcrecord_nenul_stoc     | 0
+ gcrecord_nenul_contabil | 0
+(3 rows)
+
+            k            | v 
+-------------------------+---
+ stoc_fara_cont_implicit | 0
+(1 row)
+
+          k          |   v    
+---------------------+--------
+ deschidere_contabil | 64
+ solduri_stoc        | 7914
+ deschidere_stoc     | 6947
+ imperecheri         | 44448
+ randuri_tva         | 90732
+ solduri_contabil    | 184780
+ partide_deschise    | 201046
+ documente           | 205186
+ linii               | 337596
+ randuri_contabil    | 304382
+ randuri_stoc        | 283498
+(11 rows)
+

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampBifa, CampData, CampSelectie, CampText } from '../../nucleu/campuri';
@@ -32,7 +33,7 @@ import { FctEditorLinie, type EticheteCulese } from './FctEditorLinie';
 // operare, oferit ca link în panoul de rezultat).
 
 const CAMPURI_ANTET: (keyof FctWrite & string)[] =
-  ['Numar', 'Data', 'PredatorId', 'PrimitorId', 'DataScadenta', 'NumarPV', 'DataPV', 'CodCpv'];
+  ['Numar', 'Data', 'DataInregistrare', 'PredatorId', 'PrimitorId', 'DataScadenta', 'NumarPV', 'DataPV', 'CodCpv'];
 const capAntet = (m: string) => campMeta(TIP_ANTET, m, SCHEMA_ANTET).caption;
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
@@ -216,6 +217,7 @@ export function FctDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Factură de intrare — nouă' : `Factură de intrare ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
@@ -247,6 +249,7 @@ export function FctDetaliu() {
             <div className="grila-campuri">
               <CampText<FctWrite> camp="Numar" obligatoriu />
               <CampData<FctWrite> camp="Data" />
+              <CampData<FctWrite> camp="DataInregistrare" />
               {/* Furnizorul: 129k parteneri ⇒ lookup cu grilă, căutare server-side. */}
               <LookupGrila<FctWrite> camp="PredatorId" entitate="Partener" cauta={['Cautare', 'CodFiscal']} />
               <Lookup<FctWrite> camp="PrimitorId" entitate="Gestiune" mod="local" />

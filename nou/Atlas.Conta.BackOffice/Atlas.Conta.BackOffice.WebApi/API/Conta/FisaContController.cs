@@ -99,7 +99,10 @@ public class FisaContController : ContaApiController {
         //       goală și plauzibilă, indistinctă de „cont fără mișcări";
         //   (2) echivalența celor două căi se măsoară (`CaleaBrutaEchivalenta`):
         //       diferă ⇒ 403. Adică SQL-ul brut rulează doar după ce s-a arătat că
-        //       vede exact ce ar vedea calea securizată.
+        //       vede exact ce ar vedea calea securizată. Măsurată pe TOT
+        //       istoricul contului, nu doar pe fereastra cerută: din felia 27
+        //       soldul de dinaintea ultimei perioade de referință îi vine fișei
+        //       din snapshot, care nu trece prin filtrele de securitate.
         // Ambele obligatorii; ordinea contează (404 înaintea oricărei atingeri a
         // registrului).
         if (os.GetObjectByKey<Cont>(contId.Value) == null)

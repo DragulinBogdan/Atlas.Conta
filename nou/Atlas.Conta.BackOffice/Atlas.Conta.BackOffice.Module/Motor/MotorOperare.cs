@@ -48,8 +48,8 @@ public static class MotorOperare {
     // (calea vie: OS non-secured creat de adaptorul `OperareApi`).
     public static IReadOnlyList<string> Valideaza(IObjectSpace os, Document doc) {
         try {
-            CalculeazaSiValideaza(os, doc);
-            return Array.Empty<string>();
+            var plan = CalculeazaSiValideaza(os, doc);
+            return Cub.Materializare.Refuzuri(os, doc, plan.TipDoc);                  // S-D4
         }
         catch (OperareException ex) {
             return ex.Message
@@ -62,7 +62,12 @@ public static class MotorOperare {
     static PlanOperare CalculeazaSiValideaza(IObjectSpace os, Document doc) {
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException("Doar un document în starea Draft poate fi operat.");
-        GardianPerioada.VerificaDeschisa(os, doc.Data);
+        // F27-D4: căile care nu culeg câmpul (Import1C, Migrare, generatele) intră cu `default`.
+        if (doc.DataInregistrare == default)
+            doc.DataInregistrare = doc.Data;
+        if (doc.DataInregistrare < doc.Data)
+            throw new OperareException("Data înregistrării nu poate preceda data documentului.");
+        GardianPerioada.VerificaDeschisa(os, doc.DataInregistrare);
 
         // F13-D1: TVA-ul CULES pe o linie de taxare inversă la LIVRARE nu are
         // unde să meargă, iar `PregatesteOperare` îl aduce la 0 (regula D1) —
@@ -70,7 +75,7 @@ public static class MotorOperare {
         // tăcea exact acolo unde 62f cere să strige. Se capturează aici, se
         // judecă mai jos, după ce pregătirea a putut să schimbe (sau să
         // golească) tipul de TVA al liniei.
-        var tvaCulesInainte = doc.Detalii
+        var tvaCulesInainte = Liniile(doc)
             .Select((d, i) => (Linie: d, Pozitie: i + 1, TvaCules: d.ValoareTva))
             .ToList();
 
@@ -142,7 +147,7 @@ public static class MotorOperare {
             .ToDictionary(l => l.ID, l => l.ProdusId);
         var note = new List<(DocumentDetaliu Detaliu, Guid ContDebit, Guid ContCredit,
             decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)>();
-        foreach (var d in doc.Detalii) {
+        foreach (var d in Liniile(doc)) {
             var info = claseTip.GetValueOrDefault(d.TipMaterialId);
             var linie = Fapte.Linie(d, claseTip);
             var regula = Potrivire.Contare(reguliContare, linie).Castigator;
@@ -220,7 +225,7 @@ public static class MotorOperare {
                 .Where(t => idsTipTva.Contains(t.ID))
                 .Select(t => new { t.ID, t.Cod, t.Regim, t.ContTvaDeductibilId, t.ContTvaColectatId })
                 .ToDictionary(t => t.ID, t => (t.Cod, t.Regim, t.ContTvaDeductibilId, t.ContTvaColectatId));
-            foreach (var d in doc.Detalii) {
+            foreach (var d in Liniile(doc)) {
                 if (d.TipTvaId == null || d.ValoareTva == 0m)
                     continue;
                 // Geamănul gardului din `RegistruTvaService` (review advers D4):
@@ -325,7 +330,7 @@ public static class MotorOperare {
         //    producție): lotul e creat la culegere de linia de intrare (baza nu
         //    poartă ProdusId — testul bazei §2); motorul îi fixează prețul
         //    (= Valoare/Cantitate, decizia 13), data și atributele culese.
-        var idsDetalii = doc.Detalii.Select(d => d.ID).ToList();
+        var idsDetalii = Liniile(doc).Select(d => d.ID).ToList();
         foreach (var lot in os.GetObjectsQuery<Lot>().Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
             var linie = doc.Detalii.First(d => d.ID == lot.LinieIntrareId);
             if (linie.Cantitate <= 0)
@@ -337,7 +342,7 @@ public static class MotorOperare {
             // mărginit; coloana e oricum `numeric(18,6)`, rotunjirea aici ține
             // instanța din ObjectSpace-ul viu egală cu ce se persistă.
             lot.PretUnitar = Scara.RotunjestePret(linie.Valoare / linie.Cantitate);
-            lot.Data = doc.Data;
+            lot.Data = doc.DataInregistrare;
             if (linie is ILinieCuAtributeLot atribute) {
                 lot.DataExpirare = atribute.DataExpirare;
                 lot.LotFabricatie = atribute.LotFabricatie;
@@ -346,7 +351,7 @@ public static class MotorOperare {
 
         foreach (var (detaliu, regula, miscare) in miscari) {
             var rand = os.CreateObject<RegistruStoc>();
-            rand.Data = doc.Data;
+            rand.Data = doc.DataInregistrare;
             rand.TipStoc = miscare.Cheie.TipStoc;
             rand.LotId = miscare.Cheie.LotId;
             rand.RepartitorId = miscare.Cheie.RepartitorId;
@@ -358,7 +363,7 @@ public static class MotorOperare {
 
         foreach (var n in note) {
             var rand = os.CreateObject<RegistruContabil>();
-            rand.Data = doc.Data;
+            rand.Data = doc.DataInregistrare;
             rand.ContDebitId = n.ContDebit;
             rand.ContCreditId = n.ContCredit;
             rand.Valoare = n.Valoare;
@@ -368,9 +373,15 @@ public static class MotorOperare {
             rand.Detaliu = n.Detaliu;
         }
 
+        var scrisLa = DateTime.UtcNow;
         foreach (var t in plan.RanduriTva) {
             var rand = os.CreateObject<RegistruTva>();
             rand.Data = doc.Data;
+            var (perioadaAn, perioadaLuna) = RegistruTvaService.PerioadaDeclarare(
+                os, doc, doc.Data, doc.DataInregistrare, t.Regula);                  // F27-D5/D6
+            rand.PerioadaAn = perioadaAn;
+            rand.PerioadaLuna = perioadaLuna;
+            rand.ScrisLa = scrisLa;
             rand.Document = doc;
             rand.DetaliuId = t.DetaliuId;
             rand.Sens = t.Sens;
@@ -381,6 +392,13 @@ public static class MotorOperare {
             rand.Baza = t.Baza;
             rand.Tva = t.Tva;
         }
+
+        doc.TotalStingere = Scara.RotunjesteBani(                                     // F27-D7
+            doc.LiniiCreanta(doc.Detalii.AsQueryable()).Sum(d => d.Valoare + d.ValoareTva));
+
+        // 3b. Registrul PROPRIU al tipului, prin interfață (F26-D3).
+        if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
+            cuRegistruPropriu.MaterializeazaRegistrul(os);
 
         // 4. Documentul conex (decizia 17, 00 §6): draft autogenerat în aceeași
         //    tranzacție cu operarea sursei; utilizatorul îl completează și îl
@@ -405,6 +423,9 @@ public static class MotorOperare {
         // 6. Stingerea automată (82): tipul declară sursa prin contract,
         //    serviciul materializează relația în aceeași tranzacție.
         ImperechereService.CreeazaAutomataLaOperare(os, doc);
+
+        // 7. Regimul dual (S-D4): declarația frunzei, în aceeași tranzacție.
+        Cub.Materializare.Opereaza(os, doc, tipDoc);
 
         os.CommitChanges();
         return conex ?? secundar;
@@ -438,7 +459,7 @@ public static class MotorOperare {
         Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
         List<RegulaStocFapt> reguliStoc, bool strict) {
         var miscari = new List<(DocumentDetaliu Detaliu, RegulaStocFapt Regula, MiscareStoc Miscare)>();
-        foreach (var d in doc.Detalii) {
+        foreach (var d in Liniile(doc)) {
             var info = claseTip.GetValueOrDefault(d.TipMaterialId);
             foreach (var potrivit in Potrivire.Stoc(reguliStoc, Fapte.Linie(d, claseTip)))
                 foreach (var regula in potrivit.Reguli) {
@@ -450,7 +471,7 @@ public static class MotorOperare {
                     }
                     var repartitorId = regula.Latura == LaturaDocument.Predator ? doc.PredatorId : doc.PrimitorId;
                     miscari.Add((d, regula, new MiscareStoc(
-                        new CheieStoc(d.LotId.Value, repartitorId, regula.TipStoc), doc.Data, regula.Semn * d.Cantitate)));
+                        new CheieStoc(d.LotId.Value, repartitorId, regula.TipStoc), doc.DataInregistrare, regula.Semn * d.Cantitate)));
                 }
         }
         return miscari;
@@ -515,7 +536,7 @@ public static class MotorOperare {
     // nu produce NIR).
     static Document GenereazaConex(IObjectSpace os, Document sursa, PoliticaConexFapt politica,
         Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip) {
-        var linii = sursa.Detalii
+        var linii = Liniile(sursa)                                                   // S-D6
             .Where(d => Potrivire.Conex(politica, Fapte.Linie(d, claseTip)))
             .ToList();
         if (linii.Count == 0)
@@ -527,6 +548,7 @@ public static class MotorOperare {
             ?? throw new OperareException($"Clasa documentului conex ({tipTinta?.ClrType}) nu există.");
         var conex = (Document)os.CreateObject(tipClr);
         conex.Data = sursa.Data;
+        conex.DataInregistrare = sursa.DataInregistrare;
         conex.PredatorId = politica.InverseazaLaturi ? sursa.PrimitorId : sursa.PredatorId;
         conex.PrimitorId = politica.InverseazaLaturi ? sursa.PredatorId : sursa.PrimitorId;
         conex.DocumentSursa = sursa;
@@ -559,7 +581,7 @@ public static class MotorOperare {
     public static void AnuleazaOperarea(IObjectSpace os, Document doc) {
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi anulat.");
-        GardianPerioada.VerificaDeschisa(os, doc.Data);
+        GardianPerioada.VerificaDeschisa(os, doc.DataInregistrare);
         VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);
         VerificaFaraImperecheri(os, doc);
@@ -594,8 +616,12 @@ public static class MotorOperare {
         os.Delete(randuriStoc);
         os.Delete(randuriContabile);
         os.Delete(randuriTva);
+        if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
+            cuRegistruPropriu.EliminaRegistrul(os);
+        Cub.Materializare.Anuleaza(os, doc);                                          // S-D5
         doc.Stare = StareDocument.Draft;
         doc.DataOperare = null;
+        doc.TotalStingere = null;                                                    // F27-D7
         os.CommitChanges();
     }
 
@@ -606,12 +632,12 @@ public static class MotorOperare {
     public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi stornat.");
-        if (dataStorno < doc.Data)
-            throw new OperareException("Data stornării nu poate preceda data documentului.");
+        if (dataStorno < doc.DataInregistrare)
+            throw new OperareException("Data stornării nu poate preceda data înregistrării documentului.");
         GardianPerioada.VerificaDeschisa(os, dataStorno);
         VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);
-        VerificaFaraImperecheri(os, doc);
+        ImperechereService.InverseazaLaStorno(os, doc, dataStorno);                   // F27-D8
         StergeConexeDraftAutogenerate(os, doc);
 
         var randuriStoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID).ToList();
@@ -655,9 +681,15 @@ public static class MotorOperare {
         // Identitatea fiscală (`Sens`/`TipTva`/`Regim`/`Cota`/partener) se copiază
         // ca atare — snapshot-ul rândului original, nu o re-derivare din politica
         // de azi, care între timp poate fi alta.
+        var scrisLaStorno = DateTime.UtcNow;
         foreach (var r in randuriTva) {
             var invers = os.CreateObject<RegistruTva>();
             invers.Data = dataStorno;
+            // Perioada stornării e deschisă prin gardian, deci faptul se declară
+            // în ea (JT-D5/F27-D5); excepția cu motiv e a corecției (F27-D6).
+            invers.PerioadaAn = dataStorno.Year;
+            invers.PerioadaLuna = dataStorno.Month;
+            invers.ScrisLa = scrisLaStorno;
             invers.Sens = r.Sens;
             invers.Document = doc;
             invers.DetaliuId = r.DetaliuId;
@@ -669,6 +701,10 @@ public static class MotorOperare {
             invers.Tva = -r.Tva;
             invers.Storno = true;
         }
+        if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
+            cuRegistruPropriu.StorneazaRegistrul(os, dataStorno);
+
+        Cub.Materializare.Storneaza(os, doc, dataStorno);                             // S-D5
 
         doc.Stare = StareDocument.Stornat;
         os.CommitChanges();
@@ -732,6 +768,10 @@ public static class MotorOperare {
             LoturiCulegereService.CurataOrfane(os);
     }
 
+    // S-D6: aceeași secvență a liniilor în ambele motoare (`Fapte.Operand`).
+    static IEnumerable<DocumentDetaliu> Liniile(Document doc) =>
+        doc.Detalii.OrderBy(d => d.Pozitie).ThenBy(d => d.ID);
+
     // Ancora TipDocument după numele CLR al clasei — reutilizabilă (motor,
     // DescarcareService, TvaService): totul se cheiază pe TipDocument.ID.
     internal static TipDocument GasesteTipDocument(IObjectSpace os, string clrType) =>
@@ -742,7 +782,9 @@ public static class MotorOperare {
         GasesteTipDocument(os, ClasaReala(doc).Name);
 
     // EF Core dă proxy-uri de change-tracking — clasa reală e pe tipul de bază.
-    internal static Type ClasaReala(Document doc) {
+    // Publică de la F27-D6: gate-ul de creare al corecției întreabă pe TIPUL
+    // CONCRET al documentului, iar tierul REST e alt assembly.
+    public static Type ClasaReala(Document doc) {
         var tip = doc.GetType();
         while (tip.Assembly.IsDynamic || tip.Name.EndsWith("Proxy"))
             tip = tip.BaseType;

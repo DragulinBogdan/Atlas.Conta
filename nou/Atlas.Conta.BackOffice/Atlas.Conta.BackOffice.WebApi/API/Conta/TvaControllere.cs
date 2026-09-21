@@ -56,8 +56,7 @@ public class JurnalTvaController : ContaApiController {
         // Aici e doar un DEFAULT: `sort=` de la client are prioritate.
         var rezultat = Incarca(TvaProiectii.JurnalTva(os, sens1, dataStart, dataEnd),
             loadOptions, TvaProiectii.OrdineJurnalTva());
-        // Codul de tip al documentului nu e o coloană sub TPT (R-D8): se completează
-        // în memorie, peste pagină, cu ACEEAȘI implementare ca fișa și jurnalul —
+        // Codul de tip al documentului se completează peste pagină (R-D8), cu ACEEAȘI implementare ca fișa și jurnalul —
         // două copii ar diverge tăcut. Vezi limitarea documentată pe `Randuri<T>`
         // pentru modul grupat.
         ContabilProiectii.CompleteazaTipDocument(os, Randuri<JurnalTvaRand>(rezultat));

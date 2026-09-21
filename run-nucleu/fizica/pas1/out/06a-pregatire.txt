@@ -1,0 +1,25 @@
+Timing is on.
+psql:/tmp/06a-x10-pregatire.sql:7: NOTICE:  table "_OrigTranzactii" does not exist, skipping
+DROP TABLE
+Time: 0.242 ms
+SELECT 249621
+Time: 83.454 ms
+ALTER TABLE
+Time: 43.427 ms
+ANALYZE
+Time: 11.224 ms
+psql:/tmp/06a-x10-pregatire.sql:12: NOTICE:  table "_IndexDdl" does not exist, skipping
+DROP TABLE
+Time: 0.177 ms
+CREATE TABLE
+Time: 3.896 ms
+INSERT 0 55
+Time: 5.407 ms
+ indexi_salvati 
+----------------
+             55
+(1 row)
+
+Time: 0.229 ms
+DO
+Time: 56.557 ms

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
@@ -30,7 +31,7 @@ import { DecEditorLinie, type EticheteCulese } from './DecEditorLinie';
 // editorul de linie) și **stingerea pe lanțul avans↔decont↔regularizare**
 // (31d/32d) — decontul stă pe rolul de STINS, ca factura.
 
-const CAMPURI_ANTET: (keyof DecWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId', 'NumarPV', 'DataPV'];
+const CAMPURI_ANTET: (keyof DecWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId', 'NumarPV', 'DataPV'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function DecDetaliu() {
@@ -211,6 +212,7 @@ export function DecDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Decont — nou' : `Decont ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
@@ -244,6 +246,7 @@ export function DecDetaliu() {
                   (F8-D3). Pe un draft e gol — asta e adevărul, nu o lipsă. */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<DecWrite> camp="Data" />
+              <CampData<DecWrite> camp="DataInregistrare" />
               {/* TITULARUL care justifică avansul: un `Angajat` (invariant al
                   operării). Caption-ul bazei („Predator (de la)") e corect, dar
                   prea abstract pentru ecranul de decont — felia îl numește în

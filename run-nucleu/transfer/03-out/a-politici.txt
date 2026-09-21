@@ -1,0 +1,110 @@
+== ReguliStoc (profil privat, baza Fizica.x1) ==
+ tip | Latura | clasa | TipStoc | Semn | DinSeed 
+-----+--------+-------+---------+------+---------
+ ASM |      1 |       |       1 |    1 | t
+ ASM |      1 | MF    |       5 |    1 | t
+ BCS |      1 |       |       1 |   -1 | t
+ BCS |      1 | MF    |       5 |   -1 | t
+ BCS |      2 |       |       2 |    1 | t
+ BTR |      1 |       |       1 |   -1 | t
+ BTR |      1 | MF    |       5 |   -1 | t
+ BTR |      2 |       |       1 |    1 | t
+ BTR |      2 | MF    |       5 |    1 | t
+ DSC |      1 |       |       1 |   -1 | t
+ DSC |      1 | MF    |       5 |   -1 | t
+ LDI |      1 |       |       1 |    1 | t
+ LDI |      1 | MF    |       5 |    1 | t
+ NIR |      2 |       |       1 |    1 | t
+ NIR |      2 | MF    |       5 |    1 | t
+ RDC |      2 |       |       1 |   -1 | t
+ RDC |      2 | MF    |       5 |   -1 | t
+ RLF |      1 |       |       1 |    1 | t
+ RLF |      1 | MF    |       5 |    1 | t
+(19 rows)
+
+== TipuriMaterial -> ContImplicit (cum se decide contul de stoc azi) ==
+ Cod  |                                         Denumire                                         | clasa | Natura | cont_implicit 
+------+------------------------------------------------------------------------------------------+-------+--------+---------------
+ 381  | Ambalaje                                                                                 | AMB   |      1 | 381
+ 6021 | Cheltuieli cu materialele auxiliare                                                      | C     |      3 | 6021
+ 6022 | Cheltuieli privind combustibilii                                                         | C     |      3 | 6022
+ 6028 | Cheltuieli privind alte materiale consumabile                                            | C     |      3 | 6028
+ 604  | Cheltuieli privind materialele nestocate                                                 | C     |      3 | 604
+ 635  | Alte impozite, taxe și vărsăminte asimilate                                              | C     |      3 | 635
+ 6422 | Cheltuieli cu tichetele acordate salariaților                                            | C     |      3 | 6422
+ 6458 | Alte cheltuieli privind asigurările și protecția socială                                 | C     |      3 | 6458
+ 6581 | Despăgubiri, amenzi şi penalităţi                                                        | C     |      3 | 6581
+ 6651 | Diferenţe nefavorabile de curs valutar legate de elementele monetare exprimate în valută | C     |      3 | 6651
+ 667  | Cheltuieli privind sconturile acordate                                                   | C     |      3 | 667
+ 205  | Concesiuni, brevete, licențe, mărci și active similare                                   | F     |      4 | 205
+ 208  | Alte imobilizări necorporale                                                             | F     |      4 | 208
+ 211  | Terenuri și amenajări de terenuri                                                        | F     |      4 | 211
+ 212  | Construcții                                                                              | F     |      4 | 212
+ 2131 | Echipamente tehnologice                                                                  | F     |      4 | 2131
+ 2132 | Aparate și instalații de măsurare, control și reglare                                    | F     |      4 | 2132
+ 2133 | Mijloace de transport                                                                    | F     |      4 | 2133
+ 214  | Mobilier, aparatură birotică, alte active corporale                                      | F     |      4 | 214
+ 302  | Materiale consumabile                                                                    | M     |      1 | 302
+ 3021 | Materiale auxiliare                                                                      | M     |      1 | 3021
+ 3024 | Piese de schimb                                                                          | M     |      1 | 3024
+ 3028 | Alte materiale consumabile                                                               | M     |      1 | 3028
+ 371  | Mărfuri                                                                                  | MF    |      1 | 371
+ 301  | Materii prime                                                                            | MP    |      1 | 301
+ 303  | Materiale de natura obiectelor de inventar                                               | OI    |      1 | 303
+ 345  | Produse finite                                                                           | PF    |      1 | 345
+ 605  | Energie și apă                                                                           | S     |      2 | 605
+ 6051 | Cheltuieli privind consumul de energie                                                   | S     |      2 | 6051
+ 6052 | Cheltuieli privind consumul de apă                                                       | S     |      2 | 6052
+ 6053 | Cheltuieli privind consumul de gaze naturale                                             | S     |      2 | 6053
+ 611  | Întreținere și reparații                                                                 | S     |      2 | 611
+ 612  | Redevențe, locații de gestiune și chirii                                                 | S     |      2 | 612
+ 613  | Prime de asigurare                                                                       | S     |      2 | 613
+ 614  | Studii și cercetări                                                                      | S     |      2 | 614
+ 622  | Comisioane și onorarii                                                                   | S     |      2 | 622
+ 623  | Protocol, reclamă și publicitate                                                         | S     |      2 | 623
+ 6231 | Cheltuieli de protocol                                                                   | S     |      2 | 6231
+ 6232 | Cheltuieli de reclamă şi publicitate                                                     | S     |      2 | 6232
+ 624  | Cheltuieli cu transportul de bunuri şi personal                                          | S     |      2 | 624
+ 625  | Deplasări, detașări și transferări                                                       | S     |      2 | 625
+ 626  | Poștale și telecomunicații                                                               | S     |      2 | 626
+ 627  | Cheltuieli cu serviciile bancare şi asimilate                                            | S     |      2 | 627
+ 628  | Alte servicii executate de terți                                                         | S     |      2 | 628
+ 408  | Furnizori - facturi nesosite                                                             | TER   |      2 | 408
+ 4091 | Furnizori-debitori pentru cumpărări de bunuri de natura stocurilor                       | TER   |      2 | 4091
+ 4092 | Furnizori-debitori pentru prestări de servicii                                           | TER   |      2 | 4092
+ 419  | Clienţi – creditori                                                                      | TER   |      2 | 419
+ 447  | Fonduri speciale - taxe şi vărsăminte asimilate                                          | TER   |      2 | 447
+ 473  | Decontări din operaţii în curs de clarificare                                            | TER   |      2 | 473
+ 5328 | Alte valori                                                                              | TER   |      2 | 5328
+ S371 | Punte de stoc 371 (tehnic import)                                                        | TER   |      2 | 371
+ TRZ  | Operațiune de trezorerie                                                                 | TRZ   |      5 | 
+ 704  | Venituri din servicii prestate                                                           | VEN   |      2 | 704
+ 706  | Venituri din redevențe, locații de gestiune și chirii                                    | VEN   |      2 | 706
+ 707  | Venituri din vânzarea mărfurilor                                                         | VEN   |      2 | 707
+ 708  | Venituri din activități diverse                                                          | VEN   |      2 | 708
+ 7581 | Venituri din despăgubiri, amenzi şi penalităţi                                           | VEN   |      2 | 7581
+ 7583 | Venituri din vânzarea activelor și alte operațiuni de capital                            | VEN   |      2 | 7583
+ 7588 | Alte venituri din exploatare                                                             | VEN   |      2 | 7588
+ 767  | Venituri din sconturi obţinute                                                           | VEN   |      2 | 767
+ VIR  | Virament intern                                                                          | VIR   |      6 | 581
+(62 rows)
+
+== ClaseProduse ==
+ Cod |       Denumire        | Natura 
+-----+-----------------------+--------
+ AMB | Ambalaje              |      1
+ C   | Alte cheltuieli       |      3
+ F   | Imobilizări           |      4
+ M   | Materiale consumabile |      1
+ MF  | Mărfuri               |      1
+ MP  | Materii prime         |      1
+ OI  | Obiecte de inventar   |      1
+ PF  | Produse finite        |      1
+ S   | Servicii și utilități |      2
+ T   | TVA                   |      5
+ TER | Terți și regularizări |      2
+ TRZ | Trezorerie            |      5
+ VEN | Venituri              |      2
+ VIR | Viramente interne     |      6
+(14 rows)
+

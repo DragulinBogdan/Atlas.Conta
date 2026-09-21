@@ -554,3 +554,276 @@ se aplică și coloanelor cu `Index = -1` (coloana rămâne în modelul
 view-ului) — restanța 85-r6. Gruparea încarcă primele rânduri ale fiecărui
 grup (85-r7); `Refresh` execută pagina de două ori pe `Server` (85-r8).
 Lookup-ul de lot cu `Eticheta` calculată: COUNT + pagină ≈ 30 ms per tastă.
+
+---
+
+## Felia 27 (2026-09-17) — perioadele închise, soldurile materializate și forma lui `DocumenteCuRest`
+
+**Măsurare; singura schimbare de cod încercată a fost măsurată și RESPINSĂ.**
+Metoda de mai sus, neschimbată: HTTP end-to-end cu `curl`, WebApi Debug,
+`Admin`, 6 rulări per endpoint, prima aruncată, mediana celor 5 calde,
+parametrii de grilă ai clientului (`skip=0&take=20&requireTotalCount=true`,
+plus `sort=[{Data desc}]` pe grilele de documente).
+
+**A/B PE ACEEAȘI BAZĂ.** Singura comparație care atribuie o diferență
+închiderilor e cea făcută pe ACELAȘI set de date: două baze diferă din motive
+proprii. Deci `Atlas.Conta.Import1C.Flax` (importul integral al lui 2025,
+205.186 documente operate) măsurată de două ori —
+
+- **A, cu 11 luni închise**: 01–11/2025 închise, 12/2025 deschisă ⇒ referința e
+  11/2025 (171.396 rânduri contabile, 7.790 de stoc, 184.458 partide);
+- **B, fără nicio închidere**: lanțul desfăcut prin 11 redeschideri succesive,
+  de la cea mai nouă (fiecare rematerializează referința nouă prin `SUM`
+  integral) ⇒ zero referințe, zero snapshot-uri, zero partide. După
+  măsurătoare lanțul s-a RE-ÎNCHIS în ordine cronologică, cu aceleași cifre la
+  rând (171.396 / 7.790 / 184.458) și `Reconstruieste` 0 diferențe.
+
+Contul reper `4111`, contrapartida reper cea de la 59/66 („NOD", 4.861 FCT),
+documentul reper de operare FCT-ul cu 49 de linii `FA/EU-2500084872` (copie
+Draft datată 15.12.2025, operată și anulată la fiecare rulare).
+
+### Ce aduc perioadele închise (cod neschimbat)
+
+| Probă | B: fără închideri | A: 11 luni închise | Δ | Țintă |
+|---|---|---|---|---|
+| fișa contului `4111`, decembrie | 187 ms | **122 ms** | −35% | < 100 ms, ratată |
+| balanța ANALITICĂ, decembrie | 254 ms | **210 ms** | −17% | < 100 ms, ratată |
+| `documente-cu-rest`, contrapartida-reper | 171 ms | 181 ms | zgomot | < 150 ms (vezi mai jos) |
+| `sold-parteneri` la 31.12 | 290 ms | 219 ms | −24% | informativ |
+| `sold-stoc` la zi | 153 ms | 50 ms | −67% | informativ |
+| balanța sintetică, decembrie | 83 ms | 58 ms | −30% | informativ |
+| operarea unui FCT cu 49 de linii | 411 ms | 394 ms | −4% | nu mai lentă, atinsă |
+
+Comenzile lanțului: `Reconstruieste` (recalcul integral + rescriere, o
+referință) **6,9–9,4 s**; o închidere **1,0 s** (ianuarie) → **5,2 s**
+(noiembrie), crescător cu volumul cumulat; o redeschidere **0,0 s** (ianuarie,
+fără referință nouă de scris) → **6,1 s** (noiembrie).
+
+**Ca CONTEXT, altă bază** (`Atlas.Conta.BackOffice.Privat`, clona de dev, zero
+închideri, aceeași zi și aceeași mașină): fișa 190 ms, balanța analitică
+266 ms, `documente-cu-rest` 131 ms, `sold-parteneri` 298 ms, `sold-stoc`
+152 ms, balanța sintetică 82 ms, operarea 415 ms. Cifrele NU se compară cu cele
+de mai sus rând cu rând.
+
+### Forma lui `DocumenteCuRest`: patru variante măsurate, niciuna adoptată
+
+Diagnosticul: planul lega agregatul `Imperecheri` — un tabel DERIVAT
+(`Asignari(...).GroupBy(...)`) — prin `Nested Loop Left Join`, cu
+`Rows Removed by Join Filter: 2.184.985` și două `Seq Scan` peste cele 44.448
+de rânduri, IDENTIC cu și fără referință. `PartideDeschise` nu e problema: e
+deja atinsă prin index, per rând exterior. Deci nu partidele feliei 27 o fac
+lentă, ci mulțimea de candidați de la 59 plus forma legăturii.
+
+Măsurat pe aceeași bază, în starea A (11 luni închise). **Coloana a treia e
+cea care decide**: forma NEFILTRATĂ și FĂRĂ `LIMIT`, adică exact ce consumă
+`PerioadaService.RestScadent` (`DocumenteCuRest(os, laData: ultimaZi).ToList()`)
+la închiderea unei perioade.
+
+| variantă | grilă filtrată | grilă nefiltrată | **nefiltrat, FĂRĂ `LIMIT`** | `Imperecheri` în plan |
+|---|---|---|---|---|
+| **V0** — legături ca tabele derivate (rămâne) | 181 ms | 423 ms | **220–232 ms** | 2 × `Seq Scan`, nested loop, 2,18 M rânduri respinse |
+| V1 — AMBELE legături corelate | 200 ms | 2.902 ms | — | blocul `Imperecheri` intră de 3 ori, re-evaluat per rând |
+| V2 — doar fereastra corelată (măsurată, RESPINSĂ) | **82 ms** | 473 ms | **1.024–1.061 ms** | 8 × `Index Scan`, ZERO `Seq Scan` |
+| V2′ — `Asignari` ca două sume corelate | 87 ms | 539 ms | **1.230–1.245 ms** | 16 × `Index Scan`, ZERO `Seq Scan` |
+
+**Verdict: V0 rămâne; fixul a fost MĂSURAT și RESPINS, nu neîncercat.** V2 e
+tentantă — panoul filtrat 181 → 82 ms (51 ms în starea fără închideri), pagina
+88,7 → 11,7 ms SQL, `EXPLAIN` 194 → 18,8 ms, `Seq Scan`-urile dispar complet —
+dar mută costul pe calea NEPLAFONATĂ: 220 ms → 1,02 s, adică 4,6×, pe forma pe
+care o consumă constatarea de rest scadent. O sută de milisecunde câștigate pe
+un panou nu se plătesc cu 0,8 s adăugate unei comenzi de închidere. Restanța,
+cu cifrele de mai sus: **F27-r16** — candidații de la 59 și forma legăturilor
+se rezolvă ÎMPREUNĂ, nu separat.
+
+**Prețul, spus întreg**: V2 câștigă real pe panoul filtrat (−100 ms) și
+elimină `Seq Scan`-urile, dar plătește 0,8 s în plus pe forma pe care
+`RestScadent` o materializează integral, iar costul ăla crește cu baza. Azi
+familia e `Ignorat` în seed pe ambele profiluri, deci nici nu se caută — dar
+seed-ul e o valoare de politică, nu o garanție de formă: un client care ridică
+severitatea plătește diferența. Rămâne deschisă opțiunea unei forme DEPENDENTE
+de `contrapartidaId` (corelată când vine filtru, derivată altfel), cu probele
+ei, dacă panoul devine vreodată gâtul real — dar ea pune o ramură de plan în
+hot-path și nu se decide fără cerință.
+
+**Lecție de metodă, scrisă ca să nu se repete**: o măsurătoare pe grilă
+PAGINATĂ ascunde costul căii care consumă tot. Pe `take=20`, V2 arăta ca o
+pierdere de 12% pe cazul nefiltrat (423 → 473 ms), fiindcă `LIMIT 20` oprește
+execuția devreme; fără `LIMIT`, aceeași variantă costă de 4,6× mai mult.
+Orice proiecție care are ȘI consumatori care o materializează integral se
+măsoară pe ambele forme.
+
+**Rezultate negative, păstrate fiindcă valorează cât cele pozitive**:
+- EF Core **nu emite `LATERAL`** pentru forma corelată, ci subinterogări
+  scalare corelate. Corelând AMBELE legături (V1), blocul `Imperecheri` (un
+  `UNION ALL` peste cele două laturi) ajunge de trei ori în interogare și se
+  re-evaluează per rând — 2,9 s pe cazul nefiltrat.
+- Desfacerea lui `Asignari` în două sume corelate (V2′) se traduce curat, dar e
+  mai slabă decât V2 pe toate coloanele: `dinFereastra` e folosit în patru
+  locuri, deci tabela e atinsă de 16 ori în loc de 8.
+- **Niciun index nu lipsește.** `IX_Imperecheri_DocumentId` și
+  `IX_Imperecheri_DocumentStingatorId` există amândouă și sunt folosite de
+  formele corelate (zero `Seq Scan` în planurile V2/V2′); nicio migrație nu ar
+  schimba ceva. Nimeni să nu reia drumul ăsta.
+
+**Despre ținta de „< 150 ms"**: ea a fost calibrată pe `Atlas.Conta.BackOffice.Privat`,
+unde V0 măsura 147 ms la pasul 6 (și 131 ms azi, la re-măsurare). Cele 181 ms
+sunt de pe `Atlas.Conta.Import1C.Flax` — altă bază, alt set de date. Pe baza pe
+care a fost pusă, ținta NU e încălcată.
+
+### Cele două ținte ratate care rămân, și de ce nu se ating azi
+
+**Fișa de cont: calea de date 7 ms, end-to-end 122 ms.** Interogarea proiecției
+costă **7 ms**: snapshot-ul taie fereastra la decembrie, deci `WindowAgg`
+rulează peste 12.953 atomi, nu peste cei 144.248 ai contului (la 66 pagina
+costa 244 ms). Restul e CADRU: **58 de instrucțiuni SQL per cerere**
+(bootstrap-ul de securitate XAF per ObjectSpace, fiecare sub 0,03 ms),
+hidratarea documentelor paginii (15 ms), `count` (4 ms), serializarea. Ținta se
+ratează din AFARA feliei 27 (F27-r14).
+
+**Balanța analitică: cardinalitatea cheii, și NU se rezolvă din `work_mem`.**
+~161 ms execuție, din care agregarea în **71.167 de grupe `Cont×Repartitor`**.
+Snapshot-ul E folosit și reduce intrarea de 3,5× (171.396 rânduri de snapshot +
+DOAR decembrie din `RegistruContabil`, prin `Index Scan using
+IX_RegistruContabil_Data`, în loc de ~608k rânduri unpivotate ale anului).
+`Sort Method: external merge Disk: 3648–4952 kB` la `work_mem` implicit de 4 MB
+arată ca un buton de deployment — **măsurat, nu e**:
+
+| `work_mem` pe sesiune | mediana a 4 rulări calde (SQL pur) | plan |
+|---|---|---|
+| 4 MB (implicit) | **136 ms** | `Partial GroupAggregate` paralel (2 lucrători) + `external merge` pe disc |
+| 8 MB | 155 ms | `HashAggregate`, un singur proces |
+| 16 MB | 162 ms | `HashAggregate`, un singur proces |
+| 64 MB | 183 ms | `HashAggregate` cu `Memory Usage: 96273kB`, un singur proces |
+
+Cu mai multă memorie planificatorul RENUNȚĂ la paralelism în favoarea unui hash
+aggregate secvențial și iese mai prost: sortarea pe disc nu e gâtul, ci
+producerea celor 71.167 de rânduri grupate. Ținta „< 100 ms" fusese pusă pe
+cifra „lună = 84 ms" a addendumului 66, care e IANUARIE — o lună fără sold
+inițial, deci cu puține grupe; comparabilul real al lui decembrie e „an =
+269 ms" (F27-r15).
+
+Observație colaterală: cu snapshot balanța analitică pe decembrie are 71.167 de
+rânduri, fără snapshot 72.910 — diferența sunt cheile cu debit ȘI credit
+cumulat zero, pe care snapshot-ul nu le scrie.
+
+### Reproducere (felia 27)
+
+`Atlas.Conta.Import1C.Flax` nu mai e oarbă la HTTP (addendumul 3): rulează
+`Atlas.Conta.BackOffice.Blazor.Server --updateDatabase --forceUpdate --silent`
+cu `ConnectionStrings__ConnectionString` și `ProfilContabil` în MEDIU (pe linia
+de comandă NU ajung în `IConfiguration`), care creează rolurile și cei patru
+utilizatori dev; apoi WebApi pe aceeași bază, cu portul impus prin
+`-- --urls=…` (`dotnet run` ia altfel URL-urile din `launchSettings`).
+Contul `4111` = `01a0aea3-9ec7-7577-9dd6-ffbaeb2382a7`, contrapartida-reper =
+`01a0aea4-c8d4-7e06-8664-9b508af4ced8` (pe `Privat`:
+`019fa5d0-cbcd-7461-9982-0809a2075b64`, respectiv
+`019fa5d1-bb95-7e9c-b168-3169642f4267`). Desfacerea și re-închiderea lanțului,
+ca și operarea, se fac în proces, pe un ObjectSpace standalone ca al lui
+ModelCheck (`PerioadaService.Redeschide`/`Inchide` în buclă; copie Draft prin
+metadata EF, `MotorOperare.Opereaza`, `AnuleazaOperarea`, ștergere — 0 reziduu
+viu). Forma „fără `LIMIT`" se măsoară cu `EXPLAIN (ANALYZE, BUFFERS)` pe SQL-ul
+real al variantei, cu predicatul de contrapartidă scos și fără `LIMIT`.
+`log_min_duration_statement` resetat la final (verificat `-1`); hosturile
+oprite.
+
+---
+
+## Felia 28 (2026-09-18) — TPT → TPH, A/B pe aceeași bază de conținut
+
+**Măsurare, decizia 89, regula de oprire F28-D8.** Metoda felia 27,
+neschimbată: HTTP end-to-end cu `curl`, WebApi Debug, `Admin`, 6 rulări per
+endpoint, prima aruncată, mediana celor 5 calde, cu parametrii de grilă ai
+clientului (`skip=0&take=20&requireTotalCount=true`, plus `sort=[{Data desc}]`
+pe grilele de documente). Cifrele marcate „în proces” sunt măsurate în
+proces, ca operarea la F27. Zgomotul observat e ±5–10 %.
+
+**A/B PE ACEEAȘI BAZĂ DE CONȚINUT, pe două mapări.** Schema nu se poate
+schimba pe loc, fiindcă lanțul de migrații s-a resetat. A și B sunt deci două
+baze cu ACELAȘI conținut, măsurate pe aceeași mașină, una după alta:
+
+- **A, TPT**: clona înghețată `Atlas.Conta.Import1C.Flax.TPT`, servită de
+  codul `ba20faa` (închiderea feliei 27);
+- **B, TPH**: `Atlas.Conta.Import1C.Flax.TPH`, importul integral al feliei 28,
+  servit de HEAD `14bc649`;
+- aceeași stare a lanțului pe ambele: 01–11/2025 închise, 12/2025 deschisă,
+  referința 11/2025 = 171.396 / 7.790 / 184.458;
+- `VACUUM ANALYZE` pe ambele baze și câte două treceri pe fiecare parte, cu
+  hostul repornit între ele.
+
+Reperele sunt cele de la felia 27: contul `4111`, contrapartida-reper și
+FCT-ul cu 49 de linii (copie Draft operată și anulată la fiecare rulare). În
+plus, trei cifre atribuite TPT: `CoduriTip` pe extrasul cu 335 de stingeri,
+`RegistruTva` în modul `Server` și SAF-T D406 S.
+
+| Probă | A: TPT (trecerea 1 / 2) | B: TPH (trecerea 1 / 2) | Δ | Verdict |
+|---|---|---|---|---|
+| fișa contului `4111`, decembrie | 144 / 126 ms | **61 / 55 ms** | −57 % | mai bun |
+| balanța analitică, decembrie | 211 / 206 ms | 201 / 192 ms | −5 % | zgomot |
+| `sold-parteneri` la 31.12 | 212 / 218 ms | 220 / 206 ms | — | zgomot |
+| `sold-stoc` la zi | 52 / 54 ms | 57 / 50 ms | — | zgomot |
+| balanța sintetică, decembrie | 55 / 53 ms | 48 / 44 ms | −15 % | mai bun |
+| operarea unui FCT cu 49 de linii (în proces) | 404 / 424 ms | **230 / 199 ms** | −48 % | mai bun |
+| `documente-cu-rest`, contrapartida-reper | 176 / 188 ms | 169 / 158 ms | −8 % | zgomot / ușor mai bun |
+| `CoduriTip`, extrasul cu 335 de stingeri, HTTP | 214 / 247 ms | **23 / 23 ms** | ≈ 10× | mai bun |
+| `CoduriTip`, în proces | 35 ms | **1,6 ms** | ≈ 20× | mai bun |
+| `RegistruTva` `Server`, EF în proces | 875 ms | **14,5 ms** | ≈ 60× | mai bun |
+| `RegistruTva` `Server`, EXPLAIN ANALYZE | 1.099 / 1.703 ms | **12 ms** | ≈ 100× | mai bun |
+| D406 S 09/2025, în proces | 2,5 s | 2,5 s | — | zgomot |
+| D406 S 12/2025, în proces, la RECE | 2,7 s | 3,0 s (intercalat 2,7 → 2,9) | +0,2 s (+7 %) | mai prost DOAR la rece (F28-r5) |
+| D406 S prin HTTP, cald | 09: 1224–1298 ms; 12: 1232–1274 ms | 09: 1081–1198 ms; 12: 1243–1277 ms | — | zgomot |
+
+Ca CONTEXT, nu ca termen de comparație, cifrele anterioare pe alte baze:
+- fișa 122 ms, balanța analitică 210 ms, operarea 394 ms (F27, A);
+- `CoduriTip` 185 ms și D406 2,9–3,0 s (contractul F28);
+- `RegistruTva` Server 805 ms (85, Privat).
+
+### EXPLAIN pe cifrele atribuite TPT
+
+- **`RegistruTva` `Server`**:
+  - A: 42 de JOIN-uri, Hash Join pe cele 338.594 de rânduri din
+    `DocumentDetalii`; planificare 15–18 ms, execuție 1,1–1,7 s.
+  - B: 4 JOIN-uri, top-N heapsort și Nested Loop pe PK; planificare 2 ms,
+    execuție 12 ms.
+- **`CoduriTip`**:
+  - A: materializare polimorfă, `= ANY` cu 77 de JOIN-uri; bind 41 +
+    execuție 25 ms, seq scan pe toate frunzele.
+  - B: `SELECT "ID","ClrType" … = ANY`, Index Scan pe PK; 0,46 + 0,2 ms.
+  - Pe toată cererea, SQL-ul scade de la 127 + 30 ms la 2,6 + 1,1 ms.
+- **D406**:
+  - În A, rezoluția tipului costa 20 de listări per tip, adică 60 de
+    instrucțiuni și 166,8 ms.
+  - SQL-ul total al proiecției scade de la 675 la 525 ms (12/2025) și de la
+    637 la 480 ms (09/2025).
+  - S3 cu `= ANY` pe istoric: 78.287 de id-uri costă 16,3 + 41,6 ms, 105.530
+    de id-uri 20 + 55 ms. Costul de 1,4–1,8 s din addendumul 6 NU revine.
+
+### Verdict
+
+Nicio cifră caldă nu e mai proastă peste zgomot. Câștigurile se concentrează
+exact pe cele trei cifre atribuite TPT și pe căile care citeau pe bază:
+- fișa de cont −57 %;
+- operarea −48 %;
+- `CoduriTip` ≈ 10× pe HTTP;
+- `RegistruTva` Server ≈ 60×.
+
+Singura cifră mai proastă e D406 S pe 12/2025 la RECE, +0,2 s. Cauza e
+demonstrată: un cost unic per proces.
+- În ACELAȘI proces, prima chemare costă 2509/2552 ms în A și 2621/2707 ms
+  în B.
+- Medianele chemărilor calde sunt 1553/1706 ms în A și 1621/1659 ms în B,
+  adică egale; SQL-ul e mai mic în B.
+- Cauza probabilă e JIT-ul sau compilarea EF a formei noi de interogare, dar
+  nu e izolată prin profil. Conform F28-D8 cifra nu blochează felia și rămâne
+  restanță cu nume: F28-r5.
+- Ieșirea D406 e identică între A și B după normalizarea GUID-urilor.
+
+### Reproducere (felia 28)
+
+- A: clona înghețată `Atlas.Conta.Import1C.Flax.TPT`, servită de codul
+  `ba20faa`.
+- B: `Atlas.Conta.Import1C.Flax.TPH`, servită de `14bc649`.
+- Ambele au fost aduse la aceeași stare a lanțului și au primit
+  `VACUUM ANALYZE`. Pornirea hosturilor și reperele urmează §Reproducere
+  (felia 27); id-urile reper se rezolvă pe fiecare bază, fiindcă bazele
+  recreate nu păstrează GUID-urile.
+- Artefactele pasului 3 sunt în `run-f28/pas3/`, necomise.

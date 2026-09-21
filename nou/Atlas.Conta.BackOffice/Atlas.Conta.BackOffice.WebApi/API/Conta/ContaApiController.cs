@@ -126,7 +126,7 @@ public abstract class ContaApiController : ControllerBase {
     // fără parametru de tip a MURIT. Cât gate-ul întreba pe `Document`, un id de
     // NIR trecea autorizarea pe `api/fct/{id}/opereaza` și pica abia în Apply, cu
     // 422 — adică un refuz de domeniu pentru o rută pe care documentul nici nu e
-    // vizibil. Acum `GetObjectByKey<FacturaIntrare>` nu-l vede și răspunsul e
+    // vizibil. Acum `RandDupaCheie.Ca<FacturaIntrare>` nu-l vede și răspunsul e
     // 404: „nu e vizibil PE UȘA ASTA".
     protected IActionResult ComandaAutorizata<T>(Guid id, Func<IActionResult> comanda,
             OperatieAcces operatie = OperatieAcces.Modificare, Func<T, bool> peUsaAsta = null) where T : class {
@@ -180,7 +180,7 @@ public abstract class ContaApiController : ControllerBase {
     // n-are ce căuta aici — o cerere de genul ăsta e un bug de apelant, nu un
     // refuz de utilizator.
     //
-    // `peUsaAsta` (review 80 M1): sub TPT, `GetObjectByKey<T>` găsește și
+    // `peUsaAsta` (review 80 M1): `RandDupaCheie.Ca<T>` găsește și
     // derivatele lui `T` — un id de `InchidereTva` e „vizibil" ca `NotaContabila`,
     // deși felia NTC îl EXCLUDE la citire (79c). Fără predicat, aceeași ușă ar
     // spune 404 pe GET și 403/422 pe PUT, adică două adevăruri. Predicatul e
@@ -194,7 +194,7 @@ public abstract class ContaApiController : ControllerBase {
                 nameof(operatie));
 
         using var os = Secured(typeof(T));
-        var obiect = os.GetObjectByKey<T>(id);
+        var obiect = RandDupaCheie.Ca<T>(os, id);
         // Inexistent SAU invizibil SAU în afara ușii, aceeași frază: 404 nu
         // distinge, deliberat.
         if (obiect == null || (peUsaAsta != null && !peUsaAsta(obiect)))
@@ -245,7 +245,7 @@ public abstract class ContaApiController : ControllerBase {
         using var os = Secured(typeof(T));
         var cerinte = securitate as IRequestSecurityStrategy;
         foreach (var id in (ids ?? []).Distinct()) {
-            var obiect = os.GetObjectByKey<T>(id);
+            var obiect = RandDupaCheie.Ca<T>(os, id);
             // Inexistent SAU invizibil pentru user — aceeași frază, deliberat:
             // altfel lotul ar fi un oracol de existență pentru rândurile pe care
             // securitatea le ascunde (motivul lui 404 din gate-ul simplu).
@@ -299,6 +299,17 @@ public abstract class ContaApiController : ControllerBase {
     protected bool PoateCrea(Type tip, IObjectSpace os) =>
         securitate is IRequestSecurityStrategy cerinte
             && cerinte.CanCreate(tip, os) && cerinte.CanWrite(tip, os);
+
+    // ═══ Gate-ul de SCRIERE, la nivel de TIP (F27-D3) ═══
+    // Comanda de reconstrucție a soldurilor n-are subiect (rescrie toate
+    // perioadele de referință) și nu creează nimic — întrebarea ei e „are voie
+    // omul ăsta să scrie perioade?". Simetricul lui `PoateCiti`, pe
+    // `SecurityOperations.Write`.
+    protected bool PoateScrie(Type tip, IObjectSpace os) =>
+        securitate is IRequestSecurityStrategy cerinte && cerinte.CanWrite(tip, os);
+
+    protected IActionResult RefuzScriere(Type tip) =>
+        RefuzAccesRezultat(OperatieAcces.Modificare, tip);
 
     // ═══ 404-ul, cu MOTIV (F22-D4) ═══
     // `NotFound()` gol obligă clientul să inventeze textul — exact ce făcea

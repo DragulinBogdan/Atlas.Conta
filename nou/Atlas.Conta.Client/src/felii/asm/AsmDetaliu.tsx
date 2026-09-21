@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
@@ -53,7 +54,7 @@ import { AsmEditorLinie, type EticheteCulese } from './AsmEditorLinie';
 // operatorul care redeschide documentul a doua zi vede același lucru ca cel care
 // tocmai a apăsat butonul.
 
-const CAMPURI_ANTET: (keyof AsmWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof AsmWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function AsmDetaliu() {
@@ -268,6 +269,7 @@ export function AsmDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Asamblare — nouă' : `Asamblare ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} diferenta={doc?.Diferenta} modificat={modificat || nou} />}
@@ -389,6 +391,7 @@ export function AsmDetaliu() {
                   WriteDto (F19-D6). */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<AsmWrite> camp="Data" />
+              <CampData<AsmWrite> camp="DataInregistrare" />
               {/* PREDATORUL e gestiunea în care se asamblează — și tot în ea se
                   nasc loturile produselor (`GestiuneLoturiCulese`, F19-D3).
                   Caption-ul bazei („Predator (de la)") e corect, dar prea

@@ -94,6 +94,7 @@ export function linieGoala(): RlfLinieWrite {
 export function spreWrite(citit: RlfRead): RlfWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

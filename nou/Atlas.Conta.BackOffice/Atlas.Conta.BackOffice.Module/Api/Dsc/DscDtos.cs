@@ -22,6 +22,7 @@ public sealed class DscReadDto {
     // MATERIALIZAREA propriei operări (GATE XAF D6) — pe draft e null.
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
@@ -49,6 +50,8 @@ public sealed class DscReadDto {
     public bool PoateEdita { get; set; }
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
+    // F27-D6 — legătura de corecție (null = documentul nu corectează nimic).
+    public CorectieDto Corectie { get; set; }
     public bool PoateStorna { get; set; }
 }
 

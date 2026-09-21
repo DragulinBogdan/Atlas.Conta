@@ -55,7 +55,7 @@ public static class FacturaIesireApply {
         // `Numar` NU se atinge: FCL are PoliticaNumerotare (serie fiscală) ⇒
         // server-owned (F4-D1) — nici nu e în WriteDto, nici gardianul de
         // Committing nu l-ar accepta pe o cale secured.
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         // NAVIGAȚIA, nu FK-ul scalar (ca la BTR/FCT/TRZ): rezolvarea validează
         // existența cu mesaj de domeniu, regulile XAF de culegere stau pe
         // navigație, iar pe o entitate urmărită navigația încărcată ar rescrie
@@ -296,7 +296,7 @@ public static class FacturaIesireApply {
                 $"Descărcarea de gestiune se generează doar pentru o factură OPERATĂ — "
                 + $"{Eticheta(fcl)} e în starea „{fcl.Stare}”.");
 
-        var dsc = DescarcareService.Genereaza(os, fcl, data);
+        var dsc = DocumentApply.Generat(DescarcareService.Genereaza(os, fcl, data));
         if (dsc != null)
             os.CommitChanges();
 
@@ -359,11 +359,10 @@ public static class FacturaIesireApply {
         var h = os.GetObjectsQuery<FacturaIesire>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
-                // TPT: cast-ul devine LEFT JOIN pe tabela `Partener` — null pe
-                // orice alt tip de repartitor.
+                // `as` nu filtrează pe tip: null pe alt repartitor fiindcă `CodFiscal` e doar al lui Partener (F28-J, 89).
                 PrimitorCodFiscal = (d.Primitor as Partener).CodFiscal,
                 d.DataScadenta,
                 d.GestiuneDescarcareId,
@@ -427,6 +426,7 @@ public static class FacturaIesireApply {
 
         return new FacturaIesireReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
@@ -438,6 +438,7 @@ public static class FacturaIesireApply {
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
             PoateGeneraDescarcare = poateGeneraDescarcare,

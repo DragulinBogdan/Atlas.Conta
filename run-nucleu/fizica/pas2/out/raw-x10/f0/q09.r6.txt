@@ -1,0 +1,34 @@
+                                                                                QUERY PLAN                                                                                 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=21470.17..21470.33 rows=2 width=48) (actual time=1.062..1.127 rows=16.00 loops=1)
+   Group Key: r."LotId"
+   Filter: (COALESCE(sum(r."Cantitate"), 0.0) > 0.0)
+   Rows Removed by Filter: 43
+   Buffers: shared hit=1291
+   ->  Sort  (cost=21470.17..21470.19 rows=7 width=20) (actual time=1.039..1.060 rows=976.00 loops=1)
+         Sort Key: r."LotId"
+         Sort Method: quicksort  Memory: 63kB
+         Buffers: shared hit=1291
+         ->  Nested Loop  (cost=5.43..21470.07 rows=7 width=20) (actual time=0.027..0.934 rows=976.00 loops=1)
+               Buffers: shared hit=1288
+               ->  Index Scan using "IX_Loturi_ProdusId" on "Loturi" l  (cost=0.29..135.74 rows=60 width=16) (actual time=0.012..0.053 rows=61.00 loops=1)
+                     Index Cond: ("ProdusId" = '01a0b48d-78b6-754c-92e9-c3250a37995b'::uuid)
+                     Filter: ("GCRecord" = 0)
+                     Index Searches: 1
+                     Buffers: shared hit=45
+               ->  Bitmap Heap Scan on "RegistruStoc" r  (cost=5.14..355.56 rows=1 width=20) (actual time=0.007..0.013 rows=16.00 loops=61)
+                     Recheck Cond: (l."ID" = "LotId")
+                     Filter: (("Data" <= '2025-06-30'::date) AND ("GCRecord" = 0) AND ("RepartitorId" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid) AND ("TipStoc" = 1))
+                     Rows Removed by Filter: 8
+                     Heap Blocks: exact=1060
+                     Buffers: shared hit=1243
+                     ->  Bitmap Index Scan on "IX_RegistruStoc_LotId"  (cost=0.00..5.14 rows=95 width=0) (actual time=0.002..0.002 rows=23.67 loops=61)
+                           Index Cond: ("LotId" = l."ID")
+                           Index Searches: 61
+                           Buffers: shared hit=183
+ Planning:
+   Buffers: shared hit=332
+ Planning Time: 0.570 ms
+ Execution Time: 1.170 ms
+(30 rows)
+

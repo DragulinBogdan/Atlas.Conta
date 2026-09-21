@@ -28,9 +28,8 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 //     global, altfel curățenia n-ar putea vedea (deci nici curăța) reziduul
 //     lăsat de rulările anterioare: exact rândurile care ocupă PK-urile. Cu el,
 //     baza se auto-vindecă la prima rulare, fără intervenție manuală.
-//   • **rădăcina TPT** — purja se dă pe tabela RĂDĂCINĂ a ierarhiei
-//     (`NotaTransfer` → `Documente`), fiindcă FK-urile derivatelor spre bază sunt
-//     `ON DELETE CASCADE`: un `DELETE` pe `Documente` ia cu el rândul derivatei,
+//   • **rădăcina ierarhiei** — purja se dă pe tabela RĂDĂCINII
+//     (`NotaTransfer` → `Documente`, 89): un `DELETE` pe `Documente` ia cu el
 //     detaliile, `RegistruTva` și `Imperecheri`. Ce NU cascadează (`NO ACTION`:
 //     `RegistruContabil`, `RegistruStoc`) se dă explicit, ÎNAINTEA documentelor —
 //     de-aia ordinea pașilor e a apelantului, nu a helper-ului.
@@ -60,9 +59,17 @@ sealed class Purja(IObjectSpace os) {
 
     public Purja Adauga<T>(T obiect) where T : BaseObject => Adauga([obiect]);
 
+    // Cubul (S-D1) nu derivă din `BaseObject`: aceeași purjă fizică, cu cheile date.
+    public Purja AdaugaCheie<T>(IEnumerable<Guid> ids) where T : class {
+        var distincte = ids.Distinct().ToList();
+        if (distincte.Count > 0)
+            pasi.Add((typeof(T), distincte));
+        return this;
+    }
+
     // Regulă de folosire (review F13, defect 6): purja detașează DOAR tipurile
     // purjate explicit; dependenții luați de CASCADE în bază (`RegistruTva`,
-    // `Imperecheri`, derivatele TPT) rămân în tracker dacă scena i-a încărcat
+    // `Imperecheri`) rămân în tracker dacă scena i-a încărcat
     // înainte — un commit ulterior pe același OS ar da
     // `DbUpdateConcurrencyException`. Deci: purja la ÎNCEPUTUL scenei, pe OS
     // proaspăt, sau la sfârșit, pe un OS care nu se mai folosește.
@@ -74,11 +81,18 @@ sealed class Purja(IObjectSpace os) {
         // spatele lui EF ar lăsa în tracker rânduri fantomă. Detașarea e înainte de
         // SQL, ca identity map-ul să fie liber pentru Id-urile care se recreează.
         foreach (var (tip, ids) in pasi)
-            foreach (var intrare in ctx.ChangeTracker.Entries().Where(e =>
-                         tip.IsInstanceOfType(e.Entity) && e.Entity is BaseObject b && ids.Contains(b.ID)).ToList())
-                intrare.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+            foreach (var intrare in ctx.ChangeTracker.Entries()
+                         .Where(e => tip.IsInstanceOfType(e.Entity)).ToList())
+                if (Cheia(intrare) is Guid id && ids.Contains(id))
+                    intrare.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
         foreach (var (tip, ids) in pasi) {
             var (tabela, coloanaId) = TabelaRadacina(ctx, tip);
+            // Cubul atârnă de `Documente` prin FK: purja documentului îl ia cu ea. // S-D8
+            if (tabela == "Documente")
+                foreach (var alCubului in new[] { "Postare", "Tranzactie" }) {
+                    var alCubuluiSql = $"DELETE FROM \"{alCubului}\" WHERE \"DocumentId\" = ANY(@p0)";
+                    ctx.Database.ExecuteSqlRaw(alCubuluiSql, [ids.ToArray()]);
+                }
             // Numele de tabelă/coloană vin din modelul EF (nu din date), Id-urile
             // rămân PARAMETRU (`uuid[]`) — SQL brut, dar nu concatenare de valori.
             var sql = $"DELETE FROM \"{tabela}\" WHERE \"{coloanaId}\" = ANY(@p0)";
@@ -112,6 +126,14 @@ sealed class Purja(IObjectSpace os) {
         }
         pasi.Clear();
     }
+
+    static Guid? Cheia(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry intrare) =>
+        intrare.Entity is BaseObject aplicatie
+            ? aplicatie.ID
+            : intrare.Metadata.FindPrimaryKey()?.Properties is [{ } cheie]
+                && intrare.Property(cheie.Name).CurrentValue is Guid id
+                ? id
+                : null;
 
     static bool EsteViolareFk(Exception e) {
         for (var x = e; x != null; x = x.InnerException)

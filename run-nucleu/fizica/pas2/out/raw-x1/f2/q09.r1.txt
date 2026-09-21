@@ -1,0 +1,30 @@
+                                                                          QUERY PLAN                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=13505.71..13526.94 rows=8494 width=84) (actual time=25.488..25.496 rows=309.00 loops=1)
+   Sort Key: (min(p."Data")), p."Unitate"
+   Sort Method: quicksort  Memory: 39kB
+   Buffers: shared hit=9 read=3526
+   ->  GroupAggregate  (cost=12132.91..12951.38 rows=8494 width=84) (actual time=20.361..25.437 rows=309.00 loops=1)
+         Group Key: p."Unitate"
+         Filter: (COALESCE(sum(p."Cantitate"), 0.0) > 0.0)
+         Rows Removed by Filter: 12792
+         Buffers: shared hit=3 read=3526
+         ->  Sort  (cost=12132.91..12207.42 rows=29804 width=30) (actual time=20.349..20.955 rows=27460.00 loops=1)
+               Sort Key: p."Unitate"
+               Sort Method: quicksort  Memory: 2066kB
+               Buffers: shared hit=3 read=3526
+               ->  Bitmap Heap Scan on "Postare_Stoc" p  (cost=2529.42..9917.99 rows=29804 width=30) (actual time=9.817..16.727 rows=27460.00 loops=1)
+                     Recheck Cond: (("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid) AND ("Data" <= '2025-06-30'::date))
+                     Filter: ("Spatiu" = 2)
+                     Heap Blocks: exact=3037
+                     Buffers: shared hit=3 read=3526
+                     ->  Bitmap Index Scan on ix_f2s_gest_unit_data  (cost=0.00..2521.97 rows=29804 width=0) (actual time=9.451..9.452 rows=27460.00 loops=1)
+                           Index Cond: (("Gestiune" = '01a0b48c-d7ca-73c5-88b4-c0b508a78342'::uuid) AND ("Data" <= '2025-06-30'::date))
+                           Index Searches: 1
+                           Buffers: shared hit=3 read=489
+ Planning:
+   Buffers: shared hit=390 read=11
+ Planning Time: 0.597 ms
+ Execution Time: 25.648 ms
+(26 rows)
+

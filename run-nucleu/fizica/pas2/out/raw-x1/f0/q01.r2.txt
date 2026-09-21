@@ -1,0 +1,48 @@
+                                                                                        QUERY PLAN                                                                                        
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Right Join  (cost=28421.07..28457.82 rows=200 width=387) (actual time=57.298..58.539 rows=119.00 loops=1)
+   Hash Cond: (c."ID" = "*SELECT* 1"."ContId")
+   Buffers: shared hit=1291 read=12758
+   ->  Seq Scan on "Conturi" c  (cost=0.00..24.05 rows=644 width=67) (actual time=0.012..0.065 rows=644.00 loops=1)
+         Filter: ("GCRecord" = 0)
+         Buffers: shared hit=16
+   ->  Hash  (cost=28418.57..28418.57 rows=200 width=144) (actual time=57.260..58.377 rows=119.00 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 17kB
+         Buffers: shared hit=1275 read=12758
+         ->  Finalize GroupAggregate  (cost=28347.87..28418.57 rows=200 width=144) (actual time=57.078..58.355 rows=119.00 loops=1)
+               Group Key: "*SELECT* 1"."ContId"
+               Buffers: shared hit=1275 read=12758
+               ->  Gather Merge  (cost=28347.87..28403.77 rows=480 width=144) (actual time=57.071..58.214 rows=312.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=1275 read=12758
+                     ->  Sort  (cost=27347.84..27348.34 rows=200 width=144) (actual time=55.356..55.361 rows=104.00 loops=3)
+                           Sort Key: "*SELECT* 1"."ContId"
+                           Sort Method: quicksort  Memory: 55kB
+                           Buffers: shared hit=1275 read=12758
+                           Worker 0:  Sort Method: quicksort  Memory: 52kB
+                           Worker 1:  Sort Method: quicksort  Memory: 54kB
+                           ->  Partial HashAggregate  (cost=27336.20..27340.20 rows=200 width=144) (actual time=55.261..55.300 rows=104.00 loops=3)
+                                 Group Key: "*SELECT* 1"."ContId"
+                                 Batches: 1  Memory Usage: 288kB
+                                 Buffers: shared hit=1261 read=12758
+                                 Worker 0:  Batches: 1  Memory Usage: 160kB
+                                 Worker 1:  Batches: 1  Memory Usage: 160kB
+                                 ->  Parallel Append  (cost=0.00..21629.35 rows=253638 width=58) (actual time=0.164..33.878 rows=202921.33 loops=3)
+                                       Buffers: shared hit=1261 read=12758
+                                       ->  Subquery Scan on "*SELECT* 1"  (cost=0.00..10180.58 rows=126819 width=58) (actual time=0.088..12.815 rows=101460.67 loops=3)
+                                             Buffers: shared hit=789 read=6221
+                                             ->  Parallel Seq Scan on "RegistruContabil" r  (cost=0.00..8912.39 rows=126819 width=58) (actual time=0.087..8.456 rows=101460.67 loops=3)
+                                                   Filter: (("Data" <= '2025-12-31'::date) AND ("GCRecord" = 0))
+                                                   Buffers: shared hit=789 read=6221
+                                       ->  Subquery Scan on "*SELECT* 2"  (cost=0.00..10180.58 rows=126819 width=58) (actual time=0.179..20.593 rows=152191.00 loops=2)
+                                             Buffers: shared hit=472 read=6537
+                                             ->  Parallel Seq Scan on "RegistruContabil" r0  (cost=0.00..8912.39 rows=126819 width=58) (actual time=0.179..14.120 rows=152191.00 loops=2)
+                                                   Filter: (("Data" <= '2025-12-31'::date) AND ("GCRecord" = 0))
+                                                   Buffers: shared hit=472 read=6537
+ Planning:
+   Buffers: shared hit=517
+ Planning Time: 0.723 ms
+ Execution Time: 58.715 ms
+(44 rows)
+

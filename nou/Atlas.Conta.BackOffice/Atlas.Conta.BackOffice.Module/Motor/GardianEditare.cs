@@ -8,6 +8,7 @@ using DevExpress.ExpressApp.Core;
 using DevExpress.ExpressApp.EFCore;
 using DevExpress.ExpressApp.Security;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -175,6 +176,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     public static void Verifica(IObjectSpace os) {
         var erori = new List<string>();
         var registruRaportat = false;
+        var istoricRaportat = false;
         // Lista se materializează: ramura de PROVENIENȚĂ (F23-D4) SCRIE pe
         // obiectele parcurse (`DinSeed = false`), iar `ModifiedObjects` e o
         // vedere peste change tracker-ul EF — nu se enumeră în timp ce se scrie
@@ -187,7 +189,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (obj is ICuCautare rand && !EsteSters(os, obj))
                 VerificaCodDenumire(rand, erori);
             // (j) F23-D4 — proveniența, tot al INTERFEȚEI și tot înaintea
-            // switch-ului: cele 17 tipuri `ICuProvenienta` n-au toate un `case`.
+            // switch-ului: cele 19 tipuri `ICuProvenienta` n-au toate un `case`.
             if (obj is ICuProvenienta provenit && !EsteSters(os, obj)) {
                 VerificaProvenienta(os, provenit, erori);
                 // (k) Review advers F24 — enum-urile fără membru 0 (convenția din
@@ -203,6 +205,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             // de pe un document operat e tot o scriere care se refuză).
             if (obj is IVerificabilLaCommit verificabil)
                 verificabil.Verifica(os, erori);
+            // (o) 89 — FK-ul spre o frunză TPH ține doar id-ul rădăcinii; tipul țintei îl ține gardianul.
+            if (!EsteSters(os, obj))
+                VerificaTintePeFrunze(os, obj, erori);
             switch (obj) {
                 // (b) Registrele sunt append-only și EXCLUSIV ale motorului
                 // (decizia 14): nimeni nu le scrie prin UI/API, nici măcar
@@ -214,11 +219,36 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 // de TVA sunt declarații — o editare directă ar fi exact genul de
                 // „corecție" pe care append-only-ul o interzice.
                 case RegistruTva:
+                // Al patrulea registru, scris prin `IDocumentCuRegistruPropriu` (F26-D2/D3).
+                case RegistruImobilizari:
+                // Snapshot-urile perioadelor de referință (F27-D3): nu sunt
+                // registre, dar se scriu pe aceeași ușă — doar motorul, în
+                // tranzacția închiderii.
+                case SoldPerioadaContabil:
+                case SoldPerioadaStoc:
+                // Partidele deschise ale perioadelor de referință (F27-D7): tot
+                // proiecție a motorului, scrisă în tranzacția închiderii.
+                case PartidaDeschisa:
                     if (!registruRaportat) {
                         registruRaportat = true;
-                        erori.Add("Registrele (stoc/contabil/TVA) se scriu doar de motor, la operare — "
-                            + "nu se creează, modifică sau șterg direct.");
+                        erori.Add("Registrele (stoc/contabil/TVA/imobilizări/solduri și partide de perioadă) se scriu "
+                            + "doar de motor, la operare — nu se creează, modifică sau șterg direct.");
                     }
+                    break;
+                // (m) F27-D1 — istoricul perioadei e registrul închiderilor: îl
+                // scrie doar `PerioadaService`, pe ușa non-secured, exact ca pe
+                // cele patru registre de mai sus.
+                case InchiderePerioada:
+                    if (!istoricRaportat) {
+                        istoricRaportat = true;
+                        erori.Add("Istoricul închiderilor de perioadă se scrie doar de motor, la închidere "
+                            + "și la redeschidere — nu se creează, modifică sau șterge direct.");
+                    }
+                    break;
+                // (n) F27-D1 — perioada e verigă de lanț: `An`/`Luna` se culeg o
+                // singură dată, starea e a motorului.
+                case PerioadaFiscala perioada:
+                    VerificaPerioadaFiscala(os, perioada, erori);
                     break;
                 case Document doc:
                     VerificaDocument(os, doc, erori);
@@ -286,6 +316,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 case PoliticaInchidereTva inchidere:
                     VerificaPoliticaInchidereTva(inchidere, erori);
                     break;
+                case PoliticaInchidere inchidereaPerioadei:
+                    VerificaPoliticaInchidere(os, inchidereaPerioadei, erori);
+                    break;
                 case MapareD300 mapareD300:
                     VerificaMapareD300(os, mapareD300, erori);
                     break;
@@ -297,6 +330,50 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (erori.Count > 0)
             throw new OperareException(string.Join("\n", erori.Distinct()));
     }
+
+    // (n) Perioada fiscală (F27-D1). `An`/`Luna` sunt IDENTITATEA verigii: se
+    // culeg la creare și nu se mai mișcă, fiindcă o lună rescrisă ar muta tăcut
+    // granița sub documentele deja operate. Cele trei câmpuri de stare le scrie
+    // exclusiv `PerioadaService`, pe ușa non-secured — aici, ca pe registre, nu
+    // trece nici administratorul.
+    static void VerificaPerioadaFiscala(IObjectSpace os, PerioadaFiscala perioada, ICollection<string> erori) {
+        if (EsteSters(os, perioada)) {
+            if (perioada.Inchisa)
+                erori.Add($"Perioada {EtichetaPerioada(perioada)} e închisă — o perioadă închisă nu se șterge. "
+                    + "Redeschideți-o întâi.");
+            if (os.GetObjectsQuery<InchiderePerioada>().Any(i => i.PerioadaId == perioada.ID))
+                erori.Add($"Perioada {EtichetaPerioada(perioada)} are istoric de închideri — "
+                    + "ștergerea ei ar rupe urma operațiilor motorului.");
+            return;
+        }
+        if (perioada.An < AnMinimPerioada || perioada.An > AnMaximPerioada)
+            erori.Add($"Anul perioadei trebuie să fie între {AnMinimPerioada} și {AnMaximPerioada}.");
+        if (perioada.Luna < 1 || perioada.Luna > 12)
+            erori.Add("Luna perioadei trebuie să fie între 1 și 12.");
+        if (os.IsNewObject(perioada)) {
+            if (perioada.Inchisa || perioada.InchisaLa != null || perioada.InchisaPrimaOara != null)
+                erori.Add("O perioadă nouă se creează DESCHISĂ — închiderea o face doar motorul (Închide / Redeschide).");
+            if (os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == perioada.An && p.Luna == perioada.Luna))
+                erori.Add($"Perioada {EtichetaPerioada(perioada)} există deja — o lună are o singură verigă în lanț.");
+            return;
+        }
+        var originale = Originale(os, perioada);
+        if (originale == null)
+            return;
+        if ((originale[nameof(PerioadaFiscala.An)] as int?) != perioada.An
+                || (originale[nameof(PerioadaFiscala.Luna)] as int?) != perioada.Luna)
+            erori.Add($"Luna unei perioade existente nu se schimbă ({EtichetaPerioada(perioada)}) — "
+                + "ștergeți perioada greșită și creați-o pe cea corectă.");
+        if ((originale[nameof(PerioadaFiscala.Inchisa)] as bool?) != perioada.Inchisa
+                || (originale[nameof(PerioadaFiscala.InchisaLa)] as DateTime?) != perioada.InchisaLa
+                || (originale[nameof(PerioadaFiscala.InchisaPrimaOara)] as DateTime?) != perioada.InchisaPrimaOara)
+            erori.Add("Închiderea perioadei o face doar motorul (Închide / Redeschide).");
+    }
+
+    // Aceleași margini ca pe API (`PerioadeController.AnMinim/AnMaxim`).
+    const int AnMinimPerioada = 2000, AnMaximPerioada = 2100;
+
+    static string EtichetaPerioada(PerioadaFiscala perioada) => $"{perioada.Luna:00}/{perioada.An}";
 
     // (a) Documentul: se culege cât e Draft. Starea e SERVER-OWNED — tranzițiile
     // le face doar motorul, în ObjectSpace-ul lui non-secured. Review-ul advers
@@ -312,12 +389,17 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (doc.Stare != StareDocument.Draft)
                 erori.Add($"Un document nou se creează în starea Draft, nu „{doc.Stare}” "
                     + "— operarea îi schimbă starea.");
-            if (doc.Autogenerat || doc.DocumentSursaId != null || doc.DataOperare != null)
-                erori.Add("Legătura de grup conex (Autogenerat/DocumentSursa) și DataOperare "
-                    + "le scrie doar motorul.");
+            if (doc.Autogenerat || doc.DocumentSursaId != null || doc.DataOperare != null
+                    || doc.TotalStingere != null)
+                erori.Add("Legătura de grup conex (Autogenerat/DocumentSursa), DataOperare "
+                    + "și totalul de stins le scrie doar motorul.");
             if (!string.IsNullOrEmpty(doc.Numar) && AreNumerotare(os, doc))
                 erori.Add($"Numărul documentului vine din seria tipului (PoliticaNumerotare) "
                     + "— nu se culege.");
+            if (doc.CorecteazaId != null || doc.MotivCorectie != null)
+                erori.Add(LegaturaCorectiei);
+            VerificaDataInregistrare(doc, erori);
+            VerificaLegaturaCorectiei(os, doc, erori);
             return;
         }
         var originale = Originale(os, doc);
@@ -334,14 +416,59 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "(Operează / Anulează operarea / Stornează).");
         if (!Equals(originale[nameof(Document.DataOperare)], doc.DataOperare)
                 || !Equals(originale[nameof(Document.Autogenerat)], doc.Autogenerat)
-                || !Equals(originale[nameof(Document.DocumentSursaId)], doc.DocumentSursaId))
+                || !Equals(originale[nameof(Document.DocumentSursaId)], doc.DocumentSursaId)
+                || !Equals(originale[nameof(Document.TotalStingere)], doc.TotalStingere))
             erori.Add($"Câmpurile de operare și de grup conex ale documentului {Eticheta(doc)} "
-                + "(DataOperare, Autogenerat, DocumentSursa) le scrie doar motorul.");
+                + "(DataOperare, Autogenerat, DocumentSursa, Total de stins) le scrie doar motorul.");
         var numarOriginal = originale[nameof(Document.Numar)] as string;
         if (!string.Equals(numarOriginal ?? "", doc.Numar ?? "", StringComparison.Ordinal)
                 && AreNumerotare(os, doc))
             erori.Add($"Numărul documentului {Eticheta(doc)} vine din seria tipului "
                 + "(PoliticaNumerotare) — nu se editează.");
+        if (!Equals(originale[nameof(Document.CorecteazaId)], doc.CorecteazaId)
+                || !Equals(originale[nameof(Document.MotivCorectie)], doc.MotivCorectie))
+            erori.Add(LegaturaCorectiei);
+        VerificaDataInregistrare(doc, erori);
+        VerificaLegaturaCorectiei(os, doc, erori);
+    }
+
+    // F27-D6. Legătura de corecție e a MOTORULUI, ca `Stare` și grupul conex:
+    // pe ușa securizată nu se scrie nici la creare, nici la editare.
+    const string LegaturaCorectiei =
+        "Legătura de corecție o scrie doar motorul (Corectează).";
+
+    // F27-D6 — invariantul legăturii, INDEPENDENT de ușa pe care s-a scris:
+    // gardianul îl aplică la fiecare commit securizat (inclusiv pe corecția
+    // legitimă, cât timp e Draft și se culege), iar `CorectieService` îl cheamă
+    // pe ușa non-secured, unde gardianul nu rulează.
+    internal static void VerificaLegaturaCorectiei(IObjectSpace os, Document doc, ICollection<string> erori) {
+        if (doc.CorecteazaId is not Guid originalId)
+            return;
+        if (doc.MotivCorectie == null)
+            erori.Add("Documentul de corecție nu are motiv — corecția se face cu motiv scris.");
+        var original = os.GetObjectByKey<Document>(originalId);
+        if (original == null) {
+            erori.Add("Documentul corectat nu există.");
+            return;
+        }
+        if (original.Stare != StareDocument.Stornat)
+            erori.Add($"Documentul corectat {Eticheta(original)} nu e stornat (starea „{original.Stare}”) — "
+                + "corecția e storno-ul originalului plus documentul nou.");
+        if (MotorOperare.ClasaReala(original) != MotorOperare.ClasaReala(doc))
+            erori.Add($"Corecția trebuie să fie de același tip cu documentul corectat "
+                + $"({MotorOperare.ClasaReala(original).Name}).");
+        if (os.GetObjectsQuery<Document>().Any(d => d.CorecteazaId == originalId && d.ID != doc.ID))
+            erori.Add($"Documentul {Eticheta(original)} e deja corectat de alt document — "
+                + "legătura de corecție e 1:1.");
+    }
+
+    // F27-D4. `default` = necules: motorul o normalizează la `Data` în operare,
+    // deci un draft venit pe o cale care n-o culege nu se refuză aici. Pe
+    // documentul ieșit din Draft e înghețată ca orice alt câmp, prin întoarcerea
+    // de mai sus.
+    static void VerificaDataInregistrare(Document doc, ICollection<string> erori) {
+        if (doc.DataInregistrare != default && doc.DataInregistrare < doc.Data)
+            erori.Add("Data înregistrării nu poate preceda data documentului.");
     }
 
     // (a) Liniile urmează starea documentului-gazdă (registrele s-au scris din
@@ -391,20 +518,78 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     // (re-validarea sumei ar cere excluderea propriului rând), Delete liber
     // (link fără registre proprii; gardianul de anulare/storno din motor există).
     static void VerificaImperechere(IObjectSpace os, Imperechere imperechere, ICollection<string> erori) {
-        if (EsteSters(os, imperechere))
+        if (EsteSters(os, imperechere)) {
+            // F27-D8: ștergerea rămâne liberă în fereastra deschisă (link fără
+            // registre proprii), dar o imperechere dintr-o perioadă închisă
+            // NU dispare — se desface prin rând invers, datat în deschis.
+            if (!PerioadaDeschisa(os, imperechere.Data))
+                erori.Add("O împerechere dintr-o perioadă închisă nu se șterge — "
+                    + "se desface prin rând invers („Desfă împerecherea”).");
+            // Perechea (original, invers) se anulează pe ea însăși: ștergerea
+            // oricăreia dintre laturi ar învia jumătatea rămasă, cu semnul ei,
+            // și ar muta tăcut restul ambelor documente.
+            else if (AreRandInvers(os, imperechere.ID))
+                erori.Add("Împerecherea a fost desfăcută prin rând invers — nu se mai șterge; "
+                    + "rândul invers e cel care o anulează.");
+            else if (imperechere.InverseazaId != null)
+                erori.Add("Un rând invers nu se șterge — desfacerea e fapt; "
+                    + "corectați prin altă împerechere.");
             return;
+        }
         if (!os.IsNewObject(imperechere)) {
+            // Fixup-ul EF nulează `InverseazaId` pe rândul invers când
+            // originalul lui e în curs de ștergere: modificarea e COLATERALĂ,
+            // iar refuzul care contează e cel al ștergerii de mai sus. Fără
+            // gardul ăsta, textul generic de editare ar ajunge primul și ar
+            // ascunde motivul real.
+            if (imperechere.InverseazaId == null && EsteFixupDeStergere(os, imperechere))
+                return;
             erori.Add("Imperecherea nu se editează — șterge-o și creeaz-o din nou.");
+            return;
+        }
+        // F27-D8: rândul invers e al MOTORULUI (`Desfă`, stornarea unui document
+        // imperecheat) — pe ușa securizată nu se scrie, ca legătura de corecție.
+        if (imperechere.InverseazaId != null) {
+            erori.Add("Rândul invers al unei imperecheri îl scrie doar motorul („Desfă împerecherea”).");
+            return;
+        }
+        if (imperechere.Data == default) {
+            erori.Add("Data imperecherii e obligatorie — stingerea e un fapt datat.");
+            return;
+        }
+        if (!PerioadaDeschisa(os, imperechere.Data)) {
+            erori.Add($"Perioada {imperechere.Data.Month:00}/{imperechere.Data.Year} e închisă — "
+                + "o imperechere se scrie doar într-o perioadă deschisă.");
             return;
         }
         // Limitare asumată (ca gardianul de sold, decizia 25f): două link-uri
         // NOI în același commit nu se văd reciproc la Σ ≤ rest.
         try {
             ImperechereService.ValideazaCreare(os,
-                imperechere.DocumentStingator, imperechere.Document, imperechere.Suma);
+                imperechere.DocumentStingator, imperechere.Document, imperechere.Suma,
+                null, imperechere.Data);
         }
         catch (OperareException ex) {
             erori.Add(ex.Message);
+        }
+    }
+
+    // Interogarea merge în BAZĂ, deci vede legătura încă persistată chiar dacă
+    // fixup-ul a nulat-o în memorie.
+    static bool AreRandInvers(IObjectSpace os, Guid imperechereId) =>
+        os.GetObjectsQuery<Imperechere>().Any(i => i.InverseazaId == imperechereId);
+
+    static bool EsteFixupDeStergere(IObjectSpace os, Imperechere invers) =>
+        Originale(os, invers)?[nameof(Imperechere.InverseazaId)] is Guid originalId
+        && os.ModifiedObjects.OfType<Imperechere>().Any(i => i.ID == originalId && EsteSters(os, i));
+
+    static bool PerioadaDeschisa(IObjectSpace os, DateOnly data) {
+        try {
+            GardianPerioada.VerificaDeschisa(os, data);
+            return true;
+        }
+        catch (OperareException) {
+            return false;
         }
     }
 
@@ -708,6 +893,46 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         }
     }
 
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, IForeignKey[]> fkSpreFrunze = new();
+
+    // FK-urile unui tip spre un tip NE-rădăcină al unei ierarhii cu discriminator (TPH);
+    // o formă pe care regula (o) n-o verifică (compus, spre cheie alternativă) aruncă.
+    public static IReadOnlyList<IForeignKey> FkSpreFrunze(IEntityType tip) =>
+        fkSpreFrunze.GetOrAdd(tip.ClrType, _ => {
+            var fkuri = tip.GetForeignKeys()
+                .Where(fk => fk.PrincipalEntityType.BaseType != null
+                    && fk.PrincipalEntityType.FindDiscriminatorProperty() != null)
+                .ToArray();
+            var nesuportate = fkuri.Where(fk => fk.Properties.Count != 1 || !fk.PrincipalKey.IsPrimaryKey())
+                .Select(fk => $"{fk.DeclaringEntityType.ClrType.Name}({string.Join(", ", fk.Properties.Select(p => p.Name))})"
+                    + $" → {fk.PrincipalEntityType.ClrType.Name}({string.Join(", ", fk.PrincipalKey.Properties.Select(p => p.Name))})")
+                .ToList();
+            return nesuportate.Count == 0 ? fkuri : throw new InvalidOperationException(
+                "FK spre un tip ne-rădăcină al unei ierarhii TPH pe care regula (o) nu-l poate verifica "
+                + $"(compus sau spre o cheie alternativă): {string.Join("; ", nesuportate)}.");
+        });
+
+    static void VerificaTintePeFrunze(IObjectSpace os, object obj, ICollection<string> erori) {
+        if (os is not EFCoreObjectSpace efCore
+                || efCore.DbContext.Model.FindRuntimeEntityType(obj.GetType()) is not { } tip
+                || FkSpreFrunze(tip) is not { Count: > 0 } fkuri)
+            return;
+        var intrare = efCore.DbContext.Entry(obj);
+        foreach (var fk in fkuri) {
+            var valoare = intrare.Property(fk.Properties[0].Name);
+            if (valoare.CurrentValue is not Guid id || id == Guid.Empty)
+                continue;
+            if (intrare.State != EntityState.Added && Equals(valoare.OriginalValue, valoare.CurrentValue))
+                continue;
+            var principal = fk.PrincipalEntityType.ClrType;
+            var tinta = RandDupaCheie.Oricare(os, principal, id);
+            if (principal.IsInstanceOfType(tinta))
+                continue;
+            erori.Add(RandDupaCheie.Refuz(tinta, principal,
+                RandDupaCheie.RolFk(obj.GetType(), fk.DependentToPrincipal?.Name ?? valoare.Metadata.Name), id));
+        }
+    }
+
     // ═══ F23-D5 — invarianții politicilor deschise pe OData ═══
 
     // `TipDocument` e ANCORA (decizia 20): oglindește clasele 1:1, iar `Cod` și
@@ -948,6 +1173,22 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "de plată, de recuperat). Completați-le pe toate sau goliți-le pe toate (tip inert).");
     }
 
+    // `PoliticaInchidere`: un singur rând per fel. Al doilea ar face severitatea
+    // nedeterministă, iar constatarea ar fi când blocantă, când ignorată, după
+    // ce rând întoarce baza prima (F27-D2).
+    static void VerificaPoliticaInchidere(IObjectSpace os, PoliticaInchidere politica,
+            ICollection<string> erori) {
+        if (EsteSters(os, politica))
+            return;
+        var fel = politica.Fel;
+        var duplicat = os.GetObjectsQuery<PoliticaInchidere>()
+            .Where(p => p.Fel == fel).Select(p => p.ID).ToList()
+            .Any(id => id != politica.ID);
+        if (duplicat)
+            erori.Add($"Există deja o politică de închidere pe felul „{fel}” — "
+                + "un fel are o singură severitate. Editați rândul existent.");
+    }
+
     // `MapareD300`: aceleași două reguli ca atributele XAF de pe clasă, chemate
     // prin funcțiile lor statice — o regulă, două uși (F23-D5).
     static void VerificaMapareD300(IObjectSpace os, MapareD300 mapare, ICollection<string> erori) {
@@ -1035,7 +1276,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     // Security\SecuredEFCoreObjectSpace.cs:57), deci `DbContext` e disponibil pe
     // ambele. Null = nu se poate determina (alt provider / Detached / Added) —
     // apelantul cade pe valorile curente.
-    static Microsoft.EntityFrameworkCore.ChangeTracking.PropertyValues Originale(
+    internal static Microsoft.EntityFrameworkCore.ChangeTracking.PropertyValues Originale(
             IObjectSpace os, object obj) {
         if (os is not EFCoreObjectSpace efCore)
             return null;

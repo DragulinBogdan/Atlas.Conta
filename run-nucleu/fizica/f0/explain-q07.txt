@@ -1,0 +1,47 @@
+Hash Left Join  (cost=4577.79..6928.32 rows=187 width=329) (actual time=12.255..17.266 rows=1543.00 loops=1)
+  Hash Cond: (a."TipTvaId" = tt."ID")
+  Buffers: shared hit=6689 read=2000
+  ->  Nested Loop Left Join  (cost=4569.62..6917.78 rows=187 width=173) (actual time=12.079..16.947 rows=1543.00 loops=1)
+        Buffers: shared hit=6689 read=1998
+        ->  Hash Right Join  (cost=4569.20..5427.50 rows=187 width=160) (actual time=12.039..15.005 rows=1543.00 loops=1)
+              Hash Cond: (rp."ID" = a."PartenerId")
+              Buffers: shared hit=584 read=1931
+              ->  Seq Scan on "Repartitori" rp  (cost=0.00..779.71 rows=20457 width=42) (actual time=0.024..2.156 rows=20404.00 loops=1)
+                    Filter: ("GCRecord" = 0)
+                    Buffers: shared hit=524
+              ->  Hash  (cost=4566.86..4566.86 rows=187 width=134) (actual time=11.954..12.019 rows=1543.00 loops=1)
+                    Buckets: 2048 (originally 1024)  Batches: 1 (originally 1)  Memory Usage: 191kB
+                    Buffers: shared hit=60 read=1931
+                    ->  Subquery Scan on a  (cost=4535.73..4566.86 rows=187 width=134) (actual time=10.765..11.757 rows=1543.00 loops=1)
+                          Buffers: shared hit=60 read=1931
+                          ->  GroupAggregate  (cost=4535.73..4564.99 rows=187 width=134) (actual time=10.764..11.682 rows=1543.00 loops=1)
+                                Group Key: r."DocumentId", r."TipTvaId", r."PartenerId", r."Regim", r."Cota", r."Storno", r."PerioadaAn", r."PerioadaLuna"
+                                Buffers: shared hit=60 read=1931
+                                ->  Gather Merge  (cost=4535.73..4557.05 rows=187 width=82) (actual time=10.750..10.985 rows=2932.00 loops=1)
+                                      Workers Planned: 1
+                                      Workers Launched: 1
+                                      Buffers: shared hit=60 read=1931
+                                      ->  Sort  (cost=3535.72..3536.00 rows=110 width=82) (actual time=9.266..9.297 rows=1466.00 loops=2)
+                                            Sort Key: r."DocumentId", r."TipTvaId", r."PartenerId", r."Regim", r."Cota", r."Storno", r."PerioadaAn", r."PerioadaLuna"
+                                            Sort Method: quicksort  Memory: 394kB
+                                            Buffers: shared hit=60 read=1931
+                                            Worker 0:  Sort Method: quicksort  Memory: 25kB
+                                            ->  Parallel Seq Scan on "RegistruTva" r  (cost=0.00..3531.99 rows=110 width=82) (actual time=6.924..8.900 rows=1466.00 loops=2)
+                                                  Filter: (("GCRecord" = 0) AND ("Sens" = 1) AND ((("PerioadaAn" * 100) + "PerioadaLuna") >= 202506) AND ((("PerioadaAn" * 100) + "PerioadaLuna") <= 202506))
+                                                  Rows Removed by Filter: 43900
+                                                  Buffers: shared read=1931
+        ->  Index Scan using "PK_Documente" on "Documente" dd  (cost=0.42..7.97 rows=1 width=29) (actual time=0.001..0.001 rows=1.00 loops=1543)
+              Index Cond: ("ID" = a."DocumentId")
+              Filter: ("GCRecord" = 0)
+              Index Searches: 1543
+              Buffers: shared hit=6105 read=67
+  ->  Hash  (cost=8.16..8.16 rows=1 width=112) (actual time=0.167..0.167 rows=15.00 loops=1)
+        Buckets: 1024  Batches: 1  Memory Usage: 10kB
+        Buffers: shared read=2
+        ->  Index Scan using "IX_TipuriTva_Cod" on "TipuriTva" tt  (cost=0.14..8.16 rows=1 width=112) (actual time=0.156..0.159 rows=15.00 loops=1)
+              Index Searches: 1
+              Buffers: shared read=2
+Planning:
+  Buffers: shared hit=647 read=16
+Planning Time: 5.101 ms
+Execution Time: 17.466 ms

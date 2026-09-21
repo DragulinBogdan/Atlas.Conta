@@ -1,0 +1,48 @@
+psql:/tmp/09-b7-imperechere.sql:9: NOTICE:  table "ProprA" does not exist, skipping
+DROP TABLE
+SELECT 116320
+ALTER TABLE
+psql:/tmp/09-b7-imperechere.sql:13: NOTICE:  table "ProprC" does not exist, skipping
+DROP TABLE
+SELECT 99735
+ALTER TABLE
+ANALYZE
+ANALYZE
+DROP TABLE
+psql:/tmp/09-b7-imperechere.sql:21: NOTICE:  table "ConsumA" does not exist, skipping
+SELECT 68349
+ALTER TABLE
+ANALYZE
+===== B7.1 latura: cate imperecheri au partile pe laturi OPUSE =====
+ total | laturi_opuse | aceeasi_latura | stins_fara_tert 
+-------+--------------+----------------+-----------------
+ 44448 |        43237 |             32 |            1179
+
+
+===== B7.2 reprezentabilitatea, pe definitii =====
+      definitie      | total | cont_ok | fara_rupere | rupt_cont | rupt_suma 
+---------------------+-------+---------+-------------+-----------+-----------
+ A (document)        | 44448 |   43269 |       26767 |      1179 |     16502
+ B (document x cont) | 44448 |   43269 |       26767 |      1179 |     16502
+ C (lant conex)      | 44448 |   44448 |       41838 |         0 |      2610
+
+
+===== B7.3 depasirea de suma: pe tip de document (definitia A) =====
+    ClrType     | documente | depasire_totala 
+----------------+-----------+-----------------
+ FacturaIntrare |     14341 |     42422583.22
+ FacturaIesire  |      1766 |      8234784.18
+ NotaContabila  |        38 |        74864.32
+
+
+===== B7.4 acelasi, sub definitia C (lantul FCT+NIR) =====
+ lanturi_care_depasesc | depasire_totala 
+-----------------------+-----------------
+                  2533 |      9188808.46
+
+
+===== B7.5 definitia C: coincidenta cu F0 pe lanturile FCT+NIR =====
+ lanturi | c_egal_cu_f0_al_fct | c_egal_cu_f0_fct_plus_nir | lanturi_stinse |   suma_c    | suma_f0_lant | suma_f0_fct  
+---------+---------------------+---------------------------+----------------+-------------+--------------+--------------
+   17814 |                2206 |                        11 |          13732 | 43701583.53 | 184010457.43 | 100417152.95
+

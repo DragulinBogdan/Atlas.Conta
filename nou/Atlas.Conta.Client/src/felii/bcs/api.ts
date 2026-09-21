@@ -70,6 +70,7 @@ export function linieGoala(): BcsLinieWrite {
 export function spreWrite(citit: BcsRead): BcsWrite {
   return {
     Data: citit.Data,
+    DataInregistrare: citit.DataInregistrare,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
@@ -39,7 +40,7 @@ import { ETICHETA_ROL, RdcEditorLinie, rolLiniei, type EticheteCulese } from './
 // `DocumenteCuRest` (`LiniiCreanta` e al TIPULUI, nu al coloanei). Compensarea
 // unui retur cu factura originală se face prin NOTĂ CONTABILĂ (`/ntc`).
 
-const CAMPURI_ANTET: (keyof RdcWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof RdcWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function RdcDetaliu() {
@@ -205,6 +206,7 @@ export function RdcDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Retur de la client — nou' : `Retur de la client ${doc?.Numar ?? ''}`}
       sumar={(
@@ -257,6 +259,7 @@ export function RdcDetaliu() {
                   WriteDto (F19-D6). */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<RdcWrite> camp="Data" />
+              <CampData<RdcWrite> camp="DataInregistrare" />
               <LookupGrila<RdcWrite>
                 camp="PredatorId"
                 entitate="Partener"

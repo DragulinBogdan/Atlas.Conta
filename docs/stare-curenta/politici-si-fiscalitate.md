@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-13.** [Index](README.md)
+**Actualizat: 2026-09-18.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -18,7 +18,7 @@ controlate de server. Implicitul TVA al ancorei este editabil. (20, 81e)
 Politicile sunt editabile prin OData în limita permisiunilor și a gărzilor
 de domeniu. Rolul `Configurator` (seed-uit, și pe RELEASE) citește tot și
 scrie doar tipurile din `Politici.TipuriConfigurabile` — lista explicită a
-celor 17 tipuri cu proveniență, consumată și de raportul de profil și de
+celor 20 de tipuri cu proveniență, consumată și de raportul de profil și de
 gate-urile de citire; permisiunile rolului se reaplică la fiecare seed. Toate
 tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e, 81k, 84c, 84d)
 
@@ -35,9 +35,14 @@ tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e
 | Închidere TVA | Cele patru conturi sunt toate completate sau toate absente (81e) |
 | Mapare D300 | Destinații de operații; fără mapare simultană la un rând și un strămoș al său (69b, 81e) |
 | Mapare D394 | Operația și sensul trebuie să formeze o combinație permisă (71c, 81e) |
+| Politică de amortizare | Un rând per tip material de clasă de imobilizări (natura verificată la commit): contul de amortizare, cheltuiala cu amortizarea și cheltuiala la cedare; fișa fără politică blochează generarea lunară și ieșirea (87d) |
+| Regulă de deductibilitate | Categoria fiscală, felul (plafon lunar sau procent), valoarea, valabilitatea de la o dată cu temei; aplicată doar utilizării neexclusive când e marcată așa (87d) |
+| Închidere de perioadă | Un singur rând per fel de constatare; gardianul refuză al doilea înaintea indexului unic (F27-D2) |
 
 Unicitățile politicilor se aplică rândurilor active, cu tratarea explicită a
-axelor opționale. `Repartitor.Cod` nu este cheie unică globală. (81c, 81-r4)
+axelor opționale. `Repartitor.Cod` nu este cheie unică globală, deși toate
+familiile stau pe aceeași tabelă: datele importate au coduri legitim
+repetate între familii. (81c, 81-r4, F28-r2)
 
 ## Implicitele TVA
 
@@ -154,6 +159,88 @@ citite prin referințe nu constituie snapshot complet al nomenclatoarelor.
 Gruparea ține separat sensul, tipul TVA și marcajul storno. Backfill-ul
 folosește același generator ca operarea. (68)
 
+### Perioada de declarare și rectificativa
+
+Rândul fiscal poartă două coordonate de timp: `Data` este a faptului fiscal
+(data documentului, iar pe rândul invers data stornării), `PerioadaAn` și
+`PerioadaLuna` sunt perioada în care faptul se DECLARĂ. Jurnalele, decontul,
+D300, D394 și SAF-T filtrează pe perioada de declarare. (F27-D5)
+
+Regula de completare este una singură, la scrierea rândului: dacă perioada
+datei faptului este deschisă, perioada de declarare este a ei. Dacă perioada
+faptului NU este definită în bază, perioada de declarare este cea a
+înregistrării, indiferent de politică: o lună care nu există nu are reper de
+rectificativă și nu se închide niciodată, deci nu se poate declara acolo.
+Dacă este definită și închisă, decide
+politica tipului, prin câmpul `DeclarareIntarziata` de pe `PoliticaTva`:
+`PerioadaInregistrarii` sau `PerioadaFaptului`. Seed-ul privat o pune pe
+direcție: deductibilul (FCT, DEC, RLF, DVI) declară în perioada înregistrării,
+colectatul (FCL, RDC) în perioada faptului. Profilul poate alege altfel;
+motorul nu știe de ce. Profilul bugetar nu are rânduri `PoliticaTva`, deci
+câmpul este inert acolo. (F27-D5, 29, 35d)
+
+Rândul invers al unui storno se declară în perioada stornării, deschisă prin
+gardian. Perioada de declarare este snapshot pe rând, ca regimul și cota: o
+politică schimbată ulterior nu rescrie rândurile deja scrise. (JT-D5, JT-D3)
+
+Rectificativa nu este un marcaj cules, ci un derivat din două momente:
+conținutul de rectificativă al unei perioade este mulțimea rândurilor
+declarate în ea și scrise (`ScrisLa`) după `InchisaPrimaOara` a ei. O perioadă
+niciodată închisă nu are reper, deci nu are rectificativă. Redeschiderea nu
+stinge `InchisaPrimaOara`, deci reperul rămâne cel al primei declarații.
+D300 și D394 pe exact o lună calendaristică raportează `Rectificativa` și
+diferențele față de declarat, pe cheia decontului. Răspunsul spune și dacă
+perioada e DESCHISĂ acum (redeschisă după prima declarare): conținutul e deja
+calculat, dar devine rectificativă abia la re-închidere, iar ecranul o scrie
+ca atare. (F27-D5, F27-D1, review advers F27 2')
+
+La `Eroare materială` cu PARTENER schimbat, D394 rectificativ al lunii arată
+partenerul VECHI cu factura originală și cu storno-ul ei (net zero, dar două
+facturi la numărătoare, fiindcă storno-ul e factură de storno la el — §5.2) și
+partenerul NOU cu factura corectată. Consecință acceptată: declarația
+rectificativă spune adevărul despre ce s-a declarat și ce s-a corectat, nu
+rescrie istoria partenerului vechi. (review advers F27, 5)
+
+Corecția unui document operat decide efectul FISCAL prin motiv, nu contarea.
+La `Eroare materială`, rândurile inverse ale storno-ului ȘI rândurile
+documentului nou se declară în perioada în care s-au declarat rândurile
+ORIGINALULUI: diferența apare atunci ca rectificativă pe acea lună, cu exact
+cele două seturi de rânduri. La `Fapt nou` nimic nu se mută — rândul invers
+cade în perioada stornării (JT-D5) și documentul nou pe regula normală a
+politicii, pe direcție. Un original fără rânduri fiscale nu are ce moșteni,
+deci corecția lui cade tot pe regula normală. Contarea documentului nou este
+cea normală, din politică; reclasificarea pe 1174 a erorilor semnificative din
+exerciții anterioare rămâne notă contabilă manuală (F27-r1) — motorul nu
+judecă semnificația. (F27-D6, F27-D5)
+
+## Închiderea de perioadă
+
+Severitatea constatărilor de CONȚINUT ale închiderii de perioadă este dată, nu
+cod: un rând per fel în politica de închidere de perioadă, cu trei valori.
+`Blocant` refuză închiderea și nu se poate accepta; `Avertisment` o lasă să
+treacă numai cu acceptare explicită pe constatarea concretă, scrisă în
+istoricul lunii; `Ignorat` nu emite constatarea deloc. Un fel fără rând se
+comportă ca avertisment și o SPUNE în textul constatării, ca o configurație pe
+jumătate să nu treacă tăcut. (F27-D2)
+
+Cele patru feluri și seed-ul lor:
+
+| Fel | Privat | Bugetar |
+|---|---|---|
+| Închiderea de TVA lipsește sau nu e operată | Blocant | Ignorat |
+| Amortizarea lunară lipsește sau nu e operată | Avertisment | Avertisment |
+| Document în lucru cu data înregistrării în perioadă | Avertisment | Avertisment |
+| Document operat cu rest scadent în perioadă | Ignorat | Ignorat |
+
+Diferența dintre profiluri este de CONȚINUT, nu de mecanism: bugetarul nu e
+plătitor de TVA, deci închiderea de TVA îi este tip inert, iar un blocant pe ea
+n-ar fi avut niciodată cum să se stingă. Constatarea de închidere de TVA nu se
+emite deloc când profilul n-are politica de conturi completă sau când luna nu
+are sold pe cele două conturi de TVA. (F27-D2)
+
+Blocantele STRUCTURALE ale lanțului nu sunt în această politică și nu se
+configurează: ele sunt regula lanțului. (F27-D2)
+
 ## Închiderea lunară TVA
 
 ITV este document specializat generat de serviciul lunar. Politica are patru
@@ -170,6 +257,40 @@ Previzualizarea este fără scrieri și explică refuzul prin motive precum
 sau `PerioadaInchisa`. Generarea poate răspunde cu succes fără document,
 însoțită de motiv. Regenerarea verifică toate condițiile și drepturile,
 inclusiv dreptul de creare, înainte să înlocuiască draftul într-o tranzacție. (79a, 79d)
+
+## Amortizarea imobilizărilor
+
+AMO este documentul generat lunar pe unitate internă, pe tiparul ITV;
+mecanica generării, eligibilitatea fișelor, formula și gardienii sunt
+descrise în [domeniu și operare](domeniu-si-operare.md#imobilizări). Aici
+stau datele care o parametrizează. (87d, 87g)
+
+`PoliticaAmortizare` dă, per tip material de clasă F, contul de amortizare,
+contul cheltuielii cu amortizarea și contul cheltuielii la cedare. Seed-ul
+privat acoperă tipurile 205, 208, 212, 2131–2133 și 214 cu perechile lor
+28x și 6811/6583; terenurile nu au rând. Seed-ul bugetar folosește frunzele
+280.08.01, 280.08.09, 281.03.01, 281.03.03 cu 681.01.00 și 691.00.00.
+Niciun simbol de cont nu stă în cod. (87d)
+
+`RegulaDeductibilitate` exprimă legea ca date cu valabilitate: categorie
+fiscală, marcaj „doar neexclusiv", fel (plafon lunar sau procent), valoare,
+`DeLa`/`PanaLa`, temei. La fiecare rând lunar, din regulile valabile la data
+lui, câștigă per categorie și fel rândul cu `DeLa` maxim; plafonul se aplică
+înaintea procentului; fără regulă, deductibilul este egal cu fiscalul.
+Seed-ul privat: plafon 1 500 lei/lună pe vehiculele de persoane cu cel mult
+9 locuri neexclusive (din 2012-02-01), sediul social în locuință 0 % din
+2024-01-01 și 50 % din 2026-01-01. Bugetarul nu are rânduri. O regulă nouă
+sau modificată nu rescrie lunile deja postate. (87d)
+
+O cerință fiscală nouă care încape într-un rând nou cu `DeLa` este seed; un
+fel nou de regulă este mecanism nou în cod, mic și numit. (87d)
+
+`ClasificareImobilizari` este catalogul HG 2139/2004, seed-uit din CSV
+(590 de poziții cu cod; sub-variantele fără cod sunt sărite). Banda de ani a
+poziției dă intervalul duratei fiscale: la punere în funcțiune și la
+revizuire, o durată fiscală în afara benzii se refuză când fișa are
+clasificare; fără clasificare nu se verifică. Perechea de conturi nu este în
+catalog: tipul material îl alege utilizatorul. (87d)
 
 ## Proiecțiile contabile
 

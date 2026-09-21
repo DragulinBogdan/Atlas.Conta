@@ -1,0 +1,20 @@
+                                                                                                                                                                                                                                                                                                                                                      QUERY PLAN                                                                                                                                                                                                                                                                                                                                                      
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ HashAggregate  (cost=610557.94..672568.06 rows=694429 width=98) (actual time=840.984..938.969 rows=39056.00 loops=1)
+   Group Key: p."Partener", p."Cont", p."Latura"
+   Planned Partitions: 64  Batches: 65  Memory Usage: 8209kB  Disk Usage: 90144kB
+   Buffers: shared hit=11405 read=143234, temp read=7787 written=18850
+   ->  Seq Scan on "Postare_Contabil" p  (cost=0.04..294116.72 rows=2935107 width=44) (actual time=76.614..442.009 rows=2827714.00 loops=1)
+         Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+         Rows Removed by Filter: 4147734
+         Buffers: shared hit=11405 read=143234
+ Planning:
+   Buffers: shared hit=398
+ Planning Time: 0.592 ms
+ JIT:
+   Functions: 14
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 1.123 ms (Deform 0.568 ms), Inlining 36.827 ms, Optimization 35.125 ms, Emission 27.423 ms, Total 100.498 ms
+ Execution Time: 958.527 ms
+(16 rows)
+

@@ -31,6 +31,8 @@ internal static class ProfilBugetar {
         SeedPoliticiDecont(os);
         SeedPoliticiNotaContabila(os);
         SeedPoliticiValidare(os);
+        SeedPoliticiInchiderePerioada(os);
+        SeedPoliticiImobilizari(os);
         SeedTipTvaImplicit(os);
         // Implicitele de POLITICĂ (felia 23, F23-D2): bugetarul nu primește
         // NICIUN rând, și asta e o afirmație, nu o omisiune — totul e
@@ -97,6 +99,30 @@ internal static class ProfilBugetar {
         Politica("FCL", p => p.NaturaInterzisa = NaturaClasa.Stoc);
     }
 
+    // Severitatea constatărilor de închidere de perioadă (F27-D2). Bugetarul nu
+    // e plătitor de TVA — ITV e tip inert, deci `ItvLipsa` e `Ignorat`, nu un
+    // blocant care n-ar avea niciodată cum să se stingă.
+    static void SeedPoliticiInchiderePerioada(IObjectSpace os) =>
+        ContaSeeder.SeedPoliticiInchidere(os, new() {
+            [FelConstatareInchidere.ItvLipsa] = SeveritateConstatare.Ignorat,
+            [FelConstatareInchidere.AmoLipsa] = SeveritateConstatare.Avertisment,
+            [FelConstatareInchidere.DraftInPerioada] = SeveritateConstatare.Avertisment,
+            [FelConstatareInchidere.RestScadent] = SeveritateConstatare.Ignorat,
+        });
+
+    // Planul CPLAN e pe trei niveluri: perechea de amortizare e FRUNZA categoriei (F26-D4).
+    static void SeedPoliticiImobilizari(IObjectSpace os) {
+        foreach (var cod in new[] { "PIF", "CAS", "AMO" })
+            ContaSeeder.SeedNumerotare(os, cod, cod + "-");
+
+        (string Tip, string Amortizare)[] perechi = [
+            ("205.00.00", "280.05.00"), ("208.01.00", "280.08.01"), ("208.02.00", "280.08.09"),
+            ("213.01.00", "281.03.01"), ("213.03.00", "281.03.03"), ("214.00.00", "281.04.00"),
+        ];
+        foreach (var (tip, amortizare) in perechi)
+            ContaSeeder.SeedPoliticaAmortizare(os, tip, amortizare, "681.01.00", "691.00.00");
+    }
+
     // Inventar 10 §2, curățat: clasele tehnice (TVA/Diferențe) separate de stoc
     // prin Natura; Tipul poartă simbolul de cont ca și cod (nivelul de contare).
     static void SeedClasaTip(IObjectSpace os) {
@@ -157,6 +183,9 @@ internal static class ProfilBugetar {
             ("F", "205.00.00", "Concesiuni, brevete, licențe, mărci — amortizabile"),
             ("F", "208.01.00", "Programe informatice — amortizabile"),
             ("F", "208.02.00", "Alte active fixe necorporale"),
+            // Clasa F: categoriile cu pereche de amortizare în planul bugetar (F26-D4).
+            ("F", "213.01.00", "Echipamente tehnologice (mașini, utilaje, instalații de lucru)"),
+            ("F", "213.03.00", "Mijloace de transport"),
             ("F", "214.00.00", "Mobilier, aparatură birotică, alte active fixe corporale"),
             ("F", "231.00.00", "Active fixe în curs de execuție"),
             ("F", "682.01.09", "Cheltuieli cu activele fixe corporale neamortizabile"),
@@ -180,6 +209,8 @@ internal static class ProfilBugetar {
             ("VEN", "751.01.00", "Venituri din prestări de servicii și alte activități"),
             ("VEN", "750.02.00", "Alte venituri din proprietate (chirii)"),
             ("VEN", "751.04.00", "Diverse venituri"),
+            // Linia de FCL a vânzării unei imobilizări (F26-D6).
+            ("VEN", "791.00.00", "Venituri din valorificarea unor bunuri ale statului"),
             // Tipul convențional al liniilor de plată/încasare culese manual
             // (decizia 31c): linia e defalcarea sumei, nu un material — conturile
             // vin din laturile documentului, nu din Tip (regula PLT/INC e

@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-09-13.** [Index](README.md)
+**Actualizat: 2026-09-18.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -30,6 +30,87 @@ Operarea, anularea și stornarea sunt comenzi, nu modificări directe ale
 stării prin DTO. Regulile și tranzacția lor sunt descrise în
 [domeniu și operare](domeniu-si-operare.md). (42b)
 
+Fiecare DTO de scriere al unui document poartă `DataInregistrare` ca dată
+opțională: absentă înseamnă „data documentului”, nu „gol”. Adaptorul comun
+(`Api/DocumentApply.AplicaDate`) aplică implicitul și refuză, de domeniu, o
+dată a înregistrării anterioară datei documentului — pe toate cele
+cincisprezece uși de scriere. DTO-urile de citire ale documentelor o expun
+alături de `Data`. (F27-D4)
+
+Închiderea și redeschiderea perioadei sunt tot comenzi, pe `api/perioade`:
+`GET api/perioade` întoarce lanțul și cere dreptul de citire pe tipul
+perioadei; `GET api/perioade/{an}/{luna}/verificare` întoarce constatările
+complete — cheie, fel, severitate, text, identificatorul și eticheta obiectului
+— și, fiindcă verdictul ÎNSUMEAZĂ pe ușa nesecurizată documente, închideri de
+TVA, amortizări, împerecheri și politica severităților, cere dreptul de citire
+pe toate acestea: un raport filtrat n-ar ieși gol, ar ieși FALS;
+`GET api/perioade/{an}/{luna}/istoric` întoarce rândurile de istoric ale lunii
+cu felul, momentul, utilizatorul, motivul și cheile acceptate;
+`POST api/perioade/{an}/{luna}/inchide` primește cheile acceptate în corp
+— corpul e opțional, fiindcă a închide fără constatări e cazul normal — și
+răspunde cu acceptările scrise, iar un avertisment neacceptat sau orice blocantă
+iese 422 cu lista întreagă, un rând pe linie;
+`POST api/perioade/{an}/{luna}/redeschide` primește motivul. Subiectul acestor rute
+este luna, nu un identificator: ea se rezolvă pe calea securizată, deci
+ordinea refuzurilor rămâne 400 pentru an sau lună în afara marginilor, 404
+pentru lună nedefinită sau invizibilă, 403 pentru lipsa dreptului cerut și
+422 pentru refuzul lanțului. Motivul absent la redeschidere este refuz de
+domeniu, nu de cerere. (F27-D1, F27-D2, 80a)
+
+`POST api/documente/{id}/corecteaza` corectează un document operat, pe orice
+tip: ruta e a BAZEI, iar documentul se rezolvă polimorf. Corpul poartă `Data`
+(a corecției) și `Motiv` — numele membrului de enum, ca string pe sârmă.
+Răspunsul dă originalul, documentul nou, starea originalului și `TipCod`,
+codul tipului cu care clientul știe pe ce ecran să navigheze. Ordinea
+refuzurilor este 400 pentru motiv necunoscut sau absent, cu valorile acceptate
+enumerate, 404 pentru document inexistent sau invizibil, 403 pentru lipsa
+dreptului de scriere pe instanță sau a dreptului de creare pe tipul concret —
+comanda produce un document nou — și 422 pentru refuzurile domeniului.
+DTO-urile de citire ale documentelor poartă `Corectie` (originalul, eticheta
+lui și motivul) sau `null`. În client, comanda și banda „Corectează pe …" sunt
+o singură componentă a nucleului, montată de shell pe toate ecranele de
+document. (F27-D6, 80a)
+
+`POST api/perioade/reconstruieste` recalculează integral soldurile
+perioadelor de referință și întoarce, per referință, câte rânduri existau,
+câte au ieșit din recalcul, câte diferă și suma absolută a diferențelor pe
+debit, credit, cantitate și valoare. Comanda nu are subiect, deci gate-ul ei
+este pe tip: dreptul de scriere pe perioada fiscală, același drept ca
+închiderea. Ordinea refuzurilor este 401, apoi 403, apoi 422. (F27-D3)
+
+`GET api/proiectii/sold-stoc` primește opțional `laData`: fără el întoarce
+soldul de azi, cu el soldul la sfârșitul zilei cerute. Parametrul este al
+proiecției, ca perioada balanței, nu filtru de grilă; o valoare imposibilă
+cade pe 400-ul unic al tierului. Schimbare de comportament: un lot consumat
+integral, cu cantitate ȘI valoare zero, nu mai apare în listă; unul cu
+cantitatea zero și valoare nenulă rămâne, ca reziduul valoric să se vadă.
+(F27-D3)
+
+`POST api/imperecheri` primește opțional `Data` (ziua faptului de stingere;
+absent = azi). `POST api/imperecheri/{id}/desfa` cu `{ Data }` scrie rândul
+invers al unei împerecheri dintr-o perioadă închisă: 400 pe corp malformat,
+404 pe inexistentă sau invizibilă, 403 fără drept de **scriere** pe instanță
+(desfacerea scrie un rând, nu șterge), 422 pe domeniu (deja desfăcută, rând
+invers, dată sub cea a împerecherii, perioadă închisă a rândului nou).
+`DELETE api/imperecheri/{id}` rămâne calea din fereastra deschisă; pe o
+împerechere dintr-o perioadă închisă dă 422, cu trimitere la desfacere.
+Panoul de stingeri poartă pe fiecare rând `Data`, `InverseazaId`, `Desfacuta`
+și `PerioadaDeschisa` — verdictul „ce buton are dreptul să apară" e
+server-computed, nu dedus în client. (F27-D8, 80a)
+
+`GET api/proiectii/documente-cu-rest` primește opțional `laData`: restul se
+citește la ziua cerută, pornind de la partidele deschise ale ultimei perioade
+de referință. Absent = la zi. Proiecția include acum și `ReturClient`.
+(F27-D7)
+
+`GET api/proiectii/sold-parteneri?laData=&contId=&repartitorId=` întoarce
+soldurile pe (cont × repartitor) la o dată, cu aceleași filtre de dimensiune
+ca balanța și cu rândurile de sold net zero omise. `laData` absent = azi; o
+dată nevalidă cade pe 400. Citirea cere dreptul pe registrul contabil, ca
+balanța. Ecranul `/sold-parteneri` din client ține data în URL și duce prin
+dublu-click în fișa contului. Repartitorul e dimensiunea laturii, nu partenerul
+contului de terț — ecranul o spune explicit. (F27-D7)
+
 ## Securitate și răspunsuri
 
 Ordinea gărzilor este autentificare, forma cererii, vizibilitatea obiectului,
@@ -53,6 +134,14 @@ Crearea cere drepturile de creare și scriere; modificarea cere scriere, iar
 regulilor de domeniu. Un context nesecurizat nu are strategie de securitate
 implicită: drepturile se verifică pe calea securizată care îl precedă. (80b, 80c)
 
+O referință din corpul cererii (un FK cules) se rezolvă pe rădăcina
+ierarhiei tipului cerut, iar tipul se verifică după. O referință spre un rând
+de alt tip al aceleiași ierarhii (de exemplu, un partener ales ca gestiune de
+descărcare) e refuzată cu 422 și o frază unică: „rândul ales (id) e X, nu Y”.
+O referință inexistentă sau invizibilă e refuzată tot cu 422 („nu există sau
+nu e vizibil(ă)”). Răspunsul e determinist: nu depinde de ce a încărcat deja
+cererea. Același refuz îl dă gardianul de commit pe OData și în XAF. (89e, 89i)
+
 Erorile de aplicație REST/OData au forma `{"Erori":[...]}`. Erorile de
 model binding rămân erori de cerere. Constrângerile cunoscute sunt traduse
 în mesaje de domeniu, fără detalii interne ale bazei de date. (39a, 60a, 80d)
@@ -68,9 +157,9 @@ fiecărei entități. (42f, 56)
 
 | Grup | Entități |
 |---|---|
-| Nomenclatoare cu scriere | Gestiune, TipMaterial, Partener, Produs, Angajat, TipTva, Societate (56, 77h, 81e) |
-| Politici cu scriere controlată | MapareD300, MapareD394, PoliticaMiscareSaft, TipDocument, RegulaStoc, RegulaContare, PoliticaConex, PoliticaScadenta, PoliticaValidare, PoliticaTva, PoliticaInchidereTva, PoliticaNumerotare, PoliticaTvaImplicit (81e) |
-| Nomenclatoare pentru citire | Judet, UnitateMasura, CodEconomic, SursaFinantare, CodFunctional, Proiect, ContPropriu, UnitateInterna, Lot, Cont, Angajament, Repartitor, RandD300, ClasaProdus (56, 81e) |
+| Nomenclatoare cu scriere | Gestiune, TipMaterial, Partener, Produs, Angajat, TipTva, Societate, Imobilizare (regulile fișei la gardianul de commit; starea și datele le scrie doar motorul) (56, 77h, 81e, 87i) |
+| Politici cu scriere controlată | MapareD300, MapareD394, PoliticaMiscareSaft, TipDocument, RegulaStoc, RegulaContare, PoliticaConex, PoliticaScadenta, PoliticaValidare, PoliticaTva, PoliticaInchidereTva, PoliticaNumerotare, PoliticaTvaImplicit, PoliticaAmortizare, RegulaDeductibilitate (81e, 87i) |
+| Nomenclatoare pentru citire | Judet, UnitateMasura, CodEconomic, SursaFinantare, CodFunctional, Proiect, ContPropriu, UnitateInterna, Lot, Cont, Angajament, Repartitor, RandD300, ClasaProdus, ClasificareImobilizari (56, 81e, 87i) |
 | Audit pentru citire | AuditDataItemPersistent, AuditEFCoreWeakReference (81e, 81h) |
 
 `TipDocument` permite modificarea implicitului expus; nu permite crearea,
@@ -93,9 +182,43 @@ Ecranele sunt compuse în JSX cu controale concrete. Metadata furnizează
 denumiri, tipuri și constrângeri comune; nu este un descriptor executabil de
 formular. Coloanele specifice aparțin paginii respective. (8, 42e, 43a)
 
+Listele de documente sunt compuse din `ListaDocumente` și `GrilaDocumente`
+(`nucleu/`): grilă remote cu filtre, sortare și paginare pe server; click-ul
+selectează rândul, dublu-click-ul deschide documentul. Pagina dă titlul,
+crearea (lipsește la DSC), perioada opțională din URL și coloanele. Consolele
+ITV și AMO folosesc aceeași grilă sub previzualizare. (43a, 43c)
+
+Proiecțiile fiscale filtrează pe perioada de DECLARARE, nu pe data faptului:
+`jurnal-tva`, `decont-tva`, `d300`, `d394` și SAF-T. Perioada de declarare
+are granularitate de LUNĂ: `dataStart`/`dataEnd` se citesc ca luni, deci o
+fereastră sub-lunară întoarce luna întreagă. Rândul de jurnal poartă ambele
+coordonate — data faptului și perioada de declarare. (F27-D5)
+`GET api/proiectii/rectificativa-tva?an=&luna=` întoarce conținutul de
+rectificativă al unei perioade: rândurile declarate în ea și scrise după prima
+ei închidere, plus agregatul lor pe cheia decontului. Gate-ul este dublu:
+existența perioadei se rezolvă pe ușa securizată (404 pentru lună nedefinită
+sau invizibilă), iar cifrele cer dreptul de citire pe registrul fiscal (403);
+marginile lipsă sau în afara intervalului sunt 400. D300 și D394 poartă
+`Rectificativa` și `DiferenteDeclarat`, completate doar când perioada cerută
+acoperă exact o lună calendaristică. Toate trei poartă și `PerioadaDeschisa`:
+pe o lună redeschisă după prima declarare, conținutul e deja calculat, dar
+devine rectificativă abia la re-închidere, iar banda din client o spune.
+(F27-D5, 80a, review advers F27, 2')
+
 Formularul deține local întregul DTO de scriere. TanStack Query gestionează
 starea citită de pe server, iar URL-ul starea navigabilă. Nu se menține un
 al doilea magazin global care copiază aceleași documente. (43c)
+
+Jurnalele de TVA au coloana „Perioada” lângă „Data”, iar textul explicativ
+spune că însumarea e pe perioada de declarare. D300 și D394 arată banda
+„RECTIFICATIVĂ — diferențe față de declarat” cu agregatul, doar când serverul
+o raportează. (F27-D5)
+
+Formularele de culegere au „Data înregistrării” lângă „Dată”. Câmpul gol nu
+se trimite, deci serverul aplică implicitul; ecranele documentelor generate o
+arată doar. Conversia citire → scriere a fiecărei felii o poartă explicit: un
+câmp lipsă de acolo s-ar fi rescris tăcut la fiecare re-salvare. Coloana din
+listele de documente rămâne de adăugat. (F27-D4)
 
 Liniile se editează într-un editor separat, apoi se afișează în grilă.
 Totalurile, resturile și disponibilitatea comenzilor sunt calculate de
@@ -119,8 +242,9 @@ Căutarea uzuală folosește o coloană calculată și stocată în PostgreSQL,
 formată din cod/simbol și denumire normalizate la litere mici, fără
 diacriticele acoperite de maparea comună C#/SQL/metadata. Coloana și
 regulile „ne-gol" stau în tabelul entității EF care declară proprietatea:
-o dată pe rădăcina TPT, pe fiecare derivată a unei baze CLR nemapate.
-(77a, 77-r2, 2026-09-13)
+o dată pe tabela rădăcinii unei ierarhii TPH (`Repartitori`: `Cautare`,
+`CK_Repartitori_Cod_negol`), pe fiecare derivată a unei baze CLR nemapate.
+(77a, 77-r2, 89d)
 
 Filtrele text `contains`, `notcontains`, `startswith` și `endswith` sunt
 normalizate pe calea DataSourceLoader. Egalitatea și inegalitatea rămân
@@ -173,25 +297,45 @@ proiectabilă, sortabilă și căutabilă în lookup-ul de lot; eticheta afișat
 de clientul React pe OData este o compunere separată, cu aceeași semantică.
 (85f, 85g)
 
+Tipul concret al unui document, al unei linii sau al unui repartitor este
+membrul mapat `ClrType` („Tip”), read-only. Ca orice coloană mapată, se
+poate afișa, sorta și filtra pe `Server` și `ServerView`, fără join de
+moștenire. În XAF Blazor „Tip” apare doar pe listele care amestecă tipuri:
+`Document_ListView`, `DocumentTrezorerie_ListView` (plăți și încasări) și
+`Repartitor_ListView` (a doua coloană), lookup-ul
+`Repartitor_LookupListView` (Predator/Primitor, repartitorii postării
+explicite: coloanele Denumire și Tip) și `DocumentDetaliu_LookupListView`
+(liniile-sursă, generat de XAF). Lipsește din listele și lookup-urile
+frunzelor, unde e constant, din grilele de linii și din orice DetailView.
+Mecanismul: `[VisibleInListView(false), VisibleInDetailView(false)]` pe
+proprietate (acoperă toate derivatele, inclusiv grupul-mătură al
+layout-ului autoritar), iar coloanele de pe cele trei liste ale bazelor se
+declară în `ContaUiBaseline.ColoanaTip`. (89a)
+
 ## Ecranele disponibile
 
 | Arie | Conținut |
 |---|---|
-| Documente | Liste și detalii pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC și DVI |
+| Documente | Liste și detalii pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC, DVI, PIF, CAS și AMO |
+| Imobilizări | Fișa ca ecran de nomenclator pe OData, cu panoul „Fișa" (situația la data din URL, parametrii curenți, rândurile registrului) din `GET api/imobilizari/{id}/fisa?laData=`; registrul imobilizărilor la `/imobilizari/registru` din `GET api/imobilizari/registru?laData=`, totaluri de pe server; ambele cer și citirea pe `RegistruImobilizari`. `api/pif`: agregat cules cu lookup de fișă filtrat pe locul primitorului și pe stare, dialogul liniilor de factură de clasă F din `linii-sursa` (plic `{ Candidati, MaiSunt }`, plafon 500, prefill cu restul), parametrii pre-completați pe revizuire din fișă. `api/cas`: antet plus fișele de pe locul predatorului; liniile produse de server. `api/amo`: previzualizare pe an, lună și unitate cu motiv, blocant și cele trei cifre, generare, regenerare cu confirmare, storno (87i, 87j) |
 | Declarații vamale | `api/dvi`: agregat cules (antet, linii, `FacturiIds` ca agregat întreg), `facturi-candidate` cu perioadă obligatorie, filtru implicit pe clasa fiscală extra-UE, plicul `{ Candidati, MaiSunt }` cu plafon 500 decis pe interogare și `TipMaterialSugeratId`; cere și citirea pe FCT. Ecranul: lookup TVA filtrat pe `DeImport`, popup de candidați pe luna declarației, totaluri de pe server (86h, 86i) |
 | Trezorerie și relații | Stingere manuală în limitele contractelor, vizualizarea relațiilor și comenzile documentului (57d, 76g) |
 | TVA lunar | Previzualizare și generare ITV, detaliu și comenzile rezultatului (79e) |
 | Contabilitate | Stoc, balanță, balanță pe plan, fișă de cont, registru-jurnal (66, 67) |
+| Perioade fiscale | `/perioade`: consolă, nu listă — luna în URL, verificarea cu constatările grupate pe severitate și bifă pe fiecare avertisment, închiderea care trimite cheile bifate, redeschiderea cu motiv, istoricul cu acceptările și lanțul întreg (F27-D2) |
 | Fiscalitate | Jurnale de cumpărări/vânzări, decont TVA, D300, D394, SAF-T L/S (68, 69g, 71g) |
 | Nomenclatoare | Parteneri, produse, societate; sincronizare individuală ANAF (77h) |
-| Politici | Implicite TVA, tipuri TVA, implicitele tipurilor de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, reguli de stoc, reguli de contare (formular popup cu grupuri), politici TVA, conex, validare, mapări D300/D394; „Explică pe acest tip" din fiecare grilă cu tip de document (81i, 84d) |
+| Politici | Implicite TVA, tipuri TVA, implicitele tipurilor de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, reguli de stoc, reguli de contare (formular popup cu grupuri), politici TVA, conex, validare, mapări D300/D394, politici de amortizare, reguli de deductibilitate, închidere de perioadă; „Explică pe acest tip" din fiecare grilă cu tip de document (81i, 84d, 87j) |
 | Explicarea configurației | `/politici/explica`: starea în URL, un card per mecanism cu câștigătorul, candidații eliminați, proveniența și concluzia serverului (84h) |
 | Controlul configurației | Verificarea profilului, proveniență și istoric de audit (81g, 81h, 81i) |
 
-DSC și ITV nu au flux generic de creare prin `/nou`; provin din comenzile
-specifice. Grilele de politici pot deschide un formular popup cu grupuri
-definite de ecran; rândul nou primește propuneri vizibile pentru câmpurile al
-căror gol ar fi refuzat de gardian. (58, 79a, 84d)
+DSC, ITV și AMO nu au flux generic de creare prin `/nou`; provin din
+comenzile specifice. Rutele `/nou` ale întregului client poartă o cheie de
+montare proprie: la tranziția directă de la un detaliu la `/nou`, formularul
+se remontează și nu păstrează starea documentului anterior. Grilele de
+politici pot deschide un formular popup cu grupuri definite de ecran; rândul
+nou primește propuneri vizibile pentru câmpurile al căror gol ar fi refuzat
+de gardian. (58, 79a, 84d, 87g, 87j)
 
 ## Contracte generate
 

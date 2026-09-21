@@ -59,6 +59,37 @@ public sealed class DocumentCopilDto {
     public bool Autogenerat { get; set; }
 }
 
+// Corpul comenzii de CORECȚIE (F27-D6): data la care se scriu storno-ul și
+// intrarea în evidență a documentului nou, plus motivul. `Motiv` e STRING pe
+// sârmă (convenția enum-urilor, 57a) — valoarea necunoscută e 400, nu o
+// conversie tăcută la 0.
+public sealed class CorecteazaRequestDto {
+    public DateOnly Data { get; set; }
+    public string Motiv { get; set; }
+}
+
+// Rezultatul comenzii: originalul (acum stornat) și draftul nou. `TipCod` e
+// codul ancorei `TipDocument` (FCT, NIR…) — vocabularul de rutare al clientului,
+// nu numele clasei CLR.
+public sealed record CorectieRezultatDto(
+    Guid OriginalId,
+    Guid CorectieId,
+    string StareOriginal,
+    string TipCod) {
+    public static CorectieRezultatDto Din(CorectieRezultat r) =>
+        new(r.OriginalId, r.CorectieId, r.StareOriginal.ToString(), r.TipCod);
+}
+
+// Legătura de corecție, pe ReadDto-ul oricărui tip de document (F27-D6). `null`
+// = documentul nu corectează nimic. PARTAJATĂ, ca `DocumentCopilDto`: legătura e
+// mecanism de BAZĂ, iar un al doilea exemplar per felie ar diverge tăcut.
+public sealed class CorectieDto {
+    public Guid OriginalId { get; set; }
+    // `Numar` + `Data` ale originalului, compuse pentru banda din ecran.
+    public string Eticheta { get; set; }
+    public string Motiv { get; set; }
+}
+
 // Traducerea enum ↔ sârmă, în ADAPTOR, o dată (nota de la începutul fișierului):
 // pe sârmă valorile de enum sunt STRING-uri, iar intrarea vine de la un client
 // care poate greși. Refuzul e de DOMENIU, cu valorile valide enumerate — nu o
@@ -123,5 +154,23 @@ internal static class ApiEnum {
         throw new OperareException(
             $"Rolul liniei de asamblare „{valoare}” nu există — valorile acceptate: "
             + string.Join(", ", Enum.GetNames<DirectieAsamblare>()) + ".");
+    }
+
+    // Aceeași regulă (parse pe NUME, la graniță), cu rolul ca PARAMETRU.
+    public static T Membru<T>(string valoare, string rol) where T : struct, Enum =>
+        MembruOptional<T>(valoare, rol)
+            ?? throw new OperareException($"{rol} nu e cules — valorile acceptate: "
+                + string.Join(", ", Enum.GetNames<T>()) + ".");
+
+    // Absența e o valoare cu înțeles propriu: parametru neschimbat, filtru lipsă.
+    public static T? MembruOptional<T>(string valoare, string rol) where T : struct, Enum {
+        if (string.IsNullOrWhiteSpace(valoare))
+            return null;
+        var cerut = valoare.Trim();
+        foreach (var nume in Enum.GetNames<T>())
+            if (string.Equals(nume, cerut, StringComparison.OrdinalIgnoreCase))
+                return Enum.Parse<T>(nume);
+        throw new OperareException($"{rol} „{valoare}” nu există — valorile acceptate: "
+            + string.Join(", ", Enum.GetNames<T>()) + ".");
     }
 }

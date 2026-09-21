@@ -1,0 +1,72 @@
+                                                                                         QUERY PLAN                                                                                         
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Left Join  (cost=50355.36..83048.83 rows=189 width=358) (actual time=85.226..152.151 rows=20190.00 loops=1)
+   Buffers: shared hit=61736 read=12601, temp read=2528 written=3788
+   ->  Merge Join  (cost=50355.07..82972.80 rows=189 width=211) (actual time=85.163..131.577 rows=20190.00 loops=1)
+         Merge Cond: (p_1."Cont" = c."ID")
+         Buffers: shared hit=1772 read=12001, temp read=2528 written=3788
+         ->  Finalize GroupAggregate  (cost=50340.59..82804.23 rows=60876 width=160) (actual time=73.545..129.959 rows=21911.00 loops=1)
+               Group Key: p_1."Cont", p_1."Partener"
+               Buffers: shared hit=1770 read=11999, temp read=2528 written=3788
+               ->  Gather Merge  (cost=50340.59..77934.16 rows=146102 width=160) (actual time=73.535..110.567 rows=36860.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=1770 read=11999, temp read=2528 written=3788
+                     ->  Partial GroupAggregate  (cost=49340.57..60070.34 rows=60876 width=160) (actual time=70.563..93.449 rows=12418.33 loops=3)
+                           Group Key: p_1."Cont", p_1."Partener"
+                           Buffers: shared hit=1770 read=11999, temp read=2528 written=3788
+                           ->  Sort  (cost=49340.57..49974.72 rows=253660 width=44) (actual time=70.546..76.445 rows=108112.67 loops=3)
+                                 Sort Key: p_1."Cont", p_1."Partener"
+                                 Sort Method: external merge  Disk: 10520kB
+                                 Buffers: shared hit=1770 read=11999, temp read=2528 written=3788
+                                 Worker 0:  Sort Method: external merge  Disk: 9648kB
+                                 Worker 1:  Sort Method: external merge  Disk: 10040kB
+                                 ->  Parallel Append  (cost=0.00..18766.36 rows=253660 width=44) (actual time=0.057..25.913 rows=202921.33 loops=3)
+                                       Buffers: shared hit=1694 read=11999
+                                       ->  Seq Scan on "Postare_Contabil_2016" p_1  (cost=0.00..0.00 rows=1 width=58) (actual time=0.005..0.005 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2017" p_2  (cost=0.00..0.00 rows=1 width=58) (actual time=0.004..0.004 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2018" p_3  (cost=0.00..0.00 rows=1 width=58) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2019" p_4  (cost=0.00..0.00 rows=1 width=58) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2020" p_5  (cost=0.00..0.00 rows=1 width=58) (actual time=0.002..0.002 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2021" p_6  (cost=0.00..0.00 rows=1 width=58) (actual time=0.004..0.004 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2022" p_7  (cost=0.00..0.00 rows=1 width=58) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_2023" p_8  (cost=0.00..0.00 rows=1 width=58) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Seq Scan on "Postare_Contabil_rest" p_11  (cost=0.00..0.00 rows=1 width=58) (actual time=0.004..0.005 rows=0.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       ->  Parallel Seq Scan on "Postare_Contabil_2025" p_10  (cost=0.00..17494.97 rows=253598 width=44) (actual time=0.077..18.605 rows=202878.67 loops=3)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                             Buffers: shared hit=1692 read=11999
+                                       ->  Parallel Seq Scan on "Postare_Contabil_2024" p_9  (cost=0.00..3.13 rows=75 width=45) (actual time=0.004..0.014 rows=128.00 loops=1)
+                                             Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                             Buffers: shared hit=2
+         ->  Sort  (cost=14.48..14.49 rows=2 width=67) (actual time=0.064..0.066 rows=2.00 loops=1)
+               Sort Key: c."ID"
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=2 read=2
+               ->  Bitmap Heap Scan on "Conturi" c  (cost=8.57..14.47 rows=2 width=67) (actual time=0.056..0.057 rows=2.00 loops=1)
+                     Recheck Cond: (("Simbol" = ANY ('{4111,401}'::text[])) AND ("GCRecord" = 0))
+                     Heap Blocks: exact=2
+                     Buffers: shared hit=2 read=2
+                     ->  Bitmap Index Scan on "IX_Conturi_Simbol"  (cost=0.00..8.57 rows=2 width=0) (actual time=0.042..0.043 rows=2.00 loops=1)
+                           Index Cond: ("Simbol" = ANY ('{4111,401}'::text[]))
+                           Index Searches: 1
+                           Buffers: shared read=2
+   ->  Index Scan using "PK_Repartitori" on "Repartitori" rp  (cost=0.29..0.35 rows=1 width=35) (actual time=0.001..0.001 rows=1.00 loops=20190)
+         Index Cond: ("ID" = p_1."Partener")
+         Filter: ("GCRecord" = 0)
+         Index Searches: 20188
+         Buffers: shared hit=59964 read=600
+ Planning:
+   Buffers: shared hit=2497 read=17
+ Planning Time: 2.740 ms
+ Execution Time: 153.502 ms
+(68 rows)
+

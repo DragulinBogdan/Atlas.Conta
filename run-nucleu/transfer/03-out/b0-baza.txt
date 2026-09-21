@@ -1,0 +1,14 @@
+psql:/tmp/b0-baza.sql:2: NOTICE:  schema "tr3" already exists, skipping
+CREATE SCHEMA
+               k                |    v    
+--------------------------------+---------
+ profil                         | 1
+ Documente                      | 205186
+ RegistruStoc GCRecord not null | 283498
+ RegistruStoc total             | 283498
+ RegistruContabil GC            | 304382
+ DocumentDetalii                | 337596
+ RegistruContabil total         | 304382
+ f2.Postare                     | 1162622
+(8 rows)
+

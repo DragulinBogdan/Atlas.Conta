@@ -1,0 +1,3 @@
+# Commit-uri de formatare pure, sărite de `git blame` (git config blame.ignoreRevsFile .git-blame-ignore-revs).
+# Normalizarea terminatorilor pe LF (2026-09-15)
+a6f4dbb0430f04cd1f9760c0ef7aa5852234d22f

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
 import { CampData } from '../../nucleu/campuri';
@@ -27,7 +28,7 @@ import { EditorLinie, type EticheteCulese } from './EditorLinie';
 // predatoare și +Consum pe locul de consum primitor. Ecranul nu spune nimic
 // despre asta — registrele sunt fapta motorului; el doar culege laturile.
 
-const CAMPURI_ANTET: (keyof BcsWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof BcsWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function BcsDetaliu() {
@@ -196,6 +197,7 @@ export function BcsDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Bon de consum — nou' : `Bon de consum ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
@@ -225,6 +227,7 @@ export function BcsDetaliu() {
           >
             <div className="grila-campuri">
               <CampData<BcsWrite> camp="Data" />
+              <CampData<BcsWrite> camp="DataInregistrare" />
               <Lookup<BcsWrite> camp="PredatorId" entitate="Gestiune" mod="local" />
               <div>
                 {/* Primitorul e LOCUL DE CONSUM: un intern purtător al calității

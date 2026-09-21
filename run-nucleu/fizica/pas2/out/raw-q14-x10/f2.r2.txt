@@ -1,0 +1,61 @@
+                                                                          QUERY PLAN                                                                          
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "Tranzactie"  (cost=0.43..38.50 rows=0 width=0) (actual time=0.060..0.061 rows=0.00 loops=1)
+   Buffers: shared hit=15
+   ->  Subquery Scan on "*SELECT*"  (cost=0.43..38.50 rows=1 width=46) (actual time=0.016..0.017 rows=1.00 loops=1)
+         Buffers: shared hit=4
+         ->  Limit  (cost=0.43..38.49 rows=1 width=62) (actual time=0.016..0.016 rows=1.00 loops=1)
+               Buffers: shared hit=4
+               ->  Index Scan using ix_tranzactie_document on "Tranzactie" t  (cost=0.43..76.55 rows=2 width=62) (actual time=0.015..0.016 rows=1.00 loops=1)
+                     Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: (("Data" >= '2025-01-01'::date) AND ("Fel" = 1))
+                     Index Searches: 1
+                     Buffers: shared hit=4
+ Planning:
+   Buffers: shared hit=137
+ Planning Time: 0.378 ms
+ Execution Time: 0.080 ms
+(15 rows)
+
+                                                                            QUERY PLAN                                                                             
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Insert on "Postare"  (cost=5.06..3919.94 rows=0 width=0) (actual time=1.548..1.549 rows=0.00 loops=1)
+   Buffers: shared hit=3692 read=2 dirtied=10 written=8
+   ->  Subquery Scan on "*SELECT*"  (cost=5.06..3919.94 rows=108 width=304) (actual time=0.044..0.436 rows=198.00 loops=1)
+         Buffers: shared hit=93
+         ->  Append  (cost=5.06..3918.86 rows=108 width=320) (actual time=0.044..0.417 rows=198.00 loops=1)
+               Buffers: shared hit=93
+               ->  Bitmap Heap Scan on "Postare_Contabil" p_1  (cost=5.06..336.47 rows=9 width=320) (actual time=0.043..0.224 rows=100.00 loops=1)
+                     Recheck Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: ("Data" >= '2025-01-01'::date)
+                     Rows Removed by Filter: 900
+                     Heap Blocks: exact=43
+                     Buffers: shared hit=47
+                     ->  Bitmap Index Scan on "Postare_Contabil_DocumentId_idx"  (cost=0.00..5.06 rows=84 width=0) (actual time=0.022..0.022 rows=1300.00 loops=1)
+                           Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                           Index Searches: 1
+                           Buffers: shared hit=4
+               ->  Bitmap Heap Scan on "Postare_Stoc" p_2  (cost=4.82..209.28 rows=5 width=320) (actual time=0.005..0.005 rows=0.00 loops=1)
+                     Recheck Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: ("Data" >= '2025-01-01'::date)
+                     Buffers: shared hit=3
+                     ->  Bitmap Index Scan on "Postare_Stoc_DocumentId_idx"  (cost=0.00..4.82 rows=52 width=0) (actual time=0.004..0.004 rows=0.00 loops=1)
+                           Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                           Index Searches: 1
+                           Buffers: shared hit=3
+               ->  Bitmap Heap Scan on "Postare_Fiscal" p_3  (cost=11.71..3372.56 rows=94 width=320) (actual time=0.030..0.177 rows=98.00 loops=1)
+                     Recheck Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                     Filter: ("Data" >= '2025-01-01'::date)
+                     Rows Removed by Filter: 882
+                     Heap Blocks: exact=39
+                     Buffers: shared hit=43
+                     ->  Bitmap Index Scan on "Postare_Fiscal_DocumentId_idx"  (cost=0.00..11.69 rows=968 width=0) (actual time=0.021..0.021 rows=1274.00 loops=1)
+                           Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+                           Index Searches: 1
+                           Buffers: shared hit=4
+ Planning:
+   Buffers: shared hit=760
+ Planning Time: 1.149 ms
+ Execution Time: 1.595 ms
+(38 rows)
+

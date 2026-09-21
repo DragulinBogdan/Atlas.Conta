@@ -1,6 +1,6 @@
 # Atlas.Conta — starea curentă și regulile aplicabile
 
-**Actualizat: 2026-09-13.** Referința este implementarea din workspace,
+**Actualizat: 2026-09-16.** Referința este implementarea din workspace,
 inclusiv modificările locale. Documentele descriu regulile în forma lor
 actuală, organizate pe responsabilități.
 
@@ -52,16 +52,17 @@ curente și precizează limitele implementării.
 
 | Arie | Disponibil în implementare |
 |---|---|
-| Documente | FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC |
+| Documente | FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC, DVI, PIF, CAS |
 | Închidere TVA | Previzualizare, generare, regenerare și comenzi asupra rezultatului ITV |
+| Imobilizări | Fișa cu situația la dată și registrul, punerea în funcțiune (intrare, modernizare, revizuire), ieșirea, amortizarea lunară generată cu cifra contabilă, fiscală și deductibilă, politica de amortizare, regulile de deductibilitate și catalogul HG 2139/2004 |
 | Raportare | Sold stoc, balanță, balanță pe plan, fișă de cont, registru-jurnal, jurnale TVA, decont TVA, D300 și D394 |
 | Fișiere fiscale | SAF-T L și S, cu sumar, avertismente, reconciliere și XML |
 | Nomenclatoare în React | Parteneri, produse, societate și sincronizarea individuală a partenerului cu ANAF |
-| Configurare în React | Implicite TVA, tipuri TVA, implicitul tipului de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, verificarea profilului și istoric de audit |
+| Configurare în React | Implicite TVA, tipuri TVA, implicitul tipului de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, politici de amortizare, reguli de deductibilitate, verificarea profilului și istoric de audit |
 | Import | Import1C prin motor, legături de migrare și reconciliere; conectorul legacy este prototip |
 
 Existența unei rute nu înseamnă CRUD complet: DSC se generează din factură,
-iar ITV din comanda lunară. Particularitățile fiecărui tip sunt descrise în
+iar ITV și AMO din comanda lunară. Particularitățile fiecărui tip sunt descrise în
 [domeniu și operare](domeniu-si-operare.md). Acoperirea formularelor fiscale
 și modulele absente sunt precizate în [limitele curente](limite-curente.md).
 

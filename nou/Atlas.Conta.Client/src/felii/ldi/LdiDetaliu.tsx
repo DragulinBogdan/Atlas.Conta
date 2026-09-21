@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
@@ -29,7 +30,7 @@ import { LdiEditorLinie, type EticheteCulese } from './LdiEditorLinie';
 // minusuri, cu un singur set de reguli de stoc — cantitatea semnată la operare
 // dă direcția (28a). De aceea `Total` e NET, nu absolut.
 
-const CAMPURI_ANTET: (keyof LdiWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof LdiWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function LdiDetaliu() {
@@ -198,6 +199,7 @@ export function LdiDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Listă de diferențe — nouă' : `Listă de diferențe ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
@@ -231,6 +233,7 @@ export function LdiDetaliu() {
                   (F6-D4). Pe un draft e gol — asta e adevărul, nu o lipsă. */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<LdiWrite> camp="Data" />
+              <CampData<LdiWrite> camp="DataInregistrare" />
               {/* Gestiunea INVENTARIATĂ: din ea ies minusurile și tot în ea se
                   nasc loturile plusurilor (`GestiuneLoturiCulese` — F6-D2).
                   Caption-ul bazei („Predator (de la)") e corect, dar prea

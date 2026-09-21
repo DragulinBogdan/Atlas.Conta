@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Btr;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using Microsoft.AspNetCore.Mvc;
 
@@ -72,7 +73,7 @@ public class NotaTransferController : ContaApiController {
     public IActionResult Delete(Guid id) =>
         ScriereAutorizata<NotaTransfer>(id, () => Domeniu(() => {
             using var os = Secured(typeof(NotaTransfer));
-            var doc = os.GetObjectByKey<NotaTransfer>(id);
+            var doc = RandDupaCheie.Ca<NotaTransfer>(os, id);
             if (doc == null)
                 return Invizibil();
             os.Delete(doc.Detalii.ToList());

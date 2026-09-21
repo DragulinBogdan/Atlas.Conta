@@ -1,0 +1,72 @@
+===== B6b.0 proba artefactului: PartideDeschise = TotalStingere? =====
+ randuri | rest_egal_totalstingere |   suma_rest   | suma_totalstingere 
+---------+-------------------------+---------------+--------------------
+  201046 |                  201046 | 1034831116.87 |      1034831116.87
+
+DROP TABLE
+psql:/tmp/10-b6b-f0-fara-taiere.sql:17: NOTICE:  table "F0Rest" does not exist, skipping
+SELECT 135401
+ALTER TABLE
+ANALYZE
+
+===== B6b.1 F0 onest: cate partide, pe tip =====
+        ClrType         | partide |     suma     
+------------------------+---------+--------------
+ NotaTransfer           |   45542 | 121094304.67
+ DescarcareGestiune     |   36689 |  79199898.27
+ NIR                    |   17803 |  83593304.48
+ FacturaIesire          |   11971 |  23982956.21
+ Incasare               |    8810 |  11661670.45
+ NotaContabila          |    6837 | 329227973.10
+ FacturaIntrare         |    4628 |  24550467.24
+ ReturClient            |    1631 |  -4360087.08
+ BonConsum              |     545 |    340618.38
+ Plata                  |     517 |   9630232.58
+ ReturFurnizor          |     398 |  -3137772.15
+ ListaDiferenteInventar |      18 |    773417.09
+ InchidereTva           |      12 |  23154222.11
+
+
+===== B6b.2 A / B / C contra F0 onest, pe DocumentId =====
+ definitie | f0_randuri | def_randuri | comune | rest_identic | doar_in_definitie | doar_in_f0 | abs_diferenta 
+-----------+------------+-------------+--------+--------------+-------------------+------------+---------------
+ A         |     135401 |       63336 |  47852 |        39832 |             15484 |      87549 |  641268589.52
+ B         |     135401 |       66658 |  48934 |        39832 |             15487 |      86467 |  653966501.36
+ C         |     135401 |       33032 |  35283 |        25597 |              1831 |     100118 |  645017180.91
+
+
+===== B6b.3 A contra F0 onest, pe tip =====
+          tip           | identic | comun_dar_alt_rest | doar_cub | doar_f0 
+------------------------+---------+--------------------+----------+---------
+ NIR                    |   17803 |                  0 |        0 |       0
+ FacturaIesire          |   11663 |                308 |     1771 |       0
+ Incasare               |    8810 |                  0 |        0 |       0
+ NotaContabila          |     907 |               2460 |       41 |    3470
+ Plata                  |     517 |                  0 |        0 |       0
+ FacturaIntrare         |     132 |               3223 |    13672 |    1273
+ ReturClient            |       0 |               1631 |        0 |       0
+ DescarcareGestiune     |       0 |                  0 |        0 |   36689
+ BonConsum              |       0 |                  0 |        0 |     545
+ NotaTransfer           |       0 |                  0 |        0 |   45542
+ InchidereTva           |       0 |                  0 |        0 |      12
+ ReturFurnizor          |       0 |                398 |        0 |       0
+ ListaDiferenteInventar |       0 |                  0 |        0 |      18
+
+
+===== B6b.4 C contra F0 onest, pe lantul FCT+NIR =====
+ lanturi | identic | ambele_stinse | cub_stins_f0_nu | f0_stins_cub_nu |   suma_c    |   suma_f0    
+---------+---------+---------------+-----------------+-----------------+-------------+--------------
+   17814 |      14 |            11 |           13721 |               0 | 43701583.53 | 109561410.44
+
+
+===== B6b.5 semnul: unde |rest| difera de rest (documente cu rest negativ in cub) =====
+    ClrType     | partide |     suma     
+----------------+---------+--------------
+ FacturaIntrare |   14627 | -45515656.74
+ Incasare       |    8810 | -11661670.45
+ NotaContabila  |    2407 |  -3568778.33
+ FacturaIesire  |    1927 |  -8385031.83
+ ReturClient    |    1631 |  -4360087.08
+ Plata          |     517 |  -9630232.58
+ ReturFurnizor  |     398 |  -3023554.25
+

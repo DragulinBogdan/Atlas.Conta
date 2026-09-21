@@ -46,6 +46,8 @@ internal static class ProfilPrivat {
         SeedPoliticiDecont(os);
         SeedPoliticiNotaContabila(os);
         SeedPoliticiInchidereTva(os);
+        SeedPoliticiInchiderePerioada(os);
+        SeedPoliticiImobilizari(os);
         SeedPoliticiAsamblare(os);
         SeedPoliticiDescarcare(os);
         // Retururile derivă 6xx = 3xx pe RDC (independent de FCL/DSC — cheia e
@@ -125,7 +127,14 @@ internal static class ProfilPrivat {
             ("S", "626", "Poștale și telecomunicații"),
             ("S", "628", "Alte servicii executate de terți"),
             ("C", "635", "Alte impozite, taxe și vărsăminte asimilate"),
+            // Clasa F: o categorie per pereche de amortizare din OMFP 1802 (F26-D4).
+            ("F", "205", "Concesiuni, brevete, licențe, mărci și active similare"),
             ("F", "208", "Alte imobilizări necorporale"),
+            ("F", "211", "Terenuri și amenajări de terenuri"),
+            ("F", "212", "Construcții"),
+            ("F", "2131", "Echipamente tehnologice"),
+            ("F", "2132", "Aparate și instalații de măsurare, control și reglare"),
+            ("F", "2133", "Mijloace de transport"),
             ("F", "214", "Mobilier, aparatură birotică, alte active corporale"),
             // Nivelul de contare al facturării (30b): contul de venit = alegerea
             // Tipului; simboluri OMFP (704/706/707/708 — nu 751/750 ca la bugetar).
@@ -133,6 +142,8 @@ internal static class ProfilPrivat {
             ("VEN", "706", "Venituri din redevențe, locații de gestiune și chirii"),
             ("VEN", "707", "Venituri din vânzarea mărfurilor"),
             ("VEN", "708", "Venituri din activități diverse"),
+            // Linia de FCL a vânzării unei imobilizări (F26-D6; legătura cu CAS = F26-r3).
+            ("VEN", "7583", "Venituri din vânzarea activelor și alte operațiuni de capital"),
             // Tipul convențional al liniilor de trezorerie culese manual (31c):
             // codul nu e simbol de cont — rămâne fără ContImplicit.
             ("TRZ", "TRZ", "Operațiune de trezorerie"),
@@ -438,6 +449,15 @@ internal static class ProfilPrivat {
                 p.Directie = directie;
                 p.SursaContrapartida = sursa;
                 p.ContrapartidaFallbackId = os.FirstOrDefault<Cont>(c => c.Simbol == fallback)?.ID;
+                // F27-D5 — deductibilul se declară în perioada primirii facturii
+                // (art. 301 Cod fiscal, fără rectificativă); factura noastră
+                // rămâne fiscal a perioadei ei, deci colectatul o rectifică.
+                p.DeclarareIntarziata = directie == DirectieTva.Deductibil
+                    ? DeclarareIntarziata.PerioadaInregistrarii
+                    : DeclarareIntarziata.PerioadaFaptului;
+                // S-D15 — fără gard: taxa culeasă rămâne autoritară, ca în motorul
+                // vechi; valoarea de produs e a owner-ului (S-r1).
+                p.TolerantaTaxa = null;
             });
         }
         Politica("FCT", DirectieTva.Deductibil, SursaCont.RepartitorPredator, "401");
@@ -1145,6 +1165,57 @@ internal static class ProfilPrivat {
             politica.ContDePlataId = ContDupaSimbol("4423");
             politica.ContDeRecuperatId = ContDupaSimbol("4424");
         });
+    }
+
+    // Severitatea constatărilor de închidere de perioadă (F27-D2). Privatul e
+    // plătitor de TVA: luna nu se închide fără decontul ei făcut, deci `ItvLipsa`
+    // e BLOCANT. Restul scadent e informativ la cerere, deci `Ignorat` din seed.
+    static void SeedPoliticiInchiderePerioada(IObjectSpace os) =>
+        ContaSeeder.SeedPoliticiInchidere(os, new() {
+            [FelConstatareInchidere.ItvLipsa] = SeveritateConstatare.Blocant,
+            [FelConstatareInchidere.AmoLipsa] = SeveritateConstatare.Avertisment,
+            [FelConstatareInchidere.DraftInPerioada] = SeveritateConstatare.Avertisment,
+            [FelConstatareInchidere.RestScadent] = SeveritateConstatare.Ignorat,
+        });
+
+    // Perechea 20x/21x → 280x/281x; terenurile (211) NU primesc rând (F26-D4).
+    static void SeedPoliticiImobilizari(IObjectSpace os) {
+        foreach (var cod in new[] { "PIF", "CAS", "AMO" })
+            ContaSeeder.SeedNumerotare(os, cod, cod + "-");
+
+        (string Tip, string Amortizare)[] perechi = [
+            ("205", "2805"), ("208", "2808"), ("212", "2812"),
+            ("2131", "2813"), ("2132", "2813"), ("2133", "2813"), ("214", "2814"),
+        ];
+        foreach (var (tip, amortizare) in perechi)
+            ContaSeeder.SeedPoliticaAmortizare(os, tip, amortizare, "6811", "6583");
+
+        // Limitările legii ca date cu valabilitate; bugetarul n-are impozit pe profit (F26-D4/D16).
+        (CategorieFiscala Categorie, FelDeductibilitate Fel, decimal Valoare, DateOnly DeLa, string Temei)[] reguli = [
+            (CategorieFiscala.VehiculPersoaneMax9Locuri, FelDeductibilitate.PlafonLunar, 1500m,
+                new DateOnly(2012, 2, 1),
+                "Cod fiscal art. 28 alin. (14) — amortizarea vehiculelor de transport persoane cu cel mult "
+                + "9 locuri e deductibilă în limita a 1.500 lei/lună; excepțiile (taxi, școală de șoferi, "
+                + "închiriere, agenți de vânzări, intervenție) se declară pe fișă ca utilizare exclusivă."),
+            (CategorieFiscala.SediuSocialInLocuinta, FelDeductibilitate.Procent, 0m,
+                new DateOnly(2024, 1, 1),
+                "Cod fiscal art. 28 alin. (4), forma dată de Legea nr. 296/2023 — amortizarea sediului social "
+                + "situat într-o locuință personală, neutilizat exclusiv în scopul activității, e nedeductibilă."),
+            (CategorieFiscala.SediuSocialInLocuinta, FelDeductibilitate.Procent, 50m,
+                new DateOnly(2026, 1, 1),
+                "Cod fiscal art. 28 alin. (4), forma în vigoare din 2026 — deductibilitate 50% "
+                + "(temeiul exact se completează la revizia seed-ului)."),
+        ];
+        foreach (var r in reguli)
+            ContaSeeder.Aliniaza<RegulaDeductibilitate>(os, $"{r.Categorie}/{r.DeLa:yyyy-MM-dd}",
+                x => x.Categorie == r.Categorie && x.DeLa == r.DeLa, regula => {
+                    regula.Categorie = r.Categorie;
+                    regula.DoarNeexclusiv = true;
+                    regula.Fel = r.Fel;
+                    regula.Valoare = r.Valoare;
+                    regula.DeLa = r.DeLa;
+                    regula.Temei = r.Temei;
+                });
     }
 
     // Asamblarea (FAZA 1C §7): kitting n→m pe stoc, într-o gestiune. Stoc: UN

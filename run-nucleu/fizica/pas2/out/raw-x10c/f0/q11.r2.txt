@@ -1,0 +1,32 @@
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize GroupAggregate  (cost=237563.29..361864.74 rows=304249 width=128) (actual time=373.599..585.611 rows=75417.00 loops=1)
+   Group Key: "ContDebitId", "ContCreditId", "DimensiuniDebit_RepartitorId", "DimensiuniCredit_RepartitorId"
+   Buffers: shared hit=2080 read=68078, temp read=43153 written=43214
+   ->  Gather Merge  (cost=237563.29..342697.05 rows=730198 width=128) (actual time=373.581..531.388 rows=221072.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=2080 read=68078, temp read=43153 written=43214
+         ->  Partial GroupAggregate  (cost=236563.27..257414.06 rows=304249 width=128) (actual time=361.794..471.111 rows=73690.67 loops=3)
+               Group Key: "ContDebitId", "ContCreditId", "DimensiuniDebit_RepartitorId", "DimensiuniCredit_RepartitorId"
+               Buffers: shared hit=2080 read=68078, temp read=43153 written=43214
+               ->  Sort  (cost=236563.27..238372.94 rows=723869 width=74) (actual time=361.741..402.662 rows=692551.33 loops=3)
+                     Sort Key: "ContDebitId", "ContCreditId", "DimensiuniDebit_RepartitorId", "DimensiuniCredit_RepartitorId"
+                     Sort Method: external merge  Disk: 59472kB
+                     Buffers: shared hit=2080 read=68078, temp read=43153 written=43214
+                     Worker 0:  Sort Method: external merge  Disk: 56992kB
+                     Worker 1:  Sort Method: external merge  Disk: 56232kB
+                     ->  Parallel Seq Scan on "RegistruContabil" r  (cost=0.08..101781.38 rows=723869 width=74) (actual time=5.384..90.047 rows=692551.33 loops=3)
+                           Filter: (("Data" <= '2025-06-30'::date) AND ("GCRecord" = 0) AND (("ContDebitId" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])) OR ("ContCreditId" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[]))))
+                           Rows Removed by Filter: 321863
+                           Buffers: shared hit=2004 read=68078
+ Planning:
+   Buffers: shared hit=464
+ Planning Time: 0.616 ms
+ JIT:
+   Functions: 30
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 1.965 ms (Deform 0.964 ms), Inlining 0.000 ms, Optimization 1.476 ms, Emission 14.108 ms, Total 17.549 ms
+ Execution Time: 600.231 ms
+(28 rows)
+

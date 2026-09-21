@@ -1,0 +1,39 @@
+Timing is on.
+DROP TABLE
+Time: 4.306 ms
+CREATE TABLE
+Time: 2.481 ms
+SET
+Time: 0.347 ms
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2024-12-31 gata
+psql:/tmp/snapshot.sql:37: NOTICE:  granita 2025-12-31 gata
+DO
+Time: 1723.787 ms (00:01.724)
+CREATE INDEX
+Time: 262.131 ms
+CREATE INDEX
+Time: 122.365 ms
+VACUUM
+Time: 117.215 ms
+  Granita   | Spatiu | randuri 
+------------+--------+---------
+ 2024-12-31 |      1 |      57
+ 2024-12-31 |      2 |    6947
+ 2025-12-31 |      1 |  321199
+ 2025-12-31 |      2 |  110786
+ 2025-12-31 |      3 |   44016
+(5 rows)
+
+Time: 24.685 ms
+ total  | tabela | indexi 
+--------+--------+--------
+ 109 MB | 52 MB  | 57 MB
+(1 row)
+
+Time: 1.698 ms
+         proba         | valoare 
+-----------------------+---------
+ sold_abateri_20251231 |       0
+(1 row)
+
+Time: 937.934 ms

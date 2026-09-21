@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DateBox } from 'devextreme-react';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
@@ -37,7 +38,7 @@ import { FclEditorLinie, type EticheteCulese } from './FclEditorLinie';
 // pentru restul nelivrat (backorder — F4-D3/D4).
 
 const CAMPURI_ANTET: (keyof FclWrite & string)[] =
-  ['Data', 'PredatorId', 'PrimitorId', 'DataScadenta', 'GestiuneDescarcareId'];
+  ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId', 'DataScadenta', 'GestiuneDescarcareId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function FclDetaliu() {
@@ -231,6 +232,7 @@ export function FclDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Factură de ieșire — nouă' : `Factură de ieșire ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
@@ -264,6 +266,7 @@ export function FclDetaliu() {
                   (serie fiscală „FCL-"), deci numărul e al serverului și nici nu
                   există în WriteDto (F4-D1). Se vede în titlu, după operare. */}
               <CampData<FclWrite> camp="Data" />
+              <CampData<FclWrite> camp="DataInregistrare" />
 
               {/* EMITENTUL = unitatea internă (sediul — cum operează și
                   ModelCheck/importul); `UnitateInterna` e expusă ReadOnly în

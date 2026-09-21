@@ -8,11 +8,16 @@ using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
-// Decizia 16: TPT — moștenire doar unde schema diferă și identitatea e exclusivă;
+// Decizia 16 (mapare TPH din 89): moștenire doar unde schema diferă și identitatea e exclusivă;
 // calitățile transversale sunt flags, nu clase.
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
 public abstract class Repartitor : BaseObject, ICuCautare {
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Tip")]
+    [VisibleInListView(false), VisibleInDetailView(false)]
+    public virtual string ClrType { get; protected set; }
+
     // 77-r2: obligatorii pe toate ușile. Regula de fond e a lui `ICuCautare`
     // (schema din `AplicaColoanaCautare` + `GardianEditare`); cele două
     // atribute de aici sunt jumătățile de PREZENTARE — `[Required]` ajunge în

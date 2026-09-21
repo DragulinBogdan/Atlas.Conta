@@ -1,0 +1,72 @@
+                                                                                                 QUERY PLAN                                                                                                  
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ HashAggregate  (cost=5053.77..5260.11 rows=13756 width=124) (actual time=5.624..6.878 rows=4725.00 loops=1)
+   Group Key: p."DocumentId", p."TranzactieId", p."Partener", p."CodTvaId"
+   Batches: 1  Memory Usage: 4113kB
+   Buffers: shared hit=652
+   ->  Append  (cost=0.42..4736.82 rows=14087 width=60) (actual time=0.682..2.556 rows=13960.00 loops=1)
+         Buffers: shared hit=652
+         ->  Index Scan using "Postare_Fiscal_2016_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx" on "Postare_Fiscal_2016" p_1  (cost=0.42..8.41 rows=1 width=60) (actual time=0.010..0.010 rows=0.00 loops=1)
+               Index Cond: ("PerioadaDeclarare" = 202506)
+               Filter: ("Spatiu" = 3)
+               Index Searches: 1
+               Buffers: shared hit=3
+         ->  Index Scan using "Postare_Fiscal_2017_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx" on "Postare_Fiscal_2017" p_2  (cost=0.42..8.41 rows=1 width=60) (actual time=0.004..0.004 rows=0.00 loops=1)
+               Index Cond: ("PerioadaDeclarare" = 202506)
+               Filter: ("Spatiu" = 3)
+               Index Searches: 1
+               Buffers: shared hit=3
+         ->  Index Scan using "Postare_Fiscal_2018_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx" on "Postare_Fiscal_2018" p_3  (cost=0.42..8.41 rows=1 width=60) (actual time=0.005..0.005 rows=0.00 loops=1)
+               Index Cond: ("PerioadaDeclarare" = 202506)
+               Filter: ("Spatiu" = 3)
+               Index Searches: 1
+               Buffers: shared hit=3
+         ->  Index Scan using "Postare_Fiscal_2019_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx" on "Postare_Fiscal_2019" p_4  (cost=0.42..8.41 rows=1 width=60) (actual time=0.006..0.006 rows=0.00 loops=1)
+               Index Cond: ("PerioadaDeclarare" = 202506)
+               Filter: ("Spatiu" = 3)
+               Index Searches: 1
+               Buffers: shared hit=3
+         ->  Index Scan using "Postare_Fiscal_2020_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx" on "Postare_Fiscal_2020" p_5  (cost=0.42..8.41 rows=1 width=60) (actual time=0.005..0.005 rows=0.00 loops=1)
+               Index Cond: ("PerioadaDeclarare" = 202506)
+               Filter: ("Spatiu" = 3)
+               Index Searches: 1
+               Buffers: shared hit=3
+         ->  Index Scan using "Postare_Fiscal_2021_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx" on "Postare_Fiscal_2021" p_6  (cost=0.42..8.44 rows=1 width=60) (actual time=0.007..0.008 rows=0.00 loops=1)
+               Index Cond: ("PerioadaDeclarare" = 202506)
+               Filter: ("Spatiu" = 3)
+               Index Searches: 1
+               Buffers: shared hit=3
+         ->  Index Scan using "Postare_Fiscal_2022_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx" on "Postare_Fiscal_2022" p_7  (cost=0.42..8.40 rows=1 width=60) (actual time=0.004..0.004 rows=0.00 loops=1)
+               Index Cond: ("PerioadaDeclarare" = 202506)
+               Filter: ("Spatiu" = 3)
+               Index Searches: 1
+               Buffers: shared hit=3
+         ->  Index Scan using "Postare_Fiscal_2023_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx" on "Postare_Fiscal_2023" p_8  (cost=0.42..8.41 rows=1 width=60) (actual time=0.005..0.005 rows=0.00 loops=1)
+               Index Cond: ("PerioadaDeclarare" = 202506)
+               Filter: ("Spatiu" = 3)
+               Index Searches: 1
+               Buffers: shared hit=3
+         ->  Index Scan using "Postare_Fiscal_2024_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx" on "Postare_Fiscal_2024" p_9  (cost=0.42..8.44 rows=1 width=60) (actual time=0.007..0.007 rows=0.00 loops=1)
+               Index Cond: ("PerioadaDeclarare" = 202506)
+               Filter: ("Spatiu" = 3)
+               Index Searches: 1
+               Buffers: shared hit=3
+         ->  Bitmap Heap Scan on "Postare_Fiscal_2025" p_10  (cost=889.51..4590.65 rows=14076 width=60) (actual time=0.629..1.980 rows=13960.00 loops=1)
+               Recheck Cond: ("PerioadaDeclarare" = 202506)
+               Filter: ("Spatiu" = 3)
+               Heap Blocks: exact=430
+               Buffers: shared hit=625
+               ->  Bitmap Index Scan on "Postare_Fiscal_2025_PerioadaDeclarare_CodTvaId_RolTva_Valoa_idx"  (cost=0.00..885.99 rows=14076 width=0) (actual time=0.581..0.581 rows=13960.00 loops=1)
+                     Index Cond: ("PerioadaDeclarare" = 202506)
+                     Index Searches: 1
+                     Buffers: shared hit=195
+         ->  Seq Scan on "Postare_Fiscal_2026" p_11  (cost=0.00..0.00 rows=1 width=74) (actual time=0.009..0.009 rows=0.00 loops=1)
+               Filter: (("Spatiu" = 3) AND ("PerioadaDeclarare" = 202506))
+         ->  Seq Scan on "Postare_Fiscal_rest" p_12  (cost=0.00..0.00 rows=1 width=74) (actual time=0.003..0.003 rows=0.00 loops=1)
+               Filter: (("Spatiu" = 3) AND ("PerioadaDeclarare" = 202506))
+ Planning:
+   Buffers: shared hit=1713
+ Planning Time: 1.550 ms
+ Execution Time: 7.308 ms
+(68 rows)
+

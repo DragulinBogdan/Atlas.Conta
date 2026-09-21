@@ -33,7 +33,7 @@ public static class DviApply {
         doc ??= os.CreateObject<BusinessObjects.Dvi>();
 
         doc.Numar = dto.Numar;
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         doc.Predator = predator;
         doc.Primitor = primitor;
 
@@ -114,15 +114,8 @@ public static class DviApply {
         var existente = Legaturi(os, doc.ID);
         // Aceeași disciplină ca la linii (F3-D5): facturile se rezolvă toate
         // înainte, ca un refuz să nu lase o legătură fără factură în ObjectSpace.
-        // Prin interogare pe id-uri, nu `GetObjectByKey` per id: un id al unui
-        // obiect deja urmărit cu alt tip ar arunca cast, nu refuz de domeniu.
-        var idsNoi = cerute.Where(i => !existente.Any(l => l.FacturaId == i)).ToList();
-        var facturi = idsNoi.Count == 0
-            ? new List<FacturaIntrare>()
-            : os.GetObjectsQuery<FacturaIntrare>().Where(f => idsNoi.Contains(f.ID)).ToList();
-        var deLegat = idsNoi
-            .Select(i => facturi.FirstOrDefault(f => f.ID == i)
-                ?? throw new OperareException(Refuzuri.ReferintaInvizibila("Factura de import", i)))
+        var deLegat = cerute.Where(i => !existente.Any(l => l.FacturaId == i))
+            .Select(i => Rezolva.Cere<FacturaIntrare>(os, i, "Factura de import"))
             .ToList();
 
         var deSters = existente.Where(l => !cerute.Contains(l.FacturaId)).ToList();
@@ -163,7 +156,7 @@ public static class DviApply {
         var h = os.GetObjectsQuery<BusinessObjects.Dvi>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire
             })
@@ -199,6 +192,7 @@ public static class DviApply {
 
         return new DviReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
@@ -206,6 +200,7 @@ public static class DviApply {
             Tva = linii.Sum(l => l.ValoareTva),
             PoateEdita = h.Stare == StareDocument.Draft,
             PoateOpera = h.Stare == StareDocument.Draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
             Linii = linii.Select(l => new DviLinieReadDto {

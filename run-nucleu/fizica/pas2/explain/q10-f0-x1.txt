@@ -1,0 +1,32 @@
+                                                                                         QUERY PLAN                                                                                          
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize GroupAggregate  (cost=1000.98..35051.63 rows=29730 width=172) (actual time=2.377..168.866 rows=110786.00 loops=1)
+   Group Key: "LotId", "RepartitorId", "TipStoc"
+   Buffers: shared hit=172987
+   ->  Gather Merge  (cost=1000.98..31989.44 rows=71352 width=180) (actual time=2.363..112.705 rows=110786.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=172987
+         ->  Partial GroupAggregate  (cost=0.96..22753.62 rows=29730 width=180) (actual time=0.087..65.777 rows=36928.67 loops=3)
+               Group Key: "LotId", "RepartitorId", "TipStoc"
+               Buffers: shared hit=172987
+               ->  Incremental Sort  (cost=0.96..18024.89 rows=118118 width=50) (actual time=0.080..40.487 rows=94499.33 loops=3)
+                     Sort Key: "LotId", "RepartitorId", "TipStoc"
+                     Presorted Key: "LotId"
+                     Full-sort Groups: 1956  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                     Pre-sorted Groups: 238  Sort Method: quicksort  Average Memory: 25kB  Peak Memory: 25kB
+                     Buffers: shared hit=172987
+                     Worker 0:  Full-sort Groups: 2709  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                       Pre-sorted Groups: 258  Sort Method: quicksort  Average Memory: 25kB  Peak Memory: 25kB
+                     Worker 1:  Full-sort Groups: 2693  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                       Pre-sorted Groups: 287  Sort Method: quicksort  Average Memory: 80kB  Peak Memory: 111kB
+                     ->  Parallel Index Scan using "IX_RegistruStoc_LotId" on "RegistruStoc" r  (cost=0.42..14778.40 rows=118118 width=50) (actual time=0.013..27.072 rows=94499.33 loops=3)
+                           Filter: (("Data" <= '2025-12-31'::date) AND ("GCRecord" = 0))
+                           Index Searches: 1
+                           Buffers: shared hit=172805
+ Planning:
+   Buffers: shared hit=255
+ Planning Time: 0.391 ms
+ Execution Time: 171.289 ms
+(28 rows)
+

@@ -1,0 +1,37 @@
+                                                                                          QUERY PLAN                                                                                          
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Left Join  (cost=7833.67..8357.09 rows=12210 width=230) (actual time=39.718..50.306 rows=2517.00 loops=1)
+   Hash Cond: (s."Partener" = rp."ID")
+   Buffers: shared hit=1965, temp read=222 written=386
+   ->  Hash Left Join  (cost=6799.57..7077.26 rows=12210 width=147) (actual time=35.410..45.127 rows=2517.00 loops=1)
+         Hash Cond: (s."Cont" = c."ID")
+         Buffers: shared hit=1441, temp read=222 written=386
+         ->  HashAggregate  (cost=6767.47..7012.89 rows=12210 width=96) (actual time=35.248..44.784 rows=2517.00 loops=1)
+               Group Key: s."Partener"
+               Filter: ((COALESCE(sum(CASE WHEN (s."Latura" = 1) THEN s."Valoare" ELSE 0.0 END), 0.0) - COALESCE(sum(CASE WHEN (s."Latura" = 2) THEN s."Valoare" ELSE 0.0 END), 0.0)) <> 0.0)
+               Batches: 5  Memory Usage: 8497kB  Disk Usage: 1800kB
+               Rows Removed by Filter: 17267
+               Buffers: shared hit=1425, temp read=222 written=386
+               ->  Index Only Scan using ix_sold_cont on "Sold" s  (cost=0.56..5647.86 rows=89569 width=40) (actual time=0.041..9.484 rows=126263.00 loops=1)
+                     Index Cond: (("Spatiu" = 1) AND ("Granita" = '2025-12-31'::date) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                     Heap Fetches: 0
+                     Index Searches: 1
+                     Buffers: shared hit=1425
+         ->  Hash  (cost=24.05..24.05 rows=644 width=67) (actual time=0.146..0.147 rows=644.00 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 71kB
+               Buffers: shared hit=16
+               ->  Seq Scan on "Conturi" c  (cost=0.00..24.05 rows=644 width=67) (actual time=0.015..0.073 rows=644.00 loops=1)
+                     Filter: ("GCRecord" = 0)
+                     Buffers: shared hit=16
+   ->  Hash  (cost=779.05..779.05 rows=20404 width=35) (actual time=4.180..4.181 rows=20404.00 loops=1)
+         Buckets: 32768  Batches: 1  Memory Usage: 1610kB
+         Buffers: shared hit=524
+         ->  Seq Scan on "Repartitori" rp  (cost=0.00..779.05 rows=20404 width=35) (actual time=0.007..2.212 rows=20404.00 loops=1)
+               Filter: ("GCRecord" = 0)
+               Buffers: shared hit=524
+ Planning:
+   Buffers: shared hit=407
+ Planning Time: 0.774 ms
+ Execution Time: 51.054 ms
+(33 rows)
+

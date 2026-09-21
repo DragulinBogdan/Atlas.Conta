@@ -54,6 +54,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Trz;
 // ── Scriere: agregatul per document (PUT header + linii, 42d) ──────────────
 public sealed class TrezorerieWriteDto {
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     // PLT: predator = contul propriu, primitor = beneficiarul (partener/angajat).
     // INC: oglindit. TIPUL laturilor NU se verifică la scriere — e invariant al
     // OPERĂRII (`Plata/Incasare.ValideazaOperare`); Apply validează doar
@@ -103,6 +105,7 @@ public sealed class TrezorerieReadDto {
     // SERVER-OWNED: null pe draft (seria se consumă la operare), completat după.
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos).
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
@@ -172,6 +175,8 @@ public sealed class TrezorerieReadDto {
     public bool PoateEdita { get; set; }
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
+    // F27-D6 — legătura de corecție (null = documentul nu corectează nimic).
+    public CorectieDto Corectie { get; set; }
     public bool PoateStorna { get; set; }
 }
 

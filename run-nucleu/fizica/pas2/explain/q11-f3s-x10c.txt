@@ -1,0 +1,43 @@
+                                                                                                                                                                                                                                                                                                                                                                     QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                     
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize GroupAggregate  (cost=56058.22..68002.20 rows=29024 width=98) (actual time=47.721..99.418 rows=39056.00 loops=1)
+   Group Key: s."Partener", s."Cont", s."Latura"
+   Buffers: shared hit=9927, temp read=2153 written=2158
+   ->  Gather Merge  (cost=56058.22..66347.82 rows=69658 width=98) (actual time=47.604..79.265 rows=74567.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=9927, temp read=2153 written=2158
+         ->  Partial GroupAggregate  (cost=55058.20..57307.54 rows=29024 width=98) (actual time=43.085..63.915 rows=24855.67 loops=3)
+               Group Key: s."Partener", s."Cont", s."Latura"
+               Buffers: shared hit=9927, temp read=2153 written=2158
+               ->  Sort  (cost=55058.20..55360.53 rows=120932 width=72) (actual time=43.011..48.753 rows=109418.67 loops=3)
+                     Sort Key: s."Partener", s."Cont", s."Latura"
+                     Sort Method: external merge  Disk: 4928kB
+                     Buffers: shared hit=9927, temp read=2153 written=2158
+                     Worker 0:  Sort Method: external merge  Disk: 7376kB
+                     Worker 1:  Sort Method: external merge  Disk: 4920kB
+                     ->  Parallel Append  (cost=0.46..39886.22 rows=120932 width=72) (actual time=0.028..22.907 rows=109418.67 loops=3)
+                           Buffers: shared hit=9899
+                           ->  Parallel Index Only Scan using ix_sold_cont on "Sold" s  (cost=0.56..8930.88 rows=89536 width=72) (actual time=0.053..7.388 rows=72354.67 loops=3)
+                                 Index Cond: (("Spatiu" = 1) AND ("Granita" = '2024-12-31'::date) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                 Heap Fetches: 0
+                                 Index Searches: 1
+                                 Buffers: shared hit=2500
+                           ->  Parallel Index Scan using "Postare_Contabil_2025_Data_idx" on "Postare_Contabil_2025" p  (cost=0.46..19122.09 rows=48339 width=72) (actual time=0.016..14.473 rows=47091.50 loops=2)
+                                 Index Cond: (("Data" >= '2025-01-01'::date) AND ("Data" <= '2025-05-31'::date))
+                                 Filter: (("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                 Rows Removed by Filter: 82354
+                                 Index Searches: 1
+                                 Buffers: shared hit=6277
+                           ->  Parallel Index Scan using "Postare_Contabil_2025_Data_idx" on "Postare_Contabil_2025" p_1  (cost=0.46..10922.15 rows=12949 width=72) (actual time=0.020..5.778 rows=17009.00 loops=1)
+                                 Index Cond: (("Data" >= '2025-06-01'::date) AND ("Data" <= '2025-06-30'::date))
+                                 Filter: (("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                                 Rows Removed by Filter: 30117
+                                 Index Searches: 1
+                                 Buffers: shared hit=1122
+ Planning:
+   Buffers: shared hit=696
+ Planning Time: 1.740 ms
+ Execution Time: 101.028 ms
+(39 rows)
+

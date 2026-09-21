@@ -43,15 +43,29 @@ public static class ImperechereApply {
         // comună, plafoane) rămân EXCLUSIV în serviciu — un al doilea exemplar
         // aici ar diverge tăcut.
         var imperechere = ImperechereService.Imperecheaza(os, stingator, document, dto.Suma,
-            dto.ContrapartidaId);
-        return new ImperechereReadDto {
-            Id = imperechere.ID,
-            DocumentStingatorId = imperechere.DocumentStingatorId,
-            DocumentId = imperechere.DocumentId,
-            Suma = imperechere.Suma,
-            Autogenerat = imperechere.Autogenerat
-        };
+            dto.ContrapartidaId, Zi(dto.Data));
+        return Din(imperechere);
     }
+
+    // F27-D8: desfacerea unei imperecheri dintr-o perioadă închisă. Comandă de
+    // MOTOR (scrie un rând pe care ușa securizată îl refuză), deci rulează pe
+    // ObjectSpace-ul non-secured al apelantului; dreptul l-a verificat ruta.
+    public static ImperechereReadDto Desfa(IObjectSpace os, Guid imperechereId,
+            DesfaImperechereRequestDto cerere) =>
+        Din(ImperechereService.Desfa(os, imperechereId, Zi(cerere?.Data)));
+
+    static DateOnly Zi(DateOnly? data) =>
+        data is DateOnly d && d != default ? d : DateOnly.FromDateTime(DateTime.Today);
+
+    static ImperechereReadDto Din(Imperechere imperechere) => new() {
+        Id = imperechere.ID,
+        DocumentStingatorId = imperechere.DocumentStingatorId,
+        DocumentId = imperechere.DocumentId,
+        Suma = imperechere.Suma,
+        Data = imperechere.Data,
+        InverseazaId = imperechere.InverseazaId,
+        Autogenerat = imperechere.Autogenerat
+    };
 
     // Ștergerea e LIBERĂ (31d): legătura n-are registre proprii, iar dispariția
     // ei doar eliberează restul celor două documente (și deblochează
@@ -82,18 +96,26 @@ public static class ImperechereApply {
             .OrderBy(i => i.DocumentStingatorId == documentId ? i.Document.Data : i.DocumentStingator.Data)
             .ThenBy(i => i.ID)
             .Select(i => new {
-                i.ID, i.Suma, i.Autogenerat,
+                i.ID, i.Suma, i.Autogenerat, i.Data, i.InverseazaId,
                 EsteStingator = i.DocumentStingatorId == documentId,
                 CelalaltId = i.DocumentStingatorId == documentId ? i.DocumentId : i.DocumentStingatorId,
                 CelalaltNumar = i.DocumentStingatorId == documentId
                     ? i.Document.Numar : i.DocumentStingator.Numar
             })
             .ToList();
+        // Ce rând e deja desfăcut: o singură interogare pe mulțimea MĂRGINITĂ a
+        // stingerilor documentului, nu un predicat per rând.
+        var ids = randuri.Select(r => r.ID).ToList();
+        var desfacute = os.GetObjectsQuery<Imperechere>()
+            .Where(i => i.InverseazaId != null && ids.Contains(i.InverseazaId.Value))
+            .Select(i => i.InverseazaId.Value)
+            .ToList()
+            .ToHashSet();
+        // Perioada e a BAZEI, nu a clientului (42c): panoul primește verdictul,
+        // nu regula. O singură rezolvare per lună atinsă.
+        var deschise = randuri.Select(r => (r.Data.Year, r.Data.Month)).Distinct()
+            .ToDictionary(x => x, x => PerioadaDeschisa(os, new DateOnly(x.Year, x.Month, 1)));
 
-        // CODUL TIPULUI nu poate veni din SQL (sub TPT nu există discriminator,
-        // iar ancora se caută după numele clasei CLR) — se rezolvă în memorie,
-        // pe mulțimea MĂRGINITĂ a stingerilor documentului, cu o singură
-        // căutare de ancoră per CLASĂ (`ApiProiectii.CoduriTip`).
         var tipuri = ApiProiectii.CoduriTip(os, randuri.Select(r => r.CelalaltId).ToList());
 
         return new StingeriDto {
@@ -114,12 +136,26 @@ public static class ImperechereApply {
                 Id = r.ID,
                 EsteStingator = r.EsteStingator,
                 CelalaltDocumentId = r.CelalaltId,
+                Data = r.Data,
+                InverseazaId = r.InverseazaId,
+                Desfacuta = desfacute.Contains(r.ID),
+                PerioadaDeschisa = deschise[(r.Data.Year, r.Data.Month)],
                 CelalaltTip = tipuri.TryGetValue(r.CelalaltId, out var cod) ? cod : null,
                 CelalaltNumar = r.CelalaltNumar,
                 Suma = r.Suma,
                 Autogenerat = r.Autogenerat
             }).ToList()
         };
+    }
+
+    static bool PerioadaDeschisa(IObjectSpace os, DateOnly data) {
+        try {
+            GardianPerioada.VerificaDeschisa(os, data);
+            return true;
+        }
+        catch (OperareException) {
+            return false;
+        }
     }
 
     // Gardul de scară — al treilea exemplar (BTR/FCT + trezorerie): `numeric(18,s)`

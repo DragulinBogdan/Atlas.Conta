@@ -29,6 +29,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Rlf;
 // ── Scriere: agregatul per document (PUT header + linii, 42d) ──────────────
 public sealed class RlfWriteDto {
     public DateOnly Data { get; set; }
+    // F27-D4: lipsă pe sârmă = data documentului.
+    public DateOnly? DataInregistrare { get; set; }
     // Gestiunea din care iese marfa → furnizorul care o primește înapoi. Tipul
     // laturilor rămâne invariant al OPERĂRII (`ReturFurnizor.ValideazaOperare`);
     // `Aplica` verifică doar existența.
@@ -68,6 +70,7 @@ public sealed class RlfReadDto {
     // pe draft e null.
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
+    public DateOnly DataInregistrare { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
@@ -84,6 +87,8 @@ public sealed class RlfReadDto {
     public bool PoateEdita { get; set; }
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
+    // F27-D6 — legătura de corecție (null = documentul nu corectează nimic).
+    public CorectieDto Corectie { get; set; }
     public bool PoateStorna { get; set; }
 }
 

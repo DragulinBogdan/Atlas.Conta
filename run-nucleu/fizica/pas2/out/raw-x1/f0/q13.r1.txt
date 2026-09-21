@@ -1,0 +1,39 @@
+                                                                     QUERY PLAN                                                                     
+----------------------------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using "IX_RegistruStoc_DocumentId" on "RegistruStoc" r  (cost=0.42..8.52 rows=5 width=107) (actual time=4.144..4.144 rows=0.00 loops=1)
+   Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   Filter: ("GCRecord" = 0)
+   Index Searches: 1
+   Buffers: shared read=3
+ Planning:
+   Buffers: shared hit=213 read=1
+ Planning Time: 0.776 ms
+ Execution Time: 4.176 ms
+(9 rows)
+
+                                                                           QUERY PLAN                                                                            
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using "IX_RegistruContabil_DocumentId" on "RegistruContabil" r  (cost=0.42..24.30 rows=294 width=366) (actual time=0.309..0.338 rows=228.00 loops=1)
+   Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   Filter: ("GCRecord" = 0)
+   Index Searches: 1
+   Buffers: shared hit=6 read=3
+ Planning:
+   Buffers: shared hit=386 read=1
+ Planning Time: 0.350 ms
+ Execution Time: 0.351 ms
+(9 rows)
+
+                                                                    QUERY PLAN                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using "IX_RegistruTva_DocumentId" on "RegistruTva" r  (cost=0.29..8.33 rows=2 width=134) (actual time=0.125..0.125 rows=0.00 loops=1)
+   Index Cond: ("DocumentId" = '01a0b494-a2da-7484-94ce-1019f56c4fef'::uuid)
+   Filter: ("GCRecord" = 0)
+   Index Searches: 1
+   Buffers: shared read=2
+ Planning:
+   Buffers: shared hit=146 read=1
+ Planning Time: 0.167 ms
+ Execution Time: 0.132 ms
+(9 rows)
+

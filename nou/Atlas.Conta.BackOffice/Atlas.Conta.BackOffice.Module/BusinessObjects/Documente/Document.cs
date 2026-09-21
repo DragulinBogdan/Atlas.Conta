@@ -71,15 +71,33 @@ public readonly record struct PlafonStingere(decimal Datorie, decimal Creanta) {
 // lucru), Operat = verde bold (registrele există), Stornat = gri tăiat (rândurile
 // au fost inversate). Roșul rămâne al erorilor de validare, nu al stornării.
 [NavigationItem("Documente")]
+// Textul de afișare al oricărei REFERINȚE spre un document (F27-D6): fără el,
+// `Corectează documentul` și `Document sursă` arătau GUID-ul rândului.
+[XafDefaultProperty(nameof(Numar))]
 [Appearance("Document_Stare_Operat", AppearanceItemType.ViewItem, "Stare = 'Operat'",
     TargetItems = nameof(Stare), FontColor = "Green", FontStyle = DevExpress.Drawing.DXFontStyle.Bold)]
 [Appearance("Document_Stare_Stornat", AppearanceItemType.ViewItem, "Stare = 'Stornat'",
     TargetItems = nameof(Stare), FontColor = "Gray", FontStyle = DevExpress.Drawing.DXFontStyle.Strikeout)]
+// F27-D6: grupul „Corecție" din baseline există pe TOATE tipurile (câmpurile
+// sunt ale bazei), dar are ce spune doar pe documentul care chiar corectează.
+[Appearance("Document_Corectie_Ascuns", AppearanceItemType.ViewItem, "CorecteazaId Is Null",
+    TargetItems = nameof(Corecteaza) + ";" + nameof(MotivCorectie),
+    Visibility = DevExpress.ExpressApp.Editors.ViewItemVisibility.Hide)]
 public abstract class Document : BaseObject {
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Tip")]
+    [VisibleInListView(false), VisibleInDetailView(false)]
+    public virtual string ClrType { get; protected set; }
+
     [XafDisplayName("Număr")]
     public virtual string Numar { get; set; }
     [XafDisplayName("Dată")]
     public virtual DateOnly Data { get; set; }
+
+    // F27-D4: data intrării în evidență, pe care se scriu registrele, lotul și
+    // gardianul de perioadă; `Data` rămâne a documentului fizic.
+    [XafDisplayName("Data înregistrării")]
+    public virtual DateOnly DataInregistrare { get; set; }
 
     // Validare de CULEGERE (context Save al pipeline-ului UI XAF): FK-urile
     // Predator/PrimitorId sunt NOT NULL în schemă, dar Guid.Empty NU e null —
@@ -125,6 +143,25 @@ public abstract class Document : BaseObject {
     [ModelDefault("AllowEdit", "False")]
     public virtual bool Autogenerat { get; set; }
 
+    // F27-D6: corecția peste graniță = storno-ul originalului + documentul de
+    // față. Legătura e 1:1, ale motorului amândouă (`CorectieService`), iar
+    // motivul decide efectul FISCAL (perioada de declarare), nu contarea.
+    public virtual Guid? CorecteazaId { get; set; }
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Corectează documentul")]
+    public virtual Document Corecteaza { get; set; }
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Motivul corecției")]
+    public virtual MotivCorectie? MotivCorectie { get; set; }
+
+    // F27-D7. Totalul stins de imperecheri, scris de motor la operare din
+    // `LiniiCreanta`; null cât documentul nu e operat. Fapt scris, nu agregat la
+    // citire: `ImperechereService.Total` îl citește de pe cheie, iar partidele
+    // deschise și `DocumenteCuRest` pornesc de la el.
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Total de stins")]
+    public virtual decimal? TotalStingere { get; set; }
+
     [DevExpress.ExpressApp.DC.Aggregated]
     public virtual ObservableCollection<DocumentDetaliu> Detalii { get; set; } = new();
 
@@ -149,6 +186,9 @@ public abstract class Document : BaseObject {
     // deci filtrează query-ul prin hook-ul ăsta — orice derivată care
     // suprascrie Total trebuie să țină cele două filtre în oglindă.
     public virtual IQueryable<DocumentDetaliu> LiniiCreanta(IQueryable<DocumentDetaliu> linii) => linii;
+
+    // Metodă, nu proprietate: o proprietate ar intra în metadata clientului (43d). 090l
+    public virtual Declaratii.IDeclarant Declarant() => null;
 
     // Hooks polimorfe consumate DOAR de motorul de operare (decizia 14).
     // Primesc IObjectSpace și lucrează pe FK-uri, nu pe navigații — contextul
@@ -290,9 +330,21 @@ public abstract class Document : BaseObject {
 // Bază concretă: NIR/BonConsum/NotaTransfer o folosesc direct (testul bazei §6);
 // derivate de detaliu există doar unde schema diferă.
 public class DocumentDetaliu : BaseObject {
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Tip")]
+    [VisibleInListView(false), VisibleInDetailView(false)]
+    public virtual string ClrType { get; protected set; }
+
     [Browsable(false)]
     public virtual Guid DocumentId { get; set; }
     public virtual Document Document { get; set; }
+
+    // B-r11 — ordinea de CULEGERE a liniilor, atribuită o singură dată la
+    // salvarea liniei noi (S-D6, `BackOfficeEFCoreDbContext.AtribuiePozitii`).
+    [XafDisplayName("Poziție")]
+    [VisibleInListView(false), VisibleInDetailView(false), VisibleInLookupListView(false)]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual int Pozitie { get; set; }
 
     // Cheia contării; Clasa (cheia regulilor de stoc) = TipMaterial.Clasa.
     // Validare de culegere pe NAVIGAȚIE (ca Predator/Primitor pe header —

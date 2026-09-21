@@ -1,0 +1,40 @@
+                                                                                  QUERY PLAN                                                                                  
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Right Join  (cost=29076.69..29106.35 rows=71 width=387) (actual time=44.875..46.198 rows=119.00 loops=1)
+   Hash Cond: (c."ID" = p."Cont")
+   Buffers: shared hit=312 read=15187
+   ->  Seq Scan on "Conturi" c  (cost=0.00..24.05 rows=644 width=67) (actual time=0.008..0.059 rows=644.00 loops=1)
+         Filter: ("GCRecord" = 0)
+         Buffers: shared hit=16
+   ->  Hash  (cost=29075.80..29075.80 rows=71 width=144) (actual time=44.840..46.041 rows=119.00 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 17kB
+         Buffers: shared hit=296 read=15187
+         ->  Finalize GroupAggregate  (cost=29050.76..29075.80 rows=71 width=144) (actual time=44.650..46.021 rows=119.00 loops=1)
+               Group Key: p."Cont"
+               Buffers: shared hit=296 read=15187
+               ->  Gather Merge  (cost=29050.76..29070.56 rows=170 width=144) (actual time=44.640..45.868 rows=314.00 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=296 read=15187
+                     ->  Sort  (cost=28050.73..28050.91 rows=71 width=144) (actual time=43.041..43.044 rows=104.67 loops=3)
+                           Sort Key: p."Cont"
+                           Sort Method: quicksort  Memory: 56kB
+                           Buffers: shared hit=296 read=15187
+                           Worker 0:  Sort Method: quicksort  Memory: 52kB
+                           Worker 1:  Sort Method: quicksort  Memory: 54kB
+                           ->  Partial HashAggregate  (cost=28047.13..28048.55 rows=71 width=144) (actual time=42.971..43.003 rows=104.67 loops=3)
+                                 Group Key: p."Cont"
+                                 Batches: 1  Memory Usage: 288kB
+                                 Buffers: shared hit=282 read=15187
+                                 Worker 0:  Batches: 1  Memory Usage: 160kB
+                                 Worker 1:  Batches: 1  Memory Usage: 160kB
+                                 ->  Parallel Seq Scan on "Postare_Contabil" p  (cost=0.00..19829.38 rows=252854 width=28) (actual time=0.230..18.599 rows=202921.33 loops=3)
+                                       Filter: (("Data" <= '2025-12-31'::date) AND ("Spatiu" = 1))
+                                       Rows Removed by Filter: 29632
+                                       Buffers: shared hit=282 read=15187
+ Planning:
+   Buffers: shared hit=499
+ Planning Time: 0.705 ms
+ Execution Time: 46.312 ms
+(36 rows)
+

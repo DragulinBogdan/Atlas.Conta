@@ -55,7 +55,7 @@ public static class AsamblareApply {
 
         // `Numar` NU se atinge (F19-D6): seria „ASM-" e server-owned, asignată la
         // MATERIALIZARE, în propria operare (53b).
-        doc.Data = dto.Data;
+        DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         // NAVIGAȚIA, nu FK-ul scalar (ca peste tot): rezolvarea validează
         // existența cu mesaj de domeniu, iar pe o entitate urmărită navigația
         // încărcată ar rescrie la fixup un FK setat direct. TIPUL laturilor
@@ -533,7 +533,7 @@ public static class AsamblareApply {
         var h = os.GetObjectsQuery<Asamblare>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire
             })
@@ -541,12 +541,9 @@ public static class AsamblareApply {
         if (h == null)
             return null;
 
-        // Citirea liniilor merge pe BAZA detaliului, cu frunza adusă prin `as`
-        // (TPT ⇒ LEFT JOIN în SQL): ASM-urile ISTORICE (importul 1C) poartă linii
-        // de tip BAZĂ, iar pe frunză singură ar fi ieșit `Linii: []` cu `Total`
-        // nenul. NULLABLE EXPLICIT pe TOATE valorile frunzei — inclusiv pe
-        // `Directie`: pe o linie de bază cast-ul dă null, iar un enum
-        // non-nullable ar pica la materializare.
+        // Pe BAZA detaliului: liniile de tip bază (import, istoric) apar în `Linii`, cu valorile frunzei null.
+        // `as` nu filtrează pe tip; sigur fiindcă liniile unui document sunt frunza lui sau baza (F28-H, 89).
+        // Valorile frunzei sunt nullable explicit: pe o linie de bază vin null, iar un tip valoare ar pica la materializare.
         var linii = os.GetObjectsQuery<DocumentDetaliu>()
             .Where(l => l.DocumentId == id)
             .OrderBy(l => l.ID)
@@ -592,6 +589,7 @@ public static class AsamblareApply {
 
         return new AsmReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
+            DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
@@ -599,6 +597,7 @@ public static class AsamblareApply {
             SumaConsum = sumaConsum, SumaProdus = sumaProdus, Diferenta = sumaProdus - sumaConsum,
             PoateEdita = draft,
             PoateOpera = draft,
+            Corectie = ApiProiectii.Corectie(os, id),
             PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
             PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
             PoateDistribui = draft

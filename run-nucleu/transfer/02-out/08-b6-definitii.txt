@@ -1,0 +1,94 @@
+===== B6.0 control: datele imperecherilor =====
+  data_min  |  data_max  | randuri | in_2025 | randuri_inverse | sume_negative 
+------------+------------+---------+---------+-----------------+---------------
+ 2026-09-18 | 2026-09-18 |   44448 |       0 |               0 |             0
+
+
+===== B6.0b control: documentele la 31.12.2025 =====
+ documente | pana_la_3112 | fara_total 
+-----------+--------------+------------
+    205186 |       205186 |          0
+
+psql:/tmp/08-b6-definitii.sql:28: NOTICE:  table "TertLa1231" does not exist, skipping
+DROP TABLE
+SELECT 120336
+ALTER TABLE
+ANALYZE
+DROP TABLE
+psql:/tmp/08-b6-definitii.sql:42: NOTICE:  table "ImpEfect" does not exist, skipping
+SELECT 68349
+psql:/tmp/08-b6-definitii.sql:47: NOTICE:  table "ImpEfectDoc" does not exist, skipping
+DROP TABLE
+SELECT 68349
+ALTER TABLE
+ANALYZE
+DROP TABLE
+psql:/tmp/08-b6-definitii.sql:54: NOTICE:  table "PartidaA" does not exist, skipping
+SELECT 116320
+ALTER TABLE
+ANALYZE
+DROP TABLE
+psql:/tmp/08-b6-definitii.sql:65: NOTICE:  table "ImpEfectCont" does not exist, skipping
+SELECT 68349
+DROP TABLE
+psql:/tmp/08-b6-definitii.sql:74: NOTICE:  table "PartidaB" does not exist, skipping
+SELECT 121421
+CREATE INDEX
+ANALYZE
+DROP TABLE
+psql:/tmp/08-b6-definitii.sql:89: NOTICE:  table "CheieC" does not exist, skipping
+SELECT 205186
+ALTER TABLE
+CREATE INDEX
+ANALYZE
+DROP TABLE
+psql:/tmp/08-b6-definitii.sql:97: NOTICE:  table "PartidaC" does not exist, skipping
+SELECT 99735
+ALTER TABLE
+ANALYZE
+
+===== B6.1 A / B / C: partide cu rest <> 0, suma pe debitor si pe creditor =====
+      definitie      | partide_cu_rest | suma_debitor | suma_creditor | partide_total 
+---------------------+-----------------+--------------+---------------+---------------
+ C (lant conex)      |           33032 |  75250870.77 |  -44563696.38 |         99735
+ A (document)        |           63336 | 116832185.65 |  -86145011.26 |        116320
+ B (document x cont) |           66658 | 129329372.46 | -124227573.19 |        121421
+
+
+===== B6.2 coincidenta cu PartideDeschise 12/2025, pe DocumentId =====
+ definitie | f0_randuri | def_randuri | comune | rest_identic | doar_in_definitie | doar_in_f0 | abs_diferenta 
+-----------+------------+-------------+--------+--------------+-------------------+------------+---------------
+ A         |     201046 |       63336 |  63275 |        39044 |                61 |     137771 |  878891184.84
+ B         |     201046 |       66658 |  64360 |        39047 |                61 |     136686 |  853305809.72
+ C         |     201046 |       33032 |  37063 |        24646 |                51 |     163983 |  921696876.85
+
+
+===== B6.3 unde difera A de F0: pe tip de document =====
+          tip           | identic | comun_dar_alt_rest | doar_cub | doar_f0 
+------------------------+---------+--------------------+----------+---------
+ NIR                    |   17803 |                  0 |        0 |       0
+ FacturaIesire          |   11344 |               2392 |        6 |   24960
+ Incasare               |    8633 |                177 |        0 |   22571
+ NotaContabila          |     921 |               2442 |       45 |    3470
+ Plata                  |     227 |                290 |        0 |    1969
+ FacturaIntrare         |     116 |              16901 |       10 |    1995
+ ReturClient            |       0 |               1631 |        0 |       0
+ DescarcareGestiune     |       0 |                  0 |        0 |   36689
+ BonConsum              |       0 |                  0 |        0 |     545
+ NotaTransfer           |       0 |                  0 |        0 |   45542
+ InchidereTva           |       0 |                  0 |        0 |      12
+ ReturFurnizor          |       0 |                398 |        0 |       0
+ ListaDiferenteInventar |       0 |                  0 |        0 |      18
+
+
+===== B6.4 B: cate partide per document, si cate conturi "inventate" de imperechere =====
+ nr_conturi | documente 
+------------+-----------
+          1 |     62216
+          2 |      2209
+          3 |         8
+
+ partide_pe_cont_inventat |     suma     
+--------------------------+--------------
+                     1085 | -25585375.12
+

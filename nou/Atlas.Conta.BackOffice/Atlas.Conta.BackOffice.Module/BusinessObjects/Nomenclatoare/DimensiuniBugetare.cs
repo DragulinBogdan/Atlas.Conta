@@ -45,11 +45,3 @@ public class Unitate : BaseObject {
 // FK de pe linia de document rămâne stabilă.
 [NavigationItem("Nomenclatoare")]
 public class Angajament : Dimensiune { }
-
-[NavigationItem("Nomenclatoare")]
-public class PerioadaFiscala : BaseObject {
-    public virtual int An { get; set; }
-    public virtual int Luna { get; set; }
-    // Pivotul gardienilor din decizia 14: perioada închisă = graniță absolută.
-    public virtual bool Inchisa { get; set; }
-}

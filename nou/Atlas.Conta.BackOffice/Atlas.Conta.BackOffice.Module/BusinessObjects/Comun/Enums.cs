@@ -76,6 +76,26 @@ public enum RegimTva {
 // autolichidare 4426 = 4427, pe `Colectat` nicio taxă și niciun rând.
 public enum DirectieTva { Deductibil = 1, Colectat = 2 }
 
+// Unde se declară un fapt fiscal a cărui perioadă e deja închisă (F27-D5) —
+// DATĂ pe `PoliticaTva`, nu regulă în motor: art. 301 Cod fiscal exercită
+// dreptul de deducere în perioada primirii facturii (fără rectificativă), pe
+// când o factură emisă de noi și neînregistrată la timp rămâne fiscal a
+// perioadei originale. Profilul alege; motorul nu știe de ce.
+public enum DeclarareIntarziata {
+    [XafDisplayName("În perioada înregistrării")] PerioadaInregistrarii = 1,
+    [XafDisplayName("În perioada faptului")] PerioadaFaptului = 2,
+}
+
+// De ce se corectează un document operat (F27-D6). Decide EFECTUL FISCAL al
+// perechii storno + document nou, nu contarea: eroarea materială aparține
+// perioadei originale (rândurile de TVA păstrează perioada ei de declarare ⇒
+// rectificativă), faptul nou e un fapt al perioadei corecției (regula normală
+// D5). Fără membru 0 — convenția din fișier.
+public enum MotivCorectie {
+    [XafDisplayName("Eroare materială")] EroareMateriala = 1,
+    [XafDisplayName("Fapt nou")] FaptNou = 2,
+}
+
 // Latura jurnalului de TVA (JT-D1): cumpărări sau vânzări. Sensul NU e o a doua
 // axă de configurare — se derivă din `PoliticaTva.Directie` a tipului de
 // document (Deductibil → Achiziție, Colectat → Livrare), acolo unde profilul a
@@ -401,6 +421,11 @@ public enum MotivNegenerare {
     [XafDisplayName("Există o închidere pentru o lună ulterioară")] NeCronologica = 4,
     [XafDisplayName("O lună anterioară are un draft de închidere neoperat")] DraftAnterior = 5,
     [XafDisplayName("Perioada fiscală e închisă")] PerioadaInchisa = 6,
+    // Cauzele proprii amortizării lunare; restul se citesc de ambele generatoare (F26-D7).
+    [XafDisplayName("O fișă eligibilă n-are politică de amortizare")] FisaFaraPolitica = 7,
+    [XafDisplayName("Luna are deja o amortizare")] AmortizareVie = 8,
+    [XafDisplayName("Luna precedentă n-are amortizare operată")] LunaLipsa = 9,
+    [XafDisplayName("Nicio fișă eligibilă în lună")] FaraFise = 10,
 }
 
 // Clasa fiscală a partenerului (felia 23, F23-D2) — aceleași patru valori cu
@@ -440,6 +465,26 @@ public enum FelConstatare {
     [XafDisplayName("Tip de TVA inactiv, referit ca implicit")] TipTvaInactivReferit = 3,
     [XafDisplayName("Politică lipsă")] PoliticaLipsa = 4,
     [XafDisplayName("Mapare lipsă")] MapareLipsa = 5,
+}
+
+// Cât de tare refuză o constatare de închidere de perioadă (F27-D2). Blocantul
+// nu se acceptă niciodată; avertismentul se închide doar acceptat pe cheie;
+// `Ignorat` nu se emite deloc. Severitatea constatărilor DE CONȚINUT vine din
+// `PoliticaInchidere`; blocantele STRUCTURALE (lanțul) rămân în cod.
+public enum SeveritateConstatare {
+    [XafDisplayName("Blocant")] Blocant = 1,
+    [XafDisplayName("Avertisment")] Avertisment = 2,
+    [XafDisplayName("Ignorat")] Ignorat = 3,
+}
+
+// Familia unei constatări DE CONȚINUT a închiderii de perioadă (F27-D2). Cheia
+// constatării (pe care se dă acceptarea) e mai fină — poartă și obiectul; felul
+// e ce se configurează în `PoliticaInchidere`.
+public enum FelConstatareInchidere {
+    [XafDisplayName("Închiderea de TVA lipsește sau nu e operată")] ItvLipsa = 1,
+    [XafDisplayName("Amortizarea lunară lipsește sau nu e operată")] AmoLipsa = 2,
+    [XafDisplayName("Document în lucru cu data înregistrării în perioadă")] DraftInPerioada = 3,
+    [XafDisplayName("Document operat cu rest scadent în perioadă")] RestScadent = 4,
 }
 
 // ═══ Verdictele POTRIVIRII (felia 24, F24-D5/D6) ═══════════════════════════
@@ -496,4 +541,57 @@ public enum SursaRezolvata {
     [XafDisplayName("Contul repartitorului predator")] RepartitorPredator,
     [XafDisplayName("Contul repartitorului primitor")] RepartitorPrimitor,
     [XafDisplayName("Contul explicit, ca rezervă")] FallbackExplicit,
+}
+
+// ═══ Felia 26 — imobilizări și amortizare (F26-D1…D7) ══════════════════════
+
+public enum FelMiscareImobilizare {
+    [XafDisplayName("Intrare")] Intrare = 1,
+    [XafDisplayName("Modernizare")] Modernizare = 2,
+    [XafDisplayName("Revizuire a parametrilor")] Revizuire = 3,
+    [XafDisplayName("Amortizare")] Amortizare = 4,
+    [XafDisplayName("Ieșire")] Iesire = 5,
+    // Rezervat: coloanele există, aritmetica nu (F26-D9 / F26-r6).
+    [XafDisplayName("Reevaluare")] Reevaluare = 6,
+}
+
+public enum MetodaAmortizare {
+    [XafDisplayName("Liniară")] Liniara = 1,
+    [XafDisplayName("Accelerată")] Accelerata = 2,
+    [XafDisplayName("Degresivă")] Degresiva = 3,
+}
+
+public enum StareImobilizare {
+    [XafDisplayName("Nouă")] Noua = 1,
+    [XafDisplayName("În funcțiune")] InFunctiune = 2,
+    [XafDisplayName("Ieșită")] Iesita = 3,
+}
+
+// Cheia pe care `RegulaDeductibilitate` leagă plafoanele legii (F26-D4).
+public enum CategorieFiscala {
+    [XafDisplayName("Standard")] Standard = 1,
+    [XafDisplayName("Vehicul de persoane, maximum 9 locuri")] VehiculPersoaneMax9Locuri = 2,
+    [XafDisplayName("Sediu social în locuință")] SediuSocialInLocuinta = 3,
+}
+
+public enum FelDeductibilitate {
+    [XafDisplayName("Plafon lunar")] PlafonLunar = 1,
+    [XafDisplayName("Procent")] Procent = 2,
+}
+
+public enum FelLiniePif {
+    [XafDisplayName("Intrare")] Intrare = 1,
+    [XafDisplayName("Modernizare")] Modernizare = 2,
+    [XafDisplayName("Revizuire a parametrilor")] Revizuire = 3,
+}
+
+public enum FelLinieIesire {
+    [XafDisplayName("Amortizare cumulată")] AmortizareCumulata = 1,
+    [XafDisplayName("Valoare rămasă")] ValoareRamasa = 2,
+}
+
+public enum CauzaIesire {
+    [XafDisplayName("Casare")] Casare = 1,
+    [XafDisplayName("Vânzare")] Vanzare = 2,
+    [XafDisplayName("Lipsă")] Lipsa = 3,
 }

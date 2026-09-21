@@ -1,0 +1,29 @@
+                                                                                                                                                                                                                                                                                                                                                            QUERY PLAN                                                                                                                                                                                                                                                                                                                                                            
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=446906.56..693651.95 rows=929587 width=98) (actual time=451.567..898.099 rows=39056.00 loops=1)
+   Group Key: "Partener", "Cont", "Latura"
+   Buffers: shared hit=15990 read=240871, temp read=38969 written=39029
+   ->  Gather Merge  (cost=446906.56..649297.35 rows=1737760 width=44) (actual time=448.949..717.826 rows=2827714.00 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=15990 read=240871, temp read=38969 written=39029
+         ->  Sort  (cost=445906.53..447716.70 rows=724067 width=44) (actual time=439.783..492.108 rows=942571.33 loops=3)
+               Sort Key: "Partener", "Cont", "Latura"
+               Sort Method: external merge  Disk: 51936kB
+               Buffers: shared hit=15990 read=240871, temp read=38969 written=39029
+               Worker 0:  Sort Method: external merge  Disk: 51928kB
+               Worker 1:  Sort Method: external merge  Disk: 52096kB
+               ->  Parallel Seq Scan on "Postare" p  (cost=0.04..353159.95 rows=724067 width=44) (actual time=50.596..226.509 rows=942571.33 loops=3)
+                     Filter: (("Data" <= '2025-06-30'::date) AND ("Spatiu" = 1) AND ("Cont" = ANY ('{01a0b48c-a8aa-7e36-8f14-4fa2fa4ea009,01a0b48c-a8ab-7b50-b3b7-071a2b7a349b,01a0b48c-a8ac-7e4b-a6f0-9387b76e96eb,01a0b48c-a8ac-7ab5-a52e-152a7dc2545f,01a0b48c-a8ad-7886-bf9d-1ef6ec9b9d85,01a0b48c-a8ad-738e-9300-b9812b654f5d,01a0b48c-a8ae-7e28-ab0c-d459207dc577,01a0b48c-a8af-76f6-8adc-75a198ef6a63,01a0b48c-a8af-70d2-ad7b-1d1f3709b4fe,01a0b48c-a8b0-734d-a49d-507ee62971ef,01a0b48c-a8b1-7d53-a2d6-b11eb0cc58ed,01a0b48c-a8b2-73ce-a6cd-a045b80364a8,01a0b48c-a8b2-7841-9d84-1c268bdb59e3,01a0b48c-a8b3-7212-9f12-a75dc52b91c2,01a0b48c-a8b3-70d2-85c6-14793081762f,01a0b48c-a8b4-75ad-a6f5-0403d7678e18}'::uuid[])))
+                     Rows Removed by Filter: 2911610
+                     Buffers: shared hit=15900 read=240871
+ Planning:
+   Buffers: shared hit=422
+ Planning Time: 0.769 ms
+ JIT:
+   Functions: 15
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.886 ms (Deform 0.438 ms), Inlining 84.647 ms, Optimization 38.131 ms, Emission 28.998 ms, Total 152.662 ms
+ Execution Time: 912.328 ms
+(25 rows)
+

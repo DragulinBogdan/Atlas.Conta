@@ -1,0 +1,168 @@
+                                                                                                                 QUERY PLAN                                                                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Hash Left Join  (cost=120078.08..177196.46 rows=142993 width=237) (actual time=359.944..543.939 rows=144239.00 loops=1)
+   Hash Cond: (f."TranzactieId" = cp."TranzactieId")
+   Buffers: shared hit=40570 read=7076, temp read=2972 written=2974
+   ->  Hash Left Join  (cost=11271.63..68014.63 rows=142993 width=205) (actual time=79.505..241.577 rows=144239.00 loops=1)
+         Hash Cond: (f."DocumentId" = doc."ID")
+         Buffers: shared hit=14914 read=3751, temp read=2410 written=2410
+         ->  Subquery Scan on f  (cost=116.98..47418.61 rows=142993 width=180) (actual time=36.762..151.244 rows=144239.00 loops=1)
+               Filter: (f."Data" >= '2025-01-01'::date)
+               Rows Removed by Filter: 2
+               Buffers: shared hit=14444
+               ->  WindowAgg  (cost=116.98..45621.22 rows=143791 width=180) (actual time=36.756..143.340 rows=144241.00 loops=1)
+                     Window: w1 AS (ORDER BY p_1."Data", p_1."TranzactieId", p_1."ID" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                     Storage: Memory  Maximum Storage: 17kB
+                     Buffers: shared hit=14444
+                     ->  Incremental Sort  (cost=116.67..40948.01 rows=143791 width=60) (actual time=36.744..108.092 rows=144241.00 loops=1)
+                           Sort Key: p_1."Data", p_1."TranzactieId", p_1."ID"
+                           Presorted Key: p_1."Data"
+                           Full-sort Groups: 281  Sort Method: quicksort  Average Memory: 30kB  Peak Memory: 30kB
+                           Pre-sorted Groups: 345  Sort Method: quicksort  Average Memory: 72kB  Peak Memory: 75kB
+                           Buffers: shared hit=14444
+                           ->  Merge Append  (cost=1.88..32874.53 rows=143791 width=60) (actual time=36.667..92.267 rows=144241.00 loops=1)
+                                 Sort Key: p_1."Data"
+                                 Buffers: shared hit=14441
+                                 ->  Index Scan using "Postare_Contabil_2016_Data_idx" on "Postare_Contabil_2016" p_1  (cost=0.12..8.15 rows=1 width=74) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                       Index Cond: ("Data" <= '2025-12-31'::date)
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Index Searches: 1
+                                       Buffers: shared hit=1
+                                 ->  Index Scan using "Postare_Contabil_2017_Data_idx" on "Postare_Contabil_2017" p_2  (cost=0.12..8.15 rows=1 width=74) (actual time=0.004..0.004 rows=0.00 loops=1)
+                                       Index Cond: ("Data" <= '2025-12-31'::date)
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Index Searches: 1
+                                       Buffers: shared hit=1
+                                 ->  Index Scan using "Postare_Contabil_2018_Data_idx" on "Postare_Contabil_2018" p_3  (cost=0.12..8.15 rows=1 width=74) (actual time=0.004..0.005 rows=0.00 loops=1)
+                                       Index Cond: ("Data" <= '2025-12-31'::date)
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Index Searches: 1
+                                       Buffers: shared hit=1
+                                 ->  Index Scan using "Postare_Contabil_2019_Data_idx" on "Postare_Contabil_2019" p_4  (cost=0.12..8.15 rows=1 width=74) (actual time=0.004..0.004 rows=0.00 loops=1)
+                                       Index Cond: ("Data" <= '2025-12-31'::date)
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Index Searches: 1
+                                       Buffers: shared hit=1
+                                 ->  Index Scan using "Postare_Contabil_2020_Data_idx" on "Postare_Contabil_2020" p_5  (cost=0.12..8.15 rows=1 width=74) (actual time=0.004..0.005 rows=0.00 loops=1)
+                                       Index Cond: ("Data" <= '2025-12-31'::date)
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Index Searches: 1
+                                       Buffers: shared hit=1
+                                 ->  Index Scan using "Postare_Contabil_2021_Data_idx" on "Postare_Contabil_2021" p_6  (cost=0.12..8.15 rows=1 width=74) (actual time=0.004..0.004 rows=0.00 loops=1)
+                                       Index Cond: ("Data" <= '2025-12-31'::date)
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Index Searches: 1
+                                       Buffers: shared hit=1
+                                 ->  Index Scan using "Postare_Contabil_2022_Data_idx" on "Postare_Contabil_2022" p_7  (cost=0.12..8.15 rows=1 width=74) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                       Index Cond: ("Data" <= '2025-12-31'::date)
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Index Searches: 1
+                                       Buffers: shared hit=1
+                                 ->  Index Scan using "Postare_Contabil_2023_Data_idx" on "Postare_Contabil_2023" p_8  (cost=0.12..8.15 rows=1 width=74) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                       Index Cond: ("Data" <= '2025-12-31'::date)
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Index Searches: 1
+                                       Buffers: shared hit=1
+                                 ->  Index Scan using "Postare_Contabil_2024_Cont_Data_Latura_Valoare_Partener_Uni_idx" on "Postare_Contabil_2024" p_9  (cost=0.14..12.14 rows=2 width=61) (actual time=36.602..36.603 rows=2.00 loops=1)
+                                       Index Cond: (("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date))
+                                       Filter: ("Spatiu" = 1)
+                                       Index Searches: 1
+                                       Buffers: shared hit=2
+                                 ->  Index Scan using "Postare_Contabil_2025_Data_idx" on "Postare_Contabil_2025" p_10  (cost=0.42..29582.74 rows=143780 width=60) (actual time=0.029..49.808 rows=144239.00 loops=1)
+                                       Index Cond: ("Data" <= '2025-12-31'::date)
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Rows Removed by Filter: 464397
+                                       Index Searches: 1
+                                       Buffers: shared hit=14430
+                                 ->  Index Scan using "Postare_Contabil_rest_Data_idx" on "Postare_Contabil_rest" p_11  (cost=0.12..8.15 rows=1 width=74) (actual time=0.002..0.002 rows=0.00 loops=1)
+                                       Index Cond: ("Data" <= '2025-12-31'::date)
+                                       Filter: (("Spatiu" = 1) AND ("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid))
+                                       Index Searches: 1
+                                       Buffers: shared hit=1
+         ->  Hash  (cost=6785.83..6785.83 rows=205186 width=41) (actual time=42.090..42.090 rows=205186.00 loops=1)
+               Buckets: 131072  Batches: 4  Memory Usage: 4777kB
+               Buffers: shared hit=470 read=3751, temp written=1180
+               ->  Seq Scan on "Documente" doc  (cost=0.00..6785.83 rows=205186 width=41) (actual time=0.242..17.511 rows=205186.00 loops=1)
+                     Filter: ("GCRecord" = 0)
+                     Buffers: shared hit=470 read=3751
+   ->  Hash  (cost=107905.09..107905.09 rows=72109 width=48) (actual time=279.877..279.887 rows=76280.00 loops=1)
+         Buckets: 131072  Batches: 1  Memory Usage: 5204kB
+         Buffers: shared hit=25656 read=3325, temp read=562 written=564
+         ->  Subquery Scan on cp  (cost=103443.33..107905.09 rows=72109 width=48) (actual time=241.377..271.593 rows=76280.00 loops=1)
+               Buffers: shared hit=25656 read=3325, temp read=562 written=564
+               ->  GroupAggregate  (cost=103443.33..107184.00 rows=72109 width=48) (actual time=241.374..268.287 rows=76280.00 loops=1)
+                     Group Key: q."TranzactieId"
+                     Buffers: shared hit=25656 read=3325, temp read=562 written=564
+                     ->  Sort  (cost=103443.33..104389.77 rows=378574 width=20) (actual time=241.326..247.694 rows=149755.00 loops=1)
+                           Sort Key: q."TranzactieId", c2."Simbol"
+                           Sort Method: external merge  Disk: 4496kB
+                           Buffers: shared hit=25656 read=3325, temp read=562 written=564
+                           ->  Hash Join  (cost=25446.41..60601.54 rows=378574 width=20) (actual time=65.032..215.189 rows=149755.00 loops=1)
+                                 Hash Cond: (q."TranzactieId" = p2."TranzactieId")
+                                 Buffers: shared hit=25653 read=3325
+                                 ->  Hash Join  (cost=30.49..29837.83 rows=432821 width=20) (actual time=0.373..98.954 rows=498483.00 loops=1)
+                                       Hash Cond: (q."Cont" = c2."ID")
+                                       Buffers: shared hit=13693 read=1823
+                                       ->  Append  (cost=0.00..28486.28 rows=500410 width=32) (actual time=0.059..67.587 rows=498483.00 loops=1)
+                                             Buffers: shared hit=13693 read=1807
+                                             ->  Seq Scan on "Postare_Contabil_2016" q_1  (cost=0.00..0.00 rows=1 width=32) (actual time=0.010..0.010 rows=0.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                             ->  Seq Scan on "Postare_Contabil_2017" q_2  (cost=0.00..0.00 rows=1 width=32) (actual time=0.004..0.004 rows=0.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                             ->  Seq Scan on "Postare_Contabil_2018" q_3  (cost=0.00..0.00 rows=1 width=32) (actual time=0.004..0.005 rows=0.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                             ->  Seq Scan on "Postare_Contabil_2019" q_4  (cost=0.00..0.00 rows=1 width=32) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                             ->  Seq Scan on "Postare_Contabil_2020" q_5  (cost=0.00..0.00 rows=1 width=32) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                             ->  Seq Scan on "Postare_Contabil_2021" q_6  (cost=0.00..0.00 rows=1 width=32) (actual time=0.004..0.004 rows=0.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                             ->  Seq Scan on "Postare_Contabil_2022" q_7  (cost=0.00..0.00 rows=1 width=32) (actual time=0.004..0.004 rows=0.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                             ->  Seq Scan on "Postare_Contabil_2023" q_8  (cost=0.00..0.00 rows=1 width=32) (actual time=0.003..0.003 rows=0.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                             ->  Seq Scan on "Postare_Contabil_2024" q_9  (cost=0.00..3.92 rows=126 width=32) (actual time=0.022..0.038 rows=126.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                                   Rows Removed by Filter: 2
+                                                   Buffers: shared hit=1 read=1
+                                             ->  Seq Scan on "Postare_Contabil_2025" q_10  (cost=0.00..22868.88 rows=466145 width=32) (actual time=0.022..36.035 rows=464397.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                                   Rows Removed by Filter: 144239
+                                                   Buffers: shared hit=13692 read=28
+                                             ->  Seq Scan on "Postare_Contabil_2026" q_11  (cost=0.00..3111.44 rows=34130 width=32) (actual time=4.058..13.093 rows=33960.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                                   Rows Removed by Filter: 54936
+                                                   Buffers: shared read=1778
+                                             ->  Seq Scan on "Postare_Contabil_rest" q_12  (cost=0.00..0.00 rows=1 width=32) (actual time=0.016..0.016 rows=0.00 loops=1)
+                                                   Filter: (("Cont" <> '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Spatiu" = 1))
+                                       ->  Hash  (cost=22.44..22.44 rows=644 width=20) (actual time=0.304..0.304 rows=644.00 loops=1)
+                                             Buckets: 1024  Batches: 1  Memory Usage: 41kB
+                                             Buffers: shared read=16
+                                             ->  Seq Scan on "Conturi" c2  (cost=0.00..22.44 rows=644 width=20) (actual time=0.167..0.257 rows=644.00 loops=1)
+                                                   Buffers: shared read=16
+                                 ->  Hash  (cost=24687.45..24687.45 rows=58278 width=16) (actual time=64.337..64.338 rows=76291.00 loops=1)
+                                       Buckets: 131072 (originally 65536)  Batches: 1 (originally 1)  Memory Usage: 4601kB
+                                       Buffers: shared hit=11960 read=1502
+                                       ->  HashAggregate  (cost=24104.67..24687.45 rows=58278 width=16) (actual time=53.498..58.075 rows=76291.00 loops=1)
+                                             Group Key: p2."TranzactieId"
+                                             Batches: 1  Memory Usage: 4633kB
+                                             Buffers: shared hit=11960 read=1502
+                                             ->  Bitmap Heap Scan on "Postare_Contabil_2025" p2  (cost=7149.62..23745.22 rows=143780 width=16) (actual time=19.081..39.259 rows=144239.00 loops=1)
+                                                   Recheck Cond: (("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date) AND ("Data" >= '2025-01-01'::date))
+                                                   Filter: ("Spatiu" = 1)
+                                                   Heap Blocks: exact=11960
+                                                   Buffers: shared hit=11960 read=1502
+                                                   ->  Bitmap Index Scan on "Postare_Contabil_2025_Cont_Data_Latura_Valoare_Partener_Uni_idx"  (cost=0.00..7113.68 rows=143780 width=0) (actual time=18.141..18.141 rows=144239.00 loops=1)
+                                                         Index Cond: (("Cont" = '01a0b48c-a8b2-73ce-a6cd-a045b80364a8'::uuid) AND ("Data" <= '2025-12-31'::date) AND ("Data" >= '2025-01-01'::date))
+                                                         Index Searches: 1
+                                                         Buffers: shared read=1502
+ Planning:
+   Buffers: shared hit=2815 read=21 dirtied=2
+ Planning Time: 9.453 ms
+ JIT:
+   Functions: 170
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+   Timing: Generation 4.070 ms (Deform 2.507 ms), Inlining 0.000 ms, Optimization 3.653 ms, Emission 33.161 ms, Total 40.884 ms
+ Execution Time: 561.379 ms
+(164 rows)
+

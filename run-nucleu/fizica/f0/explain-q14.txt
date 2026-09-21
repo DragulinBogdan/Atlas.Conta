@@ -1,0 +1,59 @@
+BEGIN
+Insert on "RegistruStoc"  (cost=0.42..8.53 rows=0 width=0) (actual time=0.019..0.019 rows=0.00 loops=1)
+  Buffers: shared hit=3
+  ->  Index Scan using "IX_RegistruStoc_DocumentId" on "RegistruStoc" r  (cost=0.42..8.53 rows=5 width=107) (actual time=0.018..0.019 rows=0.00 loops=1)
+        Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+        Filter: ("GCRecord" = 0)
+        Index Searches: 1
+        Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=206
+Planning Time: 0.403 ms
+Execution Time: 0.057 ms
+Insert on "RegistruContabil"  (cost=0.42..8.49 rows=0 width=0) (actual time=23.628..23.629 rows=0.00 loops=1)
+  Buffers: shared hit=2501 read=113 dirtied=80 written=1
+  ->  Index Scan using "IX_RegistruContabil_DocumentId" on "RegistruContabil" r  (cost=0.42..8.49 rows=3 width=366) (actual time=0.480..0.940 rows=50.00 loops=1)
+        Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+        Filter: ("GCRecord" = 0)
+        Index Searches: 1
+        Buffers: shared hit=3 read=2
+Planning:
+  Buffers: shared hit=380
+Planning Time: 0.393 ms
+Trigger for constraint FK_RegistruContabil_CoduriEconomice_DimensiuniCredit_CodEconom~: time=1.661 calls=50
+Trigger for constraint FK_RegistruContabil_CoduriEconomice_DimensiuniDebit_CodEconomi~: time=0.025 calls=50
+Trigger for constraint FK_RegistruContabil_CoduriFunctionale_DimensiuniCredit_CodFunc~: time=0.230 calls=50
+Trigger for constraint FK_RegistruContabil_CoduriFunctionale_DimensiuniDebit_CodFunct~: time=0.023 calls=50
+Trigger for constraint FK_RegistruContabil_Conturi_ContCreditId: time=2.114 calls=50
+Trigger for constraint FK_RegistruContabil_Conturi_ContDebitId: time=0.556 calls=50
+Trigger for constraint FK_RegistruContabil_DocumentDetalii_DetaliuId: time=6.201 calls=50
+Trigger for constraint FK_RegistruContabil_Documente_DocumentId: time=1.817 calls=50
+Trigger for constraint FK_RegistruContabil_Produse_DimensiuniCredit_MaterialId: time=17.355 calls=50
+Trigger for constraint FK_RegistruContabil_Produse_DimensiuniDebit_MaterialId: time=0.612 calls=50
+Trigger for constraint FK_RegistruContabil_Proiecte_DimensiuniCredit_ProiectId: time=0.081 calls=50
+Trigger for constraint FK_RegistruContabil_Proiecte_DimensiuniDebit_ProiectId: time=0.022 calls=50
+Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniCredit_CentruCostId: time=0.052 calls=50
+Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniCredit_RepartitorId: time=2.085 calls=50
+Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniDebit_CentruCostId: time=0.023 calls=50
+Trigger for constraint FK_RegistruContabil_Repartitori_DimensiuniDebit_RepartitorId: time=0.479 calls=50
+Trigger for constraint FK_RegistruContabil_SurseFinantare_DimensiuniCredit_SursaFinan~: time=0.073 calls=50
+Trigger for constraint FK_RegistruContabil_SurseFinantare_DimensiuniDebit_SursaFinant~: time=0.021 calls=50
+Trigger for constraint FK_RegistruContabil_Unitati_DimensiuniCredit_UnitateId: time=0.035 calls=50
+Trigger for constraint FK_RegistruContabil_Unitati_DimensiuniDebit_UnitateId: time=0.018 calls=50
+Execution Time: 57.205 ms
+Insert on "RegistruTva"  (cost=0.29..10.79 rows=0 width=0) (actual time=4.687..4.687 rows=0.00 loops=1)
+  Buffers: shared hit=629 read=17 dirtied=10 written=1
+  ->  Index Scan using "IX_RegistruTva_DocumentId" on "RegistruTva" r  (cost=0.29..10.79 rows=60 width=134) (actual time=0.557..1.163 rows=49.00 loops=1)
+        Index Cond: ("DocumentId" = '01a0b4d1-42ba-7622-a0c8-6a1e534425fb'::uuid)
+        Filter: ("GCRecord" = 0)
+        Index Searches: 1
+        Buffers: shared hit=2 read=2
+Planning:
+  Buffers: shared hit=137
+Planning Time: 0.238 ms
+Trigger for constraint FK_RegistruTva_DocumentDetalii_DetaliuId: time=0.386 calls=49
+Trigger for constraint FK_RegistruTva_Documente_DocumentId: time=0.221 calls=49
+Trigger for constraint FK_RegistruTva_Repartitori_PartenerId: time=0.183 calls=49
+Trigger for constraint FK_RegistruTva_TipuriTva_TipTvaId: time=3.176 calls=49
+Execution Time: 8.675 ms
+ROLLBACK

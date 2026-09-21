@@ -1,0 +1,98 @@
+Timing is on.
+            proba            | valoare 
+-----------------------------+---------
+ a_tranzactii_dezechilibrate | 0
+(1 row)
+
+Time: 373.018 ms
+           proba           | valoare 
+---------------------------+---------
+ b_conturi_debit_diferite  | 0
+ b_conturi_credit_diferite | 0
+(2 rows)
+
+Time: 101.086 ms
+       proba       | valoare 
+-------------------+---------
+ c_loturi_diferite | 0
+(1 row)
+
+Time: 215.522 ms
+        proba        | valoare 
+---------------------+---------
+ d_tva_chei_diferite | 0
+(1 row)
+
+Time: 45.777 ms
+                 proba                  | valoare 
+----------------------------------------+---------
+ e_contabil_asteptat                    | 697660
+ e_contabil_real                        | 697660
+ e_stoc_asteptat                        | 283498
+ e_stoc_real                            | 283498
+ e_fiscal_asteptat                      | 181464
+ e_fiscal_real                          | 181464
+ e_tranzactii_operare                   | 205173
+ e_tranzactii_storno                    | 0
+ e_tranzactii_deschidere                | 1
+ e_tranzactii_imperechere               | 44448
+ e_stingatori_fara_postare_tert         | 0
+ e_facturi_fara_postare_tert            | 1085
+ e_documente_cu_mai_multe_postari_tert  | 56771
+ e_stingatori_cu_mai_multe_postari_tert | 38
+ e_fiscal_taxa_zero                     | 0
+(15 rows)
+
+Time: 279.056 ms
+CREATE VIEW
+Time: 2.557 ms
+              proba               | valoare 
+----------------------------------+---------
+ f_facturaiesire_coincid          | 36666
+ f_facturaiesire_difera           | 2030
+ f_facturaiesire_doar_in_cub      | 6
+ f_facturaintrare_coincid         | 1082
+ f_facturaintrare_difera          | 17797
+ f_facturaintrare_doar_in_cub     | 10
+ f_facturaintrare_doar_in_partide | 133
+(7 rows)
+
+Time: 619.172 ms
+   proba   |    ClrType     |                 doc                  |    cub     |   partida   | TotalStingere | postat_pe_tert 
+-----------+----------------+--------------------------------------+------------+-------------+---------------+----------------
+ f_exemplu | FacturaIntrare | 01a0b540-87e4-7bdf-a028-f94ac20de4c3 | -275434.70 | -1587028.49 |   -1587028.49 |    -1311593.79
+ f_exemplu | FacturaIntrare | 01a0b540-3957-7797-b256-27ee887ab75c |  275434.70 |  1587028.49 |    1587028.49 |     1311593.79
+ f_exemplu | FacturaIntrare | 01a0b4bc-dff0-7f58-ac75-3f37edfd93c1 |          0 |  1168796.00 |    1168796.00 |               
+(3 rows)
+
+Time: 164.565 ms
+           proba           | valoare 
+---------------------------+---------
+ f2_facturaiesire_abateri  | 2061
+ f2_facturaiesire_egale    | 38474
+ f2_facturaintrare_abateri | 17807
+ f2_facturaintrare_egale   | 1084
+(4 rows)
+
+Time: 832.248 ms
+   proba    |    ClrType     |                 doc                  |    cub     |  asteptat   | TotalStingere | postat_pe_tert 
+------------+----------------+--------------------------------------+------------+-------------+---------------+----------------
+ f2_exemplu | FacturaIntrare | 01a0b540-87e4-7bdf-a028-f94ac20de4c3 | -275434.70 | -1587028.49 |   -1587028.49 |    -1311593.79
+ f2_exemplu | FacturaIntrare | 01a0b540-3957-7797-b256-27ee887ab75c |  275434.70 |  1587028.49 |    1587028.49 |     1311593.79
+ f2_exemplu | FacturaIntrare | 01a0b4bc-dff0-7f58-ac75-3f37edfd93c1 | -938375.94 |   230420.06 |    1168796.00 |               
+(3 rows)
+
+Time: 269.912 ms
+              proba              | valoare 
+---------------------------------+---------
+ g_randuri_partener_pe_ambele    | 115
+ g_randuri_partener_doar_debit   | 116463
+ g_randuri_partener_doar_credit  | 106750
+ g_randuri_fara_partener         | 81054
+ g_postari_tert_fara_partener    | 10182
+ g_postari_tert_total            | 311722
+ g_postari_contabile_cu_partener | 533194
+ g_postari_contabile_cu_gestiune | 385193
+(8 rows)
+
+Time: 234.075 ms

@@ -1,0 +1,34 @@
+                                                                                 QUERY PLAN                                                                                  
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Gather  (cost=12812.94..64612.96 rows=44615 width=73) (actual time=11.736..134.070 rows=139600.00 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   Buffers: shared hit=2717 read=33354
+   ->  Parallel Hash Semi Join  (cost=11812.94..59151.46 rows=18590 width=73) (actual time=9.457..120.356 rows=46533.33 loops=3)
+         Hash Cond: (p."LinieId" = c."LinieId")
+         Buffers: shared hit=2717 read=33354
+         ->  Hash Join  (cost=1.18..46491.55 rows=102678 width=73) (actual time=0.148..85.193 rows=604880.00 loops=3)
+               Hash Cond: (p."CodTvaId" = ct."ID")
+               Buffers: shared hit=1561 read=33354
+               ->  Parallel Seq Scan on "Postare_Fiscal" p  (cost=0.00..44362.90 rows=756072 width=64) (actual time=0.120..43.006 rows=604880.00 loops=3)
+                     Filter: ("Spatiu" = 3)
+                     Buffers: shared hit=1558 read=33354
+               ->  Hash  (cost=1.08..1.08 rows=8 width=13) (actual time=0.015..0.016 rows=8.00 loops=3)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=3
+                     ->  Seq Scan on "CodTva" ct  (cost=0.00..1.08 rows=8 width=13) (actual time=0.008..0.009 rows=8.00 loops=3)
+                           Buffers: shared hit=3
+         ->  Parallel Hash  (cost=11443.06..11443.06 rows=29496 width=16) (actual time=3.040..3.041 rows=15708.67 loops=3)
+               Buckets: 65536  Batches: 1  Memory Usage: 2752kB
+               Buffers: shared hit=1156
+               ->  Parallel Index Scan using ix_f2c_data on "Postare_Contabil" c  (cost=0.43..11443.06 rows=29496 width=16) (actual time=0.018..1.412 rows=15708.67 loops=3)
+                     Index Cond: (("Data" >= '2025-06-01'::date) AND ("Data" <= '2025-06-30'::date))
+                     Filter: (("LinieId" IS NOT NULL) AND ("Spatiu" = 1))
+                     Index Searches: 1
+                     Buffers: shared hit=1156
+ Planning:
+   Buffers: shared hit=752
+ Planning Time: 0.948 ms
+ Execution Time: 136.836 ms
+(30 rows)
+

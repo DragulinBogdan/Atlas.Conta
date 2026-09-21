@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Column, DataGrid } from 'devextreme-react/data-grid';
 import { DocumentShell, type Comanda } from '../../nucleu/DocumentShell';
+import { CorectieDocument } from '../../nucleu/CorectieDocument';
 import { ConfirmareInline } from '../../nucleu/ConfirmareInline';
 import { CampShell } from '../../nucleu/CampShell';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
@@ -37,7 +38,7 @@ import { NtcEditorLinie, type EticheteCulese } from './NtcEditorLinie';
 // Panoul de la subsol NU e cel al trezoreriei: nota poartă contrapartidele pe
 // LINII, iar plafonul are și SENS (F19-D16) — vezi `grupuri` mai jos.
 
-const CAMPURI_ANTET: (keyof NtcWrite & string)[] = ['Data', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof NtcWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function NtcDetaliu() {
@@ -236,6 +237,7 @@ export function NtcDetaliu() {
 
   return (
     <DocumentShell
+      corectie={<CorectieDocument id={doc?.Id} stare={doc?.Stare} corectie={doc?.Corectie} />}
       citire={citit}
       titlu={nou ? 'Notă contabilă — nouă' : `Notă contabilă ${doc?.Numar ?? ''}`}
       sumar={<Sumar stare={doc?.Stare} total={doc?.Total} modificat={modificat || nou} />}
@@ -270,6 +272,7 @@ export function NtcDetaliu() {
                   adevărul, nu o lipsă. */}
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<NtcWrite> camp="Data" />
+              <CampData<NtcWrite> camp="DataInregistrare" />
               {/* AMBELE laturi sunt repartitori INTERNI: contrapartidele reale
                   (partenerii compensării) stau pe LINII, pe cele două câmpuri de
                   repartitor ale postării. Lookup-urile sunt NEFILTRATE (F6-D8):
