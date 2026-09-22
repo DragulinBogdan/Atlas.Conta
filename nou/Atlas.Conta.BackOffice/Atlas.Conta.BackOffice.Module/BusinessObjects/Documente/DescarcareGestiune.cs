@@ -13,6 +13,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [GardContare(NivelContare.TipMaterialExact,
     "Linia descărcării nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class DescarcareGestiune : Document {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantDescarcareGestiune.Instanta;
+
     // Ambele dimensiuni rămân pe gestiune (predatorul) — precedentul Decont 32c:
     // soldul 371/345 se ține per gestiune; clientul trăiește pe rândurile FCL și
     // pe link-ul DocumentSursa, nu pe dimensiunile registrului.

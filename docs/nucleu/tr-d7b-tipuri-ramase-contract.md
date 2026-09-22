@@ -231,12 +231,52 @@ secvența liniilor (ca BCS), capătul 6xx cu `+q` pe gestiunea virtuală
 `Client` (090 (g); prima folosire a constantei). DSC fără `DocumentSursa`
 (din `HandlerAvizIesire`) e un document de sine stătător, fără partidă.
 
-Grupurile literei (a)/(b)/(c): `{FCL ∪ DSC secundar al FCL}` și `{DSC fără
-sursă}`; `Incomplete` raportează FCL cu DSC neoperat. Transferul FCL ↔ INC
-prin `Materializare.Imperecheaza` se ACTIVEAZĂ cu pasul 2 (până acum ieșea
-devreme, FCL nemigrat): plafonul e restul partidei FCL pe 4111 (regula
-MAJOR-A a feliei 31), `Imperecheri.Data` ca dată; cifrele (transferuri
-scrise, plafonate, sărite) intră în raportul pasului.
+Grupurile literei (a)/(b)/(c) NU se schimbă (amendat la pasul 2, 2026-09-22):
+grupul e per COD de tip migrat ∪ conexele prin `PoliticiConex`, iar DSC nu e
+conex — FCL și DSC sunt fiecare grupul lui, cu tranzacția lui în cub, deci
+literele se închid singure; `Incomplete` rămâne pe `PoliticiConex` (un FCL cu
+DSC draft nu e Δ). Transferul FCL ↔ INC prin `Materializare.Imperecheaza` se
+ACTIVEAZĂ cu pasul 2 (până acum ieșea devreme, FCL nemigrat), fără nicio
+atingere: `Transferuri.Cea` ia referința de pe STINGĂTOR (INC: 4111), iar
+plafonul e `Net` pe 4111 al FCL (operare + transferurile primite) — pe FCL cu
+avans partida 419 nu intră în plafon și nu primește transfer. Sub S-D16
+partida de creanță ține și debitul liniei de avans (`4111 = 419`, −100):
+soldul partidei 4111 e netul ei (probat `STR-FCL-AVANS-DOUA-PARTIDE`: 142,
+nu 242), deci împerecherea e plafonată la 142. Cifrele transferurilor
+MATERIALIZATE INC → FCL ies la proba supremă (pasul 7): gate-ul e read-only.
+
+**T-D4.1 — normalizarea oracolului pentru capătul de cost al DSC** (pasul 2):
+registrul DSC are un singur rând de stoc per linie (−q pe 371, predator) și
+rândul `607 = 371` cu AMBELE dimensiuni pe gestiunea predatoare (32c), pe când
+în cub capătul 607 e pe gestiunea virtuală `Client` (proiectată ca lipsă,
+N-D4). Regula, generală, în `Normalizari.TrD41CostulIesiriiEAlTertului` după
+`TrD4`: piciorul contabil FĂRĂ stoc al unei linii care are DOAR ieșiri de stoc,
+fără unitate și fără partener, cu gestiunea egală cu a piciorului de stoc,
+își pierde gestiunea în oracol. BCS (rând `+q` de `Consum`), FCT (recepție =
+intrare), BTR (fără picior contabil), PLT/INC (fără stoc) nu sunt atinse —
+`NUC-BCS`, `NUC-FCT*`, `NUC-BTR-*` verzi, `gate-fct` identic cu felia 31.
+
+**T-D4.2 — diferența declarată pe DSC** (măsurată pe clona TrD7b, 2026-09-22):
+aceeași clasă ca T-D2.2 pe BTR (N-r3): `DescarcareGestiune.PregatesteOperare`
+scrie `round(q × Lot.PretUnitar)` cu prețul înghețat, cubul evaluează pe
+raportul curent al cheii `(Lot, Predator, TipStoc)` (090 (j)). Gate: 842 din
+36.696 DSC (2,29 %), 0 refuzate; în modelul SQL 919 linii din 62.063, toate
+ieșiri PARȚIALE (cele 47.505 goliri sunt egale), Σ semnată +31,01 lei, |Δ| max
+16,50 lei (lot cu `PretUnitar = 0`), 909 din 919 linii ≤ 6 bani, pe
+79.199.898,27 lei mutați; cauze: raport curent ≠ `PretUnitar` 487 linii,
+derivă de rotunjire ≤ 2 bani 419, registru care nu e `round(q × PretUnitar)`
+13. Nu se normalizează; T-r7 se extinde la DSC.
+
+**T-D4.3 — citirea soldului „fără documentul curent" pe o lună închisă**
+(pasul 2, fix în `Motor/StocService.cs:61`): `SolduriService.MiscariCumulate`
+ia snapshot-ul perioadei de referință când sfârșitul ei ≤ data cerută, iar
+`faraDocumentId` filtrează doar rândurile de după referință — un document
+datat în ULTIMA zi a unei luni închise își citea propria ieșire în snapshot
+(2 DSC din 31.12.2025 refuzate `STOC_INSUFICIENT` la gate). Regula: când se
+citește fără un document, referința se termină STRICT înaintea datei
+(`granita = data − 1 zi`; gard pe `DateOnly.MinValue`). Neutru în operarea vie
+(perioada e deschisă); `gate-dsc` după fix: 0 refuzate. Capcana consemnată la
+felia 31 în `dezvoltare-si-validare.md` dispare.
 
 ### T-D5 — NIR: doar recepția fără factură; clona conexă a unui tip migrat NU se materializează
 
@@ -428,7 +468,7 @@ substituenți.
 
 0. **Contractul** (main): fișierul de față; `.gitignore` cu `/agenti-msg/`; commit.
 1. **BTR pe cub + felul mixt** (T-D2): forma mișcării cu fel în nucleu (proprietate: o declarație cu mișcări `Transfer` produce Σ per (Cont, Latura) = 0 pe ele; una cu ambele feluri produce două tranzacții balansate), `Materializare` împarte pe set, `Storneaza`/`Anuleaza` acoperă ambele, `DeclarantNotaTransfer`, override, seed `BTR`, T-D2.1 constatat pe `RegistruStoc` și pin-uit în contract, litera (e) amendată, oracolul: rândurile BTR pe același cont pliate ca `Transfer`; probe `STR-BTR-ACELASI-CONT`, `STR-BTR-CONT-DIFERIT`, `STR-BTR-MIXT`, `STR-BTR-STORNO`; ModelCheck verde pe ambele profiluri; `--declaratie-pe-baza <clonă> BTR` = 100 % egal sau fiecare diferență declarată aici. Oprire: (c), (d), (e), (g), (i). **ÎNCHIS 2026-09-21** (agent F32-P1 + verificarea main-ului): nucleu 165 teste, 0 avertismente; ModelCheck 1698 OK privat / 1434 OK bugetar, 0 FAIL; gate BTR 45.017/45.552 egale + 535 declarate (T-D2.2); `--reconciliere-cub` 0 Δ pe ambele baze; diff gol pe Blazor.Server/WebApi/Client; `STR-BTR-CONT-DIFERIT`/`STR-BTR-MIXT` = proprietățile nucleului (T-D2.1).
-2. **FCL ∪ DSC pe cub** (T-D4): `DeclarantFacturaIesire`, `DeclarantDescarcareGestiune`, gestiunea virtuală `Client` folosită, două partide pe FCL cu avans, transferul FCL ↔ INC activ, grupurile în (a)/(b)/(c) + `Incomplete`, probe `STR-FCL-*`, `STR-DSC-*`, `STR-FCL-AVANS-DOUA-PARTIDE`, `STR-FCL-INC-TRANSFER`; toate probele `FCL*`/`DSC*` existente materializează; bugetar fără DSC; gate pe clonă FCL și DSC (cu cifrele transferurilor). Oprire: (c), (d), (g).
+2. **FCL ∪ DSC pe cub** (T-D4): `DeclarantFacturaIesire`, `DeclarantDescarcareGestiune`, gestiunea virtuală `Client` folosită, două partide pe FCL cu avans, transferul FCL ↔ INC activ, grupurile în (a)/(b)/(c) + `Incomplete`, probe `STR-FCL-*`, `STR-DSC-*`, `STR-FCL-AVANS-DOUA-PARTIDE`, `STR-FCL-INC-TRANSFER`; toate probele `FCL*`/`DSC*` existente materializează; bugetar fără DSC; gate pe clonă FCL și DSC (cu cifrele transferurilor). Oprire: (c), (d), (g). **ÎNCHIS 2026-09-22** (agent F32-P2 + verificarea main-ului): ModelCheck 1765 OK privat / 1452 OK bugetar, 0 FAIL; nucleu 165; gate FCL 40.535/40.535 egale, 0 refuzate; gate DSC 35.854/36.696 egale, 0 refuzate, 842 declarate (T-D4.2); gate FCT 19.022 + 13 declarate, identic cu felia 31 (`Fiscal.Impozitul` pe direcție neutru); `--reconciliere-cub` 0 Δ pe ambele baze (privat: BCS, BTR, DSC, FCL, FCT, INC, PLT; bugetar fără DSC); diff gol pe Blazor.Server/WebApi/Client/Nucleu; T-D4.1 (normalizare), T-D4.3 (fix `StocService.SolduriLaData`) și amendamentul grupurilor consemnate în T-D4.
 3. **NTC + ITV pe cub** (T-D3): `DeclarantNotaContabila`, override pe `NotaContabila` (ITV îl moștenește), nominalizarea FIFO pe `(Cont, Partener)` cu `N.Fifo.Nominalizeaza` (B) și fallback-ul fără unitate (A), conectorul pune partenerul din subconto pe repartitorul liniei (`NoteComune` + `Punte`), gardul `Conservare.cs:133` verificat/relaxat cu proprietate, contoarele în gate (picioare cu partener nominalizate / fără partener per cont; 3xx fără lot per corespondență), `Imperecheaza` sărit fără partidă proprie, litera (f) cu excluderea (A), probe `STR-NTC-EXPLICIT`, `STR-NTC-PARTENER-FIFO`, `STR-NTC-AVANS-DOUA-UNITATI`, `STR-NTC-TERT-FARA-UNITATE`, `STR-NTC-STOC-FARA-LOT`, `STR-NTC-COMPENSARE`, `STR-ITV`; familia `F21-D*` materializează; gate pe clonă NTC și ITV cu cele cinci corespondențe la cifrele din B2.7 și cu măsura (B)/(A) pe cele 7.824; Import1C pe o lună (ianuarie) pe clonă ca să se vadă efectul partenerului pe `Imperecheri`. Oprire: (c), (d), (g) — un refuz pe o notă pe care motorul vechi o operează e oprire, nu normalizare.
 4. **RDC + RLF + DVI pe cub** (T-D6, T-D8): trei declaranți, seed, probe `STR-RDC-VENIT-COST`, `STR-RDC-PARTIDA-NEGATIVA`, `STR-RLF-FISCAL-REZIDUU`, `STR-DVI`; `DVI-V*` și contractele API `ReturClientApply`/`ReturFurnizorApply` materializează; gate pe clonă RDC și RLF (DVI n-are documente — se spune). Oprire: (c), (d), (g).
 5. **ASM + LDI + NIR pe cub** (T-D2 pe ASM, T-D5, T-D9): `DeclarantAsamblare` (fel mixt refolosit), `DeclarantListaDiferente` + constantele `Folosinta`/`Gratuit`/`Custodie` + maparea pură `TipStoc →`, `DeclarantNir` + excluderea conexului prin `PoliticaConex` (probată: FCT cu NIR conex operat ⇒ o singură recepție în cub, `STR-NIR-CONEX-EXCLUS`), probe `STR-ASM-ACELASI-CONT`, `STR-ASM-PRODUCTIE`, `STR-LDI-PLUS-MINUS`, `STR-LDI-BUGETAR-SINK`, `STR-NIR-MANUAL`; gate pe clonă ASM, LDI, NIR (NIR: 0 documente manuale — se spune; cele 17.814 conexe verificate NEmaterializate). Oprire: (c), (d), (g); TR-r7 fără cont 803x ⇒ constatare, nu inventare.

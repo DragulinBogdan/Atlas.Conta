@@ -58,7 +58,11 @@ public static class StocService {
         DateOnly data, Guid? faraDocumentId = null) {
         if (loturi.Count == 0)
             return new();
-        return SolduriService.MiscariCumulate(os, data, faraDocumentId: faraDocumentId)
+        // T-D4.3: `faraDocumentId` nu poate scoate documentul din SNAPSHOT-ul referinței,
+        // deci referința trebuie să se termine STRICT înaintea datei citite.
+        return SolduriService.MiscariCumulate(os, data,
+                granita: faraDocumentId is null || data == DateOnly.MinValue ? null : data.AddDays(-1),
+                faraDocumentId: faraDocumentId)
             .Where(m => loturi.Contains(m.LotId))
             .GroupBy(m => new { m.LotId, m.RepartitorId, m.TipStoc })
             .Select(g => new { g.Key, Cantitate = g.Sum(m => m.Cantitate), Valoare = g.Sum(m => m.Valoare) })

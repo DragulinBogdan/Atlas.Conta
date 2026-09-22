@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-21.** [Index](README.md)
+**Actualizat: 2026-09-22.** [Index](README.md)
 
 ## Modelul comun
 
@@ -830,9 +830,11 @@ cheia compusă și FK-urile per partiție. (S-r4)
 
 `TipDocument.PosteazaInCub` spune dacă tipul materializează în cub. Valoarea e
 aliniată de seed ca orice rând `DinSeed`: migrarea unui tip e a PROFILULUI, nu
-a bazei (S-r6). Migrate sunt BCS, FCT, PLT, INC (felia 31) și BTR (felia 32,
-pasul 1, 2026-09-21), pe ambele profiluri; restul tipurilor postează doar în
-registre. Un tip marcat a cărui clasă nu declară
+a bazei (S-r6). Migrate sunt BCS, FCT, PLT, INC (felia 31), BTR (felia 32,
+pasul 1, 2026-09-21) și FCL (pasul 2, 2026-09-22), pe ambele profiluri, plus
+DSC doar pe privat (pe bugetar e tip inert, fără politici — decizia stă în
+`ContaSeeder.SeedTipuriDocument(os, profil)`); restul tipurilor postează doar
+în registre. Un tip marcat a cărui clasă nu declară
 (`Document.Declarant()` întoarce `null`) e eroare de configurare: operarea
 refuză, nu tace. (S-D3)
 
@@ -892,6 +894,41 @@ cele pe gestiune și pe lot îl includ.
   pe cub per gestiune × lot (TR-D8). Nu se normalizează.
 - Ramura `Operare` a formei mixte e probată prin proprietăți în nucleu; pe
   scenă o probează ASM (pasul 5).
+
+### FCL și DSC pe cub (T-D4, felia 32, pasul 2)
+
+- **FCL** (`DeclarantFacturaIesire`): FCT în oglindă — per linie venitul pe
+  regula de vânzare a Tipului (creditul = internul, cu gestiunea emitentului;
+  debitul 4111 = terțul, fără gestiune, cu partidă), taxa colectată per linie
+  prin `Fiscal.Impozitul` pe direcția `Colectat` (creditul pe 4427, debitul pe
+  contrapartidă; gestiunea internă = latura opusă contrapartidei politicii,
+  `Fiscal.GestiuneaInterna`), taxa culeasă autoritară, taxarea inversă pe
+  livrare fără postare de taxă. Zero postări de stoc: linia de natură `Stoc` e
+  linie de venit, fără lot și fără produs. Partidă pe fiecare cont cu `RolTert`
+  al liniilor (S-D16): FCL cu regularizare de avans (`4111 = 419`) deschide
+  DOUĂ partide, iar soldul partidei de creanță e netul ei (debitul de −100 al
+  liniei de avans intră pe 4111). Valorile negative (prețuri negative) se
+  declară semnate, pe aceeași latură. Refuzuri: predator partener, primitor
+  ne-partener, fără linii, cantitate ≤ 0, `PRODUS_ALT_TIP`, regulă lipsă, TVA.
+- **DSC** (`DeclarantDescarcareGestiune`): o mișcare per linie — lotul iese
+  din gestiunea predatoare pe contul de stoc al regulii (`6xx = 3xx` per
+  Tip), evaluat cu `Evaluare.Iesire` pe raportul curent în secvența liniilor
+  (ca BCS), iar costul intră cu `+q` pe gestiunea virtuală `Client`, fără
+  unitate (090 (g), prima folosire a constantei). Aceeași formă cu sau fără
+  factura-sursă; fără partidă. Lotul e ales de `DescarcareService` (pin-uri,
+  apoi FIFO), declarantul nu realocă.
+- **Transferul INC → FCL** e activ prin `Materializare.Imperecheaza` fără
+  nicio schimbare: referința e a stingătorului (4111), plafonul e restul FCL
+  pe 4111; partida 419 nu primește transfer.
+- **Diferența declarată T-D4.2** (aceeași clasă ca T-D2.2, N-r3): pe Flax 842
+  din 36.696 DSC (2,29 %), 919 linii din 62.063, toate ieșiri PARȚIALE (cele
+  47.505 goliri sunt egale), Σ semnată +31,01 lei, |Δ| max 16,50 lei (lot cu
+  preț înghețat 0), 909 din 919 linii ≤ 6 bani, pe 79.199.898,27 lei mutați.
+  Nu se normalizează (T-r7).
+- **T-D4.3**: `StocService.SolduriLaData` citit „fără documentul curent" ia
+  referința strict înaintea datei (`granita = data − 1 zi`): snapshot-ul unei
+  luni închise conținea chiar ieșirea documentului datat în ultima ei zi.
+  Neutru în operarea vie; fixează artefactul de gate al feliei 31.
 
 `DocumentDetaliu.Pozitie` e ordinea de culegere a liniei. Se atribuie o
 singură dată, la salvarea unei linii noi, în `SaveChanges`-ul contextului — un

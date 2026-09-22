@@ -48,6 +48,7 @@ static class Normalizari {
         var rezultat = RepartitorPePiciorulPropriu(tranzactii);
         rezultat = TrD3AbsoarbeNirConex(rezultat, context);
         rezultat = TrD4UnificaStocCuContabil(rezultat);
+        rezultat = TrD41CostulIesiriiEAlTertului(rezultat);
         rezultat = TrD2NominalizeazaPrinImperechere(rezultat);
         rezultat = TrD2DesparteContrapartida(rezultat);
         rezultat = FiscalCapitalizatulSeDesface(rezultat, context);
@@ -300,6 +301,57 @@ static class Normalizari {
             rezultat.Add(unificata[i] ?? postari[i]);
         }
         return tranzactie with { Postari = rezultat };
+    }
+
+    // ── T-D4.1 — capătul fără stoc al unei linii pur de IEȘIRE nu poartă gestiune ──
+    //
+    // Convenția registrului ține dimensiunea soldului de stoc pe AMBELE picioare ale
+    // notei (32c); în cub capătul fără lot al unei linii care doar scoate marfă din
+    // patrimoniu e în afara evidenței — gestiune virtuală, citită ca lipsă (N-D4).
+    // Gardurile țin regula pe tipurile care CHIAR ies: o linie cu vreun rând de stoc
+    // pozitiv (consumul BCS, recepția FCT), cu unitate, cu partener sau pe altă
+    // gestiune decât ieșirea ei rămâne neatinsă.
+    public static IReadOnlyList<N.Tranzactie> TrD41CostulIesiriiEAlTertului(
+            IReadOnlyList<N.Tranzactie> tranzactii) {
+        ArgumentNullException.ThrowIfNull(tranzactii);
+        return [.. tranzactii.Select(CostulIesirii)];
+    }
+
+    static N.Tranzactie CostulIesirii(N.Tranzactie tranzactie) {
+        if (tranzactie.Fel != N.FelTranzactie.Operare)
+            return tranzactie;
+        var postari = tranzactie.Postari;
+        // Postarea fără linie (cauza e a documentului) intră pe cheia zero, ca oricare alta.
+        static Guid Cheia(N.Postare postare) => postare.Cauza.Linie ?? Guid.Empty;
+        var iesiri = new Dictionary<Guid, Guid?>();
+        var respinse = new HashSet<Guid>();
+        foreach (var postare in postari) {
+            if (postare.Coordonate.Unitate?.Fel != N.FelUnitate.Lot)
+                continue;
+            var coordonate = postare.Coordonate;
+            if (coordonate.Latura != N.Latura.Credit || coordonate.Gestiune is null
+                    || (iesiri.TryGetValue(Cheia(postare), out var deja)
+                        && deja != coordonate.Gestiune))
+                respinse.Add(Cheia(postare));
+            else
+                iesiri[Cheia(postare)] = coordonate.Gestiune;
+        }
+        if (iesiri.Count == 0)
+            return tranzactie;
+        var rezultat = postari.ToList();
+        var schimbari = 0;
+        for (var i = 0; i < postari.Count; i++) {
+            var coordonate = postari[i].Coordonate;
+            if (coordonate.Unitate is not null || coordonate.Partener is not null
+                || coordonate.Cont == CubDinRegistre.ContFiscal
+                || respinse.Contains(Cheia(postari[i]))
+                || !iesiri.TryGetValue(Cheia(postari[i]), out var gestiune)
+                || coordonate.Gestiune != gestiune)
+                continue;
+            rezultat[i] = postari[i] with { Coordonate = coordonate with { Gestiune = null } };
+            schimbari++;
+        }
+        return schimbari == 0 ? tranzactie : tranzactie with { Postari = rezultat };
     }
 
     // ── B-D8 pct. 3 — TR-D2a: stingerea e postarea care numește partida ──────

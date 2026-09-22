@@ -15,6 +15,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [GardContare(NaturaClasa.Stoc, NivelContare.TipMaterialExact,
     "Linia de stoc nu are regulă de contare de vânzare pentru Tipul ei — adăugați rândul de politică (sau rulați updater-ul).")]
 public class FacturaIesire : Document, IDocumentCuScadenta {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantFacturaIesire.Instanta;
+
     // Rolul de STINS (F19-D16): factura clientului lasă un sold DEBITOR pe 4111 —
     // se stinge creditând contrapartida (încasarea, jumătatea de credit a notei).
     public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>

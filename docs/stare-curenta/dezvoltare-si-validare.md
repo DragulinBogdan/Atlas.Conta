@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-21.** [Index](README.md)
+**Actualizat: 2026-09-22.** [Index](README.md)
 
 ## Organizarea sursei
 
@@ -206,7 +206,11 @@ ambele ieșind înainte de bootstrap: (S-D9)
   (f) Σ per partidă la ultima perioadă închisă, (g) TVA pe postările de storno.
   Gate-ul `--declaratie-pe-baza` pe BTR se citește „100 % egal în afara celor
   535 declarate în T-D2.2" (oracolul pliază rândurile de stoc ± ale aceluiași
-  lot, fără picior contabil, într-un `Transfer`). Grupul unui FCT e documentul ∪ NIR-ul lui conex; grupurile cu
+  lot, fără picior contabil, într-un `Transfer`); pe DSC „100 % egal în afara
+  celor 842 declarate în T-D4.2" (normalizarea T-D4.1: piciorul contabil fără
+  stoc al unei linii care doar iese își pierde gestiunea în oracol, fiindcă în
+  cub e pe gestiunea virtuală `Client`); pe FCL 100 % egal. FCL și DSC sunt
+  fiecare grupul lui (DSC nu e conex). Grupul unui FCT e documentul ∪ NIR-ul lui conex; grupurile cu
   conex neoperat se RAPORTEAZĂ separat, nu se numără ca Δ. Litera (f) e vacuă
   cât timp un tip nemigrat mai postează pe conturi cu `RolTert`, iar nota se
   tipărește.
@@ -227,10 +231,9 @@ altfel interogarea pică și oprește rularea. O clonă a bazei de import poart�
 valoarea DEFAULT a unei coloane noi, nu valoarea de seed (`TolerantaTaxa` 0
 contra `null`): se aliniază înainte de gate, altfel refuzurile sunt ale bazei,
 nu ale codului. Gate-ul re-contractează documente pe o bază cu perioadele deja
-închise, deci un document datat exact la sfârșitul perioadei de referință care
-își golește singur cheia de stoc citește zero și e refuzat `STOC_INSUFICIENT` —
-artefact al gate-ului, nu al declarantului, absent la import (unde luna se
-operează înainte de a fi închisă). Oracolul citește registrele ORDONAT pe
+închise; artefactul „document datat exact la sfârșitul perioadei de referință
+refuzat `STOC_INSUFICIENT`" (felia 31) a dispărut la T-D4.3: citirea fără
+documentul curent ia referința strict înaintea datei. Oracolul citește registrele ORDONAT pe
 (document, poziția liniei, linie, id), altfel ordinea heap-ului schimbă
 nominalizarea între rulări și aceeași probă alternează OK/FAIL.
 
