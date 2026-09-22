@@ -138,7 +138,7 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | Entitățile sau migrațiile cubului (`Postare`, `Tranzactie`) | ModelCheck pe ambele profiluri: probele `STR-SCHEMA-*` (partiționarea LIST, cheia `(Spatiu, ID)`, setul ÎNCHIS de FK-uri per partiție, indexii, absența timbrelor XAF); migrația se scrie în SQL, nu se lasă generată (S-D2, S-r4) |
 | Contractul laturilor (`Document.Laturi()`, T-D13) | ModelCheck pe ambele profiluri, ultima scenă (`VerificaLaturi`): `STR-LATURI-CONTRACT` (fiecare `TipDocument` din seed → clasa → contract cu părți nevide; metoda e abstractă, deci și compilatorul o cere), `STR-LATURI-REFUZ` (latura de partea greșită refuzată pe ușa declarației și pe ușa entității cu ACEEAȘI linie `COD: mesaj`; calitatea lipsă numită; un tip fără declarant refuzat pe ușa entității), `STR-LATURA` (PLT inversată = doar `PREDATOR_NEPOTRIVIT`, înaintea declarantului). Probele de laturi ale tipurilor asertează CODUL, nu textul vechi. Pe date reale: recensământul laturilor pe clona Flax (contract T-D13) și gate-urile pașilor 1–2 fără refuz nou |
 | Materializare, declarant al unui tip migrat, împerecherea ca `Transfer` | ModelCheck pe ambele profiluri: probele `STR-*` pe scenele BCS, Trezorerie și FCT — operare, roundtrip, storno, anulare, refuz, configurație, poziție, transfer, latură, corecție, reconciliere — cu comutarea locală a regimului (`ProbeCub.Migrat`/`Nemigrat`/`CuToleranta`, cu restaurare) și purja rândurilor de cub ale documentelor scenei (S-D8) |
-| Tip trecut pe `PosteazaInCub` | `--declaratie-pe-baza` pe o clonă a bazei de import: 100 % egal pe tipul migrat sau fiecare diferență declarată; după importul integral, `--reconciliere-cub` cu 0 rânduri Δ (S-D9) |
+| Tip trecut pe `PosteazaInCub` | fișierul tipului din `docs/nucleu/scenarii/` complet și verde pe ambele profiluri: ciclul 1–8 (operare, linii multiple, storno în perioadă și peste graniță, anulare, corecție în perioadă închisă, stingere, citiri) + cazurile-limită aplicabile + lanțurile `SC-X-*` care îl ating; așteptările scrise de mână din regula contabilă, nu din registre sau oracol (091 (a)–(c)). `--declaratie-pe-baza` și `--reconciliere-cub` rămân unelte de diagnostic pentru migrare, nu gate (S-D9 amendat de 091) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
 
 ModelCheck verifică modelul și execută scenarii de integrare, inclusiv probe
@@ -335,7 +335,14 @@ conținut sortat cu baseline-ul; 12/12 luni închise fără constatări;
 interogări. 15 dintre ele sunt vacue pe import (tipuri și legături pe care
 importul nu le produce), iar pe acelea le acoperă ModelCheck. (89g, 89h)
 
-Pe cubul persistat proba supremă are aceeași formă: importul integral cu
+**Din 2026-09-22 (091) proba supremă nu mai e importul, ci catalogul de
+scenarii** (`docs/nucleu/scenarii/README.md`): așteptări scrise de mână,
+ciclul complet per tip, lanțurile transversale, pe ambele profiluri; clona
+Flax rămâne sursă de întrebări (recensământ, 091-r2), Import1C e felia de
+migrare (091-r4), după „rotund" (091 (g)). Paragraful de mai jos e
+istoricul probei până la felia 32, pasul 2b.
+
+Pe cubul persistat proba supremă avea aceeași formă: importul integral cu
 tipurile migrate marcate `PosteazaInCub` trebuie să dea exit 0, ZERO refuzuri
 ale declarației, raport identic pe conținut sortat cu baseline-ul, 12/12 luni
 închise, `Reconstruieste` 0 diferențe, `--dump-integritate-tph` 0 încălcări și

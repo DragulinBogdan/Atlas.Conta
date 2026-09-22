@@ -569,6 +569,21 @@ numărul.
 
 ## Pașii (un agent per pas; main verifică independent și comite per pas)
 
+> **Amendament 091 (2026-09-22, după pasul 2b).** Gate-ul pe clonă și
+> proba supremă Import1C nu mai sunt condiții ale niciunui pas
+> (`docs/decizii/091-scenarii-in-loc-de-import.md`). Pașii 3, 4 și 5 se
+> fac cu fișierul tipului din `docs/nucleu/scenarii/` (ciclul complet +
+> cazurile-limită, pe ambele profiluri) în locul lui
+> `--declaratie-pe-baza`; recensământul pe clonă (091-r2) rămâne, ca
+> întrebare, nu ca gate; „Import1C pe o lună" din pasul 3 se taie. Pasul 6
+> se reduce la `Materializare.Deschide` generic (`DESCHIDERE.md`, SC-X-11,
+> SC-X-12); partea 1C (`BalantaNivel3`, `MigrareLegatura`, `Imperecheri1C`,
+> T-r4, stingerile 2024) trece la felia de migrare (091-r4). Pasul 7 se
+> taie. Pasul 8 rămâne, cu zonele lui. Înaintea pasului 3: 091-r1
+> (`--scenarii <TIP>`) și fișierele tipurilor deja pe cub (BCS, FCT, PLT,
+> INC, BTR, FCL, DSC) cu probele existente mapate pe rândurile ciclului.
+> Numerele pașilor nu se schimbă; textul de mai jos rămâne ca istoric.
+
 0. **Contractul** (main): fișierul de față; `.gitignore` cu `/agenti-msg/`; commit.
 1. **BTR pe cub + felul mixt** (T-D2): forma mișcării cu fel în nucleu (proprietate: o declarație cu mișcări `Transfer` produce Σ per (Cont, Latura) = 0 pe ele; una cu ambele feluri produce două tranzacții balansate), `Materializare` împarte pe set, `Storneaza`/`Anuleaza` acoperă ambele, `DeclarantNotaTransfer`, override, seed `BTR`, T-D2.1 constatat pe `RegistruStoc` și pin-uit în contract, litera (e) amendată, oracolul: rândurile BTR pe același cont pliate ca `Transfer`; probe `STR-BTR-ACELASI-CONT`, `STR-BTR-CONT-DIFERIT`, `STR-BTR-MIXT`, `STR-BTR-STORNO`; ModelCheck verde pe ambele profiluri; `--declaratie-pe-baza <clonă> BTR` = 100 % egal sau fiecare diferență declarată aici. Oprire: (c), (d), (e), (g), (i). **ÎNCHIS 2026-09-21** (agent F32-P1 + verificarea main-ului): nucleu 165 teste, 0 avertismente; ModelCheck 1698 OK privat / 1434 OK bugetar, 0 FAIL; gate BTR 45.017/45.552 egale + 535 declarate (T-D2.2); `--reconciliere-cub` 0 Δ pe ambele baze; diff gol pe Blazor.Server/WebApi/Client; `STR-BTR-CONT-DIFERIT`/`STR-BTR-MIXT` = proprietățile nucleului (T-D2.1).
 2. **FCL ∪ DSC pe cub** (T-D4): `DeclarantFacturaIesire`, `DeclarantDescarcareGestiune`, gestiunea virtuală `Client` folosită, două partide pe FCL cu avans, transferul FCL ↔ INC activ, grupurile în (a)/(b)/(c) + `Incomplete`, probe `STR-FCL-*`, `STR-DSC-*`, `STR-FCL-AVANS-DOUA-PARTIDE`, `STR-FCL-INC-TRANSFER`; toate probele `FCL*`/`DSC*` existente materializează; bugetar fără DSC; gate pe clonă FCL și DSC (cu cifrele transferurilor). Oprire: (c), (d), (g). **ÎNCHIS 2026-09-22** (agent F32-P2 + verificarea main-ului): ModelCheck 1765 OK privat / 1452 OK bugetar, 0 FAIL; nucleu 165; gate FCL 40.535/40.535 egale, 0 refuzate; gate DSC 35.854/36.696 egale, 0 refuzate, 842 declarate (T-D4.2); gate FCT 19.022 + 13 declarate, identic cu felia 31 (`Fiscal.Impozitul` pe direcție neutru); `--reconciliere-cub` 0 Δ pe ambele baze (privat: BCS, BTR, DSC, FCL, FCT, INC, PLT; bugetar fără DSC); diff gol pe Blazor.Server/WebApi/Client/Nucleu; T-D4.1 (normalizare), T-D4.3 (fix `StocService.SolduriLaData`) și amendamentul grupurilor consemnate în T-D4.
@@ -582,6 +597,14 @@ numărul.
 9. **Docs și închidere** (main): `stare-curenta/domeniu-si-operare.md` (regimul dual complet, felul mixt, excluderea conexului, deschiderea, abaterile declarate), `dezvoltare-si-validare.md` (literele (a)–(h), excluderile, rețeta), `restante.md` (TR-r2/r7/r10/r12 amendate sau închise cu constatarea; T-r*), `istoric-plan-de-lucru.md` (felia 32), `nucleu-transfer.md` Stare, CLAUDE.md §Stare/§Următorul pas (TR-D8), memorie.
 
 ## Regula de oprire a feliei
+
+> **Amendament 091.** Punctele 3 și 4 de mai jos (gate pe clonă, Import1C
+> integral cu raport identic, `--reconciliere-cub` 0 Δ, stingerile pe
+> partidele de deschidere, `refuzuri.ps1` pe Privat refăcută din import) se
+> înlocuiesc cu: fișierul fiecărui tip din `docs/nucleu/scenarii/` complet
+> (ciclul 1–8 + cazurile-limită aplicabile + lanțurile `SC-X-*` care îl
+> ating) și verde pe ambele profiluri; `DESCHIDERE.md` probat generic;
+> `refuzuri.ps1` PASS pe Privat re-seed-uită. Punctele 1, 2 și 5 rămân.
 
 - `PosteazaInCub = true` în seed pentru toate cele 15 tipuri pe profilul unde tipul există (privat: toate; bugetar: cele ne-inerte), pe ambele profiluri; niciun `is`/`switch` pe frunză; `Operand.cs`/`Fapte.cs` ≤ 16 interogări (proba existentă).
 - ModelCheck verde pe AMBELE profiluri cu toate `Check`-urile de azi + probele `STR-*` noi; nucleu `dotnet test` verde, 0 avertismente, testul de arhitectură neatins.
