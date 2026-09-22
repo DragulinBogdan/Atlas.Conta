@@ -1,5 +1,6 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using Microsoft.EntityFrameworkCore;
@@ -233,27 +234,47 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         Sold("SC-BCS-07", lot, Sfarsit, 0m, 0m);
     }
 
+    // Ușa entității refuză azi cu textul validării vechi (`ValideazaOperare`,
+    // `StocService`, starea documentului), înaintea declarantului; codul stabil
+    // se probează pe ușa declarației (`RefuzDeclaratie`) până la TR-D8.
     void Refuza(string id, Action actiune, string fragment) {
         try { actiune(); Verifica(id, "comanda trebuia refuzată", false); }
         catch (OperareException e) {
-            Verifica(id, $"refuz de domeniu ({e.Message})", e.Message.Contains(fragment, StringComparison.OrdinalIgnoreCase));
+            Verifica(id, $"refuz pe ușa entității, text vechi „{fragment}” ({e.Message.Split('\n')[0]})",
+                e.Message.Contains(fragment, StringComparison.OrdinalIgnoreCase));
         }
     }
 
+    void RefuzDeclaratie(string id, Guid docId, string cod) =>
+        Verifica(id, $"refuz pe ușa declarației cu codul stabil `{cod}`", Citeste(os => {
+            var doc = os.GetObjectByKey<Document>(docId);
+            var tip = os.GetObjectsQuery<TipDocument>().Single(t => t.ClrType == nameof(BonConsum));
+            return C.Materializare.Refuzuri(os, doc, tip)
+                .Any(l => l.StartsWith(cod + ":", StringComparison.Ordinal));
+        }));
+
     void Refuzuri() {
         var lot = Receptioneaza();
-        foreach (var (id, linii, mesaj) in new[] {
-            ("SC-BCS-08a", new[] { (lot, 0m) }, "cantitate"),
-            ("SC-BCS-08b", new[] { (lot, -1m) }, "cantitate"),
-            ("SC-BCS-08c", new[] { (Guid.Empty, 1m) }, "lot"),
-            ("SC-BCS-09", new[] { (lot, 6m), (lot, 5m) }, "Sold negativ") }) {
+        foreach (var (id, linii, fragment, cod) in new[] {
+            ("SC-BCS-08a", new[] { (lot, 0m) }, "cantitate", CoduriRefuz.CantitateNepozitiva),
+            ("SC-BCS-08b", new[] { (lot, -1m) }, "cantitate", CoduriRefuz.CantitateNepozitiva),
+            ("SC-BCS-08c", new[] { (Guid.Empty, 1m) }, "lot", CoduriRefuz.LotLipsa) }) {
             var doc = Culege(Consum, linii);
-            Verifica(id, "dry-run refuzat", Citeste(os => OperareApi.Valideaza(os, doc)).Count > 0);
+            Verifica(id, $"dry-run refuzat cu textul vechi „{fragment}”",
+                Citeste(os => OperareApi.Valideaza(os, doc)).Any(m => m.Contains(fragment, StringComparison.OrdinalIgnoreCase)));
+            RefuzDeclaratie(id, doc, cod);
             FaraEfecte(id, doc);
-            Refuza(id, () => Comanda(os => OperareApi.Opereaza(os, doc)), mesaj);
+            Refuza(id, () => Comanda(os => OperareApi.Opereaza(os, doc)), fragment);
             FaraEfecte(id, doc);
             Sold(id, lot, Sfarsit, 10m, 100m);
         }
+        var insuficient = Culege(Consum, (lot, 6m), (lot, 5m));
+        Verifica("SC-BCS-09", "dry-run refuzat de gardianul registrului de stoc (fără cod stabil până la TR-D8)",
+            Citeste(os => OperareApi.Valideaza(os, insuficient)).Any(m => m.Contains("Sold negativ", StringComparison.Ordinal)));
+        FaraEfecte("SC-BCS-09", insuficient);
+        Refuza("SC-BCS-09", () => Comanda(os => OperareApi.Opereaza(os, insuficient)), "Sold negativ");
+        FaraEfecte("SC-BCS-09", insuficient);
+        Sold("SC-BCS-09", lot, Sfarsit, 10m, 100m);
     }
 
     void PerioadaInchisa() {

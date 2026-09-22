@@ -21,3 +21,24 @@
 - Nu lucra simultan cu alt agent în același checkout sau pe aceleași baze.
   Pentru execuție paralelă: worktree și sufix de bază distincte, cu rulările
   grele coordonate conform regulii comune. Nu lansa subagenți implicit.
+- Refuzurile au coduri stabile în `Module/Declaratii/Coduri.cs`
+  (`CoduriRefuz`), emise de declarant ca linia `COD: mesaj`. Proba asertează
+  codul pe ușa declarației (`Materializare.Refuzuri`). Ușa entității
+  (`OperareApi.Valideaza`/`Opereaza`) trece întâi prin `ValideazaOperare` al
+  clasei și gardienii registrelor (`StocService`, perioadă, stare), care
+  refuză cu text înaintea declarantului: acolo se asertează familia mesajului
+  și absența efectelor, iar refuzul registrului se marchează ca atare în
+  fișierul tipului (până la TR-D8). Tiparul: `ScenariiBcs.Refuzuri`.
+- Fișierul tipului și scena lui urmează tiparul BCS (`BCS.md`,
+  `ScenariiBcs.cs`): fixture prin documentele reale (FCT → NIR conex),
+  comenzi prin `OperareApi` în ObjectSpace-uri noi, așteptări ca constante,
+  un an propriu liber, curățenie pe marcaj în `finally`; nu comută
+  `PosteazaInCub`, nu inserează în registre sau cub.
+- Reguli de lucru (ale agentului) nu intră în `docs/stare-curenta/`: acolo
+  stau doar mecanica și starea; regula pentru agenți stă aici, motivația în
+  `docs/decizii/`. Un rând existent din docs se rescrie doar dacă pasul îl
+  atinge; altfel se raportează.
+- Predarea nu certifică singură: owner-ul și Claude reverifică prin rulare
+  (`verifica.ps1`) și review înainte de commit. O afirmație despre cod
+  („nu există coduri stabile”) se verifică în surse înainte de a intra în
+  docs.

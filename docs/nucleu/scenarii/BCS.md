@@ -69,15 +69,22 @@ jos este **verificat pe ambele profiluri** (rularea din secțiunea Validare).
 | SC-BCS-05 | L: 10/100; BCS 4 → sold 6/60; anulează operarea. Draft, zero tranzacții/postări/registre ale BCS, lotul inițial există, sold 10/100. | acceptat | excepția declarată de anulare, invariantul III |
 | SC-BCS-06 | L: 10/100; BCS 4 în ianuarie → 6/60; închide ianuarie. Corectează la 05.02, motiv EroareMateriala: original Stornat, invers −4/−40 și draft nou legat, fără postări proprii; sold curent 10/100. Schimbă cantitatea draftului la 3 și operează: consum(3,30,L). Sold 31.01 = 6/60; 05.02 = 7/70. | acceptat | 088, 090 (i) |
 | SC-BCS-07 | Recepție 3 × 0,333333, valoare rotunjită 1 leu. Ieșire 1 → 0,33, rest 2/0,67. Ieșire 2 la 11.01 → 0,67, rest 0/0. | acceptat | 090 (c), ultima ieșire ia restul |
-| SC-BCS-08a/b/c | Din L:10/100, BCS cu cantitate 0 / −1 / fără lot. Dry-run și operarea refuză. Draft și zero efecte proprii; sold 10/100. | refuzat: cantitate / lot obligatoriu | regulă; cazuri absente din recensământ |
-| SC-BCS-09 | L:10/100; două linii 6 + 5 din același lot. Dry-run și operarea refuză întregul document, fără consumul primei linii; sold 10/100. | refuzat: stoc insuficient | review; lot repetat din recensământ |
+| SC-BCS-08a/b/c | Din L:10/100, BCS cu cantitate 0 / −1 / fără lot. Ușa declarației refuză cu codul stabil; dry-run și operarea refuză cu textul validării vechi. Draft și zero efecte proprii; sold 10/100. | refuzat: `CANTITATE_NEPOZITIVA` / `CANTITATE_NEPOZITIVA` / `LOT_LIPSA` pe declarație; text vechi pe entitate până la TR-D8 | regulă; cazuri absente din recensământ |
+| SC-BCS-09 | L:10/100; două linii 6 + 5 din același lot. Dry-run și operarea refuză întregul document, fără consumul primei linii; sold 10/100. | refuzat: stoc insuficient — gardianul REGISTRULUI (`StocService`), fără cod stabil; la TR-D8 devine refuz al cubului | review; lot repetat din recensământ |
 | SC-BCS-10 | După SC-BCS-03, repetă storno la 21.01. Rămân exact două tranzacții și sold 10/100. | refuzat: stare neeligibilă | 090 (i) |
 | SC-BCS-11 | După închiderea lui ianuarie, anularea BCS operat și operarea altui BCS în ianuarie sunt refuzate; originalul și soldul 6/60 rămân, draftul nou are zero efecte. | refuzat: perioadă închisă | invariantul III, 088 |
 | SC-X-02 (pregătire) | FCT cu recepție 10/100 → NIR conex operat. Soldul cubului este 10/100, apoi BCS 4 îl duce la 6/60; recepția nu se dublează. | acceptat | 090 (h), T-D9 |
 
-Refuzurile adaptorului actual sunt `OperareException` cu mesaje, nu DTO-uri
-cu cod stabil pentru fiecare gardian. Proba verifică familia mesajului și
-absența efectelor; nu pretinde stabilitatea textuală a întregului mesaj.
+Refuzurile au două uși. Declarantul (`Declaratii/DeclarantBonConsum.cs`)
+refuză cu coduri stabile din `CoduriRefuz`, probate direct prin
+`Materializare.Refuzuri` (linia `COD: mesaj`). Ușa entității
+(`OperareApi.Valideaza` / `Opereaza`) trece întâi prin `ValideazaOperare` al
+clasei și prin gardienii registrelor (`StocService`, perioada, starea), care
+refuză cu text, înaintea declarantului; acolo proba verifică familia
+mesajului și absența efectelor, nu textul integral. Când validarea veche cade
+(TR-D8), asertarea de pe ușa entității trece pe cod, fără să schimbe
+așteptarea scenariului. SC-BCS-09 certifică azi gardianul registrului, nu al
+cubului.
 
 ## Acoperirea rămasă
 
@@ -102,15 +109,15 @@ egalitatea normalizată nu este acreditată ca scenariu independent.
 ## Validare
 
 `verifica.ps1 -Suita Scenarii -Tip BCS -Profil Ambele -Sufix .CodexBCS`:
-exit 0 pe ambele profiluri, 2026-09-22. Build: zero erori/avertismente;
-execuție bugetar 11,51 s, privat 13,63 s (inclusiv probele `NUC-BCS`).
-Manifest local: `run-verificari/20260922-230637-777/rezultat.json`; commit
-de bază `827bf1e`, cu modificările locale ale acestei felii. Logurile și
-hash-ul DLL-ului sunt în manifest; directorul `run-*` nu este versionat.
-
-Suita integrală: exit 0 pe ambele profiluri, același DLL; manifest local
-`run-verificari/20260922-230744-727/rezultat.json`. Această rulare reexecută
-scena pe bazele deja folosite și verifică integrarea cu restul ModelCheck.
+exit 0 pe ambele profiluri, 2026-09-22 (după review: probele de cod pe ușa
+declarației pentru SC-BCS-08a/b/c, SC-BCS-09 marcat ca refuz al registrului).
+Build fără erori; `ScenariiBcs` 6,8 s bugetar, 7,1 s privat, plus `NUC-BCS`.
+Manifest local: `run-verificari/20260922-234431-012/rezultat.json`, commit
+de bază `66d33f6` cu modificările locale ale review-ului. Rularea inițială a
+lui Codex (înainte de review, aceleași scenarii fără probele de cod):
+`run-verificari/20260922-230637-777`, suita integrală
+`run-verificari/20260922-230744-727`, ambele exit 0. Directorul `run-*` nu e
+versionat.
 
 ## Recensământ Flax, numai citire
 

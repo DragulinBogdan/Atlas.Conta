@@ -6,23 +6,19 @@ actuală, organizate pe responsabilități.
 
 ## Tranziția în curs
 
-**Implementat azi:** cubul se scrie lângă registre pentru BCS, FCT, PLT,
-INC, BTR, FCL și DSC (privat). Citirile produsului și snapshot-urile sunt
-încă pe registre; regulile de mai jos despre registre și prețul lotului
-descriu această implementare, nu ținta finală. Declarantul BCS evaluează
-ieșirea pe raportul curent al lotului (90, TR-D7a).
+**Implementat:** cubul se scrie lângă registre pentru BCS, FCT, PLT, INC,
+BTR, FCL și DSC (privat). Citirile produsului și snapshot-urile sunt încă pe
+registre; regulile de mai jos despre registre și prețul lotului descriu
+această implementare, nu ținta. Declarantul BCS evaluează ieșirea pe
+raportul curent al lotului (90, TR-D7a).
 
 **Ținta decisă:** cub canonic, cititori comuni la TR-D8, eliminarea
-registrelor la TR-D9; scenarii independente ca gate (091). Nicio capacitate
-planificată nu este prezentată ca implementată doar pentru că are decizie.
+registrelor la TR-D9; catalogul de scenarii independente ca gate (091).
 
-**Lucrarea în curs:** primul lot [BCS](../nucleu/scenarii/BCS.md) are scenarii
-independente verificate pe ambele profiluri; cititorii pe cub și compensările
-după reevaluare rămân deschise. `CLAUDE.md` §Stare indică pasul; contractul feliei
-precizează domeniul și oprirea; catalogul de scenarii arată acoperirea.
-Deciziile explică ținta, probele și codul dovedesc starea curentă. O
-contradicție se consemnează explicit, nu se rezolvă prin alegerea tacită a
-sursei convenabile.
+**În lucru:** primul lot [BCS](../nucleu/scenarii/BCS.md) are scenarii
+independente verificate pe ambele profiluri; cititorii pe cub și
+compensările după reevaluare rămân deschise. Pasul curent e în `CLAUDE.md`
+§Stare; domeniul și oprirea feliei, în contractul ei; acoperirea, în catalog.
 
 ## Harta documentației
 
