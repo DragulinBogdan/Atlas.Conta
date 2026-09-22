@@ -196,6 +196,8 @@ diferența de preț, toleranța la împerechere (658/758 sub prag).
 - Snapshot = suma postărilor la graniță.
 - O schimbare de politică nu modifică nicio postare din trecut.
 - Motorul pe faptele unei baze reale reproduce baseline-ul Import1C.
+  *Amendat de 091 (2026-09-22): invariantul 7 cade; proba supremă e
+  catalogul `docs/nucleu/scenarii/`, Import1C e migrare, la sfârșit.*
 
 Față de invarianți: I rămâne (orice postare are document; împerecherea DEVINE
 operație, flux între partide — amendament); II se întărește (motorul nu

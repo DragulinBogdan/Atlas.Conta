@@ -53,6 +53,7 @@ identificatorul între paranteze (`(42b)`, `(76-r1)`).
 | Testul bazei (câmpurile `Document`/`DocumentDetaliu`) | `db/inventar/11-testul-bazei.md` |
 | TVA structural / descărcarea de gestiune (privat) | `docs/privat/p1-tva-design.md`, `p2-descarcare-design.md` |
 | Conectorul 1C și contractul de reconciliere | `docs/import/faza-1c-design.md` |
+| Catalogul de scenarii (proba supremă a motorului, 91) | `docs/nucleu/scenarii/README.md` |
 | Gate-ul XAF; dimensiunile pe frunze | `docs/gate-xaf-contract.md`; `docs/dim/dim-2-inventar.md` |
 | Tierul API / clientul React (design) | `docs/api/p5-api-design.md`, `p5-react-design.md` |
 | Contractele feliilor pasului 5 (D-urile pin-uite) | `docs/api/p5-*-contract.md` |
@@ -98,75 +99,45 @@ contrazise din neatenție.
 
 ## Stare
 
-Toate tipurile de document au felie prin API și client (ITV ca COMANDĂ, 79;
-DVI ca agregat cu legătură n→m la facturi, 86); singurul rămas e BPR
-(rezervat, 19). Refuzurile de acces sunt uniforme pe REST și OData și
-MĂSURATE (80). Listele XAF Blazor: `Server` implicit cu paginare, `ServerView`
-pe registre, `Client` explicit pe grilele de culegere, IF/IFV doar cu prag
-(85). Imobilizările au modul propriu (87, 2026-09-15): fișa ca nomenclator
-subțire, un singur registru append-only (`RegistruImobilizari`, al patrulea,
-prin `IDocumentCuRegistruPropriu`), PIF/CAS operate, AMO generată lunar cu
-trei cifre (contabil/fiscal/deductibil) din `Motor/AmortizareService.cs`,
-conturile și regulile de deductibilitate exclusiv din politică versionată,
-catalogul HG 2139/2004 ca date. Perioada e lanț și închiderea e comandă (88,
-2026-09-17): perioade contigue cu absența = închidere, verificare → acceptare
-conștientă pe cheie → închidere în tranzacție, severitatea constatărilor din
-politică; soldurile și partidele deschise se materializează DOAR pe perioadele
-de referință (ultima închisă + decembrie), citite printr-un singur serviciu
-(`Motor/SolduriService`); `DataInregistrare` e reperul registrelor, iar `Data`
-rămâne a documentului fizic; `PerioadaDeclarare` e reperul fiscal, cu
-rectificativa derivată din `InchisaPrimaOara`; corecția în perioadă închisă =
-storno legat + document nou cu motiv; împerecherea e fapt datat, desfăcut prin
-rând invers. Cele trei ierarhii sunt TPH cu discriminatorul mapat `ClrType`
-(89, 2026-09-18): tipul e dată pe rând, citit printr-un singur cititor, tipul
-țintei unui FK spre frunză îl ține gardianul și îl probează ModelCheck, iar
-lanțul de migrații a fost resetat la un singur `InitialCreate`. Ultima felie
-cu decizie proprie: 28 (89). **Decizia 90** (2026-09-20,
-`docs/decizii/090-nucleu-cub-de-postari.md`, docs în `docs/nucleu/`): nucleul
-devine un singur cub de postări (motor pur pe operand închis, unitatea
-nominalizată numită pe linie, împerecherea ca nominalizare + document
-`Împerechere`, FCT postează recepția, o singură postare de stoc, stornoul ca
-tranzacție distinctă); pașii TR-D6a…D10 sunt felii cu contract propriu,
-regimul dual e per `TipDocument` ca dată, iar XAF și React sunt ÎNGHEȚATE pe
-funcții (90m). **Felia 29 = TR-D6a ÎNCHISĂ** (2026-09-20,
-`docs/nucleu/tr-d6a-nucleu-pur-contract.md`): `nou/Atlas.Conta.Nucleu` e
-nucleul pur (BCL, zero pachete) — cubul, conservarea, unitatea/FIFO/evaluarea
-pe raportul curent, Hamilton, TVA per document × cotă, `Sold`, stornoul și
-motorul pe declarație, cu invarianții 1–6 ca proprietăți (al 7-lea e al probei
-supreme, N-r1). **Felia 30 = TR-D6b ÎNCHISĂ** (2026-09-20,
-`docs/nucleu/tr-d6b-declaratia-fluxului-contract.md`): forma declarației ține
-— `Module/Declaratii/` (operand închis construit pe seturi, `IDeclarant` pur
-numit prin METODA `Document.Declarant()`, driverul `Contractare`), iar
-declaranții BCS, PLT/INC și FCT produc EXACT postările motorului vechi pe
-ambele profiluri, fără să persiste nimic. **Felia 31 = TR-D7a ÎNCHISĂ**
-(2026-09-21, `docs/nucleu/tr-d7a-strangler-contract.md`, S-D1…S-D16): cubul e
-PERSISTAT — `Module/Cub/` cu `Tranzactie`/`Postare` (POCO fără `BaseObject`,
-tabelă partiționată LIST pe `Spatiu`, FK-uri per partiție, migrațiile ei
-scrise în SQL, S-r4), materializat în ACEEAȘI tranzacție de comandă cu
-registrele pentru tipurile cu `PosteazaInCub` (dată de profil: BCS, FCT, PLT,
-INC); refuzul declarației = refuzul operației, stornoul = a doua tranzacție cu
-perioada fiscală re-ștampilată, anularea șterge tranzacția, `Pozitie` pe linie
-e citită de ambele motoare, iar împerecherea creată DUPĂ operare e o
-tranzacție `Transfer` între partide, datată cu `Imperechere.Data`. Citirile
-rămân pe registre (TR-D8). Gate-ul are două unelte în ModelCheck
-(`--declaratie-pe-baza` read-only pe o clonă, `--reconciliere-cub` pe set);
-pe clona Flax cele patru tipuri ies 100 % egale sau cu diferența declarată, iar
-Import1C integral: Import1C integral pe Flax (`--recreeaza --cititori --inchide-lunile`, 2026-09-21): exit 0, 1 h 57 min (3 h 21 min la felia 28), raportul `nou/tools/Import1C/reconciliere-20260921-035646.txt` IDENTIC pe conținut sortat cu baseline-ul feliei 28, ZERO refuzuri ale declarației, 12/12 luni închise cu 0 constatări, `--reconciliere-cub` 0 rânduri Δ pe (a)–(g) — (f) vacuă: cele 9 conturi cu rol de terț sunt atinse și de tipuri nemigrate —, integritatea TPH 0 încălcări în 107 interogări, cubul cu 70.373 tranzacții / 252.092 postări / 16.924 transferuri (PLT → FCT; INC → FCL fără transfer, FCL fiind nemigrat), `refuzuri.ps1` 294/294 PASS pe `Atlas.Conta.BackOffice.Privat` refăcută din import cu perioadele redeschise.
-Cronologia integrală: `docs/decizii/istoric-plan-de-lucru.md`.
+**Produs (înghețat pe funcții, 90m).** Toate tipurile de document au felie
+prin API și client; singurul rămas e BPR (rezervat, 19). Refuzurile de acces
+sunt uniforme pe REST și OData și măsurate (80). Listele XAF Blazor pe
+`Server` / `ServerView` / `Client` după 85. Imobilizările au modul propriu cu
+registru append-only (87). Perioada e lanț, închiderea e comandă, soldurile se
+materializează doar pe perioadele de referință și se citesc prin
+`Motor/SolduriService` (88). Cele trei ierarhii sunt TPH cu discriminatorul
+mapat `ClrType` (89).
 
-**Următorul pas**: TR-D7b, tipurile rămase pe cub, în ordinea volumului pe
-Flax (FCL, NTC, BTR, ASM, RLF, RDC, DVI, NIR, ITV): moștenesc fundația feliei
-31 — entitățile, migrația, materializarea în tranzacția de comandă, stornoul,
-anularea, `Pozitie`, transferul împerecherii și cele două unelte de gate — și
-aduc cu ele deschiderea ca tranzacție `Deschidere` (TR-r10), notele pe conturi
-de stoc fără lot (TR-r2), Δ de sold 3xx (TR-r12) și restanțele tipului lor
-(B-r3 regula recepției pe FCT, B-r4 taxarea inversă, B-r5 `408 = 401`, B-r8
-gestiunile virtuale ca rânduri). Contract propriu în `docs/nucleu/`, cu aceeași
-regulă de oprire și aceeași probă supremă: Import1C integral cu raport identic
-cu baseline-ul și `--reconciliere-cub` fără rânduri Δ. Contractul IM e depășit
-de 90. Cererile de produs apărute între timp
-(F26-r1/r8/r9/r13, F27-r11/r13/r1, 84-r5, 86-r11, 86-r13, 80-r1, 77-r1/r6)
-intră în `restante.md` cu decizia lor, nu în felie (90m).
+**Nucleul (90, amendat de 91).** `nou/Atlas.Conta.Nucleu` e motorul pur (BCL,
+zero pachete, teste de proprietate). Declarația fluxului stă în
+`Module/Declaratii/` (`IDeclarant` numit prin `Document.Declarant()`, driverul
+`Contractare`, laturile ca structură prin `Document.Laturi()`). Cubul e
+persistat în `Module/Cub/` (`Tranzactie` / `Postare`, POCO, tabelă
+partiționată pe `Spatiu`, migrații scrise în SQL) și se scrie în aceeași
+tranzacție de comandă cu registrele pentru tipurile cu `PosteazaInCub` (regim
+dual, dată de profil). Pe cub azi: BCS, FCT, PLT, INC, BTR, FCL, DSC (privat);
+rămân NTC, ITV, RDC, RLF, DVI, ASM, LDI, NIR (felia 32, pașii 3–5), apoi
+`Deschidere` generic. Citirile rămân pe registre până la TR-D8; registrele se
+taie la TR-D9.
+
+**Proba supremă (91, 2026-09-22)** e catalogul de scenarii
+`docs/nucleu/scenarii/`: așteptări scrise de mână din regula contabilă, ciclul
+complet per tip, lanțuri transversale, pe ambele profiluri. Import1C e unealtă
+de migrare, înghețată, la sfârșit (091-r4); clona Flax e sursă de întrebări
+prin recensământ, nu gate; `--declaratie-pe-baza` și `--reconciliere-cub` sunt
+diagnostic. „Rotund" (regula de oprire a PoC-ului) e 091 (g). Restanțele au
+patru stări (091 (k)); lista `activă` din `restante.md` e singurul backlog al
+PoC-ului.
+
+Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
+`docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
+
+**Următorul pas**: 091-r1 (`--scenarii <TIP>` în ModelCheck), fișierele
+catalogului pentru tipurile deja pe cub (probele `STR-*` / `NUC-*` mapate pe
+ciclu, rândurile lipsă scrise și probate), apoi pasul 3 al feliei 32 (NTC +
+ITV) pe scenarii, cu recensământul pe clonă (091-r2) înaintea lui. Contractul
+feliei: `docs/nucleu/tr-d7b-tipuri-ramase-contract.md`, amendamentul 091 sub
+„Pașii".
 
 **Capcane de probare**: o cifră de perf se compară DOAR cu ea însăși pe
 ACEEAȘI bază (A/B prin schimbarea stării, nu între baze — altfel diferența de
@@ -219,9 +190,9 @@ altfel refuzurile sunt ale bazei, nu ale codului.
   decide unde ajung în model. La explorarea legacy: grep selectiv pe
   tabele/câmpuri, nu citit formuri la rând.
 - Probele se fac pe CALEA REALĂ (66h): HTTP pentru securitate, browser pentru
-  UI; schimbările de motor/registre au ca probă supremă re-rularea integrală
-  Import1C cu raport identic cu baseline-ul (precedentul DIM-4) — la felii
-  mari, nu la orice commit.
+  UI; schimbările de motor au ca probă supremă catalogul de scenarii
+  (`docs/nucleu/scenarii/`, 91): un tip nu e „pe cub" fără ciclul complet
+  verde pe ambele profiluri; Import1C nu mai e gate, e migrare.
 - Rulările lungi = proces detașat + monitor, nu task de fundal al harness-ului
   (50d).
 - **Codul e slim: „ce" și „cum" se citesc din cod, „de ce" din decizii.**

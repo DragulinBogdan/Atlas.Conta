@@ -757,3 +757,16 @@ detaliat în jurnal):
   Blazor.Server/WebApi/Client. Import1C integral: Import1C integral pe Flax (`--recreeaza --cititori --inchide-lunile`, 2026-09-21): exit 0, 1 h 57 min (3 h 21 min la felia 28), raportul `nou/tools/Import1C/reconciliere-20260921-035646.txt` IDENTIC pe conținut sortat cu baseline-ul feliei 28, ZERO refuzuri ale declarației, 12/12 luni închise cu 0 constatări, `--reconciliere-cub` 0 rânduri Δ pe (a)–(g) — (f) vacuă: cele 9 conturi cu rol de terț sunt atinse și de tipuri nemigrate —, integritatea TPH 0 încălcări în 107 interogări, cubul cu 70.373 tranzacții / 252.092 postări / 16.924 transferuri (PLT → FCT; INC → FCL fără transfer, FCL fiind nemigrat), `refuzuri.ps1` 294/294 PASS pe `Atlas.Conta.BackOffice.Privat` refăcută din import cu perioadele redeschise. B-r1, B-r2, B-r7,
   B-r9, B-r10 și B-r11 închise; S-r1…S-r10 în restanțe. Următorul pas: TR-D7b
   (tipurile rămase pe cub, în ordinea volumului pe Flax).
+
+- **Decizia 091 — scenarii în loc de import** (2026-09-22, branch
+  `tr-d7b-tipuri-ramase`, după pasul 2b al feliei 32): owner-ul, după
+  consultarea cu Codex (`docs/consultari/codex-2026-09-22-cub.md`), oprește
+  Import1C ca gate; proba supremă devine catalogul `docs/nucleu/scenarii/`
+  (așteptări de mână, ciclul complet per tip, 13 lanțuri transversale);
+  „rotund" primește definiție (091 (g)); stornoul după reevaluare = inversare
+  + compensare cu proveniență (091 (h)); triajul celor 248 de restanțe
+  deschise: 34 activă, 182 după PoC, 14 migrare, 16 cade la TR-D9, 2
+  depășite; pașii 3–5 ai feliei 32 continuă pe scenarii, pasul 6 devine
+  `Deschidere` generic, pasul 7 se taie. Următorul pas: 091-r1
+  (`--scenarii <TIP>`), fișierele tipurilor deja pe cub, apoi pasul 3 NTC +
+  ITV pe scenarii.
