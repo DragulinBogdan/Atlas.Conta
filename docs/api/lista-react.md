@@ -94,3 +94,8 @@ Itemii de mai jos au fost rezolvați și textul lor original trăiește în
 - **Cele 8 dimensiuni n-au UI** pe balanță/fișă (pass-through din URL).
 - **`AngajamentId` fără lookup** (tabela e goală).
 - **`HeaderFilter` trunchiat la 100 de valori** (cauza e server-side).
+- **Lookup-urile Predator/Primitor filtrate pe partea permisă** de
+  `Document.Laturi()` (T-D13 (e), 2026-09-22): contractul laturilor există pe
+  fiecare tip (parte + calitate + felul exact pe laturile cu stoc), dar XAF și
+  React sunt înghețate (090 (m)); la dezgheț, lookup-ul citește contractul și
+  restrânge nomenclatorul, în loc să lase refuzul pe operare.

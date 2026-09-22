@@ -12,6 +12,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [TipDetaliu(typeof(PunereInFunctiuneDetaliu))]
 [XafDisplayName("Punere în funcțiune")]
 public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Interna, Declaratii.Latura.Interna);
+
     static readonly FelMiscareImobilizare[] FeluriRegistru = [
         FelMiscareImobilizare.Intrare, FelMiscareImobilizare.Modernizare, FelMiscareImobilizare.Revizuire,
     ];
@@ -29,8 +32,6 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
 
     public override void ValideazaOperare(IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not UnitateInterna)
-            erori.Add("Predatorul punerii în funcțiune trebuie să fie o unitate internă.");
 
         var fise = Fise(os, Detalii);
         foreach (var linie in Detalii) {
@@ -357,6 +358,9 @@ public class PunereInFunctiuneDetaliu : DocumentDetaliu {
 [TipDetaliu(typeof(IesireImobilizareDetaliu))]
 [XafDisplayName("Ieșire de imobilizări")]
 public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumentCuRegistruPropriu {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Interna, Declaratii.Latura.Interna);
+
     [XafDisplayName("Cauză")]
     public virtual CauzaIesire Cauza { get; set; } = CauzaIesire.Casare;
 
@@ -365,8 +369,6 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
 
     public override void ValideazaOperare(IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not UnitateInterna)
-            erori.Add("Primitorul ieșirii de imobilizări trebuie să fie o unitate internă.");
 
         var fise = PunereInFunctiune.Fise(os, Detalii);
         var linii = new List<IesireImobilizareDetaliu>();
@@ -544,11 +546,14 @@ public class IesireImobilizareDetaliu : DocumentDetaliu, ILinieCuPostareExplicit
 [TipDetaliu(typeof(AmortizareLunaraDetaliu))]
 [XafDisplayName("Amortizare lunară")]
 public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocumentCuRegistruPropriu {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Interna, Declaratii.Latura.Interna);
+
     public override bool PoateFiStins(IObjectSpace os) => false;
 
     public override void ValideazaOperare(IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (PredatorId != PrimitorId || os.GetObjectByKey<Repartitor>(PredatorId) is not UnitateInterna)
+        if (PredatorId != PrimitorId)
             erori.Add("Amortizarea lunară are pe ambele laturi aceeași unitate internă.");
         var ultimaZi = new DateOnly(Data.Year, Data.Month, DateTime.DaysInMonth(Data.Year, Data.Month));
         if (Data != ultimaZi)

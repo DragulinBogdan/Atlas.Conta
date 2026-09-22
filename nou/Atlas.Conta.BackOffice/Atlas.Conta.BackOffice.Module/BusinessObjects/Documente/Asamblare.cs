@@ -41,6 +41,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // e tot ce diferă.
 [TipDetaliu(typeof(AsamblareDetaliu))]
 public class Asamblare : Document {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Gestiune, Declaratii.Latura.Gestiune);
+
     // Toleranța invariantului = toleranța de reconciliere a fazei (design §9).
     const decimal Toleranta = 0.005m;
 
@@ -71,12 +74,7 @@ public class Asamblare : Document {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        // Asamblarea trăiește într-o gestiune (regulile de stoc lucrează pe
-        // predator); laturile POT fi identice — nu se validează egalitatea.
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Gestiune)
-            erori.Add("Predatorul asamblării este gestiunea în care se lucrează.");
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Gestiune)
-            erori.Add("Primitorul asamblării este o gestiune (de regulă aceeași cu predatorul).");
+        // Laturile POT fi identice — nu se validează egalitatea.
 
         // Coerența Tip-linie ↔ produsul lotului, proiecție server-side (fără
         // navigații lazy în enumerare — 25b, ca pe DSC).

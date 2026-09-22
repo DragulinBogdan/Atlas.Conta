@@ -4348,6 +4348,8 @@ if (profil == ProfilContabil.Privat) {
     VerificaNucleuFct(privat: true);
     // Felia 32, pasul 2 — FCL si DSC pe cub (STR-FCL-*, STR-DSC-*).
     VerificaNucleuFclDsc(privat: true);
+    // Felia 32, pasul 2b — laturile ca structură (STR-LATURI-*), după toate scenele.
+    VerificaLaturi(privat: true);
 
     Rezumat();
     return;
@@ -6450,8 +6452,8 @@ using (var os = provider.CreateObjectSpace()) {
     // `TRZ`, iar predatorul-partener face documentul non-virament.
     Check("Apply acceptă laturile inversate (validarea lor e a OPERĂRII) — dry-run-ul o raportează ca DATE; de la F7-D3 rămâne DOAR refuzul predatorului (contul propriu e contrapartidă legală)",
         eroriInvers.Count == 1
-        && eroriInvers.Any(e => e.Contains("Predatorul plății"))
-        && !eroriInvers.Any(e => e.Contains("Primitorul plății")));
+        && eroriInvers.Any(e => e.StartsWith(Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.PredatorNepotrivit, StringComparison.Ordinal))
+        && !eroriInvers.Any(e => e.Contains(Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.PrimitorNepotrivit)));
     TrezorerieApply.Sterge<Plata>(os, idPltInvers);
     Check("Sterge pe draft: documentul și liniile lui dispar împreună",
         TrezorerieApply.Citeste<Plata>(os, idPltInvers) == null
@@ -9711,6 +9713,8 @@ VerificaNucleuBcs(privat: false);
 VerificaNucleuBtr(privat: false);
 // Felia 32, pasul 2 — FCL pe cub (STR-FCL-*); DSC ramane tip inert la bugetar.
 VerificaNucleuFclDsc(privat: false);
+// Felia 32, pasul 2b — laturile ca structură (STR-LATURI-*), după toate scenele.
+VerificaLaturi(privat: false);
 
 Rezumat();
 
@@ -20264,7 +20268,7 @@ void VerificaApiRdc() {
     CheckRefuza("Api RDC: laturi INVERSATE (predator gestiune / primitor partener) → refuz al tipului",
         () => OperareApi.Opereaza(os, idLaturi));
     Check("Api RDC: dry-run-ul spune ACELAȘI lucru înaintea comenzii (43b: autoritar e motorul)",
-        DryRun(idLaturi).Any(e => e.Contains("client")));
+        DryRun(idLaturi).Any(e => e.Contains(Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.PredatorNepotrivit)));
     Check("Api RDC: refuzul n-a lăsat rânduri-fantomă (33d)",
         !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idLaturi)
         && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idLaturi));
@@ -32311,12 +32315,11 @@ void VerificaNucleuTrezorerie(bool privat) {
     os.CommitChanges();
     var contractInvers = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, pltInvers);
     Refuz(() => MotorOperare.Opereaza(os, pltInvers));
-    Check($"STR-LATURA ({eticheta}): B-r2 — plata cu laturile inversate (contul propriu PRIMITOR) e "
-        + "refuzată cu `LATURA_CONT_PROPRIU_NEPOTRIVITA`, iar `CONT_PROPRIU_LIPSA` nu se aprinde "
-        + "(contul propriu există, dar pe cealaltă latură); nimic scris în cub",
+    Check($"STR-LATURA ({eticheta}): T-D13 — plata cu laturile inversate (partenerul PREDATOR) e "
+        + "refuzată de contractul laturilor cu `PREDATOR_NEPOTRIVIT`, înaintea declarantului și ca singur "
+        + "refuz (contul propriu e permis pe primitorul plății: viramentul); nimic scris în cub",
         !contractInvers.EsteAcceptat
-        && contractInvers.Refuzuri.Any(r => r.Cod == Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.LaturaContPropriuNepotrivita)
-        && !contractInvers.Refuzuri.Any(r => r.Cod == Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.ContPropriuLipsa)
+        && contractInvers.Refuzuri is [{ Cod: Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.PredatorNepotrivit }]
         && ProbeCub.Tranzactii(os, pltInvers.ID).Count == 0
         && pltInvers.Stare == StareDocument.Draft);
 
@@ -33065,12 +33068,14 @@ void VerificaNucleuFclDsc(bool privat) {
             && iesirea.Unitate == lotA.ID && iesirea.Gestiune == mag1.ID
             && randuriStocDsc.Single() is { Cantitate: -4m, Valoare: -60m });
         Check($"STR-DSC-COST-CLIENT ({eticheta}): capătul de cost poartă `+4` pe gestiunea VIRTUALĂ a "
-            + "clientului (090g), fără unitate — marfa a părăsit patrimoniul —, cu produsul lotului; "
-            + "descărcarea n-are partidă (607/371 n-au rol de terț)",
+            + "clientului (090g), fără unitate — marfa a părăsit patrimoniul —, cu produsul lotului și cu "
+            + "terțul de pe primitor (T-D13 g); descărcarea n-are partidă (607/371 n-au rol de terț), iar "
+            + "ieșirea de stoc n-are partener",
             costul is { Latura: N.Latura.Debit, Valoare: 60m, Cantitate: 4m }
             && costul.Gestiune == N.GestiuniVirtuale.Client && costul.Unitate == null
             && costul.Produs == lotA.Produs.ID
-            && postariDsc.All(p => p.Partener == null));
+            && costul.Partener == client.ID
+            && iesirea.Partener == null);
         Check($"STR-DSC-COST-CLIENT ({eticheta}): factura are în cub DOAR venitul — `4111 = 707` (120) și "
             + "taxa (25,2) —, zero postări de stoc; `Sold` pe lot din postările descărcării = "
             + $"{ProbeCub.SoldUnitate(os, dsc.ID, lotA.ID)}",
@@ -33572,4 +33577,160 @@ void VerificaNucleuFct(bool privat) {
     Check($"NUC-FCT-{eticheta} — curățenie finală (fără reziduuri de scenă)",
         !os.GetObjectsQuery<Produs>().Any(x => x.Cod.StartsWith(MarcajNucFct))
         && !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajNucFct)));
+}
+
+
+// ═══ Felia 32, pasul 2b — laturile documentului ca structură (T-D13) ═══
+void VerificaLaturi(bool privat) {
+    const string MarcajLat = "E2E-NUC-LAT";
+    var eticheta = privat ? "PRIVAT" : "BUGETAR";
+    const string CodPredator = Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.PredatorNepotrivit;
+    const string CodPrimitor = Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.PrimitorNepotrivit;
+
+    void CurataLat(IObjectSpace os) {
+        var pj = new Purja(os);
+        var repIds = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(MarcajLat)).Select(r => r.ID).ToList();
+        var idsLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajLat)).Select(l => l.ID).ToList();
+        var idsDoc = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)
+                || d.Detalii.Any(x => x.LotId != null && idsLot.Contains(x.LotId.Value)))
+            .Select(d => d.ID).ToList();
+        ProbeCub.Purjeaza(pj, os, idsDoc);
+        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().IgnoreQueryFilters()
+            .Where(r => idsLot.Contains(r.LotId)
+                || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
+        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().IgnoreQueryFilters()
+            .Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
+        pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(d => idsDoc.Contains(d.DocumentId)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+            .Where(d => idsDoc.Contains(d.ID)).ToList());
+        os.CommitChanges();
+        pj.Adauga(os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(MarcajLat)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+            .Where(x => x.Cod.StartsWith(MarcajLat)).ToList());
+        pj.Adauga(os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            .Where(r => r.Cod.StartsWith(MarcajLat)).ToList());
+        pj.Executa();
+    }
+
+    using var os = provider.CreateObjectSpace();
+    CurataLat(os);
+
+    // --- STR-LATURI-CONTRACT: fiecare tip de document din seed declară `Laturi()` ---
+    // Documentele de probă îl respectă prin ușa entității, pe care fiecare scenă o
+    // trece la operare; pe date reale, recensământul clonei Flax (contract, T-D13).
+    var tipuri = os.GetObjectsQuery<TipDocument>().Select(t => new { t.Cod, t.ClrType }).ToList();
+    var assembly = typeof(Document).Assembly;
+    var faraContract = new List<string>();
+    foreach (var t in tipuri) {
+        var clasa = assembly.GetType($"{typeof(Document).Namespace}.{t.ClrType}");
+        if (clasa is null || Activator.CreateInstance(clasa) is not Document instanta) {
+            faraContract.Add(t.Cod);
+            continue;
+        }
+        var contract = instanta.Laturi();
+        if (contract is null
+                || contract.Predator.Permisa == Atlas.Conta.BackOffice.Module.Declaratii.Parte.Niciuna
+                || contract.Primitor.Permisa == Atlas.Conta.BackOffice.Module.Declaratii.Parte.Niciuna)
+            faraContract.Add(t.Cod);
+    }
+    Check($"STR-LATURI-CONTRACT ({eticheta}): toate cele {tipuri.Count} tipuri de document din seed declară "
+        + "`Laturi()` cu părți nevide pe ambele laturi (lipsă: "
+        + (faraContract.Count == 0 ? "niciunul" : string.Join(", ", faraContract)) + ")",
+        tipuri.Count > 0 && faraContract.Count == 0);
+
+    // --- STR-LATURI-REFUZ: latura de partea greșită, pe ambele uși, cu același cod ---
+    var mag1 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG1");
+    var mag2 = os.FirstOrDefault<Gestiune>(g => g.Cod == "MAG2");
+    var tipMaterial = os.FirstOrDefault<TipMaterial>(t => t.Cod == (privat ? "302" : "302.01.00"));
+    var tipBcs = os.FirstOrDefault<TipDocument>(t => t.ClrType == nameof(BonConsum));
+    var tert = os.CreateObject<Partener>();
+    tert.Cod = MarcajLat + "-TERT";
+    tert.Denumire = "Partener probă laturi";
+    var loc = os.CreateObject<UnitateInterna>();
+    loc.Cod = MarcajLat + "-LOC";
+    loc.Denumire = "Loc de consum probă laturi";
+    loc.Calitati = CalitateRepartitor.LocConsum;
+    var produs = os.CreateObject<Produs>();
+    produs.Cod = MarcajLat + "-P";
+    produs.Denumire = "Produs probă laturi";
+    produs.UM = "BUC";
+    produs.TipMaterial = tipMaterial;
+    var lot = os.CreateObject<Lot>();
+    lot.Produs = produs;
+    lot.PretUnitar = 10m;
+    lot.Gestiune = mag1;
+    lot.Data = new DateOnly(2026, 1, 10);
+    var intrare = os.CreateObject<RegistruStoc>();
+    intrare.Data = lot.Data;
+    intrare.TipStoc = TipStoc.Magazie;
+    intrare.Lot = lot;
+    intrare.Repartitor = mag1;
+    intrare.Cantitate = 10m;
+    intrare.Valoare = 100m;
+    BonConsum Bcs(Repartitor predator, Repartitor primitor) {
+        var doc = os.CreateObject<BonConsum>();
+        doc.Data = new DateOnly(2026, 3, 5);
+        doc.Predator = predator;
+        doc.Primitor = primitor;
+        var d = os.CreateObject<DocumentDetaliu>();
+        d.Document = doc;
+        d.TipMaterial = tipMaterial;
+        d.Lot = lot;
+        d.Cantitate = 1m;
+        return doc;
+    }
+    var bcsPredatorExtern = Bcs(tert, loc);
+    var bcsPrimitorFaraCalitate = Bcs(mag1, mag2);
+    var bcsCorect = Bcs(mag1, loc);
+    var decPredatorIntern = os.CreateObject<Decont>();
+    decPredatorIntern.Data = new DateOnly(2026, 3, 5);
+    decPredatorIntern.Predator = mag1;
+    decPredatorIntern.Primitor = loc;
+    os.CommitChanges();
+
+    // Aceeași funcție pe ambele uși: mesajul declarației = linia din refuzul de operare.
+    static bool AceeasiLinie(IReadOnlyList<string> declaratie, string operare, string cod) =>
+        declaratie.Count(m => m.StartsWith(cod + ":", StringComparison.Ordinal)) == 1
+        && operare != null
+        && operare.Split('\n').Contains(declaratie.Single(m => m.StartsWith(cod + ":", StringComparison.Ordinal)));
+
+    var declPredator = Atlas.Conta.BackOffice.Module.Cub.Materializare.Refuzuri(os, bcsPredatorExtern, tipBcs);
+    var operPredator = Refuz(() => MotorOperare.Opereaza(os, bcsPredatorExtern));
+    Check($"STR-LATURI-REFUZ ({eticheta}): BCS cu predator PARTENER e refuzat pe ușa declarației cu "
+        + "`PREDATOR_NEPOTRIVIT` (înaintea declarantului: singurul refuz) și pe ușa entității cu ACEEAȘI linie; "
+        + "nimic scris, documentul rămâne Draft",
+        declPredator.Count == 1 && AceeasiLinie(declPredator, operPredator, CodPredator)
+        && ProbeCub.Tranzactii(os, bcsPredatorExtern.ID).Count == 0
+        && bcsPredatorExtern.Stare == StareDocument.Draft);
+
+    var declPrimitor = Atlas.Conta.BackOffice.Module.Cub.Materializare.Refuzuri(os, bcsPrimitorFaraCalitate, tipBcs);
+    var operPrimitor = Refuz(() => MotorOperare.Opereaza(os, bcsPrimitorFaraCalitate));
+    Check($"STR-LATURI-REFUZ ({eticheta}): BCS cu primitor gestiune FĂRĂ calitatea LocConsum e refuzat pe "
+        + "ambele uși cu `PRIMITOR_NEPOTRIVIT`, mesajul numește calitatea lipsă; nimic scris",
+        declPrimitor.Count == 1 && AceeasiLinie(declPrimitor, operPrimitor, CodPrimitor)
+        && declPrimitor[0].Contains("fără calitatea LocConsum", StringComparison.Ordinal)
+        && ProbeCub.Tranzactii(os, bcsPrimitorFaraCalitate.ID).Count == 0
+        && bcsPrimitorFaraCalitate.Stare == StareDocument.Draft);
+
+    var operDec = Refuz(() => MotorOperare.Opereaza(os, decPredatorIntern));
+    Check($"STR-LATURI-REFUZ ({eticheta}): un tip FĂRĂ declarant (DEC) cu predator gestiune e refuzat pe ușa "
+        + "entității cu `PREDATOR_NEPOTRIVIT` — contractul e al clasei, nu al declarantului",
+        operDec != null && operDec.Split('\n').Any(l => l.StartsWith(CodPredator + ":", StringComparison.Ordinal))
+        && decPredatorIntern.Stare == StareDocument.Draft);
+
+    var declCorect = Atlas.Conta.BackOffice.Module.Cub.Materializare.Refuzuri(os, bcsCorect, tipBcs);
+    Check($"STR-LATURI-REFUZ ({eticheta}): BCS cu laturile pe partea permisă (gestiune → loc de consum) "
+        + "nu are niciun refuz de latură pe ușa declarației",
+        !declCorect.Any(m => m.StartsWith(CodPredator + ":", StringComparison.Ordinal)
+            || m.StartsWith(CodPrimitor + ":", StringComparison.Ordinal)));
+
+    CurataLat(os);
+    Check($"NUC-LAT-{eticheta} — curățenie finală (fără reziduuri de scenă)",
+        !os.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajLat))
+        && !os.GetObjectsQuery<Produs>().Any(x => x.Cod.StartsWith(MarcajLat)));
 }

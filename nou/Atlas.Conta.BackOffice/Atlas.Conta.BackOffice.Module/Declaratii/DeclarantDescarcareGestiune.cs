@@ -21,9 +21,6 @@ public sealed class DeclarantDescarcareGestiune : IDeclarant {
         ArgumentNullException.ThrowIfNull(refuzuri);
 
         var doc = operand.Document;
-        if (doc.Predator.Fel != FelRepartitor.Gestiune)
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PredatorNepotrivit,
-                "Predatorul descărcării de gestiune trebuie să fie o gestiune.", null));
         if (operand.Linii.Count == 0)
             refuzuri.Add(new N.Refuz(CoduriRefuz.LiniiLipsa,
                 "Descărcarea de gestiune se cere cu cel puțin o linie.", null));
@@ -85,6 +82,8 @@ public sealed class DeclarantDescarcareGestiune : IDeclarant {
                     Cont = contare.ContDebit,
                     // N-D4: marfa părăsește patrimoniul — capătul de cost e al clientului.
                     Gestiune = N.GestiuniVirtuale.Client,
+                    // T-D13 (g): terțul nominalizat pe capătul extern.
+                    Partener = doc.Primitor.Parte == Parte.Extern ? doc.Primitor.Id : null,
                     Produs = lot.ProdusId,
                     Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideDebit, contare.Regula.Comun),
                 },

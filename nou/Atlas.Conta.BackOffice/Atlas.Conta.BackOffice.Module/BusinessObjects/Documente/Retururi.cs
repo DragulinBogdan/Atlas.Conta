@@ -27,6 +27,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Partener; stoc −q (regula +1 pe predator × linia negativă); contare
 // 3xx = 401 cu −V (stornarea achiziției) + 4426 = 401 cu −TVA (PoliticaTva).
 public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Gestiune, Declaratii.Latura.Externa);
+
     // Rolul de STINS (F19-D16): RLF stornează achiziția (3xx = 401 cu −V), deci
     // lasă un sold DEBITOR pe 401 — se stinge creditând contrapartida (o
     // încasare de la furnizor, sau jumătatea de credit a unei note).
@@ -72,10 +75,6 @@ public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Gestiune)
-            erori.Add("Predatorul returului la furnizor este gestiunea din care iese marfa.");
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Partener)
-            erori.Add("Primitorul returului la furnizor este furnizorul (partener).");
 
         // Proiecție server-side, fără navigații lazy în enumerare (25b, ca DSC/ASM).
         var idsLot = Detalii.Where(d => d.LotId != null).Select(d => d.LotId.Value).Distinct().ToList();
@@ -122,6 +121,9 @@ public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
 [GardContare(NaturaClasa.Stoc, NivelContare.TipMaterialExact,
     "Linia cu lot a returului nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc, storno) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class ReturClient : Document {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Externa, Declaratii.Latura.Gestiune);
+
     // Oglinda RLF-ului: RDC stornează livrarea (creditează 4111 cu −V), deci lasă
     // un sold CREDITOR pe contul clientului — se stinge debitând (plata de
     // rambursare, jumătatea de debit a notei). Ca la `ReturFurnizor`, declarația
@@ -192,10 +194,6 @@ public class ReturClient : Document {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Partener)
-            erori.Add("Predatorul returului de la client este clientul (partener).");
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Gestiune)
-            erori.Add("Primitorul returului de la client este gestiunea în care revine marfa.");
 
         var claseTip = Motor.Fapte.ClaseTip(os, Detalii.Select(d => d.TipMaterialId));
         // Regimul TVA al liniilor de venit: Capitalizat n-are sens pe un venit

@@ -15,6 +15,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // primitor = comisia de inventariere (calitatea Comisie — decizia 16).
 [TipDetaliu(typeof(ListaDiferenteInventarDetaliu))]
 public class ListaDiferenteInventar : Document {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Gestiune, Declaratii.Latura.Interna.Cu(CalitateRepartitor.Comisie));
+
     // F6-D2: lotul plusului se naște în gestiunea INVENTARIATĂ — predatorul
     // (28d), nu primitorul (default-ul bazei). Primitorul LDI e comisia de
     // inventariere, care nu e `Gestiune`, deci fără override-ul ăsta serviciul
@@ -41,13 +44,6 @@ public class ListaDiferenteInventar : Document {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Gestiune)
-            erori.Add("Predatorul listei de diferențe este gestiunea inventariată.");
-        // Comisia e calitate transversală, nu clasă (decizia 16) — orice
-        // repartitor intern o poate purta.
-        var primitor = os.GetObjectByKey<Repartitor>(PrimitorId);
-        if (primitor is Partener || !primitor.Calitati.HasFlag(CalitateRepartitor.Comisie))
-            erori.Add("Primitorul trebuie să fie comisia de inventariere (calitatea Comisie).");
         // Review advers F6-F1 (oglinda gardului ASM, 46d): minusul care descarcă
         // lotul născut de o linie-FRATE ar intra cu preț nefinalizat (0) —
         // gardianul de sold ar trece (aceeași cheie, aceeași zi), iar consumul

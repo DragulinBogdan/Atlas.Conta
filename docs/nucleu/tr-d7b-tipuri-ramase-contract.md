@@ -53,7 +53,7 @@ DEPĂȘITĂ de tabelul de aici.
 | V (diferențele se raportează) | T-D3 (A) (NTC fără partener), T-D6 (RLF la valoare fiscală), T-D10 (Δ 3xx) sunt consecințe DECLARATE cu cifră, fiecare cu litera ei în gate; scăparea conectorului la deschidere (T-D7) se CORECTEAZĂ, nu se declară; Import1C identic pe conținut sortat |
 | VI (fără interogare per linie) | `Fapte.Operand` rămâne ≤ 16 interogări pe toate tipurile; DSC citește loturile liniilor pe set (`SolduriLoturi` există); deschiderea scrie pe set |
 
-## Deciziile (T-D1…T-D12)
+## Deciziile (T-D1…T-D13)
 
 ### T-D1 — Fundația se refolosește, nu se re-taie
 
@@ -455,6 +455,109 @@ pierde — dovedit 2026-09-21); (l) raportul final se scrie ȘI în
 livrare — fișierul e canalul de rezervă, cu `path:line` și cifre, fără
 substituenți.
 
+### T-D13 — Laturile documentului ca structură: `Parte` (intern/extern) pe repartitor și felul permis per latură pe tip (owner, 2026-09-22)
+
+Modelul mental e cel din legacy: `GEST_DEFA_DOCUM` fixa per tip combinația
+predator → primitor pe intern/extern (FCT extern → intern, FCL intern →
+extern, BCS/BTR/LDI intern → intern, DEC extern → intern; `db/inventar/`).
+Azi regula e re-derivată în șase declaranți (helpere private în
+`DeclarantTrezorerie`, `Calitati.LocConsum` în BCS, felul exact pe latură în
+FCT/FCL/BTR/DSC) și a doua oară în validările claselor de document
+(`is Gestiune`, 14 locuri) — contra „o singură sursă de reguli" (42a).
+Nu e restanță: e pasul 2b, înaintea NTC, primul tip cu repartitor pe linie.
+
+(a) `RepartitorFapt` primește `Parte`: `Extern` (Partener, Angajat),
+`Intern` (Gestiune, UnitateInterna), `Propriu` (ContPropriu); derivată o
+singură dată, în `Fapte`, din `Fel`. `Fel` rămâne pentru ce cere felul exact
+(contul contrapartidei prin `RolTert`/`ContImplicit`).
+(b) `Document` declară contractul laturilor prin METODĂ polimorfă, ca
+`Declarant()`: `Laturi()` → per latură partea permisă + calitatea cerută
+(`LocConsum` pe primitorul BCS). Structură = cod (decizia 4): fără tabelă de
+politică, fără `switch` pe tip.
+(c) Un singur loc de refuz: `Contractare` verifică laturile ÎNAINTEA
+declarantului, cu codurile existente `PREDATOR_NEPOTRIVIT`/
+`PRIMITOR_NEPOTRIVIT`; declaranții își pierd verificările proprii.
+Validarea claselor de document (ușa de Committing, 42a) apelează ACEEAȘI
+metodă, nu o a doua listă; `is Gestiune` se taie la atingere.
+(d) Nucleul și cubul NEATINSE: gestiunea virtuală rămâne semnalul de extern
+pe postare; `Parte` nu ajunge pe `Capat` și nu are coloană. Nicio migrație.
+(e) XAF și React rămân înghețate (090 (m)): filtrarea lookup-urilor
+Predator/Primitor pe partea permisă e consumatorul natural al lui (b) și
+intră la dezgheț, consemnată în `lista-react.md`, nu acum.
+(f) Probe: `STR-LATURI-CONTRACT` — fiecare tip de document declară
+`Laturi()` și fiecare document de probă existent (`STR-*`, `F*-D*`,
+`DVI-V*`, scenele SAF-T) îl respectă; `STR-LATURI-REFUZ` — un document cu
+latura de partea greșită e refuzat pe ambele uși (comandă și Committing) cu
+același cod. Gate-urile pe clonă ale pașilor 1–2 (BTR, FCL, DSC, FCT, BCS,
+PLT, INC) rămân IDENTICE cu cifrele lor: 0 refuzuri noi.
+(g) Terțul nominalizat pe capătul extern (owner, 2026-09-22): DSC pune
+`Partener = Primitor` pe capătul 607 când primitorul e `Extern` (FCT o face
+deja prin partidă; BCS n-are capăt virtual). Oracolul primește normalizarea
+`TrD13TertulPeCapatulExtern` (rândul vechi 607 nu poartă partener), cu contor
+în gate. Citirea „net livrat / net primit per (Partener, Produs) pe gestiunile
+virtuale" e a lui TR-D8.
+Oprire: un document de pe clona Flax refuzat de contractul laturilor e
+oprire, nu lărgire tăcută — se raportează tipul, felul real al laturii și
+numărul.
+
+**Amendamente la implementare (pasul 2b, 2026-09-22):**
+
+- **(a')** `Parte` e derivată o singură dată, dar ca proprietate calculată pe
+  `RepartitorFapt` (`Laturi.ParteA(Fel)`), nu ca al doilea câmp umplut în
+  `Fapte`: un fapt nu poate purta `Fel` și `Parte` contradictorii.
+- **(b')** `Latura` = parte permisă + calitate cerută + **felul exact, doar
+  unde structura îl cere**: `Lot.Gestiune` e tipat `Gestiune`, deci laturile
+  care poartă stoc (BCS/BTR/ASM/DSC/RLF/LDI predator, FCT/NIR/RDC primitor,
+  BTR/ASM primitor) sunt `Latura.Gestiune` — altfel o unitate internă ar
+  trece contractul și ar cădea mai jos, pe nașterea lotului (constatat pe
+  proba `Api ASM: predator ne-Gestiune`). Pe laturile fără stoc rămâne
+  granularitatea părții: `UnitateInterna`/`Gestiune` interschimbabile (DVI,
+  PIF, CAS, DEC primitor), `Partener`/`Angajat` la fel pe cele externe;
+  `Angajat` nu mai e admis pe laturile interne (BCS/LDI primitor, NTC/ITV) —
+  vechile validări îl admiteau; pe Flax nu apare (recensământul de mai jos).
+- **(c')** `CONT_PROPRIU_LIPSA` și `LATURA_CONT_PROPRIU_NEPOTRIVITA` (B-r2)
+  sunt de neatins sub contractele `Plata`/`Incasare` și au fost scoase;
+  `DocumentFapt.LaturaContPropriu` la fel. Coloana `TipDocument.LaturaContPropriu`
+  și rândul ei de seed rămân până la prima migrație (T-r9; (d) cere nicio
+  migrație acum). `STR-LATURA` asertează acum `PREDATOR_NEPOTRIVIT` ca singur
+  refuz (contul propriu pe primitorul plății e legal: viramentul).
+  `Contractare.Mesaj` (`COD: mesaj [linie]`) e formatul unic al ambelor uși;
+  `Materializare.Refuzuri` îl refolosește.
+- **(f')** Proba „fiecare document de probă existent îl respectă" e ușa
+  entității însăși: fiecare scenă operează prin `ValideazaOperare`, iar
+  scenele își purjează documentele, deci o verificare finală pe bază ar fi
+  vacuă (măsurat: 0 documente operate la finalul rulării). Pe date reale,
+  recensământul laturilor pe clona `Atlas.Conta.Import1C.Flax.TrD7b`
+  (toate documentele, toate operate), fiecare pereche admisă de contract:
+
+  | Tip | Predator → Primitor (fel real, calități) | Documente |
+  |---|---|---|
+  | ASM | Gestiune → Gestiune | 1.228 |
+  | BCS | Gestiune → UnitateInterna (LocConsum) | 547 |
+  | DSC | Gestiune → Partener | 36.696 |
+  | FCL | UnitateInterna (LocConsum) → Partener | 40.535 |
+  | FCT | Partener → Gestiune | 19.035 |
+  | INC | Partener → ContPropriu | 31.381 |
+  | ITV | UnitateInterna → UnitateInterna | 12 |
+  | LDI | Gestiune → UnitateInterna (Comisie) | 18 |
+  | NIR | Partener → Gestiune | 17.814 |
+  | NTC | UnitateInterna → UnitateInterna | 7.818 |
+  | BTR | Gestiune → Gestiune | 45.552 |
+  | PLT | ContPropriu → Partener | 2.486 |
+  | RDC | Partener → Gestiune | 1.666 |
+  | RLF | Gestiune → Partener | 398 |
+
+  Nicio latură cu `Angajat`; DEC, DVI, PIF, CAS, AMO, BPR n-au documente pe
+  Flax. Gate-urile pașilor 1–2 re-rulate cu contractul activ sunt proba pe
+  cele 7 tipuri migrate (cifrele la pasul 2b).
+- **(g')** Normalizarea `TrD13TertulPeCapatulExtern` rulează DUPĂ M6 (care
+  șterge partenerul de pe capetele fără partidă), pe piciorul contabil al
+  unei linii care doar iese (aceeași identificare ca T-D4.1, `IesirilePure`),
+  cu terțul din `Context.TertPrimitor` (document → primitor de parte externă,
+  prin ACEEAȘI derivare `Laturi.ParteA`). E numărată în `Normalizari.Contoare`
+  (gate: `Normalizari.Contoare ×n`), nu în avertismente — avertismentele pică
+  probele `STR-OPERARE`.
+
 ## Ce NU intră (amânări cu nume)
 
 - Culegerea unității pe linie (NTC, regularizarea avansului), împerecherea ca document, partida ca rând, tăierea registrelor/conexului/`DescarcareService`: TR-D9.
@@ -469,6 +572,7 @@ substituenți.
 0. **Contractul** (main): fișierul de față; `.gitignore` cu `/agenti-msg/`; commit.
 1. **BTR pe cub + felul mixt** (T-D2): forma mișcării cu fel în nucleu (proprietate: o declarație cu mișcări `Transfer` produce Σ per (Cont, Latura) = 0 pe ele; una cu ambele feluri produce două tranzacții balansate), `Materializare` împarte pe set, `Storneaza`/`Anuleaza` acoperă ambele, `DeclarantNotaTransfer`, override, seed `BTR`, T-D2.1 constatat pe `RegistruStoc` și pin-uit în contract, litera (e) amendată, oracolul: rândurile BTR pe același cont pliate ca `Transfer`; probe `STR-BTR-ACELASI-CONT`, `STR-BTR-CONT-DIFERIT`, `STR-BTR-MIXT`, `STR-BTR-STORNO`; ModelCheck verde pe ambele profiluri; `--declaratie-pe-baza <clonă> BTR` = 100 % egal sau fiecare diferență declarată aici. Oprire: (c), (d), (e), (g), (i). **ÎNCHIS 2026-09-21** (agent F32-P1 + verificarea main-ului): nucleu 165 teste, 0 avertismente; ModelCheck 1698 OK privat / 1434 OK bugetar, 0 FAIL; gate BTR 45.017/45.552 egale + 535 declarate (T-D2.2); `--reconciliere-cub` 0 Δ pe ambele baze; diff gol pe Blazor.Server/WebApi/Client; `STR-BTR-CONT-DIFERIT`/`STR-BTR-MIXT` = proprietățile nucleului (T-D2.1).
 2. **FCL ∪ DSC pe cub** (T-D4): `DeclarantFacturaIesire`, `DeclarantDescarcareGestiune`, gestiunea virtuală `Client` folosită, două partide pe FCL cu avans, transferul FCL ↔ INC activ, grupurile în (a)/(b)/(c) + `Incomplete`, probe `STR-FCL-*`, `STR-DSC-*`, `STR-FCL-AVANS-DOUA-PARTIDE`, `STR-FCL-INC-TRANSFER`; toate probele `FCL*`/`DSC*` existente materializează; bugetar fără DSC; gate pe clonă FCL și DSC (cu cifrele transferurilor). Oprire: (c), (d), (g). **ÎNCHIS 2026-09-22** (agent F32-P2 + verificarea main-ului): ModelCheck 1765 OK privat / 1452 OK bugetar, 0 FAIL; nucleu 165; gate FCL 40.535/40.535 egale, 0 refuzate; gate DSC 35.854/36.696 egale, 0 refuzate, 842 declarate (T-D4.2); gate FCT 19.022 + 13 declarate, identic cu felia 31 (`Fiscal.Impozitul` pe direcție neutru); `--reconciliere-cub` 0 Δ pe ambele baze (privat: BCS, BTR, DSC, FCL, FCT, INC, PLT; bugetar fără DSC); diff gol pe Blazor.Server/WebApi/Client/Nucleu; T-D4.1 (normalizare), T-D4.3 (fix `StocService.SolduriLaData`) și amendamentul grupurilor consemnate în T-D4.
+2b. **Laturile ca structură** (T-D13; înaintea pasului 3, fiindcă NTC e primul tip cu repartitor pe linie și primul consumator al lui `Parte`): `Parte` pe `RepartitorFapt` derivată în `Fapte`, `Document.Laturi()` pe TOATE tipurile de document (și cele fără `PosteazaInCub`), `Contractare` verifică înaintea declarantului, validarea claselor refolosește metoda, declaranții pierd helperele proprii, `is Gestiune` tăiat în clasele atinse, DSC cu `Partener` pe capătul 607 + normalizarea în oracol cu contor, probe `STR-LATURI-CONTRACT`, `STR-LATURI-REFUZ`; nucleu neatins; ModelCheck verde pe ambele profiluri; gate-urile pașilor 1–2 re-rulate pe clonă cu cifre identice; diff gol pe Nucleu/Blazor.Server/WebApi/Client. Oprire: (c), (d), (g) + oprirea din T-D13. **ÎNCHIS 2026-09-22** (main, direct): `Declaratii/Laturi.cs` (`Parte`, `Latura`, `ContractLaturi`, `Laturi.Verifica` pe ambele uși), `Document.Laturi()` abstract cu 19 override-uri, `Contractare` verifică înaintea declarantului, cele 6 declaranți fără verificări de latură, `is Gestiune` tăiat din toate clasele, DSC cu `Partener` pe 607, normalizarea `TrD13TertulPeCapatulExtern` + `Normalizari.Contoare`; amendamentele (a')–(g') mai sus. ModelCheck 1771 OK privat / 1458 OK bugetar, 0 FAIL (20/20 tipuri cu contract; `STR-LATURI-*`, `STR-LATURA` amendată; probele ASM/RDC/PLT-Api pe cod); `--reconciliere-cub` 0 Δ pe ambele baze; gate pe clona TrD7b (3 h 04, `run-nucleu/tr-d7b/pas2b/`) IDENTIC cu pașii 1–2: BTR 45.017/45.552 + 535 declarate, FCL 40.535/40.535, DSC 35.854/36.696 + 842 declarate, FCT 19.022 + 13 declarate, BCS 547/547, PLT 2.486/2.486, INC 31.381/31.381, 0 refuzate pe toate; `Normalizari.Contoare ×62.063` TR-D13 pe DSC (= toate liniile lui); diff gol pe Nucleu/Blazor.Server/WebApi/Client.
 3. **NTC + ITV pe cub** (T-D3): `DeclarantNotaContabila`, override pe `NotaContabila` (ITV îl moștenește), nominalizarea FIFO pe `(Cont, Partener)` cu `N.Fifo.Nominalizeaza` (B) și fallback-ul fără unitate (A), conectorul pune partenerul din subconto pe repartitorul liniei (`NoteComune` + `Punte`), gardul `Conservare.cs:133` verificat/relaxat cu proprietate, contoarele în gate (picioare cu partener nominalizate / fără partener per cont; 3xx fără lot per corespondență), `Imperecheaza` sărit fără partidă proprie, litera (f) cu excluderea (A), probe `STR-NTC-EXPLICIT`, `STR-NTC-PARTENER-FIFO`, `STR-NTC-AVANS-DOUA-UNITATI`, `STR-NTC-TERT-FARA-UNITATE`, `STR-NTC-STOC-FARA-LOT`, `STR-NTC-COMPENSARE`, `STR-ITV`; familia `F21-D*` materializează; gate pe clonă NTC și ITV cu cele cinci corespondențe la cifrele din B2.7 și cu măsura (B)/(A) pe cele 7.824; Import1C pe o lună (ianuarie) pe clonă ca să se vadă efectul partenerului pe `Imperecheri`. Oprire: (c), (d), (g) — un refuz pe o notă pe care motorul vechi o operează e oprire, nu normalizare.
 4. **RDC + RLF + DVI pe cub** (T-D6, T-D8): trei declaranți, seed, probe `STR-RDC-VENIT-COST`, `STR-RDC-PARTIDA-NEGATIVA`, `STR-RLF-FISCAL-REZIDUU`, `STR-DVI`; `DVI-V*` și contractele API `ReturClientApply`/`ReturFurnizorApply` materializează; gate pe clonă RDC și RLF (DVI n-are documente — se spune). Oprire: (c), (d), (g).
 5. **ASM + LDI + NIR pe cub** (T-D2 pe ASM, T-D5, T-D9): `DeclarantAsamblare` (fel mixt refolosit), `DeclarantListaDiferente` + constantele `Folosinta`/`Gratuit`/`Custodie` + maparea pură `TipStoc →`, `DeclarantNir` + excluderea conexului prin `PoliticaConex` (probată: FCT cu NIR conex operat ⇒ o singură recepție în cub, `STR-NIR-CONEX-EXCLUS`), probe `STR-ASM-ACELASI-CONT`, `STR-ASM-PRODUCTIE`, `STR-LDI-PLUS-MINUS`, `STR-LDI-BUGETAR-SINK`, `STR-NIR-MANUAL`; gate pe clonă ASM, LDI, NIR (NIR: 0 documente manuale — se spune; cele 17.814 conexe verificate NEmaterializate). Oprire: (c), (d), (g); TR-r7 fără cont 803x ⇒ constatare, nu inventare.
@@ -483,6 +587,7 @@ substituenți.
 - ModelCheck verde pe AMBELE profiluri cu toate `Check`-urile de azi + probele `STR-*` noi; nucleu `dotnet test` verde, 0 avertismente, testul de arhitectură neatins.
 - `--declaratie-pe-baza` pe clona Flax pentru BTR, FCL, DSC, NTC, RDC, ASM, RLF, LDI, ITV = 100 % egal sau fiecare diferență declarată în T-D2…T-D10 cu cifra ei; NIR și DVI: 0 documente, spus explicit, oracolul = scenele.
 - Import1C integral pe Flax: exit 0, raport IDENTIC pe conținut sortat cu `reconciliere-20260921-035646.txt`, ZERO refuzuri ale declarației, 12/12 luni închise cu 0 constatări; `--reconciliere-cub` 0 rânduri Δ pe (a)–(g) cu excluderea T-D3 (A) listată nominal și cu cifra ei; (h) raportat și descompus; stingerile pe partidele de deschidere cu cifrele (create / plafonate / sărite) și check-ul Σ per (cont, partener) = `BalantaNivel3` − stingeri; cifrele consemnate în contract; NIR conex: 0 tranzacții; `--dump-integritate-tph` 0; `refuzuri.ps1` toate PASS pe Privat refăcută.
+- Contractul laturilor (T-D13) declarat pe toate tipurile de document, refuzul laturii într-un singur loc, `STR-LATURI-*` verzi, `Parte` absentă din Nucleu și din cub.
 - Diff-ul pe Blazor.Server/WebApi/Client gol în afara fișierelor generate; `MotorOperare.cs` atins doar pentru excluderea conexului (T-D5), dacă nu încape în `Materializare`.
 - Review advers aplicat; docs din pasul 9 în commit-ul de închidere; `Stare: ÎNCHISĂ` cu data. Decizie proprie NU e necesară (felia execută 090 (l)); amendamentele de literă (T-D2 la 090 (a), T-D3 la 090 (c), T-D6 la 090 (j)) se consemnează aici și în `restante.md`.
 

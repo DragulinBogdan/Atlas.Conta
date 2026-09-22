@@ -72,12 +72,6 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
         if (string.IsNullOrWhiteSpace(doc.Numar))
             refuzuri.Add(new N.Refuz(CoduriRefuz.NumarLipsa,
                 "Factura de intrare poartă numărul furnizorului.", null));
-        if (doc.Predator.Fel != FelRepartitor.Partener)
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PredatorNepotrivit,
-                "Predatorul facturii de intrare trebuie să fie un partener (furnizor).", null));
-        if (doc.Primitor.Fel != FelRepartitor.Gestiune)
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PrimitorNepotrivit,
-                "Primitorul facturii de intrare trebuie să fie o gestiune.", null));
         if (operand.Linii.Count == 0)
             refuzuri.Add(new N.Refuz(CoduriRefuz.LiniiLipsa,
                 "Factura de intrare se cere cu cel puțin o linie.", null));

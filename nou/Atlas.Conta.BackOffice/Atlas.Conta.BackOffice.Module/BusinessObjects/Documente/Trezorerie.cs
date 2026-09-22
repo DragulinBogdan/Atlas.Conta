@@ -559,6 +559,9 @@ public abstract class DocumentTrezorerie : Document {
 [GardContare(NaturaClasa.Virament, NivelContare.Natura,
     "Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class Plata : DocumentTrezorerie {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Proprie, Declaratii.Latura.ExternaSauProprie);
+
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantTrezorerie.Instanta;
 
     public override Guid GetContrapartidaId() => PrimitorId;
@@ -574,12 +577,6 @@ public class Plata : DocumentTrezorerie {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not ContPropriu)
-            erori.Add("Predatorul plății este contul propriu (casă/bancă) din care se plătește.");
-        // Contrapartida acceptă și un cont propriu (F7-D3): viramentul intern
-        // e o plată către al doilea cont propriu, nu un tip de document aparte.
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not (Partener or Angajat or ContPropriu))
-            erori.Add("Primitorul plății este beneficiarul — un partener, un angajat (avans) sau un cont propriu (virament intern).");
     }
 }
 
@@ -588,6 +585,9 @@ public class Plata : DocumentTrezorerie {
 [GardContare(NaturaClasa.Virament, NivelContare.Natura,
     "Linia de virament nu are regulă de contare potrivită (cont de tranzit = cont propriu) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class Incasare : DocumentTrezorerie {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.ExternaSauProprie, Declaratii.Latura.Proprie);
+
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantTrezorerie.Instanta;
 
     public override Guid GetContrapartidaId() => PredatorId;
@@ -602,11 +602,6 @@ public class Incasare : DocumentTrezorerie {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        // Contrapartida acceptă și un cont propriu (F7-D3) — vezi Plata.
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not (Partener or Angajat or ContPropriu))
-            erori.Add("Predatorul încasării este plătitorul — un partener, un angajat sau un cont propriu (virament intern).");
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not ContPropriu)
-            erori.Add("Primitorul încasării este contul propriu (casă/bancă) în care se încasează.");
     }
 }
 

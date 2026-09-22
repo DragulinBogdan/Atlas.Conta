@@ -20,12 +20,6 @@ public sealed class DeclarantNotaTransfer : IDeclarant {
         ArgumentNullException.ThrowIfNull(refuzuri);
 
         var doc = operand.Document;
-        if (doc.Predator.Fel != FelRepartitor.Gestiune)
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PredatorNepotrivit,
-                "Transferul se face între două gestiuni.", null));
-        if (doc.Primitor.Fel != FelRepartitor.Gestiune)
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PrimitorNepotrivit,
-                "Transferul se face între două gestiuni.", null));
         if (doc.Predator.Id == doc.Primitor.Id)
             refuzuri.Add(new N.Refuz(CoduriRefuz.GestiuniIdentice,
                 "Gestiunea sursă și cea destinație trebuie să difere.", null));

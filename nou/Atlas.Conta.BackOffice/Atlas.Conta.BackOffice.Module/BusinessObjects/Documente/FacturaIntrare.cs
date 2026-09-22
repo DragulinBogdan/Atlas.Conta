@@ -17,6 +17,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // e aditivă), deci nu primesc grup de layout.
 [TipDetaliu(typeof(FacturaIntrareDetaliu))]
 public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Externa, Declaratii.Latura.Gestiune);
+
     // Rolul de STINS (F19-D16): factura furnizorului lasă un sold CREDITOR pe
     // 401 — se stinge debitând contrapartida (plata, jumătatea de debit a notei
     // de compensare). Nu declară `CapacitateStingere`: factura nu stinge nimic.
@@ -112,10 +115,6 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
             erori.Add("Factura de intrare poartă numărul furnizorului — se completează la culegere.");
         if (GenereazaPlata && PlataContPropriuId == null)
             erori.Add("Generarea plății cere contul propriu (casă/bancă) din care se plătește.");
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Partener)
-            erori.Add("Predatorul facturii de intrare trebuie să fie un partener (furnizor).");
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Gestiune)
-            erori.Add("Primitorul facturii de intrare trebuie să fie o gestiune.");
 
         // Liniile FCT se culeg pe tipul derivat — o linie de bază DocumentDetaliu
         // ar ocoli lanțul de valori (fără PretUnitar, Valoare culeasă direct, fără

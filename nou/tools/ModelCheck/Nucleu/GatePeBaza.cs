@@ -32,6 +32,7 @@ static class GatePeBaza {
         public readonly Dictionary<string, (int Cate, HashSet<Guid> Documente, List<string> Exemple)> Refuzuri = [];
         public readonly Dictionary<string, (int Cate, List<string> Exemple, string Diff)> Feluri = [];
         public readonly Dictionary<string, int> Avertismente = [];
+        public readonly Dictionary<string, int> Normalizari = [];
         public readonly List<string> TextExceptii = [];
         public readonly List<string> Conservare = [];
         public int Transferuri;
@@ -282,6 +283,8 @@ static class GatePeBaza {
             foreach (var avertisment in Normalizari.Avertismente.Distinct())
                 contor.Avertismente[Sablon(avertisment)] =
                     contor.Avertismente.GetValueOrDefault(Sablon(avertisment)) + 1;
+            foreach (var (normalizare, cate) in Normalizari.Contoare)
+                contor.Normalizari[normalizare] = contor.Normalizari.GetValueOrDefault(normalizare) + cate;
             // Pe COORDONATE (`Comparabil`), nu pe `N.Postare` — și FĂRĂ `Linie`: transferul
             // n-are linie la declarant și poartă id-ul împerecherii în oracol (MEDIU-5).
             if (transferuri.Count > 0 && !MultisetEgal(
@@ -550,6 +553,8 @@ static class GatePeBaza {
         }
         foreach (var (avertisment, cate) in contor.Avertismente.OrderByDescending(a => a.Value))
             scrie($"   Normalizari.Avertismente ×{cate}: {avertisment}");
+        foreach (var (normalizare, cate) in contor.Normalizari.OrderByDescending(a => a.Value))
+            scrie($"   Normalizari.Contoare ×{cate}: {normalizare}");
         foreach (var text in contor.Conservare)
             scrie($"   conservare NEÎNDEPLINITĂ: {text}");
         foreach (var text in contor.TextExceptii)

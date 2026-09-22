@@ -13,6 +13,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [TipDetaliu(typeof(DocumentDetaliu))]
 [XafDisplayName("Declarație vamală de import")]
 public class Dvi : Document {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Externa, Declaratii.Latura.Interna);
+
     // DVI-D4: taxa în vamă se plătește ca orice taxă (precedentul ITV/4423),
     // nu prin imperechere — soldul lui 446 pe biroul vamal e ce rămâne de plătit.
     public override bool PoateFiStins(DevExpress.ExpressApp.IObjectSpace os) => false;
@@ -52,11 +55,6 @@ public class Dvi : Document {
         base.ValideazaOperare(os, erori);
         if (string.IsNullOrWhiteSpace(Numar))
             erori.Add("Declarația vamală poartă numărul ei (MRN) — se completează la culegere.");
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Partener)
-            erori.Add("Predatorul declarației vamale trebuie să fie un partener "
-                + "(biroul vamal, sau comisionarul care a plătit taxa în vamă).");
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not UnitateInterna)
-            erori.Add("Primitorul declarației vamale trebuie să fie o unitate internă.");
 
         var idsTipTva = Detalii.Where(d => d.TipTvaId != null)
             .Select(d => d.TipTvaId.Value).Distinct().ToList();

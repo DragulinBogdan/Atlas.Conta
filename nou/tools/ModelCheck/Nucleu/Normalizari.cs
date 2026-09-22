@@ -14,8 +14,12 @@ static class Normalizari {
     // `Postare` și `Tranzactie` au egalitate STRUCTURALĂ (090b): urmărirea se face
     // pe INDICI, nu pe seturi de instanțe — două postări identice sunt distincte.
     static readonly List<string> avertismente = [];
+    static readonly Dictionary<string, int> contoare = [];
 
     public static IReadOnlyList<string> Avertismente => avertismente.ToArray();
+
+    /// <summary>Normalizările DECLARATE aplicate (T-D13): contor per fel, fără avertisment.</summary>
+    public static IReadOnlyDictionary<string, int> Contoare => new Dictionary<string, int>(contoare);
 
     // S-D13 (amendament B-D8 pct. 11): grupurile (linie, cont, latură) nominalizate de o
     // împerechere ULTERIOARă operării. Acolo `Operare` ține piciorul de bani întreg și doar
@@ -25,6 +29,7 @@ static class Normalizari {
 
     public static void Reseteaza() {
         avertismente.Clear();
+        contoare.Clear();
         faraSpargere.Clear();
     }
 
@@ -32,14 +37,17 @@ static class Normalizari {
     /// <param name="LiniaSursa">linia conexului → linia sursei care i-a născut lotul.</param>
     /// <param name="ConturiTva">4426/4427 ale tipurilor de TVA atinse.</param>
     /// <param name="Capitalizate">tipurile de TVA atinse al căror regim capitalizează taxa în cost.</param>
+    /// <param name="TertPrimitor">document → primitorul lui, DOAR când primitorul e de parte externă (T-D13).</param>
     public sealed record Context(
         IReadOnlyDictionary<Guid, Guid> SursaConexului,
         IReadOnlyDictionary<Guid, Guid> LiniaSursa,
         IReadOnlySet<Guid> ConturiTva,
-        IReadOnlySet<Guid> Capitalizate) {
+        IReadOnlySet<Guid> Capitalizate,
+        IReadOnlyDictionary<Guid, Guid> TertPrimitor) {
 
         public static readonly Context Gol = new(
-            new Dictionary<Guid, Guid>(), new Dictionary<Guid, Guid>(), new HashSet<Guid>(), new HashSet<Guid>());
+            new Dictionary<Guid, Guid>(), new Dictionary<Guid, Guid>(), new HashSet<Guid>(), new HashSet<Guid>(),
+            new Dictionary<Guid, Guid>());
     }
 
     public static IReadOnlyList<N.Tranzactie> Toate(IReadOnlyList<N.Tranzactie> tranzactii, Context context) {
@@ -53,7 +61,8 @@ static class Normalizari {
         rezultat = TrD2DesparteContrapartida(rezultat);
         rezultat = FiscalCapitalizatulSeDesface(rezultat, context);
         rezultat = FiscalCaAtribute(rezultat, context);
-        return M6PartenerDoarPeTert(rezultat);
+        rezultat = M6PartenerDoarPeTert(rezultat);
+        return TrD13TertulPeCapatulExtern(rezultat, context);
     }
 
     // ── B-D8 pct. 9 — repartitorul stă pe piciorul PROPRIU, nu pe cel de terț ──
@@ -317,12 +326,12 @@ static class Normalizari {
         return [.. tranzactii.Select(CostulIesirii)];
     }
 
-    static N.Tranzactie CostulIesirii(N.Tranzactie tranzactie) {
-        if (tranzactie.Fel != N.FelTranzactie.Operare)
-            return tranzactie;
-        var postari = tranzactie.Postari;
-        // Postarea fără linie (cauza e a documentului) intră pe cheia zero, ca oricare alta.
-        static Guid Cheia(N.Postare postare) => postare.Cauza.Linie ?? Guid.Empty;
+    // Postarea fără linie (cauza e a documentului) intră pe cheia zero, ca oricare alta.
+    static Guid Cheia(N.Postare postare) => postare.Cauza.Linie ?? Guid.Empty;
+
+    // Liniile care DOAR ies: un singur lot pe `Credit` cu gestiune per linie; o linie cu
+    // lot și pe `Debit` sau cu două gestiuni e respinsă (nu e ieșire pură).
+    static (Dictionary<Guid, Guid?> Iesiri, HashSet<Guid> Respinse) IesirilePure(IReadOnlyList<N.Postare> postari) {
         var iesiri = new Dictionary<Guid, Guid?>();
         var respinse = new HashSet<Guid>();
         foreach (var postare in postari) {
@@ -336,6 +345,14 @@ static class Normalizari {
             else
                 iesiri[Cheia(postare)] = coordonate.Gestiune;
         }
+        return (iesiri, respinse);
+    }
+
+    static N.Tranzactie CostulIesirii(N.Tranzactie tranzactie) {
+        if (tranzactie.Fel != N.FelTranzactie.Operare)
+            return tranzactie;
+        var postari = tranzactie.Postari;
+        var (iesiri, respinse) = IesirilePure(postari);
         if (iesiri.Count == 0)
             return tranzactie;
         var rezultat = postari.ToList();
@@ -350,6 +367,45 @@ static class Normalizari {
                 continue;
             rezultat[i] = postari[i] with { Coordonate = coordonate with { Gestiune = null } };
             schimbari++;
+        }
+        return schimbari == 0 ? tranzactie : tranzactie with { Postari = rezultat };
+    }
+
+    // ── T-D13 (g) — terțul nominalizat pe capătul extern ─────────────────────
+    //
+    // Declarantul pune `Partener` = primitorul de parte externă pe capătul de cost al
+    // ieșirii (DSC: 607 pe gestiunea virtuală `Client`); rândul vechi 607 nu-l poartă
+    // (M6 îl șterge, fiindcă n-are partidă). Se aplică DUPĂ M6, pe piciorul contabil
+    // fără gestiune (TR-D4.1) al unei linii care doar iese, când documentul are terț pe
+    // primitor; contorul (`Contoare`) e al gate-ului, per capăt.
+    public static IReadOnlyList<N.Tranzactie> TrD13TertulPeCapatulExtern(
+            IReadOnlyList<N.Tranzactie> tranzactii, Context context) {
+        ArgumentNullException.ThrowIfNull(tranzactii);
+        ArgumentNullException.ThrowIfNull(context);
+        return [.. tranzactii.Select(t => TertulPeCapatulExtern(t, context))];
+    }
+
+    static N.Tranzactie TertulPeCapatulExtern(N.Tranzactie tranzactie, Context context) {
+        if (tranzactie.Fel != N.FelTranzactie.Operare || tranzactie.Document is not Guid document
+                || !context.TertPrimitor.TryGetValue(document, out var tert))
+            return tranzactie;
+        var postari = tranzactie.Postari;
+        var (iesiri, respinse) = IesirilePure(postari);
+        if (iesiri.Count == 0)
+            return tranzactie;
+        var rezultat = postari.ToList();
+        var schimbari = 0;
+        for (var i = 0; i < postari.Count; i++) {
+            var coordonate = postari[i].Coordonate;
+            if (coordonate.Unitate is not null || coordonate.Partener is not null
+                || coordonate.Gestiune is not null || coordonate.CodTva is not null
+                || coordonate.Cont == CubDinRegistre.ContFiscal
+                || respinse.Contains(Cheia(postari[i]))
+                || !iesiri.ContainsKey(Cheia(postari[i])))
+                continue;
+            rezultat[i] = postari[i] with { Coordonate = coordonate with { Partener = tert } };
+            schimbari++;
+            Numara("TR-D13: capăt de cost cu terțul de pe primitor");
         }
         return schimbari == 0 ? tranzactie : tranzactie with { Postari = rezultat };
     }
@@ -617,7 +673,29 @@ static class Normalizari {
             conexe ?? new Dictionary<Guid, Guid>(),
             conexe is null || conexe.Count == 0 ? new Dictionary<Guid, Guid>() : LiniiSursa(os, conexe),
             tipuri.Conturi,
-            tipuri.Capitalizate);
+            tipuri.Capitalizate,
+            TertPrimitor(os, ids));
+    }
+
+    // T-D13: partea primitorului prin ACEEAȘI derivare ca declarantul (`Laturi.ParteA`
+    // din `FelRepartitor` = discriminatorul `ClrType`, 89b), nu printr-o a doua listă.
+    static Dictionary<Guid, Guid> TertPrimitor(IObjectSpace os, IReadOnlyList<Guid> documente) {
+        if (documente.Count == 0)
+            return [];
+        var primitori = os.GetObjectsQuery<Document>()
+            .Where(d => documente.Contains(d.ID))
+            .Select(d => new { d.ID, d.PrimitorId })
+            .ToList();
+        var idsPrimitori = primitori.Select(p => p.PrimitorId).Distinct().ToList();
+        var externi = os.GetObjectsQuery<Repartitor>()
+            .Where(r => idsPrimitori.Contains(r.ID))
+            .Select(r => new { r.ID, r.ClrType })
+            .ToList()
+            .Where(r => Enum.TryParse<Module.Declaratii.FelRepartitor>(r.ClrType, out var fel)
+                && Module.Declaratii.Laturi.ParteA(fel) == Module.Declaratii.Parte.Extern)
+            .Select(r => r.ID)
+            .ToHashSet();
+        return primitori.Where(p => externi.Contains(p.PrimitorId)).ToDictionary(p => p.ID, p => p.PrimitorId);
     }
 
     // Cheia liniei la TR-D3: `Lot.LinieIntrareId` (lotul e născut de linia sursei);
@@ -679,4 +757,6 @@ static class Normalizari {
         avertismente.Add(mesaj);
         Console.WriteLine($"     Normalizari: {mesaj}");
     }
+
+    static void Numara(string cheie) => contoare[cheie] = contoare.GetValueOrDefault(cheie) + 1;
 }

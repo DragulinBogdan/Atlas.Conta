@@ -62,12 +62,6 @@ public sealed class DeclarantFacturaIesire : IDeclarant {
     }
 
     static void Antetul(DocumentFapt doc, Operand operand, ICollection<N.Refuz> refuzuri) {
-        if (doc.Predator.Fel == FelRepartitor.Partener)
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PredatorNepotrivit,
-                "Predatorul facturii de ieșire e emitentul — un repartitor intern, nu un partener.", null));
-        if (doc.Primitor.Fel != FelRepartitor.Partener)
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PrimitorNepotrivit,
-                "Primitorul facturii de ieșire trebuie să fie un partener (client).", null));
         if (operand.Linii.Count == 0)
             refuzuri.Add(new N.Refuz(CoduriRefuz.LiniiLipsa,
                 "Factura de ieșire se cere cu cel puțin o linie.", null));

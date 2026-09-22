@@ -155,7 +155,5 @@ public static class Materializare {
     }
 
     static IReadOnlyList<string> Mesaje(IReadOnlyList<N.Refuz> refuzuri) =>
-        [.. refuzuri.Select(r => r.Linie is Guid linie
-            ? $"{r.Cod}: {r.Mesaj} [{linie}]"
-            : $"{r.Cod}: {r.Mesaj}")];
+        [.. refuzuri.Select(Contractare.Mesaj)];
 }

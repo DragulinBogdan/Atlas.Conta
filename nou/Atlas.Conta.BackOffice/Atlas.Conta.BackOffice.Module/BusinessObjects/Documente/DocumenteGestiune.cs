@@ -15,6 +15,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // închiderea întrebării 00 §13.1) — factura postează doar liniile non-stoc.
 [TipDetaliu(typeof(NirDetaliu))]
 public class NIR : Document {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Externa, Declaratii.Latura.Gestiune);
+
     // Rolul de STINS (F19-D16, review F4): recepția CONTEAZĂ pe NIR (26a) —
     // `3xx = 401` se postează aici, nu pe factură —, deci NIR-ul lasă un sold
     // CREDITOR pe contul furnizorului, iar furnizorul e chiar PREDATORUL lui.
@@ -52,10 +55,6 @@ public class NIR : Document {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Partener)
-            erori.Add("Predatorul NIR-ului trebuie să fie un partener (furnizor).");
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Gestiune)
-            erori.Add("Primitorul NIR-ului trebuie să fie o gestiune.");
         // Natura Clasei per Tip prin PROIECȚIE (disciplina 25b): nicio navigație
         // lazy atinsă în enumerare.
         var idsTip = Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
@@ -199,6 +198,9 @@ public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteL
 // ieșiri de EVALUARE (BCS, BTR, DSC, LDI−, ASM consum); RLF declară
 // `IDocumentCuIesireFiscala` și rămâne la `preț × cantitate` (review F5).
 public class BonConsum : Document {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Gestiune, Declaratii.Latura.Interna.Cu(CalitateRepartitor.LocConsum));
+
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantBonConsum.Instanta;
 
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
@@ -210,13 +212,6 @@ public class BonConsum : Document {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Gestiune)
-            erori.Add("Predatorul bonului de consum trebuie să fie o gestiune.");
-        // Locul de consum e calitate transversală, nu clasă (decizia 16) —
-        // orice repartitor intern o poate purta (unitate, gestiune, angajat).
-        var primitor = os.GetObjectByKey<Repartitor>(PrimitorId);
-        if (primitor is Partener || !primitor.Calitati.HasFlag(CalitateRepartitor.LocConsum))
-            erori.Add("Primitorul trebuie să fie un loc de consum intern (calitatea LocConsum).");
         foreach (var d in Detalii) {
             if (d.LotId == null)
                 erori.Add("Fiecare linie de consum referă un lot (descărcarea e pe lot — decizia 13).");
@@ -229,6 +224,9 @@ public class BonConsum : Document {
 // BTR (04): −predator/+primitor pe același tip de stoc; lotul își schimbă
 // gestiunea, prețul rămâne al lotului. Primul vertical slice al motorului.
 public class NotaTransfer : Document, IDocumentCuPV {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Gestiune, Declaratii.Latura.Gestiune);
+
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantNotaTransfer.Instanta;
 
     [XafDisplayName("Număr PV")]
@@ -249,10 +247,7 @@ public class NotaTransfer : Document, IDocumentCuPV {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Gestiune
-            || os.GetObjectByKey<Repartitor>(PrimitorId) is not Gestiune)
-            erori.Add("Transferul se face între două gestiuni.");
-        else if (PredatorId == PrimitorId)
+        if (PredatorId == PrimitorId)
             erori.Add("Gestiunea sursă și cea destinație trebuie să difere.");
         foreach (var d in Detalii) {
             if (d.LotId == null)

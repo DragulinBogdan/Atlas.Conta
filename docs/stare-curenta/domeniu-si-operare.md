@@ -756,9 +756,9 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   `Fifo.Nominalizeaza` cât ține restul ei, excedentul pe partida proprie
   ca a doua mișcare (linia se sparge, inclusiv piciorul de bani); fără sursă,
   partida proprie (avans); viramentul cu ambele capete pe contul propriu al
-  documentului. Gard declarat mai slab decât azi: laturile inversate
-  (predator partener, primitor cont propriu) trec — sensul laturilor e
-  tip-dependent și devine dată pe `TipDocument` la TR-D7.
+  documentului. Laturile sunt ale contractului clasei (T-D13: PLT
+  `Propriu → Extern | Propriu`, INC `Extern | Propriu → Propriu`), verificat
+  înaintea declarantului; declarantul refuză doar laturile identice.
 - **FCT** (`DeclarantFacturaIntrare`): linia de stoc e RECEPȚIA facturii
   (TR-D3: `3xx` din contul implicit al tipului, gestiunea primitoare, lotul
   născut de linie, `+q`; capătul virtual `Furnizor` cu `−q` pe postarea de
@@ -908,15 +908,16 @@ cele pe gestiune și pe lot îl includ.
   al liniilor (S-D16): FCL cu regularizare de avans (`4111 = 419`) deschide
   DOUĂ partide, iar soldul partidei de creanță e netul ei (debitul de −100 al
   liniei de avans intră pe 4111). Valorile negative (prețuri negative) se
-  declară semnate, pe aceeași latură. Refuzuri: predator partener, primitor
-  ne-partener, fără linii, cantitate ≤ 0, `PRODUS_ALT_TIP`, regulă lipsă, TVA.
+  declară semnate, pe aceeași latură. Refuzuri: laturile prin contractul
+  clasei (T-D13), fără linii, cantitate ≤ 0, `PRODUS_ALT_TIP`, regulă lipsă, TVA.
 - **DSC** (`DeclarantDescarcareGestiune`): o mișcare per linie — lotul iese
   din gestiunea predatoare pe contul de stoc al regulii (`6xx = 3xx` per
   Tip), evaluat cu `Evaluare.Iesire` pe raportul curent în secvența liniilor
   (ca BCS), iar costul intră cu `+q` pe gestiunea virtuală `Client`, fără
-  unitate (090 (g), prima folosire a constantei). Aceeași formă cu sau fără
-  factura-sursă; fără partidă. Lotul e ales de `DescarcareService` (pin-uri,
-  apoi FIFO), declarantul nu realocă.
+  unitate (090 (g), prima folosire a constantei) și cu `Partener` = primitorul
+  când acesta e de parte externă (T-D13 (g); fără partidă — 607 n-are rol de
+  terț). Aceeași formă cu sau fără factura-sursă. Lotul e ales de
+  `DescarcareService` (pin-uri, apoi FIFO), declarantul nu realocă.
 - **Transferul INC → FCL** e activ prin `Materializare.Imperecheaza` fără
   nicio schimbare: referința e a stingătorului (4111), plafonul e restul FCL
   pe 4111; partida 419 nu primește transfer.
@@ -929,6 +930,50 @@ cele pe gestiune și pe lot îl includ.
   referința strict înaintea datei (`granita = data − 1 zi`): snapshot-ul unei
   luni închise conținea chiar ieșirea documentului datat în ultima ei zi.
   Neutru în operarea vie; fixează artefactul de gate al feliei 31.
+
+### Laturile documentului ca structură (T-D13, felia 32, pasul 2b)
+
+Modelul e cel din legacy (`GEST_DEFA_DOCUM`: predator → primitor pe
+intern/extern per tip), pus în cod, nu în tabelă:
+
+- **`Parte`** (`Declaratii/Laturi.cs`) e partea repartitorului față de
+  patrimoniu, derivată o singură dată din `FelRepartitor` (= `ClrType`, 89b)
+  prin `Laturi.ParteA`: `Extern` (Partener, Angajat), `Intern` (Gestiune,
+  UnitateInterna), `Propriu` (ContPropriu). `RepartitorFapt.Parte` o expune;
+  nu ajunge în nucleu, pe `Capat` sau în cub (gestiunea virtuală rămâne
+  semnalul de extern pe postare) și n-are coloană.
+- **Contractul** e METODA polimorfă `Document.Laturi()` (abstractă: fiecare
+  tip o declară, compilatorul o cere) → `ContractLaturi(Latura Predator,
+  Latura Primitor)`, unde `Latura` = părțile permise + calitatea cerută
+  (`LocConsum` pe primitorul BCS, `Comisie` pe al LDI) + felul exact DOAR
+  unde structura îl cere: laturile care poartă stoc sunt `Gestiune`, fiindcă
+  `Lot.Gestiune` e tipat `Gestiune`. Fără tabelă de politică, fără `switch`.
+- **Un singur loc de verificare**, `Laturi.Verifica`, pe ambele uși:
+  `Contractare` o cheamă ÎNAINTEA declarantului (refuzul laturii e singurul
+  refuz al declarației), iar `Document.ValideazaOperare` o cheamă pe faptele
+  citite din bază (`Fapte.Laturile`), cu aceeași linie de mesaj
+  (`Contractare.Mesaj`: `COD: text`). Codurile sunt `PREDATOR_NEPOTRIVIT` /
+  `PRIMITOR_NEPOTRIVIT`; declaranții și clasele nu mai au verificări proprii
+  de latură (`is Gestiune` tăiat din cele 19 clase); `CONT_PROPRIU_LIPSA` și
+  `LATURA_CONT_PROPRIU_NEPOTRIVITA` au dispărut (de neatins sub contract).
+- **Contractele declarate** (predator → primitor): NIR, FCT, RDC
+  `Extern → Gestiune`; FCL, RLF `Gestiune/Intern → Extern` (FCL emitentul e
+  `Intern`, RLF `Gestiune`); BTR, ASM `Gestiune → Gestiune`; BCS `Gestiune →
+  Intern + LocConsum`; LDI `Gestiune → Intern + Comisie`; DSC `Gestiune →
+  Extern | Intern`; NTC, ITV `Intern | Propriu` pe ambele; DEC, DVI
+  `Extern → Intern`; PLT `Propriu → Extern | Propriu`; INC `Extern | Propriu
+  → Propriu`; PIF, CAS, AMO, BPR `Intern → Intern` (AMO cere în plus
+  identitatea, în clasa ei). Față de validările vechi, granularitatea e a
+  părții: pe laturile fără stoc `UnitateInterna` și `Gestiune` sunt
+  interschimbabile (DVI, PIF, CAS, DEC), `Partener` și `Angajat` la fel pe
+  cele externe (FCT, NIR, FCL, DEC), iar `Angajat` nu mai e admis pe laturile
+  interne (BCS/LDI cu calitate, NTC) — pe Flax nicio latură nu poartă
+  `Angajat`.
+- **Terțul pe capătul extern**: DSC pune `Partener` = primitorul pe capătul
+  607 (T-D13 (g)); oracolul are normalizarea `TrD13TertulPeCapatulExtern`
+  (după M6, numărată în `Normalizari.Contoare`, nu avertisment).
+- **UI înghețat** (090 (m)): filtrarea lookup-urilor Predator/Primitor pe
+  partea permisă e a dezghețului (`lista-react.md`).
 
 `DocumentDetaliu.Pozitie` e ordinea de culegere a liniei. Se atribuie o
 singură dată, la salvarea unei linii noi, în `SaveChanges`-ul contextului — un

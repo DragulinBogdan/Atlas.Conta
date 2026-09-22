@@ -20,13 +20,6 @@ public sealed class DeclarantBonConsum : IDeclarant {
         ArgumentNullException.ThrowIfNull(refuzuri);
 
         var doc = operand.Document;
-        if (doc.Predator.Fel != FelRepartitor.Gestiune)
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PredatorNepotrivit,
-                "Predatorul bonului de consum trebuie să fie o gestiune.", null));
-        if (doc.Primitor.Fel == FelRepartitor.Partener
-                || !doc.Primitor.Calitati.HasFlag(CalitateRepartitor.LocConsum))
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PrimitorNepotrivit,
-                "Primitorul trebuie să fie un loc de consum intern (calitatea LocConsum).", null));
         if (operand.Linii.Count == 0)
             refuzuri.Add(new N.Refuz(CoduriRefuz.LiniiLipsa,
                 "Bonul de consum se cere cu cel puțin o linie.", null));

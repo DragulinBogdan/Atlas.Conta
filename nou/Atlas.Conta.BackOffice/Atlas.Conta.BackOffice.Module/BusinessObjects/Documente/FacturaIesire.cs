@@ -15,6 +15,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [GardContare(NaturaClasa.Stoc, NivelContare.TipMaterialExact,
     "Linia de stoc nu are regulă de contare de vânzare pentru Tipul ei — adăugați rândul de politică (sau rulați updater-ul).")]
 public class FacturaIesire : Document, IDocumentCuScadenta {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Interna, Declaratii.Latura.Externa);
+
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantFacturaIesire.Instanta;
 
     // Rolul de STINS (F19-D16): factura clientului lasă un sold DEBITOR pe 4111 —
@@ -60,13 +63,6 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        // Combo-ul viu legacy (defa 47): intern → extern. Emitentul e predator,
-        // clientul e primitor — creanța se particularizează prin ContImplicit.
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is Partener)
-            erori.Add("Predatorul facturii de ieșire este emitentul — un repartitor intern, nu un partener.");
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not Partener)
-            erori.Add("Primitorul facturii de ieșire trebuie să fie un partener (client).");
-
         // Refuzul liniilor de stoc la BUGETAR (07: facturarea nu descarcă
         // gestiune) trăiește în PoliticaValidare.NaturaInterzisa (30a → 3d); la
         // PRIVAT (P2) liniile de stoc sunt permise și dictează descărcarea.
