@@ -269,7 +269,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     else {
         if (!await ctx.Database.CanConnectAsync()) {
             Console.WriteLine("Baza nu există încă — doar validare de model.");
-            Rezumat();
+            Environment.ExitCode = 2;
             return;
         }
         var pending = (await ctx.Database.GetPendingMigrationsAsync()).ToList();
@@ -278,7 +278,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
             + (pending.Count > 0 ? $" ({string.Join(", ", pending)})" : ""));
         if (pending.Count > 0) {
             Console.WriteLine("Aplicați migrațiile înainte de scenariul e2e (dotnet ef database update).");
-            Rezumat();
+            Environment.ExitCode = 2;
             return;
         }
     }
@@ -31667,6 +31667,9 @@ void VerificaF28(bool privat) {
 // bugetar, scena FCL ∪ DSC îl sare acolo.
 List<Scena> ScenelePeTip(bool privat) {
     var scene = new List<Scena> {
+        new(nameof(ScenariiBcs), ["BCS"], () => new ScenariiBcs(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(VerificaNucleuBcs), ["BCS"], () => VerificaNucleuBcs(privat)),
         new(nameof(VerificaNucleuBtr), ["BTR"], () => VerificaNucleuBtr(privat)),
     };
@@ -31692,7 +31695,12 @@ int RuleazaScenele(bool privat) {
     }
     foreach (var scena in selectate) {
         var ceas = Stopwatch.StartNew();
-        scena.Ruleaza();
+        try { scena.Ruleaza(); }
+        catch (Exception ex) {
+            Check($"Scena {scena.Nume}: excepție neașteptată", false);
+            Console.WriteLine(ex);
+            break;
+        }
         if (filtruScenarii != null)
             Console.WriteLine($"     {scena.Nume}: {ceas.Elapsed.TotalSeconds:0.0} s");
     }

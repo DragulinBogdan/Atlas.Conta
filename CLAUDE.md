@@ -167,7 +167,7 @@ rularea. O clonă a bazei de import poartă DEFAULT-ul coloanei noi, nu valoarea
 de seed (`TolerantaTaxa` 0 contra `null`) — se aliniază înainte de gate,
 altfel refuzurile sunt ale bazei, nu ale codului.
 
-## Reguli de lucru pentru Claude Code
+## Reguli de lucru comune (Claude Code și Codex)
 
 - **Decizie nouă** = fișier nou `docs/decizii/NNN-slug.md` (numărul următor;
   antetul cu Data/Stare/Docs, apoi secțiunea „Regula durabilă" — regula, nu

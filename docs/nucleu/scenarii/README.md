@@ -14,7 +14,16 @@ profilului, cu cifre; nu se derivă din registre, din oracol sau din Flax.
 | Așteptare | postările pe cub (cont × latura × măsură × unitate) și citirile rezultate, cu cifre |
 | Proba | numele check-ului ModelCheck (`SC-…`) sau al testului de nucleu |
 | Proveniență | `regulă` (OMFP / politică), `recensământ Flax` (cu cifra găsită), `review` (Codex 2026-09-22 sau advers) |
-| Stare | `scrisă` / `probată` / `refuzată de motor` (cu codul refuzului, ca așteptare) |
+| Rezultat așteptat | `acceptat` sau `refuzat`, cu codul stabil al refuzului dacă există; un refuz trebuie să lase persistarea neschimbată |
+| Stare | `specificat` / `implementat` / `verificat`; pentru verificare se indică profilul și proba; `amânat la TR-D8/TR-D9` când depinde de un mecanism încă nelivrat |
+
+Tabelul este indexul. Un scenariu complex are sub el starea inițială,
+profilul/politica, comenzile în ordine cu date explicite și așteptarea după
+FIECARE pas. Regula de domeniu se citează exact (decizie și literă ori sursă
+normativă cu aplicabilitatea pe profil). O întrebare de domeniu nerezolvată
+se marchează ca atare, nu devine așteptare prin copierea rezultatului motorului.
+`verificat` se acordă numai după rularea probei; asocierea cu o probă veche
+de egalitate cu registrele nu certifică scenariul independent (091c).
 
 ## Ciclul obligatoriu al fiecărui tip
 
@@ -63,8 +72,8 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | SC-X-03 | FCL cu avans (INC anterior) → transfer INC → FCL → RDC parțial | două partide, plafonul pe rest, creanța netă după retur |
 | SC-X-04 | FCT → PLT parțială → PLT rest → storno PLT a doua | partida se redeschide exact cu suma stornată |
 | SC-X-05 | recepție 100 × 10 → BCS 60 → corecție de preț +200 → storno BCS | 091 (h): inversare 600 + compensare 120 înapoi pe lot; datoria rămâne |
-| SC-X-06 | ca SC-X-05, apoi storno corecție, apoi storno BCS | fără a doua compensare |
-| SC-X-07 | recepție → două corecții succesive → storno BCS | compensarea cumulată pe proveniență |
+| SC-X-06 | recepție 100 × 10 → BCS 60 → corecție de preț +200 → storno corecție → storno BCS | corecția este inversată înaintea consumului; inversarea BCS readuce 600 pe lot, fără compensarea încă o dată a celor 120 |
+| SC-X-07 | recepție 100 × 10 → BCS 60 → corecție de preț +200 → corecție de preț +100 → storno BCS | inversare 600 + compensare cumulată 180; stoc final 1.300, datorie 1.300, consum net zero |
 | SC-X-08 | BTR între gestiuni → BCS din gestiunea primitoare → storno BTR | refuz: lotul mutat are ieșiri |
 | SC-X-09 | ASM din două loturi → DSC din produsul rezultat → RLF pe unul din componente | costul produsului nu se re-propagă (granița declarată din design §11) |
 | SC-X-10 | închidere de lună cu documente operate → document întârziat în luna închisă → corecție | perioada închisă ca graniță absolută; storno legat + document nou |
@@ -76,7 +85,7 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 
 | Cod | Tip | Pe cub din | Fișier | Stare catalog |
 |---|---|---|---|---|
-| BCS | bon de consum | felia 31 | `BCS.md` | de scris (probele `STR-*`/`NUC-*` existente se mapează pe rânduri) |
+| BCS | bon de consum | felia 31 | [BCS.md](BCS.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
 | FCT | factură intrare | felia 31 | `FCT.md` | de scris |
 | PLT | plată | felia 31 | `PLT.md` | de scris |
 | INC | încasare | felia 31 | `INC.md` | de scris |

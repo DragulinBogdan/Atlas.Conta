@@ -131,6 +131,50 @@ o rulează în ordine; un scenariu nou intră acolo cu tipul lui, altfel filtrul
 nu-l vede. Suita integrală pe ambele profiluri rămâne gate-ul de commit.
 (091 (e), 091-r1)
 
+### Rulare reproductibilă pentru agenți
+
+Din rădăcină, cu PowerShell 7 și .NET 10:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip BCS -Profil Ambele -Sufix .CodexBCS -PregatesteBaze
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Nucleu
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Integral -Profil Ambele -Sufix .CodexBCS
+```
+
+`-PregatesteBaze` cere Python cu `psycopg`; clonează bazele locale de profil
+`Atlas.Conta.BackOffice` și `Atlas.Conta.ModelCheck.Privat` adăugând sufixul.
+Conexiunea este aceeași ca în ModelCheck: localhost:5444, postgres/postgres.
+Sursele trebuie să existe și să nu aibă conexiuni active la clonare. Scriptul
+nu le modifică, nu întrerupe conexiuni și nu șterge o bază existentă.
+La rulările următoare se omite switch-ul. Pentru o bază proaspătă se alege
+un sufix nou; acesta nu repară schema/seed-ul unei surse neactualizate.
+Bugetarul cere migrațiile aplicate și seed actual; privatul migrează și
+aliniază seed-ul prin ModelCheck. Baza bugetară absentă sau cu migrații
+neaplicate produce **exit 2**, fără rezumat verde.
+
+Scriptul compilează înainte de execuție, rulează profilurile succesiv și
+oprește la primul exit nenul. Excepția unei scene selectate este raportată
+cu stack trace și exit 1, fără excepție neprinsă a procesului. Un mutex
+refuză două invocări simultane ale scriptului pe aceeași sesiune Windows;
+nu coordonează hosturi sau comenzi lansate manual. Hostul Blazor trebuie
+oprit dacă folosește același director `bin`; pentru lucru simultan se
+folosesc checkout-uri și sufixe distincte, respectând regula unei singure
+rulări grele. Rulările lungi se lansează cu `Start-Process -WindowStyle Hidden`
+și se monitorizează logul; nu se abandonează procesul fără a-i verifica rezultatul.
+
+Artefactele sunt în `run-verificari/<timestamp>/`: log per etapă și
+`rezultat.json` cu commit, lista fișierelor modificate, profil, bazele exacte,
+SHA-256 al DLL-ului ModelCheck, argumente, durate și coduri de ieșire.
+Fișierele temporare ale build-ului rămân în subdirectorul `tmp` al rulării.
+Un commit cu modificări locale nu identifică singur sursa testată: se
+păstrează logurile și hash-ul binarului, iar predarea menționează starea
+necomisă. Codul și datele testate nu se schimbă în timpul rulării.
+
+Primul catalog independent este [BCS](../nucleu/scenarii/BCS.md), cu
+fixture prin FCT/NIR și comenzile `OperareApi`; probele `NUC-*` existente
+rămân diagnostic/regresie. Sumele directe ale scenariului peste cub nu
+înlocuiesc verificarea cititorilor comuni și a `Sold` la TR-D8.
+
 Verificarea de drift regenerează contractele și refuză diferențele față de
 fișierele versionate. O schimbare intenționată de contract se regenerează și
 se examinează înainte de includerea artefactelor în modificare. (43d, 56)
@@ -144,12 +188,12 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | Autorizare | Probe HTTP cu rolurile reale; o probă pe context nesecurizat nu demonstrează securitatea (80i, 81j) |
 | Formular sau interacțiune | Build client și verificarea fluxului în browser (66) |
 | Mod de acces al unui ListView XAF, proprietate nouă afișată în liste | ModelCheck (`D85-M1`, `D85-M2`, `D85-R1…R3`) și deschiderea listei în browser pe baza de import: sort, filtru, grupare, detaliu din listă, culegere pe document nou (85h) |
-| Import sau schimbare amplă de postare/evaluare | Import și reconciliere față de baza de referință (54) |
+| Schimbare de postare/evaluare | Catalogul cu așteptări independente, apoi ModelCheck integral pe ambele profiluri (091); importul și reconcilierea externă aparțin feliei de migrare |
 | Tip derivat nou, proprietate nouă pe frunză, FK spre o frunză | ModelCheck pe ambele profiluri (`F28-*`); după un import, `--dump-integritate-tph` rulat pe baza de import (89e, 89h) |
 | Nucleul pur (`Atlas.Conta.Nucleu`) | `dotnet test` pe soluția nucleului: testul de arhitectură și invarianții 1–6 ca proprietăți (≥ 500 de cazuri fiecare); ModelCheck doar dacă e atins `Module` (90l) |
-| Declarant, operand, `Fapte.Operand`, oracolul pilotului | ModelCheck pe AMBELE profiluri: probele `NUC-*` (egalitate exactă cu registrele normalizate, conservare, determinism, `≤ 16` interogări per operand) plus `Metadata clientului e la zi` (o proprietate nouă pe `Document` intră în metadata clientului — de aceea `Declarant()` e metodă) (TR-D6b) |
+| Declarant, operand, `Fapte.Operand`, oracolul pilotului | Scenariile independente ale tipului, apoi ModelCheck pe AMBELE profiluri; `NUC-*` păstrează comparația normalizată ca regresie, conservarea, determinismul și `≤ 16` interogări per operand. `Metadata clientului e la zi` verifică proprietățile noi pe `Document` (TR-D6b, amendat de 091) |
 | Entitățile sau migrațiile cubului (`Postare`, `Tranzactie`) | ModelCheck pe ambele profiluri: probele `STR-SCHEMA-*` (partiționarea LIST, cheia `(Spatiu, ID)`, setul ÎNCHIS de FK-uri per partiție, indexii, absența timbrelor XAF); migrația se scrie în SQL, nu se lasă generată (S-D2, S-r4) |
-| Contractul laturilor (`Document.Laturi()`, T-D13) | ModelCheck pe ambele profiluri, ultima scenă (`VerificaLaturi`): `STR-LATURI-CONTRACT` (fiecare `TipDocument` din seed → clasa → contract cu părți nevide; metoda e abstractă, deci și compilatorul o cere), `STR-LATURI-REFUZ` (latura de partea greșită refuzată pe ușa declarației și pe ușa entității cu ACEEAȘI linie `COD: mesaj`; calitatea lipsă numită; un tip fără declarant refuzat pe ușa entității), `STR-LATURA` (PLT inversată = doar `PREDATOR_NEPOTRIVIT`, înaintea declarantului). Probele de laturi ale tipurilor asertează CODUL, nu textul vechi. Pe date reale: recensământul laturilor pe clona Flax (contract T-D13) și gate-urile pașilor 1–2 fără refuz nou |
+| Contractul laturilor (`Document.Laturi()`, T-D13) | ModelCheck pe ambele profiluri, `VerificaLaturi`: `STR-LATURI-CONTRACT` (fiecare tip are laturi), `STR-LATURI-REFUZ` (aceeași linie `COD: mesaj` prin declarant și entitate), `STR-LATURA` (PLT inversată refuzată înaintea declarantului). Recensământul read-only pe Flax generează întrebări pentru catalog; nu se mai rulează gate-uri pe clonă (091) |
 | Materializare, declarant al unui tip migrat, împerecherea ca `Transfer` | ModelCheck pe ambele profiluri: probele `STR-*` pe scenele BCS, Trezorerie și FCT — operare, roundtrip, storno, anulare, refuz, configurație, poziție, transfer, latură, corecție, reconciliere — cu comutarea locală a regimului (`ProbeCub.Migrat`/`Nemigrat`/`CuToleranta`, cu restaurare) și purja rândurilor de cub ale documentelor scenei (S-D8) |
 | Tip trecut pe `PosteazaInCub` | fișierul tipului din `docs/nucleu/scenarii/` complet și verde pe ambele profiluri (în lucru: `--scenarii <TIP>`; la commit: suita integrală): ciclul 1–8 (operare, linii multiple, storno în perioadă și peste graniță, anulare, corecție în perioadă închisă, stingere, citiri) + cazurile-limită aplicabile + lanțurile `SC-X-*` care îl ating; așteptările scrise de mână din regula contabilă, nu din registre sau oracol (091 (a)–(c)). `--declaratie-pe-baza` și `--reconciliere-cub` rămân unelte de diagnostic pentru migrare, nu gate (S-D9 amendat de 091) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
@@ -177,8 +221,8 @@ Nucleul pur se probează prin `Atlas.Conta.Nucleu.Teste` (xunit.v3,
 sămânță fixă per caz, cazul picat se reproduce izolat), cu perturbări pe o
 singură postare și cu contra-proba regulii vechi acolo unde regula nouă
 diferă declarat (evaluarea pe raportul curent contra prețului înghețat).
-Invariantul 7 (baseline-ul Import1C) nu e testabil în nucleu și rămâne
-proba supremă a lui TR-D7/D10 (N-r1). Reflecția probează că niciun record
+Invariantul 7 al designului (baseline-ul Import1C) și N-r1 sunt depășite de
+091; proba supremă este catalogul de scenarii. Reflecția probează că niciun record
 public n-are setter ne-`init`; egalitatea `Tranzactie`/`Declaratie`/
 `Contract` e structurală. (N-D12)
 
@@ -200,7 +244,7 @@ vechi); redirectarea `*>` din PowerShell scrie log-ul UTF-16 — rețeta
 `run-nucleu/tr-d6b/pas4-final/run.sh` (bash) scrie UTF-8 și numără
 `OK`/`FAIL`. (TR-D6b)
 
-Gate-ul de reconciliere al cubului are două unelte, ambele în ModelCheck și
+Diagnosticul reconcilierii cubului are două unelte, ambele în ModelCheck și
 ambele ieșind înainte de bootstrap: (S-D9)
 
 - `ModelCheck --declaratie-pe-baza <baza> <COD…> [--raport <director>]` —
@@ -233,10 +277,11 @@ ambele ieșind înainte de bootstrap: (S-D9)
   cât timp un tip nemigrat mai postează pe conturi cu `RolTert`, iar nota se
   tipărește.
 
-Rețeta probei supreme e `run-nucleu/tr-d7a/import/run.ps1`: Import1C integral
+Rețeta istorică a verificării importului este `run-nucleu/tr-d7a/import/run.ps1`: Import1C integral
 (`--recreeaza --cititori --inchide-lunile`), apoi `--reclasifica`,
 `--reconciliere-cub`, `--dump-integritate-tph` și `diff-sortat.py`, care compară
-raportul de reconciliere cu baseline-ul pe conținut sortat.
+raportul de reconciliere cu baseline-ul pe conținut sortat. După 091 aceasta
+aparține migrării; nu se execută pentru validarea unei felii de motor.
 
 Capcane măsurate ale acestor probe: o SINGURĂ rulare ModelCheck o dată — două
 concurente crapă în purje și lasă reziduu (`TipuriMaterial` cu codul
@@ -336,8 +381,8 @@ cifre. Verificat 2026-09-17 pe anul 2025: 12/12 luni închise, 0 constatări per
 lună, raport identic cu `reconciliere-20260914-164035.txt`, `Reconstruieste`
 0 diferențe pe contabil, stoc și partide. (F27-D1, F27-D3)
 
-Proba supremă rămâne aceeași după trecerea pe TPH: importul integral cu
-`--recreeaza --cititori --inchide-lunile` trebuie să dea un raport IDENTIC pe
+Verificarea istorică a trecerii pe TPH a cerut ca importul integral cu
+`--recreeaza --cititori --inchide-lunile` să dea un raport IDENTIC pe
 conținut sortat cu baseline-ul curent
 (`nou/tools/Import1C/reconciliere-20260917-121343.txt`), iar
 `Reconstruieste` 0 diferențe. După ea se rulează pe baza de import SQL-ul
