@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-21.** [Index](README.md)
+**Actualizat: 2026-09-22.** [Index](README.md)
 
 ## Modelul comun
 
@@ -756,9 +756,9 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   `Fifo.Nominalizeaza` cât ține restul ei, excedentul pe partida proprie
   ca a doua mișcare (linia se sparge, inclusiv piciorul de bani); fără sursă,
   partida proprie (avans); viramentul cu ambele capete pe contul propriu al
-  documentului. Gard declarat mai slab decât azi: laturile inversate
-  (predator partener, primitor cont propriu) trec — sensul laturilor e
-  tip-dependent și devine dată pe `TipDocument` la TR-D7.
+  documentului. Laturile sunt ale contractului clasei (T-D13: PLT
+  `Propriu → Extern | Propriu`, INC `Extern | Propriu → Propriu`), verificat
+  înaintea declarantului; declarantul refuză doar laturile identice.
 - **FCT** (`DeclarantFacturaIntrare`): linia de stoc e RECEPȚIA facturii
   (TR-D3: `3xx` din contul implicit al tipului, gestiunea primitoare, lotul
   născut de linie, `+q`; capătul virtual `Furnizor` cu `−q` pe postarea de
@@ -830,8 +830,11 @@ cheia compusă și FK-urile per partiție. (S-r4)
 
 `TipDocument.PosteazaInCub` spune dacă tipul materializează în cub. Valoarea e
 aliniată de seed ca orice rând `DinSeed`: migrarea unui tip e a PROFILULUI, nu
-a bazei (S-r6). Migrate sunt BCS, FCT, PLT și INC, pe ambele profiluri; restul
-tipurilor postează doar în registre. Un tip marcat a cărui clasă nu declară
+a bazei (S-r6). Migrate sunt BCS, FCT, PLT, INC (felia 31), BTR (felia 32,
+pasul 1, 2026-09-21) și FCL (pasul 2, 2026-09-22), pe ambele profiluri, plus
+DSC doar pe privat (pe bugetar e tip inert, fără politici — decizia stă în
+`ContaSeeder.SeedTipuriDocument(os, profil)`); restul tipurilor postează doar
+în registre. Un tip marcat a cărui clasă nu declară
 (`Document.Declarant()` întoarce `null`) e eroare de configurare: operarea
 refuză, nu tace. (S-D3)
 
@@ -841,20 +844,136 @@ refuză, nu tace. (S-D3)
 (UI, WebApi, Import1C):
 
 - **Operarea** — după registre și după împerecherea automată, înainte de
-  commit: contractul declarantului devine o tranzacție `Operare` datată cu
-  `DataInregistrare` și o postare per postare a contractului. Refuzul
+  commit: contractul declarantului devine cel mult o tranzacție `Operare` și
+  cel mult una `Transfer` (cel puțin una din ele; felul mixt de mai jos, T-D2),
+  datate cu `DataInregistrare`, o postare per postare a contractului. Refuzul
   declarației E refuzul operației: o singură eroare cu toate refuzurile, iar
   tranzacția de comandă se anulează integral — nimic în cub, nimic în registre.
   Dry-run-ul arată aceleași refuzuri, în forma `EroriDto` de azi. (S-D4)
-- **Stornoul** — a doua tranzacție, de fel `Storno`: inversul exact al
-  postărilor `Operare` ale documentului și al celor `Atribuit` spre ele, datat
+- **Stornoul** — o singură tranzacție de fel `Storno`: inversul exact al
+  postărilor `Operare` ale documentului, al transferului lui de STOC (unități
+  de fel `Lot`; transferurile pe partidă sunt ale împerecherii și le inversează
+  rândul ei invers, S-D13) și al celor `Atribuit` spre ele, datat
   la data stornării, cu `PerioadaDeclarare` re-ștampilată la perioada
   stornării. Corecția cu motivul `EroareMateriala` o re-ștampilează la perioada
   originalului și pe postările `Storno`, ca pe rândurile de TVA. Un document
   operat înainte ca tipul lui să fie migrat n-are tranzacție `Operare`, deci
   stornoul lui nu atinge cubul. (S-D5)
-- **Anularea operării** șterge fizic tranzacția `Operare` și postările ei,
-  simetric cu ștergerea registrelor. (S-D5)
+- **Anularea operării** șterge fizic tranzacțiile `Operare` și `Transfer` ale
+  documentului și postările lor, simetric cu ștergerea registrelor; e gardată
+  de „fără împerecheri", deci orice `Transfer` al documentului e al lui. (S-D5, T-D2)
+
+### Felul mixt: `Transfer` pe linia care nu schimbă contul (T-D2, felia 32)
+
+Declarația are două liste: `Miscari` (debit ≠ credit, devin `Operare`) și
+`Mutari` (același cont, aceeași latură, −/+ între două capete, devin
+`Transfer`). O linie de stoc al cărei cont nu se schimbă între laturi e o
+mutare; una care schimbă contul e o mișcare. Un document are astfel cel mult o
+`Operare` și cel mult un `Transfer`, cel puțin una — amendament de literă al
+lui 090 (a), T-r1. Fiecare capăt al unui `Transfer` de stoc poartă `Gestiune`
+și `Unitate` (lotul): rapoartele pe cont îl exclud (Σ per (cont, latură) = 0),
+cele pe gestiune și pe lot îl includ.
+
+- **BTR** (`DeclarantNotaTransfer`): cheia de stoc e `(Lot, Repartitor,
+  TipStoc)`, deci lotul își schimbă gestiunea și contul lui rămâne — pe modelul
+  de azi BTR produce NUMAI `Transfer` (T-D2.1: pe Flax 85.027 linii, toate cu
+  același lot pe ambele capete, zero rânduri contabile). Contul e al lotului
+  (`TipMaterial.ContImplicitId`), fără regulă de contare; refuzuri:
+  `GESTIUNI_IDENTICE`, `CONT_STOC_LIPSA`, plus cele de gestiune, lot și
+  cantitate. Valoarea = `Evaluare.Iesire` pe raportul curent al lotului în
+  gestiunea predatoare, în secvența liniilor.
+- **Diferența declarată T-D2.2**: motorul vechi scrie `round(cantitate ×
+  Lot.PretUnitar)` cu prețul înghețat la nașterea lotului; cubul evaluează pe
+  raportul curent (090 (j), N-r3). Pe Flax: 535 din 45.552 BTR (1,17 %), 560
+  linii din 85.027, toate ieșiri PARȚIALE (cele 70.841 de goliri sunt egale),
+  Σ semnată +0,92 lei și Σ absolută 28,60 lei pe 121.094.304,67 lei mutați;
+  553 de linii sunt reziduul propriei goliri a motorului vechi mutat pe
+  destinație, 7 sunt loturi intrate la altă valoare decât prețul lor (extrem
+  `BTR-9039`: preț 0 contra 11 lei/buc). E repartizare între gestiuni, nu
+  conservare: literele (a)–(g) ale reconcilierii n-o văd; apare doar la citirile
+  pe cub per gestiune × lot (TR-D8). Nu se normalizează.
+- Ramura `Operare` a formei mixte e probată prin proprietăți în nucleu; pe
+  scenă o probează ASM (pasul 5).
+
+### FCL și DSC pe cub (T-D4, felia 32, pasul 2)
+
+- **FCL** (`DeclarantFacturaIesire`): FCT în oglindă — per linie venitul pe
+  regula de vânzare a Tipului (creditul = internul, cu gestiunea emitentului;
+  debitul 4111 = terțul, fără gestiune, cu partidă), taxa colectată per linie
+  prin `Fiscal.Impozitul` pe direcția `Colectat` (creditul pe 4427, debitul pe
+  contrapartidă; gestiunea internă = latura opusă contrapartidei politicii,
+  `Fiscal.GestiuneaInterna`), taxa culeasă autoritară, taxarea inversă pe
+  livrare fără postare de taxă. Zero postări de stoc: linia de natură `Stoc` e
+  linie de venit, fără lot și fără produs. Partidă pe fiecare cont cu `RolTert`
+  al liniilor (S-D16): FCL cu regularizare de avans (`4111 = 419`) deschide
+  DOUĂ partide, iar soldul partidei de creanță e netul ei (debitul de −100 al
+  liniei de avans intră pe 4111). Valorile negative (prețuri negative) se
+  declară semnate, pe aceeași latură. Refuzuri: laturile prin contractul
+  clasei (T-D13), fără linii, cantitate ≤ 0, `PRODUS_ALT_TIP`, regulă lipsă, TVA.
+- **DSC** (`DeclarantDescarcareGestiune`): o mișcare per linie — lotul iese
+  din gestiunea predatoare pe contul de stoc al regulii (`6xx = 3xx` per
+  Tip), evaluat cu `Evaluare.Iesire` pe raportul curent în secvența liniilor
+  (ca BCS), iar costul intră cu `+q` pe gestiunea virtuală `Client`, fără
+  unitate (090 (g), prima folosire a constantei) și cu `Partener` = primitorul
+  când acesta e de parte externă (T-D13 (g); fără partidă — 607 n-are rol de
+  terț). Aceeași formă cu sau fără factura-sursă. Lotul e ales de
+  `DescarcareService` (pin-uri, apoi FIFO), declarantul nu realocă.
+- **Transferul INC → FCL** e activ prin `Materializare.Imperecheaza` fără
+  nicio schimbare: referința e a stingătorului (4111), plafonul e restul FCL
+  pe 4111; partida 419 nu primește transfer.
+- **Diferența declarată T-D4.2** (aceeași clasă ca T-D2.2, N-r3): pe Flax 842
+  din 36.696 DSC (2,29 %), 919 linii din 62.063, toate ieșiri PARȚIALE (cele
+  47.505 goliri sunt egale), Σ semnată +31,01 lei, |Δ| max 16,50 lei (lot cu
+  preț înghețat 0), 909 din 919 linii ≤ 6 bani, pe 79.199.898,27 lei mutați.
+  Nu se normalizează (T-r7).
+- **T-D4.3**: `StocService.SolduriLaData` citit „fără documentul curent" ia
+  referința strict înaintea datei (`granita = data − 1 zi`): snapshot-ul unei
+  luni închise conținea chiar ieșirea documentului datat în ultima ei zi.
+  Neutru în operarea vie; fixează artefactul de gate al feliei 31.
+
+### Laturile documentului ca structură (T-D13, felia 32, pasul 2b)
+
+Modelul e cel din legacy (`GEST_DEFA_DOCUM`: predator → primitor pe
+intern/extern per tip), pus în cod, nu în tabelă:
+
+- **`Parte`** (`Declaratii/Laturi.cs`) e partea repartitorului față de
+  patrimoniu, derivată o singură dată din `FelRepartitor` (= `ClrType`, 89b)
+  prin `Laturi.ParteA`: `Extern` (Partener, Angajat), `Intern` (Gestiune,
+  UnitateInterna), `Propriu` (ContPropriu). `RepartitorFapt.Parte` o expune;
+  nu ajunge în nucleu, pe `Capat` sau în cub (gestiunea virtuală rămâne
+  semnalul de extern pe postare) și n-are coloană.
+- **Contractul** e METODA polimorfă `Document.Laturi()` (abstractă: fiecare
+  tip o declară, compilatorul o cere) → `ContractLaturi(Latura Predator,
+  Latura Primitor)`, unde `Latura` = părțile permise + calitatea cerută
+  (`LocConsum` pe primitorul BCS, `Comisie` pe al LDI) + felul exact DOAR
+  unde structura îl cere: laturile care poartă stoc sunt `Gestiune`, fiindcă
+  `Lot.Gestiune` e tipat `Gestiune`. Fără tabelă de politică, fără `switch`.
+- **Un singur loc de verificare**, `Laturi.Verifica`, pe ambele uși:
+  `Contractare` o cheamă ÎNAINTEA declarantului (refuzul laturii e singurul
+  refuz al declarației), iar `Document.ValideazaOperare` o cheamă pe faptele
+  citite din bază (`Fapte.Laturile`), cu aceeași linie de mesaj
+  (`Contractare.Mesaj`: `COD: text`). Codurile sunt `PREDATOR_NEPOTRIVIT` /
+  `PRIMITOR_NEPOTRIVIT`; declaranții și clasele nu mai au verificări proprii
+  de latură (`is Gestiune` tăiat din cele 19 clase); `CONT_PROPRIU_LIPSA` și
+  `LATURA_CONT_PROPRIU_NEPOTRIVITA` au dispărut (de neatins sub contract).
+- **Contractele declarate** (predator → primitor): NIR, FCT, RDC
+  `Extern → Gestiune`; FCL, RLF `Gestiune/Intern → Extern` (FCL emitentul e
+  `Intern`, RLF `Gestiune`); BTR, ASM `Gestiune → Gestiune`; BCS `Gestiune →
+  Intern + LocConsum`; LDI `Gestiune → Intern + Comisie`; DSC `Gestiune →
+  Extern | Intern`; NTC, ITV `Intern | Propriu` pe ambele; DEC, DVI
+  `Extern → Intern`; PLT `Propriu → Extern | Propriu`; INC `Extern | Propriu
+  → Propriu`; PIF, CAS, AMO, BPR `Intern → Intern` (AMO cere în plus
+  identitatea, în clasa ei). Față de validările vechi, granularitatea e a
+  părții: pe laturile fără stoc `UnitateInterna` și `Gestiune` sunt
+  interschimbabile (DVI, PIF, CAS, DEC), `Partener` și `Angajat` la fel pe
+  cele externe (FCT, NIR, FCL, DEC), iar `Angajat` nu mai e admis pe laturile
+  interne (BCS/LDI cu calitate, NTC) — pe Flax nicio latură nu poartă
+  `Angajat`.
+- **Terțul pe capătul extern**: DSC pune `Partener` = primitorul pe capătul
+  607 (T-D13 (g)); oracolul are normalizarea `TrD13TertulPeCapatulExtern`
+  (după M6, numărată în `Normalizari.Contoare`, nu avertisment).
+- **UI înghețat** (090 (m)): filtrarea lookup-urilor Predator/Primitor pe
+  partea permisă e a dezghețului (`lista-react.md`).
 
 `DocumentDetaliu.Pozitie` e ordinea de culegere a liniei. Se atribuie o
 singură dată, la salvarea unei linii noi, în `SaveChanges`-ul contextului — un

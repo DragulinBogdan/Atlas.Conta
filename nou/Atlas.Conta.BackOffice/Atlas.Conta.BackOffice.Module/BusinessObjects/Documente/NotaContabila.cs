@@ -20,6 +20,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // INTERNI (ex. SEDIU), purtători ai dimensiunii Repartitor implicite din 00 §5.
 [TipDetaliu(typeof(NotaContabilaDetaliu))]
 public class NotaContabila : Document, IDocumentCuPostareExplicita {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.InternaSauProprie, Declaratii.Latura.InternaSauProprie);
+
     // Fără PregatesteOperare: `Valoare` se culege direct pe linie (nu există
     // lanț de valori — nici cantitate, nici preț, nici TVA calculat).
 
@@ -87,9 +90,6 @@ public class NotaContabila : Document, IDocumentCuPostareExplicita {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is Partener
-                || os.GetObjectByKey<Repartitor>(PrimitorId) is Partener)
-            erori.Add("Laturile notei contabile sunt repartitori interni (ex. SEDIU) — partenerul apare pe contul liniei, nu pe latură.");
         foreach (var d in Detalii) {
             // Linia de BAZĂ n-are cum să poarte postarea explicită, deci ar fi
             // sărită mut de motor (precedentul DSC 38c: refuz explicit).

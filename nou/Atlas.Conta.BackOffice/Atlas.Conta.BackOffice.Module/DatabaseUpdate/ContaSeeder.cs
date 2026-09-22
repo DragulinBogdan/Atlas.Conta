@@ -30,7 +30,7 @@ public static class ContaSeeder {
     // AwayFromZero la bază nouă — comportamentul de dinainte de 51c).
     public static RaportSeed Seed(IObjectSpace os, ProfilContabil profil, MidpointRounding? conventie = null) {
         var raport = raportCurent = new RaportSeed();
-        SeedTipuriDocument(os);
+        SeedTipuriDocument(os, profil);
         SeedPerioadeFiscale(os);
         VerificaProfil(os, profil);
         var rotunjire = SeedSetareProfil(os, profil, conventie);
@@ -273,7 +273,7 @@ public static class ContaSeeder {
     }
 
     // Decizia 20: nomenclatorul de tipuri oglindește clasele 1:1 — doar ancoră FK + UI.
-    static void SeedTipuriDocument(IObjectSpace os) {
+    static void SeedTipuriDocument(IObjectSpace os, ProfilContabil profil) {
         // S-D3, B-r2: `PosteazaInCub` și `LaturaContPropriu` sunt date de seed.
         (string Cod, string Denumire, string ClrType, LaturaDocument? ContPropriu)[] tipuri = [
             ("FCT", "Factură intrare", nameof(FacturaIntrare), null),
@@ -321,7 +321,9 @@ public static class ContaSeeder {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
-                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC";
+                // T-D4: DSC postează în cub doar unde are politici; la bugetar e tip inert.
+                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR" or "FCL"
+                    || (t.Cod == "DSC" && profil == ProfilContabil.Privat);
                 tip.LaturaContPropriu = t.ContPropriu;
             });
     }

@@ -138,6 +138,33 @@ public class StornoTeste {
             Assert.Contains(Conservare.Verifica(stornata), refuz => refuz.Cod == Coduri.CauzaStraina);
         });
 
+    // T-D2/N-r8: documentul cu `Operare` ȘI `Transfer` se stornează într-o SINGURĂ tranzacție.
+    // Atribuitul din alt document rămâne dezechilibrat prin construcție (N-D10, restanța de mai sus).
+    [Fact]
+    public void StornoulPesteAmbeleTranzactiiAleDocumentuluiEUnaSingura() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var declaratie = Gen.Declaratie(aleator, cuMutari: true);
+            var contract = Motor.Opereaza(declaratie, new Rotunjire(MidpointRounding.AwayFromZero));
+            Assert.True(
+                contract.EsteAcceptat,
+                string.Join(" | ", contract.Refuzuri.Select(r => $"{r.Cod}: {r.Mesaj}")));
+            Assert.Equal(2, contract.Tranzactii.Count);
+            var urmator = 0;
+            var toate = contract.Tranzactii
+                .SelectMany(t => t.Postari)
+                .Select(p => (Id: new Guid(100, (short)urmator++, 0, 0, 0, 0, 0, 0, 0, 0, 0), Postare: p))
+                .ToList();
+            var selectate = Storno.Selecteaza(toate, declaratie.Document);
+            Assert.Equal(toate.Count, selectate.Count);
+            var data = Gen.Data(aleator);
+            var stornata = Storno.Inverseaza(
+                selectate, declaratie.Document, data, (data.Year * 100) + data.Month);
+            Assert.Equal(FelTranzactie.Storno, stornata.Fel);
+            Assert.Equal(data, stornata.Data);
+            Assert.Equal(toate.Count, stornata.Postari.Count);
+            Assert.Empty(Conservare.Verifica(stornata));
+        });
+
     [Fact]
     public void StornoulFaraPostariERefuzat() =>
         Assert.Throws<ArgumentException>(() =>

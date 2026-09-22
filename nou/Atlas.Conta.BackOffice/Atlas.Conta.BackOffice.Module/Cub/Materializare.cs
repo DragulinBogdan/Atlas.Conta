@@ -19,7 +19,8 @@ public static class Materializare {
         var contract = Contracteaza(os, doc, tip);
         if (!contract.EsteAcceptat)
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
-        Scrie(os, doc.ID, contract.Tranzactie);
+        foreach (var tranzactie in contract.Tranzactii)
+            Scrie(os, doc.ID, tranzactie);
     }
 
     /// <summary>Refuzurile declarației pentru dry-run (S-D4): citește, nu scrie nimic.</summary>
@@ -42,8 +43,11 @@ public static class Materializare {
         ArgumentNullException.ThrowIfNull(doc);
         if (!MotorOperare.GasesteTipDocument(os, doc).PosteazaInCub)
             return;
+        // T-D2: transferul de stoc e al documentului; cel pe partidă e al împerecherii (S-D13).
         var aleDocumentului = os.GetObjectsQuery<Postare>()
-            .Where(p => p.DocumentId == doc.ID && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .Where(p => p.DocumentId == doc.ID
+                && (p.Tranzactie.Fel == N.FelTranzactie.Operare
+                    || (p.Tranzactie.Fel == N.FelTranzactie.Transfer && p.Spatiu == N.Spatiu.Stoc)))
             .ToList();
         // Operat înainte ca tipul lui să fie migrat: stornoul nu atinge cubul (S-D5).
         if (aleDocumentului.Count == 0)
@@ -110,7 +114,8 @@ public static class Materializare {
             stingator.ID, rezultat.Data, [mutare], new N.Rotunjire(Scara.ConventieBani));
         if (!contract.EsteAcceptat)
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
-        Scrie(os, stingator.ID, contract.Tranzactie!);
+        foreach (var tranzactie in contract.Tranzactii)
+            Scrie(os, stingator.ID, tranzactie);
     }
 
     static IEnumerable<N.Postare> Citeste(IEnumerable<Postare> randuri, N.FelTranzactie fel) =>
@@ -120,8 +125,10 @@ public static class Materializare {
         ArgumentNullException.ThrowIfNull(doc);
         if (!MotorOperare.GasesteTipDocument(os, doc).PosteazaInCub)
             return;
+        // T-D2: sub `VerificaFaraImperecheri`, orice `Transfer` al documentului e al lui.
         var tranzactii = os.GetObjectsQuery<Tranzactie>()
-            .Where(t => t.DocumentId == doc.ID && t.Fel == N.FelTranzactie.Operare)
+            .Where(t => t.DocumentId == doc.ID
+                && (t.Fel == N.FelTranzactie.Operare || t.Fel == N.FelTranzactie.Transfer))
             .ToList();
         if (tranzactii.Count == 0)
             return;
@@ -148,7 +155,5 @@ public static class Materializare {
     }
 
     static IReadOnlyList<string> Mesaje(IReadOnlyList<N.Refuz> refuzuri) =>
-        [.. refuzuri.Select(r => r.Linie is Guid linie
-            ? $"{r.Cod}: {r.Mesaj} [{linie}]"
-            : $"{r.Cod}: {r.Mesaj}")];
+        [.. refuzuri.Select(Contractare.Mesaj)];
 }

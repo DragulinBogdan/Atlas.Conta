@@ -190,6 +190,9 @@ public abstract class Document : BaseObject {
     // Metodă, nu proprietate: o proprietate ar intra în metadata clientului (43d). 090l
     public virtual Declaratii.IDeclarant Declarant() => null;
 
+    /// <summary>Laturile permise ale tipului: structură, verificată o singură dată pe ambele uși (T-D13).</summary>
+    public abstract Declaratii.ContractLaturi Laturi();
+
     // Hooks polimorfe consumate DOAR de motorul de operare (decizia 14).
     // Primesc IObjectSpace și lucrează pe FK-uri, nu pe navigații — contextul
     // apelant (UI, harness, viitorul Web API) nu garantează lazy loading.
@@ -301,6 +304,9 @@ public abstract class Document : BaseObject {
             erori.Add("Documentul nu are nicio linie.");
         if (PredatorId == Guid.Empty || PrimitorId == Guid.Empty)
             erori.Add("Predatorul și primitorul sunt obligatorii.");
+        else
+            foreach (var refuz in Declaratii.Laturi.Verifica(os, this))
+                erori.Add(Declaratii.Contractare.Mesaj(refuz));
         // Oglinda NOT NULL-ului din schemă, în motor (nu doar în regula UI de
         // Save): un refuz aici vine ÎNAINTE de materializare (33d) — doar FK-ul
         // scalar, fără navigații lazy în enumerare (25b).

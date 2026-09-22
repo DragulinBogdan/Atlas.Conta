@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-21.** [Index](README.md)
+**Actualizat: 2026-09-22.** [Index](README.md)
 
 ## Organizarea sursei
 
@@ -136,6 +136,7 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | Nucleul pur (`Atlas.Conta.Nucleu`) | `dotnet test` pe soluția nucleului: testul de arhitectură și invarianții 1–6 ca proprietăți (≥ 500 de cazuri fiecare); ModelCheck doar dacă e atins `Module` (90l) |
 | Declarant, operand, `Fapte.Operand`, oracolul pilotului | ModelCheck pe AMBELE profiluri: probele `NUC-*` (egalitate exactă cu registrele normalizate, conservare, determinism, `≤ 16` interogări per operand) plus `Metadata clientului e la zi` (o proprietate nouă pe `Document` intră în metadata clientului — de aceea `Declarant()` e metodă) (TR-D6b) |
 | Entitățile sau migrațiile cubului (`Postare`, `Tranzactie`) | ModelCheck pe ambele profiluri: probele `STR-SCHEMA-*` (partiționarea LIST, cheia `(Spatiu, ID)`, setul ÎNCHIS de FK-uri per partiție, indexii, absența timbrelor XAF); migrația se scrie în SQL, nu se lasă generată (S-D2, S-r4) |
+| Contractul laturilor (`Document.Laturi()`, T-D13) | ModelCheck pe ambele profiluri, ultima scenă (`VerificaLaturi`): `STR-LATURI-CONTRACT` (fiecare `TipDocument` din seed → clasa → contract cu părți nevide; metoda e abstractă, deci și compilatorul o cere), `STR-LATURI-REFUZ` (latura de partea greșită refuzată pe ușa declarației și pe ușa entității cu ACEEAȘI linie `COD: mesaj`; calitatea lipsă numită; un tip fără declarant refuzat pe ușa entității), `STR-LATURA` (PLT inversată = doar `PREDATOR_NEPOTRIVIT`, înaintea declarantului). Probele de laturi ale tipurilor asertează CODUL, nu textul vechi. Pe date reale: recensământul laturilor pe clona Flax (contract T-D13) și gate-urile pașilor 1–2 fără refuz nou |
 | Materializare, declarant al unui tip migrat, împerecherea ca `Transfer` | ModelCheck pe ambele profiluri: probele `STR-*` pe scenele BCS, Trezorerie și FCT — operare, roundtrip, storno, anulare, refuz, configurație, poziție, transfer, latură, corecție, reconciliere — cu comutarea locală a regimului (`ProbeCub.Migrat`/`Nemigrat`/`CuToleranta`, cu restaurare) și purja rândurilor de cub ale documentelor scenei (S-D8) |
 | Tip trecut pe `PosteazaInCub` | `--declaratie-pe-baza` pe o clonă a bazei de import: 100 % egal pe tipul migrat sau fiecare diferență declarată; după importul integral, `--reconciliere-cub` cu 0 rânduri Δ (S-D9) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
@@ -198,11 +199,23 @@ ambele ieșind înainte de bootstrap: (S-D9)
   transferurile scrise, cele plafonate la restul partidei și cele sărite.
 - `ModelCheck --reconciliere-cub <baza>` — SQL pe set, toleranță 0, pe
   tipurile cu `PosteazaInCub`: (a) Σ valoare per grup × cont × latură × lună,
-  (b) Σ cantitate per lot × lună pe spațiul Stoc, (c) TVA per tip × sens × rol
-  × perioadă, (d) Σ D = Σ C per carte în fiecare tranzacție, (e) exact o
-  tranzacție `Operare` per document operat al unui tip migrat și niciuna pe
-  celelalte, (f) Σ per partidă la ultima perioadă închisă, (g) TVA pe postările
-  de storno. Grupul unui FCT e documentul ∪ NIR-ul lui conex; grupurile cu
+  (b) Σ cantitate per lot × lună pe spațiul Stoc, din `Operare` ⊕ transferul
+  de stoc (T-D2), (c) TVA per tip × sens × rol × perioadă, (d) Σ D = Σ C per
+  carte în fiecare tranzacție, (e) per document operat al unui tip migrat cel
+  mult o `Operare`, cel mult un `Transfer` de stoc (postări în spațiul Stoc) și
+  cel puțin una din ele, și niciuna dintre cele două pe celelalte (T-D2, T-r1),
+  (f) Σ per partidă la ultima perioadă închisă, (g) TVA pe postările de storno.
+  Gate-ul `--declaratie-pe-baza` pe BTR se citește „100 % egal în afara celor
+  535 declarate în T-D2.2" (oracolul pliază rândurile de stoc ± ale aceluiași
+  lot, fără picior contabil, într-un `Transfer`); pe DSC „100 % egal în afara
+  celor 842 declarate în T-D4.2" (normalizarea T-D4.1: piciorul contabil fără
+  stoc al unei linii care doar iese își pierde gestiunea în oracol, fiindcă în
+  cub e pe gestiunea virtuală `Client`; normalizarea T-D13: același picior
+  primește terțul de pe primitorul extern, pe care rândul vechi nu-l poartă —
+  numărată în `Normalizari.Contoare` și tipărită de gate ca
+  `Normalizari.Contoare ×n`, spre deosebire de avertismente, care pică
+  probele); pe FCL 100 % egal. FCL și DSC sunt
+  fiecare grupul lui (DSC nu e conex). Grupul unui FCT e documentul ∪ NIR-ul lui conex; grupurile cu
   conex neoperat se RAPORTEAZĂ separat, nu se numără ca Δ. Litera (f) e vacuă
   cât timp un tip nemigrat mai postează pe conturi cu `RolTert`, iar nota se
   tipărește.
@@ -223,10 +236,9 @@ altfel interogarea pică și oprește rularea. O clonă a bazei de import poart�
 valoarea DEFAULT a unei coloane noi, nu valoarea de seed (`TolerantaTaxa` 0
 contra `null`): se aliniază înainte de gate, altfel refuzurile sunt ale bazei,
 nu ale codului. Gate-ul re-contractează documente pe o bază cu perioadele deja
-închise, deci un document datat exact la sfârșitul perioadei de referință care
-își golește singur cheia de stoc citește zero și e refuzat `STOC_INSUFICIENT` —
-artefact al gate-ului, nu al declarantului, absent la import (unde luna se
-operează înainte de a fi închisă). Oracolul citește registrele ORDONAT pe
+închise; artefactul „document datat exact la sfârșitul perioadei de referință
+refuzat `STOC_INSUFICIENT`" (felia 31) a dispărut la T-D4.3: citirea fără
+documentul curent ia referința strict înaintea datei. Oracolul citește registrele ORDONAT pe
 (document, poziția liniei, linie, id), altfel ordinea heap-ului schimbă
 nominalizarea între rulări și aceeași probă alternează OK/FAIL.
 

@@ -81,6 +81,16 @@ static class Fiscal {
     }
 
     /// <summary>
+    /// Gestiunea internă a documentului: latura OPUSĂ contrapartidei politicii de TVA.
+    /// </summary>
+    public static Guid GestiuneaInterna(Operand operand) {
+        ArgumentNullException.ThrowIfNull(operand);
+        return operand.PoliticaTva?.SursaContrapartida == SursaCont.RepartitorPrimitor
+            ? operand.Document.Predator.Id
+            : operand.Document.Primitor.Id;
+    }
+
+    /// <summary>
     /// Mișcarea de taxă a liniei: contul de TVA al direcției contra contrapartidei
     /// politicii; la taxare inversă contrapartida e contul colectat (4426 = 4427).
     /// </summary>
@@ -116,7 +126,7 @@ static class Fiscal {
         var analiza = Contari.Analiza(linie.Analiza, null, null);
         var intern = CuFapt(operand, new N.Capat {
             Cont = contTva,
-            Gestiune = operand.Document.Primitor.Id,
+            Gestiune = GestiuneaInterna(operand),
             Produs = linie.Lot?.ProdusId,
             Analiza = analiza,
         }, fiscal, N.RolTva.Taxa);
@@ -130,13 +140,12 @@ static class Fiscal {
                 "Contrapartida rândului de TVA nu se poate rezolva.", linie.Id));
             return null;
         }
-        return new N.Miscare(
-            new N.Capat { Cont = cont, Produs = linie.Lot?.ProdusId, Analiza = analiza },
-            intern,
-            0m,
-            0m,
-            valoare,
-            new N.Cauza(operand.Document.Id, linie.Id));
+        var contrapartida = new N.Capat { Cont = cont, Produs = linie.Lot?.ProdusId, Analiza = analiza };
+        // T-D4: pe `Colectat` taxa e CREDITUL (4427) contra contrapartidei debitoare (4111).
+        var (deLa, la) = asteptata == DirectieTva.Colectat
+            ? (intern, contrapartida)
+            : (contrapartida, intern);
+        return new N.Miscare(deLa, la, 0m, 0m, valoare, new N.Cauza(operand.Document.Id, linie.Id));
     }
 
     public static (N.RegimTva Regim, decimal Cota) Cheia(TipTvaFapt tip) =>

@@ -12,6 +12,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Lanțul avans → decont → regularizare se leagă prin imperechere (decizia 31d).
 [TipDetaliu(typeof(DecontDetaliu))]
 public class Decont : Document, IDocumentCuPV {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Externa, Declaratii.Latura.Interna);
+
     // Rolul de STINS (F19-D16): decontul lasă un sold CREDITOR pe contul
     // titularului (cheltuiala lui, pe care i-o datorăm) — se stinge debitând,
     // adică exact cu plata/avansul către angajat (lanțul probat la 32b).
@@ -47,10 +50,6 @@ public class Decont : Document, IDocumentCuPV {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Angajat)
-            erori.Add("Predatorul decontului este titularul — un angajat.");
-        if (os.GetObjectByKey<Repartitor>(PrimitorId) is not (UnitateInterna or Gestiune))
-            erori.Add("Primitorul decontului este unitatea internă care primește justificarea.");
         // Clasificația bugetară per linie a migrat în PoliticaValidare (32d →
         // 3d): regulă de profil, aplicată de motor înaintea acestui hook.
         foreach (var d in Detalii)

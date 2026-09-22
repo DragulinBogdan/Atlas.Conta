@@ -5,14 +5,15 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 /// <summary>
-/// BCS (B-D4): o mișcare per linie — lotul iese din gestiunea predatoare pe
-/// contul de stoc al regulii și intră pe contul de cheltuială al locului de
-/// consum, evaluat pe raportul curent al lotului.
+/// DSC (T-D4): o mișcare per linie — lotul iese din gestiunea predatoare pe contul
+/// de stoc al regulii, evaluat pe raportul curent, iar costul intră pe gestiunea
+/// virtuală a clientului, marfa părăsind patrimoniul. Descărcarea are aceeași formă
+/// cu sau fără factura care o naște: nu nominalizează nimic al ei.
 /// </summary>
-public sealed class DeclarantBonConsum : IDeclarant {
-    public static readonly DeclarantBonConsum Instanta = new();
+public sealed class DeclarantDescarcareGestiune : IDeclarant {
+    public static readonly DeclarantDescarcareGestiune Instanta = new();
 
-    DeclarantBonConsum() { }
+    DeclarantDescarcareGestiune() { }
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -22,17 +23,17 @@ public sealed class DeclarantBonConsum : IDeclarant {
         var doc = operand.Document;
         if (operand.Linii.Count == 0)
             refuzuri.Add(new N.Refuz(CoduriRefuz.LiniiLipsa,
-                "Bonul de consum se cere cu cel puțin o linie.", null));
+                "Descărcarea de gestiune se cere cu cel puțin o linie.", null));
 
         var contari = new ContareLinie?[operand.Linii.Count];
         for (var i = 0; i < operand.Linii.Count; i++) {
             var linie = operand.Linii[i];
             if (linie.Lot is null)
                 refuzuri.Add(new N.Refuz(CoduriRefuz.LotLipsa,
-                    "Fiecare linie de consum referă un lot.", linie.Id));
+                    "Fiecare linie de descărcare referă un lot.", linie.Id));
             if (linie.Cantitate <= 0m)
                 refuzuri.Add(new N.Refuz(CoduriRefuz.CantitateNepozitiva,
-                    "Cantitatea consumată trebuie să fie pozitivă.", linie.Id));
+                    "Cantitatea descărcată trebuie să fie pozitivă.", linie.Id));
             contari[i] = Contari.Rezolva(operand, linie, refuzuri);
         }
         if (refuzuri.Count > 0)
@@ -59,8 +60,6 @@ public sealed class DeclarantBonConsum : IDeclarant {
                 valoare = N.Evaluare.Iesire(sold, linie.Cantitate, rotunjire);
             }
             catch (N.RefuzException e) {
-                // Refuzul e al liniei, nu al documentului: iterarea continuă ca să
-                // iasă TOATE refuzurile, nu primul (B-D2, MINOR-1).
                 refuzuri.Add(new N.Refuz(e.Refuz.Cod, e.Refuz.Mesaj, linie.Id));
                 continue;
             }
@@ -81,10 +80,11 @@ public sealed class DeclarantBonConsum : IDeclarant {
                 },
                 new N.Capat {
                     Cont = contare.ContDebit,
-                    Gestiune = doc.Primitor.Id,
+                    // N-D4: marfa părăsește patrimoniul — capătul de cost e al clientului.
+                    Gestiune = N.GestiuniVirtuale.Client,
+                    // T-D13 (g): terțul nominalizat pe capătul extern.
+                    Partener = doc.Primitor.Parte == Parte.Extern ? doc.Primitor.Id : null,
                     Produs = lot.ProdusId,
-                    // C5 cere unitatea pe contul postării.
-                    Unitate = iesit with { Cont = contare.ContDebit },
                     Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideDebit, contare.Regula.Comun),
                 },
                 linie.Cantitate,

@@ -196,8 +196,14 @@ internal static class Fapte {
             // Valuta/Cursul sunt câmpuri de FRUNZĂ (FacturaIntrare), fără interfață
             // declarată: pilotul nu le citește (B-D2, raportat main-ului).
             null, null,
-            doc is IDocumentCuScadenta scadenta ? scadenta.DataScadenta : null,
-            tipDoc.LaturaContPropriu);
+            doc is IDocumentCuScadenta scadenta ? scadenta.DataScadenta : null);
+
+    // T-D13: faptele laturilor pentru ușa entității.
+    internal static (Declaratii.RepartitorFapt Predator, Declaratii.RepartitorFapt Primitor) Laturile(
+            IObjectSpace os, Document doc) {
+        var repartitori = Repartitori(os, [doc.PredatorId, doc.PrimitorId]);
+        return (Repartitor(repartitori, doc.PredatorId), Repartitor(repartitori, doc.PrimitorId));
+    }
 
     static Declaratii.RepartitorFapt Repartitor(
             IReadOnlyDictionary<Guid, Declaratii.RepartitorFapt> repartitori, Guid id) =>

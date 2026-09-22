@@ -4,4 +4,6 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Pattern-ul necesar (linii de consum −1 pe loturi existente + linii de produs
 // +1 care creează loturi cu preț dat) e deja acoperit de bază via LDI.
 public class RaportProductie : Document {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Interna, Declaratii.Latura.Interna);
 }

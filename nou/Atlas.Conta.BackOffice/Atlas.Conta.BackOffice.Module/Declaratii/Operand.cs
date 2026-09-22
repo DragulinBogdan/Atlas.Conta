@@ -15,7 +15,10 @@ public enum FelRepartitor {
 }
 
 /// <summary>`Fel` null = repartitorul lipsește de pe document sau are o clasă necunoscută.</summary>
-public sealed record RepartitorFapt(Guid Id, FelRepartitor? Fel, Guid? ContImplicitId, CalitateRepartitor Calitati);
+public sealed record RepartitorFapt(Guid Id, FelRepartitor? Fel, Guid? ContImplicitId, CalitateRepartitor Calitati) {
+    /// <summary>Partea față de patrimoniu (T-D13): derivată o singură dată din `Fel`, prin <see cref="Laturi.ParteA"/>.</summary>
+    public Parte? Parte => Laturi.ParteA(Fel);
+}
 
 public sealed record ContFapt(Guid Id, string? Simbol, RolTertCont RolTert);
 
@@ -46,8 +49,7 @@ public sealed record DocumentFapt(
     RepartitorFapt Primitor,
     string? Valuta,
     decimal? Curs,
-    DateOnly? DataScadenta,
-    LaturaDocument? LaturaContPropriu);
+    DateOnly? DataScadenta);
 
 public sealed record LinieOperand(
     Guid Id,

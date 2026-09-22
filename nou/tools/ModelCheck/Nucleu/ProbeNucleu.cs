@@ -41,7 +41,7 @@ static class ProbeNucleu {
                 foreach (var refuz in contract.Refuzuri)
                     Console.WriteLine($"       refuz {refuz.Cod}: {refuz.Mesaj}");
             check($"{eticheta}: contract acceptat", contract.EsteAcceptat);
-            if (contract.Tranzactie is not { } tranzactie)
+            if (contract.Tranzactii.Count == 0)
                 continue;
 
             var aleLui = new List<Guid> { doc.ID };
@@ -61,13 +61,13 @@ static class ProbeNucleu {
 
             var raport = Comparabil.Compara(
                 Comparabil.Proiecteaza(oracol),
-                Comparabil.Proiecteaza(tranzactie),
-                Nume(os, oracol, tranzactie));
+                Comparabil.Proiecteaza(contract.Tranzactii),
+                Nume(os, oracol, [.. contract.Tranzactii]));
             if (!raport.Egal)
                 Console.WriteLine(raport.ToString());
             check($"{eticheta}: postările = registrele normalizate", raport.Egal);
 
-            var conservare = N.Conservare.Verifica(tranzactie);
+            var conservare = contract.Tranzactii.SelectMany(N.Conservare.Verifica).ToList();
             foreach (var refuz in conservare)
                 Console.WriteLine($"       conservare {refuz.Cod}: {refuz.Mesaj}");
             check($"{eticheta}: Conservare.Verifica gol", conservare.Count == 0);

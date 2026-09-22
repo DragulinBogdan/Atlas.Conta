@@ -23,8 +23,10 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         ArgumentNullException.ThrowIfNull(refuzuri);
 
         var doc = operand.Document;
-        var esteVirament = EContPropriu(doc.Predator.Fel) && EContPropriu(doc.Primitor.Fel);
-        Laturile(doc, refuzuri);
+        var esteVirament = doc.Predator.Parte == Parte.Propriu && doc.Primitor.Parte == Parte.Propriu;
+        if (doc.Predator.Id == doc.Primitor.Id)
+            refuzuri.Add(new N.Refuz(CoduriRefuz.LaturiIdentice,
+                "Predatorul și primitorul sunt același repartitor.", null));
         Liniile(operand, esteVirament, refuzuri);
 
         var contari = new ContareLinie?[operand.Linii.Count];
@@ -33,8 +35,8 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         if (refuzuri.Count > 0)
             return null;
 
-        var tert = ETert(doc.Predator.Fel) ? doc.Predator.Id
-            : ETert(doc.Primitor.Fel) ? doc.Primitor.Id
+        var tert = doc.Predator.Parte == Parte.Extern ? doc.Predator.Id
+            : doc.Primitor.Parte == Parte.Extern ? doc.Primitor.Id
             : (Guid?)null;
         var miscari = new List<N.Miscare>(operand.Linii.Count);
         var decizii = new List<N.Decizie>();
@@ -128,28 +130,6 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         return new N.Declaratie(doc.Id, doc.DataInregistrare, miscari, decizii, ipoteze);
     }
 
-    static void Laturile(DocumentFapt doc, ICollection<N.Refuz> refuzuri) {
-        if (!EParte(doc.Predator.Fel))
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PredatorNepotrivit,
-                "Predatorul unui document de trezorerie e un cont propriu, un partener sau un angajat.", null));
-        if (!EParte(doc.Primitor.Fel))
-            refuzuri.Add(new N.Refuz(CoduriRefuz.PrimitorNepotrivit,
-                "Primitorul unui document de trezorerie e un cont propriu, un partener sau un angajat.", null));
-        if (!EContPropriu(doc.Predator.Fel) && !EContPropriu(doc.Primitor.Fel))
-            refuzuri.Add(new N.Refuz(CoduriRefuz.ContPropriuLipsa,
-                "Una dintre laturi e contul propriu (casă/bancă) din care sau în care se mișcă banii.", null));
-        // B-r2: tipul declară pe CARE latură stă contul propriu (plata predător,
-        // încasarea primitor); tipul care nu declară lasă alegerea deschisă.
-        else if (doc.LaturaContPropriu is LaturaDocument latura
-                && !EContPropriu(latura == LaturaDocument.Predator ? doc.Predator.Fel : doc.Primitor.Fel))
-            refuzuri.Add(new N.Refuz(CoduriRefuz.LaturaContPropriuNepotrivita,
-                $"Tipul cere contul propriu pe latura {latura}, dar acolo stă "
-                + $"{(latura == LaturaDocument.Predator ? doc.Predator.Fel : doc.Primitor.Fel)}.", null));
-        if (doc.Predator.Id == doc.Primitor.Id)
-            refuzuri.Add(new N.Refuz(CoduriRefuz.LaturiIdentice,
-                "Predatorul și primitorul sunt același repartitor.", null));
-    }
-
     static void Liniile(Operand operand, bool esteVirament, ICollection<N.Refuz> refuzuri) {
         if (operand.Linii.Count == 0) {
             refuzuri.Add(new N.Refuz(CoduriRefuz.LiniiLipsa,
@@ -181,8 +161,8 @@ public sealed class DeclarantTrezorerie : IDeclarant {
             var propriu = peDebit is null ? peCredit : peCredit is null ? peDebit : null;
             return (propriu, propriu);
         }
-        var intern = EContPropriu(doc.Predator.Fel) ? doc.Predator.Id
-            : EContPropriu(doc.Primitor.Fel) ? doc.Primitor.Id
+        var intern = doc.Predator.Parte == Parte.Propriu ? doc.Predator.Id
+            : doc.Primitor.Parte == Parte.Propriu ? doc.Primitor.Id
             : (Guid?)null;
         return intern is null ? (null, null)
             : peDebit == intern ? (intern, null)
@@ -195,10 +175,4 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         SursaCont.RepartitorPrimitor => doc.Primitor.Id,
         _ => null,
     };
-
-    static bool EContPropriu(FelRepartitor? fel) => fel == FelRepartitor.ContPropriu;
-
-    static bool ETert(FelRepartitor? fel) => fel is FelRepartitor.Partener or FelRepartitor.Angajat;
-
-    static bool EParte(FelRepartitor? fel) => EContPropriu(fel) || ETert(fel);
 }

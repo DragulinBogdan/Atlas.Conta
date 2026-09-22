@@ -13,6 +13,11 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [GardContare(NivelContare.TipMaterialExact,
     "Linia descărcării nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class DescarcareGestiune : Document {
+    public override Declaratii.ContractLaturi Laturi() =>
+        new(Declaratii.Latura.Gestiune, Declaratii.Latura.ExternaSauInterna);
+
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantDescarcareGestiune.Instanta;
+
     // Ambele dimensiuni rămân pe gestiune (predatorul) — precedentul Decont 32c:
     // soldul 371/345 se ține per gestiune; clientul trăiește pe rândurile FCL și
     // pe link-ul DocumentSursa, nu pe dimensiunile registrului.
@@ -31,10 +36,6 @@ public class DescarcareGestiune : Document {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (os.GetObjectByKey<Repartitor>(PredatorId) is not Gestiune)
-            erori.Add("Predatorul descărcării de gestiune trebuie să fie o gestiune.");
-        // Fără validare pe primitor: DSC-ul cules manual e legal cu orice primitor
-        // (clientul se materializează pe FCL, nu ține de ieșirea din gestiune).
         foreach (var d in Detalii) {
             if (d is not DescarcareGestiuneDetaliu)
                 erori.Add("Linia descărcării trebuie culeasă ca linie de descărcare, nu ca detaliu generic.");

@@ -117,17 +117,39 @@ static class CubDinRegistre {
             ale.Add(Contabila(r, document, N.Latura.Credit, data, rolTert, felRepartitor));
         }
 
+        // T-D2: rândurile aceluiași lot (deci ACELUIAȘI cont) cu o latură negativă și
+        // una pozitivă sunt o MUTARE între gestiuni — tranzacție `Transfer` a
+        // documentului. Restul rândurilor rămân în `Operare`.
+        var liniiContabile = contabile
+            .Select(r => (Document: r.DocumentId!.Value, Linie: r.DetaliuId))
+            .ToHashSet();
+        var mutate = new HashSet<(Guid Document, Guid Lot)>();
+        foreach (var grup in stoc.GroupBy(r => (Document: r.DocumentId!.Value, Lot: r.LotId)))
+            if (EMutare([.. grup], grup.Key.Document, liniiContabile))
+                mutate.Add(grup.Key);
+        var deTransfer = new Dictionary<Guid, List<N.Postare>>();
         foreach (var r in stoc)
-            if (r.DocumentId is Guid document)
-                postari[document].Add(DeStoc(r, document, dateDocument[document], loturi));
+            if (r.DocumentId is Guid document) {
+                var data = dateDocument[document];
+                if (!mutate.Contains((document, r.LotId))) {
+                    postari[document].Add(DeStoc(r, document, data, loturi));
+                    continue;
+                }
+                if (!deTransfer.TryGetValue(document, out var ale))
+                    deTransfer[document] = ale = [];
+                ale.Add(DeMutare(r, document, data, loturi));
+            }
 
         foreach (var r in fiscale)
             postari[r.DocumentId].AddRange(Fiscale(r, dateDocument[r.DocumentId]));
 
         var tranzactii = new List<N.Tranzactie>();
-        foreach (var id in ids)
+        foreach (var id in ids) {
             if (postari[id].Count > 0)
                 tranzactii.Add(new N.Tranzactie(N.FelTranzactie.Operare, dateDocument[id], id, postari[id]));
+            if (deTransfer.TryGetValue(id, out var mutari))
+                tranzactii.Add(new N.Tranzactie(N.FelTranzactie.Transfer, dateDocument[id], id, mutari));
+        }
 
         if (imperecheri.Count > 0) {
             var tertDoc = TertPeDocument(contabile, dateDocument, rolTert, felRepartitor);
@@ -234,12 +256,49 @@ static class CubDinRegistre {
 
     // Măsurile poartă semnul în registru; nucleul cere `Latura` pe orice postare și
     // valoare pozitivă în `Operare`, deci semnul valorii trece pe latură (B-D7).
-    static N.Postare DeStoc(
+    // T-D2: mutarea e ieșirea și intrarea aceluiași lot, deci ale aceluiași cont, care se
+    // sting între ele. Linia CU picior contabil duce valoarea pe ALT cont (consumul, vânzarea):
+    // acolo rândul de stoc e piciorul unificat de TR-D4, nu o mutare.
+    static bool EMutare(
+            IReadOnlyList<RegistruStoc> randuri,
+            Guid document,
+            IReadOnlySet<(Guid Document, Guid? Linie)> liniiContabile) =>
+        randuri.Any(Negativ) && randuri.Any(r => !Negativ(r))
+        && randuri.Sum(r => r.Cantitate) == 0m && randuri.Sum(r => r.Valoare) == 0m
+        && !randuri.Any(r => liniiContabile.Contains((document, r.DetaliuId)));
+
+    static bool Negativ(RegistruStoc r) => r.Valoare != 0m ? r.Valoare < 0m : r.Cantitate < 0m;
+
+    // 090f: capetele mutării stau pe ACEEAȘI latură, cu măsurile semnate.
+    static N.Postare DeMutare(
             RegistruStoc r, Guid document, DateOnly data, IReadOnlyDictionary<Guid, LotFizic> loturi) {
-        if (!loturi.TryGetValue(r.LotId, out var lot))
-            throw new InvalidOperationException(
+        var lot = Lotul(r, document, loturi);
+        return new N.Postare(
+            new N.Coordonate {
+                Cont = lot.Cont,
+                Latura = N.Latura.Debit,
+                Data = data,
+                Gestiune = r.RepartitorId,
+                Produs = lot.ProdusId,
+                Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, lot.Cont, null, lot.ProdusId, lot.Data),
+            },
+            r.Cantitate,
+            0m,
+            r.Valoare,
+            new N.Cauza(document, r.DetaliuId));
+    }
+
+    static LotFizic Lotul(
+            RegistruStoc r, Guid document, IReadOnlyDictionary<Guid, LotFizic> loturi) =>
+        loturi.TryGetValue(r.LotId, out var lot)
+            ? lot
+            : throw new InvalidOperationException(
                 $"Rândul de stoc {r.ID} al documentului {document} numește lotul {r.LotId}, "
                 + "care n-are produs cu tip și cont implicit: contul postării nu se poate rezolva. B-D10, oprire.");
+
+    static N.Postare DeStoc(
+            RegistruStoc r, Guid document, DateOnly data, IReadOnlyDictionary<Guid, LotFizic> loturi) {
+        var lot = Lotul(r, document, loturi);
         return new N.Postare(
             new N.Coordonate {
                 Cont = lot.Cont,
