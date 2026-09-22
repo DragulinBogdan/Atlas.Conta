@@ -94,6 +94,10 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | — | `Deschidere` | pas 6 | `DESCHIDERE.md` | se scrie cu pasul |
 | PIF/CAS/AMO | imobilizări | TR-D9 | `IMO.md` | la TR-D9 |
 
+Rularea pe un tip: `ModelCheck --scenarii <TIP>[,<TIP>…] [privat]` (091-r1);
+scena unui rând se înregistrează cu tipul ei în `ScenelePeTip`
+(`nou/tools/ModelCheck/Program.cs`), altfel filtrul nu o vede.
+
 Tipurile deja pe cub primesc fișierul înaintea pasului 3: probele
 `STR-*`/`NUC-*` existente se mapează pe rândurile ciclului, iar rândurile
 lipsă (corecția în perioadă închisă, citirile) se scriu și se probează

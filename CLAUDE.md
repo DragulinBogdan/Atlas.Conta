@@ -132,8 +132,9 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: 091-r1 (`--scenarii <TIP>` în ModelCheck), fișierele
-catalogului pentru tipurile deja pe cub (probele `STR-*` / `NUC-*` mapate pe
+**Următorul pas**: fișierele
+catalogului pentru tipurile deja pe cub (rulate pe tip cu
+`ModelCheck --scenarii <TIP>[,…] [privat]`, 091-r1) (probele `STR-*` / `NUC-*` mapate pe
 ciclu, rândurile lipsă scrise și probate), apoi pasul 3 al feliei 32 (NTC +
 ITV) pe scenarii, cu recensământul pe clonă (091-r2) înaintea lui. Contractul
 feliei: `docs/nucleu/tr-d7b-tipuri-ramase-contract.md`, amendamentul 091 sub

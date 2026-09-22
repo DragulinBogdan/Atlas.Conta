@@ -151,6 +151,14 @@ static string Conexiunea(string baza) =>
     }
 }
 
+// 091-r1 — `ModelCheck --scenarii <TIP>[,<TIP>…] [privat]`: doar scenele tipului, pe baza profilului.
+var filtruScenarii = Scenarii.Filtru(args, out var eroareScenarii);
+if (eroareScenarii != null) {
+    Console.WriteLine(eroareScenarii);
+    Environment.ExitCode = 2;
+    return;
+}
+
 var profil = args.Any(a => a.Contains("privat", StringComparison.OrdinalIgnoreCase))
     ? ProfilContabil.Privat : ProfilContabil.Bugetar;
 var sufixBaza = Environment.GetEnvironmentVariable("MODELCHECK_BAZA_SUFIX") ?? "";
@@ -210,7 +218,7 @@ void PurjaIstoricPerioade(IObjectSpace os, int an) {
 // COMIS, unealta doar verifică. Dacă `metadata.json` există și nu mai corespunde
 // modelului (caption adăugat, enum extins, DefaultProperty mutat), rularea
 // normală PICĂ — clientul nu are voie să se compileze pe captions fantomă.
-{
+if (filtruScenarii == null) {
     var caleMetadata = MetadataDump.CaleImplicita();
     var (exista, identic) = MetadataDump.VerificaDrift(caleMetadata);
     if (!exista)
@@ -355,6 +363,7 @@ using (var osConventie = provider.CreateObjectSpace()) {
         + (citita ? " (din SetareProfil)" : " (implicit — baza nu are rând SetareProfil)"));
 }
 
+if (filtruScenarii == null)
 using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     Console.WriteLine($"TipuriDocument:  {await ctx.TipuriDocument.CountAsync()}");
     Console.WriteLine($"ClaseProduse:    {await ctx.ClaseProduse.CountAsync()}");
@@ -670,6 +679,15 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     // și o „șterge" din nou, tot logic. Măsurat: +1 rând/rulare pe ambele baze.
     ctx.ChangeTracker.Clear();
     await ctx.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM \"ReguliContare\" WHERE \"ID\" = {proba.ID}");
+}
+
+if (filtruScenarii != null) {
+    if (RuleazaScenele(profil == ProfilContabil.Privat) == 0) {
+        Environment.ExitCode = 2;
+        return;
+    }
+    Rezumat();
+    return;
 }
 
 // ========================= Scenariul e2e P1: profil privat =========================
@@ -4338,16 +4356,8 @@ if (profil == ProfilContabil.Privat) {
     // Felia 31 (TR-D7a), pasul 1 — schema cubului (STR-SCHEMA-*) și `Pozitie` (STR-POZITIE).
     VerificaSchemaCub(privat: true);
     VerificaPozitieLinii(privat: true);
-    // Felia 30, pasul 3 — declarantul BCS pe scenă proprie + N-r3 măsurat.
-    VerificaNucleuBcs(privat: true);
-    // Felia 32, pasul 1 — BTR pe cub: felul mixt `Operare`/`Transfer` (STR-BTR-*).
-    VerificaNucleuBtr(privat: true);
-    // Felia 30, pasul 4 — declarantul de trezorerie pe scenă privată (partide pe 401/4111).
-    VerificaNucleuTrezorerie(privat: true);
-    // Felia 30, pasul 5 — declarantul FCT: patru regimuri, imobilizarea, N-r4 măsurat.
-    VerificaNucleuFct(privat: true);
-    // Felia 32, pasul 2 — FCL si DSC pe cub (STR-FCL-*, STR-DSC-*).
-    VerificaNucleuFclDsc(privat: true);
+    // Scenele catalogului pe tip (091); aceleași pe care le selectează `--scenarii`.
+    RuleazaScenele(privat: true);
     // Felia 32, pasul 2b — laturile ca structură (STR-LATURI-*), după toate scenele.
     VerificaLaturi(privat: true);
 
@@ -9707,12 +9717,8 @@ VerificaF28(privat: false);
 // Felia 31 (TR-D7a), pasul 1 — schema cubului (STR-SCHEMA-*) și `Pozitie` (STR-POZITIE).
 VerificaSchemaCub(privat: false);
 VerificaPozitieLinii(privat: false);
-// Felia 30, pasul 3 — declarantul BCS pe scenă proprie + N-r3 măsurat.
-VerificaNucleuBcs(privat: false);
-// Felia 32, pasul 1 — BTR pe cub: felul mixt `Operare`/`Transfer` (STR-BTR-*).
-VerificaNucleuBtr(privat: false);
-// Felia 32, pasul 2 — FCL pe cub (STR-FCL-*); DSC ramane tip inert la bugetar.
-VerificaNucleuFclDsc(privat: false);
+// Scenele catalogului pe tip (091); aceleași pe care le selectează `--scenarii`.
+RuleazaScenele(privat: false);
 // Felia 32, pasul 2b — laturile ca structură (STR-LATURI-*), după toate scenele.
 VerificaLaturi(privat: false);
 
@@ -31653,6 +31659,44 @@ void VerificaF28(bool privat) {
         Check($"F28 — curățenie finală ({eticheta}): niciun document și niciun repartitor de probă rămas",
             !osF.GetObjectsQuery<Document>().Any(d => d.Numar != null && d.Numar.StartsWith(MarcajF28))
             && !osF.GetObjectsQuery<Repartitor>().Any(r => r.Cod.StartsWith(MarcajF28)));
+}
+
+// ============ 091: scenele catalogului, pe tipul pe care îl probează ============
+// Ordinea listei e ordinea suitei integrale. PLT/INC și FCT au scenă doar pe
+// privat (partidele și regimurile de TVA sunt ale profilului); DSC e inert la
+// bugetar, scena FCL ∪ DSC îl sare acolo.
+List<Scena> ScenelePeTip(bool privat) {
+    var scene = new List<Scena> {
+        new(nameof(VerificaNucleuBcs), ["BCS"], () => VerificaNucleuBcs(privat)),
+        new(nameof(VerificaNucleuBtr), ["BTR"], () => VerificaNucleuBtr(privat)),
+    };
+    if (privat) {
+        scene.Add(new(nameof(VerificaNucleuTrezorerie), ["PLT", "INC"], () => VerificaNucleuTrezorerie(privat)));
+        scene.Add(new(nameof(VerificaNucleuFct), ["FCT"], () => VerificaNucleuFct(privat)));
+    }
+    scene.Add(new(nameof(VerificaNucleuFclDsc), ["FCL", "DSC"], () => VerificaNucleuFclDsc(privat)));
+    return scene;
+}
+
+int RuleazaScenele(bool privat) {
+    var selectate = Scenarii.Selecteaza(ScenelePeTip(privat), filtruScenarii);
+    if (filtruScenarii != null) {
+        var eticheta = privat ? "privat" : "bugetar";
+        Console.WriteLine($"Scenarii {string.Join(",", filtruScenarii.Order())} pe {eticheta}: "
+            + (selectate.Count == 0 ? "NICIUNA" : string.Join(", ", selectate.Select(s => s.Nume))));
+        if (selectate.Count == 0) {
+            Console.WriteLine($"Niciun scenariu pe profilul {eticheta} pentru tipurile cerute "
+                + "(catalogul: docs/nucleu/scenarii/).");
+            return 0;
+        }
+    }
+    foreach (var scena in selectate) {
+        var ceas = Stopwatch.StartNew();
+        scena.Ruleaza();
+        if (filtruScenarii != null)
+            Console.WriteLine($"     {scena.Nume}: {ceas.Elapsed.TotalSeconds:0.0} s");
+    }
+    return selectate.Count;
 }
 
 // ============ Felia 31 (TR-D7a): schema cubului și ordinea liniilor ============
