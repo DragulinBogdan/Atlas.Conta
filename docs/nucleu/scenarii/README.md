@@ -94,7 +94,7 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | DSC | descărcare de gestiune | pas 2 (privat) | [DSC.md](DSC.md) | primul lot independent verificat pe privat; neaplicabil bugetar; ciclul complet încă deschis |
 | NTC | notă contabilă | pas 3 | [NTC.md](NTC.md) | declarant explicit, FIFO și identitate cu partener (092); cititorii comuni rămân TR-D8 |
 | ITV | închidere TVA | pas 3 (privat) | [ITV.md](ITV.md) | declarant comun NTC, corecție peste perioadă; profil inert bugetar; cititorii comuni rămân TR-D8 |
-| RDC | retur de la client | pas 4 | `RDC.md` | se scrie cu pasul |
+| RDC | retur de la client | pas 4 (privat) | [RDC.md](RDC.md) | venit/cost, partidă proprie negativă, compensare NTC, ciclu mixt peste perioadă; inert bugetar; cititorii comuni TR-D8 |
 | RLF | retur la furnizor | pas 4 | `RLF.md` | se scrie cu pasul |
 | DVI | declarație vamală | pas 4 | `DVI.md` | se scrie cu pasul |
 | ASM | asamblare | pas 5 | `ASM.md` | se scrie cu pasul |

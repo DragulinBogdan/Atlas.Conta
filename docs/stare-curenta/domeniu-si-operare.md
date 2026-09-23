@@ -787,6 +787,14 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
 
 ## Cubul persistat și regimul dual (TR-D7a, felia 31)
 
+RDC folosește `DeclarantReturClient`, activat numai pe profilul privat
+(T-D8, pasul 4). Linia fără lot inversează venitul și TVA-ul, deschizând
+partida proprie negativă; linia cu lot readuce cantitatea și valoarea
+pe lotul original, fără fapt fiscal. NTC poate compensa partida returului
+cu cea a facturii; nominalizarea directă pe factura originală rămâne TR-D9.
+Catalogul `docs/nucleu/scenarii/RDC.md` acoperă și stocul returnat deja
+consumat, anularea/reoperarea și corecția mixtă peste luna închisă.
+
 NTC și ITV folosesc același `DeclarantNotaContabila` (T-D3, pasul 3).
 Nota păstrează conturile explicite și valoarea semnată; cantitatea este 0.
 Pe un cont cu `RolTert`, partenerul explicit al liniei nominalizează FIFO

@@ -2,6 +2,13 @@
 
 **Actualizat: 2026-09-23.** [Index](README.md)
 
+Ultima felie validată: RDC pe cub, numai profilul privat. Catalogul
+`scenarii/RDC.md` are 18 scenarii; suita filtrată: 3 OK bugetar / 78 OK
+privat. Gate integral: 1.743 / 2.383 OK, zero FAIL, build și rulări exit0
+(`run-verificari/20260923-122814-720/rezultat.json`). Ambele comenzi folosesc
+`verifica.ps1`, `-Profil Ambele -Sufix .CodexBCS`; filtrarea adaugă
+`-Suita Scenarii -Tip RDC`, gate-ul `-Suita Integral`.
+
 ## Organizarea sursei
 
 | Zonă | Responsabilitate |

@@ -402,6 +402,14 @@ scriu rânduri de deschidere direct trec prin `Deschide`.
 
 ### T-D8 — Retururile și DVI
 
+**Livrare parțială 2026-09-23:** RDC implementat și activat numai pe privat.
+Catalogul `scenarii/RDC.md` verifică venit/cost mixt, lot gol și cost zero,
+compensare NTC după încasare parțială, refuzul inversării cu dependenți,
+anulare/reoperare, storno și corecție peste luna închisă. Suită filtrată:
+3/78 OK bugetar/privat; gate integral 1.743/2.383 OK, zero FAIL
+(`run-verificari/20260923-122814-720/rezultat.json`). Pasul4 rămâne deschis
+pentru RLF și DVI; limitele TR-D8/TR-D9 și B-r4 nu se închid aici.
+
 RDC: linia fără lot = venit `4111 = 70x` cu `−V` (`PastreazaSemn`), `4111 =
 4427` cu `−TVA` (direcția `Colectat`); linia cu lot = cost `6xx = 3xx` cu
 `−V` și `+q` pe lotul ORIGINAL (intrare la valoarea liniei, nu `Evaluare.

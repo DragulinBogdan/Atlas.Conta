@@ -121,6 +121,8 @@ public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
 [GardContare(NaturaClasa.Stoc, NivelContare.TipMaterialExact,
     "Linia cu lot a returului nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc, storno) — adăugați rândul de politică (sau rulați updater-ul).")]
 public class ReturClient : Document {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantReturClient.Instanta;
+
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Externa, Declaratii.Latura.Gestiune);
 
