@@ -22,4 +22,8 @@ public static class CoduriRefuz {
     public const string TipTvaLipsa = "TIP_TVA_LIPSA";
     public const string ContTvaLipsa = "CONT_TVA_LIPSA";
     public const string DirectieTvaNepotrivita = "DIRECTIE_TVA_NEPOTRIVITA";
+    public const string ContExplicitLipsa = "CONT_EXPLICIT_LIPSA";
+    public const string ValoareZero = "VALOARE_ZERO";
+    public const string RepartitorExplicitLipsa = "REPARTITOR_EXPLICIT_LIPSA";
+    public const string PartidaCuDependenti = "PARTIDA_CU_DEPENDENTI";
 }

@@ -16,7 +16,7 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
 
     RandScena[] Randuri(FacturaScena f, bool inc, params decimal[] sume) => sume.SelectMany((v, i) => new[] {
         new RandScena(Cont(ContTert(inc)), inc ? N.Latura.Credit : N.Latura.Debit, v,
-            Unitate: Partida(f.Id, ContTert(inc)), Partener: Privat ? inc ? Client : Furnizor : null,
+            Unitate: Partida(f.Id, ContTert(inc), inc ? Client : Furnizor), Partener: Privat ? inc ? Client : Furnizor : null,
             Linie: f.Linii[i].Id, Economic: Economic),
         new RandScena(Cont(Numerar), inc ? N.Latura.Debit : N.Latura.Credit, v,
             Gestiune: casa, Linie: f.Linii[i].Id, Economic: Economic)
@@ -64,13 +64,13 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         Verifica(Id(inc, "01"), "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, f.Id)).Count == 0);
         FaraEfecte(Id(inc, "01"), f.Id); Opereaza(f.Id);
         Postari(Id(inc, "01"), f.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(f, inc, 100));
-        if (Privat) SoldPartida(Id(inc, "01"), Partida(f.Id, ContTert(inc))!.Value, Ianuarie, inc ? -100 : 100);
+        if (Privat) SoldPartida(Id(inc, "01"), Partida(f.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, Ianuarie, inc ? -100 : 100);
         var m = Trezorerie(inc, 40, 60); Opereaza(m.Id);
         Postari(Id(inc, "02"), m.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(m, inc, 40, 60));
         Storneaza(f.Id, new(An, 1, 20));
         Postari(Id(inc, "03"), f.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(f, inc, 100));
         Postari(Id(inc, "03"), f.Id, N.FelTranzactie.Storno, new(An, 1, 20), Randuri(f, inc, -100));
-        if (Privat) SoldPartida(Id(inc, "03"), Partida(f.Id, ContTert(inc))!.Value, new(An, 1, 20), 0);
+        if (Privat) SoldPartida(Id(inc, "03"), Partida(f.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, new(An, 1, 20), 0);
         var inainte = Amprenta(f.Id);
         Refuza(Id(inc, "03"), () => Storneaza(f.Id, new(An, 1, 20)), "Operat");
         Verifica(Id(inc, "03"), "repetarea nu scrie", Amprenta(f.Id) == inainte);
@@ -86,8 +86,8 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         Storneaza(f.Id, Februarie);
         Postari(Id(inc, "04"), f.Id, N.FelTranzactie.Storno, Februarie, Randuri(f, inc, -100));
         if (Privat) {
-            SoldPartida(Id(inc, "04"), Partida(f.Id, ContTert(inc))!.Value, new(An, 1, 31), inc ? -100 : 100);
-            SoldPartida(Id(inc, "04"), Partida(f.Id, ContTert(inc))!.Value, Februarie, 0);
+            SoldPartida(Id(inc, "04"), Partida(f.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, new(An, 1, 31), inc ? -100 : 100);
+            SoldPartida(Id(inc, "04"), Partida(f.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, Februarie, 0);
         }
         var nou = Corecteaza(c.Id); FaraEfecte(Id(inc, "06"), nou);
         FacturaScena corectie;
@@ -102,6 +102,6 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         Postari(Id(inc, "06"), nou, N.FelTranzactie.Operare, Februarie, Randuri(corectie, inc, 80));
         Postari(Id(inc, "06"), c.Id, N.FelTranzactie.Storno, Februarie, Randuri(c, inc, -100));
         Postari(Id(inc, "06"), c.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(c, inc, 100));
-        if (Privat) SoldPartida(Id(inc, "06"), Partida(nou, ContTert(inc))!.Value, Februarie, inc ? -80 : 80);
+        if (Privat) SoldPartida(Id(inc, "06"), Partida(nou, ContTert(inc), inc ? Client : Furnizor)!.Value, Februarie, inc ? -80 : 80);
     }
 }

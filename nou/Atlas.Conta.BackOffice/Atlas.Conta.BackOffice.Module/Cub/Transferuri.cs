@@ -49,10 +49,24 @@ public static class Transferuri {
         if (cerere.OperareStins.Count == 0)
             return Sare("documentul stins n-are tranzacție `Operare` în cub");
         // Profil fără conturi cu rol de terț (bugetar): nu există partidă de mutat.
-        if (Cea(cerere.OperareStingator) is not { } referinta)
+        var tertStins = Cea(cerere.OperareStins)?.Partener;
+        var peTert = cerere.OperareStingator
+            .Where(p => tertStins == null || p.Coordonate.Partener == tertStins).ToList();
+        if (Cea(peTert) is not { } referinta)
             return Sare("documentul care stinge n-are nicio postare pe un cont cu rol de terț");
         if ((Cea(cerere.OperareStins)?.Partener ?? referinta.Partener) is not Guid tert)
             return Sare("nicio partidă a celor două documente nu poartă partener");
+
+        var proprie = IdentitatiPartide.Gaseste(
+            cerere.OperareStingator.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>(),
+            cerere.StingatorId, referinta.Cont, tert);
+        if (proprie is null)
+            return Sare("documentul care stinge n-are partidă proprie pe contul și partenerul cerut");
+        var stinsa = IdentitatiPartide.Gaseste(
+            cerere.OperareStins.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>(),
+            cerere.StinsId, referinta.Cont, tert);
+        if (stinsa is null)
+            return Sare("documentul stins n-are partidă proprie pe contul și partenerul cerut");
 
         // Împerecherea e pe DOCUMENT, partida e pe CONT: se mută cel mult RESTUL
         // partidei stinsului pe contul de referință — operarea (cu conexul absorbit)
@@ -62,19 +76,17 @@ public static class Transferuri {
         var invers = cerere.Suma < 0m;
         var plafon = invers
             ? Math.Abs(Net(
-                cerere.TransferuriStins.Where(p => p.Cauza.Document == cerere.StingatorId),
+                cerere.TransferuriStins.Where(p => p.Cauza.Document == cerere.StingatorId
+                    && p.Coordonate.Unitate?.Id == stinsa.Id),
                 referinta.Cont))
-            : Math.Abs(Net(cerere.OperareStins.Concat(cerere.TransferuriStins), referinta.Cont));
+            : Math.Abs(Net(cerere.OperareStins.Concat(cerere.TransferuriStins)
+                .Where(p => p.Coordonate.Unitate?.Id == stinsa.Id), referinta.Cont));
         var mutata = Math.Min(Math.Abs(cerere.Suma), plafon);
         if (mutata <= 0m)
             return Sare(invers
                 ? $"partida stinsului n-a primit nimic de la acest stingător pe contul {referinta.Cont}"
                 : $"documentul stins n-are rest pe contul de referință {referinta.Cont}");
 
-        var proprie = N.Unitate.DeschidePartida(
-            referinta.Cont, tert, cerere.StingatorId, cerere.DataStingator);
-        var stinsa = N.Unitate.DeschidePartida(
-            referinta.Cont, tert, cerere.StinsId, cerere.DataStins);
         if (!invers) {
             var disponibil = PePartida(
                 cerere.OperareStingator.Concat(cerere.TransferuriStingator), proprie.Id, referinta.Latura);
@@ -111,7 +123,10 @@ public static class Transferuri {
             if (cea is not null && absolut <= maxim)
                 continue;
             cea = new Referinta(
-                postare.Coordonate.Cont, postare.Coordonate.Latura, postare.Coordonate.Partener);
+                postare.Coordonate.Cont,
+                postare.Valoare >= 0m ? postare.Coordonate.Latura
+                    : postare.Coordonate.Latura == N.Latura.Debit ? N.Latura.Credit : N.Latura.Debit,
+                postare.Coordonate.Partener);
             maxim = absolut;
         }
         return cea;

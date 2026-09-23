@@ -115,8 +115,9 @@ zero pachete, teste de proprietate). Declarația fluxului stă în
 persistat în `Module/Cub/` (`Tranzactie` / `Postare`, POCO, tabelă
 partiționată pe `Spatiu`, migrații scrise în SQL) și se scrie în aceeași
 tranzacție de comandă cu registrele pentru tipurile cu `PosteazaInCub` (regim
-dual, dată de profil). Pe cub azi: BCS, FCT, PLT, INC, BTR, FCL, DSC (privat);
-rămân NTC, ITV, RDC, RLF, DVI, ASM, LDI, NIR (felia 32, pașii 3–5), apoi
+dual, dată de profil). Pe cub azi: BCS, FCT, PLT, INC, BTR, FCL, NTC,
+DSC și ITV (ultimele două numai privat); rămân RDC, RLF, DVI, ASM, LDI,
+NIR (felia 32, pașii 4–5), apoi
 `Deschidere` generic. Citirile rămân pe registre până la TR-D8; registrele se
 taie la TR-D9.
 
@@ -132,13 +133,13 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: fișierele
-catalogului pentru tipurile deja pe cub (rulate pe tip cu
-`ModelCheck --scenarii <TIP>[,…] [privat]`, 091-r1) (probele `STR-*` / `NUC-*` mapate pe
-ciclu, rândurile lipsă scrise și probate), apoi pasul 3 al feliei 32 (NTC +
-ITV) pe scenarii, cu recensământul pe clonă (091-r2) înaintea lui. Contractul
-feliei: `docs/nucleu/tr-d7b-tipuri-ramase-contract.md`, amendamentul 091 sub
-„Pașii".
+**Următorul pas**: pasul 4 al feliei 32, RDC + RLF + DVI, începând cu
+recensământul și cataloagele. Identitatea partidei include partenerul (092);
+probele și limitele pasului 3 sunt în `docs/nucleu/scenarii/NTC.md` și `ITV.md`.
+Primele loturi
+independente pentru tipurile deja pe cub sunt verificate; ciclurile complete
+rămân deschise conform fișierelor tipurilor. Contractul feliei:
+`docs/nucleu/tr-d7b-tipuri-ramase-contract.md`, amendamentul 091 sub „Pașii”.
 
 **Capcane de probare**: o cifră de perf se compară DOAR cu ea însăși pe
 ACEEAȘI bază (A/B prin schimbarea stării, nu între baze — altfel diferența de

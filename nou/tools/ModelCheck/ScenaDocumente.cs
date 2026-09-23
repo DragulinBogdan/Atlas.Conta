@@ -17,6 +17,7 @@ record LinieFctScena(decimal Cantitate, decimal Pret, string Tva = null, bool St
     decimal TaxaCuleasa = 0, string Tip = null);
 record LinieScena(Guid Id, Guid? Lot, Guid? Produs);
 record FacturaScena(Guid Id, LinieScena[] Linii);
+record LinieNtcScena(string Debit, string Credit, decimal Valoare, Guid? RepartitorDebit = null, Guid? RepartitorCredit = null);
 
 abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> check,
     bool privat, Action<IObjectSpace, int, int> inchide, string cod, int an) {
@@ -46,6 +47,22 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     }
 
     protected abstract void Executa();
+
+    protected FacturaScena Nota(DateOnly data, params LinieNtcScena[] linii) {
+        using var os = Deschide();
+        var doc = os.CreateObject<NotaContabila>();
+        doc.Data = data; doc.PredatorId = Loc; doc.PrimitorId = Loc;
+        var rezultat = new List<LinieScena>();
+        foreach (var spec in linii) {
+            var d = os.CreateObject<NotaContabilaDetaliu>(); d.Document = doc;
+            d.Pozitie = rezultat.Count + 1; d.TipMaterialId = Tip(os, "TRZ");
+            d.ContDebitId = Cont(spec.Debit); d.ContCreditId = Cont(spec.Credit);
+            d.Valoare = spec.Valoare; d.CodEconomicId = Economic;
+            d.RepartitorDebitId = spec.RepartitorDebit; d.RepartitorCreditId = spec.RepartitorCredit;
+            rezultat.Add(new(d.ID, null, null));
+        }
+        os.CommitChanges(); return new(doc.ID, rezultat.ToArray());
+    }
     protected IObjectSpace Deschide() => deschide();
     protected T CuSpatiu<T>(Func<IObjectSpace, T> actiune) { using var os = Deschide(); return actiune(os); }
     protected void Comanda(Action<IObjectSpace> actiune) { using var os = Deschide(); actiune(os); }
@@ -54,8 +71,8 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected Guid Cont(string simbol) => conturi[simbol];
     protected Guid Tip(IObjectSpace os, string codTip) => os.GetObjectsQuery<TipMaterial>().Single(t => t.Cod == codTip).ID;
     protected Guid Tva(string codTva) => CuSpatiu(os => os.GetObjectsQuery<TipTva>().Single(t => t.Cod == codTva).ID);
-    protected Guid? Partida(Guid doc, string simbol) => Privat
-        ? N.Unitate.DeschidePartida(Cont(simbol), Furnizor, doc, Ianuarie).Id : null;
+    protected Guid? Partida(Guid doc, string simbol, Guid? partener = null) => Privat
+        ? N.Unitate.DeschidePartida(Cont(simbol), partener ?? Furnizor, doc, Ianuarie).Id : null;
     protected OperareRezultat Opereaza(Guid doc) => CuSpatiu(os => OperareApi.Opereaza(os, doc));
     protected void Storneaza(Guid doc, DateOnly data) {
         var inainte = Amprenta(doc);
@@ -190,8 +207,8 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             return;
         }
         Postari(id, stingator, N.FelTranzactie.Transfer, data,
-            new(Cont(cont), latura, -suma, Unitate: Partida(stingator, cont), Partener: partener),
-            new(Cont(cont), latura, suma, Unitate: Partida(stins, cont), Partener: partener));
+            new(Cont(cont), latura, -suma, Unitate: Partida(stingator, cont, partener), Partener: partener),
+            new(Cont(cont), latura, suma, Unitate: Partida(stins, cont, partener), Partener: partener));
     }
 
     protected void Postari(string id, Guid doc, N.FelTranzactie fel, DateOnly data, params RandScena[] asteptate) {

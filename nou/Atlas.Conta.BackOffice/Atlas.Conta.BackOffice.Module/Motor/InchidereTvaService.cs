@@ -31,6 +31,9 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 //   * `Genereaza` rămâne exact ce era — apelanții vechi (Import1C, probele de
 //     motor) nu se ating.
 public static class InchidereTvaService {
+    public static DateOnly DataSoldurilor(DateOnly data, DateOnly dataInregistrare, Guid? corecteazaId) =>
+        corecteazaId is null ? data : dataInregistrare;
+
 
     // Cele trei linii ale închiderii, ca VALORI: transferul deductibilei în
     // colectată (pe minimul soldurilor) plus excedentul, care cade într-un

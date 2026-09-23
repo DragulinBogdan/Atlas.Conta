@@ -684,7 +684,9 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   document, scutită de Σ). (N-D3, N-D4)
 - **Unitatea** (lot = partidă = fișă): raportul = cost / curs / valoare
   rămasă ca citire; partida deschisă de un document are id determinist din
-  (document, cont). **FIFO**: unitatea numită pe linie se consumă întâi,
+  (document, cont, partener), conform 092; identitățile istorice sunt păstrate
+  la citire și stingere, fără rescrierea postărilor. **FIFO**: unitatea numită
+  pe linie se consumă întâi,
   fără cădere pe FIFO, apoi (data deschiderii, id), tolerant cu rest
   întors. **Evaluarea ieșirii** pe raportul CURENT al unității, ultima
   ieșire ia restul ⇒ cantitate zero ⇒ valoare zero; față de motorul de azi
@@ -784,6 +786,25 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   două cifre consemnate (N-r3, N-r4) și refuzul de toleranță.
 
 ## Cubul persistat și regimul dual (TR-D7a, felia 31)
+
+NTC și ITV folosesc același `DeclarantNotaContabila` (T-D3, pasul 3).
+Nota păstrează conturile explicite și valoarea semnată; cantitatea este 0.
+Pe un cont cu `RolTert`, partenerul explicit al liniei nominalizează FIFO
+partidele aceluiași cont și partener, în sensul stingerii și până la rest;
+excedentul deschide partida proprie. Soldurile pentru această nominalizare
+se citesc din cub la data înregistrării, ca fapte în operand. Fără partener,
+nu se inventează partidă; pe 3xx fără lot postarea rămâne doar contabilă.
+Împerecherea ulterioară fără partidă proprie nu mai transferă încă o dată
+valoarea deja nominalizată. Sursele cu nominalizări active sunt protejate
+la anulare/storno, inclusiv în intervalul dintre nominalizare și inversarea
+ei ulterioară: un dependent stornat pe 20 nu permite stornarea sursei pe 10.
+Registrele și cititorii lor rămân în regimul dual.
+
+ITV postează explicit liniile generate din `SolduriService`, fără fapte
+fiscale noi. Corecția legată verifică soldurile la `DataInregistrare`, unde
+stornoul a redeschis sumele; închiderea obișnuită folosește `Data`.
+Validarea și citirea `Stale` folosesc aceeași regulă. Cataloagele și
+validarea independentă: `docs/nucleu/scenarii/NTC.md`, `ITV.md`.
 
 Motorul scrie `Tranzactie`/`Postare` în ACEEAȘI tranzacție de comandă în care
 scrie registrele, pentru tipurile marcate cu `PosteazaInCub`. Citirile rămân

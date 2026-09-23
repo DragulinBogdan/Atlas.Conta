@@ -321,9 +321,8 @@ public static class ContaSeeder {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
-                // T-D4: DSC postează în cub doar unde are politici; la bugetar e tip inert.
-                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR" or "FCL"
-                    || (t.Cod == "DSC" && profil == ProfilContabil.Privat);
+                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR" or "FCL" or "NTC"
+                    || (t.Cod is "DSC" or "ITV" && profil == ProfilContabil.Privat);
                 tip.LaturaContPropriu = t.ContPropriu;
             });
     }

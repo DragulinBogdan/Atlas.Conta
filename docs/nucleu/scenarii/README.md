@@ -92,8 +92,8 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | BTR | notă de transfer | pas 1 | [BTR.md](BTR.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
 | FCL | factură ieșire | pas 2 | [FCL.md](FCL.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
 | DSC | descărcare de gestiune | pas 2 (privat) | [DSC.md](DSC.md) | primul lot independent verificat pe privat; neaplicabil bugetar; ciclul complet încă deschis |
-| NTC | notă contabilă | pas 3 | `NTC.md` | se scrie cu pasul |
-| ITV | închidere TVA | pas 3 | `ITV.md` | se scrie cu pasul |
+| NTC | notă contabilă | pas 3 | [NTC.md](NTC.md) | declarant explicit, FIFO și identitate cu partener (092); cititorii comuni rămân TR-D8 |
+| ITV | închidere TVA | pas 3 (privat) | [ITV.md](ITV.md) | declarant comun NTC, corecție peste perioadă; profil inert bugetar; cititorii comuni rămân TR-D8 |
 | RDC | retur de la client | pas 4 | `RDC.md` | se scrie cu pasul |
 | RLF | retur la furnizor | pas 4 | `RLF.md` | se scrie cu pasul |
 | DVI | declarație vamală | pas 4 | `DVI.md` | se scrie cu pasul |
@@ -150,3 +150,19 @@ probele sale separate nu au fost rerulate în acest lot.
 
 Controlul read-only după gate: zero repartitori/produse `E2E-SC-*`, zero
 documente și perioade în anii fixture2001–2005, pe ambele baze `.CodexBCS`.
+
+## Pasul 3 — NTC și ITV (2026-09-23)
+
+Decizia 092 extinde identitatea partidei cu partenerul, păstrând ID-urile
+istorice la citire și transfer. Scenariile noi verifică postarea explicită,
+FIFO, partenerii multipli, dependențele în timp, regularizarea avansului,
+storno/anulare/corecție și închiderea TVA. Lotul NTC/ITV: 41 verificări
+bugetar / 215 privat; nucleu 165/165 teste. Cititorii comuni, fișa/balanța
+și `Sold` reconstruibil rămân TR-D8.
+
+Gate integral final, 2026-09-23: `verifica.ps1 -Suita Integral -Profil
+Ambele -Sufix .CodexBCS`, **1.740 OK bugetar / 2.305 OK privat, 0 FAIL**,
+exit 0; build cu 0 avertismente. Manifest:
+`run-verificari/20260923-115007-397/rezultat.json`. Curățenie verificată
+read-only: zero repartitori ai scenelor NTC/ITV/API-NTC, zero postări și
+perioade din 2006–2007 pe ambele baze de test.

@@ -43,6 +43,7 @@ public static class Materializare {
         ArgumentNullException.ThrowIfNull(doc);
         if (!MotorOperare.GasesteTipDocument(os, doc).PosteazaInCub)
             return;
+        VerificaPartideFaraDependenti(os, doc, dataStorno);
         // T-D2: transferul de stoc e al documentului; cel pe partidă e al împerecherii (S-D13).
         var aleDocumentului = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == doc.ID
@@ -125,6 +126,7 @@ public static class Materializare {
         ArgumentNullException.ThrowIfNull(doc);
         if (!MotorOperare.GasesteTipDocument(os, doc).PosteazaInCub)
             return;
+        VerificaPartideFaraDependenti(os, doc, doc.DataInregistrare);
         // T-D2: sub `VerificaFaraImperecheri`, orice `Transfer` al documentului e al lui.
         var tranzactii = os.GetObjectsQuery<Tranzactie>()
             .Where(t => t.DocumentId == doc.ID
@@ -135,6 +137,35 @@ public static class Materializare {
         var ids = tranzactii.Select(t => t.ID).ToList();
         os.Delete(os.GetObjectsQuery<Postare>().Where(p => ids.Contains(p.TranzactieId)).ToList());
         os.Delete(tranzactii);
+    }
+
+    static void VerificaPartideFaraDependenti(IObjectSpace os, Document doc, DateOnly deLa) {
+        var unitati = os.GetObjectsQuery<Postare>()
+            .Where(p => p.DocumentId == doc.ID && p.Tranzactie.Fel == N.FelTranzactie.Operare
+                && p.Spatiu == N.Spatiu.Contabil && p.Unitate != null && p.Partener != null)
+            .ToList().Select(p => Randuri.Citeste(p).Coordonate.Unitate)
+            .Where(u => IdentitatiPartide.EsteProprie(u, doc.ID)).Select(u => u.Id).Distinct().ToList();
+        if (unitati.Count == 0) return;
+        var dependenti = os.GetObjectsQuery<Postare>()
+            .Where(p => p.DocumentId != doc.ID && p.Unitate != null && unitati.Contains(p.Unitate.Value)
+                && p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil && p.LinieId != null)
+            .GroupBy(p => new { p.DocumentId, p.Unitate, p.Data })
+            .Select(g => new { g.Key.DocumentId, g.Key.Unitate, g.Key.Data,
+                Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+            .Where(p => p.Net != 0m).ToList();
+        // Inversarea ulterioară a dependentului nu eliberează retroactiv sursa.
+        // Verificăm soldul la data cerută și fiecare schimbare deja înregistrată
+        // după ea; mișcările din aceeași zi se compensează împreună.
+        var activ = dependenti.GroupBy(p => new { p.DocumentId, p.Unitate }).Any(g => {
+            decimal sold = 0;
+            foreach (var zi in g.GroupBy(p => p.Data < deLa ? deLa : p.Data).OrderBy(p => p.Key)) {
+                sold += zi.Sum(p => p.Net);
+                if (sold != 0m) return true;
+            }
+            return false;
+        });
+        if (activ)
+            throw new OperareException($"{CoduriRefuz.PartidaCuDependenti}: Partida documentului este nominalizată de alte documente active.");
     }
 
     static N.Contract Contracteaza(IObjectSpace os, Document doc, TipDocument tip) =>

@@ -172,6 +172,15 @@ loturi independente verificate (2026-09-23), cu fixture prin documentele
 reale și comenzile `OperareApi`; probele `NUC-*` rămân regresie. Sumele directe ale scenariului
 peste cub nu înlocuiesc verificarea cititorilor comuni și a `Sold` la TR-D8.
 
+Cataloagele [NTC](../nucleu/scenarii/NTC.md) și [ITV](../nucleu/scenarii/ITV.md)
+au probe independente în `ScenariiNtc` și `ScenariiItv`, cu recensământ
+reproductibil în `recensamant-ntc-itv.sql`. NTC este activat pe ambele
+profiluri, ITV numai privat; bugetarul probează `ProfilInert`. Decizia 092
+extinde cheia partidei la document × cont × partener; SC-NTC-13 verifică
+separarea, SC-NTC-20 compatibilitatea cu identitatea istorică. SC-NTC-22
+verifică dependența FIFO între data nominalizării și data inversării ei.
+Rezultatele rulărilor sunt consemnate în fișierele tipurilor.
+
 Verificarea de drift regenerează contractele și refuză diferențele față de
 fișierele versionate. O schimbare intenționată de contract se regenerează și
 se examinează înainte de includerea artefactelor în modificare. (43d, 56)

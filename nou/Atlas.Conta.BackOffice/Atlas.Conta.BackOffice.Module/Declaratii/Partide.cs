@@ -33,7 +33,8 @@ static class Partide {
             if (alContului == cont)
                 net = sold;
         return new PartidaSursa(
-            N.Unitate.DeschidePartida(cont, partener, sursaId,
+            Cub.IdentitatiPartide.Gaseste(operand.UnitatiSursa, sursaId, cont, partener)
+            ?? N.Unitate.DeschidePartida(cont, partener, sursaId,
                 operand.DataInregistrareSursa ?? operand.Document.DataInregistrare),
             net >= 0m ? new N.Sold(net, 0m, 0m, 0m) : new N.Sold(0m, -net, 0m, 0m));
     }

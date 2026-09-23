@@ -22,6 +22,8 @@ public sealed record RepartitorFapt(Guid Id, FelRepartitor? Fel, Guid? ContImpli
 
 public sealed record ContFapt(Guid Id, string? Simbol, RolTertCont RolTert);
 
+public sealed record SoldPartidaFapt(N.Unitate Unitate, N.Sold Sold);
+
 public sealed record LotFapt(
     Guid Id,
     Guid ProdusId,
@@ -97,6 +99,10 @@ public sealed record Operand(
     decimal? TolerantaTaxa,
     N.PerioadaDeschisa PerioadaDeschisa,
     N.VersiunePolitica VersiunePolitica) {
+
+    public IReadOnlyDictionary<Guid, RepartitorFapt> Repartitori { get; init; } = new Dictionary<Guid, RepartitorFapt>();
+    public IReadOnlyList<SoldPartidaFapt> PartideDisponibile { get; init; } = [];
+    public IReadOnlyList<N.Unitate> UnitatiSursa { get; init; } = [];
 
     /// <summary>Forma pe care o consumă `Potrivire.Cont`.</summary>
     public LaturiFapt Laturi => new(Document.Predator.ContImplicitId, Document.Primitor.ContImplicitId);

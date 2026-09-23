@@ -106,7 +106,9 @@ internal static class Fapte {
         var politicaTva = Tva(politicaTvaEntitate);
         var tipuriTva = TipuriTva(os,
             linii.Where(d => d.TipTvaId != null).Select(d => d.TipTvaId.Value).Distinct().ToList());
-        var repartitori = Repartitori(os, [doc.PredatorId, doc.PrimitorId]);
+        var explicite = linii.OfType<ILinieCuPostareExplicita>().ToList();
+        var repartitori = Repartitori(os, [doc.PredatorId, doc.PrimitorId,
+            .. explicite.SelectMany(l => new[] { l.RepartitorDebitId, l.RepartitorCreditId }).OfType<Guid>()]);
         var sursa = Sursa(os, doc);
         var conturi = Conturi(os,
             ConturiAtinse(linii, claseTip, repartitori, reguliContare, politicaTva, tipuriTva, sursa.Partide));
@@ -143,7 +145,49 @@ internal static class Fapte {
             perioadaDeclarare,
             politicaTvaEntitate?.TolerantaTaxa,
             new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month),
-            new N.VersiunePolitica("seed", doc.DataInregistrare));
+            new N.VersiunePolitica("seed", doc.DataInregistrare)) {
+                Repartitori = repartitori,
+                PartideDisponibile = PartideDisponibile(os, doc, explicite, conturi, repartitori),
+                UnitatiSursa = UnitatiSursa(os, doc),
+            };
+    }
+
+    static IReadOnlyList<N.Unitate> UnitatiSursa(IObjectSpace os, Document doc) =>
+        !doc.Autogenerat || doc.DocumentSursaId is not Guid sursa ? [] :
+        os.GetObjectsQuery<Cub.Postare>()
+            .Where(p => p.DocumentId == sursa && p.Spatiu == N.Spatiu.Contabil
+                && p.Unitate != null && p.Partener != null && p.UnitateDeschisa != null)
+            .Select(p => new { p.Unitate, p.Cont, p.Partener, p.UnitateDeschisa }).Distinct().ToList()
+            .Select(p => new N.Unitate(p.Unitate.Value, N.FelUnitate.Partida, p.Cont,
+                p.Partener, null, p.UnitateDeschisa.Value)).ToList();
+
+    static IReadOnlyList<Declaratii.SoldPartidaFapt> PartideDisponibile(IObjectSpace os, Document doc,
+            IReadOnlyList<ILinieCuPostareExplicita> linii,
+            IReadOnlyDictionary<Guid, Declaratii.ContFapt> conturi,
+            IReadOnlyDictionary<Guid, Declaratii.RepartitorFapt> repartitori) {
+        var perechi = linii.SelectMany(l => new[] {
+            (Cont: l.ContDebitId, Repartitor: l.RepartitorDebitId),
+            (Cont: l.ContCreditId, Repartitor: l.RepartitorCreditId) })
+            .Where(p => p.Cont is Guid c && p.Repartitor is Guid r
+                && conturi.GetValueOrDefault(c)?.RolTert is not (null or RolTertCont.Niciunul)
+                && repartitori.GetValueOrDefault(r)?.Parte == Declaratii.Parte.Extern).ToList();
+        if (perechi.Count == 0) return [];
+        var idsCont = perechi.Select(p => p.Cont.Value).Distinct().ToList();
+        var idsTert = perechi.Select(p => p.Repartitor.Value).Distinct().ToList();
+        return os.GetObjectsQuery<Cub.Postare>()
+            .Where(p => p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil
+                && p.Unitate != null && p.Partener != null && p.UnitateDeschisa != null
+                && idsCont.Contains(p.Cont) && idsTert.Contains(p.Partener.Value)
+                && p.Data <= doc.DataInregistrare && p.DocumentId != doc.ID)
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, p.UnitateDeschisa })
+            .Select(g => new { g.Key,
+                Debit = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : 0m),
+                Credit = g.Sum(p => p.Latura == N.Latura.Credit ? p.Valoare : 0m) })
+            .ToList().Select(p => new Declaratii.SoldPartidaFapt(
+                new N.Unitate(p.Key.Unitate.Value, N.FelUnitate.Partida, p.Key.Cont,
+                    p.Key.Partener, null, p.Key.UnitateDeschisa.Value),
+                new N.Sold(p.Debit, p.Credit, 0m, 0m)))
+            .OrderBy(p => p.Unitate.Deschisa).ThenBy(p => p.Unitate.Id).ToList();
     }
 
     // Restul documentului-sursă FĂRĂ stingerile documentului curent: ca soldurile de

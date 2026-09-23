@@ -161,6 +161,28 @@ refuz `ASAMBLARE_NEBALANSATA`.
 
 ### T-D3 — NTC: postare explicită CA ATARE; partenerul vine pe linie din sursă, partida se nominalizează FIFO; fără partener, postarea e DECLARATĂ, nu refuzată (owner, 2026-09-21: varianta B cu A ca fallback)
 
+> Amendament 2026-09-23, decizia [092](../decizii/092-identitatea-partidei-include-partenerul.md):
+> partida proprie a notei se identifică prin document × cont × partener.
+> Parteneri diferiți pe același cont nu se confundă; identitățile deja
+> persistate se păstrează. Conectorul și gate-ul de import din textul
+> istoric de mai jos rămân în afara pasului, conform 091.
+>
+> Implementare pas 3: `DeclarantNotaContabila`, moștenit de ITV; citire pe
+> seturi a partidelor din cub și nominalizare FIFO, cu rest propriu.
+> `PARTIDA_CU_DEPENDENTI` protejează sursa la anulare/storno pe intervalul
+> în care nominalizarea altui document este activă (090e, SC-NTC-16/22).
+> Proba API NTC desface acum notele dependente înainte să anuleze sursa;
+> totalul zero al unei note nu înseamnă zero pe fiecare partidă.
+> `Conservare` nu cere relaxare: NTC declară cantitate zero, inclusiv pe 3xx.
+> ITV legat prin corecție verifică soldurile la data înregistrării, aceeași
+> regulă pentru validare și indicatorul `Stale` (SC-ITV-07).
+> Cataloagele [NTC](scenarii/NTC.md) și [ITV](scenarii/ITV.md) consemnează
+> cifrele, probele și limitele. Cititorii comuni și `Sold` rămân TR-D8.
+> Verificat 2026-09-23: ModelCheck integral 1.740 bugetar / 2.305 privat,
+> zero eșecuri; nucleu 165/165. Manifest final:
+> `run-verificari/20260923-115007-397/rezultat.json`. Felia 32 rămâne deschisă
+> pentru pașii următori; acest pas nu certifică încă „rotund” din 091(g).
+
 Nota contabilă postează exact perechea de conturi a liniei, cu valoarea ca
 atare (negativă inclusiv, S-D14), fără normalizare de semn, cu dimensiunile
 liniei; linia cu `ContDebit = ContCredit` (compensările 1C prin 891,

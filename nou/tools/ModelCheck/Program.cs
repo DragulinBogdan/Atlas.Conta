@@ -348,11 +348,10 @@ void SeteazaSeveritateItvLipsa(SeveritateConstatare severitate) {
     os.CommitChanges();
 }
 
-// Seed-ul profilului privat: exact calea updater-ului (ContaSeeder), pe
-// ObjectSpace standalone; idempotent la rulări repetate.
-if (profil == ProfilContabil.Privat) {
+// 091: scenele folosesc politicile curente ale profilului pe ambele baze.
+{
     using var osSeed = provider.CreateObjectSpace();
-    ContaSeeder.Seed(osSeed, ProfilContabil.Privat);
+    ContaSeeder.Seed(osSeed, profil);
 }
 
 // Convenția de rotunjire a banilor = dată a bazei (decizia 51c): pe calea privată
@@ -18772,6 +18771,19 @@ void VerificaApiNtc(bool privat) {
             os.GetObjectByKey<Document>(pltY.ID), 5m));
 
     // --- Anulare, re-operare, storno ---
+    // FIFO-ul pe cub leagă notele ulterioare de partidele primei note,
+    // inclusiv nota cu total zero, ale cărei linii ating partide diferite.
+    if (privat) {
+        using var osRefuz = provider.CreateObjectSpace();
+        var refuzDependenti = false;
+        try { OperareApi.AnuleazaOperarea(osRefuz, idNtc); }
+        catch (OperareException e) { refuzDependenti = e.Message.Contains("PARTIDA_CU_DEPENDENTI"); }
+        Check("Api NTC: anularea sursei refuzată cât timp notele FIFO depind de ea", refuzDependenti);
+    }
+    foreach (var dependent in new[] { idNtcNetNegativ, idNtcNetZero }) {
+        using var osDependent = provider.CreateObjectSpace();
+        OperareApi.AnuleazaOperarea(osDependent, dependent);
+    }
     var numarNtc = cit.Numar;
     Check("Api NTC: anulare prin API → Draft + notele șterse",
         OperareApi.AnuleazaOperarea(os, idNtc).StareNoua == StareDocument.Draft
@@ -31667,6 +31679,12 @@ void VerificaF28(bool privat) {
 // bugetar, scena FCL ∪ DSC îl sare acolo.
 List<Scena> ScenelePeTip(bool privat) {
     var scene = new List<Scena> {
+        new(nameof(ScenariiNtc), ["NTC"], () => new ScenariiNtc(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiItv), ["ITV"], () => new ScenariiItv(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiFct), ["FCT"], () => new ScenariiFct(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),

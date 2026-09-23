@@ -116,7 +116,8 @@ static class ReconciliereCub {
 
     // (f) S-D13 — per PARTIDĂ, la ultima perioadă închisă: Σ cub (`Operare` ⊕ `Transfer`,
     // `Data` ≤ sfârșitul perioadei) pe unitate = `PartideDeschise.Rest` al documentului
-    // care a deschis-o, iar id-ul unității e hash-ul (document, cont) recalculat în C#.
+    // care a deschis-o. Adaptorul recunoaște identitatea 092 și cheia istorică;
+    // nominalizarea FIFO nu face din documentul consumator un nou deschizător.
     // Se măsoară DOAR pe conturile ale căror documente sunt toate de tipuri migrate.
     static List<Rand> Partide(DbContext ctx, Guid[]? set, ICollection<string>? note) {
         var perioade = Citeste(ctx,
@@ -173,12 +174,10 @@ static class ReconciliereCub {
         foreach (var rand in deschizatori) {
             if (rand.Partener is not Guid partener)
                 continue;
-            var calculata = N.Unitate
-                .DeschidePartida(rand.Cont, partener, rand.Document, rand.Deschisa).Id;
-            if (calculata != rand.Unitate)
-                randuri.Add(new Rand("(f) partide",
-                    $"unitatea {rand.Unitate.ToString()[..8]} a documentului "
-                    + $"{rand.Document.ToString()[..8]} nu e hash-ul (document, cont)", 1m, 0m));
+            var unitate = new N.Unitate(rand.Unitate, N.FelUnitate.Partida,
+                rand.Cont, partener, null, rand.Deschisa);
+            if (!Module.Cub.IdentitatiPartide.EsteProprie(unitate, rand.Document))
+                continue;
             alUnitatii[rand.Unitate] = rand.Document;
         }
 
