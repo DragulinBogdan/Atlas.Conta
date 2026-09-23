@@ -1,0 +1,50 @@
+# FCT — factură de intrare
+
+**2026-09-23: primul lot independent verificat pe ambele profiluri.** Reguli: 025 (c,d),
+031 (e), 088 (f–j), 090 (a,c,d,h,j), 091 (a–e). Politicile de TVA sunt cele
+din `docs/privat/p1-tva-design.md`. Valorile de mai jos sunt constante ale
+scenariului; registrele și normalizările nu stabilesc așteptarea.
+
+Fixture: anul 2002 liber, MAG1, furnizor propriu scenei, produse/loturi noi.
+FCT se culege și operează prin comenzile reale. NIR-ul conex se operează
+numai când se probează fluxul fizic dual; nu se schimbă `PosteazaInCub`.
+Privat: material 302, furnizor 401, TVA deductibil 4426, servicii 628.
+Bugetar: 302.01.00, 401.01.00, 628.00.00; TVA CAP21 se capitalizează.
+Profilul bugetar nu are `PoliticaTva`: costul brut nu poartă coordonate
+fiscale; separarea bază/taxă și reperul fiscal se probează la privat.
+Aceasta corectează ipoteza inițială a catalogului conform P1 §4/§6,
+nu schimbă regula sau implementarea motorului.
+Conturile bugetare nu au `RolTert`: partida în cub se verifică la privat;
+la bugetar se verifică postările fără unitate de terț. Toate valorile sunt RON.
+
+| ID | Pași și așteptări numerice | Rezultat | Proveniență | Proba | Stare |
+|---|---|---|---|---|---|
+| SC-FCT-01 | 05.01: recepție 10 × 10 fără TVA; D stoc 100/+10 pe lot, C furnizor 100/−10 pe gestiunea virtuală Furnizor. Dry-run fără scriere; o singură partidă 401 de 100 la privat. Operarea NIR nu dublează cubul. | acceptat | 090 (h), SC-X-02 | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-FCT-02 | Două loturi: 4 × 10 și 2 × 15 → 40 și 30, datorie 70. | acceptat | recensământ: 5.652 FCT cu mai multe linii | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-FCT-03 | Storno în 20.01 al unei recepții 10/100 cu NIR încă Draft: invers −10/−100, sold lot și datorie zero; postările originale păstrate. | acceptat | 090 (i), 025 (d) | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-FCT-04 | Factură serviciu net100+TVA21 în ianuarie, ianuarie închis; storno în05.02: datoria ianuarie rămâne121, februarie−121; privat cost100/TVA21, bugetar cost121; fiscalul privat al stornoului poartă februarie. | acceptat | 088, 090 (i) | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-FCT-05 | Anulare FCT 10/100 cu NIR Draft: zero tranzacții/postări/registre FCT, sursa Draft, conexul Draft eliminat. Lotul de culegere se păstrează în implementarea duală (025c), fără sold. | acceptat; limita față de țintă explicită | 025 (c), invariant III | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-FCT-06 | Serviciu 100 cu TVA21: privat datorie121/TVA21, bugetar cost121. După închiderea lui ianuarie: corecție EroareMateriala în februarie, original inversat și draft legat; schimbă netul la80 și operează → privat cost80/TVA16,80/datorie96,80; bugetar cost96,80. Fiscalul privat al corecției rămâne în ianuarie; originalul nemodificat. | acceptat | 088 (h) | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-FCT-07 | Privat N21: 100+21 și N11: 50+5,50 → cost150, TVA26,50, datorie176,50. Bugetar CAP21/CAP11: cost121+55,50, datorie176,50, fără coordonate fiscale. | acceptat | recensământ: 42 FCT multicotă | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-FCT-08 | Privat: două linii N21 cu net0,01 fiecare → taxa documentului rotunjită0,00, datorie0,02. Separat, net100 și TVA culeasă21,01 → datorie121,01 (politica fără toleranță). | acceptat | 090 (j), S-D15 | `ScenariiFct` / ID-ul rândului | verificat privat; neaplicabil bugetar |
+| SC-FCT-09a/b/c | Număr lipsă / cantitate zero / lot lipsă: coduri NUMAR_LIPSA / CANTITATE_NEPOZITIVA / LOT_LIPSA prin declarație, refuz pe comandă și zero efecte. | refuzat | declarant și gardienii entității | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-X-01 | FCT10/100 → NIR operat → BCS4/40 → storno FCT: refuz conex operat. Storno NIR: refuz sold negativ; sold lot6/60, datorie100 și BCS40 intacte. | refuzat; gardieni ai regimului dual | 025 (d), 091; nu certifică încă gardianul exclusiv pe cub | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+
+Probele asertează rândurile individuale, inclusiv latura, data, gestiunea,
+unitatea, cauza, baza/taxa și perioada fiscală. Citirile sunt sume directe
+de test peste cub, nu cititorii de producție. Fișa/balanța/`Sold` și explicația
+persistată rămân la TR-D8; reevaluările/compensările la TR-D9; concurența,
+taxarea inversă, avansurile și valută necesită rânduri proprii înainte de
+certificarea ciclului complet. Stingerea este probată în grupul PLT/INC.
+
+Recensământ read-only la 2026-09-23, `Atlas.Conta.Import1C.Flax`, script
+`recensamant-tipuri.sql`: 19.035 documente, 36.996 linii, maxim49/document,
+5.652 documente multiline, 42 multicotă, 325 linii cu cantitate sau valoare
+negativă, zero corecții legate și zero date de înregistrare diferite.
+Liniile negative sunt o întrebare pentru catalog, nu o regulă importată;
+încadrarea lor ca reducere/retur/corecție rămâne de documentat separat.
+
+Validare finală: 51 verificări independente bugetar / 63 privat.
+Include verificările comune de nemodificare la storno/corecție.
+Gate integral pe ambele profiluri: `run-verificari/20260923-010027-252/rezultat.json`,
+1.699 / 2.089 verificări, zero eșecuri.

@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-22.** [Index](README.md)
+**Actualizat: 2026-09-23.** [Index](README.md)
 
 ## Organizarea sursei
 
@@ -123,7 +123,7 @@ dotnet run --project nou/tools/ModelCheck --no-build -- --scenarii BCS,FCT priva
 catalogului care probează tipurile cerute, pe baza profilului (migrare +
 seed pe privat, migrațiile aplicate pe bugetar), fără metadata, fără
 probele de model și fără celelalte scene: toate tipurile de pe cub în
-~15 s pe privat. Codurile sunt ale catalogului (`docs/nucleu/scenarii/`,
+rulate selectiv pe privat; durata depinde de grupul ales. Codurile sunt ale catalogului (`docs/nucleu/scenarii/`,
 inclusiv `DESCHIDERE`, `IMO`, `X`); un cod necunoscut sau un tip fără nicio
 scenă pe profilul cerut iese cu exit 2, nu verde. Scenele și tipurile lor
 stau în `ScenelePeTip` (`Program.cs`), aceeași listă pe care suita integrală
@@ -166,9 +166,10 @@ Refuzurile se probează pe două uși: codul stabil (`CoduriRefuz`, linia
 (`OperareApi.Valideaza` / `Opereaza`) validarea veche a clasei și gardienii
 registrelor refuză cu text ÎNAINTEA declarantului, deci acolo se asertează
 familia mesajului și absența efectelor, iar un refuz al registrului se
-marchează ca atare în fișierul tipului (până la TR-D8). Primul catalog e
-[BCS](../nucleu/scenarii/BCS.md), cu fixture prin FCT/NIR și comenzile
-`OperareApi`; probele `NUC-*` rămân regresie. Sumele directe ale scenariului
+marchează ca atare în fișierul tipului (până la TR-D8). Cataloagele
+[BCS, FCT, PLT/INC, BTR și FCL/DSC](../nucleu/scenarii/README.md) au primele
+loturi independente verificate (2026-09-23), cu fixture prin documentele
+reale și comenzile `OperareApi`; probele `NUC-*` rămân regresie. Sumele directe ale scenariului
 peste cub nu înlocuiesc verificarea cititorilor comuni și a `Sold` la TR-D8.
 
 Verificarea de drift regenerează contractele și refuză diferențele față de

@@ -1,6 +1,6 @@
 # Catalogul de scenarii — proba supremă a motorului (decizia 091)
 
-**Actualizat: 2026-09-22.** Regula: `docs/decizii/091-scenarii-in-loc-de-import.md`,
+**Actualizat: 2026-09-23.** Regula: `docs/decizii/091-scenarii-in-loc-de-import.md`,
 literele (a)–(e). Un fișier per tip de document (`<COD>.md`), cu rândurile
 de mai jos. Așteptarea se scrie de mână, din OMFP 1802 și din politica
 profilului, cu cifre; nu se derivă din registre, din oracol sau din Flax.
@@ -86,12 +86,12 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | Cod | Tip | Pe cub din | Fișier | Stare catalog |
 |---|---|---|---|---|
 | BCS | bon de consum | felia 31 | [BCS.md](BCS.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
-| FCT | factură intrare | felia 31 | `FCT.md` | de scris |
-| PLT | plată | felia 31 | `PLT.md` | de scris |
-| INC | încasare | felia 31 | `INC.md` | de scris |
-| BTR | notă de transfer | pas 1 | `BTR.md` | de scris |
-| FCL | factură ieșire | pas 2 | `FCL.md` | de scris |
-| DSC | descărcare de gestiune | pas 2 (privat) | `DSC.md` | de scris |
+| FCT | factură intrare | felia 31 | [FCT.md](FCT.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
+| PLT | plată | felia 31 | [PLT.md](PLT.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
+| INC | încasare | felia 31 | [INC.md](INC.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
+| BTR | notă de transfer | pas 1 | [BTR.md](BTR.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
+| FCL | factură ieșire | pas 2 | [FCL.md](FCL.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
+| DSC | descărcare de gestiune | pas 2 (privat) | [DSC.md](DSC.md) | primul lot independent verificat pe privat; neaplicabil bugetar; ciclul complet încă deschis |
 | NTC | notă contabilă | pas 3 | `NTC.md` | se scrie cu pasul |
 | ITV | închidere TVA | pas 3 | `ITV.md` | se scrie cu pasul |
 | RDC | retur de la client | pas 4 | `RDC.md` | se scrie cu pasul |
@@ -112,3 +112,41 @@ Tipurile deja pe cub primesc fișierul înaintea pasului 3: probele
 lipsă (corecția în perioadă închisă, citirile) se scriu și se probează
 atunci. Recensământul pe clonă (091-r2) se face o dată per tip, înaintea
 scenariilor lui, și își lasă cifrele în coloana „Proveniență".
+
+## Lotul independent din 2026-09-23
+
+FCT, PLT/INC, BTR și FCL/DSC au fixture-uri proprii, în anii 2002–2005,
+prin `ScenaDocumente`: documente reale, ObjectSpace nou per comandă,
+așteptări numerice explicite, curățenie după marcaj în `finally`.
+`ScenariiFct`, `ScenariiTrezorerie`, `ScenariiBtr` și `ScenariiVanzare`
+sunt înregistrate în `ScenelePeTip`, inclusiv în suita integrală.
+Verificările comune `SC-…-IMUTABIL` confirmă că storno/corecția păstrează
+identitățile, coordonatele și măsurile postărilor originale.
+
+Recensământul tipurilor este reproductibil prin `recensamant-tipuri.sql`,
+în tranzacție read-only pe Flax. Cifrele sunt în fișierele tipurilor.
+În special, liniile negative FCT/FCL rămân întrebări de domeniu de clasificat;
+nu au fost convertite în reguli după forma datelor importate.
+
+Lanțuri probate în acest lot: SC-X-01/02 (regim dual FCT/NIR/BCS),
+SC-X-04 (FCT/PLT, redeschiderea datoriei), SC-X-08 (BTR/BCS).
+SC-FCL-09 probează FCL/INC, iar SC-FCL-10 separarea venitului de cost.
+Cititorii comuni și snapshot-urile pe cub (TR-D8), reevaluarea/compensarea
+(TR-D9), concurența și cazurile fiscale/valutare declarate în fiecare fișier
+rămân deschise. Verdele acestui lot nu certifică încă „rotund” (091g).
+
+Validarea finală: `run-verificari/20260923-010027-252/rezultat.json`,
+ModelCheck integral **1.699 bugetar / 2.089 privat, zero eșecuri**.
+Lotul adaugă 177 / 254 verificări independente față de baza cu BCS;
+motorul, modelul și politicile nu au fost modificate.
+Rulările pe grupe au fost urmate fiecare de gate integral pe ambele profiluri.
+
+Comenzile au folosit `pwsh -NoProfile -File
+nou/tools/ModelCheck/scripts/verifica.ps1 -Profil Ambele -Sufix .CodexBCS`,
+cu `-Suita Scenarii -Tip FCT`, apoi `PLT,INC`, `BTR`, `FCL` (include DSC
+pe privat) și `-Suita Integral` după fiecare grup. Ultimul gate cuprinde și
+verificările comune de nemodificare. Nucleul pur nu a fost atins;
+probele sale separate nu au fost rerulate în acest lot.
+
+Controlul read-only după gate: zero repartitori/produse `E2E-SC-*`, zero
+documente și perioade în anii fixture2001–2005, pe ambele baze `.CodexBCS`.
