@@ -423,7 +423,11 @@ B-D8 pct.5 presupune un net care aici lipsește. Owner-ul a ales reprezentarea
 separată în `Carte=Fiscal`, cu echilibrare proprie și fără efect asupra
 balanței contabile sau partidelor, cerând contract concret înainte de cod.
 Forma propusă pentru review este în `tr-d7b-dvi-baza-fiscala-contract.md`
-(DVI-B1…B7), iar cele18 scenarii numerice în `scenarii/DVI.md`.
+(DVI-B1…B7), iar cele 20 de scenarii numerice în `scenarii/DVI.md`.
+Review-ul adaugă SC-X-14 (unicitatea fiscală în întregul catalog), proba
+filtrului pe Carte, normalizarea completă a bazei și justificarea citirii
+pentru împerechere. T-r11 urmărește intrarea comună a cititorilor pe cont
+la TR-D8. Aceste completări sunt specificate înainte de implementare.
 Seed-ul DVI rămâne nemigrat; pasul4 nu este închis.
 
 RDC: linia fără lot = venit `4111 = 70x` cu `−V` (`PastreazaSemn`), `4111 =

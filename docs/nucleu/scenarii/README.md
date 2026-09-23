@@ -80,6 +80,7 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | SC-X-11 | `Deschidere` (contabil bloc + stoc pe lot + terți pe partidă) → PLT pe partida de deschidere → FCL nouă | partida fără document se stinge prin aceeași cheie ca una cu document |
 | SC-X-12 | închidere de an: 121 → 1174, `Deschidere` a anului nou = `Sold` la 31.12 | F27-r4; snapshot-ul de referință egal cu suma postărilor |
 | SC-X-13 | DVI legată la FCT → ajustarea costului pe lot cu taxa vamală → BCS din lot | 86-r1: `Atribuit` pe lot, costul ieșirii după ajustare |
+| SC-X-14 | Faptele fiscale din fiecare scenă, înainte de curățenie: operare → storno/corecție | unicitate Bază/Taxă independent de Carte, absență explicită pe liniile fără TVA; FCT/FCL 100/21, RDC −100/−21, RLF −20/−4,20, DVI 100/21; matricea completă în [DVI-B7](../tr-d7b-dvi-baza-fiscala-contract.md#dvi-b7--probe-obligatorii-înainte-de-activare); specificat, înainte de implementarea DVI |
 
 ## Tipurile și starea lor
 
@@ -96,7 +97,7 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | ITV | închidere TVA | pas 3 (privat) | [ITV.md](ITV.md) | declarant comun NTC, corecție peste perioadă; profil inert bugetar; cititorii comuni rămân TR-D8 |
 | RDC | retur de la client | pas 4 (privat) | [RDC.md](RDC.md) | venit/cost, partidă proprie negativă, compensare NTC, ciclu mixt peste perioadă; inert bugetar; cititorii comuni TR-D8 |
 | RLF | retur la furnizor | pas 4 (privat) | [RLF.md](RLF.md) | valoare fiscală, reziduu pe lot gol, compensare NTC, ciclu peste perioadă; inert bugetar |
-| DVI | declarație vamală | pas 4, contract în review | [DVI.md](DVI.md) | baza distinctă în Carte=Fiscal aleasă de owner; forma concretă DVI-B1…B7 și18 scenarii pregătite înainte de implementare |
+| DVI | declarație vamală | pas 4, contract în review | [DVI.md](DVI.md) | baza distinctă în Carte=Fiscal aleasă de owner; DVI-B1…B7, 20 de scenarii și SC-X-14 specificate; completările review-ului incluse înainte de implementare |
 | ASM | asamblare | pas 5 | `ASM.md` | se scrie cu pasul |
 | LDI | listă de inventar | pas 5 | `LDI.md` | se scrie cu pasul |
 | NIR | recepție manuală | pas 5 | `NIR.md` | se scrie cu pasul |
