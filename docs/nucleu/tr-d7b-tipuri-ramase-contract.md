@@ -417,11 +417,13 @@ pentru RLF și DVI; limitele TR-D8/TR-D9 și B-r4 nu se închid aici.
 pe lot gol și reintrarea RDC urmată de descărcare la soldul cubului sunt
 probate; T-r2/T-r7 rămân declarate. SC-X-09 așteaptă ASM, pasul5.
 
-**Oprire DVI, înainte de implementare:** baza vamală100/taxa21 produce
+**DVI, completarea contractului înainte de implementare:** baza vamală100/taxa21 produce
 numai nota4426=446:21, deci nicio postare contabilă nu poate purta baza100.
-B-D8 pct.5 presupune un net care aici lipsește. Propunerea de reprezentare
-separată în `Carte=Fiscal` cere completarea contractului; nu este încă
-adoptată. Contraexemplul și catalogul preliminar: `scenarii/DVI.md`.
+B-D8 pct.5 presupune un net care aici lipsește. Owner-ul a ales reprezentarea
+separată în `Carte=Fiscal`, cu echilibrare proprie și fără efect asupra
+balanței contabile sau partidelor, cerând contract concret înainte de cod.
+Forma propusă pentru review este în `tr-d7b-dvi-baza-fiscala-contract.md`
+(DVI-B1…B7), iar cele18 scenarii numerice în `scenarii/DVI.md`.
 Seed-ul DVI rămâne nemigrat; pasul4 nu este închis.
 
 RDC: linia fără lot = venit `4111 = 70x` cu `−V` (`PastreazaSemn`), `4111 =
@@ -668,4 +670,4 @@ numărul.
 | T-r4 | `Deschidere.cs:43-50` și decizia 047 afirmă că 1C nu defalcă soldul de terț pe partener la 01.01 — FALS: defalcarea (partener × contract × document) e în `BalantaNivel3`; se corectează la pasul 6, TR-r6 (partea de deschidere) și TR-r10 se închid | deschisă |
 | T-r5 | DVI deschide partidă pe 446 prin S-D16 deși `PoateFiStins = false`; hook-ul e al registrelor până la TR-D9 | deschisă |
 | T-r6 | `Custodie` pe bugetar: cont 803x sau gestiune virtuală, după cum are planul bugetar contul — constatat la pasul 5 | deschisă |
-| T-r10 | Baza vamală DVI nu are postare de net pentru B-D8 pct.5; reprezentarea distinctă în cub cere completarea T-D8 înainte de implementare (`scenarii/DVI.md`) | deschisă, blochează DVI în pasul4 |
+| T-r10 | Baza vamală DVI fără net contabil: owner-ul a ales Carte=Fiscal; forma concretă DVI-B1…B7 este pregătită în `tr-d7b-dvi-baza-fiscala-contract.md`, înainte de implementare | deschisă, contract în review |

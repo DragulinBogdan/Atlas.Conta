@@ -393,6 +393,12 @@ sau propunere de normalizare nouă raportată main-ului (nu aplicată tăcut):
    `0,00` nu produce postare.
    Pe regimul Capitalizat postarea brută de cost (121) se sparge în oracol
    în bază (100, rol Bază) + taxă (21, rol Taxă) pe același cont (B-D6).
+   **Completare de direcție, owner 2026-09-23:** DVI nu are net contabil;
+   baza vamală se păstrează distinct în `Carte=Fiscal`, balansată în
+   propria carte, fără efect asupra balanței contabile sau partidelor.
+   Forma concretă este în review înainte de cod:
+   `tr-d7b-dvi-baza-fiscala-contract.md`, DVI-B1…B7. Taxa rămâne un singur
+   fapt în cartea contabilă; jurnalul fiscal citește faptele din ambele cărți.
 6. **N-D4** — capătul virtual `−q` pe postarea de terț cu
    `Gestiune = Furnizor` NU există în oracol: comparația pe `Cantitate` se
    face DOAR pe postările cu `Unitate.Fel == Lot` (`Spatiu == Stoc`); pe

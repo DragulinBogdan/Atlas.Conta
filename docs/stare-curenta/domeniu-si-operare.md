@@ -803,6 +803,12 @@ compensarea cu factura folosește NTC. Catalogul `scenarii/RLF.md` probează
 la soldul cubului. Eliminarea reziduului prin reevaluare rămâne T-r2/TR-D9;
 diferența de evaluare față de registre rămâne declarată prin T-r7.
 
+DVI nu este încă pe cub. Pentru baza vamală fără net contabil owner-ul
+a ales postarea distinctă în `Carte=Fiscal`, cu echilibrare proprie și
+fără efect asupra balanței contabile/partidelor. Contractul concret
+`docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md` este pregătit pentru
+review înainte de implementare; T-r10 rămâne deschisă până la probe.
+
 NTC și ITV folosesc același `DeclarantNotaContabila` (T-D3, pasul 3).
 Nota păstrează conturile explicite și valoarea semnată; cantitatea este 0.
 Pe un cont cu `RolTert`, partenerul explicit al liniei nominalizează FIFO

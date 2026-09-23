@@ -133,8 +133,9 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: tranșarea reprezentării bazei vamale DVI înainte de
-continuarea pasului 4 (`docs/nucleu/scenarii/DVI.md`). RDC și RLF au
+**Următorul pas**: review-ul contractului concret DVI înainte de implementare
+(`docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md`): owner-ul a ales baza
+distinctă în Carte=Fiscal. RDC și RLF au
 cataloage independente în `docs/nucleu/scenarii/`.
 Identitatea partidei include partenerul (092);
 probele și limitele pasului 3 sunt în `docs/nucleu/scenarii/NTC.md` și `ITV.md`.
