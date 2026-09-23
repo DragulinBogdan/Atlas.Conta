@@ -95,8 +95,8 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | NTC | notă contabilă | pas 3 | [NTC.md](NTC.md) | declarant explicit, FIFO și identitate cu partener (092); cititorii comuni rămân TR-D8 |
 | ITV | închidere TVA | pas 3 (privat) | [ITV.md](ITV.md) | declarant comun NTC, corecție peste perioadă; profil inert bugetar; cititorii comuni rămân TR-D8 |
 | RDC | retur de la client | pas 4 (privat) | [RDC.md](RDC.md) | venit/cost, partidă proprie negativă, compensare NTC, ciclu mixt peste perioadă; inert bugetar; cititorii comuni TR-D8 |
-| RLF | retur la furnizor | pas 4 | `RLF.md` | se scrie cu pasul |
-| DVI | declarație vamală | pas 4 | `DVI.md` | se scrie cu pasul |
+| RLF | retur la furnizor | pas 4 (privat) | [RLF.md](RLF.md) | valoare fiscală, reziduu pe lot gol, compensare NTC, ciclu peste perioadă; inert bugetar |
+| DVI | declarație vamală | pas 4, de tranșat | [DVI.md](DVI.md) | catalog preliminar; baza vamală nu are postare de net: reprezentarea cere completarea T-D8 înainte de implementare |
 | ASM | asamblare | pas 5 | `ASM.md` | se scrie cu pasul |
 | LDI | listă de inventar | pas 5 | `LDI.md` | se scrie cu pasul |
 | NIR | recepție manuală | pas 5 | `NIR.md` | se scrie cu pasul |

@@ -31679,6 +31679,9 @@ void VerificaF28(bool privat) {
 // bugetar, scena FCL ∪ DSC îl sare acolo.
 List<Scena> ScenelePeTip(bool privat) {
     var scene = new List<Scena> {
+        new(nameof(ScenariiRlf), ["RLF"], () => new ScenariiRlf(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiRdc), ["RDC"], () => new ScenariiRdc(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),

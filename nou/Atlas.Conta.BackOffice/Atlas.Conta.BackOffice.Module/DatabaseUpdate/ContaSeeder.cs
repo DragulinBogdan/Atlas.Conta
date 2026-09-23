@@ -322,7 +322,7 @@ public static class ContaSeeder {
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
                 tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR" or "FCL" or "NTC"
-                    || (t.Cod is "DSC" or "ITV" or "RDC" && profil == ProfilContabil.Privat);
+                    || (t.Cod is "DSC" or "ITV" or "RDC" or "RLF" && profil == ProfilContabil.Privat);
                 tip.LaturaContPropriu = t.ContPropriu;
             });
     }

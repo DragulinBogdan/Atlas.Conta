@@ -795,6 +795,14 @@ cu cea a facturii; nominalizarea directă pe factura originală rămâne TR-D9.
 Catalogul `docs/nucleu/scenarii/RDC.md` acoperă și stocul returnat deja
 consumat, anularea/reoperarea și corecția mixtă peste luna închisă.
 
+RLF folosește `DeclarantReturFurnizor`, tot numai pe privat (T-D6/T-D8).
+Pe lotul original scade cantitatea și valoarea notei fiscale, fără
+preluarea soldului valoric la golire. Partida proprie401 are rest pozitiv;
+compensarea cu factura folosește NTC. Catalogul `scenarii/RLF.md` probează
+și reziduul−0,01 pe lot gol, reintrarea prin RDC și descărcarea ulterioară
+la soldul cubului. Eliminarea reziduului prin reevaluare rămâne T-r2/TR-D9;
+diferența de evaluare față de registre rămâne declarată prin T-r7.
+
 NTC și ITV folosesc același `DeclarantNotaContabila` (T-D3, pasul 3).
 Nota păstrează conturile explicite și valoarea semnată; cantitatea este 0.
 Pe un cont cu `RolTert`, partenerul explicit al liniei nominalizează FIFO

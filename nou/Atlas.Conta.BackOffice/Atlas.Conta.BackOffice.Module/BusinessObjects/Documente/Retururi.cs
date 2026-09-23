@@ -27,6 +27,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Partener; stoc −q (regula +1 pe predator × linia negativă); contare
 // 3xx = 401 cu −V (stornarea achiziției) + 4426 = 401 cu −TVA (PoliticaTva).
 public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantReturFurnizor.Instanta;
+
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Gestiune, Declaratii.Latura.Externa);
 

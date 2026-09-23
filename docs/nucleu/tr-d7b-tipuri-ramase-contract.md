@@ -410,6 +410,20 @@ anulare/reoperare, storno și corecție peste luna închisă. Suită filtrată:
 (`run-verificari/20260923-122814-720/rezultat.json`). Pasul4 rămâne deschis
 pentru RLF și DVI; limitele TR-D8/TR-D9 și B-r4 nu se închid aici.
 
+**Continuare 2026-09-23:** RLF implementat și activat numai pe privat.
+`scenarii/RLF.md`: 13 scenarii, suită filtrată3/72 OK; gate integral
+1.746/2.455 OK bugetar/privat, zero FAIL
+(`run-verificari/20260923-124346-478/rezultat.json`). Reziduul fiscal−0,01
+pe lot gol și reintrarea RDC urmată de descărcare la soldul cubului sunt
+probate; T-r2/T-r7 rămân declarate. SC-X-09 așteaptă ASM, pasul5.
+
+**Oprire DVI, înainte de implementare:** baza vamală100/taxa21 produce
+numai nota4426=446:21, deci nicio postare contabilă nu poate purta baza100.
+B-D8 pct.5 presupune un net care aici lipsește. Propunerea de reprezentare
+separată în `Carte=Fiscal` cere completarea contractului; nu este încă
+adoptată. Contraexemplul și catalogul preliminar: `scenarii/DVI.md`.
+Seed-ul DVI rămâne nemigrat; pasul4 nu este închis.
+
 RDC: linia fără lot = venit `4111 = 70x` cu `−V` (`PastreazaSemn`), `4111 =
 4427` cu `−TVA` (direcția `Colectat`); linia cu lot = cost `6xx = 3xx` cu
 `−V` și `+q` pe lotul ORIGINAL (intrare la valoarea liniei, nu `Evaluare.
@@ -654,3 +668,4 @@ numărul.
 | T-r4 | `Deschidere.cs:43-50` și decizia 047 afirmă că 1C nu defalcă soldul de terț pe partener la 01.01 — FALS: defalcarea (partener × contract × document) e în `BalantaNivel3`; se corectează la pasul 6, TR-r6 (partea de deschidere) și TR-r10 se închid | deschisă |
 | T-r5 | DVI deschide partidă pe 446 prin S-D16 deși `PoateFiStins = false`; hook-ul e al registrelor până la TR-D9 | deschisă |
 | T-r6 | `Custodie` pe bugetar: cont 803x sau gestiune virtuală, după cum are planul bugetar contul — constatat la pasul 5 | deschisă |
+| T-r10 | Baza vamală DVI nu are postare de net pentru B-D8 pct.5; reprezentarea distinctă în cub cere completarea T-D8 înainte de implementare (`scenarii/DVI.md`) | deschisă, blochează DVI în pasul4 |
