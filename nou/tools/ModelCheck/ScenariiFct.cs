@@ -93,6 +93,16 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         SoldLot("SC-FCT-07", f.Linii[0].Lot!.Value, Magazie, Ianuarie, 10, Privat ? 100 : 121);
         SoldLot("SC-FCT-07", f.Linii[1].Lot!.Value, Magazie, Ianuarie, 5, Privat ? 50 : 55.50m);
         if (!Privat) return;
+        foreach (var cod in new[] { "NED21", "TI21" }) {
+            var special = Factura(Ianuarie, new LinieFctScena(1, 100, cod, false)); Opereaza(special.Id);
+            var r = Randuri(special, 0, 0, 100, 21, cod);
+            if (cod == "NED21") r[2] = r[2] with { Cont = Cont(Serviciu) };
+            else r[3] = r[3] with { Cont = Cont("4427"), Partener = null, Unitate = null };
+            Postari("SC-X-14", special.Id, N.FelTranzactie.Operare, Ianuarie, r);
+            Storneaza(special.Id, Ianuarie);
+            Postari("SC-X-14", special.Id, N.FelTranzactie.Storno, Ianuarie,
+                r.Select(p => p with { Valoare = -p.Valoare }).ToArray());
+        }
         SoldPartida("SC-FCT-07", Partida(f.Id, ContFurnizor)!.Value, Ianuarie, -176.50m);
         var mic = Factura(Ianuarie, new LinieFctScena(1, 0.01m, "N21", false), new LinieFctScena(1, 0.01m, "N21", false));
         Opereaza(mic.Id);

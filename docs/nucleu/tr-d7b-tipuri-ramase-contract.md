@@ -417,18 +417,20 @@ pentru RLF și DVI; limitele TR-D8/TR-D9 și B-r4 nu se închid aici.
 pe lot gol și reintrarea RDC urmată de descărcare la soldul cubului sunt
 probate; T-r2/T-r7 rămân declarate. SC-X-09 așteaptă ASM, pasul5.
 
-**DVI, completarea contractului înainte de implementare:** baza vamală100/taxa21 produce
-numai nota4426=446:21, deci nicio postare contabilă nu poate purta baza100.
-B-D8 pct.5 presupune un net care aici lipsește. Owner-ul a ales reprezentarea
-separată în `Carte=Fiscal`, cu echilibrare proprie și fără efect asupra
-balanței contabile sau partidelor, cerând contract concret înainte de cod.
-Forma propusă pentru review este în `tr-d7b-dvi-baza-fiscala-contract.md`
-(DVI-B1…B7), iar cele 20 de scenarii numerice în `scenarii/DVI.md`.
-Review-ul adaugă SC-X-14 (unicitatea fiscală în întregul catalog), proba
-filtrului pe Carte, normalizarea completă a bazei și justificarea citirii
-pentru împerechere. T-r11 urmărește intrarea comună a cititorilor pe cont
-la TR-D8. Aceste completări sunt specificate înainte de implementare.
-Seed-ul DVI rămâne nemigrat; pasul4 nu este închis.
+**DVI, implementare 2026-09-23:** `DeclarantDvi` postează taxa contabilă și
+baza distinctă în `Carte=Fiscal`, echilibrată pe același cont deductibil,
+fără unități. Forma aprobată DVI-B1…B7 este în
+`tr-d7b-dvi-baza-fiscala-contract.md`; cele 20 de scenarii numerice sunt
+în `scenarii/DVI.md`. Seed-ul activează DVI numai pe privat. SC-X-14
+probează unicitatea fiscală pe scenele catalogului, inclusiv între cărți;
+SC-DVI-16 detectează amestecul cărților în rulaje și soldul pe partener.
+Normalizarea DVI reconstruiește perechea bazei și gestiunea taxei din
+context explicit. T-r11 rămâne intrarea comună a cititorilor pe cont la
+TR-D8; limitele B-r4, 86-r2 și DVI pe loturi nu se închid aici.
+Gate final: 1.829 / 2.897 OK bugetar/privat, zero FAIL
+(`run-verificari/20260923-143104-680/rezultat.json`); nucleu 165/165
+(`run-verificari/20260923-143452-956/rezultat.json`). Pasul 4 este închis;
+urmează ASM → LDI → NIR, pasul 5.
 
 RDC: linia fără lot = venit `4111 = 70x` cu `−V` (`PastreazaSemn`), `4111 =
 4427` cu `−TVA` (direcția `Colectat`); linia cu lot = cost `6xx = 3xx` cu
@@ -442,13 +444,14 @@ doar dacă declarantul are nevoie de el (azi nu: postează per linie).
 
 RLF: T-D6.
 
-DVI: fără net (zero `RegulaContare`), postare fiscală per linie `4426 = 446`
+DVI: fără net (zero `RegulaContare`), postare contabilă de taxă per linie `4426 = 446`
 (sau `= 401` prin `SursaCont.RepartitorPredator`) cu direcția `Deductibil`,
 `4426 = 4427` pe tipurile `TaxareInversa` (B-r4 rămâne deschisă: fără fapt
 colectat); dacă 446 are `RolTert`, DVI deschide partidă (S-D16) deși
 `PoateFiStins = false` — hook-ul rămâne al registrelor până la TR-D9,
-declarat. Zero documente pe Flax ⇒ oracolul e exclusiv `DVI-V*` (14 probe) +
-`STR-DVI`. „DVI pe loturi" (reevaluarea cu `Atribuit`) NU intră (TR-D9).
+declarat. Perechea bazei este în `Carte=Fiscal` conform DVI-B2. Zero
+documente pe Flax ⇒ proba supremă este `SC-DVI-01…20`, cu așteptări
+independente; `DVI-V*` rămâne regresie pe registre. „DVI pe loturi" (reevaluarea cu `Atribuit`) NU intră (TR-D9).
 
 ### T-D9 — LDI și sink-urile bugetare (TR-r7 intră cu LDI)
 

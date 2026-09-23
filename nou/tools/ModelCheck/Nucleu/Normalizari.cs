@@ -45,6 +45,9 @@ static class Normalizari {
         IReadOnlySet<Guid> Capitalizate,
         IReadOnlyDictionary<Guid, Guid> TertPrimitor) {
 
+        public IReadOnlyDictionary<Guid, (Guid Cont, Guid Gestiune, N.Analiza Analiza)> BazeDvi { get; init; }
+            = new Dictionary<Guid, (Guid, Guid, N.Analiza)>();
+
         public static readonly Context Gol = new(
             new Dictionary<Guid, Guid>(), new Dictionary<Guid, Guid>(), new HashSet<Guid>(), new HashSet<Guid>(),
             new Dictionary<Guid, Guid>());
@@ -604,11 +607,26 @@ static class Normalizari {
             return tranzactie;
         var postari = initiale.ToList();
         var eliminata = new bool[postari.Count];
+        var bazeDvi = new List<N.Postare>();
         for (var f = 0; f < initiale.Count; f++) {
             var fiscala = initiale[f];
             if (fiscala.Coordonate.Cont != CubDinRegistre.ContFiscal)
                 continue;
             var cod = fiscala.Coordonate.CodTva!;
+            if (cod.Rol == N.RolTva.Baza && fiscala.Cauza.Linie is Guid linieDvi
+                    && context.BazeDvi.TryGetValue(linieDvi, out var bazaDvi)) {
+                var debit = fiscala with { Coordonate = fiscala.Coordonate with {
+                    Cont = bazaDvi.Cont, Carte = N.Carte.Fiscal, Gestiune = bazaDvi.Gestiune,
+                    Analiza = bazaDvi.Analiza,
+                } };
+                bazeDvi.Add(debit);
+                bazeDvi.Add(debit with { Coordonate = debit.Coordonate with {
+                    Latura = N.Latura.Credit, CodTva = null, PerioadaDeclarare = null, Partener = null,
+                } });
+                eliminata[f] = true;
+                Numara("DVI-B2: pereche de bază în cartea fiscală");
+                continue;
+            }
             if (cod.Rol == N.RolTva.Taxa && fiscala.Valoare == 0m) {
                 eliminata[f] = true;
                 continue;
@@ -633,8 +651,14 @@ static class Normalizari {
                 continue;
             }
             var indice = tinte[0];
+            var tintaFiscala = postari[indice].Coordonate;
+            if (cod.Rol == N.RolTva.Taxa && fiscala.Cauza.Linie is Guid linieTaxaDvi
+                    && context.BazeDvi.TryGetValue(linieTaxaDvi, out var contextDvi)) {
+                tintaFiscala = tintaFiscala with { Gestiune = contextDvi.Gestiune, Analiza = contextDvi.Analiza };
+                Numara("DVI-B2: gestiunea internă a taxei");
+            }
             postari[indice] = postari[indice] with {
-                Coordonate = postari[indice].Coordonate with {
+                Coordonate = tintaFiscala with {
                     CodTva = cod,
                     PerioadaDeclarare = fiscala.Coordonate.PerioadaDeclarare,
                     Partener = fiscala.Coordonate.Partener,
@@ -646,6 +670,7 @@ static class Normalizari {
         for (var i = 0; i < postari.Count; i++)
             if (!eliminata[i])
                 rezultat.Add(postari[i]);
+        rezultat.AddRange(bazeDvi);
         return tranzactie with { Postari = rezultat };
     }
 
@@ -674,7 +699,27 @@ static class Normalizari {
             conexe is null || conexe.Count == 0 ? new Dictionary<Guid, Guid>() : LiniiSursa(os, conexe),
             tipuri.Conturi,
             tipuri.Capitalizate,
-            TertPrimitor(os, ids));
+            TertPrimitor(os, ids)) { BazeDvi = BazeDvi(os, ids) };
+    }
+
+    static Dictionary<Guid, (Guid Cont, Guid Gestiune, N.Analiza Analiza)> BazeDvi(
+            IObjectSpace os, IReadOnlyList<Guid> documente) {
+        var dvi = os.GetObjectsQuery<Dvi>().Where(d => documente.Contains(d.ID))
+            .Select(d => new { d.ID, d.PrimitorId }).ToDictionary(d => d.ID, d => d.PrimitorId);
+        if (dvi.Count == 0) return [];
+        var ids = dvi.Keys.ToList();
+        var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(l => ids.Contains(l.DocumentId)).ToList();
+        var tipuri = linii.Select(l => l.TipTvaId).OfType<Guid>().Distinct().ToList();
+        var conturi = os.GetObjectsQuery<TipTva>().Where(t => tipuri.Contains(t.ID))
+            .Select(t => new { t.ID, t.ContTvaDeductibilId }).ToDictionary(t => t.ID, t => t.ContTvaDeductibilId);
+        var rezultat = new Dictionary<Guid, (Guid, Guid, N.Analiza)>();
+        foreach (var l in linii) {
+            if (l.TipTvaId is not Guid tip || conturi.GetValueOrDefault(tip) is not Guid cont) continue;
+            var a = l.DimensiuniCulese();
+            rezultat[l.ID] = (cont, dvi[l.DocumentId], new N.Analiza(a.CodFunctionalId, a.CodEconomicId,
+                a.SursaFinantareId, a.UnitateId, a.ProiectId, a.CentruCostId));
+        }
+        return rezultat;
     }
 
     // T-D13: partea primitorului prin ACEEAȘI derivare ca declarantul (`Laturi.ParteA`

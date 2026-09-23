@@ -2,8 +2,8 @@
 
 2026-09-23. **Direcție aprobată de owner:** baza distinctă în `Carte=Fiscal`,
 în același cub, cu echilibrare proprie și fără efect asupra balanței
-contabile sau partidelor. **Forma concretă de mai jos este pregătită pentru
-review, înainte de implementare.** DVI nu este încă activat pe cub.
+contabile sau partidelor. **Forma concretă a fost aprobată și implementată.**
+DVI este activat pe cub numai în profilul privat; bugetarul rămâne inert.
 
 Completează T-D8 din `tr-d7b-tipuri-ramase-contract.md` și B-D8 pct. 5 din
 `tr-d6b-declaratia-fluxului-contract.md`. Execută 090 (a/k) și amendamentul 091;
@@ -212,7 +212,7 @@ testul detectează omiterea filtrului chiar dacă soldul total pe cont
 rămâne accidental corect. Nu se schimbă codul de producție sau datele
 persistate pentru acest martor.
 
-**SC-X-14 — unicitatea fiscală pe întregul catalog, specificat.** O probă
+**SC-X-14 — unicitatea fiscală pe catalogul implementat.** O probă
 comună se aplică postărilor fiecărei scene înainte de curățenia fixture-ului,
 inclusiv la rularea filtrată pe tip. Se verifică multiplicitatea pe cheia
 din DVI-B3, independent de carte, atât pe `Operare`, cât și pe `Storno`;
@@ -254,4 +254,7 @@ declaranții deja validați pentru a muta toate bazele în cartea fiscală.
 **Punctul concret de review este DVI-B2:** contul TVA deductibil drept
 ancoră pentru debitul și creditul fiscal egale, cu rol Bază numai pe
 debit. Restul disciplinei rezultă din separarea pe cărți aleasă de owner.
-Implementarea nu a început; acest contract nu afirmă probe deja trecute.
+Implementarea este `DeclarantDvi`, cu `DeImport` citit în operandul închis.
+Cele 20 de scenarii sunt executabile în `ScenariiDvi`; verificarea fiscală
+comună este `UnicitateFiscala`, integrată în scenele catalogului. Rezultatele
+și manifestele de validare sunt în `scenarii/DVI.md`.

@@ -99,6 +99,12 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         RefuzDeclaratie("SC-FCL-08", invalid.Id, CoduriRefuz.CantitateNepozitiva);
         Refuza("SC-FCL-08", () => Opereaza(invalid.Id), "cantitate"); FaraEfecte("SC-FCL-08", invalid.Id);
         if (!Privat) return;
+        foreach (var cod in new[] { "TI21", "SDD" }) {
+            var special = Vinde(new LinieFclScena(1, 100, cod)); Opereaza(special.Id);
+            Postari("SC-X-14", special.Id, N.FelTranzactie.Operare, Ianuarie, Venituri(special, 0, 100, tva: cod));
+            Storneaza(special.Id, Ianuarie);
+            Postari("SC-X-14", special.Id, N.FelTranzactie.Storno, Ianuarie, Venituri(special, 0, -100, tva: cod));
+        }
         var fiscal = Vinde(new LinieFclScena(1, 100, "N21"), new LinieFclScena(1, 50, "N11")); Opereaza(fiscal.Id);
         Postari("SC-FCL-07", fiscal.Id, N.FelTranzactie.Operare, Ianuarie,
             [.. Venituri(fiscal, 0, 100, 21, "N21"), .. Venituri(fiscal, 1, 50, 5.50m, "N11")]);

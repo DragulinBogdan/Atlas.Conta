@@ -48,3 +48,8 @@ Validare finală: 51 verificări independente bugetar / 63 privat.
 Include verificările comune de nemodificare la storno/corecție.
 Gate integral pe ambele profiluri: `run-verificari/20260923-010027-252/rezultat.json`,
 1.699 / 2.089 verificări, zero eșecuri.
+
+Extensie SC-X-14 (2026-09-23): FCT NED21: bază 100 și taxă 21 pe cost (brut 121); TI21: bază 100 și taxă deductibilă 21, fără fapt colectat (B-r4).
+Sunt probate operarea și stornoul în aceeași lună, cu măsuri inverse, prin
+matrice independente și martori de duplicare/lipsă. Aceasta nu certifică
+ciclul complet al regimurilor speciale peste perioadă.

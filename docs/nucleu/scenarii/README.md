@@ -80,7 +80,7 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | SC-X-11 | `Deschidere` (contabil bloc + stoc pe lot + terți pe partidă) → PLT pe partida de deschidere → FCL nouă | partida fără document se stinge prin aceeași cheie ca una cu document |
 | SC-X-12 | închidere de an: 121 → 1174, `Deschidere` a anului nou = `Sold` la 31.12 | F27-r4; snapshot-ul de referință egal cu suma postărilor |
 | SC-X-13 | DVI legată la FCT → ajustarea costului pe lot cu taxa vamală → BCS din lot | 86-r1: `Atribuit` pe lot, costul ieșirii după ajustare |
-| SC-X-14 | Faptele fiscale din fiecare scenă, înainte de curățenie: operare → storno/corecție | unicitate Bază/Taxă independent de Carte, absență explicită pe liniile fără TVA; FCT/FCL 100/21, RDC −100/−21, RLF −20/−4,20, DVI 100/21; matricea completă în [DVI-B7](../tr-d7b-dvi-baza-fiscala-contract.md#dvi-b7--probe-obligatorii-înainte-de-activare); specificat, înainte de implementarea DVI |
+| SC-X-14 | Faptele fiscale din fiecare scenă, înainte de curățenie: operare → storno/corecție | unicitate Bază/Taxă independent de Carte, absență explicită pe liniile fără TVA; FCT/FCL 100/21, RDC −100/−21, RLF −20/−4,20, DVI 100/21; matricea completă în [DVI-B7](../tr-d7b-dvi-baza-fiscala-contract.md#dvi-b7--probe-obligatorii-înainte-de-activare); implementat în `UnicitateFiscala` și scenele catalogului |
 
 ## Tipurile și starea lor
 
@@ -97,7 +97,7 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | ITV | închidere TVA | pas 3 (privat) | [ITV.md](ITV.md) | declarant comun NTC, corecție peste perioadă; profil inert bugetar; cititorii comuni rămân TR-D8 |
 | RDC | retur de la client | pas 4 (privat) | [RDC.md](RDC.md) | venit/cost, partidă proprie negativă, compensare NTC, ciclu mixt peste perioadă; inert bugetar; cititorii comuni TR-D8 |
 | RLF | retur la furnizor | pas 4 (privat) | [RLF.md](RLF.md) | valoare fiscală, reziduu pe lot gol, compensare NTC, ciclu peste perioadă; inert bugetar |
-| DVI | declarație vamală | pas 4, contract în review | [DVI.md](DVI.md) | baza distinctă în Carte=Fiscal aleasă de owner; DVI-B1…B7, 20 de scenarii și SC-X-14 specificate; completările review-ului incluse înainte de implementare |
+| DVI | declarație vamală | pas 4 (privat) | [DVI.md](DVI.md) | bază distinctă în Carte=Fiscal, 20 de scenarii, cicluri complete și SC-X-14; inert bugetar |
 | ASM | asamblare | pas 5 | `ASM.md` | se scrie cu pasul |
 | LDI | listă de inventar | pas 5 | `LDI.md` | se scrie cu pasul |
 | NIR | recepție manuală | pas 5 | `NIR.md` | se scrie cu pasul |
@@ -167,3 +167,23 @@ exit 0; build cu 0 avertismente. Manifest:
 `run-verificari/20260923-115007-397/rezultat.json`. Curățenie verificată
 read-only: zero repartitori ai scenelor NTC/ITV/API-NTC, zero postări și
 perioade din 2006–2007 pe ambele baze de test.
+
+## SC-X-14 — unicitatea fiscală (2026-09-23)
+
+`UnicitateFiscala` consumă așteptările numerice ale scenelor, fără citirea
+registrelor pentru construirea matricei. Cheia este tranzacție × linie ×
+tip TVA × sens, fără Carte; exact o Bază și cel mult o Taxă, cu măsurile
+semnate așteptate. Liniile fără fapt fiscal au explicit 0/0. `Postari`
+verifică separat tranzacția unică și toate coordonatele; matricile rămase
+sunt reverificate înainte de curățenie. BCS are aceeași probă de absență
+pe toate liniile sale operate/stornate. Rularea filtrată păstrează proba.
+
+Acoperirea apare în log pe tip/regim/profil. Sunt incluse FCT normal,
+capitalizat (NED21: 100/21 pe cost) și taxare inversă, FCL normal,
+taxare inversă/scutit (100/0), RDC venit și cost, RLF și DVI; plus liniile
+nefiscale BCS, BTR, DSC, PLT/INC, NTC și ITV. Cazurile NED21/TI21 ale FCT
+și TI21/SDD ale FCL au și inversare -100/-21, respectiv -100/0. Pe bugetar
+absența faptelor fiscale este explicită; tipurile inerte se probează prin
+refuz și zero efecte. Nu include tipurile încă nemigrate, toate combinațiile
+viitoare sau FCL capitalizat (T-r8). Martorii în memorie detectează baza
+copiată în cealaltă carte, taxa duplicată și baza așteptată eliminată.

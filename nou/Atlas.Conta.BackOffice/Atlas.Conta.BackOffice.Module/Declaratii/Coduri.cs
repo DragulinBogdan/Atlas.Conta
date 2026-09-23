@@ -29,4 +29,6 @@ public static class CoduriRefuz {
     public const string NaturaNepotrivita = "NATURA_NEPOTRIVITA";
     public const string CantitateZero = "CANTITATE_ZERO";
     public const string TvaCapitalizat = "TVA_CAPITALIZAT";
+    public const string TvaImportNepotrivit = "TVA_IMPORT_NEPOTRIVIT";
+    public const string PoliticaTvaLipsa = "POLITICA_TVA_LIPSA";
 }

@@ -244,7 +244,7 @@ static class ReconciliereCub {
             from "Postare" p
             join "Tranzactie" t on t."ID" = p."TranzactieId"
             join grup g on g.id = p."DocumentId"
-            where t."Fel" = 1
+            where t."Fel" = 1 and p."Carte" = 1
             group by 1, 2, 3, 4),
         reg as (
             select grup, cont, latura, luna, sum(v) as v from (

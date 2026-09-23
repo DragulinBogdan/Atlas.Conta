@@ -116,7 +116,7 @@ persistat în `Module/Cub/` (`Tranzactie` / `Postare`, POCO, tabelă
 partiționată pe `Spatiu`, migrații scrise în SQL) și se scrie în aceeași
 tranzacție de comandă cu registrele pentru tipurile cu `PosteazaInCub` (regim
 dual, dată de profil). Pe cub azi: BCS, FCT, PLT, INC, BTR, FCL, NTC,
-DSC, ITV, RDC și RLF (ultimele patru numai privat); rămân DVI, ASM, LDI,
+DSC, ITV, RDC, RLF și DVI (ultimele cinci numai privat); rămân ASM, LDI,
 NIR (felia 32, pașii 4–5), apoi
 `Deschidere` generic. Citirile rămân pe registre până la TR-D8; registrele se
 taie la TR-D9.
@@ -133,10 +133,10 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: review-ul contractului concret DVI înainte de implementare
-(`docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md`): owner-ul a ales baza
-distinctă în Carte=Fiscal. RDC și RLF au
-cataloage independente în `docs/nucleu/scenarii/`.
+**Următorul pas**: ASM → LDI → NIR, pasul 5 din TR-D7b, cu scenarii
+numerice înaintea implementării. RDC, RLF și DVI au cataloage independente
+în `docs/nucleu/scenarii/`; DVI păstrează baza distinctă în Carte=Fiscal
+conform `docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md`.
 Identitatea partidei include partenerul (092);
 probele și limitele pasului 3 sunt în `docs/nucleu/scenarii/NTC.md` și `ITV.md`.
 Primele loturi

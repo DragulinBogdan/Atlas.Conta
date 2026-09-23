@@ -11,7 +11,8 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 record RandScena(Guid Cont, N.Latura Latura, decimal Valoare, decimal Cantitate = 0,
     Guid? Gestiune = null, Guid? Unitate = null, Guid? Produs = null, Guid? Partener = null,
     Guid? Linie = null, Guid? Tva = null, N.RolTva? Rol = null, int? Perioada = null,
-    N.SensTva? Sens = null, N.Spatiu Spatiu = N.Spatiu.Contabil, Guid? Economic = null);
+    N.SensTva? Sens = null, N.Spatiu Spatiu = N.Spatiu.Contabil, Guid? Economic = null,
+    N.Carte Carte = N.Carte.Contabil);
 
 record LinieFctScena(decimal Cantitate, decimal Pret, string Tva = null, bool Stoc = true,
     decimal TaxaCuleasa = 0, string Tip = null);
@@ -34,11 +35,12 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected DateOnly Februarie => new(An, 2, 5);
     int numar;
     Dictionary<string, Guid> conturi;
+    readonly Dictionary<(Guid Doc, N.FelTranzactie Fel, DateOnly Data), RandScena[]> matriceFiscale = [];
 
     public void Ruleaza() {
         Curata();
         Exception initiala = null;
-        try { Pregateste(); Executa(); }
+        try { Pregateste(); Executa(); VerificaMatriceFiscale(); }
         catch (Exception e) { initiala = e; throw; }
         finally {
             try { Curata(); }
@@ -79,7 +81,10 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         Comanda(os => OperareApi.Storneaza(os, doc, data));
         PostariPastrate(doc, inainte);
     }
-    protected void Anuleaza(Guid doc) => Comanda(os => OperareApi.AnuleazaOperarea(os, doc));
+    protected void Anuleaza(Guid doc) {
+        Comanda(os => OperareApi.AnuleazaOperarea(os, doc));
+        foreach (var cheie in matriceFiscale.Keys.Where(k => k.Doc == doc).ToArray()) matriceFiscale.Remove(cheie);
+    }
     protected void InchideIanuarie() => Comanda(os => inchide(os, An, 1));
     protected Guid Corecteaza(Guid doc) {
         var inainte = Amprenta(doc);
@@ -219,18 +224,34 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             && (fel != N.FelTranzactie.Transfer || t.Data == data)).ToList();
         var actual = randuri.Select(p => new RandScena(p.Cont, p.Latura, p.Valoare, p.Cantitate,
             p.Gestiune, p.Unitate, p.Produs, p.Partener, p.LinieId, p.TipTvaId, p.RolTva,
-            p.PerioadaDeclarare, p.SensTva, p.Spatiu, p.CodEconomic)).ToList();
+            p.PerioadaDeclarare, p.SensTva, p.Spatiu, p.CodEconomic, p.Carte)).ToList();
         var egale = actual.Count == asteptate.Length && asteptate.All(a =>
             actual.Count(r => r == a) == asteptate.Count(r => r == a));
         var ok = egale && tranzactii.Count == 1 && tranzactii[0].Data == data
-            && randuri.All(p => p.Data == data && p.Carte == N.Carte.Contabil && p.Valuta == null
+            && randuri.All(p => p.Data == data && p.Valuta == null && p.Atribuit == null
                 && p.ValoareValuta == 0 && p.CodFunctional == null && p.SursaFinantare == null
                 && p.UnitateOrganizatorica == null && p.Proiect == null && p.CentruCost == null);
         Verifica(id, $"{fel}: {asteptate.Length} postări cu coordonatele și măsurile așteptate", ok);
+        UnicitateFiscala.Verifica(os, check, Privat, doc, fel, actual, asteptate);
+        matriceFiscale[(doc, fel, data)] = asteptate;
         if (!ok) {
             foreach (var r in actual.Except(asteptate)) Console.WriteLine("     ÎN PLUS " + r);
             foreach (var r in asteptate.Except(actual)) Console.WriteLine("     LIPSĂ " + r);
         }
+    }
+
+    void VerificaMatriceFiscale() {
+        using var os = Deschide();
+        var ids = matriceFiscale.Keys.Select(k => k.Doc).Distinct().ToList();
+        var postari = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId != null && ids.Contains(p.DocumentId.Value))
+            .Select(p => new { p.DocumentId, p.Tranzactie.Fel, p.Data, p.Cont, p.Latura, p.Valoare,
+                p.LinieId, p.TipTvaId, p.RolTva, p.SensTva, p.Carte }).ToList();
+        var corecte = matriceFiscale.All(m => UnicitateFiscala.Corecte(postari
+            .Where(p => p.DocumentId == m.Key.Doc && p.Fel == m.Key.Fel && p.Data == m.Key.Data)
+            .Select(p => new RandScena(p.Cont, p.Latura, p.Valoare, Linie: p.LinieId, Tva: p.TipTvaId,
+                Rol: p.RolTva, Sens: p.SensTva, Carte: p.Carte)).ToList(), m.Value));
+        if (matriceFiscale.Count > 0)
+            Verifica("SC-X-14", $"{cod}: {matriceFiscale.Count} matrice reverificate înainte de curățenie", corecte);
     }
 
     protected string Amprenta(Guid doc) => CuSpatiu(os => string.Join("\n", os.GetObjectsQuery<C.Postare>()
@@ -296,6 +317,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         pj.Adauga(os.GetObjectsQuery<SoldPerioadaContabil>().Where(s => s.An == An));
         pj.Adauga(os.GetObjectsQuery<PartidaDeschisa>().Where(s => s.An == An));
         pj.Adauga(os.GetObjectsQuery<Imperechere>().Where(i => docs.Contains(i.DocumentId) || docs.Contains(i.DocumentStingatorId)));
+        pj.Adauga(os.GetObjectsQuery<DviFactura>().Where(i => docs.Contains(i.DviId) || docs.Contains(i.FacturaId)));
         pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => docs.Contains(r.DocumentId)));
         pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)));
         pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docs.Contains(r.DocumentId.Value)));

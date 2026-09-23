@@ -33,3 +33,8 @@ Validare finală: 26 verificări independente bugetar / 75 privat (grupul comun 
 Include verificările comune de nemodificare la storno/corecție.
 Gate integral pe ambele profiluri: `run-verificari/20260923-010027-252/rezultat.json`,
 1.699 / 2.089 verificări, zero eșecuri.
+
+Extensie SC-X-14 (2026-09-23): FCL TI21 și SDD: bază 100, taxă 0; exact un fapt Bază și niciun fapt Taxă.
+Sunt probate operarea și stornoul în aceeași lună, cu măsuri inverse, prin
+matrice independente și martori de duplicare/lipsă. Aceasta nu certifică
+ciclul complet al regimurilor speciale peste perioadă.

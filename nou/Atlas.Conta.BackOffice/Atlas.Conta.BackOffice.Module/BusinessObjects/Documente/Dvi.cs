@@ -7,12 +7,11 @@ using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
-// DVI (decizia 86): declarația vamală de import. Liniile stau pe
-// `DocumentDetaliu` de bază (precedentul NIR/BCS) — `Valoare` = valoarea în
-// vamă, `ValoareTva` = taxa declarată; nimic nu postează valoarea, doar taxa.
 [TipDetaliu(typeof(DocumentDetaliu))]
 [XafDisplayName("Declarație vamală de import")]
 public class Dvi : Document {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantDvi.Instanta;
+
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Externa, Declaratii.Latura.Interna);
 

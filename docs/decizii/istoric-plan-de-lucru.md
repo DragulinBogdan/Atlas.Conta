@@ -770,3 +770,17 @@ detaliat în jurnal):
   `Deschidere` generic, pasul 7 se taie. Următorul pas: 091-r1
   (`--scenarii <TIP>`), fișierele tipurilor deja pe cub, apoi pasul 3 NTC +
   ITV pe scenarii.
+
+- **TR-D7b, pasul 4 — DVI și SC-X-14** (2026-09-23): implementat
+  contractul aprobat DVI-B1…B7. Baza vamală devine pereche echilibrată în
+  Carte=Fiscal, taxa rămâne contabilă; fără schemă nouă sau cont tehnic.
+  `DeImport` intră în operandul închis; activare numai pe privat.
+  20 de scenarii DVI, inclusiv baza 0,01/taxa 0, 401 cu dependent NTC,
+  storno/corecție și înregistrarea întârziată. SC-X-14 verifică fiscalitatea
+  pe matricile numerice ale catalogului, cu martori de duplicare/lipsă.
+  `ReconciliereCub.Contabile` filtrează cartea contabilă; adaptorul DVI
+  reconstruiește perechea fiscală și gestiunea taxei. Gate integral
+  1.829 bugetar / 2.897 privat, zero FAIL; nucleu 165/165. Manifestele și
+  acoperirea sunt în `docs/nucleu/scenarii/DVI.md`. T-r10 închisă; T-r11,
+  B-r4, T-r5/86-r11, 86-r2 și reevaluarea pe loturi rămân declarate.
+  Următorul pas: ASM → LDI → NIR, cu scenarii înainte de cod.

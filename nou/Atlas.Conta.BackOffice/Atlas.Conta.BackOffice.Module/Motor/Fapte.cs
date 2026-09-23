@@ -46,10 +46,10 @@ internal static class Fapte {
             ? []
             : os.GetObjectsQuery<TipTva>()
                 .Where(t => ids.Contains(t.ID))
-                .Select(t => new { t.ID, t.Cod, t.Regim, t.Activ, t.Cota, t.ContTvaDeductibilId, t.ContTvaColectatId })
+                .Select(t => new { t.ID, t.Cod, t.Regim, t.Activ, t.Cota, t.ContTvaDeductibilId, t.ContTvaColectatId, t.DeImport })
                 .ToList()
                 .Select(t => new TipTvaFapt(t.ID, t.Cod, t.Regim, t.Activ, t.Cota,
-                    t.ContTvaDeductibilId, t.ContTvaColectatId))
+                    t.ContTvaDeductibilId, t.ContTvaColectatId, t.DeImport))
                 .ToDictionary(t => t.Id);
 
     public static Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)>

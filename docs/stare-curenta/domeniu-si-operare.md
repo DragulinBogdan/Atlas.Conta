@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-22.** [Index](README.md)
+**Actualizat: 2026-09-23.** [Index](README.md)
 
 ## Modelul comun
 
@@ -803,11 +803,22 @@ compensarea cu factura folosește NTC. Catalogul `scenarii/RLF.md` probează
 la soldul cubului. Eliminarea reziduului prin reevaluare rămâne T-r2/TR-D9;
 diferența de evaluare față de registre rămâne declarată prin T-r7.
 
-DVI nu este încă pe cub. Pentru baza vamală fără net contabil owner-ul
-a ales postarea distinctă în `Carte=Fiscal`, cu echilibrare proprie și
-fără efect asupra balanței contabile/partidelor. Contractul concret
-`docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md` este pregătit pentru
-review înainte de implementare; T-r10 rămâne deschisă până la probe.
+DVI folosește `DeclarantDvi`, activat numai pe privat. Taxa este contabilă;
+baza vamală este o pereche debit/credit pe contul deductibil în
+`Carte=Fiscal`, fără unități. Numai debitul fiscal poartă cod, rol Bază,
+partener și perioadă; creditul echilibrează fără fapt fiscal. Baza 0,01
+rămâne în cub și când taxa este zero. Anularea, stornoul și corecția folosesc
+mecanismele comune, inclusiv refuzul inversării cu o partidă consumată prin
+NTC. Contract: `docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md`; probe:
+`SC-DVI-01…20`, `SC-X-14`. Conturile se rezolvă din politică, inclusiv ancora
+fiscală; modelul pur și schema nu se schimbă.
+
+Citirile contabile cer `Carte=Contabil`, jurnalul TVA citește ambele cărți
+și numai faptele cu cod, adunând valorile semnate. `ReconciliereCub.Contabile`
+impune filtrul; SC-DVI-16 detectează lipsa lui inclusiv pe soldul cont ×
+partener. Cititorii de producție rămân pe registre până la TR-D8; intrarea
+comună pe cub rămâne T-r11. `Normalizari.Fiscal` reconstruiește explicit
+perechea bazei DVI și gestiunea taxei, cu contoare, inclusiv la taxa zero.
 
 NTC și ITV folosesc același `DeclarantNotaContabila` (T-D3, pasul 3).
 Nota păstrează conturile explicite și valoarea semnată; cantitatea este 0.

@@ -29,6 +29,16 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
             UltimaIesire();
             Refuzuri();
             PerioadaInchisa();
+            using var os = deschide();
+            var documente = os.GetObjectsQuery<BonConsum>().Where(d => d.PredatorId == magazie
+                && d.PrimitorId == loc).Select(d => d.ID).ToList();
+            var tranzactii = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.DocumentId != null
+                && documente.Contains(t.DocumentId.Value)).Select(t => new { t.DocumentId, t.Fel }).ToList();
+            foreach (var t in tranzactii) {
+                var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(l => l.DocumentId == t.DocumentId)
+                    .Select(l => l.ID).ToArray();
+                UnicitateFiscala.FaraFapte(os, check, privat, t.DocumentId!.Value, t.Fel, linii);
+            }
         }
         finally { Curata(); }
     }
@@ -134,6 +144,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         var tranzactii = os.GetObjectsQuery<C.Tranzactie>()
             .Where(t => t.DocumentId == docId && t.Fel == fel).ToList();
         var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == docId).ToList();
+        UnicitateFiscala.FaraFapte(os, check, privat, docId, fel, linii.Select(l => l.ID).ToArray());
         var corecte = tranzactii.Count == 1 && tranzactii[0].Data == data
             && randuri.Count == asteptate.Length * 2;
         foreach (var (lot, cantitate, valoare) in asteptate) {
