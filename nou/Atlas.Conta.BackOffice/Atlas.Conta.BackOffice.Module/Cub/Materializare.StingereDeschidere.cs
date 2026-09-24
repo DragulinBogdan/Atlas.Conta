@@ -17,17 +17,20 @@ public static partial class Materializare {
         var db = ((EFCoreObjectSpace)os).DbContext;
         if (db.Entry(stingator).State != EntityState.Unchanged)
             throw new OperareException($"{StingereDeschidereInvalida}: Stingătorul trebuie să fie salvat.");
-        _ = db.Database.SqlQuery<Guid>($"""SELECT "ID" AS "Value" FROM "Documente" WHERE "ID" = {stingator.ID} AND "GCRecord" = 0 FOR UPDATE""").ToList();
-        db.Entry(stingator).Reload();
+        BlocheazaDocumente(os, stingator);
         GardianPerioada.VerificaDeschisa(os, data);
         var initiale = os.GetObjectsQuery<Postare>().Where(p => p.Unitate == partida && p.Carte == N.Carte.Contabil
             && p.FelUnitate == N.FelUnitate.Partida
             && p.Spatiu == N.Spatiu.Contabil && p.Tranzactie.Fel == N.FelTranzactie.Deschidere).ToList();
+        if (initiale.Count == 1 && data < initiale[0].Data)
+            throw new OperareException($"{StingereDeschidereInvalida}: Data stingerii precedă deschiderea.");
         if (initiale.Count != 1 || stingator.Stare != StareDocument.Operat || suma <= 0
             || !N.Scara.EsteLa(suma, N.Scara.Bani) || data < stingator.DataInregistrare
             || data < initiale[0].Data)
             throw new OperareException($"{StingereDeschidereInvalida}: Partidă, stare, sumă sau dată invalidă.");
         var initiala = initiale[0];
+        if (initiala.Valuta != null || initiala.ValoareValuta != 0)
+            throw new OperareException($"{StingereDeschidereInvalida}: Stingerea partidelor în valută nu este încă acoperită.");
         _ = db.Database.SqlQuery<Guid>($"""SELECT "ID" AS "Value" FROM "Tranzactie" WHERE "ID" = {initiala.TranzactieId} FOR UPDATE""").ToList();
         var aleStingatorului = os.GetObjectsQuery<Postare>().Where(p => p.DocumentId == stingator.ID
             && p.Carte == N.Carte.Contabil && p.Spatiu == N.Spatiu.Contabil).ToList();
@@ -41,12 +44,16 @@ public static partial class Materializare {
         var proprie = IdentitatiPartide.Gaseste(operare.Select(p => Randuri.Citeste(p).Coordonate.Unitate)
             .OfType<N.Unitate>(), stingator.ID, initiala.Cont, initiala.Partener!.Value);
         var latura = initiala.Latura == N.Latura.Debit ? N.Latura.Credit : N.Latura.Debit;
+        var peProprie = proprie == null ? [] : os.GetObjectsQuery<Postare>()
+            .Where(p => p.Unitate == proprie.Id && p.Carte == N.Carte.Contabil).ToList();
+        peProprie = [.. peProprie.Concat(inMemorie.Where(p => p.Unitate == proprie?.Id
+            && p.Carte == N.Carte.Contabil)).DistinctBy(p => p.ID)];
         if (proprie == null || !Disponibil(primite, initiala.Latura, data, suma)
-            || !Disponibil(aleStingatorului.Where(p => p.Unitate == proprie.Id), latura, data, suma))
+            || !Disponibil(peProprie, latura, data, suma))
             throw new OperareException($"{StingereDeschidereInvalida}: Cont/partener incompatibil sau suma depășește restul disponibil.");
         var rezultat = Transferuri.Muta(new(stingator.ID, stingator.DataInregistrare,
             [.. operare.Select(Randuri.Citeste)],
-            [.. aleStingatorului.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Transfer && p.Data <= data).Select(Randuri.Citeste)],
+            [.. peProprie.Where(p => !operare.Any(o => o.ID == p.ID) && p.Data <= data).Select(Randuri.Citeste)],
             Guid.Empty, initiala.Data, [Randuri.Citeste(initiala)],
             [.. primite.Where(p => p.Tranzactie.Fel != N.FelTranzactie.Deschidere && p.Data <= data).Select(Randuri.Citeste)],
             suma, data, partida));
@@ -55,6 +62,37 @@ public static partial class Materializare {
         var contract = N.Motor.Transfera(stingator.ID, data, [rezultat.Mutare], new N.Rotunjire(Scara.ConventieBani));
         if (!contract.EsteAcceptat) throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
         foreach (var t in contract.Tranzactii) Scrie(os, stingator.ID, t);
+    }
+
+    internal static void BlocheazaDocumente(IObjectSpace os, params Document[] documente) {
+        CereTranzactie(os);
+        var db = ((EFCoreObjectSpace)os).DbContext;
+        foreach (var doc in documente.DistinctBy(d => d.ID).OrderBy(d => d.ID)) {
+            _ = db.Database.SqlQuery<Guid>($"""SELECT "ID" AS "Value" FROM "Documente" WHERE "ID" = {doc.ID} AND "GCRecord" = 0 FOR UPDATE""").ToList();
+            if (db.Entry(doc).State == EntityState.Unchanged) db.Entry(doc).Reload();
+        }
+    }
+
+    public static decimal AsignatDeschidere(IObjectSpace os, Guid document, Guid? partener = null, SensStingere? sens = null) {
+        var postari = os.GetObjectsQuery<Postare>();
+        var initiale = postari.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere
+            && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida);
+        if (partener != null) initiale = initiale.Where(p => p.Partener == partener);
+        if (sens != null) {
+            var latura = sens == SensStingere.Datorie ? N.Latura.Credit : N.Latura.Debit;
+            initiale = initiale.Where(p => p.Latura == latura);
+        }
+        return (from p in postari
+            join i in initiale on p.Unitate equals i.Unitate
+            where p.DocumentId == document && p.Carte == N.Carte.Contabil
+            select (decimal?)(p.Latura == i.Latura ? -p.Valoare : p.Valoare)).Sum() ?? 0m;
+    }
+
+    static IQueryable<Postare> StingeriDeschidere(IObjectSpace os, Guid document) {
+        var initiale = os.GetObjectsQuery<Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere
+            && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida).Select(p => p.Unitate);
+        return os.GetObjectsQuery<Postare>().Where(p => p.DocumentId == document
+            && p.Tranzactie.Fel == N.FelTranzactie.Transfer && initiale.Contains(p.Unitate));
     }
 
     static bool Disponibil(IEnumerable<Postare> postari, N.Latura latura, DateOnly data, decimal suma) {

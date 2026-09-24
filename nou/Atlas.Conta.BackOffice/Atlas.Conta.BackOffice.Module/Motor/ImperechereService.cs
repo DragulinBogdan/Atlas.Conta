@@ -43,9 +43,9 @@ public static class ImperechereService {
     // ALGEBRIC (F27-D8): rândurile inverse intră cu semn, ca registrele — o
     // imperechere desfăcută prin rând invers eliberează restul, fără ștergere.
     public static decimal Asignat(IObjectSpace os, Guid documentId) =>
-        os.GetObjectsQuery<Imperechere>()
+        (os.GetObjectsQuery<Imperechere>()
             .Where(i => i.DocumentStingatorId == documentId || i.DocumentId == documentId)
-            .Select(i => (decimal?)i.Suma).Sum() ?? 0m;
+            .Select(i => (decimal?)i.Suma).Sum() ?? 0m) + Cub.Materializare.AsignatDeschidere(os, documentId);
 
     public static decimal Ramas(IObjectSpace os, Guid documentId) =>
         Total(os, documentId) - Asignat(os, documentId);
@@ -63,6 +63,7 @@ public static class ImperechereService {
         Document stingator, Document document, decimal suma, Guid? contrapartidaId = null,
         DateOnly? data = null) {
         using var tx = TranzactieComanda.Incepe(os);
+        Cub.Materializare.BlocheazaDocumente(os, stingator, document);
         var zi = data ?? DateOnly.FromDateTime(DateTime.Today);
         GardianPerioada.VerificaDeschisa(os, zi);
         var imperechere = Creeaza(os, stingator, document, suma, autogenerat: false, contrapartidaId, zi);
@@ -367,7 +368,7 @@ public static class ImperechereService {
         var caStins = os.GetObjectsQuery<Imperechere>()
             .Where(i => i.DocumentId == stingatorId)
             .Select(i => (decimal?)i.Suma).Sum() ?? 0m;
-        return caStingator + caStins;
+        return caStingator + caStins + Cub.Materializare.AsignatDeschidere(os, stingatorId, contrapartidaId, sens);
     }
 
     // Eticheta de mesaj a sensului: refuzurile motorului sunt de DOMENIU (le

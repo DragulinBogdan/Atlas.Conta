@@ -381,7 +381,7 @@ internal static class Fapte {
                 .ToList()
                 .ToDictionary(p => p.ID, p => p.TipMaterialId);
 
-    static Dictionary<Guid, Declaratii.RepartitorFapt> Repartitori(IObjectSpace os, IReadOnlyList<Guid> ids) {
+    internal static Dictionary<Guid, Declaratii.RepartitorFapt> Repartitori(IObjectSpace os, IReadOnlyList<Guid> ids) {
         var cerute = ids.Where(id => id != Guid.Empty).Distinct().ToList();
         return cerute.Count == 0
             ? []

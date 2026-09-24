@@ -12,7 +12,7 @@ public static class Transferuri {
     public const string PartidaProprieInsuficienta = "PARTIDA_PROPRIE_INSUFICIENTA";
 
     /// <param name="TransferuriStingator">
-    /// postările de <c>Transfer</c> deja scrise ale stingătorului: plafonul partidei
+    /// postările ulterioare operării de pe unitățile stingătorului, indiferent de document: plafonul partidei
     /// proprii e ce a mai rămas pe ea, nu ce a adus operarea.
     /// </param>
     /// <param name="OperareStins">
@@ -87,7 +87,7 @@ public static class Transferuri {
                 .Where(p => p.Coordonate.Unitate?.Id == stinsa.Id), referinta.Cont));
         var mutata = Math.Min(Math.Abs(cerere.Suma), plafon);
         if (mutata <= 0m)
-            return Sare(invers
+            return Refuza(PartidaProprieInsuficienta, invers
                 ? $"partida stinsului n-a primit nimic de la acest stingător pe contul {referinta.Cont}"
                 : $"documentul stins n-are rest pe contul de referință {referinta.Cont}");
 

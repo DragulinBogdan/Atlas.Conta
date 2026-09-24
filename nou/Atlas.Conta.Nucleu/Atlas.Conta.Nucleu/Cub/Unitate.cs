@@ -27,6 +27,9 @@ public sealed record Unitate(
     public static Unitate DeschidePartida(Guid cont, Guid partener, Guid documentDeschizator, DateOnly data) =>
         new(Identitate(documentDeschizator, cont, partener), FelUnitate.Partida, cont, partener, null, data);
 
+    public static Unitate DeschidePartidaInitiala(Guid cont, Guid partener, Guid referinta, DateOnly data) =>
+        new(Identitate(referinta, cont, partener, initiala: true), FelUnitate.Partida, cont, partener, null, data);
+
     public decimal? Raport(Sold sold) {
         ArgumentNullException.ThrowIfNull(sold);
         return Fel switch {
@@ -37,8 +40,9 @@ public sealed record Unitate(
     }
 
     // 092a: SHA-256(document ‖ cont ‖ partener), Guid din primii 16 octeți, versiune 8.
-    static Guid Identitate(Guid document, Guid cont, Guid partener) {
-        var intrare = new byte[48];
+    static Guid Identitate(Guid document, Guid cont, Guid partener, bool initiala = false) {
+        var intrare = new byte[initiala ? 49 : 48];
+        if (initiala) intrare[48] = 1;
         document.ToByteArray().CopyTo(intrare, 0);
         cont.ToByteArray().CopyTo(intrare, 16);
         partener.ToByteArray().CopyTo(intrare, 32);

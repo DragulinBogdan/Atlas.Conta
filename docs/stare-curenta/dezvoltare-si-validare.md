@@ -2,16 +2,19 @@
 
 **Actualizat: 2026-09-24.** [Index](README.md)
 
-Ultima implementare validată: DEC (096), PIF/AMO/CAS complete pe cub și
-cititorul de fișă pentru AMO/CAS/API Imo (097), plus primul lot SC-CIT-01…06.
-Gate integral: **2.616 bugetar / 3.707 privat, zero FAIL**, exit 0 comun
-și build fără avertismente: `run-verificari/20260924-101646-615/rezultat.json`.
+Ultima implementare validată: corecturile Deschidere din review-ul de
+sincronizare (094, 098d), peste DEC (096), PIF/AMO/CAS și cititorul de fișă
+pentru AMO/CAS/API Imo (097), plus primul lot SC-CIT-01…06.
+Gate integral: **2.656 bugetar / 3.747 privat, zero FAIL**, exit 0 comun
+și build fără avertismente: `run-verificari/20260924-125210-353/rezultat.json`.
 Include delimitarea ASM (a)/(h) aprobată pentru regimul dual (D8-B4).
 Scenarii și limite: [IMO.md](../nucleu/scenarii/IMO.md),
-[CITIRI.md](../nucleu/scenarii/CITIRI.md). Review-ul advers IMO este restant;
-rapoartele generale TR-D8 nu sunt comutate.
-Nucleu: **179/179**, zero omise, exit 0:
-`run-verificari/20260924-100513-273/rezultat.json`.
+[CITIRI.md](../nucleu/scenarii/CITIRI.md). Review-urile de sincronizare sunt
+primite; prima felie, Deschidere, este corectată și predată pentru
+reverificare/commit. Urmează IMO, TR-D8/DEC și NIR (098d). Rapoartele generale
+TR-D8 nu sunt comutate.
+Nucleu: **180/180**, zero omise, exit 0:
+`run-verificari/20260924-124628-047/rezultat.json`.
 Comenzile, încercările intermediare și limitele sunt în
 [DESCHIDERE.md](../nucleu/scenarii/DESCHIDERE.md), NIR în
 [NIR.md](../nucleu/scenarii/NIR.md); lanțul Folosinta în

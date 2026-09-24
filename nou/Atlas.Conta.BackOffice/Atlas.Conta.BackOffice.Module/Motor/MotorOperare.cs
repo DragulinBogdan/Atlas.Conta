@@ -507,7 +507,7 @@ public static class MotorOperare {
             throw new OperareException(string.Join("\n", lipsuri));
     }
 
-    static void VerificaLatura(string simbol, DimensiuneFlags flags, Dimensiuni dims,
+    internal static void VerificaLatura(string simbol, DimensiuneFlags flags, Dimensiuni dims,
         Guid? angajamentId, string latura, string denumireLinie, ICollection<string> lipsuri) {
         if (flags == DimensiuneFlags.Niciuna)
             return;
@@ -583,6 +583,7 @@ public static class MotorOperare {
     public static void AnuleazaOperarea(IObjectSpace os, Document doc) {
         using var tranzactie = TranzactieComanda.Asigura(os);
         Cub.Materializare.BlocheazaFise(os);
+        Cub.Materializare.BlocheazaDocumente(os, doc);
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi anulat.");
         GardianPerioada.VerificaDeschisa(os, doc.DataInregistrare);
@@ -637,6 +638,7 @@ public static class MotorOperare {
     public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
         using var tranzactie = TranzactieComanda.Asigura(os);
         Cub.Materializare.BlocheazaFise(os);
+        Cub.Materializare.BlocheazaDocumente(os, doc);
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi stornat.");
         if (dataStorno < doc.DataInregistrare)

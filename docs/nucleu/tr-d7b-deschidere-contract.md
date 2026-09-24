@@ -2,7 +2,7 @@
 
 - Data: 2026-09-24
 - Stare: aprobat de owner 2026-09-24; implementat și verificat pe ambele
-  profiluri; review advers solicitat separat. Decizia 094.
+  profiluri; corecturile review-ului de sincronizare sunt verificate; reverificarea înainte de commit rămâne distinctă. Deciziile 094, 098(d).
 - Surse: T-D7 din `tr-d7b-tipuri-ramase-contract.md`, 090(d/g), 091(f/i),
   `docs/invarianti.md` I și III. Conectorul 1C rămâne înghețat (091-f).
 
@@ -80,35 +80,66 @@ contradicția printr-un filtru special pentru deschidere.
 
 Intrarea cuprinde soldurile de control, inclusiv ancora contabilă aleasă
 de apelant; motorul nu adaugă o ancoră implicită. Cheia soldului este
-Carte/Cont/Latura, cu marcaj explicit pentru detaliere obligatorie.
-Conturile cu RolTert cer întotdeauna partide; restul pot fi solduri bloc.
+Carte/Cont/Latura. Detalierea este obligatorie pentru conturile cu
+`UrmarestePartide` și conturile implicite ale tipurilor cu natura Stoc,
+indiferent de marcajul apelantului. Pentru celelalte conturi poate fi cerută
+explicit sau rezultă din prezența detaliilor.
+
 Loturile cer gestiune reală, produs cu cont implicit corespunzător, data
 lotului cel mult data deschiderii și cantitate pozitivă; valoarea poate
-fi zero. Referința stabilă a partidei nu este FK spre Document.
-Datele unităților de partidă sunt data deschiderii; identitatea include
-contul, partenerul și referința, conform 092.
+fi zero. Lotul nu are linie de intrare și nu are mișcări în cub sau registre.
+Deschiderea nu poate fi datată după tranzacții ori documente deja înregistrate.
+Referința stabilă a partidei nu este FK spre Document. Partenerul este un
+repartitor extern, după faptul său de domeniu, inclusiv angajatul.
+Partidele inițiale sunt în Carte=Contabil; cele fiscale sunt refuzate, fiind
+în afara contractului de stingere. Identitatea cont/partener/referință are
+un spațiu de nume distinct de partida proprie a documentului: egalitatea
+referinței cu ID-ul unui document nu le confundă. Identitățile deja persistate
+nu se rescriu; stingerea adresează ID-ul unității existente.
+
+Analiza și valuta se furnizează pe postarea efectivă: lot, partidă sau
+sold nedetaliat. Pe un total de control detaliat se refuză coordonatele,
+pentru a nu pierde tacit informația în momentul înlocuirii lui. Dimensiunile
+obligatorii se verifică prin același gardian ca la documente, înainte de
+scriere. Suma în valută respectă scara banilor și cere identitatea valutei.
+O partidă de 100 lei / 20 în valută păstrează raportul 5. Această intrare nu
+certifică ciclul multivalutar: stingerea partidelor inițiale în valută este
+refuzată explicit până la acoperirea lui la TR-D9 (090, limitele pasului 3).
+Soldul nedetaliat are o singură analiză pe cheia de control; împărțirea lui
+pe mai multe analize nu este acoperită de această intrare.
 
 Materializarea participă la tranzacția apelantului, fără commit propriu;
 cere tranzacție explicită și perioadă deschisă. Refuzul nu adaugă entități
 de cub în ObjectSpace. Un index unic filtrat permite cel mult o Deschidere
 în bază; apelurile repetate înainte de commit sunt refuzate și în memorie.
-Stingerea unei partide de deschidere participă la aceeași graniță de
-comandă, cu blocare și verificarea restului la data cerută.
+Stingerea, anularea și stornarea blochează același rând al documentului și
+recitesc starea după blocare. Împerecherea normală blochează ambele documente
+în ordine stabilă. Disponibilul stingerii inițiale include toate postările
+unității, indiferent de document, inclusiv minimul soldului în viitor.
+
+Transferul către partida inițială este urma de domeniu: contribuie la
+`ImperechereService.Asignat/Ramas` și la plafonul pe contrapartidă/sens,
+fără un document fictiv și fără un al doilea registru de stingeri inițiale.
+Anularea stingătorului este refuzată; stornoul inversează transferul și nu
+poate preceda data lui. Pe calea normală, un rest zero este refuz, nu salt
+tăcut. Probele cu NTC → PLT → partidă inițială și în sensul invers verifică
+faptul că aceiași 20 lei nu sting două datorii.
 
 ## Implementare și verificare
 
 `Materializare.Deschidere.cs` materializează intrarea; overload-ul din
 `Materializare.StingereDeschidere.cs` mută valoarea de pe partida proprie
 a stingătorului pe partida inițială. Scrierea dezactivează temporar lazy
-loading în EF și restaurează starea lui: 2/51 loturi cer 6/6 interogări,
-nu o citire de Tranzactie pentru fiecare postare nouă.
+loading în EF și restaurează starea lui. După gardienii suplimentari,
+2/51 loturi cer 10/10 interogări, fără citiri per poziție.
 
 Migrația canonică `20260923225546_DeschidereUnica` adaugă indexul unic
 filtrat pe Fel=Deschidere. Verificată pe cele două baze `.CodexBCS`;
 proba cu două sesiuni reale confirmă unicitatea la commit.
 
-Integral: **2.353 bugetar / 3.402 privat**, zero FAIL, exit 0, build fără
-avertismente, `run-verificari/20260924-021417-392/rezultat.json`.
+Integral după review: **2.656 bugetar / 3.747 privat**, zero FAIL, exit 0,
+build fără avertismente, `run-verificari/20260924-125210-353/rezultat.json`.
+Nucleu: 180/180, `run-verificari/20260924-124628-047/rezultat.json`.
 Comenzile și încercările intermediare: `scenarii/DESCHIDERE.md`.
 Cititorii de producție, consumul stocului inițial prin FIFO și ușile
 UI/HTTP nu sunt declarate implementate de acest mecanism. 1C rămâne

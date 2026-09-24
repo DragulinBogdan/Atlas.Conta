@@ -4,6 +4,18 @@ namespace Atlas.Conta.Nucleu.Teste;
 
 public class UnitateTeste {
     [Fact]
+    public void PartidaInitialaAreIdentitateSeparata() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var cont = Gen.Unul(aleator, Gen.Conturi);
+            var partener = Gen.Unul(aleator, Gen.Parteneri);
+            var referinta = Gen.Unul(aleator, Gen.Documente);
+            var data = Gen.Data(aleator);
+            var initiala = Unitate.DeschidePartidaInitiala(cont, partener, referinta, data);
+            Assert.NotEqual(Unitate.DeschidePartida(cont, partener, referinta, data).Id, initiala.Id);
+            Assert.Equal(initiala.Id, Unitate.DeschidePartidaInitiala(cont, partener, referinta, data.AddDays(1)).Id);
+        });
+
+    [Fact]
     public void PartidaDeschisaEDeterminista() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var cont = Gen.Unul(aleator, Gen.Conturi);

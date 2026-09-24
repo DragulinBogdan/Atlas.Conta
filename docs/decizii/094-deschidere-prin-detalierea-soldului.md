@@ -17,7 +17,11 @@ fără dublarea ei. Deschiderea generică verifică echilibrarea pe carte;
 excepția C6 din nucleul pur nu se modifică.
 (d) Tranzacția rămâne fără document, unică per bază. Terții au partide
 cu identitatea cont/partener/referință stabilă, nu documente fictive.
-Conectorul 1C rămâne înghețat conform 091(f).
+Conectorul 1C rămâne înghețat conform 091(f). Partida inițială are spațiu de
+identitate distinct de partida proprie a documentului. Analiza și valuta
+sunt păstrate la deschidere; ciclul multivalutar rămâne neacoperit până la
+TR-D9, cu refuz explicit la stingerea unei partide inițiale în valută.
+Intrarea și limitele sunt descrise în DES-B4.
 
 ## Contraexemplul și alegerea
 

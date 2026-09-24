@@ -1132,8 +1132,13 @@ rândul bloc pe Carte/Cont/Latura. Totalurile diferite sunt refuzate înaintea
 creării entităților de cub. Partidele cer cont cu UrmarestePartide, partener și
 referință stabilă; nu există document fictiv. Indexul unic filtrat permite
 o singură Deschidere în bază. Stingerea unei partide inițiale verifică
-restul, contul, partenerul și perioada sub blocare; storno-ul plății reface
-partida fără a rescrie deschiderea. (094, DES-B1…B4)
+restul întregii unități, contul, partenerul și perioada sub blocare comună
+cu storno/anulare. Transferul contribuie la restul de domeniu al plății;
+anularea este refuzată, iar stornoul nu poate preceda stingerea și reface
+partida fără a rescrie deschiderea. Detalierea stocului derivă din politică;
+loturile deja folosite și deschiderea datată după istorie sunt refuzate.
+Intrarea păstrează analiza/valuta și verifică dimensiunile obligatorii;
+limitele intrării și ale stingerii sunt în DES-B4. (094, DES-B1…B4)
 
 Citirile — sold, proiecții, fișe, SAF-T, D394, D406 — rămân pe registre până la
 TR-D8. Tipurile nemigrate postează doar în registre; notele pe conturi de

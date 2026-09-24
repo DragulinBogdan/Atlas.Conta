@@ -56,6 +56,8 @@ public static partial class Materializare {
         ArgumentNullException.ThrowIfNull(doc);
         if (!Posteaza(os, doc, MotorOperare.GasesteTipDocument(os, doc)))
             return;
+        if (StingeriDeschidere(os, doc.ID).Any(p => p.Data > dataStorno))
+            throw new OperareException($"{StingereDeschidereInvalida}: Data stornării precedă data stingerii partidei inițiale.");
         VerificaPartideFaraDependenti(os, doc, dataStorno);
         VerificaSuportFaraDependenti(os, doc, dataStorno);
         var transferuriStoc = os.GetObjectsQuery<Postare>()
@@ -117,21 +119,25 @@ public static partial class Materializare {
             .Where(p => p.DocumentId == stins.ID && p.Tranzactie.Fel == N.FelTranzactie.Operare
                 && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida)
             .ToList();
-        // Plafonul e RESTUL partidei stinsului: `Operare` (care poartă deja recepția,
-        // TR-D3) plus ce au așezat pe ea transferurile ORICĂRUI stingător.
+        var idOperareStingator = aleStingatorului.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare).Select(p => p.ID).ToArray();
+        var partideleStingatorului = aleStingatorului.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .Select(p => p.Unitate).OfType<Guid>().Distinct().ToArray();
+        var primiteDeStingator = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Unitate != null && partideleStingatorului.Contains(p.Unitate.Value)
+                && p.Carte == N.Carte.Contabil && !idOperareStingator.Contains(p.ID)).ToList();
         var partideleStinsului = aleStinsului.Select(p => p.Unitate).OfType<Guid>().Distinct().ToList();
         var primiteDeStins = partideleStinsului.Count == 0
             ? []
             : os.GetObjectsQuery<Postare>()
                 .Where(p => p.Unitate != null && partideleStinsului.Contains(p.Unitate.Value)
                     && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida
-                    && p.Tranzactie.Fel == N.FelTranzactie.Transfer)
+                    && (p.DocumentId != stins.ID || p.Tranzactie.Fel != N.FelTranzactie.Operare))
                 .ToList();
         var rezultat = Transferuri.Muta(new Transferuri.Cerere(
             stingator.ID,
             stingator.DataInregistrare,
             [.. Citeste(aleStingatorului, N.FelTranzactie.Operare)],
-            [.. Citeste(aleStingatorului, N.FelTranzactie.Transfer)],
+            [.. primiteDeStingator.Select(Randuri.Citeste)],
             stins.ID,
             stins.DataInregistrare,
             [.. aleStinsului.Select(Randuri.Citeste)],
@@ -159,7 +165,8 @@ public static partial class Materializare {
             return;
         VerificaPartideFaraDependenti(os, doc, doc.DataInregistrare);
         VerificaSuportFaraDependenti(os, doc, doc.DataInregistrare);
-        // T-D2: sub `VerificaFaraImperecheri`, orice `Transfer` al documentului e al lui.
+        if (StingeriDeschidere(os, doc.ID).Any())
+            throw new OperareException($"{StingereDeschidereInvalida}: Documentul are stingere de partidă inițială; folosiți storno.");
         var tranzactii = os.GetObjectsQuery<Tranzactie>()
             .Where(t => t.DocumentId == doc.ID
                 && (t.Fel == N.FelTranzactie.Operare || t.Fel == N.FelTranzactie.Transfer))

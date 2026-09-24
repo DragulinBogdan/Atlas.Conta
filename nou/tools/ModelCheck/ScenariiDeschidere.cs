@@ -1,5 +1,6 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.Api;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
 
     Guid Scrie(IObjectSpace os, C.SoldInitial[] s = null, C.LotInitial[] l = null, C.PartidaInitiala[] p = null) =>
         C.Materializare.Deschide(os, Ianuarie, s ?? solduri, l ?? loturi, p ?? partide);
-    Guid Partida(Guid referinta, Guid partener) => N.Unitate.DeschidePartida(contTert, partener, referinta, Ianuarie).Id;
+    Guid Partida(Guid referinta, Guid partener) => N.Unitate.DeschidePartidaInitiala(contTert, partener, referinta, Ianuarie).Id;
     void Rest(string id, Guid referinta, Guid partener, decimal valoare, DateOnly? la = null) =>
         SoldPartida(id, Partida(referinta, partener), la ?? new DateOnly(An, 1, 31), -valoare);
 
@@ -50,6 +51,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Comanda(os => {
             var c = os.CreateObject<Cont>(); c.Simbol = Marcaj; c.Denumire = Marcaj; c.Functie = "C";
             c.UrmarestePartide = true; contTert = c.ID;
+            if (Economic == null) { var e = os.CreateObject<CodEconomic>(); e.Cod = Marcaj; e.Denumire = Marcaj; Economic = e.ID; }
             ancora = os.GetObjectsQuery<Cont>().First(c => c.RolTert == RolTertCont.Niciunul && c.Simbol.StartsWith("891")).ID;
             os.GetObjectByKey<Partener>(Furnizor).ContImplicitId = c.ID;
             os.CommitChanges();
@@ -59,7 +61,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
             new(contTert, N.Latura.Credit, 150, true), new(ancora, N.Latura.Debit, 150)];
         partide = [new(contTert, Furnizor, ref1, N.Latura.Credit, 60),
             new(contTert, Furnizor, ref2, N.Latura.Credit, 40), new(contTert, Client, ref1, N.Latura.Credit, 50)];
-        Refuzuri(); Performanta();
+        Refuzuri(); ReviewIntrare(); Performanta();
         using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
             Scrie(os, solduri.Take(2).ToArray(), loturi.Take(2).ToArray(), []);
             var r = os.ModifiedObjects.OfType<C.Postare>().ToArray();
@@ -97,24 +99,32 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
             SoldLot("SC-DES-08", l.Lot, Magazie, Ianuarie.AddDays(-1), 0, 0);
         }
         Rest("SC-DES-02", ref1, Furnizor, 60); Rest("SC-DES-02", ref2, Furnizor, 40); Rest("SC-DES-02", ref1, Client, 50);
-        var plata = Trezorerie(false, 20); Opereaza(plata.Id);
+        ReviewStingeri(); ReviewConcurenta();
+        var plata = Trezorerie(false, 20);
+        Comanda(os => { var d = os.GetObjectByKey<Document>(plata.Id);
+            d.Data = Ianuarie.AddDays(2); d.DataInregistrare = d.Data; os.CommitChanges(); });
+        Opereaza(plata.Id);
+        var dataPlata = Ianuarie.AddDays(2);
         void Stinge(Guid partida, decimal suma, DateOnly data, Guid? document = null) => Comanda(os => {
             using var tx = TranzactieComanda.Incepe(os);
             C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(document ?? plata.Id), partida, suma, data);
             os.CommitChanges(); tx.Commit();
         });
-        Refuza("SC-DES-09", () => Stinge(Partida(ref1, Furnizor), 61, Ianuarie), C.Materializare.StingereDeschidereInvalida);
+        Refuza("SC-DES-09", () => Stinge(Partida(ref1, Furnizor), 61, dataPlata), C.Materializare.StingereDeschidereInvalida);
         var plataMare = Trezorerie(false, 70); Opereaza(plataMare.Id);
         Refuza("SC-DES-09", () => Stinge(Partida(ref1, Furnizor), 61, Ianuarie, plataMare.Id), C.Materializare.StingereDeschidereInvalida);
         Rest("SC-DES-09", ref1, Furnizor, 60);
-        Refuza("SC-DES-09", () => Stinge(Partida(ref1, Client), 20, Ianuarie), C.Materializare.StingereDeschidereInvalida);
-        Refuza("SC-DES-09", () => Stinge(Partida(ref1, Furnizor), 20, Ianuarie.AddDays(-1)), C.Materializare.StingereDeschidereInvalida);
+        Refuza("SC-DES-09", () => Stinge(Partida(ref1, Client), 20, dataPlata), C.Materializare.StingereDeschidereInvalida);
+        Refuza("SC-DES-09", () => Stinge(Partida(ref1, Furnizor), 20, Ianuarie.AddDays(-1)), "precedă deschiderea");
         string Original() => CuSpatiu(os => System.Text.Json.JsonSerializer.Serialize(os.GetObjectsQuery<C.Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere).OrderBy(p => p.ID)
             .Select(p => new { p.ID, p.Data, p.Cont, p.Carte, p.Latura, p.Valoare, p.Cantitate,
                 p.Unitate, p.Partener, p.Gestiune, p.DocumentId, p.LinieId }).ToArray()));
         var initial = Original();
-        Stinge(Partida(ref1, Furnizor), 20, Ianuarie);
+        Refuza("SC-DES-09", () => Stinge(Partida(ref1, Furnizor), 20, Ianuarie.AddDays(1)), C.Materializare.StingereDeschidereInvalida);
+        Verifica("SC-DES-09", "data dintre deschidere și plată nu scrie transfer", !CuSpatiu(os => os.GetObjectsQuery<C.Postare>()
+            .Any(p => p.DocumentId == plata.Id && p.Tranzactie.Fel == N.FelTranzactie.Transfer)));
+        Stinge(Partida(ref1, Furnizor), 20, dataPlata);
         using (var os = Deschide()) {
             var r = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == plata.Id && p.Tranzactie.Fel == N.FelTranzactie.Transfer).ToList();
             Verifica("SC-DES-03", "transfer exact pe debit: partidă inițială +20, partidă plată -20", r.Count == 2
@@ -123,12 +133,110 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
                 && r.Single(p => p.Valoare == -20).Unitate != Partida(ref1, Furnizor));
         }
         Rest("SC-DES-03", ref1, Furnizor, 40); Rest("SC-DES-03", ref2, Furnizor, 40); Rest("SC-DES-03", ref1, Client, 50);
-        Refuza("SC-DES-09", () => Stinge(Partida(ref2, Furnizor), 1, Ianuarie), C.Materializare.StingereDeschidereInvalida);
+        Refuza("SC-DES-09", () => Stinge(Partida(ref2, Furnizor), 1, dataPlata), C.Materializare.StingereDeschidereInvalida);
         InchideIanuarie();
-        Refuza("SC-DES-09", () => Stinge(Partida(ref2, Furnizor), 1, Ianuarie), "închis");
+        Refuza("SC-DES-09", () => Stinge(Partida(ref2, Furnizor), 1, dataPlata), "închis");
         Storneaza(plata.Id, Februarie);
         Rest("SC-DES-03", ref1, Furnizor, 40); Rest("SC-DES-03", ref1, Furnizor, 60, Februarie);
         Verifica("SC-DES-03", "originalul deschiderii păstrat", initial == Original());
+    }
+
+    void ReviewStingeri() {
+        Guid Nota(DateOnly? data = null) => CuSpatiu(os => {
+            var d = os.CreateObject<NotaContabila>(); d.Data = data ?? Ianuarie; d.DataInregistrare = d.Data;
+            d.PredatorId = Loc; d.PrimitorId = Loc;
+            var l = os.CreateObject<NotaContabilaDetaliu>(); l.Document = d; l.TipMaterialId = Tip(os, "TRZ");
+            l.ContDebitId = ancora; l.ContCreditId = contTert; l.RepartitorCreditId = Furnizor;
+            l.Valoare = 20; l.CodEconomicId = Economic;
+            os.CommitChanges(); return d.ID;
+        });
+        var nota = Nota(); Opereaza(nota);
+        var plata = Trezorerie(false, 20); Opereaza(plata.Id);
+        Imperecheaza(nota, plata.Id, 20, Ianuarie.AddDays(20));
+        Refuza("SC-DES-11", () => Comanda(os => {
+            using var tx = TranzactieComanda.Incepe(os);
+            C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(plata.Id), Partida(ref1, Furnizor), 20, Ianuarie);
+        }), "STINGERE_DESCHIDERE_INVALIDA");
+        Rest("SC-DES-11", ref1, Furnizor, 60);
+        var altaNota = Nota(Ianuarie.AddDays(20)); Opereaza(altaNota);
+        Refuza("SC-DES-11", () => Comanda(os => { using var tx = TranzactieComanda.Incepe(os);
+            C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(plata.Id), os.GetObjectByKey<Document>(altaNota), 20, Ianuarie.AddDays(20));
+        }), C.Transferuri.PartidaProprieInsuficienta);
+        var alta = Trezorerie(false, 20); Opereaza(alta.Id);
+        var data = Ianuarie.AddDays(20);
+        Comanda(os => { using var tx = TranzactieComanda.Incepe(os);
+            C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(alta.Id), Partida(ref2, Furnizor), 20, data);
+            os.CommitChanges(); tx.Commit(); });
+        Verifica("SC-DES-12", "stingerea inițială consumă și restul de domeniu al plății", CuSpatiu(os => ImperechereService.Ramas(os, alta.Id)) == 0);
+        Refuza("SC-DES-12", () => Imperecheaza(altaNota, alta.Id, 20, data), "rest");
+        Refuza("SC-DES-12", () => Comanda(os => { using var tx = TranzactieComanda.Incepe(os);
+            C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(altaNota), os.GetObjectByKey<Document>(alta.Id), 20, data);
+        }), C.Transferuri.PartidaProprieInsuficienta);
+        var stamp = Amprenta(alta.Id);
+        Refuza("SC-DES-13", () => Comanda(os => { using var tx = TranzactieComanda.Incepe(os);
+            MotorOperare.AnuleazaOperarea(os, os.GetObjectByKey<Document>(alta.Id)); }), "stingere");
+        Refuza("SC-DES-14", () => Comanda(os => { using var tx = TranzactieComanda.Incepe(os);
+            MotorOperare.Storneaza(os, os.GetObjectByKey<Document>(alta.Id), Ianuarie.AddDays(5)); }), "stingerii");
+        Verifica("SC-DES-13/14", "refuzurile păstrează plata și transferul", stamp == Amprenta(alta.Id));
+        Storneaza(alta.Id, data);
+        Rest("SC-DES-14", ref2, Furnizor, 40);
+    }
+
+    void ReviewConcurenta() {
+        foreach (var anulare in new[] { false, true }) {
+            var plata = Trezorerie(false, 20); Opereaza(plata.Id);
+            Task<string> concurent;
+            using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
+                C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(plata.Id), Partida(ref2, Furnizor), 20, Ianuarie);
+                os.CommitChanges();
+                concurent = Task.Run(() => {
+                    try { Comanda(alt => { ((EFCoreObjectSpace)alt).DbContext.Database.SetCommandTimeout(10);
+                        if (anulare) OperareApi.AnuleazaOperarea(alt, plata.Id);
+                        else OperareApi.Storneaza(alt, plata.Id, Ianuarie); }); return ""; }
+                    catch (OperareException e) { return e.Message; }
+                });
+                AsteaptaBlocare(os, concurent);
+                tx.Commit();
+            }
+            var rezultat = concurent.GetAwaiter().GetResult();
+            Verifica("SC-DES-21", anulare ? "anularea concurentă refuză stingerea comisă" : "storno concurent include transferul comis",
+                anulare ? rezultat.Contains("stingere") : rezultat == "");
+            if (anulare) Storneaza(plata.Id, Ianuarie);
+            Rest("SC-DES-21", ref2, Furnizor, 40);
+        }
+        var alta = Trezorerie(false, 20); Opereaza(alta.Id);
+        Task<string> stingere;
+        using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
+            MotorOperare.Storneaza(os, os.GetObjectByKey<Document>(alta.Id), Ianuarie);
+            stingere = Task.Run(() => {
+                try { Comanda(alt => { using var t = TranzactieComanda.Incepe(alt);
+                    ((EFCoreObjectSpace)alt).DbContext.Database.SetCommandTimeout(10);
+                    C.Materializare.Imperecheaza(alt, alt.GetObjectByKey<Document>(alta.Id), Partida(ref2, Furnizor), 20, Ianuarie);
+                    alt.CommitChanges(); t.Commit(); }); return ""; }
+                catch (OperareException e) { return e.Message; }
+            });
+            AsteaptaBlocare(os, stingere);
+            tx.Commit();
+        }
+        Verifica("SC-DES-21", "stingerea recitește starea după storno concurent", stingere.GetAwaiter().GetResult().Contains(C.Materializare.StingereDeschidereInvalida));
+        Rest("SC-DES-21", ref2, Furnizor, 40);
+    }
+
+    void AsteaptaBlocare(IObjectSpace os, Task concurent) {
+        var db = ((EFCoreObjectSpace)os).DbContext;
+        var pid = ((NpgsqlConnection)db.Database.GetDbConnection()).ProcessID;
+        string interogare = null;
+        var asteptat = System.Diagnostics.Stopwatch.StartNew();
+        while (asteptat.Elapsed < TimeSpan.FromSeconds(5) && !concurent.IsCompleted) {
+            db.Database.ExecuteSqlRaw("SELECT pg_stat_clear_snapshot()");
+            interogare = db.Database.SqlQuery<string>($"""
+                SELECT query AS "Value" FROM pg_stat_activity WHERE {pid} = ANY(pg_blocking_pids(pid))
+                """).FirstOrDefault();
+            if (interogare != null) break;
+            Thread.Sleep(20);
+        }
+        Verifica("SC-DES-21", $"comanda concurentă așteaptă blocarea documentului înaintea citirii cubului ({interogare ?? "fără blocare observată"})",
+            interogare?.Contains("FOR UPDATE") == true);
     }
 
     void Refuzuri() {
@@ -140,17 +248,66 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         }
         foreach (var v in new[] { 39m, 41m }) Refuz("diferență", null, [loturi[0] with { Valoare = v }, loturi[1]], null, C.Materializare.DeschidereDiferenta);
         Refuz("lipsă", null, [], null, C.Materializare.DeschidereDiferenta);
+        Refuz("stoc fără marcaj", [solduri[0] with { Detaliat = false }, .. solduri.Skip(1)], [], null, C.Materializare.DeschidereDiferenta);
         Refuz("fără control", solduri.Skip(2).ToArray(), null, null, C.Materializare.DeschidereInvalida);
         Refuz("cont", [solduri[0] with { Cont = Guid.NewGuid() }, .. solduri.Skip(1)], null, null, C.Materializare.DeschidereInvalida);
         foreach (var l in new[] { loturi[0] with { Lot = Guid.NewGuid() }, loturi[0] with { Gestiune = Guid.NewGuid() },
             loturi[0] with { Cont = ancora }, loturi[0] with { Cantitate = -1 }, loturi[0] with { Valoare = -1 } })
             Refuz("lot", null, [l, loturi[1]], null, C.Materializare.DeschidereInvalida);
         Refuz("partener", null, null, [partide[0] with { Partener = Magazie }, .. partide.Skip(1)], C.Materializare.DeschidereInvalida);
+        Refuz("coordonate pe control detaliat", [solduri[0] with { Valuta = Guid.NewGuid() }, .. solduri.Skip(1)], null, null, "totalul de control");
+        Refuz("valută absentă", null, null, [partide[0] with { ValoareValuta = 20 }, .. partide.Skip(1)], C.Materializare.DeschidereInvalida);
         Refuz("referință", null, null, [partide[0] with { Referinta = Guid.Empty }, .. partide.Skip(1)], C.Materializare.DeschidereInvalida);
-        Refuz("carte", [solduri[0] with { Carte = N.Carte.Fiscal }, .. solduri.Skip(1)], null, null, C.Materializare.DeschidereInvalida);
+        Refuz("carte", [solduri[0] with { Carte = N.Carte.Fiscal }, .. solduri.Skip(1)], null, null, "nu sunt echilibrate");
         Comanda(os => { os.GetObjectByKey<Lot>(loturi[0].Lot).Data = Ianuarie.AddDays(1); os.CommitChanges(); });
         Refuz("dată lot", null, null, null, C.Materializare.DeschidereInvalida);
         Comanda(os => { os.GetObjectByKey<Lot>(loturi[0].Lot).Data = Ianuarie; os.CommitChanges(); });
+    }
+
+    void ReviewIntrare() {
+        var plata = Trezorerie(false, 20); Opereaza(plata.Id);
+        using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
+            var analiza = new N.Analiza(null, Economic, null, null, null, null);
+            var valuta = Guid.NewGuid();
+            Scrie(os, [new(contTert, N.Latura.Credit, 100), new(ancora, N.Latura.Debit, 100)], [],
+                [new(contTert, Furnizor, ref1, N.Latura.Credit, 100) { Analiza = analiza, Valuta = valuta, ValoareValuta = 20 }]);
+            var p = os.ModifiedObjects.OfType<C.Postare>().Single(p => p.Cont == contTert);
+            Verifica("SC-DES-15", "partida păstrează analiza și 100 lei / 20 în valută, curs 5", p.CodEconomic == Economic
+                && p.Valuta == valuta && p.ValoareValuta == 20 && p.Valoare == 100
+                && C.Randuri.Citeste(p).Coordonate.Unitate.Raport(new N.Sold(0, 100, 0, -20)) == 5);
+            os.CommitChanges();
+            Refuza("SC-DES-15", () => C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(plata.Id),
+                Partida(ref1, Furnizor), 20, Ianuarie), "în valută");
+            Verifica("SC-DES-15", "stingerea neacoperită nu adaugă transfer", !os.ModifiedObjects.OfType<C.Postare>().Any());
+            var faraNavigatie = new C.Postare { ID = Guid.NewGuid() };
+            try { C.Randuri.Citeste(faraNavigatie); Verifica("SC-DES-16", "lipsa navigației refuzată explicit", false); }
+            catch (InvalidOperationException e) { Verifica("SC-DES-16", "lipsa navigației refuzată explicit", e.Message.Contains("fără document")); }
+        }
+        Storneaza(plata.Id, Ianuarie);
+        using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
+            Refuza("SC-DES-17", () => Scrie(os,
+                [new(contTert, N.Latura.Credit, 100, Carte: N.Carte.Fiscal), new(ancora, N.Latura.Debit, 100, Carte: N.Carte.Fiscal)], [],
+                [new(contTert, Furnizor, ref1, N.Latura.Credit, 100, N.Carte.Fiscal)]), C.Materializare.DeschidereInvalida);
+        }
+        var flags = CuSpatiu(os => os.GetObjectByKey<Cont>(contTert).DimensiuniObligatorii);
+        try {
+            Comanda(os => { os.GetObjectByKey<Cont>(contTert).DimensiuniObligatorii = DimensiuneFlags.CodEconomic; os.CommitChanges(); });
+            using var os = Deschide(); using var tx = TranzactieComanda.Incepe(os);
+            Refuza("SC-DES-18", () => Scrie(os), "Cod economic");
+            Verifica("SC-DES-18", "dimensiunea lipsă refuzată înaintea scrierii", !os.ModifiedObjects.OfType<C.Postare>().Any());
+        } finally { Comanda(os => { os.GetObjectByKey<Cont>(contTert).DimensiuniObligatorii = flags; os.CommitChanges(); }); }
+        var receptie = Receptioneaza(new LinieFctScena(5, 10));
+        using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
+            Refuza("SC-DES-19", () => C.Materializare.Deschide(os, Ianuarie.AddDays(1), solduri, loturi, partide), "istoriei existente");
+            var l = receptie.Linii[0];
+            Refuza("SC-DES-20", () => Scrie(os, [new(Cont(Stoc), N.Latura.Debit, 50), new(ancora, N.Latura.Credit, 50)],
+                [new(Cont(Stoc), l.Lot.Value, Magazie, 5, 50)], []), "deja mișcări");
+        }
+        var lotNou = Lot(5, 50);
+        Comanda(os => { os.GetObjectByKey<Lot>(lotNou.Lot).LinieIntrareId = receptie.Linii[0].Id; os.CommitChanges(); });
+        using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
+            Refuza("SC-DES-20", () => Scrie(os, [new(Cont(Stoc), N.Latura.Debit, 50), new(ancora, N.Latura.Credit, 50)], [lotNou], []), "Lot, cont");
+        }
     }
 
     void Performanta() {

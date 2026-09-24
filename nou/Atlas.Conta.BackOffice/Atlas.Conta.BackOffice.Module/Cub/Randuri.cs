@@ -7,7 +7,7 @@ namespace Atlas.Conta.BackOffice.Module.Cub;
 public static class Randuri {
     public static N.Postare Citeste(Postare rand) {
         ArgumentNullException.ThrowIfNull(rand);
-        if (rand.DocumentId is null && rand.Tranzactie.Fel != N.FelTranzactie.Deschidere)
+        if (rand.DocumentId is null && rand.Tranzactie?.Fel != N.FelTranzactie.Deschidere)
             throw new InvalidOperationException(
                 $"Postarea {rand.ID} fără document nu aparține deschiderii.");
         return new N.Postare(

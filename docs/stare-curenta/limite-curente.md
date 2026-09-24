@@ -22,7 +22,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 - Deschiderea generică (094) este o comandă de motor și scrie numai cubul.
   Rapoartele și evaluarea/FIFO care încă citesc registrele nu văd aceste
-  solduri până la TR-D8. Stingerea prin motor a unei partide inițiale și
+  solduri până la TR-D8. Intrarea păstrează analiza și valuta, dar stingerea
+  unei partide inițiale în valută este refuzată explicit până la TR-D9;
+  soldurile nedetaliate nu se împart pe mai multe analize în aceeași cheie
+  de control. Ștergerea concurentă a nomenclatoarelor referite nu este
+  serializată de comandă (review Deschidere, MINOR-3).
+  Stingerea prin motor a unei partide inițiale în lei și
   inversarea ei prin storno PLT sunt probate; nu există încă o ușă UI/HTTP
   pentru această comandă. Conectorul 1C rămâne înghețat (091-r4).
 - Serializarea operațiilor concurente și reluarea idempotentă generală a
