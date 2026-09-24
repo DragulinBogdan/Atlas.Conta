@@ -36,6 +36,21 @@ implicit `InClarificare`, delta plus `Plus`. Politica seed-ului privat:
 `Perisabilitate` și `Neimputabila` → 6xx pe clasa materialului. Pe bugetar,
 conturile se confirmă pe planul OMFP 1917 înaintea seed-ului (098-r1).
 
+(f) **Schimbarea lotului pe conex se refuză.** Lotul e născut de linia FCT;
+un lot greșit se corectează pe factură, nu prin NIR (argumentul lui (d)).
+Delta nu inventează 473/408 pentru o simplă reidentificare de lot.
+
+(g) **O singură recepție activă per FCT, cumulativă.** Conexul activ descrie
+totalul constatat. Sosirea ulterioară (inclusiv `PeDrum`) este corecția
+conexului: stornoul inversează delta anterioară, documentul nou o
+recalculează pe cumul. Corecția păstrează proveniența absorbției față de
+sursă, independent de `Autogenerat`.
+
+(h) **Pe conexul acoperit liniile sursei nu se șterg.** Cantitatea poate fi
+zero și poartă cauza; relaxarea e locală conexului, NIR-ul manual rămâne
+strict. O singură cauză pe linie; două cauze pentru aceeași lipsă se
+refuză în subsetul acesta.
+
 ## Context
 
 La tranșarea 098(a), delta NIR avea nevoie de contrapartidă pe cauză:
