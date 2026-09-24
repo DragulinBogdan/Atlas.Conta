@@ -1,6 +1,6 @@
 # Catalogul de scenarii — proba supremă a motorului (decizia 091)
 
-**Actualizat: 2026-09-23.** Regula: `docs/decizii/091-scenarii-in-loc-de-import.md`,
+**Actualizat: 2026-09-24.** Regula: `docs/decizii/091-scenarii-in-loc-de-import.md`,
 literele (a)–(e). Un fișier per tip de document (`<COD>.md`), cu rândurile
 de mai jos. Așteptarea se scrie de mână, din OMFP 1802 și din politica
 profilului, cu cifre; nu se derivă din registre, din oracol sau din Flax.
@@ -75,7 +75,7 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | SC-X-06 | recepție 100 × 10 → BCS 60 → corecție de preț +200 → storno corecție → storno BCS | corecția este inversată înaintea consumului; inversarea BCS readuce 600 pe lot, fără compensarea încă o dată a celor 120 |
 | SC-X-07 | recepție 100 × 10 → BCS 60 → corecție de preț +200 → corecție de preț +100 → storno BCS | inversare 600 + compensare cumulată 180; stoc final 1.300, datorie 1.300, consum net zero |
 | SC-X-08 | BTR între gestiuni → BCS din gestiunea primitoare → storno BTR | refuz: lotul mutat are ieșiri |
-| SC-X-09 | ASM din două loturi → DSC din produsul rezultat → RLF pe unul din componente | costul produsului nu se re-propagă (granița declarată din design §11) |
+| SC-X-09 | ASM din două loturi → DSC din produsul rezultat → RLF pe unul din componente | circuit numeric și inversări în [ASM.md](ASM.md); reevaluarea cu nepropagare rămâne TR-D9 (design §11) |
 | SC-X-10 | închidere de lună cu documente operate → document întârziat în luna închisă → corecție | perioada închisă ca graniță absolută; storno legat + document nou |
 | SC-X-11 | `Deschidere` (contabil bloc + stoc pe lot + terți pe partidă) → PLT pe partida de deschidere → FCL nouă | partida fără document se stinge prin aceeași cheie ca una cu document |
 | SC-X-12 | închidere de an: 121 → 1174, `Deschidere` a anului nou = `Sold` la 31.12 | F27-r4; snapshot-ul de referință egal cu suma postărilor |
@@ -98,11 +98,12 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | RDC | retur de la client | pas 4 (privat) | [RDC.md](RDC.md) | venit/cost, partidă proprie negativă, compensare NTC, ciclu mixt peste perioadă; inert bugetar; cititorii comuni TR-D8 |
 | RLF | retur la furnizor | pas 4 (privat) | [RLF.md](RLF.md) | valoare fiscală, reziduu pe lot gol, compensare NTC, ciclu peste perioadă; inert bugetar |
 | DVI | declarație vamală | pas 4 (privat) | [DVI.md](DVI.md) | bază distinctă în Carte=Fiscal, 20 de scenarii, cicluri complete și SC-X-14; inert bugetar |
-| ASM | asamblare | pas 5 | `ASM.md` | se scrie cu pasul |
-| LDI | listă de inventar | pas 5 | `LDI.md` | se scrie cu pasul |
-| NIR | recepție manuală | pas 5 | `NIR.md` | se scrie cu pasul |
-| — | `Deschidere` | pas 6 | `DESCHIDERE.md` | se scrie cu pasul |
-| PIF/CAS/AMO | imobilizări | TR-D9 | `IMO.md` | la TR-D9 |
+| ASM | asamblare | pas 5 | [ASM.md](ASM.md) | transformare n→m, Δ dual pe grup, storno mixt și corecție pe ambele profiluri; SC-X-09 privat; TR-D8/TR-D9 rămân explicite |
+| LDI | listă de inventar | pas 5 | [LDI.md](LDI.md) | Magazie/Marfuri pe ambele profiluri; Folosinta în gestiune reală pe lanțul FCT/NIR/BTR/BCS/LDI, inversări, corecție și istoric (093); Custodie explicit neacoperită |
+| NIR | recepție manuală și conex | pas 5 | [NIR.md](NIR.md) | verificat pe ambele profiluri: ciclul complet, stingeri, dependenți, Folosinta/Marfuri; conexul sursei migrate nu dublează cubul |
+| — | `Deschidere` | pas 6 | [DESCHIDERE.md](DESCHIDERE.md) | detaliere fără dublare (094), refuz atomic, unicitate concurentă, stingere PLT și storno; cititorii de producție rămân TR-D8 |
+| DEC | decont | înainte de TR-D8 (095) | [DEC.md](DEC.md) | declarație contabilă/fiscală și partide pe angajat (096), verificări independente |
+| PIF/CAS/AMO | imobilizări | pe cub (095, 097) | [IMO.md](IMO.md) | SC-IMO-01…25 verzi pe ambele profiluri; fișa citită din cub; review advers restant |
 
 Rularea pe un tip: `ModelCheck --scenarii <TIP>[,<TIP>…] [privat]` (091-r1);
 scena unui rând se înregistrează cu tipul ei în `ScenelePeTip`

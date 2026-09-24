@@ -1,16 +1,23 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-23.** [Index](README.md)
+**Actualizat: 2026-09-24.** [Index](README.md)
 
-Ultima felie validată: DVI pe cub, numai privat, cu baza distinctă în
-Carte=Fiscal și SC-X-14 pe catalog. Cele 20 de scenarii DVI au 3 verificări
-bugetar / 177 privat, incluzând verificarea comună fiscală. Gate integral:
-**1.829 bugetar / 2.897 privat, zero FAIL**, build fără avertismente și
-rulări exit 0 (`run-verificari/20260923-143104-680/rezultat.json`).
-Comanda: `verifica.ps1 -Suita Integral -Profil Ambele -Sufix .CodexBCS`.
-Nucleu: **165/165**, zero omise, prin `-Suita Nucleu -Sufix .CodexBCS`
-(`run-verificari/20260923-143452-956/rezultat.json`). Rularea filtrată DVI,
-comenzile și limitele sunt în `docs/nucleu/scenarii/DVI.md`.
+Ultima implementare validată: DEC (096), PIF/AMO/CAS complete pe cub și
+cititorul de fișă pentru AMO/CAS/API Imo (097), plus primul lot SC-CIT-01…06.
+Gate integral: **2.616 bugetar / 3.707 privat, zero FAIL**, exit 0 comun
+și build fără avertismente: `run-verificari/20260924-101646-615/rezultat.json`.
+Include delimitarea ASM (a)/(h) aprobată pentru regimul dual (D8-B4).
+Scenarii și limite: [IMO.md](../nucleu/scenarii/IMO.md),
+[CITIRI.md](../nucleu/scenarii/CITIRI.md). Review-ul advers IMO este restant;
+rapoartele generale TR-D8 nu sunt comutate.
+Nucleu: **179/179**, zero omise, exit 0:
+`run-verificari/20260924-100513-273/rezultat.json`.
+Comenzile, încercările intermediare și limitele sunt în
+[DESCHIDERE.md](../nucleu/scenarii/DESCHIDERE.md), NIR în
+[NIR.md](../nucleu/scenarii/NIR.md); lanțul Folosinta în
+[LDI.md](../nucleu/scenarii/LDI.md); review-ul ASM în
+[ASM.md](../nucleu/scenarii/ASM.md). S-r10 este reparată: purja SAF-T
+șterge întâi regulile `DinSeed` atașate tipurilor temporare ale scenei.
 
 ## Organizarea sursei
 
@@ -149,6 +156,7 @@ Din rădăcină, cu PowerShell 7 și .NET 10:
 pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip BCS -Profil Ambele -Sufix .CodexBCS -PregatesteBaze
 pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Nucleu
 pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Integral -Profil Ambele -Sufix .CodexBCS
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Infrastructura
 ```
 
 `-PregatesteBaze` (Python cu `psycopg`) clonează bazele locale de profil
@@ -170,6 +178,25 @@ git): log per etapă și `rezultat.json` cu commit, fișierele modificate,
 profil, bazele exacte, SHA-256 al DLL-ului ModelCheck, argumente, durate și
 coduri de ieșire — cu modificări locale, manifestul (nu commit-ul) identifică
 sursa testată.
+
+Pe Windows, wrapperul activează local procesului modul fără dialoguri de
+eroare critică sau crash (`SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX`),
+moștenit de procesele copil, și restaurează modul anterior în `finally`.
+Nu schimbă configurarea globală Windows. Mecanismul este documentat de
+[Microsoft — SetErrorMode](https://learn.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-seterrormode).
+O excepție .NET necapturată păstrează stack trace-ul în log și codul nenul
+al etapei; wrapperul oprește seria cu exit 1, fără a aștepta închiderea
+unui dialog. Protecția se aplică rulărilor prin acest wrapper, nu comenzilor
+lansate separat.
+
+`-Suita Infrastructura` probează acest comportament fără acces la baze:
+compilează o consolă izolată, verifică moștenirea modului, provoacă o
+excepție necapturată și apoi pornește cu succes un al doilea proces.
+Doar procesele acestei probe au termen de 30 s; wrapperul nu introduce un
+timeout general pentru ModelCheck. Validat la 2026-09-23:
+`run-verificari/20260923-224135-701/rezultat.json`, exit 0; căderea produce
+`0xe0434352` / `-532462766`, stack trace prezent, procesul următor exit 0,
+fără intervenție. Compilarea probei: zero avertismente și erori.
 
 Refuzurile se probează pe două uși: codul stabil (`CoduriRefuz`, linia
 `COD: mesaj`) pe ușa declarației (`Materializare.Refuzuri`); pe ușa entității
@@ -292,6 +319,16 @@ ambele ieșind înainte de bootstrap: (S-D9)
   conex neoperat se RAPORTEAZĂ separat, nu se numără ca Δ. Litera (f) e vacuă
   cât timp un tip nemigrat mai postează pe conturi cu `RolTert`, iar nota se
   tipărește.
+
+Exit-ul `--reconciliere-cub` depinde numai de (a)–(g). Diagnosticul valoric
+pe lot × gestiune × cont din ASM-B7 rămâne raport; identifică și numără
+separat mișcările din afara domeniului Magazie/Marfuri/Folosinta, fără să excludă
+postările cubului cu istoric lipsă. ASM mixt este probat prin
+`NUC-ASM-RECONCILIERE`: Operare ASM este exclusă nominal din (a), numai în
+regimul dual (D8-B4 aprobat de owner, T-r15). (h) raportează exact D 40/C 40
+față de zero în registre, 1 document și 4 postări Operare. (a)–(g) rămân
+fără diferențe, exit 0; raportul declară excepția. Verificările independente
+pe cub rămân obligatorii; egalitatea completă cub–registre nu este afirmată.
 
 Rețeta istorică a verificării importului este `run-nucleu/tr-d7a/import/run.ps1`: Import1C integral
 (`--recreeaza --cititori --inchide-lunile`), apoi `--reclasifica`,

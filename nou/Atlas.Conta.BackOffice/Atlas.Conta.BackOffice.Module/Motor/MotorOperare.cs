@@ -301,6 +301,7 @@ public static class MotorOperare {
 
     // Întoarce documentul conex generat (draft autogenerat, decizia 17) sau null.
     public static Document Opereaza(IObjectSpace os, Document doc) {
+        using var tranzactie = TranzactieComanda.Asigura(os);
         var plan = CalculeazaSiValideaza(os, doc);
         var tipDoc = plan.TipDoc;
         var claseTip = plan.ClaseTip;
@@ -428,6 +429,7 @@ public static class MotorOperare {
         Cub.Materializare.Opereaza(os, doc, tipDoc);
 
         os.CommitChanges();
+        tranzactie?.Commit();
         return conex ?? secundar;
     }
 
@@ -579,6 +581,8 @@ public static class MotorOperare {
     // dependenți (simularea eliminării rândurilor proprii ține soldurile ≥ 0 și
     // niciun alt document nu a atins loturile create) și în perioadă deschisă.
     public static void AnuleazaOperarea(IObjectSpace os, Document doc) {
+        using var tranzactie = TranzactieComanda.Asigura(os);
+        Cub.Materializare.BlocheazaFise(os);
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi anulat.");
         GardianPerioada.VerificaDeschisa(os, doc.DataInregistrare);
@@ -623,6 +627,7 @@ public static class MotorOperare {
         doc.DataOperare = null;
         doc.TotalStingere = null;                                                    // F27-D7
         os.CommitChanges();
+        tranzactie?.Commit();
     }
 
     // Storno (decizia 14): rânduri inverse la data stornării, registrele rămân
@@ -630,6 +635,8 @@ public static class MotorOperare {
     // închisă sau dependenți existenți), cât timp perioada stornării e deschisă
     // și soldurile rămân ≥ 0 din data stornării încolo.
     public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
+        using var tranzactie = TranzactieComanda.Asigura(os);
+        Cub.Materializare.BlocheazaFise(os);
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi stornat.");
         if (dataStorno < doc.DataInregistrare)
@@ -708,6 +715,7 @@ public static class MotorOperare {
 
         doc.Stare = StareDocument.Stornat;
         os.CommitChanges();
+        tranzactie?.Commit();
     }
 
     // Oglinda exactă a gardianului de grup conex pentru legătura de pereche

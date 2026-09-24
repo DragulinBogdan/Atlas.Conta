@@ -819,6 +819,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 b.HasOne<Document>().WithMany().HasForeignKey(t => t.DocumentId)
                     .OnDelete(DeleteBehavior.NoAction);
                 b.HasIndex(t => t.DocumentId);
+                b.HasIndex(t => t.Fel).IsUnique().HasFilter("\"Fel\" = 4");
             });
             modelBuilder.Entity<Cub.Postare>(b => {
                 b.ToTable("Postare");
@@ -828,6 +829,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 b.Property(p => p.Carte).HasConversion<short>();
                 b.Property(p => p.SensTva).HasConversion<short>();
                 b.Property(p => p.RolTva).HasConversion<short>();
+                b.Property(p => p.FelUnitate).HasConversion<short>();
+                b.Property(p => p.SuportSpatiu).HasConversion<short>();
+                b.Property(p => p.InversaDinSpatiu).HasConversion<short>();
                 b.HasOne(p => p.Tranzactie).WithMany(t => t.Postari).HasForeignKey(p => p.TranzactieId)
                     .OnDelete(DeleteBehavior.NoAction);
                 b.HasIndex(p => p.DocumentId);

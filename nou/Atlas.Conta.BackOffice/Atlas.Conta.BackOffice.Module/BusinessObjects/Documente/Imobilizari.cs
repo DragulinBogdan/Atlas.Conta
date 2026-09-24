@@ -8,10 +8,11 @@ using DevExpress.Persistent.Base;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
-// PIF: intrarea, modernizarea și revizuirea parametrilor; nu postează (F26-D5).
+// 097: nominalizare contabilă și bază fiscală distinctă.
 [TipDetaliu(typeof(PunereInFunctiuneDetaliu))]
 [XafDisplayName("Punere în funcțiune")]
 public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantImobilizari.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Interna, Declaratii.Latura.Interna);
 
@@ -21,7 +22,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
 
     static FelMiscareImobilizare Fel(FelLiniePif fel) => FeluriRegistru[(int)fel - 1];
 
-    // Nu închide nicio datorie: nu postează nimic (86g).
+    // 86g: fișa nu este partidă de terț.
     public override bool PoateFiStins(IObjectSpace os) => false;
 
     public override void PregatesteOperare(IObjectSpace os) {
@@ -31,6 +32,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
     }
 
     public override void ValideazaOperare(IObjectSpace os, ICollection<string> erori) {
+        Cub.Materializare.BlocheazaFise(os);
         base.ValideazaOperare(os, erori);
 
         var fise = Fise(os, Detalii);
@@ -250,9 +252,9 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
     internal static void VerificaFaraFapteUlterioare(IObjectSpace os, Guid id, DateOnly data,
             IEnumerable<Guid> fise) {
         var ids = fise.ToList();
-        var ulterioare = os.GetObjectsQuery<RegistruImobilizari>()
-            .Where(r => ids.Contains(r.ImobilizareId) && r.DocumentId != id && r.Data >= data)
-            .Select(r => new { r.Storno, r.DetaliuId, r.Fel, r.Data }).ToList();
+        var ulterioare = Cub.Citiri.Imobilizari.Randuri(os, ids, DateOnly.MaxValue)
+            .Where(r => r.DocumentId != id && r.Rand.Data >= data)
+            .Select(r => new { r.Rand.Storno, r.Rand.DetaliuId, r.Rand.Fel, r.Rand.Data }).ToList();
         var stornate = ulterioare.Where(r => r.Storno).Select(r => r.DetaliuId).ToHashSet();
         var viu = ulterioare.FirstOrDefault(r => !r.Storno && !stornate.Contains(r.DetaliuId));
         if (viu != null)
@@ -312,7 +314,10 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
 }
 
 [XafDisplayName("Linie de punere în funcțiune")]
-public class PunereInFunctiuneDetaliu : DocumentDetaliu {
+public class PunereInFunctiuneDetaliu : DocumentDetaliu, ILinieCuImobilizare {
+    public Declaratii.ImobilizareCuleasa ImobilizareCuleasa() =>
+        new Declaratii.PifCules(ImobilizareId, Fel, LinieSursaId, ValoareFiscala,
+            AmortizareInitiala, AmortizareFiscalaInitiala);
     public virtual Guid ImobilizareId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     [XafDisplayName("Imobilizare")]
@@ -358,6 +363,7 @@ public class PunereInFunctiuneDetaliu : DocumentDetaliu {
 [TipDetaliu(typeof(IesireImobilizareDetaliu))]
 [XafDisplayName("Ieșire de imobilizări")]
 public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumentCuRegistruPropriu {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantImobilizari.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Interna, Declaratii.Latura.Interna);
 
@@ -368,6 +374,7 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
     public override bool PoateFiStins(IObjectSpace os) => false;
 
     public override void ValideazaOperare(IObjectSpace os, ICollection<string> erori) {
+        Cub.Materializare.BlocheazaFise(os);
         base.ValideazaOperare(os, erori);
 
         var fise = PunereInFunctiune.Fise(os, Detalii);
@@ -506,7 +513,8 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
 }
 
 [XafDisplayName("Linie de ieșire de imobilizări")]
-public class IesireImobilizareDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
+public class IesireImobilizareDetaliu : DocumentDetaliu, ILinieCuPostareExplicita, ILinieCuImobilizare {
+    public Declaratii.ImobilizareCuleasa ImobilizareCuleasa() => new Declaratii.CasCules(ImobilizareId, Fel);
     public virtual Guid ImobilizareId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     [XafDisplayName("Imobilizare")]
@@ -546,12 +554,14 @@ public class IesireImobilizareDetaliu : DocumentDetaliu, ILinieCuPostareExplicit
 [TipDetaliu(typeof(AmortizareLunaraDetaliu))]
 [XafDisplayName("Amortizare lunară")]
 public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocumentCuRegistruPropriu {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantImobilizari.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Interna, Declaratii.Latura.Interna);
 
     public override bool PoateFiStins(IObjectSpace os) => false;
 
     public override void ValideazaOperare(IObjectSpace os, ICollection<string> erori) {
+        Cub.Materializare.BlocheazaFise(os);
         base.ValideazaOperare(os, erori);
         if (PredatorId != PrimitorId)
             erori.Add("Amortizarea lunară are pe ambele laturi aceeași unitate internă.");
@@ -667,7 +677,8 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
 }
 
 [XafDisplayName("Linie de amortizare lunară")]
-public class AmortizareLunaraDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
+public class AmortizareLunaraDetaliu : DocumentDetaliu, ILinieCuPostareExplicita, ILinieCuImobilizare {
+    public Declaratii.ImobilizareCuleasa ImobilizareCuleasa() => new Declaratii.AmoCules(ImobilizareId, ValoareFiscala);
     public virtual Guid ImobilizareId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     [XafDisplayName("Imobilizare")]

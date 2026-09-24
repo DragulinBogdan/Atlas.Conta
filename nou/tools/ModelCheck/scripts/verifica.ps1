@@ -1,7 +1,7 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-    [ValidateSet('Nucleu', 'Scenarii', 'Integral')][string]$Suita = 'Scenarii',
+    [ValidateSet('Nucleu', 'Scenarii', 'Integral', 'Infrastructura')][string]$Suita = 'Scenarii',
     [string]$Tip = 'BCS',
     [ValidateSet('Privat', 'Bugetar', 'Ambele')][string]$Profil = 'Ambele',
     [ValidatePattern('^[._][A-Za-z0-9_-]{1,24}$')][string]$Sufix = '.Codex',
@@ -22,6 +22,8 @@ $tmpAnterior = $env:TMP
 $rezultate = [Collections.Generic.List[object]]::new()
 $inceput = Get-Date
 $codIesire = 1
+$modEroriAnterior = $null
+. (Join-Path $PSScriptRoot 'mod-nesupravegheat.ps1')
 
 function Executa([string]$Etapa, [string]$Executabil, [string[]]$Argumente) {
     $log = Join-Path $director ($Etapa + '.log')
@@ -45,6 +47,7 @@ try {
     try { $preluat = $mutex.WaitOne(0) }
     catch [Threading.AbandonedMutexException] { $preluat = $true }
     if (!$preluat) { throw 'Altă verificare Atlas.Conta rulează prin acest script; așteaptă încheierea ei.' }
+    $modEroriAnterior = Activeaza-ModNesupravegheat
     New-Item -ItemType Directory -Path $director -Force | Out-Null
     $temporar = Join-Path $director 'tmp'
     New-Item -ItemType Directory -Path $temporar | Out-Null
@@ -56,7 +59,11 @@ try {
     $commit = (& git rev-parse HEAD).Trim()
     $modificari = @(& git status --short)
     Write-Host "Suita=$Suita; profil=$Profil; sufix=$Sufix; commit=$commit; loguri=$director"
-    if ($Suita -eq 'Nucleu') {
+    if ($Suita -eq 'Infrastructura') {
+        Executa 'infrastructura' 'pwsh' @('-NoProfile', '-File',
+            (Join-Path $PSScriptRoot 'probe-exceptii.ps1'), '-Director', $director)
+    }
+    elseif ($Suita -eq 'Nucleu') {
         Executa 'nucleu' 'dotnet' @('test', 'nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.slnx', '--nologo')
     }
     else {
@@ -80,11 +87,12 @@ catch {
     Write-Host $_ -ForegroundColor Red
 }
 finally {
+    Restaureaza-ModErori $modEroriAnterior
     if (Test-Path -LiteralPath $director) {
         [ordered]@{
             inceput = $inceput.ToUniversalTime().ToString('o'); sfarsit = (Get-Date).ToUniversalTime().ToString('o')
             commit = $commit; modificari = $modificari; suita = $Suita; profil = $Profil; tip = $Tip
-            baze = @(if ($Suita -ne 'Nucleu') {
+            baze = @(if ($Suita -in @('Scenarii', 'Integral')) {
                 if ($Profil -in @('Bugetar', 'Ambele')) { "Atlas.Conta.BackOffice$Sufix" }
                 if ($Profil -in @('Privat', 'Ambele')) { "Atlas.Conta.ModelCheck.Privat$Sufix" }
             })

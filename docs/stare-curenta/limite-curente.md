@@ -1,12 +1,30 @@
 # Limite curente
 
-**Actualizat: 2026-09-18.** [Index](README.md)
+**Actualizat: 2026-09-24.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Domeniu și operare
 
+- UrmarestePartide (096) nu adaugă retroactiv unități postărilor existente.
+  La TR-D8, activarea citirilor cere diagnostic și tratarea explicită a
+  istoriei fără partide, inclusiv deconturi/avansuri pe 542.
+- PIF/AMO/CAS scriu cubul, iar situația fișei se citește din el (095, 097).
+  Activarea refuză istoricul incomplet; nu există backfill implicit. Storno
+  rămâne limitat la luna documentului (087g), inclusiv în corecție.
+  Nominalizarea și inversarea suportului folosesc un blocaj tranzacțional
+  comun pe bază; corectitudinea concurentă este probată, debitul concurent
+  pe volum mare nu este măsurat. Perf 2/51 privește operandul, nu întregul
+  flux de validare al frunzelor. Referințele la suport sunt păstrate în
+  istoricul inversat chiar dacă suportul eliberat este ulterior anulat;
+  auditul durabil după anularea fizică rămâne în delimitarea TR-D9 (091j).
+
+- Deschiderea generică (094) este o comandă de motor și scrie numai cubul.
+  Rapoartele și evaluarea/FIFO care încă citesc registrele nu văd aceste
+  solduri până la TR-D8. Stingerea prin motor a unei partide inițiale și
+  inversarea ei prin storno PLT sunt probate; nu există încă o ușă UI/HTTP
+  pentru această comandă. Conectorul 1C rămâne înghețat (091-r4).
 - Serializarea operațiilor concurente și reluarea idempotentă generală a
   comenzilor nu sunt acoperite complet. Validarea într-o singură operație
   nu dovedește protecția față de două comenzi simultane. (25f, 42f)
@@ -20,13 +38,14 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Închiderea unei perioade și operarea unui document în ea sunt serializate
   numai pe căile care trec prin adaptorul de operare și prin comenzile de
   generare ale închiderii de TVA și ale amortizării. Uneltele standalone —
-  ModelCheck, Import1C, Migrare — cheamă motorul direct, fără tranzacția
-  comenzii, deliberat: acolo nu există concurență. (F27-D1)
+  ModelCheck, Import1C, Migrare — pot chema motorul direct; acesta asigură
+  acum o tranzacție dacă apelantul nu are deja una (097). Aceasta nu adaugă
+  implicit blocajul de închidere al adaptorului API pe toate ușile. (F27-D1)
 - Balanța, balanța pe plan, fișa de cont, soldul de stoc, soldurile pe loturi,
   soldul unei chei, alocarea FIFO, gardianul de sold negativ și soldurile de
   TVA ale închiderii lunare pornesc de la ultima perioadă de referință. Trei
-  citiri rămân pe registrul integral: situația imobilizărilor, fiindcă al
-  patrulea registru nu are snapshot în felia aceasta; oracolul golirilor, care
+  citiri nu folosesc snapshot: situația imobilizărilor citește cubul integral
+  al fișelor cerute (097); oracolul golirilor, care
   citește rânduri concrete, nu solduri; împerecherile și restul documentelor,
   până la felia care le datează. (F27-D3)
 - Inițialul de stoc al SAF-T rămâne pe registrul integral: agregatul lui
@@ -94,8 +113,39 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   Documentele retroactive nu reevaluează ieșirile deja operate. (75a)
 - Unele distribuiri ASM nu sunt reprezentabile exact la precizia prețului.
   Cazurile refuzate nu sunt corectate prin prețuri sau valori forțate. (75-r4, 76c)
+- Regimul dual evaluează încă ieșirile cubului pe soldul registrelor: trei
+  BCS/ASM de câte 1 din 3/10 lasă în cub 0/−0,01; un produs ASM ajustat prin
+  Δ poate păstra 0/+0,01 după consum. Sunt probe exacte ale limitei curente,
+  fără toleranță; ținta rămâne 0/0. T-r13 cere atât evaluarea pe propriul sold
+  complet, cât și tratarea explicită a istoricului divergent. (ASM-B7)
+- Diagnosticul valoric citește întreg istoricul semnat pe lot/gestiune/cont,
+  cu proveniență. Compară stocul Magazie/Marfuri/Folosinta; alte tipuri de registru și
+  postările cubului identificate în afara domeniului sunt numărate separat.
+  Postările fără corespondent rămân istoric incomplet, nu sunt excluse.
+  Contul registrelor este rezolvat din nomenclatorul curent,
+  fără a pretinde un snapshot istoric. Diferențele complete rămân neexplicate
+  până la certificarea cauzei; lipsa unei corespondențe se raportează separat.
+  Nu deduce automat N-r3 din tipul documentului. (ASM-B7, T-r13)
+- Folosința păstrează gestiunea reală pe lanțul FCT/NIR/BTR/BCS/LDI.
+  Istoricul pe alt TipStoc nu se mută și nu alimentează noua cheie prin
+  fallback. Diagnosticul listează separat lotul, gestiunea, TipStoc,
+  documentul și stornoul pentru loturile cu mișcări Folosinta ori din clase
+  acoperite de o politică Folosinta curentă; aceasta este evidență pentru
+  verificare, nu o reclasificare a istoricului. Custodie rămâne refuzată la
+  LDI; Gratuit și injectivitatea SAF-T rămân TR-r7. (093, LDI-B3)
+- Reconcilierea contabilă (a) exclude nominal Operare ASM în regimul dual;
+  (h) păstrează numărul și diferențele vizibile, fără efect asupra exit-ului.
+  Pentru ASM, comparația cu registrele nu mai detectează erori valorice:
+  probele numerice independente sunt obligatorii, conservarea singură nu
+  ajunge. Cititorii contabili includ efectul ASM. Diagnosticul valoric pe
+  lot rămâne raport. (D8-B4 aprobat, T-D10, T-r15)
 - Recepția unui NIR nu declanșează automat completarea DSC pentru facturile
   cu acoperire parțială. Există comanda de generare suplimentară pe FCL. (37g, 38d)
+- NIR manual postează pe cub la net, fără fapt fiscal; nu acoperă avizul pe
+  408 sau factura ulterioară pe un lot recepționat anterior (TR-r4/B-r5).
+  NIR conex sursei migrate rămâne necesar registrelor până la TR-D9 (B-r3).
+  Excluderea se aplică numai cu Autogenerat, sursă și PoliticaConex potrivită,
+  cu sursa PosteazaInCub; simpla legătură cu o sursă nu este suficientă.
 - Fluxurile de rezervare, comenzi de vânzare și distribuire a aceleiași
   facturi din mai multe gestiuni nu sunt acoperite complet. (37g, C1a)
 - Retururile nu au un flux general propriu de compensare; se folosește NTC. (46f, 76g)

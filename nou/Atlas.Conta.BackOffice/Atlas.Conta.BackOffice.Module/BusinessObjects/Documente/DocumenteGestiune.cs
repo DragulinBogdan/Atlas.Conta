@@ -15,6 +15,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // închiderea întrebării 00 §13.1) — factura postează doar liniile non-stoc.
 [TipDetaliu(typeof(NirDetaliu))]
 public class NIR : Document {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantNir.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Externa, Declaratii.Latura.Gestiune);
 
@@ -133,7 +134,7 @@ public class NIR : Document {
 // clona din FCT aduce lotul deja născut pe linia facturii (lot STRĂIN), iar
 // valoarea vine din prețul lui; recepția conexă nu-și alege marfa, o
 // moștenește (F5-D4).
-public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot {
+public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot, ILinieCuPretUnitar {
     // F5-D1/F5-D2: identitatea liniei de stoc pe recepția manuală — oglinda lui
     // FacturaIntrareDetaliu.ProdusId (GATE XAF D1). Nullable în schemă (aceeași
     // frunză poartă și liniile clonei conexe, unde produsul e al lotului);

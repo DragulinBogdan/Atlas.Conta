@@ -1,23 +1,33 @@
 namespace Atlas.Conta.Nucleu;
 
 public static class Motor {
-    // T-D2: `Miscari` → `Operare`, `Mutari` → `Transfer`; un refuz pe oricare refuză contractul.
     public static Contract Opereaza(Declaratie declaratie, Rotunjire rotunjire) {
         ArgumentNullException.ThrowIfNull(declaratie);
         ArgumentNullException.ThrowIfNull(rotunjire);
         var tranzactii = new List<Tranzactie>(2);
-        if (declaratie.Miscari.Count > 0) {
-            var postari = new List<Postare>(declaratie.Miscari.Count * 2);
-            foreach (var miscare in declaratie.Miscari) {
-                var (debit, credit) = Miscare.Postari(miscare, declaratie.Data);
-                postari.Add(debit);
-                postari.Add(credit);
-            }
-            tranzactii.Add(new Tranzactie(
-                FelTranzactie.Operare, declaratie.Data, declaratie.Document, postari.ToArray()));
+        var operare = new List<Postare>();
+        var transfer = new List<Postare>();
+        foreach (var miscare in declaratie.Miscari) {
+            var (debit, credit) = Miscare.Postari(miscare, declaratie.Data);
+            operare.Add(debit);
+            operare.Add(credit);
         }
-        if (declaratie.Mutari.Count > 0)
-            tranzactii.Add(Transferul(declaratie.Document, declaratie.Data, declaratie.Mutari));
+        foreach (var mutare in declaratie.Mutari) {
+            var (iesire, intrare) = Mutare.Postari(mutare, declaratie.Data);
+            transfer.Add(iesire);
+            transfer.Add(intrare);
+        }
+        foreach (var linie in declaratie.Transformari) {
+            var (reala, contrapondere) = Transformare.Postari(linie, declaratie.Data);
+            var postari = linie.Fel == FelTranzactie.Transfer ? transfer : operare;
+            postari.Add(reala);
+            postari.Add(contrapondere);
+        }
+        if (operare.Count > 0)
+            tranzactii.Add(new Tranzactie(
+                FelTranzactie.Operare, declaratie.Data, declaratie.Document, operare));
+        if (transfer.Count > 0)
+            tranzactii.Add(new Tranzactie(FelTranzactie.Transfer, declaratie.Data, declaratie.Document, transfer));
         return Incheie(tranzactii, declaratie.Decizii, declaratie.Ipoteze, rotunjire);
     }
 

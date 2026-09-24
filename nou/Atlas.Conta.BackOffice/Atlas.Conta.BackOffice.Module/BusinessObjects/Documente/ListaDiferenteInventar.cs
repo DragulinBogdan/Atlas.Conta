@@ -15,6 +15,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // primitor = comisia de inventariere (calitatea Comisie — decizia 16).
 [TipDetaliu(typeof(ListaDiferenteInventarDetaliu))]
 public class ListaDiferenteInventar : Document {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantDiferenteInventar.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Gestiune, Declaratii.Latura.Interna.Cu(CalitateRepartitor.Comisie));
 
@@ -101,7 +102,8 @@ public class ListaDiferenteInventar : Document {
 [Appearance("LDI_Linie_Minus_FaraCulegere", AppearanceItemType.ViewItem, "Directie = 'Minus'",
     TargetItems = nameof(Produs) + ";" + nameof(PretEvaluare) + ";" + nameof(DataExpirare)
         + ";" + nameof(LotFabricatie), Enabled = false)]
-public class ListaDiferenteInventarDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot {
+public class ListaDiferenteInventarDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot, ILinieCuDiferentaInventar {
+    public Declaratii.DiferentaInventarFapt DiferentaCuleasa() => new(Directie, PretEvaluare);
     // Direcția explicită (testul bazei §4) — se materializează în semnul
     // Cantitate-ii din bază la operare; UI-ul culege cantitatea pozitivă.
     [XafDisplayName("Direcție")]

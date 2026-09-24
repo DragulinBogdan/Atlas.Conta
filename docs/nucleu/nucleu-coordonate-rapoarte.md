@@ -57,7 +57,7 @@ raport e marcat.
 | `Latura` (D / C) | contabil | rulajele brute ale balanței și fișei, `TotalDebit`/`TotalCredit` SAF-T, `DebitCreditIndicator` — cu storno în roșu semnul nu le dă | latura rândului-pereche |
 | `Data` (a înregistrării) | toate | granițele de perioadă, snapshot, S1/S5 | `Data` pe contabil, stoc, imobilizări (`= DataInregistrare`); pe fiscal `Data` e cea FIZICĂ (`MotorOperare.cs:379`) — vezi §4 |
 | `Partener` (inclusiv angajat) | contabil, terți, fiscal | Customers/Suppliers, D394, jurnale, sold partener, `CustomerID`/`SupplierID` pe linia de GL | `Repartitor` pe latură; `RegistruTva.PartenerId` |
-| `Gestiune` — reală (depozit, casă/bancă, loc) sau virtuală (Consum, Folosință, Gratuit, ProducțieNeterminată, Furnizor, Client) | stoc, contabil | sold stoc, PhysicalStock, MovementOfGoods; locul fișei la data faptului | `Repartitor` (Gestiune/ContPropriu/UnitateInterna) + `TipStoc` |
+| `Gestiune` — reală (depozit, casă/bancă, loc; Folosință conform 093) sau virtuală (Consum, Gratuit, ProducțieNeterminată, Furnizor, Client) | stoc, contabil | sold stoc, PhysicalStock, MovementOfGoods; locul fișei la data faptului | `Repartitor` (Gestiune/ContPropriu/UnitateInterna) + `TipStoc` |
 | `Produs` | stoc, contabil | Products/PhysicalStock/MovementOfGoods, op11 D394, evaluarea la cost mediu, dimensiunea Material | `Lot.ProdusId`; `DebitMaterialId` |
 | `Unitate` (lot / partidă / fișă) | stoc, terți, imobilizări | sold stoc pe lot, FIFO, `StockAccountNo`, documente cu rest, registrul imobilizărilor | `LotId`; `Document.TotalStingere`; `ImobilizareId` |
 | `CodTva` = (tip@versiune × sens × rol Bază/Taxă) | fiscal | jurnale, decont, D300, D394, TaxInformation, TaxTable | `RegistruTva` (`TipTvaId`, `Sens`, `Regim`, `Cota`, coloanele `Baza`/`Tva`) |
@@ -81,8 +81,8 @@ ajunge (intrare/ieșire), cum e și azi.
 
 **Ce NU e coordonată** (și azi e coloană de registru):
 
-- `TipStoc` — Magazie/Mărfuri = `Gestiune` reală + `Cont` al laturii de valoare
-  (371 vs 3xx, decis de politică din produs); Consum/Folosință/Gratuit/
+- `TipStoc` — Magazie/Mărfuri/Folosință (093) = `Gestiune` reală + `Cont` al laturii de valoare
+  (371 vs 3xx, decis de politică din produs); Consum/Gratuit/
   ProducțieNeterminată = gestiuni virtuale; Custodie = cantitate pe cont în
   afara bilanțului (803x), cu valoare zero — distinctă de stocul propriu prin
   `Cont`, nu prin gestiune (azi n-are rânduri vii). Politica de mișcare SAF-T

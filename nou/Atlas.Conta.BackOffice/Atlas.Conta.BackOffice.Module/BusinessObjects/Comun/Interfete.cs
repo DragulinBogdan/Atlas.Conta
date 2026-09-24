@@ -38,6 +38,14 @@ public interface ILinieCuPretUnitar {
     decimal PretUnitar { get; }
 }
 
+public interface ILinieCuTransformare {
+    Declaratii.TransformareFapt TransformareCuleasa();
+}
+
+public interface ILinieCuDiferentaInventar {
+    Declaratii.DiferentaInventarFapt DiferentaCuleasa();
+}
+
 // Linia care NAȘTE un lot la culegere (F5-D2): produsul ales de operator devine
 // identitatea lotului nou, iar `LoturiCulegereService` face nașterea/
 // sincronizarea/curățenia pe contractul ăsta — o singură logică pentru toate
@@ -134,4 +142,8 @@ public interface IDocumentCuRegistruPropriu {
     void EliminaRegistrul(DevExpress.ExpressApp.IObjectSpace os);
     /// <summary>Adaugă rândurile inverse, la data stornării.</summary>
     void StorneazaRegistrul(DevExpress.ExpressApp.IObjectSpace os, DateOnly data);
+}
+
+public interface ILinieCuImobilizare {
+    Declaratii.ImobilizareCuleasa ImobilizareCuleasa();
 }

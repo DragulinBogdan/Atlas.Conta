@@ -95,13 +95,24 @@ static class Comparabil {
 
     public static List<PostareComparabila> Proiecteaza(N.Tranzactie tranzactie) {
         ArgumentNullException.ThrowIfNull(tranzactie);
-        return [.. tranzactie.Postari.Select(Proiecteaza)];
+        return Proiecteaza(new[] { tranzactie });
     }
 
     public static List<PostareComparabila> Proiecteaza(IEnumerable<N.Tranzactie> tranzactii) {
         ArgumentNullException.ThrowIfNull(tranzactii);
-        return [.. tranzactii.SelectMany(t => t.Postari).Select(Proiecteaza)];
+        var postari = tranzactii.SelectMany(t => t.Postari).ToList();
+        var excluse = postari.Count(EsteContrapondereTransformare);
+        if (excluse > 0) Console.WriteLine($"       Comparabil: {excluse} contraponderi Transformare excluse structural.");
+        return [.. postari.Where(p => !EsteContrapondereTransformare(p)).Select(Proiecteaza)];
     }
+
+    public static bool EsteContrapondereTransformare(N.Postare p) =>
+        p.Coordonate.Gestiune == N.GestiuniVirtuale.Transformare
+        && p.Coordonate.Unitate == null && p.Coordonate.Produs != null
+        && p.Coordonate.Carte == N.Carte.Contabil && p.Coordonate.Partener == null
+        && p.Coordonate.CodTva == null && p.Coordonate.PerioadaDeclarare == null
+        && p.Coordonate.Valuta == null && p.Valoare == 0m && p.ValoareValuta == 0m
+        && p.Cantitate != 0m;
 
     public static RaportComparatie Compara(
             IEnumerable<PostareComparabila> asteptat,

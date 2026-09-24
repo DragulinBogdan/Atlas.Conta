@@ -359,6 +359,7 @@ internal static class ProfilPrivat {
                 client.Any(p => simbol.StartsWith(p, StringComparison.Ordinal)) ? RolTertCont.Client
                 : furnizor.Any(p => simbol.StartsWith(p, StringComparison.Ordinal)) ? RolTertCont.Furnizor
                 : RolTertCont.Niciunul;
+            cont.UrmarestePartide = cont.RolTert != RolTertCont.Niciunul || simbol == "542";
         }
     }
 

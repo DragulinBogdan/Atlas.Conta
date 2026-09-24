@@ -24,6 +24,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     bool privat, Action<IObjectSpace, int, int> inchide, string cod, int an) {
     protected readonly bool Privat = privat;
     protected readonly int An = an;
+    protected virtual int UltimulAn => An;
     protected string Marcaj => "E2E-SC-" + cod;
     protected Guid Magazie, Destinatie, Loc, Furnizor, Client;
     protected Guid? Economic;
@@ -49,6 +50,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     }
 
     protected abstract void Executa();
+    protected virtual void CurataCubSuplimentar(IObjectSpace os, Purja purja) { }
 
     protected FacturaScena Nota(DateOnly data, params LinieNtcScena[] linii) {
         using var os = Deschide();
@@ -102,8 +104,8 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
 
     void Pregateste() {
         using var os = Deschide();
-        if (os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An)
-            || os.GetObjectsQuery<Document>().Any(d => d.DataInregistrare.Year == An))
+        if (os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An >= An && p.An <= UltimulAn)
+            || os.GetObjectsQuery<Document>().Any(d => d.DataInregistrare.Year >= An && d.DataInregistrare.Year <= UltimulAn))
             throw new InvalidOperationException($"{Marcaj} cere anul {An} liber.");
         conturi = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
         foreach (var luna in new[] { 1, 2 }) {
@@ -260,6 +262,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
                 p.Cont, p.Latura, p.Gestiune, p.Unitate, p.Produs, p.Partener, p.TipTvaId,
                 p.SensTva, p.RolTva, p.PerioadaDeclarare, p.Cantitate, p.Valoare, p.ValoareValuta,
                 p.Spatiu, p.Carte, p.Valuta, p.UnitateDeschisa, p.Atribuit, p.CodEconomic,
+                p.FelUnitate, p.SuportId, p.SuportSpatiu, p.InversaDinId, p.InversaDinSpatiu,
                 p.CodFunctional, p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost }))));
 
     protected void SoldLot(string id, Guid lot, Guid gestiune, DateOnly data, decimal q, decimal v) {
@@ -307,28 +310,41 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         var reps = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
             .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
         if (reps.Count == 0) return;
+        var liniiNascatoare = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            .Where(l => l.Produs.Cod.StartsWith(Marcaj) && l.LinieIntrareId != null)
+            .Select(l => l.LinieIntrareId.Value).ToList();
+        var documenteNascatoare = os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+            .Where(l => liniiNascatoare.Contains(l.ID)).Select(l => l.DocumentId).ToList();
         var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
-            .Where(d => reps.Contains(d.PredatorId) || reps.Contains(d.PrimitorId)).Select(d => d.ID).ToList();
+            .Where(d => reps.Contains(d.PredatorId) || reps.Contains(d.PrimitorId)
+                || documenteNascatoare.Contains(d.ID)).Select(d => d.ID).ToList();
         var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
             .Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
         var pj = new Purja(os);
+        CurataCubSuplimentar(os, pj);
         ProbeCub.Purjeaza(pj, os, docs);
-        pj.Adauga(os.GetObjectsQuery<SoldPerioadaStoc>().Where(s => s.An == An));
-        pj.Adauga(os.GetObjectsQuery<SoldPerioadaContabil>().Where(s => s.An == An));
-        pj.Adauga(os.GetObjectsQuery<PartidaDeschisa>().Where(s => s.An == An));
+        pj.Adauga(os.GetObjectsQuery<SoldPerioadaStoc>().Where(s => s.An >= An && s.An <= UltimulAn));
+        pj.Adauga(os.GetObjectsQuery<SoldPerioadaContabil>().Where(s => s.An >= An && s.An <= UltimulAn));
+        pj.Adauga(os.GetObjectsQuery<PartidaDeschisa>().Where(s => s.An >= An && s.An <= UltimulAn));
         pj.Adauga(os.GetObjectsQuery<Imperechere>().Where(i => docs.Contains(i.DocumentId) || docs.Contains(i.DocumentStingatorId)));
         pj.Adauga(os.GetObjectsQuery<DviFactura>().Where(i => docs.Contains(i.DviId) || docs.Contains(i.FacturaId)));
         pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => docs.Contains(r.DocumentId)));
+        pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>().Where(r => docs.Contains(r.DocumentId)));
         pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)));
         pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docs.Contains(r.DocumentId.Value)));
         pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docs.Contains(d.DocumentId)));
         pj.Adauga(os.GetObjectsQuery<Document>().Where(d => docs.Contains(d.ID)));
+        pj.Adauga(os.GetObjectsQuery<Imobilizare>().Where(f => f.NumarInventar.StartsWith(Marcaj)));
         pj.Adauga(os.GetObjectsQuery<Lot>().Where(l => loturi.Contains(l.ID)));
         pj.Adauga(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(Marcaj)));
+        pj.Adauga(os.GetObjectsQuery<TipMaterial>().Where(t => t.Cod.StartsWith(Marcaj)));
         pj.Adauga(os.GetObjectsQuery<Repartitor>().Where(r => reps.Contains(r.ID)));
         pj.Adauga(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == Marcaj));
-        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().Where(i => i.Perioada.An == An));
-        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().Where(p => p.An == An));
+        pj.Adauga(os.GetObjectsQuery<CodFunctional>().Where(c => c.Cod == Marcaj));
+        pj.Adauga(os.GetObjectsQuery<SursaFinantare>().Where(c => c.Cod == Marcaj));
+        pj.Adauga(os.GetObjectsQuery<Proiect>().Where(c => c.Cod == Marcaj));
+        pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().Where(i => i.Perioada.An >= An && i.Perioada.An <= UltimulAn));
+        pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().Where(p => p.An >= An && p.An <= UltimulAn));
         pj.Executa();
     }
 }

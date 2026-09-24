@@ -243,6 +243,16 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         Comanda(os => OperareApi.Opereaza(os, ultima));
         Postari("SC-BCS-07", ultima, N.FelTranzactie.Operare, new(An, 1, 11), (lot, 2m, 0.67m));
         Sold("SC-BCS-07", lot, Sfarsit, 0m, 0m);
+
+        var dual = Receptioneaza(3m, 3.333333m);
+        var valori = new[] { 3.33m, 3.34m, 3.34m };
+        for (var i = 0; i < valori.Length; i++) {
+            var data = new DateOnly(An, 1, 12 + i);
+            var doc = Culege(data, (dual, 1m));
+            Comanda(os => OperareApi.Opereaza(os, doc));
+            Postari("SC-BCS-15", doc, N.FelTranzactie.Operare, data, (dual, 1m, valori[i]));
+        }
+        Sold("SC-BCS-15 (T-r13: țintă 0/0, excepție duală 0/−0,01)", dual, Sfarsit, 0m, -0.01m);
     }
 
     // Ușa entității refuză azi cu textul validării vechi (`ValideazaOperare`,

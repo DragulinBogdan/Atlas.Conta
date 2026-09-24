@@ -305818,6 +305818,9 @@
           "RolTert": {
             "$ref": "#/components/schemas/RolTertCont"
           },
+          "UrmarestePartide": {
+            "type": "boolean"
+          },
           "Cautare": {
             "type": "string",
             "nullable": true
@@ -312902,6 +312905,11 @@
           },
           "DeclarareIntarziata": {
             "$ref": "#/components/schemas/DeclarareIntarziata"
+          },
+          "TolerantaTaxa": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -312997,6 +313005,11 @@
           },
           "DeclarareIntarziata": {
             "$ref": "#/components/schemas/DeclarareIntarziata"
+          },
+          "TolerantaTaxa": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -316587,6 +316600,12 @@
           "TipTvaImplicit": {
             "$ref": "#/components/schemas/TipTva"
           },
+          "PosteazaInCub": {
+            "type": "boolean"
+          },
+          "LaturaContPropriu": {
+            "$ref": "#/components/schemas/LaturaDocument"
+          },
           "Cautare": {
             "type": "string",
             "nullable": true
@@ -316620,6 +316639,12 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
+          },
+          "PosteazaInCub": {
+            "type": "boolean"
+          },
+          "LaturaContPropriu": {
+            "$ref": "#/components/schemas/LaturaDocument"
           },
           "Cautare": {
             "type": "string",

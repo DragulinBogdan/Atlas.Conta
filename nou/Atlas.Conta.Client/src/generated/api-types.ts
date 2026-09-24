@@ -8844,6 +8844,7 @@ export interface components {
             Sumator?: boolean;
             DimensiuniObligatorii?: components["schemas"]["DimensiuneFlags"];
             RolTert?: components["schemas"]["RolTertCont"];
+            UrmarestePartide?: boolean;
             Cautare?: string | null;
         };
         ContPropriu: {
@@ -11312,6 +11313,8 @@ export interface components {
             ContrapartidaFallbackId?: string | null;
             ContrapartidaFallback?: components["schemas"]["Cont"];
             DeclarareIntarziata?: components["schemas"]["DeclarareIntarziata"];
+            /** Format: double */
+            TolerantaTaxa?: number | null;
         };
         PoliticaTvaImplicit: {
             /** Format: uuid */
@@ -11350,6 +11353,8 @@ export interface components {
             /** Format: uuid */
             ContrapartidaFallbackId?: string | null;
             DeclarareIntarziata?: components["schemas"]["DeclarareIntarziata"];
+            /** Format: double */
+            TolerantaTaxa?: number | null;
         };
         PoliticaValidare: {
             /** Format: uuid */
@@ -12661,6 +12666,8 @@ export interface components {
             /** Format: uuid */
             TipTvaImplicitId?: string | null;
             TipTvaImplicit?: components["schemas"]["TipTva"];
+            PosteazaInCub?: boolean;
+            LaturaContPropriu?: components["schemas"]["LaturaDocument"];
             Cautare?: string | null;
         };
         TipDocumentResourceDelta: {
@@ -12672,6 +12679,8 @@ export interface components {
             ClrType?: string | null;
             /** Format: uuid */
             TipTvaImplicitId?: string | null;
+            PosteazaInCub?: boolean;
+            LaturaContPropriu?: components["schemas"]["LaturaDocument"];
             Cautare?: string | null;
         };
         TipMaterial: {

@@ -33,6 +33,9 @@ public class Cont : BaseObject, ICuCautare, ICuProvenienta {
     [XafDisplayName("Rol de terț (SAF-T)")]
     public virtual RolTertCont RolTert { get; set; }
 
+    [XafDisplayName("Urmărește partide")]
+    public virtual bool UrmarestePartide { get; set; }
+
     // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
     // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
     [XafDisplayName("Căutare")]

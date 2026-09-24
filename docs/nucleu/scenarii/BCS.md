@@ -100,6 +100,11 @@ cubului.
 
 ## Legătura cu probele existente
 
+SC-BCS-15 (implementat și verificat pe ambele profiluri, 2026-09-23): lot 3/10, trei documente
+succesive de câte 1. Cub: 3,33 / 3,34 / 3,34; sold final 0/−0,01.
+Regula țintă rămâne 0/0, rezultatul dual este excepția exactă T-r13,
+ASM-B7; fără toleranță generală. Rândul nu certifică invariantul țintă.
+
 `VerificaNucleuBcs` rămâne în aceeași selecție: `NUC-BCS-*`, inclusiv
 `NUC-BCS-N-R3-*` (evaluare 5 × 300/20 = 75, vechiul preț ar da 50),
 `NUC-BCS-REFUZURI` (două refuzuri pe două loturi), `STR-ANULARE` și

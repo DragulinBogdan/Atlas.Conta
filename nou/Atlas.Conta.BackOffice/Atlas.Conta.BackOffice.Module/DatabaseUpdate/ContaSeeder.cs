@@ -274,6 +274,7 @@ public static class ContaSeeder {
 
     // Decizia 20: nomenclatorul de tipuri oglindește clasele 1:1 — doar ancoră FK + UI.
     static void SeedTipuriDocument(IObjectSpace os, ProfilContabil profil) {
+        Cub.Citiri.Imobilizari.VerificaAcoperire(os);
         // S-D3, B-r2: `PosteazaInCub` și `LaturaContPropriu` sunt date de seed.
         (string Cod, string Denumire, string ClrType, LaturaDocument? ContPropriu)[] tipuri = [
             ("FCT", "Factură intrare", nameof(FacturaIntrare), null),
@@ -297,19 +298,16 @@ public static class ContaSeeder {
             // bugetar rămâne tip inert (fără PoliticaInchidereTva, fără
             // numerotare), ca DSC/BPR.
             ("ITV", "Închidere TVA", nameof(InchidereTva), null),
-            // Al 14-lea derivat (FAZA 1C §7): asamblarea (kitting n→m pe stoc).
-            // Ancora e în nucleu pentru AMBELE profiluri; la bugetar rămâne tip
-            // inert (fără politici), ca DSC/ITV/BPR.
             ("ASM", "Asamblare", nameof(Asamblare), null),
             // Al 15-lea și al 16-lea derivat (FAZA 1C §7): retururile, pe
             // corespondența de STORNO (valori negative pe latura originală).
             // Ancorele sunt în nucleu pentru AMBELE profiluri; la bugetar rămân
-            // tipuri inerte (fără politici), ca DSC/ITV/ASM/BPR.
+            // tipuri inerte (fără politici), ca DSC/ITV/BPR.
             ("RLF", "Retur la furnizor", nameof(ReturFurnizor), null),
             ("RDC", "Retur de la client", nameof(ReturClient), null),
             // Declarația vamală de import (86c).
             // Ancora e în nucleu pentru AMBELE profiluri; la bugetar rămâne tip
-            // inert (fără politici), ca DSC/ITV/ASM/BPR.
+            // inert (fără politici), ca DSC/ITV/BPR.
             ("DVI", "Declarație vamală de import", nameof(Dvi), null),
             // Imobilizările: ancore ACTIVE pe ambele profiluri (F26-D4).
             ("PIF", "Punere în funcțiune", nameof(PunereInFunctiune), null),
@@ -321,7 +319,7 @@ public static class ContaSeeder {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
-                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR" or "FCL" or "NTC"
+                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR" or "FCL" or "NTC" or "ASM" or "LDI" or "NIR" or "DEC" or "PIF" or "AMO" or "CAS"
                     || (t.Cod is "DSC" or "ITV" or "RDC" or "RLF" or "DVI" && profil == ProfilContabil.Privat);
                 tip.LaturaContPropriu = t.ContPropriu;
             });

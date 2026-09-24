@@ -9,6 +9,8 @@ public sealed record Mutare(
     decimal Valoare,
     Cauza Cauza) {
 
+    public ReferintaPostare? Suport { get; init; }
+
     // 090f: transferul conservă pe (Cont, Latura), deci cele două postări stau pe ACEEAȘI latură.
     public static (Postare Iesire, Postare Intrare) Postari(Mutare mutare, DateOnly data) {
         ArgumentNullException.ThrowIfNull(mutare);
@@ -22,12 +24,12 @@ public sealed record Mutare(
                 -mutare.Cantitate,
                 -mutare.ValoareValuta,
                 -mutare.Valoare,
-                mutare.Cauza),
+                mutare.Cauza) { Suport = mutare.Suport },
             new Postare(
                 mutare.La.Pe(mutare.Latura, data),
                 mutare.Cantitate,
                 mutare.ValoareValuta,
                 mutare.Valoare,
-                mutare.Cauza));
+                mutare.Cauza) { Suport = mutare.Suport });
     }
 }

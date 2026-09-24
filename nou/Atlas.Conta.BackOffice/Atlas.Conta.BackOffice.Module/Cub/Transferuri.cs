@@ -34,7 +34,8 @@ public static class Transferuri {
         IReadOnlyList<N.Postare> OperareStins,
         IReadOnlyList<N.Postare> TransferuriStins,
         decimal Suma,
-        DateOnly Data);
+        DateOnly Data,
+        Guid? PartidaTinta = null);
 
     /// <param name="Sarit">motivul pentru care împerecherea n-are corespondent în cub.</param>
     public sealed record Rezultat(N.Mutare? Mutare, DateOnly Data, N.Refuz? Refuz, string? Sarit);
@@ -62,7 +63,10 @@ public static class Transferuri {
             cerere.StingatorId, referinta.Cont, tert);
         if (proprie is null)
             return Sare("documentul care stinge n-are partidă proprie pe contul și partenerul cerut");
-        var stinsa = IdentitatiPartide.Gaseste(
+        var stinsa = cerere.PartidaTinta is Guid tinta
+            ? cerere.OperareStins.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>()
+                .Distinct().SingleOrDefault(u => u.Id == tinta && u.Cont == referinta.Cont && u.Partener == tert)
+            : IdentitatiPartide.Gaseste(
             cerere.OperareStins.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>(),
             cerere.StinsId, referinta.Cont, tert);
         if (stinsa is null)

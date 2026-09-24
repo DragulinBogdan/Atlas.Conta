@@ -41,6 +41,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // e tot ce diferă.
 [TipDetaliu(typeof(AsamblareDetaliu))]
 public class Asamblare : Document {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantAsamblare.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Gestiune, Declaratii.Latura.Gestiune);
 
@@ -171,7 +172,12 @@ public class Asamblare : Document {
 [Appearance("ASM_Linie_Consum_FaraCulegere", AppearanceItemType.ViewItem, "Directie = 'Consum'",
     TargetItems = nameof(Produs) + ";" + nameof(PretEvaluare) + ";" + nameof(DataExpirare)
         + ";" + nameof(LotFabricatie), Enabled = false)]
-public class AsamblareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot {
+public class AsamblareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot, ILinieCuTransformare {
+    public Declaratii.TransformareFapt TransformareCuleasa() => new(Directie switch {
+        DirectieAsamblare.Consum => Nucleu.RolTransformare.Consum,
+        DirectieAsamblare.Produs => Nucleu.RolTransformare.Produs,
+        _ => (Nucleu.RolTransformare?)null,
+    }, PretEvaluare);
     // Rolul explicit al liniei — se materializează în semnul Cantitate-ii din
     // bază la operare; UI-ul culege cantitatea pozitivă (ca LDI).
     [XafDisplayName("Direcție")]

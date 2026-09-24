@@ -33,6 +33,8 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
         Storneaza(d.Id, data);
         Postari("SC-BTR-03", d.Id, N.FelTranzactie.Transfer, Ianuarie, Randuri(d, 0, 4, 40));
         Postari("SC-BTR-03", d.Id, N.FelTranzactie.Storno, data, Randuri(d, 0, -4, -40));
+        Verifica("SC-CIT-05", "BTR și inversa Transfer nu apar în citirea contabilă", CuSpatiu(os =>
+            !C.Citiri.Contabil.Postari(os).Any(p => p.DocumentId == d.Id)));
         Solduri("SC-BTR-03", lot, data, 10, 100, 0, 0);
         var amprenta = Amprenta(d.Id);
         Refuza("SC-BTR-03", () => Storneaza(d.Id, data), "Operat");

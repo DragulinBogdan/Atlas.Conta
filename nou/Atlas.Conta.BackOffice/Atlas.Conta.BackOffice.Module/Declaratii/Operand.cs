@@ -20,7 +20,7 @@ public sealed record RepartitorFapt(Guid Id, FelRepartitor? Fel, Guid? ContImpli
     public Parte? Parte => Laturi.ParteA(Fel);
 }
 
-public sealed record ContFapt(Guid Id, string? Simbol, RolTertCont RolTert);
+public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide);
 
 public sealed record SoldPartidaFapt(N.Unitate Unitate, N.Sold Sold);
 
@@ -30,7 +30,14 @@ public sealed record LotFapt(
     Guid? TipMaterialId,
     Guid? ContImplicitId,
     DateOnly Data,
-    decimal PretUnitar);
+    decimal PretUnitar) {
+    public Guid? LinieIntrareId { get; init; }
+    public Guid? GestiuneId { get; init; }
+}
+
+public sealed record TransformareFapt(N.RolTransformare? Rol, decimal? PretProdus);
+
+public sealed record DiferentaInventarFapt(DirectieDiferenta Directie, decimal? PretEvaluare);
 
 public sealed record PoliticaTvaFapt(
     DirectieTva Directie,
@@ -75,6 +82,10 @@ public sealed record LinieOperand(
     N.Analiza Analiza,
     Guid? AngajamentId) {
 
+    public TransformareFapt? Transformare { get; init; }
+    public DiferentaInventarFapt? DiferentaInventar { get; init; }
+    public ImobilizareCuleasa? Imobilizare { get; init; }
+
     /// <summary>Forma pe care o consumă `Potrivire` — aceeași ortografie ca `Fapte.Linie`.</summary>
     public LinieFapt Fapt => new(TipMaterialId, ClasaId, Natura, Math.Sign(Cantitate), LotId, ContImplicitTipId);
 }
@@ -103,6 +114,9 @@ public sealed record Operand(
     public IReadOnlyDictionary<Guid, RepartitorFapt> Repartitori { get; init; } = new Dictionary<Guid, RepartitorFapt>();
     public IReadOnlyList<SoldPartidaFapt> PartideDisponibile { get; init; } = [];
     public IReadOnlyList<N.Unitate> UnitatiSursa { get; init; } = [];
+    public IReadOnlyDictionary<Guid, FisaFapt> Fise { get; init; } = new Dictionary<Guid, FisaFapt>();
+    public IReadOnlyList<SuportFapt> Suporturi { get; init; } = [];
+    public IReadOnlyList<DisponibilFapt> DisponibilNominalizare { get; init; } = [];
 
     /// <summary>Forma pe care o consumă `Potrivire.Cont`.</summary>
     public LaturiFapt Laturi => new(Document.Predator.ContImplicitId, Document.Primitor.ContImplicitId);

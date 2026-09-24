@@ -94,21 +94,7 @@ public static class AmortizareService {
     }
 
     static List<RandRegistru> Randuri(IObjectSpace os, List<Guid> fise, DateOnly panaLa) =>
-        os.GetObjectsQuery<RegistruImobilizari>()
-            .Where(r => fise.Contains(r.ImobilizareId) && r.Data <= panaLa)
-            .Select(r => new {
-                r.ID, r.ImobilizareId, r.Data, r.Fel, r.Storno, r.DetaliuId,
-                r.Valoare, r.ValoareFiscala, r.Amortizare, r.AmortizareFiscala,
-                r.AmortizareDeductibila, r.Luni,
-                r.Metoda, r.DurataLuni, r.ValoareReziduala,
-                r.MetodaFiscala, r.DurataFiscalaLuni, r.CategorieFiscala, r.UtilizareExclusiva,
-            })
-            .ToList()
-            .Select(r => new RandRegistru(r.ID, r.ImobilizareId, r.Data, r.Fel, r.Storno, r.DetaliuId,
-                r.Valoare, r.ValoareFiscala, r.Amortizare, r.AmortizareFiscala, r.AmortizareDeductibila,
-                r.Luni, r.Metoda, r.DurataLuni, r.ValoareReziduala, r.MetodaFiscala, r.DurataFiscalaLuni,
-                r.CategorieFiscala, r.UtilizareExclusiva))
-            .ToList();
+        Cub.Citiri.Imobilizari.Randuri(os, fise, panaLa).Select(r => r.Rand).ToList();
 
     // Coalesce ÎNAPOI: null pe un eveniment înseamnă „neschimbat” (F26-D2).
     static T? Coalesce<TRand, T>(List<TRand> evenimente, Func<TRand, T?> citeste) where T : struct {

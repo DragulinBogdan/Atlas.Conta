@@ -14,8 +14,12 @@ public static class GestiuniVirtuale {
 
     public static Guid Consum { get; } = Identitate("Atlas.Conta.GestiuneVirtuala:Consum");
 
+    public static Guid Transformare { get; } = Identitate("Atlas.Conta.GestiuneVirtuala:Transformare");
+
+    public static Guid Inventar { get; } = Identitate("Atlas.Conta.GestiuneVirtuala:Inventar");
+
     public static bool Este(Guid? gestiune) =>
-        gestiune == Furnizor || gestiune == Client || gestiune == Consum;
+        gestiune == Furnizor || gestiune == Client || gestiune == Consum || gestiune == Transformare || gestiune == Inventar;
 
     // Aceeași amprentă ca `Unitate.DeschidePartida` (N-D6): SHA-256, primii 16
     // octeți, nibble-ul de versiune (octetul 7) pus pe 8.

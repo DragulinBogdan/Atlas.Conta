@@ -116,10 +116,14 @@ persistat în `Module/Cub/` (`Tranzactie` / `Postare`, POCO, tabelă
 partiționată pe `Spatiu`, migrații scrise în SQL) și se scrie în aceeași
 tranzacție de comandă cu registrele pentru tipurile cu `PosteazaInCub` (regim
 dual, dată de profil). Pe cub azi: BCS, FCT, PLT, INC, BTR, FCL, NTC,
-DSC, ITV, RDC, RLF și DVI (ultimele cinci numai privat); rămân ASM, LDI,
-NIR (felia 32, pașii 4–5), apoi
-`Deschidere` generic. Citirile rămân pe registre până la TR-D8; registrele se
-taie la TR-D9.
+DSC, ITV, RDC, RLF și DVI (ultimele cinci numai privat), plus ASM, LDI, NIR, DEC și PIF/AMO/CAS pe ambele profiluri;
+LDI acoperă Magazie/Marfuri și lanțul Folosință în gestiune reală (093),
+cu Custodie explicit neacoperită. NIR conex este acoperit de sursa migrată
+prin politica conexului (T-D5). Deschiderea generică detaliază soldul inițial
+prin loturi și partide, fără dublare, cu refuz atomic al diferențelor (094).
+Fișa imobilizării este citită din cub de AMO/CAS și API Imo (097).
+Rapoartele generale și snapshot-urile rămân pe registre până la TR-D8;
+scrierea registrelor se taie la TR-D9.
 
 **Proba supremă (91, 2026-09-22)** e catalogul de scenarii
 `docs/nucleu/scenarii/`: așteptări scrise de mână din regula contabilă, ciclul
@@ -133,8 +137,15 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: ASM → LDI → NIR, pasul 5 din TR-D7b, cu scenarii
-numerice înaintea implementării. RDC, RLF și DVI au cataloage independente
+**Următorul pas**: TR-D8 — portarea consumatorilor pe intrările comune ale
+cubului, după DEC și PIF/AMO/CAS (095, 097), cu scenarii numerice înaintea
+implementării. Review-ul advers IMO rămâne de făcut.
+Urmărirea partidelor este separată de rolul comercial SAF-T (096). Transformarea ASM și absorbția
+temporară Δ în regimul dual sunt aprobate și implementate:
+`docs/nucleu/tr-d7b-asm-transformare-contract.md` (ASM-B2…B7).
+Review-ul ASM este aplicat; delimitarea contabilă (a)/(h) este aprobată
+de owner numai pentru regimul dual (T-r15, D8-B4).
+RDC, RLF și DVI au cataloage independente
 în `docs/nucleu/scenarii/`; DVI păstrează baza distinctă în Carte=Fiscal
 conform `docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md`.
 Identitatea partidei include partenerul (092);
@@ -162,9 +173,9 @@ redirectarea `*>` din PowerShell scrie log-ul UTF-16 — rețeta bash
 proiectul Blazor.Server (modelul real al hostului, 85h): build-ul lui pică pe
 DLL-uri blocate cât timp hostul Blazor rulează din același `bin`. O SINGURĂ
 rulare grea o dată (ModelCheck, gate, import): două ModelCheck-uri concurente
-crapă în purje și lasă reziduu (`TipuriMaterial 'E2E-SAFT-S-TIP'` + o
-`RegulaContare` `DinSeed` re-creată la fiecare seed) care blochează definitiv
-rulările următoare până e șters manual (S-r10). Interogările pe catalogul
+pot cădea în purje și lăsa reziduu. Purja SAF-T șterge acum și regulile
+`DinSeed` atașate tipului temporar după o cădere (S-r10), fără a permite
+rulări concurente. Interogările pe catalogul
 Postgres cer cast explicit (`partattrs` e `int2vector` de la 0, `conkey` e
 `int2[]` de la 1, `partstrat` e `"char"` ⇒ `::text`), altfel pică și opresc
 rularea. O clonă a bazei de import poartă DEFAULT-ul coloanei noi, nu valoarea
@@ -200,6 +211,13 @@ altfel refuzurile sunt ale bazei, nu ale codului.
   verde pe ambele profiluri; Import1C nu mai e gate, e migrare.
 - Rulările lungi = proces detașat + monitor, nu task de fundal al harness-ului
   (50d).
+- **Comunicarea Claude ↔ Codex** trece prin `D:\Dev\Atlas.Conta\comunicari\`
+  (gitignored, cale absolută și din worktree-uri): un fișier per mesaj,
+  `AAAA-MM-DD-HHMM-emitent-receptor-subiect.md` (emitent/receptor: `owner`,
+  `claude`, `codex`), antet cu `Răspuns la:` și `Cere:` (decizie / review /
+  informare); răspunsul = fișier nou, niciodată editarea mesajului primit.
+  Mesajul nu e sursă de adevăr: ce se tranșează intră în contract/decizie,
+  iar o aprobare vine doar de la owner.
 - **Codul e slim: „ce" și „cum" se citesc din cod, „de ce" din decizii.**
   Fără comentarii narative, raționament sau istoric în cod („review advers
   D8", „înainte era…"). XML doc pe API-ul public doar cât servește completării:

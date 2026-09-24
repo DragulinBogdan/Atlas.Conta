@@ -334,6 +334,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<bool>("Sumator")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("UrmarestePartide")
+                        .HasColumnType("boolean");
+
                     b.HasKey("ID");
 
                     b.HasIndex("ParinteId");
@@ -2985,8 +2988,17 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("DocumentId")
                         .HasColumnType("uuid");
 
+                    b.Property<short?>("FelUnitate")
+                        .HasColumnType("smallint");
+
                     b.Property<Guid?>("Gestiune")
                         .HasColumnType("uuid");
+
+                    b.Property<Guid?>("InversaDinId")
+                        .HasColumnType("uuid");
+
+                    b.Property<short?>("InversaDinSpatiu")
+                        .HasColumnType("smallint");
 
                     b.Property<short>("Latura")
                         .HasColumnType("smallint");
@@ -3013,6 +3025,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("smallint");
 
                     b.Property<short>("Spatiu")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid?>("SuportId")
+                        .HasColumnType("uuid");
+
+                    b.Property<short?>("SuportSpatiu")
                         .HasColumnType("smallint");
 
                     b.Property<Guid?>("SursaFinantare")
@@ -3074,6 +3092,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasKey("ID");
 
                     b.HasIndex("DocumentId");
+
+                    b.HasIndex("Fel")
+                        .IsUnique()
+                        .HasFilter("\"Fel\" = 4");
 
                     b.ToTable("Tranzactie", (string)null);
                 });

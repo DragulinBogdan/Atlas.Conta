@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-23.** [Index](README.md)
+**Actualizat: 2026-09-24.** [Index](README.md)
 
 ## Modelul comun
 
@@ -393,23 +393,23 @@ clientul nu introduce o rotunjire contabilă independentă. (42c, 51c, 52a)
 | Cod / tip | Regula specifică |
 |---|---|
 | FCT — factură de intrare | Numărul furnizorului este cules. Pentru stoc, naște lotul și generează NIR; postează liniile care nu trec pe NIR și TVA-ul propriu. Poate genera o plată draft din datele culese. (26a, 31e, 56) |
-| NIR — recepție | Postează recepția. Poate fi manual sau generat din FCT. Lot propriu: preț cules × cantitate; lot străin din factură: prețul lotului. Nu culege TVA. NIR-ul conex nu se șterge independent din client. (26a, 62, 62f) |
+| NIR — recepție | Manual: postează recepția și în cub, partidă proprie pe contul cu RolTert. Conexul autogenerat din sursă migrată, prin PoliticaConex, rămâne numai în registre; recepția sa este deja în cubul sursei. Lot propriu: preț cules × cantitate; lot străin din factură: prețul lotului. Nu culege TVA. NIR-ul conex nu se șterge independent din client. (26a, 62, 62f, T-D5) |
 | FCL — factură de ieșire | Postează venitul și creanța. În privat poate genera DSC; în bugetar regulile o restrâng la document fără stoc. Numărul fiscal este al serverului. (30a, 30b, 56) |
 | DSC — descărcare | Generat de serviciu din FCL, cu `LinieSursaId`, la cost, fără TVA; gestiune → client, cu ambele dimensiuni de repartitor pe gestiune. Clientul oferă citire și comenzi, fără creare manuală. (37a, 37b, 58) |
 | BTR — transfer | Mută stocul între gestiuni. Transferul simplu nu postează note contabile în planul sintetic. (23c) |
-| BCS — bon de consum | Scade Magazie de la predator și crește Consum la primitor; consumul rămâne pe responsabil. Valoarea se derivă din lot. (27a, 27d) |
-| LDI — diferențe inventar | Direcție explicită Plus/Minus, culegere pozitivă, semn la materializare. Plusul naște lot pe gestiunea predatorului; minusul cere lot existent, străin de document. Primitorul are calitatea Comisie. (28a, 28d, 63) |
+| BCS — bon de consum | Scade Magazie (Folosinta pentru OF bugetar, 093) de la predator și crește Consum la primitor; consumul rămâne pe responsabil. Valoarea se derivă din lot. (27a, 27d) |
+| LDI — diferențe inventar | Direcție explicită Plus/Minus, culegere pozitivă, semn la materializare. Plusul naște lot pe gestiunea predatorului; minusul cere lot existent, străin de document. Primitorul are calitatea Comisie. Declarant pe cub pentru Magazie/Marfuri/Folosinta: plus contra Inventar, minus contra Consum, contraponderi fără unitate. Folosinta păstrează gestiunea reală pe lanțul FCT/NIR/BTR/BCS/LDI; Custodie explicit neacoperită. (093) (28a, 28d, 63, LDI-B1…B3) |
 | PLT / INC — plată / încasare | Valoarea se culege pe linii ca defalcare. Contarea se rezolvă din laturi. PLT: cont propriu → beneficiar; INC: plătitor → cont propriu. Pot exprima și picioarele unui virament intern. (31a, 31c, 64) |
 | DEC — decont | Angajat → repartitor intern, fără stoc. Contractul permite cont și repartitor explicite pe linie. Cantitatea pro-formă zero se normalizează la unu. (32a, 32b, 32d) |
 | NTC — notă contabilă | Postare explicită. Poate stinge manual pe contrapartidă și sens; nu se înscrie implicit în stingerea automată a sursei. ITV nu este editabil prin această felie. (46b, 79c, 82a) |
 | ITV — închidere TVA | Rezultatul serviciului lunar, cu conturi din politică. Nu se culege ca agregat liber și nu închide perioada fiscală. (46c, 79a) |
 | DVI — declarație vamală de import | Linii pe detaliul de bază: valoarea în vamă ca bază, taxa declarată (0 = din cotă la operare). Nu postează valoarea și nu mișcă stocul; postează doar taxa din politica TVA (4426 contra contului implicit al predatorului — biroul vamal/comisionarul — sau 4426 = 4427 la amânarea plății). MRN cules, fără numerotare. Legătura n→m cu facturile de import este evidență, doar în Draft, prin agregat. Nu este document stins: taxa se plătește ca orice taxă, fără împerechere. (86a, 86b, 86e, 86g) |
-| ASM — asamblare/dezasamblare | Transformare n→m cu linii de produs și consum; fără contare. Diferența valorică absolută trebuie să fie ≤ 0,005. Nu consumă un lot produs de același document. (46d) |
+| ASM — asamblare/dezasamblare | Transformare n→m cu linii de produs și consum. Registrele păstrează gardul valoric 46d, la scara banilor P = R. Cubul grupează pe cont în Transfer/Operare și folosește contraponderi cantitative Transformare. Absorbția Δ este numai în cub. Nu consumă un lot produs de același document. (46d, ASM-B2…B7) |
 | RLF — retur la furnizor | Folosește lotul original; culegere pozitivă, postare cu semn negativ pe corespondența originală. (46e, 76d) |
 | RDC — retur de la client | Un document cu linii de venit și cost pe lotul original. Totalul include doar venitul; linia de cost nu are tip TVA. Rolul unei linii salvate nu se convertește prin editare. (46e, 76d) |
-| PIF — punere în funcțiune | Unitate internă → loc; linii per fișă cu `Intrare`, `Modernizare` sau `Revizuire`. Nu postează: scrie evenimentele și parametrii de amortizare în registrul imobilizărilor și materializează starea fișei. `Intrare` cere fișă nouă și parametri completi, cu linie sursă (linia unei FCT operate de clasă F, cu plafonul consumului) sau cu valoare culeasă și inițiale; `Modernizare`/`Revizuire` cer fișă în funcțiune. Refuzat dacă o AMO operată există într-o lună ulterioară. (87e) |
+| PIF — punere în funcțiune | Unitate internă → loc; linii per fișă cu `Intrare`, `Modernizare` sau `Revizuire`. Nominalizează valoarea contabilă existentă pe fișă prin Transfer, cu suport obligatoriu și fără modificarea rulajelor generale; baza fiscală se postează distinct (097). Scrie dual registrul imobilizărilor până la TR-D9 și materializează starea fișei. `Intrare` cere fișă nouă și parametri completi, cu linie sursă (linia unei FCT operate de clasă F, cu plafonul consumului) sau cu valoare culeasă și inițiale; `Modernizare`/`Revizuire` cer fișă în funcțiune. Refuzat dacă o AMO operată există într-o lună ulterioară. (87e) |
 | CAS — ieșire de imobilizare | Loc → unitate internă, cu cauza (casare, vânzare, lipsă). Se culeg doar fișele; liniile le produce serverul din situația la dată și politica tipului material: amortizarea cumulată contra contului imobilizării (omisă la cumulat zero) și valoarea rămasă pe cheltuiala de cedare (omisă la net zero). Operarea recalculează și refuză liniile care nu mai corespund; refuzată dacă o AMO operată acoperă luna ieșirii sau una ulterioară; după operare avertizează dacă luna precedentă n-are amortizare operată. Fișa devine ieșită. (87f) |
-| AMO — amortizare lunară | Document generat pe unitate internă și lună, ca ITV. Linie per fișă eligibilă cu trei cifre (contabilă, fiscală, deductibilă); postează doar cifra contabilă (cheltuială = amortizare, din politică) și scrie rândul lunar în registrul imobilizărilor. Nu se culege liber; fără flux `/nou`. (87g) |
+| AMO — amortizare lunară | Document generat pe unitate internă și lună, ca ITV. Linie per fișă eligibilă cu trei cifre (contabilă, fiscală, deductibilă); postează separat contabil și fiscal (cheltuială = amortizare, din politică), cu unitate de fișă; păstrează scrierea duală a rândului lunar până la TR-D9 (095, 097). Nu se culege liber; fără flux `/nou`. (87g) |
 
 Regimurile capitalizate nu sunt acceptate pe retururi. Retururile nu devin
 stingători; compensarea lor folosește nota contabilă. (46e, 76g)
@@ -464,17 +464,19 @@ starea și datele le scrie doar motorul. Transferul este schimbarea locului pe f
 document: următoarea amortizare postează pe noul loc, istoricul locului
 este pe rândurile lunare. (87a, 87h)
 
-Situația fișei la o dată este suma coloanelor registrului plus parametrii
-ultimului eveniment până la acea dată; fișa, registrul imobilizărilor și
-proiecțiile fiscale sunt sume peste registru. Amortizarea fiscală și cea
-deductibilă nu postează și nu au document propriu: sunt cifre înghețate pe
-rândul lunar, calculate din aceiași parametri datați și din regulile
-valabile la data rândului. (87b)
+Situația fișei, AMO/CAS și API Imo citesc aceeași intrare
+`Cub/Citiri/Imobilizari`: sume pe fișă și carte, parametri din evenimentele
+vii identificate prin cauză. Amortizarea fiscală postează în Carte=Fiscal;
+deductibilul și lunile rămân atribute istorice ale liniei AMO. Registrul
+imobilizărilor se scrie dual până la TR-D9, fără reuniune la citire.
+Activarea refuză istoricul fără fișă, fără proveniență ori cu diferențe
+valorice față de cub; migrația nu reconstruiește implicit istoricul. (095, 097)
 
 Aritmetica este exclusiv în `AmortizareService`, ca funcție pură aplicată
 de trei ori pe lună. Cota liniară este valoarea de amortizat împărțită la
 lunile rămase, rotunjită la bani, fixată la ultimul eveniment; suma lunară
-este minimul dintre cotă și rest, iar ultima lună absoarbe restul. Baza
+este minimul dintre cotă și rest; rotunjirea în jos poate lăsa o lună
+suplimentară pentru rest (F26-D7/F27-D4). Baza
 „la ultimul eveniment" este situația la sfârșitul lunii evenimentului:
 luna evenimentului postează cota veche, parametrii noi curg din luna
 următoare, indiferent de zi. Accelerata amortizează 50 % din brut în
@@ -771,8 +773,9 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   `Normal` 4426 = 401, `TaxareInversa` 4426 = 4427 (4427 fără `CodTva`: azi
   nu există fapt fiscal colectat pe TI), `Capitalizat` = bază + taxă pe
   ACELAȘI cont de cost (jurnalul rămâne proiecție), `Scutit`/`Neimpozabil`
-  doar bază; o singură partidă per cont de terț. NIR-ul conex și plata
-  autogenerată rămân ale motorului vechi (documente proprii).
+  doar bază; o singură partidă per cont de terț. NIR-ul conex rămâne în
+  registre, cu recepția deja reprezentată în cubul FCT (T-D5). Plata
+  autogenerată are document și postări proprii.
 - **Oracolul** (`nou/tools/ModelCheck/Nucleu/`): registrele documentului
   transformate în cub prin portul fidel al mapării fizicii
   (`CubDinRegistre`), normalizate DOAR prin lista închisă B-D8
@@ -887,7 +890,8 @@ aliniată de seed ca orice rând `DinSeed`: migrarea unui tip e a PROFILULUI, nu
 a bazei (S-r6). Migrate sunt BCS, FCT, PLT, INC (felia 31), BTR (felia 32,
 pasul 1, 2026-09-21) și FCL (pasul 2, 2026-09-22), pe ambele profiluri, plus
 DSC doar pe privat (pe bugetar e tip inert, fără politici — decizia stă în
-`ContaSeeder.SeedTipuriDocument(os, profil)`); restul tipurilor postează doar
+`ContaSeeder.SeedTipuriDocument(os, profil)`). Pașii 3–5 adaugă NTC și ASM pe
+ambele profiluri, ITV/RDC/RLF/DVI numai pe privat. Restul tipurilor postează doar
 în registre. Un tip marcat a cărui clasă nu declară
 (`Document.Declarant()` întoarce `null`) e eroare de configurare: operarea
 refuză, nu tace. (S-D3)
@@ -919,13 +923,14 @@ refuză, nu tace. (S-D3)
 
 ### Felul mixt: `Transfer` pe linia care nu schimbă contul (T-D2, felia 32)
 
-Declarația are două liste: `Miscari` (debit ≠ credit, devin `Operare`) și
+Declarația are `Miscari` (debit ≠ credit, devin `Operare`) și
 `Mutari` (același cont, aceeași latură, −/+ între două capete, devin
 `Transfer`). O linie de stoc al cărei cont nu se schimbă între laturi e o
 mutare; una care schimbă contul e o mișcare. Un document are astfel cel mult o
 `Operare` și cel mult un `Transfer`, cel puțin una — amendament de literă al
-lui 090 (a), T-r1. Fiecare capăt al unui `Transfer` de stoc poartă `Gestiune`
-și `Unitate` (lotul): rapoartele pe cont îl exclud (Σ per (cont, latură) = 0),
+lui 090 (a), T-r1. Fiecare capăt real al unui `Transfer` de stoc poartă `Gestiune`
+și `Unitate` (lotul); contraponderea ASM de mai jos nu are unitate.
+Rapoartele pe cont exclud Transfer (Σ per (cont, latură) = 0),
 cele pe gestiune și pe lot îl includ.
 
 - **BTR** (`DeclarantNotaTransfer`): cheia de stoc e `(Lot, Repartitor,
@@ -949,6 +954,23 @@ cele pe gestiune și pe lot îl includ.
 - Ramura `Operare` a formei mixte e probată prin proprietăți în nucleu; pe
   scenă o probează ASM (pasul 5).
 
+### Transformarea n→m (ASM-B2…B7, 2026-09-23)
+
+`Declaratie.Transformari` conține linii cu rol consum/produs, capăt real,
+cantitate, valoare și cauză. Primitiva pură adaugă o contrapondere pe
+`GestiuniVirtuale.Transformare`: același cont/produs/analiză/cauză,
+cantitate opusă, valoare zero, fără unitate. Conservările sunt neschimbate.
+Stornoul selectează tranzacția Transfer de stoc întreagă, inclusiv aceste
+postări din partiția Contabil, și verifică conservarea înaintea scrierii.
+
+Declarantul citește rolul și prețul prin `ILinieCuTransformare`. P = R se
+verifică și pe operandul închis, fără pregătirea valorilor entității.
+Grupurile sunt clasificate o singură dată după P/R; contribuțiile Δ se
+acumulează pe produsul țintă înaintea gardului de pozitivitate. Prețul cules,
+valoarea entității și prețul lotului rămân ale registrelor. Stornoul inversează
+ajustarea istorică exact; corecția calculează din nou. Contractul detaliat:
+[transformarea ASM](../nucleu/tr-d7b-asm-transformare-contract.md).
+
 ### FCL și DSC pe cub (T-D4, felia 32, pasul 2)
 
 - **FCL** (`DeclarantFacturaIesire`): FCT în oglindă — per linie venitul pe
@@ -958,7 +980,7 @@ cele pe gestiune și pe lot îl includ.
   contrapartidă; gestiunea internă = latura opusă contrapartidei politicii,
   `Fiscal.GestiuneaInterna`), taxa culeasă autoritară, taxarea inversă pe
   livrare fără postare de taxă. Zero postări de stoc: linia de natură `Stoc` e
-  linie de venit, fără lot și fără produs. Partidă pe fiecare cont cu `RolTert`
+  linie de venit, fără lot și fără produs. Partidă pe fiecare cont cu `UrmarestePartide`
   al liniilor (S-D16): FCL cu regularizare de avans (`4111 = 419`) deschide
   DOUĂ partide, iar soldul partidei de creanță e netul ei (debitul de −100 al
   liniei de avans intră pe 4111). Valorile negative (prețuri negative) se
@@ -1037,6 +1059,27 @@ documentului plus unu. Ambele motoare citesc liniile `OrderBy(Pozitie)`, apoi
 TVA-ul, loturile născute, potrivirea regulilor de stoc) trec printr-un singur
 helper, iar conexul clonat primește liniile sursei în aceeași ordine. (S-D6)
 
+### Decontul pe cub și urmărirea partidelor (095, 096)
+
+DEC declară cheltuiala și contrapartida titularului, cu TVA din politica
+profilului și fără stoc. Conturile/repartitorii expliciți au prioritate;
+contrapartida TVA rămâne cea a politicii. Normal, capitalizat și taxare
+inversă sunt probate independent; bugetarul păstrează costul brut fără
+fapte fiscale când nu are PoliticaTva.
+
+`Cont.UrmarestePartide` conduce deschiderea, nominalizarea și selecția
+partidelor. `RolTert` rămâne clasificarea comercială SAF-T. Seed-ul activează
+urmărirea pe 542 privat și 542.01.00/542.02.00 bugetar, păstrând acoperirea
+comercială existentă. Partida decontului este a titularului Angajat;
+Customers/Suppliers nu îl preiau numai pentru că are avans. Migrația
+inițializează noul atribut pe conturile cu rol comercial, inclusiv manuale;
+postările istorice rămân neschimbate.
+
+Catalog: [DEC](../nucleu/scenarii/DEC.md), inclusiv PLT 150 → DEC 100 →
+INC 50, storno/corecție după închidere și refuzuri atomice. Citirile de
+generale sunt încă pe registre, până la TR-D8. PIF/AMO/CAS au declarant și
+cititor comun pe cub, conform [contractului complet](../nucleu/tr-d7c-imobilizari-contract.md).
+
 ### Împerecherea ulterioară operării = tranzacție `Transfer`
 
 O împerechere creată DUPĂ operare, desfacerea ei și rândul invers scris la
@@ -1058,7 +1101,7 @@ automată la operare nu produce transfer — ea E nominalizarea din `Operare`. (
   reperul pe care registrele taie partidele, deja garantat de gardieni ca fiind
   în perioadă deschisă și nu înaintea datelor de înregistrare.
 - Se scrie doar când ambele documente au tranzacție `Operare` în cub. Pe un
-  profil fără conturi cu `RolTert` nu există partide, deci nu există ce muta.
+  cont fără `UrmarestePartide` nu există partide, deci nu există ce muta.
 
 ### Gardurile declaranților, ca dată sau ca regulă
 
@@ -1070,7 +1113,7 @@ automată la operare nu produce transfer — ea E nominalizarea din `Operare`. (
   rămâne autoritară, fără validare — valoarea de seed a profilului privat. O
   valoare dată refuză `TVA_IN_AFARA_TOLERANTEI` peste `toleranță × liniile
   cotei`. (S-D15)
-- O linie cu două conturi cu `RolTert` numește partidă pe AMBELE capete,
+- O linie cu două conturi cu `UrmarestePartide` numește partidă pe AMBELE capete,
   fiecare pe contul lui. (S-D16)
 - `TipDocument.LaturaContPropriu` (`Predator` / `Primitor`) spune care
   repartitor al documentului poartă contul propriu: plata predator, încasarea
@@ -1082,10 +1125,22 @@ automată la operare nu produce transfer — ea E nominalizarea din `Operare`. (
 
 ### Ce rămâne al feliilor următoare
 
+Deschiderea generică este disponibilă prin `Cub.Materializare.Deschide`
+în tranzacția explicită a apelantului, fără commit propriu. Soldurile de
+control includ ancora aleasă de apelant; loturile și partidele înlocuiesc
+rândul bloc pe Carte/Cont/Latura. Totalurile diferite sunt refuzate înaintea
+creării entităților de cub. Partidele cer cont cu UrmarestePartide, partener și
+referință stabilă; nu există document fictiv. Indexul unic filtrat permite
+o singură Deschidere în bază. Stingerea unei partide inițiale verifică
+restul, contul, partenerul și perioada sub blocare; storno-ul plății reface
+partida fără a rescrie deschiderea. (094, DES-B1…B4)
+
 Citirile — sold, proiecții, fișe, SAF-T, D394, D406 — rămân pe registre până la
-TR-D8. Tipurile nemigrate postează doar în registre; deschiderea ca tranzacție
-de fel `Deschidere` (TR-r10), notele pe conturi de stoc fără lot (TR-r2) și Δ
-de sold 3xx (TR-r12) intră cu tipurile lor, în TR-D7b și următoarele.
+TR-D8. Tipurile nemigrate postează doar în registre; notele pe conturi de
+stoc fără lot (TR-r2) și Δ de sold 3xx (TR-r12) rămân delimitate prin
+contractele tipurilor. Deschiderea generică scrie exclusiv cubul; loturile
+ei nu sunt încă disponibile consumului prin StocService, care citește
+registrele. Portarea acestei citiri operaționale este necesară la TR-D8.
 
 ## Locurile regulilor în cod
 

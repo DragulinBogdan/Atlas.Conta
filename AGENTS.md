@@ -42,3 +42,10 @@
   (`verifica.ps1`) și review înainte de commit. O afirmație despre cod
   („nu există coduri stabile”) se verifică în surse înainte de a intra în
   docs.
+- Owner-ul poate amâna explicit review-urile intermediare pe o etapă de
+  dezvoltare mai lungă. Amânarea se notează în mesajul de predare și în
+  fișierul tipului („review advers amânat de owner până la sincronizare”);
+  pașii continuă fără commit. La sincronizare, starea reverificată intră
+  într-un commit de bază, iar corecturile review-urilor restante urmează
+  câte un commit pe felie. Amânarea nu suspendă `verifica.ps1` la fiecare
+  pas.

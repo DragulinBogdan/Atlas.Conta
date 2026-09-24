@@ -5,6 +5,11 @@
 - **Docs**: decizia 090 §Regula durabilă (a), (c), (d), (f), (g), (j), (l), (m); `docs/nucleu/tr-d7a-strangler-contract.md` (fundația: S-D1…S-D16, amendamentele (1)–(12), „Închidere"); `docs/nucleu/nucleu-transfer.md` (TR-D1 deschiderea terților :115-123, TR-D4 postarea unică :234-240 și „Ce schimbă în balanță, declarat" :253-269, notele pe stoc fără lot :262-269); `docs/decizii/restante.md` (TR-r2, TR-r4, TR-r5, TR-r6, TR-r7, TR-r10, TR-r12, B-r3, B-r4, B-r5, B-r8, N-r8, S-r1…S-r11); recensământul documentelor pe Flax `run-nucleu/transfer/03-out/b5-fct-nir.txt:23-38`; hărțile explorării în `agenti-msg/` (untracked).
 - **Felii TR-D7**: felia 31 (TR-D7a) = fundația persistată + BCS, FCT, PLT, INC. Felia 32 (TR-D7b) = TOATE tipurile rămase + deschiderea. După ea, TR-D7 e închis și urmează TR-D8 (citirile pe cub).
 
+Amendament 096: condiția operațională `RolTert` pentru deschiderea,
+nominalizarea și citirea partidelor din acest contract este înlocuită de
+`Cont.UrmarestePartide`. RolTert rămâne comercial, pentru SAF-T; cifrele
+recensământului istoric de mai jos nu se recalculează.
+
 ## Scop
 
 Fiecare tip de document care mai postează doar în registre primește declarant
@@ -70,6 +75,14 @@ dacă se poate (faptele noi ale tuturor tipurilor la pasul 1, cu probe), nu
 pas cu pas.
 
 ### T-D2 — Felul tranzacției pe linia de stoc: `Transfer` când contul nu se schimbă, `Operare` când se schimbă (090 (f), (g); TR-D4)
+
+**Amendament aprobat 2026-09-23 pentru ASM:** forma n→m, contraponderile
+`Transformare`, clasificarea pe grup înaintea absorbției, varianta A și
+reziduul transversal dual sunt definite în
+[`tr-d7b-asm-transformare-contract.md`](tr-d7b-asm-transformare-contract.md),
+ASM-B2…B7. Acest contract are prioritate față de formularea pe perechi de
+linii de mai jos. Stornoul preia toate postările tranzacțiilor Transfer
+de stoc, inclusiv contraponderile fără unitate, și verifică conservarea.
 
 Pentru o linie care mută un lot între gestiuni (BTR) sau valoare între loturi
 (ASM): dacă contul de stoc al laturii sursă = contul laturii țintă, postările
@@ -158,6 +171,16 @@ ambele loturi sunt pe același cont, altfel `Operare`. Invariantul ASM
 Stoc — nu se re-implementează în declarant; diferența sub toleranță, dacă
 există, se postează ca reziduu DOAR dacă o politică o cere (090 (j)), altfel
 refuz `ASAMBLARE_NEBALANSATA`.
+
+**Constatare înaintea pasului 5 (2026-09-23, neimplementată):** T-D2 nu
+precizează contraponderile cantitative ale transformării între produse,
+nici împărțirea n consumuri → m produse între cele două feluri. Forma
+actuală `Miscare`/`Mutare` are o singură cantitate pe pereche, iar nucleul
+cere conservare pe produs. Contraexemplul 2 bucăți A / 100 → 1 bucată B / 100,
+recensământul și amendamentul propus sunt în
+[`tr-d7b-asm-transformare-contract.md`](tr-d7b-asm-transformare-contract.md).
+Propunerea ASM-B2/B3 cere alegerea owner-ului; paragraful anterior rămâne
+contractul existent până la aprobare. Catalogul inițial este `scenarii/ASM.md`.
 
 ### T-D3 — NTC: postare explicită CA ATARE; partenerul vine pe linie din sursă, partida se nominalizează FIFO; fără partener, postarea e DECLARATĂ, nu refuzată (owner, 2026-09-21: varianta B cu A ca fallback)
 
@@ -302,6 +325,13 @@ felia 31 în `dezvoltare-si-validare.md` dispare.
 
 ### T-D5 — NIR: doar recepția fără factură; clona conexă a unui tip migrat NU se materializează
 
+**Implementare 2026-09-24:** declarantul NIR și excluderea generică prin
+politica conexului sunt active pe ambele profiluri. Catalogul independent
+[NIR.md](scenarii/NIR.md) acoperă SC-NIR-01…17, inclusiv ciclul conexului,
+partida manuală, dependenții și cele două forme de linie existente.
+Diagnosticul valoric și gruparea reconcilierii atribuie conexul sursei prin
+aceeași politică; activarea tipului NIR nu produce un al doilea cap de grup.
+
 `Materializare.Opereaza/Refuzuri/Storneaza/Anuleaza` ies devreme pe un
 document generat prin `PoliticaConex` dintr-o sursă cu `PosteazaInCub` —
 condiția e `doc.Autogenerat && doc.DocumentSursaId != null` și existența
@@ -334,6 +364,11 @@ Flax 19–56 goliri/lună, ±0,01). `N.Evaluare.Iesire` NU se atinge; declarantu
 RLF nu-l cheamă.
 
 ### T-D7 — Deschiderea ca tranzacție `Deschidere`, scrisă de `Cub.Materializare`; pe terți, partidă per (Cont, Partener, document 1C) din `BalantaNivel3`; stingerile 2025 pe ele prin aceeași cheie (TR-r10, TR-r6 închise pe date)
+
+**Amendat de 094 (owner, 2026-09-24):** forma aditivă contabil + stoc de
+mai jos este înlocuită de detalierea soldului, cu refuz atomic al
+diferențelor. Contractul curent: `tr-d7b-deschidere-contract.md` DES-B1…B4.
+Partea 1C rămâne migrare conform 091(f); textul inițial se păstrează ca istoric.
 
 `Cub/Materializare.Deschide(os, data, randuriContabil, randuriStoc)` (în
 Module, nu în Import1C) scrie EXACT o tranzacție de fel `Deschidere` per bază
@@ -455,6 +490,14 @@ independente; `DVI-V*` rămâne regresie pe registre. „DVI pe loturi" (reevalu
 
 ### T-D9 — LDI și sink-urile bugetare (TR-r7 intră cu LDI)
 
+**Amendament aprobat, 2026-09-24 (093, LDI-B3).** Folosinta păstrează
+gestiunea reală, lotul și contul politicii pe lanțul FCT/NIR → BTR →
+LDI/BCS; BTR folosește Folosinta pe ambele laturi în registre, BCS pe sursă.
+Nu se introduce constanta virtuală Folosinta din formularea inițială de
+mai jos. Custodie rămâne explicit neacoperită la LDI, fără alegere automată
+între conturile 803x sau fallback virtual. T-r6/TR-r7 rămân active pentru
+domeniul rămas; regula inițială se păstrează mai jos ca istoric.
+
 LDI: linia `Minus` = `6xx = 3xx` cu `−q` pe lotul numit, `Evaluare.Iesire`,
 capătul 6xx pe gestiunea virtuală `Consum` (090 (g)); linia `Plus` = `3xx =
 7588` (bugetar `791`) cu `+q` pe lotul născut de linie la `PretEvaluare`,
@@ -486,6 +529,17 @@ sau registrul contabil) se tranșează prin contractul 1 al reconcilierii 1C la
 TR-D8, când balanța se citește din cub și se compară cu balanța 1C
 (`[1] sold per cont OMFP` din raportul Import1C); raportul Import1C NU se
 modifică în felia asta (rămâne identic cu baseline-ul).
+
+**Amendament aprobat de owner, 2026-09-24 (T-r15, D8-B4).** Înlocuiește
+amânarea din 2026-09-23: Operare ASM se exclude nominal din (a), numai în
+regimul dual. (h) raportează separat documentele/postările și diferențele
+pe cont/latură/lună. Proba mixtă `NUC-ASM-RECONCILIERE` cere exact D 40/C 40
+în (h), 1 document și 4 postări Operare, zero diferențe pe (a)–(g), exit 0.
+Probele independente pe cub rămân obligatorii și cititorii contabili
+includ efectul ASM. Regula și limitele sunt în D8-B4.
+Diagnosticul valoric pe lot din ASM-B7 este raport, fără contribuție la exit;
+acesta rămâne determinat numai de (a)–(g). Amendamentul 091 de mai jos
+păstrează catalogul de scenarii drept probă supremă, nu importul.
 
 ### T-D11 — Litera (f) după felie: non-vacuă, cu excluderi NUMITE
 
@@ -671,10 +725,11 @@ numărul.
 
 | Id | Conținut | Stare |
 |---|---|---|
-| T-r1 | 090 (a) „EXACT o tranzacție `Operare`" devine „cel mult una `Operare` și cel mult una `Transfer`, cel puțin una" pentru tipurile cu linii care nu schimbă contul (BTR, ASM); litera (e) amendată; textul deciziei 090 nu se rescrie, amendamentul e aici | deschisă |
+| T-r1 | 090 (a) „EXACT o tranzacție `Operare`" devine „cel mult una `Operare` și cel mult una `Transfer`, cel puțin una" pentru tipurile cu linii care nu schimbă contul (BTR, ASM); litera (e) amendată; textul deciziei 090 nu se rescrie, amendamentul e aici | închisă 2026-09-23 prin SC-ASM-04/05/06/08 pe ambele profiluri |
 | T-r2 | reziduul valoric lăsat de RLF pe lotul golit (valoare fiscală ≠ raportul lotului) contrazice 090 (j); se rezolvă la TR-D9 prin re-evaluarea unității cu reziduul spre 658/758 din politică | deschisă |
 | T-r3 | postările NTC pe conturi cu `RolTert` care rămân FĂRĂ partener după (B) (măsurat la pasul 3 din cele 7.824) și pe 3xx fără lot (3.365, TR-r2): declarate până la TR-D9; litera (f) le exclude nominal | deschisă |
 | T-r4 | `Deschidere.cs:43-50` și decizia 047 afirmă că 1C nu defalcă soldul de terț pe partener la 01.01 — FALS: defalcarea (partener × contract × document) e în `BalantaNivel3`; se corectează la pasul 6, TR-r6 (partea de deschidere) și TR-r10 se închid | deschisă |
 | T-r5 | DVI deschide partidă pe 446 prin S-D16 deși `PoateFiStins = false`; hook-ul e al registrelor până la TR-D9 | deschisă |
 | T-r6 | `Custodie` pe bugetar: cont 803x sau gestiune virtuală, după cum are planul bugetar contul — constatat la pasul 5 | deschisă |
 | T-r10 | Baza vamală DVI fără net contabil: owner-ul a ales Carte=Fiscal; forma concretă DVI-B1…B7 este pregătită în `tr-d7b-dvi-baza-fiscala-contract.md`, înainte de implementare | deschisă, contract în review |
+| T-r16 | BTR cu schimbare de cont nu este o cale a declarantului: `DeclarantNotaTransfer.Declara` ia un singur cont din lot și construiește destinația prin `capat with { Gestiune = doc.Primitor.Id }`, iar culegerea nu are cont destinație. Excepția ASM (T-D2) nu se extinde la BTR; dacă apare cerința, intră ca decizie cu scenarii proprii | deschisă; starea curentă în `restante.md` |

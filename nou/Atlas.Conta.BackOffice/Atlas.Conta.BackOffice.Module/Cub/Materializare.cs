@@ -2,6 +2,7 @@ using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub;
@@ -10,12 +11,24 @@ namespace Atlas.Conta.BackOffice.Module.Cub;
 /// Regimul dual (S-D3, S-D4, S-D5): pe tipurile cu <c>PosteazaInCub</c> declarația
 /// frunzei se materializează în ACEEAȘI tranzacție de comandă cu registrele vechi.
 /// </summary>
-public static class Materializare {
+public static partial class Materializare {
+    public static bool EsteConexAcoperit(IObjectSpace os, Document doc, TipDocument tip) {
+        if (!doc.Autogenerat || doc.DocumentSursaId is not Guid sursa) return false;
+        var claseSursa = os.GetObjectsQuery<Document>().Where(d => d.ID == sursa).Select(d => d.ClrType);
+        return os.GetObjectsQuery<PoliticaConex>().Any(p => p.TipDocumentTintaId == tip.ID
+            && p.TipDocumentSursa.PosteazaInCub && claseSursa.Contains(p.TipDocumentSursa.ClrType));
+    }
+
+    static bool Posteaza(IObjectSpace os, Document doc, TipDocument tip) =>
+        tip.PosteazaInCub && !EsteConexAcoperit(os, doc, tip);
+
     public static void Opereaza(IObjectSpace os, Document doc, TipDocument tip) {
         ArgumentNullException.ThrowIfNull(doc);
         ArgumentNullException.ThrowIfNull(tip);
-        if (!tip.PosteazaInCub)
+        if (!Posteaza(os, doc, tip))
             return;
+        if (doc.Detalii.OfType<ILinieCuImobilizare>().Any())
+            BlocheazaNominalizarea(os);
         var contract = Contracteaza(os, doc, tip);
         if (!contract.EsteAcceptat)
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
@@ -27,7 +40,7 @@ public static class Materializare {
     public static IReadOnlyList<string> Refuzuri(IObjectSpace os, Document doc, TipDocument tip) {
         ArgumentNullException.ThrowIfNull(doc);
         ArgumentNullException.ThrowIfNull(tip);
-        if (!tip.PosteazaInCub)
+        if (!Posteaza(os, doc, tip))
             return [];
         N.Contract contract;
         try {
@@ -41,14 +54,24 @@ public static class Materializare {
 
     public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
         ArgumentNullException.ThrowIfNull(doc);
-        if (!MotorOperare.GasesteTipDocument(os, doc).PosteazaInCub)
+        if (!Posteaza(os, doc, MotorOperare.GasesteTipDocument(os, doc)))
             return;
         VerificaPartideFaraDependenti(os, doc, dataStorno);
-        // T-D2: transferul de stoc e al documentului; cel pe partidă e al împerecherii (S-D13).
+        VerificaSuportFaraDependenti(os, doc, dataStorno);
+        var transferuriStoc = os.GetObjectsQuery<Postare>()
+            .Where(p => p.DocumentId == doc.ID && p.Tranzactie.Fel == N.FelTranzactie.Transfer
+                && (p.Spatiu == N.Spatiu.Stoc || p.FelUnitate == N.FelUnitate.Fisa) && p.Unitate != null)
+            .Select(p => p.TranzactieId);
+        var partideInitiale = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.Spatiu == N.Spatiu.Contabil && p.Unitate != null)
+            .Select(p => p.Unitate);
+        var transferuriDeschidere = os.GetObjectsQuery<Postare>()
+            .Where(p => p.DocumentId == doc.ID && p.Tranzactie.Fel == N.FelTranzactie.Transfer
+                && p.Unitate != null && partideInitiale.Contains(p.Unitate)).Select(p => p.TranzactieId);
         var aleDocumentului = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == doc.ID
                 && (p.Tranzactie.Fel == N.FelTranzactie.Operare
-                    || (p.Tranzactie.Fel == N.FelTranzactie.Transfer && p.Spatiu == N.Spatiu.Stoc)))
+                    || transferuriStoc.Contains(p.TranzactieId) || transferuriDeschidere.Contains(p.TranzactieId)))
             .ToList();
         // Operat înainte ca tipul lui să fie migrat: stornoul nu atinge cubul (S-D5).
         if (aleDocumentului.Count == 0)
@@ -59,13 +82,18 @@ public static class Materializare {
             .ToList();
         var citite = aleDocumentului.Concat(atribuite)
             .DistinctBy(p => p.ID)
-            .Select(p => (p.ID, Randuri.Citeste(p)))
+            .Select(p => (p.ID, Randuri.Citeste(p) with {
+                InversaDin = new N.ReferintaPostare(p.ID, p.Spatiu),
+            }))
             .ToList();
         var tranzactie = N.Storno.Inverseaza(
             N.Storno.Selecteaza(citite, doc.ID),
             doc.ID,
             dataStorno,
             (dataStorno.Year * 100) + dataStorno.Month);
+        var refuzuri = N.Conservare.Verifica(tranzactie);
+        if (refuzuri.Count > 0)
+            throw new OperareException(string.Join("\n", Mesaje(refuzuri)));
         Scrie(os, doc.ID, tranzactie);
     }
 
@@ -78,14 +106,16 @@ public static class Materializare {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(stingator);
         ArgumentNullException.ThrowIfNull(stins);
-        if (!MotorOperare.GasesteTipDocument(os, stingator).PosteazaInCub
-            || !MotorOperare.GasesteTipDocument(os, stins).PosteazaInCub)
+        if (!Posteaza(os, stingator, MotorOperare.GasesteTipDocument(os, stingator))
+            || !Posteaza(os, stins, MotorOperare.GasesteTipDocument(os, stins)))
             return;
         var aleStingatorului = os.GetObjectsQuery<Postare>()
-            .Where(p => p.DocumentId == stingator.ID)
+            .Where(p => p.DocumentId == stingator.ID && p.Carte == N.Carte.Contabil
+                && p.FelUnitate == N.FelUnitate.Partida)
             .ToList();
         var aleStinsului = os.GetObjectsQuery<Postare>()
-            .Where(p => p.DocumentId == stins.ID && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .Where(p => p.DocumentId == stins.ID && p.Tranzactie.Fel == N.FelTranzactie.Operare
+                && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida)
             .ToList();
         // Plafonul e RESTUL partidei stinsului: `Operare` (care poartă deja recepția,
         // TR-D3) plus ce au așezat pe ea transferurile ORICĂRUI stingător.
@@ -94,6 +124,7 @@ public static class Materializare {
             ? []
             : os.GetObjectsQuery<Postare>()
                 .Where(p => p.Unitate != null && partideleStinsului.Contains(p.Unitate.Value)
+                    && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida
                     && p.Tranzactie.Fel == N.FelTranzactie.Transfer)
                 .ToList();
         var rezultat = Transferuri.Muta(new Transferuri.Cerere(
@@ -124,9 +155,10 @@ public static class Materializare {
 
     public static void Anuleaza(IObjectSpace os, Document doc) {
         ArgumentNullException.ThrowIfNull(doc);
-        if (!MotorOperare.GasesteTipDocument(os, doc).PosteazaInCub)
+        if (!Posteaza(os, doc, MotorOperare.GasesteTipDocument(os, doc)))
             return;
         VerificaPartideFaraDependenti(os, doc, doc.DataInregistrare);
+        VerificaSuportFaraDependenti(os, doc, doc.DataInregistrare);
         // T-D2: sub `VerificaFaraImperecheri`, orice `Transfer` al documentului e al lui.
         var tranzactii = os.GetObjectsQuery<Tranzactie>()
             .Where(t => t.DocumentId == doc.ID
@@ -175,14 +207,21 @@ public static class Materializare {
                 + $"{MotorOperare.ClasaReala(doc).Name} nu declară.")
             : Contractare.Contracteaza(os, doc);
 
-    static void Scrie(IObjectSpace os, Guid documentId, N.Tranzactie tranzactie) {
-        var rand = os.CreateObject<Tranzactie>();
-        rand.DocumentId = documentId;
-        rand.Fel = tranzactie.Fel;
-        rand.Data = tranzactie.Data;
-        rand.ScrisLa = DateTime.UtcNow;
-        foreach (var postare in tranzactie.Postari)
-            Randuri.Scrie(postare, rand, os.CreateObject<Postare>());
+    static Guid Scrie(IObjectSpace os, Guid? documentId, N.Tranzactie tranzactie) {
+        var tracker = (os as EFCoreObjectSpace)?.DbContext.ChangeTracker;
+        var incarcare = tracker?.LazyLoadingEnabled;
+        try {
+            if (tracker != null) tracker.LazyLoadingEnabled = false;
+            var rand = os.CreateObject<Tranzactie>();
+            rand.DocumentId = documentId;
+            rand.Fel = tranzactie.Fel;
+            rand.Data = tranzactie.Data;
+            rand.ScrisLa = DateTime.UtcNow;
+            foreach (var postare in tranzactie.Postari)
+                Randuri.Scrie(postare, rand, os.CreateObject<Postare>());
+            return rand.ID;
+        }
+        finally { if (tracker != null) tracker.LazyLoadingEnabled = incarcare.Value; }
     }
 
     static IReadOnlyList<string> Mesaje(IReadOnlyList<N.Refuz> refuzuri) =>

@@ -60,7 +60,7 @@ public sealed class DeclarantNotaContabila : IDeclarant {
             };
             var cerere = Math.Abs(linie.Valoare);
             decizii.Add(new N.ContRezolvat(linie.Id, cont, "explicit"));
-            if (!externul || !Partide.ARolTert(operand, cont)) return [(capat, cerere)];
+            if (!externul || !Partide.Urmareste(operand, cont)) return [(capat, cerere)];
             var sens = (latura == N.Latura.Debit ? 1 : -1) * Math.Sign(linie.Valoare);
             var candidati = new List<N.Disponibil>();
             foreach (var p in operand.PartideDisponibile.Where(p =>

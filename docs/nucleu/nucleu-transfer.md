@@ -239,8 +239,9 @@ e postare reală; consumul = `6xx (gestiune virtuală Consum, +q, lot) =
 3xx (gestiune, −q, lot)` — postarea de cheltuială poartă cantitatea și lotul
 (sink-ul din design §3); asamblarea = `345 = 301` cu loturile ambelor
 laturi; custodia = cantitate pe 803x cu valoare zero. Distincția fostului
-`TipStoc` devine STRUCTURALĂ, nu de date: Magazie/Mărfuri = contul (3xx
-contra 371); Consum/Folosință/Gratuit/ProducțieNeterminată = gestiuni
+`TipStoc` devine STRUCTURALĂ, nu de date: Magazie/Mărfuri/Folosință = contul (3xx
+contra 371) în gestiunea reală (amendamentul 093 pentru Folosință);
+Consum/Gratuit/ProducțieNeterminată = gestiuni
 virtuale (coordonata `Gestiune`); Custodie = contul 803x. `PoliticaMiscareSaft`
 se re-cheiază pe `(TipDocument, Cont, Semn, Gestiune virtuală?)` și
 injectivitatea ei e PROBĂ ModelCheck pe ambele seed-uri, nu restanță.

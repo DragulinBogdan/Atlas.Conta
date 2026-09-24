@@ -7,9 +7,9 @@ namespace Atlas.Conta.BackOffice.Module.Cub;
 public static class Randuri {
     public static N.Postare Citeste(Postare rand) {
         ArgumentNullException.ThrowIfNull(rand);
-        if (rand.DocumentId is not Guid document)
+        if (rand.DocumentId is null && rand.Tranzactie.Fel != N.FelTranzactie.Deschidere)
             throw new InvalidOperationException(
-                $"Postarea {rand.ID} n-are document: deschiderea ca tranzacție e a lui TR-D7b (TR-r10).");
+                $"Postarea {rand.ID} fără document nu aparține deschiderii.");
         return new N.Postare(
             new N.Coordonate {
                 Cont = rand.Cont,
@@ -31,8 +31,11 @@ public static class Randuri {
             rand.Cantitate,
             rand.ValoareValuta,
             rand.Valoare,
-            new N.Cauza(document, rand.LinieId),
-            rand.Atribuit);
+            new N.Cauza(rand.DocumentId ?? Guid.Empty, rand.LinieId),
+            rand.Atribuit) {
+                Suport = Referinta(rand.SuportId, rand.SuportSpatiu),
+                InversaDin = Referinta(rand.InversaDinId, rand.InversaDinSpatiu),
+            };
     }
 
     public static void Scrie(N.Postare postare, Tranzactie tranzactie, Postare rand) {
@@ -44,7 +47,7 @@ public static class Randuri {
         VerificaUnitatea(postare, spatiu);
         rand.Spatiu = spatiu;
         rand.Tranzactie = tranzactie;
-        rand.DocumentId = postare.Cauza.Document;
+        rand.DocumentId = tranzactie.Fel == N.FelTranzactie.Deschidere ? null : postare.Cauza.Document;
         rand.LinieId = postare.Cauza.Linie;
         rand.Data = coordonate.Data;
         rand.Cont = coordonate.Cont;
@@ -54,6 +57,11 @@ public static class Randuri {
         rand.Produs = coordonate.Produs;
         rand.Unitate = coordonate.Unitate?.Id;
         rand.UnitateDeschisa = coordonate.Unitate?.Deschisa;
+        rand.FelUnitate = coordonate.Unitate?.Fel;
+        rand.SuportId = postare.Suport?.Id;
+        rand.SuportSpatiu = postare.Suport?.Spatiu;
+        rand.InversaDinId = postare.InversaDin?.Id;
+        rand.InversaDinSpatiu = postare.InversaDin?.Spatiu;
         rand.TipTvaId = coordonate.CodTva?.TipTva;
         rand.SensTva = coordonate.CodTva?.Sens;
         rand.RolTva = coordonate.CodTva?.Rol;
@@ -75,7 +83,8 @@ public static class Randuri {
     static N.Unitate? Unitatea(Postare rand) {
         if (rand.Unitate is not Guid id)
             return null;
-        var fel = Felul(rand.Spatiu);
+        var fel = rand.FelUnitate
+            ?? throw new InvalidOperationException($"Postarea {rand.ID} are unitate fără fel.");
         return new N.Unitate(
             id,
             fel,
@@ -86,16 +95,21 @@ public static class Randuri {
                 ?? throw new InvalidOperationException($"Postarea {rand.ID} are unitate fără dată de deschidere."));
     }
 
-    // S-D1: `FelUnitate` nu se persistă — la TR-D7 `Stoc ⇔ Lot`, `Contabil ⇒ Partida`.
-    static N.FelUnitate Felul(N.Spatiu spatiu) =>
-        spatiu == N.Spatiu.Stoc ? N.FelUnitate.Lot : N.FelUnitate.Partida;
+    static N.ReferintaPostare? Referinta(Guid? id, N.Spatiu? spatiu) =>
+        (id, spatiu) switch {
+            (null, null) => null,
+            (Guid cheie, N.Spatiu partitie) => new(cheie, partitie),
+            _ => throw new InvalidOperationException("Referință de postare incompletă."),
+        };
 
     // Cont/Partener/Produs ale unității nu au coloane proprii: se citesc înapoi din
     // ale postării, deci o unitate care se abate de la ele s-ar pierde tăcut.
     static void VerificaUnitatea(N.Postare postare, N.Spatiu spatiu) {
         if (postare.Coordonate.Unitate is not { } unitate)
             return;
-        var fel = Felul(spatiu);
+        var fel = unitate.Fel;
+        if ((spatiu == N.Spatiu.Stoc) != (fel == N.FelUnitate.Lot))
+            throw new InvalidOperationException($"Unitatea {unitate.Id} ({fel}) nu aparține spațiului {spatiu}.");
         var asteptat = new N.Unitate(
             unitate.Id,
             fel,

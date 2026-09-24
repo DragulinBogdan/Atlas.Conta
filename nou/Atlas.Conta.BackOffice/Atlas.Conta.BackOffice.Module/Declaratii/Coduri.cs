@@ -6,6 +6,13 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// românesc al motorului vechi rămâne al lui până la TR-D7 (B-D3).
 /// </summary>
 public static class CoduriRefuz {
+    public const string ReceptieStructuraInvalida = "RECEPTIE_STRUCTURA_INVALIDA";
+    public const string InventarStructuraInvalida = "INVENTAR_STRUCTURA_INVALIDA";
+    public const string InventarStocNeacoperit = "INVENTAR_STOC_NEACOPERIT";
+    public const string AsamblareNebalansata = "ASAMBLARE_NEBALANSATA";
+    public const string AsamblareStructuraInvalida = "ASAMBLARE_STRUCTURA_INVALIDA";
+    public const string AsamblareDeltaFaraAncora = "ASAMBLARE_DELTA_FARA_ANCORA";
+    public const string AsamblareProdusNepozitiv = "ASAMBLARE_PRODUS_NEPOZITIV";
     public const string PredatorNepotrivit = "PREDATOR_NEPOTRIVIT";
     public const string PrimitorNepotrivit = "PRIMITOR_NEPOTRIVIT";
     public const string LaturiIdentice = "LATURI_IDENTICE";
@@ -31,4 +38,8 @@ public static class CoduriRefuz {
     public const string TvaCapitalizat = "TVA_CAPITALIZAT";
     public const string TvaImportNepotrivit = "TVA_IMPORT_NEPOTRIVIT";
     public const string PoliticaTvaLipsa = "POLITICA_TVA_LIPSA";
+    public const string FisaLipsa = "FISA_LIPSA";
+    public const string PoliticaAmortizareLipsa = "POLITICA_AMORTIZARE_LIPSA";
+    public const string SuportInsuficient = "SUPORT_INSUFICIENT";
+    public const string SuportCuDependenti = "SUPORT_CU_DEPENDENTI";
 }

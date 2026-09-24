@@ -24,6 +24,12 @@ public class Postare {
     public virtual Guid? Produs { get; set; }
     public virtual Guid? Unitate { get; set; }
     public virtual DateOnly? UnitateDeschisa { get; set; }
+    public virtual N.FelUnitate? FelUnitate { get; set; }
+
+    public virtual Guid? SuportId { get; set; }
+    public virtual N.Spatiu? SuportSpatiu { get; set; }
+    public virtual Guid? InversaDinId { get; set; }
+    public virtual N.Spatiu? InversaDinSpatiu { get; set; }
 
     public virtual Guid? TipTvaId { get; set; }
     public virtual N.SensTva? SensTva { get; set; }

@@ -231,7 +231,9 @@ static class ProbeCub {
         var aleLor = propriile.Select(t => t.ID).ToHashSet();
         var operare = Postari(os, doc.ID)
             .Where(r => aleLor.Contains(r.TranzactieId))
-            .Select(C.Randuri.Citeste)
+            .Select(r => C.Randuri.Citeste(r) with {
+                InversaDin = new N.ReferintaPostare(r.ID, r.Spatiu),
+            })
             .ToList();
         var storno = Postari(os, doc.ID, N.FelTranzactie.Storno).Select(C.Randuri.Citeste).ToList();
         var perioada = (dataStorno.Year * 100) + dataStorno.Month;
