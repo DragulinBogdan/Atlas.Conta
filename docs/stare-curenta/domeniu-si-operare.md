@@ -1133,7 +1133,8 @@ creării entităților de cub. Partidele cer cont cu UrmarestePartide, partener 
 referință stabilă; nu există document fictiv. Indexul unic filtrat permite
 o singură Deschidere în bază. Stingerea unei partide inițiale verifică
 restul întregii unități, contul, partenerul și perioada sub blocare comună
-cu storno/anulare. Transferul contribuie la restul de domeniu al plății;
+cu storno/anulare. Transferul contribuie la restul de domeniu al plății,
+la lista de documente cu rest și la snapshot-ul partidelor, cu aceeași tăiere pe dată;
 anularea este refuzată, iar stornoul nu poate preceda stingerea și reface
 partida fără a rescrie deschiderea. Detalierea stocului derivă din politică;
 loturile deja folosite și deschiderea datată după istorie sunt refuzate.

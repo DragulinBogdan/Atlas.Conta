@@ -153,6 +153,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         var nota = Nota(); Opereaza(nota);
         var plata = Trezorerie(false, 20); Opereaza(plata.Id);
         Imperecheaza(nota, plata.Id, 20, Ianuarie.AddDays(20));
+        VerificaCitiri(plata.Id, 0, "SC-DES-11");
         Refuza("SC-DES-11", () => Comanda(os => {
             using var tx = TranzactieComanda.Incepe(os);
             C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(plata.Id), Partida(ref1, Furnizor), 20, Ianuarie);
@@ -164,10 +165,19 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         }), C.Transferuri.PartidaProprieInsuficienta);
         var alta = Trezorerie(false, 20); Opereaza(alta.Id);
         var data = Ianuarie.AddDays(20);
-        Comanda(os => { using var tx = TranzactieComanda.Incepe(os);
-            C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(alta.Id), Partida(ref2, Furnizor), 20, data);
-            os.CommitChanges(); tx.Commit(); });
+        foreach (var rest in new[] { 10, 0 }) {
+            Comanda(os => { using var tx = TranzactieComanda.Incepe(os);
+                C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(alta.Id), Partida(ref2, Furnizor), 10, data);
+                os.CommitChanges(); tx.Commit(); });
+            VerificaCitiri(alta.Id, rest, "SC-DES-12");
+        }
         Verifica("SC-DES-12", "stingerea inițială consumă și restul de domeniu al plății", CuSpatiu(os => ImperechereService.Ramas(os, alta.Id)) == 0);
+        using (var os = Deschide()) {
+            var q = Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.Asignari(os, panaLa: data.AddDays(-1));
+            Verifica("SC-DES-12", "stingerea viitoare nu intră în listă", q.Where(p => p.DocumentId == alta.Id).Sum(p => p.Suma) == 0);
+            q = Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.Asignari(os, dupa: data.AddDays(-1), panaLa: data);
+            Verifica("SC-DES-12", "fereastra listei include stingerea la data ei", q.Where(p => p.DocumentId == alta.Id).Sum(p => p.Suma) == 20);
+        }
         Refuza("SC-DES-12", () => Imperecheaza(altaNota, alta.Id, 20, data), "rest");
         Refuza("SC-DES-12", () => Comanda(os => { using var tx = TranzactieComanda.Incepe(os);
             C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(altaNota), os.GetObjectByKey<Document>(alta.Id), 20, data);
@@ -180,6 +190,23 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Verifica("SC-DES-13/14", "refuzurile păstrează plata și transferul", stamp == Amprenta(alta.Id));
         Storneaza(alta.Id, data);
         Rest("SC-DES-14", ref2, Furnizor, 40);
+        Verifica("SC-DES-14", "inversa eliberează atribuirea în citirea listei", CuSpatiu(os =>
+            Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.Asignari(os)
+                .Where(p => p.DocumentId == alta.Id).Sum(p => p.Suma)) == 0);
+    }
+
+    void VerificaCitiri(Guid document, decimal rest, string id) {
+        using var os = Deschide();
+        var detaliu = ImperechereService.Ramas(os, document);
+        var asignat = Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.Asignari(os)
+            .Where(p => p.DocumentId == document).Sum(p => p.Suma);
+        var lista = Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.DocumenteCuRest(os, laData: new DateOnly(An, 1, 31))
+            .Where(p => p.DocumentId == document).Select(p => (decimal?)p.Rest).SingleOrDefault() ?? 0;
+        using var tx = TranzactieComanda.Incepe(os);
+        SolduriService.MaterializeazaPartide(os, An, 1);
+        var sold = os.GetObjectsQuery<PartidaDeschisa>().Where(p => p.DocumentId == document && p.An == An && p.Luna == 1)
+            .Select(p => (decimal?)p.Rest).SingleOrDefault() ?? 0;
+        Verifica(id, "detaliu = listă = snapshot, inclusiv inversa", detaliu == rest && lista == rest && 20 - asignat == rest && sold == rest);
     }
 
     void ReviewConcurenta() {

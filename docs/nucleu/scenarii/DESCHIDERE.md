@@ -102,3 +102,16 @@ Rularea integrală precedentă, tot verde, este în
 `run-verificari/20260924-124655-233/rezultat.json`.
 Corecturile sunt predate pentru reverificare și commit de către Claude,
 conform 098(d); următoarea felie este IMO.
+
+### Completare la review: citiri de stingere inițială (2026-09-24)
+
+SC-DES-11/12 compară detaliul, proiecția de listă și snapshot-ul SQL:
+PLT 20 stinsă normal are rest 0; stinsă din deschidere în două tranșe de
+10 are succesiv rest 10 și 0 pe toate citirile. Data stingerii taie corect
+fereastra listei (0 înainte, 20 la dată); inversa eliberează atribuirea.
+Detaliul și lista folosesc aceeași intrare `AsignariDeschidere`; geamănul
+SQL al snapshot-ului este acoperit de egalitatea numerică.
+
+Verificare comună cu IMO: **2.709 bugetar / 3.800 privat OK**, zero FAIL,
+exit 0, build fără avertismente; suita Integral, ambele profiluri,
+`run-verificari/20260924-150531-943/rezultat.json`.

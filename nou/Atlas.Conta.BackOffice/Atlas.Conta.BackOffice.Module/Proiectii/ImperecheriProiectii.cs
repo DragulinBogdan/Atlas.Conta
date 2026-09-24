@@ -77,19 +77,6 @@ public static class ImperecheriProiectii {
 
     // ── Atomii (42c) ────────────────────────────────────────────────────────
 
-    // Unpivot-ul imperecherii pe AMBELE laturi: un rând contribuie la restul
-    // stingătorului ȘI la restul documentului stins (un document poate sta pe
-    // ambele roluri — lanțul avans↔regularizare, 31d). Geamănul în SQL al lui
-    // `ImperechereService.Asignat`, care face același lucru cu un `||` pe un
-    // singur document. ALGEBRIC: rândurile inverse (F27-D8) intră cu semn.
-    // CUSĂTURĂ, deliberat NEfuzionată: serviciul răspunde pentru UN document
-    // (predicat, nu grup) și e apelat din motor pe cale caldă; aici avem nevoie
-    // de forma agregabilă. Refactorizarea serviciului pe unpivot ar schimba
-    // planul SQL al unei căi validate, fără câștig — cele două rămân separate,
-    // iar ModelCheck le compară pe fiecare rând al proiecției (F3-D9).
-    //
-    // `dupa`/`panaLa` (F27-D7) taie FEREASTRA: „ce s-a stins după referință".
-    // Fără ele e exact forma de dinainte.
     public static IQueryable<SumaPeDocument> Asignari(IObjectSpace os,
             DateOnly? dupa = null, DateOnly? panaLa = null) {
         var legaturi = os.GetObjectsQuery<Imperechere>();
@@ -97,10 +84,14 @@ public static class ImperecheriProiectii {
             legaturi = legaturi.Where(i => i.Data > d);
         if (panaLa is DateOnly p)
             legaturi = legaturi.Where(i => i.Data <= p);
+        var initiale = Cub.Materializare.AsignariDeschidere(os);
+        if (dupa is DateOnly deLa) initiale = initiale.Where(i => i.Data > deLa);
+        if (panaLa is DateOnly la) initiale = initiale.Where(i => i.Data <= la);
         return legaturi
             .Select(i => new SumaPeDocument { DocumentId = i.DocumentStingatorId, Suma = i.Suma })
             .Concat(legaturi
-                .Select(i => new SumaPeDocument { DocumentId = i.DocumentId, Suma = i.Suma }));
+                .Select(i => new SumaPeDocument { DocumentId = i.DocumentId, Suma = i.Suma }))
+            .Concat(initiale.Select(i => new SumaPeDocument { DocumentId = i.DocumentId, Suma = i.Suma }));
     }
 
     // ── Proiecția ───────────────────────────────────────────────────────────

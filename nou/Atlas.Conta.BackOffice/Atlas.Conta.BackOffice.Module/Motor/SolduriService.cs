@@ -136,6 +136,15 @@ public static class SolduriService {
                 UNION ALL
                 SELECT "DocumentId" AS "Doc", "Suma" FROM "Imperecheri"
                  WHERE "GCRecord" = 0 AND "Data" <= {panaLa}
+                UNION ALL
+                SELECT p."DocumentId" AS "Doc",
+                       CASE WHEN p."Latura" = i."Latura" THEN -p."Valoare" ELSE p."Valoare" END AS "Suma"
+                  FROM "Postare" p JOIN "Postare" i ON p."Unitate" = i."Unitate"
+                  JOIN "Tranzactie" t ON i."TranzactieId" = t."ID"
+                 WHERE p."DocumentId" IS NOT NULL AND p."Data" <= {panaLa}
+                   AND p."Carte" = {(int)Nucleu.Carte.Contabil} AND i."Carte" = {(int)Nucleu.Carte.Contabil}
+                   AND i."FelUnitate" = {(int)Nucleu.FelUnitate.Partida}
+                   AND t."Fel" = {(int)Nucleu.FelTranzactie.Deschidere}
               ) u GROUP BY u."Doc"
             """;
 
