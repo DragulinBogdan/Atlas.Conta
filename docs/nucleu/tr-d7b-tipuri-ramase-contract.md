@@ -325,6 +325,10 @@ felia 31 în `dezvoltare-si-validare.md` dispare.
 
 ### T-D5 — NIR: doar recepția fără factură; clona conexă a unui tip migrat NU se materializează
 
+**Amendat de 098(a), 2026-09-24:** conexul acoperit postează delta față de
+sursă (recepție parțială, linie manuală); excluderea integrală de mai jos
+rămâne adevărată numai pentru conexul needitat.
+
 **Implementare 2026-09-24:** declarantul NIR și excluderea generică prin
 politica conexului sunt active pe ambele profiluri. Catalogul independent
 [NIR.md](scenarii/NIR.md) acoperă SC-NIR-01…17, inclusiv ciclul conexului,

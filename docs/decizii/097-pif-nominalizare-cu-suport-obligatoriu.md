@@ -1,7 +1,7 @@
 # 97. PIF nominalizează valoarea contabilă cu suport obligatoriu
 
 - Data: 2026-09-24
-- Stare: aprobată de owner, activă
+- Stare: aprobată de owner, activă; (b) precizată de 098 ca invariant de poziție
 - Docs: `docs/nucleu/tr-d7c-imobilizari-contract.md` IMO-B2; 087(e), 090, 094, 095.
 
 ## Regula durabilă

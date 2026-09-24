@@ -113,4 +113,5 @@
 | 94 | [Deschiderea prin detalierea soldului: loturile și partidele înlocuiesc soldul bloc; diferențele refuză atomic](094-deschidere-prin-detalierea-soldului.md) | 2026-09-24 | activă, amendează TR-D7b T-D7 |
 | 95 | [DEC și imobilizările complete pe cub înaintea citirilor TR-D8](095-producatori-completi-inaintea-citirilor.md) | 2026-09-24 | activă, amendează etapizarea 090(l) |
 | 96 | [Urmărirea partidelor separată de rolul comercial SAF-T](096-urmarirea-partidelor-separata-de-rolul-comercial.md) | 2026-09-24 | activă, precizează 090(d) |
-| 97 | [PIF nominalizează valoarea contabilă cu suport obligatoriu](097-pif-nominalizare-cu-suport-obligatoriu.md) | 2026-09-24 | activă, amendează 087(e), concretizează 090 |
+| 97 | [PIF nominalizează valoarea contabilă cu suport obligatoriu](097-pif-nominalizare-cu-suport-obligatoriu.md) | 2026-09-24 | activă, amendează 087(e), concretizează 090; precizată de 098 |
+| 98 | [Conexul NIR editat postează delta față de sursă; poziția fără fișă pe contul de imobilizare nu coboară sub zero; contul fișei vine din poziția ei în cub](098-corecturi-review-sincronizare.md) | 2026-09-24 | activă (amendează TR-D7b T-D5, precizează 097(b)) |

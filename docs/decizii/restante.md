@@ -246,7 +246,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | TR-r7 | sink-urile bugetare Gratuit/Custodie și injectivitatea SAF-T rămân deschise; Folosință păstrează gestiunea reală pe lanțul FCT/NIR/BTR/BCS/LDI (093, LDI-B3) | activă (091) |
 | TR-r8 | rulajul brut per partidă nu e sumă sub tranzacția de transfer; fișa partidei se randează ca fereastră (90) | activă (091) |
 | TR-r9 | probele de formă din ModelCheck (≈300): inventar rescrie/șterge la TR-D8/D9, nu înainte (90) | activă (091) |
-| TR-r10 | deschiderea generică fără document, cu loturi și partide; detalierea înlocuiește soldul bloc și refuză diferențele (094, DES-B1…B4). Conectorul 1C rămâne separat în 091-r4/T-r4 | închisă 2026-09-24 pentru mecanismul generic: SC-DES-01…10, integral 2.353/3.402 OK; cititorii și consumul stocului inițial rămân TR-D8 |
+| TR-r10 | deschiderea generică fără document, cu loturi și partide; detalierea înlocuiește soldul bloc și refuză diferențele (094, DES-B1…B4). Conectorul 1C rămâne separat în 091-r4/T-r4 | activă: mecanism implementat (SC-DES-01…10); review advers 2026-09-24 cu MAJOR-1 și MEDIU-1…8, corecturi în curs (098d); cititorii și consumul stocului inițial rămân TR-D8 |
 | TR-r11 | `Numar`, `DataScadenta`, `Autogenerat`, `DocumentSursa` rămân atribute ale documentului scrise la operare, sub gardianul (a) (90) | activă (091) |
 | TR-r12 | Δ de sold 3xx (+585.404,66 pe Flax) între registrul de stoc și cel contabil de azi: tranșată prin contractul 1 al reconcilierii 1C; constatare, nu consecință acceptată (90); intră la TR-D7b, cu tipurile care o produc | migrare (091) |
 | FZ-r1 | granul lui `Sold` contra snapshot-urile de azi (și dacă un read model mai grosier merită ca al doilea): gate la TR-D8, nu condiție prealabilă; FZ-r2 măsurată 2026-09-19 (fișa 348 contra 248 ms) și absorbită (90) | activă (091) |
@@ -316,8 +316,10 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 091-r3 | testul de arhitectură care refuză accesul la `Postare` în afara cititorilor comuni (`Module/Cub/Citiri`); `Transfer` și stornourile lui excluse acolo, nu per raport (091, TR-D8) | activă (091) |
 | 091-r4 | felia de migrare, cu decizie proprie, după „rotund”: conectorul 1C repornit pe modelul final, deschiderea de terți din `BalantaNivel3` (T-r4), stingerile 2024, reconcilierea 1C ca raport de diferențe (091) | migrare (091) |
 | 091-r5 | un caz apărut la migrare care contrazice catalogul devine scenariu nou plus decizie; oracolul normalizat (`CubDinRegistre`, `Normalizari`) nu se mai extinde (091) | migrare (091) |
-| 095-r1 | DEC → contract IMO → PIF/AMO/CAS complete pe cub, inclusiv cartea fiscală și istoricul fișei, înaintea TR-D8 (095), PIF cu suport obligatoriu aprobat (097); urmărirea partidelor separată de RolTert (096) | activă: producători și cititor de fișă implementați, SC-IMO-01…25 verzi pe ambele profiluri; review advers restant |
+| 095-r1 | DEC → contract IMO → PIF/AMO/CAS complete pe cub, inclusiv cartea fiscală și istoricul fișei, înaintea TR-D8 (095), PIF cu suport obligatoriu aprobat (097); urmărirea partidelor separată de RolTert (096) | activă: producători și cititor de fișă implementați, SC-IMO-01…25 verzi pe ambele profiluri; review advers făcut 2026-09-24, corecturi în curs (098b/c/d) |
 | 096-r1 | Diagnostic și tratare explicită la TR-D8 pentru postările istorice fără unitate pe conturi cu UrmarestePartide; migrația atributului nu reconstruiește istoria (096d) | activă, TR-D8 (091) |
 | 097-r1 | diagnosticul istoriei PIF fără fișă/origine/suport înaintea activării cititorilor (097) | activă, TR-D8 (091) |
 | 097-r2 | auditul anulării fizice a suportului eliberat; proveniența fără FK restrictiv (097, 091j) | activă, TR-D9 (091) |
 | 097-r3 | blocajul tranzacțional comun pe bază, limitat la IMO și suportul lui; mecanismul general rămâne 091 (g)(4) (097) | activă (091) |
+| 098-r1 | conturile de contrapartidă ale deltei NIR conex per profil, aprobate de owner înaintea codului (098a) | activă (091) |
+| 098-r2 | recensământul pe clona Flax al conexelor NIR editate față de sursă (098a) | activă (091) |

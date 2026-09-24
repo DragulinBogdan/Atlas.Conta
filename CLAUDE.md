@@ -139,7 +139,8 @@ Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucr
 
 **Următorul pas**: TR-D8 — portarea consumatorilor pe intrările comune ale
 cubului, după DEC și PIF/AMO/CAS (095, 097), cu scenarii numerice înaintea
-implementării. Review-ul advers IMO rămâne de făcut.
+implementării. Review-urile adverse LDI, NIR, Deschidere, DEC și IMO sunt făcute
+(2026-09-24); corecturile se aplică pe felii peste `94ddfa8` (098).
 Urmărirea partidelor este separată de rolul comercial SAF-T (096). Transformarea ASM și absorbția
 temporară Δ în regimul dual sunt aprobate și implementate:
 `docs/nucleu/tr-d7b-asm-transformare-contract.md` (ASM-B2…B7).
