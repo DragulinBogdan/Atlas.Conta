@@ -17,6 +17,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // e aditivă), deci nu primesc grup de layout.
 [TipDetaliu(typeof(FacturaIntrareDetaliu))]
 public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
+    public override bool AcoperaReceptia(Document conex) => conex is NIR;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Externa, Declaratii.Latura.Gestiune);
 

@@ -214,6 +214,7 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     options.BusinessObject<RegulaStoc>();
                     options.BusinessObject<RegulaContare>();
                     options.BusinessObject<PoliticaConex>();
+                    options.BusinessObject<PoliticaDiferenta>();
                     options.BusinessObject<PoliticaScadenta>();
                     options.BusinessObject<PoliticaValidare>();
                     options.BusinessObject<PoliticaTva>();

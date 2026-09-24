@@ -1,6 +1,9 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
+using Microsoft.EntityFrameworkCore;
+using Atlas.Conta.BackOffice.Module.Migrations;
 using N = Atlas.Conta.Nucleu;
 using C = Atlas.Conta.BackOffice.Module.Cub;
 
@@ -35,6 +38,7 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-BTR-03", d.Id, N.FelTranzactie.Storno, data, Randuri(d, 0, -4, -40));
         Verifica("SC-CIT-05", "BTR și inversa Transfer nu apar în citirea contabilă", CuSpatiu(os =>
             !C.Citiri.Contabil.Postari(os).Any(p => p.DocumentId == d.Id)));
+        ProvenientaIstorica(d.Id);
         Solduri("SC-BTR-03", lot, data, 10, 100, 0, 0);
         var amprenta = Amprenta(d.Id);
         Refuza("SC-BTR-03", () => Storneaza(d.Id, data), "Operat");
@@ -69,6 +73,46 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-BTR-06", c.Id, N.FelTranzactie.Storno, Februarie, Randuri(c, 0, -4, -40));
         Postari("SC-BTR-06", nou, N.FelTranzactie.Transfer, Februarie, Randuri(corectie, 0, 3, 30));
         Solduri("SC-BTR-06", c.Linii[0], Februarie, 7, 70, 3, 30);
+    }
+
+    void ProvenientaIstorica(Guid document) {
+        foreach (var ambigu in new[] { false, true }) {
+            using var os = Deschide();
+            var db = ((EFCoreObjectSpace)os).DbContext;
+            using var tranzactie = db.Database.BeginTransaction();
+            var originale = os.GetObjectsQuery<C.Postare>()
+                .Where(p => p.DocumentId == document && p.Tranzactie.Fel == N.FelTranzactie.Transfer)
+                .Select(p => new { p.ID, p.Spatiu }).ToArray();
+            var inverse = os.GetObjectsQuery<C.Postare>()
+                .Where(p => p.DocumentId == document && p.Tranzactie.Fel == N.FelTranzactie.Storno)
+                .Select(p => new { p.ID, p.Spatiu, p.InversaDinId, p.InversaDinSpatiu }).ToArray();
+            var cod = ambigu ? "SC-CIT-08" : "SC-CIT-07";
+            db.Database.ExecuteSqlInterpolated($"""
+                UPDATE "Postare" p SET "InversaDinId" = NULL, "InversaDinSpatiu" = NULL
+                FROM "Tranzactie" t WHERE p."TranzactieId" = t."ID"
+                AND p."DocumentId" = {document} AND t."Fel" = 2
+                """);
+            if (ambigu) {
+                var original = originale[0]; var duplicat = Guid.NewGuid();
+                db.Database.ExecuteSqlInterpolated($"""
+                    INSERT INTO "Postare"
+                    SELECT (jsonb_populate_record(NULL::"Postare", to_jsonb(p)
+                        || jsonb_build_object('ID', {duplicat}))).*
+                    FROM "Postare" p WHERE p."ID" = {original.ID} AND p."Spatiu" = {(short)original.Spatiu}
+                    """);
+            }
+            Refuza(cod, () => C.Citiri.Contabil.Postari(os), "CITIRE_PROVENIENTA_LIPSA: 2");
+            Verifica(cod, "completează numai perechi univoce", db.Database.ExecuteSqlRaw(OriginiStornoUnivoce.Completeaza) == (ambigu ? 1 : 2));
+            Verifica(cod, "backfill idempotent", db.Database.ExecuteSqlRaw(OriginiStornoUnivoce.Completeaza) == 0);
+            if (ambigu) Refuza(cod, () => C.Citiri.Contabil.Postari(os), "CITIRE_PROVENIENTA_LIPSA: 1");
+            else {
+                Verifica(cod, "inversele păstrează exact identitățile originale", inverse.All(i =>
+                    os.GetObjectsQuery<C.Postare>().Any(p => p.ID == i.ID && p.Spatiu == i.Spatiu
+                        && p.InversaDinId == i.InversaDinId && p.InversaDinSpatiu == i.InversaDinSpatiu)));
+                Verifica(cod, "BTR rămâne exclus din rulajele contabile", !C.Citiri.Contabil.Postari(os).Any(p => p.DocumentId == document));
+            }
+            tranzactie.Rollback();
+        }
     }
 
     void Multiple() {

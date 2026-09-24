@@ -313,6 +313,8 @@ export function NirDetaliu() {
               width={110}
               cellRender={(c) => ((c.data as { LotStrain?: boolean }).LotStrain ? 'da' : '—')}
             />
+            <Column dataField="CauzaDiferentei" caption={capLinie('CauzaDiferentei')}
+              cellRender={(c) => labelEnum('CauzaDiferentei', c.value)} />
             <Column dataField="Cantitate" caption={capLinie('Cantitate')} dataType="number" format="#,##0.###" alignment="right" />
             <Column dataField="PretUnitar" caption={capLinie('PretUnitar')} dataType="number" format="#,##0.######" alignment="right" />
             {/* Valorile sunt ale SERVERULUI (43b): apar după Salvează, nu se
@@ -329,7 +331,7 @@ export function NirDetaliu() {
                 <button
                   type="button"
                   className="buton buton--mic"
-                  disabled={!poateEdita}
+                  disabled={!poateEdita || !!c.data.LinieAcoperita}
                   onClick={(ev) => { ev.stopPropagation(); stergeLinie((c.data as { __indice: number }).__indice); }}
                 >
                   Șterge
@@ -344,6 +346,7 @@ export function NirDetaliu() {
             <NirEditorLinie
               key={indiceEditat ?? 'linie-noua'}
               linie={inEditare}
+              diferente={!!doc?.SursaReceptieiId}
               lotStrain={etichete(doc?.Linii, inEditare).LotStrain}
               lotEticheta={etichete(doc?.Linii, inEditare).LotEticheta}
               readOnly={!poateEdita}
@@ -371,6 +374,7 @@ function etichete(citite: NirLinieRead[] | null | undefined, linie: NirLinieWrit
     ProdusDenumire: culese?.ProdusDenumire ?? g?.ProdusDenumire ?? '',
     LotEticheta: g?.LotEticheta ?? '',
     LotStrain: g?.LotStrain ?? false,
+    LinieAcoperita: g?.LinieAcoperita ?? false,
     Valoare: g?.Valoare,
     ValoareTva: g?.ValoareTva,
     TipTvaCod: g?.TipTvaCod ?? '',

@@ -1,4 +1,4 @@
-﻿# Istoricul de execuție al planului de lucru (snapshot 2026-08-24)
+# Istoricul de execuție al planului de lucru (snapshot 2026-08-24)
 
 > Extras verbatim din `CLAUDE.md` la 2026-08-24 (commit `f18c24c`); secțiunea
 > finală (cronologia compactă) e mutată din `CLAUDE.md` la 2026-09-11. Starea
@@ -784,3 +784,27 @@ detaliat în jurnal):
   acoperirea sunt în `docs/nucleu/scenarii/DVI.md`. T-r10 închisă; T-r11,
   B-r4, T-r5/86-r11, 86-r2 și reevaluarea pe loturi rămân declarate.
   Următorul pas: ASM → LDI → NIR, cu scenarii înainte de cod.
+
+- **TR-D8 pregătire — corecturi citiri/DEC și NIR delta** (2026-09-24):
+  proveniența stornoului este obligatorie la citire, cu completare numai a
+  perechilor istorice univoce; contraponderea virtuală are un predicat comun.
+  DEC probează numeric inversarea/corecția partidei 542. NIR aplică 098/099:
+  diferență față de recepția istorică a facturii, cauză și politică pe clasă,
+  imputat extern/angajat, proveniență persistentă inclusiv la delta zero,
+  unicitate concurentă a cumulului și gardian de stoc pe cub. Maparea
+  bugetară NIR-D4 a fost aprobată explicit de owner. API/clientul expun
+  cauza, imputatul și politicile; reconcilierea fizică delimitează în (h)
+  întreg grupul cu delta nenulă. Contractul și probele finale sunt în
+  `docs/nucleu/tr-d8-nir-delta-contract.md` și `docs/nucleu/scenarii/NIR.md`.
+  Review-ul advers a fost amânat de owner până după NIR; predare fără
+  commit. Cititorii generali rămân de portat la TR-D8; intervalul dintre
+  inversarea și operarea cumulului corectat poate lăsa registrele vechi
+  negative și este raportat ca grup incomplet.
+
+- **Corecturi review NIR 1945** (2026-09-24): proveniență completată în
+  migrație, fără fallback runtime; citirea sursei o singură dată pe comandă,
+  imputat golit când nu produce efect, analiza istorică păstrată. Probe noi
+  SC-NIR-32…36; Integral 2.836/3.917 OK, selectiv NIR 227/224 OK, zero FAIL,
+  client/drift/HTTP/browser trecute. Limita gărzii registrelor include și
+  storno/anularea simplă după consum, 098-r3 cade la TR-D9. Predare fără
+  commit pentru reverificarea independentă.

@@ -149,6 +149,9 @@ nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76
 
 ### Anulare și storno
 
+În cub, pentru toate tipurile, storno/anularea urmăresc postările deja
+existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
+
 - Anularea operării readuce documentul în Draft și elimină rândurile sale
   de registru. Este permisă numai în perioadă deschisă și fără dependenți. (14, 25d)
 - Eliminarea mișcărilor proprii nu poate produce sold intermediar negativ.
@@ -393,7 +396,7 @@ clientul nu introduce o rotunjire contabilă independentă. (42c, 51c, 52a)
 | Cod / tip | Regula specifică |
 |---|---|
 | FCT — factură de intrare | Numărul furnizorului este cules. Pentru stoc, naște lotul și generează NIR; postează liniile care nu trec pe NIR și TVA-ul propriu. Poate genera o plată draft din datele culese. (26a, 31e, 56) |
-| NIR — recepție | Manual: postează recepția și în cub, partidă proprie pe contul cu RolTert. Conexul autogenerat din sursă migrată, prin PoliticaConex, rămâne numai în registre; recepția sa este deja în cubul sursei. Lot propriu: preț cules × cantitate; lot străin din factură: prețul lotului. Nu culege TVA. NIR-ul conex nu se șterge independent din client. (26a, 62, 62f, T-D5) |
+| NIR — recepție | Manual: recepție integrală, partidă după `UrmarestePartide`. Conex: delta față de recepția deja postată de FCT; proveniența istorică se păstrează la corecție, inclusiv la delta zero. Cauza diferenței decide contrapartida prin politică; imputarea cere partener. O singură recepție activă cumulativă per FCT, linii-sursă păstrate (zero permis), lotul nu se schimbă. Nu culege TVA. (098, 099, NIR-D1…D6) |
 | FCL — factură de ieșire | Postează venitul și creanța. În privat poate genera DSC; în bugetar regulile o restrâng la document fără stoc. Numărul fiscal este al serverului. (30a, 30b, 56) |
 | DSC — descărcare | Generat de serviciu din FCL, cu `LinieSursaId`, la cost, fără TVA; gestiune → client, cu ambele dimensiuni de repartitor pe gestiune. Clientul oferă citire și comenzi, fără creare manuală. (37a, 37b, 58) |
 | BTR — transfer | Mută stocul între gestiuni. Transferul simplu nu postează note contabile în planul sintetic. (23c) |
@@ -739,7 +742,7 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   ca `RepartitorFapt` cu felul din discriminatorul `ClrType`), liniile cu
   lotul, prețul, produsul și dimensiunile culese, politica (regulile de
   contare/stoc, politica de TVA, tipurile de TVA cu conturile lor, conturile
-  atinse cu `RolTert`), starea citită (soldurile loturilor la data
+  atinse cu `UrmarestePartide`), starea citită (soldurile loturilor la data
   înregistrării fără documentul curent, restul partidei sursei, perioada
   de declarare, perioada deschisă, versiunea politicii, toleranța taxei).
   Îl construiește `Motor/Fapte.Operand(os, doc)` PE SETURI (o interogare
@@ -756,8 +759,7 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   `DimensiuniResolver` — aceleași funcții pure ca motorul vechi.
 - **Regula coordonatelor** (B-D8 pct. 9, 10): capătul intern poartă
   `Gestiune` = repartitorul intern al documentului; capătul de terț poartă
-  `Partener` + partida DOAR pe un cont cu `RolTert` (pe profilul bugetar
-  niciun cont n-are, deci nici partidă) și nicio gestiune (azi nota pune pe
+  `Partener` + partida DOAR pe un cont cu `UrmarestePartide` și nicio gestiune (azi nota pune pe
   fiecare picior repartitorul CONTRAPARTIDEI — „contrapartida pe fiecare
   latură", respinsă de design §3).
 - **BCS** (`DeclarantBonConsum`): o mișcare per linie — lotul iese de pe
@@ -766,7 +768,7 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   re-cheiată pe contul postării), evaluat pe raportul curent în secvența
   liniilor.
 - **PLT/INC** (`DeclarantTrezorerie`, O clasă pentru ambele: diferența e în
-  regula de contare și în contul cu `RolTert`): o mișcare per linie de
+  regula de contare și în contul cu `UrmarestePartide`): o mișcare per linie de
   defalcare; plata născută din factură numește partida sursei prin
   `Fifo.Nominalizeaza` cât ține restul ei, excedentul pe partida proprie
   ca a doua mișcare (linia se sparge, inclusiv piciorul de bani); fără sursă,
@@ -836,7 +838,7 @@ perechea bazei DVI și gestiunea taxei, cu contoare, inclusiv la taxa zero.
 
 NTC și ITV folosesc același `DeclarantNotaContabila` (T-D3, pasul 3).
 Nota păstrează conturile explicite și valoarea semnată; cantitatea este 0.
-Pe un cont cu `RolTert`, partenerul explicit al liniei nominalizează FIFO
+Pe un cont cu `UrmarestePartide`, partenerul explicit al liniei nominalizează FIFO
 partidele aceluiași cont și partener, în sensul stingerii și până la rest;
 excedentul deschide partida proprie. Soldurile pentru această nominalizare
 se citesc din cub la data înregistrării, ca fapte în operand. Fără partener,
@@ -1173,3 +1175,48 @@ registrele. Portarea acestei citiri operaționale este necesară la TR-D8.
 - [Documentele de trezorerie](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Trezorerie.cs)
 - [Documentele imobilizărilor](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Imobilizari.cs)
 - [Serviciul de amortizare](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/AmortizareService.cs)
+
+### NIR delta și citirile comune (098/099, 2026-09-24)
+
+[Contractul NIR](../nucleu/tr-d8-nir-delta-contract.md) fixează sursa ca
+tranzacție și linii istorice, un singur cumul activ sub blocare comună și
+politica `tip × cauză × clasă`. `PoliticaDiferenta` este configurabilă,
+cu proveniență de seed; nomenclatorul privat existent furnizează conturile 32x.
+Bugetarul folosește maparea aprobată 473.01.09/408.00.00/461.01.09,
+428.01.02 pentru angajați și 35x pentru PeDrum. Lipsa politicii sau a
+analizelor obligatorii este refuz atomic. Stocul istoric, datoria și TVA-ul
+facturii nu se rescriu; inversarea utilizează delta existentă.
+
+Reconcilierea raportează separat în (h) numai grupurile FCT + NIR/corecții
+cu deltă, cu diferența completă inclusiv furnizorul; celelalte rămân în (a),
+iar (f) rămâne activ. `Citiri/Receptii` este intrarea comună pentru
+proveniența grupurilor din reconciliere și diagnosticul stocului. Pentru NIR acoperit, storno/anularea simplă după consum, precum și intervalul
+până la operarea cumulului corectat, pot lăsa registrul lotului negativ.
+Grupul fără cumul activ se raportează incomplet. Cubul păstrează recepția
+FCT și gardianul său de stoc; cât registrul este negativ, operațiile pe
+același lot care trec prin gardianul registrelor pot fi refuzate. Owner-ul
+acceptă limita temporară până la TR-D9; nu se adaugă adaptări pentru
+compatibilitatea regimului dual. Cititorii generali trec pe cub la TR-D8,
+iar garda registrelor dispare la TR-D9 (098-r3).
+
+`Citiri/Contabil` refuză storno fără origine verificabilă
+(`CITIRE_PROVENIENTA_LIPSA`). Migrația `OriginiStornoUnivoce` reconstituie
+numai perechi istorice univoce, fără aproximări; repetarea nu schimbă nimic,
+ambiguitatea rămâne refuzată. `Citiri/Transformare` oferă un singur predicat
+pentru contraponderea virtuală ASM, utilizat și de probe/diagnostic.
+DEC are probă numerică independentă pentru inversare și corecție peste
+închidere: partidă −100 în ianuarie, zero după inversă, noua partidă −80.
+
+Factura de avans 4091 privat / 409.01.01 bugetar nu produce recepție.
+Seed-ul bugetar clasifică 409.01.01 fără stoc (clasa S), conform 099(d);
+postările istorice nu se reclasifică prin această corecție de seed.
+
+UrmarestePartide este activ și pe 461 privat, respectiv
+408.00.00/461.01.09/428.01.02 bugetar. Efectul aparține contului, nu NIR-ului:
+și FCT bugetar pe 408 deschide partida furnizorului (SC-NIR-36/FCT), iar
+INC/PLT pe 461 folosesc urmărirea partidelor prin mecanismul comun.
+SursaReceptieiId este proveniența unică după completarea din migrație;
+corecția o păstrează independent de Autogenerat. Recepția-sursă se citește
+o singură dată pe comandă, sub blocarea sursei la operare. Validarea
+analizelor curente privește capătul diferenței; capătul stocului păstrează
+analiza istorică. Imputatul fără cauză Imputabila sau fără deltă se golește.

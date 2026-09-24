@@ -123,6 +123,8 @@ public static class VerificareProfilService {
             r => $"{codTip(r.TipDocumentId)} / {r.Latura}"),
         [typeof(RegulaContare)] = Tabel<RegulaContare>("Reguli de contare",
             r => codTip(r.TipDocumentId)),
+        [typeof(PoliticaDiferenta)] = Tabel<PoliticaDiferenta>("Politici diferență",
+            p => $"{codTip(p.TipDocumentId)} / {p.Cauza} / {p.ClasaId}"),
         [typeof(PoliticaConex)] = Tabel<PoliticaConex>("Politici conex",
             p => codTip(p.TipDocumentSursaId)),
         [typeof(PoliticaScadenta)] = Tabel<PoliticaScadenta>("Politici de scadență",

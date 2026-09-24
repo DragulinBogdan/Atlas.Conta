@@ -68,34 +68,23 @@ static class DiagnosticValoriStoc {
                 p.Cantitate, p.Valoare, p.Latura, p.Tranzactie.Fel }).ToList();
         var gestiuni = ctx.Set<Gestiune>().Select(g => g.ID).ToHashSet();
         var docIds = reg.Select(r => r.DocumentId).Concat(cub.Select(p => p.DocumentId)).OfType<Guid>().Distinct().ToArray();
-        var documente = ctx.Set<Document>().Where(d => docIds.Contains(d.ID)
-                || ctx.Set<Document>().Any(c => docIds.Contains(c.ID) && c.DocumentSursaId == d.ID))
-            .Select(d => new { d.ID, d.ClrType, d.Autogenerat, d.DocumentSursaId }).ToDictionary(d => d.ID);
-        var politiciConex = ctx.Set<PoliticaConex>().Where(p => p.TipDocumentSursa.PosteazaInCub)
-            .Select(p => new { Sursa = p.TipDocumentSursa.ClrType, Tinta = p.TipDocumentTinta.ClrType })
-            .ToList().Select(p => (p.Sursa, p.Tinta)).ToHashSet();
-        Guid? Cap(Guid? id) => id is Guid d && documente.TryGetValue(d, out var doc)
-            && doc.Autogenerat && doc.DocumentSursaId is Guid sursa && documente.TryGetValue(sursa, out var original)
-            && politiciConex.Contains((original.ClrType, doc.ClrType)) ? sursa : id;
+        var receptii = C.Citiri.Receptii.Legaturi(ctx, docIds);
+        Guid? Cap(Guid? id) => id is Guid d && receptii.TryGetValue(d, out var sursa) ? sursa : id;
         var inAfara = InAfaraDomeniului(reg.Select(r =>
             (new CheieMiscare(r.LotId, r.RepartitorId, Cap(r.DocumentId), r.Data, r.Storno), r.TipStoc)));
         var cubReal = cub.Where(p => gestiuni.Contains(p.Gestiune!.Value)).ToArray();
         var cubExclus = cubReal.Where(p => inAfara.Contains(new(p.Unitate!.Value, p.Gestiune!.Value,
-            p.DocumentId, p.Data, p.Fel == N.FelTranzactie.Storno))).Select(p => p.ID).ToHashSet();
+            Cap(p.DocumentId), p.Data, p.Fel == N.FelTranzactie.Storno))).Select(p => p.ID).ToHashSet();
         var fapte = new List<Fapt>();
         foreach (var r in reg.Where(r => r.TipStoc is TipStoc.Magazie or TipStoc.Marfuri or TipStoc.Folosinta))
             fapte.Add(new(new(r.LotId, r.RepartitorId, r.Cont), r.Data, Cap(r.DocumentId), r.DetaliuId,
                 r.Storno, r.Cantitate, r.Valoare, false, $"registru {r.ID}, doc {r.DocumentId}, linie {r.DetaliuId}"));
         foreach (var p in cubReal.Where(p => !cubExclus.Contains(p.ID)))
-            fapte.Add(new(new(p.Unitate!.Value, p.Gestiune!.Value, p.Cont), p.Data, p.DocumentId, p.LinieId,
+            fapte.Add(new(new(p.Unitate!.Value, p.Gestiune!.Value, p.Cont), p.Data, Cap(p.DocumentId), p.LinieId,
                 p.Fel == N.FelTranzactie.Storno, p.Cantitate,
                 p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare, true,
                 $"cub {p.ID}, doc {p.DocumentId}, linie {p.LinieId}, fel {p.Fel}"));
-        var virtuale = ctx.Set<C.Postare>().Where(p => p.Data <= laData
-                && p.Gestiune == N.GestiuniVirtuale.Transformare && p.Unitate == null
-                && p.Produs != null && p.Carte == N.Carte.Contabil && p.Partener == null
-                && p.TipTvaId == null && p.PerioadaDeclarare == null && p.Valuta == null
-                && p.Valoare == 0 && p.ValoareValuta == 0 && p.Cantitate != 0
+        var virtuale = ctx.Set<C.Postare>().Where(C.Citiri.Transformare.Contrapondere).Where(p => p.Data <= laData
                 && (set == null || p.DocumentId != null && docIds.Contains(p.DocumentId.Value))).Count();
         return new(laData, Calculeaza(fapte, deLa), virtuale,
             reg.Count(r => r.TipStoc is not (TipStoc.Magazie or TipStoc.Marfuri or TipStoc.Folosinta)), cubExclus.Count) {

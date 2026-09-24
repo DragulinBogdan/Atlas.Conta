@@ -90,6 +90,32 @@ activării citirilor există recensământ: originea unică poate fi atribuită
 determinist, cazurile ambigue sunt raportate și blochează activarea până
 la tratarea explicită. Nu se recreează baze ale utilizatorului implicit.
 
+Corectura MEDIU-4: intrarea contabilă verifică întregul său domeniu înainte
+de compunerea raportului și refuză cu numărul inverselor fără origine
+existentă. Migrarea completează doar perechi univoce în ambele sensuri:
+aceeași cauză și toate coordonatele, măsuri inverse, original anterior
+stornoului și nefolosit de altă inversă. Perioada declarării poate fi
+redatată; prezența ei se păstrează. Ambiguitatea nu se rezolvă prin ordinea
+ID-urilor. Proba de migrare modifică temporar proveniența unui BTR real,
+într-o tranzacție anulată la final; verifică refuzul, completarea și
+idempotenta, apoi un caz ambiguu rămas blocat.
+
+Review advers amânat de owner până la sincronizare, după NIR; verificările
+automate continuă pe fiecare felie.
+
+Implementat prin migrația `20260924130000_OriginiStornoUnivoce` și gardianul
+intrării contabile. `SC-CIT-07/08` trec pe ambele profiluri; integral
+2.723/3.814 OK, `run-verificari/20260924-160912-899/rezultat.json`.
+Predicatul complet al contraponderii este unic în `Cub.Citiri.Transformare`,
+folosit în citirea contabilă, Comparabil și DiagnosticValoriStoc. Verificarea
+formei la scriere rămâne independentă, în Conservare.
+
+**Pin de performanță înaintea portării consumatorilor:** verificarea globală
+`CITIRE_PROVENIENTA_LIPSA` devine diagnostic de activare și probă; nu se
+execută la fiecare apel `Citiri.Contabil.Postari`. Numărarea actuală a
+stornourilor fără origine pe întreaga bază este încă în cod și trebuie
+scoasă din costul citirii înaintea comutării rapoartelor.
+
 ## D8-B4 — Reconcilierea ASM la intrare
 
 **Aprobat de owner, 2026-09-24, numai pentru regimul dual (T-r15).**

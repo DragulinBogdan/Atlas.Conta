@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Formular, eroriStructurale } from '../../nucleu/formular';
-import { CampData, CampNumar, CampText } from '../../nucleu/campuri';
+import { CampData, CampNumar, CampText, CampSelectie } from '../../nucleu/campuri';
 import { CampShell } from '../../nucleu/CampShell';
 import { Lookup } from '../../nucleu/Lookup';
 import { LookupGrila } from '../../nucleu/LookupGrila';
@@ -45,6 +45,7 @@ export function NirEditorLinie(props: {
   // Proveniența lotului, DECISĂ DE SERVER (`LotStrain` din ReadDto — F5-D8):
   // clientul nu o re-derivă dintr-o euristică pe `ProdusId`.
   lotStrain: boolean;
+  diferente: boolean;
   lotEticheta?: string;
   readOnly: boolean;
   onSalveaza: (l: NirLinieWrite, etichete: EticheteCulese) => void;
@@ -69,7 +70,7 @@ export function NirEditorLinie(props: {
         tip={TIP_LINIE}
         schema={SCHEMA_LINIE}
         valoare={linie}
-        onSchimba={setLinie}
+        onSchimba={(nou) => setLinie(nou.CauzaDiferentei === 'Imputabila' ? nou : { ...nou, PartenerDiferentaId: null })}
         readOnly={readOnly}
         aratErori={aratErori}
       >
@@ -112,6 +113,7 @@ export function NirEditorLinie(props: {
             </p>
           </div>
           <Lookup<NirLinieWrite>
+            readOnly={lotStrain}
             camp="TipMaterialId"
             entitate="TipMaterial"
             mod="local"
@@ -139,6 +141,12 @@ export function NirEditorLinie(props: {
                 : 'Prețul de recepție: cu el se naște lotul, deci operarea îl cere pozitiv.'}
             </p>
           </div>
+          {props.diferente && <>
+            <CampSelectie<NirLinieWrite> camp="CauzaDiferentei" enumerare="CauzaDiferentei" />
+            {linie.CauzaDiferentei === 'Imputabila' &&
+              <LookupGrila<NirLinieWrite> camp="PartenerDiferentaId" entitate="Repartitor" />}
+            <p className="indiciu">La lipsă, cauza implicită este „În clarificare”; la surplus, „Plus”. Cantitatea zero înseamnă că bunurile facturate nu au fost primite.</p>
+          </>}
           <CampData<NirLinieWrite> camp="DataExpirare" />
           <CampText<NirLinieWrite> camp="LotFabricatie" />
         </div>

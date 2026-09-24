@@ -65,6 +65,7 @@ public static class NirApply {
         // Valoarea liniei, materializată ABIA ACUM: formula depinde de lotul pe
         // care `Sincronizeaza` tocmai l-a născut/legat (vezi `MaterializeazaValori`).
         MaterializeazaValori(os, doc);
+        Cub.ReceptiiConexe.MaterializeazaValori(os, doc);
 
         os.CommitChanges();
         return doc.ID;
@@ -165,6 +166,10 @@ public static class NirApply {
             // Postgres. Refuzăm cu mesaj de domeniu (ca FCT/BTR).
             VerificaScara(l.Cantitate, Scara.Cantitate, "Cantitatea");
             VerificaScara(l.PretUnitar, Scara.Pret, "Prețul unitar");
+            detaliu.CauzaDiferentei = l.CauzaDiferentei;
+            var imputat = l.CauzaDiferentei == CauzaDiferentei.Imputabila ? l.PartenerDiferentaId : null;
+            detaliu.PartenerDiferenta = Nomenclator<Repartitor>(os, imputat, "Imputatul");
+            if (imputat == null) detaliu.PartenerDiferentaId = null;
             detaliu.Cantitate = l.Cantitate;
             detaliu.PretUnitar = l.PretUnitar;
             detaliu.DataExpirare = l.DataExpirare;
@@ -195,6 +200,8 @@ public static class NirApply {
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
+        if (sterse.Any(d => Cub.ReceptiiConexe.EsteLinieAcoperita(os, doc, d)))
+            throw new OperareException("Linia facturii se păstrează pe NIR; folosiți cantitatea zero și cauza diferenței.");
         if (sterse.Count > 0)
             os.Delete(sterse);
     }
@@ -270,13 +277,18 @@ public static class NirApply {
                 d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
-                d.Autogenerat, d.DocumentSursaId,
+                d.Autogenerat, d.DocumentSursaId, d.SursaReceptieiId,
                 // LEFT JOIN pe documentul-sursă: null pe un NIR cules manual.
                 DocumentSursaNumar = d.DocumentSursa.Numar
             })
             .FirstOrDefault();
         if (h == null)
             return null;
+
+        // Affordance din aceeași recepție istorică, inclusiv conexe anterioare
+        // coloanelor de proveniență. Flagul/politica de azi nu sunt dovada.
+        var sursa = h.SursaReceptieiId != null || h.Autogenerat && h.DocumentSursaId != null
+            ? Cub.ReceptiiConexe.Citeste(os, Rezolva.Cere<NIR>(os, id, "NIR-ul")) : null;
 
         // Pe BAZA detaliului: liniile de tip bază (import, istoric) apar în `Linii`, cu valorile frunzei null.
         // `as` nu filtrează pe tip; sigur fiindcă liniile unui document sunt frunza lui sau baza (F28-H, 89).
@@ -285,6 +297,10 @@ public static class NirApply {
             .OrderBy(l => l.ID)
             .Select(l => new {
                 l.ID, l.TipMaterialId,
+                LinieSursaReceptieId = (l as NirDetaliu).LinieSursaReceptieId,
+                CauzaDiferentei = (l as NirDetaliu).CauzaDiferentei,
+                PartenerDiferentaId = (l as NirDetaliu).PartenerDiferentaId,
+                PartenerDiferentaDenumire = (l as NirDetaliu).PartenerDiferenta.Denumire,
                 TipMaterialCod = l.TipMaterial.Cod,
                 TipMaterialDenumire = l.TipMaterial.Denumire,
                 ProdusId = (l as NirDetaliu).ProdusId,
@@ -332,7 +348,7 @@ public static class NirApply {
         var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
 
         return new NirReadDto {
-            Id = h.ID, Numar = h.Numar, Data = h.Data,
+            Id = h.ID, Numar = h.Numar, Data = h.Data, SursaReceptieiId = sursa?.Document,
             DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
@@ -360,6 +376,11 @@ public static class NirApply {
             PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
             Linii = linii.Select(l => new NirLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
+                CauzaDiferentei = l.CauzaDiferentei, PartenerDiferentaId = l.PartenerDiferentaId,
+                PartenerDiferentaDenumire = l.PartenerDiferentaDenumire,
+                LinieAcoperita = sursa != null && Cub.ReceptiiConexe.Identifica(
+                    l.LinieSursaReceptieId, l.LotId, l.TipMaterialId, sursa.Linii) is Guid original
+                    && sursa.Linii.Any(s => s.Linie == original),
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,
                 ProdusId = l.ProdusId, ProdusCod = l.ProdusCod, ProdusDenumire = l.ProdusDenumire,
                 LotId = l.LotId,

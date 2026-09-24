@@ -39,6 +39,9 @@ internal static class ProfilPrivat {
         SeedTipTva(os);
         SeedPoliticiNotaTransfer(os);
         SeedPoliticiFacturaIntrareNir(os);
+        SeedDiferente.NIR(os, "473", "408", "461", "461",
+            ("MP", "601", "321"), ("M", "602", "322"), ("OI", "603", "323"),
+            ("MF", "607", "327"), ("AMB", "608", "328"));
         SeedPoliticiBonConsum(os);
         SeedPoliticiListaDiferente(os);
         SeedPoliticiFacturaIesire(os);
@@ -359,7 +362,7 @@ internal static class ProfilPrivat {
                 client.Any(p => simbol.StartsWith(p, StringComparison.Ordinal)) ? RolTertCont.Client
                 : furnizor.Any(p => simbol.StartsWith(p, StringComparison.Ordinal)) ? RolTertCont.Furnizor
                 : RolTertCont.Niciunul;
-            cont.UrmarestePartide = cont.RolTert != RolTertCont.Niciunul || simbol == "542";
+            cont.UrmarestePartide = cont.RolTert != RolTertCont.Niciunul || simbol is "542" or "461";
         }
     }
 

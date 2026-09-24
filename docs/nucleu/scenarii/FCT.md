@@ -28,7 +28,7 @@ la bugetar se verifică postările fără unitate de terț. Toate valorile sunt 
 | SC-FCT-07 | Privat N21: 100+21 și N11: 50+5,50 → cost150, TVA26,50, datorie176,50. Bugetar CAP21/CAP11: cost121+55,50, datorie176,50, fără coordonate fiscale. | acceptat | recensământ: 42 FCT multicotă | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 | SC-FCT-08 | Privat: două linii N21 cu net0,01 fiecare → taxa documentului rotunjită0,00, datorie0,02. Separat, net100 și TVA culeasă21,01 → datorie121,01 (politica fără toleranță). | acceptat | 090 (j), S-D15 | `ScenariiFct` / ID-ul rândului | verificat privat; neaplicabil bugetar |
 | SC-FCT-09a/b/c | Număr lipsă / cantitate zero / lot lipsă: coduri NUMAR_LIPSA / CANTITATE_NEPOZITIVA / LOT_LIPSA prin declarație, refuz pe comandă și zero efecte. | refuzat | declarant și gardienii entității | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
-| SC-X-01 | FCT10/100 → NIR operat → BCS4/40 → storno FCT: refuz conex operat. Storno NIR: refuz sold negativ; sold lot6/60, datorie100 și BCS40 intacte. | refuzat; gardieni ai regimului dual | 025 (d), 091; nu certifică încă gardianul exclusiv pe cub | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-X-01 | FCT 10/100 → NIR operat → BCS 4/40 → storno FCT: refuz conex operat. Storno NIR cu deltă zero: acceptat, fără inversă economică; sold cub 6/60, datorie 100 și BCS 40 intacte. Registrul lotului rămâne −4: limită duală acceptată, poate refuza alte operații pe lot până la TR-D9 (098-r3). | FCT refuzat; NIR acceptat | 098(a), 099: NIR inversează numai delta proprie | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 
 Probele asertează rândurile individuale, inclusiv latura, data, gestiunea,
 unitatea, cauza, baza/taxa și perioada fiscală. Citirile sunt sume directe
@@ -53,3 +53,8 @@ Extensie SC-X-14 (2026-09-23): FCT NED21: bază 100 și taxă 21 pe cost (brut 1
 Sunt probate operarea și stornoul în aceeași lună, cu măsuri inverse, prin
 matrice independente și martori de duplicare/lipsă. Aceasta nu certifică
 ciclul complet al regimurilor speciale peste perioadă.
+
+Completare transversală SC-NIR-36/FCT: pe bugetar, furnizor cu cont
+408.00.00, FCT serviciu 100 fără TVA → D628.00.00 100 / C408.00.00 100,
+partida furnizorului −100. UrmarestePartide este proprietatea contului și
+are efect și în afara NIR. Proba rulează în catalogul NIR.

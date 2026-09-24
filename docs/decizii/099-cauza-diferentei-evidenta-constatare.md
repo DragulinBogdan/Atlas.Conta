@@ -34,7 +34,8 @@ implicit `InClarificare`, delta plus `Plus`. Politica seed-ului privat:
 `InClarificare` → 473, `Plus` → 408, `PeDrum` → 32x pe clasa materialului
 (301→321, 302→322, 303→323, 371→327, 381→328), `Imputabila` → 461,
 `Perisabilitate` și `Neimputabila` → 6xx pe clasa materialului. Pe bugetar,
-conturile se confirmă pe planul OMFP 1917 înaintea seed-ului (098-r1).
+conturile au fost confirmate de owner la 2026-09-24, conform
+[contractului NIR-D4](../nucleu/tr-d8-nir-delta-contract.md#nir-d4--maparea-bugetară-aprobată-pentru-098-r1) (098-r1 închisă).
 
 (f) **Schimbarea lotului pe conex se refuză.** Lotul e născut de linia FCT;
 un lot greșit se corectează pe factură, nu prin NIR (argumentul lui (d)).

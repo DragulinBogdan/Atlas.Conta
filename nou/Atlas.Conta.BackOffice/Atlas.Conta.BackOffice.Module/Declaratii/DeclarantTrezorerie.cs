@@ -64,7 +64,6 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                 Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
             };
 
-            // B-D8 pct. 10: partida se deschide DOAR pe contul cu `RolTert`.
             var peDebit = tert is not null && Partide.Urmareste(operand, contare.ContDebit);
             var contTert = peDebit ? contare.ContDebit
                 : tert is not null && Partide.Urmareste(operand, contare.ContCredit) ? contare.ContCredit

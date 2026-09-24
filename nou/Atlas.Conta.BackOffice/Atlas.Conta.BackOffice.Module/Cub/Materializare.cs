@@ -12,40 +12,42 @@ namespace Atlas.Conta.BackOffice.Module.Cub;
 /// frunzei se materializează în ACEEAȘI tranzacție de comandă cu registrele vechi.
 /// </summary>
 public static partial class Materializare {
-    public static bool EsteConexAcoperit(IObjectSpace os, Document doc, TipDocument tip) {
-        if (!doc.Autogenerat || doc.DocumentSursaId is not Guid sursa) return false;
-        var claseSursa = os.GetObjectsQuery<Document>().Where(d => d.ID == sursa).Select(d => d.ClrType);
-        return os.GetObjectsQuery<PoliticaConex>().Any(p => p.TipDocumentTintaId == tip.ID
-            && p.TipDocumentSursa.PosteazaInCub && claseSursa.Contains(p.TipDocumentSursa.ClrType));
-    }
-
-    static bool Posteaza(IObjectSpace os, Document doc, TipDocument tip) =>
-        tip.PosteazaInCub && !EsteConexAcoperit(os, doc, tip);
+    public static bool EsteConexAcoperit(IObjectSpace os, Document doc) =>
+        ReceptiiConexe.EsteAcoperita(os, doc);
 
     public static void Opereaza(IObjectSpace os, Document doc, TipDocument tip) {
+        using var receptie = ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: true);
         ArgumentNullException.ThrowIfNull(doc);
         ArgumentNullException.ThrowIfNull(tip);
-        if (!Posteaza(os, doc, tip))
+        if (!tip.PosteazaInCub)
             return;
         if (doc.Detalii.OfType<ILinieCuImobilizare>().Any())
             BlocheazaNominalizarea(os);
+        ReceptiiConexe.Fixeaza(os, doc);
         var contract = Contracteaza(os, doc, tip);
         if (!contract.EsteAcceptat)
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
+        ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
+        ReceptiiConexe.VerificaStoc(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
         VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: true);
-        foreach (var tranzactie in contract.Tranzactii)
+        foreach (var tranzactie in contract.Tranzactii.Where(t => t.Postari.Count > 0))
             Scrie(os, doc.ID, tranzactie);
     }
 
     /// <summary>Refuzurile declarației pentru dry-run (S-D4): citește, nu scrie nimic.</summary>
     public static IReadOnlyList<string> Refuzuri(IObjectSpace os, Document doc, TipDocument tip) {
+        using var receptie = ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: false);
         ArgumentNullException.ThrowIfNull(doc);
         ArgumentNullException.ThrowIfNull(tip);
-        if (!Posteaza(os, doc, tip))
+        if (!tip.PosteazaInCub)
             return [];
         N.Contract contract;
         try {
             contract = Contracteaza(os, doc, tip);
+            if (contract.EsteAcceptat)
+                ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
+            if (contract.EsteAcceptat)
+                ReceptiiConexe.VerificaStoc(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
             if (contract.EsteAcceptat)
                 VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: false);
         }
@@ -57,8 +59,7 @@ public static partial class Materializare {
 
     public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
         ArgumentNullException.ThrowIfNull(doc);
-        if (!Posteaza(os, doc, MotorOperare.GasesteTipDocument(os, doc)))
-            return;
+        ReceptiiConexe.VerificaFaraDependenti(os, doc);
         if (StingeriDeschidere(os, doc.ID).Any(p => p.Data > dataStorno))
             throw new OperareException($"{StingereDeschidereInvalida}: Data stornării precedă data stingerii partidei inițiale.");
         VerificaPartideFaraDependenti(os, doc, dataStorno);
@@ -99,6 +100,7 @@ public static partial class Materializare {
         var refuzuri = N.Conservare.Verifica(tranzactie);
         if (refuzuri.Count > 0)
             throw new OperareException(string.Join("\n", Mesaje(refuzuri)));
+        ReceptiiConexe.VerificaStoc(os, doc, tranzactie.Postari);
         VerificaPozitiaFaraFisa(os, tranzactie.Postari, blocheaza: true);
         Scrie(os, doc.ID, tranzactie);
     }
@@ -112,8 +114,8 @@ public static partial class Materializare {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(stingator);
         ArgumentNullException.ThrowIfNull(stins);
-        if (!Posteaza(os, stingator, MotorOperare.GasesteTipDocument(os, stingator))
-            || !Posteaza(os, stins, MotorOperare.GasesteTipDocument(os, stins)))
+        if (!MotorOperare.GasesteTipDocument(os, stingator).PosteazaInCub
+            || !MotorOperare.GasesteTipDocument(os, stins).PosteazaInCub)
             return;
         var aleStingatorului = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == stingator.ID && p.Carte == N.Carte.Contabil
@@ -165,8 +167,7 @@ public static partial class Materializare {
 
     public static void Anuleaza(IObjectSpace os, Document doc) {
         ArgumentNullException.ThrowIfNull(doc);
-        if (!Posteaza(os, doc, MotorOperare.GasesteTipDocument(os, doc)))
-            return;
+        ReceptiiConexe.VerificaFaraDependenti(os, doc);
         VerificaPartideFaraDependenti(os, doc, doc.DataInregistrare);
         VerificaSuportFaraDependenti(os, doc, doc.DataInregistrare);
         if (StingeriDeschidere(os, doc.ID).Any())
@@ -179,6 +180,7 @@ public static partial class Materializare {
             return;
         var ids = tranzactii.Select(t => t.ID).ToList();
         var postari = os.GetObjectsQuery<Postare>().Where(p => ids.Contains(p.TranzactieId)).ToList();
+        ReceptiiConexe.VerificaStoc(os, doc, postari.Select(p => Randuri.Citeste(p) with { Cantitate = -p.Cantitate }));
         VerificaPozitiaFaraFisa(os, postari.Select(p => Randuri.Citeste(p) with { Valoare = -p.Valoare }), blocheaza: true);
         os.Delete(postari);
         os.Delete(tranzactii);

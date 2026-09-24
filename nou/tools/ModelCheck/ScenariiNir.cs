@@ -9,7 +9,7 @@ using C = Atlas.Conta.BackOffice.Module.Cub;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-sealed class ScenariiNir(Func<IObjectSpace> deschide, Action<string, bool> check,
+sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, bool> check,
     bool privat, Action<IObjectSpace, int, int> inchide)
     : ScenaDocumente(deschide, check, privat, inchide, "NIR", 2016) {
     int numar;
@@ -65,7 +65,7 @@ sealed class ScenariiNir(Func<IObjectSpace> deschide, Action<string, bool> check
         var a = Culege((2, 10, null)); Opereaza(a.Id); Anuleaza(a.Id); FaraEfecte("SC-NIR-05", a.Id);
         Sold("SC-NIR-05", a.Linii[0], 0, 0); Opereaza(a.Id);
         Postari("SC-NIR-05", a.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(a, 0, 2, 20));
-        Dependenti(); Plata(); Conex(); Refuzuri(); Performanta(); Tipuri();
+        Dependenti(); Plata(); Conex(); Refuzuri(); Performanta(); Tipuri(); Diferente();
         var s = Culege((2, 15, null)); Opereaza(s.Id);
         var original = Culege((2, 15, null)); Opereaza(original.Id);
         var tarziu = Culege((1, 10, null));
@@ -75,6 +75,7 @@ sealed class ScenariiNir(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-NIR-04", s.Id, N.FelTranzactie.Storno, Februarie, Inverse(Randuri(s, 0, 2, 30)));
         Sold("SC-NIR-04", s.Linii[0], 2, 30); Sold("SC-NIR-04", s.Linii[0], 0, 0, Februarie);
         Corectie(original);
+        CorectieConexaInchisa();
         Refuza("SC-NIR-11", () => Opereaza(tarziu.Id), "închis"); FaraEfecte("SC-NIR-11", tarziu.Id);
         Comanda(os => { os.GetObjectByKey<Document>(tarziu.Id).DataInregistrare = Februarie; os.CommitChanges(); });
         Opereaza(tarziu.Id);

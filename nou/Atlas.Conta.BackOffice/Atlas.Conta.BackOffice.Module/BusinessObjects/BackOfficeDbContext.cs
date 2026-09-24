@@ -85,6 +85,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<FacturaIntrareDetaliu> FacturiIntrareDetalii { get; set; }
         public DbSet<FacturaIesire> FacturiIesire { get; set; }
         public DbSet<FacturaIesireDetaliu> FacturiIesireDetalii { get; set; }
+        public DbSet<PoliticaDiferenta> PoliticiDiferenta { get; set; }
         public DbSet<NIR> NIRuri { get; set; }
         public DbSet<NirDetaliu> NIRDetalii { get; set; }
         public DbSet<BonConsum> BonuriConsum { get; set; }
@@ -612,6 +613,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // `NaturaFiltru`, `SemnFiltru`). Aici `NULLS NOT DISTINCT` e chiar
             // conținutul regulii: două reguli generice pe același tip ar fi
             // ales-o pe prima întoarsă de bază.
+            modelBuilder.Entity<PoliticaDiferenta>()
+                .HasIndex(r => new { r.TipDocumentId, r.Cauza, r.ClasaId }).IsUnique().HasFilter(viu);
             modelBuilder.Entity<RegulaStoc>()
                 .HasIndex(r => new { r.TipDocumentId, r.Latura, r.ClasaId }).IsUnique()
                 .AreNullsDistinct(false).HasFilter(viu);

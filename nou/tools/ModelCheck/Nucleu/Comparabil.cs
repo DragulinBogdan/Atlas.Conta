@@ -107,12 +107,7 @@ static class Comparabil {
     }
 
     public static bool EsteContrapondereTransformare(N.Postare p) =>
-        p.Coordonate.Gestiune == N.GestiuniVirtuale.Transformare
-        && p.Coordonate.Unitate == null && p.Coordonate.Produs != null
-        && p.Coordonate.Carte == N.Carte.Contabil && p.Coordonate.Partener == null
-        && p.Coordonate.CodTva == null && p.Coordonate.PerioadaDeclarare == null
-        && p.Coordonate.Valuta == null && p.Valoare == 0m && p.ValoareValuta == 0m
-        && p.Cantitate != 0m;
+        Module.Cub.Citiri.Transformare.EsteContrapondere(p);
 
     public static RaportComparatie Compara(
             IEnumerable<PostareComparabila> asteptat,

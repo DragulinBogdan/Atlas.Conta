@@ -321,8 +321,9 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 097-r1 | diagnosticul istoriei PIF fără fișă/origine/suport înaintea activării cititorilor (097) | activă, TR-D8 (091) |
 | 097-r2 | auditul anulării fizice a suportului eliberat; proveniența fără FK restrictiv (097, 091j) | activă, TR-D9 (091) |
 | 097-r3 | blocajul tranzacțional comun pe bază, limitat la IMO și suportul lui; mecanismul general rămâne 091 (g)(4) (097) | activă (091) |
-| 098-r1 | conturile de contrapartidă ale deltei NIR conex per profil, aprobate de owner înaintea codului (098a); privat fixat prin 099(e), bugetar de confirmat pe planul OMFP 1917 | activă (091) |
-| 098-r2 | recensământul pe clona Flax al conexelor NIR editate față de sursă (098a) | activă (091) |
+| 098-r1 | conturile de contrapartidă ale deltei NIR conex per profil, aprobate de owner înaintea codului (098a); privat fixat prin 099(e), bugetar în tr-d8-nir-delta-contract.md §NIR-D4 | închisă 2026-09-24: owner-ul aprobă maparea bugetară, inclusiv 35x PeDrum și 428.01.02 pentru personal; implementată în felia NIR delta, în așteptarea review-ului |
+| 098-r2 | recensământul pe clona Flax al conexelor NIR editate față de sursă (098a) | închisă 2026-09-24: 17.814 conexe FCT, zero diferențe de laturi sau multiset lot/tip/cantitate/valoare pe clona Flax.Api; SQL recensamant-nir-delta.sql, rezultatul în run-nucleu/tr-d8/nir-delta/recensamant.json; nu certifică fluxul nou |
+| 098-r3 | garda registrelor după storno/anulare NIR acoperit cu consum: registrul negativ poate refuza alte operații pe lot; limită acceptată de owner, fără compatibilizare (NIR-D5) | cade la TR-D9 |
 | 099-r1 | LDI adoptă cauza diferenței: minus imputabil pe partener, perisabilitate, neimputabilă; plus (099) | activă (091) |
 | 099-r2 | efectele fiscale per cauză a diferenței: ajustarea TVA, deductibilitatea (099) | după PoC (091) |
 | 099-r3 | BTR cu lipsă la primire, pe clasificarea cauzei diferenței (099) | după PoC (091) |

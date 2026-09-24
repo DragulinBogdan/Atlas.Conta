@@ -114,6 +114,10 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         Opereaza(corectie);
         var lid = CuSpatiu(os => os.GetObjectsQuery<DocumentDetaliu>().Single(l => l.DocumentId == corectie).ID);
         Postari("SC-DEC-06", corectie, N.FelTranzactie.Operare, Februarie, Simple(new(corectie, [new(lid, null, null)]), 80));
+        Postari("SC-DEC-06", original.Id, N.FelTranzactie.Storno, Februarie, Inverse(Simple(original, 100)));
+        SoldPartida("SC-DEC-06", P(original.Id), Ianuarie, -100);
+        SoldPartida("SC-DEC-06", P(original.Id), Februarie, 0);
+        SoldPartida("SC-DEC-06", P(corectie), Februarie, -80);
         Refuza("SC-DEC-14", () => Opereaza(tarziu.Id), "închis"); FaraEfecte("SC-DEC-14", tarziu.Id);
         Comanda(os => { os.GetObjectByKey<Document>(tarziu.Id).DataInregistrare = Februarie; os.CommitChanges(); }); Opereaza(tarziu.Id);
         var rt = Privat ? Fiscale(tarziu, "N21", 100, 21) : Simple(tarziu, 100);

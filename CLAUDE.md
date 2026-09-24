@@ -1,4 +1,4 @@
-﻿# CLAUDE.md — Atlas.Conta: contabilitate/gestiune (Delphi + SQL → XAF + React)
+# CLAUDE.md — Atlas.Conta: contabilitate/gestiune (Delphi + SQL → XAF + React)
 
 > Fișierul de față ține doar ce e adevărat în ORICE sesiune: contextul,
 > harta surselor de adevăr, principiile transversale, starea și regulile de
@@ -118,8 +118,8 @@ tranzacție de comandă cu registrele pentru tipurile cu `PosteazaInCub` (regim
 dual, dată de profil). Pe cub azi: BCS, FCT, PLT, INC, BTR, FCL, NTC,
 DSC, ITV, RDC, RLF și DVI (ultimele cinci numai privat), plus ASM, LDI, NIR, DEC și PIF/AMO/CAS pe ambele profiluri;
 LDI acoperă Magazie/Marfuri și lanțul Folosință în gestiune reală (093),
-cu Custodie explicit neacoperită. NIR conex este acoperit de sursa migrată
-prin politica conexului (T-D5). Deschiderea generică detaliază soldul inițial
+cu Custodie explicit neacoperită. NIR conex postează diferența față de
+recepția istorică a facturii, cu proveniență păstrată la corecție (098, 099). Deschiderea generică detaliază soldul inițial
 prin loturi și partide, fără dublare, cu refuz atomic al diferențelor (094).
 Fișa imobilizării este citită din cub de AMO/CAS și API Imo (097).
 Rapoartele generale și snapshot-urile rămân pe registre până la TR-D8;

@@ -20531,10 +20531,10 @@ void VerificaF23Model(bool privat) {
         + $"({string.Join(", ", tipuriProvenienta.Select(t => t.Name))})"
         + (faraColoana.Count > 0 ? $"; FĂRĂ coloană: {string.Join(", ", faraColoana)}" : "; toate au coloană")
         + ".");
-    Check("F23-V1 `DinSeed` există ca proprietate MAPATĂ pe toate cele 20 de tipuri care declară "
+    Check("F23-V1 `DinSeed` există ca proprietate MAPATĂ pe toate cele 21 de tipuri care declară "
         + "`ICuProvenienta` (13 politici + `PoliticaTvaImplicit` + `TipTva`/`Cont`/`ClasaProdus`/"
         + "`TipMaterial`) — lista se descoperă prin reflecție, deci o politică nouă intră singură în probă",
-        tipuriProvenienta.Count == 20 && faraColoana.Count == 0);
+        tipuriProvenienta.Count == 21 && faraColoana.Count == 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -21803,10 +21803,10 @@ void VerificaF24Rol(bool privat) {
         + (lipsaDinLista.Count > 0 ? $"; LIPSESC din listă: {string.Join(", ", lipsaDinLista)}" : "")
         + (inPlusInLista.Count > 0 ? $"; în PLUS în listă: {string.Join(", ", inPlusInLista)}" : "") + ".");
     Check($"F24-R1 ({eticheta}) `Politici.TipuriConfigurabile` == mulțimea tipurilor concrete "
-        + "`ICuProvenienta` din assembly-ul Module, în AMBELE sensuri (20 de tipuri), iar "
+        + "`ICuProvenienta` din assembly-ul Module, în AMBELE sensuri (21 de tipuri), iar "
         + "`PoliticiApply.TipuriCitite` == lista ∪ {Partener, Produs}: lista declarată și descoperirea prin "
         + "reflecție nu pot diverge fără să pice proba",
-        lipsaDinLista.Count == 0 && inPlusInLista.Count == 0 && dinLista.Count == 20 && cititeOk);
+        lipsaDinLista.Count == 0 && inPlusInLista.Count == 0 && dinLista.Count == 21 && cititeOk);
 
     string exceptieRaport = null;
     using (var os = provider.CreateObjectSpace()) {

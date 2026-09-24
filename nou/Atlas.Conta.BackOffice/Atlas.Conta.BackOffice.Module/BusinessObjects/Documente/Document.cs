@@ -84,6 +84,10 @@ public readonly record struct PlafonStingere(decimal Datorie, decimal Creanta) {
     TargetItems = nameof(Corecteaza) + ";" + nameof(MotivCorectie),
     Visibility = DevExpress.ExpressApp.Editors.ViewItemVisibility.Hide)]
 public abstract class Document : BaseObject {
+    public virtual bool AcoperaReceptia(Document conex) => false;
+    public virtual void PreiaSursaConexa(Document sursa) { }
+    public virtual void PreiaLinieConexa(DocumentDetaliu sursa, DocumentDetaliu tinta) { }
+    public virtual IReadOnlySet<CauzaDiferentei> CauzeDiferentaPermise() => new HashSet<CauzaDiferentei>();
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Tip")]
     [VisibleInListView(false), VisibleInDetailView(false)]

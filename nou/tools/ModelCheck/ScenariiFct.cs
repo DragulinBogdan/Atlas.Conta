@@ -143,8 +143,10 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         var bcs = Consum(f.Linii[0].Lot!.Value, 4); Opereaza(bcs);
         var amprente = new[] { f.Id, nir, bcs }.Select(Amprenta).ToArray();
         Refuza("SC-X-01", () => Storneaza(f.Id, new(An, 1, 20)), "conex");
-        Refuza("SC-X-01", () => Storneaza(nir, new(An, 1, 20)), "Sold negativ");
-        Verifica("SC-X-01", "refuzurile păstrează postările întregului lanț",
+        Comanda(os => OperareApi.Storneaza(os, nir, new(An, 1, 20)));
+        Verifica("SC-X-01", "storno NIR cu deltă zero schimbă starea, fără inversă economică",
+            CuSpatiu(os => os.GetObjectByKey<Document>(nir).Stare) == StareDocument.Stornat);
+        Verifica("SC-X-01", "refuzul FCT și storno NIR păstrează postările întregului lanț",
             new[] { f.Id, nir, bcs }.Select(Amprenta).SequenceEqual(amprente));
         SoldLot("SC-X-01", f.Linii[0].Lot!.Value, Magazie, new(An, 1, 20), 6, 60);
         if (Privat) SoldPartida("SC-X-01", Partida(f.Id, ContFurnizor)!.Value, new(An, 1, 20), -100);

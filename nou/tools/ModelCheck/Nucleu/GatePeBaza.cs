@@ -221,8 +221,7 @@ static class GatePeBaza {
         var eticheta = $"{doc.Numar ?? "—"} [{doc.ID.ToString()[..8]}]";
         try {
             if (doc.Autogenerat && doc.DocumentSursaId != null
-                && C.Materializare.EsteConexAcoperit(os, doc,
-                    os.GetObjectsQuery<TipDocument>().Single(t => t.ClrType == doc.ClrType))) {
+                && C.Materializare.EsteConexAcoperit(os, doc)) {
                 contor.ConexeAcoperite++;
                 return;
             }

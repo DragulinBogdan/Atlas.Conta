@@ -71,6 +71,7 @@ import { PoliticiInchidereTva } from './felii/politici/PoliticiInchidereTva';
 import { ReguliStoc } from './felii/politici/ReguliStoc';
 import { ReguliContare } from './felii/politici/ReguliContare';
 import { PoliticiTva } from './felii/politici/PoliticiTva';
+import { PoliticiDiferente } from './felii/politici/PoliticiDiferente';
 import { PoliticiConex } from './felii/politici/PoliticiConex';
 import { PoliticiValidare } from './felii/politici/PoliticiValidare';
 import { MapariD300 } from './felii/politici/MapariD300';
@@ -229,6 +230,7 @@ export function App() {
         <Route path="/politici/reguli-stoc" element={<ReguliStoc />} />
         <Route path="/politici/reguli-contare" element={<ReguliContare />} />
         <Route path="/politici/tva" element={<PoliticiTva />} />
+        <Route path="/politici/diferente" element={<PoliticiDiferente />} />
         <Route path="/politici/conex" element={<PoliticiConex />} />
         <Route path="/politici/validare" element={<PoliticiValidare />} />
         <Route path="/politici/d300" element={<MapariD300 />} />
@@ -307,6 +309,7 @@ function Meniu() {
       <NavLink to="/politici/reguli-contare">Reguli de contare</NavLink>
       <NavLink to="/politici/tva">TVA per tip</NavLink>
       <NavLink to="/politici/conex">Documente conexe</NavLink>
+      <NavLink to="/politici/diferente">Diferențe la recepție</NavLink>
       <NavLink to="/politici/validare">Validări</NavLink>
       <NavLink to="/politici/d300">Mapări D300</NavLink>
       <NavLink to="/politici/d394">Mapări D394</NavLink>

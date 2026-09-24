@@ -29,6 +29,11 @@ public static class Contractare {
             }
         if (refuzuri.Count > 0)
             return N.Contract.Refuza(refuzuri, [], [], rotunjire.JumatatiDeBan);
+        // Constatarea validată fără diferențe nu inventează postări economice.
+        // Materializarea păstrează proveniența pe agregat și omite tranzacția goală.
+        if (declaratie is null && declarant.PermiteDeclaratieFaraMiscari(operand))
+            return N.Contract.Accepta([new(N.FelTranzactie.Operare, doc.DataInregistrare, doc.ID, [])],
+                [], [operand.PerioadaDeschisa, operand.VersiunePolitica], rotunjire.JumatatiDeBan);
         return declaratie is null
             ? throw new InvalidOperationException(
                 $"Declarantul {declarant.GetType().Name} a întors null fără niciun refuz.")

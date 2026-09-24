@@ -47,6 +47,7 @@ public static class MotorOperare {
     // apelantul trebuie să folosească un ObjectSpace PROPRIU, aruncat după apel
     // (calea vie: OS non-secured creat de adaptorul `OperareApi`).
     public static IReadOnlyList<string> Valideaza(IObjectSpace os, Document doc) {
+        using var receptie = Cub.ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: false);
         try {
             var plan = CalculeazaSiValideaza(os, doc);
             return Cub.Materializare.Refuzuri(os, doc, plan.TipDoc);                  // S-D4
@@ -123,7 +124,8 @@ public static class MotorOperare {
         //    regula specifică pe Clasa liniei bate regula generică (Clasa=null =
         //    orice clasă cu Natura=Stoc) — altfel s-ar aplica amândouă.
         var miscari = PotrivesteReguliStoc(doc, claseTip, reguliStoc, strict: true);
-        StocService.VerificaSoldIntermediar(os, miscari.Select(m => m.Miscare).ToList());
+        if (!Cub.ReceptiiConexe.EsteAcoperita(os, doc))
+            StocService.VerificaSoldIntermediar(os, miscari.Select(m => m.Miscare).ToList());
 
         // 2. Rândurile contabile se CALCULEAZĂ și se validează tot înainte de
         //    materializare: potrivirea regulii pe linie = TipMaterial exact →
@@ -302,6 +304,7 @@ public static class MotorOperare {
     // Întoarce documentul conex generat (draft autogenerat, decizia 17) sau null.
     public static Document Opereaza(IObjectSpace os, Document doc) {
         using var tranzactie = TranzactieComanda.Asigura(os);
+        using var receptie = Cub.ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: true);
         var plan = CalculeazaSiValideaza(os, doc);
         var tipDoc = plan.TipDoc;
         var claseTip = plan.ClaseTip;
@@ -555,6 +558,7 @@ public static class MotorOperare {
         conex.PrimitorId = politica.InverseazaLaturi ? sursa.PredatorId : sursa.PrimitorId;
         conex.DocumentSursa = sursa;
         conex.Autogenerat = true;
+        conex.PreiaSursaConexa(sursa);
         // DIM-2: liniile clonei se nasc pe FRUNZA declarată a țintei ([TipDetaliu]
         // — aceeași declarație pe care o consumă UI-ul, 40a); o linie de bază ar
         // face PreiaDimensiuni no-op și clona ar pierde dimensiunile culese.
@@ -573,6 +577,7 @@ public static class MotorOperare {
             d.TipTvaId = s.TipTvaId;
             d.AngajamentId = s.AngajamentId;
             d.PreiaDimensiuni(s.DimensiuniCulese());
+            conex.PreiaLinieConexa(s, d);
         }
         return conex;
     }
@@ -601,7 +606,7 @@ public static class MotorOperare {
 
         // Simularea eliminării: delta goală, rândurile proprii excluse, dar
         // cheile lor re-verificate de la prima dată afectată.
-        if (randuriStoc.Count > 0) {
+        if (randuriStoc.Count > 0 && !Cub.ReceptiiConexe.EsteAcoperita(os, doc)) {
             var primaData = randuriStoc.Min(r => r.Data);
             var santinele = randuriStoc
                 .Select(r => new CheieStoc(r.LotId, r.RepartitorId, r.TipStoc)).Distinct()
@@ -656,7 +661,8 @@ public static class MotorOperare {
         var delta = randuriStoc
             .Select(r => new MiscareStoc(new CheieStoc(r.LotId, r.RepartitorId, r.TipStoc), dataStorno, -r.Cantitate))
             .ToList();
-        StocService.VerificaSoldIntermediar(os, delta);
+        if (!Cub.ReceptiiConexe.EsteAcoperita(os, doc))
+            StocService.VerificaSoldIntermediar(os, delta);
 
         foreach (var r in randuriStoc) {
             var invers = os.CreateObject<RegistruStoc>();

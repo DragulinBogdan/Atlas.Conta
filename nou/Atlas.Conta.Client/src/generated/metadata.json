@@ -15,6 +15,14 @@
       "VehiculPersoaneMax9Locuri": "Vehicul de persoane, maximum 9 locuri",
       "SediuSocialInLocuinta": "Sediu social în locuință"
     },
+    "CauzaDiferentei": {
+      "Perisabilitate": "Perisabilitate",
+      "Imputabila": "Imputabilă",
+      "Neimputabila": "Neimputabilă",
+      "PeDrum": "Pe drum",
+      "InClarificare": "În clarificare",
+      "Plus": "Plus"
+    },
     "CauzaIesire": {
       "Casare": "Casare",
       "Vanzare": "Vânzare",
@@ -1397,8 +1405,10 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
+        "SursaReceptieiId": "Sursa recepției",
         "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "TotalStingere": "Total de stins",
+        "TranzactieReceptieSursaId": "Tranzacția recepției-sursă"
       }
     },
     "NirDetaliu": {
@@ -1407,6 +1417,7 @@
         "Angajament": "Angajament",
         "AngajamentId": "Angajament",
         "Cantitate": "Cantitate",
+        "CauzaDiferentei": "Cauza diferenței",
         "ClrType": "Tip",
         "CodEconomic": "Cod economic",
         "CodEconomicId": "Cod economic",
@@ -1416,9 +1427,12 @@
         "Document": "Document",
         "DocumentId": "Document",
         "ID": "ID",
+        "LinieSursaReceptieId": "Linia recepției-sursă",
         "Lot": "Lot",
         "LotFabricatie": "Lot fabricație",
         "LotId": "Lot",
+        "PartenerDiferenta": "Imputat",
+        "PartenerDiferentaId": "Imputat",
         "Pozitie": "Poziție",
         "PretUnitar": "Preț unitar",
         "Produs": "Produs",
@@ -1625,6 +1639,22 @@
         "TipDocumentSursaId": "TipDocumentSursa",
         "TipDocumentTinta": "TipDocumentTinta",
         "TipDocumentTintaId": "TipDocumentTinta"
+      }
+    },
+    "PoliticaDiferenta": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Cauza": "Cauza diferenței",
+        "Clasa": "Clasa",
+        "ClasaId": "Clasa",
+        "Cont": "Cont",
+        "ContId": "Cont",
+        "ContPersonal": "Cont personal",
+        "ContPersonalId": "Cont personal",
+        "DinSeed": "Din seed",
+        "ID": "ID",
+        "TipDocument": "Tip document",
+        "TipDocumentId": "Tip document"
       }
     },
     "PoliticaInchidere": {

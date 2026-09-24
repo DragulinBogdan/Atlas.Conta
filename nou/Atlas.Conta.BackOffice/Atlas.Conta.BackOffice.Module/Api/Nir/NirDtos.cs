@@ -44,6 +44,9 @@ public sealed class NirWriteDto {
 // din payload se ȘTERG — reconcilierea e server-side, clientul trimite
 // agregatul întreg (43c).
 public sealed class NirLinieWriteDto {
+    public BusinessObjects.CauzaDiferentei? CauzaDiferentei { get; set; }
+    public Guid? PartenerDiferentaId { get; set; }
+
     public Guid? Id { get; set; }
     // Rămâne obligatoriu chiar și pe liniile cu produs: precompletarea Tipului
     // din Produs e UX de client (OData `Produs` expune `TipMaterialId`), NU
@@ -71,6 +74,7 @@ public sealed class NirLinieWriteDto {
 
 // ── Citire: agregatul + affordances ────────────────────────────────────────
 public sealed class NirReadDto {
+    public Guid? SursaReceptieiId { get; set; }
     public Guid Id { get; set; }
     // Server-owned: NIR ARE politică de numerotare (seria „NIR-"), consumată la
     // MATERIALIZARE, în propria operare (GATE XAF D6) — pe draft e null.
@@ -107,6 +111,10 @@ public sealed class NirReadDto {
 }
 
 public sealed class NirLinieReadDto {
+    public BusinessObjects.CauzaDiferentei? CauzaDiferentei { get; set; }
+    public Guid? PartenerDiferentaId { get; set; }
+    public bool LinieAcoperita { get; set; }
+    public string PartenerDiferentaDenumire { get; set; }
     public Guid Id { get; set; }
     public Guid TipMaterialId { get; set; }
     public string TipMaterialCod { get; set; }

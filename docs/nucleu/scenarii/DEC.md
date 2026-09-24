@@ -33,6 +33,13 @@ seed, nu se schimbă PosteazaInCub în scenă.
 
 ## Verificare 2026-09-24
 
+Corectura review-ului: SC-DEC-06 asertează separat inversa −100, partida
+originalului −100 în ianuarie și zero în februarie, plus partida corecției
+−80. Integral: **2.723 bugetar / 3.814 privat OK**, zero FAIL și build fără
+avertismente, `run-verificari/20260924-160912-899/rezultat.json`.
+Review advers amânat de owner până la sincronizare, după NIR.
+Execuțiile de mai jos documentează lotul inițial.
+
 - `pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip DEC -Profil Ambele -Sufix .CodexBCS`: exit 0, `run-verificari/20260924-083815-639/rezultat.json` (lotul inițial).
 - `pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Integral -Profil Ambele -Sufix .CodexBCS`: **2.413 bugetar / 3.503 privat**, zero FAIL, build fără avertismente, exit 0. Manifest: `run-verificari/20260924-085048-477/rezultat.json`.
 - Citiri operand pentru 2/51 linii: **7/7 bugetar, 8/8 privat** în suita integrală finală.

@@ -347,3 +347,21 @@ Verificarea de drift trebuie să confirme că fișierele generate corespund
 sursei. Tipurile TypeScript nu înlocuiesc verificarea serverului, iar
 atributele de validare XAF și cele ale contractului HTTP au consumatori
 diferiți. (43b, 43d, 77k)
+
+### Diferențele NIR (098/099, 2026-09-24)
+
+API-ul NIR citește proveniența recepției și marcajul liniilor acoperite;
+clientul culege cauza și imputatul, cu cantitate zero permisă pe linia
+acoperită. Legăturile cu sursa sunt stabilite de server, nu intră în
+WriteDto. Liniile-sursă nu se șterg și tipul/lotul lor nu se schimbă.
+Cauza implicită la operare este InClarificare pentru minus și Plus pentru
+plus; formularul explică aceste implicite. Cantitatea/valoarea constatată
+sunt distincte de delta economică postată de declarant.
+
+Politica diferențelor se editează prin OData și ecranul
+`/politici/diferente`, sub aceleași drepturi de Configurator ca celelalte
+politici. Contul pentru personal este opțional și separat de contul normal.
+
+La schimbarea cauzei NIR din Imputabila, editorul golește imediat imputatul.
+API-ul ignoră imputatul din payload pentru celelalte cauze și îl golește
+și la delta zero; un imputat ascuns nu rămâne atașat constatării.

@@ -111,6 +111,7 @@ public sealed record Operand(
     N.PerioadaDeschisa PerioadaDeschisa,
     N.VersiunePolitica VersiunePolitica) {
 
+    public ReceptieSursaFapt? ReceptieSursa { get; init; }
     public IReadOnlyDictionary<Guid, RepartitorFapt> Repartitori { get; init; } = new Dictionary<Guid, RepartitorFapt>();
     public IReadOnlyList<SoldPartidaFapt> PartideDisponibile { get; init; } = [];
     public IReadOnlyList<N.Unitate> UnitatiSursa { get; init; } = [];

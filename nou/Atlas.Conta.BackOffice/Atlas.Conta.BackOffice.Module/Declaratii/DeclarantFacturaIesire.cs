@@ -8,8 +8,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// <summary>
 /// FCL (T-D4): venitul per linie pe regula de vânzare a Tipului, creanța pe contul
 /// de terț al debitului și taxa COLECTATĂ per linie; zero postări de stoc —
-/// descărcarea de gestiune e document propriu (DSC). Fiecare cont cu rol de terț
-/// atins de linii primește o partidă (creanța, iar pe regularizarea de avans 419).
+/// descărcarea de gestiune e document propriu (DSC).
 /// </summary>
 public sealed class DeclarantFacturaIesire : IDeclarant {
     public static readonly DeclarantFacturaIesire Instanta = new();
@@ -41,7 +40,6 @@ public sealed class DeclarantFacturaIesire : IDeclarant {
             var aleLiniei = new List<N.Miscare> { Venitul(operand, linie, contari[i]!.Value, tipuri[i], decizii) };
             if (Fiscal.Impozitul(operand, linie, tipuri[i], taxa, DirectieTva.Colectat, refuzuri) is { } impozit)
                 aleLiniei.Add(impozit);
-            // S-D16: partidă pe FIECARE cont cu `RolTert` al liniei — creanța și avansul.
             foreach (var miscare in aleLiniei) {
                 Partide.Numeste(operand, miscare.DeLa.Cont, doc.Primitor.Id, linie.Id, partide, decizii);
                 Partide.Numeste(operand, miscare.La.Cont, doc.Primitor.Id, linie.Id, partide, decizii);

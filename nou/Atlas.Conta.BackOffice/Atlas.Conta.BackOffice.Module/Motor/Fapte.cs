@@ -132,7 +132,7 @@ internal static class Fapte {
             perioadaDeclarare = (an * 100) + luna;
         }
 
-        return ImobilizariFapte.Completeaza(os, new Declaratii.Operand(
+        return Cub.ReceptiiConexe.Completeaza(os, doc, ImobilizariFapte.Completeaza(os, new Declaratii.Operand(
             Document(doc, tipDoc, repartitori),
             [.. linii.Select(d => Linie(d, claseTip, loturi, tipPerProdus))],
             reguliContare,
@@ -151,7 +151,7 @@ internal static class Fapte {
                 Repartitori = repartitori,
                 PartideDisponibile = PartideDisponibile(os, doc, explicite, conturi, repartitori),
                 UnitatiSursa = UnitatiSursa(os, doc),
-            });
+            }));
     }
 
     static IReadOnlyList<N.Unitate> UnitatiSursa(IObjectSpace os, Document doc) =>

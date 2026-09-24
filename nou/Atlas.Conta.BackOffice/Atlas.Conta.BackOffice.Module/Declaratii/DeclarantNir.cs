@@ -4,14 +4,16 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
-public sealed class DeclarantNir : IDeclarant {
+public sealed partial class DeclarantNir : IDeclarant {
     public static readonly DeclarantNir Instanta = new();
     DeclarantNir() { }
+    public bool PermiteDeclaratieFaraMiscari(Operand operand) => operand.ReceptieSursa is not null;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
         ArgumentNullException.ThrowIfNull(rotunjire);
         ArgumentNullException.ThrowIfNull(refuzuri);
+        if (operand.ReceptieSursa is not null) return DeclaraDiferenta(operand, rotunjire, refuzuri);
         var doc = operand.Document;
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
