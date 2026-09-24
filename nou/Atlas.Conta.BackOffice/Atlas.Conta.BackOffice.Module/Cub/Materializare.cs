@@ -32,6 +32,7 @@ public static partial class Materializare {
         var contract = Contracteaza(os, doc, tip);
         if (!contract.EsteAcceptat)
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
+        VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: true);
         foreach (var tranzactie in contract.Tranzactii)
             Scrie(os, doc.ID, tranzactie);
     }
@@ -45,6 +46,8 @@ public static partial class Materializare {
         N.Contract contract;
         try {
             contract = Contracteaza(os, doc, tip);
+            if (contract.EsteAcceptat)
+                VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: false);
         }
         catch (OperareException eroare) {
             return [eroare.Message];
@@ -96,6 +99,7 @@ public static partial class Materializare {
         var refuzuri = N.Conservare.Verifica(tranzactie);
         if (refuzuri.Count > 0)
             throw new OperareException(string.Join("\n", Mesaje(refuzuri)));
+        VerificaPozitiaFaraFisa(os, tranzactie.Postari, blocheaza: true);
         Scrie(os, doc.ID, tranzactie);
     }
 
@@ -174,7 +178,9 @@ public static partial class Materializare {
         if (tranzactii.Count == 0)
             return;
         var ids = tranzactii.Select(t => t.ID).ToList();
-        os.Delete(os.GetObjectsQuery<Postare>().Where(p => ids.Contains(p.TranzactieId)).ToList());
+        var postari = os.GetObjectsQuery<Postare>().Where(p => ids.Contains(p.TranzactieId)).ToList();
+        VerificaPozitiaFaraFisa(os, postari.Select(p => Randuri.Citeste(p) with { Valoare = -p.Valoare }), blocheaza: true);
+        os.Delete(postari);
         os.Delete(tranzactii);
     }
 

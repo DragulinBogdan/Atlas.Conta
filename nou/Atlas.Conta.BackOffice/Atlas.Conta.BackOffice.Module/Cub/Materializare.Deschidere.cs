@@ -134,6 +134,7 @@ public static partial class Materializare {
         var tranzactie = new N.Tranzactie(N.FelTranzactie.Deschidere, data, null, postari);
         var refuzuri = N.Conservare.Verifica(tranzactie);
         if (refuzuri.Count > 0) RefuzaDeschidere(string.Join("\n", Mesaje(refuzuri)));
+        VerificaPozitiaFaraFisa(os, tranzactie.Postari, blocheaza: true);
         return Scrie(os, null, tranzactie);
     }
 

@@ -582,7 +582,7 @@ public static class MotorOperare {
     // niciun alt document nu a atins loturile create) și în perioadă deschisă.
     public static void AnuleazaOperarea(IObjectSpace os, Document doc) {
         using var tranzactie = TranzactieComanda.Asigura(os);
-        Cub.Materializare.BlocheazaFise(os);
+        Cub.Materializare.BlocheazaFise(os, doc);
         Cub.Materializare.BlocheazaDocumente(os, doc);
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi anulat.");
@@ -637,7 +637,7 @@ public static class MotorOperare {
     // și soldurile rămân ≥ 0 din data stornării încolo.
     public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
         using var tranzactie = TranzactieComanda.Asigura(os);
-        Cub.Materializare.BlocheazaFise(os);
+        Cub.Materializare.BlocheazaFise(os, doc);
         Cub.Materializare.BlocheazaDocumente(os, doc);
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi stornat.");

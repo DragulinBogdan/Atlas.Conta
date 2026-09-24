@@ -11,14 +11,14 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 static class ScenariiImo {
     public static void Ruleaza(Func<IObjectSpace> deschide, Action<string, bool> check, bool privat,
             Action<IObjectSpace, int, int> inchide) {
-        foreach (var caz in new[] { "suport", "concurenta", "ciclu", "initial", "fiscal", "liniara", "intarziat",
+        foreach (var caz in new[] { "review-deschidere", "review-blocare", "review-concurenta", "review-sursa", "review-pozitie", "review-conturi", "review-inverse", "suport", "concurenta", "ciclu", "initial", "fiscal", "liniara", "intarziat",
                 "modernizare", "revizuire", "deductibil", "loc", "perf", "accelerata", "degresiva", "reziduala", "inchis",
                 "deschidere", "cas-zero", "refuzuri", "concurenta-inversa", "fara-politica" })
             new ScenaImo(deschide, check, privat, inchide, caz).Ruleaza();
     }
 }
 
-sealed class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> check, bool privat,
+sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> check, bool privat,
     Action<IObjectSpace, int, int> inchide, string caz)
     : ScenaDocumente(deschide, check, privat, inchide, "IMO", 2019) {
     string Activ => Privat ? "214" : "214.00.00";
@@ -66,6 +66,13 @@ sealed class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> check, b
             case "refuzuri": Refuzuri(); break;
             case "concurenta-inversa": ConcurentaInversa(); break;
             case "fara-politica": FaraPolitica(); break;
+            case "review-deschidere": ReviewDeschidere(); break;
+            case "review-blocare": ReviewBlocare(); break;
+            case "review-concurenta": ReviewConcurenta(); break;
+            case "review-sursa": ReviewSursa(); break;
+            case "review-pozitie": ReviewPozitie(); break;
+            case "review-conturi": ReviewConturi(); break;
+            case "review-inverse": ReviewInverse(); break;
         }
     }
     DateOnly Zi(int luna, int zi = 5) => new(An, luna, zi);

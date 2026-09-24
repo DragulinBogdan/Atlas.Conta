@@ -80,7 +80,7 @@ public sealed class DeclarantImobilizari : IDeclarant {
             void Aloca(Guid cont, N.Latura latura, decimal suma, Guid? sursa) {
                 var ramas = suma;
                 foreach (var suport in operand.Suporturi.Where(s => s.Capat.Cont == cont && s.Latura == latura
-                        && (sursa == null || s.Linie == sursa)).OrderBy(s => s.Data).ThenBy(s => s.Referinta.Id)) {
+                        && (sursa == null ? s.FaraLinieSursa : s.Linie == sursa)).OrderBy(s => s.Data).ThenBy(s => s.Referinta.Id)) {
                     var plafon = operand.DisponibilNominalizare.FirstOrDefault(d => d.Capat == suport.Capat);
                     var disponibil = latura == N.Latura.Debit ? plafon?.DebitNetMinim : plafon?.CreditNetMinim;
                     var cheie = (suport.Capat, latura);
@@ -98,7 +98,7 @@ public sealed class DeclarantImobilizari : IDeclarant {
                 }
                 if (ramas > 0m)
                     refuzuri.Add(new(CoduriRefuz.SuportInsuficient,
-                        $"Suport contabil nenominalizat insuficient pe contul {cont}: cerut {suma}, lipsă {ramas}.", linie.Id));
+                        $"Suport contabil nenominalizat insuficient pe contul {operand.Conturi.GetValueOrDefault(cont)?.Simbol ?? "neconfigurat"}: cerut {suma}, lipsă {ramas}.", linie.Id));
             }
         }
         return refuzuri.Count > 0 ? null : new(operand.Document.Id, operand.Document.DataInregistrare,

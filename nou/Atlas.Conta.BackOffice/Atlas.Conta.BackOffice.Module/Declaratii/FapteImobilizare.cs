@@ -13,5 +13,5 @@ public sealed record CasCules(Guid Fisa, FelLinieIesire Fel) : ImobilizareCuleas
 public sealed record FisaFapt(Guid Id, Guid Cont, Guid ContAmortizare, Guid ContCheltuiala,
     Guid ContCedare, Guid Loc, DateOnly Deschisa, decimal BrutFiscal, decimal AmortizareFiscala);
 public sealed record SuportFapt(N.ReferintaPostare Referinta, Guid? Linie, N.Capat Capat,
-    N.Latura Latura, decimal Disponibil, DateOnly Data);
+    N.Latura Latura, decimal Disponibil, DateOnly Data, bool FaraLinieSursa);
 public sealed record DisponibilFapt(N.Capat Capat, decimal DebitNetMinim, decimal CreditNetMinim);

@@ -2,8 +2,8 @@
 
 2026-09-24. Implementat și verificat pe ambele profiluri, conform 095 și
 `tr-d7c-imobilizari-contract.md`, IMO-B2 A aprobată prin 097.
-SC-IMO-01…25 sunt probate prin `ScenariiImo`, pe comenzile reale,
-în ani proprii începând cu 2019. Review-ul advers al feliei rămâne de făcut.
+SC-IMO-01…33 sunt probate prin `ScenariiImo`, pe comenzile reale,
+în ani proprii începând cu 2019. Corecturile review-ului de sincronizare (098) sunt în reverificare.
 Recensământ Flax: zero documente PIF/AMO/CAS.
 
 Conturile simbolice I/A/E/C sunt contul activului, amortizării,
@@ -37,6 +37,14 @@ așteptate de mai jos sunt constante independente de registre.
 | SC-IMO-23 | Accelerată 1.200/36 luni | 50 pe primele 12 luni, apoi 25 în următoarele 24; total 1.200 |
 | SC-IMO-24 | Degresivă AD1, 1.200/36 luni, k=1,5 | primul an 600 (12 × 50); apoi 300 + 300 (24 × 25); total 1.200 |
 | SC-IMO-25 | Fișa 1.200/cumulat 200, reziduală contabilă 100, 10 luni rămase | contabil: 10 × 90 și net final 100; fiscal: 10 × 100 și net final zero, fără reziduală fiscală |
+| SC-IMO-26 | FCT I 1.200 fără legătură explicită pe PIF | `SUPORT_INSUFICIENT`, zero efecte; mesaj cu simbolul contului |
+| SC-IMO-27 | NTC suport I 1.200/A 200 → PIF în 20 ianuarie; C I 1 în 10 sau 25 ianuarie, D A 1; apoi suport suplimentar 20 în MAG1 și C I 1 în MAG2 | `POZITIE_FARA_FISA_NEGATIVA` pe ambele uși; dimensiunile nu se compensează |
+| SC-IMO-28 | Suport suplimentar 20 → ieșire anonimă 20 → anulare/storno suport | refuz atomic; sursa rămâne operată |
+| SC-IMO-29 | PIF 1.200/900 → AMO 100/50 → schimbare cont implicit și cont amortizare → AMO 100/50 (și cu contul politicii golit între generare și operare) → CAS și storno | conturile istorice: 1.200/200 și 900/100, apoi zero pe fiecare, apoi restaurate; conturile noi fără postări ale fișei |
+| SC-IMO-30 | PIF în 5 ianuarie, inversă în 15; anulare sursă vs. storno sursă în 15 | anularea refuzată, stornoul acceptat; fișa zero |
+| SC-IMO-31 | PIF 800 din suport 1.200 ținut necomis; NTC C I 800 concurentă | NTC așteaptă blocajul, apoi este refuzată; anonim 400, zero efecte NTC |
+| SC-IMO-32 | Blocaj IMO ocupat într-o sesiune; anulare/storno PLT 20 în alta | ambele termină independent de blocajul IMO |
+| SC-IMO-33 | Deschidere cu I creditor 1 sau A debitor 1, echilibrată pe capital | refuz de poziție, zero entități de cub create |
 
 Citirile verifică atât sumele pe fișă, cât și balanța, rulajele și lipsa
 efectului cărții fiscale în contabil. Probele 01–06 aplică alegerea A
@@ -46,24 +54,34 @@ matricea numerică pe cub.
 
 ## Execuție și limite
 
+Corecturi 098(b/c), SC-IMO-26…33 și completarea citirilor Deschidere:
 `verifica.ps1 -Suita Integral -Profil Ambele -Sufix .CodexBCS`:
-**2.614 bugetar / 3.705 privat OK**, zero FAIL, exit 0;
-`run-verificari/20260924-100942-750/rezultat.json`. Include și SC-CIT-01/02/06.
-Nucleu: **179/179**, zero omise, exit 0;
-`run-verificari/20260924-100513-273/rezultat.json`.
+**2.709 bugetar / 3.800 privat OK**, zero FAIL, exit 0, build fără avertismente;
+`run-verificari/20260924-150531-943/rezultat.json`.
+Codul și probele au rămas nemodificate în timpul acestei rulări.
 
-SC-IMO-22 măsoară strict contractarea pe ObjectSpace nou: **11/11 interogări**
+Probele noi pe implementarea inițială: **17 FAIL** pe bugetar,
+`run-verificari/20260924-145333-446/rezultat.json`; wrapper-ul oprește la
+primul profil eșuat. După corecturi, selectiv IMO + Deschidere pe ambele
+profiluri: zero FAIL, `run-verificari/20260924-150211-280/rezultat.json`.
+În prima încercare integrală proba nouă de concurență deschidea o a doua
+tranzacție prin API; fixture-ul folosește acum comanda directă a motorului
+sub tranzacția apelantului. Eșecul de fixture este păstrat în
+`run-verificari/20260924-145918-645/rezultat.json`.
+
+SC-IMO-22 măsoară strict contractarea pe ObjectSpace nou: **13/13 interogări**
 la 2/51 fișe. Nu este o măsurătoare a întregii operări sau a istoricului mare.
 Suplimentar, concurența PIF 800 contra anulării suportului 1.200 permite
-exact un câștigător; nu rămâne o fișă fără suport. Migrația canonică a fost
-aplicată ambelor baze de probă. Regenerarea metadata/OpenAPI/TypeScript nu
-aduce drift, iar `tsc -b` trece.
+exact un câștigător; nu rămâne o fișă fără suport. Corecturile 098 nu schimbă schema, metadata sau contractele API.
 
 Storno/corecția peste luna documentului rămân refuzate explicit (087g).
-Blocajul tranzacțional IMO este comun pe bază; performanța concurenței la
-volum mare nu este măsurată. Istoricul fără suport, fișă sau origine se
-refuză la activare; nu este reconstruit implicit. Referința suportului poate
-supraviețui anulării fizice a sursei deja eliberate: auditul complet rămâne
+Blocajul tranzacțional IMO rămâne comun pe bază, limitat la fișe și
+conturile de suport; SC-IMO-31/32 probează serializarea necesară și
+independența celorlalte documente. Performanța la volum mare nu este măsurată. Istoricul fără suport, fișă sau origine se
+refuză la activare; nu este reconstruit implicit. Anularea fizică a suportului este refuzată dacă elimină sprijinul unui
+interval istoric, chiar după eliberare; în cazul permis, referința poate
+supraviețui sursei: auditul complet rămâne
 TR-D9. API Imo și AMO/CAS citesc fișa din cub; rapoartele contabile generale,
 snapshot-urile și eliminarea scrierii duale nu sunt declarate migrate aici.
-Raport: `run-nucleu/tr-d7c/imo/raport.md`.
+Raportul implementării inițiale: `run-nucleu/tr-d7c/imo/raport.md`.
+Corecturile curente sunt predate pentru review și reverificare înainte de commit.

@@ -56,6 +56,14 @@ suportului contabil.
   ori inversat cât timp PIF-ul aferent rămâne viu. Un PIF inversat eliberează
   exact alocarea sa. Registrele de audit ale alocării nu devin solduri.
 
+098(b): orice comandă care atinge poziția anonimă pe conturile de
+imobilizare/amortizare verifică soldul pe cont × dimensiunile capătului,
+în Carte=Contabil, inclusiv la datele viitoare. Sensul normal este debit
+pentru activ și credit pentru amortizare. Sunt protejate atât conturile
+configurate, cât și cele nominalizate istoric, după schimbarea politicii.
+Operare, anulare, storno, corecție și deschidere aplică aceeași verificare;
+refuzul `POZITIE_FARA_FISA_NEGATIVA` nu lasă efecte persistate.
+
 Aceasta restrânge intrarea fără suport permisă de 087, cu aprobarea
 owner-ului consemnată în 097. În scenariile vechi, fixture-ul primește mai întâi
 suport contabil real; nu se ocolește gardianul pentru a păstra probele.
@@ -114,6 +122,17 @@ a Loc-ului fișei păstrează regula 087(h): afectează faptele următoare, făr
 rescrierea celor existente. Totalul fișei se citește peste locuri; nominalizarea
 inițială nu creează rulaje pe cont.
 
+098(c): intrarea comună `Cub/Citiri/Imobilizari.Conturi` citește contul
+activului și al amortizării din nominalizările neinverse la data cerută.
+Generatorul AMO, liniile CAS și declarantul folosesc aceeași rezolvare.
+Schimbarea politicii nu mută o fișă existentă; o configurație curentă fără
+cont de amortizare nu șterge contul deja nominalizat. Politica furnizează
+un cont numai înaintea primei sale nominalizări: pentru amortizare fără
+cumulat inițial, aceasta poate fi prima AMO. PIF fără politică rămâne
+permis în condițiile SC-IMO-21. Conturile cheltuielilor rămân din politică.
+Istoricul cu mai multe conturi pe același rol este refuzat explicit,
+nu redus prin alegerea arbitrară a unui cont.
+
 ## IMO-B4 — Inversare, corecție și timp
 
 087(g) limitează azi storno PIF/AMO/CAS la luna documentului. 095 devansează
@@ -164,17 +183,20 @@ Migrația `FisaSiProvenientaPostarii` adaugă felul explicit al unității,
 referințele, constrângerile de formă și indexurile pe părintele partiționat.
 Nu reconstruiește stornourile istorice.
 
-Comenzile IMO și anularea/stornarea suportului se serializează printr-un
-blocaj tranzacțional comun pe bază, înaintea citirii gardienilor. Motorul
-asigură o tranzacție și apelanților direcți; dacă apelantul are deja una,
+Comenzile IMO și scrierile pe conturile de nominalizare se serializează
+printr-un blocaj tranzacțional comun pe bază. Consumul anonim recitește
+poziția sub același blocaj. Storno/anulare fără suport sau fișă nu iau
+blocajul IMO. Motorul asigură o tranzacție și apelanților direcți; dacă apelantul are deja una,
 nu o închide el. Nu este mecanism de serializare generală pentru FIFO sau
 pentru închiderea perioadei pe toate ușile.
 
-Proveniența suportului nu are FK restrictiv: după inversarea PIF, suportul
-eliberat poate fi anulat fizic în perioada permisă. Postările inverse ale
-PIF păstrează referința istorică, însă nu consumă disponibil. Auditul complet
-al anulării fizice rămâne de tratat la TR-D9 (091j); nu se pretinde că
-referința singură conservă conținutul sursei șterse.
+Proveniența suportului nu are FK restrictiv. Stornoul PIF eliberează
+alocarea de la data inversei; suportul poate fi stornat de atunci, dacă
+restul lanțului permite. Anularea fizică a suportului este refuzată dacă
+eliminarea sa ar lăsa un interval istoric fără suport (PIF și inversă în
+zile diferite), chiar când restul prezent este zero. Cazul eliberării la
+aceeași dată poate permite anularea; referința istorică nu conservă singură
+conținutul sursei șterse. Auditul complet rămâne TR-D9 (097-r2, 091j).
 
 Cititorul comun de fișă agregă în SQL, apoi citește atributele evenimentelor
 pe set. Seed-ul refuză istoricul fără fișă/origine/suport și diferențele

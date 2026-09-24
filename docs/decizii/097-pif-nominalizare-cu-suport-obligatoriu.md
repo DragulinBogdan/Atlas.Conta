@@ -46,7 +46,9 @@ Implementarea și probele sunt urmărite prin 095-r1. Catalog: `scenarii/IMO.md`
   activarea cititorilor TR-D8; seed-ul refuză azi istoricul incomplet, dar
   nu îl raportează pe o bază existentă.
 - 097-r2: proveniența suportului nu are FK restrictiv; după inversarea PIF,
-  suportul eliberat poate fi anulat fizic. Auditul anulării fizice rămâne
+  suportul eliberat poate fi anulat fizic numai dacă nu dispare suportul
+  unui interval istoric (inversarea PIF într-o zi ulterioară nu permite
+  anularea sursei). Auditul anulării fizice rămâne
   pentru TR-D9 (091j); referința singură nu conservă conținutul sursei.
 - 097-r3: comenzile IMO și anularea/stornarea suportului se serializează
   printr-un blocaj tranzacțional comun pe bază. Nu este mecanismul general

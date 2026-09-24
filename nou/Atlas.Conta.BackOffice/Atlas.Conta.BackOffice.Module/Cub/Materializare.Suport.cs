@@ -20,7 +20,7 @@ public static partial class Materializare {
     }
 
     static void VerificaSuportFaraDependenti(IObjectSpace os, Document doc, DateOnly deLa) {
-        BlocheazaNominalizarea(os);
+        BlocheazaFise(os, doc);
         var surse = os.GetObjectsQuery<Postare>().Where(p => p.DocumentId == doc.ID).Select(p => p.ID);
         var dependenti = os.GetObjectsQuery<Postare>()
             .Where(p => p.SuportId != null && surse.Contains(p.SuportId.Value) && p.Unitate == null)

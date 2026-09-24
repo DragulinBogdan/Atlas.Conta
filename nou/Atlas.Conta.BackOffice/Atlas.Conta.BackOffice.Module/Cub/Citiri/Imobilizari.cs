@@ -5,7 +5,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub.Citiri;
 
-public static class Imobilizari {
+public static partial class Imobilizari {
     public static void VerificaAcoperire(IObjectSpace os) {
         var lipsuri = os.GetObjectsQuery<RegistruImobilizari>().Where(r =>
             !os.GetObjectsQuery<Postare>().Any(p => p.FelUnitate == N.FelUnitate.Fisa

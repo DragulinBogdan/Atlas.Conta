@@ -40,6 +40,7 @@ public static class CoduriRefuz {
     public const string PoliticaTvaLipsa = "POLITICA_TVA_LIPSA";
     public const string FisaLipsa = "FISA_LIPSA";
     public const string PoliticaAmortizareLipsa = "POLITICA_AMORTIZARE_LIPSA";
+    public const string PozitieFaraFisaNegativa = "POZITIE_FARA_FISA_NEGATIVA";
     public const string SuportInsuficient = "SUPORT_INSUFICIENT";
     public const string SuportCuDependenti = "SUPORT_CU_DEPENDENTI";
 }

@@ -409,7 +409,7 @@ clientul nu introduce o rotunjire contabilă independentă. (42c, 51c, 52a)
 | RDC — retur de la client | Un document cu linii de venit și cost pe lotul original. Totalul include doar venitul; linia de cost nu are tip TVA. Rolul unei linii salvate nu se convertește prin editare. (46e, 76d) |
 | PIF — punere în funcțiune | Unitate internă → loc; linii per fișă cu `Intrare`, `Modernizare` sau `Revizuire`. Nominalizează valoarea contabilă existentă pe fișă prin Transfer, cu suport obligatoriu și fără modificarea rulajelor generale; baza fiscală se postează distinct (097). Scrie dual registrul imobilizărilor până la TR-D9 și materializează starea fișei. `Intrare` cere fișă nouă și parametri completi, cu linie sursă (linia unei FCT operate de clasă F, cu plafonul consumului) sau cu valoare culeasă și inițiale; `Modernizare`/`Revizuire` cer fișă în funcțiune. Refuzat dacă o AMO operată există într-o lună ulterioară. (87e) |
 | CAS — ieșire de imobilizare | Loc → unitate internă, cu cauza (casare, vânzare, lipsă). Se culeg doar fișele; liniile le produce serverul din situația la dată și politica tipului material: amortizarea cumulată contra contului imobilizării (omisă la cumulat zero) și valoarea rămasă pe cheltuiala de cedare (omisă la net zero). Operarea recalculează și refuză liniile care nu mai corespund; refuzată dacă o AMO operată acoperă luna ieșirii sau una ulterioară; după operare avertizează dacă luna precedentă n-are amortizare operată. Fișa devine ieșită. (87f) |
-| AMO — amortizare lunară | Document generat pe unitate internă și lună, ca ITV. Linie per fișă eligibilă cu trei cifre (contabilă, fiscală, deductibilă); postează separat contabil și fiscal (cheltuială = amortizare, din politică), cu unitate de fișă; păstrează scrierea duală a rândului lunar până la TR-D9 (095, 097). Nu se culege liber; fără flux `/nou`. (87g) |
+| AMO — amortizare lunară | Document generat pe unitate internă și lună, ca ITV. Linie per fișă eligibilă cu trei cifre (contabilă, fiscală, deductibilă); postează separat contabil și fiscal (cheltuială din politică = amortizare pe contul nominalizat), cu unitate de fișă; păstrează scrierea duală a rândului lunar până la TR-D9 (095, 097). Nu se culege liber; fără flux `/nou`. (87g) |
 
 Regimurile capitalizate nu sunt acceptate pe retururi. Retururile nu devin
 stingători; compensarea lor folosește nota contabilă. (46e, 76g)
@@ -447,8 +447,8 @@ pot reprezenta operații distincte. (64, 65)
 ## Imobilizări
 
 Fișa `Imobilizare` este nomenclator subțire: număr de inventar unic,
-denumire, tip material de clasă F (contul imobilizării este contul implicit
-al tipului), clasificare opțională din catalog, loc (repartitorul notelor),
+denumire, tip material de clasă F (contul implicit furnizează prima
+nominalizare), clasificare opțională din catalog, loc (repartitorul notelor),
 centru de cost, responsabil, cod economic (dimensiunea bugetară a
 cheltuielii) și starea materializată de motor: nouă, în funcțiune, ieșită,
 cu datele punerii în funcțiune și ieșirii. Metoda, durata, valoarea
@@ -471,6 +471,17 @@ deductibilul și lunile rămân atribute istorice ale liniei AMO. Registrul
 imobilizărilor se scrie dual până la TR-D9, fără reuniune la citire.
 Activarea refuză istoricul fără fișă, fără proveniență ori cu diferențe
 valorice față de cub; migrația nu reconstruiește implicit istoricul. (095, 097)
+
+Conturile nominalizate ale activului și amortizării se citesc pe set din
+cub, prin aceeași intrare pentru generatorul AMO, CAS și declarant. Politica
+furnizează numai prima nominalizare a fiecărui cont; cheltuielile rămân din
+politică. PIF fără linie FCT consumă exclusiv deschidere/NTC operată.
+Poziția anonimă contabilă pe cont × dimensiuni nu poate deveni negativă,
+nici la o dată viitoare, la operare, anulare, storno/corecție sau deschidere.
+Protecția include conturile istorice după schimbarea politicii și se
+serializează cu PIF. Documentele fără suport/fișă nu iau blocajul IMO.
+Stornoul PIF eliberează suportul de la data lui; nu permite anularea
+sursei dacă aceasta ar șterge suportul unui interval istoric. (098b/c)
 
 Aritmetica este exclusiv în `AmortizareService`, ca funcție pură aplicată
 de trei ori pe lună. Cota liniară este valoarea de amortizat împărțită la

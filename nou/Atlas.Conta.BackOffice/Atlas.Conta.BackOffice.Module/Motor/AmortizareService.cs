@@ -177,10 +177,13 @@ public static class AmortizareService {
         var fisa = os.GetObjectByKey<Imobilizare>(imobilizareId);
         var contImplicit = fisa == null ? null
             : os.GetObjectByKey<TipMaterial>(fisa.TipMaterialId)?.ContImplicitId;
+        var conturi = Cub.Citiri.Imobilizari.Conturi(os, [imobilizareId], data).GetValueOrDefault(imobilizareId);
+        contImplicit = conturi?.Activ ?? contImplicit;
+        var contAmortizare = conturi?.Amortizare ?? politica?.ContAmortizareId;
         var linii = new List<LinieIesire>();
         if (situatie.Amortizare != 0m)
             linii.Add(new(FelLinieIesire.AmortizareCumulata, situatie.Amortizare,
-                politica?.ContAmortizareId, contImplicit));
+                contAmortizare, contImplicit));
         if (situatie.NetContabil != 0m)
             linii.Add(new(FelLinieIesire.ValoareRamasa, situatie.NetContabil,
                 politica?.ContCheltuialaCedareId, contImplicit));
@@ -334,6 +337,7 @@ public static class AmortizareService {
             return new CalculLuna([], null);
 
         var ids = fise.Select(f => f.ID).ToList();
+        var conturiFise = Cub.Citiri.Imobilizari.Conturi(os, ids, ultimaZi);
         var perFisa = Randuri(os, ids, ultimaZi).GroupBy(r => r.ImobilizareId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -342,7 +346,7 @@ public static class AmortizareService {
             .Where(p => tipuri.Contains(p.TipMaterialId))
             .Select(p => new { p.TipMaterialId, p.ContAmortizareId, p.ContCheltuialaAmortizareId })
             .ToList()
-            .Where(p => p.ContAmortizareId != null && p.ContCheltuialaAmortizareId != null)
+            .Where(p => p.ContCheltuialaAmortizareId != null)
             .ToDictionary(p => p.TipMaterialId, p => (p.ContAmortizareId, p.ContCheltuialaAmortizareId));
 
         var reguli = os.GetObjectsQuery<RegulaDeductibilitate>()
@@ -369,7 +373,8 @@ public static class AmortizareService {
             var fiscal = Cifra(randuri, referinta, f.DataPunereInFunctiune, fiscal: true, luni);
             if (contabil <= 0m && fiscal <= 0m)
                 continue;
-            if (!politici.TryGetValue(f.TipMaterialId, out var conturi)) {
+            if (!politici.TryGetValue(f.TipMaterialId, out var conturi)
+                    || (conturiFise.GetValueOrDefault(f.ID)?.Amortizare ?? conturi.ContAmortizareId) == null) {
                 faraPolitica ??= f.NumarInventar;
                 continue;
             }
@@ -378,7 +383,7 @@ public static class AmortizareService {
             linii.Add(new LinieAmortizare(f.ID, f.NumarInventar, f.Denumire, f.TipMaterialId,
                 contabil, fiscal, deductibil, luni,
                 contabil == 0m ? null : conturi.ContCheltuialaAmortizareId,
-                contabil == 0m ? null : conturi.ContAmortizareId,
+                contabil == 0m ? null : conturiFise.GetValueOrDefault(f.ID)?.Amortizare ?? conturi.ContAmortizareId,
                 f.LocId, f.CentruCostId, f.CodEconomicId));
         }
         return new CalculLuna(linii, faraPolitica);
