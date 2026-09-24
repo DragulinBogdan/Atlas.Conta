@@ -1,7 +1,7 @@
 # 98. Conexul editat postează delta; poziția fără fișă nu devine negativă; contul fișei vine din cub
 
 - **Data**: 2026-09-24
-- **Stare**: aprobată de owner, activă; amendează TR-D7b T-D5, precizează 097(b) și IMO-B3.
+- **Stare**: aprobată de owner, activă; amendează TR-D7b T-D5, precizează 097(b) și IMO-B3; (a) concretizată de 099.
 - **Docs**: `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (T-D5),
   `docs/nucleu/tr-d7c-imobilizari-contract.md` (IMO-B2/B3),
   `docs/nucleu/scenarii/NIR.md`, `docs/nucleu/scenarii/IMO.md`.
