@@ -10,12 +10,13 @@ bazele de dezvoltare: hosturile nu scanează istoria la pornire, iar
 invarianții cubului rulează în ModelCheck la finalul fiecărui profil
 (`INV-CUB`, `Cub.Citiri.Invarianti`).
 
-Validarea curentă: **3.107 bugetar / 4.103 privat OK**, zero FAIL,
-exit 0, build fără avertismente:
-`run-verificari/20260925-091707-216/integral-bugetar.log` și
-`run-verificari/20260925-092938-922/rezultat.json`.
+Validarea curentă (C102, pe bazele recreate): **3.083 bugetar / 4.079
+privat OK**, zero FAIL, exit 0, build fără avertismente,
+`run-verificari/c102/final-bugetar.log` și `final-privat.log`. Cifra scade
+față de 3.107/4.103 pentru că probele compatibilității scoase au ieșit
+(SC-CIT-08/24, SC-NTC-20, avertismentele seed-ului, backfill-urile).
 Clientul compilează; metadata/OpenAPI/types sunt stabile la regenerare.
-Decizia 101 este implementată și 101-r1 închisă: SC-CIT-49…65,
+Decizia 101 este implementată; 101-r1, redeschisă de review-ul advers, e închisă în C102 (D-2/D-3, SC-CIT-66…68). Anterior: SC-CIT-49…65,
 HTTP raport/panou cu securitate pe rând și membru peste închidere/reconstrucție,
 comandă de împerechere și refuz atomic, browser raport și candidat 100/40/60.
 Logurile `trd8-101-http-report2`, `trd8-101-http-payment2`,

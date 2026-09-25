@@ -356,6 +356,12 @@ acceptă, restul PLT ajunge la 0. Varianta NTC (C 401/furnizor 100 operată
 înaintea desfacerii) are același rezultat. Ținta comenzii este orice unitate
 proprie a stinsului, inclusiv cea deschisă prin Transfer.
 
+SC-CIT-68 (review-ul advers C102): FCT 100, PLT automată, legătura desfăcută
+la 10 ianuarie, deci partida proprie a plății există numai de la 10. O a
+doua FCT 100: împerecherea de 50 datată 7 ianuarie se refuză
+(`PARTIDA_PROPRIE_INSUFICIENTA`, punctul de la data cerută intră în calcul);
+aceeași împerechere la 10 ianuarie trece: FCT2 rest 50, plata 50.
+
 ### Validare finală partide — 2026-09-25
 
 SC-CIT-49…65 și integralele sunt verzi: **3.107 bugetar / 4.103 privat OK**,

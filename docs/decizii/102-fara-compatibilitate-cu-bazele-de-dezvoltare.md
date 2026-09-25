@@ -78,3 +78,12 @@ regulă de oprire și review la închidere.
 - 102-r1: scoaterea codului de la (c), cu probele de la (d), și decizia (e).
 - 102-r2: alinierea deciziilor, a stare-curenta și a restanțelor cu (c).
 - 102-r3: rețeta de recreare a bazelor de dezvoltare și recrearea lor.
+- 102-r4 (review-ul advers C102): desfacerea nominalizării automate care nu
+  găsește efect în cub scrie rândul invers fără Transfer și fără urmă. Nu
+  există contraexemplu concret după D-3; se tranșează între refuz
+  `IMPERECHERE_FARA_EFECT` pe ramura negativă și un invariant `INV-CUB`
+  „legăturile vii ale perechii nu depășesc efectul pe partide”.
+- 102-r5 (review-ul advers C102): `Fapte.PartideDisponibile` aduce un rând
+  pe unitate × zi pentru conturile și partenerii notei, nu un agregat pe
+  unitate; pe volum mare, soldul la dată și minimul cumulat se calculează în
+  SQL (funcție de fereastră). Nemăsurat.

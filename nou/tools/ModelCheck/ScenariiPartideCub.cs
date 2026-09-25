@@ -23,6 +23,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         NotaInainteaStingerii();
         StingereDupaDesfacere(nota: false);
         StingereDupaDesfacere(nota: true);
+        StingereInainteaPartideiProprii();
         var f = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false)); Opereaza(f.Id);
         var plata = Trezorerie(false, 40); Opereaza(plata.Id);
         var imp = Imperecheaza(plata.Id, f.Id, 40, Ianuarie);
@@ -277,6 +278,26 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             Comanda(os => ImperechereService.Sterge(os, legatura));
         }
         Anuleaza(s); Anuleaza(p.Id); Anuleaza(f.Id);
+        Furnizor = furnizor;
+    }
+
+    void StingereInainteaPartideiProprii() {
+        var furnizor = Furnizor; Furnizor = PartenerNou("-TMP");
+        var d7 = new DateOnly(An, 1, 7); var d10 = new DateOnly(An, 1, 10);
+        var f = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false)); Opereaza(f.Id);
+        var p = Trezorerie(false, 100);
+        Comanda(os => {
+            var doc = os.GetObjectByKey<Document>(p.Id);
+            doc.Autogenerat = true; doc.DocumentSursaId = f.Id; os.CommitChanges();
+        });
+        Opereaza(p.Id);
+        var automata = CuSpatiu(os => os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == p.Id).ID);
+        Comanda(os => ImperechereService.Desfa(os, automata, d10));
+        var f2 = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false)); Opereaza(f2.Id);
+        Refuza("SC-CIT-68", () => Imperecheaza(p.Id, f2.Id, 50, d7), "PARTIDA_PROPRIE_INSUFICIENTA");
+        Imperecheaza(p.Id, f2.Id, 50, d10);
+        Verifica("SC-CIT-68", "partida proprie născută la 10 finanțează numai de la 10: FCT2 −50, plata 50",
+            CuSpatiu(os => P.Ramas(os, f2.Id) == 50 && P.Ramas(os, p.Id) == 50));
         Furnizor = furnizor;
     }
 

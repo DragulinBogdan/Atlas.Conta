@@ -137,11 +137,11 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: felia de curățenie 102 (fără compatibilitate cu bazele
-de dezvoltare: codul de compatibilitate se scoate, bazele se recreează;
-102-r1…r3), împreună cu 101-r1 redeschisă, pe contractul
-`docs/nucleu/c102-curatenie-contract.md`; abia apoi snapshot-ul de stoc.
-TR-D8 — portarea consumatorilor pe intrările comune ale
+**Următorul pas**: snapshot-ul de stoc (TR-D8), scris numai din cub.
+Felia de curățenie C102 este închisă (2026-09-25, branch `c102-curatenie`):
+compatibilitatea cu bazele de dezvoltare a ieșit, invarianții cubului rulează
+în ModelCheck (`INV-CUB`), migrațiile sunt o singură `InitialCreate`, bazele
+s-au recreat, 101-r1 e închisă; rămân 102-r4/r5. TR-D8 — portarea consumatorilor pe intrările comune ale
 cubului, după DEC și PIF/AMO/CAS (095, 097), cu scenarii numerice înaintea
 implementării. Review-urile adverse LDI, NIR, Deschidere, DEC și IMO sunt făcute
 (2026-09-24); corecturile se aplică pe felii peste `94ddfa8` (098).

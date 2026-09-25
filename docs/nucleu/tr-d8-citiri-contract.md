@@ -185,6 +185,10 @@ eliminarea regimului dual rămâne TR-D9. Import1C rămâne înghețat.
 
 ## D8-B6 — Acoperirea partidelor bugetare (A aprobată de owner, 2026-09-25)
 
+**Amendat de 102 (C102, 2026-09-25):** refuzul istoricului fără unități la
+activare a ieșit; unitățile complete și totalul de decontare sunt invarianți
+verificați de ModelCheck (`INV-CUB`) pe baza rezultată.
+
 Recensământul seed-ului din 2026-09-25: `401.01.00`, `404.01.00` și
 `411.01.01`, folosite de politicile FCT/NIR, respectiv FCL/PLT/INC, au
 `UrmarestePartide=false`. Rolul SAF-T este Niciunul. 096 a păstrat numai
@@ -220,6 +224,12 @@ ambele profiluri. Integral **3.036 bugetar / 4.026 privat OK**, zero FAIL,
 snapshot-ul de partide au fost portate ulterior în felia D8-B7 de mai jos.
 
 ## D8-B7 — Împerecheri fără efect pe partidă (A aprobată de owner)
+
+**Amendat de 102 (C102, 2026-09-25):** legăturile istorice fără efect nu mai
+există, deci diagnosticul lor și `StingeriDto.Avertismente` au ieșit;
+desfacerea are două căi (transferul exact, nominalizarea automată). D-2 și
+D-3 din review-ul advers sunt corectate în C102 (SC-CIT-66/67), iar
+disponibilul temporal are un singur calcul.
 
 **A aprobată la 2026-09-25; decizia 101. Implementată și verificată.**
 Portarea raportului scoate la vedere două contraexemple din probele vechi:

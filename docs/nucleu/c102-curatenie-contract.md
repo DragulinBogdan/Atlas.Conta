@@ -1,8 +1,8 @@
 # C102 — Felia de curățenie: fără compatibilitate cu bazele de dezvoltare
 
 - Data: 2026-09-25
-- Stare: contract scris, aprobat de owner ca direcție; se execută după
-  commit-ul de bază al TR-D8 (Codex), într-o sesiune nouă (Claude)
+- Stare: închis 2026-09-25 (Claude), branch `c102-curatenie` peste `e1c58cf`;
+  vezi §Închiderea
 - Surse: decizia 102 (a)–(g); 101-r1 redeschisă (D-2, D-3);
   `comunicari/2026-09-25-1237-claude-codex-tr-d8-partide-review.md`
 - Restanțe: 102-r1, 102-r2, 102-r3, 101-r1
@@ -154,3 +154,62 @@ Felia e rotundă când:
 Buget: dacă pasul 2 sau 3 cere schimbare de model în afara C-D3, te oprești
 și raportezi. O singură rulare grea o dată, fără ModelCheck în paralel cu
 build-ul.
+
+## Închiderea (2026-09-25)
+
+Alegerile owner-ului: migrațiile comprimate (C-D8); lista DROP confirmată,
+Flax șters fără reimport, baza Privat recreată din seed (C-D9).
+
+Commit-urile: pas 2 `522acc9`, pas 3 `916b6ba`, pas 4 `a3c6c47`,
+pas 5 `7c07c8f`, pas 6 `da1e958`, apoi corecturile review-ului și documentele.
+
+**Inventarul C-D3, rând cu rând:**
+
+| Țintă | Rezultat |
+|---|---|
+| Cheia veche a partidei | scoasă: `Anterioara`, `cub_partida_anterioara`, ramura din `Origini`; `EsteProprie` = numai 092(a) |
+| Snapshot fără proveniență | scos: `DinCub` pe ambele snapshot-uri, `CITIRE_SNAPSHOT_VECHI`, `SnapshotContabilDinCub`, filtrul indexului, `NOT DinCub` |
+| Legături fără efect verificat | scoase: `EfectCubVerificat`, ramura `suma < 0 && !desfaceNominalizare` și parametrul, `Partide.Diagnostic`/`Efect`, `StingeriDto.Avertismente` și randarea |
+| Proveniența stornourilor vechi | scoasă: migrația `OriginiStornoUnivoce`, `Contabil.VerificaProvenienta`/`NumaraFaraProvenienta`, `RaportSeed.PostariFaraProvenienta`; proba rămâne în `Invarianti.VerificaProvenienta` |
+| Refuzul istoricului la pornire | scos din cele două `Program.cs` și din seed (`Imobilizari.VerificaAcoperire` rula și în `SeedTipuriDocument`); `Activare` devine `Cub.Citiri.Invarianti`, apelat de ModelCheck la finalul fiecărui profil (`INV-CUB`) |
+| Storno pe tip netrecut pe cub | **justificat, nu scos:** `return` pe declarație fără postări rămâne. Refuzul cerut de C-D3 a picat SC-X-01: NIR conex cu deltă zero (099) nu are postări și stornoul lui schimbă doar starea. Comentariul de compatibilitate a ieșit |
+| Cod mort al portării | scos: `ImperecheriProiectii.Asignari`, `SumaPeDocument`, `AsignariDeschidere`, `AsignatDeschidere`; probele SC-DES-12/14 citesc `DocumenteCuRest`/`Asignat` |
+
+Găsite la execuție, în afara C-D3, sub pragul de 30%: apelul din seed de mai
+sus; a cincea variantă a calculului temporal (`StingereDeschidere.Disponibil`);
+backfill-ul `DiferenteReceptie.CompleteazaSursa` probat de SC-NIR-32; proba
+HTTP `citiri-cub.py` pe coloana `DinCub` (găsită de review).
+
+**C-D5:** `Cub.Citiri.Partide.Evolutie`/`DisponibilTemporal` servesc
+`Fapte.Sursa`, `NominalizataLibera`, `VerificaDisponibilTemporal`,
+`VerificaPartideFaraDependenti` și `StingereDeschidere.Disponibil`.
+Singura diferență de comportament: transferul manual verifică și punctul de
+la data cerută, deci o stingere datată înaintea nașterii partidei proprii se
+refuză (SC-CIT-68).
+
+**D-2/D-3:** SC-CIT-66 și SC-CIT-67 (plus varianta NTC) sunt scrise înaintea
+corecturii și sunt roșii pe codul de la pasul 2 (proba cu stash pe Module),
+apoi verzi.
+
+**C-D8:** proba A/B `pg_dump --schema-only`, cu 593 de instrucțiuni pe
+ambele variante. Diferă numai valorile `DEFAULT` lăsate de `AddColumn` pe 12
+coloane, pe care modelul nu le declară. Schema nu depinde de profil;
+ModelCheck privat își creează baza din aceeași migrație.
+
+**Validarea:**
+
+- ModelCheck integral pe bazele recreate: **3.083 bugetar / 4.079 privat
+  OK**, zero FAIL, exit 0, build fără avertismente, `INV-CUB` verde pe ambele
+  profiluri (`run-verificari/c102/final-*.log`);
+- openapi/types/metadata regenerate și idempotente; clientul compilează;
+- WebApi și Blazor pornesc pe `Atlas.Conta.BackOffice.Privat` recreată;
+  `partide-cub.py` 3/3 PASS;
+- `refuzuri.ps1` nu are subiect pe baza din seed (cere o închidere de TVA
+  existentă) și nu a rulat.
+
+**Review-ul advers** (agent separat, numai citire): un MEDIU (`citiri-cub.py`
+pe `DinCub`), corectat; SC-CIT-65 tautologic, corectat; testul
+refuzului retroactiv lipsă, adăugat (SC-CIT-68); restanțele 102-r4
+(desfacerea automată fără efect, fără contraexemplu concret) și 102-r5
+(perf `PartideDisponibile`). Echivalența C-D5, D-2, D-3, desfacerea și
+migrația comprimată au fost verificate și țin.

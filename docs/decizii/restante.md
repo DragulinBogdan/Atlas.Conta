@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-09-24.** [Index](README.md)
+**Actualizat: 2026-09-25.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -330,7 +330,9 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 
 | 100-r1 | Acoperirea bugetară a partidelor pe cele trei conturi DinSeed, ciclurile FCT/PLT, FCL/INC, NTC și deschidere; refuz istoric conform 096-r1 | închisă 2026-09-25: SC-CIT-41…48 și cataloagele tipurilor, integral 3.036/4.026 OK; raportul/snapshot-ul rămân la TR-D8 |
 
-| 101-r1 | Efect obligatoriu al împerecherii, refuz atomic, candidați/disponibil pe cub și diagnostic al legăturilor istorice fără efect (101) | activă, redeschisă 2026-09-25 de owner după review-ul advers (`comunicari/2026-09-25-1237`): NTC consumă retroactiv partida stinsă la o dată ulterioară (D-2); ținta deschisă prin Transfer e oferită în panou, dar refuzată de comandă (D-3). Închiderea anterioară: SC-CIT-49…65, integrale 3.107/4.103 OK |
-| 102-r1 | Scoaterea codului de compatibilitate (102c), invarianții devin probe ModelCheck (102d), comprimarea migrațiilor tranșată (102e); felia de curățenie înaintea snapshot-ului de stoc | activă |
-| 102-r2 | Alinierea deciziilor, stare-curenta și restanțelor cu 102(c) | activă |
-| 102-r3 | Rețeta de recreare a bazelor de dezvoltare și recrearea lor (102b) | activă |
+| 101-r1 | Efect obligatoriu al împerecherii, refuz atomic, candidați/disponibil pe cub și diagnostic al legăturilor istorice fără efect (101) | închisă 2026-09-25 în C102: D-2 și D-3 corectate (SC-CIT-66/67), diagnosticul istoric depășit de 102; anterior activă, redeschisă 2026-09-25 de owner după review-ul advers (`comunicari/2026-09-25-1237`): NTC consumă retroactiv partida stinsă la o dată ulterioară (D-2); ținta deschisă prin Transfer e oferită în panou, dar refuzată de comandă (D-3). Închiderea anterioară: SC-CIT-49…65, integrale 3.107/4.103 OK |
+| 102-r1 | Scoaterea codului de compatibilitate (102c), invarianții devin probe ModelCheck (102d), comprimarea migrațiilor tranșată (102e); felia de curățenie înaintea snapshot-ului de stoc | închisă 2026-09-25 (C102, contractul §Închiderea) |
+| 102-r2 | Alinierea deciziilor, stare-curenta și restanțelor cu 102(c) | închisă 2026-09-25 (C102) |
+| 102-r3 | Rețeta de recreare a bazelor de dezvoltare și recrearea lor (102b) | închisă 2026-09-25 (C102; rețeta în `stare-curenta/dezvoltare-si-validare.md`) |
+| 102-r4 | Desfacerea automată fără efect în cub: refuz sau invariant `INV-CUB` (102) | activă |
+| 102-r5 | Perf `Fapte.PartideDisponibile` pe volum: agregarea temporală în SQL (102) | după PoC |

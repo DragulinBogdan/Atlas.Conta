@@ -26631,8 +26631,8 @@ void VerificaPartide(bool privat) {
             var candidatRdc = ImperecheriProiectii.DocumenteCuRest(os).SingleOrDefault(r => r.DocumentId == rdc.ID);
             Check($"PAR-V23/SC-CIT-64 ({eticheta}): returul cu partidă proprie este datorie 121 în raport",
                 apare && candidatRdc?.Rest == 121m && candidatRdc.Sens == "Datorie");
-            ImperecheriProiectii.VerificaAcoperire(os);
-            Check($"SC-CIT-65 ({eticheta}): costul RDC fără partidă respectă totalul de decontare", true);
+            Check($"SC-CIT-65 ({eticheta}): costul RDC fără partidă respectă totalul de decontare",
+                Refuz(() => ImperecheriProiectii.VerificaAcoperire(os)) == null);
         }
 
     // ═════════════════════ curățenia: scena nu rămâne în bază ═════════════

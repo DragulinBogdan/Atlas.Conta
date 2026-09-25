@@ -141,7 +141,7 @@ def main():
             findings = call('Admin', f'/api/perioade/{year}/1/verificare')
             call('Admin', f'/api/perioade/{year}/1/inchide', 'POST', {'Acceptate': [f['Cheie'] for f in findings]})
             closed = True
-            assert conn.execute('SELECT count(*) FROM "SolduriPerioadaContabil" WHERE "An"=%s AND "Luna"=1 AND "DinCub"', (year,)).fetchone()[0] > 0
+            assert conn.execute('SELECT count(*) FROM "SolduriPerioadaContabil" WHERE "An"=%s AND "Luna"=1', (year,)).fetchone()[0] > 0
             verify(True)
             call('Admin', '/api/perioade/reconstruieste', 'POST', {})
             verify(True)
