@@ -18,7 +18,6 @@ public static class Transferuri {
         decimal Suma,
         DateOnly Data,
         Guid? PartidaTinta = null,
-        bool DesfaceNominalizare = false,
         Guid? PartenerCerut = null);
 
     public sealed record Rezultat(N.Mutare? Mutare, DateOnly Data, N.Refuz? Refuz, string? Sarit);
@@ -38,12 +37,11 @@ public static class Transferuri {
             .Select(g => new { Unitate = g.Key, Net = g.Sum(p => p.Coordonate.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
             .Where(p => p.Net != 0m).ToArray();
         if (primite.Length == 0) return Sare("nu există efect de desfăcut pe partida stinsului");
-        if (primite.Length != 1) return Refuza("IMPERECHERE_AMBIGUA", "legătura istorică nu identifică un singur efect de desfăcut");
+        if (primite.Length != 1) return Refuza("IMPERECHERE_AMBIGUA", "nominalizarea nu identifică un singur efect de desfăcut");
         var efect = primite[0]; var tinta = efect.Unitate;
         if (tinta.Partener is not Guid tert) return Sare("partida nu poartă partener");
         var proprie = IdentitatiPartide.Gaseste(cerere.OperareStingator.Concat(cerere.TransferuriStingator)
             .Select(p => p.Coordonate.Unitate).OfType<N.Unitate>(), cerere.StingatorId, tinta.Cont, tert);
-        if (proprie == null && !cerere.DesfaceNominalizare) return Sare("stingătorul nu are partidă proprie");
         proprie ??= N.Unitate.DeschidePartida(tinta.Cont, tert, cerere.StingatorId, cerere.DataStingator);
         return new(new N.Mutare(Capatul(tinta.Cont, tert, tinta), Capatul(tinta.Cont, tert, proprie),
             efect.Net > 0m ? N.Latura.Debit : N.Latura.Credit, 0m, 0m,

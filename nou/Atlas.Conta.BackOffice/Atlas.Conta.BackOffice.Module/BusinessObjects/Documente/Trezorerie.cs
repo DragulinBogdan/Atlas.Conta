@@ -652,8 +652,6 @@ public class DocumentTrezorerieDetaliu : DocumentDetaliu {
 [NavigationItem("Documente")]
 public class Imperechere : BaseObject {
     [System.ComponentModel.Browsable(false)]
-    public virtual bool EfectCubVerificat { get; set; }
-    [System.ComponentModel.Browsable(false)]
     public virtual Guid? TranzactieCubId { get; set; }
     public virtual Guid DocumentStingatorId { get; set; }
     public virtual Document DocumentStingator { get; set; }

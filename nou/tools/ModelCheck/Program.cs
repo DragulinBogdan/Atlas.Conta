@@ -689,6 +689,7 @@ if (filtruScenarii != null) {
         Environment.ExitCode = 2;
         return;
     }
+    VerificaInvariantiCub();
     Rezumat();
     return;
 }
@@ -4376,6 +4377,7 @@ if (profil == ProfilContabil.Privat) {
     RuleazaScenele(privat: true);
     // Felia 32, pasul 2b — laturile ca structură (STR-LATURI-*), după toate scenele.
     VerificaLaturi(privat: true);
+    VerificaInvariantiCub();
 
     Rezumat();
     return;
@@ -9750,6 +9752,7 @@ VerificaPozitieLinii(privat: false);
 RuleazaScenele(privat: false);
 // Felia 32, pasul 2b — laturile ca structură (STR-LATURI-*), după toate scenele.
 VerificaLaturi(privat: false);
+VerificaInvariantiCub();
 
 Rezumat();
 
@@ -26629,7 +26632,7 @@ void VerificaPartide(bool privat) {
             Check($"PAR-V23/SC-CIT-64 ({eticheta}): returul cu partidă proprie este datorie 121 în raport",
                 apare && candidatRdc?.Rest == 121m && candidatRdc.Sens == "Datorie");
             ImperecheriProiectii.VerificaAcoperire(os);
-            Check($"SC-CIT-65 ({eticheta}): costul RDC fără partidă nu refuză activarea", true);
+            Check($"SC-CIT-65 ({eticheta}): costul RDC fără partidă respectă totalul de decontare", true);
         }
 
     // ═════════════════════ curățenia: scena nu rămâne în bază ═════════════
@@ -31071,6 +31074,13 @@ int RuleazaScenele(bool privat) {
             Console.WriteLine($"     {scena.Nume}: {ceas.Elapsed.TotalSeconds:0.0} s");
     }
     return selectate.Count;
+}
+
+// 102d — invarianții negarantați de scriere, pe baza rezultată a profilului.
+void VerificaInvariantiCub() {
+    using var os = provider.CreateObjectSpace();
+    var refuz = Refuz(() => Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os));
+    Check("INV-CUB: invarianții cubului pe baza rezultată" + (refuz == null ? "" : $" — {refuz.Split('\n')[0]}"), refuz == null);
 }
 
 // ============ Felia 31 (TR-D7a): schema cubului și ordinea liniilor ============

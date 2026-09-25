@@ -59,10 +59,9 @@ Owner-ul a ales cheia `(document, cont, partener)`. Decizia
 N-D6: aceeași notă poate deschide partide distincte pentru parteneri diferiți
 pe același cont. SC-NTC-13 trebuie acceptat, fără a amesteca soldurile.
 
-Identitățile deja persistate nu se rescriu. Adaptorul recunoaște cheia
-istorică și o păstrează la nominalizarea sursei și la transfer. SC-NTC-20
-probează cheia istorică fixată pe octeți, respinge partenerul greșit și
-transferă40 de pe o plată nouă către partida istorică de100.
+Cheia istorică document + cont a ieșit odată cu bazele vechi (102c);
+SC-NTC-20 este depășit de 102. SC-NTC-17 probează transferul refuzat când
+nominalizarea nu lasă partidă proprie, pe identitatea 092(a).
 Flax rămâne nemodificat.
 
 ## Recensământ și limite

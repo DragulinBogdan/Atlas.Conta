@@ -13,7 +13,7 @@ public static partial class Imobilizari {
                 && (p.Tranzactie.Fel == N.FelTranzactie.Storno) == r.Storno))
             .Select(r => r.DocumentId).Distinct().Take(10).ToList();
         if (lipsuri.Count > 0)
-            throw new OperareException("Activarea imobilizărilor pe cub cere tratarea explicită a istoricului fără fișă/suport: "
+            throw new OperareException("Registrul imobilizărilor fără fișă pe cub: "
                 + string.Join(", ", lipsuri));
         var incomplete = os.GetObjectsQuery<Postare>().Where(p => p.FelUnitate == N.FelUnitate.Fisa
             && (p.DocumentId == null || p.LinieId == null
@@ -33,7 +33,7 @@ public static partial class Imobilizari {
                 || c.ValoareFiscala != g.Sum(r => r.ValoareFiscala) || c.Amortizare != g.Sum(r => r.Amortizare)
                 || c.AmortizareFiscala != g.Sum(r => r.AmortizareFiscala)).Select(g => g.Key.DocumentId).Distinct().Take(10).ToList();
         if (diferite.Count > 0)
-            throw new OperareException("Istoric de imobilizări incomplet pe cub: " + string.Join(", ", diferite));
+            throw new OperareException("Registrul imobilizărilor diferă de cub: " + string.Join(", ", diferite));
     }
 
     public sealed record RandCuDocument(RandRegistru Rand, Guid DocumentId);

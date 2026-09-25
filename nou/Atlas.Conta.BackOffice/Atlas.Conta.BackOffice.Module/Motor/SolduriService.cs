@@ -103,7 +103,7 @@ public static class SolduriService {
     public static void Materializeaza(IObjectSpace os, int an, int luna) {
         Elimina(os, an, luna);
         var (anPrec, lunaPrec) = Precedenta(an, luna);
-        var precedentaContabil = SnapshotContabilDinCub(os, anPrec, lunaPrec) ? (anPrec, lunaPrec) : ((int, int)?)null;
+        var precedentaContabil = AreRanduri(os, Contabil, anPrec, lunaPrec) ? (anPrec, lunaPrec) : ((int, int)?)null;
         var precedentaStoc = AreRanduri(os, Stoc, anPrec, lunaPrec) ? (anPrec, lunaPrec) : ((int, int)?)null;
         ScrieContabil(os, an, luna, precedentaContabil);
         ScrieStoc(os, an, luna, precedentaStoc);
@@ -117,10 +117,10 @@ public static class SolduriService {
         var sursa = SursaPartide(os, P, an, luna);
         Executa(os, $"""
             INSERT INTO {Partide} ("ID", "GCRecord", "OptimisticLockField", "An", "Luna",
-                "UnitateId", "ContId", "PartenerId", "Deschisa", "DocumentId", "Debit", "Credit", "Rest", "DinCub")
+                "UnitateId", "ContId", "PartenerId", "Deschisa", "DocumentId", "Debit", "Credit", "Rest")
             SELECT gen_random_uuid(), 0, 0, {P(an)}, {P(luna)},
                 s."UnitateId", s."ContId", s."PartenerId", s."Deschisa", s."DocumentId",
-                s."Debit", s."Credit", ABS(s."Debit" - s."Credit"), true
+                s."Debit", s."Credit", ABS(s."Debit" - s."Credit")
             FROM ({sursa}) s
             """, argumente.ToArray());
     }
@@ -211,21 +211,13 @@ public static class SolduriService {
         return gasita;
     }
 
-    static bool SnapshotContabilDinCub(IObjectSpace os, int an, int luna) {
-        var surse = os.GetObjectsQuery<SoldPerioadaContabil>().Where(s => s.An == an && s.Luna == luna)
-            .Select(s => s.DinCub).Distinct().ToArray();
-        if (surse.Contains(false))
-            throw new OperareException($"CITIRE_SNAPSHOT_VECHI: {luna:D2}/{an}; reconstruiți soldurile din cub înaintea citirii.");
-        return surse.Length != 0;
-    }
-
     /// <summary>Atomii contabili până la `panaLa`, porniți de la ultima referință care se termină până la `granita`.</summary>
     public static IQueryable<AtomContabil> AtomiCumulati(IObjectSpace os, DateOnly panaLa, DateOnly? granita = null) {
         var atomi = ContabilProiectii.Atomi(os);
         if (os is ISecuredObjectSpace || Referinta(os, granita ?? panaLa) is not { } r)
             return atomi.Where(a => a.Data <= panaLa);
         var (an, luna, sfarsit) = r;
-        if (!SnapshotContabilDinCub(os, an, luna))
+        if (!AreRanduri(os, Contabil, an, luna))
             return atomi.Where(a => a.Data <= panaLa);
         return os.GetObjectsQuery<SoldPerioadaContabil>().IgnoreAutoIncludes()
             .Where(s => s.An == an && s.Luna == luna)
@@ -305,10 +297,10 @@ public static class SolduriService {
         var sb = new StringBuilder();
         sb.Append($"INSERT INTO {Contabil} (\"ID\", \"GCRecord\", \"OptimisticLockField\", \"An\", \"Luna\", \"ContId\", ");
         sb.Append(string.Join(", ", Dimensiuni.Select(d => $"\"{d}\"")));
-        sb.Append(", \"Debit\", \"Credit\", \"DinCub\")\n");
+        sb.Append(", \"Debit\", \"Credit\")\n");
         sb.Append($"SELECT gen_random_uuid(), 0, 0, {P(an)}, {P(luna)}, k.\"ContId\", ");
         sb.Append(string.Join(", ", Dimensiuni.Select(d => $"k.\"{d}\"")));
-        sb.Append(", SUM(k.\"Debit\"), SUM(k.\"Credit\"), true\n");
+        sb.Append(", SUM(k.\"Debit\"), SUM(k.\"Credit\")\n");
         sb.Append($"FROM (\n{SursaContabil(os, P, an, luna, precedenta)}\n) k\n");
         sb.Append("GROUP BY k.\"ContId\", ");
         sb.Append(string.Join(", ", Dimensiuni.Select(d => $"k.\"{d}\"")));
@@ -451,7 +443,7 @@ public static class SolduriService {
             WITH recalc AS ({sursa}), existent AS (
                 SELECT * FROM {Partide} WHERE "An" = {P(an)} AND "Luna" = {P(luna)}
             ), j AS (
-                SELECT e."ID", r."UnitateId", e."DinCub", e."Deschisa" AS "DataE", r."Deschisa" AS "DataR",
+                SELECT e."ID", r."UnitateId", e."Deschisa" AS "DataE", r."Deschisa" AS "DataR",
                     e."DocumentId" AS "DocE", r."DocumentId" AS "DocR",
                     e."Debit" AS "DE", e."Credit" AS "CE", e."Rest" AS "RE",
                     r."Debit" AS "DR", r."Credit" AS "CR"
@@ -459,7 +451,7 @@ public static class SolduriService {
                     ON e."UnitateId" = r."UnitateId" AND e."ContId" = r."ContId" AND e."PartenerId" = r."PartenerId"
             )
             SELECT (SELECT COUNT(*) FROM existent) AS "Existente", (SELECT COUNT(*) FROM recalc) AS "Recalculate",
-                COUNT(*) FILTER (WHERE "ID" IS NULL OR "UnitateId" IS NULL OR NOT "DinCub"
+                COUNT(*) FILTER (WHERE "ID" IS NULL OR "UnitateId" IS NULL
                     OR "DE" <> "DR" OR "CE" <> "CR" OR "RE" <> ABS("DR" - "CR")
                     OR "DataE" <> "DataR" OR "DocE" IS DISTINCT FROM "DocR") AS "Diferite",
                 COALESCE(SUM(ABS(COALESCE(ABS("DR" - "CR"), 0) - COALESCE("RE", 0))), 0) AS "DiferentaRest"

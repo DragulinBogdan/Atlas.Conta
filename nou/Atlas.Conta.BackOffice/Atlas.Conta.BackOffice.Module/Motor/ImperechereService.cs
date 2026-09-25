@@ -51,7 +51,6 @@ public static class ImperechereService {
         invers.Data = data;
         invers.InverseazaId = original.ID;
         invers.Autogenerat = false;
-        invers.EfectCubVerificat = true;
         invers.TranzactieCubId = transfer;
         return invers;
     }
@@ -92,9 +91,9 @@ public static class ImperechereService {
     static Guid? DesfaceEfect(IObjectSpace os, Imperechere original, DateOnly data) {
         if (original.TranzactieCubId is Guid transfer)
             return Cub.Materializare.DesfaceTransfer(os, original.DocumentStingatorId, transfer, data);
-        if (original.EfectCubVerificat && !original.Autogenerat) return null;
+        if (!original.Autogenerat) return null;
         return Cub.Materializare.Imperecheaza(os, original.DocumentStingator, original.Document,
-            -original.Suma, data, desfaceNominalizare: original.Autogenerat);
+            -original.Suma, data);
     }
 
     static bool EstePerioadaDeschisa(IObjectSpace os, DateOnly data) {
@@ -143,7 +142,6 @@ public static class ImperechereService {
         imperechere.Suma = suma;
         imperechere.Data = zi;
         imperechere.Autogenerat = autogenerat;
-        imperechere.EfectCubVerificat = true;
         imperechere.TranzactieCubId = transfer;
         return imperechere;
     }

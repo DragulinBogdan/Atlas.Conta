@@ -115,7 +115,6 @@ public static class ImperechereApply {
 
         return new StingeriDto {
             DocumentId = documentId,
-            Avertismente = Cub.Citiri.Partide.Diagnostic(os, documentId),
             // Afordanța de SENS a panoului (F19-D16, review F3): sensul pe care
             // trebuie să-l poarte candidații, calculat AICI din hook-ul polimorf
             // — clientul îl pasează pe ruta proiecției, nu îl deduce. Vezi

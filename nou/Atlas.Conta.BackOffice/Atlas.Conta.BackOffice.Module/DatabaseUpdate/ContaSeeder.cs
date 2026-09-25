@@ -29,9 +29,7 @@ public static class ContaSeeder {
     // iar o valoare diferită e refuzată. Null = se păstrează ce are baza (sau
     // AwayFromZero la bază nouă — comportamentul de dinainte de 51c).
     public static RaportSeed Seed(IObjectSpace os, ProfilContabil profil, MidpointRounding? conventie = null) {
-        var raport = raportCurent = new RaportSeed {
-            PostariFaraProvenienta = Cub.Citiri.Contabil.NumaraFaraProvenienta(os)
-        };
+        var raport = raportCurent = new RaportSeed();
         SeedTipuriDocument(os, profil);
         SeedPerioadeFiscale(os);
         VerificaProfil(os, profil);
@@ -276,7 +274,6 @@ public static class ContaSeeder {
 
     // Decizia 20: nomenclatorul de tipuri oglindește clasele 1:1 — doar ancoră FK + UI.
     static void SeedTipuriDocument(IObjectSpace os, ProfilContabil profil) {
-        Cub.Citiri.Imobilizari.VerificaAcoperire(os);
         // S-D3, B-r2: `PosteazaInCub` și `LaturaContPropriu` sunt date de seed.
         (string Cod, string Denumire, string ClrType, LaturaDocument? ContPropriu)[] tipuri = [
             ("FCT", "Factură intrare", nameof(FacturaIntrare), null),

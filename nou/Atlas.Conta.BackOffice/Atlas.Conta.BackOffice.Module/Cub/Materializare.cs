@@ -79,7 +79,7 @@ public static partial class Materializare {
                 && (p.Tranzactie.Fel == N.FelTranzactie.Operare
                     || transferuriStoc.Contains(p.TranzactieId) || transferuriDeschidere.Contains(p.TranzactieId)))
             .ToList();
-        // Operat înainte ca tipul lui să fie migrat: stornoul nu atinge cubul (S-D5).
+        // Declarație goală (NIR conex fără diferență, 099) sau tip inert pe profil: nimic de inversat.
         if (aleDocumentului.Count == 0)
             return;
         var tinte = aleDocumentului.Select(p => p.ID).ToList();
@@ -111,7 +111,7 @@ public static partial class Materializare {
     /// </summary>
     public static Guid? Imperecheaza(
             IObjectSpace os, Document stingator, Document stins, decimal suma, DateOnly data,
-            bool desfaceNominalizare = false, Guid? contrapartidaId = null) {
+            Guid? contrapartidaId = null) {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(stingator);
         ArgumentNullException.ThrowIfNull(stins);
@@ -144,12 +144,6 @@ public static partial class Materializare {
                     && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida
                     && (p.DocumentId != stins.ID || p.Tranzactie.Fel != N.FelTranzactie.Operare))
                 .ToList();
-        if (suma < 0m && !desfaceNominalizare) {
-            primiteDeStins = primiteDeStins.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Transfer).ToList();
-            if (!primiteDeStins.Where(p => p.DocumentId == stingator.ID)
-                .GroupBy(p => new { p.Unitate, p.Cont, p.Partener })
-                .Any(g => g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) != 0m)) return null;
-        }
         var rezultat = Transferuri.Muta(new Transferuri.Cerere(
             stingator.ID,
             stingator.DataInregistrare,
@@ -160,7 +154,7 @@ public static partial class Materializare {
             [.. aleStinsului.Select(Randuri.Citeste)],
             [.. primiteDeStins.Select(Randuri.Citeste)],
             suma,
-            data, DesfaceNominalizare: desfaceNominalizare, PartenerCerut: contrapartidaId));
+            data, PartenerCerut: contrapartidaId));
         if (rezultat.Refuz is { } refuz)
             throw new OperareException(string.Join("\n", Mesaje([refuz])));
         if (rezultat.Mutare is not { } mutare) {
@@ -172,7 +166,7 @@ public static partial class Materializare {
             stingator.ID, rezultat.Data, [mutare], new N.Rotunjire(Scara.ConventieBani));
         if (!contract.EsteAcceptat)
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
-        var nominalizata = !desfaceNominalizare ? null : aleStingatorului.FirstOrDefault(p => p.Tranzactie.Fel == N.FelTranzactie.Operare
+        var nominalizata = suma > 0m ? null : aleStingatorului.FirstOrDefault(p => p.Tranzactie.Fel == N.FelTranzactie.Operare
             && p.Unitate == mutare.DeLa.Unitate?.Id && !IdentitatiPartide.EsteProprie(mutare.DeLa.Unitate, stingator.ID));
         Guid? id = null;
         foreach (var tranzactie in contract.Tranzactii)

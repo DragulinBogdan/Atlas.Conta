@@ -47,7 +47,7 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-NTC-14", stoc.Id, N.FelTranzactie.Operare, Ianuarie, R(stoc, 0, Serviciu, Stoc, 50));
         Verifica("SC-NTC-14", "fără registru de stoc", CuSpatiu(os => !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == stoc.Id)));
         Refuzuri();
-        Fifo(); Parteneri(); Compatibilitate(); DependentaInTimp();
+        Fifo(); Parteneri(); TransferFaraPartidaProprie(); DependentaInTimp();
         if (Privat) Avans();
         PestePerioada();
     }
@@ -202,22 +202,16 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == doc && p.Cont == Cont(Serviciu) && p.Data <= data)
             .Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)) == net);
 
-    void Compatibilitate() {
+    void TransferFaraPartidaProprie() {
         var doc = Guid.Parse("00000005-0000-0000-0000-000000000000");
         var cont = Guid.Parse("00000001-0000-0000-0000-000000000000");
         var tert = Guid.Parse("00000002-0000-0000-0000-000000000000");
-        var veche = new N.Unitate(Guid.Parse("6a865294-d354-8a72-4249-185390c213bb"), N.FelUnitate.Partida, cont, tert, null, Ianuarie);
-        Verifica("SC-NTC-20", "identitatea veche păstrată", C.IdentitatiPartide.Gaseste([veche], doc, cont, tert) == veche);
-        Verifica("SC-NTC-20", "partenerul greșit nu preia identitatea", C.IdentitatiPartide.Gaseste([veche], doc, cont, Client) == null);
-        var plata = Guid.NewGuid(); var proprie = N.Unitate.DeschidePartida(cont, tert, plata, Ianuarie);
+        var facturii = N.Unitate.DeschidePartida(cont, tert, doc, Ianuarie);
+        var plata = Guid.NewGuid();
         N.Postare Post(N.Unitate u, Guid cauza, N.Latura l, decimal v) => new(
             new N.Coordonate { Cont = cont, Latura = l, Partener = tert, Unitate = u, Data = Ianuarie }, 0, 0, v, new(cauza, null));
-        var rezultat = C.Transferuri.Muta(new(plata, Ianuarie, [Post(proprie, plata, N.Latura.Debit, 40)], [],
-            doc, Ianuarie, [Post(veche, doc, N.Latura.Credit, 100)], [], 40, Ianuarie));
-        Verifica("SC-NTC-20", "plată nouă transferată pe partida istorică", rezultat.Refuz == null
-            && rezultat.Mutare?.La.Unitate == veche && rezultat.Mutare.Valoare == 40);
-        var nominalizata = C.Transferuri.Muta(new(plata, Ianuarie, [Post(veche, plata, N.Latura.Debit, 40)], [],
-            doc, Ianuarie, [Post(veche, doc, N.Latura.Credit, 100)], [], 40, Ianuarie));
+        var nominalizata = C.Transferuri.Muta(new(plata, Ianuarie, [Post(facturii, plata, N.Latura.Debit, 40)], [],
+            doc, Ianuarie, [Post(facturii, doc, N.Latura.Credit, 100)], [], 40, Ianuarie));
         Verifica("SC-NTC-17", "transfer suplimentar refuzat când nominalizarea nu lasă partidă proprie (101)",
             nominalizata.Mutare == null && nominalizata.Refuz?.Cod == "IMPERECHERE_FARA_EFECT"
             && nominalizata.Sarit == null);

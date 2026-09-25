@@ -17,12 +17,12 @@ sealed class ScenariiFisa(Func<IObjectSpace> deschide, Action<string, bool> chec
         }
         var initial = N(1, 2, Serviciu, ContFurnizor, 100);
         Comanda(os => {
-            Atlas.Conta.BackOffice.Module.Cub.Citiri.Activare.Verifica(os);
-            Verifica("SC-CIT-23", "istoricul complet trece activarea", true);
+            Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os);
+            Verifica("SC-CIT-23", "cubul acoperă registrul: invarianții trec", true);
             var db = ((EFCoreObjectSpace)os).DbContext;
             using var tx = db.Database.BeginTransaction();
             db.Database.ExecuteSqlInterpolated($"DELETE FROM \"Postare\" WHERE \"DocumentId\" = {initial.Id}");
-            Refuza("SC-CIT-23", () => Atlas.Conta.BackOffice.Module.Cub.Citiri.Activare.Verifica(os), "CITIRE_ISTORIC_INCOMPLET");
+            Refuza("SC-CIT-23", () => Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os), "CITIRE_ISTORIC_INCOMPLET");
             tx.Rollback();
         });
         var debit = N(2, 3, Serviciu, ContFurnizor, 60);
@@ -82,14 +82,14 @@ sealed class ScenariiFisa(Func<IObjectSpace> deschide, Action<string, bool> chec
             var db = ((EFCoreObjectSpace)os).DbContext;
             using var tx = db.Database.BeginTransaction();
             db.Database.ExecuteSqlInterpolated($"DELETE FROM \"Postare\" WHERE \"DocumentId\" = {multi.Id} AND \"LinieId\" = {multi.Linii[0].Id}");
-            Refuza("SC-CIT-34", () => Atlas.Conta.BackOffice.Module.Cub.Citiri.Activare.Verifica(os), "CITIRE_ISTORIC_INCOMPLET");
+            Refuza("SC-CIT-34", () => Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os), "CITIRE_ISTORIC_INCOMPLET");
             tx.Rollback();
         });
         Comanda(os => {
             var db = ((EFCoreObjectSpace)os).DbContext;
             using var tx = db.Database.BeginTransaction();
             db.Database.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"Valoare\" = \"Valoare\" + 1 WHERE \"DocumentId\" = {initial.Id} AND \"Cont\" = {Cont(Serviciu)}");
-            Refuza("SC-CIT-34", () => Atlas.Conta.BackOffice.Module.Cub.Citiri.Activare.Verifica(os), "CITIRE_CUB_DEZECHILIBRAT");
+            Refuza("SC-CIT-34", () => Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os), "CITIRE_CUB_DEZECHILIBRAT");
             tx.Rollback();
         });
         Verifica("SC-CIT-21", "două contrapartide, fără ID unic inventat", CuSpatiu(os => {

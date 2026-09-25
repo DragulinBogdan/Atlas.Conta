@@ -270,7 +270,6 @@ export function PanouStingeri(props: {
 
   return (
     <section className="document__stingeri">
-      {date?.Avertismente?.map((mesaj, i) => <p role="status" key={i}>{mesaj}</p>)}
       <div className="linii__bara">
         <h3>Stingeri</h3>
         <div className="stingeri__numere">

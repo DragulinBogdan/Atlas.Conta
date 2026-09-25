@@ -148,7 +148,7 @@ static class ReconciliereCub {
 
     // (f) S-D13 — per PARTIDĂ, la ultima perioadă închisă: Σ cub (`Operare` ⊕ `Transfer`,
     // `Data` ≤ sfârșitul perioadei) pe unitate = `PartideDeschise.Rest` al documentului
-    // care a deschis-o. Adaptorul recunoaște identitatea 092 și cheia istorică;
+    // care a deschis-o. Adaptorul recunoaște identitatea 092;
     // nominalizarea FIFO nu face din documentul consumator un nou deschizător.
     // Se măsoară DOAR pe conturile ale căror documente sunt toate de tipuri migrate.
     static List<Rand> Partide(DbContext ctx, Guid[]? set, ICollection<string>? note) {

@@ -22,11 +22,6 @@ public sealed class DocumentCuRestRand {
     public decimal Disponibil { get; set; }
 }
 
-public sealed class SumaPeDocument {
-    public Guid DocumentId { get; set; }
-    public decimal Suma { get; set; }
-}
-
 sealed class AntetCuRest {
     public Guid DocumentId { get; set; }
     public string Tip { get; set; }
@@ -43,23 +38,6 @@ public static class ImperecheriProiectii {
     static readonly string SensDatorie = SensStingere.Datorie.ToString();
     static readonly string SensCreanta = SensStingere.Creanta.ToString();
 
-
-    public static IQueryable<SumaPeDocument> Asignari(IObjectSpace os,
-            DateOnly? dupa = null, DateOnly? panaLa = null) {
-        var legaturi = os.GetObjectsQuery<Imperechere>();
-        if (dupa is DateOnly d)
-            legaturi = legaturi.Where(i => i.Data > d);
-        if (panaLa is DateOnly p)
-            legaturi = legaturi.Where(i => i.Data <= p);
-        var initiale = Cub.Materializare.AsignariDeschidere(os);
-        if (dupa is DateOnly deLa) initiale = initiale.Where(i => i.Data > deLa);
-        if (panaLa is DateOnly la) initiale = initiale.Where(i => i.Data <= la);
-        return legaturi
-            .Select(i => new SumaPeDocument { DocumentId = i.DocumentStingatorId, Suma = i.Suma })
-            .Concat(legaturi
-                .Select(i => new SumaPeDocument { DocumentId = i.DocumentId, Suma = i.Suma }))
-            .Concat(initiale.Select(i => new SumaPeDocument { DocumentId = i.DocumentId, Suma = i.Suma }));
-    }
 
 
     static IQueryable<AntetCuRest> Antete(IObjectSpace os, bool istoric = false) {

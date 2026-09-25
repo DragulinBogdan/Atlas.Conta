@@ -36,16 +36,6 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
                     // cerere și rotunjește la materializare). Pe calea
                     // --updateDatabase o fixează seed-ul însuși.
                     FixeazaConventiaRotunjire(host);
-                    try {
-                        using var scope = host.Services.CreateScope();
-                        var factory = scope.ServiceProvider.GetRequiredService<INonSecuredObjectSpaceFactory>();
-                        using var os = factory.CreateNonSecuredObjectSpace(typeof(Atlas.Conta.BackOffice.Module.BusinessObjects.Document));
-                        Atlas.Conta.BackOffice.Module.Cub.Citiri.Activare.Verifica(os);
-                    } catch (Exception e) {
-                        host.Services.GetRequiredService<ILoggerFactory>().CreateLogger<Program>()
-                            .LogError(e, "Activarea citirilor pe cub a fost refuzată.");
-                        return 1;
-                    }
                     host.Run();
                 }
             }

@@ -73,36 +73,6 @@ public static partial class Materializare {
         }
     }
 
-    public sealed class AsignareInitiala {
-        public Guid DocumentId { get; set; }
-        public DateOnly Data { get; set; }
-        public Guid? Partener { get; set; }
-        public N.Latura LaturaInitiala { get; set; }
-        public decimal Suma { get; set; }
-    }
-
-    public static IQueryable<AsignareInitiala> AsignariDeschidere(IObjectSpace os) {
-        var postari = os.GetObjectsQuery<Postare>();
-        var initiale = postari.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere
-            && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida);
-        return from p in postari
-            join i in initiale on p.Unitate equals i.Unitate
-            where p.DocumentId != null && p.Carte == N.Carte.Contabil
-            select new AsignareInitiala { DocumentId = p.DocumentId.Value, Data = p.Data,
-                Partener = i.Partener, LaturaInitiala = i.Latura,
-                Suma = p.Latura == i.Latura ? -p.Valoare : p.Valoare };
-    }
-
-    public static decimal AsignatDeschidere(IObjectSpace os, Guid document, Guid? partener = null, SensStingere? sens = null) {
-        var asignari = AsignariDeschidere(os).Where(p => p.DocumentId == document);
-        if (partener != null) asignari = asignari.Where(p => p.Partener == partener);
-        if (sens != null) {
-            var latura = sens == SensStingere.Datorie ? N.Latura.Credit : N.Latura.Debit;
-            asignari = asignari.Where(p => p.LaturaInitiala == latura);
-        }
-        return asignari.Sum(p => (decimal?)p.Suma) ?? 0m;
-    }
-
     static IQueryable<Postare> StingeriDeschidere(IObjectSpace os, Guid document) {
         var initiale = os.GetObjectsQuery<Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere
             && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida).Select(p => p.Unitate);

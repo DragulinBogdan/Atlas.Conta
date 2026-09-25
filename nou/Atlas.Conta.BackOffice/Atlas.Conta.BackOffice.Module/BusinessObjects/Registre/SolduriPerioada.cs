@@ -28,8 +28,6 @@ public class SoldPerioadaContabil : BaseObject {
     public virtual Repartitor Repartitor { get; set; }
     [XafDisplayName("Gestiune")]
     public virtual Guid? GestiuneId { get; set; }
-    [System.ComponentModel.Browsable(false)]
-    public virtual bool DinCub { get; set; }
     public virtual Guid? MaterialId { get; set; }
     [XafDisplayName("Material")]
     public virtual Produs Material { get; set; }
@@ -101,8 +99,6 @@ public class PartidaDeschisa : BaseObject {
     public virtual DateOnly Deschisa { get; set; }
     public virtual decimal Debit { get; set; }
     public virtual decimal Credit { get; set; }
-    [System.ComponentModel.Browsable(false)]
-    public virtual bool DinCub { get; set; }
     [XafDisplayName("Rest")]
     public virtual decimal Rest { get; set; }
 }

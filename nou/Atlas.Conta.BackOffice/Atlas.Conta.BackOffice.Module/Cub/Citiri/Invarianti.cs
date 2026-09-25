@@ -7,9 +7,10 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub.Citiri;
 
-public static class Activare {
+/// <summary>Invarianții cubului pe baza întreagă, negarantați de scriere; proba ModelCheck, nu cale de host (102d).</summary>
+public static class Invarianti {
     public static void Verifica(IObjectSpace os) {
-        Contabil.VerificaProvenienta(os);
+        VerificaProvenienta(os);
         var ctx = ((EFCoreObjectSpace)os).DbContext;
         var postari = os.GetObjectsQuery<Postare>();
         var lipsuri = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null
@@ -49,9 +50,15 @@ public static class Activare {
         Partide.VerificaAcoperire(os);
         Proiectii.ImperecheriProiectii.VerificaAcoperire(os);
         Imobilizari.VerificaAcoperire(os);
-        var vechiSnapshot = os.GetObjectsQuery<SoldPerioadaContabil>().LongCount(s => !s.DinCub)
-            + os.GetObjectsQuery<PartidaDeschisa>().LongCount(s => !s.DinCub);
-        if (vechiSnapshot != 0)
-            throw new OperareException($"CITIRE_SNAPSHOT_VECHI: {vechiSnapshot} poziții; reconstruiți soldurile din cub înaintea activării rapoartelor.");
+    }
+
+    public static void VerificaProvenienta(IObjectSpace os) {
+        var toate = os.GetObjectsQuery<Postare>();
+        var lipsa = os.GetObjectsQuery<Postare>().Where(p => p.Carte == N.Carte.Contabil).Where(Transformare.FaraContrapondere)
+            .LongCount(p => p.Tranzactie.Fel == N.FelTranzactie.Storno
+                && !toate.Any(o => o.ID == p.InversaDinId && o.Spatiu == p.InversaDinSpatiu
+                    && o.Tranzactie.Fel != N.FelTranzactie.Storno));
+        if (lipsa != 0)
+            throw new OperareException($"CITIRE_PROVENIENTA_LIPSA: {lipsa} postări Storno fără origine verificabilă.");
     }
 }

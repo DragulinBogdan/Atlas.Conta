@@ -7,11 +7,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Domeniu și operare
 
-- UrmarestePartide (096) nu adaugă retroactiv unități postărilor existente.
-  La TR-D8, activarea citirilor cere diagnostic și tratarea explicită a
-  istoriei fără partide, inclusiv deconturi/avansuri pe 542.
 - PIF/AMO/CAS scriu cubul, iar situația fișei se citește din el (095, 097).
-  Activarea refuză istoricul incomplet; nu există backfill implicit. Storno
+  Storno
   rămâne limitat la luna documentului (087g), inclusiv în corecție.
   Nominalizarea și inversarea suportului folosesc un blocaj tranzacțional
   comun pe bază; corectitudinea concurentă este probată, debitul concurent

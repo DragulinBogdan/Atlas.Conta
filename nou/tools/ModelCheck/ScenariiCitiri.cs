@@ -88,12 +88,10 @@ sealed class ScenariiCitiri(Func<IObjectSpace> deschide, Action<string, bool> ch
                 prima.ContabilDiferite == 0 && prima.DiferentaDebit == 0 && prima.DiferentaCredit == 0);
             var repetata = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1);
             Verifica("SC-CIT-13", "reconstrucție repetată fără diferențe", repetata.ContabilDiferite == 0);
-            db.Database.ExecuteSqlInterpolated($"UPDATE \"SolduriPerioadaContabil\" SET \"DinCub\" = false WHERE \"An\" = {An}");
-            Refuza("SC-CIT-24", () => Atlas.Conta.BackOffice.Module.Cub.Citiri.Activare.Verifica(os),
-                "CITIRE_SNAPSHOT_VECHI");
-            Refuza("SC-CIT-14", () => ContabilProiectii.Balanta(os, Februarie, new(An, 2, 28)).ToList(),
-                "CITIRE_SNAPSHOT_VECHI");
-            SolduriService.Reconstruieste(os);
+            db.Database.ExecuteSqlInterpolated($"UPDATE \"SolduriPerioadaContabil\" SET \"Debit\" = \"Debit\" + 7 WHERE \"An\" = {An} AND \"Luna\" = 1 AND \"ContId\" = {Cont(Stoc)}");
+            var corupta = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1);
+            Verifica("SC-CIT-14", "reconstrucția raportează diferența înainte de reparare",
+                corupta.ContabilDiferite != 0 && corupta.DiferentaDebit > 0);
             var r = ContabilProiectii.Balanta(os, Februarie, new(An, 2, 28), materialId: l.Produs)
                 .Single(x => x.ContId == Cont(Stoc));
             Verifica("SC-CIT-14", "reconstrucția permite citirea: final 80", r.SoldFinalDebit == 80);

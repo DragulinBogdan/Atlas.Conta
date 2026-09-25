@@ -95,15 +95,6 @@ public static class Partide {
             .Select(p => (decimal?)Math.Abs(p.Net)).Sum() ?? 0m;
     }
 
-    public static decimal Efect(IObjectSpace os, Guid stingator, Guid stins, DateOnly? laData = null, Guid? partener = null) {
-        var unitati = Origini(os).Where(o => o.DocumentId == stins).Select(o => o.UnitateId);
-        var zi = laData ?? DateOnly.MaxValue;
-        return Postari(os).Where(p => p.DocumentId == stingator && p.Data <= zi && (partener == null || p.Partener == partener) && unitati.Contains(p.Unitate.Value))
-            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener })
-            .Select(g => (decimal?)Math.Abs(g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)))
-            .Sum() ?? 0m;
-    }
-
     public static decimal NominalizataLibera(IObjectSpace os, Guid stingator, Guid stins, DateOnly? laData = null, Guid? partener = null) {
         var zi = laData ?? DateOnly.MaxValue;
         var unitati = Origini(os).Where(o => o.DocumentId == stins).Select(o => o.UnitateId);
@@ -132,25 +123,12 @@ public static class Partide {
         return Math.Max(0m, minim);
     }
 
-    public static IReadOnlyList<string> Diagnostic(IObjectSpace os, Guid document) {
-        var legaturi = os.GetObjectsQuery<Imperechere>()
-            .Where(i => i.DocumentId == document || i.DocumentStingatorId == document)
-            .GroupBy(i => new { i.DocumentStingatorId, i.DocumentId })
-            .Select(g => new { g.Key.DocumentStingatorId, g.Key.DocumentId, Suma = g.Sum(i => i.Suma) })
-            .Where(i => i.Suma > 0m).ToList();
-        return legaturi.Select(i => new { i.Suma, Efect = Efect(os, i.DocumentStingatorId, i.DocumentId) })
-            .Where(i => i.Suma > i.Efect)
-            .Select(i => $"IMPERECHERE_FARA_EFECT: legături {i.Suma:0.##}, efect pe partide {i.Efect:0.##}; restul se citește din cub.")
-            .ToArray();
-    }
-
     public static Guid Identitate(Guid document, Guid cont, Guid partener) =>
         N.Unitate.DeschidePartida(cont, partener, document, DateOnly.MinValue).Id;
 
     public static IQueryable<OriginePartida> Origini(IObjectSpace os) => Postari(os)
         .Where(p => p.DocumentId == null && p.Tranzactie.Fel == N.FelTranzactie.Deschidere
-            || p.DocumentId != null && (p.Unitate == Identitate(p.DocumentId.Value, p.Cont, p.Partener.Value)
-                || p.Unitate == IdentitatiPartide.Anterioara(p.DocumentId.Value, p.Cont)))
+            || p.DocumentId != null && p.Unitate == Identitate(p.DocumentId.Value, p.Cont, p.Partener.Value))
         .Select(p => new OriginePartida { UnitateId = p.Unitate.Value, ContId = p.Cont,
             PartenerId = p.Partener.Value, DocumentId = p.DocumentId }).Distinct();
 
@@ -159,10 +137,7 @@ public static class Partide {
             return Solduri(os, panaLa);
         var snapshot = os.GetObjectsQuery<PartidaDeschisa>()
             .Where(s => s.An == r.An && s.Luna == r.Luna);
-        var surse = snapshot.Select(s => s.DinCub).Distinct().ToArray();
-        if (surse.Contains(false))
-            throw new OperareException($"CITIRE_SNAPSHOT_VECHI: partide {r.Luna:D2}/{r.An}; reconstruiți soldurile din cub.");
-        if (surse.Length == 0) return Solduri(os, panaLa);
+        if (!snapshot.Any()) return Solduri(os, panaLa);
         return snapshot.Select(s => new SoldPartida { UnitateId = s.UnitateId, ContId = s.ContId,
                 PartenerId = s.PartenerId, Deschisa = s.Deschisa, Debit = s.Debit, Credit = s.Credit })
             .Concat(Postari(os).Where(p => p.Data > r.Sfarsit && p.Data <= panaLa)

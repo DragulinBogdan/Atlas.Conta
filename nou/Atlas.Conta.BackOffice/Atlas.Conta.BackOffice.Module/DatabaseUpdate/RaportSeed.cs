@@ -24,7 +24,6 @@ public sealed class RaportSeed {
 
     public int TotalCreate => peTip.Values.Sum(c => c.Create);
     public int TotalCorectate => peTip.Values.Sum(c => c.Corectate);
-    public long PostariFaraProvenienta { get; internal set; }
 
     internal Contor Contoare(string tip) {
         if (!peTip.TryGetValue(tip, out var c))
@@ -38,8 +37,6 @@ public sealed class RaportSeed {
     }
 
     public void Tipareste() {
-        if (PostariFaraProvenienta != 0)
-            Console.WriteLine($"AVERTISMENT CITIRE_PROVENIENTA_LIPSA: {PostariFaraProvenienta} postări Storno fără origine verificabilă; tratați istoricul înaintea activării citirii contabile.");
         foreach (var (tip, c) in peTip.OrderBy(x => x.Key, StringComparer.Ordinal))
             Console.WriteLine($"Seed {tip}: {c.Create} create, {c.Corectate} corectate, "
                 + $"{c.Manuale} manuale pe cheie de seed, {c.Sterse} șterse"

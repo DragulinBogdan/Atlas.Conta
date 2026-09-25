@@ -472,8 +472,8 @@ Situația fișei, AMO/CAS și API Imo citesc aceeași intrare
 vii identificate prin cauză. Amortizarea fiscală postează în Carte=Fiscal;
 deductibilul și lunile rămân atribute istorice ale liniei AMO. Registrul
 imobilizărilor se scrie dual până la TR-D9, fără reuniune la citire.
-Activarea refuză istoricul fără fișă, fără proveniență ori cu diferențe
-valorice față de cub; migrația nu reconstruiește implicit istoricul. (095, 097)
+Invarianții refuză registrul fără fișă, fișa fără proveniență ori diferențele
+valorice față de cub. (095, 097, 102d)
 
 Conturile nominalizate ale activului și amortizării se citesc pe set din
 cub, prin aceeași intrare pentru generatorul AMO, CAS și declarant. Politica
@@ -1085,9 +1085,9 @@ partidelor. `RolTert` rămâne clasificarea comercială SAF-T. Seed-ul activeaz�
 urmărirea pe 542 privat și 542.01.00/542.02.00 bugetar, păstrând acoperirea
 comercială existentă. Din 2026-09-25 sunt urmărite și conturile bugetare
 401.01.00, 404.01.00 și 411.01.01 DinSeed, fără schimbarea RolTert (100).
-Conturile devenite manuale sunt respectate la re-seed. Activarea citirilor
-refuză postările istorice fără identitate completă de partidă și indică
-postarea/documentul/contul; nu reconstruiește istoria din sold.
+Conturile devenite manuale sunt respectate la re-seed. Invarianții refuză
+postările fără identitate completă de partidă și indică
+postarea/documentul/contul (`CITIRE_PARTIDE_INCOMPLETE`).
 Partida decontului este a titularului Angajat;
 Customers/Suppliers nu îl preiau numai pentru că are avans. Migrația
 inițializează noul atribut pe conturile cu rol comercial, inclusiv manuale;
@@ -1219,16 +1219,19 @@ vechi și diferențele istorice rămân pentru diagnosticul dual (098-r3).
 Refuzul retragerii este verificat înaintea modificării tracker-ului, iar
 cel al operării înaintea numerotării.
 
-`Citiri/Contabil.VerificaProvenienta` este diagnosticul explicit care
-refuză storno fără origine verificabilă (`CITIRE_PROVENIENTA_LIPSA`).
-Seed-ul numără aceleași probleme și le raportează vizibil în `RaportSeed`,
-fără să refuze alinierea politicilor. `Citiri/Activare` rulează la pornirea
-ambelor hosturi și verifică proveniența, acoperirea contabilă și snapshot-ul.
+Scriitorul stornoului garantează proveniența inversei. `Citiri/Invarianti`
+verifică pe baza rezultată a fiecărui profil ModelCheck (`INV-CUB`)
+invarianții pe care scrierea nu-i garantează prin construcție: proveniența
+(`CITIRE_PROVENIENTA_LIPSA`), acoperirea registru ↔ cub pe linie și latură
+cât durează regimul dual, echilibrul pe tranzacție și carte, deschiderea,
+unitățile de partidă, totalul de decontare și imobilizările. Hosturile nu
+scanează istoria la pornire; o bază care nu corespunde codului se recreează
+(102b, 102d).
 `Postari` compune interogarea fără diagnostic global per apel;
 inversele Operare/Deschidere se clasifică prin ID și spațiul originii.
 Balanța, fișa, jurnalul și soldul pe partener sunt comutate pe cub împreună
 cu snapshot-ul contabil. Snapshot-ul include separat gestiunea și partenerul,
-poartă `DinCub` și se reconstruiește din postări. Citirile securizate folosesc
+se scrie numai din cub și se reconstruiește din postări. Citirile securizate folosesc
 postările autorizate, nu snapshot-ul global, pentru a păstra permisiunile
 pe rând și membru. Fișa afișează toate conturile corespondente, fără să
 inventeze o pereche; jurnalul are identitatea postare × spațiu.
@@ -1240,9 +1243,7 @@ folosesc data înregistrării și coordonatele complete. Raportul de stoc
 arată contul, gestiunea și costul unitar din sold; etichetele lipsă nu
 elimină sumele. Snapshot-ul de stoc este încă vechi și nu alimentează
 cititorul nou. TR-D8 rămâne în lucru conform inventarului nominal.
-Migrația `OriginiStornoUnivoce` reconstituie
-numai perechi istorice univoce, fără aproximări; repetarea nu schimbă nimic,
-ambiguitatea rămâne refuzată. `Citiri/Transformare` oferă un singur predicat
+`Citiri/Transformare` oferă un singur predicat
 pentru contraponderea virtuală ASM, utilizat și de probe/diagnostic.
 DEC are probă numerică independentă pentru inversare și corecție peste
 închidere: partidă −100 în ianuarie, zero după inversă, noua partidă −80.
@@ -1264,38 +1265,38 @@ analiza istorică. Imputatul fără cauză Imputabila sau fără deltă se gole�
 ### Partide: raport, snapshot și împerechere (101, 2026-09-25)
 
 `Cub.Citiri.Partide` este intrarea comună pentru rest, disponibil și raport.
-Cheia este unitate × cont × partener; origine prin identitatea explicită,
-inclusiv cheia istorică document + cont. Deschiderile au document nul.
+Cheia este unitate × cont × partener; originea este identitatea 092(a).
+Deschiderile au document nul.
 Raportul general expune restul absolut și sensul; nu deduce un „total al
 partidei” din rulajele documentului. Candidații păstrează etichetele tipurilor
 eligibile, dar sumele și limita perechii se citesc din cub.
 
 Snapshot-ul de partide păstrează cheia completă, debitul, creditul, data
-nașterii, documentul opțional și `DinCub`. Conține numai solduri nete nenule;
+nașterii și documentul opțional. Conține numai solduri nete nenule;
 combinarea cu fereastra următoare garantează restul, nu rulajul istoric al
 unei partide închise și redeschise. Citirea securizată agregă postările
 permise și ocolește snapshot-ul global. Reconstrucția raportează diferențele
-înaintea înlocuirii, inclusiv markerul vechi și detalierea fără document.
-Activarea refuză snapshot-urile vechi și documentele stingibile ale căror
-conturi de contrapartidă nu urmăresc partide.
+înaintea înlocuirii, inclusiv detalierea fără document. Invarianții refuză
+documentele stingibile ale căror conturi de contrapartidă nu urmăresc
+partide (`CITIRE_PARTIDE_POLITICA`).
 
 Împerecherea manuală cere efect integral pe un cont și partener comun,
 fără plafonare tăcută sau alegerea celei mai mari postări. Nominalizarea
 existentă se poate asocia documentar fără un nou transfer. Legătura poartă
-`EfectCubVerificat` și identitatea transferului creat; desfacerea inversează
-exact acel transfer. Asocierea manuală fără transfer nu inversează operarea.
+identitatea transferului creat. Desfacerea are două căi: transferul exact al
+legăturii sau, la stingerea automată, desfacerea nominalizării într-o partidă
+proprie a stingătorului. Asocierea manuală fără transfer nu inversează operarea.
 La stingerea automată, suma legăturii se confirmă din nominalizarea cubului.
 Lipsa efectului, insuficiența și ambiguitatea se refuză înaintea creării
 legăturii. CRUD-ul direct de creare/ștergere este refuzat; se folosesc comenzile.
-Panoul diagnostichează legăturile istorice mai mari decât efectul lor,
-fără a le scădea din rest. Scrierea registrelor rămâne până la TR-D9.
+Scrierea registrelor rămâne până la TR-D9.
 
 Sursa nominalizării automate se citește tot din cub, inclusiv recepția
 facturii înaintea NIR-ului. Disponibilul este limitat de fiecare dată
 ulterior scrisă: un sold eliberat în viitor nu finanțează o stingere
 retroactivă. La re-declarare se exclude efectul documentului curent.
 
-La activare, totalul de decontare al antetului este doar martor de acoperire:
+În invarianți, totalul de decontare al antetului este doar martor de acoperire:
 valoarea partidelor Operare trebuie să-l acopere integral, în modul. Costul
 vânzării/returului nu cere partidă; o politică manuală care pierde partida
 comercială este refuzată. RDC cu partidă proprie creditoare apare ca datorie,

@@ -18,13 +18,13 @@ Starea curentă Stornat a unui document nu șterge faptele istorice.
 
 SC-CIT-52: două partide pe același document și cont, pentru furnizori diferiți,
 rămân separate. Modificarea unui snapshot cu +7 este raportată înainte de
-rescriere; a doua reconstrucție are zero diferențe. Snapshot-urile vechi,
-fără proveniență cub, sunt refuzate și se pot reconstrui explicit.
+rescriere; a doua reconstrucție are zero diferențe.
 
 SC-CIT-53: identitatea documentului deschizător este verificată prin regula
 092; plata care nominalizează partida facturii nu devine eticheta acesteia.
 Traducerea SQL a identității este identică funcției nucleului pentru UUID-uri
 distincte; deschiderea inițială nu se confundă cu identitatea unui document.
+Cheia veche document + cont a ieșit (102c).
 
 SC-CIT-54: HTTP înainte/după snapshot și reconstrucție: ascunderea postărilor
 sau a valorii schimbă raportul conform drepturilor, fără acces la totalul
@@ -44,10 +44,10 @@ de producție.
 | SC-CIT-04 | ASM mixt: Operare D/C 40 și Transfer pe același cont; storno mixt | jurnalul include numai postările economice de 40/−40; exclude Transfer și inversele lui prin origine, plus contraponderile structurale | verificat pe intrarea comună |
 | SC-CIT-05 | BTR pe același cont → storno | zero rânduri contabile generale, mișcările pe lot rămân vizibile | verificat pe intrarea comună |
 | SC-CIT-06 | Deschidere D activ 1.200/C amortizare 200/C capital 1.000 → PIF | trei postări inițiale fără document; nicio dublare; sold net activ 1.200, amortizare 200 | verificat pe intrarea comună |
-| SC-CIT-07 | Storno BTR 4/40 cu cele două origini istorice lipsă | diagnosticul explicit refuză cu număr 2; backfill exact 2, repetare 0; citirea contabilă rămâne fără BTR | verificat pe ambele profiluri |
-| SC-CIT-08 | Aceeași istorie cu doi candidați originali identici pentru o inversă | completează numai perechea univocă; inversa ambiguă rămâne fără origine și diagnosticul explicit refuză cu număr 1 | verificat pe ambele profiluri |
+| SC-CIT-07 | Storno BTR 4/40 | fiecare inversă poartă exact originea ei Transfer, scrisă de storno; invariantul de proveniență trece; citirea contabilă rămâne fără BTR (102c: backfill-ul istoric a ieșit) | verificat pe ambele profiluri |
+| SC-CIT-08 | — | depășit de 102: completarea provenienței prin migrație a ieșit | — |
 | SC-CIT-09 | Citire contabilă filtrată pe același BTR stornat, înainte și după separarea diagnosticului | A: diagnostic + citire = 2 comenzi SQL; B: compunere = 0, citire = 1; ambele întorc zero rânduri BTR; diagnosticul explicit rămâne o comandă | verificat pe ambele profiluri |
-| SC-CIT-10 | Origine lipsă, ID inexistent, spațiu greșit sau altă postare Storno | diagnosticul explicit refuză cu număr 1; seed-ul continuă și raportează avertismentul cu număr 1, fără repararea provenienței; nicio inversă astfel coruptă nu devine rulaj contabil; pe istoric valid, numărul este 0 și avertismentul lipsește | verificat pe ambele profiluri |
+| SC-CIT-10 | Origine lipsă, ID inexistent, spațiu greșit sau altă postare Storno | invariantul de proveniență (`Cub.Citiri.Invarianti`) refuză cu număr 1; nicio inversă astfel coruptă nu devine rulaj contabil; pe proveniența validă trece; seed-ul nu mai citește proveniența (102) | verificat pe ambele profiluri |
 
 SC-CIT-07/08 sunt probe de migrare: fixture operațional real, alterări SQL
 controlate numai în tranzacția de probă, rollback obligatoriu. Nu sunt o
@@ -103,7 +103,7 @@ exit 0, build fără avertismente; sursele C# nemodificate pe durata rulării.
 | SC-CIT-11 | FCT stoc 10 × 10, BTR 4 × 10 și inversa lui | balanța contului de stoc D 100/C 0; soldul furnizorului C 100; filtrul gestiunii sursă D 100, fără rulajul BTR; partenerul și gestiunea rămân coordonate distincte |
 | SC-CIT-12 | Aceeași recepție, închidere ianuarie, consum în februarie de 2 × 10 | snapshot ianuarie: D stoc 100, C furnizor 100; în februarie inițial stoc 100, rulaj C 20, final 80; rezultatele sunt identice cu cumulul fără snapshot |
 | SC-CIT-13 | Reconstrucția snapshot-ului de mai sus, apoi repetare | aceleași coordonate și valori 100/100; repetarea raportează zero diferențe; etichetele nu intră în cheia sumelor |
-| SC-CIT-14 | Snapshot istoric provenit din registre, apoi reconstrucție | cititorul refuză folosirea snapshot-ului vechi; reconstrucția raportează diferențele și îl rescrie din cub; un snapshot absent/vid citește integral cubul |
+| SC-CIT-14 | Snapshot contabil alterat cu +7, apoi reconstrucție | reconstrucția raportează diferența înainte de rescriere și citirea dă din nou finalul 80; un snapshot absent/vid citește integral cubul |
 | SC-CIT-15 | DVI și ASM din SC-CIT-03/04 prin rapoartele contabile | DVI: D 4426 = 21, nu 121; ASM: D/C economic 40 și inversa −40, fără Transfer sau contraponderi |
 
 RepartitorId din proiecția contabilă reprezintă Partener; gestiunea are
@@ -133,8 +133,8 @@ jurnalului. Soft-delete-ul unei note de registru devine anularea comenzii.
 
 | ID | Scenariu | Așteptare |
 |---|---|---|
-| SC-CIT-23 | Activare pe istoric contabil complet și apoi eliminarea controlată a postărilor unei note, în tranzacție anulată | baza completă este acceptată; nota fără postări refuză cu CITIRE_ISTORIC_INCOMPLET; seed-ul rămâne separat |
-| SC-CIT-24 | Activare cu snapshot contabil din registre | refuz CITIRE_SNAPSHOT_VECHI înaintea servirii cererilor, în ambele hosturi; --updateDatabase rămâne accesibil pentru remediere |
+| SC-CIT-23 | Invarianții pe baza completă și apoi eliminarea controlată a postărilor unei note, în tranzacție anulată | baza completă trece; nota fără postări refuză cu CITIRE_ISTORIC_INCOMPLET (acoperirea registru ↔ cub cât durează regimul dual) |
+| SC-CIT-24 | — | depășit de 102: hosturile nu verifică la pornire, snapshot-ul se scrie numai din cub |
 
 Snapshot-urile contabile se folosesc în ObjectSpace-urile de sistem.
 Citirea securizată cumulează postările autorizate: snapshot-ul global nu
@@ -142,7 +142,7 @@ păstrează identitățile necesare permisiunilor pe rând și pe membru.
 Egalitatea numărului de rânduri vizibile nu dovedește accesul la valorile lor.
 Fișa compune SQL-ul generat din interogările securizate, inclusiv etichetele.
 Această verificare de securitate nu înlocuiește diagnosticul de proveniență
-de la activare.
+din invarianți.
 
 ### Balanță și plan — fixture de documente reale
 
@@ -169,7 +169,7 @@ fișa nefiltrată are C 210/D 210 și sold zero; cea filtrată pe biroul vamal
 este goală. Acoperirea bugetară a partidelor așteaptă alegerea D8-B6.
 
 SC-CIT-34: eliminarea ambelor postări ale unei singure linii NTC lasă
-tranzacția echilibrată, dar refuză activarea prin acoperirea pe linie/latură.
+tranzacția echilibrată, dar invarianții o refuză prin acoperirea pe linie/latură.
 Alterarea debitului cu 1 păstrează prezența liniilor, dar refuză conservarea
 pe tranzacție/carte. Ambele alterări sunt în tranzacții cu rollback.
 
@@ -226,8 +226,7 @@ SC-CIT-42: FCT 100, PLT 40 → partida facturii −60, plata 0;
 storno stingerii redeschide factura −100 și plata +40. Același ciclu FCL/INC
 are semne opuse. Cele două profiluri au aceeași nominalizare.
 SC-CIT-43: eliminarea unității și a partenerului de pe creditul FCT 100,
-ca în istoricul bugetar anterior, refuză activarea cu
-CITIRE_PARTIDE_INCOMPLETE. Nu se reconstruiește din sold. O notă pe 401
+refuză invarianții cu CITIRE_PARTIDE_INCOMPLETE. Nu se reconstruiește din sold. O notă pe 401
 fără partener explicit rămâne validă conform T-D3; baza fiscală DVI nu
 este partidă. Mutanții se probează în tranzacții cu rollback.
 SC-CIT-44: deschidere cu 401 creditor 100 detaliat 60+40 pentru același
@@ -292,9 +291,7 @@ cererea 40 mută exact 40. Dacă sunt mai multe ținte eligibile și comanda
 pe document nu le distinge, refuz explicit de ambiguitate, fără alegerea
 postării cu valoare maximă.
 
-SC-CIT-59: o legătură istorică fără efect, introdusă numai ca mutant în
-tranzacția de probă, este diagnosticată; nu scade raportul sau disponibilul.
-Refuzul repetat al unei comenzi nu lasă obiecte noi care să poată fi comise
+SC-CIT-59: refuzul repetat al unei comenzi nu lasă obiecte noi care să poată fi comise
 accidental prin salvarea ulterioară a aceluiași ObjectSpace.
 
 SC-CIT-60: FCT 100, NTC 75 nominalizată: asociere 50 apoi asociere 25,
@@ -309,7 +306,7 @@ numai după desfacerea ulterioară: la fiecare dată deja scrisă, restul ambelo
 partide rămâne în sensul său. Refuz înaintea materializării.
 
 Completare SC-CIT-43: contul devine manual, fără urmărire, iar factura
-istorică nu are unități: activarea refuză `CITIRE_PARTIDE_POLITICA`, distinct
+nu are unități: invarianții refuză `CITIRE_PARTIDE_POLITICA`, distinct
 de cazul cu urmărire activă și unități lipsă. SC-CIT-58 probează ambiguitatea
 în funcția pură; limita 40 din factura 40 + 60 trece prin documente reale.
 NTC bugetar nu culege toate analizele cerute de 404, deci nu este folosit

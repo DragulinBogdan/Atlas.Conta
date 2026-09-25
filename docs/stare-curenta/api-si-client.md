@@ -381,7 +381,7 @@ unitate × cont × partener. Eticheta documentului nu elimină soldul când
 lipsește sau nu este vizibilă. Postările sunt citite prin ObjectSpace secured.
 
 `documente-cu-rest` acceptă `documentCurentId` și `stinge` pentru candidați
-compatibili; `Disponibil` este limita exactă a perechii. Panourile consumă
-această valoare și diagnosticul `StingeriDto.Avertismente`. Crearea trece
+compatibili; `Disponibil` este limita exactă a perechii, iar panourile o
+consumă ca atare. Crearea trece
 prin gate-ul de drepturi și vizibilitatea ambelor documente, apoi prin
 comanda atomică în ObjectSpace non-secured, la fel ca desfacerea și ștergerea.

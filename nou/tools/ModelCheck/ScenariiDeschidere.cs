@@ -180,10 +180,10 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         }
         Verifica("SC-DES-12", "stingerea inițială consumă și restul de domeniu al plății", CuSpatiu(os => ImperechereService.Ramas(os, alta.Id)) == 0);
         using (var os = Deschide()) {
-            var q = Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.Asignari(os, panaLa: data.AddDays(-1));
-            Verifica("SC-DES-12", "stingerea viitoare nu intră în listă", q.Where(p => p.DocumentId == alta.Id).Sum(p => p.Suma) == 0);
-            q = Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.Asignari(os, dupa: data.AddDays(-1), panaLa: data);
-            Verifica("SC-DES-12", "fereastra listei include stingerea la data ei", q.Where(p => p.DocumentId == alta.Id).Sum(p => p.Suma) == 20);
+            decimal RestLa(DateOnly zi) => Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.DocumenteCuRest(os, laData: zi)
+                .Where(p => p.DocumentId == alta.Id).Select(p => (decimal?)p.Rest).SingleOrDefault() ?? 0;
+            Verifica("SC-DES-12", "stingerea viitoare nu intră în listă", RestLa(data.AddDays(-1)) == 20);
+            Verifica("SC-DES-12", "lista include stingerea la data ei", RestLa(data) == 0);
         }
         Refuza("SC-DES-12", () => Imperecheaza(altaNota, alta.Id, 20, data), "rest");
         Refuza("SC-DES-12", () => Comanda(os => { using var tx = TranzactieComanda.Incepe(os);
@@ -197,23 +197,19 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Verifica("SC-DES-13/14", "refuzurile păstrează plata și transferul", stamp == Amprenta(alta.Id));
         Storneaza(alta.Id, data);
         Rest("SC-DES-14", ref2, Furnizor, 40);
-        Verifica("SC-DES-14", "inversa eliberează atribuirea în citirea listei", CuSpatiu(os =>
-            Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.Asignari(os)
-                .Where(p => p.DocumentId == alta.Id).Sum(p => p.Suma)) == 0);
+        Verifica("SC-DES-14", "inversa eliberează atribuirea în citirea din cub", CuSpatiu(os => ImperechereService.Asignat(os, alta.Id)) == 0);
     }
 
     void VerificaCitiri(Guid document, decimal rest, string id) {
         using var os = Deschide();
         var detaliu = ImperechereService.Ramas(os, document);
-        var asignat = Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.Asignari(os)
-            .Where(p => p.DocumentId == document).Sum(p => p.Suma);
         var lista = Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii.DocumenteCuRest(os, laData: new DateOnly(An, 1, 31))
             .Where(p => p.DocumentId == document).Select(p => (decimal?)p.Rest).SingleOrDefault() ?? 0;
         using var tx = TranzactieComanda.Incepe(os);
         SolduriService.MaterializeazaPartide(os, An, 1);
         var sold = os.GetObjectsQuery<PartidaDeschisa>().Where(p => p.DocumentId == document && p.An == An && p.Luna == 1)
             .Select(p => (decimal?)p.Rest).SingleOrDefault() ?? 0;
-        Verifica(id, "detaliu = listă = snapshot, inclusiv inversa", detaliu == rest && lista == rest && 20 - asignat == rest && sold == rest);
+        Verifica(id, "detaliu = listă = snapshot, inclusiv inversa", detaliu == rest && lista == rest && sold == rest);
     }
 
     void ReviewConcurenta() {

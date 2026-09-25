@@ -327,7 +327,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // ștergere FIZICĂ ca snapshot-urile, deci unicitate fără filtru pe
             // `GCRecord`. FK `Restrict`: documentul nu dispare de sub partida lui.
             modelBuilder.Entity<PartidaDeschisa>(b => {
-                b.HasIndex(p => new { p.An, p.Luna, p.UnitateId, p.ContId, p.PartenerId }).IsUnique().HasFilter("\"DinCub\"");
+                b.HasIndex(p => new { p.An, p.Luna, p.UnitateId, p.ContId, p.PartenerId }).IsUnique();
                 b.HasIndex(p => new { p.An, p.Luna });
                 b.HasOne(p => p.Document).WithMany().HasForeignKey(p => p.DocumentId)
                     .OnDelete(DeleteBehavior.Restrict);
@@ -554,8 +554,6 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
             modelBuilder.HasDbFunction(typeof(Cub.Citiri.Partide).GetMethod(nameof(Cub.Citiri.Partide.Identitate)))
                 .HasName("cub_partida_id");
-            modelBuilder.HasDbFunction(typeof(Cub.IdentitatiPartide).GetMethod(nameof(Cub.IdentitatiPartide.Anterioara)))
-                .HasName("cub_partida_anterioara");
             AplicaCub(modelBuilder);
             AplicaScaraNumerica(modelBuilder);
             AplicaColoanePartajate(modelBuilder);

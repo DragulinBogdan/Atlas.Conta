@@ -5,9 +5,10 @@
 TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
 evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
 raportul/snapshot-ul/citirile operaționale ale partidelor folosesc
-intrările comune ale cubului. Migrația contabilă este canonică; activarea
-hosturilor verifică proveniența, acoperirea contabilă și snapshot-urile.
-Seed-ul raportează problemele fără să blocheze alinierea politicilor.
+intrările comune ale cubului. C102 (102) scoate codul de compatibilitate cu
+bazele de dezvoltare: hosturile nu scanează istoria la pornire, iar
+invarianții cubului rulează în ModelCheck la finalul fiecărui profil
+(`INV-CUB`, `Cub.Citiri.Invarianti`).
 
 Validarea curentă: **3.107 bugetar / 4.103 privat OK**, zero FAIL,
 exit 0, build fără avertismente:

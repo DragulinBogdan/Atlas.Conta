@@ -26,17 +26,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         Rest(f.Id, -60); Rest(plata.Id, 0);
         Comanda(os => ImperechereService.Desfa(os, imp, Ianuarie));
         Rest(f.Id, -100); Rest(plata.Id, 40);
-        Istoric(f.Id);
-        Comanda(os => {
-            var ctx = ((EFCoreObjectSpace)os).DbContext;
-            using var tx = ctx.Database.BeginTransaction();
-            var unitate = Partida(f.Id, ContFurnizor).Value;
-            var veche = C.IdentitatiPartide.Anterioara(f.Id, Cont(ContFurnizor));
-            ctx.Database.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"Unitate\" = {veche} WHERE \"Unitate\" = {unitate}");
-            var r = ImperecheriProiectii.PartideCuRest(os, Furnizor, laData: Ianuarie).Single(r => r.UnitateId == veche);
-            Verifica("SC-CIT-53", "cheia istorică păstrează factura și restul 100", r.DocumentId == f.Id && r.Rest == 100);
-            tx.Rollback();
-        });
+        Acoperire(f.Id);
         Furnizor = CuSpatiu(os => {
             var p = os.CreateObject<Partener>(); p.Cod = Marcaj + "-DES"; p.Denumire = p.Cod;
             os.CommitChanges(); return p.ID;
@@ -75,13 +65,6 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
                 .Any(i => i.DocumentStingatorId == n.Id));
             Verifica("SC-CIT-55", "candidatul fără partidă comună lipsește",
                 !ImperecheriProiectii.DocumenteCuRest(os, documentCurentId: n.Id).Any(r => r.DocumentId == p.Id));
-            var ctx = ((EFCoreObjectSpace)os).DbContext;
-            using var tx = ctx.Database.BeginTransaction();
-            var istoric = os.CreateObject<Imperechere>(); istoric.DocumentStingatorId = n.Id;
-            istoric.DocumentId = p.Id; istoric.Data = Ianuarie; istoric.Suma = 50; os.CommitChanges();
-            Verifica("SC-CIT-59", "istoric fără efect diagnosticat, disponibil 70",
-                P.Diagnostic(os, p.Id).Single().Contains("efect pe partide 0") && P.Ramas(os, p.Id) == 70);
-            tx.Rollback();
         });
         Verifica("SC-CIT-55", "cub intact", amprenta == Amprenta(n.Id));
         Anuleaza(n.Id); Anuleaza(p.Id);
@@ -251,8 +234,6 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         for (var i = 0; i < 8; i++) {
             var doc = Guid.NewGuid(); var cont = Guid.NewGuid(); var partener = Guid.NewGuid();
             var sql = ctx.Database.SqlQuery<Guid>($"SELECT cub_partida_id({doc}, {cont}, {partener}) AS \"Value\"").Single();
-            var vechi = ctx.Database.SqlQuery<Guid>($"SELECT cub_partida_anterioara({doc}, {cont}) AS \"Value\"").Single();
-            Verifica("SC-CIT-53", "identitate istorică SQL = adaptor", vechi == C.IdentitatiPartide.Anterioara(doc, cont));
             Verifica("SC-CIT-53", "SQL = nucleu; identitatea inițială distinctă", sql == P.Identitate(doc, cont, partener)
                 && sql != N.Unitate.DeschidePartidaInitiala(cont, partener, doc, Ianuarie).Id);
         }
@@ -275,10 +256,6 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         Verifica("SC-CIT-52", "raportează diferența 7 înainte de reparare", raport.PartideDiferite == 1 && raport.DiferentaRest == 7);
         raport = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1);
         Verifica("SC-CIT-52", "a doua reconstrucție fără diferențe", raport.PartideDiferite == 0 && raport.DiferentaRest == 0);
-        ctx.Database.ExecuteSqlInterpolated($"UPDATE \"PartideDeschise\" SET \"DinCub\" = false WHERE \"An\" = {An} AND \"Luna\" = 1");
-        Refuza("SC-CIT-52", () => P.Cumulate(os, zi).ToList(), "CITIRE_SNAPSHOT_VECHI");
-        SolduriService.Reconstruieste(os);
-        Verifica("SC-CIT-52", "reconstrucție explicită restabilește proveniența", P.Cumulate(os, zi).Any(s => s.PartenerId == Furnizor));
         tx.Rollback();
     }
 
@@ -305,7 +282,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         tx.Rollback();
     }
 
-    void Istoric(Guid factura) {
+    void Acoperire(Guid factura) {
         var nota = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 10)); Opereaza(nota.Id);
         Comanda(os => {
             P.VerificaAcoperire(os);
@@ -314,9 +291,9 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             using var tx = ctx.Database.BeginTransaction();
             var cont = Cont(ContFurnizor);
             ctx.Database.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"Unitate\" = null, \"FelUnitate\" = null, \"UnitateDeschisa\" = null, \"Partener\" = null WHERE \"DocumentId\" = {factura} AND \"Cont\" = {cont}");
-            Refuza("SC-CIT-43", () => C.Citiri.Activare.Verifica(os), "CITIRE_PARTIDE_INCOMPLETE");
+            Refuza("SC-CIT-43", () => C.Citiri.Invarianti.Verifica(os), "CITIRE_PARTIDE_INCOMPLETE");
             ctx.Database.ExecuteSqlInterpolated($"UPDATE \"Conturi\" SET \"UrmarestePartide\" = false WHERE \"ID\" = {cont}");
-            Refuza("SC-CIT-43", () => C.Citiri.Activare.Verifica(os), "CITIRE_PARTIDE_POLITICA");
+            Refuza("SC-CIT-43", () => C.Citiri.Invarianti.Verifica(os), "CITIRE_PARTIDE_POLITICA");
             tx.Rollback();
         });
         Anuleaza(nota.Id);
