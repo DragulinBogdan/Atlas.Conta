@@ -1,6 +1,5 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
-using Atlas.Conta.BackOffice.Module.Migrations;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
@@ -10,27 +9,10 @@ using C = Atlas.Conta.BackOffice.Module.Cub;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 sealed partial class ScenariiNir {
-    void ProvenientaMigrata() {
+    void ProvenientaCorectiei() {
         var (f, nir) = Constatat(4); Opereaza(nir);
-        foreach (var confirma in new[] { false, true }) {
-            using var os = Deschide();
-            var db = ((EFCoreObjectSpace)os).DbContext;
-            using var tx = db.Database.BeginTransaction();
-            db.Database.ExecuteSqlInterpolated($"""
-                UPDATE "Documente" SET "SursaReceptieiId" = NULL, "TranzactieReceptieSursaId" = NULL WHERE "ID" = {nir}
-                """);
-            db.Database.ExecuteSqlInterpolated($"""
-                UPDATE "DocumentDetalii" SET "LinieSursaReceptieId" = NULL WHERE "DocumentId" = {nir}
-                """);
-            Verifica("SC-NIR-32", "completarea migrației identifică sursa conexului vechi",
-                db.Database.ExecuteSqlRaw(DiferenteReceptie.CompleteazaSursa) == 1
-                && os.GetObjectsQuery<NIR>().Any(n => n.ID == nir && n.SursaReceptieiId == f.Id));
-            Verifica("SC-NIR-32", "completarea repetată nu schimbă nimic",
-                db.Database.ExecuteSqlRaw(DiferenteReceptie.CompleteazaSursa) == 0);
-            if (confirma) tx.Commit(); else tx.Rollback();
-        }
         var nou = CuSpatiu(os => OperareApi.Corecteaza(os, nir, new(An, 1, 20), MotivCorectie.EroareMateriala).CorectieId);
-        Verifica("SC-NIR-32", "corecția primește sursa migrată fără a fi autogenerată", CuSpatiu(os => {
+        Verifica("SC-NIR-32", "corecția primește sursa recepției fără a fi autogenerată", CuSpatiu(os => {
             var n = os.GetObjectByKey<NIR>(nou);
             return n.SursaReceptieiId == f.Id && !n.Autogenerat && n.DocumentSursaId == null;
         }));

@@ -80,10 +80,17 @@ EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
 automată a schemei prin XAF este dezactivată. Module este comun celor două
 hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
 
-Lanțul de migrații a fost resetat la 2026-09-18: singura migrație este
-`20260918113542_InitialCreate`, generată din modelul TPH. Migrațiile de
-dinainte sunt istorie în git, nu în lanț; bazele create pe lanțul vechi nu
-se actualizează, se recreează. Lanțul nou crește prin migrații, ca înainte.
+Lanțul de migrații a fost comprimat la 2026-09-25 (C102, 102e): singura
+migrație este `20260925110419_InitialCreate`, generată din model, plus SQL-ul
+brut pe care modelul nu-l declară (`Postare` partiționată pe `Spatiu` cu
+cheia `(Spatiu, ID)`, FK-urile și indecșii pe partiții, constrângerile
+`CK_Postare_*`, funcția `cub_partida_id`). Migrațiile nu transformă date.
+Proba A/B: `pg_dump --schema-only` pe baza din lanțul vechi complet și pe
+baza din migrația comprimată are aceleași 593 de instrucțiuni, cu excepția
+valorilor `DEFAULT` lăsate de `AddColumn` pe 12 coloane (de exemplu
+`TolerantaTaxa` 0), pe care modelul nu le declară. Migrațiile de dinainte
+sunt istorie în git; bazele create pe lanțul vechi nu se actualizează, se
+recreează (102b). Lanțul crește prin migrații, ca înainte.
 Comanda `dotnet ef` primește mereu `--context BackOfficeEFCoreDbContext` și
 se rulează fără `--no-build`. (23a, 89g)
 

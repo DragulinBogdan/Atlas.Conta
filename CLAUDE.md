@@ -183,9 +183,7 @@ pot cădea în purje și lăsa reziduu. Purja SAF-T șterge acum și regulile
 rulări concurente. Interogările pe catalogul
 Postgres cer cast explicit (`partattrs` e `int2vector` de la 0, `conkey` e
 `int2[]` de la 1, `partstrat` e `"char"` ⇒ `::text`), altfel pică și opresc
-rularea. O clonă a bazei de import poartă DEFAULT-ul coloanei noi, nu valoarea
-de seed (`TolerantaTaxa` 0 contra `null`) — se aliniază înainte de gate,
-altfel refuzurile sunt ale bazei, nu ale codului.
+rularea. O bază care nu corespunde codului se recreează, nu se repară (102b).
 
 ## Reguli de lucru comune (Claude Code și Codex)
 

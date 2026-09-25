@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Atlas.Conta.BackOffice.Module.Migrations
 {
     [DbContext(typeof(BackOfficeEFCoreDbContext))]
-    [Migration("20260924133219_DiferenteReceptie")]
-    partial class DiferenteReceptie
+    [Migration("20260925110419_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -664,6 +664,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<Guid?>("TranzactieCubId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("ID");
 
                     b.HasIndex("Data")
@@ -947,7 +950,21 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("An")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("DocumentId")
+                    b.Property<Guid>("ContId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Credit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("Debit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateOnly>("Deschisa")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("DocumentId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("GCRecord")
@@ -964,9 +981,15 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
+                    b.Property<Guid>("PartenerId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("Rest")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("UnitateId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("ID");
 
@@ -974,7 +997,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("An", "Luna");
 
-                    b.HasIndex("An", "Luna", "DocumentId")
+                    b.HasIndex("An", "Luna", "UnitateId", "ContId", "PartenerId")
                         .IsUnique();
 
                     b.ToTable("PartideDeschise");
@@ -2580,6 +2603,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
+                    b.Property<Guid?>("GestiuneId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Luna")
                         .HasColumnType("integer");
 
@@ -2626,10 +2652,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("An", "Luna");
 
-                    b.HasIndex("An", "Luna", "ContId", "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId")
+                    b.HasIndex("An", "Luna", "ContId", "RepartitorId", "GestiuneId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId")
                         .IsUnique();
 
-                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("An", "Luna", "ContId", "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId"), false);
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("An", "Luna", "ContId", "RepartitorId", "GestiuneId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId"), false);
 
                     b.ToTable("SolduriPerioadaContabil");
                 });
@@ -5272,8 +5298,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Document", "Document")
                         .WithMany()
                         .HasForeignKey("DocumentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Document");
                 });

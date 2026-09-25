@@ -1256,7 +1256,7 @@ UrmarestePartide este activ și pe 461 privat, respectiv
 408.00.00/461.01.09/428.01.02 bugetar. Efectul aparține contului, nu NIR-ului:
 și FCT bugetar pe 408 deschide partida furnizorului (SC-NIR-36/FCT), iar
 INC/PLT pe 461 folosesc urmărirea partidelor prin mecanismul comun.
-SursaReceptieiId este proveniența unică după completarea din migrație;
+SursaReceptieiId este proveniența unică, scrisă la generarea conexului;
 corecția o păstrează independent de Autogenerat. Recepția-sursă se citește
 o singură dată pe comandă, sub blocarea sursei la operare. Validarea
 analizelor curente privește capătul diferenței; capătul stocului păstrează

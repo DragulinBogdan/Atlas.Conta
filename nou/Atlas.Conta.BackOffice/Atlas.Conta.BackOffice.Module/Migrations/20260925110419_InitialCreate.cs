@@ -135,6 +135,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Sumator = table.Column<bool>(type: "boolean", nullable: false),
                     DimensiuniObligatorii = table.Column<int>(type: "integer", nullable: false),
                     RolTert = table.Column<int>(type: "integer", nullable: false),
+                    UrmarestePartide = table.Column<bool>(type: "boolean", nullable: false),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Simbol\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
                     GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
@@ -1033,6 +1034,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     ClrType = table.Column<string>(type: "text", nullable: true),
                     TipTvaImplicitId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PosteazaInCub = table.Column<bool>(type: "boolean", nullable: false),
+                    LaturaContPropriu = table.Column<int>(type: "integer", nullable: true),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
                     GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
@@ -1137,6 +1140,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ChitantaNumar = table.Column<string>(type: "text", nullable: true),
                     ChitantaData = table.Column<DateOnly>(type: "date", nullable: true),
                     Cauza = table.Column<int>(type: "integer", nullable: true),
+                    SursaReceptieiId = table.Column<Guid>(type: "uuid", nullable: true),
+                    TranzactieReceptieSursaId = table.Column<Guid>(type: "uuid", nullable: true),
                     GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
@@ -1331,6 +1336,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Luna = table.Column<int>(type: "integer", nullable: false),
                     ContId = table.Column<Guid>(type: "uuid", nullable: false),
                     RepartitorId = table.Column<Guid>(type: "uuid", nullable: true),
+                    GestiuneId = table.Column<Guid>(type: "uuid", nullable: true),
                     MaterialId = table.Column<Guid>(type: "uuid", nullable: true),
                     CodFunctionalId = table.Column<Guid>(type: "uuid", nullable: true),
                     CodEconomicId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1427,6 +1433,48 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     table.ForeignKey(
                         name: "FK_PoliticiConex_TipuriDocument_TipDocumentTintaId",
                         column: x => x.TipDocumentTintaId,
+                        principalTable: "TipuriDocument",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PoliticiDiferenta",
+                columns: table => new
+                {
+                    ID = table.Column<Guid>(type: "uuid", nullable: false),
+                    DinSeed = table.Column<bool>(type: "boolean", nullable: false),
+                    TipDocumentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ClasaId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Cauza = table.Column<int>(type: "integer", nullable: false),
+                    ContId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ContPersonalId = table.Column<Guid>(type: "uuid", nullable: true),
+                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PoliticiDiferenta", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_PoliticiDiferenta_ClaseProduse_ClasaId",
+                        column: x => x.ClasaId,
+                        principalTable: "ClaseProduse",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PoliticiDiferenta_Conturi_ContId",
+                        column: x => x.ContId,
+                        principalTable: "Conturi",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PoliticiDiferenta_Conturi_ContPersonalId",
+                        column: x => x.ContPersonalId,
+                        principalTable: "Conturi",
+                        principalColumn: "ID");
+                    table.ForeignKey(
+                        name: "FK_PoliticiDiferenta_TipuriDocument_TipDocumentId",
+                        column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
                         principalColumn: "ID",
                         onDelete: ReferentialAction.Cascade);
@@ -1560,6 +1608,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     SursaContrapartida = table.Column<int>(type: "integer", nullable: false),
                     ContrapartidaFallbackId = table.Column<Guid>(type: "uuid", nullable: true),
                     DeclarareIntarziata = table.Column<int>(type: "integer", nullable: false),
+                    TolerantaTaxa = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
@@ -1882,6 +1931,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: table => new
                 {
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
+                    TranzactieCubId = table.Column<Guid>(type: "uuid", nullable: true),
                     DocumentStingatorId = table.Column<Guid>(type: "uuid", nullable: false),
                     DocumentId = table.Column<Guid>(type: "uuid", nullable: false),
                     Suma = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
@@ -1921,7 +1971,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
                     An = table.Column<int>(type: "integer", nullable: false),
                     Luna = table.Column<int>(type: "integer", nullable: false),
-                    DocumentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DocumentId = table.Column<Guid>(type: "uuid", nullable: true),
+                    UnitateId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ContId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PartenerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Deschisa = table.Column<DateOnly>(type: "date", nullable: false),
+                    Debit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    Credit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     Rest = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
@@ -1938,12 +1994,33 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Tranzactie",
+                columns: table => new
+                {
+                    ID = table.Column<Guid>(type: "uuid", nullable: false),
+                    DocumentId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Fel = table.Column<short>(type: "smallint", nullable: false),
+                    Data = table.Column<DateOnly>(type: "date", nullable: false),
+                    ScrisLa = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Tranzactie", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_Tranzactie_Documente_DocumentId",
+                        column: x => x.DocumentId,
+                        principalTable: "Documente",
+                        principalColumn: "ID");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "DocumentDetalii",
                 columns: table => new
                 {
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
                     ClrType = table.Column<string>(type: "character varying(34)", maxLength: 34, nullable: false),
                     DocumentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Pozitie = table.Column<int>(type: "integer", nullable: false),
                     TipMaterialId = table.Column<Guid>(type: "uuid", nullable: false),
                     LotId = table.Column<Guid>(type: "uuid", nullable: true),
                     Cantitate = table.Column<decimal>(type: "numeric(18,3)", precision: 18, scale: 3, nullable: false),
@@ -1974,6 +2051,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ProiectId = table.Column<Guid>(type: "uuid", nullable: true),
                     CodCpv = table.Column<string>(type: "text", nullable: true),
                     Fel = table.Column<int>(type: "integer", nullable: true),
+                    LinieSursaReceptieId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CauzaDiferentei = table.Column<int>(type: "integer", nullable: true),
+                    PartenerDiferentaId = table.Column<Guid>(type: "uuid", nullable: true),
                     AmortizareInitiala = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     AmortizareFiscalaInitiala = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     LuniAmortizateInitial = table.Column<int>(type: "integer", nullable: true),
@@ -2051,6 +2131,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     table.ForeignKey(
                         name: "FK_DocumentDetalii_Repartitori_CentruCostId",
                         column: x => x.CentruCostId,
+                        principalTable: "Repartitori",
+                        principalColumn: "ID");
+                    table.ForeignKey(
+                        name: "FK_DocumentDetalii_Repartitori_PartenerDiferentaId",
+                        column: x => x.PartenerDiferentaId,
                         principalTable: "Repartitori",
                         principalColumn: "ID");
                     table.ForeignKey(
@@ -2604,6 +2689,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 column: "LotId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_DocumentDetalii_PartenerDiferentaId",
+                table: "DocumentDetalii",
+                column: "PartenerDiferentaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_DocumentDetalii_ProdusId",
                 table: "DocumentDetalii",
                 column: "ProdusId");
@@ -2830,9 +2920,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: new[] { "An", "Luna" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_PartideDeschise_An_Luna_DocumentId",
+                name: "IX_PartideDeschise_An_Luna_UnitateId_ContId_PartenerId",
                 table: "PartideDeschise",
-                columns: new[] { "An", "Luna", "DocumentId" },
+                columns: new[] { "An", "Luna", "UnitateId", "ContId", "PartenerId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -2921,6 +3011,28 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_PoliticiConex_TipDocumentTintaId",
                 table: "PoliticiConex",
                 column: "TipDocumentTintaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PoliticiDiferenta_ClasaId",
+                table: "PoliticiDiferenta",
+                column: "ClasaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PoliticiDiferenta_ContId",
+                table: "PoliticiDiferenta",
+                column: "ContId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PoliticiDiferenta_ContPersonalId",
+                table: "PoliticiDiferenta",
+                column: "ContPersonalId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PoliticiDiferenta_TipDocumentId_Cauza_ClasaId",
+                table: "PoliticiDiferenta",
+                columns: new[] { "TipDocumentId", "Cauza", "ClasaId" },
+                unique: true,
+                filter: "\"GCRecord\" = 0");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiInchidere_Fel",
@@ -3418,9 +3530,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: new[] { "An", "Luna" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_SolduriPerioadaContabil_An_Luna_ContId_RepartitorId_Materia~",
+                name: "IX_SolduriPerioadaContabil_An_Luna_ContId_RepartitorId_Gestiun~",
                 table: "SolduriPerioadaContabil",
-                columns: new[] { "An", "Luna", "ContId", "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId" },
+                columns: new[] { "An", "Luna", "ContId", "RepartitorId", "GestiuneId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId" },
                 unique: true)
                 .Annotation("Npgsql:NullsDistinct", false);
 
@@ -3574,6 +3686,18 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 column: "ContTvaNeexigibilId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Tranzactie_DocumentId",
+                table: "Tranzactie",
+                column: "DocumentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Tranzactie_Fel",
+                table: "Tranzactie",
+                column: "Fel",
+                unique: true,
+                filter: "\"Fel\" = 4");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UnitatiMasura_Cod",
                 table: "UnitatiMasura",
                 column: "Cod",
@@ -3594,11 +3718,118 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 column: "StartStateID",
                 principalTable: "StateMachineStates",
                 principalColumn: "ID");
+
+            // S-D2: Postare partiționată pe Spatiu, cheia (Spatiu, ID), FK-urile și indecșii pe partiții.
+            migrationBuilder.Sql("""
+                CREATE TABLE "Postare" (
+                    "ID" uuid NOT NULL,
+                    "Spatiu" smallint NOT NULL,
+                    "TranzactieId" uuid NOT NULL,
+                    "DocumentId" uuid NULL,
+                    "LinieId" uuid NULL,
+                    "Data" date NOT NULL,
+                    "Cont" uuid NOT NULL,
+                    "Latura" smallint NOT NULL,
+                    "Partener" uuid NULL,
+                    "Gestiune" uuid NULL,
+                    "Produs" uuid NULL,
+                    "Unitate" uuid NULL,
+                    "UnitateDeschisa" date NULL,
+                    "FelUnitate" smallint NULL,
+                    "SuportId" uuid NULL,
+                    "SuportSpatiu" smallint NULL,
+                    "InversaDinId" uuid NULL,
+                    "InversaDinSpatiu" smallint NULL,
+                    "TipTvaId" uuid NULL,
+                    "SensTva" smallint NULL,
+                    "RolTva" smallint NULL,
+                    "PerioadaDeclarare" integer NULL,
+                    "Valuta" uuid NULL,
+                    "Carte" smallint NOT NULL,
+                    "CodFunctional" uuid NULL,
+                    "CodEconomic" uuid NULL,
+                    "SursaFinantare" uuid NULL,
+                    "UnitateOrganizatorica" uuid NULL,
+                    "Proiect" uuid NULL,
+                    "CentruCost" uuid NULL,
+                    "Atribuit" uuid NULL,
+                    "Cantitate" numeric(18,3) NOT NULL,
+                    "ValoareValuta" numeric(18,2) NOT NULL,
+                    "Valoare" numeric(18,2) NOT NULL,
+                    CONSTRAINT "PK_Postare" PRIMARY KEY ("Spatiu", "ID"),
+                    CONSTRAINT "CK_Postare_FelUnitate" CHECK (
+                        ("Unitate" IS NULL AND "FelUnitate" IS NULL AND "UnitateDeschisa" IS NULL)
+                        OR ("Unitate" IS NOT NULL AND "UnitateDeschisa" IS NOT NULL AND "FelUnitate" IS NOT NULL
+                            AND (("Spatiu" = 2 AND "FelUnitate" = 1)
+                                OR ("Spatiu" = 1 AND "FelUnitate" IN (2, 3))))),
+                    CONSTRAINT "CK_Postare_Referinte" CHECK (
+                        (("InversaDinId" IS NULL AND "InversaDinSpatiu" IS NULL)
+                            OR ("InversaDinId" IS NOT NULL AND "InversaDinSpatiu" IS NOT NULL AND "InversaDinSpatiu" IN (1, 2)))
+                        AND (("SuportId" IS NULL AND "SuportSpatiu" IS NULL)
+                            OR ("SuportId" IS NOT NULL AND "SuportSpatiu" IS NOT NULL AND "SuportSpatiu" IN (1, 2))))
+                ) PARTITION BY LIST ("Spatiu");
+                CREATE TABLE "Postare_Contabil" PARTITION OF "Postare" FOR VALUES IN (1);
+                CREATE TABLE "Postare_Stoc" PARTITION OF "Postare" FOR VALUES IN (2);
+                ALTER TABLE "Postare_Contabil"
+                    ADD CONSTRAINT "FK_Postare_Contabil_Tranzactie_TranzactieId"
+                        FOREIGN KEY ("TranzactieId") REFERENCES "Tranzactie" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Contabil_Documente_DocumentId"
+                        FOREIGN KEY ("DocumentId") REFERENCES "Documente" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Contabil_Conturi_Cont"
+                        FOREIGN KEY ("Cont") REFERENCES "Conturi" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Contabil_Repartitori_Partener"
+                        FOREIGN KEY ("Partener") REFERENCES "Repartitori" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Contabil_Produse_Produs"
+                        FOREIGN KEY ("Produs") REFERENCES "Produse" ("ID");
+                ALTER TABLE "Postare_Stoc"
+                    ADD CONSTRAINT "FK_Postare_Stoc_Tranzactie_TranzactieId"
+                        FOREIGN KEY ("TranzactieId") REFERENCES "Tranzactie" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Stoc_Documente_DocumentId"
+                        FOREIGN KEY ("DocumentId") REFERENCES "Documente" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Stoc_Conturi_Cont"
+                        FOREIGN KEY ("Cont") REFERENCES "Conturi" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Stoc_Repartitori_Partener"
+                        FOREIGN KEY ("Partener") REFERENCES "Repartitori" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Stoc_Produse_Produs"
+                        FOREIGN KEY ("Produs") REFERENCES "Produse" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Stoc_Loturi_Unitate"
+                        FOREIGN KEY ("Unitate") REFERENCES "Loturi" ("ID");
+                CREATE INDEX "IX_Postare_Stoc_Produs_Data" ON "Postare_Stoc" ("Produs", "Data")
+                    INCLUDE ("Cantitate", "Valoare", "Gestiune", "Unitate");
+                CREATE INDEX "IX_Postare_Contabil_Partener_Cont_Data" ON "Postare_Contabil"
+                    ("Partener", "Cont", "Data") WHERE "Partener" IS NOT NULL;
+                CREATE INDEX "IX_Postare_Contabil_Data" ON "Postare_Contabil" ("Data");
+                CREATE INDEX "IX_Postare_Contabil_PerioadaDeclarare_TipTvaId" ON "Postare_Contabil"
+                    ("PerioadaDeclarare", "TipTvaId") WHERE "PerioadaDeclarare" IS NOT NULL;
+                CREATE INDEX "IX_Postare_DocumentId" ON "Postare" ("DocumentId");
+                CREATE INDEX "IX_Postare_TranzactieId" ON "Postare" ("TranzactieId");
+                CREATE INDEX "IX_Postare_Suport" ON "Postare" ("SuportSpatiu", "SuportId") WHERE "SuportId" IS NOT NULL;
+                CREATE INDEX "IX_Postare_InversaDin" ON "Postare" ("InversaDinSpatiu", "InversaDinId") WHERE "InversaDinId" IS NOT NULL;
+                """);
+
+            // 092a: identitatea partidei, aceeași cu N.Unitate.DeschidePartida (SC-CIT-53).
+            migrationBuilder.Sql("""
+                CREATE FUNCTION cub_partida_id(document uuid, cont uuid, partener uuid) RETURNS uuid
+                LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $body$
+                DECLARE element uuid; raw bytea; intrare bytea := ''::bytea;
+                BEGIN
+                    FOREACH element IN ARRAY ARRAY[document, cont, partener] LOOP
+                        raw := uuid_send(element);
+                        intrare := intrare || substring(raw FROM 4 FOR 1) || substring(raw FROM 3 FOR 1) || substring(raw FROM 2 FOR 1) || substring(raw FROM 1 FOR 1) || substring(raw FROM 6 FOR 1) || substring(raw FROM 5 FOR 1) || substring(raw FROM 8 FOR 1) || substring(raw FROM 7 FOR 1) || substring(raw FROM 9 FOR 1) || substring(raw FROM 10 FOR 1) || substring(raw FROM 11 FOR 1) || substring(raw FROM 12 FOR 1) || substring(raw FROM 13 FOR 1) || substring(raw FROM 14 FOR 1) || substring(raw FROM 15 FOR 1) || substring(raw FROM 16 FOR 1);
+                    END LOOP;
+                    raw := substring(sha256(intrare) FROM 1 FOR 16);
+                    raw := set_byte(raw, 7, (get_byte(raw, 7) & 15) | 128);
+                    RETURN encode(substring(raw FROM 4 FOR 1) || substring(raw FROM 3 FOR 1) || substring(raw FROM 2 FOR 1) || substring(raw FROM 1 FOR 1) || substring(raw FROM 6 FOR 1) || substring(raw FROM 5 FOR 1) || substring(raw FROM 8 FOR 1) || substring(raw FROM 7 FOR 1) || substring(raw FROM 9 FOR 1) || substring(raw FROM 10 FOR 1) || substring(raw FROM 11 FOR 1) || substring(raw FROM 12 FOR 1) || substring(raw FROM 13 FOR 1) || substring(raw FROM 14 FOR 1) || substring(raw FROM 15 FOR 1) || substring(raw FROM 16 FOR 1), 'hex')::uuid;
+                END
+                $body$;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("DROP FUNCTION cub_partida_id(uuid, uuid, uuid)");
+
             migrationBuilder.DropForeignKey(
                 name: "FK_StateMachines_StateMachineStates_StartStateID",
                 table: "StateMachines");
@@ -3667,6 +3898,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "PoliticiConex");
 
             migrationBuilder.DropTable(
+                name: "PoliticiDiferenta");
+
+            migrationBuilder.DropTable(
                 name: "PoliticiInchidere");
 
             migrationBuilder.DropTable(
@@ -3689,6 +3923,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
             migrationBuilder.DropTable(
                 name: "PoliticiValidare");
+
+            migrationBuilder.DropTable(
+                name: "Postare");
 
             migrationBuilder.DropTable(
                 name: "RegistruContabil");
@@ -3755,6 +3992,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
             migrationBuilder.DropTable(
                 name: "PermissionPolicyUser");
+
+            migrationBuilder.DropTable(
+                name: "Tranzactie");
 
             migrationBuilder.DropTable(
                 name: "DocumentDetalii");

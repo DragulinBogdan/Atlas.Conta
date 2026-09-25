@@ -161,7 +161,7 @@ avertisment rămas este dimensiunea bundle-ului Vite.
 
 | Scenariu | Premisă | Așteptare |
 |---|---|---|
-| SC-NIR-32 | NIR conex 4/100 operat, proveniența coloanelor noi golită, SQL migrație, corecție la 3/75 | completare unică și idempotentă, corecția păstrează sursa fără Autogenerat, numai delta 25, sold cub 3/75 |
+| SC-NIR-32 | NIR conex 4/100 operat, corecție la 3/75 | corecția păstrează sursa recepției fără Autogenerat, numai delta 25, sold cub 3/75 (completarea prin migrație a ieșit, 102c) |
 | SC-NIR-33 | NIR cu 1, respectiv 12 linii; se modifică numai cantitățile | gardianul editării: zero citiri; operare: o singură citire a postărilor recepției-sursă |
 | SC-NIR-34 | contul stocului cere CodFunctional după FCT 4/100; NIR 3/75 are analiza nouă | stocul păstrează analiza istorică, doar diferența se validează în politica actuală; delta 25 acceptată |
 | SC-NIR-35 | imputat rămas la PeDrum sau la Imputabila cu delta zero | imputat golit pe server, fără partidă de imputare |
