@@ -12887,7 +12887,6 @@ export interface components {
             Autogenerat?: boolean;
         };
         StingeriDto: {
-            Avertismente?: string[] | null;
             /** Format: uuid */
             DocumentId?: string;
             /** Format: double */
