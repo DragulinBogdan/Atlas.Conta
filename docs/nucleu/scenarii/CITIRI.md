@@ -1,5 +1,42 @@
 # CITIRI — TR-D8
 
+### Snapshot de stoc — specificație înaintea codului, 2026-09-25
+
+SC-CIT-69: FCT 10/100 cu NIR încă draft și deschidere exclusiv în cub
+4/40. Închiderea păstrează ambele loturi, fără să aștepte registrul NIR.
+Cheia snapshot-ului este lot × cont × produs × gestiune; data deschiderii
+vine din postări. Cantitatea și valoarea sunt semnate; numai 0/0 se omite.
+
+SC-CIT-70: BTR 4/40 din recepția 10/100, BCS 2/20 din sursă. La închidere:
+stoc sursă 4/40, stoc destinație 4/40, consum 2/20 pe contul de cheltuială
+și locul de consum. Același lot pe coordonate diferite rămâne separat.
+
+SC-CIT-71: storno BTR în februarie, după închiderea lui ianuarie:
+sursa 8/80, destinația 0/0 omisă, consumul 2/20 păstrat. Citirea directă,
+snapshot + fereastră și raportul coincid. Ianuarie rămâne 4/40 + 4/40 + 2/20.
+Închiderea lui februarie incrementală coincide cu reconstrucția integrală.
+
+SC-CIT-72: alterarea unui snapshot cu +7 valoare se raportează înaintea
+rescrierii; a doua reconstrucție are zero diferențe. Alterarea numai a datei
+deschiderii se raportează de asemenea, fără diferență numerică fictivă.
+
+SC-CIT-73: lotul de deschidere 4/40, consumat integral în februarie,
+nu mai este disponibil în gestiunea reală; ieșirea păstrează valoarea 40.
+FIFO și raportul păstrează data deschiderii peste granița snapshot-ului.
+Citirea cu excluderea unui document recitește postările, fără a-l păstra
+ascuns în snapshot. Un snapshot absent permite citirea integrală din cub.
+
+SC-CIT-74: HTTP, înainte/după închidere și reconstrucție: ascunderea
+postărilor sau a membrului Valoare schimbă raportul conform drepturilor.
+Citirea securizată nu folosește snapshot-ul global. Proba pe ObjectSpace
+nesecurizat nu înlocuiește această verificare.
+
+SC-CIT-75 (privat): recepție 3 × 10,006667 = 30,02, două DSC de câte
+1/10,01 și RLF 1/10,01 lasă în gestiunea reală cantitate 0 și valoare −0,01.
+Snapshot-ul și raportul păstrează reziduul; costul unitar este 0 și FIFO
+nu îl oferă ca disponibil. Coordonatele virtuale ale DSC se păstrează,
+fără a deveni gestiuni reale disponibile.
+
 ### Raport și snapshot de partide — specificație înaintea codului, 2026-09-25
 
 SC-CIT-49: FCT 100 și PLT 40: raportul conține partida facturii,

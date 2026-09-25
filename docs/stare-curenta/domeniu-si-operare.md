@@ -259,10 +259,10 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
 
 - Snapshot-ul unei perioade există dacă și numai dacă perioada este DE
   REFERINȚĂ: ultima perioadă închisă sau un decembrie închis. Nu este registru
-  și nu este urmă — se reconstruiește integral din registre. (F27-D3)
+  și nu este urmă — se reconstruiește integral din cub. (F27-D3, TR-D8)
 - Cheia snapshot-ului este cheia completă a atomului: cont plus cele opt
-  dimensiuni ale laturii pe partea contabilă, lot, repartitor și tip de stoc
-  pe partea de stoc. Debitul și creditul se cumulează separat, fiindcă netarea
+  dimensiuni ale laturii pe partea contabilă; lot, cont, produs și gestiune
+  pe partea de stoc, cu data deschiderii păstrată. Debitul și creditul se cumulează separat, fiindcă netarea
   nu este aditivă. Orice raport este rollup aditiv peste ea. (F27-D3, 66d)
 - Cheile integral zero se omit. Cheia absentă înseamnă zero pentru orice
   consumator. (F27-D3)
@@ -289,7 +289,7 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
 
 - Un singur serviciu răspunde „soldul la data d": snapshot-ul ultimei perioade
   de referință care se termină până la d, plus rulajele de după ea. Fără nicio
-  perioadă de referință, citirea este integral din registre — de aceea o bază
+  perioadă de referință, citirea este integral din cub — de aceea o bază
   fără închideri dă exact aceleași cifre ca una cu închideri. (F27-D3)
 - Balanța cere referinței să se termine cel târziu cu o zi înaintea începutului
   perioadei, ca soldul inițial să rămână separabil de rulaj. Aceeași regulă
@@ -301,16 +301,16 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
   iar afișarea îl exclude, ca pe orice rând anterior perioadei. Filtrele de
   dimensiune se aplică înăuntrul snapshot-ului, deci rândul sintetic poartă
   exact coordonatele filtrului. (F27-D3)
-- Soldul de stoc, soldurile pe loturi la o dată, soldul unei chei, alocarea
-  FIFO și gardianul de sold negativ pornesc de la aceeași referință. Gardianul
-  cumulează de la rândul sintetic încoace: zilele dinaintea lui sunt într-o
-  perioadă închisă, unde nicio mișcare nouă nu poate ajunge. Textul refuzului
-  nu se schimbă. (F27-D3, 14/25d)
+- Raportul de stoc, FIFO și pinurile folosesc `Cub.Citiri.Loturi.Cumulate`:
+  referință plus fereastră, pe cheia completă. Citirile securizate și cele
+  cu excluderea unui document recitesc postările. Gardul de sold intermediar
+  verifică prefixele zilnice direct în cub. `StocService` rămâne cititorul
+  explicit al registrului în regimul dual și nu consumă snapshot-ul cubului.
+  (TR-D8 D8-B1/B5)
 - Soldurile conturilor de TVA ale închiderii lunare vin din aceeași sursă
   cumulată. (F27-D3)
-- Excluderea rândurilor unui document (dry-run pe re-operare) și excluderea
-  rândurilor eliminate la anulare ating doar rulajele: un document cu rânduri
-  într-o perioadă închisă nu se mai poate anula. (F27-D3)
+- Excluderea unui document din citirea loturilor recitește direct postările,
+  inclusiv când data cerută coincide cu granița unei referințe. (SC-CIT-73)
 - Cheia cu cantitate ȘI valoare zero lipsește din soldul de stoc și din
   soldurile pe loturi, ca din snapshot: un lot consumat integral nu mai este o
   poziție de stoc și nu mai apare în listă. Cheia cu cantitatea zero și valoare
@@ -374,8 +374,9 @@ clientul nu introduce o rotunjire contabilă independentă. (42c, 51c, 52a)
 
 - Doar `ClasaProdus.Natura = Stoc` intră în regulile de stoc. Natura și tipul
   material sunt date distincte de identificarea produsului. (23b)
-- Cheia de sold este `(Lot, Repartitor, TipStoc)`. Localizarea curentă a
-  lotului se citește din registru. (25d, 27b)
+- Cheia soldului pe cub este `(Lot, Cont, Produs, Gestiune)`.
+  `(Lot, Repartitor, TipStoc)` rămâne cheia registrului din regimul dual.
+  (25d, 27b, TR-D8)
 - Soldul cantitativ intermediar trebuie să fie nenegativ la orice dată
   afectată, inclusiv pentru documente introduse retroactiv. (25d)
 - Lotul se naște la culegerea liniei de intrare și se finalizează la operare.
@@ -1255,8 +1256,12 @@ inversele lui. BCS/BTR/DSC/LDI/ASM evaluează ieșirile din soldul cubului;
 R pentru absorbția ASM rămâne separat, din registru. FIFO și pinurile DSC
 folosesc data înregistrării și coordonatele complete. Raportul de stoc
 arată contul, gestiunea și costul unitar din sold; etichetele lipsă nu
-elimină sumele. Snapshot-ul de stoc este încă vechi și nu alimentează
-cititorul nou. TR-D8 rămâne în lucru conform inventarului nominal.
+elimină sumele. Snapshot-ul de stoc se scrie numai din cub pe aceeași cheie,
+cu data deschiderii; citirile nesecurizate fără excludere pot folosi
+snapshot + fereastră. Reconstrucția detectează și data alterată, pe lângă
+diferențele de chei și măsuri. Soldurile 0/0 se omit, cele 0/valoare nenulă
+rămân. Gestiunile virtuale nu intră în disponibilul real. TR-D8 rămâne în
+lucru pentru fiscal/SAF-T și verificările transversale.
 `Citiri/Transformare` oferă un singur predicat
 pentru contraponderea virtuală ASM, utilizat și de probe/diagnostic.
 DEC are probă numerică independentă pentru inversare și corecție peste

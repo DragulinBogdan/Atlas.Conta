@@ -2,7 +2,8 @@
 
 2026-09-25. În lucru: IMO și rapoartele contabile generale sunt portate,
 inclusiv snapshot-ul contabil. Cititorul operațional și raportul de stoc
-sunt portate și verificate; snapshot-urile de stoc/partide și fiscalul rămân deschise.
+sunt portate și verificate; snapshot-urile de stoc și partide folosesc cubul.
+Fiscalul și restul verificărilor transversale rămân deschise.
 Owner-ul a autorizat continuarea după NIR și Deschiderea generică.
 095 fixează acum ordinea DEC → contract IMO → PIF/AMO/CAS complete → TR-D8;
 DEC și PIF/AMO/CAS au declaranți; partidele folosesc UrmarestePartide (096),
@@ -118,9 +119,11 @@ rămân nominal pe lista de portat.
 `Fapte.SolduriLoturi`, evaluarea ieșirilor și gardul zilnic folosesc cubul.
 Citirea R necesară absorbției ASM este separată și rămâne din registre.
 `DescarcareService`/pinurile FCL și `StocProiectii` sunt portate și verificate.
-`SolduriService.MiscariCumulate` este încă vechea suprafață a registrelor;
-nu se folosește pentru evaluarea cubului. Portarea snapshot-ului de stoc și
-a celorlalți consumatori enumerați rămâne obligatorie înaintea închiderii.
+`SolduriService` scrie și reconstruiește snapshot-ul de stoc din intrarea
+comună de lot. `Loturi.Cumulate` combină referința cu fereastra în citirile
+nesecurizate fără excludere; raportul, FIFO și pinurile îl folosesc.
+`StocService` citește registrul separat, fără acest snapshot, pentru regimul
+dual. Restul consumatorilor enumerați rămâne obligatoriu înaintea închiderii.
 
 ### Partide — felia curentă
 

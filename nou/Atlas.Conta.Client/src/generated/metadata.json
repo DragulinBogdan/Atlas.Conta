@@ -2242,13 +2242,14 @@
       "Membri": {
         "An": "An",
         "Cantitate": "Cantitate",
+        "ContId": "ContId",
+        "Deschisa": "Data deschiderii",
+        "GestiuneId": "GestiuneId",
         "ID": "ID",
         "Lot": "Lot",
         "LotId": "Lot",
         "Luna": "Luna",
-        "Repartitor": "Repartitor",
-        "RepartitorId": "Repartitor",
-        "TipStoc": "Tip stoc",
+        "ProdusId": "ProdusId",
         "Valoare": "Valoare"
       }
     },

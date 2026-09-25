@@ -808,3 +808,16 @@ detaliat în jurnal):
   client/drift/HTTP/browser trecute. Limita gărzii registrelor include și
   storno/anularea simplă după consum, 098-r3 cade la TR-D9. Predare fără
   commit pentru reverificarea independentă.
+
+- **TR-D8 — snapshot de stoc pe cub** (2026-09-25): cheia devine
+  lot/cont/produs/gestiune, cu data deschiderii păstrată. Materializarea
+  incrementală, reconstrucția și cititorul comun folosesc cubul; registrul
+  necesar regimului dual rămâne separat. SC-CIT-69…75 probează recepția
+  fără NIR operat, deschiderea, transferul/consumul, storno peste închidere,
+  FIFO, alterarea snapshot-ului, reziduul valoric și securitatea HTTP.
+  ModelCheck integral 3.166 bugetar / 4.166 privat OK, zero FAIL; HTTP 15/15;
+  client și regenerarea artefactelor verificate. Schema a fost probată pe
+  baze noi, fără recrearea bazelor principale (102b). Review propriu în
+  `docs/nucleu/tr-d8-review-codex.md`; fiscal/SAF-T și verificările
+  transversale rămân deschise. Predare fără commit și fără mesaj intermediar
+  către Claude, conform instrucțiunii owner-ului.

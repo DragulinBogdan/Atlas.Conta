@@ -97,8 +97,8 @@ EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
 automată a schemei prin XAF este dezactivată. Module este comun celor două
 hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
 
-Lanțul de migrații a fost comprimat la 2026-09-25 (C102, 102e): singura
-migrație este `20260925110419_InitialCreate`, generată din model, plus SQL-ul
+Lanțul de migrații a fost comprimat la 2026-09-25 (C102, 102e): baza inițială
+este `20260925110419_InitialCreate`, generată din model, plus SQL-ul
 brut pe care modelul nu-l declară (`Postare` partiționată pe `Spatiu` cu
 cheia `(Spatiu, ID)`, FK-urile și indecșii pe partiții, constrângerile
 `CK_Postare_*`, funcția `cub_partida_id`). Migrațiile nu transformă date.
@@ -110,6 +110,17 @@ valori `DEFAULT` lăsate de `AddColumn` pe 5 tabele (`UrmarestePartide`,
 `PosteazaInCub`), pe care modelul nu le declară. Migrațiile de dinainte
 sunt istorie în git; bazele create pe lanțul vechi nu se actualizează, se
 recreează (102b). Lanțul crește prin migrații, ca înainte.
+`20260925151359_SnapshotStocCub` înlocuiește cheia snapshot-ului de stoc
+cu lot/cont/produs/gestiune și păstrează data deschiderii. Nu convertește
+snapshot-uri vechi; bazele cu forma veche se recreează conform 102(b).
+Probele feliei folosesc bazele noi cu sufix `.SnapshotStoc` și baza HTTP
+`Atlas.Conta.BackOffice.Privat.SnapshotHttp` (seed privat plus utilizatori).
+Bazele principale nu au fost recreate de această felie.
+Validare snapshot stoc (2026-09-25): ModelCheck integral 3.166 bugetar /
+4.166 privat OK, zero FAIL; SC-CIT-74 HTTP 15/15, inclusiv peste închidere
+și reconstrucție; client build și regenerare metadata/OpenAPI/types stabile.
+Review-ul, dovezile și limitele sunt în `docs/nucleu/tr-d8-review-codex.md`.
+
 Comanda `dotnet ef` primește mereu `--context BackOfficeEFCoreDbContext` și
 se rulează fără `--no-build`. (23a, 89g)
 

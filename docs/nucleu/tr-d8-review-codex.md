@@ -1,7 +1,8 @@
 # TR-D8 — review propriu Codex
 
-2026-09-25. Review al implementării în lucru peste `c10d0fe`, înainte de
-închiderea etapei. D8-B6 A este aprobată de owner și consemnată în 100.
+2026-09-25. Review al implementării în lucru, început peste `c10d0fe` și
+completat pentru snapshot-ul de stoc peste `f5dfce6`, înainte de închiderea
+etapei. D8-B6 A este aprobată de owner și consemnată în 100.
 Review-ul nu certifică întregul TR-D8. Nu a fost trimis un mesaj intermediar către Claude.
 
 ## Probleme găsite și corectate
@@ -96,10 +97,6 @@ Review-ul nu certifică întregul TR-D8. Nu a fost trimis un mesaj intermediar c
   istoriei sunt implementate și verificate (100-r1 închisă). Raportul și
   snapshot-ul sunt acum portate; gardul refuză și politicile manuale care
   produc documente stingibile fără partide. Validarea feliei 101 este mai jos.
-- **Snapshot-ul de stoc:** este încă derivat din RegistruStoc. Cititorul
-  nou de lot și raportul citesc integral cubul și nu îl consumă. Trebuie
-  portate împreună cheia, proveniența, materializarea și reconstrucția;
-  citirea R din ASM trebuie să rămână separată în regimul dual.
 - **Fiscal/SAF-T:** TVA, D300/D394 și majoritatea secțiunilor SAF-T nu sunt
   încă portate. Versiunea istorică TVA trebuie păstrată, nu recitită din
   nomenclatorul curent. Portarea GLA/Customers/Suppliers și S3 contabil
@@ -114,6 +111,66 @@ Review-ul nu certifică întregul TR-D8. Nu a fost trimis un mesaj intermediar c
 - **Regula de oprire:** auditul S-r2, controlul arhitectural 091-r3,
   măsurătorile A/B și verificarea tuturor consumatorilor din inventar
   rămân obligatorii. Scrierea registrelor nu se elimină aici.
+
+## Snapshot-ul de stoc — review și validare (2026-09-25)
+
+Snapshot-ul este portat pe cub. Review-ul propriu nu a identificat un
+blocant în această felie; limitele transversale de mai sus rămân deschise.
+
+- **Cheia și data FIFO:** materializarea, citirea și reconstrucția folosesc
+  lot × cont × produs × gestiune și păstrează `Deschisa`. Nu comprimă
+  contul de stoc cu cel de cheltuială sau gestiunea reală cu contraponderea
+  virtuală. Se elimină numai cheia cu ambele măsuri zero; reziduul RLF
+  0/−0,01 rămâne vizibil în raport, fără disponibil FIFO.
+- **Sursa și independența reconstrucției:** `Loturi.Cumulate` combină ultima
+  referință cu postările ulterioare. Reconstrucția recitește întregul cub;
+  controlul SOL din ModelCheck agregă separat postările în memorie.
+  Alterarea deliberată a valorii cu +7 și a datei FIFO este vizibilă prin
+  cititorul optimizat înainte de reconstrucție, apoi raportată și reparată.
+  Astfel proba nu poate trece doar prin ocolirea snapshot-ului.
+- **Regimul dual:** cititorii registrului folosesc direct `RegistruStoc`.
+  Proba FCT fără NIR operat → BTR → BCS păstrează −6 în registru, distinct
+  de 4 în cub; snapshot-ul nu contaminează citirea R folosită de ASM.
+- **Permisiuni și excluderi:** un ObjectSpace secured sau o citire cu
+  document exclus recitește postările. Snapshot-ul global nu poate ocoli
+  drepturile pe rând/membru și nu poate ascunde documentul exclus.
+  Gardul zilnic continuă să verifice istoricul integral.
+
+Validare pe sursele stabilizate:
+
+- ModelCheck integral: **3.166 bugetar / 4.166 privat OK**, zero FAIL,
+  exit 0, build fără avertismente. Dovezi:
+  `run-verificari/20260925-182506-479/rezultat.json` și logurile celor două
+  profiluri. Catalogul adaugă SC-CIT-69…75; SC-CIT-74 este proba HTTP.
+  Prima integrală bugetară a semnalat metadata neregenerată după schimbarea
+  modelului; metadata a fost regenerată, apoi integrala a trecut pe ambele
+  profiluri. Nu prezentăm prima rulare ca verde.
+- HTTP SC-CIT-74: **15/15 verificări**, înainte de închidere, după închidere
+  și după reconstrucție. Admin/Cititor = 15 bucăți / 125; restricție pe rând
+  = 10/100; membrul Valoare refuzat = 15/0; User = zero rânduri.
+  Proba durabilă: `nou/tools/ProbeHttp/stoc-snapshot-cub.py --baza
+  Atlas.Conta.BackOffice.Privat.SnapshotHttp`;
+  log `run-verificari/snapshot-http-probe-final.log`.
+  Prima execuție a trecut toate verificările, dar curățarea încerca ștergerea
+  directă a NIR-ului generat; proba corectată îl elimină prin anularea FCT.
+  Execuția finală, inclusiv curățarea, are exit 0.
+  Controlul SQL ulterior confirmă zero documente active, produse/parteneri
+  temporari activi, roluri/utilizatori temporari, perioade și snapshot-uri
+  ale probei: `run-verificari/snapshot-http-cleanup.log`. Hostul este oprit.
+- Metadata/OpenAPI/types: regenerarea repetată păstrează toate cele trei
+  hash-uri. Build-ul clientului trece; rămâne avertismentul Vite despre
+  dimensiunea bundle-ului. Log: `run-verificari/snapshot-final-client.log`.
+  EF raportează model sincronizat cu migrațiile în
+  `run-verificari/snapshot-artifacts.log`.
+- Schema nouă este verificată pe baze proaspete, cu sufix `.SnapshotStoc`
+  și `.SnapshotHttp`. Migrația nu convertește snapshot-uri vechi; bazele
+  principale nu au fost recreate (102b). Nu există modificări de UI în
+  această felie; nu revendicăm o nouă probă în browser.
+
+Performanța pe istoric mare nu este certificată. Citirea registrului dual
+și citirile secured/cu excludere folosesc istoricul integral; măsurătorile
+A/B pe aceeași bază rămân obligatorii la închiderea TR-D8. Nu s-a trimis
+un mesaj intermediar către Claude.
 
 ## Validare finală a feliei partidelor (101)
 
@@ -183,7 +240,7 @@ Review-ul nu certifică întregul TR-D8. Nu a fost trimis un mesaj intermediar c
   (`MaiSunt=true`). Aceste precondiții țin de vechea bază populată/importată.
   Proba nouă SC-CIT-25 nu este prezentată ca înlocuitor al întregii matrice.
 
-**Verdict:** felia contabilă, cititorul operațional/raportul de stoc și
+**Verdict:** felia contabilă, cititorul operațional/raportul/snapshot-ul de stoc și
 raportul/snapshot-ul/citirile operaționale ale partidelor au probe verzi în
 domeniul de mai sus. 101-r1 este închisă. Etapa TR-D8 rămâne deschisă; limitele
 nominale din review sunt lucru obligatoriu, nu excepții aprobate.

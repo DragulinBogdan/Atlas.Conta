@@ -128,7 +128,7 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
                 .ToList();
             var conturi = reguliDsc.Count > 0 && GestiuneDescarcareId != null
                 ? Motor.DescarcareService.ConturiStoc(os, this) : new Dictionary<Guid, Guid>();
-            var disponibile = Cub.Citiri.Loturi.Solduri(os, DataInregistrare)
+            var disponibile = Cub.Citiri.Loturi.Cumulate(os, DataInregistrare)
                 .Where(s => idsLotPin.Contains(s.LotId) && s.GestiuneId == GestiuneDescarcareId
                     && s.Cantitate > 0m).ToList();
 

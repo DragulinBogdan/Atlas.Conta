@@ -1,4 +1,6 @@
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.Security;
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using N = Atlas.Conta.Nucleu;
@@ -37,12 +39,35 @@ public static class Loturi {
 
     public static IQueryable<SoldLot> Disponibile(IObjectSpace os, DateOnly laData,
             Guid produsId, Guid gestiuneId, Guid contId) =>
-        from sold in Solduri(os, laData)
+        from sold in Cumulate(os, laData)
         join gestiune in os.GetObjectsQuery<BusinessObjects.Gestiune>() on sold.GestiuneId equals gestiune.ID
         where sold.ProdusId == produsId && sold.GestiuneId == gestiuneId
             && sold.ContId == contId && sold.Cantitate > 0m
         orderby sold.Deschisa, sold.LotId
         select sold;
+
+    /// <summary>Soldurile din ultima referință și postările ulterioare; citirile securizate sau cu excludere folosesc postările.</summary>
+    public static IQueryable<SoldLot> Cumulate(IObjectSpace os, DateOnly? laData = null,
+            Guid? faraDocumentId = null) {
+        var zi = laData ?? DateOnly.MaxValue;
+        if (os is ISecuredObjectSpace || faraDocumentId != null
+                || SolduriService.Referinta(os, zi) is not { } r)
+            return Solduri(os, laData, faraDocumentId);
+        var snapshot = os.GetObjectsQuery<SoldPerioadaStoc>().Where(s => s.An == r.An && s.Luna == r.Luna);
+        if (!snapshot.Any()) return Solduri(os, laData);
+        return snapshot.Select(s => new SoldLot {
+                LotId = s.LotId, ContId = s.ContId, ProdusId = s.ProdusId, GestiuneId = s.GestiuneId,
+                Deschisa = s.Deschisa, Cantitate = s.Cantitate, Valoare = s.Valoare })
+            .Concat(Postari(os).Where(p => p.Data > r.Sfarsit && p.Data <= zi).Select(p => new SoldLot {
+                LotId = p.Unitate.Value, ContId = p.Cont, ProdusId = p.Produs.Value, GestiuneId = p.Gestiune.Value,
+                Deschisa = p.UnitateDeschisa ?? p.Data, Cantitate = p.Cantitate,
+                Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare }))
+            .GroupBy(s => new { s.LotId, s.ContId, s.ProdusId, s.GestiuneId })
+            .Select(g => new SoldLot { LotId = g.Key.LotId, ContId = g.Key.ContId,
+                ProdusId = g.Key.ProdusId, GestiuneId = g.Key.GestiuneId, Deschisa = g.Min(s => s.Deschisa),
+                Cantitate = g.Sum(s => s.Cantitate), Valoare = g.Sum(s => s.Valoare) })
+            .Where(s => s.Cantitate != 0m || s.Valoare != 0m);
+    }
 
     // Gardul verifică fiecare prefix zilnic, inclusiv zilele ulterioare unei
     // operații retroactive. Istoricul se citește pe set, fără politica curentă.

@@ -289,12 +289,17 @@ proba durabilă HTTP după închiderea perioadei este implementată în
 Implementat și verificat: soldurile pentru evaluarea BCS/BTR/DSC/LDI/ASM vin din intrarea
 comună de lot, cu cheia completă și gardian pe fiecare zi. R din ASM rămâne
 citire explicită a registrului; C vine din cub. FIFO și pinurile DSC,
-precum și raportul de stoc, sunt portate împreună. Snapshot-ul de stoc nu
-este încă portat și nu alimentează cititorul de lot.
+precum și raportul de stoc, sunt portate împreună. Snapshot-ul de stoc
+folosește acum lot/cont/produs/gestiune și data deschiderii din cub;
+scrierea incrementală și reconstrucția au aceeași sursă. Raportul, FIFO și
+pinurile folosesc snapshot + fereastră în ObjectSpace nesecurizat.
+Citirile securizate, cele cu excluderea unui document și gardul zilnic
+recitesc postările. Registrul necesar regimului dual se citește separat,
+fără snapshot din cub. Probe: SC-CIT-69…75.
 
 Restul regulii de oprire D8-B5 rămâne deschis: fiscal/TVA istoric,
 SAF-T integral (numai GLA/Customers/Suppliers folosesc acum atomi din cub),
-snapshot stoc, audit/arhitectură/perf și review final.
+audit/arhitectură/perf și review final.
 
 Validare după portarea operațională de stoc: **2.899 bugetar / 3.989 privat OK**,
 zero FAIL, `run-verificari/20260925-031339-966/rezultat.json`.

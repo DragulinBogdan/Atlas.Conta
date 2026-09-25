@@ -141,10 +141,7 @@ public static class SolduriService {
         AreRanduri(os, Contabil, an, luna) || AreRanduri(os, Stoc, an, luna)
         || AreRanduri(os, Partide, an, luna);
 
-    // F27-D3: ștergere FIZICĂ, nu `GCRecord`. Snapshot-ul nu e nomenclator și
-    // n-are urmă de păstrat — e o proiecție rescrisă din registre, iar un rând
-    // „șters logic" ar rupe unicitatea cheii la următoarea materializare.
-    /// <summary>Șterge snapshot-ul perioadei, pe ambele tabele.</summary>
+    /// <summary>Șterge fizic snapshot-urile contabile, de stoc și de partide ale perioadei.</summary>
     public static void Elimina(IObjectSpace os, int an, int luna) {
         Executa(os, $"DELETE FROM {Contabil} WHERE \"An\" = {{0}} AND \"Luna\" = {{1}}", an, luna);
         Executa(os, $"DELETE FROM {Stoc} WHERE \"An\" = {{0}} AND \"Luna\" = {{1}}", an, luna);
@@ -200,7 +197,7 @@ public static class SolduriService {
 
     // ═══════════════════ citirea ═══════════════════
 
-    /// <summary>Ultima perioadă DE REFERINȚĂ al cărei sfârșit e `&lt;= panaLa`; null = citire integrală din registre.</summary>
+    /// <summary>Ultima perioadă de referință al cărei sfârșit e `&lt;= panaLa`; null cere citire integrală din cub.</summary>
     public static (int An, int Luna, DateOnly Sfarsit)? Referinta(IObjectSpace os, DateOnly panaLa) {
         (int An, int Luna, DateOnly Sfarsit)? gasita = null;
         foreach (var (an, luna) in Referinte(os)) {
@@ -239,56 +236,6 @@ public static class SolduriService {
             .Concat(atomi.Where(a => a.Data > sfarsit && a.Data <= panaLa));
     }
 
-    // Clasă cu setteri, proiectată prin inițializator de obiect, ca
-    // `AtomContabil`: peste o proiecție de CONSTRUCTOR, EF nu mai vede membrii,
-    // iar orice `Where` de deasupra cade în evaluare pe client.
-    /// <summary>O mișcare de stoc cumulată: rândul sintetic al referinței sau un rând de registru de după ea.</summary>
-    public sealed class MiscareCumulata {
-        public Guid Id { get; set; }
-        public Guid LotId { get; set; }
-        public Guid RepartitorId { get; set; }
-        public TipStoc TipStoc { get; set; }
-        public DateOnly Data { get; set; }
-        public decimal Cantitate { get; set; }
-        public decimal Valoare { get; set; }
-    }
-
-    // Oglinda de stoc a lui `AtomiCumulati`, pe cheia registrului. `panaLa` null
-    // = „azi/tot". Cele două filtre opționale se aplică PER RAMURĂ, fiindcă n-au
-    // aceeași semnificație pe amândouă: rândurile unui document nu pot fi
-    // excluse din snapshot (un document cu rânduri în perioadă închisă nu se mai
-    // poate anula), iar produsul trăiește pe navigația `Lot`, absentă din
-    // proiecție.
-    /// <summary>Mișcările de stoc până la `panaLa`, pornite de la ultima referință care se termină până la `granita`.</summary>
-    public static IQueryable<MiscareCumulata> MiscariCumulate(IObjectSpace os, DateOnly? panaLa,
-            DateOnly? granita = null, Guid? faraDocumentId = null, Guid? produsId = null) {
-        var registru = os.GetObjectsQuery<RegistruStoc>().IgnoreAutoIncludes();
-        if (panaLa is { } pl)
-            registru = registru.Where(r => r.Data <= pl);
-        if (faraDocumentId is { } docId)
-            registru = registru.Where(r => r.DocumentId != docId);
-        if (produsId is { } pid)
-            registru = registru.Where(r => r.Lot.ProdusId == pid);
-        IQueryable<MiscareCumulata> Proiecteaza(IQueryable<RegistruStoc> sursa) =>
-            sursa.Select(r => new MiscareCumulata {
-                Id = r.ID, LotId = r.LotId, RepartitorId = r.RepartitorId, TipStoc = r.TipStoc,
-                Data = r.Data, Cantitate = r.Cantitate, Valoare = r.Valoare
-            });
-        if (Referinta(os, granita ?? panaLa ?? DateOnly.MaxValue) is not { } r0)
-            return Proiecteaza(registru);
-        var (an, luna, sfarsit) = r0;
-        var snapshot = os.GetObjectsQuery<SoldPerioadaStoc>().IgnoreAutoIncludes()
-            .Where(s => s.An == an && s.Luna == luna);
-        if (produsId is { } pidSnap)
-            snapshot = snapshot.Where(s => s.Lot.ProdusId == pidSnap);
-        return snapshot
-            .Select(s => new MiscareCumulata {
-                Id = s.ID, LotId = s.LotId, RepartitorId = s.RepartitorId, TipStoc = s.TipStoc,
-                Data = sfarsit, Cantitate = s.Cantitate, Valoare = s.Valoare
-            })
-            .Concat(Proiecteaza(registru.Where(r => r.Data > sfarsit)));
-    }
-
     // ═══════════════════ scrierea ═══════════════════
 
     static void ScrieContabil(IObjectSpace os, int an, int luna, (int An, int Luna)? precedenta) {
@@ -313,15 +260,17 @@ public static class SolduriService {
     static void ScrieStoc(IObjectSpace os, int an, int luna, (int An, int Luna)? precedenta) {
         var argumente = new List<object>();
         string P(object v) { argumente.Add(v); return "{" + (argumente.Count - 1) + "}"; }
-        var sb = new StringBuilder();
-        sb.Append($"INSERT INTO {Stoc} (\"ID\", \"GCRecord\", \"OptimisticLockField\", \"An\", \"Luna\", "
-            + "\"LotId\", \"RepartitorId\", \"TipStoc\", \"Cantitate\", \"Valoare\")\n");
-        sb.Append($"SELECT gen_random_uuid(), 0, 0, {P(an)}, {P(luna)}, "
-            + "k.\"LotId\", k.\"RepartitorId\", k.\"TipStoc\", SUM(k.\"Cantitate\"), SUM(k.\"Valoare\")\n");
-        sb.Append($"FROM (\n{SursaStoc(P, an, luna, precedenta)}\n) k\n");
-        sb.Append("GROUP BY k.\"LotId\", k.\"RepartitorId\", k.\"TipStoc\"\n");
-        sb.Append("HAVING SUM(k.\"Cantitate\") <> 0 OR SUM(k.\"Valoare\") <> 0");
-        Executa(os, sb.ToString(), argumente.ToArray());
+        var sursa = SursaStoc(os, P, an, luna, precedenta);
+        Executa(os, $"""
+            INSERT INTO {Stoc} ("ID", "GCRecord", "OptimisticLockField", "An", "Luna",
+                "LotId", "ContId", "ProdusId", "GestiuneId", "Deschisa", "Cantitate", "Valoare")
+            SELECT gen_random_uuid(), 0, 0, {P(an)}, {P(luna)},
+                k."LotId", k."ContId", k."ProdusId", k."GestiuneId", MIN(k."Deschisa"),
+                SUM(k."Cantitate"), SUM(k."Valoare")
+            FROM ({sursa}) k
+            GROUP BY k."LotId", k."ContId", k."ProdusId", k."GestiuneId"
+            HAVING SUM(k."Cantitate") <> 0 OR SUM(k."Valoare") <> 0
+            """, argumente.ToArray());
     }
 
     static string SursaContabil(IObjectSpace os, Func<object, string> P, int an, int luna, (int An, int Luna)? precedenta) {
@@ -343,19 +292,25 @@ public static class SolduriService {
             + $"WHERE \"An\" = {P(prec.An)} AND \"Luna\" = {P(prec.Luna)}\nUNION ALL\n{sursa}";
     }
 
-    static string SursaStoc(Func<object, string> P, int an, int luna, (int An, int Luna)? precedenta) {
-        var sb = new StringBuilder();
-        if (precedenta is { } prec) {
-            sb.Append("SELECT \"LotId\", \"RepartitorId\", \"TipStoc\", \"Cantitate\", \"Valoare\" "
-                + $"FROM {Stoc} WHERE \"An\" = {P(prec.An)} AND \"Luna\" = {P(prec.Luna)}\n");
-            sb.Append("UNION ALL\n");
+    static string SursaStoc(IObjectSpace os, Func<object, string> P, int an, int luna, (int An, int Luna)? precedenta) {
+        var sfarsit = Sfarsit(an, luna);
+        var postari = Cub.Citiri.Loturi.Postari(os).Where(p => p.Data <= sfarsit);
+        if (precedenta != null) {
+            var inceput = Inceput(an, luna);
+            postari = postari.Where(p => p.Data >= inceput);
         }
-        sb.Append("SELECT r.\"LotId\", r.\"RepartitorId\", r.\"TipStoc\", r.\"Cantitate\", r.\"Valoare\"\n"
-            + "FROM \"RegistruStoc\" r\nWHERE r.\"GCRecord\" = 0");
-        if (precedenta != null)
-            sb.Append($" AND r.\"Data\" >= {P(Inceput(an, luna))}");
-        sb.Append($" AND r.\"Data\" <= {P(Sfarsit(an, luna))}");
-        return sb.ToString();
+        var sursa = SqlInterogare.Compune(postari.Select(p => new Cub.Citiri.SoldLot {
+            LotId = p.Unitate.Value, ContId = p.Cont, ProdusId = p.Produs.Value, GestiuneId = p.Gestiune.Value,
+            Deschisa = p.UnitateDeschisa ?? p.Data, Cantitate = p.Cantitate,
+            Valoare = p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : -p.Valoare
+        }), P);
+        if (precedenta is not { } prec) return sursa;
+        return $"""
+            SELECT "LotId", "ContId", "ProdusId", "GestiuneId", "Deschisa", "Cantitate", "Valoare"
+            FROM {Stoc} WHERE "An" = {P(prec.An)} AND "Luna" = {P(prec.Luna)}
+            UNION ALL
+            {sursa}
+            """;
     }
 
     // ═══════════════════ reconstrucția ═══════════════════
@@ -404,30 +359,32 @@ public static class SolduriService {
         string P(object v) { argumente.Add(v); return "{" + (argumente.Count - 1) + "}"; }
         var sql = $"""
             WITH recalc AS (
-              SELECT k."LotId", k."RepartitorId", k."TipStoc",
+              SELECT k."LotId", k."ContId", k."ProdusId", k."GestiuneId", MIN(k."Deschisa") AS "Deschisa",
                      SUM(k."Cantitate") AS "Cantitate", SUM(k."Valoare") AS "Valoare"
               FROM (
-            {SursaStoc(P, an, luna, null)}
+            {SursaStoc(os, P, an, luna, null)}
               ) k
-              GROUP BY k."LotId", k."RepartitorId", k."TipStoc"
+              GROUP BY k."LotId", k."ContId", k."ProdusId", k."GestiuneId"
               HAVING SUM(k."Cantitate") <> 0 OR SUM(k."Valoare") <> 0
             ),
             existent AS (
-              SELECT "LotId", "RepartitorId", "TipStoc", "Cantitate", "Valoare" FROM {Stoc}
+              SELECT "LotId", "ContId", "ProdusId", "GestiuneId", "Deschisa", "Cantitate", "Valoare" FROM {Stoc}
               WHERE "An" = {P(an)} AND "Luna" = {P(luna)}
             ),
             j AS (
               SELECT e."LotId" AS "LotIdE", r."LotId" AS "LotIdR",
                      e."Cantitate" AS "CantitateE", e."Valoare" AS "ValoareE",
-                     r."Cantitate" AS "CantitateR", r."Valoare" AS "ValoareR"
+                     r."Cantitate" AS "CantitateR", r."Valoare" AS "ValoareR",
+                     e."Deschisa" AS "DeschisaE", r."Deschisa" AS "DeschisaR"
               FROM existent e FULL OUTER JOIN recalc r
-                ON e."LotId" = r."LotId" AND e."RepartitorId" = r."RepartitorId"
-               AND e."TipStoc" = r."TipStoc"
+                ON e."LotId" = r."LotId" AND e."ContId" = r."ContId"
+               AND e."ProdusId" = r."ProdusId" AND e."GestiuneId" = r."GestiuneId"
             )
             SELECT (SELECT COUNT(*) FROM existent) AS "Existente",
                    (SELECT COUNT(*) FROM recalc) AS "Recalculate",
                    COUNT(*) FILTER (WHERE "LotIdE" IS NULL OR "LotIdR" IS NULL
-                                       OR "CantitateE" <> "CantitateR" OR "ValoareE" <> "ValoareR") AS "Diferite",
+                                       OR "CantitateE" <> "CantitateR" OR "ValoareE" <> "ValoareR"
+                                       OR "DeschisaE" <> "DeschisaR") AS "Diferite",
                    COALESCE(SUM(ABS(COALESCE("CantitateR", 0) - COALESCE("CantitateE", 0))), 0) AS "DiferentaCantitate",
                    COALESCE(SUM(ABS(COALESCE("ValoareR", 0) - COALESCE("ValoareE", 0))), 0) AS "DiferentaValoare"
             FROM j

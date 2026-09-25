@@ -302,7 +302,7 @@ internal static class Fapte {
 
     static Dictionary<Declaratii.CheieLotFapt, N.Sold> SolduriLoturi(
             IObjectSpace os, Document doc, IReadOnlyList<Guid> idsLot) => idsLot.Count == 0 ? [] :
-        Cub.Citiri.Loturi.Solduri(os, doc.DataInregistrare, doc.ID)
+        Cub.Citiri.Loturi.Cumulate(os, doc.DataInregistrare, doc.ID)
             .Where(s => idsLot.Contains(s.LotId) && s.GestiuneId == doc.PredatorId)
             .ToList().ToDictionary(s => new Declaratii.CheieLotFapt(s.LotId, s.ContId, s.ProdusId, s.GestiuneId),
                 s => new N.Sold(s.Valoare > 0m ? s.Valoare : 0m,

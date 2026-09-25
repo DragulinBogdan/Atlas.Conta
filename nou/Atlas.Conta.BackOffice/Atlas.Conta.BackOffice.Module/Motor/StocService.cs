@@ -16,6 +16,15 @@ public readonly record struct SoldStoc(decimal Cantitate, decimal Valoare) {
 }
 
 public static class StocService {
+    static IQueryable<RegistruStoc> MiscariRegistru(IObjectSpace os, DateOnly? panaLa,
+            Guid? faraDocumentId = null, Guid? produsId = null) {
+        var miscari = os.GetObjectsQuery<RegistruStoc>();
+        if (panaLa is { } zi) miscari = miscari.Where(r => r.Data <= zi);
+        if (faraDocumentId is { } doc) miscari = miscari.Where(r => r.DocumentId != doc);
+        if (produsId is { } produs) miscari = miscari.Where(r => r.Lot.ProdusId == produs);
+        return miscari;
+    }
+
     // ───────────── D18-D2: ieșirea care GOLEȘTE cheia preia valoarea rămasă ─────────────
     //
     // Identificarea specifică (OMFP 1802, decizia 13) spune că un lot consumat
@@ -41,28 +50,12 @@ public static class StocService {
     public static decimal? ValoareGolire(SoldStoc soldInainte, decimal cantitateIesita) =>
         cantitateIesita > 0m && soldInainte.Cantitate == cantitateIesita ? soldInainte.Valoare : null;
 
-    // Soldurile (cantitate + valoare) la sfârșitul zilei `data` pentru TOATE
-    // cheile loturilor cerute, într-o singură interogare grupată. Rândurile
-    // documentului `faraDocumentId` sunt excluse explicit: la re-operare după
-    // anulare ele sunt deja șterse (ștergere amânată, filtru global), dar
-    // excluderea ține regula corectă și dacă apelantul o cheamă cu rândurile
-    // proprii încă vii (dry-run pe un document Operat n-are cum, dar costul e un
-    // predicat). Excluderea atinge DOAR rândurile de registru: un document cu
-    // rânduri într-o perioadă închisă nu se mai poate anula, deci n-are ce
-    // scoate din snapshot (F27-D3).
-    //
-    // Cheia cu cantitate ȘI valoare zero lipsește din rezultat, ca din snapshot:
-    // apelanții citesc prin `GetValueOrDefault`, pentru care „absentă" și „zero"
-    // sunt același răspuns.
+    /// <summary>Soldurile registrului la dată, fără documentul exclus și fără cheile integral zero.</summary>
     public static Dictionary<CheieStoc, SoldStoc> SolduriLaData(IObjectSpace os, IReadOnlyCollection<Guid> loturi,
         DateOnly data, Guid? faraDocumentId = null) {
         if (loturi.Count == 0)
             return new();
-        // T-D4.3: `faraDocumentId` nu poate scoate documentul din SNAPSHOT-ul referinței,
-        // deci referința trebuie să se termine STRICT înaintea datei citite.
-        return SolduriService.MiscariCumulate(os, data,
-                granita: faraDocumentId is null || data == DateOnly.MinValue ? null : data.AddDays(-1),
-                faraDocumentId: faraDocumentId)
+        return MiscariRegistru(os, data, faraDocumentId)
             .Where(m => loturi.Contains(m.LotId))
             .GroupBy(m => new { m.LotId, m.RepartitorId, m.TipStoc })
             .Select(g => new { g.Key, Cantitate = g.Sum(m => m.Cantitate), Valoare = g.Sum(m => m.Valoare) })
@@ -206,7 +199,7 @@ public static class StocService {
     }
 
     public static decimal Sold(IObjectSpace os, CheieStoc cheie, DateOnly? panaLa = null) =>
-        SolduriService.MiscariCumulate(os, panaLa)
+        MiscariRegistru(os, panaLa)
             .Where(m => m.LotId == cheie.LotId && m.RepartitorId == cheie.RepartitorId
                 && m.TipStoc == cheie.TipStoc)
             .Sum(m => (decimal?)m.Cantitate) ?? 0m;
@@ -222,15 +215,10 @@ public static class StocService {
         var chei = delta.Select(m => m.Cheie).Distinct().ToList();
         var erori = new List<string>();
         foreach (var cheie in chei) {
-            // Cumulul pornește de la rândul sintetic al ultimei perioade de
-            // referință (F27-D3): zilele de dinaintea lui sunt într-o perioadă
-            // închisă, unde `delta` n-are voie să ajungă (gardianul de perioadă
-            // rulează înaintea gardianului de sold). `randuriEliminate` sunt
-            // id-uri de rânduri de REGISTRU, deci nu pot atinge rândul sintetic.
-            var existente = SolduriService.MiscariCumulate(os, null)
+            var existente = MiscariRegistru(os, null)
                 .Where(m => m.LotId == cheie.LotId && m.RepartitorId == cheie.RepartitorId
                     && m.TipStoc == cheie.TipStoc)
-                .Select(m => new { ID = m.Id, m.Data, m.Cantitate })
+                .Select(m => new { m.ID, m.Data, m.Cantitate })
                 .ToList();
             var miscari = existente
                 .Where(r => randuriEliminate == null || !randuriEliminate.Contains(r.ID))
@@ -263,7 +251,7 @@ public static class StocService {
     public static (IReadOnlyList<(Guid LotId, decimal Cantitate)> Alocari, decimal Ramas) AlocaFifoTolerant(
         IObjectSpace os, Guid produsId, Guid gestiuneId, TipStoc tipStoc, DateOnly data, decimal cantitate,
         IReadOnlyDictionary<Guid, decimal> dejaAlocat = null) {
-        var solduri = SolduriService.MiscariCumulate(os, data, produsId: produsId)
+        var solduri = MiscariRegistru(os, data, produsId: produsId)
             .Where(m => m.RepartitorId == gestiuneId && m.TipStoc == tipStoc)
             .GroupBy(m => m.LotId)
             .Select(g => new { LotId = g.Key, Sold = g.Sum(m => m.Cantitate) })

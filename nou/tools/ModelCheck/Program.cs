@@ -23164,26 +23164,23 @@ void VerificaSolduriPerioada(bool privat) {
             .Where(x => x.D != 0m || x.C != 0m)
             .ToDictionary(x => x.Key, x => (x.D, x.C));
 
-    Dictionary<CheieStoc, SoldStoc> SnapshotStoc(IObjectSpace os, int an, int luna) =>
+    Dictionary<(Guid LotId, Guid ContId, Guid ProdusId, Guid GestiuneId, DateOnly Deschisa), SoldStoc> SnapshotStoc(IObjectSpace os, int an, int luna) =>
         os.GetObjectsQuery<SoldPerioadaStoc>().Where(s => s.An == an && s.Luna == luna)
-            .Select(s => new { s.LotId, s.RepartitorId, s.TipStoc, s.Cantitate, s.Valoare })
-            .ToList()
-            .ToDictionary(s => new CheieStoc(s.LotId, s.RepartitorId, s.TipStoc),
-                          s => new SoldStoc(s.Cantitate, s.Valoare));
+            .ToList().ToDictionary(s => (s.LotId, s.ContId, s.ProdusId, s.GestiuneId, s.Deschisa),
+                s => new SoldStoc(s.Cantitate, s.Valoare));
 
-    // Controlul citește REGISTRUL direct, nu `StocService.SolduriLaData`: de la
-    // pasul 2b serviciul pornește el însuși din snapshot, iar proba ar compara
-    // snapshot-ul cu el însuși. Rândurile șterse logic rămân în afară prin
-    // filtrul global, ca peste tot.
-    Dictionary<CheieStoc, SoldStoc> AsteptatStoc(IObjectSpace os, DateOnly panaLa) =>
-        os.GetObjectsQuery<RegistruStoc>()
-            .Where(r => r.Data <= panaLa)
-            .GroupBy(r => new { r.LotId, r.RepartitorId, r.TipStoc })
-            .Select(g => new { g.Key, Cantitate = g.Sum(r => r.Cantitate), Valoare = g.Sum(r => r.Valoare) })
-            .ToList()
-            .Where(x => x.Cantitate != 0m || x.Valoare != 0m)
-            .ToDictionary(x => new CheieStoc(x.Key.LotId, x.Key.RepartitorId, x.Key.TipStoc),
-                x => new SoldStoc(x.Cantitate, x.Valoare));
+    Dictionary<(Guid, Guid, Guid, Guid, DateOnly), SoldStoc> AsteptatStoc(IObjectSpace os, DateOnly panaLa) =>
+        os.GetObjectsQuery<Atlas.Conta.BackOffice.Module.Cub.Postare>()
+            .Where(p => p.Carte == Atlas.Conta.Nucleu.Carte.Contabil
+                && p.FelUnitate == Atlas.Conta.Nucleu.FelUnitate.Lot && p.Unitate != null
+                && p.Produs != null && p.Gestiune != null && p.Data <= panaLa)
+            .ToList().GroupBy(p => (p.Unitate.Value, p.Cont, p.Produs.Value, p.Gestiune.Value))
+            .Select(g => new { g.Key, Deschisa = g.Min(p => p.UnitateDeschisa ?? p.Data),
+                Cantitate = g.Sum(p => p.Cantitate),
+                Valoare = g.Sum(p => p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : -p.Valoare) })
+            .Where(s => s.Cantitate != 0m || s.Valoare != 0m)
+            .ToDictionary(s => (s.Key.Item1, s.Key.Item2, s.Key.Item3, s.Key.Item4, s.Deschisa),
+                s => new SoldStoc(s.Cantitate, s.Valoare));
 
     bool EgalContabil(IObjectSpace os, int an, int luna) {
         var snap = SnapshotContabil(os, an, luna);
@@ -23640,15 +23637,13 @@ void VerificaSolduriPerioada(bool privat) {
         var snapStoc = SnapshotStoc(os, An, 3);
         var asteptatStoc = AsteptatStoc(os, Ultima(An, 3));
         Console.WriteLine($"     MĂSURAT (SOL-V2/{eticheta}): snapshot stoc {snapStoc.Count} chei, "
-            + $"recalcul LINQ pe registru {asteptatStoc.Count} chei.");
-        Check($"SOL-V2b ({eticheta}) snapshot(03/{An}) stoc = `SUM` peste `RegistruStoc`, la cent, pe cheia "
-            + "`(lot, repartitor, tip)` — controlul citește REGISTRUL, nu `StocService`, care de la pasul 2b "
-            + "pornește el însuși din snapshot", EgalStoc(os, An, 3));
+            + $"recalcul LINQ pe cub {asteptatStoc.Count} chei.");
+        Check($"SOL-V2b ({eticheta}) snapshot(03/{An}) stoc = cub pe lot/cont/produs/gestiune și data deschiderii",
+            EgalStoc(os, An, 3));
 
-        var cheieGolita = snapStoc.Keys.Any(k => k.LotId == idLot1 && k.RepartitorId == idGestA);
-        var soldGolit = StocService.SolduriLaData(os, [idLot1], Ultima(An, 3))
-            .TryGetValue(new CheieStoc(idLot1, idGestA, snapStoc.Keys.First(k => k.LotId == idLot1).TipStoc),
-                out var s) ? s : new SoldStoc(0m, 0m);
+        var cheieGolita = snapStoc.Keys.Any(k => k.LotId == idLot1 && k.GestiuneId == idGestA);
+        var soldGolit = Atlas.Conta.BackOffice.Module.Cub.Citiri.Loturi.Solduri(os, Ultima(An, 3))
+            .FirstOrDefault(s => s.LotId == idLot1 && s.GestiuneId == idGestA);
         Console.WriteLine($"     MĂSURAT (SOL-V2c/{eticheta}): lotul golit integral are sold "
             + $"({soldGolit.Cantitate}, {soldGolit.Valoare}) și e {(cheieGolita ? "PREZENT" : "absent")} în snapshot.");
         Check($"SOL-V2c ({eticheta}) cheia lotului golit INTEGRAL din gestiunea A lipsește din snapshot: "
@@ -31024,6 +31019,9 @@ List<Scena> ScenelePeTip(bool privat) {
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiPartideCub), ["CITIRI"], () => new ScenariiPartideCub(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiSnapshotStoc), ["CITIRI"], () => new ScenariiSnapshotStoc(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiCitiri), ["CITIRI"], () => new ScenariiCitiri(

@@ -3,12 +3,7 @@ using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
-// Proiecțiile persistate ale registrelor la sfârșitul unei perioade DE
-// REFERINȚĂ (F27-D3): ultima perioadă închisă și fiecare decembrie închis.
-// Nu sunt registre și nu sunt urme (invariantul I): sunt derivabile integral
-// din registre și se rescriu prin `Motor/SolduriService`. Cheia e cheia
-// COMPLETĂ a atomului, ca orice raport să fie rollup ADITIV peste ea; cheile
-// integral zero se omit, iar cheia absentă înseamnă zero pentru consumator.
+// Proiecții reconstruibile din cub la sfârșitul perioadelor de referință (090f).
 [XafDisplayName("Sold de perioadă (contabil)")]
 public class SoldPerioadaContabil : BaseObject {
     // Fără separator de mii, ca pe `PerioadaFiscala`.
@@ -58,8 +53,6 @@ public class SoldPerioadaContabil : BaseObject {
     public virtual decimal Credit { get; set; }
 }
 
-// Aceeași regulă, pe cheia registrului de stoc (`Lot × Repartitor × TipStoc`):
-// un lot consumat integral iese din snapshot, nu rămâne mort în el.
 [XafDisplayName("Sold de perioadă (stoc)")]
 public class SoldPerioadaStoc : BaseObject {
     [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
@@ -70,11 +63,11 @@ public class SoldPerioadaStoc : BaseObject {
     public virtual Guid LotId { get; set; }
     [XafDisplayName("Lot")]
     public virtual Lot Lot { get; set; }
-    public virtual Guid RepartitorId { get; set; }
-    [XafDisplayName("Repartitor")]
-    public virtual Repartitor Repartitor { get; set; }
-    [XafDisplayName("Tip stoc")]
-    public virtual TipStoc TipStoc { get; set; }
+    public virtual Guid ContId { get; set; }
+    public virtual Guid ProdusId { get; set; }
+    public virtual Guid GestiuneId { get; set; }
+    [XafDisplayName("Data deschiderii")]
+    public virtual DateOnly Deschisa { get; set; }
 
     [XafDisplayName("Cantitate")]
     public virtual decimal Cantitate { get; set; }

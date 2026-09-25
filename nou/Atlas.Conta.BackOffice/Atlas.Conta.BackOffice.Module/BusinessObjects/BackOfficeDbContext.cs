@@ -314,11 +314,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     .OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<SoldPerioadaStoc>(b => {
-                b.HasIndex(s => new { s.An, s.Luna, s.LotId, s.RepartitorId, s.TipStoc }).IsUnique();
+                b.HasIndex(s => new { s.An, s.Luna, s.LotId, s.ContId, s.ProdusId, s.GestiuneId }).IsUnique();
                 b.HasIndex(s => new { s.An, s.Luna });
                 b.HasOne(s => s.Lot).WithMany().HasForeignKey(s => s.LotId)
-                    .OnDelete(DeleteBehavior.Restrict);
-                b.HasOne(s => s.Repartitor).WithMany().HasForeignKey(s => s.RepartitorId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
