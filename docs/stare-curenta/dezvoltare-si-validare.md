@@ -94,17 +94,22 @@ recreează (102b). Lanțul crește prin migrații, ca înainte.
 Comanda `dotnet ef` primește mereu `--context BackOfficeEFCoreDbContext` și
 se rulează fără `--no-build`. (23a, 89g)
 
-Bazele de dezvoltare se recreează astfel:
+Bazele de dezvoltare se recreează, nu se repară: o bază care nu corespunde
+codului se șterge (`DROP DATABASE`) și se reface prin comenzi (102b). Rețeta,
+cu `CS = Host=localhost;Port=5444;Username=postgres;Password=postgres`:
 
 | Bază | Recrearea |
 |---|---|
-| `Atlas.Conta.BackOffice` (bugetar) | `dotnet ef database update`, apoi seed prin Blazor `--updateDatabase --forceUpdate --silent`, cu `ProfilContabil` în mediu |
-| `Atlas.Conta.ModelCheck.Privat` | o recreează ModelCheck |
-| `Atlas.Conta.Import1C.Flax` | Import1C `--recreeaza` |
-| `Atlas.Conta.Import1C.Flax.Api` | clonă a bazei de import după importul integral |
-| `Atlas.Conta.BackOffice.Privat` | clonă a bazei de import, plus updater prin Blazor (rolurile și utilizatorii `Cititor`/`Configurator` pentru `refuzuri.ps1`), cu lanțul perioadelor redeschis integral: probele HTTP presupun zero închideri |
+| `Atlas.Conta.BackOffice` (bugetar; și baza ModelCheck bugetar) | din `Module`: `dotnet ef database update --context BackOfficeEFCoreDbContext --connection "$CS;Database=Atlas.Conta.BackOffice"`; apoi din `Blazor.Server`: `dotnet run --no-launch-profile -- --updateDatabase --forceUpdate --silent` cu `ProfilContabil=Bugetar` și `ConnectionStrings__ConnectionString=EFCoreProvider=Postgres;$CS;Database=Atlas.Conta.BackOffice` în mediu |
+| `Atlas.Conta.ModelCheck.Privat` | o recreează ModelCheck (`MigrateAsync` + seed) |
+| `Atlas.Conta.BackOffice.Privat` (baza hosturilor) | `dotnet ef database update … --connection "$CS;Database=Atlas.Conta.BackOffice.Privat"`, apoi updater-ul Blazor cu `appsettings.json` (Privat): seed plus utilizatorii `Admin`/`User`/`Cititor`/`Configurator`, fără documente |
+| `Atlas.Conta.Import1C.Flax` și clonele ei | nu se recreează implicit; Import1C `--recreeaza` la nevoie (091-r4) |
 
-(89g)
+Recrearea din 2026-09-25 (C102) a șters toate bazele Atlas.Conta de pe
+5444 (clonele de import, review, perf `Nucleu.Fizica.x1/x10`, CodexBCS,
+ClaudeRev) și a refăcut cele trei de mai sus. Pe baza Privat din seed,
+`partide-cub.py` își creează singur fixture-ul, iar `refuzuri.ps1` nu are
+subiect (cere documente existente, de exemplu o închidere de TVA). (89g, 102b)
 
 Cele trei ierarhii (`Document`, `DocumentDetaliu`, `Repartitor`) sunt TPH:
 câte o tabelă pe rădăcină, discriminatorul `ClrType` cu valorile implicite

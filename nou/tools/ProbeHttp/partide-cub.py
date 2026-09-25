@@ -1,6 +1,6 @@
 """SC-CIT-46/48: desfacerea unei plăți automate prin API, cu verificarea dreptului Delete.
 
-Necesită hostul privat pe CodexBCS și psycopg. Fixture-ul este eliminat în finally.
+Necesită hostul WebApi privat pe baza dată (implicit Atlas.Conta.BackOffice.Privat) și psycopg. Fixture-ul este eliminat în finally.
 """
 import json
 import argparse
@@ -18,8 +18,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--prin-xaf', action='store_true', help='Așteaptă cel mult 5 minute ștergerea prin acțiunea XAF.')
     parser.add_argument("--semnal-browser")
+    parser.add_argument('--baza', default='Atlas.Conta.BackOffice.Privat')
+    parser.add_argument('--url', default='http://127.0.0.1:5000')
     options = parser.parse_args()
-    base = 'http://127.0.0.1:5089'
+    base = options.url
     tokens, documents, links = {}, [], []
 
     def call(user, path, method='GET', data=None, expected=200):
@@ -42,9 +44,9 @@ def main():
         return call('Admin', '/api/odata/' + entity + '?' + urllib.parse.urlencode(
             {'$filter': f"{field} eq '{value}'"}))['value'][0]['ID']
 
-    with psycopg.connect('host=localhost port=5444 dbname=Atlas.Conta.ModelCheck.Privat.CodexBCS user=postgres password=postgres',
+    with psycopg.connect(f'host=localhost port=5444 dbname={options.baza} user=postgres password=postgres',
             autocommit=True) as conn:
-        assert conn.execute('select current_database()').fetchone()[0] == 'Atlas.Conta.ModelCheck.Privat.CodexBCS'
+        assert conn.execute('select current_database()').fetchone()[0] == options.baza
         for name in ('Admin', 'Cititor', 'User'):
             tokens[name] = call(None, '/api/Authentication/Authenticate', 'POST', {'userName': name, 'password': ''})
         debit = lookup('Cont', 'Simbol', '628')
