@@ -73,17 +73,23 @@ public static class Partide {
             .Select(p => (decimal?)Math.Abs(p.Net)).Sum() ?? 0m;
     }
 
-    public static decimal Total(IObjectSpace os, Guid document) {
+    /// <summary>Totalul documentului pe partidele proprii, în sensul de stins; fără sens declarat, Σ |net| pe unitate.</summary>
+    public static decimal Total(IObjectSpace os, Guid document, SensStingere? sens) {
         var noi = os.ModifiedObjects.OfType<Postare>().Where(p => os.IsNewObject(p)
             && p.DocumentId == document && p.Carte == N.Carte.Contabil
             && p.Tranzactie.Fel == N.FelTranzactie.Operare && p.FelUnitate == N.FelUnitate.Partida).ToArray();
-        if (noi.Length != 0) return noi.GroupBy(p => new { p.Cont, p.Partener, p.Unitate })
-            .Sum(g => Math.Abs(g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)));
-        return Contabil.Postari(os)
-        .Where(p => p.DocumentId == document && p.FelUnitate == N.FelUnitate.Partida)
-        .GroupBy(p => new { p.Cont, p.Partener, p.Unitate })
-        .Select(g => (decimal?)Math.Abs(g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)))
-        .Sum() ?? 0m;
+        var nete = noi.Length != 0
+            ? noi.GroupBy(p => new { p.Cont, p.Partener, p.Unitate })
+                .Select(g => g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)).ToList()
+            : Contabil.Postari(os)
+                .Where(p => p.DocumentId == document && p.FelUnitate == N.FelUnitate.Partida)
+                .GroupBy(p => new { p.Cont, p.Partener, p.Unitate })
+                .Select(g => g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)).ToList();
+        return sens switch {
+            SensStingere.Datorie => nete.Where(n => n < 0m).Sum(n => -n),
+            SensStingere.Creanta => nete.Where(n => n > 0m).Sum(),
+            _ => nete.Sum(Math.Abs),
+        };
     }
 
     public static decimal Capacitate(IObjectSpace os, Guid document, Guid partener, SensStingere sens) {

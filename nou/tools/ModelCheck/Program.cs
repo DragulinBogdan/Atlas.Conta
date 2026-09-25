@@ -26279,13 +26279,12 @@ void VerificaPartide(bool privat) {
 
         Console.WriteLine($"     MĂSURAT (PAR-V1/{eticheta}): TotalStingere — FCL A {fclA.TotalStingere}, "
             + $"FCL B {fclB.TotalStingere}, INC 1 {inc1.TotalStingere}.");
-        Check($"PAR-V1 ({eticheta}) `TotalStingere` e scris de motor la operare și e Σ `LiniiCreanta` pe "
-            + "fiecare document stins — citit de pe cheie, nu agregat la citire",
+        Check($"PAR-V1 ({eticheta}) `TotalStingere` e scris de motor la operare din partidele cubului, "
+            + "în sensul de stins al fiecărui document",
             fclA.TotalStingere == 100m && fclB.TotalStingere == 250m && inc1.TotalStingere == 120m
-            && fclA.TotalStingere == SumaCreanta(os, idFclA)
-            && fclB.TotalStingere == SumaCreanta(os, idFclB)
-            && inc1.TotalStingere == SumaCreanta(os, idInc1)
-            && ImperechereService.Total(os, idFclB) == 250m);
+            && fclA.TotalStingere == ImperechereService.Total(os, idFclA)
+            && fclB.TotalStingere == ImperechereService.Total(os, idFclB)
+            && inc1.TotalStingere == ImperechereService.Total(os, idInc1));
 
         // Stingerea lui ianuarie: încasarea de 120 închide A integral și B parțial.
         var impA = ImperechereService.Imperecheaza(os, inc1, fclA, 100m, null, Zi(1, 10));
@@ -26625,8 +26624,8 @@ void VerificaPartide(bool privat) {
             Console.WriteLine($"     MĂSURAT (PAR-V22/{eticheta}): RDC {rdc.Numar} — total scris "
                 + $"{Bani(rdc.TotalStingere ?? 0m)}, Σ linii de creanță {Bani(creantaRdc)}, Σ TOATE liniile "
                 + $"{Bani(brut)}; în `DocumenteCuRest`: {apare}.");
-            Check($"PAR-V22/SC-CIT-64 ({eticheta}): RDC păstrează totalul semnat −121, iar cubul are datorie 121 fără costul 30",
-                rdc.TotalStingere == -121m && creantaRdc == -121m && brut == -151m
+            Check($"PAR-V22/SC-CIT-64 ({eticheta}): RDC are totalul de stins 121 din cub, fără costul 30; liniile de creanță rămân −121",
+                rdc.TotalStingere == 121m && creantaRdc == -121m && brut == -151m
                 && ImperechereService.Total(os, rdc.ID) == 121m);
             var candidatRdc = ImperecheriProiectii.DocumenteCuRest(os).SingleOrDefault(r => r.DocumentId == rdc.ID);
             Check($"PAR-V23/SC-CIT-64 ({eticheta}): returul cu partidă proprie este datorie 121 în raport",
@@ -31051,6 +31050,7 @@ List<Scena> ScenelePeTip(bool privat) {
 }
 
 int RuleazaScenele(bool privat) {
+    AcoperireInvarianti.Reseteaza();
     var selectate = Scenarii.Selecteaza(ScenelePeTip(privat), filtruScenarii);
     if (filtruScenarii != null) {
         var eticheta = privat ? "privat" : "bugetar";
@@ -31076,11 +31076,15 @@ int RuleazaScenele(bool privat) {
     return selectate.Count;
 }
 
-// 102d — invarianții negarantați de scriere, pe baza rezultată a profilului.
 void VerificaInvariantiCub() {
+    Check($"INV-CUB: {AcoperireInvarianti.Scene} scene verificate înaintea purjei", AcoperireInvarianti.Scene > 0);
+    var neucise = AcoperireInvarianti.Neucise.ToList();
+    if (filtruScenarii == null)
+        Check("INV-CUB: fiecare ramură își ucide mutantul" + (neucise.Count == 0 ? "" : " — neexercitate: " + string.Join(", ", neucise)),
+            neucise.Count == 0);
     using var os = provider.CreateObjectSpace();
-    var refuz = Refuz(() => Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os));
-    Check("INV-CUB: invarianții cubului pe baza rezultată" + (refuz == null ? "" : $" — {refuz.Split('\n')[0]}"), refuz == null);
+    var rest = os.GetObjectsQuery<Atlas.Conta.BackOffice.Module.Cub.Postare>().LongCount();
+    Check($"INV-CUB: purja scenelor nu lasă postări ({rest})", rest == 0);
 }
 
 // ============ Felia 31 (TR-D7a): schema cubului și ordinea liniilor ============

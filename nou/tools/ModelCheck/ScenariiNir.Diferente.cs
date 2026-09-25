@@ -283,6 +283,8 @@ sealed partial class ScenariiNir {
             rezultat.ConexId == null && Net(f.Id, cod) == 100 && CuSpatiu(os =>
                 !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == f.Id && p.Cantitate != 0)
                 && !os.GetObjectsQuery<DocumentDetaliu>().Any(l => l.DocumentId == f.Id && l.LotId != null)));
+        Verifica("SC-NIR-30/avans", "totalul de stins este datoria 100, nu și creanța avansului", CuSpatiu(os =>
+            os.GetObjectByKey<FacturaIntrare>(f.Id).TotalStingere == 100m && ImperechereService.Total(os, f.Id) == 100m));
     }
 
     void ZeroIstoric() {

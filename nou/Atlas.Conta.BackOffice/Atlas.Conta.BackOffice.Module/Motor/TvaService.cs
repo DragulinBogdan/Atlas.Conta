@@ -18,6 +18,11 @@ public static class TvaService {
             .ToDictionary(t => t.ID, t => new InfoTva(t.Regim, t.Cota));
     }
 
+    /// <summary>Valoarea liniei datorată terțului: taxa autolichidată (TaxareInversa) rămâne în afara decontării.</summary>
+    public static decimal DatoratTertului(DocumentDetaliu d, IReadOnlyDictionary<Guid, InfoTva> tipuri) =>
+        d.Valoare + (d.TipTvaId is Guid id && tipuri.TryGetValue(id, out var tip) && tip.Regim == RegimTva.TaxareInversa
+            ? 0m : d.ValoareTva);
+
     // Formula fixată în design §3, cu SENSUL adăugat de F13-D1:
     //   Capitalizat:            Valoare = net × (1 + Cota/100); ValoareTva = 0
     //   Normal:                 Valoare = net;                  ValoareTva = net × Cota/100

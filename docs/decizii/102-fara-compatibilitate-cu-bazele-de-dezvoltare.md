@@ -31,6 +31,9 @@ Rețeta de recreare este unealtă de dezvoltare, nu cale a hosturilor.
 (d) Un invariant verificat până acum pe date vechi devine probă în ModelCheck
 dacă scrierea nu îl garantează prin construcție. Hosturile nu scanează
 istoria la pornire. Proba se rulează pe calea reală, ca orice probă de motor.
+Proba rulează pe fapte, nu pe o bază golită: înaintea purjei scenei. Fiecare
+ramură a ei are un mutant care produce refuzul așteptat; o ramură fără fapte
+nu contează ca verificată (completat după review-ul Codex R1, 2026-09-25).
 
 (e) Migrațiile EF rămân canonice pentru schemă (23a), fără transformări de
 date. Comprimarea istoricului migrațiilor într-o bază inițială se tranșează
@@ -72,6 +75,14 @@ din trei motive:
 
 Starea curentă a TR-D8 se comite întâi, ca bază. Felia are contract scurt,
 regulă de oprire și review la închidere.
+
+## Review-ul Codex (2026-09-25)
+
+R1: proba de la (d) rula pe baza golită de purjă. Corectată în
+`docs/nucleu/c102-curatenie-contract.md` (secțiunea review-ului Codex). Rulată
+pe fapte, proba a găsit trei totaluri de stins scrise din linii care nu
+corespundeau cubului. Owner-ul a ales ca `TotalStingere` să se scrie din cub,
+pe sensul de stins, după materializare.
 
 ## Restanțe
 

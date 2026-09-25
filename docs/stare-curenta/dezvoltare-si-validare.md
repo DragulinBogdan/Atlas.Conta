@@ -7,12 +7,28 @@ evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
 raportul/snapshot-ul/citirile operaționale ale partidelor folosesc
 intrările comune ale cubului. C102 (102) scoate codul de compatibilitate cu
 bazele de dezvoltare: hosturile nu scanează istoria la pornire, iar
-invarianții cubului rulează în ModelCheck la finalul fiecărui profil
-(`INV-CUB`, `Cub.Citiri.Invarianti`).
+invarianții cubului rulează în ModelCheck (`INV-CUB`, `Cub.Citiri.Invarianti`).
 
-Validarea curentă (C102, pe bazele recreate): **3.083 bugetar / 4.079
+`INV-CUB` (`tools/ModelCheck/AcoperireInvarianti.cs`) rulează în
+`ScenaDocumente.Ruleaza` după scenă și înaintea purjei ei, pe faptele
+produse, inclusiv stornourile. Fiecare ramură fără probă proprie are un
+mutant într-o tranzacție anulată, rulat o dată per profil pe prima scenă cu
+faptele potrivite: `DESCHIDERE-EGALA` (registrul istoric egal cu deschiderea
+cubului trece), `DESCHIDERE`, `PARTIDE` (partidă fără partener), `POLITICA`
+(totalul de decontare), `IMO-FISA`, `IMO-CAUZA`, `IMO-REGISTRU`. Ramurile
+acoperirii registru ↔ cub, echilibrului și provenienței au probele SC-CIT-23,
+SC-CIT-34 și SC-CIT-10. La final, profilul cere cel puțin o scenă verificată și,
+pe integrală, toate ramurile ucise, iar purja nu lasă postări. La prima
+rulare, proba a găsit trei totaluri de stins care nu corespundeau cubului:
+taxarea inversă (SC-FCT-10), contul explicit fără partide (SC-DEC-10) și
+factura cu avans (SC-NIR-30/avans). Totalul se scrie acum din cub (102).
+Integrala după corectură: **3.142 bugetar / 4.141 privat OK**, zero FAIL,
+build fără avertismente, `run-verificari/20260925-163947-708/`.
+
+Validarea curentă (C102 cu review-ul Codex R1): **3.142 bugetar / 4.141
 privat OK**, zero FAIL, exit 0, build fără avertismente,
-`run-verificari/c102/final-bugetar.log` și `final-privat.log`. Cifra scade
+`run-verificari/20260925-163947-708/`. La închiderea C102: 3.083/4.079,
+`run-verificari/c102/final-bugetar.log` și `final-privat.log`; cifra scăzuse
 față de 3.107/4.103 pentru că probele compatibilității scoase au ieșit
 (SC-CIT-08/24, SC-NTC-20, avertismentele seed-ului, backfill-urile).
 Clientul compilează; metadata/OpenAPI/types sunt stabile la regenerare.
@@ -87,9 +103,11 @@ brut pe care modelul nu-l declară (`Postare` partiționată pe `Spatiu` cu
 cheia `(Spatiu, ID)`, FK-urile și indecșii pe partiții, constrângerile
 `CK_Postare_*`, funcția `cub_partida_id`). Migrațiile nu transformă date.
 Proba A/B: `pg_dump --schema-only` pe baza din lanțul vechi complet și pe
-baza din migrația comprimată are aceleași 593 de instrucțiuni, cu excepția
-valorilor `DEFAULT` lăsate de `AddColumn` pe 12 coloane (de exemplu
-`TolerantaTaxa` 0), pe care modelul nu le declară. Migrațiile de dinainte
+baza din migrația comprimată are aceleași 593 de instrucțiuni. După
+normalizarea ordinii coloanelor și a tokenurilor `pg_dump`, diferă numai 10
+valori `DEFAULT` lăsate de `AddColumn` pe 5 tabele (`UrmarestePartide`,
+`Pozitie`, cele șase câmpuri din `PartideDeschise`, `TolerantaTaxa`,
+`PosteazaInCub`), pe care modelul nu le declară. Migrațiile de dinainte
 sunt istorie în git; bazele create pe lanțul vechi nu se actualizează, se
 recreează (102b). Lanțul crește prin migrații, ca înainte.
 Comanda `dotnet ef` primește mereu `--context BackOfficeEFCoreDbContext` și

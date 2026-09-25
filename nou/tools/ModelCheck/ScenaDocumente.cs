@@ -41,7 +41,10 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     public void Ruleaza() {
         Curata();
         Exception initiala = null;
-        try { Pregateste(); Executa(); VerificaMatriceFiscale(); }
+        try {
+            Pregateste(); Executa(); VerificaMatriceFiscale();
+            Comanda(os => AcoperireInvarianti.Verifica(os, Verifica));
+        }
         catch (Exception e) { initiala = e; throw; }
         finally {
             try { Curata(); }

@@ -606,16 +606,25 @@ Contractele documentului sunt:
 
 Un tip care nu închide nicio datorie o declară prin `PoateFiStins = false`
 (DVI): fără declarație, validarea ar accepta tăcut o împerechere când
-plafonul stingătorului oferă un singur sens. Totalul folosit la stingere este
-Σ(valoare + TVA) pe liniile creanței; un tip cu altă formulă a restului nu
-intră pe rolul de document stins. (86g)
+plafonul stingătorului oferă un singur sens. Un tip cu altă formulă a
+restului nu intră pe rolul de document stins. (86g)
 
-Totalul este **fapt scris**, nu agregat la citire: motorul îl calculează din
-`LiniiCreanta` și îl pune pe `Document.TotalStingere` la operare, în aceeași
-tranzacție cu registrele; îl șterge la anulare; nu îl atinge la storno.
-`ImperechereService.Total` îl citește de pe cheie și refuză explicit un
-document ieșit din Draft fără total scris. Câmpul este al motorului:
-gardianul refuză scrierea lui pe ușa securizată. (F27-D7)
+Totalul de stins vine din cub: suma netelor pe unitățile de partidă proprii ale
+documentului, în sensul lui de stins (`SensDeStins`). Pentru Datorie se adună
+netele creditoare, pentru Creanță netele debitoare; fără sens declarat, Σ |net|
+(`Cub.Citiri.Partide.Total`). Rămân în afara lui: taxa autolichidată
+(`TaxareInversa`, 4426 = 4427, SC-FCT-10), contul explicit fără partide
+(SC-DEC-10) și creanța avansului de pe aceeași factură (SC-NIR-30/avans).
+Plata autogenerată a FCT preia pe linie valoarea datorată terțului
+(`TvaService.DatoratTertului`, SC-FCT-10). (102)
+
+Totalul este **fapt scris**: motorul îl pune pe `Document.TotalStingere` la
+operare, după materializarea cubului, în aceeași tranzacție. Îl șterge la anulare
+și nu îl atinge la storno. Un tip care nu postează în cub pe profil are total 0.
+`ImperechereService.Total` și coloana „Total" din `DocumenteCuRest` citesc
+aceeași formulă din cub. `INV-CUB` (`CITIRE_PARTIDE_POLITICA`) verifică
+antetul față de cub. Câmpul este al motorului: gardianul refuză scrierea lui pe
+ușa securizată. (F27-D7, 102)
 
 ### Partide deschise
 
@@ -635,8 +644,8 @@ documentele înregistrate după ea, plus documentele atinse de o împerechere di
 fereastra deschisă (o desfacere poate readuce în listă un document stins
 integral la închidere). Costul este mărginit de fereastra deschisă plus
 numărul partidelor, nu de tot istoricul. `ReturClient` a intrat în uniune
-(a șasea ramură): totalul lui este cel filtrat prin `LiniiCreanta`, scris de
-motor, deci proiecția nu mai poate diverge de serviciu. Rândurile lui rămân
+(a șasea ramură): totalul lui vine din cub, ca la celelalte, deci proiecția
+nu poate diverge de serviciu. Rândurile lui rămân
 totuși în afara listei, dar din alt motiv — creanța unui retur este negativă
 după operare, iar filtrul `Rest > 0` o taie. (F27-D7)
 
@@ -1220,8 +1229,10 @@ Refuzul retragerii este verificat înaintea modificării tracker-ului, iar
 cel al operării înaintea numerotării.
 
 Scriitorul stornoului garantează proveniența inversei. `Citiri/Invarianti`
-verifică pe baza rezultată a fiecărui profil ModelCheck (`INV-CUB`)
-invarianții pe care scrierea nu-i garantează prin construcție: proveniența
+verifică în ModelCheck (`INV-CUB`), pe faptele fiecărei scene a catalogului,
+înaintea purjei ei, invarianții pe care scrierea nu-i garantează prin
+construcție (schema garantează deja, prin `CK_Postare_FelUnitate`, unitatea și
+nașterea partidei): proveniența
 (`CITIRE_PROVENIENTA_LIPSA`), acoperirea registru ↔ cub pe linie și latură
 cât durează regimul dual, echilibrul pe tranzacție și carte, deschiderea,
 unitățile de partidă, totalul de decontare și imobilizările. Hosturile nu

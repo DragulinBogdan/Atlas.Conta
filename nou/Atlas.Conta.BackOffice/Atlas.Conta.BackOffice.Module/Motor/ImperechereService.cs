@@ -4,7 +4,8 @@ using DevExpress.ExpressApp;
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
 public static class ImperechereService {
-    public static decimal Total(IObjectSpace os, Guid documentId) => Cub.Citiri.Partide.Total(os, documentId);
+    public static decimal Total(IObjectSpace os, Guid documentId) =>
+        Cub.Citiri.Partide.Total(os, documentId, os.GetObjectByKey<Document>(documentId)?.SensDeStins(os));
 
     public static decimal Asignat(IObjectSpace os, Guid documentId) => Total(os, documentId) - Ramas(os, documentId);
 

@@ -171,7 +171,7 @@ pas 5 `7c07c8f`, pas 6 `da1e958`, apoi corecturile review-ului și documentele.
 | Snapshot fără proveniență | scos: `DinCub` pe ambele snapshot-uri, `CITIRE_SNAPSHOT_VECHI`, `SnapshotContabilDinCub`, filtrul indexului, `NOT DinCub` |
 | Legături fără efect verificat | scoase: `EfectCubVerificat`, ramura `suma < 0 && !desfaceNominalizare` și parametrul, `Partide.Diagnostic`/`Efect`, `StingeriDto.Avertismente` și randarea |
 | Proveniența stornourilor vechi | scoasă: migrația `OriginiStornoUnivoce`, `Contabil.VerificaProvenienta`/`NumaraFaraProvenienta`, `RaportSeed.PostariFaraProvenienta`; proba rămâne în `Invarianti.VerificaProvenienta` |
-| Refuzul istoricului la pornire | scos din cele două `Program.cs` și din seed (`Imobilizari.VerificaAcoperire` rula și în `SeedTipuriDocument`); `Activare` devine `Cub.Citiri.Invarianti`, apelat de ModelCheck la finalul fiecărui profil (`INV-CUB`) |
+| Refuzul istoricului la pornire | scos din cele două `Program.cs` și din seed (`Imobilizari.VerificaAcoperire` rula și în `SeedTipuriDocument`); `Activare` devine `Cub.Citiri.Invarianti`, apelat de ModelCheck (`INV-CUB`); după review-ul Codex R1, pe faptele fiecărei scene înaintea purjei, cu mutanți per ramură (vezi mai jos) |
 | Storno pe tip netrecut pe cub | **justificat, nu scos:** `return` pe declarație fără postări rămâne. Refuzul cerut de C-D3 a picat SC-X-01: NIR conex cu deltă zero (099) nu are postări și stornoul lui schimbă doar starea. Comentariul de compatibilitate a ieșit |
 | Cod mort al portării | scos: `ImperecheriProiectii.Asignari`, `SumaPeDocument`, `AsignariDeschidere`, `AsignatDeschidere`; probele SC-DES-12/14 citesc `DocumenteCuRest`/`Asignat` |
 
@@ -192,8 +192,10 @@ corecturii și sunt roșii pe codul de la pasul 2 (proba cu stash pe Module),
 apoi verzi.
 
 **C-D8:** proba A/B `pg_dump --schema-only`, cu 593 de instrucțiuni pe
-ambele variante. Diferă numai valorile `DEFAULT` lăsate de `AddColumn` pe 12
-coloane, pe care modelul nu le declară. Schema nu depinde de profil;
+ambele variante. După normalizarea ordinii coloanelor și a tokenurilor
+`pg_dump`, diferă numai 10 valori `DEFAULT` lăsate de `AddColumn` pe 5 tabele,
+pe care modelul nu le declară (numărătoarea corectată de review-ul Codex;
+textul inițial spunea 12 coloane). Schema nu depinde de profil;
 ModelCheck privat își creează baza din aceeași migrație.
 
 **Validarea:**
@@ -213,3 +215,33 @@ refuzului retroactiv lipsă, adăugat (SC-CIT-68); restanțele 102-r4
 (desfacerea automată fără efect, fără contraexemplu concret) și 102-r5
 (perf `PartideDisponibile`). Echivalența C-D5, D-2, D-3, desfacerea și
 migrația comprimată au fost verificate și țin.
+
+## Review-ul Codex (2026-09-25)
+
+`comunicari/2026-09-25-1507-codex-claude-c102-review.md`: un MEDIU (R1) și o
+precizare editorială (DEFAULT-urile, corectate mai sus).
+
+**R1:** `INV-CUB` rula după purja scenelor, deci pe o bază goală. Acum
+rulează pe faptele fiecărei scene, înaintea purjei, cu mutanți care produc
+refuzul pe fiecare ramură fără probă proprie (detaliul în
+`stare-curenta/dezvoltare-si-validare.md`). Proba a scos trei totaluri de
+stins care nu corespundeau cubului, toate de dinainte de C102. Owner-ul a
+ales scrierea antetului din cub:
+
+- taxarea inversă: 121 pe antet față de 100 pe partidă; plata autogenerată
+  plătea 121 (SC-FCT-10);
+- contul explicit 462 pe netul DEC: 121 față de 21 (SC-DEC-10);
+- factura cu avans 4091/401: `Partide.Total` dădea 200 față de 100, iar
+  `DocumenteCuRest` grupa netul pe partener și ar fi afișat 0
+  (SC-NIR-30/avans).
+
+`Partide.Total`, coloana „Total" din `DocumenteCuRest` și
+`CITIRE_PARTIDE_POLITICA` folosesc o singură formulă, pe sensul de stins.
+Motorul scrie `TotalStingere` din ea, după materializarea cubului. PAR-V1 și
+PAR-V22 descriu acum noua semantică: RDC are total de stins 121, nu −121.
+
+Integrala: **3.142 bugetar / 4.141 privat OK**, zero FAIL, build fără
+avertismente, `run-verificari/20260925-163947-708/`. SC-FCT-10 și `INV-CUB`
+sunt roșii pe codul dinainte (`run-verificari/20260925-162409-799/`).
+Constrângerea `CK_Postare_FelUnitate` garantează deja unitatea și nașterea
+partidei, deci mutantul de partide lucrează pe partener.

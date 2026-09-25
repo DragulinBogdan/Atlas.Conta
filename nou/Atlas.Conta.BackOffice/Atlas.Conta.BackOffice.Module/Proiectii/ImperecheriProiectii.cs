@@ -40,6 +40,18 @@ public static class ImperecheriProiectii {
 
 
 
+    sealed class NetUnitate {
+        public Guid? DocumentId { get; set; }
+        public Guid? Partener { get; set; }
+        public decimal Net { get; set; }
+    }
+
+    static IQueryable<NetUnitate> Nete(IQueryable<Cub.Postare> postari) =>
+        postari.Where(p => p.FelUnitate == N.FelUnitate.Partida)
+            .GroupBy(p => new { p.DocumentId, p.Partener, p.Cont, p.Unitate })
+            .Select(g => new NetUnitate { DocumentId = g.Key.DocumentId, Partener = g.Key.Partener,
+                Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) });
+
     static IQueryable<AntetCuRest> Antete(IObjectSpace os, bool istoric = false) {
         return
             os.GetObjectsQuery<FacturaIntrare>().Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat))
@@ -88,17 +100,16 @@ public static class ImperecheriProiectii {
     public static void VerificaAcoperire(IObjectSpace os) {
         // Antetul este martor de diagnostic al acoperirii, nu sursă de rest.
         // Numai Operare: storno/transferurile nu schimbă obligația de a avea unități.
-        var parti = P.Postari(os).Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare)
-            .GroupBy(p => new { p.DocumentId, p.Cont, p.Partener })
-            .Select(g => new { g.Key.DocumentId,
-                Valoare = Math.Abs(g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)) })
-            .GroupBy(p => p.DocumentId).Select(g => new { DocumentId = g.Key, Total = g.Sum(p => p.Valoare) });
+        var parti = Nete(P.Postari(os).Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare))
+            .GroupBy(n => n.DocumentId)
+            .Select(g => new { DocumentId = g.Key,
+                Datorie = g.Sum(n => n.Net < 0m ? -n.Net : 0m), Creanta = g.Sum(n => n.Net > 0m ? n.Net : 0m) });
         var lipsuri = from a in Antete(os, istoric: true)
                       join p in parti on (Guid?)a.DocumentId equals p.DocumentId into acoperire
                       from p in acoperire.DefaultIfEmpty()
-                      let gasit = (decimal?)p.Total ?? 0m
-                      where gasit != Math.Abs(a.Total)
-                      select new { a.DocumentId, Asteptat = Math.Abs(a.Total), Gasit = gasit };
+                      let gasit = (a.Sens == SensDatorie ? (decimal?)p.Datorie : (decimal?)p.Creanta) ?? 0m
+                      where gasit != a.Total
+                      select new { a.DocumentId, Asteptat = a.Total, Gasit = gasit };
         var exemple = lipsuri.Take(10).ToArray();
         if (exemple.Length != 0) throw new OperareException("CITIRE_PARTIDE_POLITICA: total de decontare fără acoperire integrală pe partide; "
             + string.Join("; ", exemple.Select(p => $"document {p.DocumentId}, așteptat {p.Asteptat}, găsit {p.Gasit}")));
@@ -125,20 +136,20 @@ public static class ImperecheriProiectii {
             .Select(g => new { g.Key.DocumentId, g.Key.ContrapartidaId, g.Key.Sens,
                 Rest = g.Sum(p => p.Rest) });
         var ziTotal = laData ?? DateOnly.MaxValue;
-        var totale = Cub.Citiri.Contabil.Postari(os)
-            .Where(p => p.Data <= ziTotal && p.FelUnitate == N.FelUnitate.Partida)
-            .GroupBy(p => new { p.DocumentId, p.Partener })
+        var totale = Nete(Cub.Citiri.Contabil.Postari(os).Where(p => p.Data <= ziTotal))
+            .GroupBy(n => new { n.DocumentId, n.Partener })
             .Select(g => new { g.Key.DocumentId, ContrapartidaId = g.Key.Partener,
-                Total = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) });
+                Datorie = g.Sum(n => n.Net < 0m ? -n.Net : 0m), Creanta = g.Sum(n => n.Net > 0m ? n.Net : 0m) });
         var raport = from a in antete
                join s in solduri on new { DocumentId = (Guid?)a.DocumentId, a.ContrapartidaId, a.Sens }
                    equals new { s.DocumentId, s.ContrapartidaId, s.Sens }
                join t in totale on new { s.DocumentId, ContrapartidaId = (Guid?)s.ContrapartidaId }
                    equals new { t.DocumentId, t.ContrapartidaId }
+               let total = a.Sens == SensDatorie ? t.Datorie : t.Creanta
                select new DocumentCuRestRand {
                    DocumentId = a.DocumentId, Tip = a.Tip, Numar = a.Numar, Data = a.Data,
                    ContrapartidaId = a.ContrapartidaId, ContrapartidaDenumire = a.ContrapartidaDenumire,
-                   Sens = a.Sens, Total = Math.Abs(t.Total), Asignat = Math.Abs(t.Total) - s.Rest,
+                   Sens = a.Sens, Total = total, Asignat = total - s.Rest,
                    Rest = s.Rest, Disponibil = s.Rest
                };
         if (documentCurentId is not { } curent) return raport;

@@ -99,6 +99,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             if (cod == "NED21") r[2] = r[2] with { Cont = Cont(Serviciu) };
             else r[3] = r[3] with { Cont = Cont("4427"), Partener = null, Unitate = null };
             Postari("SC-X-14", special.Id, N.FelTranzactie.Operare, Ianuarie, r);
+            if (cod == "TI21") TaxareInversa(special.Id);
             Storneaza(special.Id, Ianuarie);
             Postari("SC-X-14", special.Id, N.FelTranzactie.Storno, Ianuarie,
                 r.Select(p => p with { Valoare = -p.Valoare }).ToArray());
@@ -150,6 +151,17 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             new[] { f.Id, nir, bcs }.Select(Amprenta).SequenceEqual(amprente));
         SoldLot("SC-X-01", f.Linii[0].Lot!.Value, Magazie, new(An, 1, 20), 6, 60);
         SoldPartida("SC-X-01", Partida(f.Id, ContFurnizor)!.Value, new(An, 1, 20), -100);
+    }
+
+    void TaxareInversa(Guid factura) {
+        Verifica("SC-FCT-10", "total de stins 100 pe antet și pe cub, fără taxa autolichidată", CuSpatiu(os =>
+            os.GetObjectByKey<FacturaIntrare>(factura).TotalStingere == 100m
+            && Atlas.Conta.BackOffice.Module.Motor.ImperechereService.Total(os, factura) == 100m));
+        Verifica("SC-FCT-10", "plata autogenerată plătește 100", CuSpatiu(os => {
+            var f = os.GetObjectByKey<FacturaIntrare>(factura); f.GenereazaPlata = true;
+            var plata = f.GenereazaSecundar(os);
+            return os.ModifiedObjects.OfType<DocumentDetaliu>().Where(d => d.Document == plata).Sum(d => d.Valoare) == 100m;
+        }));
     }
 
     void PestePerioada() {

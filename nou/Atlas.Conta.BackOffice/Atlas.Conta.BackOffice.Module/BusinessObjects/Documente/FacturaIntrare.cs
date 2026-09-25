@@ -92,16 +92,14 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
         plata.TipInstrument = PlataTipInstrument ?? TipInstrumentPlata.OrdinPlata;
         plata.PredatorId = PlataContPropriuId ?? Guid.Empty;
         plata.PrimitorId = PredatorId;
+        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
         foreach (var s in Detalii) {
             // DIM-2: defalcarea se naște pe frunza trezoreriei — altfel
             // PreiaDimensiuni ar fi no-op și plata ar pierde dimensiunile.
             var d = os.CreateObject<DocumentTrezorerieDetaliu>();
             d.Document = plata;
             d.TipMaterialId = s.TipMaterialId;
-            // Plata stinge BRUTUL (design §3): defalcarea clonată per linie e
-            // Valoare + ValoareTva; linia de plată nu are semantică proprie de
-            // TVA (TipTva rămâne null).
-            d.Valoare = s.Valoare + s.ValoareTva;
+            d.Valoare = Motor.TvaService.DatoratTertului(s, tipuri);
             d.AngajamentId = s.AngajamentId;
             d.PreiaDimensiuni(s.DimensiuniCulese());
         }

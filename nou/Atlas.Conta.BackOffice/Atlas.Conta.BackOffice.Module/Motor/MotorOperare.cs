@@ -400,9 +400,6 @@ public static class MotorOperare {
             rand.Tva = t.Tva;
         }
 
-        doc.TotalStingere = Scara.RotunjesteBani(                                     // F27-D7
-            doc.LiniiCreanta(doc.Detalii.AsQueryable()).Sum(d => d.Valoare + d.ValoareTva));
-
         // 3b. Registrul PROPRIU al tipului, prin interfață (F26-D3).
         if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
             cuRegistruPropriu.MaterializeazaRegistrul(os);
@@ -431,6 +428,7 @@ public static class MotorOperare {
         //    serviciul materializează relația în aceeași tranzacție.
         // 7. Regimul dual (S-D4): declarația frunzei, în aceeași tranzacție.
         Cub.Materializare.Opereaza(os, doc, tipDoc);
+        doc.TotalStingere = Scara.RotunjesteBani(ImperechereService.Total(os, doc.ID));  // F27-D7, 102
         ImperechereService.CreeazaAutomataLaOperare(os, doc);
 
         os.CommitChanges();
