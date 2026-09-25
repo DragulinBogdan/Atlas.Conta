@@ -62,9 +62,15 @@ public static class Partide {
         select new PartidaProprie { DocumentId = o.DocumentId.Value, UnitateId = s.UnitateId,
             ContId = s.ContId, PartenerId = s.PartenerId, Net = s.Debit - s.Credit };
 
-    public static decimal Ramas(IObjectSpace os, Guid document) =>
-        Proprii(os, DateOnly.MaxValue).Where(p => p.DocumentId == document)
-            .Select(p => (decimal?)Math.Abs(p.Net)).Sum() ?? 0m;
+    /// <summary>Restul documentului pe partidele proprii, cu aceeași selecție pe sens ca <see cref="Total"/>.</summary>
+    public static decimal Ramas(IObjectSpace os, Guid document, SensStingere? sens) {
+        var proprii = Proprii(os, DateOnly.MaxValue).Where(p => p.DocumentId == document);
+        return sens switch {
+            SensStingere.Datorie => proprii.Where(p => p.Net < 0m).Select(p => (decimal?)-p.Net).Sum(),
+            SensStingere.Creanta => proprii.Where(p => p.Net > 0m).Select(p => (decimal?)p.Net).Sum(),
+            _ => proprii.Select(p => (decimal?)Math.Abs(p.Net)).Sum(),
+        } ?? 0m;
+    }
 
     public static decimal Disponibil(IObjectSpace os, Guid document, Guid partener, SensStingere sens) {
         var proprii = Proprii(os, DateOnly.MaxValue)

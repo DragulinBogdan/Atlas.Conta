@@ -25,9 +25,9 @@ factura cu avans (SC-NIR-30/avans). Totalul se scrie acum din cub (102).
 Integrala după corectură: **3.142 bugetar / 4.141 privat OK**, zero FAIL,
 build fără avertismente, `run-verificari/20260925-163947-708/`.
 
-Validarea curentă (C102 cu review-ul Codex R1): **3.142 bugetar / 4.141
+Validarea curentă (C102 cu review-ul Codex R1/R2): **3.146 bugetar / 4.145
 privat OK**, zero FAIL, exit 0, build fără avertismente,
-`run-verificari/20260925-163947-708/`. La închiderea C102: 3.083/4.079,
+`run-verificari/20260925-174625-732/`. La închiderea C102: 3.083/4.079,
 `run-verificari/c102/final-bugetar.log` și `final-privat.log`; cifra scăzuse
 față de 3.107/4.103 pentru că probele compatibilității scoase au ieșit
 (SC-CIT-08/24, SC-NTC-20, avertismentele seed-ului, backfill-urile).

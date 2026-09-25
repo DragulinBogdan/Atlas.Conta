@@ -116,7 +116,15 @@ Raport: `run-nucleu/tr-d7b/pas5-nir/raport.md`.
 SC-NIR-30/avans: 4091 privat / 409.01.01 bugetar, 100 fără TVA,
 produce D avans 100/C furnizor 100, fără NIR/lot/cantitate. Seed-ul bugetar
 corectează încadrarea 409.01.01 din clasa de combustibil în clasa fără stoc S,
-conform 099(d); nu se reclasifică istoricul deja postat.
+conform 099(d); nu se reclasifică istoricul deja postat. Totalul de stins
+este datoria 100, nu și creanța avansului (102).
+
+SC-NIR-37: aceeași factură de avans verifică panoul împerecherilor, lista
+`DocumenteCuRest` și `ImperechereService` în patru stadii: nestins
+100/100/0 (total/rămas/asignat), după PLT 40 100/60/40, după PLT 60
+100/0/100, după desfacerea stingerii de 60 100/60/40. Pe privat verifică
+în fiecare stadiu că soldul 4091 al furnizorului rămâne +100, adică
+stingerea datoriei 401 nu consumă creanța avansului (review-ul Codex R2).
 
 ### Execuție 098/099 — 2026-09-24
 

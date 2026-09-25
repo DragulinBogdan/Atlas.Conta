@@ -5,11 +5,15 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 
 public static class ImperechereService {
     public static decimal Total(IObjectSpace os, Guid documentId) =>
-        Cub.Citiri.Partide.Total(os, documentId, os.GetObjectByKey<Document>(documentId)?.SensDeStins(os));
+        Cub.Citiri.Partide.Total(os, documentId, Sens(os, documentId));
 
     public static decimal Asignat(IObjectSpace os, Guid documentId) => Total(os, documentId) - Ramas(os, documentId);
 
-    public static decimal Ramas(IObjectSpace os, Guid documentId) => Cub.Citiri.Partide.Ramas(os, documentId);
+    public static decimal Ramas(IObjectSpace os, Guid documentId) =>
+        Cub.Citiri.Partide.Ramas(os, documentId, Sens(os, documentId));
+
+    static SensStingere? Sens(IObjectSpace os, Guid documentId) =>
+        os.GetObjectByKey<Document>(documentId)?.SensDeStins(os);
 
     public static Imperechere Imperecheaza(IObjectSpace os,
         Document stingator, Document document, decimal suma, Guid? contrapartidaId = null,

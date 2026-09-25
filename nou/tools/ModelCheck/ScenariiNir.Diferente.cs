@@ -285,6 +285,26 @@ sealed partial class ScenariiNir {
                 && !os.GetObjectsQuery<DocumentDetaliu>().Any(l => l.DocumentId == f.Id && l.LotId != null)));
         Verifica("SC-NIR-30/avans", "totalul de stins este datoria 100, nu și creanța avansului", CuSpatiu(os =>
             os.GetObjectByKey<FacturaIntrare>(f.Id).TotalStingere == 100m && ImperechereService.Total(os, f.Id) == 100m));
+        void Stadiu(string pas, decimal ramas) => Verifica("SC-NIR-37", $"{pas}: panou, listă și serviciu 100/{ramas}/{100 - ramas}; creanța avansului rămâne 100",
+            CuSpatiu(os => {
+                var panou = Atlas.Conta.BackOffice.Module.Api.Trz.ImperechereApply.Stingeri(os, f.Id);
+                var rand = Atlas.Conta.BackOffice.Module.Proiectii.ImperecheriProiectii
+                    .DocumenteCuRest(os, Furnizor, SensStingere.Datorie).SingleOrDefault(r => r.DocumentId == f.Id);
+                return panou.Total == 100m && panou.Ramas == ramas && panou.Asignat == 100m - ramas
+                    && ImperechereService.Ramas(os, f.Id) == ramas && ImperechereService.Asignat(os, f.Id) == 100m - ramas
+                    && (ramas == 0m ? rand == null : rand is { Total: 100m } && rand.Rest == ramas && rand.Asignat == 100m - ramas)
+                    && (!Privat || C.Citiri.Partide.Solduri(os, DateOnly.MaxValue)
+                        .Where(s => s.ContId == Cont(cod) && s.PartenerId == Furnizor).Sum(s => s.Debit - s.Credit) == 100m);
+            }));
+        Stadiu("nestins", 100m);
+        var p40 = Trezorerie(false, 40); Opereaza(p40.Id);
+        Imperecheaza(p40.Id, f.Id, 40, Ianuarie);
+        Stadiu("stingere parțială 40", 60m);
+        var p60 = Trezorerie(false, 60); Opereaza(p60.Id);
+        var integral = Imperecheaza(p60.Id, f.Id, 60, Ianuarie);
+        Stadiu("stingere integrală", 0m);
+        Comanda(os => ImperechereService.Desfa(os, integral, Ianuarie));
+        Stadiu("după desfacerea stingerii de 60", 60m);
     }
 
     void ZeroIstoric() {

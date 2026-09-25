@@ -612,7 +612,10 @@ restului nu intră pe rolul de document stins. (86g)
 Totalul de stins vine din cub: suma netelor pe unitățile de partidă proprii ale
 documentului, în sensul lui de stins (`SensDeStins`). Pentru Datorie se adună
 netele creditoare, pentru Creanță netele debitoare; fără sens declarat, Σ |net|
-(`Cub.Citiri.Partide.Total`). Rămân în afara lui: taxa autolichidată
+(`Cub.Citiri.Partide.Total`). Restul (`Partide.Ramas`) folosește aceeași
+selecție pe soldurile curente ale partidelor proprii, iar asignatul este total −
+rest. Pe o factură cu avans, datoria 401 și creanța 4091 rămân partide
+distincte (SC-NIR-37). Rămân în afara lui: taxa autolichidată
 (`TaxareInversa`, 4426 = 4427, SC-FCT-10), contul explicit fără partide
 (SC-DEC-10) și creanța avansului de pe aceeași factură (SC-NIR-30/avans).
 Plata autogenerată a FCT preia pe linie valoarea datorată terțului

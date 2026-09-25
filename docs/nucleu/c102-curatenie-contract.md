@@ -245,3 +245,16 @@ avertismente, `run-verificari/20260925-163947-708/`. SC-FCT-10 și `INV-CUB`
 sunt roșii pe codul dinainte (`run-verificari/20260925-162409-799/`).
 Constrângerea `CK_Postare_FelUnitate` garantează deja unitatea și nașterea
 partidei, deci mutantul de partide lucrează pe partener.
+
+**R2** (`comunicari/2026-09-25-1707-codex-claude-c102-r1-review.md`, probat
+prin HTTP). Pe avansul nestins, panoul împerecherilor arăta Total 100, Rămas
+200, Asignat −100, pentru că `Partide.Ramas` aduna încă |net| pe toate
+partidele proprii. `Ramas` folosește acum aceeași selecție pe sens ca
+`Total`. SC-NIR-37 verifică panoul, lista și serviciul în patru stadii:
+nestins, parțial, integral și după desfacere. Verifică și că stingerea lui 401 nu
+consumă creanța 4091. Pe codul dinainte pică în toate cele patru stadii
+(`run-verificari/20260925-174540-489/`). Integrala după corectură: **3.146
+bugetar / 4.145 privat OK**, zero FAIL (`run-verificari/20260925-174625-732/`).
+Contraexemplul Codex, rerulat prin HTTP pe aceeași clonă
+(`...Privat.CodexC102Http`), dă acum panou și listă 100/100/0. Curățenia lasă
+zero postări (`run-verificari/c102-r2-avans-http.py`, `.json`).

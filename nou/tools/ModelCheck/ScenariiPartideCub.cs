@@ -76,12 +76,12 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         var inc = Trezorerie(true, 100); Opereaza(inc.Id);
         var gresita = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 60, Client)); Opereaza(gresita.Id);
         Refuza("SC-CIT-56", () => Imperecheaza(gresita.Id, inc.Id, 60, Ianuarie), "IMPERECHERE_FARA_EFECT");
-        Verifica("SC-CIT-56", "rest 100, candidat incompatibil absent", CuSpatiu(os => P.Ramas(os, inc.Id) == 100
+        Verifica("SC-CIT-56", "rest 100, candidat incompatibil absent", CuSpatiu(os => ImperechereService.Ramas(os, inc.Id) == 100
             && !ImperecheriProiectii.DocumenteCuRest(os, documentCurentId: gresita.Id).Any(r => r.DocumentId == inc.Id)));
         Anuleaza(gresita.Id);
         var corecta = Nota(Ianuarie, new LinieNtcScena(ContClient, Serviciu, 60, Client)); Opereaza(corecta.Id);
         var asociere = Imperecheaza(corecta.Id, inc.Id, 60, Ianuarie);
-        Verifica("SC-CIT-56", "nota pe contul corect lasă rest 40", CuSpatiu(os => P.Ramas(os, inc.Id) == 40));
+        Verifica("SC-CIT-56", "nota pe contul corect lasă rest 40", CuSpatiu(os => ImperechereService.Ramas(os, inc.Id) == 40));
         Comanda(os => ImperechereService.Sterge(os, asociere)); Anuleaza(corecta.Id); Anuleaza(inc.Id);
 
         var f = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false)); Opereaza(f.Id);
@@ -134,7 +134,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             ImperecheriProiectii.DocumenteCuRest(os, documentCurentId: p.Id).Single(r => r.DocumentId == f.Id).Disponibil == 40));
         var imp = Imperecheaza(p.Id, f.Id, 40, Ianuarie);
         Verifica("SC-CIT-58", "transfer exact 40: factura 60, plata 60", CuSpatiu(os =>
-            P.Ramas(os, f.Id) == 60 && P.Ramas(os, p.Id) == 60));
+            ImperechereService.Ramas(os, f.Id) == 60 && ImperechereService.Ramas(os, p.Id) == 60));
         Comanda(os => ImperechereService.Sterge(os, imp)); Anuleaza(p.Id); Anuleaza(f.Id);
 
         f = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false)); Opereaza(f.Id);
@@ -143,7 +143,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         Comanda(os => ImperechereService.Desfa(os, imp, new(An, 1, 20)));
         Refuza("SC-CIT-61", () => Imperecheaza(p.Id, f.Id, 80, new(An, 1, 10)), "PARTIDA_PROPRIE_INSUFICIENTA");
         Verifica("SC-CIT-61", "refuz retroactiv: 50 la 10 ianuarie, 100 după desfacere", CuSpatiu(os =>
-            P.Proprii(os, new(An, 1, 10)).Single(r => r.DocumentId == p.Id).Net == 50 && P.Ramas(os, p.Id) == 100));
+            P.Proprii(os, new(An, 1, 10)).Single(r => r.DocumentId == p.Id).Net == 50 && ImperechereService.Ramas(os, p.Id) == 100));
     }
 
     void PestePerioada() {
@@ -232,7 +232,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         var pf = Partida(f.Id, ContFurnizor).Value;
         Verifica("SC-CIT-66", "NTC la d1 nu nominalizează factura stinsă la d3", CuSpatiu(os =>
             !P.Postari(os).Any(x => x.DocumentId == n.Id && x.Unitate == pf)));
-        Verifica("SC-CIT-66", "NTC deschide partidă proprie 100", CuSpatiu(os => P.Ramas(os, n.Id) == 100));
+        Verifica("SC-CIT-66", "NTC deschide partidă proprie 100", CuSpatiu(os => ImperechereService.Ramas(os, n.Id) == 100));
         Verifica("SC-CIT-66", "factura −100 la d1, 0 de la d3, niciodată creanță", CuSpatiu(os => {
             decimal La(DateOnly zi) => P.Solduri(os, zi).Where(x => x.UnitateId == pf)
                 .Select(x => x.Debit - x.Credit).SingleOrDefault();
@@ -297,7 +297,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         Refuza("SC-CIT-68", () => Imperecheaza(p.Id, f2.Id, 50, d7), "PARTIDA_PROPRIE_INSUFICIENTA");
         Imperecheaza(p.Id, f2.Id, 50, d10);
         Verifica("SC-CIT-68", "partida proprie născută la 10 finanțează numai de la 10: FCT2 −50, plata 50",
-            CuSpatiu(os => P.Ramas(os, f2.Id) == 50 && P.Ramas(os, p.Id) == 50));
+            CuSpatiu(os => ImperechereService.Ramas(os, f2.Id) == 50 && ImperechereService.Ramas(os, p.Id) == 50));
         Furnizor = furnizor;
     }
 
