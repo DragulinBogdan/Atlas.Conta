@@ -54,7 +54,7 @@ public static class Transferuri {
         var proprii = aleStingatorului.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>()
             .Where(u => IdentitatiPartide.EsteProprie(u, c.StingatorId)
                 && (c.PartenerCerut == null || u.Partener == c.PartenerCerut)).Distinct().ToArray();
-        var tinte = c.OperareStins.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>()
+        var tinte = aleStinsului.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>()
             .Where(u => c.PartidaTinta is Guid tinta ? u.Id == tinta : IdentitatiPartide.EsteProprie(u, c.StinsId)).Distinct().ToArray();
         var perechi = (from deLa in proprii
                        from la in tinte

@@ -342,6 +342,20 @@ Completare SC-CIT-58: FCT imobilizare 500 pe 404 și TVA 105 pe 401,
 PLT automată 605 pe 401: legătura confirmă numai nominalizarea 105;
 rest FCT 500 pe 404 și rest PLT 500 pe propria partidă 401.
 
+SC-CIT-66 (101-r1, D-2): FCT 100 la 5 ianuarie, PLT 100 împerecheată manual
+la 15 ianuarie, NTC la 7 ianuarie cu D 401/furnizor 100. Nota nu
+nominalizează factura (disponibilul ei temporal este 0, fiindcă e stinsă la
+15), deschide partidă proprie 100; factura are −100 la 7 ianuarie și 0 de la
+15, niciodată creanță. Același calcul temporal servește PLT automată,
+transferul manual, stingerea partidei inițiale și dependenții (C-D5).
+
+SC-CIT-67 (101-r1, D-3): FCT 100, PLT automată 100, legătura ștearsă prin
+comandă: PLT are +100 proprie numai prin transferul desfacerii. O INC 100
+de la același furnizor, pe 401, o stinge: panoul oferă 100 și comanda
+acceptă, restul PLT ajunge la 0. Varianta NTC (C 401/furnizor 100 operată
+înaintea desfacerii) are același rezultat. Ținta comenzii este orice unitate
+proprie a stinsului, inclusiv cea deschisă prin Transfer.
+
 ### Validare finală partide — 2026-09-25
 
 SC-CIT-49…65 și integralele sunt verzi: **3.107 bugetar / 4.103 privat OK**,

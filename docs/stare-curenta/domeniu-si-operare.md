@@ -1295,6 +1295,13 @@ Sursa nominalizării automate se citește tot din cub, inclusiv recepția
 facturii înaintea NIR-ului. Disponibilul este limitat de fiecare dată
 ulterior scrisă: un sold eliberat în viitor nu finanțează o stingere
 retroactivă. La re-declarare se exclude efectul documentului curent.
+Calculul este unic (`Cub.Citiri.Partide.Evolutie`/`DisponibilTemporal`):
+zilele anterioare datei se lipesc de ea, mișcările aceleiași zile se
+compensează. Îl folosesc PLT automată, FIFO-ul NTC, transferul manual,
+stingerea partidei inițiale, nominalizarea liberă și verificarea
+dependenților (C-D5, 101-r1). Ținta comenzii de împerechere este orice
+unitate proprie a stinsului, inclusiv cea deschisă prin Transfer la
+desfacerea nominalizării, aceeași mulțime din care panoul oferă candidații.
 
 În invarianți, totalul de decontare al antetului este doar martor de acoperire:
 valoarea partidelor Operare trebuie să-l acopere integral, în modul. Costul

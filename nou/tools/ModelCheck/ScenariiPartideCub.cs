@@ -20,6 +20,9 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         EfectObligatoriu();
         EfectPartialSiTemporal();
         NominalizareAutomata();
+        NotaInainteaStingerii();
+        StingereDupaDesfacere(nota: false);
+        StingereDupaDesfacere(nota: true);
         var f = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false)); Opereaza(f.Id);
         var plata = Trezorerie(false, 40); Opereaza(plata.Id);
         var imp = Imperecheaza(plata.Id, f.Id, 40, Ianuarie);
@@ -211,6 +214,70 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         Storneaza(p.Id, Ianuarie); Rest(p.Id, 0); Rest(f.Id, -100);
         Storneaza(m.Id, Ianuarie);
         Storneaza(f.Id, Ianuarie); Rest(f.Id, 0);
+    }
+
+    Guid PartenerNou(string sufix) => CuSpatiu(os => {
+        var p = os.CreateObject<Partener>(); p.Cod = Marcaj + sufix; p.Denumire = p.Cod;
+        os.CommitChanges(); return p.ID;
+    });
+
+    void NotaInainteaStingerii() {
+        var furnizor = Furnizor; Furnizor = PartenerNou("-D2");
+        var d1 = new DateOnly(An, 1, 7); var d3 = new DateOnly(An, 1, 15);
+        var f = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false)); Opereaza(f.Id);
+        var p = Trezorerie(false, 100); Opereaza(p.Id);
+        var imp = Imperecheaza(p.Id, f.Id, 100, d3);
+        var n = Nota(d1, new LinieNtcScena(ContFurnizor, Serviciu, 100, Furnizor)); Opereaza(n.Id);
+        var pf = Partida(f.Id, ContFurnizor).Value;
+        Verifica("SC-CIT-66", "NTC la d1 nu nominalizează factura stinsă la d3", CuSpatiu(os =>
+            !P.Postari(os).Any(x => x.DocumentId == n.Id && x.Unitate == pf)));
+        Verifica("SC-CIT-66", "NTC deschide partidă proprie 100", CuSpatiu(os => P.Ramas(os, n.Id) == 100));
+        Verifica("SC-CIT-66", "factura −100 la d1, 0 de la d3, niciodată creanță", CuSpatiu(os => {
+            decimal La(DateOnly zi) => P.Solduri(os, zi).Where(x => x.UnitateId == pf)
+                .Select(x => x.Debit - x.Credit).SingleOrDefault();
+            return La(d1) == -100 && La(d3) == 0 && La(DateOnly.MaxValue) == 0;
+        }));
+        Anuleaza(n.Id);
+        Comanda(os => ImperechereService.Sterge(os, imp)); Anuleaza(p.Id); Anuleaza(f.Id);
+        Furnizor = furnizor;
+    }
+
+    void StingereDupaDesfacere(bool nota) {
+        var id = nota ? "SC-CIT-67/NTC" : "SC-CIT-67";
+        var furnizor = Furnizor; Furnizor = PartenerNou(nota ? "-D3N" : "-D3");
+        var f = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false)); Opereaza(f.Id);
+        var p = Trezorerie(false, 100);
+        Comanda(os => {
+            var doc = os.GetObjectByKey<Document>(p.Id);
+            doc.Autogenerat = true; doc.DocumentSursaId = f.Id; os.CommitChanges();
+        });
+        Opereaza(p.Id);
+        Guid s = default;
+        if (nota) { s = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100, RepartitorCredit: Furnizor)).Id; Opereaza(s); }
+        var automata = CuSpatiu(os => os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == p.Id).ID);
+        Comanda(os => Atlas.Conta.BackOffice.Module.Api.Trz.ImperechereApply.Sterge(os, automata));
+        Rest(p.Id, 100);
+        if (!nota) {
+            var inc = Trezorerie(true, 100);
+            Comanda(os => {
+                os.GetObjectByKey<Incasare>(inc.Id).PredatorId = Furnizor;
+                os.GetObjectByKey<Partener>(Furnizor).ContImplicit = os.GetObjectByKey<Cont>(Cont(ContFurnizor));
+                os.CommitChanges();
+            });
+            Opereaza(inc.Id); s = inc.Id;
+        }
+        Verifica(id, "panoul oferă plata cu disponibil 100", CuSpatiu(os => ImperecheriProiectii
+            .DocumenteCuRest(os, documentCurentId: s).SingleOrDefault(r => r.DocumentId == p.Id)?.Disponibil == 100));
+        Guid? imp = null;
+        try { imp = Imperecheaza(s, p.Id, 100, Ianuarie); }
+        catch (OperareException e) { Console.WriteLine($"     {id}: {e.Message.Split('\n')[0]}"); }
+        Verifica(id, "comanda acceptă candidatul panoului", imp != null);
+        if (imp is Guid legatura) {
+            Rest(p.Id, 0);
+            Comanda(os => ImperechereService.Sterge(os, legatura));
+        }
+        Anuleaza(s); Anuleaza(p.Id); Anuleaza(f.Id);
+        Furnizor = furnizor;
     }
 
     void Rest(Guid doc, decimal net) {

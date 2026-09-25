@@ -180,12 +180,27 @@ internal static class Fapte {
         if (perechi.Count == 0) return [];
         var idsCont = perechi.Select(p => p.Cont.Value).Distinct().ToList();
         var idsTert = perechi.Select(p => p.Repartitor.Value).Distinct().ToList();
-        return Cub.Citiri.Partide.Solduri(os, doc.DataInregistrare, doc.ID)
-            .Where(p => idsCont.Contains(p.ContId) && idsTert.Contains(p.PartenerId))
-            .ToList().Select(p => new Declaratii.SoldPartidaFapt(
-                new N.Unitate(p.UnitateId, N.FelUnitate.Partida, p.ContId,
-                    p.PartenerId, null, p.Deschisa),
-                new N.Sold(p.Debit, p.Credit, 0m, 0m)))
+        var zi = doc.DataInregistrare;
+        return Cub.Citiri.Partide.Postari(os)
+            .Where(p => p.DocumentId != doc.ID && idsCont.Contains(p.Cont) && idsTert.Contains(p.Partener.Value))
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, p.Data })
+            .Select(g => new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data,
+                Deschisa = g.Min(p => p.UnitateDeschisa.Value),
+                Debit = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : 0m),
+                Credit = g.Sum(p => p.Latura == N.Latura.Credit ? p.Valoare : 0m) })
+            .ToList()
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener })
+            .Where(g => g.Any(p => p.Data <= zi))
+            .Select(g => {
+                var pana = g.Where(p => p.Data <= zi).ToArray();
+                var sold = new N.Sold(pana.Sum(p => p.Debit), pana.Sum(p => p.Credit), 0m, 0m);
+                var disponibil = Cub.Citiri.Partide.DisponibilTemporal(
+                    g.Select(p => (p.Data, p.Debit - p.Credit)), zi, Math.Sign(sold.Net));
+                return new Declaratii.SoldPartidaFapt(
+                    new N.Unitate(g.Key.Unitate.Value, N.FelUnitate.Partida, g.Key.Cont,
+                        g.Key.Partener.Value, null, g.Min(p => p.Deschisa)),
+                    sold, disponibil);
+            })
             .OrderBy(p => p.Unitate.Deschisa).ThenBy(p => p.Unitate.Id).ToList();
     }
 
@@ -212,21 +227,14 @@ internal static class Fapte {
                        on new { UnitateId = p.Unitate.Value, ContId = p.Cont, PartenerId = p.Partener.Value }
                        equals new { o.UnitateId, o.ContId, o.PartenerId }
                      where o.DocumentId == sursaId && p.DocumentId != doc.ID
-                     group p by new { p.Unitate, p.Cont, p.Partener, Data = p.Data < zi ? zi : p.Data } into g
+                     group p by new { p.Unitate, p.Cont, p.Partener, p.Data } into g
                      select new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data,
                          Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToArray();
         var partide = peZile.GroupBy(p => new { p.Unitate, p.Cont, p.Partener }).Select(g => {
-            var initial = g.Where(p => p.Data == zi).Sum(p => p.Net);
-            var semn = Math.Sign(initial);
-            var net = initial;
-            var minim = Math.Abs(initial);
-            foreach (var p in g.Where(p => p.Data > zi).OrderBy(p => p.Data)) {
-                net += p.Net;
-                minim = Math.Min(minim, Math.Max(0m, semn * net));
-            }
-            return (g.Key.Cont, Net: initial, Disponibil: minim);
+            var miscari = g.Select(p => (p.Data, p.Net)).ToArray();
+            var initial = Cub.Citiri.Partide.Evolutie(miscari, zi).First().Sold;
+            return (g.Key.Cont, Net: initial, Disponibil: Cub.Citiri.Partide.DisponibilTemporal(miscari, zi, Math.Sign(initial)));
         }).ToArray();
-        // Un sold redevenit disponibil ulterior nu poate fi consumat retroactiv.
         return (partide.Sum(p => p.Disponibil), sursa.DataInregistrare,
             [.. partide.GroupBy(p => p.Cont).Select(g => (g.Key, g.Sum(p => p.Net)))
                 .Where(p => p.Item2 != 0m).OrderBy(p => p.Key)],

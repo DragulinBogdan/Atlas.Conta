@@ -80,13 +80,6 @@ public static partial class Materializare {
             && p.Tranzactie.Fel == N.FelTranzactie.Transfer && initiale.Contains(p.Unitate));
     }
 
-    static bool Disponibil(IEnumerable<Postare> postari, N.Latura latura, DateOnly data, decimal suma) {
-        var zile = postari.GroupBy(p => p.Data < data ? data : p.Data).OrderBy(g => g.Key);
-        decimal sold = 0;
-        foreach (var zi in zile) {
-            sold += zi.Sum(p => p.Latura == latura ? p.Valoare : -p.Valoare);
-            if (sold < suma) return false;
-        }
-        return sold >= suma;
-    }
+    static bool Disponibil(IEnumerable<Postare> postari, N.Latura latura, DateOnly data, decimal suma) =>
+        Citiri.Partide.DisponibilTemporal(postari.Select(p => (p.Data, p.Latura == latura ? p.Valoare : -p.Valoare)), data, 1m) >= suma;
 }

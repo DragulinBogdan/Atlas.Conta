@@ -22,7 +22,7 @@ public sealed record RepartitorFapt(Guid Id, FelRepartitor? Fel, Guid? ContImpli
 
 public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide);
 
-public sealed record SoldPartidaFapt(N.Unitate Unitate, N.Sold Sold);
+public sealed record SoldPartidaFapt(N.Unitate Unitate, N.Sold Sold, decimal Disponibil);
 
 public readonly record struct CheieLotFapt(Guid Lot, Guid Cont, Guid Produs, Guid Gestiune);
 

@@ -100,28 +100,37 @@ public static class Partide {
         var unitati = Origini(os).Where(o => o.DocumentId == stins).Select(o => o.UnitateId);
         var postari = Postari(os).Where(p => p.DocumentId == stingator && unitati.Contains(p.Unitate.Value)
                 && (partener == null || p.Partener == partener))
-            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, Data = p.Data < zi ? zi : p.Data })
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, p.Data })
             .Select(g => new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data,
                 Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToArray();
         var legaturi = os.GetObjectsQuery<Imperechere>()
             .Where(i => i.DocumentStingatorId == stingator && i.DocumentId == stins)
-            .GroupBy(i => i.Data < zi ? zi : i.Data)
-            .Select(g => new { Data = g.Key, Suma = g.Sum(i => i.Suma) }).ToDictionary(i => i.Data, i => i.Suma);
-        var peZile = postari.ToLookup(p => p.Data);
-        var solduri = new Dictionary<(Guid? Unitate, Guid Cont, Guid? Partener), decimal>();
-        decimal efect = 0m, legata = 0m, minim = decimal.MaxValue;
-        foreach (var data in postari.Select(p => p.Data).Concat(legaturi.Keys).Append(zi).Distinct().Order()) {
-            foreach (var p in peZile[data]) {
-                var cheie = (p.Unitate, p.Cont, p.Partener);
-                var vechi = solduri.GetValueOrDefault(cheie);
-                solduri[cheie] = vechi + p.Net;
-                efect += Math.Abs(vechi + p.Net) - Math.Abs(vechi);
-            }
-            legata += legaturi.GetValueOrDefault(data);
-            minim = Math.Min(minim, efect - legata);
-        }
-        return Math.Max(0m, minim);
+            .Select(i => new { i.Data, i.Suma }).ToArray();
+        var efecte = postari.GroupBy(p => new { p.Unitate, p.Cont, p.Partener })
+            .Select(g => Evolutie(g.Select(p => (p.Data, p.Net)), zi).ToArray()).ToArray();
+        var legata = Evolutie(legaturi.Select(i => (i.Data, i.Suma)), zi).ToArray();
+        static decimal La((DateOnly Zi, decimal Sold)[] evolutie, DateOnly zi) =>
+            evolutie.LastOrDefault(p => p.Zi <= zi).Sold;
+        return Math.Max(0m, efecte.SelectMany(e => e).Concat(legata).Select(p => p.Zi).Distinct()
+            .Min(t => efecte.Sum(e => Math.Abs(La(e, t))) - La(legata, t)));
     }
+
+    /// <summary>
+    /// Soldul la data cerută, apoi la fiecare zi deja scrisă după ea: zilele anterioare se lipesc
+    /// de dată, mișcările aceleiași zile se compensează împreună (C-D5).
+    /// </summary>
+    public static IEnumerable<(DateOnly Zi, decimal Sold)> Evolutie(IEnumerable<(DateOnly Data, decimal Net)> miscari, DateOnly data) {
+        var peZile = miscari.GroupBy(m => m.Data < data ? data : m.Data).ToDictionary(g => g.Key, g => g.Sum(m => m.Net));
+        var sold = 0m;
+        foreach (var zi in peZile.Keys.Append(data).Distinct().Order()) {
+            sold += peZile.GetValueOrDefault(zi);
+            yield return (zi, sold);
+        }
+    }
+
+    /// <summary>Cât din sold rămâne în sensul <paramref name="semn"/> la data cerută și în fiecare zi deja scrisă după ea.</summary>
+    public static decimal DisponibilTemporal(IEnumerable<(DateOnly Data, decimal Net)> miscari, DateOnly data, decimal semn) =>
+        Math.Max(0m, Evolutie(miscari, data).Min(p => semn * p.Sold));
 
     public static Guid Identitate(Guid document, Guid cont, Guid partener) =>
         N.Unitate.DeschidePartida(cont, partener, document, DateOnly.MinValue).Id;

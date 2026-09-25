@@ -136,7 +136,8 @@ public static partial class Materializare {
         var primiteDeStingator = os.GetObjectsQuery<Postare>()
             .Where(p => p.Unitate != null && partideleStingatorului.Contains(p.Unitate.Value)
                 && p.Carte == N.Carte.Contabil && !idOperareStingator.Contains(p.ID)).ToList();
-        var partideleStinsului = aleStinsului.Select(p => p.Unitate).OfType<Guid>().Distinct().ToList();
+        var proprii = Citiri.Partide.Origini(os).Where(o => o.DocumentId == stins.ID).Select(o => o.UnitateId).ToList();
+        var partideleStinsului = aleStinsului.Select(p => p.Unitate).OfType<Guid>().Concat(proprii).Distinct().ToList();
         var primiteDeStins = partideleStinsului.Count == 0
             ? []
             : os.GetObjectsQuery<Postare>()
@@ -179,15 +180,12 @@ public static partial class Materializare {
     static void VerificaDisponibilTemporal(IObjectSpace os, N.Mutare mutare, DateOnly data) {
         var semn = mutare.Latura == N.Latura.Debit ? 1m : -1m;
         foreach (var (unitate, sens) in new[] { (mutare.DeLa.Unitate.Id, semn), (mutare.La.Unitate.Id, -semn) }) {
-            var zile = Citiri.Partide.Postari(os).Where(p => p.Unitate == unitate)
-                .GroupBy(p => p.Data < data ? data : p.Data)
+            var miscari = Citiri.Partide.Postari(os).Where(p => p.Unitate == unitate)
+                .GroupBy(p => p.Data)
                 .Select(g => new { Data = g.Key, Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
-                .OrderBy(p => p.Data).ToArray();
-            var rest = -mutare.Valoare;
-            foreach (var zi in zile) {
-                rest += sens * zi.Net;
-                if (rest < 0m) throw new OperareException("PARTIDA_PROPRIE_INSUFICIENTA: stingerea depășește disponibilul la data cerută sau într-o zi ulterioară.");
-            }
+                .ToArray().Select(p => (p.Data, p.Net));
+            if (Citiri.Partide.DisponibilTemporal(miscari, data, sens) < mutare.Valoare)
+                throw new OperareException("PARTIDA_PROPRIE_INSUFICIENTA: stingerea depășește disponibilul la data cerută sau într-o zi ulterioară.");
         }
     }
 
@@ -242,25 +240,15 @@ public static partial class Materializare {
             .Select(g => new { g.Key.DocumentId, g.Key.Unitate, g.Key.Data,
                 Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
             .Where(p => p.Net != 0m).ToList();
-        // Inversarea ulterioară a dependentului nu eliberează retroactiv sursa.
-        // Verificăm soldul la data cerută și fiecare schimbare deja înregistrată
-        // după ea; mișcările din aceeași zi se compensează împreună.
-        // Desfacerea stingerilor din aceeași comandă nu a ajuns încă în SQL.
-        // Numai rândurile noi se adaugă: cele persistate sunt deja în agregat.
+        // Desfacerea din aceeași comandă nu e încă în SQL: se adaugă numai rândurile noi.
         var inCurs = os.ModifiedObjects.OfType<Postare>()
             .Where(p => os.IsNewObject(p) && p.DocumentId != doc.ID
                 && p.Unitate != null && unitati.Contains(p.Unitate.Value)
                 && p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil)
             .Select(p => new { p.DocumentId, p.Unitate, p.Data,
                 Net = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare });
-        var activ = dependenti.Concat(inCurs).GroupBy(p => new { p.DocumentId, p.Unitate }).Any(g => {
-            decimal sold = 0;
-            foreach (var zi in g.GroupBy(p => p.Data < deLa ? deLa : p.Data).OrderBy(p => p.Key)) {
-                sold += zi.Sum(p => p.Net);
-                if (sold != 0m) return true;
-            }
-            return false;
-        });
+        var activ = dependenti.Concat(inCurs).GroupBy(p => new { p.DocumentId, p.Unitate })
+            .Any(g => Citiri.Partide.Evolutie(g.Select(p => (p.Data, p.Net)), deLa).Any(p => p.Sold != 0m));
         if (activ)
             throw new OperareException($"{CoduriRefuz.PartidaCuDependenti}: Partida documentului este nominalizată de alte documente active.");
     }
