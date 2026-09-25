@@ -18,7 +18,7 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza>();
-        var solduri = new Dictionary<Guid, N.Sold>();
+        var solduri = new Dictionary<CheieLotFapt, N.Sold>();
         if (operand.Linii.Count == 0)
             refuzuri.Add(new(CoduriRefuz.LiniiLipsa, "Lista de inventar cere cel puțin o linie.", null));
         foreach (var culeasa in operand.Linii) {
@@ -61,19 +61,20 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
                 Refuza(CoduriRefuz.ContStocLipsa, "Contul de stoc rezolvat trebuie să fie contul lotului.");
                 continue;
             }
+            var cheie = new CheieLotFapt(lot.Id, contStoc, lot.ProdusId, doc.Predator.Id);
             var unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, contStoc, null, lot.ProdusId, lot.Data);
             decimal v;
             if (plus) {
                 v = rotunjire.Bani(q * linie.DiferentaInventar!.PretEvaluare!.Value);
             }
             else {
-                if (!solduri.TryGetValue(lot.Id, out var sold)) {
-                    sold = operand.SolduriLoturi.GetValueOrDefault(lot.Id) ?? N.Sold.Zero;
+                if (!solduri.TryGetValue(cheie, out var sold)) {
+                    sold = operand.SolduriLoturi.GetValueOrDefault(cheie) ?? N.Sold.Zero;
                     ipoteze.Add(new N.SoldUnitateCitit(unitate, sold));
                 }
                 try { v = N.Evaluare.Iesire(sold, q, rotunjire); }
                 catch (N.RefuzException e) { Refuza(e.Refuz.Cod, e.Refuz.Mesaj); continue; }
-                solduri[lot.Id] = sold with { Credit = sold.Credit + v, Cantitate = sold.Cantitate - q };
+                solduri[cheie] = sold with { Credit = sold.Credit + v, Cantitate = sold.Cantitate - q };
                 decizii.Add(new N.ValoareIesire(linie.Id, unitate, q, v));
             }
             var real = new N.Capat { Cont = contStoc, Gestiune = doc.Predator.Id, Produs = lot.ProdusId,

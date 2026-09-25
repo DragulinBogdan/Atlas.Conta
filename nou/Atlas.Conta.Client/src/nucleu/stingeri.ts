@@ -51,11 +51,12 @@ export const stingeri = {
   // O valoare necunoscută e refuzată de rută cu 400, nu ignorată tăcut (57a).
   // `laData` (F27-D7) taie restul la o zi: proiecția pornește de la partidele
   // deschise ale ultimei perioade de referință. Absent = „la zi".
-  storeCandidati: (contrapartidaId: string, sens?: string | null, laData?: string | null) =>
+  storeCandidati: (contrapartidaId: string, sens?: string | null, laData?: string | null, documentCurentId?: string, stinge = true) =>
     storeRemote(
       `/api/proiectii/documente-cu-rest?contrapartidaId=${encodeURIComponent(contrapartidaId)}`
       + (sens ? `&sens=${encodeURIComponent(sens)}` : '')
-      + (laData ? `&laData=${encodeURIComponent(laData)}` : ''),
+      + (laData ? `&laData=${encodeURIComponent(laData)}` : '')
+      + (documentCurentId ? `&documentCurentId=${encodeURIComponent(documentCurentId)}&stinge=${stinge}` : ''),
       'DocumentId'),
 };
 

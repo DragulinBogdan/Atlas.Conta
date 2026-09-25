@@ -122,18 +122,18 @@ sealed partial class ScenariiLdi(Func<IObjectSpace> deschide, Action<string, boo
             [.. Randuri(doc, 0, -1, 3.33m), .. Randuri(doc, 1, -2, 6.67m)]);
         Sold("SC-LDI-08", lot, 0, 0);
         var dual = Receptioneaza(new LinieFctScena(3, 3.333333m)).Linii[0];
-        foreach (var v in new[] { 3.33m, 3.34m, 3.34m }) {
+        foreach (var v in new[] { 3.33m, 3.34m, 3.33m }) {
             var d = Culege(new Linie(DirectieDiferenta.Minus, 1, Lot: dual)); Opereaza(d.Id);
             Postari("SC-LDI-09", d.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(d, 0, -1, v));
         }
-        Sold("SC-LDI-09/T-r13", dual, 0, -.01m);
+        Sold("SC-LDI-09/T-r13", dual, 0, 0);
     }
 
     void Dependenti() {
         var p = Culege(new Linie(DirectieDiferenta.Plus, 1, 25)); Opereaza(p.Id);
         var bcs = Consum(p.Linii[0].Lot!.Value, 1); Opereaza(bcs);
         var stamp = Amprenta(p.Id);
-        Refuza("SC-LDI-10", () => Storneaza(p.Id, Ianuarie), "Sold negativ");
+        Refuza("SC-LDI-10", () => Storneaza(p.Id, Ianuarie), "STOC_INSUFICIENT");
         Verifica("SC-LDI-10", "original intact", stamp == Amprenta(p.Id));
         Storneaza(bcs, new(An, 1, 20)); Storneaza(p.Id, new(An, 1, 21)); Sold("SC-LDI-10", p.Linii[0], 0, 0);
         var initial = Culege(new Linie(DirectieDiferenta.Plus, 1, 10)); Opereaza(initial.Id);

@@ -339,6 +339,12 @@ de gardian. (58, 79a, 84d, 87g, 87j)
 
 ## Contracte generate
 
+Din 2026-09-25, ștergerea împerecherii prin API și acțiunea XAF
+„Șterge împerecherea” folosesc aceeași comandă atomică: eliberează suma
+nominalizată în cub și șterg legătura. Gate-ul rămâne Delete pe instanța
+vizibilă, înaintea refuzurilor de domeniu. CRUD-ul generic este refuzat
+de gardian; în perioadă închisă se folosește „Desfă împerecherea”.
+
 OpenAPI, tipurile TypeScript și metadata de model sunt generate și păstrate
 în repository. Clientul nu folosește un client API generic generat pentru
 toate operațiile. DTO-urile și atributele serverului rămân sursa contractului. (43d, 56)
@@ -365,3 +371,17 @@ politici. Contul pentru personal este opțional și separat de contul normal.
 La schimbarea cauzei NIR din Imputabila, editorul golește imediat imputatul.
 API-ul ignoră imputatul din payload pentru celelalte cauze și îl golește
 și la delta zero; un imputat ascuns nu rămâne atașat constatării.
+
+### Raportul partidelor pe cub (101, 2026-09-25)
+
+`GET /api/proiectii/partide` și pagina `/partide` expun o partidă pe rând,
+cu cont, partener/angajat, document opțional, data nașterii, sens și rest.
+Filtrele sunt `laData`, `contrapartidaId`, `sens`; cheia paginării este
+unitate × cont × partener. Eticheta documentului nu elimină soldul când
+lipsește sau nu este vizibilă. Postările sunt citite prin ObjectSpace secured.
+
+`documente-cu-rest` acceptă `documentCurentId` și `stinge` pentru candidați
+compatibili; `Disponibil` este limita exactă a perechii. Panourile consumă
+această valoare și diagnosticul `StingeriDto.Avertismente`. Crearea trece
+prin gate-ul de drepturi și vizibilitatea ambelor documente, apoi prin
+comanda atomică în ObjectSpace non-secured, la fel ca desfacerea și ștergerea.

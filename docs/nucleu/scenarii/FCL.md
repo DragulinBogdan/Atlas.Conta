@@ -38,3 +38,12 @@ Extensie SC-X-14 (2026-09-23): FCL TI21 și SDD: bază 100, taxă 0; exact un fa
 Sunt probate operarea și stornoul în aceeași lună, cu măsuri inverse, prin
 matrice independente și martori de duplicare/lipsă. Aceasta nu certifică
 ciclul complet al regimurilor speciale peste perioadă.
+
+## Extinderea partidelor bugetare — 2026-09-25
+
+Decizia 100 activează urmărirea pe 401.01.00, 404.01.00 și 411.01.01,
+fără rol comercial SAF-T. Așteptările de partidă (rest, transfer, storno,
+corecție) ale ciclurilor comune se aplică acum ambelor profiluri.
+Mențiunile anterioare „numai privat” descriu acoperirea de la data probării
+inițiale; fiscalul, DSC și contul 419 rămân specifice profilului privat.
+Probele TR-D8 SC-CIT-41…45 verifică separat politica și istoricul.

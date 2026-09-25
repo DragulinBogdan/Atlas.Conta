@@ -84,7 +84,9 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                     citite.Add(cont);
                 }
                 if (!alePartidelorSursei.TryGetValue(cont, out var alPartidei))
-                    alePartidelorSursei[cont] = alPartidei = Math.Abs(sursa.Sold.Net);
+                    alePartidelorSursei[cont] = alPartidei = (peDebit ? sursa.Sold.Net < 0m : sursa.Sold.Net > 0m)
+                        ? Math.Min(Math.Abs(sursa.Sold.Net), operand.DisponibilPartideSursa.GetValueOrDefault(cont, Math.Abs(sursa.Sold.Net)))
+                        : 0m;
                 var plafon = Math.Min(rest, alPartidei);
                 if (plafon > 0m)
                     try {

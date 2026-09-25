@@ -26,6 +26,10 @@ public class SoldPerioadaContabil : BaseObject {
     public virtual Guid? RepartitorId { get; set; }
     [XafDisplayName("Repartitor")]
     public virtual Repartitor Repartitor { get; set; }
+    [XafDisplayName("Gestiune")]
+    public virtual Guid? GestiuneId { get; set; }
+    [System.ComponentModel.Browsable(false)]
+    public virtual bool DinCub { get; set; }
     public virtual Guid? MaterialId { get; set; }
     [XafDisplayName("Material")]
     public virtual Produs Material { get; set; }
@@ -80,10 +84,6 @@ public class SoldPerioadaStoc : BaseObject {
     public virtual decimal Valoare { get; set; }
 }
 
-// Partida deschisă a unei perioade DE REFERINȚĂ (F27-D7): restul de stins al
-// unui document operat la sfârșitul ei. Aceeași regulă de referință ca
-// snapshot-urile de mai sus — la 31.12 lista E arieratele la nivel de document.
-// Rândurile cu rest zero se omit: partida închisă nu mai e partidă.
 [XafDisplayName("Partidă deschisă")]
 public class PartidaDeschisa : BaseObject {
     [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
@@ -91,12 +91,18 @@ public class PartidaDeschisa : BaseObject {
     public virtual int An { get; set; }
     public virtual int Luna { get; set; }
 
-    public virtual Guid DocumentId { get; set; }
+    public virtual Guid? DocumentId { get; set; }
     [XafDisplayName("Document")]
     public virtual Document Document { get; set; }
 
-    // `TotalStingere − Σ Imperechere.Suma` (ambele roluri, algebric, cu `Data`
-    // până la sfârșitul perioadei).
+    public virtual Guid UnitateId { get; set; }
+    public virtual Guid ContId { get; set; }
+    public virtual Guid PartenerId { get; set; }
+    public virtual DateOnly Deschisa { get; set; }
+    public virtual decimal Debit { get; set; }
+    public virtual decimal Credit { get; set; }
+    [System.ComponentModel.Browsable(false)]
+    public virtual bool DinCub { get; set; }
     [XafDisplayName("Rest")]
     public virtual decimal Rest { get; set; }
 }

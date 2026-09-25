@@ -1195,10 +1195,12 @@
         "DocumentId": "Document",
         "DocumentStingator": "DocumentStingator",
         "DocumentStingatorId": "DocumentStingator",
+        "EfectCubVerificat": "EfectCubVerificat",
         "ID": "ID",
         "Inverseaza": "Inversează împerecherea",
         "InverseazaId": "Inversează împerecherea",
-        "Suma": "Suma"
+        "Suma": "Suma",
+        "TranzactieCubId": "TranzactieCubId"
       }
     },
     "Incasare": {
@@ -1566,11 +1568,18 @@
       "DefaultProperty": null,
       "Membri": {
         "An": "An",
+        "ContId": "ContId",
+        "Credit": "Credit",
+        "Debit": "Debit",
+        "Deschisa": "Deschisa",
+        "DinCub": "DinCub",
         "Document": "Document",
         "DocumentId": "Document",
         "ID": "ID",
         "Luna": "Luna",
-        "Rest": "Rest"
+        "PartenerId": "PartenerId",
+        "Rest": "Rest",
+        "UnitateId": "UnitateId"
       }
     },
     "PerioadaFiscala": {
@@ -2215,6 +2224,8 @@
         "ContId": "Cont",
         "Credit": "Credit",
         "Debit": "Debit",
+        "DinCub": "DinCub",
+        "GestiuneId": "Gestiune",
         "ID": "ID",
         "Luna": "Luna",
         "Material": "Material",

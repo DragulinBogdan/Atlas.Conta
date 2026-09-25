@@ -255,7 +255,8 @@ internal static class ProfilBugetar {
                     c.Functie = f[3];
                     c.Sumator = f[4] == "1";
                     c.UrmarestePartide = c.RolTert != RolTertCont.Niciunul || simbol is "542.01.00" or "542.02.00"
-                        or "408.00.00" or "461.01.09" or "428.01.02";
+                        or "408.00.00" or "461.01.09" or "428.01.02"
+                        or "401.01.00" or "404.01.00" or "411.01.01";
                     c.DimensiuniObligatorii = ParseDefalcare(f[5]);
                     c.ParinteId = parinte?.ID;
                 });

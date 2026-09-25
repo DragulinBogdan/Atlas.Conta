@@ -1,7 +1,7 @@
 # 96. Urmărirea partidelor este separată de rolul comercial
 
 - Data: 2026-09-24
-- Stare: aprobată de owner, activă
+- Stare: aprobată de owner, activă; (b) amendat de 100 pentru cele trei conturi comerciale bugetare; (d) și 096-r1 depășite de 102
 - Docs: `docs/nucleu/tr-d7c-dec-contract.md` DEC-B2; 090(d), 092, 095.
 
 ## Regula durabilă

@@ -1,7 +1,7 @@
 # 92. Identitatea partidei include partenerul
 
 - **Data**: 2026-09-23
-- **Stare**: activă; amendează N-D6 din contractul TR-D6a și precizează 090(d)
+- **Stare**: activă; amendează N-D6 din contractul TR-D6a și precizează 090(d); (b)(c) compatibilitatea cu cheia veche depășită de 102
 - **Docs**: `docs/nucleu/scenarii/NTC.md` (SC-NTC-13), `docs/nucleu/tr-d6a-nucleu-pur-contract.md`, `docs/nucleu/tr-d7b-tipuri-ramase-contract.md`
 
 ## Regula durabilă

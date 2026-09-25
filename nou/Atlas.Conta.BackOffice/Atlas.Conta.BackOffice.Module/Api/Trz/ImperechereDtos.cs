@@ -64,6 +64,7 @@ public sealed class ImperechereReadDto {
 
 // ── Citire: panoul de stingeri al unui document (un singur apel) ───────────
 public sealed class StingeriDto {
+    public IReadOnlyList<string> Avertismente { get; set; } = [];
     public Guid DocumentId { get; set; }
     // Cele trei numere vin din `ImperechereService` — sursa de adevăr a
     // stingerii (`Total` trece prin `LiniiCreanta`, deci ReturClient dă brutul

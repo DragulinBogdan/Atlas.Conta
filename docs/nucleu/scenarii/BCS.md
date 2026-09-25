@@ -70,7 +70,7 @@ jos este **verificat pe ambele profiluri** (rularea din secțiunea Validare).
 | SC-BCS-06 | L: 10/100; BCS 4 în ianuarie → 6/60; închide ianuarie. Corectează la 05.02, motiv EroareMateriala: original Stornat, invers −4/−40 și draft nou legat, fără postări proprii; sold curent 10/100. Schimbă cantitatea draftului la 3 și operează: consum(3,30,L). Sold 31.01 = 6/60; 05.02 = 7/70. | acceptat | 088, 090 (i) |
 | SC-BCS-07 | Recepție 3 × 0,333333, valoare rotunjită 1 leu. Ieșire 1 → 0,33, rest 2/0,67. Ieșire 2 la 11.01 → 0,67, rest 0/0. | acceptat | 090 (c), ultima ieșire ia restul |
 | SC-BCS-08a/b/c | Din L:10/100, BCS cu cantitate 0 / −1 / fără lot. Ușa declarației refuză cu codul stabil; dry-run și operarea refuză cu textul validării vechi. Draft și zero efecte proprii; sold 10/100. | refuzat: `CANTITATE_NEPOZITIVA` / `CANTITATE_NEPOZITIVA` / `LOT_LIPSA` pe declarație; text vechi pe entitate până la TR-D8 | regulă; cazuri absente din recensământ |
-| SC-BCS-09 | L:10/100; două linii 6 + 5 din același lot. Dry-run și operarea refuză întregul document, fără consumul primei linii; sold 10/100. | refuzat: stoc insuficient — gardianul REGISTRULUI (`StocService`), fără cod stabil; la TR-D8 devine refuz al cubului | review; lot repetat din recensământ |
+| SC-BCS-09 | L:10/100; două linii 6 + 5 din același lot. Dry-run și operarea refuză întregul document, fără consumul primei linii; sold 10/100. | refuzat: `STOC_INSUFICIENT`, evaluare și gardian pe cub la TR-D8 | review; lot repetat din recensământ |
 | SC-BCS-10 | După SC-BCS-03, repetă storno la 21.01. Rămân exact două tranzacții și sold 10/100. | refuzat: stare neeligibilă | 090 (i) |
 | SC-BCS-11 | După închiderea lui ianuarie, anularea BCS operat și operarea altui BCS în ianuarie sunt refuzate; originalul și soldul 6/60 rămân, draftul nou are zero efecte. | refuzat: perioadă închisă | invariantul III, 088 |
 | SC-X-02 (pregătire) | FCT cu recepție 10/100 → NIR conex operat. Soldul cubului este 10/100, apoi BCS 4 îl duce la 6/60; recepția nu se dublează. | acceptat | 090 (h), T-D9 |
@@ -101,9 +101,10 @@ cubului.
 ## Legătura cu probele existente
 
 SC-BCS-15 (implementat și verificat pe ambele profiluri, 2026-09-23): lot 3/10, trei documente
-succesive de câte 1. Cub: 3,33 / 3,34 / 3,34; sold final 0/−0,01.
-Regula țintă rămâne 0/0, rezultatul dual este excepția exactă T-r13,
-ASM-B7; fără toleranță generală. Rândul nu certifică invariantul țintă.
+succesive de câte 1. TR-D8 (2026-09-25, în lucru): cub 3,33 / 3,34 / 3,33; sold final 0/0.
+Soldul propriu înlocuiește citirea registrului care producea reziduul
+istoric −0,01. Registrele continuă scrierea duală; diagnosticul diferențelor
+istorice T-r13 nu se închide prin această probă.
 
 `VerificaNucleuBcs` rămâne în aceeași selecție: `NUC-BCS-*`, inclusiv
 `NUC-BCS-N-R3-*` (evaluare 5 × 300/20 = 75, vechiul preț ar da 50),

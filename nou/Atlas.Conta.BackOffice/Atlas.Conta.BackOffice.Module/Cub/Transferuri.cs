@@ -3,27 +3,9 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
-/// <summary>
-/// S-D13: împerecherea creată DUPĂ operare mută suma de pe partida proprie a
-/// stingătorului pe partida stinsului, pe contul comun cu rol de terț. Funcție
-/// pură, refolosită de materializare și de gate-ul read-only.
-/// </summary>
 public static class Transferuri {
     public const string PartidaProprieInsuficienta = "PARTIDA_PROPRIE_INSUFICIENTA";
 
-    /// <param name="TransferuriStingator">
-    /// postările ulterioare operării de pe unitățile stingătorului, indiferent de document: plafonul partidei
-    /// proprii e ce a mai rămas pe ea, nu ce a adus operarea.
-    /// </param>
-    /// <param name="OperareStins">
-    /// tranzacția <c>Operare</c> a stinsului CU conexul autogenerat absorbit (TR-D3):
-    /// recepția stă pe NIR-ul conex, dar partida e a facturii.
-    /// </param>
-    /// <param name="TransferuriStins">
-    /// postările de <c>Transfer</c> așezate deja pe PARTIDELE stinsului, de oricare
-    /// stingător: plafonul e RESTUL partidei, nu ce a adus operarea.
-    /// </param>
-    /// <param name="Data">ziua faptului de stingere (<c>Imperechere.Data</c>).</param>
     public sealed record Cerere(
         Guid StingatorId,
         DateOnly DataStingator,
@@ -35,13 +17,12 @@ public static class Transferuri {
         IReadOnlyList<N.Postare> TransferuriStins,
         decimal Suma,
         DateOnly Data,
-        Guid? PartidaTinta = null);
+        Guid? PartidaTinta = null,
+        bool DesfaceNominalizare = false,
+        Guid? PartenerCerut = null);
 
-    /// <param name="Sarit">motivul pentru care împerecherea n-are corespondent în cub.</param>
     public sealed record Rezultat(N.Mutare? Mutare, DateOnly Data, N.Refuz? Refuz, string? Sarit);
 
-    /// <summary>Partida de referință a unui document: postarea lui de terț cu |Valoare| maximă.</summary>
-    readonly record struct Referinta(Guid Cont, N.Latura Latura, Guid? Partener);
 
     public static Rezultat Muta(Cerere cerere) {
         ArgumentNullException.ThrowIfNull(cerere);
@@ -49,100 +30,61 @@ public static class Transferuri {
             return Sare("documentul care stinge n-are tranzacție `Operare` în cub");
         if (cerere.OperareStins.Count == 0)
             return Sare("documentul stins n-are tranzacție `Operare` în cub");
-        // Profil fără conturi cu rol de terț (bugetar): nu există partidă de mutat.
-        var tertStins = Cea(cerere.OperareStins)?.Partener;
-        var peTert = cerere.OperareStingator
-            .Where(p => tertStins == null || p.Coordonate.Partener == tertStins).ToList();
-        if (Cea(peTert) is not { } referinta)
-            return Sare("documentul care stinge n-are nicio postare pe un cont cu rol de terț");
-        if ((Cea(cerere.OperareStins)?.Partener ?? referinta.Partener) is not Guid tert)
-            return Sare("nicio partidă a celor două documente nu poartă partener");
+        if (cerere.Suma > 0m) return MutaPozitiv(cerere);
+        var primite = cerere.TransferuriStins.Where(p => p.Cauza.Document == cerere.StingatorId
+                && p.Coordonate.Unitate is { Fel: N.FelUnitate.Partida }
+                && (cerere.PartidaTinta == null || p.Coordonate.Unitate.Id == cerere.PartidaTinta))
+            .GroupBy(p => p.Coordonate.Unitate!)
+            .Select(g => new { Unitate = g.Key, Net = g.Sum(p => p.Coordonate.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+            .Where(p => p.Net != 0m).ToArray();
+        if (primite.Length == 0) return Sare("nu există efect de desfăcut pe partida stinsului");
+        if (primite.Length != 1) return Refuza("IMPERECHERE_AMBIGUA", "legătura istorică nu identifică un singur efect de desfăcut");
+        var efect = primite[0]; var tinta = efect.Unitate;
+        if (tinta.Partener is not Guid tert) return Sare("partida nu poartă partener");
+        var proprie = IdentitatiPartide.Gaseste(cerere.OperareStingator.Concat(cerere.TransferuriStingator)
+            .Select(p => p.Coordonate.Unitate).OfType<N.Unitate>(), cerere.StingatorId, tinta.Cont, tert);
+        if (proprie == null && !cerere.DesfaceNominalizare) return Sare("stingătorul nu are partidă proprie");
+        proprie ??= N.Unitate.DeschidePartida(tinta.Cont, tert, cerere.StingatorId, cerere.DataStingator);
+        return new(new N.Mutare(Capatul(tinta.Cont, tert, tinta), Capatul(tinta.Cont, tert, proprie),
+            efect.Net > 0m ? N.Latura.Debit : N.Latura.Credit, 0m, 0m,
+            Math.Min(Math.Abs(cerere.Suma), Math.Abs(efect.Net)), new(cerere.StingatorId, null)), cerere.Data, null, null);
+    }
 
-        var proprie = IdentitatiPartide.Gaseste(
-            cerere.OperareStingator.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>(),
-            cerere.StingatorId, referinta.Cont, tert);
-        if (proprie is null)
-            return Sare("documentul care stinge n-are partidă proprie pe contul și partenerul cerut");
-        var stinsa = cerere.PartidaTinta is Guid tinta
-            ? cerere.OperareStins.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>()
-                .Distinct().SingleOrDefault(u => u.Id == tinta && u.Cont == referinta.Cont && u.Partener == tert)
-            : IdentitatiPartide.Gaseste(
-            cerere.OperareStins.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>(),
-            cerere.StinsId, referinta.Cont, tert);
-        if (stinsa is null)
-            return Sare("documentul stins n-are partidă proprie pe contul și partenerul cerut");
-
-        // Împerecherea e pe DOCUMENT, partida e pe CONT: se mută cel mult RESTUL
-        // partidei stinsului pe contul de referință — operarea (cu conexul absorbit)
-        // plus ce a primit deja partida —, restul rămâne pe a stingătorului.
-        // Rândul invers (desfacerea, inversul la storno) desface EXACT transferurile
-        // ACESTUI stingător către partida stinsului, nu restul de azi al ei.
-        var invers = cerere.Suma < 0m;
-        var plafon = invers
-            ? Math.Abs(Net(
-                cerere.TransferuriStins.Where(p => p.Cauza.Document == cerere.StingatorId
-                    && p.Coordonate.Unitate?.Id == stinsa.Id),
-                referinta.Cont))
-            : Math.Abs(Net(cerere.OperareStins.Concat(cerere.TransferuriStins)
-                .Where(p => p.Coordonate.Unitate?.Id == stinsa.Id), referinta.Cont));
-        var mutata = Math.Min(Math.Abs(cerere.Suma), plafon);
-        if (mutata <= 0m)
-            return Refuza(PartidaProprieInsuficienta, invers
-                ? $"partida stinsului n-a primit nimic de la acest stingător pe contul {referinta.Cont}"
-                : $"documentul stins n-are rest pe contul de referință {referinta.Cont}");
-
-        if (!invers) {
-            var disponibil = PePartida(
-                cerere.OperareStingator.Concat(cerere.TransferuriStingator), proprie.Id, referinta.Latura);
-            if (disponibil < mutata)
-                return Refuza(PartidaProprieInsuficienta,
-                    $"Partida proprie a documentului care stinge ține {disponibil} pe contul "
-                    + $"{referinta.Cont}, iar stingerea cere {mutata}.");
+    static Rezultat MutaPozitiv(Cerere c) {
+        var aleStingatorului = c.OperareStingator.Concat(c.TransferuriStingator).ToArray();
+        var aleStinsului = c.OperareStins.Concat(c.TransferuriStins).ToArray();
+        var proprii = aleStingatorului.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>()
+            .Where(u => IdentitatiPartide.EsteProprie(u, c.StingatorId)
+                && (c.PartenerCerut == null || u.Partener == c.PartenerCerut)).Distinct().ToArray();
+        var tinte = c.OperareStins.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>()
+            .Where(u => c.PartidaTinta is Guid tinta ? u.Id == tinta : IdentitatiPartide.EsteProprie(u, c.StinsId)).Distinct().ToArray();
+        var perechi = (from deLa in proprii
+                       from la in tinte
+                       where deLa.Cont == la.Cont && deLa.Partener == la.Partener
+                       let disponibil = aleStingatorului.Where(p => p.Coordonate.Unitate?.Id == deLa.Id)
+                           .Sum(p => p.Coordonate.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)
+                       let rest = aleStinsului.Where(p => p.Coordonate.Unitate?.Id == la.Id)
+                           .Sum(p => p.Coordonate.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)
+                       where disponibil * rest < 0m
+                       select new { deLa, la, disponibil, rest }).ToArray();
+        if (perechi.Length == 0) {
+            var compatibile = proprii.Any(s => tinte.Any(t => s.Cont == t.Cont && s.Partener == t.Partener));
+            return Refuza(compatibile ? PartidaProprieInsuficienta : "IMPERECHERE_FARA_EFECT",
+                "nu există partide disponibile de sens opus pe același cont și partener");
         }
-
-        return new Rezultat(
-            new N.Mutare(
-                Capatul(referinta.Cont, tert, invers ? stinsa : proprie),
-                Capatul(referinta.Cont, tert, invers ? proprie : stinsa),
-                referinta.Latura,
-                0m,
-                0m,
-                mutata,
-                new N.Cauza(cerere.StingatorId, null)),
-            cerere.Data,
-            null,
-            null);
+        if (perechi.Length != 1)
+            return Refuza("IMPERECHERE_AMBIGUA", "există mai multe perechi eligibile; comanda pe document nu identifică o singură partidă");
+        var p = perechi[0];
+        if (c.Suma > Math.Abs(p.disponibil) || c.Suma > Math.Abs(p.rest))
+            return Refuza(PartidaProprieInsuficienta,
+                $"stingerea cere {c.Suma}; disponibil {Math.Abs(p.disponibil)}, rest {Math.Abs(p.rest)} pe contul {p.deLa.Cont}");
+        return new(new N.Mutare(Capatul(p.deLa.Cont, p.deLa.Partener!.Value, p.deLa),
+            Capatul(p.la.Cont, p.la.Partener!.Value, p.la), p.disponibil > 0m ? N.Latura.Debit : N.Latura.Credit,
+            0m, 0m, c.Suma, new N.Cauza(c.StingatorId, null)), c.Data, null, null);
     }
 
     static N.Capat Capatul(Guid cont, Guid tert, N.Unitate partida) =>
         new() { Cont = cont, Partener = tert, Unitate = partida };
-
-    static Referinta? Cea(IReadOnlyList<N.Postare> operare) {
-        Referinta? cea = null;
-        var maxim = 0m;
-        foreach (var postare in operare) {
-            if (postare.Coordonate.Unitate is not { Fel: N.FelUnitate.Partida })
-                continue;
-            var absolut = Math.Abs(postare.Valoare);
-            if (cea is not null && absolut <= maxim)
-                continue;
-            cea = new Referinta(
-                postare.Coordonate.Cont,
-                postare.Valoare >= 0m ? postare.Coordonate.Latura
-                    : postare.Coordonate.Latura == N.Latura.Debit ? N.Latura.Credit : N.Latura.Debit,
-                postare.Coordonate.Partener);
-            maxim = absolut;
-        }
-        return cea;
-    }
-
-    static decimal Net(IEnumerable<N.Postare> postari, Guid cont) =>
-        postari.Where(p => p.Coordonate.Cont == cont)
-            .Sum(p => p.Coordonate.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare);
-
-    static decimal PePartida(IEnumerable<N.Postare> postari, Guid unitate, N.Latura latura) =>
-        postari.Where(p => p.Coordonate.Unitate?.Id == unitate)
-            .Sum(p => p.Coordonate.Latura == latura ? p.Valoare : -p.Valoare);
 
     static Rezultat Sare(string motiv) => new(null, default, null, motiv);
 

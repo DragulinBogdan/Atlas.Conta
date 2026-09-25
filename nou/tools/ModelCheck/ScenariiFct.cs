@@ -32,7 +32,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             l.Lot != null ? N.Spatiu.Stoc : N.Spatiu.Contabil, Economic);
         var credit = new RandScena(Cont(ContFurnizor), N.Latura.Credit, net, -q,
             l.Lot != null ? N.GestiuniVirtuale.Furnizor : null, Partida(f.Id, ContFurnizor),
-            l.Produs, Privat ? Furnizor : null, l.Id, Economic: Economic);
+            l.Produs, Furnizor, l.Id, Economic: Economic);
         var randuri = new List<RandScena> { debit, credit };
         if (taxa != 0) {
             randuri.Add(debit with { Cont = Privat ? Cont("4426") : cont, Cantitate = 0, Valoare = taxa,
@@ -49,7 +49,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         var nir = Opereaza(f.Id).ConexId!.Value;
         Postari("SC-FCT-01", f.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(f, 0, 10, 100));
         SoldLot("SC-FCT-01", f.Linii[0].Lot!.Value, Magazie, Ianuarie, 10, 100);
-        if (Privat) SoldPartida("SC-FCT-01", Partida(f.Id, ContFurnizor)!.Value, Ianuarie, -100);
+        SoldPartida("SC-FCT-01", Partida(f.Id, ContFurnizor)!.Value, Ianuarie, -100);
         var inainte = Amprenta(f.Id);
         Opereaza(nir);
         Verifica("SC-X-02", "NIR conex nu schimbă postările FCT", Amprenta(f.Id) == inainte);
@@ -63,7 +63,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             [.. Randuri(f, 0, 4, 40), .. Randuri(f, 1, 2, 30)]);
         SoldLot("SC-FCT-02", f.Linii[0].Lot!.Value, Magazie, Ianuarie, 4, 40);
         SoldLot("SC-FCT-02", f.Linii[1].Lot!.Value, Magazie, Ianuarie, 2, 30);
-        if (Privat) SoldPartida("SC-FCT-02", Partida(f.Id, ContFurnizor)!.Value, Ianuarie, -70);
+        SoldPartida("SC-FCT-02", Partida(f.Id, ContFurnizor)!.Value, Ianuarie, -70);
     }
 
     void StornoSiAnulare() {
@@ -73,7 +73,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-FCT-03", f.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(f, 0, 10, 100));
         Postari("SC-FCT-03", f.Id, N.FelTranzactie.Storno, data, Randuri(f, 0, -10, -100));
         SoldLot("SC-FCT-03", f.Linii[0].Lot!.Value, Magazie, data, 0, 0);
-        if (Privat) SoldPartida("SC-FCT-03", Partida(f.Id, ContFurnizor)!.Value, data, 0);
+        SoldPartida("SC-FCT-03", Partida(f.Id, ContFurnizor)!.Value, data, 0);
         var neschimbat = Amprenta(f.Id);
         Refuza("SC-FCT-03", () => Storneaza(f.Id, data), "Operat");
         Verifica("SC-FCT-03", "storno repetat nu scrie", Amprenta(f.Id) == neschimbat);
@@ -149,7 +149,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica("SC-X-01", "refuzul FCT și storno NIR păstrează postările întregului lanț",
             new[] { f.Id, nir, bcs }.Select(Amprenta).SequenceEqual(amprente));
         SoldLot("SC-X-01", f.Linii[0].Lot!.Value, Magazie, new(An, 1, 20), 6, 60);
-        if (Privat) SoldPartida("SC-X-01", Partida(f.Id, ContFurnizor)!.Value, new(An, 1, 20), -100);
+        SoldPartida("SC-X-01", Partida(f.Id, ContFurnizor)!.Value, new(An, 1, 20), -100);
     }
 
     void PestePerioada() {
@@ -177,7 +177,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         Opereaza(nou);
         Postari("SC-FCT-06", nou, N.FelTranzactie.Operare, Februarie, Randuri(corectie, 0, 0, 80, 16.80m, tva));
         Postari("SC-FCT-06", c.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(c, 0, 0, 100, 21, tva));
-        if (Privat) {
+        {
             SoldPartida("SC-FCT-06", Partida(c.Id, ContFurnizor)!.Value, new(An, 1, 31), -121);
             SoldPartida("SC-FCT-06", Partida(c.Id, ContFurnizor)!.Value, Februarie, 0);
             SoldPartida("SC-FCT-06", Partida(nou, ContFurnizor)!.Value, Februarie, -96.80m);

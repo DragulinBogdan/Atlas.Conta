@@ -1,4 +1,4 @@
-using DevExpress.ExpressApp.Design;
+﻿using DevExpress.ExpressApp.Design;
 using DevExpress.ExpressApp.EFCore.DesignTime;
 using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.BaseImpl.EF.PermissionPolicy;
@@ -290,7 +290,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // afișează — spre deosebire de `RegistruContabil` (41c).
             modelBuilder.Entity<SoldPerioadaContabil>(b => {
                 b.HasIndex(s => new {
-                    s.An, s.Luna, s.ContId, s.RepartitorId, s.MaterialId, s.CodFunctionalId,
+                    s.An, s.Luna, s.ContId, s.RepartitorId, s.GestiuneId, s.MaterialId, s.CodFunctionalId,
                     s.CodEconomicId, s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId
                 }).IsUnique().AreNullsDistinct(false);
                 b.HasIndex(s => new { s.An, s.Luna });
@@ -327,7 +327,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // ștergere FIZICĂ ca snapshot-urile, deci unicitate fără filtru pe
             // `GCRecord`. FK `Restrict`: documentul nu dispare de sub partida lui.
             modelBuilder.Entity<PartidaDeschisa>(b => {
-                b.HasIndex(p => new { p.An, p.Luna, p.DocumentId }).IsUnique();
+                b.HasIndex(p => new { p.An, p.Luna, p.UnitateId, p.ContId, p.PartenerId }).IsUnique().HasFilter("\"DinCub\"");
                 b.HasIndex(p => new { p.An, p.Luna });
                 b.HasOne(p => p.Document).WithMany().HasForeignKey(p => p.DocumentId)
                     .OnDelete(DeleteBehavior.Restrict);
@@ -552,6 +552,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // inițializatorul `= true` de pe proprietate, pentru rândurile noi.
             modelBuilder.Entity<TipTva>().Property(t => t.Activ).HasDefaultValue(true);
 
+            modelBuilder.HasDbFunction(typeof(Cub.Citiri.Partide).GetMethod(nameof(Cub.Citiri.Partide.Identitate)))
+                .HasName("cub_partida_id");
+            modelBuilder.HasDbFunction(typeof(Cub.IdentitatiPartide).GetMethod(nameof(Cub.IdentitatiPartide.Anterioara)))
+                .HasName("cub_partida_anterioara");
             AplicaCub(modelBuilder);
             AplicaScaraNumerica(modelBuilder);
             AplicaColoanePartajate(modelBuilder);

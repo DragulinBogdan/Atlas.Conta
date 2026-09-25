@@ -203,25 +203,8 @@ public static class ReceptiiConexe {
             throw new OperareException($"{Activa}: Recepția sau corecția ei activă depinde de sursă.");
     }
 
-    public static void VerificaStoc(IObjectSpace os, Document doc, IEnumerable<N.Postare> propuse) {
-        if (doc is not NIR) return;
-        var delta = propuse.Where(p => p.Coordonate.Unitate?.Fel == N.FelUnitate.Lot).ToList();
-        var loturi = delta.Select(p => p.Coordonate.Unitate!.Id).Distinct().ToList();
-        if (loturi.Count == 0) return;
-        var istoric = os.GetObjectsQuery<Postare>().Where(p => p.Carte == N.Carte.Contabil
-            && p.Unitate != null && loturi.Contains(p.Unitate.Value) && p.FelUnitate == N.FelUnitate.Lot)
-            .Select(p => new { p.Unitate, p.Gestiune, p.Data, p.Cantitate }).ToList()
-            .Select(p => (Lot: p.Unitate!.Value, p.Gestiune, p.Data, p.Cantitate));
-        foreach (var grup in istoric.Concat(delta.Select(p => (Lot: p.Coordonate.Unitate!.Id,
-                     p.Coordonate.Gestiune, p.Coordonate.Data, p.Cantitate))).GroupBy(p => (p.Lot, p.Gestiune))) {
-            var sold = 0m;
-            foreach (var zi in grup.GroupBy(p => p.Data).OrderBy(g => g.Key)) {
-                sold += zi.Sum(p => p.Cantitate);
-                if (zi.Key >= delta.Min(p => p.Coordonate.Data) && sold < 0)
-                    throw new OperareException($"{Stoc}: Recepția ar lăsa lotul {grup.Key.Lot} negativ la {zi.Key}.");
-            }
-        }
-    }
+    // Păstrează codul refuzului NIR; domeniul și calculul soldului sunt comune.
+    internal static string CodRefuzStoc(Document doc) => doc is NIR ? Stoc : "STOC_INSUFICIENT";
 
     public static void VerificaAnaliza(IObjectSpace os, Document doc, IEnumerable<N.Postare> propuse) {
         if (doc is not NIR || !EsteAcoperita(os, doc)) return;

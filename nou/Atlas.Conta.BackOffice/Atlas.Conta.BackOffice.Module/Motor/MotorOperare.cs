@@ -124,7 +124,7 @@ public static class MotorOperare {
         //    regula specifică pe Clasa liniei bate regula generică (Clasa=null =
         //    orice clasă cu Natura=Stoc) — altfel s-ar aplica amândouă.
         var miscari = PotrivesteReguliStoc(doc, claseTip, reguliStoc, strict: true);
-        if (!Cub.ReceptiiConexe.EsteAcoperita(os, doc))
+        if (!tipDoc.PosteazaInCub)
             StocService.VerificaSoldIntermediar(os, miscari.Select(m => m.Miscare).ToList());
 
         // 2. Rândurile contabile se CALCULEAZĂ și se validează tot înainte de
@@ -306,6 +306,9 @@ public static class MotorOperare {
         using var tranzactie = TranzactieComanda.Asigura(os);
         using var receptie = Cub.ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: true);
         var plan = CalculeazaSiValideaza(os, doc);
+        var refuzuriCub = Cub.Materializare.Refuzuri(os, doc, plan.TipDoc);
+        if (refuzuriCub.Count > 0)
+            throw new OperareException(string.Join("\n", refuzuriCub));
         var tipDoc = plan.TipDoc;
         var claseTip = plan.ClaseTip;
         var miscari = plan.Miscari;
@@ -426,10 +429,9 @@ public static class MotorOperare {
 
         // 6. Stingerea automată (82): tipul declară sursa prin contract,
         //    serviciul materializează relația în aceeași tranzacție.
-        ImperechereService.CreeazaAutomataLaOperare(os, doc);
-
         // 7. Regimul dual (S-D4): declarația frunzei, în aceeași tranzacție.
         Cub.Materializare.Opereaza(os, doc, tipDoc);
+        ImperechereService.CreeazaAutomataLaOperare(os, doc);
 
         os.CommitChanges();
         tranzactie?.Commit();
@@ -595,6 +597,7 @@ public static class MotorOperare {
         VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);
         VerificaFaraImperecheri(os, doc);
+        Cub.Citiri.Loturi.VerificaRetragere(os, doc);
         StergeConexeDraftAutogenerate(os, doc);
 
         var randuriStoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID).ToList();
@@ -606,7 +609,7 @@ public static class MotorOperare {
 
         // Simularea eliminării: delta goală, rândurile proprii excluse, dar
         // cheile lor re-verificate de la prima dată afectată.
-        if (randuriStoc.Count > 0 && !Cub.ReceptiiConexe.EsteAcoperita(os, doc)) {
+        if (randuriStoc.Count > 0 && !GasesteTipDocument(os, doc).PosteazaInCub) {
             var primaData = randuriStoc.Min(r => r.Data);
             var santinele = randuriStoc
                 .Select(r => new CheieStoc(r.LotId, r.RepartitorId, r.TipStoc)).Distinct()
@@ -618,7 +621,7 @@ public static class MotorOperare {
         // de altcineva (nici măcar cu mișcări care lasă soldul ≥ 0).
         var idsDetalii = doc.Detalii.Select(d => d.ID).ToList();
         foreach (var lot in os.GetObjectsQuery<Lot>().Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
-            if (os.GetObjectsQuery<RegistruStoc>().Any(r => r.LotId == lot.ID && r.DocumentId != doc.ID))
+            if (Cub.Citiri.Loturi.Postari(os).Any(r => r.Unitate == lot.ID && r.DocumentId != doc.ID))
                 throw new OperareException(
                     $"Lotul {lot.Produs?.Denumire} din {lot.Data:yyyy-MM-dd} e folosit de alte documente — folosiți storno.");
         }
@@ -651,6 +654,7 @@ public static class MotorOperare {
         GardianPerioada.VerificaDeschisa(os, dataStorno);
         VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);
+        Cub.Citiri.Loturi.VerificaRetragere(os, doc, dataStorno);
         ImperechereService.InverseazaLaStorno(os, doc, dataStorno);                   // F27-D8
         StergeConexeDraftAutogenerate(os, doc);
 
@@ -661,7 +665,7 @@ public static class MotorOperare {
         var delta = randuriStoc
             .Select(r => new MiscareStoc(new CheieStoc(r.LotId, r.RepartitorId, r.TipStoc), dataStorno, -r.Cantitate))
             .ToList();
-        if (!Cub.ReceptiiConexe.EsteAcoperita(os, doc))
+        if (!GasesteTipDocument(os, doc).PosteazaInCub)
             StocService.VerificaSoldIntermediar(os, delta);
 
         foreach (var r in randuriStoc) {

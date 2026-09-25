@@ -36,16 +36,9 @@ public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
     // lasă un sold DEBITOR pe 401 — se stinge creditând contrapartida (o
     // încasare de la furnizor, sau jumătatea de credit a unei note).
     //
-    // Declarația e ADEVĂRATĂ dar azi NEATINSĂ (review O1 — comentariul anterior
-    // pretindea că „calea directă îi acceptă"; nu îi acceptă): retururile nu
-    // sunt doar în afara lui `DocumenteCuRest` (F19-D11), ci și în afara
-    // stingerii cu totul, fiindcă după operare au valori NEGATIVE pe tot
-    // (semnarea din `PregatesteOperare`) ⇒ `ImperechereService.Total` e negativ
-    // ⇒ `Ramas` e negativ ⇒ orice sumă pozitivă cade pe „depășește restul
-    // documentului stins", ÎNAINTEA oricărei verificări de sens. Se declară
-    // fiindcă e adevărul contabil al tipului, nu fiindcă ar fi executabil azi;
-    // ziua în care restul returului va fi definit (F19-D11), sensul e deja aici
-    // și e corect.
+    // TR-D8/101: restul vine din cub în modul, iar sensul rămâne explicit.
+    // Calea directă cere partidă proprie și cont comun; lista de candidați
+    // are propriul catalog, separat de raportul general al partidelor.
     public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
         SensStingere.Creanta;
 
@@ -130,10 +123,8 @@ public class ReturClient : Document {
 
     // Oglinda RLF-ului: RDC stornează livrarea (creditează 4111 cu −V), deci lasă
     // un sold CREDITOR pe contul clientului — se stinge debitând (plata de
-    // rambursare, jumătatea de debit a notei). Ca la `ReturFurnizor`, declarația
-    // e adevărată dar azi NEATINSĂ: `LiniiCreanta` al RDC-ului dă doar liniile
-    // de venit, care după operare sunt negative ⇒ `Ramas` negativ ⇒ refuzul de
-    // rest cade înaintea oricărei verificări de sens (review O1).
+    // rambursare, jumătatea de debit a notei). TR-D8/101 citește restul din
+    // cub; totalul negativ al documentului nu ascunde datoria partidei proprii.
     public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
         SensStingere.Datorie;
 
@@ -191,8 +182,8 @@ public class ReturClient : Document {
         Detalii.Where(d => d.LotId == null).Sum(d => d.Valoare + d.ValoareTva);
 #pragma warning restore XAF0033
 
-    // Oglinda server-side a lui Total (contractul din bază): imperecherea
-    // stinge DOAR liniile de venit — ImperechereService.Total trece prin filtru.
+    // Oglinda server-side a totalului antetului. Citirea operațională a
+    // partidelor folosește cubul; costul fără partidă nu intră în decontare.
     public override IQueryable<DocumentDetaliu> LiniiCreanta(IQueryable<DocumentDetaliu> linii) =>
         linii.Where(d => d.LotId == null);
 

@@ -2,6 +2,7 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Asm;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
+using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using N = Atlas.Conta.Nucleu;
@@ -84,6 +85,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica("SC-ASM-07", "repetarea nu scrie", stamp == Amprenta(d.Id));
         Multiple(); Refuzuri(); Rotunjiri(); Capcana(); DeltaFaraAncora(); Dependenti(); LantRetur();
         var mixt = Mixt("SC-ASM-05");
+        Rapoarte(mixt.Doc, false);
         Verifica("SC-CIT-04", "ASM mixt: două postări economice de 40, fără Transfer/contrapondere", CuSpatiu(os => {
             var randuri = C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == mixt.Doc.Id).ToList();
             return randuri.Count == 2 && randuri.All(p => p.Valoare == 40 && p.Gestiune == Magazie)
@@ -102,6 +104,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         var intarziat = Culege([(Receptioneaza(new LinieFctScena(2, 50)).Linii[0], 2)], [(1, 100, null)]);
         InchideIanuarie();
         Storneaza(mixt.Doc.Id, Februarie);
+        Rapoarte(mixt.Doc, true);
         Postari("SC-ASM-08", mixt.Doc.Id, N.FelTranzactie.Storno, Februarie,
             Inverse([.. mixt.Transfer, .. mixt.Operare]));
         Verifica("SC-CIT-04", "storno mixt: două inverse economice −40; transferul rămâne exclus", CuSpatiu(os => {
@@ -120,6 +123,18 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
             [.. Rand(intarziat, 0, -2, 100), .. Rand(intarziat, 1, 1, 100)]);
         Sold("SC-ASM-15", intarziat.Linii[0], 2, 100); Sold("SC-ASM-15", intarziat.Linii[0], 0, 0, Februarie);
     }
+
+    void Rapoarte(FacturaScena doc, bool inversat) => Comanda(os => {
+        var data = inversat ? Februarie : Ianuarie;
+        var jurnal = ContabilProiectii.RegistruJurnal(os, data, data).Where(r => r.DocumentId == doc.Id).ToList();
+        var fisa = ContabilProiectii.FisaCont(os, Cont(Fabricat), data, data, materialId: doc.Linii[3].Produs).ToList();
+        var balanta = ContabilProiectii.Balanta(os, data, data, materialId: doc.Linii[3].Produs).Single();
+        var valoare = inversat ? -40 : 40;
+        Verifica("SC-CIT-15", $"ASM mixt: jurnal/fișă/balanță {valoare}, fără transfer sau contraponderi",
+            jurnal.Count == 2 && jurnal.Sum(r => r.Debit) == valoare && jurnal.Sum(r => r.Credit) == valoare
+            && fisa.Count == 1 && fisa[0].Debit == valoare && fisa[0].SoldCurent == (inversat ? 0 : 40)
+            && balanta.RulajDebit == valoare && balanta.RulajCredit == 0);
+    });
 
     void Multiple() {
         var f = Receptioneaza(new LinieFctScena(2, 30), new LinieFctScena(3, 13.333333m));
@@ -211,7 +226,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-ASM-11", b.Id, N.FelTranzactie.Transfer, Ianuarie,
             [.. Rand(b, 0, -2, 6.67m), .. Rand(b, 1, 1, 6.67m)]); Sold("SC-ASM-11", lot, 0, 0);
         var dual = Receptioneaza(new LinieFctScena(3, 3.333333m)).Linii[0];
-        var p = new[] { 3.33m, 3.33m, 3.34m }; var c = new[] { 3.33m, 3.34m, 3.34m };
+        var p = new[] { 3.33m, 3.33m, 3.34m }; var c = new[] { 3.33m, 3.34m, 3.33m };
         FacturaScena alDoilea = null;
         for (var i = 0; i < 3; i++) {
             var d = Culege([(dual, 1)], [(1, p[i], null)]);
@@ -227,11 +242,11 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
                 [.. Rand(d, 0, -1, c[i]), .. Rand(d, 1, 1, c[i])]);
             if (i == 1) alDoilea = d;
         }
-        Sold("SC-ASM-17/T-r13: țintă 0/0, excepție duală", dual, 0, -0.01m);
-        Diagnostic("SC-ASM-17", dual, 0, -.01m);
+        Sold("SC-ASM-17/T-r13: evaluare din cub", dual, 0, 0);
+        Diagnostic("SC-ASM-17", dual, 0, 0);
         var iesire = Consum(alDoilea!.Linii[1].Lot!.Value, 1); Opereaza(iesire);
-        Sold("SC-ASM-25/T-r13", alDoilea.Linii[1], 0, 0.01m);
-        Diagnostic("SC-ASM-25", alDoilea.Linii[1], 0, .01m);
+        Sold("SC-ASM-25/T-r13", alDoilea.Linii[1], 0, 0);
+        Diagnostic("SC-ASM-25", alDoilea.Linii[1], 0, 0);
         DeltaLocal();
     }
 
@@ -307,7 +322,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
             new DateOnly(An, 1, 31), [lot.Lot!.Value]);
         var p = raport.Pozitii.Single(x => x.Cheie.Gestiune == Magazie);
         Verifica(id, "diagnostic valoric: reziduu exact, istoric complet, proveniență și identitate D", !p.Incomplet
-            && p.Qcub == q && p.Qregistru == q && p.Delta == delta && p.Reziduu
+            && p.Qcub == q && p.Qregistru == q && p.Delta == delta && p.Reziduu == (delta != 0m)
             && p.Delta == p.Initial + p.Intrari - p.Iesiri
             && p.Contributii.All(c => c.Provenienta.Contains("doc ") && c.AreCub && c.AreRegistru));
         foreach (var linie in raport.Linii()) Console.WriteLine("     " + linie);
@@ -366,7 +381,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void DeltaFaraAncora() {
         var lot = Receptioneaza(new LinieFctScena(5, 0.004m)).Linii[0];
-        Opereaza(Consum(lot.Lot!.Value, 1)); Opereaza(Consum(lot.Lot.Value, 1));
+        Opereaza(Consum(lot.Lot!.Value, .5m)); Opereaza(Consum(lot.Lot.Value, 1));
         var alt = Receptioneaza(new LinieFctScena(1, 1, Tip: Materie)).Linii[0];
         var d = Culege([(lot, 1), (alt, 1)], [(1, 1, Materie)], new(An, 1, 11));
         RefuzDeclaratie("SC-ASM-23", d.Id, CoduriRefuz.AsamblareDeltaFaraAncora);

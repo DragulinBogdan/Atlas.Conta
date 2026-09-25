@@ -28,7 +28,7 @@ public static partial class Materializare {
         if (!contract.EsteAcceptat)
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
         ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
-        ReceptiiConexe.VerificaStoc(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
+        Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
         VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: true);
         foreach (var tranzactie in contract.Tranzactii.Where(t => t.Postari.Count > 0))
             Scrie(os, doc.ID, tranzactie);
@@ -47,7 +47,7 @@ public static partial class Materializare {
             if (contract.EsteAcceptat)
                 ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
             if (contract.EsteAcceptat)
-                ReceptiiConexe.VerificaStoc(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
+                Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
             if (contract.EsteAcceptat)
                 VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: false);
         }
@@ -100,7 +100,7 @@ public static partial class Materializare {
         var refuzuri = N.Conservare.Verifica(tranzactie);
         if (refuzuri.Count > 0)
             throw new OperareException(string.Join("\n", Mesaje(refuzuri)));
-        ReceptiiConexe.VerificaStoc(os, doc, tranzactie.Postari);
+        Citiri.Loturi.VerificaSoldIntermediar(os, tranzactie.Postari, ReceptiiConexe.CodRefuzStoc(doc));
         VerificaPozitiaFaraFisa(os, tranzactie.Postari, blocheaza: true);
         Scrie(os, doc.ID, tranzactie);
     }
@@ -109,14 +109,19 @@ public static partial class Materializare {
     /// S-D13: împerecherea de după operare devine o tranzacție <c>Transfer</c> pe
     /// stingător. Fără commit: e în tranzacția apelantului.
     /// </summary>
-    public static void Imperecheaza(
-            IObjectSpace os, Document stingator, Document stins, decimal suma, DateOnly data) {
+    public static Guid? Imperecheaza(
+            IObjectSpace os, Document stingator, Document stins, decimal suma, DateOnly data,
+            bool desfaceNominalizare = false, Guid? contrapartidaId = null) {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(stingator);
         ArgumentNullException.ThrowIfNull(stins);
         if (!MotorOperare.GasesteTipDocument(os, stingator).PosteazaInCub
             || !MotorOperare.GasesteTipDocument(os, stins).PosteazaInCub)
-            return;
+            throw new OperareException("IMPERECHERE_FARA_EFECT: ambele documente trebuie să posteze în cub.");
+        if (suma > 0m) {
+            suma -= Math.Min(suma, Citiri.Partide.NominalizataLibera(os, stingator.ID, stins.ID, data, contrapartidaId));
+            if (suma == 0m) return null;
+        }
         var aleStingatorului = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == stingator.ID && p.Carte == N.Carte.Contabil
                 && p.FelUnitate == N.FelUnitate.Partida)
@@ -126,7 +131,7 @@ public static partial class Materializare {
                 && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida)
             .ToList();
         var idOperareStingator = aleStingatorului.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare).Select(p => p.ID).ToArray();
-        var partideleStingatorului = aleStingatorului.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare)
+        var partideleStingatorului = aleStingatorului
             .Select(p => p.Unitate).OfType<Guid>().Distinct().ToArray();
         var primiteDeStingator = os.GetObjectsQuery<Postare>()
             .Where(p => p.Unitate != null && partideleStingatorului.Contains(p.Unitate.Value)
@@ -139,6 +144,12 @@ public static partial class Materializare {
                     && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida
                     && (p.DocumentId != stins.ID || p.Tranzactie.Fel != N.FelTranzactie.Operare))
                 .ToList();
+        if (suma < 0m && !desfaceNominalizare) {
+            primiteDeStins = primiteDeStins.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Transfer).ToList();
+            if (!primiteDeStins.Where(p => p.DocumentId == stingator.ID)
+                .GroupBy(p => new { p.Unitate, p.Cont, p.Partener })
+                .Any(g => g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) != 0m)) return null;
+        }
         var rezultat = Transferuri.Muta(new Transferuri.Cerere(
             stingator.ID,
             stingator.DataInregistrare,
@@ -149,17 +160,54 @@ public static partial class Materializare {
             [.. aleStinsului.Select(Randuri.Citeste)],
             [.. primiteDeStins.Select(Randuri.Citeste)],
             suma,
-            data));
+            data, DesfaceNominalizare: desfaceNominalizare, PartenerCerut: contrapartidaId));
         if (rezultat.Refuz is { } refuz)
             throw new OperareException(string.Join("\n", Mesaje([refuz])));
-        if (rezultat.Mutare is not { } mutare)
-            return;
+        if (rezultat.Mutare is not { } mutare) {
+            if (suma < 0m) return null;
+            throw new OperareException($"IMPERECHERE_FARA_EFECT: {rezultat.Sarit}.");
+        }
+        if (suma > 0m) VerificaDisponibilTemporal(os, mutare, data);
         var contract = N.Motor.Transfera(
             stingator.ID, rezultat.Data, [mutare], new N.Rotunjire(Scara.ConventieBani));
         if (!contract.EsteAcceptat)
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
+        var nominalizata = !desfaceNominalizare ? null : aleStingatorului.FirstOrDefault(p => p.Tranzactie.Fel == N.FelTranzactie.Operare
+            && p.Unitate == mutare.DeLa.Unitate?.Id && !IdentitatiPartide.EsteProprie(mutare.DeLa.Unitate, stingator.ID));
+        Guid? id = null;
         foreach (var tranzactie in contract.Tranzactii)
-            Scrie(os, stingator.ID, tranzactie);
+            id = Scrie(os, stingator.ID, nominalizata == null ? tranzactie : new N.Tranzactie(
+                tranzactie.Fel, tranzactie.Data, stingator.ID,
+                tranzactie.Postari.Select(p => p with { Atribuit = nominalizata.ID }).ToArray()));
+        return id;
+    }
+
+    static void VerificaDisponibilTemporal(IObjectSpace os, N.Mutare mutare, DateOnly data) {
+        var semn = mutare.Latura == N.Latura.Debit ? 1m : -1m;
+        foreach (var (unitate, sens) in new[] { (mutare.DeLa.Unitate.Id, semn), (mutare.La.Unitate.Id, -semn) }) {
+            var zile = Citiri.Partide.Postari(os).Where(p => p.Unitate == unitate)
+                .GroupBy(p => p.Data < data ? data : p.Data)
+                .Select(g => new { Data = g.Key, Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+                .OrderBy(p => p.Data).ToArray();
+            var rest = -mutare.Valoare;
+            foreach (var zi in zile) {
+                rest += sens * zi.Net;
+                if (rest < 0m) throw new OperareException("PARTIDA_PROPRIE_INSUFICIENTA: stingerea depășește disponibilul la data cerută sau într-o zi ulterioară.");
+            }
+        }
+    }
+
+    public static Guid DesfaceTransfer(IObjectSpace os, Guid document, Guid transfer, DateOnly data) {
+        var postari = os.GetObjectsQuery<Postare>().Where(p => p.TranzactieId == transfer
+            && p.DocumentId == document && p.Tranzactie.Fel == N.FelTranzactie.Transfer).ToList();
+        if (postari.Count == 0)
+            throw new OperareException("IMPERECHERE_FARA_EFECT: transferul legăturii nu există.");
+        var invers = new N.Tranzactie(N.FelTranzactie.Transfer, data, document,
+            postari.Select(p => { var original = Randuri.Citeste(p); return original with {
+                Coordonate = original.Coordonate with { Data = data }, Valoare = -p.Valoare, Cantitate = -p.Cantitate }; }).ToArray());
+        var refuzuri = N.Conservare.Verifica(invers);
+        if (refuzuri.Count != 0) throw new OperareException(string.Join("\n", Mesaje(refuzuri)));
+        return Scrie(os, document, invers);
     }
 
     static IEnumerable<N.Postare> Citeste(IEnumerable<Postare> randuri, N.FelTranzactie fel) =>
@@ -180,7 +228,7 @@ public static partial class Materializare {
             return;
         var ids = tranzactii.Select(t => t.ID).ToList();
         var postari = os.GetObjectsQuery<Postare>().Where(p => ids.Contains(p.TranzactieId)).ToList();
-        ReceptiiConexe.VerificaStoc(os, doc, postari.Select(p => Randuri.Citeste(p) with { Cantitate = -p.Cantitate }));
+        Citiri.Loturi.VerificaSoldIntermediar(os, postari.Select(p => Randuri.Citeste(p) with { Cantitate = -p.Cantitate }), ReceptiiConexe.CodRefuzStoc(doc));
         VerificaPozitiaFaraFisa(os, postari.Select(p => Randuri.Citeste(p) with { Valoare = -p.Valoare }), blocheaza: true);
         os.Delete(postari);
         os.Delete(tranzactii);
@@ -188,14 +236,14 @@ public static partial class Materializare {
 
     static void VerificaPartideFaraDependenti(IObjectSpace os, Document doc, DateOnly deLa) {
         var unitati = os.GetObjectsQuery<Postare>()
-            .Where(p => p.DocumentId == doc.ID && p.Tranzactie.Fel == N.FelTranzactie.Operare
+            .Where(p => p.DocumentId == doc.ID && (p.Tranzactie.Fel == N.FelTranzactie.Operare || p.Tranzactie.Fel == N.FelTranzactie.Transfer)
                 && p.Spatiu == N.Spatiu.Contabil && p.Unitate != null && p.Partener != null)
             .ToList().Select(p => Randuri.Citeste(p).Coordonate.Unitate)
             .Where(u => IdentitatiPartide.EsteProprie(u, doc.ID)).Select(u => u.Id).Distinct().ToList();
         if (unitati.Count == 0) return;
         var dependenti = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId != doc.ID && p.Unitate != null && unitati.Contains(p.Unitate.Value)
-                && p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil && p.LinieId != null)
+                && p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil)
             .GroupBy(p => new { p.DocumentId, p.Unitate, p.Data })
             .Select(g => new { g.Key.DocumentId, g.Key.Unitate, g.Key.Data,
                 Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
@@ -203,7 +251,15 @@ public static partial class Materializare {
         // Inversarea ulterioară a dependentului nu eliberează retroactiv sursa.
         // Verificăm soldul la data cerută și fiecare schimbare deja înregistrată
         // după ea; mișcările din aceeași zi se compensează împreună.
-        var activ = dependenti.GroupBy(p => new { p.DocumentId, p.Unitate }).Any(g => {
+        // Desfacerea stingerilor din aceeași comandă nu a ajuns încă în SQL.
+        // Numai rândurile noi se adaugă: cele persistate sunt deja în agregat.
+        var inCurs = os.ModifiedObjects.OfType<Postare>()
+            .Where(p => os.IsNewObject(p) && p.DocumentId != doc.ID
+                && p.Unitate != null && unitati.Contains(p.Unitate.Value)
+                && p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil)
+            .Select(p => new { p.DocumentId, p.Unitate, p.Data,
+                Net = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare });
+        var activ = dependenti.Concat(inCurs).GroupBy(p => new { p.DocumentId, p.Unitate }).Any(g => {
             decimal sold = 0;
             foreach (var zi in g.GroupBy(p => p.Data < deLa ? deLa : p.Data).OrderBy(p => p.Key)) {
                 sold += zi.Sum(p => p.Net);

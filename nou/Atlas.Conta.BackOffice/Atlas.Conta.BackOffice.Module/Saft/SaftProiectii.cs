@@ -380,19 +380,15 @@ public static class SaftProiectii {
         var conturiCuRol = conturi.Where(c => c.Value.RolTert != RolTertCont.Niciunul)
             .Select(c => c.Key).ToList();
 
-        // Agregatul soldurilor de terți: PROPRIU, nu `Balanta(analitic: true)`.
-        // Motivul e în antetul clasei — cheia balanței analitice e (cont ×
-        // dimensiunea ACELEIAȘI laturi), iar partenerul stă pe latura cealaltă. O
-        // singură interogare grupată pe perechile de conturi × perechile de
-        // repartitori: cardinalitatea e a nomenclatoarelor, nu a registrului.
-        var agregateTert = os.GetObjectsQuery<RegistruContabil>().IgnoreAutoIncludes()
-            .Where(r => r.Data <= dataEnd
-                && (conturiCuRol.Contains(r.ContDebitId) || conturiCuRol.Contains(r.ContCreditId)))
-            .GroupBy(r => new { r.ContDebitId, r.ContCreditId, r.DebitRepartitorId, r.CreditRepartitorId })
+        var agregateTert = ContabilProiectii.Atomi(os)
+            .Where(r => r.Data <= dataEnd && conturiCuRol.Contains(r.ContId))
+            .GroupBy(r => new { r.ContId, r.RepartitorId })
             .Select(g => new {
-                g.Key.ContDebitId, g.Key.ContCreditId, g.Key.DebitRepartitorId, g.Key.CreditRepartitorId,
-                Initial = g.Sum(r => r.Data < dataStart ? r.Valoare : 0m),
-                Rulaj = g.Sum(r => r.Data >= dataStart ? r.Valoare : 0m),
+                g.Key.ContId, g.Key.RepartitorId,
+                InitialDebit = g.Sum(r => r.Data < dataStart ? r.Debit : 0m),
+                InitialCredit = g.Sum(r => r.Data < dataStart ? r.Credit : 0m),
+                RulajDebit = g.Sum(r => r.Data >= dataStart ? r.Debit : 0m),
+                RulajCredit = g.Sum(r => r.Data >= dataStart ? r.Credit : 0m),
             })
             .ToList();
 
@@ -404,10 +400,7 @@ public static class SaftProiectii {
             AdaugaRep(r.DebitCentruCostId);
             AdaugaRep(r.CreditCentruCostId);
         }
-        foreach (var a in agregateTert) {
-            AdaugaRep(a.DebitRepartitorId);
-            AdaugaRep(a.CreditRepartitorId);
-        }
+        foreach (var a in agregateTert) AdaugaRep(a.RepartitorId);
         foreach (var d in documente.Values) {
             idsRepartitor.Add(d.PredatorId);
             idsRepartitor.Add(d.PrimitorId);
@@ -508,14 +501,10 @@ public static class SaftProiectii {
         }
 
         foreach (var a in agregateTert) {
-            var rolD = Rol(a.ContDebitId);
-            if (rolD != RolTertCont.Niciunul)
-                AcumuleazaTert(a.ContDebitId, rolD, a.DebitRepartitorId, a.CreditRepartitorId,
-                    a.Initial, a.Rulaj, debit: true);
-            var rolC = Rol(a.ContCreditId);
-            if (rolC != RolTertCont.Niciunul)
-                AcumuleazaTert(a.ContCreditId, rolC, a.CreditRepartitorId, a.DebitRepartitorId,
-                    a.Initial, a.Rulaj, debit: false);
+            AcumuleazaTert(a.ContId, Rol(a.ContId), a.RepartitorId, null,
+                a.InitialDebit, a.RulajDebit, debit: true);
+            AcumuleazaTert(a.ContId, Rol(a.ContId), a.RepartitorId, null,
+                a.InitialCredit, a.RulajCredit, debit: false);
         }
         neincluse.AddRange(neincluseTert.Values.Where(n => n.Debit != 0m || n.Credit != 0m));
 
@@ -2534,12 +2523,12 @@ public static class SaftProiectii {
             .GroupBy(x => new { x.Simbol, x.DocumentId })
             .Select(g => new { g.Key.Simbol, g.Key.DocumentId, Valoare = g.Sum(x => x.Valoare) })
             .ToList();
-        var agregatGl = os.GetObjectsQuery<RegistruContabil>().IgnoreAutoIncludes()
-            .Where(r => r.Data <= dataEnd
-                && (contIdsTinta.Contains(r.ContDebitId) || contIdsTinta.Contains(r.ContCreditId)))
-            .GroupBy(r => new { r.ContDebitId, r.ContCreditId, r.DocumentId })
+        var agregatGl = Cub.Citiri.Contabil.Postari(os)
+            .Where(r => r.Data <= dataEnd && contIdsTinta.Contains(r.Cont))
+            .GroupBy(r => new { r.Cont, r.DocumentId })
             .Select(g => new {
-                g.Key.ContDebitId, g.Key.ContCreditId, g.Key.DocumentId, Valoare = g.Sum(r => r.Valoare)
+                g.Key.Cont, g.Key.DocumentId,
+                Valoare = g.Sum(r => r.Latura == Nucleu.Latura.Debit ? r.Valoare : -r.Valoare)
             })
             .ToList();
         var codPerDocument = ApiProiectii.CoduriTip(os, agregatStoc.Select(x => x.DocumentId)
@@ -2561,14 +2550,8 @@ public static class SaftProiectii {
                 Aduna(simbol, x.DocumentId, x.Valoare, 0m);
         }
         foreach (var x in agregatGl) {
-            // Soldul contului, SEMNAT (debitor pozitiv) — exact convenția
-            // `balantaPeSimbol` de mai sus. Un rând cu contul pe AMBELE laturi
-            // (reclasificare analitică) contribuie cu +v și −v, adică zero: și
-            // asta e corect, nu o pierdere.
-            if (simbolPerContId.TryGetValue(x.ContDebitId, out var simbolD))
-                Aduna(simbolD, x.DocumentId, 0m, x.Valoare);
-            if (simbolPerContId.TryGetValue(x.ContCreditId, out var simbolC))
-                Aduna(simbolC, x.DocumentId, 0m, -x.Valoare);
+            if (simbolPerContId.TryGetValue(x.Cont, out var simbol))
+                Aduna(simbol, x.DocumentId, 0m, x.Valoare);
         }
 
         foreach (var cont in perCont)
@@ -3078,4 +3061,3 @@ public static class SaftProiectii {
         _ => cod.ToString(),
     };
 }
-

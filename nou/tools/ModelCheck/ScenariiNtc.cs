@@ -47,7 +47,8 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-NTC-14", stoc.Id, N.FelTranzactie.Operare, Ianuarie, R(stoc, 0, Serviciu, Stoc, 50));
         Verifica("SC-NTC-14", "fără registru de stoc", CuSpatiu(os => !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == stoc.Id)));
         Refuzuri();
-        if (Privat) { Fifo(); Avans(); Parteneri(); Compatibilitate(); DependentaInTimp(); }
+        Fifo(); Parteneri(); Compatibilitate(); DependentaInTimp();
+        if (Privat) Avans();
         PestePerioada();
     }
 
@@ -68,12 +69,12 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
     void Fifo() {
         Furnizor = PartenerNou();
         var f1 = Fct(60, 3); var f2 = Fct(40, 4);
-        var p1 = P(f1.Id, "401", Furnizor); var p2 = P(f2.Id, "401", Furnizor);
-        var n = Nota(Ianuarie, new LinieNtcScena("401", "628", 75, Furnizor));
+        var p1 = P(f1.Id, ContFurnizor, Furnizor); var p2 = P(f2.Id, ContFurnizor, Furnizor);
+        var n = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 75, Furnizor));
         Verifica("SC-NTC-07", "dry-run FIFO acceptat", CuSpatiu(os => OperareApi.Valideaza(os, n.Id)).Count == 0);
         FaraEfecte("SC-NTC-07", n.Id); Opereaza(n.Id);
         Postari("SC-NTC-07", n.Id, N.FelTranzactie.Operare, Ianuarie,
-            [.. R(n, 0, "401", "628", 60, ud: p1, pd: Furnizor), .. R(n, 0, "401", "628", 15, ud: p2, pd: Furnizor)]);
+            [.. R(n, 0, ContFurnizor, Serviciu, 60, ud: p1, pd: Furnizor), .. R(n, 0, ContFurnizor, Serviciu, 15, ud: p2, pd: Furnizor)]);
         SoldPartida("SC-NTC-07", p1, Ianuarie, 0); SoldPartida("SC-NTC-07", p2, Ianuarie, -25);
         var intact = Amprenta(f1.Id);
         Refuza("SC-NTC-16", () => Anuleaza(f1.Id), "PARTIDA_CU_DEPENDENTI");
@@ -89,42 +90,42 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         Storneaza(f1.Id, Ianuarie); SoldPartida("SC-NTC-16", p1, Ianuarie, 0);
 
         Furnizor = PartenerNou(); f1 = Fct(60, 3); f2 = Fct(40, 4);
-        p1 = P(f1.Id, "401", Furnizor); p2 = P(f2.Id, "401", Furnizor);
-        n = Nota(Ianuarie, new LinieNtcScena("401", "628", 70, Furnizor), new LinieNtcScena("401", "628", 50, Furnizor)); Opereaza(n.Id);
-        var proprie = P(n.Id, "401", Furnizor);
+        p1 = P(f1.Id, ContFurnizor, Furnizor); p2 = P(f2.Id, ContFurnizor, Furnizor);
+        n = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 70, Furnizor), new LinieNtcScena(ContFurnizor, Serviciu, 50, Furnizor)); Opereaza(n.Id);
+        var proprie = P(n.Id, ContFurnizor, Furnizor);
         Postari("SC-NTC-08", n.Id, N.FelTranzactie.Operare, Ianuarie,
-            [.. R(n, 0, "401", "628", 60, ud: p1, pd: Furnizor), .. R(n, 0, "401", "628", 10, ud: p2, pd: Furnizor),
-             .. R(n, 1, "401", "628", 30, ud: p2, pd: Furnizor), .. R(n, 1, "401", "628", 20, ud: proprie, pd: Furnizor)]);
+            [.. R(n, 0, ContFurnizor, Serviciu, 60, ud: p1, pd: Furnizor), .. R(n, 0, ContFurnizor, Serviciu, 10, ud: p2, pd: Furnizor),
+             .. R(n, 1, ContFurnizor, Serviciu, 30, ud: p2, pd: Furnizor), .. R(n, 1, ContFurnizor, Serviciu, 20, ud: proprie, pd: Furnizor)]);
         SoldPartida("SC-NTC-08", p1, Ianuarie, 0); SoldPartida("SC-NTC-08", p2, Ianuarie, 0); SoldPartida("SC-NTC-08", proprie, Ianuarie, 20);
 
         Furnizor = PartenerNou(); f1 = Fct(60, 3); f2 = Fct(40, 10);
-        n = Nota(Ianuarie, new LinieNtcScena("401", "628", 75, Furnizor)); Opereaza(n.Id);
+        n = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 75, Furnizor)); Opereaza(n.Id);
         Postari("SC-NTC-09", n.Id, N.FelTranzactie.Operare, Ianuarie,
-            [.. R(n, 0, "401", "628", 60, ud: P(f1.Id, "401", Furnizor), pd: Furnizor),
-             .. R(n, 0, "401", "628", 15, ud: P(n.Id, "401", Furnizor), pd: Furnizor)]);
-        SoldPartida("SC-NTC-09", P(f2.Id, "401", Furnizor), new(An, 1, 10), -40);
+            [.. R(n, 0, ContFurnizor, Serviciu, 60, ud: P(f1.Id, ContFurnizor, Furnizor), pd: Furnizor),
+             .. R(n, 0, ContFurnizor, Serviciu, 15, ud: P(n.Id, ContFurnizor, Furnizor), pd: Furnizor)]);
+        SoldPartida("SC-NTC-09", P(f2.Id, ContFurnizor, Furnizor), new(An, 1, 10), -40);
         Furnizor = PartenerNou(); f1 = Fct(60, 3); f2 = Fct(40, 3);
-        var prima = new[] { (P(f1.Id, "401", Furnizor), 60m), (P(f2.Id, "401", Furnizor), 40m) }.OrderBy(p => p.Item1).First();
-        n = Nota(Ianuarie, new LinieNtcScena("401", "628", 30, Furnizor)); Opereaza(n.Id);
-        Postari("SC-NTC-09", n.Id, N.FelTranzactie.Operare, Ianuarie, R(n, 0, "401", "628", 30, ud: prima.Item1, pd: Furnizor));
+        var prima = new[] { (P(f1.Id, ContFurnizor, Furnizor), 60m), (P(f2.Id, ContFurnizor, Furnizor), 40m) }.OrderBy(p => p.Item1).First();
+        n = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 30, Furnizor)); Opereaza(n.Id);
+        Postari("SC-NTC-09", n.Id, N.FelTranzactie.Operare, Ianuarie, R(n, 0, ContFurnizor, Serviciu, 30, ud: prima.Item1, pd: Furnizor));
 
-        Furnizor = PartenerNou(); f1 = Fct(100, 3); p1 = P(f1.Id, "401", Furnizor);
-        n = Nota(Ianuarie, new LinieNtcScena("628", "401", -30, RepartitorCredit: Furnizor)); Opereaza(n.Id);
-        Postari("SC-NTC-10", n.Id, N.FelTranzactie.Operare, Ianuarie, R(n, 0, "628", "401", -30, uc: p1, pc: Furnizor));
+        Furnizor = PartenerNou(); f1 = Fct(100, 3); p1 = P(f1.Id, ContFurnizor, Furnizor);
+        n = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, -30, RepartitorCredit: Furnizor)); Opereaza(n.Id);
+        Postari("SC-NTC-10", n.Id, N.FelTranzactie.Operare, Ianuarie, R(n, 0, Serviciu, ContFurnizor, -30, uc: p1, pc: Furnizor));
         SoldPartida("SC-NTC-10", p1, Ianuarie, -70);
-        Furnizor = PartenerNou(); f1 = Fct(100, 3); p1 = P(f1.Id, "401", Furnizor);
-        n = Nota(Ianuarie, new LinieNtcScena("628", "401", 20, RepartitorCredit: Furnizor)); Opereaza(n.Id);
-        SoldPartida("SC-NTC-11", p1, Ianuarie, -100); SoldPartida("SC-NTC-11", P(n.Id, "401", Furnizor), Ianuarie, -20);
-        Postari("SC-NTC-11", n.Id, N.FelTranzactie.Operare, Ianuarie, R(n, 0, "628", "401", 20, uc: P(n.Id, "401", Furnizor), pc: Furnizor));
-        var fara = Nota(Ianuarie, new LinieNtcScena("401", "628", 100)); Opereaza(fara.Id);
-        Postari("SC-NTC-15", fara.Id, N.FelTranzactie.Operare, Ianuarie, R(fara, 0, "401", "628", 100));
+        Furnizor = PartenerNou(); f1 = Fct(100, 3); p1 = P(f1.Id, ContFurnizor, Furnizor);
+        n = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 20, RepartitorCredit: Furnizor)); Opereaza(n.Id);
+        SoldPartida("SC-NTC-11", p1, Ianuarie, -100); SoldPartida("SC-NTC-11", P(n.Id, ContFurnizor, Furnizor), Ianuarie, -20);
+        Postari("SC-NTC-11", n.Id, N.FelTranzactie.Operare, Ianuarie, R(n, 0, Serviciu, ContFurnizor, 20, uc: P(n.Id, ContFurnizor, Furnizor), pc: Furnizor));
+        var fara = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 100)); Opereaza(fara.Id);
+        Postari("SC-NTC-15", fara.Id, N.FelTranzactie.Operare, Ianuarie, R(fara, 0, ContFurnizor, Serviciu, 100));
         SoldPartida("SC-NTC-15", p1, Ianuarie, -100);
     }
 
     void DependentaInTimp() {
         Furnizor = PartenerNou();
-        var f = Fct(100, 3); var partida = P(f.Id, "401", Furnizor);
-        var n = Nota(Ianuarie, new LinieNtcScena("401", "628", 40, Furnizor)); Opereaza(n.Id);
+        var f = Fct(100, 3); var partida = P(f.Id, ContFurnizor, Furnizor);
+        var n = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 40, Furnizor)); Opereaza(n.Id);
         var original = Amprenta(f.Id);
         Refuza("SC-NTC-16", () => Anuleaza(f.Id), "PARTIDA_CU_DEPENDENTI");
         Refuza("SC-NTC-16", () => Storneaza(f.Id, Ianuarie), "PARTIDA_CU_DEPENDENTI");
@@ -159,14 +160,14 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void Parteneri() {
         var pa = PartenerNou(); var pb = PartenerNou();
-        var n = Nota(Ianuarie, new LinieNtcScena("628", "401", 100, RepartitorCredit: pa), new LinieNtcScena("628", "401", 100, RepartitorCredit: pb)); Opereaza(n.Id);
-        var a = P(n.Id, "401", pa); var b = P(n.Id, "401", pb);
+        var n = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100, RepartitorCredit: pa), new LinieNtcScena(Serviciu, ContFurnizor, 100, RepartitorCredit: pb)); Opereaza(n.Id);
+        var a = P(n.Id, ContFurnizor, pa); var b = P(n.Id, ContFurnizor, pb);
         Verifica("SC-NTC-13", "parteneri diferiți, identități diferite", a != b);
         Postari("SC-NTC-13", n.Id, N.FelTranzactie.Operare, Ianuarie,
-            [.. R(n, 0, "628", "401", 100, uc: a, pc: pa), .. R(n, 1, "628", "401", 100, uc: b, pc: pb)]);
-        var stingere = Nota(Ianuarie, new LinieNtcScena("401", "628", 100, pa)); Opereaza(stingere.Id);
+            [.. R(n, 0, Serviciu, ContFurnizor, 100, uc: a, pc: pa), .. R(n, 1, Serviciu, ContFurnizor, 100, uc: b, pc: pb)]);
+        var stingere = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 100, pa)); Opereaza(stingere.Id);
         SoldPartida("SC-NTC-13", a, Ianuarie, 0); SoldPartida("SC-NTC-13", b, Ianuarie, -100);
-        var proprie = Nota(Ianuarie, new LinieNtcScena("628", "401", 100, RepartitorCredit: PartenerNou())); Opereaza(proprie.Id); Anuleaza(proprie.Id);
+        var proprie = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100, RepartitorCredit: PartenerNou())); Opereaza(proprie.Id); Anuleaza(proprie.Id);
         FaraEfecte("SC-NTC-05", proprie.Id);
     }
 
@@ -217,8 +218,8 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
             && rezultat.Mutare?.La.Unitate == veche && rezultat.Mutare.Valoare == 40);
         var nominalizata = C.Transferuri.Muta(new(plata, Ianuarie, [Post(veche, plata, N.Latura.Debit, 40)], [],
             doc, Ianuarie, [Post(veche, doc, N.Latura.Credit, 100)], [], 40, Ianuarie));
-        Verifica("SC-NTC-17", "transfer sărit cu motiv explicit când nota nu are partidă proprie",
-            nominalizata.Mutare == null && nominalizata.Refuz == null
-            && nominalizata.Sarit?.Contains("n-are partidă proprie") == true);
+        Verifica("SC-NTC-17", "transfer suplimentar refuzat când nominalizarea nu lasă partidă proprie (101)",
+            nominalizata.Mutare == null && nominalizata.Refuz?.Cod == "IMPERECHERE_FARA_EFECT"
+            && nominalizata.Sarit == null);
     }
 }

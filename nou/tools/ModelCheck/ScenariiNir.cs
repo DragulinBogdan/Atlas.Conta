@@ -34,13 +34,13 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
         return [new(Cont(stoc ?? Stoc), N.Latura.Debit, v, q, Magazie, l.Lot, l.Produs,
                 Linie: l.Id, Spatiu: N.Spatiu.Stoc, Economic: Economic),
             new(Cont(ContFurnizor), N.Latura.Credit, v, -q, N.GestiuniVirtuale.Furnizor,
-                partida ?? Partida(d.Id, ContFurnizor), l.Produs, Privat ? Furnizor : null, l.Id, Economic: Economic)];
+                partida ?? Partida(d.Id, ContFurnizor), l.Produs, Furnizor, l.Id, Economic: Economic)];
     }
     static RandScena[] Inverse(params RandScena[] r) => [.. r.Select(p => p with { Cantitate = -p.Cantitate, Valoare = -p.Valoare })];
     void Sold(string id, LinieScena l, decimal q, decimal v, DateOnly? data = null, Guid? gest = null) =>
         SoldLot(id, l.Lot!.Value, gest ?? Magazie, data ?? new(An, 1, 31), q, v);
     void Datorie(string id, Guid doc, decimal suma, DateOnly? data = null) {
-        if (Privat) SoldPartida(id, Partida(doc, ContFurnizor)!.Value, data ?? new(An, 1, 31), -suma);
+        SoldPartida(id, Partida(doc, ContFurnizor)!.Value, data ?? new(An, 1, 31), -suma);
     }
 
     protected override void Executa() {
@@ -79,7 +79,7 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
         Refuza("SC-NIR-11", () => Opereaza(tarziu.Id), "închis"); FaraEfecte("SC-NIR-11", tarziu.Id);
         Comanda(os => { os.GetObjectByKey<Document>(tarziu.Id).DataInregistrare = Februarie; os.CommitChanges(); });
         Opereaza(tarziu.Id);
-        var partida = Privat ? N.Unitate.DeschidePartida(Cont(ContFurnizor), Furnizor, tarziu.Id, Februarie).Id : (Guid?)null;
+        var partida = N.Unitate.DeschidePartida(Cont(ContFurnizor), Furnizor, tarziu.Id, Februarie).Id;
         Postari("SC-NIR-11", tarziu.Id, N.FelTranzactie.Operare, Februarie, Randuri(tarziu, 0, 1, 10, partida: partida));
         Sold("SC-NIR-11", tarziu.Linii[0], 0, 0); Sold("SC-NIR-11", tarziu.Linii[0], 1, 10, Februarie);
     }
@@ -114,7 +114,7 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
         });
         Opereaza(id);
         Postari("SC-NIR-06", original.Id, N.FelTranzactie.Storno, Februarie, Inverse(Randuri(original, 0, 2, 30)));
-        var partida = Privat ? N.Unitate.DeschidePartida(Cont(ContFurnizor), Furnizor, id, Februarie).Id : (Guid?)null;
+        var partida = N.Unitate.DeschidePartida(Cont(ContFurnizor), Furnizor, id, Februarie).Id;
         Postari("SC-NIR-06", id, N.FelTranzactie.Operare, Februarie, Randuri(nou, 0, 3, 60, partida: partida));
         Sold("SC-NIR-06", original.Linii[0], 2, 30); Sold("SC-NIR-06", original.Linii[0], 0, 0, Februarie);
         Sold("SC-NIR-06", nou.Linii[0], 3, 60, Februarie);

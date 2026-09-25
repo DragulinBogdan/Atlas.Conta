@@ -1,3 +1,4 @@
+import { Partide } from './felii/raportare/Partide';
 import { useState } from 'react';
 import { NavLink, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
 import Drawer from 'devextreme-react/drawer';
@@ -162,6 +163,7 @@ export function App() {
         {/* F27-D7: soldurile pe partener la o zi — partea de sold a balanței
             analitice, ecranul pe care partidele deschise îl fac ieftin. */}
         <Route path="/sold-parteneri" element={<SoldParteneri />} />
+        <Route path="/partide" element={<Partide />} />
         {/* F27-D1/D2: perioada nu se culege, deci `/perioade` e o CONSOLĂ —
             lanțul, verificarea cu bifele de acceptare, cele două comenzi și
             istoricul cu acceptările. N-are `/nou` și n-are `:id`. */}
@@ -283,6 +285,7 @@ function Meniu() {
       <NavLink to="/balanta">Balanță</NavLink>
       <NavLink to="/balanta-plan">Balanță pe plan</NavLink>
       <NavLink to="/sold-parteneri">Solduri pe repartitor</NavLink>
+          <NavLink to="/partide">Partide deschise</NavLink>
       <NavLink to="/jurnal">Registru-jurnal</NavLink>
       <NavLink to="/perioade">Perioade fiscale</NavLink>
       <span className="meniu__grup">TVA și declarații</span>

@@ -1,4 +1,4 @@
-﻿using DevExpress.ExpressApp;
+using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.AspNetCore.DesignTime;
 using DevExpress.ExpressApp.Design;
 
@@ -26,6 +26,16 @@ namespace Atlas.Conta.BackOffice.WebApi {
                 // înainte de a servi primul request (motorul rulează în cerere și
                 // rotunjește la materializare). Același helper ca în Blazor.Server.
                 FixeazaConventiaRotunjire(host);
+                try {
+                    using var scope = host.Services.CreateScope();
+                    var factory = scope.ServiceProvider.GetRequiredService<INonSecuredObjectSpaceFactory>();
+                    using var os = factory.CreateNonSecuredObjectSpace(typeof(Atlas.Conta.BackOffice.Module.BusinessObjects.Document));
+                    Atlas.Conta.BackOffice.Module.Cub.Citiri.Activare.Verifica(os);
+                } catch (Exception e) {
+                    host.Services.GetRequiredService<ILoggerFactory>().CreateLogger<Program>()
+                        .LogError(e, "Activarea citirilor pe cub a fost refuzată.");
+                    return 1;
+                }
                 host.Run();
             }
             return 0;

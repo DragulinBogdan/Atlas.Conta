@@ -137,7 +137,11 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: TR-D8 — portarea consumatorilor pe intrările comune ale
+**Următorul pas**: felia de curățenie 102 (fără compatibilitate cu bazele
+de dezvoltare: codul de compatibilitate se scoate, bazele se recreează;
+102-r1…r3), împreună cu 101-r1 redeschisă, pe contractul
+`docs/nucleu/c102-curatenie-contract.md`; abia apoi snapshot-ul de stoc.
+TR-D8 — portarea consumatorilor pe intrările comune ale
 cubului, după DEC și PIF/AMO/CAS (095, 097), cu scenarii numerice înaintea
 implementării. Review-urile adverse LDI, NIR, Deschidere, DEC și IMO sunt făcute
 (2026-09-24); corecturile se aplică pe felii peste `94ddfa8` (098).

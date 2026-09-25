@@ -9,6 +9,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// adăugat cel puțin un refuz sau a validat explicit o constatare fără mișcări.
 /// </summary>
 public interface IDeclarant {
+    bool CereSoldRegistruPentruEvaluare => false;
     bool PermiteDeclaratieFaraMiscari(Operand operand) => false;
     N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri);
 }

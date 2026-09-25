@@ -43,15 +43,15 @@ altfel. Contraponderile din Transformare au valoare 0 în toate exemplele.
 | SC-ASM-14 | ASM produce 1/100, apoi BCS consumă 1/100: storno ASM refuzat pentru dependență. După inversarea BCS se permite inversarea ASM; toate loturile revin exact. | refuz dependență, apoi acceptat | regulă |
 | SC-ASM-15 | Data 05.01, înregistrare 05.02, ianuarie închis: mișcarea 2/100→1/100 apare numai în februarie; operarea cu înregistrare în ianuarie este refuzată atomic. | acceptat / refuz perioadă | regulă |
 | SC-ASM-16 | Pe toate operările și inversările: 0 fapte TVA, contraponderi fără unitate și valoare 0; SC-X-14 inclus. | acceptat | review |
-| SC-ASM-17 | Trei ASM succesive de câte 1 din lot 3/10, produse culese 3,33; 3,33; 3,34: cub 3,33; 3,34; 3,34. Sursa 0/−0,01 în dual, regula țintă 0/0. Produse 3,33; 3,34; 3,34, Δ=0; +0,01; 0. | excepție duală exactă, fără toleranță | ASM-B7, T-r13 |
+| SC-ASM-17 | Trei ASM succesive de câte 1 din lot 3/10, produse culese 3,33; 3,33; 3,34: cub 3,33; 3,34; 3,33. Sursa 0/0. Produse 3,33; 3,34; 3,33, Δ=0; +0,01; −0,01. | TR-D8: soldul propriu al cubului | ASM-B7, T-r13 |
 | SC-ASM-18 | După primele două ASM din 17, storno al doilea inversează exact 3,34, sursa 2/6,67; corecție în februarie după ianuarie închis, consum 2 și produs nou 1/6,67: Δ nou 0 și sursa 0/0. | acceptat | ASM-B6 |
 | SC-ASM-19 | Lot 2/10,01, ASM draft consumă 1 și distribuie valoarea; BCS intermediar consumă 1. Fără redistribuire ASM refuză valoric cu stoc suficient; după redistribuire golește exact. Away: 5,01→5,00; ToEven: 5,00→5,01. | refuz atomic, apoi acceptat | proba-capcană dual/TR-D9 |
 | SC-ASM-20 | Două grupuri balansate: R/C/P = 3,33/3,34/3,33 și 10/10/10; produse finale 3,34 și 10. O singură Transfer, fără Operare. | acceptat | Δ local |
 | SC-ASM-21 | Grup numai-consum R=3,33/C=3,34 și alt cont numai-produs P=3,33: produs final 3,34 în Operare. | acceptat | Δ fără produs local |
 | SC-ASM-22 | Grup numai-consum R=10/C=9,98 și grup R=1/C=1,02/P=11 cu produse 10,99 și 0,01: ultimul rămâne 0,01 după −0,02 +0,02; nicio validare intermediară. | acceptat; probă pe operand închis | acumularea Δ |
-| SC-ASM-23 | Lot 5/0,02, două BCS de 1, apoi ASM consumă 1: R=0/C=0,01, fără produs pe acel cont; alt grup R=C=P=1. | ASAMBLARE_DELTA_FARA_ANCORA, zero efecte | limitare duală aprobată |
+| SC-ASM-23 | Lot 5/0,02, BCS de 0,5 și 1, apoi ASM consumă 1: R=0/C=0,01, fără produs pe acel cont; alt grup R=C=P=1. | ASAMBLARE_DELTA_FARA_ANCORA, zero efecte | limitare duală aprobată |
 | SC-ASM-24 | Δ negativ face ultimul produs final zero sau negativ, deși ΣP=ΣR inițial; refuz înaintea materializării. | ASAMBLARE_PRODUS_NEPOZITIV, zero efecte | ASM-B6 |
-| SC-ASM-25 | Produsul ASM-2 din 17 are 1/3,34 în cub și 1/3,33 în registre; BCS îl golește cu 3,33, rămâne 0/+0,01 în cub. | excepție duală exactă | lanț Δ → consum → golire |
+| SC-ASM-25 | Produsul ASM-2 din 17 are 1/3,34 în cub și 1/3,33 în registre; BCS îl golește cu 3,34, rămâne 0/0 în cub; registrul păstrează 3,33. | TR-D8: citire pe cub | lanț Δ → consum → golire |
 | SC-ASM-26 | Storno după TR-D9 al unui original dual cu valoare ajustată 3,34 inversează 3,34 și toate contraponderile, fără recalcul Δ. | specificat pentru TR-D9 | compatibilitate istorică |
 | NUC-ASM-RECONCILIERE | Pe SC-ASM-05: (a)–(g) fără diferențe, exit 0; (h) exact ASM D 345 = 40 față de 0 și C 301 = 40 față de 0 (conturi echivalente bugetare), 1 document și 4 postări Operare, inclusiv 2 contraponderi zero. Raportul declară excepția; orice abatere comparabilă păstrează exit 1, iar filtrul de documente se aplică și în (h). | delimitare duală aprobată, probe independente obligatorii | owner 2026-09-24, D8-B4, T-r15 |
 | SC-X-09 | Privat: surse A 4/200 și B 3/60; ASM consumă A 2/100 și B 3/60, produce marfă 4/160. DSC descarcă produs 1/40 (D 607/C 371). RLF returnează A 1/50 (D 302/C 401 cu −50): A rămâne 1/50, produsul rămâne 3/120, partida RLF +50, postările ASM/DSC intacte. Storno ASM refuzat cât DSC este activ; inversarea RLF și DSC, apoi ASM restabilește A 4/200, B 3/60, produs 0/0 și partida RLF 0. | acceptat / refuz dependență | lanț transversal pe politica privată |
@@ -133,3 +133,7 @@ abateri și exit 0, textul excepției, filtrul gol și faptul că o abatere
 (a)–(g) continuă să producă exit 1. SC-CIT-04 păstrează cele două postări
 contabile de 40 și inversele de −40 în cititorul comun; rapoartele API nu
 sunt încă portate. T-r15 este închisă; T-r13/T-r14 rămân active.
+
+Actualizare TR-D8 în lucru (2026-09-25): SC-ASM-17/25 folosesc soldul
+cubului pentru C; registrul este separat pentru R. Rezultatele istorice de
+mai sus descriu implementarea anterioară. Diagnosticul Δ rămâne activ.

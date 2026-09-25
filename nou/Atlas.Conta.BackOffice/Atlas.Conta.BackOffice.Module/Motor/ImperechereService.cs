@@ -3,62 +3,13 @@ using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
-// Stingerea (decizia 17): m2m stingător↔document cu sume parțiale. Invarianții
-// trăiesc aici — aceeași cale pentru UI, harness și viitorul Web API, ca la
-// MotorOperare. `ramas` e calcul (Total − Σ imperecheri), nu coloană.
-//
-// Un document poate apărea în AMBELE roluri (Plata de avans ↔ Incasarea de
-// regularizare: încasarea stă pe latura de document), deci suma asignată se
-// numără pe ambele coloane.
-//
-// Rolul de STINGĂTOR e polimorf (decizia 48b): îl declară
-// `Document.CapacitateStingere` — azi trezoreria (o contrapartidă, plafon =
-// totalul ei) și nota contabilă (compensarea: contrapartidele explicite ale
-// liniilor, plafon per contrapartidă).
-//
-// De la F19-D16 plafonul are și LATURĂ: e defalcat per (contrapartidă × SENS),
-// iar sensul consumat e al documentului STINS (`Document.SensDeStins`, al
-// treilea hook polimorf al rolului). Fără el o notă 401 = 4111 de 60 pe X avea
-// plafon 120 și îl consuma INTEGRAL pe două documente de aceeași natură —
-// tavanul de 120 e corect (60 datorie + 60 creanță), lipsea regula că fiecare
-// jumătate se consumă pe latura ei.
 public static class ImperechereService {
-    // Totalul documentului e FAPT SCRIS (F27-D7): motorul îl calculează la
-    // operare din `LiniiCreanta` și îl scrie pe `Document.TotalStingere`, iar
-    // serviciul îl citește pe cheie. BRUT (P1, design §3): plata stinge
-    // Valoare + ValoareTva; la regimurile capitalizate ValoareTva e 0.
-    public static decimal Total(IObjectSpace os, Guid documentId) {
-        var doc = os.GetObjectByKey<Document>(documentId);
-        if (doc == null)
-            return 0m;
-        if (doc.TotalStingere is decimal total)
-            return total;
-        if (doc.Stare == StareDocument.Draft)
-            return 0m;
-        throw new OperareException(
-            $"Documentul {doc.Numar} e {doc.Stare} dar n-are totalul de stins scris — "
-            + "totalul se scrie la operare (F27-D7); re-operați documentul.");
-    }
+    public static decimal Total(IObjectSpace os, Guid documentId) => Cub.Citiri.Partide.Total(os, documentId);
 
-    // ALGEBRIC (F27-D8): rândurile inverse intră cu semn, ca registrele — o
-    // imperechere desfăcută prin rând invers eliberează restul, fără ștergere.
-    public static decimal Asignat(IObjectSpace os, Guid documentId) =>
-        (os.GetObjectsQuery<Imperechere>()
-            .Where(i => i.DocumentStingatorId == documentId || i.DocumentId == documentId)
-            .Select(i => (decimal?)i.Suma).Sum() ?? 0m) + Cub.Materializare.AsignatDeschidere(os, documentId);
+    public static decimal Asignat(IObjectSpace os, Guid documentId) => Total(os, documentId) - Ramas(os, documentId);
 
-    public static decimal Ramas(IObjectSpace os, Guid documentId) =>
-        Total(os, documentId) - Asignat(os, documentId);
+    public static decimal Ramas(IObjectSpace os, Guid documentId) => Cub.Citiri.Partide.Ramas(os, documentId);
 
-    // Tranzacția publică (UI / Web API): validează, creează, comite.
-    //
-    // `contrapartidaId` (F19-D16) = alegerea EXPLICITĂ a grupului de plafon, când
-    // apelantul o știe (panoul de compensare afișează candidații grupați per
-    // contrapartidă × sens). `null` = se deduce; deducția REFUZĂ ambiguitatea în
-    // loc s-o rezolve tăcut — vezi `ValideazaCreare`.
-    //
-    // `data` (F27-D8) = ziua faptului de stingere; `null` = azi. Perioada ei
-    // trebuie să fie deschisă — al șaselea apelant al gardianului de perioadă.
     public static Imperechere Imperecheaza(IObjectSpace os,
         Document stingator, Document document, decimal suma, Guid? contrapartidaId = null,
         DateOnly? data = null) {
@@ -72,12 +23,11 @@ public static class ImperechereService {
         return imperechere;
     }
 
-    // F27-D8: desfacerea unei imperecheri dintr-o perioadă închisă — rând INVERS,
-    // nu ștergere (o perioadă închisă nu se rescrie). Comite.
     public static Imperechere Desfa(IObjectSpace os, Guid imperechereId, DateOnly data) {
         using var tx = TranzactieComanda.Incepe(os);
         var original = os.GetObjectByKey<Imperechere>(imperechereId)
             ?? throw new OperareException("Imperecherea nu există.");
+        Cub.Materializare.BlocheazaDocumente(os, original.DocumentStingator, original.Document);
         GardianPerioada.VerificaDeschisa(os, data);
         var invers = CreeazaInvers(os, original, data);
         os.CommitChanges();
@@ -85,9 +35,7 @@ public static class ImperechereService {
         return invers;
     }
 
-    // Rândul invers, FĂRĂ commit. NU cere ambele documente `Operat`: stingătorul
-    // poate fi tocmai documentul pe care comanda apelantă îl stornează.
-    internal static Imperechere CreeazaInvers(IObjectSpace os, Imperechere original, DateOnly data) {
+    internal static Imperechere CreeazaInvers(IObjectSpace os, Imperechere original, DateOnly data, bool inverseazaCub = true) {
         if (original.InverseazaId != null)
             throw new OperareException(
                 "Imperecherea e ea însăși un rând invers — nu se desface a doua oară.");
@@ -95,6 +43,7 @@ public static class ImperechereService {
             throw new OperareException("Imperecherea e deja desfăcută printr-un rând invers.");
         if (data < original.Data)
             throw new OperareException("Data desfacerii nu poate preceda data imperecherii.");
+        var transfer = inverseazaCub ? DesfaceEfect(os, original, data) : null;
         var invers = os.CreateObject<Imperechere>();
         invers.DocumentStingatorId = original.DocumentStingatorId;
         invers.DocumentId = original.DocumentId;
@@ -102,26 +51,17 @@ public static class ImperechereService {
         invers.Data = data;
         invers.InverseazaId = original.ID;
         invers.Autogenerat = false;
-        Cub.Materializare.Imperecheaza(os,                                            // S-D13
-            os.GetObjectByKey<Document>(invers.DocumentStingatorId),
-            os.GetObjectByKey<Document>(invers.DocumentId),
-            invers.Suma,
-            invers.Data);
+        invers.EfectCubVerificat = true;
+        invers.TranzactieCubId = transfer;
         return invers;
     }
 
-    // F27-D8, chemată din `MotorOperare.Storneaza` în locul gardianului de
-    // imperecheri: ce e în fereastra DESCHISĂ se cere șters (ca azi), ce e
-    // într-o perioadă închisă se inversează la data stornării. Regula stă aici,
-    // în motor rămâne apelul.
     internal static void InverseazaLaStorno(IObjectSpace os, Document doc, DateOnly dataStorno) {
         var legaturi = os.GetObjectsQuery<Imperechere>()
             .Where(i => i.DocumentStingatorId == doc.ID || i.DocumentId == doc.ID)
             .ToList();
         if (legaturi.Count == 0)
             return;
-        // Perechea (original, invers) s-a anulat deja pe ea însăși; ce contează
-        // sunt legăturile VII — cele care mai poartă o sumă neanulată.
         var inversate = legaturi.Where(i => i.InverseazaId != null)
             .Select(i => i.InverseazaId.Value).ToHashSet();
         var vii = legaturi
@@ -131,7 +71,30 @@ public static class ImperechereService {
             throw new OperareException(
                 "Documentul are imperecheri (stingeri) — ștergeți-le întâi, apoi anulați/stornați.");
         foreach (var legatura in vii)
-            CreeazaInvers(os, legatura, dataStorno);
+            CreeazaInvers(os, legatura, dataStorno,
+                !(legatura.Autogenerat && legatura.DocumentStingatorId == doc.ID));
+    }
+
+    public static void Sterge(IObjectSpace os, Guid imperechereId) {
+        using var tx = TranzactieComanda.Incepe(os);
+        var original = os.GetObjectByKey<Imperechere>(imperechereId)
+            ?? throw new OperareException("Imperecherea nu există.");
+        Cub.Materializare.BlocheazaDocumente(os, original.DocumentStingator, original.Document);
+        GardianPerioada.VerificaDeschisa(os, original.Data);
+        if (original.InverseazaId != null || os.GetObjectsQuery<Imperechere>().Any(i => i.InverseazaId == original.ID))
+            throw new OperareException("Împerecherea desfăcută sau rândul invers nu se șterge.");
+        DesfaceEfect(os, original, original.Data);
+        os.Delete(original);
+        os.CommitChanges();
+        tx.Commit();
+    }
+
+    static Guid? DesfaceEfect(IObjectSpace os, Imperechere original, DateOnly data) {
+        if (original.TranzactieCubId is Guid transfer)
+            return Cub.Materializare.DesfaceTransfer(os, original.DocumentStingatorId, transfer, data);
+        if (original.EfectCubVerificat && !original.Autogenerat) return null;
+        return Cub.Materializare.Imperecheaza(os, original.DocumentStingator, original.Document,
+            -original.Suma, data, desfaceNominalizare: original.Autogenerat);
     }
 
     static bool EstePerioadaDeschisa(IObjectSpace os, DateOnly data) {
@@ -144,66 +107,53 @@ public static class ImperechereService {
         }
     }
 
-    // Decizia 82: motorul cunoaște mecanismul, tipul declară participarea.
-    // Se apelează cu registrele materializate și starea Operat, FĂRĂ commit:
-    // împerecherea și operarea se persistă împreună prin commit-ul motorului.
     internal static void CreeazaAutomataLaOperare(IObjectSpace os, Document document) {
         if (document.SursaStingeriiAutomate(os) is not Guid sursaId)
             return;
         var sursa = os.GetObjectByKey<Document>(sursaId);
-        // Ambele roluri contează (F7-D5): un copil recules ca plată obișnuită
-        // poate încă avea un virament ca sursă, care nu se lasă stins.
         if (!sursa.PoateFiStins(os))
             return;
-        // Liniile documentului sunt cele din ObjectSpace, încă necomise.
-        // Păstrăm calculul 31d, inclusiv restul sursei deja parțial stinse.
         var suma = Math.Min(
-            document.Detalii.Sum(d => d.Valoare + d.ValoareTva) - Asignat(os, document.ID),
+            Total(os, document.ID),
             Ramas(os, sursa.ID));
-        if (suma > 0)
-            // F27-D8: stingătorul e documentul operat acum, deci faptul e datat
-            // la data lui de înregistrare (perioada ei e deschisă prin gardian).
-            Creeaza(os, document, sursa, suma, autogenerat: true, data: document.DataInregistrare);
+        if (suma <= 0) return;
+        ValideazaCreare(os, document, sursa, suma, data: document.DataInregistrare, autogenerat: true);
+        var tinte = Cub.Citiri.Partide.Origini(os).Where(o => o.DocumentId == sursaId)
+            .Select(o => o.UnitateId).ToHashSet();
+        var efect = os.ModifiedObjects.OfType<Cub.Postare>().Where(p => os.IsNewObject(p)
+            && p.DocumentId == document.ID && p.Carte == Atlas.Conta.Nucleu.Carte.Contabil
+            && p.Unitate != null && tinte.Contains(p.Unitate.Value))
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener })
+            .Sum(g => Math.Abs(g.Sum(p => p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : -p.Valoare)));
+        if (efect <= 0m || efect > suma)
+            throw new OperareException($"IMPERECHERE_FARA_EFECT: nominalizarea automată cere {suma}, cubul dovedește {efect}.");
+        Creeaza(os, document, sursa, efect, autogenerat: true, data: document.DataInregistrare);
     }
 
-    // Fără commit — folosită în tranzacția operării și de împerecherea manuală.
     internal static Imperechere Creeaza(IObjectSpace os,
         Document stingator, Document document, decimal suma, bool autogenerat,
         Guid? contrapartidaId = null, DateOnly? data = null) {
-        // Rotunjirea ÎNAINTE de validare, nu după: altfel suma validată contra
-        // restului n-ar fi cea persistată în `numeric(18,2)` și o stingere ar
-        // putea depăși plafonul cu bani mărunți (`Scara`).
         suma = Scara.RotunjesteBani(suma);
-        // Validarea rulează ÎNAINTE de CreateObject — comportamentul existent
-        // (motorul nu lasă rând-fantomă pe eșec) rămâne exact.
         var zi = data ?? DateOnly.FromDateTime(DateTime.Today);
-        ValideazaCreare(os, stingator, document, suma, contrapartidaId, zi);
+        contrapartidaId = ValideazaCreare(os, stingator, document, suma, contrapartidaId, zi, autogenerat);
+        var transfer = autogenerat ? null : Cub.Materializare.Imperecheaza(os, stingator, document, suma, zi, contrapartidaId: contrapartidaId);
         var imperechere = os.CreateObject<Imperechere>();
         imperechere.DocumentStingator = stingator;
         imperechere.Document = document;
         imperechere.Suma = suma;
         imperechere.Data = zi;
         imperechere.Autogenerat = autogenerat;
-        // S-D13: împerecherea automată E nominalizarea din `Operare` a declarantului;
-        // doar cea de DUPĂ operare mută partida printr-o tranzacție `Transfer`.
-        if (!autogenerat)
-            Cub.Materializare.Imperecheaza(os, stingator, document, suma, zi);
+        imperechere.EfectCubVerificat = true;
+        imperechere.TranzactieCubId = transfer;
         return imperechere;
     }
 
-    // Invarianții stingerii, extrași ca să fie refolosibili de gardianul UI
-    // (ImperechereController: New generic e permis, dar validat la commit —
-    // decizia 31d). Aruncă UserFriendlyException (OperareException) cu mesaj de
-    // business; null-guard pe navigații (culegerea prin UI le poate lăsa goale —
-    // motorul le trimite mereu setate).
-    internal static void ValideazaCreare(IObjectSpace os,
+    internal static Guid ValideazaCreare(IObjectSpace os,
         Document stingator, Document document, decimal suma, Guid? contrapartidaId = null,
-        DateOnly? data = null) {
+        DateOnly? data = null, bool autogenerat = false) {
         if (stingator == null || document == null)
             throw new OperareException(
                 "Imperecherea leagă un document care stinge de un document stins — ambele sunt obligatorii.");
-        // F27-D8: faptul de stingere nu poate precede intrarea în evidență a
-        // niciunuia dintre documentele pe care le leagă.
         if (data is DateOnly zi && zi != default
                 && (zi < stingator.DataInregistrare || zi < document.DataInregistrare))
             throw new OperareException(
@@ -212,10 +162,6 @@ public static class ImperechereService {
             throw new OperareException("Imperecherea leagă două documente operate (registrele lor există).");
         if (document.ID == stingator.ID)
             throw new OperareException("Un document nu se poate stinge pe el însuși.");
-        // Două documente de trezorerie de ACELAȘI sens nu se sting reciproc
-        // (Plata↔Plata ar consuma restul stingibil al ambelor fără să stingă
-        // nimic real — review advers); Plata↔Incasare rămâne permisă (lanțul
-        // avans↔regularizare, decizia 31d).
         if ((stingator is Plata && document is Plata)
             || (stingator is Incasare && document is Incasare))
             throw new OperareException(
@@ -223,9 +169,6 @@ public static class ImperechereService {
         if (suma <= 0)
             throw new OperareException("Suma imperecheată trebuie să fie pozitivă.");
 
-        // Cine poate sta pe rolul de stingător e decizia TIPULUI (48b): tipurile
-        // fără hook (facturi, NIR, bonuri…) nu sting nimic. Relaxarea FK-ului la
-        // `Document` a mutat filtrul din schemă în validare.
         var capacitati = stingator.CapacitateStingere(os)
             ?? throw new OperareException(
                 "Doar plățile/încasările și notele contabile pot stinge un document (compensarea e notă contabilă).");
@@ -233,32 +176,17 @@ public static class ImperechereService {
             throw new OperareException(
                 "Documentul care stinge nu poartă nicio contrapartidă (nota contabilă cere repartitori expliciți pe linii).");
 
-        // Rolul de STINS e la fel de polimorf ca rolul de stingător (F7-D5):
-        // viramentul intern nu închide nicio datorie, deci nu se stinge. Nu e
-        // redundant cu invariantul de contrapartidă de mai jos — capacitățile
-        // unei note contabile sunt repartitorii expliciți ai liniilor ei, deci
-        // pot cădea pe ORICE latură, inclusiv pe conturile proprii ale unui
-        // picior de virament.
         if (!document.PoateFiStins(os))
             throw new OperareException(
                 "Documentul nu poate fi stins: un virament intern nu închide nicio datorie sau creanță "
                 + "(contul de tranzit se închide singur când ambele picioare sunt operate).");
 
-        // Contrapartida stingătorului (furnizor/client/angajat) trebuie să apară
-        // pe documentul stins — echivalentul grupării pe partener din legacy
-        // (spDecontariObligatii); acoperă și lanțul avans↔decont↔regularizare.
         var peLaturi = capacitati.Keys
             .Where(k => k == document.PredatorId || k == document.PrimitorId)
             .ToList();
         if (peLaturi.Count == 0)
             throw new OperareException(
                 "Documentul care stinge și documentul stins nu împart aceeași contrapartidă (partener/angajat).");
-        // Alegerea EXPLICITĂ a apelantului bate deducția (F19-D16, a doua axă):
-        // panoul de compensare știe sub ce grup a afișat candidatul, motorul n-are
-        // de unde. Până la F19-D16 se lua „primul key care se potrivește cu o
-        // latură", iar cheile se umplu debit-întâi, în ordinea liniilor: un
-        // document care poartă DOUĂ dintre contrapartidele notei pe cele două
-        // laturi ale lui consuma plafonul ALTUI grup decât cel afișat.
         if (contrapartidaId is Guid ceruta) {
             if (!peLaturi.Contains(ceruta))
                 throw new OperareException(
@@ -266,12 +194,6 @@ public static class ImperechereService {
             peLaturi = new List<Guid> { ceruta };
         }
 
-        // ═══ Plafonul are LATURĂ (F19-D16) ═══
-        // Fiecare jumătate a plafonului se consumă pe latura ei. Ce fel de sold
-        // poartă documentul stins e decizia TIPULUI lui (`SensDeStins`, hook
-        // polimorf ca `CapacitateStingere`/`PoateFiStins`) — motorul nu cunoaște
-        // niciun tip. Un tip care NU declară lasă alegerea deschisă; atunci ea
-        // trebuie să fie UNICĂ, altfel se refuză: niciodată „prima jumătate".
         var sensCerut = document.SensDeStins(os);
         var perechi = new List<(Guid Contrapartida, SensStingere Sens)>();
         foreach (var cp in peLaturi) {
@@ -295,12 +217,6 @@ public static class ImperechereService {
                 + "diferite — alegeți explicit contrapartida (grupul de plafon), altfel stingerea ar consuma un "
                 + "plafon la întâmplare.");
         if (perechi.Count > 1)
-            // Refuz ACȚIONABIL (review F4): spune și ce are apelantul de făcut.
-            // Ieșirea NU e un câmp `Sens` pe care apelantul să-l aleagă — ar fi
-            // exact arbitrarul pe care refuzul există ca să-l oprească —, ci
-            // MODELAREA: tipul care chiar poate fi stins își declară natura
-            // soldului (`SensDeStins`), ca facturile, decontul, trezoreria și
-            // NIR-ul (F19-D16).
             throw new OperareException(
                 "Documentul stins nu declară ce fel de sold poartă pe contul contrapartidei, iar documentul care "
                 + "stinge are capacitate pe AMBELE sensuri față de ea (și datorie, și creanță) — jumătatea "
@@ -309,70 +225,24 @@ public static class ImperechereService {
                 + "soldului pe tipul documentului stins.");
 
         var (contrapartida, sensAles) = perechi[0];
-        var ramasStingator = capacitati[contrapartida][sensAles]
-            - AsignatFataDe(os, stingator.ID, contrapartida, sensAles);
+        var nominalizata = autogenerat ? 0m : Cub.Citiri.Partide.NominalizataLibera(os, stingator.ID, document.ID, data, contrapartida);
+        var ramasStingator = autogenerat ? capacitati[contrapartida][sensAles]
+            : Cub.Citiri.Partide.Disponibil(os, stingator.ID, contrapartida, sensAles) + nominalizata;
         if (suma > ramasStingator)
             throw new OperareException(
                 $"Suma imperecheată ({suma:0.##}) depășește restul neasignat al documentului care stinge, "
                 + $"pe sensul {Eticheta(sensAles)} ({ramasStingator:0.##}).");
-        var ramasDocument = Ramas(os, document.ID);
+        var ramasDocument = Ramas(os, document.ID) + nominalizata;
         if (suma > ramasDocument)
             throw new OperareException(
                 $"Suma imperecheată ({suma:0.##}) depășește restul nestins al documentului ({ramasDocument:0.##}).");
+        return contrapartida;
     }
 
-    // Cât a consumat deja stingătorul din plafonul lui față de o contrapartidă:
-    // stingerile lui către documente pe care apare acea contrapartidă, PLUS tot
-    // ce s-a stins pe el (rolul de document stins — lanțul avans↔regularizare).
-    // Pentru trezorerie (o singură contrapartidă, obligatorie pe toate
-    // documentele stinse de ea) suma e identică cu `Asignat` global de dinainte.
-    //
-    // PUBLICĂ de la F19 (panoul de compensare al notei, `NotaContabilaApply.
-    // Candidati`): plafonul afișat = `CapacitateStingere[cp][sens] −
-    // AsignatFataDe(cp, sens)`, adică EXACT cele două cifre pe care le compară
-    // `ValideazaCreare` mai sus.
-    // Partajarea funcției e deliberată — o formulă rescrisă în felia de citire ar
-    // fi „al doilea adevăr" al plafonului și ar propune (sau ar ascunde) stingeri
-    // pe care serverul le tratează invers.
     public static decimal AsignatFataDe(IObjectSpace os, Guid stingatorId, Guid contrapartidaId,
-        SensStingere sens) {
-        var stingeri = os.GetObjectsQuery<Imperechere>()
-            .Where(i => i.DocumentStingatorId == stingatorId)
-            .Select(i => new { i.DocumentId, i.Suma }).ToList();
-        var idsStinse = stingeri.Select(x => x.DocumentId).Distinct().ToList();
-        // POLIMORF, o SINGURĂ interogare pe o mulțime MĂRGINITĂ (documentele
-        // stinse de ACEST stingător): avem nevoie și de laturi, și de
-        // `SensDeStins`, care e hook de TIP. 60b interzice rezoluția polimorfă
-        // PER RÂND (grile de mii de documente); aici e un `IN` pe câteva id-uri,
-        // pe o cale de COMANDĂ. Alternativa — o coloană `Sens` pe `Imperechere` —
-        // ar persista o valoare DERIVATĂ din tipul documentului stins, cu
-        // migrație și backfill, pentru un câștig pe care nicio cifră nu-l cere (59).
-        var stinse = os.GetObjectsQuery<Document>()
-            .Where(d => idsStinse.Contains(d.ID))
-            .ToList()
-            .ToDictionary(d => d.ID);
-        var caStingator = 0m;
-        foreach (var x in stingeri) {
-            if (!stinse.TryGetValue(x.DocumentId, out var d))
-                continue;
-            if (d.PredatorId != contrapartidaId && d.PrimitorId != contrapartidaId)
-                continue;
-            // Un document care NU declară un sens s-a putut consuma din oricare
-            // jumătate, deci se scade din AMBELE: conservator prin construcție —
-            // nu deschide plafon nicăieri. Pentru trezorerie (o contrapartidă,
-            // un sens) cifra e IDENTICĂ cu cea de dinainte de F19-D16.
-            if (d.SensDeStins(os) is SensStingere sensStins && sensStins != sens)
-                continue;
-            caStingator += x.Suma;
-        }
-        var caStins = os.GetObjectsQuery<Imperechere>()
-            .Where(i => i.DocumentId == stingatorId)
-            .Select(i => (decimal?)i.Suma).Sum() ?? 0m;
-        return caStingator + caStins + Cub.Materializare.AsignatDeschidere(os, stingatorId, contrapartidaId, sens);
-    }
+        SensStingere sens) => Cub.Citiri.Partide.Capacitate(os, stingatorId, contrapartidaId, sens)
+            - Cub.Citiri.Partide.Disponibil(os, stingatorId, contrapartidaId, sens);
 
-    // Eticheta de mesaj a sensului: refuzurile motorului sunt de DOMENIU (le
-    // citește un contabil), nu nume de enum.
     static string Eticheta(SensStingere? sens) => sens switch {
         SensStingere.Datorie => "datorie",
         SensStingere.Creanta => "creanță",

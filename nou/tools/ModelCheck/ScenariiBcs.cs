@@ -58,8 +58,10 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void Pregateste() {
         using var os = deschide();
+        var inceput = new DateOnly(An, 1, 1);
+        var sfarsit = new DateOnly(An, 12, 31);
         if (os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == An)
-            || os.GetObjectsQuery<Document>().Any(d => d.DataInregistrare.Year == An))
+            || os.GetObjectsQuery<Document>().Any(d => d.DataInregistrare >= inceput && d.DataInregistrare <= sfarsit))
             throw new InvalidOperationException($"SC-BCS cere anul {An} liber pe baza de test.");
         foreach (var luna in new[] { 1, 2 }) {
             var p = os.CreateObject<PerioadaFiscala>();
@@ -245,14 +247,14 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         Sold("SC-BCS-07", lot, Sfarsit, 0m, 0m);
 
         var dual = Receptioneaza(3m, 3.333333m);
-        var valori = new[] { 3.33m, 3.34m, 3.34m };
+        var valori = new[] { 3.33m, 3.34m, 3.33m };
         for (var i = 0; i < valori.Length; i++) {
             var data = new DateOnly(An, 1, 12 + i);
             var doc = Culege(data, (dual, 1m));
             Comanda(os => OperareApi.Opereaza(os, doc));
             Postari("SC-BCS-15", doc, N.FelTranzactie.Operare, data, (dual, 1m, valori[i]));
         }
-        Sold("SC-BCS-15 (T-r13: țintă 0/0, excepție duală 0/−0,01)", dual, Sfarsit, 0m, -0.01m);
+        Sold("SC-BCS-15 (T-r13: evaluare din cub, 0/0)", dual, Sfarsit, 0m, 0m);
     }
 
     // Ușa entității refuză azi cu textul validării vechi (`ValideazaOperare`,
@@ -290,10 +292,10 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
             Sold(id, lot, Sfarsit, 10m, 100m);
         }
         var insuficient = Culege(Consum, (lot, 6m), (lot, 5m));
-        Verifica("SC-BCS-09", "dry-run refuzat de gardianul registrului de stoc (fără cod stabil până la TR-D8)",
-            Citeste(os => OperareApi.Valideaza(os, insuficient)).Any(m => m.Contains("Sold negativ", StringComparison.Ordinal)));
+        Verifica("SC-BCS-09", "dry-run refuzat de gardianul cubului, cu cod stabil",
+            Citeste(os => OperareApi.Valideaza(os, insuficient)).Any(m => m.Contains("STOC_INSUFICIENT", StringComparison.Ordinal)));
         FaraEfecte("SC-BCS-09", insuficient);
-        Refuza("SC-BCS-09", () => Comanda(os => OperareApi.Opereaza(os, insuficient)), "Sold negativ");
+        Refuza("SC-BCS-09", () => Comanda(os => OperareApi.Opereaza(os, insuficient)), "STOC_INSUFICIENT");
         FaraEfecte("SC-BCS-09", insuficient);
         Sold("SC-BCS-09", lot, Sfarsit, 10m, 100m);
     }

@@ -80,7 +80,7 @@ export function useUrlStare<T extends Record<string, ValoareStare>>(implicite: T
 // deep-link să nu mintă: `?proiectId=…` trebuie ori să filtreze, ori să nu fie
 // acceptat. Înghițirea tăcută era singura variantă exclusă (review, C1).
 const DIMENSIUNI = [
-  'repartitorId', 'materialId', 'codFunctionalId', 'codEconomicId',
+  'repartitorId', 'gestiuneId', 'materialId', 'codFunctionalId', 'codEconomicId',
   'sursaFinantareId', 'unitateId', 'proiectId', 'centruCostId',
 ] as const;
 

@@ -15,7 +15,7 @@ public static class IdentitatiPartide {
             .Distinct().SingleOrDefault();
 
     // 092b: compatibilitate la citire cu cheia N-D6, fără rescrierea postărilor.
-    static Guid Anterioara(Guid document, Guid cont) {
+    public static Guid Anterioara(Guid document, Guid cont) {
         var intrare = new byte[32];
         document.ToByteArray().CopyTo(intrare, 0);
         cont.ToByteArray().CopyTo(intrare, 16);

@@ -515,12 +515,11 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
 
     // (c) Imperecherea: logica migrată din `ImperechereController.OnCommitting`
     // (decizia 31d/41d) — New validat prin invarianții serviciului, Edit refuzat
-    // (re-validarea sumei ar cere excluderea propriului rând), Delete liber
-    // (link fără registre proprii; gardianul de anulare/storno din motor există).
+    // (re-validarea sumei ar cere excluderea propriului rând), Delete prin comandă
+    // (desface și nominalizarea partidei din cub, atomic cu ștergerea linkului).
     static void VerificaImperechere(IObjectSpace os, Imperechere imperechere, ICollection<string> erori) {
         if (EsteSters(os, imperechere)) {
-            // F27-D8: ștergerea rămâne liberă în fereastra deschisă (link fără
-            // registre proprii), dar o imperechere dintr-o perioadă închisă
+            // F27-D8: o imperechere dintr-o perioadă închisă
             // NU dispare — se desface prin rând invers, datat în deschis.
             if (!PerioadaDeschisa(os, imperechere.Data))
                 erori.Add("O împerechere dintr-o perioadă închisă nu se șterge — "
@@ -534,6 +533,8 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             else if (imperechere.InverseazaId != null)
                 erori.Add("Un rând invers nu se șterge — desfacerea e fapt; "
                     + "corectați prin altă împerechere.");
+            else
+                erori.Add("IMPERECHERE_COMANDA_OBLIGATORIE: ștergerea unei împerecheri cere comanda de ștergere.");
             return;
         }
         if (!os.IsNewObject(imperechere)) {
@@ -562,16 +563,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "o imperechere se scrie doar într-o perioadă deschisă.");
             return;
         }
-        // Limitare asumată (ca gardianul de sold, decizia 25f): două link-uri
-        // NOI în același commit nu se văd reciproc la Σ ≤ rest.
-        try {
-            ImperechereService.ValideazaCreare(os,
-                imperechere.DocumentStingator, imperechere.Document, imperechere.Suma,
-                null, imperechere.Data);
-        }
-        catch (OperareException ex) {
-            erori.Add(ex.Message);
-        }
+        erori.Add("IMPERECHERE_COMANDA_OBLIGATORIE: crearea unei împerecheri cere comanda de împerechere.");
     }
 
     // Interogarea merge în BAZĂ, deci vede legătura încă persistată chiar dacă

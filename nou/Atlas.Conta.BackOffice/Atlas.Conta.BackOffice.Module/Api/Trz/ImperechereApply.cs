@@ -9,12 +9,9 @@ namespace Atlas.Conta.BackOffice.Module.Api.Trz;
 // ModelCheck exersează exact acest cod pe `EFCoreObjectSpaceProvider`
 // standalone (precedentul: motorul — docs 113709).
 //
-// CONTRACT DE APELANT: rulează în ObjectSpace-ul SECURED al apelantului și
-// COMITE. Autorizarea = securitatea XAF + gardianul de Committing
-// (`GardianEditare.VerificaImperechere`), care re-rulează `ValideazaCreare` pe
-// obiectul nou. Dubla rulare (aici, prin serviciu, și acolo, la commit) e
-// BENIGNĂ: validarea e pură (citește, nu scrie) și e aceeași funcție — a doua
-// trecere e plasa care prinde și scrierile care NU vin pe calea asta.
+// Crearea și citirea rezolvă documentele în ObjectSpace-ul SECURED.
+// Ștergerea și desfacerea rulează în OS non-secured propriu după gate-ul
+// instanței din controller; comanda scrie și compensarea din cub.
 public static class ImperechereApply {
 
     // ═══════════════════════ Scriere ═══════════════════════
@@ -67,13 +64,11 @@ public static class ImperechereApply {
         Autogenerat = imperechere.Autogenerat
     };
 
-    // Ștergerea e LIBERĂ (31d): legătura n-are registre proprii, iar dispariția
-    // ei doar eliberează restul celor două documente (și deblochează
-    // anularea/stornarea lor — vezi `ApiProiectii.AreImperecheri`).
+    // Comanda din perioada deschisă compensează cubul și șterge linkul atomic.
+    // Apelantul a verificat dreptul Delete și a creat OS-ul non-secured.
     public static void Sterge(IObjectSpace os, Guid imperechereId) {
         var imperechere = Rezolva.Cere<Imperechere>(os, imperechereId, "Imperecherea");
-        os.Delete(imperechere);
-        os.CommitChanges();
+        ImperechereService.Sterge(os, imperechere.ID);
     }
 
     // ═══════════════════════ Citire ═══════════════════════
@@ -120,15 +115,14 @@ public static class ImperechereApply {
 
         return new StingeriDto {
             DocumentId = documentId,
+            Avertismente = Cub.Citiri.Partide.Diagnostic(os, documentId),
             // Afordanța de SENS a panoului (F19-D16, review F3): sensul pe care
             // trebuie să-l poarte candidații, calculat AICI din hook-ul polimorf
             // — clientul îl pasează pe ruta proiecției, nu îl deduce. Vezi
             // `StingeriDto.SensCandidati` pentru de ce e `Opus`.
             SensCandidati = doc.SensDeStins(os)?.Opus().ToString(),
-            // SURSA DE ADEVĂR = serviciul, nu o a doua agregare aici: `Total`
-            // trece prin `LiniiCreanta` (ReturClient), iar `Asignat` numără
-            // AMBELE coloane. Trei apeluri, deci patru interogări mărginite —
-            // e o citire de detaliu, nu de listă.
+            // Aceeași intrare de cub ca raportul: efect economic, rest propriu
+            // și diferența lor. Legăturile sunt afișate separat, fără a dicta restul.
             Total = ImperechereService.Total(os, documentId),
             Asignat = ImperechereService.Asignat(os, documentId),
             Ramas = ImperechereService.Ramas(os, documentId),

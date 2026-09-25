@@ -117,7 +117,7 @@ internal static class Fapte {
         var conturi = Conturi(os,
             ConturiAtinse(linii, claseTip, repartitori, reguliContare, politicaTva, tipuriTva, sursa.Partide));
 
-        var solduriLoturi = SolduriLoturi(os, doc, linii, claseTip, reguliStoc, idsLot);
+        var solduriLoturi = SolduriLoturi(os, doc, idsLot);
 
         var partideSursa = sursa.Partide
             .Where(p => conturi.GetValueOrDefault(p.Cont)?.UrmarestePartide == true)
@@ -148,9 +148,12 @@ internal static class Fapte {
             politicaTvaEntitate?.TolerantaTaxa,
             new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month),
             new N.VersiunePolitica("seed", doc.DataInregistrare)) {
+                SolduriLoturiRegistru = doc.Declarant()?.CereSoldRegistruPentruEvaluare == true
+                    ? SolduriLoturiRegistru(os, doc, linii, claseTip, reguliStoc, idsLot) : new Dictionary<Guid, N.Sold>(),
                 Repartitori = repartitori,
                 PartideDisponibile = PartideDisponibile(os, doc, explicite, conturi, repartitori),
                 UnitatiSursa = UnitatiSursa(os, doc),
+                DisponibilPartideSursa = sursa.Disponibil,
             }));
     }
 
@@ -177,19 +180,11 @@ internal static class Fapte {
         if (perechi.Count == 0) return [];
         var idsCont = perechi.Select(p => p.Cont.Value).Distinct().ToList();
         var idsTert = perechi.Select(p => p.Repartitor.Value).Distinct().ToList();
-        return os.GetObjectsQuery<Cub.Postare>()
-            .Where(p => p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil
-                && p.FelUnitate == N.FelUnitate.Partida
-                && p.Unitate != null && p.Partener != null && p.UnitateDeschisa != null
-                && idsCont.Contains(p.Cont) && idsTert.Contains(p.Partener.Value)
-                && p.Data <= doc.DataInregistrare && p.DocumentId != doc.ID)
-            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, p.UnitateDeschisa })
-            .Select(g => new { g.Key,
-                Debit = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : 0m),
-                Credit = g.Sum(p => p.Latura == N.Latura.Credit ? p.Valoare : 0m) })
+        return Cub.Citiri.Partide.Solduri(os, doc.DataInregistrare, doc.ID)
+            .Where(p => idsCont.Contains(p.ContId) && idsTert.Contains(p.PartenerId))
             .ToList().Select(p => new Declaratii.SoldPartidaFapt(
-                new N.Unitate(p.Key.Unitate.Value, N.FelUnitate.Partida, p.Key.Cont,
-                    p.Key.Partener, null, p.Key.UnitateDeschisa.Value),
+                new N.Unitate(p.UnitateId, N.FelUnitate.Partida, p.ContId,
+                    p.PartenerId, null, p.Deschisa),
                 new N.Sold(p.Debit, p.Credit, 0m, 0m)))
             .OrderBy(p => p.Unitate.Deschisa).ThenBy(p => p.Unitate.Id).ToList();
     }
@@ -199,41 +194,43 @@ internal static class Fapte {
     // împerecherea automată e deja scrisă, iar `Ramas` ar întoarce 0 (B-D5).
     // Soldul PER CONT al sursei e cel care spune ce poate ține fiecare partidă a ei
     // (MAJOR-1): restul e o cifră a documentului, partida e a contului.
-    static (decimal? Ramas, DateOnly? Data, List<(Guid Cont, decimal Sold)> Partide) Sursa(
+    static (decimal? Ramas, DateOnly? Data, List<(Guid Cont, decimal Sold)> Partide, Dictionary<Guid, decimal> Disponibil) Sursa(
             IObjectSpace os, Document doc) {
         if (!doc.Autogenerat || doc.DocumentSursaId is not Guid sursaId)
-            return (null, null, []);
+            return (null, null, [], []);
         var sursa = os.GetObjectsQuery<Document>()
             .Where(d => d.ID == sursaId)
-            .Select(d => new { d.TotalStingere, d.DataInregistrare })
-            .ToList()
-            .FirstOrDefault();
+            .Select(d => new { d.DataInregistrare })
+            .SingleOrDefault();
         if (sursa == null)
-            return (null, null, []);
-        var asignat = os.GetObjectsQuery<Imperechere>()
-            .Where(i => (i.DocumentStingatorId == sursaId || i.DocumentId == sursaId)
-                && i.DocumentStingatorId != doc.ID)
-            .Select(i => (decimal?)i.Suma)
-            .Sum() ?? 0m;
-        // Partida sursei ține și recepția, care stă pe NIR-ul ei conex (TR-D3): soldul
-        // per cont se citește pe sursă ∪ conexele ei autogenerate, fără documentul
-        // curent (secundarul e tot autogenerat pe aceeași sursă).
-        var note = os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => !r.Storno && r.DocumentId != null
-                && (r.DocumentId == sursaId
-                    || os.GetObjectsQuery<Document>().Any(d => d.ID == r.DocumentId.Value
-                        && d.Autogenerat && d.DocumentSursaId == sursaId && d.ID != doc.ID)))
-            .Select(r => new { r.ContDebitId, r.ContCreditId, r.Valoare })
-            .ToList();
-        var sume = new Dictionary<Guid, decimal>();
-        foreach (var n in note) {
-            sume[n.ContDebitId] = sume.GetValueOrDefault(n.ContDebitId) + n.Valoare;
-            sume[n.ContCreditId] = sume.GetValueOrDefault(n.ContCreditId) - n.Valoare;
-        }
-        return (
-            (sursa.TotalStingere ?? 0m) - asignat,
-            sursa.DataInregistrare,
-            [.. sume.Where(s => s.Value != 0m).OrderBy(s => s.Key).Select(s => (s.Key, s.Value))]);
+            return (null, null, [], []);
+        // Factura nominalizează și recepția în cub înaintea NIR-ului conex.
+        // Restul sursei este al unităților ei, cu efectul documentului curent exclus.
+        var zi = doc.DataInregistrare;
+        var peZile = (from p in Cub.Citiri.Partide.Postari(os)
+                     join o in Cub.Citiri.Partide.Origini(os)
+                       on new { UnitateId = p.Unitate.Value, ContId = p.Cont, PartenerId = p.Partener.Value }
+                       equals new { o.UnitateId, o.ContId, o.PartenerId }
+                     where o.DocumentId == sursaId && p.DocumentId != doc.ID
+                     group p by new { p.Unitate, p.Cont, p.Partener, Data = p.Data < zi ? zi : p.Data } into g
+                     select new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data,
+                         Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToArray();
+        var partide = peZile.GroupBy(p => new { p.Unitate, p.Cont, p.Partener }).Select(g => {
+            var initial = g.Where(p => p.Data == zi).Sum(p => p.Net);
+            var semn = Math.Sign(initial);
+            var net = initial;
+            var minim = Math.Abs(initial);
+            foreach (var p in g.Where(p => p.Data > zi).OrderBy(p => p.Data)) {
+                net += p.Net;
+                minim = Math.Min(minim, Math.Max(0m, semn * net));
+            }
+            return (g.Key.Cont, Net: initial, Disponibil: minim);
+        }).ToArray();
+        // Un sold redevenit disponibil ulterior nu poate fi consumat retroactiv.
+        return (partide.Sum(p => p.Disponibil), sursa.DataInregistrare,
+            [.. partide.GroupBy(p => p.Cont).Select(g => (g.Key, g.Sum(p => p.Net)))
+                .Where(p => p.Item2 != 0m).OrderBy(p => p.Key)],
+            partide.GroupBy(p => p.Cont).ToDictionary(g => g.Key, g => g.Sum(p => p.Disponibil)));
     }
 
     static Declaratii.DocumentFapt Document(Document doc, TipDocument tipDoc,
@@ -295,10 +292,19 @@ internal static class Fapte {
         new(dim.CodFunctionalId, dim.CodEconomicId, dim.SursaFinantareId,
             dim.UnitateId, dim.ProiectId, dim.CentruCostId);
 
+    static Dictionary<Declaratii.CheieLotFapt, N.Sold> SolduriLoturi(
+            IObjectSpace os, Document doc, IReadOnlyList<Guid> idsLot) => idsLot.Count == 0 ? [] :
+        Cub.Citiri.Loturi.Solduri(os, doc.DataInregistrare, doc.ID)
+            .Where(s => idsLot.Contains(s.LotId) && s.GestiuneId == doc.PredatorId)
+            .ToList().ToDictionary(s => new Declaratii.CheieLotFapt(s.LotId, s.ContId, s.ProdusId, s.GestiuneId),
+                s => new N.Sold(s.Valoare > 0m ? s.Valoare : 0m,
+                    s.Valoare < 0m ? -s.Valoare : 0m, s.Cantitate, 0m));
+
+    // Citire tranzitorie exclusiv pentru R din ASM-B6, nu pentru evaluarea cubului.
     // Soldul lotului pe cheia de stoc a laturii PREDATOARE, la `DataInregistrare`
     // și FĂRĂ documentul curent: `TipStoc`-ul e al regulii potrivite, deci cheia
     // se află aici (citirea are nevoie de ea), iar mișcarea o declară frunza.
-    static Dictionary<Guid, N.Sold> SolduriLoturi(IObjectSpace os, Document doc,
+    static Dictionary<Guid, N.Sold> SolduriLoturiRegistru(IObjectSpace os, Document doc,
             IReadOnlyList<DocumentDetaliu> linii,
             IReadOnlyDictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
             IReadOnlyList<RegulaStocFapt> reguliStoc, IReadOnlyList<Guid> idsLot) {

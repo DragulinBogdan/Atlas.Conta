@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 
 // Proiecția de raportare (D9, decizia 42c): soldul de stoc per
-// `Lot × Repartitor × TipStoc`, direct din registrul append-only. READ-ONLY prin
+// `Lot × Cont × Produs × Gestiune`, direct din cub. READ-ONLY prin
 // construcție — nu există verb de scriere pe registre nicăieri în API (gardianul
 // le refuză oricum, pe orice cale secured).
 [Route("api/proiectii/sold-stoc")]
@@ -23,7 +23,8 @@ public class SoldStocController : ContaApiController {
     // tierului (`[ApiController]` + `InvalidModelStateResponseFactory`), în forma
     // `EroriDto`, ca orice eșec de model binding.
     public object Get(DataSourceLoadOptions loadOptions, [FromQuery] DateOnly? laData = null) {
-        using var os = Secured(typeof(RegistruStoc));
+        using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        if (FaraPostariCitibile(os)) return Incarca(Array.Empty<SoldStocRand>().AsQueryable(), loadOptions);
         return Incarca(StocProiectii.SoldStoc(os, laData), loadOptions);
     }
 }

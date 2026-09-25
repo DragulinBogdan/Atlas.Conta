@@ -31,7 +31,7 @@ static class ProbeLdiOperand {
         RegulaStocFapt regula = new(Guid.NewGuid(), LaturaDocument.Predator, null, TipStoc.Magazie, 1, true);
         Operand Operand(params LinieOperand[] linii) => new(doc, linii, contare, [regula], null,
             new Dictionary<Guid, TipTvaFapt>(), new Dictionary<Guid, ContFapt>(),
-            new Dictionary<Guid, N.Sold> { [m.Lot!.Id] = new(50m, 0m, 5m, 0m) }, null, [], null, null, null,
+            new Dictionary<CheieLotFapt, N.Sold> { [new(m.Lot!.Id, stoc, m.Lot.ProdusId, gest)] = new(50m, 0m, 5m, 0m) }, null, [], null, null, null,
             new(2015, 1), new("probă", data));
         foreach (var conventie in new[] { MidpointRounding.ToEven, MidpointRounding.AwayFromZero }) {
             N.Contract Contract(Operand o) {

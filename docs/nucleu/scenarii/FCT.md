@@ -58,3 +58,12 @@ Completare transversală SC-NIR-36/FCT: pe bugetar, furnizor cu cont
 408.00.00, FCT serviciu 100 fără TVA → D628.00.00 100 / C408.00.00 100,
 partida furnizorului −100. UrmarestePartide este proprietatea contului și
 are efect și în afara NIR. Proba rulează în catalogul NIR.
+
+## Extinderea partidelor bugetare — 2026-09-25
+
+Decizia 100 activează urmărirea pe 401.01.00, 404.01.00 și 411.01.01,
+fără rol comercial SAF-T. Așteptările de partidă (rest, transfer, storno,
+corecție) ale ciclurilor comune se aplică acum ambelor profiluri.
+Mențiunile anterioare „numai privat” descriu acoperirea de la data probării
+inițiale; fiscalul, DSC și contul 419 rămân specifice profilului privat.
+Probele TR-D8 SC-CIT-41…45 verifică separat politica și istoricul.

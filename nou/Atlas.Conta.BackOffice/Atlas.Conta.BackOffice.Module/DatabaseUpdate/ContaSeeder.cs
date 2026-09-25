@@ -29,7 +29,9 @@ public static class ContaSeeder {
     // iar o valoare diferită e refuzată. Null = se păstrează ce are baza (sau
     // AwayFromZero la bază nouă — comportamentul de dinainte de 51c).
     public static RaportSeed Seed(IObjectSpace os, ProfilContabil profil, MidpointRounding? conventie = null) {
-        var raport = raportCurent = new RaportSeed();
+        var raport = raportCurent = new RaportSeed {
+            PostariFaraProvenienta = Cub.Citiri.Contabil.NumaraFaraProvenienta(os)
+        };
         SeedTipuriDocument(os, profil);
         SeedPerioadeFiscale(os);
         VerificaProfil(os, profil);

@@ -1,18 +1,42 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-24.** [Index](README.md)
+**Actualizat: 2026-09-25.** [Index](README.md)
 
-Ultima implementare validată: corecturile Deschidere din review-ul de
-sincronizare (094, 098d), peste DEC (096), PIF/AMO/CAS și cititorul de fișă
-pentru AMO/CAS/API Imo (097), plus primul lot SC-CIT-01…06.
-Gate integral: **2.656 bugetar / 3.747 privat, zero FAIL**, exit 0 comun
-și build fără avertismente: `run-verificari/20260924-125210-353/rezultat.json`.
-Include delimitarea ASM (a)/(h) aprobată pentru regimul dual (D8-B4).
-Scenarii și limite: [IMO.md](../nucleu/scenarii/IMO.md),
-[CITIRI.md](../nucleu/scenarii/CITIRI.md). Review-urile de sincronizare sunt
-primite; prima felie, Deschidere, este corectată și predată pentru
-reverificare/commit. Urmează IMO, TR-D8/DEC și NIR (098d). Rapoartele generale
-TR-D8 nu sunt comutate.
+TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
+evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
+raportul/snapshot-ul/citirile operaționale ale partidelor folosesc
+intrările comune ale cubului. Migrația contabilă este canonică; activarea
+hosturilor verifică proveniența, acoperirea contabilă și snapshot-urile.
+Seed-ul raportează problemele fără să blocheze alinierea politicilor.
+
+Validarea curentă: **3.107 bugetar / 4.103 privat OK**, zero FAIL,
+exit 0, build fără avertismente:
+`run-verificari/20260925-091707-216/integral-bugetar.log` și
+`run-verificari/20260925-092938-922/rezultat.json`.
+Clientul compilează; metadata/OpenAPI/types sunt stabile la regenerare.
+Decizia 101 este implementată și 101-r1 închisă: SC-CIT-49…65,
+HTTP raport/panou cu securitate pe rând și membru peste închidere/reconstrucție,
+comandă de împerechere și refuz atomic, browser raport și candidat 100/40/60.
+Logurile `trd8-101-http-report2`, `trd8-101-http-payment2`,
+`trd8-101-client-final`, `trd8-101-drift-final` sunt în `run-verificari/`.
+Decizia 100 este implementată: SC-CIT-41…48 și lanțurile comerciale sunt
+verzi pe ambele profiluri. SC-CIT-46/48 trec și prin HTTP și prin acțiunea
+XAF, cu verificarea numerică a cubului; fixture-urile sunt curățate.
+`nou/tools/ProbeHttp/partide-cub.py` oferă proba HTTP și opțiunea
+`--prin-xaf`, care așteaptă cel mult cinci minute acțiunea din browser.
+HTTP SC-CIT-25 a trecut de două ori, inclusiv după închidere și reconstrucție;
+raportul de stoc este verificat prin HTTP și browser (3/10 pe contul 371).
+Matricea generală `refuzuri.ps1` rămâne necertificată: precondițiile ei de
+bază populată (împerecheri și plafonul DVI) lipsesc pe baza izolată.
+Catalogul: [CITIRI.md](../nucleu/scenarii/CITIRI.md).
+Review-ul propriu și limitele: [tr-d8-review-codex.md](../nucleu/tr-d8-review-codex.md).
+Proba HTTP durabilă `nou/tools/ProbeHttp/citiri-cub.py` verifică accesul
+pe rând și membru înainte/după închidere și reconstrucție, pe host privat
+cu baza izolată `.CodexBCS`. Tokenurile rămân în memorie; fixture-ul și
+rolurile temporare se curăță în finally.
+
+TR-D8 nu este închis: fiscal/SAF-T, snapshot-ul de stoc și verificările
+transversale rămân în contract.
 Nucleu: **180/180**, zero omise, exit 0:
 `run-verificari/20260924-124628-047/rezultat.json`.
 Comenzile, încercările intermediare și limitele sunt în

@@ -4,6 +4,7 @@ using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
+using DevExpress.ExpressApp.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -50,6 +51,16 @@ public class PerioadaSnapshotSql {
     public virtual int Luna { get; set; }
 }
 
+public struct SnapshotPartida {
+    public Guid UnitateId { get; set; }
+    public Guid ContId { get; set; }
+    public Guid PartenerId { get; set; }
+    public DateOnly Deschisa { get; set; }
+    public Guid? DocumentId { get; set; }
+    public decimal Debit { get; set; }
+    public decimal Credit { get; set; }
+}
+
 // Soldurile materializate la închidere (F27-D3). Scrierea e SQL brut Postgres,
 // în tranzacția comenzii: cheia completă a atomului are 9 coloane și 8 dintre
 // ele sunt nullable, deci incrementala se face `UNION ALL` + `GROUP BY`, nu
@@ -58,7 +69,7 @@ public class PerioadaSnapshotSql {
 // SQL-ul brut nu trece prin filtrul global (66).
 public static class SolduriService {
     static readonly string[] Dimensiuni = [
-        "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId",
+        "RepartitorId", "GestiuneId", "MaterialId", "CodFunctionalId", "CodEconomicId",
         "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId"
     ];
 
@@ -92,61 +103,38 @@ public static class SolduriService {
     public static void Materializeaza(IObjectSpace os, int an, int luna) {
         Elimina(os, an, luna);
         var (anPrec, lunaPrec) = Precedenta(an, luna);
-        var precedentaContabil = AreRanduri(os, Contabil, anPrec, lunaPrec) ? (anPrec, lunaPrec) : ((int, int)?)null;
+        var precedentaContabil = SnapshotContabilDinCub(os, anPrec, lunaPrec) ? (anPrec, lunaPrec) : ((int, int)?)null;
         var precedentaStoc = AreRanduri(os, Stoc, anPrec, lunaPrec) ? (anPrec, lunaPrec) : ((int, int)?)null;
         ScrieContabil(os, an, luna, precedentaContabil);
         ScrieStoc(os, an, luna, precedentaStoc);
         MaterializeazaPartide(os, an, luna);
     }
 
-    // F27-D7: partidele deschise ale perioadei — restul de stins al fiecărui
-    // document operat la sfârșitul ei. NU e incrementală ca snapshot-urile:
-    // restul e diferența a două cumulate, nu o sumă de rulaje, iar mulțimea
-    // documentelor cu rest e mică prin natura ei (ce e neîncasat, nu ce s-a emis).
-    /// <summary>Scrie partidele deschise ale perioadei, din totalurile documentelor și imperecheri.</summary>
     public static void MaterializeazaPartide(IObjectSpace os, int an, int luna) {
         EliminaPartide(os, an, luna);
         var argumente = new List<object>();
         string P(object v) { argumente.Add(v); return "{" + (argumente.Count - 1) + "}"; }
-        var pAn = P(an);
-        var pLuna = P(luna);
-        var pSfarsit = P(Sfarsit(an, luna));
-        var sql = $"""
-            INSERT INTO {Partide} ("ID", "GCRecord", "OptimisticLockField", "An", "Luna", "DocumentId", "Rest")
-            SELECT gen_random_uuid(), 0, 0, {pAn}, {pLuna}, d."ID",
-                   d."TotalStingere" - COALESCE(i."Asignat", 0)
-            FROM "Documente" d
-            LEFT JOIN (
-            {AsignariPanaLa(pSfarsit)}
-            ) i ON i."Doc" = d."ID"
-            WHERE d."GCRecord" = 0 AND d."Stare" = {(int)StareDocument.Operat}
-              AND d."TotalStingere" IS NOT NULL AND d."DataInregistrare" <= {pSfarsit}
-              AND d."TotalStingere" - COALESCE(i."Asignat", 0) <> 0
-            """;
-        Executa(os, sql, argumente.ToArray());
+        var sursa = SursaPartide(os, P, an, luna);
+        Executa(os, $"""
+            INSERT INTO {Partide} ("ID", "GCRecord", "OptimisticLockField", "An", "Luna",
+                "UnitateId", "ContId", "PartenerId", "Deschisa", "DocumentId", "Debit", "Credit", "Rest", "DinCub")
+            SELECT gen_random_uuid(), 0, 0, {P(an)}, {P(luna)},
+                s."UnitateId", s."ContId", s."PartenerId", s."Deschisa", s."DocumentId",
+                s."Debit", s."Credit", ABS(s."Debit" - s."Credit"), true
+            FROM ({sursa}) s
+            """, argumente.ToArray());
     }
 
-    // Unpivot-ul imperecherii pe AMBELE laturi, agregat per document și tăiat pe
-    // `Data` — geamănul în SQL al lui `ImperechereService.Asignat`. ALGEBRIC:
-    // rândurile inverse (F27-D8) intră cu semnul lor.
-    static string AsignariPanaLa(string panaLa) => $"""
-              SELECT u."Doc", SUM(u."Suma") AS "Asignat" FROM (
-                SELECT "DocumentStingatorId" AS "Doc", "Suma" FROM "Imperecheri"
-                 WHERE "GCRecord" = 0 AND "Data" <= {panaLa}
-                UNION ALL
-                SELECT "DocumentId" AS "Doc", "Suma" FROM "Imperecheri"
-                 WHERE "GCRecord" = 0 AND "Data" <= {panaLa}
-                UNION ALL
-                SELECT p."DocumentId" AS "Doc",
-                       CASE WHEN p."Latura" = i."Latura" THEN -p."Valoare" ELSE p."Valoare" END AS "Suma"
-                  FROM "Postare" p JOIN "Postare" i ON p."Unitate" = i."Unitate"
-                  JOIN "Tranzactie" t ON i."TranzactieId" = t."ID"
-                 WHERE p."DocumentId" IS NOT NULL AND p."Data" <= {panaLa}
-                   AND p."Carte" = {(int)Nucleu.Carte.Contabil} AND i."Carte" = {(int)Nucleu.Carte.Contabil}
-                   AND i."FelUnitate" = {(int)Nucleu.FelUnitate.Partida}
-                   AND t."Fel" = {(int)Nucleu.FelTranzactie.Deschidere}
-              ) u GROUP BY u."Doc"
-            """;
+    static string SursaPartide(IObjectSpace os, Func<object, string> parametrul, int an, int luna) =>
+        SqlInterogare.Compune(
+            from s in Cub.Citiri.Partide.Solduri(os, Sfarsit(an, luna))
+            join o in Cub.Citiri.Partide.Origini(os)
+                on new { s.UnitateId, s.ContId, s.PartenerId } equals new { o.UnitateId, o.ContId, o.PartenerId } into origine
+            from o in origine.DefaultIfEmpty()
+            where s.Debit != s.Credit
+            select new SnapshotPartida { UnitateId = s.UnitateId, ContId = s.ContId,
+                PartenerId = s.PartenerId, Deschisa = s.Deschisa,
+                DocumentId = o.DocumentId, Debit = s.Debit, Credit = s.Credit }, parametrul);
 
     /// <summary>Perioada are deja snapshot scris?</summary>
     public static bool AreSnapshot(IObjectSpace os, int an, int luna) =>
@@ -223,20 +211,22 @@ public static class SolduriService {
         return gasita;
     }
 
-    // Atomii contabili ai unei citiri: snapshot-ul referinței (un rând per cheie
-    // completă, cu debitul și creditul CUMULATE, datat la sfârșitul referinței)
-    // plus rulajele de după ea. Fără referință = forma de azi, integral din
-    // registre — de aceea o bază fără nicio închidere dă exact același rezultat.
-    // `granita` cere referinței să se termine cel târziu atunci: balanța o dă ca
-    // `dataStart − 1`, ca soldul inițial (`Data < dataStart`) să rămână separabil
-    // prin `SUM(CASE)`. Cheia absentă din snapshot e zero — nimeni nu face
-    // `Single()` pe el.
+    static bool SnapshotContabilDinCub(IObjectSpace os, int an, int luna) {
+        var surse = os.GetObjectsQuery<SoldPerioadaContabil>().Where(s => s.An == an && s.Luna == luna)
+            .Select(s => s.DinCub).Distinct().ToArray();
+        if (surse.Contains(false))
+            throw new OperareException($"CITIRE_SNAPSHOT_VECHI: {luna:D2}/{an}; reconstruiți soldurile din cub înaintea citirii.");
+        return surse.Length != 0;
+    }
+
     /// <summary>Atomii contabili până la `panaLa`, porniți de la ultima referință care se termină până la `granita`.</summary>
     public static IQueryable<AtomContabil> AtomiCumulati(IObjectSpace os, DateOnly panaLa, DateOnly? granita = null) {
         var atomi = ContabilProiectii.Atomi(os);
-        if (Referinta(os, granita ?? panaLa) is not { } r)
+        if (os is ISecuredObjectSpace || Referinta(os, granita ?? panaLa) is not { } r)
             return atomi.Where(a => a.Data <= panaLa);
         var (an, luna, sfarsit) = r;
+        if (!SnapshotContabilDinCub(os, an, luna))
+            return atomi.Where(a => a.Data <= panaLa);
         return os.GetObjectsQuery<SoldPerioadaContabil>().IgnoreAutoIncludes()
             .Where(s => s.An == an && s.Luna == luna)
             .Select(s => new AtomContabil {
@@ -245,6 +235,7 @@ public static class SolduriService {
                 Debit = s.Debit,
                 Credit = s.Credit,
                 RepartitorId = s.RepartitorId,
+                GestiuneId = s.GestiuneId,
                 MaterialId = s.MaterialId,
                 CodFunctionalId = s.CodFunctionalId,
                 CodEconomicId = s.CodEconomicId,
@@ -314,11 +305,11 @@ public static class SolduriService {
         var sb = new StringBuilder();
         sb.Append($"INSERT INTO {Contabil} (\"ID\", \"GCRecord\", \"OptimisticLockField\", \"An\", \"Luna\", \"ContId\", ");
         sb.Append(string.Join(", ", Dimensiuni.Select(d => $"\"{d}\"")));
-        sb.Append(", \"Debit\", \"Credit\")\n");
+        sb.Append(", \"Debit\", \"Credit\", \"DinCub\")\n");
         sb.Append($"SELECT gen_random_uuid(), 0, 0, {P(an)}, {P(luna)}, k.\"ContId\", ");
         sb.Append(string.Join(", ", Dimensiuni.Select(d => $"k.\"{d}\"")));
-        sb.Append(", SUM(k.\"Debit\"), SUM(k.\"Credit\")\n");
-        sb.Append($"FROM (\n{SursaContabil(P, an, luna, precedenta)}\n) k\n");
+        sb.Append(", SUM(k.\"Debit\"), SUM(k.\"Credit\"), true\n");
+        sb.Append($"FROM (\n{SursaContabil(os, P, an, luna, precedenta)}\n) k\n");
         sb.Append("GROUP BY k.\"ContId\", ");
         sb.Append(string.Join(", ", Dimensiuni.Select(d => $"k.\"{d}\"")));
         // Cheile integral zero se OMIT: „absentă” și „zero” sunt același răspuns
@@ -341,36 +332,23 @@ public static class SolduriService {
         Executa(os, sb.ToString(), argumente.ToArray());
     }
 
-    // Snapshot(P−1) ∪ rulajele lunii, unpivotate pe laturi. Fără precedentă =
-    // `SUM` integral peste tot istoricul `<= sfârșitul lui P`. Rândurile de
-    // deschidere ale migrării (`DocumentId IS NULL`) intră normal: sunt rânduri
-    // de registru, nu snapshot.
-    static string SursaContabil(Func<object, string> P, int an, int luna, (int An, int Luna)? precedenta) {
+    static string SursaContabil(IObjectSpace os, Func<object, string> P, int an, int luna, (int An, int Luna)? precedenta) {
         var sfarsit = Sfarsit(an, luna);
-        var sb = new StringBuilder();
-        if (precedenta is { } prec) {
-            sb.Append("SELECT \"ContId\", ");
-            sb.Append(string.Join(", ", Dimensiuni.Select(d => $"\"{d}\"")));
-            sb.Append($", \"Debit\", \"Credit\" FROM {Contabil} WHERE \"An\" = {P(prec.An)} AND \"Luna\" = {P(prec.Luna)}\n");
-            sb.Append("UNION ALL\n");
+        var atomi = ContabilProiectii.Atomi(os).Where(a => a.Data <= sfarsit);
+        if (precedenta != null) {
+            var inceput = Inceput(an, luna);
+            atomi = atomi.Where(a => a.Data >= inceput);
         }
-        foreach (var latura in new[] { "Debit", "Credit" }) {
-            if (latura == "Credit")
-                sb.Append("UNION ALL\n");
-            // Alias-uri EXPLICITE: fără snapshot(P−1) în față, numele coloanelor
-            // uniunii ar fi cele ale registrului (`ContDebitId`,
-            // `DimensiuniDebit_*`), iar `GROUP BY k."ContId"` n-ar mai exista.
-            sb.Append($"SELECT r.\"Cont{latura}Id\" AS \"ContId\", ");
-            sb.Append(string.Join(", ", Dimensiuni.Select(d => $"r.\"Dimensiuni{latura}_{d}\" AS \"{d}\"")));
-            sb.Append(latura == "Debit"
-                ? ", r.\"Valoare\" AS \"Debit\", 0::numeric AS \"Credit\""
-                : ", 0::numeric AS \"Debit\", r.\"Valoare\" AS \"Credit\"");
-            sb.Append("\nFROM \"RegistruContabil\" r\nWHERE r.\"GCRecord\" = 0");
-            if (precedenta != null)
-                sb.Append($" AND r.\"Data\" >= {P(Inceput(an, luna))}");
-            sb.Append($" AND r.\"Data\" <= {P(sfarsit)}\n");
-        }
-        return sb.ToString().TrimEnd();
+        var sursa = SqlInterogare.Compune(atomi.Select(a => new AtomContabil {
+            ContId = a.ContId, RepartitorId = a.RepartitorId, GestiuneId = a.GestiuneId,
+            MaterialId = a.MaterialId, CodFunctionalId = a.CodFunctionalId, CodEconomicId = a.CodEconomicId,
+            SursaFinantareId = a.SursaFinantareId, UnitateId = a.UnitateId, ProiectId = a.ProiectId,
+            CentruCostId = a.CentruCostId, Debit = a.Debit, Credit = a.Credit
+        }), P);
+        if (precedenta is not { } prec) return sursa;
+        var dim = string.Join(", ", Dimensiuni.Select(d => $"\"{d}\""));
+        return $"SELECT \"ContId\", {dim}, \"Debit\", \"Credit\" FROM {Contabil} "
+            + $"WHERE \"An\" = {P(prec.An)} AND \"Luna\" = {P(prec.Luna)}\nUNION ALL\n{sursa}";
     }
 
     static string SursaStoc(Func<object, string> P, int an, int luna, (int An, int Luna)? precedenta) {
@@ -401,7 +379,7 @@ public static class SolduriService {
             WITH recalc AS (
               SELECT k."ContId", {kdim}, SUM(k."Debit") AS "Debit", SUM(k."Credit") AS "Credit"
               FROM (
-            {SursaContabil(P, an, luna, null)}
+            {SursaContabil(os, P, an, luna, null)}
               ) k
               GROUP BY k."ContId", {kdim}
               HAVING SUM(k."Debit") <> 0 OR SUM(k."Credit") <> 0
@@ -468,33 +446,23 @@ public static class SolduriService {
     static DiferentaPartideSql DiferentePartide(IObjectSpace os, int an, int luna) {
         var argumente = new List<object>();
         string P(object v) { argumente.Add(v); return "{" + (argumente.Count - 1) + "}"; }
-        var pSfarsit = P(Sfarsit(an, luna));
-        var pAn = P(an);
-        var pLuna = P(luna);
+        var sursa = SursaPartide(os, P, an, luna);
         var sql = $"""
-            WITH recalc AS (
-              SELECT d."ID" AS "DocumentId", d."TotalStingere" - COALESCE(i."Asignat", 0) AS "Rest"
-              FROM "Documente" d
-              LEFT JOIN (
-            {AsignariPanaLa(pSfarsit)}
-              ) i ON i."Doc" = d."ID"
-              WHERE d."GCRecord" = 0 AND d."Stare" = {(int)StareDocument.Operat}
-                AND d."TotalStingere" IS NOT NULL AND d."DataInregistrare" <= {pSfarsit}
-                AND d."TotalStingere" - COALESCE(i."Asignat", 0) <> 0
-            ),
-            existent AS (
-              SELECT "DocumentId", "Rest" FROM {Partide} WHERE "An" = {pAn} AND "Luna" = {pLuna}
-            ),
-            j AS (
-              SELECT e."DocumentId" AS "DocE", r."DocumentId" AS "DocR",
-                     e."Rest" AS "RestE", r."Rest" AS "RestR"
-              FROM existent e FULL OUTER JOIN recalc r ON e."DocumentId" = r."DocumentId"
+            WITH recalc AS ({sursa}), existent AS (
+                SELECT * FROM {Partide} WHERE "An" = {P(an)} AND "Luna" = {P(luna)}
+            ), j AS (
+                SELECT e."ID", r."UnitateId", e."DinCub", e."Deschisa" AS "DataE", r."Deschisa" AS "DataR",
+                    e."DocumentId" AS "DocE", r."DocumentId" AS "DocR",
+                    e."Debit" AS "DE", e."Credit" AS "CE", e."Rest" AS "RE",
+                    r."Debit" AS "DR", r."Credit" AS "CR"
+                FROM existent e FULL OUTER JOIN recalc r
+                    ON e."UnitateId" = r."UnitateId" AND e."ContId" = r."ContId" AND e."PartenerId" = r."PartenerId"
             )
-            SELECT (SELECT COUNT(*) FROM existent) AS "Existente",
-                   (SELECT COUNT(*) FROM recalc) AS "Recalculate",
-                   COUNT(*) FILTER (WHERE "DocE" IS NULL OR "DocR" IS NULL
-                                       OR "RestE" <> "RestR") AS "Diferite",
-                   COALESCE(SUM(ABS(COALESCE("RestR", 0) - COALESCE("RestE", 0))), 0) AS "DiferentaRest"
+            SELECT (SELECT COUNT(*) FROM existent) AS "Existente", (SELECT COUNT(*) FROM recalc) AS "Recalculate",
+                COUNT(*) FILTER (WHERE "ID" IS NULL OR "UnitateId" IS NULL OR NOT "DinCub"
+                    OR "DE" <> "DR" OR "CE" <> "CR" OR "RE" <> ABS("DR" - "CR")
+                    OR "DataE" <> "DataR" OR "DocE" IS DISTINCT FROM "DocR") AS "Diferite",
+                COALESCE(SUM(ABS(COALESCE(ABS("DR" - "CR"), 0) - COALESCE("RE", 0))), 0) AS "DiferentaRest"
             FROM j
             """;
         return Interogheaza<DiferentaPartideSql>(os, sql, argumente.ToArray()).Single();

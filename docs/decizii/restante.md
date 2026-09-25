@@ -317,7 +317,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 091-r4 | felia de migrare, cu decizie proprie, după „rotund”: conectorul 1C repornit pe modelul final, deschiderea de terți din `BalantaNivel3` (T-r4), stingerile 2024, reconcilierea 1C ca raport de diferențe (091) | migrare (091) |
 | 091-r5 | un caz apărut la migrare care contrazice catalogul devine scenariu nou plus decizie; oracolul normalizat (`CubDinRegistre`, `Normalizari`) nu se mai extinde (091) | migrare (091) |
 | 095-r1 | DEC → contract IMO → PIF/AMO/CAS complete pe cub, inclusiv cartea fiscală și istoricul fișei, înaintea TR-D8 (095), PIF cu suport obligatoriu aprobat (097); urmărirea partidelor separată de RolTert (096) | activă: producători și cititor de fișă implementați, SC-IMO-01…25 verzi pe ambele profiluri; review advers făcut 2026-09-24, corecturi în curs (098b/c/d) |
-| 096-r1 | Diagnostic și tratare explicită la TR-D8 pentru postările istorice fără unitate pe conturi cu UrmarestePartide; migrația atributului nu reconstruiește istoria (096d) | activă, TR-D8 (091) |
+| 096-r1 | Diagnostic și tratare explicită la TR-D8 pentru postările istorice fără unitate pe conturi cu UrmarestePartide; migrația atributului nu reconstruiește istoria (096d) | depășită de 102 (2026-09-25): bazele de dezvoltare se recreează, istoria nu se diagnostichează |
 | 097-r1 | diagnosticul istoriei PIF fără fișă/origine/suport înaintea activării cititorilor (097) | activă, TR-D8 (091) |
 | 097-r2 | auditul anulării fizice a suportului eliberat; proveniența fără FK restrictiv (097, 091j) | activă, TR-D9 (091) |
 | 097-r3 | blocajul tranzacțional comun pe bază, limitat la IMO și suportul lui; mecanismul general rămâne 091 (g)(4) (097) | activă (091) |
@@ -327,3 +327,10 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 099-r1 | LDI adoptă cauza diferenței: minus imputabil pe partener, perisabilitate, neimputabilă; plus (099) | activă (091) |
 | 099-r2 | efectele fiscale per cauză a diferenței: ajustarea TVA, deductibilitatea (099) | după PoC (091) |
 | 099-r3 | BTR cu lipsă la primire, pe clasificarea cauzei diferenței (099) | după PoC (091) |
+
+| 100-r1 | Acoperirea bugetară a partidelor pe cele trei conturi DinSeed, ciclurile FCT/PLT, FCL/INC, NTC și deschidere; refuz istoric conform 096-r1 | închisă 2026-09-25: SC-CIT-41…48 și cataloagele tipurilor, integral 3.036/4.026 OK; raportul/snapshot-ul rămân la TR-D8 |
+
+| 101-r1 | Efect obligatoriu al împerecherii, refuz atomic, candidați/disponibil pe cub și diagnostic al legăturilor istorice fără efect (101) | activă, redeschisă 2026-09-25 de owner după review-ul advers (`comunicari/2026-09-25-1237`): NTC consumă retroactiv partida stinsă la o dată ulterioară (D-2); ținta deschisă prin Transfer e oferită în panou, dar refuzată de comandă (D-3). Închiderea anterioară: SC-CIT-49…65, integrale 3.107/4.103 OK |
+| 102-r1 | Scoaterea codului de compatibilitate (102c), invarianții devin probe ModelCheck (102d), comprimarea migrațiilor tranșată (102e); felia de curățenie înaintea snapshot-ului de stoc | activă |
+| 102-r2 | Alinierea deciziilor, stare-curenta și restanțelor cu 102(c) | activă |
+| 102-r3 | Rețeta de recreare a bazelor de dezvoltare și recrearea lor (102b) | activă |

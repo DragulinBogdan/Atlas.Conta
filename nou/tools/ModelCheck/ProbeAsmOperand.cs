@@ -9,13 +9,14 @@ static class ProbeAsmOperand {
     public static void Ruleaza(Action<string, bool> check) {
         foreach (var conventie in new[] { MidpointRounding.ToEven, MidpointRounding.AwayFromZero }) {
             var gest = Guid.NewGuid(); var a = Guid.NewGuid(); var b = Guid.NewGuid();
-            var solduri = new Dictionary<Guid, N.Sold>();
+            var solduri = new Dictionary<CheieLotFapt, N.Sold>();
+            var registru = new Dictionary<Guid, N.Sold>();
             LinieOperand Linie(Guid cont, bool produs, decimal pret, decimal qSold = 0, decimal vSold = 0) {
                 var id = Guid.NewGuid(); var tip = Guid.NewGuid(); var p = Guid.NewGuid();
                 var lot = new LotFapt(Guid.NewGuid(), p, tip, cont, new(2014, 1, 1), pret) {
                     LinieIntrareId = produs ? id : Guid.NewGuid(), GestiuneId = gest,
                 };
-                if (!produs) solduri[lot.Id] = new(vSold, 0, qSold, 0);
+                if (!produs) { solduri[new(lot.Id, cont, p, gest)] = new(vSold, 0, qSold, 0); registru[lot.Id] = new(vSold, 0, qSold, 0); }
                 return new(id, tip, null, NaturaClasa.Stoc, cont, lot.Id, lot, 1, 0, 0,
                     null, null, p, tip, null, null, null, null, N.Analiza.Fara, null) {
                     Transformare = new(produs ? N.RolTransformare.Produs : N.RolTransformare.Consum, produs ? pret : null),
@@ -27,7 +28,7 @@ static class ProbeAsmOperand {
                 false, null, repartitor, repartitor, null, null, null);
             Operand Operand(params LinieOperand[] linii) => new(doc, linii, [], [], null,
                 new Dictionary<Guid, TipTvaFapt>(), new Dictionary<Guid, ContFapt>(), solduri,
-                null, [], null, null, null, new(2014, 1), new("probă", data));
+                null, [], null, null, null, new(2014, 1), new("probă", data)) { SolduriLoturiRegistru = registru };
             N.Declaratie Declara(Operand o, out List<N.Refuz> refuzuri) {
                 refuzuri = [];
                 return DeclarantAsamblare.Instanta.Declara(o, new(conventie), refuzuri);

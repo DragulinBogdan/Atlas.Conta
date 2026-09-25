@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
+using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using C = Atlas.Conta.BackOffice.Module.Cub;
@@ -119,6 +120,15 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void Citiri(FacturaScena d) {
         using var os = Deschide();
+        var jurnalContabil = ContabilProiectii.RegistruJurnal(os).Where(r => r.DocumentId == d.Id).ToList();
+        var fisaContabila = ContabilProiectii.FisaCont(os, Cont("4426"), Ianuarie, Ianuarie)
+            .Where(r => r.DocumentId == d.Id).ToList();
+        var balanta = ContabilProiectii.Balanta(os, Ianuarie, Ianuarie, repartitorId: vama)
+            .Single(r => r.ContId == Cont("4426"));
+        Verifica("SC-CIT-15", "DVI: jurnal 21/21, fișă și balanță 21, fără baza fiscală 100",
+            jurnalContabil.Count == 2 && jurnalContabil.Sum(r => r.Debit) == 21
+            && jurnalContabil.Sum(r => r.Credit) == 21 && fisaContabila.Count == 1
+            && fisaContabila[0].Debit == 21 && balanta.RulajDebit == 21 && balanta.RulajCredit == 0);
         var p = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == d.Id).ToList();
         decimal Sold(IEnumerable<C.Postare> r) => r.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare);
         var contabil = p.Where(p => p.Carte == N.Carte.Contabil).ToList();

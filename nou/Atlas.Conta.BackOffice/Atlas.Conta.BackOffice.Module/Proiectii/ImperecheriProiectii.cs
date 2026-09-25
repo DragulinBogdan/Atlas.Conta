@@ -1,61 +1,32 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
+using P = Atlas.Conta.BackOffice.Module.Cub.Citiri.Partide;
+using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Proiectii;
 
-// Proiecția de REST (F3-D4): documentele OPERATE care mai au ceva de stins —
-// candidații panoului de stingeri. Regula modulului rămâne cea din 42c: nimic
-// nu se calculează în client, iar agregarea se face ÎNTÂI, cu join-urile pe
-// REZULTATUL agregat (nu subquery corelat per rând, nu navigație lazy).
-//
-// ═══ De ce UNION PER TIP CONCRET și nu un query pe `Document` ═══
-// CONTRAPARTIDA e o latură DIFERITĂ per tip (furnizorul e predator pe FCT,
-// clientul e primitor pe FCL…); uniunea de ramuri concrete o pune în SQL, cu
-// codul tipului ca literal per ramură. // 89: F28-r1
-//
-// ═══ MĂRGINIREA (F27-D7) ═══
-// Totalul nu se mai agregă la citire: e `Document.TotalStingere`, scris de motor
-// la operare. De aceea `ReturClient` INTRĂ acum în uniune — totalul lui e deja
-// filtrat prin `LiniiCreanta` la scriere, deci proiecția nu mai poate diverge de
-// serviciu, iar amânarea din antetul vechi e închisă.
-// Restul unui document la o dată = restul lui la ULTIMA perioadă de referință
-// (`PartidaDeschisa`) minus imperecherile de după ea. Costul e mărginit de
-// fereastra deschisă plus numărul partidelor, nu de tot istoricul.
 
-// Rândul „mai am de stins": PLAT prin construcție (deciziile 6/7).
 public sealed class DocumentCuRestRand {
     public Guid DocumentId { get; set; }
-    // Codul ancorei `TipDocument` — literal per ramură a uniunii, nu coloană.
     public string Tip { get; set; }
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
-    // Latura PARTENER/ANGAJAT (nu contul propriu, nu gestiunea): cheia pe care
-    // invariantul stingerii cere potrivire (`ValideazaCreare` — contrapartida
-    // stingătorului trebuie să apară pe documentul stins).
     public Guid ContrapartidaId { get; set; }
     public string ContrapartidaDenumire { get; set; }
-    // Sensul stingerii pe care documentul îl CONSUMĂ (F19-D16), ca LITERAL per
-    // ramură — exact cum e `Tip`. Dublează `Document.SensDeStins` (funcție de
-    // TIP, deci netraductibilă în SQL), deci are check de consistență pe fiecare
-    // rând în ModelCheck (42c: o proiecție care dublează un calcul al motorului
-    // se măsoară contra lui, nu se afirmă).
     public string Sens { get; set; }
 
     public decimal Total { get; set; }
     public decimal Asignat { get; set; }
     public decimal Rest { get; set; }
+    public decimal Disponibil { get; set; }
 }
 
-// Atomul de unpivot al imperecherii, ca TIP NUMIT: `Concat` cere aceeași formă
-// pe ambele laturi, iar tipul numit face uniunea explicită și refolosibilă.
 public sealed class SumaPeDocument {
     public Guid DocumentId { get; set; }
     public decimal Suma { get; set; }
 }
 
-// Antetul unei ramuri, înainte de join-urile pe agregate: aceleași coloane
-// pentru toate tipurile, ca uniunea să fie o singură formă.
 sealed class AntetCuRest {
     public Guid DocumentId { get; set; }
     public string Tip { get; set; }
@@ -69,13 +40,9 @@ sealed class AntetCuRest {
 }
 
 public static class ImperecheriProiectii {
-    // Literalii de sens, o singură dată: `SensStingere.X.ToString()` nu se
-    // traduce în SQL, iar un string „liber" în șase ramuri ar putea devia de
-    // enum fără ca nimic să se plângă.
     static readonly string SensDatorie = SensStingere.Datorie.ToString();
     static readonly string SensCreanta = SensStingere.Creanta.ToString();
 
-    // ── Atomii (42c) ────────────────────────────────────────────────────────
 
     public static IQueryable<SumaPeDocument> Asignari(IObjectSpace os,
             DateOnly? dupa = null, DateOnly? panaLa = null) {
@@ -94,40 +61,23 @@ public static class ImperecheriProiectii {
             .Concat(initiale.Select(i => new SumaPeDocument { DocumentId = i.DocumentId, Suma = i.Suma }));
     }
 
-    // ── Proiecția ───────────────────────────────────────────────────────────
 
-    // Documentele operate cu rest > 0 la `laData` (null = „tot"), opțional
-    // filtrate pe contrapartidă și pe sens — candidații de stins (F3-D4).
-    public static IQueryable<DocumentCuRestRand> DocumenteCuRest(
-        IObjectSpace os, Guid? contrapartidaId = null, SensStingere? sens = null,
-        DateOnly? laData = null) {
-
-        // Contrapartida per tip: FCT → furnizorul (predator), FCL → clientul
-        // (primitor), PLT → beneficiarul (primitor), INC → plătitorul
-        // (predator), DEC → titularul (predator), RDC → clientul (predator).
-        var antete =
-            os.GetObjectsQuery<FacturaIntrare>().Where(d => d.Stare == StareDocument.Operat)
+    static IQueryable<AntetCuRest> Antete(IObjectSpace os, bool istoric = false) {
+        return
+            os.GetObjectsQuery<FacturaIntrare>().Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "FCT", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
                     Sens = SensDatorie, Total = d.TotalStingere ?? 0m })
-            .Concat(os.GetObjectsQuery<FacturaIesire>().Where(d => d.Stare == StareDocument.Operat)
+            .Concat(os.GetObjectsQuery<FacturaIesire>().Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "FCL", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PrimitorId, ContrapartidaDenumire = d.Primitor.Denumire,
                     Sens = SensCreanta, Total = d.TotalStingere ?? 0m }))
-            // PLT/INC: picioarele de VIRAMENT INTERN (F7) sunt EXCLUSE. Au
-            // `Rest > 0` pe veci (nu se sting niciodată — `CapacitateStingere` e
-            // null, `PoateFiStins` e false pe ele), iar contrapartida lor E un
-            // cont propriu, deci un panou filtrat pe un cont propriu chiar
-            // le-ar întoarce ca „de stins" — un candidat pe care serverul îl
-            // refuză la creare. Filtrul e oglinda predicatului de domeniu
-            // (`DocumentTrezorerie.EsteVirament`: AMBELE laturi conturi
-            // proprii); testul de tip rămâne în SQL, nu o a doua interogare.
             .Concat(os.GetObjectsQuery<Plata>()
-                .Where(d => d.Stare == StareDocument.Operat
+                .Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat)
                     && !(d.Predator is ContPropriu && d.Primitor is ContPropriu))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "PLT", Numar = d.Numar, Data = d.Data,
@@ -135,107 +85,132 @@ public static class ImperecheriProiectii {
                     ContrapartidaId = d.PrimitorId, ContrapartidaDenumire = d.Primitor.Denumire,
                     Sens = SensCreanta, Total = d.TotalStingere ?? 0m }))
             .Concat(os.GetObjectsQuery<Incasare>()
-                .Where(d => d.Stare == StareDocument.Operat
+                .Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat)
                     && !(d.Predator is ContPropriu && d.Primitor is ContPropriu))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "INC", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
                     Sens = SensDatorie, Total = d.TotalStingere ?? 0m }))
-            .Concat(os.GetObjectsQuery<Decont>().Where(d => d.Stare == StareDocument.Operat)
+            .Concat(os.GetObjectsQuery<Decont>().Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "DEC", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
                     Sens = SensDatorie, Total = d.TotalStingere ?? 0m }))
-            // RDC (F27-D7): totalul lui e deja cel filtrat prin `LiniiCreanta`,
-            // fiindcă motorul îl scrie pe document — nu mai există al doilea
-            // adevăr de evitat. Returul lasă un sold CREDITOR pe contul
-            // clientului, deci consumă jumătatea de datorie (`SensDeStins`).
-            .Concat(os.GetObjectsQuery<ReturClient>().Where(d => d.Stare == StareDocument.Operat)
+            .Concat(os.GetObjectsQuery<ReturClient>().Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "RDC", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
                     Sens = SensDatorie, Total = d.TotalStingere ?? 0m }));
 
+    }
+
+    public static void VerificaAcoperire(IObjectSpace os) {
+        // Antetul este martor de diagnostic al acoperirii, nu sursă de rest.
+        // Numai Operare: storno/transferurile nu schimbă obligația de a avea unități.
+        var parti = P.Postari(os).Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .GroupBy(p => new { p.DocumentId, p.Cont, p.Partener })
+            .Select(g => new { g.Key.DocumentId,
+                Valoare = Math.Abs(g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)) })
+            .GroupBy(p => p.DocumentId).Select(g => new { DocumentId = g.Key, Total = g.Sum(p => p.Valoare) });
+        var lipsuri = from a in Antete(os, istoric: true)
+                      join p in parti on (Guid?)a.DocumentId equals p.DocumentId into acoperire
+                      from p in acoperire.DefaultIfEmpty()
+                      let gasit = (decimal?)p.Total ?? 0m
+                      where gasit != Math.Abs(a.Total)
+                      select new { a.DocumentId, Asteptat = Math.Abs(a.Total), Gasit = gasit };
+        var exemple = lipsuri.Take(10).ToArray();
+        if (exemple.Length != 0) throw new OperareException("CITIRE_PARTIDE_POLITICA: total de decontare fără acoperire integrală pe partide; "
+            + string.Join("; ", exemple.Select(p => $"document {p.DocumentId}, așteptat {p.Asteptat}, găsit {p.Gasit}")));
+    }
+
+    public static IQueryable<DocumentCuRestRand> DocumenteCuRest(
+        IObjectSpace os, Guid? contrapartidaId = null, SensStingere? sens = null,
+        DateOnly? laData = null, Guid? documentCurentId = null, bool stinge = true) {
+
+        var antete = Antete(os);
+
         if (laData is DateOnly zi)
             antete = antete.Where(a => a.DataInregistrare <= zi);
         if (contrapartidaId is Guid cp)
             antete = antete.Where(a => a.ContrapartidaId == cp);
-        // Filtrul de SENS (F19-D16): panoul de compensare cere candidații UNEI
-        // jumătăți de plafon. Fără el ar propune o factură de client sub
-        // jumătatea de datorie a notei — o stingere pe care serviciul o refuză.
         if (sens is SensStingere sensCerut) {
             var literal = sensCerut.ToString();
             antete = antete.Where(a => a.Sens == literal);
         }
 
-        // Referința = ultima perioadă DE REFERINȚĂ care se termină până la dată
-        // (F27-D3); `laData` null = „tot", deci ultima referință a bazei.
-        var referinta = SolduriService.Referinta(os, laData ?? DateOnly.MaxValue);
-        var faraReferinta = referinta == null;
-        var sfarsitReferinta = referinta?.Sfarsit ?? DateOnly.MinValue;
-        var anReferinta = referinta?.An ?? 0;
-        var lunaReferinta = referinta?.Luna ?? 0;
-
-        // Fereastra DESCHISĂ: ce s-a stins DUPĂ referință. Un fapt de stingere
-        // nu poate cădea înaintea ei fără să fi fost scris într-o perioadă
-        // deschisă, iar gardianul de perioadă îl refuză (F27-D8) — deci partida
-        // scrisă la închidere rămâne punctul de pornire valabil.
-        var fereastra = Asignari(os, referinta?.Sfarsit, laData)
-            .GroupBy(a => a.DocumentId)
-            .Select(g => new SumaPeDocument { DocumentId = g.Key, Suma = g.Sum(x => x.Suma) });
-        // Partidele referinței ca ATOMI, nu ca entități: peste un
-        // `DefaultIfEmpty()` de entitate, `p != null` nu se traduce (EF îl lasă
-        // în evaluare pe client), iar un scalar nullable e exact aceeași
-        // întrebare, exprimabilă în SQL.
-        var partide = os.GetObjectsQuery<PartidaDeschisa>()
-            .Where(p => p.An == anReferinta && p.Luna == lunaReferinta)
-            .Select(p => new SumaPeDocument { DocumentId = p.DocumentId, Suma = p.Rest });
-
-        var randuri =
-            from a in antete
-            // LEFT pe partide: restul documentului la sfârșitul referinței.
-            join p in partide on a.DocumentId equals p.DocumentId into gp
-            from p in gp.DefaultIfEmpty()
-            // LEFT pe fereastră: un document neatins de nicio stingere de după
-            // referință apare cu restul lui întreg, nu dispare din listă.
-            join s in fereastra on a.DocumentId equals s.DocumentId into gs
-            from s in gs.DefaultIfEmpty()
-            let restPartida = (decimal?)p.Suma
-            let dinFereastra = (decimal?)s.Suma
-            // Restul la REFERINȚĂ, în trei feluri: partida scrisă la închidere;
-            // totalul, pentru documentul înregistrat DUPĂ referință; zero pentru
-            // documentul înregistrat înainte și absent din partide — el era stins
-            // integral, iar dacă reapare aici o face printr-o desfacere de după.
-            let restReferinta = restPartida
-                ?? (faraReferinta || a.DataInregistrare > sfarsitReferinta ? a.Total : 0m)
-            let rest = restReferinta - (dinFereastra ?? 0m)
-            // Candidații: partidele referinței ∪ documentele de după ea ∪
-            // documentele atinse de o stingere din fereastra deschisă.
-            where faraReferinta || restPartida != null || dinFereastra != null
-                || a.DataInregistrare > sfarsitReferinta
-            select new DocumentCuRestRand {
-                DocumentId = a.DocumentId,
-                Tip = a.Tip,
-                Numar = a.Numar,
-                Data = a.Data,
-                ContrapartidaId = a.ContrapartidaId,
-                ContrapartidaDenumire = a.ContrapartidaDenumire,
-                Sens = a.Sens,
-                Total = a.Total,
-                // `Asignat` e diferența, nu o a treia agregare: prin definiție
-                // `Asignat = Total − Rest`, deci o citire în plus n-ar adăuga
-                // adevăr, doar un al doilea drum spre el.
-                Asignat = a.Total - rest,
-                Rest = rest
-            };
-
-        // Filtrul pe REST se aplică după calcul (EF îl împinge în SQL peste
-        // subinterogare): un document stins integral nu e candidat. Rămâne
-        // `IQueryable` — DataSourceLoader pune deasupra filtrarea/sortarea/
-        // paginarea clientului (43c).
-        return randuri.Where(r => r.Rest > 0m);
+        var solduri = PartideCuRest(os, contrapartidaId, sens, laData)
+            .Where(p => p.DocumentId != null)
+            .GroupBy(p => new { p.DocumentId, p.ContrapartidaId, p.Sens })
+            .Select(g => new { g.Key.DocumentId, g.Key.ContrapartidaId, g.Key.Sens,
+                Rest = g.Sum(p => p.Rest) });
+        var ziTotal = laData ?? DateOnly.MaxValue;
+        var totale = Cub.Citiri.Contabil.Postari(os)
+            .Where(p => p.Data <= ziTotal && p.FelUnitate == N.FelUnitate.Partida)
+            .GroupBy(p => new { p.DocumentId, p.Partener })
+            .Select(g => new { g.Key.DocumentId, ContrapartidaId = g.Key.Partener,
+                Total = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) });
+        var raport = from a in antete
+               join s in solduri on new { DocumentId = (Guid?)a.DocumentId, a.ContrapartidaId, a.Sens }
+                   equals new { s.DocumentId, s.ContrapartidaId, s.Sens }
+               join t in totale on new { s.DocumentId, ContrapartidaId = (Guid?)s.ContrapartidaId }
+                   equals new { t.DocumentId, t.ContrapartidaId }
+               select new DocumentCuRestRand {
+                   DocumentId = a.DocumentId, Tip = a.Tip, Numar = a.Numar, Data = a.Data,
+                   ContrapartidaId = a.ContrapartidaId, ContrapartidaDenumire = a.ContrapartidaDenumire,
+                   Sens = a.Sens, Total = Math.Abs(t.Total), Asignat = Math.Abs(t.Total) - s.Rest,
+                   Rest = s.Rest, Disponibil = s.Rest
+               };
+        if (documentCurentId is not { } curent) return raport;
+        var perechi = P.Perechi(os, curent, stinge, contrapartidaId)
+            .Select(p => new { DocumentId = stinge ? p.StinsId : p.StingatorId, p.Disponibil });
+        return from r in raport
+               join p in perechi on r.DocumentId equals p.DocumentId
+               select new DocumentCuRestRand { DocumentId = r.DocumentId, Tip = r.Tip, Numar = r.Numar,
+                   Data = r.Data, ContrapartidaId = r.ContrapartidaId, ContrapartidaDenumire = r.ContrapartidaDenumire,
+                   Sens = r.Sens, Total = r.Total, Asignat = r.Asignat, Rest = r.Rest, Disponibil = p.Disponibil };
     }
+
+    public static IQueryable<PartidaCuRestRand> PartideCuRest(IObjectSpace os, Guid? contrapartidaId = null,
+            SensStingere? sens = null, DateOnly? laData = null) {
+        var zi = laData ?? DateOnly.MaxValue;
+        var solduri = P.Cumulate(os, zi).Where(s => s.Debit != s.Credit);
+        if (contrapartidaId is { } cp) solduri = solduri.Where(s => s.PartenerId == cp);
+        if (sens == SensStingere.Datorie) solduri = solduri.Where(s => s.Credit > s.Debit);
+        if (sens == SensStingere.Creanta) solduri = solduri.Where(s => s.Debit > s.Credit);
+        return from s in solduri
+               join o in P.Origini(os) on new { s.UnitateId, s.ContId, s.PartenerId }
+                   equals new { o.UnitateId, o.ContId, o.PartenerId } into origine
+               from o in origine.DefaultIfEmpty()
+               join d in os.GetObjectsQuery<Document>() on o.DocumentId equals (Guid?)d.ID into document
+               from d in document.DefaultIfEmpty()
+               join c in os.GetObjectsQuery<Cont>() on s.ContId equals c.ID into cont
+               from c in cont.DefaultIfEmpty()
+               join p in os.GetObjectsQuery<Repartitor>() on s.PartenerId equals p.ID into partener
+               from p in partener.DefaultIfEmpty()
+               let rest = Math.Abs(s.Debit - s.Credit)
+               select new PartidaCuRestRand {
+                   UnitateId = s.UnitateId, ContId = s.ContId, ContSimbol = c.Simbol,
+                   ContrapartidaId = s.PartenerId, ContrapartidaDenumire = p.Denumire,
+                   DocumentId = (Guid?)d.ID, DocumentTip = null, Numar = d.Numar, Data = s.Deschisa,
+                   Sens = s.Debit > s.Credit ? SensCreanta : SensDatorie,
+                   Rest = rest
+               };
+    }
+}
+
+public sealed class PartidaCuRestRand : IRandCuDocument {
+    public Guid UnitateId { get; set; }
+    public Guid ContId { get; set; }
+    public string ContSimbol { get; set; }
+    public Guid ContrapartidaId { get; set; }
+    public string ContrapartidaDenumire { get; set; }
+    public Guid? DocumentId { get; set; }
+    public string DocumentTip { get; set; }
+    public string Numar { get; set; }
+    public DateOnly Data { get; set; }
+    public string Sens { get; set; }
+    public decimal Rest { get; set; }
 }

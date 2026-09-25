@@ -44,14 +44,15 @@ public sealed class DeclarantNotaTransfer : IDeclarant {
         var mutari = new List<N.Mutare>(operand.Linii.Count);
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza>();
-        var solduri = new Dictionary<Guid, N.Sold>();
+        var solduri = new Dictionary<CheieLotFapt, N.Sold>();
         foreach (var linie in operand.Linii) {
             var lot = linie.Lot!;
             var cont = lot.ContImplicitId!.Value;
+            var cheie = new CheieLotFapt(lot.Id, cont, lot.ProdusId, doc.Predator.Id);
             var unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, cont, null, lot.ProdusId, lot.Data);
-            if (!solduri.TryGetValue(lot.Id, out var sold)) {
-                sold = operand.SolduriLoturi.GetValueOrDefault(lot.Id) ?? N.Sold.Zero;
-                solduri[lot.Id] = sold;
+            if (!solduri.TryGetValue(cheie, out var sold)) {
+                sold = operand.SolduriLoturi.GetValueOrDefault(cheie) ?? N.Sold.Zero;
+                solduri[cheie] = sold;
                 ipoteze.Add(new N.SoldUnitateCitit(unitate, sold));
             }
             decimal valoare;
@@ -63,7 +64,7 @@ public sealed class DeclarantNotaTransfer : IDeclarant {
                 refuzuri.Add(new N.Refuz(e.Refuz.Cod, e.Refuz.Mesaj, linie.Id));
                 continue;
             }
-            solduri[lot.Id] = new N.Sold(
+            solduri[cheie] = new N.Sold(
                 sold.Debit, sold.Credit + valoare, sold.Cantitate - linie.Cantitate, sold.ValoareValuta);
 
             decizii.Add(new N.ContRezolvat(linie.Id, cont, SursaCont.TipMaterial.ToString()));

@@ -1,7 +1,8 @@
 # TR-D8 — Inventarul de intrare și ordinea portării
 
-2026-09-24. În lucru: cititorul fișei IMO este portat, intrarea contabilă
-comună este probată; rapoartele generale nu sunt comutate.
+2026-09-25. În lucru: IMO și rapoartele contabile generale sunt portate,
+inclusiv snapshot-ul contabil. Cititorul operațional și raportul de stoc
+sunt portate și verificate; snapshot-urile de stoc/partide și fiscalul rămân deschise.
 Owner-ul a autorizat continuarea după NIR și Deschiderea generică.
 095 fixează acum ordinea DEC → contract IMO → PIF/AMO/CAS complete → TR-D8;
 DEC și PIF/AMO/CAS au declaranți; partidele folosesc UrmarestePartide (096),
@@ -83,3 +84,54 @@ orice snapshot se reconstruiește exact din postări (091-i).
 
 Inventarul nu declară TR-D8 închis și nu schimbă regulile aprobate.
 Starea fiecărei portări este consemnată în contract și catalog.
+
+## Prima felie de execuție — D8-B3 (2026-09-24)
+
+Diagnosticul de proveniență este separat de cititor. Seed-ul raportează
+numărul problemelor ca avertisment, fără refuz; blocarea activării aparține
+feliei care comută primul raport. SC-CIT-07…10 acoperă migrarea, ambiguitatea,
+avertismentul și costul în comenzi SQL. Niciun consumator general nu este
+declarat portat aici. Corectură de delimitare: 2026-09-25.
+
+Prima portare contabilă trebuie să cuprindă împreună
+`ContabilProiectii.Atomi/Balanta/SoldParteneri` și sursa snapshot-urilor
+contabile din `SolduriService`, inclusiv reconstrucția. `AtomiCumulati`
+concatenează snapshot-ul cu mișcările ulterioare: comutarea numai a
+atomilor ar amesteca sursele. Activarea trebuie să diagnosticheze istoricul
+incomplet și să trateze explicit snapshot-urile existente înaintea citirii.
+
+Fișa și jurnalul se proiectează apoi pe postări/tranzacții, conform
+`nucleu-coordonate-rapoarte.md`: contrapartida nu este obligatoriu unică
+într-o tranzacție cu mai multe postări. DTO-urile actuale de perechi,
+sortarea/paginarea și securitatea SQL trebuie portate împreună cu API/client.
+Acestea sunt dependențe de implementare ale contractului aprobat.
+
+## Stare efectivă după felia contabilă (2026-09-25)
+
+Tabelul de mai sus păstrează inventarul surselor de la intrare. În cod,
+`ContabilProiectii` și snapshot-ul contabil au fost comutate împreună.
+`Cub.Citiri.Activare` este gardul de pornire a hosturilor; verificarea nu
+este în bucla fiecărui raport. `SaftProiectii` folosește deja aceiași atomi
+pentru Customers/Suppliers și aceeași balanță pentru GLA; celelalte secțiuni
+rămân nominal pe lista de portat.
+
+`Fapte.SolduriLoturi`, evaluarea ieșirilor și gardul zilnic folosesc cubul.
+Citirea R necesară absorbției ASM este separată și rămâne din registre.
+`DescarcareService`/pinurile FCL și `StocProiectii` sunt portate și verificate.
+`SolduriService.MiscariCumulate` este încă vechea suprafață a registrelor;
+nu se folosește pentru evaluarea cubului. Portarea snapshot-ului de stoc și
+a celorlalți consumatori enumerați rămâne obligatorie înaintea închiderii.
+
+### Partide — felia curentă
+
+Raportul general `PartideCuRest`, API/client `/partide`, disponibilul din
+`ImperechereService`, candidații NTC/trezorerie și snapshot-ul din
+`SolduriService` folosesc cubul. Reconstrucția păstrează cheia completă și
+raportează diferențele înaintea rescrierii. `Asignari` rămâne numai suprafață
+de diagnostic a legăturilor vechi în review-ul perioadei, nu sursă de rest.
+Decizia 101 cere efect verificabil pentru comenzile noi; proveniența
+transferului este păstrată pe legătură pentru desfacere exactă.
+`Fapte.Sursa` și nominalizarea automată citesc tot cubul, cu sold efectiv
+separat de disponibilul minim pe datele ulterioare. Validare: integrale
+3.107 bugetar / 4.103 privat OK, HTTP și browser, metadata/OpenAPI fără drift;
+dovezile sunt în [review-ul propriu](tr-d8-review-codex.md). 101-r1 este închisă.

@@ -54,7 +54,7 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
     // (spargere pe loturi din liniile de stoc). Serviciu propriu, NU clona
     // PoliticaConex; motorul îl marchează la fel ca orice copil autogenerat.
     public override Document GenereazaSecundar(DevExpress.ExpressApp.IObjectSpace os) {
-        var dsc = Motor.DescarcareService.Genereaza(os, this, Data);
+        var dsc = Motor.DescarcareService.Genereaza(os, this, Data, DataInregistrare);
         // F27-D4: descărcarea intră în evidență odată cu factura care o naște.
         if (dsc != null)
             dsc.DataInregistrare = DataInregistrare;
@@ -126,6 +126,11 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
             var reguliDsc = Motor.Fapte.ReguliStoc(os, tipDsc.ID)
                 .Where(r => r.Latura == LaturaDocument.Predator && r.Semn < 0)
                 .ToList();
+            var conturi = reguliDsc.Count > 0 && GestiuneDescarcareId != null
+                ? Motor.DescarcareService.ConturiStoc(os, this) : new Dictionary<Guid, Guid>();
+            var disponibile = Cub.Citiri.Loturi.Solduri(os, DataInregistrare)
+                .Where(s => idsLotPin.Contains(s.LotId) && s.GestiuneId == GestiuneDescarcareId
+                    && s.Cantitate > 0m).ToList();
 
             foreach (var d in pinuri) {
                 var lotId = d.LotId.Value;
@@ -135,8 +140,8 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
                     continue;
                 var potrivit = Motor.Potrivire.Stoc(reguliDsc, Motor.Fapte.Linie(d, claseTip))
                     .FirstOrDefault(p => p.Latura == LaturaDocument.Predator);
-                if (potrivit is { Reguli.Count: > 0 } && Motor.StocService.Sold(os,
-                        new Motor.CheieStoc(lotId, GestiuneDescarcareId.Value, potrivit.Reguli[0].TipStoc), Data) <= 0)
+                if (potrivit is { Reguli.Count: > 0 } && !disponibile.Any(s =>
+                        s.LotId == lotId && s.ProdusId == d.ProdusId && s.ContId == conturi[d.ID]))
                     erori.Add($"Lotul ales nu are sold în gestiunea de descărcare — întâi transfer (BTR).");
             }
         }

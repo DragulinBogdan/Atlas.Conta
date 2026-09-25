@@ -30,7 +30,7 @@ Fără TVA, partidă sau valută. Proveniență: regulă, dacă nu se spune altf
 | SC-LDI-06 | Anulare listei mixte din 03 în lună deschisă: zero postări proprii, sursa 5/100, plusul 0/0; reoperare identică. | acceptat |
 | SC-LDI-07 | Plus 2/30; corecție după închiderea lunii: inversare 2/30, document legat cu lot nou; plus nou 3/60, lot original 0/0, nou 3/60. | acceptat |
 | SC-LDI-08 | Lot 3/10; minus 1 și 2 pe două linii în același document: cost 3,33 și 6,67; sold 0/0. | acceptat |
-| SC-LDI-09 | Lot 3/10; trei documente Minus 1: cub 3,33 + 3,34 + 3,34, sursa 0/−0,01 în dual. | excepție exactă T-r13, țintă 0/0 |
+| SC-LDI-09 | Lot 3/10; trei documente Minus 1: cub 3,33 + 3,34 + 3,33, sursa 0/0. | TR-D8: sold propriu al cubului |
 | SC-LDI-10 | Plus 1/25 urmat de BCS 1/25: storno plus refuzat; inversarea BCS permite storno plus, sold 0/0. | refuz dependență, apoi acceptat |
 | SC-LDI-11 | Minus 1/10 urmat de Plus pe același produs: lot nou distinct, solduri separate, fără reutilizarea lotului vechi. | acceptat |
 | SC-LDI-12 | Data 05.01, înregistrare 05.02 după închiderea lui ianuarie: plusul apare doar în februarie; înregistrare în ianuarie refuzată atomic. | acceptat/refuz perioadă |
@@ -91,3 +91,8 @@ Regresie integrală: `pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verific
 **2.122 bugetar / 3.221 privat OK, zero FAIL**, exit 0 comun,
 `run-verificari/20260923-235337-338/rezultat.json`.
 Această rulare validează domeniul implementat; nu acoperă Folosinta.
+
+Actualizare TR-D8 în lucru (2026-09-25): SC-LDI-22 verifică transferul
+lotului istoric după schimbarea TipStoc. Coordonatele cubului păstrate
+permit BTR; registrul original rămâne cu TipStoc istoric. Anularea BTR și
+storno LDI restabilesc soldurile fără reclasificarea postărilor originale.

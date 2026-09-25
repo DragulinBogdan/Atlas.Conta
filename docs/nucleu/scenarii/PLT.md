@@ -35,3 +35,12 @@ Validare finală: 54 verificări independente bugetar / 70 privat (grupul comun 
 Include verificările comune de nemodificare la storno/corecție.
 Gate integral pe ambele profiluri: `run-verificari/20260923-010027-252/rezultat.json`,
 1.699 / 2.089 verificări, zero eșecuri.
+
+## Extinderea partidelor bugetare — 2026-09-25
+
+Decizia 100 activează urmărirea pe 401.01.00, 404.01.00 și 411.01.01,
+fără rol comercial SAF-T. Așteptările de partidă (rest, transfer, storno,
+corecție) ale ciclurilor comune se aplică acum ambelor profiluri.
+Mențiunile anterioare „numai privat” descriu acoperirea de la data probării
+inițiale; fiscalul, DSC și contul 419 rămân specifice profilului privat.
+Probele TR-D8 SC-CIT-41…45 verifică separat politica și istoricul.

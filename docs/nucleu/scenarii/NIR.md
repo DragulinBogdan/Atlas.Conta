@@ -190,3 +190,12 @@ Metadata/OpenAPI/tipuri TS: regenerare repetată cu hash identic
 valid/PeDrum/delta zero (`nir-review-http.log`). În browser, schimbarea
 Imputabila → PeDrum → Imputabila lasă imputatul gol înainte de salvare.
 Fixture-ul a fost curățat prin API, hosturile temporare oprite.
+
+## Extinderea partidelor bugetare — 2026-09-25
+
+Decizia 100 activează urmărirea pe 401.01.00, 404.01.00 și 411.01.01,
+fără rol comercial SAF-T. Așteptările de partidă (rest, transfer, storno,
+corecție) ale ciclurilor comune se aplică acum ambelor profiluri.
+Mențiunile anterioare „numai privat” descriu acoperirea de la data probării
+inițiale; fiscalul, DSC și contul 419 rămân specifice profilului privat.
+Probele TR-D8 SC-CIT-41…45 verifică separat politica și istoricul.

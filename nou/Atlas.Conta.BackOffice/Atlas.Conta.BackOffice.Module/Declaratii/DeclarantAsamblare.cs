@@ -6,6 +6,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 public sealed class DeclarantAsamblare : IDeclarant {
     public static readonly DeclarantAsamblare Instanta = new();
     DeclarantAsamblare() { }
+    public bool CereSoldRegistruPentruEvaluare => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -44,11 +45,12 @@ public sealed class DeclarantAsamblare : IDeclarant {
 
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza> { operand.PerioadaDeschisa, operand.VersiunePolitica };
-        var solduriCub = new Dictionary<Guid, N.Sold>();
+        var solduriCub = new Dictionary<CheieLotFapt, N.Sold>();
         var solduriRegistru = new Dictionary<Guid, N.Sold>();
         var valori = new List<ValoriLinie>();
         foreach (var l in linii) {
             var lot = l.Lot!;
+            var cheie = new CheieLotFapt(lot.Id, lot.ContImplicitId!.Value, lot.ProdusId, doc.Predator.Id);
             var unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, lot.ContImplicitId!.Value,
                 null, lot.ProdusId, lot.Data);
             var q = Math.Abs(l.Cantitate);
@@ -56,16 +58,16 @@ public sealed class DeclarantAsamblare : IDeclarant {
             decimal r = 0m, c = 0m, p = 0m;
             if (produs) p = rotunjire.Bani(q * l.Transformare.PretProdus!.Value);
             else {
-                if (!solduriCub.TryGetValue(lot.Id, out var sold)) {
-                    sold = operand.SolduriLoturi.GetValueOrDefault(lot.Id) ?? N.Sold.Zero;
-                    solduriRegistru[lot.Id] = sold;
+                if (!solduriCub.TryGetValue(cheie, out var sold)) {
+                    sold = operand.SolduriLoturi.GetValueOrDefault(cheie) ?? N.Sold.Zero;
+                    solduriRegistru[lot.Id] = operand.SolduriLoturiRegistru.GetValueOrDefault(lot.Id) ?? N.Sold.Zero;
                     ipoteze.Add(new N.SoldUnitateCitit(unitate, sold));
                 }
                 try { c = N.Evaluare.Iesire(sold, q, rotunjire); }
                 catch (N.RefuzException e) { refuzuri.Add(e.Refuz with { Linie = l.Id }); continue; }
                 var registru = solduriRegistru[lot.Id];
                 r = q == registru.Cantitate ? registru.Net : rotunjire.Bani(q * lot.PretUnitar);
-                solduriCub[lot.Id] = sold with { Credit = sold.Credit + c, Cantitate = sold.Cantitate - q };
+                solduriCub[cheie] = sold with { Credit = sold.Credit + c, Cantitate = sold.Cantitate - q };
                 solduriRegistru[lot.Id] = registru with { Credit = registru.Credit + r, Cantitate = registru.Cantitate - q };
                 decizii.Add(new N.ValoareIesire(l.Id, unitate, q, c));
             }

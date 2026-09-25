@@ -98,6 +98,13 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
             SoldLot("SC-DES-01/07", l.Lot, Magazie, Ianuarie, l.Cantitate, l.Valoare);
             SoldLot("SC-DES-08", l.Lot, Magazie, Ianuarie.AddDays(-1), 0, 0);
         }
+        var consumInitial = Consum(loturi[0].Lot, 2);
+        Opereaza(consumInitial);
+        SoldLot("SC-CIT-36", loturi[0].Lot, Magazie, new(An, 1, 31), 2, 20);
+        Verifica("SC-CIT-36", "consumul folosește deschiderea fără recepție în registru", CuSpatiu(os =>
+            !os.GetObjectsQuery<RegistruStoc>().Any(r => r.LotId == loturi[0].Lot && r.RepartitorId == Magazie && r.Cantitate > 0)));
+        Storneaza(consumInitial, new(An, 1, 20));
+        SoldLot("SC-CIT-36", loturi[0].Lot, Magazie, new(An, 1, 31), 4, 40);
         Rest("SC-DES-02", ref1, Furnizor, 60); Rest("SC-DES-02", ref2, Furnizor, 40); Rest("SC-DES-02", ref1, Client, 50);
         ReviewStingeri(); ReviewConcurenta();
         var plata = Trezorerie(false, 20);

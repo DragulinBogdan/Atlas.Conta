@@ -133,9 +133,9 @@ export function PanouStingeri(props: {
   // tocmai rândurile pe care filtrul le scoate.
   const sursaCandidati = useMemo(
     () => (!grupat && contrapartidaId && citit.isSuccess
-      ? stingeri.storeCandidati(contrapartidaId, sensCandidati)
+      ? stingeri.storeCandidati(contrapartidaId, sensCandidati, null, documentId, rol === 'stinge')
       : null),
-    [grupat, contrapartidaId, sensCandidati, citit.isSuccess, versiune]);
+    [grupat, contrapartidaId, sensCandidati, citit.isSuccess, versiune, documentId, rol]);
 
   async function reincarca() {
     await cache.invalidateQueries({ queryKey: ['stingeri'] });
@@ -155,7 +155,7 @@ export function PanouStingeri(props: {
     // un plafon PER JUMĂTATE (`Disponibil`), iar `ValideazaCreare` exact pe el
     // îl verifică. Σ liniilor notei nu e un „rest" (F19-D10).
     const propriu = grup ? grup.disponibil : (date?.Ramas ?? 0);
-    const celalalt = rand.Rest ?? 0;
+    const celalalt = rand.Disponibil ?? 0;
     setSuma(Number(Math.min(Math.abs(propriu), Math.abs(celalalt)).toFixed(2)));
   }
 
@@ -270,6 +270,7 @@ export function PanouStingeri(props: {
 
   return (
     <section className="document__stingeri">
+      {date?.Avertismente?.map((mesaj, i) => <p role="status" key={i}>{mesaj}</p>)}
       <div className="linii__bara">
         <h3>Stingeri</h3>
         <div className="stingeri__numere">
@@ -435,6 +436,7 @@ export function PanouStingeri(props: {
                         <Column dataField="Total" caption="Total" dataType="number" format="#,##0.00" alignment="right" />
                         <Column dataField="Asignat" caption="Asignat" dataType="number" format="#,##0.00" alignment="right" />
                         <Column dataField="Rest" caption="Rest" dataType="number" format="#,##0.00" alignment="right" />
+                        <Column dataField="Disponibil" caption="Disponibil pentru stingere" dataType="number" format="#,##0.00" alignment="right" />
                         <Column
                           caption=""
                           width={90}
@@ -499,6 +501,7 @@ export function PanouStingeri(props: {
                   <Column dataField="Total" caption="Total" dataType="number" format="#,##0.00" alignment="right" />
                   <Column dataField="Asignat" caption="Asignat" dataType="number" format="#,##0.00" alignment="right" />
                   <Column dataField="Rest" caption="Rest" dataType="number" format="#,##0.00" alignment="right" />
+                        <Column dataField="Disponibil" caption="Disponibil pentru stingere" dataType="number" format="#,##0.00" alignment="right" />
                   <Column
                     caption=""
                     width={90}

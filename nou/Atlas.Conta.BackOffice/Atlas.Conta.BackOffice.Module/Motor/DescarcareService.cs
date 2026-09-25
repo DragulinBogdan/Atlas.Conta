@@ -12,6 +12,27 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // (design §5): refuzul „lot fără sold în gestiune" trăiește în
 // FacturaIesire.ValideazaOperare, gardianul de sold rămâne autoritatea la operare.
 public static class DescarcareService {
+    // Contul cerut de DSC se rezolvă din politica lui, nu din TipStoc și nu
+    // prin reclasificarea loturilor istorice. Aceeași rezolvare pentru pin/FIFO.
+    internal static Dictionary<Guid, Guid> ConturiStoc(IObjectSpace os, FacturaIesire fcl) {
+        var tip = MotorOperare.GasesteTipDocument(os, nameof(DescarcareGestiune));
+        var reguli = Fapte.ReguliContare(os, tip.ID);
+        var clase = Fapte.ClaseTip(os, fcl.Detalii.Select(d => d.TipMaterialId));
+        var laturi = Fapte.Laturi(fcl.GestiuneDescarcare, fcl.Primitor);
+        var rezultat = new Dictionary<Guid, Guid>();
+        foreach (var linie in fcl.Detalii) {
+            var fapt = Fapte.Linie(linie, clase);
+            if (fapt.Natura != NaturaClasa.Stoc) continue;
+            if (Potrivire.Contare(reguli, fapt).Castigator is not { } regula)
+                throw new OperareException("CONT_STOC_LIPSA: linia de stoc nu are regulă de contare DSC.");
+            var cont = Potrivire.Cont(regula.SursaContCredit, regula.ContCreditId, fapt.ContImplicitTipId, laturi);
+            if (cont.ContId is not Guid id)
+                throw new OperareException("CONT_STOC_LIPSA: contul de ieșire DSC nu este rezolvat.");
+            rezultat[linie.ID] = id;
+        }
+        return rezultat;
+    }
+
     // Restul nedescărcat per linie FCL de STOC (cusătura §2.2: interogabilă per
     // linie). Acoperit = Σ cantități pe liniile DSC cu LinieSursaId == linia, din
     // documente Draft SAU Operat (Stornat nu acoperă; draftul contează — altfel a
@@ -53,7 +74,8 @@ public static class DescarcareService {
     // operarea FCL și din acțiunea manuală „Generează descărcarea" (backorder).
     // Întoarce un draft DSC (marcat Autogenerat + DocumentSursa) sau null; NU
     // comite (commit-ul aparține apelantului — în hook e tranzacția operării).
-    public static DescarcareGestiune Genereaza(IObjectSpace os, FacturaIesire fcl, DateOnly data) {
+    public static DescarcareGestiune Genereaza(IObjectSpace os, FacturaIesire fcl, DateOnly data,
+            DateOnly? dataInregistrare = null) {
         if (fcl.GestiuneDescarcareId == null)
             return null;
         var gestiuneId = fcl.GestiuneDescarcareId.Value;
@@ -71,43 +93,40 @@ public static class DescarcareService {
         if (reguliDsc.Count == 0)
             return null;
 
-        // Liniile sursă materializate (TipMaterialId + Dimensiuni de clonat) și
-        // clasa/natura per Tip (pentru TipStoc — proiecție, fără navigații).
+        // Soldurile sunt citite o singură dată pentru toate liniile, pe cheia
+        // completă. Alocările locale nu devin rezervări pentru alte documente.
         var liniiSursa = fcl.Detalii.OfType<FacturaIesireDetaliu>().ToDictionary(d => d.ID);
         var claseTip = Fapte.ClaseTip(os, resturi.Select(x => liniiSursa[x.LinieId].TipMaterialId));
+        var conturi = ConturiStoc(os, fcl);
+        var produse = resturi.Select(r => r.ProdusId).OfType<Guid>().Distinct().ToArray();
+        var solduri = Cub.Citiri.Loturi.Solduri(os, dataInregistrare ?? data)
+            .Where(s => s.GestiuneId == gestiuneId && produse.Contains(s.ProdusId) && s.Cantitate > 0m)
+            .OrderBy(s => s.Deschisa).ThenBy(s => s.LotId).ToList();
 
         // Alocarea: mapa `dejaAlocat` (per lot, necomisă) se scade din solduri pe
         // parcurs. Contenția intra-draft (pin 2): PIN-urile întâi (identificarea
         // specifică bate FIFO), apoi liniile doar-produs.
-        var dejaAlocat = new Dictionary<Guid, decimal>();
+        var dejaAlocat = new Dictionary<(Guid Lot, Guid Cont), decimal>();
         var alocari = new List<(Guid LinieId, Guid TipMaterialId, Guid LotId, decimal Cantitate)>();
-        void Adauga(Guid linieId, Guid tipMaterialId, Guid lotId, decimal cantitate) {
+        void Adauga(Guid linieId, Guid tipMaterialId, Guid lotId, Guid contId, decimal cantitate) {
             alocari.Add((linieId, tipMaterialId, lotId, cantitate));
-            dejaAlocat[lotId] = dejaAlocat.GetValueOrDefault(lotId) + cantitate;
+            dejaAlocat[(lotId, contId)] = dejaAlocat.GetValueOrDefault((lotId, contId)) + cantitate;
         }
 
         foreach (var r in resturi.OrderByDescending(x => x.LotId != null)) {
             var linie = liniiSursa[r.LinieId];
-            var potrivit = Potrivire.Stoc(reguliDsc, Fapte.Linie(linie, claseTip))
-                .FirstOrDefault(p => p.Latura == LaturaDocument.Predator);
-            if (potrivit is not { Reguli.Count: > 0 })
-                continue;
-            var tipStoc = potrivit.Reguli[0].TipStoc;
-            if (r.LotId != null) {
-                // Pin: alocă DOAR din acel lot, fără fallback FIFO pe restul lui
-                // (pinul e intenția magazinului — deblocarea = scoaterea pinului).
-                var lotId = r.LotId.Value;
-                var disponibil = StocService.Sold(os, new CheieStoc(lotId, gestiuneId, tipStoc), data)
-                    - dejaAlocat.GetValueOrDefault(lotId);
-                var alocat = Math.Min(r.RestNeacoperit, disponibil);
-                if (alocat > 0)
-                    Adauga(r.LinieId, linie.TipMaterialId, lotId, alocat);
-            }
-            else {
-                var (parti, _) = StocService.AlocaFifoTolerant(
-                    os, r.ProdusId.Value, gestiuneId, tipStoc, data, r.RestNeacoperit, dejaAlocat);
-                foreach (var p in parti)
-                    Adauga(r.LinieId, linie.TipMaterialId, p.LotId, p.Cantitate);
+            if (!Potrivire.Stoc(reguliDsc, Fapte.Linie(linie, claseTip))
+                    .Any(p => p.Latura == LaturaDocument.Predator && p.Reguli.Count > 0)) continue;
+            var cont = conturi[linie.ID];
+            var ramas = r.RestNeacoperit;
+            foreach (var sold in solduri.Where(s => s.ContId == cont && s.ProdusId == r.ProdusId
+                    && (r.LotId == null || s.LotId == r.LotId))) {
+                var disponibil = sold.Cantitate - dejaAlocat.GetValueOrDefault((sold.LotId, cont));
+                var alocat = Math.Min(ramas, disponibil);
+                if (alocat <= 0) continue;
+                Adauga(r.LinieId, linie.TipMaterialId, sold.LotId, cont, alocat);
+                ramas -= alocat;
+                if (ramas == 0) break;
             }
         }
 
@@ -124,6 +143,7 @@ public static class DescarcareService {
 
         var dsc = os.CreateObject<DescarcareGestiune>();
         dsc.Data = data;
+        dsc.DataInregistrare = dataInregistrare ?? data;
         dsc.PredatorId = gestiuneId;          // gestiunea de descărcare
         dsc.PrimitorId = fcl.PrimitorId;      // clientul de pe FCL
         dsc.DocumentSursa = fcl;

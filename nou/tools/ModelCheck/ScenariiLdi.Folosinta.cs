@@ -55,9 +55,9 @@ sealed partial class ScenariiLdi {
         }
         var insuf = CulegeLa(Destinatie, Ianuarie, new Linie(DirectieDiferenta.Minus, 3, Lot: lot, Tip: TipFolosinta));
         RefuzDeclaratie("SC-LDI-18", insuf.Id, "STOC_INSUFICIENT");
-        Refuza("SC-LDI-18", () => Opereaza(insuf.Id), "Sold negativ"); FaraEfecte("SC-LDI-18", insuf.Id);
+        Refuza("SC-LDI-18", () => Opereaza(insuf.Id), "STOC_INSUFICIENT"); FaraEfecte("SC-LDI-18", insuf.Id);
         var stamp = Amprenta(btr.Id);
-        Refuza("SC-LDI-18", () => Storneaza(btr.Id, new(An, 1, 20)), "Sold negativ");
+        Refuza("SC-LDI-18", () => Storneaza(btr.Id, new(An, 1, 20)), "STOC_INSUFICIENT");
         Verifica("SC-LDI-18", "transferul cu ieșiri rămâne intact", stamp == Amprenta(btr.Id));
         var data = new DateOnly(An, 1, 20);
         Storneaza(bcs, data); Storneaza(minus.Id, data); Storneaza(btr.Id, new(An, 1, 21));
@@ -110,8 +110,11 @@ sealed partial class ScenariiLdi {
             .Select(r => new { r.ID, r.TipStoc, r.LotId, r.RepartitorId, r.Cantitate, r.Valoare }).Single());
         Verifica("SC-LDI-22", "fixture real: cheia veche Magazie", istoric.TipStoc == TipStoc.Magazie);
         var btr = Iesire(true, (original.Linii[0], 1));
-        RefuzDeclaratie("SC-LDI-22", btr.Id, "STOC_INSUFICIENT");
-        Refuza("SC-LDI-22", () => Opereaza(btr.Id), "Sold negativ"); FaraEfecte("SC-LDI-22", btr.Id);
+        Opereaza(btr.Id);
+        Sold("SC-LDI-22/TR-D8", original.Linii[0], 0, 0);
+        Sold("SC-LDI-22/TR-D8", original.Linii[0], 1, 25, gest: Destinatie);
+        Anuleaza(btr.Id); FaraEfecte("SC-LDI-22/TR-D8", btr.Id);
+        Sold("SC-LDI-22/TR-D8", original.Linii[0], 1, 25);
         Storneaza(original.Id, new(An, 1, 20));
         Postari("SC-LDI-22", original.Id, N.FelTranzactie.Storno, new(An, 1, 20),
             Inverse(Randuri(original, 0, 1, 25, TipFolosinta, CostFolosinta)));

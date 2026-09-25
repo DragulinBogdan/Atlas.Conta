@@ -340,16 +340,8 @@ public static class NotaContabilaApply {
     // două nu se disting — F22-D1, apelantul le traduce în același 404)
     // sau nu e o notă contabilă.
     public static NtcCandidatiDto Candidati(IObjectSpace os, Guid id) {
-        // Plafon de pagină per contrapartidă, ca la orice listă (`Incarca`): pe
-        // baza de import un partener poate avea sute de documente deschise.
         const int Plafon = 100;
 
-        // F21-D5, a patra ușă a feliei: `RandDupaCheie.Ca<NotaContabila>` întoarce și
-        // închiderile de TVA, deci panoul de compensare al notei răspundea 200
-        // pe un id de ITV. Practic era inert (`CapacitateStingere` pe ITV iese
-        // dicționar GOL — liniile n-au repartitori), dar un 200 pe o resursă care
-        // nu e a feliei e o afirmație falsă: aceeași frunză, același null ca
-        // `Citeste` ⇒ 404 pe `GET api/ntc/{id}/candidati`.
         var doc = RandDupaCheie.Ca<NotaContabila>(os, id);
         if (doc == null || doc is InchidereTva)
             return null;
@@ -357,18 +349,9 @@ public static class NotaContabilaApply {
         var rezultat = new NtcCandidatiDto {
             DocumentId = id,
             Stare = doc.Stare.ToString(),
-            // Oglinda primului invariant al stingerii: ambele documente OPERATE.
             PoateStinge = doc.Stare == StareDocument.Operat
         };
 
-        // Afordanța nu contrazice datele pe care le însoțește (review M3): pe un
-        // draft nota NU stinge nimic (primul invariant al stingerii: ambele
-        // documente operate), deci panoul nu întoarce plafoane și candidați
-        // lângă un `PoateStinge: false`. Un panou complet cu buton „Stinge" pe
-        // fiecare rând, urmat de refuzul serviciului la prima apăsare, e exact
-        // „panoul promite mai mult decât acceptă serviciul" (riscul 2), doar pe
-        // axa STĂRII în loc de a plafonului. `Stare`/`PoateStinge` rămân — ele
-        // sunt răspunsul la „de ce e gol".
         if (!rezultat.PoateStinge)
             return rezultat;
 
@@ -387,15 +370,12 @@ public static class NotaContabilaApply {
                      .OrderBy(k => etichete.TryGetValue(k, out var e) ? e.Denumire : null)) {
             var plafon = capacitati[cheie];
             etichete.TryGetValue(cheie, out var eticheta);
-            // Un rând per JUMĂTATE nenulă. `Datorie` întâi, ca în bilanț.
             foreach (var sens in new[] { SensStingere.Datorie, SensStingere.Creanta }) {
-                var capacitate = plafon[sens];
+                var capacitate = Cub.Citiri.Partide.Capacitate(os, id, cheie, sens);
                 if (capacitate == 0m)
                     continue;
                 var asignat = ImperechereService.AsignatFataDe(os, id, cheie, sens);
-                // Ordinea de stingere: cele mai VECHI datorii/creanțe întâi (ordinea
-                // în care le-ar lua un contabil), nu ordinea de inserare.
-                var randuri = ImperecheriProiectii.DocumenteCuRest(os, cheie, sens)
+                var randuri = ImperecheriProiectii.DocumenteCuRest(os, cheie, sens, documentCurentId: id)
                     .OrderBy(r => r.Data).ThenBy(r => r.Numar)
                     .Take(Plafon + 1)
                     .ToList();

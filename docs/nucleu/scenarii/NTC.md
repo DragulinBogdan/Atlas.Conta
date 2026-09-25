@@ -104,3 +104,12 @@ exit 0; build cu 0 avertismente. Manifest:
 `run-verificari/20260923-115007-397/rezultat.json`. Curățenie verificată
 read-only: zero repartitori ai scenelor NTC/ITV/API-NTC, zero postări și
 perioade din 2006–2007 pe ambele baze de test.
+
+## Extinderea partidelor bugetare — 2026-09-25
+
+Decizia 100 activează urmărirea pe 401.01.00, 404.01.00 și 411.01.01,
+fără rol comercial SAF-T. Așteptările de partidă (rest, transfer, storno,
+corecție) ale ciclurilor comune se aplică acum ambelor profiluri.
+Mențiunile anterioare „numai privat” descriu acoperirea de la data probării
+inițiale; fiscalul, DSC și contul 419 rămân specifice profilului privat.
+Probele TR-D8 SC-CIT-41…45 verifică separat politica și istoricul.

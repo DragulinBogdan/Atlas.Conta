@@ -51,6 +51,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
 
     protected abstract void Executa();
     protected virtual void CurataCubSuplimentar(IObjectSpace os, Purja purja) { }
+    protected virtual void CurataNomenclatoare(IObjectSpace os, Purja purja) { }
 
     protected FacturaScena Nota(DateOnly data, params LinieNtcScena[] linii) {
         using var os = Deschide();
@@ -75,8 +76,8 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected Guid Cont(string simbol) => conturi[simbol];
     protected Guid Tip(IObjectSpace os, string codTip) => os.GetObjectsQuery<TipMaterial>().Single(t => t.Cod == codTip).ID;
     protected Guid Tva(string codTva) => CuSpatiu(os => os.GetObjectsQuery<TipTva>().Single(t => t.Cod == codTva).ID);
-    protected Guid? Partida(Guid doc, string simbol, Guid? partener = null) => Privat
-        ? N.Unitate.DeschidePartida(Cont(simbol), partener ?? Furnizor, doc, Ianuarie).Id : null;
+    protected Guid? Partida(Guid doc, string simbol, Guid? partener = null) =>
+        N.Unitate.DeschidePartida(Cont(simbol), partener ?? Furnizor, doc, Ianuarie).Id;
     protected OperareRezultat Opereaza(Guid doc) => CuSpatiu(os => OperareApi.Opereaza(os, doc));
     protected void Storneaza(Guid doc, DateOnly data) {
         var inainte = Amprenta(doc);
@@ -104,8 +105,10 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
 
     void Pregateste() {
         using var os = Deschide();
+        var inceput = new DateOnly(An, 1, 1);
+        var sfarsit = new DateOnly(UltimulAn, 12, 31);
         if (os.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An >= An && p.An <= UltimulAn)
-            || os.GetObjectsQuery<Document>().Any(d => d.DataInregistrare.Year >= An && d.DataInregistrare.Year <= UltimulAn))
+            || os.GetObjectsQuery<Document>().Any(d => d.DataInregistrare >= inceput && d.DataInregistrare <= sfarsit))
             throw new InvalidOperationException($"{Marcaj} cere anul {An} liber.");
         conturi = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
         foreach (var luna in new[] { 1, 2 }) {
@@ -208,11 +211,6 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
 
     protected void TransferPartida(string id, Guid stingator, Guid stins, string cont,
             Guid partener, N.Latura latura, decimal suma, DateOnly data) {
-        if (!Privat) {
-            Verifica(id, "fără transfer de partidă pe conturi fără RolTert", CuSpatiu(os =>
-                !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == stingator && p.Tranzactie.Fel == N.FelTranzactie.Transfer)));
-            return;
-        }
         Postari(id, stingator, N.FelTranzactie.Transfer, data,
             new(Cont(cont), latura, -suma, Unitate: Partida(stingator, cont, partener), Partener: partener),
             new(Cont(cont), latura, suma, Unitate: Partida(stins, cont, partener), Partener: partener));
@@ -334,6 +332,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docs.Contains(r.DocumentId.Value)));
         pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docs.Contains(d.DocumentId)));
         pj.Adauga(os.GetObjectsQuery<Document>().Where(d => docs.Contains(d.ID)));
+        CurataNomenclatoare(os, pj);
         pj.Adauga(os.GetObjectsQuery<Imobilizare>().Where(f => f.NumarInventar.StartsWith(Marcaj)));
         pj.Adauga(os.GetObjectsQuery<Lot>().Where(l => loturi.Contains(l.ID)));
         pj.Adauga(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(Marcaj)));

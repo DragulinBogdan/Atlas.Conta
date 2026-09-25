@@ -24,6 +24,8 @@ public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide);
 
 public sealed record SoldPartidaFapt(N.Unitate Unitate, N.Sold Sold);
 
+public readonly record struct CheieLotFapt(Guid Lot, Guid Cont, Guid Produs, Guid Gestiune);
+
 public sealed record LotFapt(
     Guid Id,
     Guid ProdusId,
@@ -102,7 +104,7 @@ public sealed record Operand(
     PoliticaTvaFapt? PoliticaTva,
     IReadOnlyDictionary<Guid, TipTvaFapt> TipuriTva,
     IReadOnlyDictionary<Guid, ContFapt> Conturi,
-    IReadOnlyDictionary<Guid, N.Sold> SolduriLoturi,
+    IReadOnlyDictionary<CheieLotFapt, N.Sold> SolduriLoturi,
     decimal? RestPartidaSursa,
     IReadOnlyList<(Guid Cont, decimal Sold)> PartideSursa,
     DateOnly? DataInregistrareSursa,
@@ -112,9 +114,13 @@ public sealed record Operand(
     N.VersiunePolitica VersiunePolitica) {
 
     public ReceptieSursaFapt? ReceptieSursa { get; init; }
+    // ASM-B6: R rămâne o măsură a registrului în regimul dual; C vine din cub.
+    public IReadOnlyDictionary<Guid, N.Sold> SolduriLoturiRegistru { get; init; } = new Dictionary<Guid, N.Sold>();
     public IReadOnlyDictionary<Guid, RepartitorFapt> Repartitori { get; init; } = new Dictionary<Guid, RepartitorFapt>();
     public IReadOnlyList<SoldPartidaFapt> PartideDisponibile { get; init; } = [];
     public IReadOnlyList<N.Unitate> UnitatiSursa { get; init; } = [];
+    /// <summary>Minimul disponibil pe cont peste datele deja scrise, separat de soldul citit.</summary>
+    public IReadOnlyDictionary<Guid, decimal> DisponibilPartideSursa { get; init; } = new Dictionary<Guid, decimal>();
     public IReadOnlyDictionary<Guid, FisaFapt> Fise { get; init; } = new Dictionary<Guid, FisaFapt>();
     public IReadOnlyList<SuportFapt> Suporturi { get; init; } = [];
     public IReadOnlyList<DisponibilFapt> DisponibilNominalizare { get; init; } = [];
