@@ -1,11 +1,10 @@
 using DevExpress.ExpressApp.DC;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // Proiecții reconstruibile din cub la sfârșitul perioadelor de referință (090f).
 [XafDisplayName("Sold de perioadă (contabil)")]
-public class SoldPerioadaContabil : BaseObject {
+public class SoldPerioadaContabil : RandRegistru {
     // Fără separator de mii, ca pe `PerioadaFiscala`.
     [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
     [DevExpress.ExpressApp.Model.ModelDefault("DisplayFormat", "{0:0}")]
@@ -54,7 +53,7 @@ public class SoldPerioadaContabil : BaseObject {
 }
 
 [XafDisplayName("Sold de perioadă (stoc)")]
-public class SoldPerioadaStoc : BaseObject {
+public class SoldPerioadaStoc : RandRegistru {
     [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
     [DevExpress.ExpressApp.Model.ModelDefault("DisplayFormat", "{0:0}")]
     public virtual int An { get; set; }
@@ -79,7 +78,7 @@ public class SoldPerioadaStoc : BaseObject {
 }
 
 [XafDisplayName("Partidă deschisă")]
-public class PartidaDeschisa : BaseObject {
+public class PartidaDeschisa : RandRegistru {
     [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
     [DevExpress.ExpressApp.Model.ModelDefault("DisplayFormat", "{0:0}")]
     public virtual int An { get; set; }

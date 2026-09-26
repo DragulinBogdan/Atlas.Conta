@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-25.** [Index](README.md)
+**Actualizat: 2026-09-26.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -105,8 +105,17 @@ echivalentă a selectoarelor XAF este o limită curentă. (81c, 81e, 81-r7)
 `ICuProvenienta`. Seed-ul îl setează la creare și ALINIAZĂ la fiecare trecere
 rândurile care îl poartă (timbrul e proprietate); o modificare efectivă prin
 ObjectSpace securizat îl stinge, după care rândul e al clientului și nu se
-mai atinge; utilizatorul nu îl poate activa la creare; rândul șters logic
-rămâne șters și se raportează; reseed-ul nu reactivează timbrul. (81d, 83a, 84a)
+mai atinge; utilizatorul nu îl poate activa la creare; reseed-ul nu
+reactivează timbrul. (81d, 83a, 84a)
+
+Rândul `ICuProvenienta` șters pe ușa securizată se șterge fizic și lasă un
+`RefuzSeed` (tip + cheia din indexurile unice, serializată). Seed-ul nu
+recreează un rând refuzat și îl numără la „șterse”; golurile de mapare
+D300/D394 citesc tot refuzurile. Refuzul se șterge de rolul `Configurator`,
+iar rândul revine la următorul re-seed. Raportul de profil nu mai are
+categoria „referință spre un rând șters”: FK-ul refuză ștergerea rândului
+referit (valoarea 2 a lui `FelConstatare` e retrasă). Avertismentul D394
+pentru partenerul scos din uz e `PartenerInactiv`. (83a, 83j, 104f, 104i)
 
 Marcajul nu este permisiune, jurnal de audit sau criteriu pentru corecții
 automate. Rândurile istorice marcate prin backfill nu permit reconstituirea

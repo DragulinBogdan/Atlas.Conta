@@ -1,7 +1,6 @@
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -10,7 +9,7 @@ public enum SectiuneTvaSaft { GeneralLedger = 1, Facturi = 2 }
 
 [NavigationItem("Politici")]
 [XafDisplayName("Mapare TVA SAF-T")]
-public class MapareTvaSaft : BaseObject, ICuProvenienta, IVerificabilLaCommit {
+public class MapareTvaSaft : Politica, ICuProvenienta, IVerificabilLaCommit {
     public void Verifica(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         if (string.IsNullOrWhiteSpace(Versiune) || TipTvaId == Guid.Empty
                 || !Enum.IsDefined(Sectiune) || !Enum.IsDefined(Regim) || !Enum.IsDefined(Sens)

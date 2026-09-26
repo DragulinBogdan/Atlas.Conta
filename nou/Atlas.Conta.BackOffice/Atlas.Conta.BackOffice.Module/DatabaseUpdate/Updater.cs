@@ -1,4 +1,4 @@
-﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Security;
 using DevExpress.ExpressApp.SystemModule;
@@ -146,7 +146,7 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
             }
             return cititoriRole;
         }
-        /// <summary>Rolul de PRODUCȚIE al întreținerii profilului (83h): Read pe tot, scriere doar pe `Politici.TipuriConfigurabile`.</summary>
+        /// <summary>Rolul de PRODUCȚIE al întreținerii profilului (83h): Read pe tot, scriere doar pe `Politici.TipuriConfigurabile` și pe refuzurile lor de seed (104i).</summary>
         // Permisiunile se REAPLICĂ la fiecare rulare: rolul e al release-ului, nu
         // al bazei. Statică fiindcă o cheamă și ModelCheck, standalone.
         public static PermissionPolicyRole SeedRolConfigurator(IObjectSpace objectSpace) {
@@ -158,7 +158,7 @@ namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate {
             rol.PermissionPolicy = SecurityPermissionPolicy.ReadOnlyAllByDefault;
             const string Scriere = SecurityOperations.Create + ";" + SecurityOperations.Write
                 + ";" + SecurityOperations.Delete;
-            foreach (var tip in Politici.TipuriConfigurabile)
+            foreach (var tip in Politici.TipuriConfigurabile.Append(typeof(RefuzSeed)))
                 rol.AddTypePermissionsRecursively(tip, Scriere, SecurityPermissionState.Allow);
             return rol;
         }

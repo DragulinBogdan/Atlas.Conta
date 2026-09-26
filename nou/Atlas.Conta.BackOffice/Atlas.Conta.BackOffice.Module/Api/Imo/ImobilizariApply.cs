@@ -117,7 +117,7 @@ public static class ImobilizariApply {
         DataUltimEveniment = s.DataUltimEveniment
     };
 
-    sealed record RandCuDocument(RandRegistru Rand, Guid DocumentId, string DocumentNumar);
+    sealed record RandCuDocument(RandImobilizare Rand, Guid DocumentId, string DocumentNumar);
 
     static List<RandCuDocument> Randuri(IObjectSpace os, List<Guid> fise, DateOnly panaLa) {
         if (fise.Count == 0)

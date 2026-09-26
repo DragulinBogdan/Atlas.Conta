@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.Validation;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -13,7 +12,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class Produs : BaseObject, ICuCautare {
+public class Produs : Nomenclator, ICuCautare {
     // 77-r2 — vezi nota de pe `Repartitor.Cod`: regula e a lui `ICuCautare`,
     // atributele sunt prezentarea ei (OpenAPI/client + UI XAF).
     [System.ComponentModel.DataAnnotations.Required]
@@ -76,7 +75,7 @@ public class Produs : BaseObject, ICuCautare {
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Eticheta))]
-public class Lot : BaseObject {
+public class Lot : Editabila {
     // 85g — aceeași etichetă în SQL (liste server, lookup, căutare) și în C#.
     [NotMapped]
     [Calculated(ExpresieEticheta)]

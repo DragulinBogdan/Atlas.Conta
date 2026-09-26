@@ -52,7 +52,7 @@ def main():
         debit = lookup('Cont', 'Simbol', '628')
         assert conn.execute('SELECT count(*) FROM "Conturi" WHERE "ID"=%s AND "Simbol"=%s',
             (uuid.UUID(debit), '628')).fetchone()[0] == 1, 'Hostul nu folosește baza izolată.'
-        assert conn.execute('SELECT count(*) FROM "PerioadeFiscale" WHERE "An"=2026 AND "Luna"=1 AND NOT "Inchisa" AND "GCRecord"=0').fetchone()[0] == 1
+        assert conn.execute('SELECT count(*) FROM "PerioadeFiscale" WHERE "An"=2026 AND "Luna"=1 AND NOT "Inchisa"').fetchone()[0] == 1
         supplier = call('Admin', '/api/odata/Partener', 'POST',
             {'Cod': 'CODEX-D8-P-' + uuid.uuid4().hex[:8], 'Denumire': 'Proba partide'}, expected=201)['ID']
         try:

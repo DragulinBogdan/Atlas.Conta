@@ -65,8 +65,7 @@ public struct SnapshotPartida {
 // în tranzacția comenzii: cheia completă a atomului are 9 coloane și 8 dintre
 // ele sunt nullable, deci incrementala se face `UNION ALL` + `GROUP BY`, nu
 // JOIN — `IS NOT DISTINCT FROM` nu e hashable, iar planul ar cădea pe nested
-// loop (spike B.1). Ca la fișa de cont, `"GCRecord" = 0` se scrie EXPLICIT:
-// SQL-ul brut nu trece prin filtrul global (66).
+// loop (spike B.1).
 public static class SolduriService {
     static readonly string[] Dimensiuni = [
         "RepartitorId", "GestiuneId", "MaterialId", "CodFunctionalId", "CodEconomicId",
@@ -118,9 +117,9 @@ public static class SolduriService {
         string P(object v) { argumente.Add(v); return "{" + (argumente.Count - 1) + "}"; }
         var sursa = SursaPartide(os, P, an, luna);
         Executa(os, $"""
-            INSERT INTO {Partide} ("ID", "GCRecord", "OptimisticLockField", "An", "Luna",
+            INSERT INTO {Partide} ("ID", "An", "Luna",
                 "UnitateId", "ContId", "PartenerId", "Deschisa", "DocumentId", "Debit", "Credit", "Rest")
-            SELECT gen_random_uuid(), 0, 0, {P(an)}, {P(luna)},
+            SELECT gen_random_uuid(), {P(an)}, {P(luna)},
                 s."UnitateId", s."ContId", s."PartenerId", s."Deschisa", s."DocumentId",
                 s."Debit", s."Credit", ABS(s."Debit" - s."Credit")
             FROM ({sursa}) s
@@ -165,7 +164,6 @@ public static class SolduriService {
         const string sql = """
             SELECT "ID" AS "Value"
             FROM "PerioadeFiscale"
-            WHERE "GCRecord" = 0
             FOR UPDATE
             """;
         Interogheaza<Guid>(os, sql);
@@ -239,10 +237,10 @@ public static class SolduriService {
         var argumente = new List<object>();
         string P(object v) { argumente.Add(v); return "{" + (argumente.Count - 1) + "}"; }
         var sb = new StringBuilder();
-        sb.Append($"INSERT INTO {Contabil} (\"ID\", \"GCRecord\", \"OptimisticLockField\", \"An\", \"Luna\", \"ContId\", ");
+        sb.Append($"INSERT INTO {Contabil} (\"ID\", \"An\", \"Luna\", \"ContId\", ");
         sb.Append(string.Join(", ", Dimensiuni.Select(d => $"\"{d}\"")));
         sb.Append(", \"Debit\", \"Credit\")\n");
-        sb.Append($"SELECT gen_random_uuid(), 0, 0, {P(an)}, {P(luna)}, k.\"ContId\", ");
+        sb.Append($"SELECT gen_random_uuid(), {P(an)}, {P(luna)}, k.\"ContId\", ");
         sb.Append(string.Join(", ", Dimensiuni.Select(d => $"k.\"{d}\"")));
         sb.Append(", SUM(k.\"Debit\"), SUM(k.\"Credit\")\n");
         sb.Append($"FROM (\n{SursaContabil(os, P, an, luna, precedenta)}\n) k\n");
@@ -259,9 +257,9 @@ public static class SolduriService {
         string P(object v) { argumente.Add(v); return "{" + (argumente.Count - 1) + "}"; }
         var sursa = SursaStoc(os, P, an, luna, precedenta);
         Executa(os, $"""
-            INSERT INTO {Stoc} ("ID", "GCRecord", "OptimisticLockField", "An", "Luna",
+            INSERT INTO {Stoc} ("ID", "An", "Luna",
                 "LotId", "ContId", "ProdusId", "GestiuneId", "Deschisa", "Cantitate", "Valoare")
-            SELECT gen_random_uuid(), 0, 0, {P(an)}, {P(luna)},
+            SELECT gen_random_uuid(), {P(an)}, {P(luna)},
                 k."LotId", k."ContId", k."ProdusId", k."GestiuneId", MIN(k."Deschisa"),
                 SUM(k."Cantitate"), SUM(k."Valoare")
             FROM ({sursa}) k

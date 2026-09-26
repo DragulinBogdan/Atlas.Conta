@@ -248,7 +248,6 @@ internal static class ProfilBugetar {
             var parinte = f[2].Length > 0 ? conturi.GetValueOrDefault(f[2]) : null;
             var simbol = f[0];
             var cont = ContaSeeder.Aliniaza(os, simbol, conturi.GetValueOrDefault(simbol),
-                () => os.GetObjectsQuery<Cont>().IgnoreQueryFilters().FirstOrDefault(c => c.Simbol == simbol),
                 c => {
                     c.Simbol = simbol;
                     c.Denumire = f[1];

@@ -2,7 +2,6 @@ using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -10,7 +9,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
 [XafDisplayName("Imobilizare")]
-public class Imobilizare : BaseObject, ICuCautare, IVerificabilLaCommit {
+public class Imobilizare : Nomenclator, ICuCautare, IVerificabilLaCommit {
     [XafDisplayName("Număr de inventar")]
     public virtual string NumarInventar { get; set; }
     public virtual string Denumire { get; set; }

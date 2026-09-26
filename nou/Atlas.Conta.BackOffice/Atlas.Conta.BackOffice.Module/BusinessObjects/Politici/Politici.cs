@@ -7,7 +7,6 @@ using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.Validation;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -18,7 +17,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // Ancoră seed care oglindește clasele 1:1 (decizia 20) — doar FK + UI.
 [NavigationItem("Politici")]
 [XafDefaultProperty(nameof(Denumire))]
-public class TipDocument : BaseObject, ICuCautare, ICuProvenienta {
+public class TipDocument : Politica, ICuCautare, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -59,7 +58,7 @@ public class TipDocument : BaseObject, ICuCautare, ICuProvenienta {
 // Regula de alimentare a registrului de stoc: tip document × latură × filtru
 // Clasă → tip stoc + semn (00 §4, curățat: filtrul SEMN_ITEMS moare).
 [NavigationItem("Politici")]
-public class RegulaStoc : BaseObject, ICuProvenienta {
+public class RegulaStoc : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -81,7 +80,7 @@ public class RegulaStoc : BaseObject, ICuProvenienta {
 // generică (ambele null). Fără regulă potrivită = linia nu contează pe acest
 // tip de document (așa se împarte lanțul FCT/NIR fără dublă postare).
 [NavigationItem("Politici")]
-public class RegulaContare : BaseObject, ICuProvenienta {
+public class RegulaContare : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -248,7 +247,7 @@ public class RegulaContare : BaseObject, ICuProvenienta {
 // liniei (pe NIR trec exact liniile purtătoare de stoc) — decizia 21: politica
 // se definește pe funcționalitate, nu prin transcrierea listelor legacy.
 [NavigationItem("Politici")]
-public class PoliticaConex : BaseObject, ICuProvenienta {
+public class PoliticaConex : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -269,7 +268,7 @@ public class PoliticaConex : BaseObject, ICuProvenienta {
 // formulă de header în legacy — politică de scadență, nu structură). Motorul o
 // aplică la operare pe IDocumentCuScadenta DOAR dacă scadența nu a fost culeasă.
 [NavigationItem("Politici")]
-public class PoliticaScadenta : BaseObject, ICuProvenienta {
+public class PoliticaScadenta : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -286,7 +285,7 @@ public class PoliticaScadenta : BaseObject, ICuProvenienta {
 // nu a clasei de document; la privat rândurile pur și simplu lipsesc).
 // Motorul o aplică generic înaintea hook-urilor proprii tipului.
 [NavigationItem("Politici")]
-public class PoliticaValidare : BaseObject, ICuProvenienta {
+public class PoliticaValidare : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -309,7 +308,7 @@ public class PoliticaValidare : BaseObject, ICuProvenienta {
 // Simetrică cu PoliticaScadenta/PoliticaValidare; fără rând = niciun rând TVA
 // (profilul bugetar nu primește rânduri — zero schimbare de comportament).
 [NavigationItem("Politici")]
-public class PoliticaTva : BaseObject, ICuProvenienta {
+public class PoliticaTva : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -339,7 +338,7 @@ public class PoliticaTva : BaseObject, ICuProvenienta {
 // Toate cele patru conturi sunt nullable în schemă (politică editabilă, culeasă
 // în trepte), dar serviciul cere setul COMPLET ca să genereze ceva.
 [NavigationItem("Politici")]
-public class PoliticaInchidereTva : BaseObject, ICuProvenienta {
+public class PoliticaInchidereTva : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -367,7 +366,7 @@ public class PoliticaInchidereTva : BaseObject, ICuProvenienta {
 }
 
 [NavigationItem("Politici")]
-public class PoliticaNumerotare : BaseObject, ICuProvenienta {
+public class PoliticaNumerotare : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -398,7 +397,7 @@ public class PoliticaNumerotare : BaseObject, ICuProvenienta {
 // fi suprascrisă tăcut de formulă la prima proiecție, adică exact „un gard care
 // tace devine capcană" (62f).
 [NavigationItem("Politici")]
-public class MapareD300 : BaseObject, ICuProvenienta {
+public class MapareD300 : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -534,7 +533,7 @@ public class MapareD300 : BaseObject, ICuProvenienta {
 // ar clasifica un furnizor cu sistem normal ca fiind la încasare —, iar `N`
 // n-are sursă în registru (D4-r3) — mapată, ar promite o coloană goală.
 [NavigationItem("Politici")]
-public class MapareD394 : BaseObject, ICuProvenienta {
+public class MapareD394 : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -611,7 +610,7 @@ public class MapareD394 : BaseObject, ICuProvenienta {
 // declarat. Un rând FĂRĂ nicio politică e altceva — acela iese în `Neincluse`,
 // cu cauza lui. „Nimic nu se pierde" cere ca cele două să se deosebească.
 [NavigationItem("Politici")]
-public class PoliticaMiscareSaft : BaseObject, ICuProvenienta {
+public class PoliticaMiscareSaft : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -683,7 +682,7 @@ public class PoliticaMiscareSaft : BaseObject, ICuProvenienta {
 // fiindcă două dintre coloane sunt nullable: două rânduri „orice clasă,
 // dintotdeauna" pe același tip ar face rezolvarea nedeterministă, tăcut.
 [NavigationItem("Politici")]
-public class PoliticaTvaImplicit : BaseObject, ICuProvenienta {
+public class PoliticaTvaImplicit : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
@@ -718,7 +717,7 @@ public class PoliticaTvaImplicit : BaseObject, ICuProvenienta {
 // Conturile amortizării per tip material de clasă F (F26-D4).
 [NavigationItem("Politici")]
 [XafDisplayName("Politică de amortizare")]
-public class PoliticaAmortizare : BaseObject, ICuProvenienta, IVerificabilLaCommit {
+public class PoliticaAmortizare : Politica, ICuProvenienta, IVerificabilLaCommit {
     // F23-D4
     [XafDisplayName("Din seed")]
     [ModelDefault("AllowEdit", "False")]
@@ -757,7 +756,7 @@ public class PoliticaAmortizare : BaseObject, ICuProvenienta, IVerificabilLaComm
 // Limitarea fiscală a amortizării, ca date cu valabilitate în timp (F26-D4/D16).
 [NavigationItem("Politici")]
 [XafDisplayName("Regulă de deductibilitate")]
-public class RegulaDeductibilitate : BaseObject, ICuProvenienta {
+public class RegulaDeductibilitate : Politica, ICuProvenienta {
     // F23-D4
     [XafDisplayName("Din seed")]
     [ModelDefault("AllowEdit", "False")]
@@ -784,7 +783,7 @@ public class RegulaDeductibilitate : BaseObject, ICuProvenienta {
 // ale lanțului nu sunt aici — ele nu se configurează.
 [NavigationItem("Politici")]
 [XafDisplayName("Politică de închidere de perioadă")]
-public class PoliticaInchidere : BaseObject, ICuProvenienta {
+public class PoliticaInchidere : Politica, ICuProvenienta {
     // F23-D4
     [XafDisplayName("Din seed")]
     [ModelDefault("AllowEdit", "False")]

@@ -316560,6 +316560,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "type": "string",
             "nullable": true
@@ -316586,6 +316589,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -316596,9 +316602,6 @@
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContImplicitId": {
             "type": "string",
@@ -316626,6 +316629,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -316636,9 +316642,6 @@
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContImplicitId": {
             "type": "string",
@@ -317816,6 +317819,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "DinSeed": {
             "type": "boolean"
           },
@@ -317843,6 +317849,9 @@
           "ID": {
             "type": "string",
             "format": "uuid"
+          },
+          "Activ": {
+            "type": "boolean"
           },
           "Cod": {
             "type": "string",
@@ -317880,6 +317889,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "type": "string",
             "nullable": true
@@ -317901,6 +317913,9 @@
           "ID": {
             "type": "string",
             "format": "uuid"
+          },
+          "Activ": {
+            "type": "boolean"
           },
           "Cod": {
             "type": "string",
@@ -317987,6 +318002,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "DinSeed": {
             "type": "boolean"
           },
@@ -318040,6 +318058,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -318050,9 +318071,6 @@
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContImplicitId": {
             "type": "string",
@@ -321669,6 +321687,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -321679,9 +321700,6 @@
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContImplicitId": {
             "type": "string",
@@ -321705,6 +321723,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -321715,9 +321736,6 @@
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContImplicitId": {
             "type": "string",
@@ -321767,6 +321785,9 @@
           "ID": {
             "type": "string",
             "format": "uuid"
+          },
+          "Activ": {
+            "type": "boolean"
           },
           "NumarInventar": {
             "type": "string",
@@ -321848,6 +321869,9 @@
           "ID": {
             "type": "string",
             "format": "uuid"
+          },
+          "Activ": {
+            "type": "boolean"
           },
           "NumarInventar": {
             "type": "string",
@@ -322256,6 +322280,9 @@
           "ID": {
             "type": "string",
             "format": "uuid"
+          },
+          "Activ": {
+            "type": "boolean"
           },
           "Cod": {
             "maxLength": 5,
@@ -324362,6 +324389,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -324372,9 +324402,6 @@
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContImplicitId": {
             "type": "string",
@@ -324468,6 +324495,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -324478,9 +324508,6 @@
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContImplicitId": {
             "type": "string",
@@ -325869,6 +325896,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -325924,6 +325954,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -325970,6 +326003,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "type": "string",
             "nullable": true
@@ -325991,6 +326027,9 @@
           "ID": {
             "type": "string",
             "format": "uuid"
+          },
+          "Activ": {
+            "type": "boolean"
           },
           "Cod": {
             "type": "string",
@@ -327390,6 +327429,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -327400,9 +327442,6 @@
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContImplicitId": {
             "type": "string",
@@ -329272,6 +329311,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "type": "string",
             "nullable": true
@@ -329377,6 +329419,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "DinSeed": {
             "type": "boolean"
           },
@@ -329416,6 +329461,9 @@
           "ID": {
             "type": "string",
             "format": "uuid"
+          },
+          "Activ": {
+            "type": "boolean"
           },
           "DinSeed": {
             "type": "boolean"
@@ -329483,6 +329531,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "DinSeed": {
             "type": "boolean"
           },
@@ -329500,9 +329551,6 @@
           },
           "Regim": {
             "$ref": "#/components/schemas/RegimTva"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContTvaDeductibilId": {
             "type": "string",
@@ -329553,6 +329601,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "DinSeed": {
             "type": "boolean"
           },
@@ -329570,9 +329621,6 @@
           },
           "Regim": {
             "$ref": "#/components/schemas/RegimTva"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContTvaDeductibilId": {
             "type": "string",
@@ -329978,6 +330026,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "type": "string",
             "nullable": true
@@ -330000,6 +330051,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "Activ": {
+            "type": "boolean"
+          },
           "Cod": {
             "minLength": 1,
             "type": "string"
@@ -330010,9 +330064,6 @@
           },
           "Calitati": {
             "$ref": "#/components/schemas/CalitateRepartitor"
-          },
-          "Activ": {
-            "type": "boolean"
           },
           "ContImplicitId": {
             "type": "string",
@@ -330035,6 +330086,9 @@
           "ID": {
             "type": "string",
             "format": "uuid"
+          },
+          "Activ": {
+            "type": "boolean"
           },
           "Cod": {
             "maxLength": 9,

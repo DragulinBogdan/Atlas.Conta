@@ -6,7 +6,7 @@ using DevExpress.ExpressApp.DC;
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
 /// <summary>Un rând de `RegistruImobilizari`, citit o dată și consumat în memorie.</summary>
-public readonly record struct RandRegistru(
+public readonly record struct RandImobilizare(
     Guid ID, Guid ImobilizareId, DateOnly Data, FelMiscareImobilizare Fel, bool Storno, Guid DetaliuId,
     decimal Valoare, decimal ValoareFiscala,
     decimal Amortizare, decimal AmortizareFiscala, decimal AmortizareDeductibila, int Luni,
@@ -73,7 +73,7 @@ public static class AmortizareService {
     public static SituatieImobilizare Situatie(IObjectSpace os, Guid imobilizareId, DateOnly laData) =>
         Situatie(Randuri(os, [imobilizareId], laData), laData);
 
-    public static SituatieImobilizare Situatie(IEnumerable<RandRegistru> toate, DateOnly laData) {
+    public static SituatieImobilizare Situatie(IEnumerable<RandImobilizare> toate, DateOnly laData) {
         var randuri = toate.Where(r => r.Data <= laData).ToList();
         // Storno-ul copiază parametrii, deci evenimentul stornat iese și din rezolvarea lor (F26-D2).
         var stornate = randuri.Where(r => r.Storno).Select(r => r.DetaliuId).ToHashSet();
@@ -93,7 +93,7 @@ public static class AmortizareService {
             evenimente.Count == 0 ? null : evenimente[^1].Data);
     }
 
-    static List<RandRegistru> Randuri(IObjectSpace os, List<Guid> fise, DateOnly panaLa) =>
+    static List<RandImobilizare> Randuri(IObjectSpace os, List<Guid> fise, DateOnly panaLa) =>
         Cub.Citiri.Imobilizari.Randuri(os, fise, panaLa).Select(r => r.Rand).ToList();
 
     // Coalesce ÎNAPOI: null pe un eveniment înseamnă „neschimbat” (F26-D2).
@@ -391,7 +391,7 @@ public static class AmortizareService {
 
     // Lunile DATORATE la sfârșitul lui M (de la luna de după punere) minus cele ACOPERITE de
     // amortizările scrise; plafonul e durata rămasă, iar restul de rotunjire rămâne o lună (F27-D4).
-    static int LuniDeRecuperat(List<RandRegistru> randuri, SituatieImobilizare referinta,
+    static int LuniDeRecuperat(List<RandImobilizare> randuri, SituatieImobilizare referinta,
             DateOnly punere, DateOnly ultimaZi) {
         var acoperite = 0;
         var initiale = 0;
@@ -411,7 +411,7 @@ public static class AmortizareService {
     // veche, iar restul și lunile se citesc din situația de referință (F26-D7, formula 1C).
     // `luni` > 1 = recuperare: cotele celor `luni` luni se însumează ITERATIV, cu pragurile
     // degresivului și ale acceleratului avansate la fiecare pas (F27-D4).
-    static decimal Cifra(List<RandRegistru> randuri, SituatieImobilizare referinta, DateOnly? punere,
+    static decimal Cifra(List<RandImobilizare> randuri, SituatieImobilizare referinta, DateOnly? punere,
             bool fiscal, int luni) {
         var sfarsitEveniment = UltimaZiLuna(referinta.DataUltimEveniment.Value);
         var baza = Situatie(randuri, sfarsitEveniment);

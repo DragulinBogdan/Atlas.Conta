@@ -55,7 +55,7 @@
       "CotaNeintreaga": "Cotă ne-întreagă",
       "FaraOp11": "V/C fără detaliul pe categorii de bunuri (op11)",
       "CombinatieRefuzata": "Combinație partener × tip refuzată de formular",
-      "PartenerSters": "Partener șters din nomenclator"
+      "PartenerInactiv": "Partener inactiv în nomenclator"
     },
     "CodAvertismentSaft": {
       "FaraCodNc": "Produs fără cod NC",
@@ -108,7 +108,6 @@
     },
     "FelConstatare": {
       "RandManual": "Rând creat sau editat manual",
-      "ReferintaStearsa": "Referință spre un rând șters",
       "TipTvaInactivReferit": "Tip de TVA inactiv, referit ca implicit",
       "PoliticaLipsa": "Politică lipsă",
       "MapareLipsa": "Mapare lipsă"
@@ -528,6 +527,7 @@
     "Angajament": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -547,29 +547,6 @@
         "Denumire": "Denumire",
         "ID": "ID",
         "Marca": "Marca"
-      }
-    },
-    "ApplicationUser": {
-      "DefaultProperty": "UserName",
-      "Membri": {
-        "AccessFailedCount": "AccessFailedCount",
-        "ActiveAdminExists": "ActiveAdminExists",
-        "ChangePasswordOnFirstLogon": "ChangePasswordOnFirstLogon",
-        "ID": "ID",
-        "IsActive": "IsActive",
-        "LockoutEnd": "LockoutEnd",
-        "StoredPassword": "StoredPassword",
-        "UserName": "UserName"
-      }
-    },
-    "ApplicationUserLoginInfo": {
-      "DefaultProperty": null,
-      "Membri": {
-        "ID": "ID",
-        "LoginProviderName": "LoginProviderName",
-        "ProviderUserKey": "ProviderUserKey",
-        "User": "User",
-        "UserForeignKey": "UserForeignKey"
       }
     },
     "Asamblare": {
@@ -651,6 +628,7 @@
     "ClasaProdus": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -662,6 +640,7 @@
     "ClasificareImobilizari": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -674,6 +653,7 @@
     "CodEconomic": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -683,6 +663,7 @@
     "CodFunctional": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -692,6 +673,7 @@
     "Cont": {
       "DefaultProperty": "Simbol",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Denumire": "Denumire",
         "DimensiuniObligatorii": "DimensiuniObligatorii",
@@ -846,6 +828,7 @@
     "Dimensiune": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -1203,6 +1186,7 @@
     "Imobilizare": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "CentruCost": "Centru de cost",
         "CentruCostId": "Centru de cost",
@@ -1310,6 +1294,7 @@
     "Judet": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "CodAuto": "Indicativ auto",
@@ -1823,6 +1808,7 @@
     "Produs": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "CodNc": "Cod NC",
@@ -1840,6 +1826,7 @@
     "Proiect": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -1910,6 +1897,7 @@
     "RandD300": {
       "DefaultProperty": "Cod",
       "Membri": {
+        "Activ": "Activ",
         "AreBaza": "AreBaza",
         "AreTva": "AreTva",
         "Cod": "Cod",
@@ -1946,6 +1934,15 @@
         "Stare": "Stare",
         "Total": "Total (brut)",
         "TotalStingere": "Total de stins"
+      }
+    },
+    "RefuzSeed": {
+      "DefaultProperty": "Cheie",
+      "Membri": {
+        "Cheie": "Cheie",
+        "ID": "ID",
+        "La": "Refuzat la",
+        "Tip": "Tip"
       }
     },
     "RegistruContabil": {
@@ -2314,6 +2311,7 @@
     "SursaFinantare": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -2338,6 +2336,7 @@
     "TipMaterial": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Clasa": "Clasa",
         "ClasaId": "Clasa",
@@ -2374,6 +2373,7 @@
     "Unitate": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID"
@@ -2396,6 +2396,7 @@
     "UnitateMasura": {
       "DefaultProperty": "Cod",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",

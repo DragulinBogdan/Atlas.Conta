@@ -374,7 +374,7 @@ public enum CodAvertismentD394 {
     [XafDisplayName("Cotă ne-întreagă")] CotaNeintreaga = 6,
     [XafDisplayName("V/C fără detaliul pe categorii de bunuri (op11)")] FaraOp11 = 7,
     [XafDisplayName("Combinație partener × tip refuzată de formular")] CombinatieRefuzata = 8,
-    [XafDisplayName("Partener șters din nomenclator")] PartenerSters = 9,
+    [XafDisplayName("Partener inactiv în nomenclator")] PartenerInactiv = 9,
 }
 
 // De ce n-a generat închiderea lunară de TVA (F21-D2). `InchidereTvaService`
@@ -447,7 +447,7 @@ public enum SursaImplicit {
 // Raportul ARATĂ, seed-ul ARUNCĂ: aceleași fapte, două uși, un singur vocabular.
 public enum FelConstatare {
     [XafDisplayName("Rând creat sau editat manual")] RandManual = 1,
-    [XafDisplayName("Referință spre un rând șters")] ReferintaStearsa = 2,
+    // 2 (ReferintaStearsa) retras la 104f: FK-ul Restrict nu mai lasă referința să apară.
     [XafDisplayName("Tip de TVA inactiv, referit ca implicit")] TipTvaInactivReferit = 3,
     [XafDisplayName("Politică lipsă")] PoliticaLipsa = 4,
     [XafDisplayName("Mapare lipsă")] MapareLipsa = 5,

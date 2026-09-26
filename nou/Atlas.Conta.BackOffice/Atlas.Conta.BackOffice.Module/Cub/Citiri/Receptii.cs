@@ -8,8 +8,7 @@ public static class Receptii {
         select n."ID" as id, s."ID" as sursa
         from "Documente" n
         join "Documente" s on s."ID" = n."SursaReceptieiId"
-        where n."GCRecord" = 0 and s."GCRecord" = 0
-          and n."ClrType" = 'NIR' and s."ClrType" = 'FacturaIntrare'
+        where n."ClrType" = 'NIR' and s."ClrType" = 'FacturaIntrare'
           and exists (select 1 from "Postare" p join "Tranzactie" t on t."ID" = p."TranzactieId"
               where p."DocumentId" = s."ID" and t."Fel" = 1 and p."Carte" = 1
                 and p."FelUnitate" = 1 and p."Unitate" is not null

@@ -308,18 +308,18 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
 
     void Curata() {
         using var os = Deschide();
-        var reps = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+        var reps = os.GetObjectsQuery<Repartitor>()
             .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
         if (reps.Count == 0) return;
-        var liniiNascatoare = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+        var liniiNascatoare = os.GetObjectsQuery<Lot>()
             .Where(l => l.Produs.Cod.StartsWith(Marcaj) && l.LinieIntrareId != null)
             .Select(l => l.LinieIntrareId.Value).ToList();
-        var documenteNascatoare = os.GetObjectsQuery<DocumentDetaliu>().IgnoreQueryFilters()
+        var documenteNascatoare = os.GetObjectsQuery<DocumentDetaliu>()
             .Where(l => liniiNascatoare.Contains(l.ID)).Select(l => l.DocumentId).ToList();
-        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+        var docs = os.GetObjectsQuery<Document>()
             .Where(d => reps.Contains(d.PredatorId) || reps.Contains(d.PrimitorId)
                 || documenteNascatoare.Contains(d.ID)).Select(d => d.ID).ToList();
-        var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+        var loturi = os.GetObjectsQuery<Lot>()
             .Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
         var pj = new Purja(os);
         CurataCubSuplimentar(os, pj);

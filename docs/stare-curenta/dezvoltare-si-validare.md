@@ -162,23 +162,31 @@ trece printr-un singur helper (`ContaSeeder.Aliniaza`): caută rândul pe cheia
 indexului unic, îl creează cu timbru dacă lipsește, îl aliniază la cod dacă
 poartă timbrul seed-ului (câmpurile scalare ne-cheie, fiecare corecție
 tipărită `tip / cheie / câmp: vechi → nou`), îl lasă neatins dacă e manual și
-îl raportează dacă e șters logic. Un seed care ar schimba o cheie aruncă.
+nu îl recreează dacă există un `RefuzSeed` pe cheia lui. Un seed care ar
+schimba o cheie aruncă.
 `Seed` întoarce `RaportSeed` cu contoare per tabel (create / corectate /
 manuale / șterse); a doua trecere pe o bază aliniată nu creează și nu
 corectează nimic. Câmpurile de stare de runtime (`PoliticaNumerotare.
 UrmatorulNumar`) și cele deținute de alt pas al seed-ului (`TipTva.Activ`,
 `ContImplicitId` derivat) nu intră în aliniere. Rândurile nomenclatoarelor de
 nucleu fără proveniență (`RandD300`, `Judet`, `UnitateMasura`) se rescriu
-autoritar; reseed-ul nu suprascrie datele societății. (69b, 73a, 83a–d, 84a)
+autoritar; reseed-ul nu suprascrie datele societății. (69b, 73a, 83a–d, 84a, 104i)
 
 Profilurile nu se amestecă în aceeași bază. `SetareProfil` și rotunjirea sunt
 stabile după inițializare. (36c, 52a)
 
 Unicitatea politicilor și a codurilor de nomenclator este în schemă, prin
-indexuri unice filtrate pe `GCRecord = 0`: un rând șters logic nu este dublu,
-iar cheia lui se poate reface. Ancora `TipDocument.ClrType` este unică tot
+indexuri unice nefiltrate: ștergerea e fizică, deci cheia unui rând șters se
+poate reface. Ancora `TipDocument.ClrType` este unică tot
 așa (`IX_TipuriDocument_ClrType`); discriminatorul documentelor nu are FK
-spre ea, iar corespondența clase concrete ↔ seed o probează ModelCheck. (81c, 89a)
+spre ea, iar corespondența clase concrete ↔ seed o probează ModelCheck. (81c, 89a, 104f)
+
+Curățenia de scenă din ModelCheck (`Purja`) șterge fizic, prin SQL, și
+emulează cascada pe FK-urile obligatorii: rândurile care nu pot exista fără
+părinte pleacă înaintea lui. Schema nu mai cascadează în afara compozițiilor
+(104g). Probele care cer o etichetă de nomenclator ascunsă (SC-CIT-29/40/80)
+șterg rândul într-o tranzacție rulată înapoi, cu FK-urile suspendate
+(`AscundereControlata`). (F13-D2, 104g)
 
 Absența FK-ului pentru `Lot.LinieIntrareId` este intenționată pentru ciclul de
 inserare; integritatea este verificată de mecanismele domeniului. (26e)

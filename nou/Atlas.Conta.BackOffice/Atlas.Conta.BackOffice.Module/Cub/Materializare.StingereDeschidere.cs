@@ -68,7 +68,7 @@ public static partial class Materializare {
         CereTranzactie(os);
         var db = ((EFCoreObjectSpace)os).DbContext;
         foreach (var doc in documente.DistinctBy(d => d.ID).OrderBy(d => d.ID)) {
-            _ = db.Database.SqlQuery<Guid>($"""SELECT "ID" AS "Value" FROM "Documente" WHERE "ID" = {doc.ID} AND "GCRecord" = 0 FOR UPDATE""").ToList();
+            _ = db.Database.SqlQuery<Guid>($"""SELECT "ID" AS "Value" FROM "Documente" WHERE "ID" = {doc.ID} FOR UPDATE""").ToList();
             if (db.Entry(doc).State == EntityState.Unchanged) db.Entry(doc).Reload();
         }
     }

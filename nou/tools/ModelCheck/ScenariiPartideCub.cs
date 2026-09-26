@@ -425,7 +425,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
     }
 
     protected override void CurataCubSuplimentar(IObjectSpace os, Purja purja) {
-        var terti = os.GetObjectsQuery<Partener>().IgnoreQueryFilters()
+        var terti = os.GetObjectsQuery<Partener>()
             .Where(p => p.Cod.StartsWith(Marcaj)).Select(p => p.ID);
         var ids = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == null && terti.Contains(p.Partener.Value))
             .Select(p => p.TranzactieId).Distinct().ToList();

@@ -1,7 +1,6 @@
 using Atlas.DXF.Core.Appearance.Attributes;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 using System.ComponentModel.DataAnnotations;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -27,7 +26,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Cod))]
 [ForbidCRUD("ListView", "DetailView")]
-public class UnitateMasura : BaseObject, ICuCautare {
+public class UnitateMasura : Nomenclator, ICuCautare {
     // Codul UN/ECE („H87", „KGM", „MTQ"). Unic, index filtrat pe `GCRecord = 0`
     // (ca `Judet.Cod`), cheia de idempotență a seed-ului.
     //

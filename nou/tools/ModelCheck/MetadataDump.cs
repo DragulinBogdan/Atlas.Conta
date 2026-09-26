@@ -115,8 +115,12 @@ static class MetadataDump {
             return false;
         if (!t.Namespace.StartsWith(SpatiuBusinessObjects, StringComparison.Ordinal))
             return false;
-        return t.IsEnum || (t.IsClass && typeof(BaseObject).IsAssignableFrom(t));
+        return t.IsEnum || (t.IsClass && typeof(EntitateConta).IsAssignableFrom(t) && !Familii.Contains(t));
     }
+
+    // Bazele de familie (104e) nu sunt tipuri de domeniu: membrii lor ajung aplatizați pe derivate.
+    static readonly HashSet<Type> Familii =
+        [typeof(EntitateConta), typeof(Editabila), typeof(Nomenclator), typeof(Politica), typeof(RandRegistru)];
 
     // `DefaultProperty` = display-ul lookup-urilor (43f). Se caută pe ierarhie
     // (`inherit: true`): derivatele de document îl moștenesc de la bază.
@@ -127,7 +131,7 @@ static class MetadataDump {
             as DefaultPropertyAttribute)?.Name;
 
     // Plumbing-ul XAF/EF: niciodată câmp de formular, doar zgomot în diff.
-    static readonly string[] MembriTehnici = { "GCRecord", "OptimisticLockField" };
+    static readonly string[] MembriTehnici = { "OptimisticLockField" };
 
     // Membrii se emit APLATIZAȚI (declarați + moșteniți): clientul cere
     // `useCampMeta("NotaTransfer", "Data")` și primește caption-ul de pe baza

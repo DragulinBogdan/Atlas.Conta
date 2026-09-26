@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using Atlas.Conta.BackOffice.Module.UI;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -100,7 +99,7 @@ public class Dvi : Document, IDocumentFiscalPrimit {
 // DVI-D3: legătura n→m declarație ↔ facturi de import, pe forma `Imperechere`.
 // E EVIDENȚĂ, nu sursa cifrelor: baza și taxa sunt cele declarate în vamă.
 [XafDisplayName("Factură de import legată")]
-public class DviFactura : BaseObject, IVerificabilLaCommit {
+public class DviFactura : Editabila, IVerificabilLaCommit {
     public virtual Guid DviId { get; set; }
     [XafDisplayName("Declarație vamală")]
     public virtual Dvi Dvi { get; set; }

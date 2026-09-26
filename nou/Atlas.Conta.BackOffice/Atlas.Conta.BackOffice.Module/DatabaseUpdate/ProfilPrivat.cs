@@ -2,8 +2,6 @@ using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
-// `IgnoreQueryFilters` — singurul loc din seed care întreabă tabela ÎNTREAGĂ,
-// peste filtrul global de ștergere amânată pus de XAF (`GCRecord = 0`).
 using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate;
@@ -287,7 +285,6 @@ internal static class ProfilPrivat {
             var parinte = f[1].Length > 0 ? conturi.GetValueOrDefault(f[1]) : null;
             var simbol = f[0];
             var cont = ContaSeeder.Aliniaza(os, simbol, conturi.GetValueOrDefault(simbol),
-                () => os.GetObjectsQuery<Cont>().IgnoreQueryFilters().FirstOrDefault(c => c.Simbol == simbol),
                 c => {
                     c.Simbol = simbol;
                     c.Denumire = f[3];
@@ -597,15 +594,9 @@ internal static class ProfilPrivat {
             // (clasă `null`) e seed-uit, iar semantica SQL a lui „coloană =
             // @parametru NULL" e prea subtilă pentru o gardă de idempotență:
             // potrivirea se face ÎN MEMORIE, ca la `AliniazaContare`.
-            PoliticaTvaImplicit Cauta(bool cuSterse) {
-                var toate = os.GetObjectsQuery<PoliticaTvaImplicit>();
-                if (cuSterse)
-                    toate = toate.IgnoreQueryFilters();
-                return toate.Where(x => x.TipDocumentId == tipDoc.ID).ToList()
-                    .FirstOrDefault(x => x.ClasaFiscala == clasa && x.ValabilDeLa == null);
-            }
-            ContaSeeder.Aliniaza(os, $"{i.TipDocument}/{i.Clasa?.ToString() ?? "orice"}",
-                Cauta(false), () => Cauta(true),
+            var gasit = os.GetObjectsQuery<PoliticaTvaImplicit>().Where(x => x.TipDocumentId == tipDoc.ID).ToList()
+                .FirstOrDefault(x => x.ClasaFiscala == clasa && x.ValabilDeLa == null);
+            ContaSeeder.Aliniaza(os, $"{i.TipDocument}/{i.Clasa?.ToString() ?? "orice"}", gasit,
                 rand => {
                     rand.TipDocumentId = tipDoc.ID;
                     rand.ClasaFiscala = clasa;
@@ -737,11 +728,7 @@ internal static class ProfilPrivat {
         // decizii — un profil pe care contabilul l-a subțiat intenționat n-are
         // voie să facă `--updateDatabase` să arunce, adică să blocheze orice
         // release viitor pe baza aceea.
-        var stersDeUtilizator = os.GetObjectsQuery<MapareD300>().IgnoreQueryFilters()
-            .Select(m => new { m.TipTvaId, m.Sens })
-            .ToList()
-            .Select(m => (m.TipTvaId, m.Sens))
-            .ToHashSet();
+        var stersDeUtilizator = PerechiRefuzate<MapareD300>(os);
         foreach (var cod in coduri) {
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod);
             if (tip == null) {
@@ -852,17 +839,18 @@ internal static class ProfilPrivat {
             throw new InvalidOperationException(goluri[0]);
     }
 
+    static HashSet<(Guid, SensTva)> PerechiRefuzate<T>(IObjectSpace os) where T : ICuProvenienta =>
+        RefuzSeed.Chei<T>(os)
+            .Select(c => (Guid.Parse(c["TipTvaId"]), Enum.Parse<SensTva>(c["Sens"])))
+            .ToHashSet();
+
     // Geamăna lui `GoluriMapariD300` (F23-D8).
     internal static IReadOnlyList<string> GoluriMapariD394(
             IObjectSpace os, IReadOnlyCollection<MapareD394> mapari) {
         var goluri = new List<string>();
         var coduri = MapariD394.Select(m => m.TipTva)
             .Concat(NemapateDeliberatD394.Select(n => n.TipTva)).Distinct().ToList();
-        var stersDeUtilizator = os.GetObjectsQuery<MapareD394>().IgnoreQueryFilters()
-            .Select(m => new { m.TipTvaId, m.Sens })
-            .ToList()
-            .Select(m => (m.TipTvaId, m.Sens))
-            .ToHashSet();
+        var stersDeUtilizator = PerechiRefuzate<MapareD394>(os);
         foreach (var cod in coduri) {
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod);
             if (tip == null) {

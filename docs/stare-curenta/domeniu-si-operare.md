@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-25.** [Index](README.md)
+**Actualizat: 2026-09-26.** [Index](README.md)
 
 ## Modelul comun
 
@@ -38,8 +38,8 @@ Un FK spre un tip ne-rădăcină al unei ierarhii (de exemplu `Lot.GestiuneId`
 spre `Gestiune`, `DviFactura.FacturaId` spre `FacturaIntrare`) ține în bază
 doar id-ul rădăcinii. Pe ușa securizată, `GardianEditare` verifică, la obiect
 nou sau la FK schimbat, că ținta are tipul cerut sau un subtip al lui: altfel
-refuză cu 422 („rândul ales e X, nu Y”), iar o țintă invizibilă sau ștearsă
-logic e refuzată ca referință invizibilă. FK-urile sunt descoperite din
+refuză cu 422 („rândul ales e X, nu Y”), iar o țintă invizibilă e refuzată
+ca referință invizibilă. FK-urile sunt descoperite din
 metadata EF, nu dintr-o listă. Pe ușa de sistem integritatea o probează
 ModelCheck. (89e)
 
@@ -51,6 +51,25 @@ ModelCheck. (89e)
 | `Repartitor` | Identitate comună; derivate pentru partener, gestiune, angajat, unitate internă și cont propriu (16) |
 | `Produs` | Identitatea din catalog; nu reprezintă o intrare în stoc (13) |
 | `Lot` | Identitatea intrării, produsul, proveniența, data și prețul de evaluare (13, 26e) |
+
+Entitățile de domeniu derivă din `EntitateConta` (contractele XAF și cheia
+`Guid ID`), nu din `BaseObject`-ul DevExpress; tipurile de securitate rămân
+pe el. Mecanismele tehnice vin din familie: `Editabila` (blocare optimistă),
+`Nomenclator` (`Editabila` + `Activ`), `Politica` (`Editabila`), `Document`
+(`Editabila`, rădăcina TPH) și `RandRegistru` (scris de motor, fără blocare).
+Clasificarea celor 49 de clase e în fișierul deciziei. `ICuCheie` e cheia
+comună a entităților proprii și a celor de securitate. (104e)
+
+Nu există ștergere amânată: modelul nu are `GCRecord` și nici filtru global
+de interogare. Draftul se șterge fizic, documentul operat se stornează,
+nomenclatorul se inactivează (`Activ`, fără default în schemă), iar
+registrele le șterge doar motorul, la corecția directă. `Cascade` apare numai
+pe compoziții, adică pe colecțiile `[Aggregated]` (`Document.Detalii`,
+`Dvi.Facturi`). Restul FK-urilor de domeniu sunt `ClientNoAction` în EF și
+`NO ACTION` în schemă: refuzul vine mereu din bază, chiar dacă dependentul e
+încărcat, și iese 422 de domeniu prin traducătorul de constrângeri, cu cele
+două tipuri numite. ModelCheck probează structural regula
+(`tools/ModelCheck/ProbeStraturi.cs`). (104f, 104g, 104h)
 
 Un câmp intră în baza comună numai dacă are aceeași semantică pentru toate
 tipurile care îl folosesc și este necesar direct postării. O valoare necesară
@@ -870,9 +889,9 @@ pe registre (TR-D8). Contractul feliei: `docs/nucleu/tr-d7a-strangler-contract.m
 
 ### Entitățile și forma lor fizică
 
-`Module/Cub/` ține cele două entități, POCO EF fără `BaseObject`: cubul e
-append-only, deci fără `GCRecord`, fără `OptimisticLockField` și fără filtru
-global de interogare. Proprietățile sunt `virtual` și colecția e
+`Module/Cub/` ține cele două entități, POCO EF în afara `EntitateConta`:
+cubul e append-only, deci fără `OptimisticLockField` și fără filtru global de
+interogare. Proprietățile sunt `virtual` și colecția e
 `ObservableCollection`, cât timp hosturile folosesc proxy-uri de change
 tracking. Niciuna nu apare în UI și niciuna nu intră în metadata clientului. (S-D1)
 

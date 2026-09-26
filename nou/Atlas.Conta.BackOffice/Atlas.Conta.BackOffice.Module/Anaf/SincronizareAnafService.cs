@@ -101,8 +101,7 @@ public static class SincronizareAnafService {
 
     // Filtrul din D15-D4/D15-D6: din ID-urile cerute ies candidații (parteneri
     // vii, români, cu CUI) și cei săriți, FIECARE CU MOTIV. Un ID care nu se
-    // regăsește (inexistent sau șters logic — `GetObjectsQuery` filtrează
-    // `GCRecord`) e tot un sărit, nu o excepție: un lot nu pică din cauza unui
+    // regăsește e tot un sărit, nu o excepție: un lot nu pică din cauza unui
     // rând.
     public static SelectieCandidati Candidati(IObjectSpace os, IEnumerable<Guid> ids) {
         var ceruti = (ids ?? []).Distinct().ToList();

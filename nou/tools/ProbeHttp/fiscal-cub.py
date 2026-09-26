@@ -52,7 +52,7 @@ def main():
             login(name)
         marker = lookup('Cont', 'Simbol', '628')
         assert conn.execute('SELECT count(*) FROM "Conturi" WHERE "ID"=%s', (uuid.UUID(marker),)).fetchone()[0] == 1
-        society = conn.execute('SELECT "ID","CodFiscal" FROM "Societati" WHERE "GCRecord"=0').fetchone()
+        society = conn.execute('SELECT "ID","CodFiscal" FROM "Societati"').fetchone()
         assert society is not None
         conn.execute('UPDATE "Societati" SET "CodFiscal"=%s WHERE "ID"=%s', ('RO12345674', society[0]))
         try:

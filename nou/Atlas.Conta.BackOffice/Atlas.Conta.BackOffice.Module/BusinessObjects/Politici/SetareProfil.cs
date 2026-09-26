@@ -1,5 +1,4 @@
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -15,7 +14,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 //
 // Rândul e infrastructură, nu nomenclator de UI (ca `MigrareLegatura`): fără
 // NavigationItem — se editează prin seed / migrare de date, deliberat.
-public class SetareProfil : BaseObject {
+public class SetareProfil : Politica {
     // Oglindește appsettings `ProfilContabil` — gardianul din seed refuză o bază
     // seed-uită cu alt profil decât cel configurat (completează `VerificaProfil`,
     // care se uită doar la ancora planului de conturi).

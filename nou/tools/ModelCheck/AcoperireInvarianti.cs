@@ -70,8 +70,8 @@ static class AcoperireInvarianti {
             var valoare = Math.Min(debite[i].Sold, credite[j].Sold);
             var id = Guid.NewGuid(); primul ??= id;
             db.Database.ExecuteSqlInterpolated($@"INSERT INTO ""RegistruContabil""
-                (""ID"", ""Data"", ""ContDebitId"", ""ContCreditId"", ""Valoare"", ""Storno"", ""GCRecord"", ""OptimisticLockField"")
-                VALUES ({id}, {postari[0].Data}, {debite[i].Cont}, {credite[j].Cont}, {valoare}, false, 0, 0)");
+                (""ID"", ""Data"", ""ContDebitId"", ""ContCreditId"", ""Valoare"", ""Storno"")
+                VALUES ({id}, {postari[0].Data}, {debite[i].Cont}, {credite[j].Cont}, {valoare}, false)");
             if ((debite[i].Sold -= valoare) == 0m) i++;
             if ((credite[j].Sold -= valoare) == 0m) j++;
         }

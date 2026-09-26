@@ -36,7 +36,7 @@ public static partial class Imobilizari {
             throw new OperareException("Registrul imobilizărilor diferă de cub: " + string.Join(", ", diferite));
     }
 
-    public sealed record RandCuDocument(RandRegistru Rand, Guid DocumentId);
+    public sealed record RandCuDocument(RandImobilizare Rand, Guid DocumentId);
     sealed record Atribute(FelMiscareImobilizare Fel, decimal Deductibil, int Luni,
         MetodaAmortizare? Metoda = null, int? Durata = null, decimal? Reziduala = null,
         MetodaAmortizare? MetodaFiscala = null, int? DurataFiscala = null,

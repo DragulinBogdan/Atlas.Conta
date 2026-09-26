@@ -200,6 +200,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 // păzit fără să se atingă nimic aici.
                 VerificaEnumuri(provenit, erori);
             }
+            // (p) 104i — rândul de configurație șters își lasă refuzul, ca re-seed-ul să nu-l readucă.
+            if (obj is ICuProvenienta sters && EsteSters(os, obj))
+                RefuzSeed.Inregistreaza(os, sters);
             // (l) DVI-D3 — invarianții pe care entitatea îi poartă singură. FĂRĂ
             // gardul de ștergere: regula vede și `Delete` (o legătură dezlegată
             // de pe un document operat e tot o scriere care se refuză).
@@ -704,9 +707,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         // POST-ul al doilea prin OData trece pe lângă orice ecran.
         //
         // Se numără DOAR pe obiectele noi: un rând existent editat nu-și pune
-        // singur problema. Interogarea vede rândurile deja COMISE (`GCRecord = 0`
-        // prin filtrul global), iar `os.ModifiedObjects` dă restul commit-ului
-        // curent — două rânduri noi în același commit se prind pe a doua ramură.
+        // singur problema. Interogarea vede rândurile deja COMISE, iar
+        // `os.ModifiedObjects` dă restul commit-ului curent — două rânduri noi
+        // în același commit se prind pe a doua ramură.
         if (os.IsNewObject(societate)) {
             var comise = os.GetObjectsQuery<Societate>().Count();
             var noiInainte = os.ModifiedObjects.OfType<Societate>()
@@ -1241,23 +1244,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     static string EtichetaCont(Cont cont) =>
         string.IsNullOrWhiteSpace(cont.Simbol) ? $"({cont.ID})" : cont.Simbol;
 
-    // „Obiectul ăsta e pe cale să fie ȘTERS?" — răspuns valabil ÎN Committing.
-    //
-    // De ce NU `os.IsDeletedObject` singur (probă pe surse 26.1.3, găsită de
-    // smoke-ul feliei de trezorerie): `EFCoreObjectSpace.IsDeletedObject`
-    // (EFCoreObjectSpace.cs:375-386) întoarce true DOAR pentru `Detached` sau
-    // pentru un tip cu ștergere amânată al cărui `GCRecord` e deja 1. Or
-    // `GCRecord` îl pune `EFCoreDeferredDeletionInterceptor` în `SavingChanges`
-    // (DeferredDeletion/EFCoreDeferredDeletionInterceptor.cs:95-120), adică DUPĂ
-    // evenimentul `Committing` — deci în gardian entitatea e încă `Deleted` cu
-    // `GCRecord` 0 și `IsDeletedObject` răspunde FALS. Consecința reală: o
-    // ștergere de imperechere era raportată ca „editare" și refuzată (31d cere
-    // ștergerea liberă), pe ORICE cale secured — UI-ul XAF și `api/imperecheri`.
-    // Starea EF e sursa corectă aici; `IsDeletedObject` rămâne în paralel pentru
-    // ștergerile deja materializate. Ambele prin API-ul PUBLIC `IObjectSpace`
-    // (review F3-D1a): `IsObjectToDelete` = `GetEntityState(obj) == Deleted`
-    // (EFCoreObjectSpace.cs:371-374), fără cast la tipul concret — corect și pe
-    // providerii non-EF.
+    // În Committing, ștergerea e starea EF (`Deleted`); `IsDeletedObject` acoperă obiectul deja detașat.
     static bool EsteSters(IObjectSpace os, object obj) =>
         os.IsObjectToDelete(obj) || os.IsDeletedObject(obj);
 

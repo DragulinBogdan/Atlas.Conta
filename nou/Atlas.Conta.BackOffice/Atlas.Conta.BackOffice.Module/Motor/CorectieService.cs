@@ -18,7 +18,7 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // justificabilă: identitatea (`ID`, discriminatorul `ClrType`), ce stăpânește motorul (`Stare`,
 // `DataOperare`, `Autogenerat`, `DocumentSursaId`, `TotalStingere`), datele proprii corecției
 // (`DataInregistrare`, `CorecteazaId`, `MotivCorectie`) și câmpurile de
-// infrastructură ale lui `BaseObject`.
+// blocare optimistă.
 //
 // `Numar` și `Data` se PĂSTREAZĂ: documentul fizic e același (aceeași factură a
 // furnizorului, același număr de serie), doar evidența lui se reface. Seria nu
@@ -30,7 +30,7 @@ public static class CorectieService {
         nameof(Document.DataInregistrare), nameof(Document.DocumentSursaId),
         nameof(Document.Autogenerat), nameof(Document.CorecteazaId), nameof(Document.MotivCorectie),
         nameof(Document.TotalStingere), nameof(Document.ClrType),
-        GcRecord, LockField,
+        nameof(Editabila.OptimisticLockField),
     };
 
     // Liniile: identitatea și gazda. `LotId` se copiază de aici (linia care
@@ -38,7 +38,7 @@ public static class CorectieService {
     // NĂSCUT.
     static readonly HashSet<string> ExcluseLinie = new(StringComparer.Ordinal) {
         nameof(DocumentDetaliu.ID), nameof(DocumentDetaliu.DocumentId), nameof(DocumentDetaliu.ClrType),
-        GcRecord, LockField,
+        nameof(Editabila.OptimisticLockField),
     };
 
     // Lotul renăscut: identitatea, linia-mamă și cele două câmpuri pe care le
@@ -46,11 +46,8 @@ public static class CorectieService {
     // lot născut la culegere.
     static readonly HashSet<string> ExcluseLot = new(StringComparer.Ordinal) {
         nameof(Lot.ID), nameof(Lot.LinieIntrareId), nameof(Lot.Data), nameof(Lot.PretUnitar),
-        GcRecord, LockField,
+        nameof(Editabila.OptimisticLockField),
     };
-
-    const string GcRecord = "GCRecord";
-    const string LockField = "OptimisticLockField";
 
     public static (Document Storno, Document Corectie) Corecteaza(IObjectSpace os, Guid documentId,
             DateOnly dataCorectie, MotivCorectie motiv) {

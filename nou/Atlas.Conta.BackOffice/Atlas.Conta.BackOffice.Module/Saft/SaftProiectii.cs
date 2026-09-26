@@ -316,7 +316,7 @@ public static class SaftProiectii {
         }
         var listaRep = idsRepartitor.ToList();
 
-        var parteneri = os.GetObjectsQuery<Partener>().IgnoreQueryFilters()
+        var parteneri = os.GetObjectsQuery<Partener>()
             .Where(p => listaRep.Contains(p.ID))
             .Select(p => new {
                 p.ID, p.Cod, p.Denumire, p.CodFiscal, p.TipPersoana, p.Tara, p.InregistratTva, p.TvaLaIncasare,
@@ -337,14 +337,14 @@ public static class SaftProiectii {
             p.Fel = identitate.Fel;
         }
 
-        var repartitori = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+        var repartitori = os.GetObjectsQuery<Repartitor>()
             .Where(r => listaRep.Contains(r.ID))
             .Select(r => new { r.ID, r.Cod, r.Denumire })
             .ToList()
             .ToDictionary(r => r.ID, r => (r.Cod, r.Denumire));
-        var idsAngajat = os.GetObjectsQuery<Angajat>().IgnoreQueryFilters()
+        var idsAngajat = os.GetObjectsQuery<Angajat>()
             .Where(a => listaRep.Contains(a.ID)).Select(a => a.ID).ToList().ToHashSet();
-        var idsContPropriu = os.GetObjectsQuery<ContPropriu>().IgnoreQueryFilters()
+        var idsContPropriu = os.GetObjectsQuery<ContPropriu>()
             .Where(c => listaRep.Contains(c.ID)).Select(c => c.ID).ToList().ToHashSet();
 
         string DenumireRep(Guid? id) =>
@@ -680,7 +680,7 @@ public static class SaftProiectii {
             if (x.ProdusId is Guid p) produsPeLinie[x.ID] = p;
         }
         var idsLot = linii.Where(l => l.LotId != null).Select(l => l.LotId.Value).Distinct().ToList();
-        var produsPeLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+        var produsPeLot = os.GetObjectsQuery<Lot>()
             .Where(l => idsLot.Contains(l.ID))
             .Select(l => new { l.ID, l.ProdusId }).ToList()
             .ToDictionary(l => l.ID, l => l.ProdusId);
@@ -690,7 +690,7 @@ public static class SaftProiectii {
             .Select(f => new { f.ID, f.Valuta }).ToList()
             .ToDictionary(f => f.ID, f => f.Valuta);
 
-        var loturiNascute = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+        var loturiNascute = os.GetObjectsQuery<Lot>()
             .Where(l => l.LinieIntrareId != null && idsLinie.Contains(l.LinieIntrareId.Value))
             .Select(l => new { l.ID, l.LinieIntrareId })
             .ToList()
@@ -1369,12 +1369,12 @@ public static class SaftProiectii {
         foreach (var a in inchideri) idsRepartitor.Add(a.RepartitorId);
         var listaRep = idsRepartitor.ToList();
 
-        var repartitori = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+        var repartitori = os.GetObjectsQuery<Repartitor>()
             .Where(r => listaRep.Contains(r.ID))
             .Select(r => new { r.ID, r.Cod, r.Denumire })
             .ToList()
             .ToDictionary(r => r.ID, r => (r.Cod, r.Denumire));
-        var parteneri = os.GetObjectsQuery<Partener>().IgnoreQueryFilters()
+        var parteneri = os.GetObjectsQuery<Partener>()
             .Where(p => listaRep.Contains(p.ID))
             .Select(p => new {
                 p.ID, p.Cod, p.Denumire, p.CodFiscal, p.TipPersoana, p.Tara, p.InregistratTva, p.TvaLaIncasare
@@ -1397,13 +1397,13 @@ public static class SaftProiectii {
             .Concat(deschideri.Select(a => a.LotId))
             .Concat(inchideri.Select(a => a.LotId))
             .Distinct().ToList();
-        var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+        var loturi = os.GetObjectsQuery<Lot>()
             .Where(l => idsLot.Contains(l.ID))
             .Select(l => new { l.ID, l.ProdusId, l.PretUnitar })
             .ToList()
             .ToDictionary(l => l.ID, l => (l.ProdusId, l.PretUnitar));
         var idsProdus = loturi.Values.Select(l => l.ProdusId).Distinct().ToList();
-        var produseCont = os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+        var produseCont = os.GetObjectsQuery<Produs>()
             .Where(p => idsProdus.Contains(p.ID))
             .Select(p => new { p.ID, p.Cod, p.Denumire, ContSimbol = p.TipMaterial.ContImplicit.Simbol })
             .ToList()
@@ -2233,7 +2233,7 @@ public static class SaftProiectii {
     static (List<SaftProdus> Produse, List<SaftUnitate> Unitati) ProduseSiUnitati(
         IObjectSpace os, IReadOnlyCollection<Guid> idsProduse, Action<CodAvertismentSaft, string> avert) {
         var listaProduse = idsProduse.ToList();
-        var produse = os.GetObjectsQuery<Produs>().IgnoreQueryFilters()
+        var produse = os.GetObjectsQuery<Produs>()
             .Where(p => listaProduse.Contains(p.ID))
             .Select(p => new {
                 p.ID, p.Cod, p.Denumire, p.CodNc, p.UM,

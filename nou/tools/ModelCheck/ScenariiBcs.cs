@@ -340,12 +340,12 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void Curata() {
         using var os = deschide();
-        var reps = os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+        var reps = os.GetObjectsQuery<Repartitor>()
             .Where(r => r.Cod.StartsWith(Marcaj)).Select(r => r.ID).ToList();
         if (reps.Count == 0) return;
-        var docs = os.GetObjectsQuery<Document>().IgnoreQueryFilters()
+        var docs = os.GetObjectsQuery<Document>()
             .Where(d => reps.Contains(d.PredatorId) || reps.Contains(d.PrimitorId)).Select(d => d.ID).ToList();
-        var loturi = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+        var loturi = os.GetObjectsQuery<Lot>()
             .Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
         var pj = new Purja(os);
         ProbeCub.Purjeaza(pj, os, docs);

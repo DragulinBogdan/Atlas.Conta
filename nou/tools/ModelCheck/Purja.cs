@@ -1,38 +1,18 @@
-﻿using DevExpress.ExpressApp;
+﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
-using DevExpress.Persistent.BaseImpl.EF;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-// F13-D2 — curățenia de scenă, după ce ModelCheck a primit interceptorul de
-// ștergere amânată (`UseDeferredDeletion` pe `DbContextOptionsBuilder`).
+// Curățenia de scenă: ștergere FIZICĂ prin SQL brut, în ordinea dată de
+// apelant — curățenia nu e probă, e infrastructură (F13-D2).
 //
-// De ce nu mai merge `os.Delete` la curățenie: din momentul în care harness-ul
-// șterge ca host-ul, `os.Delete` nu mai emite `DELETE`, ci
-// `UPDATE … SET "GCRecord" = 1`. Rândul rămâne în tabelă — invizibil pentru
-// interogări (filtrul global `GCRecord = 0` pus de suprasarcina pe `ModelBuilder`),
-// dar prezent pentru BAZĂ: cheia primară rămâne ocupată (scenele care își dau
-// Id-uri DETERMINISTE — fișa, `fa510000-…` — pică la a doua rulare cu violare de
-// PK) și cascada fizică prin FK nu se mai declanșează (dependenții rămân, doar
-// ei nu mai sunt nici măcar marcați).
-//
-// Regula feliei: **curățenia nu e probă, e infrastructură** — deci ștergere
-// FIZICĂ, prin SQL brut, în ordinea FK dată de apelant (dependenții întâi);
-// `os.Delete` rămâne DOAR acolo unde ștergerea logică e chiar obiectul probei
-// (F5: maparea D300; proba 57f: linia de draft invizibilă la Committing).
-//
-// Două detalii pe care se sprijină tot mecanismul:
-//   • **`IgnoreQueryFilters`** — culegerea rândurilor de purjat ocolește filtrul
-//     global, altfel curățenia n-ar putea vedea (deci nici curăța) reziduul
-//     lăsat de rulările anterioare: exact rândurile care ocupă PK-urile. Cu el,
-//     baza se auto-vindecă la prima rulare, fără intervenție manuală.
-//   • **rădăcina ierarhiei** — purja se dă pe tabela RĂDĂCINII
-//     (`NotaTransfer` → `Documente`, 89): un `DELETE` pe `Documente` ia cu el
-//     detaliile, `RegistruTva` și `Imperecheri`. Ce NU cascadează (`NO ACTION`:
-//     `RegistruContabil`, `RegistruStoc`) se dă explicit, ÎNAINTEA documentelor —
-//     de-aia ordinea pașilor e a apelantului, nu a helper-ului.
+// Cascada e a purjei, nu a schemei (104g: `Cascade` numai în agregat): înainte
+// de un pas se șterg, recursiv, rândurile legate prin FK OBLIGATORIU — cele care
+// nu pot exista fără părinte. Referințele opționale rămân gardul: un rând din
+// afara scenei care le ține oprește purja zgomotos.
 //
 // Se citesc doar Id-urile (`Select(x => x.ID)`), niciodată entitățile: obiectele
 // materializate ar rămâne în change tracker-ul EF după purjă, iar o scenă care
@@ -41,8 +21,8 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 sealed class Purja(IObjectSpace os) {
     readonly List<(Type Tip, List<Guid> Ids)> pasi = [];
 
-    public Purja Adauga<T>(IQueryable<T> interogare) where T : BaseObject {
-        var ids = interogare.IgnoreQueryFilters().Select(x => x.ID).Distinct().ToList();
+    public Purja Adauga<T>(IQueryable<T> interogare) where T : class, ICuCheie {
+        var ids = interogare.Select(x => x.ID).Distinct().ToList();
         if (ids.Count > 0)
             pasi.Add((typeof(T), ids));
         return this;
@@ -50,16 +30,16 @@ sealed class Purja(IObjectSpace os) {
 
     // Comoditate pentru cazurile în care apelantul are deja obiectele în mână
     // (un draft creat de scenă, un `Detalii.ToList()`): tot Id-uri se purjează.
-    public Purja Adauga<T>(IEnumerable<T> obiecte) where T : BaseObject {
+    public Purja Adauga<T>(IEnumerable<T> obiecte) where T : class, ICuCheie {
         var ids = obiecte.Select(x => x.ID).Distinct().ToList();
         if (ids.Count > 0)
             pasi.Add((typeof(T), ids));
         return this;
     }
 
-    public Purja Adauga<T>(T obiect) where T : BaseObject => Adauga([obiect]);
+    public Purja Adauga<T>(T obiect) where T : class, ICuCheie => Adauga([obiect]);
 
-    // Cubul (S-D1) nu derivă din `BaseObject`: aceeași purjă fizică, cu cheile date.
+    // Cubul (S-D1) nu derivă din `EntitateConta`: aceeași purjă fizică, cu cheile date.
     public Purja AdaugaCheie<T>(IEnumerable<Guid> ids) where T : class {
         var distincte = ids.Distinct().ToList();
         if (distincte.Count > 0)
@@ -68,7 +48,7 @@ sealed class Purja(IObjectSpace os) {
     }
 
     // Regulă de folosire (review F13, defect 6): purja detașează DOAR tipurile
-    // purjate explicit; dependenții luați de CASCADE în bază (`RegistruTva`,
+    // purjate explicit; dependenții luați de cascadă (`RegistruTva`,
     // `Imperecheri`) rămân în tracker dacă scena i-a încărcat
     // înainte — un commit ulterior pe același OS ar da
     // `DbUpdateConcurrencyException`. Deci: purja la ÎNCEPUTUL scenei, pe OS
@@ -86,6 +66,7 @@ sealed class Purja(IObjectSpace os) {
                 if (Cheia(intrare) is Guid id && ids.Contains(id))
                     intrare.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
         foreach (var (tip, ids) in pasi) {
+            StergeDependentii(ctx, ctx.Model.FindEntityType(tip)!.GetRootType(), ids, 0);
             var (tabela, coloanaId) = TabelaRadacina(ctx, tip);
             // Cubul atârnă de `Documente` prin FK: purja documentului îl ia cu ea. // S-D8
             if (tabela == "Documente")
@@ -127,9 +108,36 @@ sealed class Purja(IObjectSpace os) {
         pasi.Clear();
     }
 
+    // Dependenții prin FK obligatoriu ai rândurilor date, în adâncime, înaintea părintelui.
+    static void StergeDependentii(DbContext ctx, IEntityType radacina, List<Guid> ids, int adancime) {
+        if (adancime > 8)
+            throw new InvalidOperationException($"Purja: lanț de dependențe prea adânc sub {radacina.Name}.");
+        var tipuri = radacina.GetDerivedTypesInclusive().ToHashSet();
+        foreach (var fk in ctx.Model.GetEntityTypes().SelectMany(e => e.GetDeclaredForeignKeys())) {
+            if (!fk.IsRequired || !tipuri.Contains(fk.PrincipalEntityType)
+                || !typeof(EntitateConta).IsAssignableFrom(fk.DeclaringEntityType.ClrType)
+                || fk.DeclaringEntityType.GetRootType() == radacina)
+                continue;
+            var (tabela, coloanaId) = TabelaRadacina(ctx, fk.DeclaringEntityType.ClrType);
+            var coloanaFk = fk.Properties[0].GetColumnName(
+                StoreObjectIdentifier.Table(tabela, fk.DeclaringEntityType.GetRootType().GetSchema()));
+            var copii = ctx.Database.SqlQueryRaw<Guid>(
+                $"SELECT \"{coloanaId}\" AS \"Value\" FROM \"{tabela}\" WHERE \"{coloanaFk}\" = ANY(@p0)",
+                [ids.ToArray()]).ToList();
+            if (copii.Count == 0)
+                continue;
+            StergeDependentii(ctx, fk.DeclaringEntityType.GetRootType(), copii, adancime + 1);
+            if (tabela == "Documente")
+                foreach (var alCubului in new[] { "Postare", "Tranzactie" })
+                    ctx.Database.ExecuteSqlRaw(
+                        $"DELETE FROM \"{alCubului}\" WHERE \"DocumentId\" = ANY(@p0)", [copii.ToArray()]);
+            ctx.Database.ExecuteSqlRaw($"DELETE FROM \"{tabela}\" WHERE \"{coloanaId}\" = ANY(@p0)", [copii.ToArray()]);
+        }
+    }
+
     static Guid? Cheia(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry intrare) =>
-        intrare.Entity is BaseObject aplicatie
-            ? aplicatie.ID
+        intrare.Entity is ICuCheie cuCheie
+            ? cuCheie.ID
             : intrare.Metadata.FindPrimaryKey()?.Properties is [{ } cheie]
                 && intrare.Property(cheie.Name).CurrentValue is Guid id
                 ? id

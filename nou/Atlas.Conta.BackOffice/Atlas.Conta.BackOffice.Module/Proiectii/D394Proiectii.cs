@@ -132,7 +132,7 @@ public static class D394Proiectii {
         public Guid Id;
         public string Denumire, CuiP;
         public int TipPropriu, TipPartener;
-        public bool TvaLaIncasare, PersoanaFizica, Sters;
+        public bool TvaLaIncasare, PersoanaFizica, Inactiv;
         public string CheieCui => CuiP ?? "#" + Id.ToString("N");
     }
 
@@ -172,9 +172,9 @@ public static class D394Proiectii {
             .ToList();
 
         var idsRep = agregate.Where(a => a.PartenerId != null).Select(a => a.PartenerId.Value).Distinct().ToList();
-        var parteneri = os.GetObjectsQuery<Partener>().IgnoreQueryFilters()
+        var parteneri = os.GetObjectsQuery<Partener>()
             .Where(p => idsRep.Contains(p.ID))
-            .Select(p => new { p.ID, p.Denumire, p.CodFiscal, p.TipPersoana, p.Tara, p.InregistratTva, p.TvaLaIncasare, p.GCRecord })
+            .Select(p => new { p.ID, p.Denumire, p.CodFiscal, p.TipPersoana, p.Tara, p.InregistratTva, p.TvaLaIncasare, p.Activ })
             .ToList()
             .ToDictionary(p => p.ID, p => new InfoPartener {
                 Id = p.ID,
@@ -184,7 +184,7 @@ public static class D394Proiectii {
                 TipPartener = TipPartener(p.TipPersoana, p.Tara, p.InregistratTva),
                 TvaLaIncasare = p.TvaLaIncasare,
                 PersoanaFizica = p.TipPersoana == TipPersoana.Fizica,
-                Sters = p.GCRecord != 0
+                Inactiv = !p.Activ
             });
         var clasificariDiferite = new List<(string CuiP, List<InfoPartener> Parteneri, int Tip)>();
         foreach (var g in parteneri.Values.Where(p => p.CuiP != null).GroupBy(p => p.CuiP)) {
@@ -198,7 +198,7 @@ public static class D394Proiectii {
         var idsNePartener = idsRep.Where(id => !parteneri.ContainsKey(id)).ToList();
         var repartitori = idsNePartener.Count == 0
             ? new Dictionary<Guid, string>()
-            : os.GetObjectsQuery<Repartitor>().IgnoreQueryFilters()
+            : os.GetObjectsQuery<Repartitor>()
                 .Where(r => idsNePartener.Contains(r.ID))
                 .Select(r => new { r.ID, r.Denumire })
                 .ToList()
@@ -452,7 +452,7 @@ public static class D394Proiectii {
             var idsLot = os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.ID))
                 .Select(d => new { d.ID, d.LotId }).ToList();
             var loturi = idsLot.Where(x => x.LotId != null).Select(x => x.LotId.Value).Distinct().ToList();
-            var ncPeLot = os.GetObjectsQuery<Lot>().IgnoreQueryFilters()
+            var ncPeLot = os.GetObjectsQuery<Lot>()
                 .Where(l => loturi.Contains(l.ID))
                 .Select(l => new { l.ID, l.Produs.CodNc }).ToList()
                 .ToDictionary(l => l.ID, l => l.CodNc);
@@ -485,11 +485,10 @@ public static class D394Proiectii {
                     || (r.TipPartener is 3 or 4 && r.Tip is not (TipOperatiuneD394.L or TipOperatiuneD394.LS or TipOperatiuneD394.C)))
                 .Select(r => ($"{r.Tip} „{r.Denumire}” (tip partener {r.TipPartener}, CUI {r.CuiP ?? "—"}): bază {N2(r.Baza)}", (decimal?)r.Baza))
                 .ToList());
-        Avert(CodAvertismentD394.PartenerSters,
-            "Partener șters din nomenclator cu documente operate în perioadă — rândurile lui se declară (declarația nu "
-            + "depinde de viața nomenclatorului), dar identitatea lui fiscală nu se mai poate corecta decât după "
-            + "restaurare.",
-            ordonate.SelectMany(r => r.Parteneri.Values).Where(p => p.Sters).DistinctBy(p => p.Id).OrderBy(p => p.Id)
+        Avert(CodAvertismentD394.PartenerInactiv,
+            "Partener inactiv în nomenclator cu documente operate în perioadă — rândurile lui se declară (declarația nu "
+            + "depinde de viața nomenclatorului), iar identitatea lui fiscală se corectează după reactivare.",
+            ordonate.SelectMany(r => r.Parteneri.Values).Where(p => p.Inactiv).DistinctBy(p => p.Id).OrderBy(p => p.Id)
                 .Select(p => ($"„{p.Denumire}” (CUI {p.CuiP ?? "—"})", (decimal?)null)).ToList());
 
         if (TvaProiectii.LunaExacta(dataStart, dataEnd) is (int anDeclarat, int lunaDeclarata)) {

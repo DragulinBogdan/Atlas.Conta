@@ -14,7 +14,7 @@ sealed class ScenariiBalanta(Func<IObjectSpace> deschide, Action<string, bool> c
     protected override void CurataNomenclatoare(IObjectSpace os, Purja purja) {
         var db = ((EFCoreObjectSpace)os).DbContext;
         db.Database.ExecuteSql($"UPDATE \"Conturi\" SET \"ParinteId\" = NULL WHERE \"Simbol\" LIKE {Marcaj + "%"}");
-        purja.Adauga(os.GetObjectsQuery<Cont>().IgnoreQueryFilters().Where(c => c.Simbol.StartsWith(Marcaj)));
+        purja.Adauga(os.GetObjectsQuery<Cont>().Where(c => c.Simbol.StartsWith(Marcaj)));
     }
 
     protected override void Executa() {
@@ -109,7 +109,7 @@ sealed class ScenariiBalanta(Func<IObjectSpace> deschide, Action<string, bool> c
 
         var db = ((EFCoreObjectSpace)os).DbContext;
         using var tx = db.Database.BeginTransaction();
-        db.Database.ExecuteSql($"UPDATE \"Conturi\" SET \"GCRecord\" = 1 WHERE \"ID\" = {ascuns.ID}");
+        AscundereControlata.Ascunde(db, "Conturi", ascuns.ID);
         var faraEticheta = ContabilProiectii.Balanta(os, start, end).ToList();
         Verifica("SC-CIT-29", "eticheta lipsă nu elimină suma 17", faraEticheta.Count == sintetica.Count
             && faraEticheta.Single(r => r.ContId == ascuns.ID) is { ContSimbol: null, RulajDebit: 17 }

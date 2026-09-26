@@ -7,7 +7,7 @@ using System.ComponentModel;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
     [DefaultProperty(nameof(UserName))]
-    public class ApplicationUser : PermissionPolicyUser, ISecurityUserWithLoginInfo, ISecurityUserLockout {
+    public class ApplicationUser : PermissionPolicyUser, ICuCheie, ISecurityUserWithLoginInfo, ISecurityUserLockout {
         [Browsable(false)]
         public virtual int AccessFailedCount { get; set; }
 

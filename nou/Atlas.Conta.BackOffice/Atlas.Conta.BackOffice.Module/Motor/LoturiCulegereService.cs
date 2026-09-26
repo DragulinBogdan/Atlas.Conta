@@ -275,8 +275,8 @@ static class LoturiLiniiSterse {
         // (review advers F2-D4) dacă a rămas FĂRĂ NICIO URMĂ (anularea i-a șters
         // rândurile de registru, nicio linie vie nu-l mai referă), păstrarea lui
         // ar fi zgomot ireversibil în nomenclator, exact ce curățenia există să
-        // prevină. Query-urile văd doar rândurile vii (filtrul deferred deletion);
-        // liniile în curs de ștergere din ACEST commit se exclud explicit.
+        // prevină. Query-urile văd doar rândurile comise; liniile în curs de
+        // ștergere din ACEST commit se exclud explicit.
         var spreStergere = new HashSet<Guid>(idsSterse);
         foreach (var linie in os.GetObjectsToDelete(true).OfType<DocumentDetaliu>())
             spreStergere.Add(linie.ID);

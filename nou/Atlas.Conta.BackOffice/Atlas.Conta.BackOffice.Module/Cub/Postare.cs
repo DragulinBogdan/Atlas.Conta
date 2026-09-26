@@ -2,7 +2,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
-// S-D1: POCO EF, nu `BaseObject`. `Spatiu` e cheia partiției (S-D2), calculată
+// S-D1: POCO EF, nu `EntitateConta`. `Spatiu` e cheia partiției (S-D2), calculată
 // la materializare din `postare.Spatiu()`; `UnitateDeschisa` e amendamentul la
 // FZ-D2 (cheia FIFO `(Deschisa, Id)`, partida n-are rând de nomenclator).
 public class Postare {

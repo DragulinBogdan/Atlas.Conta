@@ -3,7 +3,6 @@ using Atlas.DXF.Core.Appearance.Attributes;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -12,7 +11,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // append-only și cu starea scrisă exclusiv de motor (`Motor/PerioadaService`).
 [NavigationItem("Nomenclatoare")]
 [XafDisplayName("Perioadă fiscală")]
-public class PerioadaFiscala : BaseObject {
+public class PerioadaFiscala : Editabila {
     // Fără separator de mii: editorul numeric implicit ar arăta „2.026”.
     [ModelDefault("EditMask", "d")]
     [ModelDefault("DisplayFormat", "{0:0}")]
@@ -41,7 +40,7 @@ public class PerioadaFiscala : BaseObject {
 // registrele. Nu e agregat al perioadei — ștergerea perioadei nu-l ia cu ea.
 [ForbidCRUD("ListView", "DetailView")]
 [XafDisplayName("Închidere de perioadă")]
-public class InchiderePerioada : BaseObject {
+public class InchiderePerioada : RandRegistru {
     public virtual Guid PerioadaId { get; set; }
     [XafDisplayName("Perioada")]
     public virtual PerioadaFiscala Perioada { get; set; }

@@ -107,11 +107,8 @@ public static class TrezorerieApply {
         // timp legătura există — altfel pointerul ar rămâne să arate spre un
         // document dispărut, iar suprimarea generării (F8-D7) l-ar cita.
         //
-        // Pre-check-ul e SINGURUL gard real, nu doar un mesaj mai frumos: FK-ul
-        // `Restrict` (F8-D6) nu se atinge niciodată pe calea asta, fiindcă
-        // modelul folosește ștergere AMÂNATĂ (`UseDeferredDeletion`, 60a) —
-        // rândul rămâne în tabelă cu `GCRecord` setat. Refuzul e de DOMENIU, cu
-        // documentul numit și cu ieșirea: legătura se ține pe o singură parte,
+        // Pre-check-ul dă refuzul de DOMENIU înaintea FK-ului `Restrict` (F8-D6),
+        // cu documentul numit și cu ieșirea: legătura se ține pe o singură parte,
         // deci se șterge de acolo.
         var pointer = os.GetObjectsQuery<DocumentTrezorerie>()
             .Where(x => x.LaturaPerecheId == id)

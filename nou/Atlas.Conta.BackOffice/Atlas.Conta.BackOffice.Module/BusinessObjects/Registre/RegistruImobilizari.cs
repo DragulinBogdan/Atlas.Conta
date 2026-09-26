@@ -1,7 +1,6 @@
 using Atlas.DXF.Core.Appearance.Attributes;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -9,7 +8,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [NavigationItem("Registre")]
 [ForbidCRUD("ListView", "DetailView")]
 [XafDisplayName("Registrul imobilizărilor")]
-public class RegistruImobilizari : BaseObject {
+public class RegistruImobilizari : RandRegistru {
     public virtual DateOnly Data { get; set; }
     public virtual Guid ImobilizareId { get; set; }
     public virtual Imobilizare Imobilizare { get; set; }

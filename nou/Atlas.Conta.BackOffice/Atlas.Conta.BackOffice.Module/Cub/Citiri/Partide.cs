@@ -187,10 +187,10 @@ public static class Partide {
             });
 
     public static void VerificaAcoperire(IObjectSpace os) {
-        var externi = os.GetObjectsQuery<Partener>().IgnoreQueryFilters().Select(p => p.ID)
-            .Concat(os.GetObjectsQuery<Angajat>().IgnoreQueryFilters().Select(p => p.ID));
-        var documente = os.GetObjectsQuery<Document>().IgnoreQueryFilters();
-        var conturi = os.GetObjectsQuery<Cont>().IgnoreQueryFilters().Where(c => c.UrmarestePartide);
+        var externi = os.GetObjectsQuery<Partener>().Select(p => p.ID)
+            .Concat(os.GetObjectsQuery<Angajat>().Select(p => p.ID));
+        var documente = os.GetObjectsQuery<Document>();
+        var conturi = os.GetObjectsQuery<Cont>().Where(c => c.UrmarestePartide);
         var lipsuri = os.GetObjectsQuery<Postare>().Where(Transformare.FaraContrapondere)
             .Where(p => p.Carte == N.Carte.Contabil
                 && (p.FelUnitate == N.FelUnitate.Partida

@@ -334,12 +334,12 @@ public static class PerioadaService {
     // Prima instrucțiune a comenzii (F27-D1): `FOR UPDATE` pe rândul perioadei,
     // ca `SUM`-ul să nu ruleze înaintea blocării. `FOR SHARE`-ul gardianului de
     // operare așteaptă aici, iar două operări concurente nu se blochează între
-    // ele (spike A.0). `"GCRecord" = 0` explicit — SQL brut, fără filtru global.
+    // ele (spike A.0).
     static void Blocheaza(IObjectSpace os, int an, int luna) {
         const string sql = """
             SELECT "ID" AS "Value"
             FROM "PerioadeFiscale"
-            WHERE "An" = {0} AND "Luna" = {1} AND "GCRecord" = 0
+            WHERE "An" = {0} AND "Luna" = {1}
             FOR UPDATE
             """;
         if (os is not EFCoreObjectSpace efCore)

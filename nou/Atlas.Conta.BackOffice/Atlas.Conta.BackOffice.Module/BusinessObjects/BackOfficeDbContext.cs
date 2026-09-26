@@ -174,17 +174,17 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaTvaImplicit> PoliticiTvaImplicit { get; set; }
         // Setarea de profil a bazei (decizia 51c): un singur rând, scris de seed.
         public DbSet<SetareProfil> SetariProfil { get; set; }
+        public DbSet<RefuzSeed> RefuzuriSeed { get; set; }
 
         // Infrastructura migrării (pasul 4): corelare legacy → nou.
         public DbSet<MigrareLegatura> MigrareLegaturi { get; set; }
 
-        // Cubul de postări (S-D1): tabele proprii, în afara `BaseObject`.
+        // Cubul de postări (S-D1): tabele proprii, în afara `EntitateConta`.
         public DbSet<Cub.Tranzactie> Tranzactii { get; set; }
         public DbSet<Cub.Postare> Postari { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.UseDeferredDeletion(this);
             modelBuilder.UseOptimisticLock();
             modelBuilder.SetOneToManyAssociationDeleteBehavior(DeleteBehavior.SetNull, DeleteBehavior.Cascade);
             modelBuilder.HasChangeTrackingStrategy(ChangeTrackingStrategy.ChangingAndChangedNotificationsWithOriginalValues);
@@ -250,30 +250,17 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<DocumentDetaliu>()
                 .HasOne(d => d.Lot).WithMany().HasForeignKey(d => d.LotId);
 
-            // DVI-D3: legătura n→m declarație ↔ facturi de import. Perechea e
-            // identitatea rândului (o factură o dată pe aceeași declarație),
-            // filtrată pe `GCRecord = 0` ca toate unicitățile pe tipuri cu
-            // ștergere amânată (60a) — dezlegarea și relegarea aceleiași facturi
-            // pe un draft e flux normal. FK-uri `Restrict`: legătura nu dispare
-            // tăcut nici pe capătul declarației, nici pe cel al facturii.
+            // DVI-D3: o factură o dată pe aceeași declarație.
             modelBuilder.Entity<DviFactura>()
-                .HasIndex(f => new { f.DviId, f.FacturaId }).IsUnique()
-                .HasFilter("\"GCRecord\" = 0");
+                .HasIndex(f => new { f.DviId, f.FacturaId }).IsUnique();
             modelBuilder.Entity<DviFactura>()
-                .HasOne(f => f.Dvi).WithMany(d => d.Facturi).HasForeignKey(f => f.DviId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(f => f.Dvi).WithMany(d => d.Facturi).HasForeignKey(f => f.DviId);
             modelBuilder.Entity<DviFactura>()
-                .HasOne(f => f.Factura).WithMany().HasForeignKey(f => f.FacturaId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(f => f.Factura).WithMany().HasForeignKey(f => f.FacturaId);
 
-            // F27-D1: perioada e verigă de lanț, deci `(An, Luna)` e IDENTITATE, nu
-            // o coincidență. Filtrat pe rândurile vii ca toate unicitățile de pe
-            // tipuri cu ștergere amânată (60a) — altfel o perioadă ștearsă ar
-            // bloca recrearea aceleiași luni. Fără index, `VerificaDeschisa`
-            // (`FirstOrDefault`) ar fi ales nedeterminist între două rânduri.
+            // F27-D1: perioada e verigă de lanț, deci `(An, Luna)` e identitate.
             modelBuilder.Entity<PerioadaFiscala>()
-                .HasIndex(p => new { p.An, p.Luna }).IsUnique()
-                .HasFilter("\"GCRecord\" = 0");
+                .HasIndex(p => new { p.An, p.Luna }).IsUnique();
             // Istoricul nu dispare cu perioada (Restrict) și nu e agregat al ei:
             // e registrul închiderilor, nu o colecție de culegere.
             modelBuilder.Entity<InchiderePerioada>(b => {
@@ -286,8 +273,6 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // UNICĂ per perioadă, cu `NULLS NOT DISTINCT` (Postgres 15+) —
             // dimensiunile sunt nullable, iar semantica cerută e „aceleași
             // dimensiuni lipsă = aceeași cheie", nu „fiecare NULL e altceva".
-            // Fără filtru pe `GCRecord`: rândurile se șterg FIZIC (nu e
-            // nomenclator, e proiecție rescrisă la fiecare închidere).
             // FK-uri `Restrict` și fără `AutoInclude`: consumatorii agregă, nu
             // afișează — spre deosebire de `RegistruContabil` (41c).
             modelBuilder.Entity<SoldPerioadaContabil>(b => {
@@ -322,10 +307,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // F27-D7: partidele deschise ale perioadelor de referință. Un rând
-            // per (perioadă × document), rescris la fiecare închidere — aceeași
-            // ștergere FIZICĂ ca snapshot-urile, deci unicitate fără filtru pe
-            // `GCRecord`. FK `Restrict`: documentul nu dispare de sub partida lui.
+            // F27-D7: partidele deschise ale perioadelor de referință, rescrise la fiecare închidere.
             modelBuilder.Entity<PartidaDeschisa>(b => {
                 b.HasIndex(p => new { p.An, p.Luna, p.UnitateId, p.ContId, p.PartenerId }).IsUnique();
                 b.HasIndex(p => new { p.An, p.Luna });
@@ -335,26 +317,25 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
             // F27-D8: imperecherea e fapt datat — proiecția de rest taie fereastra
             // deschisă pe `Data`, iar rândul invers arată spre cel pe care îl
-            // desface. Legătura e 1:1 (unicitate filtrată pe rândurile vii, ca la
-            // corecție) și `Restrict`: originalul nu dispare de sub inversul lui.
+            // desface. Legătura e 1:1 și `Restrict`: originalul nu dispare de sub inversul lui.
             modelBuilder.Entity<Imperechere>(b => {
-                b.HasIndex(i => i.Data).HasFilter("\"GCRecord\" = 0");
-                b.HasIndex(i => i.InverseazaId).IsUnique().HasFilter("\"GCRecord\" = 0");
+                b.HasIndex(i => i.Data);
+                b.HasIndex(i => i.InverseazaId).IsUnique();
                 b.HasOne(i => i.Inverseaza).WithMany().HasForeignKey(i => i.InverseazaId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
             // Rulajele unei luni se citesc pe `Data` (spike B.4: 70,6 → 37,9 ms
             // pe contabil, 16,2 → 14,1 pe stoc, plan de index scan în loc de
-            // parallel seq scan). Filtrat pe rândurile vii, ca toate citirile.
+            // parallel seq scan).
             modelBuilder.Entity<RegistruContabil>()
-                .HasIndex(r => r.Data).HasFilter("\"GCRecord\" = 0");
+                .HasIndex(r => r.Data);
             modelBuilder.Entity<RegistruStoc>()
-                .HasIndex(r => r.Data).HasFilter("\"GCRecord\" = 0");
+                .HasIndex(r => r.Data);
 
             // F27-D4: consumatorii de perioadă filtrează documentele pe data înregistrării.
             modelBuilder.Entity<Document>()
-                .HasIndex(d => d.DataInregistrare).HasFilter("\"GCRecord\" = 0");
+                .HasIndex(d => d.DataInregistrare);
 
             // F27-D6: corecția arată spre originalul stornat. `WithMany()` fără
             // colecție (ca `LaturaPereche`): legătura e 1:1 și se verifică la
@@ -364,12 +345,12 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasOne(d => d.Corecteaza).WithMany().HasForeignKey(d => d.CorecteazaId)
                 .OnDelete(DeleteBehavior.Restrict);
             modelBuilder.Entity<Document>()
-                .HasIndex(d => d.CorecteazaId).HasFilter("\"GCRecord\" = 0");
+                .HasIndex(d => d.CorecteazaId);
 
             // F27-D5: jurnalele, decontul, D300, D394 și SAF-T filtrează registrul
             // fiscal pe PERIOADA DE DECLARARE, nu pe data faptului.
             modelBuilder.Entity<RegistruTva>()
-                .HasIndex(r => new { r.PerioadaAn, r.PerioadaLuna }).HasFilter("\"GCRecord\" = 0");
+                .HasIndex(r => new { r.PerioadaAn, r.PerioadaLuna });
 
             // FK-uri `Restrict`: convenția globală `SetNull`/`Cascade` ar goli tăcut fișa sau linia-sursă (F26-D1/D2/D5).
             modelBuilder.Entity<Imobilizare>(b => {
@@ -448,13 +429,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<MigrareLegatura>()
                 .HasIndex(m => new { m.Tabela, m.CheieLegacy }).IsUnique();
 
-            // D15-D1: `Cod` („RO-CJ") e cheia de idempotență a seed-ului și
-            // identitatea de raportare (SAF-T `Region`) — unic. Filtrat pe
-            // `GCRecord = 0` ca toate unicitățile pe tipuri cu ștergere amânată
-            // (60a): rândul șters rămâne fizic în tabelă, iar un index NEfiltrat
-            // ar bloca pentru totdeauna re-seed-ul aceluiași județ.
-            modelBuilder.Entity<Judet>().HasIndex(j => j.Cod).IsUnique()
-                .HasFilter("\"GCRecord\" = 0");
+            // D15-D1: `Cod` („RO-CJ") e cheia seed-ului și identitatea de raportare (SAF-T `Region`).
+            modelBuilder.Entity<Judet>().HasIndex(j => j.Cod).IsUnique();
             // Județul unui partener nu se poate șterge din nomenclator cât timp
             // e referit; convenția globală SetNull ar fi golit tăcut adresa —
             // exact genul de pierdere pe care SAF-T o descoperă la validare.
@@ -462,11 +438,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasOne(p => p.Judet).WithMany().HasForeignKey(p => p.JudetId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // D16-D2: `Cod` („H87") e cheia de idempotență a seed-ului și
-            // identitatea de raportare (`UOMStandard`) — unic, filtrat pe
-            // `GCRecord = 0` din exact motivul lui `Judet.Cod` de mai sus.
-            modelBuilder.Entity<UnitateMasura>().HasIndex(u => u.Cod).IsUnique()
-                .HasFilter("\"GCRecord\" = 0");
+            // D16-D2: `Cod` („H87") e cheia seed-ului și identitatea de raportare (`UOMStandard`).
+            modelBuilder.Entity<UnitateMasura>().HasIndex(u => u.Cod).IsUnique();
             // Unitatea unui produs nu se șterge din nomenclator cât e referită
             // (`[ForbidCRUD]` o face oricum imposibilă din UI); convenția globală
             // SetNull ar fi golit tăcut câmpul, iar produsul ar fi ieșit în fișier
@@ -493,14 +466,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // convenția globală SetNull ar fi golit tăcut structura formularului.
             // `WithMany()` fără colecție: sensurile inverse („copiii", „oglinzile
             // mele") se derivă prin query în proiecție, nu se materializează.
-            // FILTRAT pe `GCRecord = 0` (fix F5 al review-ului advers), ca toate
-            // unicitățile pe tipuri cu ȘTERGERE AMÂNATĂ (60a): rândul șters din
-            // UI rămâne fizic în tabelă, deci un index unic NEfiltrat l-ar face
-            // să blocheze pentru totdeauna recrearea aceleiași chei — o ștergere
-            // reversibilă prin construcție ar fi devenit definitivă printr-un
-            // efect colateral al schemei, cu un `23505` brut în loc de un mesaj.
-            modelBuilder.Entity<RandD300>().HasIndex(r => r.Cod).IsUnique()
-                .HasFilter("\"GCRecord\" = 0");
+            modelBuilder.Entity<RandD300>().HasIndex(r => r.Cod).IsUnique();
             modelBuilder.Entity<RandD300>()
                 .HasOne(r => r.Parinte).WithMany().HasForeignKey(r => r.ParinteId)
                 .OnDelete(DeleteBehavior.Restrict);
@@ -510,33 +476,21 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // D3-D2: tripleta e identitatea mapării — aceeași pereche poate cădea pe
             // mai multe rânduri (TI19 pe achiziție: 16 ȘI 33), dar de două ori pe
             // ACELAȘI rând ar dubla cifra la proiecție.
-            //
-            // Filtrat pe `GCRecord = 0` din același motiv ca `RandD300` de mai sus,
-            // dar aici cazul e cel REAL: maparea e politică editabilă (decizia 4),
-            // deci ștergerea ei din XAF e un flux normal, iar reintroducerea aceleiași
-            // triplete după o ștergere e chiar remediul unei greșeli de culegere.
             modelBuilder.Entity<MapareD300>()
-                .HasIndex(m => new { m.TipTvaId, m.Sens, m.RandId }).IsUnique()
-                .HasFilter("\"GCRecord\" = 0");
+                .HasIndex(m => new { m.TipTvaId, m.Sens, m.RandId }).IsUnique();
             // D4-D2: spre deosebire de D300, aici PERECHEA e identitatea — un grup
-            // de registru are un singur tip de operațiune în 394. Filtrat pe
-            // `GCRecord = 0` din același motiv (ștergerea logică e flux normal).
+            // de registru are un singur tip de operațiune în 394.
             modelBuilder.Entity<MapareD394>()
-                .HasIndex(m => new { m.TipTvaId, m.Sens }).IsUnique()
-                .HasFilter("\"GCRecord\" = 0");
+                .HasIndex(m => new { m.TipTvaId, m.Sens }).IsUnique();
             modelBuilder.Entity<MapareTvaSaft>()
                 .HasIndex(m => new { m.Versiune, m.Sectiune, m.TipTvaId, m.Regim, m.Cota, m.DeImport, m.Sens, m.Rol })
-                .IsUnique().HasFilter("\"GCRecord\" = 0");
+                .IsUnique();
 
             // D17-D1: tripleta `(TipDocument, TipStoc, Semn)` e identitatea
             // politicii de mișcare SAF-T — un rând de registru se potrivește pe
             // exact una, altfel codul de mișcare ar depinde de ordinea rândurilor.
-            // Filtrat pe `GCRecord = 0` din același motiv ca la D300/D394:
-            // politica e date editabile (decizia 4), deci ștergerea e flux normal,
-            // iar reintroducerea aceleiași chei e chiar remediul unei greșeli.
             modelBuilder.Entity<PoliticaMiscareSaft>()
-                .HasIndex(p => new { p.TipDocumentId, p.TipStoc, p.Semn }).IsUnique()
-                .HasFilter("\"GCRecord\" = 0");
+                .HasIndex(p => new { p.TipDocumentId, p.TipStoc, p.Semn }).IsUnique();
             // A DOUA jumătate a unicității, cerută de semantica lui NULL în SQL:
             // în Postgres `NULL <> NULL`, deci indexul de mai sus NU oprește două
             // rânduri „orice semn" pe aceeași pereche (tip, TipStoc) — exact
@@ -544,16 +498,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // aici o prinde: unic pe pereche, PRINTRE rândurile cu `Semn` null.
             modelBuilder.Entity<PoliticaMiscareSaft>()
                 .HasIndex(p => new { p.TipDocumentId, p.TipStoc }).IsUnique()
-                .HasFilter("\"Semn\" IS NULL AND \"GCRecord\" = 0");
+                .HasFilter("\"Semn\" IS NULL");
 
             AplicaUnicitatiPolitici(modelBuilder);
-
-            // F23-D3 — `Activ` e jumătatea de MIGRAȚIE a tipului viu: coloana se
-            // adaugă cu `DEFAULT true`, deci rândurile EXISTENTE rămân vii (un
-            // nomenclator care s-ar stinge în întregime la un `database update`
-            // ar goli tăcut toate lookup-urile de culegere). Perechea ei e
-            // inițializatorul `= true` de pe proprietate, pentru rândurile noi.
-            modelBuilder.Entity<TipTva>().Property(t => t.Activ).HasDefaultValue(true);
+            modelBuilder.Entity<RefuzSeed>().HasIndex(r => new { r.Tip, r.Cheie }).IsUnique();
 
             modelBuilder.HasDbFunction(typeof(Cub.Citiri.Partide).GetMethod(nameof(Cub.Citiri.Partide.Identitate)))
                 .HasName("cub_partida_id");
@@ -564,7 +512,22 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             AplicaColoanePartajate(modelBuilder);
             AplicaColoanaCautare(modelBuilder);
             AplicaFunctiaFaraDiacritice(modelBuilder);
+            AplicaStergereaInAgregat(modelBuilder);
         }
+
+        // 104g: `Cascade` numai pe compoziție (colecția inversă e `[Aggregated]`), altfel refuz din bază:
+        // `ClientNoAction` lasă dependenții urmăriți neatinși, deci refuzul e mereu 23503, tradus (39a).
+        private static void AplicaStergereaInAgregat(ModelBuilder modelBuilder) {
+            foreach (var entitate in modelBuilder.Model.GetEntityTypes()) {
+                if (!typeof(EntitateConta).IsAssignableFrom(entitate.ClrType))
+                    continue;
+                foreach (var fk in entitate.GetDeclaredForeignKeys())
+                    fk.DeleteBehavior = EsteCompozitie(fk) ? DeleteBehavior.Cascade : DeleteBehavior.ClientNoAction;
+            }
+        }
+
+        public static bool EsteCompozitie(IReadOnlyForeignKey fk) =>
+            fk.PrincipalToDependent?.PropertyInfo?.IsDefined(typeof(DevExpress.ExpressApp.DC.AggregatedAttribute), true) == true;
 
         // UNICITATEA POLITICILOR ȘI A CODURILOR DE NOMENCLATOR (felia 23,
         // F23-D3). Până acum, nouă politici per tip de document și cinci coduri
@@ -575,10 +538,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // făcea motorul NEDETERMINIST și TĂCUT: nu pică nimic, doar postează
         // uneori altfel.
         //
-        // Trei reguli comune, toate deja precedent în fișier:
-        //   * FILTRAT pe `"GCRecord" = 0` (60a): rândul șters logic rămâne fizic
-        //     în tabelă, iar un index nefiltrat i-ar bloca definitiv recrearea —
-        //     tocmai remediul unei greșeli de culegere;
+        // Două reguli comune, ambele deja precedent în fișier:
         //   * `NULLS NOT DISTINCT` (`AreNullsDistinct(false)`) unde cheia are
         //     coloane nullable. În Postgres `NULL <> NULL`, deci fără asta două
         //     rânduri „orice clasă / orice semn / regulă generică" pe aceeași
@@ -596,24 +556,22 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // bazele de import au coliziuni legitime între familii — restanță cu
         // nume, nu o unicitate impusă pe tăcute.
         private static void AplicaUnicitatiPolitici(ModelBuilder modelBuilder) {
-            const string viu = "\"GCRecord\" = 0";
-
             // (1) Politicile cu UN rând per tip de document — cheia e FK-ul,
             // fără nullable, deci indexul simplu ajunge.
             modelBuilder.Entity<PoliticaTva>()
-                .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+                .HasIndex(p => p.TipDocumentId).IsUnique();
             modelBuilder.Entity<PoliticaConex>()
-                .HasIndex(p => p.TipDocumentSursaId).IsUnique().HasFilter(viu);
+                .HasIndex(p => p.TipDocumentSursaId).IsUnique();
             modelBuilder.Entity<PoliticaScadenta>()
-                .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+                .HasIndex(p => p.TipDocumentId).IsUnique();
             modelBuilder.Entity<PoliticaValidare>()
-                .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+                .HasIndex(p => p.TipDocumentId).IsUnique();
             modelBuilder.Entity<PoliticaNumerotare>()
-                .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+                .HasIndex(p => p.TipDocumentId).IsUnique();
             modelBuilder.Entity<PoliticaInchidereTva>()
-                .HasIndex(p => p.TipDocumentId).IsUnique().HasFilter(viu);
+                .HasIndex(p => p.TipDocumentId).IsUnique();
             modelBuilder.Entity<PoliticaInchidere>()
-                .HasIndex(p => p.Fel).IsUnique().HasFilter(viu);
+                .HasIndex(p => p.Fel).IsUnique();
 
             // (2) Regulile de alimentare — cheia lor e cheia de POTRIVIRE a
             // motorului, cu nullable-uri pe trepte (`ClasaId`, `TipMaterialId`,
@@ -621,19 +579,19 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // conținutul regulii: două reguli generice pe același tip ar fi
             // ales-o pe prima întoarsă de bază.
             modelBuilder.Entity<PoliticaDiferenta>()
-                .HasIndex(r => new { r.TipDocumentId, r.Cauza, r.ClasaId }).IsUnique().HasFilter(viu);
+                .HasIndex(r => new { r.TipDocumentId, r.Cauza, r.ClasaId }).IsUnique();
             modelBuilder.Entity<RegulaStoc>()
                 .HasIndex(r => new { r.TipDocumentId, r.Latura, r.ClasaId }).IsUnique()
-                .AreNullsDistinct(false).HasFilter(viu);
+                .AreNullsDistinct(false);
             modelBuilder.Entity<RegulaContare>()
                 .HasIndex(r => new { r.TipDocumentId, r.TipMaterialId, r.NaturaFiltru, r.SemnFiltru })
-                .IsUnique().AreNullsDistinct(false).HasFilter(viu);
+                .IsUnique().AreNullsDistinct(false);
 
             // (3) Implicitul de TVA (F23-D2): două dintre cele trei coloane ale
             // cheii sunt nullable („orice clasă", „dintotdeauna").
             modelBuilder.Entity<PoliticaTvaImplicit>()
                 .HasIndex(p => new { p.TipDocumentId, p.ClasaFiscala, p.ValabilDeLa }).IsUnique()
-                .AreNullsDistinct(false).HasFilter(viu);
+                .AreNullsDistinct(false);
 
             // (4) Codurile de nomenclator pe care seed-ul le folosește DEJA ca
             // chei de idempotență (`os.FirstOrDefault<T>(x => x.Cod == …)`).
@@ -641,25 +599,28 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // ancora de motor (`GasesteTipDocument`) — un al doilea rând pe
             // oricare dintre ele ar rupe rezoluția de tip.
             modelBuilder.Entity<TipDocument>()
-                .HasIndex(t => t.Cod).IsUnique().HasFilter(viu);
+                .HasIndex(t => t.Cod).IsUnique();
             modelBuilder.Entity<TipDocument>()
-                .HasIndex(t => t.ClrType).IsUnique().HasFilter(viu);
+                .HasIndex(t => t.ClrType).IsUnique();
             modelBuilder.Entity<TipTva>()
-                .HasIndex(t => t.Cod).IsUnique().HasFilter(viu);
+                .HasIndex(t => t.Cod).IsUnique();
             modelBuilder.Entity<Cont>()
-                .HasIndex(c => c.Simbol).IsUnique().HasFilter(viu);
+                .HasIndex(c => c.Simbol).IsUnique();
             modelBuilder.Entity<ClasaProdus>()
-                .HasIndex(c => c.Cod).IsUnique().HasFilter(viu);
+                .HasIndex(c => c.Cod).IsUnique();
             modelBuilder.Entity<TipMaterial>()
-                .HasIndex(t => t.Cod).IsUnique().HasFilter(viu);
+                .HasIndex(t => t.Cod).IsUnique();
 
             // (5) Identitatea fișei, cheia de seed a catalogului, un rând de politică per tip (F26-D4).
             modelBuilder.Entity<Imobilizare>()
-                .HasIndex(f => f.NumarInventar).IsUnique().HasFilter(viu);
+                .HasIndex(f => f.NumarInventar).IsUnique();
             modelBuilder.Entity<ClasificareImobilizari>()
-                .HasIndex(c => c.Cod).IsUnique().HasFilter(viu);
+                .HasIndex(c => c.Cod).IsUnique();
             modelBuilder.Entity<PoliticaAmortizare>()
-                .HasIndex(p => p.TipMaterialId).IsUnique().HasFilter(viu);
+                .HasIndex(p => p.TipMaterialId).IsUnique();
+            // 104i: cheia refuzului de seed.
+            modelBuilder.Entity<RegulaDeductibilitate>()
+                .HasIndex(r => new { r.Categorie, r.DeLa }).IsUnique();
         }
 
         // Căutarea fără diacritice pe PROIECȚII (decizia 78): `Cautare.
@@ -716,7 +677,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // de sistem (Import1C, seed, motor) e apărată aici, de schemă; ușa
         // secured primește mesajul de domeniu din `GardianEditare` înaintea
         // bazei, iar violarea de constraint — dacă totuși ajunge — iese tot
-        // 422, tradusă (39a/60a, `CheckTemplate` cu numele regulii).
+        // 422, tradusă (39a, `CheckTemplate` cu numele regulii).
         private static void AplicaColoanaCautare(ModelBuilder modelBuilder) {
             foreach (var entityType in modelBuilder.Model.GetEntityTypes()) {
                 var clr = entityType.ClrType;
@@ -866,7 +827,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             if (noi.Count == 0)
                 return;
             var documente = noi.Select(e => e.Entity.DocumentId).Distinct().ToList();
-            var maxime = Set<DocumentDetaliu>().IgnoreQueryFilters()
+            var maxime = Set<DocumentDetaliu>()
                 .Where(d => documente.Contains(d.DocumentId))
                 .GroupBy(d => d.DocumentId)
                 .Select(g => new { Document = g.Key, Maxim = g.Max(d => d.Pozitie) })
@@ -905,7 +866,6 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             base.OnModelCreating(modelBuilder);
-            modelBuilder.UseDeferredDeletion(this);
             modelBuilder.HasChangeTrackingStrategy(ChangeTrackingStrategy.ChangingAndChangedNotificationsWithOriginalValues);
             modelBuilder.Entity<AuditEFCoreWeakReference>()
                 .HasMany(p => p.AuditItems)

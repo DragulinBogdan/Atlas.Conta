@@ -230,10 +230,7 @@ public static class MotorOperare {
             foreach (var d in Liniile(doc)) {
                 if (d.TipTvaId == null || d.ValoareTva == 0m)
                     continue;
-                // Geamănul gardului din `RegistruTvaService` (review advers D4):
-                // un `TipTva` șters logic din nomenclator lăsa liniile care-l referă
-                // să pice cu `KeyNotFoundException`, adică o excepție brută în loc
-                // de un refuz de domeniu cu remediu.
+                // Geamănul gardului din `RegistruTvaService` (review advers D4).
                 if (!tipuriTva.TryGetValue(d.TipTvaId.Value, out var tva))
                     throw new OperareException(
                         "Tipul de TVA al unei linii nu mai există în nomenclator (a fost șters) — "

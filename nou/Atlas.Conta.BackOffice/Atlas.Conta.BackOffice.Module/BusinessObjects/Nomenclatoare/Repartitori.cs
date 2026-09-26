@@ -4,7 +4,6 @@ using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Validation;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -12,7 +11,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // calitățile transversale sunt flags, nu clase.
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public abstract class Repartitor : BaseObject, ICuCautare {
+public abstract class Repartitor : Nomenclator, ICuCautare {
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Tip")]
     [VisibleInListView(false), VisibleInDetailView(false)]
@@ -33,7 +32,6 @@ public abstract class Repartitor : BaseObject, ICuCautare {
         CustomMessageTemplate = "Denumirea este obligatorie.")]
     public virtual string Denumire { get; set; }
     public virtual CalitateRepartitor Calitati { get; set; }
-    public virtual bool Activ { get; set; } = true;
     // Tranșarea (d) din testul bazei, lărgită la decizia 31: contul purtat de
     // repartitor intră în rezolvarea declarativă a regulilor de contare
     // (SursaCont.Repartitor*) pentru ORICE latură — partener 401/404/411,

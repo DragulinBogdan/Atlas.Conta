@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
     [Table("PermissionPolicyUserLoginInfo")]
-    public class ApplicationUserLoginInfo : BaseObject, ISecurityUserLoginInfo {
+    public class ApplicationUserLoginInfo : BaseObject, ICuCheie, ISecurityUserLoginInfo {
         public ApplicationUserLoginInfo() { }
 
         [Appearance("PasswordProvider", Enabled = false, Criteria = "!(IsNewObject(this)) and LoginProviderName == '" + SecurityDefaults.PasswordAuthentication + "'", Context = "DetailView")]

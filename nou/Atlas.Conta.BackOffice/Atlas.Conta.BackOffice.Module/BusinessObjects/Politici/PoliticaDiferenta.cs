@@ -1,7 +1,6 @@
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -17,7 +16,7 @@ public enum CauzaDiferentei {
 // 099: tip × cauză × clasă; politica nu inventează cauze sau direcții.
 [NavigationItem("Politici")]
 [XafDisplayName("Politică diferență")]
-public class PoliticaDiferenta : BaseObject, ICuProvenienta {
+public class PoliticaDiferenta : Politica, ICuProvenienta {
     [XafDisplayName("Din seed"), ModelDefault("AllowEdit", "False")]
     public virtual bool DinSeed { get; set; }
     public virtual Guid TipDocumentId { get; set; }

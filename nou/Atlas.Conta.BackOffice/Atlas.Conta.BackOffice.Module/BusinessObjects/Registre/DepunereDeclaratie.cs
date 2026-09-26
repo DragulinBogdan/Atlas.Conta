@@ -1,6 +1,5 @@
 using Atlas.DXF.Core.Appearance.Attributes;
 using DevExpress.ExpressApp.DC;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -8,7 +7,7 @@ public enum FormularFiscal { D300 = 1, D394 = 2 }
 
 [ForbidCRUD("ListView", "DetailView")]
 [XafDisplayName("Depunere declarație")]
-public class DepunereDeclaratie : BaseObject, IVerificabilLaCommit {
+public class DepunereDeclaratie : RandRegistru, IVerificabilLaCommit {
     public void Verifica(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) =>
         erori.Add("Depunerea se confirmă numai prin comanda dedicată.");
 

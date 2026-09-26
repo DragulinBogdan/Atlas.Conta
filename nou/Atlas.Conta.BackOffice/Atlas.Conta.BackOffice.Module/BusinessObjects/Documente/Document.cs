@@ -3,7 +3,6 @@ using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.Validation;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -83,7 +82,7 @@ public readonly record struct PlafonStingere(decimal Datorie, decimal Creanta) {
 [Appearance("Document_Corectie_Ascuns", AppearanceItemType.ViewItem, "CorecteazaId Is Null",
     TargetItems = nameof(Corecteaza) + ";" + nameof(MotivCorectie),
     Visibility = DevExpress.ExpressApp.Editors.ViewItemVisibility.Hide)]
-public abstract class Document : BaseObject {
+public abstract class Document : Editabila {
     public virtual bool AcoperaReceptia(Document conex) => false;
     public virtual void PreiaSursaConexa(Document sursa) { }
     public virtual void PreiaLinieConexa(DocumentDetaliu sursa, DocumentDetaliu tinta) { }
@@ -336,7 +335,7 @@ public abstract class Document : BaseObject {
 
 // Bază concretă: NIR/BonConsum/NotaTransfer o folosesc direct (testul bazei §6);
 // derivate de detaliu există doar unde schema diferă.
-public class DocumentDetaliu : BaseObject {
+public class DocumentDetaliu : Editabila {
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Tip")]
     [VisibleInListView(false), VisibleInDetailView(false)]

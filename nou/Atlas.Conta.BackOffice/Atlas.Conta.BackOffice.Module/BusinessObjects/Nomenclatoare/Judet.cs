@@ -1,7 +1,6 @@
 using Atlas.DXF.Core.Appearance.Attributes;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 using System.ComponentModel.DataAnnotations;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -34,7 +33,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
 [ForbidCRUD("ListView", "DetailView")]
-public class Judet : BaseObject, ICuCautare {
+public class Judet : Nomenclator, ICuCautare {
     // Codul ISO 3166-2, cu prefixul de țară: „RO-CJ", „RO-B". Unic (index
     // filtrat pe `GCRecord = 0` în DbContext) și cheia seed-ului.
     [MaxLength(5)]

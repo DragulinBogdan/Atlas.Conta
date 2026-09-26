@@ -1,14 +1,13 @@
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 // Decizia 10: plan doar sintetic; analiticele se derivă din dimensiuni la raportare.
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Simbol))]
-public class Cont : BaseObject, ICuCautare, ICuProvenienta {
+public class Cont : Nomenclator, ICuCautare, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]

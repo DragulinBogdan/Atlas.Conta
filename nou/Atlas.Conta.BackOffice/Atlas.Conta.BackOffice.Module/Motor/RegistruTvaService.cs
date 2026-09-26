@@ -96,12 +96,7 @@ public static class RegistruTvaService {
         foreach (var d in linii) {
             if (d.TipTvaId == null)
                 continue;
-            // `TipTva` NU e `[ForbidCRUD]` și are ștergere amânată: un tip în uz
-            // poate fi „șters" din nomenclator fără ca vreun FK să se opună (nu se
-            // face niciun DELETE real), iar liniile continuă să-l refere. Indexarea
-            // directă ar fi aruncat `KeyNotFoundException` — excepție brută (500 pe
-            // API) în loc de refuz de domeniu, și oprirea unei rulări lungi de
-            // backfill în mijlocul lotului (review advers D4).
+            // Refuz de domeniu în locul `KeyNotFoundException` (review advers D4).
             if (!tipuri.TryGetValue(d.TipTvaId.Value, out var info))
                 throw new OperareException(
                     $"Tipul de TVA al unei linii nu mai există în nomenclator (a fost șters) — "

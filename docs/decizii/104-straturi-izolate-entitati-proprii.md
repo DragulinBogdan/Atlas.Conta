@@ -1,7 +1,7 @@
 # 104 — Straturi izolate, culegerea în XAF, entități proprii fără ștergere amânată
 
 Data: 2026-09-26
-Stare: activă; amendează 042(b)(e) și 043 (aria React); depășește constatarea 60a și F13-D2 (070) privind ștergerea amânată
+Stare: activă; amendează 042(b)(e), 043 (aria React) și 083(a)(j) (mecanismul, prin (i)); depășește constatarea 60a și F13-D2 (070) privind ștergerea amânată
 Docs: acest fișier (regula + pașii feliei C104); `docs/stare-curenta/` se actualizează la fiecare pas, odată cu codul
 
 ## Regula durabilă
@@ -55,17 +55,32 @@ cere păstrarea rândului după ștergere cere o stare de domeniu explicită, nu
 reintroducerea `GCRecord`.
 
 **(g) FK: `Cascade` numai în agregat.** O cheie străină are `Cascade` doar
-dacă navigația e compoziție (liniile documentului, rândurile proprii ale unei
-politici); în rest are `Restrict`. Refuzul unui FK la ștergere iese ca 422 de
-domeniu pe toate ușile (80), cu obiectul care ține referința numit.
+dacă navigația e compoziție, adică are colecția inversă `[Aggregated]`
+(liniile documentului, legăturile DVI ↔ factură). În rest, ștergerea
+părintelui referit se refuză în bază: EF `ClientNoAction`, iar în schemă
+`NO ACTION`. Nu se folosește `Restrict` în EF, fiindcă, atunci când
+dependentul e deja încărcat în același ObjectSpace, EF aruncă singur o
+excepție netradusă, înaintea bazei. Refuzul iese ca 422 de domeniu pe toate
+ușile (80), prin traducătorul de constrângeri (39a), cu tipurile părintelui
+și dependentului numite.
 
 **(h) Proba.** Catalogul de scenarii și ModelCheck, verzi pe ambele
 profiluri. ModelCheck probează structural că:
 - modelul EF nu are proprietatea `GCRecord` pe niciun tip de domeniu;
 - `Cascade` apare doar pe compoziții;
-- `RandRegistru` nu are câmp de blocare optimistă.
+- `RandRegistru` nu are câmp de blocare optimistă;
+- fiecare tip configurabil are index unic, adică cheia refuzului din (i).
 
-Refuzul FK se probează prin HTTP (`refuzuri.ps1`) și în browser pe XAF.
+Refuzul FK se probează în ModelCheck pe ambele căi EF (dependent încărcat
+sau nu), prin HTTP (`refuzuri.ps1`) și în browser pe XAF.
+
+**(i) Rândul de seed șters rămâne șters, prin refuz explicit.** Ștergerea
+unui rând `ICuProvenienta` pe ușa securizată lasă un `RefuzSeed`: tipul și
+cheia rândului. Cheia sunt valorile coloanelor indexurilor unice (83b),
+serializate. Seed-ul (`ContaSeeder.Aliniaza`) și golurile de mapare citesc
+refuzul, nu rândul șters, deci 83(a)(j) rămân adevărate fără `GCRecord`.
+Rândul revine dacă se șterge refuzul (rolul `Configurator`). Ușa de sistem
+nu lasă refuzuri.
 
 ## Context
 
@@ -157,6 +172,15 @@ commit, cu ModelCheck verde pe ambele profiluri și cu catalogul verde.
   și verifici driftul openapi.
 - Adaugi probele structurale din (h).
 
+Executat 2026-09-26. Oprirea (seed-ul cerea păstrarea rândului șters) a fost
+tranșată de owner prin (i), iar forma FK prin (g) (`ClientNoAction`). Proba:
+ModelCheck verde pe ambele profiluri, pe baze recreate (bugetar 3214, privat
+4244 de verificări), `tools/ProbeHttp/stergere-fizica.py` pe hostul WebApi
+(422 la FK, 200 + `RefuzSeed` pentru `Configurator`) și ștergerea refuzată
+în XAF Blazor, cu mesajul tradus. Clonele de dezvoltare rămase pe 5444
+(C102R1, ClaudeF103, FiscalCub, SnapshotStoc, CodexC102Review) nu mai
+corespund codului și se recreează la nevoie (102b).
+
 **Pasul 2 — coaja comenzii (b), partea de azi.** `OperareApi` (sau
 succesorul lui) nu mai primește `IObjectSpace` de la apelant. Primește o
 fabrică de context și identitatea, și verifică explicit dreptul de comandă.
@@ -190,6 +214,34 @@ o dată (ModelCheck, gate).
 
 | Clasa | Familia | Observații |
 |---|---|---|
+| `ApplicationUserLoginInfo` | securitate | rămâne pe `BaseObject`-ul DX |
+| `Document` | Document | rădăcina TPH; frunzele moștenesc |
+| `DocumentDetaliu` | Editabila | compoziția documentului (`Cascade`) |
+| `DviFactura` | Editabila | compoziția DVI (`Cascade` pe `Dvi`); spre factură refuz din bază |
+| `Lot` | Editabila | născut de linia de intrare (L3), șters fizic cu ea; fără `Activ` |
+| `Imperechere` | Editabila | legătura culeasă și ștearsă liber (31d); inversul din perioada închisă e al motorului |
+| `PerioadaFiscala` | Editabila | veriga lanțului; starea o scrie motorul |
+| `Societate` | Editabila | un singur rând de configurare |
+| `Repartitor` (+ 5 frunze TPH) | Nomenclator | are deja `Activ`; D394 citește `!Activ` |
+| `Dimensiune` (+ 6 derivate) | Nomenclator | bază CLR nemapată; `Activ` pe fiecare tabel |
+| `Unitate` | Nomenclator | |
+| `Imobilizare` | Nomenclator | fișa; ieșirea din gestiune e document (IMO), nu `Activ` |
+| `Produs` | Nomenclator | |
+| `Cont` | Nomenclator | `ICuProvenienta` |
+| `ClasaProdus`, `TipMaterial` | Nomenclator | `ICuProvenienta` |
+| `TipTva` | Nomenclator | are deja `Activ`; `ICuProvenienta` |
+| `Judet`, `UnitateMasura`, `RandD300` | Nomenclator | de lege, seed-uite; `Activ` = abrogat |
+| `TipDocument` | Politica | ancora politicilor și a motorului |
+| `SetareProfil` | Politica | un rând, înghețat (51c) |
+| `RegulaStoc`, `RegulaContare`, `PoliticaDiferenta` | Politica | |
+| `PoliticaConex`, `PoliticaScadenta`, `PoliticaValidare`, `PoliticaTva`, `PoliticaInchidereTva`, `PoliticaNumerotare`, `PoliticaInchidere` | Politica | |
+| `MapareD300`, `MapareD394`, `MapareTvaSaft`, `PoliticaMiscareSaft`, `PoliticaTvaImplicit` | Politica | |
+| `PoliticaAmortizare`, `RegulaDeductibilitate` | Politica | |
+| `RegistruStoc`, `RegistruContabil`, `RegistruTva`, `RegistruImobilizari` | RandRegistru | motorul le șterge fizic la corecția directă (33d) |
+| `SoldPerioadaContabil`, `SoldPerioadaStoc`, `PartidaDeschisa` | RandRegistru | proiecții rescrise la închidere (ștergere fizică deja azi) |
+| `InchiderePerioada` | RandRegistru | istoricul lanțului |
+| `DepunereDeclaratie` | RandRegistru | scris doar de comanda de confirmare |
+| `MigrareLegatura` | RandRegistru | infrastructura migrării |
 
 ## Ce rămâne deschis
 

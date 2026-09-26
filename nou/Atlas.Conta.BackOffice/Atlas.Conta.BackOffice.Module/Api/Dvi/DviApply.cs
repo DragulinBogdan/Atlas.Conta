@@ -131,9 +131,6 @@ public static class DviApply {
         }
     }
 
-    // Prin INTEROGARE, nu prin navigația `Facturi`: după o ștergere amânată
-    // colecția încărcată încă poartă legătura stinsă, iar reconcilierea ar
-    // considera-o existentă.
     static List<DviFactura> Legaturi(IObjectSpace os, Guid dviId) =>
         os.GetObjectsQuery<DviFactura>().Where(f => f.DviId == dviId).ToList();
 

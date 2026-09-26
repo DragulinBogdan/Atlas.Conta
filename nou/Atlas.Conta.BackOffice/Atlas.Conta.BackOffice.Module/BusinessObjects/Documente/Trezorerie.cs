@@ -2,7 +2,6 @@ using Atlas.Conta.BackOffice.Module.UI;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -650,7 +649,7 @@ public class DocumentTrezorerieDetaliu : DocumentDetaliu {
 // `Document.CapacitateStingere`, iar azi îl poartă trezoreria și nota
 // contabilă. Tipul FK-ului nu mai face filtrarea — o face validarea.
 [NavigationItem("Documente")]
-public class Imperechere : BaseObject {
+public class Imperechere : Editabila {
     [System.ComponentModel.Browsable(false)]
     public virtual Guid? TranzactieCubId { get; set; }
     public virtual Guid DocumentStingatorId { get; set; }

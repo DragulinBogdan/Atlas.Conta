@@ -29,7 +29,7 @@ static class ReconciliereCub {
     const string Provenienta = "with receptii as (" + Module.Cub.Citiri.Receptii.LegaturiSql + """
         ), migrat as (
             select t."ID" as tip, t."Cod" as cod, t."ClrType" as clr
-            from "TipuriDocument" t where t."GCRecord" = 0 and t."PosteazaInCub"),
+            from "TipuriDocument" t where t."PosteazaInCub"),
         cu_delta as (
             select distinct r.sursa as cap from receptii r
             join "Postare" p on p."DocumentId" = r.id
@@ -38,12 +38,12 @@ static class ReconciliereCub {
         capTot as (
             select d."ID" as id, m.cod as grup
             from "Documente" d join migrat m on m.clr = d."ClrType"
-            where d."GCRecord" = 0 and d."Stare" = 1 {0}
+            where d."Stare" = 1 {0}
               and not exists (select 1 from receptii r where r.id = d."ID")),
         conexTot as (
             select c."ID" as id, capTot.grup, capTot.id as cap, c."Stare" as stare
             from "Documente" c join receptii r on r.id = c."ID"
-            join capTot on capTot.id = r.sursa where c."GCRecord" = 0 {1})
+            join capTot on capTot.id = r.sursa where true {1})
         """;
     const string Grupul = Provenienta + """
         , cap as (select id, grup, id as cap from capTot),
@@ -68,7 +68,7 @@ static class ReconciliereCub {
     public static IReadOnlyList<string> TipuriMigrate(DbContext ctx) {
         ArgumentNullException.ThrowIfNull(ctx);
         return Citeste(ctx,
-            "select t.\"Cod\" from \"TipuriDocument\" t where t.\"GCRecord\" = 0 and t.\"PosteazaInCub\" "
+            "select t.\"Cod\" from \"TipuriDocument\" t where t.\"PosteazaInCub\" "
             + "order by t.\"Cod\"",
             null,
             cititor => cititor.GetString(0));
@@ -154,7 +154,7 @@ static class ReconciliereCub {
     static List<Rand> Partide(DbContext ctx, Guid[]? set, ICollection<string>? note) {
         var perioade = Citeste(ctx,
             "select max(\"An\" * 100 + \"Luna\") from \"PerioadeFiscale\" "
-            + "where \"GCRecord\" = 0 and \"Inchisa\"",
+            + "where \"Inchisa\"",
             null,
             cititor => cititor.IsDBNull(0) ? (int?)null : cititor.GetInt32(0));
         if (perioade.Count == 0 || perioade[0] is not int perioada) {
@@ -168,7 +168,7 @@ static class ReconciliereCub {
         var conturi = Citeste(ctx, """
             with migrat as (
                 select t."ClrType" as clr from "TipuriDocument" t
-                where t."GCRecord" = 0 and t."PosteazaInCub" and t."ClrType" is not null)
+                where t."PosteazaInCub" and t."ClrType" is not null)
             select k."ID",
                    bool_and(d."ClrType" in (select clr from migrat)) as toate,
                    count(distinct d."ClrType") filter (
@@ -176,9 +176,9 @@ static class ReconciliereCub {
             from "Conturi" k
             join "RegistruContabil" r
               on (r."ContDebitId" = k."ID" or r."ContCreditId" = k."ID")
-             and r."GCRecord" = 0 and r."DocumentId" is not null
-            join "Documente" d on d."ID" = r."DocumentId" and d."GCRecord" = 0
-            where k."GCRecord" = 0 and k."UrmarestePartide"
+             and r."DocumentId" is not null
+            join "Documente" d on d."ID" = r."DocumentId"
+            where k."UrmarestePartide"
             group by k."ID"
             """, null, cititor => (Cont: cititor.GetGuid(0), Toate: cititor.GetBoolean(1)));
         var eligibile = conturi.Where(c => c.Toate).Select(c => c.Cont).ToArray();
@@ -243,8 +243,8 @@ static class ReconciliereCub {
             select pd."DocumentId", pd."Rest" from "PartideDeschise" pd
             join "Documente" d on d."ID" = pd."DocumentId"
             join "TipuriDocument" t on t."ClrType" = d."ClrType"
-            where pd."GCRecord" = 0 and pd."An" = @an and pd."Luna" = @luna
-              and t."GCRecord" = 0 and t."PosteazaInCub"
+            where pd."An" = @an and pd."Luna" = @luna
+              and t."PosteazaInCub"
               and exists (select 1 from "Postare" p
                           join "Tranzactie" tr on tr."ID" = p."TranzactieId"
                           where p."DocumentId" = pd."DocumentId" and tr."Fel" = 1
@@ -288,12 +288,12 @@ static class ReconciliereCub {
                 select g.grup, r."ContDebitId" as cont, 1 as latura,
                        date_trunc('month', r."Data")::date as luna, r."Valoare" as v
                 from "RegistruContabil" r join comparabil g on g.id = r."DocumentId"
-                where r."GCRecord" = 0 {{(nir ? "" : "and not r.\"Storno\"")}}
+                where true {{(nir ? "" : "and not r.\"Storno\"")}}
                 union all
                 select g.grup, r."ContCreditId", 2,
                        date_trunc('month', r."Data")::date, r."Valoare"
                 from "RegistruContabil" r join comparabil g on g.id = r."DocumentId"
-                where r."GCRecord" = 0 {{(nir ? "" : "and not r.\"Storno\"")}}) x
+                where true {{(nir ? "" : "and not r.\"Storno\"")}}) x
             group by 1, 2, 3, 4)
         select coalesce(c.grup, r.grup),
                coalesce((select k."Simbol" from "Conturi" k where k."ID" = coalesce(c.cont, r.cont)),
@@ -331,7 +331,7 @@ static class ReconciliereCub {
                    case when g.cap in (select cap from cu_delta) then 'net' when r."Cantitate" >= 0 then '+' else '-' end as semn,
                    sum(r."Cantitate") as v
             from "RegistruStoc" r join grup g on g.id = r."DocumentId"
-            where r."GCRecord" = 0 and (not r."Storno" or g.cap in (select cap from cu_delta))
+            where (not r."Storno" or g.cap in (select cap from cu_delta))
             group by 1, 2, 3, 4)
         select coalesce(c.grup, r.grup),
                coalesce(left(coalesce(c.lot, r.lot)::text, 8), '(fără unitate)'),
@@ -367,12 +367,12 @@ static class ReconciliereCub {
                 select g.grup, r."TipTvaId" as tip, r."Sens" as sens, 1 as rol,
                        r."PerioadaAn" * 100 + r."PerioadaLuna" as per, r."Baza" as v
                 from "RegistruTva" r join grup g on g.id = r."DocumentId"
-                where r."GCRecord" = 0 and not r."Storno"
+                where not r."Storno"
                 union all
                 select g.grup, r."TipTvaId", r."Sens", 2,
                        r."PerioadaAn" * 100 + r."PerioadaLuna", r."Tva"
                 from "RegistruTva" r join grup g on g.id = r."DocumentId"
-                where r."GCRecord" = 0 and not r."Storno") x
+                where not r."Storno") x
             group by 1, 2, 3, 4, 5)
         select coalesce(c.grup, r.grup),
                coalesce((select k."Cod" from "TipuriTva" k where k."ID" = coalesce(c.tip, r.tip)),
@@ -411,12 +411,12 @@ static class ReconciliereCub {
                 select g.grup, r."TipTvaId" as tip, r."Sens" as sens, 1 as rol,
                        r."PerioadaAn" * 100 + r."PerioadaLuna" as per, r."Baza" as v
                 from "RegistruTva" r join grup g on g.id = r."DocumentId"
-                where r."GCRecord" = 0 and r."Storno"
+                where r."Storno"
                 union all
                 select g.grup, r."TipTvaId", r."Sens", 2,
                        r."PerioadaAn" * 100 + r."PerioadaLuna", r."Tva"
                 from "RegistruTva" r join grup g on g.id = r."DocumentId"
-                where r."GCRecord" = 0 and r."Storno") x
+                where r."Storno") x
             group by 1, 2, 3, 4, 5)
         select coalesce(c.grup, r.grup),
                coalesce((select k."Cod" from "TipuriTva" k where k."ID" = coalesce(c.tip, r.tip)),
@@ -475,7 +475,7 @@ static class ReconciliereCub {
             from cap),
         aleTipului as (
             select d."ID" as id from "Documente" d join migrat m on m.clr = d."ClrType"
-            where d."GCRecord" = 0 and d."Stare" in (1, 2)),
+            where d."Stare" in (1, 2)),
         straine as (
             select t."ID" as id from "Tranzactie" t
             where (t."Fel" = 1 or t."ID" in (select id from transferDeStoc))

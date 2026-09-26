@@ -8799,6 +8799,7 @@ export interface components {
         Angajament: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             Cautare?: string | null;
@@ -8806,10 +8807,10 @@ export interface components {
         Angajat: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod: string;
             Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
-            Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
@@ -8819,10 +8820,10 @@ export interface components {
         AngajatResourceDelta: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string;
             Denumire?: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
-            Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
             Cautare?: string | null;
@@ -9234,6 +9235,7 @@ export interface components {
         ClasaProdus: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             DinSeed?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
@@ -9243,6 +9245,7 @@ export interface components {
         ClasificareImobilizari: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             Cautare?: string | null;
@@ -9255,6 +9258,7 @@ export interface components {
         CodEconomic: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             Cautare?: string | null;
@@ -9262,6 +9266,7 @@ export interface components {
         CodFunctional: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             Cautare?: string | null;
@@ -9287,6 +9292,7 @@ export interface components {
         Cont: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             DinSeed?: boolean;
             Simbol?: string | null;
             Denumire?: string | null;
@@ -9303,10 +9309,10 @@ export interface components {
         ContPropriu: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod: string;
             Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
-            Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
@@ -10537,10 +10543,10 @@ export interface components {
         Gestiune: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod: string;
             Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
-            Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
@@ -10549,10 +10555,10 @@ export interface components {
         GestiuneResourceDelta: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string;
             Denumire?: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
-            Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
             Cautare?: string | null;
@@ -10569,6 +10575,7 @@ export interface components {
         Imobilizare: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             NumarInventar?: string | null;
             Denumire?: string | null;
             /** Format: uuid */
@@ -10599,6 +10606,7 @@ export interface components {
         ImobilizareResourceDelta: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             NumarInventar?: string | null;
             Denumire?: string | null;
             /** Format: uuid */
@@ -10750,6 +10758,7 @@ export interface components {
         Judet: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             CodAuto?: string | null;
@@ -11503,10 +11512,10 @@ export interface components {
         Partener: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod: string;
             Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
-            Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
@@ -11535,10 +11544,10 @@ export interface components {
         PartenerResourceDelta: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string;
             Denumire?: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
-            Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
             Cautare?: string | null;
@@ -12054,6 +12063,7 @@ export interface components {
         Produs: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod: string;
             Denumire: string;
             UM?: string | null;
@@ -12072,6 +12082,7 @@ export interface components {
         ProdusResourceDelta: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string;
             Denumire?: string;
             UM?: string | null;
@@ -12087,6 +12098,7 @@ export interface components {
         Proiect: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             Cautare?: string | null;
@@ -12094,6 +12106,7 @@ export interface components {
         RandD300: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             Sectiune?: components["schemas"]["SectiuneD300"];
@@ -12624,10 +12637,10 @@ export interface components {
         Repartitor: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod: string;
             Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
-            Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
@@ -13301,6 +13314,7 @@ export interface components {
         SursaFinantare: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             Cautare?: string | null;
@@ -13335,6 +13349,7 @@ export interface components {
         TipMaterial: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             DinSeed?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
@@ -13349,6 +13364,7 @@ export interface components {
         TipMaterialResourceDelta: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             DinSeed?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
@@ -13367,13 +13383,13 @@ export interface components {
         TipTva: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             DinSeed?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             /** Format: double */
             Cota?: number;
             Regim?: components["schemas"]["RegimTva"];
-            Activ?: boolean;
             /** Format: uuid */
             ContTvaDeductibilId?: string | null;
             ContTvaDeductibil?: components["schemas"]["Cont"];
@@ -13391,13 +13407,13 @@ export interface components {
         TipTvaResourceDelta: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             DinSeed?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             /** Format: double */
             Cota?: number;
             Regim?: components["schemas"]["RegimTva"];
-            Activ?: boolean;
             /** Format: uuid */
             ContTvaDeductibilId?: string | null;
             /** Format: uuid */
@@ -13540,16 +13556,17 @@ export interface components {
         Unitate: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
         };
         UnitateInterna: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod: string;
             Denumire: string;
             Calitati?: components["schemas"]["CalitateRepartitor"];
-            Activ?: boolean;
             /** Format: uuid */
             ContImplicitId?: string | null;
             ContImplicit?: components["schemas"]["Cont"];
@@ -13558,6 +13575,7 @@ export interface components {
         UnitateMasura: {
             /** Format: uuid */
             ID?: string;
+            Activ?: boolean;
             Cod?: string | null;
             Denumire?: string | null;
             Cautare?: string | null;

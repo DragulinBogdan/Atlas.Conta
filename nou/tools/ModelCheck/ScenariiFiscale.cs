@@ -229,8 +229,7 @@ sealed class ScenariiFiscale(Func<IObjectSpace> deschide, Action<string, bool> c
         }));
         using (var os = Deschide()) {
             using var tx = TranzactieComanda.Incepe(os);
-            ((EFCoreObjectSpace)os).DbContext.Entry(os.GetObjectByKey<TipTva>(tva)).Property("GCRecord").CurrentValue = 1;
-            os.CommitChanges();
+            AscundereControlata.Ascunde(((EFCoreObjectSpace)os).DbContext, "TipuriTva", tva);
             var jurnal = TvaProiectii.JurnalTva(os, SensTva.Achizitie, new(An, 2, 1), new(An, 2, 28))
                 .Where(r => r.DocumentId == vechi.Id || r.DocumentId == nou.Id).ToArray();
             Verifica("SC-CIT-80", "eticheta TVA ștearsă nu pierde faptele și cotele istorice", jurnal.Length == 2

@@ -311,6 +311,10 @@ sealed partial class ScenariiNir {
         var (f, nir) = Constatat(4);
         var politica = CuSpatiu(os => os.GetObjectsQuery<PoliticaConex>().Single(p => p.TipDocumentSursa.Cod == "FCT").ID);
         var tip = CuSpatiu(os => os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == "FCT").ID);
+        var valori = CuSpatiu(os => {
+            var v = ((EFCoreObjectSpace)os).DbContext.Entry(os.GetObjectByKey<PoliticaConex>(politica)).CurrentValues;
+            return v.Properties.ToDictionary(p => p.Name, p => v[p]);
+        });
         Comanda(os => { os.Delete(os.GetObjectByKey<PoliticaConex>(politica)); os.GetObjectByKey<TipDocument>(tip).PosteazaInCub = false; os.CommitChanges(); });
         try {
             Opereaza(nir); Sold("SC-NIR-30", f.Linii[0], 4, 100);
@@ -320,8 +324,8 @@ sealed partial class ScenariiNir {
         }
         finally {
             Comanda(os => {
-                var p = os.GetObjectsQuery<PoliticaConex>().IgnoreQueryFilters().Single(p => p.ID == politica);
-                ((EFCoreObjectSpace)os).DbContext.Entry(p).Property("GCRecord").CurrentValue = 0;
+                var p = os.CreateObject<PoliticaConex>();
+                ((EFCoreObjectSpace)os).DbContext.Entry(p).CurrentValues.SetValues(valori);
                 os.GetObjectByKey<TipDocument>(tip).PosteazaInCub = true; os.CommitChanges();
             });
         }

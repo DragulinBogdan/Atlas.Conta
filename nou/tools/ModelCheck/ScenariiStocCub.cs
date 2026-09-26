@@ -67,7 +67,7 @@ sealed class ScenariiStocCub(Func<IObjectSpace> deschide, Action<string, bool> c
         Comanda(os => {
             var db = ((EFCoreObjectSpace)os).DbContext;
             using var tx = db.Database.BeginTransaction();
-            db.Database.ExecuteSqlInterpolated($"UPDATE \"Produse\" SET \"GCRecord\" = 1 WHERE \"ID\" = {produs}");
+            AscundereControlata.Ascunde(db, "Produse", produs);
             var r = StocProiectii.SoldStoc(os, Ianuarie).Single(s => s.ProdusId == produs);
             Verifica("SC-CIT-40", "eticheta ascunsă nu elimină soldul; cost unitar 20",
                 r.ProdusCod == null && r.Cantitate == 1 && r.Valoare == 20 && r.LotPretUnitar == 20);
