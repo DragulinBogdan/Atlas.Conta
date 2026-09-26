@@ -3,7 +3,9 @@
 (1) Admin șterge un nomenclator referit (TipMaterial 371, TipTva TI21) -> 422 de domeniu, rândul rămâne.
 (2) Configurator șterge o mapare D394 de seed -> 204, rândul dispare fizic și rămâne un RefuzSeed
     (dreptul rolului pe RefuzSeed trece prin securitatea reală a SaveChanges).
-Necesită hostul WebApi privat pe baza dată și psycopg. Maparea și refuzul se restaurează în finally.
+Necesită hostul WebApi privat pe baza dată și psycopg. Maparea se restaurează în finally; se șterge
+doar refuzul creat de ștergere, identificat după ID, iar refuzurile anterioare (inclusiv unul străin
+pus de probă) rămân intacte.
 """
 import argparse
 import json
@@ -11,6 +13,7 @@ import ssl
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 
 import psycopg
 
@@ -65,21 +68,37 @@ def main():
         rand = cursor.fetchone()
         assert rand is not None, 'Maparea de seed NED21/Achiziție lipsește.'
         mapare = dict(zip(coloane, rand))
-        refuzuri_inainte = conn.execute('SELECT count(*) FROM "RefuzuriSeed" WHERE "Tip"=%s', ('MapareD394',)).fetchone()[0]
+
+        def refuzuri_d394():
+            return dict(conn.execute('SELECT "ID", "Cheie" FROM "RefuzuriSeed" WHERE "Tip"=%s',
+                                     ('MapareD394',)).fetchall())
+
+        strain = uuid.uuid4()
+        conn.execute('INSERT INTO "RefuzuriSeed" ("ID", "Tip", "Cheie", "La") VALUES (%s, %s, %s, now())',
+                     (strain, 'MapareD394', json.dumps({'Proba': f'refuz-strain-{strain}'})))
+        inainte = refuzuri_d394()
+        noi = {}
         try:
             status, body = call('Configurator', f"/api/odata/MapareD394({mapare['ID']})", 'DELETE')
             fizic = conn.execute('SELECT count(*) FROM "MapariD394" WHERE "ID"=%s', (mapare['ID'],)).fetchone()[0]
-            refuzuri = conn.execute('SELECT "Cheie" FROM "RefuzuriSeed" WHERE "Tip"=%s', ('MapareD394',)).fetchall()
+            dupa = refuzuri_d394()
+            noi = {i: c for i, c in dupa.items() if i not in inainte}
             print(f'Configurator șterge MapareD394 NED21/Achiziție: DELETE -> {status}; rând fizic: {fizic}; '
-                  f'refuzuri: {[r[0] for r in refuzuri]}')
+                  f'refuzuri noi: {list(noi.values())}; refuzurile anterioare intacte: {dupa.items() >= inainte.items()}')
             assert status in (200, 204), (status, body[:800])
-            assert fizic == 0 and len(refuzuri) == refuzuri_inainte + 1
-            assert str(ned) in refuzuri[-1][0]
+            assert fizic == 0 and len(noi) == 1 and str(ned) in next(iter(noi.values()))
+            assert dupa.items() >= inainte.items()
         finally:
-            conn.execute('DELETE FROM "RefuzuriSeed" WHERE "Tip"=%s', ('MapareD394',))
+            for ident in noi:
+                conn.execute('DELETE FROM "RefuzuriSeed" WHERE "ID"=%s', (ident,))
+            conn.execute('DELETE FROM "RefuzuriSeed" WHERE "ID"=%s', (strain,))
             if conn.execute('SELECT count(*) FROM "MapariD394" WHERE "ID"=%s', (mapare['ID'],)).fetchone()[0] == 0:
                 conn.execute(f'INSERT INTO "MapariD394" ({", ".join(chr(34) + c + chr(34) for c in coloane)}) '
                              f'VALUES ({", ".join(["%s"] * len(coloane))})', rand)
+        ramase = refuzuri_d394()
+        del inainte[strain]
+        print(f'Curățenia: refuzurile dinaintea probei rămân exact ({len(inainte)}): {ramase == inainte}')
+        assert ramase == inainte
     print('OK: refuz FK 422 pe nomenclatoare referite; ștergere fizică + RefuzSeed pe politica de seed.')
 
 

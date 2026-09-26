@@ -89,8 +89,10 @@ public class RefuzSeed : Politica {
         return valoare;
     }
 
+    // Zecimalul fără scară: 21m (seed) și 21.0000 (citit din numeric(18,4)) dau aceeași cheie.
     static string Text(object valoare) => valoare switch {
         null => null,
+        decimal m => m.ToString("0.############################", CultureInfo.InvariantCulture),
         DateOnly d => d.ToString("O", CultureInfo.InvariantCulture),
         IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
         _ => valoare.ToString(),

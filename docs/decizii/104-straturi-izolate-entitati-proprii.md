@@ -181,12 +181,24 @@ ModelCheck verde pe ambele profiluri, pe baze recreate (bugetar 3214, privat
 (C102R1, ClaudeF103, FiscalCub, SnapshotStoc, CodexC102Review) nu mai
 corespund codului și se recreează la nevoie (102b).
 
+Review-ul Codex al pasului 1 (`comunicari/2026-09-26-1518`), corectat
+înaintea pasului 2: R1 — cheia refuzului serializa zecimalul cu scara
+reprezentării (`21.0000` din bază ≠ `21` din seed), deci maparea SAF-T
+ștearsă reapărea; serializarea e acum fără scară (F24-V3, cheie zecimală).
+R2 — indexul `(Categorie, DeLa)` al regulii de deductibilitate refuza un
+plafon și un procent din aceeași zi, admise de 087(g); cheia e
+`(Categorie, Fel, DeLa)`, ca selecția motorului (IMO-V58, migrația
+`C104CheieDeductibilitate`). R3 — `stergere-fizica.py` ștergea toate
+refuzurile D394 în `finally`; șterge acum doar refuzul creat, după ID.
+
 **Pasul 2 — coaja comenzii (b), partea de azi.** `OperareApi` (sau
 succesorul lui) nu mai primește `IObjectSpace` de la apelant. Primește o
 fabrică de context și identitatea, și verifică explicit dreptul de comandă.
 Se adaptează `DocumentOperareController`, controllerele WebApi și ModelCheck.
 `CumulPerioade` nu mai întreabă de `ISecuredObjectSpace`. Interiorul lui
-`MotorOperare` nu se atinge (TR-D9).
+`MotorOperare` nu se atinge (TR-D9). Identitatea vine din contextul
+autentificat, iar dreptul se verifică pe documentul și operația cerute; un
+ID dat de apelant nu e singur autorizare (review Codex, pas 1).
 
 **Pasul 3 — culegerea unică (c).**
 - Inventariezi căile de precompletare și recalcul din XAF față de cele din
@@ -194,6 +206,10 @@ Se adaptează `DocumentOperareController`, controllerele WebApi și ModelCheck.
 - Mute logica în servicii L3; controllerele XAF devin adaptori.
 - O diferență de comportament (nu doar de formă) între două căi se raportează
   înainte de unificare.
+- „Validarea de domeniu” din (c) e validarea culegerii (draftul). Conservarea,
+  starea, perioada și condițiile dependente de date concurente rămân validate
+  de L0–L2, în tranzacția comenzii; formularea lui (c) se precizează la acest
+  pas (review Codex, pas 1).
 
 **Pasul 4 — aria React (d).** Actualizezi `stare-curenta/api-si-client.md`,
 `docs/api/lista-react.md` și principiile din `CLAUDE.md` (straturile,

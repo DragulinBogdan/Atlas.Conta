@@ -109,7 +109,8 @@ mai atinge; utilizatorul nu îl poate activa la creare; reseed-ul nu
 reactivează timbrul. (81d, 83a, 84a)
 
 Rândul `ICuProvenienta` șters pe ușa securizată se șterge fizic și lasă un
-`RefuzSeed` (tip + cheia din indexurile unice, serializată). Seed-ul nu
+`RefuzSeed` (tip + cheia din indexurile unice, serializată; zecimalele fără
+scară, deci `21.0000` citit din bază și `21` din seed dau aceeași cheie). Seed-ul nu
 recreează un rând refuzat și îl numără la „șterse”; golurile de mapare
 D300/D394 citesc tot refuzurile. Refuzul se șterge de rolul `Configurator`,
 iar rândul revine la următorul re-seed. Raportul de profil nu mai are
@@ -285,7 +286,8 @@ Niciun simbol de cont nu stă în cod. (87d)
 `RegulaDeductibilitate` exprimă legea ca date cu valabilitate: categorie
 fiscală, marcaj „doar neexclusiv", fel (plafon lunar sau procent), valoare,
 `DeLa`/`PanaLa`, temei. La fiecare rând lunar, din regulile valabile la data
-lui, câștigă per categorie și fel rândul cu `DeLa` maxim; plafonul se aplică
+lui, câștigă per categorie și fel rândul cu `DeLa` maxim (aceasta e și cheia
+unică: categorie, fel, `DeLa`); plafonul se aplică
 înaintea procentului; fără regulă, deductibilul este egal cu fiscalul.
 Seed-ul privat: plafon 1 500 lei/lună pe vehiculele de persoane cu cel mult
 9 locuri neexclusive (din 2012-02-01), sediul social în locuință 0 % din

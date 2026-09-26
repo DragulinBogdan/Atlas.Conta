@@ -1235,8 +1235,8 @@ internal static class ProfilPrivat {
                 + "(temeiul exact se completează la revizia seed-ului)."),
         ];
         foreach (var r in reguli)
-            ContaSeeder.Aliniaza<RegulaDeductibilitate>(os, $"{r.Categorie}/{r.DeLa:yyyy-MM-dd}",
-                x => x.Categorie == r.Categorie && x.DeLa == r.DeLa, regula => {
+            ContaSeeder.Aliniaza<RegulaDeductibilitate>(os, $"{r.Categorie}/{r.Fel}/{r.DeLa:yyyy-MM-dd}",
+                x => x.Categorie == r.Categorie && x.Fel == r.Fel && x.DeLa == r.DeLa, regula => {
                     regula.Categorie = r.Categorie;
                     regula.DoarNeexclusiv = true;
                     regula.Fel = r.Fel;

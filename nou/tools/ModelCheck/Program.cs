@@ -20202,6 +20202,48 @@ void VerificaF24Seed(bool privat) {
         && viiDupaPurja == 1 && timbruV3
         && raportV3b.Pentru(nameof(PoliticaScadenta)).Create >= 1);
 
+    // ---- F24-V3 (privat): cheia zecimală citită din bază (numeric(18,4)) = cheia seed-ului ----
+    if (privat) {
+        (string Versiune, SectiuneTvaSaft Sectiune, Guid TipTvaId, RegimTva Regim, decimal Cota, bool DeImport,
+            SensTva Sens, Atlas.Conta.Nucleu.RolTva Rol) cheieSaft;
+        string cotaCitita, refuzCota;
+        using (var os = provider.CreateObjectSpace()) {
+            var rand = os.GetObjectsQuery<MapareTvaSaft>().Where(m => m.Cota == 21m && m.DinSeed)
+                .OrderBy(m => m.ID).First();
+            cheieSaft = (rand.Versiune, rand.Sectiune, rand.TipTvaId, rand.Regim, rand.Cota, rand.DeImport,
+                rand.Sens, rand.Rol);
+            cotaCitita = rand.Cota.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            new GardianEditare().OnObjectSpaceCreated(os);
+            os.Delete(rand);
+            os.CommitChanges();
+        }
+        int SaftVii() {
+            using var os = provider.CreateObjectSpace();
+            return os.GetObjectsQuery<MapareTvaSaft>().Count(m => m.Versiune == cheieSaft.Versiune
+                && m.Sectiune == cheieSaft.Sectiune && m.TipTvaId == cheieSaft.TipTvaId && m.Regim == cheieSaft.Regim
+                && m.Cota == cheieSaft.Cota && m.DeImport == cheieSaft.DeImport && m.Sens == cheieSaft.Sens
+                && m.Rol == cheieSaft.Rol);
+        }
+        using (var os = provider.CreateObjectSpace())
+            refuzCota = os.GetObjectsQuery<RefuzSeed>().Where(r => r.Tip == nameof(MapareTvaSaft))
+                .Select(r => r.Cheie).FirstOrDefault();
+        var raportSaft = Reseed();
+        var saftDupaReseed = SaftVii();
+        using (var os = provider.CreateObjectSpace())
+            new Purja(os).Adauga(os.GetObjectsQuery<RefuzSeed>().Where(r => r.Tip == nameof(MapareTvaSaft))).Executa();
+        var raportSaftB = Reseed();
+        var saftDupaPurja = SaftVii();
+        Console.WriteLine($"     MĂSURAT (F24-V3/cheie zecimală): cota citită „{cotaCitita}”, refuz {refuzCota}; "
+            + $"după re-seed ⇒ {saftDupaReseed} rânduri (șterse = {raportSaft.Pentru(nameof(MapareTvaSaft)).Sterse}); "
+            + $"după purja refuzului ⇒ {saftDupaPurja} (create = {raportSaftB.Pentru(nameof(MapareTvaSaft)).Create}).");
+        Check("F24-V3 (privat, 104i) cheia refuzului e canonică pe zecimale: maparea SAF-T cu cota 21 citită din "
+            + "bază ca 21.0000 și candidatul seed-ului cu 21 dau ACEEAȘI cheie — re-seed-ul real (`ContaSeeder.Seed`) "
+            + "nu o recreează; după purja refuzului o recreează",
+            cotaCitita == "21.0000" && refuzCota != null && refuzCota.Contains("\"Cota\":\"21\"")
+            && saftDupaReseed == 0 && raportSaft.Pentru(nameof(MapareTvaSaft)).Sterse == 1
+            && saftDupaPurja == 1 && raportSaftB.Pentru(nameof(MapareTvaSaft)).Create == 1);
+    }
+
     // ---- F24-V4: cheia derivată acoperită MANUAL oprește derivarea (privat) ----
     if (privat) {
         Guid bcsId, tipMfId;
@@ -28040,6 +28082,47 @@ void VerificaImobilizari(bool privat) {
             + "deductibilă 50 % din 2026; pe bugetar, unde nu există impozit pe profit și deci nicio regulă, "
             + "deductibilul E fiscalul — aceeași funcție, două profiluri",
             privat ? in2025 == 0m && in2027 == 500m : in2025 == 1000m && in2027 == 1000m);
+    }
+
+    // Cheia regulii = selecția motorului: (categorie, fel, DeLa), pe calea reală a commit-ului.
+    {
+        Atlas.Conta.BackOffice.Module.BusinessObjects.MesajeConstraintRo.Aplica();
+        var deLaCheie = new DateOnly(2099, 1, 1);
+        string ComiteRegula(params (FelDeductibilitate Fel, decimal Valoare)[] reguli) {
+            using var os = provider.CreateObjectSpace();
+            new GardianEditare().OnObjectSpaceCreated(os);
+            foreach (var (fel, valoare) in reguli) {
+                var regula = os.CreateObject<RegulaDeductibilitate>();
+                regula.Categorie = CategorieFiscala.VehiculPersoaneMax9Locuri;
+                regula.DoarNeexclusiv = true;
+                regula.Fel = fel;
+                regula.Valoare = valoare;
+                regula.DeLa = deLaCheie;
+                regula.Temei = Marcaj + " — cheia regulii";
+            }
+            try {
+                os.CommitChanges();
+                return null;
+            }
+            catch (Exception e) {
+                var violare = Atlas.DXF.EfCore.Database.Exceptions.ConstraintViolationTranslator.TryTranslate(e);
+                return violare != null
+                    ? Atlas.DXF.EfCore.Database.Exceptions.ConstraintViolationMessages.Format(violare)
+                    : e.GetBaseException().Message;
+            }
+        }
+        var douaFeluri = ComiteRegula((FelDeductibilitate.PlafonLunar, 1500m), (FelDeductibilitate.Procent, 50m));
+        var acelasiFel = ComiteRegula((FelDeductibilitate.Procent, 60m));
+        int reguliCheie;
+        using (var os = provider.CreateObjectSpace())
+            reguliCheie = os.GetObjectsQuery<RegulaDeductibilitate>().Count(r => r.DeLa == deLaCheie);
+        Console.WriteLine($"     MĂSURAT (IMO-V58/{eticheta}): plafon + procent pe aceeași categorie și dată → "
+            + $"„{douaFeluri ?? "acceptat"}”; al doilea procent → „{acelasiFel ?? "<A TRECUT>"}”; "
+            + $"{reguliCheie} rânduri pe dată.");
+        Check($"IMO-V58 ({eticheta}) unicitatea regulii de deductibilitate e cheia selecției motorului "
+            + "(categorie, fel, `DeLa`, 087g): un plafon și un procent din aceeași zi pe aceeași categorie sunt "
+            + "acceptate, al doilea rând pe aceeași categorie, fel și dată e refuzat de bază cu mesaj de domeniu",
+            douaFeluri == null && acelasiFel != null && acelasiFel.Contains("Există deja") && reguliCheie == 2);
     }
 
     // ── Curățenia finală ──────────────────────────────────────────────────────

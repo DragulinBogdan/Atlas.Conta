@@ -620,7 +620,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasIndex(p => p.TipMaterialId).IsUnique();
             // 104i: cheia refuzului de seed.
             modelBuilder.Entity<RegulaDeductibilitate>()
-                .HasIndex(r => new { r.Categorie, r.DeLa }).IsUnique();
+                .HasIndex(r => new { r.Categorie, r.Fel, r.DeLa }).IsUnique();
         }
 
         // Căutarea fără diacritice pe PROIECȚII (decizia 78): `Cautare.
