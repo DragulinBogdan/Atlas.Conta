@@ -138,7 +138,9 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: review-ul specificației intervalelor TVA și avertismentelor
+**Următorul pas**: felia C104 (decizia 104, branch `c104-straturi`, pașii 1–5
+în fișierul deciziei): entități proprii fără ștergere amânată, coaja comenzii,
+culegerea unică, React pe citiri. După ea: review-ul specificației intervalelor TVA și avertismentelor
 (103h, `docs/nucleu/tr-d8-tva-intervale-contract.md`), înaintea codului R6.
 Apoi restul SAF-T din TR-D8 (SourceDocuments integral), reconcilierea,
 auditul și gate-ul transversal de performanță. Felia fiscală
