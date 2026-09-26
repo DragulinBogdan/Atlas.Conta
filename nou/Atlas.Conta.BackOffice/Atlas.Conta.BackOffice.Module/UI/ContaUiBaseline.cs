@@ -333,6 +333,8 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Layout(l => l
                 .Group("Antet", null, g => g
                     .Group("GrupScadenta", "Scadență & PV", d => d
+                        .Item(x => x.DataPrimire)
+                        .Item(x => x.DataExigibilitate)
                         .Item(x => x.DataScadenta)
                         .Item(x => x.NumarPV)
                         .Item(x => x.DataPV))

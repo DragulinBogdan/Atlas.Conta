@@ -122,8 +122,9 @@ cu Custodie explicit neacoperită. NIR conex postează diferența față de
 recepția istorică a facturii, cu proveniență păstrată la corecție (098, 099). Deschiderea generică detaliază soldul inițial
 prin loturi și partide, fără dublare, cu refuz atomic al diferențelor (094).
 Fișa imobilizării este citită din cub de AMO/CAS și API Imo (097).
-Rapoartele generale și snapshot-urile rămân pe registre până la TR-D8;
-scrierea registrelor se taie la TR-D9.
+Citirile contabile/stoc/partide și snapshot-urile lor sunt pe cub; felia
+fiscală este portată (103). Restul SAF-T rămâne TR-D8; scrierea registrelor
+se taie la TR-D9.
 
 **Proba supremă (91, 2026-09-22)** e catalogul de scenarii
 `docs/nucleu/scenarii/`: așteptări scrise de mână din regula contabilă, ciclul
@@ -137,8 +138,11 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: citirile fiscale/TVA din TR-D8, apoi restul SAF-T și
-verificările transversale. Snapshot-ul de stoc este portat pe cub;
+**Următorul pas**: review-ul specificației intervalelor TVA și avertismentelor
+(103h, `docs/nucleu/tr-d8-tva-intervale-contract.md`), înaintea codului R6.
+Apoi restul SAF-T din TR-D8 (SourceDocuments integral), reconcilierea,
+auditul și gate-ul transversal de performanță. Felia fiscală
+103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
 `docs/nucleu/scenarii/CITIRI.md`.
 Felia de curățenie C102 este închisă (2026-09-25, branch `c102-curatenie`):

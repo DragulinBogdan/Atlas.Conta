@@ -38,7 +38,9 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         var tax = new RandScena(Cont("4426"), N.Latura.Debit, taxa, Gestiune: Loc, Partener: titular,
             Linie: l, Tva: t, Rol: N.RolTva.Taxa, Sens: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic);
         return [baza, credit, tax, credit with { Cont = cod == "TI21" ? Cont("4427") : Cont(Avans),
-            Unitate = cod == "TI21" ? null : credit.Unitate, Valoare = taxa }];
+            Unitate = cod == "TI21" ? null : credit.Unitate, Valoare = taxa,
+            Tva = cod == "TI21" ? t : null, Rol = cod == "TI21" ? N.RolTva.Autocolectare : null,
+            Sens = cod == "TI21" ? N.SensTva.Achizitie : null, Perioada = cod == "TI21" ? An * 100 + 1 : null }];
     }
     static RandScena[] Inverse(RandScena[] r, int? perioada = null) => [.. r.Select(p => p with {
         Valoare = -p.Valoare, Perioada = p.Perioada != null && perioada != null ? perioada : p.Perioada })];

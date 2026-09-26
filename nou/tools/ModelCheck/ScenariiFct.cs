@@ -97,7 +97,8 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             var special = Factura(Ianuarie, new LinieFctScena(1, 100, cod, false)); Opereaza(special.Id);
             var r = Randuri(special, 0, 0, 100, 21, cod);
             if (cod == "NED21") r[2] = r[2] with { Cont = Cont(Serviciu) };
-            else r[3] = r[3] with { Cont = Cont("4427"), Partener = null, Unitate = null };
+            else r[3] = r[3] with { Cont = Cont("4427"), Partener = Furnizor, Unitate = null,
+                Tva = Tva(cod), Rol = N.RolTva.Autocolectare, Sens = N.SensTva.Achizitie, Perioada = An * 100 + 1 };
             Postari("SC-X-14", special.Id, N.FelTranzactie.Operare, Ianuarie, r);
             if (cod == "TI21") TaxareInversa(special.Id);
             Storneaza(special.Id, Ianuarie);

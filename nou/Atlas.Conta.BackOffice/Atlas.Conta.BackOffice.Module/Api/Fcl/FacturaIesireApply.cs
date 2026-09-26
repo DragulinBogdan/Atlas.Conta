@@ -1,4 +1,4 @@
-﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -56,6 +56,7 @@ public static class FacturaIesireApply {
         // server-owned (F4-D1) — nici nu e în WriteDto, nici gardianul de
         // Committing nu l-ar accepta pe o cale secured.
         DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
+        doc.DataExigibilitate = dto.DataExigibilitate;
         // NAVIGAȚIA, nu FK-ul scalar (ca la BTR/FCT/TRZ): rezolvarea validează
         // existența cu mesaj de domeniu, regulile XAF de culegere stau pe
         // navigație, iar pe o entitate urmărită navigația încărcată ar rescrie
@@ -359,7 +360,7 @@ public static class FacturaIesireApply {
         var h = os.GetObjectsQuery<FacturaIesire>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.DataExigibilitate, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
                 // `as` nu filtrează pe tip: null pe alt repartitor fiindcă `CodFiscal` e doar al lui Partener (F28-J, 89).
@@ -427,6 +428,7 @@ public static class FacturaIesireApply {
         return new FacturaIesireReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
             DataInregistrare = h.DataInregistrare,
+            DataExigibilitate = h.DataExigibilitate,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

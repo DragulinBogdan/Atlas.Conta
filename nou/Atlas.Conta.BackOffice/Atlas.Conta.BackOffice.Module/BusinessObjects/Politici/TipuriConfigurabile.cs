@@ -12,7 +12,7 @@ public static class Politici {
         typeof(RegulaStoc), typeof(RegulaContare), typeof(PoliticaConex), typeof(PoliticaDiferenta), typeof(PoliticaScadenta),
         typeof(PoliticaValidare), typeof(PoliticaTva), typeof(PoliticaInchidereTva),
         typeof(PoliticaNumerotare), typeof(PoliticaMiscareSaft), typeof(PoliticaTvaImplicit),
-        typeof(MapareD300), typeof(MapareD394),
+        typeof(MapareD300), typeof(MapareD394), typeof(MapareTvaSaft),
         typeof(PoliticaAmortizare), typeof(RegulaDeductibilitate), typeof(PoliticaInchidere),
     ];
 }

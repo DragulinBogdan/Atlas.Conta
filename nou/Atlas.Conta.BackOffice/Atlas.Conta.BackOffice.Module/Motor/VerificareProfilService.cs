@@ -144,6 +144,8 @@ public static class VerificareProfilService {
             m => $"{codTva(m.TipTvaId)} / {m.Sens}"),
         [typeof(MapareD394)] = Tabel<MapareD394>("Mapări D394",
             m => $"{codTva(m.TipTvaId)} / {m.Sens}"),
+        [typeof(MapareTvaSaft)] = Tabel<MapareTvaSaft>("Mapări TVA SAF-T",
+            m => $"{m.Versiune} / {m.Sectiune} / {codTva(m.TipTvaId)} / {m.Cota} / {m.Sens} / {m.Rol}"),
         [typeof(PoliticaAmortizare)] = Tabel<PoliticaAmortizare>("Politici de amortizare",
             p => codMaterial(p.TipMaterialId)),
         [typeof(RegulaDeductibilitate)] = Tabel<RegulaDeductibilitate>("Reguli de deductibilitate",

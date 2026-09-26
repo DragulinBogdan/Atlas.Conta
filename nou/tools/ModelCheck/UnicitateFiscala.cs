@@ -16,8 +16,8 @@ static class UnicitateFiscala {
         if (fiscale.Count != matrice.Count) return false;
         foreach (var grup in matrice.GroupBy(p => (p.Linie, p.Tva, p.Sens))) {
             var ale = fiscale.Where(p => (p.Linie, p.Tva, p.Sens) == grup.Key).ToList();
-            if (grup.Count(p => p.Rol == N.RolTva.Baza) != 1 || grup.Count(p => p.Rol == N.RolTva.Taxa) > 1) return false;
-            foreach (var rol in new[] { N.RolTva.Baza, N.RolTva.Taxa }) {
+            if (grup.Count(p => p.Rol == N.RolTva.Baza) != 1 || grup.Count(p => p.Rol == N.RolTva.Taxa) > 1 || grup.Count(p => p.Rol == N.RolTva.Autocolectare) > 1) return false;
+            foreach (var rol in new[] { N.RolTva.Baza, N.RolTva.Taxa, N.RolTva.Autocolectare }) {
                 var a = grup.Where(p => p.Rol == rol).ToList(); var r = ale.Where(p => p.Rol == rol).ToList();
                 if (a.Count != r.Count || a.Sum(p => p.Valoare) != r.Sum(p => p.Valoare)) return false;
             }

@@ -120,8 +120,11 @@ rămân nominal pe lista de portat.
 Citirea R necesară absorbției ASM este separată și rămâne din registre.
 `DescarcareService`/pinurile FCL și `StocProiectii` sunt portate și verificate.
 `SolduriService` scrie și reconstruiește snapshot-ul de stoc din intrarea
-comună de lot. `Loturi.Cumulate` combină referința cu fereastra în citirile
-nesecurizate fără excludere; raportul, FIFO și pinurile îl folosesc.
+comună de lot. `CumulPerioade.Citeste` combină referința și fereastra în
+aceeași instrucțiune pentru cele trei domenii. Raportul, FIFO și pinurile
+folosesc `Loturi.Cumulate`; evaluarea ieșirii transmite explicit granița
+anterioară documentului exclus. Citirea secured și excluderea istorică
+fără graniță sigură recitesc postările.
 `StocService` citește registrul separat, fără acest snapshot, pentru regimul
 dual. Restul consumatorilor enumerați rămâne obligatoriu înaintea închiderii.
 
@@ -138,3 +141,14 @@ transferului este păstrată pe legătură pentru desfacere exactă.
 separat de disponibilul minim pe datele ulterioare. Validare: integrale
 3.107 bugetar / 4.103 privat OK, HTTP și browser, metadata/OpenAPI fără drift;
 dovezile sunt în [review-ul propriu](tr-d8-review-codex.md). 101-r1 este închisă.
+
+### Fiscal — 103 / D8-B8
+
+`Cub.Citiri.Fiscale` este intrarea comună pentru jurnale/decont, D300,
+D394 și TaxInformation SAF-T. `FiscalitateService` atribuie perioadele la
+scriere, păstrează reperele corecției și confirmă explicit depunerea.
+`RegistruTva` rămâne martor în regimul dual, nu sursă a acestor cititori.
+SAF-T SourceDocuments în întregime, celelalte componente ale exportului,
+reconcilierea și auditul transversal rămân pe inventarul TR-D8. Protecția
+valorilor din TaxInformation nu certifică automat toate sumele facturii
+exportate de SourceDocuments.

@@ -1,3 +1,4 @@
+import { DepunereDeclaratie } from './DepunereDeclaratie';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { NumberBox } from 'devextreme-react';
@@ -103,6 +104,7 @@ export function D300() {
 
       {/* Refuzurile serverului (perioadă inversată, extern negativ, 38 ∧ 41) sunt
           DATE, nu excepții de transport: se citesc în bară, nu în consolă. */}
+      <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D300" exportat={citit.data} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
       <PanouErori erori={citit.error ? eroriDin(citit.error) : []} titlu="Cererea a fost refuzată" />
       {avertismente.length > 0 && (
         <PanouErori erori={avertismente} titlu="Avertismente" fel="atentie" />
@@ -193,7 +195,7 @@ export function D300() {
         <div className="d300__neincluse">
           <h3>Operațiuni neincluse în decont</h3>
           <p className="indiciu">
-            Rânduri de registru pe perioada aleasă a căror pereche (tip de TVA × sens) nu are
+            Operațiuni fiscale din perioada aleasă a căror calificare istorică nu are
             mapare către un rând al formularului — deci cifrele de mai jos <strong>nu</strong> se
             regăsesc în tabloul de sus. Cauze legitime: un tip de TVA propriu, încă nemapat, sau o
             gaură deliberată a formularului (achiziția cu cota tranzitorie de 9% n-are rând în
@@ -221,9 +223,9 @@ export function D300() {
       )}
 
       <p className="indiciu">
-        Cifrele sunt cele din <strong>registrul de TVA</strong>, așezate pe rândurile formularului
-        OPANAF 174/2026. Rândurile în <em>italic</em> sunt oglinzi (copia unui rând din secțiunea
-        cealaltă, la taxare inversă), cele îngroșate sunt totaluri calculate după formulele
+        Cifrele urmează perioada fiscală atribuită fiecărei operațiuni și rândurile formularului
+        OPANAF 174/2026. Rândurile în <em>italic</em> prezintă componenta deductibilă a
+        taxării inverse, cele îngroșate sunt totaluri calculate după formulele
         ordinului, iar cele marcate „extern" nu au sursă în model (se culeg în bară sau rămân 0).
         Ecranul <strong>nu</strong> produce declarația: fișierul XML, validările ANAF și depunerea
         sunt altă unealtă.

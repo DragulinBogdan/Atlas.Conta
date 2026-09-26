@@ -1,3 +1,4 @@
+import { DepunereDeclaratie } from './DepunereDeclaratie';
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -84,6 +85,7 @@ export function D394() {
         )}
       </div>
 
+      <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D394" exportat={citit.data} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
       <PanouErori erori={citit.error ? eroriDin(citit.error) : []} titlu="Cererea a fost refuzată" />
       <Avertismente lista={avertismente} />
 
@@ -197,7 +199,7 @@ export function D394() {
       )}
 
       <p className="indiciu">
-        Cifrele sunt cele din <strong>registrul de TVA</strong>, agregate per partener după regulile
+        Cifrele operațiunilor fiscale sunt agregate per partener după regulile
         formularului 394 (OPANAF 3769/2015, modificat prin OPANAF 2194/2025): tipul de operațiune
         din politica <em>MapareD394</em>, tipul de partener din identitatea fiscală a partenerului,
         numărul de facturi 1/0 per document pe cota cu TVA-ul maxim. Sumele sunt exacte (în bani);

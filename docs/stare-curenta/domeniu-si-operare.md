@@ -302,15 +302,26 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
   dimensiune se aplică înăuntrul snapshot-ului, deci rândul sintetic poartă
   exact coordonatele filtrului. (F27-D3)
 - Raportul de stoc, FIFO și pinurile folosesc `Cub.Citiri.Loturi.Cumulate`:
-  referință plus fereastră, pe cheia completă. Citirile securizate și cele
-  cu excluderea unui document recitesc postările. Gardul de sold intermediar
+  referință plus fereastră, pe cheia completă. `CumulPerioade.Citeste` alege
+  referința și citește sumele în aceeași instrucțiune SQL pentru contabil,
+  stoc și partide. Citirile securizate recitesc postările. Evaluarea ieșirii
+  transmite o graniță strict anterioară datei documentului exclus; fără
+  această garanție, excluderea recitește integral postările. Gardul de sold intermediar
   verifică prefixele zilnice direct în cub. `StocService` rămâne cititorul
   explicit al registrului în regimul dual și nu consumă snapshot-ul cubului.
   (TR-D8 D8-B1/B5)
 - Soldurile conturilor de TVA ale închiderii lunare vin din aceeași sursă
   cumulată. (F27-D3)
-- Excluderea unui document din citirea loturilor recitește direct postările,
-  inclusiv când data cerută coincide cu granița unei referințe. (SC-CIT-73)
+- Excluderea istorică generală recitește direct postările; excluderea în
+  operare poate folosi snapshot-ul strict anterior documentului. Granița
+  contabilă rămâne separată de data finală a raportului. (SC-CIT-73/76/77)
+- Scrierea globală de snapshot (materializare, reconstrucție, eliminare)
+  refuză un ObjectSpace secured înainte de accesarea datelor. (SC-CIT-78)
+  În XAF EF Core verificăm `ISecurityEnabledOption.EnableSecurity` al
+  contextului: fabrica nesecurizată poate întoarce tot un
+  `SecuredEFCoreObjectSpace`. Aceeași verificare decide folosirea
+  snapshot-ului la citire; un ObjectSpace securizat al administratorului
+  rămâne pe postările autorizate.
 - Cheia cu cantitate ȘI valoare zero lipsește din soldul de stoc și din
   soldurile pe loturi, ca din snapshot: un lot consumat integral nu mai este o
   poziție de stoc și nu mai apare în listă. Cheia cu cantitatea zero și valoare
@@ -632,26 +643,10 @@ ușa securizată. (F27-D7, 102)
 
 ### Partide deschise
 
-`PartidaDeschisa` (`An`, `Luna`, `DocumentId`, `Rest`) este restul de stins al
-fiecărui document operat la sfârșitul unei perioade **de referință**, scris de
-`SolduriService.MaterializeazaPartide` în tranzacția închiderii, lângă
-snapshot-urile de solduri și cu aceeași regulă de referință. Rest =
-`TotalStingere` − Σ `Imperechere.Suma` (ambele roluri, algebric, `Data` până la
-sfârșitul perioadei); rândurile cu rest zero se omit. Ștearsă la redeschidere,
-rescrisă la re-închidere, verificată de `Reconstruieste` (existente /
-recalculate / diferite + Δrest). La 31.12 lista este chiar arieratele la nivel
-de document. (F27-D7)
-
-`ImperecheriProiectii.DocumenteCuRest(contrapartidă?, sens?, laData?)` pornește
-de la ultima perioadă de referință: candidații sunt partidele ei, plus
-documentele înregistrate după ea, plus documentele atinse de o împerechere din
-fereastra deschisă (o desfacere poate readuce în listă un document stins
-integral la închidere). Costul este mărginit de fereastra deschisă plus
-numărul partidelor, nu de tot istoricul. `ReturClient` a intrat în uniune
-(a șasea ramură): totalul lui vine din cub, ca la celelalte, deci proiecția
-nu poate diverge de serviciu. Rândurile lui rămân
-totuși în afara listei, dar din alt motiv — creanța unui retur este negativă
-după operare, iar filtrul `Rest > 0` o taie. (F27-D7)
+`PartidaDeschisa` este snapshot-ul pe unitate × cont × partener, scris din
+cub în tranzacția închiderii. `DocumenteCuRest` citește resturile din aceeași
+intrare comună; nu scade din nou sumele legăturilor. Regulile complete sunt
+în §„Partide: raport, snapshot și împerechere” de mai jos. (101, F27-D7 amendat)
 
 `ContabilProiectii.SoldParteneri(laData, contId?, repartitorId?, dimensiuni)`
 este partea de sold a balanței analitice pe aceeași cheie (cont × repartitor),
@@ -1137,7 +1132,7 @@ ACELAȘI cont și aceeași latură, deci Σ = 0 per cont × latură. Împerecher
 Din 2026-09-25, `Cub.Citiri.Partide` este intrarea comună pentru soldurile
 pe unitate/cont/partener, cu transferurile și inversele lor incluse.
 Selecția FIFO folosește această intrare și include partidele inițiale.
-Raportul general și snapshot-ul de partide rămân de portat în TR-D8.
+Raportul general și snapshot-ul de partide folosesc aceeași intrare (101).
 
 Ștergerea unei împerecheri este comandă atomică: eliberează în cub suma
 nominalizată și șterge linkul. CRUD-ul direct este refuzat; API și XAF
@@ -1257,8 +1252,8 @@ R pentru absorbția ASM rămâne separat, din registru. FIFO și pinurile DSC
 folosesc data înregistrării și coordonatele complete. Raportul de stoc
 arată contul, gestiunea și costul unitar din sold; etichetele lipsă nu
 elimină sumele. Snapshot-ul de stoc se scrie numai din cub pe aceeași cheie,
-cu data deschiderii; citirile nesecurizate fără excludere pot folosi
-snapshot + fereastră. Reconstrucția detectează și data alterată, pe lângă
+cu data deschiderii; citirile nesecurizate folosesc snapshot + fereastră,
+inclusiv evaluarea ieșirii cu graniță strict anterioară documentului. Reconstrucția detectează și data alterată, pe lângă
 diferențele de chei și măsuri. Soldurile 0/0 se omit, cele 0/valoare nenulă
 rămân. Gestiunile virtuale nu intră în disponibilul real. TR-D8 rămâne în
 lucru pentru fiscal/SAF-T și verificările transversale.

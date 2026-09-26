@@ -14,7 +14,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [TipDetaliu(typeof(FacturaIesireDetaliu))]
 [GardContare(NaturaClasa.Stoc, NivelContare.TipMaterialExact,
     "Linia de stoc nu are regulă de contare de vânzare pentru Tipul ei — adăugați rândul de politică (sau rulați updater-ul).")]
-public class FacturaIesire : Document, IDocumentCuScadenta {
+public class FacturaIesire : Document, IDocumentCuScadenta, IDocumentFiscal {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Interna, Declaratii.Latura.Externa);
 

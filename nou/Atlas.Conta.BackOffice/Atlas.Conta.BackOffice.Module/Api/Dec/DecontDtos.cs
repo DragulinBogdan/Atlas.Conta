@@ -34,6 +34,8 @@ public sealed class DecontWriteDto {
     public DateOnly Data { get; set; }
     // F27-D4: lipsă pe sârmă = data documentului.
     public DateOnly? DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
+    public DateOnly? DataPrimire { get; set; }
     // Titularul (`Angajat`) → unitatea internă care primește justificarea.
     public Guid PredatorId { get; set; }
     public Guid PrimitorId { get; set; }
@@ -79,6 +81,8 @@ public sealed class DecontReadDto {
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
     public DateOnly DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
+    public DateOnly? DataPrimire { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

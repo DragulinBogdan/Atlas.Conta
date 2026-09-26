@@ -38,7 +38,7 @@ import { FclEditorLinie, type EticheteCulese } from './FclEditorLinie';
 // pentru restul nelivrat (backorder — F4-D3/D4).
 
 const CAMPURI_ANTET: (keyof FclWrite & string)[] =
-  ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId', 'DataScadenta', 'GestiuneDescarcareId'];
+  ['Data', 'DataInregistrare', 'DataExigibilitate',  'PredatorId', 'PrimitorId', 'DataScadenta', 'GestiuneDescarcareId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function FclDetaliu() {
@@ -267,6 +267,7 @@ export function FclDetaliu() {
                   există în WriteDto (F4-D1). Se vede în titlu, după operare. */}
               <CampData<FclWrite> camp="Data" />
               <CampData<FclWrite> camp="DataInregistrare" />
+              <CampData<FclWrite> camp="DataExigibilitate" />
 
               {/* EMITENTUL = unitatea internă (sediul — cum operează și
                   ModelCheck/importul); `UnitateInterna` e expusă ReadOnly în

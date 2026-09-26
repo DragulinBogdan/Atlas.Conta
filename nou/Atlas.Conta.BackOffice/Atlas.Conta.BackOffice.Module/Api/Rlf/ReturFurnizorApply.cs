@@ -64,6 +64,8 @@ public static class ReturFurnizorApply {
         // MATERIALIZARE, în propria operare (53b) — gardianul de Committing o și
         // păzește pe tipurile cu politică de numerotare.
         DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
+        doc.DataExigibilitate = dto.DataExigibilitate;
+        doc.DataPrimire = dto.DataPrimire ?? doc.DataInregistrare;
         // NAVIGAȚIA, nu FK-ul scalar (ca la BTR/BCS/NIR): rezolvarea validează
         // existența cu mesaj de domeniu, iar pe o entitate urmărită navigația
         // încărcată ar rescrie la fixup un FK setat direct. TIPUL laturilor
@@ -262,7 +264,7 @@ public static class ReturFurnizorApply {
         var h = os.GetObjectsQuery<ReturFurnizor>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.DataExigibilitate, d.DataPrimire, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire
             })
@@ -296,6 +298,8 @@ public static class ReturFurnizorApply {
         return new RlfReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
             DataInregistrare = h.DataInregistrare,
+            DataExigibilitate = h.DataExigibilitate,
+            DataPrimire = h.DataPrimire ?? h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

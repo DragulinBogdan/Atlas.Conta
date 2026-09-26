@@ -41,6 +41,8 @@ public sealed class FacturaIntrareWriteDto {
     public Guid PredatorId { get; set; }
     public Guid PrimitorId { get; set; }
     public DateOnly? DataScadenta { get; set; }
+    public DateOnly? DataPrimire { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     public string NumarPV { get; set; }
     public DateOnly? DataPV { get; set; }
     public string CodCpv { get; set; }
@@ -117,6 +119,8 @@ public sealed class FacturaIntrareReadDto {
     public Guid PrimitorId { get; set; }
     public string PrimitorDenumire { get; set; }
     public DateOnly? DataScadenta { get; set; }
+    public DateOnly? DataPrimire { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     public string NumarPV { get; set; }
     public DateOnly? DataPV { get; set; }
     public string CodCpv { get; set; }
@@ -197,5 +201,7 @@ public sealed class FacturaIntrareListDto {
     public string PredatorDenumire { get; set; }
     public string PrimitorDenumire { get; set; }
     public DateOnly? DataScadenta { get; set; }
+    public DateOnly? DataPrimire { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     public decimal Total { get; set; }
 }

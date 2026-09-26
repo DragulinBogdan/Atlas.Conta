@@ -16,7 +16,12 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // ascund din view-uri prin baseline; rămân în schemă (reactivarea la fluxul BF
 // e aditivă), deci nu primesc grup de layout.
 [TipDetaliu(typeof(FacturaIntrareDetaliu))]
-public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
+public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV, IDocumentFiscalPrimit {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+    [DevExpress.ExpressApp.DC.XafDisplayName("Data primirii")]
+    public virtual DateOnly? DataPrimire { get; set; }
+
     public override bool AcoperaReceptia(Document conex) => conex is NIR;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Externa, Declaratii.Latura.Gestiune);

@@ -1,10 +1,10 @@
 using System.Runtime.CompilerServices;
 using System.Text;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
-using DevExpress.ExpressApp.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
@@ -101,6 +101,7 @@ public static class SolduriService {
 
     /// <summary>Scrie snapshot-ul perioadei: incremental din P−1 dacă îl are, altfel `SUM` integral.</summary>
     public static void Materializeaza(IObjectSpace os, int an, int luna) {
+        CereNesecurizat(os);
         Elimina(os, an, luna);
         var (anPrec, lunaPrec) = Precedenta(an, luna);
         var precedentaContabil = AreRanduri(os, Contabil, anPrec, lunaPrec) ? (anPrec, lunaPrec) : ((int, int)?)null;
@@ -111,6 +112,7 @@ public static class SolduriService {
     }
 
     public static void MaterializeazaPartide(IObjectSpace os, int an, int luna) {
+        CereNesecurizat(os);
         EliminaPartide(os, an, luna);
         var argumente = new List<object>();
         string P(object v) { argumente.Add(v); return "{" + (argumente.Count - 1) + "}"; }
@@ -125,8 +127,9 @@ public static class SolduriService {
             """, argumente.ToArray());
     }
 
-    static string SursaPartide(IObjectSpace os, Func<object, string> parametrul, int an, int luna) =>
-        SqlInterogare.Compune(
+    static string SursaPartide(IObjectSpace os, Func<object, string> parametrul, int an, int luna) {
+        CereNesecurizat(os);
+        return SqlInterogare.Compune(
             from s in Cub.Citiri.Partide.Solduri(os, Sfarsit(an, luna))
             join o in Cub.Citiri.Partide.Origini(os)
                 on new { s.UnitateId, s.ContId, s.PartenerId } equals new { o.UnitateId, o.ContId, o.PartenerId } into origine
@@ -135,6 +138,7 @@ public static class SolduriService {
             select new SnapshotPartida { UnitateId = s.UnitateId, ContId = s.ContId,
                 PartenerId = s.PartenerId, Deschisa = s.Deschisa,
                 DocumentId = o.DocumentId, Debit = s.Debit, Credit = s.Credit }, parametrul);
+    }
 
     /// <summary>Perioada are deja snapshot scris?</summary>
     public static bool AreSnapshot(IObjectSpace os, int an, int luna) =>
@@ -143,6 +147,7 @@ public static class SolduriService {
 
     /// <summary>Șterge fizic snapshot-urile contabile, de stoc și de partide ale perioadei.</summary>
     public static void Elimina(IObjectSpace os, int an, int luna) {
+        CereNesecurizat(os);
         Executa(os, $"DELETE FROM {Contabil} WHERE \"An\" = {{0}} AND \"Luna\" = {{1}}", an, luna);
         Executa(os, $"DELETE FROM {Stoc} WHERE \"An\" = {{0}} AND \"Luna\" = {{1}}", an, luna);
         EliminaPartide(os, an, luna);
@@ -168,6 +173,7 @@ public static class SolduriService {
 
     /// <summary>Recalculează integral fiecare referință, RAPORTEAZĂ diferențele, apoi rescrie.</summary>
     public static RaportReconstructie Reconstruieste(IObjectSpace os) {
+        CereNesecurizat(os);
         BlocheazaLantul(os);
         var referinte = Referinte(os);
         var randuri = new List<RandReconstructie>();
@@ -210,30 +216,21 @@ public static class SolduriService {
 
     /// <summary>Atomii contabili până la `panaLa`, porniți de la ultima referință care se termină până la `granita`.</summary>
     public static IQueryable<AtomContabil> AtomiCumulati(IObjectSpace os, DateOnly panaLa, DateOnly? granita = null) {
-        var atomi = ContabilProiectii.Atomi(os);
-        if (os is ISecuredObjectSpace || Referinta(os, granita ?? panaLa) is not { } r)
-            return atomi.Where(a => a.Data <= panaLa);
-        var (an, luna, sfarsit) = r;
-        if (!AreRanduri(os, Contabil, an, luna))
-            return atomi.Where(a => a.Data <= panaLa);
-        return os.GetObjectsQuery<SoldPerioadaContabil>().IgnoreAutoIncludes()
-            .Where(s => s.An == an && s.Luna == luna)
-            .Select(s => new AtomContabil {
-                Data = sfarsit,
-                ContId = s.ContId,
-                Debit = s.Debit,
-                Credit = s.Credit,
-                RepartitorId = s.RepartitorId,
-                GestiuneId = s.GestiuneId,
-                MaterialId = s.MaterialId,
-                CodFunctionalId = s.CodFunctionalId,
-                CodEconomicId = s.CodEconomicId,
-                SursaFinantareId = s.SursaFinantareId,
-                UnitateId = s.UnitateId,
-                ProiectId = s.ProiectId,
-                CentruCostId = s.CentruCostId
-            })
-            .Concat(atomi.Where(a => a.Data > sfarsit && a.Data <= panaLa));
+        var atomi = ContabilProiectii.Atomi(os)
+            .Select(a => new RandDatat<AtomContabil> { Data = a.Data, Rand = a });
+        var snapshot = os.GetObjectsQuery<SoldPerioadaContabil>().IgnoreAutoIncludes()
+            .Select(s => new SoldLunar<AtomContabil> {
+                An = s.An, Luna = s.Luna,
+                Rand = new AtomContabil {
+                    Data = new DateOnly(s.An, s.Luna, 1).AddMonths(1).AddDays(-1),
+                    ContId = s.ContId, Debit = s.Debit, Credit = s.Credit,
+                    RepartitorId = s.RepartitorId, GestiuneId = s.GestiuneId,
+                    MaterialId = s.MaterialId, CodFunctionalId = s.CodFunctionalId,
+                    CodEconomicId = s.CodEconomicId, SursaFinantareId = s.SursaFinantareId,
+                    UnitateId = s.UnitateId, ProiectId = s.ProiectId, CentruCostId = s.CentruCostId
+                }
+            });
+        return CumulPerioade.Citeste(os, atomi, snapshot, panaLa, granita);
     }
 
     // ═══════════════════ scrierea ═══════════════════
@@ -274,6 +271,7 @@ public static class SolduriService {
     }
 
     static string SursaContabil(IObjectSpace os, Func<object, string> P, int an, int luna, (int An, int Luna)? precedenta) {
+        CereNesecurizat(os);
         var sfarsit = Sfarsit(an, luna);
         var atomi = ContabilProiectii.Atomi(os).Where(a => a.Data <= sfarsit);
         if (precedenta != null) {
@@ -293,17 +291,14 @@ public static class SolduriService {
     }
 
     static string SursaStoc(IObjectSpace os, Func<object, string> P, int an, int luna, (int An, int Luna)? precedenta) {
+        CereNesecurizat(os);
         var sfarsit = Sfarsit(an, luna);
-        var postari = Cub.Citiri.Loturi.Postari(os).Where(p => p.Data <= sfarsit);
+        var miscari = Loturi.Miscari(os).Where(p => p.Data <= sfarsit);
         if (precedenta != null) {
             var inceput = Inceput(an, luna);
-            postari = postari.Where(p => p.Data >= inceput);
+            miscari = miscari.Where(p => p.Data >= inceput);
         }
-        var sursa = SqlInterogare.Compune(postari.Select(p => new Cub.Citiri.SoldLot {
-            LotId = p.Unitate.Value, ContId = p.Cont, ProdusId = p.Produs.Value, GestiuneId = p.Gestiune.Value,
-            Deschisa = p.UnitateDeschisa ?? p.Data, Cantitate = p.Cantitate,
-            Valoare = p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : -p.Valoare
-        }), P);
+        var sursa = SqlInterogare.Compune(miscari.Select(m => m.Rand), P);
         if (precedenta is not { } prec) return sursa;
         return $"""
             SELECT "LotId", "ContId", "ProdusId", "GestiuneId", "Deschisa", "Cantitate", "Valoare"
@@ -429,6 +424,11 @@ public static class SolduriService {
     }
 
     // ═══════════════════ primitivele ═══════════════════
+
+    static void CereNesecurizat(IObjectSpace os) {
+        if (CumulPerioade.EsteSecurizat(os))
+            throw new InvalidOperationException("SNAPSHOT_OS_SECURIZAT: scrierea globală cere un ObjectSpace nesecurizat.");
+    }
 
     static bool AreRanduri(IObjectSpace os, string tabela, int an, int luna) =>
         Interogheaza<long>(os, $"SELECT COUNT(*) AS \"Value\" FROM {tabela} WHERE \"An\" = {{0}} AND \"Luna\" = {{1}}",

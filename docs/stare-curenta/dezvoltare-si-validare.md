@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-25.** [Index](README.md)
+**Actualizat: 2026-09-26.** [Index](README.md)
 
 TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
 evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
@@ -53,8 +53,8 @@ pe rând și membru înainte/după închidere și reconstrucție, pe host privat
 cu baza izolată `.CodexBCS`. Tokenurile rămân în memorie; fixture-ul și
 rolurile temporare se curăță în finally.
 
-TR-D8 nu este închis: fiscal/SAF-T, snapshot-ul de stoc și verificările
-transversale rămân în contract.
+TR-D8 nu este închis: restul SAF-T și verificările transversale rămân
+în contract; cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
 Nucleu: **180/180**, zero omise, exit 0:
 `run-verificari/20260924-124628-047/rezultat.json`.
 Comenzile, încercările intermediare și limitele sunt în
@@ -112,14 +112,15 @@ sunt istorie în git; bazele create pe lanțul vechi nu se actualizează, se
 recreează (102b). Lanțul crește prin migrații, ca înainte.
 `20260925151359_SnapshotStocCub` înlocuiește cheia snapshot-ului de stoc
 cu lot/cont/produs/gestiune și păstrează data deschiderii. Nu convertește
-snapshot-uri vechi; bazele cu forma veche se recreează conform 102(b).
-Probele feliei folosesc bazele noi cu sufix `.SnapshotStoc` și baza HTTP
-`Atlas.Conta.BackOffice.Privat.SnapshotHttp` (seed privat plus utilizatori).
-Bazele principale nu au fost recreate de această felie.
-Validare snapshot stoc (2026-09-25): ModelCheck integral 3.166 bugetar /
-4.166 privat OK, zero FAIL; SC-CIT-74 HTTP 15/15, inclusiv peste închidere
-și reconstrucție; client build și regenerare metadata/OpenAPI/types stabile.
-Review-ul, dovezile și limitele sunt în `docs/nucleu/tr-d8-review-codex.md`.
+snapshot-uri vechi. Pe o tabelă goală migrația se aplică direct; datele
+incompatibile cer recrearea bazei conform 102(b).
+Citirile cumulate au o probă pe două conexiuni și un contor de instrucțiuni
+SQL (SC-CIT-77). Scrierea globală prin ObjectSpace secured este refuzată
+înaintea accesului la date (SC-CIT-78). Accesul real pe rând și membru este
+verificat separat prin `nou/tools/ProbeHttp/stoc-snapshot-cub.py --baza
+NUMELE_BAZEI_IZOLATE` (SC-CIT-74), cu seed privat și utilizatori.
+Dovezile rulărilor și inventarul bazelor sunt în review și în
+`docs/decizii/istoric-plan-de-lucru.md`.
 
 Comanda `dotnet ef` primește mereu `--context BackOfficeEFCoreDbContext` și
 se rulează fără `--no-build`. (23a, 89g)

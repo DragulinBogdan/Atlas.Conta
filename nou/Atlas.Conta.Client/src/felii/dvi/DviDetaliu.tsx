@@ -32,7 +32,7 @@ import { PanouFacturi } from './PanouFacturi';
 // agregatul poartă o a doua colecție — `FacturiIds`, legăturile cu facturile de
 // import, trimise ÎNTREGI la fiecare salvare.
 
-const CAMPURI_ANTET: (keyof DviWrite & string)[] = ['Numar', 'Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof DviWrite & string)[] = ['Numar', 'Data', 'DataInregistrare', 'DataExigibilitate', 'DataPrimire',  'PredatorId', 'PrimitorId'];
 const capAntet = (m: string) => campMeta(TIP_ANTET, m, SCHEMA_ANTET).caption;
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
@@ -183,6 +183,10 @@ export function DviDetaliu() {
   ];
 
   function schimbaAntet(v: DviWrite) {
+    const veche = agregat.DataInregistrare || agregat.Data;
+    const noua = v.DataInregistrare || v.Data;
+    if (veche !== noua && agregat.DataPrimire === veche && v.DataPrimire === agregat.DataPrimire)
+      v = { ...v, DataPrimire: noua };
     setAgregat(v);
     setModificat(true);
   }
@@ -281,6 +285,8 @@ export function DviDetaliu() {
               <CampText<DviWrite> camp="Numar" obligatoriu />
               <CampData<DviWrite> camp="Data" />
               <CampData<DviWrite> camp="DataInregistrare" />
+              <CampData<DviWrite> camp="DataExigibilitate" />
+              <CampData<DviWrite> camp="DataPrimire" />
               {/* Predatorul e PARTENERUL căruia i se datorează taxa (biroul
                   vamal, cu cont implicit 446): 129k parteneri ⇒ lookup cu grilă,
                   căutare server-side. */}

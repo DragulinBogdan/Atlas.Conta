@@ -11,6 +11,7 @@ namespace Atlas.Conta.BackOffice.Module.Cub.Citiri;
 public static class Invarianti {
     public static void Verifica(IObjectSpace os) {
         VerificaProvenienta(os);
+        VerificaFiscal(os);
         var ctx = ((EFCoreObjectSpace)os).DbContext;
         var postari = os.GetObjectsQuery<Postare>();
         var lipsuri = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null
@@ -60,5 +61,36 @@ public static class Invarianti {
                     && o.Tranzactie.Fel != N.FelTranzactie.Storno));
         if (lipsa != 0)
             throw new OperareException($"CITIRE_PROVENIENTA_LIPSA: {lipsa} postări Storno fără origine verificabilă.");
+    }
+
+    public static void VerificaFiscal(IObjectSpace os) {
+        var postari = os.GetObjectsQuery<Postare>();
+        var fapte = Fiscale.Postari(os);
+        if (fapte.Any(p => p.DocumentId == null || p.LinieId == null || p.SensTva == null
+                || p.RolTva == null || p.RegimTva == null || p.CotaTva == null || p.DeImport == null
+                || p.DocumentFiscalId == null || p.DataDocument == null || p.DataExigibilitate == null
+                || p.DataInregistrare == null || p.PerioadaDeclarare == null || p.PerioadaD394 == null
+                || (p.SensTva == N.SensTva.Achizitie && p.DataPrimire == null)
+                || p.RolTva < N.RolTva.Baza || p.RolTva > N.RolTva.Autocolectare))
+            throw new OperareException("CITIRE_FISCAL_INCOMPLET: calificare sau reper fiscal absent.");
+        if (fapte.Any(p => p.RolTva == N.RolTva.Autocolectare
+                && (p.RegimTva != N.RegimTva.TaxareInversa || p.SensTva != N.SensTva.Achizitie)))
+            throw new OperareException("CITIRE_FISCAL_AUTOLICHIDARE: autocolectare în afara unei achiziții cu taxare inversă.");
+        if (fapte.GroupBy(p => new { p.TranzactieId, p.LinieId, p.TipTvaId, p.SensTva, p.Partener, p.RolTva })
+                .Any(g => g.Count() != 1))
+            throw new OperareException("CITIRE_FISCAL_DUPLICAT: mai multe postări pentru același rol fiscal.");
+        if (fapte.Select(p => new { p.TranzactieId, p.LinieId, p.TipTvaId, p.SensTva, p.Partener,
+                p.RegimTva, p.CotaTva, p.DeImport, p.DocumentFiscalId, p.DataDocument, p.DataExigibilitate,
+                p.DataPrimire, p.DataInregistrare, p.PerioadaDeclarare, p.PerioadaD394,
+                p.InversaTehnica, p.RegularizareD300 }).Distinct()
+                .GroupBy(p => new { p.TranzactieId, p.LinieId, p.TipTvaId, p.SensTva, p.Partener })
+                .Any(g => g.Count() != 1))
+            throw new OperareException("CITIRE_FISCAL_CALIFICARE: calificări incompatibile în același fapt.");
+        if (fapte.Any(p => p.InversaDinId != null && !postari.Any(o => o.ID == p.InversaDinId
+                && o.Spatiu == p.InversaDinSpatiu && o.TipTvaId == p.TipTvaId && o.RolTva == p.RolTva
+                && o.SensTva == p.SensTva && o.RegimTva == p.RegimTva && o.CotaTva == p.CotaTva
+                && o.DeImport == p.DeImport && o.DocumentFiscalId == p.DocumentFiscalId
+                && o.Valoare == -p.Valoare)))
+            throw new OperareException("CITIRE_FISCAL_INVERSA: inversa nu păstrează calificarea și suma originalului.");
     }
 }

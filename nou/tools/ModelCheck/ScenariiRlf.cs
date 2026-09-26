@@ -39,7 +39,9 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
             debit with { Cont = Cont("4426"), Valoare = taxa, Cantitate = 0, Unitate = null,
                 Rol = N.RolTva.Taxa, Spatiu = N.Spatiu.Contabil },
             credit with { Cont = Cont(inversa ? "4427" : "401"), Valoare = taxa,
-                Cantitate = 0, Gestiune = null, Unitate = inversa ? null : P(d.Id), Partener = inversa ? null : Furnizor }];
+                Cantitate = 0, Gestiune = null, Unitate = inversa ? null : P(d.Id), Partener = Furnizor, Tva = inversa ? tv : null,
+                Rol = inversa ? N.RolTva.Autocolectare : null, Sens = inversa ? N.SensTva.Achizitie : null,
+                Perioada = inversa ? perioada ?? An * 100 + 1 : null }];
     }
 
     protected override void Executa() {

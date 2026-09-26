@@ -57,6 +57,8 @@ public static class DecontApply {
         // MATERIALIZARE, în propria operare (GATE XAF D6) — gardianul de
         // Committing o și păzește pe tipurile cu politică de numerotare.
         DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
+        doc.DataExigibilitate = dto.DataExigibilitate;
+        doc.DataPrimire = dto.DataPrimire ?? doc.DataInregistrare;
         // NAVIGAȚIA, nu FK-ul scalar (ca peste tot): rezolvarea validează
         // existența cu mesaj de domeniu, iar pe o entitate urmărită navigația
         // încărcată ar rescrie la fixup un FK setat direct. TIPUL laturilor
@@ -262,7 +264,7 @@ public static class DecontApply {
         var h = os.GetObjectsQuery<Decont>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.DataExigibilitate, d.DataPrimire, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
                 d.NumarPV, d.DataPV
@@ -317,6 +319,8 @@ public static class DecontApply {
         return new DecontReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
             DataInregistrare = h.DataInregistrare,
+            DataExigibilitate = h.DataExigibilitate,
+            DataPrimire = h.DataPrimire ?? h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,

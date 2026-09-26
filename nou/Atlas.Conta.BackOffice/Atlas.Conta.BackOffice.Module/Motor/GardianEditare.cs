@@ -409,6 +409,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "nu se mai modifică și nu se șterge. Anulați operarea sau stornați-l.");
             return;
         }
+        if (EsteSters(os, doc) && doc is IDocumentFiscal
+                && doc.CorecteazaId != null && doc.MotivCorectie == MotivCorectie.EroareMateriala)
+            erori.Add("TVA_CORECTIE_INCEPUTA: corecția fiscală are deja inversa înregistrată; finalizați documentul de corecție.");
         if (EsteSters(os, doc) || originale == null)
             return;
         if (doc.Stare != stareOriginala)

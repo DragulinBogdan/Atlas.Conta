@@ -67,8 +67,14 @@ static class MetadataDump {
         foreach (var t in assembly.GetTypes().Where(EsteRelevant)) {
             if (t.IsEnum)
                 enumuri[t.Name] = LabeluriEnum(t);
-            else
+            else {
                 tipuri[t.Name] = new TipMeta(DefaultProperty(t), Membri(t));
+                foreach (var proprietate in t.GetProperties(BindingFlags.Public | BindingFlags.Instance)) {
+                    var tip = Nullable.GetUnderlyingType(proprietate.PropertyType) ?? proprietate.PropertyType;
+                    if (tip.IsEnum)
+                        enumuri[tip.Name] = LabeluriEnum(tip);
+                }
+            }
         }
 
         return JsonSerializer.Serialize(new DumpMeta(enumuri, Nomenclatoare(), tipuri), Optiuni)

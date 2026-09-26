@@ -26,7 +26,12 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // RLF: marfa se întoarce la furnizor pe LOTUL ORIGINAL. Laturi Gestiune →
 // Partener; stoc −q (regula +1 pe predator × linia negativă); contare
 // 3xx = 401 cu −V (stornarea achiziției) + 4426 = 401 cu −TVA (PoliticaTva).
-public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
+public class ReturFurnizor : Document, IDocumentCuIesireFiscala, IDocumentFiscalPrimit {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+    [DevExpress.ExpressApp.DC.XafDisplayName("Data primirii")]
+    public virtual DateOnly? DataPrimire { get; set; }
+
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantReturFurnizor.Instanta;
 
     public override Declaratii.ContractLaturi Laturi() =>
@@ -115,7 +120,10 @@ public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
 // aduce ambele feluri de linii direct.
 [GardContare(NaturaClasa.Stoc, NivelContare.TipMaterialExact,
     "Linia cu lot a returului nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc, storno) — adăugați rândul de politică (sau rulați updater-ul).")]
-public class ReturClient : Document {
+public class ReturClient : Document, IDocumentFiscal {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantReturClient.Instanta;
 
     public override Declaratii.ContractLaturi Laturi() =>

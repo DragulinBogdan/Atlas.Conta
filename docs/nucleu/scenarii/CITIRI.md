@@ -1,5 +1,80 @@
 # CITIRI — TR-D8
 
+### Fiscal — specificație aprobată înaintea codului (103, D8-B8)
+
+**Implementat și verificat în domeniul de mai jos.** Owner-ul a aprobat
+F1=A, F2=A, F3=A (103). Exemplele sunt așteptări independente.
+Sumele de mai jos sunt în lei, înaintea rotunjirii la unitatea formularului.
+
+| Scenariu | Date independente | Așteptarea aprobată |
+|---|---|---|
+| SC-CIT-79 — normal și capitalizat | FCT normal 100 + 21; FCL 200 + 42; FCT capitalizat 100 + 21 | achiziții: bază 200, taxă 42, din care dedusă 21; livrări: 200/42; cost capitalizat 121, nu bază fiscală 121; trei documente fiscale |
+| SC-CIT-80 — cotă istorică | fapt 31.07.2025: 100/19; fapt 01.08.2025: 100/21; citire după schimbarea cotei/etichetei tipului | două calificări: 19% și 21%, bază 200, taxă 40; inverse −100/−19 și −100/−21; niciodată recalcul 42; formularul istoric indisponibil este semnalat |
+| SC-CIT-81 — autolichidare (F3) | achiziție TI internă 100 la 21%, deducere integrală; separat, livrare TI 100 | achiziție: datorie 100, bază unică 100, taxă 21 și autocolectare 21, D300 ambele laturi 21, D394 o achiziție C; livrarea are bază 100, taxă facturată 0 și nu inventează taxa beneficiarului |
+| SC-CIT-82 — DVI | bază vamală 100 în cartea Fiscal, TVA 21 în Contabil | intrarea comună 100/21; contraponderea fiscală nu adaugă încă 100; soldul contabil și datoria 446 rămân 21; storno −100/−21; importul nu devine achiziție internă D394 |
+| SC-CIT-83 — document fizic de corecție (F2) | factură 100/21 în ianuarie declarat; factură distinctă de reducere −20/−4,20 emisă/primită în februarie | ianuarie 100/21; februarie −20/−4,20; cumulat 80/16,80; două documente, legate prin proveniență; nicio rescriere a originalului |
+| SC-CIT-84 — eroare de evidență (F2) | aceeași factură a fost introdusă 100/21, corect este 80/16,80; descoperire în februarie după declararea lui ianuarie | cub: original + inversă + corectă, net 80/16,80; D300 Δ −20/−4,20 la regularizare în februarie; D394 ianuarie înlocuit cu 80/16,80, **o** factură; inversa tehnică nu este document nou |
+| SC-CIT-85 — primit ulterior (F1) | document 31 ianuarie, primit/înregistrat 5 februarie, 100/21, ianuarie deschis; deducerea normală este exercitată în februarie | D394 februarie 100/21, D300 februarie 100/21 în ipoteza precizată; data documentului rămâne ianuarie; închiderea ulterioară nu mută atribuirea |
+| SC-CIT-86 — rotunjire și taxă manuală | trei linii cu bază 0,03 și taxă acceptată 0,01 fiecare | fapte: bază 0,09, taxă 0,03, nu recalcul 0,02 pe agregat; inverse −0,09/−0,03; diferența față de calculul global rămâne vizibilă, rotunjirea formularului numai la margine |
+| SC-CIT-87 — securitate și profil | două fapte 100/21 și 25/5,25; aceleași citiri înainte/după închidere | privat Admin/Cititor 125/26,25; refuzul rândurilor celui de-al doilea fapt 100/21; refuzul postărilor Taxă păstrează bazele fără a reconstrui taxa din cotă; Valoare refuzată nu expune sume prin totalurile fiscale/TaxInformation; User fără citire pe Postare primește 403; bugetar fără politică TVA păstrează contabilul/stocul și nu inventează fapte fiscale, SAF-T neaplicabil |
+
+SC-CIT-79/81/82/85/87: verificăm separat jurnalul, D300, D394 și
+TaxInformation SAF-T, cu excluderi explicite după domeniul fiecăruia.
+SC-CIT-83 are document fiscal nou; SC-CIT-84 are numai corecție tehnică.
+Storno integral peste închidere păstrează și proba existentă 100/21 în
+ianuarie și −100/−21 în februarie; nu este confundat automat cu ștergerea
+unei facturi din declarația inițială.
+
+Pe bugetar se repetă mecanismele comune (istoric, inversă, permisiuni),
+cu politică fiscală explicită în fixture atunci când testăm fapte TVA;
+nu modificăm seed-ul profilului pentru a fabrica o obligație fiscală.
+Un fapt cu TipTvaId șters/invizibil păstrează cifrele și afișează lipsa
+etichetei. Duplicarea unui rol sau calificările istorice incompatibile
+sunt detectate de invarianții ModelCheck și de mutanții lor; nu se adaugă
+scanare la activare (102).
+
+Validare fiscală 2026-09-26: `ScenariiFiscale` și integrala
+`run-verificari/20260925-234727-019/rezultat.json`, **3.182/4.214 OK**.
+SC-CIT-79…86 au probe private; SC-CIT-87 are mecanism bugetar inert și
+politică explicită temporară, plus HTTP privat în cele trei stări. Refuzul
+pe întregul tip produce 403, iar cel pe rând/valoare/taxă păstrează cifrele
+aprobate. `fiscal-http-probe4.log` este execuția HTTP finală.
+
+Precizarea fixture-ului SC-CIT-80: tranziția 19→21 este simulată pe același
+TipTva, în aceeași lună februarie a anului izolat 2023, înainte/după mutarea
+cotei. Probează istoricul, eticheta absentă, maparea absentă și inversarea;
+nu certifică aplicabilitatea calendaristică a regimurilor din iulie/august
+2025. Datele acelea rămân exemplul de produs din specificație.
+
+Browser: date fiscale și implicitul primirii; jurnal cu cele două perioade;
+39 mapări SAF-T cu rolurile afișate; D394 10 facturi, 100.000/21.000 și
+confirmare explicită. Performanța și limitele se citesc în
+[review-ul propriu](../tr-d8-review-codex.md#felia-fiscală-103--review-propriu-2026-09-26).
+
+### Corecturi snapshot — specificație înaintea codului, 2026-09-25
+
+SC-CIT-76: lotul de deschidere 4/40 este în snapshot-ul lui ianuarie.
+Evaluarea unui BCS de 1 în februarie dă 10. Alterarea snapshot-ului la
+4/48 schimbă evaluarea aceleiași ieșiri la 12; reconstrucția raportează
+diferența 8 și evaluarea revine la 10. Tranzacția probei se anulează.
+Excluderea documentului curent folosește numai o referință anterioară
+datei sale; excluderea istorică generală păstrează SC-CIT-73.
+
+SC-CIT-77: construim citirile contabile, de partide și de lot înaintea
+închiderii lui februarie; închiderea pe altă conexiune înlocuiește
+referința ianuarie și îi elimină snapshot-urile. Executarea citirilor
+deja construite păstrează cifrele de control (stocul lotului 8/80 în
+sursă și 2/20 consum, datoria facturii 100). Alegerea referinței și
+citirea au o singură instrucțiune SQL, fără execuții la compunerea LINQ.
+
+SC-CIT-78: un ObjectSpace secured este refuzat înaintea oricărei scrieri
+globale de snapshot: materializare, materializarea separată a partidelor,
+reconstrucție și eliminare. Refuzul nu modifică snapshot-urile existente.
+În XAF EF Core contează securitatea activă a contextului; fabrica
+nesecurizată poate întoarce tot clasa `SecuredEFCoreObjectSpace`.
+SC-CIT-74 HTTP verifică închiderea/reconstrucția prin fabrica reală și
+citirea filtrată prin utilizatorii reali.
+
 ### Snapshot de stoc — specificație înaintea codului, 2026-09-25
 
 SC-CIT-69: FCT 10/100 cu NIR încă draft și deschidere exclusiv în cub
@@ -409,3 +484,65 @@ matricea HTTP pe rând/membru înainte și după închidere/reconstrucție;
 și anularea sunt verificate independent în cub. Browserul confirmă raportul
 cu parteneri distincți și disponibilul 60 din panou. 101-r1 este închisă;
 restul TR-D8 și matricea generală de securitate rămân delimitate în review.
+
+### Review fiscal 103 — scenarii înaintea codului, 2026-09-26
+
+SC-CIT-88: exportul lunar D300/D394 pentru FCT 100/21 conține amprenta
+faptelor citite, califică formularul și perioada. După operarea unei alte
+FCT 25/5,25 în aceeași perioadă, confirmarea versiunii vechi este refuzată
+cu `DEPUNERE_VERSIUNE_DEPASITA`, fără înregistrare de depunere. Exportul nou
+125/26,25 poate fi confirmat; repetarea aceleiași confirmări întoarce aceeași
+identitate. Confirmarea compară amprenta sub blocajul exclusiv. O altă
+perioadă sau un alt formular nu poate reutiliza versiunea. O schimbare cu
+aceleași totaluri, dar alte identități, schimbă versiunea. Citirea raportului
+și a amprentei folosește același snapshot tranzacțional; o versiune calculată
+pe date mascate/refuzate nu confirmă setul complet de fapte.
+Exportul disponibil în această felie este DTO-ul JSON cu amprentă; nu este
+fișier XML ANAF. UI păstrează versiunea exportului ales, nu o etichetă liberă.
+
+SC-CIT-89: pentru o postare fiscală reală, fiecare eliminare a unei calificări
+sau a unui reper obligatoriu este refuzată de CHECK-ul bazei, inclusiv lipsa
+datei primirii la achiziție. Tranzacția probei este anulată; faptele inițiale
+rămân intacte. Invarianții ModelCheck păstrează probele de calificări
+incompatibile între roluri, duplicare și proveniența inversei.
+
+### R6 — specificație pentru review, fără implementare
+
+SC-CIT-90: la 28 august configurăm tipul 19% până la 31 iulie inclusiv și
+tipul 21% de la 1 august inclusiv. Factura emisă la 10 august pentru o
+livrare/exigibilitate la 31 iulie, bază 100 și taxă 19: fără avertisment.
+Factura cu exigibilitate la 5 august, operată cu 100/19: avertisment de
+interval, dar operare reușită. Raportul o arată la Emise. Aceleași date pe
+FCT dau avertisment la Primite, cu orientare către furnizor. Modificarea
+retroactivă a intervalului descoperă și faptele scrise înainte de 28 august.
+O corecție tehnică 100/19 → 100/21, când D300 august nu este depus,
+păstrează august fără regularizare: baza netă 100, taxa 21; D394 are o
+factură. Documentul distinct de corecție rămâne cazul separat SC-CIT-83.
+
+SC-CIT-91: factura operată 100/19 păstrează calificarea și taxa 19 după
+editarea tipului pe loc la 21. Raportul arată diferența 19 versus 21 și
+documentul; nu modifică sumele. Draftul cu același tip preia 21 la operare
+(pentru o taxă neintrodusă manual) și primește avertisment dacă exigibilitatea
+este în afara intervalului. Schimbarea Regim/DeImport intră în aceeași
+listă de impact, cu valorile istorice/curente explicit separate.
+
+SC-CIT-92: avans iulie 100/19; factura finală august are linie 300/63 și
+regularizare −100/−19, marcată prin politică și referită la avans. Fără
+avertisment: cota 19 a regularizării este cea a avansului. D300 iulie TVA 19,
+august TVA 44; D394 iulie 100/19/o factură, august două calificări,
+300/63 la 21 și −100/−19 la 19, același document fiscal final. Taxa negativă
+nu se mută în iulie. Regularizarea −100/−21 produce avertisment de cotă
+diferită și păstrează cifrele culese (august 42), fără reparare automată.
+Fără referință: avertisment distinct, fără refuz; fără marca de politică,
+simbolul contului nu activează mecanismul. Se probează atât FCL cât și FCT.
+
+SC-CIT-93: tip fără ambele limite, 100/21: fără avertisment de interval.
+O singură limită testează numai capătul definit; chiar în ziua limitei
+nu există abatere. Verificarea intervalului nu oprește nicio operare fiscală.
+Intervalul inversat este refuz de configurare, nu refuz fiscal.
+
+SC-CIT-94: avans cu două linii la cote diferite, 100/19 și 100/9, referit
+numai prin factura sursă. Propunerea minimă raportează referință ambiguă,
+fără a alege o cotă și fără a refuza factura finală. O referință către
+document nevizibil nu dezvăluie calificarea lui în raport. Varianta cu
+referință precisă la linie/fapt așteaptă review-ul contractului R6.

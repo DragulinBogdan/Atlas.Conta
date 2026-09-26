@@ -63,8 +63,11 @@ public class SoldPerioadaStoc : BaseObject {
     public virtual Guid LotId { get; set; }
     [XafDisplayName("Lot")]
     public virtual Lot Lot { get; set; }
+    [XafDisplayName("Cont")]
     public virtual Guid ContId { get; set; }
+    [XafDisplayName("Produs")]
     public virtual Guid ProdusId { get; set; }
+    [XafDisplayName("Gestiune")]
     public virtual Guid GestiuneId { get; set; }
     [XafDisplayName("Data deschiderii")]
     public virtual DateOnly Deschisa { get; set; }

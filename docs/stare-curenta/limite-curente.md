@@ -73,12 +73,9 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   diferența și repară. F27-r12 propune memorarea numărului de rânduri și a
   sumelor scrise la închidere, verificate ca o constatare de închidere, și
   refuzul unei referințe goale cu număr memorat pozitiv. (review advers F27, 9)
-- `RegistruTva.ScrisLa` al rândurilor de storno scrise ÎNAINTE de migrația
-  care a introdus câmpul poartă `DataOperare` a documentului, adică un moment
-  anterior stornării. Reperul rectificativei e fals doar pe o bază migrată care
-  avea deja rânduri de storno ȘI care închide ulterior perioade: rândurile
-  acelea pot cădea de partea greșită a primei închideri. Bazele livrate n-au
-  perioade închise la migrare. (review advers F27, 12)
+- Compatibilizarea vechilor repere `RegistruTva.ScrisLa` nu este implementată:
+  citirea fiscală folosește cubul greenfield și confirmarea explicită a
+  depunerii; bazele de dezvoltare se recreează conform 102. (103)
 - Snapshot-urile de referință se citesc fără filtrarea de securitate pe rând.
   Fișa de cont își păstrează gate-ul strict (echivalența celor două căi,
   numărată pe TOT istoricul contului, nu doar pe fereastra de după referință),
@@ -174,12 +171,13 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   blochează reciproc. Lookup-urile XAF ale fișei și ale liniei PIF nu sunt
   filtrate pe natură, stare și loc; clasificarea se caută doar pe denumire;
   mesajele gardienilor scriu numele membrilor enum. (87, F26-r1…r22)
-- Perioada de declarare: SAF-T filtrează pe ea, dar fișierul depus nu poartă
-  niciun marcaj de rectificativă — formatul de depunere, pentru D406 ca și
-  pentru D300/D394, este felie proprie. Rectificativa se raportează numai pe
-  o perioadă care acoperă exact o lună calendaristică: pe un interval mai lung
-  întrebarea nu are subiect (nu există o singură declarație depusă), iar
-  răspunsul este fals cu listă goală. (F27-D5, F27-r5)
+- D300/D394 au atribuiri distincte. Confirmarea depunerii din aplicație
+  păstrează formularul/perioada, amprenta faptelor exportate și momentul confirmării;
+  nu transmite declarația la ANAF și nu verifică recipisa. Indicatorul
+  D394 de rectificativă este disponibil pentru exact o lună calendaristică;
+  D300 folosește regularizări. `TaxInformation` SAF-T citește faptele pe luna
+  exportului contabil. Restul `SourceDocuments`, migrarea integrală SAF-T și
+  securitatea tuturor secțiunilor exportului rămân felii TR-D8. (103, D8-B8)
 - Corecția unui document operat: motivul decide efectul fiscal, nu contarea.
   Reclasificarea pe 1174 a erorilor semnificative din exerciții anterioare
   rămâne notă contabilă manuală — motorul nu judecă semnificația. (F27-r1)
@@ -269,7 +267,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   mecanism contabil. Fluxurile de exigibilitate amânată și conturile
   intermediare aferente nu sunt acoperite complet. (36f, D4-r9)
 - Rotunjirea TVA pe grup fiscal document × cotă nu este un mecanism general.
-  Registrul păstrează valorile fiscale, dar nu un snapshot complet al
+  Cubul păstrează valorile și calificarea fiscală, dar nu un snapshot complet al
   identității și clasificării istorice a partenerului. (36f, D4-r1)
 - Implicitele TVA pentru cumpărări extra-UE și anumite cumpărări de la
   neînregistrați nu au politici distincte în seed-ul privat. Fallback-ul la

@@ -94,6 +94,8 @@ public class SaftController : ContaApiController {
         // citească registrul contabil nu-l citește nici așezat pe formular.
         // Proiecția întoarce liste materializate — nimic deferred după `using`.
         using var os = Secured(typeof(RegistruContabil));
+        if (!PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os))
+            return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
         var dto = proiectie(os, an.Value, luna.Value, null);
         if (dto.Neaplicabil != null)
             return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.DinMesaj(dto.Neaplicabil));
@@ -142,6 +144,8 @@ public class SaftController : ContaApiController {
             return BadRequest(EroriDto.Din(erori));
 
         using var os = Secured(typeof(RegistruContabil));
+        if (!PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os))
+            return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
         // ÎNAINTE de proiecție: fără drept de citire pe registru, nici măcar nu
         // se calculează declarația — refuzul e al fișierului ca atare, nu al
         // conținutului lui.

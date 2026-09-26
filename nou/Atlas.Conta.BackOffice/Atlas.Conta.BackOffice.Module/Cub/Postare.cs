@@ -35,6 +35,17 @@ public class Postare {
     public virtual N.SensTva? SensTva { get; set; }
     public virtual N.RolTva? RolTva { get; set; }
     public virtual int? PerioadaDeclarare { get; set; }
+    public virtual N.RegimTva? RegimTva { get; set; }
+    public virtual decimal? CotaTva { get; set; }
+    public virtual bool? DeImport { get; set; }
+    public virtual Guid? DocumentFiscalId { get; set; }
+    public virtual DateOnly? DataDocument { get; set; }
+    public virtual DateOnly? DataExigibilitate { get; set; }
+    public virtual DateOnly? DataPrimire { get; set; }
+    public virtual DateOnly? DataInregistrare { get; set; }
+    public virtual int? PerioadaD394 { get; set; }
+    public virtual bool RegularizareD300 { get; set; }
+    public virtual bool InversaTehnica { get; set; }
 
     public virtual Guid? Valuta { get; set; }
     public virtual N.Carte Carte { get; set; }

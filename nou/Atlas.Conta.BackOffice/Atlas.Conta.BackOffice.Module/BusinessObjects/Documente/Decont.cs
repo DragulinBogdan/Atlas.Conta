@@ -11,7 +11,12 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // aleasă) sau explicit pe linie, credit = contul de avans al titularului (542).
 // Lanțul avans → decont → regularizare se leagă prin imperechere (decizia 31d).
 [TipDetaliu(typeof(DecontDetaliu))]
-public class Decont : Document, IDocumentCuPV {
+public class Decont : Document, IDocumentCuPV, IDocumentFiscalPrimit {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+    [DevExpress.ExpressApp.DC.XafDisplayName("Data primirii")]
+    public virtual DateOnly? DataPrimire { get; set; }
+
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantDecont.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Externa, Declaratii.Latura.Interna);

@@ -188,3 +188,13 @@ absența faptelor fiscale este explicită; tipurile inerte se probează prin
 refuz și zero efecte. Nu include tipurile încă nemigrate, toate combinațiile
 viitoare sau FCL capitalizat (T-r8). Martorii în memorie detectează baza
 copiată în cealaltă carte, taxa duplicată și baza așteptată eliminată.
+
+### Felia fiscală TR-D8 (103)
+
+`verifica.ps1 -Suita Scenarii -Tip FISCALE -Profil Ambele -Sufix .FiscalCub`
+rulează `ScenariiFiscale`, inclus și în `CITIRI`/integrală. HTTP securizat:
+`python -X utf8 nou/tools/ProbeHttp/fiscal-cub.py --baza <bază privată izolată>`.
+Proba HTTP cere hostul local la 5089 (sau `--host`), seed privat, conturile
+Admin/Cititor/User cu parolă goală și anul 2021 fără perioade. Creează date,
+roluri și confirmări temporare; curăță fixture-ul în `finally`.
+Nu se rulează pe o bază de lucru a utilizatorului.

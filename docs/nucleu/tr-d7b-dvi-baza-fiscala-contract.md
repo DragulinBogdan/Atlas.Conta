@@ -63,6 +63,10 @@ cu prețul acestei discipline explicite de citire.
 
 ## DVI-B3 — Variante și reguli de unicitate
 
+Amendament aprobat (103e): unicitatea Bază/Taxă este completată cu cel mult
+o Autocolectare pentru achizițiile cu taxare inversă, pe contrapartea
+colectată, cu Sens=Achiziție. Baza rămâne unică; D300 nu dublează prin oglindă.
+
 - Contrapartidă 401 prin comisionar: taxa 21 deschide partida proprie
   `(document,401,partener)` cu rest −21. Baza 100 nu trece prin
   `Partide.Numeste`/`CuPartida`; ambele capete fiscale rămân fără unitate.
@@ -70,8 +74,8 @@ cu prețul acestei discipline explicite de citire.
   privat actual 446 nu are RolTert; nu se schimbă seed-ul contului pentru
   a forța o partidă în scenă. `PoateFiStins=false` rămâne T-r5 / 86-r11.
 - Taxare inversă IMPTI21: contabil 4426 = 4427: 21, baza fiscală 100 în aceeași
-  pereche ca mai sus. Creditul 4427 rămâne fără fapt colectat; B-r4 nu se
-  rezolvă în această felie.
+  pereche ca mai sus. Conform amendamentului 103, creditul 4427 poartă
+  Autocolectare cu Sens=Achiziție; B-r4 este acoperită în felia fiscală TR-D8.
 - Bază 0,01 cu taxa calculată 0: numai cele două postări fiscale de 0,01;
   există tranzacție operată, nu există postări de taxă sau partidă.
 - Taxa culeasă 21,03 la baza 100 se păstrează după politica existentă de
@@ -223,7 +227,7 @@ liniile fără fapt fiscal: absența tuturor faptelor nu poate trece vacuu.
 |---|---|---|
 | FCT și FCL normale, bază 100 la 21% | 1 / 1 | 100 / 21 |
 | FCT capitalizat, brut 121 | 1 / 1 | 100 / 21, ambele pe cost |
-| FCT cu taxare inversă, bază 100 | 1 / 1 achiziție; 0 colectat (B-r4) | 100 / 21 |
+| FCT cu taxare inversă, bază 100 | 1 / 1 achiziție + 1 Autocolectare (103) | 100 / 21 / 21 |
 | FCL cu taxare inversă sau scutită, bază 100 | 1 / 0 | 100 / 0 |
 | RDC venit 100 la 21%; linia separată de cost | 1 / 1 pe venit; 0 / 0 pe cost | −100 / −21 fiscal |
 | RLF bază 20 la 21% | 1 / 1 | −20 / −4,20 |
@@ -247,7 +251,7 @@ Import1C nu se rulează ca probă supremă (091).
 
 ## Limite și punct de review
 
-Nu intră DVI pe loturi/SC-X-13, reevaluarea, faptul colectat B-r4,
+Nu intră DVI pe loturi/SC-X-13 sau reevaluarea,
 stingerea directă DVI sau portarea generală a rapoartelor. Nu se schimbă
 declaranții deja validați pentru a muta toate bazele în cartea fiscală.
 

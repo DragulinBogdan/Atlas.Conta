@@ -5,7 +5,288 @@ completat pentru snapshot-ul de stoc peste `f5dfce6`, înainte de închiderea
 etapei. D8-B6 A este aprobată de owner și consemnată în 100.
 Review-ul nu certifică întregul TR-D8. Nu a fost trimis un mesaj intermediar către Claude.
 
+## Corecturile review-ului fiscal R1–R5 — 2026-09-26
+
+Review-ul Claude 1018 este confirmat. R1–R5 sunt corectate pe același diff,
+fără commit. R6 este numai specificație în `tr-d8-tva-intervale-contract.md`,
+103(h) și SC-CIT-90…94; referința la avans cu mai multe cote cere review.
+
+- R1: `Fiscale.Versiune` calculează SHA-256 pe faptele comune ordonate,
+  formular și lună; D300/D394 emit versiunea în DTO. Citirea raportului și
+  a versiunii folosește același snapshot repeatable-read. Confirmarea
+  recalculează sub blocaj exclusiv și refuză `DEPUNERE_VERSIUNE_DEPASITA`.
+  Nu există duplicare a regulilor de sumare sau un registru paralel.
+  SC-CIT-88 probează fapt nou, identități schimbate la aceleași sume,
+  formular/perioadă diferite, idempotentă și scriere pe altă conexiune în
+  timpul snapshot-ului. UI exportă JSON cu amprentă și confirmă versiunea
+  aleasă. Browserul a găsit necesitatea recitirii la reexport; butonul
+  recitește acum raportul și elimină eroarea vechiului export după succes.
+- R2: enum-ul/câmpul `DeclarareIntarziata`, seed-ul, operandul și parametrii
+  inerți au ieșit. Atribuirea folosește 103. Așteptările PDT verifică
+  direcția și faptele reale; proba schimbării unei politici fără efect a
+  ieșit. Metadata/OpenAPI/types nu mai conțin atributul.
+- R3: `CK_Postare_FiscalComplet` impune calificarea și reperele nenule,
+  inclusiv primirea la achiziții. SC-CIT-89 verifică 14 eliminări individuale
+  pe postări reale, refuz PostgreSQL 23514 și rollback, pe ambele profiluri.
+  Mutantul vechi cu reper absent este înlocuit de proba bazei; invarianții
+  de calificare între roluri, autolichidare, duplicare și inversă rămân.
+- R4: antetul D8-B8 reflectă aprobarea și implementarea.
+- R5: paragraful cu rulările 103 a ieșit din `dezvoltare-si-validare`;
+  evidența rămâne aici și în `istoric-plan-de-lucru`, fără copiere în capul
+  paginii de stare la fiecare rerulare.
+
+Validări finale:
+
+- FISCALE ambele profiluri: `run-verificari/20260926-111519-176`, exit 0.
+- Integral: **3.207 bugetar / 4.237 privat OK**, zero FAIL, exit 0, build
+  fără avertismente; `run-verificari/20260926-111832-851/rezultat.json`.
+  Comandă: `pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Integral -Profil Ambele -Sufix .FiscalCub`.
+  Wrapper-ul `run-verificari/fiscal-r1-integral.ps1` compilează și generează
+  metadata înaintea integralei. Atlas.DXF 26.1.4.9 / DevExpress 26.1.4.
+  Nu s-au editat sursele compilate în timpul execuției. Nucleul nu este
+  modificat în această corectură; cifra 180/180 de mai jos aparține feliei anterioare.
+- HTTP real: `python -X utf8 nou/tools/ProbeHttp/fiscal-cub.py --baza Atlas.Conta.BackOffice.Privat.FiscalHttp`,
+  `run-verificari/fiscal-r1-http.log/.err` (stderr gol). Matricea de acces
+  trece în toate cele trei stări. R1 refuză versiunile depășite pentru
+  D300 și D394, precum și versiunile obținute pe document/taxă/valoare
+  mascate; exportul nou este confirmat. Blocajul și refuzul anulării rămân verzi.
+- Browser D394: 100/21 → export → încă 25/5,25 → refuzul versiunii vechi;
+  reexport 125/26,25 → confirmare la 26.09.2026, 11:32:59. Owner-ul a salvat
+  cele două fișiere în `D:\Temp`; am verificat conținutul și amprentele lor.
+  Al doilea corespunde exact versiunii confirmate. Dovezi numerice:
+  `run-verificari/fiscal-r1-export-verificat.json`. Fișierele owner-ului rămân.
+- WebApi și client build reușite; după corectura de reexport,
+  `fiscal-r1-client-final.exit` = 0. Metadata/OpenAPI/types stabile la a doua
+  regenerare (`fiscal-r1-drift.log`). Comenzi: `pwsh -NoProfile -File run-verificari/fiscal-r1-client.ps1`,
+  apoi `fiscal-drift.ps1` și `fiscal-r1-client-final.ps1`. Configurația
+  temporară de restore fixează versiunile deja folosite de integrală;
+  configurația de pachete a repo-ului rămâne neatinsă.
+- Migrația `20260926081425_FiscalComplet` este aplicată pe cele trei baze
+  principale și pe baza izolată HTTP. Control independent: cinci migrații,
+  CHECK validat, coloana veche absentă, zero postări/depuneri; fixture-urile
+  2021/2022 sunt curățate. `fiscal-r1-baze-verificate.json`,
+  `fiscal-r1-migrari.log`, `fiscal-r1-migrari.exit` = 0. EF nu găsește drift
+  de model. Nu s-au recreat baze. Hosturile proprii de test au fost oprite.
+- `git diff --check` trece. Rămân avertismentele EF tool 10.0.9/runtime
+  10.0.12 și Vite chunk mare.
+
+Limitele amprentei: certifică faptele cubului din luna/formularul ales,
+nu XML-ul ANAF, recipisa, mapările curente sau parametrii externi D300.
+Exportul disponibil este DTO JSON. Calculul amprentei adaugă o citire și
+materializarea faptelor lunii; A/B din felia inițială nu măsoară acest cost
+nou. Nu am reluat benchmark-ul și nu pretind menținerea latenței de 59 ms.
+Planurile și măsurarea pe volumul țintă rămân înaintea SourceDocuments,
+conform review-ului; nu s-a introdus index sau snapshot fiscal aici.
+
+## Felia fiscală 103 — review propriu inițial, 2026-09-26
+
+Sursa comună este `Cub.Citiri.Fiscale`: măsurile sunt valorile semnate ale
+postărilor cu rol fiscal, din ambele cărți. Regimul/cota/importul și cele
+două atribuiri fiscale se păstrează la scriere; corecția tehnică păstrează
+identitatea fiscală, fără a introduce o factură nouă în D394.
+
+Probleme găsite și corectate în această felie:
+
+- înregistrarea absentă din documentul DEC trebuia normalizată înaintea
+  atribuirii fiscale; data implicită rămâne data documentului;
+- D300 nu poate scădea TVA capitalizată încă o dată când o politică o mapează
+  direct în afara totalului deductibil; regularizarea capitalizată păstrează
+  baza, fără a fabrica taxă dedusă;
+- SAF-T nu mai numără taxa capitalizată și în GL, și ca reziduu fiscal;
+- anularea operării după o depunere confirmată ar fi șters faptul declarat;
+  acum se refuză și după redeschiderea contabilă;
+- ștergerea draftului unei corecții tehnice ar lăsa numai inversa: refuz de
+  domeniu; confirmarea depunerii așteaptă finalizarea corecției;
+- confirmarea depunerii și scrierile fiscale folosesc blocaj tranzacțional
+  comun; proba HTTP ține deschisă o tranzacție fiscală pe altă conexiune și
+  demonstrează că depunerea așteaptă;
+- fără citire pe întregul tip `Postare`, mascarea EF a coordonatelor producea
+  o eroare SQL în grupări. Controllerele refuză 403 înainte de interogare;
+  restricțiile pe obiect și pe membru rămân exercitate prin providerul real;
+- browserul a găsit coloana Rol fiscal goală: generatorul metadata include
+  acum și enumurile proprietăților persistente din alte assembly-uri.
+
+Validări încheiate:
+
+- ModelCheck integral: **3.182 bugetar / 4.214 privat OK**, zero FAIL, exit 0,
+  build fără avertismente. `run-verificari/20260925-234727-019/rezultat.json`.
+  Sursele compilate nu au fost modificate în timpul rulării.
+- Nucleu: **180/180**, zero omise, exit 0;
+  `run-verificari/20260925-235511-876/rezultat.json`.
+- HTTP `fiscal-cub.py`: șase configurații de acces × trei stări
+  (deschis/închis/reconstruit), fiecare pe jurnal/decont/D300/D394 și
+  TaxInformation GL. Admin/Cititor 125/26,25; un document refuzat 100/21;
+  rolul Taxă refuzat 125/0; Valoare refuzată 0/0; User 403. Confirmare cu
+  401/400/404/403, idempotentă și serializată; anulare după depunere 422.
+  `run-verificari/fiscal-http-probe4.log`, exit 0, fixture curățat.
+- Browser: datele facturii urmează implicit înregistrarea, dar păstrează
+  primirea introdusă explicit; pagina politicii afișează cele 39 de mapări.
+  Rolurile Taxă/Autocolectare sunt vizibile. D394 pentru ianuarie 2021,
+  pe fixture-ul izolat, afișează 10 facturi, bază 100.000 și TVA 21.000;
+  confirmarea `UI-FISCAL-103` apare în pagină la 26.09.2026, 00:10:20.
+  Jurnalul afișează separat datele istorice, perioadele D300/D394 și
+  marcajele Regularizare/Inversă. Confirmarea este internă, fără transmitere ANAF.
+
+Verificarea finală a livrării:
+
+- build WebApi fără avertismente/erori; build client reușit, cu avertismentul
+  Vite existent pentru chunk peste 500 KB. Metadata/OpenAPI/types sunt stabile
+  la regenerare: `run-verificari/fiscal-client-validat.log`,
+  `fiscal-final-clean.log` și `fiscal-drift.log`;
+- migrațiile fiscale și seed-ul sunt aplicate pe `Atlas.Conta.BackOffice`,
+  `Atlas.Conta.BackOffice.Privat` și `Atlas.Conta.ModelCheck.Privat`.
+  Verificarea independentă confirmă patru migrații, zero postări și respectiv
+  0/39/39 mapări. Bazele nu au fost recreate. Dovada:
+  `run-verificari/fiscal-migrari-verificate.json`. EF păstrează avertismentul
+  uneltei 10.0.9 față de runtime 10.0.12;
+- fixture-ul HTTP/perf a fost curățat: zero documente active, postări,
+  confirmări și perioade 2021 în baza izolată. Rândurile documentelor șterse
+  logic nu sunt declarate șterse fizic;
+- sursa locală `F:\dev\Atlas.DXF\nuget` este accesibilă. Validarea finală
+  folosește Atlas.DXF 26.1.4.6 și DevExpress 26.1.4, fără schimbarea
+  configurației de pachete a proiectului; restore-ul de verificare a fixat
+  temporar versiunile în `run-verificari/`;
+- `git diff --check` trece. Modificările rămân necomise, împreună cu
+  corecturile C1–C5 ale snapshot-ului de stoc.
+
+Încercările intermediare nu sunt ascunse: prima integrală bugetară a găsit
+metadata/lista politicilor nealiniate; prima integrală privată a găsit cele
+cinci abateri de așteptări/contorizare corectate ulterior. Prima probă HTTP a
+expus refuzul lipsă pe tip; următoarele două au corectat fixture-ul (sintaxa
+GUID a criteriului și ITV înaintea închiderii). Niciuna nu este prezentată
+ca execuție verde. Procesele au folosit modul nesupravegheat; această serie
+nu a produs excepții scăpate către dialogul sistemului de operare.
+
+Limite: `SourceDocuments` integral, restul portării SAF-T, reconcilierea,
+auditul și performanța exportului complet rămân TR-D8. Verificarea refuzului
+pe `Postare.Valoare` privește sumele fiscale din `TaxInformation`, nu toate
+sumele documentelor exportate. Datele de identificare/clasificare ale
+partenerului nu sunt istoricizate în această felie. Regimurile necontractate
+(TVA la încasare, pro-rata, deduceri parțiale) nu sunt certificate.
+
+### Măsurare A/B a feliei fiscale
+
+Aceeași bază privată izolată, 120 FCT de servicii operate prin motor,
+100 linii per document, distribuite în 12 luni: **12.000 fapte fiscale** și
+12.000 rânduri RegistruTva. Codul anterior este extras din `07c79e0` într-un
+harness izolat; codul nou este DLL-ul validat. Un warm-up, apoi șapte citiri
+complete, fiecare într-un ObjectSpace nou, fără paginare; mediane locale.
+Provider nesecurizat pe ambele căi: costul filtrării secured este probat
+funcțional prin HTTP, nu măsurat în acest benchmark.
+
+| Citire | Registre anterior | Cub | Rezultat independent |
+|---|---:|---:|---|
+| Jurnal, an întreg | 5,53 ms | 58,97 ms | 120 rânduri; bază 1.200.000, TVA 252.000 pe ambele căi |
+| D394, an întreg | 9,55 ms | 58,84 ms | o poziție, 120 facturi; bază 1.200.000, TVA 252.000 pe ambele căi |
+| Materializare SAF-T L, luna 1 | 50,96 ms | 60,05 ms | 10 facturi/1.000 linii; taxa GL corectă 21.000 în cub, 42.000 în cititorul anterior care o atașa ambelor laturi |
+
+Costul fiscal este măsurat și prin materializarea SAF-T care îl consumă;
+nu pretindem că cei 60 ms măsoară numai fiscalul sau serializarea XML.
+Datele brute: `run-verificari/fiscal-perf/result.json`,
+`run-verificari/fiscal-perf4.log`; sursele harness-ului sunt în același
+director. Diferența de sumă SAF-T este intenționată și verificată prin
+postările independente; nu este declarată paritate cu rezultatul greșit.
+
+**Concluzie de performanță:** aproximativ 10,7× pentru jurnal și 6,2×
+pentru D394, deși latența absolută rămâne sub 60 ms pe acest fixture.
+Agregarea pe faptul fiscal și apoi pe raport are un cost față de registrul
+pregrupat. Acest volum nu certifică scalarea la milioane de linii și nu
+justifică introducerea unui snapshot fiscal necontractat. Măsurarea pe
+volumul țintă și optimizarea planurilor rămân punct explicit al gate-ului
+transversal TR-D8/T-r11, înaintea închiderii întregii etape.
+
 ## Probleme găsite și corectate
+
+### Corecturile C1–C5 peste 07c79e0 (review 2051)
+
+- **C1:** `SnapshotStocCub` aplicată pe `Atlas.Conta.BackOffice`,
+  `Atlas.Conta.BackOffice.Privat` și `Atlas.Conta.ModelCheck.Privat`.
+  Controlul ulterior confirmă ambele migrații, coloanele noi și zero rânduri
+  în snapshot-ul de stoc. Nu s-au recreat baze și nu s-au șters reziduuri.
+  Dovezi: `run-verificari/snapshot-review-migrari.log` și
+  `snapshot-review-date.log`. EF nu detectează schimbări de model restante;
+  păstrează avertismentul de versiune a uneltei 10.0.9 față de runtime 10.0.12.
+- **C2:** `Loturi.Miscari` deține semnul și data deschiderii;
+  `Grupeaza` deține cheia și agregarea LINQ. Materializarea/reconstrucția
+  SQL pornesc din aceeași proiecție. Contractul de aliasuri SQL rămâne probat.
+- **C3:** `CumulPerioade.Citeste` compune referința, snapshot-ul și fereastra
+  într-o singură instrucțiune pentru contabil/stoc/partide. Granița contabilă
+  rămâne distinctă de data finală. Evaluarea documentului exclus folosește
+  referința strict anterioară; excluderea istorică generală rămâne directă.
+  SC-CIT-76 vede evaluarea 10 → 12 → 10, SC-CIT-77 închide pe altă conexiune
+  după compunere și verifică atât cifrele, cât și numărul instrucțiunilor.
+- **C4:** toate scrierile globale și sursele SQL refuză securitatea activă.
+  SC-CIT-78 verifică refuzul înaintea accesării datelor printr-un proxy;
+  **nu** este prezentată ca probă a filtrării reale. Aceasta este SC-CIT-74 HTTP.
+  Prima gardă, bazată numai pe `ISecuredObjectSpace`, a produs HTTP 500 la
+  închiderea autorizată. Providerul DevExpress 26.1 creează aceeași clasă și
+  pe ușa nesecurizată, cu `ISecurityEnabledOption.EnableSecurity=false`.
+  Verificarea acestei opțiuni este acum comună citirii și scrierii; nu
+  exceptăm administratorul și nu modificăm autorizarea controllerelor.
+  Prima execuție HTTP este roșie: `snapshot-review-http.log/.err`.
+  Reluarea corectată: `snapshot-review-http2.log/.err`, **15/15**, exit 0.
+- **C5:** caption-uri Cont/Produs/Gestiune și metadata regenerate, tuple
+  consecvente, using-uri curățate, scenariul împărțit lizibil. Istoricul de
+  felie a ieșit din stare-curenta; două pasaje vechi despre partide au fost
+  înlocuite cu trimitere la regula actuală, fără o a doua descriere.
+
+Validarea selectivă a expus întâi o eroare în fixture-ul SC-CIT-76: schimbasem
+data BCS în februarie, dar nu data înregistrării. Contractarea refuza corect.
+Am corectat ambele date și am făcut refuzul explicit în mesajul probei;
+reluarea este verde pe ambele profiluri (`20260925-211432-783`). Prima
+integrală, `20260925-211753-103`, are 3.178/4.178 OK, dar precede corectarea
+gărzii găsită prin HTTP; nu o folosim pentru a certifica versiunea finală.
+
+Clientul a fost regenerat repetat fără drift pe metadata/OpenAPI/types și
+build-ul trece (`snapshot-review-client2.log/.err`); avertismentul Vite
+despre dimensiunea bundle-ului rămâne. HTTP confirmă 15/125 pentru
+Admin/Cititor, 10/100 pentru restricția pe rând, 15/0 la membrul Valoare
+refuzat și zero rânduri pentru User, înainte/după închidere/reconstrucție.
+Curățarea este verificată independent în `snapshot-review-cleanup.log`:
+zero documente active și zero entități temporare active/perioade/snapshot-uri
+ale probei. Hostul de test este oprit. Nu s-a reluat browserul/XAF;
+nu există modificări funcționale de UI în această felie.
+
+Baze cu sufix, numai inventariate pentru decizia owner-ului:
+
+```
+Atlas.Conta.BackOffice.C102R1
+Atlas.Conta.BackOffice.CodexC102Review
+Atlas.Conta.BackOffice.Privat.CodexC102Http
+Atlas.Conta.BackOffice.Privat.SnapshotHttp
+Atlas.Conta.BackOffice.SnapshotStoc
+Atlas.Conta.ModelCheck.Privat.C102R1
+Atlas.Conta.ModelCheck.Privat.CodexC102Review
+Atlas.Conta.ModelCheck.Privat.SnapshotStoc
+```
+
+Performanța pe istoric mare rămâne nemăsurată. O instrucțiune SQL probează
+atomicitatea citirii față de închidere, nu timpul de răspuns. Nu am reluat
+matricea HTTP completă contabil/partide în această felie; toate cele trei
+citiri au probe ModelCheck, iar SC-CIT-74 exercită ramura comună de securitate.
+Fără commit. D8-B8 și SC-CIT-79…87 sunt propuneri fiscale pentru owner,
+fără implementare și fără a închide B-r4 ori întregul TR-D8.
+
+Comenzile de reproducere pentru această corecție:
+
+**Validare finală C1–C5:** `run-verificari/20260925-213600-946/rezultat.json`,
+exit 0, **3.178 bugetar / 4.178 privat OK**, zero FAIL; build 0 warnings / 0 errors.
+Sursele C# nu s-au modificat în timpul rulării sau după ea.
+`dllSha256` ModelCheck:
+`AF1EC22B3AB8B45132EF0F90E32608C4E46523B03F49F1E32DE7C71835994A64`.
+Modulul verificat în ModelCheck și în hostul HTTP are același SHA256:
+`A7D2B5B92FD9DF8E57E8CC64BDDE8F83D1030D8F8410358E2FD9F10EBE60D2BF`.
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Integral -Profil Ambele -Sufix .SnapshotStoc
+python -X utf8 nou/tools/ProbeHttp/stoc-snapshot-cub.py --baza Atlas.Conta.BackOffice.Privat.SnapshotHttp
+```
+
+Proba HTTP cere hostul izolat pe portul 5089, cu seed și utilizatori;
+wrapper-ul local `run-verificari/snapshot-http-host.ps1` arată configurația
+folosită. Rulează secvențial cu verificarea grea, în mod nesupravegheat.
+
+### Constatările feliilor precedente
 
 1. **Refuzul stocului venea prea târziu la anulare/storno.** Verificarea
    din materializator putea refuza după modificarea tracker-ului registrelor.

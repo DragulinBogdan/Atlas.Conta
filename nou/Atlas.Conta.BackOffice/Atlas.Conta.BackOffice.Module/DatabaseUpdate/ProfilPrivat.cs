@@ -76,6 +76,7 @@ internal static class ProfilPrivat {
         SeedMapareD300(os);
         // Așezarea pe D394 (D4-D2): aceeași dependență de tipurile comise.
         SeedMapareD394(os);
+        SeedMapariTvaSaft(os);
         os.CommitChanges();
     }
 
@@ -373,16 +374,8 @@ internal static class ProfilPrivat {
     // livrare (seria 310xxx) / achiziție deductibilă integral (301xxx) /
     // nedeductibilă (351xxx). Tipul de operațiune D394 e direcțional, deci e
     // politică (`MapareD394`, felia 14), nu atribut al tipului.
-    static void SeedTipTva(IObjectSpace os) {
-        var conturi = os.GetObjectsQuery<Cont>()
-            .Where(c => c.Simbol == "4426" || c.Simbol == "4427" || c.Simbol == "4428")
-            .ToDictionary(c => c.Simbol, c => c);
-        var tva4426 = conturi["4426"];
-        var tva4427 = conturi["4427"];
-        var tva4428 = conturi["4428"];
-
-        (string Cod, string Denumire, decimal Cota, RegimTva Regim,
-            bool Conturi, string SafTLivrare, string SafTAchizitie, bool DeImport)[] tipuri = [
+    static readonly (string Cod, string Denumire, decimal Cota, RegimTva Regim,
+            bool Conturi, string SafTLivrare, string SafTAchizitie, bool DeImport)[] TipuriTva = [
             ("N21", "TVA 21% (standard)", 21m, RegimTva.Normal, true, "310344", "301104", false),
             ("N11", "TVA 11% (redusă)", 11m, RegimTva.Normal, true, "310351", "301105", false),
             ("N9", "TVA 9% (tranzitoriu locuințe, până la 31.07.2026)", 9m, RegimTva.Normal, true, "310310", "301102", false),
@@ -419,7 +412,56 @@ internal static class ProfilPrivat {
             ("IMPTI21", "Import de bunuri 21% — taxare inversă (art. 326)", 21m, RegimTva.TaxareInversa, true, null, "300604", true),
             ("IMPTI11", "Import de bunuri 11% — taxare inversă (art. 326)", 11m, RegimTva.TaxareInversa, true, null, "300605", true),
         ];
-        foreach (var t in tipuri)
+
+    static void SeedMapariTvaSaft(IObjectSpace os) {
+        var ids = os.GetObjectsQuery<TipTva>().ToDictionary(t => t.Cod, t => t.ID);
+        foreach (var t in TipuriTva) {
+            var id = ids[t.Cod];
+            foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
+                var cod = sens == SensTva.Achizitie ? t.SafTAchizitie : t.SafTLivrare;
+                foreach (var sectiune in Enum.GetValues<SectiuneTvaSaft>()) {
+                    if (cod != null)
+                        Adauga(sectiune, Atlas.Conta.Nucleu.RolTva.Taxa, "300", cod);
+                    else if (t.Cod == "IMP" && sens == SensTva.Achizitie)
+                        Adauga(sectiune, Atlas.Conta.Nucleu.RolTva.Taxa, "000", "000000");
+                }
+                if (t.Regim == RegimTva.TaxareInversa && sens == SensTva.Achizitie) {
+                    var auto = t.Cota switch { 21m => "380006", 11m => "380007", _ => null };
+                    if (auto != null)
+                        Adauga(SectiuneTvaSaft.GeneralLedger, Atlas.Conta.Nucleu.RolTva.Autocolectare, "300", auto);
+                }
+
+                void Adauga(SectiuneTvaSaft sectiune, Atlas.Conta.Nucleu.RolTva rol, string taxType, string taxCode) {
+                    ContaSeeder.Aliniaza<MapareTvaSaft>(os, $"{MapariFiscale.Versiune}/{sectiune}/{t.Cod}/{sens}/{rol}",
+                        m => m.Versiune == MapariFiscale.Versiune && m.Sectiune == sectiune
+                            && m.TipTvaId == id && m.Regim == t.Regim && m.Cota == t.Cota
+                            && m.DeImport == t.DeImport && m.Sens == sens && m.Rol == rol,
+                        m => {
+                            m.Versiune = MapariFiscale.Versiune;
+                            m.Sectiune = sectiune;
+                            m.TipTvaId = id;
+                            m.Regim = t.Regim;
+                            m.Cota = t.Cota;
+                            m.DeImport = t.DeImport;
+                            m.Sens = sens;
+                            m.Rol = rol;
+                            m.TaxType = taxType;
+                            m.TaxCode = taxCode;
+                        });
+                }
+            }
+        }
+    }
+
+    static void SeedTipTva(IObjectSpace os) {
+        var conturi = os.GetObjectsQuery<Cont>()
+            .Where(c => c.Simbol == "4426" || c.Simbol == "4427" || c.Simbol == "4428")
+            .ToDictionary(c => c.Simbol, c => c);
+        var tva4426 = conturi["4426"];
+        var tva4427 = conturi["4427"];
+        var tva4428 = conturi["4428"];
+
+        foreach (var t in TipuriTva)
             ContaSeeder.Aliniaza<TipTva>(os, t.Cod, x => x.Cod == t.Cod, tip => {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
@@ -453,12 +495,6 @@ internal static class ProfilPrivat {
                 p.Directie = directie;
                 p.SursaContrapartida = sursa;
                 p.ContrapartidaFallbackId = os.FirstOrDefault<Cont>(c => c.Simbol == fallback)?.ID;
-                // F27-D5 — deductibilul se declară în perioada primirii facturii
-                // (art. 301 Cod fiscal, fără rectificativă); factura noastră
-                // rămâne fiscal a perioadei ei, deci colectatul o rectifică.
-                p.DeclarareIntarziata = directie == DirectieTva.Deductibil
-                    ? DeclarareIntarziata.PerioadaInregistrarii
-                    : DeclarareIntarziata.PerioadaFaptului;
                 // S-D15 — fără gard: taxa culeasă rămâne autoritară, ca în motorul
                 // vechi; valoarea de produs e a owner-ului (S-r1).
                 p.TolerantaTaxa = null;

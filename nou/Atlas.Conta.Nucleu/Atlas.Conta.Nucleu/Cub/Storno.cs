@@ -13,6 +13,9 @@ public static class Storno {
             .Select(postare => postare with {
                 Coordonate = postare.Coordonate with {
                     Data = data,
+                    ReperFiscal = postare.Coordonate.ReperFiscal is { } reper
+                        ? reper with { PerioadaD394 = data.Year * 100 + data.Month, DataInregistrare = data }
+                        : null,
                     PerioadaDeclarare = perioadaDeclarare is { } noua && postare.Coordonate.PerioadaDeclarare is not null
                         ? noua
                         : postare.Coordonate.PerioadaDeclarare,

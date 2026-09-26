@@ -76,23 +76,9 @@ public enum RegimTva {
 // autolichidare 4426 = 4427, pe `Colectat` nicio taxă și niciun rând.
 public enum DirectieTva { Deductibil = 1, Colectat = 2 }
 
-// Unde se declară un fapt fiscal a cărui perioadă e deja închisă (F27-D5) —
-// DATĂ pe `PoliticaTva`, nu regulă în motor: art. 301 Cod fiscal exercită
-// dreptul de deducere în perioada primirii facturii (fără rectificativă), pe
-// când o factură emisă de noi și neînregistrată la timp rămâne fiscal a
-// perioadei originale. Profilul alege; motorul nu știe de ce.
-public enum DeclarareIntarziata {
-    [XafDisplayName("În perioada înregistrării")] PerioadaInregistrarii = 1,
-    [XafDisplayName("În perioada faptului")] PerioadaFaptului = 2,
-}
-
-// De ce se corectează un document operat (F27-D6). Decide EFECTUL FISCAL al
-// perechii storno + document nou, nu contarea: eroarea materială aparține
-// perioadei originale (rândurile de TVA păstrează perioada ei de declarare ⇒
-// rectificativă), faptul nou e un fapt al perioadei corecției (regula normală
-// D5). Fără membru 0 — convenția din fișier.
+// 103(c): eroarea de evidență nu este eroarea materială a formularului.
 public enum MotivCorectie {
-    [XafDisplayName("Eroare materială")] EroareMateriala = 1,
+    [XafDisplayName("Eroare de evidență")] EroareMateriala = 1,
     [XafDisplayName("Fapt nou")] FaptNou = 2,
 }
 

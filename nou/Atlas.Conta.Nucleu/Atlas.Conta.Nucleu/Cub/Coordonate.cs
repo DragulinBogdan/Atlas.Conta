@@ -10,6 +10,7 @@ public sealed record Coordonate {
     public Unitate? Unitate { get; init; }
     public CodTva? CodTva { get; init; }
     public int? PerioadaDeclarare { get; init; }
+    public ReperFiscal? ReperFiscal { get; init; }
     public Guid? Valuta { get; init; }
     public Carte Carte { get; init; } = Carte.Contabil;
     public Analiza Analiza { get; init; } = Analiza.Fara;

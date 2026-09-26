@@ -20,9 +20,15 @@ public static class Randuri {
                 Produs = rand.Produs,
                 Unitate = Unitatea(rand),
                 CodTva = rand.TipTvaId is Guid tipTva && rand.SensTva is N.SensTva sens && rand.RolTva is N.RolTva rol
-                    ? new N.CodTva(tipTva, sens, rol)
+                    ? new N.CodTva(tipTva, sens, rol) {
+                        Regim = rand.RegimTva!.Value, Cota = rand.CotaTva!.Value, DeImport = rand.DeImport!.Value,
+                    }
                     : null,
                 PerioadaDeclarare = rand.PerioadaDeclarare,
+                ReperFiscal = rand.TipTvaId == null ? null : new N.ReperFiscal(
+                    rand.DocumentFiscalId!.Value, rand.DataDocument!.Value, rand.DataExigibilitate!.Value,
+                    rand.DataPrimire, rand.DataInregistrare!.Value, rand.PerioadaD394!.Value,
+                    rand.RegularizareD300, rand.InversaTehnica),
                 Valuta = rand.Valuta,
                 Carte = rand.Carte,
                 Analiza = new N.Analiza(rand.CodFunctional, rand.CodEconomic, rand.SursaFinantare,
@@ -66,6 +72,17 @@ public static class Randuri {
         rand.SensTva = coordonate.CodTva?.Sens;
         rand.RolTva = coordonate.CodTva?.Rol;
         rand.PerioadaDeclarare = coordonate.PerioadaDeclarare;
+        rand.RegimTva = coordonate.CodTva?.Regim;
+        rand.CotaTva = coordonate.CodTva?.Cota;
+        rand.DeImport = coordonate.CodTva?.DeImport;
+        rand.DocumentFiscalId = coordonate.ReperFiscal?.DocumentFiscal;
+        rand.DataDocument = coordonate.ReperFiscal?.DataDocument;
+        rand.DataExigibilitate = coordonate.ReperFiscal?.DataExigibilitate;
+        rand.DataPrimire = coordonate.ReperFiscal?.DataPrimire;
+        rand.DataInregistrare = coordonate.ReperFiscal?.DataInregistrare;
+        rand.PerioadaD394 = coordonate.ReperFiscal?.PerioadaD394;
+        rand.RegularizareD300 = coordonate.ReperFiscal?.RegularizareD300 ?? false;
+        rand.InversaTehnica = coordonate.ReperFiscal?.InversaTehnica ?? false;
         rand.Valuta = coordonate.Valuta;
         rand.Carte = coordonate.Carte;
         rand.CodFunctional = coordonate.Analiza.CodFunctional;

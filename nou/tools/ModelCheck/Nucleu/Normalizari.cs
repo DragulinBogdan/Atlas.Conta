@@ -627,11 +627,12 @@ static class Normalizari {
                 Numara("DVI-B2: pereche de bază în cartea fiscală");
                 continue;
             }
-            if (cod.Rol == N.RolTva.Taxa && fiscala.Valoare == 0m) {
+            if (cod.Rol != N.RolTva.Baza && fiscala.Valoare == 0m) {
                 eliminata[f] = true;
                 continue;
             }
             var laturaBazei = cod.Sens == N.SensTva.Achizitie ? N.Latura.Debit : N.Latura.Credit;
+            if (cod.Rol == N.RolTva.Autocolectare) laturaBazei = N.Latura.Credit;
             var tinte = new List<int>();
             for (var t = 0; t < postari.Count; t++) {
                 var tinta = postari[t];
@@ -639,10 +640,8 @@ static class Normalizari {
                     || tinta.Coordonate.Cont == CubDinRegistre.ContFiscal
                     || tinta.Cauza.Linie != fiscala.Cauza.Linie)
                     continue;
-                // Taxarea inversă are AMBELE picioare pe conturi de TVA (4426 = 4427):
-                // rândul fiscal e al celui de pe latura bazei, celălalt n-are fapt (B-D6).
                 var eTaxa = context.ConturiTva.Contains(tinta.Coordonate.Cont);
-                if ((cod.Rol == N.RolTva.Taxa ? eTaxa : !eTaxa) && tinta.Coordonate.Latura == laturaBazei)
+                if ((cod.Rol != N.RolTva.Baza ? eTaxa : !eTaxa) && tinta.Coordonate.Latura == laturaBazei)
                     tinte.Add(t);
             }
             if (tinte.Count != 1) {

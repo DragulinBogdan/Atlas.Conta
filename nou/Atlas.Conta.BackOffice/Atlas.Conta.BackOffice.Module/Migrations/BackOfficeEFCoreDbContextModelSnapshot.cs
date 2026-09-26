@@ -353,6 +353,46 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.DepunereDeclaratie", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ConfirmataDe")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ConfirmataLa")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Formular")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GCRecord")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("OptimisticLockField")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("Perioada")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("VersiuneExportata")
+                        .HasColumnType("text");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("Formular", "Perioada", "VersiuneExportata")
+                        .IsUnique();
+
+                    b.ToTable("DepuneriDeclaratii");
+                });
+
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.Document", b =>
                 {
                     b.Property<Guid>("ID")
@@ -904,6 +944,68 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.ToTable("MapariD394");
                 });
 
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.MapareTvaSaft", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Cota")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<bool>("DeImport")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("GCRecord")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("OptimisticLockField")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("Regim")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Rol")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Sectiune")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Sens")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TaxCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TaxType")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("TipTvaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Versiune")
+                        .HasColumnType("text");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("TipTvaId");
+
+                    b.HasIndex("Versiune", "Sectiune", "TipTvaId", "Regim", "Cota", "DeImport", "Sens", "Rol")
+                        .IsUnique()
+                        .HasFilter("\"GCRecord\" = 0");
+
+                    b.ToTable("MapariTvaSaft");
+                });
+
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.MigrareLegatura", b =>
                 {
                     b.Property<Guid>("ID")
@@ -1405,9 +1507,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<Guid?>("ContrapartidaFallbackId")
                         .HasColumnType("uuid");
-
-                    b.Property<int>("DeclarareIntarziata")
-                        .HasColumnType("integer");
 
                     b.Property<bool>("DinSeed")
                         .HasColumnType("boolean");
@@ -3062,8 +3161,30 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid>("Cont")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal?>("CotaTva")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
                     b.Property<DateOnly>("Data")
                         .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataDocument")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataExigibilitate")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataInregistrare")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataPrimire")
+                        .HasColumnType("date");
+
+                    b.Property<bool?>("DeImport")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("DocumentFiscalId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("DocumentId")
                         .HasColumnType("uuid");
@@ -3080,6 +3201,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<short?>("InversaDinSpatiu")
                         .HasColumnType("smallint");
 
+                    b.Property<bool>("InversaTehnica")
+                        .HasColumnType("boolean");
+
                     b.Property<short>("Latura")
                         .HasColumnType("smallint");
 
@@ -3089,6 +3213,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("Partener")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("PerioadaD394")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("PerioadaDeclarare")
                         .HasColumnType("integer");
 
@@ -3097,6 +3224,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<Guid?>("Proiect")
                         .HasColumnType("uuid");
+
+                    b.Property<short?>("RegimTva")
+                        .HasColumnType("smallint");
+
+                    b.Property<bool>("RegularizareD300")
+                        .HasColumnType("boolean");
 
                     b.Property<short?>("RolTva")
                         .HasColumnType("smallint");
@@ -3148,7 +3281,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("TranzactieId");
 
-                    b.ToTable("Postare", (string)null);
+                    b.ToTable("Postare", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Postare_FiscalComplet", "\"TipTvaId\" IS NULL OR (\n    \"DocumentId\" IS NOT NULL AND \"LinieId\" IS NOT NULL AND\n    \"SensTva\" IS NOT NULL AND \"RolTva\" IS NOT NULL AND\n    \"RegimTva\" IS NOT NULL AND \"CotaTva\" IS NOT NULL AND \"DeImport\" IS NOT NULL AND\n    \"DocumentFiscalId\" IS NOT NULL AND \"DataDocument\" IS NOT NULL AND\n    \"DataExigibilitate\" IS NOT NULL AND \"DataInregistrare\" IS NOT NULL AND\n    \"PerioadaDeclarare\" IS NOT NULL AND \"PerioadaD394\" IS NOT NULL AND\n    (\"SensTva\" <> 1 OR \"DataPrimire\" IS NOT NULL))");
+                        });
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.Cub.Tranzactie", b =>
@@ -4035,10 +4171,20 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 {
                     b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.Document");
 
+                    b.Property<DateOnly?>("DataExigibilitate")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("date")
+                        .HasColumnName("DataExigibilitate");
+
                     b.Property<DateOnly?>("DataPV")
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("date")
                         .HasColumnName("DataPV");
+
+                    b.Property<DateOnly?>("DataPrimire")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("date")
+                        .HasColumnName("DataPrimire");
 
                     b.Property<string>("NumarPV")
                         .ValueGeneratedOnUpdateSometimes()
@@ -4084,12 +4230,27 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 {
                     b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.Document");
 
+                    b.Property<DateOnly?>("DataExigibilitate")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("date")
+                        .HasColumnName("DataExigibilitate");
+
+                    b.Property<DateOnly?>("DataPrimire")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("date")
+                        .HasColumnName("DataPrimire");
+
                     b.HasDiscriminator().HasValue("Dvi");
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.FacturaIesire", b =>
                 {
                     b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.Document");
+
+                    b.Property<DateOnly?>("DataExigibilitate")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("date")
+                        .HasColumnName("DataExigibilitate");
 
                     b.Property<DateOnly?>("DataScadenta")
                         .ValueGeneratedOnUpdateSometimes()
@@ -4126,10 +4287,20 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("Curs");
 
+                    b.Property<DateOnly?>("DataExigibilitate")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("date")
+                        .HasColumnName("DataExigibilitate");
+
                     b.Property<DateOnly?>("DataPV")
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("date")
                         .HasColumnName("DataPV");
+
+                    b.Property<DateOnly?>("DataPrimire")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("date")
+                        .HasColumnName("DataPrimire");
 
                     b.Property<DateOnly?>("DataScadenta")
                         .ValueGeneratedOnUpdateSometimes()
@@ -4253,12 +4424,27 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 {
                     b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.Document");
 
+                    b.Property<DateOnly?>("DataExigibilitate")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("date")
+                        .HasColumnName("DataExigibilitate");
+
                     b.HasDiscriminator().HasValue("ReturClient");
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.ReturFurnizor", b =>
                 {
                     b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.Document");
+
+                    b.Property<DateOnly?>("DataExigibilitate")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("date")
+                        .HasColumnName("DataExigibilitate");
+
+                    b.Property<DateOnly?>("DataPrimire")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("date")
+                        .HasColumnName("DataPrimire");
 
                     b.HasDiscriminator().HasValue("ReturFurnizor");
                 });
@@ -5284,6 +5470,17 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.MapareD394", b =>
+                {
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.TipTva", "TipTva")
+                        .WithMany()
+                        .HasForeignKey("TipTvaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TipTva");
+                });
+
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.MapareTvaSaft", b =>
                 {
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.TipTva", "TipTva")
                         .WithMany()

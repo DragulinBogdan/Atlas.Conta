@@ -60,7 +60,10 @@ public sealed class DeclarantDecont : IDeclarant {
             else miscari.Add(new(capC, baza, 0, 0, l.Valoare, cauza));
             if (Fiscal.Impozitul(operand, l, tipuri[i], taxa, DirectieTva.Deductibil, refuzuri) is { } impozit)
                 miscari.Add(impozit with { DeLa = Capat(impozit.DeLa.Cont, operand.Document.Predator.Id,
-                    impozit.DeLa.Analiza, l.Id) });
+                    impozit.DeLa.Analiza, l.Id) with {
+                        CodTva = impozit.DeLa.CodTva, ReperFiscal = impozit.DeLa.ReperFiscal,
+                        PerioadaDeclarare = impozit.DeLa.PerioadaDeclarare,
+                    } });
         }
         return refuzuri.Count > 0 ? null : new(operand.Document.Id, operand.Document.DataInregistrare,
             miscari, decizii, [operand.PerioadaDeschisa, operand.VersiunePolitica]);

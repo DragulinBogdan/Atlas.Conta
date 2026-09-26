@@ -66,6 +66,8 @@ public static class FacturaIntrareApply {
         doc.Predator = GasesteRepartitor(os, dto.PredatorId, "Predatorul (furnizorul)");
         doc.Primitor = GasesteRepartitor(os, dto.PrimitorId, "Primitorul (gestiunea)");
         doc.DataScadenta = dto.DataScadenta;
+        doc.DataPrimire = dto.DataPrimire ?? doc.DataInregistrare;
+        doc.DataExigibilitate = dto.DataExigibilitate;
         doc.NumarPV = dto.NumarPV;
         doc.DataPV = dto.DataPV;
         doc.CodCpv = dto.CodCpv;
@@ -304,7 +306,7 @@ public static class FacturaIntrareApply {
                 // `as` nu filtrează pe tip: null pe alt repartitor fiindcă `CodFiscal` e doar al lui Partener (F28-J, 89).
                 PredatorCodFiscal = (d.Predator as Partener).CodFiscal,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
-                d.DataScadenta, d.NumarPV, d.DataPV, d.CodCpv, d.Valuta, d.Curs,
+                d.DataPrimire, d.DataExigibilitate, d.DataScadenta, d.NumarPV, d.DataPV, d.CodCpv, d.Valuta, d.Curs,
                 // Parametrii plății automate (F3-D5).
                 d.GenereazaPlata, d.PlataContPropriuId,
                 PlataContPropriuDenumire = d.PlataContPropriu.Denumire,
@@ -367,6 +369,7 @@ public static class FacturaIntrareApply {
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PredatorCodFiscal = h.PredatorCodFiscal,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
+            DataPrimire = h.DataPrimire ?? h.DataInregistrare, DataExigibilitate = h.DataExigibilitate,
             DataScadenta = h.DataScadenta, NumarPV = h.NumarPV, DataPV = h.DataPV,
             CodCpv = h.CodCpv, Valuta = h.Valuta, Curs = h.Curs,
             GenereazaPlata = h.GenereazaPlata,

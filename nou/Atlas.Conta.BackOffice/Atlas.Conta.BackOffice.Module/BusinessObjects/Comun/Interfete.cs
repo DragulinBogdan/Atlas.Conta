@@ -147,3 +147,11 @@ public interface IDocumentCuRegistruPropriu {
 public interface ILinieCuImobilizare {
     Declaratii.ImobilizareCuleasa ImobilizareCuleasa();
 }
+
+public interface IDocumentFiscal {
+    DateOnly? DataExigibilitate { get; set; }
+}
+
+public interface IDocumentFiscalPrimit : IDocumentFiscal {
+    DateOnly? DataPrimire { get; set; }
+}

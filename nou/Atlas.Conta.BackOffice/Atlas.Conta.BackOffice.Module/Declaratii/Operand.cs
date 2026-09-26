@@ -44,8 +44,7 @@ public sealed record DiferentaInventarFapt(DirectieDiferenta Directie, decimal? 
 public sealed record PoliticaTvaFapt(
     DirectieTva Directie,
     SursaCont SursaContrapartida,
-    Guid? ContrapartidaFallbackId,
-    DeclarareIntarziata DeclarareIntarziata);
+    Guid? ContrapartidaFallbackId);
 
 public sealed record DocumentFapt(
     Guid Id,
@@ -114,6 +113,7 @@ public sealed record Operand(
     N.VersiunePolitica VersiunePolitica) {
 
     public ReceptieSursaFapt? ReceptieSursa { get; init; }
+    public N.ReperFiscal? ReperFiscal { get; init; }
     // ASM-B6: R rămâne o măsură a registrului în regimul dual; C vine din cub.
     public IReadOnlyDictionary<Guid, N.Sold> SolduriLoturiRegistru { get; init; } = new Dictionary<Guid, N.Sold>();
     public IReadOnlyDictionary<Guid, RepartitorFapt> Repartitori { get; init; } = new Dictionary<Guid, RepartitorFapt>();

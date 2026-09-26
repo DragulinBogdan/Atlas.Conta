@@ -3,8 +3,9 @@
 - Data: 2026-09-24
 - Stare: în lucru; producătorii DEC și IMO implementați (095–097),
   balanță, fișă, jurnal, sold parteneri și snapshot contabil portate;
-  D8-B4 aprobată de owner. Stocul este în curs, restul inventarului rămâne
-  explicit nefinalizat. D8-B6 A este aprobată (100); implementarea și probele sunt în curs.
+  stocul și partidele, inclusiv snapshot-urile, portate. D8-B4/B6/B7 aprobate;
+  D8-B8 este aprobată și implementată prin 103, în corectură după review;
+  restul SAF-T și gate-urile transversale rămân nefinalizate.
 - Surse: 090(f/k), 091(g/i/j), 094, invarianții II/III/VI,
   [inventarul](tr-d8-citiri-inventar.md), N-r8, T-r11…T-r15, S-r2, 091-r3.
 
@@ -270,6 +271,153 @@ browserul verifică raportul și panoul/candidatul 100 / 40 / 60.
 Logurile și limitele sunt în [review-ul propriu](tr-d8-review-codex.md).
 101-r1 este închisă; aceasta nu închide întregul TR-D8.
 
+## D8-B8 — Citirea fiscală: contract aprobat, 2026-09-25
+
+**Aprobată de owner: F1=A, F2=A, F3=A (103).** Completează D8-B1 și
+amendează 088(g/h) și DVI-B3. Felia fiscală este implementată și verificată;
+[review-ul propriu](tr-d8-review-codex.md) consemnează probele și limitele.
+
+### a. Intrarea greenfield și informația istorică
+
+`Cub.Citiri.Fiscale` pornește din postările cu fapt TVA, din ambele cărți.
+Cheia atomului este `(Spatiu, PostareId)`; cheia faptului economic este
+`(TranzactieId, LinieId, TipTvaId, Sens, PartenerId)`. Păstrăm rolul fiscal,
+proveniența inversei/corecției și identitatea documentului fiscal. Cartea și
+contul rămân proveniență; nu separă baza DVI de taxa aceleiași linii.
+Sumele sunt `Valoare`, cu semnul stocat, **nu Debit minus Credit**. Nu
+contopim originalul, inversa tehnică și o factură distinctă de corecție.
+
+Proiecția grupează explicit pe regim/cotă și atribuirile temporale istorice;
+nu folosește `First`/`Min` ca să ascundă două calificări incompatibile.
+La scriere înghețăm pe faptul fiscal `Regim`, `Cota` și calificarea de import.
+Inversa le copiază. Tipul TVA curent oferă etichete, nu recalculează istoria.
+Alternativa cu versiuni imuabile de nomenclator cere încă o entitate și un
+join; recomand valorile istorice pe fapt pentru modelul actual, ca la IMO.
+Codul SAF-T este o **mapare versionată la margine**, pe calificarea istorică
+și versiunea exportului; nu confundăm schimbarea cotei cu schimbarea
+nomenclatorului de raportare. Mapările absente se raportează.
+
+Separăm data documentului, faptul generator/exigibilitatea când diferă,
+data primirii la achiziție și data înregistrării. Nu deducem automat toate
+aceste date din `Postare.Data`. Atribuirile D300/D394 sunt câmpuri tipizate,
+fixate la operare după regula aprobată, nu un registru paralel și nici EAV.
+Cititorul comun expune faptele; fiecare declarație își selectează atribuirea.
+Jurnalul trebuie să arate explicit reperul temporal ales.
+
+Nu introducem snapshot fiscal: declarațiile citesc intervale de fapte,
+nu solduri cumulative. Dacă apare ulterior un sold fiscal materializat,
+folosește `CumulPerioade`, fără a patra implementare.
+
+### b. Transferul și blocajele concrete
+
+| Suprafață | Păstrăm | Rescriem înaintea comutării |
+|---|---|---|
+| TVA/jurnale | agregare SQL, etichete prin LEFT JOIN, sume stocate/manuale | sursa comună, cheia completă, separarea evenimentelor și a perioadelor; numărul de fapte nu devine număr de postări |
+| D300 | rânduri, formule, mapări și avertismente verificabile | sursa, regularizările și dublarea prin oglindă la TI; indicatorul generic „rectificativă” nu certifică o declarație depusă |
+| D394 | secțiuni, tipuri de operații, XML și validările existente | perioada primirii/emiterii, numărul documentelor fiscale, versiunea corectată fără numărarea inverselor tehnice |
+| SAF-T fiscal | schema și validările, nomenclatorul local pin-uit | TaxInformation din fapte, codificare pe secțiune și cotă istorică; restul SourceDocuments rămâne felie distinctă |
+| Închiderea TVA | soldurile conturilor TVA deja citite din cub | consumatorii fiscali auxiliari; soldul contabil nu devine suma celor două laturi de autolichidare |
+| Storno/corecție | inversa append-only și conservarea contabilă | atribuirea pe declarație, citirea perioadei originalului din cub, identitatea facturii vs inversa tehnică |
+
+Blocante la intrare: `Postare` nu păstrează azi Regim/Cota; un singur
+`PerioadaDeclarare` este insuficient pentru cazurile de mai jos; contrapartea
+4427 a TI nu are fapt fiscal (B-r4). DVI și TVA capitalizat au deja baza
+distinctă, nu o reconstruim din taxe. Aceste blocaje inițiale sunt rezolvate
+prin 103. CHECK-ul bazei refuză calificarea/reperele obligatorii absente;
+invarianții dintre postări rămân probe ModelCheck. Nu se scanează istoricul
+la activare și nu se completează din nomenclatorul de azi (102).
+Probele din registre rămân etalon independent numai în regimul dual.
+
+### c. Cercetare și alegeri închise
+
+Alternativele de mai jos păstrează formularea prezentată owner-ului; A este
+aprobată la toate cele trei puncte, prin 103.
+
+Sursele au fost confruntate cu codul la 2026-09-25:
+
+- Codul fiscal, art. 280–282/291: distinge faptul generator de exigibilitate
+  și stabilește reguli pentru cota aplicabilă. PDF-ul legii inițiale este
+  reper pentru structură, nu dovadă a cotelor curente; cotele istorice ale
+  exemplelor sunt confruntate cu nomenclatorul local.
+  [Legea 227/2015](https://static.anaf.ro/static/10/Anaf/legislatie/L_227_2015.pdf).
+- D300: instrucțiunile din OPANAF 174/2026 prevăd regularizări pentru
+  perioade anterioare, inclusiv la rd. 16. Nu justifică o rectificativă D300
+  automată pentru orice corecție contabilă.
+  [Ordinul și instrucțiunile](https://static.anaf.ro/static/10/Anaf/legislatie/OPANAF_174_2026.pdf).
+- D394: anexa 2, §1(b), include facturile primite în perioada raportată
+  indiferent de exigibilitate; §3 prevede înlocuirea declarației pentru
+  omisiuni/erori. [OPANAF 2194/2025](https://static.anaf.ro/static/10/Anaf/legislatie/OPANAF_2194_2025.pdf).
+- Procedura erorilor materiale D300 exclude erorile de înregistrare a TVA
+  în evidența contabilă. Enum-ul nostru `EroareMateriala` nu poate desemna
+  automat acea procedură. [OPANAF 3604/2015, art. 3, forma consolidată](https://legislatie.just.ro/Public/DetaliiDocument/173910).
+- Autolichidarea produce la beneficiar taxă colectată și deductibilă;
+  furnizorul nu facturează TVA. [Normele, pct. 109](https://static.anaf.ro/static/10/Anaf/legislatie/HG_1_2016_norme%20CF.pdf).
+- `anaf/RO_SAFT_SchemaDefCod_16.02.2026.xlsx`: „Legenda coduri taxa TVA”,
+  B11:B19 separă achizițiile după deductibilitate; „TVA_NoteContabile”,
+  D17:S17 dă codul 380006 pentru autocolectare 21%, **numai GLA**.
+  Nu folosim acest cod automat pentru o factură TI. „TAX-IMP - Impozite”,
+  B11:D11 distinge factura de import de taxele vamale. Aceste diferențe
+  cer mapare pe secțiune, nu un singur cod universal.
+
+**F1 — perioade:** aprobăm atribuiri distincte D300/D394 și data primirii
+explicită la achiziții? **Recomand A: da.** Exemplu: factură din ianuarie,
+primită în februarie, introdusă în februarie, ianuarie încă deschis; D394
+este februarie, chiar dacă regula actuală alege ianuarie. Data primirii se
+propune la culegere din data înregistrării, poate fi corectată înainte de
+operare și se îngheață. **B:** păstrăm 088 și refuzăm/raportăm cazul ca
+neacoperit; comutarea fiscală completă rămâne blocată.
+
+**F2 — corecții:** aprobăm separarea erorii de evidență de factura nouă de
+corecție și de eroarea materială a formularului? **Recomand A:** pentru
+eroarea contabilă simplă 100/21 → 80/16,80, descoperită după declarare,
+D300 păstrează trecutul și duce Δ −20/−4,20 la regularizarea curentă,
+iar D394 înlocuiește perioada inițială cu 80/16,80 și o singură factură.
+Factura distinctă de reducere −20/−4,20 emisă/primită ulterior aparține
+perioadei sale; inversa tehnică nu inventează o factură. Cazurile speciale
+de ajustare, inspecție sau procedură ANAF nu se deduc din acest exemplu.
+Închiderea internă și depunerea declarației sunt repere distincte; propunerea
+include confirmarea explicită a depunerii pe formular/perioadă, cu versiunea
+exportată și momentul confirmării. Este reper de raportare, fără sume
+fiscale paralele. `InchisaPrimaOara` nu dovedește depunerea. **B:** păstrăm regula
+088(h), dar nu certificăm declarațiile afectate; necesită delimitare explicită.
+
+**F3 — taxare inversă:** aprobăm completarea B-r4 cu faptul distinct
+`Autocolectare`, atașat contrapărții 4427, cu `Sens=Achizitie`?
+**Recomand A:** pe o linie avem o Bază 100, o Taxă 21 și o Autocolectare 21;
+nu dublăm baza și nu transformăm achiziția într-o factură de vânzare.
+Amendăm unicitatea DVI-B3 la cel mult o postare per rol, cu rolul suplimentar
+permis numai la autolichidare. D300 citește cele două obligații și elimină
+vechea oglindire care le-ar dubla; D394 numără o achiziție. **B:** derivăm
+autocolectarea o singură dată în intrarea comună, din regimul istoric,
+fără fapt distinct; este mai puțin cod de scriere, dar nu probează separat
+existența coordonatei fiscale pe contrapartea contabilă.
+
+### d. Probe și regula de oprire
+
+Completarea review-ului R1–R5: exportul DTO lunar poartă amprenta faptelor
+din citirea comună, calculată în același snapshot cu raportul. Confirmarea
+o verifică sub blocaj exclusiv (`DEPUNERE_VERSIUNE_DEPASITA`). Nu se păstrează
+o etichetă liberă; nu se pretinde validarea XML-ului ANAF ori a parametrilor
+externi prin amprenta faptelor. `DeclarareIntarziata` este eliminată, fără
+parametru inert în politica TVA. SC-CIT-88/89 probează versiunea și CHECK-ul.
+
+SC-CIT-79…87 în [catalog](scenarii/CITIRI.md) au fost specificate înaintea
+codului și probate prin `ScenariiFiscale`, HTTP și browser. Catalogul
+precizează domeniul profilurilor și variația temporală a fixture-ului 80.
+
+Închiderea feliei fiscale cere: producători cu atribute istorice, intrarea
+comună și consumatorii TVA/D300/D394/TaxInformation portați împreună;
+scenarii independente verzi, integral ambele profiluri, HTTP cu refuz pe
+rând și pe `Valoare`/taxă, inclusiv după închidere; arhitectură fără citiri
+`RegistruTva` de producție în domeniul portat; A/B pe aceeași bază pentru
+jurnal și D394 anual, plus măsurarea părții fiscale SAF-T. Lipsa unui
+reper temporal sau a unei mapări produce diagnostic, nu zero plauzibil.
+
+Rămân nominal pentru restul TR-D8: SAF-T SourceDocuments integral,
+reconcilierea și auditul transversal, perf-ul exportului complet, review-ul
+final și T-r11 pe întregul inventar. Nu declarăm prin această felie acoperite
+TVA la încasare, pro-rata/deduceri parțiale sau noi regimuri necontractate.
+
 ## Starea execuției — 2026-09-25
 
 Portate: intrarea contabilă, Atomi/Balanță/Plan/SoldParteneri, fișa cu
@@ -293,8 +441,13 @@ precum și raportul de stoc, sunt portate împreună. Snapshot-ul de stoc
 folosește acum lot/cont/produs/gestiune și data deschiderii din cub;
 scrierea incrementală și reconstrucția au aceeași sursă. Raportul, FIFO și
 pinurile folosesc snapshot + fereastră în ObjectSpace nesecurizat.
-Citirile securizate, cele cu excluderea unui document și gardul zilnic
-recitesc postările. Registrul necesar regimului dual se citește separat,
+Citirile securizate și gardul zilnic recitesc postările. Excluderea în
+operare poate folosi numai referința strict anterioară datei documentului;
+excluderea istorică generală recitește postările. Tiparul comun
+`CumulPerioade.Citeste` selectează referința și citește sumele în aceeași
+instrucțiune SQL pentru contabil/stoc/partide, păstrând granița contabilă.
+Scrierile globale de snapshot refuză un ObjectSpace secured înainte de
+accesarea datelor. Probe suplimentare: SC-CIT-76…78. Registrul necesar regimului dual se citește separat,
 fără snapshot din cub. Probe: SC-CIT-69…75.
 
 Restul regulii de oprire D8-B5 rămâne deschis: fiscal/TVA istoric,

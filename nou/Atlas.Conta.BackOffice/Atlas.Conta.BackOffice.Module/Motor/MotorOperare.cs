@@ -304,6 +304,7 @@ public static class MotorOperare {
     // Întoarce documentul conex generat (draft autogenerat, decizia 17) sau null.
     public static Document Opereaza(IObjectSpace os, Document doc) {
         using var tranzactie = TranzactieComanda.Asigura(os);
+        FiscalitateService.BlocheazaScrierea(os, doc);
         using var receptie = Cub.ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: true);
         var plan = CalculeazaSiValideaza(os, doc);
         var refuzuriCub = Cub.Materializare.Refuzuri(os, doc, plan.TipDoc);
@@ -385,7 +386,7 @@ public static class MotorOperare {
             var rand = os.CreateObject<RegistruTva>();
             rand.Data = doc.Data;
             var (perioadaAn, perioadaLuna) = RegistruTvaService.PerioadaDeclarare(
-                os, doc, doc.Data, doc.DataInregistrare, t.Regula);                  // F27-D5/D6
+                os, doc);
             rand.PerioadaAn = perioadaAn;
             rand.PerioadaLuna = perioadaLuna;
             rand.ScrisLa = scrisLa;
@@ -587,6 +588,8 @@ public static class MotorOperare {
     // niciun alt document nu a atins loturile create) și în perioadă deschisă.
     public static void AnuleazaOperarea(IObjectSpace os, Document doc) {
         using var tranzactie = TranzactieComanda.Asigura(os);
+        FiscalitateService.BlocheazaScrierea(os, doc);
+        FiscalitateService.VerificaAnularea(os, doc);
         Cub.Materializare.BlocheazaFise(os, doc);
         Cub.Materializare.BlocheazaDocumente(os, doc);
         if (doc.Stare != StareDocument.Operat)
@@ -643,6 +646,7 @@ public static class MotorOperare {
     // și soldurile rămân ≥ 0 din data stornării încolo.
     public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
         using var tranzactie = TranzactieComanda.Asigura(os);
+        FiscalitateService.BlocheazaScrierea(os, doc);
         Cub.Materializare.BlocheazaFise(os, doc);
         Cub.Materializare.BlocheazaDocumente(os, doc);
         if (doc.Stare != StareDocument.Operat)

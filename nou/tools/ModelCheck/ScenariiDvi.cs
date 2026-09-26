@@ -42,7 +42,9 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
         return taxa == 0 ? [debit, credit] : [
             debit with { Valoare = taxa, Rol = N.RolTva.Taxa, Carte = N.Carte.Contabil },
             new(Cont(contra), N.Latura.Credit, taxa, Linie: linie,
-                Partener: contra == "401" ? tert : null,
+                Partener: contra is "401" or "4427" ? tert : null,
+                Tva: contra == "4427" ? Tva(tva) : null, Rol: contra == "4427" ? N.RolTva.Autocolectare : null,
+                Sens: contra == "4427" ? N.SensTva.Achizitie : null, Perioada: contra == "4427" ? perioada ?? An * 100 + 1 : null,
                 Unitate: contra == "401" ? Partida(d.Id, contra, tert) : null), debit, credit];
     }
 
@@ -263,8 +265,10 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
         var deschis = Declaratie(new LinieDviScena(100));
         Comanda(os => { os.GetObjectByKey<Dvi>(deschis.Id).DataInregistrare = Februarie; os.CommitChanges(); });
         Opereaza(deschis.Id);
-        Postari("SC-DVI-18", deschis.Id, N.FelTranzactie.Operare, Februarie, Randuri(deschis, 0, 100, 21));
-        Jurnal("SC-DVI-18", [deschis.Id], An * 100 + 1, 100, 21);
+        Postari("SC-DVI-18", deschis.Id, N.FelTranzactie.Operare, Februarie,
+            Randuri(deschis, 0, 100, 21, perioada: An * 100 + 2));
+        Jurnal("SC-DVI-18", [deschis.Id], An * 100 + 1, 0, 0);
+        Jurnal("SC-DVI-18", [deschis.Id], An * 100 + 2, 100, 21);
         var p = Declaratie(new LinieDviScena(100)); Opereaza(p.Id);
         var c = Declaratie(new LinieDviScena(100)); Opereaza(c.Id);
         var tarziu = Declaratie(new LinieDviScena(100));

@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-09-18.** [Index](README.md)
+**Actualizat: 2026-09-26.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -385,3 +385,27 @@ compatibili; `Disponibil` este limita exactă a perechii, iar panourile o
 consumă ca atare. Crearea trece
 prin gate-ul de drepturi și vizibilitatea ambelor documente, apoi prin
 comanda atomică în ObjectSpace non-secured, la fel ca desfacerea și ștergerea.
+
+## Citirea fiscală și confirmarea depunerii (103)
+
+DTO/Apply pentru FCT/FCL/DEC/DVI/RDC/RLF transmit exigibilitatea și, la
+achiziții, data primirii. Clientul propune primirea din înregistrare, fără
+să suprascrie o dată introdusă explicit. Jurnalul filtrează perioada D300
+și afișează separat perioada D394 și reperele istorice.
+
+`GET/POST /api/depuneri-declaratii/{formular}/{an}/{luna}` citește sau
+confirmă depunerea. POST cere versiunea exportată, drept de scriere și
+perioadă vizibilă; refuzurile au 400/403/404/422. Aceeași versiune este
+idempotentă. OData expune istoricul numai pentru citire. D300/D394 oferă
+confirmarea pentru o singură lună, cu versiunea și momentul afișate.
+DTO-urile D300/D394 emit `VersiuneExportata`, amprentă a faptelor lunii.
+UI descarcă exportul JSON și reține acea versiune pentru confirmare;
+nu acceptă etichetă liberă. POST refuză `DEPUNERE_VERSIUNE_DEPASITA`
+dacă s-au schimbat faptele între export și confirmare. JSON-ul nu este
+XML ANAF; parametrii externi D300 nu sunt certificați de amprenta faptelor.
+
+`/politici/tva-saft` editează mapările versionate și calificarea istorică.
+Metadata include enumurile proprietăților persistente, inclusiv cele din
+nucleu. Rapoartele fiscale cer citire pe `Postare`; lipsa dreptului pe
+întregul tip este 403, iar filtrarea pe obiect/membru se aplică sursei comune.
+Această validare fiscală nu certifică toate câmpurile SourceDocuments SAF-T.

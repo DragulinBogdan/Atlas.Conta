@@ -9,7 +9,12 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 [TipDetaliu(typeof(DocumentDetaliu))]
 [XafDisplayName("Declarație vamală de import")]
-public class Dvi : Document {
+public class Dvi : Document, IDocumentFiscalPrimit {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+    [DevExpress.ExpressApp.DC.XafDisplayName("Data primirii")]
+    public virtual DateOnly? DataPrimire { get; set; }
+
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantDvi.Instanta;
 
     public override Declaratii.ContractLaturi Laturi() =>

@@ -83,10 +83,6 @@
       "RolTertMixt": "Roluri de terț mixte pe aceeași mișcare",
       "ReziduValoricFaraCantitate": "Rezidu valoric fără cantitate"
     },
-    "DeclarareIntarziata": {
-      "PerioadaInregistrarii": "În perioada înregistrării",
-      "PerioadaFaptului": "În perioada faptului"
-    },
     "DimensiuneFlags": {
       "Niciuna": "Niciuna",
       "Repartitor": "Repartitor",
@@ -154,6 +150,10 @@
       "Oglinda": "Oglindă",
       "Extern": "Extern"
     },
+    "FormularFiscal": {
+      "D300": "D300",
+      "D394": "D394"
+    },
     "LaturaDocument": {
       "Predator": "Predator",
       "Primitor": "Primitor"
@@ -163,8 +163,15 @@
       "Accelerata": "Accelerată",
       "Degresiva": "Degresivă"
     },
+    "MidpointRounding": {
+      "ToEven": "ToEven",
+      "AwayFromZero": "AwayFromZero",
+      "ToZero": "ToZero",
+      "ToNegativeInfinity": "ToNegativeInfinity",
+      "ToPositiveInfinity": "ToPositiveInfinity"
+    },
     "MotivCorectie": {
-      "EroareMateriala": "Eroare materială",
+      "EroareMateriala": "Eroare de evidență",
       "FaptNou": "Fapt nou"
     },
     "MotivEliminare": {
@@ -212,6 +219,10 @@
       "Generic": "Regula generică a laturii",
       "ClasaExacta": "Clasă exactă"
     },
+    "ProfilContabil": {
+      "Bugetar": "Bugetar",
+      "Privat": "Privat"
+    },
     "RegimTva": {
       "Normal": "Normal",
       "Capitalizat": "Capitalizat",
@@ -229,10 +240,19 @@
       "Client": "Client",
       "Furnizor": "Furnizor"
     },
+    "RolTva": {
+      "Baza": "Baza",
+      "Taxa": "Taxa",
+      "Autocolectare": "Autocolectare"
+    },
     "SectiuneD300": {
       "Colectata": "TVA colectată",
       "Deductibila": "TVA deductibilă",
       "Regularizari": "Regularizări"
+    },
+    "SectiuneTvaSaft": {
+      "GeneralLedger": "GeneralLedger",
+      "Facturi": "Facturi"
     },
     "SensStingere": {
       "Datorie": "Datorie",
@@ -710,9 +730,11 @@
         "Corecteaza": "Corectează documentul",
         "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DataPV": "Dată PV",
+        "DataPrimire": "Data primirii",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
@@ -759,6 +781,17 @@
         "TipTvaId": "Tip TVA",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
+      }
+    },
+    "DepunereDeclaratie": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ConfirmataDe": "Confirmată de",
+        "ConfirmataLa": "Confirmată la",
+        "Formular": "Formular",
+        "ID": "ID",
+        "Perioada": "Perioada",
+        "VersiuneExportata": "Versiune exportată"
       }
     },
     "DescarcareGestiune": {
@@ -931,8 +964,10 @@
         "Corecteaza": "Corectează documentul",
         "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
+        "DataPrimire": "Data primirii",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
@@ -966,6 +1001,7 @@
         "Corecteaza": "Corectează documentul",
         "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DataScadenta": "Scadență",
@@ -1025,9 +1061,11 @@
         "CorecteazaId": "Corectează documentul",
         "Curs": "Curs",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DataPV": "Dată PV",
+        "DataPrimire": "Data primirii",
         "DataScadenta": "Scadență",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1375,6 +1413,24 @@
         "Tip": "Tip operațiune D394",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA"
+      }
+    },
+    "MapareTvaSaft": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Cota": "Cotă",
+        "DeImport": "Import",
+        "DinSeed": "Din seed",
+        "ID": "ID",
+        "Regim": "Regim",
+        "Rol": "Rol fiscal",
+        "Sectiune": "Secțiune",
+        "Sens": "Sens",
+        "TaxCode": "Cod taxă",
+        "TaxType": "Tip taxă",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Versiune": "Versiune export"
       }
     },
     "MigrareLegatura": {
@@ -1731,7 +1787,6 @@
       "Membri": {
         "ContrapartidaFallback": "ContrapartidaFallback",
         "ContrapartidaFallbackId": "ContrapartidaFallback",
-        "DeclarareIntarziata": "Declararea faptului întârziat",
         "DinSeed": "Din seed",
         "Directie": "Directie",
         "ID": "ID",
@@ -2134,6 +2189,7 @@
         "Corecteaza": "Corectează documentul",
         "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
@@ -2158,8 +2214,10 @@
         "Corecteaza": "Corectează documentul",
         "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
+        "DataPrimire": "Data primirii",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
@@ -2242,14 +2300,14 @@
       "Membri": {
         "An": "An",
         "Cantitate": "Cantitate",
-        "ContId": "ContId",
+        "ContId": "Cont",
         "Deschisa": "Data deschiderii",
-        "GestiuneId": "GestiuneId",
+        "GestiuneId": "Gestiune",
         "ID": "ID",
         "Lot": "Lot",
         "LotId": "Lot",
         "Luna": "Luna",
-        "ProdusId": "ProdusId",
+        "ProdusId": "Produs",
         "Valoare": "Valoare"
       }
     },

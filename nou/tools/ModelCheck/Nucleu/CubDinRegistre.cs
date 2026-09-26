@@ -321,7 +321,10 @@ static class CubDinRegistre {
     static IEnumerable<N.Postare> Fiscale(RegistruTva r, DateOnly data) {
         // `Data` fiscală = data documentului fizic; în cub toate postările sunt datate
         // ca tranzacția (DATA_STRAINA), iar reperul fiscal e `PerioadaDeclarare` (B-D8 pct. 5).
-        foreach (var (rol, valoare) in new[] { (N.RolTva.Baza, r.Baza), (N.RolTva.Taxa, r.Tva) })
+        var masuri = new List<(N.RolTva, decimal)> { (N.RolTva.Baza, r.Baza), (N.RolTva.Taxa, r.Tva) };
+        if (r.Regim == RegimTva.TaxareInversa && r.Sens == SensTva.Achizitie)
+            masuri.Add((N.RolTva.Autocolectare, r.Tva));
+        foreach (var (rol, valoare) in masuri)
             yield return new N.Postare(
                 new N.Coordonate {
                     Cont = ContFiscal,
@@ -331,7 +334,7 @@ static class CubDinRegistre {
                     CodTva = new N.CodTva(
                         r.TipTvaId,
                         r.Sens == SensTva.Achizitie ? N.SensTva.Achizitie : N.SensTva.Livrare,
-                        rol),
+                        rol) { Regim = (N.RegimTva)r.Regim, Cota = r.Cota, DeImport = r.TipTva.DeImport },
                     PerioadaDeclarare = (r.PerioadaAn * 100) + r.PerioadaLuna,
                 },
                 0m,

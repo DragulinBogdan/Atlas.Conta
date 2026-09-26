@@ -50,9 +50,9 @@ public class RectificativaTvaController : ContaApiController {
             if (!osPerioada.GetObjectsQuery<PerioadaFiscala>().Any(p => p.An == an && p.Luna == luna))
                 return Invizibil();
 
-        using var os = Secured(typeof(RegistruTva));
-        return PoateCiti(typeof(RegistruTva), os)
+        using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        return PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os)
             ? Ok(TvaProiectii.Rectificativa(os, an.Value, luna.Value))
-            : RefuzCitire(typeof(RegistruTva));
+            : RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
     }
 }

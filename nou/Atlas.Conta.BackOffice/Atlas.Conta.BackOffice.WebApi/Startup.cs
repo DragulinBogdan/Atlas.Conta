@@ -197,6 +197,8 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // țintă (D4-D2, `TintaPermisa`) e tot funcție statică, chemată
                     // din gardian.
                     options.BusinessObject<MapareD394>();
+                    options.BusinessObject<MapareTvaSaft>();
+                    options.BusinessObject<DepunereDeclaratie>().ConfigureController(c => c.ReadOnly());
                     // Politica de mișcare SAF-T S (felia 17, D17-D1): CRUD de la
                     // felia 23; ramura ei din gardian exista deja (74a), deci
                     // deschiderea nu adaugă nicio regulă nouă. Închide 74-r12 pe

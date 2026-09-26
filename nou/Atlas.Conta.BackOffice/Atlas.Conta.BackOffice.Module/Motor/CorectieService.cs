@@ -81,6 +81,11 @@ public static class CorectieService {
         corectie.CorecteazaId = original.ID;
         corectie.MotivCorectie = motiv;
         corectie.Stare = StareDocument.Draft;
+        if (motiv == MotivCorectie.FaptNou && corectie is IDocumentFiscal faptNou) {
+            corectie.Data = dataCorectie;
+            faptNou.DataExigibilitate = dataCorectie;
+            if (faptNou is IDocumentFiscalPrimit primit) primit.DataPrimire = dataCorectie;
+        }
 
         foreach (var linie in os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => d.DocumentId == documentId).ToList()) {
@@ -90,24 +95,21 @@ public static class CorectieService {
             RenasteLotul(os, db, linie, copie);
         }
 
-        // Efectul FISCAL al motivului (F27-D6): eroarea materială aparține
-        // perioadei originalului, deci rândurile inverse tocmai scrise de storno
-        // se declară acolo, nu în perioada stornării (JT-D5 rămâne regula pentru
-        // faptul nou). Rândurile documentului NOU primesc aceeași perioadă la
-        // operarea lui, prin `RegistruTvaService.PerioadaDeclarare`.
-        var alOriginalului = motiv == MotivCorectie.EroareMateriala
-            ? RegistruTvaService.PerioadaOriginalului(os, documentId)
-            : null;
-        if (alOriginalului is { } perioada) {
+        if (motiv == MotivCorectie.EroareMateriala && FiscalitateService.Original(os, documentId) is { } fiscal) {
+            var atribuire = FiscalitateService.Corectie(os, fiscal, dataCorectie);
             foreach (var rand in os.GetObjectsQuery<RegistruTva>()
                     .Where(r => r.DocumentId == documentId && r.Storno).ToList()) {
-                rand.PerioadaAn = perioada.An;
-                rand.PerioadaLuna = perioada.Luna;
+                rand.PerioadaAn = atribuire.PerioadaD300 / 100;
+                rand.PerioadaLuna = atribuire.PerioadaD300 % 100;
             }
-            foreach (var postare in os.GetObjectsQuery<Cub.Postare>()                  // S-D5
-                    .Where(p => p.DocumentId == documentId && p.PerioadaDeclarare != null
-                        && p.Tranzactie.Fel == N.FelTranzactie.Storno).ToList())
-                postare.PerioadaDeclarare = (perioada.An * 100) + perioada.Luna;
+            foreach (var postare in os.GetObjectsQuery<Cub.Postare>()
+                    .Where(p => p.DocumentId == documentId && p.TipTvaId != null
+                        && p.Tranzactie.Fel == N.FelTranzactie.Storno).ToList()) {
+                postare.PerioadaDeclarare = atribuire.PerioadaD300;
+                postare.PerioadaD394 = atribuire.Reper.PerioadaD394;
+                postare.RegularizareD300 = atribuire.Reper.RegularizareD300;
+                postare.InversaTehnica = true;
+            }
         }
 
         var erori = new List<string>();

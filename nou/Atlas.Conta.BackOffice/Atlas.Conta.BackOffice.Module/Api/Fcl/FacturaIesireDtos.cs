@@ -33,6 +33,7 @@ public sealed class FacturaIesireWriteDto {
     public DateOnly Data { get; set; }
     // F27-D4: lipsă pe sârmă = data documentului.
     public DateOnly? DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     // Emitentul (repartitor intern) — tipul laturii se validează la OPERARE.
     public Guid PredatorId { get; set; }
     // Clientul (Partener) — la fel, tipul se cere abia la operare.
@@ -87,6 +88,7 @@ public sealed class FacturaIesireReadDto {
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
     public DateOnly DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

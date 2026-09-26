@@ -86,7 +86,7 @@ function parametriCandidati(cerere: CerereCandidati): string {
 }
 
 export function antetGol(): DviWrite {
-  return { Data: azi(), Linii: [], FacturiIds: [] };
+  return { Data: azi(), DataPrimire: azi(), Linii: [], FacturiIds: [] };
 }
 
 // Linie NOUĂ: baza și taxa pornesc de la 0 ca orice câmp numeric al culegerii.
@@ -107,6 +107,8 @@ export function spreWrite(citit: DviRead): DviWrite {
     Numar: citit.Numar,
     Data: citit.Data,
     DataInregistrare: citit.DataInregistrare,
+    DataExigibilitate: citit.DataExigibilitate,
+    DataPrimire: citit.DataPrimire,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

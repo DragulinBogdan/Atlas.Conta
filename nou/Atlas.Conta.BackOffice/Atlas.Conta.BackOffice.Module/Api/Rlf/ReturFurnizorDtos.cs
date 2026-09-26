@@ -31,6 +31,8 @@ public sealed class RlfWriteDto {
     public DateOnly Data { get; set; }
     // F27-D4: lipsă pe sârmă = data documentului.
     public DateOnly? DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
+    public DateOnly? DataPrimire { get; set; }
     // Gestiunea din care iese marfa → furnizorul care o primește înapoi. Tipul
     // laturilor rămâne invariant al OPERĂRII (`ReturFurnizor.ValideazaOperare`);
     // `Aplica` verifică doar existența.
@@ -71,6 +73,8 @@ public sealed class RlfReadDto {
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
     public DateOnly DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
+    public DateOnly? DataPrimire { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

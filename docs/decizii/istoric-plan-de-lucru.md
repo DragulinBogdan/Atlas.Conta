@@ -821,3 +821,43 @@ detaliat în jurnal):
   `docs/nucleu/tr-d8-review-codex.md`; fiscal/SAF-T și verificările
   transversale rămân deschise. Predare fără commit și fără mesaj intermediar
   către Claude, conform instrucțiunii owner-ului.
+
+- **TR-D8 — corecturi snapshot C1–C5** (2026-09-25, peste `07c79e0`):
+  proiecție comună de lot și helper pentru referință + fereastră, într-o
+  singură instrucțiune SQL. Evaluarea ieșirilor consumă snapshot-ul cu
+  graniță strict anterioară. Scrierile globale refuză securitatea activă;
+  HTTP a corectat presupunerea că interfața `ISecuredObjectSpace` ar fi
+  suficientă pentru a o identifica în DevExpress 26.1. Migrația a fost
+  aplicată pe cele trei baze principale, fără recreare; bazele reziduale
+  au fost numai inventariate. SC-CIT-76…78 adăugate, 69…75 păstrate.
+  Integral final **3.178/4.178 OK**, zero FAIL,
+  `run-verificari/20260925-213600-946`; HTTP **15/15**, curățare verificată;
+  client și regenerări stabile. Eșecurile intermediare, hash-urile,
+  comenzile și limitele sunt în `docs/nucleu/tr-d8-review-codex.md`.
+  Predare fără commit. D8-B8 și SC-CIT-79…87 pregătesc fiscal/TVA, cu
+  surse, alternative și trei alegeri pentru owner; rămân propuneri,
+  fără modificări fiscale de cod și fără mesaj intermediar către Claude.
+
+- **TR-D8 — felia fiscală 103** (2026-09-25/26, peste `07c79e0`): owner-ul
+  aprobă F1=A/F2=A/F3=A. Faptele fiscale păstrează calificarea istorică și
+  atribuiri distincte D300/D394; corecția tehnică folosește Δ curent D300 și
+  înlocuirea facturii D394. Depunerea se confirmă explicit; anularea faptelor
+  declarate și depunerea corecțiilor incomplete se refuză. Autocolectare
+  distinctă la TI, mapare SAF-T versionată pe secțiune. Cititorii comuni,
+  API și client sunt portați împreună. Integral **3.182/4.214**, Nucleu
+  **180/180**, HTTP securizat/browser și artefacte stabile; A/B documentat
+  inclusiv regresia de latență a jurnalului/D394. `103-r1` și `B-r4` închise;
+  restul SAF-T, reconcilierea/auditul și scalarea rămân TR-D8. Fără commit.
+
+- **Fiscal 103 — review R1–R5** (2026-09-26, același diff peste `07c79e0`):
+  amprentă a faptelor exportate și refuz atomic al versiunii depășite,
+  snapshot comun raport/amprentă, eliminarea politicii `DeclarareIntarziata`,
+  CHECK pentru calificarea fiscală completă, contract și stare aliniate.
+  SC-CIT-88/89, integral **3.207/4.237 OK**, zero FAIL,
+  `run-verificari/20260926-111832-851`; HTTP și browser cu exportul vechi
+  refuzat și noul export confirmat, metadata/OpenAPI/types stabile,
+  client final build exit 0. Migrația `FiscalComplet` aplicată și verificată
+  pe cele trei baze principale fără recreare. R6 rămâne specificație:
+  103(h), SC-CIT-90…94, `tr-d8-tva-intervale-contract.md`, fără cod;
+  referința la avans cu mai multe cote este delimitată pentru review.
+  Comenzile și limitele sunt în `tr-d8-review-codex.md`. Fără commit.

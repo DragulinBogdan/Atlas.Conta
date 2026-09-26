@@ -140,6 +140,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Bonus: numele DbSet-ului poate coincide cu al clasei fără să ceară
         // alias-ul `using ...Entitate =` de care are nevoie `RegistruContabil`.
         public DbSet<RegistruTva> RegistruTva { get; set; }
+        public DbSet<DepunereDeclaratie> DepuneriDeclaratii { get; set; }
         public DbSet<RegistruImobilizari> RegistruImobilizari { get; set; }
         public DbSet<SoldPerioadaContabil> SolduriPerioadaContabil { get; set; }
         public DbSet<SoldPerioadaStoc> SolduriPerioadaStoc { get; set; }
@@ -163,6 +164,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<MapareD300> MapariD300 { get; set; }
         // Politica D394 (D4-D2): (TipTva × Sens) → tip de operațiune, UNA per pereche.
         public DbSet<MapareD394> MapariD394 { get; set; }
+        public DbSet<MapareTvaSaft> MapariTvaSaft { get; set; }
         // Politica SAF-T S (felia 17, D17-D1): (TipDocument × TipStoc × Semn?) →
         // cod de mișcare + rolul terțului; cod null = excludere deliberată.
         public DbSet<PoliticaMiscareSaft> PoliticiMiscareSaft { get; set; }
@@ -522,6 +524,9 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<MapareD394>()
                 .HasIndex(m => new { m.TipTvaId, m.Sens }).IsUnique()
                 .HasFilter("\"GCRecord\" = 0");
+            modelBuilder.Entity<MapareTvaSaft>()
+                .HasIndex(m => new { m.Versiune, m.Sectiune, m.TipTvaId, m.Regim, m.Cota, m.DeImport, m.Sens, m.Rol })
+                .IsUnique().HasFilter("\"GCRecord\" = 0");
 
             // D17-D1: tripleta `(TipDocument, TipStoc, Semn)` e identitatea
             // politicii de mișcare SAF-T — un rând de registru se potrivește pe
@@ -552,6 +557,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
             modelBuilder.HasDbFunction(typeof(Cub.Citiri.Partide).GetMethod(nameof(Cub.Citiri.Partide.Identitate)))
                 .HasName("cub_partida_id");
+            modelBuilder.Entity<DepunereDeclaratie>()
+                .HasIndex(d => new { d.Formular, d.Perioada, d.VersiuneExportata }).IsUnique();
             AplicaCub(modelBuilder);
             AplicaScaraNumerica(modelBuilder);
             AplicaColoanePartajate(modelBuilder);
@@ -825,13 +832,23 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 b.HasIndex(t => t.Fel).IsUnique().HasFilter("\"Fel\" = 4");
             });
             modelBuilder.Entity<Cub.Postare>(b => {
-                b.ToTable("Postare");
+                b.ToTable("Postare", t => t.HasCheckConstraint("CK_Postare_FiscalComplet", """
+                    "TipTvaId" IS NULL OR (
+                        "DocumentId" IS NOT NULL AND "LinieId" IS NOT NULL AND
+                        "SensTva" IS NOT NULL AND "RolTva" IS NOT NULL AND
+                        "RegimTva" IS NOT NULL AND "CotaTva" IS NOT NULL AND "DeImport" IS NOT NULL AND
+                        "DocumentFiscalId" IS NOT NULL AND "DataDocument" IS NOT NULL AND
+                        "DataExigibilitate" IS NOT NULL AND "DataInregistrare" IS NOT NULL AND
+                        "PerioadaDeclarare" IS NOT NULL AND "PerioadaD394" IS NOT NULL AND
+                        ("SensTva" <> 1 OR "DataPrimire" IS NOT NULL))
+                    """));
                 b.HasKey(p => p.ID);
                 b.Property(p => p.Spatiu).HasConversion<short>();
                 b.Property(p => p.Latura).HasConversion<short>();
                 b.Property(p => p.Carte).HasConversion<short>();
                 b.Property(p => p.SensTva).HasConversion<short>();
                 b.Property(p => p.RolTva).HasConversion<short>();
+                b.Property(p => p.RegimTva).HasConversion<short>();
                 b.Property(p => p.FelUnitate).HasConversion<short>();
                 b.Property(p => p.SuportSpatiu).HasConversion<short>();
                 b.Property(p => p.InversaDinSpatiu).HasConversion<short>();

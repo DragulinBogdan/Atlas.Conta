@@ -112,7 +112,7 @@ public static class Scara {
         "PretUnitar" or "PretEvaluare" or "Curs" => Pret,
         "Cantitate" => Cantitate,
         // Cota de TVA (21, 19, 11, 9, 0) — procent, nu bani.
-        "Cota" => Procent,
+        "Cota" or "CotaTva" => Procent,
         _ => null
     };
 }

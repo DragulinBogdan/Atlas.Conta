@@ -1,7 +1,6 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
-using DevExpress.ExpressApp.Security;
 using Microsoft.EntityFrameworkCore;
 using N = Atlas.Conta.Nucleu;
 
@@ -154,18 +153,19 @@ public static class Partide {
             PartenerId = p.Partener.Value, DocumentId = p.DocumentId }).Distinct();
 
     public static IQueryable<SoldPartida> Cumulate(IObjectSpace os, DateOnly panaLa) {
-        if (os is ISecuredObjectSpace || SolduriService.Referinta(os, panaLa) is not { } r)
-            return Solduri(os, panaLa);
-        var snapshot = os.GetObjectsQuery<PartidaDeschisa>()
-            .Where(s => s.An == r.An && s.Luna == r.Luna);
-        if (!snapshot.Any()) return Solduri(os, panaLa);
-        return snapshot.Select(s => new SoldPartida { UnitateId = s.UnitateId, ContId = s.ContId,
-                PartenerId = s.PartenerId, Deschisa = s.Deschisa, Debit = s.Debit, Credit = s.Credit })
-            .Concat(Postari(os).Where(p => p.Data > r.Sfarsit && p.Data <= panaLa)
-                .Select(p => new SoldPartida { UnitateId = p.Unitate.Value, ContId = p.Cont,
-                    PartenerId = p.Partener.Value, Deschisa = p.UnitateDeschisa.Value,
-                    Debit = p.Latura == N.Latura.Debit ? p.Valoare : 0m,
-                    Credit = p.Latura == N.Latura.Credit ? p.Valoare : 0m }))
+        var snapshot = os.GetObjectsQuery<PartidaDeschisa>().Select(s => new SoldLunar<SoldPartida> {
+            An = s.An, Luna = s.Luna,
+            Rand = new SoldPartida { UnitateId = s.UnitateId, ContId = s.ContId,
+                PartenerId = s.PartenerId, Deschisa = s.Deschisa, Debit = s.Debit, Credit = s.Credit }
+        });
+        var miscari = Postari(os).Select(p => new RandDatat<SoldPartida> {
+            Data = p.Data,
+            Rand = new SoldPartida { UnitateId = p.Unitate.Value, ContId = p.Cont,
+                PartenerId = p.Partener.Value, Deschisa = p.UnitateDeschisa.Value,
+                Debit = p.Latura == N.Latura.Debit ? p.Valoare : 0m,
+                Credit = p.Latura == N.Latura.Credit ? p.Valoare : 0m }
+        });
+        return CumulPerioade.Citeste(os, miscari, snapshot, panaLa)
             .GroupBy(p => new { p.UnitateId, p.ContId, p.PartenerId })
             .Select(g => new SoldPartida { UnitateId = g.Key.UnitateId, ContId = g.Key.ContId,
                 PartenerId = g.Key.PartenerId, Deschisa = g.Min(p => p.Deschisa),

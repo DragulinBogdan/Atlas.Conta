@@ -34,6 +34,7 @@ public sealed class RdcWriteDto {
     public DateOnly Data { get; set; }
     // F27-D4: lipsă pe sârmă = data documentului.
     public DateOnly? DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     // Clientul care returnează → gestiunea în care revine marfa. Tipul laturilor
     // rămâne invariant al OPERĂRII; `Aplica` verifică doar existența.
     public Guid PredatorId { get; set; }
@@ -74,6 +75,7 @@ public sealed class RdcReadDto {
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
     public DateOnly DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

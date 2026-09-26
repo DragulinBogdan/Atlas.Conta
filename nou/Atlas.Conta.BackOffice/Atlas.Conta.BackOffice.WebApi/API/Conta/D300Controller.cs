@@ -30,6 +30,7 @@ public class D300Controller : ContaApiController {
         : base(secured, nonSecured, securitate) { }
 
     [HttpGet]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(D300Dto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
     public IActionResult Get(
@@ -75,7 +76,9 @@ public class D300Controller : ContaApiController {
         // să citească registrul fiscal nu are voie să-l citească nici agregat pe
         // formular. Proiecția întoarce deja liste materializate, deci nu rămâne
         // nimic deferred după `using` (lecția `Incarca`).
-        using var os = Secured(typeof(RegistruTva));
+        using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        if (!PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os))
+            return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
         return Ok(D300Proiectii.D300(os, dataStart.Value, dataEnd.Value,
             new ParametriD300(soldPlataPrecedent, diferentePlata,
                 soldNegativPrecedent, diferenteNegative)));

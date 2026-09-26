@@ -123,14 +123,8 @@ internal static class Fapte {
             .Where(p => conturi.GetValueOrDefault(p.Cont)?.UrmarestePartide == true)
             .ToList();
 
-        // F27-D5: aceeași regulă pe tot documentul (`dataFapt` = `doc.Data`), deci
-        // un singur fapt, nu unul per linie.
-        int? perioadaDeclarare = null;
-        if (politicaTva != null) {
-            var (an, luna) = RegistruTvaService.PerioadaDeclarare(
-                os, doc, doc.Data, doc.DataInregistrare, politicaTva.DeclarareIntarziata);
-            perioadaDeclarare = (an * 100) + luna;
-        }
+        var fiscal = politicaTva == null ? null : FiscalitateService.Atribuie(os, doc, politicaTva.Directie);
+        var perioadaDeclarare = fiscal?.PerioadaD300;
 
         return Cub.ReceptiiConexe.Completeaza(os, doc, ImobilizariFapte.Completeaza(os, new Declaratii.Operand(
             Document(doc, tipDoc, repartitori),
@@ -148,6 +142,7 @@ internal static class Fapte {
             politicaTvaEntitate?.TolerantaTaxa,
             new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month),
             new N.VersiunePolitica("seed", doc.DataInregistrare)) {
+                ReperFiscal = fiscal?.Reper,
                 SolduriLoturiRegistru = doc.Declarant()?.CereSoldRegistruPentruEvaluare == true
                     ? SolduriLoturiRegistru(os, doc, linii, claseTip, reguliStoc, idsLot) : new Dictionary<Guid, N.Sold>(),
                 Repartitori = repartitori,
@@ -302,7 +297,8 @@ internal static class Fapte {
 
     static Dictionary<Declaratii.CheieLotFapt, N.Sold> SolduriLoturi(
             IObjectSpace os, Document doc, IReadOnlyList<Guid> idsLot) => idsLot.Count == 0 ? [] :
-        Cub.Citiri.Loturi.Cumulate(os, doc.DataInregistrare, doc.ID)
+        Cub.Citiri.Loturi.Cumulate(os, doc.DataInregistrare, doc.ID,
+                granita: doc.DataInregistrare == DateOnly.MinValue ? DateOnly.MinValue : doc.DataInregistrare.AddDays(-1))
             .Where(s => idsLot.Contains(s.LotId) && s.GestiuneId == doc.PredatorId)
             .ToList().ToDictionary(s => new Declaratii.CheieLotFapt(s.LotId, s.ContId, s.ProdusId, s.GestiuneId),
                 s => new N.Sold(s.Valoare > 0m ? s.Valoare : 0m,
@@ -425,5 +421,5 @@ internal static class Fapte {
         politica == null
             ? null
             : new Declaratii.PoliticaTvaFapt(politica.Directie, politica.SursaContrapartida,
-                politica.ContrapartidaFallbackId, politica.DeclarareIntarziata);
+                politica.ContrapartidaFallbackId);
 }
