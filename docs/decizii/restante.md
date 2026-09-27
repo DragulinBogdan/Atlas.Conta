@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-09-26.** [Index](README.md)
+**Actualizat: 2026-09-27.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -344,3 +344,4 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 104-r2 | Coaja comenzii fără `IObjectSpace` și hook-urile cu `os` de pe entitate mutate în declarant/coajă (104b) | cade la TR-D9 |
 | 104-r3 | Filtrarea pe `Activ` în lookup-urile documentelor noi (104, L3/L4) | după PoC |
 | 104-r4 | Paginile React de culegere: scoase sau generate din metadate (104d) | după PoC |
+| 104-r5 | Fixture propriu al matricei `refuzuri.ps1` (subiecții creați și șterși de probă), înaintea pasului 5 din C104 | activă |

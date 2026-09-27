@@ -234,7 +234,7 @@ verificări, `run-verificari/20260927-172209-149`), cu probele structurale
 Blazor, operarea unui draft fără linii dă refuzul de domeniu, iar `Cititor`
 primește „Nu aveți dreptul de a modifica „NIR””. Driftul openapi: zero.
 Matricea generală `refuzuri.ps1` nu rulează pe bazele recreate la C102
-(nu are subiecte); limita e cea din `stare-curenta/dezvoltare-si-validare.md`.
+(nu are subiecte); limita e cea din `stare-curenta/dezvoltare-si-validare.md` (104-r5).
 
 **Pasul 3 — culegerea unică (c).**
 - Inventariezi căile de precompletare și recalcul din XAF față de cele din
@@ -304,3 +304,10 @@ o dată (ModelCheck, gate).
   referințele.
 - Paginile React de culegere: le scoatem sau le generăm din metadate după PoC
   (104-r4).
+- Matricea generală `tools/ProbeHttp/refuzuri.ps1` nu rulează pe bazele
+  recreate la C102: cere subiecți existenți (închidere de TVA, împerechere,
+  candidat DVI cu furnizor NeinregistratRo, lanț de perioade). Își creează
+  singură subiecții la pornire și îi șterge la final, ca
+  `comenzi-coaja.py`, înaintea review-ului advers din pasul 5: pasul 3 mută
+  culegerea în L3 și atinge ușile de scriere, pe care matricea le
+  regresează (104-r5, owner 2026-09-27).

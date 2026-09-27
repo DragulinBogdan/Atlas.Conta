@@ -143,7 +143,7 @@ ClaudeRev) și a refăcut cele trei de mai sus. Pe baza Privat din seed,
 subiect (cere documente existente, de exemplu o închidere de TVA). (89g, 102b)
 Comenzile de document au proba HTTP proprie, cu fixture creat și șters de ea:
 `nou/tools/ProbeHttp/comenzi-coaja.py` (404/403/422 pe cele cinci comenzi,
-ușa altui tip, fără scriere la refuz). (104b)
+ușa altui tip, fără scriere la refuz). Fixture-ul propriu al matricei generale e 104-r5. (104b)
 
 Cele trei ierarhii (`Document`, `DocumentDetaliu`, `Repartitor`) sunt TPH:
 câte o tabelă pe rădăcină, discriminatorul `ClrType` cu valorile implicite
