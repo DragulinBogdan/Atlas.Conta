@@ -42,15 +42,24 @@ public class NIR : Document, IVerificabilLaCommit {
     public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
         SensStingere.Datorie;
 
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        foreach (var d in Detalii.Where(d => d.LotId != null)) {
-            var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
-            if (lot.LinieIntrareId != d.ID)
-                d.Valoare = Scara.RotunjesteBani(d.Cantitate * lot.PretUnitar);
-            else if (d is NirDetaliu nd)
-                d.Valoare = Scara.RotunjesteBani(nd.PretUnitar * d.Cantitate);
-        }
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override void CalculeazaValori(DevExpress.ExpressApp.IObjectSpace os, IEnumerable<DocumentDetaliu> linii,
+            bool pastreazaTvaCules) {
+        base.CalculeazaValori(os, linii, pastreazaTvaCules);
         Cub.ReceptiiConexe.MaterializeazaValori(os, this);
+    }
+
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(NirDetaliu.PretUnitar));
+
+    // Linia pe lot străin (clona conexă) poartă prețul lotului; linia proprie, prețul cules.
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) {
+        var lot = linie.LotId is Guid lotId ? os.GetObjectByKey<Lot>(lotId) : null;
+        if (lot != null && lot.LinieIntrareId != linie.ID)
+            return linie.Cantitate * lot.PretUnitar;
+        return linie is NirDetaliu d ? d.PretUnitar * d.Cantitate : null;
     }
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
@@ -217,12 +226,11 @@ public class BonConsum : Document {
 
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantBonConsum.Instanta;
 
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        foreach (var d in Detalii.Where(d => d.LotId != null)) {
-            var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
-            d.Valoare = Scara.RotunjesteBani(d.Cantitate * lot.PretUnitar);
-        }
-    }
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        Lot.ValoareLaPretulLotului(os, linie);
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
@@ -252,12 +260,11 @@ public class NotaTransfer : Document, IDocumentCuPV {
     // de TVA — prețul lotului e deja valoarea de registru per unitate). Linia
     // care golește lotul în sursă ia tot soldul valoric rămas (D18-D2, în
     // motor) — valoarea e comună ambelor laturi, deci restul se MUTĂ pe destinație.
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        foreach (var d in Detalii.Where(d => d.LotId != null)) {
-            var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
-            d.Valoare = Scara.RotunjesteBani(d.Cantitate * lot.PretUnitar);
-        }
-    }
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        Lot.ValoareLaPretulLotului(os, linie);
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);

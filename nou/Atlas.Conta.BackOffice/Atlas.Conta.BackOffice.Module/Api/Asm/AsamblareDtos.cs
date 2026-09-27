@@ -41,7 +41,8 @@ public sealed class AsmLinieWriteDto {
     // OBLIGATORIU: enumerarea n-are membru 0 tocmai ca o linie fără rol cules să
     // nu treacă drept ceva, iar direcția decide TOATĂ semantica liniei aici.
     public string Directie { get; set; }
-    public Guid TipMaterialId { get; set; }
+    // Lipsă = tipul produsului, completat de culegere (104c).
+    public Guid? TipMaterialId { get; set; }
     // Marfa produsă — mecanismul lotului nou (F19-D3), obligatorie pe PRODUS
     // prin validarea de operare. Pe CONSUM se GOLEȘTE (F6-D3 aplicat pe ASM):
     // acolo marfa e a lotului descărcat, iar un produs rămas din starea de
@@ -147,8 +148,7 @@ public sealed class AsmLinieReadDto {
     // Pe un ASM OPERAT iese SEMNATĂ — e fapta operării (28a), nu o culegere.
     public decimal Cantitate { get; set; }
     public decimal? PretEvaluare { get; set; }
-    // REZULTAT, nu culegere: o materializează `Aplica` la culegere și
-    // `PregatesteOperare` la operare, din aceeași formulă SEMNATĂ (F19-D8).
+    // Rezultat, nu culegere: îl scrie `CalculeazaValori` la culegere și la operare (104c).
     public decimal Valoare { get; set; }
     public DateOnly? DataExpirare { get; set; }
     public string LotFabricatie { get; set; }

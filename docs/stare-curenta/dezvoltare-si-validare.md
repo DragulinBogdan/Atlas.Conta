@@ -312,6 +312,7 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | DTO, atribute, expunere API | Build WebApi, regenerare și verificarea contractelor; probe HTTP pentru comportamentul afectat (56, 80i) |
 | Autorizare | Probe HTTP cu rolurile reale; o probă pe context nesecurizat nu demonstrează securitatea (80i, 81j) |
 | Formular sau interacțiune | Build client și verificarea fluxului în browser (66) |
+| Culegerea (L3: precompletare, formula valorii, normalizare, regulile culegerii) | ModelCheck pe ambele profiluri: `104c-S1` (adaptorii `Api/` și `Controllers/` nu cheamă serviciile culegerii, scanare pe sursă), `104c-E1` (aceeași linie pe calea XAF și pe calea API), `104c-E2`, `104c-V1…V2` (refuzurile gardianului). Probele de scară și de rol trec prin ușa cu gardian (`OsCuGardian`). Fluxul XAF se verifică în browser: creare, produs, cantitate și preț, salvare (104c) |
 | Mod de acces al unui ListView XAF, proprietate nouă afișată în liste | ModelCheck (`D85-M1`, `D85-M2`, `D85-R1…R3`) și deschiderea listei în browser pe baza de import: sort, filtru, grupare, detaliu din listă, culegere pe document nou (85h) |
 | Schimbare de postare/evaluare | Catalogul cu așteptări independente, apoi ModelCheck integral pe ambele profiluri (091); importul și reconcilierea externă aparțin feliei de migrare |
 | Tip derivat nou, proprietate nouă pe frunză, FK spre o frunză | ModelCheck pe ambele profiluri (`F28-*`); după un import, `--dump-integritate-tph` rulat pe baza de import (89e, 89h) |

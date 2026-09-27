@@ -8871,7 +8871,7 @@ export interface components {
             Id?: string | null;
             Directie?: string | null;
             /** Format: uuid */
-            TipMaterialId?: string;
+            TipMaterialId?: string | null;
             /** Format: uuid */
             ProdusId?: string | null;
             /** Format: uuid */
@@ -10132,7 +10132,7 @@ export interface components {
             /** Format: uuid */
             Id?: string | null;
             /** Format: uuid */
-            TipMaterialId?: string;
+            TipMaterialId?: string | null;
             /** Format: uuid */
             ProdusId?: string | null;
             /** Format: uuid */
@@ -10279,7 +10279,7 @@ export interface components {
             /** Format: uuid */
             Id?: string | null;
             /** Format: uuid */
-            TipMaterialId?: string;
+            TipMaterialId?: string | null;
             /** Format: uuid */
             ProdusId?: string | null;
             /** Format: double */
@@ -10894,7 +10894,7 @@ export interface components {
             Id?: string | null;
             Directie?: string | null;
             /** Format: uuid */
-            TipMaterialId?: string;
+            TipMaterialId?: string | null;
             /** Format: uuid */
             ProdusId?: string | null;
             /** Format: uuid */
@@ -11198,7 +11198,7 @@ export interface components {
             /** Format: uuid */
             Id?: string | null;
             /** Format: uuid */
-            TipMaterialId?: string;
+            TipMaterialId?: string | null;
             /** Format: uuid */
             ProdusId?: string | null;
             /** Format: double */

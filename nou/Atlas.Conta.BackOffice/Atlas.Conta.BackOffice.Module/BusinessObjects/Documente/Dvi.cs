@@ -45,14 +45,15 @@ public class Dvi : Document, IDocumentFiscalPrimit {
     [VisibleInListView(false), VisibleInLookupListView(false)]
     public virtual decimal Taxa => Detalii.Sum(d => d.ValoareTva);
 
-    // 48b: baza e CULEASĂ (valoarea în vamă, nu preț × cantitate), taxa culeasă
-    // se păstrează, iar una lăsată la 0 se calculează din cotă.
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
-        var directie = Motor.TvaService.DirectiePentru(os, this);
-        foreach (var d in Detalii)
-            Motor.TvaService.CalculeazaValori(d, d.Valoare, tipuri, directie, pastreazaTvaCules: true);
-    }
+    // 48b: baza e CULEASĂ (valoarea în vamă, nu preț × cantitate).
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override bool CuTva() => true;
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(DocumentDetaliu.Valoare));
+
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) => linie.Valoare;
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);

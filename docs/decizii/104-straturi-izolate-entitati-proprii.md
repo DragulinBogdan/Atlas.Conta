@@ -247,6 +247,87 @@ Matricea generală `refuzuri.ps1` nu rulează pe bazele recreate la C102
   de L0–L2, în tranzacția comenzii; formularea lui (c) se precizează la acest
   pas (review Codex, pas 1).
 
+Inventarul (2026-09-27). Validarea culegerii era deja una singură:
+gardianul de Committing pe ușa securizată (`GardianEditare`,
+`IVerificabilLaCommit`, 42a). Făceau excepție câteva reguli scrise numai în
+`Apply`: TVA-ul manual (negativ, regim Normal/Taxare inversă), garda de
+scară (copiată în 14 fișiere), rolul liniei RDC și produsul liniei NIR pe
+lot străin. Precompletarea și recalculul difereau de comportament:
+- TipTva implicit: XAF îl punea la crearea liniei, fără produsul ei (deci
+  fără cota lui), pe orice tip; `Apply` îl punea la salvare, cu produsul, pe
+  cinci tipuri.
+- Valorile la culegere: XAF le calcula numai pe FCT/FCL; `Apply` le calcula
+  pe FCT/FCL/DEC/RDC/RLF/BCS/NIR/LDI/ASM, cu formule copiate din
+  `PregatesteOperare`.
+- TipMaterial din produs: XAF îl completa pe FCT/FCL; API-ul îl cerea pe
+  sârmă, iar React îl completa în TS.
+- `DataPrimire`: XAF o lăsa goală; `Apply` o scria din data înregistrării
+  și o lăsa veche la mutarea acesteia.
+- CAS: `Apply` genera liniile cu `Data`, dar operarea le verifica cu
+  `DataInregistrare` (defect). XAF nu le genera deloc.
+- PIF `ValoareFiscala` și DEC `Cantitate` 0 → 1 se completau la culegere
+  numai pe o cale.
+
+Tranșările owner-ului (2026-09-27):
+- TipTva implicit se aplică la alegerea produsului și, dacă linia nouă e
+  încă fără tip, la salvare. Se aplică numai pe tipurile a căror formulă
+  de valori poartă TVA (`Document.CuTva()`: FCT, FCL, DEC, RLF, RDC, DVI).
+  Valoarea o decid datele: partenerul, politica și ancora. Nu `PoliticaTva`,
+  fiindcă bugetarul n-o are, dar are `CAP21` pe ancoră.
+- `DataPrimire` goală înseamnă „data înregistrării”. Nu se materializează
+  la culegere.
+- `TipMaterialId` devine opțional pe liniile cu produs. Serverul îl ia din
+  `Produs.TipMaterial`; lipsa lui, după precompletare, e refuz de domeniu.
+- TVA-ul manual e o intenție explicită a adaptorului (XAF: editarea
+  câmpului; API: câmpul prezent). Recalculul șterge override-ul numai la
+  schimbarea bazei sau a tipului de TVA. Regulile lui trec în gardianul de
+  commit.
+
+Precizarea lui (c): validarea culegerii e gardianul de commit, pe orice
+ușă securizată. Pre-verificările din `Apply` rămân numai pentru ordinea
+mesajului (Draft înaintea mapării, enum-ul înaintea `CreateObject`); nu
+poartă reguli proprii. Formula valorii liniei e una, pe entitate, lângă
+`PregatesteOperare`. Culegerea o cheamă pentru previzualizare, iar operarea
+o cheamă ca autoritate și îi adaugă semnul.
+
+Executat 2026-09-27.
+- L3 e `Module/Culegere/`: `CulegereDocument` (precompletare, recalcul,
+  `InainteDeSalvare`) și `NormalizariTip` (câmpurile direcției opuse la
+  LDI și ASM, NIR, liniile CAS refăcute la data înregistrării — repară
+  defectul CAS).
+- Formula valorii e pe entitate: `Document.CalculeazaValori`, `BazaLinie`,
+  `CalculeazaLinie`, `IntrariBaza()`, `CuTva()`, `SemnulEAlOperarii()`.
+- În XAF, `CulegereDocumentController` și geamănul pe linie înlocuiesc cele
+  patru controllere vechi. `CulegereLaCommitXaf` e înregistrat în hostul
+  Blazor înaintea gardianului.
+- Cele 15 `Apply`-uri mapează și cheamă L3. Garda de scară e generică în
+  gardian, citită din modelul EF. Regulile TVA-ului cules (negativ, regim,
+  taxare inversă pe livrare, scară) sunt în L3 și se verifică înaintea
+  atribuirii și înaintea recalculului, care altfel le-ar șterge în tăcere.
+  Rolul liniei RDC, valoarea în vamă și tipul liniei obligatoriu sunt în
+  gardian.
+- Tranșări ale execuției:
+  - Împerecherea își păstrează garda explicită de scară, fiindcă e comandă,
+    nu culegere: serviciul ar rotunji suma în tăcere.
+  - DVI calculează din cotă taxa lăsată la 0 încă de la culegere, ca
+    operarea (48b).
+  - BTR și BCS au valoarea la culegere.
+  - În ecranul XAF, o valoare culeasă de bază (RDC venit, DVI) cu prea multe
+    zecimale se rotunjește la recalculul interactiv, înaintea gardianului.
+    Editorul e deja limitat la scara coloanei, deci cazul rămâne limită
+    asumată.
+
+Proba:
+- ModelCheck verde pe ambele profiluri (bugetar 3220, privat 4255 de
+  verificări, `run-verificari/20260927-191138-576`), cu `104c-S1`, `E1`,
+  `E2`, `V1` și `V2`.
+- Driftul openapi e numai `TipMaterialId?: string | null` pe cele 5 DTO-uri
+  de linie; `tsc` trece.
+- În XAF Blazor, pe o FCT nouă: data de azi, produsul completează tipul și
+  N9, iar 2 × 50 dă 100 + 9 înaintea salvării. Salvarea naște lotul și lasă
+  `DataPrimire` goală. Un TVA manual pe o linie scutită e refuzat cu
+  mesajul de domeniu.
+
 **Pasul 4 — aria React (d).** Actualizezi `stare-curenta/api-si-client.md`,
 `docs/api/lista-react.md` și principiile din `CLAUDE.md` (straturile,
 culegerea în XAF). Paginile de detaliu pentru documente se marchează înghețate.

@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -14,12 +15,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Bcs;
 // ultima autoritate — pre-check-ul de Draft există ca mesajul să fie al
 // DOMENIULUI și ca refuzul să vină înaintea oricărei modificări de stare.
 //
-// ═══ Ce face Apply pe BCS în plus/în minus față de BTR ═══
-// În PLUS: `MaterializeazaValori` — valoarea consumului se arată pe ecran la
-// culegere, nu abia după operare (F6-D6, precedentul F5-D6). În MINUS: fără
-// `NumarPV`/`DataPV` (BCS nu e `IDocumentCuPV`) și fără seam de culegere a
-// loturilor — liniile de BCS nu declară `ILinieCareNasteLot`, deci nu nasc
-// nimic; ele DESCARCĂ loturi existente.
+// Culegerea (precompletări, valori) e a `CulegereDocument` (104c). Fără
+// `NumarPV`/`DataPV`: BCS nu e `IDocumentCuPV`.
 public static class BonConsumApply {
 
     // ═══════════════════════ Scriere ═══════════════════════
@@ -57,19 +54,12 @@ public static class BonConsumApply {
         doc.Primitor = GasesteRepartitor(os, dto.PrimitorId, "Primitorul (locul de consum)");
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<BcsLinieWriteDto>());
-        MaterializeazaValori(os, doc);
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
 
-    // Ștergerea agregatului. Pre-check de DOMENIU pe Draft (gardianul de
-    // Committing rămâne plasa).
-    //
-    // FĂRĂ `LoturiCulegereService.CurataOrfane` (spre deosebire de NIR): liniile
-    // de BCS nu declară `ILinieCareNasteLot`, deci nu nasc niciodată loturi —
-    // lotul unei linii de consum e al altcuiva (l-a născut o recepție), iar
-    // curățenia nu are ce să caute. Un apel ar fi inofensiv, dar mincinos.
+    // Pre-check de DOMENIU pe Draft (gardianul de Committing rămâne plasa).
     public static void Sterge(IObjectSpace os, Guid id) {
         var doc = Rezolva.Cere<BonConsum>(os, id, "Bonul de consum");
         if (doc.Stare != StareDocument.Draft)
@@ -79,6 +69,7 @@ public static class BonConsumApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -103,7 +94,8 @@ public static class BonConsumApply {
                 detaliu.Document = doc;
             }
 
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
             if (l.LotId is Guid lotId) {
                 detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
             }
@@ -111,12 +103,8 @@ public static class BonConsumApply {
                 detaliu.Lot = null;
                 detaliu.LotId = null;
             }
-
-            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
-            // o valoare în afara coloanei ar ieși ca DbUpdateException brută din
-            // Postgres. Refuzăm cu mesaj de domeniu (ca NIR/FCT).
-            VerificaScara(l.Cantitate, Scara.Cantitate, "Cantitatea");
             detaliu.Cantitate = l.Cantitate;
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, null);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
@@ -124,42 +112,8 @@ public static class BonConsumApply {
             os.Delete(sterse);
     }
 
-    // Valoarea liniei, materializată LA CULEGERE (GATE 53c: operatorul vede cât
-    // costă consumul înainte să-l opereze) — de aceea `Valoare` nu e în WriteDto.
-    //
-    // Formula e GEAMĂNA lui `BonConsum.PregatesteOperare` (F6-D6), care o rescrie
-    // la operare: preț lot × cantitate — prețul consumului NU se culege niciodată,
-    // e al lotului descărcat (decizia 27d).
-    //
-    // Singura diferență față de hook: linia rămasă FĂRĂ lot se golește la 0.
-    // Hook-ul iterează doar `Detalii.Where(d => d.LotId != null)` fiindcă la
-    // operare o linie fără lot e oricum refuzată; aici draftul e legitim
-    // incomplet, iar valoarea veche (a lotului scos de pe linie) ar minți pe ecran.
-    static void MaterializeazaValori(IObjectSpace os, BonConsum doc) {
-        foreach (var d in doc.Detalii) {
-            // Liniile marcate spre ștergere în acest commit nu se mai ating.
-            if (os.IsObjectToDelete(d))
-                continue;
-            var lot = d.LotId is Guid lotId ? os.GetObjectByKey<Lot>(lotId) : null;
-            d.Valoare = lot != null ? Scara.RotunjesteBani(d.Cantitate * lot.PretUnitar) : 0m;
-        }
-    }
-
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
         Rezolva.Cere<Repartitor>(os, id, rol);
-
-    // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
-    // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;

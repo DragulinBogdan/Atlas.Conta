@@ -25,8 +25,11 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
     // 86g: fișa nu este partidă de terț.
     public override bool PoateFiStins(IObjectSpace os) => false;
 
-    public override void PregatesteOperare(IObjectSpace os) {
-        foreach (var linie in Detalii.OfType<PunereInFunctiuneDetaliu>())
+    public override void PregatesteOperare(IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override void CalculeazaValori(IObjectSpace os, IEnumerable<DocumentDetaliu> linii, bool pastreazaTvaCules) {
+        foreach (var linie in linii.OfType<PunereInFunctiuneDetaliu>())
             if (linie.ValoareFiscala == 0m)
                 linie.ValoareFiscala = linie.Valoare;
     }

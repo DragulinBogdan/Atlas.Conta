@@ -37,21 +37,21 @@ public class Decont : Document, IDocumentCuPV, IDocumentFiscalPrimit {
     // convenția 00 §5 (credit←Primitor) rămâne default-ul celorlalte tipuri.
     public override Guid RepartitorImplicitCredit(DevExpress.ExpressApp.IObjectSpace os) => PredatorId;
 
-    // Cantitatea e pro-formă (legacy: defaults 'BUC'/'1'); lanțul de valori
-    // trăiește pe derivată (testul bazei §3) — capătul se materializează aici,
-    // cu TVA-ul din TipTva (P1): bonul cu TVA deductibil justificat pe decont
-    // postează 4426 = 542 prin PoliticaTva. `ValoareTva` nenulă culeasă se
-    // păstrează (regula 36a uniformizată — decizia 48b): TVA-ul de pe bonul
-    // justificat bate rotunjirea noastră, exact ca la FCT.
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
-        // Latura fiscală a tipului (F13-D1) — o dată per document, nu per linie.
-        var directie = Motor.TvaService.DirectiePentru(os, this);
-        foreach (var d in Detalii.OfType<DecontDetaliu>()) {
-            if (d.Cantitate == 0)
-                d.Cantitate = 1;
-            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, directie, pastreazaTvaCules: true);
-        }
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override bool CuTva() => true;
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(DecontDetaliu.PretUnitar));
+
+    // Cantitatea e pro-formă: lipsa ei înseamnă o bucată.
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        linie is DecontDetaliu d ? d.PretUnitar * (d.Cantitate == 0 ? 1 : d.Cantitate) : null;
+
+    protected override void CalculeazaLinie(DocumentDetaliu linie, decimal baza, Motor.ContextTva tva, bool pastreazaTvaCules) {
+        if (linie.Cantitate == 0)
+            linie.Cantitate = 1;
+        base.CalculeazaLinie(linie, baza, tva, pastreazaTvaCules);
     }
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
@@ -69,13 +69,7 @@ public class Decont : Document, IDocumentCuPV, IDocumentFiscalPrimit {
 // mecanism generic de override. Contractul ILinieCuPostareExplicita e citit de
 // motor înaintea rezolvării declarative; câmpurile sunt opționale — nerezolvat
 // rămâne pe seama regulii (debit din Tip, credit din titular).
-// F8-D2: aderarea la `ILinieCuPretUnitar` e PURĂ DECLARAȚIE — `PretUnitar` există
-// pe clasă din 3a, deci nicio coloană și nicio migrație. Consecința e seam-ul
-// comun de calcul la culegere (`TvaService.CalculeazaLaCulegere`): pe tierul API
-// îl apelează `DecontApply`, iar în XAF nimic nu se schimbă — controllerul de
-// recalcul e gate-uit pe TIPUL DOCUMENTULUI
-// (`RecalculCulegere.TipCuPretUnitarCules` = FCT + FCL, ecranele gate-ului), nu
-// pe interfața liniei.
+// F8-D2: aderarea la `ILinieCuPretUnitar` e pură declarație (fără coloană nouă).
 public class DecontDetaliu : DocumentDetaliu, ILinieCuPostareExplicita, ILinieCuPretUnitar {
     public virtual string Descriere { get; set; }
     // Cota și regimul vin din TipTva (bază, P1).

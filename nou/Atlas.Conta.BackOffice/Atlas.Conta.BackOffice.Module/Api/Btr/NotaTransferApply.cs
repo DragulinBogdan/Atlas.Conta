@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -13,7 +14,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Btr;
 // (endpoint-ul de scriere) și COMITE. Gardianul de Committing e ultima autoritate
 // — pre-check-ul de mai jos există ca mesajul să fie al DOMENIULUI („nu mai e
 // Draft"), nu al gardianului generic, și ca refuzul să vină înaintea oricărei
-// modificări de stare în ObjectSpace-ul viu.
+// modificări de stare în ObjectSpace-ul viu. Culegerea (precompletări, valori)
+// e a `CulegereDocument` (104c).
 public static class NotaTransferApply {
 
     // ═══════════════════════ Scriere ═══════════════════════
@@ -51,7 +53,7 @@ public static class NotaTransferApply {
         doc.DataPV = dto.DataPV;
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<NotaTransferLinieWriteDto>());
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
@@ -79,7 +81,8 @@ public static class NotaTransferApply {
                 detaliu.Document = doc;
             }
 
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
             if (l.LotId is Guid lotId) {
                 detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
             }
@@ -87,16 +90,8 @@ public static class NotaTransferApply {
                 detaliu.Lot = null;
                 detaliu.LotId = null;
             }
-            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
-            // o cantitate în afara lui numeric(18,3) ar ieși ca DbUpdateException
-            // brută din Postgres (review advers M3). Refuzăm cu mesaj de domeniu.
-            if (Math.Abs(l.Cantitate) >= 1_000_000_000_000_000m)
-                throw new OperareException("Cantitatea depășește intervalul suportat (15 cifre întregi).");
-            if (decimal.Round(l.Cantitate, 3) != l.Cantitate)
-                throw new OperareException("Cantitatea acceptă cel mult 3 zecimale.");
             detaliu.Cantitate = l.Cantitate;
-            // `Valoare` NU se atinge: o materializează `PregatesteOperare`
-            // (preț lot × cantitate) la operare — server-owned (D8).
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, null);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();

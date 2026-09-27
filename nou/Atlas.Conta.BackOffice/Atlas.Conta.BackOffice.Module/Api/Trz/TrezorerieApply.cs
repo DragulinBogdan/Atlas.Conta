@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -21,7 +22,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Trz;
 // CONTRACT DE APELANT: `Aplica`/`Sterge` rulează în ObjectSpace-ul SECURED al
 // apelantului și COMIT. Gardianul de Committing e ultima autoritate —
 // pre-check-ul de Draft există ca mesajul să fie al DOMENIULUI și ca refuzul să
-// vină înaintea oricărei modificări de stare în ObjectSpace-ul viu.
+// vină înaintea oricărei modificări de stare în ObjectSpace-ul viu. Culegerea
+// (precompletări) e a `CulegereDocument` (104c).
 public static class TrezorerieApply {
 
     // ═══════════════════════ Scriere ═══════════════════════
@@ -87,14 +89,13 @@ public static class TrezorerieApply {
         // (F3-D1) — nici nu e în WriteDto, nici gardianul nu l-ar accepta.
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<TrezorerieLinieWriteDto>());
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
 
     // Ștergerea agregatului. Pre-check de DOMENIU pe Draft (gardianul de
-    // Committing rămâne plasa). Fără curățenie de loturi (trezoreria nu poartă
-    // stoc) și fără gardian de imperecheri: un link cere ambele documente
+    // Committing rămâne plasa). Fără gardian de imperecheri: un link cere ambele documente
     // OPERATE (31d), deci un draft nu poate avea niciunul.
     public static void Sterge<T>(IObjectSpace os, Guid id) where T : DocumentTrezorerie {
         var doc = Rezolva.Cere<T>(os, id, Fel<T>());
@@ -131,6 +132,7 @@ public static class TrezorerieApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -163,12 +165,9 @@ public static class TrezorerieApply {
                 detaliu.Document = doc;
             }
 
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
 
-            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
-            // o sumă în afara lui numeric(18,2) ar ieși ca DbUpdateException brută
-            // din Postgres. Refuzăm cu mesaj de domeniu (ca BTR/FCT).
-            VerificaScara(l.Valoare, Scara.Bani, "Valoarea");
             // CULEASĂ, nu calculată: trezoreria n-are `PregatesteOperare` (F3-D1).
             // Pozitivitatea e invariant al OPERĂRII (`DocumentTrezorerie`), nu al
             // culegerii — un draft în lucru are voie să aibă o linie pe 0.
@@ -195,6 +194,8 @@ public static class TrezorerieApply {
             if (l.CodFunctionalId == null) detaliu.CodFunctionalId = null;
             detaliu.Proiect = Nomenclator<Proiect>(os, l.ProiectId, "Proiectul");
             if (l.ProiectId == null) detaliu.ProiectId = null;
+
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, null);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
@@ -207,19 +208,6 @@ public static class TrezorerieApply {
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
         Rezolva.Cere<Repartitor>(os, id, rol);
-
-    // Gardul de scară — geamănul celui din `FacturaIntrareApply`: `numeric(18,s)`
-    // ⇒ cel mult `s` zecimale și `18 − s` cifre întregi (49e).
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     // Numele TIPULUI în mesajele de domeniu — genericul nu trebuie să vorbească
     // despre „documentul de trezorerie" când operatorul e pe ecranul de plăți.

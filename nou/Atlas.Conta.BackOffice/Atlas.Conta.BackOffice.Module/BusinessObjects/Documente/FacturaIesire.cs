@@ -39,19 +39,15 @@ public class FacturaIesire : Document, IDocumentCuScadenta, IDocumentFiscal {
     [XafDisplayName("Gestiune de descărcare")]
     public virtual Gestiune GestiuneDescarcare { get; set; }
 
-    // TVA-ul se calculează din cotă, DAR o `ValoareTva` nenulă culeasă se
-    // păstrează — regula 36a, uniformizată pe FCT/FCL/DEC (decizia 48b): pe
-    // facturarea proprie rotunjirea aparține documentului emis (e-Factura,
-    // agregarea retailului), nu recalculului nostru.
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
-        // F13-D1: pe LIVRARE (`Colectat`) o linie cu regim de taxare inversă nu
-        // poartă TVA — furnizorul emite fără taxă, art. 331. Direcția o dă
-        // politica tipului, o dată per document.
-        var directie = Motor.TvaService.DirectiePentru(os, this);
-        foreach (var d in Detalii.OfType<FacturaIesireDetaliu>())
-            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, directie, pastreazaTvaCules: true);
-    }
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override bool CuTva() => true;
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(FacturaIesireDetaliu.PretUnitar));
+
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        linie is FacturaIesireDetaliu d ? d.PretUnitar * d.Cantitate : null;
 
     // Descărcarea de gestiune (P2 §5): la operarea FCL se generează DSC-ul conex
     // (spargere pe loturi din liniile de stoc). Serviciu propriu, NU clona

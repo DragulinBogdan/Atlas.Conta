@@ -211,6 +211,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             // (o) 89 — FK-ul spre o frunză TPH ține doar id-ul rădăcinii; tipul țintei îl ține gardianul.
             if (!EsteSters(os, obj))
                 VerificaTintePeFrunze(os, obj, erori);
+            // (q) 49e, 104c — coloana `numeric(18, s)` e regulă a culegerii pe orice ușă, nu excepție de bază.
+            if (!EsteSters(os, obj))
+                VerificaScara(os, obj, erori);
             switch (obj) {
                 // (b) Registrele sunt append-only și EXCLUSIV ale motorului
                 // (decizia 14): nimeni nu le scrie prin UI/API, nici măcar
@@ -501,9 +504,55 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (parinte == null)
             return;
         var stare = StareOriginala(os, parinte) ?? parinte.Stare;
-        if (stare != StareDocument.Draft)
+        if (stare != StareDocument.Draft) {
             erori.Add($"Liniile documentului {Eticheta(parinte)} nu se mai modifică "
                 + $"(starea „{stare}”) — anulați operarea sau stornați-l.");
+            return;
+        }
+        if (!EsteSters(os, linie))
+            VerificaLinieCuleasa(os, parinte, linie, erori);
+    }
+
+    // (r) 104c — regulile liniei culese, comune ecranului XAF și API-ului; culegerea a normalizat deja linia.
+    static void VerificaLinieCuleasa(IObjectSpace os, Document parinte, DocumentDetaliu linie, ICollection<string> erori) {
+        if (linie.TipMaterialId == Guid.Empty)
+            erori.Add("Tipul (contul/clasa) liniei este obligatoriu.");
+        if (parinte is Dvi && linie.Valoare < 0)
+            erori.Add("Valoarea în vamă nu poate fi negativă — stornarea e o comandă, nu un semn.");
+        if (parinte is ReturClient && !os.IsNewObject(linie)
+                && Originale(os, linie) is { } originale
+                && (originale[nameof(DocumentDetaliu.LotId)] is null) != (linie.LotId is null))
+            erori.Add($"Linia {linie.Pozitie} a returului nu-și poate schimba rolul: venitul (fără lot) poartă "
+                + "valoarea și TVA-ul, marfa returnată (cu lot) poartă lotul și cantitatea. Ștergeți linia și "
+                + "culegeți-o din nou pe rolul dorit.");
+    }
+
+    // Scara coloanei vine din model (`AplicaScaraNumerica`), deci o proprietate nouă e păzită fără cod aici.
+    /// <summary>Scara coloanelor `numeric(18, s)` ale unui rând; culegerea o cere și înaintea recalculului (104c).</summary>
+    public static void VerificaScara(IObjectSpace os, object obj, ICollection<string> erori) {
+        if (os is not EFCoreObjectSpace efCore || efCore.DbContext.Model.FindRuntimeEntityType(obj.GetType()) == null)
+            return;
+        var entry = efCore.DbContext.Entry(obj);
+        foreach (var proprietate in entry.Metadata.GetProperties()) {
+            if (proprietate.GetScale() is not int scara
+                    || entry.Property(proprietate.Name).CurrentValue is not decimal valoare)
+                continue;
+            var rol = TipDomeniu(obj).GetProperty(proprietate.Name)
+                ?.GetCustomAttributes(typeof(DevExpress.ExpressApp.DC.XafDisplayNameAttribute), true)
+                .OfType<DevExpress.ExpressApp.DC.XafDisplayNameAttribute>().FirstOrDefault()?.DisplayName
+                ?? proprietate.Name;
+            if (decimal.Round(valoare, scara) != valoare)
+                erori.Add($"{rol} acceptă cel mult {scara} zecimale.");
+            else if (Math.Abs(valoare) >= Pow10((proprietate.GetPrecision() ?? Scara.Precizie) - scara))
+                erori.Add($"{rol} depășește intervalul suportat ({(proprietate.GetPrecision() ?? Scara.Precizie) - scara} cifre întregi).");
+        }
+    }
+
+    static decimal Pow10(int n) {
+        var p = 1m;
+        for (var i = 0; i < n; i++)
+            p *= 10m;
+        return p;
     }
 
     // Tipul documentului are rând `PoliticaNumerotare`? — exact criteriul

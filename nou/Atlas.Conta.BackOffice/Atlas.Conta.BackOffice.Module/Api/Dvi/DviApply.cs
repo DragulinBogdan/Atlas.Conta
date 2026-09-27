@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -35,13 +36,13 @@ public static class DviApply {
         doc.Numar = dto.Numar;
         DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         doc.DataExigibilitate = dto.DataExigibilitate;
-        doc.DataPrimire = dto.DataPrimire ?? doc.DataInregistrare;
+        doc.DataPrimire = dto.DataPrimire;
         doc.Predator = predator;
         doc.Primitor = primitor;
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<DviLinieWriteDto>());
         ReconciliazaFacturi(os, doc, dto.FacturiIds ?? new List<Guid>());
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
@@ -56,6 +57,7 @@ public static class DviApply {
         os.Delete(Legaturi(os, doc.ID));
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -68,12 +70,6 @@ public static class DviApply {
             // Tot ce poate REFUZA se rezolvă înaintea lui `CreateObject` (F3-D5).
             var tipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
             var tipTva = Rezolva.Optional<TipTva>(os, l.TipTvaId, "Tipul de TVA");
-            VerificaScara(l.Valoare, Scara.Bani, "Valoarea în vamă");
-            VerificaScara(l.ValoareTva, Scara.Bani, "Valoarea TVA");
-            if (l.ValoareTva < 0)
-                throw new OperareException("Valoarea TVA nu poate fi negativă.");
-            if (l.Valoare < 0)
-                throw new OperareException("Valoarea în vamă nu poate fi negativă — stornarea e o comandă, nu un semn.");
 
             DocumentDetaliu detaliu;
             if (l.Id is Guid linieId) {
@@ -89,12 +85,13 @@ public static class DviApply {
                 detaliu.Document = doc;
             }
 
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
             detaliu.TipMaterial = tipMaterial;
             detaliu.TipTva = tipTva;
             if (l.TipTvaId == null)
                 detaliu.TipTvaId = null;
             detaliu.Valoare = l.Valoare;
-            detaliu.ValoareTva = l.ValoareTva;
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, l.ValoareTva);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
@@ -133,17 +130,6 @@ public static class DviApply {
 
     static List<DviFactura> Legaturi(IObjectSpace os, Guid dviId) =>
         os.GetObjectsQuery<DviFactura>().Where(f => f.DviId == dviId).ToList();
-
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;

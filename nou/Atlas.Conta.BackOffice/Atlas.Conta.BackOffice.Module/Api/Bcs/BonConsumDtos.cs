@@ -79,9 +79,7 @@ public sealed class BcsLinieReadDto {
     // PROIECTATE PLAT: `Eticheta` e [NotMapped], deci nu traversează SQL-ul.
     public string LotEticheta { get; set; }
     public decimal Cantitate { get; set; }
-    // REZULTAT, nu culegere (GATE 53c): o materializează `Aplica` la culegere și
-    // `BonConsum.PregatesteOperare` la operare, din aceeași formulă (preț lot ×
-    // cantitate — prețul consumului nu se culege niciodată).
+    // Rezultat, nu culegere: îl scrie `CalculeazaValori` la culegere și la operare (104c).
     public decimal Valoare { get; set; }
 }
 

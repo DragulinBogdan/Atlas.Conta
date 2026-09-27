@@ -464,7 +464,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     }
 
     // Review advers F5-F1: felia 5 a făcut din ecranul XAF de NIR o cale VIE de
-    // culegere (`DocumenteLoturiCulegereController` e țintit pe `Document`, iar
+    // culegere (`CulegereDocument` e generic pe `Document`, iar
     // `NirDetaliu` are acum Produs + PretUnitar) — dar fără oglinda blocului de
     // mai sus lotul rămânea EDITABIL lângă ele, adică exact bypass-ul închis pe
     // FCT la GOL 1. Concret: operatorul culege produs și preț ȘI alege din
@@ -562,8 +562,8 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.Total, c => c.Index = -1);
 
     // F6-D10 (lecția F5-F1, aplicată preventiv): declararea `ILinieCareNasteLot`
-    // face din ecranul LDI o cale VIE de culegere — `DocumenteLoturiCulegereController`
-    // e țintit pe `Document`. Cele două direcții culeg lucruri DIFERITE, iar
+    // face din ecranul LDI o cale VIE de culegere — `CulegereDocument`
+    // e generic pe `Document`. Cele două direcții culeg lucruri DIFERITE, iar
     // câmpurile celeilalte sunt capcane: pe plus lotul e al mecanismului (născut
     // din produs + gestiunea inventariată), pe minus produsul și prețul de
     // evaluare sunt inerte. Comutarea o face `[Appearance]` de pe frunză;
@@ -657,8 +657,8 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     // liniile de produs). ASM nu poartă TVA (marfa se mută între loturi).
     //
     // F19-D13 (oglinda lui F6-D10, aceeași lecție): declararea `ILinieCareNasteLot`
-    // face din ecranul ASM o cale VIE de culegere — `DocumenteLoturiCulegereController`
-    // e țintit pe `Document`. Cele două direcții culeg lucruri DIFERITE, iar
+    // face din ecranul ASM o cale VIE de culegere — `CulegereDocument`
+    // e generic pe `Document`. Cele două direcții culeg lucruri DIFERITE, iar
     // câmpurile celeilalte sunt capcane: pe produs lotul e al mecanismului (născut
     // din produs + gestiunea în care se asamblează), pe consum produsul și prețul
     // de evaluare sunt inerte. Comutarea o face `[Appearance]` de pe frunză;

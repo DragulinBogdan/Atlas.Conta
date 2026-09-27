@@ -89,6 +89,13 @@ public class Lot : Editabila {
         + " Iif(GetMonth(Data) < 10, '0', ''), ToStr(GetMonth(Data)), '.', ToStr(GetYear(Data)),"
         + " ' · ', ToStr(Round(PretUnitar, 4))))";
 
+    /// <summary>Cantitatea liniei (sau cea dată) la prețul lotului ei, nerotunjită; 0 pe linia fără lot.</summary>
+    public static decimal ValoareLaPretulLotului(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie,
+            decimal? cantitate = null) =>
+        linie.LotId is Guid id && os.GetObjectByKey<Lot>(id) is Lot lot
+            ? (cantitate ?? linie.Cantitate) * lot.PretUnitar
+            : 0m;
+
     public static string EtichetaLot(string produs, DateOnly data, decimal pretUnitar) {
         var denumire = produs ?? "(produs nedefinit)";
         return data == default && pretUnitar == 0m

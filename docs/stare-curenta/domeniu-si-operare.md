@@ -145,6 +145,51 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
   plății ei, fiindcă împerecherea automată nu poate fi datată sub înregistrarea
   vreunuia dintre documente. (review advers F27, 3e)
 
+### Culegerea draftului (104c)
+
+Culegerea are o singură sursă, `Culegere/CulegereDocument` (L3). Controllerul
+XAF (`CulegereDocumentController`, geamănul pe linie) și `Api/*Apply` sunt
+adaptori: traduc evenimentele ecranului, respectiv PUT-ul agregatului, în
+aceleași apeluri. (104c)
+
+- Documentul nou primește data de azi, dacă apelantul nu i-a dat-o. Data
+  înregistrării urmează data documentului cât timp erau egale. (F27-D4)
+- La alegerea produsului, linia primește tipul (cont/clasă) din
+  `Produs.TipMaterial`, dacă îl lipsește. Primește și tipul de TVA implicit,
+  dacă îl lipsește și dacă formula tipului poartă TVA (`Document.CuTva()`:
+  FCT, FCL, DEC, RLF, RDC, DVI). Linia nouă rămasă fără ele le primește la
+  salvare. Implicitul se rezolvă pe partener → politică → ancoră, împăcat cu
+  cota produsului. (F23-D2, 104c)
+- Formula valorii liniei e una singură, pe entitate:
+  `Document.CalculeazaValori`, `BazaLinie` și `CalculeazaLinie`. Culegerea o
+  cheamă ca previzualizare, operarea ca autoritate; `PregatesteOperare`
+  adaugă doar semnul (LDI, ASM, RLF, RDC). Schimbarea unei intrări a bazei
+  (`Document.IntrariBaza()`) recalculează valorile și șterge TVA-ul cules pe
+  baza veche. Salvarea recalculează păstrând TVA-ul cules nenul. (36a, 48b)
+- TVA-ul cules e o intenție explicită a adaptorului. Nu poate fi negativ;
+  pe RLF și RDC culegerea e în magnitudine, iar semnul îl pune operarea
+  (`SemnulEAlOperarii()`). Se acceptă numai pe regimurile Normal și Taxare
+  inversă. Pe livrare, taxarea inversă nu poartă TVA. API-ul verifică regula
+  înaintea atribuirii, deci refuzul nu lasă valoarea în context. Salvarea o
+  verifică înaintea recalculului, care altfel ar șterge valoarea în tăcere.
+  (36a, F13-D1)
+- La salvare, pe orice ușă, `CulegereDocument.InainteDeSalvare` rulează
+  înaintea gardianului. Pentru fiecare document Draft atins face:
+  normalizarea tipului (câmpurile celeilalte direcții golite pe LDI și ASM,
+  produsul liniei conexe NIR, imputatul NIR, liniile CAS refăcute din fișe la
+  data înregistrării), precompletările rămase, loturile
+  (`LoturiCulegereService`) și valorile. În XAF pasul e
+  `CulegereLaCommitXaf`, înregistrat în hostul Blazor înaintea gardianului;
+  `Apply` îl cheamă explicit înaintea commit-ului. (104c)
+- Validarea culegerii e a gardianului de commit (`GardianEditare`): scara
+  coloanei, tipul liniei obligatoriu,
+  valoarea în vamă nenegativă și rolul liniei RDC (venit fără lot, marfă cu
+  lot), care nu se schimbă. Conservarea, starea, perioada și condițiile
+  dependente de date concurente rămân ale motorului, în tranzacția
+  comenzii. (42a, 104c)
+- `DataPrimire` goală înseamnă data înregistrării. Motorul o rezolvă la
+  postare, iar DTO-ul de citire o arată astfel. (F27-D4, 104c)
+
 ### Operarea
 
 1. Culegerea se salvează prin ușa securizată. (42b)
@@ -414,7 +459,9 @@ clasificației bugetare, angajamentul poate satisface cerința de cod economic. 
 
 Cantitățile folosesc `numeric(18,3)`, sumele `numeric(18,2)`, iar prețurile
 `numeric(18,6)`. Convențiile sunt centralizate în `Scara`; o proprietate
-decimală fără mapare explicită este refuzată la verificarea modelului. (49e)
+decimală fără mapare explicită este refuzată la verificarea modelului. O
+valoare care depășește scara coloanei e refuzată de gardianul de commit, pe
+orice ușă securizată, cu numele câmpului. Nu ajunge excepție de bază. (49e, 104c)
 
 Prețul se rotunjește cu `AwayFromZero`. Rotunjirea sumelor respectă profilul
 fixat al bazei. Culegerea, motorul și raportarea folosesc aceeași convenție;
@@ -1232,6 +1279,7 @@ registrele. Portarea acestei citiri operaționale este necesară la TR-D8.
 
 - [Document și contracte](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Document.cs)
 - [Motorul operării](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/MotorOperare.cs)
+- [Culegerea draftului (L3)](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Culegere/)
 - [Nucleul pur: conservarea](../../nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu/Conservare.cs)
 - [Nucleul pur: motorul pe declarație](../../nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu/Motor/Motor.cs)
 - [Declarația fluxului: operandul, driverul, declaranții BCS/PLT/FCT](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Declaratii/)

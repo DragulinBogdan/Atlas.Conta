@@ -59,19 +59,24 @@ public class Asamblare : Document {
 
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
         foreach (var d in Detalii.OfType<AsamblareDetaliu>()) {
-            // Idempotent prin Abs (re-operarea după anulare nu dublează semnul).
-            if (d.Directie == DirectieAsamblare.Consum) {
+            if (d.Directie == DirectieAsamblare.Consum)
                 d.Cantitate = -Math.Abs(d.Cantitate);
-                d.Valoare = d.LotId != null
-                    ? Scara.RotunjesteBani(d.Cantitate * os.GetObjectByKey<Lot>(d.LotId.Value).PretUnitar)
-                    : 0m;
-            }
-            else if (d.Directie == DirectieAsamblare.Produs) {
+            else if (d.Directie == DirectieAsamblare.Produs)
                 d.Cantitate = Math.Abs(d.Cantitate);
-                d.Valoare = Scara.RotunjesteBani(d.Cantitate * (d.PretEvaluare ?? 0m));
-            }
         }
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
     }
+
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(
+        nameof(AsamblareDetaliu.PretEvaluare), nameof(AsamblareDetaliu.Directie));
+
+    // Consumul la prețul lotului descărcat, produsul la prețul de evaluare cules.
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        linie is not AsamblareDetaliu d ? null
+        : d.Directie == DirectieAsamblare.Consum ? -(Lot.ValoareLaPretulLotului(os, d, Math.Abs(d.Cantitate)))
+        : d.Directie == DirectieAsamblare.Produs ? Math.Abs(d.Cantitate) * (d.PretEvaluare ?? 0m)
+        : null;
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);

@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -14,20 +15,9 @@ namespace Atlas.Conta.BackOffice.Module.Api.Rdc;
 // ultima autoritate — pre-check-ul de Draft există ca mesajul să fie al
 // DOMENIULUI și ca refuzul să vină înaintea oricărei modificări de stare.
 //
-// ═══ Ce e propriu RDC-ului ═══
-//  1. **Rolul liniei = prezența lui `LotId`**, IMUABIL pe o linie existentă
-//     (riscul 5, F19-D14): schimbarea de rol prin PUT e refuz explicit, nu
-//     conversie tăcută. Vezi `ReturClientDtos` pentru motiv.
-//  2. **Linia de COST își pierde identitatea fiscală**, nu doar valoarea:
-//     `TipTvaId = null` + `ValoareTva = 0` PERSISTATE la culegere (F19-D7),
-//     oglinda exactă a lui `ReturClient.PregatesteOperare`. „Inert devine
-//     adevărat, nu doar afirmat" (F6-D3): `RegistruTva` scrie un rând pentru
-//     ORICE linie cu `TipTvaId`, deci un implicit rămas pe linia de cost ar intra
-//     în jurnal ca bază impozabilă (defectul închis în felia 11) — inclusiv la
-//     backfill, care recitește din model, nu din registrul de la operare.
-//  3. **Forma de culegere e pozitivă** (F19-D8): semnarea storno e a operării și
-//     e idempotentă prin `Abs`. Ca pe RLF, Apply normalizează magnitudinile —
-//     detaliile în `ReturFurnizorApply` (riscul 6).
+// Culegerea (precompletări, valori, forma pozitivă, golirea TVA-ului pe linia de
+// cost — F19-D7) e a `CulegereDocument` (104c). Rolul liniei = prezența lui
+// `LotId` (F19-D14).
 public static class ReturClientApply {
 
     // ═══════════════════════ Scriere ═══════════════════════
@@ -64,14 +54,12 @@ public static class ReturClientApply {
         doc.Primitor = GasesteRepartitor(os, dto.PrimitorId, "Primitorul (gestiunea)");
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<RdcLinieWriteDto>());
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
 
-    // Ștergerea agregatului. Pre-check de DOMENIU pe Draft (gardianul de
-    // Committing rămâne plasa). Fără curățenie de loturi: nicio linie de RDC nu
-    // naște lot (marfa revine pe cel ORIGINAL).
+    // Pre-check de DOMENIU pe Draft (gardianul de Committing rămâne plasa).
     public static void Sterge(IObjectSpace os, Guid id) {
         var doc = Rezolva.Cere<ReturClient>(os, id, "Returul de la client");
         if (doc.Stare != StareDocument.Draft)
@@ -81,6 +69,7 @@ public static class ReturClientApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -89,14 +78,9 @@ public static class ReturClientApply {
     static void ReconciliazaLinii(IObjectSpace os, ReturClient doc, List<RdcLinieWriteDto> linii) {
         var existente = doc.Detalii.ToDictionary(d => d.ID);
         var pastrate = new HashSet<Guid>();
-        // Latura fiscală a tipului (F13-D1), rezolvată O SINGURĂ DATĂ pentru tot
-        // agregatul. RDC stornează o LIVRARE, deci `Colectat` — pe taxarea inversă
-        // nu există taxă de stornat.
-        var directieTva = TvaService.DirectiePentru(os, doc);
 
         foreach (var l in linii) {
             DocumentDetaliu detaliu;
-            var noua = false;
             if (l.Id is Guid linieId) {
                 if (!existente.TryGetValue(linieId, out detaliu))
                     throw new OperareException(
@@ -104,33 +88,14 @@ public static class ReturClientApply {
                 // Un Id repetat în payload ar suprascrie tăcut prima apariție.
                 if (!pastrate.Add(linieId))
                     throw new OperareException($"Linia {linieId} apare de două ori în cerere.");
-                // RISCUL 5, pin-uit: rolul unei linii EXISTENTE e imuabil. O
-                // conversie ar trebui să fie completă (TVA, natura Tipului,
-                // valoarea, cantitatea pro-formă) — pe jumătate ar lăsa în
-                // document o linie care nu e niciunul din cele două lucruri, iar
-                // completă ar rescrie tăcut culegerea operatorului. Refuzul spune
-                // și CE e de făcut: agregatul exprimă deja ștergerea (id-ul lipsă).
-                if ((detaliu.LotId == null) != (l.LotId == null))
-                    throw new OperareException(
-                        $"Linia {linieId} este linie de "
-                        + (detaliu.LotId == null ? "VENIT (fără lot)" : "MARFĂ RETURNATĂ (cu lot)")
-                        + " și nu-și poate schimba rolul: rolul e dat de prezența lotului, iar cele două "
-                        + "roluri au câmpuri diferite (venitul poartă valoarea și TVA-ul, marfa poartă lotul "
-                        + "și cantitatea). Ștergeți linia din document și culegeți-o din nou pe rolul dorit.");
             }
             else {
                 detaliu = os.CreateObject<DocumentDetaliu>();
                 detaliu.Document = doc;
-                noua = true;
             }
 
-            // Baza DE DINAINTEA mapării, pentru semantica recalculului de TVA (ca
-            // pe FCT/RLF): pe VENIT baza e valoarea culeasă, deci un Save care n-o
-            // atinge nu pierde override-ul de ValoareTva.
-            var bazaVeche = noua ? 0m : Math.Abs(detaliu.Valoare);
-            Guid? tipTvaVechi = noua ? null : detaliu.TipTvaId;
-
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
             if (l.LotId is Guid lotId) {
                 detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
             }
@@ -138,31 +103,8 @@ public static class ReturClientApply {
                 detaliu.Lot = null;
                 detaliu.LotId = null;
             }
-
-            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
-            // o valoare în afara coloanei ar ieși ca DbUpdateException brută din
-            // Postgres. Refuzăm cu mesaj de domeniu.
-            VerificaScara(l.Cantitate, Scara.Cantitate, "Cantitatea");
-            VerificaScara(l.Valoare, Scara.Bani, "Valoarea");
-            // MAGNITUDINE: semnul e al operării (28a/46e) — vezi nota din
-            // `ReturFurnizorApply` despre round-trip-ul unui document anulat.
-            detaliu.Cantitate = Math.Abs(l.Cantitate);
-
-            if (detaliu.LotId != null) {
-                // ── Linia de COST (marfa care revine pe lotul ORIGINAL) ──
-                // Costul e al LOTULUI, nu se culege (pattern BTR/BCS/DSC), iar
-                // `Valoare` din payload se ignoră deliberat: e câmp al celuilalt rol.
-                var lot = os.GetObjectByKey<Lot>(detaliu.LotId.Value);
-                detaliu.Valoare = Scara.RotunjesteBani(detaliu.Cantitate * lot.PretUnitar);
-                // F19-D7: identitatea fiscală se ȘTERGE, nu se ignoră. Persistată,
-                // altfel `RegistruTva` (și backfill-ul lui) scrie rândul.
-                detaliu.TipTva = null;
-                detaliu.TipTvaId = null;
-                detaliu.ValoareTva = 0m;
-                continue;
-            }
-
-            // ── Linia de VENIT (venitul stornat) ──
+            detaliu.Cantitate = l.Cantitate;
+            detaliu.Valoare = l.Valoare;
             if (l.TipTvaId is Guid tipTvaId) {
                 detaliu.TipTva = Rezolva.Cere<TipTva>(os, tipTvaId, "Tipul de TVA");
             }
@@ -171,36 +113,7 @@ public static class ReturClientApply {
                 detaliu.TipTvaId = null;
             }
 
-            // Default-ul de TipTva al tipului de document (RDC are
-            // `TipTvaImplicit = N21`) — DOAR pe liniile NOI fără TipTva în payload.
-            // Pe linia de COST nu ajunge niciodată: acolo bucla s-a întors deja.
-            if (noua && l.TipTvaId == null)
-                TvaService.AplicaTipTvaImplicit(os, doc, detaliu);
-
-            // Normalizarea la pozitiv ÎNAINTE de calcul — oglinda primului rând al
-            // ramurii de venit din `ReturClient.PregatesteOperare`.
-            detaliu.ValoareTva = Math.Abs(detaliu.ValoareTva);
-            // Lanțul de valori, materializat LA CULEGERE (GATE 53c). Baza e
-            // valoarea CULEASĂ (venitul stornat de pe factura originală);
-            // `CalculeazaValori` scrie `Valoare = round(baza)` și TVA-ul din cotă,
-            // păstrând un override nenul cât timp declanșatorii n-au bătut.
-            var bazaNoua = Math.Abs(l.Valoare);
-            var pastreaza = !noua && bazaNoua == bazaVeche && detaliu.TipTvaId == tipTvaVechi;
-            TvaService.CalculeazaValori(detaliu, bazaNoua,
-                TvaService.IncarcaTipuri(os, new[] { detaliu }), directieTva, pastreaza);
-
-            // Override-ul operatorului, DUPĂ calcul (oglinda fluxului UI, 36a).
-            if (l.ValoareTva is decimal valoareTva) {
-                VerificaScara(valoareTva, Scara.Bani, "Valoarea TVA");
-                var regim = detaliu.TipTvaId is Guid tipTvaLinieId
-                    ? os.GetObjectByKey<TipTva>(tipTvaLinieId)?.Regim
-                    : null;
-                if (valoareTva != 0 && regim is not (RegimTva.Normal or RegimTva.TaxareInversa))
-                    throw new OperareException(
-                        "Valoarea TVA se completează manual doar pe un tip de TVA cu regim "
-                        + "Normal sau Taxare inversă — regimul liniei nu poartă TVA separat.");
-                detaliu.ValoareTva = Math.Abs(valoareTva);
-            }
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, l.ValoareTva);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
@@ -210,19 +123,6 @@ public static class ReturClientApply {
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
         Rezolva.Cere<Repartitor>(os, id, rol);
-
-    // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
-    // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;

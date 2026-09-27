@@ -15,3 +15,16 @@ public static class Rezolva {
     public static T Optional<T>(IObjectSpace os, Guid? id, string rol) where T : class =>
         id == null ? null : Cere<T>(os, id.Value, rol);
 }
+
+/// <summary>Maparea câmpurilor comune ale liniei primite pe sârmă.</summary>
+public static class ApiLinie {
+    /// <summary>Tipul liniei; lipsa lui lasă precompletarea din produs culegerii (104c), iar lipsa ambelor e refuzul gardianului.</summary>
+    public static void TipMaterial(IObjectSpace os, BusinessObjects.DocumentDetaliu linie, Guid? tipMaterialId) {
+        if (tipMaterialId is Guid id) {
+            linie.TipMaterial = Rezolva.Cere<BusinessObjects.TipMaterial>(os, id, "Tipul (contul/clasa)");
+            return;
+        }
+        linie.TipMaterial = null;
+        linie.TipMaterialId = Guid.Empty;
+    }
+}

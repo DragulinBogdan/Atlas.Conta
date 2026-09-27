@@ -48,10 +48,8 @@ public sealed class NirLinieWriteDto {
     public Guid? PartenerDiferentaId { get; set; }
 
     public Guid? Id { get; set; }
-    // Rămâne obligatoriu chiar și pe liniile cu produs: precompletarea Tipului
-    // din Produs e UX de client (OData `Produs` expune `TipMaterialId`), NU
-    // magie în Apply — altfel serverul ar „ghici" identitatea contabilă a liniei.
-    public Guid TipMaterialId { get; set; }
+    // Lipsă = tipul produsului, completat de culegere (104c).
+    public Guid? TipMaterialId { get; set; }
     // Obligatoriu pe liniile de STOC ale recepției MANUALE (validat la operare):
     // fără el lotul nu se naște. Pe liniile clonei conexe rămâne gol — marfa e a
     // facturii, recepția o moștenește (F5-D4).
@@ -136,9 +134,7 @@ public sealed class NirLinieReadDto {
     // începută).
     public bool LotStrain { get; set; }
     public decimal Cantitate { get; set; }
-    // Prețul de recepție CULES (F5-D1). `Valoare` rămâne REZULTAT (GATE 53c):
-    // o materializează `Aplica` la culegere și `PregatesteOperare` la operare,
-    // din aceeași formulă.
+    // Prețul de recepție CULES (F5-D1); `Valoare` e rezultatul lui `CalculeazaValori` (104c).
     public decimal PretUnitar { get; set; }
     public decimal Valoare { get; set; }
     public decimal ValoareTva { get; set; }

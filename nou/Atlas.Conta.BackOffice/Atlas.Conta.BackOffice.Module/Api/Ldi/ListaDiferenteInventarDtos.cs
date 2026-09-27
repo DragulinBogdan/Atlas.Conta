@@ -44,7 +44,8 @@ public sealed class LdiLinieWriteDto {
     // Numele membrului `DirectieDiferenta` („Plus"/„Minus"), nu numărul lui —
     // contractul nu depinde de ordinea membrilor. OBLIGATORIU (vezi antetul).
     public string Directie { get; set; }
-    public Guid TipMaterialId { get; set; }
+    // Lipsă = tipul produsului, completat de culegere (104c).
+    public Guid? TipMaterialId { get; set; }
     // Marfa găsită în plus — mecanismul lotului nou (F6-D2), obligatoriu pe PLUS
     // prin validarea de operare („Linia de plus își creează lotul la culegere").
     // Pe MINUS se GOLEȘTE (F6-D3): acolo marfa e a lotului descărcat, iar un
@@ -119,8 +120,7 @@ public sealed class LdiLinieReadDto {
     // Pe un LDI OPERAT iese SEMNATĂ — e fapta operării (28a), nu o culegere.
     public decimal Cantitate { get; set; }
     public decimal? PretEvaluare { get; set; }
-    // REZULTAT, nu culegere (GATE 53c): o materializează `Aplica` la culegere și
-    // `PregatesteOperare` la operare, din aceeași formulă SEMNATĂ.
+    // Rezultat, nu culegere: îl scrie `CalculeazaValori` la culegere și la operare (104c).
     public decimal Valoare { get; set; }
     public DateOnly? DataExpirare { get; set; }
     public string LotFabricatie { get; set; }

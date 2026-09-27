@@ -244,6 +244,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     Console.WriteLine($"Model OK: {ctx.Model.GetEntityTypes().Count()} entity types; profil: {profil}");
     ProbeStraturi.Verifica(ctx, Check);
     ProbeStraturi.VerificaCoaja(Check);
+    ProbeCulegere.VerificaSursa(Check);
 
     if (profil == ProfilContabil.Privat) {
         // Baza privată aparține uneltei: se creează/migrează aici.
@@ -274,6 +275,13 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         .UseObjectSpaceLinkProxies()
         .UseLazyLoadingProxies()
         .AddInterceptors(NumaratorSql.Instanta));
+
+// 104c: regulile culegerii (scara coloanei) sunt ale gardianului, pe ușa securizată a API-ului.
+IObjectSpace OsCuGardian() {
+    var o = provider.CreateObjectSpace();
+    new GardianEditare().OnObjectSpaceCreated(o);
+    return o;
+}
 
 // S-D9.2 pe scenă: aceeași funcție de reconciliere pe care o cheamă
 // `--reconciliere-cub`, restrânsă la documentele scenei.
@@ -1510,8 +1518,7 @@ if (profil == ProfilContabil.Privat) {
         lNoTva.Document = fclTva; lNoTva.TipMaterial = tip704; lNoTva.Cantitate = 1m; lNoTva.PretUnitar = 10m;
         var lExplicit = os.CreateObject<FacturaIesireDetaliu>();
         lExplicit.Document = fclTva; lExplicit.TipMaterial = tip704; lExplicit.Cantitate = 1m; lExplicit.PretUnitar = 10m; lExplicit.TipTva = sdd;
-        TvaService.AplicaTipTvaImplicit(os, fclTva, lNoTva);
-        TvaService.AplicaTipTvaImplicit(os, fclTva, lExplicit);
+        Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.Normalizeaza(os, fclTva);
         Check("Default TipTva: linia fără TipTva primește N21; linia cu SDD explicit rămâne neatinsă",
             lNoTva.TipTvaId == n21.ID && lExplicit.TipTvaId == sdd.ID);
         os.CommitChanges();
@@ -3248,7 +3255,7 @@ if (profil == ProfilContabil.Privat) {
             linCost.Document = rdc; linCost.TipMaterial = tip371; linCost.Lot = lot; linCost.Cantitate = 3m;
             // TipTva pus și pe linia de COST — nu e o ciudățenie de scenă, e EXACT
             // ce face calea de produs: `TipDocument.TipTvaImplicit` al lui RDC e
-            // N21, iar `DefaultTipTvaController` îl pune pe ORICE linie nouă
+            // N21, iar culegerea îl punea pe ORICE linie nouă
             // culeasă în UI. Scena reproduce deci culegerea reală (review advers
             // D1 al feliei 11) — înainte de fix, linia asta intra în jurnalul de
             // TVA cu costul ca bază impozabilă.
@@ -3589,6 +3596,9 @@ if (profil == ProfilContabil.Privat) {
         CurataApiPrv(os);
     }
 
+    // ============ 104c: culegerea unică (privat — TipTva implicit cu cota produsului) ============
+    ProbeCulegere.Verifica(provider, Check, CheckRefuza);
+
     // ======== Felia Api DEC — semantica override-ului de TVA + 4426 = 542 (privat) ========
     // Complementul blocului bugetar `E2E-API-DEC` (F8-D13.1), pe același tipar ca
     // FCT: la bugetar toate regimurile sunt Capitalizat, deci acolo override-ul
@@ -3910,9 +3920,12 @@ if (profil == ProfilContabil.Privat) {
         CheckRefuza("Apply cu Id de linie străin → refuz (agregatul nu adoptă linii din alt document)", () =>
             FacturaIesireApply.Aplica(os, idFcl, PayloadFcl(new FacturaIesireLinieWriteDto {
                 Id = Guid.NewGuid(), TipMaterialId = tipServiciuFcl.ID, Cantitate = 1m, PretUnitar = 1m })));
-        CheckRefuza("Apply cu preț unitar în afara scării numeric(18,6) → refuz de domeniu, nu DbUpdateException", () =>
-            FacturaIesireApply.Aplica(os, idFcl, PayloadFcl(new FacturaIesireLinieWriteDto {
-                TipMaterialId = tipServiciuFcl.ID, Cantitate = 1m, PretUnitar = 0.0000001m })));
+        CheckRefuza("Apply cu preț unitar în afara scării numeric(18,6) → refuz de domeniu al gardianului (104c), nu DbUpdateException", () => {
+            using var osGard = provider.CreateObjectSpace();
+            new GardianEditare().OnObjectSpaceCreated(osGard);
+            FacturaIesireApply.Aplica(osGard, idFcl, PayloadFcl(new FacturaIesireLinieWriteDto {
+                TipMaterialId = tipServiciuFcl.ID, Cantitate = 1m, PretUnitar = 0.0000001m }));
+        });
         CheckRefuza("Apply cu pin pe lot inexistent → refuz cu mesaj de domeniu (nu violare de FK)", () =>
             FacturaIesireApply.Aplica(os, idFcl, PayloadFcl(new FacturaIesireLinieWriteDto {
                 TipMaterialId = tipMarfa.ID, ProdusId = produsFcl.ID, LotId = Guid.NewGuid(),
@@ -4568,8 +4581,8 @@ using (var os = provider.CreateObjectSpace()) {
         && citit.Linii[0].LotEticheta == lot.Eticheta
         && citit.Linii[0].TipMaterialCod == tipMaterial.Cod
         && citit.Linii[0].Cantitate == 4m);
-    Check("Apply NU scrie `Valoare` pe linie (o materializează motorul la operare)",
-        citit.Linii[0].Valoare == 0m && citit.Total == 0m);
+    Check("104c: Apply materializează `Valoare` la culegere prin formula tipului (prețul lotului × cantitate), ca operarea",
+        citit.Linii[0].Valoare == Scara.RotunjesteBani(4m * lot.PretUnitar) && citit.Total == citit.Linii[0].Valoare);
 
     // --- Apply: reconcilierea colecției (update + insert, apoi delete) ---
     var idLinie = citit.Linii[0].Id;
@@ -5243,12 +5256,15 @@ using (var os = provider.CreateObjectSpace()) {
             Linii = { new FacturaIntrareLinieWriteDto {
                 Id = Guid.NewGuid(), TipMaterialId = tipServicii.ID, Cantitate = 1m, PretUnitar = 1m } }
         }));
-    CheckRefuza("Apply cu preț unitar în afara scării numeric(18,6) → refuz de domeniu, nu DbUpdateException", () =>
-        FacturaIntrareApply.Aplica(os, idFct, new FacturaIntrareWriteDto {
+    CheckRefuza("Apply cu preț unitar în afara scării numeric(18,6) → refuz de domeniu al gardianului (104c), nu DbUpdateException", () => {
+        using var osGard = provider.CreateObjectSpace();
+        new GardianEditare().OnObjectSpaceCreated(osGard);
+        FacturaIntrareApply.Aplica(osGard, idFct, new FacturaIntrareWriteDto {
             Numar = "E2E-AF1", Data = write.Data, PredatorId = furnizor.ID, PrimitorId = mag1.ID,
             Linii = { new FacturaIntrareLinieWriteDto {
                 TipMaterialId = tipServicii.ID, Cantitate = 1m, PretUnitar = 0.0000001m } }
-        }));
+        });
+    });
     CheckRefuza("Apply cu furnizor inexistent → refuz cu mesaj de domeniu (nu violare de FK)", () =>
         FacturaIntrareApply.Aplica(os, idFct, new FacturaIntrareWriteDto {
             Numar = "E2E-AF1", Data = write.Data, PredatorId = Guid.NewGuid(), PrimitorId = mag1.ID
@@ -6404,7 +6420,7 @@ using (var os = provider.CreateObjectSpace()) {
                 Id = Guid.NewGuid(), TipMaterialId = tipTrz.ID, Valoare = 1m } }
         }));
     CheckRefuza("Apply cu valoare în afara scării numeric(18,2) → refuz de domeniu, nu DbUpdateException",
-        () => TrezorerieApply.Aplica<Plata>(os, idPlt, new TrezorerieWriteDto {
+        () => TrezorerieApply.Aplica<Plata>(OsCuGardian(), idPlt, new TrezorerieWriteDto {
             Data = writePlt.Data, PredatorId = casa.ID, PrimitorId = furnizor.ID,
             Linii = { new TrezorerieLinieWriteDto {
                 TipMaterialId = tipTrz.ID, Valoare = 1.005m } }
@@ -7820,7 +7836,7 @@ using (var os = provider.CreateObjectSpace()) {
             Linii = { write.Linii[0], write.Linii[0] }
         }));
     CheckRefuza("Apply NIR cu preț unitar în afara scării numeric(18,6) → refuz de domeniu, nu DbUpdateException", () =>
-        NirApply.Aplica(os, idNir, new NirWriteDto {
+        NirApply.Aplica(OsCuGardian(), idNir, new NirWriteDto {
             Data = dataNir, PredatorId = furnizor.ID, PrimitorId = mag1.ID,
             Linii = { new NirLinieWriteDto {
                 TipMaterialId = tipMateriale.ID, Cantitate = 1m, PretUnitar = 0.0000001m } }
@@ -8117,7 +8133,7 @@ using (var os = provider.CreateObjectSpace()) {
             Linii = { writeBcs.Linii[0], writeBcs.Linii[0] }
         }));
     CheckRefuza("Apply BCS cu cantitate în afara scării numeric(18,3) → refuz de domeniu, nu DbUpdateException", () =>
-        BonConsumApply.Aplica(os, idBcs, new BcsWriteDto {
+        BonConsumApply.Aplica(OsCuGardian(), idBcs, new BcsWriteDto {
             Data = dataBcs, PredatorId = mag1.ID, PrimitorId = loc.ID,
             Linii = { new BcsLinieWriteDto { TipMaterialId = tipMateriale.ID, LotId = lot.ID, Cantitate = 0.0001m } }
         }));
@@ -8401,7 +8417,7 @@ using (var os = provider.CreateObjectSpace()) {
             Linii = { writeLdi.Linii[0], writeLdi.Linii[0] }
         }));
     CheckRefuza("Apply LDI cu preț de evaluare în afara scării numeric(18,6) → refuz de domeniu, nu DbUpdateException", () =>
-        ListaDiferenteInventarApply.Aplica(os, idLdi, new LdiWriteDto {
+        ListaDiferenteInventarApply.Aplica(OsCuGardian(), idLdi, new LdiWriteDto {
             Data = dataLdi, PredatorId = mag1.ID, PrimitorId = comisie.ID,
             Linii = { new LdiLinieWriteDto {
                 Directie = "Plus", TipMaterialId = tipMateriale.ID, ProdusId = produs.ID,
@@ -8905,7 +8921,7 @@ using (var os = provider.CreateObjectSpace()) {
             Linii = { writeDec.Linii[0], writeDec.Linii[0] }
         }));
     CheckRefuza("Apply DEC cu preț unitar în afara scării numeric(18,6) → refuz de domeniu, nu DbUpdateException", () =>
-        DecontApply.Aplica(os, idDec, new DecontWriteDto {
+        DecontApply.Aplica(OsCuGardian(), idDec, new DecontWriteDto {
             Data = dataDec, PredatorId = titular.ID, PrimitorId = sediu.ID,
             Linii = { new DecontLinieWriteDto {
                 TipMaterialId = tipDeplasari.ID, Cantitate = 1m, PretUnitar = 0.0000001m } }
@@ -17412,7 +17428,7 @@ void VerificaApiNtc(bool privat) {
     });
     CheckRefuza("Api NTC: valoare în afara scării numeric(18,2) → refuz de domeniu, nu DbUpdateException", () => {
         var l = LinieValida(); l.Valoare = 5.001m;
-        NotaContabilaApply.Aplica(os, idNtc, Payload(l));
+        NotaContabilaApply.Aplica(OsCuGardian(), idNtc, Payload(l));
     });
     // Pe documentul EXISTENT, nu pe unul nou: refuzul cade ÎNAINTE de orice
     // atingere a header-ului, deci nota rămâne exact cum era. (Pe calea de
@@ -18331,10 +18347,10 @@ void VerificaApiAsm() {
         })));
     CheckRefuza("Api ASM: cantitate în afara scării numeric(18,3) → refuz de domeniu, nu DbUpdateException", () => {
         var l = LinieValida(); l.Cantitate = 1.0001m;
-        AsamblareApply.Aplica(os, idAsm, Payload(l));
+        AsamblareApply.Aplica(OsCuGardian(), idAsm, Payload(l));
     });
     CheckRefuza("Api ASM: preț de evaluare în afara scării numeric(18,6) → refuz de domeniu", () =>
-        AsamblareApply.Aplica(os, idAsm, Payload(new AsmLinieWriteDto {
+        AsamblareApply.Aplica(OsCuGardian(), idAsm, Payload(new AsmLinieWriteDto {
             Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID, Cantitate = 1m,
             PretEvaluare = 1.0000001m
         })));
@@ -18975,11 +18991,11 @@ void VerificaApiRlf() {
     });
     CheckRefuza("Api RLF: cantitate în afara scării numeric(18,3) → refuz de domeniu, nu DbUpdateException", () => {
         var l = LinieValida(); l.Cantitate = 1.0001m;
-        ReturFurnizorApply.Aplica(os, idRlf, Payload(l));
+        ReturFurnizorApply.Aplica(OsCuGardian(), idRlf, Payload(l));
     });
     CheckRefuza("Api RLF: `ValoareTva` în afara scării numeric(18,2) → refuz de domeniu", () => {
         var l = LinieValida(); l.ValoareTva = 1.001m;
-        ReturFurnizorApply.Aplica(os, idRlf, Payload(l));
+        ReturFurnizorApply.Aplica(OsCuGardian(), idRlf, Payload(l));
     });
     CheckRefuza("Api RLF (56): override de `ValoareTva` pe un regim FĂRĂ TVA separat (SDD, scutit) → refuz — "
         + "`PregatesteOperare` l-ar șterge oricum la operare, deci acceptarea lui ar minți operatorul", () => {
@@ -19385,12 +19401,12 @@ void VerificaApiRdc() {
         + "EXPLICIT, nu conversie tăcută — rolul e o PREZENȚĂ, iar o conversie ar trebui să fie COMPLETĂ (TVA, "
         + "natura Tipului, valoarea, cantitatea pro-formă); pe jumătate ar lăsa în document o linie care nu e "
         + "niciunul din cele două lucruri",
-        () => ReturClientApply.Aplica(os, idRdc, scoateLotul));
+        () => ReturClientApply.Aplica(OsCuGardian(), idRdc, scoateLotul));
     var puneLotul = Rescriere(ReturClientApply.Citeste(os, idRdc));
     puneLotul.Linii.Single(l => l.Id == lVenit.Id).LotId = lot.ID;
     CheckRefuza("ANCORA riscul 5 (VENIT → COST): și sensul invers e refuzat — simetria contează, altfel „rolul "
         + "e imuabil” ar fi o regulă cu o singură direcție",
-        () => ReturClientApply.Aplica(os, idRdc, puneLotul));
+        () => ReturClientApply.Aplica(OsCuGardian(), idRdc, puneLotul));
     var dupaRefuz = ReturClientApply.Citeste(os, idRdc);
     Console.WriteLine($"     MĂSURAT (Api RDC, riscul 5): ambele PUT-uri de schimbare de rol au fost REFUZATE; "
         + $"documentul are în continuare {dupaRefuz.Linii.Count} linii "
@@ -19446,7 +19462,7 @@ void VerificaApiRdc() {
         })));
     CheckRefuza("Api RDC: valoare în afara scării numeric(18,2) → refuz de domeniu, nu DbUpdateException", () => {
         var l = LinieVenit(); l.Valoare = 10.001m;
-        ReturClientApply.Aplica(os, idRdc, Payload(l));
+        ReturClientApply.Aplica(OsCuGardian(), idRdc, Payload(l));
     });
     CheckRefuza("Api RDC: latură inexistentă în nomenclatorul de repartitori → refuz de domeniu, înaintea "
         + "oricărei modificări a header-ului", () =>
@@ -28785,7 +28801,7 @@ void VerificaApiDvi() {
         PrimitorId = unitate.ID,
         Linii = {
             new DviLinieWriteDto { TipMaterialId = tip628.ID, TipTvaId = imp21.ID, Valoare = 1000m, ValoareTva = 210m },
-            // Taxa lăsată la 0: o calculează motorul din cotă, la operare (48b).
+            // Taxa lăsată la 0 se calculează din cotă la culegere, ca la operare (48b, 104c).
             new DviLinieWriteDto { TipMaterialId = tip628.ID, TipTvaId = impTi21.ID, Valoare = 500m }
         },
         FacturiIds = { idFf1 }
@@ -28800,15 +28816,15 @@ void VerificaApiDvi() {
         + $"({string.Join("; ", cit?.Facturi.Select(f => $"{f.Numar}/{f.Stare}/{f.Valoare}") ?? [])}).");
     Check("Api DVI: `Aplica` ⇒ document COMIS (vizibil dintr-un alt ObjectSpace), cu antetul cules "
         + "(MRN-ul e al declarației, nu o serie server-owned), liniile pe BAZA detaliului și legătura "
-        + "scrisă prin `FacturiIds`. `Baza`/`Tva` vin de pe SERVER (42c): 1500 valoare în vamă și 210 "
-        + "taxă — a doua linie e încă pe 0, taxa ei se naște la operare",
+        + "scrisă prin `FacturiIds`. `Baza`/`Tva` vin de pe SERVER (42c): 1500 valoare în vamă și 315 "
+        + "taxă — taxa lăsată la 0 pe a doua linie se calculează din cotă încă de la culegere (104c)",
         persistat && cit != null && cit.Id == idDvi && cit.Stare == "Draft"
         && cit.Numar == scriere.Numar && cit.Data == scriere.Data
         && cit.PredatorId == vama.ID && cit.PredatorDenumire == vama.Denumire
         && cit.PrimitorId == unitate.ID && cit.PrimitorDenumire == unitate.Denumire
-        && cit.Linii.Count == 2 && cit.Baza == 1500m && cit.Tva == 210m
+        && cit.Linii.Count == 2 && cit.Baza == 1500m && cit.Tva == 315m
         && cit.Linii.Any(l => l.TipTvaCod == "IMP21" && l.TipTvaCota == 21m && l.Valoare == 1000m && l.ValoareTva == 210m)
-        && cit.Linii.Any(l => l.TipTvaCod == "IMPTI21" && l.Valoare == 500m && l.ValoareTva == 0m)
+        && cit.Linii.Any(l => l.TipTvaCod == "IMPTI21" && l.Valoare == 500m && l.ValoareTva == 105m)
         && cit.PoateEdita && cit.PoateOpera && !cit.PoateAnula && !cit.PoateStorna);
     Check("Api DVI: factura legată se citește cu identitatea ei — numărul, data, furnizorul EXTERN (nu "
         + "biroul vamal, care e latura declarației), STAREA (DVI-r2: o factură anulată după legare "
@@ -28823,7 +28839,7 @@ void VerificaApiDvi() {
     Check("Api DVI: `Lista` dă aceleași cifre ca agregatul (join pe agregat, nu subquery corelat), plus "
         + "numărul de facturi legate; starea e tradusă ÎN SQL",
         randLista.Stare == "Draft" && randLista.Numar == scriere.Numar
-        && randLista.Baza == 1500m && randLista.Tva == 210m && randLista.NrFacturi == 1
+        && randLista.Baza == 1500m && randLista.Tva == 315m && randLista.NrFacturi == 1
         && randLista.PredatorDenumire == vama.Denumire);
 
     // ---------------- (2) Candidații ----------------
@@ -28906,7 +28922,7 @@ void VerificaApiDvi() {
         citSchimbat.Facturi.Count == 1 && citSchimbat.Facturi[0].FacturaId == idFf2
         && citSchimbat.Facturi[0].Valoare == 700m
         && os.GetObjectsQuery<DviFactura>().Count(f => f.DviId == idDvi) == 1
-        && citSchimbat.Linii.Count == 2 && citSchimbat.Baza == 1500m && citSchimbat.Tva == 210m);
+        && citSchimbat.Linii.Count == 2 && citSchimbat.Baza == 1500m && citSchimbat.Tva == 315m);
     CheckRefuza("Api DVI: aceeași factură de două ori în `FacturiIds` ⇒ refuz de DOMENIU (payload-ul e "
         + "reconciliat server-side, deci un id repetat ar fi trecut tăcut ca unul singur)",
         () => DviApply.Aplica(os, idDvi, Rescrie(citSchimbat, new List<Guid> { idFf2, idFf2 })));
@@ -28929,7 +28945,7 @@ void VerificaApiDvi() {
         + "de la refuz, pe care commit-ul următor l-ar fi persistat",
         os.GetObjectsQuery<DviFactura>().Count(f => f.DviId == idDvi) == 1
         && !os.GetObjectsQuery<DviFactura>().Any(f => f.FacturaId == Guid.Empty)
-        && DviApply.Citeste(os, idDvi) is { Linii.Count: 2, Baza: 1500m, Tva: 210m });
+        && DviApply.Citeste(os, idDvi) is { Linii.Count: 2, Baza: 1500m, Tva: 315m });
 
     // ---------------- (4) Refuzul de OPERARE prin ușă ----------------
     DviApply.Aplica(os, idDvi, Rescrie(citSchimbat, new List<Guid> { idFf2 }, tipTvaPrimaLinie: n21.ID));

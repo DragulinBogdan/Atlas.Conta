@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -13,19 +14,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Fcl;
 // apelantului (endpoint-ul de scriere) și COMIT. Gardianul de Committing e
 // ultima autoritate — pre-check-ul de Draft există ca mesajul să fie al
 // DOMENIULUI și ca refuzul să vină înaintea oricărei modificări de stare.
-//
-// ═══ Ce face Apply pe FCL, față de FCT (F4-D1) ═══
-// Pe tierul API nu rulează NICIUN ViewController, deci seam-urile de culegere se
-// apelează EXPLICIT, în ordinea din UI:
-//   1. maparea câmpurilor culese (inclusiv PINUL de lot — cules pe FCL, spre
-//      deosebire de FCT unde lotul e server-owned);
-//   2. `TvaService.AplicaTipTvaImplicit` — doar pe liniile NOI fără TipTva în
-//      payload (culegerea explicită, inclusiv golirea deliberată, bate default-ul);
-//   3. `TvaService.CalculeazaLaCulegere` — scrie `Valoare`/`ValoareTva` din
-//      `PretUnitar × Cantitate` (GATE 53c), apoi override-ul manual, dacă vine.
-// Al patrulea seam al FCT — `LoturiCulegereService` — LIPSEȘTE aici prin
-// contract: FCL nu naște loturi, doar le referă. De aceea `Sterge` nu are nici
-// `CurataOrfane`: n-are ce lăsa orfan.
+// Culegerea (precompletări, valori) e a `CulegereDocument` (104c); pinul de lot
+// e cules pe FCL, spre deosebire de FCT.
 //
 // Ce NU face: nu generează descărcarea. DSC-ul se naște exclusiv prin
 // `DescarcareService` (hook-ul `GenereazaSecundar` la operare + comanda manuală
@@ -79,14 +69,12 @@ public static class FacturaIesireApply {
         }
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<FacturaIesireLinieWriteDto>());
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
 
-    // Ștergerea agregatului. Pre-check de DOMENIU pe Draft (gardianul de
-    // Committing rămâne plasa). Fără curățenie de loturi: FCL nu naște loturi,
-    // le REFERĂ (pinul) — un lot referit de o linie ștearsă rămâne al lui.
+    // Pre-check de DOMENIU pe Draft (gardianul de Committing rămâne plasa).
     // Fără gardian de imperecheri: un link cere ambele documente OPERATE (31d),
     // deci un draft nu poate avea niciunul.
     public static void Sterge(IObjectSpace os, Guid id) {
@@ -98,6 +86,7 @@ public static class FacturaIesireApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -111,14 +100,9 @@ public static class FacturaIesireApply {
         // agregatului, deci reconcilierea o curăță în loc s-o lase invizibilă.
         var existente = doc.Detalii.ToDictionary(d => d.ID);
         var pastrate = new HashSet<Guid>();
-        // Latura fiscală a tipului (F13-D1) — pe FCL e `Colectat`, deci liniile
-        // cu regim de taxare inversă rămân cu `ValoareTva = 0` încă de la
-        // culegere; rezolvată o dată pentru tot agregatul.
-        var directieTva = TvaService.DirectiePentru(os, doc);
 
         foreach (var l in linii) {
             FacturaIesireDetaliu detaliu;
-            var noua = false;
             if (l.Id is Guid linieId) {
                 if (!existente.TryGetValue(linieId, out var existenta))
                     throw new OperareException(
@@ -134,17 +118,10 @@ public static class FacturaIesireApply {
             else {
                 detaliu = os.CreateObject<FacturaIesireDetaliu>();
                 detaliu.Document = doc;
-                noua = true;
             }
 
-            // Starea DE DINAINTEA mapării, pentru semantica recalculului de mai
-            // jos: în UI recalculul TVA se declanșează DOAR la schimbarea bazei
-            // (Cantitate/PretUnitar) sau a TipTva — un Save care nu le atinge NU
-            // pierde override-ul de ValoareTva.
-            var bazaVeche = noua ? 0m : detaliu.PretUnitar * detaliu.Cantitate;
-            Guid? tipTvaVechi = noua ? null : detaliu.TipTvaId;
-
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
 
             // „General!" — identitatea liniei de stoc (P2 §4). Obligativitatea pe
             // liniile de stoc e a OPERĂRII; aici doar existența.
@@ -168,11 +145,6 @@ public static class FacturaIesireApply {
                 detaliu.LotId = null;
             }
 
-            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
-            // o valoare în afara coloanei ar ieși ca DbUpdateException brută din
-            // Postgres. Refuzăm cu mesaj de domeniu (ca BTR/FCT).
-            VerificaScara(l.Cantitate, Scara.Cantitate, "Cantitatea");
-            VerificaScara(l.PretUnitar, Scara.Pret, "Prețul unitar");
             detaliu.Cantitate = l.Cantitate;
             detaliu.PretUnitar = l.PretUnitar;
             detaliu.Descriere = l.Descriere;
@@ -190,56 +162,7 @@ public static class FacturaIesireApply {
             detaliu.CodEconomic = Nomenclator<CodEconomic>(os, l.CodEconomicId, "Codul economic");
             if (l.CodEconomicId == null) detaliu.CodEconomicId = null;
 
-            // Default-ul de TipTva al tipului de document (37f) — DOAR pe liniile
-            // noi al căror payload n-a dat un TipTva: pe o linie existentă,
-            // golirea lui e decizie explicită a operatorului, iar re-aplicarea
-            // default-ului ar face-o imposibilă.
-            if (noua && l.TipTvaId == null)
-                TvaService.AplicaTipTvaImplicit(os, doc, detaliu);
-
-            // Lanțul de valori, materializat LA CULEGERE (GATE 53c): operatorul
-            // confruntă hârtia înainte de operare. `PregatesteOperare` îl rescrie
-            // la operare din aceeași formulă — de aceea `Valoare` nu e în WriteDto.
-            // Recalculul e CONDIȚIONAT de declanșatorii din UI (baza sau TipTva
-            // schimbate) — altfel un PUT care editează doar header-ul ar pierde
-            // tăcut override-ul de ValoareTva salvat anterior (clientul nu poate
-            // distinge „valoarea citită e override" de „e calculată", deci nu o
-            // retrimite).
-            var bazaNoua = detaliu.PretUnitar * detaliu.Cantitate;
-            if (noua || bazaNoua != bazaVeche || detaliu.TipTvaId != tipTvaVechi)
-                TvaService.CalculeazaLaCulegere(os, directieTva, detaliu, bazaNoua);
-            // Override-ul operatorului, DUPĂ calcul (oglinda fluxului UI): pe
-            // factura EMISĂ rotunjirea aparține documentului (e-Factura, agregarea
-            // retailului), nu recalculului nostru — regula 36a, uniformizată prin
-            // decizia 48b. La operare îl păstrează `pastreazaTvaCules: true`.
-            if (l.ValoareTva is decimal valoareTva) {
-                VerificaScara(valoareTva, Scara.Bani, "Valoarea TVA");
-                // Ca la FCT (review F2-D1/D7): override-ul are sens DOAR pe
-                // regimurile care postează TVA separat. Pe Capitalizat TVA-ul e
-                // deja în `Valoare` (l-ar număra de două ori în Total); pe
-                // Scutit/Neimpozabil/fără TipTva, `PregatesteOperare` l-ar șterge
-                // oricum la operare — acceptarea lui ar minți operatorul.
-                if (valoareTva < 0)
-                    throw new OperareException("Valoarea TVA nu poate fi negativă.");
-                // Prin FK, nu prin navigație: `AplicaTipTvaImplicit` setează doar
-                // `TipTvaId`, iar navigația lazy nu e garantată pe toate căile (25b).
-                var regim = detaliu.TipTvaId is Guid tipTvaLinieId
-                    ? os.GetObjectByKey<TipTva>(tipTvaLinieId)?.Regim
-                    : null;
-                if (valoareTva != 0 && regim is not (RegimTva.Normal or RegimTva.TaxareInversa))
-                    throw new OperareException(
-                        "Valoarea TVA se completează manual doar pe un tip de TVA cu regim "
-                        + "Normal sau Taxare inversă — regimul liniei nu poartă TVA separat.");
-                // F13-D1 (review, defect 1): pe LIVRARE taxarea inversă nu poartă TVA —
-                // motorul ar refuza oricum la operare, dar un draft salvat cu 63 lei de
-                // TVA pe o linie TI ar minți în ReadDto (`Total` = net + TVA) până atunci.
-                // Aceeași propoziție ca în motor, aici la PUT, cât operatorul e pe formular.
-                if (valoareTva != 0 && regim == RegimTva.TaxareInversa && directieTva == DirectieTva.Colectat)
-                    throw new OperareException(
-                        "Taxarea inversă pe livrare nu poartă TVA; linia are TVA "
-                        + $"{valoareTva:N2} — lăsați valoarea goală.");
-                detaliu.ValoareTva = valoareTva;
-            }
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, l.ValoareTva);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
@@ -252,19 +175,6 @@ public static class FacturaIesireApply {
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
         Rezolva.Cere<Repartitor>(os, id, rol);
-
-    // Gardul de scară — geamănul celui din `FacturaIntrareApply`: `numeric(18,s)`
-    // ⇒ cel mult `s` zecimale și `18 − s` cifre întregi (49e).
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     // Pe FCL numărul lipsește până la operare (serie fiscală, GATE XAF D6) —
     // eticheta cade pe dată, ca la trezorerie.

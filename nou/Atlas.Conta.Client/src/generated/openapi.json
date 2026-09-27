@@ -316773,7 +316773,8 @@
           },
           "TipMaterialId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true
           },
           "ProdusId": {
             "type": "string",
@@ -320502,7 +320503,8 @@
           },
           "TipMaterialId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true
           },
           "ProdusId": {
             "type": "string",
@@ -320914,7 +320916,8 @@
           },
           "TipMaterialId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true
           },
           "ProdusId": {
             "type": "string",
@@ -322664,7 +322667,8 @@
           },
           "TipMaterialId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true
           },
           "ProdusId": {
             "type": "string",
@@ -323499,7 +323503,8 @@
           },
           "TipMaterialId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true
           },
           "ProdusId": {
             "type": "string",

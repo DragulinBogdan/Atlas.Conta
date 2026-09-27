@@ -201,6 +201,47 @@ public abstract class Document : Editabila {
     // (ex. NotaTransfer/BonConsum: preț lot × cantitate).
     public virtual void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) { }
 
+    /// <summary>Valorile liniilor din câmpurile culese, fără semnul operării; culegerea și operarea cheamă aceeași formulă (104c).</summary>
+    public virtual void CalculeazaValori(DevExpress.ExpressApp.IObjectSpace os, IEnumerable<DocumentDetaliu> linii,
+            bool pastreazaTvaCules) {
+        var cuBaza = linii.Select(l => (Linie: l, Baza: BazaLinie(os, l))).Where(x => x.Baza != null).ToList();
+        if (cuBaza.Count == 0)
+            return;
+        var tva = CuTva()
+            ? new Motor.ContextTva(Motor.TvaService.IncarcaTipuri(os, cuBaza.Select(x => x.Linie)),
+                Motor.TvaService.DirectiePentru(os, this))
+            : null;
+        foreach (var (linie, baza) in cuBaza)
+            CalculeazaLinie(linie, baza.Value, tva, pastreazaTvaCules);
+    }
+
+    /// <summary>Baza netă, nerotunjită, a liniei; null = valoarea liniei nu se calculează pe tipul ăsta.</summary>
+    public virtual decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) => null;
+
+    /// <summary>Proprietățile liniei din care se calculează baza.</summary>
+    public virtual IReadOnlySet<string> IntrariBaza() => IntrariBazaComune;
+
+    protected static readonly IReadOnlySet<string> IntrariBazaComune = new HashSet<string> {
+        nameof(DocumentDetaliu.Cantitate), nameof(DocumentDetaliu.LotId), nameof(DocumentDetaliu.Lot),
+        nameof(DocumentDetaliu.TipTvaId), nameof(DocumentDetaliu.TipTva),
+    };
+
+    protected static IReadOnlySet<string> IntrariBazaCu(params string[] proprii) =>
+        new HashSet<string>(IntrariBazaComune.Concat(proprii));
+
+    /// <summary>Liniile tipului poartă TVA calculat din bază.</summary>
+    public virtual bool CuTva() => false;
+
+    /// <summary>Culegerea e în magnitudine, iar semnul îl pune operarea (28a/46e).</summary>
+    public virtual bool SemnulEAlOperarii() => false;
+
+    protected virtual void CalculeazaLinie(DocumentDetaliu linie, decimal baza, Motor.ContextTva tva, bool pastreazaTvaCules) {
+        if (tva != null)
+            Motor.TvaService.CalculeazaValori(linie, baza, tva.Tipuri, tva.Directie, pastreazaTvaCules);
+        else
+            linie.Valoare = Scara.RotunjesteBani(baza);
+    }
+
     // Convenția 00 §5 (dimensiunea Repartitor default pe notă: debit←Predator,
     // credit←Primitor) devine default POLIMORF — ultimul nivel al coalesce-ului
     // din motor. Decont o ajustează: creditul (contul de avans 542) urmărește

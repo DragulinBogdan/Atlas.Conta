@@ -3,13 +3,10 @@ using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
-// F2-D1: mecanismul de CULEGERE al loturilor, extras din controllerul de culegere
-// al FCT (azi `DocumenteLoturiCulegereController`, F5-D9) ca serviciu pe
-// `IObjectSpace` pur — o singură logică de naștere/sincronizare/curățenie, apelată
-// din (a) controllerul XAF (adaptor subțire pe `ObjectSpace.Committing`) și
-// (b) apply-urile tierului API înainte de commit, unde nu rulează niciun
-// ViewController. Motorul doar FINALIZEAZĂ lotul la operare (26e) — nașterea lui
-// e a culegerii.
+// F2-D1: mecanismul de CULEGERE al loturilor — o singură logică de
+// naștere/sincronizare/curățenie, chemată de `CulegereDocument.InainteDeSalvare`
+// (104c). Motorul doar FINALIZEAZĂ lotul la operare (26e) — nașterea lui e a
+// culegerii.
 //
 // F5-D3: generalizat de la `FacturaIntrare`/`FacturaIntrareDetaliu` la
 // `(Document, ILinieCareNasteLot)` — recepția manuală (NIR fără factură) naște

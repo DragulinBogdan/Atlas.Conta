@@ -41,6 +41,15 @@ dată a înregistrării anterioară datei documentului — pe toate cele
 cincisprezece uși de scriere. DTO-urile de citire ale documentelor o expun
 alături de `Data`. (F27-D4)
 
+`Api/*Apply` sunt adaptorii API ai culegerii (L3). Mapează DTO-ul, cheamă
+`CulegereDocument` pe fiecare linie și `InainteDeSalvare` înaintea commit-ului.
+Nu calculează valori, loturi sau implicite și nu poartă reguli proprii;
+refuzurile culegerii vin de la gardianul de commit, ca 422. Pe liniile cu
+produs (FCT, FCL, NIR, LDI, ASM), `TipMaterialId` e opțional: lipsa lui
+înseamnă tipul produsului, iar lipsa ambelor e refuzată. `DataPrimire`
+absentă rămâne goală și înseamnă data înregistrării; DTO-ul de citire o
+arată astfel. `ValoareTva` prezentă pe linie e TVA-ul cules explicit. (104c)
+
 Închiderea și redeschiderea perioadei sunt tot comenzi, pe `api/perioade`:
 `GET api/perioade` întoarce lanțul și cere dreptul de citire pe tipul
 perioadei; `GET api/perioade/{an}/{luna}/verificare` întoarce constatările

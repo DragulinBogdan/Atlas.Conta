@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -14,20 +15,9 @@ namespace Atlas.Conta.BackOffice.Module.Api.Ldi;
 // ultima autoritate — pre-check-ul de Draft există ca mesajul să fie al
 // DOMENIULUI și ca refuzul să vină înaintea oricărei modificări de stare.
 //
-// ═══ Ce e propriu feliei: DIRECȚIA conduce culegerea ═══
-// Fiecare linie e un plus SAU un minus, iar cele două n-au aceleași câmpuri.
-// Reconcilierea aplică deci DOUĂ contracte diferite pe aceeași frunză:
-//   * MINUS — descarcă un lot EXISTENT: se aplică pinul `LotId`, iar câmpurile
-//     plusului (produs, preț de evaluare, atributele lotului) se GOLESC (F6-D3).
-//     Golirea e persistată, nu doar ignorată — lecția F5 („inert devine adevărat,
-//     nu doar afirmat"): un produs rămas pe linie din starea de plus l-ar citi
-//     validarea de coerență Tip↔Produs și ar putea face documentul permanent
-//     ne-operabil, printr-un câmp pe care UI-ul nu-l mai arată.
-//   * PLUS — NAȘTE lotul din `ProdusId`, prin `LoturiCulegereService`, în
-//     gestiunea INVENTARIATĂ (predatorul — hook-ul `GestiuneLoturiCulese`,
-//     F6-D2). `LotId` din payload se IGNORĂ: e server-owned.
-// Gardul de direcție trăiește în SERVICIU (`ILinieCareNasteLot.NasteLot` —
-// F6-D3), nu aici: culegerea golește câmpurile, serviciul curăță lotul.
+// Culegerea (golirea câmpurilor celeilalte direcții, loturi, valori) e a
+// `CulegereDocument` (104c). Minusul descarcă lotul pinuit; plusul își naște
+// lotul din `ProdusId`, iar `LotId` din payload se ignoră (F6-D5).
 public static class ListaDiferenteInventarApply {
 
     // ═══════════════════════ Scriere ═══════════════════════
@@ -61,29 +51,12 @@ public static class ListaDiferenteInventarApply {
         doc.Primitor = GasesteRepartitor(os, dto.PrimitorId, "Primitorul (comisia de inventariere)");
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<LdiLinieWriteDto>());
-
-        // Seam-ul de culegere al loturilor (F2-D1, generalizat la F5-D3): naște
-        // lotul plusului din `ProdusId` și curăță lotul propriu al liniilor care
-        // nu mai nasc (minusul — gardul `NasteLot`, F6-D3). Pinul liniei de minus
-        // rămâne NEATINS (gardul de lot străin).
-        LoturiCulegereService.Sincronizeaza(os, doc);
-
-        // Valoarea liniei, materializată ABIA ACUM: pe plus formula are nevoie de
-        // lotul pe care `Sincronizeaza` tocmai l-a născut (vezi `MaterializeazaValori`).
-        MaterializeazaValori(os, doc);
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
 
-    // Ștergerea agregatului. Pre-check de DOMENIU pe Draft (gardianul de
-    // Committing rămâne plasa), apoi curățenia loturilor NĂSCUTE LA CULEGERE ale
-    // liniilor care dispar (loturile plusurilor). Ordinea contează: `CurataOrfane`
-    // citește `GetObjectsToDelete`, deci trebuie să vadă ștergerile DEJA marcate,
-    // dar înaintea commit-ului (loturile intră în același SaveChanges). Loturile
-    // FINALIZATE de motor nu se ating niciodată — inclusiv lotul pinuit de o linie
-    // de minus, care nici măcar nu e al liniilor de aici.
-    //
+    // Pre-check de DOMENIU pe Draft (gardianul de Committing rămâne plasa).
     // FĂRĂ refuzul pe `Autogenerat` din NIR: LDI nu e niciodată artefactul unei
     // operări (nu e țintă de `PoliticaConex` și niciun tip nu-l produce ca
     // secundar), deci n-ar avea ce apăra.
@@ -96,7 +69,7 @@ public static class ListaDiferenteInventarApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
-        LoturiCulegereService.CurataOrfane(os);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -116,6 +89,7 @@ public static class ListaDiferenteInventarApply {
             // ReadDto cu `Directie` null, iar parse-ul ar refuza-o cu mesajul de
             // enum („direcția «» nu există") în locul celui acționabil de mai jos.
             ListaDiferenteInventarDetaliu detaliu;
+            CulegereDocument.Amprenta? inainte = null;
             if (l.Id is Guid linieId) {
                 if (!existente.TryGetValue(linieId, out var existenta))
                     throw new OperareException(
@@ -127,6 +101,7 @@ public static class ListaDiferenteInventarApply {
                     ?? throw new OperareException(
                         $"Linia {linieId} nu e o linie de listă de diferențe (tip vechi) — ștergeți-o din "
                         + "document și culegeți-o din nou.");
+                inainte = CulegereDocument.Urmareste(os, doc, detaliu);
                 detaliu.Directie = ApiEnum.Directie(l.Directie);
             }
             else {
@@ -138,28 +113,22 @@ public static class ListaDiferenteInventarApply {
                 detaliu.Document = doc;
                 detaliu.Directie = directie;
             }
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
-
-            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
-            // o valoare în afara coloanei ar ieși ca DbUpdateException brută din
-            // Postgres. Refuzăm cu mesaj de domeniu (ca NIR/FCT).
-            // Semnul NU se verifică aici: culegerea e pozitivă prin contract, iar
-            // cantitatea unei linii deja operate e semnată — `ValideazaOperare`
-            // cere doar „≠ 0", și nu inventăm un refuz peste el.
-            VerificaScara(l.Cantitate, Scara.Cantitate, "Cantitatea");
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
             detaliu.Cantitate = l.Cantitate;
 
-            if (detaliu.Directie == DirectieDiferenta.Minus) {
-                // Câmpurile PLUSULUI se golesc — persistat, nu doar ignorat
-                // (F6-D3). Navigația ȘI FK-ul scalar: fixup-ul EF nu are voie să
-                // reînvie referința dintr-o navigație încă încărcată.
+            if (l.ProdusId is Guid produsId) {
+                detaliu.Produs = Rezolva.Cere<Produs>(os, produsId, "Produsul");
+            }
+            else {
                 detaliu.Produs = null;
                 detaliu.ProdusId = null;
-                detaliu.PretEvaluare = null;
-                detaliu.DataExpirare = null;
-                detaliu.LotFabricatie = null;
-                // Pinul lotului descărcat — singura direcție pe care `LotId` se
-                // aplică (F6-D5).
+            }
+            detaliu.PretEvaluare = l.PretEvaluare;
+            detaliu.DataExpirare = l.DataExpirare;
+            detaliu.LotFabricatie = l.LotFabricatie;
+
+            // Pe plus lotul e server-owned; `LotId` din payload e doar ecoul citirii (F6-D5).
+            if (detaliu.Directie == DirectieDiferenta.Minus) {
                 if (l.LotId is Guid lotId) {
                     detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
                 }
@@ -167,25 +136,6 @@ public static class ListaDiferenteInventarApply {
                     detaliu.Lot = null;
                     detaliu.LotId = null;
                 }
-            }
-            else {
-                // Produsul e mecanismul lotului (F6-D2): îl consumă
-                // `LoturiCulegereService` după reconciliere.
-                if (l.ProdusId is Guid produsId) {
-                    detaliu.Produs = Rezolva.Cere<Produs>(os, produsId, "Produsul");
-                }
-                else {
-                    detaliu.Produs = null;
-                    detaliu.ProdusId = null;
-                }
-                if (l.PretEvaluare is decimal pret)
-                    VerificaScara(pret, Scara.Pret, "Prețul de evaluare");
-                detaliu.PretEvaluare = l.PretEvaluare;
-                detaliu.DataExpirare = l.DataExpirare;
-                detaliu.LotFabricatie = l.LotFabricatie;
-                // `LotId`/`Lot` NU se ating: pe plus lotul e server-owned, îl
-                // gestionează serviciul de culegere (F6-D5). Valoarea din payload
-                // e ecoul ReadDto-ului, nu o intenție a operatorului.
             }
 
             // Dimensiunea frunzei (DIM-2) + angajamentul de pe bază — pe NAVIGAȚIE,
@@ -195,6 +145,8 @@ public static class ListaDiferenteInventarApply {
             if (l.CodEconomicId == null) detaliu.CodEconomicId = null;
             detaliu.Angajament = Nomenclator<Angajament>(os, l.AngajamentId, "Angajamentul");
             if (l.AngajamentId == null) detaliu.AngajamentId = null;
+
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, null);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
@@ -202,69 +154,11 @@ public static class ListaDiferenteInventarApply {
             os.Delete(sterse);
     }
 
-    // Valoarea liniei, materializată LA CULEGERE (GATE 53c: operatorul vede
-    // efectul NET al inventarului înainte de operare) — de aceea `Valoare` nu e
-    // în WriteDto.
-    //
-    // Formula e GEAMĂNA lui `ListaDiferenteInventar.PregatesteOperare` (F6-D6),
-    // care o rescrie la operare, cu o singură deosebire deliberată: `Cantitate`
-    // NU se atinge aici. Semnarea cantității e fapta OPERĂRII (28a) — culegerea o
-    // ține pozitivă, ca UI-ul. Valoarea, în schimb, e semnată de pe acum: `Total`-ul
-    // draftului trebuie să arate efectul net (minusuri − plusuri), nu suma
-    // absolută. De aceea formula folosește `Math.Abs(Cantitate)` explicit: e
-    // idempotentă și pe un document re-cules după operare+anulare, unde linia
-    // poartă deja cantitatea semnată.
-    //
-    // Rulează DUPĂ `Sincronizeaza`: abia atunci linia de plus are lotul născut
-    // (nu contează pentru formulă — plusul se evaluează la `PretEvaluare` — dar
-    // ordinea e aceeași ca pe NIR, și minusul depinde de pinul rămas după gard).
-    //
-    // Doar FRUNZELE (`OfType`), ca în hook: liniile de tip BAZĂ ale LDI-urilor
-    // istorice/importate n-au direcție și n-au de unde lua un preț, iar
-    // rescrierea valorii lor ar fi exact clasa de defect a review-ului GATE D1 —
-    // pierdere tăcută de dată contabilă reală.
-    static void MaterializeazaValori(IObjectSpace os, ListaDiferenteInventar doc) {
-        foreach (var d in doc.Detalii.OfType<ListaDiferenteInventarDetaliu>()) {
-            // Liniile marcate spre ștergere în acest commit nu se mai ating.
-            if (os.IsObjectToDelete(d))
-                continue;
-            if (d.Directie == DirectieDiferenta.Minus) {
-                // Minusul se evaluează la prețul lotului DESCĂRCAT. Fără lot
-                // (draft incomplet — operarea îl va refuza) valoarea se golește:
-                // valoarea veche, a lotului scos de pe linie, ar minți pe ecran.
-                var lot = d.LotId is Guid lotId ? os.GetObjectByKey<Lot>(lotId) : null;
-                d.Valoare = lot != null
-                    ? Scara.RotunjesteBani(-Math.Abs(d.Cantitate) * lot.PretUnitar)
-                    : 0m;
-            }
-            else if (d.Directie == DirectieDiferenta.Plus) {
-                // Plusul se evaluează la prețul CULES (lotul nou se naște cu el;
-                // validarea de operare îl cere pozitiv — 28e).
-                d.Valoare = Scara.RotunjesteBani(Math.Abs(d.Cantitate) * (d.PretEvaluare ?? 0m));
-            }
-            // Direcția nesetată nu ajunge aici prin `Aplica` (parse-ul o refuză);
-            // dacă totuși există pe un draft vechi, valoarea ei rămâne cum e.
-        }
-    }
-
     static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)
             where T : class => Rezolva.Optional<T>(os, id, rol);
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
         Rezolva.Cere<Repartitor>(os, id, rol);
-
-    // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
-    // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;

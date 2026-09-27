@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -14,20 +15,7 @@ namespace Atlas.Conta.BackOffice.Module.Api.Dec;
 // ultima autoritate — pre-check-ul de Draft există ca mesajul să fie al
 // DOMENIULUI și ca refuzul să vină înaintea oricărei modificări de stare.
 //
-// ═══ Ce face Apply pe DEC ═══
-// Pe tierul API nu rulează NICIUN ViewController, deci seam-urile de culegere se
-// apelează EXPLICIT, în ordinea din UI (șablonul FCT/FCL):
-//   1. maparea câmpurilor culese (inclusiv postarea explicită pe linie);
-//   2. normalizarea CANTITĂȚII pro-forma 0 → 1 (F8-D2) — la culegere, nu în
-//      spate; `Decont.PregatesteOperare` o repetă idempotent la operare, pentru
-//      calea XAF/import;
-//   3. `TvaService.AplicaTipTvaImplicit` — doar pe liniile NOI fără TipTva în
-//      payload (culegerea explicită, inclusiv golirea deliberată, bate default-ul);
-//   4. `TvaService.CalculeazaLaCulegere` — `Valoare`/`ValoareTva` din
-//      `PretUnitar × Cantitate`, CONDIȚIONAT de declanșatori, apoi override-ul
-//      manual de `ValoareTva`, dacă vine.
-// FĂRĂ seam de loturi: liniile de decont nu declară `ILinieCareNasteLot` și nu
-// referă loturi — decontul justifică cheltuieli, nu mișcă stoc.
+// Culegerea (precompletări, valori) e a `CulegereDocument` (104c).
 public static class DecontApply {
 
     // ═══════════════════════ Scriere ═══════════════════════
@@ -58,7 +46,7 @@ public static class DecontApply {
         // Committing o și păzește pe tipurile cu politică de numerotare.
         DocumentApply.AplicaDate(doc, dto.Data, dto.DataInregistrare);
         doc.DataExigibilitate = dto.DataExigibilitate;
-        doc.DataPrimire = dto.DataPrimire ?? doc.DataInregistrare;
+        doc.DataPrimire = dto.DataPrimire;
         // NAVIGAȚIA, nu FK-ul scalar (ca peste tot): rezolvarea validează
         // existența cu mesaj de domeniu, iar pe o entitate urmărită navigația
         // încărcată ar rescrie la fixup un FK setat direct. TIPUL laturilor
@@ -70,18 +58,13 @@ public static class DecontApply {
         doc.DataPV = dto.DataPV;
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<DecontLinieWriteDto>());
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
 
     // Ștergerea agregatului. Pre-check de DOMENIU pe Draft (gardianul de
     // Committing rămâne plasa).
-    //
-    // FĂRĂ `LoturiCulegereService.CurataOrfane` (ca BCS, spre deosebire de
-    // NIR/FCT/LDI): liniile de decont nu nasc loturi, deci curățenia n-ar avea ce
-    // căuta — un apel ar fi inofensiv, dar mincinos.
-    //
     // FĂRĂ refuzul pe `Autogenerat` (F5/F7): decontul nu e niciodată artefactul
     // unei operări — nu e țintă de `PoliticaConex` și niciun tip nu-l produce ca
     // secundar.
@@ -94,6 +77,7 @@ public static class DecontApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -106,13 +90,9 @@ public static class DecontApply {
         // șterge.
         var existente = doc.Detalii.ToDictionary(d => d.ID);
         var pastrate = new HashSet<Guid>();
-        // Latura fiscală a tipului (F13-D1), rezolvată O SINGURĂ DATĂ pentru tot
-        // agregatul: e proprietatea documentului, nu a liniei.
-        var directieTva = TvaService.DirectiePentru(os, doc);
 
         foreach (var l in linii) {
             DecontDetaliu detaliu;
-            var noua = false;
             if (l.Id is Guid linieId) {
                 if (!existente.TryGetValue(linieId, out var existenta))
                     throw new OperareException(
@@ -128,30 +108,13 @@ public static class DecontApply {
             else {
                 detaliu = os.CreateObject<DecontDetaliu>();
                 detaliu.Document = doc;
-                noua = true;
             }
 
-            // Starea DE DINAINTEA mapării, pentru semantica recalculului de mai
-            // jos: recalculul TVA se declanșează DOAR la schimbarea bazei
-            // (Cantitate/PretUnitar) sau a TipTva — un PUT care nu le atinge NU
-            // pierde override-ul de ValoareTva (regula F2, o singură sursă).
-            var bazaVeche = noua ? 0m : detaliu.PretUnitar * detaliu.Cantitate;
-            Guid? tipTvaVechi = noua ? null : detaliu.TipTvaId;
-
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
             detaliu.Descriere = l.Descriere;
 
-            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
-            // o valoare în afara coloanei ar ieși ca DbUpdateException brută din
-            // Postgres. Refuzăm cu mesaj de domeniu (ca FCT/NIR/LDI).
-            VerificaScara(l.Cantitate, Scara.Cantitate, "Cantitatea");
-            VerificaScara(l.PretUnitar, Scara.Pret, "Prețul unitar");
-            // Cantitatea PRO-FORMA (32d, legacy BUC/1) — normalizată LA CULEGERE
-            // (F8-D2): decontul se culege pe sumă, nu pe cantitate, iar un 0 lăsat
-            // pe linie ar da `Valoare = 0` pe ecran și ar fi „reparat" abia în
-            // spate, la operare. `PregatesteOperare` face același lucru,
-            // idempotent, pentru calea XAF/import.
-            detaliu.Cantitate = l.Cantitate == 0m ? 1m : l.Cantitate;
+            detaliu.Cantitate = l.Cantitate;
             detaliu.PretUnitar = l.PretUnitar;
 
             if (l.TipTvaId is Guid tipTvaId) {
@@ -186,43 +149,7 @@ public static class DecontApply {
                 "Repartitorul creditor al liniei");
             if (l.RepartitorCreditId == null) detaliu.RepartitorCreditId = null;
 
-            // Default-ul de TipTva al tipului de document (38d/37f) — DOAR pe
-            // liniile noi al căror payload n-a dat un TipTva: pe o linie
-            // existentă, golirea lui e decizie explicită a operatorului, iar
-            // re-aplicarea default-ului ar face-o imposibilă.
-            if (noua && l.TipTvaId == null)
-                TvaService.AplicaTipTvaImplicit(os, doc, detaliu);
-
-            // Lanțul de valori, materializat LA CULEGERE (GATE 53c, prin
-            // aderarea F8-D2 la `ILinieCuPretUnitar`): operatorul confruntă bonul
-            // înainte de operare. `PregatesteOperare` îl rescrie la operare din
-            // aceeași formulă — de aceea `Valoare` nu e în WriteDto.
-            var bazaNoua = detaliu.PretUnitar * detaliu.Cantitate;
-            if (noua || bazaNoua != bazaVeche || detaliu.TipTvaId != tipTvaVechi)
-                TvaService.CalculeazaLaCulegere(os, directieTva, detaliu, bazaNoua);
-            // Override-ul operatorului, DUPĂ calcul (oglinda fluxului UI): bonul
-            // justificat bate rotunjirea noastră (regula 36a, uniformizată prin
-            // 48b pe FCT/FCL/DEC). La operare îl păstrează `pastreazaTvaCules`.
-            if (l.ValoareTva is decimal valoareTva) {
-                VerificaScara(valoareTva, Scara.Bani, "Valoarea TVA");
-                // Aceleași două refuzuri ca pe FCT (F2-D1/D7), fără variantă a
-                // treia: pe Capitalizat TVA-ul e deja în `Valoare` (l-ar număra de
-                // două ori în Total); pe Scutit/Neimpozabil/fără TipTva,
-                // `PregatesteOperare` l-ar șterge oricum la operare. Negativul nu
-                // e TVA justificat (stornarea are documentele ei).
-                if (valoareTva < 0)
-                    throw new OperareException("Valoarea TVA nu poate fi negativă.");
-                // Prin FK, nu prin navigație: `AplicaTipTvaImplicit` setează doar
-                // `TipTvaId`, iar navigația lazy nu e garantată pe toate căile (25b).
-                var regim = detaliu.TipTvaId is Guid tipTvaLinieId
-                    ? os.GetObjectByKey<TipTva>(tipTvaLinieId)?.Regim
-                    : null;
-                if (valoareTva != 0 && regim is not (RegimTva.Normal or RegimTva.TaxareInversa))
-                    throw new OperareException(
-                        "Valoarea TVA se completează manual doar pe un tip de TVA cu regim "
-                        + "Normal sau Taxare inversă — regimul liniei nu poartă TVA separat.");
-                detaliu.ValoareTva = valoareTva;
-            }
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, l.ValoareTva);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
@@ -235,19 +162,6 @@ public static class DecontApply {
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
         Rezolva.Cere<Repartitor>(os, id, rol);
-
-    // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
-    // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;
