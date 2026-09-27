@@ -1,90 +1,252 @@
 # TR-D8 — intervale TVA și avertismente, R6
 
-Data: 2026-09-26
-Stare: specificație pentru review, fără cod R6. Regula de produs este 103(h).
-Surse: invarianții II/III/IV; decizia 103; review-ul fiscal 103 din 26.09,
-§3; scenariile SC-CIT-90…94 din `scenarii/CITIRI.md`.
+Data: 2026-09-26; revizie pentru review: 2026-09-27.
+Stare: **specificație aprobată, fără cod R6**. Regulile sunt 103(h) și
+103(i). Owner-ul a aprobat M1(B) și M7 (§R6-B8) la 2026-09-27.
+Surse: invarianții II/III/IV; deciziile 090(j), 103 și 104;
+review-ul `2026-09-27-2207-claude-codex-r6-specificatie-review.md`;
+SC-CIT-90…94 din `scenarii/CITIRI.md`.
 
-## Domeniu și comportament
+## R6-B1 — intervalul și reperul
 
-TipTva primește două date opționale, cu limite incluzive. Null înseamnă
-interval deschis la acel capăt. Un interval inversat este configurație
-malformată; refuzul salvării lui nu este refuz fiscal al documentului.
-Seed-urile existente rămân cu interval deschis; nu deducem calendarul legal
-din codul ori procentul tipului și nu închidem tipurile automat.
+`TipTva.ValabilDeLa` / `ValabilPanaLa` sunt opționale, cu limite incluzive.
+Null înseamnă capăt deschis. Un interval inversat se refuză la configurare;
+ieșirea unui document din interval produce avertisment, nu refuz fiscal.
+Nu deducem calendarul din cod, denumire sau procent la runtime și nu
+inactivăm automat tipul când trece data de sfârșit.
 
-Avertismentul de interval compară `DataExigibilitate` cu intervalul curent.
-Pentru faptul scris, data și calificarea sunt cele înghețate în cub. Pentru
-draft, sunt cele pe care le-ar folosi operarea, fără scriere de postări.
-Editarea pe loc a cotei, regimului sau importului rămâne permisă. Raportul
-arată calificarea istorică versus cea curentă; nu recalculează sumele.
+Pentru faptul scris folosim exigibilitatea și calificarea înghețate în cub;
+pentru draft, `DataExigibilitate ?? Data` și valorile pe care le-ar folosi
+operarea, fără postări persistate. Intervalul comparat este cel curent.
+Editarea cotei, regimului sau importului rămâne permisă; raportul distinge
+calificarea istorică de cea curentă, fără recalcularea faptelor istorice.
 
-Serviciul comun de avertismente întoarce cod, motiv, document/linie,
-direcție, stare, tip TVA, repere și valori istorice/curente. Operarea îl
-expune în `OperareRezultat.Mesaje`, după calea existentă de informare;
-UI și XAF arată mesajele fără a transforma succesul în refuz. Raportul
-REST folosește ObjectSpace secured. Pentru operate, măsurile vin exclusiv
-din `Cub.Citiri.Fiscale`; pentru drafturi se citește explicit agregatul,
-nu se inventează fapte fiscale persistate.
+## R6-B2 — taxa salvată și avertismentul aritmetic (M1)
 
-Raportul poate fi deschis după salvarea tipului TVA și oricând ulterior,
-filtrat pe tip și perioadă. Nu scanăm toate documentele la fiecare salvare
-sau la pornirea hostului. După modificarea politicii, UI indică raportul
-de impact. Operatele cu calificare diferită se disting de drafturile care
-vor prelua politica curentă la operare. Gruparea este Emise / Primite-Vamă;
-remediul este alegerea utilizatorului, nu comanda raportului.
+**A, inclus în propunerea R6:** `TVA_TAXA_DIFERITA_DE_COTA` se emite la
+operare și în raport. Înainte de B, L3 persista taxa calculată, iar operarea
+păstra orice `ValoareTva` nenulă. Draftul salvat cu 100/19, după editarea
+tipului la 21%, devenea fapt cu bază 100, cotă 21, taxă 19. Cu B, draftul
+nemarcat preia taxa 21 la operare. Abaterea rămâne posibilă numai pentru
+taxa culeasă, adică marcată. Raportul semnalează draftul marcat înainte de
+operare. L3 oferă acțiunea explicită „Recalculează TVA la cotă”, comună
+adaptorilor XAF și API, aplicabilă numai draftului și selecției explicite.
 
-## Regularizarea avansului
+Calculul așteptat reutilizează regula existentă `Tva.PeDocument` (090j):
+document × regim × cotă, repartizare pe linii și separat pe semne, cu
+convenția de rotunjire a bazei de date. Nu introducem o a doua formulă
+`Round(bază × cotă)` pe linie. Propunem prag diagnostic inclusiv de
+**0,01 lei pe linie** față de taxa repartizată: abatere > 0,01 → avertisment.
+Calificarea folosită este cea înghețată pentru operate, cea curentă pentru
+drafturi. Schimbarea cotei din nomenclator produce separat impact
+istoric/curent; un fapt corect 100/19 cu cotă înghețată 19 nu devine
+aritmetic greșit după editarea la 21.
 
-Propunere de implementare minimă: `TipMaterial.RegularizareAvans` boolean
-și referință opțională `FacturaAvansId` pe liniile fiscale de factură,
-expusă motorului printr-un contract de linie. Câmpul nu intră pe baza
-generică `DocumentDetaliu`: este culegere specifică, conform invariantului II.
-FCT și FCL sunt suprafețele inițiale; retururile nu devin regularizări de
-avans prin simplul semn negativ. Aceeași coloană fizică TPH poate fi mapată
-pe proprietățile omoloage ale celor două frunze; aceasta trebuie probată
-în model înaintea implementării mecanismului.
+Comparația Bază/Taxă se aplică regimurilor care produc taxă: Normal și
+TaxareInversa deductibilă. `Autocolectare` nu se adună încă o dată în taxă.
+Capitalizat, scutit, neimpozabil și taxare inversă colectată nu primesc
+abatere pentru absența unei taxe separate. Diagnosticul nu reconstruiește
+TVA capitalizat dintr-o bază brută istorică. Intervalul și diferența de
+calificare se verifică în continuare pe faptele disponibile.
 
-Marca se configurează pe tip, nu concomitent pe clasă și tip, pentru a
-evita încă o regulă de prioritate. Cu marcă și referință validă, comparația
-folosește cota/exigibilitatea istorice ale avansului. Data documentului final
-și perioadele D300/D394 ale regularizării rămân cele ale documentului final;
-referința nu mută suma negativă în luna avansului și nu recalculează TVA.
+`TolerantaTaxa` deja configurată în motor rămâne gardianul existent; R6
+nu îl dezactivează și nu îi transformă refuzul în avertisment. Scenariile
+cu taxă intenționat greșită și operare reușită folosesc toleranța neconfigurată.
 
-Fără referință: `TVA_AVANS_FARA_REFERINTA`, fără presupunerea că trebuie
-folosită cota curentă. Referință nevizibilă/inexistentă/neoperată, alt
-partener/sens sau propria factură: diagnostic separat, fără divulgarea
-datelor sursei și fără alegerea automată a altei facturi. FK-ul nu permite
-ștergerea fizică a unei surse referite; mecanismul curent de ștergere logică
-nu șterge faptele istorice.
+**B, aprobat de owner 2026-09-27 (103i):** marcajul explicit
+`DocumentDetaliu.TvaCules` (bool) înlocuiește proxy-ul „nenul = cules”.
+A rămâne: marcajul decide ce taxă intră în fapt, iar avertismentul aritmetic
+semnalează taxa culeasă care diferă de cotă.
 
-**Caz de tranșat în review:** o factură de avans poate avea mai multe cote
-sau repere fiscale. Un singur `FacturaAvansId` nu identifică atunci cota
-liniei regularizate. Nu alegem `First`, cota maximă ori o potrivire după
-valoare. Varianta minimă propusă emite `TVA_AVANS_REFERINTA_AMBIGUA` și nu
-pretinde validarea cotei. Varianta completă referă linia/faptul avansului
-sau o repartizare între fapte; aceasta depășește relația cerută acum.
-R6 nu se implementează înaintea review-ului acestei delimitări.
+- **Locul: baza.** Testul bazei (II) trece pe ambele condiții. Semantica
+  „taxa liniei e dată de operator, nu calculată din cotă” e aceeași pe orice
+  document `CuTva()`: FCT, FCL, DEC, DVI, RDC, RLF. Declarația o consumă
+  direct la postare: `Fiscal.Valoarea` alege între taxa liniei și
+  repartizarea nucleului (090j). `ValoareTva`, pe care o califică, stă deja
+  pe bază. `LinieOperand` primește `TvaCules` alături de `ValoareTva`.
+- **Zero nu se schimbă.** Marcajul acoperă numai taxa nenulă. Un 0 explicit
+  pe un tip cu taxă rămâne refuzat, conform regulii C104 („0 nu e TVA
+  cules”, `CulegereDocument.Mapata`). Lipsa taxei se alege prin tipul de
+  TVA. Invariant: `TvaCules ⇒ ValoareTva ≠ 0`, cu CHECK în migrație.
+- **Tranziții, numai în L3 (`CulegereDocument`), pe toate ușile:**
+  - taxă nenulă introdusă de operator (editorul XAF sau `tvaCules` nenul
+    în `Apply`) → `true`;
+  - taxa adusă la 0 în ecran, baza mișcată (`IntrariBaza`, inclusiv
+    `TipTva`) sau acțiunea „Recalculează TVA la cotă” → `false` și
+    recalcul (`BazaSchimbata`);
+  - linie nouă → `false`;
+  - clona conexului nu copiază taxa (`MotorOperare`, clona liniilor), deci
+    rămâne `false`. Draftul de corecție copiază `ValoareTva` și `TvaCules`
+    ale liniei sursă;
+  - semnul aplicat de `PregatesteOperare` (RDC/RLF) nu schimbă marcajul.
+- **Operarea.** `CalculeazaValori(pastreazaTvaCules: true)` păstrează taxa
+  numai când `TvaCules`. Linia nemarcată primește la operare taxa
+  repartizată pe cota curentă (`Fiscal.Valoarea`: `TvaCules ? ValoareTva :
+  taxa.PerLinie`). Același criteriu înlocuiește testul `ValoareTva != 0`
+  din gardul de taxă culeasă al `MotorOperare` (F13-D1/62f).
+- **Inițializarea.** Migrația scrie `TvaCules = (ValoareTva <> 0)` pe liniile
+  documentelor Draft. Păstrează comportamentul existent al fiecărui draft,
+  fără să deducă intenția. Pe liniile operate, `false` nu are efect, fiindcă
+  faptul e înghețat. Bazele de dezvoltare se recreează conform 102b.
+- **Probe:** schimbarea cotei cu draft nemarcat și marcat (SC-CIT-91,
+  SC-CIT-91b), editarea taxei, refuzul lui 0, recalculul explicit,
+  corecția care păstrează marcajul, conexul fără marcaj, CHECK-ul refuzat
+  de bază și driftul OpenAPI (`TvaCules` în `WriteDto` și în editorul XAF,
+  doar în citire).
 
-Pentru o sursă corectată tehnic, calificarea se citește după identitatea
-fiscală și compensarea originalului/inversei, fără numărarea inversei ca
-avans distinct. Dacă nu rezultă o calificare unică activă, avertismentul
-rămâne de ambiguitate. Nu introducem consumul/restul avansului în această
-felie; validarea regularizării peste valoarea avansului cere contract separat.
+## R6-B3 — regularizarea avansului (T1, M4)
 
-## Suprafețe
+`TipMaterial.RegularizareAvans` este marca de politică, configurată numai
+pe tip. Referința propusă devine **`LinieAvansId`**, opțională pe frunzele
+FCT/FCL și expusă motorului prin contract de linie; nu intră pe baza
+generică `DocumentDetaliu`. Aceasta precizează factura sursă din 103(h)
+până la linia ei. Un singur FK autoreferențial pe tabela TPH și o singură
+coloană fizică pentru proprietățile omoloage se probează în model.
+
+Marca plus semnul negativ al bazei la **operare** înseamnă regularizare;
+marca plus semnul pozitiv înseamnă avansul inițial, verificat normal pe
+interval, fără cerință de referință. O linie nulă nu este regularizare.
+Semnul inversei de storno nu reclasifică linia. FCT și FCL au aceeași regulă;
+un retur nemarcat nu devine avans din cauza semnului sau a contului.
+
+Lookup-ul XAF oferă liniile pozitive marcate, cu fapt fiscal activ, din
+facturi operate ale aceluiași partener și sens. Referința este către alt
+document. Se verifică și prin DTO/Apply; filtrul vizual nu ține loc de
+validare. Faptele sursei se citesc exact prin `(DocumentId, LinieId)`.
+O factură de avans cu 100/19 și 100/9 se regularizează prin două linii cu
+referințe distincte. Dispare cazul de ambiguitate produs de referința numai
+la antet; nu alegem sursa după cotă, valoare sau primul rezultat.
+
+Cu sursă validă, cota/regimul se compară cu calificarea istorică a avansului,
+iar verificarea intervalului folosește reperul avansului. Regularizarea
+păstrează propriile repere D300/D394; referința nu mută suma în luna
+avansului și nu schimbă taxa culeasă. Două facturi finale pot referi parțial
+aceeași linie. Consumul/restul avansului și depășirea lui rămân în afara R6.
+
+Fără referință: `TVA_AVANS_FARA_REFERINTA`. Sursă neoperată, de alt
+partener/sens, nemarcată ori propria factură: `TVA_AVANS_REFERINTA_INVALIDA`.
+Calificare diferită de sursa validă: `TVA_AVANS_CALIFICARE_DIFERITA`.
+Acestea sunt avertismente fiscale, nu refuzuri de operare; nu recomandă
+automat cota curentă. Regulile structurale/de acces ale culegerii rămân
+valabile: FK inexistent/invizibil se tratează conform 80/104. Ștergerea
+fizică a unei linii draft referite se refuză prin `NO ACTION` /
+`ClientNoAction` → 422; nu există ștergere logică (104f/g).
+
+## R6-B4 — retururi și reduceri (M2)
+
+Pentru ajustările art. 287, reperul explicit este art. 282 alin. (9):
+exigibilitate la evenimentul ajustării, regim și cotă ale operației de bază.
+Aceasta justifică returul din septembrie la cota livrării din iulie;
+art. 291 singur nu descrie complet cazul. Regula este reflectată și de
+instrucțiunile D300 pentru ajustările la cotele vechi:
+[OPANAF 174/2026, rândul 16](https://static.anaf.ro/static/10/Anaf/legislatie/OPANAF_174_2026.pdf).
+
+R6 minim recunoaște RDC/RLF prin contractul declarației, iar reducerile
+FCT/FCL nemarcate ca avans prin baza negativă a operării. Fără proveniență
+fiscală rezolvată, emite `TVA_AJUSTARE_FARA_SURSA` **în locul** verdictului
+de interval, indiferent dacă tipul ales este azi în interval. Mesajul spune
+că nu poate valida cota originală, nu că ajustarea este greșită. Verificarea
+aritmetică R6-B2 rămâne independentă. Excepția nu se aplică inverselor.
+
+R6 nu promite că lotul RLF identifică automat factura fiscală: proveniența
+stocului poate trece prin NIR, transfer sau deschidere. Extinderea va cere
+lanț fiscal determinist, cu refuzul unei deducții arbitrare când lipsește
+sursa sau există mai multe. Pentru RDC/reduceri trebuie contractată
+referința fiscală explicită. Numele delimitării rămase în 103-r2 este
+**„Proveniența fiscală a ajustărilor RDC/RLF/reduceri”**; nu o declarăm
+livrată și nu alegem acum un câmp generic cu mai multe semantici.
+
+## R6-B5 — implicite și straturi (M3, m1)
+
+L3 rezolvă TVA implicit la `DataExigibilitate ?? Data`, inclusiv
+`PoliticaTvaImplicit.ValabilDeLa`; candidații din afara intervalului sunt
+excluși cu motiv în `Explica`. Filtrele de acces și `Activ` rămân valabile.
+Lipsa unui candidat eligibil lasă alegerea explicită, cu explicație;
+nu promitem că un tip istoric inactiv va fi propus. Schimbarea datei nu
+înlocuiește în tăcere o alegere deja culeasă.
+
+Regula intervalului și a cotei este o funcție pură, fără ObjectSpace sau
+securitate XAF. L2 o consumă pe calificarea înghețată după operare, L3 pe
+draft, proiecția pe citirile fiscale. Nucleul nu primește nomenclatoare și
+nu se modifică pentru acest diagnostic. XAF și DTO/Apply sunt adaptoare
+L3; paginile React de detaliu rămân înghețate (104d).
+
+## R6-B6 — raport, compensare și securitate (M5, M6, m2, m3)
+
+Raportul REST folosește ObjectSpace secured. Pentru operate, măsurile și
+calificarea provin exclusiv din `Cub.Citiri.Fiscale`; pentru drafturi se
+citește explicit agregatul. Perioada filtrată este a exigibilității, nu
+implicit luna D300 sau data facturii. Rândurile arată document/linie,
+Emise / Primite-Vamă, starea, codul, motivul și calificarea istorică/actuală.
+Valorile sursei avansului apar numai dacă rândul și membrii sunt accesibili;
+sursa invizibilă și cea inexistentă sunt indistincte pentru cititor.
+
+L2 nu verifică securitatea sursei în contextul său de sistem. Mesajele
+operării rămân `COD: text`, cu identificarea liniei proprii și formulare
+minimală, fără număr, dată, cotă sau valori ale sursei. Afișarea mesajelor
+nu transformă succesul comenzii în refuz. Raportul calculează diagnosticul
+din datele permise; nu expune un rezultat îmbogățit în context non-secured.
+
+Inversele se recunosc prin `InversaDinId`, nu se verifică independent și
+nu produc un al doilea avertisment. Perechea original/inversă este
+„compensat”, ascunsă implicit; istoricul se cere explicit. Compensarea se
+rezolvă înaintea filtrării pe perioada originalului, inclusiv când inversa
+este într-o altă lună. Raportul arată starea curentă, nu pretinde un sold
+istoric la sfârșitul lunii selectate. Egalitatea sumelor unor fapte fără
+legătură de inversare nu închide un avertisment.
+
+O linie de avans stornată sau înlocuită prin corecție tehnică produce
+`TVA_AVANS_SURSA_COMPENSATA` pe regularizarea care încă o referă. Corecția
+creează linii noi; nu redirecționăm FK-ul automat. Remediul este alegerea
+explicită a sursei corecte în draft sau prin calea de corecție a operatului.
+
+Raportul se deschide după editarea tipului sau la cerere, filtrat pe tip și
+perioadă; nu scanăm toate documentele la salvare sau la pornirea hostului.
+Editarea calificării poate lăsa faptele noi fără mapare SAF-T, deoarece
+cheia include calificarea. Raportul indică lipsa mapării potrivite prin
+diagnosticul 103(f), fără să copieze automat maparea cotei vechi. Istoricul
+mapat corect rămâne astfel. Remediile aparțin utilizatorului.
+
+## R6-B7 — suprafețe și probe
 
 | Zonă | Modificare propusă |
 |---|---|
-| Entități și EF | TipTva: interval; TipMaterial: marcă; liniile FCT/FCL: referință opțională; migrație și validarea intervalului |
-| Motor | Serviciu comun de avertismente pe fapte/draft; informările operării, fără refuz fiscal și fără rescriere |
-| Raport | Proiecție secured, document/linie și direcție; calificare istorică/actuală, motiv și remediu orientativ |
-| API | REST raport de impact; DTO/Apply și lookup-ul referinței FCT/FCL; rezultatul existent Mesaje |
-| UI/XAF | Editor interval/marcă, selecție avans, avertismente după operare și acces la raport după editarea tipului |
-| Contracte generate | Metadata/OpenAPI/types; UI nu calculează avertismente sau TVA |
-| Probe | SC-CIT-90…94; integral ambele profiluri, HTTP secured, browser și regenerare fără drift |
+| Entități și EF | Interval TipTva, marcă TipMaterial, referință pe liniile FCT/FCL; migrație canonică și probe TPH/FK |
+| L1/L2 | Context fiscal și funcție pură de diagnostic; Mesaje, fără rescrieri sau refuz fiscal nou |
+| L3 | Implicite pe exigibilitate, recalcul explicit, validarea referinței; XAF și WriteDto/Apply |
+| Raport | Proiecție secured, compensare, perioadă de exigibilitate, impact și avertismente distincte |
+| UI | XAF pentru culegere; raport de citire în React sau XAF; fără calcul fiscal în TS |
+| Contracte generate | Metadata/OpenAPI/types, fără drift |
+| Probe | SC-CIT-90…94; integral pe ambele profiluri; HTTP secured, browser, model TPH și FK |
 
-Nu se schimbă Nucleul pentru diagnosticarea intervalului: acesta primește
-în continuare calificarea rezolvată, fără dependență de nomenclatoare.
 La implementare se actualizează `politici-si-fiscalitate` și `limite-curente`
-cu acoperirea reală. Până atunci, aceste documente nu descriu R6 ca livrat.
+cu acoperirea reală; acum nu descriem R6 ca livrat. Probe numerice pentru
+rotunjire, taxare inversă și capitalizat completează scenariul SC-CIT-91.
+
+## R6-B8 — alegerile owner-ului înaintea codului
+
+Ambele alegeri sunt tranșate de owner la 2026-09-27 și înscrise în 103(i).
+
+**M1(B): aprobat.** Marcajul `TvaCules` intră în R6 alături de A, cu
+semantica din R6-B2.
+
+**M7: aprobat.** Intervalele se scriu explicit în seed și se aliniază numai
+pe rândurile `DinSeed`. Rândurile utilizatorului și regula `RefuzSeed` se
+păstrează. Tabelul de mai jos este datele de implementat:
+
+| Profil / tipuri existente | De la | Până la |
+|---|---|---|
+| Privat: N19, TI19; Bugetar: CAP19 | null | 2025-07-31 |
+| Privat: N21, N11, TI21, NED21, IMP21, IMP11, IMPTI21, IMPTI11 | 2025-08-01 | null |
+| Bugetar: CAP21, CAP11 | 2025-08-01 | null |
+| Privat: N9 | null | 2026-07-31 |
+| Privat: SDD, SFD, NIM, IMP; Bugetar: CAP0 | null | null |
+
+Calendarul cotei standard/reduse și tranziția locuințelor se fundamentează
+pe [Legea 141/2025, art. II și III](https://static.anaf.ro/static/10/Anaf/legislatie/L_141_2025.pdf).
+Limita N9 nu verifică eligibilitatea unei locuințe și nu autorizează orice
+operație la 9% până la acea dată. Capătul inferior null al cotelor istorice
+nu pretinde validarea întregii istorii legislative. Mecanismul rămâne o
+verificare a intervalului configurat, nu un motor al tuturor condițiilor TVA.
+
+Codul R6 poate începe: alegerile sunt înscrise în contract și în 103(i).

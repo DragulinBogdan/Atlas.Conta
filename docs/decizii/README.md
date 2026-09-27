@@ -120,5 +120,5 @@
 
 | 101 | [Împerecherea cere efect verificabil pe partidă; disponibil și candidați din cub](101-imperechere-cu-efect-pe-partida.md) | 2026-09-25 | activă, restrânge S-D13; (d) depășit de 102 |
 | 102 | [Fără compatibilitate cu bazele de dezvoltare până la prima producție; codul de compatibilitate se scoate, bazele se recreează](102-fara-compatibilitate-cu-bazele-de-dezvoltare.md) | 2026-09-25 | activă, amendează 092(b)(c), 096(d), 100(b), 101(d), D8-B3 |
-| 103 | [Fapte fiscale istorice, perioade D300/D394 distincte și autocolectare](103-fapte-fiscale-istorice-si-perioade-distincte.md) | 2026-09-25 | activă, amendează 088(g/h) și DVI-B3; F1=A, F2=A, F3=A; (h) intervale și avertismente, specificație pentru review |
+| 103 | [Fapte fiscale istorice, perioade D300/D394 distincte și autocolectare](103-fapte-fiscale-istorice-si-perioade-distincte.md) | 2026-09-25 | activă, amendează 088(g/h) și DVI-B3; F1=A, F2=A, F3=A; (h) intervale și avertismente; (i) marcaj TvaCules și intervale în seed (owner, 2026-09-27); specificația R6 aprobată, fără cod |
 | 104 | [Straturi izolate L0–L4, culegerea în XAF și React pe citiri, entități proprii fără ștergere amânată](104-straturi-izolate-entitati-proprii.md) | 2026-09-26 | activă, amendează 042(b)(e), 043 și 083(a)(j); depășește 60a/F13-D2 privind ștergerea amânată |
