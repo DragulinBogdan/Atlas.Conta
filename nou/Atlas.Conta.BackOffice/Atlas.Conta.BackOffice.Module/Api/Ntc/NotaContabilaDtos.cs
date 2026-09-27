@@ -13,8 +13,7 @@ namespace Atlas.Conta.BackOffice.Module.Api.Ntc;
 //     `NotaContabila.ValideazaOperare`); repartitorii per latură rămân opționali,
 //     iar fără ei cade default-ul polimorf al header-ului (32c).
 //   * `Valoare` E CULEASĂ DIRECT (F19-D8): nu există lanț de valori — nici
-//     cantitate, nici preț, nici TVA calculat — deci nu există nici
-//     `MaterializeazaValori`. NEGATIVUL E PERMIS (note storno, importul 1C le
+//     cantitate, nici preț, nici TVA calculat. NEGATIVUL E PERMIS (note storno, importul 1C le
 //     aduce cu minus); ZERO e refuzat de TIP, la operare, iar felia NU duplică
 //     refuzul (o a doua sursă a aceleiași reguli e exact ce evită 42a).
 //   * FĂRĂ TVA, FĂRĂ LOT, FĂRĂ CANTITATE (F19-D7): NTC n-are `PoliticaTva` în

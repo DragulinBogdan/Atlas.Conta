@@ -1,6 +1,68 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-22.** [Index](README.md)
+**Actualizat: 2026-09-27.** [Index](README.md)
+
+TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
+evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
+raportul/snapshot-ul/citirile operaționale ale partidelor folosesc
+intrările comune ale cubului. C102 (102) scoate codul de compatibilitate cu
+bazele de dezvoltare: hosturile nu scanează istoria la pornire, iar
+invarianții cubului rulează în ModelCheck (`INV-CUB`, `Cub.Citiri.Invarianti`).
+
+`INV-CUB` (`tools/ModelCheck/AcoperireInvarianti.cs`) rulează în
+`ScenaDocumente.Ruleaza` după scenă și înaintea purjei ei, pe faptele
+produse, inclusiv stornourile. Fiecare ramură fără probă proprie are un
+mutant într-o tranzacție anulată, rulat o dată per profil pe prima scenă cu
+faptele potrivite: `DESCHIDERE-EGALA` (registrul istoric egal cu deschiderea
+cubului trece), `DESCHIDERE`, `PARTIDE` (partidă fără partener), `POLITICA`
+(totalul de decontare), `IMO-FISA`, `IMO-CAUZA`, `IMO-REGISTRU`. Ramurile
+acoperirii registru ↔ cub, echilibrului și provenienței au probele SC-CIT-23,
+SC-CIT-34 și SC-CIT-10. La final, profilul cere cel puțin o scenă verificată și,
+pe integrală, toate ramurile ucise, iar purja nu lasă postări. La prima
+rulare, proba a găsit trei totaluri de stins care nu corespundeau cubului:
+taxarea inversă (SC-FCT-10), contul explicit fără partide (SC-DEC-10) și
+factura cu avans (SC-NIR-30/avans). Totalul se scrie acum din cub (102).
+Integrala după corectură: **3.142 bugetar / 4.141 privat OK**, zero FAIL,
+build fără avertismente, `run-verificari/20260925-163947-708/`.
+
+Validarea curentă (C102 cu review-ul Codex R1/R2): **3.146 bugetar / 4.145
+privat OK**, zero FAIL, exit 0, build fără avertismente,
+`run-verificari/20260925-174625-732/`. La închiderea C102: 3.083/4.079,
+`run-verificari/c102/final-bugetar.log` și `final-privat.log`; cifra scăzuse
+față de 3.107/4.103 pentru că probele compatibilității scoase au ieșit
+(SC-CIT-08/24, SC-NTC-20, avertismentele seed-ului, backfill-urile).
+Clientul compilează; metadata/OpenAPI/types sunt stabile la regenerare.
+Decizia 101 este implementată; 101-r1, redeschisă de review-ul advers, e închisă în C102 (D-2/D-3, SC-CIT-66…68). Anterior: SC-CIT-49…65,
+HTTP raport/panou cu securitate pe rând și membru peste închidere/reconstrucție,
+comandă de împerechere și refuz atomic, browser raport și candidat 100/40/60.
+Logurile `trd8-101-http-report2`, `trd8-101-http-payment2`,
+`trd8-101-client-final`, `trd8-101-drift-final` sunt în `run-verificari/`.
+Decizia 100 este implementată: SC-CIT-41…48 și lanțurile comerciale sunt
+verzi pe ambele profiluri. SC-CIT-46/48 trec și prin HTTP și prin acțiunea
+XAF, cu verificarea numerică a cubului; fixture-urile sunt curățate.
+`nou/tools/ProbeHttp/partide-cub.py` oferă proba HTTP și opțiunea
+`--prin-xaf`, care așteaptă cel mult cinci minute acțiunea din browser.
+HTTP SC-CIT-25 a trecut de două ori, inclusiv după închidere și reconstrucție;
+raportul de stoc este verificat prin HTTP și browser (3/10 pe contul 371).
+Matricea generală `refuzuri.ps1` își creează singură subiecții (104-r5);
+plafonul candidaților DVI se probează în ModelCheck.
+Catalogul: [CITIRI.md](../nucleu/scenarii/CITIRI.md).
+Review-ul propriu și limitele: [tr-d8-review-codex.md](../nucleu/tr-d8-review-codex.md).
+Proba HTTP durabilă `nou/tools/ProbeHttp/citiri-cub.py` verifică accesul
+pe rând și membru înainte/după închidere și reconstrucție, pe host privat
+cu baza izolată `.CodexBCS`. Tokenurile rămân în memorie; fixture-ul și
+rolurile temporare se curăță în finally.
+
+TR-D8 nu este închis: restul SAF-T și verificările transversale rămân
+în contract; cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
+Nucleu: **180/180**, zero omise, exit 0:
+`run-verificari/20260924-124628-047/rezultat.json`.
+Comenzile, încercările intermediare și limitele sunt în
+[DESCHIDERE.md](../nucleu/scenarii/DESCHIDERE.md), NIR în
+[NIR.md](../nucleu/scenarii/NIR.md); lanțul Folosinta în
+[LDI.md](../nucleu/scenarii/LDI.md); review-ul ASM în
+[ASM.md](../nucleu/scenarii/ASM.md). S-r10 este reparată: purja SAF-T
+șterge întâi regulile `DinSeed` atașate tipurilor temporare ale scenei.
 
 ## Organizarea sursei
 
@@ -9,7 +71,7 @@
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module` | Model, motor, DTO/Apply, proiecții, ANAF, SAF-T, seed și migrări (42d) |
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.WebApi` | Contracte HTTP, securizarea comenzilor, OData și integrarea hostului (42f) |
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Blazor.Server` | Host XAF, administrare și actualizarea explicită a bazei (23a) |
-| `nou/Atlas.Conta.Client` | React, formulare, raportare și contractele generate (43e) |
+| `nou/Atlas.Conta.Client` | React: citiri, proiecții, consolele comenzilor, editorii de politici și nomenclatoare și contractele generate; paginile de document sunt înghețate (43e, 104d) |
 | `nou/Atlas.Conta.Nucleu` | Nucleul pur al cubului de postări: tipuri, conservare, unitate, FIFO, evaluare, repartizare, TVA, storno, motor, gestiunile virtuale — fără niciun pachet; consumat DOAR de `Module` (`Declaratii/`), referit direct și de ModelCheck ca unealtă (90b, 90l) |
 | `nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.Teste` | Invarianții nucleului ca proprietăți pe generatoare proprii și testul de arhitectură (90l) |
 | `nou/tools/ModelCheck` | Verificarea modelului și scenarii de domeniu pe PostgreSQL (23) |
@@ -35,24 +97,66 @@ EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
 automată a schemei prin XAF este dezactivată. Module este comun celor două
 hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
 
-Lanțul de migrații a fost resetat la 2026-09-18: singura migrație este
-`20260918113542_InitialCreate`, generată din modelul TPH. Migrațiile de
-dinainte sunt istorie în git, nu în lanț; bazele create pe lanțul vechi nu
-se actualizează, se recreează. Lanțul nou crește prin migrații, ca înainte.
+Lanțul de migrații a fost comprimat la 2026-09-25 (C102, 102e): baza inițială
+este `20260925110419_InitialCreate`, generată din model, plus SQL-ul
+brut pe care modelul nu-l declară (`Postare` partiționată pe `Spatiu` cu
+cheia `(Spatiu, ID)`, FK-urile și indecșii pe partiții, constrângerile
+`CK_Postare_*`, funcția `cub_partida_id`). Migrațiile nu transformă date.
+Proba A/B: `pg_dump --schema-only` pe baza din lanțul vechi complet și pe
+baza din migrația comprimată are aceleași 593 de instrucțiuni. După
+normalizarea ordinii coloanelor și a tokenurilor `pg_dump`, diferă numai 10
+valori `DEFAULT` lăsate de `AddColumn` pe 5 tabele (`UrmarestePartide`,
+`Pozitie`, cele șase câmpuri din `PartideDeschise`, `TolerantaTaxa`,
+`PosteazaInCub`), pe care modelul nu le declară. Migrațiile de dinainte
+sunt istorie în git; bazele create pe lanțul vechi nu se actualizează, se
+recreează (102b). Lanțul crește prin migrații, ca înainte.
+`20260925151359_SnapshotStocCub` înlocuiește cheia snapshot-ului de stoc
+cu lot/cont/produs/gestiune și păstrează data deschiderii. Nu convertește
+snapshot-uri vechi. Pe o tabelă goală migrația se aplică direct; datele
+incompatibile cer recrearea bazei conform 102(b).
+Citirile cumulate au o probă pe două conexiuni și un contor de instrucțiuni
+SQL (SC-CIT-77). Scrierea globală prin ObjectSpace secured este refuzată
+înaintea accesului la date (SC-CIT-78). Accesul real pe rând și membru este
+verificat separat prin `nou/tools/ProbeHttp/stoc-snapshot-cub.py --baza
+NUMELE_BAZEI_IZOLATE` (SC-CIT-74), cu seed privat și utilizatori.
+Dovezile rulărilor și inventarul bazelor sunt în review și în
+`docs/decizii/istoric-plan-de-lucru.md`.
+
 Comanda `dotnet ef` primește mereu `--context BackOfficeEFCoreDbContext` și
 se rulează fără `--no-build`. (23a, 89g)
 
-Bazele de dezvoltare se recreează astfel:
+Bazele de dezvoltare se recreează, nu se repară: o bază care nu corespunde
+codului se șterge (`DROP DATABASE`) și se reface prin comenzi (102b). Rețeta,
+cu `CS = Host=localhost;Port=5444;Username=postgres;Password=postgres`:
 
 | Bază | Recrearea |
 |---|---|
-| `Atlas.Conta.BackOffice` (bugetar) | `dotnet ef database update`, apoi seed prin Blazor `--updateDatabase --forceUpdate --silent`, cu `ProfilContabil` în mediu |
-| `Atlas.Conta.ModelCheck.Privat` | o recreează ModelCheck |
-| `Atlas.Conta.Import1C.Flax` | Import1C `--recreeaza` |
-| `Atlas.Conta.Import1C.Flax.Api` | clonă a bazei de import după importul integral |
-| `Atlas.Conta.BackOffice.Privat` | clonă a bazei de import, plus updater prin Blazor (rolurile și utilizatorii `Cititor`/`Configurator` pentru `refuzuri.ps1`), cu lanțul perioadelor redeschis integral: probele HTTP presupun zero închideri |
+| `Atlas.Conta.BackOffice` (bugetar; și baza ModelCheck bugetar) | din `Module`: `dotnet ef database update --context BackOfficeEFCoreDbContext --connection "$CS;Database=Atlas.Conta.BackOffice"`; apoi din `Blazor.Server`: `dotnet run --no-launch-profile -- --updateDatabase --forceUpdate --silent` cu `ProfilContabil=Bugetar` și `ConnectionStrings__ConnectionString=EFCoreProvider=Postgres;$CS;Database=Atlas.Conta.BackOffice` în mediu |
+| `Atlas.Conta.ModelCheck.Privat` | o recreează ModelCheck (`MigrateAsync` + seed) |
+| `Atlas.Conta.BackOffice.Privat` (baza hosturilor) | `dotnet ef database update … --connection "$CS;Database=Atlas.Conta.BackOffice.Privat"`, apoi updater-ul Blazor cu `appsettings.json` (Privat): seed plus utilizatorii `Admin`/`User`/`Cititor`/`Configurator`, fără documente |
+| `Atlas.Conta.Import1C.Flax` și clonele ei | nu se recreează implicit; Import1C `--recreeaza` la nevoie (091-r4) |
 
-(89g)
+Recrearea din 2026-09-25 (C102) a șters toate bazele Atlas.Conta de pe
+5444 (clonele de import, review, perf `Nucleu.Fizica.x1/x10`, CodexBCS,
+ClaudeRev) și a refăcut cele trei de mai sus. Pe baza Privat din seed,
+`partide-cub.py` își creează singur fixture-ul. (89g, 102b)
+Comenzile de document au proba HTTP proprie, cu fixture creat și șters de ea:
+`nou/tools/ProbeHttp/comenzi-coaja.py` (404/403/422 pe cele cinci comenzi,
+ușa altui tip, fără scriere la refuz). (104b)
+Matricea generală `refuzuri.ps1` rulează pe baza Privat din seed cu fixture
+propriu pe prima lună deschisă a lanțului: un furnizor NeinregistratRo, o FCT
+operată cu plata conex operată și împerecherea lor, un ITV draft pe aceeași
+lună și un angajat, desfăcute în ordine inversă în `finally`. Rămân auditul
+și cele două `RefuzSeed` ale rândurilor de politică de probă (104i, chei fixe:
+a doua rulare nu adaugă nimic). Plafonul de 500 al candidaților DVI e probat
+în ModelCheck, nu pe HTTP. Măsurat 2026-09-27 pe `c104-straturi`: 294/294
+PASS de două ori consecutiv, baza identică înainte și după. (104-r5)
+Desfacerea facturii se înscrie imediat după crearea ei și redescoperă din
+ID-ul FCT plata conex și împerecherile; după `finally`, matricea verifică pe
+API absența identităților fixture-ului (cod 3 la rezidu). `-CadeDupa <punct>`
+injectează o cădere după o mutație a fixture-ului, iar
+`refuzuri-caderi.ps1` le parcurge pe toate și cere cod 2 și zero rezidu la
+fiecare. (104-r5, review C104 R2)
 
 Cele trei ierarhii (`Document`, `DocumentDetaliu`, `Repartitor`) sunt TPH:
 câte o tabelă pe rădăcină, discriminatorul `ClrType` cu valorile implicite
@@ -74,23 +178,31 @@ trece printr-un singur helper (`ContaSeeder.Aliniaza`): caută rândul pe cheia
 indexului unic, îl creează cu timbru dacă lipsește, îl aliniază la cod dacă
 poartă timbrul seed-ului (câmpurile scalare ne-cheie, fiecare corecție
 tipărită `tip / cheie / câmp: vechi → nou`), îl lasă neatins dacă e manual și
-îl raportează dacă e șters logic. Un seed care ar schimba o cheie aruncă.
+nu îl recreează dacă există un `RefuzSeed` pe cheia lui. Un seed care ar
+schimba o cheie aruncă.
 `Seed` întoarce `RaportSeed` cu contoare per tabel (create / corectate /
 manuale / șterse); a doua trecere pe o bază aliniată nu creează și nu
 corectează nimic. Câmpurile de stare de runtime (`PoliticaNumerotare.
 UrmatorulNumar`) și cele deținute de alt pas al seed-ului (`TipTva.Activ`,
 `ContImplicitId` derivat) nu intră în aliniere. Rândurile nomenclatoarelor de
 nucleu fără proveniență (`RandD300`, `Judet`, `UnitateMasura`) se rescriu
-autoritar; reseed-ul nu suprascrie datele societății. (69b, 73a, 83a–d, 84a)
+autoritar; reseed-ul nu suprascrie datele societății. (69b, 73a, 83a–d, 84a, 104i)
 
 Profilurile nu se amestecă în aceeași bază. `SetareProfil` și rotunjirea sunt
 stabile după inițializare. (36c, 52a)
 
 Unicitatea politicilor și a codurilor de nomenclator este în schemă, prin
-indexuri unice filtrate pe `GCRecord = 0`: un rând șters logic nu este dublu,
-iar cheia lui se poate reface. Ancora `TipDocument.ClrType` este unică tot
+indexuri unice nefiltrate: ștergerea e fizică, deci cheia unui rând șters se
+poate reface. Ancora `TipDocument.ClrType` este unică tot
 așa (`IX_TipuriDocument_ClrType`); discriminatorul documentelor nu are FK
-spre ea, iar corespondența clase concrete ↔ seed o probează ModelCheck. (81c, 89a)
+spre ea, iar corespondența clase concrete ↔ seed o probează ModelCheck. (81c, 89a, 104f)
+
+Curățenia de scenă din ModelCheck (`Purja`) șterge fizic, prin SQL, și
+emulează cascada pe FK-urile obligatorii: rândurile care nu pot exista fără
+părinte pleacă înaintea lui. Schema nu mai cascadează în afara compozițiilor
+(104g). Probele care cer o etichetă de nomenclator ascunsă (SC-CIT-29/40/80)
+șterg rândul într-o tranzacție rulată înapoi, cu FK-urile suspendate
+(`AscundereControlata`). (F13-D2, 104g)
 
 Absența FK-ului pentru `Lot.LinieIntrareId` este intenționată pentru ciclul de
 inserare; integritatea este verificată de mecanismele domeniului. (26e)
@@ -123,13 +235,83 @@ dotnet run --project nou/tools/ModelCheck --no-build -- --scenarii BCS,FCT priva
 catalogului care probează tipurile cerute, pe baza profilului (migrare +
 seed pe privat, migrațiile aplicate pe bugetar), fără metadata, fără
 probele de model și fără celelalte scene: toate tipurile de pe cub în
-~15 s pe privat. Codurile sunt ale catalogului (`docs/nucleu/scenarii/`,
+rulate selectiv pe privat; durata depinde de grupul ales. Codurile sunt ale catalogului (`docs/nucleu/scenarii/`,
 inclusiv `DESCHIDERE`, `IMO`, `X`); un cod necunoscut sau un tip fără nicio
 scenă pe profilul cerut iese cu exit 2, nu verde. Scenele și tipurile lor
 stau în `ScenelePeTip` (`Program.cs`), aceeași listă pe care suita integrală
 o rulează în ordine; un scenariu nou intră acolo cu tipul lui, altfel filtrul
 nu-l vede. Suita integrală pe ambele profiluri rămâne gate-ul de commit.
 (091 (e), 091-r1)
+
+### Rulare reproductibilă (`scripts/verifica.ps1`)
+
+Din rădăcină, cu PowerShell 7 și .NET 10:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip BCS -Profil Ambele -Sufix .CodexBCS -PregatesteBaze
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Nucleu
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Integral -Profil Ambele -Sufix .CodexBCS
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Infrastructura
+```
+
+`-PregatesteBaze` (Python cu `psycopg`) clonează bazele locale de profil
+`Atlas.Conta.BackOffice` și `Atlas.Conta.ModelCheck.Privat` cu sufixul dat
+(`CREATE DATABASE … TEMPLATE`, localhost:5444, postgres/postgres): sursele
+nu se modifică și trebuie să nu aibă conexiuni active; o clonă existentă se
+păstrează, nu se reface. Clona poartă schema și seed-ul sursei: bugetarul
+cere migrațiile aplicate, privatul migrează și aliniază seed-ul prin
+ModelCheck. Baza bugetară absentă sau cu migrații neaplicate dă **exit 2**,
+fără rezumat.
+
+Scriptul compilează, rulează profilurile succesiv (bugetar, apoi privat) și
+se oprește la primul exit nenul; excepția unei scene selectate e raportată
+cu stack trace și exit 1. Un mutex refuză două invocări simultane pe aceeași
+sesiune Windows (nu coordonează hosturi sau comenzi lansate manual; regula
+unei singure rulări grele rămâne). Hostul Blazor trebuie oprit dacă folosește
+același `bin`. Artefactele sunt în `run-verificari/<timestamp>/` (ignorat de
+git): log per etapă și `rezultat.json` cu commit, fișierele modificate,
+profil, bazele exacte, SHA-256 al DLL-ului ModelCheck, argumente, durate și
+coduri de ieșire — cu modificări locale, manifestul (nu commit-ul) identifică
+sursa testată.
+
+Pe Windows, wrapperul activează local procesului modul fără dialoguri de
+eroare critică sau crash (`SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX`),
+moștenit de procesele copil, și restaurează modul anterior în `finally`.
+Nu schimbă configurarea globală Windows. Mecanismul este documentat de
+[Microsoft — SetErrorMode](https://learn.microsoft.com/en-us/windows/win32/api/errhandlingapi/nf-errhandlingapi-seterrormode).
+O excepție .NET necapturată păstrează stack trace-ul în log și codul nenul
+al etapei; wrapperul oprește seria cu exit 1, fără a aștepta închiderea
+unui dialog. Protecția se aplică rulărilor prin acest wrapper, nu comenzilor
+lansate separat.
+
+`-Suita Infrastructura` probează acest comportament fără acces la baze:
+compilează o consolă izolată, verifică moștenirea modului, provoacă o
+excepție necapturată și apoi pornește cu succes un al doilea proces.
+Doar procesele acestei probe au termen de 30 s; wrapperul nu introduce un
+timeout general pentru ModelCheck. Validat la 2026-09-23:
+`run-verificari/20260923-224135-701/rezultat.json`, exit 0; căderea produce
+`0xe0434352` / `-532462766`, stack trace prezent, procesul următor exit 0,
+fără intervenție. Compilarea probei: zero avertismente și erori.
+
+Refuzurile se probează pe două uși: codul stabil (`CoduriRefuz`, linia
+`COD: mesaj`) pe ușa declarației (`Materializare.Refuzuri`); pe ușa entității
+(`ComenziDocument.Valideaza` / `Opereaza`) validarea veche a clasei și gardienii
+registrelor refuză cu text ÎNAINTEA declarantului, deci acolo se asertează
+familia mesajului și absența efectelor, iar un refuz al registrului se
+marchează ca atare în fișierul tipului (până la TR-D8). Cataloagele
+[BCS, FCT, PLT/INC, BTR și FCL/DSC](../nucleu/scenarii/README.md) au primele
+loturi independente verificate (2026-09-23), cu fixture prin documentele
+reale și comenzile `ComenziDocument`; probele `NUC-*` rămân regresie. Sumele directe ale scenariului
+peste cub nu înlocuiesc verificarea cititorilor comuni și a `Sold` la TR-D8.
+
+Cataloagele [NTC](../nucleu/scenarii/NTC.md) și [ITV](../nucleu/scenarii/ITV.md)
+au probe independente în `ScenariiNtc` și `ScenariiItv`, cu recensământ
+reproductibil în `recensamant-ntc-itv.sql`. NTC este activat pe ambele
+profiluri, ITV numai privat; bugetarul probează `ProfilInert`. Decizia 092
+extinde cheia partidei la document × cont × partener; SC-NTC-13 verifică
+separarea, SC-NTC-20 compatibilitatea cu identitatea istorică. SC-NTC-22
+verifică dependența FIFO între data nominalizării și data inversării ei.
+Rezultatele rulărilor sunt consemnate în fișierele tipurilor.
 
 Verificarea de drift regenerează contractele și refuză diferențele față de
 fișierele versionate. O schimbare intenționată de contract se regenerează și
@@ -143,13 +325,14 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | DTO, atribute, expunere API | Build WebApi, regenerare și verificarea contractelor; probe HTTP pentru comportamentul afectat (56, 80i) |
 | Autorizare | Probe HTTP cu rolurile reale; o probă pe context nesecurizat nu demonstrează securitatea (80i, 81j) |
 | Formular sau interacțiune | Build client și verificarea fluxului în browser (66) |
+| Culegerea (L3: precompletare, formula valorii, normalizare, regulile culegerii) | ModelCheck pe ambele profiluri: `104c-S1` (adaptorii `Api/` și `Controllers/` nu cheamă serviciile culegerii, scanare pe sursă), `104c-E1` (aceeași linie pe calea XAF și pe calea API), `104c-E2`, `104c-V1…V2` (refuzurile gardianului). Probele de scară și de rol trec prin ușa cu gardian (`OsCuGardian`). Fluxul XAF se verifică în browser: creare, produs, cantitate și preț, salvare (104c) |
 | Mod de acces al unui ListView XAF, proprietate nouă afișată în liste | ModelCheck (`D85-M1`, `D85-M2`, `D85-R1…R3`) și deschiderea listei în browser pe baza de import: sort, filtru, grupare, detaliu din listă, culegere pe document nou (85h) |
-| Import sau schimbare amplă de postare/evaluare | Import și reconciliere față de baza de referință (54) |
+| Schimbare de postare/evaluare | Catalogul cu așteptări independente, apoi ModelCheck integral pe ambele profiluri (091); importul și reconcilierea externă aparțin feliei de migrare |
 | Tip derivat nou, proprietate nouă pe frunză, FK spre o frunză | ModelCheck pe ambele profiluri (`F28-*`); după un import, `--dump-integritate-tph` rulat pe baza de import (89e, 89h) |
 | Nucleul pur (`Atlas.Conta.Nucleu`) | `dotnet test` pe soluția nucleului: testul de arhitectură și invarianții 1–6 ca proprietăți (≥ 500 de cazuri fiecare); ModelCheck doar dacă e atins `Module` (90l) |
-| Declarant, operand, `Fapte.Operand`, oracolul pilotului | ModelCheck pe AMBELE profiluri: probele `NUC-*` (egalitate exactă cu registrele normalizate, conservare, determinism, `≤ 16` interogări per operand) plus `Metadata clientului e la zi` (o proprietate nouă pe `Document` intră în metadata clientului — de aceea `Declarant()` e metodă) (TR-D6b) |
+| Declarant, operand, `Fapte.Operand`, oracolul pilotului | Scenariile independente ale tipului, apoi ModelCheck pe AMBELE profiluri; `NUC-*` păstrează comparația normalizată ca regresie, conservarea, determinismul și `≤ 16` interogări per operand. `Metadata clientului e la zi` verifică proprietățile noi pe `Document` (TR-D6b, amendat de 091) |
 | Entitățile sau migrațiile cubului (`Postare`, `Tranzactie`) | ModelCheck pe ambele profiluri: probele `STR-SCHEMA-*` (partiționarea LIST, cheia `(Spatiu, ID)`, setul ÎNCHIS de FK-uri per partiție, indexii, absența timbrelor XAF); migrația se scrie în SQL, nu se lasă generată (S-D2, S-r4) |
-| Contractul laturilor (`Document.Laturi()`, T-D13) | ModelCheck pe ambele profiluri, ultima scenă (`VerificaLaturi`): `STR-LATURI-CONTRACT` (fiecare `TipDocument` din seed → clasa → contract cu părți nevide; metoda e abstractă, deci și compilatorul o cere), `STR-LATURI-REFUZ` (latura de partea greșită refuzată pe ușa declarației și pe ușa entității cu ACEEAȘI linie `COD: mesaj`; calitatea lipsă numită; un tip fără declarant refuzat pe ușa entității), `STR-LATURA` (PLT inversată = doar `PREDATOR_NEPOTRIVIT`, înaintea declarantului). Probele de laturi ale tipurilor asertează CODUL, nu textul vechi. Pe date reale: recensământul laturilor pe clona Flax (contract T-D13) și gate-urile pașilor 1–2 fără refuz nou |
+| Contractul laturilor (`Document.Laturi()`, T-D13) | ModelCheck pe ambele profiluri, ultima scenă (`VerificaLaturi`): `STR-LATURI-CONTRACT` (fiecare `TipDocument` din seed → clasa → contract cu părți nevide; metoda e abstractă, deci și compilatorul o cere), `STR-LATURI-REFUZ` (latura de partea greșită refuzată pe ușa declarației și pe ușa entității cu ACEEAȘI linie `COD: mesaj`; calitatea lipsă numită; un tip fără declarant refuzat pe ușa entității), `STR-LATURA` (PLT inversată = doar `PREDATOR_NEPOTRIVIT`, înaintea declarantului). Probele de laturi ale tipurilor asertează CODUL, nu textul vechi. Pe date reale: recensământul laturilor pe clona Flax (contract T-D13); după 091 clona e sursă de recensământ, nu gate |
 | Materializare, declarant al unui tip migrat, împerecherea ca `Transfer` | ModelCheck pe ambele profiluri: probele `STR-*` pe scenele BCS, Trezorerie și FCT — operare, roundtrip, storno, anulare, refuz, configurație, poziție, transfer, latură, corecție, reconciliere — cu comutarea locală a regimului (`ProbeCub.Migrat`/`Nemigrat`/`CuToleranta`, cu restaurare) și purja rândurilor de cub ale documentelor scenei (S-D8) |
 | Tip trecut pe `PosteazaInCub` | fișierul tipului din `docs/nucleu/scenarii/` complet și verde pe ambele profiluri (în lucru: `--scenarii <TIP>`; la commit: suita integrală): ciclul 1–8 (operare, linii multiple, storno în perioadă și peste graniță, anulare, corecție în perioadă închisă, stingere, citiri) + cazurile-limită aplicabile + lanțurile `SC-X-*` care îl ating; așteptările scrise de mână din regula contabilă, nu din registre sau oracol (091 (a)–(c)). `--declaratie-pe-baza` și `--reconciliere-cub` rămân unelte de diagnostic pentru migrare, nu gate (S-D9 amendat de 091) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
@@ -177,8 +360,8 @@ Nucleul pur se probează prin `Atlas.Conta.Nucleu.Teste` (xunit.v3,
 sămânță fixă per caz, cazul picat se reproduce izolat), cu perturbări pe o
 singură postare și cu contra-proba regulii vechi acolo unde regula nouă
 diferă declarat (evaluarea pe raportul curent contra prețului înghețat).
-Invariantul 7 (baseline-ul Import1C) nu e testabil în nucleu și rămâne
-proba supremă a lui TR-D7/D10 (N-r1). Reflecția probează că niciun record
+Invariantul 7 al designului (baseline-ul Import1C) și N-r1 sunt depășite de
+091; proba supremă este catalogul de scenarii. Reflecția probează că niciun record
 public n-are setter ne-`init`; egalitatea `Tranzactie`/`Declaratie`/
 `Contract` e structurală. (N-D12)
 
@@ -200,7 +383,7 @@ vechi); redirectarea `*>` din PowerShell scrie log-ul UTF-16 — rețeta
 `run-nucleu/tr-d6b/pas4-final/run.sh` (bash) scrie UTF-8 și numără
 `OK`/`FAIL`. (TR-D6b)
 
-Gate-ul de reconciliere al cubului are două unelte, ambele în ModelCheck și
+Diagnosticul reconcilierii cubului are două unelte, ambele în ModelCheck și
 ambele ieșind înainte de bootstrap: (S-D9)
 
 - `ModelCheck --declaratie-pe-baza <baza> <COD…> [--raport <director>]` —
@@ -233,10 +416,21 @@ ambele ieșind înainte de bootstrap: (S-D9)
   cât timp un tip nemigrat mai postează pe conturi cu `RolTert`, iar nota se
   tipărește.
 
-Rețeta probei supreme e `run-nucleu/tr-d7a/import/run.ps1`: Import1C integral
+Exit-ul `--reconciliere-cub` depinde numai de (a)–(g). Diagnosticul valoric
+pe lot × gestiune × cont din ASM-B7 rămâne raport; identifică și numără
+separat mișcările din afara domeniului Magazie/Marfuri/Folosinta, fără să excludă
+postările cubului cu istoric lipsă. ASM mixt este probat prin
+`NUC-ASM-RECONCILIERE`: Operare ASM este exclusă nominal din (a), numai în
+regimul dual (D8-B4 aprobat de owner, T-r15). (h) raportează exact D 40/C 40
+față de zero în registre, 1 document și 4 postări Operare. (a)–(g) rămân
+fără diferențe, exit 0; raportul declară excepția. Verificările independente
+pe cub rămân obligatorii; egalitatea completă cub–registre nu este afirmată.
+
+Rețeta istorică a verificării importului este `run-nucleu/tr-d7a/import/run.ps1`: Import1C integral
 (`--recreeaza --cititori --inchide-lunile`), apoi `--reclasifica`,
 `--reconciliere-cub`, `--dump-integritate-tph` și `diff-sortat.py`, care compară
-raportul de reconciliere cu baseline-ul pe conținut sortat.
+raportul de reconciliere cu baseline-ul pe conținut sortat. După 091 aceasta
+aparține migrării; nu se execută pentru validarea unei felii de motor.
 
 Capcane măsurate ale acestor probe: o SINGURĂ rulare ModelCheck o dată — două
 concurente crapă în purje și lasă reziduu (`TipuriMaterial` cu codul
@@ -336,8 +530,8 @@ cifre. Verificat 2026-09-17 pe anul 2025: 12/12 luni închise, 0 constatări per
 lună, raport identic cu `reconciliere-20260914-164035.txt`, `Reconstruieste`
 0 diferențe pe contabil, stoc și partide. (F27-D1, F27-D3)
 
-Proba supremă rămâne aceeași după trecerea pe TPH: importul integral cu
-`--recreeaza --cititori --inchide-lunile` trebuie să dea un raport IDENTIC pe
+Verificarea istorică a trecerii pe TPH a cerut ca importul integral cu
+`--recreeaza --cititori --inchide-lunile` să dea un raport IDENTIC pe
 conținut sortat cu baseline-ul curent
 (`nou/tools/Import1C/reconciliere-20260917-121343.txt`), iar
 `Reconstruieste` 0 diferențe. După ea se rulează pe baza de import SQL-ul

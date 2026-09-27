@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -13,20 +14,7 @@ namespace Atlas.Conta.BackOffice.Module.Api.Fct;
 // apelantului (endpoint-ul de scriere) și COMIT. Gardianul de Committing e
 // ultima autoritate — pre-check-ul de Draft există ca mesajul să fie al
 // DOMENIULUI și ca refuzul să vină înaintea oricărei modificări de stare.
-//
-// ═══ Ce face Apply pe FCT în plus față de BTR (F2-D1) ═══
-// Pe tierul API nu rulează NICIUN ViewController: nici loturile, nici default-ul
-// de TipTva, nici recalculul de valori. Cele trei seam-uri de culegere se apelează
-// EXPLICIT, în ordinea din UI:
-//   1. maparea câmpurilor culese;
-//   2. `TvaService.AplicaTipTvaImplicit` — doar pe liniile NOI fără TipTva în
-//      payload (culegerea explicită, inclusiv golirea deliberată, bate default-ul);
-//   3. `TvaService.CalculeazaLaCulegere` — scrie `Valoare`/`ValoareTva` din
-//      `PretUnitar × Cantitate` (GATE 53c: „server-owned" înseamnă că DTO-ul nu le
-//      dă, nu că rămân 0), apoi override-ul manual de `ValoareTva`, dacă vine;
-//   4. `LoturiCulegereService.Sincronizeaza` — nașterea/sincronizarea/curățenia
-//      loturilor liniilor de stoc, ÎNAINTE de commit (echivalentul lui
-//      `DocumenteLoturiCulegereController.OnCommitting`).
+// Culegerea (precompletări, valori, loturi) e a `CulegereDocument` (104c).
 public static class FacturaIntrareApply {
 
     // ═══════════════════════ Scriere ═══════════════════════
@@ -66,12 +54,12 @@ public static class FacturaIntrareApply {
         doc.Predator = GasesteRepartitor(os, dto.PredatorId, "Predatorul (furnizorul)");
         doc.Primitor = GasesteRepartitor(os, dto.PrimitorId, "Primitorul (gestiunea)");
         doc.DataScadenta = dto.DataScadenta;
+        doc.DataPrimire = dto.DataPrimire;
+        doc.DataExigibilitate = dto.DataExigibilitate;
         doc.NumarPV = dto.NumarPV;
         doc.DataPV = dto.DataPV;
         doc.CodCpv = dto.CodCpv;
         doc.Valuta = dto.Valuta;
-        if (dto.Curs != null)
-            VerificaScara(dto.Curs.Value, Scara.Pret, "Cursul valutar");
         doc.Curs = dto.Curs;
 
         // Plata automată (F3-D5, ridicarea excluderii F2): parametrii culeși ai
@@ -94,21 +82,12 @@ public static class FacturaIntrareApply {
         doc.PlataTipInstrument = plataTipInstrument;
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<FacturaIntrareLinieWriteDto>());
-
-        // Seam-ul de culegere al loturilor (F2-D1) — o singură logică, aceeași ca
-        // în UI; pe calea asta e apelat explicit, fiindcă nu există ViewController.
-        LoturiCulegereService.Sincronizeaza(os, doc);
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
 
-    // Ștergerea agregatului. Pre-check de DOMENIU pe Draft (gardianul de
-    // Committing rămâne plasa), apoi curățenia loturilor NĂSCUTE LA CULEGERE ale
-    // liniilor care dispar — echivalentul `DocumenteLoturiCuratenieController`.
-    // Ordinea contează: `CurataOrfane` citește `GetObjectsToDelete`, deci trebuie
-    // să vadă ștergerile DEJA marcate, dar înaintea commit-ului (loturile intră
-    // în același SaveChanges). Loturile FINALIZATE de motor nu se ating niciodată.
+    // Pre-check de DOMENIU pe Draft (gardianul de Committing rămâne plasa).
     public static void Sterge(IObjectSpace os, Guid id) {
         var doc = Rezolva.Cere<FacturaIntrare>(os, id, "Factura de intrare");
         if (doc.Stare != StareDocument.Draft)
@@ -118,7 +97,7 @@ public static class FacturaIntrareApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
-        LoturiCulegereService.CurataOrfane(os);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -132,13 +111,9 @@ public static class FacturaIntrareApply {
         // agregatului, deci reconcilierea o curăță în loc s-o lase invizibilă.
         var existente = doc.Detalii.ToDictionary(d => d.ID);
         var pastrate = new HashSet<Guid>();
-        // Latura fiscală a tipului (F13-D1), rezolvată O SINGURĂ DATĂ pentru tot
-        // agregatul: e proprietatea documentului, nu a liniei.
-        var directieTva = TvaService.DirectiePentru(os, doc);
 
         foreach (var l in linii) {
             FacturaIntrareDetaliu detaliu;
-            var noua = false;
             if (l.Id is Guid linieId) {
                 if (!existente.TryGetValue(linieId, out var existenta))
                     throw new OperareException(
@@ -154,17 +129,10 @@ public static class FacturaIntrareApply {
             else {
                 detaliu = os.CreateObject<FacturaIntrareDetaliu>();
                 detaliu.Document = doc;
-                noua = true;
             }
 
-            // Starea DE DINAINTEA mapării, pentru semantica recalculului de mai
-            // jos: în UI recalculul TVA se declanșează DOAR la schimbarea bazei
-            // (Cantitate/PretUnitar) sau a TipTva (`RecalculValoriCulegere`) —
-            // un Save care nu le atinge NU pierde override-ul de ValoareTva.
-            var bazaVeche = noua ? 0m : detaliu.PretUnitar * detaliu.Cantitate;
-            Guid? tipTvaVechi = noua ? null : detaliu.TipTvaId;
-
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
 
             // Produsul e mecanismul lotului (GATE XAF D1): îl consumă
             // `LoturiCulegereService` după reconciliere. `LotId` NU se atinge —
@@ -177,11 +145,6 @@ public static class FacturaIntrareApply {
                 detaliu.ProdusId = null;
             }
 
-            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
-            // o valoare în afara coloanei ar ieși ca DbUpdateException brută din
-            // Postgres. Refuzăm cu mesaj de domeniu (ca BTR).
-            VerificaScara(l.Cantitate, Scara.Cantitate, "Cantitatea");
-            VerificaScara(l.PretUnitar, Scara.Pret, "Prețul unitar");
             detaliu.Cantitate = l.Cantitate;
             detaliu.PretUnitar = l.PretUnitar;
             detaliu.CodCpv = l.CodCpv;
@@ -215,49 +178,7 @@ public static class FacturaIntrareApply {
             detaliu.Proiect = Nomenclator<Proiect>(os, l.ProiectId, "Proiectul");
             if (l.ProiectId == null) detaliu.ProiectId = null;
 
-            // Default-ul de TipTva al tipului de document (datoria P1 / 38d) —
-            // DOAR pe liniile noi al căror payload n-a dat un TipTva: pe o linie
-            // existentă, golirea lui e decizie explicită a operatorului, iar
-            // re-aplicarea default-ului ar face-o imposibilă.
-            if (noua && l.TipTvaId == null)
-                TvaService.AplicaTipTvaImplicit(os, doc, detaliu);
-
-            // Lanțul de valori, materializat LA CULEGERE (GATE 53c): operatorul
-            // confruntă hârtia înainte de operare. `PregatesteOperare` îl rescrie
-            // la operare din aceeași formulă — de aceea `Valoare` nu e în WriteDto.
-            // Recalculul e CONDIȚIONAT de declanșatorii din UI (baza sau TipTva
-            // schimbate) — altfel un PUT care editează doar header-ul ar pierde
-            // tăcut override-ul de ValoareTva salvat anterior (clientul nu poate
-            // distinge „valoarea citită e override" de „e calculată", deci nu o
-            // retrimite — reziduul semnalat la pasul 4 al feliei).
-            var bazaNoua = detaliu.PretUnitar * detaliu.Cantitate;
-            if (noua || bazaNoua != bazaVeche || detaliu.TipTvaId != tipTvaVechi)
-                TvaService.CalculeazaLaCulegere(os, directieTva, detaliu, bazaNoua);
-            // Override-ul operatorului, DUPĂ calcul (oglinda fluxului UI): factura
-            // furnizorului bate rotunjirea noastră (regula 36a). La operare îl
-            // păstrează `pastreazaTvaCules: true` — pe regimurile care postează TVA
-            // separat; regimul Capitalizat îl normalizează la 0 (TVA-ul e în preț).
-            if (l.ValoareTva is decimal valoareTva) {
-                VerificaScara(valoareTva, Scara.Bani, "Valoarea TVA");
-                // Review advers F2-D1/D7: override-ul are sens DOAR pe regimurile
-                // care postează TVA separat (Normal/TaxareInversă). Pe Capitalizat
-                // TVA-ul e deja în `Valoare` (l-ar număra de două ori în Total);
-                // pe Scutit/Neimpozabil/fără TipTva, `PregatesteOperare` l-ar
-                // șterge oricum la operare — acceptarea lui ar minți operatorul.
-                // Negativul nu e TVA de intrare (stornarea are documentele ei).
-                if (valoareTva < 0)
-                    throw new OperareException("Valoarea TVA nu poate fi negativă.");
-                // Prin FK, nu prin navigație: `AplicaTipTvaImplicit` setează doar
-                // `TipTvaId`, iar navigația lazy nu e garantată pe toate căile (25b).
-                var regim = detaliu.TipTvaId is Guid tipTvaLinieId
-                    ? os.GetObjectByKey<TipTva>(tipTvaLinieId)?.Regim
-                    : null;
-                if (valoareTva != 0 && regim is not (RegimTva.Normal or RegimTva.TaxareInversa))
-                    throw new OperareException(
-                        "Valoarea TVA se completează manual doar pe un tip de TVA cu regim "
-                        + "Normal sau Taxare inversă — regimul liniei nu poartă TVA separat.");
-                detaliu.ValoareTva = valoareTva;
-            }
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, l.ValoareTva);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
@@ -270,19 +191,6 @@ public static class FacturaIntrareApply {
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
         Rezolva.Cere<Repartitor>(os, id, rol);
-
-    // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
-    // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;
@@ -304,7 +212,7 @@ public static class FacturaIntrareApply {
                 // `as` nu filtrează pe tip: null pe alt repartitor fiindcă `CodFiscal` e doar al lui Partener (F28-J, 89).
                 PredatorCodFiscal = (d.Predator as Partener).CodFiscal,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
-                d.DataScadenta, d.NumarPV, d.DataPV, d.CodCpv, d.Valuta, d.Curs,
+                d.DataPrimire, d.DataExigibilitate, d.DataScadenta, d.NumarPV, d.DataPV, d.CodCpv, d.Valuta, d.Curs,
                 // Parametrii plății automate (F3-D5).
                 d.GenereazaPlata, d.PlataContPropriuId,
                 PlataContPropriuDenumire = d.PlataContPropriu.Denumire,
@@ -367,6 +275,7 @@ public static class FacturaIntrareApply {
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PredatorCodFiscal = h.PredatorCodFiscal,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
+            DataPrimire = h.DataPrimire ?? h.DataInregistrare, DataExigibilitate = h.DataExigibilitate,
             DataScadenta = h.DataScadenta, NumarPV = h.NumarPV, DataPV = h.DataPV,
             CodCpv = h.CodCpv, Valuta = h.Valuta, Curs = h.Curs,
             GenereazaPlata = h.GenereazaPlata,

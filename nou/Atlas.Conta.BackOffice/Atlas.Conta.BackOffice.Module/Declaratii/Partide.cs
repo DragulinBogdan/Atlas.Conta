@@ -7,14 +7,10 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// <summary>Partida documentului-sursă pe un cont, cu soldul ei citit.</summary>
 readonly record struct PartidaSursa(N.Unitate Unitate, N.Sold Sold);
 
-/// <summary>
-/// Partidele terților, comune oricărui declarant cu terț: se deschid DOAR pe
-/// conturile cu <c>RolTert</c> (B-D8 pct. 10) și se nominalizează pe partida
-/// documentului-sursă, în limita a ce ține EA (TR-D2a).
-/// </summary>
+/// <summary>Deschiderea și nominalizarea partidelor pe conturile cu urmărire activă.</summary>
 static class Partide {
-    public static bool ARolTert(Operand operand, Guid cont) =>
-        operand.Conturi.GetValueOrDefault(cont)?.RolTert is not (null or RolTertCont.Niciunul);
+    public static bool Urmareste(Operand operand, Guid cont) =>
+        operand.Conturi.GetValueOrDefault(cont)?.UrmarestePartide == true;
 
     public static N.Unitate Proprie(Operand operand, Guid cont, Guid partener) =>
         N.Unitate.DeschidePartida(
@@ -33,18 +29,15 @@ static class Partide {
             if (alContului == cont)
                 net = sold;
         return new PartidaSursa(
-            N.Unitate.DeschidePartida(cont, partener, sursaId,
+            Cub.IdentitatiPartide.Gaseste(operand.UnitatiSursa, sursaId, cont, partener)
+            ?? N.Unitate.DeschidePartida(cont, partener, sursaId,
                 operand.DataInregistrareSursa ?? operand.Document.DataInregistrare),
             net >= 0m ? new N.Sold(net, 0m, 0m, 0m) : new N.Sold(0m, -net, 0m, 0m));
     }
 
-    /// <summary>
-    /// 090h: UNA per cont de terț, deschisă de document; pe conturile fără
-    /// <c>RolTert</c> (profilul bugetar) postarea rămâne fără unitate și fără partener.
-    /// </summary>
     public static void Numeste(Operand operand, Guid cont, Guid partener, Guid linie,
             Dictionary<Guid, N.Unitate> partide, List<N.Decizie> decizii) {
-        if (partide.ContainsKey(cont) || !ARolTert(operand, cont))
+        if (partide.ContainsKey(cont) || !Urmareste(operand, cont))
             return;
         var partida = Proprie(operand, cont, partener);
         partide.Add(cont, partida);

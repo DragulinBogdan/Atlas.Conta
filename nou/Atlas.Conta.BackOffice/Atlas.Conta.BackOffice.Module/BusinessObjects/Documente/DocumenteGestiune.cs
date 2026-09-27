@@ -14,47 +14,59 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // loturile pe propriile linii (CreeazaLot). Recepția CONTEAZĂ aici (3xx = 401,
 // închiderea întrebării 00 §13.1) — factura postează doar liniile non-stoc.
 [TipDetaliu(typeof(NirDetaliu))]
-public class NIR : Document {
+public class NIR : Document, IVerificabilLaCommit {
+    [DevExpress.ExpressApp.Model.ModelDefault("AllowEdit", "False")]
+    [VisibleInListView(false), VisibleInDetailView(false)]
+    [XafDisplayName("Sursa recepției")]
+    public virtual Guid? SursaReceptieiId { get; set; }
+    [DevExpress.ExpressApp.Model.ModelDefault("AllowEdit", "False")]
+    [VisibleInListView(false), VisibleInDetailView(false)]
+    [XafDisplayName("Tranzacția recepției-sursă")]
+    public virtual Guid? TranzactieReceptieSursaId { get; set; }
+    public override IReadOnlySet<CauzaDiferentei> CauzeDiferentaPermise() =>
+        Enum.GetValues<CauzaDiferentei>().ToHashSet();
+    public override void PreiaSursaConexa(Document sursa) {
+        if (sursa.AcoperaReceptia(this)) SursaReceptieiId = sursa.ID;
+    }
+    public override void PreiaLinieConexa(DocumentDetaliu sursa, DocumentDetaliu tinta) {
+        if (SursaReceptieiId != null && tinta is NirDetaliu linie)
+            linie.LinieSursaReceptieId = sursa.ID;
+    }
+    public void Verifica(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) =>
+        Cub.ReceptiiConexe.VerificaEditare(os, this, erori);
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantNir.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Externa, Declaratii.Latura.Gestiune);
 
-    // Rolul de STINS (F19-D16, review F4): recepția CONTEAZĂ pe NIR (26a) —
-    // `3xx = 401` se postează aici, nu pe factură —, deci NIR-ul lasă un sold
-    // CREDITOR pe contul furnizorului, iar furnizorul e chiar PREDATORUL lui.
-    // Se stinge debitând: plata, sau jumătatea de debit a unei note de
-    // compensare. Nu declară `CapacitateStingere`: NIR-ul nu stinge nimic.
-    //
-    // Declarația e IEȘIREA din fundătura găsită de review: fără ea, un NIR fără
-    // factură (partenerul e pe latură, deci intră în `peLaturi`) în fața unei
-    // note `401 = 4111` pe acel furnizor primea refuzul de ambiguitate — corect
-    // ca principiu, dar nerezolvabil pe NICIO cale de apelant. Ieșirea e
-    // MODELAREA (tipul își declară natura soldului), nu un câmp `Sens` în DTO
-    // care ar lăsa apelantul să aleagă arbitrar jumătatea.
+    // 098/099: în regimul dual, recepția integrală rămâne în registre.
     public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
         SensStingere.Datorie;
 
-    // Cele două cazuri ale recepției, cu o formulă fiecare (F5-D6):
-    //  (a) lot STRĂIN (născut pe altă linie — cazul conex): valoarea vine din
-    //      prețul finalizat al lotului, deci recepția parțială (operatorul scade
-    //      cantitatea primită) se reevaluează corect;
-    //  (b) lot PROPRIU (recepție manuală, fără factură): valoarea se
-    //      materializează din prețul CULES pe linie — altfel un NIR manual s-ar
-    //      opera cu Valoare 0, iar prețul lotului (Valoare/Cantitate, 26e) ar
-    //      ieși tot 0. Prețul trăiește pe frunză (`NirDetaliu`); liniile de tip
-    //      BAZĂ ale NIR-urilor istorice/importate n-au de unde-l lua și rămân cu
-    //      valoarea lor (importul a scris-o deja).
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        foreach (var d in Detalii.Where(d => d.LotId != null)) {
-            var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
-            if (lot.LinieIntrareId != d.ID)
-                d.Valoare = Scara.RotunjesteBani(d.Cantitate * lot.PretUnitar);
-            else if (d is NirDetaliu nd)
-                d.Valoare = Scara.RotunjesteBani(nd.PretUnitar * d.Cantitate);
-        }
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override void CalculeazaValori(DevExpress.ExpressApp.IObjectSpace os, IEnumerable<DocumentDetaliu> linii,
+            bool pastreazaTvaCules) {
+        base.CalculeazaValori(os, linii, pastreazaTvaCules);
+        Cub.ReceptiiConexe.MaterializeazaValori(os, this);
+    }
+
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(NirDetaliu.PretUnitar));
+
+    // Linia pe lot străin (clona conexă) poartă prețul lotului; linia proprie, prețul cules.
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) {
+        var lot = linie.LotId is Guid lotId ? os.GetObjectByKey<Lot>(lotId) : null;
+        if (lot != null && lot.LinieIntrareId != linie.ID)
+            return linie.Cantitate * lot.PretUnitar;
+        return linie is NirDetaliu d ? d.PretUnitar * d.Cantitate : null;
     }
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
+        if (Cub.ReceptiiConexe.EsteAcoperita(os, this)
+                && !Motor.MotorOperare.GasesteTipDocument(os, this).PosteazaInCub)
+            erori.Add($"{Declaratii.CoduriRefuz.NirRegimInactiv}: Recepția sursei există în cub; activați postarea NIR înaintea operării diferenței.");
         // Natura Clasei per Tip prin PROIECȚIE (disciplina 25b): nicio navigație
         // lazy atinsă în enumerare.
         var idsTip = Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
@@ -94,7 +106,7 @@ public class NIR : Document {
                     erori.Add("Prețul unitar al liniei de recepție trebuie să fie pozitiv "
                         + "(lotul se naște cu acest preț).");
             }
-            if (d.Cantitate <= 0)
+            if (d.Cantitate < 0 || d.Cantitate == 0 && !Cub.ReceptiiConexe.EsteLinieAcoperita(os, this, d))
                 erori.Add("Cantitatea recepționată trebuie să fie pozitivă.");
         }
 
@@ -133,7 +145,18 @@ public class NIR : Document {
 // clona din FCT aduce lotul deja născut pe linia facturii (lot STRĂIN), iar
 // valoarea vine din prețul lui; recepția conexă nu-și alege marfa, o
 // moștenește (F5-D4).
-public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot {
+public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot, ILinieCuPretUnitar, IVerificabilLaCommit {
+    [DevExpress.ExpressApp.Model.ModelDefault("AllowEdit", "False")]
+    [VisibleInListView(false), VisibleInDetailView(false)]
+    [XafDisplayName("Linia recepției-sursă")]
+    public virtual Guid? LinieSursaReceptieId { get; set; }
+    public void Verifica(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) =>
+        Cub.ReceptiiConexe.VerificaEditare(os, this, erori);
+    [XafDisplayName("Cauza diferenței")]
+    public virtual CauzaDiferentei? CauzaDiferentei { get; set; }
+    public virtual Guid? PartenerDiferentaId { get; set; }
+    [XafDisplayName("Imputat"), EditorAlias(EditorAliases.LookupPropertyEditor)]
+    public virtual Repartitor PartenerDiferenta { get; set; }
     // F5-D1/F5-D2: identitatea liniei de stoc pe recepția manuală — oglinda lui
     // FacturaIntrareDetaliu.ProdusId (GATE XAF D1). Nullable în schemă (aceeași
     // frunză poartă și liniile clonei conexe, unde produsul e al lotului);
@@ -203,12 +226,11 @@ public class BonConsum : Document {
 
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantBonConsum.Instanta;
 
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        foreach (var d in Detalii.Where(d => d.LotId != null)) {
-            var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
-            d.Valoare = Scara.RotunjesteBani(d.Cantitate * lot.PretUnitar);
-        }
-    }
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        Lot.ValoareLaPretulLotului(os, linie);
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
@@ -238,12 +260,11 @@ public class NotaTransfer : Document, IDocumentCuPV {
     // de TVA — prețul lotului e deja valoarea de registru per unitate). Linia
     // care golește lotul în sursă ia tot soldul valoric rămas (D18-D2, în
     // motor) — valoarea e comună ambelor laturi, deci restul se MUTĂ pe destinație.
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        foreach (var d in Detalii.Where(d => d.LotId != null)) {
-            var lot = os.GetObjectByKey<Lot>(d.LotId.Value);
-            d.Valoare = Scara.RotunjesteBani(d.Cantitate * lot.PretUnitar);
-        }
-    }
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        Lot.ValoareLaPretulLotului(os, linie);
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);

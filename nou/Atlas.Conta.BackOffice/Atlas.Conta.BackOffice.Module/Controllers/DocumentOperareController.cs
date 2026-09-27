@@ -11,18 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Atlas.Conta.BackOffice.Module.Controllers;
 
-// Fața UI a motorului (decizia 14): acțiunile doar deleagă către motor; toată
-// logica (gardieni, registre, tranzacție) stă acolo.
-//
-// Spike pasul 5 (D5, decizia 42b): calea e ACUM identică cu cea a tierului Web
-// API — „secvență, nu cuib". Faza 1 = culegerea, comisă în ObjectSpace-ul
-// SECURED al View-ului (cu validarea de Save și cu seam-urile de Committing ale
-// culegerii). Faza 2 = comanda, prin `OperareApi`, într-un ObjectSpace
-// NON-SECURED propriu, aruncat la final: acolo motorul își ține tranzacția
-// integral, iar gardianul generic (`GardianEditare`) nu e activ — el refuză
-// exact ce face motorul (registre, tranziții de `Stare`). Puntea între cele două
-// faze e ID-ul documentului, în ambele sensuri; rezultatul se întoarce ca DATE
-// (`OperareRezultat`), nu ca entitate din OS-ul comenzii.
+// Adaptorul XAF al cojii comenzii (104b): culegerea se comite în OS-ul View-ului, comanda pleacă prin ID (42b).
 public class DocumentOperareController : ObjectViewController<DetailView, Document> {
     readonly SimpleAction opereaza;
     readonly SimpleAction anuleaza;
@@ -34,7 +23,7 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
             Caption = "Operează", ConfirmationMessage = "Operați documentul? Se vor scrie registrele.",
         };
         opereaza.Execute += (s, e) => {
-            var rezultat = Executa(OperareApi.Opereaza);
+            var rezultat = Executa(c => c.Opereaza(ViewCurrentObject.ID));
             // Fluxul legacy (00 §6): documentul conex generat se deschide imediat
             // în editare — utilizatorul îl verifică și îl operează separat.
             // Prin ID (D5): entitatea trăia în OS-ul comenzii, care s-a închis.
@@ -74,7 +63,7 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
             ConfirmationMessage = "Anulați operarea? Rândurile de registru ale documentului se șterg (corecție directă).",
         };
         anuleaza.Execute += (s, e) => {
-            Executa(OperareApi.AnuleazaOperarea);
+            Executa(c => c.AnuleazaOperarea(ViewCurrentObject.ID));
             Informeaza(new List<string> { "Operarea anulată." });
         };
 
@@ -95,7 +84,7 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
         storneaza.Execute += (s, e) => {
             var aleasa = e.ParameterCurrentValue is DateTime dt && dt != default ? dt : DateTime.Today;
             var data = DateOnly.FromDateTime(aleasa);
-            Executa((os, id) => OperareApi.Storneaza(os, id, data));
+            Executa(c => c.Storneaza(ViewCurrentObject.ID, data));
             Informeaza(new List<string> { $"Stornat la {data:dd.MM.yyyy}." });
         };
 
@@ -126,38 +115,11 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
     void Corecteaza_Execute(object sender, PopupWindowShowActionExecuteEventArgs e) {
         var parametri = (CorectieParametri)e.PopupWindowViewCurrentObject;
         var data = DateOnly.FromDateTime(parametri.Data == default ? DateTime.Today : parametri.Data);
-        var documentId = ViewCurrentObject.ID;
-
-        // Gate-ul comenzii, în forma de pe `POST api/documente/{id}/corecteaza`:
-        // Write pe INSTANȚĂ (ca la operare/storno) plus Create ȘI Write pe TIPUL
-        // CONCRET — comanda produce un document nou.
-        var tip = MotorOperare.ClasaReala(ViewCurrentObject);
-        if (Application.Security is not IRequestSecurityStrategy cerinte
-                || !IsGrantedExtensions.CanWrite(cerinte, ObjectSpace, (object)ViewCurrentObject))
-            throw new UserFriendlyException(
-                "Nu aveți dreptul de scriere necesar pentru comenzile de operare pe acest document.");
-        if (!cerinte.CanCreate(tip, ObjectSpace) || !cerinte.CanWrite(tip, ObjectSpace))
-            throw new UserFriendlyException(Refuzuri.FaraDrept(OperatieAcces.Creare, tip));
-
-        // Culegerea se comite ÎNAINTE de comandă (aceeași secvență ca `Executa`).
-        ObjectSpace.CommitChanges();
-
-        CorectieRezultat rezultat;
-        var fabrica = Application.ServiceProvider.GetRequiredService<INonSecuredObjectSpaceFactory>();
-        using (var osMotor = fabrica.CreateNonSecuredObjectSpace(typeof(Document))) {
-            try {
-                rezultat = OperareApi.Corecteaza(osMotor, documentId, data, parametri.Motiv);
-            }
-            catch (OperareException ex) {
-                throw new UserFriendlyException(ex.Message);
-            }
-        }
+        var rezultat = Executa(c => c.Corecteaza(ViewCurrentObject.ID, data, parametri.Motiv));
 
         // Draftul s-a născut în ALT DbContext. `TargetWindow.NewWindow` — tab nou
         // cu controllerele lui, ca la generarea închiderii de TVA (79-r1): pe MDI,
         // `Default` cât timp dialogul e deschis devine `NewModalWindow`.
-        ObjectSpace.Refresh();
-        ActualizeazaDisponibilitatea();
         var osView = Application.CreateObjectSpace(typeof(Document));
         var draft = osView.GetObjectByKey<Document>(rezultat.CorectieId);
         if (draft != null) {
@@ -169,68 +131,28 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
         });
     }
 
-    OperareRezultat Executa(Func<IObjectSpace, Guid, OperareRezultat> comanda) {
-        // Culegerea se comite (și se VALIDEAZĂ — contextul Save) ÎNAINTE de motor.
-        // Validarea Save rulează în Committing, adică DUPĂ ce motorul ar fi
-        // materializat registrele/numărul/Stare=Operat în același ObjectSpace —
-        // o regulă picată atunci ar lăsa o „operare-fantomă" în OS-ul viu, pe
-        // care un Save ulterior ar comite-o fără re-rularea motorului.
-        //
-        // Commit NECONDIȚIONAT (GATE XAF D2): pe un draft deschis și neatins
-        // `IsModified` e false, iar seam-ul de culegere din `Committing`
-        // (DocumenteLoturiCulegereController — nașterea lotului) n-ar mai rula
-        // niciodată pe calea „butonul direct", pe care contractul D2 o declară
-        // acoperită. Un commit fără modificări e inofensiv (SaveChanges pe zero
-        // entries), dar dă seam-urilor de Committing ultima șansă.
+    // Commit necondiționat: validarea Save și seam-urile de Committing ale culegerii rulează înaintea motorului (GATE XAF D2).
+    T Executa<T>(Func<ComenziDocument, T> comanda) {
         ObjectSpace.CommitChanges();
-        var documentId = ViewCurrentObject.ID;
-
-        // Gate de autorizare (review advers F1): ușa non-secured de mai jos e a
-        // MOTORULUI, nu a utilizatorului — cine nu are Write pe document prin
-        // securitatea XAF nu comandă operarea/anularea/stornarea. Pre-migrare
-        // refuzul venea implicit din commit-ul motorului în OS-ul secured al
-        // View-ului; acum se decide explicit, înaintea ușii.
-        if (Application.Security is not DevExpress.ExpressApp.Security.IRequestSecurityStrategy cerinte
-                || !DevExpress.ExpressApp.Security.IsGrantedExtensions.CanWrite(
-                        cerinte, ObjectSpace, (object)ViewCurrentObject))
-            throw new UserFriendlyException("Nu aveți dreptul de scriere necesar pentru comenzile de operare pe acest document.");
-
-        // Faza 2 (D5/42b): comanda rulează în ObjectSpace-ul NON-SECURED al
-        // motorului, nu în cel al View-ului. `INonSecuredObjectSpaceFactory` e
-        // scoped în DI-ul oricărui host AddXaf (DevExpress.ExpressApp\Services\
-        // Core\StartupExtensions.cs:70-83), iar OS-urile lui NU trec prin
-        // `IObjectSpaceCustomizer` (NonSecuredObjectSpaceFactory.cs:51-55) —
-        // deci gardianul generic nu-l blochează. Motorul comite singur.
-        OperareRezultat rezultat;
-        var fabrica = Application.ServiceProvider.GetRequiredService<INonSecuredObjectSpaceFactory>();
-        using (var osMotor = fabrica.CreateNonSecuredObjectSpace(typeof(Document))) {
-            try {
-                rezultat = comanda(osMotor, documentId);
-            }
-            catch (OperareException ex) {
-                // Motorul cumulează erorile cu „\n" (o singură sursă de reguli — și
-                // pentru consolă/API). În Blazor mesajul ajunge într-un
-                // `<span class="xaf-alert-message">` (verificat pe surse:
-                // AlertsHandlerServiceExceptionsExtensions → AlertTemplate), unde
-                // `white-space` implicit ar colapsa liniile într-un paragraf continuu.
-                // `site.css` cere acum `pre-line` pe clasa aceea; bulinele rămân ca
-                // plasă (dacă CSS-ul nu se aplică, liniile rămân totuși distinguibile).
-                var linii = ex.Message.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-                if (linii.Length <= 1)
-                    throw;
-                throw new UserFriendlyException(
-                    string.Join("\n", linii.Select(l => "• " + l.Trim())), ex);
-            }
+        var servicii = Application.ServiceProvider;
+        var comenzi = new ComenziDocument(servicii.GetRequiredService<INonSecuredObjectSpaceFactory>(),
+            new DreptComandaXaf(servicii.GetRequiredService<IObjectSpaceFactory>(), Application.Security));
+        T rezultat;
+        try {
+            rezultat = comanda(comenzi);
         }
-
-        // Comanda a comis în ALT DbContext — OS-ul View-ului e stale (starea,
-        // numărul, valorile rescrise de PregatesteOperare). `Refresh()` e exact
-        // ce face acțiunea standard Refresh a XAF (SystemModule\
-        // RefreshController.cs:63-67): `EFCoreObjectSpace.ReloadCore`
-        // RECREEAZĂ DbContext-ul (EFCoreObjectSpace.cs:855-875), iar
-        // `DetailView.OnObjectSpaceReloaded` re-obține CurrentObject din
-        // contextul proaspăt (DetailView.cs:141-143) — deci ViewCurrentObject de
-        // mai jos e instanța nouă, cu starea comisă de motor.
+        catch (Exception ex) when (ex is RefuzAcces or SubiectInvizibil) {
+            throw new UserFriendlyException(ex.Message, ex);
+        }
+        catch (OperareException ex) {
+            // Blazor colapsează liniile în `xaf-alert-message`; bulinele le păstrează distincte.
+            var linii = ex.Message.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            if (linii.Length <= 1)
+                throw;
+            throw new UserFriendlyException(
+                string.Join("\n", linii.Select(l => "• " + l.Trim())), ex);
+        }
+        // Comanda a comis în alt DbContext: `Refresh` recreează contextul și re-obține CurrentObject.
         ObjectSpace.Refresh();
         ActualizeazaDisponibilitatea();
         return rezultat;

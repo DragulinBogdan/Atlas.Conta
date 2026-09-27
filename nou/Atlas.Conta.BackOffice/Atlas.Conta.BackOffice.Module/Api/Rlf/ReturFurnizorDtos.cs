@@ -31,6 +31,8 @@ public sealed class RlfWriteDto {
     public DateOnly Data { get; set; }
     // F27-D4: lipsă pe sârmă = data documentului.
     public DateOnly? DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
+    public DateOnly? DataPrimire { get; set; }
     // Gestiunea din care iese marfa → furnizorul care o primește înapoi. Tipul
     // laturilor rămâne invariant al OPERĂRII (`ReturFurnizor.ValideazaOperare`);
     // `Aplica` verifică doar existența.
@@ -51,8 +53,7 @@ public sealed class RlfLinieWriteDto {
     // loturi (nu declară `ILinieCareNasteLot`).
     public Guid? LotId { get; set; }
     // MAGNITUDINEA returnată. Semnul e al operării (28a/46e), deci un `-4` venit
-    // dintr-un ReadDto de document operat se normalizează la `4` — vezi
-    // `ReturFurnizorApply.ReconciliazaLinii`.
+    // dintr-un ReadDto de document operat se normalizează la `4` de culegere (104c).
     public decimal Cantitate { get; set; }
     public Guid? TipTvaId { get; set; }
     // Override-ul manual (36a: nota de credit a furnizorului bate rotunjirea
@@ -71,6 +72,8 @@ public sealed class RlfReadDto {
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
     public DateOnly DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
+    public DateOnly? DataPrimire { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
@@ -102,9 +105,7 @@ public sealed class RlfLinieReadDto {
     // PROIECTATE PLAT: `Eticheta` e [NotMapped], deci nu traversează SQL-ul.
     public string LotEticheta { get; set; }
     public decimal Cantitate { get; set; }
-    // REZULTAT, nu culegere (GATE 53c): o materializează `Aplica` la culegere și
-    // `ReturFurnizor.PregatesteOperare` la operare, din aceeași formulă
-    // (`cantitate × prețul lotului` — prețul returului nu se culege niciodată).
+    // Rezultat, nu culegere: îl scrie `CalculeazaValori` la culegere și la operare (104c).
     public decimal Valoare { get; set; }
     public decimal ValoareTva { get; set; }
     public Guid? TipTvaId { get; set; }

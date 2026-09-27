@@ -4,6 +4,18 @@ namespace Atlas.Conta.Nucleu.Teste;
 
 public class UnitateTeste {
     [Fact]
+    public void PartidaInitialaAreIdentitateSeparata() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var cont = Gen.Unul(aleator, Gen.Conturi);
+            var partener = Gen.Unul(aleator, Gen.Parteneri);
+            var referinta = Gen.Unul(aleator, Gen.Documente);
+            var data = Gen.Data(aleator);
+            var initiala = Unitate.DeschidePartidaInitiala(cont, partener, referinta, data);
+            Assert.NotEqual(Unitate.DeschidePartida(cont, partener, referinta, data).Id, initiala.Id);
+            Assert.Equal(initiala.Id, Unitate.DeschidePartidaInitiala(cont, partener, referinta, data.AddDays(1)).Id);
+        });
+
+    [Fact]
     public void PartidaDeschisaEDeterminista() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var cont = Gen.Unul(aleator, Gen.Conturi);
@@ -12,10 +24,12 @@ public class UnitateTeste {
             var data = Gen.Data(aleator);
             var unitate = Unitate.DeschidePartida(cont, partener, document, data);
             Assert.Equal(unitate.Id, Unitate.DeschidePartida(cont, partener, document, data).Id);
-            // Data și partenerul nu intră în identitate: doar (document, cont) — N-D6.
             Assert.Equal(
                 unitate.Id,
-                Unitate.DeschidePartida(cont, Gen.AltulDecat(aleator, Gen.Parteneri, partener), document, data.AddDays(7)).Id);
+                Unitate.DeschidePartida(cont, partener, document, data.AddDays(7)).Id);
+            Assert.NotEqual(
+                unitate.Id,
+                Unitate.DeschidePartida(cont, Gen.AltulDecat(aleator, Gen.Parteneri, partener), document, data).Id);
             Assert.NotEqual(
                 unitate.Id,
                 Unitate.DeschidePartida(Gen.AltulDecat(aleator, Gen.Conturi, cont), partener, document, data).Id);
@@ -31,7 +45,7 @@ public class UnitateTeste {
     [Fact]
     public void IdentitateaPartideiEPinuitaPeOcteti() =>
         Assert.Equal(
-            Guid.Parse("6a865294-d354-8a72-4249-185390c213bb"),
+            Guid.Parse("54148296-cf7f-82a0-94df-2c0fcb440e4a"),
             Unitate.DeschidePartida(
                 Guid.Parse("00000001-0000-0000-0000-000000000000"),
                 Guid.Parse("00000002-0000-0000-0000-000000000000"),

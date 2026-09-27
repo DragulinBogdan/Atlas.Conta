@@ -42,16 +42,17 @@ public sealed class DeclarantDescarcareGestiune : IDeclarant {
         var miscari = new List<N.Miscare>(operand.Linii.Count);
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza>();
-        var solduri = new Dictionary<Guid, N.Sold>();
+        var solduri = new Dictionary<CheieLotFapt, N.Sold>();
         for (var i = 0; i < operand.Linii.Count; i++) {
             var linie = operand.Linii[i];
             var contare = contari[i]!.Value;
             var lot = linie.Lot!;
+            var cheie = new CheieLotFapt(lot.Id, contare.ContCredit, lot.ProdusId, doc.Predator.Id);
             var iesit = new N.Unitate(
                 lot.Id, N.FelUnitate.Lot, contare.ContCredit, null, lot.ProdusId, lot.Data);
-            if (!solduri.TryGetValue(lot.Id, out var sold)) {
-                sold = operand.SolduriLoturi.GetValueOrDefault(lot.Id) ?? N.Sold.Zero;
-                solduri[lot.Id] = sold;
+            if (!solduri.TryGetValue(cheie, out var sold)) {
+                sold = operand.SolduriLoturi.GetValueOrDefault(cheie) ?? N.Sold.Zero;
+                solduri[cheie] = sold;
                 ipoteze.Add(new N.SoldUnitateCitit(iesit, sold));
             }
             decimal valoare;
@@ -63,7 +64,7 @@ public sealed class DeclarantDescarcareGestiune : IDeclarant {
                 refuzuri.Add(new N.Refuz(e.Refuz.Cod, e.Refuz.Mesaj, linie.Id));
                 continue;
             }
-            solduri[lot.Id] = new N.Sold(
+            solduri[cheie] = new N.Sold(
                 sold.Debit, sold.Credit + valoare, sold.Cantitate - linie.Cantitate, sold.ValoareValuta);
 
             decizii.Add(new N.ContRezolvat(linie.Id, contare.ContDebit, contare.SursaDebit.ToString()));

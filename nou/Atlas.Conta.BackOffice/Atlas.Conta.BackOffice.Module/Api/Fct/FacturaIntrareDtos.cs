@@ -13,7 +13,7 @@ namespace Atlas.Conta.BackOffice.Module.Api.Fct;
 //     server-owned pe FCT: îl creează/sincronizează `LoturiCulegereService` la
 //     `Aplica`, îl finalizează motorul la operare.
 //   * `PretUnitar` + `TipTvaId` → `Valoare`/`ValoareTva` materializate LA
-//     CULEGERE (GATE 53c): serverul e autorul lanțului de valori, clientul dă
+//     CULEGERE (104c): serverul e autorul lanțului de valori, clientul dă
 //     doar baza. `Valoare` lipsește din WriteDto tocmai pentru că e rezultat.
 //   * `ValoareTva?` e SINGURA excepție: null = calculul standard, valoare =
 //     override-ul operatorului (factura furnizorului bate rotunjirea noastră —
@@ -41,6 +41,8 @@ public sealed class FacturaIntrareWriteDto {
     public Guid PredatorId { get; set; }
     public Guid PrimitorId { get; set; }
     public DateOnly? DataScadenta { get; set; }
+    public DateOnly? DataPrimire { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     public string NumarPV { get; set; }
     public DateOnly? DataPV { get; set; }
     public string CodCpv { get; set; }
@@ -66,27 +68,15 @@ public sealed class FacturaIntrareWriteDto {
 // agregatul întreg (43c).
 public sealed class FacturaIntrareLinieWriteDto {
     public Guid? Id { get; set; }
-    // Rămâne obligatoriu chiar și pe liniile cu produs: precompletarea Tipului
-    // din Produs e UX de client (OData `Produs` expune `TipMaterialId`), NU
-    // magie în Apply — altfel serverul ar „ghici" identitatea contabilă a liniei.
-    public Guid TipMaterialId { get; set; }
+    // Lipsă = tipul produsului, completat de culegere (104c).
+    public Guid? TipMaterialId { get; set; }
     // Obligatoriu pe liniile de STOC (validat la operare): fără el lotul nu se
     // naște, iar `FacturaIntrare.ValideazaOperare` refuză linia.
     public Guid? ProdusId { get; set; }
     public decimal Cantitate { get; set; }
     public decimal PretUnitar { get; set; }
     public Guid? TipTvaId { get; set; }
-    // null = calculul standard din regim × cotă; valoare = override-ul
-    // operatorului (36a — factura furnizorului bate rotunjirea), aplicat DUPĂ
-    // `CalculeazaLaCulegere`; acceptat DOAR pe regimurile cu TVA separat
-    // (Normal/TaxareInversă — review F2-D1) și niciodată negativ (F2-D7).
-    // LIMITE ASUMATE ALE SEMANTICII (review F2-D2/D6, documentate nu fixate):
-    // (a) override-ul EXPLICIT 0 nu supraviețuiește operării — condiția 36a din
-    // motor e `ValoareTva != 0`, deci 0 se recalculează la operare; (b) singura
-    // cale de a RENUNȚA la un override salvat e re-atingerea unui declanșator
-    // (baza sau TipTva) — recalculul nu rulează fără ei. Fix-ul de fond pentru
-    // ambele ar fi un flag persistat `TvaSuprascris` pe frunză — aditiv, dacă
-    // nevoia devine reală.
+    // null = calculul din regim × cotă; valoare = TVA-ul cules, aplicat după calcul (36a).
     public decimal? ValoareTva { get; set; }
     // Atributele lotului, culese pe linie; motorul le copiază pe Lot la operare.
     public DateOnly? DataExpirare { get; set; }
@@ -117,6 +107,8 @@ public sealed class FacturaIntrareReadDto {
     public Guid PrimitorId { get; set; }
     public string PrimitorDenumire { get; set; }
     public DateOnly? DataScadenta { get; set; }
+    public DateOnly? DataPrimire { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     public string NumarPV { get; set; }
     public DateOnly? DataPV { get; set; }
     public string CodCpv { get; set; }
@@ -197,5 +189,7 @@ public sealed class FacturaIntrareListDto {
     public string PredatorDenumire { get; set; }
     public string PrimitorDenumire { get; set; }
     public DateOnly? DataScadenta { get; set; }
+    public DateOnly? DataPrimire { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     public decimal Total { get; set; }
 }

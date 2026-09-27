@@ -1,6 +1,5 @@
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -10,7 +9,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 /// fiecare derivată își are tabelul și coloana `Cautare` proprie.
 /// </summary>
 [XafDefaultProperty(nameof(Denumire))]
-public abstract class Dimensiune : BaseObject, ICuCautare {
+public abstract class Dimensiune : Nomenclator, ICuCautare {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
 
@@ -35,7 +34,7 @@ public class Proiect : Dimensiune { }
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class Unitate : BaseObject {
+public class Unitate : Nomenclator {
     public virtual string Cod { get; set; }
     public virtual string Denumire { get; set; }
 }

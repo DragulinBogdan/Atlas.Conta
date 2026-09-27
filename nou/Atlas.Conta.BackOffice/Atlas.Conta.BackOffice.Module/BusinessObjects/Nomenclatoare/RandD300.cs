@@ -2,7 +2,6 @@ using Atlas.DXF.Core.Appearance.Attributes;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -39,7 +38,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Cod))]
 [ForbidCRUD("ListView", "DetailView")]
-public class RandD300 : BaseObject {
+public class RandD300 : Nomenclator {
     // Numărul din formular, ca text: „9", „12.1", „26.1" — sub-rândurile nu sunt
     // numere. Unic (index în DbContext); cheia de idempotență a seed-ului.
     public virtual string Cod { get; set; }

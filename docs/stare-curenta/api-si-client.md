@@ -1,12 +1,25 @@
 # API și client
 
-**Actualizat: 2026-09-18.** [Index](README.md)
+**Actualizat: 2026-09-27.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
 `Module` deține modelul, regulile de domeniu, DTO-urile și serviciile comune.
 WebApi asigură transportul, autentificarea și integrarea HTTP. XAF Blazor
-folosește același domeniu. React compune explicit paginile și formularele. (5, 42f, 43)
+folosește același domeniu. (5, 42f, 43)
+
+Straturile au dependențe într-un singur sens: L0 Nucleu, L1 Declarații, L2
+coaja comenzii, L3 culegerea (`Module/Culegere/`), L4 randarea (XAF Blazor,
+React). Un strat nu cunoaște stratul de deasupra lui. (104a)
+
+Culegerea documentelor se face în XAF Blazor. React acoperă citirile și
+proiecțiile: jurnale, declarații, fișe, reconcilieri, rapoarte, consolele
+comenzilor și editorii de politici și nomenclatoare. Paginile React de detaliu
+ale documentelor sunt înghețate: nu primesc câmpuri noi, pot rămâne în urmă
+față de model și nu blochează nicio felie. Un câmp nou pe un document intră în
+entitate, în L3 și în `WriteDto`/`ReadDto`, nu în pagina React. `WriteDto` și
+`Apply` rămân contractul de scriere pentru ModelCheck, import și orice alt
+apelant. (104d, 104-r4)
 
 Contractele documentelor sunt specifice tipului concret. Nu există un
 endpoint generic care interpretează o schemă de document primită ca date.
@@ -15,10 +28,14 @@ contractul public. Referințele din scriere sunt identificatori expliciți. (6, 
 
 ## Salvare și comenzi
 
-Crearea și salvarea rulează în ObjectSpace securizat. O comandă verifică
-accesul asupra documentului înainte să execute motorul într-un ObjectSpace
-propriu. Niciun identificator furnizat de client nu autorizează singur
-accesul prin contextul nesecurizat. (42b, 55b)
+Crearea și salvarea rulează în ObjectSpace securizat. Comenzile de document
+(operare, anulare, storno, corecție, validare) trec prin coaja
+`ComenziDocument`, construită de `ContaApiController.ComandaDocument<T>` cu
+dreptul `DreptComandaXaf` pe ușa `T` (și restricția ei, ex. NTC fără
+închideri de TVA). Coaja verifică dreptul înaintea domeniului și își deschide
+singură contextul motorului; `SubiectInvizibil` iese 404, `RefuzAcces` 403,
+`OperareException` 422. Niciun identificator furnizat de client nu
+autorizează singur accesul prin contextul nesecurizat. (42b, 55b, 80, 104b)
 
 PUT reprezintă starea completă a formularului: liniile sunt reconciliate,
 iar câmpurile opționale absente se golesc conform contractului. PATCH OData
@@ -36,6 +53,19 @@ opțională: absentă înseamnă „data documentului”, nu „gol”. Adaptoru
 dată a înregistrării anterioară datei documentului — pe toate cele
 cincisprezece uși de scriere. DTO-urile de citire ale documentelor o expun
 alături de `Data`. (F27-D4)
+
+`Api/*Apply` sunt adaptorii API ai culegerii (L3). Mapează DTO-ul, cheamă
+`CulegereDocument` pe fiecare linie și `InainteDeSalvare` înaintea commit-ului.
+Nu calculează valori, loturi sau implicite și nu poartă reguli proprii;
+refuzurile culegerii vin de la gardianul de commit, ca 422. Pe liniile cu
+produs (FCT, FCL, NIR, LDI, ASM), `TipMaterialId` e opțional: lipsa lui
+înseamnă tipul produsului, iar lipsa ambelor e refuzată. `DataPrimire`
+absentă rămâne goală și înseamnă data înregistrării; DTO-ul de citire o
+arată astfel. `ValoareTva` prezentă pe linie e TVA-ul cules explicit; un 0
+explicit e refuzat cu 422 când cota tipului dă taxă (pe DVI, câmpul
+ne-nullable 0 înseamnă necules). Refuzul CAS pe fișa fără politică de
+amortizare e al culegerii (L3); `CasApply` îl cheamă înaintea creării
+documentului, numai pentru ordinea mesajului. (104c)
 
 Închiderea și redeschiderea perioadei sunt tot comenzi, pe `api/perioade`:
 `GET api/perioade` întoarce lanțul și cere dreptul de citire pe tipul
@@ -182,6 +212,11 @@ Ecranele sunt compuse în JSX cu controale concrete. Metadata furnizează
 denumiri, tipuri și constrângeri comune; nu este un descriptor executabil de
 formular. Coloanele specifice aparțin paginii respective. (8, 42e, 43a)
 
+Regulile de formular de mai jos rămân valabile pentru editorii vii
+(politici, nomenclatoare, consolele comenzilor) și descriu paginile de
+detaliu ale documentelor așa cum au fost înghețate; acestea nu se extind.
+(104d)
+
 Listele de documente sunt compuse din `ListaDocumente` și `GrilaDocumente`
 (`nucleu/`): grilă remote cu filtre, sortare și paginare pe server; click-ul
 selectează rândul, dublu-click-ul deschide documentul. Pagina dă titlul,
@@ -316,7 +351,7 @@ declară în `ContaUiBaseline.ColoanaTip`. (89a)
 
 | Arie | Conținut |
 |---|---|
-| Documente | Liste și detalii pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC, DVI, PIF, CAS și AMO |
+| Documente | Liste pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC, DVI, PIF, CAS și AMO; paginile lor de detaliu și de culegere sunt înghețate, culegerea curentă e în XAF Blazor (104d) |
 | Imobilizări | Fișa ca ecran de nomenclator pe OData, cu panoul „Fișa" (situația la data din URL, parametrii curenți, rândurile registrului) din `GET api/imobilizari/{id}/fisa?laData=`; registrul imobilizărilor la `/imobilizari/registru` din `GET api/imobilizari/registru?laData=`, totaluri de pe server; ambele cer și citirea pe `RegistruImobilizari`. `api/pif`: agregat cules cu lookup de fișă filtrat pe locul primitorului și pe stare, dialogul liniilor de factură de clasă F din `linii-sursa` (plic `{ Candidati, MaiSunt }`, plafon 500, prefill cu restul), parametrii pre-completați pe revizuire din fișă. `api/cas`: antet plus fișele de pe locul predatorului; liniile produse de server. `api/amo`: previzualizare pe an, lună și unitate cu motiv, blocant și cele trei cifre, generare, regenerare cu confirmare, storno (87i, 87j) |
 | Declarații vamale | `api/dvi`: agregat cules (antet, linii, `FacturiIds` ca agregat întreg), `facturi-candidate` cu perioadă obligatorie, filtru implicit pe clasa fiscală extra-UE, plicul `{ Candidati, MaiSunt }` cu plafon 500 decis pe interogare și `TipMaterialSugeratId`; cere și citirea pe FCT. Ecranul: lookup TVA filtrat pe `DeImport`, popup de candidați pe luna declarației, totaluri de pe server (86h, 86i) |
 | Trezorerie și relații | Stingere manuală în limitele contractelor, vizualizarea relațiilor și comenzile documentului (57d, 76g) |
@@ -339,6 +374,12 @@ de gardian. (58, 79a, 84d, 87g, 87j)
 
 ## Contracte generate
 
+Din 2026-09-25, ștergerea împerecherii prin API și acțiunea XAF
+„Șterge împerecherea” folosesc aceeași comandă atomică: eliberează suma
+nominalizată în cub și șterg legătura. Gate-ul rămâne Delete pe instanța
+vizibilă, înaintea refuzurilor de domeniu. CRUD-ul generic este refuzat
+de gardian; în perioadă închisă se folosește „Desfă împerecherea”.
+
 OpenAPI, tipurile TypeScript și metadata de model sunt generate și păstrate
 în repository. Clientul nu folosește un client API generic generat pentru
 toate operațiile. DTO-urile și atributele serverului rămân sursa contractului. (43d, 56)
@@ -347,3 +388,59 @@ Verificarea de drift trebuie să confirme că fișierele generate corespund
 sursei. Tipurile TypeScript nu înlocuiesc verificarea serverului, iar
 atributele de validare XAF și cele ale contractului HTTP au consumatori
 diferiți. (43b, 43d, 77k)
+
+### Diferențele NIR (098/099, 2026-09-24)
+
+API-ul NIR citește proveniența recepției și marcajul liniilor acoperite;
+clientul culege cauza și imputatul, cu cantitate zero permisă pe linia
+acoperită. Legăturile cu sursa sunt stabilite de server, nu intră în
+WriteDto. Liniile-sursă nu se șterg și tipul/lotul lor nu se schimbă.
+Cauza implicită la operare este InClarificare pentru minus și Plus pentru
+plus; formularul explică aceste implicite. Cantitatea/valoarea constatată
+sunt distincte de delta economică postată de declarant.
+
+Politica diferențelor se editează prin OData și ecranul
+`/politici/diferente`, sub aceleași drepturi de Configurator ca celelalte
+politici. Contul pentru personal este opțional și separat de contul normal.
+
+La schimbarea cauzei NIR din Imputabila, editorul golește imediat imputatul.
+API-ul ignoră imputatul din payload pentru celelalte cauze și îl golește
+și la delta zero; un imputat ascuns nu rămâne atașat constatării.
+
+### Raportul partidelor pe cub (101, 2026-09-25)
+
+`GET /api/proiectii/partide` și pagina `/partide` expun o partidă pe rând,
+cu cont, partener/angajat, document opțional, data nașterii, sens și rest.
+Filtrele sunt `laData`, `contrapartidaId`, `sens`; cheia paginării este
+unitate × cont × partener. Eticheta documentului nu elimină soldul când
+lipsește sau nu este vizibilă. Postările sunt citite prin ObjectSpace secured.
+
+`documente-cu-rest` acceptă `documentCurentId` și `stinge` pentru candidați
+compatibili; `Disponibil` este limita exactă a perechii, iar panourile o
+consumă ca atare. Crearea trece
+prin gate-ul de drepturi și vizibilitatea ambelor documente, apoi prin
+comanda atomică în ObjectSpace non-secured, la fel ca desfacerea și ștergerea.
+
+## Citirea fiscală și confirmarea depunerii (103)
+
+DTO/Apply pentru FCT/FCL/DEC/DVI/RDC/RLF transmit exigibilitatea și, la
+achiziții, data primirii. Clientul propune primirea din înregistrare, fără
+să suprascrie o dată introdusă explicit. Jurnalul filtrează perioada D300
+și afișează separat perioada D394 și reperele istorice.
+
+`GET/POST /api/depuneri-declaratii/{formular}/{an}/{luna}` citește sau
+confirmă depunerea. POST cere versiunea exportată, drept de scriere și
+perioadă vizibilă; refuzurile au 400/403/404/422. Aceeași versiune este
+idempotentă. OData expune istoricul numai pentru citire. D300/D394 oferă
+confirmarea pentru o singură lună, cu versiunea și momentul afișate.
+DTO-urile D300/D394 emit `VersiuneExportata`, amprentă a faptelor lunii.
+UI descarcă exportul JSON și reține acea versiune pentru confirmare;
+nu acceptă etichetă liberă. POST refuză `DEPUNERE_VERSIUNE_DEPASITA`
+dacă s-au schimbat faptele între export și confirmare. JSON-ul nu este
+XML ANAF; parametrii externi D300 nu sunt certificați de amprenta faptelor.
+
+`/politici/tva-saft` editează mapările versionate și calificarea istorică.
+Metadata include enumurile proprietăților persistente, inclusiv cele din
+nucleu. Rapoartele fiscale cer citire pe `Postare`; lipsa dreptului pe
+întregul tip este 403, iar filtrarea pe obiect/membru se aplică sursei comune.
+Această validare fiscală nu certifică toate câmpurile SourceDocuments SAF-T.

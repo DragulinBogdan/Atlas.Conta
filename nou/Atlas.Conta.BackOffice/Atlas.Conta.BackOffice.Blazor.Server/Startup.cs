@@ -1,6 +1,7 @@
 ﻿using Atlas.Conta.BackOffice.Blazor.Server.Services;
 using Atlas.Conta.BackOffice.Module.Anaf;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.DXF.Blazor.Application.Extensions;
 using Azure.AI.OpenAI;
@@ -182,6 +183,8 @@ namespace Atlas.Conta.BackOffice.Blazor.Server {
             // se înregistrează în FIECARE host, fiindcă modulele XAF nu pot adăuga
             // servicii în DI. Seam-ul (`IObjectSpaceCustomizer`) prinde EXACT
             // ObjectSpace-urile secured — vezi probele din `GardianEditare`.
+            // 104c: culegerea se normalizează înaintea gardianului, deci înregistrarea o precedă.
+            services.AddContaCulegereXaf();
             services.AddContaGardianEditare();
             // După AddXaf: AtlasDxfExceptionService câștigă rezoluția IExceptionHandlerService,
             // iar violările de constraint DB apar în UI ca mesaje prietenoase.

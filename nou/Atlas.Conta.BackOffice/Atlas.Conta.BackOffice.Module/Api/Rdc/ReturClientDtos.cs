@@ -11,7 +11,7 @@ namespace Atlas.Conta.BackOffice.Module.Api.Rdc;
 // cantitate, FĂRĂ TVA). Pe sârmă rolul rămâne exact asta — prezența lui `LotId` —
 // iar traducerea în comutator explicit („Venit" / „Marfă returnată") e a
 // EDITORULUI, nu a modelului (F19-D12).
-// Consecința pe care Apply o impune: pe o linie EXISTENTĂ rolul NU se schimbă.
+// Consecința, impusă la commit: pe o linie EXISTENTĂ rolul NU se schimbă.
 // Un PUT care scoate `LotId` de pe o linie de cost (sau îl adaugă pe una de
 // venit) e REFUZAT explicit, nu convertit tăcut — o conversie ar trebui să fie
 // COMPLETĂ (TVA, natura Tipului, valoarea, cantitatea pro-formă), iar o conversie
@@ -34,6 +34,7 @@ public sealed class RdcWriteDto {
     public DateOnly Data { get; set; }
     // F27-D4: lipsă pe sârmă = data documentului.
     public DateOnly? DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     // Clientul care returnează → gestiunea în care revine marfa. Tipul laturilor
     // rămâne invariant al OPERĂRII; `Aplica` verifică doar existența.
     public Guid PredatorId { get; set; }
@@ -58,8 +59,7 @@ public sealed class RdcLinieWriteDto {
     // (`|q| × PretUnitar`), nu se culege niciodată.
     public decimal Valoare { get; set; }
     // Numai pe linia de VENIT. Pe linia de COST ele nu intră în model:
-    // `Apply` persistă `TipTvaId = null` și `ValoareTva = 0` (F19-D7), oglinda
-    // exactă a lui `PregatesteOperare`.
+    // culegerea persistă `TipTvaId = null` și `ValoareTva = 0` (F19-D7).
     public Guid? TipTvaId { get; set; }
     // Override-ul manual (36a). `null` = calculul standard din cotă. Acceptat doar
     // pe regimurile care postează TVA separat (Normal/TaxareInversă), ca pe FCT.
@@ -74,6 +74,7 @@ public sealed class RdcReadDto {
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
     public DateOnly DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }

@@ -24,6 +24,7 @@ public class JurnalTvaController : ContaApiController {
         : base(secured, nonSecured, securitate) { }
 
     [HttpGet]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(PaginaDto<JurnalTvaRand>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
     public IActionResult Get(DataSourceLoadOptions loadOptions,
@@ -48,7 +49,9 @@ public class JurnalTvaController : ContaApiController {
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
 
-        using var os = Secured(typeof(RegistruTva));
+        using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        if (!PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os))
+            return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
         // Ordinea se declară EXPLICIT și e TOTALĂ: altfel `DataSourceLoader` pune
         // în locul ei ordinea LUI (primul membru numit „Id"), iar `ORDER BY` pe
         // cheie ne-unică sub `LIMIT/OFFSET` n-are ordine garantată — un rând poate
@@ -76,6 +79,7 @@ public class DecontTvaController : ContaApiController {
         : base(secured, nonSecured, securitate) { }
 
     [HttpGet]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(PaginaDto<DecontTvaRand>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
     public IActionResult Get(DataSourceLoadOptions loadOptions,
@@ -88,7 +92,9 @@ public class DecontTvaController : ContaApiController {
         if (dataStart is DateOnly ds && dataEnd is DateOnly de && ds > de)
             return BadRequest(EroriDto.Din(new[] { "„dataStart” nu poate fi după „dataEnd”." }));
 
-        using var os = Secured(typeof(RegistruTva));
+        using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        if (!PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os))
+            return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
         return Ok(Incarca(TvaProiectii.DecontTva(os, dataStart, dataEnd),
             loadOptions, TvaProiectii.OrdineDecontTva()));
     }

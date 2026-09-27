@@ -64,10 +64,9 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                 Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
             };
 
-            // B-D8 pct. 10: partida se deschide DOAR pe contul cu `RolTert`.
-            var peDebit = tert is not null && Partide.ARolTert(operand, contare.ContDebit);
+            var peDebit = tert is not null && Partide.Urmareste(operand, contare.ContDebit);
             var contTert = peDebit ? contare.ContDebit
-                : tert is not null && Partide.ARolTert(operand, contare.ContCredit) ? contare.ContCredit
+                : tert is not null && Partide.Urmareste(operand, contare.ContCredit) ? contare.ContCredit
                 : (Guid?)null;
             if (contTert is not Guid cont || tert is not Guid partener) {
                 miscari.Add(new N.Miscare(credit, debit, 0m, 0m, linie.Valoare, new N.Cauza(doc.Id, linie.Id)));
@@ -85,7 +84,9 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                     citite.Add(cont);
                 }
                 if (!alePartidelorSursei.TryGetValue(cont, out var alPartidei))
-                    alePartidelorSursei[cont] = alPartidei = Math.Abs(sursa.Sold.Net);
+                    alePartidelorSursei[cont] = alPartidei = (peDebit ? sursa.Sold.Net < 0m : sursa.Sold.Net > 0m)
+                        ? Math.Min(Math.Abs(sursa.Sold.Net), operand.DisponibilPartideSursa.GetValueOrDefault(cont, Math.Abs(sursa.Sold.Net)))
+                        : 0m;
                 var plafon = Math.Min(rest, alPartidei);
                 if (plafon > 0m)
                     try {

@@ -95,6 +95,7 @@ export function spreWrite(citit: RdcRead): RdcWrite {
   return {
     Data: citit.Data,
     DataInregistrare: citit.DataInregistrare,
+    DataExigibilitate: citit.DataExigibilitate,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

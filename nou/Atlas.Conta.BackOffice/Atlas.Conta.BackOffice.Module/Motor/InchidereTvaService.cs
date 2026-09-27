@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
@@ -31,6 +32,9 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 //   * `Genereaza` rămâne exact ce era — apelanții vechi (Import1C, probele de
 //     motor) nu se ating.
 public static class InchidereTvaService {
+    public static DateOnly DataSoldurilor(DateOnly data, DateOnly dataInregistrare, Guid? corecteazaId) =>
+        corecteazaId is null ? data : dataInregistrare;
+
 
     // Cele trei linii ale închiderii, ca VALORI: transferul deductibilei în
     // colectată (pe minimul soldurilor) plus excedentul, care cade într-un
@@ -270,7 +274,7 @@ public static class InchidereTvaService {
         // Sursa e cumulată (F27-D3): snapshot-ul ultimei perioade de referință
         // plus rulajele de după ea. Atomul poartă latura, deci cele două sume se
         // scriu pe `Debit`/`Credit`, nu pe `ContDebitId`/`ContCreditId`.
-        var atomi = SolduriService.AtomiCumulati(os, panaLa);
+        var atomi = SolduriService.AtomiCumulati(os, CitireCumul.Integrala, panaLa);
         decimal Debit(Guid contId) => atomi.Where(a => a.ContId == contId)
             .Sum(a => (decimal?)a.Debit) ?? 0m;
         decimal Credit(Guid contId) => atomi.Where(a => a.ContId == contId)

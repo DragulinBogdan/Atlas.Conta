@@ -1,29 +1,16 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
-using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Proiectii;
 
-// Citirea = REGISTRE + PROIECȚII (decizia 42c): rapoartele nu interoghează
-// niciodată documentele polimorf — trăiesc pe registrele append-only, unde
-// agregarea e un `GROUP BY`. Proiecțiile sunt `IQueryable` pur (fără ASP.NET),
-// ca `DataSourceLoader` să pună filtrarea/sortarea/paginarea DEASUPRA lor și
-// SQL-ul să se execute o singură dată, server-side.
-//
-// Regula de aur a modulului (42c): nimic nu se calculează în client. `Cantitate`
-// și `Valoare` de mai jos SUNT soldurile — TypeScript-ul le afișează, nu le
-// însumează.
-
-// Un rând de sold = exact cheia registrului de stoc (`CheieStoc`), plus
-// etichetele necesare afișării. PLAT prin construcție: DTO-urile pasului 5 nu
-// poartă grafuri (deciziile 6/7).
+// Cheia istorică vine integral din cub. Etichetele sunt opționale și nu
+// hotărăsc dacă un sold există; politica curentă nu reconstruiește TipStoc.
 public sealed class SoldStocRand {
     public Guid LotId { get; set; }
+    public Guid ContId { get; set; }
+    public string ContSimbol { get; set; }
     public Guid RepartitorId { get; set; }
-    // STRING, ca `Stare` pe ReadDto-uri: contractul nu depinde de ordinea
-    // membrilor enum-ului, iar filtrarea din grilă vine tot ca text.
-    public string TipStoc { get; set; }
-
     public Guid ProdusId { get; set; }
     public string ProdusCod { get; set; }
     public string ProdusDenumire { get; set; }
@@ -31,66 +18,27 @@ public sealed class SoldStocRand {
     public DateOnly LotData { get; set; }
     public decimal LotPretUnitar { get; set; }
     public string GestiuneDenumire { get; set; }
-
     public decimal Cantitate { get; set; }
     public decimal Valoare { get; set; }
 }
 
 public static class StocProiectii {
-    // Soldul per `Lot × Repartitor × TipStoc` — exact cheia pe care o însumează
-    // `StocService.Sold`; consistența celor două e verificată în ModelCheck
-    // (D9: o proiecție care ar diverge de motor ar fi un al doilea adevăr).
-    //
-    // Structura: agregarea ÎNTÂI, join-urile pe REZULTATUL agregat (42c) — nu
-    // subquery corelat per rând și nu navigație lazy per instanță (25b/41c).
-    // Rândurile de storno sunt incluse deliberat: registrul e append-only, iar
-    // soldul E suma lui algebrică (rândurile inverse se anulează singure).
-    //
-    // `laData` null = soldul „de azi", peste tot istoricul (comportamentul de
-    // dinaintea feliei 27). Sursa e `SolduriService.MiscariCumulate` (F27-D3):
-    // snapshot-ul ultimei perioade de referință plus rulajele de după ea. De
-    // acolo vine și filtrul de mai jos: cheia cu cantitate ȘI valoare zero se
-    // omite din snapshot, deci se omite peste tot — „absentă" și „zero" sunt
-    // același răspuns, iar un lot consumat integral nu e o poziție de stoc.
-    public static IQueryable<SoldStocRand> SoldStoc(IObjectSpace os, DateOnly? laData = null) {
-        var agregate = SolduriService.MiscariCumulate(os, laData)
-            .GroupBy(r => new { r.LotId, r.RepartitorId, r.TipStoc })
-            .Select(g => new {
-                g.Key.LotId,
-                g.Key.RepartitorId,
-                g.Key.TipStoc,
-                Cantitate = g.Sum(r => r.Cantitate),
-                Valoare = g.Sum(r => r.Valoare)
-            })
-            .Where(a => a.Cantitate != 0m || a.Valoare != 0m);
-
-        return from a in agregate
-               join l in os.GetObjectsQuery<Lot>() on a.LotId equals l.ID
-               join rep in os.GetObjectsQuery<Repartitor>() on a.RepartitorId equals rep.ID
-               select new SoldStocRand {
-                   LotId = a.LotId,
-                   RepartitorId = a.RepartitorId,
-                   // Enum → string ÎN SQL (`CASE`), ca `Stare` pe lista BTR:
-                   // filtrarea/sortarea rămân server-side. Lanțul acoperă TOATE
-                   // valorile `TipStoc` — un membru nou adăugat fără rând aici
-                   // ar apărea ca „ProductieNeterminata" (ultima ramură), deci
-                   // enum-ul și proiecția se modifică împreună.
-                   TipStoc = a.TipStoc == BusinessObjects.TipStoc.Magazie ? "Magazie"
-                       : a.TipStoc == BusinessObjects.TipStoc.Consum ? "Consum"
-                       : a.TipStoc == BusinessObjects.TipStoc.Folosinta ? "Folosinta"
-                       : a.TipStoc == BusinessObjects.TipStoc.Custodie ? "Custodie"
-                       : a.TipStoc == BusinessObjects.TipStoc.Marfuri ? "Marfuri"
-                       : a.TipStoc == BusinessObjects.TipStoc.Gratuit ? "Gratuit"
-                       : "ProductieNeterminata",
-                   ProdusId = l.ProdusId,
-                   ProdusCod = l.Produs.Cod,
-                   ProdusDenumire = l.Produs.Denumire,
-                   ProdusUM = l.Produs.UM,
-                   LotData = l.Data,
-                   LotPretUnitar = l.PretUnitar,
-                   GestiuneDenumire = rep.Denumire,
-                   Cantitate = a.Cantitate,
-                   Valoare = a.Valoare
-               };
-    }
+    public static IQueryable<SoldStocRand> SoldStoc(IObjectSpace os, DateOnly? laData = null,
+            CitireCumul citire = CitireCumul.Vizibila) =>
+        from a in Cub.Citiri.Loturi.Cumulate(os, citire, laData)
+        join cont in os.GetObjectsQuery<Cont>() on a.ContId equals cont.ID into conturi
+        from cont in conturi.DefaultIfEmpty()
+        join produs in os.GetObjectsQuery<Produs>() on a.ProdusId equals produs.ID into produse
+        from produs in produse.DefaultIfEmpty()
+        join rep in os.GetObjectsQuery<Repartitor>() on a.GestiuneId equals rep.ID into repartitori
+        from rep in repartitori.DefaultIfEmpty()
+        select new SoldStocRand {
+            LotId = a.LotId, ContId = a.ContId, ContSimbol = cont.Simbol,
+            RepartitorId = a.GestiuneId, ProdusId = a.ProdusId,
+            ProdusCod = produs.Cod, ProdusDenumire = produs.Denumire, ProdusUM = produs.UM,
+            LotData = a.Deschisa,
+            LotPretUnitar = a.Cantitate == 0m ? 0m : a.Valoare / a.Cantitate,
+            GestiuneDenumire = rep.Denumire,
+            Cantitate = a.Cantitate, Valoare = a.Valoare
+        };
 }

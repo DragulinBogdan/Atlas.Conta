@@ -3,16 +3,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 using Atlas.Conta.BackOffice.Module.UI;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
-// DVI (decizia 86): declarația vamală de import. Liniile stau pe
-// `DocumentDetaliu` de bază (precedentul NIR/BCS) — `Valoare` = valoarea în
-// vamă, `ValoareTva` = taxa declarată; nimic nu postează valoarea, doar taxa.
 [TipDetaliu(typeof(DocumentDetaliu))]
 [XafDisplayName("Declarație vamală de import")]
-public class Dvi : Document {
+public class Dvi : Document, IDocumentFiscalPrimit {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+    [DevExpress.ExpressApp.DC.XafDisplayName("Data primirii")]
+    public virtual DateOnly? DataPrimire { get; set; }
+
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantDvi.Instanta;
+
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Externa, Declaratii.Latura.Interna);
 
@@ -42,14 +45,15 @@ public class Dvi : Document {
     [VisibleInListView(false), VisibleInLookupListView(false)]
     public virtual decimal Taxa => Detalii.Sum(d => d.ValoareTva);
 
-    // 48b: baza e CULEASĂ (valoarea în vamă, nu preț × cantitate), taxa culeasă
-    // se păstrează, iar una lăsată la 0 se calculează din cotă.
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
-        var directie = Motor.TvaService.DirectiePentru(os, this);
-        foreach (var d in Detalii)
-            Motor.TvaService.CalculeazaValori(d, d.Valoare, tipuri, directie, pastreazaTvaCules: true);
-    }
+    // 48b: baza e CULEASĂ (valoarea în vamă, nu preț × cantitate).
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override bool CuTva() => true;
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(DocumentDetaliu.Valoare));
+
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) => linie.Valoare;
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
@@ -96,7 +100,7 @@ public class Dvi : Document {
 // DVI-D3: legătura n→m declarație ↔ facturi de import, pe forma `Imperechere`.
 // E EVIDENȚĂ, nu sursa cifrelor: baza și taxa sunt cele declarate în vamă.
 [XafDisplayName("Factură de import legată")]
-public class DviFactura : BaseObject, IVerificabilLaCommit {
+public class DviFactura : Editabila, IVerificabilLaCommit {
     public virtual Guid DviId { get; set; }
     [XafDisplayName("Declarație vamală")]
     public virtual Dvi Dvi { get; set; }

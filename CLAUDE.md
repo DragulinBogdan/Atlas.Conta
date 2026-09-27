@@ -1,4 +1,4 @@
-﻿# CLAUDE.md — Atlas.Conta: contabilitate/gestiune (Delphi + SQL → XAF + React)
+# CLAUDE.md — Atlas.Conta: contabilitate/gestiune (Delphi + SQL → XAF + React)
 
 > Fișierul de față ține doar ce e adevărat în ORICE sesiune: contextul,
 > harta surselor de adevăr, principiile transversale, starea și regulile de
@@ -58,7 +58,7 @@ identificatorul între paranteze (`(42b)`, `(76-r1)`).
 | Tierul API / clientul React (design) | `docs/api/p5-api-design.md`, `p5-react-design.md` |
 | Contractele feliilor pasului 5 (D-urile pin-uite) | `docs/api/p5-*-contract.md` |
 | Perf pe baza de import | `docs/api/p5-perf-masuratori.md` |
-| Ce rămâne de la XAF Blazor pentru React | `docs/api/lista-react.md` |
+| Luptele structurale cu XAF Blazor (culegerea rămâne în XAF, 104d) | `docs/api/lista-react.md` |
 | Fluxul comenzilor online (bifurcație deschisă) | `docs/architecture-notes-2026-07-28.md` |
 
 ## Principii transversale (valabile în orice arie)
@@ -89,6 +89,17 @@ contrazise din neatenție.
   secvență, prin ID (42a/b, 55a/b, 58c).
 - **Citirea = registre + proiecții; scrierea = agregat per document; TS nu
   calculează niciodată sold/rest/total** (42c/d, 43).
+- **Cinci straturi, dependențe într-un singur sens**: L0 Nucleu → L1
+  Declarații → L2 coaja comenzii → L3 culegerea → L4 randarea; motorul (L0–L2)
+  nu cunoaște securitatea XAF și nici ștergerea. L3 (`Module/Culegere/`) e
+  singura sursă de implicite, recalcul și validare de domeniu; controllerele
+  XAF și `Api/*Apply` sunt adaptori peste ea (104a/c).
+- **Culegerea documentelor se face în XAF; React face citiri și proiecții.**
+  Paginile React de detaliu ale documentelor sunt înghețate: nu primesc câmpuri
+  noi și nu blochează nicio felie; `WriteDto`/`Apply` rămân, fiindcă sunt L3
+  (104d).
+- **Fără ștergere amânată**: draftul se șterge fizic, operatul se stornează,
+  nomenclatorul se inactivează (`Activ`); `Cascade` doar în agregat (104f/g).
 - **Refuzurile de acces**: 404 = inexistent sau invizibil, 403 = vizibil fără
   drept, 422 = domeniu; ordinea 401 → 400 → 404 → 403 → 422 pe toate ușile, un
   singur corp `EroriDto` (80).
@@ -115,10 +126,16 @@ zero pachete, teste de proprietate). Declarația fluxului stă în
 persistat în `Module/Cub/` (`Tranzactie` / `Postare`, POCO, tabelă
 partiționată pe `Spatiu`, migrații scrise în SQL) și se scrie în aceeași
 tranzacție de comandă cu registrele pentru tipurile cu `PosteazaInCub` (regim
-dual, dată de profil). Pe cub azi: BCS, FCT, PLT, INC, BTR, FCL, DSC (privat);
-rămân NTC, ITV, RDC, RLF, DVI, ASM, LDI, NIR (felia 32, pașii 3–5), apoi
-`Deschidere` generic. Citirile rămân pe registre până la TR-D8; registrele se
-taie la TR-D9.
+dual, dată de profil). Pe cub azi: BCS, FCT, PLT, INC, BTR, FCL, NTC,
+DSC, ITV, RDC, RLF și DVI (ultimele cinci numai privat), plus ASM, LDI, NIR, DEC și PIF/AMO/CAS pe ambele profiluri;
+LDI acoperă Magazie/Marfuri și lanțul Folosință în gestiune reală (093),
+cu Custodie explicit neacoperită. NIR conex postează diferența față de
+recepția istorică a facturii, cu proveniență păstrată la corecție (098, 099). Deschiderea generică detaliază soldul inițial
+prin loturi și partide, fără dublare, cu refuz atomic al diferențelor (094).
+Fișa imobilizării este citită din cub de AMO/CAS și API Imo (097).
+Citirile contabile/stoc/partide și snapshot-urile lor sunt pe cub; felia
+fiscală este portată (103). Restul SAF-T rămâne TR-D8; scrierea registrelor
+se taie la TR-D9.
 
 **Proba supremă (91, 2026-09-22)** e catalogul de scenarii
 `docs/nucleu/scenarii/`: așteptări scrise de mână din regula contabilă, ciclul
@@ -132,13 +149,35 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: fișierele
-catalogului pentru tipurile deja pe cub (rulate pe tip cu
-`ModelCheck --scenarii <TIP>[,…] [privat]`, 091-r1) (probele `STR-*` / `NUC-*` mapate pe
-ciclu, rândurile lipsă scrise și probate), apoi pasul 3 al feliei 32 (NTC +
-ITV) pe scenarii, cu recensământul pe clonă (091-r2) înaintea lui. Contractul
-feliei: `docs/nucleu/tr-d7b-tipuri-ramase-contract.md`, amendamentul 091 sub
-„Pașii".
+**Următorul pas**: felia C104 e închisă (104-r1, branch `c104-straturi`,
+nemersă). Urmează review-ul specificației intervalelor TVA și avertismentelor
+(103h, `docs/nucleu/tr-d8-tva-intervale-contract.md`), înaintea codului R6.
+Apoi restul SAF-T din TR-D8 (SourceDocuments integral), reconcilierea,
+auditul și gate-ul transversal de performanță. Felia fiscală
+103 este implementată și verificată; snapshot-ul de stoc este pe cub;
+contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
+`docs/nucleu/scenarii/CITIRI.md`.
+Felia de curățenie C102 este închisă (2026-09-25, branch `c102-curatenie`):
+compatibilitatea cu bazele de dezvoltare a ieșit, invarianții cubului rulează
+în ModelCheck (`INV-CUB`), migrațiile s-au comprimat în `InitialCreate`, bazele
+s-au recreat, 101-r1 e închisă; rămân 102-r4/r5. TR-D8 — portarea consumatorilor pe intrările comune ale
+cubului, după DEC și PIF/AMO/CAS (095, 097), cu scenarii numerice înaintea
+implementării. Review-urile adverse LDI, NIR, Deschidere, DEC și IMO sunt făcute
+(2026-09-24); corecturile se aplică pe felii peste `94ddfa8` (098).
+Urmărirea partidelor este separată de rolul comercial SAF-T (096). Transformarea ASM și absorbția
+temporară Δ în regimul dual sunt aprobate și implementate:
+`docs/nucleu/tr-d7b-asm-transformare-contract.md` (ASM-B2…B7).
+Review-ul ASM este aplicat; delimitarea contabilă (a)/(h) este aprobată
+de owner numai pentru regimul dual (T-r15, D8-B4).
+RDC, RLF și DVI au cataloage independente
+în `docs/nucleu/scenarii/`; DVI păstrează baza distinctă în Carte=Fiscal
+conform `docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md`.
+Identitatea partidei include partenerul (092);
+probele și limitele pasului 3 sunt în `docs/nucleu/scenarii/NTC.md` și `ITV.md`.
+Primele loturi
+independente pentru tipurile deja pe cub sunt verificate; ciclurile complete
+rămân deschise conform fișierelor tipurilor. Contractul feliei:
+`docs/nucleu/tr-d7b-tipuri-ramase-contract.md`, amendamentul 091 sub „Pașii”.
 
 **Capcane de probare**: o cifră de perf se compară DOAR cu ea însăși pe
 ACEEAȘI bază (A/B prin schimbarea stării, nu între baze — altfel diferența de
@@ -158,16 +197,14 @@ redirectarea `*>` din PowerShell scrie log-ul UTF-16 — rețeta bash
 proiectul Blazor.Server (modelul real al hostului, 85h): build-ul lui pică pe
 DLL-uri blocate cât timp hostul Blazor rulează din același `bin`. O SINGURĂ
 rulare grea o dată (ModelCheck, gate, import): două ModelCheck-uri concurente
-crapă în purje și lasă reziduu (`TipuriMaterial 'E2E-SAFT-S-TIP'` + o
-`RegulaContare` `DinSeed` re-creată la fiecare seed) care blochează definitiv
-rulările următoare până e șters manual (S-r10). Interogările pe catalogul
+pot cădea în purje și lăsa reziduu. Purja SAF-T șterge acum și regulile
+`DinSeed` atașate tipului temporar după o cădere (S-r10), fără a permite
+rulări concurente. Interogările pe catalogul
 Postgres cer cast explicit (`partattrs` e `int2vector` de la 0, `conkey` e
 `int2[]` de la 1, `partstrat` e `"char"` ⇒ `::text`), altfel pică și opresc
-rularea. O clonă a bazei de import poartă DEFAULT-ul coloanei noi, nu valoarea
-de seed (`TolerantaTaxa` 0 contra `null`) — se aliniază înainte de gate,
-altfel refuzurile sunt ale bazei, nu ale codului.
+rularea. O bază care nu corespunde codului se recreează, nu se repară (102b).
 
-## Reguli de lucru pentru Claude Code
+## Reguli de lucru comune (Claude Code și Codex)
 
 - **Decizie nouă** = fișier nou `docs/decizii/NNN-slug.md` (numărul următor;
   antetul cu Data/Stare/Docs, apoi secțiunea „Regula durabilă" — regula, nu
@@ -196,6 +233,13 @@ altfel refuzurile sunt ale bazei, nu ale codului.
   verde pe ambele profiluri; Import1C nu mai e gate, e migrare.
 - Rulările lungi = proces detașat + monitor, nu task de fundal al harness-ului
   (50d).
+- **Comunicarea Claude ↔ Codex** trece prin `D:\Dev\Atlas.Conta\comunicari\`
+  (gitignored, cale absolută și din worktree-uri): un fișier per mesaj,
+  `AAAA-MM-DD-HHMM-emitent-receptor-subiect.md` (emitent/receptor: `owner`,
+  `claude`, `codex`), antet cu `Răspuns la:` și `Cere:` (decizie / review /
+  informare); răspunsul = fișier nou, niciodată editarea mesajului primit.
+  Mesajul nu e sursă de adevăr: ce se tranșează intră în contract/decizie,
+  iar o aprobare vine doar de la owner.
 - **Codul e slim: „ce" și „cum" se citesc din cod, „de ce" din decizii.**
   Fără comentarii narative, raționament sau istoric în cod („review advers
   D8", „înainte era…"). XML doc pe API-ul public doar cât servește completării:

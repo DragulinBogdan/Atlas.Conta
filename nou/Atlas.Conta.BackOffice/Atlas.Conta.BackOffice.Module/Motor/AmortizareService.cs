@@ -6,7 +6,7 @@ using DevExpress.ExpressApp.DC;
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
 /// <summary>Un rând de `RegistruImobilizari`, citit o dată și consumat în memorie.</summary>
-public readonly record struct RandRegistru(
+public readonly record struct RandImobilizare(
     Guid ID, Guid ImobilizareId, DateOnly Data, FelMiscareImobilizare Fel, bool Storno, Guid DetaliuId,
     decimal Valoare, decimal ValoareFiscala,
     decimal Amortizare, decimal AmortizareFiscala, decimal AmortizareDeductibila, int Luni,
@@ -73,7 +73,7 @@ public static class AmortizareService {
     public static SituatieImobilizare Situatie(IObjectSpace os, Guid imobilizareId, DateOnly laData) =>
         Situatie(Randuri(os, [imobilizareId], laData), laData);
 
-    public static SituatieImobilizare Situatie(IEnumerable<RandRegistru> toate, DateOnly laData) {
+    public static SituatieImobilizare Situatie(IEnumerable<RandImobilizare> toate, DateOnly laData) {
         var randuri = toate.Where(r => r.Data <= laData).ToList();
         // Storno-ul copiază parametrii, deci evenimentul stornat iese și din rezolvarea lor (F26-D2).
         var stornate = randuri.Where(r => r.Storno).Select(r => r.DetaliuId).ToHashSet();
@@ -93,22 +93,8 @@ public static class AmortizareService {
             evenimente.Count == 0 ? null : evenimente[^1].Data);
     }
 
-    static List<RandRegistru> Randuri(IObjectSpace os, List<Guid> fise, DateOnly panaLa) =>
-        os.GetObjectsQuery<RegistruImobilizari>()
-            .Where(r => fise.Contains(r.ImobilizareId) && r.Data <= panaLa)
-            .Select(r => new {
-                r.ID, r.ImobilizareId, r.Data, r.Fel, r.Storno, r.DetaliuId,
-                r.Valoare, r.ValoareFiscala, r.Amortizare, r.AmortizareFiscala,
-                r.AmortizareDeductibila, r.Luni,
-                r.Metoda, r.DurataLuni, r.ValoareReziduala,
-                r.MetodaFiscala, r.DurataFiscalaLuni, r.CategorieFiscala, r.UtilizareExclusiva,
-            })
-            .ToList()
-            .Select(r => new RandRegistru(r.ID, r.ImobilizareId, r.Data, r.Fel, r.Storno, r.DetaliuId,
-                r.Valoare, r.ValoareFiscala, r.Amortizare, r.AmortizareFiscala, r.AmortizareDeductibila,
-                r.Luni, r.Metoda, r.DurataLuni, r.ValoareReziduala, r.MetodaFiscala, r.DurataFiscalaLuni,
-                r.CategorieFiscala, r.UtilizareExclusiva))
-            .ToList();
+    static List<RandImobilizare> Randuri(IObjectSpace os, List<Guid> fise, DateOnly panaLa) =>
+        Cub.Citiri.Imobilizari.Randuri(os, fise, panaLa).Select(r => r.Rand).ToList();
 
     // Coalesce ÎNAPOI: null pe un eveniment înseamnă „neschimbat” (F26-D2).
     static T? Coalesce<TRand, T>(List<TRand> evenimente, Func<TRand, T?> citeste) where T : struct {
@@ -191,10 +177,13 @@ public static class AmortizareService {
         var fisa = os.GetObjectByKey<Imobilizare>(imobilizareId);
         var contImplicit = fisa == null ? null
             : os.GetObjectByKey<TipMaterial>(fisa.TipMaterialId)?.ContImplicitId;
+        var conturi = Cub.Citiri.Imobilizari.Conturi(os, [imobilizareId], data).GetValueOrDefault(imobilizareId);
+        contImplicit = conturi?.Activ ?? contImplicit;
+        var contAmortizare = conturi?.Amortizare ?? politica?.ContAmortizareId;
         var linii = new List<LinieIesire>();
         if (situatie.Amortizare != 0m)
             linii.Add(new(FelLinieIesire.AmortizareCumulata, situatie.Amortizare,
-                politica?.ContAmortizareId, contImplicit));
+                contAmortizare, contImplicit));
         if (situatie.NetContabil != 0m)
             linii.Add(new(FelLinieIesire.ValoareRamasa, situatie.NetContabil,
                 politica?.ContCheltuialaCedareId, contImplicit));
@@ -348,6 +337,7 @@ public static class AmortizareService {
             return new CalculLuna([], null);
 
         var ids = fise.Select(f => f.ID).ToList();
+        var conturiFise = Cub.Citiri.Imobilizari.Conturi(os, ids, ultimaZi);
         var perFisa = Randuri(os, ids, ultimaZi).GroupBy(r => r.ImobilizareId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -356,7 +346,7 @@ public static class AmortizareService {
             .Where(p => tipuri.Contains(p.TipMaterialId))
             .Select(p => new { p.TipMaterialId, p.ContAmortizareId, p.ContCheltuialaAmortizareId })
             .ToList()
-            .Where(p => p.ContAmortizareId != null && p.ContCheltuialaAmortizareId != null)
+            .Where(p => p.ContCheltuialaAmortizareId != null)
             .ToDictionary(p => p.TipMaterialId, p => (p.ContAmortizareId, p.ContCheltuialaAmortizareId));
 
         var reguli = os.GetObjectsQuery<RegulaDeductibilitate>()
@@ -383,7 +373,8 @@ public static class AmortizareService {
             var fiscal = Cifra(randuri, referinta, f.DataPunereInFunctiune, fiscal: true, luni);
             if (contabil <= 0m && fiscal <= 0m)
                 continue;
-            if (!politici.TryGetValue(f.TipMaterialId, out var conturi)) {
+            if (!politici.TryGetValue(f.TipMaterialId, out var conturi)
+                    || (conturiFise.GetValueOrDefault(f.ID)?.Amortizare ?? conturi.ContAmortizareId) == null) {
                 faraPolitica ??= f.NumarInventar;
                 continue;
             }
@@ -392,7 +383,7 @@ public static class AmortizareService {
             linii.Add(new LinieAmortizare(f.ID, f.NumarInventar, f.Denumire, f.TipMaterialId,
                 contabil, fiscal, deductibil, luni,
                 contabil == 0m ? null : conturi.ContCheltuialaAmortizareId,
-                contabil == 0m ? null : conturi.ContAmortizareId,
+                contabil == 0m ? null : conturiFise.GetValueOrDefault(f.ID)?.Amortizare ?? conturi.ContAmortizareId,
                 f.LocId, f.CentruCostId, f.CodEconomicId));
         }
         return new CalculLuna(linii, faraPolitica);
@@ -400,7 +391,7 @@ public static class AmortizareService {
 
     // Lunile DATORATE la sfârșitul lui M (de la luna de după punere) minus cele ACOPERITE de
     // amortizările scrise; plafonul e durata rămasă, iar restul de rotunjire rămâne o lună (F27-D4).
-    static int LuniDeRecuperat(List<RandRegistru> randuri, SituatieImobilizare referinta,
+    static int LuniDeRecuperat(List<RandImobilizare> randuri, SituatieImobilizare referinta,
             DateOnly punere, DateOnly ultimaZi) {
         var acoperite = 0;
         var initiale = 0;
@@ -420,7 +411,7 @@ public static class AmortizareService {
     // veche, iar restul și lunile se citesc din situația de referință (F26-D7, formula 1C).
     // `luni` > 1 = recuperare: cotele celor `luni` luni se însumează ITERATIV, cu pragurile
     // degresivului și ale acceleratului avansate la fiecare pas (F27-D4).
-    static decimal Cifra(List<RandRegistru> randuri, SituatieImobilizare referinta, DateOnly? punere,
+    static decimal Cifra(List<RandImobilizare> randuri, SituatieImobilizare referinta, DateOnly? punere,
             bool fiscal, int luni) {
         var sfarsitEveniment = UltimaZiLuna(referinta.DataUltimEveniment.Value);
         var baza = Situatie(randuri, sfarsitEveniment);

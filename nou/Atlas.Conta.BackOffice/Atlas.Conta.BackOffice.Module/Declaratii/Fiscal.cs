@@ -70,7 +70,10 @@ static class Fiscal {
         ArgumentNullException.ThrowIfNull(operand);
         ArgumentNullException.ThrowIfNull(capat);
         return capat with {
-            CodTva = new N.CodTva(tip.Id, Sensul(operand), rol),
+            CodTva = new N.CodTva(tip.Id, Sensul(operand), rol) {
+                Regim = (N.RegimTva)(int)tip.Regim, Cota = tip.Cota, DeImport = tip.DeImport,
+            },
+            ReperFiscal = operand.ReperFiscal,
             PerioadaDeclarare = operand.PerioadaDeclarare,
             Partener = operand.PoliticaTva!.SursaContrapartida switch {
                 SursaCont.RepartitorPredator => operand.Document.Predator.Id,
@@ -141,6 +144,8 @@ static class Fiscal {
             return null;
         }
         var contrapartida = new N.Capat { Cont = cont, Produs = linie.Lot?.ProdusId, Analiza = analiza };
+        if (fiscal.Regim == RegimTva.TaxareInversa)
+            contrapartida = CuFapt(operand, contrapartida, fiscal, N.RolTva.Autocolectare);
         // T-D4: pe `Colectat` taxa e CREDITUL (4427) contra contrapartidei debitoare (4111).
         var (deLa, la) = asteptata == DirectieTva.Colectat
             ? (intern, contrapartida)

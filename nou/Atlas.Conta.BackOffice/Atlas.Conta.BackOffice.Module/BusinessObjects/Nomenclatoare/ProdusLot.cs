@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.Validation;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -13,7 +12,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class Produs : BaseObject, ICuCautare {
+public class Produs : Nomenclator, ICuCautare {
     // 77-r2 — vezi nota de pe `Repartitor.Cod`: regula e a lui `ICuCautare`,
     // atributele sunt prezentarea ei (OpenAPI/client + UI XAF).
     [System.ComponentModel.DataAnnotations.Required]
@@ -76,7 +75,7 @@ public class Produs : BaseObject, ICuCautare {
 
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Eticheta))]
-public class Lot : BaseObject {
+public class Lot : Editabila {
     // 85g — aceeași etichetă în SQL (liste server, lookup, căutare) și în C#.
     [NotMapped]
     [Calculated(ExpresieEticheta)]
@@ -89,6 +88,13 @@ public class Lot : BaseObject {
         + " Iif(GetDay(Data) < 10, '0', ''), ToStr(GetDay(Data)), '.',"
         + " Iif(GetMonth(Data) < 10, '0', ''), ToStr(GetMonth(Data)), '.', ToStr(GetYear(Data)),"
         + " ' · ', ToStr(Round(PretUnitar, 4))))";
+
+    /// <summary>Cantitatea liniei (sau cea dată) la prețul lotului ei, nerotunjită; 0 pe linia fără lot.</summary>
+    public static decimal ValoareLaPretulLotului(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie,
+            decimal? cantitate = null) =>
+        linie.LotId is Guid id && os.GetObjectByKey<Lot>(id) is Lot lot
+            ? (cantitate ?? linie.Cantitate) * lot.PretUnitar
+            : 0m;
 
     public static string EtichetaLot(string produs, DateOnly data, decimal pretUnitar) {
         var denumire = produs ?? "(produs nedefinit)";

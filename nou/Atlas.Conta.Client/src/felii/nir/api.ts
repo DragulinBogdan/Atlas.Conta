@@ -93,6 +93,8 @@ export function spreWrite(citit: NirRead): NirWrite {
       // Produsul e MECANISMUL lotului pe recepția manuală (F5-D2), nu o etichetă.
       ProdusId: l.ProdusId,
       Cantitate: l.Cantitate,
+      CauzaDiferentei: l.CauzaDiferentei,
+      PartenerDiferentaId: l.PartenerDiferentaId,
       // Prețul de recepție: din el se naște `PretUnitar`-ul lotului (26e), de
       // aceea operarea îl cere pozitiv pe liniile care își nasc lotul (F5-D7b).
       PretUnitar: l.PretUnitar,

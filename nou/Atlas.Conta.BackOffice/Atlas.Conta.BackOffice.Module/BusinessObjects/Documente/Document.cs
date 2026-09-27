@@ -3,7 +3,6 @@ using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.Validation;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -83,7 +82,11 @@ public readonly record struct PlafonStingere(decimal Datorie, decimal Creanta) {
 [Appearance("Document_Corectie_Ascuns", AppearanceItemType.ViewItem, "CorecteazaId Is Null",
     TargetItems = nameof(Corecteaza) + ";" + nameof(MotivCorectie),
     Visibility = DevExpress.ExpressApp.Editors.ViewItemVisibility.Hide)]
-public abstract class Document : BaseObject {
+public abstract class Document : Editabila {
+    public virtual bool AcoperaReceptia(Document conex) => false;
+    public virtual void PreiaSursaConexa(Document sursa) { }
+    public virtual void PreiaLinieConexa(DocumentDetaliu sursa, DocumentDetaliu tinta) { }
+    public virtual IReadOnlySet<CauzaDiferentei> CauzeDiferentaPermise() => new HashSet<CauzaDiferentei>();
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Tip")]
     [VisibleInListView(false), VisibleInDetailView(false)]
@@ -154,10 +157,7 @@ public abstract class Document : BaseObject {
     [XafDisplayName("Motivul corecției")]
     public virtual MotivCorectie? MotivCorectie { get; set; }
 
-    // F27-D7. Totalul stins de imperecheri, scris de motor la operare din
-    // `LiniiCreanta`; null cât documentul nu e operat. Fapt scris, nu agregat la
-    // citire: `ImperechereService.Total` îl citește de pe cheie, iar partidele
-    // deschise și `DocumenteCuRest` pornesc de la el.
+    /// <summary>Totalul de stins din partidele cubului, în sensul de stins; scris de motor la operare, null în Draft (F27-D7, 102).</summary>
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Total de stins")]
     public virtual decimal? TotalStingere { get; set; }
@@ -200,6 +200,47 @@ public abstract class Document : BaseObject {
     // materializează `Valoare` pe linii înainte de scrierea registrelor
     // (ex. NotaTransfer/BonConsum: preț lot × cantitate).
     public virtual void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) { }
+
+    /// <summary>Valorile liniilor din câmpurile culese, fără semnul operării; culegerea și operarea cheamă aceeași formulă (104c).</summary>
+    public virtual void CalculeazaValori(DevExpress.ExpressApp.IObjectSpace os, IEnumerable<DocumentDetaliu> linii,
+            bool pastreazaTvaCules) {
+        var cuBaza = linii.Select(l => (Linie: l, Baza: BazaLinie(os, l))).Where(x => x.Baza != null).ToList();
+        if (cuBaza.Count == 0)
+            return;
+        var tva = CuTva()
+            ? new Motor.ContextTva(Motor.TvaService.IncarcaTipuri(os, cuBaza.Select(x => x.Linie)),
+                Motor.TvaService.DirectiePentru(os, this))
+            : null;
+        foreach (var (linie, baza) in cuBaza)
+            CalculeazaLinie(linie, baza.Value, tva, pastreazaTvaCules);
+    }
+
+    /// <summary>Baza netă, nerotunjită, a liniei; null = valoarea liniei nu se calculează pe tipul ăsta.</summary>
+    public virtual decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) => null;
+
+    /// <summary>Proprietățile liniei din care se calculează baza.</summary>
+    public virtual IReadOnlySet<string> IntrariBaza() => IntrariBazaComune;
+
+    protected static readonly IReadOnlySet<string> IntrariBazaComune = new HashSet<string> {
+        nameof(DocumentDetaliu.Cantitate), nameof(DocumentDetaliu.LotId), nameof(DocumentDetaliu.Lot),
+        nameof(DocumentDetaliu.TipTvaId), nameof(DocumentDetaliu.TipTva),
+    };
+
+    protected static IReadOnlySet<string> IntrariBazaCu(params string[] proprii) =>
+        new HashSet<string>(IntrariBazaComune.Concat(proprii));
+
+    /// <summary>Liniile tipului poartă TVA calculat din bază.</summary>
+    public virtual bool CuTva() => false;
+
+    /// <summary>Culegerea e în magnitudine, iar semnul îl pune operarea (28a/46e).</summary>
+    public virtual bool SemnulEAlOperarii() => false;
+
+    protected virtual void CalculeazaLinie(DocumentDetaliu linie, decimal baza, Motor.ContextTva tva, bool pastreazaTvaCules) {
+        if (tva != null)
+            Motor.TvaService.CalculeazaValori(linie, baza, tva.Tipuri, tva.Directie, pastreazaTvaCules);
+        else
+            linie.Valoare = Scara.RotunjesteBani(baza);
+    }
 
     // Convenția 00 §5 (dimensiunea Repartitor default pe notă: debit←Predator,
     // credit←Primitor) devine default POLIMORF — ultimul nivel al coalesce-ului
@@ -285,7 +326,7 @@ public abstract class Document : BaseObject {
     public virtual Document GenereazaSecundar(DevExpress.ExpressApp.IObjectSpace os) => null;
 
     // Informări pentru operator DUPĂ o operare reușită (F8-D10) — NU e o cale de
-    // refuz: `OperareApi.Opereaza` le adaugă în `OperareRezultat.Mesaje`, lângă
+    // refuz: `ComenziDocument.Opereaza` le adaugă în `OperareRezultat.Mesaje`, lângă
     // mesajul documentului conex, iar ambele tiere (API + controllerul XAF) le
     // afișează pe calea existentă. Se apelează DUPĂ commit-ul motorului, deci
     // vede lumea finală (inclusiv copiii tocmai generați).
@@ -335,7 +376,7 @@ public abstract class Document : BaseObject {
 
 // Bază concretă: NIR/BonConsum/NotaTransfer o folosesc direct (testul bazei §6);
 // derivate de detaliu există doar unde schema diferă.
-public class DocumentDetaliu : BaseObject {
+public class DocumentDetaliu : Editabila {
     [ModelDefault("AllowEdit", "False")]
     [XafDisplayName("Tip")]
     [VisibleInListView(false), VisibleInDetailView(false)]

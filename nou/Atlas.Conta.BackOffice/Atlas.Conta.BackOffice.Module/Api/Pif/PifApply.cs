@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -32,7 +33,7 @@ public static class PifApply {
         doc.Primitor = primitor;
 
         MaterializeazaLinii(os, doc, rezolvate);
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
@@ -46,6 +47,7 @@ public static class PifApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -75,11 +77,6 @@ public static class PifApply {
             var metodaFiscala = ApiEnum.MembruOptional<MetodaAmortizare>(
                 l.MetodaFiscala, "Metoda de amortizare fiscală");
             var categorie = ApiEnum.MembruOptional<CategorieFiscala>(l.CategorieFiscala, "Categoria fiscală");
-            VerificaScara(l.Valoare, Scara.Bani, "Valoarea");
-            VerificaScara(l.ValoareFiscala ?? 0m, Scara.Bani, "Valoarea fiscală");
-            VerificaScara(l.AmortizareInitiala, Scara.Bani, "Amortizarea inițială");
-            VerificaScara(l.AmortizareFiscalaInitiala, Scara.Bani, "Amortizarea fiscală inițială");
-            VerificaScara(l.ValoareReziduala ?? 0m, Scara.Bani, "Valoarea reziduală");
 
             PunereInFunctiuneDetaliu existenta = null;
             if (l.Id is Guid linieId) {
@@ -113,6 +110,7 @@ public static class PifApply {
                 detaliu.Document = doc;
             }
 
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
             detaliu.Imobilizare = r.Fisa;
             detaliu.TipMaterial = r.TipMaterial;
             detaliu.Fel = r.Fel;
@@ -132,6 +130,7 @@ public static class PifApply {
             detaliu.DurataFiscalaLuni = l.DurataFiscalaLuni;
             detaliu.CategorieFiscala = r.Categorie;
             detaliu.UtilizareExclusiva = l.UtilizareExclusiva;
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, null);
         }
     }
 
@@ -272,17 +271,6 @@ public static class PifApply {
             });
         }
         return new LiniiSursaDto { Candidati = candidati, MaiSunt = maiSunt };
-    }
-
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
     }
 
     static string Eticheta(Document doc) =>

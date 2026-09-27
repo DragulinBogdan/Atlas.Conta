@@ -909,7 +909,7 @@ class ImportLaCerere {
     public int ProduseAtinseUmNc { get; private set; }
 
     (Guid Id, bool Nou) Materializeaza<T>(string view, string cheie,
-            Func<IObjectSpace, List<T>> cautaDupaCod, Action<T> aplica) where T : BaseObject {
+            Func<IObjectSpace, List<T>> cautaDupaCod, Action<T> aplica) where T : EntitateConta {
         using var os = provider.CreateObjectSpace();
         // Candidat la recuperare = entitate cu același cod natural care nu e
         // legată de niciun KeyField 1C. O entitate legată e omonimul legitim al

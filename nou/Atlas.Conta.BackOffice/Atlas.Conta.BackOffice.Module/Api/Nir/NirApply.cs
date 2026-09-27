@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -13,14 +14,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Nir;
 // apelantului (endpoint-ul de scriere) și COMIT. Gardianul de Committing e
 // ultima autoritate — pre-check-ul de Draft există ca mesajul să fie al
 // DOMENIULUI și ca refuzul să vină înaintea oricărei modificări de stare.
-//
-// ═══ Ce face Apply pe NIR în plus/în minus față de FCT ═══
-// Pe tierul API nu rulează NICIUN ViewController, deci seam-ul de culegere al
-// loturilor se apelează EXPLICIT (`LoturiCulegereService.Sincronizeaza`,
-// echivalentul `DocumenteLoturiCulegereController.OnCommitting`). În MINUS față
-// de FCT: NIR-ul nu culege TVA (F5-D5 — n-are `PoliticaTva`, deci nici
-// `AplicaTipTvaImplicit`, nici `CalculeazaLaCulegere`) și nu culege `Numar`
-// (are `PoliticaNumerotare`, seria e a operării).
+// Culegerea (precompletări, valori, loturi) e a `CulegereDocument` (104c).
+// NIR-ul nu culege TVA (F5-D5) și nici `Numar` (seria e a operării).
 public static class NirApply {
 
     // ═══════════════════════ Scriere ═══════════════════════
@@ -55,28 +50,12 @@ public static class NirApply {
         doc.Primitor = GasesteRepartitor(os, dto.PrimitorId, "Primitorul (gestiunea)");
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<NirLinieWriteDto>());
-
-        // Seam-ul de culegere al loturilor (F2-D1, generalizat la F5-D3):
-        // nașterea/sincronizarea/curățenia loturilor liniilor de stoc, ÎNAINTE de
-        // commit. Liniile clonei conexe (lot STRĂIN) rămân neatinse — gardul
-        // F5-D3, riscul propriu al feliei.
-        LoturiCulegereService.Sincronizeaza(os, doc);
-
-        // Valoarea liniei, materializată ABIA ACUM: formula depinde de lotul pe
-        // care `Sincronizeaza` tocmai l-a născut/legat (vezi `MaterializeazaValori`).
-        MaterializeazaValori(os, doc);
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
 
-    // Ștergerea agregatului. Pre-check de DOMENIU pe Draft (gardianul de
-    // Committing rămâne plasa), apoi curățenia loturilor NĂSCUTE LA CULEGERE ale
-    // liniilor care dispar. Ordinea contează: `CurataOrfane` citește
-    // `GetObjectsToDelete`, deci trebuie să vadă ștergerile DEJA marcate, dar
-    // înaintea commit-ului (loturile intră în același SaveChanges). Loturile
-    // FINALIZATE de motor nu se ating niciodată — inclusiv lotul STRĂIN al unei
-    // clone conexe, care nici măcar nu e al liniilor de aici.
+    // Pre-check de DOMENIU pe Draft (gardianul de Committing rămâne plasa).
     public static void Sterge(IObjectSpace os, Guid id) {
         var doc = Rezolva.Cere<NIR>(os, id, "NIR-ul");
         if (doc.Stare != StareDocument.Draft)
@@ -99,7 +78,7 @@ public static class NirApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
-        LoturiCulegereService.CurataOrfane(os);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -132,27 +111,11 @@ public static class NirApply {
                 detaliu.Document = doc;
             }
 
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
 
-            // Produsul e mecanismul lotului (F5-D2): îl consumă
-            // `LoturiCulegereService` după reconciliere. `LotId` NU se atinge —
-            // e server-owned (F5-D4).
-            //
-            // Review advers F3: pe linia cu lot STRĂIN (clona conexă) produsul e
-            // declarat peste tot „inert" — dar inert însemna „nefolosit de
-            // serviciu", nu „negolit". Diferența nu e de stil: persistat, îl
-            // citește validarea de coerență Tip↔Produs, deci un apelant al API-ului
-            // (import, script, felie viitoare) care pune acolo un produs de alt Tip
-            // face NIR-ul PERMANENT ne-operabil, cu un mesaj care arată spre un
-            // câmp pe care UI-ul îl afișează read-only. Marfa liniei conexe e a
-            // lotului moștenit — aici o GOLIM, ca inerția să fie adevărată.
-            var lotStrainAlLiniei = detaliu.LotId is Guid lotExistentId
-                && os.GetObjectByKey<Lot>(lotExistentId)?.LinieIntrareId != detaliu.ID;
-            if (lotStrainAlLiniei) {
-                detaliu.Produs = null;
-                detaliu.ProdusId = null;
-            }
-            else if (l.ProdusId is Guid produsId) {
+            // Produsul e mecanismul lotului (F5-D2); `LotId` e server-owned (F5-D4).
+            if (l.ProdusId is Guid produsId) {
                 detaliu.Produs = Rezolva.Cere<Produs>(os, produsId, "Produsul");
             }
             else {
@@ -160,11 +123,9 @@ public static class NirApply {
                 detaliu.ProdusId = null;
             }
 
-            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
-            // o valoare în afara coloanei ar ieși ca DbUpdateException brută din
-            // Postgres. Refuzăm cu mesaj de domeniu (ca FCT/BTR).
-            VerificaScara(l.Cantitate, Scara.Cantitate, "Cantitatea");
-            VerificaScara(l.PretUnitar, Scara.Pret, "Prețul unitar");
+            detaliu.CauzaDiferentei = l.CauzaDiferentei;
+            detaliu.PartenerDiferenta = Nomenclator<Repartitor>(os, l.PartenerDiferentaId, "Imputatul");
+            if (l.PartenerDiferentaId == null) detaliu.PartenerDiferentaId = null;
             detaliu.Cantitate = l.Cantitate;
             detaliu.PretUnitar = l.PretUnitar;
             detaliu.DataExpirare = l.DataExpirare;
@@ -192,45 +153,15 @@ public static class NirApply {
             if (l.CodFunctionalId == null) detaliu.CodFunctionalId = null;
             detaliu.Proiect = Nomenclator<Proiect>(os, l.ProiectId, "Proiectul");
             if (l.ProiectId == null) detaliu.ProiectId = null;
+
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, null);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
+        if (sterse.Any(d => Cub.ReceptiiConexe.EsteLinieAcoperita(os, doc, d)))
+            throw new OperareException("Linia facturii se păstrează pe NIR; folosiți cantitatea zero și cauza diferenței.");
         if (sterse.Count > 0)
             os.Delete(sterse);
-    }
-
-    // Lanțul de valori, materializat LA CULEGERE (GATE 53c: operatorul confruntă
-    // hârtia înainte de operare) — de aceea `Valoare` nu e în WriteDto.
-    //
-    // Formula e GEAMĂNA lui `NIR.PregatesteOperare` (F5-D6), care o rescrie la
-    // operare: cele două cazuri ale recepției, cu o formulă fiecare.
-    //   (a) lot STRĂIN (clona conexă): `Cantitate × lot.PretUnitar` — recepția
-    //       PARȚIALĂ e legitimă (operatorul scade cantitatea primită), iar
-    //       valoarea trebuie să-l urmeze pe ecran, nu abia după operare;
-    //   (b) lot PROPRIU sau încă nenăscut (recepție manuală): `PretUnitar ×
-    //       Cantitate` — prețul cules pe linie. Cazul „lot null" cade corect pe
-    //       ramura asta: lotul nu s-a putut naște încă (latura primitoare
-    //       necompletată, skip-ul grațios al serviciului), dar prețul cules e
-    //       deja adevărul liniei.
-    //
-    // Rulează DUPĂ `Sincronizeaza`: abia atunci liniile manuale au lot, iar
-    // proveniența lui (propriu vs străin) e decidabilă.
-    //
-    // Doar FRUNZELE, ca în hook (`else if (d is NirDetaliu nd)`): liniile de tip
-    // BAZĂ ale NIR-urilor istorice/importate n-au de unde lua un preț, iar
-    // rescrierea valorii lor pe un PUT care nici măcar nu le poate atinge
-    // (reconcilierea le refuză pe Id) ar fi exact clasa de defect a review-ului
-    // GATE D1 — pierdere tăcută de dată contabilă reală.
-    static void MaterializeazaValori(IObjectSpace os, NIR doc) {
-        foreach (var d in doc.Detalii.OfType<NirDetaliu>()) {
-            // Liniile marcate spre ștergere în acest commit nu se mai ating.
-            if (os.IsObjectToDelete(d))
-                continue;
-            var lot = d.LotId is Guid lotId ? os.GetObjectByKey<Lot>(lotId) : null;
-            d.Valoare = lot != null && lot.LinieIntrareId != d.ID
-                ? Scara.RotunjesteBani(d.Cantitate * lot.PretUnitar)
-                : Scara.RotunjesteBani(d.PretUnitar * d.Cantitate);
-        }
     }
 
     static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)
@@ -238,19 +169,6 @@ public static class NirApply {
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
         Rezolva.Cere<Repartitor>(os, id, rol);
-
-    // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
-    // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;
@@ -270,13 +188,18 @@ public static class NirApply {
                 d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
                 d.PredatorId, PredatorDenumire = d.Predator.Denumire,
                 d.PrimitorId, PrimitorDenumire = d.Primitor.Denumire,
-                d.Autogenerat, d.DocumentSursaId,
+                d.Autogenerat, d.DocumentSursaId, d.SursaReceptieiId,
                 // LEFT JOIN pe documentul-sursă: null pe un NIR cules manual.
                 DocumentSursaNumar = d.DocumentSursa.Numar
             })
             .FirstOrDefault();
         if (h == null)
             return null;
+
+        // Affordance din aceeași recepție istorică, inclusiv conexe anterioare
+        // coloanelor de proveniență. Flagul/politica de azi nu sunt dovada.
+        var sursa = h.SursaReceptieiId != null || h.Autogenerat && h.DocumentSursaId != null
+            ? Cub.ReceptiiConexe.Citeste(os, Rezolva.Cere<NIR>(os, id, "NIR-ul")) : null;
 
         // Pe BAZA detaliului: liniile de tip bază (import, istoric) apar în `Linii`, cu valorile frunzei null.
         // `as` nu filtrează pe tip; sigur fiindcă liniile unui document sunt frunza lui sau baza (F28-H, 89).
@@ -285,6 +208,10 @@ public static class NirApply {
             .OrderBy(l => l.ID)
             .Select(l => new {
                 l.ID, l.TipMaterialId,
+                LinieSursaReceptieId = (l as NirDetaliu).LinieSursaReceptieId,
+                CauzaDiferentei = (l as NirDetaliu).CauzaDiferentei,
+                PartenerDiferentaId = (l as NirDetaliu).PartenerDiferentaId,
+                PartenerDiferentaDenumire = (l as NirDetaliu).PartenerDiferenta.Denumire,
                 TipMaterialCod = l.TipMaterial.Cod,
                 TipMaterialDenumire = l.TipMaterial.Denumire,
                 ProdusId = (l as NirDetaliu).ProdusId,
@@ -332,7 +259,7 @@ public static class NirApply {
         var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
 
         return new NirReadDto {
-            Id = h.ID, Numar = h.Numar, Data = h.Data,
+            Id = h.ID, Numar = h.Numar, Data = h.Data, SursaReceptieiId = sursa?.Document,
             DataInregistrare = h.DataInregistrare,
             Stare = h.Stare.ToString(), DataOperare = h.DataOperare,
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
@@ -360,6 +287,11 @@ public static class NirApply {
             PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
             Linii = linii.Select(l => new NirLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
+                CauzaDiferentei = l.CauzaDiferentei, PartenerDiferentaId = l.PartenerDiferentaId,
+                PartenerDiferentaDenumire = l.PartenerDiferentaDenumire,
+                LinieAcoperita = sursa != null && Cub.ReceptiiConexe.Identifica(
+                    l.LinieSursaReceptieId, l.LotId, l.TipMaterialId, sursa.Linii) is Guid original
+                    && sursa.Linii.Any(s => s.Linie == original),
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,
                 ProdusId = l.ProdusId, ProdusCod = l.ProdusCod, ProdusDenumire = l.ProdusDenumire,
                 LotId = l.LotId,

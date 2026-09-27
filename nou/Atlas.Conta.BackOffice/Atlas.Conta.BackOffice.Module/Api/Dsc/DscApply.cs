@@ -6,7 +6,7 @@ namespace Atlas.Conta.BackOffice.Module.Api.Dsc;
 // Felia DSC (F4-D2): DOAR proiecțiile de citire. Scrierea nu există în felia
 // asta — descărcarea e generată de `DescarcareService` (hook la operarea FCL +
 // comanda de backorder `FacturaIesireApply.GenereazaDescarcare`), iar comenzile
-// (opereaza/anuleaza/storneaza/valideaza) merg prin `OperareApi`, agnostic de
+// (opereaza/anuleaza/storneaza/valideaza) merg prin `ComenziDocument`, agnostic de
 // tip. Numele `DscApply` se păstrează pentru simetria feliilor: când descărcarea
 // culeasă manual intră în scop, `Aplica`/`Sterge` se adaugă AICI.
 //

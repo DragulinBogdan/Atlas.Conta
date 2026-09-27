@@ -150,3 +150,8 @@ public sealed class RefuzAcces : Exception, IUserFriendlySecurityException {
     public OperatieAcces Operatie { get; }
     public Type Tip { get; }
 }
+
+/// <summary>404: subiectul comenzii nu există sau nu e vizibil pe ușa cerută (80).</summary>
+public sealed class SubiectInvizibil : Exception, IUserFriendlySecurityException {
+    public SubiectInvizibil() : base(Refuzuri.Invizibil) { }
+}

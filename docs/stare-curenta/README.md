@@ -1,8 +1,24 @@
 # Atlas.Conta — starea curentă și regulile aplicabile
 
-**Actualizat: 2026-09-16.** Referința este implementarea din workspace,
+**Actualizat: 2026-09-27.** Referința este implementarea din workspace,
 inclusiv modificările locale. Documentele descriu regulile în forma lor
 actuală, organizate pe responsabilități.
+
+## Tranziția în curs
+
+**Implementat:** cubul se scrie lângă registre pentru BCS, FCT, PLT, INC,
+BTR, FCL și DSC (privat). Citirile produsului și snapshot-urile sunt încă pe
+registre; regulile de mai jos despre registre și prețul lotului descriu
+această implementare, nu ținta. Declarantul BCS evaluează ieșirea pe
+raportul curent al lotului (90, TR-D7a).
+
+**Ținta decisă:** cub canonic, cititori comuni la TR-D8, eliminarea
+registrelor la TR-D9; catalogul de scenarii independente ca gate (091).
+
+**În lucru:** primul lot [BCS](../nucleu/scenarii/BCS.md) are scenarii
+independente verificate pe ambele profiluri; cititorii pe cub și
+compensările după reevaluare rămân deschise. Pasul curent e în `CLAUDE.md`
+§Stare; domeniul și oprirea feliei, în contractul ei; acoperirea, în catalog.
 
 ## Harta documentației
 
@@ -26,8 +42,10 @@ rotunjire sunt fixate per bază. Diferențele de profil se exprimă prin date ș
 validări, fără clase de document distincte pentru fiecare profil.
 
 Backend-ul folosește .NET, XAF și EF Core, cu PostgreSQL. `Module` conține
-modelul și regulile comune. WebApi și XAF Blazor folosesc același modul;
-clientul operațional este React cu DevExtreme.
+modelul și regulile comune. WebApi și XAF Blazor folosesc același modul.
+Documentele se culeg în XAF Blazor; clientul React, cu DevExtreme, acoperă
+citirile, proiecțiile, consolele comenzilor și editorii de politici și
+nomenclatoare. (104d)
 
 ## Reguli fundamentale
 

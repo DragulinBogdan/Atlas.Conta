@@ -63,7 +63,7 @@ export function Balanta() {
       <div className="bara-raport">
         <CasetaPerioada dataStart={stare.dataStart} dataEnd={stare.dataEnd} seteaza={seteaza} />
         <label className="bara-raport__camp">
-          <span className="camp__eticheta">Analitic (pe repartitor)</span>
+          <span className="camp__eticheta">Analitic (pe partener)</span>
           <CheckBox
             value={stare.analitic}
             onValueChanged={(e) => { if (e.event) seteaza({ analitic: e.value === true }); }}
@@ -87,6 +87,7 @@ export function Balanta() {
           const rand = e.data as BalantaRand | undefined;
           if (!rand?.ContId) return;
           navigheaza(urlCu('/fisa-cont', {
+            ...dimensiuni,
             contId: rand.ContId,
             dataStart: stare.dataStart,
             dataEnd: stare.dataEnd,
@@ -124,7 +125,7 @@ export function Balanta() {
         <Column dataField={camp('ContDenumire')} caption="Denumire" />
         <Column
           dataField={camp('RepartitorDenumire')}
-          caption="Repartitor"
+          caption="Partener"
           visible={stare.analitic}
           cellRender={celulaRepartitor}
         />
@@ -184,7 +185,7 @@ function celulaCont({ data }: { data: BalantaRand }) {
 function celulaRepartitor({ data }: { data: BalantaRand }) {
   return data.RepartitorDenumire
     ? <span>{data.RepartitorDenumire}</span>
-    : <span className="indiciu">(fără repartitor)</span>;
+    : <span className="indiciu">(fără partener)</span>;
 }
 
 const BANI = { dataType: 'number', format: '#,##0.00', alignment: 'right', width: 130 } as const;

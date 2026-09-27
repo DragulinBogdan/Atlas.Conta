@@ -15,6 +15,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // primitor = comisia de inventariere (calitatea Comisie — decizia 16).
 [TipDetaliu(typeof(ListaDiferenteInventarDetaliu))]
 public class ListaDiferenteInventar : Document {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantDiferenteInventar.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Gestiune, Declaratii.Latura.Interna.Cu(CalitateRepartitor.Comisie));
 
@@ -25,22 +26,25 @@ public class ListaDiferenteInventar : Document {
     public override Gestiune GestiuneLoturiCulese(DevExpress.ExpressApp.IObjectSpace os) =>
         PredatorId != Guid.Empty ? os.GetObjectByKey<Repartitor>(PredatorId) as Gestiune : null;
 
+    // Direcția explicită se materializează în semn — UI-ul culege cantitatea
+    // pozitivă, limbajul motorului e semn × cantitate.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        foreach (var d in Detalii.OfType<ListaDiferenteInventarDetaliu>()) {
-            // Direcția explicită se materializează în semn — UI-ul culege
-            // cantitatea pozitivă, limbajul motorului e semn × cantitate.
-            var semn = d.Directie == DirectieDiferenta.Minus ? -1 : +1;
-            d.Cantitate = Math.Abs(d.Cantitate) * semn;
-            // Valoarea poartă același semn ca și cantitatea (registrele o iau
-            // ca atare); minusul se evaluează la prețul lotului descărcat (iar
-            // minusul care GOLEȘTE lotul ia tot soldul valoric rămas — D18-D2, în
-            // motor), plusul la prețul de evaluare cules (lotul nou se naște cu el).
-            if (d.Directie == DirectieDiferenta.Minus && d.LotId != null)
-                d.Valoare = Scara.RotunjesteBani(d.Cantitate * os.GetObjectByKey<Lot>(d.LotId.Value).PretUnitar);
-            else if (d.Directie == DirectieDiferenta.Plus)
-                d.Valoare = Scara.RotunjesteBani(d.Cantitate * (d.PretEvaluare ?? 0m));
-        }
+        foreach (var d in Detalii.OfType<ListaDiferenteInventarDetaliu>())
+            d.Cantitate = Math.Abs(d.Cantitate) * (d.Directie == DirectieDiferenta.Minus ? -1 : +1);
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
     }
+
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(
+        nameof(ListaDiferenteInventarDetaliu.PretEvaluare), nameof(ListaDiferenteInventarDetaliu.Directie));
+
+    // Minusul se evaluează la prețul lotului descărcat (golirea lotului e a
+    // motorului, D18-D2), plusul la prețul de evaluare cules; valoarea poartă semnul direcției.
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        linie is not ListaDiferenteInventarDetaliu d ? null
+        : d.Directie == DirectieDiferenta.Minus ? -(Lot.ValoareLaPretulLotului(os, d, Math.Abs(d.Cantitate)))
+        : d.Directie == DirectieDiferenta.Plus ? Math.Abs(d.Cantitate) * (d.PretEvaluare ?? 0m)
+        : null;
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
@@ -101,7 +105,8 @@ public class ListaDiferenteInventar : Document {
 [Appearance("LDI_Linie_Minus_FaraCulegere", AppearanceItemType.ViewItem, "Directie = 'Minus'",
     TargetItems = nameof(Produs) + ";" + nameof(PretEvaluare) + ";" + nameof(DataExpirare)
         + ";" + nameof(LotFabricatie), Enabled = false)]
-public class ListaDiferenteInventarDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot {
+public class ListaDiferenteInventarDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot, ILinieCuDiferentaInventar {
+    public Declaratii.DiferentaInventarFapt DiferentaCuleasa() => new(Directie, PretEvaluare);
     // Direcția explicită (testul bazei §4) — se materializează în semnul
     // Cantitate-ii din bază la operare; UI-ul culege cantitatea pozitivă.
     [XafDisplayName("Direcție")]

@@ -40,7 +40,7 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 //     (Calea alternativă Blazor `LegacyObjectSpaceFactoryWrapper` ajunge tot la
 //     una dintre cele două — `Blazor\Services\XafApplicationFactory\
 //     ObjectSpaceFactoryWrapper.cs:53-60`.)
-// (3) OS-urile NON-SECURED — cele ale MOTORULUI (`OperareApi`) — vin din
+// (3) OS-urile NON-SECURED — cele ale MOTORULUI (`ComenziDocument`) — vin din
 //     `Services\Core\Internal\NonSecuredObjectSpaceFactory.cs:51-55`, care
 //     invocă `OnNonSecuredObjectSpaceCreated`, adică ALTĂ interfață; la fel
 //     `XafApplication.CreateLogonObjectSpace` (`XafApplication.cs:2450, 2463-2468`).
@@ -200,6 +200,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 // păzit fără să se atingă nimic aici.
                 VerificaEnumuri(provenit, erori);
             }
+            // (p) 104i — rândul de configurație șters își lasă refuzul, ca re-seed-ul să nu-l readucă.
+            if (obj is ICuProvenienta sters && EsteSters(os, obj))
+                RefuzSeed.Inregistreaza(os, sters);
             // (l) DVI-D3 — invarianții pe care entitatea îi poartă singură. FĂRĂ
             // gardul de ștergere: regula vede și `Delete` (o legătură dezlegată
             // de pe un document operat e tot o scriere care se refuză).
@@ -208,6 +211,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             // (o) 89 — FK-ul spre o frunză TPH ține doar id-ul rădăcinii; tipul țintei îl ține gardianul.
             if (!EsteSters(os, obj))
                 VerificaTintePeFrunze(os, obj, erori);
+            // (q) 49e, 104c — coloana `numeric(18, s)` e regulă a culegerii pe orice ușă, nu excepție de bază.
+            if (!EsteSters(os, obj))
+                VerificaScara(os, obj, erori);
             switch (obj) {
                 // (b) Registrele sunt append-only și EXCLUSIV ale motorului
                 // (decizia 14): nimeni nu le scrie prin UI/API, nici măcar
@@ -409,6 +415,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "nu se mai modifică și nu se șterge. Anulați operarea sau stornați-l.");
             return;
         }
+        if (EsteSters(os, doc) && doc is IDocumentFiscal
+                && doc.CorecteazaId != null && doc.MotivCorectie == MotivCorectie.EroareMateriala)
+            erori.Add("TVA_CORECTIE_INCEPUTA: corecția fiscală are deja inversa înregistrată; finalizați documentul de corecție.");
         if (EsteSters(os, doc) || originale == null)
             return;
         if (doc.Stare != stareOriginala)
@@ -495,9 +504,55 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (parinte == null)
             return;
         var stare = StareOriginala(os, parinte) ?? parinte.Stare;
-        if (stare != StareDocument.Draft)
+        if (stare != StareDocument.Draft) {
             erori.Add($"Liniile documentului {Eticheta(parinte)} nu se mai modifică "
                 + $"(starea „{stare}”) — anulați operarea sau stornați-l.");
+            return;
+        }
+        if (!EsteSters(os, linie))
+            VerificaLinieCuleasa(os, parinte, linie, erori);
+    }
+
+    // (r) 104c — regulile liniei culese, comune ecranului XAF și API-ului; culegerea a normalizat deja linia.
+    static void VerificaLinieCuleasa(IObjectSpace os, Document parinte, DocumentDetaliu linie, ICollection<string> erori) {
+        if (linie.TipMaterialId == Guid.Empty)
+            erori.Add("Tipul (contul/clasa) liniei este obligatoriu.");
+        if (parinte is Dvi && linie.Valoare < 0)
+            erori.Add("Valoarea în vamă nu poate fi negativă — stornarea e o comandă, nu un semn.");
+        if (parinte is ReturClient && !os.IsNewObject(linie)
+                && Originale(os, linie) is { } originale
+                && (originale[nameof(DocumentDetaliu.LotId)] is null) != (linie.LotId is null))
+            erori.Add($"Linia {linie.Pozitie} a returului nu-și poate schimba rolul: venitul (fără lot) poartă "
+                + "valoarea și TVA-ul, marfa returnată (cu lot) poartă lotul și cantitatea. Ștergeți linia și "
+                + "culegeți-o din nou pe rolul dorit.");
+    }
+
+    // Scara coloanei vine din model (`AplicaScaraNumerica`), deci o proprietate nouă e păzită fără cod aici.
+    /// <summary>Scara coloanelor `numeric(18, s)` ale unui rând; culegerea o cere și înaintea recalculului (104c).</summary>
+    public static void VerificaScara(IObjectSpace os, object obj, ICollection<string> erori) {
+        if (os is not EFCoreObjectSpace efCore || efCore.DbContext.Model.FindRuntimeEntityType(obj.GetType()) == null)
+            return;
+        var entry = efCore.DbContext.Entry(obj);
+        foreach (var proprietate in entry.Metadata.GetProperties()) {
+            if (proprietate.GetScale() is not int scara
+                    || entry.Property(proprietate.Name).CurrentValue is not decimal valoare)
+                continue;
+            var rol = TipDomeniu(obj).GetProperty(proprietate.Name)
+                ?.GetCustomAttributes(typeof(DevExpress.ExpressApp.DC.XafDisplayNameAttribute), true)
+                .OfType<DevExpress.ExpressApp.DC.XafDisplayNameAttribute>().FirstOrDefault()?.DisplayName
+                ?? proprietate.Name;
+            if (decimal.Round(valoare, scara) != valoare)
+                erori.Add($"{rol} acceptă cel mult {scara} zecimale.");
+            else if (Math.Abs(valoare) >= Pow10((proprietate.GetPrecision() ?? Scara.Precizie) - scara))
+                erori.Add($"{rol} depășește intervalul suportat ({(proprietate.GetPrecision() ?? Scara.Precizie) - scara} cifre întregi).");
+        }
+    }
+
+    static decimal Pow10(int n) {
+        var p = 1m;
+        for (var i = 0; i < n; i++)
+            p *= 10m;
+        return p;
     }
 
     // Tipul documentului are rând `PoliticaNumerotare`? — exact criteriul
@@ -515,12 +570,11 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
 
     // (c) Imperecherea: logica migrată din `ImperechereController.OnCommitting`
     // (decizia 31d/41d) — New validat prin invarianții serviciului, Edit refuzat
-    // (re-validarea sumei ar cere excluderea propriului rând), Delete liber
-    // (link fără registre proprii; gardianul de anulare/storno din motor există).
+    // (re-validarea sumei ar cere excluderea propriului rând), Delete prin comandă
+    // (desface și nominalizarea partidei din cub, atomic cu ștergerea linkului).
     static void VerificaImperechere(IObjectSpace os, Imperechere imperechere, ICollection<string> erori) {
         if (EsteSters(os, imperechere)) {
-            // F27-D8: ștergerea rămâne liberă în fereastra deschisă (link fără
-            // registre proprii), dar o imperechere dintr-o perioadă închisă
+            // F27-D8: o imperechere dintr-o perioadă închisă
             // NU dispare — se desface prin rând invers, datat în deschis.
             if (!PerioadaDeschisa(os, imperechere.Data))
                 erori.Add("O împerechere dintr-o perioadă închisă nu se șterge — "
@@ -534,6 +588,8 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             else if (imperechere.InverseazaId != null)
                 erori.Add("Un rând invers nu se șterge — desfacerea e fapt; "
                     + "corectați prin altă împerechere.");
+            else
+                erori.Add("IMPERECHERE_COMANDA_OBLIGATORIE: ștergerea unei împerecheri cere comanda de ștergere.");
             return;
         }
         if (!os.IsNewObject(imperechere)) {
@@ -562,16 +618,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "o imperechere se scrie doar într-o perioadă deschisă.");
             return;
         }
-        // Limitare asumată (ca gardianul de sold, decizia 25f): două link-uri
-        // NOI în același commit nu se văd reciproc la Σ ≤ rest.
-        try {
-            ImperechereService.ValideazaCreare(os,
-                imperechere.DocumentStingator, imperechere.Document, imperechere.Suma,
-                null, imperechere.Data);
-        }
-        catch (OperareException ex) {
-            erori.Add(ex.Message);
-        }
+        erori.Add("IMPERECHERE_COMANDA_OBLIGATORIE: crearea unei împerecheri cere comanda de împerechere.");
     }
 
     // Interogarea merge în BAZĂ, deci vede legătura încă persistată chiar dacă
@@ -709,9 +756,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         // POST-ul al doilea prin OData trece pe lângă orice ecran.
         //
         // Se numără DOAR pe obiectele noi: un rând existent editat nu-și pune
-        // singur problema. Interogarea vede rândurile deja COMISE (`GCRecord = 0`
-        // prin filtrul global), iar `os.ModifiedObjects` dă restul commit-ului
-        // curent — două rânduri noi în același commit se prind pe a doua ramură.
+        // singur problema. Interogarea vede rândurile deja COMISE, iar
+        // `os.ModifiedObjects` dă restul commit-ului curent — două rânduri noi
+        // în același commit se prind pe a doua ramură.
         if (os.IsNewObject(societate)) {
             var comise = os.GetObjectsQuery<Societate>().Count();
             var noiInainte = os.ModifiedObjects.OfType<Societate>()
@@ -1246,23 +1293,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     static string EtichetaCont(Cont cont) =>
         string.IsNullOrWhiteSpace(cont.Simbol) ? $"({cont.ID})" : cont.Simbol;
 
-    // „Obiectul ăsta e pe cale să fie ȘTERS?" — răspuns valabil ÎN Committing.
-    //
-    // De ce NU `os.IsDeletedObject` singur (probă pe surse 26.1.3, găsită de
-    // smoke-ul feliei de trezorerie): `EFCoreObjectSpace.IsDeletedObject`
-    // (EFCoreObjectSpace.cs:375-386) întoarce true DOAR pentru `Detached` sau
-    // pentru un tip cu ștergere amânată al cărui `GCRecord` e deja 1. Or
-    // `GCRecord` îl pune `EFCoreDeferredDeletionInterceptor` în `SavingChanges`
-    // (DeferredDeletion/EFCoreDeferredDeletionInterceptor.cs:95-120), adică DUPĂ
-    // evenimentul `Committing` — deci în gardian entitatea e încă `Deleted` cu
-    // `GCRecord` 0 și `IsDeletedObject` răspunde FALS. Consecința reală: o
-    // ștergere de imperechere era raportată ca „editare" și refuzată (31d cere
-    // ștergerea liberă), pe ORICE cale secured — UI-ul XAF și `api/imperecheri`.
-    // Starea EF e sursa corectă aici; `IsDeletedObject` rămâne în paralel pentru
-    // ștergerile deja materializate. Ambele prin API-ul PUBLIC `IObjectSpace`
-    // (review F3-D1a): `IsObjectToDelete` = `GetEntityState(obj) == Deleted`
-    // (EFCoreObjectSpace.cs:371-374), fără cast la tipul concret — corect și pe
-    // providerii non-EF.
+    // În Committing, ștergerea e starea EF (`Deleted`); `IsDeletedObject` acoperă obiectul deja detașat.
     static bool EsteSters(IObjectSpace os, object obj) =>
         os.IsObjectToDelete(obj) || os.IsDeletedObject(obj);
 

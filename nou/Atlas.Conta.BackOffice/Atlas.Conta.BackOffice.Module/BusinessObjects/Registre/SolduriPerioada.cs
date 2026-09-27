@@ -1,16 +1,10 @@
 using DevExpress.ExpressApp.DC;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
-// Proiecțiile persistate ale registrelor la sfârșitul unei perioade DE
-// REFERINȚĂ (F27-D3): ultima perioadă închisă și fiecare decembrie închis.
-// Nu sunt registre și nu sunt urme (invariantul I): sunt derivabile integral
-// din registre și se rescriu prin `Motor/SolduriService`. Cheia e cheia
-// COMPLETĂ a atomului, ca orice raport să fie rollup ADITIV peste ea; cheile
-// integral zero se omit, iar cheia absentă înseamnă zero pentru consumator.
+// Proiecții reconstruibile din cub la sfârșitul perioadelor de referință (090f).
 [XafDisplayName("Sold de perioadă (contabil)")]
-public class SoldPerioadaContabil : BaseObject {
+public class SoldPerioadaContabil : RandRegistru {
     // Fără separator de mii, ca pe `PerioadaFiscala`.
     [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
     [DevExpress.ExpressApp.Model.ModelDefault("DisplayFormat", "{0:0}")]
@@ -26,6 +20,8 @@ public class SoldPerioadaContabil : BaseObject {
     public virtual Guid? RepartitorId { get; set; }
     [XafDisplayName("Repartitor")]
     public virtual Repartitor Repartitor { get; set; }
+    [XafDisplayName("Gestiune")]
+    public virtual Guid? GestiuneId { get; set; }
     public virtual Guid? MaterialId { get; set; }
     [XafDisplayName("Material")]
     public virtual Produs Material { get; set; }
@@ -56,10 +52,8 @@ public class SoldPerioadaContabil : BaseObject {
     public virtual decimal Credit { get; set; }
 }
 
-// Aceeași regulă, pe cheia registrului de stoc (`Lot × Repartitor × TipStoc`):
-// un lot consumat integral iese din snapshot, nu rămâne mort în el.
 [XafDisplayName("Sold de perioadă (stoc)")]
-public class SoldPerioadaStoc : BaseObject {
+public class SoldPerioadaStoc : RandRegistru {
     [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
     [DevExpress.ExpressApp.Model.ModelDefault("DisplayFormat", "{0:0}")]
     public virtual int An { get; set; }
@@ -68,11 +62,14 @@ public class SoldPerioadaStoc : BaseObject {
     public virtual Guid LotId { get; set; }
     [XafDisplayName("Lot")]
     public virtual Lot Lot { get; set; }
-    public virtual Guid RepartitorId { get; set; }
-    [XafDisplayName("Repartitor")]
-    public virtual Repartitor Repartitor { get; set; }
-    [XafDisplayName("Tip stoc")]
-    public virtual TipStoc TipStoc { get; set; }
+    [XafDisplayName("Cont")]
+    public virtual Guid ContId { get; set; }
+    [XafDisplayName("Produs")]
+    public virtual Guid ProdusId { get; set; }
+    [XafDisplayName("Gestiune")]
+    public virtual Guid GestiuneId { get; set; }
+    [XafDisplayName("Data deschiderii")]
+    public virtual DateOnly Deschisa { get; set; }
 
     [XafDisplayName("Cantitate")]
     public virtual decimal Cantitate { get; set; }
@@ -80,23 +77,23 @@ public class SoldPerioadaStoc : BaseObject {
     public virtual decimal Valoare { get; set; }
 }
 
-// Partida deschisă a unei perioade DE REFERINȚĂ (F27-D7): restul de stins al
-// unui document operat la sfârșitul ei. Aceeași regulă de referință ca
-// snapshot-urile de mai sus — la 31.12 lista E arieratele la nivel de document.
-// Rândurile cu rest zero se omit: partida închisă nu mai e partidă.
 [XafDisplayName("Partidă deschisă")]
-public class PartidaDeschisa : BaseObject {
+public class PartidaDeschisa : RandRegistru {
     [DevExpress.ExpressApp.Model.ModelDefault("EditMask", "d")]
     [DevExpress.ExpressApp.Model.ModelDefault("DisplayFormat", "{0:0}")]
     public virtual int An { get; set; }
     public virtual int Luna { get; set; }
 
-    public virtual Guid DocumentId { get; set; }
+    public virtual Guid? DocumentId { get; set; }
     [XafDisplayName("Document")]
     public virtual Document Document { get; set; }
 
-    // `TotalStingere − Σ Imperechere.Suma` (ambele roluri, algebric, cu `Data`
-    // până la sfârșitul perioadei).
+    public virtual Guid UnitateId { get; set; }
+    public virtual Guid ContId { get; set; }
+    public virtual Guid PartenerId { get; set; }
+    public virtual DateOnly Deschisa { get; set; }
+    public virtual decimal Debit { get; set; }
+    public virtual decimal Credit { get; set; }
     [XafDisplayName("Rest")]
     public virtual decimal Rest { get; set; }
 }

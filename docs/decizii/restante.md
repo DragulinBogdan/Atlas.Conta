@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-09-22.** [Index](README.md)
+**Actualizat: 2026-09-27.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -114,12 +114,12 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 76-r4 | gate-ul comenzilor e pe `Document`, nu pe tipul feliei (422 vs 404 pe aceeași cauză; închisă de 80b) | închisă de 80b |
 | 76-r5 | `Candidati` sub-raportează pe ușa secured, iar `User` pe ușa de scriere e refuzat de primul FK invizibil, nu de o permisiune (familia 72-r10; închisă de 80b/80f) | închisă de 80b/80f |
 | 76-r6 | patru itemi de client în `lista-react.md`: căutarea sensibilă la diacritice în TOATE lookup-urile remote (colație `unaccent`/ICU sau coloană shadow — decizie de bază de date), `Lookup` care refetchează eticheta per instanță, limita convenției 61b pe valorile din PRECOMPLETARE, `window.confirm` moștenit pe ștergere (toți patru închiși de 77) | închisă de 77 |
-| 77-r1 | BTR fără convenția 61b | după PoC (091) |
+| 77-r1 | BTR fără convenția 61b | depășită de 104 (2026-09-27): paginile React de culegere sunt înghețate (104d); soarta lor e 104-r4 |
 | 77-r2 | `Cod`/`Denumire` neobligatorii pe nicio ușă (închisă de 77k) | închisă de 77k |
 | 77-r3 | editarea `PoliticaMiscareSaft` din React (închisă de 81i), comanda ANAF de lot | după PoC (091); parțial: editarea închisă de 81i, comanda de lot deschisă |
 | 77-r4 | `CodFiscal`/`Iban`/`Marca` în afara lui `Cautare` | după PoC (091) |
 | 77-r5 | precompletarea nu distinge alegerea operatorului; invalidarea nu reîmprospătează `SelectBox`-urile montate | după PoC (091) |
-| 77-r6 | `displayExpr` de nucleu pentru `TipMaterial` | după PoC (091) |
+| 77-r6 | `displayExpr` de nucleu pentru `TipMaterial` | depășită de 104 (2026-09-27): privea selectoarele paginilor React de culegere, înghețate (104d); soarta lor e 104-r4 |
 | 77-r7 | `Cautare` fără index (seq scan pe 20 k rânduri; cifra decide; calea: GIN `pg_trgm`, 78e) | după PoC (091) |
 | 77-r8 | permisiunea pe OData `text/plain` pe server (închisă de 80) | închisă de 80 |
 | 78-r1 | căutarea din grilele XAF rămâne sensibilă la diacritice (nu trec prin `DataSourceLoader`; asumat, 44/53) | după PoC (091) |
@@ -243,10 +243,10 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | TR-r4 | recepția fără factură (NIR pe aviz, 408): cerință de produs de confirmat; NIR rămâne tip până atunci (90) | după PoC (091) |
 | TR-r5 | DSC din FCL trece testul documentului-copil azi; de re-judecat dacă descărcarea devine clonă fără alegere de loturi (90) | după PoC (091) |
 | TR-r6 | conectorul 1C: data reală a împerecherii (artefact 2026-09-18) și deschiderea de terți per partener / per factură deschisă (65,5 % din soldul de terț) (90); cubul scrie `Imperechere.Data` ca atare (S-D13), deci artefactul rămâne al CONECTORULUI și se raportează, nu se corectează în cub (TR-D7a) | migrare (091) |
-| TR-r7 | sink-urile bugetare (Gratuit/Folosință/Custodie) ca gestiuni virtuale / cont 803x: fără cifre, probate la primul seed bugetar pe cub cu injectivitatea (90) | activă (091) |
+| TR-r7 | sink-urile bugetare Gratuit/Custodie și injectivitatea SAF-T rămân deschise; Folosință păstrează gestiunea reală pe lanțul FCT/NIR/BTR/BCS/LDI (093, LDI-B3) | activă (091) |
 | TR-r8 | rulajul brut per partidă nu e sumă sub tranzacția de transfer; fișa partidei se randează ca fereastră (90) | activă (091) |
 | TR-r9 | probele de formă din ModelCheck (≈300): inventar rescrie/șterge la TR-D8/D9, nu înainte (90) | activă (091) |
-| TR-r10 | deschiderea ca tranzacție de fel `Deschidere` fără document, dar CU unitate și partener pe terți; `Deschidere.cs` scrie tranzacția, nu rânduri bloc (90); intră la TR-D7b, odată cu tipurile rămase | activă (091) |
+| TR-r10 | deschiderea generică fără document, cu loturi și partide; detalierea înlocuiește soldul bloc și refuză diferențele (094, DES-B1…B4). Conectorul 1C rămâne separat în 091-r4/T-r4 | activă: mecanism implementat (SC-DES-01…10); review advers 2026-09-24 cu MAJOR-1 și MEDIU-1…8, corecturi în curs (098d); cititorii și consumul stocului inițial rămân TR-D8 |
 | TR-r11 | `Numar`, `DataScadenta`, `Autogenerat`, `DocumentSursa` rămân atribute ale documentului scrise la operare, sub gardianul (a) (90) | activă (091) |
 | TR-r12 | Δ de sold 3xx (+585.404,66 pe Flax) între registrul de stoc și cel contabil de azi: tranșată prin contractul 1 al reconcilierii 1C; constatare, nu consecință acceptată (90); intră la TR-D7b, cu tipurile care o produc | migrare (091) |
 | FZ-r1 | granul lui `Sold` contra snapshot-urile de azi (și dacă un read model mai grosier merită ca al doilea): gate la TR-D8, nu condiție prealabilă; FZ-r2 măsurată 2026-09-19 (fișa 348 contra 248 ms) și absorbită (90) | activă (091) |
@@ -275,7 +275,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | B-r1 | toleranța taxei culese, constantă de pilot în `Fapte.Operand`, refuza facturi pe care motorul vechi le operează (TR-D6b): devine `PoliticaTva.TolerantaTaxa`, MĂSURATĂ pe Flax la TR-D7a (275 de documente refuzate la 0,01 pe linia cotei, 17 la 0,10, maximul 55,87 — abateri reale ale datelor culese, nu rotunjire) și închisă ca politică OPȚIONALĂ: `null` = taxa culeasă autoritară, fără gard, ca azi; valoarea de produs rămâne S-r1 (TR-D7a) | închisă prin S-D15 |
 | B-r2 | sensul laturilor trezoreriei e tip-dependent și declarantul unic nu-l cunoaște (TR-D6b): devenit dată pe `TipDocument` (`LaturaContPropriu` = `Predator` pe plată, `Primitor` pe încasare, seed pe ambele profiluri), cu refuzul `LATURA_CONT_PROPRIU_NEPOTRIVITA`; `CONT_PROPRIU_LIPSA` rămâne pentru lipsă (TR-D7a) | închisă prin S-D7 |
 | B-r3 | recepția facturii (TR-D3) n-are regulă de contare proprie pe FCT: contrapartida se ia de pe regula `FCT/Serviciu`/`Cheltuiala` sau din politica de TVA; la TR-D7, când NIR-ul conex dispare, regula recepției devine rând de politică pe FCT (`FCT/Stoc`) (TR-D6b) | activă (091) |
-| B-r4 | taxarea inversă n-are azi fapt fiscal colectat (un singur rând `RegistruTva`, sens achiziție): piciorul 4427 al declarantului FCT rămâne fără `CodTva`; jurnalul de vânzări al autolichidării se tranșează la TR-D7/D8 (TR-D6b) | activă (091) |
+| B-r4 | Autocolectare distinctă la achiziția TI, cu Sens=Achiziție; D300 citește cele două obligații fără oglindire dublă, D394 o achiziție (103e) | închisă 2026-09-26: SC-CIT-81, matricea tipurilor și integralele verzi |
 | B-r5 | linia FCT care numește un lot recepționat pe aviz (`NIR` manual) ar posta `408 = 401` (TR-D3): CĂUTAT în motor la TR-D7a — fluxul NU există (NIR-ul manual postează `3xx = 401`, iar linia de stoc a facturii își naște singură lotul la culegere); `408` apare doar ca reclasificare de DATE la import (`HandlerFactura`), pe 17 facturi ale bazei Flax. Rămâne deschisă cu constatarea: nu se implementează fără oracol (TR-D7a) | după PoC (091) |
 | B-r6 | `Valuta`/`Curs` sunt câmpuri de frunză pe `FacturaIntrare` fără interfață declarată: operandul le lasă `null`; `IDocumentCuValuta` la primul consumator real (partida în valută, TR-D9) (TR-D6b) | activă (091) |
 | B-r7 | o linie cu DOUĂ conturi cu `RolTert` era nedefinită în declaranți (TR-D6b): 0 cazuri pe BCS/PLT/INC, 25 de facturi pe Flax (`408`, `4091`, `4092` contra `401`). Închisă ca REGULĂ, nu ca refuz: linia numește partidă pe AMBELE capete, fiecare pe contul lui (TR-D7a) | închisă prin S-D16 |
@@ -292,20 +292,56 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | S-r7 | un lot născut de o linie „în roșu” (valoare negativă, cantitate pozitivă) se evaluează negativ tăcut, ca în motorul vechi: invariantul „un lot nu se evaluează negativ” e pierdut odată cu admiterea semnului în `Operare` (TR-D7a) | activă (091) |
 | S-r8 | dry-run-ul nu fixează prețul și data lotului născut de document, deci contractul lui diferă de cel real pe `Unitate.Deschisa`; fără refuz fals azi (TR-D7a) | activă (091) |
 | S-r9 | `Pozitie` la cereri concurente poate da dubluri (două ObjectSpace-uri calculează `max + 1` din aceeași bază); ordinea rămâne deterministă prin `ThenBy(ID)`, dar proba promite `1..n` (TR-D7a) | activă (091) |
-| S-r10 | purja scenei `VerificaSaftStocuri` șterge `TipMaterial`-ul de scenă fără `ReguliContare`-le pe care seeder-ul i le atașează: o cădere în mijlocul scenei lasă un reziduu care blochează DEFINITIV rulările următoare pe acea bază, până la ștergerea manuală (TR-D7a) | activă (091) |
+| S-r10 | purja scenei `VerificaSaftStocuri` șterge `TipMaterial`-ul de scenă fără `ReguliContare`-le pe care seeder-ul i le atașează: o cădere în mijlocul scenei lasă un reziduu care blochează rulările următoare (TR-D7a) | închisă 2026-09-23: purja șterge întâi regulile `DinSeed` pe tipurile marcate ale scenei; recuperare probată pe reziduul real al unei rulări întrerupte |
 | S-r11 | dry-run-ul (`Valideaza`) prinde din declarație doar `OperareException`; o excepție de alt fel (`InvalidOperationException` din `Contractare`, `ArgumentException` din `N.Unitate`) iese 500, nu 422 — de tranșat la primul caz real sau la TR-D8, când dry-run-ul capătă cititor (TR-D7a) | activă (091) |
-| T-r1 | 090 (a) „EXACT o tranzacție `Operare`" devine „cel mult una `Operare` și cel mult una `Transfer`, cel puțin una" pentru tipurile cu linii care nu schimbă contul (BTR, ASM); litera (e) amendată; textul deciziei 090 nu se rescrie, amendamentul e în contractul TR-D7b (T-D2) | aplicată la pasul 1 (2026-09-21): `Declaratie.Mutari`, `Contract.Tranzactii`, litera (e) pe `Operare` ⊕ `Transfer` de stoc; rămâne deschisă până ASM (pasul 5) probează ramura `Operare` pe scenă |
+| T-r1 | 090 (a) „EXACT o tranzacție `Operare`" devine „cel mult una `Operare` și cel mult una `Transfer`, cel puțin una" pentru tipurile cu linii care nu schimbă contul (BTR, ASM); litera (e) amendată; textul deciziei 090 nu se rescrie, amendamentul e în contractul TR-D7b (T-D2) | închisă 2026-09-23: după pasul 1, SC-ASM-04/05/06/08 probează Operare, forma mixtă și inversarea completă pe ambele profiluri |
 | T-r2 | reziduul valoric lăsat de RLF pe lotul golit (valoare fiscală ≠ raportul lotului) contrazice 090 (j); se rezolvă la TR-D9 prin re-evaluarea unității cu reziduul spre 658/758 din politică (TR-D7b) | activă (091) |
 | T-r3 | postările NTC pe conturi cu `RolTert` care rămân FĂRĂ partener după (B) și pe 3xx fără lot (TR-r2): declarate până la TR-D9; litera (f) le exclude nominal (TR-D7b) | activă (091) |
 | T-r4 | `Deschidere.cs:43-50` și decizia 047 afirmă că 1C nu defalcă soldul de terț pe partener la 01.01 — FALS: defalcarea e în `BalantaNivel3`; se corectează la pasul 6, TR-r6 (deschiderea) și TR-r10 se închid (TR-D7b) | migrare (091) |
-| T-r5 | DVI deschide partidă pe 446 prin S-D16 deși `PoateFiStins = false`; hook-ul e al registrelor până la TR-D9 (TR-D7b) | activă (091) |
-| T-r6 | `Custodie` pe bugetar: cont 803x sau gestiune virtuală, după cum are planul bugetar contul — constatat la pasul 5 (TR-D7b) | activă (091) |
+| T-r5 | DVI deschide partidă pe contrapartida cu RolTert (401 probat; 446 numai dacă este configurat astfel), deși `PoateFiStins = false`; hook-ul e al registrelor până la TR-D9 (TR-D7b, DVI-B3) | activă (091) |
+| T-r6 | `Custodie` pe bugetar: explicit neacoperită la LDI; de definit contul politicii dintre cele zece 803x și perechea cantitativă/valorică (093d, LDI-B3) | activă (091) |
 | T-r7 | diferența declarată T-D2.2 (BTR: `round(q × PretUnitar)` în registre contra raportului curent în cub, 535 documente / 28,60 lei absolut pe Flax) și T-D4.2 (DSC: 842 documente / Σ +31,01 lei, |Δ| max 16,50) e invizibilă reconcilierii (a)–(g) și devine vizibilă la citirile pe cub per gestiune × lot; TR-D8 o raportează, nu o absoarbe (TR-D7b) | cade la TR-D9 (090, 091) |
 | T-r8 | `RegimTva.Capitalizat` pe o linie de FCL nu se desface în bază + taxă (FCT o face prin `Netele`); pe Flax nu există, pe bugetar nu e politică de TVA — de pin-uit la TR-D9 dacă apare (TR-D7b, pasul 2) | după PoC (091) |
 | T-r9 | `TipDocument.LaturaContPropriu` (B-r2, dată de seed) e redundantă cu contractul structural `Plata`/`Incasare.Laturi()` (T-D13): nimeni n-o mai citește; coloana și rândul de seed se scot la prima migrație care atinge `TipDocument`, nu acum (T-D13 (d): nicio migrație în pasul 2b) (TR-D7b, pasul 2b) | activă (091) |
+| T-r10 | DVI fără net: baza vamală distinctă în Carte=Fiscal, conform DVI-B1…B7 (`docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md`); declarant, normalizare, 20 de scenarii și SC-X-14 implementate | închisă 2026-09-23; gate integral 1.829/2.897 OK, nucleu 165/165; manifestele în `scenarii/DVI.md` |
+| T-r11 | Cititorii pe cont la TR-D8: balanța, fișa și rulajele folosesc o singură intrare cu `Carte=Contabil`; probe pe rulaje și solduri filtrate pe partener cu DVI fiscală prezentă. Filtrul din ReconciliereCub și SC-DVI-16 sunt condiții ale DVI, nu închid portarea cititorilor de producție. Contract: DVI-B4 | activă, TR-D8 (091) |
+| T-r12 | ASM: transformarea n→m, varianta A cu Δ local, storno complet și scenarii. Contract aprobat ASM-B2…B7 în `docs/nucleu/tr-d7b-asm-transformare-contract.md`; catalog `ASM.md` | închisă 2026-09-23: review aplicat, MEDIU-2/MINOR-3/MINOR-4 corectate, MEDIU-1 amânat explicit de owner în T-r15; integral 2.003/3.097 OK, nucleu 178/178 |
+| T-r13 | Reziduul valoric transversal dual pe lot × gestiune × cont: diagnostic cu proveniență și probe BCS/ASM 1+1+1. Închiderea cere evaluări noi pe soldul complet al cubului ȘI tratarea explicită a soldurilor istorice divergente; schimbarea cititorului nu șterge istoricul. Contract ASM-B7 | activă, TR-D8/TR-D9 (091) |
+| T-r14 | Cititorii TR-D8 (jurnal, fișă, GL, MovementOfGoods) exclud structural contraponderile Transformare, cu probe; diagnosticul Comparabil le exclude cu numărul raportat. Contract ASM-B2/B7 | activă, TR-D8 (091) |
+| T-r15 | Delimitarea diferențelor contabile ASM: Operare exclusă nominal din (a), număr și diferențe raportate în (h), probe independente obligatorii. Contract D8-B4 / T-D10 / ASM-B7 | închisă 2026-09-24: aprobată de owner, implementată și probată pe ambele profiluri; integral 2.616/3.707 OK, manifest 20260924-101646-615; T-r13 rămâne activă |
+| T-r16 | BTR cu schimbare de cont: declarantul și culegerea nu au cont destinație; excepția ASM nu se extinde la BTR fără decizie și scenarii proprii (TR-D7b) | după PoC (091) |
 | IM-r7 | extensia per client a modelului (`DbContext` de extensie / migrații per client): spike separat înaintea oricărei decizii de produs (90) | după PoC (091) |
 | 091-r1 | filtrul `--scenarii <TIP>` în ModelCheck: un tip într-un minut pe o bază de profil; azi scenele rulează doar în suita integrală (091) | închisă 2026-09-22 (`ScenelePeTip`; toate tipurile de pe cub în ~15 s pe privat) |
 | 091-r2 | recensământul pe clona Flax per tip rămas (NTC, ITV, RDC, RLF, ASM, LDI, NIR), o dată, înaintea scenariilor lui; cifrele în coloana „Proveniență” a fișierului tipului (091) | activă (091) |
 | 091-r3 | testul de arhitectură care refuză accesul la `Postare` în afara cititorilor comuni (`Module/Cub/Citiri`); `Transfer` și stornourile lui excluse acolo, nu per raport (091, TR-D8) | activă (091) |
 | 091-r4 | felia de migrare, cu decizie proprie, după „rotund”: conectorul 1C repornit pe modelul final, deschiderea de terți din `BalantaNivel3` (T-r4), stingerile 2024, reconcilierea 1C ca raport de diferențe (091) | migrare (091) |
 | 091-r5 | un caz apărut la migrare care contrazice catalogul devine scenariu nou plus decizie; oracolul normalizat (`CubDinRegistre`, `Normalizari`) nu se mai extinde (091) | migrare (091) |
+| 095-r1 | DEC → contract IMO → PIF/AMO/CAS complete pe cub, inclusiv cartea fiscală și istoricul fișei, înaintea TR-D8 (095), PIF cu suport obligatoriu aprobat (097); urmărirea partidelor separată de RolTert (096) | activă: producători și cititor de fișă implementați, SC-IMO-01…25 verzi pe ambele profiluri; review advers făcut 2026-09-24, corecturi în curs (098b/c/d) |
+| 096-r1 | Diagnostic și tratare explicită la TR-D8 pentru postările istorice fără unitate pe conturi cu UrmarestePartide; migrația atributului nu reconstruiește istoria (096d) | depășită de 102 (2026-09-25): bazele de dezvoltare se recreează, istoria nu se diagnostichează |
+| 097-r1 | diagnosticul istoriei PIF fără fișă/origine/suport înaintea activării cititorilor (097) | activă, TR-D8 (091) |
+| 097-r2 | auditul anulării fizice a suportului eliberat; proveniența fără FK restrictiv (097, 091j) | activă, TR-D9 (091) |
+| 097-r3 | blocajul tranzacțional comun pe bază, limitat la IMO și suportul lui; mecanismul general rămâne 091 (g)(4) (097) | activă (091) |
+| 098-r1 | conturile de contrapartidă ale deltei NIR conex per profil, aprobate de owner înaintea codului (098a); privat fixat prin 099(e), bugetar în tr-d8-nir-delta-contract.md §NIR-D4 | închisă 2026-09-24: owner-ul aprobă maparea bugetară, inclusiv 35x PeDrum și 428.01.02 pentru personal; implementată în felia NIR delta, în așteptarea review-ului |
+| 098-r2 | recensământul pe clona Flax al conexelor NIR editate față de sursă (098a) | închisă 2026-09-24: 17.814 conexe FCT, zero diferențe de laturi sau multiset lot/tip/cantitate/valoare pe clona Flax.Api; SQL recensamant-nir-delta.sql, rezultatul în run-nucleu/tr-d8/nir-delta/recensamant.json; nu certifică fluxul nou |
+| 098-r3 | garda registrelor după storno/anulare NIR acoperit cu consum: registrul negativ poate refuza alte operații pe lot; limită acceptată de owner, fără compatibilizare (NIR-D5) | cade la TR-D9 |
+| 099-r1 | LDI adoptă cauza diferenței: minus imputabil pe partener, perisabilitate, neimputabilă; plus (099) | activă (091) |
+| 099-r2 | efectele fiscale per cauză a diferenței: ajustarea TVA, deductibilitatea (099) | după PoC (091) |
+| 099-r3 | BTR cu lipsă la primire, pe clasificarea cauzei diferenței (099) | după PoC (091) |
+
+| 100-r1 | Acoperirea bugetară a partidelor pe cele trei conturi DinSeed, ciclurile FCT/PLT, FCL/INC, NTC și deschidere; refuz istoric conform 096-r1 | închisă 2026-09-25: SC-CIT-41…48 și cataloagele tipurilor, integral 3.036/4.026 OK; raportul/snapshot-ul rămân la TR-D8 |
+
+| 101-r1 | Efect obligatoriu al împerecherii, refuz atomic, candidați/disponibil pe cub și diagnostic al legăturilor istorice fără efect (101) | închisă 2026-09-25 în C102: D-2 și D-3 corectate (SC-CIT-66/67), diagnosticul istoric depășit de 102; anterior activă, redeschisă 2026-09-25 de owner după review-ul advers (`comunicari/2026-09-25-1237`): NTC consumă retroactiv partida stinsă la o dată ulterioară (D-2); ținta deschisă prin Transfer e oferită în panou, dar refuzată de comandă (D-3). Închiderea anterioară: SC-CIT-49…65, integrale 3.107/4.103 OK |
+| 102-r1 | Scoaterea codului de compatibilitate (102c), invarianții devin probe ModelCheck (102d), comprimarea migrațiilor tranșată (102e); felia de curățenie înaintea snapshot-ului de stoc | închisă 2026-09-25 (C102, contractul §Închiderea) |
+| 102-r2 | Alinierea deciziilor, stare-curenta și restanțelor cu 102(c) | închisă 2026-09-25 (C102) |
+| 102-r3 | Rețeta de recreare a bazelor de dezvoltare și recrearea lor (102b) | închisă 2026-09-25 (C102; rețeta în `stare-curenta/dezvoltare-si-validare.md`) |
+| 102-r4 | Desfacerea automată fără efect în cub: refuz sau invariant `INV-CUB` (102) | activă |
+| 102-r5 | Perf `Fapte.PartideDisponibile` pe volum: agregarea temporală în SQL (102) | după PoC |
+
+| 103-r1 | Felia fiscală D8-B8: fapte istorice, perioade distincte, corecții/depunere, cititori comuni și probe SC-CIT-79…87 (103) | închisă 2026-09-26: 3.182/4.214 OK, 180/180 Nucleu, HTTP/browser și A/B; restul SAF-T și gate-ul transversal de performanță rămân TR-D8 |
+| 103-r2 | Intervale TVA și avertismente/raport de impact, cu referință la avans (103h); contract `tr-d8-tva-intervale-contract.md`, SC-CIT-90…94 | activă: specificație pentru review, fără cod; referința la avans cu mai multe cote cere delimitarea explicită din contract |
+
+| 104-r1 | Felia C104: entități proprii și ștergere fizică, coaja comenzii fără OS dat de apelant, culegerea unică L3, aria React, review advers (104, pașii 1–5) | închisă 2026-09-27: pașii 1–5 pe `c104-straturi`, review Codex R1–R3 plus R4/R5 corectate, integral verde pe ambele profiluri |
+| 104-r2 | Coaja comenzii fără `IObjectSpace` și hook-urile cu `os` de pe entitate mutate în declarant/coajă (104b) | cade la TR-D9 |
+| 104-r3 | Filtrarea pe `Activ` în lookup-urile documentelor noi (104, L3/L4) | după PoC |
+| 104-r4 | Paginile React de culegere: scoase sau generate din metadate (104d) | după PoC |
+| 104-r5 | Fixture propriu al matricei `refuzuri.ps1` (subiecții creați și șterși de probă), înaintea pasului 5 din C104 | închisă 2026-09-27: 294/294 PASS de două ori pe baza Privat din seed |

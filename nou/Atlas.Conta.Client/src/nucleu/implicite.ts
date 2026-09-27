@@ -15,7 +15,7 @@ import type { components } from '../generated/api-types';
 // lui, și îl poate schimba. Fără asta, cifra apărea abia după „Salvează", ca și
 // cum ar fi ghicit-o cineva. Cele două nu pot diverge fiindcă e aceeași funcție
 // pe server (`ImpliciteService.TipTva`), chemată o dată prin ruta asta și o dată
-// prin `TvaService.AplicaTipTvaImplicit`.
+// prin culegere (`CulegereDocument`, 104c).
 //
 // Ce NU se schimbă din 56: tăcerea are semantică. Pe o linie EXISTENTĂ absența
 // tipului în payload rămâne GOLIRE deliberată (round-trip), iar precompletarea

@@ -20,6 +20,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // INTERNI (ex. SEDIU), purtători ai dimensiunii Repartitor implicite din 00 §5.
 [TipDetaliu(typeof(NotaContabilaDetaliu))]
 public class NotaContabila : Document, IDocumentCuPostareExplicita {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantNotaContabila.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.InternaSauProprie, Declaratii.Latura.InternaSauProprie);
 

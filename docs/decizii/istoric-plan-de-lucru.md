@@ -1,4 +1,4 @@
-﻿# Istoricul de execuție al planului de lucru (snapshot 2026-08-24)
+# Istoricul de execuție al planului de lucru (snapshot 2026-08-24)
 
 > Extras verbatim din `CLAUDE.md` la 2026-08-24 (commit `f18c24c`); secțiunea
 > finală (cronologia compactă) e mutată din `CLAUDE.md` la 2026-09-11. Starea
@@ -770,3 +770,94 @@ detaliat în jurnal):
   `Deschidere` generic, pasul 7 se taie. Următorul pas: 091-r1
   (`--scenarii <TIP>`), fișierele tipurilor deja pe cub, apoi pasul 3 NTC +
   ITV pe scenarii.
+
+- **TR-D7b, pasul 4 — DVI și SC-X-14** (2026-09-23): implementat
+  contractul aprobat DVI-B1…B7. Baza vamală devine pereche echilibrată în
+  Carte=Fiscal, taxa rămâne contabilă; fără schemă nouă sau cont tehnic.
+  `DeImport` intră în operandul închis; activare numai pe privat.
+  20 de scenarii DVI, inclusiv baza 0,01/taxa 0, 401 cu dependent NTC,
+  storno/corecție și înregistrarea întârziată. SC-X-14 verifică fiscalitatea
+  pe matricile numerice ale catalogului, cu martori de duplicare/lipsă.
+  `ReconciliereCub.Contabile` filtrează cartea contabilă; adaptorul DVI
+  reconstruiește perechea fiscală și gestiunea taxei. Gate integral
+  1.829 bugetar / 2.897 privat, zero FAIL; nucleu 165/165. Manifestele și
+  acoperirea sunt în `docs/nucleu/scenarii/DVI.md`. T-r10 închisă; T-r11,
+  B-r4, T-r5/86-r11, 86-r2 și reevaluarea pe loturi rămân declarate.
+  Următorul pas: ASM → LDI → NIR, cu scenarii înainte de cod.
+
+- **TR-D8 pregătire — corecturi citiri/DEC și NIR delta** (2026-09-24):
+  proveniența stornoului este obligatorie la citire, cu completare numai a
+  perechilor istorice univoce; contraponderea virtuală are un predicat comun.
+  DEC probează numeric inversarea/corecția partidei 542. NIR aplică 098/099:
+  diferență față de recepția istorică a facturii, cauză și politică pe clasă,
+  imputat extern/angajat, proveniență persistentă inclusiv la delta zero,
+  unicitate concurentă a cumulului și gardian de stoc pe cub. Maparea
+  bugetară NIR-D4 a fost aprobată explicit de owner. API/clientul expun
+  cauza, imputatul și politicile; reconcilierea fizică delimitează în (h)
+  întreg grupul cu delta nenulă. Contractul și probele finale sunt în
+  `docs/nucleu/tr-d8-nir-delta-contract.md` și `docs/nucleu/scenarii/NIR.md`.
+  Review-ul advers a fost amânat de owner până după NIR; predare fără
+  commit. Cititorii generali rămân de portat la TR-D8; intervalul dintre
+  inversarea și operarea cumulului corectat poate lăsa registrele vechi
+  negative și este raportat ca grup incomplet.
+
+- **Corecturi review NIR 1945** (2026-09-24): proveniență completată în
+  migrație, fără fallback runtime; citirea sursei o singură dată pe comandă,
+  imputat golit când nu produce efect, analiza istorică păstrată. Probe noi
+  SC-NIR-32…36; Integral 2.836/3.917 OK, selectiv NIR 227/224 OK, zero FAIL,
+  client/drift/HTTP/browser trecute. Limita gărzii registrelor include și
+  storno/anularea simplă după consum, 098-r3 cade la TR-D9. Predare fără
+  commit pentru reverificarea independentă.
+
+- **TR-D8 — snapshot de stoc pe cub** (2026-09-25): cheia devine
+  lot/cont/produs/gestiune, cu data deschiderii păstrată. Materializarea
+  incrementală, reconstrucția și cititorul comun folosesc cubul; registrul
+  necesar regimului dual rămâne separat. SC-CIT-69…75 probează recepția
+  fără NIR operat, deschiderea, transferul/consumul, storno peste închidere,
+  FIFO, alterarea snapshot-ului, reziduul valoric și securitatea HTTP.
+  ModelCheck integral 3.166 bugetar / 4.166 privat OK, zero FAIL; HTTP 15/15;
+  client și regenerarea artefactelor verificate. Schema a fost probată pe
+  baze noi, fără recrearea bazelor principale (102b). Review propriu în
+  `docs/nucleu/tr-d8-review-codex.md`; fiscal/SAF-T și verificările
+  transversale rămân deschise. Predare fără commit și fără mesaj intermediar
+  către Claude, conform instrucțiunii owner-ului.
+
+- **TR-D8 — corecturi snapshot C1–C5** (2026-09-25, peste `07c79e0`):
+  proiecție comună de lot și helper pentru referință + fereastră, într-o
+  singură instrucțiune SQL. Evaluarea ieșirilor consumă snapshot-ul cu
+  graniță strict anterioară. Scrierile globale refuză securitatea activă;
+  HTTP a corectat presupunerea că interfața `ISecuredObjectSpace` ar fi
+  suficientă pentru a o identifica în DevExpress 26.1. Migrația a fost
+  aplicată pe cele trei baze principale, fără recreare; bazele reziduale
+  au fost numai inventariate. SC-CIT-76…78 adăugate, 69…75 păstrate.
+  Integral final **3.178/4.178 OK**, zero FAIL,
+  `run-verificari/20260925-213600-946`; HTTP **15/15**, curățare verificată;
+  client și regenerări stabile. Eșecurile intermediare, hash-urile,
+  comenzile și limitele sunt în `docs/nucleu/tr-d8-review-codex.md`.
+  Predare fără commit. D8-B8 și SC-CIT-79…87 pregătesc fiscal/TVA, cu
+  surse, alternative și trei alegeri pentru owner; rămân propuneri,
+  fără modificări fiscale de cod și fără mesaj intermediar către Claude.
+
+- **TR-D8 — felia fiscală 103** (2026-09-25/26, peste `07c79e0`): owner-ul
+  aprobă F1=A/F2=A/F3=A. Faptele fiscale păstrează calificarea istorică și
+  atribuiri distincte D300/D394; corecția tehnică folosește Δ curent D300 și
+  înlocuirea facturii D394. Depunerea se confirmă explicit; anularea faptelor
+  declarate și depunerea corecțiilor incomplete se refuză. Autocolectare
+  distinctă la TI, mapare SAF-T versionată pe secțiune. Cititorii comuni,
+  API și client sunt portați împreună. Integral **3.182/4.214**, Nucleu
+  **180/180**, HTTP securizat/browser și artefacte stabile; A/B documentat
+  inclusiv regresia de latență a jurnalului/D394. `103-r1` și `B-r4` închise;
+  restul SAF-T, reconcilierea/auditul și scalarea rămân TR-D8. Fără commit.
+
+- **Fiscal 103 — review R1–R5** (2026-09-26, același diff peste `07c79e0`):
+  amprentă a faptelor exportate și refuz atomic al versiunii depășite,
+  snapshot comun raport/amprentă, eliminarea politicii `DeclarareIntarziata`,
+  CHECK pentru calificarea fiscală completă, contract și stare aliniate.
+  SC-CIT-88/89, integral **3.207/4.237 OK**, zero FAIL,
+  `run-verificari/20260926-111832-851`; HTTP și browser cu exportul vechi
+  refuzat și noul export confirmat, metadata/OpenAPI/types stabile,
+  client final build exit 0. Migrația `FiscalComplet` aplicată și verificată
+  pe cele trei baze principale fără recreare. R6 rămâne specificație:
+  103(h), SC-CIT-90…94, `tr-d8-tva-intervale-contract.md`, fără cod;
+  referința la avans cu mai multe cote este delimitată pentru review.
+  Comenzile și limitele sunt în `tr-d8-review-codex.md`. Fără commit.

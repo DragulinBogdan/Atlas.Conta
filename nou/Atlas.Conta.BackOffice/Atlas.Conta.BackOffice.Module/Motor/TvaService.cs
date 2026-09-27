@@ -18,6 +18,11 @@ public static class TvaService {
             .ToDictionary(t => t.ID, t => new InfoTva(t.Regim, t.Cota));
     }
 
+    /// <summary>Valoarea liniei datorată terțului: taxa autolichidată (TaxareInversa) rămâne în afara decontării.</summary>
+    public static decimal DatoratTertului(DocumentDetaliu d, IReadOnlyDictionary<Guid, InfoTva> tipuri) =>
+        d.Valoare + (d.TipTvaId is Guid id && tipuri.TryGetValue(id, out var tip) && tip.Regim == RegimTva.TaxareInversa
+            ? 0m : d.ValoareTva);
+
     // Formula fixată în design §3, cu SENSUL adăugat de F13-D1:
     //   Capitalizat:            Valoare = net × (1 + Cota/100); ValoareTva = 0
     //   Normal:                 Valoare = net;                  ValoareTva = net × Cota/100
@@ -80,31 +85,6 @@ public static class TvaService {
         d.ValoareTva = Scara.RotunjesteBani(d.ValoareTva);
     }
 
-    // GATE XAF (D5): calculul la CULEGERE — aceeași formulă, un singur apelant
-    // nou. Operatorul trebuie să vadă `Valoare`/`ValoareTva`/`Total` înainte de
-    // operare (confruntarea cu hârtia), nu abia după ce registrele s-au scris.
-    //
-    // Semantica diferă de a motorului într-un singur punct, deliberat:
-    // `pastreazaTvaCules: false`. La culegere BAZA S-A SCHIMBAT (cantitate, preț
-    // sau tip de TVA), deci un ValoareTva rămas de la baza precedentă e stale și
-    // se recalculează; regula 36a („TVA-ul cules bate rotunjirea noastră") e
-    // regula OPERĂRII și rămâne neatinsă — un override manual introdus DUPĂ
-    // ultima schimbare de bază supraviețuiește până la operare, fiindcă
-    // apelantul (controllerul de culegere) invocă seam-ul doar la schimbarea
-    // bazei. Lucrează pe FK-uri + IObjectSpace (25b), ca restul motorului.
-    //
-    // F13-D1: direcția o rezolvă SEAM-UL, nu apelantul — culegerea n-are de ce
-    // să știe de `PoliticaTva`. Documentul-gazdă se primește explicit (nu prin
-    // `linie.Document`): navigația lazy nu e garantată pe toate căile (25b), iar
-    // toți apelanții îl au deja la îndemână. Supraîncărcarea pe `DirectieTva?`
-    // există pentru buclele Apply, care rezolvă direcția O SINGURĂ DATĂ per
-    // document, nu per linie.
-    public static void CalculeazaLaCulegere(IObjectSpace os, Document doc, DocumentDetaliu linie, decimal baza) =>
-        CalculeazaLaCulegere(os, DirectiePentru(os, doc), linie, baza);
-
-    public static void CalculeazaLaCulegere(IObjectSpace os, DirectieTva? directie, DocumentDetaliu linie, decimal baza) =>
-        CalculeazaValori(linie, baza, IncarcaTipuri(os, new[] { linie }), directie);
-
     // Latura fiscală a tipului de document (36b): `Deductibil` = achiziție,
     // `Colectat` = livrare, `null` = tipul nu e eveniment de TVA în profilul
     // ăsta (nicio `PoliticaTva`) — caz în care motorul nu postează TVA oricum.
@@ -144,28 +124,7 @@ public static class TvaService {
                     // distinge, iar mesajul nu trebuie să acuze (review F13, defect 2).
                     + $"linia {c.Pozitie} poartă TVA {c.TvaCules:N2} — goliți-o înainte de operare.");
     }
-
-    // Datoria P1 (design §8): default TipTva aplicat la CULEGERE, nu în motor.
-    // No-op dacă linia are deja un TipTva cules — culegerea explicită bate
-    // default-ul, iar pe o linie EXISTENTĂ absența e golire deliberată (56).
-    //
-    // De la felia 23 e un WRAPPER peste `ImpliciteService.TipTva`: ancora
-    // `TipDocument.TipTvaImplicit` a devenit ultima treaptă a unei rezolvări cu
-    // trei picioare (partener → politică → ancoră, împăcate cu cota produsului),
-    // dar semnătura NU se schimbă — cei șase apelanți (cinci Apply-uri +
-    // `DefaultTipTvaController`) rămân neatinși, iar serverul și clientul nu pot
-    // diverge fiindcă amândoi trec prin aceeași funcție (F23-D1/D6).
-    //
-    // Data e a DOCUMENTULUI (rândurile de politică au valabilitate), produsul
-    // vine prin contractul bazei (`ProdusCules`), partenerul prin întrebarea
-    // pusă nomenclatorului — niciun `is` pe frunze (25b).
-    public static void AplicaTipTvaImplicit(IObjectSpace os, Document doc, DocumentDetaliu linie) {
-        if (linie.TipTvaId != null)
-            return;
-        var tip = MotorOperare.GasesteTipDocument(os, doc);
-        var rezultat = ImpliciteService.TipTva(os, tip.ID,
-            ImpliciteService.PartenerulDocumentului(os, doc), linie.ProdusCules(), doc.Data);
-        if (rezultat.TipTvaId != null)
-            linie.TipTvaId = rezultat.TipTvaId;
-    }
 }
+
+/// <summary>Tipurile de TVA ale liniilor și latura fiscală a documentului, citite o dată per calcul.</summary>
+public sealed record ContextTva(IReadOnlyDictionary<Guid, TvaService.InfoTva> Tipuri, DirectieTva? Directie);

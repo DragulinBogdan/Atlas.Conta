@@ -2,10 +2,6 @@ using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 using DevExpress.Data.Filtering;
 using DevExpress.ExpressApp;
-using DevExpress.Persistent.BaseImpl.EF;
-// `IgnoreQueryFilters` — raportul trebuie să vadă și rândurile ȘTERSE LOGIC,
-// fiindcă exact ele sunt capătul mort al unei referințe de politică.
-using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
@@ -49,18 +45,14 @@ public static class VerificareProfilService {
         var profil = os.GetObjectsQuery<SetareProfil>().FirstOrDefault()?.Profil
             ?? ProfilContabil.Privat;
 
-        // Etichetele, INCLUSIV ale rândurilor șterse logic: sunt numele
-        // majorității rândurilor de politică, iar un tip șters e chiar cazul pe
-        // care categoria (b) îl caută.
-        var coduriTip = CoduriCuSterse<TipDocument>(os, t => t.Cod);
-        var coduriTva = CoduriCuSterse<TipTva>(os, t => t.Cod);
-        var coduriMaterial = CoduriCuSterse<TipMaterial>(os, t => t.Cod);
+        var coduriTip = Coduri<TipDocument>(os, t => t.Cod);
+        var coduriTva = Coduri<TipTva>(os, t => t.Cod);
+        var coduriMaterial = Coduri<TipMaterial>(os, t => t.Cod);
         string CodTip(Guid id) => coduriTip.GetValueOrDefault(id) ?? "(tip necunoscut)";
         string CodTva(Guid id) => coduriTva.GetValueOrDefault(id) ?? "(tip TVA necunoscut)";
         string CodMaterial(Guid id) => coduriMaterial.GetValueOrDefault(id) ?? "(tip material necunoscut)";
 
         RanduriManuale(os, constatari, CodTip, CodTva, CodMaterial);
-        ReferinteSterse(os, constatari, CodTip, CodTva);
         TipuriInactiveReferite(os, constatari, CodTip);
         AncoreLipsa(os, constatari, CodTip);
         foreach (var gol in ContaSeeder.GoluriMapari(os, profil))
@@ -68,17 +60,9 @@ public static class VerificareProfilService {
         return constatari;
     }
 
-    static Dictionary<Guid, string> CoduriCuSterse<T>(IObjectSpace os, Func<T, string> cod)
-            where T : BaseObject =>
-        os.GetObjectsQuery<T>().IgnoreQueryFilters().ToList()
-            .ToDictionary(x => x.ID, x => cod(x) ?? "(fără cod)");
-
-    /// <summary>Id-urile rândurilor ȘTERSE LOGIC (văzute doar peste filtrul global).</summary>
-    static HashSet<Guid> Sterse<T>(IObjectSpace os) where T : BaseObject {
-        var vii = os.GetObjectsQuery<T>().Select(x => x.ID).ToList().ToHashSet();
-        return os.GetObjectsQuery<T>().IgnoreQueryFilters().Select(x => x.ID).ToList()
-            .Where(id => !vii.Contains(id)).ToHashSet();
-    }
+    static Dictionary<Guid, string> Coduri<T>(IObjectSpace os, Func<T, string> cod)
+            where T : EntitateConta =>
+        os.GetObjectsQuery<T>().ToList().ToDictionary(x => x.ID, x => cod(x) ?? "(fără cod)");
 
     // ── (a) Rândurile care NU mai sunt ale seed-ului ────────────────────────
     // `DinSeed = false` = creat de client SAU editat de client (gardianul stinge
@@ -123,6 +107,8 @@ public static class VerificareProfilService {
             r => $"{codTip(r.TipDocumentId)} / {r.Latura}"),
         [typeof(RegulaContare)] = Tabel<RegulaContare>("Reguli de contare",
             r => codTip(r.TipDocumentId)),
+        [typeof(PoliticaDiferenta)] = Tabel<PoliticaDiferenta>("Politici diferență",
+            p => $"{codTip(p.TipDocumentId)} / {p.Cauza} / {p.ClasaId}"),
         [typeof(PoliticaConex)] = Tabel<PoliticaConex>("Politici conex",
             p => codTip(p.TipDocumentSursaId)),
         [typeof(PoliticaScadenta)] = Tabel<PoliticaScadenta>("Politici de scadență",
@@ -142,6 +128,8 @@ public static class VerificareProfilService {
             m => $"{codTva(m.TipTvaId)} / {m.Sens}"),
         [typeof(MapareD394)] = Tabel<MapareD394>("Mapări D394",
             m => $"{codTva(m.TipTvaId)} / {m.Sens}"),
+        [typeof(MapareTvaSaft)] = Tabel<MapareTvaSaft>("Mapări TVA SAF-T",
+            m => $"{m.Versiune} / {m.Sectiune} / {codTva(m.TipTvaId)} / {m.Cota} / {m.Sens} / {m.Rol}"),
         [typeof(PoliticaAmortizare)] = Tabel<PoliticaAmortizare>("Politici de amortizare",
             p => codMaterial(p.TipMaterialId)),
         [typeof(RegulaDeductibilitate)] = Tabel<RegulaDeductibilitate>("Reguli de deductibilitate",
@@ -153,83 +141,6 @@ public static class VerificareProfilService {
     static string Cheia(Func<Guid, string> codTip, PoliticaTvaImplicit p) =>
         $"{codTip(p.TipDocumentId)} × {p.ClasaFiscala?.ToString() ?? "orice clasă"}"
         + (p.ValabilDeLa == null ? "" : $" de la {p.ValabilDeLa:dd.MM.yyyy}");
-
-    // ── (b) Referințe spre rânduri ȘTERSE LOGIC ────────────────────────────
-    // Ștergerea e amânată (60a), iar filtrul global ascunde rândul șters — deci
-    // o politică ce îl referă arată cu navigația goală și FK-ul plin. Motorul o
-    // citește ca „fără cont" / „fără tip" și tace. Aici se strigă.
-    static void ReferinteSterse(IObjectSpace os, List<ConstatareProfil> constatari,
-            Func<Guid, string> codTip, Func<Guid, string> codTva) {
-        var tipuriSterse = Sterse<TipDocument>(os);
-        var tvaSterse = Sterse<TipTva>(os);
-        var conturiSterse = Sterse<Cont>(os);
-        var claseSterse = Sterse<ClasaProdus>(os);
-        var materialeSterse = Sterse<TipMaterial>(os);
-        var randuriSterse = Sterse<RandD300>(os);
-
-        void Ref(string tabel, string cheie, Guid? id, HashSet<Guid> sterse, string camp) {
-            if (id is Guid g && g != Guid.Empty && sterse.Contains(g))
-                constatari.Add(new ConstatareProfil(tabel, cheie, FelConstatare.ReferintaStearsa,
-                    $"Câmpul „{camp}” arată spre un rând ȘTERS din nomenclator — motorul îl citește ca "
-                    + "absent și tace. Alegeți alt rând sau reactivați-l."));
-        }
-
-        foreach (var r in os.GetObjectsQuery<RegulaStoc>().ToList()) {
-            var cheie = $"{codTip(r.TipDocumentId)} / {r.Latura}";
-            Ref("Reguli de stoc", cheie, r.TipDocumentId, tipuriSterse, "Tip document");
-            Ref("Reguli de stoc", cheie, r.ClasaId, claseSterse, "Clasă");
-        }
-        foreach (var r in os.GetObjectsQuery<RegulaContare>().ToList()) {
-            var cheie = codTip(r.TipDocumentId);
-            Ref("Reguli de contare", cheie, r.TipDocumentId, tipuriSterse, "Tip document");
-            Ref("Reguli de contare", cheie, r.TipMaterialId, materialeSterse, "Tip material");
-            Ref("Reguli de contare", cheie, r.ContDebitId, conturiSterse, "Cont debitor");
-            Ref("Reguli de contare", cheie, r.ContCreditId, conturiSterse, "Cont creditor");
-        }
-        foreach (var p in os.GetObjectsQuery<PoliticaConex>().ToList()) {
-            var cheie = codTip(p.TipDocumentSursaId);
-            Ref("Politici conex", cheie, p.TipDocumentSursaId, tipuriSterse, "Tip document sursă");
-            Ref("Politici conex", cheie, p.TipDocumentTintaId, tipuriSterse, "Tip document țintă");
-        }
-        foreach (var p in os.GetObjectsQuery<PoliticaScadenta>().ToList())
-            Ref("Politici de scadență", codTip(p.TipDocumentId), p.TipDocumentId, tipuriSterse, "Tip document");
-        foreach (var p in os.GetObjectsQuery<PoliticaValidare>().ToList())
-            Ref("Politici de validare", codTip(p.TipDocumentId), p.TipDocumentId, tipuriSterse, "Tip document");
-        foreach (var p in os.GetObjectsQuery<PoliticaNumerotare>().ToList())
-            Ref("Politici de numerotare", codTip(p.TipDocumentId), p.TipDocumentId, tipuriSterse, "Tip document");
-        foreach (var p in os.GetObjectsQuery<PoliticaTva>().ToList()) {
-            var cheie = codTip(p.TipDocumentId);
-            Ref("Politici de TVA", cheie, p.TipDocumentId, tipuriSterse, "Tip document");
-            Ref("Politici de TVA", cheie, p.ContrapartidaFallbackId, conturiSterse, "Contrapartidă fallback");
-        }
-        foreach (var p in os.GetObjectsQuery<PoliticaInchidereTva>().ToList()) {
-            var cheie = codTip(p.TipDocumentId);
-            Ref("Politici de închidere TVA", cheie, p.TipDocumentId, tipuriSterse, "Tip document");
-            Ref("Politici de închidere TVA", cheie, p.ContDeductibilaId, conturiSterse, "Cont TVA deductibilă");
-            Ref("Politici de închidere TVA", cheie, p.ContColectataId, conturiSterse, "Cont TVA colectată");
-            Ref("Politici de închidere TVA", cheie, p.ContDePlataId, conturiSterse, "Cont TVA de plată");
-            Ref("Politici de închidere TVA", cheie, p.ContDeRecuperatId, conturiSterse, "Cont TVA de recuperat");
-        }
-        foreach (var p in os.GetObjectsQuery<PoliticaMiscareSaft>().ToList())
-            Ref("Politici de mișcare SAF-T", $"{codTip(p.TipDocumentId)} / {p.TipStoc}",
-                p.TipDocumentId, tipuriSterse, "Tip document");
-        foreach (var p in os.GetObjectsQuery<PoliticaTvaImplicit>().ToList()) {
-            var cheie = Cheia(codTip, p);
-            Ref("Implicite de TVA", cheie, p.TipDocumentId, tipuriSterse, "Tip document");
-            Ref("Implicite de TVA", cheie, p.TipTvaId, tvaSterse, "Tip TVA");
-        }
-        foreach (var m in os.GetObjectsQuery<MapareD300>().ToList()) {
-            var cheie = $"{codTva(m.TipTvaId)} / {m.Sens}";
-            Ref("Mapări D300", cheie, m.TipTvaId, tvaSterse, "Tip TVA");
-            Ref("Mapări D300", cheie, m.RandId, randuriSterse, "Rând D300");
-        }
-        foreach (var m in os.GetObjectsQuery<MapareD394>().ToList())
-            Ref("Mapări D394", $"{codTva(m.TipTvaId)} / {m.Sens}", m.TipTvaId, tvaSterse, "Tip TVA");
-        foreach (var t in os.GetObjectsQuery<TipDocument>().ToList())
-            Ref("Tipuri de document", t.Cod ?? "?", t.TipTvaImplicitId, tvaSterse, "Tip TVA implicit");
-        foreach (var t in os.GetObjectsQuery<TipMaterial>().ToList())
-            Ref("Tipuri de material", t.Cod ?? "?", t.ContImplicitId, conturiSterse, "Cont implicit");
-    }
 
     // ── (c) Implicite care țintesc un `TipTva` INACTIV ─────────────────────
     // Gardianul le refuză la scriere (F23-D5), dar o bază poate ajunge aici pe

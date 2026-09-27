@@ -2,14 +2,6 @@ import { Column, DataGrid, Paging, Sorting } from 'devextreme-react/data-grid';
 import type { components } from '../../generated/api-types';
 import { labelEnum } from '../../nucleu/campMeta';
 
-// Banda de rectificativă a unei declarații (F27-D5) — aceeași pe D300 și D394,
-// fiindcă răspunde aceleiași întrebări din aceeași sursă: ce cifre au intrat în
-// perioadă DUPĂ ce ea a fost declarată o dată.
-//
-// Nu există flag de rectificativă nicăieri în model: e diferența dintre
-// `RegistruTva.ScrisLa` și `PerioadaFiscala.InchisaPrimaOara`. Banda apare doar
-// când serverul spune că perioada chiar are astfel de cifre; pe un interval de
-// mai multe luni întrebarea n-are subiect, iar serverul răspunde „nu".
 type DecontTvaRand = components['schemas']['DecontTvaRand'];
 
 const camp = (n: keyof DecontTvaRand & string) => n;
@@ -25,19 +17,10 @@ export function BandaRectificativa(
     <div className="d300__neincluse">
       <h3>RECTIFICATIVĂ — diferențe față de declarat</h3>
       <p className="indiciu">
-        Perioada a fost închisă cel puțin o dată, iar cifrele de mai jos au intrat în registrul
-        fiscal <strong>după</strong> acea închidere: declarația de sus diferă de cea depusă atunci,
-        exact cu ele. Nu e un marcaj cules de nimeni — e diferența dintre momentul scrierii fiecărui
-        rând și momentul primei închideri a perioadei. Fișierul de depunere marcat ca rectificativ
-        rămâne altă unealtă.
+        Sunt afișate faptele înregistrate după ultima confirmare explicită a depunerii D394.
+        Declarația înlocuitoare păstrează perioada inițială și identitatea facturii corectate.
       </p>
-      {perioadaDeschisa && (
-        <p className="indiciu">
-          <strong>Perioadă redeschisă</strong> — conținutul de mai jos devine rectificativă la
-          re-închidere. Reperul rămâne prima închidere, deci ce se mai scrie până atunci intră
-          tot aici.
-        </p>
-      )}
+      {perioadaDeschisa && <p className="indiciu">Perioada contabilă este deschisă.</p>}
       <DataGrid
         dataSource={randuri}
         showBorders

@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -17,20 +18,9 @@ namespace Atlas.Conta.BackOffice.Module.Api.Asm;
 // `PretEvaluare`/`Valoare` printr-un serviciu, nu prin culegere) și își cere un
 // AL DOILEA ObjectSpace, de unică folosință, pentru predicție.
 //
-// ═══ Ce e propriu feliei: DIRECȚIA conduce culegerea (geamăn cu LDI) ═══
-// Fiecare linie e un CONSUM sau un PRODUS, iar cele două n-au aceleași câmpuri.
-// Reconcilierea aplică deci două contracte diferite pe aceeași frunză:
-//   * CONSUM — descarcă un lot EXISTENT: se aplică pinul `LotId`, iar câmpurile
-//     produsului (produs, preț de evaluare, atributele lotului) se GOLESC
-//     (F6-D3, aplicat pe ASM). Golirea e PERSISTATĂ, nu doar ignorată („inert
-//     devine adevărat, nu doar afirmat"): un produs rămas pe linie din starea de
-//     produs l-ar citi validarea de coerență Tip↔lot și ar naște lot-artefact.
-//   * PRODUS — NAȘTE lotul din `ProdusId`, prin `LoturiCulegereService`, în
-//     gestiunea în care se ASAMBLEAZĂ (predatorul — hook-ul
-//     `Asamblare.GestiuneLoturiCulese`, F19-D3). `LotId` din payload se IGNORĂ:
-//     e server-owned.
-// Gardul de direcție trăiește în SERVICIU (`ILinieCareNasteLot.NasteLot`), nu
-// aici: culegerea golește câmpurile, serviciul curăță lotul.
+// Culegerea (golirea câmpurilor celeilalte direcții, ruperea pinului străin,
+// loturi, valori) e a `CulegereDocument` (104c). Consumul descarcă lotul pinuit;
+// produsul își naște lotul din `ProdusId`, iar `LotId` din payload se ignoră.
 public static class AsamblareApply {
 
     // ═══════════════════════ Scriere ═══════════════════════
@@ -64,30 +54,12 @@ public static class AsamblareApply {
         doc.Primitor = GasesteRepartitor(os, dto.PrimitorId, "Primitorul (gestiunea care primește)");
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<AsmLinieWriteDto>());
-
-        // Seam-ul de culegere al loturilor (F2-D1, generalizat la F5-D3): naște
-        // lotul liniei de produs din `ProdusId`, în gestiunea PREDATORULUI, și
-        // curăță lotul propriu al liniilor care nu mai nasc (consumul — gardul
-        // `NasteLot`). Pinul liniei de consum rămâne NEATINS (gardul de lot
-        // străin).
-        LoturiCulegereService.Sincronizeaza(os, doc);
-
-        // Valoarea liniei, materializată ABIA ACUM: pe consum formula are nevoie
-        // de pinul rămas după gard (vezi `MaterializeazaValori`).
-        MaterializeazaValori(os, doc);
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
 
-    // Ștergerea agregatului. Pre-check de DOMENIU pe Draft (gardianul de
-    // Committing rămâne plasa), apoi curățenia loturilor NĂSCUTE LA CULEGERE ale
-    // liniilor care dispar (loturile produselor). Ordinea contează: `CurataOrfane`
-    // citește `GetObjectsToDelete`, deci trebuie să vadă ștergerile DEJA marcate,
-    // dar înaintea commit-ului. Loturile FINALIZATE de motor nu se ating
-    // niciodată — inclusiv lotul pinuit de o linie de consum, care nici măcar nu
-    // e al liniilor de aici.
-    //
+    // Pre-check de DOMENIU pe Draft (gardianul de Committing rămâne plasa).
     // Fără refuzul pe `Autogenerat`: ASM nu e niciodată artefactul unei operări
     // (nu e țintă de `PoliticaConex` și niciun tip nu-l produce ca secundar).
     public static void Sterge(IObjectSpace os, Guid id) {
@@ -99,7 +71,7 @@ public static class AsamblareApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
-        LoturiCulegereService.CurataOrfane(os);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -119,6 +91,7 @@ public static class AsamblareApply {
             // `Directie` null, iar parse-ul ar refuza-o cu mesajul de enum în
             // locul celui acționabil de mai jos.
             AsamblareDetaliu detaliu;
+            CulegereDocument.Amprenta? inainte = null;
             if (l.Id is Guid linieId) {
                 if (!existente.TryGetValue(linieId, out var existenta))
                     throw new OperareException(
@@ -130,6 +103,7 @@ public static class AsamblareApply {
                     ?? throw new OperareException(
                         $"Linia {linieId} nu e o linie de asamblare (tip vechi) — ștergeți-o din document "
                         + "și culegeți-o din nou.");
+                inainte = CulegereDocument.Urmareste(os, doc, detaliu);
                 detaliu.Directie = ApiEnum.DirectieAsm(l.Directie);
             }
             else {
@@ -141,27 +115,22 @@ public static class AsamblareApply {
                 detaliu.Document = doc;
                 detaliu.Directie = directie;
             }
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
-
-            // Scara numerică (49e) e gard la construirea MODELULUI: o valoare în
-            // afara coloanei ar ieși ca DbUpdateException brută din Postgres.
-            // Semnul NU se verifică: culegerea e pozitivă prin contract, iar
-            // cantitatea unei linii deja operate e semnată — `ValideazaOperare`
-            // cere doar „≠ 0", și nu inventăm un refuz peste el.
-            VerificaScara(l.Cantitate, Scara.Cantitate, "Cantitatea");
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
             detaliu.Cantitate = l.Cantitate;
 
-            if (detaliu.Directie == DirectieAsamblare.Consum) {
-                // Câmpurile PRODUSULUI se golesc — persistat, nu doar ignorat.
-                // Navigația ȘI FK-ul scalar: fixup-ul EF nu are voie să reînvie
-                // referința dintr-o navigație încă încărcată.
+            if (l.ProdusId is Guid produsId) {
+                detaliu.Produs = Rezolva.Cere<Produs>(os, produsId, "Produsul");
+            }
+            else {
                 detaliu.Produs = null;
                 detaliu.ProdusId = null;
-                detaliu.PretEvaluare = null;
-                detaliu.DataExpirare = null;
-                detaliu.LotFabricatie = null;
-                // Pinul lotului consumat — singura direcție pe care `LotId` se
-                // aplică.
+            }
+            detaliu.PretEvaluare = l.PretEvaluare;
+            detaliu.DataExpirare = l.DataExpirare;
+            detaliu.LotFabricatie = l.LotFabricatie;
+
+            // Pe produs lotul e server-owned; `LotId` din payload e doar ecoul citirii.
+            if (detaliu.Directie == DirectieAsamblare.Consum) {
                 if (l.LotId is Guid lotId) {
                     detaliu.Lot = Rezolva.Cere<Lot>(os, lotId, "Lotul");
                 }
@@ -170,108 +139,18 @@ public static class AsamblareApply {
                     detaliu.LotId = null;
                 }
             }
-            else {
-                // Produsul e mecanismul lotului (F19-D3): îl consumă
-                // `LoturiCulegereService` după reconciliere.
-                if (l.ProdusId is Guid produsId) {
-                    detaliu.Produs = Rezolva.Cere<Produs>(os, produsId, "Produsul");
-                }
-                else {
-                    detaliu.Produs = null;
-                    detaliu.ProdusId = null;
-                }
-                if (l.PretEvaluare is decimal pret)
-                    VerificaScara(pret, Scara.Pret, "Prețul de evaluare");
-                detaliu.PretEvaluare = l.PretEvaluare;
-                detaliu.DataExpirare = l.DataExpirare;
-                detaliu.LotFabricatie = l.LotFabricatie;
-                // `LotId` din PAYLOAD nu se aplică: pe produs lotul e
-                // server-owned, îl gestionează serviciul de culegere. Valoarea
-                // trimisă e ecoul ReadDto-ului, nu o intenție a operatorului.
-                //
-                // Ce se atinge totuși: pinul rămas pe linie dintr-o stare
-                // ANTERIOARĂ de CONSUM. Oglinda exactă a golirii de mai sus, și
-                // tot din motivul ei — „inert devine adevărat, nu doar afirmat"
-                // (F6-D3). Pe ASM linia de produs trebuie să-și DEȚINĂ lotul
-                // (`ValideazaOperare`: „lotul unei linii de produs se naște pe
-                // linia însăși, nu se refolosește"), iar gardul de lot STRĂIN din
-                // `LoturiCulegereService` refuză să nască unul cât linia referă
-                // lotul altcuiva. Fără ruptura de aici, comutarea
-                // Produs → Consum → Produs lăsa documentul PERMANENT ne-operabil:
-                // linia rămânea pinuită pe lotul consumului, nu năștea niciodată
-                // lot propriu, iar refuzul venea abia la operare, cu un mesaj pe
-                // care operatorul nu-l poate acționa din ecran (`Lot` e
-                // read-only/server-owned pe direcția Produs). MĂSURAT în
-                // ModelCheck (`E2E-API-ASM`, comutarea în ambele sensuri).
-                //
-                // Se rupe DOAR referința străină: lotul PROPRIU al liniei rămâne
-                // (altfel fiecare PUT ar naște altul), inclusiv unul finalizat de
-                // o operare anterioară.
-                if (detaliu.LotId is Guid pin) {
-                    var lotPin = os.GetObjectByKey<Lot>(pin);
-                    if (lotPin == null || lotPin.LinieIntrareId != detaliu.ID) {
-                        detaliu.Lot = null;
-                        detaliu.LotId = null;
-                    }
-                }
-            }
 
             // Angajamentul de pe BAZĂ (frunza ASM n-are dimensiuni proprii) — pe
             // NAVIGAȚIE, ca restul FK-urilor.
             detaliu.Angajament = Nomenclator<Angajament>(os, l.AngajamentId, "Angajamentul");
             if (l.AngajamentId == null) detaliu.AngajamentId = null;
+
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, null);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
         if (sterse.Count > 0)
             os.Delete(sterse);
-    }
-
-    // Valoarea liniei, materializată LA CULEGERE (GATE 53c: operatorul vede
-    // diferența invariantului înainte de operare) — de aceea `Valoare` nu e în
-    // WriteDto.
-    //
-    // Formula e GEAMĂNA lui `Asamblare.PregatesteOperare` (F19-D8), care o
-    // rescrie la operare, cu o singură deosebire deliberată: `Cantitate` NU se
-    // atinge aici. Semnarea cantității e fapta OPERĂRII (28a) — culegerea o ține
-    // pozitivă, ca UI-ul. Valoarea, în schimb, e SEMNATĂ de pe acum: `Total`-ul
-    // draftului ASM trebuie să fie exact diferența invariantului 46d (0 ⇔
-    // echilibrat — F19-D9). De aceea formula folosește `Math.Abs(Cantitate)`
-    // explicit: e idempotentă și pe un document re-cules după operare + anulare,
-    // unde linia poartă deja cantitatea semnată.
-    //
-    // Rulează DUPĂ `Sincronizeaza`: abia atunci linia de produs are lotul născut
-    // (nu contează pentru formulă — produsul se evaluează la `PretEvaluare` —
-    // dar consumul depinde de pinul rămas după gard).
-    //
-    // Doar FRUNZELE (`OfType`), ca în hook: liniile de tip BAZĂ ale ASM-urilor
-    // istorice/importate n-au direcție și n-au de unde lua un preț, iar
-    // rescrierea valorii lor ar fi pierdere tăcută de dată contabilă reală.
-    //
-    // Ce NU face: nu prezice golirea (D18-D2). Regula golirii e a MOTORULUI, pe
-    // cheia și semnul REGULII de stoc (75a) — culegerea rămâne previzualizarea
-    // `preț × cantitate`, iar diferența dintre ele e exact problema pe care o
-    // rezolvă comanda `DistribuieValoarea` de mai jos.
-    static void MaterializeazaValori(IObjectSpace os, Asamblare doc) {
-        foreach (var d in doc.Detalii.OfType<AsamblareDetaliu>()) {
-            // Liniile marcate spre ștergere în acest commit nu se mai ating.
-            if (os.IsObjectToDelete(d))
-                continue;
-            if (d.Directie == DirectieAsamblare.Consum) {
-                // Consumul se evaluează la prețul lotului DESCĂRCAT. Fără lot
-                // (draft incomplet — operarea îl va refuza) valoarea se golește:
-                // valoarea veche, a lotului scos de pe linie, ar minți pe ecran.
-                var lot = d.LotId is Guid lotId ? os.GetObjectByKey<Lot>(lotId) : null;
-                d.Valoare = lot != null
-                    ? Scara.RotunjesteBani(-Math.Abs(d.Cantitate) * lot.PretUnitar)
-                    : 0m;
-            }
-            else if (d.Directie == DirectieAsamblare.Produs) {
-                // Produsul se evaluează la prețul CULES (lotul nou se naște cu
-                // el; validarea de operare îl cere pozitiv).
-                d.Valoare = Scara.RotunjesteBani(Math.Abs(d.Cantitate) * (d.PretEvaluare ?? 0m));
-            }
-        }
     }
 
     // ═══════════════════════ F19-D4: distribuirea valorii consumului ═══════════════════════
@@ -396,8 +275,7 @@ public static class AsamblareApply {
                 + "disproporționate pentru valoarea consumului.");
 
         // Prețul: `Round(parte / q, 6)` (scara prețurilor, 49e), apoi valoarea
-        // REALIZATĂ — cea pe care o va scrie `MaterializeazaValori` și, la
-        // operare, `PregatesteOperare`.
+        // REALIZATĂ — cea pe care o scrie `CalculeazaValori`, la culegere și la operare.
         var preturi = new decimal[produse.Count];
         var realizate = new decimal[produse.Count];
         for (var i = 0; i < produse.Count; i++) {
@@ -453,10 +331,8 @@ public static class AsamblareApply {
 
         for (var i = 0; i < produse.Count; i++)
             produse[i].PretEvaluare = preturi[i];
-        // Valorile se rescriu prin ACEEAȘI funcție ca la culegere (nu din
-        // `realizate`): dacă cele două ar diverge vreodată, verificarea de mai jos
-        // o prinde ÎNAINTE de commit.
-        MaterializeazaValori(os, doc);
+        // Valorile vin din culegere, nu din `realizate`; o divergență iese la verificarea de mai jos.
+        CulegereDocument.Normalizeaza(os, doc);
         var sumaProdus = produse.Sum(p => p.Valoare);
         if (sumaProdus != tinta)
             throw new OperareException(
@@ -504,19 +380,6 @@ public static class AsamblareApply {
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
         Rezolva.Cere<Repartitor>(os, id, rol);
-
-    // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
-    // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;

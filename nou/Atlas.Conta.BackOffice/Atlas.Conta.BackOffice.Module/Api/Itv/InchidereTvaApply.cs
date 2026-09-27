@@ -68,7 +68,7 @@ public static class InchidereTvaApply {
         var h = os.GetObjectsQuery<InchidereTva>()
             .Where(d => d.ID == id)
             .Select(d => new {
-                d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
+                d.ID, d.Numar, d.Data, d.DataInregistrare, d.CorecteazaId, d.Stare, d.DataOperare,
                 d.PredatorId, UnitateDenumire = d.Predator.Denumire
             })
             .FirstOrDefault();
@@ -104,12 +104,11 @@ public static class InchidereTvaApply {
         var dePlata = Suma(politica?.ContColectataId, politica?.ContDePlataId);
         var deRecuperat = Suma(politica?.ContDeRecuperatId, politica?.ContDeductibilaId);
 
-        // Cifra MOTORULUI la `Data` documentului — aceeași funcție (`Solduri`) pe
-        // care o cheamă gardianul; o a doua formulă aici ar fi divergeat tăcut.
         var (sold4426, sold4427) = politica?.ContDeductibilaId == null || politica.ContColectataId == null
             ? (0m, 0m)
             : InchidereTvaService.Solduri(
-                os, politica.ContDeductibilaId.Value, politica.ContColectataId.Value, h.Data);
+                os, politica.ContDeductibilaId.Value, politica.ContColectataId.Value,
+                InchidereTvaService.DataSoldurilor(h.Data, h.DataInregistrare, h.CorecteazaId));
 
         // `Stale` DOAR pe Draft: pe Operat/Stornat cifra e deja în registru, iar
         // soldurile „curente" o includ — întrebarea n-ar mai avea sens. Criteriul

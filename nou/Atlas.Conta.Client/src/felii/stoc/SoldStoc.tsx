@@ -1,17 +1,12 @@
 import { useMemo } from 'react';
 import { Column, DataGrid, FilterRow, HeaderFilter, Pager, Paging, Search, Sorting, Summary, TotalItem } from 'devextreme-react/data-grid';
 import { storeRemote } from '../../nucleu/dxStore';
-import { labelEnum } from '../../nucleu/campMeta';
 
-// Raportarea trăiește pe REGISTRE, prin proiecție (42c): soldul per
-// `Lot × Repartitor × TipStoc` e calculat server-side de `StocService`/
-// proiecția echivalentă, iar grila e pură citire remote. Nicio cantitate și
-// nicio valoare nu se însumează în TypeScript — inclusiv totalurile, care merg
-// pe `DataSourceLoader` ca agregate server-side.
+// Soldurile și totalurile sunt calculate pe cub, exclusiv pe server.
 export function SoldStoc() {
-  // Cheia proiecției e COMPUSĂ — soldul se ține per `Lot × Repartitor × TipStoc`
+  // Cheia proiecției e COMPUSĂ — soldul se ține per `Lot × Cont × Produs × Gestiune`
   // (D9); `LotId` singur nu identifică un rând.
-  const sursa = useMemo(() => storeRemote('/api/proiectii/sold-stoc', ['LotId', 'RepartitorId', 'TipStoc']), []);
+  const sursa = useMemo(() => storeRemote('/api/proiectii/sold-stoc', ['LotId', 'ContId', 'ProdusId', 'RepartitorId']), []);
 
   return (
     <div className="ecran">
@@ -34,13 +29,9 @@ export function SoldStoc() {
         <Column dataField="ProdusDenumire" caption="Produs" />
         <Column dataField="ProdusUM" caption="UM" />
         <Column dataField="GestiuneDenumire" caption="Gestiune" />
-        <Column
-          dataField="TipStoc"
-          caption="Tip stoc"
-          calculateDisplayValue={(r: { TipStoc?: string }) => labelEnum('TipStoc', r.TipStoc)}
-        />
+        <Column dataField="ContSimbol" caption="Cont" />
         <Column dataField="LotData" caption="Data lot" dataType="date" format="dd.MM.yyyy" />
-        <Column dataField="LotPretUnitar" caption="Preț unitar" dataType="number" format="#,##0.000000" alignment="right" />
+        <Column dataField="LotPretUnitar" caption="Cost unitar" dataType="number" format="#,##0.000000" alignment="right" />
         <Column dataField="Cantitate" dataType="number" format="#,##0.###" alignment="right" />
         <Column dataField="Valoare" dataType="number" format="#,##0.00" alignment="right" />
 

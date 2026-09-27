@@ -6,8 +6,10 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// <summary>
 /// Declarația fluxului unui tip de document: pură, pe operandul închis, fără
 /// <c>IObjectSpace</c>, entități sau ceas. Întoarce <c>null</c> DOAR după ce a
-/// adăugat cel puțin un refuz.
+/// adăugat cel puțin un refuz sau a validat explicit o constatare fără mișcări.
 /// </summary>
 public interface IDeclarant {
+    bool CereSoldRegistruPentruEvaluare => false;
+    bool PermiteDeclaratieFaraMiscari(Operand operand) => false;
     N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri);
 }

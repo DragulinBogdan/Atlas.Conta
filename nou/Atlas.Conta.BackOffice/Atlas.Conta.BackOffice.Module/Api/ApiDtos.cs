@@ -122,8 +122,8 @@ internal static class ApiEnum {
     // `CreateObject`. Spre deosebire de `TipInstrument`, absența NU are default:
     // `DirectieDiferenta` n-are membru 0 tocmai ca linia culeasă fără direcție
     // să nu treacă drept ceva (28e), iar direcția decide TOATĂ semantica liniei
-    // în `LdiApply` (ce câmpuri se golesc, dacă `LotId` se aplică, cum se
-    // materializează valoarea). O linie fără direcție ar fi oricum ne-operabilă;
+    // (ce câmpuri se golesc, dacă `LotId` se aplică, cum se calculează
+    // valoarea). O linie fără direcție ar fi oricum ne-operabilă;
     // o refuzăm de la culegere, cu valorile valide enumerate.
     public static DirectieDiferenta Directie(string valoare) {
         if (!string.IsNullOrWhiteSpace(valoare)) {

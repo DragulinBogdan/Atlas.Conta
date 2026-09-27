@@ -9,6 +9,9 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // ea (`BatchExecutor` deschide tranzacție proprie doar dacă
 // `CurrentTransaction == null`), deci blocarea luată înainte ține și după commit.
 public static class TranzactieComanda {
+    internal static IDbContextTransaction Asigura(IObjectSpace os) =>
+        os is EFCoreObjectSpace ef && ef.DbContext.Database.CurrentTransaction != null ? null : Incepe(os);
+
     /// <summary>Deschide tranzacția comenzii pe `DbContext`-ul ObjectSpace-ului primit.</summary>
     public static IDbContextTransaction Incepe(IObjectSpace os) {
         if (os is not EFCoreObjectSpace efCore)

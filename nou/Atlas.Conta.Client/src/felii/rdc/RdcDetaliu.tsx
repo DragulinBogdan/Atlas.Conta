@@ -40,7 +40,7 @@ import { ETICHETA_ROL, RdcEditorLinie, rolLiniei, type EticheteCulese } from './
 // `DocumenteCuRest` (`LiniiCreanta` e al TIPULUI, nu al coloanei). Compensarea
 // unui retur cu factura originală se face prin NOTĂ CONTABILĂ (`/ntc`).
 
-const CAMPURI_ANTET: (keyof RdcWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId'];
+const CAMPURI_ANTET: (keyof RdcWrite & string)[] = ['Data', 'DataInregistrare', 'DataExigibilitate',  'PredatorId', 'PrimitorId'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function RdcDetaliu() {
@@ -260,6 +260,7 @@ export function RdcDetaliu() {
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<RdcWrite> camp="Data" />
               <CampData<RdcWrite> camp="DataInregistrare" />
+              <CampData<RdcWrite> camp="DataExigibilitate" />
               <LookupGrila<RdcWrite>
                 camp="PredatorId"
                 entitate="Partener"

@@ -46,10 +46,10 @@ internal static class Fapte {
             ? []
             : os.GetObjectsQuery<TipTva>()
                 .Where(t => ids.Contains(t.ID))
-                .Select(t => new { t.ID, t.Cod, t.Regim, t.Activ, t.Cota, t.ContTvaDeductibilId, t.ContTvaColectatId })
+                .Select(t => new { t.ID, t.Cod, t.Regim, t.Activ, t.Cota, t.ContTvaDeductibilId, t.ContTvaColectatId, t.DeImport })
                 .ToList()
                 .Select(t => new TipTvaFapt(t.ID, t.Cod, t.Regim, t.Activ, t.Cota,
-                    t.ContTvaDeductibilId, t.ContTvaColectatId))
+                    t.ContTvaDeductibilId, t.ContTvaColectatId, t.DeImport))
                 .ToDictionary(t => t.Id);
 
     public static Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)>
@@ -97,7 +97,9 @@ internal static class Fapte {
             Guid? contImplicit = null;
             if (tipProdus != null && claseTip.TryGetValue(tipProdus.Value, out var info))
                 contImplicit = info.ContImplicitId;
-            return new Declaratii.LotFapt(l.Id, l.ProdusId, tipProdus, contImplicit, l.Data, l.PretUnitar);
+            return new Declaratii.LotFapt(l.Id, l.ProdusId, tipProdus, contImplicit, l.Data, l.PretUnitar) {
+                LinieIntrareId = l.LinieIntrareId, GestiuneId = l.GestiuneId,
+            };
         });
 
         var reguliContare = ReguliContare(os, tipDoc.ID);
@@ -106,29 +108,25 @@ internal static class Fapte {
         var politicaTva = Tva(politicaTvaEntitate);
         var tipuriTva = TipuriTva(os,
             linii.Where(d => d.TipTvaId != null).Select(d => d.TipTvaId.Value).Distinct().ToList());
-        var repartitori = Repartitori(os, [doc.PredatorId, doc.PrimitorId]);
+        var explicite = linii.OfType<ILinieCuPostareExplicita>().ToList();
+        var repartitori = Repartitori(os, [doc.PredatorId, doc.PrimitorId,
+            .. explicite.SelectMany(l => new[] { l.RepartitorDebitId, l.RepartitorCreditId }).OfType<Guid>(),
+            .. reguliContare.SelectMany(r => new[] { r.OverrideDebit?.RepartitorId,
+                r.OverrideCredit?.RepartitorId, r.Comun?.RepartitorId }).OfType<Guid>()]);
         var sursa = Sursa(os, doc);
         var conturi = Conturi(os,
             ConturiAtinse(linii, claseTip, repartitori, reguliContare, politicaTva, tipuriTva, sursa.Partide));
 
-        var solduriLoturi = SolduriLoturi(os, doc, linii, claseTip, reguliStoc, idsLot);
+        var solduriLoturi = SolduriLoturi(os, doc, idsLot);
 
-        // MAJOR-1: partidele sursei sunt ale conturilor cu rol de terț; pe celelalte
-        // soldul e al contului, nu al unei partide de nominalizat.
         var partideSursa = sursa.Partide
-            .Where(p => conturi.GetValueOrDefault(p.Cont)?.RolTert is not (null or RolTertCont.Niciunul))
+            .Where(p => conturi.GetValueOrDefault(p.Cont)?.UrmarestePartide == true)
             .ToList();
 
-        // F27-D5: aceeași regulă pe tot documentul (`dataFapt` = `doc.Data`), deci
-        // un singur fapt, nu unul per linie.
-        int? perioadaDeclarare = null;
-        if (politicaTva != null) {
-            var (an, luna) = RegistruTvaService.PerioadaDeclarare(
-                os, doc, doc.Data, doc.DataInregistrare, politicaTva.DeclarareIntarziata);
-            perioadaDeclarare = (an * 100) + luna;
-        }
+        var fiscal = politicaTva == null ? null : FiscalitateService.Atribuie(os, doc, politicaTva.Directie);
+        var perioadaDeclarare = fiscal?.PerioadaD300;
 
-        return new Declaratii.Operand(
+        return Cub.ReceptiiConexe.Completeaza(os, doc, ImobilizariFapte.Completeaza(os, new Declaratii.Operand(
             Document(doc, tipDoc, repartitori),
             [.. linii.Select(d => Linie(d, claseTip, loturi, tipPerProdus))],
             reguliContare,
@@ -143,7 +141,62 @@ internal static class Fapte {
             perioadaDeclarare,
             politicaTvaEntitate?.TolerantaTaxa,
             new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month),
-            new N.VersiunePolitica("seed", doc.DataInregistrare));
+            new N.VersiunePolitica("seed", doc.DataInregistrare)) {
+                ReperFiscal = fiscal?.Reper,
+                SolduriLoturiRegistru = doc.Declarant()?.CereSoldRegistruPentruEvaluare == true
+                    ? SolduriLoturiRegistru(os, doc, linii, claseTip, reguliStoc, idsLot) : new Dictionary<Guid, N.Sold>(),
+                Repartitori = repartitori,
+                PartideDisponibile = PartideDisponibile(os, doc, explicite, conturi, repartitori),
+                UnitatiSursa = UnitatiSursa(os, doc),
+                DisponibilPartideSursa = sursa.Disponibil,
+            }));
+    }
+
+    static IReadOnlyList<N.Unitate> UnitatiSursa(IObjectSpace os, Document doc) =>
+        !doc.Autogenerat || doc.DocumentSursaId is not Guid sursa ? [] :
+        os.GetObjectsQuery<Cub.Postare>()
+            .Where(p => p.DocumentId == sursa && p.Spatiu == N.Spatiu.Contabil
+                && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida
+                && p.Unitate != null && p.Partener != null && p.UnitateDeschisa != null)
+            .Select(p => new { p.Unitate, p.Cont, p.Partener, p.UnitateDeschisa }).Distinct().ToList()
+            .Select(p => new N.Unitate(p.Unitate.Value, N.FelUnitate.Partida, p.Cont,
+                p.Partener, null, p.UnitateDeschisa.Value)).ToList();
+
+    static IReadOnlyList<Declaratii.SoldPartidaFapt> PartideDisponibile(IObjectSpace os, Document doc,
+            IReadOnlyList<ILinieCuPostareExplicita> linii,
+            IReadOnlyDictionary<Guid, Declaratii.ContFapt> conturi,
+            IReadOnlyDictionary<Guid, Declaratii.RepartitorFapt> repartitori) {
+        var perechi = linii.SelectMany(l => new[] {
+            (Cont: l.ContDebitId, Repartitor: l.RepartitorDebitId),
+            (Cont: l.ContCreditId, Repartitor: l.RepartitorCreditId) })
+            .Where(p => p.Cont is Guid c && p.Repartitor is Guid r
+                && conturi.GetValueOrDefault(c)?.UrmarestePartide == true
+                && repartitori.GetValueOrDefault(r)?.Parte == Declaratii.Parte.Extern).ToList();
+        if (perechi.Count == 0) return [];
+        var idsCont = perechi.Select(p => p.Cont.Value).Distinct().ToList();
+        var idsTert = perechi.Select(p => p.Repartitor.Value).Distinct().ToList();
+        var zi = doc.DataInregistrare;
+        return Cub.Citiri.Partide.Postari(os)
+            .Where(p => p.DocumentId != doc.ID && idsCont.Contains(p.Cont) && idsTert.Contains(p.Partener.Value))
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, p.Data })
+            .Select(g => new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data,
+                Deschisa = g.Min(p => p.UnitateDeschisa.Value),
+                Debit = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : 0m),
+                Credit = g.Sum(p => p.Latura == N.Latura.Credit ? p.Valoare : 0m) })
+            .ToList()
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener })
+            .Where(g => g.Any(p => p.Data <= zi))
+            .Select(g => {
+                var pana = g.Where(p => p.Data <= zi).ToArray();
+                var sold = new N.Sold(pana.Sum(p => p.Debit), pana.Sum(p => p.Credit), 0m, 0m);
+                var disponibil = Cub.Citiri.Partide.DisponibilTemporal(
+                    g.Select(p => (p.Data, p.Debit - p.Credit)), zi, Math.Sign(sold.Net));
+                return new Declaratii.SoldPartidaFapt(
+                    new N.Unitate(g.Key.Unitate.Value, N.FelUnitate.Partida, g.Key.Cont,
+                        g.Key.Partener.Value, null, g.Min(p => p.Deschisa)),
+                    sold, disponibil);
+            })
+            .OrderBy(p => p.Unitate.Deschisa).ThenBy(p => p.Unitate.Id).ToList();
     }
 
     // Restul documentului-sursă FĂRĂ stingerile documentului curent: ca soldurile de
@@ -151,41 +204,36 @@ internal static class Fapte {
     // împerecherea automată e deja scrisă, iar `Ramas` ar întoarce 0 (B-D5).
     // Soldul PER CONT al sursei e cel care spune ce poate ține fiecare partidă a ei
     // (MAJOR-1): restul e o cifră a documentului, partida e a contului.
-    static (decimal? Ramas, DateOnly? Data, List<(Guid Cont, decimal Sold)> Partide) Sursa(
+    static (decimal? Ramas, DateOnly? Data, List<(Guid Cont, decimal Sold)> Partide, Dictionary<Guid, decimal> Disponibil) Sursa(
             IObjectSpace os, Document doc) {
         if (!doc.Autogenerat || doc.DocumentSursaId is not Guid sursaId)
-            return (null, null, []);
+            return (null, null, [], []);
         var sursa = os.GetObjectsQuery<Document>()
             .Where(d => d.ID == sursaId)
-            .Select(d => new { d.TotalStingere, d.DataInregistrare })
-            .ToList()
-            .FirstOrDefault();
+            .Select(d => new { d.DataInregistrare })
+            .SingleOrDefault();
         if (sursa == null)
-            return (null, null, []);
-        var asignat = os.GetObjectsQuery<Imperechere>()
-            .Where(i => (i.DocumentStingatorId == sursaId || i.DocumentId == sursaId)
-                && i.DocumentStingatorId != doc.ID)
-            .Select(i => (decimal?)i.Suma)
-            .Sum() ?? 0m;
-        // Partida sursei ține și recepția, care stă pe NIR-ul ei conex (TR-D3): soldul
-        // per cont se citește pe sursă ∪ conexele ei autogenerate, fără documentul
-        // curent (secundarul e tot autogenerat pe aceeași sursă).
-        var note = os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => !r.Storno && r.DocumentId != null
-                && (r.DocumentId == sursaId
-                    || os.GetObjectsQuery<Document>().Any(d => d.ID == r.DocumentId.Value
-                        && d.Autogenerat && d.DocumentSursaId == sursaId && d.ID != doc.ID)))
-            .Select(r => new { r.ContDebitId, r.ContCreditId, r.Valoare })
-            .ToList();
-        var sume = new Dictionary<Guid, decimal>();
-        foreach (var n in note) {
-            sume[n.ContDebitId] = sume.GetValueOrDefault(n.ContDebitId) + n.Valoare;
-            sume[n.ContCreditId] = sume.GetValueOrDefault(n.ContCreditId) - n.Valoare;
-        }
-        return (
-            (sursa.TotalStingere ?? 0m) - asignat,
-            sursa.DataInregistrare,
-            [.. sume.Where(s => s.Value != 0m).OrderBy(s => s.Key).Select(s => (s.Key, s.Value))]);
+            return (null, null, [], []);
+        // Factura nominalizează și recepția în cub înaintea NIR-ului conex.
+        // Restul sursei este al unităților ei, cu efectul documentului curent exclus.
+        var zi = doc.DataInregistrare;
+        var peZile = (from p in Cub.Citiri.Partide.Postari(os)
+                     join o in Cub.Citiri.Partide.Origini(os)
+                       on new { UnitateId = p.Unitate.Value, ContId = p.Cont, PartenerId = p.Partener.Value }
+                       equals new { o.UnitateId, o.ContId, o.PartenerId }
+                     where o.DocumentId == sursaId && p.DocumentId != doc.ID
+                     group p by new { p.Unitate, p.Cont, p.Partener, p.Data } into g
+                     select new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data,
+                         Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToArray();
+        var partide = peZile.GroupBy(p => new { p.Unitate, p.Cont, p.Partener }).Select(g => {
+            var miscari = g.Select(p => (p.Data, p.Net)).ToArray();
+            var initial = Cub.Citiri.Partide.Evolutie(miscari, zi).First().Sold;
+            return (g.Key.Cont, Net: initial, Disponibil: Cub.Citiri.Partide.DisponibilTemporal(miscari, zi, Math.Sign(initial)));
+        }).ToArray();
+        return (partide.Sum(p => p.Disponibil), sursa.DataInregistrare,
+            [.. partide.GroupBy(p => p.Cont).Select(g => (g.Key, g.Sum(p => p.Net)))
+                .Where(p => p.Item2 != 0m).OrderBy(p => p.Key)],
+            partide.GroupBy(p => p.Cont).ToDictionary(g => g.Key, g => g.Sum(p => p.Disponibil)));
     }
 
     static Declaratii.DocumentFapt Document(Document doc, TipDocument tipDoc,
@@ -236,17 +284,31 @@ internal static class Fapte {
             explicita?.RepartitorDebitId,
             explicita?.RepartitorCreditId,
             Analiza(d.DimensiuniCulese()),
-            d.AngajamentId);
+            d.AngajamentId) {
+                Transformare = d is ILinieCuTransformare transformare ? transformare.TransformareCuleasa() : null,
+                DiferentaInventar = d is ILinieCuDiferentaInventar inventar ? inventar.DiferentaCuleasa() : null,
+                Imobilizare = d is ILinieCuImobilizare imobilizare ? imobilizare.ImobilizareCuleasa() : null,
+            };
     }
 
     static N.Analiza Analiza(Dimensiuni dim) =>
         new(dim.CodFunctionalId, dim.CodEconomicId, dim.SursaFinantareId,
             dim.UnitateId, dim.ProiectId, dim.CentruCostId);
 
+    static Dictionary<Declaratii.CheieLotFapt, N.Sold> SolduriLoturi(
+            IObjectSpace os, Document doc, IReadOnlyList<Guid> idsLot) => idsLot.Count == 0 ? [] :
+        Cub.Citiri.Loturi.Cumulate(os, Cub.Citiri.CitireCumul.Integrala, doc.DataInregistrare, doc.ID,
+                granita: doc.DataInregistrare == DateOnly.MinValue ? DateOnly.MinValue : doc.DataInregistrare.AddDays(-1))
+            .Where(s => idsLot.Contains(s.LotId) && s.GestiuneId == doc.PredatorId)
+            .ToList().ToDictionary(s => new Declaratii.CheieLotFapt(s.LotId, s.ContId, s.ProdusId, s.GestiuneId),
+                s => new N.Sold(s.Valoare > 0m ? s.Valoare : 0m,
+                    s.Valoare < 0m ? -s.Valoare : 0m, s.Cantitate, 0m));
+
+    // Citire tranzitorie exclusiv pentru R din ASM-B6, nu pentru evaluarea cubului.
     // Soldul lotului pe cheia de stoc a laturii PREDATOARE, la `DataInregistrare`
     // și FĂRĂ documentul curent: `TipStoc`-ul e al regulii potrivite, deci cheia
     // se află aici (citirea are nevoie de ea), iar mișcarea o declară frunza.
-    static Dictionary<Guid, N.Sold> SolduriLoturi(IObjectSpace os, Document doc,
+    static Dictionary<Guid, N.Sold> SolduriLoturiRegistru(IObjectSpace os, Document doc,
             IReadOnlyList<DocumentDetaliu> linii,
             IReadOnlyDictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
             IReadOnlyList<RegulaStocFapt> reguliStoc, IReadOnlyList<Guid> idsLot) {
@@ -310,14 +372,14 @@ internal static class Fapte {
     // materializarea declarației e înaintea commit-ului, iar motorul tocmai a pus
     // prețul și data pe lotul născut de document — o proiecție ar citi rândul din
     // bază, adică starea dinaintea operării.
-    static List<(Guid Id, Guid ProdusId, DateOnly Data, decimal PretUnitar)> DateLot(
+    static List<(Guid Id, Guid ProdusId, DateOnly Data, decimal PretUnitar, Guid? LinieIntrareId, Guid? GestiuneId)> DateLot(
             IObjectSpace os, IReadOnlyList<Guid> ids) =>
         ids.Count == 0
             ? []
             : os.GetObjectsQuery<Lot>()
                 .Where(l => ids.Contains(l.ID))
                 .ToList()
-                .Select(l => (l.ID, l.ProdusId, l.Data, l.PretUnitar))
+                .Select(l => (l.ID, l.ProdusId, l.Data, l.PretUnitar, l.LinieIntrareId, (Guid?)l.GestiuneId))
                 .ToList();
 
     static Dictionary<Guid, Guid?> TipuriProdus(IObjectSpace os, IReadOnlyList<Guid> ids) =>
@@ -329,7 +391,7 @@ internal static class Fapte {
                 .ToList()
                 .ToDictionary(p => p.ID, p => p.TipMaterialId);
 
-    static Dictionary<Guid, Declaratii.RepartitorFapt> Repartitori(IObjectSpace os, IReadOnlyList<Guid> ids) {
+    internal static Dictionary<Guid, Declaratii.RepartitorFapt> Repartitori(IObjectSpace os, IReadOnlyList<Guid> ids) {
         var cerute = ids.Where(id => id != Guid.Empty).Distinct().ToList();
         return cerute.Count == 0
             ? []
@@ -350,14 +412,14 @@ internal static class Fapte {
             ? []
             : os.GetObjectsQuery<Cont>()
                 .Where(c => ids.Contains(c.ID))
-                .Select(c => new { c.ID, c.Simbol, c.RolTert })
+                .Select(c => new { c.ID, c.Simbol, c.UrmarestePartide })
                 .ToList()
-                .Select(c => new Declaratii.ContFapt(c.ID, c.Simbol, c.RolTert))
+                .Select(c => new Declaratii.ContFapt(c.ID, c.Simbol, c.UrmarestePartide))
                 .ToDictionary(c => c.Id);
 
     static Declaratii.PoliticaTvaFapt Tva(PoliticaTva politica) =>
         politica == null
             ? null
             : new Declaratii.PoliticaTvaFapt(politica.Directie, politica.SursaContrapartida,
-                politica.ContrapartidaFallbackId, politica.DeclarareIntarziata);
+                politica.ContrapartidaFallbackId);
 }

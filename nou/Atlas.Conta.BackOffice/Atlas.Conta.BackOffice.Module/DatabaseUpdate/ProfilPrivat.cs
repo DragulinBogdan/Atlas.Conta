@@ -2,8 +2,6 @@ using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
-// `IgnoreQueryFilters` — singurul loc din seed care întreabă tabela ÎNTREAGĂ,
-// peste filtrul global de ștergere amânată pus de XAF (`GCRecord = 0`).
 using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate;
@@ -39,6 +37,9 @@ internal static class ProfilPrivat {
         SeedTipTva(os);
         SeedPoliticiNotaTransfer(os);
         SeedPoliticiFacturaIntrareNir(os);
+        SeedDiferente.NIR(os, "473", "408", "461", "461",
+            ("MP", "601", "321"), ("M", "602", "322"), ("OI", "603", "323"),
+            ("MF", "607", "327"), ("AMB", "608", "328"));
         SeedPoliticiBonConsum(os);
         SeedPoliticiListaDiferente(os);
         SeedPoliticiFacturaIesire(os);
@@ -73,6 +74,7 @@ internal static class ProfilPrivat {
         SeedMapareD300(os);
         // Așezarea pe D394 (D4-D2): aceeași dependență de tipurile comise.
         SeedMapareD394(os);
+        SeedMapariTvaSaft(os);
         os.CommitChanges();
     }
 
@@ -283,7 +285,6 @@ internal static class ProfilPrivat {
             var parinte = f[1].Length > 0 ? conturi.GetValueOrDefault(f[1]) : null;
             var simbol = f[0];
             var cont = ContaSeeder.Aliniaza(os, simbol, conturi.GetValueOrDefault(simbol),
-                () => os.GetObjectsQuery<Cont>().IgnoreQueryFilters().FirstOrDefault(c => c.Simbol == simbol),
                 c => {
                     c.Simbol = simbol;
                     c.Denumire = f[3];
@@ -359,6 +360,7 @@ internal static class ProfilPrivat {
                 client.Any(p => simbol.StartsWith(p, StringComparison.Ordinal)) ? RolTertCont.Client
                 : furnizor.Any(p => simbol.StartsWith(p, StringComparison.Ordinal)) ? RolTertCont.Furnizor
                 : RolTertCont.Niciunul;
+            cont.UrmarestePartide = cont.RolTert != RolTertCont.Niciunul || simbol is "542" or "461";
         }
     }
 
@@ -369,16 +371,8 @@ internal static class ProfilPrivat {
     // livrare (seria 310xxx) / achiziție deductibilă integral (301xxx) /
     // nedeductibilă (351xxx). Tipul de operațiune D394 e direcțional, deci e
     // politică (`MapareD394`, felia 14), nu atribut al tipului.
-    static void SeedTipTva(IObjectSpace os) {
-        var conturi = os.GetObjectsQuery<Cont>()
-            .Where(c => c.Simbol == "4426" || c.Simbol == "4427" || c.Simbol == "4428")
-            .ToDictionary(c => c.Simbol, c => c);
-        var tva4426 = conturi["4426"];
-        var tva4427 = conturi["4427"];
-        var tva4428 = conturi["4428"];
-
-        (string Cod, string Denumire, decimal Cota, RegimTva Regim,
-            bool Conturi, string SafTLivrare, string SafTAchizitie, bool DeImport)[] tipuri = [
+    static readonly (string Cod, string Denumire, decimal Cota, RegimTva Regim,
+            bool Conturi, string SafTLivrare, string SafTAchizitie, bool DeImport)[] TipuriTva = [
             ("N21", "TVA 21% (standard)", 21m, RegimTva.Normal, true, "310344", "301104", false),
             ("N11", "TVA 11% (redusă)", 11m, RegimTva.Normal, true, "310351", "301105", false),
             ("N9", "TVA 9% (tranzitoriu locuințe, până la 31.07.2026)", 9m, RegimTva.Normal, true, "310310", "301102", false),
@@ -415,7 +409,56 @@ internal static class ProfilPrivat {
             ("IMPTI21", "Import de bunuri 21% — taxare inversă (art. 326)", 21m, RegimTva.TaxareInversa, true, null, "300604", true),
             ("IMPTI11", "Import de bunuri 11% — taxare inversă (art. 326)", 11m, RegimTva.TaxareInversa, true, null, "300605", true),
         ];
-        foreach (var t in tipuri)
+
+    static void SeedMapariTvaSaft(IObjectSpace os) {
+        var ids = os.GetObjectsQuery<TipTva>().ToDictionary(t => t.Cod, t => t.ID);
+        foreach (var t in TipuriTva) {
+            var id = ids[t.Cod];
+            foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
+                var cod = sens == SensTva.Achizitie ? t.SafTAchizitie : t.SafTLivrare;
+                foreach (var sectiune in Enum.GetValues<SectiuneTvaSaft>()) {
+                    if (cod != null)
+                        Adauga(sectiune, Atlas.Conta.Nucleu.RolTva.Taxa, "300", cod);
+                    else if (t.Cod == "IMP" && sens == SensTva.Achizitie)
+                        Adauga(sectiune, Atlas.Conta.Nucleu.RolTva.Taxa, "000", "000000");
+                }
+                if (t.Regim == RegimTva.TaxareInversa && sens == SensTva.Achizitie) {
+                    var auto = t.Cota switch { 21m => "380006", 11m => "380007", _ => null };
+                    if (auto != null)
+                        Adauga(SectiuneTvaSaft.GeneralLedger, Atlas.Conta.Nucleu.RolTva.Autocolectare, "300", auto);
+                }
+
+                void Adauga(SectiuneTvaSaft sectiune, Atlas.Conta.Nucleu.RolTva rol, string taxType, string taxCode) {
+                    ContaSeeder.Aliniaza<MapareTvaSaft>(os, $"{MapariFiscale.Versiune}/{sectiune}/{t.Cod}/{sens}/{rol}",
+                        m => m.Versiune == MapariFiscale.Versiune && m.Sectiune == sectiune
+                            && m.TipTvaId == id && m.Regim == t.Regim && m.Cota == t.Cota
+                            && m.DeImport == t.DeImport && m.Sens == sens && m.Rol == rol,
+                        m => {
+                            m.Versiune = MapariFiscale.Versiune;
+                            m.Sectiune = sectiune;
+                            m.TipTvaId = id;
+                            m.Regim = t.Regim;
+                            m.Cota = t.Cota;
+                            m.DeImport = t.DeImport;
+                            m.Sens = sens;
+                            m.Rol = rol;
+                            m.TaxType = taxType;
+                            m.TaxCode = taxCode;
+                        });
+                }
+            }
+        }
+    }
+
+    static void SeedTipTva(IObjectSpace os) {
+        var conturi = os.GetObjectsQuery<Cont>()
+            .Where(c => c.Simbol == "4426" || c.Simbol == "4427" || c.Simbol == "4428")
+            .ToDictionary(c => c.Simbol, c => c);
+        var tva4426 = conturi["4426"];
+        var tva4427 = conturi["4427"];
+        var tva4428 = conturi["4428"];
+
+        foreach (var t in TipuriTva)
             ContaSeeder.Aliniaza<TipTva>(os, t.Cod, x => x.Cod == t.Cod, tip => {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
@@ -449,12 +492,6 @@ internal static class ProfilPrivat {
                 p.Directie = directie;
                 p.SursaContrapartida = sursa;
                 p.ContrapartidaFallbackId = os.FirstOrDefault<Cont>(c => c.Simbol == fallback)?.ID;
-                // F27-D5 — deductibilul se declară în perioada primirii facturii
-                // (art. 301 Cod fiscal, fără rectificativă); factura noastră
-                // rămâne fiscal a perioadei ei, deci colectatul o rectifică.
-                p.DeclarareIntarziata = directie == DirectieTva.Deductibil
-                    ? DeclarareIntarziata.PerioadaInregistrarii
-                    : DeclarareIntarziata.PerioadaFaptului;
                 // S-D15 — fără gard: taxa culeasă rămâne autoritară, ca în motorul
                 // vechi; valoarea de produs e a owner-ului (S-r1).
                 p.TolerantaTaxa = null;
@@ -557,15 +594,9 @@ internal static class ProfilPrivat {
             // (clasă `null`) e seed-uit, iar semantica SQL a lui „coloană =
             // @parametru NULL" e prea subtilă pentru o gardă de idempotență:
             // potrivirea se face ÎN MEMORIE, ca la `AliniazaContare`.
-            PoliticaTvaImplicit Cauta(bool cuSterse) {
-                var toate = os.GetObjectsQuery<PoliticaTvaImplicit>();
-                if (cuSterse)
-                    toate = toate.IgnoreQueryFilters();
-                return toate.Where(x => x.TipDocumentId == tipDoc.ID).ToList()
-                    .FirstOrDefault(x => x.ClasaFiscala == clasa && x.ValabilDeLa == null);
-            }
-            ContaSeeder.Aliniaza(os, $"{i.TipDocument}/{i.Clasa?.ToString() ?? "orice"}",
-                Cauta(false), () => Cauta(true),
+            var gasit = os.GetObjectsQuery<PoliticaTvaImplicit>().Where(x => x.TipDocumentId == tipDoc.ID).ToList()
+                .FirstOrDefault(x => x.ClasaFiscala == clasa && x.ValabilDeLa == null);
+            ContaSeeder.Aliniaza(os, $"{i.TipDocument}/{i.Clasa?.ToString() ?? "orice"}", gasit,
                 rand => {
                     rand.TipDocumentId = tipDoc.ID;
                     rand.ClasaFiscala = clasa;
@@ -697,11 +728,7 @@ internal static class ProfilPrivat {
         // decizii — un profil pe care contabilul l-a subțiat intenționat n-are
         // voie să facă `--updateDatabase` să arunce, adică să blocheze orice
         // release viitor pe baza aceea.
-        var stersDeUtilizator = os.GetObjectsQuery<MapareD300>().IgnoreQueryFilters()
-            .Select(m => new { m.TipTvaId, m.Sens })
-            .ToList()
-            .Select(m => (m.TipTvaId, m.Sens))
-            .ToHashSet();
+        var stersDeUtilizator = PerechiRefuzate<MapareD300>(os);
         foreach (var cod in coduri) {
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod);
             if (tip == null) {
@@ -812,17 +839,18 @@ internal static class ProfilPrivat {
             throw new InvalidOperationException(goluri[0]);
     }
 
+    static HashSet<(Guid, SensTva)> PerechiRefuzate<T>(IObjectSpace os) where T : ICuProvenienta =>
+        RefuzSeed.Chei<T>(os)
+            .Select(c => (Guid.Parse(c["TipTvaId"]), Enum.Parse<SensTva>(c["Sens"])))
+            .ToHashSet();
+
     // Geamăna lui `GoluriMapariD300` (F23-D8).
     internal static IReadOnlyList<string> GoluriMapariD394(
             IObjectSpace os, IReadOnlyCollection<MapareD394> mapari) {
         var goluri = new List<string>();
         var coduri = MapariD394.Select(m => m.TipTva)
             .Concat(NemapateDeliberatD394.Select(n => n.TipTva)).Distinct().ToList();
-        var stersDeUtilizator = os.GetObjectsQuery<MapareD394>().IgnoreQueryFilters()
-            .Select(m => new { m.TipTvaId, m.Sens })
-            .ToList()
-            .Select(m => (m.TipTvaId, m.Sens))
-            .ToHashSet();
+        var stersDeUtilizator = PerechiRefuzate<MapareD394>(os);
         foreach (var cod in coduri) {
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod);
             if (tip == null) {
@@ -1207,8 +1235,8 @@ internal static class ProfilPrivat {
                 + "(temeiul exact se completează la revizia seed-ului)."),
         ];
         foreach (var r in reguli)
-            ContaSeeder.Aliniaza<RegulaDeductibilitate>(os, $"{r.Categorie}/{r.DeLa:yyyy-MM-dd}",
-                x => x.Categorie == r.Categorie && x.DeLa == r.DeLa, regula => {
+            ContaSeeder.Aliniaza<RegulaDeductibilitate>(os, $"{r.Categorie}/{r.Fel}/{r.DeLa:yyyy-MM-dd}",
+                x => x.Categorie == r.Categorie && x.Fel == r.Fel && x.DeLa == r.DeLa, regula => {
                     regula.Categorie = r.Categorie;
                     regula.DoarNeexclusiv = true;
                     regula.Fel = r.Fel;

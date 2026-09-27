@@ -15,6 +15,14 @@
       "VehiculPersoaneMax9Locuri": "Vehicul de persoane, maximum 9 locuri",
       "SediuSocialInLocuinta": "Sediu social în locuință"
     },
+    "CauzaDiferentei": {
+      "Perisabilitate": "Perisabilitate",
+      "Imputabila": "Imputabilă",
+      "Neimputabila": "Neimputabilă",
+      "PeDrum": "Pe drum",
+      "InClarificare": "În clarificare",
+      "Plus": "Plus"
+    },
     "CauzaIesire": {
       "Casare": "Casare",
       "Vanzare": "Vânzare",
@@ -47,7 +55,7 @@
       "CotaNeintreaga": "Cotă ne-întreagă",
       "FaraOp11": "V/C fără detaliul pe categorii de bunuri (op11)",
       "CombinatieRefuzata": "Combinație partener × tip refuzată de formular",
-      "PartenerSters": "Partener șters din nomenclator"
+      "PartenerInactiv": "Partener inactiv în nomenclator"
     },
     "CodAvertismentSaft": {
       "FaraCodNc": "Produs fără cod NC",
@@ -75,10 +83,6 @@
       "RolTertMixt": "Roluri de terț mixte pe aceeași mișcare",
       "ReziduValoricFaraCantitate": "Rezidu valoric fără cantitate"
     },
-    "DeclarareIntarziata": {
-      "PerioadaInregistrarii": "În perioada înregistrării",
-      "PerioadaFaptului": "În perioada faptului"
-    },
     "DimensiuneFlags": {
       "Niciuna": "Niciuna",
       "Repartitor": "Repartitor",
@@ -104,7 +108,6 @@
     },
     "FelConstatare": {
       "RandManual": "Rând creat sau editat manual",
-      "ReferintaStearsa": "Referință spre un rând șters",
       "TipTvaInactivReferit": "Tip de TVA inactiv, referit ca implicit",
       "PoliticaLipsa": "Politică lipsă",
       "MapareLipsa": "Mapare lipsă"
@@ -146,6 +149,10 @@
       "Oglinda": "Oglindă",
       "Extern": "Extern"
     },
+    "FormularFiscal": {
+      "D300": "D300",
+      "D394": "D394"
+    },
     "LaturaDocument": {
       "Predator": "Predator",
       "Primitor": "Primitor"
@@ -155,8 +162,15 @@
       "Accelerata": "Accelerată",
       "Degresiva": "Degresivă"
     },
+    "MidpointRounding": {
+      "ToEven": "ToEven",
+      "AwayFromZero": "AwayFromZero",
+      "ToZero": "ToZero",
+      "ToNegativeInfinity": "ToNegativeInfinity",
+      "ToPositiveInfinity": "ToPositiveInfinity"
+    },
     "MotivCorectie": {
-      "EroareMateriala": "Eroare materială",
+      "EroareMateriala": "Eroare de evidență",
       "FaptNou": "Fapt nou"
     },
     "MotivEliminare": {
@@ -204,6 +218,10 @@
       "Generic": "Regula generică a laturii",
       "ClasaExacta": "Clasă exactă"
     },
+    "ProfilContabil": {
+      "Bugetar": "Bugetar",
+      "Privat": "Privat"
+    },
     "RegimTva": {
       "Normal": "Normal",
       "Capitalizat": "Capitalizat",
@@ -221,10 +239,19 @@
       "Client": "Client",
       "Furnizor": "Furnizor"
     },
+    "RolTva": {
+      "Baza": "Baza",
+      "Taxa": "Taxa",
+      "Autocolectare": "Autocolectare"
+    },
     "SectiuneD300": {
       "Colectata": "TVA colectată",
       "Deductibila": "TVA deductibilă",
       "Regularizari": "Regularizări"
+    },
+    "SectiuneTvaSaft": {
+      "GeneralLedger": "GeneralLedger",
+      "Facturi": "Facturi"
     },
     "SensStingere": {
       "Datorie": "Datorie",
@@ -500,6 +527,7 @@
     "Angajament": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -519,29 +547,6 @@
         "Denumire": "Denumire",
         "ID": "ID",
         "Marca": "Marca"
-      }
-    },
-    "ApplicationUser": {
-      "DefaultProperty": "UserName",
-      "Membri": {
-        "AccessFailedCount": "AccessFailedCount",
-        "ActiveAdminExists": "ActiveAdminExists",
-        "ChangePasswordOnFirstLogon": "ChangePasswordOnFirstLogon",
-        "ID": "ID",
-        "IsActive": "IsActive",
-        "LockoutEnd": "LockoutEnd",
-        "StoredPassword": "StoredPassword",
-        "UserName": "UserName"
-      }
-    },
-    "ApplicationUserLoginInfo": {
-      "DefaultProperty": null,
-      "Membri": {
-        "ID": "ID",
-        "LoginProviderName": "LoginProviderName",
-        "ProviderUserKey": "ProviderUserKey",
-        "User": "User",
-        "UserForeignKey": "UserForeignKey"
       }
     },
     "Asamblare": {
@@ -623,6 +628,7 @@
     "ClasaProdus": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -634,6 +640,7 @@
     "ClasificareImobilizari": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -646,6 +653,7 @@
     "CodEconomic": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -655,6 +663,7 @@
     "CodFunctional": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -664,6 +673,7 @@
     "Cont": {
       "DefaultProperty": "Simbol",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Denumire": "Denumire",
         "DimensiuniObligatorii": "DimensiuniObligatorii",
@@ -674,7 +684,8 @@
         "ParinteId": "Parinte",
         "RolTert": "Rol de terț (SAF-T)",
         "Simbol": "Simbol",
-        "Sumator": "Sumator"
+        "Sumator": "Sumator",
+        "UrmarestePartide": "Urmărește partide"
       }
     },
     "ContPropriu": {
@@ -701,9 +712,11 @@
         "Corecteaza": "Corectează documentul",
         "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DataPV": "Dată PV",
+        "DataPrimire": "Data primirii",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
@@ -750,6 +763,17 @@
         "TipTvaId": "Tip TVA",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
+      }
+    },
+    "DepunereDeclaratie": {
+      "DefaultProperty": null,
+      "Membri": {
+        "ConfirmataDe": "Confirmată de",
+        "ConfirmataLa": "Confirmată la",
+        "Formular": "Formular",
+        "ID": "ID",
+        "Perioada": "Perioada",
+        "VersiuneExportata": "Versiune exportată"
       }
     },
     "DescarcareGestiune": {
@@ -804,6 +828,7 @@
     "Dimensiune": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -922,8 +947,10 @@
         "Corecteaza": "Corectează documentul",
         "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
+        "DataPrimire": "Data primirii",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
@@ -957,6 +984,7 @@
         "Corecteaza": "Corectează documentul",
         "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DataScadenta": "Scadență",
@@ -1016,9 +1044,11 @@
         "CorecteazaId": "Corectează documentul",
         "Curs": "Curs",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DataPV": "Dată PV",
+        "DataPrimire": "Data primirii",
         "DataScadenta": "Scadență",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
@@ -1156,6 +1186,7 @@
     "Imobilizare": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "CentruCost": "Centru de cost",
         "CentruCostId": "Centru de cost",
@@ -1189,7 +1220,8 @@
         "ID": "ID",
         "Inverseaza": "Inversează împerecherea",
         "InverseazaId": "Inversează împerecherea",
-        "Suma": "Suma"
+        "Suma": "Suma",
+        "TranzactieCubId": "TranzactieCubId"
       }
     },
     "Incasare": {
@@ -1262,6 +1294,7 @@
     "Judet": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "CodAuto": "Indicativ auto",
@@ -1367,6 +1400,24 @@
         "TipTvaId": "Tip TVA"
       }
     },
+    "MapareTvaSaft": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Cota": "Cotă",
+        "DeImport": "Import",
+        "DinSeed": "Din seed",
+        "ID": "ID",
+        "Regim": "Regim",
+        "Rol": "Rol fiscal",
+        "Sectiune": "Secțiune",
+        "Sens": "Sens",
+        "TaxCode": "Cod taxă",
+        "TaxType": "Tip taxă",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "Versiune": "Versiune export"
+      }
+    },
     "MigrareLegatura": {
       "DefaultProperty": null,
       "Membri": {
@@ -1396,8 +1447,10 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
+        "SursaReceptieiId": "Sursa recepției",
         "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "TotalStingere": "Total de stins",
+        "TranzactieReceptieSursaId": "Tranzacția recepției-sursă"
       }
     },
     "NirDetaliu": {
@@ -1406,6 +1459,7 @@
         "Angajament": "Angajament",
         "AngajamentId": "Angajament",
         "Cantitate": "Cantitate",
+        "CauzaDiferentei": "Cauza diferenței",
         "ClrType": "Tip",
         "CodEconomic": "Cod economic",
         "CodEconomicId": "Cod economic",
@@ -1415,9 +1469,12 @@
         "Document": "Document",
         "DocumentId": "Document",
         "ID": "ID",
+        "LinieSursaReceptieId": "Linia recepției-sursă",
         "Lot": "Lot",
         "LotFabricatie": "Lot fabricație",
         "LotId": "Lot",
+        "PartenerDiferenta": "Imputat",
+        "PartenerDiferentaId": "Imputat",
         "Pozitie": "Poziție",
         "PretUnitar": "Preț unitar",
         "Produs": "Produs",
@@ -1551,11 +1608,17 @@
       "DefaultProperty": null,
       "Membri": {
         "An": "An",
+        "ContId": "ContId",
+        "Credit": "Credit",
+        "Debit": "Debit",
+        "Deschisa": "Deschisa",
         "Document": "Document",
         "DocumentId": "Document",
         "ID": "ID",
         "Luna": "Luna",
-        "Rest": "Rest"
+        "PartenerId": "PartenerId",
+        "Rest": "Rest",
+        "UnitateId": "UnitateId"
       }
     },
     "PerioadaFiscala": {
@@ -1626,6 +1689,22 @@
         "TipDocumentTintaId": "TipDocumentTinta"
       }
     },
+    "PoliticaDiferenta": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Cauza": "Cauza diferenței",
+        "Clasa": "Clasa",
+        "ClasaId": "Clasa",
+        "Cont": "Cont",
+        "ContId": "Cont",
+        "ContPersonal": "Cont personal",
+        "ContPersonalId": "Cont personal",
+        "DinSeed": "Din seed",
+        "ID": "ID",
+        "TipDocument": "Tip document",
+        "TipDocumentId": "Tip document"
+      }
+    },
     "PoliticaInchidere": {
       "DefaultProperty": null,
       "Membri": {
@@ -1693,7 +1772,6 @@
       "Membri": {
         "ContrapartidaFallback": "ContrapartidaFallback",
         "ContrapartidaFallbackId": "ContrapartidaFallback",
-        "DeclarareIntarziata": "Declararea faptului întârziat",
         "DinSeed": "Din seed",
         "Directie": "Directie",
         "ID": "ID",
@@ -1730,6 +1808,7 @@
     "Produs": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "CodNc": "Cod NC",
@@ -1747,6 +1826,7 @@
     "Proiect": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -1817,6 +1897,7 @@
     "RandD300": {
       "DefaultProperty": "Cod",
       "Membri": {
+        "Activ": "Activ",
         "AreBaza": "AreBaza",
         "AreTva": "AreTva",
         "Cod": "Cod",
@@ -1853,6 +1934,15 @@
         "Stare": "Stare",
         "Total": "Total (brut)",
         "TotalStingere": "Total de stins"
+      }
+    },
+    "RefuzSeed": {
+      "DefaultProperty": "Cheie",
+      "Membri": {
+        "Cheie": "Cheie",
+        "ID": "ID",
+        "La": "Refuzat la",
+        "Tip": "Tip"
       }
     },
     "RegistruContabil": {
@@ -2096,6 +2186,7 @@
         "Corecteaza": "Corectează documentul",
         "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
         "DocumentSursa": "Document sursă",
@@ -2120,8 +2211,10 @@
         "Corecteaza": "Corectează documentul",
         "CorecteazaId": "Corectează documentul",
         "Data": "Dată",
+        "DataExigibilitate": "Exigibilitate TVA",
         "DataInregistrare": "Data înregistrării",
         "DataOperare": "Data operării",
+        "DataPrimire": "Data primirii",
         "DocumentSursa": "Document sursă",
         "DocumentSursaId": "Document sursă",
         "ID": "ID",
@@ -2184,6 +2277,7 @@
         "ContId": "Cont",
         "Credit": "Credit",
         "Debit": "Debit",
+        "GestiuneId": "Gestiune",
         "ID": "ID",
         "Luna": "Luna",
         "Material": "Material",
@@ -2203,19 +2297,21 @@
       "Membri": {
         "An": "An",
         "Cantitate": "Cantitate",
+        "ContId": "Cont",
+        "Deschisa": "Data deschiderii",
+        "GestiuneId": "Gestiune",
         "ID": "ID",
         "Lot": "Lot",
         "LotId": "Lot",
         "Luna": "Luna",
-        "Repartitor": "Repartitor",
-        "RepartitorId": "Repartitor",
-        "TipStoc": "Tip stoc",
+        "ProdusId": "Produs",
         "Valoare": "Valoare"
       }
     },
     "SursaFinantare": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",
@@ -2240,6 +2336,7 @@
     "TipMaterial": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Clasa": "Clasa",
         "ClasaId": "Clasa",
@@ -2276,6 +2373,7 @@
     "Unitate": {
       "DefaultProperty": "Denumire",
       "Membri": {
+        "Activ": "Activ",
         "Cod": "Cod",
         "Denumire": "Denumire",
         "ID": "ID"
@@ -2298,6 +2396,7 @@
     "UnitateMasura": {
       "DefaultProperty": "Cod",
       "Membri": {
+        "Activ": "Activ",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "Denumire": "Denumire",

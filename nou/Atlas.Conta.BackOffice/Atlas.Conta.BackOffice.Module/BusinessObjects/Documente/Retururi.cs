@@ -26,7 +26,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // RLF: marfa se întoarce la furnizor pe LOTUL ORIGINAL. Laturi Gestiune →
 // Partener; stoc −q (regula +1 pe predator × linia negativă); contare
 // 3xx = 401 cu −V (stornarea achiziției) + 4426 = 401 cu −TVA (PoliticaTva).
-public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
+public class ReturFurnizor : Document, IDocumentCuIesireFiscala, IDocumentFiscalPrimit {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+    [DevExpress.ExpressApp.DC.XafDisplayName("Data primirii")]
+    public virtual DateOnly? DataPrimire { get; set; }
+
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantReturFurnizor.Instanta;
+
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Gestiune, Declaratii.Latura.Externa);
 
@@ -34,43 +41,33 @@ public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
     // lasă un sold DEBITOR pe 401 — se stinge creditând contrapartida (o
     // încasare de la furnizor, sau jumătatea de credit a unei note).
     //
-    // Declarația e ADEVĂRATĂ dar azi NEATINSĂ (review O1 — comentariul anterior
-    // pretindea că „calea directă îi acceptă"; nu îi acceptă): retururile nu
-    // sunt doar în afara lui `DocumenteCuRest` (F19-D11), ci și în afara
-    // stingerii cu totul, fiindcă după operare au valori NEGATIVE pe tot
-    // (semnarea din `PregatesteOperare`) ⇒ `ImperechereService.Total` e negativ
-    // ⇒ `Ramas` e negativ ⇒ orice sumă pozitivă cade pe „depășește restul
-    // documentului stins", ÎNAINTEA oricărei verificări de sens. Se declară
-    // fiindcă e adevărul contabil al tipului, nu fiindcă ar fi executabil azi;
-    // ziua în care restul returului va fi definit (F19-D11), sensul e deja aici
-    // și e corect.
+    // TR-D8/101: restul vine din cub în modul, iar sensul rămâne explicit.
+    // Calea directă cere partidă proprie și cont comun; lista de candidați
+    // are propriul catalog, separat de raportul general al partidelor.
     public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
         SensStingere.Creanta;
 
-    // Valoarea e COSTUL lotului (prețul nu se culege — pattern BTR/BCS/DSC);
-    // TVA-ul urmează factura furnizorului, deci `pastreazaTvaCules` (ca FCT):
-    // valoarea culeasă/importată bate rotunjirea noastră. Returul care GOLEȘTE
-    // lotul NU preia soldul valoric rămas (F18, review F5 — `IDocumentCuIesireFiscala`):
-    // suma returului e a notei de credit a furnizorului, `cantitate × preț`,
-    // deci baza TVA-ului și valoarea liniei rămân aceeași cifră; reziduul de
-    // cenți rămâne pe lot (raportat în SAF-T S), nu cade pe 401.
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
-        // RLF stornează o ACHIZIȚIE: politica lui e `Deductibil`, deci taxarea
-        // inversă rămâne autolichidare (F13-D1). Direcția vine tot din politică,
-        // nu din tip — motorul nu are voie s-o presupună.
-        var directie = Motor.TvaService.DirectiePentru(os, this);
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
         foreach (var linie in Detalii.Where(l => l.LotId != null)) {
-            var q = Math.Abs(linie.Cantitate);
-            var net = q * os.GetObjectByKey<Lot>(linie.LotId.Value).PretUnitar;
-            // Normalizarea la pozitiv ÎNAINTE de calcul face semnarea idempotentă
-            // (re-operarea după anulare nu dublează minusul).
-            linie.ValoareTva = Math.Abs(linie.ValoareTva);
-            Motor.TvaService.CalculeazaValori(linie, net, tipuri, directie, pastreazaTvaCules: true);
-            linie.Cantitate = -q;
+            linie.Cantitate = -linie.Cantitate;
             linie.Valoare = -linie.Valoare;
             linie.ValoareTva = -linie.ValoareTva;
         }
+    }
+
+    public override bool CuTva() => true;
+    public override bool SemnulEAlOperarii() => true;
+
+    // F18: returul care golește lotul nu preia soldul valoric rămas (IDocumentCuIesireFiscala).
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        Lot.ValoareLaPretulLotului(os, linie, Math.Abs(linie.Cantitate));
+
+    // Forma culegerii e pozitivă: semnul e al operării (28a/46e), deci recalculul e idempotent.
+    protected override void CalculeazaLinie(DocumentDetaliu linie, decimal baza, Motor.ContextTva tva, bool pastreazaTvaCules) {
+        linie.Cantitate = Math.Abs(linie.Cantitate);
+        linie.ValoareTva = Math.Abs(linie.ValoareTva);
+        base.CalculeazaLinie(linie, baza, tva, pastreazaTvaCules);
     }
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
@@ -120,59 +117,55 @@ public class ReturFurnizor : Document, IDocumentCuIesireFiscala {
 // aduce ambele feluri de linii direct.
 [GardContare(NaturaClasa.Stoc, NivelContare.TipMaterialExact,
     "Linia cu lot a returului nu are regulă de contare de cost pentru Tipul ei (6xx = cont de stoc, storno) — adăugați rândul de politică (sau rulați updater-ul).")]
-public class ReturClient : Document {
+public class ReturClient : Document, IDocumentFiscal {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantReturClient.Instanta;
+
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Externa, Declaratii.Latura.Gestiune);
 
     // Oglinda RLF-ului: RDC stornează livrarea (creditează 4111 cu −V), deci lasă
     // un sold CREDITOR pe contul clientului — se stinge debitând (plata de
-    // rambursare, jumătatea de debit a notei). Ca la `ReturFurnizor`, declarația
-    // e adevărată dar azi NEATINSĂ: `LiniiCreanta` al RDC-ului dă doar liniile
-    // de venit, care după operare sunt negative ⇒ `Ramas` negativ ⇒ refuzul de
-    // rest cade înaintea oricărei verificări de sens (review O1).
+    // rambursare, jumătatea de debit a notei). TR-D8/101 citește restul din
+    // cub; totalul negativ al documentului nu ascunde datoria partidei proprii.
     public override SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) =>
         SensStingere.Datorie;
 
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
-        // RDC stornează o LIVRARE (politica lui e `Colectat`): pe liniile de
-        // venit cu regim de taxare inversă nu există taxă de stornat (F13-D1).
-        var directie = Motor.TvaService.DirectiePentru(os, this);
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
         foreach (var linie in Detalii) {
-            if (linie.LotId == null) {
-                // Cantitatea liniei de venit e pro-formă și rămâne POZITIVĂ
-                // (nu intră în stoc); semnul storno stă pe valori.
-                linie.Cantitate = linie.Cantitate == 0m ? 1m : Math.Abs(linie.Cantitate);
-                var net = Math.Abs(linie.Valoare);
-                linie.ValoareTva = Math.Abs(linie.ValoareTva);
-                Motor.TvaService.CalculeazaValori(linie, net, tipuri, directie, pastreazaTvaCules: true);
-                linie.Valoare = -linie.Valoare;
-                linie.ValoareTva = -linie.ValoareTva;
-            }
-            else {
-                // Costul revine la prețul lotului original (nu se culege).
-                var q = Math.Abs(linie.Cantitate);
-                linie.Cantitate = -q;
-                linie.Valoare = -Scara.RotunjesteBani(q * os.GetObjectByKey<Lot>(linie.LotId.Value).PretUnitar);
-                linie.ValoareTva = 0m;
-                // …și IDENTITATEA FISCALĂ se șterge, nu doar valoarea (felia 11,
-                // review advers D1). Linia de cost e mișcare internă venit↔stoc,
-                // NU o operațiune taxabilă — dar `TipDocument.TipTvaImplicit` al
-                // lui RDC (N21) e pus de controllerul de culegere pe ORICE linie
-                // nouă, deci ajungea aici cu un tip de TVA fără sens.
-                //
-                // Până la felia 11 era doar inofensiv: pasul contabil de TVA sare
-                // liniile cu `ValoareTva == 0`. `RegistruTva` însă scrie un rând
-                // pentru ORICE linie cu `TipTvaId` — asta e chiar rostul lui
-                // (Scutit/Neimpozabil au bază fără taxă) — deci costul intra în
-                // jurnal ca bază impozabilă: un retur de 1.000 cu cost 600 ieșea
-                // pe D394 cu baza 1.600 și TVA 210. Cusătura JT-D6 nu putea s-o
-                // vadă: contribuția liniei la TVA e exact 0.
-                // Nicio pierdere de informație — tipul era o valoare implicită
-                // nefolosită de nimeni pe linia asta.
-                linie.TipTvaId = null;
-            }
+            if (linie.LotId != null)
+                linie.Cantitate = -linie.Cantitate;
+            linie.Valoare = -linie.Valoare;
+            linie.ValoareTva = -linie.ValoareTva;
         }
+    }
+
+    public override bool CuTva() => true;
+    public override bool SemnulEAlOperarii() => true;
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(DocumentDetaliu.Valoare));
+
+    // Venitul (fără lot) are baza culeasă; marfa returnată revine la prețul lotului original.
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        linie.LotId == null ? Math.Abs(linie.Valoare) : Lot.ValoareLaPretulLotului(os, linie, Math.Abs(linie.Cantitate));
+
+    // Forma culegerii e pozitivă. Cantitatea venitului e pro-formă; linia de cost
+    // e mișcare internă venit↔stoc, fără identitate fiscală (felia 11).
+    protected override void CalculeazaLinie(DocumentDetaliu linie, decimal baza, Motor.ContextTva tva, bool pastreazaTvaCules) {
+        if (linie.LotId == null) {
+            linie.Cantitate = linie.Cantitate == 0m ? 1m : Math.Abs(linie.Cantitate);
+            linie.ValoareTva = Math.Abs(linie.ValoareTva);
+            base.CalculeazaLinie(linie, baza, tva, pastreazaTvaCules);
+            return;
+        }
+        linie.Cantitate = Math.Abs(linie.Cantitate);
+        linie.Valoare = Scara.RotunjesteBani(baza);
+        linie.ValoareTva = 0m;
+        linie.TipTva = null;
+        linie.TipTvaId = null;
     }
 
     // Totalul = DOAR liniile de venit (brutul care ajustează creanța); liniile de
@@ -187,8 +180,8 @@ public class ReturClient : Document {
         Detalii.Where(d => d.LotId == null).Sum(d => d.Valoare + d.ValoareTva);
 #pragma warning restore XAF0033
 
-    // Oglinda server-side a lui Total (contractul din bază): imperecherea
-    // stinge DOAR liniile de venit — ImperechereService.Total trece prin filtru.
+    // Oglinda server-side a totalului antetului. Citirea operațională a
+    // partidelor folosește cubul; costul fără partidă nu intră în decontare.
     public override IQueryable<DocumentDetaliu> LiniiCreanta(IQueryable<DocumentDetaliu> linii) =>
         linii.Where(d => d.LotId == null);
 

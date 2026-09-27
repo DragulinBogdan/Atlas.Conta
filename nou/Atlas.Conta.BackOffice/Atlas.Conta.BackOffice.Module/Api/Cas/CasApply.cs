@@ -1,11 +1,12 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Api.Cas;
 
-// Ieșirea de imobilizări (F26-D6/D10): liniile le produce `AmortizareService.LiniiIesire`,
-// ACELAȘI producător pe care îl cheamă gardianul de operare.
+// Ieșirea de imobilizări (F26-D6/D10): liniile sunt situația fișelor la data înregistrării,
+// produse de `NormalizariTip.RegenereazaCas` din același `AmortizareService.LiniiIesire` ca operarea.
 // CONTRACT DE APELANT: ObjectSpace-ul SECURED al apelantului; `Aplica`/`Sterge` COMIT.
 public static class CasApply {
 
@@ -13,7 +14,7 @@ public static class CasApply {
         if (dto == null)
             throw new OperareException("Lipsește corpul cererii.");
 
-        // F3-D5: rezolvările ȘI calculul liniilor înaintea oricărui `CreateObject`.
+        // F3-D5: rezolvările și refuzurile înaintea oricărui `CreateObject`.
         IesireImobilizare doc = null;
         if (id is Guid existentId) {
             doc = Rezolva.Cere<IesireImobilizare>(os, existentId, "Ieșirea de imobilizări");
@@ -33,18 +34,10 @@ public static class CasApply {
             cerute.Add(fisaId);
         }
 
-        var produse = new List<(Imobilizare Fisa, TipMaterial Tip, IReadOnlyList<LinieIesire> Linii)>();
         foreach (var fisaId in cerute) {
             var fisa = Rezolva.Cere<Imobilizare>(os, fisaId, "Fișa de imobilizare");
-            var tip = Rezolva.Cere<TipMaterial>(os, fisa.TipMaterialId,
-                $"Tipul (contul/clasa) fișei {Eticheta(fisa)}");
-            var politica = os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == fisa.TipMaterialId);
-            // Aceeași frază ca gardianul de operare (F26-D6).
-            if (politica == null)
-                throw new OperareException(
-                    $"Tipul fișei {fisa.NumarInventar} n-are rând de politică de amortizare — "
-                    + "conturile ieșirii vin exclusiv din ea.");
-            produse.Add((fisa, tip, AmortizareService.LiniiIesire(os, fisaId, dto.Data, politica)));
+            Rezolva.Cere<TipMaterial>(os, fisa.TipMaterialId, $"Tipul (contul/clasa) fișei {Eticheta(fisa)}");
+            NormalizariTip.PoliticaIesirii(os, fisa);
         }
 
         doc ??= os.CreateObject<IesireImobilizare>();
@@ -53,28 +46,8 @@ public static class CasApply {
         doc.Predator = predator;
         doc.Primitor = primitor;
 
-        // `PUT` re-produce liniile: ele sunt situația fișelor la `Data`, nu culegere.
-        var existente = doc.Detalii.ToList();
-        if (existente.Count > 0)
-            os.Delete(existente);
-
-        foreach (var (fisa, tip, linii) in produse)
-            foreach (var linie in linii) {
-                var detaliu = os.CreateObject<IesireImobilizareDetaliu>();
-                detaliu.Document = doc;
-                detaliu.Imobilizare = fisa;
-                detaliu.TipMaterial = tip;
-                detaliu.Fel = linie.Fel;
-                detaliu.Valoare = linie.Valoare;
-                detaliu.Cantitate = 1m;
-                detaliu.ContDebitId = linie.ContDebitId;
-                detaliu.ContCreditId = linie.ContCreditId;
-                // F26-D8: ambii repartitori = locul fișei.
-                detaliu.RepartitorDebitId = fisa.LocId;
-                detaliu.RepartitorCreditId = fisa.LocId;
-                detaliu.CodEconomicId = fisa.CodEconomicId;
-            }
-
+        NormalizariTip.RegenereazaCas(os, doc, cerute);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
@@ -88,6 +61,7 @@ public static class CasApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 

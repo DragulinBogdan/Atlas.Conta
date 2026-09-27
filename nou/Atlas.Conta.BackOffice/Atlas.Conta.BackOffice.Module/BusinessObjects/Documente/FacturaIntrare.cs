@@ -16,7 +16,13 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // ascund din view-uri prin baseline; rămân în schemă (reactivarea la fluxul BF
 // e aditivă), deci nu primesc grup de layout.
 [TipDetaliu(typeof(FacturaIntrareDetaliu))]
-public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
+public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV, IDocumentFiscalPrimit {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+    [DevExpress.ExpressApp.DC.XafDisplayName("Data primirii")]
+    public virtual DateOnly? DataPrimire { get; set; }
+
+    public override bool AcoperaReceptia(Document conex) => conex is NIR;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Externa, Declaratii.Latura.Gestiune);
 
@@ -59,17 +65,15 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
     public virtual string ChitantaNumar { get; set; }
     public virtual DateOnly? ChitantaData { get; set; }
 
-    // Lanțul de valori trăiește pe derivată (testul bazei §3): capătul lui
-    // (Valoare + ValoareTva, după regimul TipTva — P1) se materializează la
-    // operare. TVA-ul cules manual pe linie se păstrează (factura furnizorului
-    // bate rotunjirea noastră — design §3).
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
-        // Latura fiscală a tipului (F13-D1) — o dată per document, nu per linie.
-        var directie = Motor.TvaService.DirectiePentru(os, this);
-        foreach (var d in Detalii.OfType<FacturaIntrareDetaliu>())
-            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, directie, pastreazaTvaCules: true);
-    }
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override bool CuTva() => true;
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(FacturaIntrareDetaliu.PretUnitar));
+
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        linie is FacturaIntrareDetaliu d ? d.PretUnitar * d.Cantitate : null;
 
     // Plata automată (00 §7, decizia 31): grupul DECONT_* cules → draft Plata
     // autogenerat. Header din câmpurile culese; liniile clonează DEFALCAREA
@@ -91,16 +95,14 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV {
         plata.TipInstrument = PlataTipInstrument ?? TipInstrumentPlata.OrdinPlata;
         plata.PredatorId = PlataContPropriuId ?? Guid.Empty;
         plata.PrimitorId = PredatorId;
+        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
         foreach (var s in Detalii) {
             // DIM-2: defalcarea se naște pe frunza trezoreriei — altfel
             // PreiaDimensiuni ar fi no-op și plata ar pierde dimensiunile.
             var d = os.CreateObject<DocumentTrezorerieDetaliu>();
             d.Document = plata;
             d.TipMaterialId = s.TipMaterialId;
-            // Plata stinge BRUTUL (design §3): defalcarea clonată per linie e
-            // Valoare + ValoareTva; linia de plată nu are semantică proprie de
-            // TVA (TipTva rămâne null).
-            d.Valoare = s.Valoare + s.ValoareTva;
+            d.Valoare = Motor.TvaService.DatoratTertului(s, tipuri);
             d.AngajamentId = s.AngajamentId;
             d.PreiaDimensiuni(s.DimensiuniCulese());
         }

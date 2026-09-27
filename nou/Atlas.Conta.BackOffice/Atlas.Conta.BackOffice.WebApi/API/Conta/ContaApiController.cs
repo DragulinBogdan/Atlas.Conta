@@ -134,6 +134,12 @@ public abstract class ContaApiController : ControllerBase {
         return refuz ?? comanda();
     }
 
+    /// <summary>Comanda de document prin coajă (104b): dreptul pe ușa <typeparamref name="T"/>, apoi motorul; 404 → 403 → 422.</summary>
+    protected IActionResult ComandaDocument<T>(Func<ComenziDocument, object> comanda, Func<T, bool> peUsaAsta = null)
+            where T : class =>
+        Domeniu(() => Ok(comanda(new ComenziDocument(nonSecuredFactory, new DreptComandaXaf(securedFactory, securitate,
+            typeof(T), peUsaAsta == null ? null : o => o is T t && peUsaAsta(t))))));
+
     // Ușa de SCRIERE a agregatului (F22-D2, închide 76-r5): `PUT {id}` cere
     // `Modificare`, `DELETE {id}` cere `Stergere`. Până acum n-avea NICIUN gate:
     // `User` era refuzat de primul FK invizibil rezolvat de Apply („nu există în
@@ -280,6 +286,9 @@ public abstract class ContaApiController : ControllerBase {
     // nu pe instanță: exact întrebarea „are voie omul ăsta să citească registrul?".
     // Gate-ul de comandă (`Autorizeaza<T>`) rămâne NESCHIMBAT: acolo întrebarea e
     // pe o instanță și are alt răspuns (404 pentru invizibil).
+    protected bool FaraPostariCitibile(IObjectSpace os) =>
+        !PoateCiti(typeof(Module.Cub.Postare), os) && !os.GetObjectsQuery<Module.Cub.Postare>().Any();
+
     protected bool PoateCiti(Type tip, IObjectSpace os) =>
         securitate is IRequestSecurityStrategy cerinte && cerinte.CanRead(tip, os);
 
@@ -451,6 +460,8 @@ public abstract class ContaApiController : ControllerBase {
     // `OperareException : UserFriendlyException`), tocmai ca un refuz de drept să
     // nu poată fi înghițit de un acumulator de erori de domeniu.
     IActionResult RefuzDeDomeniu(Exception ex) {
+        if (ex is SubiectInvizibil)
+            return Invizibil();
         if (ex is IUserFriendlySecurityException)
             return StatusCode(StatusCodes.Status403Forbidden, EroriDto.DinMesaj(ex.Message));
         if (ex is OperareException)

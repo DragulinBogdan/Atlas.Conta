@@ -12,7 +12,7 @@ namespace Atlas.Conta.BackOffice.Module.Controllers;
 // ObjectViewController pe DocumentDetaliu (baza) acoperă automat toate listele
 // nested ale derivatelor (FacturaIesireDetaliu, NIR-ul etc.). TargetViewNesting
 // = Nested restrânge la colecția dintr-un DetailView de Document (DocumentDetaliu
-// n-are ListView rădăcină, dar scoping-ul rămâne explicit — ca DefaultTipTvaController).
+// n-are ListView rădăcină, dar scoping-ul rămâne explicit).
 //
 // Corecția legitimă rămâne Anulează operarea (→ Draft, redevine editabil) sau
 // Stornează — exact ca la gardianul de header.

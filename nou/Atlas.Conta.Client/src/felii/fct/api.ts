@@ -51,7 +51,7 @@ export const fct = {
 };
 
 export function antetGol(): FctWrite {
-  return { Data: azi(), Linii: [] };
+  return { Data: azi(), DataPrimire: azi(), Linii: [] };
 }
 
 export function linieGoala(): FctLinieWrite {
@@ -79,6 +79,8 @@ export function spreWrite(citit: FctRead): FctWrite {
     Numar: citit.Numar,
     Data: citit.Data,
     DataInregistrare: citit.DataInregistrare,
+    DataPrimire: citit.DataPrimire,
+    DataExigibilitate: citit.DataExigibilitate,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     DataScadenta: citit.DataScadenta,

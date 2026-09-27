@@ -45,7 +45,7 @@ export function FisaCont() {
 
   const sursa = useMemo(() => (
     stare.contId
-      ? storeRemote(urlCu('/api/proiectii/fisa-cont', { ...stare, ...dimensiuni }), ['Id', 'Sens'])
+      ? storeRemote(urlCu('/api/proiectii/fisa-cont', { ...stare, ...dimensiuni }), ['Id', 'Spatiu'])
       : null
   ), [stare, dimensiuni]);
 
@@ -57,8 +57,8 @@ export function FisaCont() {
             niciun indiciu vizibil de ce. */}
         <h2>
           Fișă de cont{cont?.Simbol ? ` — ${etichetaCont(cont)}` : ''}
-          {stare.repartitorNul ? ' (fără repartitor)' : ''}
-          {stare.repartitorId ? ' (filtrată pe repartitor)' : ''}
+          {stare.repartitorNul ? ' (fără partener)' : ''}
+          {stare.repartitorId ? ' (filtrată pe partener)' : ''}
         </h2>
         <Link className="buton buton--mic" to={urlCu('/balanta', { dataStart: stare.dataStart, dataEnd: stare.dataEnd })}>
           Înapoi la balanță
@@ -144,12 +144,12 @@ export function FisaCont() {
             <Column dataField={camp('Data')} caption="Data" dataType="date" format="dd.MM.yyyy" width={100} fixed />
             <Column dataField={camp('NumarNota')} caption="Nr. notă" width={110} />
             <Column dataField={camp('Sens')} caption="Sens" width={70} alignment="center" />
-            <Column dataField={camp('ContrapartidaSimbol')} caption="Contrapartidă" width={120} />
+            <Column dataField={camp('ContrapartidaSimbol')} caption="Conturi corespondente" width={120} />
             <Column dataField={camp('Debit')} caption="Debit" {...BANI} />
             <Column dataField={camp('Credit')} caption="Credit" {...BANI} />
             {/* Vine cumulat de la server (fereastră SQL), niciodată din TS. */}
             <Column dataField={camp('SoldCurent')} caption="Sold curent" {...BANI} />
-            <Column dataField={camp('RepartitorDenumire')} caption="Repartitor" />
+            <Column dataField={camp('RepartitorDenumire')} caption="Partener" />
             <Column
               dataField={camp('DocumentNumar')}
               caption="Document"

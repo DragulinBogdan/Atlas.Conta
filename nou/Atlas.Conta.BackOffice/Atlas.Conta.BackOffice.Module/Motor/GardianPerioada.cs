@@ -9,13 +9,12 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // tratată ca închisă — exercițiul de lucru se deschide explicit prin seed/UI.
 public static class GardianPerioada {
     // `FOR SHARE` ține rândul perioadei cât durează tranzacția comenzii, în locul
-    // `FirstOrDefault`-ului (F27-D1): zero statement-uri în plus. `"GCRecord" = 0`
-    // explicit — `SqlQuery` nu trece prin filtrul global (66). `AS "Value"`: forma
+    // `FirstOrDefault`-ului (F27-D1): zero statement-uri în plus. `AS "Value"`: forma
     // cerută de `SqlQuery<T>` pentru un scalar.
     const string Sql = """
         SELECT "Inchisa" AS "Value"
         FROM "PerioadeFiscale"
-        WHERE "An" = {0} AND "Luna" = {1} AND "GCRecord" = 0
+        WHERE "An" = {0} AND "Luna" = {1}
         FOR SHARE
         """;
 

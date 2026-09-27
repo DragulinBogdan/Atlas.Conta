@@ -8,12 +8,26 @@ item: ce s-a lovit, de ce e structural, cum arată rezolvarea în React.
 Itemii se adaugă cu context (ce s-a încercat, de ce nu se fixează în Blazor).
 Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
 
+## Aria după decizia 104 (d), 2026-09-27
+
+Premisa de mai sus ține DOAR pentru citiri și proiecții. Culegerea
+documentelor se face în XAF Blazor, peste L3 (`Module/Culegere/`); paginile
+React de detaliu ale documentelor sunt înghețate (104-r4 decide după PoC dacă
+se scot sau se generează din metadate). Consecințe pentru listă:
+
+- o luptă cu Blazor pe **culegerea documentelor** nu se mai amână în React:
+  se rezolvă în XAF (sau în Atlas.DXF) sau se acceptă ca limită, cu intrare în
+  `restante.md`; se notează aici doar ca să nu se re-descopere;
+- o luptă pe **citiri, proiecții, console de comenzi și editorii de politici**
+  rămâne a React, ca până acum;
+- itemii de mai jos marcați „culegere" nu mai au rezolvarea React ca țintă.
+
 ## Structurale (motivația migrării — CLAUDE.md §Cunoștințe utilizator)
 
 - **ObjectSpace sincron, fără async nativ** — orice operație lungă blochează
   circuitul Blazor Server; în React: TanStack Query + endpoint-urile motorului
   (42b), UI-ul rămâne viu.
-- **Dialoguri**: XAF Blazor nu are un flux natural de dialog compus
+- **Dialoguri** (culegere): XAF Blazor nu are un flux natural de dialog compus
   (culegere-în-pași, confirmări cu conținut dinamic); în React: componente de
   dialog proprii per felie (43a).
 - **Feedback de progres** (operare lungă, import): fără streaming de stare în
@@ -22,11 +36,11 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
 
 ## Din felii anterioare
 
-- **Multi-tab staleness pe read-only post-Draft** (40c, limitare asumată):
+- **Multi-tab staleness pe read-only post-Draft** (culegere; 40c, limitare asumată):
   `ObjectSpace.Committed` nu se propagă între tab-uri/OS-uri; fix-ul de fond =
   gardian generic de Committing pe server, care în designul 42a e exact
   distincția secured/non-secured a pasului 5.
-- **SmartLookupPropertyEditor revertat** (commit `98ce1d0`, memoria
+- **SmartLookupPropertyEditor revertat** (culegere; commit `98ce1d0`, memoria
   „smartlookup-fallback-standard"): match-exact-pe-tastare pe nomenclatoare
   mari (plan 1.679, TipMaterial) nu e viabil azi în componenta Atlas.DXF;
   repararea se face în Atlas.DXF separat; în React: `Lookup` pe OData cu
@@ -37,7 +51,7 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
 
 ## Adăugate la GATE XAF
 
-- **Footer de sumar pe grilele de linii** (pas 3, DROP documentat):
+- **Footer de sumar pe grilele de linii** (culegere; pas 3, DROP documentat):
   `IModelColumn.Summary` e citit doar de grila WinForms (docs DevExpress);
   în Blazor sumarul cere ViewController pe `DxGridListEditor.GridSummary`
   (`ViewSummaryController` din Atlas.DXF e acțiune interactivă, gated pe
@@ -49,7 +63,7 @@ Deschisă la felia GATE XAF (29.07.2026), seed-uită cu ce era deja cunoscut.
   calculată server-side (proiecție), adică exact modelul de citire al pasului 5
   (42c); nu se cârpește în XAF.
 - **`Total` pe DetailView nu se reîmprospătează după salvarea unei linii**
-  (smoke pas 4): rămâne 0 până la o re-citire a documentului (după operare apare
+  (culegere; smoke pas 4): rămâne 0 până la o re-citire a documentului (după operare apare
   corect: 1.210). Cauza e structurală — proprietatea `[NotMapped]` nu notifică,
   iar XAF nu re-evaluează editorul la commit-ul colecției nested; „fix"-ul în
   Blazor ar fi un refresh manual de ViewItem la fiecare commit de linie (fragil,
@@ -88,14 +102,16 @@ Itemii de mai jos au fost rezolvați și textul lor original trăiește în
 ## Rămase (nestructurale)
 
 - **BTR n-a adoptat convenția 61b** (etichete per poziție, precompletare) —
-  77-r1, plumbing de felie.
+  77-r1, depășită de 104: pagina React de culegere e înghețată.
 - **`displayExpr` de nucleu pentru `TipMaterial`** (ASM arată cod + denumire,
-  BCS doar denumire) — 77-r6.
+  BCS doar denumire) — 77-r6, depășită de 104: paginile React de culegere sunt
+  înghețate.
 - **Cele 8 dimensiuni n-au UI** pe balanță/fișă (pass-through din URL).
-- **`AngajamentId` fără lookup** (tabela e goală).
+- **`AngajamentId` fără lookup** (culegere; tabela e goală).
 - **`HeaderFilter` trunchiat la 100 de valori** (cauza e server-side).
 - **Lookup-urile Predator/Primitor filtrate pe partea permisă** de
   `Document.Laturi()` (T-D13 (e), 2026-09-22): contractul laturilor există pe
   fiecare tip (parte + calitate + felul exact pe laturile cu stoc), dar XAF și
-  React sunt înghețate (090 (m)); la dezgheț, lookup-ul citește contractul și
-  restrânge nomenclatorul, în loc să lase refuzul pe operare.
+  React sunt înghețate (090 (m)); la dezgheț, lookup-ul XAF al culegerii
+  (104d) citește contractul și restrânge nomenclatorul, în loc să lase
+  refuzul pe operare.

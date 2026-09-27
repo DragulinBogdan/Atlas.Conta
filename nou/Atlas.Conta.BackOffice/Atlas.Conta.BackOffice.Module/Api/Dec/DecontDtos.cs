@@ -34,6 +34,8 @@ public sealed class DecontWriteDto {
     public DateOnly Data { get; set; }
     // F27-D4: lipsă pe sârmă = data documentului.
     public DateOnly? DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
+    public DateOnly? DataPrimire { get; set; }
     // Titularul (`Angajat`) → unitatea internă care primește justificarea.
     public Guid PredatorId { get; set; }
     public Guid PrimitorId { get; set; }
@@ -79,6 +81,8 @@ public sealed class DecontReadDto {
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
     public DateOnly DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
+    public DateOnly? DataPrimire { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
@@ -117,8 +121,7 @@ public sealed class DecontLinieReadDto {
     public string Descriere { get; set; }
     public decimal Cantitate { get; set; }
     public decimal? PretUnitar { get; set; }
-    // REZULTAT, nu culegere: le materializează `Aplica` la culegere și
-    // `PregatesteOperare` la operare, din aceeași formulă (`TvaService`).
+    // Rezultat, nu culegere: le scrie `CalculeazaValori` la culegere și la operare (104c).
     public decimal Valoare { get; set; }
     public decimal ValoareTva { get; set; }
     public Guid? TipTvaId { get; set; }

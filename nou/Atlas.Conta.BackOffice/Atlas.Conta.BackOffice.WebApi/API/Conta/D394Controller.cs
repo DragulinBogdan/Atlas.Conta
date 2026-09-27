@@ -27,6 +27,7 @@ public class D394Controller : ContaApiController {
         : base(secured, nonSecured, securitate) { }
 
     [HttpGet]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(D394Dto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
     public IActionResult Get([FromQuery] DateOnly? dataStart = null, [FromQuery] DateOnly? dataEnd = null) {
@@ -46,7 +47,9 @@ public class D394Controller : ContaApiController {
         // citească registrul fiscal nu-l citește nici așezat pe parteneri (`User`
         // ⇒ 200 cu liste goale — ușa filtrează rândurile, 69g). Proiecția
         // întoarce liste materializate: nimic deferred după `using`.
-        using var os = Secured(typeof(RegistruTva));
+        using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        if (!PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os))
+            return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
         return Ok(D394Proiectii.D394(os, dataStart.Value, dataEnd.Value));
     }
 }

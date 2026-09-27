@@ -23,7 +23,14 @@ internal static class ProfilBugetar {
         os.CommitChanges();
         ContaSeeder.SeedContImplicitTipMaterial(os);
         SeedPoliticiNotaTransfer(os);
+        SeedPoliticiAsamblare(os);
         SeedPoliticiFacturaIntrareNir(os);
+        SeedDiferente.NIR(os, "473.01.09", "408.00.00", "461.01.09", "428.01.02",
+            ("M", "602.01.00", "351.01.00"), ("OI", "603.00.00", "351.02.00"),
+            ("OF", "603.00.00", "351.02.00"), ("MF", "607.00.00", "357.00.00"),
+            ("D", "602.02.00", "351.01.00"), ("L", "602.02.00", "351.01.00"),
+            ("PS", "602.04.00", "351.01.00"), ("MED", "602.09.00", "351.01.00"),
+            ("MS", "602.09.00", "351.01.00"), ("DEZ", "602.09.00", "351.01.00"));
         SeedPoliticiBonConsum(os);
         SeedPoliticiListaDiferente(os);
         SeedPoliticiFacturaIesire(os);
@@ -195,7 +202,7 @@ internal static class ProfilBugetar {
             ("T", "442.07.00", "TVA colectată"),
             ("OF", "303.02.00", "Obiecte de inventar în folosință"),
             ("D", "302.02.00.2", "Motorină"),
-            ("D", "409.01.01", "Furnizori-debitori pentru cumpărări de bunuri"),
+            ("S", "409.01.01", "Furnizori-debitori pentru cumpărări de bunuri"),
             ("D", "532.04.00", "Bonuri valorice pentru carburant"),
             ("D", "532.08.00", "Alte valori"),
             ("MED", "302.09.00.1", "Medicamente"),
@@ -241,12 +248,14 @@ internal static class ProfilBugetar {
             var parinte = f[2].Length > 0 ? conturi.GetValueOrDefault(f[2]) : null;
             var simbol = f[0];
             var cont = ContaSeeder.Aliniaza(os, simbol, conturi.GetValueOrDefault(simbol),
-                () => os.GetObjectsQuery<Cont>().IgnoreQueryFilters().FirstOrDefault(c => c.Simbol == simbol),
                 c => {
                     c.Simbol = simbol;
                     c.Denumire = f[1];
                     c.Functie = f[3];
                     c.Sumator = f[4] == "1";
+                    c.UrmarestePartide = c.RolTert != RolTertCont.Niciunul || simbol is "542.01.00" or "542.02.00"
+                        or "408.00.00" or "461.01.09" or "428.01.02"
+                        or "401.01.00" or "404.01.00" or "411.01.01";
                     c.DimensiuniObligatorii = ParseDefalcare(f[5]);
                     c.ParinteId = parinte?.ID;
                 });
@@ -277,16 +286,20 @@ internal static class ProfilBugetar {
         return flags;
     }
 
-    // Inventar 04: −1 predator / +1 primitor, ACELAȘI tip stoc (magazie);
-    // Clasa=null ⇒ regula acoperă toate clasele cu Natura=Stoc.
-    // Contare: NICIUN rând — la plan sintetic transferul nu mișcă conturi;
-    // mutarea între gestiuni trăiește în registrul de stoc (+ dimensiunea
-    // Repartitor), nu în note 3xx=3xx (zgomotul legacy nu se preia).
     static void SeedPoliticiNotaTransfer(IObjectSpace os) {
         var btr = os.FirstOrDefault<TipDocument>(x => x.Cod == "BTR");
         ContaSeeder.SeedNumerotare(os, "BTR", "BTR-");
-        SeedReguliStoc(os, btr, LaturaDocument.Predator, -1, (null, TipStoc.Magazie));
-        SeedReguliStoc(os, btr, LaturaDocument.Primitor, +1, (null, TipStoc.Magazie));
+        SeedReguliStoc(os, btr, LaturaDocument.Predator, -1,
+            (null, TipStoc.Magazie), ("OF", TipStoc.Folosinta));
+        SeedReguliStoc(os, btr, LaturaDocument.Primitor, +1,
+            (null, TipStoc.Magazie), ("OF", TipStoc.Folosinta));
+    }
+
+    static void SeedPoliticiAsamblare(IObjectSpace os) {
+        var asm = os.FirstOrDefault<TipDocument>(x => x.Cod == "ASM");
+        ContaSeeder.SeedNumerotare(os, "ASM", "ASM-");
+        SeedReguliStoc(os, asm, LaturaDocument.Predator, +1,
+            (null, TipStoc.Magazie), ("MF", TipStoc.Marfuri));
     }
 
     // Registrele profilului, ca rânduri de politică: incremental per (latură ×
@@ -365,7 +378,8 @@ internal static class ProfilBugetar {
     static void SeedPoliticiBonConsum(IObjectSpace os) {
         var bcs = os.FirstOrDefault<TipDocument>(x => x.Cod == "BCS");
         ContaSeeder.SeedNumerotare(os, "BCS", "BCS-");
-        SeedReguliStoc(os, bcs, LaturaDocument.Predator, -1, (null, TipStoc.Magazie));
+        SeedReguliStoc(os, bcs, LaturaDocument.Predator, -1,
+            (null, TipStoc.Magazie), ("OF", TipStoc.Folosinta));
         SeedReguliStoc(os, bcs, LaturaDocument.Primitor, +1, (null, TipStoc.Consum));
 
         // Contarea consumului: 6xx = 3xx per Clasă/Tip, derivată din simbol

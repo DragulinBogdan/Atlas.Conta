@@ -1,3 +1,4 @@
+import { Partide } from './felii/raportare/Partide';
 import { useState } from 'react';
 import { NavLink, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
 import Drawer from 'devextreme-react/drawer';
@@ -71,10 +72,12 @@ import { PoliticiInchidereTva } from './felii/politici/PoliticiInchidereTva';
 import { ReguliStoc } from './felii/politici/ReguliStoc';
 import { ReguliContare } from './felii/politici/ReguliContare';
 import { PoliticiTva } from './felii/politici/PoliticiTva';
+import { PoliticiDiferente } from './felii/politici/PoliticiDiferente';
 import { PoliticiConex } from './felii/politici/PoliticiConex';
 import { PoliticiValidare } from './felii/politici/PoliticiValidare';
 import { MapariD300 } from './felii/politici/MapariD300';
 import { MapariD394 } from './felii/politici/MapariD394';
+import { MapariTvaSaft } from './felii/politici/MapariTvaSaft';
 import { Verificare } from './felii/politici/Verificare';
 import { Explica } from './felii/politici/Explica';
 import { PoliticiAmortizare } from './felii/politici/PoliticiAmortizare';
@@ -161,6 +164,7 @@ export function App() {
         {/* F27-D7: soldurile pe partener la o zi — partea de sold a balanței
             analitice, ecranul pe care partidele deschise îl fac ieftin. */}
         <Route path="/sold-parteneri" element={<SoldParteneri />} />
+        <Route path="/partide" element={<Partide />} />
         {/* F27-D1/D2: perioada nu se culege, deci `/perioade` e o CONSOLĂ —
             lanțul, verificarea cu bifele de acceptare, cele două comenzi și
             istoricul cu acceptările. N-are `/nou` și n-are `:id`. */}
@@ -229,10 +233,12 @@ export function App() {
         <Route path="/politici/reguli-stoc" element={<ReguliStoc />} />
         <Route path="/politici/reguli-contare" element={<ReguliContare />} />
         <Route path="/politici/tva" element={<PoliticiTva />} />
+        <Route path="/politici/diferente" element={<PoliticiDiferente />} />
         <Route path="/politici/conex" element={<PoliticiConex />} />
         <Route path="/politici/validare" element={<PoliticiValidare />} />
         <Route path="/politici/d300" element={<MapariD300 />} />
         <Route path="/politici/d394" element={<MapariD394 />} />
+        <Route path="/politici/tva-saft" element={<MapariTvaSaft />} />
         <Route path="/politici/verificare" element={<Verificare />} />
         <Route path="/politici/amortizare" element={<PoliticiAmortizare />} />
         <Route path="/politici/deductibilitate" element={<ReguliDeductibilitate />} />
@@ -281,6 +287,7 @@ function Meniu() {
       <NavLink to="/balanta">Balanță</NavLink>
       <NavLink to="/balanta-plan">Balanță pe plan</NavLink>
       <NavLink to="/sold-parteneri">Solduri pe repartitor</NavLink>
+          <NavLink to="/partide">Partide deschise</NavLink>
       <NavLink to="/jurnal">Registru-jurnal</NavLink>
       <NavLink to="/perioade">Perioade fiscale</NavLink>
       <span className="meniu__grup">TVA și declarații</span>
@@ -307,9 +314,11 @@ function Meniu() {
       <NavLink to="/politici/reguli-contare">Reguli de contare</NavLink>
       <NavLink to="/politici/tva">TVA per tip</NavLink>
       <NavLink to="/politici/conex">Documente conexe</NavLink>
+      <NavLink to="/politici/diferente">Diferențe la recepție</NavLink>
       <NavLink to="/politici/validare">Validări</NavLink>
       <NavLink to="/politici/d300">Mapări D300</NavLink>
       <NavLink to="/politici/d394">Mapări D394</NavLink>
+      <NavLink to="/politici/tva-saft">Mapări TVA SAF-T</NavLink>
       <NavLink to="/politici/amortizare">Amortizare (conturi)</NavLink>
       <NavLink to="/politici/deductibilitate">Deductibilitate fiscală</NavLink>
       <NavLink to="/politici/inchidere-perioada">Închidere de perioadă</NavLink>

@@ -3,8 +3,6 @@ using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
-// `IgnoreQueryFilters` (rândul șters logic) + modelul design-time, din care se
-// citesc cheile unice și coloanele generate.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -101,24 +99,24 @@ public static class ContaSeeder {
 
     public static T Aliniaza<T>(IObjectSpace os, string cheie, Expression<Func<T, bool>> potrivire,
             Action<T> seteaza) where T : class, ICuProvenienta =>
-        Aliniaza(os, cheie, os.GetObjectsQuery<T>().FirstOrDefault(potrivire),
-            () => os.GetObjectsQuery<T>().IgnoreQueryFilters().FirstOrDefault(potrivire), seteaza);
+        Aliniaza(os, cheie, os.GetObjectsQuery<T>().FirstOrDefault(potrivire), seteaza);
 
     /// <summary>Aceeași semantică, pentru cheile căutate într-un dicționar deja încărcat.</summary>
-    public static T Aliniaza<T>(IObjectSpace os, string cheie, T gasitViu, Func<T> gasitSters,
+    public static T Aliniaza<T>(IObjectSpace os, string cheie, T gasitViu,
             Action<T> seteaza) where T : class, ICuProvenienta {
         var tip = typeof(T).Name;
         var contor = Raport.Contoare(tip);
         if (gasitViu == null) {
-            if (gasitSters() != null) {
-                Console.WriteLine($"  {tip} {cheie}: ȘTERS de utilizator, nu se recreează "
-                    + "(politica e date — decizia 4).");
-                contor.Sterse++;
-                return null;
-            }
             var rand = os.CreateObject<T>();
             rand.DinSeed = true;
             seteaza(rand);
+            if (RefuzSeed.Refuzat(os, rand)) {
+                os.Delete(rand);
+                Console.WriteLine($"  {tip} {cheie}: ȘTERS de utilizator, nu se recreează "
+                    + "(politica e date — decizia 4, 104i).");
+                contor.Sterse++;
+                return null;
+            }
             contor.Create++;
             return rand;
         }
@@ -162,8 +160,7 @@ public static class ContaSeeder {
             .Model.FindEntityType(tip)
             ?? throw new InvalidOperationException(
                 "Seed-ul cere un EFCoreObjectSpace (modelul design-time) — 83b.");
-        var coloaneCheie = entitate.GetIndexes().Where(i => i.IsUnique)
-            .SelectMany(i => i.Properties).Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
+        var coloaneCheie = RefuzSeed.ColoaneCheie(os, tip).Select(p => p.Name).ToHashSet(StringComparer.Ordinal);
         IReadOnlyList<ProprietateSeed> lista = entitate.GetProperties()
             .Where(p => p.PropertyInfo != null && !p.IsPrimaryKey()
                 && p.Name != nameof(ICuProvenienta.DinSeed) && p.GetComputedColumnSql() == null)
@@ -200,15 +197,12 @@ public static class ContaSeeder {
     // de document (listă mică).
     internal static RegulaContare AliniazaContare(IObjectSpace os, TipDocument tipDoc, string cheie,
             Guid? tipMaterialId, NaturaClasa? naturaFiltru, int? semnFiltru, Action<RegulaContare> seteaza) {
-        RegulaContare Cauta(bool cuSterse) {
-            var toate = os.GetObjectsQuery<RegulaContare>();
-            if (cuSterse)
-                toate = toate.IgnoreQueryFilters();
-            return toate.Where(r => r.TipDocumentId == tipDoc.ID).ToList()
+        RegulaContare Cauta() {
+            return os.GetObjectsQuery<RegulaContare>().Where(r => r.TipDocumentId == tipDoc.ID).ToList()
                 .FirstOrDefault(r => r.TipMaterialId == tipMaterialId
                     && r.NaturaFiltru == naturaFiltru && r.SemnFiltru == semnFiltru);
         }
-        return Aliniaza(os, cheie, Cauta(false), () => Cauta(true), r => {
+        return Aliniaza(os, cheie, Cauta(), r => {
             r.TipDocumentId = tipDoc.ID;
             r.TipMaterialId = tipMaterialId;
             r.NaturaFiltru = naturaFiltru;
@@ -219,14 +213,11 @@ public static class ContaSeeder {
 
     internal static RegulaStoc AliniazaRegulaStoc(IObjectSpace os, TipDocument tipDoc, string cheie,
             LaturaDocument latura, Guid? clasaId, TipStoc tipStoc, int semn) {
-        RegulaStoc Cauta(bool cuSterse) {
-            var toate = os.GetObjectsQuery<RegulaStoc>();
-            if (cuSterse)
-                toate = toate.IgnoreQueryFilters();
-            return toate.Where(r => r.TipDocumentId == tipDoc.ID).ToList()
+        RegulaStoc Cauta() {
+            return os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipDoc.ID).ToList()
                 .FirstOrDefault(r => r.Latura == latura && r.ClasaId == clasaId);
         }
-        return Aliniaza(os, cheie, Cauta(false), () => Cauta(true), r => {
+        return Aliniaza(os, cheie, Cauta(), r => {
             r.TipDocumentId = tipDoc.ID;
             r.Latura = latura;
             r.ClasaId = clasaId;
@@ -297,19 +288,16 @@ public static class ContaSeeder {
             // bugetar rămâne tip inert (fără PoliticaInchidereTva, fără
             // numerotare), ca DSC/BPR.
             ("ITV", "Închidere TVA", nameof(InchidereTva), null),
-            // Al 14-lea derivat (FAZA 1C §7): asamblarea (kitting n→m pe stoc).
-            // Ancora e în nucleu pentru AMBELE profiluri; la bugetar rămâne tip
-            // inert (fără politici), ca DSC/ITV/BPR.
             ("ASM", "Asamblare", nameof(Asamblare), null),
             // Al 15-lea și al 16-lea derivat (FAZA 1C §7): retururile, pe
             // corespondența de STORNO (valori negative pe latura originală).
             // Ancorele sunt în nucleu pentru AMBELE profiluri; la bugetar rămân
-            // tipuri inerte (fără politici), ca DSC/ITV/ASM/BPR.
+            // tipuri inerte (fără politici), ca DSC/ITV/BPR.
             ("RLF", "Retur la furnizor", nameof(ReturFurnizor), null),
             ("RDC", "Retur de la client", nameof(ReturClient), null),
             // Declarația vamală de import (86c).
             // Ancora e în nucleu pentru AMBELE profiluri; la bugetar rămâne tip
-            // inert (fără politici), ca DSC/ITV/ASM/BPR.
+            // inert (fără politici), ca DSC/ITV/BPR.
             ("DVI", "Declarație vamală de import", nameof(Dvi), null),
             // Imobilizările: ancore ACTIVE pe ambele profiluri (F26-D4).
             ("PIF", "Punere în funcțiune", nameof(PunereInFunctiune), null),
@@ -321,9 +309,8 @@ public static class ContaSeeder {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
-                // T-D4: DSC postează în cub doar unde are politici; la bugetar e tip inert.
-                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR" or "FCL"
-                    || (t.Cod == "DSC" && profil == ProfilContabil.Privat);
+                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR" or "FCL" or "NTC" or "ASM" or "LDI" or "NIR" or "DEC" or "PIF" or "AMO" or "CAS"
+                    || (t.Cod is "DSC" or "ITV" or "RDC" or "RLF" or "DVI" && profil == ProfilContabil.Privat);
                 tip.LaturaContPropriu = t.ContPropriu;
             });
     }
@@ -501,9 +488,7 @@ public static class ContaSeeder {
     //
     // 2.163 de rânduri, deci se citește tabela O DATĂ, în dicționar, în loc de
     // 2.163 de `FirstOrDefault` (fiecare = un round-trip; la seed-ul unei baze
-    // noi asta ar fi însemnat minute în loc de secunde). `IgnoreQueryFilters`
-    // NU se folosește: rândurile șterse logic rămân șterse, iar indexul unic e
-    // filtrat pe `GCRecord = 0` tocmai ca re-crearea să fie posibilă.
+    // noi asta ar fi însemnat minute în loc de secunde).
     // Public: ModelCheck (alt assembly) probează rescrierea pe calea reală.
     // Nomenclator de LEGE, ca `RandD300`: fără timbru de proveniență, aliniat pe `Cod` (F26-D4).
     internal static void SeedClasificariImobilizari(IObjectSpace os) {

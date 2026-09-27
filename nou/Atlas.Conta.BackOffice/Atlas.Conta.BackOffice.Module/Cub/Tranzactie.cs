@@ -3,8 +3,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
-// S-D1: POCO EF, nu `BaseObject` — cubul e append-only (fără ștergere amânată,
-// fără timbru optimist, fără filtru global).
+// S-D1: POCO EF, nu `EntitateConta` — cubul e append-only (fără timbru optimist).
 public class Tranzactie {
     public virtual Guid ID { get; set; }
 

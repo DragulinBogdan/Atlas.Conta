@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-18.** [Index](README.md)
+**Actualizat: 2026-09-26.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -18,7 +18,7 @@ controlate de server. Implicitul TVA al ancorei este editabil. (20, 81e)
 Politicile sunt editabile prin OData în limita permisiunilor și a gărzilor
 de domeniu. Rolul `Configurator` (seed-uit, și pe RELEASE) citește tot și
 scrie doar tipurile din `Politici.TipuriConfigurabile` — lista explicită a
-celor 20 de tipuri cu proveniență, consumată și de raportul de profil și de
+celor 22 de tipuri cu proveniență, consumată și de raportul de profil și de
 gate-urile de citire; permisiunile rolului se reaplică la fiecare seed. Toate
 tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e, 81k, 84c, 84d)
 
@@ -61,7 +61,7 @@ pe D300 și D394). (83f–g, 84b)
 Tipurile de import sunt marcate prin `TipTva.DeImport`, nu prin coduri în cod.
 Seed-ul privat are `IMP21`/`IMP11` (regim normal, coduri SAF-T de achiziție
 301204/301205, D300 rd. 24/25) și `IMPTI21`/`IMPTI11` (taxare inversă la
-import, 300604/300605, rd. 7 cu oglinda 22 pusă de proiecție); declarația
+import, 300604/300605, rd. 7/22 din Autocolectare/Taxă); declarația
 vamală are politica TVA deductibilă cu contrapartida pe predator (fallback
 446), implicitul generic `IMP21` și nicio mapare D394. Bugetar are doar
 ancora tipului. (86c)
@@ -105,8 +105,18 @@ echivalentă a selectoarelor XAF este o limită curentă. (81c, 81e, 81-r7)
 `ICuProvenienta`. Seed-ul îl setează la creare și ALINIAZĂ la fiecare trecere
 rândurile care îl poartă (timbrul e proprietate); o modificare efectivă prin
 ObjectSpace securizat îl stinge, după care rândul e al clientului și nu se
-mai atinge; utilizatorul nu îl poate activa la creare; rândul șters logic
-rămâne șters și se raportează; reseed-ul nu reactivează timbrul. (81d, 83a, 84a)
+mai atinge; utilizatorul nu îl poate activa la creare; reseed-ul nu
+reactivează timbrul. (81d, 83a, 84a)
+
+Rândul `ICuProvenienta` șters pe ușa securizată se șterge fizic și lasă un
+`RefuzSeed` (tip + cheia din indexurile unice, serializată; zecimalele fără
+scară, deci `21.0000` citit din bază și `21` din seed dau aceeași cheie). Seed-ul nu
+recreează un rând refuzat și îl numără la „șterse”; golurile de mapare
+D300/D394 citesc tot refuzurile. Refuzul se șterge de rolul `Configurator`,
+iar rândul revine la următorul re-seed. Raportul de profil nu mai are
+categoria „referință spre un rând șters”: FK-ul refuză ștergerea rândului
+referit (valoarea 2 a lui `FelConstatare` e retrasă). Avertismentul D394
+pentru partenerul scos din uz e `PartenerInactiv`. (83a, 83j, 104f, 104i)
 
 Marcajul nu este permisiune, jurnal de audit sau criteriu pentru corecții
 automate. Rândurile istorice marcate prin backfill nu permit reconstituirea
@@ -152,66 +162,67 @@ Linia declarației vamale poartă doar tipuri `DeImport` cu cotă (`IMP` cu cot�
 0 este refuzat la operare); taxa culeasă se păstrează, iar zero se completează
 din cotă la operare. (86d)
 
-Registrul TVA se materializează pe linii când există politica și tipul TVA
-necesare, inclusiv pentru linii fiscale fără sumă TVA contabilizată. Cota,
-regimul și valorile fiscale sunt fixate în registru. Etichetele care sunt
-citite prin referințe nu constituie snapshot complet al nomenclatoarelor.
-Gruparea ține separat sensul, tipul TVA și marcajul storno. Backfill-ul
-folosește același generator ca operarea. (68)
+Cubul păstrează pe fiecare fapt fiscal regimul, cota, importul, valorile cu
+semn, identitatea documentului fiscal și reperele temporale. Intrarea comună
+`Cub.Citiri.Fiscale` citește ambele cărți; contul și cartea păstrează
+proveniența, fără să despartă baza fiscală DVI de taxa contabilă. Un fapt
+are cel mult o Bază și o Taxă; achiziția cu taxare inversă adaugă o
+Autocolectare pe contrapartea colectată, cu același sens Achiziție.
+Nomenclatorul curent oferă etichete, fără să recalculeze cota istorică. (103)
 
-### Perioada de declarare și rectificativa
+Registrul TVA vechi rămâne diagnostic în regimul dual. Cititorii fiscali
+portați nu îl folosesc drept sursă. Nu există snapshot fiscal cumulativ și
+nici compatibilizare a istoricului de dezvoltare. (102, 103)
 
-Rândul fiscal poartă două coordonate de timp: `Data` este a faptului fiscal
-(data documentului, iar pe rândul invers data stornării), `PerioadaAn` și
-`PerioadaLuna` sunt perioada în care faptul se DECLARĂ. Jurnalele, decontul,
-D300, D394 și SAF-T filtrează pe perioada de declarare. (F27-D5)
+### Perioada de declarare și corecțiile
 
-Regula de completare este una singură, la scrierea rândului: dacă perioada
-datei faptului este deschisă, perioada de declarare este a ei. Dacă perioada
-faptului NU este definită în bază, perioada de declarare este cea a
-înregistrării, indiferent de politică: o lună care nu există nu are reper de
-rectificativă și nu se închide niciodată, deci nu se poate declara acolo.
-Dacă este definită și închisă, decide
-politica tipului, prin câmpul `DeclarareIntarziata` de pe `PoliticaTva`:
-`PerioadaInregistrarii` sau `PerioadaFaptului`. Seed-ul privat o pune pe
-direcție: deductibilul (FCT, DEC, RLF, DVI) declară în perioada înregistrării,
-colectatul (FCL, RDC) în perioada faptului. Profilul poate alege altfel;
-motorul nu știe de ce. Profilul bugetar nu are rânduri `PoliticaTva`, deci
-câmpul este inert acolo. (F27-D5, 29, 35d)
+Data documentului, exigibilitatea, primirea la achiziție și înregistrarea
+sunt distincte. Primirea se propune din înregistrare, rămâne editabilă în
+draft și se îngheață la operare. D394 folosește primirea/emisia; D300,
+perioada înregistrării la achiziție și cea a exigibilității la livrare.
+O livrare omisă dintr-o perioadă D300 deja declarată intră în regularizarea
+curentă. Nu există parametru `DeclarareIntarziata` în politica TVA. (103)
 
-Rândul invers al unui storno se declară în perioada stornării, deschisă prin
-gardian. Perioada de declarare este snapshot pe rând, ca regimul și cota: o
-politică schimbată ulterior nu rescrie rândurile deja scrise. (JT-D5, JT-D3)
+Depunerea se confirmă explicit pe formular, an, lună și versiune exportată.
+Versiunea emisă în DTO-ul D300/D394 este SHA-256 peste faptele perioadei din
+citirea comună, formular și perioadă. Raportul și amprenta folosesc același
+snapshot tranzacțional. Confirmarea recalculează amprenta sub blocaj exclusiv;
+o versiune depășită primește `DEPUNERE_VERSIUNE_DEPASITA`. UI exportă JSON-ul
+cu amprentă și păstrează versiunea acelui export pentru confirmare, fără
+etichetă liberă. Aceasta verifică faptele cubului, nu parametrii manuali sau
+fișierul XML ANAF.
+`DepunereDeclaratie` păstrează momentul și utilizatorul, fără sume fiscale
+paralele; nu se editează prin CRUD generic. Aceeași confirmare este
+idempotentă. Confirmarea și scrierile fiscale se serializează tranzacțional.
+Închiderea sau redeschiderea contabilă nu confirmă și nu șterge depunerea.
+D394 compară `ScrisLa` cu ultima confirmare; D300 folosește regularizări și
+nu expune automat o rectificativă. Confirmarea din aplicație este evidența
+depunerii efectuate de utilizator, nu transmitere către ANAF. (103d)
 
-Rectificativa nu este un marcaj cules, ci un derivat din două momente:
-conținutul de rectificativă al unei perioade este mulțimea rândurilor
-declarate în ea și scrise (`ScrisLa`) după `InchisaPrimaOara` a ei. O perioadă
-niciodată închisă nu are reper, deci nu are rectificativă. Redeschiderea nu
-stinge `InchisaPrimaOara`, deci reperul rămâne cel al primei declarații.
-D300 și D394 pe exact o lună calendaristică raportează `Rectificativa` și
-diferențele față de declarat, pe cheia decontului. Răspunsul spune și dacă
-perioada e DESCHISĂ acum (redeschisă după prima declarare): conținutul e deja
-calculat, dar devine rectificativă abia la re-închidere, iar ecranul o scrie
-ca atare. (F27-D5, F27-D1, review advers F27 2')
+`CK_Postare_FiscalComplet` impune la scriere calificările și reperele
+obligatorii când `TipTvaId` este prezent, inclusiv primirea la achiziții.
+Nu există scanare de istoric la pornire. Invarianții între roluri și
+proveniența inversei rămân verificați în ModelCheck.
 
-La `Eroare materială` cu PARTENER schimbat, D394 rectificativ al lunii arată
-partenerul VECHI cu factura originală și cu storno-ul ei (net zero, dar două
-facturi la numărătoare, fiindcă storno-ul e factură de storno la el — §5.2) și
-partenerul NOU cu factura corectată. Consecință acceptată: declarația
-rectificativă spune adevărul despre ce s-a declarat și ce s-a corectat, nu
-rescrie istoria partenerului vechi. (review advers F27, 5)
+La eroarea de evidență 100/21 → 80/16,80, dacă D300 inițial a fost depus,
+inversa tehnică și versiunea corectată produc Δ −20/−4,20 în regularizarea
+curentă, păstrând trecutul declarat. D394 înlocuiește perioada inițială cu
+80/16,80 și o singură factură. Inversa tehnică nu este o factură distinctă;
+un partener vechi cu net zero nu contribuie la numărătoare. În lipsa unei
+depuneri D300, corecția rămâne în atribuirea inițială. Corecția TVA
+capitalizată nu inventează o deducere. (103c)
 
-Corecția unui document operat decide efectul FISCAL prin motiv, nu contarea.
-La `Eroare materială`, rândurile inverse ale storno-ului ȘI rândurile
-documentului nou se declară în perioada în care s-au declarat rândurile
-ORIGINALULUI: diferența apare atunci ca rectificativă pe acea lună, cu exact
-cele două seturi de rânduri. La `Fapt nou` nimic nu se mută — rândul invers
-cade în perioada stornării (JT-D5) și documentul nou pe regula normală a
-politicii, pe direcție. Un original fără rânduri fiscale nu are ce moșteni,
-deci corecția lui cade tot pe regula normală. Contarea documentului nou este
-cea normală, din politică; reclasificarea pe 1174 a erorilor semnificative din
-exerciții anterioare rămâne notă contabilă manuală (F27-r1) — motorul nu
-judecă semnificația. (F27-D6, F27-D5)
+Factura distinctă de reducere, inclusiv returul comercial, are propriile
+date și propriile atribuiri. Draftul `FaptNou` propune data corecției ca
+dată a documentului, exigibilității și primirii, unde se aplică. Codul enum
+`EroareMateriala` se păstrează, dar eticheta este „Eroare de evidență”; el nu
+implementează procedura ANAF pentru eroarea materială a formularului.
+Reclasificarea semnificativă pe 1174 rămâne notă manuală. (103, F27-r1)
+
+Anularea operării unui fapt inclus într-o declarație confirmată este
+refuzată și după redeschiderea contabilă. Corecția tehnică începută trebuie
+încheiată: draftul nu poate fi șters, iar depunerea perioadei afectate este
+refuzată cât timp versiunea înlocuitoare nu este operată.
 
 ## Închiderea de perioadă
 
@@ -275,7 +286,8 @@ Niciun simbol de cont nu stă în cod. (87d)
 `RegulaDeductibilitate` exprimă legea ca date cu valabilitate: categorie
 fiscală, marcaj „doar neexclusiv", fel (plafon lunar sau procent), valoare,
 `DeLa`/`PanaLa`, temei. La fiecare rând lunar, din regulile valabile la data
-lui, câștigă per categorie și fel rândul cu `DeLa` maxim; plafonul se aplică
+lui, câștigă per categorie și fel rândul cu `DeLa` maxim (aceasta e și cheia
+unică: categorie, fel, `DeLa`); plafonul se aplică
 înaintea procentului; fără regulă, deductibilul este egal cu fiscalul.
 Seed-ul privat: plafon 1 500 lei/lună pe vehiculele de persoane cu cel mult
 9 locuri neexclusive (din 2012-02-01), sediul social în locuință 0 % din
@@ -294,7 +306,7 @@ catalog: tipul material îl alege utilizatorul. (87d)
 
 ## Proiecțiile contabile
 
-Raportarea folosește registrele. Debitarea și creditarea sunt proiectate pe
+Citirile contabile portate folosesc cubul, cu `Carte=Contabil`. Debitarea și creditarea sunt proiectate pe
 laturi; perioada și dimensiunile sunt parametri ai raportului, diferiți de
 filtrele de afișare ale grilei. (42c, 66)
 
@@ -311,7 +323,7 @@ join-uri care păstrează faptele contabile când un nomenclator lipsește. (66)
 
 ## D300 și D394
 
-D300 proiectează registrul TVA prin `MapareD300` către rândurile de operații.
+D300 proiectează faptele fiscale din cub prin `MapareD300` către rândurile de operații.
 Structura `RandD300` este furnizată de seed și nu se editează prin API;
 formulele sunt cod. O mapare poate contribui la mai multe rânduri, fără
 dublare pe lanțul strămoș–descendent. (69a, 69b, 69c)
@@ -323,18 +335,19 @@ Valorile nemapate sunt raportate cu motiv, iar avertismentele nu trunchiază
 sumele. Coloanele neaplicabile sunt absente, nu zerouri fabricate. (69c, 69d, 69e)
 Importurile intră în decont din declarația vamală, nu din factura furnizorului
 extern: rd. 24/25 pentru taxa plătită în vamă, rd. 7 (și oglinda 22) pentru
-amânarea plății; SAF-T D406 emite codurile de import din același registru,
+amânarea plății; SAF-T D406 emite codurile de import din aceleași fapte,
 fără filtru de tip. (86c, 86k)
 
-D394 grupează document × storno × partener × sens × tip TVA × cotă.
+D394 grupează document fiscal × storno comercial × partener × sens × tip TVA × calificare istorică.
 Clasificarea partenerului folosește aceeași funcție fiscală ca implicitele.
 CUI-ul este normalizat pentru agregare; partenerii multipli cu același CUI
 pot forma aceeași poziție. Înregistrarea TVA are prioritate în grup. (71b, 71d, 81b)
 
 `MapareD394` permite operațiile de vânzare L/V/LS și de cumpărare A/C/AS pe
 sensul corespunzător. AI este derivată și nu se configurează ca mapare.
-Numărul de facturi distinge documentul și storno-ul. Totalurile pe sens se
-reconciliază cu registrul prin operațiile incluse și `Neincluse`. Ștergerea
+Numărul de facturi distinge documentul fiscal și storno-ul comercial, fără
+inverse tehnice. Totalurile pe sens se reconciliază cu faptele cubului prin
+operațiile incluse și `Neincluse`. Ștergerea
 logică a partenerului nu elimină faptele fiscale. Secțiunile neacoperite
 produc limite și avertismente, nu date presupuse. (71c, 71d, 71e)
 
@@ -371,6 +384,14 @@ iar refuzurile de domeniu 422. (72c, 72e)
 SAF-T L și S folosesc profilul privat; profilul bugetar este neaplicabil și
 este refuzat cu 422. Exportul este lunar. Sumarul JSON expune agregate,
 avertismente și reconcilieri; XML-ul este scris prin streaming. (73c, 73g)
+
+`TaxInformation` citește `Cub.Citiri.Fiscale`. `MapareTvaSaft` selectează
+codurile după versiunea exportului, secțiune, tip, regim, cotă istorică,
+import, sens și rol. Lipsa mapării produce diagnostic; autocolectarea are
+cod distinct numai în GeneralLedger. Politica are editor React și proveniență.
+Restul `SourceDocuments` și sursele contabile/stoc ale exportului complet
+rămân inventariate separat în TR-D8; această felie nu certifică migrarea sau
+securitatea întregului SAF-T. (103, D8-B8)
 
 În L, partenerul unei note rezultă din rolul contului și dimensiunile
 materializate. TVA este asociată pe linie și storno. Retururile/stornările

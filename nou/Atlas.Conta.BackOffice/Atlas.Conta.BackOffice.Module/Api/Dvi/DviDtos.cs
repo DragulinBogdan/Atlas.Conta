@@ -10,6 +10,8 @@ public sealed class DviWriteDto {
     public DateOnly Data { get; set; }
     // F27-D4: lipsă pe sârmă = data documentului.
     public DateOnly? DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
+    public DateOnly? DataPrimire { get; set; }
     public Guid PredatorId { get; set; }
     public Guid PrimitorId { get; set; }
     public List<DviLinieWriteDto> Linii { get; set; } = new();
@@ -37,6 +39,8 @@ public sealed class DviReadDto {
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
     public DateOnly DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
+    public DateOnly? DataPrimire { get; set; }
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
     public Guid PredatorId { get; set; }

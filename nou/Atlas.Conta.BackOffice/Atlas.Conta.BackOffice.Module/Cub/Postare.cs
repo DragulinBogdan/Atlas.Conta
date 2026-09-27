@@ -2,7 +2,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
-// S-D1: POCO EF, nu `BaseObject`. `Spatiu` e cheia partiției (S-D2), calculată
+// S-D1: POCO EF, nu `EntitateConta`. `Spatiu` e cheia partiției (S-D2), calculată
 // la materializare din `postare.Spatiu()`; `UnitateDeschisa` e amendamentul la
 // FZ-D2 (cheia FIFO `(Deschisa, Id)`, partida n-are rând de nomenclator).
 public class Postare {
@@ -24,11 +24,28 @@ public class Postare {
     public virtual Guid? Produs { get; set; }
     public virtual Guid? Unitate { get; set; }
     public virtual DateOnly? UnitateDeschisa { get; set; }
+    public virtual N.FelUnitate? FelUnitate { get; set; }
+
+    public virtual Guid? SuportId { get; set; }
+    public virtual N.Spatiu? SuportSpatiu { get; set; }
+    public virtual Guid? InversaDinId { get; set; }
+    public virtual N.Spatiu? InversaDinSpatiu { get; set; }
 
     public virtual Guid? TipTvaId { get; set; }
     public virtual N.SensTva? SensTva { get; set; }
     public virtual N.RolTva? RolTva { get; set; }
     public virtual int? PerioadaDeclarare { get; set; }
+    public virtual N.RegimTva? RegimTva { get; set; }
+    public virtual decimal? CotaTva { get; set; }
+    public virtual bool? DeImport { get; set; }
+    public virtual Guid? DocumentFiscalId { get; set; }
+    public virtual DateOnly? DataDocument { get; set; }
+    public virtual DateOnly? DataExigibilitate { get; set; }
+    public virtual DateOnly? DataPrimire { get; set; }
+    public virtual DateOnly? DataInregistrare { get; set; }
+    public virtual int? PerioadaD394 { get; set; }
+    public virtual bool RegularizareD300 { get; set; }
+    public virtual bool InversaTehnica { get; set; }
 
     public virtual Guid? Valuta { get; set; }
     public virtual N.Carte Carte { get; set; }

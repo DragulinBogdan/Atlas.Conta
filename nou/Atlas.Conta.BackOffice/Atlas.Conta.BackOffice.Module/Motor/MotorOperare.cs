@@ -45,8 +45,9 @@ public static class MotorOperare {
     // primit — `PregatesteOperare` scrie `Valoare`/`Cantitate` pe linii, iar
     // gardienii pot lăsa alte instanțe atinse. Nimic nu se comite aici, dar
     // apelantul trebuie să folosească un ObjectSpace PROPRIU, aruncat după apel
-    // (calea vie: OS non-secured creat de adaptorul `OperareApi`).
+    // (calea vie: OS non-secured creat de adaptorul `ComenziDocument`).
     public static IReadOnlyList<string> Valideaza(IObjectSpace os, Document doc) {
+        using var receptie = Cub.ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: false);
         try {
             var plan = CalculeazaSiValideaza(os, doc);
             return Cub.Materializare.Refuzuri(os, doc, plan.TipDoc);                  // S-D4
@@ -95,7 +96,7 @@ public static class MotorOperare {
         // vor veni) ar fi o copie în plus care poate rămâne în urmă (42a: o
         // singură sursă de reguli). Locul acoperă amândouă căile de scriere,
         // fiindcă amândouă operează prin motor: XAF prin `Opereaza`, API-ul prin
-        // `OperareApi` → `Opereaza`/`Valideaza` (dry-run-ul îl arată clientului
+        // `ComenziDocument` → `Opereaza`/`Valideaza` (dry-run-ul îl arată clientului
         // înainte de comandă).
         TvaService.VerificaTvaCulesTaxareInversa(os, tipDoc, tvaCulesInainte, erori);
         ValideazaDeclarativ(os, doc, tipDoc, claseTip, erori);
@@ -123,7 +124,8 @@ public static class MotorOperare {
         //    regula specifică pe Clasa liniei bate regula generică (Clasa=null =
         //    orice clasă cu Natura=Stoc) — altfel s-ar aplica amândouă.
         var miscari = PotrivesteReguliStoc(doc, claseTip, reguliStoc, strict: true);
-        StocService.VerificaSoldIntermediar(os, miscari.Select(m => m.Miscare).ToList());
+        if (!tipDoc.PosteazaInCub)
+            StocService.VerificaSoldIntermediar(os, miscari.Select(m => m.Miscare).ToList());
 
         // 2. Rândurile contabile se CALCULEAZĂ și se validează tot înainte de
         //    materializare: potrivirea regulii pe linie = TipMaterial exact →
@@ -228,10 +230,7 @@ public static class MotorOperare {
             foreach (var d in Liniile(doc)) {
                 if (d.TipTvaId == null || d.ValoareTva == 0m)
                     continue;
-                // Geamănul gardului din `RegistruTvaService` (review advers D4):
-                // un `TipTva` șters logic din nomenclator lăsa liniile care-l referă
-                // să pice cu `KeyNotFoundException`, adică o excepție brută în loc
-                // de un refuz de domeniu cu remediu.
+                // Geamănul gardului din `RegistruTvaService` (review advers D4).
                 if (!tipuriTva.TryGetValue(d.TipTvaId.Value, out var tva))
                     throw new OperareException(
                         "Tipul de TVA al unei linii nu mai există în nomenclator (a fost șters) — "
@@ -301,7 +300,13 @@ public static class MotorOperare {
 
     // Întoarce documentul conex generat (draft autogenerat, decizia 17) sau null.
     public static Document Opereaza(IObjectSpace os, Document doc) {
+        using var tranzactie = TranzactieComanda.Asigura(os);
+        FiscalitateService.BlocheazaScrierea(os, doc);
+        using var receptie = Cub.ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: true);
         var plan = CalculeazaSiValideaza(os, doc);
+        var refuzuriCub = Cub.Materializare.Refuzuri(os, doc, plan.TipDoc);
+        if (refuzuriCub.Count > 0)
+            throw new OperareException(string.Join("\n", refuzuriCub));
         var tipDoc = plan.TipDoc;
         var claseTip = plan.ClaseTip;
         var miscari = plan.Miscari;
@@ -378,7 +383,7 @@ public static class MotorOperare {
             var rand = os.CreateObject<RegistruTva>();
             rand.Data = doc.Data;
             var (perioadaAn, perioadaLuna) = RegistruTvaService.PerioadaDeclarare(
-                os, doc, doc.Data, doc.DataInregistrare, t.Regula);                  // F27-D5/D6
+                os, doc);
             rand.PerioadaAn = perioadaAn;
             rand.PerioadaLuna = perioadaLuna;
             rand.ScrisLa = scrisLa;
@@ -392,9 +397,6 @@ public static class MotorOperare {
             rand.Baza = t.Baza;
             rand.Tva = t.Tva;
         }
-
-        doc.TotalStingere = Scara.RotunjesteBani(                                     // F27-D7
-            doc.LiniiCreanta(doc.Detalii.AsQueryable()).Sum(d => d.Valoare + d.ValoareTva));
 
         // 3b. Registrul PROPRIU al tipului, prin interfață (F26-D3).
         if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
@@ -422,12 +424,13 @@ public static class MotorOperare {
 
         // 6. Stingerea automată (82): tipul declară sursa prin contract,
         //    serviciul materializează relația în aceeași tranzacție.
-        ImperechereService.CreeazaAutomataLaOperare(os, doc);
-
         // 7. Regimul dual (S-D4): declarația frunzei, în aceeași tranzacție.
         Cub.Materializare.Opereaza(os, doc, tipDoc);
+        doc.TotalStingere = Scara.RotunjesteBani(ImperechereService.Total(os, doc.ID));  // F27-D7, 102
+        ImperechereService.CreeazaAutomataLaOperare(os, doc);
 
         os.CommitChanges();
+        tranzactie?.Commit();
         return conex ?? secundar;
     }
 
@@ -505,7 +508,7 @@ public static class MotorOperare {
             throw new OperareException(string.Join("\n", lipsuri));
     }
 
-    static void VerificaLatura(string simbol, DimensiuneFlags flags, Dimensiuni dims,
+    internal static void VerificaLatura(string simbol, DimensiuneFlags flags, Dimensiuni dims,
         Guid? angajamentId, string latura, string denumireLinie, ICollection<string> lipsuri) {
         if (flags == DimensiuneFlags.Niciuna)
             return;
@@ -553,6 +556,7 @@ public static class MotorOperare {
         conex.PrimitorId = politica.InverseazaLaturi ? sursa.PredatorId : sursa.PrimitorId;
         conex.DocumentSursa = sursa;
         conex.Autogenerat = true;
+        conex.PreiaSursaConexa(sursa);
         // DIM-2: liniile clonei se nasc pe FRUNZA declarată a țintei ([TipDetaliu]
         // — aceeași declarație pe care o consumă UI-ul, 40a); o linie de bază ar
         // face PreiaDimensiuni no-op și clona ar pierde dimensiunile culese.
@@ -571,6 +575,7 @@ public static class MotorOperare {
             d.TipTvaId = s.TipTvaId;
             d.AngajamentId = s.AngajamentId;
             d.PreiaDimensiuni(s.DimensiuniCulese());
+            conex.PreiaLinieConexa(s, d);
         }
         return conex;
     }
@@ -579,12 +584,18 @@ public static class MotorOperare {
     // dependenți (simularea eliminării rândurilor proprii ține soldurile ≥ 0 și
     // niciun alt document nu a atins loturile create) și în perioadă deschisă.
     public static void AnuleazaOperarea(IObjectSpace os, Document doc) {
+        using var tranzactie = TranzactieComanda.Asigura(os);
+        FiscalitateService.BlocheazaScrierea(os, doc);
+        FiscalitateService.VerificaAnularea(os, doc);
+        Cub.Materializare.BlocheazaFise(os, doc);
+        Cub.Materializare.BlocheazaDocumente(os, doc);
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi anulat.");
         GardianPerioada.VerificaDeschisa(os, doc.DataInregistrare);
         VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);
         VerificaFaraImperecheri(os, doc);
+        Cub.Citiri.Loturi.VerificaRetragere(os, doc);
         StergeConexeDraftAutogenerate(os, doc);
 
         var randuriStoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID).ToList();
@@ -596,7 +607,7 @@ public static class MotorOperare {
 
         // Simularea eliminării: delta goală, rândurile proprii excluse, dar
         // cheile lor re-verificate de la prima dată afectată.
-        if (randuriStoc.Count > 0) {
+        if (randuriStoc.Count > 0 && !GasesteTipDocument(os, doc).PosteazaInCub) {
             var primaData = randuriStoc.Min(r => r.Data);
             var santinele = randuriStoc
                 .Select(r => new CheieStoc(r.LotId, r.RepartitorId, r.TipStoc)).Distinct()
@@ -608,7 +619,7 @@ public static class MotorOperare {
         // de altcineva (nici măcar cu mișcări care lasă soldul ≥ 0).
         var idsDetalii = doc.Detalii.Select(d => d.ID).ToList();
         foreach (var lot in os.GetObjectsQuery<Lot>().Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
-            if (os.GetObjectsQuery<RegistruStoc>().Any(r => r.LotId == lot.ID && r.DocumentId != doc.ID))
+            if (Cub.Citiri.Loturi.Postari(os).Any(r => r.Unitate == lot.ID && r.DocumentId != doc.ID))
                 throw new OperareException(
                     $"Lotul {lot.Produs?.Denumire} din {lot.Data:yyyy-MM-dd} e folosit de alte documente — folosiți storno.");
         }
@@ -623,6 +634,7 @@ public static class MotorOperare {
         doc.DataOperare = null;
         doc.TotalStingere = null;                                                    // F27-D7
         os.CommitChanges();
+        tranzactie?.Commit();
     }
 
     // Storno (decizia 14): rânduri inverse la data stornării, registrele rămân
@@ -630,6 +642,10 @@ public static class MotorOperare {
     // închisă sau dependenți existenți), cât timp perioada stornării e deschisă
     // și soldurile rămân ≥ 0 din data stornării încolo.
     public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
+        using var tranzactie = TranzactieComanda.Asigura(os);
+        FiscalitateService.BlocheazaScrierea(os, doc);
+        Cub.Materializare.BlocheazaFise(os, doc);
+        Cub.Materializare.BlocheazaDocumente(os, doc);
         if (doc.Stare != StareDocument.Operat)
             throw new OperareException("Doar un document Operat poate fi stornat.");
         if (dataStorno < doc.DataInregistrare)
@@ -637,6 +653,7 @@ public static class MotorOperare {
         GardianPerioada.VerificaDeschisa(os, dataStorno);
         VerificaFaraLaturaPerecheOperata(os, doc);
         VerificaFaraConexeOperate(os, doc);
+        Cub.Citiri.Loturi.VerificaRetragere(os, doc, dataStorno);
         ImperechereService.InverseazaLaStorno(os, doc, dataStorno);                   // F27-D8
         StergeConexeDraftAutogenerate(os, doc);
 
@@ -647,7 +664,8 @@ public static class MotorOperare {
         var delta = randuriStoc
             .Select(r => new MiscareStoc(new CheieStoc(r.LotId, r.RepartitorId, r.TipStoc), dataStorno, -r.Cantitate))
             .ToList();
-        StocService.VerificaSoldIntermediar(os, delta);
+        if (!GasesteTipDocument(os, doc).PosteazaInCub)
+            StocService.VerificaSoldIntermediar(os, delta);
 
         foreach (var r in randuriStoc) {
             var invers = os.CreateObject<RegistruStoc>();
@@ -708,6 +726,7 @@ public static class MotorOperare {
 
         doc.Stare = StareDocument.Stornat;
         os.CommitChanges();
+        tranzactie?.Commit();
     }
 
     // Oglinda exactă a gardianului de grup conex pentru legătura de pereche

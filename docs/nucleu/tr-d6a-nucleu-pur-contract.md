@@ -131,6 +131,11 @@ al fizicii (13/13), TR-D6b întoarce N-D4, nu o normalizează.
 
 ### N-D6 — Unitatea (lot = partidă = fișă)
 
+> Amendat de [092](../decizii/092-identitatea-partidei-include-partenerul.md):
+> cheia partidei noi include și partenerul. Identitățile deja persistate
+> se păstrează la citire, nominalizare și transfer; formula de mai jos
+> descrie implementarea anterioară.
+
 - `Unitate` (record): `Guid Id`, `FelUnitate Fel` (`Lot | Partida | Fisa`),
   `Guid Cont`, `Guid? Partener` (obligatoriu la `Partida`), `Guid? Produs`
   (obligatoriu la `Lot`), `DateOnly Deschisa`.

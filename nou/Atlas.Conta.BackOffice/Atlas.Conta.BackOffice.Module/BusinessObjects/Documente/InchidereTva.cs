@@ -42,7 +42,8 @@ public class InchidereTva : NotaContabila {
             return;
         }
         var (sold4426, sold4427) = Motor.InchidereTvaService.Solduri(
-            os, politica.ContDeductibilaId.Value, politica.ContColectataId.Value, Data);
+            os, politica.ContDeductibilaId.Value, politica.ContColectataId.Value,
+            Motor.InchidereTvaService.DataSoldurilor(Data, DataInregistrare, CorecteazaId));
         decimal Suma(Guid? debit, Guid? credit) => Detalii.OfType<NotaContabilaDetaliu>()
             .Where(d => d.ContDebitId == debit && d.ContCreditId == credit)
             .Sum(d => d.Valoare);

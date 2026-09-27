@@ -200,21 +200,21 @@ public class ItvController : ContaApiController {
         }), OperatieAcces.Stergere);
 
     // ── Comenzi: OS NON-SECURED, tranzacția integral a motorului (42b) ─────
-    // Identic `NtcController`: `OperareApi` lucrează pe `Document`, agnostic la
+    // Identic `NtcController`: `ComenziDocument` lucrează pe `Document`, agnostic la
     // tip. Singura diferență e `typeof` din fabrica de ObjectSpace.
     [HttpPost("{id:guid}/opereaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Opereaza(Guid id) => Comanda(id, os => OperareApi.Opereaza(os, id));
+    public IActionResult Opereaza(Guid id) => Comanda(c => c.Opereaza(id));
 
     [HttpPost("{id:guid}/anuleaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Anuleaza(Guid id) => Comanda(id, os => OperareApi.AnuleazaOperarea(os, id));
+    public IActionResult Anuleaza(Guid id) => Comanda(c => c.AnuleazaOperarea(id));
 
     // Data stornării se CULEGE (GATE XAF D10). Ecranul propune ca implicit `Data`
     // documentului — stornarea la chiar data închiderii lasă luna regenerabilă
@@ -225,22 +225,16 @@ public class ItvController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Storneaza(Guid id, [FromBody] StornoRequestDto cerere) =>
-        Comanda(id, os => OperareApi.Storneaza(os, id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
+        Comanda(c => c.Storneaza(id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
 
     [HttpPost("{id:guid}/valideaza")]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
-    public IActionResult Valideaza(Guid id) => ComandaAutorizata<InchidereTva>(id, () => Domeniu(() => {
-        using var os = NonSecured(typeof(InchidereTva));
-        return Ok(EroriDto.Din(OperareApi.Valideaza(os, id)));
-    }));
+    public IActionResult Valideaza(Guid id) => ComandaDocument<InchidereTva>(c => EroriDto.Din(c.Valideaza(id)));
 
-    IActionResult Comanda(Guid id, Func<IObjectSpace, OperareRezultat> comanda) =>
-        ComandaAutorizata<InchidereTva>(id, () => Domeniu(() => {
-            using var os = NonSecured(typeof(InchidereTva));
-            return Ok(OperareRezultatDto.Din(comanda(os)));
-        }));
+    IActionResult Comanda(Func<ComenziDocument, OperareRezultat> comanda) =>
+        ComandaDocument<InchidereTva>(c => OperareRezultatDto.Din(comanda(c)));
 
     // Toate erorile deodată, ca la SAF-T/D300: cine cere o lună greșită vrea să
     // afle tot ce e greșit, nu prima problemă.

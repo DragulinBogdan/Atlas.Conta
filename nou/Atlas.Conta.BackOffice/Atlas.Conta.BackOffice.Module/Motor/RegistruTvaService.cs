@@ -29,53 +29,17 @@ public static class RegistruTvaService {
     // apelantului.
     public readonly record struct RandTva(
         Guid DetaliuId, SensTva Sens, Guid? PartenerId, Guid TipTvaId,
-        RegimTva Regim, decimal Cota, decimal Baza, decimal Tva,
-        DeclarareIntarziata Regula);
+        RegimTva Regim, decimal Cota, decimal Baza, decimal Tva);
 
-    // F27-D5 — perioada în care faptul se DECLARĂ, pentru un fapt petrecut la
-    // `dataFapt` și înregistrat la `dataInregistrare`. Perioada deschisă a
-    // faptului câștigă întotdeauna; peste una ÎNCHISĂ decide politica tipului;
-    // peste una NEDEFINITĂ câștigă înregistrarea, indiferent de politică.
-    // Citire simplă, fără blocare: rândul perioadei e deja ținut de gardianul
-    // care a verificat `DataInregistrare`.
-    //
-    // F27-D6: corecția pentru EROARE MATERIALĂ aparține fiscal perioadei
-    // originalului — rândurile documentului nou se declară acolo unde s-au
-    // declarat ale lui, deci diferența apare ca rectificativă pe acea lună.
-    // Faptul nou rămâne pe regula normală.
-    public static (int An, int Luna) PerioadaDeclarare(IObjectSpace os, Document doc, DateOnly dataFapt,
-            DateOnly dataInregistrare, DeclarareIntarziata regula) {
-        if (doc.CorecteazaId is Guid originalId && doc.MotivCorectie == MotivCorectie.EroareMateriala) {
-            var alOriginalului = PerioadaOriginalului(os, originalId);
-            if (alOriginalului != null)
-                return alOriginalului.Value;
-        }
-        var inchisa = os.GetObjectsQuery<PerioadaFiscala>()
-            .Where(p => p.An == dataFapt.Year && p.Luna == dataFapt.Month)
-            .Select(p => (bool?)p.Inchisa)
-            .FirstOrDefault();
-        if (inchisa == false)
-            return (dataFapt.Year, dataFapt.Month);
-        // Perioada NEDEFINITĂ nu se poate declara: n-are reper de rectificativă
-        // și nu se închide niciodată, deci politica n-are ce alege acolo.
-        if (inchisa == null)
-            return (dataInregistrare.Year, dataInregistrare.Month);
-        return regula == DeclarareIntarziata.PerioadaInregistrarii
-            ? (dataInregistrare.Year, dataInregistrare.Month)
-            : (dataFapt.Year, dataFapt.Month);
+    public static (int An, int Luna) PerioadaDeclarare(IObjectSpace os, Document doc) {
+        var directie = TvaService.DirectiePentru(os, doc) ?? DirectieTva.Deductibil;
+        var perioada = FiscalitateService.Atribuie(os, doc, directie).PerioadaD300;
+        return (perioada / 100, perioada % 100);
     }
 
-    // F27-D6 — perioada în care s-au declarat faptele fiscale ale unui document:
-    // rândurile lui NESTORNATE (toate au aceeași perioadă, scrisă de regula de
-    // mai sus la operare). `null` = documentul n-a avut fapte fiscale, deci
-    // corecția lui n-are ce moșteni și cade pe regula normală.
     public static (int An, int Luna)? PerioadaOriginalului(IObjectSpace os, Guid documentId) =>
-        os.GetObjectsQuery<RegistruTva>()
-            .Where(r => r.DocumentId == documentId && !r.Storno)
-            .Select(r => new { r.PerioadaAn, r.PerioadaLuna })
-            .FirstOrDefault() is { } p
-            ? (p.PerioadaAn, p.PerioadaLuna)
-            : null;
+        FiscalitateService.Original(os, documentId) is { } p
+            ? (p.PerioadaD300 / 100, p.PerioadaD300 % 100) : null;
 
     // Forma folosită de MOTOR: primește ce are deja rezolvat (tipul documentului,
     // liniile pe care tocmai le-a pregătit `PregatesteOperare`).
@@ -132,20 +96,14 @@ public static class RegistruTvaService {
         foreach (var d in linii) {
             if (d.TipTvaId == null)
                 continue;
-            // `TipTva` NU e `[ForbidCRUD]` și are ștergere amânată: un tip în uz
-            // poate fi „șters" din nomenclator fără ca vreun FK să se opună (nu se
-            // face niciun DELETE real), iar liniile continuă să-l refere. Indexarea
-            // directă ar fi aruncat `KeyNotFoundException` — excepție brută (500 pe
-            // API) în loc de refuz de domeniu, și oprirea unei rulări lungi de
-            // backfill în mijlocul lotului (review advers D4).
+            // Refuz de domeniu în locul `KeyNotFoundException` (review advers D4).
             if (!tipuri.TryGetValue(d.TipTvaId.Value, out var info))
                 throw new OperareException(
                     $"Tipul de TVA al unei linii nu mai există în nomenclator (a fost șters) — "
                     + "reatribuiți-l pe linie înainte de operare.");
             var (regim, cota) = info;
             var (baza, tva) = Cifre(regim, cota, d.Valoare, d.ValoareTva);
-            randuri.Add(new RandTva(d.ID, sens, partenerId, d.TipTvaId.Value, regim, cota, baza, tva,
-                politica.DeclarareIntarziata));
+            randuri.Add(new RandTva(d.ID, sens, partenerId, d.TipTvaId.Value, regim, cota, baza, tva));
         }
         return randuri;
     }

@@ -31,7 +31,7 @@ import { DecEditorLinie, type EticheteCulese } from './DecEditorLinie';
 // editorul de linie) și **stingerea pe lanțul avans↔decont↔regularizare**
 // (31d/32d) — decontul stă pe rolul de STINS, ca factura.
 
-const CAMPURI_ANTET: (keyof DecWrite & string)[] = ['Data', 'DataInregistrare', 'PredatorId', 'PrimitorId', 'NumarPV', 'DataPV'];
+const CAMPURI_ANTET: (keyof DecWrite & string)[] = ['Data', 'DataInregistrare', 'DataExigibilitate', 'DataPrimire',  'PredatorId', 'PrimitorId', 'NumarPV', 'DataPV'];
 const capLinie = (m: string) => campMeta(TIP_LINIE, m, SCHEMA_LINIE).caption;
 
 export function DecDetaliu() {
@@ -182,6 +182,10 @@ export function DecDetaliu() {
   ];
 
   function schimbaAntet(v: DecWrite) {
+    const veche = agregat.DataInregistrare || agregat.Data;
+    const noua = v.DataInregistrare || v.Data;
+    if (veche !== noua && agregat.DataPrimire === veche && v.DataPrimire === agregat.DataPrimire)
+      v = { ...v, DataPrimire: noua };
     setAgregat(v);
     setModificat(true);
   }
@@ -247,6 +251,8 @@ export function DecDetaliu() {
               <Static membru="Numar" valoare={doc?.Numar} />
               <CampData<DecWrite> camp="Data" />
               <CampData<DecWrite> camp="DataInregistrare" />
+              <CampData<DecWrite> camp="DataExigibilitate" />
+              <CampData<DecWrite> camp="DataPrimire" />
               {/* TITULARUL care justifică avansul: un `Angajat` (invariant al
                   operării). Caption-ul bazei („Predator (de la)") e corect, dar
                   prea abstract pentru ecranul de decont — felia îl numește în

@@ -6,6 +6,20 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// românesc al motorului vechi rămâne al lui până la TR-D7 (B-D3).
 /// </summary>
 public static class CoduriRefuz {
+    public const string NirDeltaStructura = "NIR_DELTA_STRUCTURA";
+    public const string NirDeltaCauza = "NIR_DELTA_CAUZA";
+    public const string NirDeltaPolitica = "NIR_DELTA_POLITICA";
+    public const string NirProvenientaInvalida = "NIR_PROVENIENTA_INVALIDA";
+    public const string NirReceptieActiva = "NIR_RECEPTIE_ACTIVA";
+    public const string NirStocInsuficient = "NIR_STOC_INSUFICIENT";
+    public const string NirRegimInactiv = "NIR_REGIM_INACTIV";
+    public const string ReceptieStructuraInvalida = "RECEPTIE_STRUCTURA_INVALIDA";
+    public const string InventarStructuraInvalida = "INVENTAR_STRUCTURA_INVALIDA";
+    public const string InventarStocNeacoperit = "INVENTAR_STOC_NEACOPERIT";
+    public const string AsamblareNebalansata = "ASAMBLARE_NEBALANSATA";
+    public const string AsamblareStructuraInvalida = "ASAMBLARE_STRUCTURA_INVALIDA";
+    public const string AsamblareDeltaFaraAncora = "ASAMBLARE_DELTA_FARA_ANCORA";
+    public const string AsamblareProdusNepozitiv = "ASAMBLARE_PRODUS_NEPOZITIV";
     public const string PredatorNepotrivit = "PREDATOR_NEPOTRIVIT";
     public const string PrimitorNepotrivit = "PRIMITOR_NEPOTRIVIT";
     public const string LaturiIdentice = "LATURI_IDENTICE";
@@ -22,4 +36,18 @@ public static class CoduriRefuz {
     public const string TipTvaLipsa = "TIP_TVA_LIPSA";
     public const string ContTvaLipsa = "CONT_TVA_LIPSA";
     public const string DirectieTvaNepotrivita = "DIRECTIE_TVA_NEPOTRIVITA";
+    public const string ContExplicitLipsa = "CONT_EXPLICIT_LIPSA";
+    public const string ValoareZero = "VALOARE_ZERO";
+    public const string RepartitorExplicitLipsa = "REPARTITOR_EXPLICIT_LIPSA";
+    public const string PartidaCuDependenti = "PARTIDA_CU_DEPENDENTI";
+    public const string NaturaNepotrivita = "NATURA_NEPOTRIVITA";
+    public const string CantitateZero = "CANTITATE_ZERO";
+    public const string TvaCapitalizat = "TVA_CAPITALIZAT";
+    public const string TvaImportNepotrivit = "TVA_IMPORT_NEPOTRIVIT";
+    public const string PoliticaTvaLipsa = "POLITICA_TVA_LIPSA";
+    public const string FisaLipsa = "FISA_LIPSA";
+    public const string PoliticaAmortizareLipsa = "POLITICA_AMORTIZARE_LIPSA";
+    public const string PozitieFaraFisaNegativa = "POZITIE_FARA_FISA_NEGATIVA";
+    public const string SuportInsuficient = "SUPORT_INSUFICIENT";
+    public const string SuportCuDependenti = "SUPORT_CU_DEPENDENTI";
 }

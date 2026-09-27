@@ -70,7 +70,7 @@ export const rlf = {
 };
 
 export function antetGol(): RlfWrite {
-  return { Data: azi(), Linii: [] };
+  return { Data: azi(), DataPrimire: azi(), Linii: [] };
 }
 
 export function linieGoala(): RlfLinieWrite {
@@ -95,6 +95,8 @@ export function spreWrite(citit: RlfRead): RlfWrite {
   return {
     Data: citit.Data,
     DataInregistrare: citit.DataInregistrare,
+    DataExigibilitate: citit.DataExigibilitate,
+    DataPrimire: citit.DataPrimire,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     Linii: (citit.Linii ?? []).map((l) => ({

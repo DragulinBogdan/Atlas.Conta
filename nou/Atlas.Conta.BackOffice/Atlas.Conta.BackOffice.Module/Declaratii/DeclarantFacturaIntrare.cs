@@ -47,8 +47,6 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
             var aleLiniei = Netele(operand, linie, intern, tert, cantitate, tipuri[i], rotunjire).ToList();
             if (Fiscal.Impozitul(operand, linie, tipuri[i], taxa, DirectieTva.Deductibil, refuzuri) is { } impozit)
                 aleLiniei.Add(impozit);
-            // S-D16: partidă pe FIECARE cont cu `RolTert` al liniei, nu doar pe
-            // piciorul de terț (408 = 401, 4091 = 401 — B-r7).
             foreach (var miscare in aleLiniei) {
                 Partide.Numeste(operand, miscare.DeLa.Cont, doc.Predator.Id, linie.Id, partide, decizii);
                 Partide.Numeste(operand, miscare.La.Cont, doc.Predator.Id, linie.Id, partide, decizii);

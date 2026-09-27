@@ -1,4 +1,5 @@
 ﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
@@ -15,13 +16,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Ntc;
 // ultima autoritate — pre-check-ul de Draft există ca mesajul să fie al
 // DOMENIULUI și ca refuzul să vină înaintea oricărei modificări de stare.
 //
-// ═══ Ce face Apply pe NTC în MINUS față de toate celelalte felii ═══
-// NIMIC nu se materializează. Nota n-are lanț de valori (F19-D8): `Valoare` e
-// culeasă, nu calculată; n-are TVA de calculat (`PoliticaTva` lipsește în ambele
-// profiluri, F19-D7); n-are loturi de născut sau de curățat (`ILinieCareNasteLot`
-// nu e declarată); n-are cantitate pro-forma de normalizat. Rămâne maparea
-// câmpurilor + reconcilierea colecției — și e corect că e atât: orice „ajutor"
-// în plus ar fi un al doilea adevăr față de ce postează motorul.
+// Culegerea e a `CulegereDocument` (104c); nota n-are lanț de valori (F19-D8):
+// `Valoare` e culeasă, nu calculată.
 //
 // ═══ Ce NU atinge reconcilierea pe o linie EXISTENTĂ ═══
 // `Cantitate`, `LotId`, `TipTvaId`, `ValoareTva`, `AngajamentId` — câmpuri de
@@ -69,18 +65,14 @@ public static class NotaContabilaApply {
         doc.Primitor = GasesteRepartitor(os, dto.PrimitorId, "Primitorul (unitatea internă)");
 
         ReconciliazaLinii(os, doc, dto.Linii ?? new List<NtcLinieWriteDto>());
-
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
         return doc.ID;
     }
 
-    // Ștergerea agregatului. Pre-check de DOMENIU pe Draft (gardianul de
-    // Committing rămâne plasa).
-    //
-    // FĂRĂ `LoturiCulegereService.CurataOrfane` (ca BCS/DEC): liniile de notă nu
-    // nasc loturi, deci curățenia n-ar avea ce căuta — un apel ar fi inofensiv,
-    // dar mincinos. FĂRĂ refuz pe `Autogenerat`: nota nu e artefactul unei
-    // operări (închiderea de TVA are tipul ei, ITV).
+    // Pre-check de DOMENIU pe Draft (gardianul de Committing rămâne plasa).
+    // FĂRĂ refuz pe `Autogenerat`: nota nu e artefactul unei operări (închiderea
+    // de TVA are tipul ei, ITV).
     public static void Sterge(IObjectSpace os, Guid id) {
         var doc = Rezolva.Cere<NotaContabila>(os, id, "Nota contabilă");
         RefuzaInchidereaTva(doc);
@@ -91,6 +83,7 @@ public static class NotaContabilaApply {
 
         os.Delete(doc.Detalii.ToList());
         os.Delete(doc);
+        CulegereDocument.InainteDeSalvare(os);
         os.CommitChanges();
     }
 
@@ -123,7 +116,8 @@ public static class NotaContabilaApply {
                 detaliu.Document = doc;
             }
 
-            detaliu.TipMaterial = Rezolva.Cere<TipMaterial>(os, l.TipMaterialId, "Tipul (contul/clasa)");
+            var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
+            ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
             detaliu.Descriere = l.Descriere;
 
             // Postarea explicită pe linie (32a) — trăsătura tipului. Toate patru
@@ -146,12 +140,9 @@ public static class NotaContabilaApply {
             detaliu.CodEconomic = Nomenclator<CodEconomic>(os, l.CodEconomicId, "Codul economic");
             if (l.CodEconomicId == null) detaliu.CodEconomicId = null;
 
-            // Scara numerică (49e) e gard la construirea MODELULUI, nu a valorii:
-            // o valoare în afara coloanei ar ieși ca DbUpdateException brută din
-            // Postgres. Refuzăm cu mesaj de domeniu (ca FCT/NIR/LDI/DEC).
-            VerificaScara(l.Valoare, Scara.Bani, "Valoarea");
             // CULEASĂ ca atare — inclusiv negativă (F19-D8). Zero îl refuză tipul.
             detaliu.Valoare = l.Valoare;
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, null);
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();
@@ -170,7 +161,7 @@ public static class NotaContabilaApply {
     //
     // `is` aici e la GRANIȚĂ, în Apply, nu în motor — regula „motorul nu cunoaște
     // frunzele" nu e atinsă. Comenzile (`opereaza`/`anuleaza`/`storneaza`) rămân
-    // PERMISE pe ruta NTC: sunt `OperareApi` pe `Document`, agnostic la tip, și
+    // PERMISE pe ruta NTC: sunt `ComenziDocument` pe `Document`, agnostic la tip, și
     // produc exact același rezultat ca pe ruta ITV — un al doilea gard acolo ar fi
     // fost o regulă fără miză.
     static void RefuzaInchidereaTva(NotaContabila doc) {
@@ -184,19 +175,6 @@ public static class NotaContabilaApply {
 
     static Repartitor GasesteRepartitor(IObjectSpace os, Guid id, string rol) =>
         Rezolva.Cere<Repartitor>(os, id, rol);
-
-    // Gardul de scară: `numeric(18, s)` ⇒ cel mult `s` zecimale și `18 − s` cifre
-    // întregi. Aceeași formă pentru toate cele trei scări ale modelului (49e).
-    static void VerificaScara(decimal valoare, int scara, string rol) {
-        if (decimal.Round(valoare, scara) != valoare)
-            throw new OperareException($"{rol} acceptă cel mult {scara} zecimale.");
-        var limita = 1m;
-        for (var i = 0; i < Scara.Precizie - scara; i++)
-            limita *= 10m;
-        if (Math.Abs(valoare) >= limita)
-            throw new OperareException(
-                $"{rol} depășește intervalul suportat ({Scara.Precizie - scara} cifre întregi).");
-    }
 
     static string Eticheta(Document doc) =>
         string.IsNullOrWhiteSpace(doc.Numar) ? $"({doc.Data:dd.MM.yyyy})" : doc.Numar;
@@ -340,16 +318,8 @@ public static class NotaContabilaApply {
     // două nu se disting — F22-D1, apelantul le traduce în același 404)
     // sau nu e o notă contabilă.
     public static NtcCandidatiDto Candidati(IObjectSpace os, Guid id) {
-        // Plafon de pagină per contrapartidă, ca la orice listă (`Incarca`): pe
-        // baza de import un partener poate avea sute de documente deschise.
         const int Plafon = 100;
 
-        // F21-D5, a patra ușă a feliei: `RandDupaCheie.Ca<NotaContabila>` întoarce și
-        // închiderile de TVA, deci panoul de compensare al notei răspundea 200
-        // pe un id de ITV. Practic era inert (`CapacitateStingere` pe ITV iese
-        // dicționar GOL — liniile n-au repartitori), dar un 200 pe o resursă care
-        // nu e a feliei e o afirmație falsă: aceeași frunză, același null ca
-        // `Citeste` ⇒ 404 pe `GET api/ntc/{id}/candidati`.
         var doc = RandDupaCheie.Ca<NotaContabila>(os, id);
         if (doc == null || doc is InchidereTva)
             return null;
@@ -357,18 +327,9 @@ public static class NotaContabilaApply {
         var rezultat = new NtcCandidatiDto {
             DocumentId = id,
             Stare = doc.Stare.ToString(),
-            // Oglinda primului invariant al stingerii: ambele documente OPERATE.
             PoateStinge = doc.Stare == StareDocument.Operat
         };
 
-        // Afordanța nu contrazice datele pe care le însoțește (review M3): pe un
-        // draft nota NU stinge nimic (primul invariant al stingerii: ambele
-        // documente operate), deci panoul nu întoarce plafoane și candidați
-        // lângă un `PoateStinge: false`. Un panou complet cu buton „Stinge" pe
-        // fiecare rând, urmat de refuzul serviciului la prima apăsare, e exact
-        // „panoul promite mai mult decât acceptă serviciul" (riscul 2), doar pe
-        // axa STĂRII în loc de a plafonului. `Stare`/`PoateStinge` rămân — ele
-        // sunt răspunsul la „de ce e gol".
         if (!rezultat.PoateStinge)
             return rezultat;
 
@@ -387,15 +348,12 @@ public static class NotaContabilaApply {
                      .OrderBy(k => etichete.TryGetValue(k, out var e) ? e.Denumire : null)) {
             var plafon = capacitati[cheie];
             etichete.TryGetValue(cheie, out var eticheta);
-            // Un rând per JUMĂTATE nenulă. `Datorie` întâi, ca în bilanț.
             foreach (var sens in new[] { SensStingere.Datorie, SensStingere.Creanta }) {
-                var capacitate = plafon[sens];
+                var capacitate = Cub.Citiri.Partide.Capacitate(os, id, cheie, sens);
                 if (capacitate == 0m)
                     continue;
                 var asignat = ImperechereService.AsignatFataDe(os, id, cheie, sens);
-                // Ordinea de stingere: cele mai VECHI datorii/creanțe întâi (ordinea
-                // în care le-ar lua un contabil), nu ordinea de inserare.
-                var randuri = ImperecheriProiectii.DocumenteCuRest(os, cheie, sens)
+                var randuri = ImperecheriProiectii.DocumenteCuRest(os, cheie, sens, documentCurentId: id)
                     .OrderBy(r => r.Data).ThenBy(r => r.Numar)
                     .Take(Plafon + 1)
                     .ToList();

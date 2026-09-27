@@ -34,7 +34,7 @@ public readonly record struct PoliticaTvaImplicitFapt(Guid Id, ClasaFiscalaParte
     DateOnly? ValabilDeLa, Guid TipTvaId, bool DinSeed);
 
 public readonly record struct TipTvaFapt(Guid Id, string Cod, RegimTva Regim, bool Activ,
-    decimal Cota, Guid? ContTvaDeductibilId, Guid? ContTvaColectatId);
+    decimal Cota, Guid? ContTvaDeductibilId, Guid? ContTvaColectatId, bool DeImport = false);
 
 // `Motiv` null = câștigătorul.
 public readonly record struct CandidatContare(RegulaContareFapt Regula, MotivEliminare? Motiv);

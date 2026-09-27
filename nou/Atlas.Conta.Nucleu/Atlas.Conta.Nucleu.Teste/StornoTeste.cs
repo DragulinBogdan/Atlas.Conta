@@ -4,6 +4,32 @@ namespace Atlas.Conta.Nucleu.Teste;
 
 public class StornoTeste {
     [Fact]
+    public void NominalizareaSiInversaPastreazaSuportulSiIdentitateaFisei() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var document = Gen.Documente[0];
+            var data = Gen.Data(aleator);
+            var sursa = Gen.CapatContabil(aleator) with { Unitate = null };
+            var fisa = new Unitate(Gen.Unul(aleator, Gen.Unitati), FelUnitate.Fisa, sursa.Cont, null, null, data);
+            var suport = new ReferintaPostare(Gen.Unul(aleator, Gen.Linii), Spatiu.Contabil);
+            var mutare = new Mutare(sursa, sursa with { Unitate = fisa }, Latura.Debit,
+                0m, 0m, 1200m, new(document, null)) { Suport = suport };
+            var contract = Motor.Transfera(document, data, [mutare], new Rotunjire(MidpointRounding.AwayFromZero));
+            Assert.True(contract.EsteAcceptat);
+            var postari = contract.Tranzactii.Single().Postari.Select(p => p with {
+                InversaDin = new(Gen.Unul(aleator, Gen.Linii), Spatiu.Contabil),
+            }).ToList();
+            var inversa = Storno.Inverseaza(postari, document, data);
+            Assert.Empty(Conservare.Verifica(inversa));
+            Assert.All(postari, p => Assert.Equal(suport, p.Suport));
+            for (var i = 0; i < postari.Count; i++) {
+                Assert.Equal(postari[i].InversaDin, inversa.Postari[i].InversaDin);
+                Assert.Equal(suport, inversa.Postari[i].Suport);
+                Assert.Equal(postari[i].Coordonate.Unitate, inversa.Postari[i].Coordonate.Unitate);
+                Assert.Equal(-postari[i].Valoare, inversa.Postari[i].Valoare);
+            }
+        });
+
+    [Fact]
     public void StornoulScoateExactCauzatulSiAtribuitul() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var scena = Scena.Construieste(aleator);

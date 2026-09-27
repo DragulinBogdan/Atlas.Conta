@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using Atlas.DXF.Core.Appearance.Attributes;
 using DevExpress.ExpressApp.DC;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
@@ -18,7 +17,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 [NavigationItem("Registre")]
 [ForbidCRUD("ListView", "DetailView")]
-public class RegistruStoc : BaseObject {
+public class RegistruStoc : RandRegistru {
     public virtual DateOnly Data { get; set; }
     public virtual TipStoc TipStoc { get; set; }
     public virtual Guid LotId { get; set; }
@@ -40,7 +39,7 @@ public class RegistruStoc : BaseObject {
 
 [NavigationItem("Registre")]
 [ForbidCRUD("ListView", "DetailView")]
-public class RegistruContabil : BaseObject {
+public class RegistruContabil : RandRegistru {
     public virtual DateOnly Data { get; set; }
     public virtual string NumarNota { get; set; }
     public virtual Guid ContDebitId { get; set; }
@@ -200,7 +199,7 @@ public class RegistruContabil : BaseObject {
 // n-ar fi fost.
 [NavigationItem("Registre")]
 [ForbidCRUD("ListView", "DetailView")]
-public class RegistruTva : BaseObject {
+public class RegistruTva : RandRegistru {
     // Data FAPTULUI fiscal (data documentului; data stornării pe rândul invers)
     // — jurnalele sunt pe data facturii. Perioada în care faptul se DECLARĂ e
     // perechea de mai jos, care poate fi alta (F27-D5).

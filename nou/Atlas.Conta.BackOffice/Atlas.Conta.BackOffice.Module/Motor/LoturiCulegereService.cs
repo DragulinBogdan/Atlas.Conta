@@ -3,13 +3,10 @@ using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
-// F2-D1: mecanismul de CULEGERE al loturilor, extras din controllerul de culegere
-// al FCT (azi `DocumenteLoturiCulegereController`, F5-D9) ca serviciu pe
-// `IObjectSpace` pur — o singură logică de naștere/sincronizare/curățenie, apelată
-// din (a) controllerul XAF (adaptor subțire pe `ObjectSpace.Committing`) și
-// (b) apply-urile tierului API înainte de commit, unde nu rulează niciun
-// ViewController. Motorul doar FINALIZEAZĂ lotul la operare (26e) — nașterea lui
-// e a culegerii.
+// F2-D1: mecanismul de CULEGERE al loturilor — o singură logică de
+// naștere/sincronizare/curățenie, chemată de `CulegereDocument.InainteDeSalvare`
+// (104c). Motorul doar FINALIZEAZĂ lotul la operare (26e) — nașterea lui e a
+// culegerii.
 //
 // F5-D3: generalizat de la `FacturaIntrare`/`FacturaIntrareDetaliu` la
 // `(Document, ILinieCareNasteLot)` — recepția manuală (NIR fără factură) naște
@@ -275,8 +272,8 @@ static class LoturiLiniiSterse {
         // (review advers F2-D4) dacă a rămas FĂRĂ NICIO URMĂ (anularea i-a șters
         // rândurile de registru, nicio linie vie nu-l mai referă), păstrarea lui
         // ar fi zgomot ireversibil în nomenclator, exact ce curățenia există să
-        // prevină. Query-urile văd doar rândurile vii (filtrul deferred deletion);
-        // liniile în curs de ștergere din ACEST commit se exclud explicit.
+        // prevină. Query-urile văd doar rândurile comise; liniile în curs de
+        // ștergere din ACEST commit se exclud explicit.
         var spreStergere = new HashSet<Guid>(idsSterse);
         foreach (var linie in os.GetObjectsToDelete(true).OfType<DocumentDetaliu>())
             spreStergere.Add(linie.ID);

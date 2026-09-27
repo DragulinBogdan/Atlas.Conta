@@ -25,7 +25,10 @@ public sealed record Unitate(
     }
 
     public static Unitate DeschidePartida(Guid cont, Guid partener, Guid documentDeschizator, DateOnly data) =>
-        new(Identitate(documentDeschizator, cont), FelUnitate.Partida, cont, partener, null, data);
+        new(Identitate(documentDeschizator, cont, partener), FelUnitate.Partida, cont, partener, null, data);
+
+    public static Unitate DeschidePartidaInitiala(Guid cont, Guid partener, Guid referinta, DateOnly data) =>
+        new(Identitate(referinta, cont, partener, initiala: true), FelUnitate.Partida, cont, partener, null, data);
 
     public decimal? Raport(Sold sold) {
         ArgumentNullException.ThrowIfNull(sold);
@@ -36,11 +39,13 @@ public sealed record Unitate(
         };
     }
 
-    // N-D6: SHA-256 peste document.ToByteArray() ‖ cont.ToByteArray() (16 + 16), primii 16 octeți ca Guid, nibble-ul de versiune (octetul 7) pus pe 8.
-    static Guid Identitate(Guid document, Guid cont) {
-        var intrare = new byte[32];
+    // 092a: SHA-256(document ‖ cont ‖ partener), Guid din primii 16 octeți, versiune 8.
+    static Guid Identitate(Guid document, Guid cont, Guid partener, bool initiala = false) {
+        var intrare = new byte[initiala ? 49 : 48];
+        if (initiala) intrare[48] = 1;
         document.ToByteArray().CopyTo(intrare, 0);
         cont.ToByteArray().CopyTo(intrare, 16);
+        partener.ToByteArray().CopyTo(intrare, 32);
         var amprenta = SHA256.HashData(intrare);
         var id = amprenta[..16];
         id[7] = (byte)((id[7] & 0x0F) | 0x80);

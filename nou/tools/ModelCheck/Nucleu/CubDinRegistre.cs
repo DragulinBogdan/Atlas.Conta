@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using N = Atlas.Conta.Nucleu;
@@ -101,7 +101,7 @@ static class CubDinRegistre {
         stoc = [.. stoc.Where(r => !r.Storno)];
         fiscale = [.. fiscale.Where(r => !r.Storno)];
 
-        var rolTert = ConturiRolTert(os, contabile);
+        var urmarestePartide = ConturiPartide(os, contabile);
         var felRepartitor = FeluriRepartitor(os, contabile);
         var loturi = Loturi(os, stoc);
 
@@ -113,8 +113,8 @@ static class CubDinRegistre {
             if (r.DocumentId is not Guid document || !postari.TryGetValue(document, out var ale))
                 continue;
             var data = dateDocument[document];
-            ale.Add(Contabila(r, document, N.Latura.Debit, data, rolTert, felRepartitor));
-            ale.Add(Contabila(r, document, N.Latura.Credit, data, rolTert, felRepartitor));
+            ale.Add(Contabila(r, document, N.Latura.Debit, data, urmarestePartide, felRepartitor));
+            ale.Add(Contabila(r, document, N.Latura.Credit, data, urmarestePartide, felRepartitor));
         }
 
         // T-D2: rândurile aceluiași lot (deci ACELUIAȘI cont) cu o latură negativă și
@@ -152,7 +152,7 @@ static class CubDinRegistre {
         }
 
         if (imperecheri.Count > 0) {
-            var tertDoc = TertPeDocument(contabile, dateDocument, rolTert, felRepartitor);
+            var tertDoc = TertPeDocument(contabile, dateDocument, urmarestePartide, felRepartitor);
             // MAJOR-A: partida stinsului ține și recepția, care stă pe NIR-ul lui conex
             // (TR-D3) — soldul ei se citește pe stins ∪ conexele lui autogenerate.
             var soldPeCont = SoldPeCont(contabile, ConexeleContabile(os, idsTot));
@@ -221,7 +221,7 @@ static class CubDinRegistre {
             Guid document,
             N.Latura latura,
             DateOnly data,
-            IReadOnlyDictionary<Guid, RolTertCont> rolTert,
+            IReadOnlyDictionary<Guid, bool> urmarestePartide,
             IReadOnlyDictionary<Guid, string> felRepartitor) {
         var peDebit = latura == N.Latura.Debit;
         var cont = peDebit ? r.ContDebitId : r.ContCreditId;
@@ -229,7 +229,7 @@ static class CubDinRegistre {
         var alPerechii = peDebit ? r.CreditRepartitorId : r.DebitRepartitorId;
         var partener = Tert(alLaturii, felRepartitor) ?? Tert(alPerechii, felRepartitor);
         N.Unitate? unitate = null;
-        if (rolTert.GetValueOrDefault(cont) != RolTertCont.Niciunul) {
+        if (urmarestePartide.GetValueOrDefault(cont)) {
             if (partener is not Guid tert)
                 throw new InvalidOperationException(
                     $"Rândul contabil {r.ID} al documentului {document} postează pe contul de terț {cont} "
@@ -321,7 +321,10 @@ static class CubDinRegistre {
     static IEnumerable<N.Postare> Fiscale(RegistruTva r, DateOnly data) {
         // `Data` fiscală = data documentului fizic; în cub toate postările sunt datate
         // ca tranzacția (DATA_STRAINA), iar reperul fiscal e `PerioadaDeclarare` (B-D8 pct. 5).
-        foreach (var (rol, valoare) in new[] { (N.RolTva.Baza, r.Baza), (N.RolTva.Taxa, r.Tva) })
+        var masuri = new List<(N.RolTva, decimal)> { (N.RolTva.Baza, r.Baza), (N.RolTva.Taxa, r.Tva) };
+        if (r.Regim == RegimTva.TaxareInversa && r.Sens == SensTva.Achizitie)
+            masuri.Add((N.RolTva.Autocolectare, r.Tva));
+        foreach (var (rol, valoare) in masuri)
             yield return new N.Postare(
                 new N.Coordonate {
                     Cont = ContFiscal,
@@ -331,7 +334,7 @@ static class CubDinRegistre {
                     CodTva = new N.CodTva(
                         r.TipTvaId,
                         r.Sens == SensTva.Achizitie ? N.SensTva.Achizitie : N.SensTva.Livrare,
-                        rol),
+                        rol) { Regim = (N.RegimTva)r.Regim, Cota = r.Cota, DeImport = r.TipTva.DeImport },
                     PerioadaDeclarare = (r.PerioadaAn * 100) + r.PerioadaLuna,
                 },
                 0m,
@@ -433,7 +436,7 @@ static class CubDinRegistre {
     static Dictionary<Guid, TertDoc> TertPeDocument(
             IReadOnlyList<RegistruContabil> contabile,
             IReadOnlyDictionary<Guid, DateOnly> dateDocument,
-            IReadOnlyDictionary<Guid, RolTertCont> rolTert,
+            IReadOnlyDictionary<Guid, bool> urmarestePartide,
             IReadOnlyDictionary<Guid, string> felRepartitor) {
         var candidati = new List<(Guid Document, decimal Absolut, Guid Rand, N.Latura Latura, TertDoc Tert)>();
         foreach (var r in contabile) {
@@ -442,7 +445,7 @@ static class CubDinRegistre {
             foreach (var latura in new[] { N.Latura.Debit, N.Latura.Credit }) {
                 var peDebit = latura == N.Latura.Debit;
                 var cont = peDebit ? r.ContDebitId : r.ContCreditId;
-                if (rolTert.GetValueOrDefault(cont) == RolTertCont.Niciunul)
+                if (!urmarestePartide.GetValueOrDefault(cont))
                     continue;
                 var alLaturii = peDebit ? r.DebitRepartitorId : r.CreditRepartitorId;
                 var alPerechii = peDebit ? r.CreditRepartitorId : r.DebitRepartitorId;
@@ -474,15 +477,15 @@ static class CubDinRegistre {
         : new N.Analiza(r.CreditCodFunctionalId, r.CreditCodEconomicId, r.CreditSursaFinantareId,
             r.CreditUnitateId, r.CreditProiectId, r.CreditCentruCostId);
 
-    static Dictionary<Guid, RolTertCont> ConturiRolTert(IObjectSpace os, IReadOnlyList<RegistruContabil> contabile) {
+    static Dictionary<Guid, bool> ConturiPartide(IObjectSpace os, IReadOnlyList<RegistruContabil> contabile) {
         var ids = contabile.SelectMany(r => new[] { r.ContDebitId, r.ContCreditId }).Distinct().ToList();
         return ids.Count == 0
             ? []
             : os.GetObjectsQuery<Cont>()
                 .Where(c => ids.Contains(c.ID))
-                .Select(c => new { c.ID, c.RolTert })
+                .Select(c => new { c.ID, c.UrmarestePartide })
                 .ToList()
-                .ToDictionary(c => c.ID, c => c.RolTert);
+                .ToDictionary(c => c.ID, c => c.UrmarestePartide);
     }
 
     // Felul repartitorului = discriminatorul `ClrType` citit prin PROIECȚIE, nu prin `is` (89b).

@@ -1,6 +1,11 @@
 # Atlas.Conta.Client — SPA React (pasul 5)
 
-Clientul React al tierului API (deciziile 42/43). Felia pilot a spike-ului
+Clientul React al tierului API (deciziile 42/43). Aria lui, din decizia 104 (d):
+citiri, proiecții, consolele comenzilor, editorii de politici și nomenclatoare.
+Paginile de detaliu și editorii de linie ai tipurilor de document
+(`felii/<tip>/*Detaliu.tsx`, `*EditorLinie.tsx`) sunt înghețate: nu primesc
+câmpuri noi; culegerea se face în XAF Blazor. `nomenclatoare/` și fișa din
+`imobilizari/` rămân vii. Felia pilot a spike-ului
 (`docs/api/p5-spike1-contract.md`): **NotaTransfer (BTR)** + proiecția
 **sold stoc**. A doua felie (`docs/api/p5-felia-fct-contract.md`, F2-D8):
 **FacturaIntrare (FCT)** cu editor de linie complet + **NIR** citire/comenzi —

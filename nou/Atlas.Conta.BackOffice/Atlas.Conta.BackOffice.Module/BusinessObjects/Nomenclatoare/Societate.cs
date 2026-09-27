@@ -3,7 +3,6 @@ using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.ExpressApp.Model;
 using DevExpress.Persistent.Base;
-using DevExpress.Persistent.BaseImpl.EF;
 using DevExpress.Persistent.Validation;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -39,7 +38,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // aici și nu acolo ar produce un fișier respins la validare.
 [NavigationItem("Configurare")]
 [XafDefaultProperty(nameof(Denumire))]
-public class Societate : BaseObject {
+public class Societate : Editabila {
     // Numele raportorului din `Header/Company/Name`. 70 = `Name` din
     // `CompanyStructure` (aceeași lungime ca `Partener.Denumire` n-ar fi
     // adevărată: acolo n-avem `[MaxLength]`, aici o cere schema).

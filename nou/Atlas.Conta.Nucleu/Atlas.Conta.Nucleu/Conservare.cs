@@ -19,7 +19,26 @@ public static class Conservare {
             VerificaTransferul(tranzactie, refuzuri);
         VerificaSemnul(tranzactie, refuzuri);
         VerificaFormele(tranzactie, refuzuri);
+        VerificaTransformarile(tranzactie, refuzuri);
         return refuzuri;
+    }
+
+    static void VerificaTransformarile(Tranzactie tranzactie, List<Refuz> refuzuri) {
+        var cauze = tranzactie.Postari.Where(p => p.Coordonate.Gestiune == GestiuniVirtuale.Transformare)
+            .Select(p => p.Cauza).ToHashSet();
+        foreach (var grup in tranzactie.Postari.Where(p => cauze.Contains(p.Cauza))
+                     .GroupBy(p => (p.Coordonate.Cont, p.Coordonate.Produs, p.Cauza))) {
+            var reale = grup.Where(p => p.Coordonate.Gestiune != GestiuniVirtuale.Transformare).ToArray();
+            var virtuale = grup.Where(p => p.Coordonate.Gestiune == GestiuniVirtuale.Transformare).ToArray();
+            if (reale.Length == 0 || virtuale.Length == 0 || grup.Sum(p => p.Cantitate) != 0m
+                    || reale.Any(p => p.Coordonate.Unitate is not { Fel: FelUnitate.Lot }
+                        || p.Coordonate.Gestiune is null || GestiuniVirtuale.Este(p.Coordonate.Gestiune))
+                    || virtuale.Any(p => p.Coordonate.Unitate != null || p.Valoare != 0m || p.ValoareValuta != 0m
+                        || p.Coordonate.Carte != Carte.Contabil || p.Coordonate.Partener != null
+                        || p.Coordonate.CodTva != null || p.Coordonate.PerioadaDeclarare != null || p.Coordonate.Valuta != null))
+                refuzuri.Add(new Refuz(Coduri.ContrapondereTransformareInvalida,
+                    "Transformarea cere contrapondere cantitativă fără valoare pe același cont, produs și cauză.", grup.Key.Cauza.Linie));
+        }
     }
 
     static void VerificaDocumentul(Tranzactie tranzactie, List<Refuz> refuzuri) {

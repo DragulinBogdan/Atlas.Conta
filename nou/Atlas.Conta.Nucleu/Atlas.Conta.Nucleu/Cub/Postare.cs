@@ -8,6 +8,9 @@ public sealed record Postare(
     Cauza Cauza,
     Guid? Atribuit = null) {
 
+    public ReferintaPostare? Suport { get; init; }
+    public ReferintaPostare? InversaDin { get; init; }
+
     // `with` ocolește constructorul; scara se apără și în `init` (N-D2).
     readonly decimal cantitate = LaScara(Cantitate, Scara.Cantitate, nameof(Cantitate));
     readonly decimal valoareValuta = LaScara(ValoareValuta, Scara.Bani, nameof(ValoareValuta));

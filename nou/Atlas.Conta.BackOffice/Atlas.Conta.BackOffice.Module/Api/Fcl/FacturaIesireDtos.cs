@@ -33,6 +33,7 @@ public sealed class FacturaIesireWriteDto {
     public DateOnly Data { get; set; }
     // F27-D4: lipsă pe sârmă = data documentului.
     public DateOnly? DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     // Emitentul (repartitor intern) — tipul laturii se validează la OPERARE.
     public Guid PredatorId { get; set; }
     // Clientul (Partener) — la fel, tipul se cere abia la operare.
@@ -52,10 +53,8 @@ public sealed class FacturaIesireWriteDto {
 // agregatul întreg (43c).
 public sealed class FacturaIesireLinieWriteDto {
     public Guid? Id { get; set; }
-    // Rămâne obligatoriu chiar și pe liniile cu produs: precompletarea Tipului
-    // din Produs e UX de client (OData `Produs` expune `TipMaterialId`), NU
-    // magie în Apply — altfel serverul ar „ghici" identitatea contabilă a liniei.
-    public Guid TipMaterialId { get; set; }
+    // Lipsă = tipul produsului, completat de culegere (104c).
+    public Guid? TipMaterialId { get; set; }
     // „General!" (P2 §4): obligatoriu pe liniile de STOC — validat la operare
     // (`FacturaIesire.ValideazaOperare`), împreună cu coerența Tip ↔ Produs.
     public Guid? ProdusId { get; set; }
@@ -68,13 +67,7 @@ public sealed class FacturaIesireLinieWriteDto {
     public decimal Cantitate { get; set; }
     public decimal PretUnitar { get; set; }
     public Guid? TipTvaId { get; set; }
-    // null = calculul standard din regim × cotă; valoare = override-ul
-    // operatorului (36a — documentul emis poartă rotunjirea lui: e-Factura,
-    // agregarea retailului), aplicat DUPĂ `CalculeazaLaCulegere`; acceptat DOAR
-    // pe regimurile cu TVA separat (Normal/TaxareInversă) și niciodată negativ.
-    // Aceleași două limite asumate ca la FCT (F2-D2/D6): override-ul explicit 0
-    // nu supraviețuiește operării (condiția 36a din motor e `ValoareTva != 0`),
-    // iar renunțarea la un override salvat cere re-atingerea unui declanșator.
+    // null = calculul din regim × cotă; valoare = TVA-ul cules, aplicat după calcul (36a).
     public decimal? ValoareTva { get; set; }
     // Singura dimensiune-frunză a FCL (DIM-2); DSC-ul o primește prin clonă.
     public Guid? CodEconomicId { get; set; }
@@ -87,6 +80,7 @@ public sealed class FacturaIesireReadDto {
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
     public DateOnly DataInregistrare { get; set; }
+    public DateOnly? DataExigibilitate { get; set; }
     // STRING, nu enum (vezi ApiDtos): contractul nu depinde de ordinea membrilor.
     public string Stare { get; set; }
     public DateTime? DataOperare { get; set; }
@@ -141,7 +135,7 @@ public sealed class FacturaIesireLinieReadDto {
     public string Descriere { get; set; }
     public decimal Cantitate { get; set; }
     public decimal PretUnitar { get; set; }
-    // Server-owned (GATE 53c): materializate la culegere, rescrise la operare.
+    // Server-owned: scrise de `CalculeazaValori` la culegere și la operare (104c).
     public decimal Valoare { get; set; }
     public decimal ValoareTva { get; set; }
     public Guid? TipTvaId { get; set; }

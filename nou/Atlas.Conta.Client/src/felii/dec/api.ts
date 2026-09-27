@@ -67,7 +67,7 @@ export const dec = {
 };
 
 export function antetGol(): DecWrite {
-  return { Data: azi(), Linii: [] };
+  return { Data: azi(), DataPrimire: azi(), Linii: [] };
 }
 
 // Linie nouă: cantitatea rămâne 0 și o normalizează SERVERUL la 1 (pro-formă,
@@ -91,6 +91,8 @@ export function spreWrite(citit: DecRead): DecWrite {
   return {
     Data: citit.Data,
     DataInregistrare: citit.DataInregistrare,
+    DataExigibilitate: citit.DataExigibilitate,
+    DataPrimire: citit.DataPrimire,
     PredatorId: citit.PredatorId,
     PrimitorId: citit.PrimitorId,
     NumarPV: citit.NumarPV,

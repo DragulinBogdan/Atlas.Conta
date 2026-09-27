@@ -19,16 +19,17 @@ namespace Atlas.Conta.BackOffice.Module.Controllers;
 // `GardianEditare` îi aplică pe ORICE ușă securizată (spike pasul 5, D4) —
 // inclusiv pe OData, unde nu există controllere de view.
 //
-// Din review-ul advers F27 (1c) cele două scrieri ale ecranului sunt COMENZI, pe
-// ObjectSpace non-secured: „Împerechează" (crearea) și „Desfă împerecherea"
-// (rândul invers). `New` e retras, culegerea e read-only; ștergerea din
-// fereastra deschisă rămâne pe ușa securizată, unde gardianul o judecă.
+// Crearea, desfacerea și ștergerea sunt comenzi cu gate pe ObjectSpace-ul
+// securizat și tranzacție proprie non-secured. Ștergerea desface și
+// nominalizarea din cub; CRUD-ul direct nu poate menține această atomicitate.
 public sealed class ImperechereController : ViewController {
     const string CheieNew = "F27.ImperechereaEComanda";
 
     readonly PopupWindowShowAction desface;
     readonly PopupWindowShowAction imperecheaza;
+    readonly SimpleAction sterge;
     NewObjectViewController controllerNou;
+    DeleteObjectsViewController controllerStergere;
 
     public ImperechereController() {
         TargetObjectType = typeof(Imperechere);
@@ -62,6 +63,12 @@ public sealed class ImperechereController : ViewController {
         };
         desface.CustomizePopupWindowParams += Desfa_CustomizePopupWindowParams;
         desface.Execute += Desfa_Execute;
+        sterge = new SimpleAction(this, "Imperechere.Sterge", PredefinedCategory.RecordEdit) {
+            Caption = "Șterge împerecherea",
+            SelectionDependencyType = SelectionDependencyType.RequireSingleObject,
+            ConfirmationMessage = "Ștergeți împerecherea și eliberați suma stinsă?",
+        };
+        sterge.Execute += Sterge_Execute;
     }
 
     protected override void OnActivated() {
@@ -76,6 +83,9 @@ public sealed class ImperechereController : ViewController {
         controllerNou = Frame.GetController<NewObjectViewController>();
         if (controllerNou != null)
             controllerNou.NewObjectAction.Active[CheieNew] = false;
+        controllerStergere = Frame.GetController<DeleteObjectsViewController>();
+        if (controllerStergere != null)
+            controllerStergere.DeleteAction.Active[CheieNew] = false;
     }
 
     protected override void OnDeactivated() {
@@ -84,6 +94,9 @@ public sealed class ImperechereController : ViewController {
         if (controllerNou != null)
             controllerNou.NewObjectAction.Active.RemoveItem(CheieNew);
         controllerNou = null;
+        if (controllerStergere != null)
+            controllerStergere.DeleteAction.Active.RemoveItem(CheieNew);
+        controllerStergere = null;
         base.OnDeactivated();
     }
 
@@ -182,6 +195,21 @@ public sealed class ImperechereController : ViewController {
         AplicaCapabilitati();
     }
 
+    void Sterge_Execute(object sender, SimpleActionExecuteEventArgs e) {
+        if (View.CurrentObject is not Imperechere imperechere) return;
+        if (Application.Security is not IRequestSecurityStrategy cerinte
+                || !IsGrantedExtensions.CanDelete(cerinte, ObjectSpace, (object)imperechere))
+            throw new UserFriendlyException(
+                Refuzuri.FaraDrept(OperatieAcces.Stergere, typeof(Imperechere)));
+        var fabrica = Application.ServiceProvider.GetRequiredService<INonSecuredObjectSpaceFactory>();
+        using (var osMotor = fabrica.CreateNonSecuredObjectSpace(typeof(Imperechere))) {
+            try { ImperechereService.Sterge(osMotor, imperechere.ID); }
+            catch (OperareException ex) { throw new UserFriendlyException(ex.Message); }
+        }
+        if (View is DetailView) View.Close();
+        else ObjectSpace.Refresh();
+    }
+
     // Imperecherea nu se mai CULEGE nicăieri: e produsul unei comenzi, deci
     // ecranele ei sunt read-only (ListView și DetailView). Ștergerea rămâne a
     // ferestrei deschise, desfacerea a celei închise.
@@ -193,6 +221,10 @@ public sealed class ImperechereController : ViewController {
         desface.Enabled["Persistata"] = !nou
             && View.CurrentObject is Imperechere imperechere
             && imperechere.InverseazaId == null;
+        sterge.Enabled["Persistata"] = desface.Enabled["Persistata"];
+        sterge.Enabled["Acces"] = View.CurrentObject is Imperechere curenta
+            && Application.Security is IRequestSecurityStrategy cerinte
+            && IsGrantedExtensions.CanDelete(cerinte, ObjectSpace, (object)curenta);
     }
 }
 

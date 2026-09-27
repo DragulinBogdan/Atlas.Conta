@@ -23,9 +23,9 @@ public interface ILinieCuAtributeLot {
 // Linia care culege un PREȚ UNITAR — baza calculului de TVA la culegere
 // (GATE XAF D5). Lanțul de valori trăiește pe derivate (testul bazei §3), dar
 // capătul lui de intrare are aceeași formă pe toate liniile care se culeg
-// financiar: baza = PretUnitar × Cantitate. Contract read-only: seam-ul de
-// recalcul (TvaService.CalculeazaLaCulegere) doar CITEȘTE prețul; scrierea
-// rămâne a proprietății virtuale de pe derivată.
+// financiar: baza = PretUnitar × Cantitate. Contract read-only: formula
+// documentului (`BazaLinie`, 104c) doar CITEȘTE prețul; scrierea rămâne a
+// proprietății virtuale de pe derivată.
 // Implementat de FacturaIntrareDetaliu, FacturaIesireDetaliu (cele două ecrane
 // ale gate-ului) și — din felia 8 (F8-D2) — DecontDetaliu: aderarea lui a fost
 // pură declarație (`PretUnitar` exista din 3a), iar seam-ul de calcul la
@@ -36,6 +36,14 @@ public interface ILinieCuAtributeLot {
 // recalcul se abonează pe TIPUL DOCUMENTULUI (FCT/FCL), nu pe interfața liniei.
 public interface ILinieCuPretUnitar {
     decimal PretUnitar { get; }
+}
+
+public interface ILinieCuTransformare {
+    Declaratii.TransformareFapt TransformareCuleasa();
+}
+
+public interface ILinieCuDiferentaInventar {
+    Declaratii.DiferentaInventarFapt DiferentaCuleasa();
 }
 
 // Linia care NAȘTE un lot la culegere (F5-D2): produsul ales de operator devine
@@ -134,4 +142,16 @@ public interface IDocumentCuRegistruPropriu {
     void EliminaRegistrul(DevExpress.ExpressApp.IObjectSpace os);
     /// <summary>Adaugă rândurile inverse, la data stornării.</summary>
     void StorneazaRegistrul(DevExpress.ExpressApp.IObjectSpace os, DateOnly data);
+}
+
+public interface ILinieCuImobilizare {
+    Declaratii.ImobilizareCuleasa ImobilizareCuleasa();
+}
+
+public interface IDocumentFiscal {
+    DateOnly? DataExigibilitate { get; set; }
+}
+
+public interface IDocumentFiscalPrimit : IDocumentFiscal {
+    DateOnly? DataPrimire { get; set; }
 }

@@ -117,28 +117,15 @@ public static class ImobilizariApply {
         DataUltimEveniment = s.DataUltimEveniment
     };
 
-    sealed record RandCuDocument(RandRegistru Rand, Guid DocumentId, string DocumentNumar);
+    sealed record RandCuDocument(RandImobilizare Rand, Guid DocumentId, string DocumentNumar);
 
     static List<RandCuDocument> Randuri(IObjectSpace os, List<Guid> fise, DateOnly panaLa) {
         if (fise.Count == 0)
             return [];
-        return os.GetObjectsQuery<RegistruImobilizari>()
-            .Where(r => fise.Contains(r.ImobilizareId) && r.Data <= panaLa)
-            .Select(r => new {
-                r.ID, r.ImobilizareId, r.Data, r.Fel, r.Storno, r.DetaliuId,
-                r.Valoare, r.ValoareFiscala, r.Amortizare, r.AmortizareFiscala,
-                r.AmortizareDeductibila, r.Luni,
-                r.Metoda, r.DurataLuni, r.ValoareReziduala,
-                r.MetodaFiscala, r.DurataFiscalaLuni, r.CategorieFiscala, r.UtilizareExclusiva,
-                r.DocumentId, DocumentNumar = r.Document.Numar
-            })
-            .ToList()
-            .Select(r => new RandCuDocument(
-                new RandRegistru(r.ID, r.ImobilizareId, r.Data, r.Fel, r.Storno, r.DetaliuId,
-                    r.Valoare, r.ValoareFiscala, r.Amortizare, r.AmortizareFiscala,
-                    r.AmortizareDeductibila, r.Luni, r.Metoda, r.DurataLuni, r.ValoareReziduala,
-                    r.MetodaFiscala, r.DurataFiscalaLuni, r.CategorieFiscala, r.UtilizareExclusiva),
-                r.DocumentId, r.DocumentNumar))
-            .ToList();
+        var randuri = Cub.Citiri.Imobilizari.Randuri(os, fise, panaLa);
+        var ids = randuri.Select(r => r.DocumentId).Distinct().ToList();
+        var numere = os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID))
+            .Select(d => new { d.ID, d.Numar }).ToDictionary(d => d.ID, d => d.Numar);
+        return randuri.Select(r => new RandCuDocument(r.Rand, r.DocumentId, numere.GetValueOrDefault(r.DocumentId))).ToList();
     }
 }

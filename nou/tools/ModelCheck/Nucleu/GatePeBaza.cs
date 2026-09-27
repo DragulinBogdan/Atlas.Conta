@@ -23,6 +23,7 @@ static class GatePeBaza {
     sealed class Contor {
         public int Documente;
         public int FaraDeclarant;
+        public int ConexeAcoperite;
         public int Egale;
         public int Refuzate;
         public int Diferite;
@@ -219,6 +220,11 @@ static class GatePeBaza {
             List<(Guid, Guid?)> regulaLipsa) {
         var eticheta = $"{doc.Numar ?? "—"} [{doc.ID.ToString()[..8]}]";
         try {
+            if (doc.Autogenerat && doc.DocumentSursaId != null
+                && C.Materializare.EsteConexAcoperit(os, doc)) {
+                contor.ConexeAcoperite++;
+                return;
+            }
             if (doc.Declarant() is null) {
                 contor.FaraDeclarant++;
                 return;
@@ -517,7 +523,8 @@ static class GatePeBaza {
     static void Raporteaza(Action<string> scrie, string cod, Contor contor) {
         scrie($"{cod}: {contor.Documente} documente — EGALE {contor.Egale}, REFUZATE {contor.Refuzate}, "
             + $"DIFERITE {contor.Diferite}, EXCEPȚIE DECLARATĂ {contor.Declarate}, "
-            + $"EXCEPȚII {contor.Exceptii}, fără declarant {contor.FaraDeclarant}");
+            + $"EXCEPȚII {contor.Exceptii}, fără declarant {contor.FaraDeclarant}, "
+            + $"CONEXE ACOPERITE DE SURSĂ {contor.ConexeAcoperite}");
         if (contor.Declarate > 0) {
             scrie($"   EXCEPȚIE DECLARATĂ (B-D8 TR-D3: FCT fără rânduri proprii): {contor.Declarate} documente");
             scrie($"       id-uri: {string.Join(", ", contor.IdsDeclarate.Select(d => d.ToString()))}"

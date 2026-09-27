@@ -14,7 +14,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 [TipDetaliu(typeof(FacturaIesireDetaliu))]
 [GardContare(NaturaClasa.Stoc, NivelContare.TipMaterialExact,
     "Linia de stoc nu are regulă de contare de vânzare pentru Tipul ei — adăugați rândul de politică (sau rulați updater-ul).")]
-public class FacturaIesire : Document, IDocumentCuScadenta {
+public class FacturaIesire : Document, IDocumentCuScadenta, IDocumentFiscal {
+    [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
+    public virtual DateOnly? DataExigibilitate { get; set; }
+
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Interna, Declaratii.Latura.Externa);
 
@@ -36,25 +39,21 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
     [XafDisplayName("Gestiune de descărcare")]
     public virtual Gestiune GestiuneDescarcare { get; set; }
 
-    // TVA-ul se calculează din cotă, DAR o `ValoareTva` nenulă culeasă se
-    // păstrează — regula 36a, uniformizată pe FCT/FCL/DEC (decizia 48b): pe
-    // facturarea proprie rotunjirea aparține documentului emis (e-Factura,
-    // agregarea retailului), nu recalculului nostru.
-    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) {
-        var tipuri = Motor.TvaService.IncarcaTipuri(os, Detalii);
-        // F13-D1: pe LIVRARE (`Colectat`) o linie cu regim de taxare inversă nu
-        // poartă TVA — furnizorul emite fără taxă, art. 331. Direcția o dă
-        // politica tipului, o dată per document.
-        var directie = Motor.TvaService.DirectiePentru(os, this);
-        foreach (var d in Detalii.OfType<FacturaIesireDetaliu>())
-            Motor.TvaService.CalculeazaValori(d, d.PretUnitar * d.Cantitate, tipuri, directie, pastreazaTvaCules: true);
-    }
+    public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
+        CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
+
+    public override bool CuTva() => true;
+    public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
+    static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(FacturaIesireDetaliu.PretUnitar));
+
+    public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
+        linie is FacturaIesireDetaliu d ? d.PretUnitar * d.Cantitate : null;
 
     // Descărcarea de gestiune (P2 §5): la operarea FCL se generează DSC-ul conex
     // (spargere pe loturi din liniile de stoc). Serviciu propriu, NU clona
     // PoliticaConex; motorul îl marchează la fel ca orice copil autogenerat.
     public override Document GenereazaSecundar(DevExpress.ExpressApp.IObjectSpace os) {
-        var dsc = Motor.DescarcareService.Genereaza(os, this, Data);
+        var dsc = Motor.DescarcareService.Genereaza(os, this, Data, DataInregistrare);
         // F27-D4: descărcarea intră în evidență odată cu factura care o naște.
         if (dsc != null)
             dsc.DataInregistrare = DataInregistrare;
@@ -126,6 +125,11 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
             var reguliDsc = Motor.Fapte.ReguliStoc(os, tipDsc.ID)
                 .Where(r => r.Latura == LaturaDocument.Predator && r.Semn < 0)
                 .ToList();
+            var conturi = reguliDsc.Count > 0 && GestiuneDescarcareId != null
+                ? Motor.DescarcareService.ConturiStoc(os, this) : new Dictionary<Guid, Guid>();
+            var disponibile = Cub.Citiri.Loturi.Cumulate(os, Cub.Citiri.CitireCumul.Integrala, DataInregistrare)
+                .Where(s => idsLotPin.Contains(s.LotId) && s.GestiuneId == GestiuneDescarcareId
+                    && s.Cantitate > 0m).ToList();
 
             foreach (var d in pinuri) {
                 var lotId = d.LotId.Value;
@@ -135,8 +139,8 @@ public class FacturaIesire : Document, IDocumentCuScadenta {
                     continue;
                 var potrivit = Motor.Potrivire.Stoc(reguliDsc, Motor.Fapte.Linie(d, claseTip))
                     .FirstOrDefault(p => p.Latura == LaturaDocument.Predator);
-                if (potrivit is { Reguli.Count: > 0 } && Motor.StocService.Sold(os,
-                        new Motor.CheieStoc(lotId, GestiuneDescarcareId.Value, potrivit.Reguli[0].TipStoc), Data) <= 0)
+                if (potrivit is { Reguli.Count: > 0 } && !disponibile.Any(s =>
+                        s.LotId == lotId && s.ProdusId == d.ProdusId && s.ContId == conturi[d.ID]))
                     erori.Add($"Lotul ales nu are sold în gestiunea de descărcare — întâi transfer (BTR).");
             }
         }
