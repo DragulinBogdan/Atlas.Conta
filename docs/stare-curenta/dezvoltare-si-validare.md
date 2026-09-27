@@ -71,7 +71,7 @@ Comenzile, încercările intermediare și limitele sunt în
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module` | Model, motor, DTO/Apply, proiecții, ANAF, SAF-T, seed și migrări (42d) |
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.WebApi` | Contracte HTTP, securizarea comenzilor, OData și integrarea hostului (42f) |
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Blazor.Server` | Host XAF, administrare și actualizarea explicită a bazei (23a) |
-| `nou/Atlas.Conta.Client` | React, formulare, raportare și contractele generate (43e) |
+| `nou/Atlas.Conta.Client` | React: citiri, proiecții, consolele comenzilor, editorii de politici și nomenclatoare și contractele generate; paginile de document sunt înghețate (43e, 104d) |
 | `nou/Atlas.Conta.Nucleu` | Nucleul pur al cubului de postări: tipuri, conservare, unitate, FIFO, evaluare, repartizare, TVA, storno, motor, gestiunile virtuale — fără niciun pachet; consumat DOAR de `Module` (`Declaratii/`), referit direct și de ModelCheck ca unealtă (90b, 90l) |
 | `nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.Teste` | Invarianții nucleului ca proprietăți pe generatoare proprii și testul de arhitectură (90l) |
 | `nou/tools/ModelCheck` | Verificarea modelului și scenarii de domeniu pe PostgreSQL (23) |

@@ -58,8 +58,8 @@
 | 39 | [Pre-polish](039-atlas-dxf-constraint-translator.md) | 2026-07-23 | activă |
 | 40 | [Felia polish XAF](040-felia-polish-xaf.md) | 2026-07-23 | activă |
 | 41 | [Felia „restanțele 40e](041-restantele-40e-atlas-dxf-26-1-3-6.md) | 2026-07-24 | activă |
-| 42 | [Design pasul 5 — tierul API + React](042-design-p5-tierul-api.md) | 2026-07-24 | activă |
-| 43 | [Design pasul 5 — clientul React](043-design-p5-clientul-react.md) | 2026-07-24 | activă |
+| 42 | [Design pasul 5 — tierul API + React](042-design-p5-tierul-api.md) | 2026-07-24 | activă; (b)(e) amendate de 104 |
+| 43 | [Design pasul 5 — clientul React](043-design-p5-clientul-react.md) | 2026-07-24 | activă; aria amendată de 104d |
 | 44 | [Reordonarea roadmap-ului](044-reordonare-roadmap-1c-inainte-de-p5.md) | 2026-07-25 | executată (reordonarea s-a consumat: 1C, GATE XAF, DIM, apoi pasul 5) |
 | 45 | [Design FAZA 1C — conector de import + reconciliere pe an fiscal complet](045-design-faza-1c-import-reconciliere.md) | 2026-07-25 | activă |
 | 46 | [Felia 1C-a — tipurile noi de model](046-felia-1c-a-tipurile-noi.md) | 2026-07-25 | activă |

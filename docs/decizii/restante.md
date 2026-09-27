@@ -114,12 +114,12 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 76-r4 | gate-ul comenzilor e pe `Document`, nu pe tipul feliei (422 vs 404 pe aceeași cauză; închisă de 80b) | închisă de 80b |
 | 76-r5 | `Candidati` sub-raportează pe ușa secured, iar `User` pe ușa de scriere e refuzat de primul FK invizibil, nu de o permisiune (familia 72-r10; închisă de 80b/80f) | închisă de 80b/80f |
 | 76-r6 | patru itemi de client în `lista-react.md`: căutarea sensibilă la diacritice în TOATE lookup-urile remote (colație `unaccent`/ICU sau coloană shadow — decizie de bază de date), `Lookup` care refetchează eticheta per instanță, limita convenției 61b pe valorile din PRECOMPLETARE, `window.confirm` moștenit pe ștergere (toți patru închiși de 77) | închisă de 77 |
-| 77-r1 | BTR fără convenția 61b | după PoC (091) |
+| 77-r1 | BTR fără convenția 61b | depășită de 104 (2026-09-27): paginile React de culegere sunt înghețate (104d); soarta lor e 104-r4 |
 | 77-r2 | `Cod`/`Denumire` neobligatorii pe nicio ușă (închisă de 77k) | închisă de 77k |
 | 77-r3 | editarea `PoliticaMiscareSaft` din React (închisă de 81i), comanda ANAF de lot | după PoC (091); parțial: editarea închisă de 81i, comanda de lot deschisă |
 | 77-r4 | `CodFiscal`/`Iban`/`Marca` în afara lui `Cautare` | după PoC (091) |
 | 77-r5 | precompletarea nu distinge alegerea operatorului; invalidarea nu reîmprospătează `SelectBox`-urile montate | după PoC (091) |
-| 77-r6 | `displayExpr` de nucleu pentru `TipMaterial` | după PoC (091) |
+| 77-r6 | `displayExpr` de nucleu pentru `TipMaterial` | depășită de 104 (2026-09-27): privea selectoarele paginilor React de culegere, înghețate (104d); soarta lor e 104-r4 |
 | 77-r7 | `Cautare` fără index (seq scan pe 20 k rânduri; cifra decide; calea: GIN `pg_trgm`, 78e) | după PoC (091) |
 | 77-r8 | permisiunea pe OData `text/plain` pe server (închisă de 80) | închisă de 80 |
 | 78-r1 | căutarea din grilele XAF rămâne sensibilă la diacritice (nu trec prin `DataSourceLoader`; asumat, 44/53) | după PoC (091) |

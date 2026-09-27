@@ -58,7 +58,7 @@ identificatorul între paranteze (`(42b)`, `(76-r1)`).
 | Tierul API / clientul React (design) | `docs/api/p5-api-design.md`, `p5-react-design.md` |
 | Contractele feliilor pasului 5 (D-urile pin-uite) | `docs/api/p5-*-contract.md` |
 | Perf pe baza de import | `docs/api/p5-perf-masuratori.md` |
-| Ce rămâne de la XAF Blazor pentru React | `docs/api/lista-react.md` |
+| Luptele structurale cu XAF Blazor (culegerea rămâne în XAF, 104d) | `docs/api/lista-react.md` |
 | Fluxul comenzilor online (bifurcație deschisă) | `docs/architecture-notes-2026-07-28.md` |
 
 ## Principii transversale (valabile în orice arie)
@@ -89,6 +89,17 @@ contrazise din neatenție.
   secvență, prin ID (42a/b, 55a/b, 58c).
 - **Citirea = registre + proiecții; scrierea = agregat per document; TS nu
   calculează niciodată sold/rest/total** (42c/d, 43).
+- **Cinci straturi, dependențe într-un singur sens**: L0 Nucleu → L1
+  Declarații → L2 coaja comenzii → L3 culegerea → L4 randarea; motorul (L0–L2)
+  nu cunoaște securitatea XAF și nici ștergerea. L3 (`Module/Culegere/`) e
+  singura sursă de implicite, recalcul și validare de domeniu; controllerele
+  XAF și `Api/*Apply` sunt adaptori peste ea (104a/c).
+- **Culegerea documentelor se face în XAF; React face citiri și proiecții.**
+  Paginile React de detaliu ale documentelor sunt înghețate: nu primesc câmpuri
+  noi și nu blochează nicio felie; `WriteDto`/`Apply` rămân, fiindcă sunt L3
+  (104d).
+- **Fără ștergere amânată**: draftul se șterge fizic, operatul se stornează,
+  nomenclatorul se inactivează (`Activ`); `Cascade` doar în agregat (104f/g).
 - **Refuzurile de acces**: 404 = inexistent sau invizibil, 403 = vizibil fără
   drept, 422 = domeniu; ordinea 401 → 400 → 404 → 403 → 422 pe toate ușile, un
   singur corp `EroriDto` (80).
@@ -138,9 +149,8 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: felia C104 (decizia 104, branch `c104-straturi`, pașii 1–5
-în fișierul deciziei): entități proprii fără ștergere amânată, coaja comenzii,
-culegerea unică, React pe citiri. După ea: review-ul specificației intervalelor TVA și avertismentelor
+**Următorul pas**: felia C104 (decizia 104, branch `c104-straturi`), pasul 5:
+review advers pe pașii 1–3 și închiderea 104-r1 (pașii 1–4 sunt comiși). După ea: review-ul specificației intervalelor TVA și avertismentelor
 (103h, `docs/nucleu/tr-d8-tva-intervale-contract.md`), înaintea codului R6.
 Apoi restul SAF-T din TR-D8 (SourceDocuments integral), reconcilierea,
 auditul și gate-ul transversal de performanță. Felia fiscală

@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-24.** [Index](README.md)
+**Actualizat: 2026-09-27.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -315,6 +315,11 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Client, API și livrare
 
+- Paginile React de detaliu ale documentelor sunt înghețate: câmpurile
+  adăugate modelului după 2026-09-27 nu apar acolo, iar convențiile de
+  selector rămase neadoptate (BTR, `TipMaterial`) nu se mai aplică. Culegerea
+  curentă e în XAF Blazor. Scoaterea sau generarea lor din metadate se decide
+  după PoC. (104d, 104-r4)
 - Cheia cache-ului `byKey` combină proiecțiile de selecție și expandare într-o
   formă care nu distinge toate combinațiile posibile. Nu se presupune că
   orice proiecție nouă este sigură fără verificarea cheii. (77b)

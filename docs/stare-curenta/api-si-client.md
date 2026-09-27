@@ -1,12 +1,25 @@
 # API și client
 
-**Actualizat: 2026-09-26.** [Index](README.md)
+**Actualizat: 2026-09-27.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
 `Module` deține modelul, regulile de domeniu, DTO-urile și serviciile comune.
 WebApi asigură transportul, autentificarea și integrarea HTTP. XAF Blazor
-folosește același domeniu. React compune explicit paginile și formularele. (5, 42f, 43)
+folosește același domeniu. (5, 42f, 43)
+
+Straturile au dependențe într-un singur sens: L0 Nucleu, L1 Declarații, L2
+coaja comenzii, L3 culegerea (`Module/Culegere/`), L4 randarea (XAF Blazor,
+React). Un strat nu cunoaște stratul de deasupra lui. (104a)
+
+Culegerea documentelor se face în XAF Blazor. React acoperă citirile și
+proiecțiile: jurnale, declarații, fișe, reconcilieri, rapoarte, consolele
+comenzilor și editorii de politici și nomenclatoare. Paginile React de detaliu
+ale documentelor sunt înghețate: nu primesc câmpuri noi, pot rămâne în urmă
+față de model și nu blochează nicio felie. Un câmp nou pe un document intră în
+entitate, în L3 și în `WriteDto`/`ReadDto`, nu în pagina React. `WriteDto` și
+`Apply` rămân contractul de scriere pentru ModelCheck, import și orice alt
+apelant. (104d, 104-r4)
 
 Contractele documentelor sunt specifice tipului concret. Nu există un
 endpoint generic care interpretează o schemă de document primită ca date.
@@ -195,6 +208,11 @@ Ecranele sunt compuse în JSX cu controale concrete. Metadata furnizează
 denumiri, tipuri și constrângeri comune; nu este un descriptor executabil de
 formular. Coloanele specifice aparțin paginii respective. (8, 42e, 43a)
 
+Regulile de formular de mai jos rămân valabile pentru editorii vii
+(politici, nomenclatoare, consolele comenzilor) și descriu paginile de
+detaliu ale documentelor așa cum au fost înghețate; acestea nu se extind.
+(104d)
+
 Listele de documente sunt compuse din `ListaDocumente` și `GrilaDocumente`
 (`nucleu/`): grilă remote cu filtre, sortare și paginare pe server; click-ul
 selectează rândul, dublu-click-ul deschide documentul. Pagina dă titlul,
@@ -329,7 +347,7 @@ declară în `ContaUiBaseline.ColoanaTip`. (89a)
 
 | Arie | Conținut |
 |---|---|
-| Documente | Liste și detalii pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC, DVI, PIF, CAS și AMO |
+| Documente | Liste pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC, DVI, PIF, CAS și AMO; paginile lor de detaliu și de culegere sunt înghețate, culegerea curentă e în XAF Blazor (104d) |
 | Imobilizări | Fișa ca ecran de nomenclator pe OData, cu panoul „Fișa" (situația la data din URL, parametrii curenți, rândurile registrului) din `GET api/imobilizari/{id}/fisa?laData=`; registrul imobilizărilor la `/imobilizari/registru` din `GET api/imobilizari/registru?laData=`, totaluri de pe server; ambele cer și citirea pe `RegistruImobilizari`. `api/pif`: agregat cules cu lookup de fișă filtrat pe locul primitorului și pe stare, dialogul liniilor de factură de clasă F din `linii-sursa` (plic `{ Candidati, MaiSunt }`, plafon 500, prefill cu restul), parametrii pre-completați pe revizuire din fișă. `api/cas`: antet plus fișele de pe locul predatorului; liniile produse de server. `api/amo`: previzualizare pe an, lună și unitate cu motiv, blocant și cele trei cifre, generare, regenerare cu confirmare, storno (87i, 87j) |
 | Declarații vamale | `api/dvi`: agregat cules (antet, linii, `FacturiIds` ca agregat întreg), `facturi-candidate` cu perioadă obligatorie, filtru implicit pe clasa fiscală extra-UE, plicul `{ Candidati, MaiSunt }` cu plafon 500 decis pe interogare și `TipMaterialSugeratId`; cere și citirea pe FCT. Ecranul: lookup TVA filtrat pe `DeImport`, popup de candidați pe luna declarației, totaluri de pe server (86h, 86i) |
 | Trezorerie și relații | Stingere manuală în limitele contractelor, vizualizarea relațiilor și comenzile documentului (57d, 76g) |

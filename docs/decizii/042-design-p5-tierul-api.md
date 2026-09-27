@@ -1,7 +1,7 @@
 # Decizia 42 — Design pasul 5 — tierul API + React
 
 - **Data**: 2026-07-24 (primul commit în jurnal)
-- **Stare**: activă
+- **Stare**: activă; (b) amendat de 104b (coaja comenzii își face singură contextul), (e) amendat de 104d (culegerea documentelor în XAF, React pe citiri)
 - **Docs**: docs/api/p5-api-design.md
 
 ## Regula durabilă

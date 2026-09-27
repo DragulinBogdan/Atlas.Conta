@@ -1,6 +1,6 @@
 # Atlas.Conta — starea curentă și regulile aplicabile
 
-**Actualizat: 2026-09-22.** Referința este implementarea din workspace,
+**Actualizat: 2026-09-27.** Referința este implementarea din workspace,
 inclusiv modificările locale. Documentele descriu regulile în forma lor
 actuală, organizate pe responsabilități.
 
@@ -42,8 +42,10 @@ rotunjire sunt fixate per bază. Diferențele de profil se exprimă prin date ș
 validări, fără clase de document distincte pentru fiecare profil.
 
 Backend-ul folosește .NET, XAF și EF Core, cu PostgreSQL. `Module` conține
-modelul și regulile comune. WebApi și XAF Blazor folosesc același modul;
-clientul operațional este React cu DevExtreme.
+modelul și regulile comune. WebApi și XAF Blazor folosesc același modul.
+Documentele se culeg în XAF Blazor; clientul React, cu DevExtreme, acoperă
+citirile, proiecțiile, consolele comenzilor și editorii de politici și
+nomenclatoare. (104d)
 
 ## Reguli fundamentale
 

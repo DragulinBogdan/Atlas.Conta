@@ -1,7 +1,9 @@
 # Pasul 5 — API + React: designul clientului React (design)
 
 Stare: **FIXAT (24.07.2026) — sesiune de explorare arhitecturală; toate cele 6
-tranșări confirmate; implementarea urmează.**
+tranșări confirmate; implementarea urmează.** Aria amendată de decizia 104 (d),
+2026-09-27: culegerea documentelor se face în XAF Blazor, React face citiri și
+proiecții, paginile de detaliu ale documentelor sunt înghețate.
 Contextul: acoperă mandatul din `p5-api-design.md` §8 („sesiune separată:
 structura aplicației React — state management, pipeline-ul de codegen
 OpenAPI→TS + captions, componente per felie"). La momentul sesiunii clientul

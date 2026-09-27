@@ -332,6 +332,13 @@ Proba:
 `docs/api/lista-react.md` și principiile din `CLAUDE.md` (straturile,
 culegerea în XAF). Paginile de detaliu pentru documente se marchează înghețate.
 
+Executat 2026-09-27, numai documentație: `stare-curenta` (împărțirea
+responsabilităților, ecranele, limitele, indexul), `lista-react.md` (premisa
+restrânsă la citiri; itemii de culegere marcați), principiile din `CLAUDE.md`,
+antetele 042/043 și README-ul clientului. 77-r1 și 77-r6 (selectoarele
+paginilor React de culegere) sunt depășite de (d); soarta paginilor rămâne
+104-r4.
+
 **Pasul 5 — review advers și închidere.** Review advers pe pașii 1–3,
 corecturile pe felie, apoi închiderea restanței 104-r1.
 
