@@ -45,14 +45,25 @@ FĂRĂ URME
   fi un no-op și proba ar trece din alt motiv decât cel probat.
   `POST api/itv/genereaza` se probează DOAR ca `Cititor`/`User`/`Configurator`:
   pe `Admin` ar SCRIE un draft ori de câte ori luna e liberă (capcana feliei
-  21) — iar luna cerută e una DEJA închisă
-  (`InchidereVie`), ca nici măcar un gate picat să nu scrie. Niciun rând
+  21) — iar luna cerută n-are sold de închis
+  (`FaraSold`), ca nici măcar un gate picat să nu scrie. Niciun rând
   SEED-uit nu se modifică: probele de politică se fac pe rânduri create de
   script (vezi blocul F23 pentru ce anume NU se poate măsura din cauza asta).
   A doua rulare consecutivă trebuie să dea exact aceleași rezultate.
 
-  Singura urmă rămasă, deliberat: rândurile de AUDIT produse de scrierile de mai
-  sus. Un jurnal nu se șterge — de-aia e jurnal.
+  Urmele rămase, deliberat: rândurile de AUDIT produse de scrierile de mai
+  sus (un jurnal nu se șterge — de-aia e jurnal) și cele două `RefuzSeed` pe
+  cheile rândurilor de politică de probă (104i: ștergerea pe ușa securizată își
+  lasă refuzul, iar refuzul n-are ușă HTTP). Cheile sunt fixe, deci a doua
+  rulare nu adaugă nimic.
+
+FIXTURE PROPRIU (104-r5)
+  Subiecții care nu se pot crea ca draft își are matricea singură, pe prima lună
+  deschisă a lanțului: un furnizor NeinregistratRo, o FCT operată cu plata conex
+  operată (deci o împerechere), un ITV draft pe luna lor și un angajat. Se
+  desfac în ordine inversă în `finally` (împerecherea, anularea, ștergerea), deci
+  matricea rulează pe baza recreată din seed. Plafonul de 500 al candidaților
+  DVI se probează în ModelCheck, cu plafon forțat.
 
 UTILIZARE
   pwsh -File nou/tools/ProbeHttp/refuzuri.ps1
@@ -231,7 +242,7 @@ if (-not $tokenAdmin) { Write-Error 'Admin lipsește din -Utilizatori: matricea 
 
 # ═══ 2. Descoperirea datelor, prin API (nimic hardcodat) ════════════════════
 # Scriptul nu presupune nimic despre baza pe care rulează: își găsește singur
-# un partener, o gestiune, o unitate internă și o lună de ITV DEJA închisă.
+# un partener, o gestiune și o unitate internă; restul subiecților sunt ai fixture-ului.
 function Get-PrimaEntitate {
     # `-Filtru` (OData `$filter`, ne-encodat) pentru descoperirile care au nevoie
     # de un rând ANUME, pe codul lui: tipurile de document și de TVA sunt referite
@@ -246,7 +257,15 @@ function Get-PrimaEntitate {
     $valori[0]
 }
 
+function Invoke-Fixture {
+    param([string]$Metoda, [string]$Cale, $Corp, [int]$Asteptat = 200)
+    $r = Invoke-Cerere -Metoda $Metoda -Cale $Cale -Token $tokenAdmin -Corp $Corp
+    if ($r.Status -ne $Asteptat) { throw "fixture: $Metoda $Cale → HTTP $($r.Status) ≠ $Asteptat — $(Scurt $r.Corp 300)" }
+    if ($r.Corp) { $r.Corp | ConvertFrom-Json }
+}
+
 $curatenie = [Collections.Generic.List[scriptblock]]::new()
+$fixture = [Collections.Generic.List[scriptblock]]::new()
 $codIesire = 0
 
 try {
@@ -255,22 +274,61 @@ try {
     $unitate = Get-PrimaEntitate 'UnitateInterna'
     Write-Host "  partener: $($partener.Cod)  gestiune: $($gestiune.Cod)  unitate: $($unitate.Cod)" -ForegroundColor DarkGray
 
-    # Luna ITV pentru `genereaza`: una cu închidere OPERATĂ (deci `InchidereVie`),
-    # ca proba să nu poată scrie nici dacă gate-ul ar fi picat. Fallback: o lună
-    # din trecutul îndepărtat, unde nu există sold de închis.
-    $itvLista = (Invoke-Cerere -Metoda GET -Cale '/api/itv?take=50' -Token $tokenAdmin).Corp | ConvertFrom-Json
-    $itvOperat = $itvLista.data | Where-Object { $_.Stare -eq 'Operat' } | Select-Object -First 1
-    $itvOricare = $itvLista.data | Select-Object -First 1
-    if ($itvOperat) { $anItv = $itvOperat.An; $lunaItv = $itvOperat.Luna }
-    else { $anItv = 2001; $lunaItv = 1 }
-    if (-not $itvOricare) { throw 'Nu există nicio închidere de TVA pe bază — proba `GET api/itv/{id}` n-are subiect.' }
-    $idItv = $itvOricare.Id
-    Write-Host "  itv: $($itvOricare.Numar) ($idItv); genereaza pe $anItv-$lunaItv" -ForegroundColor DarkGray
+    # ── Fixture-ul propriu (104-r5), desfăcut în ordine inversă în `finally` ─
+    $lunaFixture = @(Invoke-Fixture GET '/api/perioade') | Where-Object { -not $_.Inchisa } |
+        Sort-Object An, Luna | Select-Object -First 1
+    if (-not $lunaFixture) { throw 'Nicio perioadă deschisă pe lanț — fixture-ul n-are unde opera.' }
+    $dataFixture = '{0}-{1:00}-15' -f $lunaFixture.An, $lunaFixture.Luna
+    $timbru = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 
-    # Perioada pentru fișierul SAF-T: luna unei închideri operate e o lună cu
-    # activitate. Gate-ul de 403 al lui `User` vine oricum înaintea proiecției.
-    $anSaft = if ($itvOperat) { $itvOperat.An } else { 2025 }
-    $lunaSaft = if ($itvOperat) { $itvOperat.Luna } else { 1 }
+    $idFurnizorFixture = (Invoke-Fixture POST '/api/odata/Partener' -Asteptat 201 -Corp @{
+            Cod = "PROBA-R5-F-$timbru"; Denumire = 'Furnizor probă 104-r5'
+            Tara = 'RO'; TipPersoana = 'Juridica'; InregistratTva = $false
+        }).ID
+    $fixture.Add({ Invoke-Fixture DELETE "/api/odata/Partener($idFurnizorFixture)" | Out-Null }.GetNewClosure())
+
+    $corpFctFixture = @{
+        Numar              = "R5-FCT-$timbru"
+        Data               = $dataFixture
+        PredatorId         = $idFurnizorFixture
+        PrimitorId         = $gestiune.ID
+        GenereazaPlata     = $true
+        PlataContPropriuId = (Get-PrimaEntitate 'ContPropriu' "Cod eq 'CASA'").ID
+        PlataNumar         = "R5-PLT-$timbru"
+        PlataData          = $dataFixture
+        PlataTipInstrument = 'DispozitieCasa'
+        Linii              = @(@{
+                TipMaterialId = (Get-PrimaEntitate 'TipMaterial' "Cod eq '628'").ID
+                TipTvaId      = (Get-PrimaEntitate 'TipTva' "Cod eq 'N21'").ID
+                Cantitate     = 1
+                PretUnitar    = 100
+            })
+    }
+    $idFctFixture = (Invoke-Fixture POST '/api/fct' -Corp $corpFctFixture -Asteptat 201).Id
+    $fixture.Add({ Invoke-Fixture DELETE "/api/fct/$idFctFixture" -Asteptat 204 | Out-Null }.GetNewClosure())
+    $idPltFixture = (Invoke-Fixture POST "/api/fct/$idFctFixture/opereaza" -Corp @{}).ConexId
+    if (-not $idPltFixture) { throw 'fixture: operarea FCT n-a generat plata conex.' }
+    $fixture.Add({ Invoke-Fixture POST "/api/fct/$idFctFixture/anuleaza" -Corp @{} | Out-Null }.GetNewClosure())
+    $fixture.Add({ Invoke-Fixture DELETE "/api/plt/$idPltFixture" -Asteptat 204 | Out-Null }.GetNewClosure())
+    Invoke-Fixture POST "/api/plt/$idPltFixture/opereaza" -Corp @{} | Out-Null
+    $fixture.Add({ Invoke-Fixture POST "/api/plt/$idPltFixture/anuleaza" -Corp @{} | Out-Null }.GetNewClosure())
+    $idImperechere = @((Invoke-Fixture GET "/api/imperecheri/$idPltFixture/stingeri").Imperecheri)[0].Id
+    if (-not $idImperechere) { throw 'fixture: plata conex operată n-a stins factura.' }
+    $fixture.Add({ Invoke-Fixture DELETE "/api/imperecheri/$idImperechere" -Asteptat 204 | Out-Null }.GetNewClosure())
+
+    $itvFixture = Invoke-Fixture POST '/api/itv/genereaza' -Corp @{ An = $lunaFixture.An; Luna = $lunaFixture.Luna; UnitateId = $unitate.ID }
+    if (-not $itvFixture.DocumentId) { throw "fixture: ITV negenerat pe $dataFixture — $($itvFixture.Motiv)" }
+    $idItv = $itvFixture.DocumentId
+    $fixture.Add({ Invoke-Fixture DELETE "/api/itv/$idItv" -Asteptat 204 | Out-Null }.GetNewClosure())
+
+    $angajat = Invoke-Fixture POST '/api/odata/Angajat' -Asteptat 201 -Corp @{ Cod = "PROBA-R5-A-$timbru"; Denumire = 'Angajat probă 104-r5' }
+    $fixture.Add({ Invoke-Fixture DELETE "/api/odata/Angajat($($angajat.ID))" | Out-Null }.GetNewClosure())
+    Write-Host "  fixture pe $dataFixture`: FCT $idFctFixture, PLT $idPltFixture, împerechere $idImperechere, ITV $idItv, angajat $($angajat.ID)" -ForegroundColor DarkGray
+
+    # `genereaza` pe o lună fără sold (`FaraSold`), ca proba să nu poată scrie
+    # nici dacă gate-ul ar pica; SAF-T pe luna cu activitate a fixture-ului.
+    $anItv = 2001; $lunaItv = 1
+    $anSaft = $lunaFixture.An; $lunaSaft = $lunaFixture.Luna
 
     # Draftul de NIR al lui Admin — subiectul VIZIBIL al probelor de instanță.
     $corpNir = @{
@@ -288,20 +346,6 @@ try {
             Write-Host "curățenie: DELETE /api/nir/$idNir → $($sters.Status)" -ForegroundColor DarkGray
         }.GetNewClosure())
     Write-Host "  nir draft: $idNir" -ForegroundColor DarkGray
-
-    # O împerechere EXISTENTĂ, ca subiect VIZIBIL al probei de desfacere (review
-    # advers F27, 10). `Imperechere` nu e set OData, deci se descoperă prin
-    # panoul de stingeri al documentelor: prima plată care poartă o legătură.
-    # Doar citită — proba pe ea se oprește la 403, deci nu lasă urme.
-    $idImperechere = $null
-    foreach ($plata in ((Invoke-Cerere -Metoda GET -Cale '/api/plt?take=60' -Token $tokenAdmin).Corp | ConvertFrom-Json).data) {
-        $stingeri = (Invoke-Cerere -Metoda GET -Cale "/api/imperecheri/$($plata.Id)/stingeri" -Token $tokenAdmin).Corp | ConvertFrom-Json
-        if (@($stingeri.Imperecheri).Count -gt 0) { $idImperechere = @($stingeri.Imperecheri)[0].Id; break }
-    }
-    if (-not $idImperechere) {
-        throw 'Nicio împerechere pe primele 60 de plăți — proba `desfa` cu subiect vizibil n-are subiect.'
-    }
-    Write-Host "  imperechere: $idImperechere" -ForegroundColor DarkGray
 
     $idInexistent = [guid]::NewGuid()
 
@@ -480,36 +524,16 @@ try {
     # `facturi-candidate` cere DOUĂ drepturi (DVI-D5): declarația din rută, dacă
     # vine, și CITIREA pe facturi — panoul arată facturi, nu declarații, iar o
     # listă filtrată tăcut ar propune legături pe care operatorul nu le poate face.
-    $perioadaDvi = 'dataStart=2026-01-01&dataEnd=2026-12-31'
-    # Perioada LARGĂ, pentru proba de plafon: pe baza Privat 2025 are peste
-    # 19.000 de facturi operate. Sfârșitul ei = ziua celei mai recente candidate
-    # a unui furnizor `NeinregistratRo`, găsită mergând înapoi pe paginile rutei
-    # (plafonul taie pe dată, descrescător) — altfel cele 500 pot fi toate RO.
-    $inceputLargDvi = '2025-01-01'
-    $sfarsitCautare = [datetime]'2026-12-31'
-    $ziNeinregistrat = $null
-    for ($pagina = 0; $pagina -lt 100 -and -not $ziNeinregistrat; $pagina++) {
-        $caleCautare = "/api/dvi/facturi-candidate?dataStart=$inceputLargDvi&dataEnd=$($sfarsitCautare.ToString('yyyy-MM-dd'))&toate=true"
-        $rCautare = Invoke-Cerere -Metoda GET -Cale $caleCautare -Token $tokenAdmin
-        if ($rCautare.Status -ne 200) { throw "Descoperirea candidaților DVI a picat: HTTP $($rCautare.Status)" }
-        $plicCautare = $rCautare.Corp | ConvertFrom-Json
-        $neinregistrat = @($plicCautare.Candidati | Where-Object ClasaFiscala -eq 'NeinregistratRo') | Select-Object -First 1
-        if ($neinregistrat) { $ziNeinregistrat = ([datetime]$neinregistrat.Data).ToString('yyyy-MM-dd'); break }
-        if (-not $plicCautare.MaiSunt) { break }
-        $ceaMaiVeche = @($plicCautare.Candidati | ForEach-Object { [datetime]$_.Data } | Sort-Object)[0]
-        $sfarsitCautare = if ($ceaMaiVeche -lt $sfarsitCautare) { $ceaMaiVeche } else { $sfarsitCautare.AddDays(-1) }
-    }
-    if (-not $ziNeinregistrat) { throw 'Nicio factură candidată DVI a unui furnizor NeinregistratRo — proba de plafon n-are subiect.' }
-    $perioadaLargaDvi = "dataStart=$inceputLargDvi&dataEnd=$ziNeinregistrat"
-    Write-Host "  candidați DVI: fereastra largă $inceputLargDvi … $ziNeinregistrat (cea mai recentă candidată NeinregistratRo, pagina $($pagina + 1))" -ForegroundColor DarkGray
+    $perioadaDvi = "dataStart=$($lunaFixture.An)-01-01&dataEnd=$($lunaFixture.An)-12-31"
+    $perioadaLargaDvi = "dataStart=$dataFixture&dataEnd=$dataFixture"
     Proba -Cerere 'candidați DVI' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" -Contine '"Candidati":[]', '"MaiSunt":false' -Nota 'plic, nu tablou' | Out-Null
     Proba -Cerere 'candidați DVI' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" -Nota 'Read pe tot' | Out-Null
     Proba -Cerere 'candidați DVI' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" | Out-Null
     Proba -Cerere 'candidați DVI' -User 'User' -Asteptat 403 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaDvi" -Contine 'citi' -Nota 'DVI-D5: dreptul pe FACTURI' | Out-Null
-    # Pe baza asta TOȚI furnizorii sunt RO, deci lista implicită e GOALĂ pe bună
+    # Furnizorul fixture-ului e RO, deci lista implicită (extra-UE) e GOALĂ pe bună
     # dreptate — iar `toate=true` o umple: perechea arată că filtrul de clasă fiscală
     # e REAL, nu că ruta n-ar citi nimic (un 200 gol singur ar fi o probă vacuă).
-    Proba -Cerere 'candidați DVI (toate)' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaLargaDvi&toate=true" -Contine '"Candidati":[{', '"ClasaFiscala":"NeinregistratRo"', '"TipMaterialSugeratId"', '"MaiSunt":true' -Nota 'plic PLIN, plafonul 500 atins pe 19k facturi' | Out-Null
+    Proba -Cerere 'candidați DVI (toate)' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaLargaDvi&toate=true" -Contine '"Candidati":[{', '"ClasaFiscala":"NeinregistratRo"', '"TipMaterialSugeratId"', '"MaiSunt":false' -Nota 'plic PLIN; plafonul în ModelCheck' | Out-Null
     Proba -Cerere 'candidați DVI (toate)' -User 'User' -Asteptat 403 -Metoda GET -Cale "/api/dvi/facturi-candidate?$perioadaLargaDvi&toate=true" -Contine 'citi' | Out-Null
     # Cu `dviId`, subiectul rutei e declarația: 404-ul instanței vine ÎNAINTEA
     # 403-ului de tip (ordinea 80a), deci `User` nici nu află că facturile există.
@@ -584,7 +608,6 @@ try {
     Proba -Cerere 'ștergere Imobilizare' -User 'User' -Asteptat 404 -Metoda DELETE -Cale "/api/odata/Imobilizare($idFisaImo)" -Contine 'nu există sau nu e vizibil' | Out-Null
     # F28-D (89, regula (o)): `ResponsabilId` țintește frunza `Angajat`; o `Gestiune`
     # e alt rând al aceleiași tabele `Repartitori` — refuz la creare și la modificare.
-    $angajat = Get-PrimaEntitate 'Angajat'
     $corpFisaResponsabilGestiune = $corpFisa.Clone()
     $corpFisaResponsabilGestiune['NumarInventar'] = "$($corpFisa.NumarInventar)-F28"
     $corpFisaResponsabilGestiune['ResponsabilId'] = $gestiune.ID
@@ -733,8 +756,8 @@ try {
     Proba -Cerere 'desfacere împerechere' -User 'Configurator' -Asteptat 404 -Metoda POST -Cale "/api/imperecheri/$idInexistent/desfa" -Corp $corpDesfa -Contine 'nu există sau nu e vizibil' | Out-Null
     # Review advers F27 (10): pe un id INEXISTENT 404-ul ascunde întrebarea de
     # drept. Pe o împerechere pe care `Cititor` O VEDE, refuzul trebuie să fie
-    # 403 „modifica" — desfacerea scrie. Subiectul e un rând EXISTENT, descoperit
-    # prin OData: proba nu creează nimic, iar 403-ul nu scrie nimic.
+    # 403 „modifica" — desfacerea scrie. Subiectul e împerecherea fixture-ului,
+    # iar 403-ul nu scrie nimic.
     Proba -Cerere 'desfacere împerechere vizibilă' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/imperecheri/$idImperechere/desfa" -Corp $corpDesfa -Contine 'modifica' -Nota 'Write pe instanță: desfacerea scrie' | Out-Null
 
     # ── F27-D7: proiecțiile noi de sold și restul la o dată ────────────────
@@ -841,7 +864,7 @@ try {
             Write-Host "curățenie: DELETE /api/odata/PoliticaTvaImplicit($idImplicitConfig) → $($sters.Status)" -ForegroundColor DarkGray
         }.GetNewClosure())
     Proba -Cerere 'modificare politică' -User 'Configurator' -Asteptat 204 -Metoda PATCH -Cale "/api/odata/PoliticaTvaImplicit($idImplicitConfig)" -Corp @{ ValabilDeLa = '2033-01-01' } -FaraJson -Nota 'schimbare REALĂ' | Out-Null
-    $stergereConfig = Proba -Cerere 'ștergere politică' -User 'Configurator' -Asteptat 200 -Metoda DELETE -Cale "/api/odata/PoliticaTvaImplicit($idImplicitConfig)" -FaraJson -Nota 'rândul propriu, fără urme'
+    $stergereConfig = Proba -Cerere 'ștergere politică' -User 'Configurator' -Asteptat 200 -Metoda DELETE -Cale "/api/odata/PoliticaTvaImplicit($idImplicitConfig)" -FaraJson -Nota 'rândul propriu; refuzul lui rămâne (104i)'
     if ($stergereConfig.Verdict -eq 'PASS') { $curatenie.RemoveAt($curatenie.Count - 1) }
 
     # `Societate` (73a) e CRUD pe OData, dar antetul raportorului NU e politică
@@ -1193,6 +1216,11 @@ catch {
 }
 finally {
     foreach ($pas in $curatenie) { try { & $pas } catch { Write-Host "curățenia a picat: $_" -ForegroundColor Red } }
+    for ($i = $fixture.Count - 1; $i -ge 0; $i--) {
+        try { & $fixture[$i] }
+        catch { Write-Host "curățenia fixture-ului a picat: $_" -ForegroundColor Red; if ($codIesire -eq 0) { $codIesire = 1 } }
+    }
+    Write-Host "curățenie: fixture desfăcut ($($fixture.Count) pași)" -ForegroundColor DarkGray
 }
 
 # ═══ 4. Tabelul ═════════════════════════════════════════════════════════════

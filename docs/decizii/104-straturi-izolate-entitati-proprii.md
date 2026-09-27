@@ -391,4 +391,10 @@ o dată (ModelCheck, gate).
   singură subiecții la pornire și îi șterge la final, ca
   `comenzi-coaja.py`, înaintea review-ului advers din pasul 5: pasul 3 mută
   culegerea în L3 și atinge ușile de scriere, pe care matricea le
-  regresează (104-r5, owner 2026-09-27).
+  regresează (104-r5, owner 2026-09-27). Închisă 2026-09-27: fixture-ul
+  (furnizor NeinregistratRo, FCT operată cu plata conex și împerecherea, ITV
+  draft, angajat) pe prima lună deschisă, desfăcut în `finally`; 294/294 PASS
+  de două ori pe baza Privat din seed. Proba de plafon DVI (`MaiSunt=true` pe
+  19k facturi) a trecut în ModelCheck, care forțează plafonul; urma
+  `RefuzSeed` a rândurilor de politică de probă e declarată în antetul
+  matricei.

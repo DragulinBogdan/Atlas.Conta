@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-26.** [Index](README.md)
+**Actualizat: 2026-09-27.** [Index](README.md)
 
 TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
 evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
@@ -44,8 +44,8 @@ XAF, cu verificarea numerică a cubului; fixture-urile sunt curățate.
 `--prin-xaf`, care așteaptă cel mult cinci minute acțiunea din browser.
 HTTP SC-CIT-25 a trecut de două ori, inclusiv după închidere și reconstrucție;
 raportul de stoc este verificat prin HTTP și browser (3/10 pe contul 371).
-Matricea generală `refuzuri.ps1` rămâne necertificată: precondițiile ei de
-bază populată (împerecheri și plafonul DVI) lipsesc pe baza izolată.
+Matricea generală `refuzuri.ps1` își creează singură subiecții (104-r5);
+plafonul candidaților DVI se probează în ModelCheck.
 Catalogul: [CITIRI.md](../nucleu/scenarii/CITIRI.md).
 Review-ul propriu și limitele: [tr-d8-review-codex.md](../nucleu/tr-d8-review-codex.md).
 Proba HTTP durabilă `nou/tools/ProbeHttp/citiri-cub.py` verifică accesul
@@ -139,11 +139,18 @@ cu `CS = Host=localhost;Port=5444;Username=postgres;Password=postgres`:
 Recrearea din 2026-09-25 (C102) a șters toate bazele Atlas.Conta de pe
 5444 (clonele de import, review, perf `Nucleu.Fizica.x1/x10`, CodexBCS,
 ClaudeRev) și a refăcut cele trei de mai sus. Pe baza Privat din seed,
-`partide-cub.py` își creează singur fixture-ul, iar `refuzuri.ps1` nu are
-subiect (cere documente existente, de exemplu o închidere de TVA). (89g, 102b)
+`partide-cub.py` își creează singur fixture-ul. (89g, 102b)
 Comenzile de document au proba HTTP proprie, cu fixture creat și șters de ea:
 `nou/tools/ProbeHttp/comenzi-coaja.py` (404/403/422 pe cele cinci comenzi,
-ușa altui tip, fără scriere la refuz). Fixture-ul propriu al matricei generale e 104-r5. (104b)
+ușa altui tip, fără scriere la refuz). (104b)
+Matricea generală `refuzuri.ps1` rulează pe baza Privat din seed cu fixture
+propriu pe prima lună deschisă a lanțului: un furnizor NeinregistratRo, o FCT
+operată cu plata conex operată și împerecherea lor, un ITV draft pe aceeași
+lună și un angajat, desfăcute în ordine inversă în `finally`. Rămân auditul
+și cele două `RefuzSeed` ale rândurilor de politică de probă (104i, chei fixe:
+a doua rulare nu adaugă nimic). Plafonul de 500 al candidaților DVI e probat
+în ModelCheck, nu pe HTTP. Măsurat 2026-09-27 pe `c104-straturi`: 294/294
+PASS de două ori consecutiv, baza identică înainte și după. (104-r5)
 
 Cele trei ierarhii (`Document`, `DocumentDetaliu`, `Repartitor`) sunt TPH:
 câte o tabelă pe rădăcină, discriminatorul `ClrType` cu valorile implicite
