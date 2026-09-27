@@ -149,15 +149,15 @@ PoC-ului.
 Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
-**Următorul pas**: felia C104 e închisă (104-r1, branch `c104-straturi`,
-nemersă). Urmează review-ul specificației intervalelor TVA și avertismentelor
+**Următorul pas**: felia C104 e închisă (104-r1) și mersă în main (PR #8).
+Urmează review-ul specificației intervalelor TVA și avertismentelor
 (103h, `docs/nucleu/tr-d8-tva-intervale-contract.md`), înaintea codului R6.
 Apoi restul SAF-T din TR-D8 (SourceDocuments integral), reconcilierea,
 auditul și gate-ul transversal de performanță. Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
 `docs/nucleu/scenarii/CITIRI.md`.
-Felia de curățenie C102 este închisă (2026-09-25, branch `c102-curatenie`):
+Felia de curățenie C102 este închisă (2026-09-25, mersă în main prin PR #8):
 compatibilitatea cu bazele de dezvoltare a ieșit, invarianții cubului rulează
 în ModelCheck (`INV-CUB`), migrațiile s-au comprimat în `InitialCreate`, bazele
 s-au recreat, 101-r1 e închisă; rămân 102-r4/r5. TR-D8 — portarea consumatorilor pe intrările comune ale
