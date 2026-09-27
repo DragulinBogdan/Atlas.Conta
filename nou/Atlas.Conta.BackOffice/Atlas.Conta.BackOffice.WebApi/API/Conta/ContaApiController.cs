@@ -287,7 +287,7 @@ public abstract class ContaApiController : ControllerBase {
     // Gate-ul de comandă (`Autorizeaza<T>`) rămâne NESCHIMBAT: acolo întrebarea e
     // pe o instanță și are alt răspuns (404 pentru invizibil).
     protected bool FaraPostariCitibile(IObjectSpace os) =>
-        !PoateCiti(typeof(Module.Cub.Postare), os) && !os.GetObjectsQuery<Module.Cub.Postare>().Any();
+        !PoateCiti(typeof(Module.Cub.Postare), os) && !Module.Cub.Citiri.Vizibilitate.ArePostari(os);
 
     protected bool PoateCiti(Type tip, IObjectSpace os) =>
         securitate is IRequestSecurityStrategy cerinte && cerinte.CanRead(tip, os);

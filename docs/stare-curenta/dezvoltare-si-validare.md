@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-27.** [Index](README.md)
+**Actualizat: 2026-09-28.** [Index](README.md)
 
 TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
 evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
@@ -52,6 +52,23 @@ Proba HTTP durabilă `nou/tools/ProbeHttp/citiri-cub.py` verifică accesul
 pe rând și membru înainte/după închidere și reconstrucție, pe host privat
 cu baza izolată `.CodexBCS`. Tokenurile rămân în memorie; fixture-ul și
 rolurile temporare se curăță în finally.
+
+Accesul la cub (091-r3): codul de producție (`Module`, `WebApi`,
+`Blazor.Server`) obține rânduri `Postare`/`Tranzactie` numai prin
+`Cub/Citiri`. Excepțiile numite sunt scriitorul (`Cub/Materializare*`),
+faptul sursei recepției conexe (`Cub/ReceptiiConexe.cs`) și maparea EF
+(`BackOfficeDbContext`). Consumatorii compun peste intrările comune
+(filtre, proiecții, eticheta `Storno`), fără să refacă domeniul. Proba
+`091-r3` (`tools/ModelCheck/ProbeCititoriCub.cs`) scanează sursa înaintea
+bazei, deci rulează și fără bază. Caută rădăcinile de interogare,
+`ModifiedObjects.OfType`, `CreateObject`, `Set<>`, `typeof` pe
+`GetObjects`, SQL pe tabelele cubului, navigarea `Tranzactie.Postari` și
+`DbContext.Postari`. Pică și pe o excepție care nu mai are acces. Scanarea e
+sintactică: tipul calificat cu `N.`/`Nucleu.` e al nucleului, restul contează
+ca rând al cubului. ModelCheck e probă independentă și citește cubul direct
+(D8-B1). Excluderea `Transfer` și a inversei lui stă numai în
+`Citiri.Contabil.Postari`, după originea `InversaDin` (N-r8). `Loturi` și
+`Partide` includ transferul prin contract.
 
 TR-D8 nu este închis: restul SAF-T și verificările transversale rămân
 în contract; cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
@@ -331,6 +348,7 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 | Tip derivat nou, proprietate nouă pe frunză, FK spre o frunză | ModelCheck pe ambele profiluri (`F28-*`); după un import, `--dump-integritate-tph` rulat pe baza de import (89e, 89h) |
 | Nucleul pur (`Atlas.Conta.Nucleu`) | `dotnet test` pe soluția nucleului: testul de arhitectură și invarianții 1–6 ca proprietăți (≥ 500 de cazuri fiecare); ModelCheck doar dacă e atins `Module` (90l) |
 | Declarant, operand, `Fapte.Operand`, oracolul pilotului | Scenariile independente ale tipului, apoi ModelCheck pe AMBELE profiluri; `NUC-*` păstrează comparația normalizată ca regresie, conservarea, determinismul și `≤ 16` interogări per operand. `Metadata clientului e la zi` verifică proprietățile noi pe `Document` (TR-D6b, amendat de 091) |
+| Citire nouă din cub, în orice proiect de producție | Intrare în `Cub/Citiri`, apoi ModelCheck: `091-r3` refuză accesul la `Postare`/`Tranzactie` în afara ei și a excepțiilor numite (scanare pe sursă, fără bază) |
 | Entitățile sau migrațiile cubului (`Postare`, `Tranzactie`) | ModelCheck pe ambele profiluri: probele `STR-SCHEMA-*` (partiționarea LIST, cheia `(Spatiu, ID)`, setul ÎNCHIS de FK-uri per partiție, indexii, absența timbrelor XAF); migrația se scrie în SQL, nu se lasă generată (S-D2, S-r4) |
 | Contractul laturilor (`Document.Laturi()`, T-D13) | ModelCheck pe ambele profiluri, ultima scenă (`VerificaLaturi`): `STR-LATURI-CONTRACT` (fiecare `TipDocument` din seed → clasa → contract cu părți nevide; metoda e abstractă, deci și compilatorul o cere), `STR-LATURI-REFUZ` (latura de partea greșită refuzată pe ușa declarației și pe ușa entității cu ACEEAȘI linie `COD: mesaj`; calitatea lipsă numită; un tip fără declarant refuzat pe ușa entității), `STR-LATURA` (PLT inversată = doar `PREDATOR_NEPOTRIVIT`, înaintea declarantului). Probele de laturi ale tipurilor asertează CODUL, nu textul vechi. Pe date reale: recensământul laturilor pe clona Flax (contract T-D13); după 091 clona e sursă de recensământ, nu gate |
 | Materializare, declarant al unui tip migrat, împerecherea ca `Transfer` | ModelCheck pe ambele profiluri: probele `STR-*` pe scenele BCS, Trezorerie și FCT — operare, roundtrip, storno, anulare, refuz, configurație, poziție, transfer, latură, corecție, reconciliere — cu comutarea locală a regimului (`ProbeCub.Migrat`/`Nemigrat`/`CuToleranta`, cu restaurare) și purja rândurilor de cub ale documentelor scenei (S-D8) |

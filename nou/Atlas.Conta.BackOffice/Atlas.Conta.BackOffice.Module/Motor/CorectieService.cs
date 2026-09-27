@@ -99,14 +99,7 @@ public static class CorectieService {
                 rand.PerioadaAn = atribuire.PerioadaD300 / 100;
                 rand.PerioadaLuna = atribuire.PerioadaD300 % 100;
             }
-            foreach (var postare in os.GetObjectsQuery<Cub.Postare>()
-                    .Where(p => p.DocumentId == documentId && p.TipTvaId != null
-                        && p.Tranzactie.Fel == N.FelTranzactie.Storno).ToList()) {
-                postare.PerioadaDeclarare = atribuire.PerioadaD300;
-                postare.PerioadaD394 = atribuire.Reper.PerioadaD394;
-                postare.RegularizareD300 = atribuire.Reper.RegularizareD300;
-                postare.InversaTehnica = true;
-            }
+            Cub.Materializare.ReatribuieInversaFiscala(os, documentId, atribuire);
         }
 
         var erori = new List<string>();

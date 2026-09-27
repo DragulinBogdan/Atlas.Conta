@@ -124,9 +124,8 @@ public static class ImperechereService {
         ValideazaCreare(os, document, sursa, suma, data: document.DataInregistrare, autogenerat: true);
         var tinte = Cub.Citiri.Partide.Origini(os).Where(o => o.DocumentId == sursaId)
             .Select(o => o.UnitateId).ToHashSet();
-        var efect = os.ModifiedObjects.OfType<Cub.Postare>().Where(p => os.IsNewObject(p)
-            && p.DocumentId == document.ID && p.Carte == Atlas.Conta.Nucleu.Carte.Contabil
-            && p.Unitate != null && tinte.Contains(p.Unitate.Value))
+        var efect = Cub.Citiri.Partide.Noi(os, document.ID)
+            .Where(p => p.Unitate != null && tinte.Contains(p.Unitate.Value))
             .GroupBy(p => new { p.Unitate, p.Cont, p.Partener })
             .Sum(g => Math.Abs(g.Sum(p => p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : -p.Valoare)));
         if (efect <= 0m || efect > suma)
