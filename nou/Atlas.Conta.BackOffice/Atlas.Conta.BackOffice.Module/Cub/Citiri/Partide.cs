@@ -152,7 +152,7 @@ public static class Partide {
         .Select(p => new OriginePartida { UnitateId = p.Unitate.Value, ContId = p.Cont,
             PartenerId = p.Partener.Value, DocumentId = p.DocumentId }).Distinct();
 
-    public static IQueryable<SoldPartida> Cumulate(IObjectSpace os, DateOnly panaLa) {
+    public static IQueryable<SoldPartida> Cumulate(IObjectSpace os, CitireCumul citire, DateOnly panaLa) {
         var snapshot = os.GetObjectsQuery<PartidaDeschisa>().Select(s => new SoldLunar<SoldPartida> {
             An = s.An, Luna = s.Luna,
             Rand = new SoldPartida { UnitateId = s.UnitateId, ContId = s.ContId,
@@ -165,7 +165,7 @@ public static class Partide {
                 Debit = p.Latura == N.Latura.Debit ? p.Valoare : 0m,
                 Credit = p.Latura == N.Latura.Credit ? p.Valoare : 0m }
         });
-        return CumulPerioade.Citeste(os, miscari, snapshot, panaLa)
+        return CumulPerioade.Citeste(os, citire, miscari, snapshot, panaLa)
             .GroupBy(p => new { p.UnitateId, p.ContId, p.PartenerId })
             .Select(g => new SoldPartida { UnitateId = g.Key.UnitateId, ContId = g.Key.ContId,
                 PartenerId = g.Key.PartenerId, Deschisa = g.Min(p => p.Deschisa),

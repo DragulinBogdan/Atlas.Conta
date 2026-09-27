@@ -1,3 +1,4 @@
+using CitireCumul = Atlas.Conta.BackOffice.Module.Cub.Citiri.CitireCumul;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 using Atlas.Conta.BackOffice.Module.Motor;
@@ -334,7 +335,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         var zi = new DateOnly(An, 1, 31);
         var directe = P.Solduri(os, zi).Where(s => s.PartenerId == Furnizor && s.Debit != s.Credit)
             .Select(s => new { s.UnitateId, Net = s.Debit - s.Credit }).ToList().OrderBy(s => s.UnitateId).ToArray();
-        var cumulate = P.Cumulate(os, zi).Where(s => s.PartenerId == Furnizor && s.Debit != s.Credit)
+        var cumulate = P.Cumulate(os, CitireCumul.Integrala, zi).Where(s => s.PartenerId == Furnizor && s.Debit != s.Credit)
             .Select(s => new { s.UnitateId, Net = s.Debit - s.Credit }).ToList().OrderBy(s => s.UnitateId).ToArray();
         Verifica("SC-CIT-50", "snapshot = cub direct, inclusiv două deschideri fără document", directe.SequenceEqual(cumulate)
             && os.GetObjectsQuery<PartidaDeschisa>().Count(s => s.An == An && s.Luna == 1 && s.PartenerId == Furnizor && s.DocumentId == null) == 2);

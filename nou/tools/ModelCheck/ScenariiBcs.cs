@@ -114,10 +114,10 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
             facturaId = fct.ID;
             os.CommitChanges();
         }
-        var rezultat = Citeste(os => OperareApi.Opereaza(os, facturaId));
+        var rezultat = Citeste(os => ComenziDocument.Sistem(os).Opereaza(facturaId));
         if (rezultat.ConexId is not Guid nir)
             throw new InvalidOperationException("SC-BCS: recepția cere NIR conex.");
-        Comanda(os => OperareApi.Opereaza(os, nir));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(nir));
         return lotId;
     }
 
@@ -189,15 +189,15 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         var lot = Receptioneaza();
         Sold("SC-X-02", lot, Intrare, 10m, 100m);
         var doc = Culege(Consum, (lot, 4m));
-        Verifica("SC-BCS-01", "dry-run acceptat", Citeste(os => OperareApi.Valideaza(os, doc)).Count == 0);
+        Verifica("SC-BCS-01", "dry-run acceptat", Citeste(os => ComenziDocument.Sistem(os).Valideaza(doc)).Count == 0);
         FaraEfecte("SC-BCS-01", doc);
-        Comanda(os => OperareApi.Opereaza(os, doc));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(doc));
         Postari("SC-BCS-01", doc, N.FelTranzactie.Operare, Consum, (lot, 4m, 40m));
         Sold("SC-BCS-01", lot, Sfarsit, 6m, 60m);
-        Comanda(os => OperareApi.Storneaza(os, doc, new(An, 1, 20)));
+        Comanda(os => ComenziDocument.Sistem(os).Storneaza(doc, new(An, 1, 20)));
         Postari("SC-BCS-03", doc, N.FelTranzactie.Storno, new(An, 1, 20), (lot, -4m, -40m));
         Sold("SC-BCS-03", lot, Sfarsit, 10m, 100m);
-        Refuza("SC-BCS-10", () => Comanda(os => OperareApi.Storneaza(os, doc, new(An, 1, 21))), "Operat");
+        Refuza("SC-BCS-10", () => Comanda(os => ComenziDocument.Sistem(os).Storneaza(doc, new(An, 1, 21))), "Operat");
         Verifica("SC-BCS-10", "repetarea stornoului nu adaugă tranzacții",
             Citeste(os => os.GetObjectsQuery<C.Tranzactie>().Count(t => t.DocumentId == doc)) == 2);
         Sold("SC-BCS-10", lot, Sfarsit, 10m, 100m);
@@ -207,18 +207,18 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         var a = Receptioneaza();
         var b = Receptioneaza(10m, 15m);
         var doc = Culege(Consum, (a, 4m), (b, 2m));
-        Comanda(os => OperareApi.Opereaza(os, doc));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(doc));
         Postari("SC-BCS-02", doc, N.FelTranzactie.Operare, Consum, (a, 4m, 40m), (b, 2m, 30m));
         Sold("SC-BCS-02", a, Sfarsit, 6m, 60m);
         Sold("SC-BCS-02", b, Sfarsit, 8m, 120m);
         var comun = Receptioneaza();
         var repetat = Culege(Consum, (comun, 6m), (comun, 4m));
-        Comanda(os => OperareApi.Opereaza(os, repetat));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(repetat));
         Postari("SC-BCS-02b", repetat, N.FelTranzactie.Operare, Consum, (comun, 6m, 60m), (comun, 4m, 40m));
         Sold("SC-BCS-02b", comun, Sfarsit, 0m, 0m);
         var fractionar = Receptioneaza(10m, 8m);
         var fractie = Culege(Consum, (fractionar, 0.125m));
-        Comanda(os => OperareApi.Opereaza(os, fractie));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(fractie));
         Postari("SC-BCS-02c", fractie, N.FelTranzactie.Operare, Consum, (fractionar, 0.125m, 1m));
         Sold("SC-BCS-02c", fractionar, Sfarsit, 9.875m, 79m);
     }
@@ -226,9 +226,9 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
     void Anulare() {
         var lot = Receptioneaza();
         var doc = Culege(Consum, (lot, 4m));
-        Comanda(os => OperareApi.Opereaza(os, doc));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(doc));
         Sold("SC-BCS-05", lot, Sfarsit, 6m, 60m);
-        Comanda(os => OperareApi.AnuleazaOperarea(os, doc));
+        Comanda(os => ComenziDocument.Sistem(os).AnuleazaOperarea(doc));
         FaraEfecte("SC-BCS-05", doc);
         Sold("SC-BCS-05", lot, Sfarsit, 10m, 100m);
         Verifica("SC-BCS-05", "lotul primit prin FCT rămâne", Citeste(os => os.GetObjectsQuery<Lot>().Any(l => l.ID == lot)));
@@ -238,11 +238,11 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         var lot = Receptioneaza(3m, 0.333333m);
         Sold("SC-BCS-07", lot, Intrare, 3m, 1m);
         var prima = Culege(Consum, (lot, 1m));
-        Comanda(os => OperareApi.Opereaza(os, prima));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(prima));
         Postari("SC-BCS-07", prima, N.FelTranzactie.Operare, Consum, (lot, 1m, 0.33m));
         Sold("SC-BCS-07", lot, Consum, 2m, 0.67m);
         var ultima = Culege(new(An, 1, 11), (lot, 2m));
-        Comanda(os => OperareApi.Opereaza(os, ultima));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(ultima));
         Postari("SC-BCS-07", ultima, N.FelTranzactie.Operare, new(An, 1, 11), (lot, 2m, 0.67m));
         Sold("SC-BCS-07", lot, Sfarsit, 0m, 0m);
 
@@ -251,7 +251,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         for (var i = 0; i < valori.Length; i++) {
             var data = new DateOnly(An, 1, 12 + i);
             var doc = Culege(data, (dual, 1m));
-            Comanda(os => OperareApi.Opereaza(os, doc));
+            Comanda(os => ComenziDocument.Sistem(os).Opereaza(doc));
             Postari("SC-BCS-15", doc, N.FelTranzactie.Operare, data, (dual, 1m, valori[i]));
         }
         Sold("SC-BCS-15 (T-r13: evaluare din cub, 0/0)", dual, Sfarsit, 0m, 0m);
@@ -284,18 +284,18 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
             ("SC-BCS-08c", new[] { (Guid.Empty, 1m) }, "lot", CoduriRefuz.LotLipsa) }) {
             var doc = Culege(Consum, linii);
             Verifica(id, $"dry-run refuzat cu textul vechi „{fragment}”",
-                Citeste(os => OperareApi.Valideaza(os, doc)).Any(m => m.Contains(fragment, StringComparison.OrdinalIgnoreCase)));
+                Citeste(os => ComenziDocument.Sistem(os).Valideaza(doc)).Any(m => m.Contains(fragment, StringComparison.OrdinalIgnoreCase)));
             RefuzDeclaratie(id, doc, cod);
             FaraEfecte(id, doc);
-            Refuza(id, () => Comanda(os => OperareApi.Opereaza(os, doc)), fragment);
+            Refuza(id, () => Comanda(os => ComenziDocument.Sistem(os).Opereaza(doc)), fragment);
             FaraEfecte(id, doc);
             Sold(id, lot, Sfarsit, 10m, 100m);
         }
         var insuficient = Culege(Consum, (lot, 6m), (lot, 5m));
         Verifica("SC-BCS-09", "dry-run refuzat de gardianul cubului, cu cod stabil",
-            Citeste(os => OperareApi.Valideaza(os, insuficient)).Any(m => m.Contains("STOC_INSUFICIENT", StringComparison.Ordinal)));
+            Citeste(os => ComenziDocument.Sistem(os).Valideaza(insuficient)).Any(m => m.Contains("STOC_INSUFICIENT", StringComparison.Ordinal)));
         FaraEfecte("SC-BCS-09", insuficient);
-        Refuza("SC-BCS-09", () => Comanda(os => OperareApi.Opereaza(os, insuficient)), "STOC_INSUFICIENT");
+        Refuza("SC-BCS-09", () => Comanda(os => ComenziDocument.Sistem(os).Opereaza(insuficient)), "STOC_INSUFICIENT");
         FaraEfecte("SC-BCS-09", insuficient);
         Sold("SC-BCS-09", lot, Sfarsit, 10m, 100m);
     }
@@ -305,21 +305,21 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         var b = Receptioneaza();
         var storno = Culege(Consum, (a, 4m));
         var original = Culege(Consum, (b, 4m));
-        Comanda(os => OperareApi.Opereaza(os, storno));
-        Comanda(os => OperareApi.Opereaza(os, original));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(storno));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(original));
         Comanda(os => inchide(os, An, 1));
         Verifica("SC-BCS-04", "ianuarie închis prin comandă",
             Citeste(os => os.GetObjectsQuery<PerioadaFiscala>().Single(p => p.An == An && p.Luna == 1).Inchisa));
-        Refuza("SC-BCS-11", () => Comanda(os => OperareApi.AnuleazaOperarea(os, original)), "închis");
+        Refuza("SC-BCS-11", () => Comanda(os => ComenziDocument.Sistem(os).AnuleazaOperarea(original)), "închis");
         var refuzat = Culege(Consum, (b, 1m));
-        Refuza("SC-BCS-11", () => Comanda(os => OperareApi.Opereaza(os, refuzat)), "închis");
+        Refuza("SC-BCS-11", () => Comanda(os => ComenziDocument.Sistem(os).Opereaza(refuzat)), "închis");
         FaraEfecte("SC-BCS-11", refuzat);
         Sold("SC-BCS-11", b, Sfarsit, 6m, 60m);
-        Comanda(os => OperareApi.Storneaza(os, storno, Februarie));
+        Comanda(os => ComenziDocument.Sistem(os).Storneaza(storno, Februarie));
         Postari("SC-BCS-04", storno, N.FelTranzactie.Storno, Februarie, (a, -4m, -40m));
         Sold("SC-BCS-04", a, Sfarsit, 6m, 60m);
         Sold("SC-BCS-04", a, Februarie, 10m, 100m);
-        var corectie = Citeste(os => OperareApi.Corecteaza(os, original, Februarie, MotivCorectie.EroareMateriala));
+        var corectie = Citeste(os => ComenziDocument.Sistem(os).Corecteaza(original, Februarie, MotivCorectie.EroareMateriala));
         FaraEfecte("SC-BCS-06", corectie.CorectieId);
         Postari("SC-BCS-06", original, N.FelTranzactie.Storno, Februarie, (b, -4m, -40m));
         Sold("SC-BCS-06", b, Februarie, 10m, 100m);
@@ -332,7 +332,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
             os.GetObjectsQuery<DocumentDetaliu>().Single(d => d.DocumentId == doc.ID).Cantitate = 3m;
             os.CommitChanges();
         }
-        Comanda(os => OperareApi.Opereaza(os, corectie.CorectieId));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(corectie.CorectieId));
         Postari("SC-BCS-06", corectie.CorectieId, N.FelTranzactie.Operare, Februarie, (b, 3m, 30m));
         Sold("SC-BCS-06", b, Sfarsit, 6m, 60m);
         Sold("SC-BCS-06", b, Februarie, 7m, 70m);

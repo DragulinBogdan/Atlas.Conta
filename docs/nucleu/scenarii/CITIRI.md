@@ -75,6 +75,14 @@ nesecurizată poate întoarce tot clasa `SecuredEFCoreObjectSpace`.
 SC-CIT-74 HTTP verifică închiderea/reconstrucția prin fabrica reală și
 citirea filtrată prin utilizatorii reali.
 
+### Cititorul declarat — C104 pasul 2, 2026-09-27
+
+SC-CIT-95: în tranzacția SC-CIT-76, după alterarea snapshot-ului lui
+ianuarie cu +8, soldul lotului la 31 ianuarie citit `Integrala` depășește
+cu exact 8 soldul citit `Vizibila`: citirea vizibilă nu atinge snapshot-ul,
+cea integrală pornește din el. Alegerea o face apelantul, nu tipul
+ObjectSpace-ului (104b).
+
 ### Snapshot de stoc — specificație înaintea codului, 2026-09-25
 
 SC-CIT-69: FCT 10/100 cu NIR încă draft și deschidere exclusiv în cub

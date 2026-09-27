@@ -54,7 +54,7 @@ sealed partial class ScenariiNir {
         });
         var (f, nir) = Constatat(3);
         var stamp = Amprenta(f.Id);
-        Verifica("SC-NIR-18", "dry-run parțial acceptat", CuSpatiu(os => OperareApi.Valideaza(os, nir)).Count == 0);
+        Verifica("SC-NIR-18", "dry-run parțial acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(nir)).Count == 0);
         FaraEfecte("SC-NIR-18", nir); Opereaza(nir); Delta("SC-NIR-18", nir, Clarificare, 25);
         Sold("SC-NIR-18", f.Linii[0], 3, 75); Datorie("SC-NIR-18", f.Id, 100);
         Verifica("SC-NIR-18", "factura intactă", stamp == Amprenta(f.Id));
@@ -128,7 +128,7 @@ sealed partial class ScenariiNir {
         var contVechi = Cont(Clarificare);
         Comanda(os => { os.GetObjectByKey<PoliticaDiferenta>(politica).ContId = Cont(Drum); os.CommitChanges(); });
         try {
-            var nou = CuSpatiu(os => OperareApi.Corecteaza(os, nir, new(An, 1, 20), MotivCorectie.EroareMateriala).CorectieId);
+            var nou = CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(nir, new(An, 1, 20), MotivCorectie.EroareMateriala).CorectieId);
             Verifica("SC-NIR-24", "storno inversează contul vechi", Net(nir, Clarificare) == 0 && Net(nir, Drum) == 0);
             Schimba(nou, 2); Opereaza(nou); Delta("SC-NIR-24", nou, Drum, 50); Sold("SC-NIR-24", f.Linii[0], 2, 50);
         }
@@ -143,7 +143,7 @@ sealed partial class ScenariiNir {
 
     void PeDrumCumulativ() {
         var (f, nir) = Constatat(3, CauzaDiferentei.PeDrum); Opereaza(nir);
-        var nou = CuSpatiu(os => OperareApi.Corecteaza(os, nir, new(An, 1, 20), MotivCorectie.EroareMateriala).CorectieId);
+        var nou = CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(nir, new(An, 1, 20), MotivCorectie.EroareMateriala).CorectieId);
         Schimba(nou, 4, CauzaDiferentei.PeDrum); Opereaza(nou);
         Sold("SC-NIR-25", f.Linii[0], 4, 100);
         Verifica("SC-NIR-25", "drum stins, noua deltă zero, proveniență păstrată fără Autogenerat",
@@ -156,9 +156,9 @@ sealed partial class ScenariiNir {
     void RefuzStoc() {
         var (f, initial) = Constatat(4); Opereaza(initial);
         var bcs = Consum(f.Linii[0].Lot!.Value, 2); Opereaza(bcs);
-        var nir = CuSpatiu(os => OperareApi.Corecteaza(os, initial, new(An, 1, 20), MotivCorectie.EroareMateriala).CorectieId);
+        var nir = CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(initial, new(An, 1, 20), MotivCorectie.EroareMateriala).CorectieId);
         Schimba(nir, 0);
-        Verifica("SC-NIR-stoc", "dry-run vede consumul existent", CuSpatiu(os => OperareApi.Valideaza(os, nir))
+        Verifica("SC-NIR-stoc", "dry-run vede consumul existent", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(nir))
             .Any(e => e.Contains(C.ReceptiiConexe.Stoc)));
         Refuza("SC-NIR-stoc", () => Opereaza(nir), C.ReceptiiConexe.Stoc); FaraEfecte("SC-NIR-stoc", nir);
     }
@@ -207,7 +207,7 @@ sealed partial class ScenariiNir {
         if (!Privat) {
             Comanda(os => { os.GetObjectByKey<NIR>(n).Detalii.OfType<NirDetaliu>().Single().CodFunctionalId = null; os.CommitChanges(); });
             Verifica("SC-NIR-22/analiza", "imputarea fără clasificația cerută este refuzată în dry-run",
-                CuSpatiu(os => OperareApi.Valideaza(os, n)).Any(e => e.Contains("428.01.02") && e.Contains("Cod funcțional")));
+                CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(n)).Any(e => e.Contains("428.01.02") && e.Contains("Cod funcțional")));
             Refuza("SC-NIR-22/analiza", () => Opereaza(n), "Cod funcțional"); FaraEfecte("SC-NIR-22/analiza", n);
             Schimba(n, 3, CauzaDiferentei.Imputabila, angajat);
         }

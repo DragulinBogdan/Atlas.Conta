@@ -170,7 +170,7 @@ public static class NotaContabilaApply {
     //
     // `is` aici e la GRANIȚĂ, în Apply, nu în motor — regula „motorul nu cunoaște
     // frunzele" nu e atinsă. Comenzile (`opereaza`/`anuleaza`/`storneaza`) rămân
-    // PERMISE pe ruta NTC: sunt `OperareApi` pe `Document`, agnostic la tip, și
+    // PERMISE pe ruta NTC: sunt `ComenziDocument` pe `Document`, agnostic la tip, și
     // produc exact același rezultat ca pe ruta ITV — un al doilea gard acolo ar fi
     // fost o regulă fără miză.
     static void RefuzaInchidereaTva(NotaContabila doc) {

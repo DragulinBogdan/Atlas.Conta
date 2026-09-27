@@ -49,7 +49,7 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         Comanda(os => { var a = os.CreateObject<Angajat>(); a.Cod = Marcaj + "-A"; a.Denumire = a.Cod;
             a.ContImplicitId = Cont(Avans); titular = a.ID; os.CommitChanges(); });
         var d = Culege();
-        Verifica("SC-DEC-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, d.Id)).Count == 0);
+        Verifica("SC-DEC-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         FaraEfecte("SC-DEC-01", d.Id); Opereaza(d.Id);
         Postari("SC-DEC-01", d.Id, N.FelTranzactie.Operare, Ianuarie, Simple(d, 100));
         Storneaza(d.Id, new(An, 1, 20));

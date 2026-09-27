@@ -25,7 +25,7 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
     protected override void Executa() {
         var lot = Receptioneaza(new LinieFctScena(10, 10)).Linii[0];
         var d = Iesire(true, (lot, 4));
-        Verifica("SC-BTR-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, d.Id)).Count == 0);
+        Verifica("SC-BTR-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         FaraEfecte("SC-BTR-01", d.Id); Opereaza(d.Id);
         Postari("SC-BTR-01", d.Id, N.FelTranzactie.Transfer, Ianuarie, Randuri(d, 0, 4, 40));
         Verifica("SC-BTR-01", "numai Transfer, fără tranzacție Operare", CuSpatiu(os =>

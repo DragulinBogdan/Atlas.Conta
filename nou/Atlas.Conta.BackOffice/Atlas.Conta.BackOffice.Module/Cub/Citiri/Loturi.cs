@@ -45,9 +45,9 @@ public static class Loturi {
             Guid? faraDocumentId = null) =>
         Grupeaza(Miscari(os, faraDocumentId).Where(m => m.Data <= (laData ?? DateOnly.MaxValue)).Select(m => m.Rand));
 
-    public static IQueryable<SoldLot> Disponibile(IObjectSpace os, DateOnly laData,
+    public static IQueryable<SoldLot> Disponibile(IObjectSpace os, CitireCumul citire, DateOnly laData,
             Guid produsId, Guid gestiuneId, Guid contId) =>
-        from sold in Cumulate(os, laData)
+        from sold in Cumulate(os, citire, laData)
         join gestiune in os.GetObjectsQuery<BusinessObjects.Gestiune>() on sold.GestiuneId equals gestiune.ID
         where sold.ProdusId == produsId && sold.GestiuneId == gestiuneId
             && sold.ContId == contId && sold.Cantitate > 0m
@@ -55,7 +55,7 @@ public static class Loturi {
         select sold;
 
     /// <summary>Excluderea poate folosi snapshot-ul numai cu o graniță anterioară tuturor postărilor documentului exclus.</summary>
-    public static IQueryable<SoldLot> Cumulate(IObjectSpace os, DateOnly? laData = null,
+    public static IQueryable<SoldLot> Cumulate(IObjectSpace os, CitireCumul citire, DateOnly? laData = null,
             Guid? faraDocumentId = null, DateOnly? granita = null) {
         var zi = laData ?? DateOnly.MaxValue;
         if (faraDocumentId != null && granita == null)
@@ -66,7 +66,7 @@ public static class Loturi {
                 Deschisa = s.Deschisa, Cantitate = s.Cantitate, Valoare = s.Valoare
             }
         });
-        return Grupeaza(CumulPerioade.Citeste(os, Miscari(os, faraDocumentId), snapshot, zi, granita));
+        return Grupeaza(CumulPerioade.Citeste(os, citire, Miscari(os, faraDocumentId), snapshot, zi, granita));
     }
 
     // Gardul verifică fiecare prefix zilnic, inclusiv zilele ulterioare unei

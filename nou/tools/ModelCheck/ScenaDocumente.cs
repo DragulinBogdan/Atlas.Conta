@@ -81,20 +81,20 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected Guid Tva(string codTva) => CuSpatiu(os => os.GetObjectsQuery<TipTva>().Single(t => t.Cod == codTva).ID);
     protected Guid? Partida(Guid doc, string simbol, Guid? partener = null) =>
         N.Unitate.DeschidePartida(Cont(simbol), partener ?? Furnizor, doc, Ianuarie).Id;
-    protected OperareRezultat Opereaza(Guid doc) => CuSpatiu(os => OperareApi.Opereaza(os, doc));
+    protected OperareRezultat Opereaza(Guid doc) => CuSpatiu(os => ComenziDocument.Sistem(os).Opereaza(doc));
     protected void Storneaza(Guid doc, DateOnly data) {
         var inainte = Amprenta(doc);
-        Comanda(os => OperareApi.Storneaza(os, doc, data));
+        Comanda(os => ComenziDocument.Sistem(os).Storneaza(doc, data));
         PostariPastrate(doc, inainte);
     }
     protected void Anuleaza(Guid doc) {
-        Comanda(os => OperareApi.AnuleazaOperarea(os, doc));
+        Comanda(os => ComenziDocument.Sistem(os).AnuleazaOperarea(doc));
         foreach (var cheie in matriceFiscale.Keys.Where(k => k.Doc == doc).ToArray()) matriceFiscale.Remove(cheie);
     }
     protected void InchideIanuarie() => Comanda(os => inchide(os, An, 1));
     protected Guid Corecteaza(Guid doc) {
         var inainte = Amprenta(doc);
-        var corectie = CuSpatiu(os => OperareApi.Corecteaza(os, doc, Februarie, MotivCorectie.EroareMateriala).CorectieId);
+        var corectie = CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(doc, Februarie, MotivCorectie.EroareMateriala).CorectieId);
         PostariPastrate(doc, inainte);
         return corectie;
     }

@@ -1,4 +1,6 @@
+using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.DC;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -53,6 +55,69 @@ static class ProbeStraturi {
             .Select(t => t.Name).ToList();
         check("104i: fiecare tip configurabil are index unic — cheia refuzului de seed" + Abateri(faraCheie),
             faraCheie.Count == 0);
+    }
+
+    // 104b: coaja refuză înaintea oricărui context, apoi își deschide singură contextul comenzii.
+    public static void VerificaCoaja(Action<string, bool> check) {
+        var comenzi = new (string Nume, Action<ComenziDocument> Ruleaza)[] {
+            ("Opereaza", c => c.Opereaza(Guid.NewGuid())),
+            ("AnuleazaOperarea", c => c.AnuleazaOperarea(Guid.NewGuid())),
+            ("Storneaza", c => c.Storneaza(Guid.NewGuid(), new DateOnly(2026, 1, 31))),
+            ("Corecteaza", c => c.Corecteaza(Guid.NewGuid(), new DateOnly(2026, 1, 31), MotivCorectie.EroareMateriala)),
+            ("Valideaza", c => c.Valideaza(Guid.NewGuid())),
+        };
+        var refuzuri = new (string Nume, Func<Exception> Refuz)[] {
+            ("404", () => new SubiectInvizibil()),
+            ("403", () => new RefuzAcces(OperatieAcces.Modificare, typeof(Document))),
+        };
+        var abateri = new List<string>();
+        foreach (var (nume, ruleaza) in comenzi) {
+            foreach (var (cod, refuz) in refuzuri) {
+                var fabrica = new FabricaNumarata();
+                var prins = Prinde(() => ruleaza(new ComenziDocument(fabrica, new DreptRefuzat(refuz))));
+                if (prins?.GetType() != refuz().GetType() || fabrica.Deschideri != 0)
+                    abateri.Add($"{nume}/{cod}: {prins?.GetType().Name ?? "fără refuz"}, {fabrica.Deschideri} contexte");
+            }
+            var permisa = new FabricaNumarata();
+            if (Prinde(() => ruleaza(new ComenziDocument(permisa, new DreptRefuzat(null)))) is not ContextDeschis
+                    || permisa.Deschideri != 1)
+                abateri.Add($"{nume}/permis: {permisa.Deschideri} contexte");
+        }
+        check("104b: coaja refuză 404/403 fără să deschidă contextul și, cu drept, își deschide singură "
+            + "un context non-secured per comandă" + Abateri(abateri), abateri.Count == 0);
+
+        var cuContext = typeof(ComenziDocument).GetMethods(System.Reflection.BindingFlags.Public
+                | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.DeclaredOnly)
+            .Where(m => m.GetParameters().Any(p => typeof(IObjectSpace).IsAssignableFrom(p.ParameterType)))
+            .Select(m => m.Name).ToList();
+        check("104b: comenzile cojii nu primesc `IObjectSpace` de la apelant" + Abateri(cuContext), cuContext.Count == 0);
+    }
+
+    static Exception Prinde(Action actiune) {
+        try {
+            actiune();
+            return null;
+        }
+        catch (Exception ex) {
+            return ex;
+        }
+    }
+
+    sealed class DreptRefuzat(Func<Exception> refuz) : IDreptComanda {
+        public void Cere(Guid documentId, ComandaDocument comanda) {
+            if (refuz?.Invoke() is { } ex)
+                throw ex;
+        }
+    }
+
+    sealed class ContextDeschis : Exception;
+
+    sealed class FabricaNumarata : INonSecuredObjectSpaceFactory {
+        public int Deschideri { get; private set; }
+        public IObjectSpace CreateNonSecuredObjectSpace(Type objectType) {
+            Deschideri++;
+            throw new ContextDeschis();
+        }
     }
 
     static string Abateri(List<string> abateri) =>

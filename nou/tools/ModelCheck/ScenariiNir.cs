@@ -50,7 +50,7 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
         Verifica("SC-NIR-01", "prețul lotului zero în draft; contract acceptat și determinist", c.EsteAcceptat
             && CuSpatiu(os => os.GetObjectByKey<Lot>(d.Linii[0].Lot!.Value).PretUnitar) == 0
             && c == CuSpatiu(os => Contractare.Contracteaza(os, os.GetObjectByKey<Document>(d.Id))));
-        Verifica("SC-NIR-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, d.Id)).Count == 0);
+        Verifica("SC-NIR-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         FaraEfecte("SC-NIR-01", d.Id); Opereaza(d.Id);
         Postari("SC-NIR-01", d.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(d, 0, 6, 75));
         Sold("SC-NIR-01", d.Linii[0], 6, 75); Datorie("SC-NIR-01", d.Id, 75);
@@ -125,7 +125,7 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
         var nir = Opereaza(f.Id).ConexId!.Value; var stamp = Amprenta(f.Id);
         void Neschimbat(string pas) => Verifica("SC-NIR-09", pas + ": fără cub propriu, sursa intactă", stamp == Amprenta(f.Id)
             && CuSpatiu(os => !os.GetObjectsQuery<C.Tranzactie>().Any(t => t.DocumentId == nir)));
-        Verifica("SC-NIR-09", "dry-run conex acceptat", CuSpatiu(os => OperareApi.Valideaza(os, nir)).Count == 0);
+        Verifica("SC-NIR-09", "dry-run conex acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(nir)).Count == 0);
         Opereaza(nir); Neschimbat("operare");
         Sold("SC-NIR-09", f.Linii[0], 4, 100);
         using (var os = Deschide()) {
@@ -135,7 +135,7 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
             Verifica("SC-NIR-09", "reconciliere: conexul nu este un al doilea cap de grup", abateri.Count == 0);
         }
         Anuleaza(nir); Neschimbat("anulare"); Opereaza(nir); Neschimbat("reoperare");
-        Comanda(os => OperareApi.Storneaza(os, nir, new(An, 1, 20))); Neschimbat("storno");
+        Comanda(os => ComenziDocument.Sistem(os).Storneaza(nir, new(An, 1, 20))); Neschimbat("storno");
         Storneaza(f.Id, new(An, 1, 20)); Sold("SC-NIR-09", f.Linii[0], 0, 0);
         var sursa = Culege((1, 1, null)); Opereaza(sursa.Id);
         foreach (var cuSursa in new[] { false, true }) {

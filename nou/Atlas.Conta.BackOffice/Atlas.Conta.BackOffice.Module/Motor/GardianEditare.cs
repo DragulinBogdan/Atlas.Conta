@@ -40,7 +40,7 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 //     (Calea alternativă Blazor `LegacyObjectSpaceFactoryWrapper` ajunge tot la
 //     una dintre cele două — `Blazor\Services\XafApplicationFactory\
 //     ObjectSpaceFactoryWrapper.cs:53-60`.)
-// (3) OS-urile NON-SECURED — cele ale MOTORULUI (`OperareApi`) — vin din
+// (3) OS-urile NON-SECURED — cele ale MOTORULUI (`ComenziDocument`) — vin din
 //     `Services\Core\Internal\NonSecuredObjectSpaceFactory.cs:51-55`, care
 //     invocă `OnNonSecuredObjectSpaceCreated`, adică ALTĂ interfață; la fel
 //     `XafApplication.CreateLogonObjectSpace` (`XafApplication.cs:2450, 2463-2468`).

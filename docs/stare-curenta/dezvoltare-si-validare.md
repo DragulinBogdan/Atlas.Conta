@@ -141,6 +141,9 @@ Recrearea din 2026-09-25 (C102) a șters toate bazele Atlas.Conta de pe
 ClaudeRev) și a refăcut cele trei de mai sus. Pe baza Privat din seed,
 `partide-cub.py` își creează singur fixture-ul, iar `refuzuri.ps1` nu are
 subiect (cere documente existente, de exemplu o închidere de TVA). (89g, 102b)
+Comenzile de document au proba HTTP proprie, cu fixture creat și șters de ea:
+`nou/tools/ProbeHttp/comenzi-coaja.py` (404/403/422 pe cele cinci comenzi,
+ușa altui tip, fără scriere la refuz). (104b)
 
 Cele trei ierarhii (`Document`, `DocumentDetaliu`, `Repartitor`) sunt TPH:
 câte o tabelă pe rădăcină, discriminatorul `ClrType` cu valorile implicite
@@ -279,13 +282,13 @@ fără intervenție. Compilarea probei: zero avertismente și erori.
 
 Refuzurile se probează pe două uși: codul stabil (`CoduriRefuz`, linia
 `COD: mesaj`) pe ușa declarației (`Materializare.Refuzuri`); pe ușa entității
-(`OperareApi.Valideaza` / `Opereaza`) validarea veche a clasei și gardienii
+(`ComenziDocument.Valideaza` / `Opereaza`) validarea veche a clasei și gardienii
 registrelor refuză cu text ÎNAINTEA declarantului, deci acolo se asertează
 familia mesajului și absența efectelor, iar un refuz al registrului se
 marchează ca atare în fișierul tipului (până la TR-D8). Cataloagele
 [BCS, FCT, PLT/INC, BTR și FCL/DSC](../nucleu/scenarii/README.md) au primele
 loturi independente verificate (2026-09-23), cu fixture prin documentele
-reale și comenzile `OperareApi`; probele `NUC-*` rămân regresie. Sumele directe ale scenariului
+reale și comenzile `ComenziDocument`; probele `NUC-*` rămân regresie. Sumele directe ale scenariului
 peste cub nu înlocuiesc verificarea cititorilor comuni și a `Sold` la TR-D8.
 
 Cataloagele [NTC](../nucleu/scenarii/NTC.md) și [ITV](../nucleu/scenarii/ITV.md)

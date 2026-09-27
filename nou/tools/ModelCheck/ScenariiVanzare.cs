@@ -81,7 +81,7 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
 
     void FacturiDeschise() {
         var f = Vinde(new LinieFclScena(1, 100));
-        Verifica("SC-FCL-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, f.Id)).Count == 0);
+        Verifica("SC-FCL-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(f.Id)).Count == 0);
         FaraEfecte("SC-FCL-01", f.Id); Opereaza(f.Id);
         Postari("SC-FCL-01", f.Id, N.FelTranzactie.Operare, Ianuarie, Venituri(f, 0, 100));
         SoldPartida("SC-FCL-01", Partida(f.Id, ContClient, Client)!.Value, Ianuarie, 100);
@@ -151,7 +151,7 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
     (FacturaScena, FacturaScena) DescarcariDeschise() {
         var lot = Receptioneaza(new LinieFctScena(10, 10, Tip: "371")).Linii[0];
         var d = Iesire(false, (lot, 4));
-        Verifica("SC-DSC-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, d.Id)).Count == 0);
+        Verifica("SC-DSC-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         FaraEfecte("SC-DSC-01", d.Id); Opereaza(d.Id);
         Postari("SC-DSC-01", d.Id, N.FelTranzactie.Operare, Ianuarie, Costuri(d, 0, 4, 40));
         SoldLot("SC-DSC-01", lot.Lot!.Value, Magazie, Ianuarie, 6, 60);

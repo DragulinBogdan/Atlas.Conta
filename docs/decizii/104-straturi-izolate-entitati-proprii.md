@@ -200,6 +200,42 @@ Se adaptează `DocumentOperareController`, controllerele WebApi și ModelCheck.
 autentificat, iar dreptul se verifică pe documentul și operația cerute; un
 ID dat de apelant nu e singur autorizare (review Codex, pas 1).
 
+Executat 2026-09-27. `OperareApi` a devenit coaja `Api/ComenziDocument`:
+primește fabrica non-secured și un `IDreptComanda`, verifică dreptul
+înaintea oricărei atingeri a domeniului (`SubiectInvizibil` = 404,
+`RefuzAcces` = 403) și își deschide singură un context per comandă.
+`DreptComandaXaf` e dreptul comun XAF și WebApi: rezolvă documentul pe
+ușa securizată a utilizatorului autentificat, cu tipul ușii și restricția
+ei (NTC), cere Write pe instanță și, la corecție, Create și Write pe tipul
+concret; refuzul numește clasa reală a documentului. Gate-urile
+duplicate din `DocumentOperareController` și `ContaApiController`/
+`CorectieController` au ieșit; controllerele sunt adaptori de o linie
+(`ComandaDocument<T>`). `CumulPerioade` nu mai întreabă de securitate:
+apelantul declară `CitireCumul` — motorul `Integrala` (snapshot +
+fereastră), proiecțiile servite pe ușa securizată `Vizibila` implicit
+(numai postări). Tranșări ale pasului:
+- ModelCheck păstrează contextul propriu prin ușa de sistem explicită
+  `ComenziDocument.Sistem(os)` (fără drept XAF); separarea completă a
+  contextului și în ModelCheck cade la 104-r2, împreună cu coaja fără
+  `IObjectSpace`.
+- Scrierile globale de snapshot (`SolduriService.CereNesecurizat`) încă
+  refuză un context securizat după opțiunea EF; verificarea iese când
+  închiderea perioadei trece prin propria coajă (104-r2).
+- Balanța, fișa, soldurile și SAF-T citesc pe ușa securizată doar postări,
+  ca înainte; probele de snapshot o cer explicit `Integrala` (SC-CIT-11…14,
+  75, F27-R9), iar SC-CIT-95 și F27-R9 probează că citirea vizibilă nu
+  atinge snapshot-ul.
+
+Proba: ModelCheck verde pe ambele profiluri (bugetar 3219, privat 4250 de
+verificări, `run-verificari/20260927-172209-149`), cu probele structurale
+104b (refuzul înaintea contextului, un context per comandă, niciun
+`IObjectSpace` în semnăturile comenzilor); HTTP
+`tools/ProbeHttp/comenzi-coaja.py` 28/28 pe hostul WebApi privat; în XAF
+Blazor, operarea unui draft fără linii dă refuzul de domeniu, iar `Cititor`
+primește „Nu aveți dreptul de a modifica „NIR””. Driftul openapi: zero.
+Matricea generală `refuzuri.ps1` nu rulează pe bazele recreate la C102
+(nu are subiecte); limita e cea din `stare-curenta/dezvoltare-si-validare.md`.
+
 **Pasul 3 — culegerea unică (c).**
 - Inventariezi căile de precompletare și recalcul din XAF față de cele din
   `Apply`/`ImpliciteApply`.

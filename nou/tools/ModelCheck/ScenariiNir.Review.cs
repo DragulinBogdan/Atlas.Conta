@@ -11,7 +11,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 sealed partial class ScenariiNir {
     void ProvenientaCorectiei() {
         var (f, nir) = Constatat(4); Opereaza(nir);
-        var nou = CuSpatiu(os => OperareApi.Corecteaza(os, nir, new(An, 1, 20), MotivCorectie.EroareMateriala).CorectieId);
+        var nou = CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(nir, new(An, 1, 20), MotivCorectie.EroareMateriala).CorectieId);
         Verifica("SC-NIR-32", "corecția primește sursa recepției fără a fi autogenerată", CuSpatiu(os => {
             var n = os.GetObjectByKey<NIR>(nou);
             return n.SursaReceptieiId == f.Id && !n.Autogenerat && n.DocumentSursaId == null;
@@ -51,7 +51,7 @@ sealed partial class ScenariiNir {
         try {
             Verifica("SC-NIR-34", "sursa nu are codul funcțional cerut ulterior", CuSpatiu(os =>
                 os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == f.Id && p.Cont == id && p.CodFunctional == null)));
-            Verifica("SC-NIR-34", "dry-run păstrează analiza istorică", CuSpatiu(os => OperareApi.Valideaza(os, nir)).Count == 0);
+            Verifica("SC-NIR-34", "dry-run păstrează analiza istorică", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(nir)).Count == 0);
             Opereaza(nir); Delta("SC-NIR-34", nir, Clarificare, 25);
             Verifica("SC-NIR-34", "diferența are analiza nouă, stocul o păstrează pe cea istorică", CuSpatiu(os =>
                 os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == nir && p.Cont == id && p.CodFunctional == null)

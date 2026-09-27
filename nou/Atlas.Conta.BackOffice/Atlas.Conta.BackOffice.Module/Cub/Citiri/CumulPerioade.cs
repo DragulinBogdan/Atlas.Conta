@@ -1,8 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
-using DevExpress.EntityFrameworkCore.Security.Infrastructure;
 using DevExpress.ExpressApp;
-using DevExpress.ExpressApp.EFCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Atlas.Conta.BackOffice.Module.Cub.Citiri;
 
@@ -17,16 +14,20 @@ public struct SoldLunar<T> {
     public T Rand { get; set; }
 }
 
-public static class CumulPerioade {
-    internal static bool EsteSecurizat(IObjectSpace os) =>
-        os is ISecuredObjectSpace && (os is not EFCoreObjectSpace ef
-            || ef.DbContext.GetService<ISecurityEnabledOption>().EnableSecurity);
+/// <summary>Cine citește cumulul, declarat de apelant (104b).</summary>
+public enum CitireCumul {
+    /// <summary>Cititorul poate să nu vadă toate mișcările (ușa securizată): cumulul se citește numai din mișcări.</summary>
+    Vizibila,
+    /// <summary>Cititorul vede toate mișcările (motorul, ușa de sistem): cumulul pornește din snapshot.</summary>
+    Integrala
+}
 
-    /// <summary>Referința și fereastra sunt citite în aceeași instrucțiune; citirea secured folosește doar mișcările.</summary>
-    public static IQueryable<T> Citeste<T>(IObjectSpace os, IQueryable<RandDatat<T>> miscari,
+public static class CumulPerioade {
+    /// <summary>Referința și fereastra sunt citite în aceeași instrucțiune; citirea vizibilă folosește doar mișcările.</summary>
+    public static IQueryable<T> Citeste<T>(IObjectSpace os, CitireCumul citire, IQueryable<RandDatat<T>> miscari,
             IQueryable<SoldLunar<T>> snapshot, DateOnly panaLa, DateOnly? granita = null) {
         var direct = miscari.Where(m => m.Data <= panaLa);
-        if (EsteSecurizat(os)) return direct.Select(m => m.Rand);
+        if (citire == CitireCumul.Vizibila) return direct.Select(m => m.Rand);
         var limita = granita ?? panaLa;
         var ultimaLuna = limita.Year * 12 + limita.Month;
         if (limita.Day != DateTime.DaysInMonth(limita.Year, limita.Month)) ultimaLuna--;

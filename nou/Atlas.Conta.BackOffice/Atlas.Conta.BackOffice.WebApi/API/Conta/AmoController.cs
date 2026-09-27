@@ -108,14 +108,14 @@ public class AmoController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Opereaza(Guid id) => Comanda(id, os => OperareApi.Opereaza(os, id));
+    public IActionResult Opereaza(Guid id) => Comanda(c => c.Opereaza(id));
 
     [HttpPost("{id:guid}/anuleaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult Anuleaza(Guid id) => Comanda(id, os => OperareApi.AnuleazaOperarea(os, id));
+    public IActionResult Anuleaza(Guid id) => Comanda(c => c.AnuleazaOperarea(id));
 
     [HttpPost("{id:guid}/storneaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
@@ -123,23 +123,17 @@ public class AmoController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Storneaza(Guid id, [FromBody] StornoRequestDto cerere) =>
-        Comanda(id, os => OperareApi.Storneaza(os, id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
+        Comanda(c => c.Storneaza(id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
 
     [HttpPost("{id:guid}/valideaza")]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Valideaza(Guid id) =>
-        ComandaAutorizata<AmortizareLunara>(id, () => Domeniu(() => {
-            using var os = NonSecured(typeof(AmortizareLunara));
-            return Ok(EroriDto.Din(OperareApi.Valideaza(os, id)));
-        }));
+        ComandaDocument<AmortizareLunara>(c => EroriDto.Din(c.Valideaza(id)));
 
-    IActionResult Comanda(Guid id, Func<IObjectSpace, OperareRezultat> comanda) =>
-        ComandaAutorizata<AmortizareLunara>(id, () => Domeniu(() => {
-            using var os = NonSecured(typeof(AmortizareLunara));
-            return Ok(OperareRezultatDto.Din(comanda(os)));
-        }));
+    IActionResult Comanda(Func<ComenziDocument, OperareRezultat> comanda) =>
+        ComandaDocument<AmortizareLunara>(c => OperareRezultatDto.Din(comanda(c)));
 
     IActionResult RegistrulCitibil() {
         using var os = Secured(typeof(RegistruImobilizari));

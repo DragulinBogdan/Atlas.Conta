@@ -3,6 +3,7 @@ using System.Text;
 using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Proiectii;
+using DevExpress.EntityFrameworkCore.Security.Infrastructure;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
@@ -213,7 +214,8 @@ public static class SolduriService {
     }
 
     /// <summary>Atomii contabili până la `panaLa`, porniți de la ultima referință care se termină până la `granita`.</summary>
-    public static IQueryable<AtomContabil> AtomiCumulati(IObjectSpace os, DateOnly panaLa, DateOnly? granita = null) {
+    public static IQueryable<AtomContabil> AtomiCumulati(IObjectSpace os, CitireCumul citire, DateOnly panaLa,
+            DateOnly? granita = null) {
         var atomi = ContabilProiectii.Atomi(os)
             .Select(a => new RandDatat<AtomContabil> { Data = a.Data, Rand = a });
         var snapshot = os.GetObjectsQuery<SoldPerioadaContabil>().IgnoreAutoIncludes()
@@ -228,7 +230,7 @@ public static class SolduriService {
                     UnitateId = s.UnitateId, ProiectId = s.ProiectId, CentruCostId = s.CentruCostId
                 }
             });
-        return CumulPerioade.Citeste(os, atomi, snapshot, panaLa, granita);
+        return CumulPerioade.Citeste(os, citire, atomi, snapshot, panaLa, granita);
     }
 
     // ═══════════════════ scrierea ═══════════════════
@@ -423,8 +425,10 @@ public static class SolduriService {
 
     // ═══════════════════ primitivele ═══════════════════
 
+    // 104-r2: scrierile globale refuză securitatea activă până când coaja perioadei își alege singură contextul.
     static void CereNesecurizat(IObjectSpace os) {
-        if (CumulPerioade.EsteSecurizat(os))
+        if (os is ISecuredObjectSpace && (os is not EFCoreObjectSpace ef
+                || ef.DbContext.GetService<ISecurityEnabledOption>().EnableSecurity))
             throw new InvalidOperationException("SNAPSHOT_OS_SECURIZAT: scrierea globală cere un ObjectSpace nesecurizat.");
     }
 

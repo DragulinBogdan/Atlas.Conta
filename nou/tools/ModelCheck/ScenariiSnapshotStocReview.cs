@@ -1,3 +1,4 @@
+using CitireCumul = Atlas.Conta.BackOffice.Module.Cub.Citiri.CitireCumul;
 using System.Diagnostics;
 using System.Reflection;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -37,6 +38,10 @@ sealed partial class ScenariiSnapshotStoc {
                 WHERE "An" = {An} AND "Luna" = 1 AND "LotId" = {lot} AND "GestiuneId" = {Magazie}
                 """);
             Verifica("SC-CIT-76", "snapshot 4/48: aceeași ieșire se evaluează la 12", Evaluare() == 12);
+            decimal Sold(CitireCumul citire) => C.Citiri.Loturi.Cumulate(os, citire, new(An, 1, 31))
+                .Where(s => s.LotId == lot && s.GestiuneId == Magazie).ToList().Sum(s => s.Valoare);
+            Verifica("SC-CIT-95", "citirea vizibilă ignoră snapshot-ul alterat, cea integrală pornește din el",
+                Sold(CitireCumul.Integrala) - Sold(CitireCumul.Vizibila) == 8);
             var raport = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1);
             Verifica("SC-CIT-76", "reconstrucția raportează 8 și evaluarea revine la 10",
                 raport.StocDiferite == 1 && raport.DiferentaValoare == 8 && Evaluare() == 10);
@@ -51,10 +56,10 @@ sealed partial class ScenariiSnapshotStoc {
         var zi = new DateOnly(An, 2, 28);
         var partida = Partida(factura, ContFurnizor)!.Value;
         var cont = Cont(Stoc);
-        var stoc = C.Citiri.Loturi.Cumulate(os, zi).Where(s => s.LotId == lot);
-        var contabil = SolduriService.AtomiCumulati(os, zi, new(An, 1, 31))
+        var stoc = C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, zi).Where(s => s.LotId == lot);
+        var contabil = SolduriService.AtomiCumulati(os, CitireCumul.Integrala, zi, new(An, 1, 31))
             .Where(a => a.ContId == cont && a.MaterialId == produs);
-        var partide = C.Citiri.Partide.Cumulate(os, zi).Where(p => p.UnitateId == partida);
+        var partide = C.Citiri.Partide.Cumulate(os, CitireCumul.Integrala, zi).Where(p => p.UnitateId == partida);
         Verifica("SC-CIT-77", "compunerea celor trei citiri nu execută SQL", comenzi.Numar == 0);
         Comanda(altul => inchidePerioada(altul, An, 2));
         Verifica("SC-CIT-77", "cealaltă conexiune a eliminat referința ianuarie", CuSpatiu(altul =>

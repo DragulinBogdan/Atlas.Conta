@@ -1,3 +1,4 @@
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
@@ -117,7 +118,8 @@ public static class ImperecheriProiectii {
 
     public static IQueryable<DocumentCuRestRand> DocumenteCuRest(
         IObjectSpace os, Guid? contrapartidaId = null, SensStingere? sens = null,
-        DateOnly? laData = null, Guid? documentCurentId = null, bool stinge = true) {
+        DateOnly? laData = null, Guid? documentCurentId = null, bool stinge = true,
+        CitireCumul citire = CitireCumul.Vizibila) {
 
         var antete = Antete(os);
 
@@ -130,7 +132,7 @@ public static class ImperecheriProiectii {
             antete = antete.Where(a => a.Sens == literal);
         }
 
-        var solduri = PartideCuRest(os, contrapartidaId, sens, laData)
+        var solduri = PartideCuRest(os, contrapartidaId, sens, laData, citire)
             .Where(p => p.DocumentId != null)
             .GroupBy(p => new { p.DocumentId, p.ContrapartidaId, p.Sens })
             .Select(g => new { g.Key.DocumentId, g.Key.ContrapartidaId, g.Key.Sens,
@@ -163,9 +165,9 @@ public static class ImperecheriProiectii {
     }
 
     public static IQueryable<PartidaCuRestRand> PartideCuRest(IObjectSpace os, Guid? contrapartidaId = null,
-            SensStingere? sens = null, DateOnly? laData = null) {
+            SensStingere? sens = null, DateOnly? laData = null, CitireCumul citire = CitireCumul.Vizibila) {
         var zi = laData ?? DateOnly.MaxValue;
-        var solduri = P.Cumulate(os, zi).Where(s => s.Debit != s.Credit);
+        var solduri = P.Cumulate(os, citire, zi).Where(s => s.Debit != s.Credit);
         if (contrapartidaId is { } cp) solduri = solduri.Where(s => s.PartenerId == cp);
         if (sens == SensStingere.Datorie) solduri = solduri.Where(s => s.Credit > s.Debit);
         if (sens == SensStingere.Creanta) solduri = solduri.Where(s => s.Debit > s.Credit);

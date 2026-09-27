@@ -44,7 +44,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void Simpla() {
         var f = Factura(Ianuarie, new LinieFctScena(10, 10));
-        Verifica("SC-FCT-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, f.Id)).Count == 0);
+        Verifica("SC-FCT-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(f.Id)).Count == 0);
         FaraEfecte("SC-FCT-01", f.Id);
         var nir = Opereaza(f.Id).ConexId!.Value;
         Postari("SC-FCT-01", f.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(f, 0, 10, 100));
@@ -132,7 +132,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
                 os.CommitChanges();
             }
             RefuzDeclaratie(id, f.Id, cod);
-            Verifica(id, "dry-run refuzat", CuSpatiu(os => OperareApi.Valideaza(os, f.Id)).Count > 0);
+            Verifica(id, "dry-run refuzat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(f.Id)).Count > 0);
             FaraEfecte(id, f.Id);
             Refuza(id, () => Opereaza(f.Id), fragment);
             FaraEfecte(id, f.Id);
@@ -145,7 +145,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         var bcs = Consum(f.Linii[0].Lot!.Value, 4); Opereaza(bcs);
         var amprente = new[] { f.Id, nir, bcs }.Select(Amprenta).ToArray();
         Refuza("SC-X-01", () => Storneaza(f.Id, new(An, 1, 20)), "conex");
-        Comanda(os => OperareApi.Storneaza(os, nir, new(An, 1, 20)));
+        Comanda(os => ComenziDocument.Sistem(os).Storneaza(nir, new(An, 1, 20)));
         Verifica("SC-X-01", "storno NIR cu deltă zero schimbă starea, fără inversă economică",
             CuSpatiu(os => os.GetObjectByKey<Document>(nir).Stare) == StareDocument.Stornat);
         Verifica("SC-X-01", "refuzul FCT și storno NIR păstrează postările întregului lanț",

@@ -210,7 +210,7 @@ public static class PerioadaService {
             .ToList().ToHashSet();
         if (scadente.Count == 0)
             return;
-        var restante = ImperecheriProiectii.DocumenteCuRest(os, laData: ultimaZi)
+        var restante = ImperecheriProiectii.DocumenteCuRest(os, laData: ultimaZi, citire: Cub.Citiri.CitireCumul.Integrala)
             .Select(r => new { r.DocumentId, r.Tip, r.Numar, r.Rest, r.ContrapartidaDenumire })
             .ToList()
             .Where(r => scadente.Contains(r.DocumentId))

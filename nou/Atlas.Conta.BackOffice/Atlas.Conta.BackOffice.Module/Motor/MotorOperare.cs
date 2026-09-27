@@ -45,7 +45,7 @@ public static class MotorOperare {
     // primit — `PregatesteOperare` scrie `Valoare`/`Cantitate` pe linii, iar
     // gardienii pot lăsa alte instanțe atinse. Nimic nu se comite aici, dar
     // apelantul trebuie să folosească un ObjectSpace PROPRIU, aruncat după apel
-    // (calea vie: OS non-secured creat de adaptorul `OperareApi`).
+    // (calea vie: OS non-secured creat de adaptorul `ComenziDocument`).
     public static IReadOnlyList<string> Valideaza(IObjectSpace os, Document doc) {
         using var receptie = Cub.ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: false);
         try {
@@ -96,7 +96,7 @@ public static class MotorOperare {
         // vor veni) ar fi o copie în plus care poate rămâne în urmă (42a: o
         // singură sursă de reguli). Locul acoperă amândouă căile de scriere,
         // fiindcă amândouă operează prin motor: XAF prin `Opereaza`, API-ul prin
-        // `OperareApi` → `Opereaza`/`Valideaza` (dry-run-ul îl arată clientului
+        // `ComenziDocument` → `Opereaza`/`Valideaza` (dry-run-ul îl arată clientului
         // înainte de comandă).
         TvaService.VerificaTvaCulesTaxareInversa(os, tipDoc, tvaCulesInainte, erori);
         ValideazaDeclarativ(os, doc, tipDoc, claseTip, erori);

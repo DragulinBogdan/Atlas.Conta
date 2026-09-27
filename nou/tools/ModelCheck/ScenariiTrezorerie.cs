@@ -61,7 +61,7 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
 
     void CicluDeschis(bool inc) {
         var f = Trezorerie(inc, 100);
-        Verifica(Id(inc, "01"), "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, f.Id)).Count == 0);
+        Verifica(Id(inc, "01"), "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(f.Id)).Count == 0);
         FaraEfecte(Id(inc, "01"), f.Id); Opereaza(f.Id);
         Postari(Id(inc, "01"), f.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(f, inc, 100));
         SoldPartida(Id(inc, "01"), Partida(f.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, Ianuarie, inc ? -100 : 100);

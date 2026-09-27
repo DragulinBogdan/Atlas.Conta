@@ -221,8 +221,8 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
                 os.CommitChanges();
                 concurent = Task.Run(() => {
                     try { Comanda(alt => { ((EFCoreObjectSpace)alt).DbContext.Database.SetCommandTimeout(10);
-                        if (anulare) OperareApi.AnuleazaOperarea(alt, plata.Id);
-                        else OperareApi.Storneaza(alt, plata.Id, Ianuarie); }); return ""; }
+                        if (anulare) ComenziDocument.Sistem(alt).AnuleazaOperarea(plata.Id);
+                        else ComenziDocument.Sistem(alt).Storneaza(plata.Id, Ianuarie); }); return ""; }
                     catch (OperareException e) { return e.Message; }
                 });
                 AsteaptaBlocare(os, concurent);

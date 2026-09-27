@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Proiectii;
@@ -22,8 +23,9 @@ public sealed class SoldStocRand {
 }
 
 public static class StocProiectii {
-    public static IQueryable<SoldStocRand> SoldStoc(IObjectSpace os, DateOnly? laData = null) =>
-        from a in Cub.Citiri.Loturi.Cumulate(os, laData)
+    public static IQueryable<SoldStocRand> SoldStoc(IObjectSpace os, DateOnly? laData = null,
+            CitireCumul citire = CitireCumul.Vizibila) =>
+        from a in Cub.Citiri.Loturi.Cumulate(os, citire, laData)
         join cont in os.GetObjectsQuery<Cont>() on a.ContId equals cont.ID into conturi
         from cont in conturi.DefaultIfEmpty()
         join produs in os.GetObjectsQuery<Produs>() on a.ProdusId equals produs.ID into produse

@@ -243,6 +243,7 @@ var opts = optsBuilder.Options;
 using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     Console.WriteLine($"Model OK: {ctx.Model.GetEntityTypes().Count()} entity types; profil: {profil}");
     ProbeStraturi.Verifica(ctx, Check);
+    ProbeStraturi.VerificaCoaja(Check);
 
     if (profil == ProfilContabil.Privat) {
         // Baza privată aparține uneltei: se creează/migrează aici.
@@ -2226,7 +2227,7 @@ if (profil == ProfilContabil.Privat) {
 
     // ============= Felia API ITV (F21) — E2E-API-ITV (privat) =============
     // Închiderea de TVA parcursă prin CONTRACTUL feliei: `Previzualizeaza` →
-    // `Genereaza` → `Citeste` → `Regenereaza` → `OperareApi` → storno →
+    // `Genereaza` → `Citeste` → `Regenereaza` → `ComenziDocument` → storno →
     // `Sterge`. Endpoint-urile din host sunt transport peste EXACT acest cod.
     //
     // Semantica de MOTOR e deja acoperită de blocul `E2E-ITV` de mai sus (lunile
@@ -2451,7 +2452,7 @@ if (profil == ProfilContabil.Privat) {
             // ambele sensuri). Sensul celălalt (`true` ⇔ eroarea apare) e mai jos.
             List<string> eroriDryProaspat;
             using (var osDry = provider.CreateObjectSpace())
-                eroriDryProaspat = OperareApi.Valideaza(osDry, idItv).ToList();
+                eroriDryProaspat = ComenziDocument.Sistem(osDry).Valideaza(idItv).ToList();
             Check("F21-D9.4 — pe draftul proaspăt: `Stale == false` ȘI dry-run-ul motorului NU conține eroarea "
                 + "anti-stale (criteriul din DTO e chiar cel al gardianului, `LiniiPotrivescSoldurile` — 79 M4), "
                 + "soldurile CURENTE din DTO sunt cele ale motorului (21/42) și afordanțele sunt cele de Draft",
@@ -2480,7 +2481,7 @@ if (profil == ProfilContabil.Privat) {
             // Dry-run pe un OS de UNICĂ FOLOSINȚĂ: `Valideaza` SCRIE (25b/55b).
             List<string> eroriDry;
             using (var osDry = provider.CreateObjectSpace())
-                eroriDry = OperareApi.Valideaza(osDry, idItv).ToList();
+                eroriDry = ComenziDocument.Sistem(osDry).Valideaza(idItv).ToList();
             Check("F21-D9.4 — după încă o factură în lună: `Stale == true` ÎN DTO **și** dry-run-ul dă exact "
                 + "eroarea gardianului anti-stale — ecranul spune același lucru pe care operarea îl refuză "
                 + "(dacă cele două ar diverge, butonul „Operează” ar promite ce serverul neagă)",
@@ -2518,7 +2519,7 @@ if (profil == ProfilContabil.Privat) {
                 var citFaraPolitica = InchidereTvaApply.Citeste(os, idItvNou);
                 List<string> eroriFaraPolitica;
                 using (var osDry = provider.CreateObjectSpace())
-                    eroriFaraPolitica = OperareApi.Valideaza(osDry, idItvNou).ToList();
+                    eroriFaraPolitica = ComenziDocument.Sistem(osDry).Valideaza(idItvNou).ToList();
                 Check("F21-D9.4b (79 M4) — cu `PoliticaInchidereTva` incompletă (contul de plată golit DUPĂ "
                     + "generare): `Stale == null` în DTO — nu `false` —, iar dry-run-ul refuză cu prima ramură a "
                     + "gardianului („cere politica … completă”). Anti-vacuitate: documentul e tot Draft, deci "
@@ -2535,9 +2536,9 @@ if (profil == ProfilContabil.Privat) {
                 InchidereTvaApply.Citeste(os, idItvNou).Stale == false);
 
             // ── (5) Operarea, storno-ul și redeschiderea lunii ──
-            var rezOperare = OperareApi.Opereaza(os, idItvNou);
+            var rezOperare = ComenziDocument.Sistem(os).Opereaza(idItvNou);
             var citOperat = InchidereTvaApply.Citeste(os, idItvNou);
-            Check("F21-D9.5 — `OperareApi.Opereaza` ⇒ Operat cu numărul din politică (seria „ITV-”, consumată la "
+            Check("F21-D9.5 — `ComenziDocument.Opereaza` ⇒ Operat cu numărul din politică (seria „ITV-”, consumată la "
                 + "MATERIALIZARE — 53b), iar `Stale` devine `null`: pe un document operat cifra e deja în "
                 + "registru, deci întrebarea n-are sens (un `false` acolo ar fi fost o afirmație despre altceva)",
                 rezOperare.StareNoua == StareDocument.Operat
@@ -2582,12 +2583,12 @@ if (profil == ProfilContabil.Privat) {
             var rezDec = InchidereTvaApply.Genereaza(os,
                 new GenerareItvRequestDto { An = 2026, Luna = 12, UnitateId = unitate.ID });
             var idItvDec = rezDec.DocumentId ?? Guid.Empty;
-            OperareApi.Opereaza(os, idItvDec);
-            OperareApi.AnuleazaOperarea(os, idItvNou);
+            ComenziDocument.Sistem(os).Opereaza(idItvDec);
+            ComenziDocument.Sistem(os).AnuleazaOperarea(idItvNou);
             var citNovRedeschis = InchidereTvaApply.Citeste(os, idItvNou);
             List<string> eroriCronologie;
             using (var osDry = provider.CreateObjectSpace())
-                eroriCronologie = OperareApi.Valideaza(osDry, idItvNou).ToList();
+                eroriCronologie = ComenziDocument.Sistem(osDry).Valideaza(idItvNou).ToList();
             Check("F21-D9.5b (79 F1) — noiembrie Draft (prin anularea operării) cât decembrie e OPERAT: DTO-ul "
                 + "spune `PoateOpera == true` și `Stale == false` (afordanța e a STĂRII, iar liniile chiar se "
                 + "potrivesc cu soldurile revenite), dar dry-run-ul motorului dă exact eroarea cronologică — "
@@ -2596,9 +2597,9 @@ if (profil == ProfilContabil.Privat) {
                 citNovRedeschis.Stare == "Draft" && citNovRedeschis.PoateOpera && citNovRedeschis.Stale == false
                 && eroriCronologie.Any(e => e.Contains("operată pentru o lună ulterioară"))
                 && !eroriCronologie.Any(e => e.Contains("s-au schimbat de la generare")));
-            CheckRefuza("F21-D9.5b (79 F1) — ACELAȘI gard pe ușa care SCRIE: `OperareApi.Opereaza` pe draftul de "
+            CheckRefuza("F21-D9.5b (79 F1) — ACELAȘI gard pe ușa care SCRIE: `ComenziDocument.Opereaza` pe draftul de "
                 + "noiembrie ⇒ refuz (gardul stă în `ValideazaOperare`, deci apără toate ușile — XAF, API, consolă)",
-                () => OperareApi.Opereaza(os, idItvNou));
+                () => ComenziDocument.Sistem(os).Opereaza(idItvNou));
             Check("F21-D9.5b — refuzul n-a lăsat rânduri-fantomă (33d) și n-a dublat 4423: la 31.12 soldul de "
                 + "plată e cel al UNEI singure închideri operate (decembrie, 0 — luna a ieșit pe recuperat), "
                 + "iar noiembrie n-a mai postat nimic",
@@ -2626,9 +2627,9 @@ if (profil == ProfilContabil.Privat) {
 
             // Scena revine la starea pe care o cere restul blocului: decembrie
             // dispare (anulare + ștergere pe ușa proprie), noiembrie se re-operează.
-            OperareApi.AnuleazaOperarea(os, idItvDec);
+            ComenziDocument.Sistem(os).AnuleazaOperarea(idItvDec);
             InchidereTvaApply.Sterge(os, idItvDec);
-            OperareApi.Opereaza(os, idItvNou);
+            ComenziDocument.Sistem(os).Opereaza(idItvNou);
             Check("F21-D9.5b/c — scena restaurată: închiderea lui decembrie a dispărut, noiembrie e din nou "
                 + "Operat (cu ACELAȘI număr — re-operarea nu consumă seria a doua oară, 53b) și luna e iar "
                 + "închisă în registru",
@@ -2637,7 +2638,7 @@ if (profil == ProfilContabil.Privat) {
                 && InchidereTvaApply.Citeste(os, idItvNou).Numar == citOperat.Numar
                 && SoldDebitorApi(cont4426, finalNoi) == 0m && SoldCreditorApi(cont4427, finalNoi) == 0m);
 
-            OperareApi.Storneaza(os, idItvNou, finalNoi);
+            ComenziDocument.Sistem(os).Storneaza(idItvNou, finalNoi);
             var prevDupaStorno = InchidereTvaApply.Previzualizeaza(os, 2026, 11);
             Check("F21-D9.5 — storno la CHIAR data închiderii ⇒ luna redevine închiderabilă: previzualizarea dă "
                 + "din nou `Motiv == null` pe soldurile revenite (disciplina 46f, singura ei consecință pentru "
@@ -3669,7 +3670,7 @@ if (profil == ProfilContabil.Privat) {
             wDec.Linii[0].ValoareTva = null;
             DecontApply.Aplica(os, idDecPrv, wDec);
         }
-        OperareApi.Opereaza(os, idDecPrv);
+        ComenziDocument.Sistem(os).Opereaza(idDecPrv);
         var notePrvDec = os.GetObjectsQuery<RegistruContabil>()
             .Where(r => r.DocumentId == idDecPrv && !r.Storno).ToList();
         Check("Api DEC privat operat: nota principală (cheltuiala = 542, 200 net) + rândul de TVA 4426 = 542 (42) — PoliticaTva pe latura predatorului, care e ANGAJATUL",
@@ -3679,7 +3680,7 @@ if (profil == ProfilContabil.Privat) {
             && notePrvDec.Any(n => n.ContDebitId == cont4426Dec.ID
                 && n.ContCreditId == cont542Dec.ID && n.Valoare == 42m)
             && DecontApply.Citeste(os, idDecPrv) is { Total: 242m, PoateAnula: true });
-        OperareApi.AnuleazaOperarea(os, idDecPrv);
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idDecPrv);
         DecontApply.Sterge(os, idDecPrv);
         CurataApiDecPrv(os);
         Check("Curățenie finală felia Api DEC privat (fără reziduuri e2e)",
@@ -3689,7 +3690,7 @@ if (profil == ProfilContabil.Privat) {
 
     // ======= Felia Api FCL — culegere, TVA, operare (F4-D9, pasul 1 al feliei) =======
     // Fluxul de VÂNZARE parcurs prin CONTRACTUL feliei: WriteDto →
-    // `FacturaIesireApply.Aplica` → `Citeste`/`Lista` → dry-run → `OperareApi`.
+    // `FacturaIesireApply.Aplica` → `Citeste`/`Lista` → dry-run → `ComenziDocument`.
     // Endpoint-urile din host sunt transport peste EXACT acest cod, deci ce e verde
     // aici e verde și pe sârmă. Blocul trăiește în suita PRIVATĂ fiindcă vânzarea
     // din stoc e a profilului privat (la bugetar liniile de stoc pe FCL sunt
@@ -3784,7 +3785,7 @@ if (profil == ProfilContabil.Privat) {
         // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
         IReadOnlyList<string> DryRunFcl(Guid docId) {
             using var osDry = provider.CreateObjectSpace();
-            return OperareApi.Valideaza(osDry, docId);
+            return ComenziDocument.Sistem(osDry).Valideaza(docId);
         }
 
         // --- Apply: creare din WriteDto (fără Numar/Valoare — server-owned) ---
@@ -3955,8 +3956,8 @@ if (profil == ProfilContabil.Privat) {
             FacturaIesireApply.Citeste(os, idFcl) is { Stare: "Draft", Numar: null }
             && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idFcl));
 
-        var rezFcl = OperareApi.Opereaza(os, idFcl);
-        Check("OperareApi.Opereaza pe FCL → Operat + ConexId (descărcarea generată în aceeași tranzacție), cu mesaj pentru operator",
+        var rezFcl = ComenziDocument.Sistem(os).Opereaza(idFcl);
+        Check("ComenziDocument.Opereaza pe FCL → Operat + ConexId (descărcarea generată în aceeași tranzacție), cu mesaj pentru operator",
             rezFcl.StareNoua == StareDocument.Operat && rezFcl.ConexId != null
             && rezFcl.Mesaje.Count == 1);
 
@@ -4057,8 +4058,8 @@ if (profil == ProfilContabil.Privat) {
         // --- Comenzile generice pe DSC (nimic nou în motor) ---
         Check("Dry-run pe descărcarea draft → listă goală (aceiași gardieni ca la operare)",
             DryRunFcl(idDsc).Count == 0);
-        var rezDsc = OperareApi.Opereaza(os, idDsc);
-        Check("OperareApi pe DSC → Operat, FĂRĂ conex (descărcarea e frunza lanțului conex)",
+        var rezDsc = ComenziDocument.Sistem(os).Opereaza(idDsc);
+        Check("ComenziDocument pe DSC → Operat, FĂRĂ conex (descărcarea e frunza lanțului conex)",
             rezDsc.StareNoua == StareDocument.Operat && rezDsc.ConexId == null && rezDsc.Mesaje.Count == 0);
         citDsc = DscApply.Citeste(os, idDsc);
         Check("Citeste după operare: numărul din seria proprie (DSC-), affordances inversate",
@@ -4107,7 +4108,7 @@ if (profil == ProfilContabil.Privat) {
         CheckRefuza("GenereazaDescarcare pe FCL DRAFT → refuz de DOMENIU (pe draft nu există încă acoperire de generat)",
             () => FacturaIesireApply.GenereazaDescarcare(os, idFcl2, new DateOnly(2026, 5, 20)));
 
-        var rezFcl2 = OperareApi.Opereaza(os, idFcl2);
+        var rezFcl2 = ComenziDocument.Sistem(os).Opereaza(idFcl2);
         var idDsc2 = rezFcl2.ConexId.Value;
         var citDsc2 = DscApply.Citeste(os, idDsc2);
         Check("Backorder: descărcarea conexă alocă DOAR disponibilul (6 din lotul vechi + 7 din lotul pin = 13); "
@@ -4133,7 +4134,7 @@ if (profil == ProfilContabil.Privat) {
 
         // Descărcarea parțială se operează (draftul nu rezervă stoc — gardianul de
         // sold rămâne autoritatea), apoi comanda manuală se lovește de lipsă.
-        OperareApi.Opereaza(os, idDsc2);
+        ComenziDocument.Sistem(os).Opereaza(idDsc2);
         var genFaraStoc = FacturaIesireApply.GenereazaDescarcare(os, idFcl2, new DateOnly(2026, 5, 20));
         Check("GenereazaDescarcare fără sold disponibil → DscId null, dar restul se RAPORTEAZĂ (7 buc așteaptă marfă)",
             genFaraStoc.DscId == null && genFaraStoc.Resturi.Count == 1 && genFaraStoc.Resturi[0].Rest == 7m);
@@ -4190,7 +4191,7 @@ if (profil == ProfilContabil.Privat) {
         os.CommitChanges();
         CheckRefuza("Plafonul de acoperire per linie-sursă (F4/D2): descărcarea MANUALĂ suprapusă "
             + "(8 peste cei 13 operați, din 20 facturate) → refuz la operare",
-            () => OperareApi.Opereaza(os, dscManualFcl.ID));
+            () => ComenziDocument.Sistem(os).Opereaza(dscManualFcl.ID));
         os.Delete(linieManualFcl);
         os.Delete(dscManualFcl);
         os.CommitChanges();
@@ -4209,14 +4210,14 @@ if (profil == ProfilContabil.Privat) {
             && DscApply.Citeste(os, idFcl) == null);
 
         // --- Lanțul de anulare/storno pe grup ---
-        OperareApi.AnuleazaOperarea(os, idDsc);
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idDsc);
         Check("Anularea descărcării o readuce pe Draft, îi șterge rândurile de stoc și ELIBEREAZĂ factura "
             + "(PoateAnula/PoateStorna redevin adevărate — draftul continuă să acopere)",
             DscApply.Citeste(os, idDsc).Stare == "Draft"
             && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idDsc)
             && FacturaIesireApply.Citeste(os, idFcl) is { PoateAnula: true, PoateStorna: true }
             && FacturaIesireApply.RestNedescarcat(os, idFcl).All(r => r.Rest == 0m));
-        var rezStornoDsc2 = OperareApi.Storneaza(os, idDsc2, new DateOnly(2026, 5, 25));
+        var rezStornoDsc2 = ComenziDocument.Sistem(os).Storneaza(idDsc2, new DateOnly(2026, 5, 25));
         Check("Storno pe descărcarea operată: Stornat — iar acoperirea se REDESCHIDE (stornatul nu acoperă, draftul da): "
             + "restul urcă de la 0 la 13 și PoateGeneraDescarcare redevine adevărat",
             rezStornoDsc2.StareNoua == StareDocument.Stornat
@@ -4499,7 +4500,7 @@ using (var os = provider.CreateObjectSpace()) {
 // =============== Scenariul e2e pasul 5 / spike 1: felia BTR (D1/D8/D9) ===============
 // Același obiect de studiu ca 3b (transferul), dar parcurs prin CONTRACTUL
 // feliei, nu prin entități: WriteDto → `NotaTransferApply.Aplica` → `Citeste` /
-// `Lista` → dry-run `OperareApi.Valideaza` → comenzile `OperareApi`. Endpoint-urile
+// `Lista` → dry-run `ComenziDocument.Valideaza` → comenzile `ComenziDocument`. Endpoint-urile
 // din host sunt transport peste EXACT acest cod (D1: DTO-uri + Apply în Module,
 // fără ASP.NET), deci ce e verde aici e verde și pe sârmă — controllerul nu mai
 // poate ascunde o regulă.
@@ -4540,7 +4541,7 @@ using (var os = provider.CreateObjectSpace()) {
     // endpoint-ului `POST .../valideaza`.
     IReadOnlyList<string> DryRun(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
 
     // --- Apply: creare din WriteDto (fără Stare/Numar/Valoare — server-owned) ---
@@ -4627,8 +4628,8 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Dry-run pe draftul reparat → din nou listă goală", DryRun(idBtr).Count == 0);
 
     // --- Comenzile prin adaptor: rezultatul e DATE, nu entitate ---
-    var rezultatOperare = OperareApi.Opereaza(os, idBtr);
-    Check("OperareApi.Opereaza → OperareRezultat cu StareNoua=Operat, fără conex (BTR n-are politică)",
+    var rezultatOperare = ComenziDocument.Sistem(os).Opereaza(idBtr);
+    Check("ComenziDocument.Opereaza → OperareRezultat cu StareNoua=Operat, fără conex (BTR n-are politică)",
         rezultatOperare.DocumentId == idBtr && rezultatOperare.StareNoua == StareDocument.Operat
         && rezultatOperare.ConexId == null && rezultatOperare.Mesaje.Count == 0);
     Check("OperareRezultatDto → starea traversează sârma ca TEXT",
@@ -4676,14 +4677,14 @@ using (var os = provider.CreateObjectSpace()) {
                 && s.GestiuneId == r.RepartitorId).Cantitate));
 
     // --- Anulare → re-operare → storno, tot prin adaptor ---
-    var rezultatAnulare = OperareApi.AnuleazaOperarea(os, idBtr);
-    Check("OperareApi.AnuleazaOperarea → Draft, registrele proprii șterse, affordances de Draft",
+    var rezultatAnulare = ComenziDocument.Sistem(os).AnuleazaOperarea(idBtr);
+    Check("ComenziDocument.AnuleazaOperarea → Draft, registrele proprii șterse, affordances de Draft",
         rezultatAnulare.StareNoua == StareDocument.Draft
         && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idBtr)
         && NotaTransferApply.Citeste(os, idBtr).PoateEdita);
-    OperareApi.Opereaza(os, idBtr);
-    var rezultatStorno = OperareApi.Storneaza(os, idBtr, new DateOnly(2026, 7, 22));
-    Check("OperareApi.Storneaza → Stornat + rânduri inverse la data cerută; nicio afordanță rămasă",
+    ComenziDocument.Sistem(os).Opereaza(idBtr);
+    var rezultatStorno = ComenziDocument.Sistem(os).Storneaza(idBtr, new DateOnly(2026, 7, 22));
+    Check("ComenziDocument.Storneaza → Stornat + rânduri inverse la data cerută; nicio afordanță rămasă",
         rezultatStorno.StareNoua == StareDocument.Stornat
         && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idBtr && r.Storno) == 2
         && os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == idBtr && r.Storno)
@@ -5028,7 +5029,7 @@ using (var os = provider.CreateObjectSpace()) {
 // ============ Scenariul e2e pasul 5 / felia 2: Api FCT + NIR (F2-D6) ============
 // Același lanț ca blocul 3c de mai sus (FCT → NIR conex → registre), dar parcurs
 // prin CONTRACTUL feliei: WriteDto → `FacturaIntrareApply.Aplica` → `Citeste` /
-// `Lista` → dry-run → comenzile `OperareApi` → `NirApply`. Endpoint-urile din host
+// `Lista` → dry-run → comenzile `ComenziDocument` → `NirApply`. Endpoint-urile din host
 // sunt transport peste EXACT acest cod, deci ce e verde aici e verde și pe sârmă.
 //
 // Ce exersează în plus față de blocul 3c (și de felia BTR):
@@ -5102,7 +5103,7 @@ using (var os = provider.CreateObjectSpace()) {
     // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
     IReadOnlyList<string> DryRunFct(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
 
     // --- Apply: creare din WriteDto (fără LotId/Valoare — server-owned) ---
@@ -5259,8 +5260,8 @@ using (var os = provider.CreateObjectSpace()) {
     // --- Dry-run, apoi comanda ---
     Check("Dry-run (Valideaza) pe draftul FCT valid → listă goală", DryRunFct(idFct).Count == 0);
 
-    var rezOperare = OperareApi.Opereaza(os, idFct);
-    Check("OperareApi.Opereaza pe FCT → Operat + ConexId (NIR-ul generat în aceeași tranzacție), cu mesaj pentru operator",
+    var rezOperare = ComenziDocument.Sistem(os).Opereaza(idFct);
+    Check("ComenziDocument.Opereaza pe FCT → Operat + ConexId (NIR-ul generat în aceeași tranzacție), cu mesaj pentru operator",
         rezOperare.StareNoua == StareDocument.Operat && rezOperare.ConexId != null
         && rezOperare.Mesaje.Count == 1);
     var idNir = rezOperare.ConexId.Value;
@@ -5311,8 +5312,8 @@ using (var os = provider.CreateObjectSpace()) {
         listaNir.Count == 1 && listaNir[0].Stare == "Draft" && listaNir[0].Autogenerat
         && listaNir[0].Total == 59.5m && listaNir[0].PrimitorDenumire == mag1.Denumire);
 
-    var rezNir = OperareApi.Opereaza(os, idNir);
-    Check("OperareApi.Opereaza pe NIR → Operat, cu număr din politica proprie (seria NIR-), fără alt conex",
+    var rezNir = ComenziDocument.Sistem(os).Opereaza(idNir);
+    Check("ComenziDocument.Opereaza pe NIR → Operat, cu număr din politica proprie (seria NIR-), fără alt conex",
         rezNir.StareNoua == StareDocument.Operat && rezNir.ConexId == null
         && NirApply.Citeste(os, idNir).Numar?.StartsWith("NIR-") == true);
     var stocNir = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == idNir).ToList();
@@ -5334,13 +5335,13 @@ using (var os = provider.CreateObjectSpace()) {
     CheckRefuza("Sterge peste FCT Operat → același refuz de domeniu",
         () => FacturaIntrareApply.Sterge(os, idFct));
     CheckRefuza("Anularea FCT cu NIR operat → refuzată (gardianul grupului conex)",
-        () => OperareApi.AnuleazaOperarea(os, idFct));
+        () => ComenziDocument.Sistem(os).AnuleazaOperarea(idFct));
 
-    OperareApi.AnuleazaOperarea(os, idNir);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idNir);
     Check("NIR anulat: Draft, registrele proprii șterse — dar RĂMÂNE autogenerat",
         NirApply.Citeste(os, idNir) is { Stare: "Draft", Autogenerat: true }
         && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idNir));
-    OperareApi.AnuleazaOperarea(os, idFct);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idFct);
     Check("Anularea FCT ȘTERGE NIR-ul redevenit draft autogenerat (artefact al operării) — Copii se golește",
         NirApply.Citeste(os, idNir) == null
         && FacturaIntrareApply.Citeste(os, idFct) is { Stare: "Draft", Copii.Count: 0 });
@@ -6346,7 +6347,7 @@ using (var os = provider.CreateObjectSpace()) {
     // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
     IReadOnlyList<string> DryRunTrz(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
 
     // ── (a) Plata culeasă manual ────────────────────────────────────────────
@@ -6440,8 +6441,8 @@ using (var os = provider.CreateObjectSpace()) {
         && !os.GetObjectsQuery<DocumentDetaliu>().Any(d => d.DocumentId == idPltInvers));
 
     // ── Comanda pe plată: numărul din serie + contarea din laturi ───────────
-    var rezPlt = OperareApi.Opereaza(os, idPlt);
-    Check("OperareApi.Opereaza pe PLT → Operat, fără conex/secundar",
+    var rezPlt = ComenziDocument.Sistem(os).Opereaza(idPlt);
+    Check("ComenziDocument.Opereaza pe PLT → Operat, fără conex/secundar",
         rezPlt.StareNoua == StareDocument.Operat && rezPlt.ConexId == null && rezPlt.Mesaje.Count == 0);
     plt = TrezorerieApply.Citeste<Plata>(os, idPlt);
     Check("După operare numărul vine DIN SERIE (PLT-), nu din payload; affordances inversate",
@@ -6483,7 +6484,7 @@ using (var os = provider.CreateObjectSpace()) {
         && TrezorerieApply.Citeste<Incasare>(os, idInc) != null
         && !TrezorerieApply.Lista<Plata>(os).Any(x => x.Id == idInc)
         && TrezorerieApply.Lista<Incasare>(os).Any(x => x.Id == idInc));
-    OperareApi.Opereaza(os, idInc);
+    ComenziDocument.Sistem(os).Opereaza(idInc);
     var inc = TrezorerieApply.Citeste<Incasare>(os, idInc);
     var noteInc = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idInc).ToList();
     Check("Apply<Incasare> + operare: număr din seria proprie (INC-), contare oglindită 531.01.01 = 411.01.01 (fallback client), 80",
@@ -6540,7 +6541,7 @@ using (var os = provider.CreateObjectSpace()) {
             PredatorId = furnizor.ID, PrimitorId = mag1.ID,
             GenereazaPlata = true, PlataContPropriuId = idContPropriuInexistent }));
 
-    var rezFct = OperareApi.Opereaza(os, idFctPlata);
+    var rezFct = ComenziDocument.Sistem(os).Opereaza(idFctPlata);
     Check("Operarea FCT (numai servicii ⇒ fără NIR conex) întoarce SECUNDARUL: draftul de plată",
         rezFct.StareNoua == StareDocument.Operat && rezFct.ConexId != null);
     var idPlataAuto = rezFct.ConexId.Value;
@@ -6566,9 +6567,9 @@ using (var os = provider.CreateObjectSpace()) {
         && plataAuto.Linii[0].Valoare == 121m
         && plataAuto.Linii[0].CodEconomicId == codEc.ID);
 
-    OperareApi.Opereaza(os, idPlataAuto);
+    ComenziDocument.Sistem(os).Opereaza(idPlataAuto);
     var impAuto = os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentStingatorId == idPlataAuto).ToList();
-    Check("Operarea plății autogenerate prin OperareApi → imperecherea automată pe BRUT (121), factura stinsă integral",
+    Check("Operarea plății autogenerate prin ComenziDocument → imperecherea automată pe BRUT (121), factura stinsă integral",
         impAuto.Count == 1 && impAuto[0].DocumentId == idFctPlata && impAuto[0].Suma == 121m
         && impAuto[0].Autogenerat && ImperechereService.Ramas(os, idFctPlata) == 0m);
     var plataOperata = TrezorerieApply.Citeste<Plata>(os, idPlataAuto);
@@ -6588,7 +6589,7 @@ using (var os = provider.CreateObjectSpace()) {
     Check("F3-D2: affordance ONESTĂ — plata cu imperechere NU se mai anunță anulabilă (oglinda lui VerificaFaraImperecheri)",
         !plataOperata.PoateAnula && !plataOperata.PoateStorna);
     CheckRefuza("…iar motorul chiar refuză: anularea plății cu imperechere",
-        () => OperareApi.AnuleazaOperarea(os, idPlataAuto));
+        () => ComenziDocument.Sistem(os).AnuleazaOperarea(idPlataAuto));
     Check("F3-D2: numerele stingerii pe ReadDto-ul trezoreriei (Total/Asignat/Ramas din serviciu — TS nu le calculează)",
         plataOperata.Total == 121m && plataOperata.Asignat == 121m && plataOperata.Ramas == 0m);
 
@@ -6842,7 +6843,7 @@ using (var os = provider.CreateObjectSpace()) {
     // Dry-run-ul își cere ObjectSpace-ul PROPRIU (`PregatesteOperare` SCRIE).
     IReadOnlyList<string> DryRunAvir(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
 
     // ── (b) Ancora 1: viramentul cules prin API, cu affordance-ul de FORMĂ ──
@@ -6963,7 +6964,7 @@ using (var os = provider.CreateObjectSpace()) {
     new Purja(os).Adauga(regulaSemn).Executa();
 
     // ── (d) Ancora 3: operarea piciorului de IEȘIRE ─────────────────────────
-    var rezVirPlt = OperareApi.Opereaza(os, idVirPlt);
+    var rezVirPlt = ComenziDocument.Sistem(os).Opereaza(idVirPlt);
     var idVirInc = rezVirPlt.ConexId ?? Guid.Empty;
     var notePicior1 = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idVirPlt).ToList();
     Check("F7-D9 ancora 3: piciorul de ieșire postează 581 (tranzit) = 531.01.01 (contul propriu SURSĂ), 500 — un singur rând, ZERO stoc",
@@ -7021,7 +7022,7 @@ using (var os = provider.CreateObjectSpace()) {
             Id = virInc.Linii[0].Id, TipMaterialId = tipVir.ID,
             Valoare = 500m, CodEconomicId = codEcVir.ID } }
     });
-    var rezVirInc = OperareApi.Opereaza(os, idVirInc);
+    var rezVirInc = ComenziDocument.Sistem(os).Opereaza(idVirInc);
     var notePicior2 = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == idVirInc).ToList();
     Check("F7-D9 ancora 5: piciorul de INTRARE postează 770.00.00 (contul propriu DESTINAȚIE) = 581, la data lui; Repartitor = contul propriu al ACESTUI picior pe ambele laturi",
         rezVirInc.StareNoua == StareDocument.Operat
@@ -7077,7 +7078,7 @@ using (var os = provider.CreateObjectSpace()) {
         Linii = { new TrezorerieLinieWriteDto {
             TipMaterialId = tipTrz.ID, Valoare = 70m, CodEconomicId = codEcVir.ID } }
     });
-    OperareApi.Opereaza(os, idPltStins);
+    ComenziDocument.Sistem(os).Opereaza(idPltStins);
 
     var ntcAvir = os.CreateObject<NotaContabila>();
     ntcAvir.Data = new DateOnly(2026, 4, 13);
@@ -7132,29 +7133,29 @@ using (var os = provider.CreateObjectSpace()) {
     foreach (var idStingere in os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentStingatorId == ntcAvir.ID).Select(i => i.ID).ToArray())
         ImperechereService.Sterge(os, idStingere);
     MotorOperare.AnuleazaOperarea(os, ntcAvir);
-    OperareApi.AnuleazaOperarea(os, idPltStins);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idPltStins);
 
     // ── (g) Ancora 7: anulare, regenerare, storno ───────────────────────────
-    OperareApi.AnuleazaOperarea(os, idVirInc);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idVirInc);
     Check("F7-D9 ancora 7: anularea laturii pereche o readuce în Draft, fără rânduri proprii",
         TrezorerieApply.Citeste<Incasare>(os, idVirInc) is { Stare: "Draft" }
         && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idVirInc));
-    OperareApi.AnuleazaOperarea(os, idVirPlt);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idVirPlt);
     Check("F7-D9 ancora 7: anularea SURSEI șterge draftul autogenerat (gardienii de grup existenți — artefact al operării, se regenerează la re-operare)",
         TrezorerieApply.Citeste<Incasare>(os, idVirInc) == null
         && TrezorerieApply.Citeste<Plata>(os, idVirPlt) is { Stare: "Draft", Copii.Count: 0 }
         && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idVirPlt));
 
-    var rezReoperare = OperareApi.Opereaza(os, idVirPlt);
+    var rezReoperare = ComenziDocument.Sistem(os).Opereaza(idVirPlt);
     var idVirInc2 = rezReoperare.ConexId ?? Guid.Empty;
     Check("Risc pin-uit (ping-pong): re-operarea sursei după anulare regenerează EXACT o latură pereche, nu una în plus",
         idVirInc2 != Guid.Empty && idVirInc2 != idVirInc
         && TrezorerieApply.Citeste<Plata>(os, idVirPlt).Copii.Count == 1);
-    OperareApi.Opereaza(os, idVirInc2);
+    ComenziDocument.Sistem(os).Opereaza(idVirInc2);
     // Piciorul-copil se stornează ÎNTÂI: gardianul de grup refuză stornarea
     // sursei cât timp copilul e Operat (nu și când e Stornat).
-    OperareApi.Storneaza(os, idVirInc2, new DateOnly(2026, 4, 20));
-    OperareApi.Storneaza(os, idVirPlt, new DateOnly(2026, 4, 20));
+    ComenziDocument.Sistem(os).Storneaza(idVirInc2, new DateOnly(2026, 4, 20));
+    ComenziDocument.Sistem(os).Storneaza(idVirPlt, new DateOnly(2026, 4, 20));
     var idsPicioare2 = new List<Guid> { idVirPlt, idVirInc2 };
     var noteStorno = os.GetObjectsQuery<RegistruContabil>()
         .Where(r => r.DocumentId != null && idsPicioare2.Contains(r.DocumentId.Value))
@@ -7669,7 +7670,7 @@ using (var os = provider.CreateObjectSpace()) {
 
 // ========= Scenariul e2e pasul 5 / felia 5: Api NIR scriere (F5-D8) =========
 // RECEPȚIA FĂRĂ FACTURĂ, parcursă prin contractul feliei: WriteDto →
-// `NirApply.Aplica` → `Citeste` → dry-run → `OperareApi.Opereaza` → registre.
+// `NirApply.Aplica` → `Citeste` → dry-run → `ComenziDocument.Opereaza` → registre.
 // Fluxul n-a existat nicăieri până la felia asta (nici în XAF, nici prin API):
 // `NirDetaliu` n-avea `ProdusId`, iar `CreeazaLot` n-avea niciun apelant din UI
 // — exact golul de model pe care GATE-ul l-a închis pe FCT (53a).
@@ -7753,7 +7754,7 @@ using (var os = provider.CreateObjectSpace()) {
     // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
     IReadOnlyList<string> DryRunNir(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
 
     // --- Apply: recepția MANUALĂ, din WriteDto (fără Numar/LotId/Valoare) ---
@@ -7834,7 +7835,7 @@ using (var os = provider.CreateObjectSpace()) {
             Data = dataNir, PredatorId = furnizor.ID, PrimitorId = mag1.ID,
             Linii = { linieProba }
         });
-        CheckRefuza(nume, () => OperareApi.Opereaza(os, id));
+        CheckRefuza(nume, () => ComenziDocument.Sistem(os).Opereaza(id));
         Check(nume + " — fără rânduri-fantomă în ObjectSpace (33d)",
             !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == id)
             && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == id)
@@ -7866,8 +7867,8 @@ using (var os = provider.CreateObjectSpace()) {
         && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idNir)
         && os.GetObjectByKey<Lot>(lotNascut.ID).PretUnitar == 0m);
 
-    var rezNir = OperareApi.Opereaza(os, idNir);
-    Check("OperareApi.Opereaza pe NIR manual → Operat, cu număr din politica proprie (seria NIR-), fără conex; affordances inversate (nu mai e editabil)",
+    var rezNir = ComenziDocument.Sistem(os).Opereaza(idNir);
+    Check("ComenziDocument.Opereaza pe NIR manual → Operat, cu număr din politica proprie (seria NIR-), fără conex; affordances inversate (nu mai e editabil)",
         rezNir.StareNoua == StareDocument.Operat && rezNir.ConexId == null
         && NirApply.Citeste(os, idNir) is { Numar: not null, PoateEdita: false, PoateOpera: false,
             PoateAnula: true, PoateStorna: true }
@@ -7901,7 +7902,7 @@ using (var os = provider.CreateObjectSpace()) {
             TipMaterialId = tipMateriale.ID, ProdusId = produs.ID,
             Cantitate = 10m, PretUnitar = 5m, TipTvaId = cap19.ID, CodEconomicId = codEc.ID } }
     });
-    var idNirConex = OperareApi.Opereaza(os, idFct).ConexId.Value;
+    var idNirConex = ComenziDocument.Sistem(os).Opereaza(idFct).ConexId.Value;
     var conex = NirApply.Citeste(os, idNirConex);
     var lotFct = os.GetObjectByKey<Lot>(conex.Linii[0].LotId.Value);
     Check("NIR conex: DRAFT AUTOGENERAT deci EDITABIL (F5-D8b — recepția parțială e flux de producție), cu lot STRĂIN pe linie, fără produs și fără preț propriu",
@@ -7942,7 +7943,7 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Refuzul de mai sus nu a atins documentul: conexul e viu, cu linia lui",
         NirApply.Citeste(os, idNirConex) is { } viu && viu.Linii.Count == 1);
 
-    OperareApi.Opereaza(os, idNirConex);
+    ComenziDocument.Sistem(os).Opereaza(idNirConex);
     var stocConex = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == idNirConex).ToList();
     Check("NIR conex operat după PUT: +4/+23,8 pe lotul facturii — gardul de preț (F5-D7b) NU atinge liniile cu lot străin, acolo prețul e al lotului",
         stocConex.Count == 1 && stocConex[0].LotId == lotFct.ID
@@ -7972,7 +7973,7 @@ using (var os = provider.CreateObjectSpace()) {
 
 // ========= Scenariul e2e pasul 5 / felia 6: Api BCS scriere (F6-D11) =========
 // Consumul cules manual, parcurs prin contractul feliei: WriteDto →
-// `BonConsumApply.Aplica` → `Citeste`/`Lista` → dry-run → `OperareApi.Opereaza`
+// `BonConsumApply.Aplica` → `Citeste`/`Lista` → dry-run → `ComenziDocument.Opereaza`
 // → cele DOUĂ registre de stoc (−Magazie predator, +Consum primitor — 27a).
 //
 // Ce exersează în plus față de blocul e2e „3c: BonConsum" (care probează
@@ -8057,7 +8058,7 @@ using (var os = provider.CreateObjectSpace()) {
     // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
     IReadOnlyList<string> DryRunBcs(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
     int SerieBcs() => os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "BCS").UrmatorulNumar;
 
@@ -8130,7 +8131,7 @@ using (var os = provider.CreateObjectSpace()) {
         var id = BonConsumApply.Aplica(os, null, new BcsWriteDto {
             Data = dataBcs, PredatorId = predatorId, PrimitorId = primitorId, Linii = { linieProba }
         });
-        CheckRefuza(nume, () => OperareApi.Opereaza(os, id));
+        CheckRefuza(nume, () => ComenziDocument.Sistem(os).Opereaza(id));
         Check(nume + " — fără rânduri-fantomă în ObjectSpace (33d)",
             !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == id)
             && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == id)
@@ -8161,9 +8162,9 @@ using (var os = provider.CreateObjectSpace()) {
         && os.GetObjectByKey<BonConsum>(idBcs).Numar == null
         && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idBcs));
 
-    var rezBcs = OperareApi.Opereaza(os, idBcs);
+    var rezBcs = ComenziDocument.Sistem(os).Opereaza(idBcs);
     citit = BonConsumApply.Citeste(os, idBcs);
-    Check("OperareApi.Opereaza pe BCS → Operat, cu număr din politica proprie (seria BCS-), fără conex; affordances inversate",
+    Check("ComenziDocument.Opereaza pe BCS → Operat, cu număr din politica proprie (seria BCS-), fără conex; affordances inversate",
         rezBcs.StareNoua == StareDocument.Operat && rezBcs.ConexId == null
         && citit.Numar?.StartsWith("BCS-") == true && citit.DataOperare != null
         && !citit.PoateEdita && !citit.PoateOpera && citit.PoateAnula && citit.PoateStorna
@@ -8189,12 +8190,12 @@ using (var os = provider.CreateObjectSpace()) {
 
     // --- Anulare (BCS e frunză în graful de dependențe — 27d) și storno ---
     Check("Anulare prin API → Draft + solduri revenite (Magazie 20, Consum 0)",
-        OperareApi.AnuleazaOperarea(os, idBcs).StareNoua == StareDocument.Draft
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idBcs).StareNoua == StareDocument.Draft
         && SoldBcs(mag1, TipStoc.Magazie) == 20m && SoldBcs(loc, TipStoc.Consum) == 0m
         && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idBcs));
-    OperareApi.Opereaza(os, idBcs);
+    ComenziDocument.Sistem(os).Opereaza(idBcs);
     Check("Storno prin API → Stornat, 4 rânduri de stoc (2 + 2 inverse), solduri nete revenite",
-        OperareApi.Storneaza(os, idBcs, new DateOnly(2026, 7, 22)).StareNoua == StareDocument.Stornat
+        ComenziDocument.Sistem(os).Storneaza(idBcs, new DateOnly(2026, 7, 22)).StareNoua == StareDocument.Stornat
         && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idBcs) == 4
         && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idBcs && r.Storno) == 2
         && SoldBcs(mag1, TipStoc.Magazie) == 20m && SoldBcs(loc, TipStoc.Consum) == 0m);
@@ -8220,7 +8221,7 @@ using (var os = provider.CreateObjectSpace()) {
 // ========= Scenariul e2e pasul 5 / felia 6: Api LDI scriere (F6-D11) =========
 // Inventarierea culeasă manual, prin contractul feliei: WriteDto →
 // `ListaDiferenteInventarApply.Aplica` → `Citeste`/`Lista` → dry-run →
-// `OperareApi.Opereaza` → registre. Singurul tip BIDIRECȚIONAL: plusul NAȘTE
+// `ComenziDocument.Opereaza` → registre. Singurul tip BIDIRECȚIONAL: plusul NAȘTE
 // lotul (ca o recepție manuală), minusul descarcă unul existent.
 //
 // TESTUL-ANCORĂ AL FELIEI (F6-D2): lotul plusului se naște în gestiunea
@@ -8304,7 +8305,7 @@ using (var os = provider.CreateObjectSpace()) {
     decimal SoldLdi(Lot l) => StocService.Sold(os, new CheieStoc(l.ID, mag1.ID, TipStoc.Magazie));
     IReadOnlyList<string> DryRunLdi(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
     int SerieLdi() => os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "LDI").UrmatorulNumar;
 
@@ -8509,7 +8510,7 @@ using (var os = provider.CreateObjectSpace()) {
         var id = ListaDiferenteInventarApply.Aplica(os, null, new LdiWriteDto {
             Data = dataLdi, PredatorId = predatorId, PrimitorId = primitorId, Linii = { linieProba }
         });
-        CheckRefuza(nume, () => OperareApi.Opereaza(os, id));
+        CheckRefuza(nume, () => ComenziDocument.Sistem(os).Opereaza(id));
         Check(nume + " — fără rânduri-fantomă în ObjectSpace (33d)",
             !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == id)
             && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == id)
@@ -8588,7 +8589,7 @@ using (var os = provider.CreateObjectSpace()) {
         }
     });
     CheckRefuza("Minus care descarcă lotul născut de linia-FRATE a aceluiași document → refuz (review F6-F1: prețul plusului nu există până la operare)",
-        () => OperareApi.Opereaza(os, idFrate));
+        () => ComenziDocument.Sistem(os).Opereaza(idFrate));
     Check("Refuzul F6-F1 — fără rânduri-fantomă (33d)",
         !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idFrate)
         && os.GetObjectByKey<ListaDiferenteInventar>(idFrate).Stare == StareDocument.Draft);
@@ -8605,9 +8606,9 @@ using (var os = provider.CreateObjectSpace()) {
         && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idLdi)
         && os.GetObjectByKey<Lot>(lotPlus.ID).PretUnitar == 0m);
 
-    var rezLdi = OperareApi.Opereaza(os, idLdi);
+    var rezLdi = ComenziDocument.Sistem(os).Opereaza(idLdi);
     citit = ListaDiferenteInventarApply.Citeste(os, idLdi);
-    Check("OperareApi.Opereaza pe LDI → Operat, cu număr din politica proprie (seria LDI-), fără conex; affordances inversate",
+    Check("ComenziDocument.Opereaza pe LDI → Operat, cu număr din politica proprie (seria LDI-), fără conex; affordances inversate",
         rezLdi.StareNoua == StareDocument.Operat && rezLdi.ConexId == null
         && citit.Numar?.StartsWith("LDI-") == true && citit.DataOperare != null
         && !citit.PoateEdita && !citit.PoateOpera && citit.PoateAnula && citit.PoateStorna
@@ -8640,15 +8641,15 @@ using (var os = provider.CreateObjectSpace()) {
 
     // --- Anulare directă (lotul plusului neatins de alții) și storno ---
     Check("Anulare prin API → Draft + solduri revenite (vechi 10, nou 0)",
-        OperareApi.AnuleazaOperarea(os, idLdi).StareNoua == StareDocument.Draft
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idLdi).StareNoua == StareDocument.Draft
         && SoldLdi(lotVechi) == 10m && SoldLdi(lotPlusFinal) == 0m
         && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idLdi));
-    OperareApi.Opereaza(os, idLdi);
+    ComenziDocument.Sistem(os).Opereaza(idLdi);
     Check("Re-operare după anulare: semnul rămâne IDEMPOTENT (Math.Abs înainte de semnare, pe ambele căi)",
         ListaDiferenteInventarApply.Citeste(os, idLdi).Linii.Single(l => l.Directie == "Minus").Cantitate == -2m
         && ListaDiferenteInventarApply.Citeste(os, idLdi).Linii.Single(l => l.Directie == "Plus").Valoare == 21m);
     Check("Storno prin API → Stornat, 4 rânduri de stoc (2 + 2 inverse), solduri nete revenite",
-        OperareApi.Storneaza(os, idLdi, new DateOnly(2026, 7, 22)).StareNoua == StareDocument.Stornat
+        ComenziDocument.Sistem(os).Storneaza(idLdi, new DateOnly(2026, 7, 22)).StareNoua == StareDocument.Stornat
         && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idLdi) == 4
         && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idLdi && r.Storno) == 2
         && SoldLdi(lotVechi) == 10m && SoldLdi(lotPlusFinal) == 0m);
@@ -8666,8 +8667,8 @@ using (var os = provider.CreateObjectSpace()) {
     });
     var linieFinalizata = ListaDiferenteInventarApply.Citeste(os, idFinalizat).Linii.Single();
     var idLotFinalizat = linieFinalizata.LotId.Value;
-    OperareApi.Opereaza(os, idFinalizat);
-    OperareApi.AnuleazaOperarea(os, idFinalizat);
+    ComenziDocument.Sistem(os).Opereaza(idFinalizat);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idFinalizat);
     ListaDiferenteInventarApply.Aplica(os, idFinalizat, new LdiWriteDto {
         Data = dataLdi, PredatorId = mag1.ID, PrimitorId = comisie.ID,
         Linii = { new LdiLinieWriteDto {
@@ -8707,7 +8708,7 @@ using (var os = provider.CreateObjectSpace()) {
 
 // ===================== Felia Api DEC (F8-D13, blocul E2E-ADEC) =====================
 // Fluxul-ancoră al decontului parcurs prin CONTRACTUL feliei: `DecontWriteDto` →
-// `DecontApply.Aplica` → `Citeste`/`Lista` → dry-run → `OperareApi.Opereaza` →
+// `DecontApply.Aplica` → `Citeste`/`Lista` → dry-run → `ComenziDocument.Opereaza` →
 // registre → imperecherea lanțului avans↔decont. Endpoint-urile din host sunt
 // transport peste EXACT acest cod (blocul e2e 3c de mai sus probează MOTORUL pe
 // obiecte construite direct — aici se probează CULEGEREA).
@@ -8789,7 +8790,7 @@ using (var os = provider.CreateObjectSpace()) {
     // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
     IReadOnlyList<string> DryRunDec(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
     int SerieDec() => os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "DEC").UrmatorulNumar;
     List<RegistruContabil> NoteDec(Guid docId) =>
@@ -8966,7 +8967,7 @@ using (var os = provider.CreateObjectSpace()) {
             Linii = { linieProba }
         });
         Check(nume + " — dry-run-ul îl vede (fără să atingă nimic)", DryRunDec(id).Count > 0);
-        CheckRefuza(nume, () => OperareApi.Opereaza(os, id));
+        CheckRefuza(nume, () => ComenziDocument.Sistem(os).Opereaza(id));
         Check(nume + " — fără rânduri-fantomă și fără număr consumat (33d + GATE D6)",
             !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == id)
             && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == id)
@@ -9006,9 +9007,9 @@ using (var os = provider.CreateObjectSpace()) {
         && os.GetObjectByKey<Decont>(idDec).Numar == null
         && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idDec));
 
-    var rezDec = OperareApi.Opereaza(os, idDec);
+    var rezDec = ComenziDocument.Sistem(os).Opereaza(idDec);
     citDec = DecontApply.Citeste(os, idDec);
-    Check("OperareApi.Opereaza pe DEC → Operat, cu număr din politica proprie (seria DEC-), fără conex; affordances inversate",
+    Check("ComenziDocument.Opereaza pe DEC → Operat, cu număr din politica proprie (seria DEC-), fără conex; affordances inversate",
         rezDec.StareNoua == StareDocument.Operat && rezDec.ConexId == null
         && citDec.Numar?.StartsWith("DEC-") == true && citDec.DataOperare != null
         && !citDec.PoateEdita && !citDec.PoateOpera && citDec.PoateAnula && citDec.PoateStorna
@@ -9050,7 +9051,7 @@ using (var os = provider.CreateObjectSpace()) {
     linieAvansDec.Valoare = 100m;
     linieAvansDec.CodEconomicId = codEcDec.ID; // 531/542 cer defalcarea E
     os.CommitChanges();
-    OperareApi.Opereaza(os, avansDec.ID);
+    ComenziDocument.Sistem(os).Opereaza(avansDec.ID);
     var impDec = ImperechereService.Imperecheaza(os, avansDec, os.GetObjectByKey<Decont>(idDec), 54.2m);
     citDec = DecontApply.Citeste(os, idDec);
     Check("ANCORA F8-D13.4: avansul (PLT pe titular) stinge decontul pe TOTALUL BRUT, iar affordance-ele devin ONESTE — PoateAnula/PoateStorna FALSE cât există imperecherea (57d)",
@@ -9058,7 +9059,7 @@ using (var os = provider.CreateObjectSpace()) {
         && ImperechereService.Ramas(os, avansDec.ID) == 45.8m
         && citDec.Stare == "Operat" && !citDec.PoateAnula && !citDec.PoateStorna);
     CheckRefuza("…iar gardianul motorului confirmă: anularea decontului imperecheat = refuz",
-        () => OperareApi.AnuleazaOperarea(os, idDec));
+        () => ComenziDocument.Sistem(os).AnuleazaOperarea(idDec));
     ImperechereService.Sterge(os, impDec.ID);
     citDec = DecontApply.Citeste(os, idDec);
     Check("După ștergerea link-ului (31d: se șterge liber), affordance-ele revin",
@@ -9066,15 +9067,15 @@ using (var os = provider.CreateObjectSpace()) {
 
     // --- Anulare, re-operare idempotentă, storno ---
     Check("Anulare prin API → Draft + notele șterse",
-        OperareApi.AnuleazaOperarea(os, idDec).StareNoua == StareDocument.Draft
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idDec).StareNoua == StareDocument.Draft
         && NoteDec(idDec).Count == 0);
-    OperareApi.Opereaza(os, idDec);
+    ComenziDocument.Sistem(os).Opereaza(idDec);
     Check("Re-operare după anulare: cantitatea pro-forma rămâne 1, valorile rămân, numărul rămâne (idempotență)",
         DecontApply.Citeste(os, idDec) is { Total: 54.2m } dupaReoperare
         && dupaReoperare.Linii.Single(l => l.Id == linieDeplasare.Id).Cantitate == 1m
         && dupaReoperare.Numar?.StartsWith("DEC-") == true);
     Check("Storno prin API → Stornat, note inverse append-only (−30, −24,2) la data stornării",
-        OperareApi.Storneaza(os, idDec, new DateOnly(2026, 7, 22)).StareNoua == StareDocument.Stornat
+        ComenziDocument.Sistem(os).Storneaza(idDec, new DateOnly(2026, 7, 22)).StareNoua == StareDocument.Stornat
         && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idDec) == 4
         && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idDec && r.Storno
             && r.Data == new DateOnly(2026, 7, 22)
@@ -9187,7 +9188,7 @@ using (var os = provider.CreateObjectSpace()) {
     // Dry-run-ul își cere ObjectSpace-ul PROPRIU (`PregatesteOperare` SCRIE).
     IReadOnlyList<string> DryRunAper(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
     // Refuzurile de gardian se citesc pe MESAJ, nu doar pe „a aruncat": F8-D9
     // cere ca mesajul SPECIFIC (latura pereche) să ajungă înaintea celui de grup
@@ -9206,7 +9207,7 @@ using (var os = provider.CreateObjectSpace()) {
 
     // ── (A) Nonregresia F7 + `Pereche` simetrică + avertismentul ABSENT ──────
     var idA1 = TrezorerieApply.Aplica<Plata>(os, null, ScrieVir(new DateOnly(2026, 5, 4), casa, banca, 100m));
-    var rezA1 = OperareApi.Opereaza(os, idA1);
+    var rezA1 = ComenziDocument.Sistem(os).Opereaza(idA1);
     var idAc = rezA1.ConexId ?? Guid.Empty;
     Check("ANCORA F8-D13.5 (nonregresie F7): perechea AUTOGENERATĂ primește `LaturaPerecheId` = sursa — legătura o scrie motorul pe COPIL, singura parte care e Draft",
         idAc != Guid.Empty && os.GetObjectByKey<Incasare>(idAc).LaturaPerecheId == idA1);
@@ -9226,7 +9227,7 @@ using (var os = provider.CreateObjectSpace()) {
         && citAc.Pereche.Stare == "Operat" && citAc.Pereche.Numar == numarA1
         && numarA1?.StartsWith("PLT-") == true);
 
-    var rezAc = OperareApi.Opereaza(os, idAc);
+    var rezAc = ComenziDocument.Sistem(os).Opereaza(idAc);
     Check("ANCORA F8-D13.5 (nonregresie F7): latura pereche operată NU generează un al treilea document (gardul de recursie ține), 581 se închide la 0, ZERO imperecheri",
         rezAc.ConexId == null
         && !os.GetObjectsQuery<Document>().Any(d => d.DocumentSursaId == idAc)
@@ -9236,17 +9237,17 @@ using (var os = provider.CreateObjectSpace()) {
             || i.DocumentStingatorId == idAc || i.DocumentId == idAc));
 
     // ── (B) Gardianul F8-D9 pe perechea AUTOGENERATĂ: care mesaj iese ────────
-    var mesajTintaAuto = MesajRefuz(() => OperareApi.AnuleazaOperarea(os, idA1));
+    var mesajTintaAuto = MesajRefuz(() => ComenziDocument.Sistem(os).AnuleazaOperarea(idA1));
     Check("ANCORA F8-D13.3: anularea ȚINTEI cu pointer-ul Operat = refuz, cu mesajul SPECIFIC de latură pereche — nu cel de grup conex, deși aici AMBII gardieni s-ar aplica (ordinea e fixată în cod)",
         mesajTintaAuto != null && mesajTintaAuto.Contains("latura pereche")
         && !mesajTintaAuto.Contains("conexe"));
     Check("…iar STORNAREA țintei primește exact același refuz (gardianul e pe ambele căi de corecție)",
-        MesajRefuz(() => OperareApi.Storneaza(os, idA1, new DateOnly(2026, 5, 20))) is string m
+        MesajRefuz(() => ComenziDocument.Sistem(os).Storneaza(idA1, new DateOnly(2026, 5, 20))) is string m
         && m.Contains("latura pereche"));
     Check("ANCORA F8-D13.3: pointer-ul (piciorul care DECLARĂ legătura) se anulează LIBER — el e frunza, nimeni nu depinde de el",
-        OperareApi.AnuleazaOperarea(os, idAc).StareNoua == StareDocument.Draft);
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idAc).StareNoua == StareDocument.Draft);
     Check("ANCORA F8-D13.3: după anularea pointer-ului, ținta se anulează; aici pointer-ul e ȘI copil autogenerat, deci dispare cu ea (artefact al operării)",
-        OperareApi.AnuleazaOperarea(os, idA1).StareNoua == StareDocument.Draft
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idA1).StareNoua == StareDocument.Draft
         && TrezorerieApply.Citeste<Incasare>(os, idAc) == null
         && TrezorerieApply.Citeste<Plata>(os, idA1) is { Stare: "Draft", Pereche: null });
 
@@ -9258,10 +9259,10 @@ using (var os = provider.CreateObjectSpace()) {
     // jumătatea consultativă a lui F8-D10 era moartă pe scenariul pentru care a
     // fost scrisă. Criteriul corect e „fără pereche OPERATĂ": 581 se închide doar
     // când al doilea picior e operat, iar un draft e o intenție.
-    var idAc2 = OperareApi.Opereaza(os, idA1).ConexId ?? Guid.Empty;
+    var idAc2 = ComenziDocument.Sistem(os).Opereaza(idA1).ConexId ?? Guid.Empty;
     var etichetaDraftBlocant = $"({TrezorerieApply.Citeste<Incasare>(os, idAc2).Data:dd.MM.yyyy})";
     var idC64 = TrezorerieApply.Aplica<Incasare>(os, null, ScrieVir(new DateOnly(2026, 5, 5), casa, banca, 100m));
-    var rezC64 = OperareApi.Opereaza(os, idC64);
+    var rezC64 = ComenziDocument.Sistem(os).Opereaza(idC64);
     Check("ANCORA 64k (PREZENT, draftul generat ÎNCĂ EXISTĂ): avertismentul APARE și numește ȘI piciorul candidat, ȘI draftul care blochează legarea — pe criteriul vechi („fără pereche”) aici era TĂCERE, exact pe scenariul canonic",
         rezC64.Mesaje.Any(m => m.Contains("picioare operate compatibile")
             && m.Contains(numarA1) && m.Contains("blocat de draftul")
@@ -9283,7 +9284,7 @@ using (var os = provider.CreateObjectSpace()) {
         && eroriDraftAuto[0].Contains("latură pereche GENERATĂ automat")
         && eroriDraftAuto[0].Contains("ștergeți acel draft"));
     TrezorerieApply.Sterge<Incasare>(os, idC64Legat);
-    OperareApi.AnuleazaOperarea(os, idC64);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idC64);
     TrezorerieApply.Sterge<Incasare>(os, idC64);
 
     // ── (C2) Același flux DUPĂ ștergerea draftului blocant ──────────────────
@@ -9293,11 +9294,11 @@ using (var os = provider.CreateObjectSpace()) {
         && TrezorerieApply.CandidatiPereche<Incasare, Plata>(os, casa.ID, banca.ID, null)
             .SingleOrDefault(c => c.Id == idA1) is { PerecheDraftNumar: null });
     var idC = TrezorerieApply.Aplica<Incasare>(os, null, ScrieVir(new DateOnly(2026, 5, 6), casa, banca, 100m));
-    var rezC = OperareApi.Opereaza(os, idC);
+    var rezC = ComenziDocument.Sistem(os).Opereaza(idC);
     Check("ANCORA F8-D13.4 (PREZENT, candidat liber): avertismentul îl numește FĂRĂ mențiunea de draft blocant — textul descrie starea reală, nu un șablon fix",
         rezC.Mesaje.Any(m => m.Contains("picioare operate compatibile") && m.Contains(numarA1)
             && !m.Contains("blocat de draftul")));
-    OperareApi.AnuleazaOperarea(os, idC);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idC);
     TrezorerieApply.Sterge<Incasare>(os, idC);
 
     // ── (D) Legătura CULEASĂ suprimă generarea în AMBELE sensuri ─────────────
@@ -9322,12 +9323,12 @@ using (var os = provider.CreateObjectSpace()) {
     Check("…legătura se RETRAGE la fel de simplu cum s-a pus (e câmp cules): dry-run curat după golire",
         TrezorerieApply.Citeste<Plata>(os, idD1).LaturaPerecheId == null && DryRunAper(idD1).Count == 0);
 
-    var rezD1 = OperareApi.Opereaza(os, idD1);
+    var rezD1 = ComenziDocument.Sistem(os).Opereaza(idD1);
     Check("ANCORA F8-D13.1b: la operarea PRIMULUI picior — cel care NU poartă linkul — generarea se suprimă fiindcă CINEVA ÎL ARATĂ PE EL; fără jumătatea a doua a lui F8-D7 s-ar fi născut un al treilea document, adică gaura 64k mutată cu o zi mai devreme",
         rezD1.ConexId == null
         && !os.GetObjectsQuery<Document>().Any(d => d.DocumentSursaId == idD1)
         && !rezD1.Mesaje.Any(m => m.Contains("picioare operate compatibile")));
-    var rezD2 = OperareApi.Opereaza(os, idD2);
+    var rezD2 = ComenziDocument.Sistem(os).Opereaza(idD2);
     Check("ANCORA F8-D13.1a: piciorul cules CU link nu generează nimic la rândul lui; perechea declarată manual închide 581 la 0 cu EXACT două rânduri și ZERO imperecheri",
         rezD2.ConexId == null
         && !os.GetObjectsQuery<Document>().Any(d => d.DocumentSursaId == idD2)
@@ -9345,11 +9346,11 @@ using (var os = provider.CreateObjectSpace()) {
         !TrezorerieApply.CandidatiPereche<Incasare, Plata>(os, casa.ID, banca.ID, null).Any(c => c.Id == idD1)
         && !TrezorerieApply.CandidatiPereche<Plata, Incasare>(os, casa.ID, banca.ID, null).Any(c => c.Id == idD2));
     var idE3 = TrezorerieApply.Aplica<Incasare>(os, null, ScrieVir(new DateOnly(2026, 5, 11), casa, banca, 50m));
-    var rezE3 = OperareApi.Opereaza(os, idE3);
+    var rezE3 = ComenziDocument.Sistem(os).Opereaza(idE3);
     Check("ANCORA (limita criteriului nou): nici avertismentul nu-l pomenește pe piciorul cu pereche OPERATĂ, deși îl pomenește pe cel liber — proba NU e vacuă (mesajul chiar apare)",
         rezE3.Mesaje.Any(m => m.Contains("picioare operate compatibile") && m.Contains(numarA1))
         && !rezE3.Mesaje.Any(m => m.Contains(TrezorerieApply.Citeste<Plata>(os, idD1).Numar)));
-    OperareApi.AnuleazaOperarea(os, idE3);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idE3);
     TrezorerieApply.Sterge<Incasare>(os, idE3);
 
     // Affordance ONESTĂ pe legătura manuală (afordanța găsită cu criteriul greșit):
@@ -9360,13 +9361,13 @@ using (var os = provider.CreateObjectSpace()) {
         && TrezorerieApply.Citeste<Incasare>(os, idD2) is { PoateAnula: true, PoateStorna: true });
 
     // ── Gardianul F8-D9 pe legătura MANUALĂ (fără nicio relație de grup) ────
-    var mesajTintaManuala = MesajRefuz(() => OperareApi.AnuleazaOperarea(os, idD1));
+    var mesajTintaManuala = MesajRefuz(() => ComenziDocument.Sistem(os).AnuleazaOperarea(idD1));
     Check("ANCORA F8-D13.3: ținta unei legături DECLARATE MANUAL n-are `DocumentSursa`, deci gardianul de grup conex n-are ce apăra — o apără exclusiv cel nou (F8-D9), altfel ținta s-ar re-opera și ar genera o pereche lângă cea deja operată",
         mesajTintaManuala != null && mesajTintaManuala.Contains("latura pereche")
         && !mesajTintaManuala.Contains("conexe"));
-    OperareApi.AnuleazaOperarea(os, idD2);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idD2);
     Check("…pointer-ul se anulează liber, iar DUPĂ el se anulează și ținta; legătura CULEASĂ supraviețuiește anulării (e a operatorului, nu artefact al operării — spre deosebire de draftul autogenerat)",
-        OperareApi.AnuleazaOperarea(os, idD1).StareNoua == StareDocument.Draft
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idD1).StareNoua == StareDocument.Draft
         && TrezorerieApply.Citeste<Incasare>(os, idD2) is { Stare: "Draft" } dupaAnulare
         && dupaAnulare.LaturaPerecheId == idD1);
 
@@ -9525,9 +9526,9 @@ using (var os = provider.CreateObjectSpace()) {
     os.CommitChanges();
 
     var idH1 = TrezorerieApply.Aplica<Plata>(os, null, ScrieVir(new DateOnly(2026, 5, 16), casaH, bancaH, 400m));
-    var idHc = OperareApi.Opereaza(os, idH1).ConexId ?? Guid.Empty;
-    OperareApi.Opereaza(os, idHc);
-    OperareApi.Storneaza(os, idHc, new DateOnly(2026, 5, 17));
+    var idHc = ComenziDocument.Sistem(os).Opereaza(idH1).ConexId ?? Guid.Empty;
+    ComenziDocument.Sistem(os).Opereaza(idHc);
+    ComenziDocument.Sistem(os).Storneaza(idHc, new DateOnly(2026, 5, 17));
     var numarH1 = TrezorerieApply.Citeste<Plata>(os, idH1).Numar;
 
     Check("ANCORA D1 (descriptiv vs decizional): pe sursa cu perechea STORNATĂ, `Pereche` o ARATĂ în continuare (o poți deschide), dar `PerecheActiva` = FALSE — 581 e din nou deschis, iar clientul ramifică pe boolean, nu pe stare",
@@ -9557,10 +9558,10 @@ using (var os = provider.CreateObjectSpace()) {
 
     // Avertismentul: piciorul descoperit reintră în listă.
     var idH2 = TrezorerieApply.Aplica<Incasare>(os, null, ScrieVir(new DateOnly(2026, 5, 18), casaH, bancaH, 400m));
-    var rezH2 = OperareApi.Opereaza(os, idH2);
+    var rezH2 = ComenziDocument.Sistem(os).Opereaza(idH2);
     Check("ANCORA D1-A: un nou picior cules manual îl NUMEȘTE pe cel rămas descoperit în avertismentul consultativ — pe criteriul vechi era tăcere, deci gaura 64k se redeschidea tăcut după orice storno",
         rezH2.Mesaje.Any(m => m.Contains("picioare operate compatibile") && m.Contains(numarH1)));
-    OperareApi.AnuleazaOperarea(os, idH2);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idH2);
     var idH2Conex = os.GetObjectsQuery<DocumentTrezorerie>()
         .Where(x => x.DocumentSursaId == idH2).Select(x => (Guid?)x.ID).FirstOrDefault();
     Check("…iar anularea lui i-a șters draftul autogenerat (artefact al operării) — starea rămâne curată pentru proba următoare",
@@ -9569,13 +9570,13 @@ using (var os = provider.CreateObjectSpace()) {
 
     // D1-B: anulare + re-operare REGENEREAZĂ perechea.
     Check("ANCORA D1-B (gardianul rămâne pe Operat): ținta cu pointer STORNAT se anulează LIBER — gardianul apără registre, iar registrele pointer-ului sunt deja inversate",
-        OperareApi.AnuleazaOperarea(os, idH1).StareNoua == StareDocument.Draft
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idH1).StareNoua == StareDocument.Draft
         && os.GetObjectByKey<Incasare>(idHc) is { Stare: StareDocument.Stornat });
-    var rezH1Reoperat = OperareApi.Opereaza(os, idH1);
+    var rezH1Reoperat = ComenziDocument.Sistem(os).Opereaza(idH1);
     var idHc2 = rezH1Reoperat.ConexId ?? Guid.Empty;
     Check("ANCORA D1-B: re-operarea sursei REGENEREAZĂ latura pereche (suprimarea se uită la perechea ACTIVĂ, nu la orice pointer) — altfel indiciul din client prescria exact o operațiune care nu făcea nimic",
         idHc2 != Guid.Empty && os.GetObjectByKey<Incasare>(idHc2).LaturaPerecheId == idH1);
-    OperareApi.Opereaza(os, idHc2);
+    ComenziDocument.Sistem(os).Opereaza(idHc2);
     Check("ANCORA D1-B: perechea regenerată se operează (pointer-ul stornat nu mai blochează validarea) și 581 se închide la 0 peste TOATE cele trei documente — stornarea a golit contribuția piciorului anulat",
         TrezorerieApply.Citeste<Incasare>(os, idHc2) is { Stare: "Operat" }
         && Sold581(idH1, idHc, idHc2) == 0m
@@ -9589,7 +9590,7 @@ using (var os = provider.CreateObjectSpace()) {
     // deschis" despre un document care o ARE — iar sfatul „culegeți manual
     // piciorul celălalt" ar produce chiar dubla postare pe care felia o închide.
     var idI1 = TrezorerieApply.Aplica<Plata>(os, null, ScrieVir(new DateOnly(2026, 5, 19), casaI, bancaI, 700m));
-    var idIc = OperareApi.Opereaza(os, idI1).ConexId ?? Guid.Empty;
+    var idIc = ComenziDocument.Sistem(os).Opereaza(idI1).ConexId ?? Guid.Empty;
     Check("ANCORA D1 (PerecheActiva pe DRAFT): perechea abia generată e Draft — intenția celui de-al doilea picior — deci ACTIVĂ; `Stornat` e singura stare care nu contează",
         TrezorerieApply.Citeste<Plata>(os, idI1) is { PerecheActiva: true } inainteDeGolire
         && inainteDeGolire.Pereche.Stare == "Draft");
@@ -9609,7 +9610,7 @@ using (var os = provider.CreateObjectSpace()) {
     }
     Check("ANCORA D2: suprimarea generării ține și cu linkul golit — sursa nu naște un al doilea copil (gardul de grup conex, nu doar cel de link)",
         !aGeneratDinNou);
-    OperareApi.Opereaza(os, idIc);
+    ComenziDocument.Sistem(os).Opereaza(idIc);
     Check("ANCORA D1 (PerecheActiva pe OPERAT): perechea operată e activă, 581 se închide la 0 — golirea linkului a rămas o chestiune de AFIȘARE, datele n-au fost niciodată în pericol",
         TrezorerieApply.Citeste<Plata>(os, idI1) is { PerecheActiva: true } dupaOperare
         && dupaOperare.Pereche.Stare == "Operat"
@@ -13726,7 +13727,7 @@ void VerificaSaftStocuri(bool privat) {
     os.CommitChanges();
     var refuzFaraCont = false;
     using (var proba = provider.CreateObjectSpace()) {
-        try { OperareApi.Opereaza(proba, asm.ID); }
+        try { ComenziDocument.Sistem(proba).Opereaza(asm.ID); }
         catch (OperareException e) { refuzFaraCont = e.Message.Contains("CONT_STOC_LIPSA"); }
     }
     Check("D17/ASM: lipsa contului refuză atomic operarea; degradarea nomenclatorului se probează după operare",
@@ -17183,7 +17184,7 @@ void VerificaValoareIesire(bool privat) {
 // ================= Felia API NTC (F19, track 1) — E2E-API-NTC =================
 // Nota contabilă parcursă prin CONTRACTUL feliei: WriteDto →
 // `NotaContabilaApply.Aplica` → `Citeste`/`Lista` → `Candidati` → dry-run →
-// `OperareApi`. Endpoint-urile din host sunt transport peste EXACT acest cod,
+// `ComenziDocument`. Endpoint-urile din host sunt transport peste EXACT acest cod,
 // deci ce e verde aici e verde și pe sârmă.
 //
 // Rulează pe AMBELE profiluri (F19-D14): NTC are `PoliticaNumerotare` în
@@ -17281,7 +17282,7 @@ void VerificaApiNtc(bool privat) {
     // MotorOperare.Valideaza: `PregatesteOperare` SCRIE pe linii).
     IReadOnlyList<string> DryRunNtc(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
     int SerieNtc() => os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocument.Cod == "NTC").UrmatorulNumar;
     List<RegistruContabil> NoteNtc(Guid docId) =>
@@ -17456,7 +17457,7 @@ void VerificaApiNtc(bool privat) {
             NotaContabilaApply.Aplica(os, idNtc, Payload(l));
         });
     CheckRefuza("Api NTC: motorul refuză o notă cu linie de tip BAZĂ (n-are postare explicită — ar fi sărită mut)",
-        () => OperareApi.Opereaza(os, idNtc));
+        () => ComenziDocument.Sistem(os).Opereaza(idNtc));
     NotaContabilaApply.Aplica(os, idNtc, rescriere);
     Check("Api NTC: linia absentă din payload se ȘTERGE (reconciliere server-side) — linia de bază dispare, "
         + "agregatul revine la 75",
@@ -17471,7 +17472,7 @@ void VerificaApiNtc(bool privat) {
             Data = dataNtc, PredatorId = predatorId, PrimitorId = primitorId, Linii = { linie }
         });
         Check(nume + " — dry-run-ul îl vede (fără să atingă nimic)", DryRunNtc(id).Count > 0);
-        CheckRefuza(nume, () => OperareApi.Opereaza(os, id));
+        CheckRefuza(nume, () => ComenziDocument.Sistem(os).Opereaza(id));
         Check(nume + " — fără rânduri-fantomă și fără număr consumat (33d + GATE D6)",
             !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == id)
             && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == id)
@@ -17510,7 +17511,7 @@ void VerificaApiNtc(bool privat) {
         && os.GetObjectByKey<NotaContabila>(idNtc).Numar == null
         && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == idNtc));
 
-    var rez = OperareApi.Opereaza(os, idNtc);
+    var rez = ComenziDocument.Sistem(os).Opereaza(idNtc);
     cit = NotaContabilaApply.Citeste(os, idNtc);
     Check("Api NTC: Opereaza → Operat, cu număr din seria proprie (NTC-), fără conex și fără secundar; "
         + "affordances inversate",
@@ -17565,7 +17566,7 @@ void VerificaApiNtc(bool privat) {
         linie.Valoare = valoare;
         linie.CodEconomicId = codEc.ID;   // conturile 5xx/401/411 bugetare cer defalcarea E
         os.CommitChanges();
-        OperareApi.Opereaza(os, doc.ID);
+        ComenziDocument.Sistem(os).Opereaza(doc.ID);
         return doc;
     }
     var incX1 = TrezorerieOperata(incasare: true, partenerX, 100m, new DateOnly(2026, 4, 10));
@@ -17654,7 +17655,7 @@ void VerificaApiNtc(bool privat) {
                 RepartitorDebitId = partenerX.ID, CodEconomicId = codEc.ID, Valoare = 5m }
         }
     });
-    OperareApi.Opereaza(os, idAxa2);
+    ComenziDocument.Sistem(os).Opereaza(idAxa2);
     var notaAxa2 = os.GetObjectByKey<NotaContabila>(idAxa2);
     var capAxa2 = notaAxa2.CapacitateStingere(os);
     var cheiAxa2 = capAxa2.Keys.ToList();
@@ -17708,7 +17709,7 @@ void VerificaApiNtc(bool privat) {
         ImperechereService.Sterge(os, idStingere);
     Check("F19-D16 (a doua axă): scena revine la zero — încasarea își recapătă restul întreg (100,00)",
         ImperechereService.Ramas(os, incX1.ID) == 95m);
-    OperareApi.AnuleazaOperarea(os, idAxa2);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idAxa2);
 
     // ═══ Proba de fond a lui F19-D16: 60 nu mai stinge 120 de aceeași natură ═══
     // Defectul măsurat la pasul 2 al feliei: nota `401 = 4111` de 60,00 pe X avea
@@ -17765,7 +17766,7 @@ void VerificaApiNtc(bool privat) {
         + "iar gardianul motorului confirmă",
         !cit.PoateAnula && !cit.PoateStorna);
     CheckRefuza("Api NTC: anularea unei note care STINGE se refuză (gardianul acoperă coloana DocumentStingator)",
-        () => OperareApi.AnuleazaOperarea(os, idNtc));
+        () => ComenziDocument.Sistem(os).AnuleazaOperarea(idNtc));
     foreach (var idStingere in os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentStingatorId == idNtc).Select(i => i.ID).ToArray())
         ImperechereService.Sterge(os, idStingere);
     cit = NotaContabilaApply.Citeste(os, idNtc);
@@ -17801,7 +17802,7 @@ void VerificaApiNtc(bool privat) {
             TipMaterialId = tipTrz.ID, ContDebitId = contClient.ID, ContCreditId = contTranzit.ID,
             RepartitorDebitId = unitate.ID, CodEconomicId = codEc.ID, Valoare = 30m } }
     });
-    OperareApi.Opereaza(os, idStingeNota);
+    ComenziDocument.Sistem(os).Opereaza(idStingeNota);
     CheckRefuza("101: nota cu repartitor intern nu consumă partidele partenerului", () =>
         ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idStingeNota),
             os.GetObjectByKey<Document>(idNtc), 30m));
@@ -17855,7 +17856,7 @@ void VerificaApiNtc(bool privat) {
                 RepartitorDebitId = partenerX.ID, CodEconomicId = codEc.ID, Valoare = -40m }
         }
     });
-    OperareApi.Opereaza(os, idNtcNetZero);
+    ComenziDocument.Sistem(os).Opereaza(idNtcNetZero);
     var capNetZero = os.GetObjectByKey<NotaContabila>(idNtcNetZero).CapacitateStingere(os);
     var netPeX = os.GetObjectsQuery<NotaContabilaDetaliu>()
         .Where(d => d.DocumentId == idNtcNetZero && d.RepartitorDebitId == partenerX.ID)
@@ -17905,7 +17906,7 @@ void VerificaApiNtc(bool privat) {
                 RepartitorDebitId = partenerY.ID, CodEconomicId = codEc.ID, Valoare = -40m }
         }
     });
-    OperareApi.Opereaza(os, idNtcNetNegativ);
+    ComenziDocument.Sistem(os).Opereaza(idNtcNetNegativ);
     Check("ANCORA F19-D16 (F1): două linii de −40,00 pe DEBITUL lui Y dau net −80,00, deci plafon 80,00 pe "
         + "`Creanta` — un debit de −80 e economic un credit de 80. Latura o răstoarnă semnul NETULUI, nu semnul "
         + "fiecărei linii: tratarea liniei negative e o consecință a netării, nu un caz special",
@@ -17950,7 +17951,7 @@ void VerificaApiNtc(bool privat) {
             TipMaterialId = tipTrz.ID, ContDebitId = contTranzit.ID, ContCreditId = contClient.ID,
             CodEconomicId = codEc.ID, Valoare = 9m } }
     });
-    OperareApi.Opereaza(os, idFaraContrapartida);
+    ComenziDocument.Sistem(os).Opereaza(idFaraContrapartida);
     Check("Api NTC: nota fără repartitori pe linii n-are nicio contrapartidă — panoul întoarce lista GOALĂ "
         + "(48b: fără contrapartide explicite nota nu stinge nimic)",
         NotaContabilaApply.Candidati(os, idFaraContrapartida) is { PoateStinge: true } candGol
@@ -17965,26 +17966,26 @@ void VerificaApiNtc(bool privat) {
     if (privat) {
         using var osRefuz = provider.CreateObjectSpace();
         var refuzDependenti = false;
-        try { OperareApi.AnuleazaOperarea(osRefuz, idNtc); }
+        try { ComenziDocument.Sistem(osRefuz).AnuleazaOperarea(idNtc); }
         catch (OperareException e) { refuzDependenti = e.Message.Contains("PARTIDA_CU_DEPENDENTI"); }
         Check("Api NTC: anularea sursei refuzată cât timp notele FIFO depind de ea", refuzDependenti);
     }
     foreach (var dependent in new[] { idNtcNetNegativ, idNtcNetZero }) {
         using var osDependent = provider.CreateObjectSpace();
-        OperareApi.AnuleazaOperarea(osDependent, dependent);
+        ComenziDocument.Sistem(osDependent).AnuleazaOperarea(dependent);
     }
     var numarNtc = cit.Numar;
     Check("Api NTC: anulare prin API → Draft + notele șterse",
-        OperareApi.AnuleazaOperarea(os, idNtc).StareNoua == StareDocument.Draft
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idNtc).StareNoua == StareDocument.Draft
         && NoteNtc(idNtc).Count == 0);
-    OperareApi.Opereaza(os, idNtc);
+    ComenziDocument.Sistem(os).Opereaza(idNtc);
     Check("Api NTC: re-operare după anulare — același număr, aceleași trei rânduri (valorile nu se re-semnează)",
         NotaContabilaApply.Citeste(os, idNtc) is { Total: 75m } dupaReoperare
         && dupaReoperare.Numar == numarNtc
         && NoteNtc(idNtc).Count == 3 && NoteNtc(idNtc).Sum(n => n.Valoare) == 75m);
     Check("Api NTC: storno prin API → Stornat, rânduri inverse append-only la data stornării (−60 / −25 / +10 — "
         + "negativa devine pozitivă)",
-        OperareApi.Storneaza(os, idNtc, new DateOnly(2026, 7, 23)).StareNoua == StareDocument.Stornat
+        ComenziDocument.Sistem(os).Storneaza(idNtc, new DateOnly(2026, 7, 23)).StareNoua == StareDocument.Stornat
         && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idNtc) == 6
         && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idNtc && r.Storno
             && r.Data == new DateOnly(2026, 7, 23)
@@ -17999,7 +18000,7 @@ void VerificaApiNtc(bool privat) {
 
 // ================= Felia API ASM (F19, track 2) — E2E-API-ASM =================
 // Asamblarea parcursă prin CONTRACTUL feliei: WriteDto → `AsamblareApply.Aplica`
-// → `Citeste`/`Lista` → `DistribuieValoarea` → dry-run → `OperareApi`.
+// → `Citeste`/`Lista` → `DistribuieValoarea` → dry-run → `ComenziDocument`.
 // Endpoint-urile din host sunt transport peste EXACT acest cod, deci ce e verde
 // aici e verde și pe sârmă.
 //
@@ -18149,7 +18150,7 @@ void VerificaApiAsm() {
     // `MotorOperare.Valideaza`: `PregatesteOperare` SCRIE pe linii).
     IReadOnlyList<string> DryRun(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
     // Seria se citește din BAZĂ, nu din cache-ul OS-ului scenei.
     int SerieAsm() {
@@ -18379,7 +18380,7 @@ void VerificaApiAsm() {
         + "deci n-au loc nici în consum, nici în produse)",
         () => AsamblareApply.DistribuieValoarea(os, () => provider.CreateObjectSpace(), idAsm));
     CheckRefuza("Api ASM: motorul refuză o asamblare cu linie de tip BAZĂ („trebuie culeasă ca linie de asamblare”)",
-        () => OperareApi.Opereaza(os, idAsm));
+        () => ComenziDocument.Sistem(os).Opereaza(idAsm));
     AsamblareApply.Aplica(os, idAsm, Rescriere(citBaza));
     Check("Api ASM: linia absentă din payload se ȘTERGE (reconciliere server-side) — linia de bază dispare, "
         + "agregatul revine la două linii",
@@ -18398,7 +18399,7 @@ void VerificaApiAsm() {
         new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
             Cantitate = 1m, PretEvaluare = 5m });
     CheckRefuza("Api ASM: predator ne-Gestiune → refuz al tipului („asamblarea trăiește într-o gestiune”)",
-        () => OperareApi.Opereaza(os, idLaturi));
+        () => ComenziDocument.Sistem(os).Opereaza(idLaturi));
     Check("Api ASM: dry-run-ul spune ACELAȘI lucru înaintea comenzii (43b: autoritar e motorul)",
         DryRun(idLaturi).Any(e => e.Contains("gestiune")));
     AsamblareApply.Sterge(os, idLaturi);
@@ -18408,7 +18409,7 @@ void VerificaApiAsm() {
         new AsmLinieWriteDto { Directie = "Produs", TipMaterialId = tip371.ID, ProdusId = produsKit.ID,
             Cantitate = 1m });
     CheckRefuza("Api ASM: linie de produs FĂRĂ preț de evaluare → refuz al tipului („cere preț de evaluare pozitiv”)",
-        () => OperareApi.Opereaza(os, idPretZero));
+        () => ComenziDocument.Sistem(os).Opereaza(idPretZero));
     AsamblareApply.Sterge(os, idPretZero);
 
     Check("Api ASM (F19-D6 + GATE D6): niciun refuz n-a consumat seria „ASM-” — numărul se asignează abia la "
@@ -18433,7 +18434,7 @@ void VerificaApiAsm() {
     AsamblareApply.Aplica(os, idLotFrate, payloadFrate);
     CheckRefuza("Api ASM: consumul unui lot produs de ACELAȘI document → refuz al tipului (lanțul de kitting = "
         + "documente separate, operate în ordine) — culegerea îl PERMITE, refuzul e al motorului, cu mesajul lui",
-        () => OperareApi.Opereaza(os, idLotFrate));
+        () => ComenziDocument.Sistem(os).Opereaza(idLotFrate));
     AsamblareApply.Sterge(os, idLotFrate);
 
     // Riscul 3 al contractului, MĂSURAT: coerența Tip↔Produs la NAȘTERE.
@@ -18459,7 +18460,7 @@ void VerificaApiAsm() {
             + "care îl au toate tipurile care nasc loturi (LDI F6-F2, FCT, FCL, NIR) și care lipsea de pe ASM. "
             + "Mesajul numește PRODUSUL, câmp editabil, nu lotul: pe linia de produs `Lot` e server-owned și "
             + "read-only, deci vechiul refuz trimitea operatorul la un câmp pe care nu-l poate atinge (62f)",
-            () => OperareApi.Opereaza(os, idTipGresit));
+            () => ComenziDocument.Sistem(os).Opereaza(idTipGresit));
         Check("Api ASM (review M2): refuzul e chiar cel al produsului, cuvânt cu cuvânt ca pe LDI — nu cel "
             + "TRANZITIV prin lot",
             DryRun(idTipGresit).Any(e =>
@@ -18532,7 +18533,7 @@ void VerificaApiAsm() {
         && citDupa2.Linii.Single(l => l.Directie == "Produs") is { PretEvaluare: 10m, Valoare: 10.00m });
 
     // Operarea: predicția == cifra pe care o SCRIE motorul.
-    OperareApi.Opereaza(os, idCapcana);
+    ComenziDocument.Sistem(os).Opereaza(idCapcana);
     var citOperat = AsamblareApply.Citeste(os, idCapcana);
     var lConsumOperat = citOperat.Linii.Single(l => l.Directie == "Consum");
     var lProdusOperat = citOperat.Linii.Single(l => l.Directie == "Produs");
@@ -18597,7 +18598,7 @@ void VerificaApiAsm() {
         && AsamblareApply.Citeste(os, idMulti).Linii.Single(l => l.ProdusId == produsKit2.ID).Valoare == 4.00m);
     Check("Api ASM: documentul distribuit pe mai multe linii trece dry-run-ul FĂRĂ erori (invariantul 46d la zero)",
         DryRun(idMulti).Count == 0);
-    OperareApi.Opereaza(os, idMulti);
+    ComenziDocument.Sistem(os).Opereaza(idMulti);
     Check("Api ASM: …și operează, cu ambele loturi finalizate la prețurile distribuite",
         AsamblareApply.Citeste(os, idMulti).Stare == "Operat"
         && SoldCheie(lotRest2.ID, gA) == new SoldStoc(0m, 0m)
@@ -18681,10 +18682,10 @@ void VerificaApiAsm() {
     // ═══════════ (E) Anulare, re-operare, storno ═══════════
     var numarCapcana = citOperat.Numar;
     Check("Api ASM: anulare prin API → Draft, rândurile de stoc dispar, lotul consumat își recapătă soldul",
-        OperareApi.AnuleazaOperarea(os, idCapcana).StareNoua == StareDocument.Draft
+        ComenziDocument.Sistem(os).AnuleazaOperarea(idCapcana).StareNoua == StareDocument.Draft
         && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == idCapcana)
         && SoldCheie(lotRest.ID, gA) == new SoldStoc(1m, 10.00m));
-    OperareApi.Opereaza(os, idCapcana);
+    ComenziDocument.Sistem(os).Opereaza(idCapcana);
     var citReoperat = AsamblareApply.Citeste(os, idCapcana);
     Check("Api ASM: re-operare după anulare — același număr, aceleași cifre (idempotența `Abs`-urilor din "
         + "`PregatesteOperare` + regula golirii, care recalculează pe registrul curent)",
@@ -18694,7 +18695,7 @@ void VerificaApiAsm() {
         && SoldCheie(lotRest.ID, gA) == new SoldStoc(0m, 0m));
     Check("Api ASM: storno prin API → Stornat, rânduri INVERSE append-only la data stornării (+1/+10,00 pe lotul "
         + "consumat, −1/−10,00 pe lotul produs)",
-        OperareApi.Storneaza(os, idCapcana, new DateOnly(2026, 7, 15)).StareNoua == StareDocument.Stornat
+        ComenziDocument.Sistem(os).Storneaza(idCapcana, new DateOnly(2026, 7, 15)).StareNoua == StareDocument.Stornat
         && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idCapcana && r.Storno) == 2
         && SoldCheie(lotRest.ID, gA) == new SoldStoc(1m, 10.00m));
 
@@ -18707,7 +18708,7 @@ void VerificaApiAsm() {
 
 // ================= Felia API RLF (F19, track 3) — E2E-API-RLF =================
 // Returul la furnizor parcurs prin CONTRACTUL feliei: WriteDto →
-// `ReturFurnizorApply.Aplica` → `Citeste`/`Lista` → dry-run → `OperareApi`.
+// `ReturFurnizorApply.Aplica` → `Citeste`/`Lista` → dry-run → `ComenziDocument`.
 // Endpoint-urile din host sunt transport peste EXACT acest cod, deci ce e verde
 // aici e verde și pe sârmă.
 //
@@ -18842,7 +18843,7 @@ void VerificaApiRlf() {
         os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == docId && !r.Storno).ToList();
     IReadOnlyList<string> DryRun(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
     int SerieRlf() {
         using var o = provider.CreateObjectSpace();
@@ -19012,7 +19013,7 @@ void VerificaApiRlf() {
 
     var idLaturi = IdNou(furnizor.ID, gest.ID, LinieValida());
     CheckRefuza("Api RLF: laturi INVERSATE (predator partener / primitor gestiune) → refuz al tipului",
-        () => OperareApi.Opereaza(os, idLaturi));
+        () => ComenziDocument.Sistem(os).Opereaza(idLaturi));
     Check("Api RLF: dry-run-ul spune ACELAȘI lucru înaintea comenzii (43b: autoritar e motorul)",
         DryRun(idLaturi).Any(e => e.Contains("gestiune")));
     Check("Api RLF: refuzul n-a lăsat rânduri-fantomă (33d)",
@@ -19026,7 +19027,7 @@ void VerificaApiRlf() {
         + "valoarea lotului scos de pe linie ar minți pe ecran (precedentul BCS)",
         ReturFurnizorApply.Citeste(os, idFaraLot).Linii[0] is { LotId: null, Valoare: 0m, ValoareTva: 0m });
     CheckRefuza("Api RLF: …iar operarea o refuză („returul descarcă LOTUL ORIGINAL” — decizia 13)",
-        () => OperareApi.Opereaza(os, idFaraLot));
+        () => ComenziDocument.Sistem(os).Opereaza(idFaraLot));
     ReturFurnizorApply.Sterge(os, idFaraLot);
 
     var idCapitalizat = IdNou(gest.ID, furnizor.ID, new RlfLinieWriteDto {
@@ -19034,14 +19035,14 @@ void VerificaApiRlf() {
     });
     CheckRefuza("Api RLF: regim `Capitalizat` (NED21) → refuz al MOTORULUI, nu al clientului (43b) — valoarea "
         + "returului e costul lotului, nu costul plus taxa",
-        () => OperareApi.Opereaza(os, idCapitalizat));
+        () => ComenziDocument.Sistem(os).Opereaza(idCapitalizat));
     ReturFurnizorApply.Sterge(os, idCapitalizat);
 
     var idPesteSold = IdNou(gest.ID, furnizor.ID, new RlfLinieWriteDto {
         TipMaterialId = tip371.ID, LotId = lotIntreg.ID, Cantitate = 999m
     });
     CheckRefuza("Api RLF: retur peste soldul lotului → refuzul gardianului de sold (25d), pe calea API",
-        () => OperareApi.Opereaza(os, idPesteSold));
+        () => ComenziDocument.Sistem(os).Opereaza(idPesteSold));
     ReturFurnizorApply.Sterge(os, idPesteSold);
 
     Check("Api RLF (F19-D6 + GATE D6): niciun refuz n-a consumat seria „RLF-” — numărul se asignează abia la "
@@ -19062,7 +19063,7 @@ void VerificaApiRlf() {
 
     // ═══════════ (D) Operarea: semnarea, stocul, notele ═══════════
     Check("Api RLF: dry-run-ul unui retur complet nu întoarce nicio eroare", DryRun(idRlf).Count == 0);
-    OperareApi.Opereaza(os, idRlf);
+    ComenziDocument.Sistem(os).Opereaza(idRlf);
     var citOperat = ReturFurnizorApply.Citeste(os, idRlf);
     var linieOperata = citOperat.Linii.Single();
     Check("Api RLF: operarea SEMNEAZĂ (−4 / −40,00 / −8,40), consumă seria „RLF-”, iar ReadDto arată cifrele "
@@ -19107,7 +19108,7 @@ void VerificaApiRlf() {
         + "și ATÂT — nu consultă soldul valoric și nu prezice golirea; calea API nu introduce un al doilea adevăr "
         + "despre valoarea ieșirii",
         citFiscal.Linii[0].Valoare == 10.00m && citFiscal.Linii[0].ValoareTva == 2.10m);
-    OperareApi.Opereaza(os, idFiscal);
+    ComenziDocument.Sistem(os).Opereaza(idFiscal);
     // Contrastul: un BON DE CONSUM pe lotul geamăn, în aceeași poziție, ABSOARBE.
     Bcs(lotGeaman, new DateOnly(2026, 9, 12), 1m);
     var soldFiscal = SoldCheie(lotFiscal.ID);
@@ -19134,7 +19135,7 @@ void VerificaApiRlf() {
 
     // ═══════════ (F) Riscul 6: idempotența semnării prin calea API ═══════════
     var numarRlf = citOperat.Numar;
-    OperareApi.AnuleazaOperarea(os, idRlf);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idRlf);
     var citAnulat = ReturFurnizorApply.Citeste(os, idRlf);
     Console.WriteLine($"     MĂSURAT (Api RLF, riscul 6): după ANULARE documentul e „{citAnulat.Stare}” cu linia "
         + $"încă semnată de operare ({citAnulat.Linii[0].Cantitate:0.###} / {citAnulat.Linii[0].Valoare:N2} / "
@@ -19157,7 +19158,7 @@ void VerificaApiRlf() {
         + "`Abs`",
         citRenormalizat.Linii[0].Cantitate == 4m && citRenormalizat.Linii[0].Valoare == 40m
         && citRenormalizat.Linii[0].ValoareTva == 8.4m && citRenormalizat.Total == 48.4m);
-    OperareApi.Opereaza(os, idRlf);
+    ComenziDocument.Sistem(os).Opereaza(idRlf);
     var citReoperat = ReturFurnizorApply.Citeste(os, idRlf);
     Check("RISCUL 6: re-operarea după anulare + PUT dă EXACT aceleași cifre și același număr — semnul nu se "
         + "dublează (nici prin motor, nici prin Apply)",
@@ -19170,7 +19171,7 @@ void VerificaApiRlf() {
     var dStorno = new DateOnly(2026, 9, 20);
     Check("Api RLF: storno prin API → Stornat, rânduri INVERSE append-only (POZITIVE, cu flag `Storno`) la data "
         + "stornării; stocul revine la 10",
-        OperareApi.Storneaza(os, idRlf, dStorno).StareNoua == StareDocument.Stornat
+        ComenziDocument.Sistem(os).Storneaza(idRlf, dStorno).StareNoua == StareDocument.Stornat
         && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idRlf && r.Storno) == 1
         && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idRlf && r.Storno) == 2
         && os.GetObjectsQuery<RegistruContabil>()
@@ -19194,7 +19195,7 @@ void VerificaApiRlf() {
 
 // ================= Felia API RDC (F19, track 3) — E2E-API-RDC =================
 // Returul de la client parcurs prin CONTRACTUL feliei: WriteDto →
-// `ReturClientApply.Aplica` → `Citeste`/`Lista` → dry-run → `OperareApi`.
+// `ReturClientApply.Aplica` → `Citeste`/`Lista` → dry-run → `ComenziDocument`.
 // Endpoint-urile din host sunt transport peste EXACT acest cod.
 //
 // Rulează DOAR pe profilul PRIVAT (F19-D14): politicile RDC există doar acolo.
@@ -19300,7 +19301,7 @@ void VerificaApiRdc() {
         os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == docId && !r.Storno).ToList();
     IReadOnlyList<string> DryRun(Guid docId) {
         using var osDry = provider.CreateObjectSpace();
-        return OperareApi.Valideaza(osDry, docId);
+        return ComenziDocument.Sistem(osDry).Valideaza(docId);
     }
     int SerieRdc() {
         using var o = provider.CreateObjectSpace();
@@ -19471,7 +19472,7 @@ void VerificaApiRdc() {
 
     var idLaturi = IdNou(gest.ID, client.ID, LinieVenit());
     CheckRefuza("Api RDC: laturi INVERSATE (predator gestiune / primitor partener) → refuz al tipului",
-        () => OperareApi.Opereaza(os, idLaturi));
+        () => ComenziDocument.Sistem(os).Opereaza(idLaturi));
     Check("Api RDC: dry-run-ul spune ACELAȘI lucru înaintea comenzii (43b: autoritar e motorul)",
         DryRun(idLaturi).Any(e => e.Contains(Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.PredatorNepotrivit)));
     Check("Api RDC: refuzul n-a lăsat rânduri-fantomă (33d)",
@@ -19483,21 +19484,21 @@ void VerificaApiRdc() {
         new RdcLinieWriteDto { TipMaterialId = tip371.ID, Valoare = 100m, TipTvaId = n21.ID });
     CheckRefuza("Api RDC: linie de VENIT (fără lot) cu Tip de STOC → refuz al tipului (venitul poartă natura "
         + "Serviciu; marfa care revine se culege pe o linie cu lot)",
-        () => OperareApi.Opereaza(os, idVenitStoc));
+        () => ComenziDocument.Sistem(os).Opereaza(idVenitStoc));
     ReturClientApply.Sterge(os, idVenitStoc);
 
     var idTipIncoerent = IdNou(client.ID, gest.ID,
         LinieVenit(),
         new RdcLinieWriteDto { TipMaterialId = tip301.ID, LotId = lot.ID, Cantitate = 1m });
     CheckRefuza("Api RDC: linie de marfă cu Tip incoerent cu produsul lotului → refuz al tipului",
-        () => OperareApi.Opereaza(os, idTipIncoerent));
+        () => ComenziDocument.Sistem(os).Opereaza(idTipIncoerent));
     ReturClientApply.Sterge(os, idTipIncoerent);
 
     var idCapitalizat = IdNou(client.ID, gest.ID,
         new RdcLinieWriteDto { TipMaterialId = tip707.ID, Valoare = 100m, TipTvaId = ned21.ID });
     CheckRefuza("Api RDC: venit cu regim `Capitalizat` (NED21) → refuz al MOTORULUI (43b) — semnarea ar compunda "
         + "brutul la re-operare",
-        () => OperareApi.Opereaza(os, idCapitalizat));
+        () => ComenziDocument.Sistem(os).Opereaza(idCapitalizat));
     ReturClientApply.Sterge(os, idCapitalizat);
 
     Check("Api RDC (F19-D6 + GATE D6): niciun refuz n-a consumat seria „RDC-”",
@@ -19505,7 +19506,7 @@ void VerificaApiRdc() {
 
     // ═══════════ (E) Operarea ═══════════
     Check("Api RDC: dry-run-ul returului complet nu întoarce nicio eroare", DryRun(idRdc).Count == 0);
-    OperareApi.Opereaza(os, idRdc);
+    ComenziDocument.Sistem(os).Opereaza(idRdc);
     var citOperat = ReturClientApply.Citeste(os, idRdc);
     var venitOperat = citOperat.Linii.Single(l => l.LotId == null);
     var costOperat = citOperat.Linii.Single(l => l.LotId != null);
@@ -19537,7 +19538,7 @@ void VerificaApiRdc() {
 
     // ═══════════ (F) Riscul 6: idempotența semnării prin calea API ═══════════
     var numarRdc = citOperat.Numar;
-    OperareApi.AnuleazaOperarea(os, idRdc);
+    ComenziDocument.Sistem(os).AnuleazaOperarea(idRdc);
     var citAnulat = ReturClientApply.Citeste(os, idRdc);
     ReturClientApply.Aplica(os, idRdc, Rescriere(citAnulat));
     var citRenormalizat = ReturClientApply.Citeste(os, idRdc);
@@ -19552,7 +19553,7 @@ void VerificaApiRdc() {
         && citRenormalizat.Linii.Single(l => l.LotId == null).Cantitate == 1m
         && citRenormalizat.Linii.Single(l => l.LotId != null).Cantitate == 3m
         && SoldCheie() == new SoldStoc(10m, 100m));
-    OperareApi.Opereaza(os, idRdc);
+    ComenziDocument.Sistem(os).Opereaza(idRdc);
     var citReoperat = ReturClientApply.Citeste(os, idRdc);
     Check("RISCUL 6 (RDC): re-operarea după anulare + PUT dă EXACT aceleași cifre și același număr",
         citReoperat.Numar == numarRdc && citReoperat.Total == -121m
@@ -19562,7 +19563,7 @@ void VerificaApiRdc() {
     // ═══════════ (G) Storno ═══════════
     Check("Api RDC: storno prin API → Stornat, rânduri INVERSE append-only (POZITIVE, cu flag `Storno`); stocul "
         + "revine la 10",
-        OperareApi.Storneaza(os, idRdc, new DateOnly(2026, 10, 20)).StareNoua == StareDocument.Stornat
+        ComenziDocument.Sistem(os).Storneaza(idRdc, new DateOnly(2026, 10, 20)).StareNoua == StareDocument.Stornat
         && os.GetObjectsQuery<RegistruStoc>().Count(r => r.DocumentId == idRdc && r.Storno) == 1
         && os.GetObjectsQuery<RegistruContabil>().Count(r => r.DocumentId == idRdc && r.Storno) == 3
         && SoldCheie() == new SoldStoc(10m, 100m));
@@ -23264,7 +23265,7 @@ void VerificaSolduriPerioada(bool privat) {
                     + $"WHERE \"An\" = {An} AND \"Luna\" = 1 FOR UPDATE";
                 cmd.ExecuteNonQuery();
             }
-            var refuz = CuLockTimeout(o => OperareApi.Opereaza(o, idProba));
+            var refuz = CuLockTimeout(o => ComenziDocument.Sistem(o).Opereaza(idProba));
             Console.WriteLine($"     MĂSURAT (PER-C1/{eticheta}): operarea sub închidere „în curs” a ieșit cu "
                 + $"„{refuz ?? "<a trecut>"}”.");
             Check($"PER-C1 ({eticheta}) cu o închidere „în curs” care ține `FOR UPDATE` pe rândul perioadei, "
@@ -23273,7 +23274,7 @@ void VerificaSolduriPerioada(bool privat) {
                 refuz == "55P03");
             txExterna.Rollback();
         }
-        var dupa = CuLockTimeout(o => OperareApi.Opereaza(o, idProba));
+        var dupa = CuLockTimeout(o => ComenziDocument.Sistem(o).Opereaza(idProba));
         Check($"PER-C2 ({eticheta}) după eliberarea lock-ului aceeași comandă TRECE — blocarea serializează "
             + "cursa, nu interzice operarea", dupa == null);
 
@@ -25284,7 +25285,7 @@ void VerificaAcceptare(bool privat) {
         using (var os = provider.CreateObjectSpace()) {
             var rez = InchidereTvaApply.Genereaza(os,
                 new GenerareItvRequestDto { An = An, Luna = 1, UnitateId = idUnitate });
-            OperareApi.Opereaza(os, rez.DocumentId ?? Guid.Empty);
+            ComenziDocument.Sistem(os).Opereaza(rez.DocumentId ?? Guid.Empty);
         }
         Check($"ACC-V4 ({eticheta}) după generarea ȘI operarea închiderii de TVA pe lună, constatarea dispare "
             + "— un draft neoperat n-ar fi ajuns (nu scrie registre)",
@@ -25309,7 +25310,7 @@ void VerificaAcceptare(bool privat) {
     using (var os = provider.CreateObjectSpace()) {
         var rez = AmoApply.Genereaza(os,
             new GenerareAmoRequestDto { An = An, Luna = 1, UnitateId = idUnitate });
-        OperareApi.Opereaza(os, rez.DocumentId ?? Guid.Empty);
+        ComenziDocument.Sistem(os).Opereaza(rez.DocumentId ?? Guid.Empty);
     }
     Check($"ACC-V6 ({eticheta}) după generarea și operarea amortizării lunii, constatarea dispare",
         Constatare(1, "AMO-LIPSA") == null);
@@ -25703,7 +25704,7 @@ void VerificaReviewAcceptare(bool privat) {
         if (amoSeed != null)
             Politica(FelConstatareInchidere.AmoLipsa, amoSeed.Value);
         using (var os = provider.CreateObjectSpace())
-            OperareApi.Opereaza(os, idAmo);
+            ComenziDocument.Sistem(os).Opereaza(idAmo);
         Check($"F27-RA3c ({eticheta}) AMO Operat ⇒ constatarea dispare", Constatare(An, 1, "AMO-LIPSA") == null);
         using (var os = provider.CreateObjectSpace()) {
             MotorOperare.Storneaza(os, os.GetObjectByKey<Document>(idAmo), Zi(1, 31));
@@ -25715,7 +25716,7 @@ void VerificaReviewAcceptare(bool privat) {
             amoStornat != null && amoStornat.Text.Contains("lipsește"));
         using (var os = provider.CreateObjectSpace()) {
             var rez = AmoApply.Genereaza(os, new GenerareAmoRequestDto { An = An, Luna = 1, UnitateId = idUnitate });
-            OperareApi.Opereaza(os, rez.DocumentId ?? Guid.Empty);
+            ComenziDocument.Sistem(os).Opereaza(rez.DocumentId ?? Guid.Empty);
         }
 
         // ── RA1: acceptarea pe o fotografie veche ──
@@ -25805,7 +25806,7 @@ void VerificaReviewAcceptare(bool privat) {
                 draft?.ObiectId == idItv && drafturiFeb == 0
                 && Constatare(An, 2, $"DRAFT-IN-PERIOADA:{idItv}") == null);
             using (var os = provider.CreateObjectSpace())
-                OperareApi.Opereaza(os, idItv);
+                ComenziDocument.Sistem(os).Opereaza(idItv);
             Check($"F27-RA2c ({eticheta}) ITV Operat ⇒ constatarea dispare", Constatare(An, 2, "ITV-LIPSA") == null);
             using (var os = provider.CreateObjectSpace()) {
                 MotorOperare.Storneaza(os, os.GetObjectByKey<Document>(idItv), Zi(2, 28));
@@ -25819,7 +25820,7 @@ void VerificaReviewAcceptare(bool privat) {
                 var rez = InchidereTvaApply.Genereaza(os, new GenerareItvRequestDto { An = An, Luna = 3, UnitateId = idUnitate });
                 idItvMar = rez.DocumentId ?? Guid.Empty;
                 if (idItvMar != Guid.Empty)
-                    OperareApi.Opereaza(os, idItvMar);
+                    ComenziDocument.Sistem(os).Opereaza(idItvMar);
             }
             MotivNegenerare? motivFeb;
             using (var os = provider.CreateObjectSpace())
@@ -28139,7 +28140,7 @@ void VerificaImobilizari(bool privat) {
 }
 
 // Imobilizările parcurse prin CONTRACTUL feliei: `PifApply.LiniiSursa` →
-// `PifApply.Aplica` → `OperareApi` → `AmoApply.Previzualizeaza`/`Genereaza`/
+// `PifApply.Aplica` → `ComenziDocument` → `AmoApply.Previzualizeaza`/`Genereaza`/
 // `Citeste` (`Stale`) → revizuire → `Regenereaza` → `CasApply.Aplica` →
 // `ImobilizariApply.Fisa`/`Registru`. Endpoint-urile din host sunt transport
 // peste EXACT acest cod.
@@ -28273,7 +28274,7 @@ void VerificaImobilizariApi(bool privat) {
     linieFct.ProiectId = proiect.ID;
     os.CommitChanges();
     var idLinieSursa = linieFct.ID;
-    OperareApi.Opereaza(os, fct.ID);
+    ComenziDocument.Sistem(os).Opereaza(fct.ID);
 
     // Fișa se creează DIRECT pe ObjectSpace: nomenclatorul e pe OData, care nu se
     // exersează in-process, iar gardianul ei are deja probă în `E2E-IMO`.
@@ -28342,7 +28343,7 @@ void VerificaImobilizariApi(bool privat) {
         !dupaPif.Candidati.Any(c => c.LinieId == idLinieSursa)
         && epuizat != null && epuizat.Consumat == 3600m && epuizat.Rest == 0m);
 
-    OperareApi.Opereaza(os, idPif);
+    ComenziDocument.Sistem(os).Opereaza(idPif);
 
     // ── API-IMO-V4: luna punerii în funcțiune nu se amortizează ───────────────
     var prevMai = AmoApply.Previzualizeaza(os, An, 5);
@@ -28406,7 +28407,7 @@ void VerificaImobilizariApi(bool privat) {
             }
         }
     });
-    OperareApi.Opereaza(os, idRevizuire);
+    ComenziDocument.Sistem(os).Opereaza(idRevizuire);
     var dupaRevizuire = AmoApply.Citeste(os, idAmoIunie);
     Console.WriteLine($"     MĂSURAT (API-IMO-V7/{eticheta}): după revizuirea duratei la 48, draftul lunii "
         + $"are Stale = {dupaRevizuire.Stale}.");
@@ -28416,7 +28417,7 @@ void VerificaImobilizariApi(bool privat) {
         dupaRevizuire.Stale == true);
     CheckRefuza($"API-IMO-V8 ({eticheta}) operarea unui draft stale e refuzată de gardian — `Stale` și refuzul "
         + "citesc ACELAȘI criteriu",
-        () => OperareApi.Opereaza(os, idAmoIunie));
+        () => ComenziDocument.Sistem(os).Opereaza(idAmoIunie));
 
     // ── API-IMO-V9: regenerarea, cu cota nouă ────────────────────────────────
     var cotaRevizuita = Math.Round(3600m / 48m, 2);
@@ -28434,7 +28435,7 @@ void VerificaImobilizariApi(bool privat) {
         && citRegen.TotalContabil == cotaRevizuita
         && AmoApply.Citeste(os, idAmoIunie) == null);
 
-    OperareApi.Opereaza(os, idAmoIunie2);
+    ComenziDocument.Sistem(os).Opereaza(idAmoIunie2);
     Check($"API-IMO-V10 ({eticheta}) după operare `Stale` e `null`, nu `false`: cifra e deja în registru, iar "
         + "întrebarea n-ar mai avea sens",
         AmoApply.Citeste(os, idAmoIunie2).Stale == null);
@@ -28448,7 +28449,7 @@ void VerificaImobilizariApi(bool privat) {
         throw new OperareException($"Scena API-IMO: iulie n-a fost generată ({generatIulie.Motiv}).");
     var idAmoIulie = generatIulie.DocumentId.Value;
     var citIulie = AmoApply.Citeste(os, idAmoIulie);
-    OperareApi.Opereaza(os, idAmoIulie);
+    ComenziDocument.Sistem(os).Opereaza(idAmoIulie);
     var iarasiIulie = AmoApply.Genereaza(os,
         new GenerareAmoRequestDto { An = An, Luna = 7, UnitateId = unitate.ID });
     Console.WriteLine($"     MĂSURAT (API-IMO-V11/{eticheta}): iulie = {citIulie.TotalContabil}; a doua "
@@ -28486,7 +28487,7 @@ void VerificaImobilizariApi(bool privat) {
             && l.ContDebitId == politicaF.ContAmortizareId && l.ContCreditId == tipF.ContImplicitId)
         && citCas.Linii.Any(l => l.Fel == nameof(FelLinieIesire.ValoareRamasa) && l.Valoare == ramas
             && l.ContDebitId == politicaF.ContCheltuialaCedareId && l.ContCreditId == tipF.ContImplicitId));
-    OperareApi.Opereaza(os, idCas);
+    ComenziDocument.Sistem(os).Opereaza(idCas);
 
     // ── API-IMO-V14: fișa la DATĂ ────────────────────────────────────────────
     var fisaIulie = ImobilizariApply.Fisa(os, idFisa, Zi(7, 31));
@@ -28635,7 +28636,7 @@ void VerificaImobilizariApi(bool privat) {
 
 // Declarația vamală parcursă prin CONTRACTUL feliei: `Aplica` (creare cu
 // facturi) → `Citeste` → `FacturiCandidate` → `Aplica` (schimbă legăturile) →
-// `OperareApi` → refuzul PUT-ului pe document operat → storno. Endpoint-urile
+// `ComenziDocument` → refuzul PUT-ului pe document operat → storno. Endpoint-urile
 // din host sunt transport peste EXACT acest cod.
 //
 // Semantica de MOTOR (planul, registrele, D300, gardianul legăturii) e acoperită
@@ -28936,11 +28937,11 @@ void VerificaApiDvi() {
         CheckRefuza("Api DVI: o linie culeasă cu un tip de TVA care nu e `DeImport` (N21) trece de "
             + "culegere — draftul are voie să fie greșit — și se oprește la OPERARE, cu refuzul TIPULUI. "
             + "Felia nu-l duplică: o a doua sursă a aceleiași reguli ar diverge tăcut (42a)",
-            () => OperareApi.Opereaza(osDry, idDvi));
+            () => ComenziDocument.Sistem(osDry).Opereaza(idDvi));
     DviApply.Aplica(os, idDvi, Rescrie(citSchimbat, new List<Guid> { idFf2 }, tipTvaPrimaLinie: imp21.ID));
 
     // ---------------- (5) Operarea, refuzul PUT-ului, stornoul ----------------
-    var rezOperare = OperareApi.Opereaza(os, idDvi);
+    var rezOperare = ComenziDocument.Sistem(os).Opereaza(idDvi);
     var citOperat = DviApply.Citeste(os, idDvi);
     Console.WriteLine($"     MĂSURAT (Api DVI/operare): stare {rezOperare.StareNoua}, conex "
         + $"{rezOperare.ConexId?.ToString() ?? "<niciunul>"}; Baza {citOperat.Baza}, Tva {citOperat.Tva}.");
@@ -28963,7 +28964,7 @@ void VerificaApiDvi() {
         os.GetObjectsQuery<DviFactura>().Count(f => f.DviId == idDvi && f.FacturaId == idFf2) == 1
         && os.GetObjectsQuery<DviFactura>().Count(f => f.DviId == idDvi) == 1);
 
-    var rezStorno = OperareApi.Storneaza(os, idDvi, new DateOnly(2026, 2, 26));
+    var rezStorno = ComenziDocument.Sistem(os).Storneaza(idDvi, new DateOnly(2026, 2, 26));
     var citStornat = DviApply.Citeste(os, idDvi);
     Check("Api DVI: `storneaza` prin ușă ⇒ `Stornat` pe sârmă (string, nu ordinalul enum-ului), fără "
         + "nicio afordanță de scriere, iar legăturile rămân înghețate cu documentul",
@@ -29675,7 +29676,7 @@ void VerificaReviewF26(bool privat) {
 // Review advers felia 27, pasul 8b — probele `F27-R*`. Scena stă în 2036
 // (12/2035 nedefinit ⇒ 01/2036 e capăt de lanț); niciun alt bloc nu atinge anul.
 // Fiecare probă răspunde unui scenariu din spec (R1 cursa pe căile fără
-// `OperareApi`, R2 redeschiderea cu rectificativă, R3 corecția cu conex/pereche/
+// `ComenziDocument`, R2 redeschiderea cu rectificativă, R3 corecția cu conex/pereche/
 // stingeri, R4 lotul consumat între `Data` și `DataInregistrare`, R5 eroarea
 // materială cu partener schimbat, R6 partida inversată în P+1, R7 anularea după
 // redeschidere, R8 dry-run-ul sub închidere, R9 sabotajul snapshot-ului, R11
@@ -30056,7 +30057,7 @@ void VerificaReviewF27(bool privat) {
             && conexFctS is { Stare: StareDocument.Draft });
     }
 
-    // ═════════════ R1/R8 — cursa pe căile care NU trec prin `OperareApi` ═════════════
+    // ═════════════ R1/R8 — cursa pe căile care NU trec prin `ComenziDocument` ═════════════
     using (var externa = new Npgsql.NpgsqlConnection(connectionString)) {
         using var tx = LockExtern(externa, 1, "UPDATE");
         var imp = SubLock(o => ImperechereService.Imperecheaza(o, o.GetObjectByKey<Document>(idIncZ),
@@ -30067,7 +30068,7 @@ void VerificaReviewF27(bool privat) {
         // operat `Valideaza` răspunde din starea lui, fără să atingă perioada.
         // Conexul lui FCT-S e singurul draft al scenei la ora asta.
         var idDraftDryRun = idConexFctS;
-        var dryRun = SubLock(o => OperareApi.Valideaza(o, idDraftDryRun));
+        var dryRun = SubLock(o => ComenziDocument.Sistem(o).Valideaza(idDraftDryRun));
         var reconstructie = SubLock(o => Atlas.Conta.BackOffice.Module.Api.Perioade.PerioadeApply.Reconstruieste(o));
         var gardian = SubLock(o => {
             var i = o.CreateObject<Imperechere>();
@@ -30306,16 +30307,17 @@ void VerificaReviewF27(bool privat) {
     // ═════════════ R9 — snapshot-ul sabotat ═════════════
     using (var os = provider.CreateObjectSpace()) {
         var db = ((EFCoreObjectSpace)os).DbContext.Database;
-        var inainte = ContabilProiectii.Balanta(os, Zi(3, 1), Zi(3, 31), analitic: true).ToList()
-            .Sum(r => r.InitialDebit + r.InitialCredit);
+        decimal Initial(Atlas.Conta.BackOffice.Module.Cub.Citiri.CitireCumul citire) => ContabilProiectii.Balanta(os, Zi(3, 1), Zi(3, 31), analitic: true,
+            citire: citire).ToList().Sum(r => r.InitialDebit + r.InitialCredit);
+        var inainte = Initial(Atlas.Conta.BackOffice.Module.Cub.Citiri.CitireCumul.Integrala);
         var sters = db.ExecuteSql($"""
             DELETE FROM "SolduriPerioadaContabil" WHERE "ID" = (
               SELECT "ID" FROM "SolduriPerioadaContabil"
               WHERE "An" = {An} AND "Luna" = 2 AND ("Debit" <> 0 OR "Credit" <> 0)
               ORDER BY "Credit" DESC LIMIT 1)
             """);
-        var dupa = ContabilProiectii.Balanta(os, Zi(3, 1), Zi(3, 31), analitic: true).ToList()
-            .Sum(r => r.InitialDebit + r.InitialCredit);
+        var dupa = Initial(Atlas.Conta.BackOffice.Module.Cub.Citiri.CitireCumul.Integrala);
+        var vizibila = Initial(Atlas.Conta.BackOffice.Module.Cub.Citiri.CitireCumul.Vizibila);
         var raport = SolduriService.Reconstruieste(os).Referinte.FirstOrDefault(r => r.Luna == 2);
         Console.WriteLine($"     MĂSURAT (F27-R9/{eticheta}): Σ inițial (debit + credit) al balanței analitice pe 03 înainte "
             + $"{inainte}, după ștergerea unui rând de snapshot {dupa}; reconstrucția raportează "
@@ -30324,6 +30326,8 @@ void VerificaReviewF27(bool privat) {
             + "scade), fără niciun semnal la citire; singura detecție e reconstrucția la cerere, care raportează "
             + "diferența (și repară)",
             sters == 1 && dupa < inainte && raport != null && raport.ContabilDiferite >= 1);
+        Check($"F27-R9 ({eticheta}) citirea vizibilă (104b) nu atinge snapshot-ul: inițialul rămâne cel dinaintea ștergerii",
+            vizibila == inainte);
     }
 
     // ═════════════ partea liberă: ștergerea originalului desfăcut; desfacerea în fereastra deschisă ═════════════
@@ -32915,7 +32919,7 @@ void VerificaNucleuFct(bool privat) {
         using (ProbeCub.Migrat(os, faraDeclarant)) {
             string mesajConfig = null;
             using (var osConfig = provider.CreateObjectSpace())
-                try { OperareApi.Opereaza(osConfig, faraDeclarant.ID); }
+                try { ComenziDocument.Sistem(osConfig).Opereaza(faraDeclarant.ID); }
                 catch (OperareException e) { mesajConfig = e.Message; }
             using var osDupaConfig = provider.CreateObjectSpace();
             Check($"STR-CONFIG ({eticheta}): `PosteazaInCub` pe un tip FĂRĂ declarant (BPR) refuză operarea "
@@ -32975,7 +32979,7 @@ void VerificaNucleuFct(bool privat) {
     using (ProbeCub.CuToleranta(os, fctRefuz, 0.01m)) {
         string mesajRefuz = null;
         using (var osRefuz = provider.CreateObjectSpace())
-            try { OperareApi.Opereaza(osRefuz, fctRefuz.ID); }
+            try { ComenziDocument.Sistem(osRefuz).Opereaza(fctRefuz.ID); }
             catch (OperareException e) { mesajRefuz = e.Message; }
         using var osDupaRefuz = provider.CreateObjectSpace();
         Check($"STR-REFUZ ({eticheta}): refuzul declarației e refuzul operației — „{mesajRefuz?.Split('\n')[0]}”; "
@@ -32988,7 +32992,7 @@ void VerificaNucleuFct(bool privat) {
             $"STR-REFUZ ({eticheta}): zero rânduri în cub după refuz", fctRefuz.ID);
 
         using var osDry = provider.CreateObjectSpace();
-        var eroriDry = OperareApi.Valideaza(osDry, fctRefuz.ID);
+        var eroriDry = ComenziDocument.Sistem(osDry).Valideaza(fctRefuz.ID);
         Check($"STR-VALIDEAZA ({eticheta}): dry-run-ul pe tipul migrat arată refuzul declarației "
             + $"([{string.Join("; ", eroriDry)}]), fără să scrie ceva",
             eroriDry.Any(e => e.Contains(N.Coduri.TvaInAfaraTolerantei)));

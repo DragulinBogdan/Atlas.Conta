@@ -1,3 +1,4 @@
+using CitireCumul = Atlas.Conta.BackOffice.Module.Cub.Citiri.CitireCumul;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
@@ -31,13 +32,13 @@ sealed class ScenariiCitiri(Func<IObjectSpace> deschide, Action<string, bool> ch
         VerificaBalanta("SC-CIT-11", l.Produs!.Value, Ianuarie, new(An, 1, 31), 0, 100, 0, 100);
         Verifica("SC-CIT-11", "gestiunea se filtrează separat de partener", CuSpatiu(os => {
             var a = ContabilProiectii.Balanta(os, Ianuarie, new(An, 1, 31),
-                materialId: l.Produs, gestiuneId: Magazie).Single();
+                materialId: l.Produs, gestiuneId: Magazie, citire: CitireCumul.Integrala).Single();
             return a.ContId == Cont(Stoc) && a.RulajDebit == 100 && a.RulajCredit == 0;
         }));
         if (Privat)
             Verifica("SC-CIT-11", "sold furnizor 100 pe coordonata partener", CuSpatiu(os =>
                 ContabilProiectii.SoldParteneri(os, new(An, 1, 31), Cont(ContFurnizor),
-                    repartitorId: Furnizor, materialId: l.Produs).Single().SoldCreditor == 100));
+                    repartitorId: Furnizor, materialId: l.Produs, citire: CitireCumul.Integrala).Single().SoldCreditor == 100));
 
         InchideIanuarie();
         var consum = Consum(l.Lot!.Value, 2);
@@ -49,17 +50,17 @@ sealed class ScenariiCitiri(Func<IObjectSpace> deschide, Action<string, bool> ch
         Verifica("SC-CIT-32", "consumul separă 8/80 în magazie de 2/20 pe cheltuială", CuSpatiu(os => {
             var solduri = Atlas.Conta.BackOffice.Module.Cub.Citiri.Loturi.Solduri(os, Februarie)
                 .Where(s => s.LotId == l.Lot.Value).ToList();
-            var disponibil = Atlas.Conta.BackOffice.Module.Cub.Citiri.Loturi.Disponibile(os, Februarie,
+            var disponibil = Atlas.Conta.BackOffice.Module.Cub.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie,
                 l.Produs.Value, Magazie, Cont(Stoc)).Single(s => s.LotId == l.Lot.Value);
             var consumat = solduri.Single(s => s.GestiuneId != Magazie);
             return solduri.Count == 2 && disponibil.Cantitate == 8 && disponibil.Valoare == 80
                 && consumat.Cantitate == 2 && consumat.Valoare == 20 && consumat.ContId != Cont(Stoc)
-                && !Atlas.Conta.BackOffice.Module.Cub.Citiri.Loturi.Disponibile(os, Februarie,
+                && !Atlas.Conta.BackOffice.Module.Cub.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie,
                     l.Produs.Value, consumat.GestiuneId, consumat.ContId).Any();
         }));
         Verifica("SC-CIT-16", "fișa: credit 20, sold 80 și contrapartidă", CuSpatiu(os => {
             var r = ContabilProiectii.FisaCont(os, Cont(Stoc), Februarie, new(An, 2, 28),
-                materialId: l.Produs, gestiuneId: Magazie).Single();
+                materialId: l.Produs, gestiuneId: Magazie, citire: CitireCumul.Integrala).Single();
             return r.Debit == 0 && r.Credit == 20 && r.SoldCurent == 80
                 && r.ContrapartidaId != null && r.ContrapartidaSimbol != null;
         }));
@@ -74,7 +75,8 @@ sealed class ScenariiCitiri(Func<IObjectSpace> deschide, Action<string, bool> ch
             var db = ((EFCoreObjectSpace)os).DbContext;
             using var tx = db.Database.BeginTransaction();
             db.Database.ExecuteSqlInterpolated($"DELETE FROM \"SolduriPerioadaContabil\" WHERE \"An\" = {An}");
-            var r = ContabilProiectii.Balanta(os, Februarie, new(An, 2, 28), materialId: l.Produs)
+            var r = ContabilProiectii.Balanta(os, Februarie, new(An, 2, 28), materialId: l.Produs,
+                citire: CitireCumul.Integrala)
                 .Single(x => x.ContId == Cont(Stoc));
             Verifica("SC-CIT-12", "fără snapshot: inițial 100, credit 20, final 80",
                 r.InitialDebit == 100 && r.RulajCredit == 20 && r.SoldFinalDebit == 80);
@@ -92,7 +94,8 @@ sealed class ScenariiCitiri(Func<IObjectSpace> deschide, Action<string, bool> ch
             var corupta = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1);
             Verifica("SC-CIT-14", "reconstrucția raportează diferența înainte de reparare",
                 corupta.ContabilDiferite != 0 && corupta.DiferentaDebit > 0);
-            var r = ContabilProiectii.Balanta(os, Februarie, new(An, 2, 28), materialId: l.Produs)
+            var r = ContabilProiectii.Balanta(os, Februarie, new(An, 2, 28), materialId: l.Produs,
+                citire: CitireCumul.Integrala)
                 .Single(x => x.ContId == Cont(Stoc));
             Verifica("SC-CIT-14", "reconstrucția permite citirea: final 80", r.SoldFinalDebit == 80);
             tx.Rollback();
@@ -135,7 +138,8 @@ sealed class ScenariiCitiri(Func<IObjectSpace> deschide, Action<string, bool> ch
 
     void VerificaBalanta(string id, Guid produs, DateOnly deLa, DateOnly panaLa,
             decimal initial, decimal debit, decimal credit, decimal final) {
-        var r = CuSpatiu(os => ContabilProiectii.Balanta(os, deLa, panaLa, materialId: produs)
+        var r = CuSpatiu(os => ContabilProiectii.Balanta(os, deLa, panaLa, materialId: produs,
+            citire: CitireCumul.Integrala)
             .Single(x => x.ContId == Cont(Stoc)));
         Verifica(id, $"stoc: inițial {initial}, D {debit}, C {credit}, final {final}",
             r.InitialDebit == initial && r.InitialCredit == 0 && r.RulajDebit == debit

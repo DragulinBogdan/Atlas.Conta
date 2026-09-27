@@ -71,7 +71,7 @@ sealed partial class ScenariiLdi(Func<IObjectSpace> deschide, Action<string, boo
         Verifica("SC-LDI-02", "minusul cu cantitate pozitivă culeasă este acceptat", m.EsteAcceptat);
         Comanda(os => { os.GetObjectByKey<DocumentDetaliu>(minus.Linii[0].Id).Cantitate = -4; os.CommitChanges(); });
         Verifica("SC-LDI-02", "semnul normalizat nu schimbă declarația", m == Contract(minus.Id));
-        Verifica("SC-LDI-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, plus.Id)).Count == 0);
+        Verifica("SC-LDI-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(plus.Id)).Count == 0);
         FaraEfecte("SC-LDI-01", plus.Id); Opereaza(plus.Id); Opereaza(minus.Id);
         Postari("SC-LDI-01", plus.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(plus, 0, 2, 30));
         Postari("SC-LDI-02", minus.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(minus, 0, -4, 40));

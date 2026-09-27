@@ -66,8 +66,8 @@ sealed partial class ScenaImo {
                     try {
                         Comanda(alt => {
                             ((EFCoreObjectSpace)alt).DbContext.Database.SetCommandTimeout(3);
-                            if (anulare) Atlas.Conta.BackOffice.Module.Api.OperareApi.AnuleazaOperarea(alt, plata.Id);
-                            else Atlas.Conta.BackOffice.Module.Api.OperareApi.Storneaza(alt, plata.Id, Ianuarie);
+                            if (anulare) Atlas.Conta.BackOffice.Module.Api.ComenziDocument.Sistem(alt).AnuleazaOperarea(plata.Id);
+                            else Atlas.Conta.BackOffice.Module.Api.ComenziDocument.Sistem(alt).Storneaza(plata.Id, Ianuarie);
                         }); return "OK";
                     }
                     catch (Exception e) { return e.Message; }

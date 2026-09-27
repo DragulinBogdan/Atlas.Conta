@@ -13,7 +13,7 @@ namespace Atlas.Conta.BackOffice.Module.Api.Dsc;
 // adaugă AICI, fără să mute nimic.
 //
 // Comenzile (opereaza/anuleaza/storneaza/valideaza) nu cer nimic aici: sunt
-// agnostice de tip (`OperareApi` + `OperareRezultatDto`/`StornoRequestDto`).
+// agnostice de tip (`ComenziDocument` + `OperareRezultatDto`/`StornoRequestDto`).
 
 // ── Citire: agregatul + affordances ────────────────────────────────────────
 public sealed class DscReadDto {

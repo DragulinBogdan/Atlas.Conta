@@ -69,7 +69,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         var citiriMari = ContractPur(mare.Id);
         Verifica("SC-ASM/PERF", $"2 și 51 linii: {citiriMici}/{citiriMari} interogări", citiriMari == citiriMici
             && citiriMari > 0 && citiriMari <= ProbeNucleu.PragInterogari);
-        Verifica("SC-ASM-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, d.Id)).Count == 0);
+        Verifica("SC-ASM-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         FaraEfecte("SC-ASM-01", d.Id); Opereaza(d.Id);
         RandScena[] r = [.. Rand(d, 0, -2, 100), .. Rand(d, 1, 1, 100)];
         Postari("SC-ASM-01", d.Id, N.FelTranzactie.Transfer, Ianuarie, r);
@@ -297,7 +297,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         var data = new DateOnly(An, 1, 11);
         var d = Culege([(lot, 1)], [(1, 5m, null)], data);
         Distribuie(d.Id);
-        Verifica("SC-ASM-19", "valid înaintea consumului intermediar", CuSpatiu(os => OperareApi.Valideaza(os, d.Id)).Count == 0);
+        Verifica("SC-ASM-19", "valid înaintea consumului intermediar", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         var bcs = Consum(lot.Lot!.Value, 1); Opereaza(bcs);
         var stamp = Amprenta(bcs);
         RefuzDeclaratie("SC-ASM-19", d.Id, CoduriRefuz.AsamblareNebalansata);

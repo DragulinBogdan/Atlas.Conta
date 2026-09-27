@@ -57,7 +57,7 @@ sealed class ScenariiItv(Func<IObjectSpace> deschide, Action<string, bool> check
     }
     void Varianta(decimal ded, decimal col, string id, params (string Debit, string Credit, decimal V)[] linii) {
         var baza = Baza(ded, col); var doc = Genereaza();
-        Verifica(id, "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, doc)).Count == 0);
+        Verifica(id, "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(doc)).Count == 0);
         FaraEfecte(id, doc); Opereaza(doc);
         Randuri(id, doc, N.FelTranzactie.Operare, Sfarsit, linii);
         Solduri(id, Sfarsit, 0, 0, Math.Max(0, col - ded), Math.Max(0, ded - col));

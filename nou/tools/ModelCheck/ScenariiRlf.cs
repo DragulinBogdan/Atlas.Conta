@@ -59,7 +59,7 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
     void Simple() {
         var f = Receptioneaza(new LinieFctScena(10, 10, Tip: "371")); var lot = f.Linii[0];
         var d = Retur(new LinieRlfScena(lot, 2));
-        Verifica("SC-RLF-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, d.Id)).Count == 0);
+        Verifica("SC-RLF-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         FaraEfecte("SC-RLF-01", d.Id); Opereaza(d.Id);
         Postari("SC-RLF-01", d.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(d, 0, -2, -20));
         SoldLot("SC-RLF-01", lot.Lot!.Value, Magazie, Ianuarie, 8, 80);

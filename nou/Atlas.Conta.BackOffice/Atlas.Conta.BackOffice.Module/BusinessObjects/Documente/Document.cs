@@ -285,7 +285,7 @@ public abstract class Document : Editabila {
     public virtual Document GenereazaSecundar(DevExpress.ExpressApp.IObjectSpace os) => null;
 
     // Informări pentru operator DUPĂ o operare reușită (F8-D10) — NU e o cale de
-    // refuz: `OperareApi.Opereaza` le adaugă în `OperareRezultat.Mesaje`, lângă
+    // refuz: `ComenziDocument.Opereaza` le adaugă în `OperareRezultat.Mesaje`, lângă
     // mesajul documentului conex, iar ambele tiere (API + controllerul XAF) le
     // afișează pe calea existentă. Se apelează DUPĂ commit-ul motorului, deci
     // vede lumea finală (inclusiv copiii tocmai generați).

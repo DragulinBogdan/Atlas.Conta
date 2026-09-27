@@ -67,7 +67,7 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void Simple() {
         var d = Declaratie(new LinieDviScena(100));
-        Verifica("SC-DVI-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, d.Id)).Count == 0);
+        Verifica("SC-DVI-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         FaraEfecte("SC-DVI-01", d.Id); Opereaza(d.Id);
         Postari("SC-DVI-01", d.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(d, 0, 100, 21));
         Verifica("SC-CIT-03", "intrarea contabilă include numai perechea TVA 21", CuSpatiu(os => {

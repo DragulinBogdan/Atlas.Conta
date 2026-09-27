@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-26.** [Index](README.md)
+**Actualizat: 2026-09-27.** [Index](README.md)
 
 ## Modelul comun
 
@@ -69,7 +69,9 @@ pe compoziții, adică pe colecțiile `[Aggregated]` (`Document.Detalii`,
 `NO ACTION` în schemă: refuzul vine mereu din bază, chiar dacă dependentul e
 încărcat, și iese 422 de domeniu prin traducătorul de constrângeri, cu cele
 două tipuri numite. ModelCheck probează structural regula
-(`tools/ModelCheck/ProbeStraturi.cs`). (104f, 104g, 104h)
+(`tools/ModelCheck/ProbeStraturi.cs`), împreună cu coaja comenzii: refuzul
+404/403 vine înaintea oricărui context, iar comenzile nu primesc
+`IObjectSpace`. (104b, 104f, 104g, 104h)
 
 Un câmp intră în baza comună numai dacă are aceeași semantică pentru toate
 tipurile care îl folosesc și este necesar direct postării. O valoare necesară
@@ -146,9 +148,18 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
 ### Operarea
 
 1. Culegerea se salvează prin ușa securizată. (42b)
-2. Comanda este autorizată pe tipul și documentul cerut. (55b, 80b)
-3. Motorul lucrează cu documentul încărcat prin ID într-un ObjectSpace
-   non-secured propriu comenzii. (42b)
+2. Coaja comenzii (`Api/ComenziDocument`) primește ID-ul documentului și
+   dreptul operatorului (`IDreptComanda`). Verifică dreptul înaintea oricărei
+   atingeri a domeniului: documentul invizibil pe ușa cerută e 404
+   (`SubiectInvizibil`), fără Write pe instanță e 403 (`RefuzAcces`), iar
+   corecția mai cere Create și Write pe tipul concret. `DreptComandaXaf`
+   rezolvă documentul prin ușa securizată a utilizatorului autentificat și
+   servește XAF-ul și WebApi-ul. (55b, 80b, 104b)
+3. Coaja își deschide singură contextul: un ObjectSpace non-secured propriu
+   fiecărei comenzi, eliberat după ea. Tranzacția comenzii ține blocarea
+   perioadei peste `CommitChanges`. Ușa de sistem
+   (`ComenziDocument.Sistem(os)`) e a uneltelor standalone (ModelCheck):
+   primește contextul apelantului și nu verifică drepturi. (42b, F27-D1, 104-r2)
 4. Calculează valorile prin contractele tipului, aplică evaluarea ieșirilor
    și validează perioada, starea, liniile, politicile, dimensiunile și stocul. (33d, 75a)
 5. Materializează numărul și scadența implicite, finalizează loturile și
@@ -214,7 +225,7 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
 - Perioada închisă nu se atinge: storno-ul și documentul nou trăiesc în
   fereastra deschisă, iar snapshot-ul perioadei rămâne cel de la închidere.
   Efectul FISCAL al motivului e în `politici-si-fiscalitate.md`.
-- Comanda: `Motor/CorectieService.cs`, prin `Api/OperareApi.Corecteaza`;
+- Comanda: `Motor/CorectieService.cs`, prin `Api/ComenziDocument.Corecteaza`;
   ușile sunt `POST api/documente/{id}/corecteaza` și acțiunea XAF
   „Corectează" de pe orice DetailView de document.
 
@@ -338,9 +349,18 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
   refuză un ObjectSpace secured înainte de accesarea datelor. (SC-CIT-78)
   În XAF EF Core verificăm `ISecurityEnabledOption.EnableSecurity` al
   contextului: fabrica nesecurizată poate întoarce tot un
-  `SecuredEFCoreObjectSpace`. Aceeași verificare decide folosirea
-  snapshot-ului la citire; un ObjectSpace securizat al administratorului
-  rămâne pe postările autorizate.
+  `SecuredEFCoreObjectSpace`. Verificarea rămâne numai pe scriere, până
+  când coaja perioadei își alege singură contextul. (104-r2)
+- Citirea cumulată nu întreabă de securitate: apelantul declară cine citește
+  (`CitireCumul`). `Integrala` (motorul, ușa de sistem, citirile motorului
+  pe ușa non-secured) pornește din snapshot; `Vizibila` citește numai
+  postările, fiindcă snapshot-ul nu poartă filtrele de rând ale rolului.
+  Citirile cumulate din `Cub/Citiri` (`Loturi.Cumulate`,
+  `Partide.Cumulate`, `SolduriService.AtomiCumulati`) cer declarația;
+  proiecțiile servite pe ușa securizată (balanța, fișa, soldurile de
+  partener, stoc și partide, documentele cu rest, SAF-T) au implicit
+  `Vizibila`. Închiderea perioadei citește restanțele integral. (104b,
+  SC-CIT-95)
 - Cheia cu cantitate ȘI valoare zero lipsește din soldul de stoc și din
   soldurile pe loturi, ca din snapshot: un lot consumat integral nu mai este o
   poziție de stoc și nu mai apare în listă. Cheia cu cantitatea zero și valoare

@@ -32,15 +32,8 @@ public class CorectieController : ContaApiController {
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
 
-        var refuz = Autorizeaza<Document>(id) ?? RefuzPeTipulConcret(id);
-        if (refuz != null)
-            return refuz;
-
         var data = cerere?.Data is DateOnly d && d != default ? d : DateOnly.FromDateTime(DateTime.Today);
-        return Domeniu(() => {
-            using var os = NonSecured(typeof(Document));
-            return Ok(CorectieRezultatDto.Din(OperareApi.Corecteaza(os, id, data, motiv.Value)));
-        });
+        return ComandaDocument<Document>(c => CorectieRezultatDto.Din(c.Corecteaza(id, data, motiv.Value)));
     }
 
     // Parse pe NUME, la graniță, cu valorile valide enumerate — 400, nu 422:
@@ -59,17 +52,5 @@ public class CorectieController : ContaApiController {
         erori.Add($"Motivul corecției „{valoare}” nu există — valorile acceptate: "
             + string.Join(", ", Enum.GetNames<MotivCorectie>()) + ".");
         return null;
-    }
-
-    // Gate-ul de CREARE pe tipul CONCRET al documentului (80b: Create ȘI Write).
-    // `Autorizeaza<Document>` a răspuns deja la „e vizibil?" și „am voie să
-    // scriu pe el?"; aici se pune întrebarea documentului NOU, pe care comanda
-    // îl produce. Tipul nu poate veni din rută — se citește din discriminator.
-    IActionResult RefuzPeTipulConcret(Guid id) {
-        using var os = Secured(typeof(Document));
-        var tip = CititorTipDocument.Clasa(CititorTipDocument.Clase(os, [id]).GetValueOrDefault(id));
-        if (tip == null)
-            return Invizibil();
-        return PoateCrea(tip, os) ? null : RefuzCreare(tip);
     }
 }

@@ -10,7 +10,7 @@ namespace Atlas.Conta.BackOffice.Module.Api.Nir;
 //     din client, iar loturile se nasc pe PROPRIILE lui linii.
 //
 // Comenzile (opereaza/anuleaza/storneaza/valideaza) nu cer nimic aici: sunt
-// agnostice de tip (`OperareApi` + `OperareRezultatDto`/`StornoRequestDto`).
+// agnostice de tip (`ComenziDocument` + `OperareRezultatDto`/`StornoRequestDto`).
 
 // ── Scriere: agregatul per document (PUT header + linii, 42d) ──────────────
 //

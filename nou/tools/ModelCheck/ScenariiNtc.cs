@@ -29,7 +29,7 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
 
     protected override void Executa() {
         var d = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100));
-        Verifica("SC-NTC-01", "validare fără refuz", CuSpatiu(os => OperareApi.Valideaza(os, d.Id)).Count == 0);
+        Verifica("SC-NTC-01", "validare fără refuz", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         FaraEfecte("SC-NTC-01", d.Id); Opereaza(d.Id);
         Postari("SC-NTC-01", d.Id, N.FelTranzactie.Operare, Ianuarie, R(d, 0, Serviciu, ContFurnizor, 100));
         Storneaza(d.Id, new(An, 1, 20));
@@ -71,7 +71,7 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         var f1 = Fct(60, 3); var f2 = Fct(40, 4);
         var p1 = P(f1.Id, ContFurnizor, Furnizor); var p2 = P(f2.Id, ContFurnizor, Furnizor);
         var n = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 75, Furnizor));
-        Verifica("SC-NTC-07", "dry-run FIFO acceptat", CuSpatiu(os => OperareApi.Valideaza(os, n.Id)).Count == 0);
+        Verifica("SC-NTC-07", "dry-run FIFO acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(n.Id)).Count == 0);
         FaraEfecte("SC-NTC-07", n.Id); Opereaza(n.Id);
         Postari("SC-NTC-07", n.Id, N.FelTranzactie.Operare, Ianuarie,
             [.. R(n, 0, ContFurnizor, Serviciu, 60, ud: p1, pd: Furnizor), .. R(n, 0, ContFurnizor, Serviciu, 15, ud: p2, pd: Furnizor)]);

@@ -15,10 +15,14 @@ contractul public. Referințele din scriere sunt identificatori expliciți. (6, 
 
 ## Salvare și comenzi
 
-Crearea și salvarea rulează în ObjectSpace securizat. O comandă verifică
-accesul asupra documentului înainte să execute motorul într-un ObjectSpace
-propriu. Niciun identificator furnizat de client nu autorizează singur
-accesul prin contextul nesecurizat. (42b, 55b)
+Crearea și salvarea rulează în ObjectSpace securizat. Comenzile de document
+(operare, anulare, storno, corecție, validare) trec prin coaja
+`ComenziDocument`, construită de `ContaApiController.ComandaDocument<T>` cu
+dreptul `DreptComandaXaf` pe ușa `T` (și restricția ei, ex. NTC fără
+închideri de TVA). Coaja verifică dreptul înaintea domeniului și își deschide
+singură contextul motorului; `SubiectInvizibil` iese 404, `RefuzAcces` 403,
+`OperareException` 422. Niciun identificator furnizat de client nu
+autorizează singur accesul prin contextul nesecurizat. (42b, 55b, 80, 104b)
 
 PUT reprezintă starea completă a formularului: liniile sunt reconciliate,
 iar câmpurile opționale absente se golesc conform contractului. PATCH OData

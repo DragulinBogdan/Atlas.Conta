@@ -10,7 +10,7 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 // Felia verticală BTR (D1/D8) — endpoint-uri PER TIP DE DOCUMENT (decizia 6:
 // API-ul nu expune ierarhia polimorf). Controllerul e subțire prin construcție:
 // citirea deleagă la proiecțiile din `NotaTransferApply`, scrierea la
-// reconcilierea agregatului, comenzile la `OperareApi`. Fiecare linie de mai jos
+// reconcilierea agregatului, comenzile la `ComenziDocument`. Fiecare linie de mai jos
 // e transport sau traducere de erori.
 [Route("api/btr")]
 public class NotaTransferController : ContaApiController {
@@ -91,14 +91,14 @@ public class NotaTransferController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
-    public IActionResult Opereaza(Guid id) => Comanda(id, os => OperareApi.Opereaza(os, id));
+    public IActionResult Opereaza(Guid id) => Comanda(c => c.Opereaza(id));
 
     [HttpPost("{id:guid}/anuleaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
-    public IActionResult Anuleaza(Guid id) => Comanda(id, os => OperareApi.AnuleazaOperarea(os, id));
+    public IActionResult Anuleaza(Guid id) => Comanda(c => c.AnuleazaOperarea(id));
 
     [HttpPost("{id:guid}/storneaza")]
     [ProducesResponseType(typeof(OperareRezultatDto), StatusCodes.Status200OK)]
@@ -106,7 +106,7 @@ public class NotaTransferController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Storneaza(Guid id, [FromBody] StornoRequestDto cerere) =>
-        Comanda(id, os => OperareApi.Storneaza(os, id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
+        Comanda(c => c.Storneaza(id, cerere?.Data ?? DateOnly.FromDateTime(DateTime.Today)));
 
     // Dry-run (D3): fazele „calculează + validează" ale operării, fără
     // materializare și fără commit — ObjectSpace-ul e PROPRIU și se ARUNCĂ
@@ -117,14 +117,8 @@ public class NotaTransferController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
-    public IActionResult Valideaza(Guid id) => ComandaAutorizata<NotaTransfer>(id, () => Domeniu(() => {
-        using var os = NonSecured(typeof(NotaTransfer));
-        return Ok(EroriDto.Din(OperareApi.Valideaza(os, id)));
-    }));
+    public IActionResult Valideaza(Guid id) => ComandaDocument<NotaTransfer>(c => EroriDto.Din(c.Valideaza(id)));
 
-    IActionResult Comanda(Guid id, Func<IObjectSpace, OperareRezultat> comanda) =>
-        ComandaAutorizata<NotaTransfer>(id, () => Domeniu(() => {
-            using var os = NonSecured(typeof(NotaTransfer));
-            return Ok(OperareRezultatDto.Din(comanda(os)));
-        }));
+    IActionResult Comanda(Func<ComenziDocument, OperareRezultat> comanda) =>
+        ComandaDocument<NotaTransfer>(c => OperareRezultatDto.Din(comanda(c)));
 }

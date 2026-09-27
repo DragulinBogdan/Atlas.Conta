@@ -1,3 +1,4 @@
+using CitireCumul = Atlas.Conta.BackOffice.Module.Cub.Citiri.CitireCumul;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
@@ -91,11 +92,11 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
             "reziduul 0/−0,01 rămâne în snapshot și raport, fără disponibil FIFO", CuSpatiu(os => {
             var s = os.GetObjectsQuery<SoldPerioadaStoc>().Single(s => s.An == An && s.Luna == 1 && s.LotId == rez
                 && s.GestiuneId == Magazie);
-            var r = StocProiectii.SoldStoc(os, new(An, 1, 31)).Single(s => s.LotId == rez && s.RepartitorId == Magazie);
+            var r = StocProiectii.SoldStoc(os, new(An, 1, 31), CitireCumul.Integrala).Single(s => s.LotId == rez && s.RepartitorId == Magazie);
             return s.Cantitate == 0 && s.Valoare == -.01m && r.Cantitate == 0 && r.Valoare == -.01m
                 && r.LotPretUnitar == 0
-                && !C.Citiri.Loturi.Disponibile(os, Februarie, s.ProdusId, Magazie, Cont("371")).Any()
-                && !C.Citiri.Loturi.Disponibile(os, Februarie, s.ProdusId, N.GestiuniVirtuale.Client, Cont("607"))
+                && !C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, s.ProdusId, Magazie, Cont("371")).Any()
+                && !C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, s.ProdusId, N.GestiuniVirtuale.Client, Cont("607"))
                     .Any();
         }));
         var cheltuiala = Cont(Privat ? "602" : "602.01.00");
@@ -120,16 +121,16 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
             StocService.SolduriLaData(os, [lot], new(An, 1, 31))
                 .Where(s => s.Key.RepartitorId == Magazie).Sum(s => s.Value.Cantitate) == -6));
         Verifica("SC-CIT-73", "FIFO păstrează data deschiderii din snapshot", CuSpatiu(os =>
-            C.Citiri.Loturi.Disponibile(os, Februarie, produsInitial, Magazie, Cont(Stoc))
+            C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, produsInitial, Magazie, Cont(Stoc))
                 .Single().Deschisa == new DateOnly(An, 1, 1)));
         Verifica("SC-CIT-73", "excluderea facturii nu rămâne ascunsă în snapshot", CuSpatiu(os => {
-            var s = C.Citiri.Loturi.Cumulate(os, Februarie, f.Id).Single(s => s.LotId == lot
+            var s = C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie, f.Id).Single(s => s.LotId == lot
                 && s.GestiuneId == Magazie && s.ContId == Cont(Stoc));
             return s.Cantitate == -6 && s.Valoare == -60;
         }));
         Storneaza(btr, Februarie);
         Verifica("SC-CIT-71", "storno peste închidere: sursa 8/80, destinația zero, ianuarie intact", CuSpatiu(os => {
-            var s = C.Citiri.Loturi.Cumulate(os, Februarie).Where(s => s.LotId == lot).ToArray();
+            var s = C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie).Where(s => s.LotId == lot).ToArray();
             return s.Length == 2 && s.Any(s => s.ContId == Cont(Stoc) && s.GestiuneId == Magazie && s.Cantitate == 8
                 && s.Valoare == 80)
                 && s.Any(s => s.ContId == cheltuiala && s.GestiuneId == Loc && s.Cantitate == 2 && s.Valoare == 20)
@@ -143,7 +144,7 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
         });
         Opereaza(consum);
         Verifica("SC-CIT-73", "deschiderea se golește cu valoarea 40 după închidere", CuSpatiu(os =>
-            !C.Citiri.Loturi.Disponibile(os, Februarie, produsInitial, Magazie, Cont(Stoc)).Any()
+            !C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, produsInitial, Magazie, Cont(Stoc)).Any()
             && os.GetObjectByKey<Document>(consum).Detalii.Single().Valoare == 40));
         CitirePesteSchimbareaReferintei(lot, f.Linii[0].Produs!.Value, f.Id);
         Coincid("SC-CIT-71", new(An, 2, 28));
@@ -166,7 +167,7 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
             else db.Database.ExecuteSqlInterpolated($"""
                 UPDATE "SolduriPerioadaStoc" SET "Valoare" = "Valoare" + 7 WHERE "ID" = {id}
                 """);
-            var citit = C.Citiri.Loturi.Cumulate(os, new(An, 2, 28))
+            var citit = C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, new(An, 2, 28))
                 .Single(s => s.LotId == lot && s.GestiuneId == Magazie);
             Verifica("SC-CIT-72", "proba-capcană confirmă folosirea snapshot-ului înaintea reconstrucției",
                 data ? citit.Deschisa == Ianuarie.AddDays(1) : citit.Valoare == 87);
@@ -183,7 +184,7 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
             var db = ((EFCoreObjectSpace)os).DbContext;
             using var tx = db.Database.BeginTransaction();
             db.Database.ExecuteSqlInterpolated($"DELETE FROM \"SolduriPerioadaStoc\" WHERE \"An\" = {An}");
-            Verifica("SC-CIT-73", "snapshot absent: citire integrală din cub", C.Citiri.Loturi.Cumulate(os, Februarie)
+            Verifica("SC-CIT-73", "snapshot absent: citire integrală din cub", C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie)
                 .Single(s => s.LotId == lot && s.ContId == Cont(Stoc) && s.GestiuneId == Magazie).Valoare == 80);
             tx.Rollback();
         });
@@ -192,8 +193,8 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
     void Coincid(string id, DateOnly zi) => Verifica(id,
         "direct, snapshot + fereastră și raport au aceleași coordonate și măsuri", CuSpatiu(os => {
         var direct = C.Citiri.Loturi.Solduri(os, zi).ToArray();
-        var cumul = C.Citiri.Loturi.Cumulate(os, zi).ToArray();
-        var raport = StocProiectii.SoldStoc(os, zi).ToArray();
+        var cumul = C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, zi).ToArray();
+        var raport = StocProiectii.SoldStoc(os, zi, CitireCumul.Integrala).ToArray();
         return direct.Length == cumul.Length && direct.All(d => cumul.Contains(d))
             && raport.Length == direct.Length && direct.All(d => raport.Any(r => r.LotId == d.LotId
                 && r.ContId == d.ContId && r.ProdusId == d.ProdusId && r.RepartitorId == d.GestiuneId

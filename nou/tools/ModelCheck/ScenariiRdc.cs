@@ -74,7 +74,7 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void Venituri() {
         var d = Retur(new LinieRdcScena(100));
-        Verifica("SC-RDC-01", "dry-run acceptat", CuSpatiu(os => OperareApi.Valideaza(os, d.Id)).Count == 0);
+        Verifica("SC-RDC-01", "dry-run acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         FaraEfecte("SC-RDC-01", d.Id); Opereaza(d.Id);
         Postari("SC-RDC-01", d.Id, N.FelTranzactie.Operare, Ianuarie, Venit(d, 0, -100));
         SoldPartida("SC-RDC-01", P(d.Id), Ianuarie, -100);
