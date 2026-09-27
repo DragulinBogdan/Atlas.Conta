@@ -42,19 +42,18 @@ public static class NormalizariTip {
 
     /// <summary>
     /// Liniile ieșirii sunt situația fișelor la data înregistrării, nu culegere; se refac
-    /// numai când diferă. Fișa fără politică de amortizare rămâne cum e (refuzul e al operării).
+    /// numai când diferă. Fișa fără politică de amortizare e refuzată.
     /// </summary>
     public static void RegenereazaCas(IObjectSpace os, IesireImobilizare doc, IReadOnlyList<Guid> fise) {
         var existente = Vii(os, doc).OfType<IesireImobilizareDetaliu>().ToList();
         var pastrate = new List<IesireImobilizareDetaliu>();
         foreach (var fisaId in fise) {
             var fisa = os.GetObjectByKey<Imobilizare>(fisaId);
-            var politica = fisa == null ? null
-                : os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == fisa.TipMaterialId);
-            if (politica == null) {
+            if (fisa == null) {
                 pastrate.AddRange(existente.Where(l => l.ImobilizareId == fisaId));
                 continue;
             }
+            var politica = PoliticaIesirii(os, fisa);
             var linii = AmortizareService.LiniiIesire(os, fisaId, doc.DataInregistrare, politica);
             var actuale = existente.Where(l => l.ImobilizareId == fisaId).ToList();
             if (Corespund(actuale, linii, fisa)) {
@@ -82,6 +81,12 @@ public static class NormalizariTip {
         if (deSters.Count > 0)
             os.Delete(deSters);
     }
+
+    /// <summary>Conturile ieșirii vin exclusiv din politica tipului fișei (F26-D6); fără ea, refuz.</summary>
+    public static PoliticaAmortizare PoliticaIesirii(IObjectSpace os, Imobilizare fisa) =>
+        os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == fisa.TipMaterialId)
+        ?? throw new OperareException($"Tipul fișei {fisa.NumarInventar} n-are rând de politică de amortizare — "
+            + "conturile ieșirii vin exclusiv din ea.");
 
     static bool Corespund(List<IesireImobilizareDetaliu> actuale, IReadOnlyList<LinieIesire> linii, Imobilizare fisa) =>
         actuale.Count == linii.Count

@@ -37,11 +37,7 @@ public static class CasApply {
         foreach (var fisaId in cerute) {
             var fisa = Rezolva.Cere<Imobilizare>(os, fisaId, "Fișa de imobilizare");
             Rezolva.Cere<TipMaterial>(os, fisa.TipMaterialId, $"Tipul (contul/clasa) fișei {Eticheta(fisa)}");
-            // Aceeași frază ca gardianul de operare (F26-D6).
-            if (os.FirstOrDefault<PoliticaAmortizare>(p => p.TipMaterialId == fisa.TipMaterialId) == null)
-                throw new OperareException(
-                    $"Tipul fișei {fisa.NumarInventar} n-are rând de politică de amortizare — "
-                    + "conturile ieșirii vin exclusiv din ea.");
+            NormalizariTip.PoliticaIesirii(os, fisa);
         }
 
         doc ??= os.CreateObject<IesireImobilizare>();

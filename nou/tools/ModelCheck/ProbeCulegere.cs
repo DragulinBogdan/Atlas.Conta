@@ -114,6 +114,42 @@ static class ProbeCulegere {
             check("104c-E2: `DataPrimire` necules rămâne gol (înseamnă data înregistrării), nu se materializează la culegere",
                 api.DataPrimire == null && FacturaIntrareApply.Citeste(os, idApi).DataPrimire == api.DataInregistrare);
 
+            // ── TVA-ul cules: câmpul prezent e intenția, 0 nu e TVA cules (104c, pasul 3) ──
+            var normal = os.GetObjectsQuery<TipTva>()
+                .Where(t => t.Regim == RegimTva.Normal && t.Cota > 0m && t.Activ).OrderBy(t => t.Cod).FirstOrDefault();
+            if (normal != null) {
+                FacturaIntrareWriteDto Tva(decimal? valoareTva, decimal pret, Guid? linieId) => new() {
+                    Numar = Marcaj + "-T", Data = data, PredatorId = furnizor.ID, PrimitorId = gestiune.ID,
+                    Linii = { new FacturaIntrareLinieWriteDto { Id = linieId, ProdusId = produs.ID, TipTvaId = normal.ID,
+                        Cantitate = 1m, PretUnitar = pret, ValoareTva = valoareTva } },
+                };
+                var idT = FacturaIntrareApply.Aplica(os, null, Tva(null, 100m, null));
+                var linieT = os.GetObjectByKey<FacturaIntrare>(idT).Detalii.Single();
+                var absent = linieT.ValoareTva;
+                FacturaIntrareApply.Aplica(os, idT, Tva(17m, 100m, linieT.ID));
+                var cules = linieT.ValoareTva;
+                FacturaIntrareApply.Aplica(os, idT, Tva(null, 100m, linieT.ID));
+                var pastrat = linieT.ValoareTva;
+                FacturaIntrareApply.Aplica(os, idT, Tva(null, 200m, linieT.ID));
+                var recalculat = linieT.ValoareTva;
+                Console.WriteLine($"     MĂSURAT (104c-T1): {normal.Cod} pe 100: absent {absent}, cules 17 → {cules}, "
+                    + $"re-salvat fără câmp {pastrat}, baza 200 fără câmp {recalculat}.");
+                check("104c-T1: TVA-ul cules pe API: absent = din cotă; explicit 17 rămâne 17 și la re-salvarea fără câmp; "
+                    + "schimbarea bazei fără valoare nouă îl recalculează",
+                    absent == normal.Cota && cules == 17m && pastrat == 17m && recalculat == 2 * normal.Cota);
+
+                using var osZero = provider.CreateObjectSpace();
+                refuza("104c-T2: TVA explicit 0 pe o linie a cărei cotă dă taxă e refuzat, nu înlocuit tăcut cu TVA-ul din cotă",
+                    () => FacturaIntrareApply.Aplica(osZero, idT, Tva(0m, 200m, linieT.ID)));
+                osZero.Rollback();
+                var linieZero = osZero.GetObjectByKey<FacturaIntrare>(idT).Detalii.Single();
+                linieZero.ValoareTva = 0m;
+                CulegereDocument.LinieSchimbata(osZero, linieZero.Document, linieZero, nameof(DocumentDetaliu.ValoareTva));
+                check("104c-T3: în ecranul XAF, TVA-ul adus la 0 revine vizibil la cotă (aceeași regulă ca pe API)",
+                    linieZero.ValoareTva == 2 * normal.Cota);
+                osZero.Rollback();
+            }
+
             // ── Regulile culegerii sunt ale gardianului, pe orice ușă ──
             using var osGard = provider.CreateObjectSpace();
             new GardianEditare().OnObjectSpaceCreated(osGard);

@@ -28609,6 +28609,29 @@ void VerificaImobilizariApi(bool privat) {
         refuzFaraPolitica != null
         && refuzFaraPolitica.Contains("n-are rând de politică de amortizare")
         && refuzFaraPolitica.Contains(Marcaj + "-FP"));
+    string refuzFaraPoliticaXaf;
+    using (var osXaf = provider.CreateObjectSpace()) {
+        new Atlas.Conta.BackOffice.Module.Culegere.CulegereLaCommitXaf().OnObjectSpaceCreated(osXaf);
+        new GardianEditare().OnObjectSpaceCreated(osXaf);
+        var casXaf = osXaf.CreateObject<IesireImobilizare>();
+        casXaf.Data = Zi(9, 10);
+        casXaf.DataInregistrare = casXaf.Data;
+        casXaf.Cauza = CauzaIesire.Casare;
+        casXaf.Predator = osXaf.GetObjectByKey<Repartitor>(gestiune.ID);
+        casXaf.Primitor = osXaf.GetObjectByKey<Repartitor>(unitate.ID);
+        var linieCasXaf = osXaf.CreateObject<IesireImobilizareDetaliu>();
+        linieCasXaf.Document = casXaf;
+        linieCasXaf.Imobilizare = osXaf.GetObjectByKey<Imobilizare>(idFaraPolitica);
+        linieCasXaf.ImobilizareId = idFaraPolitica;
+        linieCasXaf.TipMaterialId = tipFaraPolitica.ID;
+        refuzFaraPoliticaXaf = Refuz(() => osXaf.CommitChanges());
+        osXaf.Rollback();
+    }
+    Console.WriteLine($"     MĂSURAT (104c-C1/{eticheta}): „{refuzFaraPoliticaXaf?.Split('\n')[0] ?? "SALVAT"}”.");
+    Check($"104c-C1 ({eticheta}) aceeași CAS fără politică pe calea XAF (L3 la Committing, apoi gardianul) e refuzată "
+        + "la salvare cu textul ușii API: regula e a culegerii, nu a adaptorului",
+        refuzFaraPoliticaXaf != null && refuzFaraPoliticaXaf == refuzFaraPolitica
+        && !os.GetObjectsQuery<IesireImobilizareDetaliu>().Any(l => l.ImobilizareId == idFaraPolitica));
     CheckRefuza($"API-IMO-V21 ({eticheta}) aceeași fișă de două ori în `Fise` ⇒ refuz de DOMENIU (mulțimea e "
         + "reconciliată server-side, deci un id repetat ar fi trecut tăcut ca unul singur)",
         () => CasApply.Aplica(os, null, new CasWriteDto {

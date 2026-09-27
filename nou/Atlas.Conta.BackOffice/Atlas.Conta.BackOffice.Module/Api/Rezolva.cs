@@ -24,7 +24,6 @@ public static class ApiLinie {
             linie.TipMaterial = Rezolva.Cere<BusinessObjects.TipMaterial>(os, id, "Tipul (contul/clasa)");
             return;
         }
-        linie.TipMaterial = null;
-        linie.TipMaterialId = Guid.Empty;
+        linie.TipMaterialId = Guid.Empty; // navigația nu se golește: FK-ul e obligatoriu, EF ar rupe relația (104g)
     }
 }

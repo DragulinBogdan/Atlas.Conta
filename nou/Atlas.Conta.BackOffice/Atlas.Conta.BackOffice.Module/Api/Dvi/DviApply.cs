@@ -91,7 +91,7 @@ public static class DviApply {
             if (l.TipTvaId == null)
                 detaliu.TipTvaId = null;
             detaliu.Valoare = l.Valoare;
-            CulegereDocument.Mapata(os, doc, detaliu, inainte, l.ValoareTva);
+            CulegereDocument.Mapata(os, doc, detaliu, inainte, l.ValoareTva == 0m ? null : l.ValoareTva); // 48b: 0 = necules
         }
 
         var sterse = existente.Values.Where(d => !pastrate.Contains(d.ID)).ToList();

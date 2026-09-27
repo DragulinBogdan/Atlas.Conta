@@ -64,18 +64,27 @@ FIXTURE PROPRIU (104-r5)
   desfac în ordine inversă în `finally` (împerecherea, anularea, ștergerea), deci
   matricea rulează pe baza recreată din seed. Plafonul de 500 al candidaților
   DVI se probează în ModelCheck, cu plafon forțat.
+  Desfacerea facturii se înscrie imediat după crearea ei și redescoperă din ID-ul
+  FCT plata conex și împerecherile, deci o cădere după orice mutație nu lasă
+  subgraful în urmă. După `finally`, scriptul verifică pe API că identitățile
+  fixture-ului nu mai există (cod 3 dacă au rămas).
+  `-CadeDupa <punct>` injectează o cădere după mutația numită; `refuzuri-caderi.ps1`
+  le parcurge pe toate și cere, la fiecare, cod 2 și zero rezidu.
 
 UTILIZARE
   pwsh -File nou/tools/ProbeHttp/refuzuri.ps1
   pwsh -File nou/tools/ProbeHttp/refuzuri.ps1 -Host https://localhost:5001 -Utilizatori Admin,Cititor,User,Configurator
-  Cod de ieșire: 0 = toate PASS, 1 = cel puțin un FAIL, 2 = descoperirea a picat.
+  Cod de ieșire: 0 = toate PASS, 1 = cel puțin un FAIL, 2 = descoperirea a picat,
+  3 = fixture-ul a lăsat rezidu.
 #>
 
 [CmdletBinding()]
 param(
     [Alias('Host')]
     [string]$HostUrl = 'https://localhost:5001',
-    [string[]]$Utilizatori = @('Admin', 'Cititor', 'User', 'Configurator')
+    [string[]]$Utilizatori = @('Admin', 'Cititor', 'User', 'Configurator'),
+    [ValidateSet('', 'Furnizor', 'Fct', 'OperareFct', 'OperarePlt', 'Imperechere', 'Itv', 'Angajat')]
+    [string]$CadeDupa = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -264,9 +273,31 @@ function Invoke-Fixture {
     if ($r.Corp) { $r.Corp | ConvertFrom-Json }
 }
 
+function Cade([string]$Punct) {
+    if ($CadeDupa -eq $Punct) { throw "injecție: cădere după $Punct" }
+}
+
+# Subgraful facturii se redescoperă din ID-ul ei: împerecherile, plata conex, factura.
+function Desfa-Factura([guid]$IdFct) {
+    $r = Invoke-Cerere -Metoda GET -Cale "/api/fct/$IdFct" -Token $tokenAdmin
+    if ($r.Status -eq 404) { return }
+    $fct = $r.Corp | ConvertFrom-Json
+    foreach ($i in @((Invoke-Fixture GET "/api/imperecheri/$IdFct/stingeri").Imperecheri)) {
+        if ($i.Id) { Invoke-Fixture DELETE "/api/imperecheri/$($i.Id)" -Asteptat 204 | Out-Null }
+    }
+    foreach ($plt in @($fct.Copii | Where-Object { $_.Tip -eq 'PLT' })) {
+        if ($plt.Stare -eq 'Operat') { Invoke-Fixture POST "/api/plt/$($plt.Id)/anuleaza" -Corp @{} | Out-Null }
+        Invoke-Fixture DELETE "/api/plt/$($plt.Id)" -Asteptat 204 | Out-Null
+    }
+    if ($fct.Stare -eq 'Operat') { Invoke-Fixture POST "/api/fct/$IdFct/anuleaza" -Corp @{} | Out-Null }
+    Invoke-Fixture DELETE "/api/fct/$IdFct" -Asteptat 204 | Out-Null
+}
+
 $curatenie = [Collections.Generic.List[scriptblock]]::new()
 $fixture = [Collections.Generic.List[scriptblock]]::new()
 $codIesire = 0
+$timbru = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+$idFctFixture = $null; $idItv = $null
 
 try {
     $partener = Get-PrimaEntitate 'Partener'
@@ -279,13 +310,13 @@ try {
         Sort-Object An, Luna | Select-Object -First 1
     if (-not $lunaFixture) { throw 'Nicio perioadă deschisă pe lanț — fixture-ul n-are unde opera.' }
     $dataFixture = '{0}-{1:00}-15' -f $lunaFixture.An, $lunaFixture.Luna
-    $timbru = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
 
     $idFurnizorFixture = (Invoke-Fixture POST '/api/odata/Partener' -Asteptat 201 -Corp @{
             Cod = "PROBA-R5-F-$timbru"; Denumire = 'Furnizor probă 104-r5'
             Tara = 'RO'; TipPersoana = 'Juridica'; InregistratTva = $false
         }).ID
     $fixture.Add({ Invoke-Fixture DELETE "/api/odata/Partener($idFurnizorFixture)" | Out-Null }.GetNewClosure())
+    Cade 'Furnizor'
 
     $corpFctFixture = @{
         Numar              = "R5-FCT-$timbru"
@@ -305,24 +336,26 @@ try {
             })
     }
     $idFctFixture = (Invoke-Fixture POST '/api/fct' -Corp $corpFctFixture -Asteptat 201).Id
-    $fixture.Add({ Invoke-Fixture DELETE "/api/fct/$idFctFixture" -Asteptat 204 | Out-Null }.GetNewClosure())
+    $fixture.Add({ Desfa-Factura $idFctFixture }.GetNewClosure())
+    Cade 'Fct'
     $idPltFixture = (Invoke-Fixture POST "/api/fct/$idFctFixture/opereaza" -Corp @{}).ConexId
+    Cade 'OperareFct'
     if (-not $idPltFixture) { throw 'fixture: operarea FCT n-a generat plata conex.' }
-    $fixture.Add({ Invoke-Fixture POST "/api/fct/$idFctFixture/anuleaza" -Corp @{} | Out-Null }.GetNewClosure())
-    $fixture.Add({ Invoke-Fixture DELETE "/api/plt/$idPltFixture" -Asteptat 204 | Out-Null }.GetNewClosure())
     Invoke-Fixture POST "/api/plt/$idPltFixture/opereaza" -Corp @{} | Out-Null
-    $fixture.Add({ Invoke-Fixture POST "/api/plt/$idPltFixture/anuleaza" -Corp @{} | Out-Null }.GetNewClosure())
+    Cade 'OperarePlt'
     $idImperechere = @((Invoke-Fixture GET "/api/imperecheri/$idPltFixture/stingeri").Imperecheri)[0].Id
     if (-not $idImperechere) { throw 'fixture: plata conex operată n-a stins factura.' }
-    $fixture.Add({ Invoke-Fixture DELETE "/api/imperecheri/$idImperechere" -Asteptat 204 | Out-Null }.GetNewClosure())
+    Cade 'Imperechere'
 
     $itvFixture = Invoke-Fixture POST '/api/itv/genereaza' -Corp @{ An = $lunaFixture.An; Luna = $lunaFixture.Luna; UnitateId = $unitate.ID }
     if (-not $itvFixture.DocumentId) { throw "fixture: ITV negenerat pe $dataFixture — $($itvFixture.Motiv)" }
     $idItv = $itvFixture.DocumentId
     $fixture.Add({ Invoke-Fixture DELETE "/api/itv/$idItv" -Asteptat 204 | Out-Null }.GetNewClosure())
+    Cade 'Itv'
 
     $angajat = Invoke-Fixture POST '/api/odata/Angajat' -Asteptat 201 -Corp @{ Cod = "PROBA-R5-A-$timbru"; Denumire = 'Angajat probă 104-r5' }
     $fixture.Add({ Invoke-Fixture DELETE "/api/odata/Angajat($($angajat.ID))" | Out-Null }.GetNewClosure())
+    Cade 'Angajat'
     Write-Host "  fixture pe $dataFixture`: FCT $idFctFixture, PLT $idPltFixture, împerechere $idImperechere, ITV $idItv, angajat $($angajat.ID)" -ForegroundColor DarkGray
 
     # `genereaza` pe o lună fără sold (`FaraSold`), ca proba să nu poată scrie
@@ -1221,6 +1254,21 @@ finally {
         catch { Write-Host "curățenia fixture-ului a picat: $_" -ForegroundColor Red; if ($codIesire -eq 0) { $codIesire = 1 } }
     }
     Write-Host "curățenie: fixture desfăcut ($($fixture.Count) pași)" -ForegroundColor DarkGray
+
+    # FK-urile spre factură sunt NO ACTION (104g): factura ștearsă înseamnă plata conex și împerecherea șterse.
+    $rezidu = @()
+    foreach ($set in 'Partener', 'Angajat') {
+        $cale = "/api/odata/$set`?`$filter=" + [uri]::EscapeDataString("startswith(Cod,'PROBA-R5-') and endswith(Cod,'-$timbru')")
+        $r = Invoke-Cerere -Metoda GET -Cale $cale -Token $tokenAdmin
+        $rezidu += @(($r.Corp | ConvertFrom-Json).value | ForEach-Object { "$set $($_.Cod)" })
+    }
+    if ($idFctFixture -and (Invoke-Cerere -Metoda GET -Cale "/api/fct/$idFctFixture" -Token $tokenAdmin).Status -ne 404) { $rezidu += "FCT $idFctFixture" }
+    if ($idItv -and (Invoke-Cerere -Metoda GET -Cale "/api/itv/$idItv" -Token $tokenAdmin).Status -ne 404) { $rezidu += "ITV $idItv" }
+    if ($rezidu.Count -gt 0) {
+        Write-Host "REZIDU fixture: $($rezidu -join '; ')" -ForegroundColor Red
+        $codIesire = 3
+    }
+    else { Write-Host 'rezidu fixture: zero' -ForegroundColor DarkGray }
 }
 
 # ═══ 4. Tabelul ═════════════════════════════════════════════════════════════

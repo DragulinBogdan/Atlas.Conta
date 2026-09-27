@@ -151,6 +151,12 @@ lună și un angajat, desfăcute în ordine inversă în `finally`. Rămân audi
 a doua rulare nu adaugă nimic). Plafonul de 500 al candidaților DVI e probat
 în ModelCheck, nu pe HTTP. Măsurat 2026-09-27 pe `c104-straturi`: 294/294
 PASS de două ori consecutiv, baza identică înainte și după. (104-r5)
+Desfacerea facturii se înscrie imediat după crearea ei și redescoperă din
+ID-ul FCT plata conex și împerecherile; după `finally`, matricea verifică pe
+API absența identităților fixture-ului (cod 3 la rezidu). `-CadeDupa <punct>`
+injectează o cădere după o mutație a fixture-ului, iar
+`refuzuri-caderi.ps1` le parcurge pe toate și cere cod 2 și zero rezidu la
+fiecare. (104-r5, review C104 R2)
 
 Cele trei ierarhii (`Document`, `DocumentDetaliu`, `Repartitor`) sunt TPH:
 câte o tabelă pe rădăcină, discriminatorul `ClrType` cu valorile implicite

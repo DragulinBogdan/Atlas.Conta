@@ -61,7 +61,11 @@ refuzurile culegerii vin de la gardianul de commit, ca 422. Pe liniile cu
 produs (FCT, FCL, NIR, LDI, ASM), `TipMaterialId` e opțional: lipsa lui
 înseamnă tipul produsului, iar lipsa ambelor e refuzată. `DataPrimire`
 absentă rămâne goală și înseamnă data înregistrării; DTO-ul de citire o
-arată astfel. `ValoareTva` prezentă pe linie e TVA-ul cules explicit. (104c)
+arată astfel. `ValoareTva` prezentă pe linie e TVA-ul cules explicit; un 0
+explicit e refuzat cu 422 când cota tipului dă taxă (pe DVI, câmpul
+ne-nullable 0 înseamnă necules). Refuzul CAS pe fișa fără politică de
+amortizare e al culegerii (L3); `CasApply` îl cheamă înaintea creării
+documentului, numai pentru ordinea mesajului. (104c)
 
 Închiderea și redeschiderea perioadei sunt tot comenzi, pe `api/perioade`:
 `GET api/perioade` întoarce lanțul și cere dreptul de citire pe tipul

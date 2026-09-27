@@ -26,13 +26,17 @@ public static class CulegereDocument {
             doc.DataInregistrare = doc.Data;
     }
 
-    /// <summary>O proprietate a liniei s-a schimbat în ecran: produsul precompletează, baza recalculează.</summary>
+    /// <summary>
+    /// O proprietate a liniei s-a schimbat în ecran: produsul precompletează, baza recalculează,
+    /// iar TVA-ul adus la 0 revine la cotă (0 nu e TVA cules).
+    /// </summary>
     public static void LinieSchimbata(IObjectSpace os, Document doc, DocumentDetaliu linie, string proprietate) {
         if (doc.Stare != StareDocument.Draft)
             return;
         if (proprietate is nameof(FacturaIntrareDetaliu.Produs) or nameof(FacturaIntrareDetaliu.ProdusId))
             ProdusAles(os, doc, linie);
-        else if (doc.IntrariBaza().Contains(proprietate))
+        else if (doc.IntrariBaza().Contains(proprietate)
+                || proprietate == nameof(DocumentDetaliu.ValoareTva) && linie.ValoareTva == 0m && doc.CuTva())
             BazaSchimbata(os, doc, linie);
     }
 
@@ -52,17 +56,25 @@ public static class CulegereDocument {
 
     /// <summary>
     /// Linia tocmai mapată de adaptorul API: precompletările, recalculul când baza s-a mișcat
-    /// față de <paramref name="inainte"/>, apoi TVA-ul cules explicit (36a).
+    /// față de <paramref name="inainte"/>, apoi TVA-ul cules explicit (36a). Un 0 explicit nu e
+    /// TVA cules: e acceptat numai dacă și cota dă 0; lipsa taxei se alege prin tipul de TVA.
     /// </summary>
     public static void Mapata(IObjectSpace os, Document doc, DocumentDetaliu linie, Amprenta? inainte, decimal? tvaCules) {
         VerificaScara(os, doc, [linie]);
         PrecompleteazaTipMaterial(os, linie);
         if (inainte == null && linie.TipTvaId == null)
             AplicaTipTvaImplicit(os, doc, linie);
-        if (inainte != new Amprenta(doc.BazaLinie(os, linie), linie.TipTvaId))
+        if (inainte != new Amprenta(doc.BazaLinie(os, linie), linie.TipTvaId) || tvaCules == 0m && doc.CuTva())
             BazaSchimbata(os, doc, linie);
         if (tvaCules is not decimal valoare)
             return;
+        if (valoare == 0m && doc.CuTva()) {
+            if (linie.ValoareTva != 0m)
+                throw new OperareException($"Valoarea TVA 0 contrazice tipul de TVA al liniei, a cărui cotă dă "
+                    + $"{linie.ValoareTva:N2}. Lăsați valoarea goală pentru calculul din cotă sau alegeți un tip "
+                    + "de TVA fără taxă (scutit, neimpozabil).");
+            return;
+        }
         if (valoare < 0m && doc.SemnulEAlOperarii())
             valoare = -valoare;
         if (RefuzTvaCules(os, doc, linie, valoare) is string refuz)

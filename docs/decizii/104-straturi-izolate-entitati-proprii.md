@@ -342,6 +342,41 @@ paginilor React de culegere) sunt depășite de (d); soarta paginilor rămâne
 **Pasul 5 — review advers și închidere.** Review advers pe pașii 1–3,
 corecturile pe felie, apoi închiderea restanței 104-r1.
 
+Review-ul Codex (2026-09-27, pe `89bcb63`): un MAJOR și două MEDIU,
+reproduse și confirmate în cod; restul (probele structurale ale pasului 1,
+coaja pasului 2 fără schimbări în `MotorOperare`, `CitireCumul`, 104-r5 pe
+rularea normală) a ținut.
+- R1 (MAJOR): pe API, `ValoareTva: 0` explicit pe o linie N21 se salva ca
+  TVA din cotă, fără refuz: valoarea nu distinge „necules” de „0 cules”.
+  Tranșarea owner-ului: **0 nu e TVA cules.** Lipsa taxei se alege prin
+  tipul de TVA. L3 (`CulegereDocument.Mapata`) refuză un 0 explicit când
+  cota dă taxă nenulă; în XAF, TVA-ul adus la 0 revine vizibil la cotă
+  (`LinieSchimbata`). DVI păstrează regula lui (48b): câmpul ne-nullable 0
+  înseamnă necules. Fără schimbare de model. Probe: 104c-T1…T3.
+- R2 (MEDIU): o cădere după operarea plății, înaintea descoperirii
+  împerecherii, lăsa FCT și PLT operate, împerecherea și furnizorul.
+  `refuzuri.ps1` înscrie desfacerea facturii imediat după crearea ei, cu
+  redescoperirea subgrafului din ID-ul FCT, și verifică rezidul după
+  `finally`; `refuzuri-caderi.ps1` injectează căderea după fiecare mutație.
+- R3 (MEDIU): refuzul CAS pe fișa fără politică de amortizare era numai în
+  `CasApply`; XAF salva draftul. Regula e acum în L3
+  (`NormalizariTip.PoliticaIesirii`, chemată de `RegenereazaCas`), iar
+  `CasApply` o cheamă înaintea `CreateObject` doar pentru ordinea mesajului
+  (API-IMO-V22). Garda de operare rămâne. Probă: 104c-C1.
+- R4 (găsit de proba 104c-T1, la reverificare): un PUT pe o linie existentă
+  fără `TipMaterialId` (opțional de la pasul 3) golea navigația unui FK
+  obligatoriu, iar EF arunca netradus „association severed” (500).
+  `ApiLinie.TipMaterial` golește acum doar cheia; precompletarea L3 o reface
+  din produs, iar lipsa ambelor rămâne refuzul gardianului. React-ul înghețat
+  trimite mereu tipul, deci nu îl atingea.
+
+Proba corecturilor (2026-09-27): ModelCheck integral verde pe ambele
+profiluri (bugetar 3221, privat 4259, zero FAIL,
+`run-verificari/20260927-212215-608`), cu 104c-T1…T3 și 104c-C1 pe ambele
+căi. Pe WebApi Privat: reproducerea R1/R4 6/6 (0 explicit refuzat pe POST și
+PUT, 17 păstrat, PUT fără tip = 422 de domeniu), `refuzuri-caderi.ps1` 7/7
+puncte fără rezidu, `refuzuri.ps1` 294/294 PASS de două ori, cu zero rezidu.
+
 **Regula de oprire.** Te oprești și raportezi în trei situații:
 - un tip de domeniu cere păstrarea rândului după ștergere;
 - o cascadă auditată nu se încadrează clar ca agregat sau referință;

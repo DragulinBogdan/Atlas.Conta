@@ -173,11 +173,17 @@ aceleași apeluri. (104c)
   înaintea atribuirii, deci refuzul nu lasă valoarea în context. Salvarea o
   verifică înaintea recalculului, care altfel ar șterge valoarea în tăcere.
   (36a, F13-D1)
+- 0 nu e TVA cules. Pe API, un 0 explicit e refuzat când cota tipului de TVA
+  dă taxă nenulă; lipsa taxei se alege prin tipul de TVA (scutit,
+  neimpozabil). În XAF, TVA-ul adus la 0 revine vizibil la cotă. Câmpul
+  `ValoareTva` al DVI e ne-nullable pe sârmă, deci acolo 0 înseamnă necules.
+  (48b, 104c)
 - La salvare, pe orice ușă, `CulegereDocument.InainteDeSalvare` rulează
   înaintea gardianului. Pentru fiecare document Draft atins face:
   normalizarea tipului (câmpurile celeilalte direcții golite pe LDI și ASM,
   produsul liniei conexe NIR, imputatul NIR, liniile CAS refăcute din fișe la
-  data înregistrării), precompletările rămase, loturile
+  data înregistrării, cu refuz pe fișa al cărei tip n-are politică de
+  amortizare), precompletările rămase, loturile
   (`LoturiCulegereService`) și valorile. În XAF pasul e
   `CulegereLaCommitXaf`, înregistrat în hostul Blazor înaintea gardianului;
   `Apply` îl cheamă explicit înaintea commit-ului. (104c)
