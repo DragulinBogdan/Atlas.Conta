@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Culegere;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.Editors;
 
 namespace Atlas.Conta.BackOffice.Module.Controllers;
 
@@ -53,7 +54,7 @@ public class CulegereDocumentController : ObjectViewController<DetailView, Docum
 
     // `Total` e calculat, fără notificare: XAF nu-l reîmprospătează la schimbarea unei linii.
     void ReimprospateazaTotal() {
-        if (View?.FindItem(nameof(Document.Total)) is DevExpress.ExpressApp.Editors.PropertyEditor editor)
+        if (View?.FindItem(nameof(Document.Total)) is PropertyEditor editor)
             editor.Refresh();
     }
 }
@@ -79,9 +80,19 @@ public class CulegereLinieController : ObjectViewController<DetailView, Document
         inCulegere = true;
         try {
             CulegereDocument.LinieSchimbata(ObjectSpace, gazda, linie, e.PropertyName);
+            ReimprospateazaDupaScriere(linie, e);
         }
         finally {
             inCulegere = false;
         }
+    }
+
+    // `PropertyEditor.ReadValue` e ignorat cât editorul își scrie valoarea (DevExpress PropertyEditor.cs:257):
+    // când culegerea a schimbat chiar proprietatea editată, recitirea se amână după scriere.
+    void ReimprospateazaDupaScriere(DocumentDetaliu linie, ObjectChangedEventArgs e) {
+        if (View.FindItem(e.PropertyName) is not PropertyEditor editor
+                || Equals(editor.MemberInfo.GetValue(linie), e.NewValue))
+            return;
+        SynchronizationContext.Current?.Post(_ => editor.ReadValue(), null);
     }
 }

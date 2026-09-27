@@ -377,6 +377,23 @@ căi. Pe WebApi Privat: reproducerea R1/R4 6/6 (0 explicit refuzat pe POST și
 PUT, 17 păstrat, PUT fără tip = 422 de domeniu), `refuzuri-caderi.ps1` 7/7
 puncte fără rezidu, `refuzuri.ps1` 294/294 PASS de două ori, cu zero rezidu.
 
+- R5 (găsit în browser): pe DetailView-ul liniei, TVA-ul adus la 0 revenea
+  la cotă în model (totalul documentului arăta 109), dar editorul rămânea pe
+  0,00. `PropertyEditor.ReadValue` e ignorat cât editorul își scrie valoarea
+  (DevExpress `PropertyEditor.cs:257`), iar `ObjectChanged` rulează în
+  interiorul scrierii. `CulegereLinieController` amână recitirea editorului
+  prin contextul de sincronizare Blazor când culegerea a schimbat chiar
+  proprietatea editată.
+
+Proba în browser (XAF Blazor, baza Privat, 2026-09-27): pe linia draftului
+`C104C-XAF-1` (N9%, baza 100), 0 tastat revine imediat la 9,00; 5 tastat
+rămâne 5,00; modificările au fost abandonate fără salvare. Refuzul CAS fără
+politică (104c-C1) e probat în ModelCheck pe lanțul XAF de commit
+(`CulegereLaCommitXaf` + gardian), nu în browser: baza Privat din seed nu are
+fișe de imobilizare, iar afișarea refuzului e cea comună a gardianului.
+
+104-r1 închisă 2026-09-27.
+
 **Regula de oprire.** Te oprești și raportezi în trei situații:
 - un tip de domeniu cere păstrarea rândului după ștergere;
 - o cascadă auditată nu se încadrează clar ca agregat sau referință;

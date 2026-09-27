@@ -340,7 +340,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 103-r1 | Felia fiscală D8-B8: fapte istorice, perioade distincte, corecții/depunere, cititori comuni și probe SC-CIT-79…87 (103) | închisă 2026-09-26: 3.182/4.214 OK, 180/180 Nucleu, HTTP/browser și A/B; restul SAF-T și gate-ul transversal de performanță rămân TR-D8 |
 | 103-r2 | Intervale TVA și avertismente/raport de impact, cu referință la avans (103h); contract `tr-d8-tva-intervale-contract.md`, SC-CIT-90…94 | activă: specificație pentru review, fără cod; referința la avans cu mai multe cote cere delimitarea explicită din contract |
 
-| 104-r1 | Felia C104: entități proprii și ștergere fizică, coaja comenzii fără OS dat de apelant, culegerea unică L3, aria React, review advers (104, pașii 1–5) | activă |
+| 104-r1 | Felia C104: entități proprii și ștergere fizică, coaja comenzii fără OS dat de apelant, culegerea unică L3, aria React, review advers (104, pașii 1–5) | închisă 2026-09-27: pașii 1–5 pe `c104-straturi`, review Codex R1–R3 plus R4/R5 corectate, integral verde pe ambele profiluri |
 | 104-r2 | Coaja comenzii fără `IObjectSpace` și hook-urile cu `os` de pe entitate mutate în declarant/coajă (104b) | cade la TR-D9 |
 | 104-r3 | Filtrarea pe `Activ` în lookup-urile documentelor noi (104, L3/L4) | după PoC |
 | 104-r4 | Paginile React de culegere: scoase sau generate din metadate (104d) | după PoC |
