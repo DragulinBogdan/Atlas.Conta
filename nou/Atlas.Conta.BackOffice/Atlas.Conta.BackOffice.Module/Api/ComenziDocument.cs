@@ -54,6 +54,12 @@ public sealed class ComenziDocument {
             if (conex != null)
                 mesaje.Add($"S-a generat documentul conex {Eticheta(os, conex)}.");
             mesaje.AddRange(doc.MesajeDupaOperare(os));
+            if (doc.CuTva()) {
+                var pozitii = doc.Detalii.OrderBy(l => l.Pozitie).ThenBy(l => l.ID)
+                    .Select((l, i) => (l.ID, Pozitie: i + 1)).ToDictionary(l => l.ID, l => l.Pozitie);
+                mesaje.AddRange(DiagnosticTvaService.Citeste(os, documentId: doc.ID)
+                    .Select(r => $"{r.Cod}: linia {pozitii[r.LinieId]} — {r.Motiv}"));
+            }
             tx.Commit();
             return new OperareRezultat(doc.ID, doc.Stare, conex?.ID, mesaje);
         });

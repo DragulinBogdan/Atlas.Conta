@@ -1,7 +1,7 @@
 # TR-D8 — intervale TVA și avertismente, R6
 
 Data: 2026-09-26; revizie pentru review: 2026-09-27.
-Stare: **specificație aprobată, fără cod R6**. Regulile sunt 103(h) și
+Stare: **implementat și verificat, review advers închis (2026-09-28)**. Regulile sunt 103(h) și
 103(i). Owner-ul a aprobat M1(B) și M7 (§R6-B8) la 2026-09-27.
 Surse: invarianții II/III/IV; deciziile 090(j), 103 și 104;
 review-ul `2026-09-27-2207-claude-codex-r6-specificatie-review.md`;
@@ -75,6 +75,8 @@ semnalează taxa culeasă care diferă de cotă.
     `TipTva`) sau acțiunea „Recalculează TVA la cotă” → `false` și
     recalcul (`BazaSchimbata`);
   - linie nouă → `false`;
+  - `ValoareTva = null` prin WriteDto, cu baza neschimbată, păstrează taxa
+    și marcajul existente; revenirea la calcul se cere explicit;
   - clona conexului nu copiază taxa (`MotorOperare`, clona liniilor), deci
     rămâne `false`. Draftul de corecție copiază `ValoareTva` și `TvaCules`
     ale liniei sursă;
@@ -91,7 +93,7 @@ semnalează taxa culeasă care diferă de cotă.
 - **Probe:** schimbarea cotei cu draft nemarcat și marcat (SC-CIT-91,
   SC-CIT-91b), editarea taxei, refuzul lui 0, recalculul explicit,
   corecția care păstrează marcajul, conexul fără marcaj, CHECK-ul refuzat
-  de bază și driftul OpenAPI (`TvaCules` în `WriteDto` și în editorul XAF,
+  de bază și driftul OpenAPI (`TvaCules` în `ReadDto` și în editorul XAF,
   doar în citire).
 
 ## R6-B3 — regularizarea avansului (T1, M4)
@@ -183,7 +185,9 @@ sursa invizibilă și cea inexistentă sunt indistincte pentru cititor.
 
 L2 nu verifică securitatea sursei în contextul său de sistem. Mesajele
 operării rămân `COD: text`, cu identificarea liniei proprii și formulare
-minimală, fără număr, dată, cotă sau valori ale sursei. Afișarea mesajelor
+minimală, fără număr, dată, cotă sau valori ale sursei. Linia proprie este
+identificată prin poziția afișată, în aceeași ordine ca gardul F13-D1.
+Afișarea mesajelor
 nu transformă succesul comenzii în refuz. Raportul calculează diagnosticul
 din datele permise; nu expune un rezultat îmbogățit în context non-secured.
 
@@ -205,7 +209,9 @@ perioadă; nu scanăm toate documentele la salvare sau la pornirea hostului.
 Editarea calificării poate lăsa faptele noi fără mapare SAF-T, deoarece
 cheia include calificarea. Raportul indică lipsa mapării potrivite prin
 diagnosticul 103(f), fără să copieze automat maparea cotei vechi. Istoricul
-mapat corect rămâne astfel. Remediile aparțin utilizatorului.
+mapat corect rămâne astfel. Diagnosticul mapării rulează numai când SAF-T
+se aplică, după criteriul comun al proiecției SAF-T; profilul bugetar nu
+primește acest avertisment. Remediile aparțin utilizatorului.
 
 ## R6-B7 — suprafețe și probe
 
@@ -219,8 +225,8 @@ mapat corect rămâne astfel. Remediile aparțin utilizatorului.
 | Contracte generate | Metadata/OpenAPI/types, fără drift |
 | Probe | SC-CIT-90…94; integral pe ambele profiluri; HTTP secured, browser, model TPH și FK |
 
-La implementare se actualizează `politici-si-fiscalitate` și `limite-curente`
-cu acoperirea reală; acum nu descriem R6 ca livrat. Probe numerice pentru
+Acoperirea implementată și delimitările sunt actualizate în
+`politici-si-fiscalitate` și `limite-curente`. Probe numerice pentru
 rotunjire, taxare inversă și capitalizat completează scenariul SC-CIT-91.
 
 ## R6-B8 — alegerile owner-ului înaintea codului
@@ -249,4 +255,37 @@ operație la 9% până la acea dată. Capătul inferior null al cotelor istorice
 nu pretinde validarea întregii istorii legislative. Mecanismul rămâne o
 verificare a intervalului configurat, nu un motor al tuturor condițiilor TVA.
 
-Codul R6 poate începe: alegerile sunt înscrise în contract și în 103(i).
+Implementarea urmează alegerile înscrise în 103(i).
+
+## Verificarea implementării — 2026-09-28
+
+- `ScenariiTvaIntervale` rulează prin `--scenarii FISCALE` / `CITIRI` pe
+  ambele profiluri. Acoperă calificarea înghețată, taxa automată/culesă,
+  exigibilitatea, compensarea între luni, avansul cu mai multe cote,
+  corecția sursei fără redirecționare, retururile și repartizarea centului
+  în cub. Modelul EF probează o singură coloană și un singur FK NO ACTION.
+- Integrala ambelor profiluri: `run-verificari/20260927-235325-207`, exit 0.
+  După completările de diagnostic și securitate: scenarii FISCALE pe ambele
+  profiluri, `run-verificari/20260928-002153-343`, exit 0.
+- HTTP secured: `nou/tools/ProbeHttp/tva-intervale.py`, clona `.CodexR6Http`;
+  sursă ascunsă și membri fiscali `Valoare`/`CotaTva` ascunși, 401/404/403/422,
+  interval inversat, recalcul explicit și ștergerea sursei referite refuzată.
+  Matricea existentă `refuzuri.ps1`: 294/294 PASS.
+- Browser React: perioadă, avertismente, calificări, comutatorul istoricului.
+  Browser XAF: marcaj read-only, taxă manuală 19,50 păstrată la salvare,
+  recalcul explicit 19,00 cu marcaj false, lookup cu sursa operată eligibilă
+  și excluderea sursei draft. Client build și generare repetată fără drift.
+
+Pentru FCT/FCL cu bază negativă, L3 permite și taxa manuală negativă:
+regularizarea aprobată −100/−19 poate fi culeasă prin aceeași intrare.
+RDC/RLF păstrează convenția culegerii pozitive și semnul aplicat la operare.
+Proveniența fiscală RDC/RLF/reduceri și consumul/restul avansului nu sunt
+implementate în această felie.
+
+Corecturile review-ului din 2026-09-28 (M1–M3 și m2) sunt verificate:
+FISCALE pe ambele profiluri, `run-verificari/20260928-005014-921`, exit 0;
+HTTP cu tranziția PUT/null și operare, `run-verificari/r6/review-http.out.log`,
+exit 0. În browser, recalculul pe FCT selectată produce 19 și se salvează;
+acțiunea lipsește din NIR și din lista rădăcină `DocumentDetaliu_ListView`.
+`git diff --check` trece. Integrala anterioară nu a fost reluată pentru
+aceste corecturi locale. Observațiile m1/m3/m4 sunt în `limite-curente`.

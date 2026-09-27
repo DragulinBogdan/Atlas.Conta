@@ -174,6 +174,46 @@ Registrul TVA vechi rămâne diagnostic în regimul dual. Cititorii fiscali
 portați nu îl folosesc drept sursă. Nu există snapshot fiscal cumulativ și
 nici compatibilizare a istoricului de dezvoltare. (102, 103)
 
+### Intervale și diagnostic TVA
+
+`TipTva.ValabilDeLa` / `ValabilPanaLa` sunt opționale și incluzive;
+intervalul inversat se refuză. Implicitul din culegere folosește
+exigibilitatea (fallback data documentului), exclude candidații din afara
+intervalului cu motiv în `Explica` și păstrează filtrele de acces/Activ.
+Intervalele seed sunt cele din R6-B8, aliniate numai pe `DinSeed`. (103h/i)
+
+`DocumentDetaliu.TvaCules` distinge taxa nenulă introdusă explicit de taxa
+calculată. L3 îl aprinde la culegere și îl stinge la schimbarea bazei/tipului,
+zero în ecran sau recalcul explicit pe selecție. Zero explicit prin Apply
+păstrează refuzul C104. `ValoareTva = null` prin WriteDto, cu baza
+neschimbată, păstrează taxa și marcajul existente. Acțiunea XAF de recalcul
+este disponibilă numai în lista de linii inclusă în documentul cu TVA,
+cu selecție explicită de linii draft. Corecția copiază taxa și marcajul, conexul niciuna;
+RDC/RLF păstrează marcajul la schimbarea semnului. CHECK-ul exclude marcajul
+pe zero. Operarea păstrează numai taxa marcată; cea automată urmează cota
+curentă și repartizarea pe document. Toleranța configurată rămâne refuz. (103i)
+
+Raportul „Impact TVA” (`/api/proiectii/diagnostic-tva`) citește faptele din
+cub și drafturile din agregat, prin ObjectSpace secured. Filtrează pe
+exigibilitate și tip, arată calificarea înghețată/actuală și avertizează la
+abatere mai mare de 0,01 lei față de repartizarea nucleului. Nu reconstruiește
+taxa capitalizată și nu dublează autocolectarea. Lipsa mapării SAF-T este
+explicită numai când SAF-T se aplică; diagnosticul și proiecția SAF-T
+folosesc același criteriu, care exclude profilul bugetar.
+Inversele legate compensează originalul inclusiv între luni;
+avertismentele compensate apar numai la cerere. Operarea emite mesaje
+minimale pe poziția liniei proprii, fără GUID; raportul nu dezvăluie sursa
+inaccesibilă. (103h)
+
+`TipMaterial.RegularizareAvans` și baza negativă identifică regularizarea
+FCT/FCL. `LinieAvansId` nominalizează linia pozitivă din altă factură,
+operată, marcată, a aceluiași partener/sens. Sursa oferă calificarea și
+reperul pentru diagnostic, fără să schimbe perioada sau taxa regularizării.
+Sursa invalidă, lipsă ori compensată produce avertisment; FK-ul nu se
+redirecționează la corecție. Retururile și reducerile fără sursă fiscală
+verificabilă primesc avertisment de proveniență în locul verdictului de
+interval. Contract: `docs/nucleu/tr-d8-tva-intervale-contract.md`. (103h/i)
+
 ### Perioada de declarare și corecțiile
 
 Data documentului, exigibilitatea, primirea la achiziție și înregistrarea

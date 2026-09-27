@@ -76,7 +76,9 @@ public sealed class FacturaIntrareLinieWriteDto {
     public decimal Cantitate { get; set; }
     public decimal PretUnitar { get; set; }
     public Guid? TipTvaId { get; set; }
-    // null = calculul din regim × cotă; valoare = TVA-ul cules, aplicat după calcul (36a).
+    public Guid? LinieAvansId { get; set; }
+    // null păstrează taxa culeasă existentă dacă baza nu se schimbă; valoare nenulă = TVA cules.
+    // Revenirea la calcul se cere prin comanda explicită „Recalculează TVA la cotă”.
     public decimal? ValoareTva { get; set; }
     // Atributele lotului, culese pe linie; motorul le copiază pe Lot la operare.
     public DateOnly? DataExpirare { get; set; }
@@ -157,7 +159,9 @@ public sealed class FacturaIntrareLinieReadDto {
     public decimal PretUnitar { get; set; }
     public decimal Valoare { get; set; }
     public decimal ValoareTva { get; set; }
+    public bool TvaCules { get; set; }
     public Guid? TipTvaId { get; set; }
+    public Guid? LinieAvansId { get; set; }
     public string TipTvaCod { get; set; }
     public string TipTvaDenumire { get; set; }
     public decimal? TipTvaCota { get; set; }

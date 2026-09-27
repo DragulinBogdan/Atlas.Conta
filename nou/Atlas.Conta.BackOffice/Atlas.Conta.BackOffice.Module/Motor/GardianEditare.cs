@@ -1034,6 +1034,8 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                     + $"{string.Join("; ", folosit)} — dezactivați-l în loc.");
             return;
         }
+        if (tip.ValabilDeLa is { } deLa && tip.ValabilPanaLa is { } panaLa && deLa > panaLa)
+            erori.Add("TVA_INTERVAL_INVALID: data de început a intervalului depășește data de sfârșit.");
         if (tip.Cota is < 0m or > 100m)
             erori.Add($"Cota tipului de TVA {tip.Cod ?? tip.Denumire} e {tip.Cota} — cota e un procent "
                 + "între 0 și 100.");

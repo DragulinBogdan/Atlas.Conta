@@ -181,7 +181,8 @@
       "Dublura": "Dublură pe același nivel",
       "DataViitoare": "Valabil de la o dată viitoare",
       "ClasaDiferita": "Altă clasă fiscală",
-      "Inactiv": "Tipul de TVA e inactiv"
+      "Inactiv": "Tipul de TVA e inactiv",
+      "IntervalTva": "Exigibilitatea este în afara intervalului TVA"
     },
     "MotivNegenerare": {
       "ProfilInert": "Profilul nu are conturile închiderii",
@@ -518,6 +519,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareDeductibila": "Amortizare deductibilă",
         "ValoareFiscala": "Amortizare fiscală",
@@ -597,6 +599,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
       }
@@ -761,6 +764,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
       }
@@ -821,6 +825,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
       }
@@ -876,6 +881,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
       }
@@ -934,6 +940,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
       }
@@ -1017,6 +1024,8 @@
         "Document": "Document",
         "DocumentId": "Document",
         "ID": "ID",
+        "LinieAvans": "Linia avansului",
+        "LinieAvansId": "Linia avansului",
         "Lot": "Lot",
         "LotId": "Lot",
         "Pozitie": "Poziție",
@@ -1027,6 +1036,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareLivrare": "Valoare livrare",
         "ValoareTva": "Valoare TVA"
@@ -1090,6 +1100,8 @@
         "Document": "Document",
         "DocumentId": "Document",
         "ID": "ID",
+        "LinieAvans": "Linia avansului",
+        "LinieAvansId": "Linia avansului",
         "Lot": "Lot",
         "LotFabricatie": "Lot fabricație",
         "LotId": "Lot",
@@ -1105,6 +1117,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareReceptie": "Valoare recepție",
         "ValoareTva": "Valoare TVA"
@@ -1179,6 +1192,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
       }
@@ -1353,6 +1367,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
       }
@@ -1487,6 +1502,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
       }
@@ -1543,6 +1559,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "Valoare": "Valoare",
         "ValoareTva": "Valoare TVA"
       }
@@ -1887,6 +1904,7 @@
         "TipMaterialId": "Tip (cont/clasă)",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
         "UtilizareExclusiva": "Utilizare exclusivă",
         "Valoare": "Valoare",
         "ValoareFiscala": "Valoare fiscală",
@@ -2345,7 +2363,8 @@
         "ContImplicitId": "ContImplicit",
         "Denumire": "Denumire",
         "DinSeed": "Din seed",
-        "ID": "ID"
+        "ID": "ID",
+        "RegularizareAvans": "Avans / regularizare avans"
       }
     },
     "TipTva": {
@@ -2367,7 +2386,9 @@
         "Denumire": "Denumire",
         "DinSeed": "Din seed",
         "ID": "ID",
-        "Regim": "Regim"
+        "Regim": "Regim",
+        "ValabilDeLa": "Valabil de la",
+        "ValabilPanaLa": "Valabil până la"
       }
     },
     "Unitate": {

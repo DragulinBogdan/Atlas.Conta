@@ -2089,9 +2089,11 @@ public static class SaftProiectii {
     }
 
 
+    public static bool SeAplica(IObjectSpace os) => os.GetObjectsQuery<SetareProfil>()
+        .Select(s => (ProfilContabil?)s.Profil).FirstOrDefault() != ProfilContabil.Bugetar;
+
     static string MotivNeaplicabil(IObjectSpace os, string modul) {
-        var setare = os.GetObjectsQuery<SetareProfil>().Select(s => new { s.Profil }).FirstOrDefault();
-        if (setare == null || setare.Profil != ProfilContabil.Bugetar)
+        if (SeAplica(os))
             return null;
         return $"SAF-T (D406{modul}) nu se aplică profilului bugetar: planul de conturi al instituțiilor "
             + "publice nu e printre cele 12 baze contabile (`TaxAccountingBasis`) ale schemei ANAF, deci "

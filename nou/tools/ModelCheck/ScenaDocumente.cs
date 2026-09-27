@@ -146,7 +146,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             var d = os.CreateObject<FacturaIntrareDetaliu>();
             d.Document = doc; d.Pozitie = rezultat.Count + 1;
             d.TipMaterialId = Tip(os, spec.Tip ?? (spec.Stoc ? Stoc : Serviciu));
-            d.Cantitate = spec.Cantitate; d.PretUnitar = spec.Pret; d.ValoareTva = spec.TaxaCuleasa;
+            d.Cantitate = spec.Cantitate; d.PretUnitar = spec.Pret;
             d.CodEconomicId = Economic;
             if (spec.Tva != null) d.TipTva = os.GetObjectsQuery<TipTva>().Single(t => t.Cod == spec.Tva);
             Guid? lotId = null, produsId = null;
@@ -155,6 +155,8 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
                 p.Denumire = p.Cod; p.UM = "BUC"; p.TipMaterialId = d.TipMaterialId;
                 lotId = d.CreeazaLot(os, p, (Gestiune)doc.Primitor).ID; produsId = p.ID;
             }
+            if (spec.TaxaCuleasa != 0m)
+                Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.Mapata(os, doc, d, null, spec.TaxaCuleasa);
             rezultat.Add(new(d.ID, lotId, produsId));
         }
         os.CommitChanges();

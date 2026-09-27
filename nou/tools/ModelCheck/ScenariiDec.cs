@@ -77,7 +77,11 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
                 [.. Fiscale(cote, "N21", 100, 21), .. Fiscale(new(cote.Id, [cote.Linii[1]]), "N11", 100, 11)]);
             SoldPartida("SC-DEC-09", P(cote.Id), Ianuarie, -232);
             var cules = Culege(100, "N21");
-            Comanda(os => { os.GetObjectByKey<DecontDetaliu>(cules.Linii[0].Id).ValoareTva = 20.99m; os.CommitChanges(); });
+            Comanda(os => {
+                var l = os.GetObjectByKey<DecontDetaliu>(cules.Linii[0].Id);
+                Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.Mapata(os, l.Document, l, null, 20.99m);
+                os.CommitChanges();
+            });
             Opereaza(cules.Id);
             Postari("SC-DEC-09", cules.Id, N.FelTranzactie.Operare, Ianuarie, Fiscale(cules, "N21", 100, 20.99m));
         }

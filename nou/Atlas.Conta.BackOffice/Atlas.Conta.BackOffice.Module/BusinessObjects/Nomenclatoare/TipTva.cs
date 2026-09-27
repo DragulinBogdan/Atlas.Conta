@@ -23,6 +23,11 @@ public class TipTva : Nomenclator, ICuCautare, ICuProvenienta {
     public virtual decimal Cota { get; set; }
     public virtual RegimTva Regim { get; set; }
 
+    [XafDisplayName("Valabil de la")]
+    public virtual DateOnly? ValabilDeLa { get; set; }
+    [XafDisplayName("Valabil până la")]
+    public virtual DateOnly? ValabilPanaLa { get; set; }
+
     // Conturile de TVA (4426/4427/4428) trăiesc în planul mare — lookup standard
     // (SmartLookup revertat, decizia 40d/gate).
     public virtual Guid? ContTvaDeductibilId { get; set; }

@@ -258,6 +258,24 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - `SDD`/`SFD` nu au cod SAF-T de achiziție; `N9` poartă codul de livrare al
   rândului 10.1 în timp ce maparea D300 îl pune pe rândul 11. (84-r1, 84-r2)
 
+- R6 verifică intervale configurate, nu toate condițiile legale ale unei cote.
+  Proveniența fiscală a ajustărilor RDC/RLF/reduceri rămâne neacoperită:
+  diagnosticul nu deduce factura fiscală din lot. Nu ține consumul/restul
+  avansului și nu refuză depășirea lui; referințele parțiale repetate sunt
+  permise. Nu repară automat taxele sau calificările istorice. (103-r2)
+- Pe FCT/FCL, baza negativă și taxa culeasă pozitivă sunt încă admise în
+  L3; abaterea este diagnosticată aritmetic. Un refuz pentru semne
+  incompatibile și înlocuirea lui `ILinieCuAvans` ca proxy pentru linia de
+  factură rămân de tratat la următoarea atingere a validării. (103-r3)
+- Raportul R6 are costuri de măsurat la gate-ul transversal de performanță:
+  acces leneș la `Tranzactie` și verificări de securitate per postare,
+  rezolvarea tipului/politicii per draft, citire fără limită temporală când
+  perioada lipsește și self-join pe postările fiscale la deschiderea
+  lookup-ului de avans. Nu există încă un buget de cost probat. (103h; gate-ul transversal TR-D8, 090/091)
+- Implicitele Privat `FCT|RLF/UE → TI21` și `DVI → IMP21` sunt nedatate.
+  Înainte de 2025-08-01, tipurile nu sunt eligibile; rămâne alegerea
+  explicită cu explicație conform R6-B5. Adăugarea rândurilor istorice
+  datate în seed cere alegerea owner-ului. (103h/i, R6-B5)
 - D300 și D394 sunt proiecții pentru cazurile implementate, nu acoperirea
   integrală a formularelor. Nu există export XML D300/D394. (69-r6, D4-r13)
 - Prorata, ajustările, cazurile fiscale speciale și toate secțiunile

@@ -1,4 +1,4 @@
-﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
@@ -23,35 +23,7 @@ public static class TvaService {
         d.Valoare + (d.TipTvaId is Guid id && tipuri.TryGetValue(id, out var tip) && tip.Regim == RegimTva.TaxareInversa
             ? 0m : d.ValoareTva);
 
-    // Formula fixată în design §3, cu SENSUL adăugat de F13-D1:
-    //   Capitalizat:            Valoare = net × (1 + Cota/100); ValoareTva = 0
-    //   Normal:                 Valoare = net;                  ValoareTva = net × Cota/100
-    //   TaxareInversa × Deductibil (achiziție): ca Normal — beneficiarul
-    //                           autolichidează (4426 = 4427).
-    //   TaxareInversa × Colectat (livrare):     Valoare = net;  ValoareTva = 0
-    //   Scutit / Neimpozabil / TipTva null:     Valoare = net;  ValoareTva = 0
-    //
-    // F13-D1 (Cod fiscal art. 331): taxarea inversă NU e proprietatea liniei
-    // singure, ci a perechii (regim × latura documentului). Furnizorul emite
-    // factura FĂRĂ TVA, cu mențiunea „taxare inversă"; taxa o declară și o
-    // deduce beneficiarul. Formula de dinainte era per REGIM și inventa pe
-    // livrare o taxă pe care nimeni n-o datorează (D300 o ocolea printr-o
-    // excepție, iar Import1C o compensa la sursă).
-    //
-    // Sensul vine din `PoliticaTva.Directie` a TIPULUI de document (36b),
-    // politică-dată existentă — nu un câmp nou pe `TipTva` și nu un hook pe
-    // frunză: un tip fără `PoliticaTva` nu postează TVA oricum, deci `directie`
-    // null ⇒ comportamentul dinainte (nu se pierde nimic). Parametrul e
-    // EXPLICIT, fără default: un apelant nou trebuie să se întrebe pe ce latură
-    // se află, nu să moștenească tăcut achiziția.
-    //
-    // `pastreazaTvaCules` (FCT/FCL/DEC — regula 36a uniformizată prin decizia
-    // 48b): un ValoareTva nenul CULES nu se suprascrie la operare. Documentul
-    // real (factura furnizorului, factura emisă, bonul justificat) poartă
-    // rotunjirea lui; recalculul din cotă ar diferi pe bani mărunți și ar rupe
-    // atât reconcilierea de import, cât și e-Factura (36f). Pe TI × Colectat NU
-    // se aplică — acolo nu există taxă de păstrat, iar un `ValoareTva` cules e
-    // REFUZAT la operare (`VerificaTvaCulesTaxareInversa`), nu înghițit tăcut.
+    /// <summary>Calculează valorile liniei; păstrează taxa numai când este marcată drept culeasă.</summary>
     public static void CalculeazaValori(DocumentDetaliu d, decimal net,
         IReadOnlyDictionary<Guid, InfoTva> tipuri, DirectieTva? directie,
         bool pastreazaTvaCules = false) {
@@ -69,7 +41,7 @@ public static class TvaService {
             case RegimTva.Normal:
             case RegimTva.TaxareInversa:
                 d.Valoare = net;
-                if (!(pastreazaTvaCules && d.ValoareTva != 0m))
+                if (!(pastreazaTvaCules && d.TvaCules))
                     d.ValoareTva = net * info.Cota / 100m;
                 break;
             default: // Scutit / Neimpozabil / fără TipTva

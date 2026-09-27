@@ -163,7 +163,7 @@ public static class ReturFurnizorApply {
                 LotProdus = l.Lot.Produs.Denumire,
                 LotData = (DateOnly?)l.Lot.Data,
                 LotPret = (decimal?)l.Lot.PretUnitar,
-                l.Cantitate, l.Valoare, l.ValoareTva,
+                l.Cantitate, l.Valoare, l.ValoareTva, l.TvaCules,
                 l.TipTvaId, TipTvaCod = l.TipTva.Cod, TipTvaDenumire = l.TipTva.Denumire,
                 TipTvaCota = (decimal?)l.TipTva.Cota
             })
@@ -194,7 +194,7 @@ public static class ReturFurnizorApply {
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,
                 LotId = l.LotId,
                 LotEticheta = ApiProiectii.EtichetaLot(l.LotProdus, l.LotData, l.LotPret),
-                Cantitate = l.Cantitate, Valoare = l.Valoare, ValoareTva = l.ValoareTva,
+                Cantitate = l.Cantitate, Valoare = l.Valoare, ValoareTva = l.ValoareTva, TvaCules = l.TvaCules,
                 TipTvaId = l.TipTvaId, TipTvaCod = l.TipTvaCod,
                 TipTvaDenumire = l.TipTvaDenumire, TipTvaCota = l.TipTvaCota
             }).ToList()

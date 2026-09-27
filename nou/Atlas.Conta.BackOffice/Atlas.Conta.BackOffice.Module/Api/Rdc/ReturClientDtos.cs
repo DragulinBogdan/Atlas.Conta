@@ -113,6 +113,7 @@ public sealed class RdcLinieReadDto {
     public decimal Cantitate { get; set; }
     public decimal Valoare { get; set; }
     public decimal ValoareTva { get; set; }
+    public bool TvaCules { get; set; }
     public Guid? TipTvaId { get; set; }
     public string TipTvaCod { get; set; }
     public string TipTvaDenumire { get; set; }

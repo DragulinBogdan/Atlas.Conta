@@ -53,13 +53,12 @@ static class Fiscal {
     }
 
     /// <summary>
-    /// 090j: taxa CULEASĂ e autoritară, PER LINIE ca azi (<c>pastreazaTvaCules</c>);
-    /// linia lăsată la zero o primește pe a nucleului (N-r4).
+    /// Taxa marcată este păstrată; restul liniilor primesc repartizarea pe document.
     /// </summary>
     public static decimal Valoarea(LinieOperand linie, N.TaxaDocument taxa) {
         ArgumentNullException.ThrowIfNull(linie);
         ArgumentNullException.ThrowIfNull(taxa);
-        return linie.ValoareTva != 0m ? linie.ValoareTva : taxa.PerLinie.GetValueOrDefault(linie.Id);
+        return linie.TvaCules ? linie.ValoareTva : taxa.PerLinie.GetValueOrDefault(linie.Id);
     }
 
     /// <summary>

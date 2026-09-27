@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
+using System.Runtime.CompilerServices;
 
 namespace Atlas.Conta.BackOffice.Module.Culegere;
 
@@ -9,6 +10,7 @@ namespace Atlas.Conta.BackOffice.Module.Culegere;
 /// la aceleași momente; validarea culegerii e a gardianului de commit (104c).
 /// </summary>
 public static class CulegereDocument {
+    static readonly ConditionalWeakTable<IObjectSpace, object> inCalcul = new();
     /// <summary>Starea bazei unei linii existente, înaintea mapării ei.</summary>
     public readonly record struct Amprenta(decimal? Baza, Guid? TipTvaId);
 
@@ -31,13 +33,15 @@ public static class CulegereDocument {
     /// iar TVA-ul adus la 0 revine la cotă (0 nu e TVA cules).
     /// </summary>
     public static void LinieSchimbata(IObjectSpace os, Document doc, DocumentDetaliu linie, string proprietate) {
-        if (doc.Stare != StareDocument.Draft)
+        if (doc.Stare != StareDocument.Draft || inCalcul.TryGetValue(os, out _))
             return;
         if (proprietate is nameof(FacturaIntrareDetaliu.Produs) or nameof(FacturaIntrareDetaliu.ProdusId))
             ProdusAles(os, doc, linie);
         else if (doc.IntrariBaza().Contains(proprietate)
                 || proprietate == nameof(DocumentDetaliu.ValoareTva) && linie.ValoareTva == 0m && doc.CuTva())
             BazaSchimbata(os, doc, linie);
+        else if (proprietate == nameof(DocumentDetaliu.ValoareTva) && doc.CuTva())
+            linie.TvaCules = linie.ValoareTva != 0m;
     }
 
     public static void ProdusAles(IObjectSpace os, Document doc, DocumentDetaliu linie) {
@@ -47,8 +51,27 @@ public static class CulegereDocument {
     }
 
     /// <summary>Baza s-a mișcat: valorile se recalculează, iar TVA-ul cules pe baza veche se pierde.</summary>
-    public static void BazaSchimbata(IObjectSpace os, Document doc, DocumentDetaliu linie) =>
-        doc.CalculeazaValori(os, [linie], pastreazaTvaCules: false);
+    public static void BazaSchimbata(IObjectSpace os, Document doc, DocumentDetaliu linie) {
+        linie.TvaCules = false;
+        Calculeaza(os, doc, [linie], false);
+    }
+
+    public static void RecalculeazaTva(IObjectSpace os, Document doc, IEnumerable<DocumentDetaliu> linii) {
+        if (doc.Stare != StareDocument.Draft)
+            throw new OperareException("TVA se recalculează numai pe draft.");
+        var selectate = linii.DistinctBy(l => l.ID).ToList();
+        if (!doc.CuTva() || selectate.Count == 0 || selectate.Any(l => l.DocumentId != doc.ID))
+            throw new OperareException("Selectați explicit liniile documentului cu TVA.");
+        foreach (var linie in selectate)
+            linie.TvaCules = false;
+        Calculeaza(os, doc, selectate, false);
+    }
+
+    static void Calculeaza(IObjectSpace os, Document doc, List<DocumentDetaliu> linii, bool pastreaza) {
+        inCalcul.Add(os, new object());
+        try { doc.CalculeazaValori(os, linii, pastreazaTvaCules: pastreaza); }
+        finally { inCalcul.Remove(os); }
+    }
 
     /// <summary>Null pe linia nouă.</summary>
     public static Amprenta? Urmareste(IObjectSpace os, Document doc, DocumentDetaliu linie) =>
@@ -80,6 +103,7 @@ public static class CulegereDocument {
         if (RefuzTvaCules(os, doc, linie, valoare) is string refuz)
             throw new OperareException(refuz);
         linie.ValoareTva = valoare;
+        linie.TvaCules = valoare != 0m;
     }
 
     /// <summary>
@@ -103,7 +127,7 @@ public static class CulegereDocument {
         VerificaScara(os, doc, linii);
         VerificaTvaCules(os, doc, linii);
         LoturiCulegereService.Sincronizeaza(os, doc);
-        doc.CalculeazaValori(os, linii, pastreazaTvaCules: true);
+        Calculeaza(os, doc, linii, true);
     }
 
     // 49e: recalculul rotunjește valoarea culeasă (RDC, DVI), deci scara se verifică înaintea lui.
@@ -119,7 +143,7 @@ public static class CulegereDocument {
     // 36a, F13-D1: TVA-ul cules are sens numai pe regimurile care îl postează separat. Se verifică
     // înaintea recalculului, care l-ar șterge în tăcere.
     static void VerificaTvaCules(IObjectSpace os, Document doc, List<DocumentDetaliu> linii) {
-        var erori = linii.Where(l => l.ValoareTva != 0m)
+        var erori = linii.Where(l => l.TvaCules)
             .Select(l => RefuzTvaCules(os, doc, l, doc.SemnulEAlOperarii() ? Math.Abs(l.ValoareTva) : l.ValoareTva))
             .Where(r => r != null).Distinct().ToList();
         if (erori.Count > 0)
@@ -129,8 +153,8 @@ public static class CulegereDocument {
     static string RefuzTvaCules(IObjectSpace os, Document doc, DocumentDetaliu linie, decimal valoare) {
         if (!doc.CuTva() || valoare == 0m)
             return null;
-        if (valoare < 0m)
-            return "Valoarea TVA nu poate fi negativă.";
+        if (valoare < 0m && !(linie is ILinieCuAvans && doc.BazaLinie(os, linie) < 0m))
+            return "Valoarea TVA negativă cere o linie de factură cu bază negativă.";
         if (decimal.Round(valoare, Scara.Bani) != valoare)
             return $"Valoarea TVA acceptă cel mult {Scara.Bani} zecimale.";
         var regim = linie.TipTvaId is Guid id ? os.GetObjectByKey<TipTva>(id)?.Regim : null;
@@ -168,13 +192,14 @@ public static class CulegereDocument {
         }
     }
 
-    // F23-D2: partener → politică → ancoră, împăcate cu cota produsului; data e a documentului.
+    // 103h: implicitul folosește exigibilitatea, fără schimbarea alegerii existente.
     static bool AplicaTipTvaImplicit(IObjectSpace os, Document doc, DocumentDetaliu linie) {
         if (!doc.CuTva())
             return false;
         var tipDoc = MotorOperare.GasesteTipDocument(os, doc);
         var rezultat = ImpliciteService.TipTva(os, tipDoc.ID,
-            ImpliciteService.PartenerulDocumentului(os, doc), linie.ProdusCules(), doc.Data);
+            ImpliciteService.PartenerulDocumentului(os, doc), linie.ProdusCules(),
+            (doc as IDocumentFiscal)?.DataExigibilitate ?? doc.Data);
         if (rezultat.TipTvaId is not Guid id)
             return false;
         linie.TipTva = os.GetObjectByKey<TipTva>(id);

@@ -514,7 +514,11 @@ datei primirii la achiziție. Tranzacția probei este anulată; faptele inițial
 rămân intacte. Invarianții ModelCheck păstrează probele de calificări
 incompatibile între roluri, duplicare și proveniența inversei.
 
-### R6 — specificație aprobată, fără implementare (2026-09-27)
+### R6 — implementat și verificat (2026-09-28)
+
+Runner: `ScenariiTvaIntervale`, selectoarele `FISCALE` / `CITIRI`.
+Probe secured: `nou/tools/ProbeHttp/tva-intervale.py`. Dovezile de rulare și
+verificarea XAF/React sunt în contract, secțiunea „Verificarea implementării”.
 
 Contract: `../tr-d8-tva-intervale-contract.md`, R6-B1…B8. Owner-ul a aprobat
 M1(B) și M7 (103i). Probele de schimbare a cotei folosesc datele din
@@ -573,6 +577,14 @@ Ieșirea exigibilității din interval rămâne avertisment independent.
 Regim/DeImport apar și ele în impactul istoric/curent. Dacă există numai
 maparea SAF-T pentru calificarea veche, noua calificare primește diagnosticul
 de lipsă a mapării 103(f); istoricul păstrează maparea corespunzătoare.
+Proba citește toate codurile raportului, fără filtru de avertismente SAF-T.
+Pe Bugetar, FCT fără mapare nu primește `TipTvaFaraCodSaft`, nici în draft,
+nici la operare sau în raportul faptului. Pe Privat, aceeași lipsă produce
+avertisment; mapările explicite ale fixture-ului îl elimină. Mesajele
+operării identifică linia proprie prin poziție, fără GUID.
+HTTP probează și PUT cu baza neschimbată și `ValoareTva = null`: păstrează
+taxa culeasă 19 inclusiv la operare după schimbarea cotei la 21; recalculul
+explicit ulterior produce 21 și șterge marcajul.
 
 SC-CIT-91a: trei linii normale cu baze 0,02 la 21% au taxa pe document
 0,01, repartizată 0,01/0/0 (ordinea urmează repartizarea stabilă). Fără

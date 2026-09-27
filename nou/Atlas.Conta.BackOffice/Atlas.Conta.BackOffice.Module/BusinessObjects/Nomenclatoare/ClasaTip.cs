@@ -33,6 +33,8 @@ public class ClasaProdus : Nomenclator, ICuCautare, ICuProvenienta {
 [NavigationItem("Nomenclatoare")]
 [XafDefaultProperty(nameof(Denumire))]
 public class TipMaterial : Nomenclator, ICuCautare, ICuProvenienta {
+    [XafDisplayName("Avans / regularizare avans")]
+    public virtual bool RegularizareAvans { get; set; }
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
     // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]

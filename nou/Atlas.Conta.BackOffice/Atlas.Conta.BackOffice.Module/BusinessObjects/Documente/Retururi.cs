@@ -144,6 +144,7 @@ public class ReturClient : Document, IDocumentFiscal {
     }
 
     public override bool CuTva() => true;
+    public override bool LinieFiscala(DocumentDetaliu linie) => linie.LotId == null;
     public override bool SemnulEAlOperarii() => true;
     public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
     static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(DocumentDetaliu.Valoare));

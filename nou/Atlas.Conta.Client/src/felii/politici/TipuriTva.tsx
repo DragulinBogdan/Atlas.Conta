@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { useMemo } from 'react';
 import { Column, Lookup } from 'devextreme-react/data-grid';
 import { storeOData } from '../../nucleu/odata';
@@ -43,6 +44,9 @@ export function TipuriTva() {
       <Column dataField="Regim" caption={cap('Regim')} width={150}>
         <Lookup dataSource={regimuri} valueExpr="valoare" displayExpr="label" />
       </Column>
+      <Column dataField="ValabilDeLa" caption={cap('ValabilDeLa')} dataType="date" format="dd.MM.yyyy" width={125} />
+      <Column dataField="ValabilPanaLa" caption={cap('ValabilPanaLa')} dataType="date" format="dd.MM.yyyy" width={125} />
+      <Column caption="Impact" cellRender={impact} allowEditing={false} width={135} />
       <Column dataField="Activ" caption={cap('Activ')} dataType="boolean" width={90} />
       {/* Felia 25: singura cale prin care motorul și ecranul declarației vamale
           spun „tip de import" fără să cunoască vreun cod (29). */}
@@ -78,4 +82,8 @@ export function TipuriTva() {
       <Column dataField="CodSafTAchizitie" caption="Cod SAF-T achiziție" width={130} />
     </GrilaPolitica>
   );
+}
+
+function impact({ data }: { data: { ID?: string } }) {
+  return data.ID ? <Link to={`/diagnostic-tva?tipTvaId=${data.ID}`}>Verifică impactul</Link> : null;
 }

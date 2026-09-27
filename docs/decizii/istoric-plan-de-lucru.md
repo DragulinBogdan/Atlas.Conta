@@ -861,3 +861,16 @@ detaliat în jurnal):
   103(h), SC-CIT-90…94, `tr-d8-tva-intervale-contract.md`, fără cod;
   referința la avans cu mai multe cote este delimitată pentru review.
   Comenzile și limitele sunt în `tr-d8-review-codex.md`. Fără commit.
+
+- **2026-09-28 — R6 implementat (103h/i), review advers închis.** Intervale
+  TVA, marcaj explicit `TvaCules`, recalcul L3/XAF/API, referință la linia
+  avansului, avertismente pure și raport secured de impact. Migrație canonică,
+  un singur FK TPH, CHECK-uri, seed pe ambele profiluri. Integrala ambelor
+  profiluri exit 0 (`20260927-235325-207`); scenarii FISCALE după corecturile
+  de review, HTTP R6 și 294/294 refuzuri, browser XAF/React, build client și
+  generare repetată fără drift. Review-ul propriu a corectat materializarea
+  faptelor cu cotă ascunsă prin permisiuni; proba este în `tva-intervale.py`.
+  Corecturile M1–M3 și m2 sunt verificate: FISCALE ambele profiluri
+  (`20260928-005014-921`), HTTP și browser XAF; commit aprobat de owner.
+  Proveniența ajustărilor rămâne 103-r2; validarea semnului taxei, 103-r3.
+  Bazele de verificare sunt izolate.

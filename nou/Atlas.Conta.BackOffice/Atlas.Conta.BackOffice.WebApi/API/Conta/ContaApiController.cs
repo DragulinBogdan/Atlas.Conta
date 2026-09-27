@@ -314,6 +314,9 @@ public abstract class ContaApiController : ControllerBase {
     // perioadele de referință) și nu creează nimic — întrebarea ei e „are voie
     // omul ăsta să scrie perioade?". Simetricul lui `PoateCiti`, pe
     // `SecurityOperations.Write`.
+    protected bool PoateCitiMembrul(IObjectSpace os, object obiect, string membru) =>
+        securitate is IRequestSecurityStrategy cerinte && cerinte.CanRead(os, obiect, membru);
+
     protected bool PoateScrie(Type tip, IObjectSpace os) =>
         securitate is IRequestSecurityStrategy cerinte && cerinte.CanWrite(tip, os);
 
