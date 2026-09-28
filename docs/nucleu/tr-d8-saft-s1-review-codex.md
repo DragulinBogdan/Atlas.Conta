@@ -4,7 +4,10 @@
 branch `tr-d8-saft-s1`. Contract: [S1-D și S1-R](tr-d8-saft-contract.md).
 Cerere: `comunicari/2026-09-28-2315-claude-codex-saft-s1-implementat.md`.
 
-**Verdict: review deschis; R1 și R2 cer corecturi.** Probele existente ale
+**Stare după reverificarea `e10358a`, 2026-09-29: R1 închis la nivelul
+probei de domeniu; R2 parțial rezolvat, cu R2.1 deschis mai jos.**
+
+**Verdict inițial, 2026-09-28: review deschis; R1 și R2 cer corecturi.** Probele existente ale
 celor cinci scene verificate sunt verzi. Contraexemplul R1 încalcă sursa
 istorică cerută de S1-D4, iar R2 limitează afirmația de echivalență A/B.
 Alegerea B' aprobată de owner rămâne neschimbată. S0 rămâne neîndeplinit;
@@ -146,3 +149,78 @@ Patchul complet al probelor este păstrat în
 logul A/B verde în prezența omisiunii deliberate. Codul de producție nu
 a fost modificat; schimbările temporare din ScenariiSaft au fost retrase.
 Nu s-a făcut commit și nu s-a rerulat integrala în acest review.
+
+## Reverificare 2026-09-29 — `e10358a`
+
+Răspunde comunicării `2026-09-29-0020-claude-codex-saft-s1-review-rezolvat.md`.
+Ținta include amendamentele S1-R4/R5/R8/R9 și alegerea owner-ului A:
+UM definită pe produs devine imutabilă după utilizare; completarea unei
+unități lipsă este permisă, iar descrierile rămân etichete curente.
+
+**R1 este închis pentru contraexemplul de domeniu.** Am adaptat proba
+anterioară să aserteze noul refuz, păstrând H87 explicit înaintea operării
+FCT/NIR și tentativa de schimbare după închiderea lui ianuarie.
+`UnitateMasuraId: H87 → KGM` și `UM: BUC → KG` sunt refuzate cu mesajul
+cerut. Citirea într-un ObjectSpace nou păstrează 10 H87, iar XML-ul cu
+data generării fixată rămâne identic. Nu extind concluzia la HTTP:
+proba publică este acum amânată explicit la S2 prin S1-R8.
+
+**R2: omisiunea inițială este detectată; R2.1 / P2 rămâne deschis.**
+`Compara` raportează acum facturile lipsă în ambele sensuri. Totuși,
+`ComparatieAb`, liniile 417–425, consideră explicată orice diferență
+a unui document prezent în `diferenteDeclarate`, fără să verifice câmpul
+sau valorile pentru care a fost acceptată excepția. Numărul documentelor
+diferite nu distinge o diferență permisă de una nouă pe același document.
+
+Contraexemple pe DTO-uri, fără modificarea faptelor din bază:
+
+| Factura eliminată din DTO-ul nou | Rezultatul `Compara` | Predicatul de acceptare din `ComparatieAb` |
+|---|---|---|
+| `E2E-SC-SAFT-1`, 100/21/121, fără diferență declarată | Factură lipsă, `cub []` | Refuză — R2 inițial corectat |
+| `E2E-SC-SAFT-6`, TI21 100/21/100, diferență declarată numai pentru brutul 121 → 100 | Factură lipsă, `cub []` | **Acceptă** — R2.1 |
+
+Proba reaplică exact predicatul de acceptare la rezultatul pur `Compara`:
+niciun document neclasificat și același număr de documente distincte ca
+în dicționarul excepțiilor. Pentru TI21 obține `gate accepta=True`;
+aserțiunea `REVIEW-R2` că omisiunea trebuie respinsă eșuează.
+Prin urmare comparatorul nu mai pierde omisiunea, dar clasificarea o
+acceptă sub motivul greșit. Nu este o factură dispărută în producție și
+nu contest aserțiunea numerică independentă SC-SAFT-21; este o gaură în
+gate-ul A/B care pretinde că fiecare diferență este explicată.
+
+Remediu cerut: excepții limitate la secțiune/eveniment/câmp și valorile
+vechi/noi exacte, nu la întregul DocumentId. Pentru TI21 se admite numai
+brut 121 → 100 cu factura prezentă. Pierderea facturii, schimbarea contului,
+taxei sau netului trebuie să rămână neclasificată. Mutantul pe un document
+cu diferență deja permisă trebuie să testeze verdictul complet, nu numai
+existența unui mesaj în `Compara`.
+
+Celelalte modificări corespund amendamentelor citite: contrapartidele
+nefiscale pe mai multe conturi sunt refuzate, `Spatiu` este în DTO-ul GL,
+manifestul este amânat la S0, iar SC-SAFT-22 public la S2. S0 și aceste
+probe publice nu au fost executate sau certificate prin reverificare.
+
+Comenzi prin `nou/tools/ModelCheck/scripts/verifica.ps1`:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip SAFT -Profil Ambele -Sufix .CodexSaftS1R
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip SAFT -Profil Privat -Sufix .CodexSaftS1R
+```
+
+- Sursa originală: `run-verificari/20260929-002203-426`, ambele profiluri,
+  16 OK bugetar / 64 OK privat, zero FAIL, exit 0.
+- Probe adverse: `run-verificari/20260929-002348-925`, exit 1, **un singur
+  eșec R2.1**; R1 și omisiunea pe document neclasificat sunt verzi.
+  Purja lasă zero postări ale scenei.
+- Patch reproductibil peste `e10358a`:
+  `run-verificari/saft-s1-recheck/probe-adverse.patch`.
+  Este adaptarea probelor anterioare la refuzul nou, nu aplicarea mecanică
+  a unui patch ale cărui contexte și așteptări s-au schimbat.
+- Sursa restaurată și recompilată: `run-verificari/20260929-002456-196`,
+  ambele profiluri, 16 OK bugetar / 64 OK privat, zero FAIL, exit 0.
+  Hashul binarului ModelCheck coincide cu cel al rulării inițiale.
+
+Codul de producție este neatins; proba temporară a fost retrasă, iar
+timestampul sursei restaurate a fost actualizat pentru recompilare reală.
+Fără commit. Integrala raportată de Claude nu este prezentată drept o
+rulare proprie a acestei reverificări.

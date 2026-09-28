@@ -461,9 +461,11 @@ sunt refuzuri (`SaftDto.Refuzuri`), iar XML-ul nu se scrie. Citirea cere
 RepeatableRead și refuză o tranzacție ambiantă mai slabă. Regulile complete:
 [S1-R](../nucleu/tr-d8-saft-contract.md#s1-r--review-și-tranșări-2026-09-28).
 
-Review-ul advers Codex (R1/R2) este rezolvat: unitatea istorică e protejată
-de regula produsului de mai sus, iar comparația A/B cu exportul vechi merge
-în ambele sensuri, pe facturi și pe GL per document. Stabilitatea octet cu
+Reverificarea Codex din 2026-09-29 închide R1 la nivelul probei de domeniu:
+unitatea definită e protejată de regula produsului de mai sus. Comparația
+A/B merge în ambele sensuri, iar o diferență e acceptată numai dacă secțiunea,
+evenimentul și valorile vechi/noi coincid exact cu o excepție declarată (R2.1).
+Stabilitatea octet cu
 octet a reexportului e probată cu metadatele și data generării fixate;
 redenumirile din nomenclator (descrieri) rămân etichete curente.
 [Review S1](../nucleu/tr-d8-saft-s1-review-codex.md).

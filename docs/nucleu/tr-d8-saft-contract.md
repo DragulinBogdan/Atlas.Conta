@@ -628,7 +628,11 @@ comutarea L, în S2, pe ruta reală. În S1 rămân proba RepeatableRead
 exportul vechi merge în ambele sensuri, pe cheia (document, storno). Pe
 facturi compară tipul, netul, taxa, brutul, contul, numărul de linii și data;
 pe GL compară totalurile D/C per document. Proba cere și respingerea unui
-mutant cu o factură omisă. Diferențele clasificate pe fixture-ul S1 sunt:
+mutant cu o factură omisă. *R2.1:* o diferență e explicată numai prin
+potrivirea exactă (secțiune, document, storno, valoare veche, valoare nouă),
+iar gate-ul cere ca mulțimea diferențelor găsite să fie exact mulțimea
+declarată. Omisiunea unei facturi cu o diferență deja clasificată (TI21)
+trebuie și ea respinsă. Diferențele clasificate pe fixture-ul S1 sunt:
 brutul TI21, `InvoiceDate` (data documentului, inclusiv pentru stornoul 381)
 și recepția stocului la FCT (cub) față de NIR (registrul vechi). Linia GL
 păstrează `(Spatiu, ID)` postării în DTO; manifestul ca fișier rămâne la S0.

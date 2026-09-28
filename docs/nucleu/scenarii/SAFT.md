@@ -10,13 +10,17 @@ motor. Datele și cota 21% sunt intrări controlate ale fixture-ului; nu se
 deduc din exportul vechi. Codificarea XML a cazurilor încă deschise nu este
 declarată aprobată. Numele de probe de mai jos sunt propuse.
 
-**Review advers Codex, 2026-09-28: R1/R2 rezolvate (2026-09-29).**
+**Review advers Codex, reverificat 2026-09-29: R1 închis; R2.1 corectat
+(2026-09-29), în așteptarea reverificării.**
 R1: unitatea produsului e imutabilă după operare (S1-R5, alegerea owner-ului
 A); contraexemplul 10 H87 → KGM este refuzat, iar exportul rămâne 10 H87.
 R2: `Compara` merge în ambele sensuri, pe facturi (tip, net, taxă, brut,
 cont, linii, dată) și pe GL per document. Un mutant cu o factură omisă este
-prins. Diferențele A/B din ianuarie sunt clasificate: TI21 brut, data
-facturii F și a stornoului, recepția la FCT față de NIR.
+prins de comparator. R2.1: excepțiile fixează acum secțiunea, evenimentul
+(document, storno) și valorile vechi/noi exacte. Gate-ul cere egalitatea
+exactă cu lista declarată, iar mutanții (factură obișnuită omisă, factură
+TI21 omisă) sunt respinși amândoi. Diferențele din ianuarie sunt: TI21 brut,
+data facturii F și a stornoului, recepția la FCT față de NIR.
 [Review-ul S1](../tr-d8-saft-s1-review-codex.md).
 
 | Id | Scenariu și așteptare numerică | Proba propusă | Proveniență | Rezultat / stare |
