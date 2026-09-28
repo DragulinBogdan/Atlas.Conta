@@ -138,20 +138,26 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         diferenteDeclarate[f21.Id] = "SC-SAFT-21: taxarea inversă nu adaugă autocolectarea la brutul comercial (vechi 121, cub 100)";
         var f22 = Factura(Ianuarie, new LinieFctScena(2, 50, "N21", false)); Opereaza(f22.Id);
         var f18 = Fct(fb, Zi(1, 8), new LinieFctScena(1, 100, "N21", false)); Inregistrare(f18.Id, Zi(1, 10)); Opereaza(f18.Id);
+        diferenteDeclarate[f18.Id] = "S1-R4: InvoiceDate este data documentului (8), nu data înregistrării (10)";
         var f23 = Factura(Zi(1, 8), new LinieFctScena(1, 100, "N21", false)); Inregistrare(f23.Id, Februarie); Opereaza(f23.Id);
         var anulata = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false)); Opereaza(anulata.Id); Anuleaza(anulata.Id);
         var stornoIan = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false)); Opereaza(stornoIan.Id);
         Storneaza(stornoIan.Id, Zi(1, 20));
         var stornoFeb = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false)); Opereaza(stornoFeb.Id);
         var receptie = Receptioneaza(new LinieFctScena(10, 10, "N21", Tip: "371"));
+        var nir = CuSpatiu(os => os.GetObjectsQuery<Document>().Single(d => d.Autogenerat && d.DocumentSursaId == receptie.Id).ID);
+        diferenteDeclarate[stornoIan.Id] = "S1-R4: factura 381 păstrează data documentului (5), vechiul punea data stornării (20)";
+        diferenteDeclarate[receptie.Id] = "SAF-B5: recepția intră la FCT în cub (100 + 21), în registrul vechi numai TVA 21";
+        diferenteDeclarate[nir] = "SAF-B5: NIR-ul egal nu mai poartă recepția (vechi 100, cub 0)";
 
         var ian = Export(1);
         FaraRefuzuri(ian, "SC-SAFT-01");
         Ianuarie1(ian, f01.Id, v02, f03.Id, dvi, fa, ca);
         Ianuarie2(ian, f19.Id, f20a.Id, f20b.Id, f21.Id, f22.Id, f18.Id, f23.Id, anulata.Id, stornoIan.Id);
         Cusaturi(ian, 1);
-        var artefactIanuarie = Xml(ian);
         ComparatieAb(1);
+        UnitateIstorica(receptie.Linii[0].Produs!.Value, receptie.Id);
+        var artefactIanuarie = Xml(Export(1));
 
         Comanda(os => {
             foreach (var formular in new[] { FormularFiscal.D300, FormularFiscal.D394 })
@@ -176,7 +182,9 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         Refuza("SC-SAFT-22", () => Comanda(os => {
             os.GetObjectsQuery<DocumentDetaliu>().Single(l => l.DocumentId == f22.Id).Cantitate = 5;
             GardianEditare.Verifica(os);
-        }), "");
+        }), "nu se mai modifică");
+        Verifica("SC-SAFT-22", "linia operată refuzată rămâne cu cantitatea 2",
+            CuSpatiu(os => os.GetObjectsQuery<DocumentDetaliu>().Single(l => l.DocumentId == f22.Id).Cantitate) == 2);
         Storneaza(stornoFeb.Id, Februarie);
         var retur = CuSpatiu(os => {
             var d = os.CreateObject<ReturFurnizor>(); d.Data = Februarie; d.DataPrimire = Februarie;
@@ -210,6 +218,27 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
 
         RepeatableRead();
         MapareLipsa();
+    }
+
+    void UnitateIstorica(Guid produs, Guid factura) {
+        Guid Unitate(IObjectSpace os, string cod) => os.GetObjectsQuery<UnitateMasura>().Single(u => u.Cod == cod).ID;
+        void Schimba(Guid id, string cod) => Comanda(os => {
+            os.GetObjectByKey<Produs>(id).UnitateMasuraId = Unitate(os, cod);
+            GardianEditare.Verifica(os); os.CommitChanges();
+        });
+        Schimba(produs, "H87");
+        var inainte = Xml(Export(1));
+        Refuza("SC-SAFT-22", () => Schimba(produs, "KGM"), "unitatea de măsură nu se mai schimbă");
+        var linie = Export(1).FacturiPrimite.Single(f => f.DocumentId == factura).Linii.Single();
+        Verifica("SC-SAFT-22", "UM istorică: completarea H87 e permisă, KGM după operare e refuzată, exportul rămâne 10 H87",
+            linie is { Quantity: 10, InvoiceUOM: "H87" } && Xml(Export(1)).AsSpan().SequenceEqual(inainte));
+        var liber = CuSpatiu(os => {
+            var p = os.CreateObject<Produs>(); p.Cod = Marcaj + "-LIBER"; p.Denumire = p.Cod; p.UnitateMasuraId = Unitate(os, "H87");
+            os.CommitChanges(); return p.ID;
+        });
+        Schimba(liber, "KGM");
+        Verifica("SC-SAFT-22", "produsul fără mișcări operate își poate schimba unitatea",
+            CuSpatiu(os => os.GetObjectByKey<Produs>(liber).UnitateMasura.Cod) == "KGM");
     }
 
     static bool Refuzat(Action actiune) {
@@ -359,24 +388,45 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
 
     readonly Dictionary<Guid, string> diferenteDeclarate = [];
 
+    static List<(Guid Document, string Diferenta)> Compara(SaftDto vechi, SaftDto nou) {
+        var rezultat = new List<(Guid, string)>();
+        static string Factura(SaftFactura f) => $"{f.InvoiceType} {f.NetTotal}/{Taxa(f)}/{f.GrossTotal} {f.AccountID} "
+            + $"{f.Linii.Count} linii {f.InvoiceDate:yyyy-MM-dd}";
+        var facturiVechi = vechi.FacturiEmise.Concat(vechi.FacturiPrimite).ToLookup(f => (f.DocumentId, f.Storno));
+        var facturiNoi = nou.FacturiEmise.Concat(nou.FacturiPrimite).ToLookup(f => (f.DocumentId, f.Storno));
+        foreach (var cheie in facturiVechi.Select(g => g.Key).Union(facturiNoi.Select(g => g.Key))) {
+            var v = facturiVechi[cheie].Select(Factura).Order(StringComparer.Ordinal).ToList();
+            var n = facturiNoi[cheie].Select(Factura).Order(StringComparer.Ordinal).ToList();
+            if (!v.SequenceEqual(n))
+                rezultat.Add((cheie.DocumentId, $"factură{(cheie.Storno ? " storno" : "")}: vechi [{string.Join("|", v)}], cub [{string.Join("|", n)}]"));
+        }
+        static Dictionary<Guid, (decimal D, decimal C)> Gl(SaftDto d) => d.Jurnale.SelectMany(j => j.Tranzactii)
+            .GroupBy(t => t.DocumentId).ToDictionary(g => g.Key, g => (Debit(g.SelectMany(t => t.Linii)), Credit(g.SelectMany(t => t.Linii))));
+        var glVechi = Gl(vechi);
+        var glNou = Gl(nou);
+        foreach (var doc in glVechi.Keys.Union(glNou.Keys))
+            if (glVechi.GetValueOrDefault(doc) != glNou.GetValueOrDefault(doc))
+                rezultat.Add((doc, $"GL: vechi {glVechi.GetValueOrDefault(doc)}, cub {glNou.GetValueOrDefault(doc)}"));
+        return rezultat;
+    }
+
     void ComparatieAb(int luna) {
         var vechi = ExportVechi(luna);
         var nou = Export(luna);
-        var diferente = new List<string>();
-        var explicate = new List<string>();
-        foreach (var f in nou.FacturiEmise.Concat(nou.FacturiPrimite)) {
-            var v = vechi.FacturiEmise.Concat(vechi.FacturiPrimite).Where(x => x.DocumentId == f.DocumentId && x.Storno == f.Storno).ToList();
-            if (v.Count != 1 || v[0].NetTotal != f.NetTotal || v[0].GrossTotal != f.GrossTotal || v[0].InvoiceType != f.InvoiceType)
-                (diferenteDeclarate.TryGetValue(f.DocumentId, out var motiv) ? explicate : diferente).Add($"{f.InvoiceNo}/{f.InvoiceType}: vechi {string.Join("|", v.Select(x => $"{x.InvoiceType} {x.NetTotal}/{x.GrossTotal}"))}"
-                    + $", nou {f.NetTotal}/{f.GrossTotal}{(motiv == null ? "" : " — " + motiv)}");
-        }
-        var glVechi = vechi.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii).ToList();
-        var glNou = nou.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii).ToList();
-        Console.WriteLine($"     MĂSURAT (A/B luna {luna}): GL vechi D/C {Debit(glVechi)}/{Credit(glVechi)}, nou {Debit(glNou)}/{Credit(glNou)}; "
-            + $"facturi vechi {vechi.FacturiEmise.Count + vechi.FacturiPrimite.Count}, nou {nou.FacturiEmise.Count + nou.FacturiPrimite.Count}; "
-            + $"explicate [{string.Join("; ", explicate)}]; neclasificate [{string.Join("; ", diferente)}]");
-        Verifica("SC-SAFT-15", $"A/B luna {luna}: fiecare diferență de factură între exportul vechi și cub e clasificată",
-            diferente.Count == 0 && explicate.Count == diferenteDeclarate.Count);
+        var toate = Compara(vechi, nou);
+        var explicate = toate.Where(d => diferenteDeclarate.ContainsKey(d.Document))
+            .Select(d => $"{d.Diferenta} — {diferenteDeclarate[d.Document]}").ToList();
+        var neclasificate = toate.Where(d => !diferenteDeclarate.ContainsKey(d.Document)).Select(d => d.Diferenta).ToList();
+        Console.WriteLine($"     MĂSURAT (A/B luna {luna}): facturi vechi {vechi.FacturiEmise.Count + vechi.FacturiPrimite.Count}, "
+            + $"cub {nou.FacturiEmise.Count + nou.FacturiPrimite.Count}; explicate [{string.Join("; ", explicate)}]; "
+            + $"neclasificate [{string.Join("; ", neclasificate)}]");
+        Verifica("SC-SAFT-15", $"A/B luna {luna}: facturi și GL per document comparate în ambele sensuri, fiecare diferență clasificată",
+            neclasificate.Count == 0 && toate.Select(d => d.Document).Distinct().Count() == diferenteDeclarate.Count);
+
+        var omisa = nou.FacturiPrimite[0];
+        var mutant = new SaftDto { FacturiEmise = nou.FacturiEmise, FacturiPrimite = nou.FacturiPrimite.Skip(1).ToList(), Jurnale = nou.Jurnale };
+        Verifica("SC-SAFT-15", "mutant A/B: o factură omisă din cub (lipsă, nu supliment) este raportată",
+            Compara(vechi, mutant).Any(d => d.Document == omisa.DocumentId && d.Diferenta.Contains("cub []", StringComparison.Ordinal)));
     }
 
     void RepeatableRead() {

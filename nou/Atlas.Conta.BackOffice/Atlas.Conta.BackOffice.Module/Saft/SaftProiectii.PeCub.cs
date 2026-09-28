@@ -330,6 +330,7 @@ public static partial class SaftProiectii {
                     var (customer, supplier) = Identitati(p);
                     tranzactie.Linii.Add(new SaftLinieTranzactie {
                         RandRegistruId = p.Id,
+                        Spatiu = p.Spatiu,
                         DetaliuId = p.LinieId,
                         RecordID = (++pozitie).ToString(CultureInfo.InvariantCulture),
                         AccountID = Simbol(p.Cont),
@@ -471,15 +472,14 @@ public static partial class SaftProiectii {
                     if (tertLinie.Count == 0)
                         continue;
                     var net = tertLinie.Sum(Comercial);
-                    var contrapartide = grup.Where(p => !EsteTert(p)).GroupBy(p => p.Cont).ToList();
-                    if (contrapartide.Count == 0 || contrapartide.Sum(g => g.Sum(Contrapartida)) != net) {
-                        Refuza(RefuzProvenienta, $"{eticheta}: linia nefiscală {info.Pozitie} are net {net} fără contrapartidă "
-                            + "egală pe conturile ei.", docId, tranzactieId);
+                    var contrapartide = grup.Where(p => !EsteTert(p)).ToList();
+                    if (contrapartide.Select(p => p.Cont).Distinct().Count() != 1 || contrapartide.Sum(Contrapartida) != net) {
+                        Refuza(RefuzProvenienta, $"{eticheta}: linia nefiscală {info.Pozitie} are net {net} fără o contrapartidă "
+                            + "unică și egală.", docId, tranzactieId);
                         continue;
                     }
                     conservat += net;
-                    subLinii.AddRange(contrapartide.OrderBy(g => Simbol(g.Key), StringComparer.Ordinal)
-                        .Select(g => (g.Key, g.Sum(Contrapartida), Nefiscal(), (DateOnly?)null, g.First())));
+                    subLinii.Add((contrapartide[0].Cont, net, Nefiscal(), null, contrapartide[0]));
                 }
                 var cantitate = Math.Abs(info.Cantitate);
                 if (cantitate == 0m) {

@@ -10,6 +10,15 @@ motor. Datele și cota 21% sunt intrări controlate ale fixture-ului; nu se
 deduc din exportul vechi. Codificarea XML a cazurilor încă deschise nu este
 declarată aprobată. Numele de probe de mai jos sunt propuse.
 
+**Review advers Codex, 2026-09-28: R1/R2 rezolvate (2026-09-29).**
+R1: unitatea produsului e imutabilă după operare (S1-R5, alegerea owner-ului
+A); contraexemplul 10 H87 → KGM este refuzat, iar exportul rămâne 10 H87.
+R2: `Compara` merge în ambele sensuri, pe facturi (tip, net, taxă, brut,
+cont, linii, dată) și pe GL per document. Un mutant cu o factură omisă este
+prins. Diferențele A/B din ianuarie sunt clasificate: TI21 brut, data
+facturii F și a stornoului, recepția la FCT față de NIR.
+[Review-ul S1](../tr-d8-saft-s1-review-codex.md).
+
 | Id | Scenariu și așteptare numerică | Proba propusă | Proveniență | Rezultat / stare |
 |---|---|---|---|---|
 | SC-SAFT-01 | FCT servicii 100 + 21: GL D 6xx 100, D 4426 21, C 401 121; PurchaseInvoice net 100, taxă 21, brut 121; plata 40 lasă furnizor 81 | SAFT-L-ACHIZITIE | 073, 090, 103; regulă contabilă | Verificat (ScenariiSaft) |

@@ -284,6 +284,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 // (g) Produsul (felia 16, D16-D2): `CodNc` are exact 8 cifre.
                 case Produs produs:
                     VerificaProdus(produs, erori);
+                    VerificaUnitateProdus(os, produs, erori);
                     break;
                 // (h) Politica de mișcare SAF-T (felia 17, D17-D1): codul din
                 // nomenclator, motivul obligatoriu la excluderea deliberată,
@@ -832,6 +833,31 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (!string.IsNullOrWhiteSpace(cod) && !FormatCodNc.IsMatch(cod))
             erori.Add($"Produsul {produs.Denumire ?? produs.Cod} are codul NC „{cod}” — "
                 + "codul NC are exact 8 cifre (sau rămâne gol).");
+    }
+
+    // S1-R5: cantitatea declarată are sensul unității de la operare; completarea unei unități lipsă rămâne permisă.
+    static void VerificaUnitateProdus(IObjectSpace os, Produs produs, ICollection<string> erori) {
+        if (EsteSters(os, produs) || os is not EFCoreObjectSpace efCore)
+            return;
+        var intrare = efCore.DbContext.Entry(produs);
+        if (intrare.State == EntityState.Added)
+            return;
+        bool Schimbata(string membru) {
+            var valoare = intrare.Property(membru);
+            return valoare.OriginalValue is { } veche && !(veche is string text && string.IsNullOrWhiteSpace(text))
+                && !Equals(veche, valoare.CurrentValue);
+        }
+        if (!Schimbata(nameof(Produs.UnitateMasuraId)) && !Schimbata(nameof(Produs.UM)))
+            return;
+        var id = produs.ID;
+        var folosit = Cub.Citiri.Produse.AreMiscari(os, id)
+            || os.GetObjectsQuery<FacturaIntrareDetaliu>().Any(l => l.ProdusId == id && l.Document.Stare != StareDocument.Draft)
+            || os.GetObjectsQuery<FacturaIesireDetaliu>().Any(l => l.ProdusId == id && l.Document.Stare != StareDocument.Draft)
+            || os.GetObjectsQuery<NirDetaliu>().Any(l => l.ProdusId == id && l.Document.Stare != StareDocument.Draft)
+            || os.GetObjectsQuery<AsamblareDetaliu>().Any(l => l.ProdusId == id && l.Document.Stare != StareDocument.Draft);
+        if (folosit)
+            erori.Add($"Produsul {produs.Denumire ?? produs.Cod} are mișcări operate — unitatea de măsură nu se mai "
+                + "schimbă; pentru altă unitate creați un produs nou.");
     }
 
     // (h) Politica de mișcare SAF-T (felia 17, D17-D1). Trei reguli de FOND, pe

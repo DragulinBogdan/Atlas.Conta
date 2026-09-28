@@ -179,6 +179,8 @@ public sealed class SaftTranzactie {
 
 public sealed class SaftLinieTranzactie {
     public Guid RandRegistruId { get; set; }
+    // Pe cub, proveniența completă a liniei este (Spatiu, RandRegistruId) — S1-D2.
+    public Atlas.Conta.Nucleu.Spatiu? Spatiu { get; set; }
     public Guid? DetaliuId { get; set; }
     public string RecordID { get; set; }
     public string AccountID { get; set; }

@@ -575,8 +575,10 @@ din perioada declarată. Maparea se reverifică la S0.
   tranzacții și linii. Contul liniei = contul unic al postărilor cu rol
   Bază; mai multe conturi dau `SAFT_PROVENIENTA_AMBIGUA`, fără proratare.
 - Linie nefiscală: netul = postările de terț ale liniei; contul = contul
-  contrapartidei. Mai multe conturi produc sublinii exacte, câte una per
-  postare, fără proratare.
+  unic al contrapartidei. Mai multe conturi de contrapartidă pe aceeași
+  linie dau `SAFT_PROVENIENTA_AMBIGUA`: niciun producător actual nu le
+  generează, iar subliniile ar cere o regulă de cantitate neprobată
+  (review Codex, punctul 3).
 - O linie fără postare de terț nu este linie de factură; de exemplu,
   componenta de cost a RDC rămâne numai în GL. Un eveniment fără postare
   de terț și fără fapt fiscal nu este factură (RDC numai de stoc). Unul cu
@@ -593,6 +595,16 @@ liniei operate|, iar `UnitPrice` = prețul unitar al liniei, sau |net| /
 cantitate dacă prețul lipsește. Cantitatea zero dă `SAFT_SURSA_INCOMPLETA`.
 Inversa citește aceeași linie; corecția are linii proprii.
 
+*Amendament după review-ul Codex R1, alegerea owner-ului A (2026-09-29):*
+UM nu stă pe linie, ci pe produs. De aceea unitatea produsului
+(`UnitateMasuraId` și textul `UM`) devine imutabilă din momentul în care
+produsul are postări în cub sau apare pe o linie operată; completarea
+unei unități lipsă rămâne permisă. Regula e a nomenclatorului și protejează
+și stocul, nu doar factura. Pentru altă unitate se creează alt produs.
+Descrierile (produs, tip de material) rămân etichete curente din nomenclator:
+redenumirea corectează textul, nu măsura. Gardianul e `GardianEditare`,
+iar proba e SC-SAFT-22 (UM istorică).
+
 **S1-R6 — refuzurile.** `SaftDto.Refuzuri` (cod, mesaj, document,
 tranzacție); cu lista nevidă, XML-ul nu se scrie. Stornoul din lună al unui
 document al cărui înlocuitor e încă `Draft` dă `SAFT_CORECTIE_INCOMPLETA`.
@@ -607,6 +619,16 @@ exportată se verifică echilibrată (D = C); altfel `SAFT_PROVENIENTA_AMBIGUA`.
 Taxa unei postări Taxă/Autocolectare este suma postării, cu baza faptului ei.
 
 **S1-R8 — securitate și comutare.** Conform R1, S1 nu are rută publică.
-Refuzul `SAFT_ACCES_INCOMPLET` și probele HTTP SC-SAFT-13 se livrează la
+Refuzul `SAFT_ACCES_INCOMPLET`, probele HTTP SC-SAFT-13 și proba pe ușile
+publice a liniei operate (SC-SAFT-22, azi prin gardian) se livrează la
 comutarea L, în S2, pe ruta reală. În S1 rămân proba RepeatableRead
 (SC-SAFT-17) și refuzul unei tranzacții ambiante mai slabe.
+
+**S1-R9 — A/B și proveniența (după review-ul Codex R2).** Comparația cu
+exportul vechi merge în ambele sensuri, pe cheia (document, storno). Pe
+facturi compară tipul, netul, taxa, brutul, contul, numărul de linii și data;
+pe GL compară totalurile D/C per document. Proba cere și respingerea unui
+mutant cu o factură omisă. Diferențele clasificate pe fixture-ul S1 sunt:
+brutul TI21, `InvoiceDate` (data documentului, inclusiv pentru stornoul 381)
+și recepția stocului la FCT (cub) față de NIR (registrul vechi). Linia GL
+păstrează `(Spatiu, ID)` postării în DTO; manifestul ca fișier rămâne la S0.
