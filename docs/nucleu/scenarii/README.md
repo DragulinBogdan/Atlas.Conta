@@ -198,3 +198,13 @@ Proba HTTP cere hostul local la 5089 (sau `--host`), seed privat, conturile
 Admin/Cititor/User cu parolă goală și anul 2021 fără perioade. Creează date,
 roluri și confirmări temporare; curăță fixture-ul în `finally`.
 Nu se rulează pe o bază de lucru a utilizatorului.
+
+### SAF-T pe cub — S1 implementat, S2/S3 în delimitare
+
+[SAFT.md](SAFT.md) conține matricea S1 GL/facturi și delimitarea S2 Payments,
+S3 stocuri. [Contractul SAF-T](../tr-d8-saft-contract.md) integrează
+SAF-D1/D2/D4=A, SAF-D3=C și S1 cu S1-D5 = B' (381 + 384), toate aprobate de
+owner. S1 rulează prin `--scenarii SAFT` (anul 2024), plus verificările
+SC-SAFT-10/11 din scenele ASM, IMO și DEC. Ruta publică L nu este comutată
+(R1), iar validarea XSD/DUK a noului fișier așteaptă S0. Mapările și
+derivarea cauzelor S3 au blocaje explicite.

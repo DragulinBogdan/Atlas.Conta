@@ -179,6 +179,8 @@ public sealed class SaftTranzactie {
 
 public sealed class SaftLinieTranzactie {
     public Guid RandRegistruId { get; set; }
+    // Pe cub, proveniența completă a liniei este (Spatiu, RandRegistruId) — S1-D2.
+    public Atlas.Conta.Nucleu.Spatiu? Spatiu { get; set; }
     public Guid? DetaliuId { get; set; }
     public string RecordID { get; set; }
     public string AccountID { get; set; }
@@ -207,6 +209,9 @@ public sealed class SaftFactura {
     public DateOnly InvoiceDate { get; set; }
     public string InvoiceType { get; set; }
     public string SelfBillingIndicator { get; set; }
+    // Opționalele S.I.15/S.I.18: legătura evenimentului cu tranzacția GL (S1-R2).
+    public DateOnly? GLPostingDate { get; set; }
+    public string TransactionID { get; set; }
     // Contul de terț al documentului (S.I.4, M).
     public string AccountID { get; set; }
     // `CustomerInfo`/`SupplierInfo` (`xs:choice`, nota [5]): ramura `Name` e
@@ -681,6 +686,13 @@ public sealed class SaftRezumat {
     public bool ReferinteBat { get; set; }
 }
 
+public sealed class SaftRefuz {
+    public string Cod { get; set; }
+    public string Mesaj { get; set; }
+    public Guid? DocumentId { get; set; }
+    public Guid? TranzactieId { get; set; }
+}
+
 public sealed class SaftDto {
     // Nenul ⇒ declarația NU se aplică bazei (profil bugetar: planul instituțiilor
     // publice nu e printre cele 12 `TaxAccountingBasis`), iar restul e GOL prin
@@ -703,6 +715,8 @@ public sealed class SaftDto {
     public List<SaftFactura> FacturiEmise { get; set; } = [];
     public List<SaftFactura> FacturiPrimite { get; set; } = [];
     public List<SaftPlata> Plati { get; set; } = [];
+    // Nevid ⇒ fișierul nu se scrie (S1-R6).
+    public List<SaftRefuz> Refuzuri { get; set; } = [];
 
     // ── Secțiunile modulului S (goale pe L, ca `Jurnale` pe S) ──────────────
     public List<SaftTipMiscare> TipuriMiscare { get; set; } = [];

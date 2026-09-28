@@ -31040,6 +31040,9 @@ List<Scena> ScenelePeTip(bool privat) {
         new(nameof(ScenariiTvaIntervale), ["CITIRI", "FISCALE"], () => new ScenariiTvaIntervale(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiSaft), ["SAFT"], () => new ScenariiSaft(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiSnapshotStoc), ["CITIRI"], () => new ScenariiSnapshotStoc(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),

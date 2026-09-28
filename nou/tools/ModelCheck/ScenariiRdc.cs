@@ -2,6 +2,7 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
 using C = Atlas.Conta.BackOffice.Module.Cub;
 using N = Atlas.Conta.Nucleu;
@@ -119,6 +120,15 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
         Opereaza(Iesire(false, (gol, 10)).Id);
         var inapoi = Retur(new LinieRdcScena(0, Lot: gol, Cantitate: 2)); Opereaza(inapoi.Id);
         Postari("SC-RDC-07", inapoi.Id, N.FelTranzactie.Operare, Ianuarie, Cost(inapoi, 0, 2, 20));
+        Verifica("SC-SAFT-18", "RDC pe cub: retur 381 −40/−8,40/−48,40 fără linia de cost; RDC numai de stoc nu e factură și nu refuză",
+            CuSpatiu(os => {
+                var saft = SaftProiectii.SaftPeCub(os, An, 1);
+                var retur = saft.FacturiEmise.Where(x => x.DocumentId == d.Id).ToList();
+                return retur.Count == 1 && retur[0] is { InvoiceType: "381", NetTotal: -40, GrossTotal: -48.40m }
+                    && retur[0].Linii.Count == 1 && retur[0].Linii[0].TaxInformation.TaxAmount == -8.40m
+                    && !saft.FacturiEmise.Any(x => x.DocumentId == inapoi.Id)
+                    && !saft.Refuzuri.Any(r => r.DocumentId == d.Id || r.DocumentId == inapoi.Id);
+            }));
         SoldLot("SC-RDC-07", gol.Lot!.Value, Magazie, Ianuarie, 2, 20);
         Storneaza(inapoi.Id, Ianuarie); SoldLot("SC-RDC-07", gol.Lot.Value, Magazie, Ianuarie, 0, 0);
         var doua = Receptioneaza(new LinieFctScena(10, 10, Tip: "371"), new LinieFctScena(10, 20, Tip: "371"));

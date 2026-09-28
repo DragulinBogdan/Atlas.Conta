@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-26.** [Index](README.md)
+**Actualizat: 2026-09-28.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -401,7 +401,10 @@ măsură standard sunt nomenclatoare de bază, expuse pentru citire. (72b, 73a, 
 Produsul poate avea cod NC de opt cifre și unitate standard. Referința la
 unitatea standard coexistă cu textul UM legacy. Normalizarea este explicită
 și nu ghicește corespondențe. Rolul și funcția contului sunt date utilizate
-în proiecțiile fiscale. (73b, 73c)
+în proiecțiile fiscale. (73b, 73c) Unitatea produsului (standard și text) se
+poate completa oricând, dar nu se mai schimbă după ce produsul are postări
+în cub sau apare pe o linie operată: cantitățile istorice au sensul unității
+de la operare. Pentru altă unitate se creează alt produs. (S1-R5)
 
 Sincronizarea ANAF folosește clientul PlatitorTva v9 injectat de host.
 Candidații au CUI normalizabil la 2–10 cifre; persoanele fizice/CNP și
@@ -438,6 +441,35 @@ materializate. TVA este asociată pe linie și storno. Retururile/stornările
 folosesc tipul și semnul fiscal corespunzător. Pentru facturile de stoc,
 legătura contabilă poate proveni din NIR-ul materializat. Societatea apare
 în rolurile de client/furnizor cerute de reprezentarea celeilalte laturi. (73e)
+
+**L pe cub (TR-D8 S1, încă necomutat).** `SaftProiectii.SaftPeCub` produce
+nomenclatoarele, GL-ul și facturile din `Citiri.Contabil.Jurnal` și
+`Citiri.Fiscale`, fără registre; `Payments` rămâne gol până la S2, iar ruta
+publică L folosește exportul existent până la comutarea S1 + S2 (R1).
+Tranzacția GL este tranzacția cubului, inclusiv deschiderea din lună.
+Linia GL este postarea, iar totalul D/C este rulajul balanței.
+`TransactionDate` și `GLPostingDate` sunt data contabilă; `SystemEntryDate`
+este data UTC a `ScrisLa`. Factura este evenimentul cubului
+(`Operare`/`Storno`) și poartă `TransactionID`-ul tranzacției GL. Tipul:
+storno 381, reemisă după corecție 384, total comercial negativ 381, altfel
+380. Luna închisă se reexportă identic după o corecție ulterioară (B').
+Brutul vine din postările de terț, iar netul, taxa și autocolectarea din
+faptele fiscale ale liniei. Brutul trebuie să fie Σ(net + taxă −
+autocolectare); cantitatea comercială vine din linia operată.
+Ambiguitatea, sursa lipsă, maparea lipsă și corecția cu înlocuitor Draft
+sunt refuzuri (`SaftDto.Refuzuri`), iar XML-ul nu se scrie. Citirea cere
+RepeatableRead și refuză o tranzacție ambiantă mai slabă. Regulile complete:
+[S1-R](../nucleu/tr-d8-saft-contract.md#s1-r--review-și-tranșări-2026-09-28).
+
+Reverificarea Codex din 2026-09-29 închide R1 la nivelul probei de domeniu:
+unitatea definită e protejată de regula produsului de mai sus. Comparația
+A/B merge în ambele sensuri, iar o diferență e acceptată numai dacă secțiunea,
+evenimentul și valorile vechi/noi coincid exact cu o excepție declarată (R2.1).
+R2.1 este închis prin reverificarea `ad193a9`: omisiunea TI21 și schimbările
+de net, taxă, brut, cont sau eveniment sunt respinse de verdictul complet.
+Stabilitatea octet cu octet a reexportului e probată cu metadatele și data generării fixate;
+redenumirile din nomenclator (descrieri) rămân etichete curente.
+[Review S1](../nucleu/tr-d8-saft-s1-review-codex.md).
 
 Datele neincluse rămân explicite și participă la reconcilierea notelor,
 facturilor, TVA, soldurilor și nomenclatoarelor. Lipsa unui câmp necesar nu

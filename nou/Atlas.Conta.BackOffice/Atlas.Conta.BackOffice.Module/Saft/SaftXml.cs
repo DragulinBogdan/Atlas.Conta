@@ -89,6 +89,8 @@ public static class SaftXml {
         ArgumentNullException.ThrowIfNull(iesire);
         if (dto.Neaplicabil != null)
             throw new InvalidOperationException(dto.Neaplicabil);
+        if (dto.Refuzuri.Count > 0)
+            throw new InvalidOperationException(string.Join(Environment.NewLine, dto.Refuzuri.Select(r => $"{r.Cod}: {r.Mesaj}")));
         if (dto.Header == null)
             throw new InvalidOperationException(
                 "Declarația D406 n-are antet — proiecția n-a rulat sau societatea raportoare lipsește.");
@@ -653,6 +655,8 @@ public static class SaftXml {
                 ElData("InvoiceDate", f.InvoiceDate);
                 ElCerut("InvoiceType", f.InvoiceType);
                 ElCerut("SelfBillingIndicator", f.SelfBillingIndicator);
+                if (f.GLPostingDate is { } dataGl) ElData("GLPostingDate", dataGl);
+                El("TransactionID", f.TransactionID);
                 foreach (var l in f.Linii) {
                     Start("InvoiceLine");
                     ElCerut("LineNumber", l.LineNumber.ToString(Inv));

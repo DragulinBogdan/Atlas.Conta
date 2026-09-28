@@ -10,7 +10,7 @@ static class Scenarii {
     /// <summary>Codurile catalogului, în ordinea din <c>docs/nucleu/scenarii/README.md</c>.</summary>
     public static readonly string[] Coduri = [
         "BCS", "FCT", "PLT", "INC", "BTR", "FCL", "DSC", "NTC", "ITV", "RDC", "RLF", "DVI", "ASM", "LDI",
-        "NIR", "DESCHIDERE", "DEC", "IMO", "CITIRI", "FISCALE", "X",
+        "NIR", "DESCHIDERE", "DEC", "IMO", "CITIRI", "FISCALE", "SAFT", "X",
     ];
 
     public static string Folosire =>

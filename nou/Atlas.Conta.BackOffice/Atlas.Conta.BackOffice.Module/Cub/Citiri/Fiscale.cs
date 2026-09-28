@@ -40,9 +40,19 @@ public sealed class FaptFiscal {
 }
 
 public static class Fiscale {
-    public static IDbContextTransaction DeschideCitirea(IObjectSpace os) {
+    public const string IzolareInsuficienta = "CITIRE_IZOLARE_INSUFICIENTA";
+
+    /// <summary>Tranzacția de citire a unei declarații; cu <paramref name="cereIzolare"/>, o ambiantă sub RepeatableRead se refuză.</summary>
+    public static IDbContextTransaction DeschideCitirea(IObjectSpace os, bool cereIzolare = false) {
         var db = ((EFCoreObjectSpace)os).DbContext.Database;
-        return db.CurrentTransaction == null ? db.BeginTransaction(IsolationLevel.RepeatableRead) : null;
+        if (db.CurrentTransaction is not { } ambianta)
+            return db.BeginTransaction(IsolationLevel.RepeatableRead);
+        if (cereIzolare && ambianta.GetDbTransaction().IsolationLevel
+                is not (IsolationLevel.RepeatableRead or IsolationLevel.Serializable or IsolationLevel.Snapshot))
+            throw new InvalidOperationException(
+                $"{IzolareInsuficienta}: citirea declarației cere cel puțin RepeatableRead, tranzacția existentă are "
+                + $"{ambianta.GetDbTransaction().IsolationLevel}.");
+        return null;
     }
 
     public static string Versiune(IObjectSpace os, FormularFiscal formular, DateOnly deLa, DateOnly panaLa) {
