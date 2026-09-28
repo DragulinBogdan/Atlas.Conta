@@ -158,7 +158,7 @@ public static class DviApply {
                 TipMaterialDenumire = l.TipMaterial.Denumire,
                 l.TipTvaId, TipTvaCod = l.TipTva.Cod, TipTvaDenumire = l.TipTva.Denumire,
                 TipTvaCota = (decimal?)l.TipTva.Cota,
-                l.Valoare, l.ValoareTva
+                l.Valoare, l.ValoareTva, l.TvaCules
             })
             .ToList();
 
@@ -197,7 +197,7 @@ public static class DviApply {
                 TipMaterialDenumire = l.TipMaterialDenumire,
                 TipTvaId = l.TipTvaId, TipTvaCod = l.TipTvaCod,
                 TipTvaDenumire = l.TipTvaDenumire, TipTvaCota = l.TipTvaCota,
-                Valoare = l.Valoare, ValoareTva = l.ValoareTva
+                Valoare = l.Valoare, ValoareTva = l.ValoareTva, TvaCules = l.TvaCules
             }).ToList(),
             Facturi = legaturi.Select(f => new DviFacturaDto {
                 FacturaId = f.FacturaId,

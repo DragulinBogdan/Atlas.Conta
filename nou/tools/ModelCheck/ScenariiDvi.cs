@@ -24,8 +24,10 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
         var rezultat = new List<LinieScena>();
         foreach (var spec in linii) {
             var l = os.CreateObject<DocumentDetaliu>(); l.Document = d; l.Pozitie = rezultat.Count + 1;
-            l.TipMaterialId = Tip(os, Stoc); l.Valoare = spec.Baza; l.ValoareTva = spec.Taxa;
+            l.TipMaterialId = Tip(os, Stoc); l.Valoare = spec.Baza;
             if (spec.Tva != null) l.TipTvaId = Tva(spec.Tva);
+            if (spec.Taxa != 0)
+                Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.Mapata(os, d, l, null, spec.Taxa);
             rezultat.Add(new(l.ID, null, null));
         }
         os.CommitChanges(); return new(d.ID, rezultat.ToArray());

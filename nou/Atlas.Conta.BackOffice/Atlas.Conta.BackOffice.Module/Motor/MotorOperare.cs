@@ -77,7 +77,7 @@ public static class MotorOperare {
         // judecă mai jos, după ce pregătirea a putut să schimbe (sau să
         // golească) tipul de TVA al liniei.
         var tvaCulesInainte = Liniile(doc)
-            .Select((d, i) => (Linie: d, Pozitie: i + 1, TvaCules: d.ValoareTva))
+            .Select((d, i) => (Linie: d, Pozitie: i + 1, TvaCules: d.TvaCules ? d.ValoareTva : 0m))
             .ToList();
 
         doc.PregatesteOperare(os);

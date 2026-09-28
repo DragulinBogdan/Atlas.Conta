@@ -46,10 +46,10 @@ internal static class Fapte {
             ? []
             : os.GetObjectsQuery<TipTva>()
                 .Where(t => ids.Contains(t.ID))
-                .Select(t => new { t.ID, t.Cod, t.Regim, t.Activ, t.Cota, t.ContTvaDeductibilId, t.ContTvaColectatId, t.DeImport })
+                .Select(t => new { t.ID, t.Cod, t.Regim, t.Activ, t.Cota, t.ContTvaDeductibilId, t.ContTvaColectatId, t.DeImport, t.ValabilDeLa, t.ValabilPanaLa })
                 .ToList()
                 .Select(t => new TipTvaFapt(t.ID, t.Cod, t.Regim, t.Activ, t.Cota,
-                    t.ContTvaDeductibilId, t.ContTvaColectatId, t.DeImport))
+                    t.ContTvaDeductibilId, t.ContTvaColectatId, t.DeImport, t.ValabilDeLa, t.ValabilPanaLa))
                 .ToDictionary(t => t.Id);
 
     public static Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)>
@@ -285,6 +285,7 @@ internal static class Fapte {
             explicita?.RepartitorCreditId,
             Analiza(d.DimensiuniCulese()),
             d.AngajamentId) {
+                TvaCules = d.TvaCules,
                 Transformare = d is ILinieCuTransformare transformare ? transformare.TransformareCuleasa() : null,
                 DiferentaInventar = d is ILinieCuDiferentaInventar inventar ? inventar.DiferentaCuleasa() : null,
                 Imobilizare = d is ILinieCuImobilizare imobilizare ? imobilizare.ImobilizareCuleasa() : null,

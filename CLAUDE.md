@@ -150,9 +150,9 @@ Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucr
 `docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
 
 **Următorul pas**: felia C104 e închisă (104-r1) și mersă în main (PR #8).
-Urmează review-ul specificației intervalelor TVA și avertismentelor
-(103h, `docs/nucleu/tr-d8-tva-intervale-contract.md`), înaintea codului R6.
-Apoi restul SAF-T din TR-D8 (SourceDocuments integral), reconcilierea,
+R6 este implementat și verificat (103h/i, 2026-09-28), cu review advers închis:
+`docs/nucleu/tr-d8-tva-intervale-contract.md`. Proveniența fiscală a ajustărilor
+rămâne delimitată în 103-r2. Urmează restul SAF-T din TR-D8 (SourceDocuments integral), reconcilierea,
 auditul și gate-ul transversal de performanță. Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

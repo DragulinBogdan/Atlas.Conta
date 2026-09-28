@@ -17,11 +17,7 @@ public static class ImpliciteService {
     /// </summary>
     public readonly record struct RezultatImplicit(Guid? TipTvaId, SursaImplicit Sursa, string Motiv);
 
-    /// <summary>
-    /// Rezolvarea din F23-D2, pașii 1–6. `data` e data DOCUMENTULUI (nu ziua de
-    /// azi): rândurile de politică au valabilitate, iar o factură cu dată în urmă
-    /// primește implicitul care era în vigoare atunci.
-    /// </summary>
+    /// <summary>Rezolvă implicitul la reperul fiscal primit de la culegere.</summary>
     public static RezultatImplicit TipTva(IObjectSpace os, Guid tipDocumentId,
             Guid? partenerId, Guid? produsId, DateOnly data) =>
         Explica(os, tipDocumentId, partenerId, produsId, data).Rezultat;

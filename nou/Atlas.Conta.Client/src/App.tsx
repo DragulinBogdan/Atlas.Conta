@@ -1,3 +1,4 @@
+import { DiagnosticTva } from './felii/tva/DiagnosticTva';
 import { Partide } from './felii/raportare/Partide';
 import { useState } from 'react';
 import { NavLink, Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
@@ -199,6 +200,7 @@ export function App() {
         <Route path="/imobilizari/nou" element={<ImobilizareDetaliu key="nou" />} />
         <Route path="/imobilizari/registru" element={<RegistruImobilizari />} />
         <Route path="/imobilizari/:id" element={<ImobilizareDetaliu />} />
+        <Route path="/diagnostic-tva" element={<DiagnosticTva />} />
         <Route path="/jurnal-cumparari" element={<JurnalCumparari />} />
         <Route path="/jurnal-vanzari" element={<JurnalVanzari />} />
         <Route path="/decont-tva" element={<DecontTva />} />
@@ -291,6 +293,7 @@ function Meniu() {
       <NavLink to="/jurnal">Registru-jurnal</NavLink>
       <NavLink to="/perioade">Perioade fiscale</NavLink>
       <span className="meniu__grup">TVA și declarații</span>
+      <NavLink to="/diagnostic-tva">Impact TVA</NavLink>
       <NavLink to="/jurnal-cumparari">Jurnal cumpărări</NavLink>
       <NavLink to="/jurnal-vanzari">Jurnal vânzări</NavLink>
       <NavLink to="/itv">Închidere TVA</NavLink>

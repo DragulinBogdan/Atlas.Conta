@@ -514,7 +514,18 @@ datei primirii la achiziție. Tranzacția probei este anulată; faptele inițial
 rămân intacte. Invarianții ModelCheck păstrează probele de calificări
 incompatibile între roluri, duplicare și proveniența inversei.
 
-### R6 — specificație pentru review, fără implementare
+### R6 — implementat și verificat (2026-09-28)
+
+Runner: `ScenariiTvaIntervale`, selectoarele `FISCALE` / `CITIRI`.
+Probe secured: `nou/tools/ProbeHttp/tva-intervale.py`. Dovezile de rulare și
+verificarea XAF/React sunt în contract, secțiunea „Verificarea implementării”.
+
+Contract: `../tr-d8-tva-intervale-contract.md`, R6-B1…B8. Owner-ul a aprobat
+M1(B) și M7 (103i). Probele de schimbare a cotei folosesc datele din
+iulie/august/septembrie 2025. Intervalele se configurează explicit pe
+tipurile fixture-ului, nu pe rândurile `DinSeed`, ca probele să nu depindă
+de seed. Seed-ul are proba lui separată, SC-CIT-93a. Taxele intenționat diferite
+folosesc `TolerantaTaxa = null`; gardienii existenți nu sunt dezactivați.
 
 SC-CIT-90: la 28 august configurăm tipul 19% până la 31 iulie inclusiv și
 tipul 21% de la 1 august inclusiv. Factura emisă la 10 august pentru o
@@ -525,32 +536,124 @@ FCT dau avertisment la Primite, cu orientare către furnizor. Modificarea
 retroactivă a intervalului descoperă și faptele scrise înainte de 28 august.
 O corecție tehnică 100/19 → 100/21, când D300 august nu este depus,
 păstrează august fără regularizare: baza netă 100, taxa 21; D394 are o
-factură. Documentul distinct de corecție rămâne cazul separat SC-CIT-83.
+factură. Originalul și inversa formează un singur caz „compensat”, absent
+din raportul implicit și vizibil la cererea istoricului. Inversa nu primește
+avertisment propriu. Aceeași compensare este recunoscută când inversa este
+în septembrie, chiar dacă filtrul raportului selectează exigibilitatea din
+august: raportul arată starea curentă. O altă factură −100/−19 fără legătură
+`InversaDinId` nu închide cazul original. Documentul distinct de corecție
+rămâne cazul separat SC-CIT-83.
+
+SC-CIT-90a (M3): L3, factură 10 august / exigibilitate 31 iulie, două reguli
+și tipuri eligibile 19% până la 31 iulie și 21% de la 1 august: propune 19%.
+Fără exigibilitate explicită propune 21%. Dacă tipul istoric este inactiv,
+nu propune nici tipul inactiv, nici 21% în afara intervalului; `Explica`
+arată motivul lipsei candidatului. Alegerea existentă nu este înlocuită
+automat la schimbarea datei. După o editare a calificării care generează
+impact asupra primului caz, raportul filtrat pe iulie îl include, cel pe
+august nu îl include, chiar dacă data facturii este în august.
+
+SC-CIT-90b (M2): livrare iulie 100/19; retur parțial RDC în septembrie
+−40/−7,60, cotă 19. TVA ajustării rămâne −7,60 în septembrie; nu se mută în
+iulie și nu devine −8,40 la 21%. În delimitarea minimă R6, fără proveniență
+fiscală rezolvată, apare `TVA_AJUSTARE_FARA_SURSA`, fără avertismentul de
+interval și fără avertisment aritmetic. Aceeași așteptare pentru RLF și
+reducere FCT/FCL nemarcată ca avans. Varianta −40/−8,40 cu cotă 19 primește
+suplimentar `TVA_TAXA_DIFERITA_DE_COTA`; varianta cotă 21 și taxă −8,40
+rămâne fără sursă verificabilă, chiar dacă aritmetica este corectă.
 
 SC-CIT-91: factura operată 100/19 păstrează calificarea și taxa 19 după
 editarea tipului pe loc la 21. Raportul arată diferența 19 versus 21 și
-documentul; nu modifică sumele. Draftul cu același tip preia 21 la operare
-(pentru o taxă neintrodusă manual) și primește avertisment dacă exigibilitatea
-este în afara intervalului. Schimbarea Regim/DeImport intră în aceeași
-listă de impact, cu valorile istorice/curente explicit separate.
+documentul; nu modifică sumele și nu declară greșită aritmetica faptului
+înghețat 100 × 19% = 19. Draftul cu același tip și taxă salvată 19 păstrează
+19 cu marcajul `TvaCules`, adică o taxă culeasă de operator, păstrează 19
+la operare, dar îngheață cota 21. `TVA_TAXA_DIFERITA_DE_COTA` apare atât în
+raportul draftului, cât și la operare și ulterior pe fapt. Taxa 19 este
+raportată pe calificarea 21%, fără corecție automată. Draftul cu taxa 19
+calculată, deci nemarcată, se operează la 100/21/21, fără avertisment
+aritmetic. Pe draftul marcat, acțiunea L3 „Recalculează TVA la cotă” dă 21,
+stinge marcajul și elimină abaterea aritmetică.
+Ieșirea exigibilității din interval rămâne avertisment independent.
+Regim/DeImport apar și ele în impactul istoric/curent. Dacă există numai
+maparea SAF-T pentru calificarea veche, noua calificare primește diagnosticul
+de lipsă a mapării 103(f); istoricul păstrează maparea corespunzătoare.
+Proba citește toate codurile raportului, fără filtru de avertismente SAF-T.
+Pe Bugetar, FCT fără mapare nu primește `TipTvaFaraCodSaft`, nici în draft,
+nici la operare sau în raportul faptului. Pe Privat, aceeași lipsă produce
+avertisment; mapările explicite ale fixture-ului îl elimină. Mesajele
+operării identifică linia proprie prin poziție, fără GUID.
+HTTP probează și PUT cu baza neschimbată și `ValoareTva = null`: păstrează
+taxa culeasă 19 inclusiv la operare după schimbarea cotei la 21; recalculul
+explicit ulterior produce 21 și șterge marcajul.
+
+SC-CIT-91a: trei linii normale cu baze 0,02 la 21% au taxa pe document
+0,01, repartizată 0,01/0/0 (ordinea urmează repartizarea stabilă). Fără
+avertisment pentru repartizare. La baza 100 și cota 21, taxele 21,01 și
+21,02 au abateri 0,01 și 0,02: prima fără avertisment, a doua cu avertisment.
+Capitalizat 100 net → 121 brut nu primește eroare pentru lipsa taxei
+separate; scutit 100/0 la fel. Taxare inversă deductibilă 100: Taxă 21 și
+Autocolectare 21, fără comparație cu 42; taxare inversă colectată 100/0,
+fără eroare pentru taxa zero. Cu toleranța motorului configurată la zero,
+100/cotă 21/taxă 19 păstrează refuzul existent și absența efectelor.
+
+SC-CIT-91b (B, 103i): tranzițiile marcajului `TvaCules`.
+- Taxa 19,50 tastată pe linia 100 la 19% dă `TvaCules` = true.
+- Schimbarea cantității sau a tipului TVA recalculează taxa și dă false.
+- Taxa adusă la 0 în ecran revine la cotă și dă false.
+- Un 0 trimis prin `Apply` pe un tip cu taxă rămâne refuzat, ca înainte.
+- Linia nouă și linia clonată în conex au false.
+- Draftul de corecție copiază taxa și marcajul liniei sursă.
+- RDC/RLF păstrează marcajul la inversarea semnului.
+- O scriere directă `TvaCules = true` cu `ValoareTva = 0` e refuzată de
+  CHECK-ul bazei (23514).
+- Migrația marchează drafturile existente cu taxă nenulă și lasă neatinse
+  liniile operate.
 
 SC-CIT-92: avans iulie 100/19; factura finală august are linie 300/63 și
-regularizare −100/−19, marcată prin politică și referită la avans. Fără
+regularizare −100/−19, marcată prin politică și referită la linia avansului. Fără
 avertisment: cota 19 a regularizării este cea a avansului. D300 iulie TVA 19,
 august TVA 44; D394 iulie 100/19/o factură, august două calificări,
 300/63 la 21 și −100/−19 la 19, același document fiscal final. Taxa negativă
-nu se mută în iulie. Regularizarea −100/−21 produce avertisment de cotă
-diferită și păstrează cifrele culese (august 42), fără reparare automată.
+nu se mută în iulie. Regularizarea −100/−21, culeasă cu cotă 21%, produce
+avertisment de calificare diferită și păstrează cifrele culese (august 42),
+fără reparare automată.
 Fără referință: avertisment distinct, fără refuz; fără marca de politică,
-simbolul contului nu activează mecanismul. Se probează atât FCL cât și FCT.
+simbolul contului nu activează mecanismul. Linia pozitivă marcată 100/19 a
+avansului nu cere referință; se verifică normal pe interval. Două facturi
+finale care referă aceeași linie pentru −40/−7,60 și −60/−11,40 nu sunt
+refuzate pentru reutilizarea referinței; nu se pretinde calculul restului.
+Se probează atât FCL cât și FCT. Varianta greșită −100/−21 distinge:
+cotă 21 → calificare diferită de sursă; cotă 19 → abatere aritmetică.
 
 SC-CIT-93: tip fără ambele limite, 100/21: fără avertisment de interval.
 O singură limită testează numai capătul definit; chiar în ziua limitei
 nu există abatere. Verificarea intervalului nu oprește nicio operare fiscală.
 Intervalul inversat este refuz de configurare, nu refuz fiscal.
 
-SC-CIT-94: avans cu două linii la cote diferite, 100/19 și 100/9, referit
-numai prin factura sursă. Propunerea minimă raportează referință ambiguă,
-fără a alege o cotă și fără a refuza factura finală. O referință către
-document nevizibil nu dezvăluie calificarea lui în raport. Varianta cu
-referință precisă la linie/fapt așteaptă review-ul contractului R6.
+SC-CIT-93a (M7, 103i): N19/TI19/CAP19 includ
+31.07.2025 și exclud 01.08.2025; tipurile 21/11 din R6-B8 includ 01.08.2025
+și exclud 31.07.2025; N9 include 31.07.2026 și exclude 01.08.2026. Re-seed-ul
+aliniază intervalele `DinSeed`, păstrează intervalele rândului manual și nu
+recreează un rând refuzat prin `RefuzSeed`. Trecerea zilei nu schimbă `Activ`.
+
+SC-CIT-94: avans cu două linii la cote diferite, 100/19 și 100/9.
+Regularizările −100/−19 și −100/−9 referă fiecare linia corespunzătoare:
+fără avertisment, total regularizat −200/−28. Prima referită intenționat
+la linia de 9% produce `TVA_AVANS_CALIFICARE_DIFERITA`, fără alegerea altei
+surse. Sursa neoperată, nemarcată, de alt partener/sens ori din propria
+factură produce `TVA_AVANS_REFERINTA_INVALIDA`; lipsa sursei produce
+`TVA_AVANS_FARA_REFERINTA`.
+
+SC-CIT-94a: avans stornat sau înlocuit prin corecție tehnică, referința
+draftului rămasă pe linia veche: `TVA_AVANS_SURSA_COMPENSATA`, fără mutare
+automată către linia nouă. Alegerea explicită a noii linii cu fapt activ
+elimină avertismentul dacă datele corespund. Proba de model verifică o
+singură coloană/FK pentru frunzele FCT/FCL. Ștergerea fizică a unei surse
+draft referite se refuză atomic, 422; nu șterge linia care o referă.
+
+SC-CIT-94b: accesul la sursă este retras după salvarea referinței. Mesajul
+operării conține codul și linia proprie, fără cotă, dată, număr sau valori
+ale sursei. Raportul secured nu dezvăluie sursa ascunsă, inclusiv prin
+explicații sau totaluri; membrii refuzați rămân protejați. Pentru cititor,
+sursa invizibilă și cea inexistentă au același răspuns. Lookup și DTO/Apply
+respectă filtrele de acces; React nu primește un editor nou al documentului.

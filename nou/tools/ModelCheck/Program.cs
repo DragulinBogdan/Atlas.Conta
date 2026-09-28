@@ -1036,6 +1036,7 @@ if (profil == ProfilContabil.Privat) {
         linieFclTiCules.PretUnitar = 300m;
         linieFclTiCules.TipTva = ti21;
         linieFclTiCules.ValoareTva = 63m;
+        Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.LinieSchimbata(os, fclTiCules, linieFclTiCules, nameof(DocumentDetaliu.ValoareTva));
         os.CommitChanges();
         var eroriFclTiCules = MotorOperare.Valideaza(os, fclTiCules);
         // Dry-run-ul NU e read-only pe ObjectSpace-ul primit (contract de apelant
@@ -1044,6 +1045,7 @@ if (profil == ProfilContabil.Privat) {
         // doua probă trebuie să pornească din ACEEAȘI stare culeasă, altfel ar
         // trece degeaba.
         linieFclTiCules.ValoareTva = 63m;
+        Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.LinieSchimbata(os, fclTiCules, linieFclTiCules, nameof(DocumentDetaliu.ValoareTva));
         CheckRefuza("F13-D1 gard: FCL + TI21 cu ValoareTva CULES (63) → refuz la operare, nu înghițire tăcută",
             () => MotorOperare.Opereaza(os, fclTiCules));
         Check("F13-D1 gard: mesajul numește linia și suma culeasă, iar dry-run-ul (`Valideaza`) îl arată "
@@ -1055,6 +1057,7 @@ if (profil == ProfilContabil.Privat) {
             && fclTiCules.Stare == StareDocument.Draft
             && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == fclTiCules.ID)
             && !os.GetObjectsQuery<RegistruTva>().Any(r => r.DocumentId == fclTiCules.ID));
+        Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.LinieSchimbata(os, fclTiCules, linieFclTiCules, nameof(DocumentDetaliu.ValoareTva));
 
         // --- Capitalizat (nedeductibil): comportamentul bugetar, ca date ---
         var fctNed = os.CreateObject<FacturaIntrare>();
@@ -1104,6 +1107,7 @@ if (profil == ProfilContabil.Privat) {
         linieManual.PretUnitar = 100m;
         linieManual.TipTva = n21;
         linieManual.ValoareTva = 20.9m; // TVA-ul de pe factura furnizorului
+        Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.LinieSchimbata(os, fctManual, linieManual, nameof(DocumentDetaliu.ValoareTva));
         os.CommitChanges();
         MotorOperare.Opereaza(os, fctManual);
         Check("ValoareTva culeasă manual (20,9) nu se suprascrie la operare; rândul 4426 o postează",
@@ -1149,6 +1153,7 @@ if (profil == ProfilContabil.Privat) {
         linieFclManual.PretUnitar = 100m;
         linieFclManual.TipTva = n21;
         linieFclManual.ValoareTva = 20.99m; // TVA-ul de pe factura emisă (rotunjirea ei)
+        Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.LinieSchimbata(os, fclManual, linieFclManual, nameof(DocumentDetaliu.ValoareTva));
         os.CommitChanges();
         MotorOperare.Opereaza(os, fclManual);
         Check("FCL: ValoareTva culeasă (20,99) nu se suprascrie; 4111 = 4427 postează exact 20,99",
@@ -1167,6 +1172,7 @@ if (profil == ProfilContabil.Privat) {
         linieDecManual.PretUnitar = 100m;
         linieDecManual.TipTva = n21;
         linieDecManual.ValoareTva = 20.99m; // TVA-ul de pe bonul justificat
+        Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.LinieSchimbata(os, decManual, linieDecManual, nameof(DocumentDetaliu.ValoareTva));
         os.CommitChanges();
         MotorOperare.Opereaza(os, decManual);
         Check("DEC: ValoareTva culeasă (20,99) nu se suprascrie; 4426 = 542 postează exact 20,99",
@@ -31030,6 +31036,9 @@ List<Scena> ScenelePeTip(bool privat) {
         new(nameof(ScenariiFiscale), ["CITIRI", "FISCALE"], () => new ScenariiFiscale(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiTvaIntervale), ["CITIRI", "FISCALE"], () => new ScenariiTvaIntervale(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiSnapshotStoc), ["CITIRI"], () => new ScenariiSnapshotStoc(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
@@ -33002,6 +33011,7 @@ void VerificaNucleuFct(bool privat) {
     var fctRefuz = Factura("-F8", new DateOnly(2026, 3, 11));
     var linieRefuz = Linie(fctRefuz, tipServicii, 1m, 100m, n21);
     linieRefuz.ValoareTva = 21.5m;
+    Atlas.Conta.BackOffice.Module.Culegere.CulegereDocument.LinieSchimbata(os, fctRefuz, linieRefuz, nameof(DocumentDetaliu.ValoareTva));
     os.CommitChanges();
     using (ProbeCub.Nemigrat(os, fctRefuz)) {
         MotorOperare.Opereaza(os, fctRefuz);

@@ -70,6 +70,13 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         Imobilizari(registry);
         Perioade(registry);
         ColoanaTip(registry);
+        registry.For<DocumentDetaliu>().ListView(nameof(DocumentDetaliu) + "_LookupListView")
+            .Column(d => d.Document, c => c.Index = 0)
+            .Column(d => d.Pozitie, c => c.Index = 1)
+            .Column(d => d.TipTva, c => c.Index = 2)
+            .Column(d => d.Valoare, c => c.Index = 3);
+        registry.For<FacturaIntrareDetaliu>().HideMembers(d => d.LinieAvansId);
+        registry.For<FacturaIesireDetaliu>().HideMembers(d => d.LinieAvansId);
     }
 
     // 89 — „Tip” doar pe listele care amestecă tipuri; pe frunze e constant.

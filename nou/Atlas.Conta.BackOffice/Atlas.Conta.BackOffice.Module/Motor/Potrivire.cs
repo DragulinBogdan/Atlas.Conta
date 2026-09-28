@@ -34,7 +34,8 @@ public readonly record struct PoliticaTvaImplicitFapt(Guid Id, ClasaFiscalaParte
     DateOnly? ValabilDeLa, Guid TipTvaId, bool DinSeed);
 
 public readonly record struct TipTvaFapt(Guid Id, string Cod, RegimTva Regim, bool Activ,
-    decimal Cota, Guid? ContTvaDeductibilId, Guid? ContTvaColectatId, bool DeImport = false);
+    decimal Cota, Guid? ContTvaDeductibilId, Guid? ContTvaColectatId, bool DeImport = false,
+    DateOnly? ValabilDeLa = null, DateOnly? ValabilPanaLa = null);
 
 // `Motiv` null = câștigătorul.
 public readonly record struct CandidatContare(RegulaContareFapt Regula, MotivEliminare? Motiv);
@@ -169,7 +170,9 @@ public static class Potrivire {
 
         var randPolitica = randuriTip
             .Where(r => (r.ValabilDeLa == null || r.ValabilDeLa <= data)
-                && (r.ClasaFiscala == null || r.ClasaFiscala == clasa))
+                && (r.ClasaFiscala == null || r.ClasaFiscala == clasa)
+                && tipuri.TryGetValue(r.TipTvaId, out var tip)
+                && Declaratii.IntervalTva.Contine(data, tip.ValabilDeLa, tip.ValabilPanaLa))
             .OrderByDescending(r => r.ClasaFiscala != null)
             .ThenByDescending(r => r.ValabilDeLa ?? DateOnly.MinValue)
             .Select(r => (PoliticaTvaImplicitFapt?)r)
@@ -179,9 +182,11 @@ public static class Potrivire {
         TipTvaFapt? Viu(Guid? id, string treapta) {
             if (id == null || !tipuri.TryGetValue(id.Value, out var info))
                 return null;
-            if (info.Activ)
+            if (info.Activ && Declaratii.IntervalTva.Contine(data, info.ValabilDeLa, info.ValabilPanaLa))
                 return info;
-            note.Add($"Tipul „{info.Cod}” ({treapta}) e INACTIV și a fost sărit.");
+            note.Add(!info.Activ
+                ? $"Tipul „{info.Cod}” ({treapta}) e INACTIV și a fost sărit."
+                : $"Tipul „{info.Cod}” ({treapta}) este în afara intervalului la exigibilitatea {data:dd.MM.yyyy} și a fost sărit.");
             return null;
         }
 
@@ -195,6 +200,9 @@ public static class Potrivire {
         var candidati = randuriTip.Select(r => new CandidatTvaImplicit(r,
             r.ValabilDeLa != null && r.ValabilDeLa > data ? MotivEliminare.DataViitoare
             : r.ClasaFiscala != null && r.ClasaFiscala != clasa ? MotivEliminare.ClasaDiferita
+            : tipuri.TryGetValue(r.TipTvaId, out var inInterval)
+                && !Declaratii.IntervalTva.Contine(data, inInterval.ValabilDeLa, inInterval.ValabilPanaLa)
+                ? MotivEliminare.IntervalTva
             : randPolitica is PoliticaTvaImplicitFapt castigator && castigator.Id != r.Id
                 ? (r.ClasaFiscala != null) == (castigator.ClasaFiscala != null)
                     && r.ValabilDeLa == castigator.ValabilDeLa

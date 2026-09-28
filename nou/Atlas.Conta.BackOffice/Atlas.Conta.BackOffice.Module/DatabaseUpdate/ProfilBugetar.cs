@@ -82,6 +82,8 @@ internal static class ProfilBugetar {
                 tip.Denumire = t.Denumire;
                 tip.Cota = t.Cota;
                 tip.Regim = RegimTva.Capitalizat;
+                tip.ValabilDeLa = t.Cod is "CAP21" or "CAP11" ? new DateOnly(2025, 8, 1) : null;
+                tip.ValabilPanaLa = t.Cod == "CAP19" ? new DateOnly(2025, 7, 31) : null;
             });
     }
 

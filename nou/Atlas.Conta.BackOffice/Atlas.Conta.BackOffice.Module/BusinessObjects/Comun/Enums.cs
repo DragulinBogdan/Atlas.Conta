@@ -509,6 +509,7 @@ public enum MotivEliminare {
     [XafDisplayName("Valabil de la o dată viitoare")] DataViitoare,
     [XafDisplayName("Altă clasă fiscală")] ClasaDiferita,
     [XafDisplayName("Tipul de TVA e inactiv")] Inactiv,
+    [XafDisplayName("Exigibilitatea este în afara intervalului TVA")] IntervalTva,
 }
 
 // De ce o latură nu scrie în niciun registru de stoc: distincția „profilul a

@@ -124,6 +124,7 @@ public sealed class DecontLinieReadDto {
     // Rezultat, nu culegere: le scrie `CalculeazaValori` la culegere și la operare (104c).
     public decimal Valoare { get; set; }
     public decimal ValoareTva { get; set; }
+    public bool TvaCules { get; set; }
     public Guid? TipTvaId { get; set; }
     public string TipTvaCod { get; set; }
     public string TipTvaDenumire { get; set; }

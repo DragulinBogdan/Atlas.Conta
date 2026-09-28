@@ -64,8 +64,22 @@ prin simbolul contului. Referința opțională a liniei la factura de avans
 permite compararea cu cota și exigibilitatea istorice ale avansului.
 Lipsa referinței produce avertisment, fără refuz. Regula este alegerea
 owner-ului din 2026-09-26, transmisă în review-ul 1018 și reluată în cererea
-de continuare; implementarea R6 așteaptă review-ul specificației
+de continuare; implementarea R6 și corecturile review-ului sunt verificate la 2026-09-28; contractul este
 `docs/nucleu/tr-d8-tva-intervale-contract.md`.
+
+**(i)** Taxa liniei are un marcaj explicit, `TvaCules`, în locul proxy-ului
+„nenul = cules”. Taxa nemarcată e calculată și se recalculează la operare pe
+cota curentă. Taxa marcată e a operatorului, se păstrează și e comparată
+aritmetic cu cota. Marcajul stă pe baza liniei, iar tranzițiile lui sunt
+numai în L3. Zeroul explicit rămâne refuzat pe un tip cu taxă.
+
+Seed-ul profilurilor poartă intervalele declarate ale tipurilor TVA
+(Legea 141/2025: 19% până la 31.07.2025; 21% și 11% de la 01.08.2025;
+9% pentru locuințe până la 31.07.2026). Seed-ul le aliniază numai pe
+rândurile `DinSeed` și nu inactivează automat tipurile.
+
+Ambele reguli sunt alegerile owner-ului din 2026-09-27 (M1(B) și M7).
+Detaliile, tabelul complet și probele sunt în contractul R6 (R6-B2, R6-B8).
 
 ## Context și tranșare
 
@@ -87,5 +101,13 @@ eliminat din model, seed și contractele generate; atribuirea urmează (b–d).
   OK, Nucleu 180/180, HTTP, browser și A/B pe aceeași bază. Dovezi și limite
   în `docs/nucleu/tr-d8-review-codex.md`. Review R1–R5 corectat, integral
   3.207/4.237 OK și HTTP/browser reluate; predare fără commit. Restul TR-D8 rămâne deschis.
-- **103-r2** — activă: intervale TVA, raport de impact și regularizarea
-  avansului conform (h); specificație R6 pentru review, fără implementare.
+- **103-r2** — R6 implementat și verificat, review advers închis (2026-09-28):
+  intervale TVA, raport de impact, regularizarea avansului prin linia sursă,
+  marcajul `TvaCules` și intervalele din seed, conform (h) și (i).
+  Rămâne activă proveniența fiscală a ajustărilor RDC/RLF/reduceri (R6-B4);
+  consumul/restul avansului nu intră în R6.
+- **103-r3** — activă, la următoarea atingere a validării L3: semnele
+  incompatibile ale bazei și taxei culese pe FCT/FCL sunt încă admise,
+  cu avertisment aritmetic. Rămân de stabilit și probat refuzul de domeniu
+  și identificarea liniei de factură fără proxy-ul `ILinieCuAvans`.
+  Nu blochează închiderea R6 și nu introduce acum un refuz nou.

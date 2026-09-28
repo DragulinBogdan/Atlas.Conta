@@ -604,6 +604,18 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasIndex(t => t.ClrType).IsUnique();
             modelBuilder.Entity<TipTva>()
                 .HasIndex(t => t.Cod).IsUnique();
+            modelBuilder.Entity<TipTva>().ToTable(t => t.HasCheckConstraint("CK_TipTva_Interval",
+                "\"ValabilDeLa\" IS NULL OR \"ValabilPanaLa\" IS NULL OR \"ValabilDeLa\" <= \"ValabilPanaLa\""));
+            modelBuilder.Entity<DocumentDetaliu>().ToTable(t => t.HasCheckConstraint("CK_DocumentDetalii_TvaCules",
+                "NOT \"TvaCules\" OR \"ValoareTva\" <> 0"));
+            modelBuilder.Entity<FacturaIntrareDetaliu>().Property(d => d.LinieAvansId).HasColumnName("LinieAvansId");
+            modelBuilder.Entity<FacturaIesireDetaliu>().Property(d => d.LinieAvansId).HasColumnName("LinieAvansId");
+            modelBuilder.Entity<FacturaIntrareDetaliu>().HasOne(d => d.LinieAvans).WithMany()
+                .HasForeignKey(d => d.LinieAvansId).OnDelete(DeleteBehavior.ClientNoAction)
+                .HasConstraintName("FK_DocumentDetalii_DocumentDetalii_LinieAvansId");
+            modelBuilder.Entity<FacturaIesireDetaliu>().HasOne(d => d.LinieAvans).WithMany()
+                .HasForeignKey(d => d.LinieAvansId).OnDelete(DeleteBehavior.ClientNoAction)
+                .HasConstraintName("FK_DocumentDetalii_DocumentDetalii_LinieAvansId");
             modelBuilder.Entity<Cont>()
                 .HasIndex(c => c.Simbol).IsUnique();
             modelBuilder.Entity<ClasaProdus>()

@@ -162,6 +162,9 @@ public static class FacturaIesireApply {
             detaliu.CodEconomic = Nomenclator<CodEconomic>(os, l.CodEconomicId, "Codul economic");
             if (l.CodEconomicId == null) detaliu.CodEconomicId = null;
 
+            detaliu.LinieAvans = l.LinieAvansId is Guid avans
+                ? Rezolva.Cere<DocumentDetaliu>(os, avans, "Linia avansului") : null;
+            if (l.LinieAvansId == null) detaliu.LinieAvansId = null;
             CulegereDocument.Mapata(os, doc, detaliu, inainte, l.ValoareTva);
         }
 
@@ -301,7 +304,7 @@ public static class FacturaIesireApply {
                 LotProdus = l.Lot.Produs.Denumire,
                 LotData = (DateOnly?)l.Lot.Data,
                 LotPret = (decimal?)l.Lot.PretUnitar,
-                l.Descriere, l.Cantitate, l.PretUnitar, l.Valoare, l.ValoareTva,
+                l.Descriere, l.Cantitate, l.PretUnitar, l.Valoare, l.ValoareTva, l.LinieAvansId, l.TvaCules,
                 l.TipTvaId, TipTvaCod = l.TipTva.Cod, TipTvaDenumire = l.TipTva.Denumire,
                 TipTvaCota = (decimal?)l.TipTva.Cota,
                 l.CodEconomicId, CodEconomicCod = l.CodEconomic.Cod
@@ -364,6 +367,7 @@ public static class FacturaIesireApply {
                 Descriere = l.Descriere,
                 Cantitate = l.Cantitate, PretUnitar = l.PretUnitar,
                 Valoare = l.Valoare, ValoareTva = l.ValoareTva,
+                LinieAvansId = l.LinieAvansId, TvaCules = l.TvaCules,
                 TipTvaId = l.TipTvaId, TipTvaCod = l.TipTvaCod,
                 TipTvaDenumire = l.TipTvaDenumire, TipTvaCota = l.TipTvaCota,
                 CodEconomicId = l.CodEconomicId, CodEconomicCod = l.CodEconomicCod

@@ -338,7 +338,8 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 102-r5 | Perf `Fapte.PartideDisponibile` pe volum: agregarea temporală în SQL (102) | după PoC |
 
 | 103-r1 | Felia fiscală D8-B8: fapte istorice, perioade distincte, corecții/depunere, cititori comuni și probe SC-CIT-79…87 (103) | închisă 2026-09-26: 3.182/4.214 OK, 180/180 Nucleu, HTTP/browser și A/B; restul SAF-T și gate-ul transversal de performanță rămân TR-D8 |
-| 103-r2 | Intervale TVA și avertismente/raport de impact, cu referință la avans (103h); contract `tr-d8-tva-intervale-contract.md`, SC-CIT-90…94 | activă: specificație pentru review, fără cod; referința la avans cu mai multe cote cere delimitarea explicită din contract |
+| 103-r2 | Intervale TVA și avertismente/raport de impact, cu referință la linia avansului (103h); contract `tr-d8-tva-intervale-contract.md`, SC-CIT-90…94; delimitare rămasă: Proveniența fiscală a ajustărilor RDC/RLF/reduceri (R6-B4) | activă numai pentru proveniența fiscală a ajustărilor RDC/RLF/reduceri; R6 implementat și verificat 2026-09-28, review advers închis; consumul/restul avansului rămâne în afara R6 |
+| 103-r3 | Validarea L3 a semnului taxei culese față de baza FCT/FCL și înlocuirea proxy-ului `ILinieCuAvans` pentru linia de factură; detalii în 103 | activă, la următoarea atingere a validării L3; nu blochează închiderea R6 |
 
 | 104-r1 | Felia C104: entități proprii și ștergere fizică, coaja comenzii fără OS dat de apelant, culegerea unică L3, aria React, review advers (104, pașii 1–5) | închisă 2026-09-27: pașii 1–5 pe `c104-straturi`, review Codex R1–R3 plus R4/R5 corectate, integral verde pe ambele profiluri |
 | 104-r2 | Coaja comenzii fără `IObjectSpace` și hook-urile cu `os` de pe entitate mutate în declarant/coajă (104b) | cade la TR-D9 |

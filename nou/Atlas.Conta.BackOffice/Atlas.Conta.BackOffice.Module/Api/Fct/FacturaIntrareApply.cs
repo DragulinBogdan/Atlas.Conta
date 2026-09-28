@@ -178,6 +178,9 @@ public static class FacturaIntrareApply {
             detaliu.Proiect = Nomenclator<Proiect>(os, l.ProiectId, "Proiectul");
             if (l.ProiectId == null) detaliu.ProiectId = null;
 
+            detaliu.LinieAvans = l.LinieAvansId is Guid avans
+                ? Rezolva.Cere<DocumentDetaliu>(os, avans, "Linia avansului") : null;
+            if (l.LinieAvansId == null) detaliu.LinieAvansId = null;
             CulegereDocument.Mapata(os, doc, detaliu, inainte, l.ValoareTva);
         }
 
@@ -238,7 +241,7 @@ public static class FacturaIntrareApply {
                 LotProdus = l.Lot.Produs.Denumire,
                 LotData = (DateOnly?)l.Lot.Data,
                 LotPret = (decimal?)l.Lot.PretUnitar,
-                l.Cantitate, l.PretUnitar, l.Valoare, l.ValoareTva,
+                l.Cantitate, l.PretUnitar, l.Valoare, l.ValoareTva, l.LinieAvansId, l.TvaCules,
                 l.TipTvaId, TipTvaCod = l.TipTva.Cod, TipTvaDenumire = l.TipTva.Denumire,
                 TipTvaCota = (decimal?)l.TipTva.Cota,
                 l.DataExpirare, l.LotFabricatie, l.CodCpv,
@@ -300,6 +303,7 @@ public static class FacturaIntrareApply {
                 LotEticheta = ApiProiectii.EtichetaLot(l.LotProdus, l.LotData, l.LotPret),
                 Cantitate = l.Cantitate, PretUnitar = l.PretUnitar,
                 Valoare = l.Valoare, ValoareTva = l.ValoareTva,
+                LinieAvansId = l.LinieAvansId, TvaCules = l.TvaCules,
                 TipTvaId = l.TipTvaId, TipTvaCod = l.TipTvaCod,
                 TipTvaDenumire = l.TipTvaDenumire, TipTvaCota = l.TipTvaCota,
                 DataExpirare = l.DataExpirare, LotFabricatie = l.LotFabricatie, CodCpv = l.CodCpv,

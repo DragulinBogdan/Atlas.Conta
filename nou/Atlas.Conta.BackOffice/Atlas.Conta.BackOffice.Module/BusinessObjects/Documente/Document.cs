@@ -232,6 +232,8 @@ public abstract class Document : Editabila {
     /// <summary>Liniile tipului poartă TVA calculat din bază.</summary>
     public virtual bool CuTva() => false;
 
+    public virtual bool LinieFiscala(DocumentDetaliu linie) => CuTva();
+
     /// <summary>Culegerea e în magnitudine, iar semnul îl pune operarea (28a/46e).</summary>
     public virtual bool SemnulEAlOperarii() => false;
 
@@ -429,6 +431,10 @@ public class DocumentDetaliu : Editabila {
     // TipTva + PoliticaTva); 0 la regimurile care nu postează separat.
     [XafDisplayName("Valoare TVA")]
     public virtual decimal ValoareTva { get; set; }
+
+    [XafDisplayName("TVA cules")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool TvaCules { get; set; }
 
     // Ancoră spre execuția bugetară (modul separat) — testul bazei §7.1.
     public virtual Guid? AngajamentId { get; set; }

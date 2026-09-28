@@ -147,7 +147,13 @@ public class FacturaIesire : Document, IDocumentCuScadenta, IDocumentFiscal {
     }
 }
 
-public class FacturaIesireDetaliu : DocumentDetaliu, ILinieCuPretUnitar {
+public class FacturaIesireDetaliu : DocumentDetaliu, ILinieCuPretUnitar, ILinieCuAvans {
+    public virtual Guid? LinieAvansId { get; set; }
+    [XafDisplayName("Linia avansului"), DataSourceProperty(nameof(AvansuriDisponibile))]
+    public virtual DocumentDetaliu LinieAvans { get; set; }
+    [NotMapped, System.ComponentModel.Browsable(false)]
+    public IEnumerable<DocumentDetaliu> AvansuriDisponibile => Culegere.AvansuriCulegere.Candidati(ObjectSpace, Document);
+
     public virtual string Descriere { get; set; }
     // Familia LIVRARE, un singur set de valori (07) — fără dubla familie legacy.
     // Cota și regimul vin din TipTva (bază, P1).

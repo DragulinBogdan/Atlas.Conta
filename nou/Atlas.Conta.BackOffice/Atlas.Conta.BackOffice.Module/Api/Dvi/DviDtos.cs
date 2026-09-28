@@ -72,6 +72,7 @@ public sealed class DviLinieReadDto {
     public decimal? TipTvaCota { get; set; }
     public decimal Valoare { get; set; }
     public decimal ValoareTva { get; set; }
+    public bool TvaCules { get; set; }
 }
 
 // Factura legată, cât să fie recunoscută și deschisă. `Stare` e a facturii:

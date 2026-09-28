@@ -165,7 +165,13 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV, IDoc
     }
 }
 
-public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCuPretUnitar, ILinieCareNasteLot {
+public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCuPretUnitar, ILinieCareNasteLot, ILinieCuAvans {
+    public virtual Guid? LinieAvansId { get; set; }
+    [XafDisplayName("Linia avansului"), DataSourceProperty(nameof(AvansuriDisponibile))]
+    public virtual DocumentDetaliu LinieAvans { get; set; }
+    [NotMapped, System.ComponentModel.Browsable(false)]
+    public IEnumerable<DocumentDetaliu> AvansuriDisponibile => Culegere.AvansuriCulegere.Candidati(ObjectSpace, Document);
+
     // Lanțul de valori trăiește pe derivată (testul bazei §3); capetele lui
     // (Valoare + ValoareTva din bază) intră în registre. Cota și regimul vin
     // din TipTva (bază, P1) — fosta CotaTva de pe derivată era redundantă.

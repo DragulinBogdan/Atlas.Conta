@@ -467,6 +467,10 @@ internal static class ProfilPrivat {
                 tip.CodSafTLivrare = t.SafTLivrare;
                 tip.CodSafTAchizitie = t.SafTAchizitie;
                 tip.DeImport = t.DeImport;
+                tip.ValabilDeLa = t.Cod is "N21" or "N11" or "TI21" or "NED21"
+                    or "IMP21" or "IMP11" or "IMPTI21" or "IMPTI11" ? new DateOnly(2025, 8, 1) : null;
+                tip.ValabilPanaLa = t.Cod is "N19" or "TI19" ? new DateOnly(2025, 7, 31)
+                    : t.Cod == "N9" ? new DateOnly(2026, 7, 31) : null;
                 if (t.Conturi) {
                     tip.ContTvaDeductibilId = tva4426.ID;
                     tip.ContTvaColectatId = tva4427.ID;

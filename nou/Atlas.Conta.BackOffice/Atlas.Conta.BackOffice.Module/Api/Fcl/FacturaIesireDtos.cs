@@ -67,7 +67,9 @@ public sealed class FacturaIesireLinieWriteDto {
     public decimal Cantitate { get; set; }
     public decimal PretUnitar { get; set; }
     public Guid? TipTvaId { get; set; }
-    // null = calculul din regim × cotă; valoare = TVA-ul cules, aplicat după calcul (36a).
+    public Guid? LinieAvansId { get; set; }
+    // null păstrează taxa culeasă existentă dacă baza nu se schimbă; valoare nenulă = TVA cules.
+    // Revenirea la calcul se cere prin comanda explicită „Recalculează TVA la cotă”.
     public decimal? ValoareTva { get; set; }
     // Singura dimensiune-frunză a FCL (DIM-2); DSC-ul o primește prin clonă.
     public Guid? CodEconomicId { get; set; }
@@ -138,7 +140,9 @@ public sealed class FacturaIesireLinieReadDto {
     // Server-owned: scrise de `CalculeazaValori` la culegere și la operare (104c).
     public decimal Valoare { get; set; }
     public decimal ValoareTva { get; set; }
+    public bool TvaCules { get; set; }
     public Guid? TipTvaId { get; set; }
+    public Guid? LinieAvansId { get; set; }
     public string TipTvaCod { get; set; }
     public string TipTvaDenumire { get; set; }
     public decimal? TipTvaCota { get; set; }
