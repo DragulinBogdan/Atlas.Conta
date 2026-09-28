@@ -154,10 +154,8 @@ internal static class Fapte {
 
     static IReadOnlyList<N.Unitate> UnitatiSursa(IObjectSpace os, Document doc) =>
         !doc.Autogenerat || doc.DocumentSursaId is not Guid sursa ? [] :
-        os.GetObjectsQuery<Cub.Postare>()
-            .Where(p => p.DocumentId == sursa && p.Spatiu == N.Spatiu.Contabil
-                && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida
-                && p.Unitate != null && p.Partener != null && p.UnitateDeschisa != null)
+        Cub.Citiri.Partide.Postari(os)
+            .Where(p => p.DocumentId == sursa && p.Spatiu == N.Spatiu.Contabil)
             .Select(p => new { p.Unitate, p.Cont, p.Partener, p.UnitateDeschisa }).Distinct().ToList()
             .Select(p => new N.Unitate(p.Unitate.Value, N.FelUnitate.Partida, p.Cont,
                 p.Partener, null, p.UnitateDeschisa.Value)).ToList();

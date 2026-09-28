@@ -202,6 +202,17 @@ public static partial class Materializare {
         return Scrie(os, document, invers);
     }
 
+    public static void ReatribuieInversaFiscala(IObjectSpace os, Guid document, FiscalitateService.Atribuire atribuire) {
+        foreach (var postare in os.GetObjectsQuery<Postare>()
+                .Where(p => p.DocumentId == document && p.TipTvaId != null
+                    && p.Tranzactie.Fel == N.FelTranzactie.Storno).ToList()) {
+            postare.PerioadaDeclarare = atribuire.PerioadaD300;
+            postare.PerioadaD394 = atribuire.Reper.PerioadaD394;
+            postare.RegularizareD300 = atribuire.Reper.RegularizareD300;
+            postare.InversaTehnica = true;
+        }
+    }
+
     static IEnumerable<N.Postare> Citeste(IEnumerable<Postare> randuri, N.FelTranzactie fel) =>
         randuri.Where(p => p.Tranzactie.Fel == fel).Select(Randuri.Citeste);
 

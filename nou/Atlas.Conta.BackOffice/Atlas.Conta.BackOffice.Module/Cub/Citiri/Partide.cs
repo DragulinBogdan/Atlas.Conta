@@ -80,9 +80,8 @@ public static class Partide {
 
     /// <summary>Totalul documentului pe partidele proprii, în sensul de stins; fără sens declarat, Σ |net| pe unitate.</summary>
     public static decimal Total(IObjectSpace os, Guid document, SensStingere? sens) {
-        var noi = os.ModifiedObjects.OfType<Postare>().Where(p => os.IsNewObject(p)
-            && p.DocumentId == document && p.Carte == N.Carte.Contabil
-            && p.Tranzactie.Fel == N.FelTranzactie.Operare && p.FelUnitate == N.FelUnitate.Partida).ToArray();
+        var noi = Noi(os, document)
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare && p.FelUnitate == N.FelUnitate.Partida).ToArray();
         var nete = noi.Length != 0
             ? noi.GroupBy(p => new { p.Cont, p.Partener, p.Unitate })
                 .Select(g => g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)).ToList()
@@ -96,6 +95,11 @@ public static class Partide {
             _ => nete.Sum(Math.Abs),
         };
     }
+
+    /// <summary>Postările contabile ale documentului materializate în comanda curentă, încă nescrise în bază.</summary>
+    public static IEnumerable<Postare> Noi(IObjectSpace os, Guid document) =>
+        os.ModifiedObjects.OfType<Postare>().Where(p => os.IsNewObject(p)
+            && p.DocumentId == document && p.Carte == N.Carte.Contabil);
 
     public static decimal Capacitate(IObjectSpace os, Guid document, Guid partener, SensStingere sens) {
         var nete = Contabil.Postari(os).Where(p => p.DocumentId == document && p.Partener == partener

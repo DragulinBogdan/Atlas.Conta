@@ -18,7 +18,7 @@ public static class FiscalitateService {
     public static void VerificaAnularea(IObjectSpace os, Document doc) {
         if (doc is not IDocumentFiscal) return;
         var depuneri = os.GetObjectsQuery<DepunereDeclaratie>();
-        if (os.GetObjectsQuery<Cub.Postare>().Any(p => p.DocumentId == doc.ID && p.TipTvaId != null
+        if (Cub.Citiri.Fiscale.Postari(os).Any(p => p.DocumentId == doc.ID
                 && depuneri.Any(d => d.Formular == FormularFiscal.D300 && d.Perioada == p.PerioadaDeclarare
                     || d.Formular == FormularFiscal.D394 && d.Perioada == p.PerioadaD394)))
             throw new OperareException("TVA_DEJA_DECLARATA: faptele declarate se corectează prin inversă, nu se șterg prin anularea operării.");
@@ -52,8 +52,8 @@ public static class FiscalitateService {
     public static Atribuire Original(IObjectSpace os, Guid document) => Reper(os, document, N.FelTranzactie.Operare);
 
     static Atribuire Reper(IObjectSpace os, Guid document, N.FelTranzactie fel) {
-        var repere = os.GetObjectsQuery<Cub.Postare>()
-            .Where(p => p.DocumentId == document && p.TipTvaId != null && p.Tranzactie.Fel == fel)
+        var repere = Cub.Citiri.Fiscale.Postari(os)
+            .Where(p => p.DocumentId == document && p.Tranzactie.Fel == fel)
             .Select(p => new { p.PerioadaDeclarare, p.DocumentFiscalId, p.DataDocument, p.DataExigibilitate,
                 p.DataPrimire, p.DataInregistrare, p.PerioadaD394, p.RegularizareD300 })
             .Distinct().ToArray();
@@ -90,7 +90,7 @@ public static class FiscalitateService {
         if (existenta != null) return existenta.ID;
         var drafturi = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Draft
             && d.CorecteazaId != null && d.MotivCorectie == MotivCorectie.EroareMateriala);
-        if (os.GetObjectsQuery<Cub.Postare>().Any(p => p.InversaTehnica
+        if (Cub.Citiri.Fiscale.Postari(os).Any(p => p.InversaTehnica
                 && (formular == FormularFiscal.D300 ? p.PerioadaDeclarare == perioada : p.PerioadaD394 == perioada)
                 && drafturi.Any(d => d.CorecteazaId == p.DocumentId)))
             throw new OperareException("DEPUNERE_CORECTIE_DRAFT: finalizați corecția începută înainte de confirmarea depunerii.");

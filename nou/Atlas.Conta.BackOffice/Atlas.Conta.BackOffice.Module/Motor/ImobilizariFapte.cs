@@ -46,9 +46,8 @@ internal static class ImobilizariFapte {
         }
         var note = os.GetObjectsQuery<NotaContabila>().Where(d => d.Stare == StareDocument.Operat).Select(d => d.ID);
         var stornate = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Stornat).Select(d => d.ID);
-        var randuri = os.GetObjectsQuery<C.Postare>()
-            .Where(p => conturi.Contains(p.Cont) && p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil
-                && p.Unitate == null && p.DocumentId != operand.Document.Id)
+        var randuri = C.Citiri.Imobilizari.PozitiiFaraFisa(os)
+            .Where(p => conturi.Contains(p.Cont) && p.DocumentId != operand.Document.Id)
             .Select(p => new { p.ID, p.Spatiu, p.Tranzactie.Fel, p.LinieId, p.Data, p.Latura, p.Valoare,
                 p.Cont, p.Partener, p.Gestiune, p.Produs, p.Valuta, p.CodFunctional, p.CodEconomic,
                 p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost, p.SuportId, p.InversaDinId,

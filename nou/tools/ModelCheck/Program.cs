@@ -245,6 +245,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     ProbeStraturi.Verifica(ctx, Check);
     ProbeStraturi.VerificaCoaja(Check);
     ProbeCulegere.VerificaSursa(Check);
+    ProbeCititoriCub.VerificaSursa(Check);
 
     if (profil == ProfilContabil.Privat) {
         // Baza privată aparține uneltei: se creează/migrează aici.
