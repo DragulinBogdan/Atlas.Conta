@@ -4,6 +4,7 @@ using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
 using Atlas.Conta.BackOffice.Module.Saft;
+using System.Xml.Linq;
 using DevExpress.ExpressApp;
 using C = Atlas.Conta.BackOffice.Module.Cub;
 
@@ -12,7 +13,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // TR-D8 S1: catalogul docs/nucleu/scenarii/SAFT.md pe exportul L din cub (SaftPeCub).
 sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> check,
     bool privat, Action<IObjectSpace, int, int> inchide)
-    : ScenaDocumente(deschide, check, privat, inchide, "SAFT", 2024) {
+    : ScenaDocumente(deschide, check, privat, inchide, "SAFT", 2040) {
     protected override void CurataNomenclatoare(IObjectSpace os, Purja purja) =>
         purja.Adauga(os.GetObjectsQuery<DepunereDeclaratie>().Where(d => d.Perioada >= An * 100 && d.Perioada < (An + 1) * 100));
 
@@ -102,16 +103,27 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
             }));
             return;
         }
-        var inainte = CuSpatiu(os => os.GetObjectsQuery<Societate>().Select(x => new { x.CodFiscal, x.InregistratTva, x.Tara }).First());
+        var inainte = CuSpatiu(os => os.GetObjectsQuery<Societate>().Select(x => new {
+            x.CodFiscal, x.InregistratTva, x.Tara, x.Denumire, x.ContactNume, x.ContactPrenume, x.Telefon, x.ContBancarId,
+        }).First());
+        var ibanInainte = CuSpatiu(os => os.GetObjectsQuery<ContPropriu>().Single(c => c.Cod == "BANCA").Iban);
         Comanda(os => {
             var soc = os.GetObjectsQuery<Societate>().First();
-            soc.CodFiscal = "12345674"; soc.InregistratTva = true; soc.Tara = "RO"; os.CommitChanges();
+            var banca = os.GetObjectsQuery<ContPropriu>().Single(c => c.Cod == "BANCA");
+            banca.Iban = "RO49AAAA1B31007593840000";
+            soc.CodFiscal = "12345674"; soc.InregistratTva = true; soc.Tara = "RO";
+            soc.Denumire = "Atlas Probă SAF-T SRL"; soc.ContactNume = "Popescu"; soc.ContactPrenume = "Ion";
+            soc.Telefon = "0264000000"; soc.ContBancarId = banca.ID;
+            os.CommitChanges();
         });
         try { Privat1(); }
         finally {
             Comanda(os => {
                 var soc = os.GetObjectsQuery<Societate>().First();
                 soc.CodFiscal = inainte.CodFiscal; soc.InregistratTva = inainte.InregistratTva; soc.Tara = inainte.Tara;
+                soc.Denumire = inainte.Denumire; soc.ContactNume = inainte.ContactNume; soc.ContactPrenume = inainte.ContactPrenume;
+                soc.Telefon = inainte.Telefon; soc.ContBancarId = inainte.ContBancarId;
+                os.GetObjectsQuery<ContPropriu>().Single(c => c.Cod == "BANCA").Iban = ibanInainte;
                 os.CommitChanges();
             });
         }
@@ -135,11 +147,11 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         Opereaza(f20a.Id);
         var f20b = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false, 21.01m)); Opereaza(f20b.Id);
         var f21 = Factura(Ianuarie, new LinieFctScena(1, 100, "TI21", false)); Opereaza(f21.Id);
-        Declara(f21.Id, "factură", "380 100.00/21.00/121.00 401 1 2024-01-05", "380 100.00/21.00/100.00 401 1 2024-01-05",
+        Declara(f21.Id, "factură", $"380 100.00/21.00/121.00 401 1 {An}-01-05", $"380 100.00/21.00/100.00 401 1 {An}-01-05",
             "SC-SAFT-21: taxarea inversă nu adaugă autocolectarea la brutul comercial");
         var f22 = Factura(Ianuarie, new LinieFctScena(2, 50, "N21", false)); Opereaza(f22.Id);
         var f18 = Fct(fb, Zi(1, 8), new LinieFctScena(1, 100, "N21", false)); Inregistrare(f18.Id, Zi(1, 10)); Opereaza(f18.Id);
-        Declara(f18.Id, "factură", "380 100.00/21.00/121.00 401 1 2024-01-10", "380 100.00/21.00/121.00 401 1 2024-01-08",
+        Declara(f18.Id, "factură", $"380 100.00/21.00/121.00 401 1 {An}-01-10", $"380 100.00/21.00/121.00 401 1 {An}-01-08",
             "S1-R4: InvoiceDate este data documentului, nu data înregistrării");
         var f23 = Factura(Zi(1, 8), new LinieFctScena(1, 100, "N21", false)); Inregistrare(f23.Id, Februarie); Opereaza(f23.Id);
         var anulata = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false)); Opereaza(anulata.Id); Anuleaza(anulata.Id);
@@ -148,7 +160,7 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         var stornoFeb = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false)); Opereaza(stornoFeb.Id);
         var receptie = Receptioneaza(new LinieFctScena(10, 10, "N21", Tip: "371"));
         var nir = CuSpatiu(os => os.GetObjectsQuery<Document>().Single(d => d.Autogenerat && d.DocumentSursaId == receptie.Id).ID);
-        Declara(stornoIan.Id, "factură storno", "381 -100.00/-21.00/-121.00 401 1 2024-01-20", "381 -100.00/-21.00/-121.00 401 1 2024-01-05",
+        Declara(stornoIan.Id, "factură storno", $"381 -100.00/-21.00/-121.00 401 1 {An}-01-20", $"381 -100.00/-21.00/-121.00 401 1 {An}-01-05",
             "S1-R4: factura 381 păstrează data documentului, vechiul punea data stornării");
         Declara(receptie.Id, "GL", "21.00/21.00", "121.00/121.00", "SAF-B5: recepția intră la FCT în cub, în registrul vechi numai TVA");
         Declara(nir, "GL", "100.00/100.00", "absent", "SAF-B5: NIR-ul egal nu mai poartă recepția");
@@ -219,8 +231,92 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         Verifica("SC-SAFT-18", "februarie reexportat după corecția din martie rămâne identic",
             Xml(Export(2)).AsSpan().SequenceEqual(artefactFebruarie));
 
+        Certificare(artefactIanuarie, artefactFebruarie, Xml(mar));
+
         RepeatableRead();
         MapareLipsa();
+    }
+
+    void Certificare(byte[] ianuarie, byte[] februarie, byte[] martie) {
+        var director = Path.Combine(Duk.DirectorTemporar(), $"s0-{DateTime.UtcNow:yyyyMMdd-HHmmss}");
+        Directory.CreateDirectory(director);
+        var validari = new List<ValidareD406>();
+        string Scrie(string nume, byte[] continut) {
+            var cale = Path.Combine(director, nume + ".xml");
+            File.WriteAllBytes(cale, continut);
+            return cale;
+        }
+        ValidareD406 Valideaza(string nume, byte[] continut) {
+            var v = ValidareD406.Ruleaza(Scrie(nume, continut));
+            validari.Add(v);
+            Console.WriteLine($"     MĂSURAT (S0 {nume}, perioada din antet {v.An}-{v.Luna:00}): {v.Rezumat}");
+            foreach (var e in v.EroriXsd.Take(10)) Console.WriteLine($"         EROARE XSD: {e}");
+            foreach (var e in v.Duk.Erori.Take(10)) Console.WriteLine($"         EROARE DUK: {e}");
+            foreach (var a in v.Duk.Avertismente.Take(10)) Console.WriteLine($"         ATENȚIONARE DUK: {a}");
+            return v;
+        }
+        static byte[] Muta(byte[] xml, Action<XDocument> mutatie) {
+            var doc = XDocument.Load(new MemoryStream(xml));
+            mutatie(doc);
+            using var ms = new MemoryStream();
+            doc.Save(ms);
+            return ms.ToArray();
+        }
+        XNamespace ns = SaftXml.SpatiuNume;
+
+        var luni = new[] { (1, ianuarie), (2, februarie), (3, martie) }
+            .Select(x => (Luna: x.Item1, V: Valideaza($"saft-L-{An}-{x.Item1:00}", x.Item2))).ToList();
+        foreach (var (luna, v) in luni)
+            Verifica("SC-SAFT-24", $"luna {luna}: XML L acceptat de XSD v249 (d406) și de DUK {ManifestD406.VersiuneValidator} pe perioada din antet",
+                v.Valid && (v.An, v.Luna) == (An, luna));
+        Verifica("SC-SAFT-24", "februarie și martie fără vânzări: SalesInvoices gol, fără totaluri zero",
+            new[] { februarie, martie }.All(x => XDocument.Load(new MemoryStream(x)).Descendants(ns + "SalesInvoices").Single() is { IsEmpty: true }));
+
+        var facturiFeb = XDocument.Load(new MemoryStream(februarie)).Descendants(ns + "PurchaseInvoices").Elements(ns + "Invoice")
+            .Select(f => (No: (string)f.Element(ns + "InvoiceNo"), Tip: (string)f.Element(ns + "InvoiceType"))).ToList();
+        Verifica("SC-SAFT-24", "februarie: 381 și 384 cu același InvoiceNo în același fișier, acceptate de DUK",
+            luni[1].V.Valid && facturiFeb.Where(f => f.Tip == "384")
+                .Any(r => facturiFeb.Any(i => i.Tip == "381" && i.No == r.No)));
+        var tranzactieIan = XDocument.Load(new MemoryStream(ianuarie)).Descendants(ns + "Transaction").ToList();
+        Verifica("SC-SAFT-24", "ianuarie: SystemEntryDate din afara perioadei (timbrul real) acceptat, GLPostingDate = TransactionDate în perioadă",
+            luni[0].V.Valid
+            && tranzactieIan.Any(t => DateOnly.Parse((string)t.Element(ns + "SystemEntryDate")!).Year != An)
+            && tranzactieIan.All(t => (string)t.Element(ns + "GLPostingDate") == (string)t.Element(ns + "TransactionDate")));
+
+        static bool Obligatoriu(params string[] cale) => XsdD406.Element(cale) is { MinOccurs: 1 };
+        static bool Optional(params string[] cale) => XsdD406.Element(cale) is { MinOccurs: 0 };
+        string[] tranzactie = ["AuditFile", "GeneralLedgerEntries", "Journal", "Transaction"];
+        Verifica("SC-SAFT-24", "schema fixată: Transaction cere SystemEntryDate și GLPostingDate; Invoice.GLPostingDate și PaymentLine.SourceDocumentID sunt opționale",
+            Obligatoriu([.. tranzactie, "SystemEntryDate"]) && Obligatoriu([.. tranzactie, "GLPostingDate"])
+            && Optional("AuditFile", "SourceDocuments", "PurchaseInvoices", "Invoice", "GLPostingDate")
+            && Optional("AuditFile", "SourceDocuments", "Payments", "Payment", "PaymentLine", "SourceDocumentID"));
+
+        var perioada = Valideaza("mutant-antet-2024", Muta(ianuarie, d => {
+            foreach (var an in new[] { "PeriodStartYear", "PeriodEndYear" }) d.Descendants(ns + an).Single().Value = "2024";
+        }));
+        Verifica("SC-SAFT-25", "mutant: același fișier cu antetul pe 2024 e validat pe nomenclatorul 2024, iar codurile cotei 21% sunt respinse",
+            perioada.Duk is { Disponibil: true, Valid: false, Perioada: (2024, 1) }
+            && perioada.Duk.Erori.Any(e => e.Contains("nu se afla in lista", StringComparison.Ordinal)));
+        var faraData = Valideaza("mutant-fara-glpostingdate", Muta(ianuarie, d =>
+            d.Descendants(ns + "Transaction").First().Element(ns + "GLPostingDate")!.Remove()));
+        Verifica("SC-SAFT-25", "mutant: tranzacția fără GLPostingDate este respinsă de XSD (schema nu e vidă)",
+            faraData.EroriXsd.Count > 0);
+        var test = Valideaza("mutant-namespace-d406t", Muta(ianuarie, d => {
+            d.Root!.Attributes().Where(a => a.IsNamespaceDeclaration).Remove();
+            foreach (var e in d.Descendants()) e.Name = XNamespace.Get(ManifestD406.SpatiuXsdPublicat) + e.Name.LocalName;
+        }));
+        Verifica("SC-SAFT-25", "mutant: fișierul cu namespace-ul de test d406t este respins de XSD-ul derivat și de DUK D406",
+            test.EroriXsd.Count > 0 && test.Duk is { Disponibil: true, Valid: false });
+        var captura = Valideaza("masura-glpostingdate-captura", Muta(ianuarie, d => {
+            foreach (var t in d.Descendants(ns + "Transaction"))
+                t.Element(ns + "GLPostingDate")!.Value = (string)t.Element(ns + "SystemEntryDate")!;
+        }));
+        Console.WriteLine($"     MĂSURAT (S1-R3 la S0): GLPostingDate = data capturării, în afara perioadei → {captura.Rezumat}");
+
+        var manifest = ValidareD406.ScrieManifest(director, validari);
+        Console.WriteLine($"     MANIFEST S0: {manifest}");
+        Verifica("SC-SAFT-24", "manifestul rulării fixează XSD, schema derivată, kitul, nomenclatorul și SHA-256 al fiecărui fișier",
+            File.Exists(manifest) && validari.All(v => v.Sha256.Length == 64));
     }
 
     void UnitateIstorica(Guid produs, Guid factura) {

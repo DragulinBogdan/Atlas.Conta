@@ -51,9 +51,9 @@ namespace Atlas.Conta.BackOffice.Module.Saft;
 //     validatorul o cere însă PREZENTĂ („ar fi trebuit sa apara de minimum 1
 //     ori"): o declarație de stocuri fără nicio intrare de stoc fizic nu se
 //     poate depune — faptul e al lui ANAF, nu al schemei.
-//   • Secțiunile lunarului (`GeneralLedgerEntries`, `SalesInvoices`,
-//     `PurchaseInvoices`, `Payments`) n-au voie, pe `C`, să poarte NICI MĂCAR
-//     totalurile la zero (`CuTotaluri`, mai jos).
+//   • Secțiunile `GeneralLedgerEntries`, `SalesInvoices`, `PurchaseInvoices`,
+//     `Payments` fără intrări nu poartă NICI MĂCAR totalurile la zero, pe
+//     niciun modul (`CuTotaluri`, mai jos; pe L măsurat la TR-D8 S0).
 //
 // ═══ Detaliile care nu se văd din tabelul de câmpuri ═══
 //   • `TaxAmount` NU e un număr, e o `AmountStructure` (Amount + CurrencyCode +
@@ -145,10 +145,8 @@ public static class SaftXml {
         };
         using var w = XmlWriter.Create(iesire, setari);
         var moneda = dto.Header.DefaultCurrencyCode ?? SaftProiectii.DefaultCurrencyCode;
-        // Totalurile unei secțiuni se scriu dacă secțiunea e a modulului declarat
-        // SAU dacă are totuși rânduri (o listă plină fără totaluri ar fi mai rea
-        // decât o abatere de profil — și e oricum un semn de proiecție stricată).
-        bool CuTotaluri(int randuri) => !laCerere || randuri > 0;
+        // Secțiunea fără intrări se scrie goală, fără totaluri, pe ambele module: DUK respinge totalurile zero (TR-D8 S0).
+        static bool CuTotaluri(int randuri) => randuri > 0;
 
         // ── helper-e de scriere ─────────────────────────────────────────────
         void Start(string nume) => w.WriteStartElement(nume, SpatiuNume);

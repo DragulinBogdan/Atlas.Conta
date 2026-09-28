@@ -6,3 +6,6 @@
 # Evidența (legacy Delphi, exporturile bazei vechi): octeții rămân neatinși.
 legacy/** -text
 db/export/** -text
+
+# Artefactele ANAF pin-uite prin SHA-256 (TR-D8 S0): octeții publicați, neatinși.
+nou/tools/ModelCheck/Anaf/** -text

@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-28.** [Index](README.md)
+**Actualizat: 2026-09-29.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -178,9 +178,11 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   D300 folosește regularizări. `TaxInformation` SAF-T citește faptele pe luna
   exportului contabil. GL-ul și facturile pe cub (S1) nu sunt încă pe ruta
   publică: comutarea L așteaptă `Payments` (S2), refuzul
-  `SAFT_ACCES_INCOMPLET` și probele HTTP. Stocurile (S3), validarea XSD/DUK
-  a noului fișier (S0) și securitatea tuturor secțiunilor rămân felii TR-D8.
-  (103, D8-B8, S1-R8)
+  `SAFT_ACCES_INCOMPLET` și probele HTTP. Validarea XSD/DUK a noului
+  fișier (S0) certifică GL și facturile; Payments se certifică la S2.
+  Stocurile (S3) și securitatea tuturor secțiunilor rămân felii TR-D8.
+  Validatorul se rulează numai pe lună întreagă (antetul cu o singură lună).
+  (103, D8-B8, S1-R8, S0-R4)
 - Corecția unui document operat: motivul decide efectul fiscal, nu contarea.
   Reclasificarea pe 1174 a erorilor semnificative din exerciții anterioare
   rămâne notă contabilă manuală — motorul nu judecă semnificația. (F27-r1)

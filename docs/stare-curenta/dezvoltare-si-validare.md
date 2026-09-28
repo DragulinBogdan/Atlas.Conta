@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-28.** [Index](README.md)
+**Actualizat: 2026-09-29.** [Index](README.md)
 
 TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
 evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
@@ -513,7 +513,14 @@ identificate ale testului, în baza verificată. Auditul se păstrează. (70e, 8
 
 Procesele lungi se lansează cu jurnal și cod de ieșire capturat. Pe Windows,
 procesele de fundal se lansează cu fereastra ascunsă. Validatorul DUK cere
-un director temporar accesibil procesului. Jurnalele publicate nu includ
+un director temporar accesibil procesului. Validarea D406 (XSD + DUK) folosește
+numai artefactele pin-uite prin SHA-256 în `ManifestD406`: XSD v249 versionat
+în `nou/tools/ModelCheck/Anaf/` (namespace substituit declarat), kitul DUK
+J2.2.18 și nomenclatorul din `anaf/` (gitignored; alt director prin
+`ATLAS_ANAF`). Kitul absent sau schimbat (inclusiv în timpul rulării) pică
+proba, nu o sare; perioada validatorului vine din antetul fișierului, fiindcă
+ea alege nomenclatorul. Fiecare rulare scrie `manifest-d406.json` lângă
+fișierele validate. (S0-R1…R4) Jurnalele publicate nu includ
 parole, tokenuri sau adrese de feed cu credențiale. (50d, 73f)
 
 ## Import operațional 1C

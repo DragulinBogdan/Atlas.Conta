@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-28.** [Index](README.md)
+**Actualizat: 2026-09-29.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -490,3 +490,8 @@ Reconcilierile S urmăresc registrul față de ceea ce se emite, completitudinea
 soldurile pe cont și integritatea referințelor. Diferențele sunt raportate.
 Validarea DUK verifică fișierul în profilurile testate; nu extinde acoperirea
 funcțională declarată în [limitele curente](limite-curente.md). (74d, 74e)
+
+O secțiune `GeneralLedgerEntries`, `SalesInvoices`, `PurchaseInvoices` sau
+`Payments` fără intrări se scrie goală, fără `NumberOfEntries` și totaluri,
+pe ambele module: validatorul respinge totalurile zero, iar schema cere
+secțiunea prezentă. (74e, S0-R5)

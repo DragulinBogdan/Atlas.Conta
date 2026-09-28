@@ -4,6 +4,10 @@
 S1 aprobat de owner cu S1-D5 = B' (381 + 384); review-ul și regulile
 de derivare sunt în [S1-R](#s1-r--review-și-tranșări-2026-09-28).**
 
+**2026-09-29 — S0 implementat: manifest pin-uit, XSD v249 cu substituție
+declarată, DUK fără `SĂRIT` și cu perioada din antet; regulile și măsurătorile
+sunt în [S0-R](#s0-r--artefactele-validării-fixate-2026-09-29).**
+
 Răspunde cererii din `comunicari/2026-09-28-0115-claude-codex-saft-sourcedocuments-contract.md`.
 Bază inspectată: `faa8b2d`. Contracte existente: 073, 074, 090, 091,
 103 și [D8-B1…B8](tr-d8-citiri-contract.md).
@@ -282,7 +286,8 @@ XSD, nomenclator și validator. Inventarul local la redactare:
   aplicației folosește `d406`. Compatibilitatea trebuie rezolvată explicit;
   nu declarăm validarea producției prin schimbarea tacită a namespace-ului.
 
-**Gate S0 neîndeplinit:** fixarea artefactului XSD utilizabil și verificarea
+**Gate S0 neîndeplinit** (la redactare; închis de
+[S0-R](#s0-r--artefactele-validării-fixate-2026-09-29)): fixarea artefactului XSD utilizabil și verificarea
 coerenței kitului/nomenclatorului. DUK existent permite `SĂRIT` și fallback
 fără validarea perioadei; acestea nu sunt acceptabile pentru închiderea
 feliei. Înregistrăm hashurile și după rulare pentru a detecta auto-update.
@@ -636,3 +641,76 @@ trebuie și ea respinsă. Diferențele clasificate pe fixture-ul S1 sunt:
 brutul TI21, `InvoiceDate` (data documentului, inclusiv pentru stornoul 381)
 și recepția stocului la FCT (cub) față de NIR (registrul vechi). Linia GL
 păstrează `(Spatiu, ID)` postării în DTO; manifestul ca fișier rămâne la S0.
+
+## S0-R — artefactele validării fixate (2026-09-29)
+
+Implementat în `nou/tools/ModelCheck` (`ValidareD406.cs`, `Duk.cs`), probat
+în `ScenariiSaft` (SC-SAFT-24, SC-SAFT-25). Regulile de mai jos închid gate-ul
+S0 pentru artefactele S1; Payments (S2) și stocurile (S3) se certifică pe
+același manifest când există.
+
+**S0-R1 — manifestul.** Pin-urile SHA-256 stau în cod (`ManifestD406`):
+XSD `Ro_SAFT_Schema_v249_2025.xsd` (`80AD7EAA…DCCC2`, versionat în
+`nou/tools/ModelCheck/Anaf/`, `-text` în `.gitattributes`), validatorul
+`lib/D406Validator.jar` J2.2.18 (`197FD169…32373`) plus
+`DUKIntegrator.jar`, `DUKIntegrator_AnLunaUI.jar`, `lib/DecValidation.jar`,
+`lib/Validator.jar`, și nomenclatorul `RO_SAFT_SchemaDefCod_16.02.2026.xlsx`
+(`050508BF…0F2D`). Fiecare rulare scrie `manifest-d406.json` lângă fișiere:
+pin-urile, SHA-256 al schemei derivate, SHA-256 al fiecărui XML, perioada,
+erorile XSD și verdictul DUK cu comanda exactă. Kitul se verifică înainte și
+după fiecare rulare DUK; o abatere (auto-update, fișier lipsă) e respingere.
+
+**S0-R2 — versiunea reală a kitului.** `config/versiuniCurente.txt` spune
+J2.2.8, dar jar-ul local este octet cu octet cel publicat de ANAF pentru
+J2.2.18 (`update5/D406_35/D406Validator.jar`, `versiuni.xml` la
+2026-09-29). Versiunea se citește din pin, nu din fișierul kitului;
+73-r8 și 74-r13 se închid. Nomenclatorul local 16.02.2026 este un superset
+strict al celui legat de pagina ANAF (05.02.2026): singura diferență este
+codul WHT 604040, prezent în `Parameters_v3` al validatorului pin-uit.
+
+**S0-R3 — namespace-ul.** XSD-ul public declară `targetNamespace` și
+prefixul `nsSAFT` pe `d406t`; producția folosește `d406`. Validarea XSD
+înlocuiește exact aceste două atribute (fiecare trebuie să apară o singură
+dată) și înregistrează substituția în manifest. Avertismentul „fără
+informație de schemă” este eroare, iar rădăcina trebuie să aibă declarație
+în schemă. Validatorul D406 impune `d406` (D406T impune `d406t`); un fișier
+`d406t` este respins și de XSD-ul derivat, și de DUK D406.
+
+**S0-R4 — perioada.** Măsurat: `an`/`luna` date lui
+`DUKIntegrator_AnLunaUI.jar` aleg versiunea nomenclatorului, nu se compară
+cu antetul. Același fișier din 2024 cu coduri ale cotei 21% are 51 de
+erori de cod pe `an=2024` și zero pe `an=2026`. Deci perioada vine numai
+din `Header/SelectionCriteria` (o singură lună; altfel refuz), nu separat.
+Fallback-ul pe `DUKIntegrator.jar` fără perioadă este eliminat, iar kitul
+absent sau nepotrivit dă `INDISPONIBIL` = verificare picată, nu `SĂRIT`
+(inclusiv pentru probele D16-V3/D17-V3).
+
+**S0-R5 — secțiunile fără intrări.** Măsurat pe L: `SalesInvoices` sau
+`Payments` cu `NumberOfEntries = 0` și totaluri zero sunt respinse de DUK
+(„elementul ... ar fi trebuit sa apara de minimum 1 ori”); omisiunea
+secțiunii trece DUK, dar contrazice XSD-ul (secțiunea e obligatorie).
+Scriitorul emite deci secțiunea goală, fără totaluri, pe ambele module
+(`CuTotaluri` = există intrări); XSD-ul și DUK o acceptă.
+
+**S0-R6 — fixture-ul în regimul cotei.** Catalogul S1 folosea anul 2024
+cu cota 21%, pe care nomenclatorul ANAF al anului 2024 nu o conține. Scena
+SAFT se mută pe 2040 (primul an liber al suitei după 2036), unde se aplică
+nomenclatorul curent. Cifrele economice ale fixture-ului nu se schimbă.
+
+**S0-R7 — ce certifică S0 pe S1.** XML-urile L ale lunilor 1–3 trec XSD
+v249 (d406) și DUK J2.2.18, fără atenționări, inclusiv: 381 și 384 cu același
+`InvoiceNo` în februarie (S1-R1 ține, fără număr inventat); TI21 și cele două
+cote; `SystemEntryDate` în afara perioadei (timbrul real). Schema fixată
+cere `SystemEntryDate` și `GLPostingDate` pe `Transaction`; pe `Invoice`
+`GLPostingDate` și pe `PaymentLine` `SourceDocumentID` sunt opționale (R4).
+Măsurat, nu probă: DUK acceptă și `GLPostingDate` = data capturării, în afara
+perioadei; S1-R3 rămâne o alegere de semantică (data contabilă care decide
+perioada), nu o constrângere a validatorului. Mutanții respinși: antetul pe
+2024 (codurile 21% nu sunt în nomenclator), tranzacția fără `GLPostingDate`
+(XSD și DUK), namespace-ul `d406t` (XSD și DUK). Payments rămâne gol în S1:
+fișierul nu certifică Payments (S1-D7).
+
+Integral verde pe ambele profiluri (bugetar 3.267, privat 4.375 verificări),
+inclusiv D16-V3/D17-V3 pe kitul pin-uit: `run-verificari/20260929-011541-801`
+(manifestul S0 în `tmp/atlas-saft/s0-*/manifest-d406.json`).
+

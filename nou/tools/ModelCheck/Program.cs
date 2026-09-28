@@ -12999,18 +12999,14 @@ void VerificaSaftXml(SaftDto saft, int an, int luna, double msProiectie) {
                 && Toate(s).Single().Elements(ns + "TotalCredit").Count() == 1));
 
     // ---------------- Oracolul: validatorul oficial ----------------
-    var rezultat = Duk.Valideaza(caleXml, an, luna);
+    var rezultat = Duk.Valideaza(caleXml);
     Console.WriteLine($"     MĂSURAT (D16-V3 DUK): {rezultat.Rezumat}");
     Console.WriteLine($"         COMANDA {rezultat.Comanda}");
     foreach (var e in rezultat.Erori.Take(30))
         Console.WriteLine($"         EROARE DUK: {e}");
     foreach (var a in rezultat.Avertismente.Take(30))
         Console.WriteLine($"         ATENȚIONARE DUK: {a}");
-    if (!rezultat.Disponibil)
-        Console.WriteLine($"     SĂRIT (D16-V3): validatorul oficial n-a rulat — {rezultat.Motiv}. Fișierul scenei "
-            + $"rămâne la {caleXml}; proba de validitate NU s-a făcut.");
-    else
-        Check("D16-V3 VALIDATORUL OFICIAL (DUKIntegrator, kit local) acceptă fișierul scenei — cu diacritice "
+    Check("D16-V3 VALIDATORUL OFICIAL (DUKIntegrator, kit local) acceptă fișierul scenei — cu diacritice "
             + "(riscul 9), fără `ExchangeRate` pe RON (riscul 6), cu `ProductCommodityCode = 0` (riscul 8) și cu "
             + "segmentarea `1/1` (riscul 7): patru riscuri pin-uite, măsurate pe același fișier",
             rezultat.Valid);
@@ -13023,7 +13019,7 @@ void VerificaSaftXml(SaftDto saft, int an, int luna, double msProiectie) {
         modifica();
         try {
             var cale = Scrie(saft, $"{prefix}-{nume}");
-            var r = Duk.Valideaza(cale, an, luna);
+            var r = Duk.Valideaza(cale);
             Console.WriteLine($"     MĂSURAT (D16-V3 {nume}): {intrebare} → {r.Rezumat}");
             foreach (var e in r.Erori.Take(5))
                 Console.WriteLine($"         EROARE DUK: {e}");
@@ -14499,19 +14495,14 @@ void VerificaSaftStocuriXml(SaftDto saft, int an, int luna, double msProiectie) 
         goale.All(g => g.Copii == 0) && saft.TipuriAnaliza.Count == 0);
 
     // ---------------- Oracolul: validatorul oficial ----------------
-    var rezultat = Duk.Valideaza(caleXml, an, luna);
+    var rezultat = Duk.Valideaza(caleXml);
     Console.WriteLine($"     MĂSURAT (D17-V3 DUK): {rezultat.Rezumat}");
     Console.WriteLine($"         COMANDA {rezultat.Comanda}");
     foreach (var e in rezultat.Erori.Take(30))
         Console.WriteLine($"         EROARE DUK: {e}");
     foreach (var a in rezultat.Avertismente.Take(30))
         Console.WriteLine($"         ATENȚIONARE DUK: {a}");
-    if (!rezultat.Disponibil)
-        Console.WriteLine($"     SĂRIT (D17-V3): validatorul oficial n-a rulat — {rezultat.Motiv}. Fișierul S al "
-            + $"scenei rămâne la {caleXml}; proba de validitate NU s-a făcut, iar riscurile 1–5 rămân "
-            + "NEMĂSURATE.");
-    else
-        Check("D17-V3 VALIDATORUL OFICIAL (DUKIntegrator, kit local) acceptă fișierul de STOCURI al scenei — "
+    Check("D17-V3 VALIDATORUL OFICIAL (DUKIntegrator, kit local) acceptă fișierul de STOCURI al scenei — "
             + "cu `HeaderComment = C`, cu cantități NEGATIVE pe ieșiri (riscul 1), cu secțiunile lunarului "
             + "goale (riscul 2), cu `StockCharacteristic = 0` (riscul 3), cu `StockAccountNo` = Guid de 36 "
             + "caractere (riscul 4) și cu `ProductType` = simbol de cont (riscul 5)",
@@ -14525,7 +14516,7 @@ void VerificaSaftStocuriXml(SaftDto saft, int an, int luna, double msProiectie) 
         modifica();
         try {
             var cale = Scrie(saft, $"{prefix}-{nume}");
-            var r = Duk.Valideaza(cale, an, luna);
+            var r = Duk.Valideaza(cale);
             Console.WriteLine($"     MĂSURAT (D17-V3/{nume}): {intrebare} → {r.Rezumat}");
             foreach (var e in r.Erori.Take(8))
                 Console.WriteLine($"         EROARE DUK: {e}");
@@ -14613,7 +14604,7 @@ void VerificaSaftStocuriXml(SaftDto saft, int an, int luna, double msProiectie) 
             new XElement(ns + "TotalDebit", "0.00"),
             new XElement(ns + "TotalCredit", "0.00"));
     docTotaluri.Save(caleCuTotaluri);
-    var rTotaluri = Duk.Valideaza(caleCuTotaluri, an, luna);
+    var rTotaluri = Duk.Valideaza(caleCuTotaluri);
     Console.WriteLine($"     MĂSURAT (D17-V3/sectiuni-L-cu-totaluri): riscul 2 — `GeneralLedgerEntries`/"
         + $"`SalesInvoices`/`PurchaseInvoices`/`Payments` cu `NumberOfEntries = 0` și totalurile 0,00 "
         + $"→ {rTotaluri.Rezumat}");
