@@ -465,8 +465,9 @@ Reverificarea Codex din 2026-09-29 închide R1 la nivelul probei de domeniu:
 unitatea definită e protejată de regula produsului de mai sus. Comparația
 A/B merge în ambele sensuri, iar o diferență e acceptată numai dacă secțiunea,
 evenimentul și valorile vechi/noi coincid exact cu o excepție declarată (R2.1).
-Stabilitatea octet cu
-octet a reexportului e probată cu metadatele și data generării fixate;
+R2.1 este închis prin reverificarea `ad193a9`: omisiunea TI21 și schimbările
+de net, taxă, brut, cont sau eveniment sunt respinse de verdictul complet.
+Stabilitatea octet cu octet a reexportului e probată cu metadatele și data generării fixate;
 redenumirile din nomenclator (descrieri) rămân etichete curente.
 [Review S1](../nucleu/tr-d8-saft-s1-review-codex.md).
 

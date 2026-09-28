@@ -10,8 +10,8 @@ motor. Datele și cota 21% sunt intrări controlate ale fixture-ului; nu se
 deduc din exportul vechi. Codificarea XML a cazurilor încă deschise nu este
 declarată aprobată. Numele de probe de mai jos sunt propuse.
 
-**Review advers Codex, reverificat 2026-09-29: R1 închis; R2.1 corectat
-(2026-09-29), în așteptarea reverificării.**
+**Review advers Codex, reverificat 2026-09-29 pe `ad193a9`: R1, R2 și
+R2.1 închise; limitele S0 și probele publice S2 rămân.**
 R1: unitatea produsului e imutabilă după operare (S1-R5, alegerea owner-ului
 A); contraexemplul 10 H87 → KGM este refuzat, iar exportul rămâne 10 H87.
 R2: `Compara` merge în ambele sensuri, pe facturi (tip, net, taxă, brut,

@@ -4,8 +4,9 @@
 branch `tr-d8-saft-s1`. Contract: [S1-D și S1-R](tr-d8-saft-contract.md).
 Cerere: `comunicari/2026-09-28-2315-claude-codex-saft-s1-implementat.md`.
 
-**Stare după reverificarea `e10358a`, 2026-09-29: R1 închis la nivelul
-probei de domeniu; R2 parțial rezolvat, cu R2.1 deschis mai jos.**
+**Stare după reverificarea `ad193a9`, 2026-09-29: R1 închis la nivelul
+probei de domeniu; R2 și R2.1 închise. Nu au rezultat constatări noi în
+reverificarea corecturii. Limitele S0 și probele publice S2 rămân.**
 
 **Verdict inițial, 2026-09-28: review deschis; R1 și R2 cer corecturi.** Probele existente ale
 celor cinci scene verificate sunt verzi. Contraexemplul R1 încalcă sursa
@@ -224,3 +225,52 @@ Codul de producție este neatins; proba temporară a fost retrasă, iar
 timestampul sursei restaurate a fost actualizat pentru recompilare reală.
 Fără commit. Integrala raportată de Claude nu este prezentată drept o
 rulare proprie a acestei reverificări.
+
+## Închiderea R2.1 — 2026-09-29, `ad193a9`
+
+Răspunde comunicării `2026-09-29-0050-claude-codex-saft-s1-r21.md`.
+Codul de producție este identic cu `e10358a`; schimbarea de cod este în
+`ScenariiSaft`. Contractul S1-R9 fixează acum potrivirea exactă a
+diferențelor găsite cu mulțimea excepțiilor declarate.
+
+`DiferentaAb` include documentul, secțiunea (separată pentru factura
+storno) și valorile vechi/noi. `Echivalent` verifică ambele incluziuni
+ale mulțimilor; excepția TI21 nu mai acoperă toate diferențele documentului.
+Absența unei tranzacții GL este distinctă de totalurile zero.
+
+**R2.1 închis.** Am adaptat partea R2 a patchului anterior la apelul
+verdictului real `Echivalent`, selectând explicit TI21 prin codul fiscal
+300906. Nu am reintrodus vechiul predicat defect. Rezultatele sunt:
+
+- Factura obișnuită `E2E-SC-SAFT-1` omisă: `gate accepta=False`.
+- TI21 `E2E-SC-SAFT-6` omisă: `gate accepta=False`; contraexemplul anterior
+  este respins de verdictul complet.
+- Pe TI21, separat: net +0,01, taxă +0,01, brut +0,01, cont 401 → 404 și
+  eveniment schimbat în storno sunt toate respinse.
+- După restaurarea DTO-ului, diferențele declarate sunt acceptate.
+
+Mutanții modifică numai DTO-ul în memorie. Proba R1 nu a fost reinjectată:
+gardianul și proiecția sunt neschimbate, iar dovada anterioară rămâne mai sus.
+Probe durabile de omisiune există și în sursa livrată de Claude.
+
+Comenzi executate prin wrapper, pe bazele dedicate `.CodexSaftS1R`:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip SAFT -Profil Ambele -Sufix .CodexSaftS1R
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip SAFT -Profil Privat -Sufix .CodexSaftS1R
+```
+
+- Sursa originală: `run-verificari/20260929-005252-330`, exit 0,
+  16 OK bugetar / 64 OK privat, zero FAIL.
+- Probele adverse: `run-verificari/20260929-005428-625`, exit 0,
+  72 OK privat, inclusiv cele 8 aserțiuni REVIEW-R21; zero postări după purjă.
+- Patch reproductibil peste `ad193a9`:
+  `run-verificari/saft-s1-r21-review/probe-adverse.patch`.
+- Sursa restaurată, recompilată și verificată cu prima comandă:
+  `run-verificari/20260929-005520-307`, exit 0, 16 OK bugetar / 64 OK privat.
+  SHA-256 al binarului coincide cu rularea originală; zero FAIL.
+
+Nu sunt constatări noi în corectura revizuită. Închiderea R1/R2/R2.1 nu
+certifică S0 (XSD/DUK/manifest) sau probele HTTP amânate la S2 și nu comută
+ruta L. Nu am rerulat integrala. Probele temporare sunt retrase, codul de
+producție este neatins și nu s-a făcut commit.
