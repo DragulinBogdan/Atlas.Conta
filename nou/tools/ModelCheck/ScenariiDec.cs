@@ -84,6 +84,16 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
             });
             Opereaza(cules.Id);
             Postari("SC-DEC-09", cules.Id, N.FelTranzactie.Operare, Ianuarie, Fiscale(cules, "N21", 100, 20.99m));
+            Verifica("SC-SAFT-11", "DEC pe cub: GL D 628 100 + D 4426 20,99 / C 542 120,99, zero facturi, titularul absent din terți",
+                CuSpatiu(os => {
+                    var saft = SaftProiectii.SaftPeCub(os, An, 1);
+                    var gl = saft.Jurnale.SelectMany(j => j.Tranzactii).Where(t => t.DocumentId == cules.Id).SelectMany(t => t.Linii).ToList();
+                    decimal Suma(string latura, string cont) => gl.Where(l => l.DebitCreditIndicator == latura && l.AccountID == cont).Sum(l => l.Amount);
+                    return Suma("D", Serviciu) == 100 && Suma("D", "4426") == 20.99m && Suma("C", Avans) == 120.99m
+                        && gl.Where(l => l.DebitCreditIndicator == "D").Sum(l => l.Amount) == 120.99m
+                        && !saft.FacturiPrimite.Concat(saft.FacturiEmise).Any(f => f.DocumentTip == "DEC")
+                        && !saft.Clienti.Any(t => t.PartenerId == titular) && !saft.Furnizori.Any(t => t.PartenerId == titular);
+                }));
         }
         Verifica("SC-DEC-15", "contul de avans urmărește partide fără rol comercial", CuSpatiu(os => {
             var c = os.GetObjectByKey<Cont>(Cont(Avans)); return c.UrmarestePartide && c.RolTert == RolTertCont.Niciunul;

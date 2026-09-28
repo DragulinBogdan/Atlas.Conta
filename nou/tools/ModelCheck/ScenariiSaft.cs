@@ -1,0 +1,428 @@
+using Atlas.Conta.BackOffice.Module.Api;
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
+using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.Proiectii;
+using Atlas.Conta.BackOffice.Module.Saft;
+using DevExpress.ExpressApp;
+using C = Atlas.Conta.BackOffice.Module.Cub;
+
+namespace Atlas.Conta.BackOffice.ModelCheck;
+
+// TR-D8 S1: catalogul docs/nucleu/scenarii/SAFT.md pe exportul L din cub (SaftPeCub).
+sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> check,
+    bool privat, Action<IObjectSpace, int, int> inchide)
+    : ScenaDocumente(deschide, check, privat, inchide, "SAFT", 2024) {
+    protected override void CurataNomenclatoare(IObjectSpace os, Purja purja) =>
+        purja.Adauga(os.GetObjectsQuery<DepunereDeclaratie>().Where(d => d.Perioada >= An * 100 && d.Perioada < (An + 1) * 100));
+
+    DateOnly Zi(int luna, int zi) => new(An, luna, zi);
+    SaftDto Export(int luna) => CuSpatiu(os => SaftProiectii.SaftPeCub(os, An, luna, Zi(luna, 28)));
+    SaftDto ExportVechi(int luna) => CuSpatiu(os => SaftProiectii.Saft(os, An, luna, Zi(luna, 28)));
+
+    static byte[] Xml(SaftDto d) {
+        using var ms = new MemoryStream();
+        SaftXml.Scrie(d, ms);
+        return ms.ToArray();
+    }
+
+    static IEnumerable<SaftLinieTranzactie> Gl(SaftDto d, params Guid[] docs) =>
+        d.Jurnale.SelectMany(j => j.Tranzactii).Where(t => docs.Contains(t.DocumentId)).SelectMany(t => t.Linii);
+    static decimal Debit(IEnumerable<SaftLinieTranzactie> l, string cont = null) =>
+        l.Where(x => x.DebitCreditIndicator == "D" && (cont == null || x.AccountID == cont)).Sum(x => x.Amount);
+    static decimal Credit(IEnumerable<SaftLinieTranzactie> l, string cont = null) =>
+        l.Where(x => x.DebitCreditIndicator == "C" && (cont == null || x.AccountID == cont)).Sum(x => x.Amount);
+    static List<SaftFactura> Facturi(SaftDto d, params Guid[] docs) =>
+        d.FacturiEmise.Concat(d.FacturiPrimite).Where(f => docs.Contains(f.DocumentId)).ToList();
+    static decimal Taxa(SaftFactura f) => f.Linii.Sum(l => l.TaxInformation.TaxAmount);
+    static bool Suma(SaftFactura f, string tip, decimal net, decimal taxa, decimal brut) =>
+        f.InvoiceType == tip && f.NetTotal == net && Taxa(f) == taxa && f.GrossTotal == brut;
+    static decimal? Sold(List<SaftTert> terti, Guid partener) =>
+        terti.SingleOrDefault(t => t.PartenerId == partener) is { } t
+            ? (t.ClosingDebitBalance ?? 0m) - (t.ClosingCreditBalance ?? 0m) : null;
+
+    bool FaraRefuzuri(SaftDto d, string id) {
+        foreach (var r in d.Refuzuri) Console.WriteLine($"     REFUZ {r.Cod}: {r.Mesaj}");
+        Verifica(id, $"luna {d.Luna}: exportul pe cub fără refuzuri", d.Refuzuri.Count == 0);
+        return d.Refuzuri.Count == 0;
+    }
+
+    void Perioada(int luna) => Comanda(os => {
+        var p = os.CreateObject<PerioadaFiscala>(); p.An = An; p.Luna = luna; os.CommitChanges();
+    });
+
+    Guid NouPartener(string sufix) => CuSpatiu(os => {
+        var p = os.CreateObject<Partener>(); p.Cod = Marcaj + "-" + sufix; p.Denumire = p.Cod;
+        os.CommitChanges(); return p.ID;
+    });
+
+    FacturaScena Fct(Guid partener, DateOnly data, params LinieFctScena[] linii) {
+        var f = Factura(data, linii);
+        Comanda(os => { os.GetObjectByKey<FacturaIntrare>(f.Id).PredatorId = partener; os.CommitChanges(); });
+        return f;
+    }
+
+    void Inregistrare(Guid doc, DateOnly data) => Comanda(os => {
+        var f = os.GetObjectByKey<FacturaIntrare>(doc); f.DataInregistrare = data; f.DataPrimire = data; os.CommitChanges();
+    });
+
+    Guid Fcl(Guid client, decimal baza, string tva) => CuSpatiu(os => {
+        var d = os.CreateObject<FacturaIesire>(); d.Data = Ianuarie; d.PredatorId = Loc; d.PrimitorId = client;
+        var l = os.CreateObject<FacturaIesireDetaliu>(); l.Document = d; l.Pozitie = 1;
+        l.TipMaterialId = Tip(os, "704"); l.Cantitate = 1; l.PretUnitar = baza; l.TipTvaId = Tva(tva);
+        os.CommitChanges(); return d.ID;
+    });
+
+    Guid Trezorerie(bool incasare, Guid partener, decimal suma) {
+        var doc = Trezorerie(incasare, suma).Id;
+        Comanda(os => {
+            var d = os.GetObjectByKey<Document>(doc);
+            if (incasare) d.PredatorId = partener; else d.PrimitorId = partener;
+            os.CommitChanges();
+        });
+        return doc;
+    }
+
+    Guid Corecteaza(Guid doc, DateOnly data, Action<DocumentDetaliu> linie) {
+        var corectie = CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(doc, data, MotivCorectie.EroareMateriala).CorectieId);
+        Comanda(os => {
+            linie(os.GetObjectsQuery<DocumentDetaliu>().Single(l => l.DocumentId == corectie));
+            os.CommitChanges();
+        });
+        return corectie;
+    }
+
+    protected override void Executa() {
+        if (!Privat) {
+            var inert = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false));
+            Opereaza(inert.Id);
+            Verifica("SC-SAFT-14", "bugetar: L neaplicabil, fără antet, GL sau facturi", CuSpatiu(os => {
+                var d = SaftProiectii.SaftPeCub(os, An, 1);
+                return d.Neaplicabil != null && d.Header == null && d.Jurnale.Count == 0 && d.FacturiPrimite.Count == 0;
+            }));
+            return;
+        }
+        var inainte = CuSpatiu(os => os.GetObjectsQuery<Societate>().Select(x => new { x.CodFiscal, x.InregistratTva, x.Tara }).First());
+        Comanda(os => {
+            var soc = os.GetObjectsQuery<Societate>().First();
+            soc.CodFiscal = "12345674"; soc.InregistratTva = true; soc.Tara = "RO"; os.CommitChanges();
+        });
+        try { Privat1(); }
+        finally {
+            Comanda(os => {
+                var soc = os.GetObjectsQuery<Societate>().First();
+                soc.CodFiscal = inainte.CodFiscal; soc.InregistratTva = inainte.InregistratTva; soc.Tara = inainte.Tara;
+                os.CommitChanges();
+            });
+        }
+    }
+
+    void Privat1() {
+        Comutare();
+        Timbre();
+        foreach (var luna in new[] { 3, 4, 5 }) Perioada(luna);
+        var fa = NouPartener("FA"); var fb = NouPartener("FB"); var ca = NouPartener("CA");
+
+        var f01 = Fct(fa, Ianuarie, new LinieFctScena(1, 100, "N21", Stoc: false)); Opereaza(f01.Id);
+        var p01 = Trezorerie(false, fa, 40); Opereaza(p01);
+        var v02 = Fcl(ca, 200, "N21"); Opereaza(v02);
+        var i02 = Trezorerie(true, ca, 100); Opereaza(i02);
+        var f03 = Factura(Ianuarie, new LinieFctScena(1, 100, "NED21", Stoc: false)); Opereaza(f03.Id);
+        var dvi = Dvi(); Opereaza(dvi);
+        var f19 = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false), new LinieFctScena(1, 50, "N11", false));
+        Opereaza(f19.Id);
+        var f20a = Factura(Ianuarie, new LinieFctScena(1, .01m, "N21", false), new LinieFctScena(1, .01m, "N21", false));
+        Opereaza(f20a.Id);
+        var f20b = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false, 21.01m)); Opereaza(f20b.Id);
+        var f21 = Factura(Ianuarie, new LinieFctScena(1, 100, "TI21", false)); Opereaza(f21.Id);
+        diferenteDeclarate[f21.Id] = "SC-SAFT-21: taxarea inversă nu adaugă autocolectarea la brutul comercial (vechi 121, cub 100)";
+        var f22 = Factura(Ianuarie, new LinieFctScena(2, 50, "N21", false)); Opereaza(f22.Id);
+        var f18 = Fct(fb, Zi(1, 8), new LinieFctScena(1, 100, "N21", false)); Inregistrare(f18.Id, Zi(1, 10)); Opereaza(f18.Id);
+        var f23 = Factura(Zi(1, 8), new LinieFctScena(1, 100, "N21", false)); Inregistrare(f23.Id, Februarie); Opereaza(f23.Id);
+        var anulata = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false)); Opereaza(anulata.Id); Anuleaza(anulata.Id);
+        var stornoIan = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false)); Opereaza(stornoIan.Id);
+        Storneaza(stornoIan.Id, Zi(1, 20));
+        var stornoFeb = Factura(Ianuarie, new LinieFctScena(1, 100, "N21", false)); Opereaza(stornoFeb.Id);
+        var receptie = Receptioneaza(new LinieFctScena(10, 10, "N21", Tip: "371"));
+
+        var ian = Export(1);
+        FaraRefuzuri(ian, "SC-SAFT-01");
+        Ianuarie1(ian, f01.Id, v02, f03.Id, dvi, fa, ca);
+        Ianuarie2(ian, f19.Id, f20a.Id, f20b.Id, f21.Id, f22.Id, f18.Id, f23.Id, anulata.Id, stornoIan.Id);
+        Cusaturi(ian, 1);
+        var artefactIanuarie = Xml(ian);
+        ComparatieAb(1);
+
+        Comanda(os => {
+            foreach (var formular in new[] { FormularFiscal.D300, FormularFiscal.D394 })
+                FiscalitateService.ConfirmaDepunerea(os, formular, An, 1,
+                    Fiscale.Versiune(os, formular, Zi(1, 1), Zi(1, 31)), "ModelCheck");
+        });
+        InchideIanuarie();
+
+        var c18 = CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(f18.Id, Februarie, MotivCorectie.EroareMateriala).CorectieId);
+        var draft = Export(2);
+        Verifica("SC-SAFT-18", "înlocuitor Draft: refuz SAFT_CORECTIE_INCOMPLETA înaintea XML", draft.Refuzuri.Any(r =>
+            r.Cod == SaftProiectii.RefuzCorectie && r.DocumentId == f18.Id) && Refuzat(() => Xml(draft)));
+        Comanda(os => {
+            var l = os.GetObjectsQuery<FacturaIntrareDetaliu>().Single(l => l.DocumentId == c18);
+            l.PretUnitar = 80; l.ValoareTva = 16.80m; os.CommitChanges();
+        });
+        Opereaza(c18);
+        var c22 = Corecteaza(f22.Id, Februarie, l => {
+            var d = (FacturaIntrareDetaliu)l; d.Cantitate = 3; d.PretUnitar = 40; d.ValoareTva = 25.20m;
+        });
+        Opereaza(c22);
+        Refuza("SC-SAFT-22", () => Comanda(os => {
+            os.GetObjectsQuery<DocumentDetaliu>().Single(l => l.DocumentId == f22.Id).Cantitate = 5;
+            GardianEditare.Verifica(os);
+        }), "");
+        Storneaza(stornoFeb.Id, Februarie);
+        var retur = CuSpatiu(os => {
+            var d = os.CreateObject<ReturFurnizor>(); d.Data = Februarie; d.DataPrimire = Februarie;
+            d.PredatorId = Magazie; d.PrimitorId = Furnizor;
+            var l = os.CreateObject<DocumentDetaliu>(); l.Document = d; l.Pozitie = 1; l.TipMaterialId = Tip(os, "371");
+            l.Cantitate = 2; l.LotId = receptie.Linii[0].Lot; l.TipTvaId = Tva("N21");
+            os.CommitChanges(); return d.ID;
+        });
+        Opereaza(retur);
+
+        var feb = Export(2);
+        FaraRefuzuri(feb, "SC-SAFT-18");
+        Februarie1(feb, f18.Id, c18, f22.Id, c22, f23.Id, stornoFeb.Id, retur, receptie.Id);
+        Cusaturi(feb, 2);
+        Verifica("SC-SAFT-18", "reexportul lunii închise e identic octet cu octet după corecția din februarie",
+            Xml(Export(1)).AsSpan().SequenceEqual(artefactIanuarie));
+        var artefactFebruarie = Xml(feb);
+
+        var c18b = Corecteaza(c18, Zi(3, 5), l => { var d = (FacturaIntrareDetaliu)l; d.PretUnitar = 70; d.ValoareTva = 14.70m; });
+        Opereaza(c18b);
+        var mar = Export(3);
+        FaraRefuzuri(mar, "SC-SAFT-18");
+        var martie = Facturi(mar, c18, c18b);
+        Verifica("SC-SAFT-18", "martie: 381 −80/−16,80/−96,80 și 384 70/14,70/84,70; GL net −12,10; furnizor 84,70",
+            martie.Count == 2 && Suma(martie.Single(f => f.DocumentId == c18), "381", -80, -16.80m, -96.80m)
+            && Suma(martie.Single(f => f.DocumentId == c18b), "384", 70, 14.70m, 84.70m)
+            && Debit(Gl(mar, c18, c18b)) == -12.10m && Credit(Gl(mar, c18, c18b)) == -12.10m
+            && Sold(mar.Furnizori, fb) == -84.70m);
+        Verifica("SC-SAFT-18", "februarie reexportat după corecția din martie rămâne identic",
+            Xml(Export(2)).AsSpan().SequenceEqual(artefactFebruarie));
+
+        RepeatableRead();
+        MapareLipsa();
+    }
+
+    static bool Refuzat(Action actiune) {
+        try { actiune(); return false; }
+        catch (InvalidOperationException) { return true; }
+    }
+
+    Guid Dvi() => CuSpatiu(os => {
+        var p = os.CreateObject<Partener>(); p.Cod = Marcaj + "-VAMA"; p.Denumire = p.Cod; p.ContImplicitId = Cont("446");
+        var d = os.CreateObject<Dvi>(); d.Data = Ianuarie; d.Numar = Marcaj + "-MRN"; d.Predator = p; d.PrimitorId = Loc;
+        var l = os.CreateObject<DocumentDetaliu>(); l.Document = d; l.TipMaterialId = Tip(os, Stoc);
+        l.TipTvaId = Tva("IMP21"); l.Valoare = 100;
+        os.CommitChanges(); return d.ID;
+    });
+
+    void Comutare() {
+        var sursa = File.ReadAllText(Path.Combine(MetadataDump.DirectorProiect(), "..", "..", "Atlas.Conta.BackOffice",
+            "Atlas.Conta.BackOffice.WebApi", "API", "Conta", "SaftController.cs"));
+        Verifica("SC-SAFT-15", "S1 singur: ruta publică L rămâne exportul existent, fără SaftPeCub",
+            sursa.Contains("SaftProiectii.Saft)", StringComparison.Ordinal) && !sursa.Contains("SaftPeCub", StringComparison.Ordinal));
+    }
+
+    void Timbre() => Verifica("SC-SAFT-16", "data sistemului e data UTC a timbrului, fără fusul mașinii",
+        SaftProiectii.DataSistem(new DateTime(2026, 1, 10, 23, 30, 0, DateTimeKind.Utc)) == new DateOnly(2026, 1, 10)
+        && SaftProiectii.DataSistem(new DateTime(2026, 2, 5, 0, 15, 0, DateTimeKind.Utc)) == new DateOnly(2026, 2, 5)
+        && SaftProiectii.DataSistem(new DateTime(2026, 2, 6, 12, 0, 0, DateTimeKind.Unspecified)) == new DateOnly(2026, 2, 6));
+
+    void Ianuarie1(SaftDto d, Guid f01, Guid v02, Guid f03, Guid dvi, Guid fa, Guid ca) {
+        var gl01 = Gl(d, f01).ToList();
+        var fact01 = Facturi(d, f01);
+        var tranzactie01 = d.Jurnale.SelectMany(j => j.Tranzactii).Where(t => t.DocumentId == f01).ToList();
+        Verifica("SC-SAFT-01", "FCT 100+21: GL D 628 100, D 4426 21, C 401 121; factura 380 100/21/121 pe aceeași tranzacție",
+            Debit(gl01, "628") == 100 && Debit(gl01, "4426") == 21 && Credit(gl01, "401") == 121 && Debit(gl01) == 121 && Credit(gl01) == 121
+            && fact01.Count == 1 && Suma(fact01[0], "380", 100, 21, 121) && fact01[0].AccountID == "401"
+            && fact01[0].Linii.Single().TaxInformation.TaxCode == "301104"
+            && tranzactie01.Count == 1 && fact01[0].TransactionID == tranzactie01[0].TransactionID
+            && fact01[0].GLPostingDate == Ianuarie && tranzactie01[0].GLPostingDate == Ianuarie);
+        Verifica("SC-SAFT-01", "plata 40 lasă furnizorul cu 81 credit", Sold(d.Furnizori, fa) == -81);
+
+        var gl02 = Gl(d, v02).ToList();
+        var fact02 = Facturi(d, v02);
+        Verifica("SC-SAFT-02", "FCL 200+42: D 4111 242, C 4427 42, C venit 200; factura 380 200/42/242; client 142",
+            Debit(gl02, "4111") == 242 && Credit(gl02, "4427") == 42 && Credit(gl02) == 242
+            && fact02.Count == 1 && Suma(fact02[0], "380", 200, 42, 242) && d.FacturiEmise.Contains(fact02[0])
+            && Sold(d.Clienti, ca) == 142);
+
+        var gl03 = Gl(d, f03).ToList();
+        var fact03 = Facturi(d, f03);
+        Verifica("SC-SAFT-03", "capitalizat: GL D/C 121/121, factura net 100, taxă 21, brut 121",
+            Debit(gl03) == 121 && Credit(gl03, "401") == 121 && fact03.Count == 1 && Suma(fact03[0], "380", 100, 21, 121));
+
+        var glDvi = Gl(d, dvi).ToList();
+        Verifica("SC-SAFT-04", "DVI: GL 21/21 (D 4426, C 446), baza 100 nu intră în GL, zero facturi",
+            Debit(glDvi, "4426") == 21 && Credit(glDvi, "446") == 21 && Debit(glDvi) == 21 && Credit(glDvi) == 21
+            && Facturi(d, dvi).Count == 0);
+    }
+
+    void Ianuarie2(SaftDto d, Guid f19, Guid f20a, Guid f20b, Guid f21, Guid f22, Guid f18, Guid f23, Guid anulata, Guid stornoIan) {
+        var fact19 = Facturi(d, f19);
+        Verifica("SC-SAFT-19", "două cote: net 150, TVA 26,50, brut 176,50; două linii, două coduri, fără multiplicare",
+            fact19.Count == 1 && Suma(fact19[0], "380", 150, 26.50m, 176.50m) && fact19[0].Linii.Count == 2
+            && fact19[0].TaxInformationTotals.Count == 2);
+        var fact20a = Facturi(d, f20a); var fact20b = Facturi(d, f20b);
+        Verifica("SC-SAFT-20", "0,01 + 0,01 → net 0,02 TVA 0,00; taxa culeasă 21,01 → brut 121,01, fără recalcul",
+            fact20a.Count == 1 && Suma(fact20a[0], "380", .02m, 0, .02m)
+            && fact20b.Count == 1 && Suma(fact20b[0], "380", 100, 21.01m, 121.01m));
+        var gl21 = Gl(d, f21).ToList();
+        var fact21 = Facturi(d, f21);
+        Verifica("SC-SAFT-21", "TI21: GL 121/121 (C 401 100), factura brut 100, taxa 21 pe 300906; 4427 pe 380006",
+            Debit(gl21) == 121 && Credit(gl21) == 121 && Credit(gl21, "401") == 100
+            && fact21.Count == 1 && Suma(fact21[0], "380", 100, 21, 100)
+            && fact21[0].Linii.Single().TaxInformation.TaxCode == "300906"
+            && gl21.Single(l => l.AccountID == "4427").TaxInformation.TaxCode == "380006");
+        var fact22 = Facturi(d, f22);
+        Verifica("SC-SAFT-22", "serviciu 2 ore × 50: cub cu cantitate 0, factura cu 2 și preț 50", fact22.Count == 1
+            && fact22[0].Linii.Single() is { Quantity: 2, UnitPrice: 50, InvoiceLineAmount: 100 }
+            && CuSpatiu(os => C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == f22).All(p => p.Cantitate == 0)));
+        var fact18 = Facturi(d, f18);
+        Verifica("SC-SAFT-18", "ianuarie: F 380 100/21/121, datat 8, înregistrat 10",
+            fact18.Count == 1 && Suma(fact18[0], "380", 100, 21, 121)
+            && fact18[0].InvoiceDate == Zi(1, 8) && fact18[0].GLPostingDate == Zi(1, 10)
+            && Debit(Gl(d, f18)) == 121 && Credit(Gl(d, f18)) == 121);
+        Verifica("SC-SAFT-23", "factura din 8 ianuarie înregistrată pe 5 februarie lipsește din ianuarie",
+            Facturi(d, f23).Count == 0 && !Gl(d, f23).Any());
+        Verifica("SC-SAFT-18", "anularea în perioadă deschisă nu lasă GL și nici factură 381",
+            Facturi(d, anulata).Count == 0 && !Gl(d, anulata).Any());
+        var stornate = Facturi(d, stornoIan);
+        Verifica("SC-SAFT-18", "storno în aceeași lună: 380 +121 și 381 −121, GL net 0, identități distincte",
+            stornate.Count == 2 && stornate.Any(f => Suma(f, "380", 100, 21, 121)) && stornate.Any(f => Suma(f, "381", -100, -21, -121))
+            && stornate.Select(f => f.TransactionID).Distinct().Count() == 2
+            && Debit(Gl(d, stornoIan)) == 0 && Credit(Gl(d, stornoIan)) == 0);
+    }
+
+    void Februarie1(SaftDto d, Guid f18, Guid c18, Guid f22, Guid c22, Guid f23, Guid stornoFeb, Guid retur, Guid receptie) {
+        var fact18 = Facturi(d, f18, c18);
+        var invers = fact18.SingleOrDefault(f => f.DocumentId == f18);
+        var reemisa = fact18.SingleOrDefault(f => f.DocumentId == c18);
+        Verifica("SC-SAFT-18", "februarie (B'): 381 −100/−21/−121 și 384 80/16,80/96,80, același număr, date originale",
+            fact18.Count == 2 && invers != null && reemisa != null
+            && Suma(invers, "381", -100, -21, -121) && Suma(reemisa, "384", 80, 16.80m, 96.80m)
+            && invers.InvoiceNo == reemisa.InvoiceNo && invers.InvoiceDate == Zi(1, 8) && reemisa.InvoiceDate == Zi(1, 8)
+            && invers.GLPostingDate == Februarie && reemisa.GLPostingDate == Februarie
+            && invers.TransactionID != reemisa.TransactionID);
+        Verifica("SC-SAFT-18", "GL februarie net D/C −24,20/−24,20", Debit(Gl(d, f18, c18)) == -24.20m && Credit(Gl(d, f18, c18)) == -24.20m);
+        var fact22 = Facturi(d, f22, c22);
+        Verifica("SC-SAFT-22", "corecția la 3 ore: inversa leagă cantitatea 2 și prețul 50, reemisa 3 × 40",
+            fact22.Count == 2
+            && fact22.Single(f => f.DocumentId == f22) is { InvoiceType: "381" } s
+            && s.Linii.Single() is { Quantity: 2, UnitPrice: 50, InvoiceLineAmount: -100 }
+            && fact22.Single(f => f.DocumentId == c22) is { InvoiceType: "384" } r
+            && r.Linii.Single() is { Quantity: 3, UnitPrice: 40, InvoiceLineAmount: 120 });
+        var fact23 = Facturi(d, f23);
+        Verifica("SC-SAFT-23", "februarie: 380 100/21/121, InvoiceDate și TaxPointDate 8 ianuarie, GLPostingDate 5 februarie",
+            fact23.Count == 1 && Suma(fact23[0], "380", 100, 21, 121) && fact23[0].InvoiceDate == Zi(1, 8)
+            && fact23[0].Linii.Single().TaxPointDate == Zi(1, 8) && fact23[0].GLPostingDate == Februarie);
+        var fs = Facturi(d, stornoFeb);
+        Verifica("SC-SAFT-18", "storno în februarie al unei facturi din ianuarie: 381 −100/−21/−121",
+            fs.Count == 1 && Suma(fs[0], "381", -100, -21, -121));
+        var fr = Facturi(d, retur);
+        Verifica("SC-SAFT-18", "retur RLF 2 buc: 381 −20/−4,20/−24,20 pe 401, fără a atinge recepția",
+            fr.Count == 1 && Suma(fr[0], "381", -20, -4.20m, -24.20m) && fr[0].AccountID == "401"
+            && Facturi(d, receptie).Count == 0);
+    }
+
+    void Cusaturi(SaftDto d, int luna) {
+        var balanta = CuSpatiu(os => ContabilProiectii.Balanta(os, Zi(luna, 1), Zi(luna, DateTime.DaysInMonth(An, luna))).ToList());
+        var tranzactii = d.Jurnale.SelectMany(j => j.Tranzactii).ToList();
+        Verifica("SC-SAFT-15", $"luna {luna}: GL echilibrat pe fiecare tranzacție și total = rulajul balanței",
+            tranzactii.All(t => Debit(t.Linii) == Credit(t.Linii))
+            && d.Rezumat.TotalDebit == balanta.Sum(b => b.RulajDebit) && d.Rezumat.TotalCredit == balanta.Sum(b => b.RulajCredit)
+            && d.Rezumat.ClosingGla == d.Rezumat.ClosingBalanta);
+        Verifica("SC-SAFT-15", $"luna {luna}: fiecare factură are tranzacția GL a evenimentului ei",
+            d.FacturiEmise.Concat(d.FacturiPrimite).All(f => tranzactii.Any(t => t.TransactionID == f.TransactionID)));
+        var societate = CuSpatiu(os => SaftReguli.IdSocietate(os.GetObjectsQuery<Societate>().First()));
+        var sisteme = CuSpatiu(os => os.GetObjectsQuery<C.Tranzactie>().Where(t => t.Data >= Zi(luna, 1) && t.Data <= Zi(luna, DateTime.DaysInMonth(An, luna)))
+            .Select(t => new { t.ID, t.ScrisLa }).ToList().ToDictionary(t => t.ID.ToString(), t => t.ScrisLa));
+        Verifica("SC-SAFT-16", $"luna {luna}: SystemEntryDate = data UTC a timbrului propriu al fiecărei tranzacții",
+            tranzactii.All(t => !sisteme.TryGetValue(t.TransactionID, out var s) || t.SystemEntryDate == SaftProiectii.DataSistem(s)));
+        Verifica("SC-SAFT-15", $"luna {luna}: fiecare partener referit în GL și facturi are intrare în Customers/Suppliers",
+            tranzactii.SelectMany(t => t.Linii).Select(l => l.CustomerID).Where(i => i != societate)
+                .All(i => d.Clienti.Any(c => c.Id == i))
+            && tranzactii.SelectMany(t => t.Linii).Select(l => l.SupplierID).Where(i => i != societate)
+                .All(i => d.Furnizori.Any(c => c.Id == i))
+            && d.FacturiPrimite.All(f => d.Furnizori.Any(c => c.Id == f.PartenerID))
+            && d.FacturiEmise.All(f => d.Clienti.Any(c => c.Id == f.PartenerID)));
+    }
+
+    readonly Dictionary<Guid, string> diferenteDeclarate = [];
+
+    void ComparatieAb(int luna) {
+        var vechi = ExportVechi(luna);
+        var nou = Export(luna);
+        var diferente = new List<string>();
+        var explicate = new List<string>();
+        foreach (var f in nou.FacturiEmise.Concat(nou.FacturiPrimite)) {
+            var v = vechi.FacturiEmise.Concat(vechi.FacturiPrimite).Where(x => x.DocumentId == f.DocumentId && x.Storno == f.Storno).ToList();
+            if (v.Count != 1 || v[0].NetTotal != f.NetTotal || v[0].GrossTotal != f.GrossTotal || v[0].InvoiceType != f.InvoiceType)
+                (diferenteDeclarate.TryGetValue(f.DocumentId, out var motiv) ? explicate : diferente).Add($"{f.InvoiceNo}/{f.InvoiceType}: vechi {string.Join("|", v.Select(x => $"{x.InvoiceType} {x.NetTotal}/{x.GrossTotal}"))}"
+                    + $", nou {f.NetTotal}/{f.GrossTotal}{(motiv == null ? "" : " — " + motiv)}");
+        }
+        var glVechi = vechi.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii).ToList();
+        var glNou = nou.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii).ToList();
+        Console.WriteLine($"     MĂSURAT (A/B luna {luna}): GL vechi D/C {Debit(glVechi)}/{Credit(glVechi)}, nou {Debit(glNou)}/{Credit(glNou)}; "
+            + $"facturi vechi {vechi.FacturiEmise.Count + vechi.FacturiPrimite.Count}, nou {nou.FacturiEmise.Count + nou.FacturiPrimite.Count}; "
+            + $"explicate [{string.Join("; ", explicate)}]; neclasificate [{string.Join("; ", diferente)}]");
+        Verifica("SC-SAFT-15", $"A/B luna {luna}: fiecare diferență de factură între exportul vechi și cub e clasificată",
+            diferente.Count == 0 && explicate.Count == diferenteDeclarate.Count);
+    }
+
+    void RepeatableRead() {
+        var fc = NouPartener("FC");
+        var primul = Fct(fc, Zi(4, 5), new LinieFctScena(1, 100, "N21", false)); Opereaza(primul.Id);
+        var alDoilea = Fct(fc, Zi(4, 6), new LinieFctScena(1, 50, "N21", false));
+        using (var os = Deschide()) {
+            using var citire = Fiscale.DeschideCitirea(os, cereIzolare: true);
+            var inainte = C.Citiri.Contabil.Jurnal(os, Zi(4, 1), Zi(4, 30)).Count();
+            Opereaza(alDoilea.Id);
+            var d = SaftProiectii.SaftPeCub(os, An, 4, Zi(4, 28));
+            var gl = d.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii).ToList();
+            Console.WriteLine($"     MĂSURAT (SC-SAFT-17): postări la deschidere {inainte}; GL D/C {Debit(gl)}/{Credit(gl)}; "
+                + $"facturi {d.FacturiPrimite.Sum(f => f.NetTotal)}/{d.FacturiPrimite.Sum(f => f.GrossTotal)}; furnizor {Sold(d.Furnizori, fc)}");
+            Verifica("SC-SAFT-17", "scriere concurentă între citiri: fișierul rămâne integral 121 (GL, facturi, furnizor)",
+                inainte == 4 && Debit(gl) == 121 && Credit(gl) == 121
+                && d.FacturiPrimite.Sum(f => f.NetTotal) == 100 && d.FacturiPrimite.Sum(f => f.GrossTotal) == 121
+                && Sold(d.Furnizori, fc) == -121);
+        }
+        var dupa = Export(4);
+        var glDupa = dupa.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii).ToList();
+        Verifica("SC-SAFT-17", "exportul următor: 181,50 pe GL, facturi 150/31,50/181,50 și furnizor",
+            Debit(glDupa) == 181.50m && dupa.FacturiPrimite.Sum(f => f.NetTotal) == 150
+            && dupa.FacturiPrimite.Sum(Taxa) == 31.50m && dupa.FacturiPrimite.Sum(f => f.GrossTotal) == 181.50m
+            && Sold(dupa.Furnizori, fc) == -181.50m);
+        using (var os = Deschide()) {
+            using var tx = TranzactieComanda.Incepe(os);
+            var refuz = "";
+            try { SaftProiectii.SaftPeCub(os, An, 4); }
+            catch (InvalidOperationException e) { refuz = e.Message; }
+            Verifica("SC-SAFT-17", "tranzacție ambiantă ReadCommitted: refuz înaintea citirii",
+                refuz.StartsWith(Fiscale.IzolareInsuficienta, StringComparison.Ordinal));
+        }
+    }
+
+    void MapareLipsa() {
+        var tva = Tva("N21");
+        var f = Factura(Zi(5, 5), new LinieFctScena(1, 100, "N21", false));
+        try {
+            Comanda(os => { os.GetObjectByKey<TipTva>(tva).Cota = 19; os.CommitChanges(); });
+            Opereaza(f.Id);
+        } finally {
+            Comanda(os => { os.GetObjectByKey<TipTva>(tva).Cota = 21; os.CommitChanges(); });
+        }
+        var d = Export(5);
+        Verifica("SC-SAFT-14", "cota istorică 19 fără mapare: SAFT_MAPARE_LIPSA pe GL și factură, XML refuzat, nu cod implicit",
+            d.Refuzuri.Count(r => r.Cod == SaftProiectii.RefuzMapare && r.DocumentId == f.Id) == 2 && Refuzat(() => Xml(d)));
+    }
+}

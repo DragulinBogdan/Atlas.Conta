@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Atlas.Conta.BackOffice.Module.Saft;
 
-public static class SaftProiectii {
+public static partial class SaftProiectii {
 
     public const string SoftwareCompanyName = "Atlas";
     public const string SoftwareID = "Atlas.Conta";

@@ -3,6 +3,7 @@ using Atlas.Conta.BackOffice.Module.Api.Asm;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Proiectii;
+using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using N = Atlas.Conta.Nucleu;
@@ -93,6 +94,14 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
                 && randuri.Single(p => p.Latura == N.Latura.Credit).Cont == Cont(Materie);
         }));
         ProbaReconciliere(mixt.Doc.Id);
+        if (Privat) Verifica("SC-SAFT-10", "ASM mixt pe cub: GL numai D 345 40 / C materie 40, fără transfer sau contraponderi",
+            CuSpatiu(os => {
+                var gl = SaftProiectii.SaftPeCub(os, An, 1).Jurnale.SelectMany(j => j.Tranzactii)
+                    .Where(t => t.DocumentId == mixt.Doc.Id).SelectMany(t => t.Linii).ToList();
+                return gl.Count == 2 && gl.All(l => l.Amount == 40)
+                    && gl.Single(l => l.DebitCreditIndicator == "D").AccountID == Fabricat
+                    && gl.Single(l => l.DebitCreditIndicator == "C").AccountID == Materie;
+            }));
         Anuleaza(mixt.Doc.Id); FaraEfecte("SC-ASM-09", mixt.Doc.Id);
         foreach (var l in mixt.Doc.Linii.Skip(2)) Sold("SC-ASM-09", l, 0, 0);
         Opereaza(mixt.Doc.Id);
@@ -105,6 +114,12 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         InchideIanuarie();
         Storneaza(mixt.Doc.Id, Februarie);
         Rapoarte(mixt.Doc, true);
+        if (Privat) Verifica("SC-SAFT-10", "storno ASM mixt în februarie: numai inversele Operare −40/−40 în GL",
+            CuSpatiu(os => {
+                var gl = SaftProiectii.SaftPeCub(os, An, 2).Jurnale.SelectMany(j => j.Tranzactii)
+                    .Where(t => t.DocumentId == mixt.Doc.Id).SelectMany(t => t.Linii).ToList();
+                return gl.Count == 2 && gl.All(l => l.Amount == -40);
+            }));
         Postari("SC-ASM-08", mixt.Doc.Id, N.FelTranzactie.Storno, Februarie,
             Inverse([.. mixt.Transfer, .. mixt.Operare]));
         Verifica("SC-CIT-04", "storno mixt: două inverse economice −40; transferul rămâne exclus", CuSpatiu(os => {

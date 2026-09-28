@@ -2,6 +2,7 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
 using C = Atlas.Conta.BackOffice.Module.Cub;
 using N = Atlas.Conta.Nucleu;
@@ -158,6 +159,8 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         });
         Opereaza(factura.Id);
         var p = Pif(f, sursa: factura.Linii[0].Id); Opereaza(p.Id); Sold("SC-IMO-01", f, 1200, 0, 900, 0);
+        if (Privat) Verifica("SC-SAFT-11", "PIF nominalizează fără rulaj GL: zero linii SAF-T pe cub pentru PIF", CuSpatiu(os =>
+            !SaftProiectii.SaftPeCub(os, An, 1).Jurnale.SelectMany(j => j.Tranzactii).Any(t => t.DocumentId == p.Id)));
         var transfer = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(r => r.DocumentId == p.Id
             && r.Tranzactie.Fel == N.FelTranzactie.Transfer).ToList());
         Verifica("SC-IMO-01", "Transfer D anonim −1200 / D fișă +1200, cu suport explicit", transfer.Count == 2
@@ -193,6 +196,12 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
     void Ciclu() {
         SuportNota(); var f = Fisa(); var p = Pif(f); Opereaza(p.Id);
         var amo = Amo(2); Opereaza(amo); Sold("SC-IMO-07", f, 1200, 100, 900, 50);
+        if (Privat) Verifica("SC-SAFT-11", "AMO 100 contabil / 50 fiscal: GL numai D/C 100, suma fiscală nu intră", CuSpatiu(os => {
+            var gl = SaftProiectii.SaftPeCub(os, An, 2).Jurnale.SelectMany(j => j.Tranzactii)
+                .Where(t => t.DocumentId == amo).SelectMany(t => t.Linii).ToList();
+            return gl.Count == 2 && gl.Single(l => l.DebitCreditIndicator == "D").Amount == 100
+                && gl.Single(l => l.DebitCreditIndicator == "C").Amount == 100;
+        }));
         Anuleaza(amo); Sold("SC-IMO-14", f, 1200, 0, 900, 0); Opereaza(amo);
         Refuza("SC-IMO-17", () => Storneaza(p.Id, Ianuarie), "ulterioare");
         Refuza("SC-IMO-16", () => Storneaza(amo, Zi(3)), "luna lui");

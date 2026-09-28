@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-27.** [Index](README.md)
+**Actualizat: 2026-09-28.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -176,8 +176,11 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   nu transmite declarația la ANAF și nu verifică recipisa. Indicatorul
   D394 de rectificativă este disponibil pentru exact o lună calendaristică;
   D300 folosește regularizări. `TaxInformation` SAF-T citește faptele pe luna
-  exportului contabil. Restul `SourceDocuments`, migrarea integrală SAF-T și
-  securitatea tuturor secțiunilor exportului rămân felii TR-D8. (103, D8-B8)
+  exportului contabil. GL-ul și facturile pe cub (S1) nu sunt încă pe ruta
+  publică: comutarea L așteaptă `Payments` (S2), refuzul
+  `SAFT_ACCES_INCOMPLET` și probele HTTP. Stocurile (S3), validarea XSD/DUK
+  a noului fișier (S0) și securitatea tuturor secțiunilor rămân felii TR-D8.
+  (103, D8-B8, S1-R8)
 - Corecția unui document operat: motivul decide efectul fiscal, nu contarea.
   Reclasificarea pe 1174 a erorilor semnificative din exerciții anterioare
   rămâne notă contabilă manuală — motorul nu judecă semnificația. (F27-r1)

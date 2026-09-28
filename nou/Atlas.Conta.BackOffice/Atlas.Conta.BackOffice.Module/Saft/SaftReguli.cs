@@ -210,6 +210,10 @@ public static class SaftReguli {
     public static string InvoiceType(bool storno, bool esteRetur) =>
         storno || esteRetur ? "381" : "380";
 
+    /// <summary>`InvoiceType` al evenimentului din cub (S1-R1): storno 381, reemisă după corecție 384, total negativ 381, altfel 380.</summary>
+    public static string InvoiceTypeEveniment(bool storno, bool reemisa, decimal brut) =>
+        storno ? "381" : reemisa ? "384" : brut < 0m ? "381" : "380";
+
     /// <summary>
     /// Tuplul `(PaymentMethod, PaymentMechanism)` — singura regulă de CORELARE
     /// din schemă pe care validatorul chiar o impune („Pentru PaymentMechanism
