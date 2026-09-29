@@ -176,11 +176,14 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   nu transmite declarația la ANAF și nu verifică recipisa. Indicatorul
   D394 de rectificativă este disponibil pentru exact o lună calendaristică;
   D300 folosește regularizări. `TaxInformation` SAF-T citește faptele pe luna
-  exportului contabil. GL-ul, facturile și plățile pe cub (S1, S2) nu sunt
-  încă pe ruta publică: comutarea L așteaptă refuzul `SAFT_ACCES_INCOMPLET`,
-  probele HTTP și review-ul S2. Validarea XSD/DUK a noului fișier (S0)
-  certifică GL-ul, facturile și plățile lunilor scenei. Compensarea prin notă
-  contabilă nu apare în Payments (SAFT-r1).
+  exportului contabil. Ruta publică L citește cubul (S1, S2); validarea
+  XSD/DUK (S0) certifică GL-ul, facturile și plățile lunilor scenei.
+  Compensarea prin notă contabilă nu apare în Payments (SAFT-r1). Valuta și
+  TVA la încasare pe plăți nu există în cub, iar exportul le refuză. Citirea
+  alocărilor filtrează postările contabile pe `Unitate`, fără index dedicat.
+  Planul pe volum nu e măsurat, fiindcă nu există bază de volum după C102
+  (FZ-r3). Exportul nu face câte o interogare per plată sau factură: 41–42
+  de comenzi SQL la 1–14 plăți.
   Stocurile (S3) și securitatea tuturor secțiunilor rămân felii TR-D8.
   Validatorul se rulează numai pe lună întreagă (antetul cu o singură lună).
   (103, D8-B8, S1-R8, S0-R4, S2)

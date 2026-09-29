@@ -39,7 +39,7 @@ capătul lunii operării, stornoul care neagă liniile declarate, comutarea L
 și `SAFT_ACCES_INCOMPLET`. Rândurile SC-SAFT-26…36 sunt așteptări de
 contract. S2-Q1 (stornoul neagă liniile declarate) și S2-Q2 (compensarea
 în afara Payments, SAFT-r1) sunt tranșate de owner. Implementate și verificate:
-SC-SAFT-05, 06, 26…35; rămân SC-SAFT-13 și 36 (HTTP, la comutare).
+SC-SAFT-05, 06, 13, 26…36; ruta L este comutată pe cub.
 
 | Id | Scenariu și așteptare numerică | Proba propusă | Proveniență | Rezultat / stare |
 |---|---|---|---|---|
@@ -55,7 +55,7 @@ SC-SAFT-05, 06, 26…35; rămân SC-SAFT-13 și 36 (HTTP, la comutare).
 | SC-SAFT-10 | ASM mixt: grup 371 transfer 60/60; grup 301→345 operare 40/40. GL numai D 345 40/C 301 40; comparația veche GL 0, delta explicită 40/40 | SAFT-L-ASM-MIXT | D8-B4, ASM-B7 | Verificat (ScenariiAsm, inclusiv inversa din februarie) |
 | SC-SAFT-11 | PIF nominalizează 1.200 deja în contabil: GL suplimentar 0. AMO 100: D cheltuială 100/C amortizare 100. Carte Fiscal și transferurile de fișă nu dublează GL | SAFT-L-IMO | 097 și contract IMO | Verificat PIF, AMO și DEC (ScenariiImo, ScenariiDec); CAS rămâne în catalogul IMO |
 | SC-SAFT-12 | Același lot în două gestiuni cu același nume, apoi pe două conturi: poziții distincte, suma 10/100 conservată; chei XML fără coliziuni | SAFT-S-CHEI | SAF-B3.6 | Specificat economic; codificare de pin-uit |
-| SC-SAFT-13 | Utilizator ascunde 21 din FCT 100 + 21 sau un rând 401 121: nu primește declarație cu 100 ori 0; refuz înainte de XML, fără scurgere de sume ascunse | SAFT-HTTP-DREPTURI | SAF-D4 A aprobat, 103 | Mutat la comutarea L în S2 (S1-R8) |
+| SC-SAFT-13 | Utilizator ascunde 21 din FCT 100 + 21 sau un rând 401 121: nu primește declarație cu 100 ori 0; refuz înainte de XML, fără scurgere de sume ascunse | SAFT-HTTP-DREPTURI | SAF-D4 A aprobat, 103 | Verificat HTTP (`ProbeHttp/saft-acces.py`, host izolat) |
 | SC-SAFT-14 | Bugetar cu documente operate: L și S neaplicabile, fără XML „gol valid”; cont/mapping/reper obligatoriu lipsă pe privat: refuz, nu zero | SAFT-HTTP-REFUZURI | 073/074 și SAF-B6 | Verificat: bugetar neaplicabil, mapare lipsă refuzată |
 | SC-SAFT-15 | S1 livrat singur: ruta L rămâne cea existentă, fără noul GL combinat cu Payments vechi; S1+S2: L integral nou; C rămâne vechi până la S3 | SAFT-COMUTARE | R1, SAF-B1 | Verificat: ruta L neschimbată, cusături GL–balanță–facturi, A/B clasificat |
 | SC-SAFT-16 | FCT capturată la 23:30 UTC, inversă și corecție în alte două zile UTC: trei timbre proprii; reexportul într-un alt fus nu schimbă SystemEntryDate | SAFT-TIMBRE | R2, S1-D3 | Verificat |
@@ -78,7 +78,7 @@ SC-SAFT-05, 06, 26…35; rămân SC-SAFT-13 și 36 (HTTP, la comutare).
 | SC-SAFT-33 | PLT pe două linii 40 + 60 către același furnizor, pe aceeași partidă: o singură linie de plată 100 (partida, nu detaliul); centre de cost diferite pe cele două linii: analiza omisă pe linie, avertisment `PlataAnalizaMixta`, GL cu ambele analize | SAFT-P-MULTILINIE | S2-D2 | Verificat (ScenariiSaft) |
 | SC-SAFT-34 | L complet pe lunile scenei, cu Payments nevid: XSD v249 + DUK J2.2.18 fără atenționări (inclusiv 50 + 20 fără referință, R4); manifestul leagă `(TransactionID, LineNumber)` de postările și transferurile sursă; mutanți respinși: linie de plată omisă, sursă permutată, `SourceDocumentID` schimbat; A/B plăți cu diferențele declarate exact (împărțirea 50 + 20, legătura viitoare, `TransactionID`) | SAFT-P-CERTIFICARE | S0-R1…R8, S2-D6 | Verificat (ScenariiSaft) |
 | SC-SAFT-35 | Altă sesiune comite o legătură 50 între citirea GL și citirea plăților: fișierul are fie 70 rest, fie 50 + 20, niciodată amestec; refuzul ReadCommitted rămâne | SAFT-P-REPEATABLE-READ | R3, SC-SAFT-17 | Verificat (ScenariiSaft) |
-| SC-SAFT-36 | Host viu: Admin complet → 200; fără drept pe `Postare` → 403 `SAFT_ACCES_INCOMPLET`; refuz condițional de rând pe `Postare` sau pe document; membru `Valoare`/`Partener` ascuns; metadate necesare ascunse → 403 înaintea primului byte, pe sumar și pe fișier, fără sume ascunse în corp | SAFT-HTTP-ACCES | SAF-D4, S2-D5 | Contract S2 |
+| SC-SAFT-36 | Host viu: Admin complet → 200; fără drept pe `Postare` → 403 `SAFT_ACCES_INCOMPLET`; refuz condițional de rând pe `Postare` sau pe document; membru `Valoare`/`Partener` ascuns; metadate necesare ascunse → 403 înaintea primului byte, pe sumar și pe fișier, fără sume ascunse în corp | SAFT-HTTP-ACCES | SAF-D4, S2-D5 | Verificat HTTP (`ProbeHttp/saft-acces.py`, host izolat); SC-SAFT-36 și prin ScenariiSaft (tabelele citite) |
 
 ## SC-SAFT-15…17 — probe structurale cu rezultate măsurabile
 

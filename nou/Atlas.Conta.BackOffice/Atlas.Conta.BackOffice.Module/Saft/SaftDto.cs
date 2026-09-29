@@ -789,6 +789,8 @@ public sealed class SaftSumarDto {
     public int FacturiEmise { get; set; }
     public int FacturiPrimite { get; set; }
     public int Plati { get; set; }
+    // Nevid ⇒ fișierul L pe cub se refuză (422); ecranul arată de ce (S2-D5).
+    public List<SaftRefuz> Refuzuri { get; set; } = [];
 
     // Contoarele modulului S (zero pe L, ca cele de mai sus pe S). `Excluse`
     // merge ÎNTREG, ca `Neincluse`: e mărginit de numărul de POLITICI (21 la

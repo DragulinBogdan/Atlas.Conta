@@ -250,7 +250,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | TR-r11 | `Numar`, `DataScadenta`, `Autogenerat`, `DocumentSursa` rămân atribute ale documentului scrise la operare, sub gardianul (a) (90) | activă (091) |
 | TR-r12 | Δ de sold 3xx (+585.404,66 pe Flax) între registrul de stoc și cel contabil de azi: tranșată prin contractul 1 al reconcilierii 1C; constatare, nu consecință acceptată (90); intră la TR-D7b, cu tipurile care o produc | migrare (091) |
 | FZ-r1 | granul lui `Sold` contra snapshot-urile de azi (și dacă un read model mai grosier merită ca al doilea): gate la TR-D8, nu condiție prealabilă; FZ-r2 măsurată 2026-09-19 (fișa 348 contra 248 ms) și absorbită (90) | activă (091) |
-| FZ-r3 | lookup-ul per partidă (SAF-T Payments, fișa partidei): index `(Unitate, Data)` pe Contabil probat pe o interogare reală (90, TR-D8) | activă (091) |
+| FZ-r3 | lookup-ul per partidă (SAF-T Payments, fișa partidei): index `(Unitate, Data)` pe Contabil probat pe o interogare reală (90, TR-D8) | activă (091); TR-D8 S2 a fixat interogarea reală (`Citiri.Plati`: transferurile și originile pe `Unitate = ANY`, `Data ≤ capăt`), planul pe volum rămâne de măsurat la gate-ul transversal de perf |
 | SAFT-r1 | explorarea unui document de compensare care își generează postările (declarant propriu) și devine sursa Payments 02/97; azi compensarea e NTC, în afara Payments (TR-D8 S2-R2, `docs/nucleu/tr-d8-saft-contract.md`) | după PoC (091) |
 | FZ-r4 | creșterea reală a coordonatelor pe un istoric lung: `Sold` la 1,2 GB și cifrele +S sunt limite inferioare (90) | după PoC (091) |
 | FZ-r5 | rândul de stoc unificat cu postarea 3xx: economie ≤ 9 % — tranșat de 90g (o singură postare); re-măsurarea rămâne TR-r3 | închisă prin 90g |

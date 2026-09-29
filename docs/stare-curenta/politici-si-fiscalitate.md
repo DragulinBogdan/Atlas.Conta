@@ -442,10 +442,10 @@ folosesc tipul și semnul fiscal corespunzător. Pentru facturile de stoc,
 legătura contabilă poate proveni din NIR-ul materializat. Societatea apare
 în rolurile de client/furnizor cerute de reprezentarea celeilalte laturi. (73e)
 
-**L pe cub (TR-D8 S1 + S2, încă necomutat).** `SaftProiectii.SaftPeCub` produce
+**L pe cub (TR-D8 S1 + S2).** `SaftProiectii.SaftPeCub` produce
 nomenclatoarele, GL-ul, facturile și plățile din `Citiri.Contabil.Jurnal`,
-`Citiri.Fiscale` și `Citiri.Plati`, fără registre; ruta publică L folosește
-exportul existent până la gate-ul S2 (R1).
+`Citiri.Fiscale` și `Citiri.Plati`, fără registre. Ruta publică L îl
+folosește (R1); fișierul de stocuri S rămâne pe exportul existent până la S3.
 Tranzacția GL este tranzacția cubului, inclusiv deschiderea din lună.
 Linia GL este postarea, iar totalul D/C este rulajul balanței.
 `TransactionDate` și `GLPostingDate` sunt data contabilă; `SystemEntryDate`

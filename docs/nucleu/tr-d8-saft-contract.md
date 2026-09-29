@@ -762,8 +762,9 @@ Integral verde pe ambele profiluri (bugetar 3.267, privat 4.382):
 
 ## S2 — Payments și comutarea L: contract pentru aprobare
 
-Stare: **propus de Claude (2026-09-29); S2-Q1 și S2-Q2 tranșate de owner
-(S2-R1, S2-R2), implementarea aprobată în paralel cu review-ul Codex.** Bază inspectată: `1985d7e` (S0 închis). Nu schimbă
+Stare: **S2-Q1 și S2-Q2 tranșate de owner (S2-R1, S2-R2); implementat și
+verificat, ruta L comutată pe cub (S2-R3). Review advers Codex cerut; gate-ul
+S2 (S2-D7) se închide la review.** Bază inspectată: `1985d7e` (S0 închis). Nu schimbă
 motorul, scrierea registrelor, împerecherea sau politica mișcărilor. Payments
 se derivă numai din cub; `Imperechere` rămâne metadatele comenzii, nu sursa
 alocării. La ieșire, ruta publică L comută pe cub (R1).
@@ -799,10 +800,10 @@ Latura contrapartidei = opusul laturii contului propriu: `Debit` când
 evenimentului pe latura contrapartidei sunt **postările de contrapartidă**;
 ele singure dau liniile. Lipsa datei pe tip = `SAFT_SURSA_INCOMPLETA`.
 
-Excluderi, raportate în `Neincluse` cu cauza (paritate cu ruta veche):
+Viramentul intern (ambele laturi conturi proprii) nu este plată către terț:
+rămâne numai în GL și, ca pe ruta veche, nu intră în `Neincluse`.
+Excluderi raportate în `Neincluse` cu cauza (paritate cu ruta veche):
 
-- viramentul intern (ambele laturi `Parte.Propriu`, din `Document.Laturi()`);
-  rămâne în GL, fără plată către terț;
 - latura externă este `Partener`, dar nicio postare de contrapartidă nu are
   cont cu `RolTert` (`PlataFaraContTert`, de exemplu 4423 către ANAF);
 - documentul fără latură externă (`DocumentFaraPartener`).
@@ -992,3 +993,44 @@ genereze singur postările. Un astfel de document, cu declarant propriu, ar fi
 sursa firească a unei plăți 02/97. De aceea compensarea nu intră în S2, iar
 explorarea documentului de compensare devine restanța **SAFT-r1**. Efectul
 unei NTC asupra alocării unei plăți rămâne în S2-D3.2 (SC-SAFT-31).
+
+### S2-R3 — implementare și probe (2026-09-29)
+
+Commit-uri pe `tr-d8-saft-s2`: `b57c1bc` (Payments pe cub) și commit-ul
+comutării. Cititorul `Cub/Citiri/Plati` implementează S2-D3. Proiecția
+`SaftProiectii.PeCub.Plati` implementează S2-D1/D2. `SaftAcces` implementează
+S2-D5, iar `SaftController` comută L.
+
+- **Lista tipurilor verificate** nu e scrisă din memorie. Proba SC-SAFT-36
+  capturează SQL-ul emis de `SaftPeCub` prin `DiagnosticListener`-ul EF Core
+  și cere ca mulțimea tabelelor citite să fie egală cu tabelele din
+  `SaftAcces.Citite`. Prima rulare a găsit trei tabele lipsă
+  (`ClaseProduse`, `MapariTvaSaft`, `SetariProfil`); lista le include acum.
+  Garda verifică toate tipurile mapate în aceste tabele (TPH: bază și frunze).
+- **HTTP pe host izolat** (`ProbeHttp/saft-acces.py`, baza
+  `…Privat.SaftS2Http`). Restricțiile de rând pe `Postare`, de membru pe
+  `Postare.Valoare` și de rând pe `Partener` dau toate 403
+  `SAFT_ACCES_INCOMPLET` pe sumar și fișier, fără sume în corp. `User` dă tot
+  403. Admin și Cititor primesc 200, cu plata 50 F + 20 rest și TVA 21 în GL.
+  Editarea liniei FCT operate dă 422, iar fișierul rămâne identic.
+  `refuzuri.ps1` trece 294/294.
+  **Schimbare intenționată:** SC-CIT-87 aștepta pe SAF-T L un XML filtrat
+  pentru rolurile cu restricții; acum ele primesc 403 (SAF-D4), iar proba
+  `fiscal-cub.py` e actualizată.
+- **Perf (S2-D6):** exportul emite 42, 42 și 41 de comenzi SQL la 14, 3 și
+  1 plăți (20, 7 și 2 facturi), deci fără N+1. **Abatere de la S2-D6:**
+  indexul FZ-r3 nu e decis. Interogarea reală e fixată: transferurile și
+  originile pe `Unitate = ANY(…)`, `Data ≤ capăt`, pe `Postare_Contabil`,
+  care n-are index pe `Unitate`. Nu există bază de volum după C102, iar un
+  plan pe baza scenei nu dovedește nimic. FZ-r3 rămâne activă până la
+  gate-ul transversal de perf.
+- **Abateri de fixture, fără efect asupra regulii:** în ramura SC-SAFT-27,
+  legătura din februarie se șterge înaintea stornoului din martie, fiindcă
+  gardianul refuză stornoul cu legătură vie în perioadă deschisă. SC-SAFT-30
+  rulează în scena DES, al cărei cont de terț primește `RolTert` Furnizor.
+  Fără rol, plata ar fi ieșit corect în `Neincluse`.
+
+Integral verde pe ambele profiluri după Payments (bugetar 3.267, privat
+4.406): `run-verificari/20260929-115901-443`; după comutare (bugetar 3.267,
+privat 4.408): `run-verificari/20260929-122333-161`. Probele HTTP:
+`run-verificari/saft-s2-http-{probe,fiscal,refuzuri}.log`.

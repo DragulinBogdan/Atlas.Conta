@@ -172,6 +172,7 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         Ianuarie1(ian, f01.Id, v02, f03.Id, dvi, fa, ca);
         Ianuarie2(ian, f19.Id, f20a.Id, f20b.Id, f21.Id, f22.Id, f18.Id, f23.Id, anulata.Id, stornoIan.Id);
         VerificaPlatiIanuarie(ian);
+        AccesCitit();
         Cusaturi(ian, 1);
         ComparatieAb(1);
         UnitateIstorica(receptie.Linii[0].Produs!.Value, receptie.Id);
@@ -587,6 +588,15 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
                     == t.Linii.Where(l => l.AccountID == g.Key.AccountID && l.DebitCreditIndicator == g.Key.DebitCreditIndicator).Sum(l => l.Amount))));
     }
 
+    void AccesCitit() {
+        var comenzi = CapturaSql.Comenzi(() => Export(1));
+        var citite = CapturaSql.Tabele(comenzi);
+        var verificate = CuSpatiu(os => SaftAcces.Tabele(os));
+        Console.WriteLine($"     MĂSURAT (SC-SAFT-36): {comenzi.Count} comenzi SQL; tabele citite [{string.Join(", ", citite.Order())}]; "
+            + $"neverificate [{string.Join(", ", citite.Except(verificate).Order())}]; necitite [{string.Join(", ", verificate.Except(citite).Order())}]");
+        Verifica("SC-SAFT-36", "SAFT_ACCES_INCOMPLET verifică exact tabelele citite de exportul L pe cub", citite.SetEquals(verificate));
+    }
+
     void PlatiFebruarie() {
         Imperecheaza(p06, fP2, 50, Februarie);
         Storneaza(p27, Februarie);
@@ -613,9 +623,18 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         Storneaza(p27b, Zi(3, 10));
     }
 
-    void VerificaPlatiMartie(SaftDto d) =>
+    void VerificaPlatiMartie(SaftDto d) {
         Verifica("SC-SAFT-27", "legătura din februarie ștearsă, storno în martie: −70 rest",
             Linii(d, p27b, true, (-70, null)) && Plati(d, p27b).Count == 1);
+        var masuri = new[] { 1, 2, 3 }.Select(luna => {
+            SaftDto dto = null;
+            var comenzi = CapturaSql.Comenzi(() => dto = Export(luna)).Count;
+            return (Luna: luna, Comenzi: comenzi, Plati: dto.Plati.Count, Facturi: dto.FacturiEmise.Count + dto.FacturiPrimite.Count);
+        }).ToList();
+        Console.WriteLine("     MĂSURAT (S2-D6 perf): " + string.Join("; ", masuri.Select(m => $"luna {m.Luna}: {m.Plati} plăți, {m.Facturi} facturi, {m.Comenzi} comenzi SQL")));
+        Verifica("SC-SAFT-34", "exportul L nu face o interogare per plată sau factură: numărul de comenzi SQL nu crește cu volumul lunii",
+            masuri[0].Plati > masuri[2].Plati * 5 && masuri.Max(m => m.Comenzi) - masuri.Min(m => m.Comenzi) <= 2);
+    }
 
     void RepeatableReadPlati() {
         var fd = NouPartener("FD");
@@ -668,8 +687,10 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
     void Comutare() {
         var sursa = File.ReadAllText(Path.Combine(MetadataDump.DirectorProiect(), "..", "..", "Atlas.Conta.BackOffice",
             "Atlas.Conta.BackOffice.WebApi", "API", "Conta", "SaftController.cs"));
-        Verifica("SC-SAFT-15", "S1 singur: ruta publică L rămâne exportul existent, fără SaftPeCub",
-            sursa.Contains("SaftProiectii.Saft)", StringComparison.Ordinal) && !sursa.Contains("SaftPeCub", StringComparison.Ordinal));
+        Verifica("SC-SAFT-15", "S1 + S2: ambele uși L citesc SaftPeCub, ușile S rămân pe SaftStocuri, exportul L vechi nu mai e public",
+            System.Text.RegularExpressions.Regex.Matches(sursa, @"\(an, luna, SaftProiectii\.SaftPeCub\b").Count == 2
+            && System.Text.RegularExpressions.Regex.Matches(sursa, @"\(an, luna, SaftProiectii\.SaftStocuri\b").Count == 2
+            && !System.Text.RegularExpressions.Regex.IsMatch(sursa, @"SaftProiectii\.Saft\b"));
     }
 
     void Timbre() => Verifica("SC-SAFT-16", "data sistemului e data UTC a timbrului, fără fusul mașinii",

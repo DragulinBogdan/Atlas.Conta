@@ -121,7 +121,10 @@ def main():
                     assert next((r['Tva'] for r in d300['Randuri'] if r['Cod'] == '30'), 0) == tax, (stage, name, d300)
                     d394 = call(name, '/api/proiectii/d394?' + interval)
                     assert sum(r['Baza'] for r in d394['Operatiuni']) == base and sum(r['Tva'] or 0 for r in d394['Operatiuni']) == tax, (stage, name, d394)
-                    if name != 'User':
+                    if name.startswith('CodexCIT87'):
+                        refuz = json.dumps(call(name, f'/api/proiectii/saft/xml?an={year}&luna=1', expected=403), ensure_ascii=False)
+                        assert 'SAFT_ACCES_INCOMPLET' in refuz, (stage, name, refuz)
+                    elif name != 'User':
                         xml = call(name, f'/api/proiectii/saft/xml?an={year}&luna=1')
                         root = ET.fromstring(xml)
                         ns = {'s': root.tag.split('}')[0][1:]}

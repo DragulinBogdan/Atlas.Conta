@@ -115,6 +115,7 @@ public static partial class SaftProiectii {
             FacturiEmise = dto.FacturiEmise.Count,
             FacturiPrimite = dto.FacturiPrimite.Count,
             Plati = dto.Plati.Count,
+            Refuzuri = dto.Refuzuri,
             TipuriMiscare = dto.TipuriMiscare.Count,
             StocFizic = dto.StocFizic.Count,
             MiscariStoc = dto.MiscariStoc.Count,
