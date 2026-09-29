@@ -244,6 +244,7 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
 
         RepeatableRead();
         RepeatableReadPlati();
+        NominalizareDesfacuta();
         MapareLipsa();
     }
 
@@ -636,6 +637,35 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
             masuri[0].Plati > masuri[2].Plati * 5 && masuri.Max(m => m.Comenzi) - masuri.Min(m => m.Comenzi) <= 2);
     }
 
+    void NominalizareDesfacuta() {
+        var fr = NouPartener("FR");
+        Guid Factura() { var f = Fct(fr, Zi(4, 6), new LinieFctScena(1, 100, Stoc: false)).Id; Opereaza(f); return f; }
+        Guid Automata(decimal suma, Guid sursa) => Trz(false, fr, [suma], (os, d) => {
+            d.Data = Zi(4, 7); d.DataInregistrare = d.Data; d.Autogenerat = true; d.DocumentSursaId = sursa;
+        });
+        void Desface(Guid plata) {
+            var legatura = CuSpatiu(os => os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == plata && i.Autogenerat).ID);
+            Comanda(os => ImperechereService.Desfa(os, legatura, Zi(4, 10)));
+        }
+        var (g1, g2, g3, g4) = (Factura(), Factura(), Factura(), Factura());
+        var integrala = Automata(50, g1); Desface(integrala);
+        var excedent = Automata(120, g2); Desface(excedent);
+        var realocata = Automata(50, g3); Desface(realocata);
+        Imperecheaza(realocata, g4, 30, Zi(4, 15));
+        var aprilie = Export(4);
+        Verifica("SC-SAFT-37", "nominalizarea automată desfăcută în lună: 50 integral → 50 rest; 120 pe G de rest 100 → 120 rest; realocată 30 pe altă factură → 30 G4 + 20 rest",
+            aprilie.Refuzuri.Count == 0 && Linii(aprilie, integrala, false, (50, null))
+            && Linii(aprilie, excedent, false, (120, null)) && Linii(aprilie, realocata, false, (30, g4), (20, null)));
+        Verifica("SC-SAFT-37", "aprilie: proveniența fiecărei linii de plată acoperă postările operării, fără sursă pierdută la desfacere",
+            Provenienta(ProvenientaD406.Din(aprilie), Xml(aprilie)));
+        Storneaza(integrala, Zi(5, 8));
+        Storneaza(excedent, Zi(5, 8));
+        var mai = Export(5);
+        Verifica("SC-SAFT-37", "storno în mai: −50 rest și −120 rest (liniile din aprilie negate), cu proveniența stornoului",
+            mai.Refuzuri.Count == 0 && Linii(mai, integrala, true, (-50, null)) && Linii(mai, excedent, true, (-120, null))
+            && Provenienta(ProvenientaD406.Din(mai), Xml(mai)));
+    }
+
     void RepeatableReadPlati() {
         var fd = NouPartener("FD");
         var f = Fct(fd, Zi(4, 6), new LinieFctScena(1, 100, Stoc: false)).Id; Opereaza(f);
@@ -802,6 +832,18 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
             tranzactii.All(t => Debit(t.Linii) == Credit(t.Linii))
             && d.Rezumat.TotalDebit == balanta.Sum(b => b.RulajDebit) && d.Rezumat.TotalCredit == balanta.Sum(b => b.RulajCredit)
             && d.Rezumat.ClosingGla == d.Rezumat.ClosingBalanta);
+        var r = d.Rezumat;
+        Console.WriteLine($"     MĂSURAT (cusături L luna {luna}): D {r.TotalDebit}/balanță {r.ValoareRegistruContabil}; "
+            + $"TVA GL {r.TvaGl} + capitalizat {r.TvaCapitalizat} / fapte {r.TvaRegistru}; "
+            + $"bază achiziții {r.BazaFacturiAchizitie} + {r.BazaNeincluseAchizitie} / {r.BazaRegistruAchizitie}; "
+            + $"livrări {r.BazaFacturiLivrare} + {r.BazaNeincluseLivrare} / {r.BazaRegistruLivrare}; plăți {r.TotalPlati}");
+        Verifica("SC-SAFT-15", $"luna {luna}: cusăturile ecranului L pe cub sunt egale (jurnal = rulajul balanței, TVA GL + capitalizat = faptele fiscale, "
+            + "baza facturilor + baza neinclusă = faptele fiscale pe sens, plățile = Σ brut)",
+            r.TotalDebit == r.ValoareRegistruContabil && r.TotalDebit != 0
+            && r.TvaGl + r.TvaCapitalizat + r.TvaFaraCodSaft == r.TvaRegistru
+            && r.BazaFacturiAchizitie + r.BazaNeincluseAchizitie == r.BazaRegistruAchizitie
+            && r.BazaFacturiLivrare + r.BazaNeincluseLivrare == r.BazaRegistruLivrare
+            && r.TotalPlati == d.Plati.Sum(p => p.GrossTotal) && r.NumarPlati == d.Plati.Count);
         Verifica("SC-SAFT-15", $"luna {luna}: fiecare factură are tranzacția GL a evenimentului ei",
             d.FacturiEmise.Concat(d.FacturiPrimite).All(f => tranzactii.Any(t => t.TransactionID == f.TransactionID)));
         var societate = CuSpatiu(os => SaftReguli.IdSocietate(os.GetObjectsQuery<Societate>().First()));

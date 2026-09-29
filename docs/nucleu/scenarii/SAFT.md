@@ -41,6 +41,17 @@ contract. S2-Q1 (stornoul neagă liniile declarate) și S2-Q2 (compensarea
 în afara Payments, SAFT-r1) sunt tranșate de owner. Implementate și verificate:
 SC-SAFT-05, 06, 13, 26…36; ruta L este comutată pe cub.
 
+**Review advers S2, 2026-09-29, `663cadb`: deschis (S2-RV1 / P1).**
+Nominalizarea integrală PLT 50 → FCT 100, desfăcută în aceeași lună prin
+comanda reală, exportă încă 50 pe factură, în loc de 50 rest fără referință.
+Varianta PLT 120 cu rest inițial 20 trece. SC-SAFT-05/26 nu acoperă încă
+această combinație; scenariile existente verzi nu închid constatarea.
+[Contraexemplul și verificările](../tr-d8-saft-s2-review-codex.md).
+**Corectat de Claude (S2-R4):** linia de rest se creează pentru fiecare
+partidă proprie, chiar când operarea n-a scris nimic pe ea. Proba durabilă
+este SC-SAFT-37. Mutantul (cititorul de la `663cadb`) pică pe toate cele
+trei verificări ale ei.
+
 | Id | Scenariu și așteptare numerică | Proba propusă | Proveniență | Rezultat / stare |
 |---|---|---|---|---|
 | SC-SAFT-01 | FCT servicii 100 + 21: GL D 6xx 100, D 4426 21, C 401 121; PurchaseInvoice net 100, taxă 21, brut 121; plata 40 lasă furnizor 81 | SAFT-L-ACHIZITIE | 073, 090, 103; regulă contabilă | Verificat (ScenariiSaft) |
@@ -78,6 +89,7 @@ SC-SAFT-05, 06, 13, 26…36; ruta L este comutată pe cub.
 | SC-SAFT-33 | PLT pe două linii 40 + 60 către același furnizor, pe aceeași partidă: o singură linie de plată 100 (partida, nu detaliul); centre de cost diferite pe cele două linii: analiza omisă pe linie, avertisment `PlataAnalizaMixta`, GL cu ambele analize | SAFT-P-MULTILINIE | S2-D2 | Verificat (ScenariiSaft) |
 | SC-SAFT-34 | L complet pe lunile scenei, cu Payments nevid: XSD v249 + DUK J2.2.18 fără atenționări (inclusiv 50 + 20 fără referință, R4); manifestul leagă `(TransactionID, LineNumber)` de postările și transferurile sursă; mutanți respinși: linie de plată omisă, sursă permutată, `SourceDocumentID` schimbat; A/B plăți cu diferențele declarate exact (împărțirea 50 + 20, legătura viitoare, `TransactionID`) | SAFT-P-CERTIFICARE | S0-R1…R8, S2-D6 | Verificat (ScenariiSaft) |
 | SC-SAFT-35 | Altă sesiune comite o legătură 50 între citirea GL și citirea plăților: fișierul are fie 70 rest, fie 50 + 20, niciodată amestec; refuzul ReadCommitted rămâne | SAFT-P-REPEATABLE-READ | R3, SC-SAFT-17 | Verificat (ScenariiSaft) |
+| SC-SAFT-37 | Nominalizare automată desfăcută în aprilie: PLT 50 integral pe G1 → 50 rest; PLT 120 pe G2 de rest 100 → 120 rest; PLT 50 pe G3, desfăcută și realocată 30 pe G4 → 30 G4 + 20 rest; proveniența fiecărei linii acoperă postările operării; storno în mai → −50 rest și −120 rest | SAFT-P-NOMINALIZARE-DESFACUTA | S2-RV1, S2-D3 | Verificat (ScenariiSaft), cu mutant |
 | SC-SAFT-36 | Host viu: Admin complet → 200; fără drept pe `Postare` → 403 `SAFT_ACCES_INCOMPLET`; refuz condițional de rând pe `Postare` sau pe document; membru `Valoare`/`Partener` ascuns; metadate necesare ascunse → 403 înaintea primului byte, pe sumar și pe fișier, fără sume ascunse în corp | SAFT-HTTP-ACCES | SAF-D4, S2-D5 | Verificat HTTP (`ProbeHttp/saft-acces.py`, host izolat); SC-SAFT-36 și prin ScenariiSaft (tabelele citite) |
 
 ## SC-SAFT-15…17 — probe structurale cu rezultate măsurabile

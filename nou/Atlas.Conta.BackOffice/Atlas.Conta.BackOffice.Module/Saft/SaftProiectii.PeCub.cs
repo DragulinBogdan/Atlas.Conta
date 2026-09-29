@@ -633,12 +633,30 @@ public static partial class SaftProiectii {
                 terti.Sum(t => (t.ClosingDebitBalance ?? 0m) - (t.ClosingCreditBalance ?? 0m));
             decimal InchidereGla(RolTertCont rol) => dto.Conturi.Where(c => Rol(c.ContId) == rol)
                 .Sum(c => (c.ClosingDebitBalance ?? 0m) - (c.ClosingCreditBalance ?? 0m));
+            var fapteLuna = fapte.Values.SelectMany(f => f).ToList();
+            var evenimenteFactura = dto.FacturiEmise.Concat(dto.FacturiPrimite).Select(f => f.TransactionID).ToHashSet();
+            var taxeInGl = dto.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii
+                    .Where(l => l.TaxInformation.TaxType == SaftReguli.TaxTypeTva && l.DetaliuId != null)
+                    .Select(l => (t.TransactionID, l.DetaliuId.Value))).ToHashSet();
+            decimal Baza(SensTva sens, bool doarNeincluse) => fapteLuna.Where(f => f.Sens == sens
+                && (!doarNeincluse || !evenimenteFactura.Contains(f.TranzactieId.ToString()))).Sum(f => f.Baza);
             dto.Rezumat = new SaftRezumat {
                 Tranzactii = dto.Jurnale.Sum(j => j.Tranzactii.Count),
                 LiniiGl = liniiGl.Count,
+                RanduriRegistru = liniiGl.Count,
                 TotalDebit = totalDebit,
                 TotalCredit = totalCredit,
+                ValoareRegistruContabil = balanta.Sum(b => b.RulajDebit),
                 TvaGl = liniiGl.Where(l => l.TaxInformation.TaxType == SaftReguli.TaxTypeTva).Sum(l => l.TaxInformation.TaxAmount),
+                TvaRegistru = fapteLuna.Sum(f => f.Tva + f.Autocolectare),
+                TvaCapitalizat = fapteLuna.Where(f => f.Regim == RegimTva.Capitalizat
+                    && !taxeInGl.Contains((f.TranzactieId.ToString(), f.DetaliuId))).Sum(f => f.Tva),
+                BazaNeincluseAchizitie = Baza(SensTva.Achizitie, doarNeincluse: true),
+                BazaNeincluseLivrare = Baza(SensTva.Livrare, doarNeincluse: true),
+                BazaRegistruAchizitie = Baza(SensTva.Achizitie, doarNeincluse: false),
+                BazaRegistruLivrare = Baza(SensTva.Livrare, doarNeincluse: false),
+                TotalPlati = dto.Plati.Sum(p => p.GrossTotal),
+                NumarPlati = dto.Plati.Count,
                 BazaFacturiAchizitie = dto.FacturiPrimite.SelectMany(f => f.Linii).Sum(l => l.TaxInformation.TaxBase ?? 0m),
                 BazaFacturiLivrare = dto.FacturiEmise.SelectMany(f => f.Linii).Sum(l => l.TaxInformation.TaxBase ?? 0m),
                 ClosingGla = dto.Conturi.Sum(c => (c.ClosingDebitBalance ?? 0m) - (c.ClosingCreditBalance ?? 0m)),

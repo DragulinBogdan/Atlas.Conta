@@ -1034,3 +1034,33 @@ Integral verde pe ambele profiluri după Payments (bugetar 3.267, privat
 4.406): `run-verificari/20260929-115901-443`; după comutare (bugetar 3.267,
 privat 4.408): `run-verificari/20260929-122333-161`. Probele HTTP:
 `run-verificari/saft-s2-http-{probe,fiscal,refuzuri}.log`.
+
+### S2-R4 — review Codex S2-RV1 și integrarea ecranului (2026-09-29)
+
+**S2-RV1 / P1, corectat.** O plată nominalizată integral la operare nu are
+postare pe partida proprie. Linia de rest nu exista, iar transferul invers
+al desfacerii nu se aplica: exportul păstra 50 pe factură. Acum linia de rest
+se creează pentru fiecare partidă proprie, chiar la zero. Liniile legate prin
+transferuri pe aceeași partidă proprie își unesc contribuțiile, deci
+proveniența nu depinde de ordinea transferurilor. Proba SC-SAFT-37 acoperă:
+nominalizarea integrală desfăcută, excedentul, realocarea pe altă factură,
+stornoul din luna următoare și proveniența. Cititorul de la `663cadb` pică
+pe toate cele trei verificări.
+
+**Ecranul L după comutare.** Sumarul pe cub completa numai o parte din
+`SaftRezumat`, iar pagina ar fi arătat „diferă” pe cusăturile construite pe
+registrele vechi. Pe cub, „evidența” din cusături înseamnă:
+
+- rulajul debitor al balanței lunii;
+- TVA din faptele fiscale (`Tva + Autocolectare`), cu TVA capitalizată
+  numărată numai dacă n-are linie de taxă în GL;
+- baza faptelor fiscale pe sens, din care baza fără factură (DVI, decont)
+  e cea a faptelor din tranzacții care nu sunt evenimente-factură;
+- `TotalPlati` = Σ brut al plăților.
+
+Proba SC-SAFT-15 cere egalitatea lor pe lunile scenei. Pagina React afișează
+`Refuzuri` din sumar înainte de descărcare, iar textele ei numesc sursa nouă.
+Verificat în browser pe baza izolată: ianuarie are toate cusăturile egale și
+plata 70; februarie arată `SAFT_CORECTIE_INCOMPLETA` deasupra secțiunilor
+(`run-verificari/saft-s2-ui-februarie-refuz.jpg`).
+Integral verde după corectură (bugetar 3.267, privat 4.415): `run-verificari/20260929-204252-054`.

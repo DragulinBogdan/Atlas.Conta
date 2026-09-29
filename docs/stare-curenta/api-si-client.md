@@ -454,5 +454,7 @@ tipurile și membrii restricționați, fără rânduri ori sume. Criteriile se
 citesc din `ISelectDataSecurity`, aceeași sursă din care EF Core filtrează.
 `CanRead(Type)` nu ajunge, fiindcă răspunde `true` sub restricții
 condiționale. Refuzurile proiecției (`SaftDto.Refuzuri`) apar în sumar
-(`Refuzuri`, 200) și dau 422 pe fișier, înaintea primului byte. Ușile S
+(`Refuzuri`, 200; ecranul le arată înaintea descărcării) și dau 422 pe
+fișier, înaintea primului byte. Cusăturile ecranului L compară declarația
+cu cubul: rulajul balanței, faptele fiscale și baza lor pe sens. Ușile S
 (`…/saft/stocuri*`) rămân pe exportul existent până la S3. (SAF-D4, S2-D5)

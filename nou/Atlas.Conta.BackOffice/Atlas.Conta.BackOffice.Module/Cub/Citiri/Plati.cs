@@ -142,7 +142,10 @@ public static class Plati {
                 linie.Suma += p.Valoare;
                 linie.Contributii.Add(p);
             }
+            foreach (var p in a.Operare.Where(p => p.Unitate != null && p.Partener != null).ToList())
+                Linie(a, p.Cont, p.Partener, p.Latura, TintaPlata.Rest, Partide.Identitate(a.DocumentId, p.Cont, p.Partener.Value), null);
             foreach (var rest in a.Linii.Where(l => l.Tinta == TintaPlata.Rest).ToList()) {
+                var legate = new List<AlocarePlata> { rest };
                 foreach (var (id, perechi) in transferuri) {
                     var pe = perechi.Where(p => p.Unitate == rest.Unitate).ToList();
                     if (pe.Count == 0 || pe[0].Data > a.Capat) continue;
@@ -158,13 +161,16 @@ public static class Plati {
                     if (tinta == null) continue;
                     tinta.Suma -= efect;
                     rest.Suma += efect;
-                    tinta.Contributii.AddRange(rest.Contributii.Where(c => !tinta.Contributii.Contains(c)));
+                    if (!legate.Contains(tinta)) legate.Add(tinta);
                     foreach (var p in perechi) {
                         var sursa = new SursaPlata(p.Spatiu, p.ID);
                         tinta.Transferuri.Add(sursa);
                         rest.Transferuri.Add(sursa);
                     }
                 }
+                var comune = legate.SelectMany(l => l.Contributii).Distinct().ToList();
+                foreach (var l in legate)
+                    l.Contributii.AddRange(comune.Where(c => !l.Contributii.Contains(c)));
             }
             if (a.Linii.Any(l => l.Suma < 0m))
                 a.Erori.Add("o alocare sau restul are semn opus plății");
