@@ -172,7 +172,8 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         Cusaturi(ian, 1);
         ComparatieAb(1);
         UnitateIstorica(receptie.Linii[0].Produs!.Value, receptie.Id);
-        var artefactIanuarie = Xml(Export(1));
+        var dtoIanuarie = Export(1);
+        var artefactIanuarie = Xml(dtoIanuarie);
 
         Comanda(os => {
             foreach (var formular in new[] { FormularFiscal.D300, FormularFiscal.D394 })
@@ -231,13 +232,14 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         Verifica("SC-SAFT-18", "februarie reexportat după corecția din martie rămâne identic",
             Xml(Export(2)).AsSpan().SequenceEqual(artefactFebruarie));
 
-        Certificare(artefactIanuarie, artefactFebruarie, Xml(mar));
+        Certificare((dtoIanuarie, artefactIanuarie), (feb, artefactFebruarie), (mar, Xml(mar)));
 
         RepeatableRead();
         MapareLipsa();
     }
 
-    void Certificare(byte[] ianuarie, byte[] februarie, byte[] martie) {
+    void Certificare((SaftDto Dto, byte[] Xml) ian, (SaftDto Dto, byte[] Xml) feb, (SaftDto Dto, byte[] Xml) mar) {
+        var (ianuarie, februarie, martie) = (ian.Xml, feb.Xml, mar.Xml);
         var director = Path.Combine(Duk.DirectorTemporar(), $"s0-{DateTime.UtcNow:yyyyMMdd-HHmmss}");
         Directory.CreateDirectory(director);
         var validari = new List<ValidareD406>();
@@ -246,8 +248,8 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
             File.WriteAllBytes(cale, continut);
             return cale;
         }
-        ValidareD406 Valideaza(string nume, byte[] continut) {
-            var v = ValidareD406.Ruleaza(Scrie(nume, continut));
+        ValidareD406 Valideaza(string nume, byte[] continut, SaftDto dto = null) {
+            var v = ValidareD406.Ruleaza(Scrie(nume, continut), dto);
             validari.Add(v);
             Console.WriteLine($"     MĂSURAT (S0 {nume}, perioada din antet {v.An}-{v.Luna:00}): {v.Rezumat}");
             foreach (var e in v.EroriXsd.Take(10)) Console.WriteLine($"         EROARE XSD: {e}");
@@ -264,8 +266,13 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         }
         XNamespace ns = SaftXml.SpatiuNume;
 
-        var luni = new[] { (1, ianuarie), (2, februarie), (3, martie) }
-            .Select(x => (Luna: x.Item1, V: Valideaza($"saft-L-{An}-{x.Item1:00}", x.Item2))).ToList();
+        foreach (var (nume, dto) in new[] { ("cub", Export(4)), ("ruta-veche", ExportVechi(4)) })
+            Verifica("SC-SAFT-24", $"luna 4 fără rulaj ({nume}): GL, facturi și plăți goale trec XSD și DUK",
+                dto is { Jurnale.Count: 0, FacturiPrimite.Count: 0, FacturiEmise.Count: 0, Plati.Count: 0 }
+                && Valideaza($"fara-rulaj-{nume}", Xml(dto)).Valid);
+
+        var luni = new[] { (1, ian), (2, feb), (3, mar) }
+            .Select(x => (Luna: x.Item1, V: Valideaza($"saft-L-{An}-{x.Item1:00}", x.Item2.Xml, x.Item2.Dto))).ToList();
         foreach (var (luna, v) in luni)
             Verifica("SC-SAFT-24", $"luna {luna}: XML L acceptat de XSD v249 (d406) și de DUK {ManifestD406.VersiuneValidator} pe perioada din antet",
                 v.Valid && (v.An, v.Luna) == (An, luna));
@@ -301,6 +308,9 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
             d.Descendants(ns + "Transaction").First().Element(ns + "GLPostingDate")!.Remove()));
         Verifica("SC-SAFT-25", "mutant: tranzacția fără GLPostingDate este respinsă de XSD (schema nu e vidă)",
             faraData.EroriXsd.Count > 0);
+        var mixt = Scrie("mutant-copil-fara-namespace", Muta(ianuarie, d =>
+            d.Descendants(ns + "Transaction").First().Element(ns + "GLPostingDate")!.Name = "GLPostingDate"));
+        Verifica("SC-SAFT-25", "mutant: un copil obligatoriu fără namespace este respins de XSD", XsdD406.Valideaza(mixt).Count > 0);
         var test = Valideaza("mutant-namespace-d406t", Muta(ianuarie, d => {
             d.Root!.Attributes().Where(a => a.IsNamespaceDeclaration).Remove();
             foreach (var e in d.Descendants()) e.Name = XNamespace.Get(ManifestD406.SpatiuXsdPublicat) + e.Name.LocalName;
@@ -315,8 +325,41 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
 
         var manifest = ValidareD406.ScrieManifest(director, validari);
         Console.WriteLine($"     MANIFEST S0: {manifest}");
+        foreach (var (luna, v) in luni) {
+            var continut = new[] { ianuarie, februarie, martie }[luna - 1];
+            var p = ValidareD406.CitesteProvenienta(manifest, v.Fisier);
+            Console.WriteLine($"     MĂSURAT (S0 proveniență luna {luna}): {p.Gl.Count} linii GL, {p.Facturi.Count} facturi");
+            Verifica("SC-SAFT-24", $"luna {luna}: manifestul leagă fiecare (TransactionID, RecordID) al XML-ului de (Spatiu, ID) al postării din cub, unic și complet; facturile de eveniment",
+                Provenienta(p, continut));
+            if (luna == 1)
+                Verifica("SC-SAFT-25", "mutanți de proveniență: o linie GL omisă, o cheie de postare dublată și o factură omisă sunt respinse",
+                    !Provenienta(p with { Gl = p.Gl.Skip(1).ToList() }, continut)
+                    && !Provenienta(p with { Gl = [.. p.Gl.Take(p.Gl.Count - 1), p.Gl[^1] with { PostareId = p.Gl[0].PostareId, Spatiu = p.Gl[0].Spatiu }] }, continut)
+                    && !Provenienta(p with { Facturi = p.Facturi.Skip(1).ToList() }, continut));
+        }
         Verifica("SC-SAFT-24", "manifestul rulării fixează XSD, schema derivată, kitul, nomenclatorul și SHA-256 al fiecărui fișier",
             File.Exists(manifest) && validari.All(v => v.Sha256.Length == 64));
+    }
+
+    bool Provenienta(ProvenientaD406 p, byte[] xml) {
+        XNamespace ns = SaftXml.SpatiuNume;
+        var doc = XDocument.Load(new MemoryStream(xml));
+        var liniiXml = doc.Descendants(ns + "Transaction").SelectMany(t => t.Elements(ns + "TransactionLine")
+            .Select(l => ((string)t.Element(ns + "TransactionID"), (string)l.Element(ns + "RecordID")))).ToList();
+        var facturiXml = new[] { "SalesInvoices", "PurchaseInvoices" }.SelectMany(s => doc.Descendants(ns + s).Elements(ns + "Invoice")
+            .Select(f => (s, (string)f.Element(ns + "InvoiceNo"), (string)f.Element(ns + "InvoiceType"), (string)f.Element(ns + "TransactionID"))))
+            .OrderBy(x => x).ToList();
+        var ids = p.Gl.Select(l => l.PostareId).ToList();
+        var cub = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(x => ids.Contains(x.ID))
+            .Select(x => new { x.Spatiu, x.ID, x.TranzactieId, x.DocumentId, x.LinieId }).ToList());
+        return p.Gl.Count > 0 && p.Gl.Count == liniiXml.Count
+            && p.Gl.Select(l => (l.TransactionID, l.RecordID)).ToHashSet().SetEquals(liniiXml)
+            && liniiXml.Distinct().Count() == liniiXml.Count
+            && p.Gl.All(l => l.Spatiu != null) && p.Gl.Select(l => (l.Spatiu, l.PostareId)).Distinct().Count() == p.Gl.Count
+            && p.Gl.All(l => cub.Any(c => c.Spatiu == l.Spatiu && c.ID == l.PostareId && c.TranzactieId.ToString() == l.TransactionID
+                && (c.DocumentId ?? Guid.Empty) == l.DocumentId && c.LinieId == l.LinieId))
+            && p.Facturi.Select(f => (f.Sectiune, f.InvoiceNo, f.InvoiceType, f.TransactionID)).OrderBy(x => x).SequenceEqual(facturiXml)
+            && p.Facturi.Select(f => (f.DocumentId, f.Storno, f.TransactionID)).Distinct().Count() == p.Facturi.Count;
     }
 
     void UnitateIstorica(Guid produs, Guid factura) {

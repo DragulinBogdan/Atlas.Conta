@@ -8,6 +8,11 @@ de derivare sunt în [S1-R](#s1-r--review-și-tranșări-2026-09-28).**
 declarată, DUK fără `SĂRIT` și cu perioada din antet; regulile și măsurătorile
 sunt în [S0-R](#s0-r--artefactele-validării-fixate-2026-09-29).**
 
+**Review advers S0, 2026-09-29: XSD/DUK reverificate; S0-RV1/P2
+(proveniența liniilor GL în manifest, S1-D2/R9) corectat în S0-R8, de
+reverificat de Codex.**
+[Raportul Codex](tr-d8-saft-s0-review-codex.md).
+
 Răspunde cererii din `comunicari/2026-09-28-0115-claude-codex-saft-sourcedocuments-contract.md`.
 Bază inspectată: `faa8b2d`. Contracte existente: 073, 074, 090, 091,
 103 și [D8-B1…B8](tr-d8-citiri-contract.md).
@@ -714,3 +719,19 @@ Integral verde pe ambele profiluri (bugetar 3.267, privat 4.375 verificări),
 inclusiv D16-V3/D17-V3 pe kitul pin-uit: `run-verificari/20260929-011541-801`
 (manifestul S0 în `tmp/atlas-saft/s0-*/manifest-d406.json`).
 
+**S0-R8 — proveniența în manifest (review Codex S0-RV1).** Fiecare fișier
+certificat poartă în `manifest-d406.json`, lângă SHA-256-ul lui, harta scoasă
+din DTO-ul exact din care s-a scris: linia GL `(TransactionID, RecordID)` →
+`(Spatiu, ID)` al postării, cu `DocumentId` și `LinieId`; factura
+`(secțiune, InvoiceNo, InvoiceType, TransactionID)` → `(DocumentId, Storno)`.
+Proba citește harta înapoi din fișierul manifest și cere: aceeași mulțime de
+`(TransactionID, RecordID)` ca XML-ul, fără dubluri; cheia `(Spatiu, ID)`
+completă și unică; fiecare postare există în cub cu `TranzactieId` =
+`TransactionID`, același document și aceeași linie; aceeași mulțime de facturi
+ca XML-ul, cu eveniment unic. Mutanții (linie GL omisă, cheie de postare
+dublată, factură omisă) sunt respinși. Măsurat: 62, 28 și 8 linii GL; 13, 7 și
+2 facturi în lunile 1–3. Au intrat în catalog și probele adverse ale lui Codex
+care au trecut: luna fără rulaj, pe cub și pe ruta veche, trece XSD și DUK;
+un copil obligatoriu fără namespace este respins de XSD.
+Integral verde pe ambele profiluri (bugetar 3.267, privat 4.382):
+`run-verificari/20260929-083657-241`.

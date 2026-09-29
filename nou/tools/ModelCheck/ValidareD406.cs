@@ -107,15 +107,48 @@ public static class XsdD406 {
     };
 }
 
+/// <summary>Linia GL a fișierului legată de cheia completă a postării din cub (S1-D2).</summary>
+public sealed record LegaturaGl(string TransactionID, string RecordID, Atlas.Conta.Nucleu.Spatiu? Spatiu, Guid PostareId,
+    Guid DocumentId, Guid? LinieId);
+
+/// <summary>Factura fișierului legată de evenimentul ei: documentul, stornoul și tranzacția cubului (S1-D2).</summary>
+public sealed record LegaturaFactura(string Sectiune, string InvoiceNo, string InvoiceType, string TransactionID,
+    Guid DocumentId, bool Storno);
+
+public sealed record ProvenientaD406(List<LegaturaGl> Gl, List<LegaturaFactura> Facturi) {
+    public static ProvenientaD406 Din(SaftDto dto) => new(
+        dto.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii.Select(l =>
+            new LegaturaGl(t.TransactionID, l.RecordID, l.Spatiu, l.RandRegistruId, t.DocumentId, l.DetaliuId))).ToList(),
+        dto.FacturiEmise.Select(f => ("SalesInvoices", f)).Concat(dto.FacturiPrimite.Select(f => ("PurchaseInvoices", f)))
+            .Select(x => new LegaturaFactura(x.Item1, x.f.InvoiceNo, x.f.InvoiceType, x.f.TransactionID, x.f.DocumentId, x.f.Storno))
+            .ToList());
+}
+
 /// <summary>O validare XSD + DUK a unui fișier, cu intrarea ei în manifestul rulării.</summary>
 public sealed record ValidareD406(string Fisier, string Sha256, int An, int Luna,
-    List<string> EroriXsd, DukRezultat Duk) {
+    List<string> EroriXsd, DukRezultat Duk, ProvenientaD406 Provenienta) {
     public bool Valid => EroriXsd.Count == 0 && Duk.Valid;
 
-    public static ValidareD406 Ruleaza(string caleXml) {
+    /// <summary>`dto` e declarația din care s-a scris exact `caleXml`; fără el, fișierul n-are proveniență.</summary>
+    public static ValidareD406 Ruleaza(string caleXml, SaftDto dto = null) {
         var xsd = XsdD406.Valideaza(caleXml);
         var duk = global::Atlas.Conta.BackOffice.ModelCheck.Duk.Valideaza(caleXml);
-        return new(Path.GetFileName(caleXml), ManifestD406.Sha256(caleXml), duk.Perioada.An, duk.Perioada.Luna, xsd, duk);
+        return new(Path.GetFileName(caleXml), ManifestD406.Sha256(caleXml), duk.Perioada.An, duk.Perioada.Luna, xsd, duk,
+            dto == null ? null : ProvenientaD406.Din(dto));
+    }
+
+    public static readonly JsonSerializerOptions Json = new() {
+        WriteIndented = true,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() },
+    };
+
+    /// <summary>Proveniența fișierului `fisier`, citită înapoi din manifestul scris.</summary>
+    public static ProvenientaD406 CitesteProvenienta(string caleManifest, string fisier) {
+        using var doc = JsonDocument.Parse(File.ReadAllText(caleManifest));
+        var intrare = doc.RootElement.GetProperty("fisiere").EnumerateArray()
+            .Single(f => f.GetProperty("Fisier").GetString() == fisier);
+        return intrare.GetProperty("Provenienta").Deserialize<ProvenientaD406>(Json);
     }
 
     public string Rezumat => $"XSD {(EroriXsd.Count == 0 ? "ok" : $"{EroriXsd.Count} erori")}, DUK {Duk.Rezumat}";
@@ -137,11 +170,10 @@ public sealed record ValidareD406(string Fisier, string Sha256, int An, int Luna
             fisiere = validari.Select(v => new {
                 v.Fisier, v.Sha256, v.An, v.Luna, v.Valid, v.EroriXsd,
                 duk = new { v.Duk.Rezumat, v.Duk.Erori, v.Duk.Avertismente, v.Duk.Comanda },
+                v.Provenienta,
             }),
         };
-        File.WriteAllText(cale, JsonSerializer.Serialize(manifest, new JsonSerializerOptions {
-            WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        }));
+        File.WriteAllText(cale, JsonSerializer.Serialize(manifest, Json));
         return cale;
     }
 }

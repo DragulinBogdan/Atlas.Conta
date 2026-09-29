@@ -520,7 +520,8 @@ J2.2.18 și nomenclatorul din `anaf/` (gitignored; alt director prin
 `ATLAS_ANAF`). Kitul absent sau schimbat (inclusiv în timpul rulării) pică
 proba, nu o sare; perioada validatorului vine din antetul fișierului, fiindcă
 ea alege nomenclatorul. Fiecare rulare scrie `manifest-d406.json` lângă
-fișierele validate. (S0-R1…R4) Jurnalele publicate nu includ
+fișierele validate, cu proveniența liniilor GL și a facturilor pentru
+fișierele certificate. (S0-R1…R4, S0-R8) Jurnalele publicate nu includ
 parole, tokenuri sau adrese de feed cu credențiale. (50d, 73f)
 
 ## Import operațional 1C
