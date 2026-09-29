@@ -120,11 +120,11 @@ public sealed record LegaturaPlata(string TransactionID, int LineNumber, Guid Do
     Guid? TintaDocumentId, List<SaftSursa> Surse);
 
 /// <summary>Linia de mișcare a fișierului S legată de postările pe lot agregate în ea (S3-D8).</summary>
-public sealed record LegaturaMiscare(string MovementReference, int LineNumber, Guid? TranzactieId, List<Guid> Postari);
+public sealed record LegaturaMiscare(string MovementReference, int LineNumber, Guid? TranzactieId, List<SaftSursa> Postari);
 
-/// <summary>Poziția PhysicalStock legată de cheia ei din cub (S3-D4).</summary>
+/// <summary>Poziția PhysicalStock legată de cheia ei și de sursele ei: postările pe lot ale cheii până la capătul lunii (S3-RV2).</summary>
 public sealed record LegaturaPozitie(string WarehouseID, string ProductCode, string StockAccountNo, string ProductType,
-    Guid Lot, Guid Cont, Guid Produs, Guid Gestiune);
+    Guid Lot, Guid Cont, Guid Produs, Guid Gestiune, int Surse = 0, string ShaSurse = null);
 
 public sealed record ProvenientaD406(List<LegaturaGl> Gl, List<LegaturaFactura> Facturi, List<LegaturaPlata> Plati,
         List<LegaturaMiscare> Miscari = null, List<LegaturaPozitie> Pozitii = null,

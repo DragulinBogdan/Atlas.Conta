@@ -434,7 +434,7 @@ public sealed class SaftLinieMiscareStoc {
     public Guid RepartitorId { get; set; }
     public Guid ContId { get; set; }
     /// <summary>Postările pe lot agregate în linie (S3-D2); goală pe ruta veche.</summary>
-    public List<Guid> Postari { get; set; } = [];
+    public List<SaftSursa> Postari { get; set; } = [];
     public string ShipToWarehouseId { get; set; }
     public string ShipFromWarehouseId { get; set; }
     public string StockAccountNo { get; set; }

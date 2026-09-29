@@ -39,6 +39,7 @@ public static partial class SaftProiectii {
             public Guid Id, TranzactieId, Lot, Cont, Produs, Gestiune;
             public Guid? DocumentId, LinieId;
             public N.FelTranzactie Fel;
+            public N.Spatiu Spatiu;
             public DateOnly Data, Deschisa;
             public DateTime ScrisLa;
             public decimal Cantitate, Valoare;
@@ -53,7 +54,7 @@ public static partial class SaftProiectii {
             public DateTime ScrisLa;
             public Pozitie Pozitie;
             public decimal Cantitate, Valoare;
-            public List<Guid> Postari = [];
+            public List<SaftSursa> Postari = [];
             public RegulaMiscare Regula;
         }
 
@@ -109,7 +110,7 @@ public static partial class SaftProiectii {
 
             var luna = Loturi.Postari(os).Where(p => p.Data >= start && p.Data <= end)
                 .Select(p => new PostareLot {
-                    Id = p.ID, TranzactieId = p.TranzactieId, DocumentId = p.Tranzactie.DocumentId, LinieId = p.LinieId,
+                    Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, DocumentId = p.Tranzactie.DocumentId, LinieId = p.LinieId,
                     Fel = p.Tranzactie.Fel, Data = p.Data, ScrisLa = p.Tranzactie.ScrisLa,
                     Lot = p.Unitate.Value, Cont = p.Cont, Produs = p.Produs.Value, Gestiune = p.Gestiune.Value,
                     Deschisa = p.UnitateDeschisa ?? p.Data, Cantitate = p.Cantitate,
@@ -220,7 +221,7 @@ public static partial class SaftProiectii {
                     TranzactieId = prima.TranzactieId, DocumentId = prima.DocumentId, LinieId = prima.LinieId,
                     Fel = prima.Fel, Data = prima.Data, ScrisLa = prima.ScrisLa, Deschisa = g.Min(p => p.Deschisa),
                     Pozitie = prima.Pozitie, Cantitate = g.Sum(p => p.Cantitate), Valoare = g.Sum(p => p.Valoare),
-                    Postari = g.Select(p => p.Id).OrderBy(id => id).ToList(),
+                    Postari = g.Select(p => new SaftSursa { Spatiu = p.Spatiu, Id = p.Id }).OrderBy(x => x.Id).ToList(),
                 };
                 if (linie.Cantitate == 0m && linie.Valoare == 0m) continue;
                 linii.Add(linie);
@@ -443,12 +444,17 @@ public static partial class SaftProiectii {
                 return e.OpeningQuantity + x.Q != e.ClosingQuantity || e.OpeningValue + x.V != e.ClosingValue;
             });
             var raportabile = linii.Where(l => Raportabila(l.Pozitie.Cont)).ToList();
-            var perCont = dto.StocFizic.GroupBy(e => e.ContId).Select(g => {
-                var b = balanta.Where(x => x.ContId == g.Key).ToList();
-                var inchidereGl = b.Sum(x => x.InitialDebit - x.InitialCredit + x.RulajDebit - x.RulajCredit);
-                var stoc = g.Sum(e => e.ClosingValue);
+            // S3-RV1: și contul raportabil cu sold sau rulaj contabil fără nicio poziție fizică.
+            var conturiGl = balanta.Where(b => b.InitialDebit != 0m || b.InitialCredit != 0m
+                    || b.RulajDebit != 0m || b.RulajCredit != 0m)
+                .Where(b => categorii.Rezolva(b.ContId) is TipStoc c && CategoriiStoc.Rol(c) == RolCategorieStoc.Raportabila)
+                .Select(b => b.ContId);
+            var perCont = dto.StocFizic.Select(e => e.ContId).Concat(conturiGl).Distinct().Select(cont => {
+                var inchidereGl = balanta.Where(x => x.ContId == cont)
+                    .Sum(x => x.InitialDebit - x.InitialCredit + x.RulajDebit - x.RulajCredit);
+                var stoc = dto.StocFizic.Where(e => e.ContId == cont).Sum(e => e.ClosingValue);
                 return new SaftDiferentaCont {
-                    Cont = SaftReguli.ProductTypeDinCont(SimbolCont(g.Key)), ContId = g.Key,
+                    Cont = SaftReguli.ProductTypeDinCont(SimbolCont(cont)), ContId = cont,
                     ClosingStocFizic = stoc, ClosingBalanta = inchidereGl, Diferenta = stoc - inchidereGl,
                 };
             }).OrderBy(c => c.Cont, StringComparer.Ordinal).ToList();

@@ -76,7 +76,10 @@ def main():
             for kind, target, field, value, member in (
                     ('Rand', POSTARE, 'Criteria', '[Valoare] > 100', None),
                     ('Membru', POSTARE, 'Members', 'Valoare', 'Valoare'),
-                    ('Metadate', PARTENER, 'Criteria', f"StartsWith([Cod], '{marker}')", None)):
+                    ('Metadate', PARTENER, 'Criteria', f"StartsWith([Cod], '{marker}')", None),
+                    ('Snapshot', 'Atlas.Conta.BackOffice.Module.BusinessObjects.SoldPerioadaStoc', 'Members', 'Cantitate', 'Cantitate'),
+                    ('Politica', 'Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaMiscareSaft', 'Members', 'CodMiscare', 'CodMiscare'),
+                    ('Categorie', 'Atlas.Conta.BackOffice.Module.BusinessObjects.Cont', 'Members', 'CategorieStoc', 'CategorieStoc')):
                 role, user, permission, restriction = [uuid.uuid4() for _ in range(4)]
                 name = 'SaftS3-' + kind + '-' + user.hex[:6]
                 table = 'Member' if member else 'Object'
@@ -91,7 +94,7 @@ def main():
                 login(name)
                 for path in (sumar, xml):
                     refused = json.dumps(call(name, path, expected=403), ensure_ascii=False)
-                    expected_type = 'Partener' if target == PARTENER else 'Postare' + ('.' + member if member else '')
+                    expected_type = target.rsplit('.', 1)[-1] + ('.' + member if member else '')
                     assert 'SAFT_ACCES_INCOMPLET' in refused and expected_type in refused, (name, path, refused)
                     assert '100.00' not in refused and '100,00' not in refused, (name, path, refused)
                 print('PASS SC-SAFT-48', kind, '403 SAFT_ACCES_INCOMPLET pe sumarul și fișierul S, fără sume', flush=True)

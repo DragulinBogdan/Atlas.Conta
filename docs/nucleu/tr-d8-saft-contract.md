@@ -1294,14 +1294,16 @@ Import1C (înghețat, 091-r4). Se șterge la gate-ul final, cu L vechi (R1).
 ### S3-D7 — cusături (probe pe fiecare lună a scenei, ambele sensuri)
 
 (a) **Poziție:** Opening + Σ liniilor = Closing, exact, pe Q și pe V.
-(b) **Cont:** Σ Closing V pe cont (categorii raportabile) = soldul contabil al
-contului la capătul lunii, din același reper, minus postările fără lot pe acel
-cont. Acestea din urmă se listează pe document, ca `Componente`: o NTC
+(b) **Cont** (amendat la S3-RV1): pe fiecare cont cu poziții sau cu categorie
+raportabilă și sold/rulaj contabil, Σ Closing V − soldul contabil = Σ
+componentelor pe tip de document, iar componentele nenule nu au stoc fizic
+(postări fără lot pe acel cont). Acestea din urmă se listează pe document, ca `Componente`: o NTC
 directă pe 371 este diferență explicată, nu refuz. În luna deschiderii se
 compară și Opening cu inițialul GL plus jurnalul DESCHIDERE.
 (c) **Eveniment:** pentru mișcările cu `TransactionID`, Σ BookValue pe cont =
-Σ postărilor pe lot ale aceleiași tranzacții în GL. Pe `Transfer`, Σ Q = 0 și
-Σ V = 0 pe mișcare.
+Σ postărilor pe lot ale aceleiași tranzacții în GL. Pe `Transfer`, Σ V = 0 pe
+tranzacție. Mutarea (80) conservă și cantitatea pe lot, iar transformarea își
+păstrează cantitățile independente (amendat la S3-RV3).
 (d) **Conservare:** Σ liniilor emise + Σ liniilor excluse = Σ tuturor
 postărilor pe lot din lună. Nu există „neincluse”: ce nu e emis e exclus cu
 motiv sau refuzat.
@@ -1441,3 +1443,64 @@ codurilor, FCT fără registru), SC-SAFT-15 (ușile S pe `SaftStocuriPeCub`).
 Integral verde (bugetar 3.269, privat 4.466):
 `run-verificari/20260929-225536-294`; scenele DES + SAFT după SC-SAFT-45:
 `run-verificari/20260929-230610-759`; HTTP: `run-verificari/saft-s3-http-{probe,refuzuri}.log`.
+
+### S3-RV — review Codex S3-RV1…RV4, corectat (2026-09-29)
+
+[Raportul Codex](tr-d8-saft-s3-review-codex.md): patru constatări P2 pe `6b55920`.
+S3-R1/R2 nu se redeschid. Toate patru sunt corectate, fiecare cu probă și mutant.
+
+**S3-RV1 — contul fără lot (producție).** Domeniul reconcilierii pe cont
+(S3-D7b) este acum reuniunea conturilor cu poziții și a conturilor cu categorie
+raportabilă care au sold sau rulaj contabil, chiar fără niciun lot.
+`Componente` citește aceleași conturi. Proba: NTC D301/C401 30 fără lot în
+februarie. 301 apare cu stoc 0, sold 30, diferență −30, iar componenta NTC
+are 0 fizic și 30 contabil. Nu se inventează poziție și nici refuz. Cusătura
+S3-D7b devine: pe fiecare cont, diferența este Σ componentelor, iar
+componentele nenule nu au stoc fizic. Egalitatea strictă stoc = sold nu mai
+e cerută.
+
+**S3-RV2 — proveniența S3-D8, amendată.** Linia de mișcare poartă cheia
+completă `(Spatiu, ID)` a postărilor agregate (`SaftLinieMiscareStoc.Postari`).
+Sursele poziției sunt, prin definiție, postările pe lot ale cheii (lot, cont,
+produs, gestiune) până la capătul lunii. Manifestul le fixează ca număr și
+SHA-256 al listei sortate `(Spatiu, ID)`, nu ca listă completă (istoricul unui
+lot poate fi lung). Comparatorul certificării reface lista din cub, verifică
+numărul și amprenta, apoi recalculează Opening (Data < început sau
+`Deschidere` din lună) și Closing direct din postări, independent de
+snapshot, și le compară cu XML-ul. Codul fiecărei mișcări se recalculează
+independent din politică: tipul documentului, categoria contului, semnul
+originii. `MovementType` și fiecare `MovementSubType` trebuie să fie acel
+cod. Mutanții respinși: `ClosingStockValue` + 1, alt cod pe o mișcare,
+amprenta surselor schimbată, pe lângă cei de la S3-R3. Certificarea acoperă
+ianuarie (din postări), februarie (Opening din snapshot, după închiderea lui
+ianuarie) și martie, fără nicio mișcare. Martie trece XSD și DUK fără
+atenționări: `MovementOfGoods` gol pe „C” este acceptat.
+
+**S3-RV3 — S3-D7c, amendată.** Suma cantităților nu este invariant pentru orice
+`Transfer`. Regula corectă, pe tranzacțiile fără `TransactionID`: Σ V = 0 pe
+tranzacție. Mutarea (80) conservă și cantitatea pe lot. Transformarea (70/20)
+păstrează cantitățile independente. Motorul și cantitățile exportate nu se
+schimbă. Scena are acum ASM 2 → 1 pe același cont (70 −2/−20, 20 +1/+20,
+Σ Q = −1, Σ V = 0, Transfer) și inversa lui în februarie (70 +2/+20,
+20 −1/−20). SC-SAFT-09 e verificat pe acest caz.
+
+**S3-RV4 — A/B, amendat la cheia S3-D8.** Comparația se face pe document ×
+storno × lot × gestiune, în ambele sensuri. Fiecare excepție are valorile
+vechi și noi exacte:
+
+- recepția: cheia NIR-ului conex (vechi) și a FCT (nou), cu aceeași valoare;
+- FCT cu NIR Draft: nou fără vechi;
+- Δ ASM: −3,33 → −3,34 și 3,33 → 3,34;
+- NIR delta: 3/75 → −1/−25 și 5/125 → 1/25.
+
+Cheia excepției trebuie chiar să difere, iar orice altă diferență e defect.
+Mutanții respinși: omiterea operării BCS și a stornoului ei din aceeași lună,
+plus o diferență de 100 pe o cheie exceptată.
+
+**HTTP.** `saft-stocuri.py` preia extensia lui Codex: restricțiile pe
+`SoldPerioadaStoc.Cantitate`, `PoliticaMiscareSaft.CodMiscare` și
+`Cont.CategorieStoc` dau 403 pe ambele uși S.
+
+Integral verde după corecturi (bugetar 3.269, privat 4.475):
+`run-verificari/20260929-234107-166`; scenele DES + SAFT: `run-verificari/20260929-233856-839`;
+HTTP extins: `run-verificari/saft-s3-http-probe.log`.
