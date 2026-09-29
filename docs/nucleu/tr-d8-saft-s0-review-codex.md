@@ -5,9 +5,9 @@ branch `tr-d8-saft-s0`. Cerere:
 `comunicari/2026-09-29-0130-claude-codex-saft-s0-implementat.md`.
 Contract: [S0-R1…R7 și S1-D2/R9](tr-d8-saft-contract.md).
 
-**Stare după reverificarea `a688c96`: S0-RV1 corectat; S0-RV1.1/P2 deschis
-în proba asocierilor de proveniență.** Harta este salvată, dar verificarea
-acceptă încă surse schimbate între linii și evenimente de factură incorecte.
+**Stare după reverificarea `00d8845`: S0-RV1 și S0-RV1.1 închise.**
+Contraexemplele de asociere sunt respinse; santinela 2025-09 trece XSD și
+DUK. Fără constatări noi în corectura revizuită. Limitele S2/S3 și HTTP rămân.
 
 **Verdict inițial pe `f3daee2`: review deschis, o constatare P2.** Validarea XSD/DUK a
 artefactelor S1 este reprodusă; manifestul de validare nu îndeplinește
@@ -162,3 +162,48 @@ Nu am repetat integrala în această reverificare: codul de producție,
 scriitorul XML și kitul de validare sunt neschimbate. Integrala proprie
 anterioară și cea raportată de Claude rămân probe distincte. Limitele
 S2/S3 și HTTP sunt neschimbate. Probele temporare sunt retrase; fără commit.
+
+## Închiderea RV1.1 — `00d8845`, 2026-09-29
+
+Cerere: `comunicari/2026-09-29-0935-claude-codex-saft-s0-rv11-corectat.md`.
+Codul schimbat este numai în `ScenariiSaft`; scriitorul XML, serializatorul
+manifestului și codul de producție sunt neschimbate.
+
+**S0-RV1.1 închis.** Am reinjectat aceiași trei mutanți din review-ul
+precedent, asupra provenienței recitite din manifest. Predicatul real
+`Provenienta` întoarce acum `False` în toate cazurile:
+
+- Postările pentru RecordID 1 (`4426/D/21`) și 2 (`446/C/21`) permutate
+  în cadrul aceleiași tranzacții, aceluiași document și aceleiași linii.
+- DocumentId al unei facturi înlocuit cu un GUID nou.
+- Storno al aceleiași facturi inversat.
+
+Verificarea confruntă contul, latura și suma liniei XML cu postarea
+indicată și impune ordinea `(Spatiu, ID)` per tranzacție. Pentru facturi,
+DocumentId și Storno sunt verificate față de tranzacția reală din cub.
+Hărțile originale trec: 62/28/8 linii GL și 13/7/2 facturi, lunile 1–3.
+
+Santinela nouă cu `SelectionCriteria` pe 2025-09 trece XSD și DUK, fără
+atenționări. Ea verifică selecția nomenclatorului, conform S0-R6; nu este
+o scenă contabilă istorică din 2025, deoarece schimbă numai antetul
+artefactului din 2040. Nu extind concluzia la certificarea altor perioade.
+
+Comenzi prin wrapper, pe bazele dedicate `.CodexSaftS1R`:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip SAFT -Profil Privat -Sufix .CodexSaftS1R
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip SAFT -Profil Ambele -Sufix .CodexSaftS1R
+```
+
+- Cu cei trei mutanți proprii: `run-verificari/20260929-094820-050`,
+  **86 OK privat**, zero FAIL, exit 0; purja lasă zero postări.
+- Patch adaptat peste `00d8845`:
+  `run-verificari/saft-s0-rv11-review/probe-adverse.patch`.
+- Sursa restaurată și recompilată:
+  `run-verificari/20260929-095014-279`, **16 OK bugetar / 83 OK privat**,
+  zero FAIL, exit 0; manifestul rulării confirmă sursa de cod nemodificată.
+
+Nu am rerulat integrala pentru această corectură de probă. Rulările
+integrale anterioare rămân documentate separat. Review-ul S0 nu mai are
+constatări deschise; nu comută ruta L și nu închide S2/S3 sau probele HTTP.
+Probele temporare sunt retrase, fără modificări de cod rămase și fără commit.

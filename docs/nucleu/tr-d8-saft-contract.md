@@ -8,9 +8,14 @@ de derivare sunt în [S1-R](#s1-r--review-și-tranșări-2026-09-28).**
 declarată, DUK fără `SĂRIT` și cu perioada din antet; regulile și măsurătorile
 sunt în [S0-R](#s0-r--artefactele-validării-fixate-2026-09-29).**
 
-**Review advers S0, reverificat pe `a688c96`: S0-RV1 corectat prin
-salvarea hărții; S0-RV1.1/P2 (asocierile exacte) corectat în S0-R8,
-de reverificat de Codex. XSD/DUK rămân reverificate.**
+**Review advers S0, reverificat pe `00d8845`: S0-RV1 și S0-RV1.1 închise.
+Mutanții de asociere sunt respinși; hărțile originale și santinela 2025-09
+trec. XSD/DUK rămân reverificate. Fără constatări noi în corectură.**
+
+**2026-09-29 — S0 aprobat de owner:** scena pe 2040 cu santinela 2025-09
+(S0-R6) și scriitorul care emite secțiunile fără intrări goale, fără
+totaluri, inclusiv pe ruta publică existentă (S0-R5). S0 este închis;
+comutarea L rămâne la S2 (R1).
 [Raportul Codex](tr-d8-saft-s0-review-codex.md).
 
 Răspunde cererii din `comunicari/2026-09-28-0115-claude-codex-saft-sourcedocuments-contract.md`.

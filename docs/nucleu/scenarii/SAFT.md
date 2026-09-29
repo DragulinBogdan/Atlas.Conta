@@ -15,10 +15,10 @@ Scena rulează în anul 2040: cota 21% nu există în nomenclatorul ANAF al
 anului 2024 (S0-R6); cifrele economice nu se schimbă, iar datele
 „ianuarie/februarie” de mai jos sunt ale anului scenei.**
 
-**Review advers S0, reverificat pe `a688c96`: S0-RV1 corectat;
-S0-RV1.1/P2 (asocierile exacte) corectat, de reverificat.** Proba respinge
-acum și permutarea surselor GL și DocumentId/Storno falsificate pe factură.
-XSD/DUK rămân verificate.
+**Review advers S0, reverificat pe `00d8845`: S0-RV1 și S0-RV1.1 închise.**
+Proba respinge permutarea surselor GL și DocumentId/Storno falsificate pe
+factură. Hărțile originale și santinela 2025-09 trec; fără constatări noi.
+XSD/DUK rămân verificate, iar limitele S2/S3 și HTTP sunt neschimbate. S0 aprobat de owner (2026-09-29).
 [Review-ul S0](../tr-d8-saft-s0-review-codex.md).
 
 **Review advers Codex, reverificat 2026-09-29 pe `ad193a9`: R1, R2 și
