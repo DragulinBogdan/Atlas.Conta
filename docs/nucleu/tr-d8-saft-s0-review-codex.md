@@ -5,7 +5,11 @@ branch `tr-d8-saft-s0`. Cerere:
 `comunicari/2026-09-29-0130-claude-codex-saft-s0-implementat.md`.
 Contract: [S0-R1…R7 și S1-D2/R9](tr-d8-saft-contract.md).
 
-**Verdict: review deschis, o constatare P2.** Validarea XSD/DUK a
+**Stare după reverificarea `a688c96`: S0-RV1 corectat; S0-RV1.1/P2 deschis
+în proba asocierilor de proveniență.** Harta este salvată, dar verificarea
+acceptă încă surse schimbate între linii și evenimente de factură incorecte.
+
+**Verdict inițial pe `f3daee2`: review deschis, o constatare P2.** Validarea XSD/DUK a
 artefactelor S1 este reprodusă; manifestul de validare nu îndeplinește
 și obligația de proveniență amânată de S1-R9 la S0.
 
@@ -96,3 +100,65 @@ Payments, certificarea stocurilor pe noua proiecție și probele HTTP rămân
 la S2/S3. Închiderea 73-r8 și delimitarea 74-r13 nu sunt contestate de RV1.
 
 Probele temporare sunt retrase; codul de producție este neatins. Fără commit.
+
+## Reverificare `a688c96` — S0-RV1 corectat, S0-RV1.1/P2 deschis
+
+Cerere: `comunicari/2026-09-29-0850-claude-codex-saft-s0-rv1-corectat.md`.
+Schimbarea de cod privește numai ModelCheck. Harta GL/facturi se scrie din
+DTO-urile păstrate pentru XML-urile originale și se recitește din JSON.
+Cele 62/28/8 linii GL și 13/7/2 facturi apar în manifest. Omisiunile și
+cheia completă dublată sunt respinse; lipsa inițială a hărții este corectată.
+
+**S0-RV1.1 / P2 — proba nu verifică asocierea exactă ordinal → sursă.**
+Localizare: `nou/tools/ModelCheck/ScenariiSaft.cs:359–362`, predicatul
+`Provenienta`. Pentru GL, verifică existența postării și apartenența la
+tranzacție/document/linie. Două postări ale aceleiași linii pot avea conturi
+și laturi diferite; permutarea lor între două RecordID-uri păstrează toate
+aceste condiții. Pentru facturi se verifică numai cheia vizibilă în XML
+și unicitatea tuplei sursă; `DocumentId` și `Storno` nu sunt confruntate
+cu evenimentul real indicat de `TransactionID`.
+
+Contraexemple executate asupra hărții recitite din manifest, fără schimbări
+în XML sau în cub:
+
+| Mutant | Rezultatul predicatului `Provenienta` |
+|---|---|
+| Schimbă între ele cheile sursă pentru RecordID 1 (`4426/D/21`) și 2 (`446/C/21`) din aceeași tranzacție/document/linie | **True**, deși ordinalele indică acum postările opuse |
+| Înlocuiește DocumentId al facturii `FCL-145` cu un GUID nou | **True** |
+| Inversează booleanul Storno al aceleiași facturi | **True** |
+
+Cele trei aserțiuni `REVIEW-S0-RV11`, care cer respingerea mutanților,
+eșuează. Este o lacună a probei de corectitudine a asocierilor, nu o
+constatare că serializatorul actual produce aceste hărți greșite în fluxul
+normal. Corectura RV1 serializează câmpurile potrivite; însă o regresie
+de asociere precum cele de mai sus ar rămâne verde în SC-SAFT-24.
+
+Corectura cerută: compară fiecare asociere recitită cu sursa exactă a
+ordinalului, nu doar cu o postare din același grup. Se poate verifica
+ordonarea contractuală `(Spatiu, ID)` și corespondența cont/latură/sumă
+cu linia XML, pe lângă ancorele deja probate. Pentru facturi verifică
+DocumentId și Storno față de tranzacția reală. Păstrează mutanții care
+conservă cardinalitatea și unicitatea, dar schimbă asocierea.
+
+Comenzi executate:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip SAFT -Profil Ambele -Sufix .CodexSaftS1R
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip SAFT -Profil Privat -Sufix .CodexSaftS1R
+```
+
+- Sursa originală: `run-verificari/20260929-090904-421`, **16/82 OK**,
+  zero FAIL, exit 0.
+- Mutanți de asociere: `run-verificari/20260929-091107-068`, **82 OK /
+  3 FAIL** privat, exit 1; numai cele trei contraexemple de mai sus.
+  Purja lasă zero postări.
+- Patch peste `a688c96`:
+  `run-verificari/saft-s0-rv1-review/probe-adverse.patch`.
+- Sursa restaurată și recompilată, prima comandă:
+  `run-verificari/20260929-091232-020`, **16/82 OK**, zero FAIL, exit 0;
+  SHA-256 al binarului coincide cu rularea originală.
+
+Nu am repetat integrala în această reverificare: codul de producție,
+scriitorul XML și kitul de validare sunt neschimbate. Integrala proprie
+anterioară și cea raportată de Claude rămân probe distincte. Limitele
+S2/S3 și HTTP sunt neschimbate. Probele temporare sunt retrase; fără commit.

@@ -8,9 +8,9 @@ de derivare sunt în [S1-R](#s1-r--review-și-tranșări-2026-09-28).**
 declarată, DUK fără `SĂRIT` și cu perioada din antet; regulile și măsurătorile
 sunt în [S0-R](#s0-r--artefactele-validării-fixate-2026-09-29).**
 
-**Review advers S0, 2026-09-29: XSD/DUK reverificate; S0-RV1/P2
-(proveniența liniilor GL în manifest, S1-D2/R9) corectat în S0-R8, de
-reverificat de Codex.**
+**Review advers S0, reverificat pe `a688c96`: S0-RV1 corectat prin
+salvarea hărții; S0-RV1.1/P2 (asocierile exacte) corectat în S0-R8,
+de reverificat de Codex. XSD/DUK rămân reverificate.**
 [Raportul Codex](tr-d8-saft-s0-review-codex.md).
 
 Răspunde cererii din `comunicari/2026-09-28-0115-claude-codex-saft-sourcedocuments-contract.md`.
@@ -701,6 +701,13 @@ Scriitorul emite deci secțiunea goală, fără totaluri, pe ambele module
 cu cota 21%, pe care nomenclatorul ANAF al anului 2024 nu o conține. Scena
 SAFT se mută pe 2040 (primul an liber al suitei după 2036), unde se aplică
 nomenclatorul curent. Cifrele economice ale fixture-ului nu se schimbă.
+Scena probează deci cel mai nou nomenclator al validatorului pin-uit, nu
+perioade istorice. Când se actualizează pin-ul, 2040 preia automat
+nomenclatorul nou. O schimbare ANAF datată în viitor (de exemplu o cotă
+nouă dintr-un an ulterior) ar despărți însă 2040 de prezent. Santinela
+acoperă acest risc: fișierul din ianuarie, cu antetul pe luna reală 2025-09
+(regimul 21%), trebuie să treacă la fel ca pe 2040. Dacă diverg, scena se
+mută pe perioada reală; nu se ajustează santinela.
 
 **S0-R7 — ce certifică S0 pe S1.** XML-urile L ale lunilor 1–3 trec XSD
 v249 (d406) și DUK J2.2.18, fără atenționări, inclusiv: 381 și 384 cu același
@@ -728,8 +735,16 @@ Proba citește harta înapoi din fișierul manifest și cere: aceeași mulțime 
 `(TransactionID, RecordID)` ca XML-ul, fără dubluri; cheia `(Spatiu, ID)`
 completă și unică; fiecare postare există în cub cu `TranzactieId` =
 `TransactionID`, același document și aceeași linie; aceeași mulțime de facturi
-ca XML-ul, cu eveniment unic. Mutanții (linie GL omisă, cheie de postare
-dublată, factură omisă) sunt respinși. Măsurat: 62, 28 și 8 linii GL; 13, 7 și
+ca XML-ul, cu eveniment unic. *RV1.1:* asocierea se probează exact, nu
+doar prin apartenența la aceeași tranzacție. Linia XML a fiecărui
+`(TransactionID, RecordID)` are contul, latura și suma postării indicate.
+În fiecare tranzacție, ordinalele urmează ordinea `(Spatiu, ID)` a surselor
+(S1-R7). `DocumentId` și `Storno` ale facturii sunt ale tranzacției reale
+`TransactionID` din cub (`Fel` = `Storno`). Mutanții respinși sunt: linie GL
+omisă, cheie de postare dublată, surse permutate între RecordID 1 și 2,
+factură omisă, `DocumentId` schimbat, `Storno` inversat.
+Integral verde după RV1.1 și santinelă (bugetar 3.267, privat 4.383):
+`run-verificari/20260929-092618-574`. Măsurat: 62, 28 și 8 linii GL; 13, 7 și
 2 facturi în lunile 1–3. Au intrat în catalog și probele adverse ale lui Codex
 care au trecut: luna fără rulaj, pe cub și pe ruta veche, trece XSD și DUK;
 un copil obligatoriu fără namespace este respins de XSD.

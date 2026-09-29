@@ -15,9 +15,10 @@ Scena rulează în anul 2040: cota 21% nu există în nomenclatorul ANAF al
 anului 2024 (S0-R6); cifrele economice nu se schimbă, iar datele
 „ianuarie/februarie” de mai jos sunt ale anului scenei.**
 
-**Review advers S0, 2026-09-29: S0-RV1/P2 corectat (S0-R8), de
-reverificat.** XSD/DUK și luna fără rulaj sunt reverificate; manifestul
-leagă acum fiecare RecordID de cheia completă a postării (S1-D2/R9).
+**Review advers S0, reverificat pe `a688c96`: S0-RV1 corectat;
+S0-RV1.1/P2 (asocierile exacte) corectat, de reverificat.** Proba respinge
+acum și permutarea surselor GL și DocumentId/Storno falsificate pe factură.
+XSD/DUK rămân verificate.
 [Review-ul S0](../tr-d8-saft-s0-review-codex.md).
 
 **Review advers Codex, reverificat 2026-09-29 pe `ad193a9`: R1, R2 și
@@ -58,8 +59,8 @@ data facturii F și a stornoului, recepția la FCT față de NIR.
 | SC-SAFT-21 | TI21 net 100: GL cost 100, furnizor 100, TVA D21/C21; debit=credit=121, factură de plată 100, nu 121 | SAFT-TAXARE-INVERSA | SC-FCT-10, S1-D4 | Verificat; diferența A/B de brut (vechi 121) clasificată |
 | SC-SAFT-22 | Serviciu 2 ore × 50: cantitate cub 0, comercială 2; net cub 100/TVA21; factura are 2 și preț 50, nu cantitate 0/1 | SAFT-CANTITATE-COMERCIALA | S1-D4, declarant FCT Netul | Verificat, inclusiv corecția 3 × 40 și refuzul editării liniei operate |
 | SC-SAFT-23 | Factură din 8 ianuarie primită/înregistrată la 5 februarie: ianuarie 0; februarie 100/21/121; InvoiceDate/TaxPointDate 8 ianuarie, GLPostingDate 5 februarie | SAFT-FACTURA-INTARZIATA | S1-D3/D5; fixture cu exigibilitate explicită 8 ianuarie | Verificat |
-| SC-SAFT-24 | XML L lunile 1–3 (anul 2040): XSD v249 cu namespace-ul `d406` substituit declarat și DUK J2.2.18 pe perioada din antet, zero erori și atenționări; februarie are 381 și 384 cu același `InvoiceNo`; `SalesInvoices` fără intrări scris gol; luna 4 fără rulaj (cub și ruta veche) validă; `manifest-d406.json` cu SHA-256 al artefactelor și proveniența fiecărei linii GL și facturi, verificată contra XML-ului și a cubului | SAFT-S0-CERTIFICARE | S0-R1…R8 | Verificat (ScenariiSaft) |
-| SC-SAFT-25 | Mutanți: antetul ianuarie pe 2024 → codurile cotei 21% respinse de DUK; tranzacție fără `GLPostingDate` → XSD respinge; namespace `d406t` → XSD derivat și DUK D406 resping; copil obligatoriu fără namespace → XSD respinge; manifest cu linie GL omisă, cheie de postare dublată sau factură omisă → respins | SAFT-S0-MUTANTI | S0-R3, S0-R4, S0-R8 | Verificat (ScenariiSaft) |
+| SC-SAFT-24 | XML L lunile 1–3 (anul 2040): XSD v249 cu namespace-ul `d406` substituit declarat și DUK J2.2.18 pe perioada din antet, zero erori și atenționări; februarie are 381 și 384 cu același `InvoiceNo`; `SalesInvoices` fără intrări scris gol; luna 4 fără rulaj (cub și ruta veche) validă; santinela: ianuarie cu antetul pe 2025-09 trece la fel ca pe 2040; `manifest-d406.json` cu SHA-256 al artefactelor și proveniența fiecărei linii GL și facturi, verificată contra XML-ului și a cubului | SAFT-S0-CERTIFICARE | S0-R1…R8 | Verificat (ScenariiSaft) |
+| SC-SAFT-25 | Mutanți: antetul ianuarie pe 2024 → codurile cotei 21% respinse de DUK; tranzacție fără `GLPostingDate` → XSD respinge; namespace `d406t` → XSD derivat și DUK D406 resping; copil obligatoriu fără namespace → XSD respinge; manifest cu linie GL omisă, cheie de postare dublată, surse permutate între RecordID-uri, factură omisă, DocumentId schimbat sau Storno inversat → respins | SAFT-S0-MUTANTI | S0-R3, S0-R4, S0-R8 | Verificat (ScenariiSaft) |
 
 ## SC-SAFT-15…17 — probe structurale cu rezultate măsurabile
 

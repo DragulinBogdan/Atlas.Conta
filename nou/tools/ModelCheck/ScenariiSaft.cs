@@ -298,9 +298,14 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
             && Optional("AuditFile", "SourceDocuments", "PurchaseInvoices", "Invoice", "GLPostingDate")
             && Optional("AuditFile", "SourceDocuments", "Payments", "Payment", "PaymentLine", "SourceDocumentID"));
 
-        var perioada = Valideaza("mutant-antet-2024", Muta(ianuarie, d => {
-            foreach (var an in new[] { "PeriodStartYear", "PeriodEndYear" }) d.Descendants(ns + an).Single().Value = "2024";
-        }));
+        byte[] CuAntet(int an, int luna) => Muta(ianuarie, d => {
+            foreach (var (camp, valoare) in new[] { ("PeriodStartYear", an), ("PeriodEndYear", an), ("PeriodStart", luna), ("PeriodEnd", luna) })
+                d.Descendants(ns + camp).Single().Value = valoare.ToString();
+        });
+        var santinela = Valideaza("santinela-antet-2025-09", CuAntet(2025, 9));
+        Verifica("SC-SAFT-24", "santinelă: ianuarie validat pe nomenclatorul lunii reale 2025-09 (regimul 21%) trece ca pe 2040",
+            santinela.Duk is { Valid: true, Perioada: (2025, 9) } && santinela.EroriXsd.Count == 0);
+        var perioada = Valideaza("mutant-antet-2024", CuAntet(2024, 1));
         Verifica("SC-SAFT-25", "mutant: același fișier cu antetul pe 2024 e validat pe nomenclatorul 2024, iar codurile cotei 21% sunt respinse",
             perioada.Duk is { Disponibil: true, Valid: false, Perioada: (2024, 1) }
             && perioada.Duk.Erori.Any(e => e.Contains("nu se afla in lista", StringComparison.Ordinal)));
@@ -329,13 +334,23 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
             var continut = new[] { ianuarie, februarie, martie }[luna - 1];
             var p = ValidareD406.CitesteProvenienta(manifest, v.Fisier);
             Console.WriteLine($"     MĂSURAT (S0 proveniență luna {luna}): {p.Gl.Count} linii GL, {p.Facturi.Count} facturi");
-            Verifica("SC-SAFT-24", $"luna {luna}: manifestul leagă fiecare (TransactionID, RecordID) al XML-ului de (Spatiu, ID) al postării din cub, unic și complet; facturile de eveniment",
+            Verifica("SC-SAFT-24", $"luna {luna}: manifestul leagă fiecare (TransactionID, RecordID) de postarea lui exactă (cont, latură, sumă, ordinea Spatiu/ID) și fiecare factură de tranzacția reală (document, storno)",
                 Provenienta(p, continut));
             if (luna == 1)
-                Verifica("SC-SAFT-25", "mutanți de proveniență: o linie GL omisă, o cheie de postare dublată și o factură omisă sunt respinse",
-                    !Provenienta(p with { Gl = p.Gl.Skip(1).ToList() }, continut)
+            {
+                var (a, b) = (p.Gl[0], p.Gl[1]);
+                List<LegaturaGl> permutate = [a with { Spatiu = b.Spatiu, PostareId = b.PostareId }, b with { Spatiu = a.Spatiu, PostareId = a.PostareId }, .. p.Gl.Skip(2)];
+                var f0 = p.Facturi[0];
+                Verifica("SC-SAFT-25", "mutanți de proveniență: linie GL omisă, cheie de postare dublată, surse permutate între RecordID 1 și 2, "
+                    + "factură omisă, DocumentId schimbat și Storno inversat sunt respinse",
+                    a.TransactionID == b.TransactionID
+                    && !Provenienta(p with { Gl = p.Gl.Skip(1).ToList() }, continut)
                     && !Provenienta(p with { Gl = [.. p.Gl.Take(p.Gl.Count - 1), p.Gl[^1] with { PostareId = p.Gl[0].PostareId, Spatiu = p.Gl[0].Spatiu }] }, continut)
-                    && !Provenienta(p with { Facturi = p.Facturi.Skip(1).ToList() }, continut));
+                    && !Provenienta(p with { Gl = permutate }, continut)
+                    && !Provenienta(p with { Facturi = p.Facturi.Skip(1).ToList() }, continut)
+                    && !Provenienta(p with { Facturi = [f0 with { DocumentId = Guid.NewGuid() }, .. p.Facturi.Skip(1)] }, continut)
+                    && !Provenienta(p with { Facturi = [f0 with { Storno = !f0.Storno }, .. p.Facturi.Skip(1)] }, continut));
+            }
         }
         Verifica("SC-SAFT-24", "manifestul rulării fixează XSD, schema derivată, kitul, nomenclatorul și SHA-256 al fiecărui fișier",
             File.Exists(manifest) && validari.All(v => v.Sha256.Length == 64));
@@ -344,22 +359,42 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
     bool Provenienta(ProvenientaD406 p, byte[] xml) {
         XNamespace ns = SaftXml.SpatiuNume;
         var doc = XDocument.Load(new MemoryStream(xml));
-        var liniiXml = doc.Descendants(ns + "Transaction").SelectMany(t => t.Elements(ns + "TransactionLine")
-            .Select(l => ((string)t.Element(ns + "TransactionID"), (string)l.Element(ns + "RecordID")))).ToList();
+        var liniiXml = doc.Descendants(ns + "Transaction").SelectMany(t => t.Elements(ns + "TransactionLine").Select(l => {
+            var suma = l.Element(ns + "DebitAmount") ?? l.Element(ns + "CreditAmount");
+            return (Cheie: ((string)t.Element(ns + "TransactionID"), (string)l.Element(ns + "RecordID")),
+                Cont: (string)l.Element(ns + "AccountID"), Latura: suma?.Name.LocalName == "DebitAmount" ? "D" : "C",
+                Suma: decimal.Parse((string)suma?.Element(ns + "Amount") ?? "", Inv));
+        })).ToList();
         var facturiXml = new[] { "SalesInvoices", "PurchaseInvoices" }.SelectMany(s => doc.Descendants(ns + s).Elements(ns + "Invoice")
             .Select(f => (s, (string)f.Element(ns + "InvoiceNo"), (string)f.Element(ns + "InvoiceType"), (string)f.Element(ns + "TransactionID"))))
             .OrderBy(x => x).ToList();
         var ids = p.Gl.Select(l => l.PostareId).ToList();
-        var cub = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(x => ids.Contains(x.ID))
-            .Select(x => new { x.Spatiu, x.ID, x.TranzactieId, x.DocumentId, x.LinieId }).ToList());
+        var tranzactii = p.Facturi.Select(f => Guid.Parse(f.TransactionID)).ToList();
+        var (cub, simboluri, evenimente) = CuSpatiu(os => (
+            os.GetObjectsQuery<C.Postare>().Where(x => ids.Contains(x.ID))
+                .Select(x => new { x.Spatiu, x.ID, x.TranzactieId, x.DocumentId, x.LinieId, x.Cont, x.Latura, x.Valoare }).ToList(),
+            os.GetObjectsQuery<Cont>().ToDictionary(c => c.ID, c => c.Simbol),
+            os.GetObjectsQuery<C.Tranzactie>().Where(t => tranzactii.Contains(t.ID))
+                .Select(t => new { t.ID, t.DocumentId, t.Fel }).ToList().ToDictionary(t => t.ID.ToString())));
+        var dupaCheie = liniiXml.GroupBy(l => l.Cheie).ToDictionary(g => g.Key, g => g.First());
+        bool Sursa(LegaturaGl l) => dupaCheie.TryGetValue((l.TransactionID, l.RecordID), out var x)
+            && cub.SingleOrDefault(c => c.Spatiu == l.Spatiu && c.ID == l.PostareId) is { } c
+            && c.TranzactieId.ToString() == l.TransactionID && (c.DocumentId ?? Guid.Empty) == l.DocumentId && c.LinieId == l.LinieId
+            && simboluri.GetValueOrDefault(c.Cont) == x.Cont && (c.Latura == Atlas.Conta.Nucleu.Latura.Debit ? "D" : "C") == x.Latura
+            && c.Valoare == x.Suma;
+        bool Ordonata(IEnumerable<LegaturaGl> tranzactie) {
+            var surse = tranzactie.OrderBy(l => int.Parse(l.RecordID, Inv)).Select(l => (l.Spatiu, l.PostareId)).ToList();
+            return surse.Zip(surse.Skip(1)).All(x => x.First.Spatiu < x.Second.Spatiu
+                || x.First.Spatiu == x.Second.Spatiu && x.First.PostareId.CompareTo(x.Second.PostareId) < 0);
+        }
         return p.Gl.Count > 0 && p.Gl.Count == liniiXml.Count
-            && p.Gl.Select(l => (l.TransactionID, l.RecordID)).ToHashSet().SetEquals(liniiXml)
-            && liniiXml.Distinct().Count() == liniiXml.Count
+            && p.Gl.Select(l => (l.TransactionID, l.RecordID)).ToHashSet().SetEquals(liniiXml.Select(l => l.Cheie))
+            && dupaCheie.Count == liniiXml.Count
             && p.Gl.All(l => l.Spatiu != null) && p.Gl.Select(l => (l.Spatiu, l.PostareId)).Distinct().Count() == p.Gl.Count
-            && p.Gl.All(l => cub.Any(c => c.Spatiu == l.Spatiu && c.ID == l.PostareId && c.TranzactieId.ToString() == l.TransactionID
-                && (c.DocumentId ?? Guid.Empty) == l.DocumentId && c.LinieId == l.LinieId))
+            && p.Gl.All(Sursa) && p.Gl.GroupBy(l => l.TransactionID).All(Ordonata)
             && p.Facturi.Select(f => (f.Sectiune, f.InvoiceNo, f.InvoiceType, f.TransactionID)).OrderBy(x => x).SequenceEqual(facturiXml)
-            && p.Facturi.Select(f => (f.DocumentId, f.Storno, f.TransactionID)).Distinct().Count() == p.Facturi.Count;
+            && p.Facturi.All(f => evenimente.TryGetValue(f.TransactionID, out var t) && t.DocumentId == f.DocumentId
+                && (t.Fel == Atlas.Conta.Nucleu.FelTranzactie.Storno) == f.Storno);
     }
 
     void UnitateIstorica(Guid produs, Guid factura) {
