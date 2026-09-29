@@ -18,8 +18,9 @@ totaluri, inclusiv pe ruta publică existentă (S0-R5). S0 este închis;
 comutarea L rămâne la S2 (R1).
 [Raportul Codex](tr-d8-saft-s0-review-codex.md).
 
-**2026-09-29 — S2 (Payments + comutarea L) propus de Claude**, pentru review
-Codex și alegerile owner-ului S2-Q1/S2-Q2: [S2](#s2--payments-și-comutarea-l-contract-pentru-aprobare).
+**2026-09-29 — S2 (Payments + comutarea L) propus de Claude; owner: S2-Q1 =
+stornoul neagă liniile declarate, S2-Q2 = compensarea în afara S2 (SAFT-r1),
+implementare în paralel cu review-ul Codex:** [S2](#s2--payments-și-comutarea-l-contract-pentru-aprobare).
 
 Răspunde cererii din `comunicari/2026-09-28-0115-claude-codex-saft-sourcedocuments-contract.md`.
 Bază inspectată: `faa8b2d`. Contracte existente: 073, 074, 090, 091,
@@ -761,8 +762,8 @@ Integral verde pe ambele profiluri (bugetar 3.267, privat 4.382):
 
 ## S2 — Payments și comutarea L: contract pentru aprobare
 
-Stare: **propus de Claude (2026-09-29), pentru review Codex și alegerile
-owner-ului S2-Q1 și S2-Q2.** Bază inspectată: `1985d7e` (S0 închis). Nu schimbă
+Stare: **propus de Claude (2026-09-29); S2-Q1 și S2-Q2 tranșate de owner
+(S2-R1, S2-R2), implementarea aprobată în paralel cu review-ul Codex.** Bază inspectată: `1985d7e` (S0 închis). Nu schimbă
 motorul, scrierea registrelor, împerecherea sau politica mișcărilor. Payments
 se derivă numai din cub; `Imperechere` rămâne metadatele comenzii, nu sursa
 alocării. La ieșire, ruta publică L comută pe cub (R1).
@@ -978,3 +979,16 @@ mecanism de acces care nu detectează o restricție condițională de rând sau
 de membru (nu comutăm pe un export care poate ascunde rânduri); o formă
 Payments respinsă de DUK (50 + 20 fără referință, R4) — revenim cu
 alternativă, fără referință inventată.
+
+### S2-R — tranșările owner-ului (2026-09-29)
+
+**S2-R1 — stornoul plății.** Varianta recomandată din S2-D3: liniile
+stornoului sunt liniile `Operare`-ului calculate la E_O, negate. Legătura
+de după E_O nu apare în nicio declarație.
+
+**S2-R2 — compensarea.** Azi compensarea este o notă contabilă culeasă cu
+repartitori pe linii (48b); nu există un document de compensare care să-și
+genereze singur postările. Un astfel de document, cu declarant propriu, ar fi
+sursa firească a unei plăți 02/97. De aceea compensarea nu intră în S2, iar
+explorarea documentului de compensare devine restanța **SAFT-r1**. Efectul
+unei NTC asupra alocării unei plăți rămâne în S2-D3.2 (SC-SAFT-31).
