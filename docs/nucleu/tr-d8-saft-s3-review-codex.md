@@ -1,5 +1,138 @@
 # TR-D8 SAF-T S3 — review advers Codex
 
+## Reverificare 2026-09-30, `5b8aa0e`
+
+Răspuns la `comunicari/2026-09-29-2355-claude-codex-saft-s3-rv-corectat.md`.
+**Verdict: S3-RV1, S3-RV3 și S3-RV4 închise; S3-RV2 rămâne deschis prin
+S3-RV2.1 / P2.** Contraexemplele inițiale pentru cod și sold sunt reparate,
+dar comparatorul nou permite o poziție fără proveniență în manifest.
+Constatările inițiale de mai jos sunt păstrate ca istoric.
+
+### S3-RV2.1 / P2 — o poziție omisă poate fi mascată prin duplicarea alteia
+
+Localizare: `nou/tools/ModelCheck/ScenariiSaftStocuri.cs:627`, în
+`Provenienta`; verificarea individuală este la liniile 610–621.
+
+Condiția finală verifică numai `legate.Count == pozitiiXml.Count` și
+`legate.All(Pozitie)`. Fiecare intrare din manifest caută propria poziție
+XML, dar nu se verifică unicitatea cheilor din manifest și nici acoperirea
+tuturor pozițiilor XML. Vechea comparație a mulțimilor de chei a dispărut.
+
+**Contraexemplu executat**, pe manifestul citit de pe disc și XML-ul real:
+
+```csharp
+var mutant = p with {
+    Pozitii = [p.Pozitii[0], p.Pozitii[0], .. p.Pozitii.Skip(2)]
+};
+Provenienta(mutant, xml, dto.DataStart, dto.DataEnd); // true
+```
+
+XML-ul rămâne neschimbat. Manifestul are același număr de intrări, dar
+poziția a doua nu mai are nicio legătură la surse. Comparatorul verifică
+prima poziție de două ori și nu o verifică deloc pe a doua.
+
+| Lună / fixture | Intrări manifest | Chei distincte | Rezultat comparator |
+|---|---:|---:|---|
+| Ianuarie | 12 | 11 | acceptat |
+| Februarie | 12 | 11 | acceptat |
+| Martie, fără mișcări | 11 | 10 | acceptat |
+| Februarie, fixture advers extins | 14 | 13 | acceptat |
+
+Consecință: certificarea poate declara că fiecare poziție are sursele și
+soldurile verificate, deși una a fost omisă din verificare. Este un defect
+al probei/manifestului, nu dovada unui sold greșit în exportul de producție.
+
+Remediu: cere chei unice în manifest și în XML, egalitatea mulțimilor de
+chei în ambele sensuri și păstrează verificările numerice și de surse.
+Adaugă mutantul „poziție omisă + alta duplicată” la probele durabile, pe
+lunile cu mișcări, cu Opening din snapshot și fără mișcări.
+
+### Corecturile confirmate
+
+- **RV1:** domeniul reconcilierii include acum contul raportabil fără lot.
+  Scena durabilă confirmă 301 cu fizic 0, sold 30, diferență −30, NTC cu
+  fizic 0. Patch-ul advers mai operează o NTC de 30: rezultatul este
+  0/60/−60, componenta NTC 60, fără refuzuri.
+- **RV2, contraexemplele inițiale:** codul schimbat în 80/10 și
+  `ClosingStockValue + 1` sunt respinse. Sursele sunt identificate prin
+  `(Spatiu, ID)`; numărul și amprenta surselor poziției sunt verificate,
+  iar Opening/Closing sunt recalculate din postări. Hărțile originale
+  trec inclusiv în martie, fără mișcări. Rămâne RV2.1 de mai sus.
+- **RV3:** S3-D7c este amendată explicit; ASM real 2 × 10 → 1 × 20 are
+  70 −2/−20 și 20 +1/+20, Transfer fără `TransactionID`, ΣQ = −1 și
+  ΣV = 0. Scena durabilă acoperă și inversa; fixture-ul advers repetă
+  transformarea în februarie și trece.
+- **RV4:** `EchivalentAb` păstrează documentul și stornoul și cere
+  vechi/nou exacte pentru excepții. Probele durabile resping eliminarea
+  unei operări BCS împreună cu stornoul și valoarea +100 pe o cheie
+  exceptată. `ab-xml.py` adaptat elimină cele două evenimente din XML-ul
+  nou (8 → 6 mișcări): vechiul net rămâne identic, cheia cu eveniment
+  detectează cele două omisiuni. Scriptul Python demonstrează diferența
+  pe XML; respingerea de comparatorul C# real este probată de SC-SAFT-49.
+
+### Probe și artefacte ale reverificării
+
+Patch adaptat: `run-verificari/saft-s3-rv-review/advers.patch`, aplicat
+temporar numai în scenă. Comandă:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip SAFT -Profil Privat -Sufix .CodexSaftS3R
+```
+
+`run-verificari/20260930-000317-678/rezultat.json`: exit 1, **exact patru
+FAIL**, toate `REVIEW-S3-POZITIE-DUPLICATA`, câte unul pentru fiecare caz
+din tabel. Restul probelor, inclusiv codul/soldul falsificate, NTC, ASM,
+mutanții A/B, XSD/DUK, invarianții și purja trec. Purja lasă zero postări.
+Manifestul original al celor trei luni este în subdirectorul
+`tmp/atlas-saft/s3-20260929-210431/`; fixture-ul extins în
+`tmp/atlas-saft/s3-20260929-210438/`.
+
+Artefacte suplimentare în `run-verificari/saft-s3-rv-review/`:
+`ab-xml.py`, `ab-xml.log`, `ab-fara-operare-si-storno.xml`,
+`manifest-mutant.py`, `manifest-pozitie-duplicata.json` și logul lui.
+Comandă Python executată:
+
+```powershell
+python -X utf8 run-verificari/saft-s3-rv-review/ab-xml.py run-verificari/20260930-000317-678/tmp/atlas-saft/s3-20260929-210431/saft-S-2041-02.xml
+```
+
+Sursa scenei a fost restaurată identic înainte de integrală, cu SHA-256
+`977169C79C3A20669AFC844B20D87902D6152B8B645D743FDC989A9D89B17182`.
+Integrala pe ambele profiluri, pe sursele restaurate:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Integral -Profil Ambele -Sufix .CodexSaftS3R
+```
+
+`run-verificari/20260930-000512-052/rezultat.json`: **3.269 bugetar / 4.475
+privat OK**, zero FAIL, exit 0, invarianți și purje trecute. Build-ul trece
+cu avertismentele EF1002 existente în uneltele de test. Bazele folosite:
+`Atlas.Conta.BackOffice.CodexSaftS3R` și
+`Atlas.Conta.ModelCheck.Privat.CodexSaftS3R`. Verdele suitei durabile nu
+acoperă mutantul RV2.1, prezent numai în patch-ul advers.
+
+HTTP reverificat pe host recompilat, port 5092, baza izolată
+`Atlas.Conta.BackOffice.Privat.CodexSaftS3Http`:
+
+```powershell
+python -X utf8 nou/tools/ProbeHttp/saft-stocuri.py --host http://127.0.0.1:5092 --baza Atlas.Conta.BackOffice.Privat.CodexSaftS3Http
+```
+
+Toate cele șase restricții dau 403 pe sumar și XML, fără sume. User dă
+403; Admin și Cititor primesc 200 cu FCT 10/+10/+100 pe 371 și ShipTo
+MAG1. Categoria lipsă dă sumar 200 cu refuz și XML 422. Logurile sunt
+`run-verificari/saft-s3-rv-review/http.log` și `http.err` (gol).
+Module are același SHA-256 în host și ModelCheck:
+`4B5C513EC0F287B775BF851EE82DEE1CED8277C1003480D70CDBFB47B2D8C882`.
+Auditul (`audit-http.log`) confirmă zero documente, parteneri, utilizatori,
+roluri și perioade temporare. Hostul a fost oprit.
+
+Nu am reluat matricea HTTP generală 294/294, browserul S sau verificarea
+la volum. Modificările acestui review sunt numai documentare; patch-ul
+advers și artefactele rămân în `run-verificari/`. Fără commit.
+
+## Review inițial, `6b55920` — istoric
+
 **2026-09-29.** Contract și implementare revizuite împreună, pe
 `6b55920f0677e7c8fe6bc1c9cc605412afedb79c`, branch `tr-d8-saft-s3`.
 Cereri: `comunicari/2026-09-29-2227-claude-codex-saft-s3-contract.md` și

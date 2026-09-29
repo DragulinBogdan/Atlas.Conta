@@ -518,6 +518,8 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
                 + "fiecărei mișcări e cel al politicii pe tipul, categoria și semnul originii, iar fiecare poziție are sursele "
                 + "(număr și SHA-256) din care Opening și Closing se recalculează direct din postări",
                 Provenienta(p, xml, dto.DataStart, dto.DataEnd) && ValidareD406.ShaCategorii(p.CategoriiStoc)?.Length == 64);
+            Verifica("SC-SAFT-49", $"luna {dto.Luna}: manifestul cu o poziție omisă și alta duplicată în locul ei este respins",
+                !Provenienta(p with { Pozitii = [p.Pozitii[0], p.Pozitii[0], .. p.Pozitii.Skip(2)] }, xml, dto.DataStart, dto.DataEnd));
             if (dto.Luna != 1) continue;
             var a = p.Miscari[0];
             var b = p.Miscari.First(x => !x.Postari.Any(s => a.Postari.Any(t => t.Id == s.Id)));
@@ -608,6 +610,8 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
                 && cod != null && x.Cod == cod && x.L.SubCod == cod;
         }
         var legate = (p.Pozitii ?? []).ToList();
+        var cheiLegate = legate.Select(z => (z.WarehouseID, z.ProductCode, z.StockAccountNo, z.ProductType)).ToList();
+        var cheiXml = pozitiiXml.Select(e => e.Cheie).ToList();
         bool Pozitie(LegaturaPozitie z) {
             var gasite = pozitiiXml.Where(e => e.Cheie == (z.WarehouseID, z.ProductCode, z.StockAccountNo, z.ProductType)).ToList();
             if (gasite.Count != 1 || Surse(z, capat) != (z.Surse, z.ShaSurse)) return false;
@@ -624,6 +628,8 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
             && miscari.Select(m => (m.MovementReference, m.LineNumber)).ToHashSet().SetEquals(linii.Select(l => l.Cheie))
             && ids.Distinct().Count() == ids.Count && miscari.All(Linie)
             && miscariXml.All(m => m.Linii.All(l => l.SubCod == m.Cod))
-            && legate.Count == pozitiiXml.Count && legate.All(Pozitie);
+            && cheiLegate.Distinct().Count() == cheiLegate.Count && cheiXml.Distinct().Count() == cheiXml.Count
+            && cheiLegate.ToHashSet().SetEquals(cheiXml)
+            && legate.Select(z => (z.Lot, z.Cont, z.Produs, z.Gestiune)).Distinct().Count() == legate.Count && legate.All(Pozitie);
     }
 }

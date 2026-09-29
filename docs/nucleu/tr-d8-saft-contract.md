@@ -1504,3 +1504,14 @@ plus o diferență de 100 pe o cheie exceptată.
 Integral verde după corecturi (bugetar 3.269, privat 4.475):
 `run-verificari/20260929-234107-166`; scenele DES + SAFT: `run-verificari/20260929-233856-839`;
 HTTP extins: `run-verificari/saft-s3-http-probe.log`.
+
+**S3-RV2.1 — cheile poziției în manifest (reverificarea Codex, 2026-09-30).**
+RV1, RV3 și RV4 sunt închise. Comparatorul verifica numai numărul
+intrărilor de poziție, astfel că o poziție omisă și alta duplicată în locul
+ei treceau. Acum cheile `(WarehouseID, ProductCode, StockAccountNo,
+ProductType)` sunt unice în manifest și în XML, iar mulțimile sunt egale în
+ambele sensuri. Cheia sursă `(Lot, Cont, Produs, Gestiune)` este și ea unică.
+Verificările numerice și ale surselor rămân. Mutantul lui Codex e respins
+în scenă pe fiecare lună certificată: ianuarie, februarie cu Opening din
+snapshot și martie fără mișcări. Scenele SAFT sunt verzi pe ambele profiluri:
+`run-verificari/20260930-004543-140`. Producția nu se schimbă.

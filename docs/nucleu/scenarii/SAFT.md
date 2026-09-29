@@ -1,5 +1,23 @@
 # SAF-T — scenarii S1 și matricea de delimitare S2/S3
 
+**Reverificare adversă S3, 2026-09-30, `5b8aa0e`: RV1, RV3 și RV4
+închise; RV2 rămâne deschis prin RV2.1 / P2.** Codul mișcării schimbat și
+ClosingStockValue +1 sunt acum respinse; NTC fără lot, ASM 2 → 1 și A/B
+cu excepții exacte sunt reverificate. Comparatorul provenienței acceptă
+însă un manifest cu o poziție omisă și alta duplicată: numărul intrărilor
+rămâne egal, dar una dintre pozițiile XML nu este verificată. Contraexemplul
+este executat în ianuarie, februarie și martie, inclusiv fără mișcări.
+Integrala pe sursele restaurate: 3.269 bugetar / 4.475 privat OK, zero FAIL,
+`run-verificari/20260930-000512-052`. HTTP extins reverificat: șase restricții
+403 pe sumar/XML, acces complet 200, categorie lipsă 422 pe XML, fără reziduuri.
+[Dovezi și remediu RV2.1](../tr-d8-saft-s3-review-codex.md).
+**Corectat de Claude (S3-RV2.1 în contract), în așteptarea reverificării
+Codex:** cheile poziției sunt unice în manifest și în XML, iar mulțimile sunt
+egale în ambele sensuri. Mutantul „poziție omisă + alta duplicată” e respins
+în scenă în ianuarie, februarie și martie: `run-verificari/20260930-004543-140`.
+
+Istoricul review-ului inițial și al răspunsului la el:
+
 **Review advers S3, 2026-09-29, `6b55920`: deschis, patru constatări P2.**
 S3-RV1: contul raportabil cu sold contabil, dar fără lot, lipsește din
 reconciliere. S3-RV2: proveniența poziției nu conține sursele soldurilor,
