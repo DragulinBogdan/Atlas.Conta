@@ -4,6 +4,25 @@
 S1 aprobat de owner cu S1-D5 = B' (381 + 384); review-ul și regulile
 de derivare sunt în [S1-R](#s1-r--review-și-tranșări-2026-09-28).**
 
+**2026-09-29 — S0 implementat: manifest pin-uit, XSD v249 cu substituție
+declarată, DUK fără `SĂRIT` și cu perioada din antet; regulile și măsurătorile
+sunt în [S0-R](#s0-r--artefactele-validării-fixate-2026-09-29).**
+
+**Review advers S0, reverificat pe `00d8845`: S0-RV1 și S0-RV1.1 închise.
+Mutanții de asociere sunt respinși; hărțile originale și santinela 2025-09
+trec. XSD/DUK rămân reverificate. Fără constatări noi în corectură.**
+
+**2026-09-29 — S0 aprobat de owner:** scena pe 2040 cu santinela 2025-09
+(S0-R6) și scriitorul care emite secțiunile fără intrări goale, fără
+totaluri, inclusiv pe ruta publică existentă (S0-R5). S0 este închis;
+comutarea L rămâne la S2 (R1).
+[Raportul Codex](tr-d8-saft-s0-review-codex.md).
+
+**2026-09-29 — S2 închis: review Codex S2-RV1 închis după reverificare.**
+**2026-09-29 — S2 (Payments + comutarea L) propus de Claude; owner: S2-Q1 =
+stornoul neagă liniile declarate, S2-Q2 = compensarea în afara S2 (SAFT-r1),
+implementare în paralel cu review-ul Codex:** [S2](#s2--payments-și-comutarea-l-contract-pentru-aprobare).
+
 Răspunde cererii din `comunicari/2026-09-28-0115-claude-codex-saft-sourcedocuments-contract.md`.
 Bază inspectată: `faa8b2d`. Contracte existente: 073, 074, 090, 091,
 103 și [D8-B1…B8](tr-d8-citiri-contract.md).
@@ -282,7 +301,8 @@ XSD, nomenclator și validator. Inventarul local la redactare:
   aplicației folosește `d406`. Compatibilitatea trebuie rezolvată explicit;
   nu declarăm validarea producției prin schimbarea tacită a namespace-ului.
 
-**Gate S0 neîndeplinit:** fixarea artefactului XSD utilizabil și verificarea
+**Gate S0 neîndeplinit** (la redactare; închis de
+[S0-R](#s0-r--artefactele-validării-fixate-2026-09-29)): fixarea artefactului XSD utilizabil și verificarea
 coerenței kitului/nomenclatorului. DUK existent permite `SĂRIT` și fallback
 fără validarea perioadei; acestea nu sunt acceptabile pentru închiderea
 feliei. Înregistrăm hashurile și după rulare pentru a detecta auto-update.
@@ -636,3 +656,414 @@ trebuie și ea respinsă. Diferențele clasificate pe fixture-ul S1 sunt:
 brutul TI21, `InvoiceDate` (data documentului, inclusiv pentru stornoul 381)
 și recepția stocului la FCT (cub) față de NIR (registrul vechi). Linia GL
 păstrează `(Spatiu, ID)` postării în DTO; manifestul ca fișier rămâne la S0.
+
+## S0-R — artefactele validării fixate (2026-09-29)
+
+Implementat în `nou/tools/ModelCheck` (`ValidareD406.cs`, `Duk.cs`), probat
+în `ScenariiSaft` (SC-SAFT-24, SC-SAFT-25). Regulile de mai jos închid gate-ul
+S0 pentru artefactele S1; Payments (S2) și stocurile (S3) se certifică pe
+același manifest când există.
+
+**S0-R1 — manifestul.** Pin-urile SHA-256 stau în cod (`ManifestD406`):
+XSD `Ro_SAFT_Schema_v249_2025.xsd` (`80AD7EAA…DCCC2`, versionat în
+`nou/tools/ModelCheck/Anaf/`, `-text` în `.gitattributes`), validatorul
+`lib/D406Validator.jar` J2.2.18 (`197FD169…32373`) plus
+`DUKIntegrator.jar`, `DUKIntegrator_AnLunaUI.jar`, `lib/DecValidation.jar`,
+`lib/Validator.jar`, și nomenclatorul `RO_SAFT_SchemaDefCod_16.02.2026.xlsx`
+(`050508BF…0F2D`). Fiecare rulare scrie `manifest-d406.json` lângă fișiere:
+pin-urile, SHA-256 al schemei derivate, SHA-256 al fiecărui XML, perioada,
+erorile XSD și verdictul DUK cu comanda exactă. Kitul se verifică înainte și
+după fiecare rulare DUK; o abatere (auto-update, fișier lipsă) e respingere.
+
+**S0-R2 — versiunea reală a kitului.** `config/versiuniCurente.txt` spune
+J2.2.8, dar jar-ul local este octet cu octet cel publicat de ANAF pentru
+J2.2.18 (`update5/D406_35/D406Validator.jar`, `versiuni.xml` la
+2026-09-29). Versiunea se citește din pin, nu din fișierul kitului;
+73-r8 și 74-r13 se închid. Nomenclatorul local 16.02.2026 este un superset
+strict al celui legat de pagina ANAF (05.02.2026): singura diferență este
+codul WHT 604040, prezent în `Parameters_v3` al validatorului pin-uit.
+
+**S0-R3 — namespace-ul.** XSD-ul public declară `targetNamespace` și
+prefixul `nsSAFT` pe `d406t`; producția folosește `d406`. Validarea XSD
+înlocuiește exact aceste două atribute (fiecare trebuie să apară o singură
+dată) și înregistrează substituția în manifest. Avertismentul „fără
+informație de schemă” este eroare, iar rădăcina trebuie să aibă declarație
+în schemă. Validatorul D406 impune `d406` (D406T impune `d406t`); un fișier
+`d406t` este respins și de XSD-ul derivat, și de DUK D406.
+
+**S0-R4 — perioada.** Măsurat: `an`/`luna` date lui
+`DUKIntegrator_AnLunaUI.jar` aleg versiunea nomenclatorului, nu se compară
+cu antetul. Același fișier din 2024 cu coduri ale cotei 21% are 51 de
+erori de cod pe `an=2024` și zero pe `an=2026`. Deci perioada vine numai
+din `Header/SelectionCriteria` (o singură lună; altfel refuz), nu separat.
+Fallback-ul pe `DUKIntegrator.jar` fără perioadă este eliminat, iar kitul
+absent sau nepotrivit dă `INDISPONIBIL` = verificare picată, nu `SĂRIT`
+(inclusiv pentru probele D16-V3/D17-V3).
+
+**S0-R5 — secțiunile fără intrări.** Măsurat pe L: `SalesInvoices` sau
+`Payments` cu `NumberOfEntries = 0` și totaluri zero sunt respinse de DUK
+(„elementul ... ar fi trebuit sa apara de minimum 1 ori”); omisiunea
+secțiunii trece DUK, dar contrazice XSD-ul (secțiunea e obligatorie).
+Scriitorul emite deci secțiunea goală, fără totaluri, pe ambele module
+(`CuTotaluri` = există intrări); XSD-ul și DUK o acceptă.
+
+**S0-R6 — fixture-ul în regimul cotei.** Catalogul S1 folosea anul 2024
+cu cota 21%, pe care nomenclatorul ANAF al anului 2024 nu o conține. Scena
+SAFT se mută pe 2040 (primul an liber al suitei după 2036), unde se aplică
+nomenclatorul curent. Cifrele economice ale fixture-ului nu se schimbă.
+Scena probează deci cel mai nou nomenclator al validatorului pin-uit, nu
+perioade istorice. Când se actualizează pin-ul, 2040 preia automat
+nomenclatorul nou. O schimbare ANAF datată în viitor (de exemplu o cotă
+nouă dintr-un an ulterior) ar despărți însă 2040 de prezent. Santinela
+acoperă acest risc: fișierul din ianuarie, cu antetul pe luna reală 2025-09
+(regimul 21%), trebuie să treacă la fel ca pe 2040. Dacă diverg, scena se
+mută pe perioada reală; nu se ajustează santinela.
+
+**S0-R7 — ce certifică S0 pe S1.** XML-urile L ale lunilor 1–3 trec XSD
+v249 (d406) și DUK J2.2.18, fără atenționări, inclusiv: 381 și 384 cu același
+`InvoiceNo` în februarie (S1-R1 ține, fără număr inventat); TI21 și cele două
+cote; `SystemEntryDate` în afara perioadei (timbrul real). Schema fixată
+cere `SystemEntryDate` și `GLPostingDate` pe `Transaction`; pe `Invoice`
+`GLPostingDate` și pe `PaymentLine` `SourceDocumentID` sunt opționale (R4).
+Măsurat, nu probă: DUK acceptă și `GLPostingDate` = data capturării, în afara
+perioadei; S1-R3 rămâne o alegere de semantică (data contabilă care decide
+perioada), nu o constrângere a validatorului. Mutanții respinși: antetul pe
+2024 (codurile 21% nu sunt în nomenclator), tranzacția fără `GLPostingDate`
+(XSD și DUK), namespace-ul `d406t` (XSD și DUK). Payments rămâne gol în S1:
+fișierul nu certifică Payments (S1-D7).
+
+Integral verde pe ambele profiluri (bugetar 3.267, privat 4.375 verificări),
+inclusiv D16-V3/D17-V3 pe kitul pin-uit: `run-verificari/20260929-011541-801`
+(manifestul S0 în `tmp/atlas-saft/s0-*/manifest-d406.json`).
+
+**S0-R8 — proveniența în manifest (review Codex S0-RV1).** Fiecare fișier
+certificat poartă în `manifest-d406.json`, lângă SHA-256-ul lui, harta scoasă
+din DTO-ul exact din care s-a scris: linia GL `(TransactionID, RecordID)` →
+`(Spatiu, ID)` al postării, cu `DocumentId` și `LinieId`; factura
+`(secțiune, InvoiceNo, InvoiceType, TransactionID)` → `(DocumentId, Storno)`.
+Proba citește harta înapoi din fișierul manifest și cere: aceeași mulțime de
+`(TransactionID, RecordID)` ca XML-ul, fără dubluri; cheia `(Spatiu, ID)`
+completă și unică; fiecare postare există în cub cu `TranzactieId` =
+`TransactionID`, același document și aceeași linie; aceeași mulțime de facturi
+ca XML-ul, cu eveniment unic. *RV1.1:* asocierea se probează exact, nu
+doar prin apartenența la aceeași tranzacție. Linia XML a fiecărui
+`(TransactionID, RecordID)` are contul, latura și suma postării indicate.
+În fiecare tranzacție, ordinalele urmează ordinea `(Spatiu, ID)` a surselor
+(S1-R7). `DocumentId` și `Storno` ale facturii sunt ale tranzacției reale
+`TransactionID` din cub (`Fel` = `Storno`). Mutanții respinși sunt: linie GL
+omisă, cheie de postare dublată, surse permutate între RecordID 1 și 2,
+factură omisă, `DocumentId` schimbat, `Storno` inversat.
+Integral verde după RV1.1 și santinelă (bugetar 3.267, privat 4.383):
+`run-verificari/20260929-092618-574`. Măsurat: 62, 28 și 8 linii GL; 13, 7 și
+2 facturi în lunile 1–3. Au intrat în catalog și probele adverse ale lui Codex
+care au trecut: luna fără rulaj, pe cub și pe ruta veche, trece XSD și DUK;
+un copil obligatoriu fără namespace este respins de XSD.
+Integral verde pe ambele profiluri (bugetar 3.267, privat 4.382):
+`run-verificari/20260929-083657-241`.
+
+## S2 — Payments și comutarea L: contract pentru aprobare
+
+Stare: **S2 închis (2026-09-29).** S2-Q1 și S2-Q2 au fost tranșate de owner
+(S2-R1, S2-R2). Implementarea e verificată, iar ruta L e comutată pe cub
+(S2-R3). Review-ul advers Codex e închis (S2-RV1 corectat în `3ac87ee`,
+reverificat, integrala independentă `20260929-205701-186`). FZ-r3 rămâne
+deschisă pentru gate-ul transversal de perf. Bază inspectată: `1985d7e` (S0 închis). Nu schimbă
+motorul, scrierea registrelor, împerecherea sau politica mișcărilor. Payments
+se derivă numai din cub; `Imperechere` rămâne metadatele comenzii, nu sursa
+alocării. La ieșire, ruta publică L comută pe cub (R1).
+
+Faptele de model pe care se sprijină (verificate în cod la redactare):
+
+- PLT/INC postează prin `DeclarantTrezorerie`: o mișcare per linie, capătul
+  terțului pe partidă. Plata cu document-sursă se **nominalizează** în
+  `Operare`: postarea terțului stă direct pe partida sursei, cât ține restul
+  ei, iar excedentul pe partida proprie (`Partide.Identitate(P, cont, terț)`).
+- Legătura manuală (`ImperechereService.Imperecheaza`) scrie o tranzacție
+  `Transfer` a stingătorului: o singură `Mutare` = două postări pe același
+  cont, partener și latură, −x pe partida proprie și +x pe partida țintă
+  (`Transferuri.Muta`). Desfacerea și stornoul scriu transferul invers datat;
+  data legăturii e în perioadă deschisă (`GardianPerioada`).
+- Partida inițială din deschidere are referință `Guid` opacă, fără număr de
+  document (`PartidaInitiala.Referinta`).
+- Trezoreria nu produce fapte fiscale (TVA la încasare = 36f, după PoC) și nu
+  are valută în cub (`Miscare` cu valută 0; 73-r16, 64k, B-r6).
+- `TipDocument.LaturaContPropriu` (B-r2, dată de seed) spune latura pe care
+  stă contul propriu: `Predator` pe plată, `Primitor` pe încasare.
+
+### S2-D1 — evenimentul și domeniul
+
+Evenimentul de plată este tranzacția cubului `Operare` sau `Storno` (a unei
+`Operare`) a unui document din mulțimea restrânsă pe tip
+`DocumentTrezorerie` (89b), cu `Tranzactie.Data` în lună, citită din
+`Citiri.Contabil.Postari` (Transferul nu e eveniment de plată: SAF-B3.3).
+Anularea șterge evenimentul. Bugetar: neaplicabil, ca la S1.
+
+Latura contrapartidei = opusul laturii contului propriu: `Debit` când
+`LaturaContPropriu = Predator`, `Credit` când e `Primitor`. Postările
+evenimentului pe latura contrapartidei sunt **postările de contrapartidă**;
+ele singure dau liniile. Lipsa datei pe tip = `SAFT_SURSA_INCOMPLETA`.
+
+Viramentul intern (ambele laturi conturi proprii) nu este plată către terț:
+rămâne numai în GL și, ca pe ruta veche, nu intră în `Neincluse`.
+Excluderi raportate în `Neincluse` cu cauza (paritate cu ruta veche):
+
+- latura externă este `Partener`, dar nicio postare de contrapartidă nu are
+  cont cu `RolTert` (`PlataFaraContTert`, de exemplu 4423 către ANAF);
+- documentul fără latură externă (`DocumentFaraPartener`).
+
+Latura externă `Angajat` intră, cu `CustomerID` = `SupplierID` = codul
+societății și avertismentul `PlataCatreAngajat` (paritate; SAF-T nu are
+identitate de angajat).
+
+Gărzi, înaintea XML: postare de contrapartidă cu `Valuta` ≠ null sau fapt
+fiscal (`Fiscale.Fapte`) pe tranzacția evenimentului = `SAFT_SURSA_INCOMPLETA`
+(modelul nu le are; nu convertim și nu inventăm TVA la încasare); mai mulți
+parteneri distincți pe postările de contrapartidă = `SAFT_PROVENIENTA_AMBIGUA`.
+
+### S2-D2 — linia de plată
+
+Linia = grupul postărilor de contrapartidă ale evenimentului pe
+`(Cont, Partener, ținta alocării)`; ținta vine din S2-D3. Nu există linie pe
+detaliul documentului: partida e pe document × cont × terț, iar un transfer
+nu se poate atribui unei linii de defalcare fără proratare (S1-R4).
+
+- `AccountID` = simbolul contului postării; `CustomerID`/`SupplierID` după
+  `Cont.RolTert` (Client → client + societate; Furnizor → societate +
+  furnizor), cu `Postare.Partener`. Contul fără rol, fără partidă (de exemplu
+  542 pe angajat), dă o linie fără țintă.
+- `DebitCreditIndicator` = latura postării; `PaymentLineAmount` = suma
+  semnată (stornoul negativ, pe aceeași latură, ca GL-ul S1-D3).
+- `SourceDocumentID` = `Document.Numar` al documentului-origine al țintei;
+  lipsește pentru rest (avans) și pentru partida inițială.
+- `TaxInformation` = nefiscal explicit: regula e că evenimentul nu are fapt
+  fiscal (garda din S2-D1), nu fallback la o mapare lipsă.
+- `Analysis` = analiza comună a postărilor liniei; dacă diferă, se omite pe
+  linie (GL o păstrează integral), cu avertismentul `PlataAnalizaMixta`.
+- `Description` = descrierea liniei de defalcare când linia provine dintr-un
+  singur detaliu cu descriere, altfel descrierea plății.
+- Ordinea: țintele cu document după (Data, Numar, Id) ale originii, apoi
+  partida inițială, apoi restul; `LineNumber` ordinal.
+
+Antetul: `PaymentRefNo` = `Document.Numar` (același și la storno, ca
+381/384 la S1-R1); `TransactionID` = `TranzactieId` (aceeași cu tranzacția
+GL, cusătura S1-R2); `TransactionDate` = `Tranzactie.Data`;
+`Period`/`PeriodYear` = luna exportată; `PaymentMethod`/`PaymentMechanism`
+din `DocumentTrezorerie.TipInstrument` (`SaftReguli.MetodaPlata`, metadată
+de identificare); `GrossTotal` = Σ liniilor. Secțiunea: `NumberOfEntries` =
+evenimentele, `TotalDebit`/`TotalCredit` = Σ liniilor D/C (formula actuală).
+
+Cusătura: Σ liniilor evenimentului = Σ postărilor de contrapartidă ale
+aceleiași `TransactionID` din GL, pe cont și latură; altfel
+`SAFT_PROVENIENTA_AMBIGUA`.
+
+### S2-D3 — alocarea la capătul lunii operării (R4, SAF-B3.3)
+
+Pentru documentul P, cu `Operare` în luna M_O și capătul E_O = ultima zi a
+lui M_O. Alocarea lui P este:
+
+1. **nominalizată**: postarea de contrapartidă a `Operare` pe o partidă
+   străină u (origine `Partide.Origini` ≠ P) e alocată originii lui u;
+   originea fără document (deschidere) = partida inițială;
+2. **prin transfer**: pe partida proprie u_P, fiecare tranzacție `Transfer`
+   (citită prin `Citiri.Partide.Postari`, care o include) cu `Data ≤ E_O` care are o postare pe u_P este o pereche (u_P, w), pe
+   același cont, partener și latură; altă formă = `SAFT_PROVENIENTA_AMBIGUA`.
+   Ținta w primește −(efectul semnat al transferului pe u_P, în sensul laturii
+   lui P). Sursa transferului nu contează: legătura lui P, desfacerea ei,
+   o notă de compensare care stinge avansul lui P (SC-DES-11) sau desfacerea
+   nominalizării automate intră la fel. Țintele cu sumă netă 0 dispar;
+3. **rest** = suma lui P pe u_P − Σ alocărilor prin transfer.
+
+Fiecare alocare și restul au semnul sumei lui P și nu o depășesc; altfel
+`SAFT_PROVENIENTA_AMBIGUA` (gardianul împerecherii o face imposibilă; proba
+o cere).
+
+**Stornoul** lui P, în orice lună, are liniile `Operare`-ului calculate la
+E_O, cu suma negată și aceleași ținte. Conservare: Σ postărilor stornoului
+= −Σ postărilor `Operare`, pe cont și latură; altfel refuz. Corecția este alt
+document, cu alocarea proprie.
+
+**R4, măsurat la redactare (2026-09-29):** în `saft-L-2040-01.xml` al S0
+(ianuarie, anul scenei) s-a injectat o plată `PLT-1` cu `TransactionID`,
+linia 1 D 401 50 cu `SourceDocumentID` = o factură a fișierului, linia 2
+D 401 20 fără referință, plus stornoul ei cu −50/−20 și același
+`PaymentRefNo`. DUK J2.2.18 (`an=2040`, `luna=01`) le validează fără erori
+și fără atenționări. Identificatorul societății pe latura opusă trebuie să
+fie `00` + CUI (`SaftReguli.IdSocietate`); `RO` + CUI este respins
+(„formatul este invalid”). XSD-ul se verifică la certificare, pe XML-ul
+real al scriitorului.
+
+Consecințe (**S2-Q1**, recomandarea): legătura datată după E_O nu apare
+în nicio declarație, iar reexportul unei luni închise este stabil, fiindcă
+transferurile ≤ E_O nu se mai pot scrie. Stornoul neagă exact ce s-a
+declarat pentru P, deci suma referințelor unei facturi pe toate declarațiile
+rămâne coerentă: PLT 70 + legătură 50 în ianuarie, storno în februarie →
+ianuarie 50 F + 20 rest, februarie −50 F și −20 rest. Legătura din
+februarie și stornoul din martie → ianuarie 70 rest, martie −70 rest.
+Alternativa „stornoul inversează starea de dinaintea lui” ar raporta −50 F
+fără +50 F declarat.
+
+### S2-D4 — ce nu intră în Payments
+
+**S2-Q2 (owner):** compensarea prin notă contabilă (48b) nu este eveniment
+de plată în S2; rămâne în GL, ca pe ruta veche. Recomandare: restanță
+numită (Payments cu `PaymentMethod` 02 / mecanism 97 are nevoie de o regulă
+de linie pe ambele laturi ale compensării). Efectul ei asupra unei plăți
+(S2-D3.2) intră deja, cu referința la NTC.
+
+Valuta, diferențele de curs și TVA la încasare nu există în cub pentru
+trezorerie; garda S2-D1 le refuză dacă apar, fără a le declara acoperite.
+
+### S2-D5 — comutarea L și accesul complet
+
+După gate-ul S2, `GET api/proiectii/saft` și `…/saft/xml` citesc
+`SaftPeCub`; rutele S (`…/saft/stocuri*`) rămân pe `SaftStocuri` până la S3
+(R1). `SaftProiectii.Saft` (L vechi) rămâne numai oracol A/B în ModelCheck
+și sursa Import1C (înghețat, 091-r4); nu mai e accesibil public. Se șterge
+la gate-ul final, odată cu partea L a rutei vechi.
+
+`Refuzuri` nevid: XML = 422 cu `EroriDto` (codurile și mesajele), înaintea
+primului byte; sumarul JSON = 200 cu lista de refuzuri (ecranul arată de ce
+fișierul nu pleacă).
+
+`SAFT_ACCES_INCOMPLET` (403, SAF-D4 A), pe ambele uși L, înaintea
+proiecției (și a sumarului: un sumar filtrat este tot o proiecție parțială).
+Verificat în sursele DevExpress 26.1.4: `CanRead(Type, os)` răspunde `false`
+numai când criteriul combinat e exact `1 = 0`; o restricție condițională de
+rând sau de membru lasă `true` (`PermissionRequestProcessor.IsGrantedInSameRole`,
+`SelectCriteriaProcessor`). Nu poate deci proba accesul complet. Mecanismul:
+
+- `ISelectDataSecurity` din `SecurityStrategy.CreateSelectDataSecurity(os)`,
+  aceeași instanță din care EF Core filtrează rândurile și ascunde membrii
+  (`SecurityPermissionProcessor`);
+- acces complet pe un tip = `GetObjectCriteria(tip)` fără criteriu nevid și
+  `GetMemberCriteria(tip, m)` fără criteriu nevid pentru fiecare membru de
+  securitate (`SecurityMembersHelper.GetSecurityMembers`); administratorul și
+  tipurile nesecurizate dau liste goale;
+- lista tipurilor = exact tipurile interogate de `SaftPeCub` (bază **și**
+  frunze: o permisiune declarată pe o frunză nu se aplică cererii pe bază,
+  iar una pe bază se aplică frunzei), derivată din inventarul cititorilor și
+  fixată printr-o probă care o compară cu tipurile efectiv interogate;
+- un membru-referință spre alt tip securizat moștenește criteriul tipului
+  țintă, deci tipul țintă intră în listă.
+
+Răspunsul 403 numește tipul sau membrul lipsă, nu rânduri ori sume.
+
+### S2-D6 — probe
+
+Scenariile S2 sunt SC-SAFT-05, 06, 13, 15 și 26…36 din
+[SAFT.md](scenarii/SAFT.md): așteptări pe linii, ținte, `SourceDocumentID`,
+sume semnate, cusătura cu GL, excluderi și refuzuri, create prin documente
+și comenzi reale (legătură, desfacere, storno, corecție), fără fapte inserate
+în cub. Certificarea L complet (lunile scenei, Payments nevid) pe manifestul
+S0: XSD v249 + DUK J2.2.18, fără atenționări; S0-R8 se extinde cu harta
+plății `(TransactionID, LineNumber)` → mulțimea `(Spatiu, ID)` a postărilor
+de contrapartidă și a transferurilor care o justifică, plus ținta; mutanții
+(linie omisă, sursă permutată, `SourceDocumentID` schimbat) sunt respinși.
+
+A/B pe plăți (cheia document × storno, în ambele sensuri, S1-R9): total,
+cont, linii, referințe. Diferențele declarate exact: împărțirea 50 F + 20
+rest față de plata întreagă pe F (ruta veche pune referința pe toate liniile
+dacă legătura e unică), legătura viitoare citită de ruta veche fără dată,
+`TransactionID` nou. Orice altă diferență e defect.
+
+Perf (SAF-B7, FZ-r3): numărul de interogări al exportului nu crește cu
+numărul plăților (măsurat la n și 2n); planul SQL al citirii transferurilor
+pe partidele proprii (`EXPLAIN (ANALYZE, BUFFERS)`) decide indexul
+`(Unitate, Data)`; dacă e nevoie, migrația cubului se scrie în SQL.
+
+### S2-D7 — gate și oprire
+
+Gate S2 = L complet: probele S2 și S1 verzi pe ambele profiluri, XML-urile
+lunilor scenei certificate cu manifest, probele HTTP pe host viu
+(SC-SAFT-13, SC-SAFT-22 pe ușa publică, SAFT_ACCES_INCOMPLET), A/B clasificat,
+review advers Codex închis. Abia apoi se comută ruta.
+
+Oprire: alocare fără proveniență completă; eveniment fără cusătură cu GL;
+mecanism de acces care nu detectează o restricție condițională de rând sau
+de membru (nu comutăm pe un export care poate ascunde rânduri); o formă
+Payments respinsă de DUK (50 + 20 fără referință, R4) — revenim cu
+alternativă, fără referință inventată.
+
+### S2-R — tranșările owner-ului (2026-09-29)
+
+**S2-R1 — stornoul plății.** Varianta recomandată din S2-D3: liniile
+stornoului sunt liniile `Operare`-ului calculate la E_O, negate. Legătura
+de după E_O nu apare în nicio declarație.
+
+**S2-R2 — compensarea.** Azi compensarea este o notă contabilă culeasă cu
+repartitori pe linii (48b); nu există un document de compensare care să-și
+genereze singur postările. Un astfel de document, cu declarant propriu, ar fi
+sursa firească a unei plăți 02/97. De aceea compensarea nu intră în S2, iar
+explorarea documentului de compensare devine restanța **SAFT-r1**. Efectul
+unei NTC asupra alocării unei plăți rămâne în S2-D3.2 (SC-SAFT-31).
+
+### S2-R3 — implementare și probe (2026-09-29)
+
+Commit-uri pe `tr-d8-saft-s2`: `b57c1bc` (Payments pe cub) și commit-ul
+comutării. Cititorul `Cub/Citiri/Plati` implementează S2-D3. Proiecția
+`SaftProiectii.PeCub.Plati` implementează S2-D1/D2. `SaftAcces` implementează
+S2-D5, iar `SaftController` comută L.
+
+- **Lista tipurilor verificate** nu e scrisă din memorie. Proba SC-SAFT-36
+  capturează SQL-ul emis de `SaftPeCub` prin `DiagnosticListener`-ul EF Core
+  și cere ca mulțimea tabelelor citite să fie egală cu tabelele din
+  `SaftAcces.Citite`. Prima rulare a găsit trei tabele lipsă
+  (`ClaseProduse`, `MapariTvaSaft`, `SetariProfil`); lista le include acum.
+  Garda verifică toate tipurile mapate în aceste tabele (TPH: bază și frunze).
+- **HTTP pe host izolat** (`ProbeHttp/saft-acces.py`, baza
+  `…Privat.SaftS2Http`). Restricțiile de rând pe `Postare`, de membru pe
+  `Postare.Valoare` și de rând pe `Partener` dau toate 403
+  `SAFT_ACCES_INCOMPLET` pe sumar și fișier, fără sume în corp. `User` dă tot
+  403. Admin și Cititor primesc 200, cu plata 50 F + 20 rest și TVA 21 în GL.
+  Editarea liniei FCT operate dă 422, iar fișierul rămâne identic.
+  `refuzuri.ps1` trece 294/294.
+  **Schimbare intenționată:** SC-CIT-87 aștepta pe SAF-T L un XML filtrat
+  pentru rolurile cu restricții; acum ele primesc 403 (SAF-D4), iar proba
+  `fiscal-cub.py` e actualizată.
+- **Perf (S2-D6):** exportul emite 42, 42 și 41 de comenzi SQL la 14, 3 și
+  1 plăți (20, 7 și 2 facturi), deci fără N+1. **Abatere de la S2-D6:**
+  indexul FZ-r3 nu e decis. Interogarea reală e fixată: transferurile și
+  originile pe `Unitate = ANY(…)`, `Data ≤ capăt`, pe `Postare_Contabil`,
+  care n-are index pe `Unitate`. Nu există bază de volum după C102, iar un
+  plan pe baza scenei nu dovedește nimic. FZ-r3 rămâne activă până la
+  gate-ul transversal de perf.
+- **Abateri de fixture, fără efect asupra regulii:** în ramura SC-SAFT-27,
+  legătura din februarie se șterge înaintea stornoului din martie, fiindcă
+  gardianul refuză stornoul cu legătură vie în perioadă deschisă. SC-SAFT-30
+  rulează în scena DES, al cărei cont de terț primește `RolTert` Furnizor.
+  Fără rol, plata ar fi ieșit corect în `Neincluse`.
+
+Integral verde pe ambele profiluri după Payments (bugetar 3.267, privat
+4.406): `run-verificari/20260929-115901-443`; după comutare (bugetar 3.267,
+privat 4.408): `run-verificari/20260929-122333-161`. Probele HTTP:
+`run-verificari/saft-s2-http-{probe,fiscal,refuzuri}.log`.
+
+### S2-R4 — review Codex S2-RV1 și integrarea ecranului (2026-09-29)
+
+**S2-RV1 / P1, corectat.** O plată nominalizată integral la operare nu are
+postare pe partida proprie. Linia de rest nu exista, iar transferul invers
+al desfacerii nu se aplica: exportul păstra 50 pe factură. Acum linia de rest
+se creează pentru fiecare partidă proprie, chiar la zero. Liniile legate prin
+transferuri pe aceeași partidă proprie își unesc contribuțiile, deci
+proveniența nu depinde de ordinea transferurilor. Proba SC-SAFT-37 acoperă:
+nominalizarea integrală desfăcută, excedentul, realocarea pe altă factură,
+stornoul din luna următoare și proveniența. Cititorul de la `663cadb` pică
+pe toate cele trei verificări.
+
+**Ecranul L după comutare.** Sumarul pe cub completa numai o parte din
+`SaftRezumat`, iar pagina ar fi arătat „diferă” pe cusăturile construite pe
+registrele vechi. Pe cub, „evidența” din cusături înseamnă:
+
+- rulajul debitor al balanței lunii;
+- TVA din faptele fiscale (`Tva + Autocolectare`), cu TVA capitalizată
+  numărată numai dacă n-are linie de taxă în GL;
+- baza faptelor fiscale pe sens, din care baza fără factură (DVI, decont)
+  e cea a faptelor din tranzacții care nu sunt evenimente-factură;
+- `TotalPlati` = Σ brut al plăților.
+
+Proba SC-SAFT-15 cere egalitatea lor pe lunile scenei. Pagina React afișează
+`Refuzuri` din sumar înainte de descărcare, iar textele ei numesc sursa nouă.
+Verificat în browser pe baza izolată: ianuarie are toate cusăturile egale și
+plata 70; februarie arată `SAFT_CORECTIE_INCOMPLETA` deasupra secțiunilor
+(`run-verificari/saft-s2-ui-februarie-refuz.jpg`).
+Integral verde după corectură (bugetar 3.267, privat 4.415): `run-verificari/20260929-204252-054`.

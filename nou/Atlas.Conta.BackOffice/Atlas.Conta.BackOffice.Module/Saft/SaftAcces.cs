@@ -1,0 +1,49 @@
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
+using DevExpress.ExpressApp.Security;
+using Microsoft.EntityFrameworkCore;
+
+namespace Atlas.Conta.BackOffice.Module.Saft;
+
+/// <summary>
+/// Accesul complet cerut de D406 L pe cub (SAF-D4, S2-D5): niciun criteriu de rând sau de membru pe tipurile
+/// citite de <see cref="SaftProiectii.SaftPeCub"/>, inclusiv pe toate tipurile mapate în aceleași tabele.
+/// </summary>
+public static class SaftAcces {
+    public const string Refuz = "SAFT_ACCES_INCOMPLET";
+
+    /// <summary>Tipurile ale căror tabele le citește exportul L pe cub; proba SC-SAFT-36 le compară cu SQL-ul emis.</summary>
+    public static readonly Type[] Citite = [
+        typeof(Cub.Postare), typeof(Cub.Tranzactie), typeof(Document), typeof(DocumentDetaliu), typeof(Cont),
+        typeof(Repartitor), typeof(TipDocument), typeof(TipTva), typeof(Societate), typeof(Produs), typeof(Lot),
+        typeof(UnitateMasura), typeof(TipMaterial), typeof(CodFunctional), typeof(CodEconomic), typeof(SursaFinantare),
+        typeof(Unitate), typeof(Proiect), typeof(Judet), typeof(ClasaProdus), typeof(MapareTvaSaft), typeof(SetareProfil),
+    ];
+
+    public static IReadOnlySet<string> Tabele(IObjectSpace os) {
+        var model = ((EFCoreObjectSpace)os).DbContext.Model;
+        return Citite.Select(t => model.FindEntityType(t)?.GetTableName()).OfType<string>().ToHashSet(StringComparer.Ordinal);
+    }
+
+    /// <summary>Tipurile și membrii pe care utilizatorul nu îi poate citi necondiționat; lista goală = acces complet.</summary>
+    public static List<string> Lipsuri(IObjectSpace os, ISelectDataSecurityProvider securitate) {
+        ArgumentNullException.ThrowIfNull(securitate);
+        var tabele = Tabele(os);
+        var model = ((EFCoreObjectSpace)os).DbContext.Model;
+        var tipuri = model.GetEntityTypes().Where(e => e.GetTableName() is { } t && tabele.Contains(t))
+            .Select(e => e.ClrType).Distinct().OrderBy(t => t.Name, StringComparer.Ordinal).ToList();
+        var citire = securitate.CreateSelectDataSecurity(os);
+        var lipsuri = new List<string>();
+        foreach (var tip in tipuri) {
+            if (Restrictiv(citire.GetObjectCriteria(tip)))
+                lipsuri.Add(tip.Name);
+            foreach (var membru in SecurityMembersHelper.GetSecurityMembers(tip))
+                if (Restrictiv(citire.GetMemberCriteria(tip, membru)))
+                    lipsuri.Add($"{tip.Name}.{membru}");
+        }
+        return lipsuri;
+    }
+
+    static bool Restrictiv(IList<string> criterii) => criterii.Any(c => !string.IsNullOrEmpty(c));
+}

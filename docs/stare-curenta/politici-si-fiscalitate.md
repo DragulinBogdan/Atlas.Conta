@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-28.** [Index](README.md)
+**Actualizat: 2026-09-29.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -442,10 +442,10 @@ folosesc tipul și semnul fiscal corespunzător. Pentru facturile de stoc,
 legătura contabilă poate proveni din NIR-ul materializat. Societatea apare
 în rolurile de client/furnizor cerute de reprezentarea celeilalte laturi. (73e)
 
-**L pe cub (TR-D8 S1, încă necomutat).** `SaftProiectii.SaftPeCub` produce
-nomenclatoarele, GL-ul și facturile din `Citiri.Contabil.Jurnal` și
-`Citiri.Fiscale`, fără registre; `Payments` rămâne gol până la S2, iar ruta
-publică L folosește exportul existent până la comutarea S1 + S2 (R1).
+**L pe cub (TR-D8 S1 + S2).** `SaftProiectii.SaftPeCub` produce
+nomenclatoarele, GL-ul, facturile și plățile din `Citiri.Contabil.Jurnal`,
+`Citiri.Fiscale` și `Citiri.Plati`, fără registre. Ruta publică L îl
+folosește (R1); fișierul de stocuri S rămâne pe exportul existent până la S3.
 Tranzacția GL este tranzacția cubului, inclusiv deschiderea din lună.
 Linia GL este postarea, iar totalul D/C este rulajul balanței.
 `TransactionDate` și `GLPostingDate` sunt data contabilă; `SystemEntryDate`
@@ -460,6 +460,21 @@ Ambiguitatea, sursa lipsă, maparea lipsă și corecția cu înlocuitor Draft
 sunt refuzuri (`SaftDto.Refuzuri`), iar XML-ul nu se scrie. Citirea cere
 RepeatableRead și refuză o tranzacție ambiantă mai slabă. Regulile complete:
 [S1-R](../nucleu/tr-d8-saft-contract.md#s1-r--review-și-tranșări-2026-09-28).
+
+Plata este evenimentul cubului (`Operare`/`Storno`) al unui document de
+trezorerie, cu `TransactionID`-ul tranzacției GL. Liniile ei sunt postările
+de pe latura contrapartidei (opusă `TipDocument.LaturaContPropriu`), grupate
+pe cont, partener și țintă. Ținta se află la capătul lunii operării: partida
+străină nominalizată la operare, perechile `Transfer` de pe partida proprie
+datate până atunci (legătură, desfacere, notă care stinge avansul) și restul.
+`SourceDocumentID` este numărul documentului-origine al țintei. Restul și
+partida inițială nu au referință. Stornoul neagă liniile operării. Legătura
+de după luna plății nu apare în nicio declarație. Viramentul intern rămâne
+numai în GL. Plata către partener fără cont cu `RolTert` intră în
+`Neincluse`. Plata către angajat poartă codul societății. Valuta și faptele
+fiscale pe plată refuză exportul. Compensarea prin notă nu este plată
+(SAFT-r1). Regulile:
+[S2](../nucleu/tr-d8-saft-contract.md#s2--payments-și-comutarea-l-contract-pentru-aprobare).
 
 Reverificarea Codex din 2026-09-29 închide R1 la nivelul probei de domeniu:
 unitatea definită e protejată de regula produsului de mai sus. Comparația
@@ -490,3 +505,8 @@ Reconcilierile S urmăresc registrul față de ceea ce se emite, completitudinea
 soldurile pe cont și integritatea referințelor. Diferențele sunt raportate.
 Validarea DUK verifică fișierul în profilurile testate; nu extinde acoperirea
 funcțională declarată în [limitele curente](limite-curente.md). (74d, 74e)
+
+O secțiune `GeneralLedgerEntries`, `SalesInvoices`, `PurchaseInvoices` sau
+`Payments` fără intrări se scrie goală, fără `NumberOfEntries` și totaluri,
+pe ambele module: validatorul respinge totalurile zero, iar schema cere
+secțiunea prezentă. (74e, S0-R5)

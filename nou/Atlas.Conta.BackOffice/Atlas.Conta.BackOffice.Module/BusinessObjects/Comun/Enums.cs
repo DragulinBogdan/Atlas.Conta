@@ -359,6 +359,8 @@ public enum CodAvertismentSaft {
     // Se DECLARĂ ca atare (registrul e sursa), separat de `SoldNegativ`:
     // e alt fapt, cu altă cauză și cu altă cifră.
     [XafDisplayName("Rezidu valoric fără cantitate")] ReziduValoricFaraCantitate = 24,
+    [XafDisplayName("Plată cu analize diferite pe aceeași linie")] PlataAnalizaMixta = 25,
+    [XafDisplayName("Plată pe o partidă inițială fără număr de document")] PlataPePartidaInitiala = 26,
 }
 
 // Cauza unui avertisment D394 (D4-D5, fix 7 al review-ului advers): avertismentele

@@ -111,6 +111,7 @@ export function Saft() {
   const neincluse = sumar?.Neincluse ?? [];
   const excluse = sumar?.Excluse ?? [];
   const avertismente = sumar?.Avertismente ?? [];
+  const refuzuri = (sumar?.Refuzuri ?? []).map((r) => `${r.Cod}: ${r.Mesaj}`);
 
   async function descarca() {
     const cerere = cale;
@@ -187,6 +188,7 @@ export function Saft() {
           serverului, și fără buton de descărcare: n-ai ce descărca. */}
       <PanouErori erori={citit.error ? eroriDin(citit.error) : []} titlu="Declarația nu se poate genera" />
       <PanouErori erori={eroriDescarcare} titlu="Fișierul nu s-a putut genera" />
+      <PanouErori erori={refuzuri} titlu="Fișierul se refuză până la rezolvarea acestor cauze" />
 
       {citit.isPending ? <p className="indiciu">Se încarcă…</p> : sumar && (
         <>
@@ -220,7 +222,7 @@ export function Saft() {
         </p>
       ) : (
         <p className="indiciu">
-          Cifrele sunt cele din <strong>registrul contabil</strong> și din <strong>registrul de TVA</strong>,
+          Cifrele vin din <strong>postările contabile</strong> și din <strong>faptele fiscale</strong> ale lunii,
           așezate pe structura D406 modul <strong>L</strong> (lunar): master files, jurnalele contabile,
           facturile emise și primite, plățile. Declarația <strong>S</strong> (mișcări de stocuri) e altă
           declarație, nu o secțiune opțională a acesteia — se alege din comutatorul de sus;
@@ -413,26 +415,26 @@ function Cusaturi({ rezumat }: { rezumat: Rezumat }) {
       dreapta: rezumat.TotalCredit ?? zero,
     },
     {
-      nume: 'Jurnalele contra registrului',
-      explicatie: 'Σ debit == Σ valoare semnată din registrul contabil (rândurile cu document)',
+      nume: 'Jurnalele contra balanței',
+      explicatie: 'Σ debit == rulajul debitor al balanței lunii',
       stanga: rezumat.TotalDebit ?? zero,
       dreapta: rezumat.ValoareRegistruContabil ?? zero,
     },
     {
       nume: 'TVA (trei termeni)',
-      explicatie: 'TVA din jurnal + TVA capitalizat + TVA fără cod SAF-T == TVA din registrul fiscal',
+      explicatie: 'TVA din jurnal + TVA capitalizat fără linie de taxă + TVA fără cod SAF-T == TVA din faptele fiscale ale lunii',
       stanga: (rezumat.TvaGl ?? zero) + (rezumat.TvaCapitalizat ?? zero) + (rezumat.TvaFaraCodSaft ?? zero),
       dreapta: rezumat.TvaRegistru ?? zero,
     },
     {
       nume: 'Baza facturilor — achiziții',
-      explicatie: 'Σ bază pe facturile primite + Σ bază neinclusă == Σ bază din registrul fiscal',
+      explicatie: 'Σ bază pe facturile primite + Σ bază fără factură (DVI, decont…) == Σ bază din faptele fiscale',
       stanga: (rezumat.BazaFacturiAchizitie ?? zero) + (rezumat.BazaNeincluseAchizitie ?? zero),
       dreapta: rezumat.BazaRegistruAchizitie ?? zero,
     },
     {
       nume: 'Baza facturilor — livrări',
-      explicatie: 'Σ bază pe facturile emise + Σ bază neinclusă == Σ bază din registrul fiscal',
+      explicatie: 'Σ bază pe facturile emise + Σ bază fără factură == Σ bază din faptele fiscale',
       stanga: (rezumat.BazaFacturiLivrare ?? zero) + (rezumat.BazaNeincluseLivrare ?? zero),
       dreapta: rezumat.BazaRegistruLivrare ?? zero,
     },
@@ -451,7 +453,7 @@ function Cusaturi({ rezumat }: { rezumat: Rezumat }) {
           <tr>
             <th>Cusătură</th>
             <th>Din declarație</th>
-            <th>Din registru</th>
+            <th>Din evidență</th>
             <th>Diferență</th>
             <th>Stare</th>
             <th>Ce verifică</th>

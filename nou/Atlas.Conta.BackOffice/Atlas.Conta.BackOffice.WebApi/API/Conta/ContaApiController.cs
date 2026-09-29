@@ -292,6 +292,10 @@ public abstract class ContaApiController : ControllerBase {
     protected bool PoateCiti(Type tip, IObjectSpace os) =>
         securitate is IRequestSecurityStrategy cerinte && cerinte.CanRead(tip, os);
 
+    /// <summary>Sursa criteriilor de citire ale utilizatorului curent (aceeași din care EF Core filtrează rândurile).</summary>
+    protected DevExpress.ExpressApp.Security.ISelectDataSecurityProvider CriteriiCitire =>
+        securitate as DevExpress.ExpressApp.Security.ISelectDataSecurityProvider;
+
     // ═══ Gate-ul de CREARE, la nivel de TIP (felia 21, F21-D3) ═══
     // Comanda de GENERARE n-are subiect: ea PRODUCE documentul, deci nu există
     // instanță pe care `ComandaAutorizata<T>(id)` s-o rezolve (76-r4 numește

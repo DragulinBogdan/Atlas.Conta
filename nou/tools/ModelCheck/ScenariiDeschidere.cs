@@ -1,3 +1,4 @@
+using Atlas.Conta.BackOffice.Module.Saft;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Api;
@@ -50,7 +51,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
     protected override void Executa() {
         Comanda(os => {
             var c = os.CreateObject<Cont>(); c.Simbol = Marcaj; c.Denumire = Marcaj; c.Functie = "C";
-            c.UrmarestePartide = true; contTert = c.ID;
+            c.UrmarestePartide = true; c.RolTert = RolTertCont.Furnizor; contTert = c.ID;
             if (Economic == null) { var e = os.CreateObject<CodEconomic>(); e.Cod = Marcaj; e.Denumire = Marcaj; Economic = e.ID; }
             ancora = os.GetObjectsQuery<Cont>().First(c => c.RolTert == RolTertCont.Niciunul && c.Simbol.StartsWith("891")).ID;
             os.GetObjectByKey<Partener>(Furnizor).ContImplicitId = c.ID;
@@ -140,12 +141,24 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
                 && r.Single(p => p.Valoare == -20).Unitate != Partida(ref1, Furnizor));
         }
         Rest("SC-DES-03", ref1, Furnizor, 40); Rest("SC-DES-03", ref2, Furnizor, 40); Rest("SC-DES-03", ref1, Client, 50);
+        PlataPePartidaInitiala(plata.Id, 1, 20);
         Refuza("SC-DES-09", () => Stinge(Partida(ref2, Furnizor), 1, dataPlata), C.Materializare.StingereDeschidereInvalida);
         InchideIanuarie();
         Refuza("SC-DES-09", () => Stinge(Partida(ref2, Furnizor), 1, dataPlata), "închis");
         Storneaza(plata.Id, Februarie);
         Rest("SC-DES-03", ref1, Furnizor, 40); Rest("SC-DES-03", ref1, Furnizor, 60, Februarie);
+        PlataPePartidaInitiala(plata.Id, 2, -20);
         Verifica("SC-DES-03", "originalul deschiderii păstrat", initial == Original());
+    }
+
+    void PlataPePartidaInitiala(Guid plata, int luna, decimal suma) {
+        if (!Privat) return;
+        var saft = CuSpatiu(os => SaftProiectii.SaftPeCub(os, An, luna));
+        var p = saft.Plati.Where(x => x.DocumentId == plata).ToList();
+        Verifica("SC-SAFT-30", $"luna {luna}: plata pe partida inițială are o linie D {suma} fără SourceDocumentID și avertismentul PlataPePartidaInitiala",
+            p.Count == 1 && p[0].Linii.Count == 1
+            && p[0].Linii[0] is { SourceDocumentID: null, TintaDocumentId: null, DebitCreditIndicator: "D" } l && l.PaymentLineAmount == suma
+            && saft.Avertismente.Any(a => a.Cod == nameof(CodAvertismentSaft.PlataPePartidaInitiala)));
     }
 
     void ReviewStingeri() {

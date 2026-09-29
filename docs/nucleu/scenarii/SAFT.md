@@ -10,8 +10,19 @@ motor. Datele și cota 21% sunt intrări controlate ale fixture-ului; nu se
 deduc din exportul vechi. Codificarea XML a cazurilor încă deschise nu este
 declarată aprobată. Numele de probe de mai jos sunt propuse.
 
+**2026-09-29 — S0: artefactele S1 validate cu manifest (SC-SAFT-24/25).
+Scena rulează în anul 2040: cota 21% nu există în nomenclatorul ANAF al
+anului 2024 (S0-R6); cifrele economice nu se schimbă, iar datele
+„ianuarie/februarie” de mai jos sunt ale anului scenei.**
+
+**Review advers S0, reverificat pe `00d8845`: S0-RV1 și S0-RV1.1 închise.**
+Proba respinge permutarea surselor GL și DocumentId/Storno falsificate pe
+factură. Hărțile originale și santinela 2025-09 trec; fără constatări noi.
+XSD/DUK rămân verificate, iar limitele S2/S3 și HTTP sunt neschimbate. S0 aprobat de owner (2026-09-29).
+[Review-ul S0](../tr-d8-saft-s0-review-codex.md).
+
 **Review advers Codex, reverificat 2026-09-29 pe `ad193a9`: R1, R2 și
-R2.1 închise; limitele S0 și probele publice S2 rămân.**
+R2.1 închise; probele publice S2 rămân.**
 R1: unitatea produsului e imutabilă după operare (S1-R5, alegerea owner-ului
 A); contraexemplul 10 H87 → KGM este refuzat, iar exportul rămâne 10 H87.
 R2: `Compara` merge în ambele sensuri, pe facturi (tip, net, taxă, brut,
@@ -23,21 +34,46 @@ TI21 omisă) sunt respinși amândoi. Diferențele din ianuarie sunt: TI21 brut,
 data facturii F și a stornoului, recepția la FCT față de NIR.
 [Review-ul S1](../tr-d8-saft-s1-review-codex.md).
 
+**2026-09-29 — S2 propus (contract §S2):** Payments din cub, alocarea la
+capătul lunii operării, stornoul care neagă liniile declarate, comutarea L
+și `SAFT_ACCES_INCOMPLET`. Rândurile SC-SAFT-26…36 sunt așteptări de
+contract. S2-Q1 (stornoul neagă liniile declarate) și S2-Q2 (compensarea
+în afara Payments, SAFT-r1) sunt tranșate de owner. Implementate și verificate:
+SC-SAFT-05, 06, 13, 26…36; ruta L este comutată pe cub.
+
+**Review advers S2, 2026-09-29, `663cadb`: deschis (S2-RV1 / P1).**
+Nominalizarea integrală PLT 50 → FCT 100, desfăcută în aceeași lună prin
+comanda reală, exportă încă 50 pe factură, în loc de 50 rest fără referință.
+Varianta PLT 120 cu rest inițial 20 trece. SC-SAFT-05/26 nu acoperă încă
+această combinație; scenariile existente verzi nu închid constatarea.
+[Contraexemplul și verificările](../tr-d8-saft-s2-review-codex.md).
+**Corectat de Claude (S2-R4):** linia de rest se creează pentru fiecare
+partidă proprie, chiar când operarea n-a scris nimic pe ea. Proba durabilă
+este SC-SAFT-37. Mutantul (cititorul de la `663cadb`) pică pe toate cele
+trei verificări ale ei.
+
+**Reverificat de Codex pe `3ac87ee`: S2-RV1 închis.** SC-SAFT-37 trece
+pentru 50 rest, 120 rest, realocare 30 G4 + 20 rest și storno −50/−120,
+inclusiv proveniența. Integrala independentă: 3.267 bugetar / 4.415 privat
+OK, `run-verificari/20260929-205701-186`. Cusăturile noi SC-SAFT-15 trec;
+refuzurile sunt integrate în ecran. Fără constatări noi în corectură;
+FZ-r3 rămâne deschisă. Detaliile și limitele sunt în review-ul de mai sus.
+
 | Id | Scenariu și așteptare numerică | Proba propusă | Proveniență | Rezultat / stare |
 |---|---|---|---|---|
 | SC-SAFT-01 | FCT servicii 100 + 21: GL D 6xx 100, D 4426 21, C 401 121; PurchaseInvoice net 100, taxă 21, brut 121; plata 40 lasă furnizor 81 | SAFT-L-ACHIZITIE | 073, 090, 103; regulă contabilă | Verificat (ScenariiSaft) |
 | SC-SAFT-02 | FCL servicii 200 + 42: GL D 411 242, C 7xx 200, C 4427 42; SalesInvoice 200/42/242; INC 100 lasă client 142 | SAFT-L-VANZARE | 073, 090, 103 | Verificat (ScenariiSaft) |
 | SC-SAFT-03 | FCT capitalizată 100 + 21: D cost 121 / C 401 121; factura păstrează net 100 și taxă 21, fără dublarea bazei pe cost | SAFT-L-CAPITALIZAT | 103 și catalog FCT | Verificat (ScenariiSaft) |
 | SC-SAFT-04 | DVI bază 100, TVA 21: GL D 4426 21/C 446 21; sold și rulaj contabil 21/21, nu 121/121; baza fiscală 100 rămâne în faptele fiscale; zero facturi DVI inventate | SAFT-L-DVI | Contract DVI, D8-B1, T-r11 | Verificat (ScenariiSaft) |
-| SC-SAFT-05 | PLT 70, alocare 50: plată totală 70, referință factură numai pentru 50, rest 20; factura 100 rămâne cu 50. Desfacerea alocării restabilește 100/70, fără nouă plată | SAFT-P-ALOCARI | D8-B7; propunere SAF-B3.3 | Propus; specificat, de aprobat |
-| SC-SAFT-06 | PLT 70 în ianuarie; legătură 50 în februarie: la 31 ianuarie alocare 0/rest 70; la 28 februarie alocare 50/rest 20; zero plată suplimentară în februarie | SAFT-P-LIMITA | Propunere SAF-B3.3 | Propus; specificat, de aprobat |
+| SC-SAFT-05 | PLT 70, alocare 50: plată totală 70, referință factură numai pentru 50, rest 20; factura 100 rămâne cu 50. Desfacerea alocării restabilește 100/70, fără nouă plată | SAFT-P-ALOCARI | D8-B7; SAF-B3.3; S2-D3 | Verificat (ScenariiSaft) |
+| SC-SAFT-06 | PLT 70 în ianuarie; legătură 50 în februarie: la 31 ianuarie alocare 0/rest 70; la 28 februarie alocare 50/rest 20; zero plată suplimentară în februarie | SAFT-P-LIMITA | SAF-B3.3; S2-D3 | Verificat (ScenariiSaft) |
 | SC-SAFT-07 | FCT 10 buc × 10 = 100 în ianuarie; NIR egal în februarie: stoc ianuarie 10/100; NIR adaugă 0/0; final februarie 10/100. Codurile Movement rămân de tranșat | SAFT-S-FCT-NIR | 098, contract NIR delta; SAF-B3.5 | Economic specificat; XML deschis |
 | SC-SAFT-08 | Deschidere 10/100 în MAG1; BTR 4/40 în MAG2: MAG1 6/60, MAG2 4/40; total 10/100. Inversa în februarie: 10/100 și 0/0; GL rulaj transfer 0 în ambele luni | SAFT-S-TRANSFER | 090, contract BTR; N-r8 | Acceptat; specificat |
 | SC-SAFT-09 | ASM același cont: 2 A/100 devin 1 B/100. Movement real −2/−100, +1/+100; GL 0; contraponderi Transformare exportate 0. Inversa reface A 2/100 și B 0/0 | SAFT-S-ASM | ASM-B2…B7 | Acceptat; specificat |
 | SC-SAFT-10 | ASM mixt: grup 371 transfer 60/60; grup 301→345 operare 40/40. GL numai D 345 40/C 301 40; comparația veche GL 0, delta explicită 40/40 | SAFT-L-ASM-MIXT | D8-B4, ASM-B7 | Verificat (ScenariiAsm, inclusiv inversa din februarie) |
 | SC-SAFT-11 | PIF nominalizează 1.200 deja în contabil: GL suplimentar 0. AMO 100: D cheltuială 100/C amortizare 100. Carte Fiscal și transferurile de fișă nu dublează GL | SAFT-L-IMO | 097 și contract IMO | Verificat PIF, AMO și DEC (ScenariiImo, ScenariiDec); CAS rămâne în catalogul IMO |
 | SC-SAFT-12 | Același lot în două gestiuni cu același nume, apoi pe două conturi: poziții distincte, suma 10/100 conservată; chei XML fără coliziuni | SAFT-S-CHEI | SAF-B3.6 | Specificat economic; codificare de pin-uit |
-| SC-SAFT-13 | Utilizator ascunde 21 din FCT 100 + 21 sau un rând 401 121: nu primește declarație cu 100 ori 0; refuz înainte de XML, fără scurgere de sume ascunse | SAFT-HTTP-DREPTURI | SAF-D4 A aprobat, 103 | Mutat la comutarea L în S2 (S1-R8) |
+| SC-SAFT-13 | Utilizator ascunde 21 din FCT 100 + 21 sau un rând 401 121: nu primește declarație cu 100 ori 0; refuz înainte de XML, fără scurgere de sume ascunse | SAFT-HTTP-DREPTURI | SAF-D4 A aprobat, 103 | Verificat HTTP (`ProbeHttp/saft-acces.py`, host izolat) |
 | SC-SAFT-14 | Bugetar cu documente operate: L și S neaplicabile, fără XML „gol valid”; cont/mapping/reper obligatoriu lipsă pe privat: refuz, nu zero | SAFT-HTTP-REFUZURI | 073/074 și SAF-B6 | Verificat: bugetar neaplicabil, mapare lipsă refuzată |
 | SC-SAFT-15 | S1 livrat singur: ruta L rămâne cea existentă, fără noul GL combinat cu Payments vechi; S1+S2: L integral nou; C rămâne vechi până la S3 | SAFT-COMUTARE | R1, SAF-B1 | Verificat: ruta L neschimbată, cusături GL–balanță–facturi, A/B clasificat |
 | SC-SAFT-16 | FCT capturată la 23:30 UTC, inversă și corecție în alte două zile UTC: trei timbre proprii; reexportul într-un alt fus nu schimbă SystemEntryDate | SAFT-TIMBRE | R2, S1-D3 | Verificat |
@@ -48,6 +84,20 @@ data facturii F și a stornoului, recepția la FCT față de NIR.
 | SC-SAFT-21 | TI21 net 100: GL cost 100, furnizor 100, TVA D21/C21; debit=credit=121, factură de plată 100, nu 121 | SAFT-TAXARE-INVERSA | SC-FCT-10, S1-D4 | Verificat; diferența A/B de brut (vechi 121) clasificată |
 | SC-SAFT-22 | Serviciu 2 ore × 50: cantitate cub 0, comercială 2; net cub 100/TVA21; factura are 2 și preț 50, nu cantitate 0/1 | SAFT-CANTITATE-COMERCIALA | S1-D4, declarant FCT Netul | Verificat, inclusiv corecția 3 × 40 și refuzul editării liniei operate |
 | SC-SAFT-23 | Factură din 8 ianuarie primită/înregistrată la 5 februarie: ianuarie 0; februarie 100/21/121; InvoiceDate/TaxPointDate 8 ianuarie, GLPostingDate 5 februarie | SAFT-FACTURA-INTARZIATA | S1-D3/D5; fixture cu exigibilitate explicită 8 ianuarie | Verificat |
+| SC-SAFT-24 | XML L lunile 1–3 (anul 2040): XSD v249 cu namespace-ul `d406` substituit declarat și DUK J2.2.18 pe perioada din antet, zero erori și atenționări; februarie are 381 și 384 cu același `InvoiceNo`; `SalesInvoices` fără intrări scris gol; luna 4 fără rulaj (cub și ruta veche) validă; santinela: ianuarie cu antetul pe 2025-09 trece la fel ca pe 2040; `manifest-d406.json` cu SHA-256 al artefactelor și proveniența fiecărei linii GL și facturi, verificată contra XML-ului și a cubului | SAFT-S0-CERTIFICARE | S0-R1…R8 | Verificat (ScenariiSaft) |
+| SC-SAFT-25 | Mutanți: antetul ianuarie pe 2024 → codurile cotei 21% respinse de DUK; tranzacție fără `GLPostingDate` → XSD respinge; namespace `d406t` → XSD derivat și DUK D406 resping; copil obligatoriu fără namespace → XSD respinge; manifest cu linie GL omisă, cheie de postare dublată, surse permutate între RecordID-uri, factură omisă, DocumentId schimbat sau Storno inversat → respins | SAFT-S0-MUTANTI | S0-R3, S0-R4, S0-R8 | Verificat (ScenariiSaft) |
+| SC-SAFT-26 | FCT G 100 fără TVA; PLT 50 cu sursa G (nominalizată la operare): o linie D 401 50 cu `SourceDocumentID` G, nu 100 prin citirea și a legăturii. PLT 120 cu sursa G de rest 100: 100 G + 20 rest; factura G rest 0 | SAFT-P-NOMINALIZATA | S2-D3.1; `DeclarantTrezorerie` | Verificat (ScenariiSaft) |
+| SC-SAFT-27 | PLT 70 + legătură 50 pe F în ianuarie, storno în februarie: ianuarie 50 F + 20 rest; februarie −50 F și −20 rest, `TransactionID` = tranzacția stornoului; GL februarie D 401 −70 / C 5121 −70. Ramura: legătură în februarie, ștearsă în martie (cu legătura vie în perioadă deschisă, stornoul e refuzat de gardian), apoi storno în martie: ianuarie 70 rest, februarie nicio plată, martie −70 rest | SAFT-P-STORNO | S2-D3 (stornoul neagă E_O) | Verificat (ScenariiSaft) |
+| SC-SAFT-28 | FCL V 242 către CA; INC 100 legată de V: linie C 411 100, `SourceDocumentID` V, `CustomerID` CA, `SupplierID` societatea; dispoziția de casă → 01/10, ordinul de plată → 03/42 | SAFT-P-INCASARE | S2-D1/D2; `LaturaContPropriu` | Verificat (ScenariiSaft) |
+| SC-SAFT-29 | Virament BANCA→CASA 500: GL D 5311 / C 5121 500, zero plăți. PLT 300 către ANAF pe 4423 (fără `RolTert`): `Neincluse` `PlataFaraContTert`, GL neschimbat. PLT 200 angajatului pe 542: plată 200 cu codul societății pe ambele identificatoare și avertismentul `PlataCatreAngajat` | SAFT-P-EXCLUDERI | S2-D1; paritate cu ruta veche | Verificat (ScenariiSaft) |
+| SC-SAFT-30 | Deschidere: partidă inițială furnizor FA 60; PLT 20 stinge partida inițială în ianuarie: linie D 401 20 fără `SourceDocumentID`, avertismentul `PlataPePartidaInitiala`; partida inițială rest 40 | SAFT-P-DESCHIDERE | S2-D3.1; SC-DES-03 | Verificat (ScenariiDeschidere, lunile 1–2) |
+| SC-SAFT-31 | PLT 20 avans liber către FA; NTC compensează avansul (stinge partida PLT) în aceeași lună: plata 20 are o linie cu `SourceDocumentID` = numărul NTC; NTC nu devine plată (S2-Q2) | SAFT-P-COMPENSARE | S2-D3.2, S2-D4; SC-DES-11 | Verificat (ScenariiSaft) |
+| SC-SAFT-32 | PLT 100 în ianuarie închis, corecție în februarie la 80: februarie are stornoul −100 (liniile ianuarie negate) și plata 80 a documentului nou, cu alocarea lui; ianuarie reexportat identic | SAFT-P-CORECTIE | S2-D3; SC-PLT-06 | Verificat (ScenariiSaft) |
+| SC-SAFT-33 | PLT pe două linii 40 + 60 către același furnizor, pe aceeași partidă: o singură linie de plată 100 (partida, nu detaliul); centre de cost diferite pe cele două linii: analiza omisă pe linie, avertisment `PlataAnalizaMixta`, GL cu ambele analize | SAFT-P-MULTILINIE | S2-D2 | Verificat (ScenariiSaft) |
+| SC-SAFT-34 | L complet pe lunile scenei, cu Payments nevid: XSD v249 + DUK J2.2.18 fără atenționări (inclusiv 50 + 20 fără referință, R4); manifestul leagă `(TransactionID, LineNumber)` de postările și transferurile sursă; mutanți respinși: linie de plată omisă, sursă permutată, `SourceDocumentID` schimbat; A/B plăți cu diferențele declarate exact (împărțirea 50 + 20, legătura viitoare, `TransactionID`) | SAFT-P-CERTIFICARE | S0-R1…R8, S2-D6 | Verificat (ScenariiSaft) |
+| SC-SAFT-35 | Altă sesiune comite o legătură 50 între citirea GL și citirea plăților: fișierul are fie 70 rest, fie 50 + 20, niciodată amestec; refuzul ReadCommitted rămâne | SAFT-P-REPEATABLE-READ | R3, SC-SAFT-17 | Verificat (ScenariiSaft) |
+| SC-SAFT-37 | Nominalizare automată desfăcută în aprilie: PLT 50 integral pe G1 → 50 rest; PLT 120 pe G2 de rest 100 → 120 rest; PLT 50 pe G3, desfăcută și realocată 30 pe G4 → 30 G4 + 20 rest; proveniența fiecărei linii acoperă postările operării; storno în mai → −50 rest și −120 rest | SAFT-P-NOMINALIZARE-DESFACUTA | S2-RV1, S2-D3 | Verificat (ScenariiSaft), cu mutant |
+| SC-SAFT-36 | Host viu: Admin complet → 200; fără drept pe `Postare` → 403 `SAFT_ACCES_INCOMPLET`; refuz condițional de rând pe `Postare` sau pe document; membru `Valoare`/`Partener` ascuns; metadate necesare ascunse → 403 înaintea primului byte, pe sumar și pe fișier, fără sume ascunse în corp | SAFT-HTTP-ACCES | SAF-D4, S2-D5 | Verificat HTTP (`ProbeHttp/saft-acces.py`, host izolat); SC-SAFT-36 și prin ScenariiSaft (tabelele citite) |
 
 ## SC-SAFT-15…17 — probe structurale cu rezultate măsurabile
 

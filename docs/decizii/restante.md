@@ -79,7 +79,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 73-r5 | `Produs.UM` string | după PoC (091) |
 | 73-r6 | ecranul React `Societate`, `CodNc`/UM pe produs | după PoC (091) |
 | 73-r7 | OpANAF 1783/2021 (termene/praguri) | după PoC (091) |
-| 73-r8 | kitul DUK J2.2.8 vs J2.2.15, `-d` inutilizabil | după PoC (091) |
+| 73-r8 | kitul DUK J2.2.8 vs J2.2.15, `-d` inutilizabil | închisă 2026-09-29 de TR-D8 S0-R1/R2: kitul local e J2.2.18 publicat (SHA-256 pin-uit), verificat înainte și după fiecare rulare |
 | 73-r9 | `ContFaraRol` pe facturile de achiziție Flax (date) | migrare (091) |
 | 73-r10 | `Neincluse` întreg în sumar | după PoC (091) |
 | 73-r11 | `UnitPrice` la 2 zecimale, cantitatea negativă nemăsurată | după PoC (091) |
@@ -100,7 +100,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 74-r10 | `T`/segmentare pe S | după PoC (091) |
 | 74-r11 | D17-V6 doar privat, proba ștergerii logice | după PoC (091) |
 | 74-r12 | ecran React `PoliticaMiscareSaft` (închisă de 81i) | închisă de 81i |
-| 74-r13 | DUK J2.2.18 | după PoC (091) |
+| 74-r13 | DUK J2.2.18 | închisă 2026-09-29 de TR-D8 S0-R2 pentru L; S se reverifică pe manifest la S3 |
 | 74-r14 | gardian produs de stoc fără cont | după PoC (091) |
 | 74-r15 | `FaraCodNc` pe Flax | migrare (091) |
 | 75-r1 | ASM UI: derivarea valorii produsului din consum | închisă de 76c |
@@ -250,7 +250,8 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | TR-r11 | `Numar`, `DataScadenta`, `Autogenerat`, `DocumentSursa` rămân atribute ale documentului scrise la operare, sub gardianul (a) (90) | activă (091) |
 | TR-r12 | Δ de sold 3xx (+585.404,66 pe Flax) între registrul de stoc și cel contabil de azi: tranșată prin contractul 1 al reconcilierii 1C; constatare, nu consecință acceptată (90); intră la TR-D7b, cu tipurile care o produc | migrare (091) |
 | FZ-r1 | granul lui `Sold` contra snapshot-urile de azi (și dacă un read model mai grosier merită ca al doilea): gate la TR-D8, nu condiție prealabilă; FZ-r2 măsurată 2026-09-19 (fișa 348 contra 248 ms) și absorbită (90) | activă (091) |
-| FZ-r3 | lookup-ul per partidă (SAF-T Payments, fișa partidei): index `(Unitate, Data)` pe Contabil probat pe o interogare reală (90, TR-D8) | activă (091) |
+| FZ-r3 | lookup-ul per partidă (SAF-T Payments, fișa partidei): index `(Unitate, Data)` pe Contabil probat pe o interogare reală (90, TR-D8) | activă (091); TR-D8 S2 a fixat interogarea reală (`Citiri.Plati`: transferurile și originile pe `Unitate = ANY`, `Data ≤ capăt`), planul pe volum rămâne de măsurat la gate-ul transversal de perf |
+| SAFT-r1 | explorarea unui document de compensare care își generează postările (declarant propriu) și devine sursa Payments 02/97; azi compensarea e NTC, în afara Payments (TR-D8 S2-R2, `docs/nucleu/tr-d8-saft-contract.md`) | după PoC (091) |
 | FZ-r4 | creșterea reală a coordonatelor pe un istoric lung: `Sold` la 1,2 GB și cifrele +S sunt limite inferioare (90) | după PoC (091) |
 | FZ-r5 | rândul de stoc unificat cu postarea 3xx: economie ≤ 9 % — tranșat de 90g (o singură postare); re-măsurarea rămâne TR-r3 | închisă prin 90g |
 | FZ-r6 | partiționarea pe an: redeschisă doar când citirile integrale de istoric trec pragul pe baza reală; rămâne PhysicalStock (90) | după PoC (091) |

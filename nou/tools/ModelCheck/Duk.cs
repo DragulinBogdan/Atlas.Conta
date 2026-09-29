@@ -1,37 +1,26 @@
 using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-// ORACOLUL — validatorul oficial ANAF (DUKIntegrator), rulat OFFLINE peste
-// fișierul scenei (felia 16, D16-D5, proba V3).
-//
-// DE CE un oracol extern: schema D406 nu există ca XSD în kit — validarea e
-// compilată în `D406Validator.jar`, iar singurul XSD care se poate citi
-// (`Ro_SAFT_Schema_v247_20230306.xsd`, din analiza 1C) e din 2023. Ordinea și
-// numele elementelor se pot deci CONFIRMA doar rulând validatorul. Rezultatul
-// lui e un fapt măsurat, nu o opinie despre schemă.
-//
-// Ce NU face: nu blochează suita dacă lipsește (kitul e ~252 MB și e gitignored,
-// java vine cu el). Absența se raportează ZGOMOTOS — o linie `SĂRIT` în rezumat
-// — fiindcă „proba n-a rulat" și „proba a trecut" sunt lucruri diferite.
+/// <summary>Rezultatul DUKIntegrator pe un fișier; kitul absent sau nepotrivit manifestului e respingere.</summary>
 public sealed class DukRezultat {
-    /// <summary>Kitul și java-ul lui există; altfel `Motiv` spune ce lipsește.</summary>
+    /// <summary>Validatorul a rulat pe kitul pin-uit; altfel `Motiv`.</summary>
     public bool Disponibil { get; init; }
     public string Motiv { get; init; }
-    /// <summary>Fișierul de erori conține literal `ok` — singurul semnal al validatorului.</summary>
+    /// <summary>Fișierul de erori conține literal `ok`, iar kitul e neschimbat după rulare.</summary>
     public bool Valid { get; init; }
-    /// <summary>Versiunea validatorului D406 din `config/versiuniCurente.txt` (ex. `J2.2.8`).</summary>
-    public string Versiune { get; init; }
+    public string Versiune { get; init; } = ManifestD406.VersiuneValidator;
+    /// <summary>Perioada din antetul fișierului, transmisă validatorului.</summary>
+    public (int An, int Luna) Perioada { get; init; }
     public List<string> Erori { get; init; } = [];
-    /// <summary>Atenționările (prefixul `!`): se LISTEAZĂ, nu blochează (§C.3).</summary>
+    /// <summary>Atenționările (prefixul `!`) se listează, nu blochează (73).</summary>
     public List<string> Avertismente { get; init; } = [];
-    /// <summary>Comanda exactă, ca proba să fie reproductibilă manual.</summary>
     public string Comanda { get; init; }
-    /// <summary>Fișierul validat — păstrat pe disc la eșec.</summary>
     public string CaleXml { get; init; }
 
     public string Rezumat =>
-        !Disponibil ? $"SĂRIT ({Motiv})"
+        !Disponibil ? $"INDISPONIBIL ({Motiv})"
         : Valid ? $"ok ({Versiune}), {Avertismente.Count} atenționări"
         : $"RESPINS ({Versiune}): {Erori.Count} erori";
 }
@@ -41,50 +30,35 @@ public static class Duk {
     public const string TipDeclaratie = "D406";
 
     /// <summary>
-    /// Rulează validatorul pe `caleXml`. `an`/`luna` merg la
-    /// `DUKIntegrator_AnLunaUI.jar` (validatorul corelează tipul declarației cu
-    /// perioada — `validateDeclaredPeriod`).
+    /// Validează `caleXml` cu `DUKIntegrator_AnLunaUI.jar` pe perioada din antet: `an`/`luna` aleg nomenclatorul
+    /// validatorului și nu se compară cu antetul, deci o perioadă dată separat ar putea masca erori (TR-D8 S0).
     /// </summary>
-    public static DukRezultat Valideaza(string caleXml, int an, int luna, int timeoutSecunde = 300) {
-        var dist = GasesteKit();
-        if (dist == null)
-            return new DukRezultat {
-                Motiv = "kitul DUK lipsește (căutat `anaf/duk_SAFT_an_luna/dist` în arborele repo-ului "
-                    + "și în variabila de mediu ATLAS_DUK)",
-            };
-        var java = GasesteJava(dist);
+    public static DukRezultat Valideaza(string caleXml, int timeoutSecunde = 300) {
+        if (PerioadaDinAntet(caleXml) is not { } perioada)
+            return new DukRezultat { Motiv = "antetul nu declară o singură lună (SelectionCriteria PeriodStart = PeriodEnd)", CaleXml = caleXml };
+        var (an, luna) = perioada;
+        var anaf = GasesteAnaf();
+        if (anaf == null)
+            return new DukRezultat { Motiv = "directorul `anaf/` cu kitul DUK lipsește (arborele repo-ului sau ATLAS_ANAF)" };
+        var dist = Path.Combine(anaf, "duk_SAFT_an_luna", "dist");
+        var abateri = ManifestD406.Abateri(dist, ManifestD406.Kit)
+            .Concat(ManifestD406.Abateri(anaf, [ManifestD406.Nomenclator])).ToList();
+        if (abateri.Count > 0)
+            return new DukRezultat { Motiv = "kit nepotrivit manifestului: " + string.Join("; ", abateri) };
+        var java = Directory.EnumerateDirectories(dist, "jre*").OrderByDescending(d => d)
+            .Select(jre => Path.Combine(jre, "bin", "java.exe")).FirstOrDefault(File.Exists);
         if (java == null)
             return new DukRezultat { Motiv = $"java lipsește din kit ({dist}\\jre*\\bin\\java.exe)" };
-        // Jar-ul cu an/lună e cel care primește parametrii de perioadă; fără el,
-        // jar-ul de bază validează la fel, dar fără corelația de perioadă.
-        var jar = Path.Combine(dist, "DUKIntegrator_AnLunaUI.jar");
-        var cuPerioada = File.Exists(jar);
-        if (!cuPerioada)
-            jar = Path.Combine(dist, "DUKIntegrator.jar");
-        if (!File.Exists(jar))
-            return new DukRezultat { Motiv = $"DUKIntegrator.jar lipsește din {dist}" };
 
-        // `!` pe fișierul de erori = atenționările se păstrează separat, în
-        // `.wrn.txt`, iar `.err.txt` primește marca `ok`. FĂRĂ prefix ele se
-        // PIERD (doc/Instructiuni.txt).
         var caleErori = caleXml + ".err.txt";
         var caleAvertismente = caleXml + ".wrn.txt";
         foreach (var f in new[] { caleErori, caleAvertismente })
-            if (File.Exists(f))
-                File.Delete(f);
-
-        var argumente = new List<string> {
-            "-jar", jar, "-v", TipDeclaratie, caleXml, "!" + caleErori,
-        };
-        if (cuPerioada) {
-            // `$` = „ia valoarea implicită a parametrului opțional".
-            argumente.Add("$");
-            argumente.Add($"an={an}");
-            argumente.Add($"luna={luna:00}");
-        }
-        // ATENȚIE, măsurat: `-d` (fără auto-update) e documentat pentru modul
-        // GRAFIC; pus înaintea lui `-v`, procesul rămâne agățat (fereastră care
-        // nu se deschide) până la timeout. În linie de comandă se rulează FĂRĂ.
+            File.Delete(f);
+        // `!` pune atenționările în `.wrn.txt`, altfel se pierd; `-d` agață procesul în CLI (doc/Instructiuni.txt, 73-r8).
+        string[] argumente = [
+            "-jar", Path.Combine(dist, "DUKIntegrator_AnLunaUI.jar"), "-v", TipDeclaratie, caleXml, "!" + caleErori,
+            "$", $"an={an}", $"luna={luna:00}",
+        ];
         var psi = new ProcessStartInfo(java) {
             WorkingDirectory = dist,
             RedirectStandardOutput = true,
@@ -103,30 +77,25 @@ public static class Duk {
             var stdout = proces.StandardOutput.ReadToEndAsync();
             var stderr = proces.StandardError.ReadToEndAsync();
             if (!proces.WaitForExit(timeoutSecunde * 1000)) {
-                try { proces.Kill(entireProcessTree: true); } catch { /* deja mort */ }
-                return new DukRezultat {
-                    Disponibil = true,
-                    Motiv = $"validatorul n-a terminat în {timeoutSecunde} s",
-                    Comanda = comanda,
-                    CaleXml = caleXml,
-                    Versiune = Versiunea(dist),
-                };
+                try { proces.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+                return new DukRezultat { Motiv = $"validatorul n-a terminat în {timeoutSecunde} s", Comanda = comanda, CaleXml = caleXml };
             }
             iesire = (stdout.Result + "\n" + stderr.Result).Trim();
         }
 
         var erori = CitesteLinii(caleErori);
         var avertismente = CitesteLinii(caleAvertismente);
-        var valid = erori.Count == 1 && erori[0].Trim().Equals("ok", StringComparison.OrdinalIgnoreCase);
-        if (valid)
+        var ok = erori is [var unic] && unic.Trim().Equals("ok", StringComparison.OrdinalIgnoreCase);
+        if (ok)
             erori.Clear();
-        if (erori.Count == 0 && !valid)
-            // Nici `ok`, nici erori în fișier: iese la iveală ce a spus procesul.
+        else if (erori.Count == 0)
             erori.Add($"(fișierul de erori lipsește sau e gol) ieșire: {Scurt(iesire)}");
+        var dupa = ManifestD406.Abateri(dist, ManifestD406.Kit);
+        erori.AddRange(dupa.Select(a => $"kitul s-a schimbat în timpul rulării: {a}"));
         return new DukRezultat {
             Disponibil = true,
-            Valid = valid,
-            Versiune = Versiunea(dist),
+            Perioada = perioada,
+            Valid = ok && dupa.Count == 0,
             Erori = erori,
             Avertismente = avertismente,
             Comanda = comanda,
@@ -134,56 +103,36 @@ public static class Duk {
         };
     }
 
-    /// <summary>Directorul în care se scriu fișierele probei (păstrate la eșec).</summary>
+    static (int, int)? PerioadaDinAntet(string caleXml) {
+        static XElement Copil(XElement e, string nume) => e?.Elements().FirstOrDefault(x => x.Name.LocalName == nume);
+        var criterii = Copil(Copil(XDocument.Load(caleXml).Root, "Header"), "SelectionCriteria");
+        int? Valoare(string nume) => int.TryParse((string)Copil(criterii, nume), out var v) ? v : null;
+        return (Valoare("PeriodStartYear"), Valoare("PeriodStart"), Valoare("PeriodEndYear"), Valoare("PeriodEnd")) is
+            (int an, int luna, int anSfarsit, int lunaSfarsit) && an == anSfarsit && luna == lunaSfarsit ? (an, luna) : null;
+    }
+
     public static string DirectorTemporar() {
         var cale = Path.Combine(Path.GetTempPath(), "atlas-saft");
         Directory.CreateDirectory(cale);
         return cale;
     }
 
-    static List<string> CitesteLinii(string cale) {
-        if (!File.Exists(cale))
-            return [];
-        return File.ReadAllLines(cale)
-            .Select(l => l.TrimEnd())
-            .Where(l => l.Length > 0)
-            .ToList();
-    }
+    static List<string> CitesteLinii(string cale) =>
+        !File.Exists(cale) ? [] : File.ReadAllLines(cale).Select(l => l.TrimEnd()).Where(l => l.Length > 0).ToList();
 
     static string Scurt(string text) =>
         string.IsNullOrWhiteSpace(text) ? "(goală)"
         : text.Length <= 400 ? text.ReplaceLineEndings(" ")
         : text[..400].ReplaceLineEndings(" ") + "…";
 
-    static string Versiunea(string dist) {
-        var cale = Path.Combine(dist, "config", "versiuniCurente.txt");
-        if (!File.Exists(cale))
-            return "necunoscută";
-        var linie = File.ReadAllLines(cale)
-            .FirstOrDefault(l => l.StartsWith(TipDeclaratie + ";", StringComparison.Ordinal));
-        // Formatul e `D406;J2.2.8;P2.0.1` — versiunea validatorului e a doua.
-        return linie?.Split(';').Skip(1).FirstOrDefault() ?? "necunoscută";
-    }
-
-    static string GasesteKit() {
-        var dinMediu = Environment.GetEnvironmentVariable("ATLAS_DUK");
+    static string GasesteAnaf() {
+        var dinMediu = Environment.GetEnvironmentVariable("ATLAS_ANAF");
         if (!string.IsNullOrWhiteSpace(dinMediu) && Directory.Exists(dinMediu))
             return dinMediu;
-        var director = new DirectoryInfo(AppContext.BaseDirectory);
-        while (director != null) {
-            var candidat = Path.Combine(director.FullName, "anaf", "duk_SAFT_an_luna", "dist");
-            if (Directory.Exists(candidat))
+        for (var d = new DirectoryInfo(AppContext.BaseDirectory); d != null; d = d.Parent) {
+            var candidat = Path.Combine(d.FullName, "anaf");
+            if (Directory.Exists(Path.Combine(candidat, "duk_SAFT_an_luna", "dist")))
                 return candidat;
-            director = director.Parent;
-        }
-        return null;
-    }
-
-    static string GasesteJava(string dist) {
-        foreach (var jre in Directory.EnumerateDirectories(dist, "jre*").OrderByDescending(d => d)) {
-            var java = Path.Combine(jre, "bin", "java.exe");
-            if (File.Exists(java))
-                return java;
         }
         return null;
     }
