@@ -52,6 +52,13 @@ partidă proprie, chiar când operarea n-a scris nimic pe ea. Proba durabilă
 este SC-SAFT-37. Mutantul (cititorul de la `663cadb`) pică pe toate cele
 trei verificări ale ei.
 
+**Reverificat de Codex pe `3ac87ee`: S2-RV1 închis.** SC-SAFT-37 trece
+pentru 50 rest, 120 rest, realocare 30 G4 + 20 rest și storno −50/−120,
+inclusiv proveniența. Integrala independentă: 3.267 bugetar / 4.415 privat
+OK, `run-verificari/20260929-205701-186`. Cusăturile noi SC-SAFT-15 trec;
+refuzurile sunt integrate în ecran. Fără constatări noi în corectură;
+FZ-r3 rămâne deschisă. Detaliile și limitele sunt în review-ul de mai sus.
+
 | Id | Scenariu și așteptare numerică | Proba propusă | Proveniență | Rezultat / stare |
 |---|---|---|---|---|
 | SC-SAFT-01 | FCT servicii 100 + 21: GL D 6xx 100, D 4426 21, C 401 121; PurchaseInvoice net 100, taxă 21, brut 121; plata 40 lasă furnizor 81 | SAFT-L-ACHIZITIE | 073, 090, 103; regulă contabilă | Verificat (ScenariiSaft) |

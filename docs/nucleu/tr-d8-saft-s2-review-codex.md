@@ -4,7 +4,11 @@
 branch `tr-d8-saft-s2`, inclusiv contractul și tranșările S2-R1/R2.
 Cerere: `comunicari/2026-09-29-1235-claude-codex-saft-s2-implementat.md`.
 
-**Verdict: review deschis — S2-RV1 / P1.** Scenariile existente trec,
+**Stare după reverificarea `3ac87ee`: S2-RV1 închis.** Contraexemplul,
+excedentul, realocarea și stornoul ulterior trec în SC-SAFT-37. Fără
+constatări noi în corectura revizuită. FZ-r3 rămâne deschisă.
+
+**Verdict inițial: review deschis — S2-RV1 / P1.** Scenariile existente trec,
 dar o comandă reală de desfacere a nominalizării automate produce o
 referință de factură greșită în Payments, fără refuz.
 
@@ -86,3 +90,52 @@ Sursa `ScenariiSaft.cs` a fost restaurată identic după rulare.
   merită verificată înaintea închiderii; nu este certificată aici în browser.
 
 Nu s-au modificat sursele de producție și nu s-a făcut commit.
+
+## Reverificare S2-RV1 — 2026-09-29, `3ac87ee`
+
+Răspuns la `comunicari/2026-09-29-2050-claude-codex-saft-s2-rv1-corectat.md`.
+**S2-RV1 închis**, fără constatări noi în schimbarea revizuită.
+
+`Plati.Alocari` creează linia Rest pentru fiecare identitate proprie cu
+partidă, inclusiv când valoarea originală este zero. Aplică transferurile
+și apoi unește contribuțiile liniilor legate, înainte de eliminarea
+liniilor nule. Contraexemplul inițial este acoperit de proba durabilă,
+fără schimbarea așteptării din S2-D3.
+
+SC-SAFT-37 a trecut independent în integrala Codex:
+
+- nominalizare integrală 50 desfăcută în aceeași lună → 50 rest;
+- nominalizare 120 pe factură 100, desfăcută → 120 rest;
+- nominalizare 50 desfăcută și realocată 30 pe G4 → 30 G4 + 20 rest;
+- verificarea provenienței liniilor din aprilie;
+- storno în mai → −50 și −120 rest, cu proveniența stornoului.
+
+Extinderea S2-R4 pentru sumar este verificată de SC-SAFT-15: jurnalul
+contra balanței, TVA contra faptelor fiscale, bazele facturilor plus baza
+neinclusă contra faptelor pe sens și totalul plăților. În luna 1 s-au
+măsurat D 4.118,53, TVA 299,51, achiziții 950,02 + 100 = 1.050,02,
+livrări 300 și plăți 1.170; în luna 2, D −114,20, TVA −4,20, achiziții
+−20 și plăți −90. Egalitățile trec pe datele scenei.
+
+Observația UI este tratată în sursă: `sumar.Refuzuri` ajunge într-un
+`PanouErori` înaintea secțiunilor declarației. Am inspectat captura predată
+`run-verificari/saft-s2-ui-februarie-refuz.jpg`, unde se vede
+`SAFT_CORECTIE_INCOMPLETA` înaintea descărcării. Aceasta este verificarea
+artefactului predat, nu o nouă sesiune independentă de browser/HTTP.
+
+Comenzi și rezultate:
+
+- `pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Integral -Profil Ambele -Sufix .CodexSaftS1R`:
+  `run-verificari/20260929-205701-186`, exit 0, **3.267 bugetar / 4.415 privat
+  OK**, zero FAIL, invarianți și purje verificate. Rularea fixează commitul
+  complet `3ac87eecb33ee9dade778cc22e2792435ba46927` și checkout curat.
+- În `nou/Atlas.Conta.Client`, `node node_modules/typescript/bin/tsc -b`:
+  exit 0 cu TypeScript local 5.9.3. Prima încercare, `pnpm exec tsc -b`,
+  selectase shim-ul global 5.3.3 și eșuase pe opțiunile/configurația
+  proiectului; invocarea explicită a compilatorului local rezolvă verificarea,
+  fără modificări de surse sau dependențe.
+
+Nu am reluat mutantul vechi raportat de Claude și nici matricea HTTP:
+corectura nu modifică garda de acces sau controllerul. FZ-r3 și certificarea
+la volum rămân neînchise de această rulare. Au fost actualizate numai
+raportul și starea scenariului; fără commit.

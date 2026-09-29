@@ -18,6 +18,7 @@ totaluri, inclusiv pe ruta publică existentă (S0-R5). S0 este închis;
 comutarea L rămâne la S2 (R1).
 [Raportul Codex](tr-d8-saft-s0-review-codex.md).
 
+**2026-09-29 — S2 închis: review Codex S2-RV1 închis după reverificare.**
 **2026-09-29 — S2 (Payments + comutarea L) propus de Claude; owner: S2-Q1 =
 stornoul neagă liniile declarate, S2-Q2 = compensarea în afara S2 (SAFT-r1),
 implementare în paralel cu review-ul Codex:** [S2](#s2--payments-și-comutarea-l-contract-pentru-aprobare).
@@ -762,9 +763,11 @@ Integral verde pe ambele profiluri (bugetar 3.267, privat 4.382):
 
 ## S2 — Payments și comutarea L: contract pentru aprobare
 
-Stare: **S2-Q1 și S2-Q2 tranșate de owner (S2-R1, S2-R2); implementat și
-verificat, ruta L comutată pe cub (S2-R3). Review advers Codex cerut; gate-ul
-S2 (S2-D7) se închide la review.** Bază inspectată: `1985d7e` (S0 închis). Nu schimbă
+Stare: **S2 închis (2026-09-29).** S2-Q1 și S2-Q2 au fost tranșate de owner
+(S2-R1, S2-R2). Implementarea e verificată, iar ruta L e comutată pe cub
+(S2-R3). Review-ul advers Codex e închis (S2-RV1 corectat în `3ac87ee`,
+reverificat, integrala independentă `20260929-205701-186`). FZ-r3 rămâne
+deschisă pentru gate-ul transversal de perf. Bază inspectată: `1985d7e` (S0 închis). Nu schimbă
 motorul, scrierea registrelor, împerecherea sau politica mișcărilor. Payments
 se derivă numai din cub; `Imperechere` rămâne metadatele comenzii, nu sursa
 alocării. La ieșire, ruta publică L comută pe cub (R1).
