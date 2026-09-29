@@ -494,6 +494,7 @@ public static class SaftXml {
             ElCerut("PaymentRefNo", p.PaymentRefNo);
             ElInt("Period", dto.Luna);
             ElInt("PeriodYear", dto.An);
+            El("TransactionID", p.TransactionID);
             ElData("TransactionDate", p.TransactionDate);
             ElCerut("PaymentMethod", p.PaymentMethod);
             ElCerut("Description", p.Description);

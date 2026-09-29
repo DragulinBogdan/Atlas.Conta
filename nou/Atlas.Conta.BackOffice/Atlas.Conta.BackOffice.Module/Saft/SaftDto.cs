@@ -258,6 +258,8 @@ public sealed class SaftPlata {
     public bool Storno { get; set; }
     public string DocumentTip { get; set; }
     public string PaymentRefNo { get; set; }
+    // Pe cub: tranzacția evenimentului, aceeași cu cea din GL (S2-D2).
+    public string TransactionID { get; set; }
     public DateOnly TransactionDate { get; set; }
     public string PaymentMethod { get; set; }
     public string PaymentMechanism { get; set; }
@@ -279,6 +281,14 @@ public sealed class SaftLiniePlata {
     public decimal PaymentLineAmount { get; set; }
     public List<SaftAnaliza> Analiza { get; set; } = [];
     public SaftTaxInfo TaxInformation { get; set; }
+    // Pe cub: documentul-origine al țintei și postările care justifică linia (S2-D3).
+    public Guid? TintaDocumentId { get; set; }
+    public List<SaftSursa> Surse { get; set; } = [];
+}
+
+public sealed class SaftSursa {
+    public Atlas.Conta.Nucleu.Spatiu Spatiu { get; set; }
+    public Guid Id { get; set; }
 }
 
 // Ce NU intră în fișier, cu cauza și cifrele lui (D16-D4) — parte din CONTRACT,

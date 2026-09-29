@@ -81,7 +81,9 @@
       "NumarFacturaDuplicat": "Număr de factură duplicat",
       "DataPostariiInAfaraPerioadei": "Data postării în afara perioadei (omisă)",
       "RolTertMixt": "Roluri de terț mixte pe aceeași mișcare",
-      "ReziduValoricFaraCantitate": "Rezidu valoric fără cantitate"
+      "ReziduValoricFaraCantitate": "Rezidu valoric fără cantitate",
+      "PlataAnalizaMixta": "Plată cu analize diferite pe aceeași linie",
+      "PlataPePartidaInitiala": "Plată pe o partidă inițială fără număr de document"
     },
     "DimensiuneFlags": {
       "Niciuna": "Niciuna",

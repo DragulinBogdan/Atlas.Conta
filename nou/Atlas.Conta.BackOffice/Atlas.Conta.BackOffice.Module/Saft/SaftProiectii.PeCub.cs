@@ -15,7 +15,7 @@ public static partial class SaftProiectii {
     public const string RefuzMapare = "SAFT_MAPARE_LIPSA";
     public const string RefuzCorectie = "SAFT_CORECTIE_INCOMPLETA";
 
-    /// <summary>D406 L din cub (TR-D8 S1): nomenclatoare, GL și facturi; `Payments` rămâne gol până la S2.</summary>
+    /// <summary>D406 L din cub (TR-D8 S1/S2): nomenclatoare, GL, facturi și plăți.</summary>
     public static SaftDto SaftPeCub(IObjectSpace os, int an, int luna, DateOnly? dataCreare = null) {
         using var citire = Fiscale.DeschideCitirea(os, cereIzolare: true);
         var dto = new SaftDto {
@@ -33,7 +33,7 @@ public static partial class SaftProiectii {
     public static DateOnly DataSistem(DateTime scrisLa) => DateOnly.FromDateTime(
         scrisLa.Kind == DateTimeKind.Local ? scrisLa.ToUniversalTime() : scrisLa);
 
-    sealed class ExportPeCub(IObjectSpace os, SaftDto dto, DateOnly? dataCreare) {
+    sealed partial class ExportPeCub(IObjectSpace os, SaftDto dto, DateOnly? dataCreare) {
         sealed record DocInfo(Guid Id, string Numar, DateOnly Data, Guid? CorecteazaId);
         sealed record LinieInfo(int Pozitie, decimal Cantitate, Guid TipMaterialId, Guid? LotId);
 
@@ -94,12 +94,14 @@ public static partial class SaftProiectii {
             tipuriTva = os.GetObjectsQuery<TipTva>().Select(t => new { t.ID, t.Cod, t.Denumire }).ToList()
                 .ToDictionary(t => t.ID, t => (t.Cod, t.Denumire));
             Documente(jurnal);
-            var agregateTert = Parteneri(jurnal);
+            var plati = PregatestePlati(jurnal);
+            var agregateTert = Parteneri(jurnal, plati.Values.Select(p => p.Extern).OfType<Guid>());
 
             Gl(jurnal);
             CorectiiIncomplete(jurnal);
             dto.FacturiEmise = Facturi(jurnal, vanzare: true);
             dto.FacturiPrimite = Facturi(jurnal, vanzare: false);
+            Plati(jurnal, plati);
             Terti(agregateTert);
 
             var (produse, unitati) = ProduseSiUnitati(os, produseFolosite.ToList(), (cod, exemplu) => Avert(cod, exemplu));
@@ -177,7 +179,7 @@ public static partial class SaftProiectii {
         sealed record AgregatTert(Guid ContId, Guid? RepartitorId,
             decimal InitialDebit, decimal InitialCredit, decimal RulajDebit, decimal RulajCredit);
 
-        List<AgregatTert> Parteneri(List<PostareJurnal> jurnal) {
+        List<AgregatTert> Parteneri(List<PostareJurnal> jurnal, IEnumerable<Guid> suplimentari) {
             var conturiCuRol = conturi.Where(c => c.Value.RolTert != RolTertCont.Niciunul).Select(c => c.Key).ToList();
             var agregate = ContabilProiectii.Atomi(os)
                 .Where(r => r.Data <= end && conturiCuRol.Contains(r.ContId))
@@ -195,6 +197,7 @@ public static partial class SaftProiectii {
             var ids = jurnal.Where(p => p.Partener != null).Select(p => p.Partener.Value)
                 .Concat(agregate.Where(a => a.RepartitorId != null).Select(a => a.RepartitorId.Value))
                 .Concat(jurnal.Where(p => p.CentruCost != null).Select(p => p.CentruCost.Value))
+                .Concat(suplimentari)
                 .Distinct().ToList();
             parteneri = os.GetObjectsQuery<Partener>().Where(p => ids.Contains(p.ID))
                 .Select(p => new {
@@ -236,17 +239,20 @@ public static partial class SaftProiectii {
             };
         }
 
-        List<SaftAnaliza> Analiza(PostareJurnal p) {
+        List<SaftAnaliza> Analiza(PostareJurnal p) =>
+            Analiza(p.CentruCost, p.Proiect, p.UnitateOrganizatorica, p.SursaFinantare, p.CodFunctional, p.CodEconomic);
+
+        List<SaftAnaliza> Analiza(Guid? cc, Guid? proiect, Guid? unitate, Guid? sf, Guid? cf, Guid? ce) {
             var lista = new List<SaftAnaliza>();
             void Adauga(string tip, Guid? id) {
                 if (id is Guid v) lista.Add(new SaftAnaliza { AnalysisType = tip, AnalysisID = etichete.Inregistreaza(tip, v) });
             }
-            Adauga("CC", p.CentruCost);
-            Adauga("P", p.Proiect);
-            Adauga("U", p.UnitateOrganizatorica);
-            Adauga("SF", p.SursaFinantare);
-            Adauga("CF", p.CodFunctional);
-            Adauga("CE", p.CodEconomic);
+            Adauga("CC", cc);
+            Adauga("P", proiect);
+            Adauga("U", unitate);
+            Adauga("SF", sf);
+            Adauga("CF", cf);
+            Adauga("CE", ce);
             return lista;
         }
 

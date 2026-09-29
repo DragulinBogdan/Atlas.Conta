@@ -2472,6 +2472,12 @@ public static partial class SaftProiectii {
             "Referințe de mișcare mai lungi de 35 de caractere — numărul documentului s-a tăiat de la ÎNCEPUT "
             + "(coada distinge, prefixul de serie se repetă). Identitatea rămâne unică prin sufixele de cod și de "
             + "storno, dar referința nu mai e numărul întreg.",
+        CodAvertismentSaft.PlataAnalizaMixta =>
+            "Linii de plată formate din postări cu analize diferite (centru de cost, proiect…) pe aceeași partidă: "
+            + "`Analysis` se omite pe linia de plată, iar GL-ul păstrează analiza fiecărei postări.",
+        CodAvertismentSaft.PlataPePartidaInitiala =>
+            "Plăți alocate unei partide din soldul inițial: partida n-are număr de document, deci linia iese fără "
+            + "`SourceDocumentID`.",
         _ => cod.ToString(),
     };
 }

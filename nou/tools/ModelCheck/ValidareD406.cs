@@ -115,13 +115,19 @@ public sealed record LegaturaGl(string TransactionID, string RecordID, Atlas.Con
 public sealed record LegaturaFactura(string Sectiune, string InvoiceNo, string InvoiceType, string TransactionID,
     Guid DocumentId, bool Storno);
 
-public sealed record ProvenientaD406(List<LegaturaGl> Gl, List<LegaturaFactura> Facturi) {
+/// <summary>Linia de plată a fișierului legată de postările și transferurile care o justifică, și de ținta ei (S2-D3).</summary>
+public sealed record LegaturaPlata(string TransactionID, int LineNumber, Guid DocumentId, bool Storno,
+    Guid? TintaDocumentId, List<SaftSursa> Surse);
+
+public sealed record ProvenientaD406(List<LegaturaGl> Gl, List<LegaturaFactura> Facturi, List<LegaturaPlata> Plati) {
     public static ProvenientaD406 Din(SaftDto dto) => new(
         dto.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii.Select(l =>
             new LegaturaGl(t.TransactionID, l.RecordID, l.Spatiu, l.RandRegistruId, t.DocumentId, l.DetaliuId))).ToList(),
         dto.FacturiEmise.Select(f => ("SalesInvoices", f)).Concat(dto.FacturiPrimite.Select(f => ("PurchaseInvoices", f)))
             .Select(x => new LegaturaFactura(x.Item1, x.f.InvoiceNo, x.f.InvoiceType, x.f.TransactionID, x.f.DocumentId, x.f.Storno))
-            .ToList());
+            .ToList(),
+        dto.Plati.SelectMany(p => p.Linii.Select(l =>
+            new LegaturaPlata(p.TransactionID, l.LineNumber, p.DocumentId, p.Storno, l.TintaDocumentId, l.Surse))).ToList());
 }
 
 /// <summary>O validare XSD + DUK a unui fișier, cu intrarea ei în manifestul rulării.</summary>
