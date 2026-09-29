@@ -626,9 +626,7 @@ public class PoliticaMiscareSaft : Politica, ICuProvenienta {
         CustomMessageTemplate = "Tipul de document este obligatoriu.")]
     public virtual TipDocument TipDocument { get; set; }
 
-    // Aceeași axă ca `RegulaStoc.TipStoc` și `RegistruStoc.TipStoc`: registrul
-    // atins e jumătate din identitatea mișcării (BCS scoate din `Magazie` și
-    // pune în `Consum` — două rânduri, două răspunsuri diferite).
+    // Categoria contului postării pe lot (`Cont.CategorieStoc`, S3-D1), nu registrul.
     [XafDisplayName("Tip stoc")]
     public virtual TipStoc TipStoc { get; set; }
 

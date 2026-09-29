@@ -403,6 +403,7 @@ public sealed class SaftTipMiscare {
 // exact convenția lui `381` de la facturi.
 public sealed class SaftMiscareStoc {
     public Guid DocumentId { get; set; }
+    public Guid? TranzactieId { get; set; }
     public bool Storno { get; set; }
     public string MovementReference { get; set; }
     public DateOnly MovementDate { get; set; }
@@ -431,8 +432,11 @@ public sealed class SaftLinieMiscareStoc {
     public string ProductCode { get; set; }
     public Guid LotId { get; set; }
     public Guid RepartitorId { get; set; }
-    // Identificatorul lotului — DOAR când produsul are > 1 lot în gestiune
-    // (ghid p. 36); altfel absent.
+    public Guid ContId { get; set; }
+    /// <summary>Postările pe lot agregate în linie (S3-D2); goală pe ruta veche.</summary>
+    public List<Guid> Postari { get; set; } = [];
+    public string ShipToWarehouseId { get; set; }
+    public string ShipFromWarehouseId { get; set; }
     public string StockAccountNo { get; set; }
     // SEMNATĂ ca în registru (intrare +, ieșire −, stornoul inversat).
     public decimal Quantity { get; set; }
@@ -451,6 +455,7 @@ public sealed class SaftLinieMiscareStoc {
 public sealed class SaftStocFizic {
     public Guid RepartitorId { get; set; }
     public Guid LotId { get; set; }
+    public Guid ContId { get; set; }
     public Guid ProdusId { get; set; }
     public string WarehouseId { get; set; }
     public string ProductCode { get; set; }
@@ -737,6 +742,9 @@ public sealed class SaftDto {
     public int NumberOfMovementLines { get; set; }
     public decimal TotalQuantityReceived { get; set; }
     public decimal TotalQuantityIssued { get; set; }
+
+    /// <summary>Categoria rezolvată a fiecărui cont cu postări pe lot citite (S3-D1); intră în manifest.</summary>
+    public SortedDictionary<string, string> CategoriiStoc { get; set; } = new(StringComparer.Ordinal);
 
     public List<SaftNeinclus> Neincluse { get; set; } = [];
     // Excluderile DELIBERATE (politică fără cod, cu motiv) — altă listă decât

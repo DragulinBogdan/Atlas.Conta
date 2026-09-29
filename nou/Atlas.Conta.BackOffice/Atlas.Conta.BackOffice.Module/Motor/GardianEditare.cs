@@ -904,6 +904,12 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (politica.Semn is not (null or -1 or 1))
             erori.Add($"Politica de mișcare SAF-T pe {eticheta}/{politica.TipStoc} are semnul "
                 + $"{politica.Semn} — semnul e −1 (ieșire), +1 (intrare) sau gol (orice semn).");
+
+        // S3-D1: pe o categorie raportabilă excluderea ar rupe Opening + mișcări = Closing.
+        if (string.IsNullOrWhiteSpace(politica.CodMiscare)
+                && CategoriiStoc.Rol(politica.TipStoc) == RolCategorieStoc.Raportabila)
+            erori.Add($"Politica de mișcare SAF-T pe {eticheta}/{politica.TipStoc} nu poate exclude: "
+                + "categoria are poziții în PhysicalStock, deci fiecare mișcare a ei cere cod.");
     }
 
     // ═══ F23-D4 — PROVENIENȚA: gardianul o STINGE, seed-ul o aprinde ═══

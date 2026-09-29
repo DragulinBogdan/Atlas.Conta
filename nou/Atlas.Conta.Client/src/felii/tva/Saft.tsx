@@ -213,12 +213,13 @@ export function Saft() {
 
       {fel === 'S' ? (
         <p className="indiciu">
-          Cifrele sunt cele din <strong>registrul de stoc</strong>, așezate pe structura D406 modul
-          <strong> S</strong> („la cerere"): tipurile de mișcare, produsele, stocul fizic per gestiune și
-          lot, mișcările de bunuri. Se depune tot pe <strong>o lună</strong>, la solicitarea ANAF, ca
-          fișier separat de cel lunar. Codul fiecărei mișcări e o <strong>politică</strong>
-          („Politici → Mișcări SAF-T"), nu o regulă din cod — un tip de document fără politică apare mai
-          jos la „Neincluse". Cantitățile sunt semnate ca în registru (intrare +, ieșire −).
+          Cifrele vin din <strong>postările pe lot</strong> ale cubului, așezate pe structura D406 modul
+          <strong> S</strong> („la cerere"): tipurile de mișcare, produsele, stocul fizic per gestiune, lot
+          și cont, mișcările de bunuri. Se depune tot pe <strong>o lună</strong>, la solicitarea ANAF, ca
+          fișier separat de cel lunar. Categoria stocului vine din contul postării („Plan de conturi →
+          Categorie stoc"), iar codul mișcării dintr-o <strong>politică</strong> („Politici → Mișcări
+          SAF-T"). O mișcare fără politică sau un cont fără categorie apar sus, la refuzuri, iar fișierul
+          nu se generează. Cantitățile sunt semnate (intrare +, ieșire −).
         </p>
       ) : (
         <p className="indiciu">
@@ -496,15 +497,15 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
     nume: string; explicatie: string; stanga: number; dreapta: number; bate: boolean; cant?: boolean;
   }[] = [
     {
-      nume: 'S1 stoc fizic vs registru (valoare)',
-      explicatie: 'deschidere + rândurile de registru ale lunii == închidere, pe FIECARE intrare '
-        + '(gestiune × lot)',
+      nume: 'S1 stoc fizic vs postări (valoare)',
+      explicatie: 'deschidere + postările pe lot ale lunii == închidere, pe FIECARE poziție '
+        + '(gestiune × lot × cont)',
       stanga: (rezumat.StocOpeningValoare ?? zero) + (rezumat.StocMiscariValoare ?? zero),
       dreapta: rezumat.StocClosingValoare ?? zero,
       bate: (rezumat.StocIntrariDiferite ?? 0) === 0,
     },
     {
-      nume: 'S1 stoc fizic vs registru (cantitate)',
+      nume: 'S1 stoc fizic vs postări (cantitate)',
       explicatie: 'aceeași egalitate, pe cantități',
       stanga: (rezumat.StocOpeningCantitate ?? zero) + (rezumat.StocMiscariCantitate ?? zero),
       dreapta: rezumat.StocClosingCantitate ?? zero,
@@ -513,8 +514,7 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
     },
     {
       nume: 'S5 stoc fizic vs fișier (valoare)',
-      explicatie: 'aceeași egalitate, dar cu Σ luată din liniile EMISE în MovementOfGoods — S1 confruntă '
-        + 'trei interogări pe registru între ele, deci nu vede ce s-a scris în fișier',
+      explicatie: 'aceeași egalitate, dar cu Σ luată din liniile EMISE în MovementOfGoods',
       stanga: (rezumat.StocOpeningValoare ?? zero) + (rezumat.StocEmiseValoare ?? zero),
       dreapta: rezumat.StocClosingValoare ?? zero,
       bate: (rezumat.StocFizicVsMiscariDiferite ?? 0) === 0,
@@ -529,8 +529,8 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
     },
     {
       nume: 'S2 nimic nu se pierde (valoare)',
-      explicatie: 'Σ mișcări + Σ excluse deliberat + Σ neincluse == Σ registrul de stoc al lunii '
-        + '(toate tipurile de stoc)',
+      explicatie: 'Σ mișcări + Σ excluse deliberat == Σ postările pe lot ale lunii (toate categoriile); '
+        + 'ce nu e emis e exclus sau refuzat',
       stanga: (rezumat.MiscariValoare ?? zero) + (rezumat.ExcluseValoare ?? zero)
         + (rezumat.NeincluseStocValoare ?? zero),
       dreapta: rezumat.RegistruStocValoare ?? zero,
@@ -570,7 +570,7 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
       rupte: rezumat.ReferinteDuplicate ?? 0,
       total: rezumat.NumarMiscari ?? 0,
       explicatie: 'MovementReference e identitatea mișcării în fișier, deci trebuie să fie unică — '
-        + 'numerele de document duplicate primesc un discriminant',
+        + 'numerele de document duplicate trec pe identitatea tranzacției',
     },
   ];
   return (
@@ -581,7 +581,7 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
           <tr>
             <th>Cusătură</th>
             <th>Din declarație</th>
-            <th>Din registru</th>
+            <th>Din cub</th>
             <th>Diferență</th>
             <th>Stare</th>
             <th>Ce verifică</th>
@@ -616,8 +616,8 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
       </table>
       <p className="indiciu">
         S1 și S5 se verifică <strong>pe fiecare intrare</strong> de stoc fizic (
-        {numar(rezumat.StocIntrari ?? 0)} intrări, {numar(rezumat.StocIntrariDiferite ?? 0)} diferite față de
-        registru, {numar(rezumat.StocFizicVsMiscariDiferite ?? 0)} față de fișier), nu doar pe total — două
+        {numar(rezumat.StocIntrari ?? 0)} poziții, {numar(rezumat.StocIntrariDiferite ?? 0)} diferite față de
+        postări, {numar(rezumat.StocFizicVsMiscariDiferite ?? 0)} față de fișier), nu doar pe total — două
         erori de semn opus s-ar anula într-o singură sumă. Validatorul ANAF nu face nicio aritmetică pe
         declarația de stocuri: aceste cusături sunt singura probă că nu s-a pierdut nimic.
       </p>
@@ -650,8 +650,8 @@ function StocPerCont({ lista, rezumat, sumar }:
       </h3>
       <p className="indiciu">
         <strong>Raportată, nu blocantă.</strong> Diferența e legitimă: contul de stoc din balanță poate
-        purta și note contabile sau solduri de deschidere fără lot, care nu au corespondent în stocul
-        fizic per gestiune × lot. Se citește ca să se știe <em>cât</em> și <em>pe ce cont</em>.
+        purta și note contabile fără lot, care nu au corespondent în stocul fizic per gestiune × lot.
+        Se citește ca să se știe <em>cât</em> și <em>pe ce cont</em>.
       </p>
       <table className="tabel-mic">
         <thead>
@@ -723,7 +723,7 @@ function Excluse({ lista }: { lista: Exclus[] }) {
     <div className="d300__neincluse">
       <h3>Excluse deliberat ({numar(lista.length)})</h3>
       <p className="indiciu">
-        Rânduri de registru pe care o politică de mișcare le lasă <strong>intenționat</strong> în afara
+        Linii de mișcare pe care o politică le lasă <strong>intenționat</strong> în afara
         declarației, cu motivul ei. Cifrele lor intră în cusătura S2 ca termen separat — nu se pierd,
         doar nu se declară.
       </p>

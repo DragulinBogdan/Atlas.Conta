@@ -331,17 +331,17 @@ public static class SaftReguli {
             ["60"] = "Reduceri comerciale primite",
             ["70"] = "Consum",
             ["80"] = "Transfer intern",
-            ["90"] = "Cheltuieli ulterioare capitalizate",
-            ["100"] = "Diferențe de preț în plus",
-            ["101"] = "Diferențe de preț în minus",
+            ["90"] = "Cheltuieli ulterioare incluse în valoarea de intrare",
+            ["100"] = "Diferențe de preț pozitive",
+            ["101"] = "Diferențe de preț negative",
             ["110"] = "Plus de inventar",
             ["120"] = "Minus de inventar",
-            ["130"] = "Ajustări pentru depreciere",
-            ["140"] = "Reluări ale ajustărilor pentru depreciere",
+            ["130"] = "Ajustări pentru deprecierea stocurilor",
+            ["140"] = "Reluări de ajustări pentru deprecierea stocurilor",
             ["150"] = "Bunuri acordate cu titlu gratuit",
             ["160"] = "Bunuri degradate",
             ["170"] = "Bunuri expirate",
-            ["180"] = "Alte tranzacții (fără cantitate)",
+            ["180"] = "Alte tranzacții",
         };
 
     /// <summary>

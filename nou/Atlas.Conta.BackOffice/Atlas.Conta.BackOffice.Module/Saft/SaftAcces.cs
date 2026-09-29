@@ -21,15 +21,24 @@ public static class SaftAcces {
         typeof(Unitate), typeof(Proiect), typeof(Judet), typeof(ClasaProdus), typeof(MapareTvaSaft), typeof(SetareProfil),
     ];
 
-    public static IReadOnlySet<string> Tabele(IObjectSpace os) {
+    /// <summary>Tipurile citite de exportul S pe cub (S3-D6); proba SC-SAFT-48 le compară cu SQL-ul emis.</summary>
+    public static readonly Type[] CititeStocuri = [
+        typeof(Cub.Postare), typeof(Cub.Tranzactie), typeof(Document), typeof(DocumentDetaliu), typeof(Cont),
+        typeof(Repartitor), typeof(TipDocument), typeof(TipTva), typeof(Societate), typeof(Produs),
+        typeof(UnitateMasura), typeof(TipMaterial), typeof(Judet), typeof(ClasaProdus), typeof(MapareTvaSaft),
+        typeof(SetareProfil), typeof(PoliticaMiscareSaft), typeof(PerioadaFiscala), typeof(SoldPerioadaStoc),
+    ];
+
+    public static IReadOnlySet<string> Tabele(IObjectSpace os, IEnumerable<Type> citite = null) {
         var model = ((EFCoreObjectSpace)os).DbContext.Model;
-        return Citite.Select(t => model.FindEntityType(t)?.GetTableName()).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        return (citite ?? Citite).Select(t => model.FindEntityType(t)?.GetTableName()).OfType<string>()
+            .ToHashSet(StringComparer.Ordinal);
     }
 
     /// <summary>Tipurile și membrii pe care utilizatorul nu îi poate citi necondiționat; lista goală = acces complet.</summary>
-    public static List<string> Lipsuri(IObjectSpace os, ISelectDataSecurityProvider securitate) {
+    public static List<string> Lipsuri(IObjectSpace os, ISelectDataSecurityProvider securitate, IEnumerable<Type> citite = null) {
         ArgumentNullException.ThrowIfNull(securitate);
-        var tabele = Tabele(os);
+        var tabele = Tabele(os, citite);
         var model = ((EFCoreObjectSpace)os).DbContext.Model;
         var tipuri = model.GetEntityTypes().Where(e => e.GetTableName() is { } t && tabele.Contains(t))
             .Select(e => e.ClrType).Distinct().OrderBy(t => t.Name, StringComparer.Ordinal).ToList();

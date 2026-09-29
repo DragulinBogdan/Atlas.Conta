@@ -13120,7 +13120,8 @@ void VerificaMiscariSaft(bool privat) {
         && SaftReguli.CoduriMiscare.Values.All(v => !string.IsNullOrWhiteSpace(v))
         && SaftReguli.CoduriMiscare.Values.Distinct(StringComparer.Ordinal).Count() == 19
         && SaftReguli.CoduriMiscare["10"] == "Achiziție" && SaftReguli.CoduriMiscare["70"] == "Consum"
-        && SaftReguli.CoduriMiscare["101"] == "Diferențe de preț în minus"
+        && SaftReguli.CoduriMiscare["101"] == "Diferențe de preț negative"
+        && SaftReguli.CoduriMiscare["180"] == "Alte tranzacții"
         && SaftReguli.EsteCodMiscare("10") && SaftReguli.EsteCodMiscare("180")
         && !SaftReguli.EsteCodMiscare("999") && !SaftReguli.EsteCodMiscare("1")
         && !SaftReguli.EsteCodMiscare("") && !SaftReguli.EsteCodMiscare(null));
@@ -13189,11 +13190,11 @@ void VerificaMiscariSaft(bool privat) {
         // Numărul NU e o constantă scrisă în probă: e cardinalitatea tabelului de
         // seed × „fiecare rând al lui există exact o dată în bază". O politică
         // adăugată în tabel fără rând în bază (sau invers) pică aici.
-        Check("D17-V1 (privat) seed-ul scrie EXACT tabelul D17-D1 — 21 de rânduri, câte unul pentru fiecare "
-            + "(tip × registru × semn) pe care profilul chiar îl produce: 8 tipuri (NIR/BTR/BCS/LDI/DSC/ASM/"
-            + "RLF/RDC) × registrele `Magazie`+`Marfuri` pe care le scrie `SeedReguliStoc`, plus `Consum` la BCS",
-            randuri.Count == 21 && asteptate.Count == 21
-            && randuri.Select(r => (r.Tip, r.TipStoc, r.Semn)).Distinct().Count() == 21
+        Check("D17-V1 (privat) seed-ul scrie EXACT tabelul S3-D3 — 23 de rânduri, câte unul pentru fiecare "
+            + "(tip × categorie × semn) pe care profilul chiar îl produce: 9 tipuri (FCT/NIR/BTR/BCS/LDI/DSC/ASM/"
+            + "RLF/RDC) × categoriile `Magazie`+`Marfuri`, plus `Consum` la BCS",
+            randuri.Count == 23 && asteptate.Count == 23
+            && randuri.Select(r => (r.Tip, r.TipStoc, r.Semn)).Distinct().Count() == 23
             && asteptate.All(a => randuri.Any(r => r.Tip == a.Tip && r.TipStoc == a.TipStoc && r.Semn == a.Semn
                 && r.CodMiscare == a.Cod && r.RolTert == a.Rol && r.Motiv == a.Motiv))
             && randuri.All(r => asteptate.Any(a => a.Tip == r.Tip && a.TipStoc == r.TipStoc && a.Semn == r.Semn)));
@@ -13207,7 +13208,9 @@ void VerificaMiscariSaft(bool privat) {
         Check("D17-V1 (privat) intrările de marfă și ieșirile către terți poartă ROLUL: NIR ± → `10` "
             + "Achiziție/Furnizor, DSC − → `30` Vânzare/Client, RLF − → `50` Retur către furnizor/Furnizor, "
             + "RDC + → `40` Retur de la client/Client — rolul e al politicii, identificatorii îi pune legea",
-            Cod("NIR", TipStoc.Magazie, null) == "10" && Cod("NIR", TipStoc.Marfuri, null) == "10"
+            Cod("FCT", TipStoc.Magazie, null) == "10" && Cod("FCT", TipStoc.Marfuri, null) == "10"
+            && Rol("FCT", TipStoc.Marfuri, null) == RolTertSaft.Furnizor
+            && Cod("NIR", TipStoc.Magazie, null) == "10" && Cod("NIR", TipStoc.Marfuri, null) == "10"
             && Rol("NIR", TipStoc.Magazie, null) == RolTertSaft.Furnizor
             && Cod("DSC", TipStoc.Magazie, -1) == "30" && Cod("DSC", TipStoc.Marfuri, -1) == "30"
             && Rol("DSC", TipStoc.Marfuri, -1) == RolTertSaft.Client
@@ -13245,13 +13248,12 @@ void VerificaMiscariSaft(bool privat) {
             .ToList()
             .Where(r => new[] { "NIR", "BTR", "BCS", "LDI", "DSC", "ASM", "RLF", "RDC" }.Contains(r.Tip))
             .Select(r => (r.Tip, r.TipStoc)).Distinct().ToList();
-        var acoperite = randuri.Select(r => (r.Tip, r.TipStoc)).Distinct().ToList();
+        var acoperite = randuri.Where(r => r.Tip != "FCT").Select(r => (r.Tip, r.TipStoc)).Distinct().ToList();
         Console.WriteLine($"     MĂSURAT (D17-V1/acoperire): {registre.Count} perechi (tip × registru) scrise de "
             + $"`RegulaStoc`, {acoperite.Count} acoperite de politică; fără politică: "
             + $"{(registre.Except(acoperite).Any() ? string.Join(", ", registre.Except(acoperite).Select(x => $"{x.Tip}/{x.TipStoc}")) : "niciuna")}.");
         Check("D17-V1 (privat) politica acoperă FIECARE pereche (tip × registru) pe care regulile de stoc "
-            + "private chiar o scriu, și niciuna în plus — altfel un rând de registru real ar fi ieșit în "
-            + "`Neincluse` din lipsă de politică, tăcut",
+            + "private chiar o scriu, și niciuna în plus în afara FCT (recepția pe cub, fără registru; S3-D3)",
             registre.Count == acoperite.Count
             && registre.OrderBy(x => x.Tip, StringComparer.Ordinal).ThenBy(x => x.TipStoc)
                 .SequenceEqual(acoperite.OrderBy(x => x.Tip, StringComparer.Ordinal).ThenBy(x => x.TipStoc)));
@@ -13273,7 +13275,7 @@ void VerificaMiscariSaft(bool privat) {
         Check("D17-V1 (privat) `SeedPoliticiMiscareSaft` e IDEMPOTENT pe cheia (tip × registru × semn): "
             + "`--forceUpdate` pe o bază deja seed-uită nu adaugă un al doilea rând (care ar fi făcut "
             + "potrivirea ambiguă)",
-            inainte == 21 && dupa == 21);
+            inainte == 23 && dupa == 23);
     }
 
     // ---------------- Gardianul (D17-D1), pe ușa comună ----------------
@@ -13378,10 +13380,10 @@ void VerificaMiscariSaft(bool privat) {
         int dupaCuratenie;
         using (var osCitire = provider.CreateObjectSpace())
             dupaCuratenie = osCitire.GetObjectsQuery<PoliticaMiscareSaft>().Count();
-        Check("D17-V1 (privat) curățenie: baza rămâne cu cele 21 de politici seed-uite (rândul de probă "
+        Check("D17-V1 (privat) curățenie: baza rămâne cu cele 23 de politici seed-uite (rândul de probă "
             + "purjat FIZIC — o ștergere logică ar fi fost citită de seed-ul următor ca decizie a "
             + "utilizatorului)",
-            dupaCuratenie == 21);
+            dupaCuratenie == 23);
     }
 }
 
@@ -14302,13 +14304,13 @@ void VerificaSaftStocuri(bool privat) {
         !os.GetObjectsQuery<RegistruStoc>().Any(r => r.Data >= pStart && r.Data <= pEnd));
     FaraReziduu("antetul societății",
         os.GetObjectsQuery<Societate>().First().CodFiscal == socInainte.CodFiscal);
-    // Politica mutată de probe trebuie să fie EXACT cum a găsit-o scena: cele 21
+    // Politica mutată de probe trebuie să fie EXACT cum a găsit-o scena: cele 23
     // de rânduri seed-uite, cu BTR/Marfuri/orice-semn → 80, fără rol.
     var btrDupa = os.GetObjectsQuery<PoliticaMiscareSaft>()
         .Where(p => p.TipDocument.Cod == "BTR" && p.TipStoc == TipStoc.Marfuri)
         .Select(p => new { p.Semn, p.CodMiscare, p.RolTert }).ToList();
     FaraReziduu("politica BTR/Marfuri",
-        os.GetObjectsQuery<PoliticaMiscareSaft>().Count() == 21
+        os.GetObjectsQuery<PoliticaMiscareSaft>().Count() == 23
         && btrDupa.Count == 1 && btrDupa[0].Semn == null && btrDupa[0].CodMiscare == "80"
         && btrDupa[0].RolTert == RolTertSaft.Niciunul);
     Console.WriteLine($"     MĂSURAT (D17-V2 curățenie): {(reziduuri.Count == 0 ? "niciun reziduu"
@@ -31032,6 +31034,9 @@ List<Scena> ScenelePeTip(bool privat) {
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiSaft), ["SAFT"], () => new ScenariiSaft(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiSaftStocuri), ["SAFT"], () => new ScenariiSaftStocuri(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiSnapshotStoc), ["CITIRI"], () => new ScenariiSnapshotStoc(

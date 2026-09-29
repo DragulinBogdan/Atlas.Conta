@@ -18,9 +18,10 @@ totaluri, inclusiv pe ruta publică existentă (S0-R5). S0 este închis;
 comutarea L rămâne la S2 (R1).
 [Raportul Codex](tr-d8-saft-s0-review-codex.md).
 
-**2026-09-29 — S3 (MovementOfGoods, PhysicalStock, comutarea C) propus de
-Claude; owner: S3-Q1 = A (NIR delta = 10 semnat, cheia fără `Cauza`), S3-Q2 =
-A (Δ ASM acceptat); review-ul Codex cerut:** [S3](#s3--movementofgoods-physicalstock-și-comutarea-c-contract-pentru-aprobare).
+**2026-09-29 — S3 implementat și comutat pe `tr-d8-saft-s3` (S3-R3); integrala
+verde pe ambele profiluri, S certificat XSD/DUK, HTTP pe host izolat; review-ul
+advers Codex cerut. Owner: S3-Q1 = A (NIR delta = 10 semnat, cheia fără
+`Cauza`), S3-Q2 = A (Δ ASM acceptat):** [S3](#s3--movementofgoods-physicalstock-și-comutarea-c-contract-pentru-aprobare).
 **2026-09-29 — S2 închis: review Codex S2-RV1 închis după reverificare.**
 **2026-09-29 — S2 (Payments + comutarea L) propus de Claude; owner: S2-Q1 =
 stornoul neagă liniile declarate, S2-Q2 = compensarea în afara S2 (SAFT-r1),
@@ -1073,8 +1074,8 @@ Integral verde după corectură (bugetar 3.267, privat 4.415): `run-verificari/2
 
 ## S3 — MovementOfGoods, PhysicalStock și comutarea C: contract pentru aprobare
 
-Stare: **propus de Claude (2026-09-29); S3-Q1 și S3-Q2 tranșate de owner
-([S3-R](#s3-r--tranșările-owner-ului-2026-09-29)); review-ul advers Codex
+Stare: **implementat și comutat (S3-R3, 2026-09-29); S3-Q1 și S3-Q2 tranșate de
+owner ([S3-R](#s3-r--tranșările-owner-ului-2026-09-29)); review-ul advers Codex
 cerut.** Bază inspectată: `66e25c1` (main după PR #12).
 Nu schimbă motorul, declaranții, scrierea registrelor sau împerecherea.
 Schimbă modelul politicii: `Cont.CategorieStoc` (SAF-D3=C), iar
@@ -1263,11 +1264,11 @@ Refuzuri, fiindcă cubul le face imposibile și apariția lor este defect:
   `{CodTip}-{Numar}`, plus felul evenimentului (nimic pe Operare, `/T` pe
   Transfer, `/S` pe Storno), plus `/{cod}` când evenimentul are mai multe
   coduri. Exemple: `FCT-12`, `FCT-12/S`, `BTR-3/T`, `ASM-4/70`, `ASM-4/T/20`.
-  Dacă forma depășește 35 de caractere ori coincide în fișier cu altă formă
-  lizibilă, toate mișcările afectate primesc rezerva `{TranzactieId:N}{cod}`
-  (≤ 35, fără `-`, deci disjunctă de formele lizibile). Aceasta acoperă și
-  numerele duplicate între documente și un eventual al doilea eveniment de
-  același fel pe document. Injectivitatea vine din construcție. Referința
+  Două documente ale fișierului cu același tip și număr trec cu toate
+  mișcările lor pe rezerva `{TranzactieId:N}{cod}` (≤ 35, fără `-`, deci
+  disjunctă de formele lizibile); la fel orice formă care depășește 35 de
+  caractere ori coincide cu alta (un eventual al doilea eveniment de același
+  fel pe document). Injectivitatea vine din construcție. Referința
   depinde numai de eveniment și de conținutul lunii, deci rămâne stabilă la
   reexportul unei luni închise. Trunchierea și discriminantul `#n` de pe ruta
   veche dispar.
@@ -1392,3 +1393,51 @@ valorice intră odată cu primul producător care le cere, ca restanța
 a cubului (ΣP + ΣΔ = ΣC), fără linie separată pentru Δ. Δ rămâne diferență
 declarată în A/B față de registrul vechi (SC-SAFT-44) și dispare la TR-D9.
 Limita din SAF-D3=C („Blocaj S3 identificat”) este astfel închisă.
+
+### S3-R3 — implementare și probe (2026-09-29)
+
+Pe `tr-d8-saft-s3`: `Saft/CategoriiStoc` (rezolverul S3-D1), migrația
+`S3CategorieStoc`, `Saft/SaftProiectii.PeCub.Stocuri` (S3-D2…D5, D7),
+`SaftAcces.CititeStocuri` și comutarea ușilor S în `SaftController`. Scriitorul
+emite `ShipTo`/`ShipFrom` numai când linia îi are, deci ruta L e neschimbată.
+
+- **Scena `ScenariiSaftStocuri` (2041).** Fiecare mișcare din S3-D3 e creată
+  prin documente și comenzi reale: FCT, NIR ± (Draft în ianuarie, constatare
+  în februarie), BCS cu storno, DSC pe două loturi, BTR, LDI ±, RLF, RDC și ASM
+  cu Δ. Ianuarie se închide, deci Opening-ul din februarie trece prin
+  snapshot; reexportul lui ianuarie e identic octet cu octet după închidere și
+  după februarie. SC-SAFT-45 (deschiderea din lună) rulează în scena DES,
+  fiindcă deschiderea e unică pe bază.
+- **Certificarea.** XML-ul S al lui ianuarie și februarie trece XSD v249 și DUK
+  J2.2.18 fără atenționări, cu `ShipTo`/`ShipFrom`, `StockAccountNo` = lotul și
+  rezerva `MovementReference` acceptate. Manifestul primește harta
+  (MovementReference, LineNumber) → postări, harta pozițiilor și amprenta
+  configurației cont → categorie; mutanții sunt respinși.
+- **A/B și proba duală.** Pe lot × gestiune, netul lunii diferă de ruta veche
+  numai pe cheile declarate: Δ ASM ±0,01 pe consum și produs, recepția pe FCT
+  în ianuarie față de NIR în registru, NIR delta în februarie. Categoria
+  derivată coincide cu `TipStoc`-ul registrului pe toate cele 10 poziții.
+- **Perf.** 27 de comenzi SQL la 16 și la 6 mișcări (fără N+1).
+- **HTTP** (`ProbeHttp/saft-stocuri.py`, host izolat 5091, baza
+  `…Privat.SaftS3Http`): restricțiile de rând/membru pe `Postare` și de rând pe
+  `Partener` dau 403 pe ambele uși S, fără sume; Admin și Cititor primesc 200
+  cu FCT 10 +10/+100 pe 371; categoria lipsă dă sumar 200 cu refuzul și
+  fișier 422. `refuzuri.ps1` trece 294/294.
+
+**Abateri de la contract, fără efect asupra regulii:**
+
+- Regula de rezervă a `MovementReference` e precizată: două documente cu
+  același tip și număr trec cu toate mișcările lor pe rezervă, inclusiv
+  stornoul, altfel forma lizibilă a stornoului ar fi ambiguă (S3-D5 amendat).
+- Cusătura S3-D7c e pe tranzacție: pe `Transfer`, Σ Q și Σ V se anulează pe
+  tranzacție, nu pe fiecare mișcare (ASM pe Transfer are 70 și 20 separat).
+- Tabelele citite de S nu includ `Loturi`; lista a fost fixată prin captura SQL.
+- SC-SAFT-12 rămâne parțial: lotul pe două conturi de stoc nu are producător.
+- Ecranul S are textele actualizate (sursa e cubul), dar nu a fost verificat
+  în browser în această rulare.
+
+Probe vechi actualizate: D17-V1 (23 de politici, etichetele oficiale ale
+codurilor, FCT fără registru), SC-SAFT-15 (ușile S pe `SaftStocuriPeCub`).
+Integral verde (bugetar 3.269, privat 4.466):
+`run-verificari/20260929-225536-294`; scenele DES + SAFT după SC-SAFT-45:
+`run-verificari/20260929-230610-759`; HTTP: `run-verificari/saft-s3-http-{probe,refuzuri}.log`.
