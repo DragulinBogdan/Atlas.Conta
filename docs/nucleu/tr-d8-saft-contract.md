@@ -19,8 +19,8 @@ comutarea L rămâne la S2 (R1).
 [Raportul Codex](tr-d8-saft-s0-review-codex.md).
 
 **2026-09-29 — S3 (MovementOfGoods, PhysicalStock, comutarea C) propus de
-Claude; așteaptă owner-ul pe S3-Q1 (NIR delta) și S3-Q2 (Δ ASM) și review-ul
-Codex:** [S3](#s3--movementofgoods-physicalstock-și-comutarea-c-contract-pentru-aprobare).
+Claude; owner: S3-Q1 = A (NIR delta = 10 semnat, cheia fără `Cauza`), S3-Q2 =
+A (Δ ASM acceptat); review-ul Codex cerut:** [S3](#s3--movementofgoods-physicalstock-și-comutarea-c-contract-pentru-aprobare).
 **2026-09-29 — S2 închis: review Codex S2-RV1 închis după reverificare.**
 **2026-09-29 — S2 (Payments + comutarea L) propus de Claude; owner: S2-Q1 =
 stornoul neagă liniile declarate, S2-Q2 = compensarea în afara S2 (SAFT-r1),
@@ -1073,8 +1073,9 @@ Integral verde după corectură (bugetar 3.267, privat 4.415): `run-verificari/2
 
 ## S3 — MovementOfGoods, PhysicalStock și comutarea C: contract pentru aprobare
 
-Stare: **propus de Claude (2026-09-29); așteaptă S3-Q1 și S3-Q2 de la owner
-și review-ul advers Codex.** Bază inspectată: `66e25c1` (main după PR #12).
+Stare: **propus de Claude (2026-09-29); S3-Q1 și S3-Q2 tranșate de owner
+([S3-R](#s3-r--tranșările-owner-ului-2026-09-29)); review-ul advers Codex
+cerut.** Bază inspectată: `66e25c1` (main după PR #12).
 Nu schimbă motorul, declaranții, scrierea registrelor sau împerecherea.
 Schimbă modelul politicii: `Cont.CategorieStoc` (SAF-D3=C), iar
 `PoliticaMiscareSaft.TipStoc` înseamnă de acum categoria contului, nu
@@ -1376,3 +1377,18 @@ exact consumurile 70 evaluate FIFO. O linie separată 100 pentru Δ ar
 dezechilibra mișcarea. Δ este diferența față de registrul vechi, intră în A/B
 și dispare la TR-D9. **B**: persistăm Δ distinct. Varianta B schimbă
 modelul cubului, contrar SAF-D3=C („nu adăugăm coloane pe Postare”).
+
+### S3-R — tranșările owner-ului (2026-09-29)
+
+**S3-R1 — NIR delta.** Varianta A: constatarea NIR după FCT, pe oricare
+cauză 099 și pe ambele semne, este codul 10 cu cantitatea semnată (corecția
+recepției facturate). Cauza contabilă rămâne în GL. SAF-D3=C se amendează
+pe acest punct: cheia `PoliticaMiscareSaft` rămâne (TipDocument, TipStoc,
+Semn?), iar `TipStoc` devine categoria contului. `Cauza?` și mișcările numai
+valorice intră odată cu primul producător care le cere, ca restanța
+**SAFT-r2**.
+
+**S3-R2 — Δ ASM.** Varianta A: producția 20 se raportează la valoarea finală
+a cubului (ΣP + ΣΔ = ΣC), fără linie separată pentru Δ. Δ rămâne diferență
+declarată în A/B față de registrul vechi (SC-SAFT-44) și dispare la TR-D9.
+Limita din SAF-D3=C („Blocaj S3 identificat”) este astfel închisă.
