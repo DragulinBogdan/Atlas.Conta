@@ -377,6 +377,26 @@ proprietate (acoperă toate derivatele, inclusiv grupul-mătură al
 layout-ului autoritar), iar coloanele de pe cele trei liste ale bazelor se
 declară în `ContaUiBaseline.ColoanaTip`. (89a)
 
+## Grilele de linii pe roluri în XAF Blazor
+
+Coloanele grilelor de linii nu se declară pe indici, ci pe roluri (106h).
+`ContaUiBaseline.LiniiPeRoluri` declară o dată, pe ierarhia `DocumentDetaliu`,
+vocabularul în ordinea de culegere: Directie, Identitate, Provenienta,
+Unitate, Cantitate, Pret, Tva, Valori, AtributeLot, Conturi, Parametri.
+Fiecare tip de linie umple sloturile pe care le poartă cu membrii lui și lasă
+goale (`Drop`) pe cele pe care nu le poartă; un rol al bazei nepurtat se
+ascunde pe grila tipului, iar un membru fără rol vine la coadă, în ordinea
+generată. Rezultatele motorului sunt `ReadOnly` printr-o singură declarație,
+care blochează coloana grilei și itemul dialogului liniei deopotrivă:
+`Valoare` pe FCT, NIR, FCL, LDI, DEC, DSC și ASM; `Lot` pe FCT și NIR. NTC și
+DVI culeg `Valoare`. Excepțiile pe view (legenda `Valoare în vamă`, o coloană
+ascunsă pe o singură grilă, grila DVI) rămân view-scoped și câștigă în fața
+rolurilor. Lookup-urile nu sunt atinse. Primitiva e Atlas.DXF 26.1.4.10
+(`Columns`/`Slot`/`Drop`, `ReadOnly`; `Views/docs/COLUMN-SLOTS.md`).
+Limita: BCS, BTR și RLF (RDC culege `Valoare`) stau pe grila generică și pe dialogul comun cu
+DVI, deci `Valoare` nu e blocată acolo (106-r6). Tabloul rolurilor per tip:
+`design/format-xaf-documente.md`, axa 2. (106h)
+
 ## Ecranele disponibile
 
 | Arie | Conținut |

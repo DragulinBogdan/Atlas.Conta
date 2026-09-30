@@ -21745,6 +21745,8 @@ void VerificaD85(bool privat) {
         && radacini.Count > 0 && radacini.All(r => r.Mod == CollectionSourceDataAccessMode.Server)
         && dataView.Count == 0);
 
+    ProbeLinii.Verifica(model, eticheta, Check);
+
     // ---- D85-M2: precondițiile modurilor de VIEW (ServerView / InstantFeedbackView) ----
     var referite = (model?.Views.OfType<IModelDetailView>() ?? [])
         .SelectMany(dv => dv.Items.OfType<IModelMemberViewItem>())

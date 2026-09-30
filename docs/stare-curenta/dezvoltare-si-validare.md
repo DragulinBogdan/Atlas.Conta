@@ -82,7 +82,14 @@ bazei, deci rulează și fără bază. La fel probele regimului pe stare
 sufixul ID-ului o comandă din `RegimDocument.ComenziCunoscute`; prin scanare
 sintactică, nicio affordance `Poate*` din `Module/Api/` nu se calculează din
 `StareDocument` și niciun controller nu poartă cheia „Stare”. Catalogul
-`REGIM` (`ScenariiRegim.cs`, anul 2012) rulează cu `--scenarii REGIM`. Caută rădăcinile de interogare,
+`REGIM` (`ScenariiRegim.cs`, anul 2012) rulează cu `--scenarii REGIM`. Probele
+axei 2 (`tools/ModelCheck/ProbeLinii.cs`, 106h-1…3) rulează pe modelul XAF
+real, în rularea integrală, cu registrul baseline-ului construit pe loc:
+fiecare grilă tipizată de linii începe cu coloanele rolurilor în ordinea
+vocabularului și ascunde rolurile nepurtate; fiecare membru `ReadOnly` e
+blocat pe grilă și pe dialogul liniei; pe fiecare tip cu detaliu propriu care
+calculează `Valoare` (`BazaLinie` suprascris, `Valoare` nu e intrare),
+`Valoare` e `ReadOnly`. Caută rădăcinile de interogare,
 `ModifiedObjects.OfType`, `CreateObject`, `Set<>`, `typeof` pe
 `GetObjects`, SQL pe tabelele cubului, navigarea `Tranzactie.Postari` și
 `DbContext.Postari`. Pică și pe o excepție care nu mai are acces. Scanarea e

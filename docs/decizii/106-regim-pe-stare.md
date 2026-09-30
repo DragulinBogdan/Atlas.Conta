@@ -1,7 +1,7 @@
 # 106 — Regimul pe stare: o singură sursă a editabilității și a comenzilor disponibile
 
 Data: 2026-09-30
-Stare: activă; amendează 042(e) (affordance-urile pe resursă au acum o sursă comună) și precizează 104(c)
+Stare: activă; amendează 042(e) (affordance-urile pe resursă au acum o sursă comună) și precizează 104(c); (h) adăugat 2026-10-01 (axa 2 făcută, închide 106-r4)
 Docs: `docs/nucleu/scenarii/REGIM.md`; `design/format-xaf-documente.md`; `docs/stare-curenta/domeniu-si-operare.md`, `api-si-client.md`, `dezvoltare-si-validare.md`
 
 ## Regula durabilă
@@ -59,6 +59,22 @@ regim: tranziția e comandă a motorului cu registre, nu schimbare de câmp.
 Modulele externe (Llamachant, Reactive.XAF) nu intră: regulile per tip sunt
 structură, deci cod, nu date. Axele 1 și 2 ale formatului (antet, coloanele
 liniilor pe roluri) rămân în baseline, cu restanțele numite.
+
+**(h) Axa 2: liniile se declară pe roluri, o dată pe ierarhie (2026-10-01,
+închide 106-r4; precizează (g)).** Vocabularul rolurilor liniei (Directie,
+Identitate, Provenienta, Unitate, Cantitate, Pret, Tva, Valori, AtributeLot,
+Conturi, Parametri) e declarat o dată pe `DocumentDetaliu`, în ordinea de
+culegere; un tip spune doar ce roluri poartă și ce nu poartă. Baza deține
+ordinea, tipul deține conținutul; un rol al bazei nepurtat de tip se ascunde,
+un membru fără rol vine la coadă. Rezultatul motorului (`Valoare` unde
+`BazaLinie` o calculează și nu e intrare; `Lot` unde îl naște mecanismul) e
+`ReadOnly` printr-o singură declarație, pe grilă și pe dialogul liniei
+deopotrivă. Primitiva stă în Atlas.DXF (`Columns`/`Slot`/`Drop`, `ReadOnly`,
+26.1.4.10), nu în Conta: e structură de view, fără noțiune de document.
+Excepțiile pe view rămân view-scoped și câștigă. Proba: `ProbeLinii`
+(106h-1…3) pe modelul real. Limita numită: tipurile de pe grila generică nu
+blochează `Valoare` (106-r6). Vocabularul e structură (cod), deci o ordine
+nouă = o linie schimbată pe bază; un tip nu poate reordona sloturile.
 
 ## Context
 
@@ -118,9 +134,10 @@ list-ului e planul de conturi și D300, prin modul plat Key/ParentKey, fără
   au acțiuni doar în React; în XAF nu există încă acțiuni pentru ele.
 - 106-r3: planul de conturi și D300 pe `DxTreeListEditor` în mod plat, cu
   view opt-out de la `Server` (85a).
-- 106-r4: axa 2, coloanele grilelor de linii declarate pe roluri, cu
-  blocajele câmpurilor-rezultat puse o singură dată (grilă și dialog);
-  candidat de primitivă în Atlas.DXF.
+- 106-r4: închisă prin (h), 2026-10-01.
+- 106-r6: BCS/BTR/RLF calculează `Valoare`, dar stau pe grila generică
+  și pe dialogul `DocumentDetaliu_DetailView`, comun cu DVI (care o culege);
+  blocajul cere detaliu propriu.
 - 106-r5: StateMachine și ViewVariants ies din `Startup.cs` și din
   `RequiredModuleTypes` (tabele și noduri de model fără utilizare); `HCategory`
   iese din `DbContext`.
