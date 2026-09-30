@@ -106,6 +106,15 @@ static class SaftAb {
         ("data unei facturi +1 zi", d => d.FacturiEmise.Concat(d.FacturiPrimite).FirstOrDefault() is { } f && Muta(() => f.InvoiceDate = f.InvoiceDate.AddDays(1))),
         ("valoarea unei linii de mișcare +1", d => d.MiscariStoc.SelectMany(m => m.Linii).FirstOrDefault() is { } l && Muta(() => l.BookValue += 1)),
         ("ClosingValue al unei poziții +1", d => d.StocFizic.FirstOrDefault() is { } p && Muta(() => p.ClosingValue += 1)),
+        ("codul recepției 10 → 80, Q/V păstrate", d => d.MiscariStoc.FirstOrDefault(m => m.MovementType == "10") is { } m
+            && Muta(() => { m.MovementType = "80"; foreach (var l in m.Linii) l.MovementSubType = "80"; })),
+        ("valoarea unei ieșiri ASM +0,02 (spre registru, departe de cub)", d => d.MiscariStoc
+            .Where(m => m.MovementReference?.StartsWith("ASM", StringComparison.Ordinal) == true)
+            .SelectMany(m => m.Linii).FirstOrDefault(l => l.BookValue < 0) is { } l && Muta(() => l.BookValue += 0.02m)),
+        ("referința unei linii de plată alocate scoasă, sumele păstrate", d => d.Plati.Where(p => p.Linii.Count > 1).SelectMany(p => p.Linii)
+            .FirstOrDefault(l => l.TintaDocumentId != null) is { } l && Muta(() => { l.TintaDocumentId = null; l.SourceDocumentID = null; })),
+        ("1 mutat între două linii ale aceleiași plăți", d => d.Plati.FirstOrDefault(p => p.Linii.Count > 1) is { } p
+            && Muta(() => { p.Linii[0].PaymentLineAmount += 1; p.Linii[1].PaymentLineAmount -= 1; })),
     ];
     static bool Muta(Action a) { a(); return true; }
 
@@ -152,8 +161,8 @@ static class SaftAb {
         public string Clasa(IObjectSpace os, int an, int luna, Rand r) => r.Sectiune switch {
             "GL" => Gl(os, an, luna, r),
             "Facturi" => Factura(os, r),
-            "Plăți" => Plata(r),
-            "Mișcări" => Miscare(os, r),
+            "Plăți" => Plata(os, r),
+            "Mișcări" => Miscare(os, an, luna, r),
             "Stoc" => Stoc(os, an, luna, r),
             "Diagnostic" => Diagnostic(r),
             _ => null,
@@ -258,40 +267,84 @@ static class SaftAb {
             return tipuri.Count > 0 && os.GetObjectsQuery<TipTva>().Where(t => tipuri.Contains(t.ID)).All(t => t.Cod.StartsWith("TI"));
         }
 
-        static string Plata(Rand r) {
+        static string Plata(IObjectSpace os, Rand r) {
             if (r.V.Count != 1 || r.N.Count != 1) return null;
             var v = (SaftPlata)r.V[0];
             var n = (SaftPlata)r.N[0];
             static string Conturi(SaftPlata p) => string.Join(",", p.Linii.Select(l => $"{l.AccountID} {l.DebitCreditIndicator}").Distinct().Order());
             return v.GrossTotal == n.GrossTotal && v.Linii.Sum(l => l.PaymentLineAmount) == n.Linii.Sum(l => l.PaymentLineAmount)
-                && Conturi(v) == Conturi(n)
-                ? "S2-D2/D3: alocarea pe partide din cub față de atribuirea întregii plăți (brut și Σ linii conservate)"
+                && Conturi(v) == Conturi(n) && AlocareaImperecherilor(os, n)
+                ? "S2-D2/D3: alocarea la capătul lunii operării (martor: referințele și sumele = împerecherile datate ≤ capăt, restul fără referință)"
                 : null;
         }
 
-        string Miscare(IObjectSpace os, Rand r) {
-            var (doc, _, lot, gest) = ((Guid, bool, Guid, Guid))r.Cheie;
+        // B8-RV1: ținta fiecărei linii = împerecherile documentului (în oricare rol) datate până la capătul lunii Operare.
+        static bool AlocareaImperecherilor(IObjectSpace os, SaftPlata n) {
+            var date = os.GetObjectsQuery<C.Tranzactie>()
+                .Where(t => t.DocumentId == n.DocumentId && t.Fel == N.FelTranzactie.Operare).Select(t => t.Data).Distinct().ToList();
+            if (date.Count != 1) return false;
+            var capat = new DateOnly(date[0].Year, date[0].Month, DateTime.DaysInMonth(date[0].Year, date[0].Month));
+            var asteptate = os.GetObjectsQuery<Imperechere>()
+                .Where(i => (i.DocumentStingatorId == n.DocumentId || i.DocumentId == n.DocumentId) && i.Data <= capat)
+                .Select(i => new { Tinta = i.DocumentStingatorId == n.DocumentId ? i.DocumentId : i.DocumentStingatorId, i.Suma }).ToList()
+                .GroupBy(i => i.Tinta).Select(g => (Tinta: g.Key, Suma: (n.Storno ? -1m : 1m) * g.Sum(i => i.Suma)))
+                .Where(x => x.Suma != 0).ToDictionary(x => x.Tinta, x => x.Suma);
+            var referite = n.Linii.Where(l => l.TintaDocumentId != null)
+                .GroupBy(l => l.TintaDocumentId.Value).ToDictionary(g => g.Key, g => g.Sum(l => l.PaymentLineAmount));
+            var tinte = asteptate.Keys.ToList();
+            var numar = os.GetObjectsQuery<Document>().Where(d => tinte.Contains(d.ID)).Select(d => new { d.ID, d.Numar }).ToList()
+                .ToDictionary(d => d.ID, d => d.Numar);
+            var rest = n.Linii.Where(l => l.TintaDocumentId == null).ToList();
+            return referite.Count == asteptate.Count && asteptate.All(x => referite.GetValueOrDefault(x.Key) == x.Value)
+                && n.Linii.Where(l => l.TintaDocumentId != null)
+                    .All(l => numar.TryGetValue(l.TintaDocumentId.Value, out var nr) && l.SourceDocumentID == nr)
+                && rest.All(l => l.SourceDocumentID == null)
+                && rest.Sum(l => l.PaymentLineAmount) == n.GrossTotal - asteptate.Values.Sum();
+        }
+
+        string Miscare(IObjectSpace os, int an, int luna, Rand r) {
+            var (doc, storno, lot, gest) = ((Guid, bool, Guid, Guid))r.Cheie;
+            var liniiV = r.V.Cast<(SaftMiscareStoc m, SaftLinieMiscareStoc l)>().Select(x => x.l).ToList();
             var liniiN = r.N.Cast<(SaftMiscareStoc m, SaftLinieMiscareStoc l)>().Select(x => x.l).ToList();
-            static (decimal Q, decimal V) S(IReadOnlyList<object> l) =>
-                (l.Cast<(SaftMiscareStoc m, SaftLinieMiscareStoc l)>().Sum(x => x.l.Quantity),
-                 l.Cast<(SaftMiscareStoc m, SaftLinieMiscareStoc l)>().Sum(x => x.l.BookValue));
-            var (v, n) = (S(r.V), S(r.N));
+            static (decimal Q, decimal V) S(IEnumerable<SaftLinieMiscareStoc> l) => (l.Sum(x => x.Quantity), l.Sum(x => x.BookValue));
+            static string Coduri(IEnumerable<SaftLinieMiscareStoc> l) =>
+                string.Join(",", l.Select(x => x.MovementSubType).Distinct().Order(StringComparer.Ordinal));
+            var (v, n) = (S(liniiV), S(liniiN));
             string clasa = null;
             if (Pereche(os, doc) is { } p) {
-                Acumuleaza(p, $"lot {lot} gest {gest} Q", v.Q, n.Q);
-                Acumuleaza(p, $"lot {lot} gest {gest} V", v.V, n.V);
-                clasa = doc == p.Conex && r.V.Count > 0 && r.N.Count > 0
-                    ? "S3-R1: NIR delta față de recepția integrală pe NIR în registru (martor: perechea egală cumulat)"
-                    : "SAF-B5: recepția pe documentul-sursă în cub, pe conex în registru (martor: perechea egală cumulat)";
+                // B8-RV1: se mută numai documentul purtător; codul, lotul, gestiunea și Q/V rămân, cumulat pe pereche.
+                var mutata = doc == p.Sursa ? liniiV.Count == 0 && liniiN.Count > 0 : liniiN.Count == 0 && liniiV.Count > 0;
+                var delta = doc == p.Conex && liniiV.Count > 0 && liniiN.Count > 0;
+                if (!mutata && !delta) return null;
+                foreach (var cod in liniiV.Concat(liniiN).Select(x => x.MovementSubType).Distinct()) {
+                    var (cv, cn) = (S(liniiV.Where(x => x.MovementSubType == cod)), S(liniiN.Where(x => x.MovementSubType == cod)));
+                    Acumuleaza(p, $"lot {lot} gest {gest} storno {storno} cod {cod} Q", cv.Q, cn.Q);
+                    Acumuleaza(p, $"lot {lot} gest {gest} storno {storno} cod {cod} V", cv.V, cn.V);
+                }
+                clasa = delta
+                    ? "S3-R1: NIR delta față de recepția integrală pe NIR în registru (martor: perechea egală cumulat pe lot × gestiune × cod)"
+                    : "SAF-B5: recepția pe documentul-sursă în cub, pe conex în registru (martor: perechea egală cumulat pe lot × gestiune × cod)";
             }
             else if (os.GetObjectByKey<Document>(doc) is Asamblare && v.Q == n.Q && Math.Abs(v.V - n.V) <= 0.01m
+                && Coduri(liniiV) == Coduri(liniiN) && MiscareaCubului(os, an, luna, doc, storno, lot, gest) == n
                 && os.GetObjectsQuery<C.Postare>().Where(x => x.DocumentId == doc && x.Unitate != null && x.Cantitate != 0)
                     .GroupBy(x => x.Tranzactie.ID).All(g => g.Sum(x => x.Latura == N.Latura.Debit ? x.Valoare : -x.Valoare) == 0))
-                clasa = "S3-R2: Δ ASM — valoarea FIFO a cubului, ΣP + ΣΔ = ΣC pe tranzacție";
+                clasa = "S3-R2: Δ ASM — Q/V nou = postările cubului pe document × lot × gestiune, |Δ| ≤ 0,01 față de registru, ΣP + ΣΔ = ΣC pe tranzacție";
             else if (r.V.Count == 0 && liniiN.Count > 0 && liniiN.All(l => ProdusFaraCont(l.ProdusId) && ContulPostarii(os, doc, l)))
                 clasa = ContIstoric();
             if (clasa != null) explicate.Add(doc);
             return clasa;
+        }
+
+        // B8-RV1: ținta exactă a mișcării ASM — postările cubului ale documentului pe lot × gestiune, în lună.
+        static (decimal Q, decimal V) MiscareaCubului(IObjectSpace os, int an, int luna, Guid doc, bool storno, Guid lot, Guid gest) {
+            var inceput = new DateOnly(an, luna, 1);
+            var capat = inceput.AddMonths(1).AddDays(-1);
+            var postari = os.GetObjectsQuery<C.Postare>()
+                .Where(p => p.DocumentId == doc && p.Unitate == lot && p.Gestiune == gest && p.Carte == N.Carte.Contabil
+                    && p.Data >= inceput && p.Data <= capat && (p.Tranzactie.Fel == N.FelTranzactie.Storno) == storno)
+                .Select(p => new { p.Cantitate, V = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare }).ToList();
+            return (postari.Sum(p => p.Cantitate), postari.Sum(p => p.V));
         }
 
         bool ProdusFaraCont(Guid produs) => vechi.Neincluse.Any(x => x.Cauza == "FaraContStoc" && x.ProdusId == produs)
