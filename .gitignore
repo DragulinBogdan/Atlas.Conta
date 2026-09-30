@@ -32,6 +32,7 @@ bld/
 /1C/
 
 /run*/
+/tmp/
 
 # .NET Core
 project.lock.json

@@ -4,13 +4,13 @@ Data: 2026-09-30
 Stare: activă; amendează 073 (delimitarea exportului L) și 074 (cheia și categoria politicii de mișcare S)
 Docs: `docs/nucleu/tr-d8-saft-contract.md` (SAF-B1…B8, S0–S3, B8-R1…R4); `docs/nucleu/scenarii/SAFT.md`; `docs/nucleu/tr-d8-saft-ab.md`
 
-**Starea verificării B8, 2026-09-30:** reverificarea Codex pe `37ac61c`
-închide B8-RV2 (oracolul D18) și B8-RV3 (perf reprodus). Clasificarea A/B
-a fost deschisă prin B8-RV1.1/P2 (totalul perechii FCT/NIR nu dovedea
-distribuția reală). Martorul pe document e corectat în `3a4372d`
-(B8-RV1.1-C, `run-verificari/20260930-230311-066`) și așteaptă reverificarea. Integrala proprie: 3.269 / 4.477,
-`run-verificari/20260930-221831-487`. Regula durabilă rămâne activă.
-[Review-ul](../nucleu/tr-d8-saft-b8-review-codex.md).
+**Starea verificării B8, 2026-09-30:** toate constatările sunt rezolvate.
+Codex a aplicat corecția RV1.2 pe clasificatorul istoric `3a4372d`:
+martori pe sursa reală pentru ambele ramuri de factură, 21 de mutanți
+respinși, aceleași 111 diferențe clasificate. Integrala: **3.269 / 4.521 OK**.
+Corecția este reverificată de Claude și comisă pe `tr-d8-saft-ab-rv1`.
+Regula durabilă rămâne activă.
+[Corecția și dovezile](../nucleu/tr-d8-saft-b8-rv12-corectie.md).
 
 ## Regula durabilă
 

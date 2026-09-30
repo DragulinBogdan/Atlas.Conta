@@ -1,5 +1,114 @@
 # SAF-B8 — review advers Codex
 
+## Corecție RV1.2 aplicată de Codex (2026-09-30)
+
+**B8-RV1.2 rezolvată; toate constatările B8 sunt închise.** Owner-ul a cerut
+aplicarea corecției. Ambele ramuri de factură au acum martor pe sursa reală;
+21 de probe adverse sunt respinse, iar raportul păstrează cele 111 diferențe
+legitime, toate clasificate. Integrala pe ambele rute este verde:
+**3.269 / 4.521 OK**, zero FAIL. Codul este reverificat de Claude și comis pe `tr-d8-saft-ab-rv1`.
+[Implementarea, comenzile și limitele](tr-d8-saft-b8-rv12-corectie.md).
+
+## Reverificare pe `b3272de`, clasificator `3a4372d` (2026-09-30)
+
+**B8-RV1.1 este închis. B8-RV1 rămâne deschis prin B8-RV1.2 / P2,
+pe cele două ramuri SAF-B5 ale facturilor. B8-RV2 și B8-RV3 rămân închise.**
+Codul de producție și ModelCheck de pe branch-ul curent sunt identice
+cu `37ac61c`; schimbarea executabilă revizuită este clasificatorul istoric
+`SaftAb.cs` de la `3a4372d`.
+
+### RV1.1 închis — martorul pe document respinge redistribuirea
+
+Am executat clasificatorul nemodificat pe copii ale exportului scenei S3,
+cu documente și postări reale:
+
+- controlul NIR 10/100 → FCT 10/100 trece;
+- mutantul FCT 9/90 + NIR 1/10 este respins când cubul cere FCT 10/100 și NIR zero;
+- controlul GL mutat integral de pe NIR pe FCT trece;
+- mutantul GL care mută câte 1 pe debit și credit înapoi pe NIR este respins,
+  deși păstrează atât totalul perechii, cât și echilibrul fiecărui document;
+- codul 10 → 80 și ASM −3,32 când cubul cere −3,34 rămân respinse.
+
+`MiscareaCubului` și `GlulCubului` leagă acum rezultatul nou de postările
+fiecărui document, suplimentar totalului perechii. Contraexemplul RV1.1
+nu mai trece.
+
+### B8-RV1.2 / P2 — facturile SAF-B5 acceptă sume fără suport în sursă
+
+Loc: `nou/tools/ModelCheck/SaftAb.cs` **la `3a4372d`**, metoda
+`Clasificator.Factura`, condițiile de la **237–243** și **260–264**.
+Prima ramură cere perechea FCT/NIR, existența registrului pe conex, data
+rădăcinii și totaluri interne coerente. A doua păstrează liniile vechi și
+cere ca diferențele de net/brut să fie suma liniilor adăugate. Niciuna nu
+leagă valorile acceptate din factura nouă de postările/faptele documentului.
+
+**Da, clasa facturii semnalată în predarea lui Claude este aceeași familie
+de defecte ca RV1/RV1.1:** o condiție necesară pentru explicație este tratată
+ca dovadă suficientă pentru valori arbitrare din DTO. Nu este suficient ca
+GL-ul sau mișcarea altui rând comparat să aibă martor corect.
+
+Primul contraexemplu folosește factura reală DES, `E2E-SC-DES-1`, 5 × 10,
+fără TVA. Cubul are debit 50 pe contul de stoc. Copia veche omite doar
+factura, situație prezentă și în raportul A/B arhivat. Controlul nou are
+o linie 50, net/brut 50 și trece. Mutantul păstrează identitatea, data,
+cantitatea și TVA zero, dar pune **linia/netul/brutul la 500**. Comparatorul
+îl acceptă: **o diferență SAF-B5, zero perechi neînchise**, cubul rămânând 50.
+Proba `REVIEW-B8-RV12-FACTURA` eșuează exact pe refuzul așteptat.
+
+Al doilea contraexemplu folosește factura reală D16-V2,
+`E2E-SAFT-FCT-EUR`: net 200, brut 242, cu linia 628 de 100/TVA 21 și
+linia 371 de 100/TVA 21. Copia veche păstrează doar 628, net 100/brut 121,
+ca în raportul arhivat. Controlul trece. În copia nouă mutantă, linia 371
+devine **500/TVA 105**, netul **600**, brutul **726**, iar 628 rămâne intactă.
+Cubul are în continuare debit 100 pe 371. Și acest mutant este acceptat:
+**o diferență SAF-B5, zero perechi neînchise**.
+`REVIEW-B8-RV12-EXTRA` eșuează pe refuzul așteptat; martorul sursei și
+controlul corect trec. TVA rămâne 21%, deci nici coerența cotei nu închide
+lacuna. Cele două ramuri necesită aceeași corecție de fond.
+
+**Condiția de închidere:** legați factura nouă și liniile adăugate de
+sursele reale ale documentului/evenimentului, conform regulii de proiecție
+(cont, cantitate, bază și taxă), cu verificarea câmpurilor care nu trebuie
+să se schimbe. Egalitățile interne pot rămâne verificări suplimentare.
+Păstrați controalele corecte și adăugați mutanți pentru ambele ramuri;
+reverificați apoi cele 111 diferențe pe starea cu ambele rute.
+
+Aceasta este o lacună a certificării A/B, nu dovada că exportul de producție
+emite facturile inventate. Probele modifică numai copii ale DTO-urilor;
+nu schimbă postările și nu reintroduc ruta veche în produs.
+
+### Verificările acestei reverificări
+
+Proba inițială: `verifica.ps1 -Suita Scenarii -Tip SAFT,DESCHIDERE
+-Profil Ambele -Sufix .CodexSaftS3R`,
+`run-verificari/20260930-231518-978`: exact un FAIL intenționat,
+`REVIEW-B8-RV12-FACTURA`. Controalele și mutanții RV1.1 trec.
+Clasificatorul a fost copiat nemodificat din `3a4372d`; scriptul și patch-ul
+sunt în `run-verificari/saft-b8-rv11-review/advers.py`, respectiv `advers.patch`.
+
+Proba celeilalte ramuri: `verifica.ps1 -Suita Scenarii -Tip SAFT
+-Profil Privat -Sufix .CodexSaftS3R`,
+`run-verificari/20260930-231922-568`: exact un FAIL intenționat,
+`REVIEW-B8-RV12-EXTRA`, controalele trecute. Scriptul suplimentar este
+`saft-b8-rv11-review/extra.py`, iar patch-ul `extra.patch`, în `run-verificari/`.
+
+După restaurarea byte-identică a celor trei fișiere și eliminarea helperului,
+`verifica.ps1 -Suita Scenarii -Tip SAFT,DESCHIDERE -Profil Ambele
+-Sufix .CodexSaftS3R` este verde: **155 bugetar / 397 privat OK**, zero FAIL,
+exit 0, `run-verificari/20260930-232243-624`. DLL SHA-256:
+`6E25C65C545A658FD8B506B68EC651AA31FC7F23DFAEED42E58C74DDE5D79B8E`.
+`git diff -- nou` este gol. XSD-ul, cele cinci JAR-uri și nomenclatorul
+păstrează hash-urile review-ului anterior (`saft-b8-rv11-review/pinuri-dupa.json`).
+Predarea modifică numai documentația; `tmp/` preexistent este neatins.
+Fără commit.
+
+Integrala istorică a autorului (`20260930-230311-066`, 3.269 / 4.500) și
+raportul regenerat au fost inspectate; proba proprie este izolată, nu o
+nouă execuție integrală a rutei vechi. Integrala proprie anterioară pe codul
+principal neschimbat rămâne `20260930-221831-487`, 3.269 / 4.477 OK.
+Nu am repetat perf, HTTP sau browserul pentru schimbarea exclusivă a
+clasificatorului istoric. SAFT-r4/r5 și gate-ul transversal rămân deschise.
+
 ## Reverificare pe `37ac61c` (2026-09-30)
 
 **B8-RV2 și B8-RV3 sunt închise. B8-RV1 rămâne deschis prin

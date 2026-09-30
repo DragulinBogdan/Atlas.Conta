@@ -1,4 +1,24 @@
-**Reverificare B8 pe `37ac61c`, 2026-09-30: RV2 și RV3 închise;
+**Corecție B8-RV1.2 aplicată și verificată de Codex, 2026-09-30:
+toate constatările B8 sunt închise.** 21 de mutanți ai facturilor sunt
+respinși; raportul A/B regenerat păstrează 111 diferențe clasificate.
+Integrala istorică: **3.269 / 4.521 OK**, zero FAIL, pe `.CodexB8Rv12`.
+Corecția este reverificată de Claude și comisă pe `tr-d8-saft-ab-rv1`.
+[Cod, probe și limite](../tr-d8-saft-b8-rv12-corectie.md).
+
+Istoricul constatărilor:
+
+**Reverificare B8 pe `b3272de`, clasificator `3a4372d`, 2026-09-30:
+RV1.1 închis; RV2 și RV3 rămân închise. RV1 rămâne deschis prin RV1.2/P2.**
+Redistribuirile pe documente sunt respinse în mișcări și GL; controalele
+corecte trec. Ramurile SAF-B5 ale facturilor acceptă însă net/brut 500
+în loc de 50 (DES) și linia de stoc 500/TVA 105 în loc de 100/TVA 21
+(D16-V2), cu sursa reală neschimbată. Sunt probe executate ale
+clasificatorului, fără modificarea exportului de producție.
+SAFT + DESCHIDERE pe sursele restaurate: **155 bugetar / 397 privat OK**,
+zero FAIL, exit 0, `run-verificari/20260930-232243-624`.
+[Dovada și condiția de închidere](../tr-d8-saft-b8-review-codex.md).
+
+**Reverificare anterioară B8 pe `37ac61c`, 2026-09-30: RV2 și RV3 închise;
 RV1 rămâne deschis prin RV1.1 / P2.** Oracolul D18 respinge 18 mutanți pe
 trei luni; integrala proprie trece cu 3.269 / 4.477 OK. Matricea perf
 completă a fost reprodusă pe baza Codex: 48 de măsurători, criteriile trecute,

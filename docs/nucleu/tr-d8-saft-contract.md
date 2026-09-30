@@ -2116,3 +2116,34 @@ rulare căzută a mutantului, este verde: 3.269 / 4.500,
 `run-verificari/20260930-230311-066`. Rezultatul are aceleași 111 diferențe, cu aceleași
 numărători pe clase. [Raportul](tr-d8-saft-ab.md) s-a regenerat.
 
+### B8-RV1.2 — reverificare Codex a `3a4372d` (2026-09-30)
+
+**B8-RV1.1 închis; B8-RV1 rămâne deschis prin B8-RV1.2/P2.**
+B8-RV2 și B8-RV3 rămân închise. [Dovezile](tr-d8-saft-b8-review-codex.md).
+Martorii noi pe document resping redistribuirea 9/90 + 1/10 în mișcări și
+redistribuirea echilibrată D1/C1 în GL; controalele corecte trec.
+
+Ramurile SAF-B5 ale facturilor acceptă încă sume fără suport în sursă:
+factura DES cu linie/net/brut 500 în loc de 50 și linia suplimentară 371
+din D16-V2 cu 500/TVA 105 în loc de 100/TVA 21. Fiecare mutant primește
+o clasă și zero perechi neînchise, deși postările reale rămân neschimbate.
+Probele temporare executate sunt în `run-verificari/20260930-231518-978`
+și `run-verificari/20260930-231922-568`, câte un FAIL intenționat.
+
+Pentru închidere, martorul leagă factura nouă și liniile adăugate de
+sursele reale ale documentului/evenimentului (cont, cantitate, bază și
+taxă), verifică restul câmpurilor neschimbate și păstrează controalele
+corecte. Ambele ramuri primesc mutanți; raportul A/B se reverifică pe
+starea cu ambele rute. Coerența internă a totalurilor rămâne o verificare
+suplimentară. Contraexemplele privesc dovada clasificării, fără a demonstra
+un defect al exportului de producție și fără a redeschide S0–S3.
+
+### B8-RV1.2-C — corecție aplicată de Codex (2026-09-30)
+
+La cererea owner-ului, martorul ambelor ramuri SAF-B5 ale facturilor a fost
+legat de sursele reale ale documentului/evenimentului. Cele 21 de probe
+adverse sunt respinse; cele 111 diferențe legitime rămân clasificate.
+Integrala pe ambele rute: **3.269 / 4.521 OK**, zero FAIL, exit 0.
+**B8-RV1.2 este rezolvată; toate constatările B8 sunt închise.**
+Codul este reverificat de Claude și comis pe `tr-d8-saft-ab-rv1`. SAFT-r4/r5 și gate-ul transversal rămân.
+[Surse, martori, comandă și manifest](tr-d8-saft-b8-rv12-corectie.md).
