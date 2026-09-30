@@ -1,5 +1,7 @@
 using Atlas.Conta.BackOffice.Module.Anaf;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
@@ -550,6 +552,7 @@ var solduri = flax.SolduriDeschidere(dataDeschidere);
 var solduriPartener = flax.SolduriPartener(dataDeschidere);
 var stoc = flax.StocDeschidere(dataDeschidere);
 var stocOrfan = flax.StocFaraIdentitate(dataDeschidere);
+var pozitiiTert = flax.PozitiiTert(dataDeschidere);
 
 // ==================== Faza DESCHIDERE (pasul 3) ====================
 // Rândurile de deschidere poartă data ULTIMEI zile a anului precedent
@@ -559,18 +562,55 @@ var dataRanduri = DateOnly.FromDateTime(dataDeschidere.AddDays(-1));
 
 var cronometru = System.Diagnostics.Stopwatch.StartNew();
 
-Console.WriteLine($"\n--- Deschiderea contabilă la {dataRanduri:yyyy-MM-dd} ---");
+// Perioadele fiscale ÎNAINTEA deschiderii: `Materializare.Deschide` cere perioada
+// deschisă (M1-D2); motorul tratează perioada lipsă ca închisă (14).
+var anImport = dataDeschidere.Year;
+var (perioadeExistente, perioadeCreate) = Perioade.Asigura(provider, anImport);
+
 var extrabilantiere1C = plan1C.Where(c => c.Extrabilantier).Select(c => c.Cod).ToHashSet();
-var rezContabil = Deschidere.Contabile(provider, solduri, extrabilantiere1C, Mapeaza,
-    dataRanduri, Avert, Check);
-Console.WriteLine($"Registru contabil: {rezContabil.Randuri} rânduri contra ancorei "
-    + $"{Deschidere.Ancora}; extrabilanțiere sărite: {rezContabil.Extrabilantiere} "
-    + $"({rezContabil.SumaExtrabilantiera:N2}); reziduul propriu al sursei pe ancoră: "
-    + $"{rezContabil.ReziduuAncora:N2}.");
+var laCerere = new ImportLaCerere(provider, flax, Avert);
+var dataCub = DateOnly.FromDateTime(dataDeschidere);
+HashSet<string> urmarite;
+HashSet<string> conturiStocSimbol;
+var simbolPeIdAtlas = planAtlas.ToDictionary(x => x.Value, x => x.Key);
+using (var os = provider.CreateObjectSpace()) {
+    urmarite = os.GetObjectsQuery<Cont>().Where(c => c.UrmarestePartide).Select(c => c.Simbol).ToHashSet();
+    conturiStocSimbol = os.GetObjectsQuery<TipMaterial>()
+        .Where(t => t.Clasa.Natura == NaturaClasa.Stoc && t.ContImplicitId != null)
+        .Select(t => t.ContImplicitId.Value).ToList()
+        .Select(id => simbolPeIdAtlas[id]).ToHashSet();
+}
+
+Console.WriteLine($"\n--- Partidele inițiale ale terților la {dataCub:yyyy-MM-dd} (M1-D4) ---");
+var rezPartide = Deschidere.Partide(provider, laCerere, flax, pozitiiTert, Mapeaza, planAtlas, urmarite, Avert, Check);
+Console.WriteLine($"Poziții de terț în sursă: {rezPartide.Pozitii}; pe conturi neurmărite (sold nedetaliat): "
+    + $"{rezPartide.PeConturiNeurmarite}; nemapate: {rezPartide.Nemapate}; agregate pe contract: {rezPartide.Agregate}; "
+    + $"partide inițiale: {rezPartide.Partide.Count} (fără document de decontare: {rezPartide.FaraDocument}).");
+Console.WriteLine($"Fără partener în sursă: {rezPartide.FaraPartener}, din care recuperate din antetul documentului "
+    + $"{rezPartide.PartenerRecuperatDinDocument}; pe partenerul generic „{Deschidere.CodPartenerGeneric}”: "
+    + $"{rezPartide.Partide.Count(p => p.Partener == rezPartide.PartenerGeneric)} partide, Σ {rezPartide.SoldPeGeneric:N2} lei (M1-D5).");
+foreach (var g in rezPartide.Partide.GroupBy(p => p.Simbol).OrderBy(g => g.Key, StringComparer.Ordinal))
+    Console.WriteLine($"     {g.Key,-6} {g.Count(),6} partide  D {g.Where(p => p.Sold > 0).Sum(p => p.Sold),15:N2}  "
+        + $"C {-g.Where(p => p.Sold < 0).Sum(p => p.Sold),15:N2}  net {g.Sum(p => p.Sold),15:N2}");
+
+var nete = Deschidere.Nete(solduri, extrabilantiere1C, planAtlas, sumatoriAtlas, Mapeaza, Avert, Check);
 
 Console.WriteLine($"\n--- Stocul de deschidere la {dataRanduri:yyyy-MM-dd} ---");
-var laCerere = new ImportLaCerere(provider, flax, Avert);
-var rezStoc = Deschidere.Stoc(provider, laCerere, stoc, Mapeaza, dataRanduri, Avert, Check);
+Deschidere.RezultatControale controale = null;
+Deschidere.RezultatCub rezCub = null;
+var rezStoc = Deschidere.Stoc(provider, laCerere, stoc, Mapeaza, planAtlas, dataRanduri, Avert, Check, loturiCub => {
+    controale = Deschidere.Controale(nete.Net, rezPartide.Intrare, loturiCub, simbolPeIdAtlas, urmarite,
+        conturiStocSimbol, Avert, Check);
+    Console.WriteLine($"\n--- Cubul: tranzacția Deschidere la {dataCub:yyyy-MM-dd} (M1-D2) ---");
+    Console.WriteLine($"Controale: {controale.Controale.Count} (cont, latură); loturi în cub: {loturiCub.Count}; "
+        + $"partide: {rezPartide.Intrare.Count}; conturi de stoc cu sold dar fără lot: {controale.ConturiStocFaraLot}; "
+        + $"Δ declarat pe stoc (M1-D6): {controale.DeclarateStoc.Values.Sum():N2} lei pe {controale.DeclarateStoc.Count} conturi.");
+    rezCub = Deschidere.Cub(provider, dataCub, controale.Controale, loturiCub, rezPartide.Intrare, rezPartide.Partide,
+        planAtlas, Avert, Check);
+    Console.WriteLine($"Tranzacția {rezCub.Tranzactie}: {(rezCub.Scrisa ? "SCRISĂ" : "existentă, verificată")}, "
+        + $"{rezCub.Postari} postări ({rezCub.PartideScrise} partide, {rezCub.LoturiScrise} loturi); "
+        + $"legături 1C:{Deschidere.ViewPartide} noi: {rezCub.LegaturiNoi}.");
+});
 Console.WriteLine($"Loturi: {rezStoc.Loturi} (noi în rularea asta: {rezStoc.LoturiNoi}) "
     + $"din {stoc.Count} poziții; produse: {rezStoc.Produse} distincte "
     + $"({rezStoc.ProduseNoi} noi, {rezStoc.ProduseFaraTip} refuzate).");
@@ -583,6 +623,13 @@ Console.WriteLine($"Netare: {rezStoc.PozitiiNegative} celule negative absorbite;
     + $"{rezStoc.CeluleDegenerate} celule rămase cu o singură coordonată nenulă.");
 Console.WriteLine($"Registru stoc: {rezStoc.RanduriStoc} rânduri de deschidere; "
     + $"Σ {rezStoc.ValoareScrisa:N2} lei / {rezStoc.CantitateScrisa:N3} buc.");
+
+Console.WriteLine($"\n--- Deschiderea contabilă la {dataRanduri:yyyy-MM-dd} (rândurile bloc, M1-D3) ---");
+var rezContabil = Deschidere.Contabile(provider, nete, controale.Controale, controale.DeclarateStoc, dataRanduri, Check);
+Console.WriteLine($"Registru contabil: {rezContabil.Randuri} rânduri contra ancorei "
+    + $"{Deschidere.Ancora}; extrabilanțiere sărite: {rezContabil.Extrabilantiere} "
+    + $"({rezContabil.SumaExtrabilantiera:N2}); reziduul propriu al sursei pe ancoră: "
+    + $"{rezContabil.ReziduuAncora:N2}.");
 Console.WriteLine($"La cerere: {laCerere.ParteneriNoi} parteneri noi, {laCerere.ProduseNoi} produse noi, "
     + $"{laCerere.Recuperate} recuperate, {laCerere.ReferinteMoarte} referințe moarte, "
     + $"{laCerere.ProduseFaraTip} fără TipMaterial.");
@@ -815,7 +862,7 @@ if (sabotaj) {
 
 Console.WriteLine($"\n=== Reconcilierea deschiderii la {dataRanduri:yyyy-MM-dd} ===");
 var rezRec = Reconciliere.Executa(provider, solduri, extrabilantiere1C, stoc, stocOrfan,
-    rezStoc.DiferenteJustificate, Mapeaza, Avert, Check);
+    rezStoc.DiferenteJustificate, controale.DeclarateStoc, Mapeaza, Avert, Check);
 
 // ==================== Faza DOCUMENTE: bucla lunară (pasul 1) ====================
 // Perioadele fiscale întâi (motorul tratează perioada LIPSĂ ca închisă, decizia
@@ -824,8 +871,6 @@ var rezRec = Reconciliere.Executa(provider, solduri, extrabilantiere1C, stoc, st
 // lista e goală, deci bucla rulează în gol — deliberat, ca infrastructura să fie
 // verificabilă înaintea primului tip.
 
-var anImport = dataDeschidere.Year;
-var (perioadeExistente, perioadeCreate) = Perioade.Asigura(provider, anImport);
 Console.WriteLine($"\n=== Documentele {anImport} (lunile 1..{panaLa}) ===");
 Console.WriteLine($"Perioade fiscale {anImport}: {perioadeExistente} existente, {perioadeCreate} create "
     + "(deschise — perioada lipsă e tratată ca închisă de gardian).");
@@ -850,6 +895,8 @@ bucla.StareContract.ProduseNetate = rezStoc.ProduseNetate;
 bucla.StareContract.JustificateDeschidere = rezStoc.DiferenteJustificate;
 bucla.StareContract.ValoriFaraCantitateDeschidere = rezStoc.ValoriFaraCantitate;
 bucla.StareContract.Extrabilantiere1C = extrabilantiere1C;
+bucla.StareContract.DeclarateDeschidere = controale.DeclarateStoc;
+bucla.StareContract.PartenerGeneric = rezPartide.PartenerGeneric;
 if (sabotaj)
     bucla.ActiveazaSabotajLuna();
 var luni = new List<RezultatLuna>();
@@ -973,6 +1020,18 @@ if (inchideLunile) {
         + (deschise.Count == 0 ? "." : $": {string.Join(", ", deschise.Select(p => $"{p.Luna:00}/{p.An}"))}."));
     Check($"--inchide-lunile: {inchideri.Count} perioade închise din {panaLa} luni importate",
         inchideri.Count == panaLa);
+}
+
+// INV-CUB pe baza integrală (M1-D9 iii): ce nu garantează scrierea se verifică o
+// dată, la final.
+using (var os = provider.CreateObjectSpace()) {
+    try {
+        Invarianti.Verifica(os);
+        Check("INV-CUB pe baza integrală după import", true);
+    }
+    catch (OperareException ex) {
+        Check($"INV-CUB pe baza integrală după import — {ex.Message.Split('\n')[0]}", false);
+    }
 }
 
 // Invariantul de IDEMPOTENȚĂ al importului de documente, verificabil pe ORICE

@@ -1,6 +1,8 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
+using N = Atlas.Conta.Nucleu;
 
 namespace Import1C;
 
@@ -36,6 +38,9 @@ static class Imperecheri1C {
     // (care conține deja identitatea documentului sursă) + ținta, deci o pereche
     // stingător↔stins are exact o legătură.
     public const string View = "Imperechere";
+    // Stingerile pe PARTIDE INIȚIALE (M1-D7): urma e transferul din cub, fără rând
+    // `Imperechere`; legătura proprie ține idempotența.
+    public const string ViewDeschidere = "StingereDeschidere";
 
     // Tipurile-țintă care se sar prin construcție, nu din lipsă de date.
     const string SoldDeschidere = "IntroducereaSoldurilor";
@@ -47,6 +52,42 @@ static class Imperecheri1C {
     static readonly Dictionary<string, int> sarite = new(StringComparer.Ordinal);
     static readonly Dictionary<string, decimal> valoareSarita = new(StringComparer.Ordinal);
     static int detaliiRefuz;
+
+    public static int StinsePeDeschidere { get; private set; }
+    public static int ExistenteDeschidere { get; private set; }
+    public static decimal SumaStinsaPeDeschidere { get; private set; }
+    // Σ refuzată per partidă inițială (peste rest, semn inversat): intrarea
+    // contractului 5, care explică restul partidei față de sursă.
+    public static readonly Dictionary<Guid, decimal> SaritPePartida = [];
+    // Σ plafonată per partidă inițială: sursa stinge peste restul poziției (pozițiile
+    // în valută, evaluate în lei la cursul din 2024, plătite la cursul zilei);
+    // Atlas stinge restul, excedentul se numără (precedentul S-r5 pe documente).
+    public static readonly Dictionary<Guid, decimal> PlafonatPePartida = [];
+    public static int Plafonate { get; private set; }
+    static Dictionary<string, List<(Guid Partida, Guid Cont, Guid Partener)>> indexDeschidere;
+
+    // Partidele inițiale pe referința 1C a documentului de decontare: legăturile
+    // `1C:PartidaDeschidere` (cheia sursei) + faptele cubului (cont, partener).
+    static IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> PartideDeschidere(BuclaImport bucla,
+            string tipRef, string id) {
+        if (indexDeschidere == null) {
+            indexDeschidere = new Dictionary<string, List<(Guid, Guid, Guid)>>(StringComparer.Ordinal);
+            using var os = bucla.CreeazaObjectSpace();
+            var fapte = os.GetObjectsQuery<Postare>()
+                .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
+                .Select(p => new { p.Unitate, p.Cont, p.Partener }).ToList()
+                .ToDictionary(x => x.Unitate.Value);
+            foreach (var (cheie, partida) in Legaturi.Incarca(os, Deschidere.ViewPartide)) {
+                var referinta = cheie.Split('|')[2];
+                if (referinta == Deschidere.CheieFaraDocument || !fapte.TryGetValue(partida, out var f) || f.Partener == null)
+                    continue;
+                (indexDeschidere.TryGetValue(referinta, out var lista)
+                    ? lista : indexDeschidere[referinta] = []).Add((partida, f.Cont, f.Partener.Value));
+            }
+        }
+        var refCheie = Deschidere.RefCheie(tipRef, id);
+        return refCheie != null && indexDeschidere.TryGetValue(refCheie, out var l) ? l : [];
+    }
 
     // Câte instanțe se lasă pe un singur ObjectSpace înainte de reciclare: fiecare
     // imperechere comite, iar change tracker-ul ar crește la zeci de mii de
@@ -68,7 +109,7 @@ static class Imperecheri1C {
         // poziții rămâne amânată (31f).
         var perechi = sursa
             .Where(s => s.Tinta != null)
-            .GroupBy(s => (s.View, s.CheieStingator, TintaTip: s.Tinta.Tip, TintaId: s.Tinta.Id))
+            .GroupBy(s => (s.View, s.CheieStingator, TintaTip: s.Tinta.Tip, TintaId: s.Tinta.Id, TipRef: s.Tinta.TipRef))
             .Select(g => (g.Key, Suma: g.Sum(x => x.Suma)))
             .ToList();
         // Descrierile țintelor, pentru triajul „dinaintea ferestrei" de mai jos.
@@ -77,8 +118,11 @@ static class Imperecheri1C {
             .ToDictionary(g => g.Key, g => g.First().Tinta.Descriere, StringComparer.Ordinal);
 
         Dictionary<string, Guid> legaturi;
-        using (var citire = bucla.CreeazaObjectSpace())
+        Dictionary<string, Guid> legaturiDeschidere;
+        using (var citire = bucla.CreeazaObjectSpace()) {
             legaturi = Legaturi.Incarca(citire, View);
+            legaturiDeschidere = Legaturi.Incarca(citire, ViewDeschidere);
+        }
         IObjectSpace os = null;
         var peLot = 0;
         var create = 0;
@@ -92,6 +136,37 @@ static class Imperecheri1C {
                 }
                 if (suma <= 0) {
                     Sare("sumă ne-pozitivă după agregare", suma);
+                    continue;
+                }
+                // M1-D7: ținta e o poziție de deschidere (document din 2024 sau
+                // mai vechi, inclusiv retururi și `IntroducereaSoldurilor`) ⇒
+                // stingere pe partida inițială, în cub, fără rând `Imperechere`.
+                if (bucla.Tinta(cheie.TintaTip, cheie.TintaId) == null
+                        && PartideDeschidere(bucla, cheie.TipRef, cheie.TintaId) is { Count: > 0 } candidate) {
+                    var cheieDeschidere = $"{cheie.View}/{cheie.CheieStingator}->{cheie.TipRef}/{cheie.TintaId}";
+                    if (legaturiDeschidere.ContainsKey(cheieDeschidere)) {
+                        ExistenteDeschidere++;
+                        continue;
+                    }
+                    var stingatorDeschidere = bucla.Tinta(cheie.View, cheie.CheieStingator);
+                    if (stingatorDeschidere == null) {
+                        Sare("stingătorul n-a devenit document (rândul lui e transcris în punte)", suma);
+                        continue;
+                    }
+                    if (bucla.Stare(stingatorDeschidere.Value) != StareDocument.Operat) {
+                        Sare("stingătorul nu e operat (partidă de deschidere)", suma);
+                        continue;
+                    }
+                    if (os == null || peLot >= LotObjectSpace) {
+                        os?.Dispose();
+                        os = bucla.CreeazaObjectSpace();
+                        peLot = 0;
+                    }
+                    peLot++;
+                    if (CreeazaPeDeschidere(bucla, os, stingatorDeschidere.Value, candidate, suma, cheieDeschidere))
+                        create++;
+                    else
+                        peLot = LotObjectSpace;
                     continue;
                 }
                 if (cheie.TintaTip == null) {
@@ -172,7 +247,11 @@ static class Imperecheri1C {
             if (existent == null) {
                 var stingator = os.GetObjectByKey<Document>(stingatorId);
                 var tinta = os.GetObjectByKey<Document>(tintaId);
-                existent = ImperechereService.Imperecheaza(os, stingator, tinta, suma);
+                // M1-D8: data reală a stingerii = a documentului mai târziu dintre cei
+                // doi (serviciul refuză o dată care precede pe oricare).
+                var data = stingator.DataInregistrare > tinta.DataInregistrare
+                    ? stingator.DataInregistrare : tinta.DataInregistrare;
+                existent = ImperechereService.Imperecheaza(os, stingator, tinta, suma, data: data);
                 Create++;
             }
             else
@@ -194,6 +273,67 @@ static class Imperecheri1C {
             return false;
         }
     }
+
+    static bool CreeazaPeDeschidere(BuclaImport bucla, IObjectSpace os, Guid stingatorId,
+            IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> candidate, decimal suma, string cheieLegatura) {
+        var perechi = os.GetObjectsQuery<Postare>()
+            .Where(p => p.DocumentId == stingatorId && p.Carte == N.Carte.Contabil
+                && p.FelUnitate == N.FelUnitate.Partida && p.Partener != null
+                && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .Select(p => new { p.Cont, p.Partener }).Distinct().ToList();
+        var partida = candidate.FirstOrDefault(c => perechi.Any(p => p.Cont == c.Cont && p.Partener == c.Partener));
+        if (partida == default) {
+            Sare("partida de deschidere există, dar stingătorul nu postează pe (cont, partener) al ei", suma);
+            return false;
+        }
+        // Restul partidei inițiale la ora asta, din cub (toate postările unității).
+        var restPartida = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Unitate == partida.Partida && p.Carte == N.Carte.Contabil)
+            .Select(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare).ToList().Sum();
+        var restAbs = Math.Abs(restPartida);
+        var deStins = suma;
+        if (restAbs < suma) {
+            if (restAbs < 0.01m) {
+                Sare("partida de deschidere e deja stinsă (sursa stinge peste rest)", suma);
+                SaritPePartida[partida.Partida] = SaritPePartida.GetValueOrDefault(partida.Partida) + suma;
+                return false;
+            }
+            deStins = restAbs;
+            Plafonate++;
+            PlafonatPePartida[partida.Partida] = PlafonatPePartida.GetValueOrDefault(partida.Partida) + (suma - restAbs);
+            valoarePlafonata += suma - restAbs;
+        }
+        try {
+            using var tx = TranzactieComanda.Incepe(os);
+            var stingator = os.GetObjectByKey<Document>(stingatorId);
+            Materializare.Imperecheaza(os, stingator, partida.Partida, deStins, stingator.DataInregistrare);
+            Legaturi.Leaga(os, ViewDeschidere, cheieLegatura, partida.Partida);
+            os.CommitChanges();
+            tx.Commit();
+            StinsePeDeschidere++;
+            SumaStinsaPeDeschidere += deStins;
+            return true;
+        }
+        catch (Exception ex) {
+            os.Rollback();
+            if (deStins != suma) {
+                Plafonate--;
+                PlafonatPePartida[partida.Partida] -= suma - restAbs;
+                valoarePlafonata -= suma - restAbs;
+            }
+            var motiv = ex is OperareException && ex.Message.Contains("restul disponibil")
+                ? "partida de deschidere refuză: stingătorul n-are rest pe partida proprie sau semn inversat (M1-D7)"
+                : $"partida de deschidere refuză (alt motiv): {ex.GetType().Name}";
+            Sare(motiv, suma);
+            SaritPePartida[partida.Partida] = SaritPePartida.GetValueOrDefault(partida.Partida) + suma;
+            if (++detaliiRefuz <= 20)
+                bucla.Avert($"Stingerea pe partida inițială {cheieLegatura} ({suma:N2}) a fost refuzată: "
+                    + ex.Message.Split('\n')[0]);
+            return false;
+        }
+    }
+
+    static decimal valoarePlafonata;
 
     // Triajul refuzurilor. Cele de BUSINESS sunt divergențe reale între sursă și
     // model, fiecare cu înțelesul ei (48b: raport, nu stop). Restul e DEFECT și
@@ -227,10 +367,13 @@ static class Imperecheri1C {
     }
 
     public static void Raporteaza() {
-        if (Create == 0 && sarite.Count == 0)
+        if (Create == 0 && sarite.Count == 0 && StinsePeDeschidere == 0)
             return;
         Console.WriteLine($"  Imperecheri (total rulare): {Create} create, {Recuperate} recuperate, "
-            + $"{Existente} deja legate.");
+            + $"{Existente} deja legate; pe partide inițiale: {StinsePeDeschidere} stinse "
+            + $"(Σ {SumaStinsaPeDeschidere:N2} lei), {ExistenteDeschidere} deja legate, "
+            + $"{SaritPePartida.Count} partide cu refuzuri (Σ {SaritPePartida.Values.Sum():N2}), "
+            + $"{Plafonate} plafonate la restul partidei (excedent Σ {valoarePlafonata:N2}).");
         foreach (var s in sarite.OrderByDescending(x => x.Value))
             Console.WriteLine($"    {s.Value,8} sărite — {s.Key} (Σ {valoareSarita[s.Key]:N2} lei)");
     }

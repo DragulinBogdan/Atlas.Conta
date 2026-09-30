@@ -83,6 +83,11 @@ record FlaxOrganizatie(string Id, string Cod, string Denumire, string DenumireCo
 
 record FlaxCont(string Cod, string Denumire, bool Sintetic, bool Extrabilantier);
 
+// O poziție de terț din `BalantaNivel3` (M1-D4): `PartenerId` null = sursa n-are
+// partener; `DocTipRef`/`DocId` null = referință goală de document de decontare.
+record FlaxPozitieTert(string Cont, string PartenerId, string PartenerDesc,
+    string DocTipRef, string DocTipNume, string DocId, string DocDesc, decimal SoldIni);
+
 record FlaxSold(string Cont, decimal SoldIni);
 
 record FlaxSoldPartener(string Cont, string PartenerId, string PartenerDesc, decimal SoldIni);
@@ -432,6 +437,54 @@ partial class FlaxDb(string connectionString) : IDisposable {
                 Hex(r, 3), Hex(r, 4), Text(r, 5), Hex(r, 6), Text(r, 7),
                 Dec(r, 8), Dec(r, 9)),
             ("@p", period));
+
+    // Pozițiile de TERȚ ale balanței (M1-D4): conturile cu trei subconto stau în
+    // `BalantaNivel3` ca (partener × contract × document de decontare); contractul
+    // se agregă aici (nu face parte din identitatea partidei Atlas). Tipul
+    // documentului de decontare circulă ca hex al lui `_Type` (aceeași formă ca
+    // `FlaxRef.TipRef` din notele lunii, deci cheile se potrivesc prin construcție);
+    // partenerul e null când sursa are referința goală. Aceeași citire servește și
+    // fine-de-luna contractului 5 (`SoldIni` al perioadei următoare).
+    public List<FlaxPozitieTert> PozitiiTert(DateTime period) =>
+        Query(@"select ltrim(rtrim(Cont)), Valoare1_Partenerii_ID, max(Valoare1_Desc),
+                       convert(varchar(10), Valoare3_Type, 2),
+                       max(case when Valoare3_AprovizionareMarfuriSiServiciiPrimite_ID is not null then 'AprovizionareMarfuriSiServiciiPrimite'
+                                when Valoare3_VanzareMarfuriSiServiciiPrestate_ID is not null then 'VanzareMarfuriSiServiciiPrestate'
+                                when Valoare3_ReturDeLaClient_ID is not null then 'ReturDeLaClient'
+                                when Valoare3_ReturLaFurnizor_ID is not null then 'ReturLaFurnizor'
+                                when Valoare3_IntroducereaSoldurilor_ID is not null then 'IntroducereaSoldurilor'
+                                when Valoare3_AvizDeIesire_ID is not null then 'AvizDeIesire'
+                                when Valoare3_AvizDeIntrare_ID is not null then 'AvizDeIntrare'
+                                when Valoare3_ExtrasDeCont_ID is not null then 'ExtrasDeCont'
+                                when Valoare3_Plata_ID is not null then 'Plata'
+                                when Valoare3_Incasare_ID is not null then 'Incasare'
+                                when Valoare3_Import_ID is not null then 'Import'
+                                else null end),
+                       Valoare3_Id, max(Valoare3_Desc), sum(SoldIni)
+                from flax.BalantaNivel3
+                where Period = @p and Cont is not null and Cont not like '3%'
+                group by ltrim(rtrim(Cont)), Valoare1_Partenerii_ID, Valoare3_Type, Valoare3_Id
+                having sum(SoldIni) <> 0",
+            r => new FlaxPozitieTert(Text(r, 0), Hex(r, 1), Text(r, 2),
+                RefGoala(Text(r, 3)) ? null : Text(r, 3), Text(r, 4),
+                RefGoala(Text(r, 3)) ? null : Hex(r, 5), Text(r, 6), Dec(r, 7)),
+            ("@p", period));
+
+    static bool RefGoala(string tipRef) => tipRef == null || tipRef.All(c => c == '0');
+
+    // Partenerul din ANTETUL documentului de decontare, pentru pozițiile cărora
+    // sursa le-a pierdut partenerul de subconto (M1-D5): recuperare, nu ghicire.
+    public string PartenerDocument(string tipNume, string hexId) {
+        var view = tipNume switch {
+            "VanzareMarfuriSiServiciiPrestate" or "AprovizionareMarfuriSiServiciiPrimite"
+                or "ReturDeLaClient" or "ReturLaFurnizor" => tipNume,
+            _ => null,
+        };
+        if (view == null || hexId == null)
+            return null;
+        return Query($"select Partener_ID from flax.{view} where KeyField = @id",
+            r => Hex(r, 0), ("@id", DinHex(hexId))).FirstOrDefault();
+    }
 
     // ==================== Fine de lună (pasul 6: reconcilierea lunară) ====================
     //
