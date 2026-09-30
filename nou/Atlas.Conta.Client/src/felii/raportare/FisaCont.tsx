@@ -31,7 +31,14 @@ export function FisaCont() {
     // poate exprima absența, iar drill-down-ul pe acel rând deschidea fișa
     // întregului cont, cu ultimul sold curent egal cu soldul SINTETIC.
     repartitorNul: false,
+    // Ecranul care a deschis fișa (drill-down din SAF-T); numai rută internă.
+    inapoi: '',
   });
+  const inapoi = stare.inapoi.startsWith('/') && !stare.inapoi.startsWith('//') ? stare.inapoi : null;
+  const filtre = useMemo(() => {
+    const { inapoi: _navigare, ...rest } = stare;
+    return rest;
+  }, [stare]);
 
   const sursaConturi = useSursaConturi();
   // Contul ales, ca date brute ale nomenclatorului: îl dă widget-ul (pagina lui
@@ -45,9 +52,9 @@ export function FisaCont() {
 
   const sursa = useMemo(() => (
     stare.contId
-      ? storeRemote(urlCu('/api/proiectii/fisa-cont', { ...stare, ...dimensiuni }), ['Id', 'Spatiu'])
+      ? storeRemote(urlCu('/api/proiectii/fisa-cont', { ...filtre, ...dimensiuni }), ['Id', 'Spatiu'])
       : null
-  ), [stare, dimensiuni]);
+  ), [filtre, dimensiuni]);
 
   return (
     <div className="ecran">
@@ -60,8 +67,9 @@ export function FisaCont() {
           {stare.repartitorNul ? ' (fără partener)' : ''}
           {stare.repartitorId ? ' (filtrată pe partener)' : ''}
         </h2>
-        <Link className="buton buton--mic" to={urlCu('/balanta', { dataStart: stare.dataStart, dataEnd: stare.dataEnd })}>
-          Înapoi la balanță
+        <Link className="buton buton--mic"
+          to={inapoi ?? urlCu('/balanta', { dataStart: stare.dataStart, dataEnd: stare.dataEnd })}>
+          {inapoi?.startsWith('/saft') ? 'Înapoi la SAF-T' : inapoi ? 'Înapoi' : 'Înapoi la balanță'}
         </Link>
       </div>
 

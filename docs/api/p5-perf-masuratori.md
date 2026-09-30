@@ -911,6 +911,14 @@ diferă de „cald” numai prin deschiderea conexiunilor.)
   tablou, alt transport) ține de gate-ul transversal de perf. Nu e o
   proprietate a exportului.
 - **DUK:** ~2,2 s pe fișier, independent de volum în intervalul măsurat.
+- **Balanța scanează istoricul pe server.** Soldurile de cont ale ambelor
+  fișiere vin din `ContabilProiectii.Balanta` pe ObjectSpace-ul securizat,
+  care recitește postările (TR-D8 citiri: snapshot-ul contabil servește numai
+  citirile nesecurizate). Interogarea întoarce un rând pe cont, dar scanează
+  `Postare_Contabil` + `Postare_Stoc` întregi (2.243 → 4.163 de rânduri de la
+  m = 6 la m = 12; 2,3 → 3,9 ms). Cum SAF-T cere acces complet (SAF-D4), ar
+  putea porni din snapshot, ca pozițiile S. Restanța **SAFT-r4**, la gate-ul
+  transversal.
 
 Pragul absolut și planul pe volum real rămân la gate-ul transversal. Baza de
 volum reală nu există după C102, deci FZ-r3 rămâne activă.

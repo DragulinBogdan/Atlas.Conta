@@ -452,12 +452,14 @@ cere citire necondiționată. Orice criteriu de rând sau de membru pe tabelele
 citite de export (`SaftAcces.Citite` pe L, `SaftAcces.CititeStocuri` pe S, cu
 toate tipurile mapate în ele) dă 403
 `SAFT_ACCES_INCOMPLET` pe ambele uși, înaintea proiecției. Corpul numește
-tipurile și membrii restricționați, fără rânduri ori sume. Criteriile se
+tipurile și membrii restricționați, fără rânduri ori sume: întâi tipurile
+citite de secțiune, fără frunzele TPH ale unei baze deja restricționate. Criteriile se
 citesc din `ISelectDataSecurity`, aceeași sursă din care EF Core filtrează.
 `CanRead(Type)` nu ajunge, fiindcă răspunde `true` sub restricții
 condiționale. Refuzurile proiecției (`SaftDto.Refuzuri`) apar în sumar
-(`Refuzuri`, 200; ecranul le arată înaintea descărcării) și dau 422 pe
-fișier, înaintea primului byte. Cusăturile ecranului L compară declarația
+(`Refuzuri`, 200; ecranul le arată înaintea descărcării și ține butonul
+XML inactiv) și dau 422 pe fișier, înaintea primului byte. Fișa contului
+deschisă din S3 revine la SAF-T (`inapoi`, numai rută internă). Cusăturile ecranului L compară declarația
 cu cubul: rulajul balanței, faptele fiscale și baza lor pe sens. Cele ale
 ecranului S compară fiecare poziție cu postările pe lot ale lunii și stocul
 pe cont cu soldul contabil; diferența pe cont se sparge în „(sold inițial)”

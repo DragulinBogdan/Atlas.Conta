@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import type { components } from '../../generated/api-types';
 import { labelEnum } from '../../nucleu/campMeta';
 import { descarcaFisier, eroriDin, ia } from '../../nucleu/http';
@@ -82,6 +82,7 @@ type Fel = keyof typeof MODULE;
 
 export function Saft() {
   const acum = new Date();
+  const locatie = useLocation();
   const [stare, seteaza] = useUrlStare({
     an: String(acum.getFullYear()),
     luna: String(acum.getMonth() + 1),
@@ -176,7 +177,8 @@ export function Saft() {
           <button
             type="button"
             className="buton buton--primar"
-            disabled={descarcare.activa}
+            disabled={descarcare.activa || refuzuri.length > 0}
+            title={refuzuri.length > 0 ? 'Fișierul se refuză până la rezolvarea cauzelor de mai jos' : undefined}
             onClick={descarca}
           >
             {descarcare.activa ? 'Se generează…' : 'Descarcă XML'}
@@ -197,7 +199,8 @@ export function Saft() {
             <>
               <SectiuniStoc sumar={sumar} rezumat={rezumat} />
               <CusaturiStoc rezumat={rezumat} />
-              <StocPerCont lista={rezumat.StocPerCont ?? []} rezumat={rezumat} sumar={sumar} />
+              <StocPerCont lista={rezumat.StocPerCont ?? []} rezumat={rezumat} sumar={sumar}
+                inapoi={locatie.pathname + locatie.search} />
               <Excluse lista={excluse} />
             </>
           ) : (
@@ -639,8 +642,8 @@ function CusaturiStoc({ rezumat }: { rezumat: Rezumat }) {
 // `ContId` gol (`Guid.Empty`) = niciun cont în spatele simbolului (diferența e a
 // unei grupări fără cont propriu): fără id nu există fișă, deci nu se pune un
 // link care ar deschide un ecran gol.
-function StocPerCont({ lista, rezumat, sumar }:
-  { lista: DiferentaCont[]; rezumat: Rezumat; sumar: SaftSumar }) {
+function StocPerCont({ lista, rezumat, sumar, inapoi }:
+  { lista: DiferentaCont[]; rezumat: Rezumat; sumar: SaftSumar; inapoi: string }) {
   if (lista.length === 0) return null;
   return (
     <div className="saft__sectiune">
@@ -672,6 +675,7 @@ function StocPerCont({ lista, rezumat, sumar }:
                       contId: c.ContId,
                       dataStart: sumar.DataStart,
                       dataEnd: sumar.DataEnd,
+                      inapoi,
                     })}
                     >
                       {c.Cont}

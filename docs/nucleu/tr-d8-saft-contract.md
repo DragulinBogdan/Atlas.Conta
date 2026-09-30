@@ -1883,5 +1883,55 @@ Unealta se compune din `ModelCheck --perf-saft`, `PerfSaft.cs` și
 `CapturaSql.Masoara` (durata și rândurile pe comandă, cu parametrii pentru
 EXPLAIN). Experimentele de transport folosesc `MODELCHECK_CONEXIUNE_EXTRA`.
 Rularea: `run-verificari/perf-saft-20260930-162802`, toate criteriile OK.
+Criteriul pe `Postare` măsoară rândurile transferate, nu scanarea de pe
+server. Planurile arată că balanța (inițialul de cont, comun L și S)
+scanează istoricul pe server: un rând pe cont, dar 2.243 → 4.163 de postări
+de la m = 6 la m = 12. Cauza e regula TR-D8 pentru citirile securizate, care
+nu folosesc snapshot-ul. Nu e N+1 și nici transfer de istoric, deci nu
+blochează B8, dar e numită **SAFT-r4**: cu accesul complet verificat
+(SAF-D4), balanța SAF-T poate porni din snapshot.
 Integrala e verde pe ambele profiluri după corecția din `Componente`:
 `run-verificari/20260930-163341-762`.
+
+### B8-R4 — certificarea finală, HTTP și pagina (pasul 4, 2026-09-30)
+
+**Certificarea.** Integrala e verde pe ambele profiluri (bugetar 3.269 /
+privat 4.470): `run-verificari/20260930-165747-186`. Ea cuprinde:
+
+- L pe lunile 1–3 și luna fără rulaj (SC-SAFT-24);
+- S pe ianuarie, februarie și martie (SC-SAFT-49): XSD v249 și DUK
+  J2.2.18, fără atenționări;
+- D16-V3/D17-V3 pe cub.
+
+Manifestele sunt în `tmp/atlas-saft/{s0,s3}-*/manifest-d406.json` din
+același director. Pinurile S0 (nomenclatorul `050508BF…`, validatorul
+`197FD169…`) sunt neschimbate după rulare, deci DUK nu s-a auto-actualizat.
+
+**HTTP**, pe un singur host izolat (5091, baza `…Privat.SaftS3Http`), după
+schimbarea din `SaftAcces`:
+
+- `saft-acces.py`: 7 PASS;
+- `saft-stocuri.py`: 10 PASS;
+- `fiscal-cub.py`: 22 PASS;
+- `refuzuri.ps1`: 294/294.
+
+Log-urile sunt în `run-verificari/saft-b8-http/`.
+
+**Pagina (B8-D5), verificată în browser** (Vite pe 5188, hostul izolat,
+fixture prin API și SQL, curățat fără reziduu):
+
+- butonul „Descarcă XML” e inactiv cât sumarul are refuzuri, cu titlul
+  explicativ (`run-verificari/saft-b8-ui-refuz-buton-inactiv.png`, cu
+  `SAFT_CATEGORIE_LIPSA` pe bandă);
+- drill-down-ul S3 → fișa 371 poartă `inapoi`, iar fișa arată
+  „Înapoi la SAF-T” și revine la luna și felul de pe care a plecat;
+  parametrul nu ajunge în cererea către API și se acceptă numai ca rută
+  internă;
+- lista 403 (`SaftAcces.Lipsuri`) numește întâi tipurile citite de secțiune,
+  în ordinea lor. Frunzele TPH ale unei tabele cu baza restricționată nu se
+  mai enumeră, și nici membrii restricționați pe bază. Pentru `User`, L
+  începe cu „Postare, Tranzactie, Document…”, iar S își numește propriile
+  tipuri (`PoliticaMiscareSaft`, `SoldPerioadaStoc`). O restricție numai pe
+  `Partener` rămâne numită `Partener` (proba HTTP).
+
+Rămâne pasul 5: review-ul advers al feliei (B8-D6).
