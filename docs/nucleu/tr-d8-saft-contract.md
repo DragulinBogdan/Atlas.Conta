@@ -1935,3 +1935,139 @@ fixture prin API și SQL, curățat fără reziduu):
   `Partener` rămâne numită `Partener` (proba HTTP).
 
 Rămâne pasul 5: review-ul advers al feliei (B8-D6).
+
+### B8-RV — review advers Codex (2026-09-30)
+
+**Pe `8172f93`, B8-D6 rămâne deschis cu trei constatări P2.**
+[Raportul și probele](tr-d8-saft-b8-review-codex.md):
+
+- **B8-RV1:** clasificatorul A/B acceptă cod FCT 10 → 80 și ASM
+  −3,33 → −3,32 când cubul cere −3,34. Martorii trebuie să limiteze
+  diferențele la regula explicată, apoi raportul final se reverifică.
+- **B8-RV2:** D18-V1 filtrează recalculul după conturile din export;
+  omiterea celor trei poziții 371 dintr-o scenă cu 12 poziții trece.
+  Domeniul oracolului trebuie determinat independent.
+- **B8-RV3:** șase puncte din matrice, procesul rece, setul de lucru și
+  ASM lipsesc; timpul fără SQL și toleranța de 50% la alocări schimbă
+  criteriile aprobate. B8-Q3 nu aprobă aceste derogări. B8-D3 rămâne ținta
+  până la un amendament explicit al owner-ului.
+
+Integrala pe HEAD: 3.269 bugetar / 4.470 privat, zero FAIL
+(`run-verificari/20260930-200732-448`). Probele adverse confirmă cele trei
+contraexemple; coerența L↔S trece în lunile 1–3. După restaurarea surselor,
+scenele SAFT trec pe ambele profiluri (`run-verificari/20260930-201858-800`).
+HTTP pe același host propriu: 7 L / 10 S / 22 fiscale / 294 refuzuri, toate
+PASS; numerele de rânduri din tabelele inventariate sunt identice înainte/după.
+Aceste rezultate nu închid constatările; S0–S3 rămân închise.
+
+### B8-RV3-P — condițiile noii măsurări, fixate înaintea ei (2026-09-30)
+
+B8-D3 rămâne ținta, cu criteriile aprobate. Precizările din B8-R3 care
+schimbau criteriul se retrag: timpul fără SQL, toleranța de 50% la alocări
+și scara redusă. Rularea anterioară (`perf-saft-20260930-162802`) rămâne
+numai ca istoric.
+
+- **Matricea:** k ∈ {1, 4, 16, 64} × m ∈ {0, 6, 12}, L și S. Punctul
+  k = 256 iese. Unitatea cuprinde și ASM (consumă 1 din lotul FCT).
+- **Rece / cald:** fiecare punct (k, m, modul) rulează într-un proces-copil
+  nou, cu pool gol și JIT rece. Prima rulare este „rece”, a doua, în același
+  proces, este „cald”. Criteriile se evaluează pe ambele faze. În procesul
+  nou, captura SQL cere `LoggingCacheTime = 0`: EF ține în cache 1 s
+  starea „diagnostic activ”, iar exportul rece nu emitea evenimente.
+- **Vârful setului de lucru:** `PeakWorkingSet64` al procesului-copil. Vârful
+  gestionat eșantionat rămâne alături.
+- **Planurile:** `EXPLAIN (ANALYZE, BUFFERS)` pe toate interogările exportului,
+  la k = 64 pe fiecare m (deci și la k = 64, m = 12: alocarea Payments și
+  Opening S).
+- **Criterii blocante (textul B8-D3):**
+  - numărul comenzilor SQL este constant pe fază, peste toate punctele;
+  - Opening S nu citește istoricul: rândurile din `Postare` nu cresc cu m
+    (25%), iar cele din snapshot sunt ≤ 2 × pozițiile, pe fiecare k și fază.
+    Forma e cea din B8-R3; review-ul n-a contestat-o;
+  - durata totală a exportului (cu SQL) și alocările cresc cel mult liniar:
+    f(4k) ≤ 1,25 × 4 × f(k) pe fiecare pas, pe fiecare m, modul și fază;
+  - la k = 64 exportul este integral, pe fiecare m: fără refuzuri, XML scris,
+    XSD v249 valid, apoi DUK J2.2.18 fără atenționări.
+- **Suplimentar, neblocant:** execuția pe server ≤ 100 ms la k = 64.
+- **Topologia (constatare, nu criteriu).** Postgres-ul de dezvoltare (5444)
+  este un container Linux în spatele proxy-ului de porturi Docker Desktop
+  (`com.docker.backend` / `wslrelay`). Pe această cale, o cerere
+  parametrizată de ~5–40 KB plătește ~43 ms, iar în rețeaua containerului
+  aceleași interogări nu au salt. Măsurat pe `unnest($1::uuid[])`:
+  - prin proxy: 200 de UUID-uri = 0,5 ms; 256–2.000 = 43–44 ms;
+    3.000 = 4,7 ms; 4.000 = 6,3 ms;
+  - aceeași interogare textuală, din container, pe 127.0.0.1: 0–3 ms pe
+    toată scara;
+  - dovezile: `run-verificari/saft-b8-rv3-transport/`.
+
+  Pragul aparține proxy-ului mașinii de dezvoltare. Nu ține de export, de
+  Npgsql sau de Postgres (B8-R3 îl atribuise buclei locale Windows). Deci
+  `--perf-saft` rulează același binar, pe aceeași bază, într-un container
+  `dotnet/aspnet:10.0` din rețeaua containerului Postgres
+  (`scripts/perf-saft-container.ps1`). DUK, care are JRE numai pentru
+  Windows, validează apoi pe Windows XML-urile calde de la k = 64
+  (`--perf-saft-duk`).
+- **Oprirea:** un criteriu blocant picat oprește felia (B8-D8). Pragul nu se
+  mută după rulare; o derogare cere amendamentul owner-ului.
+
+### B8-RV3-A — amendamentul owner-ului după prima rulare (2026-09-30)
+
+Prima rulare pe condițiile B8-RV3-P (`run-verificari/perf-saft-20260930-212405`)
+trece toate criteriile, cu o excepție: **S, cald, m = 0, k 16 → 64:
+46 → 236 ms, ×5,1**, peste ×5. Cauza, măsurată: interogarea faptelor fiscale
+(`Cub/Citiri/Fiscale.Fapte`) durează pe server 60,5 ms. Postgres estimează
+`Tranzactie` la 1 rând (real: 642) și alege un Nested Loop cu 642 de scanări
+pe interval (108.189 de buffere). Scena m = 0 se măsoară la câteva secunde
+după ce purja a golit tabelele și scena le-a reumplut, deci înaintea
+autoanalyze. La m = 6 și m = 12, cu mai multe date, dar cu statistici
+actualizate, aceeași interogare durează 1–3 ms. L la m = 0 arată același
+efect (58,6 ms pe server), dar rămâne în criteriu.
+
+**Owner, 2026-09-30: varianta A.** După construirea fiecărei trepte și
+înaintea măsurării, scena rulează `ANALYZE`, adică starea stabilă pe care
+autovacuum o atinge în producție. Criteriile B8-D3 rămân neschimbate;
+matricea se rerulează integral. Riscul real devine restanța **SAFT-r5**:
+după o inserare masivă, unealta de migrare/import rulează `ANALYZE`.
+Variantele respinse: întărirea citirii fiscale (hot-path-ul feliei 103,
+comun cu D300/D394, în afara B8) și păstrarea criteriului picat.
+
+### B8-RV-C — constatările corectate, în așteptarea reverificării Codex (2026-09-30)
+
+- **B8-RV1.** Clasificatorul (`ddcac79` peste `900cf7b`, branch
+  `tr-d8-saft-ab-rv1`) are martori strânși:
+  - perechea document ↔ conex cumulează pe lot × gestiune × storno × cod, iar
+    documentul purtător are poziția strictă;
+  - S3-R2 cere Q/V nou = exact postările cubului pe document × lot ×
+    gestiune;
+  - S2-D2/D3 verifică fiecare referință și sumă contra împerecherilor datate
+    ≤ capătul lunii `Operare`, cu restul fără referință.
+
+  Mutanții noi sunt respinși: cod 10 → 80, ASM +0,02 (−3,34 → −3,32),
+  referința unei plăți alocate scoasă, 1 mutat între două linii.
+  Integrala pe starea cu ambele rute (worktree, baze `.ClaudeAB`) este verde:
+  `run-verificari/20260930-205445-461`. Rezultatul are aceleași 111 diferențe
+  cu aceleași valori, toate clasificate. Diferă numai identificatorii generați
+  la rulare. [Raportul](tr-d8-saft-ab.md) s-a regenerat.
+- **B8-RV2.** `OracolStocFizic` (ModelCheck) ia domeniul din postările pe lot
+  și din `Cont.CategorieStoc` urcată pe părinți, nu din fișier. Cheia este
+  așteptată dacă are sold sau postări în lună (S3-D4). Cheile se compară în
+  ambele sensuri, cu Opening/Closing. Același oracol rulează:
+  - în D17-V2;
+  - în scena S3, pe ianuarie–martie, cu două conturi raportabile
+    (SC-SAFT-50).
+
+  Mutantul „toate cele 3 poziții 371 omise” e respins și numește 371.
+  SC-SAFT-51 fixează coerența L ↔ S din probele Codex.
+- **B8-RV3.** B8-D3 trece pe criteriile aprobate, în condițiile B8-RV3-P și
+  cu amendamentul B8-RV3-A: `run-verificari/perf-saft-20260930-213218`.
+  [Tabelul și concluziile](../api/p5-perf-masuratori.md#tr-d8-saf-b8-2026-09-30--saf-t-l-și-s-pe-cub-scara-sintetică).
+
+Integrala pe HEAD, pe ambele profiluri: **3.269 bugetar / 4.477 privat**, zero
+FAIL, `run-verificari/20260930-213707-712`.
+
+**Incident de mediu.** O joncțiune `anaf/` în worktree-ul A/B a fost urmată
+de `git worktree remove --force`, iar `anaf/` (gitignored) s-a golit. Au
+fost restaurate kitul DUK (din `D:\temp\duk_SAFT_an_luna`) și nomenclatorul
+(de pe static.anaf.ro), ambele egale cu pinurile SHA-256 din
+`ManifestD406`. Materialele de referință neexecutate (ghidul PDF, extrasele
+`.md`) lipsesc până la re-descărcare.

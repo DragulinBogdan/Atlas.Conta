@@ -1,3 +1,17 @@
+**Review advers B8, 2026-09-30, `8172f93`: deschis, trei constatări P2.**
+Clasificatorul A/B acceptă codul FCT 10 → 80 și un Δ ASM în direcția greșită;
+recalculul D18-V1 acceptă omiterea tuturor pozițiilor unui cont; măsurarea
+perf nu îndeplinește matricea și criteriile B8-D3 aprobate. Integrala trece
+(3.269 bugetar / 4.470 privat), dar nu închide aceste constatări.
+[Probe și condiții de închidere](../tr-d8-saft-b8-review-codex.md).
+**Corectat de Claude (B8-RV-C în contract), în așteptarea reverificării
+Codex:** A/B reverificat cu martori strânși și patru mutanți noi
+(`run-verificari/20260930-205445-461`). SC-SAFT-50 are oracolul D18-V1
+independent de fișier, cu mutantul 371. SC-SAFT-51 fixează coerența L ↔ S.
+Perf-ul B8-D3 trece pe criteriile aprobate
+(`run-verificari/perf-saft-20260930-213218`). Integrala: 3.269 / 4.477,
+`run-verificari/20260930-213707-712`.
+
 **SAF-B8, 2026-09-30 — ruta pe registre scoasă.** Comparațiile A/B ale
 SC-SAFT-15 și SC-SAFT-49 au fost înlocuite de
 [raportul A/B final](../tr-d8-saft-ab.md): 111 diferențe clasificate, cu
@@ -167,6 +181,8 @@ FZ-r3 rămâne deschisă. Detaliile și limitele sunt în review-ul de mai sus.
 | SC-SAFT-47 | BCS operat și stornat în aceeași lună: `BCS-n`, `BCS-n/S`; ASM pe Transfer: `ASM-n/T/20`, `ASM-n/T/70`; două BCS cu același număr → toate mișcările lor pe rezerva `{TranzactieId:N}{cod}`; număr de 34 de caractere → rezerva; două gestiuni cu codul MAG1 → `SAFT_CHEIE_NEINJECTIVA`; `StockAccountNo` = lotul pe toate pozițiile | SAFT-S-CHEI-REFERINTE | S3-D5, SC-SAFT-12 | Verificat (ScenariiSaftStocuri) |
 | SC-SAFT-48 | Host viu, rutele S: Admin și Cititor 200 cu FCT 10 +10/+100 pe 371, `ShipTo` MAG1; restricție de rând/membru pe `Postare` și de rând pe `Partener` → 403 `SAFT_ACCES_INCOMPLET` fără sume; User 403; categorie lipsă → sumar 200 cu refuzul, fișier 422; bugetar neaplicabil; tabelele citite = `SaftAcces.CititeStocuri` | SAFT-S-HTTP | S3-D6, SAF-D4 | Verificat HTTP (`ProbeHttp/saft-stocuri.py`, host izolat) și ScenariiSaftStocuri |
 | SC-SAFT-49 | S pe ianuarie, februarie (Opening din snapshot) și martie (fără mișcări): XSD v249 + DUK J2.2.18 fără atenționări; manifestul leagă linia de postările `(Spatiu, ID)` și poziția de sursele ei (număr + SHA-256); Opening/Closing și codul recalculate independent; mutanți respinși (linie omisă, surse permutate, alt lot, alte surse, ClosingStockValue + 1, alt cod); cusăturile S3-D7 a–d (b și c amendate); A/B pe document × storno × lot × gestiune cu excepții exacte și mutanți (omisiune BCS + storno, diferență de 100); proba duală egală; reexport identic | SAFT-S-CERTIFICARE | S3-D7, S3-D8, S3-RV | Verificat (ScenariiSaftStocuri) |
+| SC-SAFT-50 | S pe ianuarie, februarie și martie: fiecare poziție `PhysicalStock` = recalculul naiv din postările cubului pe (gestiune, lot, cont); domeniul — conturile raportabile și cheile așteptate — vine din postări și din `Cont.CategorieStoc` urcată pe părinți, nu din fișier; cheile egale în ambele sensuri, pe cel puțin două conturi (302, 371); mutantul „toate pozițiile 371 omise” e respins și numește 371 | SAFT-S-D18 | D18-V1, S3-D4, B8-RV2 | Verificat (ScenariiSaftStocuri; D17-V2 prin același oracol) |
+| SC-SAFT-51 | Coerența L ↔ S pe aceeași lună (ianuarie, februarie, martie): pe fiecare cont de stoc al reconcilierii S, soldul net Closing din `Conturi` al lui L = `ClosingBalanta` din S, iar Σ componente = diferența pe cont | SAFT-LS-COERENTA | S3-D7, B8-D6 | Verificat (ScenariiSaftStocuri) |
 
 ## SC-SAFT-15…17 — probe structurale cu rezultate măsurabile
 

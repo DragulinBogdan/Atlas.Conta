@@ -274,11 +274,38 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
         ProbaDuala(ian);
         Perf();
         Certificare((ian, artefactIan), (feb, Xml(feb)), (Export(3), null));
+        OracolSiCoerenta();
 
         ChRefuzuri(bcs2, bcs3);
         CategorieLipsa();
     }
 
+
+    void OracolSiCoerenta() {
+        foreach (var luna in new[] { 1, 2, 3 }) {
+            var (start, capat) = (new DateOnly(An, luna, 1), new DateOnly(An, luna, DateTime.DaysInMonth(An, luna)));
+            var s = Export(luna);
+            var l = CuSpatiu(os => SaftProiectii.SaftPeCub(os, An, luna, Zi(luna, 28)));
+            var d18 = CuSpatiu(os => OracolStocFizic.Compara(os, s, start, capat));
+            Console.WriteLine($"     MĂSURAT (SC-SAFT-50 luna {luna}): {d18}");
+            Verifica("SC-SAFT-50", $"luna {luna}: PhysicalStock = recalculul naiv din cub pe cel puțin două conturi raportabile, "
+                + "cu domeniul din postări și categoria contului, chei egale în ambele sensuri", d18.Ok && d18.Conturi >= 2);
+            if (luna == 1) {
+                var fara371 = System.Text.Json.JsonSerializer.Deserialize<SaftDto>(System.Text.Json.JsonSerializer.Serialize(s));
+                var omise = fara371.StocFizic.RemoveAll(e => e.ProductType == "371");
+                var mutant = CuSpatiu(os => OracolStocFizic.Compara(os, fara371, start, capat));
+                Console.WriteLine($"     MĂSURAT (SC-SAFT-50 mutant, {omise} poziții 371 omise): {mutant}");
+                Verifica("SC-SAFT-50", "mutant: toate pozițiile 371 omise din fișier → recalculul respinge și numește contul lipsă",
+                    omise > 0 && !mutant.Ok && mutant.ConturiLipsa.SequenceEqual(["371"]));
+            }
+            Verifica("SC-SAFT-51", $"luna {luna}: pe fiecare cont de stoc, soldul net Closing din L = soldul contabil al "
+                + "reconcilierii S, iar Σ componente = diferența",
+                s.Rezumat.StocPerCont.Count > 0
+                && s.Rezumat.StocPerCont.All(c => l.Conturi.SingleOrDefault(x => x.ContId == c.ContId) is { } x
+                    && (x.ClosingDebitBalance ?? 0m) - (x.ClosingCreditBalance ?? 0m) == c.ClosingBalanta
+                    && c.Componente.Sum(y => y.Diferenta) == c.Diferenta));
+        }
+    }
 
     void Schimba(Guid nir, decimal q) => Comanda(os => {
         var l = os.GetObjectByKey<NIR>(nir).Detalii.OfType<NirDetaliu>().Single();

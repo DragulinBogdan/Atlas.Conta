@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-29.** [Index](README.md)
+**Actualizat: 2026-09-30.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -182,13 +182,14 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   TVA la încasare pe plăți nu există în cub, iar exportul le refuză. Factura
   în valută se declară în RON, cu avertismentul `FacturaInValuta` (B-r6). Citirea
   alocărilor filtrează postările contabile pe `Unitate`, fără index dedicat.
-  Pe scara sintetică (SAF-B8, până la 256 de unități/lună și 12 luni de
-  istoric) L emite 43 de comenzi SQL și S 26, constant; istoricul nu se
-  citește din `Postare`, iar execuția maximă pe server e 17,7 ms (originile
-  partidelor, FZ-r3). Planul pe volum real rămâne nemăsurat: nu există bază
-  de volum după C102. Interogările cu parametru-tablou de 500–2.000 de
-  identificatori plătesc ~43 ms de transport pe bucla locală Windows (măsurat
-  și cu psycopg); se tratează la gate-ul transversal de perf.
+  Pe scara sintetică (SAF-B8: k ∈ {1, 4, 16, 64} unități/lună × m ∈ {0, 6, 12}
+  luni de istoric, proces rece și cald) L emite 43 de comenzi SQL și S 26,
+  constant. Istoricul nu se citește din `Postare`. Durata și alocările cresc
+  liniar, iar execuția maximă pe server la k = 64 este 5,2 ms. Planul pe volum
+  real rămâne nemăsurat, fiindcă nu există bază de volum după C102 (FZ-r3).
+  După o inserare masivă, până la autoanalyze, citirea faptelor fiscale poate
+  degenera în Nested Loop (SAFT-r5). Pragul de ~43 ms văzut pe mașina de
+  dezvoltare aparține proxy-ului de porturi Docker Desktop, nu produsului.
   Lotul pe două conturi de stoc nu are azi producător; dacă apare, poziția
   îl separă prin `ProductType`, iar garda de injectivitate refuză cheile
   duplicate (SC-SAFT-12 parțial). Balanța SAF-T recitește postările (SAFT-r4).

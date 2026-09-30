@@ -4,6 +4,12 @@ Data: 2026-09-30
 Stare: activă; amendează 073 (delimitarea exportului L) și 074 (cheia și categoria politicii de mișcare S)
 Docs: `docs/nucleu/tr-d8-saft-contract.md` (SAF-B1…B8, S0–S3, B8-R1…R4); `docs/nucleu/scenarii/SAFT.md`; `docs/nucleu/tr-d8-saft-ab.md`
 
+**Starea verificării B8, 2026-09-30:** review-ul Codex pe `8172f93` a
+găsit trei constatări P2 (clasificarea A/B, independența D18-V1, măsurarea
+perf). Toate sunt corectate (B8-RV-C în contract) și așteaptă reverificarea
+Codex. Integrala: 3.269 / 4.477, `run-verificari/20260930-213707-712`.
+[Review-ul](../nucleu/tr-d8-saft-b8-review-codex.md).
+
 ## Regula durabilă
 
 **(a) Cubul este singura sursă a fișierelor L și S.** GL-ul, facturile,
@@ -68,11 +74,13 @@ cifrele și probele rămân în contract.
 - SAFT-r2: mișcările numai valorice și `Cauza` în cheia politicii;
 - SAFT-r3: codurile de diagnostic fără producător;
 - SAFT-r4: balanța din snapshot;
+- SAFT-r5: `ANALYZE` după inserarea masivă (migrare, import);
 - FZ-r3: planul pe volum al alocării Payments;
 - F26-r8: Assets;
 - FZ-r7: reperul `TaxInformation`;
 - TR-r7: bugetarul;
-- pragul de transport al tablourilor mari, la gate-ul transversal de perf.
+- pragul de ~43 ms al cererilor de 5–40 KB aparține proxy-ului de porturi Docker Desktop al
+  mașinii de dezvoltare, nu produsului (B8-RV3-P); gate-ul transversal de perf măsoară fără el.
 
 TR-D8 nu se închide integral: reconcilierea și auditul transversal, bugetul
 de perf și inventarul complet T-r11 își păstrează gate-urile.

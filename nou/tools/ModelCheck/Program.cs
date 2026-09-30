@@ -219,6 +219,25 @@ void PurjaIstoricPerioade(IObjectSpace os, int an) {
         .Where(i => ids.Contains(i.PerioadaId))).Executa();
 }
 
+// SAF-B8 D3: procesul-copil al unui punct perf (rece = proces nou, pool gol) și DUK-ul separat pe XML-urile lui.
+if (args.Contains("--perf-saft-masura")) {
+    var i = Array.IndexOf(args, "--perf-saft-masura");
+    var punct = new PerfSaft.Punct(int.Parse(args[i + 1]), int.Parse(args[i + 2]), int.Parse(args[i + 3]), int.Parse(args[i + 4]),
+        args[i + 5], args[i + 6] == "1");
+    using var providerPerf = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
+        (builder, _) => builder.UseNpgsql(connectionString).UseChangeTrackingProxies().UseObjectSpaceLinkProxies().UseLazyLoadingProxies()
+            .ConfigureLoggingCacheTime(TimeSpan.Zero));
+    var masuri = PerfSaft.MasoaraInProces(() => providerPerf.CreateObjectSpace(), punct, args[i + 7], Check);
+    Console.WriteLine(PerfSaft.Json(masuri));
+    Rezumat();
+    return;
+}
+if (args.Contains("--perf-saft-duk")) {
+    PerfSaft.ValideazaDuk(args[Array.IndexOf(args, "--perf-saft-duk") + 1], Check);
+    Rezumat();
+    return;
+}
+
 // D10 — disciplina migrațiilor aplicată codegen-ului (43d): canonic e artefactul
 // COMIS, unealta doar verifică. Dacă `metadata.json` există și nu mai corespunde
 // modelului (caption adăugat, enum extins, DefaultProperty mutat), rularea
@@ -667,11 +686,25 @@ if (args.Contains("--perf-saft")) {
     var directorPerf = Environment.GetEnvironmentVariable("PERF_SAFT_DIR")
         ?? Path.Combine(Duk.DirectorTemporar(), $"perf-saft-{DateTime.UtcNow:yyyyMMdd-HHmmss}");
     Directory.CreateDirectory(directorPerf);
+    List<PerfSaft.Masura> MasoaraProces(PerfSaft.Punct p) {
+        var psi = new ProcessStartInfo(Environment.ProcessPath!) { RedirectStandardOutput = true, UseShellExecute = false };
+        foreach (var a in new[] { typeof(PerfSaft).Assembly.Location, "--perf-saft-masura", $"{p.Istoric}", $"{p.An}", $"{p.Luna}",
+                     $"{p.Unitati}", p.Modul, p.Planuri ? "1" : "0", directorPerf, "privat" })
+            psi.ArgumentList.Add(a);
+        using var copil = Process.Start(psi)!;
+        List<PerfSaft.Masura> masuri = null;
+        for (string linie; (linie = copil.StandardOutput.ReadLine()) != null;) {
+            if (linie.StartsWith(PerfSaft.PrefixJson, StringComparison.Ordinal)) masuri = PerfSaft.DinJson(linie);
+            else if (linie.StartsWith("     ") || linie.StartsWith("FAIL")) Console.WriteLine(linie);
+        }
+        copil.WaitForExit();
+        Check($"SAF-B8-D3: procesul de măsurare {p.Modul} m{p.Istoric} k{p.Unitati} se încheie fără eșec", copil.ExitCode == 0 && masuri != null);
+        return masuri ?? [];
+    }
     var masuriPerf = new List<PerfSaft.Masura>();
-    foreach (var (anPerf, istoricPerf, unitatiPerf, trepte) in new[] {
-                 (2050, 0, 0, new[] { 1, 4, 16, 64, 256 }), (2052, 6, 16, new[] { 16 }), (2054, 12, 16, new[] { 16 }) }) {
+    foreach (var (anPerf, istoricPerf, unitatiPerf) in new[] { (2050, 0, 0), (2052, 6, 16), (2054, 12, 16) }) {
         var scenaPerf = new PerfSaft(() => provider.CreateObjectSpace(), Check, (os, an, luna) => InchideAcceptTot(os, an, luna),
-            anPerf, istoricPerf, unitatiPerf, trepte, directorPerf, planuri: true);
+            anPerf, istoricPerf, unitatiPerf, [1, 4, 16, 64], MasoaraProces);
         var ceasPerf = Stopwatch.StartNew();
         scenaPerf.Ruleaza();
         masuriPerf.AddRange(scenaPerf.Masuri);
@@ -13881,36 +13914,12 @@ void VerificaSaftStocuri(bool privat) {
     }
 
     // ---------------- D18-V1: trecerea UNICĂ peste istoric == recalcularea naivă ----------------
-    // Felia 18, pasul 1 (D18-D1): deschiderea, închiderea și soldurile pe
-    // registrele neraportate ies dintr-un singur agregat cu sume condiționate.
-    // Oracolul de aici e cel mai prost algoritm posibil: TOATE rândurile de
-    // registru ale scenei citite în memorie, sumate rând cu rând, per capăt.
     {
-        var conturiStoc = saft.StocFizic.Select(e => e.ContId).Distinct().ToList();
-        var postariNaiv = os.GetObjectsQuery<Atlas.Conta.BackOffice.Module.Cub.Postare>()
-            .Where(p => p.Unitate != null && p.Gestiune != null && p.Carte == Atlas.Conta.Nucleu.Carte.Contabil
-                && conturiStoc.Contains(p.Cont) && p.Data <= pEnd)
-            .Select(p => new { Lot = p.Unitate.Value, Gestiune = p.Gestiune.Value, p.Cont, p.Data, p.Cantitate,
-                Deschidere = p.Tranzactie.Fel == Atlas.Conta.Nucleu.FelTranzactie.Deschidere,
-                Valoare = p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : -p.Valoare })
-            .ToList();
-        var deschidereNaiv = postariNaiv.Where(p => p.Data < pStart || p.Deschidere)
-            .GroupBy(p => (p.Gestiune, p.Lot, p.Cont)).ToDictionary(g => g.Key, g => (g.Sum(p => p.Cantitate), g.Sum(p => p.Valoare)));
-        var inchidereNaiv = postariNaiv
-            .GroupBy(p => (p.Gestiune, p.Lot, p.Cont)).ToDictionary(g => g.Key, g => (g.Sum(p => p.Cantitate), g.Sum(p => p.Valoare)));
-        var intrariDiferiteNaiv = saft.StocFizic.Count(e =>
-            (e.OpeningQuantity, e.OpeningValue) != deschidereNaiv.GetValueOrDefault((e.RepartitorId, e.LotId, e.ContId))
-            || (e.ClosingQuantity, e.ClosingValue) != inchidereNaiv.GetValueOrDefault((e.RepartitorId, e.LotId, e.ContId)));
-        var cheiFisier = saft.StocFizic.Select(e => (e.RepartitorId, e.LotId, e.ContId)).ToHashSet();
-        var cheiLipsaNaiv = inchidereNaiv.Keys.Concat(deschidereNaiv.Keys).Distinct()
-            .Count(k => !cheiFisier.Contains(k)
-                && (deschidereNaiv.GetValueOrDefault(k) != (0m, 0m) || inchidereNaiv.GetValueOrDefault(k) != (0m, 0m)));
-        Console.WriteLine($"     MĂSURAT (D18-V1 pe cub): {postariNaiv.Count} postări pe lot ≤ {pEnd:yyyy-MM-dd} sumate naiv; "
-            + $"{saft.StocFizic.Count} intrări de stoc fizic, {intrariDiferiteNaiv} diferite, {cheiLipsaNaiv} chei cu sold lipsă.");
+        var d18 = OracolStocFizic.Compara(os, saft, pStart, pEnd);
+        Console.WriteLine($"     MĂSURAT (D18-V1 pe cub): {d18}");
         Check("D18-V1 (pe cub) Opening/Closing al fiecărei intrări `PhysicalStock` == suma naivă a postărilor cubului pe "
-            + "(gestiune, lot, cont), cu deschiderea din lună în Opening (SC-SAFT-45), iar nicio cheie cu sold nu lipsește; "
-            + "exportul citește snapshot-ul, recalculul de aici nu",
-            intrariDiferiteNaiv == 0 && cheiLipsaNaiv == 0 && saft.StocFizic.Count > 0 && postariNaiv.Count > 0);
+            + "(gestiune, lot, cont), cu deschiderea din lună în Opening (SC-SAFT-45); cheile așteptate — domeniul din postări "
+            + "și categoria contului, nu din fișier — coincid cu cele din fișier în ambele sensuri (B8-RV2)", d18.Ok);
     }
 
     // ---------------- Antetul ----------------

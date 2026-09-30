@@ -830,95 +830,150 @@ demonstrată: un cost unic per proces.
 
 ## TR-D8 SAF-B8 (2026-09-30) — SAF-T L și S pe cub, scara sintetică
 
-Contract: [B8-D3 și B8-R3](../nucleu/tr-d8-saft-contract.md). Comanda:
-`ModelCheck --perf-saft privat`, cu `MODELCHECK_BAZA_SUFIX` pe o bază proprie
-și `PERF_SAFT_DIR` pentru artefacte. Rularea din tabel este
-`run-verificari/perf-saft-20260930-162802`: XML-uri, planuri
-`EXPLAIN (ANALYZE, BUFFERS)` și `perf.log`. Baza este
-`Atlas.Conta.ModelCheck.Privat.ClaudeS3`, pe localhost:5444 (Windows).
+Contract: [B8-D3, B8-RV3-P și B8-RV3-A](../nucleu/tr-d8-saft-contract.md). Rularea
+care închide B8-D3 este `run-verificari/perf-saft-20260930-213218`: XML-uri,
+planuri `EXPLAIN (ANALYZE, BUFFERS)` la k = 64 pe fiecare m, `perf.log`,
+`duk.log`, `rulare.json` (commit, hash DLL). Baza este
+`Atlas.Conta.ModelCheck.Privat.ClaudeS3`. Comanda este
+`nou/tools/ModelCheck/scripts/perf-saft-container.ps1`: `ModelCheck --perf-saft`
+rulează într-un container `dotnet/aspnet:10.0`, în rețeaua containerului
+Postgres, apoi `--perf-saft-duk` rulează pe Windows.
+
+**De ce în container.** Postgres-ul de dezvoltare (5444) stă în spatele
+proxy-ului de porturi Docker Desktop (`wslrelay` / `com.docker.backend`). Pe
+această cale, o cerere parametrizată de ~5–40 KB plătește ~43 ms. Măsurat pe
+`unnest($1::uuid[])`:
+
+- 200 de UUID-uri: 0,5 ms;
+- 256–2.000: 44 ms;
+- 3.000–4.000: 5–9 ms.
+
+În rețeaua containerului, aceeași interogare durează 1–3,7 ms pe toată scara
+(`run-verificari/saft-b8-rv3-transport/`). Pragul ține de mașina de
+dezvoltare, nu de export, de Npgsql sau de Postgres. Rularea din 30.09 16:28
+îl atribuise greșit buclei locale Windows.
 
 **Scena.** O unitate cuprinde:
 
 - FCT (stoc 10 × 10 + serviciu 50, N21) cu NIR conex;
 - PLT 70, legată 50 de FCT;
-- BCS 2, BTR 1 și DSC 1 din lotul FCT;
+- BCS 2, BTR 1, DSC 1 și ASM 1 din lotul FCT;
 - FCL 100 cu INC 60 legată.
 
-Luna măsurată are k unități. Istoricul are m luni închise × 16 unități, plus
-un lot „lung” consumat în fiecare lună. Totul se face prin comenzi reale;
-scena se purjează la final.
+Luna măsurată are k ∈ {1, 4, 16, 64} unități. Istoricul are m ∈ {0, 6, 12}
+luni închise × 16 unități, plus un lot „lung” consumat în fiecare lună. Totul
+se face prin comenzi reale; scena se purjează la final. După fiecare treaptă
+și înaintea măsurării rulează `ANALYZE` (B8-RV3-A; fără el, scena m = 0 se
+măsura pe statistici de tabelă goală, vezi mai jos).
 
-**Fazele.** „Rece” golește pool-ul Npgsql și rulează GC; JIT-ul rămâne cald,
-fiindcă procesul nu se repornește. „Cald” este a doua rulare.
+**Fazele.** Fiecare punct (k, m, modul) rulează într-un proces-copil nou.
+„Rece” este prima rulare, cu pool gol, JIT rece și modelul EF construit
+atunci. „Cald” este a doua rulare, în același proces. Captura SQL a
+procesului nou cere `LoggingCacheTime = 0`: EF ține în cache 1 s starea
+„diagnostic activ”, iar fără setare exportul rece nu emite evenimente.
 
 **Măsurile:**
 
-- `ms` = exportul complet (proiecția, fără XML); `ms SQL` = Σ duratelor
+- `ms` = exportul complet, cu SQL (proiecția, fără XML); `ms SQL` = Σ duratelor
   comenzilor;
 - rândurile citite din `DataReaderClosing`;
-- octeții alocați prin `GC.GetTotalAllocatedBytes`; vârful gestionat
-  eșantionat la 2 ms;
-- XML scris pe disc; DUK măsurat separat, numai la punctele cu planuri.
+- octeții alocați (`GC.GetTotalAllocatedBytes`);
+- vârful gestionat, eșantionat la 2 ms;
+- vârful setului de lucru al procesului (`PeakWorkingSet64`);
+- XML-ul scris pe disc, validat XSD în proces; DUK separat, la k = 64.
 
-| m | k | modul | faza | ms | comenzi | ms SQL | rânduri | alocați MiB | vârf MiB | XML KiB | ms XML | ms DUK | tranzacții | facturi | plăți | mișcări | poziții | rânduri Postare | rânduri snapshot |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 0 | 1 | L | cald | 36 | 43 | 21 | 958 | 1,9 | 73,7 | 45 | 1 | 0 | 8 | 3 | 2 | 0 | 0 | 68 | 0 |
-| 0 | 4 | L | cald | 35 | 43 | 22 | 1168 | 2,3 | 68,3 | 130 | 1 | 0 | 26 | 9 | 8 | 0 | 0 | 191 | 0 |
-| 0 | 16 | L | cald | 35 | 43 | 26 | 2008 | 3,8 | 72,0 | 471 | 6 | 0 | 98 | 33 | 32 | 0 | 0 | 683 | 0 |
-| 0 | 64 | L | cald | 323 | 43 | 299 | 5368 | 11,2 | 83,7 | 1833 | 5 | 0 | 386 | 129 | 128 | 0 | 0 | 2651 | 0 |
-| 0 | 256 | L | rece | 816 | 43 | 717 | 18808 | 59,4 | 112,4 | 7287 | 21 | 0 | 1538 | 513 | 512 | 0 | 0 | 10523 | 0 |
-| 0 | 256 | L | cald | 786 | 43 | 706 | 18808 | 59,2 | 119,1 | 7287 | 15 | 2284 | 1538 | 513 | 512 | 0 | 0 | 10523 | 0 |
-| 6 | 16 | L | cald | 36 | 43 | 27 | 1998 | 3,8 | 112,9 | 464 | 2 | 2149 | 97 | 32 | 32 | 0 | 0 | 678 | 0 |
-| 12 | 16 | L | cald | 35 | 43 | 27 | 1998 | 3,8 | 130,6 | 465 | 2 | 2149 | 97 | 32 | 32 | 0 | 0 | 678 | 0 |
-| 0 | 1 | S | cald | 28 | 26 | 16 | 1486 | 1,8 | 69,8 | 18 | 1 | 0 | 0 | 0 | 0 | 6 | 3 | 37 | 1 |
-| 0 | 4 | S | cald | 23 | 26 | 14 | 1582 | 1,9 | 67,2 | 41 | 1 | 0 | 0 | 0 | 0 | 18 | 9 | 82 | 1 |
-| 0 | 16 | S | cald | 20 | 26 | 14 | 1966 | 2,4 | 68,6 | 132 | 2 | 0 | 0 | 0 | 0 | 66 | 33 | 262 | 1 |
-| 0 | 64 | S | cald | 23 | 26 | 16 | 3502 | 4,8 | 77,4 | 498 | 2 | 0 | 0 | 0 | 0 | 258 | 129 | 982 | 1 |
-| 0 | 256 | S | rece | 273 | 26 | 246 | 9646 | 14,9 | 106,4 | 1965 | 5 | 0 | 0 | 0 | 0 | 1026 | 513 | 3862 | 1 |
-| 0 | 256 | S | cald | 264 | 26 | 243 | 9646 | 14,6 | 111,1 | 1965 | 5 | 2161 | 0 | 0 | 0 | 1026 | 513 | 3862 | 1 |
-| 6 | 16 | S | cald | 24 | 26 | 17 | 2344 | 3,1 | 108,6 | 349 | 1 | 2151 | 0 | 0 | 0 | 65 | 225 | 258 | 291 |
-| 12 | 16 | S | cald | 27 | 26 | 19 | 2728 | 3,8 | 129,3 | 569 | 2 | 2152 | 0 | 0 | 0 | 65 | 417 | 258 | 579 |
+| m | k | modul | faza | ms | comenzi | ms SQL | rânduri | alocați MiB | vârf gestionat MiB | vârf set lucru MiB | XML KiB | ms XML | tranzacții | facturi | plăți | mișcări | poziții | rânduri Postare | rânduri snapshot | server max ms |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 1 | L | rece | 613 | 43 | 38 | 962 | 24.8 | 31.7 | 197.8 | 44 | 15 | 8 | 3 | 2 | 0 | 0 | 68 | 0 |  |
+| 0 | 1 | L | cald | 42 | 43 | 21 | 962 | 2.4 | 29.1 | 202.8 | 44 | 12 | 8 | 3 | 2 | 0 | 0 | 68 | 0 |  |
+| 0 | 4 | L | rece | 603 | 43 | 37 | 1172 | 25.1 | 31.6 | 197.8 | 127 | 43 | 26 | 9 | 8 | 0 | 0 | 191 | 0 |  |
+| 0 | 4 | L | cald | 40 | 43 | 21 | 1172 | 2.4 | 29.8 | 202.8 | 127 | 10 | 26 | 9 | 8 | 0 | 0 | 191 | 0 |  |
+| 0 | 16 | L | rece | 636 | 43 | 43 | 2012 | 26.7 | 31.7 | 198.0 | 459 | 34 | 98 | 33 | 32 | 0 | 0 | 683 | 0 |  |
+| 0 | 16 | L | cald | 53 | 43 | 24 | 2012 | 4.0 | 33.9 | 206.8 | 459 | 24 | 98 | 33 | 32 | 0 | 0 | 683 | 0 |  |
+| 0 | 64 | L | rece | 707 | 43 | 50 | 5372 | 34.3 | 32.9 | 201.9 | 1787 | 94 | 386 | 129 | 128 | 0 | 0 | 2651 | 0 |  |
+| 0 | 64 | L | cald | 73 | 43 | 31 | 5372 | 11.6 | 37.1 | 213.4 | 1787 | 122 | 386 | 129 | 128 | 0 | 0 | 2651 | 0 | 4.4 |
+| 0 | 1 | S | rece | 506 | 26 | 28 | 1496 | 22.1 | 31.4 | 196.6 | 21 | 11 | 0 | 0 | 0 | 8 | 4 | 39 | 1 |  |
+| 0 | 1 | S | cald | 21 | 26 | 9 | 1496 | 1.9 | 25.7 | 200.9 | 21 | 3 | 0 | 0 | 0 | 8 | 4 | 39 | 1 |  |
+| 0 | 4 | S | rece | 526 | 26 | 29 | 1616 | 22.4 | 31.6 | 196.7 | 54 | 14 | 0 | 0 | 0 | 26 | 13 | 90 | 1 |  |
+| 0 | 4 | S | cald | 23 | 26 | 10 | 1616 | 2.1 | 26.2 | 201.0 | 54 | 5 | 0 | 0 | 0 | 26 | 13 | 90 | 1 |  |
+| 0 | 16 | S | rece | 556 | 26 | 30 | 2096 | 23.2 | 31.5 | 197.1 | 185 | 17 | 0 | 0 | 0 | 98 | 49 | 294 | 1 |  |
+| 0 | 16 | S | cald | 27 | 26 | 11 | 2096 | 2.9 | 28.0 | 201.4 | 185 | 11 | 0 | 0 | 0 | 98 | 49 | 294 | 1 |  |
+| 0 | 64 | S | rece | 568 | 26 | 35 | 4016 | 26.4 | 31.8 | 196.7 | 710 | 41 | 0 | 0 | 0 | 386 | 193 | 1110 | 1 |  |
+| 0 | 64 | S | cald | 42 | 26 | 16 | 4016 | 6.2 | 35.9 | 207.5 | 710 | 34 | 0 | 0 | 0 | 386 | 193 | 1110 | 1 | 1.4 |
+| 6 | 1 | L | rece | 719 | 43 | 49 | 952 | 24.7 | 31.8 | 197.6 | 37 | 14 | 7 | 2 | 2 | 0 | 0 | 63 | 0 |  |
+| 6 | 1 | L | cald | 43 | 43 | 25 | 952 | 2.0 | 28.7 | 202.3 | 37 | 5 | 7 | 2 | 2 | 0 | 0 | 63 | 0 |  |
+| 6 | 4 | L | rece | 625 | 43 | 43 | 1162 | 25.1 | 31.8 | 197.3 | 120 | 18 | 25 | 8 | 8 | 0 | 0 | 186 | 0 |  |
+| 6 | 4 | L | cald | 46 | 43 | 26 | 1162 | 2.4 | 29.8 | 202.2 | 120 | 9 | 25 | 8 | 8 | 0 | 0 | 186 | 0 |  |
+| 6 | 16 | L | rece | 615 | 43 | 47 | 2002 | 26.8 | 31.6 | 197.3 | 453 | 36 | 97 | 32 | 32 | 0 | 0 | 678 | 0 |  |
+| 6 | 16 | L | cald | 52 | 43 | 28 | 2002 | 4.0 | 33.8 | 206.1 | 453 | 25 | 97 | 32 | 32 | 0 | 0 | 678 | 0 |  |
+| 6 | 64 | L | rece | 656 | 43 | 60 | 5362 | 34.3 | 32.8 | 201.7 | 1781 | 100 | 385 | 128 | 128 | 0 | 0 | 2646 | 0 |  |
+| 6 | 64 | L | cald | 74 | 43 | 36 | 5362 | 11.5 | 37.0 | 213.1 | 1781 | 115 | 385 | 128 | 128 | 0 | 0 | 2646 | 0 | 4.5 |
+| 6 | 1 | S | rece | 541 | 26 | 34 | 2066 | 23.0 | 31.8 | 197.0 | 360 | 25 | 0 | 0 | 0 | 7 | 292 | 35 | 387 |  |
+| 6 | 1 | S | cald | 28 | 26 | 13 | 2066 | 2.9 | 28.3 | 201.3 | 360 | 19 | 0 | 0 | 0 | 7 | 292 | 35 | 387 |  |
+| 6 | 4 | S | rece | 534 | 26 | 33 | 2186 | 23.2 | 31.7 | 196.9 | 393 | 27 | 0 | 0 | 0 | 25 | 301 | 86 | 387 |  |
+| 6 | 4 | S | cald | 37 | 26 | 17 | 2186 | 3.3 | 29.0 | 201.4 | 393 | 28 | 0 | 0 | 0 | 25 | 301 | 86 | 387 |  |
+| 6 | 16 | S | rece | 571 | 26 | 36 | 2666 | 24.2 | 31.4 | 196.9 | 525 | 38 | 0 | 0 | 0 | 97 | 337 | 290 | 387 |  |
+| 6 | 16 | S | cald | 37 | 26 | 16 | 2666 | 4.0 | 30.9 | 202.8 | 525 | 32 | 0 | 0 | 0 | 97 | 337 | 290 | 387 |  |
+| 6 | 64 | S | rece | 550 | 26 | 36 | 4586 | 27.4 | 31.4 | 196.5 | 1051 | 57 | 0 | 0 | 0 | 385 | 481 | 1106 | 387 |  |
+| 6 | 64 | S | cald | 62 | 26 | 19 | 4586 | 7.2 | 37.4 | 208.8 | 1051 | 57 | 0 | 0 | 0 | 385 | 481 | 1106 | 387 | 3.7 |
+| 12 | 1 | L | rece | 649 | 43 | 48 | 952 | 24.9 | 31.8 | 197.7 | 37 | 13 | 7 | 2 | 2 | 0 | 0 | 63 | 0 |  |
+| 12 | 1 | L | cald | 44 | 43 | 26 | 952 | 2.0 | 28.8 | 202.4 | 37 | 5 | 7 | 2 | 2 | 0 | 0 | 63 | 0 |  |
+| 12 | 4 | L | rece | 643 | 43 | 48 | 1162 | 25.1 | 31.8 | 197.5 | 121 | 24 | 25 | 8 | 8 | 0 | 0 | 186 | 0 |  |
+| 12 | 4 | L | cald | 51 | 43 | 30 | 1162 | 2.4 | 29.7 | 202.3 | 121 | 13 | 25 | 8 | 8 | 0 | 0 | 186 | 0 |  |
+| 12 | 16 | L | rece | 640 | 43 | 50 | 2002 | 26.8 | 31.5 | 197.6 | 453 | 31 | 97 | 32 | 32 | 0 | 0 | 678 | 0 |  |
+| 12 | 16 | L | cald | 60 | 43 | 32 | 2002 | 4.0 | 33.8 | 206.6 | 453 | 32 | 97 | 32 | 32 | 0 | 0 | 678 | 0 |  |
+| 12 | 64 | L | rece | 664 | 43 | 60 | 5362 | 34.2 | 32.7 | 201.9 | 1783 | 103 | 385 | 128 | 128 | 0 | 0 | 2646 | 0 |  |
+| 12 | 64 | L | cald | 81 | 43 | 40 | 5362 | 11.5 | 36.9 | 213.6 | 1783 | 99 | 385 | 128 | 128 | 0 | 0 | 2646 | 0 | 5.2 |
+| 12 | 1 | S | rece | 558 | 26 | 35 | 2642 | 24.2 | 32.0 | 197.0 | 703 | 43 | 0 | 0 | 0 | 7 | 580 | 35 | 771 |  |
+| 12 | 1 | S | cald | 37 | 26 | 16 | 2642 | 3.9 | 31.0 | 205.5 | 703 | 93 | 0 | 0 | 0 | 7 | 580 | 35 | 771 |  |
+| 12 | 4 | S | rece | 618 | 26 | 39 | 2762 | 24.4 | 31.7 | 196.8 | 736 | 70 | 0 | 0 | 0 | 25 | 589 | 86 | 771 |  |
+| 12 | 4 | S | cald | 36 | 26 | 16 | 2762 | 4.1 | 31.5 | 203.1 | 736 | 38 | 0 | 0 | 0 | 25 | 589 | 86 | 771 |  |
+| 12 | 16 | S | rece | 585 | 26 | 41 | 3242 | 25.1 | 32.1 | 197.2 | 867 | 49 | 0 | 0 | 0 | 97 | 625 | 290 | 771 |  |
+| 12 | 16 | S | cald | 39 | 26 | 17 | 3242 | 4.9 | 33.5 | 205.3 | 867 | 39 | 0 | 0 | 0 | 97 | 625 | 290 | 771 |  |
+| 12 | 64 | S | rece | 577 | 26 | 46 | 5162 | 28.7 | 31.5 | 197.4 | 1394 | 96 | 0 | 0 | 0 | 385 | 769 | 1106 | 771 |  |
+| 12 | 64 | S | cald | 80 | 26 | 27 | 5162 | 8.4 | 37.5 | 209.9 | 1394 | 79 | 0 | 0 | 0 | 385 | 769 | 1106 | 771 | 4.9 |
 
-(Rândurile „rece” pentru k < 256 sunt în `perf-saft.md` din director. La k mic
-diferă de „cald” numai prin deschiderea conexiunilor.)
+**Criteriile B8-D3 aprobate, toate OK:**
 
-**Ce arată cifrele:**
+- **Comenzi SQL constante:** 43 pe L, 26 pe S, în toate cele 12 puncte, rece
+  și cald.
+- **Opening S nu citește istoricul.** Rândurile din `Postare` la k fix nu
+  cresc cu m (k = 64: 1.110 / 1.106 / 1.106). Snapshot-ul urmează pozițiile
+  deschise (1 / 387 / 771 rânduri la 193 / 481 / 769 de poziții).
+- **Liniaritate** f(4k) ≤ 1,25 × 4 × f(k), pe durata totală și pe alocări.
+  Pasul cel mai mare, cald:
+  - L m = 0, k 16 → 64: 53 → 73 ms, 4,0 → 11,6 MiB (×2,9);
+  - S m = 12, k 16 → 64: 39 → 80 ms (×2,1).
 
-- **Fără N+1.** L emite 43 de comenzi SQL, iar S 26, în toate punctele (k de
-  la 1 la 256, m de la 0 la 12).
-- **Istoricul nu se citește.** Rândurile din `Postare` rămân constante cu m
-  (L: 683 / 678 / 678; S: 262 / 258 / 258). Snapshot-ul S urmează pozițiile
-  deschise (291 / 579 rânduri la 225 / 417 poziții). Prima rulare a arătat
-  contrariul pe S: defalcarea reconcilierii pe tip de document (S3-D7b)
-  citea tot istoricul pe document (847 de rânduri la m = 12). Corecția e
-  B8-Q3 = A: fereastra lunii, plus „(sold inițial)” din snapshot.
-- **Timpul client e liniar.** Proiecția fără SQL: L 24 → 79 ms, S 7 → 21 ms
-  la k 64 → 256. Alocările cresc cel mult n log n (L ×5,3 la ×4; S ×3,0).
-- **Serverul nu e gâtul.** Execuția maximă a unei interogări la k = 256 este
-  17,7 ms pe L (alocarea Payments pe partide, FZ-r3) și 4,5 ms pe S.
-- **Pragul de transport.** Diferența dintre `ms SQL` și execuția pe server
-  vine de la interogările cu parametru-tablou (`= ANY(@ids)`). Fiecare
-  plătește ~43 ms pe această mașină când tabloul are între ~500 și ~2.000 de
-  UUID-uri. Fenomenul se reproduce identic cu psycopg, deci independent de
-  Npgsql și de codul SAF-T:
-  - 200 de UUID-uri: 0,6 ms;
-  - 500–2.000 de UUID-uri: 44 ms;
-  - 4.000 de UUID-uri: 6 ms.
+  Rece, durata e dominată de pornire (~0,5–0,7 s: modelul EF, JIT) și
+  crește sub 20% pe toată scara.
+- **k = 64 exportat integral pe fiecare m:** fără refuzuri, XSD valid, DUK
+  J2.2.18 fără atenționări pe cele 6 fișiere (~2,2 s fiecare).
+- **Suplimentar:** execuția maximă pe server la k = 64 este 5,2 ms (L) și
+  4,9 ms (S).
 
-  Nemonotonia indică interacțiunea ACK întârziat / buffer pe bucla locală
-  Windows. Cu `Write Buffer Size=65536`, L la k = 64 scade de la 323 la
-  55 ms, dar pragul revine la k = 256. Rezolvarea (buffer, join în loc de
-  tablou, alt transport) ține de gate-ul transversal de perf. Nu e o
-  proprietate a exportului.
-- **DUK:** ~2,2 s pe fișier, independent de volum în intervalul măsurat.
-- **Balanța scanează istoricul pe server.** Soldurile de cont ale ambelor
-  fișiere vin din `ContabilProiectii.Balanta` pe ObjectSpace-ul securizat,
-  care recitește postările (TR-D8 citiri: snapshot-ul contabil servește numai
-  citirile nesecurizate). Interogarea întoarce un rând pe cont, dar scanează
-  `Postare_Contabil` + `Postare_Stoc` întregi (2.243 → 4.163 de rânduri de la
-  m = 6 la m = 12; 2,3 → 3,9 ms). Cum SAF-T cere acces complet (SAF-D4), ar
-  putea porni din snapshot, ca pozițiile S. Restanța **SAFT-r4**, la gate-ul
-  transversal.
+**Statisticile vechi (SAFT-r5).** Prima rulare pe aceleași condiții, dar
+fără `ANALYZE` (`run-verificari/perf-saft-20260930-212405`), a picat într-un
+singur punct: S cald, m = 0, k 16 → 64, 46 → 236 ms. Scena m = 0 se măsoară
+la câteva secunde după purjă și reumplere, înaintea autoanalyze. Postgres
+estimează `Tranzactie` la 1 rând (real: 642). Citirea faptelor fiscale
+(`Cub/Citiri/Fiscale.Fapte`) devine un Nested Loop cu 642 de scanări pe
+interval: 108.189 de buffere, 60,5 ms în loc de 1,4 ms. Riscul e real după
+orice inserare masivă. Unealta de migrare/import va rula `ANALYZE`
+(SAFT-r5).
+
+**Balanța scanează istoricul pe server (SAFT-r4, neschimbat).** Soldurile de
+cont ale ambelor fișiere vin din `ContabilProiectii.Balanta` pe
+ObjectSpace-ul securizat, care recitește postările: un rând întors pe cont,
+dar scanare pe `Postare_Contabil` + `Postare_Stoc`. Cu accesul complet
+verificat (SAF-D4), balanța poate porni din snapshot. Rămâne la gate-ul
+transversal.
+
+**Istoric.** Rularea `perf-saft-20260930-162802` (review Codex B8-RV3) nu
+acoperea matricea aprobată și trecea criteriile doar după precizări făcute
+după măsurare: timpul fără SQL și alocări cu 50%. Precizările s-au retras
+(B8-RV3-P). Pragul ei de ~43 ms era al proxy-ului, iar faza ei „rece”
+rula în același proces.
 
 Pragul absolut și planul pe volum real rămân la gate-ul transversal. Baza de
 volum reală nu există după C102, deci FZ-r3 rămâne activă.

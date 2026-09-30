@@ -1,27 +1,32 @@
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-// SAF-B8 D3: scara sintetică a exporturilor L și S — k unități în luna măsurată, m luni închise de istoric.
+// SAF-B8 D3: scara sintetică a exporturilor L și S — k unități în luna măsurată, m luni închise de istoric;
+// fiecare punct (k, m, modul) se măsoară într-un proces nou: prima rulare e „rece”, a doua „cald”.
 sealed class PerfSaft(Func<IObjectSpace> deschide, Action<string, bool> check, Action<IObjectSpace, int, int> inchide,
-        int an, int istoric, int unitatiIstoric, int[] trepte, string director, bool planuri)
+        int an, int istoric, int unitatiIstoric, int[] trepte, Func<PerfSaft.Punct, IReadOnlyList<PerfSaft.Masura>> masoaraProces)
     : ScenaDocumente(deschide, check, true, inchide, "PERF" + istoric, an) {
 
+    public sealed record Punct(int Istoric, int An, int Luna, int Unitati, string Modul, bool Planuri);
+
     public sealed record Masura(int Istoric, int Unitati, string Modul, string Faza, double Ms, int Comenzi, double MsSql,
-        long Randuri, long Alocati, long VarfGestionat, long OctetiXml, double MsXml, double MsDuk,
-        int Tranzactii, int Facturi, int Plati, int Miscari, int Pozitii, int Refuzuri, long RanduriPostare, long RanduriSnapshot, double MsServerMax = 0);
+        long Randuri, long Alocati, long VarfGestionat, long VarfSetLucru, long OctetiXml, double MsXml, bool XsdValid,
+        int Tranzactii, int Facturi, int Plati, int Miscari, int Pozitii, int Refuzuri, long RanduriPostare, long RanduriSnapshot,
+        double MsServerMax = 0);
 
     static string Tabela(CapturaSql.Comanda c) => CapturaSql.Tabele([c.Text]).FirstOrDefault() ?? "";
 
     public List<Masura> Masuri { get; } = [];
     protected override int UltimulAn => An + 1;
+    int numarProdus;
 
     protected override void Executa() {
         var inainte = CuSpatiu(os => os.GetObjectsQuery<Societate>().Select(x => new {
@@ -72,9 +77,9 @@ sealed class PerfSaft(Func<IObjectSpace> deschide, Action<string, bool> check, A
         var facute = 0;
         foreach (var k in trepte) {
             for (; facute < k; facute++) Unitate(new DateOnly(anM, lunaM, 1 + facute % 27));
+            Comanda(os => ((EFCoreObjectSpace)os).DbContext.Database.ExecuteSqlRaw("ANALYZE"));
             foreach (var modul in new[] { "L", "S" })
-                foreach (var faza in new[] { "rece", "cald" })
-                    Masuri.Add(Masoara(anM, lunaM, k, modul, faza, planuri && k == trepte[^1] && faza == "cald"));
+                Masuri.AddRange(masoaraProces(new Punct(istoric, anM, lunaM, k, modul, k == trepte[^1])));
         }
     }
 
@@ -90,7 +95,19 @@ sealed class PerfSaft(Func<IObjectSpace> deschide, Action<string, bool> check, A
         os.CommitChanges(); return x.ID;
     });
 
-    // O unitate: FCT (stoc + serviciu) cu NIR conex, PLT parțial legată, BCS, BTR, DSC, FCL cu INC legată.
+    Guid Asm(DateOnly d, LinieScena consum) => CuSpatiu(os => {
+        var x = os.CreateObject<Asamblare>(); x.Data = d; x.DataInregistrare = d; x.PredatorId = Magazie; x.PrimitorId = Magazie;
+        var c = os.CreateObject<AsamblareDetaliu>(); c.Document = x; c.Pozitie = 1; c.Directie = DirectieAsamblare.Consum;
+        c.LotId = consum.Lot; c.Cantitate = 1; c.TipMaterialId = os.GetObjectByKey<Produs>(consum.Produs!.Value).TipMaterialId!.Value;
+        var l = os.CreateObject<AsamblareDetaliu>(); l.Document = x; l.Pozitie = 2; l.Directie = DirectieAsamblare.Produs;
+        l.TipMaterialId = Tip(os, Stoc); l.Cantitate = 1; l.PretEvaluare = 10;
+        var p = os.CreateObject<Produs>(); p.Cod = Marcaj + "-ASM" + ++numarProdus; p.Denumire = p.Cod; p.UM = "BUC";
+        p.TipMaterialId = l.TipMaterialId; l.ProdusId = p.ID;
+        l.CreeazaLot(os, p, os.GetObjectByKey<Gestiune>(Magazie));
+        os.CommitChanges(); return x.ID;
+    });
+
+    // O unitate: FCT (stoc + serviciu) cu NIR conex, PLT parțial legată, BCS, BTR, DSC, ASM, FCL cu INC legată.
     void Unitate(DateOnly d) {
         var f = Factura(d, new LinieFctScena(10, 10, "N21"), new LinieFctScena(1, 50, "N21", Stoc: false));
         Dateaza(f.Id, d);
@@ -102,14 +119,19 @@ sealed class PerfSaft(Func<IObjectSpace> deschide, Action<string, bool> check, A
         var bcs = Consum(lot.Lot.Value, 2); Dateaza(bcs, d); Opereaza(bcs);
         var btr = Iesire(true, (lot, 1)).Id; Dateaza(btr, d); Opereaza(btr);
         var dsc = Iesire(false, (lot, 1)).Id; Dateaza(dsc, d); Opereaza(dsc);
+        Opereaza(Asm(d, lot));
         var fcl = Fcl(d, 100); Opereaza(fcl);
         var inc = Trezorerie(true, 60).Id; Dateaza(inc, d); Opereaza(inc);
         Imperecheaza(inc, fcl, 60, d);
     }
 
-    Masura Masoara(int anM, int lunaM, int k, string modul, string faza, bool cuPlanuri) {
-        if (faza == "rece") { NpgsqlConnection.ClearAllPools(); GC.Collect(); GC.WaitForPendingFinalizers(); }
-        using var os = Deschide();
+    // Procesul-copil: aceeași măsurare de două ori — prima e rece (proces nou, pool gol), a doua caldă.
+    public static List<Masura> MasoaraInProces(Func<IObjectSpace> deschide, Punct punct, string director, Action<string, bool> check) =>
+        [Masoara(deschide, punct, "rece", false, director, check), Masoara(deschide, punct, "cald", punct.Planuri, director, check)];
+
+    static Masura Masoara(Func<IObjectSpace> deschide, Punct punct, string faza, bool cuPlanuri, string director, Action<string, bool> check) {
+        var (istoric, anM, lunaM, k, modul) = (punct.Istoric, punct.An, punct.Luna, punct.Unitati, punct.Modul);
+        using var os = deschide();
         var alocatInainte = GC.GetTotalAllocatedBytes(true);
         long varf = 0;
         using var opreste = new CancellationTokenSource();
@@ -132,75 +154,86 @@ sealed class PerfSaft(Func<IObjectSpace> deschide, Action<string, bool> check, A
         var msXml = ceas.Elapsed.TotalMilliseconds;
         opreste.Cancel(); esantionare.Wait();
         var alocati = GC.GetTotalAllocatedBytes(true) - alocatInainte;
-        double msDuk = 0, serverMax = 0;
-        if (cuPlanuri && dto.Refuzuri.Count == 0) {
-            ceas.Restart();
-            var duk = Duk.Valideaza(cale);
-            msDuk = ceas.Elapsed.TotalMilliseconds;
-            Console.WriteLine($"     PERF DUK {modul} m{istoric} k{k}: {(duk.Valid ? "ok" : "RESPINS")} în {msDuk:0} ms");
-            Verifica("SAF-B8-D3", $"XML {modul} la m={istoric}, k={k} validat de DUK", duk.Valid && duk.Avertismente.Count == 0);
-            serverMax = Planuri(os, comenzi, $"perf-planuri-{modul}-m{istoric}-k{k}.txt");
-        }
+        using var proces = Process.GetCurrentProcess();
+        var setLucru = proces.PeakWorkingSet64;
+        var xsd = dto.Refuzuri.Count == 0 && XsdD406.Valideaza(cale).Count == 0;
+        double serverMax = 0;
+        if (cuPlanuri && dto.Refuzuri.Count == 0)
+            serverMax = Planuri(os, comenzi, director, $"perf-planuri-{modul}-m{istoric}-k{k}.txt");
         var m = new Masura(istoric, k, modul, faza, ms, comenzi.Count, comenzi.Sum(c => c.Durata.TotalMilliseconds),
-            comenzi.Sum(c => c.Randuri), alocati, varf, File.Exists(cale) ? new FileInfo(cale).Length : 0, msXml, msDuk,
+            comenzi.Sum(c => c.Randuri), alocati, varf, setLucru, File.Exists(cale) ? new FileInfo(cale).Length : 0, msXml, xsd,
             dto.Jurnale.Sum(j => j.Tranzactii.Count), dto.FacturiEmise.Count + dto.FacturiPrimite.Count, dto.Plati.Count,
             dto.MiscariStoc.Count, dto.StocFizic.Count, dto.Refuzuri.Count,
             comenzi.Where(c => Tabela(c) == "Postare").Sum(c => c.Randuri),
             comenzi.Where(c => Tabela(c).StartsWith("SolduriPerioada")).Sum(c => c.Randuri), serverMax);
         Console.WriteLine($"     MĂSURAT (perf {modul} m{istoric} k{k} {faza}): {m.Ms:0} ms, {m.Comenzi} comenzi / {m.MsSql:0} ms SQL / "
             + $"{m.Randuri} rânduri, alocați {m.Alocati / 1048576.0:0.0} MiB, vârf gestionat {m.VarfGestionat / 1048576.0:0.0} MiB, "
-            + $"XML {m.OctetiXml / 1024.0:0} KiB în {m.MsXml:0} ms; {m.Tranzactii} tranzacții, {m.Facturi} facturi, {m.Plati} plăți, "
+            + $"vârf set de lucru {m.VarfSetLucru / 1048576.0:0.0} MiB, XML {m.OctetiXml / 1024.0:0} KiB în {m.MsXml:0} ms "
+            + $"(XSD {(m.XsdValid ? "valid" : "INVALID")}); {m.Tranzactii} tranzacții, {m.Facturi} facturi, {m.Plati} plăți, "
             + $"{m.Miscari} mișcări, {m.Pozitii} poziții; rânduri din Postare {m.RanduriPostare}, din snapshot {m.RanduriSnapshot}");
         return m;
     }
 
-    // Criteriile B8-D3 peste toate punctele (k, m); tabelul intră în p5-perf-masuratori.md.
+    public const string PrefixJson = "PERF-JSON ";
+    public static string Json(IReadOnlyList<Masura> masuri) => PrefixJson + JsonSerializer.Serialize(masuri);
+    public static List<Masura> DinJson(string linie) => JsonSerializer.Deserialize<List<Masura>>(linie[PrefixJson.Length..]);
+
+    // Criteriile B8-D3, așa cum au fost aprobate, pe matricea k × m; tabelul intră în p5-perf-masuratori.md.
     public static void Evalueaza(List<Masura> toate, Action<string, bool> check, string director) {
-        var cald = toate.Where(m => m.Faza == "cald").ToList();
-        foreach (var modul in new[] { "L", "S" }) {
-            var puncte = cald.Where(m => m.Modul == modul).ToList();
-            check($"SAF-B8-D3 ({modul}): numărul de comenzi SQL nu depinde de k și m "
+        foreach (var modul in new[] { "L", "S" })
+        foreach (var faza in new[] { "rece", "cald" }) {
+            var puncte = toate.Where(m => m.Modul == modul && m.Faza == faza).ToList();
+            check($"SAF-B8-D3 ({modul}, {faza}): numărul de comenzi SQL nu depinde de k și m "
                 + $"([{string.Join(", ", puncte.Select(p => $"m{p.Istoric}k{p.Unitati}:{p.Comenzi}"))}])",
-                puncte.Max(p => p.Comenzi) - puncte.Min(p => p.Comenzi) <= 2);
-            var scara = puncte.Where(p => p.Istoric == 0).OrderBy(p => p.Unitati).ToList();
-            var perechi = scara.Zip(scara.Skip(1)).ToList();
-            bool Liniar(Func<Masura, double> f, double toleranta) =>
-                perechi.All(x => f(x.Second) <= toleranta * f(x.First) * x.Second.Unitati / x.First.Unitati);
-            check($"SAF-B8-D3 ({modul}): timpul client (fără SQL) crește cel mult liniar în k (toleranță 25% pe pas), "
-                + "alocările cel mult n log n (toleranță 50% pe pas) "
-                + $"([{string.Join(", ", scara.Select(p => $"k{p.Unitati}:{p.Ms - p.MsSql:0} ms/{p.Alocati / 1048576.0:0.0} MiB"))}])",
-                perechi.Count > 0 && Liniar(p => p.Ms - p.MsSql, 1.25) && Liniar(p => p.Alocati, 1.5));
-            var maxim = scara.Count > 0 ? scara.Where(p => p.MsServerMax > 0).DefaultIfEmpty(scara[^1]).Last() : null;
-            check($"SAF-B8-D3 ({modul}): la k maxim nicio interogare nu depășește 100 ms pe server (EXPLAIN ANALYZE; "
-                + $"maxim {maxim?.MsServerMax:0.0} ms); pragul de transport al tablourilor mari se raportează separat",
-                maxim is { MsServerMax: > 0 and <= 100 });
-            check($"SAF-B8-D3 ({modul}): exportul complet la k maxim nu are refuzuri", scara.Count > 0 && scara[^1].Refuzuri == 0);
-            var istoric = puncte.Where(p => p.Unitati == puncte.Where(q => q.Istoric > 0).Select(q => q.Unitati).DefaultIfEmpty(-1).First())
-                .OrderBy(p => p.Istoric).ToList();
-            if (modul == "L" && istoric.Count > 1)
-                check("SAF-B8-D3 (L): rândurile citite din `Postare` nu cresc cu m (toleranță 25%) "
-                    + $"([{string.Join(", ", istoric.Select(p => $"m{p.Istoric}: Postare {p.RanduriPostare}, snapshot {p.RanduriSnapshot}"))}])",
-                    istoric.Skip(1).All(p => p.RanduriPostare <= 1.25 * istoric[0].RanduriPostare));
-            if (modul == "S" && istoric.Count > 1) {
-                var baza = istoric[0];
-                check("SAF-B8-D3 (S): Opening citește snapshot-ul — rândurile citite din `Postare` nu cresc cu m (toleranță 25%), "
-                    + "iar cele din snapshot urmează pozițiile deschise "
-                    + $"([{string.Join(", ", istoric.Select(p => $"m{p.Istoric}: Postare {p.RanduriPostare}, snapshot {p.RanduriSnapshot}, poziții {p.Pozitii}"))}])",
-                    istoric.Skip(1).All(p => p.RanduriPostare <= 1.25 * baza.RanduriPostare && p.RanduriSnapshot <= 2 * p.Pozitii));
+                puncte.Count > 0 && puncte.Select(p => p.Comenzi).Distinct().Count() == 1);
+            foreach (var m in puncte.Select(p => p.Istoric).Distinct().Order()) {
+                var scara = puncte.Where(p => p.Istoric == m).OrderBy(p => p.Unitati).ToList();
+                var perechi = scara.Zip(scara.Skip(1)).ToList();
+                bool Liniar(Func<Masura, double> f) =>
+                    perechi.All(x => f(x.Second) <= 1.25 * f(x.First) * x.Second.Unitati / x.First.Unitati);
+                check($"SAF-B8-D3 ({modul}, {faza}, m={m}): durata și alocările cresc cel mult liniar în k, toleranță 25% pe pas "
+                    + $"([{string.Join(", ", scara.Select(p => $"k{p.Unitati}: {p.Ms:0} ms / {p.Alocati / 1048576.0:0.0} MiB"))}])",
+                    perechi.Count == 3 && Liniar(p => p.Ms) && Liniar(p => p.Alocati));
+                var maxim = scara[^1];
+                check($"SAF-B8-D3 ({modul}, {faza}, m={m}): scena k={maxim.Unitati} se exportă integral — fără refuzuri, XML scris, XSD valid",
+                    maxim.Refuzuri == 0 && maxim.OctetiXml > 0 && maxim.XsdValid);
+                if (faza == "cald")
+                    check($"SAF-B8-D3 ({modul}, m={m}, suplimentar): la k={maxim.Unitati} nicio interogare nu depășește 100 ms pe server "
+                        + $"(EXPLAIN ANALYZE; maxim {maxim.MsServerMax:0.0} ms)", maxim.MsServerMax is > 0 and <= 100);
             }
+            if (modul == "S")
+                foreach (var k in puncte.Select(p => p.Unitati).Distinct().Order()) {
+                    var istoric = puncte.Where(p => p.Unitati == k).OrderBy(p => p.Istoric).ToList();
+                    var baza = istoric[0];
+                    check($"SAF-B8-D3 (S, {faza}, k={k}): Opening citește snapshot-ul — rândurile din `Postare` nu cresc cu m "
+                        + "(toleranță 25%), iar cele din snapshot urmează pozițiile deschise "
+                        + $"([{string.Join(", ", istoric.Select(p => $"m{p.Istoric}: Postare {p.RanduriPostare}, snapshot {p.RanduriSnapshot}, poziții {p.Pozitii}"))}])",
+                        istoric.Count == 3 && istoric.Skip(1).All(p => p.RanduriPostare <= 1.25 * baza.RanduriPostare && p.RanduriSnapshot <= 2 * p.Pozitii));
+                }
         }
-        var sb = new StringBuilder("| m | k | modul | faza | ms | comenzi | ms SQL | rânduri | alocați MiB | vârf MiB | XML KiB | ms XML | ms DUK | tranzacții | facturi | plăți | mișcări | poziții | rânduri Postare | rânduri snapshot |\n"
-            + "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n");
-        foreach (var m in toate.OrderBy(m => m.Istoric).ThenBy(m => m.Unitati).ThenBy(m => m.Modul).ThenByDescending(m => m.Faza))
+        var sb = new StringBuilder("| m | k | modul | faza | ms | comenzi | ms SQL | rânduri | alocați MiB | vârf gestionat MiB | vârf set lucru MiB | XML KiB | ms XML | tranzacții | facturi | plăți | mișcări | poziții | rânduri Postare | rânduri snapshot | server max ms |\n"
+            + "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n");
+        foreach (var m in toate.OrderBy(m => m.Istoric).ThenBy(m => m.Modul).ThenBy(m => m.Unitati).ThenByDescending(m => m.Faza))
             sb.Append($"| {m.Istoric} | {m.Unitati} | {m.Modul} | {m.Faza} | {m.Ms:0} | {m.Comenzi} | {m.MsSql:0} | {m.Randuri} | "
-                + $"{m.Alocati / 1048576.0:0.0} | {m.VarfGestionat / 1048576.0:0.0} | {m.OctetiXml / 1024.0:0} | {m.MsXml:0} | {m.MsDuk:0} | "
-                + $"{m.Tranzactii} | {m.Facturi} | {m.Plati} | {m.Miscari} | {m.Pozitii} | {m.RanduriPostare} | {m.RanduriSnapshot} |\n");
+                + $"{m.Alocati / 1048576.0:0.0} | {m.VarfGestionat / 1048576.0:0.0} | {m.VarfSetLucru / 1048576.0:0.0} | {m.OctetiXml / 1024.0:0} | {m.MsXml:0} | "
+                + $"{m.Tranzactii} | {m.Facturi} | {m.Plati} | {m.Miscari} | {m.Pozitii} | {m.RanduriPostare} | {m.RanduriSnapshot} | "
+                + $"{(m.MsServerMax > 0 ? m.MsServerMax.ToString("0.0") : "")} |\n");
         File.WriteAllText(Path.Combine(director, "perf-saft.md"), sb.ToString());
         Console.WriteLine($"     PERF tabel: {Path.Combine(director, "perf-saft.md")}");
     }
 
+    // DUK pe XML-urile calde de la k maxim, separat de export (B8-D3): kitul are JRE numai pentru Windows.
+    public static void ValideazaDuk(string director, Action<string, bool> check) {
+        foreach (var cale in Directory.EnumerateFiles(director, "perf-*-k64-cald.xml").Order()) {
+            var ceas = Stopwatch.StartNew();
+            var duk = Duk.Valideaza(cale);
+            Console.WriteLine($"     MĂSURAT (perf DUK {Path.GetFileName(cale)}): {(duk.Valid ? "ok" : "RESPINS")} în {ceas.Elapsed.TotalMilliseconds:0} ms");
+            check($"SAF-B8-D3: {Path.GetFileName(cale)} validat de DUK, fără atenționări", duk.Valid && duk.Avertismente.Count == 0);
+        }
+    }
+
     // EXPLAIN (ANALYZE, BUFFERS) pe fiecare comandă a exportului, cu parametrii ei; cele mai scumpe primele.
-    double Planuri(IObjectSpace os, List<CapturaSql.Comanda> comenzi, string fisier) {
+    static double Planuri(IObjectSpace os, List<CapturaSql.Comanda> comenzi, string director, string fisier) {
         var ctx = ((EFCoreObjectSpace)os).DbContext;
         var conexiune = ctx.Database.GetDbConnection();
         if (conexiune.State != System.Data.ConnectionState.Open) conexiune.Open();

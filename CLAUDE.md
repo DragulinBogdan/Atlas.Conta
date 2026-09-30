@@ -153,9 +153,9 @@ Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucr
 R6 este implementat și verificat (103h/i, 2026-09-28), cu review advers închis:
 `docs/nucleu/tr-d8-tva-intervale-contract.md`. Proveniența fiscală a ajustărilor
 rămâne delimitată în 103-r2. SAF-T L și S sunt pe cub, cu ruta pe registre
-scoasă și gate-ul final SAF-B8 trecut (decizia 105, branch `tr-d8-saft-b8`,
-review Codex cerut). Urmează reconcilierea, auditul și gate-ul transversal de
-performanță din TR-D8. Felia fiscală
+scoasă. Cele trei constatări P2 ale review-ului final SAF-B8 sunt corectate
+(B8-RV-C) și așteaptă reverificarea Codex (decizia 105, branch `tr-d8-saft-b8`).
+Urmează reconcilierea, auditul și gate-ul transversal de performanță din TR-D8. Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
 `docs/nucleu/scenarii/CITIRI.md`.
