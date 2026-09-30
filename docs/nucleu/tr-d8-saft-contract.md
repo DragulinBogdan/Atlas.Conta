@@ -2071,3 +2071,48 @@ fost restaurate kitul DUK (din `D:\temp\duk_SAFT_an_luna`) și nomenclatorul
 (de pe static.anaf.ro), ambele egale cu pinurile SHA-256 din
 `ManifestD406`. Materialele de referință neexecutate (ghidul PDF, extrasele
 `.md`) lipsesc până la re-descărcare.
+
+### B8-RV-R — reverificare Codex pe `37ac61c` (2026-09-30)
+
+**B8-RV2 și B8-RV3 închise. B8-RV1 rămâne deschis prin B8-RV1.1/P2.**
+[Raportul reverificării](tr-d8-saft-b8-review-codex.md).
+
+- **RV1.1:** la `ddcac79`, martorul perechii acceptă FCT 9/90 + NIR 1/10
+  în loc de FCT 10/100 + NIR fără mișcare. Sunt două diferențe clasificate
+  SAF-B5/S3-R1 și zero perechi neînchise. Codul, lotul, gestiunea, stornoul
+  și totalul sunt păstrate, dar distribuția pe documente este falsă.
+  Martorul trebuie legat de postările reale ale fiecărui document/eveniment,
+  apoi raportul A/B se reverifică. Mutanții inițiali de cod și ASM sunt respinși.
+- **RV2:** cele trei originale lunare trec; 18 mutanți (omitere, duplicare,
+  cheie străină, sumă schimbată) sunt respinși. Oracolul este independent.
+- **RV3:** reproducere proprie `run-verificari/perf-saft-20260930-222637`,
+  `.CodexSaftS3R`: 48 măsurători, toate criteriile trecute, șase seturi de
+  planuri și șase XML-uri k=64 acceptate de DUK fără atenționări. Topologia
+  B8-RV3-P este o condiție explicită a măsurării; `ANALYZE` este acoperit de
+  amendamentul B8-RV3-A. SAFT-r4/r5 și gate-ul transversal rămân.
+
+Integrala proprie: 3.269 bugetar / 4.477 privat, zero FAIL,
+`run-verificari/20260930-221831-487`. Codul de producție nu a fost modificat
+în reverificare; probele adverse sunt temporare. Gate-ul B8 rămâne deschis
+pentru RV1.1, fără redeschiderea S0–S3.
+
+### B8-RV1.1-C — martorul pe document, corectat (2026-09-30)
+
+Clasificatorul `3a4372d` (branch `tr-d8-saft-ab-rv1`, peste `ddcac79`)
+leagă fiecare document al perechii FCT ↔ NIR de postările lui din cub în
+lună. Mișcarea nouă = Σ postărilor documentului pe lot × gestiune × storno,
+iar NIR-ul fără delta are zero. Linia GL nouă = Σ postărilor documentului pe
+contul SAF-T × latură. Totalul cumulat pe pereche × cod rămâne verificat în
+plus.
+
+Mutanți noi, respinși pe fiecare scenă cu ținta lor:
+
+- „recepția împărțită” (FCT 9/90 + NIR 1/10, totalul păstrat): contraexemplul
+  Codex;
+- „GL împărțit” (1 mutat de pe FCT pe NIR pe același cont și latură).
+
+Integrala pe starea cu ambele rute, cu bazele `.ClaudeAB` recreate după o
+rulare căzută a mutantului, este verde: 3.269 / 4.500,
+`run-verificari/20260930-230311-066`. Rezultatul are aceleași 111 diferențe, cu aceleași
+numărători pe clase. [Raportul](tr-d8-saft-ab.md) s-a regenerat.
+

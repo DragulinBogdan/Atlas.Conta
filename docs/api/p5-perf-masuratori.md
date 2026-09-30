@@ -830,6 +830,15 @@ demonstrată: un cost unic per proces.
 
 ## TR-D8 SAF-B8 (2026-09-30) — SAF-T L și S pe cub, scara sintetică
 
+**Reprodus de Codex pe `37ac61c`, 2026-09-30: B8-RV3 închis.**
+`run-verificari/perf-saft-20260930-222637`, baza proprie `.CodexSaftS3R`:
+48 de măsurători (matricea completă, L/S, rece/cald), criteriile trecute,
+43/26 comenzi SQL constante, șase seturi de planuri și șase XML-uri k=64
+acceptate de DUK fără atenționări. Saltul maxim la cald: L ×1,43,
+S ×1,58 (din tabelul rotunjit). Condițiile B8-RV3-P și amendamentul
+B8-RV3-A sunt păstrate; aceasta nu certifică transportul prin proxy-ul
+Windows și nu închide SAFT-r4/r5. [Reverificarea](../nucleu/tr-d8-saft-b8-review-codex.md).
+
 Contract: [B8-D3, B8-RV3-P și B8-RV3-A](../nucleu/tr-d8-saft-contract.md). Rularea
 care închide B8-D3 este `run-verificari/perf-saft-20260930-213218`: XML-uri,
 planuri `EXPLAIN (ANALYZE, BUFFERS)` la k = 64 pe fiecare m, `perf.log`,

@@ -1,5 +1,123 @@
 # SAF-B8 — review advers Codex
 
+## Reverificare pe `37ac61c` (2026-09-30)
+
+**B8-RV2 și B8-RV3 sunt închise. B8-RV1 rămâne deschis prin
+B8-RV1.1 / P2.** Cele două contraexemple inițiale A/B (cod 10 → 80 și
+ASM −3,32 în loc de −3,34) sunt acum respinse. Clasificatorul întărit de
+la `ddcac79` acceptă însă o redistribuire nejustificată a recepției între
+FCT și NIR, dacă totalul perechii rămâne egal.
+
+### B8-RV1.1 / P2 — totalul perechii nu dovedește delta reală a NIR-ului
+
+Loc: `nou/tools/ModelCheck/SaftAb.cs` la **`ddcac79`**, `Miscare`, liniile
+314–325, în special condiția `delta` de la 317. Aceasta cere numai ca
+documentul să fie conexul și să existe linii în ambele DTO-uri. Urmează
+cumularea Q/V pe pereche, lot × gestiune × storno × cod. Verificarea exactă
+`MiscareaCubului(...) == n` este folosită la 329 numai pentru ASM.
+
+Contraexemplul folosește recepția reală 10 × 10 din scena S3 (SC-SAFT-07).
+Registrul NIR poartă 10/100; cubul poartă recepția 10/100 pe FCT și nicio
+postare pe lot pe NIR-ul egal. Pentru verificarea clasificatorului am
+construit două copii controlate ale DTO-ului, păstrând celelalte secțiuni:
+
+| Variantă | FCT Q/V | NIR Q/V | Verdict A/B |
+|---|---|---|---|
+| vechi, poziția recepției din registru | absent | 10/100 | referință |
+| nou, control corect | 10/100 | absent | acceptat: 2 diferențe SAF-B5, 0 perechi neînchise |
+| nou, mutant | **9/90** | **1/10** | **acceptat:** FCT = SAF-B5, NIR = S3-R1, 0 perechi neînchise |
+
+Codul rămâne 10, lotul, gestiunea și stornoul rămân aceleași; totalul
+mișcărilor și PhysicalStock rămân neschimbate. NIR-ul mutant are referință
+distinctă. El inventează totuși o mișcare pe un document care n-a produs-o
+și micșorează recepția FCT. Acest lucru nu este justificat de SAF-B5 sau
+S3-R1. Condițiile noi privind poziția și codul nu îl resping.
+
+Proba execută `LunaNoua`, `Compara`, `Clasa` și `PerechiNeinchise` din
+clasificatorul `ddcac79`, fără modificarea acestuia. Este o probă izolată a
+martorului pe documente reale, nu o nouă rulare completă a exportului vechi
+și nici afirmația că exportul de producție generează acest mutant.
+
+**Închidere:** martorul SAF-B5/S3-R1 trebuie să lege Q/V nou de postările
+reale ale fiecărui document × eveniment × lot × gestiune din lună, inclusiv
+absența mișcării dacă NIR-ul are delta zero. Egalitatea cumulată poate
+rămâne o verificare suplimentară. Adăugați mutantul 9/90 + 1/10, păstrați
+controlul 10/100 + absent și reverificați raportul A/B pe starea cu ambele
+rute. Corecția poate reutiliza martorul exact deja introdus pentru ASM.
+
+### B8-RV2 închis — oracol independent și comparație în ambele sensuri
+
+`OracolStocFizic` își determină domeniul din postări și categoria efectivă
+a contului, independent de export. SC-SAFT-50 trece pe două conturi în
+lunile 1–3. Omiterea contului 371 păstrează cele 22 de postări în oracolul
+din ianuarie și produce exact 3 chei lipsă, cu contul 371 numit.
+
+Am extins verificarea cu șase mutanți în fiecare dintre cele trei luni:
+toate pozițiile omise; contul 371 omis; poziție duplicată; poziție omisă
+și înlocuită cu un duplicat; poziție străină cu sold zero; ClosingValue +1.
+**Toți cei 18 mutanți sunt respinși**, iar cele trei DTO-uri originale trec,
+inclusiv martie fără mișcări. SC-SAFT-51 (coerența L↔S) trece în integrală.
+
+### B8-RV3 închis — reproducere în condițiile contractului amendat
+
+Rulare proprie: `run-verificari/perf-saft-20260930-222637`, baza
+`Atlas.Conta.ModelCheck.Privat.CodexSaftS3R`, scriptul
+`nou/tools/ModelCheck/scripts/perf-saft-container.ps1 -Sufix .CodexSaftS3R`.
+Perf și DUK au exit 0. Auditul artefactelor confirmă:
+
+- toate cele **48 de măsurători**: k={1,4,16,64} × m={0,6,12} × L/S × rece/cald;
+- procese noi pentru fiecare punct/modul, a doua rulare caldă, working set
+  măsurat, ASM în unitatea de volum;
+- 43 comenzi SQL pe L și 26 pe S, constante pe întreaga matrice;
+- criteriile inițiale de durată totală și alocări, toleranță 25%, trecute
+  pe toate scările și pe ambele faze;
+- saltul maxim de timp la cald, din tabelul rotunjit: L 58→83 ms (×1,43),
+  S 26→41 ms (×1,58), sub limita ×5;
+- șase seturi de planuri la k=64, inclusiv m=12; șase XML-uri calde k=64
+  acceptate de DUK J2.2.18 fără atenționări; XSD valid în măsurări.
+
+**Judecata condițiilor.** Topologia B8-RV3-P este legitimă pentru această
+măsurare: elimină proxy-ul local documentat și păstrează durata totală,
+inclusiv SQL. Nu certifică latența căii Windows → portul publicat de Docker.
+`ANALYZE` este o precondiție explicit aprobată prin B8-RV3-A; nu schimbă
+pragurile, iar starea fără statistici actualizate rămâne delimitată prin
+SAFT-r5. SAFT-r4/r5 și gate-ul transversal rămân deschise. Rularea proprie
+confirmă rezultatul în aceste condiții, fără relaxări suplimentare.
+
+### Verificări ale reverificării
+
+- Integrala proprie prin `verifica.ps1 -Suita Integral -Profil Ambele
+  -Sufix .CodexSaftS3R`: **3.269 / 4.477 OK**, zero FAIL, exit 0,
+  `run-verificari/20260930-221831-487`.
+- Proba adversă finală prin `verifica.ps1 -Suita Scenarii -Tip SAFT
+  -Profil Privat -Sufix .CodexSaftS3R`,
+  `run-verificari/20260930-223442-520`: exact **un FAIL așteptat**,
+  `REVIEW-B8-RV-SPLIT`. Controlul direct al sursei pe lot, perechea corectă,
+  respingerea codului și a Δ ASM trec. Cele 18 mutații D18 sunt respinse.
+  Scriptul reproductibil și patch-ul sunt `saft-b8-rv-review/advers.py`
+  și `advers.patch`; helperul nemodificat provine din
+  `git show ddcac79:nou/tools/ModelCheck/SaftAb.cs`.
+- După eliminarea probelor temporare, `verifica.ps1 -Suita Scenarii
+  -Tip SAFT -Profil Ambele -Sufix .CodexSaftS3R`: **42 / 281 OK**, zero
+  FAIL, exit 0, `run-verificari/20260930-223705-537`. DLL-ul revine exact
+  la hash-ul integralei și al perf-ului; `git diff -- nou` este gol.
+- Perf a rulat secvențial după integrală, sub mutex-ul verificărilor, cu
+  același DLL: `870149840E72533CC2918EA15C0CC8CC6C4F2254FCCEBF2C1C879312EC9DEBB7`.
+  Scriptul de lansare, auditul matricei și logurile sunt în
+  `run-verificari/saft-b8-rv-review/`.
+- XSD-ul, cele cinci JAR-uri și nomenclatorul restaurate după incident
+  corespund pinurilor review-ului anterior (`pinuri-restaurate.json`) și
+  rămân identice după toate rulările (`pinuri-dupa.json`).
+- Nu am repetat browserul și suita HTTP: corecția `37ac61c` atinge harness-ul
+  și documentația, fără schimbări de cod de producție față de review-ul B8.
+  Raportul A/B integral regenerat de autor a fost inspectat; reverificarea
+  proprie a clasificatorului este proba izolată descrisă mai sus.
+
+Predarea modifică numai documentația. Directorul neversionat `tmp/` exista
+la începutul reverificării și nu a fost modificat de aceasta. Fără commit.
+
+## Istoricul review-ului inițial pe `8172f93`
+
 Data: 2026-09-30. Bază: `3461636`; HEAD revizuit: `8172f93d3600077a199a0728d334f8679ebc06a3`
 (`tr-d8-saft-b8`). Contract: [B8-D1…D8](tr-d8-saft-contract.md#b8--gate-ul-final-saf-t-contract-pentru-aprobare-2026-09-30).
 

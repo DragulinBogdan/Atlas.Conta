@@ -1,3 +1,14 @@
+**Reverificare B8 pe `37ac61c`, 2026-09-30: RV2 și RV3 închise;
+RV1 rămâne deschis prin RV1.1 / P2.** Oracolul D18 respinge 18 mutanți pe
+trei luni; integrala proprie trece cu 3.269 / 4.477 OK. Matricea perf
+completă a fost reprodusă pe baza Codex: 48 de măsurători, criteriile trecute,
+șase XML-uri k=64 acceptate de DUK (`perf-saft-20260930-222637`).
+Clasificatorul A/B `ddcac79` acceptă încă FCT 9/90 + NIR 1/10 când
+postările cer FCT 10/100 și NIR fără mișcare. Egalitatea totalului perechii
+nu dovedește delta NIR. [Dovada și condiția de închidere](../tr-d8-saft-b8-review-codex.md).
+
+Istoricul review-ului B8:
+
 **Review advers B8, 2026-09-30, `8172f93`: deschis, trei constatări P2.**
 Clasificatorul A/B acceptă codul FCT 10 → 80 și un Δ ASM în direcția greșită;
 recalculul D18-V1 acceptă omiterea tuturor pozițiilor unui cont; măsurarea
