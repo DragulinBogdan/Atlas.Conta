@@ -45,7 +45,7 @@ static class Saft1C {
 
         SaftDto dto;
         using (var os = provider.CreateObjectSpace())
-            dto = stocuri ? SaftProiectii.SaftStocuri(os, an, luna) : SaftProiectii.Saft(os, an, luna);
+            dto = stocuri ? SaftProiectii.SaftStocuriPeCub(os, an, luna) : SaftProiectii.SaftPeCub(os, an, luna);
         var durataProiectie = cronometru.Elapsed;
 
         // Bugetarul n-are bază contabilă printre cele 12 ale ANAF ⇒ declarația
@@ -78,7 +78,7 @@ static class Saft1C {
         var dimensiune = new FileInfo(caleXml).Length;
 
         cronometru.Restart();
-        var duk = Duk.Valideaza(caleXml, an, luna);
+        var duk = Duk.Valideaza(caleXml);
         var durataDuk = cronometru.Elapsed;
 
         var caleRaport = Path.Combine(director, $"{radacina}-raport.txt");

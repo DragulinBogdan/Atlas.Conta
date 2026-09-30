@@ -477,14 +477,20 @@ fiscale pe plată refuză exportul. Compensarea prin notă nu este plată
 [S2](../nucleu/tr-d8-saft-contract.md#s2--payments-și-comutarea-l-contract-pentru-aprobare).
 
 Reverificarea Codex din 2026-09-29 închide R1 la nivelul probei de domeniu:
-unitatea definită e protejată de regula produsului de mai sus. Comparația
-A/B merge în ambele sensuri, iar o diferență e acceptată numai dacă secțiunea,
-evenimentul și valorile vechi/noi coincid exact cu o excepție declarată (R2.1).
-R2.1 este închis prin reverificarea `ad193a9`: omisiunea TI21 și schimbările
-de net, taxă, brut, cont sau eveniment sunt respinse de verdictul complet.
+unitatea definită e protejată de regula produsului de mai sus.
 Stabilitatea octet cu octet a reexportului e probată cu metadatele și data generării fixate;
 redenumirile din nomenclator (descrieri) rămân etichete curente.
 [Review S1](../nucleu/tr-d8-saft-s1-review-codex.md).
+
+Factura în valută se declară în RON, cu avertismentul `FacturaInValuta`
+(cubul nu poartă valuta, B-r6). `ConturiDiferite` numără conturile al căror
+Closing − Opening din GeneralLedgerAccounts diferă de rulajul net al liniilor
+GL emise; `Neincluse` pe terți poartă numele repartitorului.
+
+**Ruta pe registre este scoasă (SAF-B8, 2026-09-30).** `SaftProiectii.Saft`
+și `SaftStocuri` nu mai există. Diferențele lor față de cub sunt clasificate
+o singură dată, cu martor numeric, în [raportul A/B final](../nucleu/tr-d8-saft-ab.md);
+probele D16/D17 rulează pe cub.
 
 Datele neincluse rămân explicite și participă la reconcilierea notelor,
 facturilor, TVA, soldurilor și nomenclatoarelor. Lipsa unui câmp necesar nu

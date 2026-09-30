@@ -11,7 +11,7 @@ catalogul scris de mână rămâne proba supremă (91).
 
 ## Metoda
 
-`ModelCheck/SaftAb.cs` compară semantic cele două exporturi pe aceeași bază
+`ModelCheck/SaftAb.cs` (la `900cf7b`; scos la pasul 2 odată cu ruta veche) compară semantic cele două exporturi pe aceeași bază
 și în aceeași stare, pe fiecare lună a scenei. Scena este la capăt, înaintea
 purjei. Cheile folosite sunt:
 

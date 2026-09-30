@@ -1,3 +1,10 @@
+**SAF-B8, 2026-09-30 — ruta pe registre scoasă.** Comparațiile A/B ale
+SC-SAFT-15 și SC-SAFT-49 au fost înlocuite de
+[raportul A/B final](../tr-d8-saft-ab.md): 111 diferențe clasificate, cu
+martori și mutanți, pe scenele SAFT, SAFT-S, DES, D16-V2 și D17-V2. Restul
+rândurilor rămân verificate pe cub. D16-V2/D17-V2 rulează ca scene `SAFT`
+([harta de acoperire](../tr-d8-saft-contract.md#b8-r2--ruta-veche-scoasă-d16d17-portate-pasul-2-2026-09-30)).
+
 # SAF-T — scenarii S1 și matricea de delimitare S2/S3
 
 **Reverificare S3 pe `b0b2c63`, 2026-09-30: RV2.1 și RV2 închise;

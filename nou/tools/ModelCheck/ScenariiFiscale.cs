@@ -72,7 +72,7 @@ sealed class ScenariiFiscale(Func<IObjectSpace> deschide, Action<string, bool> c
             return c.NrFact == 1 && c.Baza == 100;
         }));
         Verifica("SC-CIT-81", "SAF-T: deducere 300906, autocolectare 380006 numai pe credit", CuSpatiu(os => {
-            var d = SaftProiectii.Saft(os, An, 1);
+            var d = SaftProiectii.SaftPeCub(os, An, 1);
             var l = d.Jurnale.SelectMany(j => j.Tranzactii).Single(t => t.DocumentId == ti.Id).Linii;
             return l.Single(p => p.AccountID == "4426").TaxInformation.TaxCode == "300906"
                 && l.Single(p => p.AccountID == "4427").TaxInformation.TaxCode == "380006"

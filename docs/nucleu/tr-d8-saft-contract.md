@@ -1755,3 +1755,85 @@ Integrala e verde pe ambele profiluri (bugetar 3.269 / privat 4.502):
   scenele vechi și dispare odată cu portarea (B8-D1), fiindcă în producție
   operarea scrie întotdeauna cubul.
 - **Conturi și Terți:** zero diferențe pe toate scenele.
+
+### B8-R2 — ruta veche scoasă, D16/D17 portate (pasul 2, 2026-09-30)
+
+`SaftProiectii.Saft` și `SaftStocuri` sunt șterse împreună cu helperii folosiți
+numai de ele. `SaftProiectii.cs` scade de la 2.484 la 535 de linii; rămân
+antetul, conturile, terții, produsele, `EtichetePerioada`, mesajele și
+`ReferinteDuplicate`, pe care cubul le folosește. Comparatorul A/B și ramurile
+A/B din scene ies odată cu ruta; raportul lor rămâne în
+[tr-d8-saft-ab.md](tr-d8-saft-ab.md). D16-V2/D17-V2 rulează acum pe cub, ca
+scene `SAFT` (`--scenarii SAFT`). Consumatorii punctuali (`ScenariiCitiri`,
+`ScenariiDec`, `ScenariiFiscale`, `VerificaValoareIesire`, `VerificaDvi`,
+`Import1C/Saft1C`) citesc cubul.
+
+**Defecte de producție găsite de portare și corectate:**
+
+- `SaftPeCub` lăsa gol `Neinclus.RepartitorDenumire` (coloana „Repartitor” din
+  ecranul SAF-T). Acum îl completează.
+- Cusătura 4 (sold pe cont) era tautologică pe cub: `ConturiDiferite` și
+  `SumaAbsolutaClosing` nu se calculau, iar `ClosingGla`/`ClosingBalanta` vin
+  din aceeași balanță. `ConturiDiferite` compară acum, pe fiecare cont,
+  Closing − Opening cu rulajul net al liniilor GL emise. Proba D16-V2 îl
+  recalculează independent din liniile fișierului.
+- `FacturaInValuta` (pasul 1, B8-R1).
+
+**Import1C** nu mai compila de la S0 (`f3daee2`: `Duk.Valideaza` și
+`ManifestD406`). A fost corectat minimal; unealta rămâne înghețată.
+
+**Fixture-uri schimbate, fără efect asupra regulii:**
+
+- D16 nu mai are tipul TVA fără cod. Pe cub el refuză fișierul, iar
+  SC-SAFT-14 îl acoperă.
+- Legătura PLT ↔ FCT din D16 e datată în lună. `Imperecheaza` fără dată ia
+  ziua de azi, iar cubul corect nu o alocă în august. Raportul A/B a
+  clasificat cazul ca S2-D3, cu brut conservat.
+- D17 pierde BTR-ul operat „nemigrat” și rândul de registru fabricat pentru
+  rezidu. Niciunul nu poate exista pe cub.
+
+**Harta de acoperire** (aserțiune veche → înlocuitor pe cub; regula):
+
+| Veche | Pe cub | Regula |
+|---|---|---|
+| D16-V2 GL: două linii per rând de registru, D = C ca număr | o linie per postare, Σ D = Σ C pe tranzacție | S1-D3 |
+| D16-V2 L1: rândurile FCT fără 401, 401 pe NIR | FCT poartă 371 = 401 100, NIR-ul conex n-are GL | SAF-B5 |
+| D16-V2 L3: 381 datat la storno | 381 cu data documentului; GLPostingDate = data stornoului | S1-R4, S1-R2 |
+| D16-V2 `FaraContrapartida` (FCT-EUR, NIR Draft) | linia de stoc pe 371 din postare, fără Neincluse, `FacturaInValuta` | SAF-B5, B-r6 |
+| D16-V2 SalesInvoices cu linia fără cod | 2 linii; tipul fără cod e refuz | S1-D4, SC-SAFT-14 |
+| D16-V2 TaxTable: `000000` + avertisment | niciun avertisment, `TvaFaraCodSaft` = 0, fără refuzuri | S1-D4 |
+| D16-V2 cusătura 3: `Neincluse/TipFaraSectiuneFacturi` DEC 60 | termenul „fără factură” = registrul fiscal independent (60) | S2-R4 |
+| D16-V2 cusătura 4 pe balanță | Closing − Opening = rulajul GL pe cont, recalculat | B8-R2 |
+| D16-V2 avertismente: TVA fără cod, linie fără contrapartidă | dispar; rămân NC, UM, adresă, valută | S1-D4, SAF-B5 |
+| F20-D5 (S): agregatul Neincluse = S2 | S nu are Neincluse (zero) | S3-D6, SAF-D4 |
+| D18-V1: naiv pe `RegistruStoc` + `SoldPeTipStocNeraportat` | naiv pe postările cubului (gestiune, lot, cont) | S3-D4, S3-D1, F27-r10 |
+| D17-V2 coduri: NIR ⇒ 10 | FCT ⇒ 10, NIR conex fără mișcare | SAF-B5, SC-SAFT-07 |
+| D17-V2 ASM: consumul −4/−40 fără produsul fără cont | `/T/20`, `/T/70`, consum −7/−55 cu linia pe 371 | S3-D5, SAF-B5 |
+| D17-V2 storno `…/S` la final | `…/S/{cod}` | S3-D5 |
+| D17-V2 `Neincluse/FaraContStoc` + `ProductType` „0” | contul istoric 371, fără Neincluse și avertisment | SAF-B5 |
+| D17-V2 terți: NIR (0, furnizor) | FCT (0, furnizor) | SAF-B5 |
+| D17-V2 PhysicalStock: 9 intrări | 8 (fără artefactul MAG2) | fixture |
+| D17-V2 `StockAccountNo` numai la loturi multiple | întotdeauna lotul | S3-D5 |
+| D17-V2 S2 cu Neincluse ≠ 0 | S2 cu Neincluse = 0 | S3-D6 |
+| D17-V2 rol fără partener ⇒ raportor + avertisment | refuz `SAFT_TERT_LIPSA` | S3-D2, SAF-D4 |
+| D17-V2 fără politică ⇒ `Neincluse/FaraCodMiscare` | refuz `SAFT_MISCARE_FARA_POLITICA` | SAF-D4 |
+| D17-V6 F1: `#1`/`#2` + avertisment | rezerva `{TranzactieId:N}{cod}`, 0 duplicate | S3-D5 |
+| D17-V6 F2: S5 rupt pe produsul fără cont | S5 întreg, recalculat din liniile emise | SAF-B5 |
+| D17-V6 F3: `Neincluse/CodMiscareNecunoscut` | refuz `SAFT_COD_MISCARE_NECUNOSCUT` | SAF-D4 |
+| D17-V6 F4: `MovementPostingDate` omis + avertisment | prezent, = `ScrisLa` | S3-D2, R2 |
+| D17-V6 F5: rolul grupului, `RolTertMixt` | refuz `SAFT_PROVENIENTA_AMBIGUA` / `SAFT_TERT_LIPSA` | S3-D2 |
+| D17-V6 F6: rezidu „0 buc/X lei” fabricat în registru | scos; reziduul real pe cub e refuz (D18-V2 r) | S3-D4 |
+| D18-V2 (r): `ReziduValoricFaraCantitate` | refuz pe lot (−0,01 ⇒ `SAFT_SOLD_NEGATIV`) | S3-D4 |
+| SC-SAFT-15/49: A/B pe scene, cu mutanți | arhivat în raportul B8-R1 | B8-D1 |
+
+Restul celor 120 de aserțiuni D16/D17 trec neschimbate pe cub. Rămâne o
+curățenie: valorile `CodAvertismentSaft`/`CauzaNeincludere` pe care numai
+ruta veche le emitea (de exemplu `TipTvaFaraCodSaft`, `LinieFaraContrapartida`,
+`TertLipsaPeMiscare`, `ProdusFaraContStoc`, `SoldPeTipStocNeraportat`,
+`FaraContStoc`, `FaraCodMiscare`, `CodMiscareNecunoscut`) nu mai au
+producător. Ștergerea lor atinge metadata și codegen-ul clientului, deci
+se face ca restanța **SAFT-r3**, nu în această felie.
+
+Integrala e verde pe ambele profiluri (bugetar 3.269 / privat 4.469):
+`run-verificari/20260930-135439-826`. Scenele SAFT sunt verzi pe ambele
+profiluri. WebApi și hostul Blazor compilează.

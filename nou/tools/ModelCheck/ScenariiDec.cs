@@ -99,7 +99,7 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
             var c = os.GetObjectByKey<Cont>(Cont(Avans)); return c.UrmarestePartide && c.RolTert == RolTertCont.Niciunul;
         }));
         if (Privat) Verifica("SC-DEC-15", "titularul nu apare în Customers/Suppliers SAF-T", CuSpatiu(os => {
-            var saft = SaftProiectii.Saft(os, An, 1);
+            var saft = SaftProiectii.SaftPeCub(os, An, 1);
             return !saft.Clienti.Any(t => t.PartenerId == titular) && !saft.Furnizori.Any(t => t.PartenerId == titular);
         }));
         var q = Culege(); Comanda(os => { os.GetObjectByKey<DecontDetaliu>(q.Linii[0].Id).Cantitate = 0; os.CommitChanges(); });

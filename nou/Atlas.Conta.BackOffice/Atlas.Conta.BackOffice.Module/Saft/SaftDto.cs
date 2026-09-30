@@ -762,7 +762,7 @@ public sealed class SaftDto {
 // paginează") spunea că răspunsul e declarația ÎNTREAGĂ; datele au contrazis-o:
 // ecranul nu afișează niciuna dintre liniile alea, iar browserul plătește
 // oricum parsarea lor. Deci ușa JSON servește un SUMAR, iar listele trăiesc în
-// exact două locuri — FIȘIERUL (`saft/xml`, streaming) și `SaftProiectii.Saft()`
+// exact două locuri — FIȘIERUL (`saft/xml`, streaming) și `SaftProiectii.SaftPeCub()`
 // pentru ModelCheck. Nu e o paginare: e ALTĂ întrebare („cât e declarația?"),
 // cu răspuns complet.
 //

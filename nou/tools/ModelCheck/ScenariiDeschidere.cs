@@ -150,10 +150,6 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Rest("SC-DES-03", ref1, Furnizor, 40); Rest("SC-DES-03", ref1, Furnizor, 60, Februarie);
         PlataPePartidaInitiala(plata.Id, 2, -20);
         Verifica("SC-DES-03", "originalul deschiderii păstrat", initial == Original());
-        if (Privat) {
-            AbFinal("SC-SAFT-15", (os, l) => SaftProiectii.Saft(os, An, l), (os, l) => SaftProiectii.SaftPeCub(os, An, l));
-            AbFinal("SC-SAFT-49", (os, l) => SaftProiectii.SaftStocuri(os, An, l), (os, l) => SaftProiectii.SaftStocuriPeCub(os, An, l));
-        }
     }
 
 

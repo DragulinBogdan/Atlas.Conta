@@ -104,7 +104,7 @@ sealed class ScenariiCitiri(Func<IObjectSpace> deschide, Action<string, bool> ch
             var faraNir = Factura(Februarie, new LinieFctScena(10, 10));
             var rezultat = Opereaza(faraNir.Id);
             Verifica("SC-CIT-33", "Suppliers: inițial 100, final 200 cu recepția FCT și NIR draft", CuSpatiu(os => {
-                var saft = Atlas.Conta.BackOffice.Module.Saft.SaftProiectii.Saft(os, An, 2);
+                var saft = Atlas.Conta.BackOffice.Module.Saft.SaftProiectii.SaftPeCub(os, An, 2);
                 var furnizor = saft.Furnizori.Single(p => p.PartenerId == Furnizor);
                 var cont = saft.Conturi.Single(c => c.ContId == Cont(ContFurnizor));
                 return os.GetObjectByKey<Document>(rezultat.ConexId!.Value).Stare == StareDocument.Draft

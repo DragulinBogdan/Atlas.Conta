@@ -71,15 +71,6 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         }
         os.CommitChanges(); return new(doc.ID, rezultat.ToArray());
     }
-    // SAF-B8 D2: la capătul scenei, fiecare lună cu tranzacții, ruta veche contra cubului.
-    protected void AbFinal(string id, Func<IObjectSpace, int, Module.Saft.SaftDto> vechi,
-            Func<IObjectSpace, int, Module.Saft.SaftDto> nou) {
-        using var os = Deschide();
-        var luni = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.Data.Year == An)
-            .Select(t => t.Data.Month).Distinct().OrderBy(l => l).ToList()
-            .Select(l => (l, vechi(os, l), nou(os, l))).ToList();
-        SaftAb.Ruleaza(os, Marcaj, id, Privat, An, luni, (m, ok) => Verifica(id, m[(id.Length + 2)..], ok));
-    }
     protected IObjectSpace Deschide() => deschide();
     protected T CuSpatiu<T>(Func<IObjectSpace, T> actiune) { using var os = Deschide(); return actiune(os); }
     protected void Comanda(Action<IObjectSpace> actiune) { using var os = Deschide(); actiune(os); }
