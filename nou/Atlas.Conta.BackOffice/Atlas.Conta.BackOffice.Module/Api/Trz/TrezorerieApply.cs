@@ -281,22 +281,9 @@ public static class TrezorerieApply {
             .Where(l => l.DocumentId == id)
             .Sum(l => (decimal?)(l.Valoare + l.ValoareTva)) ?? 0m;
 
-        // Affordance onestă pe AMBELE condiții ale motorului (F3-D2): grupul
-        // conex (copil operat) ȘI stingerile — plata care a stins o factură nu
-        // se anulează până nu se șterge imperecherea.
         var copii = ApiProiectii.Copii(os, id);
-        var faraCopiiOperati = copii.All(c => c.Stare != nameof(StareDocument.Operat));
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
         var (pereche, perecheActiva) = Pereche<T>(os, id);
-        // Oglinda gardianului `MotorOperare.VerificaFaraLaturaPerecheOperata`
-        // (F8-D9). Grupul conex („copil operat") îl acoperea DOAR pentru perechea
-        // AUTOGENERATĂ, care e și copil; legătura DECLARATĂ manual n-are
-        // `DocumentSursa`, deci fără asta affordance-ul spunea „se poate anula"
-        // despre un document pe care motorul îl refuză — exact clasa de minciună
-        // închisă la F3-D2/F5-D8b. CUSĂTURĂ: predicatul e identic cu al
-        // gardianului (pointer OPERAT); dacă acolo se schimbă, aici minte.
-        var faraLaturaPerecheOperata = !os.GetObjectsQuery<DocumentTrezorerie>()
-            .Any(x => x.LaturaPerecheId == id && x.Stare == StareDocument.Operat);
 
         return new TrezorerieReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -321,13 +308,11 @@ public static class TrezorerieApply {
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
             DocumentSursaNumar = h.DocumentSursaNumar,
             DocumentSursaTip = ApiProiectii.CodTip(os, h.DocumentSursaId),
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri
-                && faraLaturaPerecheOperata,
-            PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri
-                && faraLaturaPerecheOperata,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Copii = copii,
             Linii = linii.Select(l => new TrezorerieLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,

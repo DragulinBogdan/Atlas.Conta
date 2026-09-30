@@ -231,10 +231,7 @@ public static class NotaContabilaApply {
             })
             .ToList();
 
-        // Affordance ONESTĂ pe stingeri (F3-D2/57d): pe NTC compensarea E cazul
-        // normal al tipului (48b), deci refuzul gardianului de anulare/storno se
-        // ARATĂ, nu se descoperă la apăsarea butonului.
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new NtcReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -246,11 +243,11 @@ public static class NotaContabilaApply {
             // cifră în agregat și în listă, chiar dacă documentul poartă linii de
             // tip bază. Pe notă `ValoareTva` e 0 prin construcție.
             Total = linii.Sum(l => l.Valoare + l.ValoareTva),
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new NtcLinieReadDto {
                 Id = l.ID,
                 TipMaterialId = l.TipMaterialId,
@@ -327,7 +324,7 @@ public static class NotaContabilaApply {
         var rezultat = new NtcCandidatiDto {
             DocumentId = id,
             Stare = doc.Stare.ToString(),
-            PoateStinge = doc.Stare == StareDocument.Operat
+            PoateStinge = RegimDocument.Calculeaza(os, doc).Poate(RegimDocument.Stinge)
         };
 
         if (!rezultat.PoateStinge)

@@ -164,7 +164,7 @@ public static class PifApply {
             })
             .ToList();
 
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new PifReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -173,12 +173,12 @@ public static class PifApply {
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
             Total = linii.Sum(l => l.Valoare),
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
-            PoateSterge = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
+            PoateSterge = regim.Poate(RegimDocument.Sterge),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new PifLinieReadDto {
                 Id = l.ID, ImobilizareId = l.ImobilizareId,
                 NumarInventar = l.NumarInventar, ImobilizareDenumire = l.ImobilizareDenumire,

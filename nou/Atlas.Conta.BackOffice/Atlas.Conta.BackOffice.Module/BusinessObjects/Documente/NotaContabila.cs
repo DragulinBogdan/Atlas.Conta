@@ -24,6 +24,9 @@ public class NotaContabila : Document, IDocumentCuPostareExplicita {
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.InternaSauProprie, Declaratii.Latura.InternaSauProprie);
 
+    public override void ContribuieRegim(DevExpress.ExpressApp.IObjectSpace os, Api.RegimDocument.Constructor regim) =>
+        regim.Decide(Api.RegimDocument.Stinge, regim.Operat ? null : "Stinge doar o notă operată.");
+
     // Fără PregatesteOperare: `Valoare` se culege direct pe linie (nu există
     // lanț de valori — nici cantitate, nici preț, nici TVA calculat).
 

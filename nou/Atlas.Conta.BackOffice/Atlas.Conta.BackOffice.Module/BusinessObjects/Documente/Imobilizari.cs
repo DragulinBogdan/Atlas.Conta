@@ -563,6 +563,9 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
 
     public override bool PoateFiStins(IObjectSpace os) => false;
 
+    public override void ContribuieRegim(IObjectSpace os, Api.RegimDocument.Constructor regim) =>
+        regim.Decide(Api.RegimDocument.Regenereaza, regim.Draft ? null : "Se regenerează doar un draft.");
+
     public override void ValideazaOperare(IObjectSpace os, ICollection<string> erori) {
         Cub.Materializare.BlocheazaFise(os);
         base.ValideazaOperare(os, erori);

@@ -739,33 +739,44 @@ public static class MotorOperare {
     // autogenerată e acoperită de amândoi (are și `DocumentSursaId`, și link),
     // iar mesajul ăsta e cel specific — „latura pereche" spune operatorului
     // exact ce vede pe ecran.
-    static void VerificaFaraLaturaPerecheOperata(IObjectSpace os, Document doc) {
-        if (os.GetObjectsQuery<DocumentTrezorerie>()
-                .Any(x => x.LaturaPerecheId == doc.ID && x.Stare == StareDocument.Operat))
-            throw new OperareException(
-                "Documentul e declarat latura pereche a unui virament încă operat — "
-                + "anulați/stornați întâi acel document.");
-    }
+    static void VerificaFaraLaturaPerecheOperata(IObjectSpace os, Document doc) =>
+        Refuza(MotivLaturaPerecheOperata(os, doc));
 
     // Anularea/stornarea operează pe grupul conex (00 §8): copiii cu registre
     // (Operat) se anulează/stornează întâi — refuz conservator; copiii DRAFT
     // autogenerați sunt un artefact al operării anulate și se șterg odată cu ea
     // (re-operarea sursei generează un draft proaspăt).
-    static void VerificaFaraConexeOperate(IObjectSpace os, Document doc) {
-        if (os.GetObjectsQuery<Document>().Any(x => x.DocumentSursaId == doc.ID && x.Stare == StareDocument.Operat))
-            throw new OperareException(
-                "Documentul are documente generate (conexe) încă operate — anulați/stornați întâi acele documente.");
-    }
+    static void VerificaFaraConexeOperate(IObjectSpace os, Document doc) =>
+        Refuza(MotivConexeOperate(os, doc));
 
     // Stingerea leagă REGISTRELE celor două documente (decizia 17); anularea
     // sau stornarea uneia dintre părți ar lăsa imperecherea fără acoperire —
     // refuz conservator: utilizatorul șterge întâi imperecherile (link simplu,
     // fără registre proprii), apoi corectează documentul.
-    static void VerificaFaraImperecheri(IObjectSpace os, Document doc) {
-        if (os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentStingatorId == doc.ID || i.DocumentId == doc.ID))
-            throw new OperareException(
-                "Documentul are imperecheri (stingeri) — ștergeți-le întâi, apoi anulați/stornați.");
+    static void VerificaFaraImperecheri(IObjectSpace os, Document doc) =>
+        Refuza(MotivImperecheri(os, doc));
+
+    static void Refuza(string motiv) {
+        if (motiv != null)
+            throw new OperareException(motiv);
     }
+
+    // Motivele dependenților, citite și de regimul pe stare (106b): null = liber.
+    public static string MotivLaturaPerecheOperata(IObjectSpace os, Document doc) =>
+        os.GetObjectsQuery<DocumentTrezorerie>()
+            .Any(x => x.LaturaPerecheId == doc.ID && x.Stare == StareDocument.Operat)
+            ? "Documentul e declarat latura pereche a unui virament încă operat — anulați/stornați întâi acel document."
+            : null;
+
+    public static string MotivConexeOperate(IObjectSpace os, Document doc) =>
+        os.GetObjectsQuery<Document>().Any(x => x.DocumentSursaId == doc.ID && x.Stare == StareDocument.Operat)
+            ? "Documentul are documente generate (conexe) încă operate — anulați/stornați întâi acele documente."
+            : null;
+
+    public static string MotivImperecheri(IObjectSpace os, Document doc) =>
+        os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentStingatorId == doc.ID || i.DocumentId == doc.ID)
+            ? "Documentul are imperecheri (stingeri) — ștergeți-le întâi, apoi anulați/stornați."
+            : null;
 
     static void StergeConexeDraftAutogenerate(IObjectSpace os, Document doc) {
         var stersi = false;

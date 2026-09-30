@@ -42,6 +42,15 @@ public class FacturaIesire : Document, IDocumentCuScadenta, IDocumentFiscal {
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
         CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
 
+    // Cele două verificări ieftine scurt-circuitează proiecția resturilor (F4-D4).
+    public override void ContribuieRegim(DevExpress.ExpressApp.IObjectSpace os, Api.RegimDocument.Constructor regim) =>
+        regim.Decide(Api.RegimDocument.GenereazaDescarcarea,
+            !regim.Operat ? "Descărcarea se generează pe o factură operată."
+            : GestiuneDescarcareId == null ? "Factura nu are gestiune de descărcare."
+            : !Motor.DescarcareService.RestNedescarcat(os, this).Any(r => r.RestNeacoperit > 0)
+                ? "Factura nu are rest nedescărcat."
+            : null);
+
     public override bool CuTva() => true;
     public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
     static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(FacturaIesireDetaliu.PretUnitar));

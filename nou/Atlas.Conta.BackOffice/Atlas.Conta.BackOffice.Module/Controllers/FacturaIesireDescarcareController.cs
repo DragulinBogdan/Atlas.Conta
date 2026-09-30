@@ -121,19 +121,5 @@ public class FacturaIesireDescarcareController : ObjectViewController<DetailView
         // Default azi în editorul din toolbar (cosmetic; coalesce-ul din Execute
         // rămâne autoritatea pe gol/MinValue).
         genereaza.Value = DateTime.Today;
-        ActualizeazaDisponibilitatea();
-        View.CurrentObjectChanged += OnCurrentObjectChanged;
     }
-
-    protected override void OnDeactivated() {
-        View.CurrentObjectChanged -= OnCurrentObjectChanged;
-        base.OnDeactivated();
-    }
-
-    void OnCurrentObjectChanged(object sender, EventArgs e) => ActualizeazaDisponibilitatea();
-
-    // Backorder-ul are sens doar pe FCL OPERATĂ (ca Anulează/Stornează în
-    // DocumentOperareController): pe draft nu există încă acoperire de generat.
-    void ActualizeazaDisponibilitatea() =>
-        genereaza.Enabled["Stare"] = ViewCurrentObject?.Stare == StareDocument.Operat;
 }

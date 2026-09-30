@@ -16,6 +16,7 @@ readonly + editor de linie propriu, validarea autoritară = motorul.
 | [culegere-asamblare.md](culegere-asamblare.md) | ASM — asamblare/kitting (consum → produs) |
 | [culegere-asamblare-xaf.md](culegere-asamblare-xaf.md) | ASM — același ecran în primitivele XAF (detaliu tipizat; fără balanță live) |
 | [dashboard.md](dashboard.md) | Dashboard — activitățile curente ale operatorului |
+| [format-xaf-documente.md](format-xaf-documente.md) | Formatul unitar al ecranului de document în XAF (2026-09-30): cele trei axe, regimul pe stare implementat (decizia 106) |
 
 ---
 

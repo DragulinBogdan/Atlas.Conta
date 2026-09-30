@@ -220,11 +220,7 @@ public static class ListaDiferenteInventarApply {
             .Where(l => l.DocumentId == id)
             .Sum(l => (decimal?)(l.Valoare + l.ValoareTva)) ?? 0m;
 
-        // Affordance ONESTĂ pe stingeri (F3-D2): LDI nu e creanță și n-ar trebui
-        // să poarte imperecheri, dar gardianul motorului
-        // (`VerificaFaraImperecheri`) e generic pe `Document` — dacă totuși există
-        // un link, refuzul se ARATĂ, nu se descoperă la apăsarea butonului.
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new LdiReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -233,11 +229,11 @@ public static class ListaDiferenteInventarApply {
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
             Total = total,
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new LdiLinieReadDto {
                 Id = l.ID,
                 Directie = l.Directie?.ToString(),

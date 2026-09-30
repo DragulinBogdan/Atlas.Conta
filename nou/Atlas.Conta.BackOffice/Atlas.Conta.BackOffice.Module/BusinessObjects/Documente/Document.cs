@@ -339,6 +339,9 @@ public abstract class Document : Editabila {
     public virtual IReadOnlyList<string> MesajeDupaOperare(DevExpress.ExpressApp.IObjectSpace os) =>
         Array.Empty<string>();
 
+    /// <summary>Comenzile proprii tipului în regimul pe stare (106c); baza nu contribuie nimic.</summary>
+    public virtual void ContribuieRegim(DevExpress.ExpressApp.IObjectSpace os, Api.RegimDocument.Constructor regim) { }
+
     // Invariantele proprii tipului, verificate de motor înainte de operare.
     // Baza impune doar ce cere orice document; obligativitățile per tip se
     // adaugă în override (validarea declarativă completă vine la 3c/3d).

@@ -76,7 +76,13 @@ faptul sursei recepției conexe (`Cub/ReceptiiConexe.cs`) și maparea EF
 (`BackOfficeDbContext`). Consumatorii compun peste intrările comune
 (filtre, proiecții, eticheta `Storno`), fără să refacă domeniul. Proba
 `091-r3` (`tools/ModelCheck/ProbeCititoriCub.cs`) scanează sursa înaintea
-bazei, deci rulează și fără bază. Caută rădăcinile de interogare,
+bazei, deci rulează și fără bază. La fel probele regimului pe stare
+(`tools/ModelCheck/ProbeRegim.cs`, 106e): prin reflecție, fiecare comandă
+`RecordEdit` a unui controller pe `DetailView` de `Document` numește prin
+sufixul ID-ului o comandă din `RegimDocument.ComenziCunoscute`; prin scanare
+sintactică, nicio affordance `Poate*` din `Module/Api/` nu se calculează din
+`StareDocument` și niciun controller nu poartă cheia „Stare”. Catalogul
+`REGIM` (`ScenariiRegim.cs`, anul 2012) rulează cu `--scenarii REGIM`. Caută rădăcinile de interogare,
 `ModifiedObjects.OfType`, `CreateObject`, `Set<>`, `typeof` pe
 `GetObjects`, SQL pe tabelele cubului, navigarea `Tranzactie.Postari` și
 `DbContext.Postari`. Pică și pe o excepție care nu mai are acces. Scanarea e

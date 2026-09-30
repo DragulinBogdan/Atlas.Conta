@@ -55,6 +55,13 @@ Operarea, anularea și stornarea sunt comenzi, nu modificări directe ale
 stării prin DTO. Regulile și tranzacția lor sunt descrise în
 [domeniu și operare](domeniu-si-operare.md). (42b)
 
+Affordance-urile de pe DTO-urile de citire (`PoateEdita`, `PoateOpera`,
+`PoateAnula`, `PoateStorna`, `PoateSterge`, `PoateRegenera`, `PoateDistribui`,
+`PoateStinge`, `PoateGeneraDescarcare`) sunt proiecția regimului pe stare
+(`RegimDocument`), aceeași sursă ca acțiunile XAF; `Apply` nu le calculează
+din `Stare`. Singura excepție declarată e `DscApply.PoateEdita = false`,
+fapt al tierului (nu există cale de scriere pe DSC). (42e, 106d)
+
 Fiecare DTO de scriere al unui document poartă `DataInregistrare` ca dată
 opțională: absentă înseamnă „data documentului”, nu „gol”. Adaptorul comun
 (`Api/DocumentApply.AplicaDate`) aplică implicitul și refuză, de domeniu, o
@@ -306,6 +313,21 @@ Grilele de politici citesc prin OData și scriu prin transportul HTTP comun,
 pentru a afișa mesajele `Erori`, proveniența și accesul la istoric.
 Transportul OData standard al DevExtreme nu păstrează în toate cazurile
 aceleași mesaje detaliate la citire. (81i, 80-r1)
+
+## Regimul pe stare în XAF Blazor
+
+Un singur gardian (`Controllers/RegimDocumentController`, cu gemenii lui pe
+grila nested a liniilor și pe dialogul liniei) aplică regimul pe stare
+(106): `View.AllowEdit/AllowNew/AllowDelete` cu cheia „Regim” și
+`Action.Enabled` pe fiecare acțiune al cărei ID se termină cu numele unei
+comenzi din vocabular (`Document.Opereaza`, `FacturaIesire.GenereazaDescarcarea`).
+Motivul indisponibilității ajunge în tooltip-ul acțiunii, iar tooltip-ul
+propriu revine când comanda redevine disponibilă. Regimul se re-evaluează la
+activare, la schimbarea obiectului curent, la `Committed` și la `Reloaded`
+(comanda comite în alt context și controllerul de operare face `Refresh`).
+Controllerele de comenzi nu mai poartă `Enabled["Stare"]`; ModelCheck
+probează structural că fiecare comandă din toolbar-ul DetailView-ului unui
+`Document` numește o comandă a regimului. (106d, 106e)
 
 ## Listele XAF Blazor
 

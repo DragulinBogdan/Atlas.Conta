@@ -173,7 +173,7 @@ public static class DviApply {
             .ToList();
         var totaluriFacturi = Totaluri(os, legaturi.Select(f => f.FacturaId).ToList());
 
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new DviReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -185,11 +185,11 @@ public static class DviApply {
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
             Baza = linii.Sum(l => l.Valoare),
             Tva = linii.Sum(l => l.ValoareTva),
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new DviLinieReadDto {
                 Id = l.ID,
                 TipMaterialId = l.TipMaterialId,

@@ -261,15 +261,8 @@ public static class FacturaIntrareApply {
             .Where(l => l.DocumentId == id)
             .Sum(l => (decimal?)(l.Valoare + l.ValoareTva)) ?? 0m;
 
-        // Affordance ONESTĂ (review advers F2-D5): gardianul de grup refuză
-        // anularea/stornarea cât timp există un copil OPERAT — iar copiii sunt
-        // deja calculați pentru DTO, deci consecința se arată, nu se descoperă
-        // la refuz. F3-D2 închide și a doua condiție a motorului: STINGERILE
-        // (`VerificaFaraImperecheri`) — factura stinsă de o plată nu se anulează
-        // până nu se șterge link-ul.
         var copii = ApiProiectii.Copii(os, id);
-        var faraCopiiOperati = copii.All(c => c.Stare != nameof(StareDocument.Operat));
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new FacturaIntrareReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -289,11 +282,11 @@ public static class FacturaIntrareApply {
             PlataTipInstrument = h.PlataTipInstrument?.ToString(),
             Total = total,
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Copii = copii,
             Linii = linii.Select(l => new FacturaIntrareLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,

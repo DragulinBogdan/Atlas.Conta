@@ -122,10 +122,7 @@ public static class InchidereTvaApply {
             stale = !InchidereTvaService.LiniiPotrivescSoldurile(
                 new InchidereTvaService.LiniiInchidere(transfer, dePlata, deRecuperat), sold4426, sold4427);
 
-        // Affordance ONESTĂ (57d): deși `CapacitateStingere` iese dicționar GOL pe
-        // ITV (liniile n-au repartitori), afordanța se scrie pe aceeași sursă ca
-        // gardianul de anulare/storno, nu pe presupunerea că n-are imperecheri.
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new ItvReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -137,12 +134,12 @@ public static class InchidereTvaApply {
             Transfer = transfer, DePlata = dePlata, DeRecuperat = deRecuperat,
             Sold4426Curent = sold4426, Sold4427Curent = sold4427,
             Stale = stale,
-            PoateOpera = h.Stare == StareDocument.Draft,
-            PoateSterge = h.Stare == StareDocument.Draft,
-            PoateRegenera = h.Stare == StareDocument.Draft,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
+            PoateSterge = regim.Poate(RegimDocument.Sterge),
+            PoateRegenera = regim.Poate(RegimDocument.Regenereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new ItvLinieReadDto {
                 Id = l.ID,
                 Descriere = l.Descriere,

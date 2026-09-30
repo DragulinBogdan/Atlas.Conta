@@ -67,14 +67,4 @@ internal static class ApiProiectii {
             ? null
             : CoduriTip(os, new[] { documentId.Value }).GetValueOrDefault(documentId.Value);
 
-    // Affordance ONESTĂ pe stingeri (F3-D2): oglinda API a gardianului
-    // `MotorOperare.VerificaFaraImperecheri` — anularea și stornarea se refuză
-    // cât timp documentul poartă un link pe ORICARE rol (31d). Trăiește aici, nu
-    // în serviciu, fiindcă e o CITIRE de affordance (ca `Copii`), nu un
-    // invariant: invarianții stingerii rămân în `ImperechereService`. CUSĂTURĂ:
-    // predicatul e identic cu al gardianului — dacă acolo se schimbă (alt rol,
-    // alt filtru), affordance-ul de aici minte până se schimbă la fel.
-    public static bool AreImperecheri(IObjectSpace os, Guid documentId) =>
-        os.GetObjectsQuery<Imperechere>()
-            .Any(i => i.DocumentStingatorId == documentId || i.DocumentId == documentId);
 }

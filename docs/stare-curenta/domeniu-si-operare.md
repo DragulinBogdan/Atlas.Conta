@@ -105,6 +105,25 @@ Stările sunt `Draft`, `Operat` și `Stornat`. Documentul și liniile sale sunt
 editabile în Draft. Starea originală din persistență este autoritatea
 gardianului de editare; un formular vechi nu redeschide dreptul de scriere. (14, 55a)
 
+### Regimul pe stare (106)
+
+Editabilitatea și comenzile disponibile ale unui document au o singură
+sursă: `Api/RegimDocument.Calculeaza`, în coaja comenzii. Regimul e onest:
+pentru fiecare comandă din vocabular întoarce motivul indisponibilității
+sau nimic, cu aceleași predicate ca gardienii motorului
+(`MotorOperare.Motiv*`, `GardianPerioada.MotivInchisa`). Draft: editabil;
+Operează, Validează, Șterge. Operat: needitabil; Anulează cere perioada
+înregistrării deschisă și niciun dependent (latură pereche operată, conex
+operat, împerechere); Stornează și Corectează cer doar lipsa dependenților.
+Stornat: nimic. Tipul contribuie comenzile proprii prin
+`Document.ContribuieRegim`, în vocabularul închis
+`RegimDocument.ComenziCunoscute`: NTC → Stinge pe Operat; AMO și ITV →
+Regenerează pe Draft; ASM → Distribuie pe Draft cu linii de consum și de
+produs; FCL → Generează descărcarea pe Operat, cu gestiune de descărcare și
+rest nedescărcat. Adaptorii (`Api/*Apply`, controllerele XAF) randează
+regimul și nu îl re-derivă din `Stare`. Proba: catalogul `REGIM` și probele
+structurale din ModelCheck. (106b, 106c, 106e)
+
 ### Data documentului și data înregistrării
 
 Documentul poartă două date. `Data` este a documentului fizic: numerotarea,

@@ -291,6 +291,8 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     ProbeCititoriRegistre.VerificaSursa(Check);
     ProbeTransferCititori.VerificaSursa(Check);
     ProbeBlocajScriere.VerificaSursa(Check);
+    ProbeRegim.VerificaActiuni(Check);
+    ProbeRegim.VerificaSursa(Check);
 
     if (profil == ProfilContabil.Privat) {
         // Baza privată aparține uneltei: se creează/migrează aici.
@@ -30974,6 +30976,9 @@ List<Scena> ScenelePeTip(bool privat) {
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiNtc), ["NTC"], () => new ScenariiNtc(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiRegim), ["REGIM"], () => new ScenariiRegim(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiItv), ["ITV"], () => new ScenariiItv(

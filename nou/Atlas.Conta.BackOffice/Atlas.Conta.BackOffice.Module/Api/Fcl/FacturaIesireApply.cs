@@ -319,24 +319,8 @@ public static class FacturaIesireApply {
             .Where(l => l.DocumentId == id)
             .Sum(l => (decimal?)(l.Valoare + l.ValoareTva)) ?? 0m;
 
-        // Affordance ONESTĂ (F2-D5 + F3-D2): gardianul de grup refuză anularea/
-        // stornarea cât timp există un copil OPERAT (aici: o descărcare operată),
-        // iar `VerificaFaraImperecheri` cât timp factura e stinsă de o încasare.
-        // Copiii sunt oricum calculați pentru DTO — consecința se arată, nu se
-        // descoperă la refuz.
         var copii = ApiProiectii.Copii(os, id);
-        var faraCopiiOperati = copii.All(c => c.Stare != nameof(StareDocument.Operat));
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
-
-        // Backorder (F4-D4): affordance ONESTĂ pe comanda de generare — aceleași
-        // trei condiții pe care le-ar întâlni comanda (Operat, gestiune aleasă,
-        // rest > 0). Ordinea contează: cele două verificări ieftine
-        // scurt-circuitează, deci proiecția de acoperire (care încarcă entitatea
-        // și enumerează liniile) NU se plătește pe drafturi și nici pe facturile
-        // de servicii — exact cazul majoritar.
-        var poateGeneraDescarcare = h.Stare == StareDocument.Operat
-            && h.GestiuneDescarcareId != null
-            && RestNedescarcat(os, id).Any(r => r.Rest > 0);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new FacturaIesireReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -351,12 +335,12 @@ public static class FacturaIesireApply {
             GestiuneDescarcareDenumire = h.GestiuneDescarcareDenumire,
             Total = total,
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
-            PoateGeneraDescarcare = poateGeneraDescarcare,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
+            PoateGeneraDescarcare = regim.Poate(RegimDocument.GenereazaDescarcarea),
             Copii = copii,
             Linii = linii.Select(l => new FacturaIesireLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
