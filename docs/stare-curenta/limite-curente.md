@@ -26,7 +26,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   serializată de comandă (review Deschidere, MINOR-3).
   Stingerea prin motor a unei partide inițiale în lei și
   inversarea ei prin storno PLT sunt probate; nu există încă o ușă UI/HTTP
-  pentru această comandă. Conectorul 1C rămâne înghețat (091-r4).
+  pentru această comandă. Conectorul 1C a ieșit din îngheț numai pe deschidere
+  și pe trecerea 2 a lunii (107): deschiderea trece prin această comandă, iar
+  stingerile anului pe partide inițiale se scriu în cub; fără deschiderea în
+  cub Import1C nu mai rulează pe modelul cu stocul citit din cub (107 j).
+  Stingerile prin facturi rămân în afara trecerii 2 (107-r1), pozițiile în
+  valută intră în lei și se plafonează la rest (107-r4).
 - Comenzile care scriu sunt seriale per bază (X-D6): doi operatori nu scriu
   simultan, al doilea așteaptă comanda primului, oricât de străine ar fi
   documentele lor. Așteaptă și salvarea unui draft care adaugă detalii fără

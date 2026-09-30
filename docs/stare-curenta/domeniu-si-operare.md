@@ -99,7 +99,9 @@ motorul îl cheamă prin interfață în cele trei puncte ale ciclului de viaț�
 dependențele dintre faptele aceleiași fișe le refuză tipul, nu motorul. (87c)
 Un rând operat se citește cu valorile și dimensiunile deja rezolvate.
 Excepția scrierii directe pentru migrare este deschiderea contabilă/de stoc,
-marcată prin `DocumentId = null`. (14, 25e, 40d)
+marcată prin `DocumentId = null`; rândurile ei sunt brute per (cont, latură),
+scrise din aceleași controale ca tranzacția `Deschidere` a cubului, pe care
+conectorul o scrie prin comanda motorului înaintea lor. (14, 25e, 40d, 107 a/b)
 
 Stările sunt `Draft`, `Operat` și `Stornat`. Documentul și liniile sale sunt
 editabile în Draft. Starea originală din persistență este autoritatea

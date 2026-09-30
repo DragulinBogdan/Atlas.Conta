@@ -280,7 +280,7 @@ static class Imperecheri1C {
             .Where(p => p.DocumentId == stingatorId && p.Carte == N.Carte.Contabil
                 && p.FelUnitate == N.FelUnitate.Partida && p.Partener != null
                 && p.Tranzactie.Fel == N.FelTranzactie.Operare)
-            .Select(p => new { p.Cont, p.Partener }).Distinct().ToList();
+            .Select(p => new { p.Cont, p.Partener, p.Unitate }).Distinct().ToList();
         var partida = candidate.FirstOrDefault(c => perechi.Any(p => p.Cont == c.Cont && p.Partener == c.Partener));
         if (partida == default) {
             Sare("partida de deschidere există, dar stingătorul nu postează pe (cont, partener) al ei", suma);
@@ -326,14 +326,22 @@ static class Imperecheri1C {
                 : $"partida de deschidere refuză (alt motiv): {ex.GetType().Name}";
             Sare(motiv, suma);
             SaritPePartida[partida.Partida] = SaritPePartida.GetValueOrDefault(partida.Partida) + suma;
-            if (++detaliiRefuz <= 20)
-                bucla.Avert($"Stingerea pe partida inițială {cheieLegatura} ({suma:N2}) a fost refuzată: "
+            if (++detaliiRefuzDeschidere <= 60) {
+                var proprii = perechi.Where(p => p.Cont == partida.Cont && p.Partener == partida.Partener)
+                    .Select(p => p.Unitate).Distinct().ToList();
+                var restPropriu = os.GetObjectsQuery<Postare>()
+                    .Where(p => p.Unitate != null && proprii.Contains(p.Unitate) && p.Carte == N.Carte.Contabil)
+                    .Select(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare).ToList().Sum();
+                bucla.Avert($"Stingerea pe partida inițială {cheieLegatura} ({suma:N2}, de stins {deStins:N2}) refuzată: "
+                    + $"rest partidă {restPartida:N2}, rest propriu {restPropriu:N2} pe {proprii.Count} unități — "
                     + ex.Message.Split('\n')[0]);
+            }
             return false;
         }
     }
 
     static decimal valoarePlafonata;
+    static int detaliiRefuzDeschidere;
 
     // Triajul refuzurilor. Cele de BUSINESS sunt divergențe reale între sursă și
     // model, fiecare cu înțelesul ei (48b: raport, nu stop). Restul e DEFECT și

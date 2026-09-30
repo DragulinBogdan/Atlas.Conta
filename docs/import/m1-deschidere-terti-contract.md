@@ -251,3 +251,55 @@ ca raport de diferențe pe modelul rotund).
   handlerele, cititorii TR-D8, închiderea de perioadă.
 - Orice corecție de motor descoperită pe date: devine scenariu nou plus
   decizie (091-r5), nu se repară în conector.
+
+## 4. Execuție (2026-10-01, ianuarie; anul integral în curs)
+
+Decizia: `docs/decizii/107-deschiderea-de-terti-din-balanta-nivel3.md`.
+Rulările: `run-verificari/m1-ian/` (două rulări pe ianuarie, `--recreeaza
+--cititori --pana-la 1`, baza `Atlas.Conta.Import1C.Flax.M1`), `run-verificari/m1-an/`
+(anul integral, `--continua`). Cifrele de mai jos sunt ale rulării a doua pe
+ianuarie.
+
+**Deschiderea (1:10).** 4.026 poziții de terț în sursă, 59 pe conturi
+neurmărite (sold nedetaliat), 3.967 partide inițiale pe 9 conturi (401 1.336,
+4111 2.456, 419 118, 418 36, 461 8, 4091 7, 408 3, 404 2, 4118 1), 65 fără
+document de decontare, 7 pe partenerul generic (Σ 46.982,90; recuperarea din
+antetul documentului 0: cele două documente sunt neoperate în 1C). Per cont,
+D − C al partidelor = soldul Balanței, exact. 62 de controale (cont, latură),
+6.817 loturi în cub (celulele cu valoare fără cantitate, 47 / 719,94, rămân în
+registru), Δ declarat pe stoc −1.415,00 pe un cont. Tranzacția `Deschidere`:
+10.828 postări, egale cu controalele pe toate cheile; INV-CUB verde după
+deschidere și pe baza integrală după lună; 60 de rânduri bloc brute;
+reconcilierea deschiderii verde cu Δ-ul declarat și ancora 891 = −0,01 −
+(−1.415,00).
+
+**Luna (24:45; baseline 2026-09-21: 8:41).** 15.232 documente, 0 eșecuri,
+9.225 unități. Trecerea 2: 1.965 împerecheri pe documente + 1.334 stingeri pe
+partide inițiale (Σ 5.165.451,94), 36 plafonate la rest (excedent 9.302,73),
+297 partide cu refuzuri (Σ 1.616.938,76; 260 „deja stinsă", 38 „stingătorul
+n-are rest / semn inversat").
+
+**Contractele.** 3 și 4 verzi. 1: 5 conturi neexplicate, toate drift al
+motorului de pe main față de baseline, nu al M1 — 4111 +1,26 = 788 de facturi
+cu ±0,03 (rotunjirea TVA pe linie), 401 −10,57 = evaluările RLF, 4423 +8,45 /
+4427 +1,00 / 4426 −0,14 = consecința în ITV (contractul 2 pică pe același
+8,45); 891 e explicat de Δ-ul declarat. Același drift face ca refuzurile de
+împerechere pe documente „sursa stinge peste totalul documentului" să crească
+de la 6 (Σ 21k, baseline) la 213 (Σ 742k): plăți refuzate pentru 1–3 bani.
+5: 3.967 partide, 1.474 stinse integral în ambele părți, 32 explicate de
+refuzuri, 129 neatinse de trecerea 2 (Σ cub −255.847,47: 419 × 54, 4111 × 55,
+401 × 11, 418 × 6, 408 × 3 — stinse în sursă de facturi), 42 fără explicație
+(401 × 31 Σ −168.937,29, 4111 × 11 Σ 8.027,06), dominate de compensarea
+`SED00000025/27.01.2025` care postează 401 = 891 pe 251.159,98 pentru un
+document ținut la doi parteneri (170.114,95 + 81.045,03): sursa folosește
+891 ca punte de compensare (4.796 rânduri pe an, Σ 0).
+
+**Constatare pe main.** Rularea de control (main fără M1, worktree
+`m1-control`, baza `.Flax.M0`) pică din prima zi cu `STOC_INSUFICIENT` pe
+orice ieșire dintr-un lot de deschidere: stocul se citește din cub, iar
+deschiderea de pe main e doar în registre. Import1C nu mai rula pe main;
+M1 e condiția rulării (107 j).
+
+**Regula de oprire (M1-D10)** nu e îndeplinită pe contractele 1 și 2 din
+cauza drift-ului (107-r3) și pe contractul 5 pentru cele 42 de partide;
+verdictul anului integral se adaugă aici la finalul rulării.
