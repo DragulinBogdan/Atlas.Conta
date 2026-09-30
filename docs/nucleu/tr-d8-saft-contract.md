@@ -1837,3 +1837,51 @@ se face ca restanța **SAFT-r3**, nu în această felie.
 Integrala e verde pe ambele profiluri (bugetar 3.269 / privat 4.469):
 `run-verificari/20260930-135439-826`. Scenele SAFT sunt verzi pe ambele
 profiluri. WebApi și hostul Blazor compilează.
+
+### B8-R3 — măsurătorile SAF-B7 (pasul 3, 2026-09-30)
+
+**Owner, 2026-09-30: B8-Q3 = A.** Prima rulare a găsit o citire a întregului
+istoric în S: reconcilierea stoc ↔ sold pe cont, defalcată pe tip de
+document (S3-D7b, S3-RV1), grupa toate postările până la capătul lunii pe
+document (847 de rânduri la m = 12, plus tipurile acestor documente).
+Varianta A amendează S3-D7b. Pe fiecare cont, componentele sunt:
+
+- „(sold inițial)”: stocul la deschidere (pozițiile, fără deschiderea din
+  lună) față de soldul contabil inițial (balanța), ambele din snapshot;
+- componentele lunii pe tipul documentului, din postările ferestrei.
+
+Σ componente = diferența pe cont rămâne invariantul (D17-V6 F7). Se pierde
+defalcarea istorică a diferenței de deschidere; luna în care a apărut o
+diferență o arată pe tip. Proba SC-SAFT-49: în martie, fără mișcări, −30 pe
+301 este „(sold inițial)”, nu NTC-ul din februarie.
+
+**Criteriile B8-D3, precizate de măsurare:**
+
+- **Comenzi SQL:** neschimbat. 43 pe L, 26 pe S, în toate punctele.
+- **Opening S:** rândurile citite din `Postare` nu cresc cu m (toleranță
+  25%), iar cele din snapshot sunt cel mult 2 × pozițiile. Totalul
+  rândurilor nu e criteriu, fiindcă include metadate care cresc legitim cu
+  pozițiile (produse, loturi, snapshot). Același criteriu pe `Postare` se
+  aplică pe L.
+- **Liniaritatea:** se judecă pe timpul client (`ms − ms SQL`), cu toleranță
+  25% pe pas ×4. Alocările au toleranță 50% pe pas: L crește ×5,3 la
+  64 → 256, adică creșterea de colecții și sortarea, n log n, fără tipar
+  pătratic (acela ar da ×16).
+- **Serverul:** la k maxim, nicio interogare peste 100 ms în
+  `EXPLAIN (ANALYZE, BUFFERS)` (măsurat: 17,7 ms pe L, 4,5 ms pe S).
+- **Transportul:** timpul SQL total include un prag de ~43 ms pe interogare
+  cu parametru-tablou de 500–2.000 de UUID-uri. Pragul e reprodus identic cu
+  psycopg, deci e o proprietate a buclei locale Windows, nu a exportului. Se
+  raportează separat și merge la gate-ul transversal. Acolo este și restul
+  pragului absolut.
+- **Scara:** punctul k = 256 a fost adăugat, fiindcă la k = 64 pragul de
+  transport ascundea regimul liniar.
+
+Rezultatele, tabelul și dovezile sunt în
+[p5-perf-masuratori.md](../api/p5-perf-masuratori.md#tr-d8-saf-b8-2026-09-30--saf-t-l-și-s-pe-cub-scara-sintetică).
+Unealta se compune din `ModelCheck --perf-saft`, `PerfSaft.cs` și
+`CapturaSql.Masoara` (durata și rândurile pe comandă, cu parametrii pentru
+EXPLAIN). Experimentele de transport folosesc `MODELCHECK_CONEXIUNE_EXTRA`.
+Rularea: `run-verificari/perf-saft-20260930-162802`, toate criteriile OK.
+Integrala e verde pe ambele profiluri după corecția din `Componente`:
+`run-verificari/20260930-163341-762`.

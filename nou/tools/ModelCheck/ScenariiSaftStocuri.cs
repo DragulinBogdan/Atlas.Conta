@@ -263,6 +263,10 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
         Verifica("SC-SAFT-49", "S3-RV1: NTC D301/C401 30 fără lot — 301 apare în reconciliere cu stoc 0, sold 30, diferența −30 explicată de NTC",
             feb.Rezumat.StocPerCont.SingleOrDefault(c => c.Cont == "301") is { ClosingStocFizic: 0, ClosingBalanta: 30, Diferenta: -30 } c301
             && c301.Componente.SingleOrDefault(x => x.Diferenta != 0) is { TipDocument: "NTC", StocFizic: 0, Balanta: 30 });
+        Verifica("SC-SAFT-49", "B8-Q3: în martie (fără mișcări) diferența −30 de pe 301 e componenta „(sold inițial)”, din snapshot, "
+            + "nu NTC-ul din februarie — componentele citesc numai fereastra lunii (88e)",
+            Export(3).Rezumat.StocPerCont.SingleOrDefault(c => c.Cont == "301") is { Diferenta: -30 } m301
+            && m301.Componente.Count == 1 && m301.Componente[0] is { TipDocument: "(sold inițial)", StocFizic: 0, Balanta: 30 });
         Cusaturi(feb);
 
         Verifica("SC-SAFT-49", "reexportul lui ianuarie după mișcările din februarie e identic octet cu octet",

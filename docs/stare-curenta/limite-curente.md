@@ -182,10 +182,13 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   TVA la încasare pe plăți nu există în cub, iar exportul le refuză. Factura
   în valută se declară în RON, cu avertismentul `FacturaInValuta` (B-r6). Citirea
   alocărilor filtrează postările contabile pe `Unitate`, fără index dedicat.
-  Planul pe volum nu e măsurat, fiindcă nu există bază de volum după C102
-  (FZ-r3). Exportul nu face câte o interogare per plată sau factură: 41–42
-  de comenzi SQL la 1–14 plăți.
-  Stocurile (S3) și securitatea tuturor secțiunilor rămân felii TR-D8.
+  Pe scara sintetică (SAF-B8, până la 256 de unități/lună și 12 luni de
+  istoric) L emite 43 de comenzi SQL și S 26, constant; istoricul nu se
+  citește din `Postare`, iar execuția maximă pe server e 17,7 ms (originile
+  partidelor, FZ-r3). Planul pe volum real rămâne nemăsurat: nu există bază
+  de volum după C102. Interogările cu parametru-tablou de 500–2.000 de
+  identificatori plătesc ~43 ms de transport pe bucla locală Windows (măsurat
+  și cu psycopg); se tratează la gate-ul transversal de perf.
   Validatorul se rulează numai pe lună întreagă (antetul cu o singură lună).
   (103, D8-B8, S1-R8, S0-R4, S2)
 - Corecția unui document operat: motivul decide efectul fiscal, nu contarea.

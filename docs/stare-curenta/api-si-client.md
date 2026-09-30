@@ -460,4 +460,6 @@ condiționale. Refuzurile proiecției (`SaftDto.Refuzuri`) apar în sumar
 fișier, înaintea primului byte. Cusăturile ecranului L compară declarația
 cu cubul: rulajul balanței, faptele fiscale și baza lor pe sens. Cele ale
 ecranului S compară fiecare poziție cu postările pe lot ale lunii și stocul
-pe cont cu soldul contabil. (SAF-D4, S2-D5, S3-D6)
+pe cont cu soldul contabil; diferența pe cont se sparge în „(sold inițial)”
+(din snapshot) și componentele lunii pe tipul documentului, fără a citi
+istoricul (B8-Q3). (SAF-D4, S2-D5, S3-D6)

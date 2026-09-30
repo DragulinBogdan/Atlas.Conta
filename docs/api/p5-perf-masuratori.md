@@ -827,3 +827,90 @@ demonstrată: un cost unic per proces.
   (felia 27); id-urile reper se rezolvă pe fiecare bază, fiindcă bazele
   recreate nu păstrează GUID-urile.
 - Artefactele pasului 3 sunt în `run-f28/pas3/`, necomise.
+
+## TR-D8 SAF-B8 (2026-09-30) — SAF-T L și S pe cub, scara sintetică
+
+Contract: [B8-D3 și B8-R3](../nucleu/tr-d8-saft-contract.md). Comanda:
+`ModelCheck --perf-saft privat`, cu `MODELCHECK_BAZA_SUFIX` pe o bază proprie
+și `PERF_SAFT_DIR` pentru artefacte. Rularea din tabel este
+`run-verificari/perf-saft-20260930-162802`: XML-uri, planuri
+`EXPLAIN (ANALYZE, BUFFERS)` și `perf.log`. Baza este
+`Atlas.Conta.ModelCheck.Privat.ClaudeS3`, pe localhost:5444 (Windows).
+
+**Scena.** O unitate cuprinde:
+
+- FCT (stoc 10 × 10 + serviciu 50, N21) cu NIR conex;
+- PLT 70, legată 50 de FCT;
+- BCS 2, BTR 1 și DSC 1 din lotul FCT;
+- FCL 100 cu INC 60 legată.
+
+Luna măsurată are k unități. Istoricul are m luni închise × 16 unități, plus
+un lot „lung” consumat în fiecare lună. Totul se face prin comenzi reale;
+scena se purjează la final.
+
+**Fazele.** „Rece” golește pool-ul Npgsql și rulează GC; JIT-ul rămâne cald,
+fiindcă procesul nu se repornește. „Cald” este a doua rulare.
+
+**Măsurile:**
+
+- `ms` = exportul complet (proiecția, fără XML); `ms SQL` = Σ duratelor
+  comenzilor;
+- rândurile citite din `DataReaderClosing`;
+- octeții alocați prin `GC.GetTotalAllocatedBytes`; vârful gestionat
+  eșantionat la 2 ms;
+- XML scris pe disc; DUK măsurat separat, numai la punctele cu planuri.
+
+| m | k | modul | faza | ms | comenzi | ms SQL | rânduri | alocați MiB | vârf MiB | XML KiB | ms XML | ms DUK | tranzacții | facturi | plăți | mișcări | poziții | rânduri Postare | rânduri snapshot |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 1 | L | cald | 36 | 43 | 21 | 958 | 1,9 | 73,7 | 45 | 1 | 0 | 8 | 3 | 2 | 0 | 0 | 68 | 0 |
+| 0 | 4 | L | cald | 35 | 43 | 22 | 1168 | 2,3 | 68,3 | 130 | 1 | 0 | 26 | 9 | 8 | 0 | 0 | 191 | 0 |
+| 0 | 16 | L | cald | 35 | 43 | 26 | 2008 | 3,8 | 72,0 | 471 | 6 | 0 | 98 | 33 | 32 | 0 | 0 | 683 | 0 |
+| 0 | 64 | L | cald | 323 | 43 | 299 | 5368 | 11,2 | 83,7 | 1833 | 5 | 0 | 386 | 129 | 128 | 0 | 0 | 2651 | 0 |
+| 0 | 256 | L | rece | 816 | 43 | 717 | 18808 | 59,4 | 112,4 | 7287 | 21 | 0 | 1538 | 513 | 512 | 0 | 0 | 10523 | 0 |
+| 0 | 256 | L | cald | 786 | 43 | 706 | 18808 | 59,2 | 119,1 | 7287 | 15 | 2284 | 1538 | 513 | 512 | 0 | 0 | 10523 | 0 |
+| 6 | 16 | L | cald | 36 | 43 | 27 | 1998 | 3,8 | 112,9 | 464 | 2 | 2149 | 97 | 32 | 32 | 0 | 0 | 678 | 0 |
+| 12 | 16 | L | cald | 35 | 43 | 27 | 1998 | 3,8 | 130,6 | 465 | 2 | 2149 | 97 | 32 | 32 | 0 | 0 | 678 | 0 |
+| 0 | 1 | S | cald | 28 | 26 | 16 | 1486 | 1,8 | 69,8 | 18 | 1 | 0 | 0 | 0 | 0 | 6 | 3 | 37 | 1 |
+| 0 | 4 | S | cald | 23 | 26 | 14 | 1582 | 1,9 | 67,2 | 41 | 1 | 0 | 0 | 0 | 0 | 18 | 9 | 82 | 1 |
+| 0 | 16 | S | cald | 20 | 26 | 14 | 1966 | 2,4 | 68,6 | 132 | 2 | 0 | 0 | 0 | 0 | 66 | 33 | 262 | 1 |
+| 0 | 64 | S | cald | 23 | 26 | 16 | 3502 | 4,8 | 77,4 | 498 | 2 | 0 | 0 | 0 | 0 | 258 | 129 | 982 | 1 |
+| 0 | 256 | S | rece | 273 | 26 | 246 | 9646 | 14,9 | 106,4 | 1965 | 5 | 0 | 0 | 0 | 0 | 1026 | 513 | 3862 | 1 |
+| 0 | 256 | S | cald | 264 | 26 | 243 | 9646 | 14,6 | 111,1 | 1965 | 5 | 2161 | 0 | 0 | 0 | 1026 | 513 | 3862 | 1 |
+| 6 | 16 | S | cald | 24 | 26 | 17 | 2344 | 3,1 | 108,6 | 349 | 1 | 2151 | 0 | 0 | 0 | 65 | 225 | 258 | 291 |
+| 12 | 16 | S | cald | 27 | 26 | 19 | 2728 | 3,8 | 129,3 | 569 | 2 | 2152 | 0 | 0 | 0 | 65 | 417 | 258 | 579 |
+
+(Rândurile „rece” pentru k < 256 sunt în `perf-saft.md` din director. La k mic
+diferă de „cald” numai prin deschiderea conexiunilor.)
+
+**Ce arată cifrele:**
+
+- **Fără N+1.** L emite 43 de comenzi SQL, iar S 26, în toate punctele (k de
+  la 1 la 256, m de la 0 la 12).
+- **Istoricul nu se citește.** Rândurile din `Postare` rămân constante cu m
+  (L: 683 / 678 / 678; S: 262 / 258 / 258). Snapshot-ul S urmează pozițiile
+  deschise (291 / 579 rânduri la 225 / 417 poziții). Prima rulare a arătat
+  contrariul pe S: defalcarea reconcilierii pe tip de document (S3-D7b)
+  citea tot istoricul pe document (847 de rânduri la m = 12). Corecția e
+  B8-Q3 = A: fereastra lunii, plus „(sold inițial)” din snapshot.
+- **Timpul client e liniar.** Proiecția fără SQL: L 24 → 79 ms, S 7 → 21 ms
+  la k 64 → 256. Alocările cresc cel mult n log n (L ×5,3 la ×4; S ×3,0).
+- **Serverul nu e gâtul.** Execuția maximă a unei interogări la k = 256 este
+  17,7 ms pe L (alocarea Payments pe partide, FZ-r3) și 4,5 ms pe S.
+- **Pragul de transport.** Diferența dintre `ms SQL` și execuția pe server
+  vine de la interogările cu parametru-tablou (`= ANY(@ids)`). Fiecare
+  plătește ~43 ms pe această mașină când tabloul are între ~500 și ~2.000 de
+  UUID-uri. Fenomenul se reproduce identic cu psycopg, deci independent de
+  Npgsql și de codul SAF-T:
+  - 200 de UUID-uri: 0,6 ms;
+  - 500–2.000 de UUID-uri: 44 ms;
+  - 4.000 de UUID-uri: 6 ms.
+
+  Nemonotonia indică interacțiunea ACK întârziat / buffer pe bucla locală
+  Windows. Cu `Write Buffer Size=65536`, L la k = 64 scade de la 323 la
+  55 ms, dar pragul revine la k = 256. Rezolvarea (buffer, join în loc de
+  tablou, alt transport) ține de gate-ul transversal de perf. Nu e o
+  proprietate a exportului.
+- **DUK:** ~2,2 s pe fișier, independent de volum în intervalul măsurat.
+
+Pragul absolut și planul pe volum real rămân la gate-ul transversal. Baza de
+volum reală nu există după C102, deci FZ-r3 rămâne activă.

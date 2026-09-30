@@ -143,6 +143,7 @@ public static partial class SaftProiectii {
             .Distinct(StringComparer.Ordinal).Count();
 
     const string ComponentaDeschidere = "(deschidere)";
+    const string ComponentaSoldInitial = "(sold inițial)";
 
     static bool IdentitateTertValida(string id) {
         if (string.IsNullOrEmpty(id))

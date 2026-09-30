@@ -458,7 +458,7 @@ public static partial class SaftProiectii {
                     ClosingStocFizic = stoc, ClosingBalanta = inchidereGl, Diferenta = stoc - inchidereGl,
                 };
             }).OrderBy(c => c.Cont, StringComparer.Ordinal).ToList();
-            Componente(perCont);
+            Componente(perCont, luna, balanta);
 
             var coduriProdus = dto.Produse.Select(p => p.ProductCode).ToHashSet(StringComparer.Ordinal);
             var referite = dto.StocFizic.Select(e => e.ProductCode).Concat(emise.Select(l => l.ProductCode))
@@ -495,15 +495,13 @@ public static partial class SaftProiectii {
             dto.Rezumat.ReferinteBat = dto.Rezumat.ReferinteDuplicate == 0;
         }
 
-        // S3-D7b: diferența pe cont se sparge pe tipul documentului, din postările pe lot și din GL.
-        void Componente(List<SaftDiferentaCont> perCont) {
+        // S3-D7b, B8-Q3: soldul inițial din snapshot + componentele lunii pe tipul documentului (88e).
+        void Componente(List<SaftDiferentaCont> perCont, List<PostareLot> luna, List<BalantaRand> balanta) {
             if (perCont.Count == 0) return;
-            var ids = perCont.Select(c => c.ContId).ToList();
-            var stoc = Loturi.Postari(os).Where(p => p.Data <= end && ids.Contains(p.Cont))
-                .GroupBy(p => new { p.Cont, p.Tranzactie.DocumentId })
-                .Select(g => new { g.Key.Cont, g.Key.DocumentId,
-                    Valoare = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToList();
-            var gl = Contabil.Postari(os).Where(p => p.Data <= end && ids.Contains(p.Cont))
+            var ids = perCont.Select(c => c.ContId).ToHashSet();
+            var stoc = luna.Where(p => ids.Contains(p.Cont))
+                .GroupBy(p => (p.Cont, p.DocumentId)).Select(g => (g.Key.Cont, g.Key.DocumentId, Valoare: g.Sum(p => p.Valoare))).ToList();
+            var gl = Contabil.Postari(os).Where(p => p.Data >= start && p.Data <= end && ids.Contains(p.Cont))
                 .GroupBy(p => new { p.Cont, p.DocumentId })
                 .Select(g => new { g.Key.Cont, g.Key.DocumentId,
                     Valoare = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToList();
@@ -511,16 +509,17 @@ public static partial class SaftProiectii {
                 .OfType<Guid>().Distinct().ToList());
             string Tip(Guid? d) => d is Guid id ? coduri.GetValueOrDefault(id) ?? "(tip necunoscut)" : ComponentaDeschidere;
             var acumulat = new Dictionary<(Guid Cont, string Tip), (decimal Stoc, decimal Gl)>();
-            foreach (var x in stoc) {
-                var k = (x.Cont, Tip(x.DocumentId));
-                var v = acumulat.GetValueOrDefault(k);
-                acumulat[k] = (v.Stoc + x.Valoare, v.Gl);
+            void Aduna(Guid cont, string tip, decimal s, decimal g) {
+                var v = acumulat.GetValueOrDefault((cont, tip));
+                acumulat[(cont, tip)] = (v.Stoc + s, v.Gl + g);
             }
-            foreach (var x in gl) {
-                var k = (x.Cont, Tip(x.DocumentId));
-                var v = acumulat.GetValueOrDefault(k);
-                acumulat[k] = (v.Stoc, v.Gl + x.Valoare);
-            }
+            foreach (var cont in ids)
+                Aduna(cont, ComponentaSoldInitial,
+                    dto.StocFizic.Where(e => e.ContId == cont).Sum(e => e.OpeningValue)
+                        - luna.Where(p => p.Cont == cont && p.Fel == N.FelTranzactie.Deschidere).Sum(p => p.Valoare),
+                    balanta.Where(b => b.ContId == cont).Sum(b => b.InitialDebit - b.InitialCredit));
+            foreach (var x in stoc) Aduna(x.Cont, Tip(x.DocumentId), x.Valoare, 0m);
+            foreach (var x in gl) Aduna(x.Cont, Tip(x.DocumentId), 0m, x.Valoare);
             foreach (var c in perCont)
                 c.Componente = acumulat.Where(a => a.Key.Cont == c.ContId && (a.Value.Stoc != 0m || a.Value.Gl != 0m))
                     .Select(a => new SaftComponentaCont {

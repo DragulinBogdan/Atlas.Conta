@@ -47,7 +47,8 @@ using N = Atlas.Conta.Nucleu;
 
 // Șablonul de conexiune al uneltei: o singură definiție pentru toate comenzile.
 static string Conexiunea(string baza) =>
-    "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=" + baza;
+    "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=" + baza
+    + (Environment.GetEnvironmentVariable("MODELCHECK_CONEXIUNE_EXTRA") is { Length: > 0 } extra ? ";" + extra : "");
 
 // Validare model EF + (dacă baza există) verificare migrații/seed + scenariile
 // end-to-end ale motorului de operare pe un IObjectSpace real — aceeași
@@ -660,6 +661,25 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     // Proba e artefact de harness, nu obiect de probă ⇒ purjă FIZICĂ (F13-D2).
     ctx.ChangeTracker.Clear();
     await ctx.Database.ExecuteSqlInterpolatedAsync($"DELETE FROM \"ReguliContare\" WHERE \"ID\" = {proba.ID}");
+}
+
+if (args.Contains("--perf-saft")) {
+    var directorPerf = Environment.GetEnvironmentVariable("PERF_SAFT_DIR")
+        ?? Path.Combine(Duk.DirectorTemporar(), $"perf-saft-{DateTime.UtcNow:yyyyMMdd-HHmmss}");
+    Directory.CreateDirectory(directorPerf);
+    var masuriPerf = new List<PerfSaft.Masura>();
+    foreach (var (anPerf, istoricPerf, unitatiPerf, trepte) in new[] {
+                 (2050, 0, 0, new[] { 1, 4, 16, 64, 256 }), (2052, 6, 16, new[] { 16 }), (2054, 12, 16, new[] { 16 }) }) {
+        var scenaPerf = new PerfSaft(() => provider.CreateObjectSpace(), Check, (os, an, luna) => InchideAcceptTot(os, an, luna),
+            anPerf, istoricPerf, unitatiPerf, trepte, directorPerf, planuri: true);
+        var ceasPerf = Stopwatch.StartNew();
+        scenaPerf.Ruleaza();
+        masuriPerf.AddRange(scenaPerf.Masuri);
+        Console.WriteLine($"     PERF m{istoricPerf}: {ceasPerf.Elapsed.TotalSeconds:0} s");
+    }
+    PerfSaft.Evalueaza(masuriPerf, Check, directorPerf);
+    Rezumat();
+    return;
 }
 
 if (filtruScenarii != null) {
