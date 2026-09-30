@@ -18,6 +18,9 @@ totaluri, inclusiv pe ruta publică existentă (S0-R5). S0 este închis;
 comutarea L rămâne la S2 (R1).
 [Raportul Codex](tr-d8-saft-s0-review-codex.md).
 
+**2026-09-30 — gate-ul final B8 propus; owner: B8-Q1 = A, B8-Q2 = A:**
+[B8](#b8--gate-ul-final-saf-t-contract-pentru-aprobare-2026-09-30).
+
 **2026-09-29 — S3 implementat și comutat pe `tr-d8-saft-s3` (S3-R3); integrala
 verde pe ambele profiluri, S certificat XSD/DUK, HTTP pe host izolat; review-ul
 advers Codex cerut. Owner: S3-Q1 = A (NIR delta = 10 semnat, cheia fără
@@ -1521,3 +1524,213 @@ noi. Mutantul este respins și pe fixture-ul extins din februarie (14 intrări,
 13 chei distincte), `run-verificari/20260930-004852-898`. Scenele SAFT pe
 sursele restaurate trec pe ambele profiluri (18 bugetar / 175 privat OK),
 `run-verificari/20260930-005052-797`. [Raport](tr-d8-saft-s3-review-codex.md).
+
+**Smoke UI S în browser, 2026-09-30 (după PR #13): verde.** Host WebApi
+izolat pe 5091, baza `…Privat.SaftS3Http`, clientul cu
+`VITE_TINTA_API=http://127.0.0.1:5091`; fixture prin API (două FCT în
+ianuarie 2024 și NTC 371/401 30 fără lot), curățat la final. Admin
+ianuarie/februarie; XML-ul din buton interceptat ca blob;
+`SAFT_CATEGORIE_LIPSA` pe bandă și 422 la buton; `User` 403 fără cifre;
+`Cititor` 200; componentele RV1 (371: 250 / 280 / −30 = NTC −30); drill
+la fișa contului. Observațiile UX intră în B8-D5.
+
+## B8 — gate-ul final SAF-T: contract pentru aprobare (2026-09-30)
+
+**Owner, 2026-09-30: B8-Q1 = A (port + ștergere), B8-Q2 = A (scară
+sintetică). Implementarea pornește în paralel cu review-ul Codex al
+contractului.**
+
+Bază: `3461636` (S1, S2 și S3 merse în main). Contractul detaliază ieșirea
+SAF-B8. Nu închide TR-D8 integral: reconcilierea și auditul transversal,
+pragul perf și inventarul complet T-r11 își păstrează gate-urile.
+
+| Livrabil SAF-B8 | Stare la `3461636` | Ce rămâne |
+|---|---|---|
+| Subfeliile S1–S3 | închise, review Codex închis | — |
+| Matricea numerică | verde; SC-SAFT-12 parțial | SC-SAFT-12 trece în limite: lotul pe două conturi de stoc nu are producător (B8-D7) |
+| A/B clasificat | per scenă, în ModelCheck (`ExportVechi`) | un raport unic L+S, arhivat înaintea scoaterii rutei vechi (B8-D2) |
+| XML L/S cu manifest | per lună de scenă (S0-R8, S3-RV2) | o certificare comună pe HEAD-ul feliei (B8-D4) |
+| Probe HTTP | per subfelie, pe host izolat | o rulare comună pe HEAD (B8-D4) |
+| Măsurători SAF-B7 | numai numărul comenzilor SQL | setul complet (B8-D3) |
+| Review advers | per subfelie | review-ul feliei (B8-D6) |
+
+### B8-D1 — scoaterea exporturilor vechi L/S
+
+Rutele publice L și S citesc cubul de la S2/S3. `SaftProiectii.Saft` și
+`SaftProiectii.SaftStocuri` citesc registrele (≈1.900 de linii). Azi au
+trei roluri:
+
+- oracolul A/B din scene (`ExportVechi` în `ScenariiSaft`,
+  `ScenariiSaftStocuri`);
+- sursa probelor D16-V2 și D17-V2 (`VerificaSaft`, `VerificaSaftStocuri`,
+  `VerificaSaftStocuriFixuri`, ≈3.300 de linii în ModelCheck);
+- consumatori punctuali: `ScenariiCitiri`, `ScenariiDec`,
+  `ScenariiFiscale`, `VerificaValoareIesire`, `VerificaDvi` și
+  `Import1C/Saft1C`.
+
+**Propunere (B8-Q1 = A).**
+
+1. Scenele D16-V2 și D17-V2 sunt cele mai largi fixture-uri SAF-T.
+   Conțin valută, FCL + DSC, RDC, RLF, INC, DEC, două stornouri, produs
+   fără cont de stoc și deschidere pe loturi × gestiuni. Ele rulează o
+   ultimă dată prin ambele exporturi. Diferențele intră în raportul B8-D2.
+2. Apoi scenele se portează pe cub, aserțiune cu aserțiune:
+   - aserțiunea scrisă de mână rămâne dacă regula ei rămâne adevărată;
+   - dacă regula s-a schimbat (valuta refuzată, avertismentul devenit
+     refuz, recepția pe FCT), aserțiunea se înlocuiește și numește regula
+     S*/SAF-*;
+   - aserțiunea care doar compară cu ruta veche dispare.
+   Harta aserțiune veche → probă nouă / regulă / motivul dispariției intră
+   în acest contract. Ea dovedește că acoperirea nu se pierde.
+3. Consumatorii punctuali trec pe `SaftPeCub` / `SaftStocuriPeCub`.
+   `Import1C/Saft1C` trece la fel; unealta rămâne înghețată, doar compilează.
+4. Se șterg `Saft`, `SaftStocuri`, helperii folosiți numai de ele,
+   `ExportVechi` și ramurile A/B din scene. Probele A/B trăiesc mai departe
+   în raportul arhivat, nu în cod. Catalogul scris de mână rămâne proba
+   supremă (91).
+
+**B:** exporturile vechi se mută în ModelCheck ca oracol până la TR-D9.
+Contra: țin în viață citirile pe registre (`RegistruStoc`, soldurile pe
+tip de stoc) pe care TR-D9 le taie. Oracolul nu mai clasifică nimic nou
+după raportul final, iar fiecare schimbare de model ar trebui întreținută
+și pe calea veche.
+
+### B8-D2 — raportul A/B final
+
+Raportul acoperă scenele SAFT, SAFT-S, DES, D16-V2 și D17-V2, pe ambele
+profiluri, înaintea pasului 4 din B8-D1. Unitatea raportului este
+scenă × lună × secțiune × cheie, cu valoarea veche, valoarea nouă,
+diferența și regula care o explică. Cheile sunt:
+
+- GL: tranzacție / linie / cont;
+- facturi: `InvoiceNo` / linie;
+- Payments: plată / linie;
+- MovementOfGoods: document × storno × lot × gestiune;
+- PhysicalStock: poziție.
+
+Clasele admise sunt cele din SAF-B5, S1-R, S2-R, S3-D8 și S3-RV4, fiecare
+cu identificatorul ei. O diferență neclasificată oprește felia. Raportul se
+comite în `docs/nucleu/tr-d8-saft-ab.md`, fiindcă după B8-D1 nu mai poate
+fi regenerat. Log-urile brute rămân în `run-verificari/`.
+
+### B8-D3 — măsurătorile SAF-B7
+
+După C102 nu există bază de volum, iar Import1C e înghețat până la final
+(091-r4). **Propunere (B8-Q2 = A): scară sintetică prin comenzi reale.**
+
+- **Scena de volum.** Unitatea combinată L+S cuprinde FCT + NIR, PLT cu
+  alocare parțială, INC, BCS, BTR, ASM și FCL + DSC. Ea se multiplică de
+  k ∈ {1, 4, 16, 64} ori într-o lună dintr-un an liber. Istoricul adaugă
+  m ∈ {0, 6, 12} luni închise înainte, pentru creșterea istoricului de stoc
+  și a partidelor.
+- **Rularea.** Comanda ModelCheck `--perf-saft` rulează pe o bază proprie
+  (`MODELCHECK_BAZA_SUFIX`), în afara integralei. Pe fiecare punct (k, m)
+  rulează L și S separat, rece (proces nou, pool gol) și cald (a doua
+  rulare).
+- **Măsurile:**
+  - durata totală;
+  - comenzile SQL: număr, durată și rânduri, prin `DiagnosticListener`;
+  - octeții alocați (`GC.GetTotalAllocatedBytes`) și vârful setului de
+    lucru;
+  - dimensiunea XML și durata serializării;
+  - durata DUK, separat;
+  - la k = 64, m = 12: `EXPLAIN (ANALYZE, BUFFERS)` pe interogarea
+    alocării Payments și pe Opening S.
+- **Criterii blocante:**
+  - numărul de comenzi SQL nu depinde de k și m;
+  - rândurile citite de Opening S nu cresc cu m, fiindcă Opening citește
+    snapshot-ul;
+  - durata și alocările cresc cel mult liniar în k, cu toleranță de 25%
+    pe fiecare pas ×4;
+  - scena k = 64 se exportă integral; un export imposibil de măsurat
+    blochează felia (SAF-B7).
+- **În afara criteriilor.** Pragul absolut rămâne la gate-ul transversal.
+  FZ-r3 rămâne activă: planul la k = 64 e indiciu, nu decizie de index.
+- **Rezultatele** intră într-o secțiune nouă în
+  `docs/api/p5-perf-masuratori.md`. Fiecare cifră se compară numai cu ea
+  însăși, pe aceeași bază.
+
+**B:** amânăm măsurătorile până la o bază de volum (Import1C reactivat
+ori clonă de client). Contra: SAF-B7 declară blocantă imposibilitatea
+măsurării, deci B8 n-ar putea închide.
+
+### B8-D4 — certificarea finală și HTTP
+
+Pe HEAD-ul feliei, după B8-D1:
+
+- integrala verde pe ambele profiluri;
+- XML-urile L și S ale fiecărei luni de scenă validate cu XSD v249 și
+  DUK J2.2.18, fără atenționări, cu manifestele arhivate în
+  `run-verificari/`;
+- hash-urile artefactelor S0 re-înregistrate după rulare, ca să prindem un
+  auto-update;
+- un singur host izolat rulează `saft-acces.py`, `saft-stocuri.py`,
+  `fiscal-cub.py` și `refuzuri.ps1`;
+- după ștergere, captura SQL a SC-SAFT-36 pe ambele uși e egală cu
+  `SaftAcces.Citite` / `CititeStocuri`.
+
+### B8-D5 — pagina SAF-T
+
+Corecturile observate la smoke-ul S, verificate în browser:
+
+- butonul XML e inactiv cât sumarul are refuzuri; azi 422 dublează mesajul
+  benzii;
+- lista 403 numește tipurile relevante ale secțiunii, nu primul tip
+  alfabetic al helperului comun cu L;
+- fișa contului deschisă din SAF-T revine la SAF-T, nu la balanță.
+
+Pagina SAF-T este o pagină de citire, nu o pagină de detaliu înghețată
+(104d).
+
+### B8-D6 — review advers al feliei (Codex)
+
+Țintele review-ului:
+
+- harta de acoperire din B8-D1: nicio aserțiune veche pierdută fără motiv;
+- raportul B8-D2: nicio clasă folosită în afara martorului ei numeric;
+- măsurătorile B8-D3: citirea istoricului pe Opening și N+1 la k mare;
+- securitatea după ștergere: tabelele citite versus lista `SaftAcces`, pe
+  ambele uși;
+- coerența L ↔ S pe aceeași lună: soldul conturilor de stoc din GL versus
+  cusăturile S3-D7.
+
+Constatările P1/P2 se închid înaintea merge-ului.
+
+### B8-D7 — închiderea documentară
+
+- **Decizia 105 „SAF-T pe cub”.** Regula durabilă adună ce e azi numai în
+  contract: sursa unică e cubul; SAF-D1…D4; S1-D5 = B'; S2-R1/R2;
+  S3-R1/R2; categoria stocului pe cont; manifestul și certificarea;
+  refuzul fără acces complet. Decizia amendează 073 (delimitarea
+  exportului) și 074 (cheia politicii de mișcare).
+- **Restanțe.**
+  - F27-r10 se închide: inițialul pe registru dispare cu ruta veche.
+  - T-r14 și N-r8 se închid numai pentru consumatorul SAF-T; în textul
+    restanței rămân deschise pentru ceilalți cititori.
+  - SAFT-r1, SAFT-r2, FZ-r3, FZ-r7, F26-r8 și TR-r7 rămân.
+  - SC-SAFT-12 (lotul pe două conturi de stoc) devine limită declarată.
+- **Stare.** `stare-curenta/limite-curente.md` se actualizează: rândul
+  „Stocurile (S3)… rămân felii TR-D8” e depășit. `CLAUDE.md` („Următorul
+  pas”) se actualizează la fel.
+
+### B8-D8 — pașii și oprirea
+
+Pașii, în ordine:
+
+1. Raportul A/B (B8-D2), înaintea oricărei ștergeri.
+2. Portarea D16-V2/D17-V2 și a consumatorilor, apoi ștergerea (B8-D1).
+3. Măsurătorile (B8-D3).
+4. Certificarea, HTTP și pagina (B8-D4, B8-D5).
+5. Review-ul Codex (B8-D6).
+6. Documentele și decizia 105 (B8-D7).
+
+Oprire:
+
+- o diferență A/B neclasificată;
+- o aserțiune veche fără corespondent și fără motiv;
+- un număr de comenzi care crește cu k sau m;
+- un Opening care citește istoricul;
+- un XML respins;
+- o constatare P1 deschisă.
+
+Fiecare caz revine la contract, nu se tolerează.
