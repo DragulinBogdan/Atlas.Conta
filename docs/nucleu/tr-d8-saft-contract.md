@@ -1734,3 +1734,24 @@ Oprire:
 - o constatare P1 deschisă.
 
 Fiecare caz revine la contract, nu se tolerează.
+
+### B8-R1 — raportul A/B final (pasul 1, 2026-09-30)
+
+[Raportul](tr-d8-saft-ab.md) acoperă scenele SAFT, SAFT-S, DES, D16-V2 și
+D17-V2 pe toate lunile lor: 111 diferențe, toate clasificate, cu martor
+numeric. Cei cinci mutanți de pe prima lună a fiecărei scene sunt respinși.
+Integrala e verde pe ambele profiluri (bugetar 3.269 / privat 4.502):
+`run-verificari/20260930-131021-786`.
+
+- **Martorul pozițiilor este sursa, nu mișcările.** Ruta veche calcula
+  PhysicalStock din `RegistruStoc`, inclusiv rândurile scoase din mișcări
+  (produsul fără cont). Martorul este deci: nou − vechi = Σ pe document
+  (cub − registru), iar fiecare document cu diferență este clasificat.
+- **Defect corectat.** Exportul pe cub pierduse avertismentul
+  `FacturaInValuta` (D16-V2, FCT-EUR). `SaftPeCub` îl emite acum din
+  `FacturaIntrare.Valuta`, pe mulțimea restrânsă la tip (89b, B-r6).
+- **Artefact de probă.** În D17-V2, BTR-FC este operat „nemigrat”: are
+  rânduri de registru și zero postări în cub. Clasa lui există numai în
+  scenele vechi și dispare odată cu portarea (B8-D1), fiindcă în producție
+  operarea scrie întotdeauna cubul.
+- **Conturi și Terți:** zero diferențe pe toate scenele.

@@ -241,6 +241,8 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         VerificaPlatiMartie(mar);
 
         Certificare((dtoIanuarie, artefactIanuarie), (feb, artefactFebruarie), (mar, Xml(mar)));
+        AbFinal("SC-SAFT-15", (os, l) => SaftProiectii.Saft(os, An, l, Zi(l, 28)),
+            (os, l) => SaftProiectii.SaftPeCub(os, An, l, Zi(l, 28)));
 
         RepeatableRead();
         RepeatableReadPlati();
@@ -924,6 +926,7 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         Verifica("SC-SAFT-15", "mutanți A/B: gate-ul respinge omisiunea unei facturi obișnuite și a uneia cu diferență deja clasificată",
             !Echivalent(vechi, FaraFactura(obisnuita), out _) && !Echivalent(vechi, FaraFactura(clasificata), out _));
     }
+
 
     void RepeatableRead() {
         var fc = NouPartener("FC");

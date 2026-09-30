@@ -179,7 +179,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   exportului contabil. Ruta publică L citește cubul (S1, S2); validarea
   XSD/DUK (S0) certifică GL-ul, facturile și plățile lunilor scenei.
   Compensarea prin notă contabilă nu apare în Payments (SAFT-r1). Valuta și
-  TVA la încasare pe plăți nu există în cub, iar exportul le refuză. Citirea
+  TVA la încasare pe plăți nu există în cub, iar exportul le refuză. Factura
+  în valută se declară în RON, cu avertismentul `FacturaInValuta` (B-r6). Citirea
   alocărilor filtrează postările contabile pe `Unitate`, fără index dedicat.
   Planul pe volum nu e măsurat, fiindcă nu există bază de volum după C102
   (FZ-r3). Exportul nu face câte o interogare per plată sau factură: 41–42

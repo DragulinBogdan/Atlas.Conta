@@ -11688,6 +11688,15 @@ void VerificaSaftModel(bool privat) {
     }
 }
 
+// SAF-B8 D2: A/B final pe lunile scenelor D16-V2 / D17-V2, cu clasificatorul comun.
+void AbFinalProba(string id, int an, int[] luni, bool stocuri, DateOnly dataCreare) {
+    using var os = provider.CreateObjectSpace();
+    var date = luni.Select(l => (l,
+        stocuri ? SaftProiectii.SaftStocuri(os, an, l, dataCreare) : SaftProiectii.Saft(os, an, l, dataCreare),
+        stocuri ? SaftProiectii.SaftStocuriPeCub(os, an, l, dataCreare) : SaftProiectii.SaftPeCub(os, an, l, dataCreare))).ToList();
+    SaftAb.Ruleaza(os, id, id + " (privat)", true, an, date, Check);
+}
+
 // ============ Felia 16, pas 2: regulile + proiecția SAF-T — D16-V2 ============
 // Ce probează: (a) funcțiile PURE ale legii (`SaftReguli`) pe toate ramurile lor,
 // fără bază — deci identic pe ambele profiluri; (b) proiecția `SaftProiectii.Saft`
@@ -12227,6 +12236,7 @@ void VerificaSaft(bool privat) {
 
     // ══════════ Proiecția ══════════
     var saft = SaftProiectii.Saft(os, an, luna, dataCreare);
+    if (privat) AbFinalProba("D16-V2", an, [luna], stocuri: false, dataCreare);
     var rez = saft.Rezumat;
     Console.WriteLine($"     MĂSURAT (D16-V2, {luna:00}.{an}): {rez.Tranzactii} tranzacții / {rez.LiniiGl} linii GL "
         + $"peste {rez.RanduriRegistru} rânduri de registru; jurnale [{string.Join(", ", saft.Jurnale.Select(j => $"{j.JournalID}×{j.Tranzactii.Count}"))}]; "
@@ -13812,6 +13822,7 @@ void VerificaSaftStocuri(bool privat) {
     var cronometru = Stopwatch.StartNew();
     var saft = SaftProiectii.SaftStocuri(os, an, luna, dataCreare);
     var msProiectie = cronometru.Elapsed.TotalMilliseconds;
+    if (privat) AbFinalProba("D17-V2", an, [luna - 1, luna], stocuri: true, dataCreare);
     var rez = saft.Rezumat;
     Console.WriteLine($"     MĂSURAT (D17-V2, {luna:00}.{an}): {rez.NumarMiscari} mișcări / "
         + $"{rez.NumarLiniiMiscare} linii peste {rez.RanduriRegistruStoc} rânduri de registru; "

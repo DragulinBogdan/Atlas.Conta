@@ -286,10 +286,13 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
         ProbaDuala(ian);
         Perf();
         Certificare((ian, artefactIan), (feb, Xml(feb)), (Export(3), null));
+        AbFinal("SC-SAFT-49", (os, l) => SaftProiectii.SaftStocuri(os, An, l, Zi(l, 28)),
+            (os, l) => SaftProiectii.SaftStocuriPeCub(os, An, l, Zi(l, 28)));
 
         ChRefuzuri(bcs2, bcs3);
         CategorieLipsa();
     }
+
 
     void Schimba(Guid nir, decimal q) => Comanda(os => {
         var l = os.GetObjectByKey<NIR>(nir).Detalii.OfType<NirDetaliu>().Single();

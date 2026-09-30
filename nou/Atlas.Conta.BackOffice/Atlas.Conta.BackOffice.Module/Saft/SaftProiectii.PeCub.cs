@@ -101,6 +101,7 @@ public static partial class SaftProiectii {
             CorectiiIncomplete(jurnal);
             dto.FacturiEmise = Facturi(jurnal, vanzare: true);
             dto.FacturiPrimite = Facturi(jurnal, vanzare: false);
+            ValutaFacturi();
             Plati(jurnal, plati);
             Terti(agregateTert);
 
@@ -401,6 +402,17 @@ public static partial class SaftProiectii {
                     $"{(vanzare ? "SalesInvoices" : "PurchaseInvoices")} „{coliziune.Key.Item1}” ({coliziune.Key.InvoiceType}): "
                     + $"{coliziune.Count()} evenimente cu același număr și tip.");
             return lista;
+        }
+
+        // B-r6: cubul nu poartă valuta, fișierul declară RON.
+        void ValutaFacturi() {
+            var ids = dto.FacturiPrimite.Select(f => f.DocumentId).Distinct().ToList();
+            foreach (var f in os.GetObjectsQuery<FacturaIntrare>().Where(f => ids.Contains(f.ID) && f.Valuta != null)
+                         .Select(f => new { f.Numar, f.Valuta }).ToList()
+                         .Where(f => !string.IsNullOrWhiteSpace(f.Valuta) && !string.Equals(f.Valuta.Trim(), DefaultCurrencyCode, StringComparison.OrdinalIgnoreCase))
+                         .OrderBy(f => f.Numar, StringComparer.Ordinal))
+                Avert(CodAvertismentSaft.FacturaInValuta,
+                    $"FCT {f.Numar} e în {f.Valuta} — fișierul declară totul în RON (`CurrencyAmount` = `Amount`), fără curs.");
         }
 
         SaftFactura Factura(Guid tranzactieId, List<PostareJurnal> tx, bool vanzare) {
