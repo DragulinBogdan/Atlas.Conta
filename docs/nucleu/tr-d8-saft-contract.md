@@ -1755,3 +1755,13 @@ Integrala e verde pe ambele profiluri (bugetar 3.269 / privat 4.502):
   scenele vechi și dispare odată cu portarea (B8-D1), fiindcă în producție
   operarea scrie întotdeauna cubul.
 - **Conturi și Terți:** zero diferențe pe toate scenele.
+
+### B8-RV1.2-C — corecție aplicată de Codex (2026-09-30)
+
+La cererea owner-ului, martorul ambelor ramuri SAF-B5 ale facturilor a fost
+legat de sursele reale ale documentului/evenimentului. Cele 21 de probe
+adverse sunt respinse; cele 111 diferențe legitime rămân clasificate.
+Integrala pe ambele rute: **3.269 / 4.521 OK**, zero FAIL, exit 0.
+**B8-RV1.2 este rezolvată; toate constatările B8 sunt închise.**
+Codul este reverificat de Claude și comis pe `tr-d8-saft-ab-rv1`. SAFT-r4/r5 și gate-ul transversal rămân.
+[Surse, martori, comandă și manifest](tr-d8-saft-b8-rv12-corectie.md).

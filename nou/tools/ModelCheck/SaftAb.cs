@@ -158,6 +158,7 @@ static class SaftAb {
         }
         foreach (var p in perechi) Console.WriteLine($"     A/B PERECHE NEÎNCHISĂ: {p}");
         verifica($"{id}: A/B final — perechile document ↔ conex egale cumulat (sau conexul Draft fără registru)", perechi.Count == 0);
+        VerificaFacturi(os, an, luni, rezultat, id, verifica);
         if (luni.Count == 0) return;
         var respinsi = new List<string>();
         var aplicati = new List<string>();
@@ -174,6 +175,57 @@ static class SaftAb {
             aplicati.Count > 0 && respinsi.Count == aplicati.Count);
     }
 
+
+    static void VerificaFacturi(IObjectSpace os, int an, IReadOnlyList<(int Luna, SaftDto V, SaftDto N)> luni,
+            List<(int Luna, List<(Rand Rand, string Clasa)> Randuri)> rezultate, string id, Action<string, bool> verifica) {
+        foreach (var (luna, randuri) in rezultate) {
+            foreach (var (rand, clasa) in randuri.Where(x => x.Rand.Sectiune == "Facturi"
+                         && x.Clasa?.StartsWith("SAF-B5:", StringComparison.Ordinal) == true)) {
+                var original = (SaftFactura)rand.N.Single();
+                var veche = rand.V.Cast<SaftFactura>().SingleOrDefault();
+                var tinta = original.Linii.First(l => veche == null || !veche.Linii.Any(v => v.DetaliuId == l.DetaliuId));
+                var ramura = veche == null ? "factură absentă" : "linie suplimentară";
+                var factor = veche == null ? 10m : 5m;
+                var mutanti = new List<(string Nume, Action<SaftFactura, SaftLinieFactura> Muta)> {
+                    ("bază și TVA multiplicate, totaluri coerente", (f,l) => {
+                        var delta = l.InvoiceLineAmount * (factor - 1);
+                        var deltaTva = l.TaxInformation.TaxAmount * (factor - 1);
+                        l.InvoiceLineAmount *= factor; l.TaxInformation.TaxAmount *= factor;
+                        l.TaxInformation.TaxBase *= factor;
+                        f.NetTotal += delta; f.GrossTotal += delta + deltaTva;
+                    }),
+                    ("cantitate +1", (_,l) => l.Quantity += 1),
+                    ("cont linie schimbat", (_,l) => l.AccountID += "X"),
+                    ("cod taxă schimbat", (_,l) => l.TaxInformation.TaxCode = "999999"),
+                    ("TVA +1 cu brut coerent", (f,l) => { l.TaxInformation.TaxAmount += 1; f.GrossTotal += 1; }),
+                    ("număr factură schimbat", (f,_) => f.InvoiceNo += "-X"),
+                    ("cont factură schimbat", (f,_) => f.AccountID += "X"),
+                    ("linie omisă cu totaluri coerente", (f,l) => {
+                        f.Linii.Remove(l); f.NetTotal -= l.InvoiceLineAmount;
+                        f.GrossTotal -= l.InvoiceLineAmount + l.TaxInformation.TaxAmount;
+                    }),
+                    ("linie duplicată cu totaluri păstrate", (f,l) => {
+                        l.InvoiceLineAmount /= 2; l.Quantity /= 2; l.TaxInformation.TaxAmount /= 2;
+                        l.TaxInformation.TaxBase /= 2; f.Linii.Add(Clona(l));
+                    }),
+                    ("tip factură schimbat", (f,_) => f.InvoiceType = "389"),
+                };
+                if (original.Linii.Count > 1)
+                    mutanti.Add(("1 redistribuit între linii, totaluri păstrate", (f,l) => {
+                        l.InvoiceLineAmount += 1; f.Linii.First(x => x != l).InvoiceLineAmount -= 1;
+                    }));
+                foreach (var (nume, muta) in mutanti) {
+                    var candidat = Cloneaza(luni.Single(x => x.Luna == luna).N);
+                    var factura = candidat.FacturiPrimite.Single(f => f.DocumentId == original.DocumentId && f.Storno == original.Storno);
+                    muta(factura, factura.Linii.Single(l => l.DetaliuId == tinta.DetaliuId));
+                    var (r, p) = Evalueaza(os, an, luni.Select(x => x.Luna == luna ? (x.Luna, x.V, candidat) : x).ToList());
+                    verifica($"{id}: A/B {ramura} — {nume} respins",
+                        r.Any(x => x.Randuri.Any(y => y.Clasa == null)) || p.Count > 0);
+                }
+            }
+        }
+    }
+
     // Clasele admise (SAF-B5, S1-R, S2-R, S3-D8, S3-RV4); fiecare cere martorul ei numeric.
     public sealed class Clasificator {
         SaftDto vechi, nou;
@@ -188,7 +240,7 @@ static class SaftAb {
 
         public string Clasa(IObjectSpace os, int an, int luna, Rand r) => r.Sectiune switch {
             "GL" => Gl(os, an, luna, r),
-            "Facturi" => Factura(os, r),
+            "Facturi" => Factura(os, an, luna, r),
             "Plăți" => Plata(os, r),
             "Mișcări" => Miscare(os, an, luna, r),
             "Stoc" => Stoc(os, an, luna, r),
@@ -231,13 +283,14 @@ static class SaftAb {
             return "SAF-B5: recepția stă pe documentul-sursă în cub, pe conex în registrul vechi (martor: fiecare document = postările lui din cub, perechea egală cumulat)";
         }
 
-        string Factura(IObjectSpace os, Rand r) {
+        string Factura(IObjectSpace os, int an, int luna, Rand r) {
             var (doc, _) = ((Guid, bool))r.Cheie;
             var pereche = Pereche(os, doc) is { } pp && pp.Sursa == doc ? pp : ((Guid Sursa, Guid Conex)?)null;
             if (r.V.Count == 0 && r.N.Count == 1 && pereche is { } p
                 && (perechi.ContainsKey(p) || RegistruPe(os, p.Conex)) && r.N[0] is SaftFactura f
                 && f.InvoiceDate == DataRadacina(os, doc) && f.NetTotal == f.Linii.Sum(l => l.InvoiceLineAmount)
-                && f.GrossTotal == f.NetTotal + f.Linii.Sum(l => l.TaxInformation?.TaxAmount ?? 0)) {
+                && f.GrossTotal == f.NetTotal + f.Linii.Sum(l => l.TaxInformation?.TaxAmount ?? 0)
+                && FacturaDinCub(os, an, luna, f)) {
                 facturaNumaiPeCub = true;
                 explicate.Add(doc);
                 return "SAF-B5: factura fără rând propriu în registrul vechi (recepția și baza pe conex); cubul o emite";
@@ -245,14 +298,17 @@ static class SaftAb {
             if (r.V.Count != 1 || r.N.Count != 1) return null;
             var v = (SaftFactura)r.V[0];
             var n = (SaftFactura)r.N[0];
-            if (pereche != null && v.InvoiceType == n.InvoiceType && v.InvoiceDate == n.InvoiceDate) {
+            if (pereche != null && v.InvoiceType == n.InvoiceType && v.InvoiceDate == n.InvoiceDate
+                && v.InvoiceNo == n.InvoiceNo && v.AccountID == n.AccountID && FacturaDinCub(os, an, luna, n)) {
                 var extra = n.Linii.ToList();
                 foreach (var l in v.Linii.Select(Linie)) {
                     var i = extra.FindIndex(x => Linie(x) == l);
                     if (i < 0) { extra = null; break; }
                     extra.RemoveAt(i);
                 }
-                if (extra is { Count: > 0 } && n.NetTotal - v.NetTotal == extra.Sum(x => x.InvoiceLineAmount)
+                if (extra is { Count: > 0 } && extra.All(l => os.GetObjectsQuery<C.Postare>().Any(p =>
+                        p.DocumentId == doc && p.LinieId == l.DetaliuId && p.FelUnitate == N.FelUnitate.Lot))
+                    && n.NetTotal - v.NetTotal == extra.Sum(x => x.InvoiceLineAmount)
                     && n.GrossTotal - v.GrossTotal == extra.Sum(x => x.InvoiceLineAmount + (x.TaxInformation?.TaxAmount ?? 0))) {
                     liniiStocPeCub = true;
                     explicate.Add(doc);
@@ -275,6 +331,73 @@ static class SaftAb {
             return SaftAb.Factura(restul) == SaftAb.Factura(n)
                 ? string.Join(" + ", new[] { tip, data, brut }.Where(x => x != null))
                 : null;
+        }
+
+
+        static bool FacturaDinCub(IObjectSpace os, int an, int luna, SaftFactura f) {
+            if (os.GetObjectByKey<Document>(f.DocumentId) is not FacturaIntrare doc) return false;
+            var start = new DateOnly(an, luna, 1);
+            var end = start.AddMonths(1).AddDays(-1);
+            var fel = f.Storno ? N.FelTranzactie.Storno : N.FelTranzactie.Operare;
+            var evenimente = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.DocumentId == doc.ID
+                && t.Fel == fel && t.Data >= start && t.Data <= end).ToList();
+            if (evenimente.Count != 1) return false;
+            var eveniment = evenimente[0];
+            var postari = os.GetObjectsQuery<C.Postare>().Where(p => p.TranzactieId == eveniment.ID
+                && p.Carte == N.Carte.Contabil).ToList();
+            var conturi = os.GetObjectsQuery<Cont>().ToList().ToDictionary(c => c.ID);
+            bool Furnizor(C.Postare p) => conturi[p.Cont].RolTert == RolTertCont.Furnizor;
+            decimal Comercial(C.Postare p) => p.Latura == N.Latura.Credit ? p.Valoare : -p.Valoare;
+            var terti = postari.Where(Furnizor).ToList();
+            var contTert = terti.Select(p => p.Cont).Distinct().ToList();
+            var parteneri = terti.Select(p => p.Partener).Distinct().ToList();
+            var brut = terti.Sum(Comercial);
+            if (contTert.Count != 1 || parteneri.Count != 1 || parteneri[0] == null
+                || f.InvoiceNo != doc.Numar || f.InvoiceDate != DataRadacina(os, doc.ID)
+                || f.InvoiceType != SaftReguli.InvoiceTypeEveniment(f.Storno, doc.CorecteazaId != null, brut)
+                || f.AccountID != SaftReguli.SimbolSaft(conturi[contTert[0]].Simbol)
+                || f.TransactionID != eveniment.ID.ToString() || f.GLPostingDate != eveniment.Data
+                || f.PartenerCheie != parteneri[0] || f.GrossTotal != brut) return false;
+
+            var fapte = C.Citiri.Fiscale.Fapte(os).Where(x => x.TranzactieId == eveniment.ID).ToList();
+            var linii = postari.Where(p => p.LinieId != null && Furnizor(p)).Select(p => p.LinieId.Value)
+                .Union(fapte.Select(x => x.DetaliuId)).ToHashSet();
+            if (f.Linii.Count != linii.Count || f.Linii.Select(l => l.DetaliuId).Distinct().Count() != linii.Count
+                || !linii.SetEquals(f.Linii.Select(l => l.DetaliuId))) return false;
+            var mapari = new MapariFiscale(os);
+            var net = 0m;
+            var comercial = 0m;
+            foreach (var l in f.Linii) {
+                var detaliu = os.GetObjectByKey<DocumentDetaliu>(l.DetaliuId);
+                if (detaliu == null || detaliu.DocumentId != doc.ID || l.Quantity != Math.Abs(detaliu.Cantitate)
+                    || l.Quantity == 0 || l.DebitCreditIndicator != "D" || l.TaxInformation == null) return false;
+                var ps = postari.Where(p => p.LinieId == l.DetaliuId).ToList();
+                var fs = fapte.Where(x => x.DetaliuId == l.DetaliuId).ToList();
+                decimal baza, taxa, auto;
+                List<Guid> contBaza;
+                string cod, tip;
+                if (fs.Count == 0) {
+                    baza = ps.Where(Furnizor).Sum(Comercial); taxa = auto = 0m;
+                    var contra = ps.Where(p => !Furnizor(p)).ToList();
+                    contBaza = contra.Select(p => p.Cont).Distinct().ToList();
+                    if (-contra.Sum(Comercial) != baza) return false;
+                    cod = SaftReguli.TaxCodeNefiscal; tip = SaftReguli.TaxTypeNefiscal;
+                } else {
+                    if (fs.Count != 1) return false;
+                    var fapt = fs[0];
+                    var mapare = mapari.Pentru(fapt, SectiuneTvaSaft.Facturi);
+                    if (mapare == null || fapt.DataDocument != f.InvoiceDate) return false;
+                    baza = fapt.Baza; taxa = fapt.Tva; auto = fapt.Autocolectare;
+                    contBaza = ps.Where(p => p.RolTva == N.RolTva.Baza).Select(p => p.Cont).Distinct().ToList();
+                    cod = mapare.TaxCode; tip = mapare.TaxType;
+                    if (l.TaxInformation.TaxBase != baza || l.TaxInformation.TaxPercentage != fapt.Cota) return false;
+                }
+                if (contBaza.Count != 1 || l.AccountID != SaftReguli.SimbolSaft(conturi[contBaza[0]].Simbol)
+                    || l.InvoiceLineAmount != baza || l.TaxInformation.TaxAmount != taxa
+                    || l.TaxInformation.TaxCode != cod || l.TaxInformation.TaxType != tip) return false;
+                net += baza; comercial += baza + taxa - auto;
+            }
+            return f.NetTotal == net && f.GrossTotal == comercial;
         }
 
         static string Linie(SaftLinieFactura l) =>
