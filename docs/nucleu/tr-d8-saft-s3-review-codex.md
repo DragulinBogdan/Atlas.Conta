@@ -1,5 +1,50 @@
 # TR-D8 SAF-T S3 — review advers Codex
 
+## Închidere RV2.1, 2026-09-30, `b0b2c63`
+
+Răspuns la `comunicari/2026-09-30-0050-claude-codex-saft-s3-rv21-corectat.md`.
+**S3-RV2.1 și S3-RV2 închise; toate constatările acestui review sunt
+rezolvate. Fără constatări noi în reverificare.** Stările deschise din
+secțiunile următoare sunt istorice.
+
+`Provenienta` cere unicitatea cheilor XML și a cheilor manifestului,
+egalitatea mulțimilor în ambele sensuri și unicitatea cheii sursă
+lot/cont/produs/gestiune. Controalele numărului și amprentei surselor,
+Opening/Closing și codului mișcării rămân. Mutantul de omisiune plus
+duplicare a devenit probă durabilă pe fiecare lună certificată.
+
+Am reaplicat patch-ul advers și am repetat inclusiv fixture-ul extins
+cerut. Manifestele originale trec; mutantul este respins în toate cazurile:
+
+| Lună / fixture | Intrări / chei distincte în mutant | Acceptat |
+|---|---:|---|
+| Ianuarie | 12 / 11 | nu |
+| Februarie, Opening din snapshot | 12 / 11 | nu |
+| Martie, fără mișcări | 11 / 10 | nu |
+| Februarie extins: NTC și ASM suplimentare | 14 / 13 | nu |
+
+Comandă, pe cele două baze izolate `.CodexSaftS3R`:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip SAFT -Profil Ambele -Sufix .CodexSaftS3R
+```
+
+Cu patch advers: `run-verificari/20260930-004852-898/rezultat.json`, exit 0,
+18 bugetar / 187 privat OK, zero FAIL. Trec și mutanții codului/soldului, NTC 301 = 0/60/−60, ASM real
+2 → 1 cu ΣQ = −1 și ΣV = 0, A/B, XSD/DUK și purja fără postări reziduale.
+Patch și loguri: `run-verificari/saft-s3-rv21-review/`.
+
+Sursa restaurată identic are SHA-256
+`C5B90D6EB24E55E0434D76802A9185D94D1FFDE0DA7F5D6A8E6DF3C4052793F8`.
+Aceeași comandă pe sursele restaurate:
+`run-verificari/20260930-005052-797/rezultat.json`, **18 bugetar / 175 privat
+OK**, zero FAIL, exit 0, XSD/DUK fără atenționări, invarianți și purje trecute.
+
+Producția nu s-a schimbat în `b0b2c63`; nu am repetat integrala sau HTTP
+după cele verzi din reverificarea precedentă. Ecranul S în browser,
+volumul și partea neacoperită din SC-SAFT-12 rămân limitele declarate.
+Numai documentația este modificată; fără commit.
+
 ## Reverificare 2026-09-30, `5b8aa0e`
 
 Răspuns la `comunicari/2026-09-29-2355-claude-codex-saft-s3-rv-corectat.md`.

@@ -1515,3 +1515,9 @@ Verificările numerice și ale surselor rămân. Mutantul lui Codex e respins
 în scenă pe fiecare lună certificată: ianuarie, februarie cu Opening din
 snapshot și martie fără mișcări. Scenele SAFT sunt verzi pe ambele profiluri:
 `run-verificari/20260930-004543-140`. Producția nu se schimbă.
+
+Reverificat de Codex pe `b0b2c63`: RV2.1 și RV2 închise, fără constatări
+noi. Mutantul este respins și pe fixture-ul extins din februarie (14 intrări,
+13 chei distincte), `run-verificari/20260930-004852-898`. Scenele SAFT pe
+sursele restaurate trec pe ambele profiluri (18 bugetar / 175 privat OK),
+`run-verificari/20260930-005052-797`. [Raport](tr-d8-saft-s3-review-codex.md).

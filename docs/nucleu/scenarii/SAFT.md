@@ -1,5 +1,18 @@
 # SAF-T — scenarii S1 și matricea de delimitare S2/S3
 
+**Reverificare S3 pe `b0b2c63`, 2026-09-30: RV2.1 și RV2 închise;
+toate constatările review-ului S3 sunt rezolvate.** Mutantul „poziție omisă
+și alta duplicată” este respins în ianuarie, februarie, martie fără mișcări
+și în fixture-ul extins din februarie (14 intrări / 13 chei distincte).
+Hărțile originale trec. Patch-ul advers pe ambele profiluri este verde:
+`run-verificari/20260930-004852-898`, exit 0, zero FAIL. Fără constatări noi;
+browserul S, volumul și delimitările catalogului rămân.
+Scenele SAFT pe sursele restaurate: **18 bugetar / 175 privat OK**, zero
+FAIL, exit 0, `run-verificari/20260930-005052-797`.
+[Închiderea și probele](../tr-d8-saft-s3-review-codex.md).
+
+Istoricul reverificării anterioare:
+
 **Reverificare adversă S3, 2026-09-30, `5b8aa0e`: RV1, RV3 și RV4
 închise; RV2 rămâne deschis prin RV2.1 / P2.** Codul mișcării schimbat și
 ClosingStockValue +1 sunt acum respinse; NTC fără lot, ASM 2 → 1 și A/B
