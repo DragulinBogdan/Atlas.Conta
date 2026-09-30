@@ -1,7 +1,7 @@
 # Decizia 74 — Pasul 5, felia 17 — SAF-T D406 **S (stocuri)** peste `RegistruStoc`
 
 - **Data**: 2026-08-27
-- **Stare**: activă (închide 73-r1; amendează 73f/g cu faptele profilului `C`)
+- **Stare**: activă, amendată de 105 (2026-09-30) (închide 73-r1; amendează 73f/g cu faptele profilului `C`)
 - **Docs**: docs/api/p5-felia-saft-s-contract.md (explorarea XSD/nomenclator/
   ghid/validator, D17-D1…D4 + amendamentele pașilor 1 și 3, riscurile 1–10,
   V1–V5, §Închidere), docs/import/faza-1c-design.md (`--saft-s`),

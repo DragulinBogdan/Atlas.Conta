@@ -1,7 +1,7 @@
 # Decizia 73 — Pasul 5, felia 16 — SAF-T (D406 L) ca proiecție peste registre
 
 - **Data**: 2026-08-26
-- **Stare**: activă (închide D4-r5 parțial — cod NC pe produs, D4-r10 — antetul
+- **Stare**: activă, amendată de 105 (2026-09-30) (închide D4-r5 parțial — cod NC pe produs, D4-r10 — antetul
   societății, D4-r14; deschide prima infrastructură de fișier XML din repo —
   69-r6/D4-r13 rămân, dar au acum un precedent; **73-r1 închisă de decizia 74**,
   care amendează 73f/g cu faptele profilului `C`)

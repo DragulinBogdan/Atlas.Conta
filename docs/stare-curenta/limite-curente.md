@@ -189,6 +189,9 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   de volum după C102. Interogările cu parametru-tablou de 500–2.000 de
   identificatori plătesc ~43 ms de transport pe bucla locală Windows (măsurat
   și cu psycopg); se tratează la gate-ul transversal de perf.
+  Lotul pe două conturi de stoc nu are azi producător; dacă apare, poziția
+  îl separă prin `ProductType`, iar garda de injectivitate refuză cheile
+  duplicate (SC-SAFT-12 parțial). Balanța SAF-T recitește postările (SAFT-r4).
   Validatorul se rulează numai pe lună întreagă (antetul cu o singură lună).
   (103, D8-B8, S1-R8, S0-R4, S2)
 - Corecția unui document operat: motivul decide efectul fiscal, nu contarea.

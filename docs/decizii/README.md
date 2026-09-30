@@ -89,8 +89,8 @@
 | 70 | [Pasul 5, felia 13 — motor/structură post-D300 (69-r4/r7/r5 + 67e)](070-p5-felia13-motor-structura.md) | 2026-08-25 | activă |
 | 71 | [Pasul 5, felia 14 — D394, declarația informativă](071-p5-felia14-d394.md) | 2026-08-25 | activă (71b amendată de 72a) |
 | 72 | [Pasul 5, felia 15 — partener + ANAF (adresa, `Judet`, sincronizarea ANAF)](072-p5-felia15-partener-anaf.md) | 2026-08-26 | activă |
-| 73 | [Pasul 5, felia 16 — SAF-T (D406 L): `Societate`, `UnitateMasura`, `CodNc`, `RolTert`, proiecție + fișier XML + DUK](073-p5-felia16-saft.md) | 2026-08-26 | activă |
-| 74 | [Pasul 5, felia 17 — SAF-T S (stocuri): `PoliticaMiscareSaft`, proiecție peste `RegistruStoc`, cusăturile S1–S5, fișier + DUK](074-p5-felia17-saft-s.md) | 2026-08-27 | activă |
+| 73 | [Pasul 5, felia 16 — SAF-T (D406 L): `Societate`, `UnitateMasura`, `CodNc`, `RolTert`, proiecție + fișier XML + DUK](073-p5-felia16-saft.md) | 2026-08-26 | activă, amendată de 105 (sursa = cubul, refuz fără acces complet) |
+| 74 | [Pasul 5, felia 17 — SAF-T S (stocuri): `PoliticaMiscareSaft`, proiecție peste `RegistruStoc`, cusăturile S1–S5, fișier + DUK](074-p5-felia17-saft-s.md) | 2026-08-27 | activă, amendată de 105 (categoria pe cont, proiecția pe cub, refuzuri) |
 | 75 | [Pasul 5, felia 18 — restanțele grele ale lui S: golirea valorică (motor), reclasificarea ca mișcare, perf proiecție](075-p5-felia18-restante-s.md) | 2026-08-29 | activă |
 | 76 | [Pasul 5, felia 19 — NTC + ASM + retururi (RLF/RDC): scriere prin API și client; plafonul de stingere cu latură și netat](076-p5-felia19-ntc-asm-retururi.md) | 2026-08-29 | activă (amendează 31d/48b) |
 | 77 | [Pasul 5, felia 20 — finisajul clientului: căutarea fără diacritice (coloană generată), cache-ul de nomenclator, confirmările inline, `Neincluse` agregat, primele ecrane de nomenclator](077-p5-felia20-finisaj-client.md) | 2026-08-29 | activă |
@@ -122,3 +122,4 @@
 | 102 | [Fără compatibilitate cu bazele de dezvoltare până la prima producție; codul de compatibilitate se scoate, bazele se recreează](102-fara-compatibilitate-cu-bazele-de-dezvoltare.md) | 2026-09-25 | activă, amendează 092(b)(c), 096(d), 100(b), 101(d), D8-B3 |
 | 103 | [Fapte fiscale istorice, perioade D300/D394 distincte și autocolectare](103-fapte-fiscale-istorice-si-perioade-distincte.md) | 2026-09-25 | activă, amendează 088(g/h) și DVI-B3; F1=A, F2=A, F3=A; (h) intervale și avertismente; (i) marcaj TvaCules și intervale în seed (owner, 2026-09-27); R6 implementat, verificat și cu review advers închis (2026-09-28); proveniența ajustărilor rămâne delimitată |
 | 104 | [Straturi izolate L0–L4, culegerea în XAF și React pe citiri, entități proprii fără ștergere amânată](104-straturi-izolate-entitati-proprii.md) | 2026-09-26 | activă, amendează 042(b)(e), 043 și 083(a)(j); depășește 60a/F13-D2 privind ștergerea amânată |
+| 105 | [SAF-T D406 pe cub: sursă unică, acces complet, certificare cu manifest](105-saft-pe-cub.md) | 2026-09-30 | activă, amendează 073 și 074 |
