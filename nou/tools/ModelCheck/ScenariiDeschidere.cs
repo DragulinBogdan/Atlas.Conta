@@ -152,6 +152,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Verifica("SC-DES-03", "originalul deschiderii păstrat", initial == Original());
     }
 
+
     void DeschidereInSaftS() {
         if (!Privat) return;
         var (s, l, deschidere) = CuSpatiu(os => (SaftProiectii.SaftStocuriPeCub(os, An, 1), SaftProiectii.SaftPeCub(os, An, 1),

@@ -431,6 +431,11 @@ using (var os = provider.CreateObjectSpace()) {
     Console.WriteLine($"Registru stoc: {randuriStoc} rânduri de deschidere.");
 }
 
+// SAFT-r5
+using (var os = provider.CreateObjectSpace())
+    ((EFCoreObjectSpace)os).DbContext.Database.ExecuteSqlRaw("ANALYZE");
+Console.WriteLine("ANALYZE după ultima scriere a migrării.");
+
 // ============================ Reconcilierea ============================
 // Contractul pasului 4: soldurile de deschidere din NOU (citite înapoi din
 // Postgres) = soldurile de închidere legacy, per cont sintetic.

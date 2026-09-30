@@ -18,7 +18,6 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
 
     DateOnly Zi(int luna, int zi) => new(An, luna, zi);
     SaftDto Export(int luna) => CuSpatiu(os => SaftProiectii.SaftStocuriPeCub(os, An, luna, Zi(luna, 28)));
-    SaftDto ExportVechi(int luna) => CuSpatiu(os => SaftProiectii.SaftStocuri(os, An, luna, Zi(luna, 28)));
 
     static byte[] Xml(SaftDto d) {
         using var ms = new MemoryStream();
@@ -264,31 +263,48 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
         Verifica("SC-SAFT-49", "S3-RV1: NTC D301/C401 30 fără lot — 301 apare în reconciliere cu stoc 0, sold 30, diferența −30 explicată de NTC",
             feb.Rezumat.StocPerCont.SingleOrDefault(c => c.Cont == "301") is { ClosingStocFizic: 0, ClosingBalanta: 30, Diferenta: -30 } c301
             && c301.Componente.SingleOrDefault(x => x.Diferenta != 0) is { TipDocument: "NTC", StocFizic: 0, Balanta: 30 });
+        Verifica("SC-SAFT-49", "B8-Q3: în martie (fără mișcări) diferența −30 de pe 301 e componenta „(sold inițial)”, din snapshot, "
+            + "nu NTC-ul din februarie — componentele citesc numai fereastra lunii (88e)",
+            Export(3).Rezumat.StocPerCont.SingleOrDefault(c => c.Cont == "301") is { Diferenta: -30 } m301
+            && m301.Componente.Count == 1 && m301.Componente[0] is { TipDocument: "(sold inițial)", StocFizic: 0, Balanta: 30 });
         Cusaturi(feb);
 
         Verifica("SC-SAFT-49", "reexportul lui ianuarie după mișcările din februarie e identic octet cu octet",
             Xml(Export(1)).AsSpan().SequenceEqual(artefactIan));
-        Guid Conex(Guid fct) => CuSpatiu(os => os.GetObjectsQuery<Document>().Single(d => d.DocumentSursaId == fct).ID);
-        void Receptie(Guid fct, LinieScena lot, decimal q, decimal v) {
-            DeclaraAb(1, Conex(fct), lot, (q, v), null, "recepția e pe FCT în cub, pe NIR-ul conex în registru");
-            DeclaraAb(1, fct, lot, null, (q, v), "recepția e pe FCT în cub, pe NIR-ul conex în registru");
-        }
-        Receptie(receptie.Id, la, 10, 100); Receptie(marfuri.Id, l1, 2, 20); Receptie(marfuri.Id, l2, 5, 60);
-        Receptie(fld.Id, ld, 3, 10); Receptie(flm.Id, lm, 3, 30);
-        DeclaraAb(1, fnir.Id, fnir.Linii[0], null, (4, 100), "FCT cu NIR conex încă Draft: recepția e numai în cub");
-        DeclaraAb(1, fplus.Id, fplus.Linii[0], null, (4, 100), "FCT cu NIR conex încă Draft: recepția e numai în cub");
-        DeclaraAb(1, asm2.Id, ld, (-1, -3.33m), (-1, -3.34m), "Δ ASM: consumul FIFO pe cub față de registru (S3-R2)");
-        DeclaraAb(1, asm2.Id, asm2.Linii[1], (1, 3.33m), (1, 3.34m), "Δ ASM: produsul la ΣC față de P în registru (S3-R2)");
-        DeclaraAb(2, nirMinus, fnir.Linii[0], (3, 75), (-1, -25), "NIR delta (S3-R1) față de recepția integrală în registru");
-        DeclaraAb(2, nirPlus, fplus.Linii[0], (5, 125), (1, 25), "NIR delta (S3-R1) față de recepția integrală în registru");
-        Ab(1);
-        Ab(2, (bcs3, "omisiunea unei operări BCS și a stornoului ei"));
         ProbaDuala(ian);
         Perf();
         Certificare((ian, artefactIan), (feb, Xml(feb)), (Export(3), null));
+        OracolSiCoerenta();
 
         ChRefuzuri(bcs2, bcs3);
         CategorieLipsa();
+    }
+
+
+    void OracolSiCoerenta() {
+        foreach (var luna in new[] { 1, 2, 3 }) {
+            var (start, capat) = (new DateOnly(An, luna, 1), new DateOnly(An, luna, DateTime.DaysInMonth(An, luna)));
+            var s = Export(luna);
+            var l = CuSpatiu(os => SaftProiectii.SaftPeCub(os, An, luna, Zi(luna, 28)));
+            var d18 = CuSpatiu(os => OracolStocFizic.Compara(os, s, start, capat));
+            Console.WriteLine($"     MĂSURAT (SC-SAFT-50 luna {luna}): {d18}");
+            Verifica("SC-SAFT-50", $"luna {luna}: PhysicalStock = recalculul naiv din cub pe cel puțin două conturi raportabile, "
+                + "cu domeniul din postări și categoria contului, chei egale în ambele sensuri", d18.Ok && d18.Conturi >= 2);
+            if (luna == 1) {
+                var fara371 = System.Text.Json.JsonSerializer.Deserialize<SaftDto>(System.Text.Json.JsonSerializer.Serialize(s));
+                var omise = fara371.StocFizic.RemoveAll(e => e.ProductType == "371");
+                var mutant = CuSpatiu(os => OracolStocFizic.Compara(os, fara371, start, capat));
+                Console.WriteLine($"     MĂSURAT (SC-SAFT-50 mutant, {omise} poziții 371 omise): {mutant}");
+                Verifica("SC-SAFT-50", "mutant: toate pozițiile 371 omise din fișier → recalculul respinge și numește contul lipsă",
+                    omise > 0 && !mutant.Ok && mutant.ConturiLipsa.SequenceEqual(["371"]));
+            }
+            Verifica("SC-SAFT-51", $"luna {luna}: pe fiecare cont de stoc, soldul net Closing din L = soldul contabil al "
+                + "reconcilierii S, iar Σ componente = diferența",
+                s.Rezumat.StocPerCont.Count > 0
+                && s.Rezumat.StocPerCont.All(c => l.Conturi.SingleOrDefault(x => x.ContId == c.ContId) is { } x
+                    && (x.ClosingDebitBalance ?? 0m) - (x.ClosingCreditBalance ?? 0m) == c.ClosingBalanta
+                    && c.Componente.Sum(y => y.Diferenta) == c.Diferenta));
+        }
     }
 
     void Schimba(Guid nir, decimal q) => Comanda(os => {
@@ -400,47 +416,6 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
             var p = os.CreateObject<PoliticaMiscareSaft>(); p.TipDocumentId = fct; p.TipStoc = TipStoc.Magazie; p.Semn = -1;
             p.Motiv = "probă"; GardianEditare.Verifica(os);
         }), "nu poate exclude");
-    }
-
-    // A/B pe (document, storno, lot, gestiune), în ambele sensuri; excepțiile au valorile vechi/noi exacte (S3-D8, S3-RV4).
-    readonly record struct CheieAb(Guid Document, bool Storno, Guid Lot, Guid Gestiune);
-    readonly Dictionary<(int Luna, CheieAb Cheie), ((decimal, decimal)? Vechi, (decimal, decimal)? Nou, string Motiv)> declarateAb = [];
-
-    void DeclaraAb(int luna, Guid doc, LinieScena lot, (decimal, decimal)? vechi, (decimal, decimal)? nou, string motiv) =>
-        declarateAb[(luna, new CheieAb(doc, false, lot.Lot!.Value, Magazie))] = (vechi, nou, motiv);
-
-    static Dictionary<CheieAb, (decimal, decimal)> NetAb(IEnumerable<SaftMiscareStoc> miscari) => miscari
-        .SelectMany(m => m.Linii.Select(l => (Cheie: new CheieAb(m.DocumentId, m.Storno, l.LotId, l.RepartitorId), l.Quantity, l.BookValue)))
-        .GroupBy(x => x.Cheie).ToDictionary(g => g.Key, g => (g.Sum(x => x.Quantity), g.Sum(x => x.BookValue)));
-
-    bool EchivalentAb(int luna, Dictionary<CheieAb, (decimal, decimal)> vechi, Dictionary<CheieAb, (decimal, decimal)> nou,
-            out List<string> neclasificate) {
-        var diferite = vechi.Keys.Union(nou.Keys)
-            .Where(k => !vechi.TryGetValue(k, out var v) || !nou.TryGetValue(k, out var n) || v != n)
-            .ToDictionary(k => k, k => (Vechi: vechi.TryGetValue(k, out var v) ? v : ((decimal, decimal)?)null,
-                Nou: nou.TryGetValue(k, out var n) ? n : ((decimal, decimal)?)null));
-        var declarate = declarateAb.Where(d => d.Key.Luna == luna).ToDictionary(d => d.Key.Cheie, d => d.Value);
-        neclasificate = diferite.Where(d => !declarate.TryGetValue(d.Key, out var x) || x.Vechi != d.Value.Vechi || x.Nou != d.Value.Nou)
-            .Select(d => $"{d.Key} {d.Value.Vechi} → {d.Value.Nou}").ToList();
-        return neclasificate.Count == 0 && declarate.Keys.All(diferite.ContainsKey);
-    }
-
-    void Ab(int luna, params (Guid Document, string Omisiune)[] omisiuni) {
-        var vechi = NetAb(ExportVechi(luna).MiscariStoc);
-        var nou = Export(luna);
-        var ok = EchivalentAb(luna, vechi, NetAb(nou.MiscariStoc), out var neclasificate);
-        Console.WriteLine($"     MĂSURAT (A/B S luna {luna}): {vechi.Count} chei vechi, {NetAb(nou.MiscariStoc).Count} pe cub; "
-            + $"declarate [{string.Join("; ", declarateAb.Where(d => d.Key.Luna == luna).Select(d => d.Value.Motiv).Distinct())}]; "
-            + $"neclasificate [{string.Join("; ", neclasificate)}]");
-        Verifica("SC-SAFT-49", $"A/B S luna {luna}: pe document × storno × lot × gestiune, diferențele coincid exact (cheie, vechi, nou) cu cele declarate",
-            ok);
-        var exceptata = declarateAb.Keys.First(k => k.Luna == luna && declarateAb[k].Nou != null).Cheie;
-        var excesiv = NetAb(nou.MiscariStoc);
-        excesiv[exceptata] = (excesiv[exceptata].Item1, excesiv[exceptata].Item2 + 100);
-        var mutanti = omisiuni.All(o => !EchivalentAb(luna, vechi, NetAb(nou.MiscariStoc.Where(m => m.DocumentId != o.Document)), out _))
-            && !EchivalentAb(luna, vechi, excesiv, out _);
-        Verifica("SC-SAFT-49", $"A/B S luna {luna}: mutanții sunt respinși — o diferență de 100 pe o cheie exceptată"
-            + (omisiuni.Length > 0 ? $", {string.Join(", ", omisiuni.Select(o => o.Omisiune))}" : ""), mutanti);
     }
 
     void ProbaDuala(SaftDto d) {

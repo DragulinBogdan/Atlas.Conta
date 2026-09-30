@@ -329,9 +329,6 @@ public sealed class SaftNeinclus {
     public int? Semn { get; set; }
     public decimal? Cantitate { get; set; }
     public decimal? Valoare { get; set; }
-    // Codul CULES din politică, pe cauza `CodMiscareNecunoscut` — singurul loc
-    // în care „ce scrie în politică” e chiar informația care lipsește din
-    // nomenclator. Null pe orice altă cauză.
     public string CodMiscare { get; set; }
 }
 
@@ -762,7 +759,7 @@ public sealed class SaftDto {
 // paginează") spunea că răspunsul e declarația ÎNTREAGĂ; datele au contrazis-o:
 // ecranul nu afișează niciuna dintre liniile alea, iar browserul plătește
 // oricum parsarea lor. Deci ușa JSON servește un SUMAR, iar listele trăiesc în
-// exact două locuri — FIȘIERUL (`saft/xml`, streaming) și `SaftProiectii.Saft()`
+// exact două locuri — FIȘIERUL (`saft/xml`, streaming) și `SaftProiectii.SaftPeCub()`
 // pentru ModelCheck. Nu e o paginare: e ALTĂ întrebare („cât e declarația?"),
 // cu răspuns complet.
 //

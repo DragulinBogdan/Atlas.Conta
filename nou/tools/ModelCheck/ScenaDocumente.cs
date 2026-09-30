@@ -92,6 +92,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         foreach (var cheie in matriceFiscale.Keys.Where(k => k.Doc == doc).ToArray()) matriceFiscale.Remove(cheie);
     }
     protected void InchideIanuarie() => Comanda(os => inchide(os, An, 1));
+    protected void Inchide(int an, int luna) => Comanda(os => inchide(os, an, luna));
     protected Guid Corecteaza(Guid doc) {
         var inainte = Amprenta(doc);
         var corectie = CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(doc, Februarie, MotivCorectie.EroareMateriala).CorectieId);

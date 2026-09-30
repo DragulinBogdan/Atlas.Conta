@@ -373,11 +373,9 @@ public static class SaftReguli {
     /// partenerului documentului.
     /// <para>
     /// `Client` ⇒ `(partener, "0")`; `Furnizor` ⇒ `("0", partener)`; `Niciunul`
-    /// ⇒ `(raportor, raportor)`. Rol CERUT dar partener lipsă (NIR manual fără
-    /// factură-sursă, document intern cu ambele laturi gestiuni) ⇒ tot
-    /// `(raportor, raportor)`: fișierul spune „mișcare internă”, ceea ce e
-    /// onest, iar apelantul pune avertismentul `TertLipsaPeMiscare` — un
-    /// identificator inventat ar fi minciună, un element gol ar fi fișier
+    /// ⇒ `(raportor, raportor)`. Rol CERUT dar partener lipsă ⇒ tot
+    /// `(raportor, raportor)`; apelantul refuză documentul (`SAFT_TERT_LIPSA`),
+    /// fiindcă un identificator inventat ar fi minciună, iar unul gol, fișier
     /// invalid.
     /// </para>
     /// </summary>
@@ -406,10 +404,9 @@ public static class SaftReguli {
     public static string OwnerIdRaportor(Societate societate) => IdSocietate(societate);
 
     /// <summary>
-    /// Valoarea de rezervă a lui `ProductType`/`AccountID` — produsul fără cont
-    /// de stoc. Pe `PhysicalStock` iese cu avertisment (`ProdusFaraContStoc`);
-    /// pe linia de mișcare NU se folosește niciodată (acolo `AccountID` e
-    /// obligatoriu și un cont inventat e interzis — 73e ⇒ `Neincluse`).
+    /// Valoarea de rezervă a lui `ProductType` — postarea fără cont de stoc.
+    /// Pe linia de mișcare NU se folosește niciodată (acolo `AccountID` e
+    /// obligatoriu și un cont inventat e interzis, 73e).
     /// </summary>
     public const string ProductTypeImplicit = "0";
 

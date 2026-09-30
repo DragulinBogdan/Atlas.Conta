@@ -1028,6 +1028,11 @@ RaporteazaUmNc(laCerere, "pas final");
 if (anaf)
     await ExecutaAnaf(laCerere);
 
+// SAFT-r5
+using (var ctx = new BackOfficeEFCoreDbContext(opts))
+    await ctx.Database.ExecuteSqlRawAsync("ANALYZE");
+Console.WriteLine("ANALYZE după ultima scriere a importului.");
+
 Console.WriteLine($"\nDocumente {anImport}: {luni.Sum(l => l.Documente)} importate, "
     + $"{luni.Sum(l => l.Sarite)} sărite, {luni.Sum(l => l.Copii)} copii autogenerați, "
     + $"{luni.Sum(l => l.Esecuri)} eșecuri, {luni.Sum(l => l.Realocari)} realocări de lot "

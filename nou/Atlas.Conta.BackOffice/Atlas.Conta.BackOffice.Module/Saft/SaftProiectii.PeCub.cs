@@ -58,6 +58,7 @@ public static partial class SaftProiectii {
         Dictionary<Guid, (string Cod, string Denumire)> tipuriTva;
         Dictionary<(Guid Tranzactie, Guid Linie), List<FaptFiscal>> fapte;
         EtichetePerioada etichete;
+        Dictionary<Guid, (string Cod, string Denumire)> repartitori = [];
 
         void Avert(CodAvertismentSaft cod, string exemplu, decimal? suma = null) {
             if (!avertismente.TryGetValue(cod, out var lista)) lista = avertismente[cod] = [];
@@ -101,6 +102,7 @@ public static partial class SaftProiectii {
             CorectiiIncomplete(jurnal);
             dto.FacturiEmise = Facturi(jurnal, vanzare: true);
             dto.FacturiPrimite = Facturi(jurnal, vanzare: false);
+            ValutaFacturi();
             Plati(jurnal, plati);
             Terti(agregateTert);
 
@@ -216,7 +218,7 @@ public static partial class SaftProiectii {
                         Id406 = identitate.Id, Fel = identitate.Fel,
                     };
                 });
-            var repartitori = os.GetObjectsQuery<Repartitor>().Where(r => ids.Contains(r.ID))
+            repartitori = os.GetObjectsQuery<Repartitor>().Where(r => ids.Contains(r.ID))
                 .Select(r => new { r.ID, r.Cod, r.Denumire }).ToList()
                 .ToDictionary(r => r.ID, r => (r.Cod, r.Denumire));
             etichete = new EtichetePerioada(os, repartitori);
@@ -403,6 +405,17 @@ public static partial class SaftProiectii {
             return lista;
         }
 
+        // B-r6: cubul nu poartă valuta, fișierul declară RON.
+        void ValutaFacturi() {
+            var ids = dto.FacturiPrimite.Select(f => f.DocumentId).Distinct().ToList();
+            foreach (var f in os.GetObjectsQuery<FacturaIntrare>().Where(f => ids.Contains(f.ID) && f.Valuta != null)
+                         .Select(f => new { f.Numar, f.Valuta }).ToList()
+                         .Where(f => !string.IsNullOrWhiteSpace(f.Valuta) && !string.Equals(f.Valuta.Trim(), DefaultCurrencyCode, StringComparison.OrdinalIgnoreCase))
+                         .OrderBy(f => f.Numar, StringComparer.Ordinal))
+                Avert(CodAvertismentSaft.FacturaInValuta,
+                    $"FCT {f.Numar} e în {f.Valuta} — fișierul declară totul în RON (`CurrencyAmount` = `Amount`), fără curs.");
+        }
+
         SaftFactura Factura(Guid tranzactieId, List<PostareJurnal> tx, bool vanzare) {
             var prima = tx[0];
             var docId = prima.DocumentId.Value;
@@ -558,6 +571,7 @@ public static partial class SaftProiectii {
                             ContId = a.ContId,
                             ContSimbol = conturi.TryGetValue(a.ContId, out var ci) ? ci.Simbol : null,
                             RepartitorId = a.RepartitorId,
+                            RepartitorDenumire = a.RepartitorId is Guid r && repartitori.TryGetValue(r, out var ri) ? ri.Denumire : null,
                             Debit = 0m, Credit = 0m,
                         };
                     n.Debit += a.InitialDebit + a.RulajDebit;
@@ -638,6 +652,9 @@ public static partial class SaftProiectii {
             var taxeInGl = dto.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii
                     .Where(l => l.TaxInformation.TaxType == SaftReguli.TaxTypeTva && l.DetaliuId != null)
                     .Select(l => (t.TransactionID, l.DetaliuId.Value))).ToHashSet();
+            static decimal Net(decimal? debit, decimal? credit) => (debit ?? 0m) - (credit ?? 0m);
+            var rulajGl = liniiGl.GroupBy(l => l.AccountID)
+                .ToDictionary(g => g.Key, g => g.Sum(l => l.DebitCreditIndicator == "D" ? l.Amount : -l.Amount));
             decimal Baza(SensTva sens, bool doarNeincluse) => fapteLuna.Where(f => f.Sens == sens
                 && (!doarNeincluse || !evenimenteFactura.Contains(f.TranzactieId.ToString()))).Sum(f => f.Baza);
             dto.Rezumat = new SaftRezumat {
@@ -662,6 +679,9 @@ public static partial class SaftProiectii {
                 ClosingGla = dto.Conturi.Sum(c => (c.ClosingDebitBalance ?? 0m) - (c.ClosingCreditBalance ?? 0m)),
                 ClosingBalanta = balanta.Sum(b => b.InitialDebit - b.InitialCredit + b.RulajDebit - b.RulajCredit),
                 ConturiVerificate = dto.Conturi.Count,
+                ConturiDiferite = dto.Conturi.Count(c => Net(c.ClosingDebitBalance, c.ClosingCreditBalance)
+                    - Net(c.OpeningDebitBalance, c.OpeningCreditBalance) != rulajGl.GetValueOrDefault(c.AccountID)),
+                SumaAbsolutaClosing = dto.Conturi.Sum(c => Math.Abs(Net(c.ClosingDebitBalance, c.ClosingCreditBalance))),
                 ClosingClienti = Inchidere(dto.Clienti),
                 ClosingGlaClienti = InchidereGla(RolTertCont.Client),
                 ClosingFurnizori = Inchidere(dto.Furnizori),

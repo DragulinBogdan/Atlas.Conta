@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-29.** [Index](README.md)
+**Actualizat: 2026-09-30.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -179,12 +179,20 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   exportului contabil. Ruta publică L citește cubul (S1, S2); validarea
   XSD/DUK (S0) certifică GL-ul, facturile și plățile lunilor scenei.
   Compensarea prin notă contabilă nu apare în Payments (SAFT-r1). Valuta și
-  TVA la încasare pe plăți nu există în cub, iar exportul le refuză. Citirea
+  TVA la încasare pe plăți nu există în cub, iar exportul le refuză. Factura
+  în valută se declară în RON, cu avertismentul `FacturaInValuta` (B-r6). Citirea
   alocărilor filtrează postările contabile pe `Unitate`, fără index dedicat.
-  Planul pe volum nu e măsurat, fiindcă nu există bază de volum după C102
-  (FZ-r3). Exportul nu face câte o interogare per plată sau factură: 41–42
-  de comenzi SQL la 1–14 plăți.
-  Stocurile (S3) și securitatea tuturor secțiunilor rămân felii TR-D8.
+  Pe scara sintetică (SAF-B8: k ∈ {1, 4, 16, 64} unități/lună × m ∈ {0, 6, 12}
+  luni de istoric, proces rece și cald) L emite 43 de comenzi SQL și S 26,
+  constant. Istoricul nu se citește din `Postare`. Durata și alocările cresc
+  liniar, iar execuția maximă pe server la k = 64 este 5,2 ms. Planul pe volum
+  real rămâne nemăsurat, fiindcă nu există bază de volum după C102 (FZ-r3).
+  După o inserare masivă, până la autoanalyze, citirea faptelor fiscale poate
+  degenera în Nested Loop (SAFT-r5). Pragul de ~43 ms văzut pe mașina de
+  dezvoltare aparține proxy-ului de porturi Docker Desktop, nu produsului.
+  Lotul pe două conturi de stoc nu are azi producător; dacă apare, poziția
+  îl separă prin `ProductType`, iar garda de injectivitate refuză cheile
+  duplicate (SC-SAFT-12 parțial). Balanța SAF-T recitește postările (SAFT-r4).
   Validatorul se rulează numai pe lună întreagă (antetul cu o singură lună).
   (103, D8-B8, S1-R8, S0-R4, S2)
 - Corecția unui document operat: motivul decide efectul fiscal, nu contarea.

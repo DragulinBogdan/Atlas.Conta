@@ -18,6 +18,7 @@
          Nu s-a mutat în `Module`: pornirea unui proces java nu e treaba unui
          assembly de domeniu, pe care îl încarcă și host-ul web. -->
     <Compile Include="..\ModelCheck\Duk.cs" Link="Duk.cs" />
+    <Compile Include="..\ModelCheck\ValidareD406.cs" Link="ValidareD406.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.*" />

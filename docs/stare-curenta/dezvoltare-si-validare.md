@@ -93,8 +93,8 @@ Comenzile, încercările intermediare și limitele sunt în
 | `nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.Teste` | Invarianții nucleului ca proprietăți pe generatoare proprii și testul de arhitectură (90l) |
 | `nou/tools/ModelCheck` | Verificarea modelului și scenarii de domeniu pe PostgreSQL (23) |
 | `nou/tools/ProbeHttp` | Probe ale contractului HTTP și ale permisiunilor reale (80i, 81j) |
-| `nou/tools/Import1C` | Import operațional și reconcilierea sursei (45f) |
-| `nou/tools/Migrare` | Prototipul migrării nomenclatoarelor și soldurilor legacy (34, 35a) |
+| `nou/tools/Import1C` | Import operațional și reconcilierea sursei (45f); `ANALYZE` după ultima scriere (SAFT-r5) |
+| `nou/tools/Migrare` | Prototipul migrării nomenclatoarelor și soldurilor legacy (34, 35a); `ANALYZE` după ultima scriere (SAFT-r5) |
 | `legacy`, `db` | Dovezi despre aplicația și datele vechi (21, 35b) |
 
 Într-un repository cu `.codegraph/`, explorarea codului începe cu CodeGraph.
