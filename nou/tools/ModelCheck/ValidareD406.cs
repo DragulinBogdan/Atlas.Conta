@@ -119,7 +119,16 @@ public sealed record LegaturaFactura(string Sectiune, string InvoiceNo, string I
 public sealed record LegaturaPlata(string TransactionID, int LineNumber, Guid DocumentId, bool Storno,
     Guid? TintaDocumentId, List<SaftSursa> Surse);
 
-public sealed record ProvenientaD406(List<LegaturaGl> Gl, List<LegaturaFactura> Facturi, List<LegaturaPlata> Plati) {
+/// <summary>Linia de mișcare a fișierului S legată de postările pe lot agregate în ea (S3-D8).</summary>
+public sealed record LegaturaMiscare(string MovementReference, int LineNumber, Guid? TranzactieId, List<SaftSursa> Postari);
+
+/// <summary>Poziția PhysicalStock legată de cheia ei și de sursele ei: postările pe lot ale cheii până la capătul lunii (S3-RV2).</summary>
+public sealed record LegaturaPozitie(string WarehouseID, string ProductCode, string StockAccountNo, string ProductType,
+    Guid Lot, Guid Cont, Guid Produs, Guid Gestiune, int Surse = 0, string ShaSurse = null);
+
+public sealed record ProvenientaD406(List<LegaturaGl> Gl, List<LegaturaFactura> Facturi, List<LegaturaPlata> Plati,
+        List<LegaturaMiscare> Miscari = null, List<LegaturaPozitie> Pozitii = null,
+        SortedDictionary<string, string> CategoriiStoc = null) {
     public static ProvenientaD406 Din(SaftDto dto) => new(
         dto.Jurnale.SelectMany(j => j.Tranzactii).SelectMany(t => t.Linii.Select(l =>
             new LegaturaGl(t.TransactionID, l.RecordID, l.Spatiu, l.RandRegistruId, t.DocumentId, l.DetaliuId))).ToList(),
@@ -127,7 +136,12 @@ public sealed record ProvenientaD406(List<LegaturaGl> Gl, List<LegaturaFactura> 
             .Select(x => new LegaturaFactura(x.Item1, x.f.InvoiceNo, x.f.InvoiceType, x.f.TransactionID, x.f.DocumentId, x.f.Storno))
             .ToList(),
         dto.Plati.SelectMany(p => p.Linii.Select(l =>
-            new LegaturaPlata(p.TransactionID, l.LineNumber, p.DocumentId, p.Storno, l.TintaDocumentId, l.Surse))).ToList());
+            new LegaturaPlata(p.TransactionID, l.LineNumber, p.DocumentId, p.Storno, l.TintaDocumentId, l.Surse))).ToList(),
+        dto.MiscariStoc.SelectMany(m => m.Linii.Select(l =>
+            new LegaturaMiscare(m.MovementReference, l.LineNumber, m.TranzactieId, l.Postari))).ToList(),
+        dto.StocFizic.Select(e => new LegaturaPozitie(e.WarehouseId, e.ProductCode, e.StockAccountNo, e.ProductType,
+            e.LotId, e.ContId, e.ProdusId, e.RepartitorId)).ToList(),
+        dto.CategoriiStoc.Count == 0 ? null : dto.CategoriiStoc);
 }
 
 /// <summary>O validare XSD + DUK a unui fișier, cu intrarea ei în manifestul rulării.</summary>
@@ -159,6 +173,11 @@ public sealed record ValidareD406(string Fisier, string Sha256, int An, int Luna
 
     public string Rezumat => $"XSD {(EroriXsd.Count == 0 ? "ok" : $"{EroriXsd.Count} erori")}, DUK {Duk.Rezumat}";
 
+    /// <summary>Amprenta configurației cont → categorie a fișierului S (S3-D1); null pe L.</summary>
+    public static string ShaCategorii(SortedDictionary<string, string> categorii) => categorii == null ? null
+        : Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(
+            string.Join('\n', categorii.Select(c => $"{c.Key}={c.Value}")))));
+
     /// <summary>Scrie `manifest-d406.json` lângă fișierele validate și întoarce calea.</summary>
     public static string ScrieManifest(string director, IEnumerable<ValidareD406> validari) {
         var cale = Path.Combine(director, "manifest-d406.json");
@@ -177,6 +196,7 @@ public sealed record ValidareD406(string Fisier, string Sha256, int An, int Luna
                 v.Fisier, v.Sha256, v.An, v.Luna, v.Valid, v.EroriXsd,
                 duk = new { v.Duk.Rezumat, v.Duk.Erori, v.Duk.Avertismente, v.Duk.Comanda },
                 v.Provenienta,
+                categoriiStocSha256 = ShaCategorii(v.Provenienta?.CategoriiStoc),
             }),
         };
         File.WriteAllText(cale, JsonSerializer.Serialize(manifest, Json));

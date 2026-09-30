@@ -106,6 +106,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
             !os.GetObjectsQuery<RegistruStoc>().Any(r => r.LotId == loturi[0].Lot && r.RepartitorId == Magazie && r.Cantitate > 0)));
         Storneaza(consumInitial, new(An, 1, 20));
         SoldLot("SC-CIT-36", loturi[0].Lot, Magazie, new(An, 1, 31), 4, 40);
+        DeschidereInSaftS();
         Rest("SC-DES-02", ref1, Furnizor, 60); Rest("SC-DES-02", ref2, Furnizor, 40); Rest("SC-DES-02", ref1, Client, 50);
         ReviewStingeri(); ReviewConcurenta();
         var plata = Trezorerie(false, 20);
@@ -149,6 +150,20 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Rest("SC-DES-03", ref1, Furnizor, 40); Rest("SC-DES-03", ref1, Furnizor, 60, Februarie);
         PlataPePartidaInitiala(plata.Id, 2, -20);
         Verifica("SC-DES-03", "originalul deschiderii păstrat", initial == Original());
+    }
+
+    void DeschidereInSaftS() {
+        if (!Privat) return;
+        var (s, l, deschidere) = CuSpatiu(os => (SaftProiectii.SaftStocuriPeCub(os, An, 1), SaftProiectii.SaftPeCub(os, An, 1),
+            os.GetObjectsQuery<C.Tranzactie>().Single(t => t.Fel == N.FelTranzactie.Deschidere).ID));
+        var jurnal = l.Jurnale.Single(j => j.JournalID == SaftProiectii.JurnalDeschidere).Tranzactii.SelectMany(t => t.Linii)
+            .Where(x => x.AccountID == Stoc && x.DebitCreditIndicator == "D").Sum(x => x.Amount);
+        Verifica("SC-SAFT-45", "deschiderea din lună intră în Opening-ul fiecărui lot, nu e mișcare; Opening pe 302 = jurnalul DESCHIDERE din GL",
+            loturi.All(x => s.StocFizic.SingleOrDefault(e => e.LotId == x.Lot && e.RepartitorId == Magazie) is { } e
+                && (e.OpeningQuantity, e.OpeningValue, e.ClosingQuantity, e.ClosingValue) == (x.Cantitate, x.Valoare, x.Cantitate, x.Valoare))
+            && s.MiscariStoc.All(m => m.TranzactieId != deschidere) && s.Rezumat.StocIntrariDiferite == 0
+            && jurnal == loturi.Sum(x => x.Valoare)
+            && s.StocFizic.Where(e => loturi.Any(x => x.Lot == e.LotId)).Sum(e => e.OpeningValue) == jurnal);
     }
 
     void PlataPePartidaInitiala(Guid plata, int luna, decimal suma) {

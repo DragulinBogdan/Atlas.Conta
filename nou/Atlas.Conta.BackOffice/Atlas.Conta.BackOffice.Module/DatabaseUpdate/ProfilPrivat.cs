@@ -32,6 +32,7 @@ internal static class ProfilPrivat {
         // Rolul de terț al conturilor (felia 16, D16-D3) — tot o DERIVARE peste
         // planul comis, deci după commit, lângă `SeedContImplicitTipMaterial`.
         SeedRolTert(os);
+        SeedCategoriiStoc(os);
         ContaSeeder.SeedContImplicitTipMaterial(os);
         SeedContImplicitPunteStoc(os);
         SeedTipTva(os);
@@ -362,6 +363,19 @@ internal static class ProfilPrivat {
                 : RolTertCont.Niciunul;
             cont.UrmarestePartide = cont.RolTert != RolTertCont.Niciunul || simbol is "542" or "461";
         }
+    }
+
+    // S3-D1: categoria stă pe grupă și se moștenește; restul clasei 3 rămâne neclasificat.
+    static readonly Dictionary<string, TipStoc> CategoriiStoc = new(StringComparer.Ordinal) {
+        ["30"] = TipStoc.Magazie, ["34"] = TipStoc.Magazie, ["38"] = TipStoc.Magazie,
+        ["37"] = TipStoc.Marfuri, ["6"] = TipStoc.Consum, ["711"] = TipStoc.Consum,
+    };
+
+    internal static void SeedCategoriiStoc(IObjectSpace os) {
+        var plan = SimboluriPlan();
+        foreach (var cont in os.GetObjectsQuery<Cont>().ToList())
+            if (plan.Contains(cont.Simbol ?? "") && cont.DinSeed)
+                cont.CategorieStoc = CategoriiStoc.TryGetValue(cont.Simbol, out var c) ? c : null;
     }
 
     // Nomenclatorul TipTva (design §2): cotele Legii 141/2025 (21 standard,
@@ -875,34 +889,11 @@ internal static class ProfilPrivat {
         return goluri;
     }
 
-    // ── Politica de mișcare SAF-T S (felia 17, D17-D1) ──────────────────────
-    //
-    // Tabelul e derivat pe FUNCȚIONALITATE (decizia 21), din perechea
-    // „ce scrie tipul în registru" (`SeedReguliStoc` de mai jos) × „cum se
-    // numește mișcarea aia în D406": NIR aduce marfă de la furnizor (`10`), DSC o
-    // dă clientului (`30`), BTR o mută între gestiuni (`80`), BCS o consumă
-    // (`70`), LDI o găsește în plus (`110`) sau în minus (`120`), ASM produce
-    // (`20`) consumând (`70`), RLF o întoarce furnizorului (`50`), RDC o
-    // primește înapoi de la client (`40`).
-    //
-    // `Semn` NULL = „orice semn" acolo unde tipul are o singură direcție per
-    // registru (NIR intră mereu, BTR are ACEEAȘI mișcare pe ambele picioare);
-    // ±1 acolo unde direcția schimbă codul (LDI, ASM).
-    //
-    // Registrele: `Magazie` + `Marfuri` peste tot, fiindcă exact aceeași pereche
-    // o scrie `SeedReguliStoc` la privat (genericul + clasa MF). Singura excepție
-    // e `Consum`, pe care doar BCS îl atinge.
-    //
-    // Cod NULL pe `BCS/Consum/+1`: rândul de intrare în consum e o mutare de
-    // RESPONSABILITATE (27a), nu o mișcare de stoc în magazie — declarat, ar
-    // dubla ieșirea `70` a aceleiași linii. Excludere DELIBERATĂ, cu motiv, nu
-    // omisiune: cifrele ei apar în `Excluse`.
-    //
-    // Codurile fără sursă în model azi (60 reduceri comerciale, 90 capitalizări,
-    // 100/101 diferențe de preț, 130–180) NU se seed-uiesc: niciun tip de
-    // document nu le produce. Politica le poate primi fără release când apar.
+    // S3-D3: (tip, categoria contului, semn) → cod D406; codul null exclude, cu motiv.
     static readonly (string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv)[]
         PoliticiMiscareSaft = [
+            ("FCT", TipStoc.Magazie, null, "10", RolTertSaft.Furnizor, null),
+            ("FCT", TipStoc.Marfuri, null, "10", RolTertSaft.Furnizor, null),
             ("NIR", TipStoc.Magazie, null, "10", RolTertSaft.Furnizor, null),
             ("NIR", TipStoc.Marfuri, null, "10", RolTertSaft.Furnizor, null),
             ("BTR", TipStoc.Magazie, null, "80", RolTertSaft.Niciunul, null),

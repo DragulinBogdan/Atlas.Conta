@@ -156,6 +156,12 @@ public static class SaftXml {
             if (!string.IsNullOrEmpty(valoare))
                 w.WriteElementString(nume, SpatiuNume, valoare);
         }
+        void Gestiune(string nume, string warehouseId) {
+            if (string.IsNullOrEmpty(warehouseId)) return;
+            Start(nume);
+            El("WarehouseID", warehouseId);
+            Stop();
+        }
         // Obligatoriu în schemă: se emite chiar gol (proiecția a strigat deja
         // lipsa printr-un avertisment — fișierul nu inventează o valoare).
         void ElCerut(string nume, string valoare) =>
@@ -396,8 +402,6 @@ public static class SaftXml {
                 // `LocationID` (O): modelul n-are locație în gestiune (contract
                 // §Ce NU intră).
                 ElCerutNenul("ProductCode", e.ProductCode, context);
-                // Identificatorul lotului — prezent DOAR când produsul are mai
-                // multe intrări în aceeași gestiune (ghid p. 36).
                 El("StockAccountNo", e.StockAccountNo);
                 ElCerutNenul("ProductType", e.ProductType, context);
                 // `ProductStatus` (O): fără sursă în model.
@@ -567,18 +571,14 @@ public static class SaftXml {
                     // Contul de stoc: obligatoriu ȘI neinventabil (73e) — dacă
                     // lipsea, proiecția a scos deja linia în `Neincluse`.
                     ElCerutNenul("AccountID", l.AccountId, context);
-                    // `TransactionID` stă pe LINIE în schemă, dar în model e al
-                    // documentului (o mișcare = un document × storno × cod), deci
-                    // se repetă pe toate liniile ei — exact ca `TransactionID`-ul
-                    // de pe `Transaction` în GL.
                     El("TransactionID", m.TransactionId);
                     // Convenția S (xlsx SD.MG.21/22): latura liberă e literalul
                     // „0", nu raportorul — invers decât pe GL. Validatorul
                     // refuză doar cazul „ambele 0"; ambele goale ar fi invalid.
                     ElCerutNenul("CustomerID", l.CustomerId, context);
                     ElCerutNenul("SupplierID", l.SupplierId, context);
-                    // `ShipTo`/`ShipFrom` (O): gestiunile transferului rămân
-                    // restanță (contract §Ce NU intră).
+                    Gestiune("ShipTo", l.ShipToWarehouseId);
+                    Gestiune("ShipFrom", l.ShipFromWarehouseId);
                     ElCerutNenul("ProductCode", l.ProductCode, context);
                     El("StockAccountNo", l.StockAccountNo);
                     ElCerut("Quantity", Cantitate(l.Quantity));

@@ -18,6 +18,10 @@ totaluri, inclusiv pe ruta publică existentă (S0-R5). S0 este închis;
 comutarea L rămâne la S2 (R1).
 [Raportul Codex](tr-d8-saft-s0-review-codex.md).
 
+**2026-09-29 — S3 implementat și comutat pe `tr-d8-saft-s3` (S3-R3); integrala
+verde pe ambele profiluri, S certificat XSD/DUK, HTTP pe host izolat; review-ul
+advers Codex cerut. Owner: S3-Q1 = A (NIR delta = 10 semnat, cheia fără
+`Cauza`), S3-Q2 = A (Δ ASM acceptat):** [S3](#s3--movementofgoods-physicalstock-și-comutarea-c-contract-pentru-aprobare).
 **2026-09-29 — S2 închis: review Codex S2-RV1 închis după reverificare.**
 **2026-09-29 — S2 (Payments + comutarea L) propus de Claude; owner: S2-Q1 =
 stornoul neagă liniile declarate, S2-Q2 = compensarea în afara S2 (SAFT-r1),
@@ -1067,3 +1071,453 @@ Verificat în browser pe baza izolată: ianuarie are toate cusăturile egale și
 plata 70; februarie arată `SAFT_CORECTIE_INCOMPLETA` deasupra secțiunilor
 (`run-verificari/saft-s2-ui-februarie-refuz.jpg`).
 Integral verde după corectură (bugetar 3.267, privat 4.415): `run-verificari/20260929-204252-054`.
+
+## S3 — MovementOfGoods, PhysicalStock și comutarea C: contract pentru aprobare
+
+Stare: **implementat și comutat (S3-R3, 2026-09-29); S3-Q1 și S3-Q2 tranșate de
+owner ([S3-R](#s3-r--tranșările-owner-ului-2026-09-29)); review-ul advers Codex
+cerut.** Bază inspectată: `66e25c1` (main după PR #12).
+Nu schimbă motorul, declaranții, scrierea registrelor sau împerecherea.
+Schimbă modelul politicii: `Cont.CategorieStoc` (SAF-D3=C), iar
+`PoliticaMiscareSaft.TipStoc` înseamnă de acum categoria contului, nu
+registrul. La ieșire, rutele S comută pe cub (R1).
+
+Faptele de model, verificate în cod la redactare:
+
+- Postarea pe lot este cea din `Loturi.Postari`: Carte Contabil, `FelUnitate.Lot`,
+  cu unitate, produs și gestiune (Spatiu Stoc). Capătul fără lot al mișcării
+  stă pe o gestiune virtuală (Furnizor, Client, Consum, Inventar) sau pe un
+  cont fără unitate. Contraponderea ASM are `Unitate = null` și nu intră;
+  T-r14 este satisfăcută structural, fără filtru nominal.
+- Producătorii pe lot, cu capătul real: FCT +q (Furnizor), NIR propriu +q,
+  NIR delta ±q (Inventar; contul cauzei 099 fără lot), BTR −q/+q între două
+  gestiuni reale (Transfer), BCS −q pe 3xx și +q pe contul de consum,
+  LDI +q (Inventar) / −q (Consum), DSC −q (Client), RLF −q (Furnizor),
+  RDC +q (Client), ASM −q consum / +q produs (Operare sau Transfer pe cont).
+- Stornoul unui document este **o** tranzacție `Storno` care inversează și
+  Operarea, și Transferul pe stoc; fiecare postare are `InversaDin`.
+  `Deschidere` este unică, fără document, fără istorie anterioară datei ei.
+- Singurul lot pe un cont care nu e de stoc este capătul de consum BCS
+  (`Unitate` pe 6xx, respectiv 711 pentru 345), în gestiunea primitorului.
+- Linia FCT de stoc cu TVA capitalizată postează pe același lot două rânduri:
+  (q, bază) și (0, taxă).
+- NIR delta cu q = 0 are v = 0 (valoarea e proporțională), deci nu produce
+  mișcare numai valorică. Azi niciun producător nu scrie pe lot o linie cu
+  cantitate netă 0 și valoare nenulă.
+- ASM: `DeclarantAsamblare` impune ΣP = ΣR și absoarbe Δ = C − R în produs,
+  deci Σ valorilor produselor = ΣC, consumul evaluat FIFO pe cub. Pe cub
+  transformarea este echilibrată la C. Δ există numai față de registrul vechi.
+
+Normele, din ghidul D406 v2.0 (dec. 2021, §2.8, §2.10, §4.4) și foaia
+`Nomenclator stocuri` a workbook-ului din SAF-B6:
+
+- `AccountID` pe linia de mișcare este contul analitic de clasa 3 al stocului.
+- `Quantity` = 0 la 60, 90, 100, 101, 130, 140 și 180 („Alte tranzacții
+  (care nu presupun mișcări cantitative)”).
+- PhysicalStock: fiecare produs, per gestiune și per preț unitar (FIFO).
+  Include și stocurile terților (custodie, consignație), neacoperite aici.
+- Etichetele codurilor apar în rapoartele ANAF (nota 6). `SaftReguli.CoduriMiscare`
+  diferă azi de etichetele oficiale la 90, 100, 101, 130, 140 și 180. Se
+  aliniază verbatim, iar `MovementTypeTable.Description` = eticheta RO.
+- Stocurile se depun la cerere, câte o declarație pe lună sau trimestru.
+
+### S3-D1 — categoria contului (SAF-D3=C)
+
+`Cont.CategorieStoc : TipStoc?`. Rezolvarea urcă pe `Parinte` până la prima
+valoare explicită. Lipsa pe tot lanțul înseamnă cont neclasificat. Un singur
+rezolver servește exportul și probele. Categoria se editează pe planul de
+conturi, fără release, fără gardian propriu. O schimbare după postare poate
+reclasifica un reexport. De aceea manifestul S0-R8 primește perechile cont →
+categorie rezolvată ale conturilor atinse, plus hash-ul lor.
+
+Rolul categoriei în fișierul S este structură, deci stă în cod:
+
+| Categorie | Rol |
+|---|---|
+| Magazie, Marfuri | poziție raportabilă în PhysicalStock; fiecare linie cere cod |
+| Consum | nu e stoc de clasa 3 (lotul a trecut pe cheltuială); fără poziție; linia cere rând de politică, de regulă excludere cu motiv (BCS/Consum/+1 de azi) |
+| Folosinta, Custodie, Gratuit, ProductieNeterminata | neacoperite de S3 (Folosința există numai pe bugetar, 093): poziția sau linia = refuz `SAFT_CATEGORIE_NEACOPERITA` |
+| neclasificat | refuz `SAFT_CATEGORIE_LIPSA`, cu simbolul contului și numărul postărilor |
+
+Pe categoriile raportabile, gardianul refuză rândul de politică fără cod:
+o excludere acolo ar rupe identitatea poziției (S3-D7a).
+
+Seed privat propus: 30, 34, 38 → Magazie; 37 → Marfuri; 6 și 711 → Consum.
+Restul clasei 3 (32x, 33x, 35x, 36x, 39x) rămâne neclasificat. Azi aceste
+conturi nu poartă loturi, iar primul lot acolo cere decizie, nu moștenire
+tăcută. Bugetarul nu primește seed (SAF-T neaplicabil, TR-r7).
+
+### S3-D2 — mișcarea și linia
+
+**Evenimentul** = tranzacția cubului `Operare`, `Transfer` sau `Storno`, cu
+`Tranzactie.Data` în lună. `Deschidere` nu este mișcare (S3-D4).
+
+**Linia** = agregatul postărilor pe lot ale evenimentului pe
+`(LinieId, Unitate, Cont, Gestiune)`. `Quantity` = Σ cantităților.
+`BookValue` = Σ valorilor semnate (Debit +, Credit −). O linie cu (0, 0)
+dispare. O linie cu cantitate 0 și valoare nenulă primește refuzul
+`SAFT_MISCARE_VALORICA`: nu are producător azi, iar codurile 90/100/101/180
+cer contract propriu.
+
+**Codul.** Semnul politicii este semnul cantității pe `Operare`/`Transfer`
+și opusul lui pe `Storno` (semnul originii, SAF-D3=C). Categoria este cea
+a contului liniei. Rezolvarea pe `(TipDocument, categorie, semn)`:
+
+- rândul cu semn exact bate rândul cu semn null;
+- lipsa rândului dă refuzul `SAFT_MISCARE_FARA_POLITICA`;
+- codul null înseamnă excludere cu motiv, cu cifrele în `Excluse`;
+- codul în afara nomenclatorului dă refuz.
+
+Cheia rămâne fără `Cauza` (S3-Q1).
+
+**StockMovement** = (eveniment, cod): o tranzacție pe două coduri (ASM 70 și
+20) dă două mișcări.
+
+- `MovementReference`: S3-D5.
+- `MovementDate` = `Tranzactie.Data`.
+- `MovementPostingDate` = data UTC din `Tranzactie.ScrisLa`, același reper ca
+  SystemEntryDate din GL (R2). Fără `MovementPostingTime`.
+- `MovementType` = codul; `DocumentReference` = (codul tipului, `Document.Numar`),
+  fără `DocumentLine`, fiindcă linia agregă.
+- `LineNumber` ordinal.
+- `AccountID` = simbolul SAF-T al contului istoric al postării.
+- `TransactionID` = `TranzactieId`, numai când tranzacția are postări în GL-ul
+  lunii (cusătura S1-R2). Transferul pur nu are.
+- `CustomerID`/`SupplierID`: rolul din rândul de politică și terțul extern al
+  documentului (`Document.Laturi()`; DSC autogenerat: al sursei), cu
+  `TertiLinieStoc`. Rolul cerut fără terț este refuzul `SAFT_TERT_LIPSA`
+  (azi avertisment). Roluri diferite în aceeași mișcare dau
+  `SAFT_PROVENIENTA_AMBIGUA`.
+- `ShipFrom.WarehouseID` pentru Q < 0, `ShipTo.WarehouseID` pentru Q > 0
+  (nou; leagă linia de poziție).
+- `ProductCode`, `StockAccountNo` (S3-D5), `UnitOfMeasure` = UM produsului,
+  imutabilă după operare (S1-R1), factorul 1.
+- `MovementSubType` = codul.
+
+Ordinea: mișcările după (Data, ScrisLa, TranzactieId, cod); liniile după
+(poziția liniei în document, data deschiderii lotului, LotId, WarehouseID).
+`NumberOfMovementLines`, `TotalQuantityReceived`/`Issued` au formula actuală.
+
+### S3-D3 — codurile (SAF-B3.5): tabelul propus
+
+Cheia (tip, categorie, semn) este exhaustivă pentru producătorii de azi.
+Magazie și Marfuri primesc același rând.
+
+| Tip | Categorie | Semn | Cod | Rol | Notă |
+|---|---|---|---|---|---|
+| FCT | Magazie/Marfuri | orice | 10 | Furnizor | **nou**; recepția e a facturii pe cub (T-D3) |
+| NIR | Magazie/Marfuri | orice | 10 | Furnizor | recepția proprie și delta, pe ambele semne (S3-Q1) |
+| BTR | Magazie/Marfuri | orice | 80 | — | ambele picioare |
+| BCS | Magazie/Marfuri | −1 | 70 | — | |
+| BCS | Consum | +1 | — | — | excludere, motivul actual (27a) |
+| LDI | Magazie/Marfuri | +1 / −1 | 110 / 120 | — | |
+| DSC | Magazie/Marfuri | −1 | 30 | Client | |
+| RLF | Magazie/Marfuri | −1 | 50 | Furnizor | |
+| RDC | Magazie/Marfuri | +1 | 40 | Client | |
+| ASM | Magazie/Marfuri | +1 / −1 | 20 / 70 | — | valoarea produsului = ΣC (S3-Q2) |
+
+Rândurile NIR existente acoperă deja delta: semnul null prinde și minusul.
+Se adaugă FCT. Celelalte rânduri rămân, iar semantica `TipStoc` devine
+categoria contului.
+
+### S3-D4 — poziția (PhysicalStock)
+
+Poziția = (Lot, Cont, Produs, Gestiune) pe o categorie raportabilă.
+
+- **Opening** = Σ postărilor cu Data < începutul lunii, plus postările
+  `Deschidere` din lună. Soldul inițial al bazei este inițial, nu mișcare.
+  GL îl arată în lună ca jurnal DESCHIDERE (S1-R); diferența se explică în
+  cusătura S3-D7b a lunii deschiderii.
+- **Closing** = Opening + Σ liniilor lunii.
+- Citirea folosește `Loturi.Cumulate` cu snapshot-ul lunii anterioare, în
+  aceeași `Fiscale.DeschideCitirea` (R3).
+- Poziția intră dacă Opening ≠ 0, Closing ≠ 0 sau are linii în lună (F27-r10).
+
+Câmpuri:
+
+- `WarehouseID`, `ProductCode`, `StockAccountNo` (S3-D5).
+- `ProductType` = simbolul SAF-T al contului, ca pe ruta veche (18 caractere).
+- `OwnerID` = raportorul; UM; factorul 1.
+- `StockCharacteristic` și NC: convențiile existente.
+- `UnitPrice` = round(V/Q, 2) pe primul capăt cu Q ≠ 0 (Closing, apoi Opening),
+  altfel pe Σ liniilor de intrare din lună. Nu folosim `Lot.PretUnitar` curent
+  (SAF-B3.4).
+
+Refuzuri, fiindcă cubul le face imposibile și apariția lor este defect:
+
+- Q < 0 sau V < 0 la un capăt: `SAFT_SOLD_NEGATIV`;
+- Q = 0 și V ≠ 0 la un capăt: `SAFT_REZIDU_VALORIC` (FIFO închide lotul la
+  valoarea rămasă).
+
+### S3-D5 — cheile (SAF-B3.6)
+
+- `WarehouseID` = `Repartitor.Cod` fără trunchiere. Un cod de peste 35 de
+  caractere sau două gestiuni cu același WarehouseID în fișier dau
+  `SAFT_CHEIE_NEINJECTIVA`.
+- `StockAccountNo` = `{LotId:N}` întotdeauna (32 ≤ 70). Cheia e stabilă între
+  luni și nu apare odată cu al doilea lot, ca pe ruta veche.
+- Poziția XML (WarehouseID, ProductCode, StockAccountNo, ProductType) trebuie
+  să fie injectivă pe (gestiune, produs, lot, cont). `SimbolSaft` scoate
+  punctele, iar `ProductType` taie la 18 caractere, deci coliziunea este
+  posibilă în principiu. Ea dă tot `SAFT_CHEIE_NEINJECTIVA`.
+- `MovementReference` (35 de caractere). Forma lizibilă este
+  `{CodTip}-{Numar}`, plus felul evenimentului (nimic pe Operare, `/T` pe
+  Transfer, `/S` pe Storno), plus `/{cod}` când evenimentul are mai multe
+  coduri. Exemple: `FCT-12`, `FCT-12/S`, `BTR-3/T`, `ASM-4/70`, `ASM-4/T/20`.
+  Două documente ale fișierului cu același tip și număr trec cu toate
+  mișcările lor pe rezerva `{TranzactieId:N}{cod}` (≤ 35, fără `-`, deci
+  disjunctă de formele lizibile); la fel orice formă care depășește 35 de
+  caractere ori coincide cu alta (un eventual al doilea eveniment de același
+  fel pe document). Injectivitatea vine din construcție. Referința
+  depinde numai de eveniment și de conținutul lunii, deci rămâne stabilă la
+  reexportul unei luni închise. Trunchierea și discriminantul `#n` de pe ruta
+  veche dispar.
+
+### S3-D6 — acces, citire, comutare
+
+Aceeași formă ca S2-D5:
+
+- `SAFT_ACCES_INCOMPLET` (403) pe ambele uși S, înaintea proiecției.
+- `SaftAcces.Citite` se extinde cu tabelele citite de fișierul S. Lista se
+  fixează prin captura SQL (SC-SAFT-36 extinsă pe S).
+- `Refuzuri` nevid dă 422 pe XML, înaintea primului byte, și 200 pe sumar.
+  Ecranul afișează refuzurile.
+- Bugetarul rămâne neaplicabil.
+
+Secțiunile comune (GeneralLedgerAccounts, TaxTable, UOM, Products,
+AnalysisTypeTable) folosesc cititorii S1 pe cub, nu copii.
+
+După gate, `…/saft/stocuri` și `…/saft/stocuri/xml` citesc proiecția pe cub.
+`SaftProiectii.SaftStocuri` rămâne numai oracol A/B în ModelCheck și sursă
+Import1C (înghețat, 091-r4). Se șterge la gate-ul final, cu L vechi (R1).
+
+### S3-D7 — cusături (probe pe fiecare lună a scenei, ambele sensuri)
+
+(a) **Poziție:** Opening + Σ liniilor = Closing, exact, pe Q și pe V.
+(b) **Cont** (amendat la S3-RV1): pe fiecare cont cu poziții sau cu categorie
+raportabilă și sold/rulaj contabil, Σ Closing V − soldul contabil = Σ
+componentelor pe tip de document, iar componentele nenule nu au stoc fizic
+(postări fără lot pe acel cont). Acestea din urmă se listează pe document, ca `Componente`: o NTC
+directă pe 371 este diferență explicată, nu refuz. În luna deschiderii se
+compară și Opening cu inițialul GL plus jurnalul DESCHIDERE.
+(c) **Eveniment:** pentru mișcările cu `TransactionID`, Σ BookValue pe cont =
+Σ postărilor pe lot ale aceleiași tranzacții în GL. Pe `Transfer`, Σ V = 0 pe
+tranzacție. Mutarea (80) conservă și cantitatea pe lot, iar transformarea își
+păstrează cantitățile independente (amendat la S3-RV3).
+(d) **Conservare:** Σ liniilor emise + Σ liniilor excluse = Σ tuturor
+postărilor pe lot din lună. Nu există „neincluse”: ce nu e emis e exclus cu
+motiv sau refuzat.
+(e) **Probă duală (SAF-D3=C):** categoria derivată față de
+`RegistruStoc.TipStoc`, rând cu rând, prin corespondența
+document/linie/lot/gestiune/sens. Egalitate, diferență, absență sau
+ambiguitate, cu motiv; NIR vechi ↔ FCT nou nu e egalitate declarată.
+
+### S3-D8 — probe, A/B și perf
+
+Scenariile S3 sunt SC-SAFT-07…09, 12 și 38…49 din [SAFT.md](scenarii/SAFT.md).
+Ele sunt create prin documente și comenzi reale (operare, storno, corecție,
+constatare NIR, inventar, asamblare), fără fapte inserate în cub.
+
+Certificarea S pe lunile scenei, pe manifestul S0: XSD v249 și DUK J2.2.18,
+fără atenționări. S0-R8 se extinde cu harta liniei de mișcare
+(MovementReference, LineNumber) → mulțimea `(Spatiu, ID)` a postărilor
+agregate și harta poziției → postările ei. Mutanții (linie omisă, postare
+permutată între loturi, cod schimbat) sunt respinși.
+
+A/B contra `SaftStocuri`, pe cheia document × storno × lot × gestiune, în
+ambele sensuri. Diferențele declarate exact:
+
+- recepția pe FCT față de NIR în registru, cu NIR delta ca rest;
+- contul istoric față de contul curent al tipului de material;
+- valoarea FIFO a cubului față de registru, inclusiv Δ ASM;
+- WarehouseID pe cod, cheile noi, avertismentele devenite refuzuri.
+
+Orice altă diferență este defect.
+
+Perf (SAF-B7): numărul de comenzi SQL nu crește cu numărul mișcărilor
+(măsurat la n și 2n); Opening citește snapshot-ul, nu tot istoricul.
+
+### S3-D9 — gate și oprire
+
+Gate S3 = fișierul S complet:
+
+- probele S3 verzi pe ambele profiluri, fără regresie S1/S2;
+- XML-ul S al lunilor scenei certificat cu manifest;
+- probele HTTP pe host viu (403, 422, neaplicabil pe bugetar);
+- A/B clasificat și proba duală raportată;
+- review advers Codex închis.
+
+Abia apoi comută C. Urmează gate-ul final comun al SAF-T (SAF-B8).
+
+Oprire:
+
+- o mișcare sau poziție fără proveniență completă;
+- o cusătură S3-D7 care nu se închide;
+- o formă respinsă de DUK (ShipFrom/ShipTo, `StockAccountNo` = lot,
+  rezerva `MovementReference`): revenim cu alternativă, fără cheie
+  trunchiată;
+- un producător nou pe lot pe care tabelul S3-D3 nu îl acoperă.
+
+### S3-Q — întrebările pentru owner
+
+**S3-Q1 — NIR delta (SAF-B3.5).** Constatarea NIR după FCT mută −q (lipsă,
+oricare dintre cele cinci cauze 099) sau +q (plus, 408) pe lotul recepționat
+de factură. Recomandare **A**: codul 10 cu cantitatea semnată, adică
+corecția recepției facturate. FCT a declarat 10 × +4, iar recepția reală a
+fost 3, deci NIR declară 10 × −1. Netul 10 × +3 coincide cu ce declara ruta
+veche (recepția era pe NIR). Cauza contabilă (473/461/6xx/32x) rămâne în GL.
+Cheia politicii nu are nevoie de `Cauza`, iar SAF-D3=C se amendează pe acest
+punct: `Cauza?` intră când apare un producător care o cere (restanță numită).
+**B**: minusul primește cod pe cauză (de exemplu 120/160 pentru
+imputabilă/perisabilitate). Aceasta cere `Cauza` derivată din contul
+contrapartidei, iar pe privat Perisabilitate și Neimputabila au același
+cont 6xx, deci nu sunt injective. Nu există nici cod ANAF pentru „în
+clarificare” ori „pe drum”.
+
+**S3-Q2 — Δ ASM.** Recomandare **A**: acceptăm. Nu este o limită a
+cubului: pe cub, ΣP + ΣΔ = ΣC, deci producția 20 la valoarea finală egalează
+exact consumurile 70 evaluate FIFO. O linie separată 100 pentru Δ ar
+dezechilibra mișcarea. Δ este diferența față de registrul vechi, intră în A/B
+și dispare la TR-D9. **B**: persistăm Δ distinct. Varianta B schimbă
+modelul cubului, contrar SAF-D3=C („nu adăugăm coloane pe Postare”).
+
+### S3-R — tranșările owner-ului (2026-09-29)
+
+**S3-R1 — NIR delta.** Varianta A: constatarea NIR după FCT, pe oricare
+cauză 099 și pe ambele semne, este codul 10 cu cantitatea semnată (corecția
+recepției facturate). Cauza contabilă rămâne în GL. SAF-D3=C se amendează
+pe acest punct: cheia `PoliticaMiscareSaft` rămâne (TipDocument, TipStoc,
+Semn?), iar `TipStoc` devine categoria contului. `Cauza?` și mișcările numai
+valorice intră odată cu primul producător care le cere, ca restanța
+**SAFT-r2**.
+
+**S3-R2 — Δ ASM.** Varianta A: producția 20 se raportează la valoarea finală
+a cubului (ΣP + ΣΔ = ΣC), fără linie separată pentru Δ. Δ rămâne diferență
+declarată în A/B față de registrul vechi (SC-SAFT-44) și dispare la TR-D9.
+Limita din SAF-D3=C („Blocaj S3 identificat”) este astfel închisă.
+
+### S3-R3 — implementare și probe (2026-09-29)
+
+Pe `tr-d8-saft-s3`: `Saft/CategoriiStoc` (rezolverul S3-D1), migrația
+`S3CategorieStoc`, `Saft/SaftProiectii.PeCub.Stocuri` (S3-D2…D5, D7),
+`SaftAcces.CititeStocuri` și comutarea ușilor S în `SaftController`. Scriitorul
+emite `ShipTo`/`ShipFrom` numai când linia îi are, deci ruta L e neschimbată.
+
+- **Scena `ScenariiSaftStocuri` (2041).** Fiecare mișcare din S3-D3 e creată
+  prin documente și comenzi reale: FCT, NIR ± (Draft în ianuarie, constatare
+  în februarie), BCS cu storno, DSC pe două loturi, BTR, LDI ±, RLF, RDC și ASM
+  cu Δ. Ianuarie se închide, deci Opening-ul din februarie trece prin
+  snapshot; reexportul lui ianuarie e identic octet cu octet după închidere și
+  după februarie. SC-SAFT-45 (deschiderea din lună) rulează în scena DES,
+  fiindcă deschiderea e unică pe bază.
+- **Certificarea.** XML-ul S al lui ianuarie și februarie trece XSD v249 și DUK
+  J2.2.18 fără atenționări, cu `ShipTo`/`ShipFrom`, `StockAccountNo` = lotul și
+  rezerva `MovementReference` acceptate. Manifestul primește harta
+  (MovementReference, LineNumber) → postări, harta pozițiilor și amprenta
+  configurației cont → categorie; mutanții sunt respinși.
+- **A/B și proba duală.** Pe lot × gestiune, netul lunii diferă de ruta veche
+  numai pe cheile declarate: Δ ASM ±0,01 pe consum și produs, recepția pe FCT
+  în ianuarie față de NIR în registru, NIR delta în februarie. Categoria
+  derivată coincide cu `TipStoc`-ul registrului pe toate cele 10 poziții.
+- **Perf.** 27 de comenzi SQL la 16 și la 6 mișcări (fără N+1).
+- **HTTP** (`ProbeHttp/saft-stocuri.py`, host izolat 5091, baza
+  `…Privat.SaftS3Http`): restricțiile de rând/membru pe `Postare` și de rând pe
+  `Partener` dau 403 pe ambele uși S, fără sume; Admin și Cititor primesc 200
+  cu FCT 10 +10/+100 pe 371; categoria lipsă dă sumar 200 cu refuzul și
+  fișier 422. `refuzuri.ps1` trece 294/294.
+
+**Abateri de la contract, fără efect asupra regulii:**
+
+- Regula de rezervă a `MovementReference` e precizată: două documente cu
+  același tip și număr trec cu toate mișcările lor pe rezervă, inclusiv
+  stornoul, altfel forma lizibilă a stornoului ar fi ambiguă (S3-D5 amendat).
+- Cusătura S3-D7c e pe tranzacție: pe `Transfer`, Σ Q și Σ V se anulează pe
+  tranzacție, nu pe fiecare mișcare (ASM pe Transfer are 70 și 20 separat).
+- Tabelele citite de S nu includ `Loturi`; lista a fost fixată prin captura SQL.
+- SC-SAFT-12 rămâne parțial: lotul pe două conturi de stoc nu are producător.
+- Ecranul S are textele actualizate (sursa e cubul), dar nu a fost verificat
+  în browser în această rulare.
+
+Probe vechi actualizate: D17-V1 (23 de politici, etichetele oficiale ale
+codurilor, FCT fără registru), SC-SAFT-15 (ușile S pe `SaftStocuriPeCub`).
+Integral verde (bugetar 3.269, privat 4.466):
+`run-verificari/20260929-225536-294`; scenele DES + SAFT după SC-SAFT-45:
+`run-verificari/20260929-230610-759`; HTTP: `run-verificari/saft-s3-http-{probe,refuzuri}.log`.
+
+### S3-RV — review Codex S3-RV1…RV4, corectat (2026-09-29)
+
+[Raportul Codex](tr-d8-saft-s3-review-codex.md): patru constatări P2 pe `6b55920`.
+S3-R1/R2 nu se redeschid. Toate patru sunt corectate, fiecare cu probă și mutant.
+
+**S3-RV1 — contul fără lot (producție).** Domeniul reconcilierii pe cont
+(S3-D7b) este acum reuniunea conturilor cu poziții și a conturilor cu categorie
+raportabilă care au sold sau rulaj contabil, chiar fără niciun lot.
+`Componente` citește aceleași conturi. Proba: NTC D301/C401 30 fără lot în
+februarie. 301 apare cu stoc 0, sold 30, diferență −30, iar componenta NTC
+are 0 fizic și 30 contabil. Nu se inventează poziție și nici refuz. Cusătura
+S3-D7b devine: pe fiecare cont, diferența este Σ componentelor, iar
+componentele nenule nu au stoc fizic. Egalitatea strictă stoc = sold nu mai
+e cerută.
+
+**S3-RV2 — proveniența S3-D8, amendată.** Linia de mișcare poartă cheia
+completă `(Spatiu, ID)` a postărilor agregate (`SaftLinieMiscareStoc.Postari`).
+Sursele poziției sunt, prin definiție, postările pe lot ale cheii (lot, cont,
+produs, gestiune) până la capătul lunii. Manifestul le fixează ca număr și
+SHA-256 al listei sortate `(Spatiu, ID)`, nu ca listă completă (istoricul unui
+lot poate fi lung). Comparatorul certificării reface lista din cub, verifică
+numărul și amprenta, apoi recalculează Opening (Data < început sau
+`Deschidere` din lună) și Closing direct din postări, independent de
+snapshot, și le compară cu XML-ul. Codul fiecărei mișcări se recalculează
+independent din politică: tipul documentului, categoria contului, semnul
+originii. `MovementType` și fiecare `MovementSubType` trebuie să fie acel
+cod. Mutanții respinși: `ClosingStockValue` + 1, alt cod pe o mișcare,
+amprenta surselor schimbată, pe lângă cei de la S3-R3. Certificarea acoperă
+ianuarie (din postări), februarie (Opening din snapshot, după închiderea lui
+ianuarie) și martie, fără nicio mișcare. Martie trece XSD și DUK fără
+atenționări: `MovementOfGoods` gol pe „C” este acceptat.
+
+**S3-RV3 — S3-D7c, amendată.** Suma cantităților nu este invariant pentru orice
+`Transfer`. Regula corectă, pe tranzacțiile fără `TransactionID`: Σ V = 0 pe
+tranzacție. Mutarea (80) conservă și cantitatea pe lot. Transformarea (70/20)
+păstrează cantitățile independente. Motorul și cantitățile exportate nu se
+schimbă. Scena are acum ASM 2 → 1 pe același cont (70 −2/−20, 20 +1/+20,
+Σ Q = −1, Σ V = 0, Transfer) și inversa lui în februarie (70 +2/+20,
+20 −1/−20). SC-SAFT-09 e verificat pe acest caz.
+
+**S3-RV4 — A/B, amendat la cheia S3-D8.** Comparația se face pe document ×
+storno × lot × gestiune, în ambele sensuri. Fiecare excepție are valorile
+vechi și noi exacte:
+
+- recepția: cheia NIR-ului conex (vechi) și a FCT (nou), cu aceeași valoare;
+- FCT cu NIR Draft: nou fără vechi;
+- Δ ASM: −3,33 → −3,34 și 3,33 → 3,34;
+- NIR delta: 3/75 → −1/−25 și 5/125 → 1/25.
+
+Cheia excepției trebuie chiar să difere, iar orice altă diferență e defect.
+Mutanții respinși: omiterea operării BCS și a stornoului ei din aceeași lună,
+plus o diferență de 100 pe o cheie exceptată.
+
+**HTTP.** `saft-stocuri.py` preia extensia lui Codex: restricțiile pe
+`SoldPerioadaStoc.Cantitate`, `PoliticaMiscareSaft.CodMiscare` și
+`Cont.CategorieStoc` dau 403 pe ambele uși S.
+
+Integral verde după corecturi (bugetar 3.269, privat 4.475):
+`run-verificari/20260929-234107-166`; scenele DES + SAFT: `run-verificari/20260929-233856-839`;
+HTTP extins: `run-verificari/saft-s3-http-probe.log`.
+
+**S3-RV2.1 — cheile poziției în manifest (reverificarea Codex, 2026-09-30).**
+RV1, RV3 și RV4 sunt închise. Comparatorul verifica numai numărul
+intrărilor de poziție, astfel că o poziție omisă și alta duplicată în locul
+ei treceau. Acum cheile `(WarehouseID, ProductCode, StockAccountNo,
+ProductType)` sunt unice în manifest și în XML, iar mulțimile sunt egale în
+ambele sensuri. Cheia sursă `(Lot, Cont, Produs, Gestiune)` este și ea unică.
+Verificările numerice și ale surselor rămân. Mutantul lui Codex e respins
+în scenă pe fiecare lună certificată: ianuarie, februarie cu Opening din
+snapshot și martie fără mișcări. Scenele SAFT sunt verzi pe ambele profiluri:
+`run-verificari/20260930-004543-140`. Producția nu se schimbă.
+
+Reverificat de Codex pe `b0b2c63`: RV2.1 și RV2 închise, fără constatări
+noi. Mutantul este respins și pe fixture-ul extins din februarie (14 intrări,
+13 chei distincte), `run-verificari/20260930-004852-898`. Scenele SAFT pe
+sursele restaurate trec pe ambele profiluri (18 bugetar / 175 privat OK),
+`run-verificari/20260930-005052-797`. [Raport](tr-d8-saft-s3-review-codex.md).

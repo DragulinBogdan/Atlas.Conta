@@ -717,10 +717,10 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
     void Comutare() {
         var sursa = File.ReadAllText(Path.Combine(MetadataDump.DirectorProiect(), "..", "..", "Atlas.Conta.BackOffice",
             "Atlas.Conta.BackOffice.WebApi", "API", "Conta", "SaftController.cs"));
-        Verifica("SC-SAFT-15", "S1 + S2: ambele uși L citesc SaftPeCub, ușile S rămân pe SaftStocuri, exportul L vechi nu mai e public",
+        Verifica("SC-SAFT-15", "S1 + S2 + S3: ușile L citesc SaftPeCub, ușile S SaftStocuriPeCub; exporturile vechi L și S nu mai sunt publice",
             System.Text.RegularExpressions.Regex.Matches(sursa, @"\(an, luna, SaftProiectii\.SaftPeCub\b").Count == 2
-            && System.Text.RegularExpressions.Regex.Matches(sursa, @"\(an, luna, SaftProiectii\.SaftStocuri\b").Count == 2
-            && !System.Text.RegularExpressions.Regex.IsMatch(sursa, @"SaftProiectii\.Saft\b"));
+            && System.Text.RegularExpressions.Regex.Matches(sursa, @"\(an, luna, SaftProiectii\.SaftStocuriPeCub\b").Count == 2
+            && !System.Text.RegularExpressions.Regex.IsMatch(sursa, @"SaftProiectii\.(Saft|SaftStocuri)\b"));
     }
 
     void Timbre() => Verifica("SC-SAFT-16", "data sistemului e data UTC a timbrului, fără fusul mașinii",

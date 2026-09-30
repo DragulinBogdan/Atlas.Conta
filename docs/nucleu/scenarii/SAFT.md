@@ -1,5 +1,54 @@
 # SAF-T — scenarii S1 și matricea de delimitare S2/S3
 
+**Reverificare S3 pe `b0b2c63`, 2026-09-30: RV2.1 și RV2 închise;
+toate constatările review-ului S3 sunt rezolvate.** Mutantul „poziție omisă
+și alta duplicată” este respins în ianuarie, februarie, martie fără mișcări
+și în fixture-ul extins din februarie (14 intrări / 13 chei distincte).
+Hărțile originale trec. Patch-ul advers pe ambele profiluri este verde:
+`run-verificari/20260930-004852-898`, exit 0, zero FAIL. Fără constatări noi;
+browserul S, volumul și delimitările catalogului rămân.
+Scenele SAFT pe sursele restaurate: **18 bugetar / 175 privat OK**, zero
+FAIL, exit 0, `run-verificari/20260930-005052-797`.
+[Închiderea și probele](../tr-d8-saft-s3-review-codex.md).
+
+Istoricul reverificării anterioare:
+
+**Reverificare adversă S3, 2026-09-30, `5b8aa0e`: RV1, RV3 și RV4
+închise; RV2 rămâne deschis prin RV2.1 / P2.** Codul mișcării schimbat și
+ClosingStockValue +1 sunt acum respinse; NTC fără lot, ASM 2 → 1 și A/B
+cu excepții exacte sunt reverificate. Comparatorul provenienței acceptă
+însă un manifest cu o poziție omisă și alta duplicată: numărul intrărilor
+rămâne egal, dar una dintre pozițiile XML nu este verificată. Contraexemplul
+este executat în ianuarie, februarie și martie, inclusiv fără mișcări.
+Integrala pe sursele restaurate: 3.269 bugetar / 4.475 privat OK, zero FAIL,
+`run-verificari/20260930-000512-052`. HTTP extins reverificat: șase restricții
+403 pe sumar/XML, acces complet 200, categorie lipsă 422 pe XML, fără reziduuri.
+[Dovezi și remediu RV2.1](../tr-d8-saft-s3-review-codex.md).
+**Corectat de Claude (S3-RV2.1 în contract), în așteptarea reverificării
+Codex:** cheile poziției sunt unice în manifest și în XML, iar mulțimile sunt
+egale în ambele sensuri. Mutantul „poziție omisă + alta duplicată” e respins
+în scenă în ianuarie, februarie și martie: `run-verificari/20260930-004543-140`.
+
+Istoricul review-ului inițial și al răspunsului la el:
+
+**Review advers S3, 2026-09-29, `6b55920`: deschis, patru constatări P2.**
+S3-RV1: contul raportabil cu sold contabil, dar fără lot, lipsește din
+reconciliere. S3-RV2: proveniența poziției nu conține sursele soldurilor,
+iar comparatorul acceptă codul mișcării schimbat și ClosingStockValue +1.
+S3-RV3: ASM 2 → 1 conservă valoarea, dar are ΣQ = −1 chiar pe Transfer;
+cerința universală ΣQ = 0 din S3-D7c este contrazisă de proba reală.
+S3-RV4: A/B pierde evenimentul și verifică excepțiile numai pe cheie;
+eliminarea unei operări BCS și a stornoului ei lasă netul comparat identic.
+SC-SAFT-49 verde nu închide aceste constatări; marcajul de verificare al
+SC-SAFT-09 nu acoperă încă raportul 2 → 1 în scena S3.
+[Contraexemple, comenzi și limite](../tr-d8-saft-s3-review-codex.md).
+**Corectat de Claude (S3-RV în contract), în așteptarea reverificării Codex:**
+RV1 reconcilierea include contul raportabil fără lot (NTC D301 30); RV2 sursele
+poziției (număr + SHA-256), Opening/Closing recalculate din postări și codul
+recalculat din politică, cu mutanți; RV3 S3-D7c amendată, ASM 2 → 1 și inversa
+în scenă; RV4 A/B pe document × storno × lot × gestiune cu excepții exacte și
+mutanți.
+
 **2026-09-28 — S1 aprobat (S1-D5 = B', 381 + 384) și implementat pe cub
 (`SaftProiectii.SaftPeCub`). Probele S1 sunt în ModelCheck (`--scenarii
 SAFT`, plus DEC, ASM și IMO); starea fiecărui rând este în coloana finală.
@@ -67,15 +116,15 @@ FZ-r3 rămâne deschisă. Detaliile și limitele sunt în review-ul de mai sus.
 | SC-SAFT-04 | DVI bază 100, TVA 21: GL D 4426 21/C 446 21; sold și rulaj contabil 21/21, nu 121/121; baza fiscală 100 rămâne în faptele fiscale; zero facturi DVI inventate | SAFT-L-DVI | Contract DVI, D8-B1, T-r11 | Verificat (ScenariiSaft) |
 | SC-SAFT-05 | PLT 70, alocare 50: plată totală 70, referință factură numai pentru 50, rest 20; factura 100 rămâne cu 50. Desfacerea alocării restabilește 100/70, fără nouă plată | SAFT-P-ALOCARI | D8-B7; SAF-B3.3; S2-D3 | Verificat (ScenariiSaft) |
 | SC-SAFT-06 | PLT 70 în ianuarie; legătură 50 în februarie: la 31 ianuarie alocare 0/rest 70; la 28 februarie alocare 50/rest 20; zero plată suplimentară în februarie | SAFT-P-LIMITA | SAF-B3.3; S2-D3 | Verificat (ScenariiSaft) |
-| SC-SAFT-07 | FCT 10 buc × 10 = 100 în ianuarie; NIR egal în februarie: stoc ianuarie 10/100; NIR adaugă 0/0; final februarie 10/100. Codurile Movement rămân de tranșat | SAFT-S-FCT-NIR | 098, contract NIR delta; SAF-B3.5 | Economic specificat; XML deschis |
-| SC-SAFT-08 | Deschidere 10/100 în MAG1; BTR 4/40 în MAG2: MAG1 6/60, MAG2 4/40; total 10/100. Inversa în februarie: 10/100 și 0/0; GL rulaj transfer 0 în ambele luni | SAFT-S-TRANSFER | 090, contract BTR; N-r8 | Acceptat; specificat |
-| SC-SAFT-09 | ASM același cont: 2 A/100 devin 1 B/100. Movement real −2/−100, +1/+100; GL 0; contraponderi Transformare exportate 0. Inversa reface A 2/100 și B 0/0 | SAFT-S-ASM | ASM-B2…B7 | Acceptat; specificat |
+| SC-SAFT-07 | FCT 10 buc × 10 = 100 în ianuarie; NIR egal în februarie: stoc ianuarie 10/100; NIR adaugă 0/0; final februarie 10/100. Codurile Movement rămân de tranșat | SAFT-S-FCT-NIR | 098, contract NIR delta; SAF-B3.5 | Verificat pe S (ScenariiSaftStocuri): FCT 10 +10/+100, NIR egal fără mișcare |
+| SC-SAFT-08 | Deschidere 10/100 în MAG1; BTR 4/40 în MAG2: MAG1 6/60, MAG2 4/40; total 10/100. Inversa în februarie: 10/100 și 0/0; GL rulaj transfer 0 în ambele luni | SAFT-S-TRANSFER | 090, contract BTR; N-r8 | Verificat pe S (ScenariiSaftStocuri): BTR 80 −1/+1 între MAG1 și destinație, fără TransactionID |
+| SC-SAFT-09 | ASM același cont: 2 A/100 devin 1 B/100. Movement real −2/−100, +1/+100; GL 0; contraponderi Transformare exportate 0. Inversa reface A 2/100 și B 0/0 | SAFT-S-ASM | ASM-B2…B7 | Verificat pe S (ScenariiSaftStocuri): ASM 2 → 1 pe același cont, Transfer 70 −2/−20 și 20 +1/+20, inversa în februarie; Δ la SC-SAFT-44 |
 | SC-SAFT-10 | ASM mixt: grup 371 transfer 60/60; grup 301→345 operare 40/40. GL numai D 345 40/C 301 40; comparația veche GL 0, delta explicită 40/40 | SAFT-L-ASM-MIXT | D8-B4, ASM-B7 | Verificat (ScenariiAsm, inclusiv inversa din februarie) |
 | SC-SAFT-11 | PIF nominalizează 1.200 deja în contabil: GL suplimentar 0. AMO 100: D cheltuială 100/C amortizare 100. Carte Fiscal și transferurile de fișă nu dublează GL | SAFT-L-IMO | 097 și contract IMO | Verificat PIF, AMO și DEC (ScenariiImo, ScenariiDec); CAS rămâne în catalogul IMO |
-| SC-SAFT-12 | Același lot în două gestiuni cu același nume, apoi pe două conturi: poziții distincte, suma 10/100 conservată; chei XML fără coliziuni | SAFT-S-CHEI | SAF-B3.6 | Specificat economic; codificare de pin-uit |
+| SC-SAFT-12 | Același lot în două gestiuni cu același nume, apoi pe două conturi: poziții distincte, suma 10/100 conservată; chei XML fără coliziuni | SAFT-S-CHEI | SAF-B3.6 | Parțial: același lot în două gestiuni dă poziții distincte pe WarehouseID (cod, nu nume), iar două gestiuni cu același cod dau `SAFT_CHEIE_NEINJECTIVA` (ScenariiSaftStocuri); lotul pe două conturi de stoc nu are producător azi, poziția îl separă prin `ProductType` și garda de injectivitate |
 | SC-SAFT-13 | Utilizator ascunde 21 din FCT 100 + 21 sau un rând 401 121: nu primește declarație cu 100 ori 0; refuz înainte de XML, fără scurgere de sume ascunse | SAFT-HTTP-DREPTURI | SAF-D4 A aprobat, 103 | Verificat HTTP (`ProbeHttp/saft-acces.py`, host izolat) |
 | SC-SAFT-14 | Bugetar cu documente operate: L și S neaplicabile, fără XML „gol valid”; cont/mapping/reper obligatoriu lipsă pe privat: refuz, nu zero | SAFT-HTTP-REFUZURI | 073/074 și SAF-B6 | Verificat: bugetar neaplicabil, mapare lipsă refuzată |
-| SC-SAFT-15 | S1 livrat singur: ruta L rămâne cea existentă, fără noul GL combinat cu Payments vechi; S1+S2: L integral nou; C rămâne vechi până la S3 | SAFT-COMUTARE | R1, SAF-B1 | Verificat: ruta L neschimbată, cusături GL–balanță–facturi, A/B clasificat |
+| SC-SAFT-15 | S1 livrat singur: ruta L rămâne cea existentă, fără noul GL combinat cu Payments vechi; S1+S2: L integral nou; C rămâne vechi până la S3; după S3 ușile S citesc `SaftStocuriPeCub` | SAFT-COMUTARE | R1, SAF-B1 | Verificat: ruta L neschimbată, cusături GL–balanță–facturi, A/B clasificat |
 | SC-SAFT-16 | FCT capturată la 23:30 UTC, inversă și corecție în alte două zile UTC: trei timbre proprii; reexportul într-un alt fus nu schimbă SystemEntryDate | SAFT-TIMBRE | R2, S1-D3 | Verificat |
 | SC-SAFT-17 | Citire începe cu FCT 100/21; altă sesiune comite FCT 50/10,50 între GL și facturi: primul fișier rămâne integral 121; al doilea are 181,50 | SAFT-REPEATABLE-READ | R3, SAF-B6 | Verificat, inclusiv refuzul ReadCommitted |
 | SC-SAFT-18 | Ianuarie depus 100/21; corecție februarie 80/16,80, apoi martie 70/14,70: GL lunar 121, −24,20, −12,10; sold final 84,70; facturi după varianta S1-D5 | SAFT-CORECTII | 088, 103, S1-D5 | Verificat B' pe trei luni, cu reexport stabil octet cu octet |
@@ -98,6 +147,18 @@ FZ-r3 rămâne deschisă. Detaliile și limitele sunt în review-ul de mai sus.
 | SC-SAFT-35 | Altă sesiune comite o legătură 50 între citirea GL și citirea plăților: fișierul are fie 70 rest, fie 50 + 20, niciodată amestec; refuzul ReadCommitted rămâne | SAFT-P-REPEATABLE-READ | R3, SC-SAFT-17 | Verificat (ScenariiSaft) |
 | SC-SAFT-37 | Nominalizare automată desfăcută în aprilie: PLT 50 integral pe G1 → 50 rest; PLT 120 pe G2 de rest 100 → 120 rest; PLT 50 pe G3, desfăcută și realocată 30 pe G4 → 30 G4 + 20 rest; proveniența fiecărei linii acoperă postările operării; storno în mai → −50 rest și −120 rest | SAFT-P-NOMINALIZARE-DESFACUTA | S2-RV1, S2-D3 | Verificat (ScenariiSaft), cu mutant |
 | SC-SAFT-36 | Host viu: Admin complet → 200; fără drept pe `Postare` → 403 `SAFT_ACCES_INCOMPLET`; refuz condițional de rând pe `Postare` sau pe document; membru `Valoare`/`Partener` ascuns; metadate necesare ascunse → 403 înaintea primului byte, pe sumar și pe fișier, fără sume ascunse în corp | SAFT-HTTP-ACCES | SAF-D4, S2-D5 | Verificat HTTP (`ProbeHttp/saft-acces.py`, host izolat); SC-SAFT-36 și prin ScenariiSaft (tabelele citite) |
+| SC-SAFT-38 | FCT 4 buc × 25 = 100 în ianuarie (lot pe 302, MAG1), NIR conex Draft: ianuarie 10 +4/+100, fără mișcare NIR; NIR constată 3 în februarie, cauza InClarificare: 10 −1/−25; lotul februarie inițial 4/100, final 3/75; 473 25 numai în GL | SAFT-S-NIR-MINUS | S3-D3, S3-R1; NIR-D2 | Verificat (ScenariiSaftStocuri) |
+| SC-SAFT-39 | FCT 4 × 25; NIR constată 5 în februarie, cauza Plus: 10 +1/+25 pe același lot, `SupplierID` = furnizorul; final 5/125; 408 25 în GL | SAFT-S-NIR-PLUS | S3-D3, S3-R1 | Verificat (ScenariiSaftStocuri) |
+| SC-SAFT-40 | FCT 10 × 10 pe 302; BCS 3 în ianuarie: 70 −3/−30, capătul de consum +3/+30 pe 602 în `Excluse`; LDI minus 1 → final ianuarie 6/60; februarie: storno BCS 70 +3/+30 (`/S`), BCS nou 70 −2/−20, BCS 1 operat și stornat; lotul inițial 6/60, final 7/70; Excluse BCS/Consum/+1 = −1/−10 din 4 linii | SAFT-S-BCS | S3-D2, S3-D4; ciclul stocului | Verificat (ScenariiSaftStocuri) |
+| SC-SAFT-41 | L1 2 × 10, L2 5 × 12 (371); DSC 2 + 2 către client: o mișcare 30 cu L1 −2/−20 și L2 −2/−24; `CustomerID` = clientul, `ShipFrom` = MAG1 | SAFT-S-DSC | S3-D2, S3-D5 | Verificat (ScenariiSaftStocuri) |
+| SC-SAFT-42 | LDI plus 2 la prețul de evaluare 10 → 110 +2/+20; LDI minus 1 din lotul 302 (10/100) → 120 −1/−10 | SAFT-S-LDI | S3-D3 | Verificat (ScenariiSaftStocuri) |
+| SC-SAFT-43 | RLF 1 din L2 (12) → 50 −1/−12 cu `SupplierID`; RDC cu lot 1 în L1 (10) → 40 +1/+10 cu `CustomerID` | SAFT-S-RETUR | S3-D3 | Verificat (ScenariiSaftStocuri) |
+| SC-SAFT-44 | Lot 3 × 3,333333 = 10,00; două ASM consumă câte 1: a doua are C = 3,34 față de R = P = 3,33, deci Transfer cu 70 −1/−3,34 și 20 +1/+3,34, fără linie 100; A/B arată ±0,01 față de registru pe cele două loturi | SAFT-S-ASM-DELTA | S3-R2, ASM-B2…B7 | Verificat (ScenariiSaftStocuri) |
+| SC-SAFT-45 | Deschiderea din lună a scenei DES (loturi pe 302): Opening = Closing = soldul deschis pe fiecare lot, nicio mișcare din tranzacția `Deschidere`; Opening pe 302 = jurnalul DESCHIDERE din GL-ul L | SAFT-S-DESCHIDERE | S3-D4, S3-D7 | Verificat (ScenariiDeschidere) |
+| SC-SAFT-46 | 37 fără categorie (371 moștenește): `SAFT_CATEGORIE_LIPSA` care numește 371, XML refuzat; categoria pusă pe 371 repară, iar `CategoriiStoc` (manifest, cu amprentă) arată 371 Mărfuri, 302 Magazie, 602 Consum; rândul de excludere pe FCT/Magazie e refuzat de gardian | SAFT-S-CATEGORIE | S3-D1 | Verificat (ScenariiSaftStocuri) |
+| SC-SAFT-47 | BCS operat și stornat în aceeași lună: `BCS-n`, `BCS-n/S`; ASM pe Transfer: `ASM-n/T/20`, `ASM-n/T/70`; două BCS cu același număr → toate mișcările lor pe rezerva `{TranzactieId:N}{cod}`; număr de 34 de caractere → rezerva; două gestiuni cu codul MAG1 → `SAFT_CHEIE_NEINJECTIVA`; `StockAccountNo` = lotul pe toate pozițiile | SAFT-S-CHEI-REFERINTE | S3-D5, SC-SAFT-12 | Verificat (ScenariiSaftStocuri) |
+| SC-SAFT-48 | Host viu, rutele S: Admin și Cititor 200 cu FCT 10 +10/+100 pe 371, `ShipTo` MAG1; restricție de rând/membru pe `Postare` și de rând pe `Partener` → 403 `SAFT_ACCES_INCOMPLET` fără sume; User 403; categorie lipsă → sumar 200 cu refuzul, fișier 422; bugetar neaplicabil; tabelele citite = `SaftAcces.CititeStocuri` | SAFT-S-HTTP | S3-D6, SAF-D4 | Verificat HTTP (`ProbeHttp/saft-stocuri.py`, host izolat) și ScenariiSaftStocuri |
+| SC-SAFT-49 | S pe ianuarie, februarie (Opening din snapshot) și martie (fără mișcări): XSD v249 + DUK J2.2.18 fără atenționări; manifestul leagă linia de postările `(Spatiu, ID)` și poziția de sursele ei (număr + SHA-256); Opening/Closing și codul recalculate independent; mutanți respinși (linie omisă, surse permutate, alt lot, alte surse, ClosingStockValue + 1, alt cod); cusăturile S3-D7 a–d (b și c amendate); A/B pe document × storno × lot × gestiune cu excepții exacte și mutanți (omisiune BCS + storno, diferență de 100); proba duală egală; reexport identic | SAFT-S-CERTIFICARE | S3-D7, S3-D8, S3-RV | Verificat (ScenariiSaftStocuri) |
 
 ## SC-SAFT-15…17 — probe structurale cu rezultate măsurabile
 

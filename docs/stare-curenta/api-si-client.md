@@ -445,10 +445,12 @@ nucleu. Rapoartele fiscale cer citire pe `Postare`; lipsa dreptului pe
 întregul tip este 403, iar filtrarea pe obiect/membru se aplică sursei comune.
 Această validare fiscală nu certifică toate câmpurile SourceDocuments SAF-T.
 
-D406 L (`GET api/proiectii/saft` și `…/saft/xml`) citește cubul
-(`SaftProiectii.SaftPeCub`). Excepție de la filtrarea de mai sus: exportul
+D406 L (`GET api/proiectii/saft` și `…/saft/xml`) și S (`…/saft/stocuri` și
+`…/saft/stocuri/xml`) citesc cubul (`SaftProiectii.SaftPeCub`,
+`SaftStocuriPeCub`). Excepție de la filtrarea de mai sus: exportul
 cere citire necondiționată. Orice criteriu de rând sau de membru pe tabelele
-citite de export (`SaftAcces.Citite`, cu toate tipurile mapate în ele) dă 403
+citite de export (`SaftAcces.Citite` pe L, `SaftAcces.CititeStocuri` pe S, cu
+toate tipurile mapate în ele) dă 403
 `SAFT_ACCES_INCOMPLET` pe ambele uși, înaintea proiecției. Corpul numește
 tipurile și membrii restricționați, fără rânduri ori sume. Criteriile se
 citesc din `ISelectDataSecurity`, aceeași sursă din care EF Core filtrează.
@@ -456,5 +458,6 @@ citesc din `ISelectDataSecurity`, aceeași sursă din care EF Core filtrează.
 condiționale. Refuzurile proiecției (`SaftDto.Refuzuri`) apar în sumar
 (`Refuzuri`, 200; ecranul le arată înaintea descărcării) și dau 422 pe
 fișier, înaintea primului byte. Cusăturile ecranului L compară declarația
-cu cubul: rulajul balanței, faptele fiscale și baza lor pe sens. Ușile S
-(`…/saft/stocuri*`) rămân pe exportul existent până la S3. (SAF-D4, S2-D5)
+cu cubul: rulajul balanței, faptele fiscale și baza lor pe sens. Cele ale
+ecranului S compară fiecare poziție cu postările pe lot ale lunii și stocul
+pe cont cu soldul contabil. (SAF-D4, S2-D5, S3-D6)

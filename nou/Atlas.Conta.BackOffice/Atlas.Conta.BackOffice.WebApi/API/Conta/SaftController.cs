@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 
-// SAF-T — declarația D406, modul L (felia 16, D16-D5; pe cub de la TR-D8 S2):
+// SAF-T — declarația D406, modul L (felia 16, D16-D5; pe cub de la TR-D8 S2) și S (pe cub de la S3):
 // formularul ANAF, servit în DOUĂ forme ale ACELUIAȘI conținut.
 //
 //   • `GET api/proiectii/saft?an&luna`      → `SaftSumarDto` (JSON) — ce vede
@@ -16,7 +16,7 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 //
 // Modulul S (stocuri, „la cerere" — felia 17, D17-D4) are aceleași două uși pe
 // `…/saft/stocuri` și `…/saft/stocuri/xml`, cu ACELEAȘI gărzi în ACEEAȘI ordine:
-// singura diferență e proiecția (`SaftStocuri`) și, în fișier, `HeaderComment`.
+// diferă proiecția (`SaftStocuriPeCub`), tipurile citite și, în fișier, `HeaderComment`.
 // Gărzile trăiesc o singură dată (`Sumar` și `Fisier`, mai jos) — două copii ar
 // fi divergat exact acolo unde contează.
 //
@@ -36,7 +36,7 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 //    `SelectionCriteria` sunt luni, nu date libere): `an`+`luna`, nullable, ca
 //    „lipsă" să se distingă de `0` pe care binding-ul l-ar livra tăcut;
 //  • un singur 400 pe sârmă (70f): `EroriDto`, ca la orice proiecție;
-//  • PROPRIU: pe L, orice restricție de citire pe datele exportului dă 403
+//  • PROPRIU: pe L și S, orice restricție de citire pe datele exportului dă 403
 //    `SAFT_ACCES_INCOMPLET` pe ambele uși (SAF-D4); refuzurile proiecției dau
 //    422 pe fișier, înaintea primului byte. Fără CUI, fișierul nu pleacă
 //    deloc (fixul F7) — 422, nu un XML anonim cu status 200.
@@ -65,27 +65,27 @@ public class SaftController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Get([FromQuery] int? an = null, [FromQuery] int? luna = null) =>
-        Sumar(an, luna, SaftProiectii.SaftPeCub, peCub: true);
+        Sumar(an, luna, SaftProiectii.SaftPeCub, SaftAcces.Citite);
 
     // ═══ Modulul S (la cerere = STOCURI), felia 17 ═══
-    // Aceleași două uși, aceeași ordine a gărzilor, alt modul: singura diferență
-    // e PROIECȚIA (`SaftStocuri` în loc de `Saft`) și, în fișier,
-    // `HeaderComment = C`. Rutele sunt separate, nu un parametru `fel` pe
+    // Aceleași două uși, aceeași ordine a gărzilor, alt modul: diferă PROIECȚIA,
+    // tipurile citite și, în fișier, `HeaderComment = C`. Rutele sunt separate, nu un parametru `fel` pe
     // aceeași rută, fiindcă cele două declarații se depun separat (un fișier per
     // lună, per modul — §2 al contractului) și fiindcă un client care cere „S"
     // are altă listă de secțiuni de arătat: contractul e altul, deci și ușa.
     [HttpGet("stocuri")]
     [ProducesResponseType(typeof(SaftSumarDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult GetStocuri([FromQuery] int? an = null, [FromQuery] int? luna = null) =>
-        Sumar(an, luna, SaftProiectii.SaftStocuri, peCub: false);
+        Sumar(an, luna, SaftProiectii.SaftStocuriPeCub, SaftAcces.CititeStocuri);
 
     // Ușa JSON, o singură dată pentru ambele module: perioada → proiecție →
     // `Neaplicabil` → sumar. Diferența dintre L și S intră ca FUNCȚIE de
     // proiecție, nu ca `if` pe un parametru — cele două uși n-au voie să înceapă
     // să difere prin altceva decât modulul.
-    IActionResult Sumar(int? an, int? luna, Func<IObjectSpace, int, int, DateOnly?, SaftDto> proiectie, bool peCub) {
+    IActionResult Sumar(int? an, int? luna, Func<IObjectSpace, int, int, DateOnly?, SaftDto> proiectie, Type[] citite) {
         var erori = Perioada(an, luna);
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
@@ -94,12 +94,8 @@ public class SaftController : ContaApiController {
         // citească registrul contabil nu-l citește nici așezat pe formular.
         // Proiecția întoarce liste materializate — nimic deferred după `using`.
         using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
-        if (peCub) {
-            if (AccesIncomplet(os) is { } refuz)
-                return refuz;
-        }
-        else if (!PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os))
-            return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        if (AccesIncomplet(os, citite) is { } refuz)
+            return refuz;
         var dto = proiectie(os, an.Value, luna.Value, null);
         if (dto.Neaplicabil != null)
             return StatusCode(StatusCodes.Status422UnprocessableEntity, EroriDto.DinMesaj(dto.Neaplicabil));
@@ -122,9 +118,9 @@ public class SaftController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Xml([FromQuery] int? an = null, [FromQuery] int? luna = null) =>
-        Fisier(an, luna, SaftProiectii.SaftPeCub, PrefixL, peCub: true);
+        Fisier(an, luna, SaftProiectii.SaftPeCub, PrefixL, SaftAcces.Citite);
 
-    // Fișierul modulului S. ACEEAȘI ordine a gărzilor ca la L (`PoateCiti` ⇒ 403,
+    // Fișierul modulului S. ACEEAȘI ordine a gărzilor ca la L (`SAFT_ACCES_INCOMPLET` ⇒ 403,
     // `Neaplicabil` ⇒ 422, CUI lipsă/invalid ⇒ 422), plus una PROPRIE modulului:
     // stocul fizic gol ⇒ 422. Vezi `Fisier`.
     [HttpGet("stocuri/xml")]
@@ -133,7 +129,7 @@ public class SaftController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult XmlStocuri([FromQuery] int? an = null, [FromQuery] int? luna = null) =>
-        Fisier(an, luna, SaftProiectii.SaftStocuri, PrefixS, peCub: false);
+        Fisier(an, luna, SaftProiectii.SaftStocuriPeCub, PrefixS, SaftAcces.CititeStocuri);
 
     const string PrefixL = "SAF-T", PrefixS = "SAF-T-S";
 
@@ -142,25 +138,14 @@ public class SaftController : ContaApiController {
     // copii ar fi divergat exact acolo unde contează (F7 s-ar fi aplicat doar pe
     // una), și n-ar fi existat niciun loc în care să se citească ordinea.
     IActionResult Fisier(int? an, int? luna,
-            Func<IObjectSpace, int, int, DateOnly?, SaftDto> proiectie, string prefixNume, bool peCub) {
+            Func<IObjectSpace, int, int, DateOnly?, SaftDto> proiectie, string prefixNume, Type[] citite) {
         var erori = Perioada(an, luna);
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
 
-        using var os = Secured(peCub ? typeof(Atlas.Conta.BackOffice.Module.Cub.Postare) : typeof(RegistruContabil));
-        if (peCub) {
-            if (AccesIncomplet(os) is { } refuz)
-                return refuz;
-        }
-        else {
-            if (!PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os))
-                return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
-            // ÎNAINTE de proiecție: fără drept de citire pe registru, nici măcar nu
-            // se calculează declarația — refuzul e al fișierului ca atare, nu al
-            // conținutului lui.
-            if (!PoateCiti(typeof(RegistruContabil), os))
-                return RefuzCitire(typeof(RegistruContabil));
-        }
+        using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        if (AccesIncomplet(os, citite) is { } refuz)
+            return refuz;
 
         var dto = proiectie(os, an.Value, luna.Value, null);
         if (dto.Neaplicabil != null)
@@ -239,9 +224,9 @@ public class SaftController : ContaApiController {
     }
 
     /// <summary>SAF-D4: 403 înaintea proiecției dacă vreun tip sau membru citit de exportul pe cub are restricții de citire.</summary>
-    IActionResult AccesIncomplet(IObjectSpace os) {
+    IActionResult AccesIncomplet(IObjectSpace os, Type[] citite) {
         var lipsuri = CriteriiCitire is { } criterii
-            ? SaftAcces.Lipsuri(os, criterii)
+            ? SaftAcces.Lipsuri(os, criterii, citite)
             : ["securitatea hostului nu expune criteriile de citire"];
         if (lipsuri.Count == 0)
             return null;

@@ -35,6 +35,10 @@ public class Cont : Nomenclator, ICuCautare, ICuProvenienta {
     [XafDisplayName("Urmărește partide")]
     public virtual bool UrmarestePartide { get; set; }
 
+    /// <summary>Categoria stocului de pe lot în SAF-T S; gol = moștenită de la părinte (SAF-D3=C).</summary>
+    [XafDisplayName("Categorie stoc (SAF-T)")]
+    public virtual TipStoc? CategorieStoc { get; set; }
+
     // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
     // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
     [XafDisplayName("Căutare")]

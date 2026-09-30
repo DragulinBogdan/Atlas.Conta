@@ -416,15 +416,15 @@
       },
       {
         "Cod": "90",
-        "Denumire": "Cheltuieli ulterioare capitalizate"
+        "Denumire": "Cheltuieli ulterioare incluse în valoarea de intrare"
       },
       {
         "Cod": "100",
-        "Denumire": "Diferențe de preț în plus"
+        "Denumire": "Diferențe de preț pozitive"
       },
       {
         "Cod": "101",
-        "Denumire": "Diferențe de preț în minus"
+        "Denumire": "Diferențe de preț negative"
       },
       {
         "Cod": "110",
@@ -436,11 +436,11 @@
       },
       {
         "Cod": "130",
-        "Denumire": "Ajustări pentru depreciere"
+        "Denumire": "Ajustări pentru deprecierea stocurilor"
       },
       {
         "Cod": "140",
-        "Denumire": "Reluări ale ajustărilor pentru depreciere"
+        "Denumire": "Reluări de ajustări pentru deprecierea stocurilor"
       },
       {
         "Cod": "150",
@@ -456,7 +456,7 @@
       },
       {
         "Cod": "180",
-        "Denumire": "Alte tranzacții (fără cantitate)"
+        "Denumire": "Alte tranzacții"
       }
     ],
     "Cautare": {
@@ -679,6 +679,7 @@
       "DefaultProperty": "Simbol",
       "Membri": {
         "Activ": "Activ",
+        "CategorieStoc": "Categorie stoc (SAF-T)",
         "Cautare": "Căutare",
         "Denumire": "Denumire",
         "DimensiuniObligatorii": "DimensiuniObligatorii",

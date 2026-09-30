@@ -445,7 +445,7 @@ legătura contabilă poate proveni din NIR-ul materializat. Societatea apare
 **L pe cub (TR-D8 S1 + S2).** `SaftProiectii.SaftPeCub` produce
 nomenclatoarele, GL-ul, facturile și plățile din `Citiri.Contabil.Jurnal`,
 `Citiri.Fiscale` și `Citiri.Plati`, fără registre. Ruta publică L îl
-folosește (R1); fișierul de stocuri S rămâne pe exportul existent până la S3.
+folosește (R1).
 Tranzacția GL este tranzacția cubului, inclusiv deschiderea din lună.
 Linia GL este postarea, iar totalul D/C este rulajul balanței.
 `TransactionDate` și `GLPostingDate` sunt data contabilă; `SystemEntryDate`
@@ -490,9 +490,24 @@ Datele neincluse rămân explicite și participă la reconcilierea notelor,
 facturilor, TVA, soldurilor și nomenclatoarelor. Lipsa unui câmp necesar nu
 este mascată printr-o valoare inventată. (73e)
 
-În S, politica mișcării se aplică pe tip document × tip stoc × semn.
-Absența politicii diferă de excluderea deliberată prin cod absent.
-Storno-ul păstrează codul mișcării inițiale și inversează valorile.
+**S pe cub (TR-D8 S3).** `SaftProiectii.SaftStocuriPeCub` produce
+PhysicalStock și MovementOfGoods din postările pe lot (`Citiri.Loturi`), fără
+registre. Categoria stocului vine din contul istoric al postării
+(`Cont.CategorieStoc`, moștenită de la părinte; privat: 30/34/38 Magazie,
+37 Mărfuri, 6 și 711 Consum). Magazie/Mărfuri au poziții. Consumul nu e stoc,
+iar liniile lui cer politică, de regulă excludere. Folosință, Custodie,
+Gratuit și producția în curs sunt neacoperite. Contul fără categorie pe tot
+lanțul refuză fișierul. Mișcarea este evenimentul cubului
+(`Operare`/`Transfer`/`Storno`) × cod. Linia agregă postările pe
+(linie, lot, cont, gestiune). Codul vine din politica pe tip × categorie ×
+semn, cu semnul originii pe storno. NIR delta este 10 cu cantitatea semnată
+(S3-R1). ASM raportează producția la valoarea finală a cubului (ΣC, S3-R2).
+Linia numai valorică este refuz (SAFT-r2). Poziția este lot × cont × produs
+× gestiune; `Opening` include deschiderea din lună. Cheile: WarehouseID =
+codul gestiunii, `StockAccountNo` = lotul, `MovementReference` lizibilă sau
+rezerva `{TranzactieId:N}{cod}`. Pe o categorie raportabilă, politica nu poate
+exclude. Regulile:
+[S3](../nucleu/tr-d8-saft-contract.md#s3--movementofgoods-physicalstock-și-comutarea-c-contract-pentru-aprobare).
 Stocul fizic se grupează pe repartitor și lot, pentru tipurile eligibile;
 mișcările pe document × storno × cod, cu cantități și valori semnate. (74a, 74c)
 
