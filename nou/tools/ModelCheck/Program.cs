@@ -14025,7 +14025,7 @@ void VerificaSaftStocuri(bool privat) {
 
     // ---------------- `Neincluse`: produsul fără cont de stoc ----------------
     var neinclusFaraCont = saft.Neincluse
-        .SingleOrDefault(n => n.Cauza == nameof(CauzaNeincludere.FaraContStoc));
+        .SingleOrDefault(n => n.Cauza == "FaraContStoc");
     Console.WriteLine($"     MĂSURAT (D17-V2 Neincluse): {saft.Neincluse.Count} rânduri — "
         + $"{neinclusFaraCont?.Cauza} pe „{neinclusFaraCont?.ProdusCod}” ×{neinclusFaraCont?.Randuri} "
         + $"{neinclusFaraCont?.Cantitate:0.###}/{neinclusFaraCont?.Valoare:N2}; "
@@ -14037,7 +14037,7 @@ void VerificaSaftStocuri(bool privat) {
         + "fără `ProdusFaraContStoc`; operarea unui document nou pe el e refuzată (D17/ASM, `CONT_STOC_LIPSA`)",
         saft.Neincluse.Count == 0
         && saft.StocFizic.Where(e => e.ProdusId == produsFaraCont.ID).ToList() is [{ ProductType: "371", OpeningQuantity: 30m, ClosingQuantity: 27m }]
-        && !saft.Avertismente.Any(a => a.Cod == nameof(CodAvertismentSaft.ProdusFaraContStoc)));
+        && !saft.Avertismente.Any(a => a.Cod == "ProdusFaraContStoc"));
 
     // ---------------- Terții pe linia de mișcare ----------------
     var idFurnizor = SaftReguli.IdPartener(furnizor, societate).Id;
@@ -14182,7 +14182,7 @@ void VerificaSaftStocuri(bool privat) {
     var btrCuRol = cuRol.MiscariStoc.SingleOrDefault(m => m.DocumentId == btr.ID && !m.Storno);
     Console.WriteLine($"     MĂSURAT (D17-V2 rol fără partener): BTR ⇒ ({btrCuRol?.Linii[0].CustomerId}, "
         + $"{btrCuRol?.Linii[0].SupplierId}); avertisment "
-        + $"{cuRol.Avertismente.FirstOrDefault(a => a.Cod == nameof(CodAvertismentSaft.TertLipsaPeMiscare))?.Numar ?? 0}.");
+        + $"{cuRol.Avertismente.FirstOrDefault(a => a.Cod == "TertLipsaPeMiscare")?.Numar ?? 0}.");
     Check("D17-V2 (pe cub, SAF-D4) rol cerut + partener LIPSĂ ⇒ refuz `SAFT_TERT_LIPSA` pe document, nu raportorul "
         + "tăcut și nu identificator inventat",
         cuRol.Refuzuri.Any(r => r.Cod == SaftProiectii.RefuzTertLipsa && r.DocumentId == btr.ID));
@@ -14671,7 +14671,7 @@ void VerificaSaftStocuriFixuri(IObjectSpace os, int an, int luna, DateOnly dataC
     // baza de import apare la fel: importul lui 12/2025 a rulat în 2026-08.
     var documenteCuMiscari = saft.MiscariStoc.Select(m => m.DocumentId).Distinct().Count();
     var avertPostare = saft.Avertismente
-        .FirstOrDefault(a => a.Cod == nameof(CodAvertismentSaft.DataPostariiInAfaraPerioadei));
+        .FirstOrDefault(a => a.Cod == "DataPostariiInAfaraPerioadei");
     Console.WriteLine($"     MĂSURAT (D17-V6/F4 postare): {saft.MiscariStoc.Count(m => m.MovementPostingDate != null)}"
         + $"/{saft.MiscariStoc.Count} mișcări cu `MovementPostingDate`; avertisment ×{avertPostare?.Numar ?? 0} "
         + $"peste {documenteCuMiscari} documente — ex. {avertPostare?.Exemple.FirstOrDefault()}");
@@ -14786,7 +14786,7 @@ void VerificaSaftStocuriFixuri(IObjectSpace os, int an, int luna, DateOnly dataC
     var refDup = dupaScena.MiscariStoc.Where(m => m.DocumentId == dup1.ID || m.DocumentId == dup2.ID)
         .OrderBy(m => m.DocumentId).Select(m => m.MovementReference).ToList();
     var avertNumar = dupaScena.Avertismente
-        .FirstOrDefault(a => a.Cod == nameof(CodAvertismentSaft.NumarDocumentDuplicat));
+        .FirstOrDefault(a => a.Cod == "NumarDocumentDuplicat");
     var ordinePeId = new[] { dup1.ID, dup2.ID }.OrderBy(x => x).ToList();
     Console.WriteLine($"     MĂSURAT (D17-V6/F1 scenă): două BTR cu numărul „{dup1.Numar}” ⇒ "
         + $"[{string.Join(", ", refDup)}]; avertisment ×{avertNumar?.Numar ?? 0}; S4 referințe duplicate "
@@ -14820,7 +14820,7 @@ void VerificaSaftStocuriFixuri(IObjectSpace os, int an, int luna, DateOnly dataC
     var rolMixt = SaftProiectii.SaftStocuriPeCub(os, an, luna, dataCreare);
     var mixtDoua = rolMixt.MiscariStoc.SingleOrDefault(m => m.DocumentId == btrMixt.ID && !m.Storno);
     var avertRolMixt = rolMixt.Avertismente
-        .FirstOrDefault(a => a.Cod == nameof(CodAvertismentSaft.RolTertMixt));
+        .FirstOrDefault(a => a.Cod == "RolTertMixt");
 
     polMarfuri.RolTert = RolTertSaft.Niciunul;
     polMagazie.RolTert = RolTertSaft.Niciunul;
@@ -14828,7 +14828,7 @@ void VerificaSaftStocuriFixuri(IObjectSpace os, int an, int luna, DateOnly dataC
 
     Console.WriteLine($"     MĂSURAT (D17-V6/F5 roluri): un singur rol ne-`Niciunul` ⇒ mișcarea are "
         + $"{mixtUnic?.Linii.Count} linii, avertisment "
-        + $"{rolUnic.Avertismente.Count(a => a.Cod == nameof(CodAvertismentSaft.RolTertMixt))}; DOUĂ roluri "
+        + $"{rolUnic.Avertismente.Count(a => a.Cod == "RolTertMixt")}; DOUĂ roluri "
         + $"⇒ {mixtDoua?.Linii.Count} linii, avertisment ×{avertRolMixt?.Numar ?? 0} — "
         + $"ex. {avertRolMixt?.Exemple.FirstOrDefault()}");
     // 4 linii, nu 2: transferul scrie pe AMBELE picioare (−predator, +primitor)

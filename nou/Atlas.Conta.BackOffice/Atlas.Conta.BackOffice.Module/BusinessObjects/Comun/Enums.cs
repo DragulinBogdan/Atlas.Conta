@@ -238,46 +238,16 @@ public enum CauzaNeincludere {
     // NIM) sau un `TipTva` propriu al clientului, încă nemapat.
     [XafDisplayName("Tip de TVA fără mapare D394")] TipTvaNemapat = 3,
 
-    // ── Felia 16 (SAF-T, D16-D4): cauzele proprii fișierului D406 ───────────
-    // Enum-ul e PARTAJAT deliberat cu D394 (același vocabular de „ce nu intră și
-    // de ce"): primele trei cauze sunt aceleași fapte, citite de două formulare.
+    // ── SAF-T (D16-D4): enum PARTAJAT cu D394, același vocabular ─────────────
     // Documentul n-are niciun cont cu `RolTert` pe rândurile lui (nici pe cele
     // ale conexelor lui autogenerate), deci `Invoice.AccountID` (M) — sau
     // `AccountID` al terțului referit de o plată — n-are sursă. Nici factura,
     // nici plata nu se emit: un identificator gol face fișierul invalid.
     [XafDisplayName("Document fără cont de terț")] ContFaraRol = 4,
-    // Linia de factură n-are contrapartidă în registrul contabil: singurele ei
-    // rânduri sunt cel de TVA și cel al contului de terț (cazul liniilor de STOC
-    // ale FCT — recepția contează pe NIR, 26a). `InvoiceLine.AccountID` e
-    // obligatoriu și NU se inventează.
-    [XafDisplayName("Linie de factură fără cont contrapartidă")] FaraContrapartida = 5,
     // Latura de partener a documentului nu e un `Partener` (nomenclator de alt
     // fel) — factura/plata n-are `CustomerInfo`/`SupplierInfo`.
     [XafDisplayName("Documentul n-are partener pe laturi")] DocumentFaraPartener = 6,
-    // Faptul fiscal aparține unui tip care NU are secțiune de facturi în D406
-    // (DEC, NTC, bonurile fiscale…): baza lui e în `RegistruTva` și în GL, dar nu
-    // într-un `Invoice`. Fără cauza asta, cusătura 3 s-ar fi putut ține doar
-    // restrângând registrul la tipurile de factură — adică măsurându-se pe sine.
-    [XafDisplayName("Tip de document fără secțiune de facturi")] TipFaraSectiuneFacturi = 7,
 
-    // ── Felia 17 (SAF-T S, D17-D3): cauzele proprii declarației de stocuri ──
-    // Rândul de registru de stoc n-are NICIO politică de mișcare pe cheia lui
-    // (tip × TipStoc × semn), deci `MovementType` n-are sursă. Se deosebește
-    // DELIBERAT de excludere: un rând cu politică FĂRĂ cod e o decizie luată
-    // (iese în `Excluse`, cu motivul ei), unul fără politică e o gaură de profil
-    // — „nimic nu se pierde” cere ca cele două să nu arate la fel.
-    [XafDisplayName("Rând de stoc fără cod de mișcare")] FaraCodMiscare = 8,
-    // Produsul mișcat n-are cont de stoc (`TipMaterial.ContImplicit`), iar
-    // `MovementLine.AccountID` e obligatoriu. Un cont inventat e interzis (73e),
-    // deci linia iese din fișier și intră aici, cu cantitatea și valoarea ei.
-    [XafDisplayName("Produs fără cont de stoc")] FaraContStoc = 9,
-    // Politica are un cod de mișcare care NU e în nomenclatorul D406 (`999`,
-    // spații, un cod scos dintr-o versiune veche a listei). Gardianul îl refuză
-    // la culegere, dar seed-ul și conectoarele scriu pe ușa non-secured, iar
-    // validatorul respinge fișierul ÎNTREG pe o valoare din afara listei — deci
-    // proiecția RE-verifică și scoate rândurile afară, în loc să le declare cu
-    // un cod inventat. `MovementTypeTable` nu-l vede niciodată.
-    [XafDisplayName("Cod de mișcare necunoscut în politică")] CodMiscareNecunoscut = 10,
 }
 
 // Cauza unui avertisment SAF-T (D16-D4) — aceeași formă agregată ca la D394
@@ -298,10 +268,8 @@ public enum CodAvertismentSaft {
     [XafDisplayName("Plată către un angajat (fără identitate de partener)")] PlataCatreAngajat = 6,
     [XafDisplayName("Factură în valută")] FacturaInValuta = 7,
     [XafDisplayName("Antetul societății e incomplet")] SocietateIncompleta = 8,
-    [XafDisplayName("Factură fără cont de terț")] ContFaraRolPeFactura = 9,
     [XafDisplayName("Parteneri cu același identificator SAF-T")] PartenerDublat = 10,
     [XafDisplayName("Partener fără cod fiscal valid")] PartenerFaraCuiValid = 11,
-    [XafDisplayName("Linie de factură fără cont contrapartidă")] LinieFaraContrapartida = 12,
     [XafDisplayName("Rând de registru fără partener pe cont de terț")] TertFaraPartener = 13,
     // Plata către un PARTENER ale cărei rânduri n-ating niciun cont cu `RolTert`
     // (462 „Creditori diverși", 461, un cont de decontare oarecare): terțul n-ar
@@ -309,56 +277,11 @@ public enum CodAvertismentSaft {
     // face fișierul invalid. Plata iese în `Neincluse`, nu cu un cont inventat.
     [XafDisplayName("Plată fără cont de terț pe rânduri")] PlataFaraContTert = 14,
 
-    // ── Felia 17 (SAF-T S, D17-D3) ──────────────────────────────────────────
-    // Politica cere un rol de terț (NIR ⇒ furnizor, DSC ⇒ client), dar
-    // documentul n-are niciun `Partener` pe laturi — nici pe ale lui, nici pe
-    // ale documentului-sursă când e autogenerat. Ambele identificatoare ies cu
-    // ale raportorului (mișcare internă), ceea ce e onest, nu inventat.
-    [XafDisplayName("Mișcare cu rol de terț, fără partener")] TertLipsaPeMiscare = 15,
-    // `PhysicalStock.ProductType` cere contul de stoc al produsului; lipsă ⇒ `0`.
-    // Pe MIȘCĂRI aceeași gaură e mai gravă (`AccountID` e obligatoriu), deci
-    // acolo iese `Neincluse/FaraContStoc`, nu avertisment.
-    [XafDisplayName("Produs fără cont de stoc")] ProdusFaraContStoc = 16,
-    // Sold final negativ pe (gestiune × lot). NU e „gardianul de sold a dormit"
-    // (25d păzește soldul pe cheia de stoc a MOTORULUI, iar el nu e încălcat):
-    // pe baza de import cauza e deriva de rotunjire PER LOT, pe care contractul
-    // 1C o declară nereconciliabilă structural (45e/52). Registrul e sursa —
-    // se declară CA ATARE și se strigă, nu se ajustează la zero.
-    [XafDisplayName("Sold de stoc negativ")] SoldNegativ = 17,
-    // Sold de deschidere pe un `TipStoc` fără nicio politică cu cod (Custodie,
-    // Gratuit, ProductieNeterminata): `PhysicalStock` nu-l declară. N-are
-    // document, deci nu poate fi `Neincluse` — dar nici nu are voie să dispară.
-    [XafDisplayName("Sold pe tip de stoc neraportat")] SoldPeTipStocNeraportat = 18,
-    // `MovementReference` (max 35) n-a încăput cu sufixele ei: numărul s-a tăiat
-    // de la început. Identitatea rămâne unică prin sufixe, dar e scurtată.
-    [XafDisplayName("Referință de mișcare trunchiată")] MovementReferenceTrunchiat = 19,
 
-    // ── Felia 17, fixurile review-ului advers (D17-V6) ──────────────────────
-    // DOUĂ documente de același tip cu ACELAȘI număr (importul 1C aduce numărul
-    // sursei, iar conexele îl moștenesc): `(codTip, Numar)` nu e o identitate,
-    // deci `MovementReference` primește un discriminant (`#1`, `#2`) ca să
-    // rămână unică în fișier. Cifra se strigă — numerele duplicate sunt un fapt
-    // al nomenclatorului, nu al generatorului.
-    [XafDisplayName("Număr de document duplicat (referință discriminată)")] NumarDocumentDuplicat = 20,
     // Același fapt pe LUNAR: două facturi din aceeași secțiune cu același
     // `InvoiceNo`. Aici NU se discriminează nimic — `InvoiceNo` e numărul REAL
     // al facturii și nu are voie să fie inventat —, dar cifra se declară.
     [XafDisplayName("Număr de factură duplicat")] NumarFacturaDuplicat = 21,
-    // `MovementPostingDate` = `DataOperare`, care e ora RULĂRII (importul din
-    // 1C a operat 12/2025 în 2026-08). O dată de postare în afara perioadei
-    // declarate e o contradicție în fișier, deci elementul (opțional) se OMITE
-    // și se strigă, în loc să se scrie o dată care contrazice antetul.
-    [XafDisplayName("Data postării în afara perioadei (omisă)")] DataPostariiInAfaraPerioadei = 22,
-    // Grupul `(Document × Storno × Cod)` are DOUĂ roluri de terț distincte pe
-    // rândurile lui (politici diferite per `TipStoc`): fișierul are un singur
-    // `CustomerID`/`SupplierID` per linie, iar rolul se ia deterministic de pe
-    // prima linie. Politica ar trebui să fie coerentă pe același cod.
-    [XafDisplayName("Roluri de terț mixte pe aceeași mișcare")] RolTertMixt = 23,
-    // Intrare de stoc fizic cu cantitate 0 la ambele capete și valoare nenulă
-    // la vreunul — reziduul valoric al derivei de rotunjire per lot (45e).
-    // Se DECLARĂ ca atare (registrul e sursa), separat de `SoldNegativ`:
-    // e alt fapt, cu altă cauză și cu altă cifră.
-    [XafDisplayName("Rezidu valoric fără cantitate")] ReziduValoricFaraCantitate = 24,
     [XafDisplayName("Plată cu analize diferite pe aceeași linie")] PlataAnalizaMixta = 25,
     [XafDisplayName("Plată pe o partidă inițială fără număr de document")] PlataPePartidaInitiala = 26,
 }

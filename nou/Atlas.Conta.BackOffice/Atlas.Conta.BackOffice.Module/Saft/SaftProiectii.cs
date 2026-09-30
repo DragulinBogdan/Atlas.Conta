@@ -461,19 +461,12 @@ public static partial class SaftProiectii {
         CodAvertismentSaft.SocietateIncompleta =>
             "Antetul societății raportoare e incomplet — fișierul se generează, dar validatorul îl respinge: "
             + "completați „Configurare → Societate”.",
-        CodAvertismentSaft.ContFaraRolPeFactura =>
-            "Documente de factură fără niciun cont cu rol de terț pe rândurile lor — `Invoice.AccountID` e "
-            + "obligatoriu, deci factura nu se emite (vezi `Neincluse`); verificați `Cont.RolTert` din plan.",
         CodAvertismentSaft.PartenerDublat =>
             "Parteneri distincți cu același identificator SAF-T — master files cer o cheie unică, deci se declară "
             + "o singură intrare cu soldurile cumulate; verificați nomenclatorul.",
         CodAvertismentSaft.PartenerFaraCuiValid =>
             "Parteneri români sau înregistrați în scopuri de TVA al căror cod fiscal nu trece cifra de control — "
             + "identificatorul lor iese cu prefixul `04` (cod intern), fiindcă `00` cere un CUI valid.",
-        CodAvertismentSaft.LinieFaraContrapartida =>
-            "Linii de factură fără cont contrapartidă în registrul contabil — cazul liniilor de STOC ale facturii "
-            + "de intrare, a căror recepție contează pe NIR-ul conex (26a). `InvoiceLine.AccountID` e obligatoriu "
-            + "și nu se inventează, deci liniile ies în `Neincluse`.",
         CodAvertismentSaft.PlataFaraContTert =>
             "Plăți/încasări către un PARTENER ale căror rânduri n-ating niciun cont cu `RolTert` (462, 461, un cont "
             + "de decontare oarecare) — `Customer`/`Supplier` cere `AccountID`, iar un element gol face fișierul "
@@ -481,50 +474,10 @@ public static partial class SaftProiectii {
         CodAvertismentSaft.TertFaraPartener =>
             "Rânduri de registru pe conturi de terți fără niciun partener pe laturi — `CustomerID`/`SupplierID` "
             + "ies cu codul societății, iar soldul lor nu ajunge în `Customers`/`Suppliers`.",
-        CodAvertismentSaft.TertLipsaPeMiscare =>
-            "Mișcări de stoc a căror politică cere un rol de terț (NIR ⇒ furnizor, DSC ⇒ client), dar al căror "
-            + "document n-are niciun partener pe laturi — nici pe ale documentului-sursă. Ambele identificatoare "
-            + "ies cu ale societății raportoare, adică „mișcare internă”; cazul tipic e NIR-ul MANUAL, fără "
-            + "factură-sursă.",
-        CodAvertismentSaft.ProdusFaraContStoc =>
-            "Produse fără cont de stoc (`TipMaterial.ContImplicit`) — `PhysicalStock.ProductType` iese „0”. Pe "
-            + "MIȘCĂRI aceeași gaură scoate linia din fișier (`Neincluse/FaraContStoc`): acolo `AccountID` e "
-            + "obligatoriu, iar un cont inventat e interzis (73e).",
-        CodAvertismentSaft.SoldNegativ =>
-            "Solduri finale NEGATIVE pe (gestiune × lot). NU e o scăpare a gardianului de sold (25d păzește "
-            + "cheia de stoc a MOTORULUI, care nu e încălcată): pe baza de import cauza e deriva de rotunjire "
-            + "PER LOT, pe care contractul 1C o declară nereconciliabilă structural (45e/52) — valoarea "
-            + "grupei se conservă, repartiția ei pe loturi nu. Se declară CA ATARE: registrul e sursa, iar o "
-            + "ajustare la zero ar fi o cifră inventată.",
-        CodAvertismentSaft.ReziduValoricFaraCantitate =>
-            "Intrări de stoc fizic cu cantitate 0 la ambele capete și valoare nenulă („0 bucăți, X lei”) — "
-            + "același rezidu al derivei per lot (45e), dar ALT fapt decât soldul negativ, deci altă cifră. "
-            + "Se declară: `PhysicalStock` descrie patrimoniul, iar o valoare omisă ar face fișierul mai mic "
-            + "decât balanța.",
-        CodAvertismentSaft.NumarDocumentDuplicat =>
-            "Perechi (tip × număr) purtate de MAI MULTE documente — importul aduce numărul sursei, iar conexele "
-            + "îl moștenesc. `MovementReference` primește discriminantul `#1`…`#n` (ordinea `DocumentId`, "
-            + "stabilă între rulări), ca identitatea mișcărilor din fișier să rămână unică.",
         CodAvertismentSaft.NumarFacturaDuplicat =>
             "Facturi din aceeași secțiune cu ACELAȘI `InvoiceNo` — aici NU se discriminează nimic: numărul e "
             + "cel real al facturii, iar un sufix inventat ar declara o factură care nu există. Faptul se "
             + "raportează ca să fie văzut înainte de depunere.",
-        CodAvertismentSaft.DataPostariiInAfaraPerioadei =>
-            "Documente a căror `DataOperare` cade în afara perioadei declarate (pe baza de import e ora "
-            + "RULĂRII importului) — `MovementPostingDate` e opțional în schemă, deci se OMITE: o dată de "
-            + "postare care contrazice antetul e mai rea decât absența ei.",
-        CodAvertismentSaft.RolTertMixt =>
-            "Mișcări al căror grup (document × storno × cod) atinge registre cu roluri de terț DIFERITE — "
-            + "linia are un singur `CustomerID`/`SupplierID`, deci se ia rolul primei linii (determinist pe "
-            + "`Id`). E o incoerență de POLITICĂ: același cod de mișcare ar trebui să aibă același rol.",
-        CodAvertismentSaft.SoldPeTipStocNeraportat =>
-            "Solduri pe registre de stoc pe care declarația NU le raportează (`Consum`, `Folosinta`, `Custodie`…): "
-            + "niciun tip de document nu produce cod de mișcare pe ele, deci nu sunt patrimoniu în magazie. N-au "
-            + "document, deci nu pot fi `Neincluse` — dar cifra rămâne vizibilă aici.",
-        CodAvertismentSaft.MovementReferenceTrunchiat =>
-            "Referințe de mișcare mai lungi de 35 de caractere — numărul documentului s-a tăiat de la ÎNCEPUT "
-            + "(coada distinge, prefixul de serie se repetă). Identitatea rămâne unică prin sufixele de cod și de "
-            + "storno, dar referința nu mai e numărul întreg.",
         CodAvertismentSaft.PlataAnalizaMixta =>
             "Linii de plată formate din postări cu analize diferite (centru de cost, proiect…) pe aceeași partidă: "
             + "`Analysis` se omite pe linia de plată, iar GL-ul păstrează analiza fiecărei postări.",

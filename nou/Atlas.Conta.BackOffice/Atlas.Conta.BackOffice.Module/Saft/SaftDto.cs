@@ -329,9 +329,6 @@ public sealed class SaftNeinclus {
     public int? Semn { get; set; }
     public decimal? Cantitate { get; set; }
     public decimal? Valoare { get; set; }
-    // Codul CULES din politică, pe cauza `CodMiscareNecunoscut` — singurul loc
-    // în care „ce scrie în politică” e chiar informația care lipsește din
-    // nomenclator. Null pe orice altă cauză.
     public string CodMiscare { get; set; }
 }
 
