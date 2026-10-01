@@ -1,5 +1,121 @@
 # TR-D8 transversal — review advers al contractului
 
+## Reverificare pe `99cb7cf` (2026-10-01)
+
+**X-RV2, X-RV3, X-RV4, X-RV6 și X-RV7 sunt închise la nivel de contract.
+X-RV1 și X-RV5 rămân deschise prin completările de mai jos.** Implementarea
+și probele sunt încă viitoare; închiderea observației de contract nu
+certifică implementarea și nu ține locul pin-urilor owner-ului.
+
+Am confruntat amendamentele cu `26df646`, răspunsul
+`2026-10-01-1200-claude-codex-tr-d8-transversal-rv-aplicat.md` și sursele
+curente. Accesul complet și probele HTTP acoperă X-RV2; proveniența grupului
+și mutanții acoperă X-RV3; matricea serială și sincronizarea acoperă X-RV4;
+oprirea/amendamentul explicit acoperă X-RV6; planurile, delimitarea rutelor
+și oracolul numeric acoperă X-RV7. Completările despre fixture, utilizările
+nominale și absența scanării la pornire sunt acceptate.
+
+### X-RV1.1 / P1 — Cheile trebuie derivate din coordonatele efective, inclusiv cele istorice
+
+Loc: contractul amendat, X-D6(b), liniile 255–267.
+
+Mutarea blocajului înaintea planului și contractării corectează momentul.
+Cheile grosiere pot funcționa, dar „derivate din liniile documentului”
+nu definește încă aceeași cheie pentru toate comenzile care ating aceeași
+poziție. Nu toate conturile provin din politica curentă a liniei.
+
+Contraexemplul relevant este recepția/inversa după schimbarea politicii:
+NIR păstrează contul istoric al capătului de stoc, iar storno inversează
+postările istorice. Dacă precalculul blocajelor rezolvă contul nou C2 din
+linie, dar efectul este pe C1, un BCS a cărui regulă rezolvă C1 ia alt
+blocaj, deși atinge aceeași poziție (produs, gestiune, C1). Blocajul 97002
+al NIR-ului nu este luat de BCS. Nu afirm că viitoarea implementare va
+alege C2; contractul trebuie să interzică explicit această derivare.
+
+Surse: `tr-d8-nir-delta-contract.md:130–133` păstrează coordonatele
+istorice; `Cub/Materializare.cs:77–99` inversează postările citite, nu
+reface contarea; `DeclarantBonConsum.cs:49–60` citește soldul pe contul
+rezolvat al creditului. Cazul schimbării politicii este deja în contractul
+NIR, nu o extensie de domeniu propusă aici.
+
+Corecția minimă: un inventar al sursei coordonatelor pentru fiecare cale,
+cu regula că orice două comenzi care pot schimba/citi același sold protejat
+au cel puțin aceeași cheie de blocare. Pentru operare se folosesc capetele
+efective rezolvate fără citire de sold; pentru NIR conex, proveniența
+istorică; pentru storno/anulare/desfacere, coordonatele efectelor istorice
+retrase, inclusiv transferurile și efectele atribuite. Aceste citiri de
+identitate/proveniență pot preceda blocarea soldului. Toate căile care
+modifică poziția trebuie să participe, inclusiv împerecherea și deschiderea.
+
+Răspuns la întrebarea despre BTR/ASM: BTR curent **nu schimbă contul**.
+`DeclarantNotaTransfer.cs:50–81` păstrează contul și produsul lotului și
+schimbă gestiunea; sunt necesare ambele chei, sursă și destinație, inclusiv
+la inversare. ASM folosește contul fiecărui lot și gestiunea documentului
+(`DeclarantAsamblare.cs:51–75`), deci includeți toate liniile de consum și
+produs, cu conturile lor efective. Nu este suficient contul unei singure
+laturi a documentului.
+
+Probă suplimentară: NIR/storno cu politică schimbată contra unui consum
+pe poziția istorică, plus BTR contra consum în destinație. Se asertează
+cheile comune și rezultatul serial numeric. Păstrați proba 3/1,00.
+
+### X-RV1.2 / P2 — Ordinea trebuie stabilită după resursele hash efectiv blocate
+
+Loc: X-D6(b), liniile 260–261.
+
+Sortarea cheilor logice urmată de blocarea hash-urilor lor nu garantează
+absența deadlock-ului când există coliziuni. Contraexemplu structural:
+A < B < C < D, h(A)=h(D)=u, h(B)=h(C)=v. Comanda cu {A,B} blochează u→v;
+comanda cu {C,D} blochează v→u. Fiecare respectă ordinea logică cerută,
+dar intercalarea poate produce un ciclu. Nu este o coliziune măsurată în
+datele curente; este un caz permis de mecanismul cu hash propus.
+
+Corecție: calculați un identificator fizic stabil al blocajului (cu domeniu
+explicit), deduplicați și sortați identificatorii fizici înainte de
+achiziție. Coliziunea trebuie să producă doar serializare suplimentară.
+Aceeași regulă se aplică în ambele procese. Probă cu funcție de hash
+controlată care forțează cazul de mai sus; fără timeout/deadlock.
+
+### X-RV5.1 / P2 — Contractele numai cu Transfer nu au Operare pentru explicație
+
+Loc: X-D4(a), liniile 114–123; X-D4(d), liniile 140–144.
+
+BTR este contraexemplu direct în cod: `DeclarantNotaTransfer.cs:92`
+produce numai `Mutari`, cu `ValoareIesire` și `SoldUnitateCitit`.
+`Nucleu/Motor/Motor.cs:26–30` creează `Operare` numai dacă există postări
+de operare. Pentru BTR există o singură tranzacție `Transfer`.
+[SC-BTR-01/07](scenarii/BTR.md) cer această reprezentare.
+
+Amendamentul pune explicația obligatoriu pe `Operare`, iar invariantul
+cere `ValoareIesire` numai pentru ieșiri din `Operare`, deși enumeră BTR.
+Astfel, BTR nu are purtătorul prescris și scapă din domeniul auditului.
+Nu trebuie creat un `Operare` fictiv și nici schimbat felul BTR pentru audit.
+
+Corecție minimă: explicația aparține primei tranzacții **efectiv produse**
+din contract, `Operare` dacă există, altfel `Transfer`; celelalte o referă.
+Distingeți transferul produs de declarant (poate avea explicație) de
+`Motor.Transfera` al împerecherii (excepția explicită). Invariantul include
+ieșirile evaluate atât din `Operare`, cât și din `Transfer`, cu semnul
+normalizat explicit: la BTR postarea sursei este −Q/−V, decizia ieșirii
+este +Q/+V. Cititorul și auditul urmează și inversa unui asemenea transfer.
+
+Probă suplimentară: BTR simplu și BTR cu două linii pe același lot,
+explicație prezentă fără `Operare`; alterarea/eliminarea ei este detectată;
+storno și anulare; păstrați cazul mixt ASM și excepția împerecherii.
+
+### Validarea reverificării
+
+Comenzi: `git status --short`, `git log -3 --oneline`,
+`git diff 26df646..HEAD -- docs/nucleu/tr-d8-transversal-contract.md`;
+`codegraph explore` pentru Motor, DeclarantNotaContabila, DeclarantAsamblare,
+DeclarantNotaTransfer, Materializare.Storneaza și Fapte.SolduriLoturiRegistru;
+citiri țintite ale contractelor și catalogului BTR; `git diff --check`.
+Nu am schimbat contractul propus sau codul și nu am rulat ModelCheck,
+concurență, HTTP ori baze de date. A/A/A/A rămâne recomandarea de review,
+cu aceste completări înainte de declararea contractului pregătit.
+
+## Review inițial pe `26df646` (istoric)
+
 Data: 2026-10-01. Contract revizuit: `26df646`, branch `tr-d8-transversal`,
 bază `02f7788`. Stare: **șapte observații deschise; contractul cere corectare
 înaintea implementării**. Aprobarea D-urilor și X-Q-urilor rămâne la owner.

@@ -54,6 +54,23 @@ existent); probele de formă TR-r9 (rescrise când mor registrele); pragul
 absolut de perf pe volum REAL (FZ-r3, migrare); 102-r5 (după PoC); B8-r*
 și restanțele `după PoC`. Import1C rămâne înghețat (091-r4).
 
+### Modelul perioadei rămâne cel din 088 (confirmat de owner, 2026-10-01)
+
+Discuția despre „trasul de linie prin materializare, cu redeschidere logată
+și reevaluare" s-a tranșat pe ce există: închiderea e comandă care
+materializează soldurile pe perioadele de referință (088 b/d), snapshot-ul
+se reconstruiește exact din postări (090 i) și nu devine tranzacție de
+`Deschidere` lunară (094 interzice dublarea faptelor); redeschiderea e
+explicită, cu motiv, logată, numai pe ultima perioadă închisă, în lanț
+(088 a/c), și readuce perioada la regulile uneia deschise: retroactivul e
+permis dacă nu produce stoc negativ în nicio zi, iar **valoarea ieșirilor
+deja operate nu se rescrie** — reevaluarea la redeschidere ar fi mecanismul
+`Atribuit` (090 k, N-r5) și rămâne TR-D9; fiscalul declarat nu se
+redeschide, se regularizează (103). Corecția în perioadă închisă rămâne
+storno legat + document nou (088 h). Felia nu atinge acest model; X-D5
+dovedește consecința lui pentru cititori: după cutoff, citirea pornește din
+snapshot și nu atinge istoricul.
+
 ## X-D2 — Testul de arhitectură al registrelor și lista nominală (T-r11 pe întregul inventar)
 
 `ProbeCititoriCub` (091-r3) apără azi numai rândurile cubului. Se adaugă
@@ -112,8 +129,9 @@ Fapt măsurat în cod: `Contractare.Contracteaza` întoarce `N.Contract` cu
 Se pin-uiește:
 
 - (a) **ce se persistă**: explicația unui contract se scrie **o singură
-  dată**, pe prima tranzacție a contractului (`Operare`); a doua tranzacție
-  a aceleiași declarații (`Transfer`) poartă numai referința la ea
+  dată**, pe **prima tranzacție efectiv produsă** de contract — `Operare`
+  când există, altfel `Transfer` (BTR produce numai `Transfer`, X-RV5.1); a
+  doua tranzacție a aceleiași declarații poartă numai referința la ea
   (`ExplicatieDin`), ca nicio decizie să nu fie numărată de două ori
   (X-RV5). Conținutul: lista ordonată a deciziilor și ipotezelor, cu
   `Linie` și `Unitate` acolo unde le au, `JumatatiDeBan`, numele
@@ -139,10 +157,11 @@ Se pin-uiește:
   invizibilă), niciodată o proiecție parțială;
 - (d) **invariantul de audit** (probă ModelCheck, ambele profiluri), pe
   mecanism, cu domeniu și semn explicite (X-RV5): (1) o postare de ieșire
-  pe lot dintr-o tranzacție `Operare`, evaluată din sold (BCS, DSC, BTR,
-  LDI minus, ASM consum, NTC pe lot), are exact o `ValoareIesire` a
-  aceleiași linii și unități, cu valoarea postată, și un `SoldUnitateCitit`
-  al unității; (2) o ieșire a cărei valoare nu vine din sold (RLF la valoare
+  pe lot evaluată din sold (BCS, DSC, LDI minus, ASM consum, NTC pe lot în
+  `Operare`; BTR și celelalte transferuri evaluate în `Transfer`, unde
+  capătul-sursă −Q/−V se normalizează față de decizia +Q/+V, X-RV5.1) are
+  exact o `ValoareIesire` a aceleiași linii și unități, cu valoarea
+  postată, și un `SoldUnitateCitit` al unității; (2) o ieșire a cărei valoare nu vine din sold (RLF la valoare
   fiscală, NIR-delta) are exact o decizie nouă `ValoareDeclarata(Linie,
   Unitate, Cantitate, Valoare, Sursa)` în nucleu (ierarhie închisă N-D11,
   cu teste), fără schimbarea evaluării aprobate; (3) stornoul unei intrări
@@ -154,8 +173,9 @@ Se pin-uiește:
 - (e) **scenariile** SC-CIT-96…99 (catalogul [CITIRI](scenarii/CITIRI.md)):
   „de ce acest lot" pe BCS din două loturi cu prețuri diferite, pe NTC cu
   stingere FIFO pe două partide, pe ASM cu `AbsorbtieEvaluare` și
-  `Operare` + `Transfer` (o singură explicație, referită), pe RLF la golire
-  cu reziduu și NIR-minus (`ValoareDeclarata`), plus **HTTP pe host viu**:
+  `Operare` + `Transfer` (o singură explicație, referită), pe BTR (purtător
+  `Transfer`, semnul sursei normalizat), pe RLF la golire cu reziduu și
+  NIR-minus (`ValoareDeclarata`), plus **HTTP pe host viu**:
   tranzacție vizibilă cu (1) membru valoric refuzat, (2) altă linie refuzată,
   (3) istoric parțial al unității — răspunsul este 403 fără nicio valoare
   derivată; storno → explicația originii;
@@ -229,8 +249,22 @@ tranzacția de deschidere și pe documentele stingerii (DES, în ordinea `ID`);
 `pg_advisory_xact_lock` pe suport (97001), pe sursa recepției (97002) și pe
 depuneri (fiscal). **Nu există blocaj pe lot și nici pe partidă**;
 `VerificaSoldIntermediar` și `VerificaDisponibilTemporal` citesc și verifică
-fără a ține rândul. Direcția fixată de 091: blocaj pesimist per unitate în
-tranzacția de comandă, nu `Serializable` cu reluare.
+fără a ține rândul. Direcția fixată de 091: blocaj pesimist în tranzacția
+de comandă, nu `Serializable` cu reluare.
+
+**Alegerea owner-ului, 2026-10-01: scrierea în cub este serială per bază
+(nivelul 3).** Dintre cele trei granularități discutate (chei fine pe
+unitate, X-RV1.1/1.2; gestiune + partener; un singur blocaj per bază),
+owner-ul a ales modelul natural: o comandă care scrie în cub (operare,
+storno, anulare, corecție, împerechere, desfacere, stingere de deschidere,
+reconstrucție) ia la intrare un `pg_advisory_xact_lock` constant și îl ține
+până la commit; citirile nu-l ating niciodată. Limita se transferă către
+modul de operare: doi operatori nu scriu simultan în cub, al doilea așteaptă
+durata unei comenzi. Prețul primește cifră în X-D5 (durata fiecărei comenzi
+la k = 64, m = 12). Rafinarea pe gestiune + partener intră ca restanță
+`X-r1`, cu criteriul ei: așteptare pe blocaj măsurată peste un prag fixat de
+owner atunci, nu acum. X-RV1.1 și X-RV1.2 se închid prin construcție: nu
+există chei de derivat și nici ordine între ele.
 
 Se pin-uiește:
 
@@ -252,26 +286,26 @@ Se pin-uiește:
   verde. Sincronizarea testului lasă prima sesiune să facă commit când a
   doua a intrat în așteptarea blocajului (timeout și rollback controlate),
   nu cere ambelor să fie simultan în secțiunea protejată;
-- (b) **mecanismul** (X-RV1): blocajul protejează **citirea care decide
-  valoarea**, nu doar scrierea. Se ia la **intrarea comenzii**, înaintea
-  planului registrelor (`MotorOperare.Opereaza`) și a contractului
-  (`Contractare`), pe chei derivate din liniile documentului fără nicio
-  citire de sold: (produs, gestiune, cont) pentru liniile de stoc și
-  (cont, partener) pentru liniile cu partidă, prin `pg_advisory_xact_lock`
-  pe hash-ul cheii, în ordine deterministă după cheie; unitățile FIFO
-  alese ulterior stau sub cheia lor grosieră, deci nu există set de
-  unități de redescoperit după blocare. Ordinea comună cu blocajele
-  existente se inventariază în contract la pasul 3 și se respectă peste
-  tot: documentele (`ID`) → perioada (F27-D1) → suport 97001 / sursa
-  recepției 97002 / deschiderea → cheile unităților; `Pozitie` pe detalii
-  se atribuie sub blocajul documentului; dry-run-ul nu ia blocaje;
-- (c) probele de deadlock pe **căile mixte reale**, nu doar pe două liste
-  inversate: operare cu stoc + stingere de deschidere, împerechere
-  (`ImperechereService` ia documentele înaintea perioadei) contra operare
-  cu partidă, NIR conex (97002) contra BCS pe lotul recepționat; fiecare
-  se serializează, nu pică;
-- (d) 097-r3 (blocajul comun IMO) rămâne așa cum e; mecanismul general de
-  aici nu-l înlocuiește în felie, se notează dacă îl poate absorbi la TR-D9.
+- (b) **mecanismul**: blocajul protejează **citirea care decide valoarea**,
+  nu doar scrierea (X-RV1). Un singur `pg_advisory_xact_lock` cu cheie
+  constantă, luat într-un singur loc (`TranzactieComanda.Incepe` sau
+  echivalentul de la intrarea comenzii), **înaintea** planului registrelor
+  (`MotorOperare.Opereaza`), a contractului (`Contractare`) și a oricărui
+  alt blocaj existent; toate celelalte blocaje (perioada F27-D1, documentele
+  stingerii, 97001, 97002, depunerile) rămân și se iau după el, deci
+  ordinea comună e „global → restul", fără cicluri posibile. Dry-run-ul
+  (`Valideaza`/`Refuzuri`) și citirile nu iau blocajul; `Pozitie` pe
+  detalii se atribuie sub blocajul global, ca orice scriere;
+- (c) **proba structurală**: fiecare comandă care scrie în cub ia blocajul
+  global ca primă instrucțiune (probă ModelCheck pe captura SQL a fiecărui
+  tip de comandă, inclusiv împerecherea, stingerea de deschidere,
+  reconstrucția și închiderea), plus proba că nicio citire de producție nu
+  îl ia; probele de interacțiune din (a) rămân toate și trec prin
+  construcție, dar se rulează pe două conexiuni reale ca să dovedească
+  serializarea, nu s-o presupună;
+- (d) 097-r3 (blocajul comun IMO) și blocajele fine existente rămân așa cum
+  sunt; blocajul global le acoperă, scoaterea lor e a lui TR-D9 dacă se
+  dovedește redundantă.
 
 ## X-D7 — Activarea, regimul dual și restanțele TR-D8
 
@@ -376,9 +410,12 @@ toate sunt acceptate și încorporate mai sus, cu probele lor de închidere:
 | X-RV6 (P2) | X-D5 (c), regula de oprire, X-Q2 (B): criteriu picat = gate deschis; amânarea = amendament explicit al owner-ului |
 | X-RV7 (P2) | X-D5 (c): matrice operație × rută × criteriu, proba din plan (partiții, `actual rows × loops`, buffers), reconstrucția separată, controlul numeric cu oracol independent |
 | răspunsuri 1, 5 | X-D5 (a): fixture-ul exercită Deschidere, NTC + împerechere, PIF/AMO, LDI, DVI, RLF; artefactul X-D3 arată contoarele și notele per ramură; X-D2: intrarea permisă numește utilizarea; „la pornire" scos (102d) |
+| X-RV1.1, X-RV1.2 (reverificare) | închise prin alegerea owner-ului: blocaj global per bază (X-D6), fără chei de derivat și fără ordine între ele; rafinarea = restanța X-r1 |
+| X-RV5.1 (reverificare) | X-D4 (a)/(d)/(e): purtătorul explicației e prima tranzacție efectiv produsă (BTR = `Transfer`); transferurile evaluate intră în invariant cu semnul sursei normalizat; BTR în probele auditului |
 
-Recomandarea lui Codex pe X-Q1…X-Q4 este A/A/A/A, ca a mea; pin-ul rămâne
-al owner-ului.
+Reverificarea Codex (`comunicari/2026-10-01-1122-…`) a închis X-RV2, X-RV3,
+X-RV4, X-RV6, X-RV7. Recomandarea lui Codex pe X-Q1…X-Q4 este A/A/A/A, ca a
+mea; pin-ul rămâne al owner-ului.
 
 ## Ce NU intră (amânări cu nume)
 
