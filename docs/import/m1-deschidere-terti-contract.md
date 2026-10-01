@@ -300,6 +300,16 @@ orice ieșire dintr-un lot de deschidere: stocul se citește din cub, iar
 deschiderea de pe main e doar în registre. Import1C nu mai rula pe main;
 M1 e condiția rulării (107 j).
 
+**Martie (anul integral).** O factură de vânzare a unei imobilizări
+(`VanzareMarfuriSiServiciiPrestate/BEDB…32FB`, 10.03.2025) e refuzată de
+gardianul `POZITIE_FARA_FISA_NEGATIVA` pe 214: deschiderea lui 214 e sold
+nedetaliat (fără fișă, fără dimensiuni), iar linia de vânzare poartă
+coordonate proprii, deci poziția ei pornește de la zero și devine −13.734,01.
+E cazul F26-r13 (fișele din 1C → PIF de deschidere), nu al M1; gardianul
+(098) e de după baseline. Consecință în rulare: 1 eșec ⇒ ITV-ul lui martie
+nu se generează ⇒ 4426/4427/4423 și 214/2814 (±20.399,78) pică din martie
+încolo, în cascadă. Durata lunii: 43:00.
+
 **Regula de oprire (M1-D10)** nu e îndeplinită pe contractele 1 și 2 din
 cauza drift-ului (107-r3) și pe contractul 5 pentru cele 42 de partide;
 verdictul anului integral se adaugă aici la finalul rulării.

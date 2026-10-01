@@ -205,7 +205,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | F26-r10 | ajustările pentru depreciere (29x), leasingul, obiectele de inventar date în folosință (8035) (87) | după PoC (091) |
 | F26-r11 | repartizarea cheltuielii cu amortizarea pe mai multe centre de cost cu coeficienți (87) | după PoC (091) |
 | F26-r12 | `RegistruImobilizari` pe `ServerView` (85) (87) | după PoC (091) |
-| F26-r13 | migrarea fișelor din 1C (`IntroducereSolduriInitialeMF` → PIF de deschidere cu inițialele): conectorul, nu mecanismul (87) | migrare (091) |
+| F26-r13 | migrarea fișelor din 1C (`IntroducereSolduriInitialeMF` → PIF de deschidere cu inițialele): conectorul, nu mecanismul (87) | migrare (091); pe Flax, cu deschiderea în cub (107), vânzarea unei imobilizări pe 214 fără fișă e refuzată de gardianul 098 (`POZITIE_FARA_FISA_NEGATIVA`, 10.03.2025) și blochează ITV-ul lunii — devine condiție a migrării |
 | F26-r14 | eligibilitatea metodei fiscale pe categorie (accelerata doar pe echipamente/calculatoare, art. 28 (12)) — azi doar documentată (87) | după PoC (091) |
 | F26-r15 | cele 4 poziții-părinte din catalog cu benzile pe sub-variante fără cod: fără verificare a duratei fiscale până la o decizie (87) | după PoC (091) |
 | F26-r16 | clasificația bugetară a cheltuielii cu amortizarea (codul economic) | închisă la pasul 2b (dimensiune pe fișă, `Imobilizare.CodEconomicId`, 87a/87g) |
