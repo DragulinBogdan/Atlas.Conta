@@ -1,7 +1,7 @@
 # 107 — Migrarea deschide terții per partidă din `BalantaNivel3`, prin `Materializare.Deschide`; stingerile anului pe partide inițiale; partener generic de migrare
 
 - Data: 2026-10-01
-- Stare: activă; prima felie a 091-r4 (M1); amendează 047 (soldul de terț NU e nedefalcat în 1C), 091 (f) (conectorul iese din îngheț pe deschidere și trecerea 2); închide T-r4, TR-r6 și FZ-r10 pe partea de date
+- Stare: activă, implementată și probată pe Flax 2026-10-01 (ianuarie integral, anul oprit după 8 luni la cererea owner-ului; regula de oprire M1-D10 neatinsă din cauze din afara M1: 107-r3, F26-r13, performanță); nemersă în main, fără review advers; prima felie a 091-r4 (M1); amendează 047 (soldul de terț NU e nedefalcat în 1C), 091 (f) (conectorul iese din îngheț pe deschidere și trecerea 2); închide T-r4, TR-r6 și FZ-r10 pe partea de date
 - Docs: `docs/import/m1-deschidere-terti-contract.md` (M1-D1…D10, recensământul, execuția); 094 și DES-B1…B4; 090 (d); 092; 096; `docs/import/faza-1c-design.md` §3, §8, §12.2
 
 ## Regula durabilă
@@ -117,5 +117,13 @@ contraargumentul owner-ului, D7 retururi) sunt în contract, §1–2.
 - 107-r3 — drift-ul contractului 1 față de baseline (TVA ±0,03 pe linie, RLF,
   ITV): scenarii + decizie pe motor (091 r5), nu normalizare în conector.
 - 107-r4 — valuta: partide inițiale în valută cu curs propriu, la TR-D9.
+- 107-r6 — performanța importului: 25 → 50 min/lună față de 8–10 la baseline
+  (~5×), de măsurat pe gate-ul TR-D8 înaintea oricărei rulări integrale.
+- 107-r7 — ordinea stingerilor din aceeași compensare e nedeterministă între
+  rulări (ianuarie: 42 apoi 41 partide neexplicate, Σ diferită pe 401); de
+  ordonat cronologic, cu dată, în trecerea 2.
+- 107-r8 — nota-punte a vânzării cu valoare pe 3 zecimale (iunie, 122,408)
+  refuzată de gardianul de scară: rotunjirea la bani în handler, cu
+  divergența declarată.
 - 107-r5 — partenerul generic la go-live: procedura de rezolvare (NTC de
   reclasificare) și excluderea din D394/SAF-T ca decizie de produs.

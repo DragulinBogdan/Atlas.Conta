@@ -252,7 +252,7 @@ ca raport de diferențe pe modelul rotund).
 - Orice corecție de motor descoperită pe date: devine scenariu nou plus
   decizie (091-r5), nu se repară în conector.
 
-## 4. Execuție (2026-10-01, ianuarie; anul integral în curs)
+## 4. Execuție (2026-10-01; ianuarie și anul integral oprit după 8 luni)
 
 Decizia: `docs/decizii/107-deschiderea-de-terti-din-balanta-nivel3.md`.
 Rulările: `run-verificari/m1-ian/` (două rulări pe ianuarie, `--recreeaza
@@ -310,6 +310,37 @@ E cazul F26-r13 (fișele din 1C → PIF de deschidere), nu al M1; gardianul
 nu se generează ⇒ 4426/4427/4423 și 214/2814 (±20.399,78) pică din martie
 încolo, în cascadă. Durata lunii: 43:00.
 
-**Regula de oprire (M1-D10)** nu e îndeplinită pe contractele 1 și 2 din
-cauza drift-ului (107-r3) și pe contractul 5 pentru cele 42 de partide;
-verdictul anului integral se adaugă aici la finalul rulării.
+**Anul integral (`run-verificari/m1-an/`, `--recreeaza --cititori --continua`,
+pornit 02:16, oprit la cererea owner-ului la 08:16 după 8 luni).** Deschiderea
+identică cu ianuarie. Lunile, în ordine (documente importate / eșecuri /
+durată): 01: 15.232 / 0 / 24:39; 02: 15.863 / 0 / 36:32; 03: 18.401 / 1 /
+43:00; 04: 15.212 / 0 / 41:11; 05: 14.716 / 0 / 44:30; 06: 14.523 / 1 / 46:48;
+07: 14.852 / 2 / 50:45; 08: 13.458 / 0 / 48:22. Ritmul lunar crește de la 25 la
+50 de minute (baseline 2026-09-21: 8–10 minute, 1 h 57 pe an); extrapolat,
+anul ar fi durat ~9 h 30. Cele 4 eșecuri de import: trei pe gardianul fișelor
+(098) — vânzări de imobilizări pe 214 (martie) și 212 (iulie, 752.752,00) și
+o notă pe 212 (iulie), toate F26-r13 — și unul pe gardianul de scară: o
+notă-punte a unei vânzări cu valoarea 122,408 (iunie), calcul al handler-ului
+de vânzare pe care gardianul de pe main îl refuză acum. Fiecare eșec blochează
+ITV-ul lunii, deci 4426/4427/4423 pică în cascadă din martie.
+
+Contractul 5 pe cele 8 luni: partide stinse integral în ambele părți 1.470 →
+2.690 din 3.967; explicate de refuzuri 35 → 78; neatinse de trecerea 2 130 →
+194 (Σ cub −255k → −324k; stinse în sursă de facturi — 107-r1); pe partenerul
+generic 0 → 3 (Σ 36.731,21); fără explicație 41 → 51 (401 × 16 Σ −292.886,15,
+4111 × 28 Σ +23.261,08, 418 × 6 Σ −0,01, 419 × 1), stabile în componență din
+februarie: dominate de compensarea prin punte 891 pentru documente ținute la
+doi parteneri și de un client cu credite și facturi amestecate. Explicația prin
+plafonare n-a prins niciodată (0) din cauza unui semn inversat în formulă,
+corectat după rulare (commit 2301ca0), neverificat pe date.
+
+**Concluzii.** (1) Mecanismul M1 ține: deschiderea exactă în cub cu INV-CUB
+verde, 3.967 partide inițiale, două treimi stinse integral prin trecerea 2,
+contractul 5 funcțional ca oracol lunar. (2) Regula de oprire M1-D10 nu se
+poate atinge pe acest main: contractele 1 și 2 pică pe drift-ul motorului
+(107-r3) și pe fișele lipsă (F26-r13), nu pe M1. (3) Import1C nu mai rulează
+pe main fără M1 (107 j). (4) Performanța importului s-a degradat de ~5× față
+de baseline — de măsurat pe gate-ul de performanță TR-D8 înaintea oricărei
+rulări integrale următoare. (5) Deschise, cu nume: 107-r1…r5, F26-r13, și
+nedeterminismul ordinii stingerilor din aceeași compensare (ianuarie a dat
+42, apoi 41 partide neexplicate, cu Σ diferită pe 401).
