@@ -314,7 +314,7 @@ static partial class ReconciliereLuna {
                 stare.Jurnalizeaza($"  ok   partidă {cheie}: cub {cub:N2} = sursă {sold:N2} + refuzate {sarit:N2}");
                 continue;
             }
-            if (plafonat != 0m && Math.Abs(delta + semn * plafonat) < EpsV) {
+            if (plafonat != 0m && Math.Abs(delta - semn * plafonat) < EpsV) {
                 plafonate++;
                 stare.Jurnalizeaza($"  ok   partidă {cheie}: cub {cub:N2} = sursă {sold:N2} − plafonat {plafonat:N2}");
                 continue;
