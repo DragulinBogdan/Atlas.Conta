@@ -37,6 +37,7 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-BTR-03", d.Id, N.FelTranzactie.Storno, data, Randuri(d, 0, -4, -40));
         Verifica("SC-CIT-05", "BTR și inversa Transfer nu apar în citirea contabilă", CuSpatiu(os =>
             !C.Citiri.Contabil.Postari(os).Any(p => p.DocumentId == d.Id)));
+        TransferPeCititori("SC-CIT-100", "Loturi.Postari", 2, 2, 4, d.Id);
         ProvenientaScrisa(d.Id);
         CostCitire(d.Id);
         ProvenientaInvalida(d.Id);

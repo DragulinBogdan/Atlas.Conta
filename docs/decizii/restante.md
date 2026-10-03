@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-09-27.** [Index](README.md)
+**Actualizat: 2026-10-03.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -275,7 +275,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | N-r5 | stornoul unei postări ATRIBUITE (reevaluare) intră în selecție (090i) și poartă cauza altui document, dar contrapartida ei inversată e nedefinită ⇒ tranzacția de storno nu conservă valoarea; se tranșează la TR-D9 odată cu reevaluarea (TR-D6a) | activă (091) |
 | N-r6 | amendamente de literă ale contractului TR-D6a consemnate în cod: cazurile `Decizie` poartă `Linie`; `Motor.Transfera` ia `Mutare`, nu `Declaratie` (fără decizii/ipoteze pe transfer); ierarhia închisă ține prin constructor `private protected`, copy-constructorul rămâne `protected` (CS8878); `Unitate with { Fel }` și `Declaratie with { Document, Miscari }` nu se re-validează inter-câmp — se construiesc din nou (TR-D6a) | activă (091) |
 | N-r7 | ordinea FIFO a nucleului e `Guid.CompareTo` (componentă cu componentă) prin `Fifo.Intai`; `ORDER BY uuid` în Postgres are altă ordine ⇒ la TR-D7 candidații se sortează în nucleu, nu în SQL, altfel „ultima ia restul” cade pe alt lot la date egale (TR-D6a) | activă (091) |
-| N-r8 | stornoul unei tranzacții de fel `Transfer` e de fel `Storno` și intră în citirile cu `includeTransfer = false`; pe proiecțiile pe cont contribuie zero (±v pe aceeași latură), dar apare ca rând în listările de jurnal — regula listării rămâne a lui TR-D8, acum că `Transfer` se persistă (TR-D6a, TR-D7a) | activă (091); consumatorul SAF-T probat și închis local (105), ceilalți cititori rămân |
+| N-r8 | stornoul unei tranzacții de fel `Transfer` e de fel `Storno` și intră în citirile cu `includeTransfer = false`; pe proiecțiile pe cont contribuie zero (±v pe aceeași latură), dar apare ca rând în listările de jurnal — regula listării rămâne a lui TR-D8, acum că `Transfer` se persistă (TR-D6a, TR-D7a) | activă (091); consumatorul SAF-T probat și închis local (105); intrările comune probate de X-D2 (2026-10-03: proba `N-r8`, SC-CIT-100…102); rămâne regula listării, X-D7 (d) |
 | N-r9 | `Repartizare.Hamilton` poate depăși `decimal` la ponderi ~1e20 × total ~1e8; inaccesibil cu baze ≤ 1e10; dacă un apelant trimite preț × cantitate brute ca ponderi, se normalizează întâi (TR-D6a) | după PoC (091) |
 | B-r1 | toleranța taxei culese, constantă de pilot în `Fapte.Operand`, refuza facturi pe care motorul vechi le operează (TR-D6b): devine `PoliticaTva.TolerantaTaxa`, MĂSURATĂ pe Flax la TR-D7a (275 de documente refuzate la 0,01 pe linia cotei, 17 la 0,10, maximul 55,87 — abateri reale ale datelor culese, nu rotunjire) și închisă ca politică OPȚIONALĂ: `null` = taxa culeasă autoritară, fără gard, ca azi; valoarea de produs rămâne S-r1 (TR-D7a) | închisă prin S-D15 |
 | B-r2 | sensul laturilor trezoreriei e tip-dependent și declarantul unic nu-l cunoaște (TR-D6b): devenit dată pe `TipDocument` (`LaturaContPropriu` = `Predator` pe plată, `Primitor` pe încasare, seed pe ambele profiluri), cu refuzul `LATURA_CONT_PROPRIU_NEPOTRIVITA`; `CONT_PROPRIU_LIPSA` rămâne pentru lipsă (TR-D7a) | închisă prin S-D7 |

@@ -75,6 +75,25 @@ nesecurizată poate întoarce tot clasa `SecuredEFCoreObjectSpace`.
 SC-CIT-74 HTTP verifică închiderea/reconstrucția prin fabrica reală și
 citirea filtrată prin utilizatorii reali.
 
+### `Transfer` pe cititorii comuni — N-r8, X-D2 (2026-10-03)
+
+Așteptările sunt numărate de mână din scenă. Oracolul citește cubul direct:
+rândurile tranzacțiilor `Transfer` ale documentelor și rândurile `Storno` a
+căror origine `InversaDin` este unul dintre ele. Fiecare intrare comună cu
+regim declarat le numără pe aceleași identități.
+
+| ID | Scenariu | Așteptare | Stare |
+|---|---|---|---|
+| SC-CIT-100 | BTR 4 × 10 pe lot, stornat în ianuarie | 2 postări Transfer și 2 inverse; `Loturi.Postari` le întoarce pe toate 4; `Contabil.Postari`, `Contabil.Jurnal`, `Plati.Postari` și `Partide.Postari` întorc zero | verificat pe ambele profiluri |
+| SC-CIT-101 | FCT 100, plăți 40 și 60 împerecheate; plata de 60 stornată în februarie cu desfacerea legăturii | 6 postări Transfer (40, 60 și desfacerea −60, câte două), nicio inversă `Storno`; `Partide.Postari` le întoarce pe toate 6; intrările contabile și `Loturi.Postari` întorc zero | verificat pe ambele profiluri |
+| SC-CIT-102 | ASM mixt (Operare + Transfer) stornat în februarie | 4 postări Transfer și 4 inverse într-un `Storno` care poartă și inversele `Operare`; `Loturi.Postari` întoarce cele 4 rânduri pe lot; intrările contabile întorc zero, deși inversele `Operare` ale aceluiași storno rămân în jurnal (SC-CIT-04) | verificat pe ambele profiluri |
+
+`Fiscale.Postari` și `Imobilizari.PozitiiFaraFisa` nu filtrează felul și sunt
+doar măsurate. `PozitiiFaraFisa` întoarce contraponderile ASM (4 în
+SC-CIT-102): au valoare zero, iar consumatorul ei filtrează pe conturile
+imobilizărilor. Proba structurală `N-r8` cere regimul declarat pentru orice
+intrare publică nouă.
+
 ### Cititorul declarat — C104 pasul 2, 2026-09-27
 
 SC-CIT-95: în tranzacția SC-CIT-76, după alterarea snapshot-ului lui

@@ -222,6 +222,23 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             new(Cont(cont), latura, suma, Unitate: Partida(stins, cont, partener), Partener: partener));
     }
 
+    protected void TransferPeCititori(string id, string intrare, int transferuri, int inverse, int peIntrare, params Guid[] documente) {
+        using var os = Deschide();
+        var transfer = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId != null && documente.Contains(p.DocumentId.Value)
+            && p.Tranzactie.Fel == N.FelTranzactie.Transfer).Select(p => p.ID).ToList();
+        var inv = os.GetObjectsQuery<C.Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Storno
+            && p.InversaDinId != null && transfer.Contains(p.InversaDinId.Value)).Select(p => p.ID).ToList();
+        var numarate = ProbeTransferCititori.Numara(os, [.. transfer, .. inv]);
+        Console.WriteLine($"     MĂSURAT ({id}): {transfer.Count} postări Transfer, {inv.Count} inverse; "
+            + string.Join(", ", numarate.Select(n => $"{n.Nume} {n.Numar}")) + ".");
+        Verifica(id, $"N-r8: {transferuri} postări Transfer și {inverse} inverse; {peIntrare} pe `{intrare}`, "
+            + "zero pe intrările care exclud și pe cealaltă intrare care include",
+            transfer.Count == transferuri && inv.Count == inverse
+            && numarate.Any(n => n.Nume == intrare && n.Regim == ProbeTransferCititori.Regim.Include)
+            && numarate.Where(n => n.Regim != ProbeTransferCititori.Regim.Indiferent)
+                .All(n => n.Numar == (n.Nume == intrare ? peIntrare : 0)));
+    }
+
     protected void Postari(string id, Guid doc, N.FelTranzactie fel, DateOnly data, params RandScena[] asteptate) {
         using var os = Deschide();
         var randuri = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == doc && p.Tranzactie.Fel == fel

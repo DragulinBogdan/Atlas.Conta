@@ -7,6 +7,7 @@
   `comunicari/2026-10-01-1400-codex-claude-tr-d8-transversal-contract-inchis.md`).
   Branch `tr-d8-transversal`, tăiat din `main` = `02f7788` (după PR #14).
   Implementarea pornește cu pasul 1 din X-D8, un commit per pas.
+  **Pasul 1 (X-D2) implementat și verificat, 2026-10-03** — vezi „Execuție".
 - Bază: [D8-B5](tr-d8-citiri-contract.md) pasul 5 și „Limite care împiedică
   închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
   091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
@@ -422,6 +423,61 @@ toate sunt acceptate și încorporate mai sus, cu probele lor de închidere:
 Reverificarea Codex (`comunicari/2026-10-01-1122-…`) a închis X-RV2, X-RV3,
 X-RV4, X-RV6, X-RV7. Recomandarea lui Codex pe X-Q1…X-Q4 este A/A/A/A, ca a
 mea; pin-ul rămâne al owner-ului.
+
+## Execuție
+
+### Pasul 1 — X-D2: proba registrelor, lista nominală, N-r8 pe cititori (2026-10-03)
+
+Livrat: `tools/ModelCheck/ProbeCititoriRegistre.cs` + `.Lista.cs` (proba
+`X-D2`), `ProbeTransferCititori.cs` (proba `N-r8`), `SursaProductie.cs`
+(arborii sintactici ai sursei de producție), SC-CIT-100…102 și modul
+`ModelCheck --probe-sursa [--lista]`. Regula, lista nominală și limitele
+probei stau în `stare-curenta/dezvoltare-si-validare.md` și
+`limite-curente.md`.
+
+Ce a arătat prima rulare (87 de utilizări fișier × membru × registru în 291
+de fișiere) și cum amendează X-D2:
+
+1. **Trei clase în plus față de cele trei din contract.** *Maparea EF*
+   (`BackOfficeEFCoreDbContext`). *Autorizarea*: rutele care întorc cifre cer
+   dreptul de citire pe tipul registrului (`RegistrulCitibil` în trei
+   controllere, `PerioadeController.TipuriInsumate`), deși cifrele vin din cub
+   (F22-D5, 80e). *Legătura*: `Imperechere` nu este registru, este legătura
+   explicită dintre două documente și rămâne după TR-D9; proba îi fixează
+   membrii, ca suma legăturilor să nu redevină sursă de rest. Singurul calcul
+   care o citește este `Partide.NominalizataLibera` (101).
+2. **Un defect, corectat.** `TvaProiectii.IntreLuni(IQueryable<RegistruTva>)`
+   era un cititor de registru rămas în `Proiectii/`, fără apelant de producție;
+   a ieșit, iar oracolul pe registrul fiscal stă în ModelCheck.
+3. **Intrările „de verificat" din contract.** `LoturiCulegereService` nu culege
+   din registru: `LoturiLiniiSterse.Curata` întreabă numai dacă lotul are urmă
+   (martor). `CorectieService.Corecteaza` scrie perioada inversei (scriitor).
+   `ImperecheriProiectii.Asignari` și martorul `RegistruTva` din `TvaProiectii`
+   nu mai există.
+4. **Perimetrul cititorilor.** În `Proiectii/`, `Api/`, `Culegere/`, `Saft/`,
+   `Declaratii/` și WebApi sunt 12 intrări: 4 de autorizare, 7 ale legăturii
+   și una singură care consumă un sold de registru, absorbția ASM-B6 din
+   `DeclarantAsamblare.Declara` (clasa 1 a contractului, „`StocService.R`").
+   Evaluarea cubului citește `Loturi.Cumulate`, nu registrul.
+5. **Cod fără apelant de producție.** `StocService.Sold`, `AlocaFifoTolerant`
+   și `AlocaFifo` sunt chemate numai de ModelCheck. Rămân declarate în clasa 1
+   până la TR-D9; proba refuză orice apelant nou.
+6. **N-r8.** Regimul fiecărei intrări publice pe rânduri de cub este declarat
+   și probat numeric. `Fiscale.Postari` și `Imobilizari.PozitiiFaraFisa` nu
+   filtrează felul; `PozitiiFaraFisa` întoarce contraponderile ASM, cu valoare
+   zero, iar consumatorul ei filtrează pe conturile imobilizărilor. Regula
+   listării rămâne la X-D7 (d).
+
+Limita probei: scanarea e sintactică, iar purtătorii netipizați de date de
+registru sunt declarați de mână (`Purtatori`).
+
+De înregistrat ca restanță la decizia 107: **X-r2** — subiectul permisiunii
+care păzește cifrele citite din cub, după tăierea tipurilor de registru
+(TR-D9).
+
+Validare: integrala **3.277 bugetar / 4.485 privat OK**, zero FAIL,
+`run-verificari/20261003-173905-898/`; scenele ASM, BTR și PLT separat pe ambele
+profiluri, `run-verificari/20261003-173755-531/`. Bazele: clonele `.ClaudeX1`.
 
 ## Ce NU intră (amânări cu nume)
 

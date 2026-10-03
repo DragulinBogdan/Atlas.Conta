@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-30.** [Index](README.md)
+**Actualizat: 2026-10-03.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -18,8 +18,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   auditul durabil după anularea fizică rămâne în delimitarea TR-D9 (091j).
 
 - Deschiderea generică (094) este o comandă de motor și scrie numai cubul.
-  Rapoartele și evaluarea/FIFO care încă citesc registrele nu văd aceste
-  solduri până la TR-D8. Intrarea păstrează analiza și valuta, dar stingerea
+  Registrele regimului dual nu primesc aceste solduri; cititorii și
+  evaluarea le iau din cub (X-D2). Intrarea păstrează analiza și valuta, dar stingerea
   unei partide inițiale în valută este refuzată explicit până la TR-D9;
   soldurile nedetaliate nu se împart pe mai multe analize în aceeași cheie
   de control. Ștergerea concurentă a nomenclatoarelor referite nu este
@@ -50,11 +50,9 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   al fișelor cerute (097); oracolul golirilor, care
   citește rânduri concrete, nu solduri; împerecherile și restul documentelor,
   până la felia care le datează. (F27-D3)
-- Inițialul de stoc al SAF-T rămâne pe registrul integral: agregatul lui
-  raportează și NUMĂRUL de rânduri de registru pe tipurile de stoc
-  nedeclarate, iar dintr-un snapshot numărul nu se mai poate afla. Inițialul
-  de CONT al SAF-T trece prin balanță, deci pornește de la referință.
-  (F27-D3, F27-r10)
+- Inițialul de stoc al SAF-T citește snapshot-ul de loturi al cubului
+  (105; F27-r10 închisă). Inițialul de CONT al SAF-T recitește postările pe
+  spațiul securizat, nu pornește din snapshot. (SAFT-r4, X-D5)
 - Rândurile integral nule dispar din rapoarte după prima închidere. O cheie cu
   debitul și creditul cumulate zero la referință nu are rând de snapshot, deci
   un cont sau un cont cu repartitor fără nicio mișcare în perioada cerută nu
@@ -66,7 +64,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   rol care ar putea citi perioada fiscală fără să poată citi tabelele de
   solduri ar primi soldul inițial zero, fără avertisment. Rolurile livrate nu
   au această formă: cine citește perioada citește și soldurile, iar un rol care
-  nu vede perioadele cade pe citirea din registrul integral. (F27-D3)
+  nu vede perioadele cade pe citirea integrală a cubului. (F27-D3)
 - Integritatea snapshot-ului nu e verificată la citire. Un rând de snapshot
   șters direct din bază dă o balanță tăcut greșită (inițialul scade), fără
   niciun semnal; singura detecție e reconstrucția la cerere, care raportează
@@ -221,10 +219,19 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   creanța unui retur e negativă după operare (venit stornat), iar filtrul
   `Rest > 0` o taie. Împerecherea unui retur rămâne pe calea directă
   (serviciu / XAF). (F27-D7)
-- Rămân pe registrul integral, fără partide: `ImperecheriProiectii.Asignari`
-  (unpivot-ul folosit de panoul notei de compensare) și `ImperechereService`
-  pe un document anume — ambele sunt căi de COMANDĂ, pe mulțimi mărginite.
-  (F27-D7)
+- `Imperechere` rămâne legătura explicită: panoul stingerilor îi afișează
+  rândurile, iar restul, totalul și candidații vin din `Cub.Citiri.Partide`.
+  Singurul calcul care citește sumele legăturilor este
+  `Partide.NominalizataLibera`, pe o pereche de documente (101, X-D2).
+- Proba X-D2 este sintactică. Un rezultat netipizat derivat dintr-un registru
+  se urmărește la apelanți numai dacă membrul e declarat în `Purtatori`; un
+  purtător nou, nedeclarat, nu e văzut. `StocService.Sold`, `AlocaFifoTolerant`
+  și `AlocaFifo` nu mai au apelant de producție și rămân în `Module` numai ca
+  oracol al probelor, până la TR-D9.
+- Cifrele citite din cub sunt păzite de dreptul de citire pe tipul registrului
+  (`RegistruContabil` pentru închiderea de TVA, `RegistruImobilizari` pentru
+  fișă și amortizare). Subiectul permisiunii după tăierea registrelor nu este
+  ales. (F22-D5, X-D2; TR-D9)
 - `documente-cu-rest` rămâne proiecția scumpă, iar partidele nu schimbă asta:
   pe baza de import costă 181 ms filtrat pe o contrapartidă (171 ms cu lanțul
   desfăcut — diferență în zgomot), 423 ms nefiltrat pe grilă și 220 ms pe

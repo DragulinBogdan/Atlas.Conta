@@ -50,6 +50,11 @@ static string Conexiunea(string baza) =>
     "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=" + baza
     + (Environment.GetEnvironmentVariable("MODELCHECK_CONEXIUNE_EXTRA") is { Length: > 0 } extra ? ";" + extra : "");
 
+// Oracolul pe registrul fiscal: rândurile lunilor de declarare din interval.
+static IQueryable<RegistruTva> RegistruTvaIntreLuni(IObjectSpace os, DateOnly deLa, DateOnly panaLa) =>
+    os.GetObjectsQuery<RegistruTva>().Where(r => r.PerioadaAn * 100 + r.PerioadaLuna >= deLa.Year * 100 + deLa.Month
+        && r.PerioadaAn * 100 + r.PerioadaLuna <= panaLa.Year * 100 + panaLa.Month);
+
 // Validare model EF + (dacă baza există) verificare migrații/seed + scenariile
 // end-to-end ale motorului de operare pe un IObjectSpace real — aceeași
 // infrastructură XAF pe care o folosește și UI-ul (docs 113709).
@@ -219,6 +224,16 @@ void PurjaIstoricPerioade(IObjectSpace os, int an) {
         .Where(i => ids.Contains(i.PerioadaId))).Executa();
 }
 
+// X-D2 — `ModelCheck --probe-sursa [--lista]`: numai probele pe sursă, fără bază.
+if (args.Contains("--probe-sursa")) {
+    ProbeCulegere.VerificaSursa(Check);
+    ProbeCititoriCub.VerificaSursa(Check);
+    ProbeCititoriRegistre.VerificaSursa(Check, args.Contains("--lista"));
+    ProbeTransferCititori.VerificaSursa(Check);
+    Rezumat();
+    return;
+}
+
 // SAF-B8 D3: procesul-copil al unui punct perf (rece = proces nou, pool gol) și DUK-ul separat pe XML-urile lui.
 if (args.Contains("--perf-saft-masura")) {
     var i = Array.IndexOf(args, "--perf-saft-masura");
@@ -266,6 +281,8 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     ProbeStraturi.VerificaCoaja(Check);
     ProbeCulegere.VerificaSursa(Check);
     ProbeCititoriCub.VerificaSursa(Check);
+    ProbeCititoriRegistre.VerificaSursa(Check);
+    ProbeTransferCititori.VerificaSursa(Check);
 
     if (profil == ProfilContabil.Privat) {
         // Baza privată aparține uneltei: se creează/migrează aici.
@@ -12597,7 +12614,7 @@ void VerificaSaft(bool privat) {
         rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft == rez.TvaRegistru && rez.TvaRegistru != 0m);
     // Registrul fiscal al lunii, citit INDEPENDENT de proiecție (altfel cusătura
     // 3 s-ar măsura tot pe cifrele ei): baza tipurilor FĂRĂ secțiune de facturi.
-    var randuriTvaScena = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), pStart, pEnd)
+    var randuriTvaScena = RegistruTvaIntreLuni(os, pStart, pEnd)
         .Select(r => new { r.DocumentId, r.Baza }).ToList();
     // Tipurile de factură se citesc pe CLASELE CLR (FCL/FCT/RDC/RLF), nu prin
     // `CoduriTip` — ca proba să nu depindă de aceeași funcție pe care o folosește
@@ -16541,7 +16558,7 @@ void VerificaD394(bool cuTva) {
     var cuV = D394Proiectii.D394(os, pStart, pEnd);
     var vCuTva = cuV.Operatiuni.Single(o => o.CuiP == "33333333" && o.Tip == "V");
     var avV = cuV.Avertismente.FirstOrDefault(a => a.Cod == "TvaPeTipFaraColoana");
-    var brutV = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), pStart, pEnd)
+    var brutV = RegistruTvaIntreLuni(os, pStart, pEnd)
         .Where(r => r.Sens == SensTva.Livrare)
         .Sum(r => (decimal?)r.Tva) ?? 0m;
     var opVTva = cuV.Operatiuni.Where(o => o.Sens == "Livrare").Sum(o => (o.Tva ?? 0m) + o.TvaNedeclarat)

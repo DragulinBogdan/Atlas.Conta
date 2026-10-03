@@ -127,6 +127,8 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
             return randuri.Count == 4 && randuri.Count(p => p.Valoare == -40) == 2
                 && randuri.All(p => p.Gestiune == Magazie);
         }));
+        TransferPeCititori("SC-CIT-102", "Loturi.Postari", mixt.Transfer.Length, mixt.Transfer.Length,
+            2 * mixt.Transfer.Count(r => r.Unitate != null), mixt.Doc.Id);
         Sold("SC-ASM-08", mixt.Doc.Linii[0], 0, 0);
         Sold("SC-ASM-08", mixt.Doc.Linii[0], 1, 60, Februarie);
         Corectie("SC-ASM-10", corectieDoc, corectieLot, 1, 50, 1, 50);

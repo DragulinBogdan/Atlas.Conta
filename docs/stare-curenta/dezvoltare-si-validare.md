@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-29.** [Index](README.md)
+**Actualizat: 2026-10-03.** [Index](README.md)
 
 TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
 evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
@@ -69,6 +69,76 @@ ca rând al cubului. ModelCheck e probă independentă și citește cubul direct
 (D8-B1). Excluderea `Transfer` și a inversei lui stă numai în
 `Citiri.Contabil.Postari`, după originea `InversaDin` (N-r8). `Loturi` și
 `Partide` includ transferul prin contract.
+
+`Transfer` pe cititorii comuni (N-r8, gate-ul transversal TR-D8 X-D2): proba
+`N-r8` (`tools/ModelCheck/ProbeTransferCititori.cs`) cere ca fiecare intrare
+publică din `Cub/Citiri` care întoarce rânduri de cub să aibă regimul
+declarat. `Contabil.Postari`, `Contabil.Jurnal` și `Plati.Postari` exclud
+`Transfer` și inversele lui. `Loturi.Postari` și `Partide.Postari` le includ.
+`Fiscale.Postari` și `Imobilizari.PozitiiFaraFisa` nu filtrează felul:
+domeniul lor e dat de coordonate, iar regula nu li se aplică.
+`FelTranzactie.Transfer` apare în producție numai în zece membri numiți:
+scriitorul (`Cub/Materializare*`), producătorul `DeclarantAsamblare`, trei
+cititori comuni (`Loturi.VerificaRetragere`, `Plati.Alocari`,
+`Imobilizari.VerificaAcoperire`) și eticheta mișcării din SAF-T. Un consumator
+care refiltrează `Transfer` e detectat (mutant). SC-CIT-100…102 numără, pe
+fiecare intrare, rândurile `Transfer` și inversele lor din BTR stornat, din
+împerecherea desfăcută și din ASM-ul mixt stornat. Regula listării (jurnal,
+fișă, eticheta felului) rămâne la X-D7 (d).
+
+Accesul la registre (X-D2): `RegistruContabil`, `RegistruStoc`, `RegistruTva`,
+`RegistruImobilizari` și `Imperechere` se ating în producție numai prin lista
+nominală din `tools/ModelCheck/ProbeCititoriRegistre.Lista.cs`. O intrare
+numește fișierul, membrul, registrul și rolul. Un membru nou într-un fișier
+deja permis rămâne încălcare. Proba `X-D2` (`ProbeCititoriRegistre.cs`) citește
+arborele sintactic al sursei (`SursaProductie.cs`) și numără trei feluri de
+utilizare: mențiunea tipului, inclusiv prin alias `using`; numele tabelei
+într-un literal; apelul unui purtător. Purtător este orice membru al cărui tip
+declarat conține o colecție de rânduri de registru, plus lista declarată
+`Purtatori` pentru rezultatele netipizate: soldurile din `StocService`,
+`Operand.SolduriLoturiRegistru` și `Partide.NominalizataLibera`. `nameof` și
+definiția tipului nu contează. Proba pică și pe o intrare rămasă fără
+utilizare, iar șase mutanți îi probează detecția. În `Proiectii/`, `Api/`,
+`Culegere/`, `Saft/`, `Declaratii/` și WebApi cele patru registre apar numai
+ca cheie de autorizare; singura excepție numită este absorbția ASM-B6 din
+`DeclarantAsamblare`.
+
+Lista nominală (71 de intrări, 87 de utilizări fișier × membru × registru):
+
+| Clasa | Membrii | Rolul |
+|---|---|---|
+| maparea EF | `BackOfficeEFCoreDbContext`: `OnModelCreating` și cele cinci `DbSet` | definiția și maparea |
+| 1. scriitor dual | `MotorOperare`: `Opereaza`, `AnuleazaOperarea`, `Storneaza` | scriu, șterg și inversează rândurile din `RegistruContabil`, `RegistruStoc`, `RegistruTva` |
+| | `CorectieService.Corecteaza` | reatribuie perioada inversei în `RegistruTva` |
+| | `GardianEditare.Verifica` | refuză scrierea celor patru registre pe ușile securizate (14) |
+| | `StocService`: `MiscariRegistru`, `SolduriLaData`, `AplicaValoareIesire`, `VerificaSoldIntermediar` | valoarea ieșirii și garda de sold ale rândului de registru |
+| | `StocService`: `Sold`, `AlocaFifoTolerant`, `AlocaFifo` | fără apelant de producție; oracol al probelor |
+| | `Fapte.SolduriLoturiRegistru`, `Fapte.Operand`, `DeclarantAsamblare.Declara` | absorbția Δ a ASM față de soldul registrului (ASM-B6) |
+| | `PunereInFunctiune`, `IesireImobilizare`, `AmortizareLunara`: `MaterializeazaRegistrul`, `EliminaRegistrul`, `StorneazaRegistrul`; `PunereInFunctiune.RanduriProprii`, `Inverseaza` | scriu `RegistruImobilizari` |
+| 2. martor | `Invarianti.Verifica`, `Imobilizari.VerificaAcoperire` | acoperirea cubului față de registru (`INV-CUB`, 097-r1) |
+| | `Materializare.Deschide`, `LoturiLiniiSterse.Curata` | urma lotului în `RegistruStoc` |
+| | `GardianEditare.VerificaTipTva`, `Imobilizare.Verifica` | referința care oprește ștergerea nomenclatorului |
+| 3. evidență XAF | `ContaUiBaseline`: `AscundeFkuriBrute`, `Imobilizari` | listele registrelor |
+| autorizare | `RegistrulCitibil` din `ItvController`, `AmoController`, `ImobilizariController`; `PerioadeController.TipuriInsumate` | dreptul de citire pe tipul registrului păzește cifrele (F22-D5, 80e) |
+| legătură | `ImperechereService` (8), `GardianEditare` (4), `MotorOperare.VerificaFaraImperecheri`, `Partide.NominalizataLibera`, `Materializare.Imperecheaza`, `ApiProiectii.AreImperecheri`, `ImperechereApply` (3), `ImperechereController` (5), `ImperecheriController` (3) | `Imperechere` este legătura explicită, nu registru; restul și candidații vin din `Partide` |
+
+Clasele 1–3 sunt ale contractului X-D2. Maparea, autorizarea și legătura le-a
+cerut prima rulare. Clasa 1 și evidența XAF cad la TR-D9; `Imperechere` rămâne.
+Prima rulare a găsit un singur defect: supraîncărcarea
+`TvaProiectii.IntreLuni(IQueryable<RegistruTva>)`, fără apelant de producție, a
+ieșit din `Proiectii/`; oracolul pe registrul fiscal stă acum în ModelCheck.
+`ImperecheriProiectii.Asignari` și martorul `RegistruTva` din `TvaProiectii`,
+numite în contract, nu mai există.
+
+`ModelCheck --probe-sursa [--lista]` rulează numai probele pe sursă (104c-S1,
+091-r3, X-D2, N-r8), fără bază; `--lista` tipărește utilizările reale, din
+care se actualizează lista nominală.
+
+Validarea pasului 1 al gate-ului transversal (X-D2, 2026-10-03): **3.277
+bugetar / 4.485 privat OK**, zero FAIL, exit 0,
+`run-verificari/20261003-173905-898/`, pe clonele `.ClaudeX1`. Clona bugetară
+a cerut aplicarea a două migrații: baza-sursă `Atlas.Conta.BackOffice` este în
+urma codului cu `IntervaleTvaSiAvans` și `S3CategorieStoc`.
 
 TR-D8 nu este închis: restul SAF-T și verificările transversale rămân
 în contract; cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
