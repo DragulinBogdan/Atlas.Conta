@@ -12,8 +12,8 @@
   închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
   091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
   restanțele cu starea `activă, TR-D8` din `docs/decizii/restante.md`.
-- Închiderea: decizia **107** (106 este luată de `c106-regim-stare`, nemers;
-  numerele nu se refolosesc).
+- Închiderea: decizia **108** (106 este luată de `c106-regim-stare`, 107 de
+  `m1-deschidere-terti`, ambele nemerse; numerele nu se refolosesc).
 
 ## De ce o felie separată
 
@@ -363,7 +363,7 @@ Ordinea pașilor, un commit per pas pe `tr-d8-transversal`:
 5. X-D5 + X-D3: `PerfCub`, reconcilierea integrală și INV-CUB pe baza de
    volum, măsurătorile în container, tranșarea SAFT-r4/FZ-r1/FZ-r3/103h.
 6. Integrala ambele profiluri, `refuzuri.ps1` pe host viu, drift OpenAPI,
-   review advers Codex prin `comunicari/`, decizia 107, `stare-curenta/`,
+   review advers Codex prin `comunicari/`, decizia 108, `stare-curenta/`,
    `restante.md`, `istoric-plan-de-lucru.md`, CLAUDE.md §Stare.
 
 Regula de oprire:
@@ -393,7 +393,7 @@ istoric al tranșării, nu se implementează.
   formă din X-D5 (c), fără prag absolut, în container (recomandat; precedentul
   B8-Q2 = A); **B** = amendament de perimetru: X-D5 iese din gate și
   rămâne restanță până la o bază de volum reală (migrare); TR-D8 s-ar
-  închide fără cifre de perf, declarat în decizia 107.
+  închide fără cifre de perf, declarat în decizia 108.
 - **X-Q3** 102-r4: **A** = refuz `IMPERECHERE_FARA_EFECT` pe ramura negativă a
   desfacerii automate (recomandat: o singură sursă de reguli, fără urmă
   tăcută); **B** = invariant `INV-CUB` „legăturile vii ale perechii nu depășesc
@@ -475,12 +475,10 @@ De înregistrat ca restanță la decizia de închidere: **X-r2** — subiectul
 permisiunii care păzește cifrele citite din cub, după tăierea tipurilor de
 registru (TR-D9).
 
-**Numărul deciziei de închidere, de confirmat de owner.** Contractul o numește
-107, dar 107 este luat de `107-deschiderea-de-terti-din-balanta-nivel3.md` pe
-branch-ul nemers `m1-deschidere-terti` (constatat 2026-10-03). Numerele nu se
-refolosesc: dacă M1 își păstrează 107, închiderea gate-ului ia următorul număr
-liber la scriere. Până atunci „decizia 107" din acest contract se citește
-„decizia de închidere a gate-ului".
+**Numărul deciziei de închidere: 108 (owner, 2026-10-03).** Contractul o
+numea 107, dar 107 este luat de `107-deschiderea-de-terti-din-balanta-nivel3.md`
+pe branch-ul nemers `m1-deschidere-terti`. Numerele nu se refolosesc: M1 își
+păstrează 107, închiderea gate-ului este 108.
 
 Validare: integrala **3.277 bugetar / 4.485 privat OK**, zero FAIL,
 `run-verificari/20261003-173905-898/`; scenele ASM, BTR și PLT separat pe ambele
