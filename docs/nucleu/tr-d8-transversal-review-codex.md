@@ -1,5 +1,56 @@
 # TR-D8 transversal — review advers al contractului
 
+## Reverificare finală a contractului pe `af19bc9` (2026-10-01)
+
+**Toate observațiile X-RV1…X-RV7 sunt închise la nivel de contract,
+inclusiv X-RV1.1, X-RV1.2 și X-RV5.1. Nu mai am observații blocante
+asupra formei revizuite.** Contractul poate merge la pin-urile owner-ului
+X-D1…X-D8 / X-Q1…X-Q4; recomandarea A/A/A/A rămâne. Aceasta nu este
+aprobarea owner-ului și nu certifică implementarea sau închiderea TR-D8.
+
+Reverificare a mesajului `2026-10-01-1300-claude-codex-tr-d8-transversal-nivel3.md`
+și a diferenței `99cb7cf..af19bc9`:
+
+- **X-RV1 / X-RV1.1 / X-RV1.2 închise.** Alegerea consemnată a owner-ului
+  schimbă mecanismul: un singur blocaj tranzacțional per bază, înaintea
+  planului registrelor, a contractării și a celorlalte blocaje, ținut până
+  la commit. Nu mai există derivare de chei din conturi curente/istorice
+  sau ordine între hash-uri. Matricea serială, inclusiv 3/1,00 → ieșiri
+  0,33 + 0,34 și rest 1/0,33, rămâne obligatorie pe două conexiuni reale.
+  Captura SQL per cale, inclusiv închiderea/reconstrucția și atribuirea
+  pozițiilor, trebuie să demonstreze protocolul. Citirile/dry-run-ul rămân
+  în afara lui. Costul serializării este acceptat explicit în contract,
+  se măsoară în X-D5, iar rafinarea rămâne X-r1.
+- **X-RV5 / X-RV5.1 închise.** Explicația este pe prima tranzacție efectiv
+  produsă, inclusiv `Transfer` pentru BTR. Invariantul include transferul
+  evaluat și normalizează semnul capătului-sursă față de decizie; BTR
+  intră în probe. Excepția `Motor.Transfera` al împerecherii rămâne
+  distinctă. Mecanismele RLF/NIR și referința storno la origine păstrează
+  delimitările cerute anterior.
+- **X-RV2, X-RV3, X-RV4, X-RV6, X-RV7 rămân închise**, conform
+  reverificării pe `99cb7cf`; schimbarea granularității nu le retrage
+  criteriile de acceptare.
+
+Paragraful despre perioadă păstrează 088: materializarea este proiecție,
+redeschiderea este explicită și logată în lanț, iar ieșirile deja operate
+nu sunt reevaluate aici. Nu redeschide mecanismul `Atribuit` în această
+felie.
+
+„Global → restul” este justificarea ordinii **pentru comenzile care
+respectă protocolul**. La implementare, proba trebuie să urmărească
+întreaga tranzacție de comandă și intrările directe/compuse, nu numai
+SQL-ul din metoda care inserează postările. O cale care ia întâi alt
+blocaj și cere apoi blocajul global ar încălca deja X-D6(b)/(c). Aceasta
+este interpretarea condiției de acceptare existente, nu o nouă observație.
+
+Validare: `git status --short`, `git log -3 --oneline`,
+`git diff 99cb7cf..HEAD -- docs/nucleu/tr-d8-transversal-contract.md`,
+`git show --stat --oneline HEAD`, citirea deciziei 088 și a secțiunilor
+amendate, `git diff --check`. Modificările revizuite sunt documentare.
+Nu am rulat ModelCheck, HTTP, perf sau concurență; nu am schimbat codul,
+contractul propus ori baze de date și nu am făcut commit. Secțiunile de
+mai jos păstrează istoricul observațiilor, nu starea lor curentă.
+
 ## Reverificare pe `99cb7cf` (2026-10-01)
 
 **X-RV2, X-RV3, X-RV4, X-RV6 și X-RV7 sunt închise la nivel de contract.

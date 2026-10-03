@@ -1,10 +1,12 @@
 # TR-D8 — gate-ul transversal: contract pentru aprobare
 
 - Data: 2026-10-01
-- Stare: propus (branch `tr-d8-transversal`, tăiat din `main` = `02f7788`,
-  după PR #14); amendat după review-ul advers Codex (X-RV1…X-RV7, vezi
-  secțiunea de la final); aprobarea D-urilor și răspunsurile X-Q1…X-Q4 sunt
-  ale owner-ului.
+- Stare: **aprobat de owner, 2026-10-03** (X-Q1…X-Q4 = A/A/A/A; nivelul 3 al
+  blocajului ales 2026-10-01); review-ul advers Codex al contractului e
+  închis (X-RV1…X-RV7, inclusiv 1.1/1.2/5.1,
+  `comunicari/2026-10-01-1400-codex-claude-tr-d8-transversal-contract-inchis.md`).
+  Branch `tr-d8-transversal`, tăiat din `main` = `02f7788` (după PR #14).
+  Implementarea pornește cu pasul 1 din X-D8, un commit per pas.
 - Bază: [D8-B5](tr-d8-citiri-contract.md) pasul 5 și „Limite care împiedică
   închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
   091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
@@ -377,6 +379,10 @@ Regula de oprire:
   baza de volum se măsoară în container, nu prin proxy-ul Docker Desktop.
 
 ## X-Q — întrebările pentru owner
+
+**Pin-urile owner-ului, 2026-10-03: X-Q1 = A, X-Q2 = A, X-Q3 = A, X-Q4 = A.**
+Recomandarea Claude și Codex a fost aceeași. Opțiunile B rămân mai jos ca
+istoric al tranșării, nu se implementează.
 
 - **X-Q1** forma explicației deciziei: **A** = `Explicatie jsonb` pe
   `Tranzactie`, schemă versionată, cititor + `GET` read-only (recomandat:
