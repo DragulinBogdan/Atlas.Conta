@@ -1,5 +1,6 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using DevExpress.ExpressApp;
 using N = Atlas.Conta.Nucleu;
@@ -54,6 +55,13 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
             Refuza("SC-RLF-12", () => Opereaza(inert.Id), "politică de numerotare"); FaraEfecte("SC-RLF-12", inert.Id); return;
         }
         Simple(); Reziduu(); Compensare(); Refuzuri(); PestePerioada();
+        // X-D7 (b): seed-ul profilului bugetar cere RLF și ITV în afara cubului; nimic nu se salvează.
+        Comanda(os => {
+            ContaSeeder.SeedTipuriDocument(os, ProfilContabil.Bugetar);
+            bool InCub(string cod) => os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == cod).PosteazaInCub;
+            Verifica("SC-CIT-109", "seed-ul care cere ieșirea din regim: RLF, cu tranzacții în cub, rămâne; ITV, fără tranzacții, iese",
+                InCub("RLF") && !InCub("ITV") && InCub("FCT"));
+        });
     }
 
     void Simple() {

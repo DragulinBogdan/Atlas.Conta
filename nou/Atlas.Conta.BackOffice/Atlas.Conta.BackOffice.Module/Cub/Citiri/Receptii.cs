@@ -21,6 +21,10 @@ public static class Receptii {
     }
 
     public static Dictionary<Guid, Guid> Legaturi(DbContext ctx, IReadOnlyCollection<Guid> documente) =>
-        ctx.Database.SqlQueryRaw<Legatura>("select r.id as \"Id\", r.sursa as \"Sursa\" from (" + LegaturiSql + ") r")
-            .Where(r => documente.Contains(r.Id)).ToDictionary(r => r.Id, r => r.Sursa);
+        Toate(ctx).Where(r => documente.Contains(r.Id)).ToDictionary(r => r.Id, r => r.Sursa);
+
+    public static Dictionary<Guid, Guid> Legaturi(DbContext ctx) => Toate(ctx).ToDictionary(r => r.Id, r => r.Sursa);
+
+    static IQueryable<Legatura> Toate(DbContext ctx) =>
+        ctx.Database.SqlQueryRaw<Legatura>("select r.id as \"Id\", r.sursa as \"Sursa\" from (" + LegaturiSql + ") r");
 }

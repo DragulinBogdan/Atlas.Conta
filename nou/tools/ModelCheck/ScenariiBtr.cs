@@ -22,6 +22,24 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
         SoldLot(id, l.Lot.Value, Destinatie, data, qt, vt);
     }
 
+    void Capete(Guid doc, Guid lot) => Comanda(os => {
+        decimal Registru(Guid gestiune) => os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => r.DocumentId == doc && r.LotId == lot && r.RepartitorId == gestiune).Sum(r => (decimal?)r.Cantitate) ?? 0m;
+        decimal Cub(Guid gestiune) => os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.DocumentId == doc && p.Unitate == lot && p.Gestiune == gestiune).Sum(p => (decimal?)p.Cantitate) ?? 0m;
+        C.Citiri.Loturi.VerificaAcoperire(os);
+        Verifica("SC-CIT-105", "transferul are ambele capete: −4 pe sursă și +4 pe destinație, în registru și în cub",
+            Registru(Magazie) == -4 && Registru(Destinatie) == 4 && Cub(Magazie) == -4 && Cub(Destinatie) == 4);
+        var db = ((EFCoreObjectSpace)os).DbContext;
+        foreach (var (caz, gestiune) in new[] { ("destinației", Destinatie), ("sursei", Magazie) }) {
+            using var tx = db.Database.BeginTransaction();
+            db.Database.ExecuteSqlInterpolated(
+                $"UPDATE \"Postare\" SET \"Cantitate\" = 0 WHERE \"DocumentId\" = {doc} AND \"Gestiune\" = {gestiune}");
+            Refuza("SC-CIT-105/fără capătul " + caz, () => C.Citiri.Invarianti.Verifica(os), C.Citiri.Loturi.IstoricIncomplet);
+            tx.Rollback();
+        }
+    });
+
     protected override void Executa() {
         var lot = Receptioneaza(new LinieFctScena(10, 10)).Linii[0];
         var d = Iesire(true, (lot, 4));
@@ -31,6 +49,7 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica("SC-BTR-01", "numai Transfer, fără tranzacție Operare", CuSpatiu(os =>
             os.GetObjectsQuery<C.Tranzactie>().Count(t => t.DocumentId == d.Id) == 1));
         Solduri("SC-BTR-01", lot, Ianuarie, 6, 60, 4, 40);
+        Capete(d.Id, lot.Lot!.Value);
         var data = new DateOnly(An, 1, 20);
         Storneaza(d.Id, data);
         Postari("SC-BTR-03", d.Id, N.FelTranzactie.Transfer, Ianuarie, Randuri(d, 0, 4, 40));
@@ -38,6 +57,7 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica("SC-CIT-05", "BTR și inversa Transfer nu apar în citirea contabilă", CuSpatiu(os =>
             !C.Citiri.Contabil.Postari(os).Any(p => p.DocumentId == d.Id)));
         TransferPeCititori("SC-CIT-100", "Loturi.Postari", 2, 2, 4, d.Id);
+        ListareTransfer("SC-CIT-107", "Loturi.Postari", d.Id);
         ProvenientaScrisa(d.Id);
         CostCitire(d.Id);
         ProvenientaInvalida(d.Id);

@@ -1040,6 +1040,10 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (!string.Equals(originale[nameof(TipDocument.ClrType)] as string, tip.ClrType, StringComparison.Ordinal))
                 erori.Add($"Clasa CLR a tipului de document {tip.Cod} ({originale[nameof(TipDocument.ClrType)]}) "
                     + "e legătura cu codul — o scrie release-ul, nu culegerea.");
+            if ((originale[nameof(TipDocument.PosteazaInCub)] as bool?) == true && !tip.PosteazaInCub
+                    && Cub.Materializare.AreTranzactii(os, tip.ClrType))
+                erori.Add($"{Declaratii.CoduriRefuz.PosteazaInCubIreversibil}: tipul {tip.Cod} are tranzacții în cub; "
+                    + "documentele lui nu mai pot posta numai în registre.");
         }
         VerificaTipTvaActiv(os, tip.TipTvaImplicitId ?? tip.TipTvaImplicit?.ID,
             $"ancora tipului de document {tip.Cod}", erori);

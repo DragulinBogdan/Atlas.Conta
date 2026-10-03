@@ -15,14 +15,19 @@ produse, inclusiv stornourile. Fiecare ramură fără probă proprie are un
 mutant într-o tranzacție anulată, rulat o dată per profil pe prima scenă cu
 faptele potrivite: `DESCHIDERE-EGALA` (registrul istoric egal cu deschiderea
 cubului trece), `DESCHIDERE`, `PARTIDE` (partidă fără partener), `POLITICA`
-(totalul de decontare), `IMO-FISA`, `IMO-CAUZA`, `IMO-REGISTRU` și cei șapte
-ai explicației (X-D4): `EXPLICATIE-LIPSA` (explicația ștearsă),
+(totalul de decontare), `IMO-FISA`, `IMO-CAUZA`, `IMO-ORIGINE` (inversa unei
+fișe fără `InversaDin`), `IMO-SUPORT` (transfer valoric pe fișă fără suport),
+`IMO-REGISTRU` și cei șapte ai explicației (X-D4): `EXPLICATIE-LIPSA` (explicația ștearsă),
 `-REFERINTA` (referința mutată pe alt document), `-STORNO` (cantitatea
 inversei pe lot schimbată), `-IESIRE` (valoarea unei `ValoareIesire` +0,01),
 `-DECLARATA` (`ValoareDeclarata` scoasă), `-EVALUARE` (soldul citit +1.000),
 `-STINGERE` (`AlocareFifo` scoase). Ramurile
 acoperirii registru ↔ cub, echilibrului și provenienței au probele SC-CIT-23,
-SC-CIT-34 și SC-CIT-10. La final, profilul cere cel puțin o scenă verificată și,
+SC-CIT-34 și SC-CIT-10. Acoperirea cantitativă a stocului
+(`Loturi.VerificaAcoperire`, `CITIRE_ISTORIC_STOC_INCOMPLET`, X-D7 a) rulează
+prima dintre acoperiri și are probele SC-CIT-103…105. Mutantul
+`EXPLICATIE-STORNO` aplică aceeași abatere și rândului de registru, ca să
+ajungă la ramura explicației. La final, profilul cere cel puțin o scenă verificată și,
 pe integrală, toate ramurile ucise, iar purja nu lasă postări. La prima
 rulare, proba a găsit trei totaluri de stins care nu corespundeau cubului:
 taxarea inversă (SC-FCT-10), contul explicit fără partide (SC-DEC-10) și
@@ -88,8 +93,21 @@ cititori comuni (`Loturi.VerificaRetragere`, `Plati.Alocari`,
 `Imobilizari.VerificaAcoperire`) și eticheta mișcării din SAF-T. Un consumator
 care refiltrează `Transfer` e detectat (mutant). SC-CIT-100…102 numără, pe
 fiecare intrare, rândurile `Transfer` și inversele lor din BTR stornat, din
-împerecherea desfăcută și din ASM-ul mixt stornat. Regula listării (jurnal,
-fișă, eticheta felului) rămâne la X-D7 (d).
+împerecherea desfăcută și din ASM-ul mixt stornat.
+
+Regula listării (N-r8, X-D7 d): jurnalul și fișa de cont nu listează
+`Transfer` și nici inversa lui, fiindcă pornesc din `Contabil.Postari`.
+O listare pe unitate (lot, partidă) pornește din `Loturi.Postari` sau
+`Partide.Postari`, care le întorc pe amândouă, și arată felul rândului din
+`Tranzactie.Fel`; inversa unui transfer apare ca `Storno`. Listarea nu
+refiltrează felul (mutantul probei `N-r8`). SC-CIT-107 o probează pe
+`ContabilProiectii.RegistruJurnal`, pe `FisaCont` și pe cele două intrări pe
+unitate. Contraponderile Transformare (T-r14) nu ajung prin nicio intrare
+comună: `Contabil`, `Partide` și `Imobilizari.PozitiiFaraFisa` aplică
+`Transformare.FaraContrapondere`, `Loturi` cere unitate, `Fiscale` cere tip de
+TVA, iar `Plati` pornește din `Contabil`. SC-CIT-106 numără zero pe toate
+șapte, SC-CIT-15 și SC-SAFT-10 pe rapoarte, iar SC-ASM-16 probează că
+diagnosticul `Comparabil` le exclude cu numărul raportat.
 
 Accesul la registre (X-D2): `RegistruContabil`, `RegistruStoc`, `RegistruTva`,
 `RegistruImobilizari` și `Imperechere` se ating în producție numai prin lista
@@ -108,7 +126,7 @@ utilizare, iar șase mutanți îi probează detecția. În `Proiectii/`, `Api/`,
 ca cheie de autorizare; singura excepție numită este absorbția ASM-B6 din
 `DeclarantAsamblare`.
 
-Lista nominală (71 de intrări, 87 de utilizări fișier × membru × registru):
+Lista nominală (72 de intrări, 88 de utilizări fișier × membru × registru):
 
 | Clasa | Membrii | Rolul |
 |---|---|---|
@@ -120,7 +138,7 @@ Lista nominală (71 de intrări, 87 de utilizări fișier × membru × registru)
 | | `StocService`: `Sold`, `AlocaFifoTolerant`, `AlocaFifo` | fără apelant de producție; oracol al probelor |
 | | `Fapte.SolduriLoturiRegistru`, `Fapte.Operand`, `DeclarantAsamblare.Declara` | absorbția Δ a ASM față de soldul registrului (ASM-B6) |
 | | `PunereInFunctiune`, `IesireImobilizare`, `AmortizareLunara`: `MaterializeazaRegistrul`, `EliminaRegistrul`, `StorneazaRegistrul`; `PunereInFunctiune.RanduriProprii`, `Inverseaza` | scriu `RegistruImobilizari` |
-| 2. martor | `Invarianti.Verifica`, `Imobilizari.VerificaAcoperire` | acoperirea cubului față de registru (`INV-CUB`, 097-r1) |
+| 2. martor | `Invarianti.Verifica`, `Loturi.VerificaAcoperire`, `Imobilizari.VerificaAcoperire` | acoperirea cubului față de registru (`INV-CUB`, X-D7 a, 097-r1) |
 | | `Materializare.Deschide`, `LoturiLiniiSterse.Curata` | urma lotului în `RegistruStoc` |
 | | `GardianEditare.VerificaTipTva`, `Imobilizare.Verifica` | referința care oprește ștergerea nomenclatorului |
 | 3. evidență XAF | `ContaUiBaseline`: `AscundeFkuriBrute`, `Imobilizari` | listele registrelor |
@@ -182,6 +200,13 @@ se probează direct în bază), SC-DES-21 (așteptarea e pe blocajul scrierii)
 Validare: integrala **3.361 bugetar / 4.570 privat OK**, zero FAIL, exit 0,
 54 de scene per profil sub `INV-CUB`, `run-verificari/20261003-211029-736/`, pe clonele
 `.ClaudeX2`; `--probe-sursa` verde.
+
+Pasul 4 al gate-ului transversal (X-D7, 2026-10-03). Fără migrație și fără
+schimbare de contract HTTP. `ContaSeeder.SeedTipuriDocument` este public, ca
+proba seed-ului să-l poată chema nesalvat. Validare: integrala **3.387
+bugetar / 4.597 privat OK**, zero FAIL, exit 0, 54 de scene per profil sub
+`INV-CUB`, `run-verificari/20261003-214312-683/`, pe clonele `.ClaudeX2`;
+`--probe-sursa` verde.
 
 TR-D8 nu este închis: restul SAF-T și verificările transversale rămân
 în contract; cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.

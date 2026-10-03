@@ -60,6 +60,7 @@ static partial class ProbeCititoriRegistre {
         // ── 2. martori și diagnostice ──
         new(M + "Cub/Citiri/Invarianti.cs", "Invarianti.Verifica", "RegistruContabil", Clasa.Martor, "INV-CUB: acoperirea contabilă a cubului"),
         new(M + "Cub/Citiri/Imobilizari.cs", "Imobilizari.VerificaAcoperire", "RegistruImobilizari", Clasa.Martor, "acoperirea fișelor (097-r1)"),
+        new(M + "Cub/Citiri/Loturi.cs", "Loturi.VerificaAcoperire", "RegistruStoc", Clasa.Martor, "INV-CUB: acoperirea cantitativă a stocului pe grup"),
         new(M + "Cub/Materializare.Deschidere.cs", "Materializare.Deschide", "RegistruStoc", Clasa.Martor, "refuză lotul de deschidere care are deja mișcări"),
         new(M + "Motor/LoturiCulegereService.cs", "LoturiLiniiSterse.Curata", "RegistruStoc", Clasa.Martor, "urma lotului înaintea ștergerii lui"),
         new(M + "Motor/GardianEditare.cs", "GardianEditare.VerificaTipTva", "RegistruTva", Clasa.Martor, "referința care oprește ștergerea tipului de TVA"),

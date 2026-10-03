@@ -6,6 +6,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// românesc al motorului vechi rămâne al lui până la TR-D7 (B-D3).
 /// </summary>
 public static class CoduriRefuz {
+    public const string PosteazaInCubIreversibil = "POSTEAZA_IN_CUB_IREVERSIBIL";
     public const string NirDeltaStructura = "NIR_DELTA_STRUCTURA";
     public const string NirDeltaCauza = "NIR_DELTA_CAUZA";
     public const string NirDeltaPolitica = "NIR_DELTA_POLITICA";

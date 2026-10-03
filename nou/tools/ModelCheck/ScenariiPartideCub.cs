@@ -21,6 +21,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         EfectObligatoriu();
         EfectPartialSiTemporal();
         NominalizareAutomata();
+        RegimIreversibil();
         NotaInainteaStingerii();
         StingereDupaDesfacere(nota: false);
         StingereDupaDesfacere(nota: true);
@@ -185,6 +186,39 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         }
     }
 
+    // 102-r4: nominalizarea plății mutată de pe partida facturii lasă desfacerea fără efect de inversat.
+    void DesfacereFaraEfect(Guid imp, Guid plata, Guid factura) {
+        var partida = Partida(factura, ContFurnizor)!.Value; var straina = Guid.NewGuid();
+        var inainte = Amprenta(plata);
+        int Muta(Guid deLa, Guid la) => CuSpatiu(os => ((EFCoreObjectSpace)os).DbContext.Database.ExecuteSqlInterpolated(
+            $"UPDATE \"Postare\" SET \"Unitate\" = {la} WHERE \"DocumentId\" = {plata} AND \"Unitate\" = {deLa}"));
+        var mutate = Muta(partida, straina);
+        try {
+            Refuza("SC-CIT-108", () => Comanda(os => ImperechereService.Sterge(os, imp)), "IMPERECHERE_FARA_EFECT");
+            Refuza("SC-CIT-108", () => Comanda(os => ImperechereService.Desfa(os, imp, Ianuarie)), "IMPERECHERE_FARA_EFECT");
+            Verifica("SC-CIT-108", "refuzul păstrează legătura și nu scrie rândul invers", mutate > 0 && CuSpatiu(os =>
+                os.GetObjectByKey<Imperechere>(imp) != null && !os.GetObjectsQuery<Imperechere>().Any(i => i.InverseazaId == imp)));
+        }
+        finally { Muta(straina, partida); }
+        Verifica("SC-CIT-108", "cubul plății este cel dinaintea probei", Amprenta(plata) == inainte);
+    }
+
+    // X-D7 (b): un tip cu tranzacții în cub nu iese din regim; unul fără tranzacții poate.
+    void RegimIreversibil() => Comanda(os => {
+        TipDocument Tip(string cod) => os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == cod);
+        var cuFapte = Tip("FCT"); var faraFapte = Tip("CAS");
+        Verifica("SC-CIT-109", "FCT are tranzacții în cub, CAS nu are", C.Materializare.AreTranzactii(os, cuFapte.ClrType)
+            && !C.Materializare.AreTranzactii(os, faraFapte.ClrType) && cuFapte.PosteazaInCub && faraFapte.PosteazaInCub);
+        cuFapte.PosteazaInCub = false;
+        Refuza("SC-CIT-109", () => GardianEditare.Verifica(os), Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.PosteazaInCubIreversibil);
+        cuFapte.PosteazaInCub = true;
+        faraFapte.PosteazaInCub = false;
+        string refuz = null;
+        try { GardianEditare.Verifica(os); } catch (OperareException e) { refuz = e.Message; }
+        Verifica("SC-CIT-109", "tipul fără tranzacții în cub poate ieși din regim" + (refuz == null ? "" : " — " + refuz), refuz == null);
+        faraFapte.PosteazaInCub = true;
+    });
+
     void NominalizareAutomata() {
         var f = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false)); Opereaza(f.Id);
         var p = Trezorerie(false, 100);
@@ -202,6 +236,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         });
         Verifica("SC-CIT-48", "refuzul CRUD păstrează legătura și postările",
             CuSpatiu(os => os.GetObjectByKey<Imperechere>(imp) != null) && Amprenta(p.Id) == original);
+        DesfacereFaraEfect(imp, p.Id, f.Id);
         Comanda(os => Atlas.Conta.BackOffice.Module.Api.Trz.ImperechereApply.Sterge(os, imp));
         Rest(f.Id, -100); Rest(p.Id, 100);
         Verifica("SC-CIT-46", "postările inițiale rămân după desfacere",

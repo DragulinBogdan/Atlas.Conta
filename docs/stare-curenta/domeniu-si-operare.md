@@ -1009,6 +1009,13 @@ ambele profiluri, ITV/RDC/RLF/DVI numai pe privat. Restul tipurilor postează do
 (`Document.Declarant()` întoarce `null`) e eroare de configurare: operarea
 refuză, nu tace. (S-D3)
 
+Regimul nu se stinge (X-D7 b, X-Q4). După prima tranzacție în cub a unui tip,
+trecerea lui `PosteazaInCub` pe `false` e refuzată de gardian cu
+`POSTEAZA_IN_CUB_IREVERSIBIL`, iar seed-ul nu o mai aliniază pe `false`
+(`Materializare.AreTranzactii`). Altfel documentele noi ale tipului ar scrie
+numai registrele, iar cititorii de pe cub le-ar omite tăcut. Un tip fără
+tranzacții în cub poate ieși din regim.
+
 ### Materializarea, stornoul, anularea
 
 `Module/Cub/Materializare.cs` rulează din `MotorOperare`, deci pe toate ușile
@@ -1478,7 +1485,10 @@ legăturii sau, la stingerea automată, desfacerea nominalizării într-o partid
 proprie a stingătorului. Asocierea manuală fără transfer nu inversează operarea.
 La stingerea automată, suma legăturii se confirmă din nominalizarea cubului.
 Lipsa efectului, insuficiența și ambiguitatea se refuză înaintea creării
-legăturii. CRUD-ul direct de creare/ștergere este refuzat; se folosesc comenzile.
+legăturii. La fel la desfacere: nominalizarea automată care nu-și mai găsește
+efectul pe partida stinsului dă `IMPERECHERE_FARA_EFECT`, iar legătura rămâne
+și rândul invers nu se scrie fără transferul lui (102-r4, X-D7 f).
+CRUD-ul direct de creare/ștergere este refuzat; se folosesc comenzile.
 Scrierea registrelor rămâne până la TR-D9.
 
 Sursa nominalizării automate se citește tot din cub, inclusiv recepția

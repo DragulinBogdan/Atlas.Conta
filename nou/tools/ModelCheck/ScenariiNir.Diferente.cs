@@ -91,6 +91,7 @@ sealed partial class ScenariiNir {
         Capitalizat(); Avans();
         ImputariDistincte(); Concurenta(); ReconciliereDelta(); ZeroIstoric();
         ProvenientaCorectiei(); CitireaSursei(); AnalizaIstorica(); ImputatInert(); FacturaPe408();
+        AcoperireStoc();
         (facturaDeCorectat, nirDeCorectat) = Constatat(3); Opereaza(nirDeCorectat);
     }
 

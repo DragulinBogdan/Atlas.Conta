@@ -141,6 +141,8 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         }));
         TransferPeCititori("SC-CIT-102", "Loturi.Postari", mixt.Transfer.Length, mixt.Transfer.Length,
             2 * mixt.Transfer.Count(r => r.Unitate != null), mixt.Doc.Id);
+        ListareTransfer("SC-CIT-107", "Loturi.Postari", mixt.Doc.Id);
+        ContraponderiPeCititori("SC-CIT-106", 2 * mixt.Transfer.Concat(mixt.Operare).Count(r => r.Unitate == null), mixt.Doc.Id);
         Sold("SC-ASM-08", mixt.Doc.Linii[0], 0, 0);
         Sold("SC-ASM-08", mixt.Doc.Linii[0], 1, 60, Februarie);
         Corectie("SC-ASM-10", corectieDoc, corectieLot, 1, 50, 1, 50);

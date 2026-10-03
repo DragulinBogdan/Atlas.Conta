@@ -240,6 +240,24 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   (`RegistruContabil` pentru închiderea de TVA, `RegistruImobilizari` pentru
   fișă și amortizare). Subiectul permisiunii după tăierea registrelor nu este
   ales. (F22-D5, X-D2; TR-D9)
+- Acoperirea cantitativă a stocului (X-D7 a) compară registrul cu cubul pe
+  document × lot × gestiune × storno × semn, pe `Magazie`, `Marfuri` și
+  `Folosinta`. Contul nu intră în cheie: rândul de registru nu îl poartă, iar
+  derivarea lui din politica de azi ar rescrie istoricul (093c); valoarea pe
+  cont rămâne la reconcilierea (a). Direcția e registru → cub: o postare pe
+  lot fără rând de registru (deschiderea, recepția facturii cu NIR neoperat)
+  nu e lipsă. Grupul recepției conexe se compară net, pe factură și
+  recepțiile ei; fără nicio recepție operată, registrul grupului trebuie să
+  fie zero. `Custodie` și celelalte tipuri de stoc nu se compară. Invariantul
+  rulează în ModelCheck, nu la pornirea hosturilor (102d).
+- Gardianul refuză numai stingerea regimului (X-D7 b). Activarea
+  `PosteazaInCub` pe un tip cu documente operate numai în registre nu e
+  refuzată la scriere; o arată `INV-CUB`, ca istoric incomplet.
+- Produsul nu are o listare a postărilor pe lot sau pe partidă. Regula
+  listării N-r8 e fixată pe intrările comune și probată pe ele; singura
+  listare pe lot din producție este mișcarea de stoc SAF-T, care poartă
+  eticheta felului. O fișă a lotului sau a partidei se construiește peste
+  `Loturi.Postari`, respectiv `Partide.Postari`, fără filtru pe fel.
 - Probele de concurență (X-D6) pun cele două comenzi în coada blocajului
   ținut de scenă și le lasă să ruleze în ordinea cozii. Dovedesc rezultatul
   serial și așteptarea pe conexiuni distincte; nu măsoară debitul și nu

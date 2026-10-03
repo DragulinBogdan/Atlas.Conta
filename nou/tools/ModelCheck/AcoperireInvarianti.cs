@@ -19,6 +19,8 @@ static class AcoperireInvarianti {
         new("POLITICA", "CITIRE_PARTIDE_POLITICA", TotalDecontareDiferit),
         new("IMO-FISA", "fără fișă pe cub", FisaPeAltaUnitate),
         new("IMO-CAUZA", "fără cauză", FisaFaraLinie),
+        new("IMO-ORIGINE", "fără cauză", FisaFaraOrigine),
+        new("IMO-SUPORT", "fără cauză", FisaFaraSuport),
         new("IMO-REGISTRU", "diferă de cub", RegistruImobilizariDiferit),
         new("EXPLICATIE-LIPSA", C.Citiri.Explicatii.Lipsa, ExplicatieStearsa),
         new("EXPLICATIE-REFERINTA", C.Citiri.Explicatii.Referinta, ExplicatieReferitaGresit),
@@ -132,6 +134,28 @@ static class AcoperireInvarianti {
         return true;
     }
 
+    static bool FisaFaraOrigine(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.FelUnitate == N.FelUnitate.Fisa && p.Carte != N.Carte.Contabil
+                && p.Tranzactie.Fel == N.FelTranzactie.Storno && p.InversaDinId != null)
+            .Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.InversaDinId, (Guid?)null).SetProperty(p => p.InversaDinSpatiu, (N.Spatiu?)null));
+        return true;
+    }
+
+    static bool FisaFaraSuport(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.FelUnitate == N.FelUnitate.Fisa && p.Tranzactie.Fel == N.FelTranzactie.Transfer
+                && p.Valoare != 0m && p.SuportId != null)
+            .Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.SuportId, (Guid?)null).SetProperty(p => p.SuportSpatiu, (N.Spatiu?)null));
+        return true;
+    }
+
     static bool RegistruImobilizariDiferit(IObjectSpace os, DbContext db) {
         var tinta = os.GetObjectsQuery<RegistruImobilizari>().Select(r => (Guid?)r.ID).FirstOrDefault();
         if (tinta == null) return false;
@@ -191,10 +215,15 @@ static class AcoperireInvarianti {
     static bool InversaPeLotDiferita(IObjectSpace os, DbContext db) {
         var tinta = os.GetObjectsQuery<C.Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Storno && p.FelUnitate == N.FelUnitate.Lot)
-            .Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+            .Select(p => new { p.ID, p.Spatiu, p.DocumentId, p.Unitate, p.Gestiune }).FirstOrDefault();
         if (tinta == null) return false;
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
             .ExecuteUpdate(s => s.SetProperty(p => p.Cantitate, p => p.Cantitate + 1m));
+        // Registrul primește aceeași abatere, ca mutantul să ajungă la ramura explicației, nu la acoperirea stocului.
+        var rand = os.GetObjectsQuery<RegistruStoc>().Where(r => r.Storno && r.DocumentId == tinta.DocumentId
+            && r.LotId == tinta.Unitate && r.RepartitorId == tinta.Gestiune
+            && (r.TipStoc == TipStoc.Magazie || r.TipStoc == TipStoc.Marfuri || r.TipStoc == TipStoc.Folosinta)).Select(r => (Guid?)r.ID).FirstOrDefault();
+        db.Set<RegistruStoc>().Where(r => r.ID == rand).ExecuteUpdate(s => s.SetProperty(r => r.Cantitate, r => r.Cantitate + 1m));
         return true;
     }
 }

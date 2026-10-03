@@ -12,6 +12,7 @@ public static class Invarianti {
     public static void Verifica(IObjectSpace os) {
         VerificaProvenienta(os);
         VerificaFiscal(os);
+        Loturi.VerificaAcoperire(os);
         var ctx = ((EFCoreObjectSpace)os).DbContext;
         var postari = os.GetObjectsQuery<Postare>();
         var lipsuri = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null

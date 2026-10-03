@@ -89,10 +89,29 @@ regim declarat le numără pe aceleași identități.
 | SC-CIT-102 | ASM mixt (Operare + Transfer) stornat în februarie | 4 postări Transfer și 4 inverse într-un `Storno` care poartă și inversele `Operare`; `Loturi.Postari` întoarce cele 4 rânduri pe lot; intrările contabile întorc zero, deși inversele `Operare` ale aceluiași storno rămân în jurnal (SC-CIT-04) | verificat pe ambele profiluri |
 
 `Fiscale.Postari` și `Imobilizari.PozitiiFaraFisa` nu filtrează felul și sunt
-doar măsurate. `PozitiiFaraFisa` întoarce contraponderile ASM (4 în
-SC-CIT-102): au valoare zero, iar consumatorul ei filtrează pe conturile
-imobilizărilor. Proba structurală `N-r8` cere regimul declarat pentru orice
+doar măsurate. Proba structurală `N-r8` cere regimul declarat pentru orice
 intrare publică nouă.
+
+### Activarea, regimul dual și restanțele TR-D8 — X-D7 (2026-10-03)
+
+Așteptările cantitative sunt scrise de mână din regula recepției conexe
+(098, 099): registrul ține cumulul constatat pe NIR, cubul ține recepția pe
+factură și numai diferența pe NIR. Probele citesc registrul și cubul direct,
+nu prin interogarea invariantului.
+
+| ID | Scenariu | Așteptare | Stare |
+|---|---|---|---|
+| SC-CIT-103 | FCT 4 × 25 cu recepție conexă, de trei ori: constatat 4, constatat 3, constatat 4 plus un lot nou de 1; recepția cu 3 stornată; recepția cu 4 corectată la 2 | pe lotul sursei, registrul grupului ține 4, 3 și 4, iar cubul 4 pe factură cu 0, −1 și 0 pe recepție; lotul adăugat are 1 în registru și 1 pe recepție; după storno registrul e 0 și cubul rămâne 4 pe factură, fără cumul activ; după corecție registrul e 4 − 4 + 2, iar cubul 4 pe factură și −2 pe corecție; acoperirea trece în fiecare stare | verificat pe ambele profiluri |
+| SC-CIT-104 | aceleași fapte, cu trei alterări în tranzacție anulată: cantitatea recepției de pe factură pusă pe zero, cantitatea deltei pusă pe zero, `SursaReceptieiId` ștearsă | `CITIRE_ISTORIC_STOC_INCOMPLET` de fiecare dată | verificat pe ambele profiluri |
+| SC-CIT-105 | BTR 4 din lotul 10 × 10 | −4 pe sursă și +4 pe destinație, în registru și în cub; cu cantitatea unui capăt pusă pe zero, pe rând, `CITIRE_ISTORIC_STOC_INCOMPLET` | verificat pe ambele profiluri |
+| SC-CIT-106 | ASM mixt stornat (faptele SC-CIT-102) | 8 contraponderi Transformare (4 linii și inversele lor); zero pe fiecare dintre cele șapte intrări comune | verificat pe ambele profiluri |
+| SC-CIT-107 | BTR stornat; plățile împerecheate, una desfăcută; ASM mixt stornat | `RegistruJurnal` și `FisaCont` nu listează nicio postare `Transfer` și nicio inversă a ei; `Loturi.Postari` le întoarce cu felul fiecăreia (2 `Transfer` și 2 `Storno`, în ambele scene), `Partide.Postari` la fel (6 `Transfer`) | verificat pe ambele profiluri |
+| SC-CIT-108 | plată nominalizată automat pe factură; nominalizarea mutată în cub pe altă partidă, apoi readusă | ștergerea și desfacerea legăturii dau `IMPERECHERE_FARA_EFECT`; legătura rămâne, rândul invers nu se scrie, cubul plății e neschimbat | verificat pe ambele profiluri |
+| SC-CIT-109 | FCT cu tranzacții în cub, CAS fără; pe privat, seed-ul profilului bugetar rulat nesalvat după un RLF operat | `PosteazaInCub = false` pe FCT dă `POSTEAZA_IN_CUB_IREVERSIBIL`, pe CAS trece; seed-ul lasă RLF în cub și scoate ITV | verificat (gardianul pe ambele profiluri, seed-ul pe privat) |
+
+`Imobilizari.PozitiiFaraFisa` exclude acum contraponderile ASM, ca celelalte
+intrări. Ramurile fișei fără origine și fără suport (097-r1) au mutanții
+`IMO-ORIGINE` și `IMO-SUPORT` în `INV-CUB`.
 
 ### Explicația deciziei — X-D4 (2026-10-03)
 

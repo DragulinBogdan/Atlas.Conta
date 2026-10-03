@@ -15,6 +15,12 @@ public static partial class Materializare {
     public static bool EsteConexAcoperit(IObjectSpace os, Document doc) =>
         ReceptiiConexe.EsteAcoperita(os, doc);
 
+    /// <summary>Un tip cu tranzacții în cub nu mai iese din regimul <c>PosteazaInCub</c>.</summary>
+    public static bool AreTranzactii(IObjectSpace os, string clrType) {
+        var documente = os.GetObjectsQuery<Document>().Where(d => d.ClrType == clrType).Select(d => (Guid?)d.ID);
+        return os.GetObjectsQuery<Tranzactie>().Any(t => documente.Contains(t.DocumentId));
+    }
+
     public static void Opereaza(IObjectSpace os, Document doc, TipDocument tip) {
         using var receptie = ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: true);
         ArgumentNullException.ThrowIfNull(doc);
@@ -162,10 +168,8 @@ public static partial class Materializare {
             data, PartenerCerut: contrapartidaId));
         if (rezultat.Refuz is { } refuz)
             throw new OperareException(string.Join("\n", Mesaje([refuz])));
-        if (rezultat.Mutare is not { } mutare) {
-            if (suma < 0m) return null;
+        if (rezultat.Mutare is not { } mutare)
             throw new OperareException($"IMPERECHERE_FARA_EFECT: {rezultat.Sarit}.");
-        }
         if (suma > 0m) VerificaDisponibilTemporal(os, mutare, data);
         var contract = N.Motor.Transfera(
             stingator.ID, rezultat.Data, [mutare], new N.Rotunjire(Scara.ConventieBani));

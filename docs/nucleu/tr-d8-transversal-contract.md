@@ -10,6 +10,7 @@
   **Pasul 1 (X-D2) implementat și verificat, 2026-10-03** — vezi „Execuție".
   **Pasul 2 (X-D4) implementat și verificat, 2026-10-03.**
   **Pasul 3 (X-D6) implementat și verificat, 2026-10-03.**
+  **Pasul 4 (X-D7) implementat și verificat, 2026-10-03.**
 - Bază: [D8-B5](tr-d8-citiri-contract.md) pasul 5 și „Limite care împiedică
   închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
   091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
@@ -621,6 +622,68 @@ Probele nu exercită ușa HTTP și contextul securizat (același cod de blocaj)
 Validare: integrala **3.361 bugetar / 4.570 privat OK**, zero FAIL,
 `run-verificari/20261003-211029-736/`, pe clonele `.ClaudeX2`; scena de concurență separat pe
 ambele profiluri; `--probe-sursa` verde.
+
+### Pasul 4 — X-D7: acoperirea stocului, regimul ireversibil, restanțele TR-D8 (2026-10-03)
+
+Livrat: `Loturi.VerificaAcoperire` (`CITIRE_ISTORIC_STOC_INCOMPLET`) în
+`INV-CUB`; regula `Materializare.AreTranzactii`, chemată de gardian
+(`POSTEAZA_IN_CUB_IREVERSIBIL`) și de seed; refuzul `IMPERECHERE_FARA_EFECT`
+pe ramura negativă a desfacerii; `FaraContrapondere` în
+`Imobilizari.PozitiiFaraFisa`; mutanții `IMO-ORIGINE` și `IMO-SUPORT`;
+SC-CIT-103…109. Regulile stau în `stare-curenta/domeniu-si-operare.md` și
+`dezvoltare-si-validare.md`, limitele în `limite-curente.md`. T-r14, N-r8,
+097-r1 și 102-r4 sunt închise.
+
+Ce a arătat implementarea și cum amendează X-D7:
+
+1. **Cheia grupului nu are cont.** Contractul numea „lot, gestiune, cont,
+   sens, origine de storno”. Rândul `RegistruStoc` nu poartă contul, iar
+   derivarea lui din nomenclatorul de azi ar rescrie istoricul după o
+   schimbare de politică (093c, NIR-D3). Cheia este document × lot ×
+   gestiune × storno × semn. Valoarea pe cont rămâne la reconcilierea (a)
+   din X-D3.
+2. **Recepția conexă se compară net, pe grupul sursei.** Factura și
+   recepțiile ei formează un grup (`Receptii.Legaturi`). În el semnul și
+   stornoul nu se separă: registrul ține cumulul pe NIR, cubul ține recepția
+   pe factură și delta pe NIR. Fără nicio recepție operată, cubul păstrează
+   recepția facturii, iar registrul grupului trebuie să fie zero (precedentul
+   `GrupulComplet` din reconciliere).
+3. **Direcția este registru → cub.** Deschiderea generică și recepția
+   facturii cu NIR neoperat au postări pe lot fără rând de registru și nu
+   sunt lipsuri. Un rând de registru fără document cere postare pe lot fără
+   document.
+4. **Domeniul este `Magazie`, `Marfuri`, `Folosinta`.** `Custodie` rămâne în
+   afara cubului (093d).
+5. **Invariantul a trecut pe toate scenele fără nicio corecție de
+   producție.** Rulează primul dintre acoperiri, ca ștergerea provenienței
+   să nu fie prinsă întâi de acoperirea contabilă. Mutantul
+   `EXPLICATIE-STORNO` schimba cantitatea unei inverse pe lot și era prins
+   acum de acoperirea stocului; aplică aceeași abatere rândului de registru,
+   ca să ajungă la ramura lui.
+6. **Probele sunt de scenă, nu mutanți generici.** SC-CIT-103…105 citesc
+   registrul și cubul direct, cu cifrele scrise din regula recepției conexe
+   și a transferului.
+7. **(b) O singură regulă.** Gardianul și seed-ul întreabă același
+   `AreTranzactii`. Activarea unui tip cu documente operate numai în registre
+   nu e refuzată la scriere; o arată `INV-CUB` (limită declarată).
+8. **(c) O singură intrare întorcea contraponderi.** `PozitiiFaraFisa` le
+   exclude acum, deci regula e uniformă pe cele șapte intrări comune.
+9. **(d) Produsul nu are fișa lotului sau a partidei.** Regula „le arată cu
+   eticheta felului” e fixată pe intrările comune `Loturi.Postari` și
+   `Partide.Postari`, care întorc `Transfer` și inversa lui cu
+   `Tranzactie.Fel`, și e probată pe ele. Nu s-a adăugat o listare fără
+   consumator; singura listare pe lot din producție rămâne mișcarea SAF-T.
+10. **(e) Două ramuri nu aveau mutant.** Fișa fără origine a inversei și
+    transferul valoric fără suport.
+11. **(f) Niciun flux existent nu ajungea pe ramura negativă fără efect.**
+    Integrala a rămas verde după refuz. Proba mută nominalizarea plății pe
+    altă partidă și cheamă comenzile reale `Sterge` și `Desfa`.
+12. **(g), (h).** T-r11 se listează la decizia 108, prin X-D2. T-r13 rămâne
+    activă; diagnosticul ASM-B7 pe baza de volum e al pasului 5.
+
+Validare: integrala **3.387 bugetar / 4.597 privat OK**, zero FAIL,
+`run-verificari/20261003-214312-683/`, pe clonele `.ClaudeX2`; 54 de scene
+per profil sub `INV-CUB`, toți mutanții uciși; `--probe-sursa` verde.
 
 ## Ce NU intră (amânări cu nume)
 
