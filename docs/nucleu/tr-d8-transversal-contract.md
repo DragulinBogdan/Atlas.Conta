@@ -9,6 +9,7 @@
   Implementarea pornește cu pasul 1 din X-D8, un commit per pas.
   **Pasul 1 (X-D2) implementat și verificat, 2026-10-03** — vezi „Execuție".
   **Pasul 2 (X-D4) implementat și verificat, 2026-10-03.**
+  **Pasul 3 (X-D6) implementat și verificat, 2026-10-03.**
 - Bază: [D8-B5](tr-d8-citiri-contract.md) pasul 5 și „Limite care împiedică
   închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
   091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
@@ -544,6 +545,82 @@ Validare: nucleu **180/180**; integrala **3.309 bugetar / 4.518 privat OK**,
 zero FAIL, `run-verificari/20261003-182901-833/`, pe clonele `.ClaudeX2`;
 SC-CIT-99 pe host viu 8/8 PASS, `run-verificari/x2-expl-http/proba.log`;
 `--probe-sursa` verde.
+
+### Pasul 3 — X-D6: scrierea serială per bază, probele pe două conexiuni, S-r9 (2026-10-03)
+
+Livrat: blocajul scrierii în `TranzactieComanda.Incepe`
+(`BlocajScriere`, refuzul `SCRIERE_OCUPATA`); `Materializare.CereScriere` pe
+deschidere și pe stingerea ei; `Pozitie` atribuită sub blocaj, în tranzacția
+salvării (`BackOfficeEFCoreDbContext.SaveChanges`); proba pe sursă `X-D6`
+(`tools/ModelCheck/ProbeBlocajScriere.cs`) și scena `ScenariiConcurenta`
+(SC-X-15…SC-X-23, `--scenarii X`). Regula stă în
+`stare-curenta/domeniu-si-operare.md` („Scrierea serială per bază”),
+limitele în `limite-curente.md`. S-r9 și F27-r8 închise.
+
+Ce a arătat implementarea și cum amendează X-D6:
+
+1. **Locul unic exista deja.** Toate comenzile își deschideau tranzacția prin
+   `TranzactieComanda.Incepe`/`Asigura` (18 apeluri), deci blocajul a intrat
+   acolo, fără nicio atingere în `MotorOperare`. Îl iau și comenzile care nu
+   scriu cubul direct — generarea și regenerarea AMO și ITV, confirmarea
+   depunerii: citirile lor decid ce scriu, iar „luna liberă” (79) e aceeași
+   cursă.
+2. **Două uși rulează în tranzacția apelantului.** `Materializare.Deschide`
+   și stingerea de deschidere nu au apelant de producție și nu își deschid
+   tranzacția; iau blocajul la intrare, reentrant, prin `CereScriere`.
+3. **S-r9 întinde blocajul peste salvarea draftului.** `Pozitie` se calcula
+   înaintea tranzacției salvării. Acum salvarea care adaugă detalii fără
+   poziție își deschide tranzacția, ia blocajul și abia apoi citește maximul;
+   la eșec, pozițiile atribuite se șterg, ca reluarea să recitească. Prețul:
+   o asemenea salvare așteaptă comanda în curs (limită declarată; rafinarea
+   e tot X-r1).
+4. **Așteptarea are capăt: `SCRIERE_OCUPATA`.** Contractul spunea doar că al
+   doilea operator așteaptă durata unei comenzi. Npgsql întrerupe orice
+   instrucțiune la timpul de comandă al conexiunii (30 s implicit), deci o
+   așteptare lungă ar fi ieșit ca eroare de bază. Întreruperea blocajului e
+   tradusă în refuz de domeniu cu cod stabil, fără nimic scris (SC-X-23).
+   Pragul propriu al așteptării, separat de timpul comenzilor, nu e ales.
+5. **Sincronizarea probelor e o poartă, nu o barieră.** Comenzile reale își
+   comit singure tranzacția, deci „prima ține tranzacția până intră a doua în
+   așteptare” ar fi cerut ocolirea cojii. Scena ține ea blocajul scrierii;
+   cele două comenzi pornesc pe fire și conexiuni proprii și intră pe rând în
+   coada lui (observate în `pg_stat_activity`, cu interogarea blocajului);
+   eliberarea le rulează în ordinea cozii. Ambele parcurg calea reală, de la
+   intrarea cojii, iar a doua așteaptă efectiv commit-ul primei.
+6. **Matricea măsurată**, identică pe ambele profiluri: două consumuri de 6
+   din 10/100 — succes și `STOC_INSUFICIENT`, lot 4/40 (SC-X-15); două
+   consumuri de 1 din 3/1,00 — 0,33 și 0,34, cu soldurile citite 3/1,00 și
+   2/0,67 în explicații, rest 1/0,33 (SC-X-16); consum contra retragere —
+   succes și refuz în ambele ordini (SC-X-17); două stingeri de 60 pe 100 —
+   succes și refuz peste rest (SC-X-18); aceeași pereche — 40 + 40 trec,
+   din 15 + 15 trece una (SC-X-19); două detalii noi — pozițiile 1, 2, 3
+   (SC-X-20); operare → închidere — ambele trec, snapshot 6/60; închidere →
+   operare — operarea e refuzată (SC-X-21). Nicio excepție în afara
+   refuzului de domeniu; `INV-CUB` verde pe scenă.
+7. **„Retragerea intrării” e stornoul FCT cu NIR-ul conex încă draft.** Cu
+   NIR-ul operat, stornoul FCT e refuzat de conex indiferent de consum, iar
+   stornoul NIR cu delta zero nu retrage nimic (SC-X-01); cursa reală există
+   numai pe FCT.
+8. **Proba structurală (c) are două jumătăți.** Pe sursă: lista nominală a
+   celor 21 de membri care intră sub blocaj, tranzacțiile deschise numai prin
+   `TranzactieComanda` și prin citirea declarată, cheia într-un singur
+   fișier, cu doi mutanți. Pe captura SQL (SC-X-22): 16 feluri de comandă
+   încep cu blocajul; dry-run-ul, cinci citiri și salvarea fără detalii noi nu
+   îl iau.
+9. **Trei probe vechi presupuneau două comenzi simultan în scriere** și s-au
+   rescris: SC-DES-05, SC-DES-21, SC-IMO-32. Blocajele fine (97001, 97002,
+   `FOR UPDATE` pe documente și perioadă) au rămas neatinse, cum cere (d).
+
+De dus mai departe: X-D5 măsoară durata fiecărei comenzi la k = 64, m = 12,
+adică prețul blocajului; **X-r1** se înregistrează la decizia de închidere,
+cu două fețe — rafinarea pe gestiune și partener și scoaterea salvării de
+draft de sub blocajul comenzilor; la pasul 6, `SCRIERE_OCUPATA` pe ușa HTTP.
+Probele nu exercită ușa HTTP și contextul securizat (același cod de blocaj)
+și nu măsoară debitul.
+
+Validare: integrala **3.361 bugetar / 4.570 privat OK**, zero FAIL,
+`run-verificari/20261003-211029-736/`, pe clonele `.ClaudeX2`; scena de concurență separat pe
+ambele profiluri; `--probe-sursa` verde.
 
 ## Ce NU intră (amânări cu nume)
 

@@ -13,7 +13,7 @@ public static partial class Materializare {
     /// <summary>Stinge o partidă inițială în tranzacția apelantului, fără commit sau document fictiv.</summary>
     public static void Imperecheaza(IObjectSpace os, Document stingator, Guid partida, decimal suma, DateOnly data) {
         ArgumentNullException.ThrowIfNull(stingator);
-        CereTranzactie(os);
+        CereScriere(os);
         var db = ((EFCoreObjectSpace)os).DbContext;
         if (db.Entry(stingator).State != EntityState.Unchanged)
             throw new OperareException($"{StingereDeschidereInvalida}: Stingătorul trebuie să fie salvat.");

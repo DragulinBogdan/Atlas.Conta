@@ -840,12 +840,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         }
 
         // O interogare per salvare, grupată pe document — nu una per linie. // S-D6
-        private void AtribuiePozitii() {
-            var noi = ChangeTracker.Entries<DocumentDetaliu>()
-                .Where(e => e.State == EntityState.Added && e.Entity.Pozitie == 0)
-                .ToList();
-            if (noi.Count == 0)
-                return;
+        private void AtribuiePozitii(List<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<DocumentDetaliu>> noi) {
             var documente = noi.Select(e => e.Entity.DocumentId).Distinct().ToList();
             var maxime = Set<DocumentDetaliu>()
                 .Where(d => documente.Contains(d.DocumentId))
@@ -865,15 +860,51 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             }
         }
 
-        public override int SaveChanges(bool acceptAllChangesOnSuccess) {
-            AtribuiePozitii();
-            return base.SaveChanges(acceptAllChangesOnSuccess);
+        private List<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<DocumentDetaliu>> DetaliiFaraPozitie() =>
+            ChangeTracker.Entries<DocumentDetaliu>()
+                .Where(e => e.State == EntityState.Added && e.Entity.Pozitie == 0)
+                .ToList();
+
+        private static void FaraPozitie(List<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<DocumentDetaliu>> noi) {
+            foreach (var intrare in noi.Where(e => e.State == EntityState.Added))
+                intrare.Entity.Pozitie = 0;
         }
 
-        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
+        // Maximul se citește sub blocajul scrierii, în tranzacția salvării (S-r9).
+        public override int SaveChanges(bool acceptAllChangesOnSuccess) {
+            var noi = DetaliiFaraPozitie();
+            if (noi.Count == 0)
+                return base.SaveChanges(acceptAllChangesOnSuccess);
+            try {
+                using var tranzactie = Motor.TranzactieComanda.Asigura(Database);
+                AtribuiePozitii(noi);
+                var scrise = base.SaveChanges(acceptAllChangesOnSuccess);
+                tranzactie?.Commit();
+                return scrise;
+            }
+            catch {
+                FaraPozitie(noi);
+                throw;
+            }
+        }
+
+        public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
                 CancellationToken cancellationToken = default) {
-            AtribuiePozitii();
-            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            var noi = DetaliiFaraPozitie();
+            if (noi.Count == 0)
+                return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+            try {
+                await using var tranzactie = await Motor.TranzactieComanda.AsiguraAsync(Database, cancellationToken);
+                AtribuiePozitii(noi);
+                var scrise = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+                if (tranzactie != null)
+                    await tranzactie.CommitAsync(cancellationToken);
+                return scrise;
+            }
+            catch {
+                FaraPozitie(noi);
+                throw;
+            }
         }
 
     }

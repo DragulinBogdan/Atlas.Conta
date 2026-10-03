@@ -60,7 +60,7 @@ sealed partial class ScenaImo {
         foreach (var anulare in new[] { true, false }) {
             var plata = Trezorerie(false, 20); Opereaza(plata.Id);
             Task<string> concurent;
-            using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
+            using (var os = Deschide()) using (var tx = ((EFCoreObjectSpace)os).DbContext.Database.BeginTransaction()) {
                 C.Materializare.BlocheazaFise(os);
                 concurent = Task.Run(() => {
                     try {

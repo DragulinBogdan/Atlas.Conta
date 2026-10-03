@@ -75,14 +75,29 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
             Refuza("SC-DES-05", () => Scrie(os), C.Materializare.DeschidereExistenta);
             Verifica("SC-DES-05", "al doilea apel nu adaugă postări", os.ModifiedObjects.OfType<C.Postare>().Count() == cate);
         }
-        using (var a = Deschide()) using (var b = Deschide())
-        using (var ta = TranzactieComanda.Incepe(a)) using (var tb = TranzactieComanda.Incepe(b)) {
-            Scrie(a); Scrie(b); a.CommitChanges(); ta.Commit();
-            try { b.CommitChanges(); tb.Commit(); Verifica("SC-DES-05", "unicitate în bază", false); }
-            catch (Exception e) when (CauzaPg(e) is { SqlState: PostgresErrorCodes.UniqueViolation }) {
-                Verifica("SC-DES-05", "două sesiuni: a doua deschidere refuzată de indexul unic", true);
-            }
+        Task<string> aDoua;
+        using (var a = Deschide()) using (var ta = TranzactieComanda.Incepe(a)) {
+            Scrie(a); a.CommitChanges();
+            aDoua = Task.Run(() => {
+                try { Comanda(b => { using var tb = TranzactieComanda.Incepe(b); Scrie(b); b.CommitChanges(); tb.Commit(); }); return ""; }
+                catch (OperareException e) { return e.Message; }
+            });
+            AsteaptaBlocare(a, aDoua, "SC-DES-05");
+            ta.Commit();
         }
+        Verifica("SC-DES-05", "două sesiuni: a doua deschidere așteaptă prima și e refuzată",
+            aDoua.GetAwaiter().GetResult().Contains(C.Materializare.DeschidereExistenta));
+        Verifica("SC-DES-05", "indexul unic al bazei refuză a doua tranzacție de deschidere", CuSpatiu(os => {
+            var db = ((EFCoreObjectSpace)os).DbContext;
+            using var tx = db.Database.BeginTransaction();
+            try {
+                db.Database.ExecuteSqlInterpolated(
+                    $"""INSERT INTO "Tranzactie" ("ID", "Fel", "Data", "ScrisLa") VALUES ({Guid.NewGuid()}, 4, {Ianuarie}, now())""");
+                return false;
+            }
+            catch (PostgresException e) { return e.SqlState == PostgresErrorCodes.UniqueViolation; }
+            finally { tx.Rollback(); }
+        }));
         Comanda(os => { using var tx = TranzactieComanda.Incepe(os);
             Refuza("SC-DES-05", () => Scrie(os), C.Materializare.DeschidereExistenta); });
         using (var os = Deschide()) {
@@ -281,7 +296,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Rest("SC-DES-21", ref2, Furnizor, 40);
     }
 
-    void AsteaptaBlocare(IObjectSpace os, Task concurent) {
+    void AsteaptaBlocare(IObjectSpace os, Task concurent, string id = "SC-DES-21") {
         var db = ((EFCoreObjectSpace)os).DbContext;
         var pid = ((NpgsqlConnection)db.Database.GetDbConnection()).ProcessID;
         string interogare = null;
@@ -294,8 +309,8 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
             if (interogare != null) break;
             Thread.Sleep(20);
         }
-        Verifica("SC-DES-21", $"comanda concurentă așteaptă blocarea documentului înaintea citirii cubului ({interogare ?? "fără blocare observată"})",
-            interogare?.Contains("FOR UPDATE") == true);
+        Verifica(id, $"comanda concurentă așteaptă blocajul scrierii înaintea citirii cubului ({interogare ?? "fără blocare observată"})",
+            interogare == TranzactieComanda.BlocajScriere);
     }
 
     void Refuzuri() {

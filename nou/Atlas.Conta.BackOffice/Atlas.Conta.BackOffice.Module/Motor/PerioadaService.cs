@@ -331,10 +331,8 @@ public static class PerioadaService {
         return rand;
     }
 
-    // Prima instrucțiune a comenzii (F27-D1): `FOR UPDATE` pe rândul perioadei,
-    // ca `SUM`-ul să nu ruleze înaintea blocării. `FOR SHARE`-ul gardianului de
-    // operare așteaptă aici, iar două operări concurente nu se blochează între
-    // ele (spike A.0).
+    // `FOR UPDATE` pe rândul perioadei, înaintea oricărei citiri a comenzii
+    // (F27-D1); `FOR SHARE`-ul gardianului de operare așteaptă aici.
     static void Blocheaza(IObjectSpace os, int an, int luna) {
         const string sql = """
             SELECT "ID" AS "Value"

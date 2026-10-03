@@ -230,6 +230,7 @@ if (args.Contains("--probe-sursa")) {
     ProbeCititoriCub.VerificaSursa(Check);
     ProbeCititoriRegistre.VerificaSursa(Check, args.Contains("--lista"));
     ProbeTransferCititori.VerificaSursa(Check);
+    ProbeBlocajScriere.VerificaSursa(Check);
     Rezumat();
     return;
 }
@@ -283,6 +284,7 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     ProbeCititoriCub.VerificaSursa(Check);
     ProbeCititoriRegistre.VerificaSursa(Check);
     ProbeTransferCititori.VerificaSursa(Check);
+    ProbeBlocajScriere.VerificaSursa(Check);
 
     if (profil == ProfilContabil.Privat) {
         // Baza privată aparține uneltei: se creează/migrează aici.
@@ -30398,7 +30400,7 @@ void VerificaReviewF27(bool privat) {
             Console.WriteLine($"     MĂSURAT (F27-R11/{eticheta}): T0 → „{rezultate[0] ?? "<a trecut>"}”, "
                 + $"T1 → „{rezultate[1] ?? "<a trecut>"}”, rânduri de istoric {istoric}.");
             Check($"F27-R11 ({eticheta}) două închideri concurente ale lui {luna:00}/{An}: exact una trece, cealaltă "
-                + "așteaptă `FOR UPDATE` și cade CURAT pe „e deja închisă” (422), cu un singur rând de istoric",
+                + "așteaptă și cade CURAT pe „e deja închisă” (422), cu un singur rând de istoric",
                 rezultate.Count(r => r == null) == 1
                 && rezultate.Any(r => r != null && r.Contains("deja închisă")) && istoric == 1);
         }
@@ -30957,6 +30959,9 @@ List<Scena> ScenelePeTip(bool privat) {
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiExplicatii), ["CITIRI"], () => new ScenariiExplicatii(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiConcurenta), ["X"], () => new ScenariiConcurenta(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiCitiri), ["CITIRI"], () => new ScenariiCitiri(

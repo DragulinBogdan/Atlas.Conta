@@ -27,9 +27,18 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   Stingerea prin motor a unei partide inițiale în lei și
   inversarea ei prin storno PLT sunt probate; nu există încă o ușă UI/HTTP
   pentru această comandă. Conectorul 1C rămâne înghețat (091-r4).
-- Serializarea operațiilor concurente și reluarea idempotentă generală a
-  comenzilor nu sunt acoperite complet. Validarea într-o singură operație
-  nu dovedește protecția față de două comenzi simultane. (25f, 42f)
+- Comenzile care scriu sunt seriale per bază (X-D6): doi operatori nu scriu
+  simultan, al doilea așteaptă comanda primului, oricât de străine ar fi
+  documentele lor. Așteaptă și salvarea unui draft care adaugă detalii fără
+  poziție. Durata fiecărei comenzi pe volum nu e încă măsurată (X-D5), iar
+  rafinarea blocajului pe gestiune și partener e restanța X-r1. Peste timpul
+  de comandă al conexiunii (30 s implicit), așteptarea iese ca refuz
+  `SCRIERE_OCUPATA`; pragul nu e configurat separat de timpul comenzilor.
+- Reluarea idempotentă generală a comenzilor nu este acoperită. (42f)
+- Blocajul scrierii îl ia `TranzactieComanda`. O unealtă care își deschide
+  singură tranzacția (`Database.BeginTransaction`) și cheamă motorul nu îl
+  are; proba pe sursă refuză asta în `Module`, WebApi și Blazor, nu și în
+  uneltele standalone. Deschiderea și stingerea ei îl iau oricum, la intrare.
 - Baza nu verifică tipul unui rând: discriminatorul `ClrType` al documentelor
   nu are FK spre `TipDocument.ClrType`, iar un FK spre o frunză (de exemplu
   `Lot.GestiuneId`) acceptă în schemă id-ul oricărui repartitor. Pe ușa
@@ -38,11 +47,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   probele ModelCheck și SQL-ul din `--dump-integritate-tph` rulat după
   import. (89a, 89e)
 - Închiderea unei perioade și operarea unui document în ea sunt serializate
-  numai pe căile care trec prin adaptorul de operare și prin comenzile de
-  generare ale închiderii de TVA și ale amortizării. Uneltele standalone —
-  ModelCheck, Import1C, Migrare — pot chema motorul direct; acesta asigură
-  acum o tranzacție dacă apelantul nu are deja una (097). Aceasta nu adaugă
-  implicit blocajul de închidere al adaptorului API pe toate ușile. (F27-D1)
+  pe toate căile care deschid tranzacția prin `TranzactieComanda`: adaptorul
+  de operare, comenzile de generare, și motorul chemat direct de uneltele
+  standalone, care își asigură tranzacția dacă apelantul nu are una (097).
+  (F27-D1, X-D6)
 - Balanța, balanța pe plan, fișa de cont, soldul de stoc, soldurile pe loturi,
   soldul unei chei, alocarea FIFO, gardianul de sold negativ și soldurile de
   TVA ale închiderii lunare pornesc de la ultima perioadă de referință. Trei
@@ -232,6 +240,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   (`RegistruContabil` pentru închiderea de TVA, `RegistruImobilizari` pentru
   fișă și amortizare). Subiectul permisiunii după tăierea registrelor nu este
   ales. (F22-D5, X-D2; TR-D9)
+- Probele de concurență (X-D6) pun cele două comenzi în coada blocajului
+  ținut de scenă și le lasă să ruleze în ordinea cozii. Dovedesc rezultatul
+  serial și așteptarea pe conexiuni distincte; nu măsoară debitul și nu
+  exercită ușa HTTP sau contextul securizat, unde blocajul e același cod.
 - Explicația deciziei (X-D4) există numai pe tranzacțiile scrise de un
   contract. Împerecherea, desfacerea, stingerea de deschidere și deschiderea
   nu au decizii de explicat și nu au explicație. Un document operat înaintea

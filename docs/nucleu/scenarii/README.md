@@ -82,6 +82,22 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | SC-X-13 | DVI legată la FCT → ajustarea costului pe lot cu taxa vamală → BCS din lot | 86-r1: `Atribuit` pe lot, costul ieșirii după ajustare |
 | SC-X-14 | Faptele fiscale din fiecare scenă, înainte de curățenie: operare → storno/corecție | unicitate Bază/Taxă independent de Carte, absență explicită pe liniile fără TVA; FCT/FCL 100/21, RDC −100/−21, RLF −20/−4,20, DVI 100/21; matricea completă în [DVI-B7](../tr-d7b-dvi-baza-fiscala-contract.md#dvi-b7--probe-obligatorii-înainte-de-activare); implementat în `UnicitateFiscala` și scenele catalogului |
 
+Concurența pe două conexiuni (X-D6, `ScenariiConcurenta`, `--scenarii X`):
+scena ține blocajul scrierii, cele două comenzi intră pe rând în coada lui
+și rulează în ordinea cozii. Verificate pe ambele profiluri, 2026-10-03.
+
+| Id | Comenzile, în ordinea serializată | Rezultatul serial |
+|---|---|---|
+| SC-X-15 | lot 10/100; două BCS de câte 6 | primul trece, al doilea `STOC_INSUFICIENT`, fără efecte; lot 4/40 (SC-BCS-13) |
+| SC-X-16 | lot 3/1,00; două BCS de câte 1 | ambele trec, 0,33 apoi 0,34; soldurile citite din explicații sunt 3/1,00 și 2/0,67; lot 1/0,33 |
+| SC-X-17 | FCT 10 × 10 operată; BCS 4 și stornoul FCT, în ambele ordini | consum → storno: stornoul e refuzat, lot 6/60; storno → consum: consumul e refuzat, lot 0/0 |
+| SC-X-18 | FCT 100; două plăți de 60 împerecheate cu ea | prima trece, a doua e refuzată peste rest; rest factură 40, a doua plată nealocată |
+| SC-X-19 | FCT 100 și PLT 100, aceeași pereche: 40 + 40, apoi 15 + 15 | 40 + 40 trec, rest 20; din 15 + 15 trece prima, rest 5 |
+| SC-X-20 | BCS draft cu o linie; două sesiuni adaugă câte un detaliu | ambele trec; pozițiile sunt 1, 2, 3 (S-r9) |
+| SC-X-21 | lot 10/100; BCS 4 și închiderea lunii lui, în ambele ordini | operare → închidere: ambele trec, snapshot 6/60; închidere → operare: operarea e refuzată, fără efecte, iar snapshot-ul lunii rămâne 6/60 (SC-BCS-14, F27-r8) |
+| SC-X-22 | cele 16 feluri de comandă, pe captura SQL | fiecare începe cu blocajul scrierii; dry-run-ul, citirile și salvarea fără detalii noi nu îl iau |
+| SC-X-23 | comandă care așteaptă peste timpul ei | refuz `SCRIERE_OCUPATA`, fără efecte; după eliberare trece |
+
 ## Tipurile și starea lor
 
 | Cod | Tip | Pe cub din | Fișier | Stare catalog |

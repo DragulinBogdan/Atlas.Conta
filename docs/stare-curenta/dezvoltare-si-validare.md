@@ -135,9 +135,23 @@ ieșit din `Proiectii/`; oracolul pe registrul fiscal stă acum în ModelCheck.
 `ImperecheriProiectii.Asignari` și martorul `RegistruTva` din `TvaProiectii`,
 numite în contract, nu mai există.
 
+Blocajul scrierii (X-D6): proba `X-D6` (`ProbeBlocajScriere.cs`) ține lista
+nominală a membrilor care intră sub blocaj (21 de intrări: comenzile, cele
+două uși din tranzacția apelantului și salvarea detaliilor noi). Un membru
+nou care cheamă `TranzactieComanda.Incepe`/`Asigura` pică proba până e
+adăugat, cu rolul lui; la fel o deschidere de tranzacție în afara
+`TranzactieComanda` și a citirii declarate (`Fiscale.DeschideCitirea`) sau
+cheia blocajului scrisă în alt fișier. Scena `ScenariiConcurenta`
+(`--scenarii X`) probează pe captura SQL că fiecare fel de comandă începe cu
+blocajul și că citirile nu îl iau (SC-X-22), apoi matricea rezultatelor
+seriale pe două conexiuni (SC-X-15…SC-X-21, SC-X-23). O scenă care ține
+`TranzactieComanda.Incepe` pe un ObjectSpace și cheamă pe același fir o
+comandă sau o salvare de detalii noi pe altul se blochează singură până la
+`SCRIERE_OCUPATA`.
+
 `ModelCheck --probe-sursa [--lista]` rulează numai probele pe sursă (104c-S1,
-091-r3, X-D2, N-r8), fără bază; `--lista` tipărește utilizările reale, din
-care se actualizează lista nominală.
+091-r3, X-D2, N-r8, X-D6), fără bază; `--lista` tipărește utilizările reale,
+din care se actualizează lista nominală.
 
 Validarea pasului 1 al gate-ului transversal (X-D2, 2026-10-03): **3.277
 bugetar / 4.485 privat OK**, zero FAIL, exit 0,
@@ -158,6 +172,16 @@ avertismente, 53 de scene per profil sub `INV-CUB`,
 `run-verificari/20261003-182901-833/`, pe clonele `.ClaudeX2`; SC-CIT-99 8/8
 PASS, `run-verificari/x2-expl-http/proba.log`; OpenAPI și tipurile TS
 regenerate, cu schimbări numai aditive în `api-types.ts`.
+
+Pasul 3 al gate-ului transversal (X-D6, 2026-10-03). Fără migrație și fără
+schimbare de contract HTTP. Trei probe existente presupuneau două comenzi
+simultan în secțiunea de scriere și s-au rescris pe modelul serial:
+SC-DES-05 (a doua deschidere așteaptă și e refuzată de domeniu; indexul unic
+se probează direct în bază), SC-DES-21 (așteptarea e pe blocajul scrierii)
+și SC-IMO-32 (blocajul IMO străin se ține fără blocajul scrierii).
+Validare: integrala **3.361 bugetar / 4.570 privat OK**, zero FAIL, exit 0,
+54 de scene per profil sub `INV-CUB`, `run-verificari/20261003-211029-736/`, pe clonele
+`.ClaudeX2`; `--probe-sursa` verde.
 
 TR-D8 nu este închis: restul SAF-T și verificările transversale rămân
 în contract; cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.

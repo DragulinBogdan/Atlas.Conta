@@ -37,6 +37,12 @@ singură contextul motorului; `SubiectInvizibil` iese 404, `RefuzAcces` 403,
 `OperareException` 422. Niciun identificator furnizat de client nu
 autorizează singur accesul prin contextul nesecurizat. (42b, 55b, 80, 104b)
 
+Comenzile care scriu sunt seriale per bază (X-D6): o comandă trimisă cât
+timp alta scrie așteaptă. Dacă așteptarea depășește timpul de comandă al
+conexiunii, răspunsul e 422 cu `SCRIERE_OCUPATA`, fără nimic scris; cererea
+se poate retrimite. Același refuz îl poate da salvarea unui draft care
+adaugă linii.
+
 PUT reprezintă starea completă a formularului: liniile sunt reconciliate,
 iar câmpurile opționale absente se golesc conform contractului. PATCH OData
 este parțial: absența unei proprietăți o păstrează. Enumerările sunt șiruri

@@ -332,9 +332,9 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
   operare, generarea și regenerarea închiderii de TVA și a amortizării,
   închiderea, redeschiderea și reconstrucția perioadei. Gardianul de perioadă
   citește starea lunii blocând rândul în citire, iar comenzile perioadei îl
-  blochează în scriere înainte de orice calcul. Cele două comenzi se
-  serializează astfel între ele, iar două operări concurente nu se blochează
-  una pe alta. (F27-D1)
+  blochează în scriere înainte de orice calcul. (F27-D1) Tranzacția comenzii
+  începe cu blocajul scrierii, deci comenzile se serializează toate între
+  ele; vezi „Scrierea serială per bază”. (X-D6)
 
 ### Soldurile materializate la închidere
 
@@ -1281,6 +1281,43 @@ Dry-run-ul nu persistă nimic. O declarație pe care nucleul nu o poate
 construi (`ArgumentException`) sau un declarant care nu întoarce nici
 declarație, nici refuz dau refuzul `DECLARATIE_INVALIDA`, pe dry-run și pe
 operare, în aceeași formă ca orice refuz al declarației (S-r11).
+
+### Scrierea serială per bază (X-D6, 2026-10-03)
+
+- **O singură comandă scrie la un moment dat.** Tranzacția unei comenzi se
+  deschide prin `TranzactieComanda.Incepe`, care ia ca primă instrucțiune
+  blocajul scrierii — un `pg_advisory_xact_lock` cu cheie constantă
+  (`TranzactieComanda.BlocajScriere`), ținut până la commit sau rollback.
+  Blocajul protejează citirea care decide valoarea, nu doar scrierea: soldul
+  lotului, restul partidei, starea perioadei și planul registrelor se citesc
+  după el, pe starea lăsată de comanda precedentă.
+- **Cine îl ia**: operarea, anularea, stornoul și corecția; împerecherea,
+  desfacerea și ștergerea ei; închiderea, redeschiderea și reconstrucția
+  perioadei; generarea și regenerarea AMO și ITV; confirmarea depunerii;
+  deschiderea și stingerea ei, care rulează în tranzacția apelantului și iau
+  blocajul la intrare (`Materializare.CereScriere`); salvarea care adaugă
+  detalii fără poziție. Lista e nominală și probată pe sursă.
+- **Cine nu îl ia**: citirile, dry-run-ul (`Valideaza`, `Refuzuri`) și
+  salvarea unui draft fără detalii noi.
+- **Ordinea blocajelor** e „scrierea, apoi restul”: perioada (F27-D1),
+  documentele stingerii, suportul și fișele IMO (97001), sursa recepției
+  (97002) și depunerile rămân și se iau după blocajul scrierii, deci nu pot
+  forma cicluri între comenzi.
+- **Așteptarea** durează cât comanda din față. Dacă depășește timpul de
+  comandă al conexiunii, a doua comandă primește refuzul `SCRIERE_OCUPATA`
+  (422), fără nimic scris, și se poate relua.
+- **`Pozitie` pe detalii** (S-r9): salvarea care adaugă detalii fără poziție
+  deschide tranzacția ei, ia blocajul scrierii și abia apoi citește maximul
+  pe document; două sesiuni care adaugă pe același document primesc poziții
+  distincte, în ordinea intrării.
+- **Rezultatele seriale probate pe două conexiuni** (SC-X-15…SC-X-23, ambele
+  profiluri): două consumuri peste lot — un succes și `STOC_INSUFICIENT`;
+  două consumuri care încap pe 3/1,00 — 0,33 și 0,34, cu soldurile citite
+  3/1,00 și 2/0,67 în explicațiile persistate; consum contra stornoul
+  recepției — un succes și un refuz, în ambele ordini; două stingeri peste
+  restul aceleiași partide — un succes și un refuz; aceeași pereche — după
+  sume; operare, apoi închidere — ambele trec și snapshot-ul poartă
+  operarea; închidere, apoi operare — operarea e refuzată.
 
 ### Gardurile declaranților, ca dată sau ca regulă
 
