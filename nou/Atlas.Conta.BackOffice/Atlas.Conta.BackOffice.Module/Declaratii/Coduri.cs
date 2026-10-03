@@ -50,4 +50,11 @@ public static class CoduriRefuz {
     public const string PozitieFaraFisaNegativa = "POZITIE_FARA_FISA_NEGATIVA";
     public const string SuportInsuficient = "SUPORT_INSUFICIENT";
     public const string SuportCuDependenti = "SUPORT_CU_DEPENDENTI";
+    public const string DeclaratieInvalida = "DECLARATIE_INVALIDA";
+}
+
+/// <summary>Sursele unei <c>ValoareDeclarata</c>: de unde vine valoarea ieșirii care nu se evaluează din sold.</summary>
+public static class SurseValoare {
+    public const string Linie = "Linie";
+    public const string Receptie = "Receptie";
 }

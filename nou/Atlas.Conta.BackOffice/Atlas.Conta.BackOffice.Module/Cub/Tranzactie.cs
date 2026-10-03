@@ -15,5 +15,11 @@ public class Tranzactie {
 
     public virtual DateTime ScrisLa { get; set; }
 
+    /// <summary>Explicația contractului (<see cref="Cub.Explicatie"/>), pe prima lui tranzacție scrisă.</summary>
+    public virtual string Explicatie { get; set; }
+
+    /// <summary>Tranzacția aceluiași contract care poartă explicația.</summary>
+    public virtual Guid? ExplicatieDinId { get; set; }
+
     public virtual ObservableCollection<Postare> Postari { get; set; } = new();
 }

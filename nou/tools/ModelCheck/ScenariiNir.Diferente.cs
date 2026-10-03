@@ -56,6 +56,10 @@ sealed partial class ScenariiNir {
         var stamp = Amprenta(f.Id);
         Verifica("SC-NIR-18", "dry-run parțial acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(nir)).Count == 0);
         FaraEfecte("SC-NIR-18", nir); Opereaza(nir); Delta("SC-NIR-18", nir, Clarificare, 25);
+        var lipsa = Explicatia(nir, N.FelTranzactie.Operare).Origini.Single().Explicatie.Linii().Single().Iesiri.Single();
+        Verifica("SC-CIT-98", "NIR-minus: ieșirea 1/25 e declarată din recepția facturii, fără sold citit",
+            lipsa is { Cantitate: 1, Valoare: 25, SoldInainte: null, Sursa: SurseValoare.Receptie }
+            && lipsa.Unitate.Id == f.Linii[0].Lot);
         Sold("SC-NIR-18", f.Linii[0], 3, 75); Datorie("SC-NIR-18", f.Id, 100);
         Verifica("SC-NIR-18", "factura intactă", stamp == Amprenta(f.Id));
         Refuza("SC-NIR-18", () => Anuleaza(f.Id), "conex");

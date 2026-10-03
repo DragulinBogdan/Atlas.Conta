@@ -57,6 +57,8 @@ public sealed class DeclarantReturFurnizor : IDeclarant {
             // T-D6: nota fiscală păstrează q × prețul lotului, inclusiv la golire.
             // Nu se aplică Evaluare.Iesire; eventualul reziduu rămâne explicit.
             miscari.Add(new(tert, intern, l.Cantitate, 0m, l.Valoare, new(doc.Id, l.Id)));
+            if (l.Cantitate < 0m)
+                decizii.Add(new N.ValoareDeclarata(l.Id, intern.Unitate!, -l.Cantitate, -l.Valoare, SurseValoare.Linie));
             Partide.Numeste(operand, intern.Cont, doc.Primitor.Id, l.Id, partide, decizii);
             Partide.Numeste(operand, tert.Cont, doc.Primitor.Id, l.Id, partide, decizii);
             var impozit = Fiscal.Impozitul(operand, l, fiscale[i], taxa, DirectieTva.Deductibil, refuzuri);

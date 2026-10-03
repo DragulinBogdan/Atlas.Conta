@@ -9,6 +9,9 @@ public sealed record AlocareFifo(Guid Linie, Unitate Unitate, decimal Masura) : 
 
 public sealed record ValoareIesire(Guid Linie, Unitate Unitate, decimal Cantitate, decimal Valoare) : Decizie;
 
+/// <summary>Ieșirea a cărei valoare nu vine din soldul unității: o dă sursa numită.</summary>
+public sealed record ValoareDeclarata(Guid Linie, Unitate Unitate, decimal Cantitate, decimal Valoare, string Sursa) : Decizie;
+
 public sealed record PartidaDeschisa(Guid Linie, Unitate Unitate) : Decizie;
 
 public sealed record ContRezolvat(Guid Linie, Guid Cont, string Sursa) : Decizie;

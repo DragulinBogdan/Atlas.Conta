@@ -94,6 +94,24 @@ SC-CIT-102): au valoare zero, iar consumatorul ei filtrează pe conturile
 imobilizărilor. Proba structurală `N-r8` cere regimul declarat pentru orice
 intrare publică nouă.
 
+### Explicația deciziei — X-D4 (2026-10-03)
+
+Așteptările sunt scrise de mână din regula evaluării: ieșirea ia
+`q × sold / cantitate`, ultima ieșire ia restul, stingerea ia partidele în
+ordinea deschiderii. Explicația se citește prin `Cub.Citiri.Explicatii`, nu
+din contractul recalculat.
+
+| ID | Scenariu | Așteptare | Stare |
+|---|---|---|---|
+| SC-CIT-96 | Recepție 3 × 0,333333 și 10 × 12,50; BCS cu liniile 1 (lot ieftin), 4 (lot scump), 1 (lot ieftin); BTR 2 din lotul scump, după bon; storno al amândurora; alt BCS operat și anulat | dry-run-ul nu persistă nimic; o singură explicație, pe `Operare`, cu declarantul, perioada, versiunea politicii și două solduri citite; pe linii: 0,33 din 1,00/3, 50 din 125/10, 0,34 din soldul curent 0,67/2; BTR: purtătorul e `Transfer`, decizia +2/+25 din soldul net 75/6 explică sursa postată −2/−25; `Storno` nu are explicație proprie, iar cititorul întoarce explicația originalului; baza refuză explicația pe `Storno` (`CK_Tranzactie_Explicatie`); anularea nu lasă nici tranzacție, nici explicație; forma persistată se citește înapoi identic, și după trecerea prin `jsonb`; versiune, decizie sau ipoteză necunoscută = refuz | verificat pe ambele profiluri |
+| SC-CIT-97 | Două facturi de 60 și 40 ale aceluiași furnizor; NTC cu liniile 70 și 50 pe contul furnizorului; separat, plată împerecheată cu factura | linia 70 stinge 60 + 10, linia 50 stinge 30 și deschide partida proprie pentru 20; soldurile citite ale partidelor sunt −60 și −40; transferul împerecherii nu are explicație, operarea plății o are pe a ei | verificat pe ambele profiluri |
+| SC-CIT-98 | ASM mixt (consum 60 pe contul produsului, consum 40 pe alt cont); ASM cu Δ de rotunjire; RLF 1 bucată la golirea lotului 3 × 10,006667 după două ieșiri; NIR conex care constată 3 din 4 × 25 | ASM mixt: o explicație, pe `Operare`, referită de `Transfer` prin `ExplicatieDinId`; consumurile 60 și 40 evaluate din soldurile 60 și 40; stornoul inversează ambele tranzacții și are o singură explicație de origine; Δ-ul absorbit e în explicația purtătorului `Transfer`; RLF: 1/10,01 `ValoareDeclarata` cu sursa `Linie`, fără sold citit, reziduul −0,01 rămâne pe lot; NIR-minus: 1/25 `ValoareDeclarata` cu sursa `Receptie` | verificat pe ambele profiluri; RLF numai privat |
+| SC-CIT-99 | HTTP pe host viu, bază privată clonată: FCT 10 × 10 și 5 × 5, BCS 4 și 1, apoi storno | `Admin` și `Cititor`: 200, 40 din 100/10 și 5 din 25/5; `User` și un id inexistent: același 404; trei roluri cu citire implicită și o restricție — membrul `Postare.Valoare`, rândul `DocumentDetaliu` cu cantitatea 1, rândurile `Postare` dinaintea datei bonului: 403 `EXPLICATIE_ACCES_INCOMPLET` cu tipul restricționat și fără nicio valoare, linie sau lot; tranzacția `Storno`: 200 cu explicația originalului | verificat (`nou/tools/ProbeHttp/explicatii.py`) |
+
+Invariantul de audit rulează în `INV-CUB`, pe faptele fiecărei scene a
+catalogului, cu șapte mutanți proprii. S-r11 e probată în scena SC-CIT-96:
+o cantitate cu patru zecimale, necomisă, dă refuzul `DECLARATIE_INVALIDA`.
+
 ### Cititorul declarat — C104 pasul 2, 2026-09-27
 
 SC-CIT-95: în tranzacția SC-CIT-76, după alterarea snapshot-ului lui

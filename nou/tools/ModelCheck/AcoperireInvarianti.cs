@@ -20,6 +20,13 @@ static class AcoperireInvarianti {
         new("IMO-FISA", "fără fișă pe cub", FisaPeAltaUnitate),
         new("IMO-CAUZA", "fără cauză", FisaFaraLinie),
         new("IMO-REGISTRU", "diferă de cub", RegistruImobilizariDiferit),
+        new("EXPLICATIE-LIPSA", C.Citiri.Explicatii.Lipsa, ExplicatieStearsa),
+        new("EXPLICATIE-REFERINTA", C.Citiri.Explicatii.Referinta, ExplicatieReferitaGresit),
+        new("EXPLICATIE-STORNO", C.Citiri.Explicatii.Storno, InversaPeLotDiferita),
+        new("EXPLICATIE-IESIRE", C.Citiri.Explicatii.Iesire, (os, db) => Rescrie(os, db, ValoareIesireDiferita)),
+        new("EXPLICATIE-DECLARATA", C.Citiri.Explicatii.Iesire, (os, db) => Rescrie(os, db, Fara<N.ValoareDeclarata>)),
+        new("EXPLICATIE-EVALUARE", C.Citiri.Explicatii.Evaluare, (os, db) => Rescrie(os, db, SoldCititDiferit)),
+        new("EXPLICATIE-STINGERE", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, Fara<N.AlocareFifo>)),
     ];
 
     static readonly HashSet<string> ucise = [];
@@ -130,6 +137,64 @@ static class AcoperireInvarianti {
         if (tinta == null) return false;
         db.Set<RegistruImobilizari>().Where(r => r.ID == tinta)
             .ExecuteUpdate(s => s.SetProperty(r => r.Valoare, r => r.Valoare + 1));
+        return true;
+    }
+
+    static bool Rescrie(IObjectSpace os, DbContext db, Func<C.Explicatie, C.Explicatie> schimba) {
+        foreach (var t in os.GetObjectsQuery<C.Tranzactie>().Where(t => t.Explicatie != null)
+                .OrderBy(t => t.ID).Select(t => new { t.ID, t.Explicatie }).ToList()) {
+            if (schimba(C.Explicatie.Citeste(t.Explicatie)) is not { } schimbata) continue;
+            var json = schimbata.Scrie();
+            db.Set<C.Tranzactie>().Where(x => x.ID == t.ID).ExecuteUpdate(s => s.SetProperty(x => x.Explicatie, json));
+            return true;
+        }
+        return false;
+    }
+
+    static C.Explicatie ValoareIesireDiferita(C.Explicatie e) {
+        var tinta = e.Decizii.OfType<N.ValoareIesire>().FirstOrDefault();
+        return tinta == null ? null : e with {
+            Decizii = [.. e.Decizii.Select(d => ReferenceEquals(d, tinta) ? tinta with { Valoare = tinta.Valoare + 0.01m } : d)],
+        };
+    }
+
+    static C.Explicatie SoldCititDiferit(C.Explicatie e) {
+        var iesire = e.Decizii.OfType<N.ValoareIesire>().FirstOrDefault();
+        var tinta = iesire == null ? null : e.Ipoteze.OfType<N.SoldUnitateCitit>()
+            .FirstOrDefault(i => i.Unitate.Id == iesire.Unitate.Id && i.Unitate.Cont == iesire.Unitate.Cont);
+        return tinta == null ? null : e with {
+            Ipoteze = [.. e.Ipoteze.Select(i => ReferenceEquals(i, tinta)
+                ? tinta with { Sold = tinta.Sold with { Debit = tinta.Sold.Debit + 1000m } } : i)],
+        };
+    }
+
+    static C.Explicatie Fara<T>(C.Explicatie e) where T : N.Decizie =>
+        e.Decizii.OfType<T>().Any() ? e with { Decizii = [.. e.Decizii.Where(d => d is not T)] } : null;
+
+    static bool ExplicatieStearsa(IObjectSpace os, DbContext db) {
+        var cuIesiri = os.GetObjectsQuery<C.Postare>().Where(p => p.FelUnitate == N.FelUnitate.Lot && p.Cantitate < 0m
+            && p.Tranzactie.Explicatie != null).Select(p => (Guid?)p.TranzactieId).FirstOrDefault();
+        return cuIesiri != null && db.Set<C.Tranzactie>().Where(t => t.ID == cuIesiri)
+            .ExecuteUpdate(s => s.SetProperty(t => t.Explicatie, (string)null)) > 0;
+    }
+
+    static bool ExplicatieReferitaGresit(IObjectSpace os, DbContext db) {
+        var referinta = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.ExplicatieDinId != null)
+            .Select(t => new { t.ID, t.DocumentId }).FirstOrDefault();
+        if (referinta == null) return false;
+        var strain = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.Explicatie != null && t.DocumentId != referinta.DocumentId)
+            .Select(t => (Guid?)t.ID).FirstOrDefault();
+        return strain != null && db.Set<C.Tranzactie>().Where(t => t.ID == referinta.ID)
+            .ExecuteUpdate(s => s.SetProperty(t => t.ExplicatieDinId, strain)) > 0;
+    }
+
+    static bool InversaPeLotDiferita(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Storno && p.FelUnitate == N.FelUnitate.Lot)
+            .Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Cantitate, p => p.Cantitate + 1m));
         return true;
     }
 }

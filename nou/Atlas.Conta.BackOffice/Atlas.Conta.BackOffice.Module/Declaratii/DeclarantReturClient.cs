@@ -63,6 +63,8 @@ public sealed class DeclarantReturClient : IDeclarant {
                     contare.ContCredit, null, lot.ProdusId, lot.Data) };
                 debit = debit with { Gestiune = N.GestiuniVirtuale.Client, Partener = doc.Predator.Id };
                 miscari.Add(new(credit, debit, l.Cantitate, 0m, l.Valoare, new(doc.Id, l.Id)));
+                if (l.Cantitate > 0m)
+                    decizii.Add(new N.ValoareDeclarata(l.Id, credit.Unitate!, l.Cantitate, l.Valoare, SurseValoare.Linie));
             }
             else {
                 if (fiscale[i] is { } tip) credit = Fiscal.CuFapt(operand, credit, tip, N.RolTva.Baza);

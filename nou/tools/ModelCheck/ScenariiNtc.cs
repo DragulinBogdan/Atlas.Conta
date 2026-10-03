@@ -97,6 +97,15 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
             [.. R(n, 0, ContFurnizor, Serviciu, 60, ud: p1, pd: Furnizor), .. R(n, 0, ContFurnizor, Serviciu, 10, ud: p2, pd: Furnizor),
              .. R(n, 1, ContFurnizor, Serviciu, 30, ud: p2, pd: Furnizor), .. R(n, 1, ContFurnizor, Serviciu, 20, ud: proprie, pd: Furnizor)]);
         SoldPartida("SC-NTC-08", p1, Ianuarie, 0); SoldPartida("SC-NTC-08", p2, Ianuarie, 0); SoldPartida("SC-NTC-08", proprie, Ianuarie, 20);
+        var stinse = Explicatia(n.Id, N.FelTranzactie.Operare).Origini.Single().Explicatie.Linii();
+        Console.WriteLine("     MĂSURAT (SC-CIT-97): " + string.Join("; ", stinse.Select(l =>
+            string.Join(" + ", l.Stingeri.Select(s => $"{s.Masura} din sold {s.SoldCitit?.Net}")) + $", partide deschise {l.PartideDeschise.Count}")));
+        Verifica("SC-CIT-97", "NTC FIFO: linia 70 stinge 60 + 10, linia 50 stinge 30 și deschide partida proprie; soldurile citite −60 și −40",
+            stinse.Count == 2 && stinse.All(l => l.Iesiri.Count == 0)
+            && stinse[0].Stingeri.Select(s => (s.Unitate.Id, s.Masura)).SequenceEqual([(p1, 60m), (p2, 10m)])
+            && stinse[0].Stingeri[0].SoldCitit?.Net == -60 && stinse[0].Stingeri[1].SoldCitit?.Net == -40
+            && stinse[1].Stingeri.Select(s => (s.Unitate.Id, s.Masura)).SequenceEqual([(p2, 30m)])
+            && stinse[1].PartideDeschise.Single().Unitate.Id == proprie);
 
         Furnizor = PartenerNou(); f1 = Fct(60, 3); f2 = Fct(40, 10);
         n = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 75, Furnizor)); Opereaza(n.Id);

@@ -97,6 +97,10 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
         var r = Retur(new LinieRlfScena(rez, 1)); Opereaza(r.Id);
         Postari("SC-RLF-05", r.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(r, 0, -1, -10.01m));
         SoldLot("SC-RLF-05", rez.Lot!.Value, Magazie, Ianuarie, 0, -.01m);
+        var declarata = Explicatia(r.Id, N.FelTranzactie.Operare).Origini.Single().Explicatie.Linii().Single().Iesiri.Single();
+        Verifica("SC-CIT-98", "RLF la golire: ieșirea 1/10,01 e declarată de linie, fără sold citit; reziduul −0,01 rămâne pe lot",
+            declarata is { Cantitate: 1, Valoare: 10.01m, SoldInainte: null, Sursa: SurseValoare.Linie }
+            && declarata.Unitate.Id == rez.Lot);
         SoldPartida("SC-RLF-05", P(r.Id), Ianuarie, 10.01m);
         var intact = Amprenta(r.Id);
         var rdc = CuSpatiu(os => {

@@ -796,9 +796,17 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Indexii și restul FK-urilor lui `Postare` stau pe PARTIȚII, în SQL. // S-D2, S-r4
         private static void AplicaCub(ModelBuilder modelBuilder) {
             modelBuilder.Entity<Cub.Tranzactie>(b => {
-                b.ToTable("Tranzactie");
+                b.ToTable("Tranzactie", t => {
+                    t.HasCheckConstraint("CK_Tranzactie_Explicatie",
+                        "\"Explicatie\" IS NULL OR (\"ExplicatieDinId\" IS NULL AND \"DocumentId\" IS NOT NULL AND \"Fel\" IN (1, 3))");
+                    t.HasCheckConstraint("CK_Tranzactie_ExplicatieDin",
+                        "\"ExplicatieDinId\" IS NULL OR (\"DocumentId\" IS NOT NULL AND \"Fel\" = 3)");
+                });
                 b.HasKey(t => t.ID);
                 b.Property(t => t.Fel).HasConversion<short>();
+                b.Property(t => t.Explicatie).HasColumnType("jsonb");
+                b.HasOne<Cub.Tranzactie>().WithMany().HasForeignKey(t => t.ExplicatieDinId)
+                    .OnDelete(DeleteBehavior.NoAction);
                 b.HasOne<Document>().WithMany().HasForeignKey(t => t.DocumentId)
                     .OnDelete(DeleteBehavior.NoAction);
                 b.HasIndex(t => t.DocumentId);

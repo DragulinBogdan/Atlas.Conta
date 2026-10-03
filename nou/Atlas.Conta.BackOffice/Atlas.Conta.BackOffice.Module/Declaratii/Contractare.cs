@@ -27,6 +27,9 @@ public static class Contractare {
             catch (N.RefuzException e) {
                 refuzuri.Add(e.Refuz);
             }
+            catch (ArgumentException e) {
+                refuzuri.Add(new(CoduriRefuz.DeclaratieInvalida, e.Message, null));
+            }
         if (refuzuri.Count > 0)
             return N.Contract.Refuza(refuzuri, [], [], rotunjire.JumatatiDeBan);
         // Constatarea validată fără diferențe nu inventează postări economice.
@@ -34,10 +37,17 @@ public static class Contractare {
         if (declaratie is null && declarant.PermiteDeclaratieFaraMiscari(operand))
             return N.Contract.Accepta([new(N.FelTranzactie.Operare, doc.DataInregistrare, doc.ID, [])],
                 [], [operand.PerioadaDeschisa, operand.VersiunePolitica], rotunjire.JumatatiDeBan);
-        return declaratie is null
-            ? throw new InvalidOperationException(
-                $"Declarantul {declarant.GetType().Name} a întors null fără niciun refuz.")
-            : N.Motor.Opereaza(declaratie, rotunjire);
+        if (declaratie is null)
+            return Invalida($"Declarantul {declarant.GetType().Name} a întors null fără niciun refuz.");
+        try {
+            return N.Motor.Opereaza(declaratie, rotunjire);
+        }
+        catch (ArgumentException e) {
+            return Invalida(e.Message);
+        }
+
+        N.Contract Invalida(string mesaj) =>
+            N.Contract.Refuza([new(CoduriRefuz.DeclaratieInvalida, mesaj, null)], [], [], rotunjire.JumatatiDeBan);
     }
 
     /// <summary>Textul unui refuz pentru operator: codul stabil, mesajul, linia dacă e a ei.</summary>

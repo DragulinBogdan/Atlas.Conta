@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-09-27.** [Index](README.md)
+**Actualizat: 2026-10-03.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -465,3 +465,24 @@ ecranului S compară fiecare poziție cu postările pe lot ale lunii și stocul
 pe cont cu soldul contabil; diferența pe cont se sparge în „(sold inițial)”
 (din snapshot) și componentele lunii pe tipul documentului, fără a citi
 istoricul (B8-Q3). (SAF-D4, S2-D5, S3-D6)
+
+## Explicația deciziei (X-D4)
+
+`GET api/proiectii/explicatii/{tranzactieId}` întoarce `ExplicatieTranzactieDto`:
+felul tranzacției, documentul și `Origini` — explicația proprie, cea referită
+sau, la storno, ale originalelor; lista e goală pe împerechere, desfacere și
+deschidere. Fiecare origine are purtătorul, declarantul, versiunea, perioada,
+politica și liniile cu ieșirile (unitate, cantitate, valoare, soldul dinainte
+sau sursa valorii declarate), stingerile (partidă, măsură, sold citit),
+conturile rezolvate, partidele deschise și absorbțiile. Nu există pagină
+React (104d).
+
+Tranzacția pe care contextul securizat nu o vede dă 404, ca una inexistentă.
+Explicația dezvăluie solduri întregi ale unităților și valori ale altor linii,
+deci cere citire necondiționată pe `ExplicatieAcces.Citite` (`Tranzactie`,
+`Postare`, `Document`, `DocumentDetaliu`, `Lot`, `Produs`, `Cont`,
+`Repartitor`, cu toate tipurile mapate în aceleași tabele). Orice criteriu de
+rând sau de membru dă 403 `EXPLICATIE_ACCES_INCOMPLET` înaintea citirii, cu
+tipurile și membrii restricționați în corp și fără nicio valoare; nu există
+proiecție parțială. Mecanismul e `Api.AccesComplet`, comun cu D406
+(`SaftAcces` îl apelează cu listele lui).

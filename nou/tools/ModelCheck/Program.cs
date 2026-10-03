@@ -30956,6 +30956,9 @@ List<Scena> ScenelePeTip(bool privat) {
         new(nameof(ScenariiSnapshotStoc), ["CITIRI"], () => new ScenariiSnapshotStoc(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiExplicatii), ["CITIRI"], () => new ScenariiExplicatii(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiCitiri), ["CITIRI"], () => new ScenariiCitiri(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),

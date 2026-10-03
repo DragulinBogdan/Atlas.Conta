@@ -51,6 +51,7 @@ public static class Invarianti {
         Partide.VerificaAcoperire(os);
         Proiectii.ImperecheriProiectii.VerificaAcoperire(os);
         Imobilizari.VerificaAcoperire(os);
+        Explicatii.VerificaAcoperire(os);
     }
 
     public static void VerificaProvenienta(IObjectSpace os) {

@@ -15,7 +15,12 @@ produse, inclusiv stornourile. Fiecare ramură fără probă proprie are un
 mutant într-o tranzacție anulată, rulat o dată per profil pe prima scenă cu
 faptele potrivite: `DESCHIDERE-EGALA` (registrul istoric egal cu deschiderea
 cubului trece), `DESCHIDERE`, `PARTIDE` (partidă fără partener), `POLITICA`
-(totalul de decontare), `IMO-FISA`, `IMO-CAUZA`, `IMO-REGISTRU`. Ramurile
+(totalul de decontare), `IMO-FISA`, `IMO-CAUZA`, `IMO-REGISTRU` și cei șapte
+ai explicației (X-D4): `EXPLICATIE-LIPSA` (explicația ștearsă),
+`-REFERINTA` (referința mutată pe alt document), `-STORNO` (cantitatea
+inversei pe lot schimbată), `-IESIRE` (valoarea unei `ValoareIesire` +0,01),
+`-DECLARATA` (`ValoareDeclarata` scoasă), `-EVALUARE` (soldul citit +1.000),
+`-STINGERE` (`AlocareFifo` scoase). Ramurile
 acoperirii registru ↔ cub, echilibrului și provenienței au probele SC-CIT-23,
 SC-CIT-34 și SC-CIT-10. La final, profilul cere cel puțin o scenă verificată și,
 pe integrală, toate ramurile ucise, iar purja nu lasă postări. La prima
@@ -139,6 +144,20 @@ bugetar / 4.485 privat OK**, zero FAIL, exit 0,
 `run-verificari/20261003-173905-898/`, pe clonele `.ClaudeX1`. Clona bugetară
 a cerut aplicarea a două migrații: baza-sursă `Atlas.Conta.BackOffice` este în
 urma codului cu `IntervaleTvaSiAvans` și `S3CategorieStoc`.
+
+Pasul 2 al gate-ului transversal (X-D4, 2026-10-03). Migrația
+`ExplicatieTranzactie` e scrisă în SQL (S-r4): două coloane, două CHECK-uri,
+FK-ul și indexul lui pe `Tranzactie`; relația e și în modelul EF, ca
+inserarea și ștergerea să respecte ordinea. `Explicatii.VerificaAcoperire`
+intră în lista N-r8 ca martor. Proba HTTP `nou/tools/ProbeHttp/explicatii.py`
+rulează pe o clonă de unică folosință a unei baze private cu seed: bonul
+rămâne stornat, deci baza nu se refolosește (rețeta:
+`run-verificari/x2-expl-http.ps1`). Validare: nucleu **180/180**; integrala
+**3.309 bugetar / 4.518 privat OK**, zero FAIL, exit 0, build fără
+avertismente, 53 de scene per profil sub `INV-CUB`,
+`run-verificari/20261003-182901-833/`, pe clonele `.ClaudeX2`; SC-CIT-99 8/8
+PASS, `run-verificari/x2-expl-http/proba.log`; OpenAPI și tipurile TS
+regenerate, cu schimbări numai aditive în `api-types.ts`.
 
 TR-D8 nu este închis: restul SAF-T și verificările transversale rămân
 în contract; cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.

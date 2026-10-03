@@ -92,6 +92,18 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         foreach (var cheie in matriceFiscale.Keys.Where(k => k.Doc == doc).ToArray()) matriceFiscale.Remove(cheie);
     }
     protected void InchideIanuarie() => Comanda(os => inchide(os, An, 1));
+
+    protected sealed record TranzactieScena(Guid Id, N.FelTranzactie Fel, bool Explicata, Guid? Din);
+
+    protected List<TranzactieScena> Tranzactii(Guid doc) => CuSpatiu(os => os.GetObjectsQuery<C.Tranzactie>()
+        .Where(t => t.DocumentId == doc).OrderBy(t => t.ScrisLa).ThenBy(t => t.Fel)
+        .Select(t => new { t.ID, t.Fel, Explicata = t.Explicatie != null, t.ExplicatieDinId }).ToList()
+        .Select(t => new TranzactieScena(t.ID, t.Fel, t.Explicata, t.ExplicatieDinId)).ToList());
+
+    protected C.Citiri.ExplicatieTranzactie Explicatia(Guid doc, N.FelTranzactie fel) {
+        var tranzactie = Tranzactii(doc).Last(t => t.Fel == fel).Id;
+        return CuSpatiu(os => C.Citiri.Explicatii.PeTranzactie(os, tranzactie));
+    }
     protected void Inchide(int an, int luna) => Comanda(os => inchide(os, an, luna));
     protected Guid Corecteaza(Guid doc) {
         var inainte = Amprenta(doc);

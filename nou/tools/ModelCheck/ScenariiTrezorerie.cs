@@ -49,6 +49,10 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         TransferPartida("SC-X-04", p2.Id, f.Id, ContFurnizor, Furnizor, N.Latura.Debit, -60, Februarie);
         Postari("SC-X-04", p2.Id, N.FelTranzactie.Storno, Februarie, Randuri(p2, false, -60));
         TransferPeCititori("SC-CIT-101", "Partide.Postari", 6, 0, 6, p1.Id, p2.Id);
+        Verifica("SC-CIT-97", "transferul împerecherii nu are explicație; operarea plății o are pe a ei",
+            Tranzactii(p1.Id).Where(t => t.Fel == N.FelTranzactie.Transfer).All(t => !t.Explicata && t.Din == null)
+            && Explicatia(p1.Id, N.FelTranzactie.Transfer).Origini.Count == 0
+            && Explicatia(p1.Id, N.FelTranzactie.Operare).Origini.Count == 1);
         Verifica("SC-X-04", "factura nu este rescrisă; împerecherea netă rămasă40", Amprenta(f.Id) == amprenta
             && CuSpatiu(os => os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentId == f.Id).Sum(i => i.Suma)) == 40);
         {

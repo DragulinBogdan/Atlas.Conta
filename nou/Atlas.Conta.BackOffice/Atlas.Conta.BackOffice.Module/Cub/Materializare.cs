@@ -30,8 +30,12 @@ public static partial class Materializare {
         ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
         Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
         VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: true);
-        foreach (var tranzactie in contract.Tranzactii.Where(t => t.Postari.Count > 0))
-            Scrie(os, doc.ID, tranzactie);
+        var explicatie = Explicatie.Din(contract, doc.Declarant().GetType().Name).Scrie();
+        Guid? purtator = null;
+        foreach (var tranzactie in contract.Tranzactii.Where(t => t.Postari.Count > 0)) {
+            var id = Scrie(os, doc.ID, tranzactie, purtator == null ? explicatie : null, purtator);
+            purtator ??= id;
+        }
     }
 
     /// <summary>Refuzurile declarației pentru dry-run (S-D4): citește, nu scrie nimic.</summary>
@@ -271,7 +275,8 @@ public static partial class Materializare {
                 + $"{MotorOperare.ClasaReala(doc).Name} nu declară.")
             : Contractare.Contracteaza(os, doc);
 
-    static Guid Scrie(IObjectSpace os, Guid? documentId, N.Tranzactie tranzactie) {
+    static Guid Scrie(IObjectSpace os, Guid? documentId, N.Tranzactie tranzactie,
+            string explicatie = null, Guid? explicatieDin = null) {
         var tracker = (os as EFCoreObjectSpace)?.DbContext.ChangeTracker;
         var incarcare = tracker?.LazyLoadingEnabled;
         try {
@@ -281,6 +286,8 @@ public static partial class Materializare {
             rand.Fel = tranzactie.Fel;
             rand.Data = tranzactie.Data;
             rand.ScrisLa = DateTime.UtcNow;
+            rand.Explicatie = explicatie;
+            rand.ExplicatieDinId = explicatieDin;
             foreach (var postare in tranzactie.Postari)
                 Randuri.Scrie(postare, rand, os.CreateObject<Postare>());
             return rand.ID;

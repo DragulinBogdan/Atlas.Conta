@@ -8,6 +8,7 @@
   Branch `tr-d8-transversal`, tăiat din `main` = `02f7788` (după PR #14).
   Implementarea pornește cu pasul 1 din X-D8, un commit per pas.
   **Pasul 1 (X-D2) implementat și verificat, 2026-10-03** — vezi „Execuție".
+  **Pasul 2 (X-D4) implementat și verificat, 2026-10-03.**
 - Bază: [D8-B5](tr-d8-citiri-contract.md) pasul 5 și „Limite care împiedică
   închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
   091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
@@ -483,6 +484,66 @@ păstrează 107, închiderea gate-ului este 108.
 Validare: integrala **3.277 bugetar / 4.485 privat OK**, zero FAIL,
 `run-verificari/20261003-173905-898/`; scenele ASM, BTR și PLT separat pe ambele
 profiluri, `run-verificari/20261003-173755-531/`. Bazele: clonele `.ClaudeX1`.
+
+### Pasul 2 — X-D4: explicația deciziei persistată, S-r11 (2026-10-03)
+
+Livrat: `ValoareDeclarata` în nucleu; `Cub/Explicatie.cs` (forma versionată
+și derivarea pe linii); coloanele `Explicatie` și `ExplicatieDinId` pe
+`Tranzactie`, cu migrația `ExplicatieTranzactie` scrisă în SQL;
+`Materializare.Opereaza` scrie explicația pe prima tranzacție a contractului;
+`Cub/Citiri/Explicatii.cs` (cititorul și invariantul de audit, în `INV-CUB`);
+`GET api/proiectii/explicatii/{tranzactieId}` cu `ExplicatieAcces` și
+`Api/AccesComplet.cs`; `DECLARATIE_INVALIDA` în `Contractare`; scena
+`ScenariiExplicatii`, SC-CIT-96…99, șapte mutanți `INV-CUB-EXPLICATIE-*` și
+proba HTTP `ProbeHttp/explicatii.py`. Regula stă în
+`stare-curenta/domeniu-si-operare.md` și `api-si-client.md`, limitele în
+`limite-curente.md`.
+
+Ce a arătat implementarea și cum amendează X-D4:
+
+1. **Domeniul invariantului e mecanismul, nu lista de tipuri.** Orice postare
+   pe lot cu cantitate negativă dintr-o tranzacție `Operare` sau `Transfer`
+   cere exact o decizie de valoare. Invariantul e verde pe cele 53 de scene
+   ale fiecărui profil după ce RLF, RDC și NIR-minus emit `ValoareDeclarata`;
+   mutantul `EXPLICATIE-DECLARATA` dovedește că lipsa ei e prinsă.
+2. **„NTC pe lot în `Operare`" din (d)(1) nu există.** Nota contabilă nu
+   poartă loturi; din NTC intră în invariant numai stingerea FIFO, la (d)(4).
+3. **RDC intră la (d)(2) alături de RLF și NIR-minus.** O linie de retur de
+   la client cu cantitate pozitivă scoate lotul la valoarea culeasă, deci
+   primește `ValoareDeclarata`. Evaluarea aprobată nu se schimbă.
+4. **(d)(1) e mai tare decât pinul.** Pe lângă „o decizie cu valoarea
+   postată și un sold citit", invariantul recalculează fiecare `ValoareIesire`
+   din soldul persistat, în ordinea deciziilor, cu rotunjirea bazei
+   (`CITIRE_EXPLICATIE_EVALUARE`). Altfel soldul citit ar fi fost text
+   neverificat, iar mutantul care îl alterează ar fi supraviețuit.
+5. **Soldul citit e net.** Operandul construiește `Sold(net, 0, cantitate)`
+   din `Loturi.Cumulate`, nu rulajele debit/credit ale lotului.
+6. **Referința e apărată de bază.** `ExplicatieDinId` are FK spre `Tranzactie`
+   și două CHECK-uri: explicația numai pe `Operare`/`Transfer` cu document,
+   referința numai pe `Transfer`. Relația e și în modelul EF, ca inserarea și
+   ștergerea celor două tranzacții să-și respecte ordinea (anularea ASM mixt,
+   SC-ASM-09).
+7. **(d)(4) are și direcția inversă.** Fiecare `AlocareFifo` își are postarea,
+   iar fiecare postare `Operare` pe partida altui document are `AlocareFifo`.
+   Toți declaranții cu partide o respectă fără modificări.
+8. **S-r11.** `Contractare` nu mai aruncă pentru declarația neconstruibilă:
+   întoarce contract refuzat cu `DECLARATIE_INVALIDA`. Rămâne excepție numai
+   documentul al cărui tip nu declară, pe care coaja îl refuză înainte.
+   Declanșatorul probat e o cantitate în afara scării, ținută în memorie; pe
+   ușa HTTP codul nu e probat separat (limită declarată).
+9. **Accesul.** Mecanismul SAF-D4 s-a mutat din `SaftAcces` în
+   `Api.AccesComplet`, cu lista tipurilor ca parametru; `SaftAcces` îl
+   apelează. DTO-ul se numește `ExplicatieContractDto`, fiindcă
+   `Politici.ExplicatieDto` exista.
+10. **Proba HTTP lasă reziduu.** Stornoul nu se poate anula, deci
+    `explicatii.py` rulează pe o clonă de unică folosință.
+
+De dus la pasul 6: ușa explicației în matricea `refuzuri.ps1`.
+
+Validare: nucleu **180/180**; integrala **3.309 bugetar / 4.518 privat OK**,
+zero FAIL, `run-verificari/20261003-182901-833/`, pe clonele `.ClaudeX2`;
+SC-CIT-99 pe host viu 8/8 PASS, `run-verificari/x2-expl-http/proba.log`;
+`--probe-sursa` verde.
 
 ## Ce NU intră (amânări cu nume)
 

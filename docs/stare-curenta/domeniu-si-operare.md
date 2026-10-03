@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-27.** [Index](README.md)
+**Actualizat: 2026-10-03.** [Index](README.md)
 
 ## Modelul comun
 
@@ -1235,6 +1235,52 @@ nominalizarea originală, astfel încât stornarea ulterioară să îi compensez
 efectul. Stornarea directă a plății automate inversează nominalizarea o
 singură dată. Gardul de dependențe include inversele încă necomise din
 aceeași comandă și verifică soldurile intermediare pe dată.
+
+### Explicația deciziei (X-D4, 2026-10-03)
+
+Contractul acceptat își persistă deciziile și ipotezele: de ce a costat
+ieșirea atât, din ce sold, ce partide a stins.
+
+- **Unde**: `Tranzactie.Explicatie` (`jsonb`), pe prima tranzacție scrisă a
+  contractului — `Operare` când există, altfel `Transfer` (BTR, ASM fără
+  schimb de cont). A doua tranzacție a aceluiași contract o referă prin
+  `ExplicatieDinId`. Se scrie în același `INSERT` cu rândul și nu se mai
+  modifică. `Storno`, `Deschidere`, transferul împerecherii, desfacerea și
+  stingerea de deschidere nu au explicație; baza refuză prin
+  `CK_Tranzactie_Explicatie` și `CK_Tranzactie_ExplicatieDin`.
+- **Ce**: `Cub.Explicatie` — versiunea schemei (`v` = 1), numele
+  declarantului, `JumatatiDeBan`, deciziile și ipotezele contractului în
+  ordinea declarației, cu linia și unitatea lor. Un cititor refuză o versiune,
+  o decizie sau o ipoteză pe care nu o cunoaște.
+- **Ieșirea pe lot** are exact o decizie de valoare: `ValoareIesire` când
+  valoarea vine din soldul citit (BCS, DSC, BTR, LDI minus, consumul ASM),
+  `ValoareDeclarata` când o dă altă sursă — linia documentului (RLF și RDC, la
+  valoarea culeasă) sau recepția facturii (NIR-minus). Sursele sunt
+  `Declaratii.SurseValoare`. Decizia poartă cantitatea și valoarea pozitive;
+  postarea-sursă a unui transfer le are negative.
+- **Soldul citit** (`SoldUnitateCitit`) e soldul net al unității la data
+  documentului, fără documentul curent, o dată per unitate. Soldul dinaintea
+  fiecărei ieșiri următoare de pe aceeași unitate se derivă din deciziile
+  anterioare (`Explicatie.IesiriEvaluate`).
+- **Stingerea FIFO** are câte o `AlocareFifo` per linie și partidă stinsă;
+  partida proprie a documentului are `PartidaDeschisa`.
+- **Stornoul** se explică prin original: `Cub.Citiri.Explicatii.PeTranzactie`
+  urmează `InversaDin` și întoarce explicațiile purtătorilor de origine.
+  **Anularea operării** șterge explicația odată cu tranzacția.
+- **Invariantul** (`Explicatii.VerificaAcoperire`, în `INV-CUB`):
+  `CITIRE_EXPLICATIE_LIPSA` (o tranzacție `Operare` sau o ieșire pe lot fără
+  explicație), `…_REFERINTA` (referință spre o tranzacție fără explicație sau
+  a altui document), `…_STORNO` (inversa pe lot nu oglindește originalul),
+  `…_IESIRE` (ieșirile postate și deciziile de valoare nu corespund una la
+  una pe linie, unitate, cantitate și valoare), `…_EVALUARE` (valoarea unei
+  `ValoareIesire` nu rezultă din soldul persistat, cu rotunjirea bazei),
+  `…_STINGERE` (alocare fără postare sau postare pe partida altui document
+  fără alocare).
+
+Dry-run-ul nu persistă nimic. O declarație pe care nucleul nu o poate
+construi (`ArgumentException`) sau un declarant care nu întoarce nici
+declarație, nici refuz dau refuzul `DECLARATIE_INVALIDA`, pe dry-run și pe
+operare, în aceeași formă ca orice refuz al declarației (S-r11).
 
 ### Gardurile declaranților, ca dată sau ca regulă
 

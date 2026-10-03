@@ -232,6 +232,23 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   (`RegistruContabil` pentru închiderea de TVA, `RegistruImobilizari` pentru
   fișă și amortizare). Subiectul permisiunii după tăierea registrelor nu este
   ales. (F22-D5, X-D2; TR-D9)
+- Explicația deciziei (X-D4) există numai pe tranzacțiile scrise de un
+  contract. Împerecherea, desfacerea, stingerea de deschidere și deschiderea
+  nu au decizii de explicat și nu au explicație. Un document operat înaintea
+  migrației n-ar avea explicație, iar invariantul l-ar refuza: baza se
+  recreează (102b).
+- Refuzul `EXPLICATIE_ACCES_INCOMPLET` se decide pe tip, nu pe tranzacția
+  cerută: un criteriu de rând pe `Postare` sau pe o frunză de document refuză
+  explicația oricărei tranzacții, inclusiv a uneia pe care criteriul n-o
+  atinge. E prețul regulii „fără proiecție parțială” (SAF-D4).
+- `DECLARATIE_INVALIDA` (S-r11) e probată pe coaja comenzii, cu o cantitate
+  în afara scării ținută în memorie. Un declanșator persistabil pe ușa HTTP
+  nu a fost construit; răspunsul ușii e cel al oricărui refuz de declarație
+  (422 la operare, listă la dry-run), neprobat separat pentru acest cod.
+- Explicația repetă câte două `ContRezolvat` și unitatea întreagă pe fiecare
+  linie. Mărimea ei pe documente lungi se măsoară în X-D5, nu aici.
+- Matricea `refuzuri.ps1` nu conține încă ușa explicației; proba ei e
+  `explicatii.py`. Intră în matrice la închiderea gate-ului (X-D8, pasul 6).
 - `documente-cu-rest` rămâne proiecția scumpă, iar partidele nu schimbă asta:
   pe baza de import costă 181 ms filtrat pe o contrapartidă (171 ms cu lanțul
   desfăcut — diferență în zgomot), 423 ms nefiltrat pe grilă și 220 ms pe
