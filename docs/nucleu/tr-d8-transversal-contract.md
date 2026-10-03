@@ -471,9 +471,16 @@ de fișiere) și cum amendează X-D2:
 Limita probei: scanarea e sintactică, iar purtătorii netipizați de date de
 registru sunt declarați de mână (`Purtatori`).
 
-De înregistrat ca restanță la decizia 107: **X-r2** — subiectul permisiunii
-care păzește cifrele citite din cub, după tăierea tipurilor de registru
-(TR-D9).
+De înregistrat ca restanță la decizia de închidere: **X-r2** — subiectul
+permisiunii care păzește cifrele citite din cub, după tăierea tipurilor de
+registru (TR-D9).
+
+**Numărul deciziei de închidere, de confirmat de owner.** Contractul o numește
+107, dar 107 este luat de `107-deschiderea-de-terti-din-balanta-nivel3.md` pe
+branch-ul nemers `m1-deschidere-terti` (constatat 2026-10-03). Numerele nu se
+refolosesc: dacă M1 își păstrează 107, închiderea gate-ului ia următorul număr
+liber la scriere. Până atunci „decizia 107" din acest contract se citește
+„decizia de închidere a gate-ului".
 
 Validare: integrala **3.277 bugetar / 4.485 privat OK**, zero FAIL,
 `run-verificari/20261003-173905-898/`; scenele ASM, BTR și PLT separat pe ambele
