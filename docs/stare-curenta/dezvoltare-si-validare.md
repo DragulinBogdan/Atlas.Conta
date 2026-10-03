@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-03.** [Index](README.md)
+**Actualizat: 2026-10-04.** [Index](README.md)
 
 TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
 evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
@@ -471,6 +471,24 @@ Rezultatele rulărilor sunt consemnate în fișierele tipurilor.
 Verificarea de drift regenerează contractele și refuză diferențele față de
 fișierele versionate. O schimbare intenționată de contract se regenerează și
 se examinează înainte de includerea artefactelor în modificare. (43d, 56)
+
+### Scara transversală de perf (`scripts/perf-cub-container.ps1`)
+
+`ModelCheck --perf-cub [privat]` construiește scena de volum (k unități în
+luna măsurată, m luni închise de istoric, faptele „o dată per bază”) și
+măsoară fiecare cititor comun într-un proces nou, rece și cald, pe ușa
+securizată și pe cea nesecurizată. Fiecare cifră citită se compară cu
+așteptarea scenei. La k maxim, citirile se reexecută sub `EXPLAIN (ANALYZE,
+BUFFERS)`, cu planul ales și fără scanare secvențială. Înaintea purjei rulează
+reconcilierea integrală, `INV-CUB` și diagnosticul ASM-B7 pe toată baza.
+Rețeta rulează ambele profiluri în containerul din rețeaua Postgres și
+validează XML-urile SAF-T cu DUK; parametrii `-Profil`, `-Istoric`, `-Trepte`
+și `-Operatii` restrâng rularea. Scara completă durează circa 35 de minute și
+este o rulare grea: nu se suprapune cu alta pe aceleași baze. O rulare
+întreruptă lasă scena în bază; următoarea o purjează la pornire, dar datele
+societății de pe profilul privat rămân cele ale scenei și se refac de mână.
+Un cititor nou care citește cumulat sau pe interval intră în `PerfCub.Operatii`
+cu ruta și cifrele lui de control. (X-D5, X-D3)
 
 ## Verificări proporționale cu modificarea
 

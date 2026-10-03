@@ -986,3 +986,240 @@ rula în același proces.
 
 Pragul absolut și planul pe volum real rămân la gate-ul transversal. Baza de
 volum reală nu există după C102, deci FZ-r3 rămâne activă.
+
+## TR-D8 gate-ul transversal (2026-10-04) — scara `PerfCub`, cititorii comuni și comenzile de scriere
+
+Contract: [X-D5 și X-D3](../nucleu/tr-d8-transversal-contract.md), cu amendamentele din
+„Execuție”, pasul 5. Rularea: `run-verificari/perf-cub-20261004-002621/` (`privat/`,
+`bugetar/`): `perf.log`, tabelele complete `perf-cub-<profil>.md`, măsurătorile brute
+`perf-cub-<profil>.json`, planurile `EXPLAIN (ANALYZE, BUFFERS)` la k = 64 pentru fiecare
+operație și m (`*.planuri.txt` cu planul ales, `*.planuri-index.txt` fără scanare
+secvențială, plus JSON-ul brut), artefactele X-D3 `xd3-<profil>-m<m>.md`, XML-urile SAF-T
+de la k = 64, `duk.log` și `rulare.json` (commit, hash DLL). Comanda:
+`nou/tools/ModelCheck/scripts/perf-cub-container.ps1` — `ModelCheck --perf-cub` pe fiecare
+profil, în containerul `dotnet/aspnet:10.0` din rețeaua containerului Postgres, pe clonele
+`.ClaudeX2`; DUK rulează apoi pe Windows. Starea de dinaintea corecturilor este
+`run-verificari/perf-cub-20261003-231254/` (numai privat).
+
+**Scena.** Unitatea este cea din SAF-B8: FCT (stoc 10 × 10 + serviciu 50) cu NIR conex,
+PLT 70 legată 50, BCS 2, BTR 1, DSC 1 (numai privat), ASM 1, FCL 100 cu INC 60 legată; pe
+privat cu TVA N21, pe bugetar fără. Luna măsurată are k ∈ {1, 4, 16, 64} unități; istoricul
+are m ∈ {0, 6, 12} luni închise × 16 unități și lotul „lung” (1.000 de bucăți, un consum pe
+lună). Prima lună a scenei poartă faptele „o dată per bază”: deschiderea (două loturi și o
+partidă de furnizor, cu un consum și o stingere pe ele, când m > 0), o notă contabilă cu
+împerechere explicită, PIF cu amortizare lunară, LDI minus, un ASM pe conturi diferite și
+trei transformări 1 + 1 + 1 din 3 × 3,333333, o factură de vânzare stornată, iar pe privat
+RLF și DVI legată la o factură de import. La m = 0 luna întâi rămâne deschisă și luna
+măsurată este a doua. După ultima treaptă se operează „documentul lung”: un consum cu 64
+de linii, câte una din fiecare lot al lunii. Baza la m = 12: 2.611 tranzacții și 7.951
+de postări pe privat, 2.351 și 5.887 pe bugetar.
+
+**Măsurarea.** Fiecare punct (operație, m, k) rulează într-un proces-copil nou: prima
+execuție e „rece”, a doua „caldă”. Pe ușa securizată procesul face întâi logonul
+utilizatorului administrativ al scenei, deci modelul EF e construit înaintea măsurării
+reci. Se înregistrează durata, comenzile SQL (număr, durată, rânduri citite), rândurile
+livrate, octeții alocați, vârful gestionat și cifrele de control. La k = 64, fiecare
+citire a operației se reexecută sub `EXPLAIN (ANALYZE, BUFFERS)` de două ori: cu planul
+ales de planificator și cu `enable_seqscan = off`. Din plan se numără nodurile de scanare
+pe partițiile lui `Postare`, rândurile atinse (livrate plus respinse de filtru, ori
+bucle) și bufferele lor. Comenzile de scriere se cronometrează în procesul scenei, pe
+fiecare document al fiecărei unități.
+
+**Rutele.** `-SV` = ObjectSpace securizat, citire `Vizibila` (ce rulează azi API-ul);
+`-NV` = nesecurizat, `Vizibila`; `-NI` = nesecurizat, `Integrala` (din snapshot); `-S` /
+`-N` = securizat / nesecurizat pentru cititorii pe interval și SAF-T. Rutele criteriilor:
+*snapshot*, *interval* (citește numai intervalul cerut), *recitire* (fără graniță sigură:
+citirea vizibilă și dry-run-ul notei stingătoare), *reconstrucție*, *scriere*.
+
+### Cititorii la k = 64 — privat
+
+| operație | comenzi SQL | ms cald k=64 (m=0 / 6 / 12) | ms rece k=64 (m=12) | rânduri livrate (m=0 / 6 / 12) | alocați MiB (m=12) | Postare, plan ales: rânduri (m=0 / 6 / 12) | Postare, fără secvențial: rânduri (m=0 / 6 / 12) | server max ms (m=12) |
+|---|---|---|---|---|---|---|---|---|
+| BAL-SV | 6 | 11,6 / 11,4 / 13,3 | 272 | 24 / 25 / 25 | 0,4 | 1990 / 4911 / 7827 | 1990 / 4911 / 7827 | 4,7 |
+| BAL-NV | 1 | 5,4 / 6,6 / 8,1 | 215 | 24 / 25 / 25 | 0,2 | 1990 / 4911 / 7827 | 1990 / 4911 / 7827 | 4,6 |
+| BAL-NI | 1 | 12,3 / 12,9 / 12,9 | 243 | 24 / 25 / 25 | 0,3 | 1990 / 1926 / 1926 | 1990 / 1926 / 1926 | 3,4 |
+| FISA-SV | 6 | 23,0 / 25,8 / 25,6 | 294 | 320 / 320 / 320 | 0,8 | 5096 / 7046 / 8498 | 5078 / 6532 / 7984 | 9,9 |
+| FISA-NV | 1 | 13,5 / 15,2 / 15,8 | 226 | 320 / 320 / 320 | 0,7 | 5096 / 7046 / 8498 | 5078 / 6532 / 7984 | 8,6 |
+| FISA-NI | 1 | 20,5 / 22,4 / 21,6 | 251 | 320 / 320 / 320 | 0,8 | 5096 / 5058 / 5058 | 5078 / 5058 / 5058 | 6,8 |
+| JRN-S | 6 | 12,6 / 13,4 / 13,8 | 242 | 1284 / 1284 / 1284 | 1,1 | 1986 / 1926 / 1926 | 1926 / 1926 / 1926 | 2,8 |
+| JRN-N | 1 | 9,2 / 9,9 / 10,4 | 209 | 1284 / 1284 / 1284 | 0,8 | 1986 / 1926 / 1926 | 1926 / 1926 / 1925 | 2,9 |
+| SPART-SV | 6 | 10,4 / 12,5 / 13,7 | 284 | 23 / 24 / 24 | 0,4 | 1990 / 4911 / 7827 | 1990 / 4911 / 7827 | 4,7 |
+| SPART-NV | 1 | 5,5 / 6,9 / 8,0 | 207 | 23 / 24 / 24 | 0,2 | 1990 / 4911 / 7827 | 1990 / 4911 / 7827 | 4,9 |
+| SPART-NI | 1 | 7,2 / 7,3 / 7,6 | 222 | 23 / 24 / 24 | 0,2 | 1990 / 1926 / 1926 | 1990 / 1926 / 1926 | 3,3 |
+| PREST-SV | 6 | 15,6 / 25,6 / 37,8 | 318 | 200 / 489 / 777 | 0,9 | 2242 / 5547 / 8821 | 1576 / 3908 / 6210 | 28,8 |
+| PREST-NV | 1 | 11,5 / 21,1 / 34,3 | 269 | 200 / 489 / 777 | 0,6 | 2242 / 5547 / 8821 | 1576 / 3908 / 6210 | 31,0 |
+| PREST-NI | 1 | 11,1 / 23,6 / 40,7 | 266 | 200 / 489 / 777 | 0,7 | 2242 / 3366 / 4504 | 2242 / 3366 / 4504 | 63,7 |
+| STOC-SV | 6 | 8,8 / 9,9 / 11,8 | 249 | 265 / 652 / 1036 | 1,0 | 532 / 1314 / 2094 | 532 / 1314 / 2094 | 1,8 |
+| STOC-NV | 1 | 4,8 / 6,3 / 7,4 | 196 | 265 / 652 / 1036 | 0,8 | 532 / 1314 / 2094 | 532 / 1314 / 2094 | 1,5 |
+| STOC-NI | 1 | 5,4 / 7,0 / 8,2 | 231 | 265 / 652 / 1036 | 0,9 | 532 / 514 / 514 | 532 / 514 / 514 | 1,7 |
+| FIFO-N | 30 | 30,2 / 29,7 / 26,9 | 1645 | 1 / 1 / 1 | 1,2 | 10 / 4 / 4 | 10 / 4 / 4 | 0,3 |
+| PDISP-N | 24 | 25,7 / 24,0 / 23,9 | 1515 | 1 / 1 / 1 | 2,2 | 2436 / 6029 / 9617 | 1770 / 4390 / 7006 | 0,8 |
+| RECON-N | 4–14 | 8,5 / 70,8 / 119,1 | 452 | 0 / 1 / 1 | 0,9 | 0 / 9363 / 15361 | 0 / 6923 / 12921 | 26,6 |
+| JTVA-S | 7 | 16,2 / 20,3 / 16,2 | 292 | 128 / 128 / 128 | 0,8 | 768 / 768 / 768 | 768 / 768 / 768 | 1,2 |
+| JTVA-N | 2 | 11,3 / 11,9 / 11,3 | 215 | 128 / 128 / 128 | 0,5 | 768 / 768 / 768 | 768 / 768 / 768 | 1,1 |
+| D300-S | 12 | 24,3 / 23,2 / 22,6 | 383 | 55 / 55 / 55 | 1,2 | 1152 / 1152 / 1152 | 1152 / 1152 / 1152 | 0,8 |
+| D300-N | 7 | 13,7 / 14,7 / 14,0 | 292 | 55 / 55 / 55 | 0,8 | 1152 / 1152 / 1152 | 1152 / 1152 / 1152 | 0,9 |
+| D394-S | 13 | 25,7 / 27,1 / 26,5 | 399 | 2 / 2 / 2 | 1,2 | 1152 / 1152 / 1152 | 1152 / 1152 / 1152 | 0,9 |
+| D394-N | 8 | 15,9 / 15,7 / 14,9 | 325 | 2 / 2 / 2 | 1,0 | 1152 / 1152 / 1152 | 1152 / 1152 / 1152 | 0,8 |
+| R6-S | 17 | 102,6 / 104,2 / 104,1 | 1550 | 0 / 0 / 0 | 24,9 | 5964 / 4426 / 1926 | 1926 / 1926 / 1926 | 1,7 |
+| R6-N | 11 | 31,2 / 31,8 / 33,1 | 1347 | 0 / 0 / 0 | 10,7 | 3978 / 2408 / 1158 | 1158 / 1158 / 1158 | 1,3 |
+| SAFTL-S | 48 | 108,2 / 111,7 / 111,8 | 655 | 386 / 386 / 386 | 12,3 | 11062 / 12733 / 9752 | 9878 / 9752 / 9752 | 4,4 |
+| SAFTL-N | 43 | 76,6 / 69,8 / 67,7 | 653 | 386 / 386 / 386 | 11,3 | 11062 / 12733 / 9752 | 9878 / 9752 / 9752 | 5,8 |
+| SAFTS-S | 31 | 59,9 / 61,7 / 66,7 | 536 | 585 / 875 / 1163 | 8,7 | 8498 / 12027 / 7446 | 7528 / 7446 / 7446 | 3,4 |
+| SAFTS-N | 26 | 46,1 / 61,9 / 64,1 | 559 | 585 / 875 / 1163 | 8,0 | 8498 / 12027 / 7446 | 7528 / 7446 / 7446 | 3,4 |
+| INCH-N | 64–67 | — / 112,0 / 136,4 | 771 | — / 1 / 1 | 2,1 | — / 15472 / 15520 | — / 15472 / 15520 | 1,1 |
+
+### Cititorii la k = 64 — bugetar
+
+| operație | comenzi SQL | ms cald k=64 (m=0 / 6 / 12) | ms rece k=64 (m=12) | rânduri livrate (m=0 / 6 / 12) | alocați MiB (m=12) | Postare, plan ales: rânduri (m=0 / 6 / 12) | Postare, fără secvențial: rânduri (m=0 / 6 / 12) | server max ms (m=12) |
+|---|---|---|---|---|---|---|---|---|
+| BAL-SV | 6 | 10,4 / 11,5 / 12,4 | 269 | 15 / 16 / 16 | 0,4 | 1460 / 3613 / 5761 | 1460 / 3613 / 5761 | 3,5 |
+| BAL-NV | 1 | 5,3 / 16,9 / 7,0 | 215 | 15 / 16 / 16 | 0,2 | 1460 / 3613 / 5761 | 1460 / 3613 / 5761 | 3,3 |
+| BAL-NI | 1 | 12,0 / 12,2 / 12,4 | 236 | 15 / 16 / 16 | 0,3 | 1460 / 1414 / 1414 | 1460 / 1414 / 1414 | 2,5 |
+| FISA-SV | 6 | 20,9 / 22,1 / 23,5 | 297 | 192 / 192 / 192 | 0,7 | 2210 / 3811 / 4975 | 2195 / 3361 / 4525 | 4,6 |
+| FISA-NV | 1 | 12,0 / 12,9 / 13,1 | 220 | 192 / 192 / 192 | 0,6 | 2210 / 3811 / 4975 | 2195 / 3361 / 4525 | 4,5 |
+| FISA-NI | 1 | 19,8 / 21,1 / 20,0 | 253 | 192 / 192 / 192 | 0,7 | 2210 / 2179 / 2179 | 2195 / 2179 / 2179 | 4,1 |
+| JRN-S | 6 | 10,9 / 11,5 / 11,9 | 281 | 772 / 772 / 772 | 0,8 | 1458 / 1414 / 1414 | 1443 / 1414 / 1414 | 2,1 |
+| JRN-N | 1 | 7,4 / 7,5 / 8,0 | 195 | 772 / 772 / 772 | 0,5 | 1458 / 1414 / 1414 | 1443 / 1414 / 1414 | 2,2 |
+| SPART-SV | 6 | 10,5 / 11,3 / 11,9 | 259 | 14 / 15 / 15 | 0,4 | 1460 / 3613 / 5761 | 1460 / 3613 / 5761 | 3,4 |
+| SPART-NV | 1 | 5,4 / 6,2 / 6,8 | 217 | 14 / 15 / 15 | 0,2 | 1460 / 3613 / 5761 | 1460 / 3613 / 5761 | 3,2 |
+| SPART-NI | 1 | 6,6 / 7,6 / 8,3 | 233 | 14 / 15 / 15 | 0,2 | 1460 / 1414 / 1414 | 1460 / 1414 / 1414 | 2,5 |
+| PREST-SV | 6 | 14,4 / 23,0 / 34,5 | 273 | 197 / 486 / 774 | 0,9 | 1172 / 3914 / 6242 | 1172 / 2908 / 4662 | 25,0 |
+| PREST-NV | 1 | 10,1 / 17,2 / 29,9 | 235 | 197 / 486 / 774 | 0,6 | 1172 / 3914 / 6242 | 1172 / 2908 / 4662 | 25,9 |
+| PREST-NI | 1 | 10,4 / 18,7 / 32,8 | 256 | 197 / 486 / 774 | 0,7 | 1579 / 2418 / 3282 | 1579 / 2418 / 3282 | 58,7 |
+| STOC-SV | 6 | 9,0 / 11,1 / 10,9 | 247 | 263 / 650 / 1034 | 1,0 | 465 / 1151 / 1835 | 465 / 1151 / 1835 | 1,5 |
+| STOC-NV | 1 | 4,9 / 6,1 / 8,3 | 194 | 263 / 650 / 1034 | 0,8 | 465 / 1151 / 1835 | 465 / 1151 / 1835 | 1,6 |
+| STOC-NI | 1 | 5,6 / 7,2 / 9,0 | 230 | 263 / 650 / 1034 | 0,9 | 465 / 450 / 450 | 465 / 450 / 450 | 2,0 |
+| FIFO-N | 30 | 31,5 / 26,0 / 29,5 | 1629 | 1 / 1 / 1 | 1,3 | 10 / 4 / 4 | 10 / 4 / 4 | 0,3 |
+| PDISP-N | 24 | 25,4 / 26,1 / 27,0 | 1528 | 1 / 1 / 1 | 2,2 | 1779 / 4412 / 7040 | 1376 / 3420 / 5460 | 0,6 |
+| RECON-N | 4–14 | 6,4 / 62,3 / 92,3 | 445 | 0 / 1 / 1 | 0,9 | 0 / 7096 / 11680 | 0 / 5232 / 9816 | 21,4 |
+| INCH-N | 46–49 | — / 79,3 / 95,3 | 662 | — / 1 / 1 | 1,4 | — / 60 / 108 | — / 60 / 108 | 0,1 |
+
+„Plan ales” = planul planificatorului; „fără secvențial” = cu `enable_seqscan = off`.
+Coloanele „rânduri” sunt rânduri atinse pe `Postare`, nu rânduri livrate. Scara completă
+în k (durată și alocări la fiecare treaptă, rece și cald) este în `perf-cub-<profil>.md`.
+
+### Comenzile de scriere (durata sub blocajul scrierii) — privat
+
+| comandă | comenzi SQL (median, toate treptele) | ms median m=0 k→64 | ms median m=6 k→64 | ms median m=12 k→64 | ms maxim m=12 k→64 | ms SQL median m=12 |
+|---|---|---|---|---|---|---|
+| AMO | 87–89 | 162,2 | 43,9 | 43,5 | 48,3 | 24,8 |
+| ASM | 53 | 27,7 | 28,9 | 28,8 | 39,4 | 15,9 |
+| BCS | 48 | 24,6 | 25,7 | 25,3 | 30,2 | 12,9 |
+| BCS-LUNG | 111 | 119,1 | 113,2 | 110,5 | 110,5 | 61,0 |
+| BTR | 47 | 23,1 | 24,0 | 24,0 | 33,3 | 12,5 |
+| DSC | 54 | 27,9 | 29,0 | 29,5 | 35,4 | 16,1 |
+| FCL | 64 | 26,4 | 27,2 | 27,8 | 36,0 | 15,1 |
+| FCT | 78 | 37,3 | 38,2 | 38,9 | 56,6 | 21,8 |
+| IMPERECHERE | 29 | 18,2 | 19,0 | 20,0 | 28,5 | 12,2 |
+| INC | 41 | 19,0 | 19,3 | 19,9 | 24,4 | 10,0 |
+| INCHIDERE | 68 | — | 66,4 | 79,2 | 99,5 | 65,6 |
+| NIR | 67 | 29,7 | 30,5 | 30,2 | 39,9 | 16,2 |
+| PLT | 41 | 19,0 | 19,2 | 19,9 | 36,6 | 10,0 |
+
+### Comenzile de scriere — bugetar
+
+| comandă | comenzi SQL (median, toate treptele) | ms median m=0 k→64 | ms median m=6 k→64 | ms median m=12 k→64 | ms maxim m=12 k→64 | ms SQL median m=12 |
+|---|---|---|---|---|---|---|
+| AMO | 87–89 | 181,9 | 44,6 | 45,1 | 50,5 | 24,5 |
+| ASM | 53 | 27,5 | 28,6 | 28,8 | 34,5 | 15,8 |
+| BCS | 48 | 24,7 | 25,5 | 25,2 | 30,5 | 13,0 |
+| BCS-LUNG | 111 | 112,2 | 98,1 | 101,5 | 101,5 | 51,0 |
+| BTR | 47 | 23,2 | 23,8 | 23,7 | 32,7 | 12,4 |
+| FCL | 48 | 20,9 | 21,4 | 21,7 | 24,4 | 10,7 |
+| FCT | 59 | 30,0 | 31,0 | 31,7 | 35,2 | 16,8 |
+| IMPERECHERE | 29 | 18,2 | 18,5 | 19,2 | 30,0 | 11,5 |
+| INC | 41 | 19,0 | 18,8 | 19,1 | 26,8 | 9,5 |
+| INCHIDERE | 50 | — | 41,5 | 46,5 | 74,1 | 36,7 |
+| NIR | 65 | 29,0 | 29,4 | 29,6 | 36,2 | 16,3 |
+| PLT | 41 | 18,8 | 18,8 | 19,2 | 23,7 | 9,4 |
+
+O unitate întreagă (toate comenzile ei, în serie) durează la m = 12 circa 284 ms pe privat
+și 237 ms pe bugetar, față de 271 și 230 ms la m = 0. Documentul lung (64 de linii)
+se operează în 110 ms, o închidere de lună în 79 ms (privat) și 47 ms (bugetar).
+
+### Criteriile X-D5 (c)
+
+- **Controlul numeric: trecut în toate cele 1.280 de măsurători** (640 de puncte × rece
+  și cald: 392 pe privat, 248 pe bugetar). Așteptările sunt scrise din regula contabilă a unității și
+  a faptelor „o dată per bază”: rulaje, sold inițial și final pe furnizor și client,
+  partide cu rest, stoc pe gestiuni reale și la locul de consum, baze și taxe pe jurnale,
+  numărul facturilor, plăților și mișcărilor SAF-T. Aceleași cifre au trecut înainte și
+  după corecturile de mai jos.
+- **Comenzi SQL constante în k și m:** toți cititorii, pe ambele uși. Reconstrucția are 4
+  comenzi fără nicio referință (m = 0) și 14 cu una. Închiderea lunii măsurate are 67
+  (privat, m = 6) și 64 (m = 12): după decembrie referința precedentă nu se elimină.
+  Comenzile unității au același număr de comenzi SQL pe toate treptele; amortizarea și
+  închiderea, de la a treia lună încolo.
+- **Liniaritate** f(4k) ≤ 1,25 × 4 × f(k) pe durată și alocări, la cald: trecută pe toate
+  operațiile și treptele.
+- **Proba din plan** (rutele *snapshot* și *interval*, k = 64, fără scanare secvențială):
+  rândurile atinse pe `Postare` nu depind de m pe balanță, fișă, jurnal, soldul
+  partenerilor, raportul de stoc, dry-run-ul consumului, jurnalele de TVA, D300, D394,
+  raportul de impact și SAF-T L și S. **Un criteriu rămâne picat: `PREST-NI`**
+  (partidele cu rest, din snapshot): 2.242 / 3.366 / 4.504 rânduri pe privat, 1.579 /
+  2.418 / 3.282 pe bugetar. Fereastra de după referință e constantă; crește căutarea
+  originii partidei (`Partide.Origini`), care parcurge toate postările de partidă cu
+  identitatea documentului. E forma proiecției `DocumenteCuRest` (F27-r16).
+- **SAF-T la k = 64:** fără refuzuri, XSD valid, DUK fără atenționări pe cele 12 fișiere
+  (L și S, securizat și nesecurizat, m = 0 / 6 / 12).
+
+### Ce au schimbat cifrele (înainte → după, privat, k = 64, rânduri atinse pe `Postare` la m = 0 / 6 / 12)
+
+| cititor | înainte | după | cauza și corectura |
+|---|---|---|---|
+| balanța din snapshot | 1.990 / 4.907 / 7.823 | 1.990 / 1.926 / 1.926 | fereastra de după referință compara `an × 12 + lună` calculat din `Data`; acum compară `Data` cu sfârșitul referinței |
+| raportul de stoc din snapshot | 1.986 / 4.907 / 7.823 | 532 / 514 / 514 | aceeași fereastră; cititorii de loturi nu tăiau partiția contabilă; lipsea indexul pe `Data` în partiția de stoc |
+| dry-run-ul consumului (FIFO) | 3.972 / 9.814 / 15.646 | 10 / 4 / 4 | gardul de sold intermediar citea tot istoricul lotului; acum pornește din cumul și citește zilele de la data documentului |
+| D394 | 5.958 / 14.721 / 23.469 | 1.152 / 1.152 / 1.152 | filtrul pe `PerioadaD394` nu avea index |
+| raportul de impact (nesecurizat) | 2.760 / 5.681 / 8.597 | 1.158 / 1.158 / 1.158 | filtrul pe `DataExigibilitate` nu avea index |
+| SAF-T L | 12.667 / 25.424 / 38.240 | 9.878 / 9.752 / 9.752 | balanța de cont și soldurile terților reciteau postările (SAFT-r4) |
+| SAF-T S | 9.694 / 18.538 / 27.322 | 7.528 / 7.446 / 7.446 | aceeași balanță |
+
+Raportul de impact pe ușa securizată emitea 19 / 25 / 49 / 145 comenzi la k = 1 / 4 / 16 /
+64: tranzacția fiecărui document se încărca leneș la verificarea de permisiune. Acum
+emite 17 la orice k, în 104 ms față de 161 ms.
+
+Cei cinci indecși noi (`IndecsiCititoriCub`) nu au schimbat măsurabil durata scrierii:
+la m = 12, BCS 26,0 → 25,3 ms, FCT 39,7 → 38,9 ms, NIR 33,5 → 30,2 ms, închiderea 76,0 →
+79,2 ms. Comenzile cu stoc emit două comenzi SQL în plus (gardul citește cumulul și
+fereastra separat).
+
+### Ce tranșează cifrele (X-D5 d)
+
+- **SAFT-r4 — închisă.** Balanța de cont și soldurile terților din L și S pornesc din
+  snapshot (`CitireCumul.Integrala`), sub accesul complet verificat de SAF-D4. Rândurile
+  atinse pe `Postare` sunt independente de m. `SaftAcces` cere acum și perioadele și
+  snapshot-ul contabil.
+- **FZ-r1 — închisă cu cifra, fără al doilea read model.** Pe aceeași bază, balanța
+  analitică din snapshot atinge 1.926 de rânduri din `Postare` la orice m, cea recitită
+  7.827 la m = 12. La acest volum recitirea e totuși mai rapidă: 8,1 ms față de 12,9 ms
+  (snapshot-ul aduce 1.383 de rânduri proprii). Granul lui `Sold` nu cere alt read
+  model; rapoartele API rămân pe citirea vizibilă (104b), cu cost care crește cu
+  istoricul.
+- **FZ-r3 — planul e măsurat; volumul real rămâne al migrării.** Indexul
+  `(Unitate, Data)` există acum pe ambele partiții. La k = 64 și m = 12 îl aleg, fără nicio
+  constrângere, plățile SAF-T L, partidele cu rest, dry-run-ul consumului, închiderea și
+  reconstrucția.
+- **103h — costurile raportului de impact au cifră.** La 128 de documente fiscale în
+  lună: 33 ms și 10,7 MiB pe ușa nesecurizată, 104 ms și 24,9 MiB pe cea securizată
+  (verificarea de permisiune per obiect), 17 comenzi SQL, independent de istoric.
+- **102-r5 — numai măsurat.** Dry-run-ul notei stingătoare citește toate partidele
+  deschise ale partenerului: 1.770 / 4.390 / 7.006 rânduri, 24–26 ms.
+- **Explicația deciziei.** Documentul de 64 de linii are o explicație de 58.066 de octeți
+  (907 pe linie). La m = 12 baza privată ține 2.094 de explicații, 2,15 MB în total.
+
+### Constatări în afara criteriilor
+
+- Raportul de stoc listează și capătul de consum al bonului: rânduri pe contul de
+  cheltuială, la locul de consum, cu cantitatea și valoarea consumate. Postarea de debit
+  a BCS poartă lotul ca unitate, iar `Loturi.Postari` o ia ca poziție de stoc. Controlul
+  numeric le separă: stocul din gestiunile reale și consumul cumulat sunt amândouă cele
+  așteptate. Pozițiile din snapshot cresc cu tot ce s-a consumat vreodată, nu numai cu
+  stocul existent.
+- Citirea vizibilă (ce rulează API-ul) recitește tot istoricul la fiecare raport cumulat:
+  la m = 12, 7.827 de rânduri pentru balanță față de 1.926 din snapshot.
+- Ușa securizată adaugă cinci comenzi SQL și 3–10 ms pe citire la cald; la rece, cu
+  logonul făcut, 240–320 ms față de 195–270 ms.
+- Planul ales de planificator la acest volum rămâne pe alocuri secvențial (tabelele au
+  sub 300 de pagini); de aceea criteriul din plan se evaluează fără scanare secvențială.

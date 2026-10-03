@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-10-03.** [Index](README.md)
+**Actualizat: 2026-10-04.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -471,6 +471,9 @@ ecranului S compară fiecare poziție cu postările pe lot ale lunii și stocul
 pe cont cu soldul contabil; diferența pe cont se sparge în „(sold inițial)”
 (din snapshot) și componentele lunii pe tipul documentului, fără a citi
 istoricul (B8-Q3). (SAF-D4, S2-D5, S3-D6)
+Soldurile de cont și ale terților din L și S pornesc din snapshot-ul contabil,
+deci accesul complet cerut include perioadele fiscale și soldurile de perioadă.
+(SAFT-r4, X-D5)
 
 ## Explicația deciziei (X-D4)
 

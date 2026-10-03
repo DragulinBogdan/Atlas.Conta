@@ -11,6 +11,9 @@
   **Pasul 2 (X-D4) implementat și verificat, 2026-10-03.**
   **Pasul 3 (X-D6) implementat și verificat, 2026-10-03.**
   **Pasul 4 (X-D7) implementat și verificat, 2026-10-03.**
+  **Pasul 5 (X-D5 + X-D3) implementat și măsurat, 2026-10-04; un criteriu de
+  formă rămâne picat (`PartideCuRest`) și cere decizia owner-ului — vezi
+  „Execuție”.**
 - Bază: [D8-B5](tr-d8-citiri-contract.md) pasul 5 și „Limite care împiedică
   închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
   091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
@@ -684,6 +687,130 @@ Ce a arătat implementarea și cum amendează X-D7:
 Validare: integrala **3.387 bugetar / 4.597 privat OK**, zero FAIL,
 `run-verificari/20261003-214312-683/`, pe clonele `.ClaudeX2`; 54 de scene
 per profil sub `INV-CUB`, toți mutanții uciși; `--probe-sursa` verde.
+
+### Pasul 5 — X-D5 + X-D3: scara transversală și reconcilierea pe baza de volum (2026-10-04)
+
+Livrat: scena `PerfCub` (`tools/ModelCheck/PerfCub*.cs`), modurile
+`ModelCheck --perf-cub` și `--perf-cub-masura`, rețeta
+`scripts/perf-cub-container.ps1`; reconcilierea integrală, `INV-CUB` și
+diagnosticul ASM-B7 pe baza de volum, la fiecare m, pe ambele profiluri;
+patru corecturi de formă în cititori și migrația `IndecsiCititoriCub`.
+Cifrele și tabelele sunt în `docs/api/p5-perf-masuratori.md` („TR-D8 gate-ul
+transversal”), regulile în `stare-curenta/`, limitele în `limite-curente.md`.
+
+Ce a arătat implementarea și cum amendează X-D5 și X-D3:
+
+1. **Scena.** Unitatea e cea din SAF-B8, pe ambele profiluri (bugetarul fără
+   DSC și fără TVA). Faptele „o dată per bază” stau în prima lună, pe parteneri
+   proprii, ca luna măsurată să conțină numai unități. La m = 0 luna întâi
+   rămâne deschisă, iar luna măsurată este a doua. Față de (a) s-au adăugat un
+   ASM pe conturi diferite, trei transformări 1 + 1 + 1 din 3 × 3,333333, o
+   factură de vânzare stornată și stingerea partidei de deschidere: fără ele
+   ramurile (g), (h) și ASM-B7 erau vide.
+2. **Rutele din producție.** Rapoartele API (balanță, fișă, sold parteneri,
+   partide cu rest, stoc) citesc `Vizibila`, deci recitesc postările (104b).
+   Din snapshot citesc motorul (evaluarea ieșirii, gardul de sold, închiderea,
+   TVA-ul lunii) și SAF-T. Matricea măsoară fiecare raport cumulat de trei ori:
+   securizat `Vizibila` (produsul), nesecurizat `Vizibila` și nesecurizat
+   `Integrala` (A/B-ul lui FZ-r1). S-a adăugat a patra rută, *interval*, pentru
+   cititorii care cer numai luna (jurnal, jurnale de TVA, D300, D394, raportul
+   de impact); criteriul din plan e același ca la *snapshot*.
+3. **Ușa securizată** e un `SecuredEFCoreObjectSpaceProvider` cu un utilizator
+   administrativ al scenei. Logonul precede măsurarea rece.
+4. **Controlul numeric** are așteptările scrise din regula contabilă a
+   unității: 1.280 de măsurători, toate trecute, aceleași înainte și după
+   corecturi. A prins o constatare de produs (punctul 11).
+5. **Proba din plan se evaluează fără scanare secvențială (amendament de
+   metodă, de confirmat de owner).** La k = 64 luna măsurată e un sfert din
+   bază, iar tabelele au sub 300 de pagini: planificatorul alege legitim
+   scanarea secvențială, care atinge istoricul oricât de bună ar fi forma
+   interogării. Criteriul numără rândurile atinse pe `Postare` (livrate plus
+   respinse de filtru) cu `enable_seqscan = off`: trece numai dacă există o
+   cale de acces independentă de m și nu rămâne nicio scanare secvențială.
+   Planul ales de planificator se raportează alături. Bufferele se cer
+   mărginite de rândurile atinse, nu egale între trepte: un `Index Scan`
+   numără fiecare acces la pagină, un `Bitmap Heap Scan` paginile distincte.
+6. **Prima rulare a picat criteriul pe aproape toți cititorii; cauzele au fost
+   de formă și s-au corectat în felie:**
+   - fereastra de după referință din `CumulPerioade.Citeste` compara
+     `an × 12 + lună` calculat din `Data`, deci nu putea folosi niciun index;
+     acum compară `Data` cu sfârșitul referinței, în aceeași instrucțiune;
+   - `Loturi.Postari` și `Partide.Postari` nu filtrau `Spatiu`, deci fiecare
+     citire parcurgea și partiția străină;
+   - gardul de sold intermediar citea tot istoricul lotului; acum pornește
+     din cumulul de dinaintea primei date propuse și citește zilele de la ea;
+   - raportul de impact încărca leneș tranzacția fiecărui document pe ușa
+     securizată (19 → 145 de comenzi SQL între k = 1 și k = 64); acum 17;
+   - lipseau indecși: `Data` și `(PerioadaDeclarare, TipTvaId)` pe partiția
+     de stoc, `PerioadaD394`, `DataExigibilitate` și `(Unitate, Data)` pe
+     ambele. Fiecare e folosit de cel puțin un plan ales la m = 12. Durata
+     scrierii nu s-a schimbat măsurabil.
+7. **SAFT-r4 e închisă.** Balanța de cont și soldurile terților din L și S
+   pornesc din snapshot. `SaftAcces.Citite` și `CititeStocuri` cer acum și
+   `PerioadaFiscala` și `SoldPerioadaContabil`.
+8. **FZ-r1 e închisă cu cifra.** Balanța din snapshot atinge 1.926 de rânduri
+   la orice m, cea recitită 7.827 la m = 12; la acest volum recitirea durează
+   8,1 ms, snapshot-ul 12,9 ms. Nu se adaugă un al doilea read model.
+9. **FZ-r3: planul e măsurat.** Indexul `(Unitate, Data)` e ales fără
+   constrângere de plățile SAF-T L, partidele cu rest, dry-run-ul consumului,
+   închidere și reconstrucție. Pragul pe volum real rămâne al migrării.
+10. **103h are cifră:** raportul de impact, la 128 de documente fiscale în
+    lună, 33 ms nesecurizat și 104 ms securizat, 17 comenzi SQL, independent
+    de istoric. 102-r5 e numai măsurat (dry-run-ul notei stingătoare citește
+    toate partidele deschise ale partenerului). Explicația unui document de 64
+    de linii are 58.066 de octeți.
+11. **Raportul de stoc listează capătul de consum al bonului.** Postarea de
+    debit a BCS poartă lotul ca unitate, pe contul de cheltuială și la locul
+    de consum, iar `Loturi.Postari` o ia ca poziție. Controlul numeric le
+    separă și le probează pe amândouă. Semantica raportului nu s-a schimbat
+    aici: e întrebare pentru owner.
+12. **Prețul blocajului (X-D6).** O comandă a unității durează 19–39 ms la
+    orice m; unitatea întreagă 284 ms pe privat și 237 ms pe bugetar la
+    m = 12; documentul de 64 de linii 110 ms; închiderea unei luni 79 ms.
+13. **X-D3: reconcilierea (f) nu cunoștea stornoul și deschiderea.** Prima
+    rulare integrală a dat două rânduri Δ: o factură stornată numărată fără
+    inversa ei și partida de deschidere, care nu are document. Defectul era
+    al diagnosticului: suma cubului lua numai `Operare` și `Transfer`. Acum
+    ia toate felurile, iar partidele de deschidere se compară pe unitate cu
+    rândurile de snapshot fără document.
+14. **X-D3 pe baza de volum:** (a)–(g) zero rânduri Δ și `INV-CUB` verde la
+    m = 0, 6 și 12, pe ambele profiluri. Artefactul `xd3-<profil>-m<m>.md`
+    listează faptele exercitate pe ramuri (toate nevide), notele, (h) și
+    ASM-B7. (h) raportează ASM-ul pe conturi diferite (cub 40, registre 0);
+    ASM-B7 raportează transformările 1 + 1 + 1 (±0,01) și loturile de
+    deschidere, fără corespondent în registre. Niciuna nu e declarată N-r3.
+    Trei mutanți `INV-CUB` nu au fapte în scenă (`IMO-ORIGINE`,
+    `EXPLICATIE-STORNO`, `EXPLICATIE-STINGERE`); pe bugetar și
+    `EXPLICATIE-DECLARATA`. Îi ucide catalogul de scenarii.
+15. **Criteriile de comenzi SQL** se citesc pe structură: reconstrucția are 4
+    comenzi fără referință și 14 cu una; închiderea lunii măsurate are 67 la
+    m = 6 și 64 la m = 12 (după decembrie referința precedentă rămâne);
+    amortizarea și închiderea se compară de la a treia lună încolo. La m = 0
+    închiderea lunii măsurate nu se poate măsura: lanțul cere luna întâi
+    închisă.
+
+**Criteriu rămas picat (regula de oprire, X-RV6).** `PREST-NI` — partidele
+cu rest, din snapshot: rândurile atinse pe `Postare` cresc cu m (2.242 /
+3.366 / 4.504 pe privat, 1.579 / 2.418 / 3.282 pe bugetar, la k = 64).
+Fereastra e constantă; crește `Partide.Origini`, care caută documentul
+deschizător parcurgând toate postările de partidă. E forma proiecției
+`DocumenteCuRest`, restanța F27-r16, care cade la TR-D9. Consumatorul de
+producție al rutei e constatarea de rest scadent de la închidere. **X-D5
+rămâne deschis până când owner-ul alege:** amendament explicit (cititorul
+`PartideCuRest`, criteriul din plan, cifrele de mai sus, restanța F27-r16)
+sau corectarea în felie (originea purtată de snapshot și de fereastră).
+
+De înregistrat la decizia de închidere: **X-r3** — raportul de stoc și
+capătul de consum al BCS (punctul 11). De confirmat de owner: amendamentul
+de metodă de la punctul 5.
+
+Validare: scara completă `run-verificari/perf-cub-20261004-002621/` —
+**1.488 OK / 1 FAIL privat, 970 OK / 1 FAIL bugetar** (același criteriu,
+`PREST-NI`), DUK fără atenționări pe cele 12 fișiere SAF-T; integrala
+**3.387 bugetar / 4.597 privat OK**, zero FAIL,
+`run-verificari/20261004-001917-630/`, pe clonele `.ClaudeX2`;
+`--probe-sursa` verde. Starea de dinaintea corecturilor:
+`run-verificari/perf-cub-20261003-231254/`.
 
 ## Ce NU intră (amânări cu nume)
 

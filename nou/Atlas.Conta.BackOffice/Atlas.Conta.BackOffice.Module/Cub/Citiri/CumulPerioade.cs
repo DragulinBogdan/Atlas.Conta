@@ -38,8 +38,8 @@ public static class CumulPerioade {
             .OrderByDescending(p => p.An).ThenByDescending(p => p.Luna).Take(1);
         var sold = snapshot.Where(s => referinta.Any(p => p.An == s.An && p.Luna == s.Luna));
         return sold.Select(s => s.Rand).Concat(direct
-            .Where(m => m.Data.Year * 12 + m.Data.Month
-                > (sold.Select(s => (int?)(s.An * 12 + s.Luna)).Max() ?? 0))
+            .Where(m => m.Data > (sold.Select(s => (DateOnly?)new DateOnly(s.An, s.Luna, 1).AddMonths(1).AddDays(-1)).Max()
+                ?? DateOnly.MinValue))
             .Select(m => m.Rand));
     }
 }

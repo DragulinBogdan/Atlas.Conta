@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-10-03.** [Index](README.md)
+**Actualizat: 2026-10-04.** [Index](README.md)
 
 ## Modelul comun
 
@@ -385,11 +385,16 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
 - Raportul de stoc, FIFO și pinurile folosesc `Cub.Citiri.Loturi.Cumulate`:
   referință plus fereastră, pe cheia completă. `CumulPerioade.Citeste` alege
   referința și citește sumele în aceeași instrucțiune SQL pentru contabil,
-  stoc și partide. Citirile securizate recitesc postările. Evaluarea ieșirii
+  stoc și partide. Fereastra de după referință se filtrează pe `Data`,
+  comparată cu sfârșitul referinței, deci folosește indexul pe dată; cititorii
+  de loturi și de partide citesc numai partiția lor (`Spatiu`). Citirile
+  securizate recitesc postările. Evaluarea ieșirii
   transmite o graniță strict anterioară datei documentului exclus; fără
-  această garanție, excluderea recitește integral postările. Gardul de sold intermediar
-  verifică prefixele zilnice direct în cub. `StocService` rămâne cititorul
+  această garanție, excluderea recitește integral postările. Gardul de sold
+  intermediar pornește din cumulul de dinaintea primei date propuse și
+  verifică prefixele zilnice de la ea încolo, în cub. `StocService` rămâne cititorul
   explicit al registrului în regimul dual și nu consumă snapshot-ul cubului.
+  (F27-D3, X-D5)
   (TR-D8 D8-B1/B5)
 - Soldurile conturilor de TVA ale închiderii lunare vin din aceeași sursă
   cumulată. (F27-D3)

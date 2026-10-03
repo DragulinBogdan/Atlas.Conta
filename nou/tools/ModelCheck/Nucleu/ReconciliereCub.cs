@@ -146,7 +146,7 @@ static class ReconciliereCub {
 
     sealed record RandPartida(Guid Document, Guid Cont, Guid Unitate, Guid? Partener, DateOnly Deschisa);
 
-    // (f) S-D13 — per PARTIDĂ, la ultima perioadă închisă: Σ cub (`Operare` ⊕ `Transfer`,
+    // (f) S-D13 — per PARTIDĂ, la ultima perioadă închisă: Σ cub (toate felurile,
     // `Data` ≤ sfârșitul perioadei) pe unitate = `PartideDeschise.Rest` al documentului
     // care a deschis-o. Adaptorul recunoaște identitatea 092;
     // nominalizarea FIFO nu face din documentul consumator un nou deschizător.
@@ -216,20 +216,26 @@ static class ReconciliereCub {
 
         var solduri = Citeste(ctx, """
             select p."Unitate",
-                   sum(case when p."Latura" = 1 then p."Valoare" else -p."Valoare" end)
+                   sum(case when p."Latura" = 1 then p."Valoare" else -p."Valoare" end),
+                   bool_or(t."Fel" = 4)
             from "Postare" p
             join "Tranzactie" t on t."ID" = p."TranzactieId"
-            where t."Fel" in (1, 3) and p."Spatiu" = 1 and p."Unitate" is not null
+            where p."Spatiu" = 1 and p."Unitate" is not null
               and p."Carte" = 1 and p."FelUnitate" = 2
               and p."Data" <= @sfarsit and p."Cont" = any(@cont)
             group by 1
-            """, null, cititor => (Unitate: cititor.GetGuid(0), Net: cititor.GetDecimal(1)),
+            """, null, cititor => (Unitate: cititor.GetGuid(0), Net: cititor.GetDecimal(1), Initiala: cititor.GetBoolean(2)),
             eligibile, sfarsit);
 
         var alCubului = new Dictionary<Guid, decimal>();
-        foreach (var (unitate, net) in solduri) {
+        var initiale = new Dictionary<Guid, decimal>();
+        foreach (var (unitate, net, initiala) in solduri) {
             if (net == 0m)
                 continue;
+            if (initiala) {
+                initiale[unitate] = Math.Abs(net);
+                continue;
+            }
             if (!alUnitatii.TryGetValue(unitate, out var document)) {
                 randuri.Add(new Rand("(f) partide",
                     $"unitatea {unitate.ToString()[..8]} are Σ ≠ 0 fără document deschizător în cub",
@@ -262,9 +268,24 @@ static class ReconciliereCub {
                 randuri.Add(new Rand("(f) partide",
                     $"documentul {document.ToString()[..8]} la {an}-{luna:00}", cub, registre));
         }
+        // Partida deschisă de `Deschidere` nu are document: se compară pe unitate, numai pe baza întreagă.
+        var initialeSnapshot = set is not null ? [] : Citeste(ctx, """
+            select pd."UnitateId", pd."Rest" from "PartideDeschise" pd
+            where pd."An" = @an and pd."Luna" = @luna and pd."DocumentId" is null and pd."ContId" = any(@cont)
+            """, null, cititor => (Unitate: cititor.GetGuid(0), Ramas: cititor.GetDecimal(1)), eligibile, null, an, luna)
+            .ToDictionary(x => x.Unitate, x => Math.Abs(x.Ramas));
+        if (set is null)
+            foreach (var unitate in initiale.Keys.Union(initialeSnapshot.Keys)) {
+                var cub = initiale.GetValueOrDefault(unitate);
+                var registre = initialeSnapshot.GetValueOrDefault(unitate);
+                if (cub != registre)
+                    randuri.Add(new Rand("(f) partide",
+                        $"partida de deschidere {unitate.ToString()[..8]} la {an}-{luna:00}", cub, registre));
+            }
         note?.Add($"(f) partide: {eligibile.Length} conturi eligibile din {conturi.Count}, "
             + $"perioada {an}-{luna:00}, {alUnitatii.Count} partide în cub, "
-            + $"{alRegistrelor.Count} rânduri `PartideDeschise` comparate.");
+            + $"{alRegistrelor.Count} rânduri `PartideDeschise` comparate"
+            + (set is null ? $", {initiale.Count} partide de deschidere contra {initialeSnapshot.Count} rânduri fără document." : "."));
         return randuri;
     }
 

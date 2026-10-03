@@ -248,6 +248,12 @@ if (args.Contains("--perf-saft-masura")) {
     Rezumat();
     return;
 }
+// X-D5: procesul-copil al unui punct (m, k, operație) al scării transversale.
+if (args.Contains("--perf-cub-masura")) {
+    var i = Array.IndexOf(args, "--perf-cub-masura");
+    Console.WriteLine(PerfCub.Json(PerfCub.MasoaraInProces(connectionString, PerfCub.DinArgument(args[i + 1]), args[i + 2])));
+    return;
+}
 if (args.Contains("--perf-saft-duk")) {
     PerfSaft.ValideazaDuk(args[Array.IndexOf(args, "--perf-saft-duk") + 1], Check);
     Rezumat();
@@ -730,6 +736,49 @@ if (args.Contains("--perf-saft")) {
         Console.WriteLine($"     PERF m{istoricPerf}: {ceasPerf.Elapsed.TotalSeconds:0} s");
     }
     PerfSaft.Evalueaza(masuriPerf, Check, directorPerf);
+    Rezumat();
+    return;
+}
+
+// X-D5 / X-D3: `ModelCheck --perf-cub [privat]` — scara transversală a cititorilor comuni și reconcilierea pe baza de volum.
+if (args.Contains("--perf-cub")) {
+    var privatPerf = profil == ProfilContabil.Privat;
+    var directorPerf = Environment.GetEnvironmentVariable("PERF_CUB_DIR")
+        ?? Path.Combine(Duk.DirectorTemporar(), $"perf-cub-{DateTime.UtcNow:yyyyMMdd-HHmmss}");
+    Directory.CreateDirectory(directorPerf);
+    int[] Lista(string nume, string lipsa) => (Environment.GetEnvironmentVariable(nume) ?? lipsa)
+        .Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray();
+    var istoricePerf = Lista("PERF_CUB_M", "0,6,12");
+    var treptePerf = Lista("PERF_CUB_K", "1,4,16,64");
+    var unitatiPerf = Lista("PERF_CUB_UNITATI", "16")[0];
+    List<PerfCub.Masura> MasoaraProces(PerfCub.Punct p) {
+        var psi = new ProcessStartInfo(Environment.ProcessPath!) { RedirectStandardOutput = true, UseShellExecute = false };
+        foreach (var a in new[] { typeof(PerfCub).Assembly.Location, "--perf-cub-masura", PerfCub.Argument(p), directorPerf }
+                     .Concat(privatPerf ? ["privat"] : Array.Empty<string>()))
+            psi.ArgumentList.Add(a);
+        using var copil = Process.Start(psi)!;
+        List<PerfCub.Masura> masuri = null;
+        for (string linie; (linie = copil.StandardOutput.ReadLine()) != null;) {
+            if (linie.StartsWith(PerfCub.PrefixJson, StringComparison.Ordinal)) masuri = PerfCub.DinJson(linie);
+            else if (linie.StartsWith("     ") || linie.StartsWith("FAIL")) Console.WriteLine(linie);
+        }
+        copil.WaitForExit();
+        Check($"X-D5: procesul de măsurare {p.Operatie} m{p.Istoric} k{p.Unitati} se încheie fără eșec", copil.ExitCode == 0 && masuri != null);
+        return masuri ?? [];
+    }
+    var scenePerf = new List<PerfCub>();
+    foreach (var istoricPerf in istoricePerf) {
+        var scenaPerf = new PerfCub(() => provider.CreateObjectSpace(), Check, privatPerf, (os, an, luna) => InchideAcceptTot(os, an, luna),
+            2060 + istoricPerf / 3, istoricPerf, unitatiPerf, treptePerf, MasoaraProces, directorPerf, opts);
+        var ceasPerf = Stopwatch.StartNew();
+        scenaPerf.Ruleaza();
+        scenePerf.Add(scenaPerf);
+        var neucise = AcoperireInvarianti.Neucise.ToList();
+        File.AppendAllText(Path.Combine(directorPerf, $"xd3-{(privatPerf ? "privat" : "bugetar")}-m{istoricPerf}.md"),
+            $"\n## Mutanții INV-CUB după m = {istoricPerf}\n\nNeuciși încă: {(neucise.Count == 0 ? "niciunul" : string.Join(", ", neucise))}.\n");
+        Console.WriteLine($"     PERFCUB m{istoricPerf}: {ceasPerf.Elapsed.TotalSeconds:0} s; mutanți INV-CUB neuciși: {(neucise.Count == 0 ? "niciunul" : string.Join(", ", neucise))}");
+    }
+    PerfCub.Evalueaza(scenePerf, Check, directorPerf, privatPerf);
     Rezumat();
     return;
 }

@@ -270,7 +270,7 @@ public static partial class SaftProiectii {
         IObjectSpace os, DateOnly dataStart, DateOnly dataEnd,
         Dictionary<Guid, (string Simbol, string Denumire, string Functie, RolTertCont RolTert)> conturi,
         Action<CodAvertismentSaft, string> avert) {
-        var balanta = ContabilProiectii.Balanta(os, dataStart, dataEnd, analitic: false).ToList();
+        var balanta = ContabilProiectii.Balanta(os, dataStart, dataEnd, analitic: false, citire: Cub.Citiri.CitireCumul.Integrala).ToList();
         var rezultat = new List<SaftCont>();
         foreach (var b in balanta
                      .OrderBy(x => x.ContSimbol ?? "", StringComparer.Ordinal).ThenBy(x => x.ContId)) {

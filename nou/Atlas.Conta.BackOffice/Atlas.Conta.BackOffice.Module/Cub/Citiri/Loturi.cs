@@ -19,7 +19,7 @@ public struct SoldLot {
 
 public static class Loturi {
     public static IQueryable<Postare> Postari(IObjectSpace os) => os.GetObjectsQuery<Postare>()
-        .Where(p => p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Lot
+        .Where(p => p.Spatiu == N.Spatiu.Stoc && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Lot
             && p.Unitate != null && p.Produs != null && p.Gestiune != null);
 
     public static IQueryable<RandDatat<SoldLot>> Miscari(IObjectSpace os, Guid? faraDocumentId = null) {
@@ -83,13 +83,15 @@ public static class Loturi {
         if (delta.Length == 0) return;
         var chei = delta.Select(p => p.Cheie).ToHashSet();
         var loturi = chei.Select(c => c.Lot).Distinct().ToArray();
-        var istoric = Postari(os).Where(p => loturi.Contains(p.Unitate.Value))
+        var primaData = delta.Min(p => p.Data);
+        var initial = Cumulate(os, CitireCumul.Integrala, primaData.AddDays(-1)).Where(s => loturi.Contains(s.LotId)).ToList()
+            .Select(s => (Cheie: new CheieLotFapt(s.LotId, s.ContId, s.ProdusId, s.GestiuneId), Data: DateOnly.MinValue, s.Cantitate));
+        var istoric = initial.Concat(Postari(os).Where(p => loturi.Contains(p.Unitate.Value) && p.Data >= primaData)
             .GroupBy(p => new { p.Unitate, p.Cont, p.Produs, p.Gestiune, p.Data })
             .Select(g => new { g.Key, Cantitate = g.Sum(p => p.Cantitate) }).ToList()
             .Select(p => (Cheie: new CheieLotFapt(p.Key.Unitate.Value, p.Key.Cont,
-                p.Key.Produs.Value, p.Key.Gestiune.Value), p.Key.Data, p.Cantitate))
+                p.Key.Produs.Value, p.Key.Gestiune.Value), p.Key.Data, p.Cantitate)))
             .Where(p => chei.Contains(p.Cheie));
-        var primaData = delta.Min(p => p.Data);
         foreach (var grup in istoric.Concat(delta).GroupBy(p => p.Cheie)) {
             decimal sold = 0m;
             foreach (var zi in grup.GroupBy(p => p.Data).OrderBy(g => g.Key)) {
