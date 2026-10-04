@@ -15,13 +15,17 @@ public static class FiscalitateService {
                 "SELECT pg_advisory_xact_lock_shared({0})", CheieDepuneri);
     }
 
-    public static void VerificaAnularea(IObjectSpace os, Document doc) {
-        if (doc is not IDocumentFiscal) return;
+    public static void VerificaAnularea(IObjectSpace os, Document doc) => MotorOperare.Refuza(MotivAnulare(os, doc));
+
+    /// <summary>Faptele fiscale deja declarate nu se șterg prin anulare; null = liber.</summary>
+    public static string MotivAnulare(IObjectSpace os, Document doc) {
+        if (doc is not IDocumentFiscal) return null;
         var depuneri = os.GetObjectsQuery<DepunereDeclaratie>();
-        if (Cub.Citiri.Fiscale.Postari(os).Any(p => p.DocumentId == doc.ID
+        return Cub.Citiri.Fiscale.Postari(os).Any(p => p.DocumentId == doc.ID
                 && depuneri.Any(d => d.Formular == FormularFiscal.D300 && d.Perioada == p.PerioadaDeclarare
-                    || d.Formular == FormularFiscal.D394 && d.Perioada == p.PerioadaD394)))
-            throw new OperareException("TVA_DEJA_DECLARATA: faptele declarate se corectează prin inversă, nu se șterg prin anularea operării.");
+                    || d.Formular == FormularFiscal.D394 && d.Perioada == p.PerioadaD394))
+            ? "TVA_DEJA_DECLARATA: faptele declarate se corectează prin inversă, nu se șterg prin anularea operării."
+            : null;
     }
 
     public sealed record Atribuire(int PerioadaD300, N.ReperFiscal Reper);

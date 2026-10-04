@@ -229,8 +229,7 @@ public static partial class Materializare {
         ReceptiiConexe.VerificaFaraDependenti(os, doc);
         VerificaPartideFaraDependenti(os, doc, doc.DataInregistrare);
         VerificaSuportFaraDependenti(os, doc, doc.DataInregistrare);
-        if (StingeriDeschidere(os, doc.ID).Any())
-            throw new OperareException($"{StingereDeschidereInvalida}: Documentul are stingere de partidă inițială; folosiți storno.");
+        MotorOperare.Refuza(MotivStingereDeschidere(os, doc));
         var tranzactii = os.GetObjectsQuery<Tranzactie>()
             .Where(t => t.DocumentId == doc.ID
                 && (t.Fel == N.FelTranzactie.Operare || t.Fel == N.FelTranzactie.Transfer))
@@ -245,31 +244,66 @@ public static partial class Materializare {
         os.Delete(tranzactii);
     }
 
-    static void VerificaPartideFaraDependenti(IObjectSpace os, Document doc, DateOnly deLa) {
+    sealed record NominalizarePartida(Guid? Document, Guid? Unitate, DateOnly Data, decimal Net);
+    sealed record NominalizareSuport(Guid? Suport, Guid? Document, DateOnly Data, decimal Valoare);
+
+    /// <summary>Nominalizările altor documente pe partidele și pe suportul documentului, citite o dată, fără blocaj (106k).</summary>
+    public sealed class Nominalizari {
+        readonly List<NominalizarePartida> partide;
+        readonly List<NominalizareSuport> suport;
+
+        internal Nominalizari(IObjectSpace os, Document doc) {
+            partide = DependentiPartide(os, doc);
+            suport = DependentiSuport(os, doc);
+        }
+
+        /// <summary>Motivul nominalizărilor active de la data dată, sau null; <c>DateOnly.MaxValue</c> = active la orice dată. <paramref name="faraDocumente"/> = documentele ale căror legături le desface aceeași comandă.</summary>
+        public string Motiv(DateOnly deLa, IReadOnlyCollection<Guid> faraDocumente = null) =>
+            MotivPartide(faraDocumente is { Count: > 0 }
+                    ? partide.Where(p => p.Document is not Guid id || !faraDocumente.Contains(id)) : partide, deLa)
+                ?? MotivSuport(suport, deLa);
+    }
+
+    public static Nominalizari CitesteNominalizari(IObjectSpace os, Document doc) => new(os, doc);
+
+    /// <summary>Anularea nu desface stingerea unei partide inițiale; null = liber.</summary>
+    public static string MotivStingereDeschidere(IObjectSpace os, Document doc) =>
+        StingeriDeschidere(os, doc.ID).Any()
+            ? $"{StingereDeschidereInvalida}: Documentul are stingere de partidă inițială; folosiți storno."
+            : null;
+
+    static void VerificaPartideFaraDependenti(IObjectSpace os, Document doc, DateOnly deLa) =>
+        MotorOperare.Refuza(MotivPartide(DependentiPartide(os, doc), deLa));
+
+    static string MotivPartide(IEnumerable<NominalizarePartida> dependenti, DateOnly deLa) =>
+        dependenti.GroupBy(p => new { p.Document, p.Unitate })
+            .Any(g => Citiri.Partide.Evolutie(g.Select(p => (p.Data, p.Net)), deLa).Any(p => p.Sold != 0m))
+            ? $"{CoduriRefuz.PartidaCuDependenti}: Partida documentului este nominalizată de alte documente active."
+            : null;
+
+    static List<NominalizarePartida> DependentiPartide(IObjectSpace os, Document doc) {
         var unitati = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == doc.ID && (p.Tranzactie.Fel == N.FelTranzactie.Operare || p.Tranzactie.Fel == N.FelTranzactie.Transfer)
                 && p.Spatiu == N.Spatiu.Contabil && p.Unitate != null && p.Partener != null)
             .ToList().Select(p => Randuri.Citeste(p).Coordonate.Unitate)
             .Where(u => IdentitatiPartide.EsteProprie(u, doc.ID)).Select(u => u.Id).Distinct().ToList();
-        if (unitati.Count == 0) return;
+        if (unitati.Count == 0) return [];
         var dependenti = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId != doc.ID && p.Unitate != null && unitati.Contains(p.Unitate.Value)
                 && p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil)
             .GroupBy(p => new { p.DocumentId, p.Unitate, p.Data })
             .Select(g => new { g.Key.DocumentId, g.Key.Unitate, g.Key.Data,
                 Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
-            .Where(p => p.Net != 0m).ToList();
+            .Where(p => p.Net != 0m).ToList()
+            .Select(p => new NominalizarePartida(p.DocumentId, p.Unitate, p.Data, p.Net));
         // Desfacerea din aceeași comandă nu e încă în SQL: se adaugă numai rândurile noi.
         var inCurs = os.ModifiedObjects.OfType<Postare>()
             .Where(p => os.IsNewObject(p) && p.DocumentId != doc.ID
                 && p.Unitate != null && unitati.Contains(p.Unitate.Value)
                 && p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil)
-            .Select(p => new { p.DocumentId, p.Unitate, p.Data,
-                Net = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare });
-        var activ = dependenti.Concat(inCurs).GroupBy(p => new { p.DocumentId, p.Unitate })
-            .Any(g => Citiri.Partide.Evolutie(g.Select(p => (p.Data, p.Net)), deLa).Any(p => p.Sold != 0m));
-        if (activ)
-            throw new OperareException($"{CoduriRefuz.PartidaCuDependenti}: Partida documentului este nominalizată de alte documente active.");
+            .Select(p => new NominalizarePartida(p.DocumentId, p.Unitate, p.Data,
+                p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare));
+        return [.. dependenti, .. inCurs];
     }
 
     static N.Contract Contracteaza(IObjectSpace os, Document doc, TipDocument tip) =>

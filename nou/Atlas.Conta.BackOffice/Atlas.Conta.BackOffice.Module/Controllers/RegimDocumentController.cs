@@ -10,7 +10,7 @@ namespace Atlas.Conta.BackOffice.Module.Controllers;
 // potrivite după sufixul ID-ului acțiunii („Document.Opereaza” → „Opereaza”).
 public class RegimDocumentController : ObjectViewController<DetailView, Document> {
     const string Cheie = "Regim";
-    readonly Dictionary<string, string> tooltipuri = [];
+    readonly Dictionary<ActionBase, string> tooltipuri = [];
 
     protected override void OnActivated() {
         base.OnActivated();
@@ -24,6 +24,12 @@ public class RegimDocumentController : ObjectViewController<DetailView, Document
         View.CurrentObjectChanged -= OnSchimbare;
         ObjectSpace.Committed -= OnSchimbare;
         ObjectSpace.Reloaded -= OnSchimbare;
+        // Controllerele și acțiunile frame-ului se refolosesc între view-uri (docs DevExpress 112728).
+        foreach (var (actiune, tooltip) in tooltipuri) {
+            actiune.Enabled.RemoveItem(Cheie);
+            actiune.ToolTip = tooltip;
+        }
+        tooltipuri.Clear();
         base.OnDeactivated();
     }
 
@@ -37,10 +43,10 @@ public class RegimDocumentController : ObjectViewController<DetailView, Document
             var comanda = Comanda(actiune);
             if (comanda == null)
                 continue;
-            tooltipuri.TryAdd(actiune.Id, actiune.ToolTip);
+            tooltipuri.TryAdd(actiune, actiune.ToolTip);
             var motiv = regim?.Motiv(comanda);
             actiune.Enabled[Cheie] = regim == null || motiv == null;
-            actiune.ToolTip = motiv ?? tooltipuri[actiune.Id];
+            actiune.ToolTip = motiv ?? tooltipuri[actiune];
         }
     }
 

@@ -25,7 +25,7 @@ static class ProbeTransferCititori {
     ];
 
     static readonly (string Fisier, string Membru, string Rol)[] Permise = [
-        (Modul + "Cub/Materializare.cs", "Materializare.VerificaPartideFaraDependenti", "scriitorul: retragerea refuză partidele cu dependenți"),
+        (Modul + "Cub/Materializare.cs", "Materializare.DependentiPartide", "scriitorul și regimul: retragerea refuză partidele cu dependenți"),
         (Modul + "Cub/Materializare.cs", "Materializare.DesfaceTransfer", "scriitorul: inversa transferului unei legături"),
         (Modul + "Cub/Materializare.cs", "Materializare.Storneaza", "scriitorul: stornoul inversează și transferurile"),
         (Modul + "Cub/Materializare.cs", "Materializare.Anuleaza", "scriitorul: anularea șterge și transferurile"),

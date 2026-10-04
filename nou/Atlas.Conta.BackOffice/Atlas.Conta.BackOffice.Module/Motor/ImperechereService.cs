@@ -61,22 +61,34 @@ public static class ImperechereService {
     }
 
     internal static void InverseazaLaStorno(IObjectSpace os, Document doc, DateOnly dataStorno) {
-        var legaturi = os.GetObjectsQuery<Imperechere>()
-            .Where(i => i.DocumentStingatorId == doc.ID || i.DocumentId == doc.ID)
-            .ToList();
-        if (legaturi.Count == 0)
-            return;
-        var inversate = legaturi.Where(i => i.InverseazaId != null)
-            .Select(i => i.InverseazaId.Value).ToHashSet();
-        var vii = legaturi
-            .Where(i => i.InverseazaId == null && !inversate.Contains(i.ID))
-            .ToList();
-        if (vii.Any(i => EstePerioadaDeschisa(os, i.Data)))
-            throw new OperareException(
-                "Documentul are imperecheri (stingeri) — ștergeți-le întâi, apoi anulați/stornați.");
+        var vii = Vii(Toate(os, doc));
+        MotorOperare.Refuza(MotivVii(vii, data => EstePerioadaDeschisa(os, data)));
         foreach (var legatura in vii)
             CreeazaInvers(os, legatura, dataStorno,
                 !(legatura.Autogenerat && legatura.DocumentStingatorId == doc.ID));
+    }
+
+    /// <summary>Citirea fără blocaj a legăturilor documentului (106k): anularea refuză pe orice legătură (31d), stornoul pe una vie într-o perioadă deschisă (088j); partenerii sunt documentele ale căror legături le-ar desface stornoul.</summary>
+    public static (string Anulare, string Stornare, IReadOnlyList<Guid> Parteneri) Motive(IObjectSpace os, Document doc) {
+        var toate = Toate(os, doc);
+        var vii = Vii(toate);
+        return (toate.Count > 0 ? MotorOperare.MesajImperecheri : null,
+            MotivVii(vii, data => GardianPerioada.MotivInchisa(os, data) == null),
+            vii.Select(i => i.DocumentStingatorId == doc.ID ? i.DocumentId : i.DocumentStingatorId).Distinct().ToList());
+    }
+
+    static string MotivVii(IEnumerable<Imperechere> vii, Func<DateOnly, bool> deschisa) =>
+        vii.Any(i => deschisa(i.Data)) ? MotorOperare.MesajImperecheri : null;
+
+    static List<Imperechere> Toate(IObjectSpace os, Document doc) =>
+        os.GetObjectsQuery<Imperechere>()
+            .Where(i => i.DocumentStingatorId == doc.ID || i.DocumentId == doc.ID)
+            .ToList();
+
+    static List<Imperechere> Vii(List<Imperechere> legaturi) {
+        var inversate = legaturi.Where(i => i.InverseazaId != null)
+            .Select(i => i.InverseazaId.Value).ToHashSet();
+        return legaturi.Where(i => i.InverseazaId == null && !inversate.Contains(i.ID)).ToList();
     }
 
     public static void Sterge(IObjectSpace os, Guid imperechereId) {

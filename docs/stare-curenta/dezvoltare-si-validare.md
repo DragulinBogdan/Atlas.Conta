@@ -83,7 +83,17 @@ sufixul ID-ului o comandă din `RegimDocument.ComenziCunoscute`; prin scanare
 sintactică, nicio affordance `Poate*` din `Module/Api/` nu se calculează din
 `StareDocument`, niciun controller nu poartă cheia „Stare” și niciun tip din
 `BusinessObjects/` nu decide `Sterge` (106j). Catalogul
-`REGIM` (`ScenariiRegim.cs`, anul 2013) rulează cu `--scenarii REGIM`. Probele
+`REGIM` (`ScenariiRegim.cs`, anul 2013) rulează cu `--scenarii REGIM`.
+Conformitatea regim ↔ comandă (SC-X-24, 106k) rulează în fiecare scenă:
+`ScenaDocumente.Anuleaza`, `Storneaza` și `Corecteaza` citesc regimul
+înaintea comenzii și numără abaterile în ambele sensuri. Un refuz lăsat
+comenzii se dovedește pe starea documentului (`ProbeRegim.Clasifica`): pe
+valori, pe data cerută ori pe limita 106-r7, al cărei număr îl declară scena
+(`LimiteRegim`). O scenă care probează
+concurența sau prima instrucțiune SQL a comenzii cheamă `ComenziDocument`
+direct, nu helperul. Un gardian nou de dependență pe calea anulării sau a
+stornării intră ca predicat `Motiv*` în `Motor/GardieniRetragere`; altfel
+SC-X-24 cade la prima scenă care îl atinge. Probele
 axei 2 (`tools/ModelCheck/ProbeLinii.cs`, 106h-1…3) rulează pe modelul XAF
 real, în rularea integrală, cu registrul baseline-ului construit pe loc:
 fiecare grilă tipizată de linii începe cu coloanele rolurilor în ordinea

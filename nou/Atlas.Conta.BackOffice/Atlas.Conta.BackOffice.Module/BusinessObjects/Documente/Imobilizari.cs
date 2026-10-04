@@ -221,9 +221,14 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
         }
     }
 
+    public string MotivDependenti(IObjectSpace os) =>
+        MotivFapteUlterioare(os, ID, DataInregistrare, Fise(os, Detalii).Keys);
+
+    public string MotivPerioadaStornarii(IObjectSpace os) => MotivLunaStornarii(os, DataInregistrare);
+
     public void EliminaRegistrul(IObjectSpace os) {
         var fise = Fise(os, Detalii);
-        VerificaFaraFapteUlterioare(os, ID, DataInregistrare, fise.Keys);
+        MotorOperare.Refuza(MotivFapteUlterioare(os, ID, DataInregistrare, fise.Keys));
         os.Delete(RanduriProprii(os));
         foreach (var l in Detalii.OfType<PunereInFunctiuneDetaliu>())
             if (l.Fel == FelLiniePif.Intrare)
@@ -232,7 +237,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
 
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
         var fise = Fise(os, Detalii);
-        VerificaFaraFapteUlterioare(os, ID, DataInregistrare, fise.Keys);
+        MotorOperare.Refuza(MotivFapteUlterioare(os, ID, DataInregistrare, fise.Keys));
         VerificaLunaStornarii(DataInregistrare, data);
         foreach (var r in RanduriProprii(os))
             Inverseaza(os, r, data);
@@ -252,7 +257,7 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
     }
 
     // Corecția directă doar fără dependenți (14): un fapt ulterior viu s-a calculat pe cifrele astea.
-    internal static void VerificaFaraFapteUlterioare(IObjectSpace os, Guid id, DateOnly data,
+    internal static string MotivFapteUlterioare(IObjectSpace os, Guid id, DateOnly data,
             IEnumerable<Guid> fise) {
         var ids = fise.ToList();
         var ulterioare = Cub.Citiri.Imobilizari.Randuri(os, ids, DateOnly.MaxValue)
@@ -260,11 +265,16 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
             .Select(r => new { r.Rand.Storno, r.Rand.DetaliuId, r.Rand.Fel, r.Rand.Data }).ToList();
         var stornate = ulterioare.Where(r => r.Storno).Select(r => r.DetaliuId).ToHashSet();
         var viu = ulterioare.FirstOrDefault(r => !r.Storno && !stornate.Contains(r.DetaliuId));
-        if (viu != null)
-            throw new OperareException(
-                $"Fișele documentului au fapte ulterioare nestornate („{viu.Fel}” din {viu.Data:dd.MM.yyyy}) — "
-                + "anulați-le sau stornați-le pe acelea întâi.");
+        return viu == null ? null
+            : $"Fișele documentului au fapte ulterioare nestornate („{viu.Fel}” din {viu.Data:dd.MM.yyyy}) — "
+                + "anulați-le sau stornați-le pe acelea întâi.";
     }
+
+    // 87g: singura dată admisă a stornării e în luna documentului, deci perioada ei se citește fără comandă.
+    internal static string MotivLunaStornarii(IObjectSpace os, DateOnly dataDocument) =>
+        GardianPerioada.MotivInchisa(os, dataDocument) is { } inchisa
+            ? $"Un document de imobilizări se stornează cu o dată din luna lui ({dataDocument:MM.yyyy}). {inchisa}"
+            : null;
 
     // Situația la o dată e o sumă de rânduri ≤ dată: un rând invers datat în altă lună ar lăsa
     // lunile dintre document și storno cu o situație falsă (87g).
@@ -459,15 +469,17 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
         }
     }
 
+    public string MotivPerioadaStornarii(IObjectSpace os) => PunereInFunctiune.MotivLunaStornarii(os, DataInregistrare);
+
     public void EliminaRegistrul(IObjectSpace os) {
-        VerificaFaraAmortizareUlterioara(os);
+        MotorOperare.Refuza(MotivDependenti(os));
         var id = ID;
         os.Delete(os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList());
         ReaduInFunctiune(os);
     }
 
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
-        VerificaFaraAmortizareUlterioara(os);
+        MotorOperare.Refuza(MotivDependenti(os));
         PunereInFunctiune.VerificaLunaStornarii(DataInregistrare, data);
         var id = ID;
         foreach (var r in os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList())
@@ -476,13 +488,12 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
     }
 
     // Lunile de după ieșire s-au generat FĂRĂ fișele ieșite (simetricul refuzului de la operare).
-    void VerificaFaraAmortizareUlterioara(IObjectSpace os) {
-        if (AmortizareOperataDinLuna(os, DataInregistrare) is { } amo)
-            throw new OperareException(
-                $"Amortizarea {amo.Numar} ({amo.Data:dd.MM.yyyy}) e operată pentru luna ieșirii sau una "
+    public string MotivDependenti(IObjectSpace os) =>
+        AmortizareOperataDinLuna(os, DataInregistrare) is { } amo
+            ? $"Amortizarea {amo.Numar} ({amo.Data:dd.MM.yyyy}) e operată pentru luna ieșirii sau una "
                 + "ulterioară, fără fișele ieșite — readuse în funcțiune, lunile acelea le-ar lipsi. "
-                + "Stornați-o pe aceea întâi.");
-    }
+                + "Stornați-o pe aceea întâi."
+            : null;
 
     static (string Numar, DateOnly Data)? AmortizareOperataDinLuna(IObjectSpace os, DateOnly data) {
         var primaZi = new DateOnly(data.Year, data.Month, 1);
@@ -650,35 +661,35 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
         }
     }
 
+    public string MotivPerioadaStornarii(IObjectSpace os) => PunereInFunctiune.MotivLunaStornarii(os, DataInregistrare);
+
     public void EliminaRegistrul(IObjectSpace os) {
-        VerificaFaraDependenti(os);
+        MotorOperare.Refuza(MotivDependenti(os));
         var id = ID;
         os.Delete(os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList());
     }
 
     public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
-        VerificaFaraDependenti(os);
+        MotorOperare.Refuza(MotivDependenti(os));
         PunereInFunctiune.VerificaLunaStornarii(DataInregistrare, data);
         var id = ID;
         foreach (var r in os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList())
             PunereInFunctiune.Inverseaza(os, r, data);
     }
 
-    void VerificaFaraDependenti(IObjectSpace os) {
-        VerificaFaraAmortizareUlterioara(os);
-        PunereInFunctiune.VerificaFaraFapteUlterioare(os, ID, DataInregistrare,
+    public string MotivDependenti(IObjectSpace os) =>
+        MotivAmortizareUlterioara(os)
+        ?? PunereInFunctiune.MotivFapteUlterioare(os, ID, DataInregistrare,
             Detalii.OfType<AmortizareLunaraDetaliu>().Select(l => l.ImobilizareId));
-    }
 
-    void VerificaFaraAmortizareUlterioara(IObjectSpace os) {
+    string MotivAmortizareUlterioara(IObjectSpace os) {
         var data = Data;
         var ulterioara = os.GetObjectsQuery<AmortizareLunara>()
             .Where(a => a.Data > data && a.Stare == StareDocument.Operat)
             .OrderBy(a => a.Data).Select(a => new { a.Numar, a.Data }).FirstOrDefault();
-        if (ulterioara != null)
-            throw new OperareException(
-                $"Există o amortizare operată pentru o lună ulterioară ({ulterioara.Numar}, "
-                + $"{ulterioara.Data:dd.MM.yyyy}) — cronologia amortizării e strictă. Stornați-o pe aceea întâi.");
+        return ulterioara == null ? null
+            : $"Există o amortizare operată pentru o lună ulterioară ({ulterioara.Numar}, "
+                + $"{ulterioara.Data:dd.MM.yyyy}) — cronologia amortizării e strictă. Stornați-o pe aceea întâi.";
     }
 }
 
