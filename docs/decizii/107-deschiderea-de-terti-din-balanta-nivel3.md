@@ -1,7 +1,7 @@
 # 107 — Migrarea deschide terții per partidă din `BalantaNivel3`, prin `Materializare.Deschide`; stingerile anului pe partide inițiale; partener generic de migrare
 
 - Data: 2026-10-01
-- Stare: activă, implementată și probată pe Flax 2026-10-01 (ianuarie integral, anul oprit după 8 luni la cererea owner-ului; regula de oprire M1-D10 neatinsă din cauze din afara M1: 107-r3, F26-r13, performanță); rebazată pe main `ac372fc` și reverificată pe ianuarie 2026-10-04 (INV-CUB verde cu invarianții 108, plafonarea verificată pe date); M1-D10 amendat de owner 2026-10-04 la deschidere exactă + ianuarie verde pe mecanism, atins (rularea integrală 12/12 trece în restul 091-r4, după TR-D9); nemersă în main, review advers cerut 2026-10-04; prima felie a 091-r4 (M1); amendează 047 (soldul de terț NU e nedefalcat în 1C), 091 (f) (conectorul iese din îngheț pe deschidere și trecerea 2); închide T-r4, TR-r6 și FZ-r10 pe partea de date
+- Stare: activă, implementată și probată pe Flax 2026-10-01 (ianuarie integral, anul oprit după 8 luni la cererea owner-ului; regula de oprire M1-D10 neatinsă din cauze din afara M1: 107-r3, F26-r13, performanță); rebazată pe main `ac372fc` și reverificată pe ianuarie 2026-10-04 (INV-CUB verde cu invarianții 108, plafonarea verificată pe date); M1-D10 amendat de owner 2026-10-04 la deschidere exactă + ianuarie verde pe mecanism (rularea integrală 12/12 trece în restul 091-r4, după TR-D9); nemersă în main, review advers Codex cu M1-R1…R4 corectate 2026-10-04 (`docs/import/m1-review-codex.md`), reverificarea în curs; prima felie a 091-r4 (M1); amendează 047 (soldul de terț NU e nedefalcat în 1C), 091 (f) (conectorul iese din îngheț pe deschidere și trecerea 2); închide T-r4, TR-r6 și FZ-r10 pe partea de date
 - Docs: `docs/import/m1-deschidere-terti-contract.md` (M1-D1…D10, recensământul, execuția); 094 și DES-B1…B4; 090 (d); 092; 096; `docs/import/faza-1c-design.md` §3, §8, §12.2
 
 ## Regula durabilă
@@ -14,7 +14,8 @@ sursa canonică pe istoric (12, 18, 21, 35b, invariantul V).**
 
 (a) **Deschiderea = `Materializare.Deschide` (094), scrisă de conector o dată
 per bază**, pe prima rulare, înaintea oricărui document, în tranzacție
-explicită. La re-rulare nu se rescrie: se verifică împotriva sursei.
+explicită. La re-rulare nu se rescrie: se verifică împotriva sursei, pe detaliu — fiecare
+partidă și fiecare lot, în ambele sensuri, pe identitate și pe măsuri.
 Ordinea în conector este loturi → cub → rânduri bloc de registru (regimul
 dual, până la TR-D9): comanda refuză un lot cu mișcări în `RegistruStoc`.
 
@@ -58,11 +59,14 @@ partida inițială. Ziua rulării nu mai e dată de împerechere.
 
 (h) **Contractul 5 al reconcilierii**: restul fiecărei partide inițiale în
 cub la fine de lună = soldul poziției în sursă la începutul lunii următoare,
-corectat cu Σ refuzată și Σ plafonată pe partidă. Partidele partenerului
-generic și cele pe care trecerea 2 nu le-a atins deloc (stinse în sursă de
-un tip din afara trecerii 2: factura care consumă avansul pe 419/409,
-factura sosită pe 408, nota fără partener) se declară cu sumă, nu pică;
-restul e FAIL al lunii.
+corectat cu mișcarea cerută de sursă și neaplicată pe partidă. Mișcarea
+neaplicată e semnată după sensul ei real (debit − credit), cumulează
+refuzurile și plafonările și se rederivă din cub la reluare. O explică numai
+refuzul nominalizat al motorului; o eroare tehnică a stingerii e eșec al
+lunii, niciodată explicație. Partidele partenerului generic și cele pe care
+trecerea 2 nu le-a atins deloc (stinse în sursă de un tip din afara trecerii
+2: factura care consumă avansul pe 419/409, factura sosită pe 408, nota fără
+partener) se declară cu sumă, nu pică; restul e FAIL al lunii.
 
 (i) **Diferențele contractului 1 față de baseline-ul 2026-09-21 se judecă
 contra modelului (091 r5), nu se ascund în conector**: rotunjirea TVA pe linie
@@ -106,6 +110,16 @@ contraargumentul owner-ului, D7 retururi) sunt în contract, §1–2.
   intră în lei; plafonarea (f) le închide, iar nota de curs a sursei din luna
   următoare închide poziția și în sursă.
 
+## Review advers (Codex, 2026-10-04)
+
+Patru observații, toate confirmate și corectate în conector; detaliul,
+probele și rularea de închidere sunt în contract, §4. M1-R1: reluarea
+verifica numai sumele pe (cont, latură) și numerele, nu detaliul — de aici
+precizarea din (a). M1-R2, M1-R3, M1-R4: explicațiile contractului 5 erau
+numai în memorie, semnate după deschidere și alimentate și de erori tehnice —
+de aici (h) rescris. Triajul partidelor rămase fără explicație a dat două
+limite cu nume, 107-r9 și 107-r10.
+
 ## Ce rămâne deschis
 
 - 107-r1 — stingerile prin facturi (avansul pe 419/409 consumat de factură,
@@ -129,5 +143,12 @@ contraargumentul owner-ului, D7 retururi) sunt în contract, §1–2.
 - 107-r8 — nota-punte a vânzării cu valoare pe 3 zecimale (iunie, 122,408)
   refuzată de gardianul de scară: rotunjirea la bani în handler, cu
   divergența declarată.
+- 107-r9 — documentele care mișcă direct partida inițială la operare (Compensare,
+  Operatia transcrise ca notă cu partida nominalizată) nu trec prin trecerea 2;
+  diferența lor față de sursă rămâne FAIL în contractul 5, etichetată cu Σ
+  mișcată direct.
+- 107-r10 — încasările inline ale retailului (`RaportDeVanzariCuAmanunt`,
+  copiii `#inc`) nu sunt enumerate de trecerea 2: stingerea lor pe o poziție de
+  deschidere nu ajunge pe partida inițială.
 - 107-r5 — partenerul generic la go-live: procedura de rezolvare (NTC de
   reclasificare) și excluderea din D394/SAF-T ca decizie de produs.

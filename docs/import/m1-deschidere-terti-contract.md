@@ -4,8 +4,8 @@
 - Stare: PIN-UIT de owner 2026-10-01 (M1-D3 brut per latură, M1-D5 partener
   generic de migrare, M1-D7 retururile 2024 pe partida inițială); implementat pe
   branch `m1-deschidere-terti`; M1-D10 amendat de owner 2026-10-04 (deschidere
-  exactă + ianuarie verde pe mecanism), atins la reverificarea din aceeași zi;
-  review advers cerut.
+  exactă + ianuarie verde pe mecanism), review advers Codex cu
+  M1-R1…R4 corectate (`docs/import/m1-review-codex.md`), reverificarea în curs.
 - Surse: 091 (f) și 091-r4 (felia de migrare); 094 și DES-B1…B4
   (`docs/nucleu/tr-d7b-deschidere-contract.md`); T-D7 din
   `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (forma inițială, amendată de
@@ -152,7 +152,10 @@ goală.
 Regula: soldul inițial NU se abate de la sursă. Pozițiile intră ca partide
 inițiale pe un **partener generic de migrare**, creat de conector (nu de
 seed: e nevoia migrării, nu a profilului), cod fix `MIGRARE-NEDEFINIT`,
-denumire explicită, `NuIncludeInDec394`, legat `1C:PartenerMigrare`.
+denumire explicită, legat `1C:PartenerMigrare`. Excluderea lui din D394 și
+SAF-T e o țintă, nu comportament implementat: conectorul scrie numai codul și
+denumirea, modelul nu are câmpul `NuIncludeInDec394` pe partener, iar decizia
+de produs e 107-r5.
 Referința = documentul de decontare când există, altfel Guid determinist
 din (cont, generic, „fără document"); poziția cu document își ia partenerul
 din antetul documentului dacă antetul îl are (recuperare, nu ghicire;
@@ -400,3 +403,67 @@ artefactele în `run-verificari/m1-ian-rebazat/`.
 Regula de oprire M1-D10 în forma inițială (12/12) rămâne neatinsă, din
 aceleași cauze din afara M1; în forma amendată la 2026-10-04 e atinsă de
 această rulare.
+
+**Review advers Codex (2026-10-04): M1-R1…R4, corectate.** Raportul:
+`docs/import/m1-review-codex.md`. Corecturile sunt numai în conector
+(`e4e24c7`, `b895079`, `16f0446`).
+
+- M1-R1 — verificarea deschiderii compară acum fiecare partidă și fiecare lot
+  al sursei cu postările tranzacției `Deschidere`, în ambele sensuri, pe
+  identitate și pe măsuri (`Deschidere.DiferenteDetaliu`), la scriere și la
+  reluare. O partidă a sursei nematerializată în cub nu mai primește legătură;
+  legăturile fără poziție în sursă se raportează.
+- M1-R2 — plafonarea unei stingeri deja legate se rederivă la reluare din
+  transferul scris în cub (suma cerută de sursă minus suma aplicată), nu din
+  memoria procesului.
+- M1-R3 — refuzurile și plafonările sunt mișcări neaplicate semnate debit −
+  credit, după sensul real: latura rândului de compensare în sursă, cu semnul
+  lui, sau postările stingătorului pe (cont, partener). Contractul 5 le
+  cumulează: Δ (cub − sursă) = −(refuzat + plafonat). Mișcarea în sensul
+  soldului partidei e refuz nominalizat, înaintea motorului.
+- M1-R4 — numai refuzul nominalizat al motorului (rest indisponibil) explică
+  o stingere neaplicată. Orice altă excepție e eroare tehnică: nu intră în
+  explicații și pică luna („trecerea 2 fără erori tehnice"); la fel, pe calea
+  documentelor, excepțiile neașteptate și `SCRIERE_OCUPATA`. O legătură fără
+  transferul ei în cub e tot eroare.
+- M1-D5 — excluderea partenerului generic din D394 nu e implementată; textul
+  e corectat.
+
+Probele: 12 probe fără bază la fiecare pornire (`ProbeM1.cs`: reluare
+identică, redistribuire 60/40 → 61/39 cu total constant, referință înlocuită,
+latură schimbată; sens normal, sens invers, plafonare, refuz + plafonare;
+clasificarea excepțiilor) și, cu `--probe-stingeri`, două erori injectate pe
+prima stingere reală (la începutul tranzacției și la persistare), verificate
+în bază: eșec, fără legătură, fără transfer.
+
+Rularea de închidere, `run-verificari/m1-ian-r1r4/` (baza
+`Atlas.Conta.Import1C.Flax.M1s`, binarul de la `16f0446`):
+
+- `rulare1` — `--recreeaza --cititori --probe-stingeri --pana-la 1`, 22:34:
+  deschiderea identică, detaliul = sursa (0 diferențe pe 3.967 partide și
+  6.817 loturi), INV-CUB verde de două ori, 0 eșecuri de import, 0 erori
+  tehnice, probele injectate verzi. Contractele 1 și 2: aceleași 5 conturi,
+  la ban. Contractul 5: 1.474 stinse integral, 34 explicate de refuzuri, 30
+  de plafonare, 130 neatinse, 10 fără explicație (401 × 4, Σ Δ −25.053,36;
+  4111 × 6, Σ Δ 5.411,00). Toate cele 10 au mișcări directe la operare pe
+  partida inițială (107-r9), afișate cu suma lor. Trecerea 2: 1.343 stingeri
+  pe partide inițiale, 36 plafonate (excedent 22.499,32), 287 de partide cu
+  refuzuri; refuzul „semn inversat" 2 (Σ 2.879,00).
+- `rulare2` — reluarea pe aceeași bază, fără `--recreeaza`, 0:37: deschiderea
+  „existentă, verificată" cu 0 diferențe de detaliu, 0 stingeri noi, 1.343
+  deja legate, aceleași 36 plafonări rederivate. Jurnalul de reconciliere e
+  identic cu al rulării 1, în afara liniei cu data.
+
+Rulările intermediare (`intermediare/`) au arătat două greșeli ale
+corecturilor, reparate înaintea rulării de închidere: stingătorul unei note de
+compensare are net zero pe (cont, partener), deci sensul nu se poate citi din
+postările lui (209 stingeri cu sens nedeterminat), iar rândul de compensare cu
+sumă negativă mișcă poziția pe latura opusă (10 stingeri refuzate greșit ca
+„semn inversat").
+
+Limite numite, nu închise: cifrele trecerii 2 diferă între rulări proaspete
+pe aceeași sursă (107-r7; a patra rulare, alt set de partide fără explicație);
+perechea stingător → poziție nu e mereu 1:1 cu mișcarea sursei pe poziție
+(documente ținute pe mai multe conturi sau la mai mulți parteneri), iar o
+notă poate mișca partida direct la operare și apoi fi refuzată în trecerea 2
+(107-r9); încasările inline de retail nu intră în trecerea 2 (107-r10).
