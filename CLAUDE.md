@@ -155,11 +155,12 @@ R6 este implementat și verificat (103h/i, 2026-09-28), cu review advers închis
 `docs/nucleu/tr-d8-tva-intervale-contract.md`. Proveniența fiscală a ajustărilor
 rămâne delimitată în 103-r2. SAF-T L și S sunt pe cub, cu ruta pe registre
 scoasă; review-ul B8 e închis (RV1.2 corectat și reverificat, decizia 105).
-Gate-ul transversal TR-D8 e implementat și verificat pe `tr-d8-transversal`
-(decizia 108, contractul `docs/nucleu/tr-d8-transversal-contract.md`, pașii
-1–6); review-ul implementării (X-RI1…X-RI4) este închis după reverificarea
-Codex la `7223abc`, 2026-10-04. Branch-ul nu este mers.
-După el urmează TR-D9: tăierea scriitorilor vechi și a regimului dual. Felia fiscală
+TR-D8 este închis: gate-ul transversal (decizia 108, contractul
+`docs/nucleu/tr-d8-transversal-contract.md`, pașii 1–6) e mers în main prin
+PR #15 (2026-10-04), cu review-ul implementării închis (X-RI1…X-RI4).
+Urmează, în ordine: discuția și aducerea pe main a branch-urilor
+`c106-regim-stare` (decizia 106) și `m1-deschidere-terti` (decizia 107), apoi
+TR-D9: tăierea scriitorilor vechi și a regimului dual. Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
 `docs/nucleu/scenarii/CITIRI.md`.
