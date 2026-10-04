@@ -208,8 +208,19 @@ bugetar / 4.597 privat OK**, zero FAIL, exit 0, 54 de scene per profil sub
 `INV-CUB`, `run-verificari/20261003-214312-683/`, pe clonele `.ClaudeX2`;
 `--probe-sursa` verde.
 
-TR-D8 nu este închis: restul SAF-T și verificările transversale rămân
-în contract; cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
+Pasul 5 al gate-ului transversal (X-D5 + X-D3, 2026-10-04): vezi „Scara
+transversală de perf”. Migrația `IndecsiCititoriCub` adaugă cinci indecși.
+
+Pasul 6 al gate-ului transversal (X-D8, 2026-10-04). Fără schimbare de
+producție. Validare: integrala la `ff08a8c` **3.387 bugetar / 4.597 privat
+OK**, zero FAIL, exit 0, `run-verificari/20261004-081014-672/`, pe clonele
+`.ClaudeX2`; nucleu **180/180**; `--probe-sursa` verde; `verifica:drift`
+exit 0; probele HTTP în `run-verificari/x6-http/` (matricea 300/300 de două
+ori, `scriere-ocupata.py` 7/7, `comenzi-coaja.py` 28/28, `explicatii.py`
+8/8). Regula feliei: decizia 108. Review-ul advers al feliei e cerut lui
+Codex; TR-D8 se consideră închis după el.
+
+Cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
 Nucleu: **180/180**, zero omise, exit 0:
 `run-verificari/20260924-124628-047/rezultat.json`.
 Comenzile, încercările intermediare și limitele sunt în
@@ -306,6 +317,23 @@ lună și un angajat, desfăcute în ordine inversă în `finally`. Rămân audi
 a doua rulare nu adaugă nimic). Plafonul de 500 al candidaților DVI e probat
 în ModelCheck, nu pe HTTP. Măsurat 2026-09-27 pe `c104-straturi`: 294/294
 PASS de două ori consecutiv, baza identică înainte și după. (104-r5)
+Matricea conține și ușa explicației (X-D4): tranzacția facturii fixture-ului
+se află din jurnal, `Admin`, `Cititor` și `Configurator` primesc 200, iar
+`User` 404, la fel ca pe un id inexistent. 403
+`EXPLICATIE_ACCES_INCOMPLET` cere un rol cu citire restricționată și rămâne
+al probei `explicatii.py`. Măsurat 2026-10-04 pe `tr-d8-transversal`, pe o
+bază privată recreată din seed: 300/300 PASS de două ori consecutiv. (X-D8)
+Blocajul scrierii are proba HTTP proprie,
+`nou/tools/ProbeHttp/scriere-ocupata.py`: ține
+`pg_advisory_xact_lock(97000)` pe o a doua conexiune și cere, sub blocaj,
+200 imediat pe citire, pe dry-run și pe salvarea fără detalii noi, 422
+`SCRIERE_OCUPATA` fără nimic scris pe operare și pe salvarea cu o linie
+nouă, apoi 200 pe aceeași operare după eliberare. Fixture-ul e al probei și
+se desface în `finally`. Durează cât două timpuri de comandă (un minut).
+Rețeta care recreează baza din seed, pornește hostul pe 5089 și rulează
+matricea de două ori, `scriere-ocupata.py`, `comenzi-coaja.py` și
+`explicatii.py` (ultima, fiindcă lasă un bon stornat):
+`run-verificari/x6-http.ps1`. (X-D6, X-D8)
 Desfacerea facturii se înscrie imediat după crearea ei și redescoperă din
 ID-ul FCT plata conex și împerecherile; după `finally`, matricea verifică pe
 API absența identităților fixture-ului (cod 3 la rezidu). `-CadeDupa <punct>`

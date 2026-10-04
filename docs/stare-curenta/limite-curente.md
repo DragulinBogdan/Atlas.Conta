@@ -71,8 +71,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Raportul de stoc listează și capătul de consum al bonului: postarea de debit
   a BCS poartă lotul ca unitate, pe contul de cheltuială și la locul de
   consum, iar `Loturi.Postari` o ia ca poziție. Rândurile acestea cresc cu tot
-  ce s-a consumat, și în raport, și în snapshot-ul de stoc. (X-D5; X-r3, la
-  decizia 108)
+  ce s-a consumat, și în raport, și în snapshot-ul de stoc. (X-D5; X-r3)
 - `PartideCuRest` caută documentul deschizător al fiecărei partide parcurgând
   toate postările de partidă (`Partide.Origini`), și când soldurile vin din
   snapshot. E singurul criteriu de formă picat al scării transversale:
@@ -283,8 +282,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   `Loturi.Postari`, respectiv `Partide.Postari`, fără filtru pe fel.
 - Probele de concurență (X-D6) pun cele două comenzi în coada blocajului
   ținut de scenă și le lasă să ruleze în ordinea cozii. Dovedesc rezultatul
-  serial și așteptarea pe conexiuni distincte; nu măsoară debitul și nu
-  exercită ușa HTTP sau contextul securizat, unde blocajul e același cod.
+  serial și așteptarea pe conexiuni distincte; nu măsoară debitul. Pe ușa
+  HTTP și pe contextul securizat e probat numai refuzul `SCRIERE_OCUPATA`
+  și ce nu ia blocajul (`scriere-ocupata.py`), nu matricea rezultatelor
+  seriale.
+- `SCRIERE_OCUPATA` iese 422, ca orice refuz de domeniu. Un client nu îl
+  deosebește de un refuz definitiv decât după cod. (108)
 - Explicația deciziei (X-D4) există numai pe tranzacțiile scrise de un
   contract. Împerecherea, desfacerea, stingerea de deschidere și deschiderea
   nu au decizii de explicat și nu au explicație. Un document operat înaintea
@@ -301,8 +304,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Explicația repetă câte două `ContRezolvat` și unitatea întreagă pe fiecare
   linie. Măsurat în X-D5: 907 octeți pe linie, 58.066 pentru un consum de 64
   de linii.
-- Matricea `refuzuri.ps1` nu conține încă ușa explicației; proba ei e
-  `explicatii.py`. Intră în matrice la închiderea gate-ului (X-D8, pasul 6).
+- Matricea `refuzuri.ps1` probează ușa explicației numai cu cei patru
+  utilizatori ai ei: 200 și 404. 403 `EXPLICATIE_ACCES_INCOMPLET` cere un
+  rol cu citire restricționată și rămâne al probei `explicatii.py`, care
+  lasă un bon stornat pe baza ei. (X-D8)
 - `documente-cu-rest` rămâne proiecția scumpă, iar partidele nu schimbă asta:
   pe baza de import costă 181 ms filtrat pe o contrapartidă (171 ms cu lanțul
   desfăcut — diferență în zgomot), 423 ms nefiltrat pe grilă și 220 ms pe

@@ -802,6 +802,20 @@ try {
     Proba -Cerere 'documente cu rest la o dată' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/proiectii/documente-cu-rest?laData=2026-12-31' -Contine '"data":[]' -Nota 'documentele invizibile ⇒ listă goală' | Out-Null
     Proba -Cerere 'documente cu rest cu dată invalidă' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/documente-cu-rest?laData=nu-e-data' -Contine 'laData' | Out-Null
 
+    # ── X-D4: explicația deciziei, pe tranzacția facturii fixture-ului ──────
+    # 403 `EXPLICATIE_ACCES_INCOMPLET` cere un rol cu citire restricționată,
+    # pe care cei patru utilizatori nu-l au: proba lui e `explicatii.py`.
+    $jurnalFixture = Invoke-Fixture GET "/api/proiectii/registru-jurnal?dataStart=$dataFixture&dataEnd=$dataFixture"
+    $idTranzactie = @($jurnalFixture.data | Where-Object { $_.DocumentId -eq $idFctFixture })[0].TranzactieId
+    if (-not $idTranzactie) { throw 'fixture: factura operată nu are tranzacție în jurnal.' }
+    $caleExplicatie = "/api/proiectii/explicatii/$idTranzactie"
+    Proba -Cerere 'explicația tranzacției' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleExplicatie -Contine "$idFctFixture", '"Origini":[{' | Out-Null
+    Proba -Cerere 'explicația tranzacției' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale $caleExplicatie -Contine '"Origini":[{' -Nota 'Read pe tot, fără restricții ⇒ acces complet' | Out-Null
+    Proba -Cerere 'explicația tranzacției' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale $caleExplicatie -Contine '"Origini":[{' | Out-Null
+    Proba -Cerere 'explicația tranzacției' -User 'User' -Asteptat 404 -Metoda GET -Cale $caleExplicatie -Contine 'nu există sau nu e vizibil' -Nota 'tranzacția invizibilă, nedistinsă de una inexistentă' | Out-Null
+    Proba -Cerere 'explicația unui id inexistent' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/proiectii/explicatii/$idInexistent" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'explicația unui id inexistent' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/proiectii/explicatii/$idInexistent" -Contine 'nu există sau nu e vizibil' -Nota 'același răspuns ca pe tranzacția existentă' | Out-Null
+
     # ── F23: politicile, implicitele și auditul (F23-D10 + F23-D9) ─────────
     # Ce a schimbat măsurătoarea pasului 2 față de tabelul din contract, și de
     # ce probele de mai jos arată altfel decât acolo:

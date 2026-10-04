@@ -14,6 +14,8 @@
   **Pasul 5 (X-D5 + X-D3) implementat și măsurat, 2026-10-04; criteriul
   picat pe `PartideCuRest` este amânat prin amendamentul owner-ului, iar
   metoda probei din plan e confirmată — vezi „Execuție”.**
+  **Pasul 6 (X-D8) verificat, 2026-10-04: integrala, probele HTTP, driftul
+  și decizia 108; review-ul advers al feliei e cerut lui Codex.**
 - Bază: [D8-B5](tr-d8-citiri-contract.md) pasul 5 și „Limite care împiedică
   închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
   091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
@@ -814,6 +816,54 @@ Validare: scara completă `run-verificari/perf-cub-20261004-002621/` —
 `run-verificari/20261004-001917-630/`, pe clonele `.ClaudeX2`;
 `--probe-sursa` verde. Starea de dinaintea corecturilor:
 `run-verificari/perf-cub-20261003-231254/`.
+
+### Pasul 6 — X-D8: integrala, probele pe ușa HTTP, driftul, închiderea (2026-10-04)
+
+Livrat: ușa explicației în matricea `refuzuri.ps1`; proba
+`nou/tools/ProbeHttp/scriere-ocupata.py`; rețeta
+`run-verificari/x6-http.ps1`; decizia
+[108](../decizii/108-gate-transversal-tr-d8.md); restanțele X-r1, X-r2 și
+X-r3; T-r11 închisă. Nicio schimbare de producție.
+
+1. **Baza probelor HTTP** e recreată din seed, nu clonată:
+   `database update` pe o bază nouă, apoi updater-ul Blazor pe profilul
+   privat. Matricea rulează deci pe baza pe care o promite (104-r5), cu
+   migrațiile feliei aplicate de la zero.
+2. **Ușa explicației în matrice** (șase rânduri). Tranzacția e a facturii
+   fixture-ului, aflată din jurnal (`TranzactieId` pe rândul documentului):
+   `Admin`, `Cititor` și `Configurator` primesc 200 cu originea; `User`
+   primește 404 și pe tranzacția existentă, și pe un id inexistent, cu
+   același corp. 403 `EXPLICATIE_ACCES_INCOMPLET` cere un rol cu citire
+   restricționată, pe care cei patru utilizatori nu-l au: rămâne probat de
+   `explicatii.py`.
+3. **`SCRIERE_OCUPATA` pe ușa HTTP.** Proba ține blocajul scrierii pe o a
+   doua conexiune (`pg_advisory_xact_lock(97000)` într-o tranzacție psycopg)
+   și trimite cererile ca `Admin`, pe contextul securizat. Sub blocaj:
+   citirea, dry-run-ul și salvarea fără detalii noi răspund imediat cu 200;
+   operarea și salvarea unui draft cu o linie nouă ies 422 cu un singur
+   `SCRIERE_OCUPATA` după 30,2 și 30,0 s (timpul de comandă al conexiunii),
+   fără nimic scris; după eliberare aceeași operare trece în 0,4 s.
+   Fixture-ul (furnizor și FCT) se desface în `finally`.
+4. **Refuzul trece neîmpachetat prin `SaveChanges`-ul contextului
+   securizat.** Salvarea cu detalii noi aruncă `OperareException` din
+   `BackOfficeEFCoreDbContext.SaveChanges`, sub `CommitChanges`; învelișul
+   `Domeniu` îl vede ca atare și răspunde 422, nu 500. Era limita declarată
+   la pasul 3.
+5. **Codul HTTP.** `SCRIERE_OCUPATA` e 422, ca orice `OperareException`;
+   regula refuzurilor (80) nu are un cod separat pentru „ocupat, reîncearcă”.
+   Declarat în decizia 108.
+
+Validare: matricea **300/300 PASS** de două ori consecutiv (294 + cele șase
+rânduri noi), aceleași verdicte, zero reziduu, numărul de documente,
+tranzacții, postări și repartitori identic înainte și după;
+`scriere-ocupata.py` 7/7; `comenzi-coaja.py` 28/28; `explicatii.py` 8/8 —
+`run-verificari/x6-http/`. Integrala la `ff08a8c`: **3.387 bugetar / 4.597
+privat OK**, zero FAIL, `run-verificari/20261004-081014-672/`, pe clonele
+`.ClaudeX2`. Nucleu **180/180**. `--probe-sursa` verde. `verifica:drift`
+exit 0: OpenAPI și tipurile TS regenerate identic.
+
+Review-ul advers al feliei: cerut lui Codex prin
+`comunicari/2026-10-04-0830-claude-codex-tr-d8-transversal-review.md`.
 
 ## Ce NU intră (amânări cu nume)
 
