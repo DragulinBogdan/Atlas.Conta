@@ -895,3 +895,23 @@ detaliat în jurnal):
   Reverificarea Codex la `7223abc` închide X-RI1…X-RI4: integrala proprie
   3.394 / 4.604 OK, zero FAIL, inclusiv mutanții și `X-D5-PLAN`;
   `run-verificari/20261004-102241-857/`. Mers în main prin PR #15.
+
+- **2026-10-04 — M1, deschiderea de terți din `BalantaNivel3` (decizia 107),
+  prima felie a 091-r4, pe `m1-deschidere-terti`.** Import1C scrie deschiderea
+  prin `Materializare.Deschide`: controale brute per (cont, latură), loturile
+  ca detaliu, terții ca partide inițiale, pozițiile fără partener pe
+  `MIGRARE-NEDEFINIT`. Stingerile anului pe pozițiile de deschidere intră în
+  cub pe partidă, în trecerea 2, plafonate la rest. Contractul 5 al
+  reconcilierii compară restul partidei cu soldul poziției în sursă.
+  Implementată 2026-10-01 (anul oprit după 8 luni la cererea owner-ului),
+  rebazată pe main `ac372fc` și reverificată pe ianuarie: 0 eșecuri de
+  import, INV-CUB verde cu invarianții 108, deschiderea fără diferențe de
+  detaliu, reluarea cu jurnal identic. Contractele 1 și 2 pică pe aceleași 5
+  conturi, la ban (107-r3). Contractul 5: 1.474 partide stinse integral, 34
+  explicate de refuzuri, 30 de plafonare, 130 neatinse de trecerea 2, 10 FAIL
+  (107-r9). M1-D10 amendat de owner la deschidere exactă + ianuarie verde pe
+  mecanism; 12/12 trece în restul 091-r4, după TR-D9. Închise: T-r4, TR-r6,
+  FZ-r10 pe date. Noi: 107-r1…r10. Review-ul advers (Codex): M1-R1…R4 și
+  M1-R3a corectate, închise la RV2 pe `111b89a`; importul proaspăt nu a fost
+  repetat cu binarul final. `run-verificari/m1-ian-r1r4/`. Mers în main prin
+  PR #20.

@@ -42,12 +42,13 @@ static class Reconciliere {
             IReadOnlyList<FlaxPozitieStoc> stoc,
             IReadOnlyList<FlaxPozitieStoc> stocOrfan,
             IReadOnlyList<Deschidere.DiferentaSursa> justificate,
+            IReadOnlyDictionary<string, decimal> declarateStoc,
             Func<string, string> mapeaza,
             Action<string> avert, Action<string, bool> check) {
         using var os = provider.CreateObjectSpace();
 
         var (simboluri, difContabile, ancoraDb, ancoraSursa) =
-            Contabil(os, solduri, extrabilantiere1C, mapeaza, check);
+            Contabil(os, solduri, extrabilantiere1C, declarateStoc, mapeaza, avert, check);
         var (chei, nejustificate, gasite, q, v) =
             Stoc(os, stoc, stocOrfan, justificate, avert, check);
 
@@ -65,7 +66,9 @@ static class Reconciliere {
             IObjectSpace os,
             IReadOnlyList<FlaxSold> solduri,
             IReadOnlySet<string> extrabilantiere1C,
+            IReadOnlyDictionary<string, decimal> declarateStoc,
             Func<string, string> mapeaza,
+            Action<string> avert,
             Action<string, bool> check) {
 
         // ---- Partea BAZĂ: rândurile de deschidere, netate per simbol ----
@@ -120,9 +123,15 @@ static class Reconciliere {
         sursa.Remove(Deschidere.Ancora);
 
         var simboluri = db.Keys.Union(sursa.Keys).OrderBy(s => s, StringComparer.Ordinal).ToList();
-        var diferente = simboluri
+        var toate = simboluri
             .Select(s => (Simbol: s, Db: db.GetValueOrDefault(s), Sursa: sursa.GetValueOrDefault(s)))
             .Where(x => Math.Abs(x.Db - x.Sursa) >= Eps)
+            .ToList();
+        foreach (var x in toate.Where(x => Math.Abs(x.Db - x.Sursa - declarateStoc.GetValueOrDefault(x.Simbol)) < Eps))
+            avert($"Deschidere: cont {x.Simbol} bază {x.Db:N2} = sursă 1C {x.Sursa:N2} + Δ declarat "
+                + $"{declarateStoc.GetValueOrDefault(x.Simbol):N2} (deschidere fără detaliu de lot, M1-D6).");
+        var diferente = toate
+            .Where(x => Math.Abs(x.Db - x.Sursa - declarateStoc.GetValueOrDefault(x.Simbol)) >= Eps)
             .ToList();
         foreach (var (simbol, valDb, valSursa) in diferente.OrderByDescending(x => Math.Abs(x.Db - x.Sursa)))
             check($"  cont {simbol}: bază {valDb:N2} = sursă 1C {valSursa:N2} "
@@ -135,8 +144,10 @@ static class Reconciliere {
         // cazul unei surse curate, iar aici sursa își parchează pe propriul cont
         // de deschidere un reziduu de rotunjire (−0,01 la 01.01.2025). Ancora
         // Atlas trebuie să-l poarte identic — altfel s-a pierdut un leu pe drum.
+        var declarat = declarateStoc.Values.Sum();
         check($"Ancora {Deschidere.Ancora}: sold în bază {ancoraDb:N2} = soldul 1C al contului "
-            + $"de deschidere al sursei {ancoraSursa:N2}", Math.Abs(ancoraDb - ancoraSursa) < Eps);
+            + $"de deschidere al sursei {ancoraSursa:N2} − Δ declarat {declarat:N2}",
+            Math.Abs(ancoraDb - (ancoraSursa - declarat)) < Eps);
 
         return (simboluri.Count, diferente.Count, ancoraDb, ancoraSursa);
     }

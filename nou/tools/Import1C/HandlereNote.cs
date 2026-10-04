@@ -223,12 +223,17 @@ static class HandlerCompensare {
                 // (2X pe același partener). Doar debitul ar pierde creditul.
                 var debit = subconto.Latura(r.Linie, Subconto.Debit).DeFel(Subconto.FelDocumente);
                 var credit = subconto.Latura(r.Linie, Subconto.Credit).DeFel(Subconto.FelDocumente);
-                if (debit != null)
-                    yield return new StingereSursa(View, h.Id, debit, Math.Abs(r.Suma));
-                if (credit != null)
-                    yield return new StingereSursa(View, h.Id, credit, Math.Abs(r.Suma));
+                foreach (var s in StingeriRand(h.Id, debit, credit, r.Suma))
+                    yield return s;
             }
         }
+    }
+
+    internal static IEnumerable<StingereSursa> StingeriRand(string cheie, FlaxRef debit, FlaxRef credit, decimal suma) {
+        if (debit != null)
+            yield return new StingereSursa(View, cheie, debit, Math.Abs(suma), Math.Sign(suma));
+        if (credit != null)
+            yield return new StingereSursa(View, cheie, credit, Math.Abs(suma), -Math.Sign(suma));
     }
 
     public static void Raporteaza() {

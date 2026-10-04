@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub;
 using DevExpress.ExpressApp;
+using N = Atlas.Conta.Nucleu;
 
 namespace Import1C;
 
@@ -37,42 +39,21 @@ static partial class Deschidere {
         int Extrabilantiere, decimal SumaExtrabilantiera,
         decimal ReziduuAncora);
 
-    // Un rând per cont 1C cu sold nenul, contra ancorei: sold pozitiv (debitor)
-    // → Debit = contul, Credit = 891; negativ → invers, cu valoarea absolută.
-    //
-    // FĂRĂ dimensiuni — și e un FAPT AL SURSEI, nu o simplificare: 1C nu poartă
-    // defalcarea analitică pe soldul de deschidere al terților (verificat:
-    // BalantaNivel1 are 2 rânduri cont×partener la 01.01.2025, față de soldurile
-    // de sute de mii de lei de pe 401/411). Consecința asumată e că stingerile
-    // din 2025 pe facturi din 2024 vor stinge soldul global, fără imperechere —
-    // exact modelul pasului 4 (decizia 34d, „terții pornesc pe sold per partener").
-    public static RezultatContabil Contabile(
-            IObjectSpaceProvider provider,
-            IReadOnlyList<FlaxSold> solduri,
-            IReadOnlySet<string> extrabilantiere,
-            Func<string, string> mapeaza,
-            DateOnly data, Action<string> avert, Action<string, bool> check) {
-        using var os = provider.CreateObjectSpace();
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == null).ToList());
-        os.CommitChanges();
+    public sealed record SolduriNete(IReadOnlyDictionary<string, decimal> Net, decimal ReziduuAncora,
+        int Nerezolvate, int PeSumator, int Extrabilantiere, decimal SumaExtrabilantiera);
 
-        var plan = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
-        var sumatori = os.GetObjectsQuery<Cont>().Where(c => c.Sumator).Select(c => c.Simbol).ToHashSet();
-        if (!plan.TryGetValue(Ancora, out var ancora))
+    // 22c: fără clasa 8; reziduul de rotunjire al sursei nu se scrie, se verifică prin soldul ancorei.
+    public static SolduriNete Nete(IReadOnlyList<FlaxSold> solduri, IReadOnlySet<string> extrabilantiere,
+            IReadOnlyDictionary<string, Guid> plan, IReadOnlySet<string> sumatori,
+            Func<string, string> mapeaza, Action<string> avert, Action<string, bool> check) {
+        if (!plan.ContainsKey(Ancora))
             throw new InvalidOperationException($"Planul OMFP nu conține ancora {Ancora}.");
-
-        var randuri = 0;
+        var net = new Dictionary<string, decimal>(StringComparer.Ordinal);
         var nerezolvate = new List<FlaxSold>();
         var peSumator = new List<(FlaxSold Sold, string Simbol)>();
         var extra = new List<FlaxSold>();
-        var peAncora = new List<FlaxSold>();
-
+        var reziduu = 0m;
         foreach (var sold in solduri.OrderBy(s => s.Cont, StringComparer.Ordinal)) {
-            // Conturile extrabilanțiere 1C (clasa 8 a planului lor) NU au ce căuta
-            // contra ancorei: 891 e o balanță de deschidere bilanțieră, iar un
-            // rând extrabilanțier ar lăsa-o dezechilibrată. Se sar și se
-            // raportează cu suma — echivalentul „clasa 8 amânată" de la pasul 4
-            // (deciziile 9/22c: evidența angajamentelor e alt modul).
             if (extrabilantiere.Contains(sold.Cont)) {
                 extra.Add(sold);
                 avert($"Cont 1C {sold.Cont} (sold {sold.SoldIni:N2}) e EXTRABILANȚIER în planul 1C "
@@ -88,49 +69,51 @@ static partial class Deschidere {
                 peSumator.Add((sold, simbol));
                 continue;
             }
-            // Sursa are propriul cont de bilanț de deschidere, cu un reziduu de
-            // rotunjire pe el (`891.` = −0,01 la 01.01.2025). E ACELAȘI cont cu
-            // ancora noastră: scrierea lui ar produce un rând 891/891, care nu
-            // poartă informație. Se sare, iar reziduul devine contractul de
-            // verificare de mai jos — ancora Atlas trebuie să reproducă EXACT
-            // soldul 1C al ancorei, altfel s-a pierdut un leu pe drum.
             if (simbol == Ancora) {
-                peAncora.Add(sold);
+                reziduu += sold.SoldIni;
                 avert($"Cont 1C {sold.Cont} (sold {sold.SoldIni:N2}) E ancora de deschidere "
                     + $"({Ancora}) — sursa își parchează pe el reziduul de rotunjire; nu se scrie "
                     + "ca rând (ar fi 891/891), ci se verifică prin soldul ancorei.");
                 continue;
             }
-            var r = os.CreateObject<RegistruContabil>();
-            r.Data = data;
-            r.NumarNota = "DESCHIDERE";
-            r.Valoare = Math.Abs(sold.SoldIni);
-            if (sold.SoldIni > 0) {
-                r.ContDebitId = plan[simbol];
-                r.ContCreditId = ancora;
-            }
-            else {
-                r.ContDebitId = ancora;
-                r.ContCreditId = plan[simbol];
-            }
-            randuri++;
+            net[simbol] = net.GetValueOrDefault(simbol) + sold.SoldIni;
         }
-        os.CommitChanges();
-
-        // La deschidere nu mai tolerăm găuri (spre deosebire de smoke-ul pasului
-        // 2, unde erau intrare de lucru): un sold nescris e un leu pierdut din
-        // bilanț, deci eșec, nu avertisment.
         foreach (var s in nerezolvate.OrderByDescending(s => Math.Abs(s.SoldIni)))
             check($"Sold 1C {s.Cont} ({s.SoldIni:N2}) se mapează pe planul OMFP", false);
         foreach (var (s, simbol) in peSumator.OrderByDescending(x => Math.Abs(x.Sold.SoldIni)))
             check($"Sold 1C {s.Cont} ({s.SoldIni:N2}) → {simbol}: cont NE-sumator", false);
         check($"Toate cele {solduri.Count} solduri 1C se rezolvă pe conturi ne-sumatoare "
-            + $"({randuri} rânduri scrise, {extra.Count} extrabilanțiere + {peAncora.Count} pe ancoră sărite)",
+            + $"({extra.Count} extrabilanțiere + reziduu pe ancoră {reziduu:N2} sărite)",
             nerezolvate.Count == 0 && peSumator.Count == 0);
+        return new SolduriNete(net, reziduu, nerezolvate.Count, peSumator.Count, extra.Count, extra.Sum(s => s.SoldIni));
+    }
 
-        // Verificarea internă a fazei: rândurile scrise se citesc ÎNAPOI și se
-        // netează per simbol. Ancora trebuie să se închidă la zero — adică
-        // balanța 1C e echilibrată ȘI n-am pierdut/dublat rânduri pe drum.
+    public static RezultatContabil Contabile(IObjectSpaceProvider provider, SolduriNete nete,
+            IReadOnlyList<Control> controale, IReadOnlyDictionary<string, decimal> declarate,
+            DateOnly data, Action<string, bool> check) {
+        using var os = provider.CreateObjectSpace();
+        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == null).ToList());
+        os.CommitChanges();
+        var plan = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
+        var ancora = plan[Ancora];
+        var randuri = 0;
+        foreach (var c in controale.Where(c => c.Simbol != Ancora)) {
+            var r = os.CreateObject<RegistruContabil>();
+            r.Data = data;
+            r.NumarNota = "DESCHIDERE";
+            r.Valoare = c.Valoare;
+            if (c.Latura == N.Latura.Debit) {
+                r.ContDebitId = plan[c.Simbol];
+                r.ContCreditId = ancora;
+            }
+            else {
+                r.ContDebitId = ancora;
+                r.ContCreditId = plan[c.Simbol];
+            }
+            randuri++;
+        }
+        os.CommitChanges();
+
         var scrise = os.GetObjectsQuery<RegistruContabil>()
             .Where(r => r.DocumentId == null)
             .Select(r => new { D = r.ContDebit.Simbol, C = r.ContCredit.Simbol, r.Valoare })
@@ -144,16 +127,13 @@ static partial class Deschidere {
             + $"= {randuri} scrise", scrise.Count == randuri);
         check($"Σ debit = Σ credit pe rândurile scrise (net pe toate conturile: "
             + $"{net.Values.Sum():N2})", Math.Abs(net.Values.Sum()) < EpsV);
-        // Ancora se închide pe reziduul PROPRIU al sursei, nu neapărat la zero:
-        // Σ soldurilor 1C e zero doar dacă numeri și contul lor de deschidere.
-        // Cu sursa curată (fără rând pe 891) verificarea e „ancora = 0".
-        var reziduu = peAncora.Sum(s => s.SoldIni);
-        check($"Ancora {Ancora} reproduce soldul 1C al aceluiași cont: "
-            + $"{net.GetValueOrDefault(Ancora):N2} = {reziduu:N2}",
-            Math.Abs(net.GetValueOrDefault(Ancora) - reziduu) < EpsV);
+        var asteptat = nete.ReziduuAncora - declarate.Values.Sum();
+        check($"Ancora {Ancora} reproduce soldul 1C al aceluiași cont ± diferențele declarate: "
+            + $"{net.GetValueOrDefault(Ancora):N2} = {nete.ReziduuAncora:N2} − ({declarate.Values.Sum():N2})",
+            Math.Abs(net.GetValueOrDefault(Ancora) - asteptat) < EpsV);
 
-        return new RezultatContabil(randuri, nerezolvate.Count, peSumator.Count,
-            extra.Count, extra.Sum(s => s.SoldIni), reziduu);
+        return new RezultatContabil(randuri, nete.Nerezolvate, nete.PeSumator,
+            nete.Extrabilantiere, nete.SumaExtrabilantiera, nete.ReziduuAncora);
     }
 
     // ==================== D + E. Stocul de deschidere ====================
@@ -224,8 +204,9 @@ static partial class Deschidere {
     public static RezultatStoc Stoc(
             IObjectSpaceProvider provider, ImportLaCerere laCerere,
             IReadOnlyList<FlaxPozitieStoc> pozitii,
-            Func<string, string> mapeaza,
-            DateOnly data, Action<string> avert, Action<string, bool> check) {
+            Func<string, string> mapeaza, IReadOnlyDictionary<string, Guid> plan,
+            DateOnly data, Action<string> avert, Action<string, bool> check,
+            Action<IReadOnlyList<LotInitial>> cub = null) {
 
         // ---- 1. Gruparea pe loturi (document creator × produs × CONT) ----
         // Același lot poate sta în MAI MULTE depozite: Atlas ține soldul per
@@ -245,6 +226,10 @@ static partial class Deschidere {
             var cheie = CheieLot(p);
             if (!descriptori.TryGetValue(cheie, out var d)) {
                 var parsata = ParseData(p.DocDesc);
+                if (parsata > data) {
+                    avert($"Lot {cheie}: data parsată {parsata:yyyy-MM-dd} e după deschidere — se ia data deschiderii.");
+                    parsata = null;
+                }
                 d = new DescriptorLot {
                     Cheie = cheie,
                     ProdusHex = p.NomenclatorId,
@@ -466,6 +451,24 @@ static partial class Deschidere {
                 check($"Depozitul 1C {d.DepozitHex} (lot {d.Cheie}) e legat de o Gestiune", false);
             check($"Toate pozițiile de stoc cad pe depozite legate ({faraDepozit.Count} loturi orfane)",
                 faraDepozit.Count == 0);
+        }
+
+        // 107a: cubul înaintea rândurilor bloc; `Deschide` refuză un lot cu mișcări în registru.
+        if (cub != null) {
+            var loturiCub = new List<LotInitial>();
+            using (var os = provider.CreateObjectSpace()) {
+                var depoziteCub = Legaturi.Incarca(os, "Depozite");
+                foreach (var c in deScris.OrderBy(c => c.CheieLot, StringComparer.Ordinal)
+                             .ThenBy(c => c.DepozitHex, StringComparer.Ordinal)) {
+                    if (!lotId.TryGetValue(c.CheieLot, out var id)
+                        || !depoziteCub.TryGetValue(c.DepozitHex, out var gestiune)
+                        || c.Cantitate < EpsQ)
+                        continue;
+                    var simbol = descriptori[c.CheieLot].SimbolCont;
+                    loturiCub.Add(new LotInitial(plan[simbol], id, gestiune, c.Cantitate, c.Valoare));
+                }
+            }
+            cub(loturiCub);
         }
 
         // ---- 6. Rândurile de RegistruStoc ----

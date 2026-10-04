@@ -1,6 +1,8 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
+using N = Atlas.Conta.Nucleu;
 
 namespace Import1C;
 
@@ -133,6 +135,9 @@ static partial class ReconciliereLuna {
         public IReadOnlyList<Deschidere.DiferentaSursa> JustificateDeschidere = [];
         public IReadOnlySet<string> Extrabilantiere1C = new HashSet<string>(StringComparer.Ordinal);
 
+        public IReadOnlyDictionary<string, decimal> DeclarateDeschidere = new Dictionary<string, decimal>(StringComparer.Ordinal);
+        public Guid? PartenerGeneric;
+
         // Valoarea pe care deschiderea a scris-o pe chei FĂRĂ cantitate și pe care
         // nimic n-o mai poate stinge (vezi `Deschidere.RezultatStoc`). E o
         // măsurătoare per cheie, nu o justificare în alb: cantitatea rămâne
@@ -227,11 +232,133 @@ static partial class ReconciliereLuna {
         var (dePlata, deRecuperat) = Tva(os, ctx, cat, stare, avert, Contract);
         RaporteazaStoc(stoc, ctx, stare, avert, Contract);
         Rotunjire(stoc, ctx, stare, MidpointCumulat(os, ctx), Contract);
+        PartideInitiale(os, ctx, stare, cat, Contract);
         if (stare.Jurnal != null)
             Console.WriteLine($"     raport integral al lunii (toate diferențele): {stare.Jurnal.Cale}");
 
-        return new Rezultat(4, picate, stoc.Justificate, stare.PlafonStoc, dePlata, deRecuperat);
+        return new Rezultat(5, picate, stoc.Justificate, stare.PlafonStoc, dePlata, deRecuperat);
     }
+
+    static void PartideInitiale(IObjectSpace os, ContextLuna ctx, Stare stare, Catalog cat,
+            Action<string, bool> contract) {
+        var legaturi = Legaturi.Incarca(os, Deschidere.ViewPartide);
+        if (legaturi.Count == 0) {
+            contract("5. Partide inițiale: baza n-are partide de deschidere (cubul fără tranzacție Deschidere)", false);
+            return;
+        }
+        var initiale = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
+            .Select(p => new { p.Unitate, p.Partener }).ToList();
+        var generice = initiale.Where(p => p.Partener == stare.PartenerGeneric).Select(p => p.Unitate.Value).ToHashSet();
+        var unitatiInitiale = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
+            .Select(p => p.Unitate);
+        var restCub = os.GetObjectsQuery<Postare>()
+            .Where(p => p.FelUnitate == N.FelUnitate.Partida && p.Carte == N.Carte.Contabil
+                && p.Data <= ctx.Ultima && unitatiInitiale.Contains(p.Unitate))
+            .GroupBy(p => p.Unitate)
+            .Select(g => new { Unitate = g.Key, Sold = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+            .ToList()
+            .ToDictionary(x => x.Unitate.Value, x => x.Sold);
+
+        var sursa = new Dictionary<string, decimal>(StringComparer.Ordinal);
+        foreach (var p in ctx.Bucla.Flax.PozitiiTert(new DateTime(ctx.An, ctx.Luna, 1).AddMonths(1))) {
+            var simbol = cat.Mapeaza(p.Cont);
+            if (simbol == null)
+                continue;
+            var cheie = Deschidere.CheieSursa(simbol, p.PartenerId, Deschidere.RefCheie(p.DocTipRef, p.DocId));
+            sursa[cheie] = sursa.GetValueOrDefault(cheie) + p.SoldIni;
+        }
+
+        var deschidere = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
+            .Select(p => new { p.Unitate, Sold = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare }).ToList()
+            .ToDictionary(x => x.Unitate.Value, x => x.Sold);
+
+        var directe = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare && p.Carte == N.Carte.Contabil
+                && p.Data <= ctx.Ultima && unitatiInitiale.Contains(p.Unitate))
+            .GroupBy(p => p.Unitate)
+            .Select(g => new { Unitate = g.Key, Sold = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+            .ToList()
+            .ToDictionary(x => x.Unitate.Value, x => x.Sold);
+
+        var picate = new List<(string Cheie, decimal Cub, decimal Sursa, decimal Refuzat, decimal Plafonat, decimal? Direct)>();
+        var explicate = 0;
+        var plafonate = 0;
+        var cumulate = 0;
+        var declarate = new List<(string Cheie, decimal Cub, decimal Sursa)>();
+        var neatinse = new List<(string Cheie, decimal Cub, decimal Sursa)>();
+        var stinseIntegral = 0;
+        foreach (var (cheie, partida) in legaturi.OrderBy(x => x.Key, StringComparer.Ordinal)) {
+            var cub = restCub.GetValueOrDefault(partida);
+            var sold = sursa.GetValueOrDefault(cheie);
+            if (cub == 0m && sold == 0m) {
+                stinseIntegral++;
+                continue;
+            }
+            var delta = cub - sold;
+            if (Math.Abs(delta) < EpsV)
+                continue;
+            var refuzat = Imperecheri1C.RefuzatPePartida.GetValueOrDefault(partida);
+            var plafonat = Imperecheri1C.PlafonatPePartida.GetValueOrDefault(partida);
+            var explicatie = Explica(delta, refuzat, plafonat);
+            if (explicatie != ExplicatiePartida.Fara) {
+                if (explicatie == ExplicatiePartida.Refuz) explicate++;
+                else if (explicatie == ExplicatiePartida.Plafonare) plafonate++;
+                else cumulate++;
+                stare.Jurnalizeaza($"  ok   partidă {cheie}: cub {cub:N2} = sursă {sold:N2} − neaplicat "
+                    + $"(refuzat {refuzat:N2}, plafonat {plafonat:N2}; debit − credit)");
+                continue;
+            }
+            if (generice.Contains(partida)) {
+                declarate.Add((cheie, cub, sold));
+                continue;
+            }
+            if (deschidere.TryGetValue(partida, out var initial) && Math.Abs(cub - initial) < EpsV
+                    && refuzat == 0m && plafonat == 0m) {
+                neatinse.Add((cheie, cub, sold));
+                continue;
+            }
+            picate.Add((cheie, cub, sold, refuzat, plafonat, directe.TryGetValue(partida, out var direct) ? direct : null));
+        }
+        stare.Jurnalizeaza($"\n[5] Partide inițiale la {ctx.Ultima:yyyy-MM-dd} — {legaturi.Count} partide, "
+            + $"{stinseIntegral} stinse integral în ambele părți, {explicate} explicate de refuzuri, "
+            + $"{plafonate} explicate de plafonare, {cumulate} de refuz și plafonare, {declarate.Count} declarate pe partenerul generic, "
+            + $"{neatinse.Count} neatinse de trecerea 2 (stinse în sursă de alt tip), {picate.Count} FAIL:");
+        foreach (var x in declarate)
+            stare.Jurnalizeaza($"  decl partidă {x.Cheie}: cub {x.Cub:N2}, sursă {x.Sursa:N2} — partener nedefinit în sursă (M1-D5)");
+        foreach (var x in neatinse.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)))
+            stare.Jurnalizeaza($"  neat partidă {x.Cheie}: cub {x.Cub:N2}, sursă {x.Sursa:N2} — neatinsă de trecerea 2");
+        var neatinsePeCont = neatinse.GroupBy(x => x.Cheie.Split('|')[0])
+            .Select(g => $"{g.Key} × {g.Count()} (Σ Δ {g.Sum(x => x.Cub - x.Sursa):N2})");
+        if (neatinse.Count > 0)
+            Console.WriteLine($"     [5] neatinse de trecerea 2: {string.Join(", ", neatinsePeCont)}");
+        string Origine((string Cheie, decimal Cub, decimal Sursa, decimal Refuzat, decimal Plafonat, decimal? Direct) x) =>
+            $"Δ {x.Cub - x.Sursa:N2}, refuzat {x.Refuzat:N2}, plafonat {x.Plafonat:N2}"
+            + (x.Direct is { } d ? $", mișcată direct la operare Σ {d:N2} (107-r9)" : "");
+        foreach (var x in picate.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)).ThenBy(x => x.Cheie, StringComparer.Ordinal))
+            stare.Jurnalizeaza($"  FAIL partidă {x.Cheie}: cub {x.Cub:N2} = sursă {x.Sursa:N2} ({Origine(x)})");
+        foreach (var x in picate.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)).ThenBy(x => x.Cheie, StringComparer.Ordinal).Take(10))
+            contract($"  partidă {x.Cheie}: cub {x.Cub:N2} = sursă 1C {x.Sursa:N2} ({Origine(x)})", false);
+        var peCont = picate.GroupBy(x => x.Cheie.Split('|')[0])
+            .Select(g => $"{g.Key} × {g.Count()} (Σ Δ {g.Sum(x => x.Cub - x.Sursa):N2})");
+        contract($"5. Partide inițiale: {legaturi.Count} partide, {stinseIntegral} stinse integral, "
+            + $"{explicate} explicate de refuzuri, {plafonate} de plafonare, {cumulate} de refuz și plafonare, "
+            + $"{declarate.Count} declarate (partener generic, "
+            + $"Σ cub {declarate.Sum(x => x.Cub):N2}), {neatinse.Count} neatinse de trecerea 2 "
+            + $"(Σ cub {neatinse.Sum(x => x.Cub):N2}), {picate.Count} fără explicație"
+            + (picate.Count == 0 ? "" : $" — pe conturi: {string.Join(", ", peCont)}"), picate.Count == 0);
+    }
+
+    internal enum ExplicatiePartida { Fara, Refuz, Plafonare, RefuzSiPlafonare }
+
+    // 107h: sursa = cubul + mișcarea neaplicată, deci Δ (cub − sursă) = −(refuzat + plafonat).
+    internal static ExplicatiePartida Explica(decimal delta, decimal refuzat, decimal plafonat) =>
+        (refuzat == 0m && plafonat == 0m) || Math.Abs(delta + refuzat + plafonat) >= EpsV ? ExplicatiePartida.Fara
+        : plafonat == 0m ? ExplicatiePartida.Refuz
+        : refuzat == 0m ? ExplicatiePartida.Plafonare
+        : ExplicatiePartida.RefuzSiPlafonare;
 
     // ==================== 1. Sold per cont sintetic OMFP ====================
 
@@ -298,6 +425,10 @@ static partial class ReconciliereLuna {
         foreach (var d in registru.Where(d => d.ValoareNepostata != 0m)) {
             Explica(d.ContDebit, -d.ValoareNepostata);
             Explica(d.ContCredit, d.ValoareNepostata);
+        }
+        foreach (var (cont, delta) in stare.DeclarateDeschidere) {
+            Explica(cont, delta);
+            Explica(Deschidere.Ancora, -delta);
         }
 
         // (a') D18-D4: reziduul per lot ABSORBIT LA GOLIRE, din REGISTRU. Nu e o

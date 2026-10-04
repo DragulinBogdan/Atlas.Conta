@@ -838,3 +838,20 @@ Prototipul legacy migrează nomenclatoare și solduri de deschidere la granița
 aleasă. Istoricul rămâne în sursă. Deschiderile contabile folosesc convenția
 de cont de deschidere, iar soldurile terților nu sunt transformate în facturi
 inventate. Legăturile de migrare fac reluarea identificabilă și idempotentă. (34a, 34b, 34d)
+
+Import1C scrie deschiderea prin `Materializare.Deschide`, o dată per bază:
+controale brute per (cont, latură), loturile ca detaliu al conturilor de stoc,
+terții ca partide inițiale `(cont, partener, document de decontare)` din
+`BalantaNivel3`, pozițiile fără partener pe partenerul generic de migrare
+`MIGRARE-NEDEFINIT`. Stingerile anului pe pozițiile de deschidere se scriu în
+cub pe partidă, în trecerea 2, plafonate la rest; data împerecherii este a
+faptului. La reluare deschiderea nu se rescrie: fiecare partidă și fiecare
+lot al sursei se compară cu cubul, în ambele sensuri. Contractul 5 al
+reconcilierii compară restul fiecărei partide inițiale cu soldul poziției în
+sursă la luna următoare, corectat cu mișcarea neaplicată (refuzuri și
+plafonări semnate după sensul real, cumulate, rederivate din cub la reluare);
+partidele neatinse de trecerea 2 și cele ale partenerului generic se declară
+cu sumă. O eroare tehnică a unei stingeri pică luna și nu explică nimic.
+`--probe-stingeri` injectează două erori pe prima stingere reală. Contractul
+și cifrele:
+`docs/import/m1-deschidere-terti-contract.md`. (107)
