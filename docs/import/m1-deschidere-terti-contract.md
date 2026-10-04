@@ -2,8 +2,10 @@
 
 - Data: 2026-10-01
 - Stare: PIN-UIT de owner 2026-10-01 (M1-D3 brut per latură, M1-D5 partener
-  generic de migrare, M1-D7 retururile 2024 pe partida inițială); implementarea
-  urmează pe branch `m1-deschidere-terti`.
+  generic de migrare, M1-D7 retururile 2024 pe partida inițială); implementat pe
+  branch `m1-deschidere-terti`; M1-D10 amendat de owner 2026-10-04 (deschidere
+  exactă + ianuarie verde pe mecanism), atins la reverificarea din aceeași zi;
+  review advers cerut.
 - Surse: 091 (f) și 091-r4 (felia de migrare); 094 și DES-B1…B4
   (`docs/nucleu/tr-d7b-deschidere-contract.md`); T-D7 din
   `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (forma inițială, amendată de
@@ -243,6 +245,24 @@ migrare), `stare-curenta` actualizată, T-r4 închisă, TR-r6 închisă pe date,
 FZ-r10 închisă pe date; 091-r4 rămâne deschisă pentru restul (reconcilierea
 ca raport de diferențe pe modelul rotund).
 
+**Amendament (owner, 2026-10-04): deschidere exactă + ianuarie verde pe
+mecanism.** Regula de oprire a feliei M1 devine:
+
+- deschiderea exactă: M1-D9 (i) verde și `Invarianti.Verifica` fără refuz
+  după deschidere;
+- ianuarie pe mecanism: `--recreeaza --cititori --pana-la 1` cu 0 eșecuri de
+  import, `Invarianti.Verifica` fără refuz pe baza integrală, contractele 3
+  și 4 verzi, contractul 5 rulat pe toate partidele inițiale;
+- contractele 1 și 2 pot pica numai pe diferențe atribuite cu nume unei
+  restanțe din afara M1 (azi 107-r3); partidele contractului 5 rămase fără
+  explicație se raportează cu sumă și se triază la review-ul advers.
+
+Rularea integrală 12/12 cu contractele 1–5 verzi iese din M1 și trece în
+restul 091-r4, după TR-D9: blocajele ei (107-r3, F26-r13, 107-r6…r8) sunt în
+afara feliei. Review-ul advers la închidere și restul paragrafului de mai
+sus rămân. Citirea „verde pe mecanism” de mai sus (ce contracte trebuie
+verzi și ce se raportează) e a implementării și se confirmă la review.
+
 ## 3. Ce NU intră
 
 - Conturile neurmărite pe partide cu trei subconto (473, 442.x, 511.2):
@@ -377,4 +397,6 @@ artefactele în `run-verificari/m1-ian-rebazat/`.
   între rulări, deci partea ordinii nedeterministe (107-r7) nu se poate separa
   de a motorului din această singură rulare.
 
-Regula de oprire M1-D10 rămâne neatinsă, din aceleași cauze din afara M1.
+Regula de oprire M1-D10 în forma inițială (12/12) rămâne neatinsă, din
+aceleași cauze din afara M1; în forma amendată la 2026-10-04 e atinsă de
+această rulare.
