@@ -224,9 +224,9 @@ static class HandlerCompensare {
                 var debit = subconto.Latura(r.Linie, Subconto.Debit).DeFel(Subconto.FelDocumente);
                 var credit = subconto.Latura(r.Linie, Subconto.Credit).DeFel(Subconto.FelDocumente);
                 if (debit != null)
-                    yield return new StingereSursa(View, h.Id, debit, Math.Abs(r.Suma));
+                    yield return new StingereSursa(View, h.Id, debit, Math.Abs(r.Suma), 1);
                 if (credit != null)
-                    yield return new StingereSursa(View, h.Id, credit, Math.Abs(r.Suma));
+                    yield return new StingereSursa(View, h.Id, credit, Math.Abs(r.Suma), -1);
             }
         }
     }

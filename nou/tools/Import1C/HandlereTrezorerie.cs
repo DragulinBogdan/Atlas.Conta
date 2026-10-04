@@ -69,7 +69,8 @@ sealed record AnalizaTrezorerie(List<GrupTrezorerie> Grupuri,
 // O stingere derivată din sursă: cine stinge (cheia documentului Atlas) și ce
 // stinge (referința 1C a documentului). Trecerea 2 (Imperecheri.cs) o traduce în
 // `Imperechere`; trecerea 1 nu face nimic cu ea.
-sealed record StingereSursa(string View, string CheieStingator, FlaxRef Tinta, decimal Suma);
+// `Sens`: latura pe care sursa mișcă poziția-țintă (+1 debit, −1 credit); 0 = se citește din postările stingătorului.
+sealed record StingereSursa(string View, string CheieStingator, FlaxRef Tinta, decimal Suma, int Sens = 0);
 
 static class MotorTrezorerie {
     // Conturile pe care Atlas le poate reprezenta ca LATURĂ de document, adică

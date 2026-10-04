@@ -107,7 +107,7 @@ static class Imperecheri1C {
         var perechi = sursa
             .Where(s => s.Tinta != null)
             .GroupBy(s => (s.View, s.CheieStingator, TintaTip: s.Tinta.Tip, TintaId: s.Tinta.Id, TipRef: s.Tinta.TipRef))
-            .Select(g => (g.Key, Suma: g.Sum(x => x.Suma)))
+            .Select(g => (g.Key, Suma: g.Sum(x => x.Suma), Sens: Math.Sign(g.Sum(x => x.Sens * x.Suma))))
             .ToList();
         // Descrierile țintelor, pentru triajul „dinaintea ferestrei" de mai jos.
         var descrieri = sursa.Where(s => s.Tinta?.Descriere != null)
@@ -126,7 +126,7 @@ static class Imperecheri1C {
         var create = 0;
         var existenteLaStart = Existente;
         try {
-            foreach (var (cheie, suma) in perechi) {
+            foreach (var (cheie, suma, sens) in perechi) {
                 var cheieLegatura = $"{cheie.View}/{cheie.CheieStingator}->{cheie.TintaId}";
                 if (legaturi.ContainsKey(cheieLegatura)) {
                     Existente++;
@@ -160,7 +160,7 @@ static class Imperecheri1C {
                         peLot = 0;
                     }
                     peLot++;
-                    if (CreeazaPeDeschidere(bucla, os, stingatorDeschidere.Value, candidate, suma, cheieDeschidere))
+                    if (CreeazaPeDeschidere(bucla, os, stingatorDeschidere.Value, candidate, suma, sens, cheieDeschidere))
                         create++;
                     else
                         peLot = LotObjectSpace;
@@ -273,7 +273,8 @@ static class Imperecheri1C {
     }
 
     static bool CreeazaPeDeschidere(BuclaImport bucla, IObjectSpace os, Guid stingatorId,
-            IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> candidate, decimal suma, string cheieLegatura) {
+            IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> candidate, decimal suma, int sensSursa,
+            string cheieLegatura) {
         var proprii = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == stingatorId && p.Carte == N.Carte.Contabil
                 && p.FelUnitate == N.FelUnitate.Partida && p.Partener != null
@@ -289,8 +290,8 @@ static class Imperecheri1C {
             .Where(p => p.Unitate == partida.Partida && p.Carte == N.Carte.Contabil)
             .Select(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare).ToList().Sum();
         var sensPartida = Math.Sign(restPartida);
-        var sensMiscare = Math.Sign(proprii.Where(p => p.Cont == partida.Cont && p.Partener == partida.Partener)
-            .Sum(p => p.Semnat));
+        var sensMiscare = sensSursa != 0 ? sensSursa
+            : Math.Sign(proprii.Where(p => p.Cont == partida.Cont && p.Partener == partida.Partener).Sum(p => p.Semnat));
         if (sensMiscare != 0 && sensMiscare == sensPartida) {
             Refuza(partida.Partida, sensMiscare * suma, suma,
                 "partida de deschidere refuză: sursa mișcă partida în sensul soldului ei (semn inversat, M1-D7)");
