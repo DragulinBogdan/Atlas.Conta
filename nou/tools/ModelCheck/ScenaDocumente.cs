@@ -85,11 +85,11 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected OperareRezultat Opereaza(Guid doc) => CuSpatiu(os => ComenziDocument.Sistem(os).Opereaza(doc));
     protected void Storneaza(Guid doc, DateOnly data) {
         var inainte = Amprenta(doc);
-        CuRegim(doc, ComandaDocument.Storneaza, () => CuSpatiu(os => ComenziDocument.Sistem(os).Storneaza(doc, data)));
+        CuRegim(doc, ComandaDocument.Storneaza, data, () => CuSpatiu(os => ComenziDocument.Sistem(os).Storneaza(doc, data)));
         PostariPastrate(doc, inainte);
     }
     protected void Anuleaza(Guid doc) {
-        CuRegim(doc, ComandaDocument.AnuleazaOperarea, () => CuSpatiu(os => ComenziDocument.Sistem(os).AnuleazaOperarea(doc)));
+        CuRegim(doc, ComandaDocument.AnuleazaOperarea, null, () => CuSpatiu(os => ComenziDocument.Sistem(os).AnuleazaOperarea(doc)));
         foreach (var cheie in matriceFiscale.Keys.Where(k => k.Doc == doc).ToArray()) matriceFiscale.Remove(cheie);
     }
 
@@ -101,9 +101,16 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
 
     // SC-X-24 (106k): fiecare comandă de retragere a scenei e comparată cu regimul citit înaintea ei.
     readonly List<string> abateriRegim = [];
+    readonly Dictionary<RefuzNepromis, int> nepromiseRegim = [];
     int comenziRegim;
 
-    T CuRegim<T>(Guid doc, ComandaDocument comanda, Func<T> executa) {
+    /// <summary>Câte refuzuri pe limita 106-r7 probează scena; orice alt număr e abatere.</summary>
+    protected virtual int LimiteRegim => 0;
+
+    protected RefuzNepromis ClasaRefuz(Guid doc, ComandaDocument comanda, DateOnly? data, string mesaj) =>
+        CuSpatiu(os => ProbeRegim.Clasifica(os, doc, comanda, data, mesaj));
+
+    T CuRegim<T>(Guid doc, ComandaDocument comanda, DateOnly? data, Func<T> executa) {
         var regim = CuSpatiu(os => os.GetObjectByKey<Document>(doc) is { } d ? RegimDocument.Calculeaza(os, d) : null);
         if (regim == null) return executa();
         var motiv = regim.Motiv(comanda.ToString());
@@ -115,8 +122,14 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             return rezultat;
         }
         catch (OperareException e) {
-            if (motiv == null && !ProbeRegim.RefuzLaComanda(comanda, e.Message))
-                lock (abateriRegim) abateriRegim.Add($"{comanda} oferită de regim, refuzată de comandă: {e.Message}");
+            if (motiv == null) {
+                var clasa = ClasaRefuz(doc, comanda, data, e.Message);
+                lock (abateriRegim) {
+                    nepromiseRegim[clasa] = nepromiseRegim.GetValueOrDefault(clasa) + 1;
+                    if (clasa == RefuzNepromis.Abatere)
+                        abateriRegim.Add($"{comanda} oferită de regim, refuzată de comandă: {e.Message}");
+                }
+            }
             throw;
         }
     }
@@ -124,8 +137,11 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     void VerificaRegim() {
         if (comenziRegim == 0) return;
         foreach (var abatere in abateriRegim) Console.WriteLine($"     ABATERE REGIM ({cod}): {abatere}");
-        Verifica("SC-X-24", $"{cod}: {comenziRegim} comenzi de retragere conforme cu regimul citit înaintea lor",
-            abateriRegim.Count == 0);
+        int Nepromise(RefuzNepromis clasa) => nepromiseRegim.GetValueOrDefault(clasa);
+        Verifica("SC-X-24", $"{cod}: {comenziRegim} comenzi de retragere conforme cu regimul citit înaintea lor; lăsate comenzii: "
+            + $"{Nepromise(RefuzNepromis.PeValori)} pe valori, {Nepromise(RefuzNepromis.PeDataCeruta)} pe data cerută, "
+            + $"{Nepromise(RefuzNepromis.Limita106r7)} pe limita 106-r7 (declarate {LimiteRegim})",
+            abateriRegim.Count == 0 && Nepromise(RefuzNepromis.Limita106r7) == LimiteRegim);
     }
     protected void InchideIanuarie() => Comanda(os => inchide(os, An, 1));
 
@@ -143,7 +159,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected void Inchide(int an, int luna) => Comanda(os => inchide(os, an, luna));
     protected Guid Corecteaza(Guid doc) {
         var inainte = Amprenta(doc);
-        var corectie = CuRegim(doc, ComandaDocument.Corecteaza,
+        var corectie = CuRegim(doc, ComandaDocument.Corecteaza, Februarie,
             () => CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(doc, Februarie, MotivCorectie.EroareMateriala).CorectieId));
         PostariPastrate(doc, inainte);
         return corectie;

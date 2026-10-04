@@ -4,10 +4,15 @@ Data: 2026-10-04. Cod: `908d3c8` (PR #17), diferența față de `7ee5470`.
 Contract: [106](../decizii/106-regim-pe-stare.md), inclusiv (i)/(j);
 catalog: [REGIM](scenarii/REGIM.md).
 
-**Verdict: necesită corecturi — patru observații P2 deschise.** Trei sunt
+**Verdict inițial: necesită corecturi — patru observații P2.** Trei sunt
 confirmate prin comenzile reale; a patra este constatare statică XAF.
 Integrala verde nu acoperă contraexemplele. Nu s-au modificat regulile
 aprobate sau codul de producție.
+
+Reverificare la `5941b28`: R1…R4 închise tehnic;
+[RV1](c106-review-codex-rv1.md) consemnează observația C106-R5 asupra
+probei SC-X-24 și delimitarea limitei 106-r7, încă dependentă de aprobarea
+owner-ului.
 
 În referințele de mai jos, `Module/` înseamnă
 `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/`.

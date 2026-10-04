@@ -368,6 +368,8 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         Verifica("SC-IMO-16", "luna documentului închisă: regimul refuză Anulează, Stornează și Corectează",
             Refuzata(regim, ComandaDocument.AnuleazaOperarea, "închisă") && Refuzata(regim, ComandaDocument.Storneaza, "luna lui")
             && Refuzata(regim, ComandaDocument.Corecteaza, "luna lui"));
+        Verifica("SC-IMO-16", "SC-X-24 nu ia refuzul pe luna închisă drept refuz pe data cerută",
+            ClasaRefuz(p.Id, ComandaDocument.Corecteaza, Februarie, "cu o dată din luna lui") == RefuzNepromis.Abatere);
         Refuza("SC-IMO-16", () => Storneaza(p.Id, Ianuarie), "închisă");
         Refuza("SC-IMO-16", () => Corecteaza(p.Id), "luna lui");
         Verifica("SC-IMO-16", "corecția refuzată păstrează originalele", amprenta == Amprenta(p.Id));

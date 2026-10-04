@@ -360,8 +360,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   stoc, poziție fără fișă) și, la stornare și corecție, pe cele care depind
   de data cerută: perioada ei, luna la imobilizări cât luna documentului e
   deschisă, nominalizările stinse ulterior. La stornarea unui document cu
-  legături vii în perioade închise, regimul nu numără nominalizarea liberă a
-  partenerului pe aceeași partidă; refuzul rămas după desfacerea legăturilor
+  legături vii în perioade închise, regimul nu numără nominalizarea
+  partenerului pe aceeași partidă când ea nu vine din transferul legăturii,
+  inclusiv la legătura manuală care acoperă exact o nominalizare făcută la
+  operare; refuzul `PARTIDA_CU_DEPENDENTI` rămas după desfacerea legăturilor
   apare la comandă. (106i, 106k, 106-r7)
 - Salariile, execuția bugetară completă, producția pe rețete, împărțirea pe
   cofinanțări și contabilitatea multivalutară nu sunt module complete în

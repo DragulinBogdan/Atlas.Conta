@@ -86,8 +86,10 @@ sintactică, nicio affordance `Poate*` din `Module/Api/` nu se calculează din
 `REGIM` (`ScenariiRegim.cs`, anul 2013) rulează cu `--scenarii REGIM`.
 Conformitatea regim ↔ comandă (SC-X-24, 106k) rulează în fiecare scenă:
 `ScenaDocumente.Anuleaza`, `Storneaza` și `Corecteaza` citesc regimul
-înaintea comenzii și numără abaterile în ambele sensuri; refuzurile lăsate
-comenzii sunt lista nominală `ProbeRegim.RefuzLaComanda`. O scenă care probează
+înaintea comenzii și numără abaterile în ambele sensuri. Un refuz lăsat
+comenzii se dovedește pe starea documentului (`ProbeRegim.Clasifica`): pe
+valori, pe data cerută ori pe limita 106-r7, al cărei număr îl declară scena
+(`LimiteRegim`). O scenă care probează
 concurența sau prima instrucțiune SQL a comenzii cheamă `ComenziDocument`
 direct, nu helperul. Un gardian nou de dependență pe calea anulării sau a
 stornării intră ca predicat `Motiv*` în `Motor/GardieniRetragere`; altfel

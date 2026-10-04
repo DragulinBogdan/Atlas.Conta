@@ -357,7 +357,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 106-r4 | Axa 2 a formatului: coloanele grilelor de linii declarate pe roluri, blocajele câmpurilor-rezultat puse o singură dată; primitiva `Columns`/`ReadOnly` în Atlas.DXF 26.1.4.10 (106h) | închisă 2026-10-01 |
 | 106-r5 | StateMachine și ViewVariants scoase din `Startup.cs` și `RequiredModuleTypes`; `HCategory` scos din `DbContext` (106g) | activă |
 | 106-r6 | BCS/BTR/RLF calculează `Valoare` dar stau pe grila generică și pe dialogul comun cu DVI; blocajul rezultatului cere detaliu propriu (106h) | după PoC |
-| 106-r7 | Regimul stornării nu numără nominalizarea liberă a partenerului unei legături vii; refuzul `PARTIDA_CU_DEPENDENTI` rămas după desfacere apare la comandă (106k) | după PoC |
+| 106-r7 | Regimul stornării nu numără nominalizarea partenerului unei legături vii când ea nu vine din transferul legăturii (și legătura manuală fără transfer în cub); refuzul `PARTIDA_CU_DEPENDENTI` rămas după desfacere apare la comandă (106k, SC-REGIM-14) | după PoC; owner 2026-10-04: rămâne la comandă |
 | X-r1 | Rafinarea blocajului scrierii: granularitatea pe gestiune + partener și scoaterea salvării de draft de sub blocajul comenzilor; pragul de așteptare separat de timpul comenzii (108) | după PoC; se deschide la așteptare măsurată peste un prag fixat de owner |
 | X-r2 | Subiectul permisiunii care păzește cifrele citite din cub, după tăierea tipurilor de registru; azi `RegistrulCitibil` (108) | cade la TR-D9 |
 | X-r3 | Raportul de stoc listează capătul de consum al BCS (postarea de debit poartă lotul ca unitate, pe contul de cheltuială); semantica raportului e întrebare pentru owner (108) | activă: întrebare deschisă pentru owner |

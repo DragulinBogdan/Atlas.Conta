@@ -117,8 +117,13 @@ Cele trei comenzi nu au aceleași dependențe:
 - **La comandă rămân** (i): valorile (soldul de stoc, poziția fără fișă),
   data cerută (perioada ei, luna la imobilizări cât luna documentului e
   deschisă, nominalizările stinse ulterior datei) și nominalizarea rămasă
-  după desfacerea legăturilor pe care stornoul le inversează singur
-  (partenerii legăturilor vii nu se numără la nominalizări, 106-r7).
+  după desfacerea legăturilor pe care stornoul le inversează singur:
+  partenerii legăturilor vii nu se numără la nominalizări, deci regimul
+  oferă stornarea și când nominalizarea partenerului nu vine din transferul
+  legăturii și rămâne activă după desfacere. Cazul include legătura manuală
+  care acoperă exact o nominalizare făcută de partener la operare, fără
+  transfer în cub. Comanda refuză atunci `PARTIDA_CU_DEPENDENTI`, atomic
+  (106-r7; tranșarea owner-ului, 2026-10-04: refuzul rămâne la comandă).
 
 Tipul cu registru propriu contribuie prin interfață
 (`IDocumentCuRegistruPropriu.MotivDependenti`, `MotivPerioadaStornarii`), nu
@@ -126,8 +131,11 @@ prin `switch`. Costul din (f) devine: un document operat fără dependenți se
 citește în 10–12 instrucțiuni mărginite pe ID (măsurat: NTC 10, FCT 12), cu
 plafonul probat în SC-REGIM-13. Proba e SC-X-24: fiecare comandă de
 retragere a catalogului de scenarii e comparată cu regimul citit înaintea
-ei, în ambele sensuri; refuzurile lăsate comenzii sunt o listă nominală
-(`ProbeRegim.RefuzLaComanda`). Adaptorul XAF își retrage cheia „Regim” și
+ei, în ambele sensuri. Un refuz lăsat comenzii se dovedește pe starea
+documentului, nu pe mesaj (`ProbeRegim.Clasifica`): nominal pe valori; pe
+data cerută numai dacă o altă dată admisă există; pe limita 106-r7 numai
+dacă refuzul vine de la partenerii legăturilor vii, iar scena îi declară
+numărul. Adaptorul XAF își retrage cheia „Regim” și
 tooltip-urile de pe acțiunile frame-ului la dezactivare.
 
 ## Context
@@ -225,6 +233,32 @@ Corectura respectă contractul ciclului de viață XAF și rămâne.
 Reverificarea lui Codex e cerută în
 `comunicari/2026-10-04-1355-claude-codex-c106-review-corectat.md`.
 
+Reverificare Codex la `5941b28`:
+[RV1](../nucleu/c106-review-codex-rv1.md), R1…R4 închise tehnic,
+integrala 3.450/4.671 OK. C106-R5 semnalează excepția prea largă din
+SC-X-24. 106-r7 este măsurată și pe nominalizare 40 acoperită integral de
+legătura manuală de 40, fără transfer cub. Predarea precizează că (k)
+așteaptă aprobarea owner-ului; review-ul nu aprobă amânarea lui 106-r7.
+
+C106-R5, corectat. Excepția pe mesaj a ieșit: SC-X-24 clasifică refuzul
+unei comenzi oferite de regim pe starea documentului. `PARTIDA_CU_DEPENDENTI`
+e refuz pe data cerută numai dacă nominalizarea e activă la data cerută și
+stinsă la orice dată ulterioară (SC-NTC-22); e limita 106-r7 numai dacă
+refuzul dispare când partenerii legăturilor vii, calculați de probă, sunt
+lăsați deoparte; altfel e abatere. La fel luna imobilizărilor: refuz pe
+dată numai cât luna documentului e deschisă. O scenă declară câte refuzuri
+pe limita 106-r7 probează; orice alt număr pică. SC-REGIM-15 și SC-IMO-16
+arată că un regim care ar pierde un dependent permanent sau luna închisă e
+abatere, nu refuz pe dată. Limita 106-r7 are proba ei, SC-REGIM-14, pe
+fixture-ul din RV1.
+
+Integrala după corectură: 3.459 bugetar / 4.680 privat, zero FAIL
+(`run-verificari/20261004-142733-206/`). Reverificarea e cerută în
+`comunicari/2026-10-04-1434-claude-codex-c106-rv1-corectat.md`.
+
+Tranșarea owner-ului, 2026-10-04: 106-r7 rămâne la comandă. Regimul
+stornării nu simulează desfacerea legăturilor.
+
 ## Ce rămâne deschis
 
 - 106-r1: închisă 2026-10-04. Probat în browser pe hostul Blazor, pe o
@@ -244,10 +278,14 @@ Reverificarea lui Codex e cerută în
   blocajul cere detaliu propriu.
 - 106-r7: la stornare, regimul nu numără nominalizările partenerilor
   legăturilor vii, fiindcă stornoul desface el însuși acele legături. Dacă
-  partenerul are și o nominalizare liberă pe aceeași partidă (101), ea
-  rămâne după desfacere și comanda refuză `PARTIDA_CU_DEPENDENTI`, deși
-  regimul a oferit stornarea. Citirea exactă cere contribuția fiecărei
-  legături pe partidă.
+  nominalizarea partenerului nu vine din transferul legăturii, ea rămâne
+  după desfacere și comanda refuză `PARTIDA_CU_DEPENDENTI`, deși regimul a
+  oferit stornarea. Două forme: nominalizarea liberă peste suma legăturii
+  (101) și legătura manuală care acoperă exact o nominalizare făcută de
+  partener la operare, fără transfer în cub (măsurată: FCT 100, NTC 40,
+  legătură 40, SC-REGIM-14). O nominalizare acoperită integral de o legătură
+  nu face deci stornarea sursei sigură. Citirea exactă cere contribuția
+  fiecărei legături pe partidă. Owner, 2026-10-04: rămâne la comandă.
 - 106-r5: StateMachine și ViewVariants ies din `Startup.cs` și din
   `RequiredModuleTypes` (tabele și noduri de model fără utilizare); `HCategory`
   iese din `DbContext`.
