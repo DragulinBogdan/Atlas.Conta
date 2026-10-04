@@ -5,7 +5,8 @@
   generic de migrare, M1-D7 retururile 2024 pe partida inițială); implementat pe
   branch `m1-deschidere-terti`; M1-D10 amendat de owner 2026-10-04 (deschidere
   exactă + ianuarie verde pe mecanism), review advers Codex cu
-  M1-R1…R4 corectate (`docs/import/m1-review-codex.md`), reverificarea în curs.
+  M1-R1…R4 corectate (`docs/import/m1-review-codex.md`); RV1 a închis R1, R2, R4
+  (`docs/import/m1-rv1-review-codex.md`), M1-R3a corectată, reverificarea ei în curs.
 - Surse: 091 (f) și 091-r4 (felia de migrare); 094 și DES-B1…B4
   (`docs/nucleu/tr-d7b-deschidere-contract.md`); T-D7 din
   `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (forma inițială, amendată de
@@ -467,3 +468,33 @@ perechea stingător → poziție nu e mereu 1:1 cu mișcarea sursei pe poziție
 (documente ținute pe mai multe conturi sau la mai mulți parteneri), iar o
 notă poate mișca partida direct la operare și apoi fi refuzată în trecerea 2
 (107-r9); încasările inline de retail nu intră în trecerea 2 (107-r10).
+
+**Reverificarea Codex RV1 (2026-10-04): M1-R1, R2, R4 închise; M1-R3a
+corectată.** Raportul: `docs/import/m1-rv1-review-codex.md`. Agregarea
+perechilor aduna magnitudinile și păstra numai semnul netului: +100 și −40 pe
+aceeași poziție dădeau 140 cu sens +1, iar +100 și −100 dădeau 200 cu sens
+zero, citit apoi ca „sens necunoscut”. Corectura (`f6b7725`):
+
+- `Imperecheri1C.Agrega` — sursa cu sens cunoscut se agregă semnat: suma
+  perechii e modulul netului, sensul e semnul lui; netul zero dă sumă zero și
+  perechea se sare („sumă ne-pozitivă după agregare”). Sensul necunoscut e
+  `null`, nu zero, și numai el se citește din postările stingătorului.
+- Aceeași agregare servește și calea perechilor între documente: pentru
+  compensări, suma împerecherii devine netul semnat al rândurilor, nu suma
+  modulelor. Trezoreria nu are sens din sursă și rămâne cu suma adunată ca
+  până acum. În ianuarie sursa nu are rânduri de sens opus pe aceeași pereche,
+  deci cifrele lunii nu se schimbă; în an există (recensământul Codex).
+- Rederivarea plafonării la reluare ține bugetul aplicat pe (stingător,
+  partidă): a doua pereche pe aceeași partidă primește restul, nu o eroare de
+  transfer lipsă.
+
+Probele (`ProbeM1.cs`, 6 noi, prin producătorul `HandlerCompensare.StingeriRand`
+și agregatorul real): rândul cu referințe distincte pe ambele laturi, cu sumă
+pozitivă și negativă; +100/−40 → +60; −100/+40 → −60; +100/−100 → sumă zero,
+nu sens necunoscut; trezoreria rămâne necunoscută; două rânduri cu referințe
+distincte pe laturi → două perechi, +60 și −60.
+
+Verificarea pe date: reluarea pe `Atlas.Conta.Import1C.Flax.M1s` cu binarul de
+la `f6b7725` (`run-verificari/m1-ian-r1r4/rulare3-r3a/`): aceleași 3.964 de
+perechi, jurnalul de reconciliere identic cu `rulare2` în afara liniei cu
+data. Importul proaspăt nu a fost repetat cu acest binar.
