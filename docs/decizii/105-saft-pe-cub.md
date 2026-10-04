@@ -8,7 +8,7 @@ Docs: `docs/nucleu/tr-d8-saft-contract.md` (SAF-B1…B8, S0–S3, B8-R1…R4); `
 Codex a aplicat corecția RV1.2 pe clasificatorul istoric `3a4372d`:
 martori pe sursa reală pentru ambele ramuri de factură, 21 de mutanți
 respinși, aceleași 111 diferențe clasificate. Integrala: **3.269 / 4.521 OK**.
-Corecția este reverificată de Claude și comisă pe `tr-d8-saft-ab-rv1`.
+Corecția este reverificată de Claude și comisă pe `tr-d8-saft-ab-rv1` (tag, fost branch).
 Regula durabilă rămâne activă.
 [Corecția și dovezile](../nucleu/tr-d8-saft-b8-rv12-corectie.md).
 

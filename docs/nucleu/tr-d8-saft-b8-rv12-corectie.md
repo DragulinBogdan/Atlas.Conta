@@ -6,7 +6,7 @@ Reverificată de Claude la 2026-09-30, independent de rapoartele de mai jos:
 hash-urile sursei și ale DLL-ului, identitatea patch ↔ worktree, 3.269 / 4.521
 OK cu zero FAIL numărate în loguri, cele 21 de probe pe privat (0 pe bugetar),
 cele 111 rânduri ale raportului identice pe (scenă, profil, lună, secțiune,
-clasă) cu raportul anterior. Comisă pe `tr-d8-saft-ab-rv1`. SAFT-r4/r5 și
+clasă) cu raportul anterior. Comisă pe `tr-d8-saft-ab-rv1` (tag, fost branch). SAFT-r4/r5 și
 gate-ul transversal TR-D8 rămân delimitările lor existente.
 
 ## Schimbarea
@@ -70,7 +70,7 @@ bazele `.CodexSaftS3R`, cu schema verificată; rularea de mai sus este cea final
 
 ## Surse și predare
 
-Codul este comis pe branch-ul istoric `tr-d8-saft-ab-rv1`, peste `3a4372d`,
+Codul este comis pe tag-ul `tr-d8-saft-ab-rv1` (fost branch), peste `3a4372d`,
 fișierul `nou/tools/ModelCheck/SaftAb.cs`, SHA-256 sursă
 `5E9069B1D8A3C63E491472BB91375745839D2AE84A48C0D75871491B4BF89968`
 (lucrat în worktree-ul `run-verificari/saft-b8-rv12-worktree`, scos după

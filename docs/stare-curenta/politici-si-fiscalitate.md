@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-09-29.** [Index](README.md)
+**Actualizat: 2026-10-04.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -154,6 +154,18 @@ TVA cules explicit este păstrat la operare și validat, nu înlocuit automat
 cu rezultatul unei recalculări. Recalcularea din culegere și validarea la
 operare au responsabilități distincte. Totalul brut participă la stingere. (36a, 36b, 56)
 
+Taxa nemarcată se decide pe document × cotă, din valorile rotunjite ale
+liniilor fiscale, și se repartizează pe linii (Hamilton peste |valoare|, pe
+fiecare semn, în ordinea operării). Formula e una singură, pe entitate:
+culegerea o aplică la fiecare recalcul și la salvare, operarea la pregătire.
+Linia poartă deci taxa pe care o postează cubul și registrele, iar totalul
+documentului este totalul partidei, pe draft și după operare. Declarația
+postează taxa liniei, fără să o decidă din nou; taxa marcată rămâne a
+operatorului și intră neschimbată. Un tip fără politică de TVA păstrează taxa
+calculată pe linie. INV-CUB refuză taxa postată separat care diferă de taxa
+liniei (`CITIRE_TAXA_DIFERITA_DE_LINIE`); taxa capitalizată stă în valoarea
+liniei și nu intră în comparație. (090j, 109 a/b; SC-FCL-11, SC-FCL-12, SC-FCT-11)
+
 Taxarea inversă pe sens deductibil generează autolichidarea. Pe sens
 colectat, TVA trebuie să fie zero și nu se generează notă TVA; o valoare
 nenulă este refuzată înainte de materializare, inclusiv la salvarea REST. (70a, 70b)
@@ -191,7 +203,9 @@ este disponibilă numai în lista de linii inclusă în documentul cu TVA,
 cu selecție explicită de linii draft. Corecția copiază taxa și marcajul, conexul niciuna;
 RDC/RLF păstrează marcajul la schimbarea semnului. CHECK-ul exclude marcajul
 pe zero. Operarea păstrează numai taxa marcată; cea automată urmează cota
-curentă și repartizarea pe document. Toleranța configurată rămâne refuz. (103i)
+curentă și repartizarea pe document. Toleranța configurată rămâne refuz.
+O cale care nu culege prin L3 și aduce taxa unui document real (conectorul
+1C) o marchează la scriere; nemarcată, taxa se recalculează. (103i, 109 c)
 
 Raportul „Impact TVA” (`/api/proiectii/diagnostic-tva`) citește faptele din
 cub și drafturile din agregat, prin ObjectSpace secured. Filtrează pe

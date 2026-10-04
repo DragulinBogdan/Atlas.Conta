@@ -115,6 +115,18 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-FCT-08", cules.Id, N.FelTranzactie.Operare, Ianuarie,
             Randuri(cules, 0, 0, 100, 21.01m, "N21"));
         SoldPartida("SC-FCT-08", Partida(cules.Id, ContFurnizor)!.Value, Ianuarie, -121.01m);
+        var trei = Factura(Ianuarie, new LinieFctScena(1, 10.03m, "N21", false), new LinieFctScena(1, 10.03m, "N21", false),
+            new LinieFctScena(1, 10.03m, "N21", false));
+        Opereaza(trei.Id);
+        Postari("SC-FCT-11", trei.Id, N.FelTranzactie.Operare, Ianuarie, [.. Randuri(trei, 0, 0, 10.03m, 2.11m, "N21"),
+            .. Randuri(trei, 1, 0, 10.03m, 2.11m, "N21"), .. Randuri(trei, 2, 0, 10.03m, 2.10m, "N21")]);
+        SoldPartida("SC-FCT-11", Partida(trei.Id, ContFurnizor)!.Value, Ianuarie, -36.41m);
+        Verifica("SC-FCT-11", "documentul operat poartă taxa postată: 2,11 / 2,11 / 2,10, total 36,41 = totalul de stins",
+            CuSpatiu(os => {
+                var d = os.GetObjectByKey<FacturaIntrare>(trei.Id);
+                return d.Detalii.OrderBy(l => l.Pozitie).Select(l => l.ValoareTva).ToArray() is [2.11m, 2.11m, 2.10m]
+                    && d.Total == 36.41m && d.TotalStingere == 36.41m;
+            }));
     }
 
     void Refuzuri() {

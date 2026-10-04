@@ -407,7 +407,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Marcajele ANAF pentru TVA la încasare nu constituie implementarea întregului
   mecanism contabil. Fluxurile de exigibilitate amânată și conturile
   intermediare aferente nu sunt acoperite complet. (36f, D4-r9)
-- Rotunjirea TVA pe grup fiscal document × cotă nu este un mecanism general.
+- Rotunjirea TVA pe document × cotă acoperă taxa nemarcată (109). Taxa
+  culeasă rămâne suma liniilor, fără regularizare pe grup.
   Cubul păstrează valorile și calificarea fiscală, dar nu un snapshot complet al
   identității și clasificării istorice a partenerului. (36f, D4-r1)
 - Implicitele TVA pentru cumpărări extra-UE și anumite cumpărări de la

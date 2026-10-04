@@ -6,7 +6,7 @@
 aplicarea corecției. Ambele ramuri de factură au acum martor pe sursa reală;
 21 de probe adverse sunt respinse, iar raportul păstrează cele 111 diferențe
 legitime, toate clasificate. Integrala pe ambele rute este verde:
-**3.269 / 4.521 OK**, zero FAIL. Codul este reverificat de Claude și comis pe `tr-d8-saft-ab-rv1`.
+**3.269 / 4.521 OK**, zero FAIL. Codul este reverificat de Claude și comis pe `tr-d8-saft-ab-rv1` (tag, fost branch).
 [Implementarea, comenzile și limitele](tr-d8-saft-b8-rv12-corectie.md).
 
 ## Reverificare pe `b3272de`, clasificator `3a4372d` (2026-09-30)

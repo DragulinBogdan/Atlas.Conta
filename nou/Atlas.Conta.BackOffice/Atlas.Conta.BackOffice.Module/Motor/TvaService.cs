@@ -1,5 +1,6 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
+using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
@@ -55,6 +56,26 @@ public static class TvaService {
         // aici: rotunjirea se face o singură dată, pe rezultat.
         d.Valoare = Scara.RotunjesteBani(d.Valoare);
         d.ValoareTva = Scara.RotunjesteBani(d.ValoareTva);
+    }
+
+    /// <summary>
+    /// Taxa nemarcată a documentului: decisă pe document × cotă din valorile liniilor și repartizată
+    /// pe linii, în ordinea operării (109a). Fără politică de TVA rămâne taxa de linie.
+    /// </summary>
+    public static void RepartizeazaTaxa(IEnumerable<DocumentDetaliu> linii, ContextTva tva) {
+        if (tva.Directie is not DirectieTva directie)
+            return;
+        var fiscale = linii.Where(l => l.TipTvaId is Guid id && tva.Tipuri.ContainsKey(id))
+            .OrderBy(l => l.Pozitie).ThenBy(l => l.ID)
+            .Select(l => (Linie: l, Cheie: Guid.NewGuid(), Tip: tva.Tipuri[l.TipTvaId.Value]))
+            .ToList();
+        if (fiscale.All(f => f.Linie.TvaCules))
+            return;
+        var taxa = N.Tva.PeDocument(
+            [.. fiscale.Select(f => new N.LinieTva(f.Cheie, f.Linie.Valoare, (N.RegimTva)(int)f.Tip.Regim, f.Tip.Cota))],
+            (N.DirectieTva)(int)directie, new N.Rotunjire(Scara.ConventieBani));
+        foreach (var f in fiscale.Where(f => !f.Linie.TvaCules))
+            f.Linie.ValoareTva = taxa.PerLinie[f.Cheie];
     }
 
     // Latura fiscală a tipului de document (36b): `Deductibil` = achiziție,
