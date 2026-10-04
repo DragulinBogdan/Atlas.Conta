@@ -940,6 +940,6 @@ detaliat în jurnal):
   XAF nu recalculează la reîncărcare și reîncarcă liniile surori (109 f), iar
   formula scrie fiecare câmp o singură dată (109 g). După corecție: 2,11 /
   2,10 / 4,20, total 48,47 pe ecran, pe totalul de stins, în cub și în
-  registre. Închise: 107-r3, 109-r2. Noi: 109-r1, 109-r3, 109-r4. Decizia
-  așteaptă aprobarea owner-ului și review-ul advers. `run-verificari/r3-ian/`,
-  `r3-ian-final/`, `r3-motor/`.
+  registre. Închise: 107-r3, 109-r2. Noi: 109-r1, 109-r3, 109-r4. Decizia e
+  aprobată de owner (2026-10-04); review-ul advers e nefăcut.
+  `run-verificari/r3-ian/`, `r3-ian-final/`, `r3-motor/`.
