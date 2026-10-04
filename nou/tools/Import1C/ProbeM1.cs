@@ -38,6 +38,31 @@ static class ProbeM1 {
         check("probă M1-R3: diferența fără nicio mișcare neaplicată nu e explicată",
             ReconciliereLuna.Explica(5m, 0m, 0m) == Fara);
 
+        var refA = new FlaxRef("00000075", "Vanzare", "A", null);
+        var refB = new FlaxRef("00000038", "Aprovizionare", "B", null);
+        bool Rand(decimal suma, int sensDebit) {
+            var s = HandlerCompensare.StingeriRand("nota", refA, refB, suma).ToList();
+            return s.Count == 2 && s[0].Tinta == refA && s[0].Sens == sensDebit && s[0].Suma == Math.Abs(suma)
+                && s[1].Tinta == refB && s[1].Sens == -sensDebit && s[1].Suma == Math.Abs(suma);
+        }
+        check("probă M1-R3a: rândul de compensare cu referințe distincte pe ambele laturi dă două stingeri de sens opus, "
+            + "iar suma negativă le întoarce", Rand(100m, 1) && Rand(-100m, -1));
+        (decimal Suma, int? Sens) Net(params (decimal Suma, int? Sens)[] randuri) {
+            var p = Imperecheri1C.Agrega(randuri.Select(r => new StingereSursa("Compensare", "nota", refA, r.Suma, r.Sens)));
+            return p.Count == 1 ? (p[0].Suma, p[0].Sens) : (-1m, null);
+        }
+        check("probă M1-R3a: +100 și −40 pe aceeași poziție se agregă la +60", Net((100m, 1), (40m, -1)) == (60m, 1));
+        check("probă M1-R3a: −100 și +40 pe aceeași poziție se agregă la −60", Net((100m, -1), (40m, 1)) == (60m, -1));
+        check("probă M1-R3a: +100 și −100 dau net zero (sumă zero, sărită), nu sens necunoscut",
+            Net((100m, 1), (100m, -1)) == (0m, 0));
+        check("probă M1-R3a: sursa fără sens (trezoreria) rămâne cu suma adunată și sens necunoscut",
+            Net((100m, null), (40m, null)) == (140m, null));
+        var peLaturi = Imperecheri1C.Agrega(HandlerCompensare.StingeriRand("nota", refA, refB, 100m)
+            .Concat(HandlerCompensare.StingeriRand("nota", refA, refB, -40m)));
+        check("probă M1-R3a: două rânduri cu referințe distincte pe laturi dau două perechi, +60 și −60",
+            peLaturi.Count == 2 && peLaturi.Any(p => p.Key.TintaId == "A" && p.Suma == 60m && p.Sens == 1)
+                && peLaturi.Any(p => p.Key.TintaId == "B" && p.Suma == 60m && p.Sens == -1));
+
         var nominal = new OperareException($"{Materializare.StingereDeschidereInvalida}: Cont/partener incompatibil "
             + "sau suma depășește restul disponibil.");
         var ocupata = new OperareException($"{TranzactieComanda.ScriereOcupata}: altă comandă scrie în bază; reîncercați.");

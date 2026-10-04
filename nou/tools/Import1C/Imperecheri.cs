@@ -62,7 +62,7 @@ static class Imperecheri1C {
     public static int EsecuriTehnice { get; private set; }
     public static bool ProbaEsec { get; set; }
     static bool probaEsecFacuta;
-    static Dictionary<(Guid Document, Guid Partida), decimal> aplicate;
+    static Dictionary<(Guid Document, Guid Partida), (decimal Total, decimal Ramas)> aplicate;
     static Dictionary<string, List<(Guid Partida, Guid Cont, Guid Partener)>> indexDeschidere;
 
     static IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> PartideDeschidere(BuclaImport bucla,
@@ -91,6 +91,20 @@ static class Imperecheri1C {
     // entități pe o lună de extrase.
     const int LotObjectSpace = 200;
 
+    // Sursa cu sens cunoscut se agregă semnat: suma e modulul netului, sensul e semnul lui, iar netul zero dă
+    // sumă zero (sărită). Sensul necunoscut (null) rămâne necunoscut și suma se adună ca până acum.
+    internal static List<((string View, string CheieStingator, string TintaTip, string TintaId, string TipRef) Key,
+            decimal Suma, int? Sens)> Agrega(IEnumerable<StingereSursa> sursa) =>
+        sursa.Where(s => s.Tinta != null)
+            .GroupBy(s => (s.View, s.CheieStingator, TintaTip: s.Tinta.Tip, TintaId: s.Tinta.Id, TipRef: s.Tinta.TipRef))
+            .Select(g => {
+                if (g.Any(x => x.Sens == null))
+                    return (g.Key, g.Sum(x => x.Suma), (int?)null);
+                var net = g.Sum(x => x.Sens.Value * x.Suma);
+                return (g.Key, Math.Abs(net), (int?)Math.Sign(net));
+            })
+            .ToList();
+
     public static void Executa(ContextLuna ctx) {
         var bucla = ctx.Bucla;
         var sursa = HandlerExtras.Stingeri(ctx)
@@ -104,11 +118,7 @@ static class Imperecheri1C {
         // pot stinge același document (o plată care acoperă două poziții ale
         // aceleiași facturi). Un singur link cu suma totală — imperecherea pe
         // poziții rămâne amânată (31f).
-        var perechi = sursa
-            .Where(s => s.Tinta != null)
-            .GroupBy(s => (s.View, s.CheieStingator, TintaTip: s.Tinta.Tip, TintaId: s.Tinta.Id, TipRef: s.Tinta.TipRef))
-            .Select(g => (g.Key, Suma: g.Sum(x => x.Suma), Sens: Math.Sign(g.Sum(x => x.Sens * x.Suma))))
-            .ToList();
+        var perechi = Agrega(sursa);
         // Descrierile țintelor, pentru triajul „dinaintea ferestrei" de mai jos.
         var descrieri = sursa.Where(s => s.Tinta?.Descriere != null)
             .GroupBy(s => s.Tinta.Id, StringComparer.Ordinal)
@@ -273,7 +283,7 @@ static class Imperecheri1C {
     }
 
     static bool CreeazaPeDeschidere(BuclaImport bucla, IObjectSpace os, Guid stingatorId,
-            IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> candidate, decimal suma, int sensSursa,
+            IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> candidate, decimal suma, int? sensSursa,
             string cheieLegatura) {
         var proprii = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == stingatorId && p.Carte == N.Carte.Contabil
@@ -290,8 +300,8 @@ static class Imperecheri1C {
             .Where(p => p.Unitate == partida.Partida && p.Carte == N.Carte.Contabil)
             .Select(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare).ToList().Sum();
         var sensPartida = Math.Sign(restPartida);
-        var sensMiscare = sensSursa != 0 ? sensSursa
-            : Math.Sign(proprii.Where(p => p.Cont == partida.Cont && p.Partener == partida.Partener).Sum(p => p.Semnat));
+        var sensMiscare = sensSursa
+            ?? Math.Sign(proprii.Where(p => p.Cont == partida.Cont && p.Partener == partida.Partener).Sum(p => p.Semnat));
         if (sensMiscare != 0 && sensMiscare == sensPartida) {
             Refuza(partida.Partida, sensMiscare * suma, suma,
                 "partida de deschidere refuză: sursa mișcă partida în sensul soldului ei (semn inversat, M1-D7)");
@@ -393,18 +403,17 @@ static class Imperecheri1C {
     static void RederivaPlafonarea(BuclaImport bucla, Guid? stingator, Guid partida, decimal suma, string cheieLegatura) {
         aplicate ??= Aplicate(bucla);
         var cheie = (stingator ?? Guid.Empty, partida);
-        var ramas = aplicate.GetValueOrDefault(cheie);
-        if (ramas == 0m) {
+        if (!aplicate.TryGetValue(cheie, out var transfer) || transfer.Total == 0m) {
             EsecuriTehnice++;
             bucla.Avert($"Legătura {ViewDeschidere}/{cheieLegatura} există, dar cubul n-are transferul ei pe partida {partida}.");
             return;
         }
-        var aplicat = Math.Sign(ramas) * Math.Min(Math.Abs(ramas), suma);
-        aplicate[cheie] = ramas - aplicat;
-        Plafoneaza(partida, Math.Sign(aplicat) * (suma - Math.Abs(aplicat)));
+        var aplicat = Math.Min(Math.Abs(transfer.Ramas), suma);
+        aplicate[cheie] = (transfer.Total, transfer.Ramas - Math.Sign(transfer.Total) * aplicat);
+        Plafoneaza(partida, Math.Sign(transfer.Total) * (suma - aplicat));
     }
 
-    static Dictionary<(Guid, Guid), decimal> Aplicate(BuclaImport bucla) {
+    static Dictionary<(Guid, Guid), (decimal, decimal)> Aplicate(BuclaImport bucla) {
         using var os = bucla.CreeazaObjectSpace();
         var initiale = os.GetObjectsQuery<Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
@@ -416,7 +425,7 @@ static class Imperecheri1C {
             .Select(g => new { g.Key.DocumentId, g.Key.Unitate,
                 Semnat = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
             .ToList()
-            .ToDictionary(x => (x.DocumentId.Value, x.Unitate.Value), x => x.Semnat);
+            .ToDictionary(x => (x.DocumentId.Value, x.Unitate.Value), x => (x.Semnat, x.Semnat));
     }
 
     static void ProbeazaEsecul(BuclaImport bucla, Guid stingatorId, Guid partida, decimal deStins, string cheieLegatura) {
