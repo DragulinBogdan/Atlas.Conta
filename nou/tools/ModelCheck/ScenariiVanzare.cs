@@ -141,6 +141,8 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         Comanda(os => { CulegereDocument.Normalizeaza(os, os.GetObjectByKey<FacturaIesire>(f.Id)); os.CommitChanges(); });
         Verifica("SC-FCL-11", "draftul cules poartă taxa documentului: 2,11 / 2,11 / 2,10, total 36,41",
             Document(f.Id) is { Taxe: [2.11m, 2.11m, 2.10m], Total: 36.41m });
+        Verifica("SC-FCL-11", "renormalizarea draftului neschimbat nu modifică nicio linie",
+            CuSpatiu(os => { CulegereDocument.Normalizeaza(os, os.GetObjectByKey<FacturaIesire>(f.Id)); return os.ModifiedObjects.Count; }) == 0);
         Opereaza(f.Id);
         Postari("SC-FCL-11", f.Id, N.FelTranzactie.Operare, Ianuarie, [.. Venituri(f, 0, 10.03m, 2.11m, "N21"),
             .. Venituri(f, 1, 10.03m, 2.11m, "N21"), .. Venituri(f, 2, 10.03m, 2.10m, "N21")]);

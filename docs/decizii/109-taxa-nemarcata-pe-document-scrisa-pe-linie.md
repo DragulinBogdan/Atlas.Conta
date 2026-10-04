@@ -41,6 +41,17 @@ de orice ipoteză despre motor. Cât ține regimul dual, contractul 1 citește
 registrele, iar închiderea de TVA se generează din cub: o diferență registru ↔
 cub apare ca sold rămas pe 4426/4427 după închidere.
 
+(f) **Reîncărcarea nu e culegere, iar documentul se reîncarcă întreg.** În
+ecranul XAF linia se editează în tabul ei, cu spațiul ei de obiecte, iar
+salvarea de acolo renormalizează tot documentul. Adaptorul de culegere nu
+recalculează pe evenimentele unei reîncărcări (`IsReloading`); când o linie a
+documentului e reîncărcată, tabul documentului reîncarcă și liniile surori pe
+care nu le-a modificat el.
+
+(g) **Formula scrie fiecare câmp o singură dată.** Renormalizarea unui
+document neschimbat nu modifică nicio linie: fără valoare intermediară
+nerotunjită, fără taxă de linie rescrisă apoi de repartizare.
+
 ## Context
 
 107-r3 numea „drift-ul motorului” diferențele contractului 1 din ianuarie
@@ -106,7 +117,7 @@ consemnase diferența ca a regimului dual; tăierea registrelor nu o închidea.
   Pe motorul neschimbat pică exact pe partea de document (4 verificări) și pe
   cele trei probe N-r4 rescrise; postările din cub treceau deja
   (`run-verificari/r3-motor/scenarii-fcl-fct-privat-motor-vechi.log`).
-- **ModelCheck integral**: 4.704 privat, 3.459 bugetar, zero FAIL
+- **ModelCheck integral**: 4.705 privat, 3.459 bugetar, zero FAIL
   (`run-verificari/r3-motor/privat.log`, `bugetar.log`). Baza bugetară avea
   patru migrații neaplicate; au fost aplicate înaintea rulării.
 - **Conectorul singur, pe motorul neschimbat** (`run-verificari/r3-ian/`,
@@ -124,29 +135,55 @@ consemnase diferența ca a regimului dual; tăierea registrelor nu o închidea.
   conectorul. Binarul precede o singură tăietură fără efect: câmpul rămas
   nefolosit `LinieOperand.TvaCules`; ModelCheck integral a fost rerulat după
   ea, cu aceleași cifre.
+- **Binarul de după (f) și (g), import proaspăt**
+  (`run-verificari/r3-ian-final2/`, baza `.Flax.R3f` recreată, 23:56): 0
+  eșecuri de import, INV-CUB verde, contractele 1–4 identice pe conținut cu
+  rularea numai cu conectorul.
+- **Browser, pe host viu** (`run-verificari/r3-ui.ps1`, baza
+  `Atlas.Conta.BackOffice.Privat.R3Ui`, Blazor pe 5091, draft creat prin API
+  pe 5089; instantaneele în `run-verificari/r3-ui/`). Draft cu trei linii de
+  10,03 la N21: API-ul și ecranul arată 2,11 / 2,11 / 2,10, total 36,41. Linia
+  3 deschisă din grilă în tabul ei, prețul dus la 20,00: tabul liniei arată
+  imediat valoarea 20,00 și taxa 4,20; după salvare, tabul documentului arată
+  2,11 / 2,10 / 4,20 și total 48,47 (linia 2 s-a mutat, deși s-a editat linia
+  3). Operarea din ecran dă FCL-3, cu 48,47 pe linii, pe totalul de stins, pe
+  4111 în cub și în registre; taxa fiecărei linii e cea postată.
+- **Regresia găsită de probă și corectată prin (f).** Prima trecere, înaintea
+  lui (f): după salvarea liniei, operarea din tabul documentului era refuzată
+  cu „obiectul a fost schimbat de alt utilizator”. `ReloadObject` ridică
+  evenimente de schimbare, adaptorul le trata ca editare, iar repartizarea
+  rescria în memorie linia soră cu versiunea veche. Controlul cu valori
+  rotunde (3 × 10,00, fără mutare pe surori) opera fără conflict.
+- **(g) pe contoarele de versiune.** Înaintea lui (g), salvarea unei linii
+  ridica versiunea tuturor liniilor cu taxă nerotundă, fără schimbare de
+  valoare; după, linia 1 rămâne la versiunea 0 și la salvare, și la operare.
+  Proba `SC-FCL-11` „renormalizarea draftului neschimbat nu modifică nicio
+  linie” e roșie pe formula dinainte
+  (`r3-motor/scenarii-fcl-privat-formula-veche.log`).
 - **Împerecherile refuzate „peste totalul documentului”**: 212 (Σ 756.238,35)
-  → 46 (Σ 378.517,19), respectiv 47 (Σ 394.612,67) la a doua rulare. Din cele 11 detaliate în jurnal, niciuna nu mai e de
+  → 46 (Σ 378.517,19), apoi 47 la următoarele două rulări. Din cele 11 detaliate în jurnal, niciuna nu mai e de
   bani mărunți: nouă depășesc restul cu sub 20 de lei (cele patru verificate
   sunt facturi cu taxare inversă ale aceluiași furnizor, cu excedente de
   0,95–11,48: divergențele de valoare declarate pe 401, Σ −20,01, prezente și
   la baseline, unde refuzurile erau 6, Σ 21k), două
   țintesc o factură a cărei partidă proprie e mai mică decât totalul sursei
   (restul stă pe punte). Restul de 35 nu e triat (109-r3).
-- **Contractul 5**: 12 partide fără explicație la prima rulare, 10 la a doua
-  (10 la rularea de închidere a M1). Cele afișate poartă eticheta 107-r9;
-  variația între două importuri proaspete ale aceluiași cod e 107-r7.
+- **Contractul 5**: 12, 10 și 8 partide fără explicație la cele trei importuri
+  proaspete (10 la rularea de închidere a M1). Cele afișate poartă eticheta
+  107-r9; variația de la o rulare la alta e 107-r7.
 
 ## Ce rămâne deschis
 
 - 109-r1 — contractele 1 și 2 ale reconcilierii citesc `RegistruContabil`
   (`ReconciliereLuna`); la TR-D9 trec pe cititorii cubului.
-- 109-r2 — în ecranul XAF, recalculul unei linii mută taxa și pe celelalte
-  linii nemarcate ale documentului. Starea salvată e corectă (normalizarea de
-  la commit recalculează tot documentul); reafișarea celorlalte rânduri
-  înaintea salvării nu e probată în browser.
+- 109-r2 — închisă 2026-10-04 prin proba din browser și prin (f).
 - 109-r3 — 46 de împerecheri pe documente refuzate „peste restul nestins al
   documentului” în ianuarie, față de 6 la baseline; clasa de bani mărunți a
   dispărut, restul nu e triat (candidat: facturile cu o parte din creanță pe
   punte, a căror partidă proprie e mai mică decât totalul sursei).
 - Neschimbate: S-r1 (valoarea de produs a toleranței), 103-r3 (semnele
   incompatibile pe FCT/FCL), 107-r1, 107-r7, 107-r9.
+- 109-r4 — tabul liniei care nu a fost deschis din grila documentului (deschis
+  prin adresă sau rămas dintr-o sesiune anterioară) nu reîmprospătează tabul
+  documentului la salvare: documentul arată valorile vechi până la Refresh.
+  Operarea merge, fiindcă lucrează pe cheie. Comportament XAF dinaintea 109.

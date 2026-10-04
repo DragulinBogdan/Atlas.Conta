@@ -928,12 +928,18 @@ detaliat în jurnal):
   pe linii, la culegere și la operare; declarația postează taxa liniei;
   INV-CUB refuză divergența (`CITIRE_TAXA_DIFERITA_DE_LINIE`). Scenarii noi:
   SC-FCL-11, SC-FCL-12, SC-FCT-11, roșii pe motorul vechi. ModelCheck integral
-  **3.459 / 4.704 OK**, zero FAIL. Ianuarie pe Flax, numai cu conectorul
+  **3.459 / 4.705 OK**, zero FAIL. Ianuarie pe Flax, numai cu conectorul
   corectat (`.Flax.R3`): contractele 1 și 2 verzi la ban, egale cu baseline-ul
   în afara Δ-ului declarat al stocului (107 e); împerecherile refuzate „peste
   totalul documentului” 212 → 46. Importul proaspăt cu binarul final
   (`.Flax.R3f`): aceleași contracte 1–4, INV-CUB verde cu invariantul nou.
-  Contractul 5 a dat 12, apoi 10 partide fără explicație (107-r7, 107-r9).
-  Închisă: 107-r3. Noi: 109-r1, 109-r2, 109-r3. Decizia așteaptă aprobarea
-  owner-ului și review-ul advers. `run-verificari/r3-ian/`, `r3-ian-final/`,
-  `r3-motor/`.
+  Contractul 5 a dat 12, 10 și 8 partide fără explicație la trei importuri
+  proaspete (107-r7, 107-r9). Proba din browser (109-r2) a găsit un conflict
+  de versiune la operarea din tabul documentului după salvarea unei linii în
+  tabul ei: reîncărcarea liniei era tratată ca editare. Corectat: adaptorul
+  XAF nu recalculează la reîncărcare și reîncarcă liniile surori (109 f), iar
+  formula scrie fiecare câmp o singură dată (109 g). După corecție: 2,11 /
+  2,10 / 4,20, total 48,47 pe ecran, pe totalul de stins, în cub și în
+  registre. Închise: 107-r3, 109-r2. Noi: 109-r1, 109-r3, 109-r4. Decizia
+  așteaptă aprobarea owner-ului și review-ul advers. `run-verificari/r3-ian/`,
+  `r3-ian-final/`, `r3-motor/`.

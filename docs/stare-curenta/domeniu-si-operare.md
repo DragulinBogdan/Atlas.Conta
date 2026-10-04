@@ -187,6 +187,14 @@ XAF (`CulegereDocumentController`, geamănul pe linie) și `Api/*Apply` sunt
 adaptori: traduc evenimentele ecranului, respectiv PUT-ul agregatului, în
 aceleași apeluri. (104c)
 
+În XAF linia se editează în tabul ei, cu spațiul ei de obiecte; salvarea de
+acolo normalizează tot documentul. Reîncărcarea unui obiect nu e culegere:
+adaptorul nu recalculează pe evenimentele ei. Când o linie a documentului e
+reîncărcată, tabul documentului reîncarcă și liniile surori nemodificate de
+el, deci arată taxele și totalul salvate și poate opera fără conflict de
+versiune. Tabul liniei care nu a fost deschis din grila documentului nu
+declanșează reîncărcarea (109-r4). (109 f)
+
 - Documentul nou primește data de azi, dacă apelantul nu i-a dat-o. Data
   înregistrării urmează data documentului cât timp erau egale. (F27-D4)
 - La alegerea produsului, linia primește tipul (cont/clasă) din
