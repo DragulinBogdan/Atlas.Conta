@@ -158,9 +158,11 @@ scoasă; review-ul B8 e închis (RV1.2 corectat și reverificat, decizia 105).
 TR-D8 este închis: gate-ul transversal (decizia 108, contractul
 `docs/nucleu/tr-d8-transversal-contract.md`, pașii 1–6) e mers în main prin
 PR #15 (2026-10-04), cu review-ul implementării închis (X-RI1…X-RI4).
-Urmează, în ordine: discuția și aducerea pe main a branch-urilor
-`c106-regim-stare` (decizia 106) și `m1-deschidere-terti` (decizia 107), apoi
-TR-D9: tăierea scriitorilor vechi și a regimului dual. Felia fiscală
+Felia C106 (decizia 106: regimul pe stare, liniile pe roluri, ștergerea pe
+stare) e mersă în main prin PR #17 (2026-10-04), cu 106-r1 închisă; review-ul
+advers al feliei e deschis. Urmează, în ordine: discuția și aducerea pe main
+a branch-ului `m1-deschidere-terti` (decizia 107), apoi TR-D9: tăierea
+scriitorilor vechi și a regimului dual. Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
 `docs/nucleu/scenarii/CITIRI.md`.
