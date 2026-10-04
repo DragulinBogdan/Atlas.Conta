@@ -217,7 +217,7 @@ public abstract class Document : Editabila {
         foreach (var (linie, baza) in cuBaza)
             CalculeazaLinie(linie, baza.Value, tva, pastreazaTvaCules);
         if (tva != null)
-            Motor.TvaService.RepartizeazaTaxa(fiscale, tva);
+            Motor.TvaService.RepartizeazaTaxa(os, fiscale, tva);
     }
 
     /// <summary>Baza netă, nerotunjită, a liniei; null = valoarea liniei nu se calculează pe tipul ăsta.</summary>

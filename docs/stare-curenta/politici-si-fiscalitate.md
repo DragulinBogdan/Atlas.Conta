@@ -166,7 +166,10 @@ calculată pe linie. INV-CUB refuză taxa postată separat care diferă de taxa
 liniei (`CITIRE_TAXA_DIFERITA_DE_LINIE`); taxa capitalizată stă în valoarea
 liniei și nu intră în comparație. Formula scrie fiecare câmp o singură dată:
 renormalizarea unui document neschimbat nu modifică nicio linie.
-(090j, 109 a/b/g; SC-FCL-11, SC-FCL-12, SC-FCT-11)
+Liniile noi fără poziție vin după cele numerotate, în aceeași ordine folosită
+de salvare pentru atribuirea pozițiilor. Calculul nu atribuie poziții;
+acestea se scriu în continuare sub blocajul salvării.
+(090j, 109 a/b/g; SC-FCL-11…14, SC-FCT-11)
 
 Taxarea inversă pe sens deductibil generează autolichidarea. Pe sens
 colectat, TVA trebuie să fie zero și nu se generează notă TVA; o valoare

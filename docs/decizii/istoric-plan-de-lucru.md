@@ -943,3 +943,16 @@ detaliat în jurnal):
   registre. Închise: 107-r3, 109-r2. Noi: 109-r1, 109-r3, 109-r4. Decizia e
   aprobată de owner (2026-10-04); review-ul advers e nefăcut.
   `run-verificari/r3-ian/`, `r3-ian-final/`, `r3-motor/`.
+
+- **2026-10-05 — review-ul advers Codex al deciziei 109, o observație
+  (109-R1), corectată de Codex și reverificată independent.** Poziția liniei
+  noi se atribuie la salvare, deci la culegere linia nouă era prima în
+  repartizare și ultima după salvare: cu o linie marcată, draftul salvat arăta
+  36,46, iar operarea 36,45. Liniile fără poziție vin acum după cele
+  numerotate, în ordinea colecției documentului, aceeași la calcul și la
+  atribuirea pozițiilor (`BackOfficeEFCoreDbContext.InOrdineaPozitiilor`).
+  SC-FCL-13, SC-FCL-14 (0/1/2 linii salvate, fără și cu taxă culeasă), roșii
+  pe ordonarea veche. ModelCheck integral **3.459 / 4.771 OK**, zero FAIL, pe
+  binar recompilat. Proba pe HTTP și cea din browser (a treia linie adăugată
+  din ecran, FCL-6 și FCL-7) trec; ianuarie pe Flax păstrează contractele 1–4.
+  `docs/nucleu/109-review-codex.md`, `run-verificari/r3-ui/r1-*`, `r3-ian-r1/`.

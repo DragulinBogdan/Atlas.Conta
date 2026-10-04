@@ -1,5 +1,6 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
@@ -47,11 +48,11 @@ public static class TvaService {
     /// Taxa nemarcată a documentului: decisă pe document × cotă din valorile liniilor și repartizată
     /// pe linii, în ordinea operării (109a). Fără politică de TVA rămâne taxa de linie.
     /// </summary>
-    public static void RepartizeazaTaxa(IEnumerable<DocumentDetaliu> linii, ContextTva tva) {
+    public static void RepartizeazaTaxa(IObjectSpace os, IEnumerable<DocumentDetaliu> linii, ContextTva tva) {
         if (tva.Directie is not DirectieTva directie)
             return;
-        var fiscale = linii.Where(l => l.TipTvaId is Guid id && tva.Tipuri.ContainsKey(id))
-            .OrderBy(l => l.Pozitie).ThenBy(l => l.ID)
+        var db = (BackOfficeEFCoreDbContext)((EFCoreObjectSpace)os).DbContext;
+        var fiscale = db.InOrdineaPozitiilor(linii.Where(l => l.TipTvaId is Guid id && tva.Tipuri.ContainsKey(id)))
             .Select(l => (Linie: l, Cheie: Guid.NewGuid(), Tip: tva.Tipuri[l.TipTvaId.Value]))
             .ToList();
         if (fiscale.All(f => f.Linie.TvaCules))

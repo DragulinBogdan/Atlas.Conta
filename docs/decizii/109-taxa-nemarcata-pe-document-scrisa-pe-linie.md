@@ -1,8 +1,8 @@
 # 109 — Taxa nemarcată se decide pe document × cotă și se scrie pe linie; declarația postează taxa liniei; taxa unui document real adusă de o cale fără culegere e marcată
 
 - Data: 2026-10-04
-- Stare: activă, aprobată de owner 2026-10-04; implementată și verificată pe `107-r3-drift-tva`, review-ul advers nefăcut; precizează 090 (j) și 103 (i); închide 107-r3; face din N-r4 o egalitate (registrele și cubul poartă aceeași taxă)
-- Docs: `docs/nucleu/scenarii/FCL.md` (SC-FCL-11, SC-FCL-12), `FCT.md` (SC-FCT-11); `docs/stare-curenta/politici-si-fiscalitate.md` („TVA la operare”); 107 (i); `docs/nucleu/tr-d8-tva-intervale-contract.md` (R6-B2); dovezile în `run-verificari/r3-ian/`, `r3-ian-final/`, `r3-motor/`
+- Stare: activă, aprobată de owner 2026-10-04; implementată pe `107-r3-drift-tva`; review advers Codex închis: 109-R1 corectată de Codex și reverificată independent 2026-10-05 (`docs/nucleu/109-review-codex.md`); precizează 090 (j) și 103 (i); închide 107-r3; face din N-r4 o egalitate (registrele și cubul poartă aceeași taxă)
+- Docs: `docs/nucleu/scenarii/FCL.md` (SC-FCL-11…14), `FCT.md` (SC-FCT-11); `docs/nucleu/109-review-codex.md`; `docs/stare-curenta/politici-si-fiscalitate.md` („TVA la operare”); 107 (i); `docs/nucleu/tr-d8-tva-intervale-contract.md` (R6-B2); dovezile în `run-verificari/r3-ian/`, `r3-ian-final/`, `r3-motor/`
 
 ## Regula durabilă
 
@@ -14,6 +14,9 @@ operatorului sau a documentului real și intră neschimbată.**
 linii.** Baza de calcul e suma valorilor rotunjite ale liniilor fiscale ale
 cotei; rezultatul, rotunjit o dată, se repartizează pe linii prin Hamilton
 peste |valoare|, pe fiecare semn, în ordinea operării (poziție, apoi cheie).
+Liniile noi, încă fără poziție, vin după cele numerotate, în ordinea
+colecției documentului: aceeași în care salvarea le atribuie pozițiile
+(precizat 2026-10-05, 109-R1).
 Formula e a entității (`Document.CalculeazaValori`, 104c), aceeași la
 culegere (recalcul și salvare) și la pregătirea operării. Draftul arată deci
 totalul care se va posta.
@@ -112,6 +115,31 @@ consemnase diferența ca a regimului dual; tăierea registrelor nu o închidea.
   0,01 între registre și nucleu; acum cer egalitatea.
 
 ## Verificare
+
+Corectura 109-R1 (Codex, 2026-10-05): liniile noi se ordonează după cele
+numerotate, în ordinea colecției documentului, comună repartizării și
+atribuirii pozițiilor la salvare. Pozițiile se atribuie în continuare sub
+blocajul scrierii. SC-FCL-13/14 verifică 0/1/2 linii deja salvate și restul
+noi, cu/fără taxă culeasă, prima salvare, idempotența și operarea. Integrala:
+3.459 OK bugetar / 4.771 OK privat, zero FAIL, exit 0,
+`run-verificari/20261004-235420-458/`. Raport și control negativ:
+`docs/nucleu/109-review-codex.md`.
+
+Reverificarea independentă (Claude, 2026-10-05), pe binar recompilat integral
+din arborele corectat: 3.459 OK bugetar / 4.771 OK privat, zero FAIL
+(`run-verificari/20261005-004505-569/`). Pe HTTP, prin WebApi: draft cu două
+linii salvate, a treia adăugată prin PUT, fără și cu taxa liniei 2 culeasă —
+2,11 / 2,11 / 2,10 și 36,41, respectiv 2,11 / 2,15 / 2,10 și 36,45, la
+răspuns, la prima citire, la PUT fără editări și după operare
+(`run-verificari/r3-ui-r1-http.py`, `r3-ui/r1-http.log`). În browser, pe host
+viu: a treia linie adăugată din grila documentului, în tabul ei; linia nouă
+arată 2,10 înaintea salvării, tabul documentului arată aceleași taxe și
+totaluri, operarea trece fără conflict de versiune (FCL-6: 36,41; FCL-7:
+36,45), cu aceleași valori pe totalul de stins și în cub
+(`run-verificari/r3-ui/r1-*`). Ianuarie pe Flax cu binarul corectat
+(`run-verificari/r3-ian-r1/`, baza `.Flax.R3f`): contractele 1–4 identice cu
+`r3-ian-final2/`, INV-CUB verde, aceeași durată; contractul 5 a dat 7 partide
+fără explicație (107-r7).
 
 - **Scenarii, scrise înaintea rulării.** SC-FCL-11, SC-FCL-12, SC-FCT-11.
   Pe motorul neschimbat pică exact pe partea de document (4 verificări) și pe
