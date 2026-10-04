@@ -362,7 +362,7 @@ static class HandlerReturFurnizor {
             // Cantitatea și TVA-ul se culeg POZITIVE — semnul e al motorului (46a).
             d.Cantitate = l.Cantitate;
             d.TipTvaId = l.TipTvaId;
-            d.ValoareTva = l.Tva;
+            Catalog.TaxaDinSursa(d, l.Tva);
         }
         return rlf;
     }
@@ -643,7 +643,7 @@ static class HandlerReturClient {
             d.Cantitate = 1m;
             d.Valoare = v.Net;
             d.TipTvaId = v.TipTvaId;
-            d.ValoareTva = v.Tva;
+            Catalog.TaxaDinSursa(d, v.Tva);
         }
         var gestiune = os.GetObjectByKey<Gestiune>(plan.GestiuneId);
         foreach (var c in plan.Costuri) {

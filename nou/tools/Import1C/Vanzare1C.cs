@@ -109,7 +109,7 @@ static class Venituri1C {
             d.Cantitate = 1m;
             d.PretUnitar = v.Net;
             d.TipTvaId = v.TipTvaId;
-            d.ValoareTva = v.Tva;
+            Catalog.TaxaDinSursa(d, v.Tva);
         }
     }
 
