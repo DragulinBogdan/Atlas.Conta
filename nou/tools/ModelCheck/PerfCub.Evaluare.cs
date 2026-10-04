@@ -143,6 +143,9 @@ sealed partial class PerfCub {
         Verifica("X-D3", $"m={istoric}: diagnosticul ASM-B7 rulat pe {valori.Pozitii.Count} poziții, {reziduuri} cu cantitate zero și valoare nenulă", valori.Pozitii.Count > 0);
     }
 
+    // Criteriile din plan amânate nominal prin amendamentul owner-ului (X-RV6), cu restanța fiecăruia.
+    static readonly Dictionary<string, string> Amanate = new() { ["PREST-NI"] = "F27-r16" };
+
     static string Mib(double octeti) => (octeti / 1048576.0).ToString("0.0", CultureInfo.InvariantCulture);
 
     // Criteriile de formă X-D5 (c) pe matricea operație × rută, pe toate treptele unui profil.
@@ -185,7 +188,9 @@ sealed partial class PerfCub {
             var peIndex = string.Join(", ", planuri.Select(p => $"m{p.Istoric}: {p.ScanariIndex} scanări ({p.SecventialeIndex} secvențiale) / {p.RanduriIndex:0} rânduri / {p.BuffersIndex} buffers"));
             if (planuri.Count > 0)
                 Console.WriteLine($"     MĂSURAT (X-D5 {profil} {op.Cod} [{op.Ruta}], planul ales la k={kMaxim}): {descriere}");
-            if (op.Ruta is Snapshot or Interval && planuri.Count > 1) {
+            if (Amanate.TryGetValue(op.Cod, out var restanta) && planuri.Count > 1)
+                Console.WriteLine($"     AMÂNAT (X-D5 {profil} {op.Cod} [{op.Ruta}], plan la k={kMaxim}, {restanta}): {peIndex}");
+            else if (op.Ruta is Snapshot or Interval && planuri.Count > 1) {
                 // Bufferele nu se compară între trepte: un Index Scan numără fiecare acces la pagină, un Bitmap Heap Scan paginile
                 // distincte, iar planificatorul le alternează. Se cer mărginite de rândurile atinse (coborârea în index + pagina rândului).
                 var baza = planuri[0];

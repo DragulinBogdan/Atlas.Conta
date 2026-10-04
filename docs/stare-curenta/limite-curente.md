@@ -71,12 +71,13 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Raportul de stoc listează și capătul de consum al bonului: postarea de debit
   a BCS poartă lotul ca unitate, pe contul de cheltuială și la locul de
   consum, iar `Loturi.Postari` o ia ca poziție. Rândurile acestea cresc cu tot
-  ce s-a consumat, și în raport, și în snapshot-ul de stoc. (X-D5; de tranșat
-  de owner, X-r3)
+  ce s-a consumat, și în raport, și în snapshot-ul de stoc. (X-D5; X-r3, la
+  decizia 108)
 - `PartideCuRest` caută documentul deschizător al fiecărei partide parcurgând
   toate postările de partidă (`Partide.Origini`), și când soldurile vin din
   snapshot. E singurul criteriu de formă picat al scării transversale:
-  rândurile atinse cresc cu istoricul. (F27-r16, X-D5)
+  rândurile atinse cresc cu istoricul. Amânat prin amendamentul owner-ului
+  (2026-10-04), odată cu F27-r16. (F27-r16, X-D5)
 - Scara transversală este sintetică și mică: 7.951 de postări la 12 luni. Nu
   are prag absolut. Proba din plan se evaluează cu scanarea secvențială
   interzisă, fiindcă la acest volum planificatorul o alege legitim; planul

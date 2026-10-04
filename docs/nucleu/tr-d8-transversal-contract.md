@@ -11,9 +11,9 @@
   **Pasul 2 (X-D4) implementat și verificat, 2026-10-03.**
   **Pasul 3 (X-D6) implementat și verificat, 2026-10-03.**
   **Pasul 4 (X-D7) implementat și verificat, 2026-10-03.**
-  **Pasul 5 (X-D5 + X-D3) implementat și măsurat, 2026-10-04; un criteriu de
-  formă rămâne picat (`PartideCuRest`) și cere decizia owner-ului — vezi
-  „Execuție”.**
+  **Pasul 5 (X-D5 + X-D3) implementat și măsurat, 2026-10-04; criteriul
+  picat pe `PartideCuRest` este amânat prin amendamentul owner-ului, iar
+  metoda probei din plan e confirmată — vezi „Execuție”.**
 - Bază: [D8-B5](tr-d8-citiri-contract.md) pasul 5 și „Limite care împiedică
   închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
   091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
@@ -721,7 +721,7 @@ Ce a arătat implementarea și cum amendează X-D5 și X-D3:
    unității: 1.280 de măsurători, toate trecute, aceleași înainte și după
    corecturi. A prins o constatare de produs (punctul 11).
 5. **Proba din plan se evaluează fără scanare secvențială (amendament de
-   metodă, de confirmat de owner).** La k = 64 luna măsurată e un sfert din
+   metodă, confirmat de owner, 2026-10-04).** La k = 64 luna măsurată e un sfert din
    bază, iar tabelele au sub 300 de pagini: planificatorul alege legitim
    scanarea secvențială, care atinge istoricul oricât de bună ar fi forma
    interogării. Criteriul numără rândurile atinse pe `Postare` (livrate plus
@@ -789,20 +789,23 @@ Ce a arătat implementarea și cum amendează X-D5 și X-D3:
     închiderea lunii măsurate nu se poate măsura: lanțul cere luna întâi
     închisă.
 
-**Criteriu rămas picat (regula de oprire, X-RV6).** `PREST-NI` — partidele
-cu rest, din snapshot: rândurile atinse pe `Postare` cresc cu m (2.242 /
+**Criteriu picat, amânat prin amendament (regula de oprire, X-RV6).**
+`PREST-NI` — partidele cu rest, din snapshot: rândurile atinse pe `Postare` cresc cu m (2.242 /
 3.366 / 4.504 pe privat, 1.579 / 2.418 / 3.282 pe bugetar, la k = 64).
 Fereastra e constantă; crește `Partide.Origini`, care caută documentul
 deschizător parcurgând toate postările de partidă. E forma proiecției
 `DocumenteCuRest`, restanța F27-r16, care cade la TR-D9. Consumatorul de
-producție al rutei e constatarea de rest scadent de la închidere. **X-D5
-rămâne deschis până când owner-ul alege:** amendament explicit (cititorul
-`PartideCuRest`, criteriul din plan, cifrele de mai sus, restanța F27-r16)
-sau corectarea în felie (originea purtată de snapshot și de fereastră).
+producție al rutei e constatarea de rest scadent de la închidere.
 
-De înregistrat la decizia de închidere: **X-r3** — raportul de stoc și
-capătul de consum al BCS (punctul 11). De confirmat de owner: amendamentul
-de metodă de la punctul 5.
+**Amendamentul owner-ului, 2026-10-04.** Cititorul `PartideCuRest`, criteriul
+„accesul la `Postare` nu depinde de m” (proba din plan), cifrele de mai sus,
+restanța F27-r16: criteriul se amână odată cu ea, la TR-D9. X-D5 se închide
+cu această singură amânare; scara o raportează nominal (`AMÂNAT`), nu ca
+eșec. Tot owner-ul a confirmat metoda de la punctul 5 și a trimis punctul 11
+la decizia de închidere.
+
+De înregistrat la decizia 108: **X-r3** — raportul de stoc și capătul de
+consum al BCS (punctul 11).
 
 Validare: scara completă `run-verificari/perf-cub-20261004-002621/` —
 **1.488 OK / 1 FAIL privat, 970 OK / 1 FAIL bugetar** (același criteriu,

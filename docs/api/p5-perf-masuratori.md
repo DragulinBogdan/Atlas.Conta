@@ -1160,7 +1160,8 @@ se operează în 110 ms, o închidere de lună în 79 ms (privat) și 47 ms (bug
   (partidele cu rest, din snapshot): 2.242 / 3.366 / 4.504 rânduri pe privat, 1.579 /
   2.418 / 3.282 pe bugetar. Fereastra de după referință e constantă; crește căutarea
   originii partidei (`Partide.Origini`), care parcurge toate postările de partidă cu
-  identitatea documentului. E forma proiecției `DocumenteCuRest` (F27-r16).
+  identitatea documentului. E forma proiecției `DocumenteCuRest` (F27-r16);
+  criteriul e amânat prin amendamentul owner-ului din 2026-10-04.
 - **SAF-T la k = 64:** fără refuzuri, XSD valid, DUK fără atenționări pe cele 12 fișiere
   (L și S, securizat și nesecurizat, m = 0 / 6 / 12).
 
