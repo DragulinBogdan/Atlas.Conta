@@ -321,8 +321,12 @@ grila nested a liniilor și pe dialogul liniei) aplică regimul pe stare
 (106): `View.AllowEdit/AllowNew/AllowDelete` cu cheia „Regim” și
 `Action.Enabled` pe fiecare acțiune al cărei ID se termină cu numele unei
 comenzi din vocabular (`Document.Opereaza`, `FacturaIesire.GenereazaDescarcarea`).
-Motivul indisponibilității ajunge în tooltip-ul acțiunii, iar tooltip-ul
-propriu revine când comanda redevine disponibilă. Regimul se re-evaluează la
+Ștergerea standard XAF (`Delete`) e comanda `Sterge` a regimului pe
+DetailView-ul documentului. Motivul indisponibilității ajunge în tooltip-ul
+acțiunii, iar tooltip-ul propriu revine când comanda redevine disponibilă;
+în Blazor tooltip-ul se randează și pe acțiunea dezactivată (probat în
+browser, 2026-10-04). Lista de documente nu aplică regimul pe selecție:
+acolo ștergerea unui document operat e refuzată la salvare, de gardian. Regimul se re-evaluează la
 activare, la schimbarea obiectului curent, la `Committed` și la `Reloaded`
 (comanda comite în alt context și controllerul de operare face `Refresh`).
 Controllerele de comenzi nu mai poartă `Enabled["Stare"]`; ModelCheck

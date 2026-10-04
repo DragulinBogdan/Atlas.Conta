@@ -3,6 +3,7 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Controllers;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.SystemModule;
 using DevExpress.Persistent.Base;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
@@ -31,6 +32,9 @@ static class ProbeRegim {
             }
         }
         Console.WriteLine($"     MĂSURAT (106e): comenzi potrivite [{string.Join("; ", potrivite)}]; abateri [{string.Join("; ", abateri)}].");
+        using (var stergere = new DeleteObjectsViewController())
+            check("106e: ștergerea standard XAF e comanda `Sterge` a regimului",
+                RegimDocumentController.Comanda(stergere.DeleteAction) == RegimDocument.Sterge);
         check("106e: fiecare comandă din toolbar-ul DetailView-ului unui `Document` numește prin sufixul ID-ului o comandă a regimului",
             abateri.Count == 0 && potrivite.Count >= 5);
     }

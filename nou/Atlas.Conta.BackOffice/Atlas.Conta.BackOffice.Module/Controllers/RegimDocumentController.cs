@@ -2,6 +2,7 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Actions;
+using DevExpress.ExpressApp.SystemModule;
 
 namespace Atlas.Conta.BackOffice.Module.Controllers;
 
@@ -44,6 +45,8 @@ public class RegimDocumentController : ObjectViewController<DetailView, Document
     }
 
     public static string Comanda(ActionBase actiune) {
+        if (actiune.Controller is DeleteObjectsViewController sters && actiune == sters.DeleteAction)
+            return RegimDocument.Sterge;
         var sufix = actiune.Id[(actiune.Id.LastIndexOf('.') + 1)..];
         return RegimDocument.ComenziCunoscute.Contains(sufix) ? sufix : null;
     }

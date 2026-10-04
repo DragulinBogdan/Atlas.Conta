@@ -45,7 +45,8 @@ Comenzile proprii ale tipurilor, în același vocabular:
 Convenția XAF: ID-ul acțiunii se termină cu numele comenzii
 (`Document.Opereaza`, `FacturaIesire.GenereazaDescarcarea`). Gardianul
 potrivește sufixul cu vocabularul și pune `Enabled["Regim"]` și tooltip-ul cu
-motivul. O comandă nouă intră întâi în `RegimDocument.ComenziCunoscute`,
+motivul. Ștergerea standard XAF (`Delete`) e legată explicit de `Sterge`.
+O comandă nouă intră întâi în `RegimDocument.ComenziCunoscute`,
 apoi în hook-ul tipului, apoi în acțiune; ModelCheck refuză o acțiune
 `RecordEdit` fără comandă în vocabular.
 

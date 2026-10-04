@@ -136,9 +136,14 @@ list-ului e planul de conturi și D300, prin modul plat Key/ParentKey, fără
 
 ## Ce rămâne deschis
 
-- 106-r1: motivul indisponibilității în XAF Blazor se arată prin tooltip;
-  de probat în browser că tooltip-ul se randează pe acțiunea dezactivată,
-  altfel se caută alt purtător (text static în grupul Stare).
+- 106-r1: închisă 2026-10-04. Probat în browser pe hostul Blazor, pe o
+  notă contabilă Draft și pe una Operată: elementul de sub cursor al fiecărei
+  acțiuni dezactivate poartă motivul în `title`, inclusiv pe acțiunea cu
+  parametru (Stornează), unde butonul are `pointer-events: none` și titlul
+  stă pe containerul lui; tooltip-ul propriu revine pe acțiunea disponibilă.
+  Proba a arătat că ștergerea standard XAF rămânea disponibilă pe documentul
+  operat; e legată acum de comanda `Sterge`. Lista de documente nu aplică
+  regimul pe selecție (refuzul vine de la gardian, la salvare).
 - 106-r2: comenzile proprii ale tipurilor (Regenereaza, Distribuie, Stinge)
   au acțiuni doar în React; în XAF nu există încă acțiuni pentru ele.
 - 106-r3: planul de conturi și D300 pe `DxTreeListEditor` în mod plat, cu
