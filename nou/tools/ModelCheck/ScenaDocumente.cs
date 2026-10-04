@@ -43,7 +43,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         Curata();
         Exception initiala = null;
         try {
-            Pregateste(); Executa(); VerificaMatriceFiscale();
+            Pregateste(); Executa(); VerificaMatriceFiscale(); VerificaRegim();
             Comanda(os => AcoperireInvarianti.Verifica(os, Verifica));
         }
         catch (Exception e) { initiala = e; throw; }
@@ -85,12 +85,47 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected OperareRezultat Opereaza(Guid doc) => CuSpatiu(os => ComenziDocument.Sistem(os).Opereaza(doc));
     protected void Storneaza(Guid doc, DateOnly data) {
         var inainte = Amprenta(doc);
-        Comanda(os => ComenziDocument.Sistem(os).Storneaza(doc, data));
+        CuRegim(doc, ComandaDocument.Storneaza, () => CuSpatiu(os => ComenziDocument.Sistem(os).Storneaza(doc, data)));
         PostariPastrate(doc, inainte);
     }
     protected void Anuleaza(Guid doc) {
-        Comanda(os => ComenziDocument.Sistem(os).AnuleazaOperarea(doc));
+        CuRegim(doc, ComandaDocument.AnuleazaOperarea, () => CuSpatiu(os => ComenziDocument.Sistem(os).AnuleazaOperarea(doc)));
         foreach (var cheie in matriceFiscale.Keys.Where(k => k.Doc == doc).ToArray()) matriceFiscale.Remove(cheie);
+    }
+
+    protected RegimDocument Regim(Guid doc) => CuSpatiu(os => RegimDocument.Calculeaza(os, doc));
+    protected static bool Refuzata(RegimDocument regim, ComandaDocument comanda, string fragmentMotiv) =>
+        Refuzata(regim, comanda.ToString(), fragmentMotiv);
+    protected static bool Refuzata(RegimDocument regim, string comanda, string fragmentMotiv) =>
+        !regim.Poate(comanda) && (regim.Motiv(comanda) ?? "").Contains(fragmentMotiv, StringComparison.OrdinalIgnoreCase);
+
+    // SC-X-24 (106k): fiecare comandă de retragere a scenei e comparată cu regimul citit înaintea ei.
+    readonly List<string> abateriRegim = [];
+    int comenziRegim;
+
+    T CuRegim<T>(Guid doc, ComandaDocument comanda, Func<T> executa) {
+        var regim = CuSpatiu(os => os.GetObjectByKey<Document>(doc) is { } d ? RegimDocument.Calculeaza(os, d) : null);
+        if (regim == null) return executa();
+        var motiv = regim.Motiv(comanda.ToString());
+        lock (abateriRegim) comenziRegim++;
+        try {
+            var rezultat = executa();
+            if (motiv != null)
+                lock (abateriRegim) abateriRegim.Add($"{comanda} a reușit, regimul o refuza: {motiv}");
+            return rezultat;
+        }
+        catch (OperareException e) {
+            if (motiv == null && !ProbeRegim.RefuzLaComanda(comanda, e.Message))
+                lock (abateriRegim) abateriRegim.Add($"{comanda} oferită de regim, refuzată de comandă: {e.Message}");
+            throw;
+        }
+    }
+
+    void VerificaRegim() {
+        if (comenziRegim == 0) return;
+        foreach (var abatere in abateriRegim) Console.WriteLine($"     ABATERE REGIM ({cod}): {abatere}");
+        Verifica("SC-X-24", $"{cod}: {comenziRegim} comenzi de retragere conforme cu regimul citit înaintea lor",
+            abateriRegim.Count == 0);
     }
     protected void InchideIanuarie() => Comanda(os => inchide(os, An, 1));
 
@@ -108,7 +143,8 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected void Inchide(int an, int luna) => Comanda(os => inchide(os, an, luna));
     protected Guid Corecteaza(Guid doc) {
         var inainte = Amprenta(doc);
-        var corectie = CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(doc, Februarie, MotivCorectie.EroareMateriala).CorectieId);
+        var corectie = CuRegim(doc, ComandaDocument.Corecteaza,
+            () => CuSpatiu(os => ComenziDocument.Sistem(os).Corecteaza(doc, Februarie, MotivCorectie.EroareMateriala).CorectieId));
         PostariPastrate(doc, inainte);
         return corectie;
     }

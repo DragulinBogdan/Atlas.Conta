@@ -331,6 +331,11 @@ fără interogări): o selecție care conține un document ne-Draft are
 ștergerea indisponibilă în întregime, cu motivul în tooltip. (106j) Regimul se re-evaluează la
 activare, la schimbarea obiectului curent, la `Committed` și la `Reloaded`
 (comanda comite în alt context și controllerul de operare face `Refresh`).
+La dezactivare, gardianul își retrage cheia „Regim” și tooltip-urile de pe
+acțiunile atinse, fiindcă un frame își refolosește controllerele și acțiunile
+între view-uri. În configurația curentă fiecare view rădăcină are tabul și
+frame-ul lui; în browser, după un document operat, nomenclatorul deschis din
+navigație sau din lookup are ștergerea disponibilă (probat 2026-10-04). (106k)
 Controllerele de comenzi nu mai poartă `Enabled["Stare"]`; ModelCheck
 probează structural că fiecare comandă din toolbar-ul DetailView-ului unui
 `Document` numește o comandă a regimului. (106d, 106e)

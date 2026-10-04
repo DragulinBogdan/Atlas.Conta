@@ -110,23 +110,33 @@ gardianului de editare; un formular vechi nu redeschide dreptul de scriere. (14,
 Editabilitatea și comenzile disponibile ale unui document au o singură
 sursă: `Api/RegimDocument.Calculeaza`, în coaja comenzii. Regimul e onest:
 pentru fiecare comandă din vocabular întoarce motivul indisponibilității
-sau nimic, cu aceleași predicate ca gardienii motorului
-(`MotorOperare.Motiv*`, `GardianPerioada.MotivInchisa`). Draft: editabil;
-Operează, Validează, Șterge. Operat: needitabil; Anulează cere perioada
-înregistrării deschisă și niciun dependent (latură pereche operată, conex
-operat, împerechere); Stornează și Corectează cer doar lipsa dependenților.
-Stornat: nimic. Ștergerea se decide numai pe stare (Draft), fără hook de tip
-(106j). Tipul contribuie comenzile proprii prin
+sau nimic, cu aceleași predicate ca gardienii motorului. Draft: editabil;
+Operează, Validează, Șterge. Operat: needitabil; motivele pentru Anulează,
+Stornează și Corectează le compune `Motor/GardieniRetragere.Citeste`, în
+ordinea motorului, din predicatele pe care comanda le aruncă. Anularea are
+data fixă și își citește toți gardienii: TVA deja declarată, perioada
+înregistrării, latura pereche, conexele operate, orice împerechere, loturile
+proprii folosite de alte documente, dependenții registrului propriu (PIF,
+CAS, AMO), recepția activă, nominalizările active pe partidele și pe suportul
+documentului, stingerea unei partide inițiale. Stornarea și corecția își aleg
+data la comandă, deci regimul refuză numai ce refuză la orice dată: latura
+pereche, conexele, împerecherea vie dintr-o perioadă deschisă (cele din
+perioade închise le inversează stornoul), dependenții registrului propriu,
+luna închisă a documentului de imobilizări, recepția activă, nominalizările
+cu net rămas nenul. Stornat: nimic. Ștergerea se decide numai pe stare
+(Draft), fără hook de tip (106j). Tipul contribuie comenzile proprii prin
 `Document.ContribuieRegim`, în vocabularul închis
 `RegimDocument.ComenziCunoscute`: NTC → Stinge pe Operat; AMO și ITV →
 Regenerează pe Draft; ASM → Distribuie pe Draft cu linii de consum și de
 produs; FCL → Generează descărcarea pe Operat, cu gestiune de descărcare și
 rest nedescărcat. Adaptorii (`Api/*Apply`, controllerele XAF) randează
 regimul și nu îl re-derivă din `Stare`. Regimul promite starea, dependenții
-și perioada; refuzurile care depind de valori (sold, validări) și
-`SCRIERE_OCUPATA` apar numai la comandă, iar citirea regimului nu ia blocajul
-scrierii. Proba: catalogul `REGIM` și probele structurale din ModelCheck.
-(106b, 106c, 106e, 106i)
+și perioada; refuzurile care depind de valori (sold, validări), de data
+cerută la stornare și `SCRIERE_OCUPATA` apar numai la comandă, iar citirea
+regimului nu ia blocajul scrierii. Un document operat fără dependenți se
+citește în 10–12 instrucțiuni mărginite pe ID. Proba: catalogul `REGIM`,
+conformitatea regim ↔ comandă pe tot catalogul (SC-X-24) și probele
+structurale din ModelCheck. (106b, 106c, 106e, 106i, 106k)
 
 ### Data documentului și data înregistrării
 

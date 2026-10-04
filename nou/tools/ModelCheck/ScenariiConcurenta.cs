@@ -239,7 +239,7 @@ sealed class ScenariiConcurenta(Func<IObjectSpace> deschide, Action<string, bool
         });
 
         Sub("operare", () => Opereaza(bon));
-        Sub("anulare", () => Anuleaza(bon));
+        InSpatiu("anulare", os => ComenziDocument.Sistem(os).AnuleazaOperarea(bon));
         Opereaza(bon);
         InSpatiu("storno", os => ComenziDocument.Sistem(os).Storneaza(bon, new(An, 1, 20)));
         InSpatiu("corecție", os => ComenziDocument.Sistem(os).Corecteaza(corectat, Februarie, MotivCorectie.EroareMateriala));

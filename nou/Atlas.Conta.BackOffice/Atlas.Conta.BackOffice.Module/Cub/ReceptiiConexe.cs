@@ -198,10 +198,15 @@ public static class ReceptiiConexe {
     public static void VerificaFaraDependenti(IObjectSpace os, Document doc) {
         var id = Sursa(doc) ?? doc.ID;
         Blocheaza(os, id);
-        if (os.GetObjectsQuery<NIR>().Any(n => n.ID != doc.ID && n.Stare == StareDocument.Operat
-                && n.SursaReceptieiId == doc.ID))
-            throw new OperareException($"{Activa}: Recepția sau corecția ei activă depinde de sursă.");
+        MotorOperare.Refuza(MotivDependenti(os, doc));
     }
+
+    /// <summary>Recepția activă a altui document depinde de sursă, citit fără blocaj; null = liber.</summary>
+    public static string MotivDependenti(IObjectSpace os, Document doc) =>
+        os.GetObjectsQuery<NIR>().Any(n => n.ID != doc.ID && n.Stare == StareDocument.Operat
+            && n.SursaReceptieiId == doc.ID)
+            ? $"{Activa}: Recepția sau corecția ei activă depinde de sursă."
+            : null;
 
     // Păstrează codul refuzului NIR; domeniul și calculul soldului sunt comune.
     internal static string CodRefuzStoc(Document doc) => doc is NIR ? Stoc : "STOC_INSUFICIENT";

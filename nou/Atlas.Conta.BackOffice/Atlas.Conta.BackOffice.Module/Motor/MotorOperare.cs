@@ -615,14 +615,7 @@ public static class MotorOperare {
             StocService.VerificaSoldIntermediar(os, santinele, randuriStoc.Select(r => r.ID).ToList());
         }
 
-        // Loturile create de liniile documentului nu au voie să fi fost atinse
-        // de altcineva (nici măcar cu mișcări care lasă soldul ≥ 0).
-        var idsDetalii = doc.Detalii.Select(d => d.ID).ToList();
-        foreach (var lot in os.GetObjectsQuery<Lot>().Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
-            if (Cub.Citiri.Loturi.Postari(os).Any(r => r.Unitate == lot.ID && r.DocumentId != doc.ID))
-                throw new OperareException(
-                    $"Lotul {lot.Produs?.Denumire} din {lot.Data:yyyy-MM-dd} e folosit de alte documente — folosiți storno.");
-        }
+        Refuza(MotivLoturiFolosite(os, doc));
 
         os.Delete(randuriStoc);
         os.Delete(randuriContabile);
@@ -756,12 +749,12 @@ public static class MotorOperare {
     static void VerificaFaraImperecheri(IObjectSpace os, Document doc) =>
         Refuza(MotivImperecheri(os, doc));
 
-    static void Refuza(string motiv) {
+    internal static void Refuza(string motiv) {
         if (motiv != null)
             throw new OperareException(motiv);
     }
 
-    // Motivele dependenților, citite și de regimul pe stare (106b): null = liber.
+    // Motivele dependenților, citite și de regimul pe stare (106b, 106k): null = liber.
     public static string MotivLaturaPerecheOperata(IObjectSpace os, Document doc) =>
         os.GetObjectsQuery<DocumentTrezorerie>()
             .Any(x => x.LaturaPerecheId == doc.ID && x.Stare == StareDocument.Operat)
@@ -773,10 +766,30 @@ public static class MotorOperare {
             ? "Documentul are documente generate (conexe) încă operate — anulați/stornați întâi acele documente."
             : null;
 
+    internal const string MesajImperecheri =
+        "Documentul are imperecheri (stingeri) — ștergeți-le întâi, apoi anulați/stornați.";
+
     public static string MotivImperecheri(IObjectSpace os, Document doc) =>
         os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentStingatorId == doc.ID || i.DocumentId == doc.ID)
-            ? "Documentul are imperecheri (stingeri) — ștergeți-le întâi, apoi anulați/stornați."
+            ? MesajImperecheri
             : null;
+
+    /// <summary>Loturile născute de liniile documentului nu au mișcări ale altor documente; null = liber.</summary>
+    public static string MotivLoturiFolosite(IObjectSpace os, Document doc) {
+        var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == doc.ID).Select(d => d.ID);
+        var loturi = os.GetObjectsQuery<Lot>()
+            .Where(l => l.LinieIntrareId != null && linii.Contains(l.LinieIntrareId.Value))
+            .Select(l => new { l.ID, l.Produs.Denumire, l.Data }).ToList();
+        if (loturi.Count == 0)
+            return null;
+        var ids = loturi.Select(l => l.ID).ToList();
+        var folosite = Cub.Citiri.Loturi.Postari(os)
+            .Where(r => r.Unitate != null && ids.Contains(r.Unitate.Value) && r.DocumentId != doc.ID)
+            .Select(r => r.Unitate.Value).Distinct().ToHashSet();
+        var lot = loturi.FirstOrDefault(l => folosite.Contains(l.ID));
+        return lot == null ? null
+            : $"Lotul {lot.Denumire} din {lot.Data:yyyy-MM-dd} e folosit de alte documente — folosiți storno.";
+    }
 
     static void StergeConexeDraftAutogenerate(IObjectSpace os, Document doc) {
         var stersi = false;

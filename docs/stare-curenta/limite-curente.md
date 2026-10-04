@@ -356,6 +356,13 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   înregistrării i se normalizează la ea, nu la a facturii. Coloana „Data
   înregistrării” lipsește din coloanele listelor de documente ale clientului
   React și din DTO-urile lor de listă. (F27-D4, F27-D5, F27-r9)
+- Regimul pe stare nu promite refuzurile care depind de valori (sold de
+  stoc, poziție fără fișă) și, la stornare și corecție, pe cele care depind
+  de data cerută: perioada ei, luna la imobilizări cât luna documentului e
+  deschisă, nominalizările stinse ulterior. La stornarea unui document cu
+  legături vii în perioade închise, regimul nu numără nominalizarea liberă a
+  partenerului pe aceeași partidă; refuzul rămas după desfacerea legăturilor
+  apare la comandă. (106i, 106k, 106-r7)
 - Salariile, execuția bugetară completă, producția pe rețete, împărțirea pe
   cofinanțări și contabilitatea multivalutară nu sunt module complete în
   produsul curent. Importul 1C nu echivalează cu un import bancar

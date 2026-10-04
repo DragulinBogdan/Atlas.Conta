@@ -203,6 +203,11 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
                 && gl.Single(l => l.DebitCreditIndicator == "C").Amount == 100;
         }));
         Anuleaza(amo); Sold("SC-IMO-14", f, 1200, 0, 900, 0); Opereaza(amo);
+        var regim = Regim(p.Id);
+        Verifica("SC-IMO-17", "regimul refuză Anulează, Stornează și Corectează pe PIF cu AMO ulterioară",
+            Refuzata(regim, ComandaDocument.AnuleazaOperarea, "ulterioare") && Refuzata(regim, ComandaDocument.Storneaza, "ulterioare")
+            && Refuzata(regim, ComandaDocument.Corecteaza, "ulterioare"));
+        Refuza("SC-IMO-17", () => Anuleaza(p.Id), "ulterioare");
         Refuza("SC-IMO-17", () => Storneaza(p.Id, Ianuarie), "ulterioare");
         Refuza("SC-IMO-16", () => Storneaza(amo, Zi(3)), "luna lui");
         var cas = Cas(f, 3); Opereaza(cas); Sold("SC-IMO-12", f, 0, 0, 0, 0);
@@ -255,7 +260,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         string Executa(Action actiune) { start.SignalAndWait(); try { actiune(); return "OK"; }
             catch (OperareException e) { return e.Message; } }
         var rezultate = Task.WhenAll(Task.Run(() => Executa(() => Opereaza(p.Id))),
-            Task.Run(() => Executa(() => Anuleaza(n.Id)))).GetAwaiter().GetResult();
+            Task.Run(() => Executa(() => Comanda(os => ComenziDocument.Sistem(os).AnuleazaOperarea(n.Id))))).GetAwaiter().GetResult();
         Verifica("SC-IMO-05/06", "nominalizare concurentă cu anularea suportului: exact una reușește",
             rezultate.Count(r => r == "OK") == 1
             && rezultate.Any(r => r.Contains(CoduriRefuz.SuportInsuficient) || r.Contains(CoduriRefuz.SuportCuDependenti)));
@@ -359,6 +364,11 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
     void Inchis() {
         SuportNota(); var f = Fisa(); var p = Pif(f); Opereaza(p.Id);
         InchideIanuarie(); var amprenta = Amprenta(p.Id);
+        var regim = Regim(p.Id);
+        Verifica("SC-IMO-16", "luna documentului închisă: regimul refuză Anulează, Stornează și Corectează",
+            Refuzata(regim, ComandaDocument.AnuleazaOperarea, "închisă") && Refuzata(regim, ComandaDocument.Storneaza, "luna lui")
+            && Refuzata(regim, ComandaDocument.Corecteaza, "luna lui"));
+        Refuza("SC-IMO-16", () => Storneaza(p.Id, Ianuarie), "închisă");
         Refuza("SC-IMO-16", () => Corecteaza(p.Id), "luna lui");
         Verifica("SC-IMO-16", "corecția refuzată păstrează originalele", amprenta == Amprenta(p.Id));
     }

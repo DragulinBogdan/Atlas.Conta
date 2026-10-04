@@ -142,6 +142,10 @@ public interface IDocumentCuRegistruPropriu {
     void EliminaRegistrul(DevExpress.ExpressApp.IObjectSpace os);
     /// <summary>Adaugă rândurile inverse, la data stornării.</summary>
     void StorneazaRegistrul(DevExpress.ExpressApp.IObjectSpace os, DateOnly data);
+    /// <summary>Motivul pentru care rândurile proprii nu se retrag cât au fapte dependente, citit fără comandă; null = liber.</summary>
+    string MotivDependenti(DevExpress.ExpressApp.IObjectSpace os);
+    /// <summary>Motivul pentru care stornarea nu are nicio dată admisă, citit fără comandă; null = există.</summary>
+    string MotivPerioadaStornarii(DevExpress.ExpressApp.IObjectSpace os);
 }
 
 public interface ILinieCuImobilizare {

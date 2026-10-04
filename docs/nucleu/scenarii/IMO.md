@@ -27,8 +27,8 @@ așteptate de mai jos sunt constante independente de registre.
 | SC-IMO-13 | CAS cu cumulat 0; CAS complet amortizat | o singură pereche pe carte, fără dublare sau sumă negativă |
 | SC-IMO-14 | Anulare/reoperare PIF, AMO, CAS fără dependenți în lună deschisă | zero efecte după anulare; valori identice la reoperare |
 | SC-IMO-15 | Storno în luna documentului pentru fiecare eveniment, inclusiv revizuire zero | inverse exacte în ambele cărți; suport eliberat; parametrii revin; originale imuabile |
-| SC-IMO-16 | Storno/corecție în altă lună ori după închiderea lunii documentului | refuzul explicit din 087(g); nicio scriere parțială |
-| SC-IMO-17 | PIF cu AMO ulterioară; AMO cu CAS ulterior; CAS cu AMO generată ulterior | inversarea necronologică refuzată |
+| SC-IMO-16 | Storno/corecție în altă lună ori după închiderea lunii documentului | refuzul explicit din 087(g); nicio scriere parțială; cu luna documentului închisă, regimul refuză Anulează, Stornează și Corectează (106k) |
+| SC-IMO-17 | PIF cu AMO ulterioară; AMO cu CAS ulterior; CAS cu AMO generată ulterior | inversarea necronologică refuzată; pe PIF cu AMO ulterioară regimul refuză Anulează, Stornează și Corectează cu același motiv (106k) |
 | SC-IMO-18 | PIF fizic ianuarie, înregistrat martie, 1.200/12 → AMO martie | 200 și Luni=2; aprilie 100 și Luni=1; ianuarie/februarie contabil neschimbate |
 | SC-IMO-19 | Vehicul neexclusiv, AMO fiscală 8.000 în luna recuperării, plafon 1.500 privat | fiscal 8.000, deductibil 1.500 o singură dată; bugetar deductibil 8.000 |
 | SC-IMO-20 | Schimbare Loc între februarie și martie | februarie 100 la locul vechi, martie 100 la locul nou; nicio rescriere |

@@ -1,6 +1,8 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Fct;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
+using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
@@ -14,10 +16,6 @@ sealed class ScenariiRegim(Func<IObjectSpace> deschide, Action<string, bool> che
     const string CmdCorecteaza = nameof(ComandaDocument.Corecteaza);
     const string CmdOpereaza = nameof(ComandaDocument.Opereaza);
     const string CmdValideaza = nameof(ComandaDocument.Valideaza);
-
-    RegimDocument Regim(Guid id) => CuSpatiu(os => RegimDocument.Calculeaza(os, id));
-    static bool Refuzata(RegimDocument r, string comanda, string fragmentMotiv) =>
-        !r.Poate(comanda) && (r.Motiv(comanda) ?? "").Contains(fragmentMotiv, StringComparison.OrdinalIgnoreCase);
 
     bool StergereaPeStare(Guid id) => CuSpatiu(os => {
         var doc = os.GetObjectByKey<Document>(id);
@@ -42,8 +40,11 @@ sealed class ScenariiRegim(Func<IObjectSpace> deschide, Action<string, bool> che
             && Refuzata(r, CmdOpereaza, "deja operat") && Refuzata(r, CmdValideaza, "deja operat")
             && Refuzata(r, RegimDocument.Sterge, "stornează"));
 
+        Cost("NTC", nota.Id, 10);
+
         var factura = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false));
         Opereaza(factura.Id);
+        Cost("FCT", factura.Id, 12);
         var plata = Trezorerie(incasare: false, 100);
         Opereaza(plata.Id);
         Imperecheaza(plata.Id, factura.Id, 100, Ianuarie);
@@ -74,6 +75,19 @@ sealed class ScenariiRegim(Func<IObjectSpace> deschide, Action<string, bool> che
         Verifica("SC-REGIM-06", "perioada închisă refuză doar Anulează, cu motivul perioadei; Stornează și Corectează rămân disponibile",
             Refuzata(r, CmdAnuleaza, "închisă") && r.Poate(CmdStorneaza) && r.Poate(CmdCorecteaza));
 
+        rp = Regim(plata.Id);
+        rf = Regim(factura.Id);
+        Verifica("SC-REGIM-09", "împerecherea vie din luna închisă nu refuză Stornează și Corectează; Anulează e refuzată cu motivul perioadei",
+            Refuzata(rp, CmdAnuleaza, "închisă") && rp.Poate(CmdStorneaza) && rp.Poate(CmdCorecteaza)
+            && Refuzata(rf, CmdAnuleaza, "închisă") && rf.Poate(CmdStorneaza) && rf.Poate(CmdCorecteaza));
+        Storneaza(plata.Id, Februarie);
+        rf = Regim(factura.Id);
+        Verifica("SC-REGIM-10", "stornarea plății inversează împerecherea; pe factură legătura inversată nu refuză Stornează și Corectează",
+            Regim(plata.Id).Stare == StareDocument.Stornat && rf.Poate(CmdStorneaza) && rf.Poate(CmdCorecteaza));
+        var corectie = Corecteaza(factura.Id);
+        Verifica("SC-REGIM-10", "corecția facturii cu istoric de împerecheri reușește: original stornat, corecție Draft",
+            Regim(factura.Id).Stare == StareDocument.Stornat && Regim(corectie).Stare == StareDocument.Draft);
+
         Storneaza(nota.Id, Februarie);
         r = Regim(nota.Id);
         Verifica("SC-REGIM-07", "stornat: needitabil, nicio comandă disponibilă",
@@ -81,5 +95,32 @@ sealed class ScenariiRegim(Func<IObjectSpace> deschide, Action<string, bool> che
         stergere &= StergereaPeStare(nota.Id) && Refuzata(r, RegimDocument.Sterge, "stornat");
         Verifica("SC-REGIM-08", "ștergerea se decide numai pe stare: componenta ieftină dă motivul regimului pe Draft, Operat și Stornat",
             stergere);
+
+        if (!Privat) return;
+        Comanda(os => { var p = os.CreateObject<PerioadaFiscala>(); p.An = An; p.Luna = 3; os.CommitChanges(); });
+        Declarata("SC-REGIM-11", FormularFiscal.D300, 2);
+        Declarata("SC-REGIM-12", FormularFiscal.D394, 3);
     }
+
+    void Cost(string tip, Guid id, int plafon) {
+        var citiri = CapturaSql.Masoara(() => Regim(id));
+        Console.WriteLine($"     MĂSURAT (106f): regimul unui {tip} operat fără dependenți: {citiri.Count} instrucțiuni SQL, "
+            + $"{citiri.Sum(c => c.Durata.TotalMilliseconds):0.0} ms [{string.Join("; ", citiri.Select(c => string.Join("+", CapturaSql.Tabele([c.Text]))))}].");
+        Verifica("SC-REGIM-13", $"{tip} operat fără dependenți: regimul se citește în cel mult {plafon} instrucțiuni SQL", citiri.Count <= plafon);
+    }
+
+    void Declarata(string id, FormularFiscal formular, int luna) {
+        var fiscala = Factura(new(An, luna, 5), new LinieFctScena(1, 100, "N21", Stoc: false));
+        Opereaza(fiscala.Id);
+        var inainte = Regim(fiscala.Id);
+        Comanda(os => FiscalitateService.ConfirmaDepunerea(os, formular, An, luna,
+            Fiscale.Versiune(os, formular, new(An, luna, 1), new DateOnly(An, luna, 1).AddMonths(1).AddDays(-1)), "ModelCheck"));
+        var r = Regim(fiscala.Id);
+        Verifica(id, $"{formular} depus, luna înregistrării deschisă: Anulează devine refuzată cu TVA_DEJA_DECLARATA; Stornează și Corectează rămân disponibile",
+            inainte.Poate(CmdAnuleaza) && Refuzata(r, CmdAnuleaza, "TVA_DEJA_DECLARATA") && r.Poate(CmdStorneaza) && r.Poate(CmdCorecteaza));
+        Refuza(id, () => Anuleaza(fiscala.Id), "TVA_DEJA_DECLARATA");
+    }
+
+    protected override void CurataNomenclatoare(IObjectSpace os, Purja purja) =>
+        purja.Adauga(os.GetObjectsQuery<DepunereDeclaratie>().Where(d => d.Perioada >= An * 100 && d.Perioada < (An + 1) * 100));
 }

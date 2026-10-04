@@ -39,6 +39,15 @@ static class ProbeRegim {
             abateri.Count == 0 && potrivite.Count >= 5);
     }
 
+    // Refuzurile pe care regimul nu le promite (106i): valorile și, la stornare și corecție, data cerută.
+    static readonly string[] RefuzuriPeValori = ["STOC_INSUFICIENT", "POZITIE_FARA_FISA_NEGATIVA"];
+    static readonly string[] RefuzuriPeDataCeruta = ["cu o dată din luna lui", "PARTIDA_CU_DEPENDENTI"];
+
+    public static bool RefuzLaComanda(ComandaDocument comanda, string mesaj) =>
+        RefuzuriPeValori.Any(f => mesaj.Contains(f, StringComparison.Ordinal))
+        || comanda != ComandaDocument.AnuleazaOperarea
+            && RefuzuriPeDataCeruta.Any(f => mesaj.Contains(f, StringComparison.Ordinal));
+
     static (Type View, Type Obiect) TintaObjectView(Type tip) {
         for (var b = tip; b != null; b = b.BaseType)
             if (b.IsGenericType && b.GetGenericTypeDefinition() == typeof(ObjectViewController<,>))

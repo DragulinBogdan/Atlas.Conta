@@ -97,6 +97,7 @@ scena ține blocajul scrierii, cele două comenzi intră pe rând în coada lui
 | SC-X-21 | lot 10/100; BCS 4 și închiderea lunii lui, în ambele ordini | operare → închidere: ambele trec, snapshot 6/60; închidere → operare: operarea e refuzată, fără efecte, iar snapshot-ul lunii rămâne 6/60 (SC-BCS-14, F27-r8) |
 | SC-X-22 | cele 16 feluri de comandă, pe captura SQL | fiecare începe cu blocajul scrierii; dry-run-ul, citirile și salvarea fără detalii noi nu îl iau |
 | SC-X-23 | comandă care așteaptă peste timpul ei | refuz `SCRIERE_OCUPATA`, fără efecte; după eliberare trece |
+| SC-X-24 | fiecare Anulează, Stornează și Corectează din scenele catalogului, cu regimul citit înaintea comenzii | regimul care refuză ⇒ comanda refuză; comanda care refuză ⇒ regimul refuza, în afara refuzurilor pe valori și pe data cerută (106k, [REGIM](REGIM.md)) |
 
 ## Tipurile și starea lor
 

@@ -59,11 +59,10 @@ public sealed class RegimDocument {
             case StareDocument.Operat:
                 regim.Refuza(ComandaDocument.Opereaza, "Documentul e deja operat.");
                 regim.Refuza(ComandaDocument.Valideaza, "Documentul e deja operat.");
-                var dependenti = regim.Dependenti();
-                regim.Decide(ComandaDocument.AnuleazaOperarea,
-                    GardianPerioada.MotivInchisa(os, doc.DataInregistrare) ?? dependenti);
-                regim.Decide(ComandaDocument.Storneaza, dependenti);
-                regim.Decide(ComandaDocument.Corecteaza, dependenti);
+                var retragere = GardieniRetragere.Citeste(os, doc);
+                regim.Decide(ComandaDocument.AnuleazaOperarea, retragere.Anulare);
+                regim.Decide(ComandaDocument.Storneaza, retragere.Stornare);
+                regim.Decide(ComandaDocument.Corecteaza, retragere.Stornare);
                 break;
             default:
                 foreach (var comanda in Enum.GetNames<ComandaDocument>())
@@ -79,8 +78,6 @@ public sealed class RegimDocument {
     /// <summary>Contribuția tipului la regim: comenzile proprii, pe starea și datele documentului.</summary>
     public sealed class Constructor {
         readonly Dictionary<string, string> comenzi = [];
-        string dependenti;
-        bool dependentiCititi;
 
         internal Constructor(IObjectSpace os, Document doc) {
             ObjectSpace = os;
@@ -103,17 +100,6 @@ public sealed class RegimDocument {
             if (!ComenziCunoscute.Contains(comanda))
                 throw new ArgumentException($"Comanda „{comanda}” nu e în vocabularul regimului.", nameof(comanda));
             comenzi[comanda] = motiv;
-        }
-
-        /// <summary>Primul motiv al gardienilor de dependenți (latura pereche, conexele, împerecherile), citit o singură dată.</summary>
-        public string Dependenti() {
-            if (!dependentiCititi) {
-                dependenti = MotorOperare.MotivLaturaPerecheOperata(ObjectSpace, Document)
-                    ?? MotorOperare.MotivConexeOperate(ObjectSpace, Document)
-                    ?? MotorOperare.MotivImperecheri(ObjectSpace, Document);
-                dependentiCititi = true;
-            }
-            return dependenti;
         }
     }
 }
