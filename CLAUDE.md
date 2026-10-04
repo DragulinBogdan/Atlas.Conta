@@ -157,7 +157,8 @@ rămâne delimitată în 103-r2. SAF-T L și S sunt pe cub, cu ruta pe registre
 scoasă; review-ul B8 e închis (RV1.2 corectat și reverificat, decizia 105).
 Gate-ul transversal TR-D8 e implementat și verificat pe `tr-d8-transversal`
 (decizia 108, contractul `docs/nucleu/tr-d8-transversal-contract.md`, pașii
-1–6); review-ul advers al feliei e cerut lui Codex, iar merge-ul îl așteaptă.
+1–6); review-ul implementării (X-RI1…X-RI4) e corectat, iar merge-ul așteaptă
+reverificarea lui Codex.
 După el urmează TR-D9: tăierea scriitorilor vechi și a regimului dual. Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

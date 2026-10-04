@@ -6,6 +6,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 public sealed partial class DeclarantNir : IDeclarant {
     public static readonly DeclarantNir Instanta = new();
+    public string SursaValoareDeclarata => SurseValoare.Receptie;
     DeclarantNir() { }
     public bool PermiteDeclaratieFaraMiscari(Operand operand) => operand.ReceptieSursa is not null;
 

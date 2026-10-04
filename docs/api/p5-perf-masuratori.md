@@ -1001,6 +1001,15 @@ profil, în containerul `dotnet/aspnet:10.0` din rețeaua containerului Postgres
 `.ClaudeX2`; DUK rulează apoi pe Windows. Starea de dinaintea corecturilor este
 `run-verificari/perf-cub-20261003-231254/` (numai privat).
 
+**Rerulare după review-ul implementării (X-RI3, X-RI4), 2026-10-04:**
+`run-verificari/perf-cub-20261004-093104/` — 1.526 OK pe privat și 996 pe bugetar,
+zero FAIL, `PREST-NI` raportat `AMÂNAT`. Un `EXPLAIN` respins invalidează acum
+măsurarea, iar fiecare operație cere plan pentru fiecare citire, în ambele treceri
+(nicio respingere, nici în această rulare, nici în cea de mai sus). Operația D300 nu
+mai cheamă `DecontTva`: controlul ei compară rândurile 9, 24, 19 și 30 din rezultatul
+D300 cu constantele scenei. Tabelele de mai jos sunt ale rulării `002621`, cu excepția
+rândurilor D300, care sunt ale rerulării.
+
 **Scena.** Unitatea este cea din SAF-B8: FCT (stoc 10 × 10 + serviciu 50) cu NIR conex,
 PLT 70 legată 50, BCS 2, BTR 1, DSC 1 (numai privat), ASM 1, FCL 100 cu INC 60 legată; pe
 privat cu TVA N21, pe bugetar fără. Luna măsurată are k ∈ {1, 4, 16, 64} unități; istoricul
@@ -1057,8 +1066,8 @@ citirea vizibilă și dry-run-ul notei stingătoare), *reconstrucție*, *scriere
 | RECON-N | 4–14 | 8,5 / 70,8 / 119,1 | 452 | 0 / 1 / 1 | 0,9 | 0 / 9363 / 15361 | 0 / 6923 / 12921 | 26,6 |
 | JTVA-S | 7 | 16,2 / 20,3 / 16,2 | 292 | 128 / 128 / 128 | 0,8 | 768 / 768 / 768 | 768 / 768 / 768 | 1,2 |
 | JTVA-N | 2 | 11,3 / 11,9 / 11,3 | 215 | 128 / 128 / 128 | 0,5 | 768 / 768 / 768 | 768 / 768 / 768 | 1,1 |
-| D300-S | 12 | 24,3 / 23,2 / 22,6 | 383 | 55 / 55 / 55 | 1,2 | 1152 / 1152 / 1152 | 1152 / 1152 / 1152 | 0,8 |
-| D300-N | 7 | 13,7 / 14,7 / 14,0 | 292 | 55 / 55 / 55 | 0,8 | 1152 / 1152 / 1152 | 1152 / 1152 / 1152 | 0,9 |
+| D300-S | 11 | 22,5 / 24,2 / 22,8 | 320 | 55 / 55 / 55 | 0,8 | 768 / 768 / 768 | 768 / 768 / 768 | 0,9 |
+| D300-N | 6 | 11,8 / 11,6 / 11,1 | 271 | 55 / 55 / 55 | 0,7 | 768 / 768 / 768 | 768 / 768 / 768 | 0,9 |
 | D394-S | 13 | 25,7 / 27,1 / 26,5 | 399 | 2 / 2 / 2 | 1,2 | 1152 / 1152 / 1152 | 1152 / 1152 / 1152 | 0,9 |
 | D394-N | 8 | 15,9 / 15,7 / 14,9 | 325 | 2 / 2 / 2 | 1,0 | 1152 / 1152 / 1152 | 1152 / 1152 / 1152 | 0,8 |
 | R6-S | 17 | 102,6 / 104,2 / 104,1 | 1550 | 0 / 0 / 0 | 24,9 | 5964 / 4426 / 1926 | 1926 / 1926 / 1926 | 1,7 |

@@ -27,7 +27,8 @@ sealed partial class PerfCub {
     public sealed record Masura(int Istoric, int Unitati, string Operatie, string Faza, double Ms, int Comenzi, double MsSql, long Randuri,
         long Alocati, long VarfGestionat, long VarfSetLucru, long Cardinal, Dictionary<string, decimal> Control,
         int ScanariPostare, double RanduriPostare, long BuffersPostare, double RanduriSnapshot, double MsServerMax, string Eroare,
-        int ScanariIndex = 0, double RanduriIndex = 0, long BuffersIndex = 0, int SecventialeIndex = 0);
+        int ScanariIndex = 0, double RanduriIndex = 0, long BuffersIndex = 0, int SecventialeIndex = 0,
+        int PlanuriCerute = 0, int PlanuriRespinse = 0);
 
     public sealed record DurataComanda(int Istoric, int Treapta, string Tip, double Ms, int Comenzi, double MsSql);
 
@@ -130,10 +131,12 @@ sealed partial class PerfCub {
         }),
         .. PeInterval("D300", "D300 pe lună", true, m => {
             var d = D300Proiectii.D300(m.Os, m.Start, m.End, null);
-            var decont = TvaProiectii.DecontTva(m.Os, m.Start, m.End).ToList();
+            D300Rand Rand(string cod) => d.Randuri.Single(r => r.Cod == cod);
             return new(d.Randuri.Count, new() {
                 ["nemapate"] = d.Nemapate.Count,
-                ["decont.baza"] = decont.Sum(x => x.Baza), ["decont.tva"] = decont.Sum(x => x.Tva),
+                ["rd9.baza"] = Rand("9").Baza ?? 0, ["rd9.tva"] = Rand("9").Tva ?? 0,
+                ["rd24.baza"] = Rand("24").Baza ?? 0, ["rd24.tva"] = Rand("24").Tva ?? 0,
+                ["rd19.tva"] = Rand("19").Tva ?? 0, ["rd30.tva"] = Rand("30").Tva ?? 0,
             });
         }),
         .. PeInterval("D394", "D394 pe lună", true, m => {
@@ -239,20 +242,29 @@ sealed partial class PerfCub {
             using var osRedeschide = deschide();
             PerioadaService.Redeschide(osRedeschide, punct.An, punct.Luna, "PerfCub", null, "PerfCub");
         }
-        var gol = new StatisticaPlan(0, 0, 0, 0, 0, 0);
+        var gol = new StatisticaPlan(0, 0, 0, 0, 0, 0, 0, 0);
         var plan = cuPlanuri && eroare == null ? Planuri(os, comenzi, mediu.Fisier("planuri.txt"), false) : gol;
         var index = cuPlanuri && eroare == null ? Planuri(os, comenzi, mediu.Fisier("planuri-index.txt"), true) : gol;
-        var m = new Masura(punct.Istoric, punct.Unitati, op.Cod, faza, ms, comenzi.Count, comenzi.Sum(c => c.Durata.TotalMilliseconds),
+        var m = CuPlanuri(new Masura(punct.Istoric, punct.Unitati, op.Cod, faza, ms, comenzi.Count, comenzi.Sum(c => c.Durata.TotalMilliseconds),
             comenzi.Sum(c => c.Randuri), alocati, varf, proces.PeakWorkingSet64, citit?.Cardinal ?? 0, citit?.Control ?? [],
-            plan.Scanari, plan.Randuri, plan.Buffers, plan.RanduriSnapshot, plan.MsServerMax, eroare,
-            index.Scanari, index.Randuri, index.Buffers, index.Secventiale);
+            0, 0, 0, 0, 0, eroare), plan, index);
         Console.WriteLine($"     MĂSURAT (perfcub {op.Cod} m{punct.Istoric} k{punct.Unitati} {faza}): {m.Ms:0} ms, {m.Comenzi} comenzi / {m.MsSql:0} ms SQL / "
             + $"{m.Randuri} rânduri citite, {m.Cardinal} rânduri livrate, alocați {m.Alocati / 1048576.0:0.0} MiB, vârf gestionat {m.VarfGestionat / 1048576.0:0.0} MiB"
             + (cuPlanuri ? $"; plan: {m.ScanariPostare} scanări pe Postare, {m.RanduriPostare:0} rânduri, {m.BuffersPostare} buffers, snapshot {m.RanduriSnapshot:0}"
                 + $"; fără scanare secvențială: {m.ScanariIndex} scanări ({m.SecventialeIndex} secvențiale), {m.RanduriIndex:0} rânduri, {m.BuffersIndex} buffers" : "")
-            + (eroare == null ? "" : "; EROARE " + eroare));
+            + (m.Eroare == null ? "" : "; EROARE " + m.Eroare));
         return m;
     }
+
+    // Un plan respins invalidează măsurarea: statisticile lui lipsesc, nu sunt zero.
+    static Masura CuPlanuri(Masura m, StatisticaPlan plan, StatisticaPlan index) => m with {
+        ScanariPostare = plan.Scanari, RanduriPostare = plan.Randuri, BuffersPostare = plan.Buffers,
+        RanduriSnapshot = plan.RanduriSnapshot, MsServerMax = plan.MsServerMax,
+        ScanariIndex = index.Scanari, RanduriIndex = index.Randuri, BuffersIndex = index.Buffers, SecventialeIndex = index.Secventiale,
+        PlanuriCerute = plan.Cerute + index.Cerute, PlanuriRespinse = plan.Respinse + index.Respinse,
+        Eroare = m.Eroare ?? (plan.Respinse + index.Respinse == 0 ? null
+            : $"EXPLAIN respins pe {plan.Respinse + index.Respinse} din {plan.Cerute + index.Cerute} planuri cerute"),
+    };
 
     public const string PrefixJson = "PERFCUB-JSON ";
     public static string Json(IReadOnlyList<Masura> masuri) => PrefixJson + JsonSerializer.Serialize(masuri);
@@ -260,7 +272,8 @@ sealed partial class PerfCub {
     public static string Argument(Punct p) => Convert.ToBase64String(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(p)));
     public static Punct DinArgument(string a) => JsonSerializer.Deserialize<Punct>(Encoding.UTF8.GetString(Convert.FromBase64String(a)));
 
-    sealed record StatisticaPlan(int Scanari, double Randuri, long Buffers, double RanduriSnapshot, double MsServerMax, int Secventiale);
+    sealed record StatisticaPlan(int Scanari, double Randuri, long Buffers, double RanduriSnapshot, double MsServerMax, int Secventiale,
+        int Cerute, int Respinse);
 
     // EXPLAIN (ANALYZE, BUFFERS) pe fiecare citire a operației, cu parametrii ei; proba din plan numără nodurile de scanare pe
     // partițiile lui `Postare`: rândurile atinse (livrate + respinse de filtru) × bucle și bufferele lor. A doua trecere
@@ -274,16 +287,17 @@ sealed partial class PerfCub {
         }
         var text = new StringBuilder();
         var brute = new List<string>();
-        int scanari = 0, secventiale = 0; double randuri = 0, snapshot = 0, serverMaxim = 0; long buffers = 0;
+        int scanari = 0, secventiale = 0, cerute = 0, respinse = 0; double randuri = 0, snapshot = 0, serverMaxim = 0; long buffers = 0;
         foreach (var c in comenzi.Where(c => c.Text.TrimStart().StartsWith("SELECT", StringComparison.OrdinalIgnoreCase)
                      || c.Text.TrimStart().StartsWith("WITH", StringComparison.OrdinalIgnoreCase))) {
             if (c.Text.Contains("FOR UPDATE", StringComparison.OrdinalIgnoreCase) || c.Text.Contains("pg_advisory", StringComparison.OrdinalIgnoreCase)) continue;
+            cerute++;
             using var cmd = conexiune.CreateCommand();
             cmd.CommandText = "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + c.Text;
             foreach (var p in c.Parametri) cmd.Parameters.Add(p is ICloneable cl ? (System.Data.Common.DbParameter)cl.Clone() : p);
             string json;
             try { json = (string)cmd.ExecuteScalar(); }
-            catch (Exception e) { text.AppendLine($"-- EXPLAIN respins: {e.Message.Split('\n')[0]}\n{c.Text}\n"); continue; }
+            catch (Exception e) { respinse++; text.AppendLine($"-- EXPLAIN respins: {e.Message.Split('\n')[0]}\n{c.Text}\n"); continue; }
             brute.Add(json);
             using var doc = JsonDocument.Parse(json);
             var radacina = doc.RootElement[0];
@@ -325,6 +339,6 @@ sealed partial class PerfCub {
             regim.CommandText = "SET enable_seqscan = on";
             regim.ExecuteNonQuery();
         }
-        return new(scanari, randuri, buffers, snapshot, serverMaxim, secventiale);
+        return new(scanari, randuri, buffers, snapshot, serverMaxim, secventiale, cerute, respinse);
     }
 }

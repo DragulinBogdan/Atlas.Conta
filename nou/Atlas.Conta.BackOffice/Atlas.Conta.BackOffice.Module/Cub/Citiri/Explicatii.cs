@@ -20,6 +20,7 @@ public static class Explicatii {
     public const string Referinta = "CITIRE_EXPLICATIE_REFERINTA";
     public const string Iesire = "CITIRE_EXPLICATIE_IESIRE";
     public const string Evaluare = "CITIRE_EXPLICATIE_EVALUARE";
+    public const string Mecanism = "CITIRE_EXPLICATIE_MECANISM";
     public const string Stingere = "CITIRE_EXPLICATIE_STINGERE";
     public const string Storno = "CITIRE_EXPLICATIE_STORNO";
 
@@ -91,9 +92,24 @@ public static class Explicatii {
                 Partener = p.Partener!.Value, Deschisa = p.UnitateDeschisa!.Value, p.Valoare })
             .ToList().ToLookup(p => Purtator(p.TranzactieId));
 
+        var documente = purtatori.Select(p => p.Document).Distinct().ToList();
+        var declaranti = os.GetObjectsQuery<Document>().Where(d => documente.Contains(d.ID)).ToList()
+            .ToDictionary(d => d.ID, d => d.Declarant());
+
         var rotunjire = new N.Rotunjire(Scara.ConventieBani);
         foreach (var purtator in purtatori) {
             var explicatie = Explicatie.Citeste(purtator.Explicatie);
+
+            var declarant = declaranti.GetValueOrDefault(purtator.Document);
+            if (declarant is null || declarant.GetType().Name != explicatie.Declarant)
+                throw new OperareException($"{Mecanism}: tranzacția {purtator.ID}: explicația numește declarantul "
+                    + $"{explicatie.Declarant}, documentul declară prin {declarant?.GetType().Name ?? "niciunul"}.");
+            var sursa = declarant.SursaValoareDeclarata;
+            if (explicatie.Decizii.Any(d => sursa is null ? d is N.ValoareDeclarata
+                    : d is N.ValoareIesire || d is N.ValoareDeclarata v && v.Sursa != sursa))
+                throw new OperareException($"{Mecanism}: tranzacția {purtator.ID}: {explicatie.Declarant} "
+                    + (sursa is null ? "evaluează ieșirile din sold; explicația poartă o valoare declarată."
+                        : $"declară valoarea din sursa {sursa}; explicația poartă alt mecanism."));
 
             var decise = explicatie.Decizii.Select(d => d switch {
                 N.ValoareIesire i => new IesirePeLot(i.Linie, i.Unitate.Id, i.Unitate.Cont, i.Cantitate, i.Valoare),
@@ -110,6 +126,13 @@ public static class Explicatii {
                 if (inainte is null || !Evaluata(inainte, iesire, rotunjire))
                     throw new OperareException($"{Evaluare}: tranzacția {purtator.ID}, linia {iesire.Linie}: valoarea "
                         + $"{iesire.Valoare} nu rezultă din soldul citit al unității {iesire.Unitate.Id}.");
+
+            foreach (var pePartida in explicatie.Decizii.OfType<N.AlocareFifo>().GroupBy(a => (a.Unitate.Id, a.Unitate.Cont))) {
+                var citit = explicatie.SoldCitit(pePartida.First().Unitate);
+                if (citit is null || pePartida.Sum(a => Math.Abs(a.Masura)) > Math.Abs(citit.Net))
+                    throw new OperareException($"{Stingere}: tranzacția {purtator.ID}: alocarea FIFO de "
+                        + $"{pePartida.Sum(a => Math.Abs(a.Masura))} pe partida {pePartida.Key.Id} nu rezultă din soldul ei citit.");
+            }
 
             var alocate = explicatie.Decizii.OfType<N.AlocareFifo>()
                 .GroupBy(a => ((Guid?)a.Linie, a.Unitate.Id)).ToDictionary(g => g.Key, g => g.Sum(a => a.Masura));

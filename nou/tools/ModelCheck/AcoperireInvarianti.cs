@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
@@ -29,6 +30,12 @@ static class AcoperireInvarianti {
         new("EXPLICATIE-DECLARATA", C.Citiri.Explicatii.Iesire, (os, db) => Rescrie(os, db, Fara<N.ValoareDeclarata>)),
         new("EXPLICATIE-EVALUARE", C.Citiri.Explicatii.Evaluare, (os, db) => Rescrie(os, db, SoldCititDiferit)),
         new("EXPLICATIE-STINGERE", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, Fara<N.AlocareFifo>)),
+        new("EXPLICATIE-MECANISM", C.Citiri.Explicatii.Mecanism, (os, db) => Rescrie(os, db, EvaluatDeclarat)),
+        new("EXPLICATIE-DECLARANT", C.Citiri.Explicatii.Mecanism, (os, db) => Rescrie(os, db,
+            e => EvaluatDeclarat(e) is { } declarata ? declarata with { Declarant = nameof(DeclarantReturFurnizor) } : null)),
+        new("EXPLICATIE-SOLD-FIFO", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, e => SoldFifo(e, null))),
+        new("EXPLICATIE-SOLD-FIFO-MIC", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, e => SoldFifo(e, N.Sold.Zero))),
+        new("TRANSFER-CONT", C.Citiri.Invarianti.TransferNeconservat, DestinatieTransferPeAltCont),
     ];
 
     static readonly HashSet<string> ucise = [];
@@ -190,6 +197,36 @@ static class AcoperireInvarianti {
             Ipoteze = [.. e.Ipoteze.Select(i => ReferenceEquals(i, tinta)
                 ? tinta with { Sold = tinta.Sold with { Debit = tinta.Sold.Debit + 1000m } } : i)],
         };
+    }
+
+    // X-RI1: aceleași cifre, alt mecanism — ieșirile evaluate redenumite „declarate”, fără soldurile citite.
+    static C.Explicatie EvaluatDeclarat(C.Explicatie e) => !e.Decizii.OfType<N.ValoareIesire>().Any() ? null : e with {
+        Decizii = [.. e.Decizii.Select(d => d is N.ValoareIesire i
+            ? new N.ValoareDeclarata(i.Linie, i.Unitate, i.Cantitate, i.Valoare, SurseValoare.Linie) : d)],
+        Ipoteze = [.. e.Ipoteze.Where(i => i is not N.SoldUnitateCitit)],
+    };
+
+    static C.Explicatie SoldFifo(C.Explicatie e, N.Sold inlocuit) {
+        var alocare = e.Decizii.OfType<N.AlocareFifo>().FirstOrDefault();
+        var tinta = alocare == null ? null : e.Ipoteze.OfType<N.SoldUnitateCitit>()
+            .FirstOrDefault(i => i.Unitate.Id == alocare.Unitate.Id && i.Unitate.Cont == alocare.Unitate.Cont);
+        return tinta == null ? null : e with {
+            Ipoteze = [.. e.Ipoteze.Where(i => inlocuit != null || !ReferenceEquals(i, tinta))
+                .Select(i => ReferenceEquals(i, tinta) ? tinta with { Sold = inlocuit } : i)],
+        };
+    }
+
+    // X-RI2: numai contul capătului de destinație al unui transfer pe lot.
+    static bool DestinatieTransferPeAltCont(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Transfer && p.FelUnitate == N.FelUnitate.Lot
+                && p.Carte == N.Carte.Contabil && p.Cantitate > 0m && p.Valoare != 0m)
+            .Select(p => new { p.ID, p.Spatiu, p.Cont }).FirstOrDefault();
+        if (tinta == null) return false;
+        var altCont = os.GetObjectsQuery<Cont>().Where(c => c.ID != tinta.Cont).OrderBy(c => c.Simbol).Select(c => c.ID).First();
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Cont, altCont));
+        return true;
     }
 
     static C.Explicatie Fara<T>(C.Explicatie e) where T : N.Decizie =>

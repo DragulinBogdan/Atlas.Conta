@@ -42,7 +42,10 @@ sealed partial class PerfCub {
             "FIFO" or "PDISP" => new() { ["refuzuri"] = 0 },
             "RECON" => new() { ["referinte"] = istoric > 0 ? 1 : 0, ["diferite"] = 0 },
             "JTVA" => new() { ["achizitii.baza"] = k * 150, ["achizitii.tva"] = k * 31.50m, ["livrari.baza"] = k * 100, ["livrari.tva"] = k * 21 },
-            "D300" => new() { ["nemapate"] = 0, ["decont.baza"] = k * 250, ["decont.tva"] = k * 52.50m },
+            "D300" => new() {
+                ["nemapate"] = 0, ["rd9.baza"] = k * 100, ["rd9.tva"] = k * 21, ["rd24.baza"] = k * 150, ["rd24.tva"] = k * 31.50m,
+                ["rd19.tva"] = k * 21, ["rd30.tva"] = k * 31.50m,
+            },
             "D394" => new() { ["documente"] = 2 * k, ["baza"] = k * 250, ["neincluse.baza"] = 0 },
             "R6" => new() { ["baza"] = 0, ["taxa"] = 0 },
             "SAFTL" => cuXml ? new() { ["refuzuri"] = 0, ["facturi"] = 2 * k, ["plati"] = 2 * k, ["miscari"] = 0, ["xsd"] = 0 }
@@ -184,6 +187,10 @@ sealed partial class PerfCub {
             }
             var kMaxim = calde.Count == 0 ? 0 : calde.Max(p => p.Unitati);
             var planuri = calde.Where(p => p.Unitati == kMaxim).OrderBy(p => p.Istoric).ToList();
+            if (planuri.Count > 0)
+                Check($"{op.Cod} [{op.Ruta}, plan la k={kMaxim}]: fiecare citire a operației are planul ei, în ambele treceri "
+                    + $"([{string.Join(", ", planuri.Select(p => $"m{p.Istoric}: {p.PlanuriCerute - p.PlanuriRespinse}/{p.PlanuriCerute}"))}])",
+                    planuri.All(p => p.PlanuriCerute > 0 && p.PlanuriRespinse == 0));
             var descriere = string.Join(", ", planuri.Select(p => $"m{p.Istoric}: {p.ScanariPostare} scanări / {p.RanduriPostare:0} rânduri / {p.BuffersPostare} buffers / snapshot {p.RanduriSnapshot:0}"));
             var peIndex = string.Join(", ", planuri.Select(p => $"m{p.Istoric}: {p.ScanariIndex} scanări ({p.SecventialeIndex} secvențiale) / {p.RanduriIndex:0} rânduri / {p.BuffersIndex} buffers"));
             if (planuri.Count > 0)
@@ -196,7 +203,8 @@ sealed partial class PerfCub {
                 var baza = planuri[0];
                 Check($"{op.Cod} [{op.Ruta}, plan la k={kMaxim}, fără scanare secvențială]: accesul la `Postare` nu depinde de m — nicio scanare "
                     + $"secvențială rămasă, rânduri atinse în toleranța de 25% față de m={baza.Istoric}, buffers mărginite de rânduri ([{peIndex}])",
-                    planuri.All(p => p.SecventialeIndex == 0 && p.RanduriIndex <= 1.25 * baza.RanduriIndex
+                    planuri.All(p => p.PlanuriCerute > 0 && p.PlanuriRespinse == 0
+                        && p.SecventialeIndex == 0 && p.RanduriIndex <= 1.25 * baza.RanduriIndex
                         && p.BuffersIndex <= 5 * p.RanduriIndex + 16 * p.ScanariIndex));
             }
             else if (planuri.Count > 0)

@@ -887,5 +887,9 @@ detaliat în jurnal):
   nucleu 180/180, matricea de refuzuri 300/300 de două ori,
   `SCRIERE_OCUPATA` pe ușa HTTP, drift zero. Închise: S-r2, S-r9, S-r11,
   F27-r8, T-r11, T-r14, N-r8, 097-r1, 102-r4, SAFT-r4, FZ-r1. Noi: X-r1,
-  X-r2, X-r3. Review-ul advers al feliei e cerut lui Codex; branch-ul nu e
-  mers.
+  X-r2, X-r3. Review-ul implementării (Codex, la `2b57aa5`): patru
+  observații P2 pe verificările feliei, X-RI1…X-RI4, corectate — mecanismul
+  explicației ținut de declarant, conservarea pe cont a transferului
+  persistat, planul respins care invalidează măsurarea, controlul D300 pe
+  rezultatul D300; integrala **3.394 / 4.604 OK**, scara 1.526 / 996 OK.
+  Reverificarea e cerută; branch-ul nu e mers.

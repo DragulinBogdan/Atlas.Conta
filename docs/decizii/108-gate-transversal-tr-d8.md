@@ -6,9 +6,11 @@ Docs: `docs/nucleu/tr-d8-transversal-contract.md` (X-D1…X-D8, X-Q1…X-Q4, X-R
 
 **Starea verificării, 2026-10-04:** pașii 1–6 din X-D8 sunt implementați și
 verificați pe `tr-d8-transversal`. Review-ul advers al contractului este
-închis (X-RV1…X-RV7). Review-ul advers al feliei este cerut lui Codex
-(`comunicari/2026-10-04-0830-claude-codex-tr-d8-transversal-review.md`);
-până la răspunsul lui, felia nu se merge.
+închis (X-RV1…X-RV7). [Review-ul advers al implementării](../nucleu/tr-d8-transversal-implementare-review-codex.md)
+la `2b57aa5` a adus patru observații P2, X-RI1…X-RI4. Toate sunt corectate
+(contractul, „Corecturile review-ului implementării”); integrala după
+corecturi: 3.394 bugetar / 4.604 privat OK. Felia așteaptă reverificarea lui
+Codex înainte de merge.
 
 ## Regula durabilă
 
@@ -36,6 +38,9 @@ aceleiași declarații o referă prin `ExplicatieDinId`. Stornoul nu are
 explicație proprie: a lui este a originalului. Împerecherea, desfacerea,
 stingerea de deschidere și deschiderea nu au decizii de explicat. O ieșire a
 cărei valoare nu vine din sold poartă `ValoareDeclarata`, cu sursa numită.
+Mecanismul e al declarantului, nu al explicației: declarantul spune dacă
+evaluează din sold sau declară valoarea și din ce sursă, iar invariantul îl
+ia din document. O partidă stinsă FIFO își are soldul citit între ipoteze.
 Dry-run-ul nu persistă nimic. Acoperirea explicației este invariant
 `INV-CUB`, cu mutant pe fiecare ramură.
 
@@ -63,7 +68,9 @@ purjei (X-D7 a, 102d).** Contabilul, stocul cantitativ, deschiderea,
 partidele, fișele și explicațiile au fiecare o verificare în
 `Invarianti.Verifica`. Stocul se compară pe grup și proveniență, nu pe rând:
 recepția conexă aparține în registre NIR-ului și în cub facturii. Lipsa este
-`CITIRE_ISTORIC_STOC_INCOMPLET`. Nicio verificare nu rulează la pornirea
+`CITIRE_ISTORIC_STOC_INCOMPLET`. Un transfer persistat conservă valoarea pe
+(cont, latură) și cantitatea pe (cont, produs), ca la contractare (090f);
+altfel `CITIRE_TRANSFER_NECONSERVAT`. Nicio verificare nu rulează la pornirea
 hosturilor.
 
 **(h) `PosteazaInCub` nu se stinge (X-Q4 = A).** După prima tranzacție în cub
@@ -87,7 +94,9 @@ probat din plan fără scanare secvențială; liniaritate la cald; control
 numeric cu oracol independent de cititori. Un criteriu picat lasă gate-ul
 deschis. Amânarea este amendament explicit al owner-ului, cu cititorul,
 criteriul, cifra și restanța numite. O materializare nouă cere cifră
-măsurată (090 i). Scara se măsoară în container.
+măsurată (090 i). Scara se măsoară în container. Absența probei nu e probă:
+un plan respins invalidează măsurarea, iar controlul numeric compară
+rezultatul cititorului măsurat, nu al altuia.
 
 ## Context
 
@@ -128,7 +137,8 @@ contract; decizia adună regula.
 | 3 | X-D6: blocajul scrierii, probele pe două conexiuni, S-r9 | `9b5fa62` | 3.361 / 4.570 |
 | 4 | X-D7: acoperirea stocului, regimul ireversibil, restanțele | `87052f7` | 3.387 / 4.597 |
 | 5 | X-D5 + X-D3: scara, reconcilierea pe baza de volum | `06cd4d4`, `ff08a8c` | 3.387 / 4.597 |
-| 6 | X-D8: integrala, probele HTTP, driftul, închiderea | acesta | 3.387 / 4.597 |
+| 6 | X-D8: integrala, probele HTTP, driftul, închiderea | `2b57aa5` | 3.387 / 4.597 |
+| review | X-RI1…X-RI4: corecturile review-ului implementării | următorul | 3.394 / 4.604 |
 
 Probele pasului 6, pe o bază privată recreată din seed
 (`run-verificari/x6-http/`): matricea `refuzuri.ps1` 300/300 de două ori, cu
@@ -169,14 +179,32 @@ criteriu picat pe fiecare, cel amânat
   registru și cub.
 - `SCRIERE_OCUPATA` iese 422, ca orice `OperareException`. Regula refuzurilor
   (80) nu are un cod separat pentru „ocupat, reîncearcă”.
+- Invariantul explicației nu recitește istoricul. Un sold citit alterat în
+  sus și o valoare declarată diferită de linia sau recepția ei de origine,
+  dar egală cu postarea, rămân nedetectate.
 
 ## Review
 
 Review-ul advers al contractului: X-RV1…X-RV7, plus reverificările 1.1, 1.2
 și 5.1, toate închise înaintea implementării
-(`docs/nucleu/tr-d8-transversal-review-codex.md`). Review-ul advers al
-feliei este cerut la pasul 6; constatările lui se aplică peste acest commit
-și se consemnează aici.
+(`docs/nucleu/tr-d8-transversal-review-codex.md`).
+
+Review-ul advers al implementării, la `2b57aa5`
+(`docs/nucleu/tr-d8-transversal-implementare-review-codex.md`): patru
+observații P2 despre verificările care certifică felia. Niciuna nu a cerut
+schimbarea unei cifre postate și niciuna nu redeschide tranșările
+owner-ului.
+
+| Obs. | Ce lipsea | Corecția |
+|---|---|---|
+| X-RI1 | invariantul explicației accepta ieșirile evaluate redenumite „declarate” și stingerea FIFO fără soldul citit | mecanismul ținut de declarant (`IDeclarant.SursaValoareDeclarata`), `CITIRE_EXPLICATIE_MECANISM`; soldul citit al partidei stinse obligatoriu și plafon al alocărilor |
+| X-RI2 | contul capătului de destinație al unui BTR nu era păzit: cheia cantitativă nu are cont, iar reconcilierea (a) exclude transferurile | `Invarianti.VerificaTransferuri`, `CITIRE_TRANSFER_NECONSERVAT` |
+| X-RI3 | un `EXPLAIN` respins lăsa statistici zero, acceptate de criteriul din plan | planul respins e eroarea măsurării; fiecare citire cere plan; proba `X-D5-PLAN` |
+| X-RI4 | controlul numeric al operației D300 citea `DecontTva` | controlul pe rândurile 9, 24, 19 și 30 din rezultatul D300 |
+
+Nu s-a confirmat o cale reală de ocolire a blocajului scrierii și nici un
+cititor de registre ratat de proba sintactică. Reverificarea corecturilor
+este cerută lui Codex.
 
 ## Restanțe
 

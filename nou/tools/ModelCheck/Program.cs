@@ -322,6 +322,9 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         .UseLazyLoadingProxies()
         .AddInterceptors(NumaratorSql.Instanta));
 
+using (var osPlan = provider.CreateObjectSpace())
+    PerfCub.ProbaPlanRespins(osPlan, profil == ProfilContabil.Privat, Check);
+
 // 104c: regulile culegerii (scara coloanei) sunt ale gardianului, pe ușa securizată a API-ului.
 IObjectSpace OsCuGardian() {
     var o = provider.CreateObjectSpace();

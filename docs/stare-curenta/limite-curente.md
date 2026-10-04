@@ -265,8 +265,11 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Acoperirea cantitativă a stocului (X-D7 a) compară registrul cu cubul pe
   document × lot × gestiune × storno × semn, pe `Magazie`, `Marfuri` și
   `Folosinta`. Contul nu intră în cheie: rândul de registru nu îl poartă, iar
-  derivarea lui din politica de azi ar rescrie istoricul (093c); valoarea pe
-  cont rămâne la reconcilierea (a). Direcția e registru → cub: o postare pe
+  derivarea lui din politica de azi ar rescrie istoricul (093c). Valoarea pe
+  cont a operărilor rămâne la reconcilierea (a); a transferurilor, pe care
+  (a) le exclude, la conservarea pe cont din `INV-CUB`
+  (`CITIRE_TRANSFER_NECONSERVAT`), care nu compară cu registrul, ci cere ca
+  cele două capete să stea pe același cont. Direcția e registru → cub: o postare pe
   lot fără rând de registru (deschiderea, recepția facturii cu NIR neoperat)
   nu e lipsă. Grupul recepției conexe se compară net, pe factură și
   recepțiile ei; fără nicio recepție operată, registrul grupului trebuie să
@@ -304,6 +307,11 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Explicația repetă câte două `ContRezolvat` și unitatea întreagă pe fiecare
   linie. Măsurat în X-D5: 907 octeți pe linie, 58.066 pentru un consum de 64
   de linii.
+- Invariantul explicației nu recitește istoricul: verifică soldul citit al
+  unei partide stinse numai ca prezență și ca plafon al alocărilor. Un sold
+  citit alterat în sus trece. La fel, o valoare declarată e comparată cu
+  postarea ei și cu sursa permisă declarantului, nu recalculată din linia
+  sau recepția de origine. (X-RI1)
 - Matricea `refuzuri.ps1` probează ușa explicației numai cu cei patru
   utilizatori ai ei: 200 și 404. 403 `EXPLICATIE_ACCES_INCOMPLET` cere un
   rol cu citire restricționată și rămâne al probei `explicatii.py`, care

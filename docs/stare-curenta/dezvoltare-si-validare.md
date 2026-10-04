@@ -21,7 +21,13 @@ fișe fără `InversaDin`), `IMO-SUPORT` (transfer valoric pe fișă fără supo
 `-REFERINTA` (referința mutată pe alt document), `-STORNO` (cantitatea
 inversei pe lot schimbată), `-IESIRE` (valoarea unei `ValoareIesire` +0,01),
 `-DECLARATA` (`ValoareDeclarata` scoasă), `-EVALUARE` (soldul citit +1.000),
-`-STINGERE` (`AlocareFifo` scoase). Ramurile
+`-STINGERE` (`AlocareFifo` scoase). Review-ul implementării (X-RI1, X-RI2) a
+adăugat cinci: `EXPLICATIE-MECANISM` (ieșirile evaluate redenumite
+`ValoareDeclarata`, cu aceleași cifre și fără soldurile citite),
+`-DECLARANT` (aceeași substituție, cu numele declarantului schimbat într-unul
+care declară valori), `-SOLD-FIFO` (soldul citit al partidei stinse scos),
+`-SOLD-FIFO-MIC` (soldul citit pus sub suma alocată) și `TRANSFER-CONT`
+(numai contul capătului de destinație al unui transfer pe lot). Ramurile
 acoperirii registru ↔ cub, echilibrului și provenienței au probele SC-CIT-23,
 SC-CIT-34 și SC-CIT-10. Acoperirea cantitativă a stocului
 (`Loturi.VerificaAcoperire`, `CITIRE_ISTORIC_STOC_INCOMPLET`, X-D7 a) rulează
@@ -87,10 +93,12 @@ declarat. `Contabil.Postari`, `Contabil.Jurnal` și `Plati.Postari` exclud
 `Transfer` și inversele lui. `Loturi.Postari` și `Partide.Postari` le includ.
 `Fiscale.Postari` și `Imobilizari.PozitiiFaraFisa` nu filtrează felul:
 domeniul lor e dat de coordonate, iar regula nu li se aplică.
-`FelTranzactie.Transfer` apare în producție numai în zece membri numiți:
-scriitorul (`Cub/Materializare*`), producătorul `DeclarantAsamblare`, trei
-cititori comuni (`Loturi.VerificaRetragere`, `Plati.Alocari`,
-`Imobilizari.VerificaAcoperire`) și eticheta mișcării din SAF-T. Un consumator
+`FelTranzactie.Transfer` apare în producție numai în doisprezece membri
+numiți: scriitorul (cinci membri din `Cub/Materializare*`), producătorul
+`DeclarantAsamblare`, doi cititori comuni (`Loturi.VerificaRetragere`,
+`Plati.Alocari`), trei martori (`Imobilizari.VerificaAcoperire`,
+`Explicatii.VerificaAcoperire`, `Invarianti.VerificaTransferuri`) și eticheta
+mișcării din SAF-T. Un consumator
 care refiltrează `Transfer` e detectat (mutant). SC-CIT-100…102 numără, pe
 fiecare intrare, rândurile `Transfer` și inversele lor din BTR stornat, din
 împerecherea desfăcută și din ASM-ul mixt stornat.
@@ -217,8 +225,17 @@ OK**, zero FAIL, exit 0, `run-verificari/20261004-081014-672/`, pe clonele
 `.ClaudeX2`; nucleu **180/180**; `--probe-sursa` verde; `verifica:drift`
 exit 0; probele HTTP în `run-verificari/x6-http/` (matricea 300/300 de două
 ori, `scriere-ocupata.py` 7/7, `comenzi-coaja.py` 28/28, `explicatii.py`
-8/8). Regula feliei: decizia 108. Review-ul advers al feliei e cerut lui
-Codex; TR-D8 se consideră închis după el.
+8/8). Regula feliei: decizia 108.
+
+Review-ul implementării (Codex, 2026-10-04) a adus patru observații,
+X-RI1…X-RI4, toate corectate: mecanismul explicației ținut de declarant și
+soldul citit al partidei stinse, conservarea pe cont a transferului
+persistat, planul respins care invalidează măsurarea, controlul D300 pe
+rezultatul D300. Validare după corecturi: integrala **3.394 bugetar / 4.604
+privat OK**, zero FAIL, `run-verificari/20261004-092403-010/`;
+`--probe-sursa` verde; scara completă
+`run-verificari/perf-cub-20261004-093104/`, 1.526 / 996 OK, zero FAIL.
+Reverificarea e cerută lui Codex; TR-D8 se consideră închis după ea.
 
 Cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
 Nucleu: **180/180**, zero omise, exit 0:
@@ -507,7 +524,10 @@ luna măsurată, m luni închise de istoric, faptele „o dată per bază”) ș
 măsoară fiecare cititor comun într-un proces nou, rece și cald, pe ușa
 securizată și pe cea nesecurizată. Fiecare cifră citită se compară cu
 așteptarea scenei. La k maxim, citirile se reexecută sub `EXPLAIN (ANALYZE,
-BUFFERS)`, cu planul ales și fără scanare secvențială. Înaintea purjei rulează
+BUFFERS)`, cu planul ales și fără scanare secvențială. Un plan respins e
+eroarea măsurării, iar o operație fără plan pentru fiecare citire pică
+criteriul; proba `X-D5-PLAN`, care rulează în orice ModelCheck, ține regula
+(X-RI3). Înaintea purjei rulează
 reconcilierea integrală, `INV-CUB` și diagnosticul ASM-B7 pe toată baza.
 Rețeta rulează ambele profiluri în containerul din rețeaua Postgres și
 validează XML-urile SAF-T cu DUK; parametrii `-Profil`, `-Istoric`, `-Trepte`

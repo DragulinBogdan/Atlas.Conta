@@ -646,7 +646,8 @@ Ce a arătat implementarea și cum amendează X-D7:
    derivarea lui din nomenclatorul de azi ar rescrie istoricul după o
    schimbare de politică (093c, NIR-D3). Cheia este document × lot ×
    gestiune × storno × semn. Valoarea pe cont rămâne la reconcilierea (a)
-   din X-D3.
+   din X-D3 pentru operări; pentru transferuri, pe care (a) le exclude, la
+   conservarea pe cont din `INV-CUB` (X-RI2).
 2. **Recepția conexă se compară net, pe grupul sursei.** Factura și
    recepțiile ei formează un grup (`Receptii.Legaturi`). În el semnul și
    stornoul nu se separă: registrul ține cumulul pe NIR, cubul ține recepția
@@ -864,6 +865,67 @@ exit 0: OpenAPI și tipurile TS regenerate identic.
 
 Review-ul advers al feliei: cerut lui Codex prin
 `comunicari/2026-10-04-0830-claude-codex-tr-d8-transversal-review.md`.
+Rezultat la `2b57aa5`, 2026-10-04: [review-ul implementării](tr-d8-transversal-implementare-review-codex.md)
+are patru observații P2, X-RI1…X-RI4: integrala era verde, dar mutanții
+documentați supraviețuiau. Toate patru sunt acceptate și corectate mai jos;
+reverificarea e cerută lui Codex. Review-ul contractului X-RV1…X-RV7 rămâne
+închis.
+
+### Corecturile review-ului implementării — X-RI1…X-RI4 (2026-10-04)
+
+Cele patru observații privesc verificările care certifică felia, nu fluxurile
+normale. Niciuna nu a cerut schimbarea unei cifre postate.
+
+1. **X-RI1 — mecanismul nu-l mai alege explicația.** Invariantul trata la fel
+   `ValoareIesire` și `ValoareDeclarata` și recalcula numai ce rămânea
+   evaluat, deci redenumirea deciziei ocolea dovada. Acum mecanismul e al
+   declarantului: `IDeclarant.SursaValoareDeclarata` e `null` la declaranții
+   care evaluează din sold și numește sursa la cei trei care declară valoarea
+   (NIR `Receptie`, RLF și RDC `Linie`). Invariantul ia declarantul din
+   document, nu din explicație, și refuză cu `CITIRE_EXPLICATIE_MECANISM`:
+   numele declarantului diferit de al documentului, o valoare declarată la un
+   declarant care evaluează, o valoare evaluată sau altă sursă la unul care
+   declară. Niciun declarant nu amestecă mecanismele, deci discriminarea e
+   completă.
+2. **X-RI1 — soldul citit al partidei stinse e obligatoriu.** Fiecare partidă
+   cu `AlocareFifo` cere `SoldUnitateCitit` al ei, iar suma alocărilor nu
+   depășește soldul citit; altfel `CITIRE_EXPLICATIE_STINGERE`. Soldul curent
+   nu se recitește în locul celui istoric, deci un sold citit alterat în sus
+   rămâne nedetectat (limită declarată).
+3. **X-RI2 — transferul persistat conservă pe cont.** Reconcilierea (a)
+   exclude transferurile, iar cheia cantitativă nu are cont, deci contul
+   destinației unui BTR nu era păzit de nimic. Nucleul cere deja la contractare
+   ca un transfer să conserve valoarea pe (cont, latură) și cantitatea pe
+   (cont, produs) (090f, `Conservare.VerificaTransferul`). Aceeași regulă se
+   reverifică acum pe cub: `Invarianti.VerificaTransferuri`,
+   `CITIRE_TRANSFER_NECONSERVAT`. Nu derivă niciun cont din politica de azi:
+   cere numai ca cele două capete să stea pe același cont. Fraza „valoarea pe
+   cont rămâne la reconcilierea (a)” de la pasul 4 e corectată.
+4. **X-RI3 — un plan respins invalidează măsurarea.** `Planuri` numără
+   citirile eligibile și planurile respinse. O respingere devine eroarea
+   măsurării, iar evaluatorul cere, la fiecare operație, ca toate citirile să
+   aibă plan în ambele treceri; criteriul din plan nu mai trece fără nicio
+   probă. Proba `X-D5-PLAN` rulează în orice ModelCheck: un `EXPLAIN` cu
+   împărțire la zero e numărat ca respins, unul legitim pe zero rânduri nu,
+   iar evaluatorul real refuză planul respins și planul absent și acceptă
+   zeroul legitim.
+5. **X-RI4 — controlul D300 citește D300.** Operația nu mai cheamă
+   `DecontTva`. Cifrele de control sunt rândurile 9 și 24 (baza și taxa) și
+   totalurile 19 și 30 din rezultatul D300, comparate cu constantele scenei.
+   Durata și comenzile SQL atribuite D300 sunt acum numai ale lui (11 comenzi
+   pe ușa securizată și 6 pe cea nesecurizată, față de 12 și 7).
+
+Mutanți noi în `INV-CUB`, toți uciși pe ambele profiluri:
+`EXPLICATIE-MECANISM`, `EXPLICATIE-DECLARANT`, `EXPLICATIE-SOLD-FIFO`,
+`EXPLICATIE-SOLD-FIFO-MIC`, `TRANSFER-CONT`. `Invarianti.VerificaTransferuri`
+intră în lista N-r8 ca martor.
+
+Validare: integrala **3.394 bugetar / 4.604 privat OK**, zero FAIL,
+`run-verificari/20261004-092403-010/`, pe clonele `.ClaudeX2`; `--probe-sursa`
+verde; scara completă `run-verificari/perf-cub-20261004-093104/` — **1.526 OK
+privat, 996 OK bugetar**, zero FAIL, `PREST-NI` raportat `AMÂNAT`, DUK fără
+atenționări; controlul numeric are aceleași 1.280 de măsurători, toate
+trecute.
 
 ## Ce NU intră (amânări cu nume)
 

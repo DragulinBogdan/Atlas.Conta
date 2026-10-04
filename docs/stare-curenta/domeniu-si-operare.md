@@ -1269,13 +1269,18 @@ ieșirea atât, din ce sold, ce partide a stins.
   `ValoareDeclarata` când o dă altă sursă — linia documentului (RLF și RDC, la
   valoarea culeasă) sau recepția facturii (NIR-minus). Sursele sunt
   `Declaratii.SurseValoare`. Decizia poartă cantitatea și valoarea pozitive;
-  postarea-sursă a unui transfer le are negative.
+  postarea-sursă a unui transfer le are negative. Mecanismul e al
+  declarantului, nu al explicației: `IDeclarant.SursaValoareDeclarata` e
+  `null` pentru declaranții care evaluează din sold și numește sursa pentru
+  cei trei care declară valoarea (NIR, RLF, RDC). Niciun declarant nu le
+  amestecă.
 - **Soldul citit** (`SoldUnitateCitit`) e soldul net al unității la data
   documentului, fără documentul curent, o dată per unitate. Soldul dinaintea
   fiecărei ieșiri următoare de pe aceeași unitate se derivă din deciziile
   anterioare (`Explicatie.IesiriEvaluate`).
-- **Stingerea FIFO** are câte o `AlocareFifo` per linie și partidă stinsă;
-  partida proprie a documentului are `PartidaDeschisa`.
+- **Stingerea FIFO** are câte o `AlocareFifo` per linie și partidă stinsă,
+  iar partida stinsă are soldul ei citit între ipoteze; partida proprie a
+  documentului are `PartidaDeschisa`.
 - **Stornoul** se explică prin original: `Cub.Citiri.Explicatii.PeTranzactie`
   urmează `InversaDin` și întoarce explicațiile purtătorilor de origine.
   **Anularea operării** șterge explicația odată cu tranzacția.
@@ -1286,8 +1291,18 @@ ieșirea atât, din ce sold, ce partide a stins.
   `…_IESIRE` (ieșirile postate și deciziile de valoare nu corespund una la
   una pe linie, unitate, cantitate și valoare), `…_EVALUARE` (valoarea unei
   `ValoareIesire` nu rezultă din soldul persistat, cu rotunjirea bazei),
-  `…_STINGERE` (alocare fără postare sau postare pe partida altui document
-  fără alocare).
+  `…_STINGERE` (alocare fără postare, postare pe partida altui document
+  fără alocare, partidă stinsă fără sold citit sau cu alocări peste soldul
+  citit), `…_MECANISM` (explicația numește alt declarant decât cel al
+  documentului, poartă o valoare declarată la un declarant care evaluează
+  din sold, sau o valoare evaluată ori altă sursă la unul care declară).
+  Declarantul se ia din document, nu din explicație.
+- **Transferul persistat conservă pe cont** (`Invarianti.VerificaTransferuri`,
+  `CITIRE_TRANSFER_NECONSERVAT`, în `INV-CUB`): în orice tranzacție `Transfer`
+  valoarea se anulează pe (cont, latură) și cantitatea pe (cont, produs). E
+  regula de la contractare (090f), reverificată pe ce s-a scris. Acoperă
+  contul capătului de destinație, pe care nici acoperirea cantitativă a
+  stocului, nici reconcilierea (a) nu îl văd.
 
 Dry-run-ul nu persistă nimic. O declarație pe care nucleul nu o poate
 construi (`ArgumentException`) sau un declarant care nu întoarce nici

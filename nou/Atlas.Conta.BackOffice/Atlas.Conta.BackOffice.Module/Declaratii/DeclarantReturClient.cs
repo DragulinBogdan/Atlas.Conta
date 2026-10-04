@@ -7,6 +7,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 public sealed class DeclarantReturClient : IDeclarant {
     public static readonly DeclarantReturClient Instanta = new();
+    public string SursaValoareDeclarata => SurseValoare.Linie;
     DeclarantReturClient() { }
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
