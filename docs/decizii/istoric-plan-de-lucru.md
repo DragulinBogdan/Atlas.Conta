@@ -894,4 +894,4 @@ detaliat în jurnal):
   rezultatul D300; integrala **3.394 / 4.604 OK**, scara 1.526 / 996 OK.
   Reverificarea Codex la `7223abc` închide X-RI1…X-RI4: integrala proprie
   3.394 / 4.604 OK, zero FAIL, inclusiv mutanții și `X-D5-PLAN`;
-  `run-verificari/20261004-102241-857/`. Branch-ul nu e mers.
+  `run-verificari/20261004-102241-857/`. Mers în main prin PR #15.

@@ -11,7 +11,8 @@ la `2b57aa5` a adus patru observații P2, X-RI1…X-RI4. Toate sunt corectate
 (contractul, „Corecturile review-ului implementării”); integrala după
 corecturi: 3.394 bugetar / 4.604 privat OK. Codex a reverificat independent
 la `7223abc`, cu aceleași rezultate pe ambele profiluri, și a închis
-X-RI1…X-RI4. Review-ul feliei este închis; branch-ul nu este mers.
+X-RI1…X-RI4. Review-ul feliei este închis; felia e mersă în main prin PR #15
+(2026-10-04).
 
 ## Regula durabilă
 

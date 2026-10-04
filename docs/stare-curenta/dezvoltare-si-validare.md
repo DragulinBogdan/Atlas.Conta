@@ -237,7 +237,7 @@ privat OK**, zero FAIL, `run-verificari/20261004-092403-010/`;
 `run-verificari/perf-cub-20261004-093104/`, 1.526 / 996 OK, zero FAIL.
 Reverificarea Codex la `7223abc` a închis X-RI1…X-RI4, cu integrala proprie
 3.394 / 4.604 OK (`run-verificari/20261004-102241-857/`). TR-D8 este închis
-(decizia 108); branch-ul nu e mers.
+(decizia 108) și mers în main prin PR #15.
 
 Cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
 Nucleu: **180/180**, zero omise, exit 0:
