@@ -38,8 +38,7 @@ static class Imperecheri1C {
     // (care conține deja identitatea documentului sursă) + ținta, deci o pereche
     // stingător↔stins are exact o legătură.
     public const string View = "Imperechere";
-    // Stingerile pe PARTIDE INIȚIALE (M1-D7): urma e transferul din cub, fără rând
-    // `Imperechere`; legătura proprie ține idempotența.
+    // 107f: fără rând `Imperechere`; idempotența o ține legătura.
     public const string ViewDeschidere = "StingereDeschidere";
 
     // Tipurile-țintă care se sar prin construcție, nu din lipsă de date.
@@ -56,18 +55,11 @@ static class Imperecheri1C {
     public static int StinsePeDeschidere { get; private set; }
     public static int ExistenteDeschidere { get; private set; }
     public static decimal SumaStinsaPeDeschidere { get; private set; }
-    // Σ refuzată per partidă inițială (peste rest, semn inversat): intrarea
-    // contractului 5, care explică restul partidei față de sursă.
     public static readonly Dictionary<Guid, decimal> SaritPePartida = [];
-    // Σ plafonată per partidă inițială: sursa stinge peste restul poziției (pozițiile
-    // în valută, evaluate în lei la cursul din 2024, plătite la cursul zilei);
-    // Atlas stinge restul, excedentul se numără (precedentul S-r5 pe documente).
     public static readonly Dictionary<Guid, decimal> PlafonatPePartida = [];
     public static int Plafonate { get; private set; }
     static Dictionary<string, List<(Guid Partida, Guid Cont, Guid Partener)>> indexDeschidere;
 
-    // Partidele inițiale pe referința 1C a documentului de decontare: legăturile
-    // `1C:PartidaDeschidere` (cheia sursei) + faptele cubului (cont, partener).
     static IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> PartideDeschidere(BuclaImport bucla,
             string tipRef, string id) {
         if (indexDeschidere == null) {
@@ -138,9 +130,6 @@ static class Imperecheri1C {
                     Sare("sumă ne-pozitivă după agregare", suma);
                     continue;
                 }
-                // M1-D7: ținta e o poziție de deschidere (document din 2024 sau
-                // mai vechi, inclusiv retururi și `IntroducereaSoldurilor`) ⇒
-                // stingere pe partida inițială, în cub, fără rând `Imperechere`.
                 if (bucla.Tinta(cheie.TintaTip, cheie.TintaId) == null
                         && PartideDeschidere(bucla, cheie.TipRef, cheie.TintaId) is { Count: > 0 } candidate) {
                     var cheieDeschidere = $"{cheie.View}/{cheie.CheieStingator}->{cheie.TipRef}/{cheie.TintaId}";
@@ -247,8 +236,7 @@ static class Imperecheri1C {
             if (existent == null) {
                 var stingator = os.GetObjectByKey<Document>(stingatorId);
                 var tinta = os.GetObjectByKey<Document>(tintaId);
-                // M1-D8: data reală a stingerii = a documentului mai târziu dintre cei
-                // doi (serviciul refuză o dată care precede pe oricare).
+                // 107g
                 var data = stingator.DataInregistrare > tinta.DataInregistrare
                     ? stingator.DataInregistrare : tinta.DataInregistrare;
                 existent = ImperechereService.Imperecheaza(os, stingator, tinta, suma, data: data);
@@ -286,7 +274,6 @@ static class Imperecheri1C {
             Sare("partida de deschidere există, dar stingătorul nu postează pe (cont, partener) al ei", suma);
             return false;
         }
-        // Restul partidei inițiale la ora asta, din cub (toate postările unității).
         var restPartida = os.GetObjectsQuery<Postare>()
             .Where(p => p.Unitate == partida.Partida && p.Carte == N.Carte.Contabil)
             .Select(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare).ToList().Sum();

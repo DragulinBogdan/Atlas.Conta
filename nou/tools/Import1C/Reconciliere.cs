@@ -123,8 +123,6 @@ static class Reconciliere {
         sursa.Remove(Deschidere.Ancora);
 
         var simboluri = db.Keys.Union(sursa.Keys).OrderBy(s => s, StringComparer.Ordinal).ToList();
-        // M1-D6: pe conturile de stoc, Δ = exact diferența declarată a deschiderii
-        // (loturi nereprezentabile) — se raportează, nu pică.
         var toate = simboluri
             .Select(s => (Simbol: s, Db: db.GetValueOrDefault(s), Sursa: sursa.GetValueOrDefault(s)))
             .Where(x => Math.Abs(x.Db - x.Sursa) >= Eps)

@@ -7,11 +7,6 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Import1C;
 
-// M1 (docs/import/m1-deschidere-terti-contract.md): deschiderea trece prin
-// `Materializare.Deschide` o dată per bază — solduri de control brute per
-// (cont, latură), loturile ca detaliu al conturilor de stoc, partidele inițiale
-// ale terților din `BalantaNivel3`. Rândurile bloc din registre (regimul dual)
-// se scriu din ACELEAȘI controale, după cub.
 static partial class Deschidere {
     public const string ViewPartide = "PartidaDeschidere";
     public const string ViewPartenerMigrare = "PartenerMigrare";
@@ -21,9 +16,6 @@ static partial class Deschidere {
 
     public sealed record Control(string Simbol, N.Latura Latura, decimal Valoare);
 
-    // Partida inițială cu cheia ei de SURSĂ (simbol OMFP | partener 1C sau „-" |
-    // tipRef/id sau „-"): cheia legăturii `1C:PartidaDeschidere` și cheia pe care
-    // contractul 5 o rederivă din sursă lună de lună.
     public sealed record PartidaSursa(string Cheie, string Simbol, string PartenerHex,
         string RefCheie, decimal Sold, string Descriere, Guid Partener, Guid Referinta);
 
@@ -39,8 +31,7 @@ static partial class Deschidere {
     public static string RefCheie(string tipRef, string id) =>
         tipRef == null || id == null ? null : $"{tipRef}/{id}";
 
-    // Referința stabilă a partidei: Guid determinist din cheia 1C (sau din
-    // (cont, partener) când sursa n-are document), fără FK spre Document (DES-B4).
+    // 107c: Guid determinist din cheia sursei, fără FK spre Document.
     static Guid ReferintaDin(string text) {
         var amprenta = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text));
         var id = amprenta[..16];
@@ -112,8 +103,6 @@ static partial class Deschidere {
             partide.Where(p => p.Partener == generic).Sum(p => p.Sold));
     }
 
-    // Partenerul generic de migrare (M1-D5): al conectorului, nu al seed-ului;
-    // idempotent prin legătura `1C:PartenerMigrare`.
     static Guid AsiguraPartenerGeneric(IObjectSpaceProvider provider) {
         using var os = provider.CreateObjectSpace();
         var legaturi = Legaturi.Incarca(os, ViewPartenerMigrare);
@@ -130,15 +119,9 @@ static partial class Deschidere {
         return p.ID;
     }
 
-    // ==================== Controalele brute per (cont, latură) ====================
-
     public sealed record RezultatControale(IReadOnlyList<Control> Controale,
         IReadOnlyDictionary<string, decimal> DeclarateStoc, int ConturiStocFaraLot);
 
-    // Din soldurile nete (Balanța mapată, fără ancoră): pe conturile urmărite pe
-    // partide controlul e Σ partidelor per latură (M1-D3); pe conturile de stoc,
-    // Σ loturilor scrise, cu diferența față de Balanță declarată (M1-D6); restul
-    // rămâne net, pe o singură latură. Ancora primește contrapartida brută.
     public static RezultatControale Controale(IReadOnlyDictionary<string, decimal> net,
             IReadOnlyList<PartidaInitiala> partide, IReadOnlyList<LotInitial> loturi,
             IReadOnlyDictionary<Guid, string> simbolPeId, IReadOnlySet<string> urmarite,
@@ -186,8 +169,6 @@ static partial class Deschidere {
         return new RezultatControale(controale, declarate, stocFaraLot);
     }
 
-    // ==================== Cubul: o singură tranzacție `Deschidere` ====================
-
     public sealed record RezultatCub(bool Scrisa, Guid Tranzactie, int Postari, int PartideScrise,
         int LoturiScrise, int LegaturiNoi);
 
@@ -231,7 +212,6 @@ static partial class Deschidere {
             os.CommitChanges();
         }
 
-        // Verificarea (i): cubul recitit contra controalelor, per (cont, latură).
         int postari, partideScrise, loturiScrise;
         using (var os = provider.CreateObjectSpace()) {
             var ale = os.GetObjectsQuery<Postare>().Where(p => p.TranzactieId == tranzactie)

@@ -83,8 +83,6 @@ record FlaxOrganizatie(string Id, string Cod, string Denumire, string DenumireCo
 
 record FlaxCont(string Cod, string Denumire, bool Sintetic, bool Extrabilantier);
 
-// O poziție de terț din `BalantaNivel3` (M1-D4): `PartenerId` null = sursa n-are
-// partener; `DocTipRef`/`DocId` null = referință goală de document de decontare.
 record FlaxPozitieTert(string Cont, string PartenerId, string PartenerDesc,
     string DocTipRef, string DocTipNume, string DocId, string DocDesc, decimal SoldIni);
 
@@ -438,13 +436,7 @@ partial class FlaxDb(string connectionString) : IDisposable {
                 Dec(r, 8), Dec(r, 9)),
             ("@p", period));
 
-    // Pozițiile de TERȚ ale balanței (M1-D4): conturile cu trei subconto stau în
-    // `BalantaNivel3` ca (partener × contract × document de decontare); contractul
-    // se agregă aici (nu face parte din identitatea partidei Atlas). Tipul
-    // documentului de decontare circulă ca hex al lui `_Type` (aceeași formă ca
-    // `FlaxRef.TipRef` din notele lunii, deci cheile se potrivesc prin construcție);
-    // partenerul e null când sursa are referința goală. Aceeași citire servește și
-    // fine-de-luna contractului 5 (`SoldIni` al perioadei următoare).
+    // 107c: contractul se agregă; tipul documentului circulă ca hex al lui `_Type`, ca `FlaxRef.TipRef`.
     public List<FlaxPozitieTert> PozitiiTert(DateTime period) =>
         Query(@"select ltrim(rtrim(Cont)), Valoare1_Partenerii_ID, max(Valoare1_Desc),
                        convert(varchar(10), Valoare3_Type, 2),
@@ -472,8 +464,6 @@ partial class FlaxDb(string connectionString) : IDisposable {
 
     static bool RefGoala(string tipRef) => tipRef == null || tipRef.All(c => c == '0');
 
-    // Partenerul din ANTETUL documentului de decontare, pentru pozițiile cărora
-    // sursa le-a pierdut partenerul de subconto (M1-D5): recuperare, nu ghicire.
     public string PartenerDocument(string tipNume, string hexId) {
         var view = tipNume switch {
             "VanzareMarfuriSiServiciiPrestate" or "AprovizionareMarfuriSiServiciiPrimite"

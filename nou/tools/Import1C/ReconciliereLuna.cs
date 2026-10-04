@@ -135,10 +135,6 @@ static partial class ReconciliereLuna {
         public IReadOnlyList<Deschidere.DiferentaSursa> JustificateDeschidere = [];
         public IReadOnlySet<string> Extrabilantiere1C = new HashSet<string>(StringComparer.Ordinal);
 
-        // M1-D6: Δ-ul declarat al deschiderii pe conturile de stoc (Atlas − 1C:
-        // controlul = Σ loturilor scrise, nu Balanța) — explicație permanentă a
-        // contractului 1. M1-D5: partenerul generic de migrare, ale cărui partide
-        // inițiale se declară în contractul 5, nu pică.
         public IReadOnlyDictionary<string, decimal> DeclarateDeschidere = new Dictionary<string, decimal>(StringComparer.Ordinal);
         public Guid? PartenerGeneric;
 
@@ -243,12 +239,6 @@ static partial class ReconciliereLuna {
         return new Rezultat(5, picate, stoc.Justificate, stare.PlafonStoc, dePlata, deRecuperat);
     }
 
-    // ==================== 5. Partidele inițiale (M1-D9 ii) ====================
-    //
-    // Pentru fiecare partidă de deschidere, restul din cub la fine de lună =
-    // `SoldIni` al lunii următoare din `BalantaNivel3` pe aceeași cheie de sursă
-    // + Σ stingerilor refuzate pe ea (contorizate în trecerea 2). Partidele
-    // partenerului generic (M1-D5) se declară cu Σ, nu pică.
     static void PartideInitiale(IObjectSpace os, ContextLuna ctx, Stare stare, Catalog cat,
             Action<string, bool> contract) {
         var legaturi = Legaturi.Incarca(os, Deschidere.ViewPartide);
@@ -289,9 +279,6 @@ static partial class ReconciliereLuna {
         var explicate = 0;
         var plafonate = 0;
         var declarate = new List<(string Cheie, decimal Cub, decimal Sursa)>();
-        // Partide pe care trecerea 2 nu le-a atins deloc (restul din cub = deschiderea),
-        // dar sursa le-a mișcat: stingătorul e un tip din afara trecerii 2 (factura
-        // care consumă avansul pe 419/409, factura sosită pe 408, nota fără partener).
         var neatinse = new List<(string Cheie, decimal Cub, decimal Sursa)>();
         var stinseIntegral = 0;
         foreach (var (cheie, partida) in legaturi.OrderBy(x => x.Key, StringComparer.Ordinal)) {
@@ -307,8 +294,7 @@ static partial class ReconciliereLuna {
             var sarit = Imperecheri1C.SaritPePartida.GetValueOrDefault(partida);
             var plafonat = Imperecheri1C.PlafonatPePartida.GetValueOrDefault(partida);
             var semn = Math.Sign(deschidere.GetValueOrDefault(partida));
-            // Refuzul lasă restul din cub mai mare în sensul partidei, cu suma refuzată;
-            // plafonarea îl lasă mai mic, cu excedentul (sursa a inversat poziția).
+            // 107h: refuzul lasă restul mai mare în sensul partidei, plafonarea mai mic.
             if (sarit != 0m && Math.Abs(delta - semn * sarit) < EpsV) {
                 explicate++;
                 stare.Jurnalizeaza($"  ok   partidă {cheie}: cub {cub:N2} = sursă {sold:N2} + refuzate {sarit:N2}");
@@ -420,7 +406,6 @@ static partial class ReconciliereLuna {
             Explica(d.ContDebit, -d.ValoareNepostata);
             Explica(d.ContCredit, d.ValoareNepostata);
         }
-        // M1-D6: deschiderea fără detaliu de lot, declarată o dată, purtată permanent.
         foreach (var (cont, delta) in stare.DeclarateDeschidere) {
             Explica(cont, delta);
             Explica(Deschidere.Ancora, -delta);

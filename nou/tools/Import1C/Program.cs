@@ -562,8 +562,7 @@ var dataRanduri = DateOnly.FromDateTime(dataDeschidere.AddDays(-1));
 
 var cronometru = System.Diagnostics.Stopwatch.StartNew();
 
-// Perioadele fiscale ÎNAINTEA deschiderii: `Materializare.Deschide` cere perioada
-// deschisă (M1-D2); motorul tratează perioada lipsă ca închisă (14).
+// 107a: `Deschide` cere perioada deschisă.
 var anImport = dataDeschidere.Year;
 var (perioadeExistente, perioadeCreate) = Perioade.Asigura(provider, anImport);
 
@@ -1022,8 +1021,6 @@ if (inchideLunile) {
         inchideri.Count == panaLa);
 }
 
-// INV-CUB pe baza integrală (M1-D9 iii): ce nu garantează scrierea se verifică o
-// dată, la final.
 using (var os = provider.CreateObjectSpace()) {
     try {
         Invarianti.Verifica(os);

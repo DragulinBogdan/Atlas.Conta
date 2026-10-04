@@ -42,10 +42,7 @@ static partial class Deschidere {
     public sealed record SolduriNete(IReadOnlyDictionary<string, decimal> Net, decimal ReziduuAncora,
         int Nerezolvate, int PeSumator, int Extrabilantiere, decimal SumaExtrabilantiera);
 
-    // Soldurile 1C mapate pe OMFP, nete per simbol, fără ancoră și fără
-    // extrabilanțiere (clasa 8 nu intră în bilanțul de deschidere — 9/22c). Sursa
-    // își parchează pe propriul cont de deschidere un reziduu de rotunjire; el nu
-    // se scrie (ar fi 891/891), ci se verifică prin soldul ancorei.
+    // 22c: fără clasa 8; reziduul de rotunjire al sursei nu se scrie, se verifică prin soldul ancorei.
     public static SolduriNete Nete(IReadOnlyList<FlaxSold> solduri, IReadOnlySet<string> extrabilantiere,
             IReadOnlyDictionary<string, Guid> plan, IReadOnlySet<string> sumatori,
             Func<string, string> mapeaza, Action<string> avert, Action<string, bool> check) {
@@ -91,9 +88,6 @@ static partial class Deschidere {
         return new SolduriNete(net, reziduu, nerezolvate.Count, peSumator.Count, extra.Count, extra.Sum(s => s.SoldIni));
     }
 
-    // Rândurile bloc ale registrului contabil (regimul dual), scrise din ACELEAȘI
-    // controale ca tranzacția `Deschidere` a cubului: un rând per (cont, latură)
-    // contra ancorei (M1-D3). Se rescriu integral la fiecare rulare (25e).
     public static RezultatContabil Contabile(IObjectSpaceProvider provider, SolduriNete nete,
             IReadOnlyList<Control> controale, IReadOnlyDictionary<string, decimal> declarate,
             DateOnly data, Action<string, bool> check) {
@@ -133,8 +127,6 @@ static partial class Deschidere {
             + $"= {randuri} scrise", scrise.Count == randuri);
         check($"Σ debit = Σ credit pe rândurile scrise (net pe toate conturile: "
             + $"{net.Values.Sum():N2})", Math.Abs(net.Values.Sum()) < EpsV);
-        // Ancora = reziduul propriu al sursei minus diferențele declarate ale
-        // stocului (M1-D6): ce nu s-a putut detalia pe lot nu s-a scris nicăieri.
         var asteptat = nete.ReziduuAncora - declarate.Values.Sum();
         check($"Ancora {Ancora} reproduce soldul 1C al aceluiași cont ± diferențele declarate: "
             + $"{net.GetValueOrDefault(Ancora):N2} = {nete.ReziduuAncora:N2} − ({declarate.Values.Sum():N2})",
@@ -461,10 +453,7 @@ static partial class Deschidere {
                 faraDepozit.Count == 0);
         }
 
-        // ---- 5b. Cubul (M1-D2): loturile ca detaliu al conturilor de stoc, ÎNAINTE
-        // de rândurile de registru (`Deschide` refuză un lot cu mișcări în
-        // `RegistruStoc`). Celulele cu valoare fără cantitate nu pot fi lot în cub
-        // (cantitatea e obligatorie) — rămân în registru și în diferența declarată.
+        // 107a: cubul înaintea rândurilor bloc; `Deschide` refuză un lot cu mișcări în registru.
         if (cub != null) {
             var loturiCub = new List<LotInitial>();
             using (var os = provider.CreateObjectSpace()) {
