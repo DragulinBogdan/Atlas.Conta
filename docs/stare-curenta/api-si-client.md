@@ -325,8 +325,10 @@ comenzi din vocabular (`Document.Opereaza`, `FacturaIesire.GenereazaDescarcarea`
 DetailView-ul documentului. Motivul indisponibilității ajunge în tooltip-ul
 acțiunii, iar tooltip-ul propriu revine când comanda redevine disponibilă;
 în Blazor tooltip-ul se randează și pe acțiunea dezactivată (probat în
-browser, 2026-10-04). Lista de documente nu aplică regimul pe selecție:
-acolo ștergerea unui document operat e refuzată la salvare, de gardian. Regimul se re-evaluează la
+browser, 2026-10-04). Pe lista de documente, `RegimListaController` aplică
+pe selecție componenta ieftină a ștergerii (`RegimDocument.MotivStergere`,
+fără interogări): o selecție care conține un document ne-Draft are
+ștergerea indisponibilă în întregime, cu motivul în tooltip. (106j) Regimul se re-evaluează la
 activare, la schimbarea obiectului curent, la `Committed` și la `Reloaded`
 (comanda comite în alt context și controllerul de operare face `Refresh`).
 Controllerele de comenzi nu mai poartă `Enabled["Stare"]`; ModelCheck

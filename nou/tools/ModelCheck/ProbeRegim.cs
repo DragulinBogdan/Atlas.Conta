@@ -48,6 +48,7 @@ static class ProbeRegim {
 
     static readonly Regex AffordancePeStare = new(@"\bPoate\w*\s*=\s*[^,;\n]*\bStareDocument\.");
     static readonly Regex CheieStare = new(@"\[\s*""Stare""\s*\]");
+    static readonly Regex StergereInTip = new(@"\bRegimDocument\.Sterge\b|""Sterge""");
     static readonly Regex ComentariuBloc = new(@"/\*.*?\*/", RegexOptions.Singleline);
     static readonly Regex ComentariuLinie = new(@"(?<!:)//.*$", RegexOptions.Multiline);
 
@@ -61,13 +62,15 @@ static class ProbeRegim {
             var text = ComentariuLinie.Replace(ComentariuBloc.Replace(File.ReadAllText(Path.Combine(radacina, fisier)),
                 m => new string('\n', m.Value.Count(c => c == '\n'))), "");
             fisiere++;
-            var regex = fisier.Contains("/Api/") ? AffordancePeStare : fisier.Contains("/Controllers/") ? CheieStare : null;
+            var regex = fisier.Contains("/Api/") ? AffordancePeStare : fisier.Contains("/Controllers/") ? CheieStare
+                : fisier.Contains("/BusinessObjects/") ? StergereInTip : null;
             if (regex == null)
                 continue;
             incalcari.AddRange(regex.Matches(text).Select(m => $"{fisier}:{text[..m.Index].Count(c => c == '\n') + 1} {m.Value.Trim()}"));
         }
-        Console.WriteLine($"     MĂSURAT (106c/d): {fisiere} fișiere; încălcări [{string.Join("; ", incalcari)}].");
-        check("106c/d: nicio affordance din `Api/` nu se calculează din `StareDocument` și niciun controller nu poartă cheia „Stare” — regimul e singura sursă",
+        Console.WriteLine($"     MĂSURAT (106c/d/j): {fisiere} fișiere; încălcări [{string.Join("; ", incalcari)}].");
+        check("106c/d/j: nicio affordance din `Api/` nu se calculează din `StareDocument`, niciun controller nu poartă cheia „Stare” "
+            + "și niciun tip nu decide `Sterge` — regimul e singura sursă",
             fisiere > 100 && incalcari.Count == 0);
     }
 }

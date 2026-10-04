@@ -52,6 +52,43 @@ public class RegimDocumentController : ObjectViewController<DetailView, Document
     }
 }
 
+// Lista de documente aplică pe selecție componenta ieftină a ștergerii (106j).
+public class RegimListaController : ObjectViewController<ListView, Document> {
+    const string Cheie = "Regim";
+    SimpleAction stergere;
+    string tooltip;
+
+    protected override void OnActivated() {
+        base.OnActivated();
+        stergere = Frame.GetController<DeleteObjectsViewController>()?.DeleteAction;
+        tooltip = stergere?.ToolTip;
+        View.SelectionChanged += OnSelectie;
+        Aplica();
+    }
+
+    protected override void OnDeactivated() {
+        View.SelectionChanged -= OnSelectie;
+        if (stergere != null) {
+            stergere.Enabled.RemoveItem(Cheie);
+            stergere.ToolTip = tooltip;
+        }
+        base.OnDeactivated();
+    }
+
+    void OnSelectie(object sender, EventArgs e) => Aplica();
+
+    void Aplica() {
+        if (stergere == null)
+            return;
+        var selectate = View.SelectedObjects.OfType<Document>().ToList();
+        var motive = selectate.Select(RegimDocument.MotivStergere).Where(m => m != null).ToList();
+        stergere.Enabled[Cheie] = motive.Count == 0;
+        stergere.ToolTip = motive.Count == 0 ? tooltip
+            : selectate.Count == 1 ? motive[0]
+            : $"{motive.Count} din {selectate.Count} documente selectate nu se pot șterge. {motive[0]}";
+    }
+}
+
 // Liniile nested și dialogul liniei urmează componenta ieftină a regimului, pe masterul lor.
 public class RegimLiniiController : ObjectViewController<ListView, DocumentDetaliu> {
     const string Cheie = "Regim";

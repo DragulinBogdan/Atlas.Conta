@@ -81,7 +81,8 @@ bazei, deci rulează și fără bază. La fel probele regimului pe stare
 `RecordEdit` a unui controller pe `DetailView` de `Document` numește prin
 sufixul ID-ului o comandă din `RegimDocument.ComenziCunoscute`; prin scanare
 sintactică, nicio affordance `Poate*` din `Module/Api/` nu se calculează din
-`StareDocument` și niciun controller nu poartă cheia „Stare”. Catalogul
+`StareDocument`, niciun controller nu poartă cheia „Stare” și niciun tip din
+`BusinessObjects/` nu decide `Sterge` (106j). Catalogul
 `REGIM` (`ScenariiRegim.cs`, anul 2013) rulează cu `--scenarii REGIM`. Probele
 axei 2 (`tools/ModelCheck/ProbeLinii.cs`, 106h-1…3) rulează pe modelul XAF
 real, în rularea integrală, cu registrul baseline-ului construit pe loc:

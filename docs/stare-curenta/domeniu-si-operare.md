@@ -115,7 +115,8 @@ sau nimic, cu aceleași predicate ca gardienii motorului
 Operează, Validează, Șterge. Operat: needitabil; Anulează cere perioada
 înregistrării deschisă și niciun dependent (latură pereche operată, conex
 operat, împerechere); Stornează și Corectează cer doar lipsa dependenților.
-Stornat: nimic. Tipul contribuie comenzile proprii prin
+Stornat: nimic. Ștergerea se decide numai pe stare (Draft), fără hook de tip
+(106j). Tipul contribuie comenzile proprii prin
 `Document.ContribuieRegim`, în vocabularul închis
 `RegimDocument.ComenziCunoscute`: NTC → Stinge pe Operat; AMO și ITV →
 Regenerează pe Draft; ASM → Distribuie pe Draft cu linii de consum și de

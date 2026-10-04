@@ -1,5 +1,6 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.Api.Fct;
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
@@ -18,9 +19,15 @@ sealed class ScenariiRegim(Func<IObjectSpace> deschide, Action<string, bool> che
     static bool Refuzata(RegimDocument r, string comanda, string fragmentMotiv) =>
         !r.Poate(comanda) && (r.Motiv(comanda) ?? "").Contains(fragmentMotiv, StringComparison.OrdinalIgnoreCase);
 
+    bool StergereaPeStare(Guid id) => CuSpatiu(os => {
+        var doc = os.GetObjectByKey<Document>(id);
+        return RegimDocument.MotivStergere(doc) == RegimDocument.Calculeaza(os, doc).Motiv(RegimDocument.Sterge);
+    });
+
     protected override void Executa() {
         var nota = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100));
         var r = Regim(nota.Id);
+        var stergere = StergereaPeStare(nota.Id) && r.Poate(RegimDocument.Sterge);
         Verifica("SC-REGIM-01", "draft: editabil; Operează, Validează, Șterge disponibile; Anulează, Stornează, Corectează, Stinge refuzate cu motiv",
             r.Editabil && r.Poate(CmdOpereaza) && r.Poate(CmdValideaza) && r.Poate(RegimDocument.Sterge)
             && Refuzata(r, CmdAnuleaza, "Operat") && Refuzata(r, CmdStorneaza, "Operat") && Refuzata(r, CmdCorecteaza, "operat")
@@ -29,6 +36,7 @@ sealed class ScenariiRegim(Func<IObjectSpace> deschide, Action<string, bool> che
 
         Opereaza(nota.Id);
         r = Regim(nota.Id);
+        stergere &= StergereaPeStare(nota.Id) && Refuzata(r, RegimDocument.Sterge, "stornează");
         Verifica("SC-REGIM-02", "operat fără dependenți: needitabil; Anulează, Stornează, Corectează, Stinge disponibile; Operează, Validează, Șterge refuzate",
             !r.Editabil && r.Poate(CmdAnuleaza) && r.Poate(CmdStorneaza) && r.Poate(CmdCorecteaza) && r.Poate(RegimDocument.Stinge)
             && Refuzata(r, CmdOpereaza, "deja operat") && Refuzata(r, CmdValideaza, "deja operat")
@@ -70,5 +78,8 @@ sealed class ScenariiRegim(Func<IObjectSpace> deschide, Action<string, bool> che
         r = Regim(nota.Id);
         Verifica("SC-REGIM-07", "stornat: needitabil, nicio comandă disponibilă",
             !r.Editabil && r.Comenzi.Count >= 6 && r.Comenzi.Values.All(motiv => motiv != null));
+        stergere &= StergereaPeStare(nota.Id) && Refuzata(r, RegimDocument.Sterge, "stornat");
+        Verifica("SC-REGIM-08", "ștergerea se decide numai pe stare: componenta ieftină dă motivul regimului pe Draft, Operat și Stornat",
+            stergere);
     }
 }

@@ -22,6 +22,7 @@ cu gestiune de descărcare și rest nedescărcat.
 | SC-REGIM-05 | FCT stoc 2 × 50 operată; NIR conex operat | pe FCT: Anulează, Stornează, Corectează refuzate cu motivul conexelor | `SC-REGIM-05` | regulă (26d, 106b) | acceptat | implementat |
 | SC-REGIM-06 | ianuarie închisă; NTC din 02 | Anulează refuzată cu motivul perioadei; Stornează și Corectează disponibile | `SC-REGIM-06` | regulă (14, 106b) | acceptat | implementat |
 | SC-REGIM-07 | NTC din 06 stornată în februarie | needitabil; nicio comandă disponibilă | `SC-REGIM-07` | regulă (106b) | acceptat | implementat |
+| SC-REGIM-08 | NTC din 01, 02 și 07 | pe Draft, Operat și Stornat, `MotivStergere` e exact motivul regimului pentru Șterge | `SC-REGIM-08` | regulă (106j) | acceptat | implementat |
 
 Probele structurale (106e), în afara catalogului: fiecare comandă din
 toolbar-ul DetailView-ului unui `Document` numește o comandă a regimului

@@ -33,6 +33,13 @@ public sealed class RegimDocument {
     /// <summary>Componenta ieftină a regimului, pe entitate: antetul și liniile se culeg doar în Draft.</summary>
     public static bool EsteEditabil(Document doc) => doc == null || doc.Stare == StareDocument.Draft;
 
+    /// <summary>Componenta ieftină a regimului pentru ștergere, pe entitate (106j): null = se poate șterge.</summary>
+    public static string MotivStergere(Document doc) => doc?.Stare switch {
+        null or StareDocument.Draft => null,
+        StareDocument.Operat => "Documentul operat se stornează, nu se șterge.",
+        _ => "Documentul e stornat.",
+    };
+
     public static RegimDocument Calculeaza(IObjectSpace os, Guid documentId) =>
         Calculeaza(os, Rezolva.Cere<Document>(os, documentId, "Documentul"));
 
@@ -40,11 +47,11 @@ public sealed class RegimDocument {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(doc);
         var regim = new Constructor(os, doc);
+        regim.Decide(Sterge, MotivStergere(doc));
         switch (doc.Stare) {
             case StareDocument.Draft:
                 regim.Permite(ComandaDocument.Opereaza);
                 regim.Permite(ComandaDocument.Valideaza);
-                regim.Permite(Sterge);
                 regim.Refuza(ComandaDocument.AnuleazaOperarea, "Doar un document Operat poate fi anulat.");
                 regim.Refuza(ComandaDocument.Storneaza, "Doar un document Operat poate fi stornat.");
                 regim.Refuza(ComandaDocument.Corecteaza, "Se corectează doar un document operat.");
@@ -52,7 +59,6 @@ public sealed class RegimDocument {
             case StareDocument.Operat:
                 regim.Refuza(ComandaDocument.Opereaza, "Documentul e deja operat.");
                 regim.Refuza(ComandaDocument.Valideaza, "Documentul e deja operat.");
-                regim.Refuza(Sterge, "Documentul operat se stornează, nu se șterge.");
                 var dependenti = regim.Dependenti();
                 regim.Decide(ComandaDocument.AnuleazaOperarea,
                     GardianPerioada.MotivInchisa(os, doc.DataInregistrare) ?? dependenti);
@@ -62,10 +68,11 @@ public sealed class RegimDocument {
             default:
                 foreach (var comanda in Enum.GetNames<ComandaDocument>())
                     regim.Refuza(comanda, "Documentul e stornat.");
-                regim.Refuza(Sterge, "Documentul e stornat.");
                 break;
         }
         doc.ContribuieRegim(os, regim);
+        if (regim.Comenzi[Sterge] != MotivStergere(doc))
+            throw new InvalidOperationException("Ștergerea se decide numai pe stare (106j); tipul nu o poate schimba.");
         return new RegimDocument(doc.Stare, EsteEditabil(doc), regim.Comenzi);
     }
 

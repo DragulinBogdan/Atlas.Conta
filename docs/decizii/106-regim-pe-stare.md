@@ -1,7 +1,7 @@
 # 106 — Regimul pe stare: o singură sursă a editabilității și a comenzilor disponibile
 
 Data: 2026-09-30
-Stare: activă; amendează 042(e) (affordance-urile pe resursă au acum o sursă comună) și precizează 104(c); (h) adăugat 2026-10-01 (axa 2 făcută, închide 106-r4); (i) adăugat 2026-10-04 (delimitarea față de 108)
+Stare: activă; amendează 042(e) (affordance-urile pe resursă au acum o sursă comună) și precizează 104(c); (h) adăugat 2026-10-01 (axa 2 făcută, închide 106-r4); (i) și (j) adăugate 2026-10-04 (delimitarea față de 108; ștergerea pe stare, aplicată și pe lista de documente)
 Docs: `docs/nucleu/scenarii/REGIM.md`; `design/format-xaf-documente.md`; `docs/stare-curenta/domeniu-si-operare.md`, `api-si-client.md`, `dezvoltare-si-validare.md`
 
 ## Regula durabilă
@@ -85,6 +85,16 @@ Citirea regimului nu ia blocajul scrierii (108e). Predicatul împerecherilor
 are un singur loc, `MotorOperare.MotivImperecheri`, numit în lista nominală
 a registrelor (108a) ca legătură.
 
+**(j) Ștergerea se decide numai pe stare (2026-10-04).** `Sterge` e disponibilă
+pe Draft și refuzată pe Operat și Stornat, fără dependenți și fără perioadă;
+are componentă ieftină pe entitate, `RegimDocument.MotivStergere`, iar un tip
+nu o poate schimba prin hook (regimul refuză, ModelCheck scanează). De aceea
+lista de documente o aplică pe selecție fără nicio interogare: dacă selecția
+conține un document care nu e Draft, ștergerea standard XAF e indisponibilă
+pentru toată selecția, cu motivul în tooltip. Nu se șterg doar drafturile
+dintr-o selecție mixtă. Pe DetailView, ștergerea standard e comanda `Sterge`
+a regimului. Gardianul de la salvare rămâne plasa.
+
 ## Context
 
 Sesiune de arhitectură cu owner-ul, 2026-09-30, pornită de la `design/*-xaf.md`
@@ -142,8 +152,7 @@ list-ului e planul de conturi și D300, prin modul plat Key/ParentKey, fără
   parametru (Stornează), unde butonul are `pointer-events: none` și titlul
   stă pe containerul lui; tooltip-ul propriu revine pe acțiunea disponibilă.
   Proba a arătat că ștergerea standard XAF rămânea disponibilă pe documentul
-  operat; e legată acum de comanda `Sterge`. Lista de documente nu aplică
-  regimul pe selecție (refuzul vine de la gardian, la salvare).
+  operat, pe DetailView și pe listă; regula e (j).
 - 106-r2: comenzile proprii ale tipurilor (Regenereaza, Distribuie, Stinge)
   au acțiuni doar în React; în XAF nu există încă acțiuni pentru ele.
 - 106-r3: planul de conturi și D300 pe `DxTreeListEditor` în mod plat, cu
