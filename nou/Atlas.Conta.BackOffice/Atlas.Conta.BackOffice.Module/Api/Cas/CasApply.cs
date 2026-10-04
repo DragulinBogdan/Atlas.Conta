@@ -91,7 +91,7 @@ public static class CasApply {
             })
             .ToList();
 
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new CasReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -102,12 +102,12 @@ public static class CasApply {
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
             Total = linii.Sum(l => l.Valoare),
             Fise = linii.Select(l => l.ImobilizareId).Distinct().ToList(),
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
-            PoateSterge = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
+            PoateSterge = regim.Poate(RegimDocument.Sterge),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new CasLinieReadDto {
                 Id = l.ID, ImobilizareId = l.ImobilizareId,
                 NumarInventar = l.NumarInventar, ImobilizareDenumire = l.ImobilizareDenumire,

@@ -444,11 +444,7 @@ public static class AsamblareApply {
         var sumaConsum = -linii.Where(l => l.Directie == DirectieAsamblare.Consum).Sum(l => l.Valoare);
         var sumaProdus = linii.Where(l => l.Directie == DirectieAsamblare.Produs).Sum(l => l.Valoare);
 
-        // Affordance ONESTĂ pe stingeri: ASM nu e creanță și n-ar trebui să poarte
-        // imperecheri, dar gardianul motorului (`VerificaFaraImperecheri`) e
-        // generic pe `Document` — dacă totuși există un link, refuzul se ARATĂ.
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
-        var draft = h.Stare == StareDocument.Draft;
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new AsmReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -458,14 +454,12 @@ public static class AsamblareApply {
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
             Total = total,
             SumaConsum = sumaConsum, SumaProdus = sumaProdus, Diferenta = sumaProdus - sumaConsum,
-            PoateEdita = draft,
-            PoateOpera = draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateDistribui = draft
-                && linii.Any(l => l.Directie == DirectieAsamblare.Consum)
-                && linii.Any(l => l.Directie == DirectieAsamblare.Produs),
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
+            PoateDistribui = regim.Poate(RegimDocument.Distribuie),
             Linii = linii.Select(l => new AsmLinieReadDto {
                 Id = l.ID,
                 Directie = l.Directie?.ToString(),

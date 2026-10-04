@@ -231,6 +231,7 @@ if (args.Contains("--probe-sursa")) {
     ProbeCititoriRegistre.VerificaSursa(Check, args.Contains("--lista"));
     ProbeTransferCititori.VerificaSursa(Check);
     ProbeBlocajScriere.VerificaSursa(Check);
+    ProbeRegim.VerificaSursa(Check);
     Rezumat();
     return;
 }
@@ -291,6 +292,8 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     ProbeCititoriRegistre.VerificaSursa(Check);
     ProbeTransferCititori.VerificaSursa(Check);
     ProbeBlocajScriere.VerificaSursa(Check);
+    ProbeRegim.VerificaActiuni(Check);
+    ProbeRegim.VerificaSursa(Check);
 
     if (profil == ProfilContabil.Privat) {
         // Baza privată aparține uneltei: se creează/migrează aici.
@@ -21743,6 +21746,8 @@ void VerificaD85(bool privat) {
         && radacini.Count > 0 && radacini.All(r => r.Mod == CollectionSourceDataAccessMode.Server)
         && dataView.Count == 0);
 
+    ProbeLinii.Verifica(model, eticheta, Check);
+
     // ---- D85-M2: precondițiile modurilor de VIEW (ServerView / InstantFeedbackView) ----
     var referite = (model?.Views.OfType<IModelDetailView>() ?? [])
         .SelectMany(dv => dv.Items.OfType<IModelMemberViewItem>())
@@ -30974,6 +30979,9 @@ List<Scena> ScenelePeTip(bool privat) {
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiNtc), ["NTC"], () => new ScenariiNtc(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiRegim), ["REGIM"], () => new ScenariiRegim(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiItv), ["ITV"], () => new ScenariiItv(

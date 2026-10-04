@@ -7,14 +7,12 @@ using DevExpress.ExpressApp.Model;
 
 namespace Atlas.Conta.BackOffice.Module.UI;
 
-// Baseline de coloane (EntityFluent) pentru ListView-urile de detaliu: cele
-// tipizate comutate de TipDetaliuViewUpdater + cel GENERIC al bazei
-// (`Document_Detalii_ListView`, folosit de NIR/BTR/BCS/PLT/INC/RLF/RDC).
-// Conținut: ordinea logică de culegere (Index) + ascunderea FK-urilor brute
-// (zgomot) + câteva capacități view-scoped. Sunt DEFAULT-uri — diff-urile
-// utilizatorului din Model Editor rămân prioritare (SetIfEmpty/SetIfDefault).
-// Coloanele de TVA se ascund view-scoped (Index = -1) pe tipurile fără semantică
-// de TVA (LDI/DSC) — membrul rămâne vizibil pe tipurile care îl folosesc.
+// Baseline-ul XAF al Contei (EntityFluent). Grilele de linii se declară pe
+// ROLURI (106h): vocabularul o dată pe ierarhia `DocumentDetaliu`, tipul spune
+// ce roluri poartă; rezultatele motorului sunt `ReadOnly` pe grilă și pe dialog
+// deopotrivă. Excepțiile pe view (captions, o coloană ascunsă pe o singură
+// grilă) rămân view-scoped și câștigă în fața rolurilor. Sunt DEFAULT-uri —
+// diff-urile utilizatorului din Model Editor rămân prioritare.
 //
 // Layout-ul DetailView-urilor de document e TOT aici, declarativ: `.Layout(...)`
 // (Atlas.DXF 26.1.3.9) — API AUTORITAR, aplicat de `UiLayoutUpdater` chiar în
@@ -57,7 +55,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     public void Register(UiBaselineRegistry registry) {
         AscundeFkuriBrute(registry);
         LayoutDocumente(registry);
-        DetaliuGeneric(registry);
+        LiniiPeRoluri(registry);
         FacturaIntrare(registry);
         Nir(registry);
         FacturaIesire(registry);
@@ -365,29 +363,40 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
                         .Item(x => x.GestiuneDescarcare))));
     }
 
-    // ListView-ul GENERIC al colecției `Detalii` (id-ul nested generat de XAF din
-    // clasa care DECLARĂ membrul: `Document_Detalii_ListView`, unul singur pentru
-    // toată ierarhia). Îl folosesc tipurile fără detaliu derivat: NIR (conexul
-    // FCT!), BTR, BCS, PLT, INC, RLF, RDC — ordinea de mai jos le prinde pe toate.
-    // Dimensiunile/Angajamentul rămân după coloanele de bază (index nealocat).
-    static void DetaliuGeneric(UiBaselineRegistry registry) {
-        registry.For<DocumentDetaliu>()
-            .ListView(nameof(Document) + "_" + nameof(Document.Detalii) + ListView, _ => { })
-            .Column(d => d.TipMaterial, c => c.Index = 0)
-            .Column(d => d.Lot, c => c.Index = 1)
-            .Column(d => d.Cantitate, c => c.Index = 2)
-            .Column(d => d.Valoare, c => c.Index = 3)
-            .Column(d => d.TipTva, c => c.Index = 4)
-            .Column(d => d.ValoareTva, c => c.Index = 5);
+    // Vocabularul rolurilor liniei (106h). Ordinea sloturilor e a ierarhiei; un tip
+    // umple sau lasă gol câte un slot. Un rol al bazei pe care tipul nu-l poartă se
+    // ascunde; un membru fără rol vine la coadă, în ordinea generată.
+    static class Rol {
+        public const string Directie = "Directie", Identitate = "Identitate", Provenienta = "Provenienta",
+            Unitate = "Unitate", Cantitate = "Cantitate", Pret = "Pret", Tva = "Tva", Valori = "Valori",
+            AtributeLot = "AtributeLot", Conturi = "Conturi", Parametri = "Parametri";
+    }
+
+    // Grila generică `Document_Detalii_ListView` (BCS/BTR/RLF/RDC) și `DocumentDetaliu_ListView`
+    // (DVI) primesc exact vocabularul bazei; DVI își pune excepțiile pe view (vezi `Dvi`).
+    static void LiniiPeRoluri(UiBaselineRegistry registry) {
+        registry.ForHierarchy<DocumentDetaliu>().Columns(c => c
+            .Slot(Rol.Directie)
+            .Slot(Rol.Identitate, d => d.TipMaterial)
+            .Slot(Rol.Provenienta)
+            .Slot(Rol.Unitate, d => d.Lot)
+            .Slot(Rol.Cantitate, d => d.Cantitate)
+            .Slot(Rol.Pret)
+            .Slot(Rol.Tva, d => d.TipTva, d => d.ValoareTva)
+            .Slot(Rol.Valori, d => d.Valoare)
+            .Slot(Rol.AtributeLot)
+            .Slot(Rol.Conturi)
+            .Slot(Rol.Parametri));
+
+        registry.For<DocumentTrezorerieDetaliu>()
+            .HideForeignKeys()
+            .Columns(c => c.Drop(Rol.Unitate).Drop(Rol.Cantitate));
     }
 
     static void FacturaIntrare(UiBaselineRegistry registry) {
-        // Header: câmpurile moarte (CHITANTA_* — 31e) și id-ul de import Tethys
-        // dispar din view-uri, rămân în schemă (GATE XAF D12).
+        // Câmpurile moarte (CHITANTA_*, 31e) și id-ul de import Tethys rămân în schemă (GATE XAF D12).
         registry.For<FacturaIntrare>()
             .HideMembers(d => d.GenereazaChitanta, d => d.ChitantaNumar, d => d.ChitantaData, d => d.TethysId);
-        // Coloanele proprii, după identificarea documentului (vezi ListaRoot):
-        // scadența/PV întâi, apoi câmpurile de curs și grupul plății.
         ListaRoot<FacturaIntrare>(registry)
             .Column(d => d.DataScadenta, c => c.Index = 10)
             .Column(d => d.NumarPV, c => c.Index = 11)
@@ -401,13 +410,8 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.PlataData, c => c.Index = 19)
             .Column(d => d.PlataTipInstrument, c => c.Index = 20);
 
-        // Grila de lookup (DVI alege factura de import din ea, D7) suferă de
-        // simptomul descris la `ListaRoot`, netratat: coloanele generate încep cu
-        // `Scadență`, iar identificarea documentului lipsește — o factură fără
-        // scadență/PV/plată n-are NICIO celulă nenulă, deci nu se poate alege.
-        // Indicii 0–3 nu ajung singuri (aceeași cauză ca la `ListaRoot`): coloanele
-        // proprii păstrează indicii generați și s-ar intercala, deci lookup-ul le
-        // ascunde — el cere identificarea facturii, nu detaliile plății.
+        // Lookup-ul (DVI alege factura de import, D7) cere identificarea facturii, nu
+        // detaliile plății; coloanele proprii s-ar intercala, deci se ascund.
         registry.For<FacturaIntrare>()
             .ListView(nameof(FacturaIntrare) + "_LookupListView")
             .Column(d => d.Numar, c => c.Index = 0)
@@ -427,93 +431,28 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.PlataData, c => c.Index = -1)
             .Column(d => d.PlataTipInstrument, c => c.Index = -1);
 
-        var entitate = registry.For<FacturaIntrareDetaliu>();
-        entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(FacturaIntrareDetaliu) + ListView, Culegere)
-            // Produsul e PRIMUL: el dă Tipul (D3) și naște lotul (D2) — ordinea
-            // coloanelor e ordinea de culegere.
-            .Column(d => d.Produs, c => c.Index = 0)
-            .Column(d => d.TipMaterial, c => c.Index = 1)
-            // Lotul liniei de FCT e al mecanismului D2 (se naște din produs +
-            // gestiunea primitoare, motorul îl finalizează): READ-ONLY view-scoped.
-            // Alegerea manuală a unui lot străin era exact bypass-ul care rupea
-            // TVA-ul de cost (GOL 1 al explorării) — se închide aici, nu la nivel
-            // de membru: pe FCL/LDI/ASM/BTR lotul se CULEGE.
-            .Column(d => d.Lot, c => { c.Index = 2; c.AllowEdit = false; })
-            .Column(d => d.Cantitate, c => c.Index = 3)
-            .Column(d => d.PretUnitar, c => c.Index = 4)
-            .Column(d => d.TipTva, c => c.Index = 5)
-            .Column(d => d.ValoareTva, c => c.Index = 6)
-            // `Valoare` e REZULTAT (preț × cantitate, prin regimul TipTva) — se
-            // recalculează la culegere (D5) și `PregatesteOperare` o rescrie
-            // necondiționat la operare. Editabilă, ar invita operatorul s-o
-            // „corecteze", iar valoarea tastată s-ar pierde fără mesaj (review
-            // advers D7). `ValoareTva` RĂMÂNE editabilă — acolo overrideul e
-            // deliberat păstrat de motor (36a: factura bate rotunjirea noastră).
-            .Column(d => d.Valoare, c => { c.Index = 7; c.AllowEdit = false; })
-            .Column(d => d.DataExpirare, c => c.Index = 8)
-            .Column(d => d.LotFabricatie, c => c.Index = 9)
-            .Column(d => d.CodCpv, c => c.Index = 10)
-            // Al treilea număr pe aceeași linie (preț × cantitate, înaintea
-            // regulilor de TVA) confundă la culegere: Valoare + Valoare TVA sunt
-            // cele care se postează și se recalculează live (D5).
+        registry.For<FacturaIntrareDetaliu>()
+            .Columns(c => c
+                .Slot(Rol.Identitate, d => d.Produs, d => d.TipMaterial)
+                .Slot(Rol.Pret, d => d.PretUnitar)
+                .Slot(Rol.AtributeLot, d => d.DataExpirare, d => d.LotFabricatie)
+                .Slot(Rol.Parametri, d => d.CodCpv))
+            // Lotul se naște din produs + gestiune (D2); `Valoare` e rezultatul regimului
+            // de TVA (D5); `ValoareTva` rămâne culeasă (36a).
+            .ReadOnly(d => d.Lot, d => d.Valoare)
+            .ListView(nameof(FacturaIntrareDetaliu) + ListView, Culegere)
             .Column(d => d.ValoareReceptie, c => c.Index = -1);
-        // Linia se culege și prin DetailView-ul propriu (dialogul de New/edit al
-        // colecției — 40a), unde AllowEdit-ul coloanei nu ajunge: același lot
-        // read-only și acolo, altfel bypass-ul rămâne deschis pe cealaltă cale.
-        entitate.DetailView(nameof(FacturaIntrareDetaliu) + "_DetailView", dv => {
-            if (dv.Items[nameof(FacturaIntrareDetaliu.Lot)] is IModelCommonMemberViewItem lot)
-                lot.AllowEdit = false;
-            // Idem `Valoare` (review advers D7): rezultat, nu culegere.
-            if (dv.Items[nameof(DocumentDetaliu.Valoare)] is IModelCommonMemberViewItem valoare)
-                valoare.AllowEdit = false;
-        });
     }
 
-    // Review advers F5-F1: felia 5 a făcut din ecranul XAF de NIR o cale VIE de
-    // culegere (`CulegereDocument` e generic pe `Document`, iar
-    // `NirDetaliu` are acum Produs + PretUnitar) — dar fără oglinda blocului de
-    // mai sus lotul rămânea EDITABIL lângă ele, adică exact bypass-ul închis pe
-    // FCT la GOL 1. Concret: operatorul culege produs și preț ȘI alege din
-    // nomenclator lotul unei recepții anterioare; serviciul de culegere vede lot
-    // străin și tace (gardul F5-D3), produsul și prețul rămân inerte fără niciun
-    // mesaj, iar operarea adaugă +cantitate pe un lot DEJA în stoc, evaluat la
-    // prețul LUI — marfă re-recepționată, invizibilă pentru gardianul de sold
-    // (mișcarea e pozitivă) și o notă `3xx = 401` fără legătură cu hârtia
-    // furnizorului. Gardul rămâne corect; aici i se închide capcana.
     static void Nir(UiBaselineRegistry registry) {
-        var entitate = registry.For<NirDetaliu>();
-        entitate.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(NirDetaliu) + ListView, Culegere)
-            // Ordinea coloanelor = ordinea de culegere: produsul dă Tipul și naște
-            // lotul recepției manuale.
-            .Column(d => d.Produs, c => c.Index = 0)
-            .Column(d => d.TipMaterial, c => c.Index = 1)
-            // Lotul e al mecanismului (născut din produs + gestiunea primitoare pe
-            // recepția manuală, MOȘTENIT de pe factură pe clona conexă): read-only
-            // pe ambele cazuri — pe conex nici nu e al liniei (F5-D4).
-            .Column(d => d.Lot, c => { c.Index = 2; c.AllowEdit = false; })
-            .Column(d => d.Cantitate, c => c.Index = 3)
-            .Column(d => d.PretUnitar, c => c.Index = 4)
-            // `Valoare` e REZULTAT (F5-D6): `PregatesteOperare` o rescrie
-            // necondiționat, pe ambele ramuri. Editabilă, valoarea tastată s-ar
-            // pierde fără mesaj — review advers D7, aceeași concluzie ca pe FCT.
-            .Column(d => d.Valoare, c => { c.Index = 5; c.AllowEdit = false; })
-            .Column(d => d.DataExpirare, c => c.Index = 6)
-            .Column(d => d.LotFabricatie, c => c.Index = 7)
-            // NIR-ul nu culege TVA (F5-D5): pe clona conexă `TipTva` e informativ
-            // (clonat din factură), `ValoareTva` e mereu 0 — a le arăta la culegere
-            // ar sugera că se completează aici.
-            .Column(d => d.TipTva, c => c.Index = -1)
-            .Column(d => d.ValoareTva, c => c.Index = -1);
-        // Dialogul de New/edit al colecției (40a) — acolo AllowEdit-ul coloanei nu
-        // ajunge, iar bypass-ul ar rămâne deschis pe cealaltă cale.
-        entitate.DetailView(nameof(NirDetaliu) + "_DetailView", dv => {
-            if (dv.Items[nameof(NirDetaliu.Lot)] is IModelCommonMemberViewItem lot)
-                lot.AllowEdit = false;
-            if (dv.Items[nameof(DocumentDetaliu.Valoare)] is IModelCommonMemberViewItem valoare)
-                valoare.AllowEdit = false;
-        });
+        registry.For<NirDetaliu>()
+            .Columns(c => c
+                .Slot(Rol.Identitate, d => d.Produs, d => d.TipMaterial)
+                .Slot(Rol.Pret, d => d.PretUnitar)
+                .Slot(Rol.AtributeLot, d => d.DataExpirare, d => d.LotFabricatie)
+                .Drop(Rol.Tva))                                   // F5-D5
+            .ReadOnly(d => d.Lot, d => d.Valoare)                 // F5-D4, F5-D6
+            .ListView(nameof(NirDetaliu) + ListView, Culegere);
     }
 
     static void FacturaIesire(UiBaselineRegistry registry) {
@@ -521,43 +460,20 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.DataScadenta, c => c.Index = 10)
             .Column(d => d.GestiuneDescarcare, c => c.Index = 11);
 
-        var entitate = registry.For<FacturaIesireDetaliu>();
-        entitate.HideMembers(d => d.ProdusId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(FacturaIesireDetaliu) + ListView, Culegere)
-            .Column(d => d.Produs, c => c.Index = 0)
-            // Pe FCL lotul e PIN-ul opțional (P2, 37d) — se culege, deci editabil.
-            .Column(d => d.Lot, c => c.Index = 1)
-            .Column(d => d.TipMaterial, c => c.Index = 2)
-            .Column(d => d.Cantitate, c => c.Index = 3)
-            .Column(d => d.PretUnitar, c => c.Index = 4)
-            .Column(d => d.TipTva, c => c.Index = 5)
-            .Column(d => d.ValoareTva, c => c.Index = 6)
-            // Rezultat, nu culegere — vezi nota de pe FCT (review advers D7).
-            .Column(d => d.Valoare, c => { c.Index = 7; c.AllowEdit = false; })
-            .Column(d => d.Descriere, c => c.Index = 8)
-            // Ca la FCT: preț × cantitate e un al treilea număr redundant lângă
-            // Valoare / Valoare TVA.
+        registry.For<FacturaIesireDetaliu>()
+            .Columns(c => c
+                .Slot(Rol.Identitate, d => d.Produs, d => d.TipMaterial)
+                .Slot(Rol.Pret, d => d.PretUnitar)
+                .Slot(Rol.Parametri, d => d.Descriere))
+            .ReadOnly(d => d.Valoare)                             // lotul e pin opțional, se culege (37d)
+            .ListView(nameof(FacturaIesireDetaliu) + ListView, Culegere)
             .Column(d => d.ValoareLivrare, c => c.Index = -1);
     }
 
     // ListView-ul ROOT al unui tip de document: identificarea documentului ÎNTÂI.
-    // Găsit la smoke-ul UI al gate-ului: generatorul XAF așază coloanele derivatei
-    // înaintea celor moștenite, deci lista de facturi începea cu Scadență / PV /
-    // Cod CPV / grupul de plată, iar `Numar`, `Data`, `Predator`, `Primitor` erau
-    // împinse în dreapta, în afara ecranului — un contabil nu-și găsea factura.
-    //
-    // `Document.Total` e [NotMapped] și enumerează Detalii ⇒ o coloană aici =
-    // N+1 pe fiecare pagină (disciplina de hot-path, 35d; baza de smoke are 187k
-    // documente). Se ascunde view-scoped (Index = -1, ca la coloanele de TVA fără
-    // semantică) — pe DetailView rămâne, e câmpul cu care operatorul confruntă
-    // hârtia înainte de operare (D5).
-    //
-    // Indicii bazei sunt 0–4 și NU ajung singuri: coloanele proprii derivatei
-    // păstrează indicii generați (tot 0..n), iar grila le sortează INTERCALAT
-    // (Scadență, Număr, Dată, Număr PV, Dată PV, Predator, …) — găsit la smoke-ul
-    // migrării de layout, cu simptomul din nota de mai sus doar pe jumătate
-    // rezolvat. De aceea apelantul continuă lanțul cu propriile coloane, de la
-    // 10 în sus; „gaura" 5–9 lasă loc unor coloane comune viitoare.
+    // Generatorul XAF pune coloanele derivatei înaintea celor moștenite și le
+    // păstrează indicii, deci apelantul continuă cu ale lui de la 10 în sus;
+    // `Total` e [NotMapped] peste `Detalii` (N+1 pe pagină, 35d) — pe DetailView rămâne (D5).
     static ListViewFluent<T> ListaRoot<T>(UiBaselineRegistry registry) where T : Document
         => registry.For<T>()
             .ListView(typeof(T).Name + ListView, _ => { })
@@ -568,170 +484,97 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.Stare, c => c.Index = 4)
             .Column(d => d.Total, c => c.Index = -1);
 
-    // F6-D10 (lecția F5-F1, aplicată preventiv): declararea `ILinieCareNasteLot`
-    // face din ecranul LDI o cale VIE de culegere — `CulegereDocument`
-    // e generic pe `Document`. Cele două direcții culeg lucruri DIFERITE, iar
-    // câmpurile celeilalte sunt capcane: pe plus lotul e al mecanismului (născut
-    // din produs + gestiunea inventariată), pe minus produsul și prețul de
-    // evaluare sunt inerte. Comutarea o face `[Appearance]` de pe frunză;
-    // ordinea coloanelor de aici e ordinea de culegere a plusului.
+    // LDI/ASM: cele două direcții culeg lucruri diferite; comutarea câmpurilor e
+    // `[Appearance]` pe frunză (F6-D10, F19-D13), nu blocaj aici.
     static void ListaDiferenteInventar(UiBaselineRegistry registry) {
-        var entitate = registry.For<ListaDiferenteInventarDetaliu>();
-        entitate.HideMembers(d => d.ProdusId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(ListaDiferenteInventarDetaliu) + ListView, Culegere)
-            .Column(d => d.Directie, c => c.Index = 0)
-            .Column(d => d.TipMaterial, c => c.Index = 1)
-            .Column(d => d.Produs, c => c.Index = 2)
-            .Column(d => d.Lot, c => c.Index = 3)
-            .Column(d => d.Cantitate, c => c.Index = 4)
-            .Column(d => d.PretEvaluare, c => c.Index = 5)
-            // Rezultat, nu culegere: `PregatesteOperare` o rescrie necondiționat
-            // pe ambele direcții — vezi nota de pe FCT (review advers D7).
-            .Column(d => d.Valoare, c => { c.Index = 6; c.AllowEdit = false; })
-            .Column(d => d.DataExpirare, c => c.Index = 7)
-            .Column(d => d.LotFabricatie, c => c.Index = 8)
-            // LDI n-are semantică de TVA — ascunde coloanele moștenite din bază.
-            .Column(d => d.TipTva, c => c.Index = -1)
-            .Column(d => d.ValoareTva, c => c.Index = -1);
-        // Dialogul de New/edit al colecției (40a) — acolo AllowEdit-ul coloanei nu
-        // ajunge; `Lot`/`Produs` NU se blochează aici: editabilitatea lor e pe
-        // direcție ([Appearance] de pe frunză), nu necondiționată ca la FCT/NIR.
-        entitate.DetailView(nameof(ListaDiferenteInventarDetaliu) + "_DetailView", dv => {
-            if (dv.Items[nameof(DocumentDetaliu.Valoare)] is IModelCommonMemberViewItem valoare)
-                valoare.AllowEdit = false;
-        });
+        registry.For<ListaDiferenteInventarDetaliu>()
+            .Columns(c => c
+                .Slot(Rol.Directie, d => d.Directie)
+                .Slot(Rol.Identitate, d => d.Produs, d => d.TipMaterial)
+                .Slot(Rol.Pret, d => d.PretEvaluare)
+                .Slot(Rol.AtributeLot, d => d.DataExpirare, d => d.LotFabricatie)
+                .Drop(Rol.Tva))
+            .ReadOnly(d => d.Valoare)
+            .ListView(nameof(ListaDiferenteInventarDetaliu) + ListView, Culegere);
     }
 
     static void Decont(UiBaselineRegistry registry) {
-        var entitate = registry.For<DecontDetaliu>();
-        entitate.HideMembers(
-            d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
-            d => d.ContDebitId, d => d.ContCreditId, d => d.RepartitorDebitId, d => d.RepartitorCreditId);
-        entitate.ListView(nameof(DecontDetaliu) + ListView, Culegere)
-            .Column(d => d.TipMaterial, c => c.Index = 0)
-            .Column(d => d.Descriere, c => c.Index = 1)
-            .Column(d => d.Cantitate, c => c.Index = 2)
-            .Column(d => d.PretUnitar, c => c.Index = 3)
-            .Column(d => d.TipTva, c => c.Index = 4)
-            .Column(d => d.ValoareTva, c => c.Index = 5)
-            .Column(d => d.Valoare, c => c.Index = 6)
-            // Postarea explicită pe linie (ILinieCuPostareExplicita) — la coadă.
-            .Column(d => d.ContDebit, c => c.Index = 7)
-            .Column(d => d.ContCredit, c => c.Index = 8)
-            .Column(d => d.RepartitorDebit, c => c.Index = 9)
-            .Column(d => d.RepartitorCredit, c => c.Index = 10);
+        registry.For<DecontDetaliu>()
+            .Columns(c => c
+                .Slot(Rol.Identitate, d => d.TipMaterial, d => d.Descriere)
+                .Drop(Rol.Unitate)
+                .Slot(Rol.Pret, d => d.PretUnitar)
+                .Slot(Rol.Conturi, d => d.ContDebit, d => d.ContCredit, d => d.RepartitorDebit, d => d.RepartitorCredit))
+            .ReadOnly(d => d.Valoare)
+            .ListView(nameof(DecontDetaliu) + ListView, Culegere);
     }
 
     static void DescarcareGestiune(UiBaselineRegistry registry) {
-        var entitate = registry.For<DescarcareGestiuneDetaliu>();
-        entitate.HideMembers(d => d.LinieSursaId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(DescarcareGestiuneDetaliu) + ListView, Culegere)
-            .Column(d => d.LinieSursa, c => { c.Index = 0; c.Caption = "Linie sursă"; })
-            .Column(d => d.TipMaterial, c => c.Index = 1)
-            .Column(d => d.Lot, c => c.Index = 2)
-            .Column(d => d.Cantitate, c => c.Index = 3)
-            .Column(d => d.Valoare, c => c.Index = 4)
-            // DSC nu poartă TVA (integral pe FCL) — ascunde coloanele din bază.
-            .Column(d => d.TipTva, c => c.Index = -1)
-            .Column(d => d.ValoareTva, c => c.Index = -1);
+        registry.For<DescarcareGestiuneDetaliu>()
+            .Columns(c => c
+                .Slot(Rol.Identitate, d => d.LinieSursa, d => d.TipMaterial)
+                .Drop(Rol.Tva))
+            .ReadOnly(d => d.Valoare)
+            .ListView(nameof(DescarcareGestiuneDetaliu) + ListView, Culegere)
+            .Column(d => d.LinieSursa, c => c.Caption = "Linie sursă");
     }
 
-    // Nota contabilă (FAZA 1C §5): linia E postarea — conturile și repartitorii
-    // per latură sunt câmpurile de culegere. Restul semanticii bazei (TipMaterial
-    // convențional TRZ, lot, cantitate, TVA) nu se folosește pe notă și se ascunde.
+    // Nota contabilă: linia E postarea, deci perechea de conturi o identifică (FAZA 1C §5).
     static void NotaContabila(UiBaselineRegistry registry) {
-        var entitate = registry.For<NotaContabilaDetaliu>();
-        entitate.HideMembers(
-            d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
-            d => d.ContDebitId, d => d.ContCreditId, d => d.RepartitorDebitId, d => d.RepartitorCreditId);
-        entitate.ListView(nameof(NotaContabilaDetaliu) + ListView, Culegere)
-            .Column(d => d.Descriere, c => c.Index = 0)
-            .Column(d => d.ContDebit, c => c.Index = 1)
-            .Column(d => d.ContCredit, c => c.Index = 2)
-            .Column(d => d.RepartitorDebit, c => c.Index = 3)
-            .Column(d => d.RepartitorCredit, c => c.Index = 4)
-            .Column(d => d.Valoare, c => c.Index = 5)
-            // Coloanele moștenite fără semantică pe notă.
-            .Column(d => d.TipMaterial, c => c.Index = -1)
-            .Column(d => d.Lot, c => c.Index = -1)
-            .Column(d => d.Cantitate, c => c.Index = -1)
-            .Column(d => d.TipTva, c => c.Index = -1)
-            .Column(d => d.ValoareTva, c => c.Index = -1);
+        registry.For<NotaContabilaDetaliu>()
+            .Columns(c => c
+                .Slot(Rol.Identitate, d => d.Descriere, d => d.ContDebit, d => d.ContCredit,
+                    d => d.RepartitorDebit, d => d.RepartitorCredit)
+                .Drop(Rol.Unitate).Drop(Rol.Cantitate).Drop(Rol.Tva))
+            .ListView(nameof(NotaContabilaDetaliu) + ListView, Culegere);
     }
 
-    // Asamblarea (FAZA 1C §7): rolul liniei (consum/produs) e primul câmp de
-    // culegere — restul e schema de stoc (lot, cantitate, preț de evaluare pe
-    // liniile de produs). ASM nu poartă TVA (marfa se mută între loturi).
-    //
-    // F19-D13 (oglinda lui F6-D10, aceeași lecție): declararea `ILinieCareNasteLot`
-    // face din ecranul ASM o cale VIE de culegere — `CulegereDocument`
-    // e generic pe `Document`. Cele două direcții culeg lucruri DIFERITE, iar
-    // câmpurile celeilalte sunt capcane: pe produs lotul e al mecanismului (născut
-    // din produs + gestiunea în care se asamblează), pe consum produsul și prețul
-    // de evaluare sunt inerte. Comutarea o face `[Appearance]` de pe frunză;
-    // ordinea coloanelor de aici e ordinea de culegere a produsului.
     static void Asamblare(UiBaselineRegistry registry) {
-        var entitate = registry.For<AsamblareDetaliu>();
-        entitate.HideMembers(d => d.ProdusId, d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId);
-        entitate.ListView(nameof(AsamblareDetaliu) + ListView, Culegere)
-            .Column(d => d.Directie, c => c.Index = 0)
-            .Column(d => d.TipMaterial, c => c.Index = 1)
-            .Column(d => d.Produs, c => c.Index = 2)
-            .Column(d => d.Lot, c => c.Index = 3)
-            .Column(d => d.Cantitate, c => c.Index = 4)
-            .Column(d => d.PretEvaluare, c => c.Index = 5)
-            .Column(d => d.Valoare, c => c.Index = 6)
-            .Column(d => d.DataExpirare, c => c.Index = 7)
-            .Column(d => d.LotFabricatie, c => c.Index = 8)
-            // ASM nu poartă TVA — ascunde coloanele moștenite din bază.
-            .Column(d => d.TipTva, c => c.Index = -1)
-            .Column(d => d.ValoareTva, c => c.Index = -1);
+        registry.For<AsamblareDetaliu>()
+            .Columns(c => c
+                .Slot(Rol.Directie, d => d.Directie)
+                .Slot(Rol.Identitate, d => d.Produs, d => d.TipMaterial)
+                .Slot(Rol.Pret, d => d.PretEvaluare)
+                .Slot(Rol.AtributeLot, d => d.DataExpirare, d => d.LotFabricatie)
+                .Drop(Rol.Tva))
+            .ReadOnly(d => d.Valoare)
+            .ListView(nameof(AsamblareDetaliu) + ListView, Culegere);
     }
 
-    // Declarația vamală de import (DVI-D7). Liniile folosesc detaliul de BAZĂ,
-    // dar NU grila generică: `[TipDetaliu(typeof(DocumentDetaliu))]` de pe `Dvi`
-    // comută colecția pe ListView-ul propriu al clasei (`DocumentDetaliu_ListView`),
-    // ca ascunderea cantității și a lotului să nu atingă NIR/BTR/BCS/PLT/INC/
-    // RLF/RDC, care stau toate pe `Document_Detalii_ListView`.
+    // DVI (DVI-D7) folosește detaliul de BAZĂ pe ListView-ul propriu al clasei
+    // (`DocumentDetaliu_ListView`), nu grila generică, ca excepțiile ei să nu atingă
+    // BCS/BTR/RLF/RDC. `Valoare` e culeasă (valoarea în vamă), nu rezultat.
     static void Dvi(UiBaselineRegistry registry) {
         registry.For<DocumentDetaliu>()
             .ListView(nameof(DocumentDetaliu) + ListView, Culegere)
-            .Column(d => d.TipMaterial, c => c.Index = 0)
-            .Column(d => d.TipTva, c => c.Index = 1)
             .Column(d => d.Valoare, c => { c.Index = 2; c.Caption = "Valoare în vamă"; })
+            .Column(d => d.TipTva, c => c.Index = 1)
             .Column(d => d.ValoareTva, c => c.Index = 3)
             // Declarația n-are stoc: cantitatea și lotul n-au semantică pe ea.
             .Column(d => d.Cantitate, c => c.Index = -1)
             .Column(d => d.Lot, c => c.Index = -1)
-            // Gazda e chiar DetailView-ul pe care stă grila; ListView-ul de CLASĂ
-            // (spre deosebire de cel nested) păstrează navigația spre părinte, iar
-            // `Document` n-are DefaultProperty (85b) ⇒ coloana ar afișa un GUID.
+            // Gazda e chiar DetailView-ul pe care stă grila; `Document` n-are DefaultProperty (85b).
             .Column(d => d.Document, c => c.Index = -1);
 
         registry.For<DviFactura>().HideForeignKeys();               // DviId/FacturaId
         registry.For<DviFactura>()
             .ListView(nameof(BusinessObjects.Dvi) + "_" + nameof(BusinessObjects.Dvi.Facturi) + ListView, lv => {
                 Culegere(lv);
-                // Coloanele facturii se declară pe CĂI IMBRICATE: `Document`
-                // n-are DefaultProperty (85b), deci `Factura` singură ar fi un
-                // GUID. Selectorul tipizat al fluent-ului nu exprimă o cale, deci
-                // coloanele se adaugă pe view (updater-ul le-ar crea oricum).
+                // Coloanele facturii pe CĂI IMBRICATE: `Document` n-are DefaultProperty (85b),
+                // iar selectorul tipizat nu exprimă o cale.
                 ColoanaPeCale(lv, "Factura.Numar", 0, "Număr factură");
                 ColoanaPeCale(lv, "Factura.Data", 1, "Dată factură");
                 ColoanaPeCale(lv, "Factura.Predator", 2, "Furnizor");
                 ColoanaPeCale(lv, "Factura.Stare", 3, "Stare factură");
             })
             .Column(f => f.Factura, c => c.Index = -1)
-            // Gazda e chiar DetailView-ul pe care stă grila.
             .Column(f => f.Dvi, c => c.Index = -1);
 
-        // `Total (brut)` ar aduna baza cu taxa — pe
-        // declarație cifrele sunt `Baza` și `Taxa`, ambele pe DetailView.
+        // `Total (brut)` ar aduna baza cu taxa — pe declarație cifrele sunt `Baza` și `Taxa`.
         registry.For<BusinessObjects.Dvi>().HideMembers(nameof(Document.Total));
 
         // Panoul facturilor de import stă NESTED în grupul liniilor (același id ⇒
-        // concatenare ÎNĂUNTRU), adică imediat sub grila declarației, nu după
-        // „Stare & totaluri" — unde l-ar fi dus compunerea bază-întâi.
+        // concatenare înăuntru), imediat sub grila declarației.
         registry.For<BusinessObjects.Dvi>()
             .Layout(l => l
                 .Group("GrupDetalii", "Detalii", g => g
@@ -772,79 +615,46 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(c => c.DurataMaxAni, c => c.Index = 3)
             .Column(c => c.Grupa, c => c.Index = 4);
 
-        var pif = registry.For<PunereInFunctiuneDetaliu>();
-        pif.HideForeignKeys();
-        pif.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
-            d => d.ImobilizareId, d => d.LinieSursaId);
-        pif.ListView(nameof(PunereInFunctiuneDetaliu) + ListView, Culegere)
-            .Column(d => d.Imobilizare, c => c.Index = 0)
-            .Column(d => d.Fel, c => c.Index = 1)
-            .Column(d => d.TipMaterial, c => c.Index = 2)
-            .Column(d => d.LinieSursa, c => { c.Index = 3; c.Caption = "Linie sursă"; })
-            .Column(d => d.Valoare, c => c.Index = 4)
-            .Column(d => d.ValoareFiscala, c => c.Index = 5)
-            .Column(d => d.Metoda, c => c.Index = 6)
-            .Column(d => d.DurataLuni, c => c.Index = 7)
-            .Column(d => d.ValoareReziduala, c => c.Index = 8)
-            .Column(d => d.MetodaFiscala, c => c.Index = 9)
-            .Column(d => d.DurataFiscalaLuni, c => c.Index = 10)
-            .Column(d => d.CategorieFiscala, c => c.Index = 11)
-            .Column(d => d.UtilizareExclusiva, c => c.Index = 12)
-            .Column(d => d.AmortizareInitiala, c => c.Index = 13)
-            .Column(d => d.AmortizareFiscalaInitiala, c => c.Index = 14)
-            .Column(d => d.LuniAmortizateInitial, c => c.Index = 15)
-            .Column(d => d.Cantitate, c => c.Index = -1)
-            .Column(d => d.Lot, c => c.Index = -1)
-            .Column(d => d.TipTva, c => c.Index = -1)
-            .Column(d => d.ValoareTva, c => c.Index = -1);
+        registry.For<PunereInFunctiuneDetaliu>()
+            .HideForeignKeys()
+            .Columns(c => c
+                .Slot(Rol.Directie, d => d.Fel)
+                .Slot(Rol.Identitate, d => d.Imobilizare, d => d.TipMaterial)
+                .Slot(Rol.Provenienta, d => d.LinieSursa)
+                .Drop(Rol.Unitate).Drop(Rol.Cantitate).Drop(Rol.Tva)
+                .Slot(Rol.Valori, d => d.Valoare, d => d.ValoareFiscala)
+                .Slot(Rol.Parametri, d => d.Metoda, d => d.DurataLuni, d => d.ValoareReziduala,
+                    d => d.MetodaFiscala, d => d.DurataFiscalaLuni, d => d.CategorieFiscala, d => d.UtilizareExclusiva,
+                    d => d.AmortizareInitiala, d => d.AmortizareFiscalaInitiala, d => d.LuniAmortizateInitial))
+            .ListView(nameof(PunereInFunctiuneDetaliu) + ListView, Culegere)
+            .Column(d => d.LinieSursa, c => c.Caption = "Linie sursă");
 
-        var cas = registry.For<IesireImobilizareDetaliu>();
-        cas.HideForeignKeys();
-        cas.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
-            d => d.ImobilizareId, d => d.ContDebitId, d => d.ContCreditId,
-            d => d.RepartitorDebitId, d => d.RepartitorCreditId, d => d.CodEconomicId);
-        cas.ListView(nameof(IesireImobilizareDetaliu) + ListView, ReadOnly)
-            .Column(d => d.Imobilizare, c => c.Index = 0)
-            .Column(d => d.Fel, c => c.Index = 1)
-            .Column(d => d.ContDebit, c => c.Index = 2)
-            .Column(d => d.ContCredit, c => c.Index = 3)
-            .Column(d => d.Valoare, c => c.Index = 4)
-            .Column(d => d.RepartitorDebit, c => c.Index = 5)
-            .Column(d => d.RepartitorCredit, c => c.Index = 6)
-            .Column(d => d.CodEconomic, c => c.Index = 7)
-            .Column(d => d.TipMaterial, c => c.Index = -1)
-            .Column(d => d.Cantitate, c => c.Index = -1)
-            .Column(d => d.Lot, c => c.Index = -1)
-            .Column(d => d.TipTva, c => c.Index = -1)
-            .Column(d => d.ValoareTva, c => c.Index = -1);
+        registry.For<IesireImobilizareDetaliu>()
+            .HideForeignKeys()
+            .Columns(c => c
+                .Slot(Rol.Directie, d => d.Fel)
+                .Slot(Rol.Identitate, d => d.Imobilizare)
+                .Drop(Rol.Unitate).Drop(Rol.Cantitate).Drop(Rol.Tva)
+                .Slot(Rol.Conturi, d => d.ContDebit, d => d.ContCredit, d => d.RepartitorDebit,
+                    d => d.RepartitorCredit, d => d.CodEconomic))
+            .ListView(nameof(IesireImobilizareDetaliu) + ListView, ReadOnly);
         registry.For<IesireImobilizare>()
             .Layout(l => l
                 .Group("Antet", null, g => g
                     .Group("GrupIesire", "Ieșire", d => d
                         .Item(x => x.Cauza))));
 
-        var amo = registry.For<AmortizareLunaraDetaliu>();
-        amo.HideForeignKeys();
-        amo.HideMembers(d => d.TipMaterialId, d => d.LotId, d => d.TipTvaId, d => d.AngajamentId,
-            d => d.ImobilizareId, d => d.ContDebitId, d => d.ContCreditId,
-            d => d.RepartitorDebitId, d => d.RepartitorCreditId, d => d.CentruCostId,
-            d => d.CodEconomicId);
-        amo.ListView(nameof(AmortizareLunaraDetaliu) + ListView, ReadOnly)
-            .Column(d => d.Imobilizare, c => c.Index = 0)
-            .Column(d => d.Valoare, c => { c.Index = 1; c.Caption = "Amortizare contabilă"; })
-            .Column(d => d.ValoareFiscala, c => c.Index = 2)
-            .Column(d => d.ValoareDeductibila, c => c.Index = 3)
-            .Column(d => d.Luni, c => c.Index = 4)
-            .Column(d => d.ContDebit, c => c.Index = 5)
-            .Column(d => d.ContCredit, c => c.Index = 6)
-            .Column(d => d.RepartitorDebit, c => c.Index = 7)
-            .Column(d => d.CentruCost, c => c.Index = 8)
-            .Column(d => d.CodEconomic, c => c.Index = 9)
-            .Column(d => d.TipMaterial, c => c.Index = -1)
-            .Column(d => d.Cantitate, c => c.Index = -1)
-            .Column(d => d.Lot, c => c.Index = -1)
-            .Column(d => d.TipTva, c => c.Index = -1)
-            .Column(d => d.ValoareTva, c => c.Index = -1)
+        registry.For<AmortizareLunaraDetaliu>()
+            .HideForeignKeys()
+            .Columns(c => c
+                .Slot(Rol.Identitate, d => d.Imobilizare)
+                .Drop(Rol.Unitate).Drop(Rol.Cantitate).Drop(Rol.Tva)
+                .Slot(Rol.Valori, d => d.Valoare, d => d.ValoareFiscala, d => d.ValoareDeductibila)
+                .Slot(Rol.Conturi, d => d.ContDebit, d => d.ContCredit, d => d.RepartitorDebit,
+                    d => d.CentruCost, d => d.CodEconomic)
+                .Slot(Rol.Parametri, d => d.Luni))
+            .ListView(nameof(AmortizareLunaraDetaliu) + ListView, ReadOnly)
+            .Column(d => d.Valoare, c => c.Caption = "Amortizare contabilă")
             .Column(d => d.RepartitorCredit, c => c.Index = -1);
 
         registry.For<PoliticaAmortizare>().HideForeignKeys();        // TipMaterialId/Cont*Id

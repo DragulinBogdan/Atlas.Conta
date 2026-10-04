@@ -143,6 +143,8 @@ public static class NotaTransferApply {
             })
             .ToList();
 
+        var regim = RegimDocument.Calculeaza(os, id);
+
         return new NotaTransferReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
             DataInregistrare = h.DataInregistrare,
@@ -152,12 +154,11 @@ public static class NotaTransferApply {
             NumarPV = h.NumarPV, DataPV = h.DataPV,
             Total = linii.Sum(l => l.Valoare + l.ValoareTva),
             Autogenerat = h.Autogenerat, DocumentSursaId = h.DocumentSursaId,
-            // Affordances din stare — aceleași surse ca acțiunile XAF.
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat,
-            PoateStorna = h.Stare == StareDocument.Operat,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new NotaTransferLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,

@@ -155,12 +155,7 @@ public static class BonConsumApply {
             })
             .ToList();
 
-        // Affordance ONESTĂ pe stingeri (F3-D2): BCS nu e creanță și n-ar trebui
-        // să poarte imperecheri, dar gardianul motorului
-        // (`VerificaFaraImperecheri`) e generic pe `Document` — dacă totuși există
-        // un link (import, compensare pe notă), refuzul se ARATĂ, nu se descoperă
-        // la apăsarea butonului. Un `Any` mărginit per citire.
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new BcsReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -169,11 +164,11 @@ public static class BonConsumApply {
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
             Total = linii.Sum(l => l.Valoare + l.ValoareTva),
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new BcsLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,

@@ -169,11 +169,7 @@ public static class ReturFurnizorApply {
             })
             .ToList();
 
-        // Affordance ONESTĂ pe stingeri (F3-D2): RLF nu e în `DocumenteCuRest`
-        // (F19-D11), dar gardianul motorului (`VerificaFaraImperecheri`) e generic
-        // pe `Document` — dacă totuși există un link (compensare pe notă, import),
-        // refuzul se ARATĂ, nu se descoperă la apăsarea butonului.
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new RlfReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -184,11 +180,11 @@ public static class ReturFurnizorApply {
             PredatorId = h.PredatorId, PredatorDenumire = h.PredatorDenumire,
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
             Total = linii.Sum(l => l.Valoare + l.ValoareTva),
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new RlfLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,

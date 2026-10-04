@@ -167,11 +167,7 @@ public sealed class TrezorerieReadDto {
     // de mai jos) și pentru perechea PLT+INC a transferului 581, când intră.
     public List<DocumentCopilDto> Copii { get; set; } = new();
 
-    // Affordances pe RESURSĂ (42e), ONESTE pe AMBELE condiții ale motorului
-    // (F3-D2): starea + grupul conex (copil operat) + STINGERILE
-    // (`VerificaFaraImperecheri` — o plată cu imperechere nu se anulează până
-    // nu se șterge link-ul). Aceeași formulă pe FCT/NIR/PLT/INC, prin
-    // `ApiProiectii.AreImperecheri`.
+    // Affordances pe RESURSĂ (42e), din regimul pe stare (106).
     public bool PoateEdita { get; set; }
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }

@@ -224,11 +224,7 @@ public static class DecontApply {
             .Where(l => l.DocumentId == id)
             .Sum(l => (decimal?)(l.Valoare + l.ValoareTva)) ?? 0m;
 
-        // Affordance ONESTĂ pe stingeri (F3-D2/57d): decontul e una dintre cele 5
-        // ramuri ale proiecției `DocumenteCuRest` și stă pe lanțul
-        // avans↔decont↔regularizare — imperecherea e cazul NORMAL al tipului,
-        // deci refuzul gardianului se ARATĂ, nu se descoperă la apăsarea butonului.
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new DecontReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -240,11 +236,11 @@ public static class DecontApply {
             PrimitorId = h.PrimitorId, PrimitorDenumire = h.PrimitorDenumire,
             NumarPV = h.NumarPV, DataPV = h.DataPV,
             Total = total,
-            PoateEdita = h.Stare == StareDocument.Draft,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateEdita = regim.Editabil,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new DecontLinieReadDto {
                 Id = l.ID,
                 TipMaterialId = l.TipMaterialId,

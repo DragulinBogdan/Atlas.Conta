@@ -82,7 +82,7 @@ public static class AmoApply {
             stale = !(analiza.Motiv == null && doc != null && doc.LiniileCorespund(analiza));
         }
 
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new AmoReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -94,12 +94,12 @@ public static class AmoApply {
             TotalFiscal = linii.Sum(l => l.Fiscal),
             TotalDeductibil = linii.Sum(l => l.Deductibil),
             Stale = stale,
-            PoateOpera = h.Stare == StareDocument.Draft,
-            PoateSterge = h.Stare == StareDocument.Draft,
-            PoateRegenera = h.Stare == StareDocument.Draft,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
+            PoateSterge = regim.Poate(RegimDocument.Sterge),
+            PoateRegenera = regim.Poate(RegimDocument.Regenereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new LinieAmoDto {
                 Id = l.ID, ImobilizareId = l.ImobilizareId,
                 NumarInventar = l.NumarInventar, Denumire = l.Denumire,

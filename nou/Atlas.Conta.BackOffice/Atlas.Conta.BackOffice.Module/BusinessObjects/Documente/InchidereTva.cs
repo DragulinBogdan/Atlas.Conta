@@ -24,6 +24,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // [TipDetaliu] se re-declară: atributul e Inherited=false (UI/TipDetaliuAttribute).
 [TipDetaliu(typeof(NotaContabilaDetaliu))]
 public class InchidereTva : NotaContabila {
+    // Închiderea nu stinge manual (79c); se regenerează cât e draft.
+    public override void ContribuieRegim(DevExpress.ExpressApp.IObjectSpace os, Api.RegimDocument.Constructor regim) =>
+        regim.Decide(Api.RegimDocument.Regenereaza, regim.Draft ? null : "Se regenerează doar un draft.");
+
     // Gardianul anti-stale (review advers 1C-a, defect 4): draftul poartă
     // soldurile de la GENERARE; dacă între generare și operare au mai intrat
     // documente de TVA în lună, operarea ar posta valori vechi — luna nu s-ar

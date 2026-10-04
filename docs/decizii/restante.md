@@ -351,7 +351,12 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 104-r3 | Filtrarea pe `Activ` în lookup-urile documentelor noi (104, L3/L4) | după PoC |
 | 104-r4 | Paginile React de culegere: scoase sau generate din metadate (104d) | după PoC |
 | 104-r5 | Fixture propriu al matricei `refuzuri.ps1` (subiecții creați și șterși de probă), înaintea pasului 5 din C104 | închisă 2026-09-27: 294/294 PASS de două ori pe baza Privat din seed |
-
+| 106-r1 | Motivul indisponibilității unei comenzi în XAF Blazor: tooltip-ul pe acțiunea dezactivată se probează în browser; altfel alt purtător (106d) | închisă 2026-10-04: probat în browser pe Draft și pe Operat; ștergerea standard XAF legată de `Sterge` |
+| 106-r2 | Acțiuni XAF pentru comenzile proprii ale tipurilor (Regenerează, Distribuie, Stinge), azi doar în React (106c) | după PoC |
+| 106-r3 | Planul de conturi și D300 pe `DxTreeListEditor` în mod plat (Key/ParentKey), cu opt-out de la `Server` (106, 85a) | după PoC |
+| 106-r4 | Axa 2 a formatului: coloanele grilelor de linii declarate pe roluri, blocajele câmpurilor-rezultat puse o singură dată; primitiva `Columns`/`ReadOnly` în Atlas.DXF 26.1.4.10 (106h) | închisă 2026-10-01 |
+| 106-r5 | StateMachine și ViewVariants scoase din `Startup.cs` și `RequiredModuleTypes`; `HCategory` scos din `DbContext` (106g) | activă |
+| 106-r6 | BCS/BTR/RLF calculează `Valoare` dar stau pe grila generică și pe dialogul comun cu DVI; blocajul rezultatului cere detaliu propriu (106h) | după PoC |
 | X-r1 | Rafinarea blocajului scrierii: granularitatea pe gestiune + partener și scoaterea salvării de draft de sub blocajul comenzilor; pragul de așteptare separat de timpul comenzii (108) | după PoC; se deschide la așteptare măsurată peste un prag fixat de owner |
 | X-r2 | Subiectul permisiunii care păzește cifrele citite din cub, după tăierea tipurilor de registru; azi `RegistrulCitibil` (108) | cade la TR-D9 |
 | X-r3 | Raportul de stoc listează capătul de consum al BCS (postarea de debit poartă lotul ca unitate, pe contul de cheltuială); semantica raportului e întrebare pentru owner (108) | activă: întrebare deschisă pentru owner |

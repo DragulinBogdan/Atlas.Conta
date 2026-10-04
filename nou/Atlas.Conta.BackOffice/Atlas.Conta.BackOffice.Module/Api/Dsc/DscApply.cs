@@ -64,15 +64,7 @@ public static class DscApply {
             .Where(l => l.DocumentId == id)
             .Sum(l => (decimal?)(l.Valoare + l.ValoareTva)) ?? 0m;
 
-        // Affordances ONESTE (F3-D2), oglinda celor două gardiene generice ale
-        // motorului la anulare/stornare: `VerificaFaraImperecheri` (31d) și grupul
-        // conex (un copil OPERAT refuză). Pe DSC copiii sunt în mod normal
-        // inexistenți — dar predicatul e al BAZEI, iar affordance-ul care l-ar
-        // ignora ar minți exact în cazul în care refuzul chiar vine. Un `Any`
-        // mărginit per citire, nu proiecția `Copii` (DSC nu expune grupul).
-        var faraCopiiOperati = !os.GetObjectsQuery<Document>()
-            .Any(d => d.DocumentSursaId == id && d.Stare == StareDocument.Operat);
-        var faraImperecheri = !ApiProiectii.AreImperecheri(os, id);
+        var regim = RegimDocument.Calculeaza(os, id);
 
         return new DscReadDto {
             Id = h.ID, Numar = h.Numar, Data = h.Data,
@@ -87,10 +79,10 @@ public static class DscApply {
             // Pe acest tier descărcarea n-are NICIO cale de scriere (F4-D2) — o
             // affordance de editare ar minți contractul (precedentul NIR, F2-D5).
             PoateEdita = false,
-            PoateOpera = h.Stare == StareDocument.Draft,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
             Corectie = ApiProiectii.Corectie(os, id),
-            PoateAnula = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
-            PoateStorna = h.Stare == StareDocument.Operat && faraCopiiOperati && faraImperecheri,
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Linii = linii.Select(l => new DscLinieReadDto {
                 Id = l.ID, TipMaterialId = l.TipMaterialId,
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,

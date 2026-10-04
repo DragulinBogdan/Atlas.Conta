@@ -89,10 +89,7 @@ public sealed class ItvReadDto {
     // ecranul ar minți (cusătura e MĂSURATĂ în ModelCheck, F21-D9).
     public bool? Stale { get; set; }
 
-    // Affordances pe RESURSĂ (42e). `PoateAnula`/`PoateStorna` țin cont de
-    // imperecheri ca peste tot (57d) — chiar dacă ITV nu poate stinge nimic,
-    // afordanța nu se scrie pe presupunerea asta, ci pe aceeași sursă ca
-    // gardianul (`ApiProiectii.AreImperecheri`).
+    // Affordances pe RESURSĂ (42e), din regimul pe stare (106).
     public bool PoateOpera { get; set; }
     public bool PoateAnula { get; set; }
     // F27-D6 — legătura de corecție (null = documentul nu corectează nimic).

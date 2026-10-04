@@ -111,6 +111,7 @@ scena ține blocajul scrierii, cele două comenzi intră pe rând în coada lui
 | DSC | descărcare de gestiune | pas 2 (privat) | [DSC.md](DSC.md) | primul lot independent verificat pe privat; neaplicabil bugetar; ciclul complet încă deschis |
 | NTC | notă contabilă | pas 3 | [NTC.md](NTC.md) | declarant explicit, FIFO și identitate cu partener (092); cititorii comuni rămân TR-D8 |
 | ITV | închidere TVA | pas 3 (privat) | [ITV.md](ITV.md) | declarant comun NTC, corecție peste perioadă; profil inert bugetar; cititorii comuni rămân TR-D8 |
+| REGIM | regimul pe stare (transversal) | 106 | [REGIM.md](REGIM.md) | editabilitatea și comenzile disponibile, cu motiv, pe Draft/Operat/Stornat, împerechere, conex operat, perioadă închisă; ReadDto = regim |
 | RDC | retur de la client | pas 4 (privat) | [RDC.md](RDC.md) | venit/cost, partidă proprie negativă, compensare NTC, ciclu mixt peste perioadă; inert bugetar; cititorii comuni TR-D8 |
 | RLF | retur la furnizor | pas 4 (privat) | [RLF.md](RLF.md) | valoare fiscală, reziduu pe lot gol, compensare NTC, ciclu peste perioadă; inert bugetar |
 | DVI | declarație vamală | pas 4 (privat) | [DVI.md](DVI.md) | bază distinctă în Carte=Fiscal, 20 de scenarii, cicluri complete și SC-X-14; inert bugetar |

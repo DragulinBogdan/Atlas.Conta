@@ -55,6 +55,13 @@ Operarea, anularea și stornarea sunt comenzi, nu modificări directe ale
 stării prin DTO. Regulile și tranzacția lor sunt descrise în
 [domeniu și operare](domeniu-si-operare.md). (42b)
 
+Affordance-urile de pe DTO-urile de citire (`PoateEdita`, `PoateOpera`,
+`PoateAnula`, `PoateStorna`, `PoateSterge`, `PoateRegenera`, `PoateDistribui`,
+`PoateStinge`, `PoateGeneraDescarcare`) sunt proiecția regimului pe stare
+(`RegimDocument`), aceeași sursă ca acțiunile XAF; `Apply` nu le calculează
+din `Stare`. Singura excepție declarată e `DscApply.PoateEdita = false`,
+fapt al tierului (nu există cale de scriere pe DSC). (42e, 106d)
+
 Fiecare DTO de scriere al unui document poartă `DataInregistrare` ca dată
 opțională: absentă înseamnă „data documentului”, nu „gol”. Adaptorul comun
 (`Api/DocumentApply.AplicaDate`) aplică implicitul și refuză, de domeniu, o
@@ -307,6 +314,27 @@ pentru a afișa mesajele `Erori`, proveniența și accesul la istoric.
 Transportul OData standard al DevExtreme nu păstrează în toate cazurile
 aceleași mesaje detaliate la citire. (81i, 80-r1)
 
+## Regimul pe stare în XAF Blazor
+
+Un singur gardian (`Controllers/RegimDocumentController`, cu gemenii lui pe
+grila nested a liniilor și pe dialogul liniei) aplică regimul pe stare
+(106): `View.AllowEdit/AllowNew/AllowDelete` cu cheia „Regim” și
+`Action.Enabled` pe fiecare acțiune al cărei ID se termină cu numele unei
+comenzi din vocabular (`Document.Opereaza`, `FacturaIesire.GenereazaDescarcarea`).
+Ștergerea standard XAF (`Delete`) e comanda `Sterge` a regimului pe
+DetailView-ul documentului. Motivul indisponibilității ajunge în tooltip-ul
+acțiunii, iar tooltip-ul propriu revine când comanda redevine disponibilă;
+în Blazor tooltip-ul se randează și pe acțiunea dezactivată (probat în
+browser, 2026-10-04). Pe lista de documente, `RegimListaController` aplică
+pe selecție componenta ieftină a ștergerii (`RegimDocument.MotivStergere`,
+fără interogări): o selecție care conține un document ne-Draft are
+ștergerea indisponibilă în întregime, cu motivul în tooltip. (106j) Regimul se re-evaluează la
+activare, la schimbarea obiectului curent, la `Committed` și la `Reloaded`
+(comanda comite în alt context și controllerul de operare face `Refresh`).
+Controllerele de comenzi nu mai poartă `Enabled["Stare"]`; ModelCheck
+probează structural că fiecare comandă din toolbar-ul DetailView-ului unui
+`Document` numește o comandă a regimului. (106d, 106e)
+
 ## Listele XAF Blazor
 
 Modul de acces implicit al ListView-urilor root este `Server`, cu paginare
@@ -354,6 +382,26 @@ Mecanismul: `[VisibleInListView(false), VisibleInDetailView(false)]` pe
 proprietate (acoperă toate derivatele, inclusiv grupul-mătură al
 layout-ului autoritar), iar coloanele de pe cele trei liste ale bazelor se
 declară în `ContaUiBaseline.ColoanaTip`. (89a)
+
+## Grilele de linii pe roluri în XAF Blazor
+
+Coloanele grilelor de linii nu se declară pe indici, ci pe roluri (106h).
+`ContaUiBaseline.LiniiPeRoluri` declară o dată, pe ierarhia `DocumentDetaliu`,
+vocabularul în ordinea de culegere: Directie, Identitate, Provenienta,
+Unitate, Cantitate, Pret, Tva, Valori, AtributeLot, Conturi, Parametri.
+Fiecare tip de linie umple sloturile pe care le poartă cu membrii lui și lasă
+goale (`Drop`) pe cele pe care nu le poartă; un rol al bazei nepurtat se
+ascunde pe grila tipului, iar un membru fără rol vine la coadă, în ordinea
+generată. Rezultatele motorului sunt `ReadOnly` printr-o singură declarație,
+care blochează coloana grilei și itemul dialogului liniei deopotrivă:
+`Valoare` pe FCT, NIR, FCL, LDI, DEC, DSC și ASM; `Lot` pe FCT și NIR. NTC și
+DVI culeg `Valoare`. Excepțiile pe view (legenda `Valoare în vamă`, o coloană
+ascunsă pe o singură grilă, grila DVI) rămân view-scoped și câștigă în fața
+rolurilor. Lookup-urile nu sunt atinse. Primitiva e Atlas.DXF 26.1.4.10
+(`Columns`/`Slot`/`Drop`, `ReadOnly`; `Views/docs/COLUMN-SLOTS.md`).
+Limita: BCS, BTR și RLF (RDC culege `Valoare`) stau pe grila generică și pe dialogul comun cu
+DVI, deci `Valoare` nu e blocată acolo (106-r6). Tabloul rolurilor per tip:
+`design/format-xaf-documente.md`, axa 2. (106h)
 
 ## Ecranele disponibile
 

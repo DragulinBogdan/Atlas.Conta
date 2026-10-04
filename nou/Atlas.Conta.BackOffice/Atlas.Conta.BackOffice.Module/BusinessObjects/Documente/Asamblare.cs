@@ -71,6 +71,18 @@ public class Asamblare : Document {
     static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(
         nameof(AsamblareDetaliu.PretEvaluare), nameof(AsamblareDetaliu.Directie));
 
+    public override void ContribuieRegim(DevExpress.ExpressApp.IObjectSpace os, Api.RegimDocument.Constructor regim) {
+        if (!regim.Draft) {
+            regim.Refuza(Api.RegimDocument.Distribuie, "Se distribuie doar un draft.");
+            return;
+        }
+        var directii = os.GetObjectsQuery<AsamblareDetaliu>().Where(l => l.DocumentId == ID)
+            .Select(l => l.Directie).Distinct().ToList();
+        regim.Decide(Api.RegimDocument.Distribuie,
+            directii.Contains(DirectieAsamblare.Consum) && directii.Contains(DirectieAsamblare.Produs)
+                ? null : "Distribuirea cere cel puțin o linie de consum și una de produs.");
+    }
+
     // Consumul la prețul lotului descărcat, produsul la prețul de evaluare cules.
     public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
         linie is not AsamblareDetaliu d ? null

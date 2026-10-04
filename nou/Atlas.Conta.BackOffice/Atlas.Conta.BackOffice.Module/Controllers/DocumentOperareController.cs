@@ -154,7 +154,6 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
         }
         // Comanda a comis în alt DbContext: `Refresh` recreează contextul și re-obține CurrentObject.
         ObjectSpace.Refresh();
-        ActualizeazaDisponibilitatea();
         return rezultat;
     }
 
@@ -173,23 +172,6 @@ public class DocumentOperareController : ObjectViewController<DetailView, Docume
         // Default azi în editorul din toolbar (cosmetic; coalesce-ul din Execute
         // rămâne autoritatea pe gol/MinValue) — ca la „Generează descărcarea".
         storneaza.Value = DateTime.Today;
-        ActualizeazaDisponibilitatea();
-        View.CurrentObjectChanged += OnCurrentObjectChanged;
-    }
-
-    protected override void OnDeactivated() {
-        View.CurrentObjectChanged -= OnCurrentObjectChanged;
-        base.OnDeactivated();
-    }
-
-    void OnCurrentObjectChanged(object sender, EventArgs e) => ActualizeazaDisponibilitatea();
-
-    void ActualizeazaDisponibilitatea() {
-        var stare = ViewCurrentObject?.Stare;
-        opereaza.Enabled["Stare"] = stare == StareDocument.Draft;
-        anuleaza.Enabled["Stare"] = stare == StareDocument.Operat;
-        storneaza.Enabled["Stare"] = stare == StareDocument.Operat;
-        corecteaza.Enabled["Stare"] = stare == StareDocument.Operat;
     }
 }
 
