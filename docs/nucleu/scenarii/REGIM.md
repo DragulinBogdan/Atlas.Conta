@@ -1,7 +1,7 @@
 # REGIM — regimul pe stare (decizia 106)
 
-**Actualizat: 2026-09-30.** Proba: `ModelCheck --scenarii REGIM [privat]`
-(`tools/ModelCheck/ScenariiRegim.cs`, anul 2012). Scenariul e transversal:
+**Actualizat: 2026-10-04.** Proba: `ModelCheck --scenarii REGIM [privat]`
+(`tools/ModelCheck/ScenariiRegim.cs`, anul 2013). Scenariul e transversal:
 folosește NTC, FCT, PLT și conexul NIR ca subiecți, iar așteptarea e regula
 comenzilor (106b), nu postările.
 

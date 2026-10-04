@@ -7,7 +7,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // Catalogul REGIM (106): regimul pe stare, scris de mână din regula comenzilor.
 sealed class ScenariiRegim(Func<IObjectSpace> deschide, Action<string, bool> check,
     bool privat, Action<IObjectSpace, int, int> inchide)
-    : ScenaDocumente(deschide, check, privat, inchide, "REGIM", 2012) {
+    : ScenaDocumente(deschide, check, privat, inchide, "REGIM", 2013) {
     const string CmdAnuleaza = nameof(ComandaDocument.AnuleazaOperarea);
     const string CmdStorneaza = nameof(ComandaDocument.Storneaza);
     const string CmdCorecteaza = nameof(ComandaDocument.Corecteaza);

@@ -82,7 +82,7 @@ bazei, deci rulează și fără bază. La fel probele regimului pe stare
 sufixul ID-ului o comandă din `RegimDocument.ComenziCunoscute`; prin scanare
 sintactică, nicio affordance `Poate*` din `Module/Api/` nu se calculează din
 `StareDocument` și niciun controller nu poartă cheia „Stare”. Catalogul
-`REGIM` (`ScenariiRegim.cs`, anul 2012) rulează cu `--scenarii REGIM`. Probele
+`REGIM` (`ScenariiRegim.cs`, anul 2013) rulează cu `--scenarii REGIM`. Probele
 axei 2 (`tools/ModelCheck/ProbeLinii.cs`, 106h-1…3) rulează pe modelul XAF
 real, în rularea integrală, cu registrul baseline-ului construit pe loc:
 fiecare grilă tipizată de linii începe cu coloanele rolurilor în ordinea
@@ -147,7 +147,7 @@ utilizare, iar șase mutanți îi probează detecția. În `Proiectii/`, `Api/`,
 ca cheie de autorizare; singura excepție numită este absorbția ASM-B6 din
 `DeclarantAsamblare`.
 
-Lista nominală (72 de intrări, 88 de utilizări fișier × membru × registru):
+Lista nominală (71 de intrări, 87 de utilizări fișier × membru × registru):
 
 | Clasa | Membrii | Rolul |
 |---|---|---|
@@ -164,7 +164,7 @@ Lista nominală (72 de intrări, 88 de utilizări fișier × membru × registru)
 | | `GardianEditare.VerificaTipTva`, `Imobilizare.Verifica` | referința care oprește ștergerea nomenclatorului |
 | 3. evidență XAF | `ContaUiBaseline`: `AscundeFkuriBrute`, `Imobilizari` | listele registrelor |
 | autorizare | `RegistrulCitibil` din `ItvController`, `AmoController`, `ImobilizariController`; `PerioadeController.TipuriInsumate` | dreptul de citire pe tipul registrului păzește cifrele (F22-D5, 80e) |
-| legătură | `ImperechereService` (8), `GardianEditare` (4), `MotorOperare.VerificaFaraImperecheri`, `Partide.NominalizataLibera`, `Materializare.Imperecheaza`, `ApiProiectii.AreImperecheri`, `ImperechereApply` (3), `ImperechereController` (5), `ImperecheriController` (3) | `Imperechere` este legătura explicită, nu registru; restul și candidații vin din `Partide` |
+| legătură | `ImperechereService` (8), `GardianEditare` (4), `MotorOperare.MotivImperecheri`, `Partide.NominalizataLibera`, `Materializare.Imperecheaza`, `ImperechereApply` (3), `ImperechereController` (5), `ImperecheriController` (3) | `Imperechere` este legătura explicită, nu registru; restul și candidații vin din `Partide` |
 
 Clasele 1–3 sunt ale contractului X-D2. Maparea, autorizarea și legătura le-a
 cerut prima rulare. Clasa 1 și evidența XAF cad la TR-D9; `Imperechere` rămâne.
@@ -189,7 +189,7 @@ comandă sau o salvare de detalii noi pe altul se blochează singură până la
 `SCRIERE_OCUPATA`.
 
 `ModelCheck --probe-sursa [--lista]` rulează numai probele pe sursă (104c-S1,
-091-r3, X-D2, N-r8, X-D6), fără bază; `--lista` tipărește utilizările reale,
+091-r3, X-D2, N-r8, X-D6, 106c/d), fără bază; `--lista` tipărește utilizările reale,
 din care se actualizează lista nominală.
 
 Validarea pasului 1 al gate-ului transversal (X-D2, 2026-10-03): **3.277

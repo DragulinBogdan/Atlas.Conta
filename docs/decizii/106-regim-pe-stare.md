@@ -1,7 +1,7 @@
 # 106 — Regimul pe stare: o singură sursă a editabilității și a comenzilor disponibile
 
 Data: 2026-09-30
-Stare: activă; amendează 042(e) (affordance-urile pe resursă au acum o sursă comună) și precizează 104(c); (h) adăugat 2026-10-01 (axa 2 făcută, închide 106-r4)
+Stare: activă; amendează 042(e) (affordance-urile pe resursă au acum o sursă comună) și precizează 104(c); (h) adăugat 2026-10-01 (axa 2 făcută, închide 106-r4); (i) adăugat 2026-10-04 (delimitarea față de 108)
 Docs: `docs/nucleu/scenarii/REGIM.md`; `design/format-xaf-documente.md`; `docs/stare-curenta/domeniu-si-operare.md`, `api-si-client.md`, `dezvoltare-si-validare.md`
 
 ## Regula durabilă
@@ -75,6 +75,15 @@ Excepțiile pe view rămân view-scoped și câștigă. Proba: `ProbeLinii`
 (106h-1…3) pe modelul real. Limita numită: tipurile de pe grila generică nu
 blochează `Valoare` (106-r6). Vocabularul e structură (cod), deci o ordine
 nouă = o linie schimbată pe bază; un tip nu poate reordona sloturile.
+
+**(i) Ce promite regimul (2026-10-04; precizează (b) după 108).** Regimul
+răspunde pentru gardienii care se pot citi fără a executa comanda: starea,
+dependenții și perioada. Refuzurile care depind de valori (sold, validări,
+contractul declarației) și așteptarea blocajului de scriere
+(`SCRIERE_OCUPATA`, 108f) apar numai la comandă și nu fac regimul neonest.
+Citirea regimului nu ia blocajul scrierii (108e). Predicatul împerecherilor
+are un singur loc, `MotorOperare.MotivImperecheri`, numit în lista nominală
+a registrelor (108a) ca legătură.
 
 ## Context
 

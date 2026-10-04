@@ -231,6 +231,7 @@ if (args.Contains("--probe-sursa")) {
     ProbeCititoriRegistre.VerificaSursa(Check, args.Contains("--lista"));
     ProbeTransferCititori.VerificaSursa(Check);
     ProbeBlocajScriere.VerificaSursa(Check);
+    ProbeRegim.VerificaSursa(Check);
     Rezumat();
     return;
 }

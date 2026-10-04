@@ -121,8 +121,11 @@ Stornat: nimic. Tipul contribuie comenzile proprii prin
 Regenerează pe Draft; ASM → Distribuie pe Draft cu linii de consum și de
 produs; FCL → Generează descărcarea pe Operat, cu gestiune de descărcare și
 rest nedescărcat. Adaptorii (`Api/*Apply`, controllerele XAF) randează
-regimul și nu îl re-derivă din `Stare`. Proba: catalogul `REGIM` și probele
-structurale din ModelCheck. (106b, 106c, 106e)
+regimul și nu îl re-derivă din `Stare`. Regimul promite starea, dependenții
+și perioada; refuzurile care depind de valori (sold, validări) și
+`SCRIERE_OCUPATA` apar numai la comandă, iar citirea regimului nu ia blocajul
+scrierii. Proba: catalogul `REGIM` și probele structurale din ModelCheck.
+(106b, 106c, 106e, 106i)
 
 ### Data documentului și data înregistrării
 
