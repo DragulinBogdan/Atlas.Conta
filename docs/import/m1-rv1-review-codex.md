@@ -1,5 +1,8 @@
 # M1 — reverificarea corecturilor R1–R4
 
+**Stare curentă:** [RV2 la 111b89a](m1-rv2-review-codex.md) închide și
+M1-R3a. Mai jos este verdictul RV1, păstrat ca istoric.
+
 **Data:** 2026-10-04. **Revizie:** `8cf7ad9`, branch `m1-deschidere-terti`,
 peste `8d1aee6`. Răspuns la predarea
 `comunicari/2026-10-04-1805-claude-codex-m1-review-corectat.md`.

@@ -1,7 +1,7 @@
 # 107 — Migrarea deschide terții per partidă din `BalantaNivel3`, prin `Materializare.Deschide`; stingerile anului pe partide inițiale; partener generic de migrare
 
 - Data: 2026-10-01
-- Stare: activă, implementată și probată pe Flax 2026-10-01 (ianuarie integral, anul oprit după 8 luni la cererea owner-ului; regula de oprire M1-D10 neatinsă din cauze din afara M1: 107-r3, F26-r13, performanță); rebazată pe main `ac372fc` și reverificată pe ianuarie 2026-10-04 (INV-CUB verde cu invarianții 108, plafonarea verificată pe date); M1-D10 amendat de owner 2026-10-04 la deschidere exactă + ianuarie verde pe mecanism (rularea integrală 12/12 trece în restul 091-r4, după TR-D9); nemersă în main, review advers Codex: M1-R1, R2, R4 închise la RV1 (`docs/import/m1-rv1-review-codex.md`), M1-R3a (agregarea semnată) corectată, reverificarea ei în curs; prima felie a 091-r4 (M1); amendează 047 (soldul de terț NU e nedefalcat în 1C), 091 (f) (conectorul iese din îngheț pe deschidere și trecerea 2); închide T-r4, TR-r6 și FZ-r10 pe partea de date
+- Stare: activă, implementată și probată pe Flax 2026-10-01 (ianuarie integral, anul oprit după 8 luni la cererea owner-ului; regula de oprire M1-D10 neatinsă din cauze din afara M1: 107-r3, F26-r13, performanță); rebazată pe main `ac372fc` și reverificată pe ianuarie 2026-10-04 (INV-CUB verde cu invarianții 108, plafonarea verificată pe date); M1-D10 amendat de owner 2026-10-04 la deschidere exactă + ianuarie verde pe mecanism (rularea integrală 12/12 trece în restul 091-r4, după TR-D9); mersă în main prin PR #20 (2026-10-04); review advers Codex închis la RV2 (`docs/import/m1-rv2-review-codex.md`): M1-R1…R4 și M1-R3a (agregarea semnată) corectate și reverificate; prima felie a 091-r4 (M1); amendează 047 (soldul de terț NU e nedefalcat în 1C), 091 (f) (conectorul iese din îngheț pe deschidere și trecerea 2); închide T-r4, TR-r6 și FZ-r10 pe partea de date
 - Docs: `docs/import/m1-deschidere-terti-contract.md` (M1-D1…D10, recensământul, execuția); 094 și DES-B1…B4; 090 (d); 092; 096; `docs/import/faza-1c-design.md` §3, §8, §12.2
 
 ## Regula durabilă
@@ -119,7 +119,9 @@ precizarea din (a). M1-R2, M1-R3, M1-R4: explicațiile contractului 5 erau
 numai în memorie, semnate după deschidere și alimentate și de erori tehnice —
 de aici (h) rescris. Triajul partidelor rămase fără explicație a dat două
 limite cu nume, 107-r9 și 107-r10. La RV1 a rămas M1-R3a: perechile cu sens
-din sursă se agregă semnat, iar netul zero nu e sens necunoscut.
+din sursă se agregă semnat, iar netul zero nu e sens necunoscut. RV2 a
+închis-o și a închis review-ul, fără observații noi
+(`docs/import/m1-rv2-review-codex.md`); limitele închiderii sunt în contract, §4.
 
 ## Ce rămâne deschis
 

@@ -1,5 +1,9 @@
 # M1 — review advers Codex
 
+**Stare curentă:** [reverificarea finală la 111b89a](m1-rv2-review-codex.md)
+închide M1-R1–R4, inclusiv M1-R3a, cu limitele documentate.
+Mai jos este review-ul inițial.
+
 **Data:** 2026-10-04. **Verdict:** modificări necesare; M1-D10 nu este încă
 reverificat ca îndeplinit. Patru observații: două P1 și două P2.
 

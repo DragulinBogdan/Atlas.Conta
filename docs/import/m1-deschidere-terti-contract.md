@@ -2,11 +2,11 @@
 
 - Data: 2026-10-01
 - Stare: PIN-UIT de owner 2026-10-01 (M1-D3 brut per latură, M1-D5 partener
-  generic de migrare, M1-D7 retururile 2024 pe partida inițială); implementat pe
-  branch `m1-deschidere-terti`; M1-D10 amendat de owner 2026-10-04 (deschidere
-  exactă + ianuarie verde pe mecanism), review advers Codex cu
-  M1-R1…R4 corectate (`docs/import/m1-review-codex.md`); RV1 a închis R1, R2, R4
-  (`docs/import/m1-rv1-review-codex.md`), M1-R3a corectată, reverificarea ei în curs.
+  generic de migrare, M1-D7 retururile 2024 pe partida inițială); implementat și
+  mers în main prin PR #20 (2026-10-04); M1-D10 amendat de owner 2026-10-04
+  (deschidere exactă + ianuarie verde pe mecanism); review advers Codex închis
+  la RV2 (`docs/import/m1-rv2-review-codex.md`): M1-R1…R4 și M1-R3a corectate
+  și reverificate, cu limitele numite acolo.
 - Surse: 091 (f) și 091-r4 (felia de migrare); 094 și DES-B1…B4
   (`docs/nucleu/tr-d7b-deschidere-contract.md`); T-D7 din
   `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (forma inițială, amendată de
@@ -498,3 +498,11 @@ Verificarea pe date: reluarea pe `Atlas.Conta.Import1C.Flax.M1s` cu binarul de
 la `f6b7725` (`run-verificari/m1-ian-r1r4/rulare3-r3a/`): aceleași 3.964 de
 perechi, jurnalul de reconciliere identic cu `rulare2` în afara liniei cu
 data. Importul proaspăt nu a fost repetat cu acest binar.
+
+**Reverificarea Codex RV2 (2026-10-04): M1-R3a închisă, review-ul advers
+închis.** Raportul: `docs/import/m1-rv2-review-codex.md`, la `111b89a`. Fără
+observații noi. Limitele închiderii rămân: importul proaspăt nu a fost repetat
+cu binarul final; cele 10 partide din contractul 5 rămân FAIL etichetate, nu
+explicate; cheia perechii nu conține contul și partenerul poziției, deci
+netarea între poziții diferite rămâne limita mapării pereche–poziție; 107-r7,
+107-r9 și 107-r10 rămân deschise. Felia e mersă în main prin PR #20.
