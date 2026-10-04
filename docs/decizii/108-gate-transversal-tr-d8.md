@@ -138,7 +138,7 @@ contract; decizia adună regula.
 | 4 | X-D7: acoperirea stocului, regimul ireversibil, restanțele | `87052f7` | 3.387 / 4.597 |
 | 5 | X-D5 + X-D3: scara, reconcilierea pe baza de volum | `06cd4d4`, `ff08a8c` | 3.387 / 4.597 |
 | 6 | X-D8: integrala, probele HTTP, driftul, închiderea | `2b57aa5` | 3.387 / 4.597 |
-| review | X-RI1…X-RI4: corecturile review-ului implementării | următorul | 3.394 / 4.604 |
+| review | X-RI1…X-RI4: corecturile review-ului implementării | `791e41c` | 3.394 / 4.604 |
 
 Probele pasului 6, pe o bază privată recreată din seed
 (`run-verificari/x6-http/`): matricea `refuzuri.ps1` 300/300 de două ori, cu
