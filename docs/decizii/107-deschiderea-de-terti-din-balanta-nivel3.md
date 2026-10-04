@@ -1,7 +1,7 @@
 # 107 — Migrarea deschide terții per partidă din `BalantaNivel3`, prin `Materializare.Deschide`; stingerile anului pe partide inițiale; partener generic de migrare
 
 - Data: 2026-10-01
-- Stare: activă, implementată și probată pe Flax 2026-10-01 (ianuarie integral, anul oprit după 8 luni la cererea owner-ului; regula de oprire M1-D10 neatinsă din cauze din afara M1: 107-r3, F26-r13, performanță); nemersă în main, fără review advers; prima felie a 091-r4 (M1); amendează 047 (soldul de terț NU e nedefalcat în 1C), 091 (f) (conectorul iese din îngheț pe deschidere și trecerea 2); închide T-r4, TR-r6 și FZ-r10 pe partea de date
+- Stare: activă, implementată și probată pe Flax 2026-10-01 (ianuarie integral, anul oprit după 8 luni la cererea owner-ului; regula de oprire M1-D10 neatinsă din cauze din afara M1: 107-r3, F26-r13, performanță); rebazată pe main `ac372fc` și reverificată pe ianuarie 2026-10-04 (INV-CUB verde cu invarianții 108, plafonarea verificată pe date); nemersă în main, fără review advers; prima felie a 091-r4 (M1); amendează 047 (soldul de terț NU e nedefalcat în 1C), 091 (f) (conectorul iese din îngheț pe deschidere și trecerea 2); închide T-r4, TR-r6 și FZ-r10 pe partea de date
 - Docs: `docs/import/m1-deschidere-terti-contract.md` (M1-D1…D10, recensământul, execuția); 094 și DES-B1…B4; 090 (d); 092; 096; `docs/import/faza-1c-design.md` §3, §8, §12.2
 
 ## Regula durabilă
@@ -118,7 +118,10 @@ contraargumentul owner-ului, D7 retururi) sunt în contract, §1–2.
   ITV): scenarii + decizie pe motor (091 r5), nu normalizare în conector.
 - 107-r4 — valuta: partide inițiale în valută cu curs propriu, la TR-D9.
 - 107-r6 — performanța importului: 25 → 50 min/lună față de 8–10 la baseline
-  (~5×), de măsurat pe gate-ul TR-D8 înaintea oricărei rulări integrale.
+  (~5×) la 2026-10-01; după gate-ul TR-D8 (108) ianuarie durează 21:27, tot
+  ~2,5× baseline, iar creșterea de la o lună la alta nu e remăsurată. Scara
+  sintetică X-D5 nu acoperă calea importului: de profilat înaintea oricărei
+  rulări integrale.
 - 107-r7 — ordinea stingerilor din aceeași compensare e nedeterministă între
   rulări (ianuarie: 42 apoi 41 partide neexplicate, Σ diferită pe 401); de
   ordonat cronologic, cu dată, în trecerea 2.

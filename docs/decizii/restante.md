@@ -325,7 +325,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 107-r3 | drift-ul contractului 1 față de baseline-ul 2026-09-21 (TVA ±0,03 pe linie pe sute de facturi, evaluarea RLF, consecința în ITV): scenarii + decizie pe motor (091 r5), nu normalizare în conector (107) | activă (091) |
 | 107-r4 | valuta: partidele inițiale în valută cu curs propriu (azi în lei, plafonate la rest la stingere) (107) | cade la TR-D9 (090, 091) |
 | 107-r5 | partenerul generic de migrare la go-live: procedura de rezolvare prin NTC de reclasificare și excluderea din D394/SAF-T ca decizie de produs (107) | migrare (091) |
-| 107-r6 | performanța Import1C: 25 → 50 min/lună pe Flax față de 8–10 la baseline 2026-09-21 (~5×); de măsurat pe gate-ul TR-D8 înaintea oricărei rulări integrale (107) | activă (091) |
+| 107-r6 | performanța Import1C: 25 → 50 min/lună pe Flax față de 8–10 la baseline 2026-09-21 (~5×); după gate-ul TR-D8 ianuarie durează 21:27 (2026-10-04, ~2,5× baseline), creșterea pe luni neremăsurată; scara X-D5 nu acoperă calea importului, de profilat înaintea oricărei rulări integrale (107) | activă (091) |
 | 107-r7 | ordinea stingerilor din aceeași compensare e nedeterministă între rulări (ianuarie: 42 apoi 41 partide neexplicate); de ordonat cronologic în trecerea 2 (107) | migrare (091) |
 | 107-r8 | nota-punte a vânzării cu valoare pe 3 zecimale (iunie 2025, 122,408) refuzată de gardianul de scară; rotunjirea la bani în handler, divergența declarată (107) | migrare (091) |
 | 091-r5 | un caz apărut la migrare care contrazice catalogul devine scenariu nou plus decizie; oracolul normalizat (`CubDinRegistre`, `Normalizari`) nu se mai extinde (091) | migrare (091) |

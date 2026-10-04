@@ -332,7 +332,8 @@ generic 0 → 3 (Σ 36.731,21); fără explicație 41 → 51 (401 × 16 Σ −29
 februarie: dominate de compensarea prin punte 891 pentru documente ținute la
 doi parteneri și de un client cu credite și facturi amestecate. Explicația prin
 plafonare n-a prins niciodată (0) din cauza unui semn inversat în formulă,
-corectat după rulare (commit 2301ca0), neverificat pe date.
+corectat după rulare, neverificat pe date la acel moment (verificat la
+reverificarea de mai jos).
 
 **Concluzii.** (1) Mecanismul M1 ține: deschiderea exactă în cub cu INV-CUB
 verde, 3.967 partide inițiale, două treimi stinse integral prin trecerea 2,
@@ -344,3 +345,36 @@ de baseline — de măsurat pe gate-ul de performanță TR-D8 înaintea oricăre
 rulări integrale următoare. (5) Deschise, cu nume: 107-r1…r5, F26-r13, și
 nedeterminismul ordinii stingerilor din aceeași compensare (ianuarie a dat
 42, apoi 41 partide neexplicate, cu Σ diferită pe 401).
+
+**Reverificarea după rebase (2026-10-04).** Branch-ul a fost rebazat pe main
+`ac372fc` (TR-D8 transversal — 108, C106), fără schimbare de cod în conector.
+Rulare `--recreeaza --cititori --pana-la 1` pe o bază nouă,
+`Atlas.Conta.Import1C.Flax.M1r` (baza `.Flax.M1` cu cele 8 luni e pe schema
+veche, fără explicația tranzacției, deci nu se mai poate continua);
+artefactele în `run-verificari/m1-ian-rebazat/`.
+
+- Deschiderea (1:05) e identică: 3.967 partide inițiale, 6.817 loturi, 10.828
+  postări pe 62 de controale, 60 de rânduri bloc, Δ declarat −1.415,00 pe 371,
+  ancora verde.
+- INV-CUB e verde după deschidere și pe baza integrală după lună. E prima
+  probă pe volum a invarianților adăugați de 108: acoperirea istoricului de
+  stoc registru ↔ cub, conservarea transferurilor, acoperirea explicațiilor.
+- Luna: 15.232 documente, 0 eșecuri, 21:27 (24:45 la 2026-10-01; baseline
+  2026-09-21: 8:41). Blocajul scrierii (108) nu a produs niciun refuz.
+- Contractele 1 și 2 pică pe aceleași 5 conturi, la ban (401 −10,57, 4423
+  +8,45, 4111 +1,26, 4427 +1,00, 4426 −0,14): felia 108 și C106 nu au mișcat
+  drift-ul (107-r3). Contractele 3 și 4 verzi.
+- Contractul 5: 1.467 stinse integral, 40 explicate de refuzuri, 30 de
+  plafonare (0 la 2026-10-01: semnul corectat e acum verificat pe date), 130
+  neatinse de trecerea 2 (Σ cub −255.749,19), 11 fără explicație (401 × 3,
+  Σ 2.072,55; 4111 × 8, Σ 4.784,42) față de 42. Compensarea
+  `SED00000025/27.01.2025` nu mai e printre ele.
+- Trecerea 2: 1.968 împerecheri pe documente și 1.354 stingeri pe partide
+  inițiale (Σ 5.338.438,73), 35 plafonate la rest (excedent 29.835,32), 278 de
+  partide cu refuzuri (Σ 1.423.419,38); „sursa stinge peste totalul
+  documentului" 210 (Σ 743.093,04). Cifrele diferă de ambele rulări din
+  2026-10-01 pe aceeași sursă și același cod de conector; motorul s-a schimbat
+  între rulări, deci partea ordinii nedeterministe (107-r7) nu se poate separa
+  de a motorului din această singură rulare.
+
+Regula de oprire M1-D10 rămâne neatinsă, din aceleași cauze din afara M1.
