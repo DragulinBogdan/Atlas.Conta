@@ -183,8 +183,8 @@ public static partial class SaftProiectii {
 
         List<AgregatTert> Parteneri(List<PostareJurnal> jurnal, IEnumerable<Guid> suplimentari) {
             var conturiCuRol = conturi.Where(c => c.Value.RolTert != RolTertCont.Niciunul).Select(c => c.Key).ToList();
-            var agregate = ContabilProiectii.Atomi(os)
-                .Where(r => r.Data <= end && conturiCuRol.Contains(r.ContId))
+            var agregate = Motor.SolduriService.AtomiCumulati(os, CitireCumul.Integrala, end, start.AddDays(-1))
+                .Where(r => conturiCuRol.Contains(r.ContId))
                 .GroupBy(r => new { r.ContId, r.RepartitorId })
                 .Select(g => new {
                     g.Key.ContId, g.Key.RepartitorId,

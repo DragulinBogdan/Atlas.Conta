@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-09-29.** [Index](README.md)
+**Actualizat: 2026-10-04.** [Index](README.md)
 
 TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
 evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
@@ -15,9 +15,25 @@ produse, inclusiv stornourile. Fiecare ramură fără probă proprie are un
 mutant într-o tranzacție anulată, rulat o dată per profil pe prima scenă cu
 faptele potrivite: `DESCHIDERE-EGALA` (registrul istoric egal cu deschiderea
 cubului trece), `DESCHIDERE`, `PARTIDE` (partidă fără partener), `POLITICA`
-(totalul de decontare), `IMO-FISA`, `IMO-CAUZA`, `IMO-REGISTRU`. Ramurile
+(totalul de decontare), `IMO-FISA`, `IMO-CAUZA`, `IMO-ORIGINE` (inversa unei
+fișe fără `InversaDin`), `IMO-SUPORT` (transfer valoric pe fișă fără suport),
+`IMO-REGISTRU` și cei șapte ai explicației (X-D4): `EXPLICATIE-LIPSA` (explicația ștearsă),
+`-REFERINTA` (referința mutată pe alt document), `-STORNO` (cantitatea
+inversei pe lot schimbată), `-IESIRE` (valoarea unei `ValoareIesire` +0,01),
+`-DECLARATA` (`ValoareDeclarata` scoasă), `-EVALUARE` (soldul citit +1.000),
+`-STINGERE` (`AlocareFifo` scoase). Review-ul implementării (X-RI1, X-RI2) a
+adăugat cinci: `EXPLICATIE-MECANISM` (ieșirile evaluate redenumite
+`ValoareDeclarata`, cu aceleași cifre și fără soldurile citite),
+`-DECLARANT` (aceeași substituție, cu numele declarantului schimbat într-unul
+care declară valori), `-SOLD-FIFO` (soldul citit al partidei stinse scos),
+`-SOLD-FIFO-MIC` (soldul citit pus sub suma alocată) și `TRANSFER-CONT`
+(numai contul capătului de destinație al unui transfer pe lot). Ramurile
 acoperirii registru ↔ cub, echilibrului și provenienței au probele SC-CIT-23,
-SC-CIT-34 și SC-CIT-10. La final, profilul cere cel puțin o scenă verificată și,
+SC-CIT-34 și SC-CIT-10. Acoperirea cantitativă a stocului
+(`Loturi.VerificaAcoperire`, `CITIRE_ISTORIC_STOC_INCOMPLET`, X-D7 a) rulează
+prima dintre acoperiri și are probele SC-CIT-103…105. Mutantul
+`EXPLICATIE-STORNO` aplică aceeași abatere și rândului de registru, ca să
+ajungă la ramura explicației. La final, profilul cere cel puțin o scenă verificată și,
 pe integrală, toate ramurile ucise, iar purja nu lasă postări. La prima
 rulare, proba a găsit trei totaluri de stins care nu corespundeau cubului:
 taxarea inversă (SC-FCT-10), contul explicit fără partide (SC-DEC-10) și
@@ -70,8 +86,160 @@ ca rând al cubului. ModelCheck e probă independentă și citește cubul direct
 `Citiri.Contabil.Postari`, după originea `InversaDin` (N-r8). `Loturi` și
 `Partide` includ transferul prin contract.
 
-TR-D8 nu este închis: restul SAF-T și verificările transversale rămân
-în contract; cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
+`Transfer` pe cititorii comuni (N-r8, gate-ul transversal TR-D8 X-D2): proba
+`N-r8` (`tools/ModelCheck/ProbeTransferCititori.cs`) cere ca fiecare intrare
+publică din `Cub/Citiri` care întoarce rânduri de cub să aibă regimul
+declarat. `Contabil.Postari`, `Contabil.Jurnal` și `Plati.Postari` exclud
+`Transfer` și inversele lui. `Loturi.Postari` și `Partide.Postari` le includ.
+`Fiscale.Postari` și `Imobilizari.PozitiiFaraFisa` nu filtrează felul:
+domeniul lor e dat de coordonate, iar regula nu li se aplică.
+`FelTranzactie.Transfer` apare în producție numai în doisprezece membri
+numiți: scriitorul (cinci membri din `Cub/Materializare*`), producătorul
+`DeclarantAsamblare`, doi cititori comuni (`Loturi.VerificaRetragere`,
+`Plati.Alocari`), trei martori (`Imobilizari.VerificaAcoperire`,
+`Explicatii.VerificaAcoperire`, `Invarianti.VerificaTransferuri`) și eticheta
+mișcării din SAF-T. Un consumator
+care refiltrează `Transfer` e detectat (mutant). SC-CIT-100…102 numără, pe
+fiecare intrare, rândurile `Transfer` și inversele lor din BTR stornat, din
+împerecherea desfăcută și din ASM-ul mixt stornat.
+
+Regula listării (N-r8, X-D7 d): jurnalul și fișa de cont nu listează
+`Transfer` și nici inversa lui, fiindcă pornesc din `Contabil.Postari`.
+O listare pe unitate (lot, partidă) pornește din `Loturi.Postari` sau
+`Partide.Postari`, care le întorc pe amândouă, și arată felul rândului din
+`Tranzactie.Fel`; inversa unui transfer apare ca `Storno`. Listarea nu
+refiltrează felul (mutantul probei `N-r8`). SC-CIT-107 o probează pe
+`ContabilProiectii.RegistruJurnal`, pe `FisaCont` și pe cele două intrări pe
+unitate. Contraponderile Transformare (T-r14) nu ajung prin nicio intrare
+comună: `Contabil`, `Partide` și `Imobilizari.PozitiiFaraFisa` aplică
+`Transformare.FaraContrapondere`, `Loturi` cere unitate, `Fiscale` cere tip de
+TVA, iar `Plati` pornește din `Contabil`. SC-CIT-106 numără zero pe toate
+șapte, SC-CIT-15 și SC-SAFT-10 pe rapoarte, iar SC-ASM-16 probează că
+diagnosticul `Comparabil` le exclude cu numărul raportat.
+
+Accesul la registre (X-D2): `RegistruContabil`, `RegistruStoc`, `RegistruTva`,
+`RegistruImobilizari` și `Imperechere` se ating în producție numai prin lista
+nominală din `tools/ModelCheck/ProbeCititoriRegistre.Lista.cs`. O intrare
+numește fișierul, membrul, registrul și rolul. Un membru nou într-un fișier
+deja permis rămâne încălcare. Proba `X-D2` (`ProbeCititoriRegistre.cs`) citește
+arborele sintactic al sursei (`SursaProductie.cs`) și numără trei feluri de
+utilizare: mențiunea tipului, inclusiv prin alias `using`; numele tabelei
+într-un literal; apelul unui purtător. Purtător este orice membru al cărui tip
+declarat conține o colecție de rânduri de registru, plus lista declarată
+`Purtatori` pentru rezultatele netipizate: soldurile din `StocService`,
+`Operand.SolduriLoturiRegistru` și `Partide.NominalizataLibera`. `nameof` și
+definiția tipului nu contează. Proba pică și pe o intrare rămasă fără
+utilizare, iar șase mutanți îi probează detecția. În `Proiectii/`, `Api/`,
+`Culegere/`, `Saft/`, `Declaratii/` și WebApi cele patru registre apar numai
+ca cheie de autorizare; singura excepție numită este absorbția ASM-B6 din
+`DeclarantAsamblare`.
+
+Lista nominală (72 de intrări, 88 de utilizări fișier × membru × registru):
+
+| Clasa | Membrii | Rolul |
+|---|---|---|
+| maparea EF | `BackOfficeEFCoreDbContext`: `OnModelCreating` și cele cinci `DbSet` | definiția și maparea |
+| 1. scriitor dual | `MotorOperare`: `Opereaza`, `AnuleazaOperarea`, `Storneaza` | scriu, șterg și inversează rândurile din `RegistruContabil`, `RegistruStoc`, `RegistruTva` |
+| | `CorectieService.Corecteaza` | reatribuie perioada inversei în `RegistruTva` |
+| | `GardianEditare.Verifica` | refuză scrierea celor patru registre pe ușile securizate (14) |
+| | `StocService`: `MiscariRegistru`, `SolduriLaData`, `AplicaValoareIesire`, `VerificaSoldIntermediar` | valoarea ieșirii și garda de sold ale rândului de registru |
+| | `StocService`: `Sold`, `AlocaFifoTolerant`, `AlocaFifo` | fără apelant de producție; oracol al probelor |
+| | `Fapte.SolduriLoturiRegistru`, `Fapte.Operand`, `DeclarantAsamblare.Declara` | absorbția Δ a ASM față de soldul registrului (ASM-B6) |
+| | `PunereInFunctiune`, `IesireImobilizare`, `AmortizareLunara`: `MaterializeazaRegistrul`, `EliminaRegistrul`, `StorneazaRegistrul`; `PunereInFunctiune.RanduriProprii`, `Inverseaza` | scriu `RegistruImobilizari` |
+| 2. martor | `Invarianti.Verifica`, `Loturi.VerificaAcoperire`, `Imobilizari.VerificaAcoperire` | acoperirea cubului față de registru (`INV-CUB`, X-D7 a, 097-r1) |
+| | `Materializare.Deschide`, `LoturiLiniiSterse.Curata` | urma lotului în `RegistruStoc` |
+| | `GardianEditare.VerificaTipTva`, `Imobilizare.Verifica` | referința care oprește ștergerea nomenclatorului |
+| 3. evidență XAF | `ContaUiBaseline`: `AscundeFkuriBrute`, `Imobilizari` | listele registrelor |
+| autorizare | `RegistrulCitibil` din `ItvController`, `AmoController`, `ImobilizariController`; `PerioadeController.TipuriInsumate` | dreptul de citire pe tipul registrului păzește cifrele (F22-D5, 80e) |
+| legătură | `ImperechereService` (8), `GardianEditare` (4), `MotorOperare.VerificaFaraImperecheri`, `Partide.NominalizataLibera`, `Materializare.Imperecheaza`, `ApiProiectii.AreImperecheri`, `ImperechereApply` (3), `ImperechereController` (5), `ImperecheriController` (3) | `Imperechere` este legătura explicită, nu registru; restul și candidații vin din `Partide` |
+
+Clasele 1–3 sunt ale contractului X-D2. Maparea, autorizarea și legătura le-a
+cerut prima rulare. Clasa 1 și evidența XAF cad la TR-D9; `Imperechere` rămâne.
+Prima rulare a găsit un singur defect: supraîncărcarea
+`TvaProiectii.IntreLuni(IQueryable<RegistruTva>)`, fără apelant de producție, a
+ieșit din `Proiectii/`; oracolul pe registrul fiscal stă acum în ModelCheck.
+`ImperecheriProiectii.Asignari` și martorul `RegistruTva` din `TvaProiectii`,
+numite în contract, nu mai există.
+
+Blocajul scrierii (X-D6): proba `X-D6` (`ProbeBlocajScriere.cs`) ține lista
+nominală a membrilor care intră sub blocaj (21 de intrări: comenzile, cele
+două uși din tranzacția apelantului și salvarea detaliilor noi). Un membru
+nou care cheamă `TranzactieComanda.Incepe`/`Asigura` pică proba până e
+adăugat, cu rolul lui; la fel o deschidere de tranzacție în afara
+`TranzactieComanda` și a citirii declarate (`Fiscale.DeschideCitirea`) sau
+cheia blocajului scrisă în alt fișier. Scena `ScenariiConcurenta`
+(`--scenarii X`) probează pe captura SQL că fiecare fel de comandă începe cu
+blocajul și că citirile nu îl iau (SC-X-22), apoi matricea rezultatelor
+seriale pe două conexiuni (SC-X-15…SC-X-21, SC-X-23). O scenă care ține
+`TranzactieComanda.Incepe` pe un ObjectSpace și cheamă pe același fir o
+comandă sau o salvare de detalii noi pe altul se blochează singură până la
+`SCRIERE_OCUPATA`.
+
+`ModelCheck --probe-sursa [--lista]` rulează numai probele pe sursă (104c-S1,
+091-r3, X-D2, N-r8, X-D6), fără bază; `--lista` tipărește utilizările reale,
+din care se actualizează lista nominală.
+
+Validarea pasului 1 al gate-ului transversal (X-D2, 2026-10-03): **3.277
+bugetar / 4.485 privat OK**, zero FAIL, exit 0,
+`run-verificari/20261003-173905-898/`, pe clonele `.ClaudeX1`. Clona bugetară
+a cerut aplicarea a două migrații: baza-sursă `Atlas.Conta.BackOffice` este în
+urma codului cu `IntervaleTvaSiAvans` și `S3CategorieStoc`.
+
+Pasul 2 al gate-ului transversal (X-D4, 2026-10-03). Migrația
+`ExplicatieTranzactie` e scrisă în SQL (S-r4): două coloane, două CHECK-uri,
+FK-ul și indexul lui pe `Tranzactie`; relația e și în modelul EF, ca
+inserarea și ștergerea să respecte ordinea. `Explicatii.VerificaAcoperire`
+intră în lista N-r8 ca martor. Proba HTTP `nou/tools/ProbeHttp/explicatii.py`
+rulează pe o clonă de unică folosință a unei baze private cu seed: bonul
+rămâne stornat, deci baza nu se refolosește (rețeta:
+`run-verificari/x2-expl-http.ps1`). Validare: nucleu **180/180**; integrala
+**3.309 bugetar / 4.518 privat OK**, zero FAIL, exit 0, build fără
+avertismente, 53 de scene per profil sub `INV-CUB`,
+`run-verificari/20261003-182901-833/`, pe clonele `.ClaudeX2`; SC-CIT-99 8/8
+PASS, `run-verificari/x2-expl-http/proba.log`; OpenAPI și tipurile TS
+regenerate, cu schimbări numai aditive în `api-types.ts`.
+
+Pasul 3 al gate-ului transversal (X-D6, 2026-10-03). Fără migrație și fără
+schimbare de contract HTTP. Trei probe existente presupuneau două comenzi
+simultan în secțiunea de scriere și s-au rescris pe modelul serial:
+SC-DES-05 (a doua deschidere așteaptă și e refuzată de domeniu; indexul unic
+se probează direct în bază), SC-DES-21 (așteptarea e pe blocajul scrierii)
+și SC-IMO-32 (blocajul IMO străin se ține fără blocajul scrierii).
+Validare: integrala **3.361 bugetar / 4.570 privat OK**, zero FAIL, exit 0,
+54 de scene per profil sub `INV-CUB`, `run-verificari/20261003-211029-736/`, pe clonele
+`.ClaudeX2`; `--probe-sursa` verde.
+
+Pasul 4 al gate-ului transversal (X-D7, 2026-10-03). Fără migrație și fără
+schimbare de contract HTTP. `ContaSeeder.SeedTipuriDocument` este public, ca
+proba seed-ului să-l poată chema nesalvat. Validare: integrala **3.387
+bugetar / 4.597 privat OK**, zero FAIL, exit 0, 54 de scene per profil sub
+`INV-CUB`, `run-verificari/20261003-214312-683/`, pe clonele `.ClaudeX2`;
+`--probe-sursa` verde.
+
+Pasul 5 al gate-ului transversal (X-D5 + X-D3, 2026-10-04): vezi „Scara
+transversală de perf”. Migrația `IndecsiCititoriCub` adaugă cinci indecși.
+
+Pasul 6 al gate-ului transversal (X-D8, 2026-10-04). Fără schimbare de
+producție. Validare: integrala la `ff08a8c` **3.387 bugetar / 4.597 privat
+OK**, zero FAIL, exit 0, `run-verificari/20261004-081014-672/`, pe clonele
+`.ClaudeX2`; nucleu **180/180**; `--probe-sursa` verde; `verifica:drift`
+exit 0; probele HTTP în `run-verificari/x6-http/` (matricea 300/300 de două
+ori, `scriere-ocupata.py` 7/7, `comenzi-coaja.py` 28/28, `explicatii.py`
+8/8). Regula feliei: decizia 108.
+
+Review-ul implementării (Codex, 2026-10-04) a adus patru observații,
+X-RI1…X-RI4, toate corectate: mecanismul explicației ținut de declarant și
+soldul citit al partidei stinse, conservarea pe cont a transferului
+persistat, planul respins care invalidează măsurarea, controlul D300 pe
+rezultatul D300. Validare după corecturi: integrala **3.394 bugetar / 4.604
+privat OK**, zero FAIL, `run-verificari/20261004-092403-010/`;
+`--probe-sursa` verde; scara completă
+`run-verificari/perf-cub-20261004-093104/`, 1.526 / 996 OK, zero FAIL.
+Reverificarea Codex la `7223abc` a închis X-RI1…X-RI4, cu integrala proprie
+3.394 / 4.604 OK (`run-verificari/20261004-102241-857/`). TR-D8 este închis
+(decizia 108); branch-ul nu e mers.
+
+Cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
 Nucleu: **180/180**, zero omise, exit 0:
 `run-verificari/20260924-124628-047/rezultat.json`.
 Comenzile, încercările intermediare și limitele sunt în
@@ -168,6 +336,23 @@ lună și un angajat, desfăcute în ordine inversă în `finally`. Rămân audi
 a doua rulare nu adaugă nimic). Plafonul de 500 al candidaților DVI e probat
 în ModelCheck, nu pe HTTP. Măsurat 2026-09-27 pe `c104-straturi`: 294/294
 PASS de două ori consecutiv, baza identică înainte și după. (104-r5)
+Matricea conține și ușa explicației (X-D4): tranzacția facturii fixture-ului
+se află din jurnal, `Admin`, `Cititor` și `Configurator` primesc 200, iar
+`User` 404, la fel ca pe un id inexistent. 403
+`EXPLICATIE_ACCES_INCOMPLET` cere un rol cu citire restricționată și rămâne
+al probei `explicatii.py`. Măsurat 2026-10-04 pe `tr-d8-transversal`, pe o
+bază privată recreată din seed: 300/300 PASS de două ori consecutiv. (X-D8)
+Blocajul scrierii are proba HTTP proprie,
+`nou/tools/ProbeHttp/scriere-ocupata.py`: ține
+`pg_advisory_xact_lock(97000)` pe o a doua conexiune și cere, sub blocaj,
+200 imediat pe citire, pe dry-run și pe salvarea fără detalii noi, 422
+`SCRIERE_OCUPATA` fără nimic scris pe operare și pe salvarea cu o linie
+nouă, apoi 200 pe aceeași operare după eliberare. Fixture-ul e al probei și
+se desface în `finally`. Durează cât două timpuri de comandă (un minut).
+Rețeta care recreează baza din seed, pornește hostul pe 5089 și rulează
+matricea de două ori, `scriere-ocupata.py`, `comenzi-coaja.py` și
+`explicatii.py` (ultima, fiindcă lasă un bon stornat):
+`run-verificari/x6-http.ps1`. (X-D6, X-D8)
 Desfacerea facturii se înscrie imediat după crearea ei și redescoperă din
 ID-ul FCT plata conex și împerecherile; după `finally`, matricea verifică pe
 API absența identităților fixture-ului (cod 3 la rezidu). `-CadeDupa <punct>`
@@ -333,6 +518,27 @@ Rezultatele rulărilor sunt consemnate în fișierele tipurilor.
 Verificarea de drift regenerează contractele și refuză diferențele față de
 fișierele versionate. O schimbare intenționată de contract se regenerează și
 se examinează înainte de includerea artefactelor în modificare. (43d, 56)
+
+### Scara transversală de perf (`scripts/perf-cub-container.ps1`)
+
+`ModelCheck --perf-cub [privat]` construiește scena de volum (k unități în
+luna măsurată, m luni închise de istoric, faptele „o dată per bază”) și
+măsoară fiecare cititor comun într-un proces nou, rece și cald, pe ușa
+securizată și pe cea nesecurizată. Fiecare cifră citită se compară cu
+așteptarea scenei. La k maxim, citirile se reexecută sub `EXPLAIN (ANALYZE,
+BUFFERS)`, cu planul ales și fără scanare secvențială. Un plan respins e
+eroarea măsurării, iar o operație fără plan pentru fiecare citire pică
+criteriul; proba `X-D5-PLAN`, care rulează în orice ModelCheck, ține regula
+(X-RI3). Înaintea purjei rulează
+reconcilierea integrală, `INV-CUB` și diagnosticul ASM-B7 pe toată baza.
+Rețeta rulează ambele profiluri în containerul din rețeaua Postgres și
+validează XML-urile SAF-T cu DUK; parametrii `-Profil`, `-Istoric`, `-Trepte`
+și `-Operatii` restrâng rularea. Scara completă durează circa 35 de minute și
+este o rulare grea: nu se suprapune cu alta pe aceleași baze. O rulare
+întreruptă lasă scena în bază; următoarea o purjează la pornire, dar datele
+societății de pe profilul privat rămân cele ale scenei și se refac de mână.
+Un cititor nou care citește cumulat sau pe interval intră în `PerfCub.Operatii`
+cu ruta și cifrele lui de control. (X-D5, X-D3)
 
 ## Verificări proporționale cu modificarea
 

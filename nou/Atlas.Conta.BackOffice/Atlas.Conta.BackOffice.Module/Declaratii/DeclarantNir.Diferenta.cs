@@ -88,6 +88,8 @@ public sealed partial class DeclarantNir {
             miscari.Add(q < 0 ? new(stoc, diferenta, -q, 0, -v, new(doc.Id, linie.Id))
                 : new(diferenta, stoc, q, 0, v, new(doc.Id, linie.Id)));
             decizii.Add(new N.ContRezolvat(linie.Id, contDiferenta, $"Diferență: {cauza}"));
+            if (q < 0)
+                decizii.Add(new N.ValoareDeclarata(linie.Id, stoc.Unitate!, -q, -v, SurseValoare.Receptie));
         }
         return refuzuri.Count > 0 || miscari.Count == 0 ? null : new(doc.Id, doc.DataInregistrare, miscari, decizii,
             [operand.PerioadaDeschisa, operand.VersiunePolitica]);

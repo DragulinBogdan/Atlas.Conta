@@ -175,7 +175,7 @@ public static class Gen {
             var linie = Unul(aleator, Linii);
             var cont = Unul(aleator, Conturi);
             var produs = Unul(aleator, Produse);
-            decizii.Add(aleator.Next(4) switch {
+            decizii.Add(aleator.Next(5) switch {
                 0 => new AlocareFifo(
                     linie,
                     Lot(aleator, cont, produs),
@@ -186,6 +186,12 @@ public static class Gen {
                     Zecimal(aleator, 0.001m, 999.999m, Scara.Cantitate),
                     Zecimal(aleator, 0.01m, 9999.99m, Scara.Bani)),
                 2 => new PartidaDeschisa(linie, Partida(aleator, cont, Unul(aleator, Parteneri))),
+                3 => new ValoareDeclarata(
+                    linie,
+                    Lot(aleator, cont, produs),
+                    Zecimal(aleator, 0.001m, 999.999m, Scara.Cantitate),
+                    Zecimal(aleator, 0m, 9999.99m, Scara.Bani),
+                    "document"),
                 _ => new ContRezolvat(linie, cont, "politica"),
             });
         }

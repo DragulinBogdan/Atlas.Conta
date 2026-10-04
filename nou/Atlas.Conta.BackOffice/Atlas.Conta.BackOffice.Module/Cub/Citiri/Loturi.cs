@@ -1,4 +1,5 @@
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Declaratii;
@@ -18,7 +19,7 @@ public struct SoldLot {
 
 public static class Loturi {
     public static IQueryable<Postare> Postari(IObjectSpace os) => os.GetObjectsQuery<Postare>()
-        .Where(p => p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Lot
+        .Where(p => p.Spatiu == N.Spatiu.Stoc && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Lot
             && p.Unitate != null && p.Produs != null && p.Gestiune != null);
 
     public static IQueryable<RandDatat<SoldLot>> Miscari(IObjectSpace os, Guid? faraDocumentId = null) {
@@ -82,13 +83,15 @@ public static class Loturi {
         if (delta.Length == 0) return;
         var chei = delta.Select(p => p.Cheie).ToHashSet();
         var loturi = chei.Select(c => c.Lot).Distinct().ToArray();
-        var istoric = Postari(os).Where(p => loturi.Contains(p.Unitate.Value))
+        var primaData = delta.Min(p => p.Data);
+        var initial = Cumulate(os, CitireCumul.Integrala, primaData.AddDays(-1)).Where(s => loturi.Contains(s.LotId)).ToList()
+            .Select(s => (Cheie: new CheieLotFapt(s.LotId, s.ContId, s.ProdusId, s.GestiuneId), Data: DateOnly.MinValue, s.Cantitate));
+        var istoric = initial.Concat(Postari(os).Where(p => loturi.Contains(p.Unitate.Value) && p.Data >= primaData)
             .GroupBy(p => new { p.Unitate, p.Cont, p.Produs, p.Gestiune, p.Data })
             .Select(g => new { g.Key, Cantitate = g.Sum(p => p.Cantitate) }).ToList()
             .Select(p => (Cheie: new CheieLotFapt(p.Key.Unitate.Value, p.Key.Cont,
-                p.Key.Produs.Value, p.Key.Gestiune.Value), p.Key.Data, p.Cantitate))
+                p.Key.Produs.Value, p.Key.Gestiune.Value), p.Key.Data, p.Cantitate)))
             .Where(p => chei.Contains(p.Cheie));
-        var primaData = delta.Min(p => p.Data);
         foreach (var grup in istoric.Concat(delta).GroupBy(p => p.Cheie)) {
             decimal sold = 0m;
             foreach (var zi in grup.GroupBy(p => p.Data).OrderBy(g => g.Key)) {
@@ -98,6 +101,45 @@ public static class Loturi {
                         + $"pe lotul {grup.Key.Lot}, cont {grup.Key.Cont}, gestiune {grup.Key.Gestiune}.");
             }
         }
+    }
+
+    public const string IstoricIncomplet = "CITIRE_ISTORIC_STOC_INCOMPLET";
+
+    sealed record GrupStoc(Guid? Document, Guid Lot, Guid Gestiune, bool Storno, bool Plus);
+
+    /// <summary>Fiecare grup de mișcări din registrul stocului are aceeași cantitate pe loturile cubului; recepția conexă se compară pe grupul sursei.</summary>
+    public static void VerificaAcoperire(IObjectSpace os) {
+        var registru = os.GetObjectsQuery<RegistruStoc>()
+            .Where(r => r.TipStoc == TipStoc.Magazie || r.TipStoc == TipStoc.Marfuri || r.TipStoc == TipStoc.Folosinta)
+            .GroupBy(r => new { r.DocumentId, r.LotId, r.RepartitorId, r.Storno, Plus = r.Cantitate >= 0m })
+            .Select(g => new { g.Key.DocumentId, g.Key.LotId, g.Key.RepartitorId, g.Key.Storno, g.Key.Plus,
+                Cantitate = g.Sum(r => r.Cantitate) }).ToList();
+        if (registru.Count == 0) return;
+        var cub = Postari(os)
+            .GroupBy(p => new { p.DocumentId, p.Unitate, p.Gestiune,
+                Storno = p.Tranzactie.Fel == N.FelTranzactie.Storno, Plus = p.Cantitate >= 0m })
+            .Select(g => new { g.Key.DocumentId, g.Key.Unitate, g.Key.Gestiune, g.Key.Storno, g.Key.Plus,
+                Cantitate = g.Sum(p => p.Cantitate) }).ToList();
+        var legaturi = Receptii.Legaturi(((EFCoreObjectSpace)os).DbContext);
+        var surse = legaturi.Values.ToHashSet();
+        var cumulActiv = os.GetObjectsQuery<NIR>()
+            .Where(d => d.SursaReceptieiId != null && d.Stare == StareDocument.Operat).Select(d => d.ID).ToList()
+            .Where(legaturi.ContainsKey).Select(id => legaturi[id]).ToHashSet();
+        Guid? Cap(Guid? document) => document is Guid id && legaturi.TryGetValue(id, out var sursa) ? sursa : document;
+        bool Conex(Guid? document) => document is Guid id && (legaturi.ContainsKey(id) || surse.Contains(id));
+        // Grupul recepției conexe se compară net: registrul ține cumulul pe NIR, cubul recepția pe FCT și delta pe NIR (098, 099).
+        GrupStoc Cheie(Guid? document, Guid lot, Guid gestiune, bool storno, bool plus) => Conex(document)
+            ? new(Cap(document), lot, gestiune, false, true) : new(document, lot, gestiune, storno, plus);
+        var cantitati = cub.GroupBy(p => Cheie(p.DocumentId, p.Unitate.Value, p.Gestiune.Value, p.Storno, p.Plus))
+            .ToDictionary(g => g.Key, g => g.Sum(p => p.Cantitate));
+        var lipsuri = registru.GroupBy(r => Cheie(r.DocumentId, r.LotId, r.RepartitorId, r.Storno, r.Plus))
+            .Select(g => (g.Key, Registru: g.Sum(r => r.Cantitate),
+                Cub: Conex(g.Key.Document) && !cumulActiv.Contains(g.Key.Document.Value) ? 0m : cantitati.GetValueOrDefault(g.Key)))
+            .Where(g => g.Registru != g.Cub).OrderBy(g => g.Key.Document).ThenBy(g => g.Key.Lot).ToList();
+        if (lipsuri.Count != 0)
+            throw new OperareException($"{IstoricIncomplet}: {lipsuri.Count} grupuri de mișcări din registrul stocului fără aceeași cantitate în cub; exemple: "
+                + string.Join("; ", lipsuri.Take(10).Select(g => $"document {g.Key.Document}, lot {g.Key.Lot}, gestiune {g.Key.Gestiune}"
+                    + $"{(g.Key.Storno ? ", storno" : "")}: registru {g.Registru}, cub {g.Cub}")));
     }
 
     // Refuzul cantitativ precedă orice schimbare în tracker-ul registrelor.

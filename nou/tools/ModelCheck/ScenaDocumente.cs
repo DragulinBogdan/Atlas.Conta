@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.Proiectii;
 using DevExpress.ExpressApp;
 using Microsoft.EntityFrameworkCore;
 using C = Atlas.Conta.BackOffice.Module.Cub;
@@ -92,6 +93,18 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         foreach (var cheie in matriceFiscale.Keys.Where(k => k.Doc == doc).ToArray()) matriceFiscale.Remove(cheie);
     }
     protected void InchideIanuarie() => Comanda(os => inchide(os, An, 1));
+
+    protected sealed record TranzactieScena(Guid Id, N.FelTranzactie Fel, bool Explicata, Guid? Din);
+
+    protected List<TranzactieScena> Tranzactii(Guid doc) => CuSpatiu(os => os.GetObjectsQuery<C.Tranzactie>()
+        .Where(t => t.DocumentId == doc).OrderBy(t => t.ScrisLa).ThenBy(t => t.Fel)
+        .Select(t => new { t.ID, t.Fel, Explicata = t.Explicatie != null, t.ExplicatieDinId }).ToList()
+        .Select(t => new TranzactieScena(t.ID, t.Fel, t.Explicata, t.ExplicatieDinId)).ToList());
+
+    protected C.Citiri.ExplicatieTranzactie Explicatia(Guid doc, N.FelTranzactie fel) {
+        var tranzactie = Tranzactii(doc).Last(t => t.Fel == fel).Id;
+        return CuSpatiu(os => C.Citiri.Explicatii.PeTranzactie(os, tranzactie));
+    }
     protected void Inchide(int an, int luna) => Comanda(os => inchide(os, an, luna));
     protected Guid Corecteaza(Guid doc) {
         var inainte = Amprenta(doc);
@@ -220,6 +233,60 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         Postari(id, stingator, N.FelTranzactie.Transfer, data,
             new(Cont(cont), latura, -suma, Unitate: Partida(stingator, cont, partener), Partener: partener),
             new(Cont(cont), latura, suma, Unitate: Partida(stins, cont, partener), Partener: partener));
+    }
+
+    protected void TransferPeCititori(string id, string intrare, int transferuri, int inverse, int peIntrare, params Guid[] documente) {
+        using var os = Deschide();
+        var transfer = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId != null && documente.Contains(p.DocumentId.Value)
+            && p.Tranzactie.Fel == N.FelTranzactie.Transfer).Select(p => p.ID).ToList();
+        var inv = os.GetObjectsQuery<C.Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Storno
+            && p.InversaDinId != null && transfer.Contains(p.InversaDinId.Value)).Select(p => p.ID).ToList();
+        var numarate = ProbeTransferCititori.Numara(os, [.. transfer, .. inv]);
+        Console.WriteLine($"     MĂSURAT ({id}): {transfer.Count} postări Transfer, {inv.Count} inverse; "
+            + string.Join(", ", numarate.Select(n => $"{n.Nume} {n.Numar}")) + ".");
+        Verifica(id, $"N-r8: {transferuri} postări Transfer și {inverse} inverse; {peIntrare} pe `{intrare}`, "
+            + "zero pe intrările care exclud și pe cealaltă intrare care include",
+            transfer.Count == transferuri && inv.Count == inverse
+            && numarate.Any(n => n.Nume == intrare && n.Regim == ProbeTransferCititori.Regim.Include)
+            && numarate.Where(n => n.Regim != ProbeTransferCititori.Regim.Indiferent)
+                .All(n => n.Numar == (n.Nume == intrare ? peIntrare : 0)));
+    }
+
+    // T-r14: contraponderile Transformare nu ajung prin nicio intrare comună.
+    protected void ContraponderiPeCititori(string id, int asteptate, params Guid[] documente) {
+        using var os = Deschide();
+        var contraponderi = os.GetObjectsQuery<C.Postare>().Where(C.Citiri.Transformare.Contrapondere)
+            .Where(p => p.DocumentId != null && documente.Contains(p.DocumentId.Value)).Select(p => p.ID).ToList();
+        var numarate = ProbeTransferCititori.Numara(os, contraponderi);
+        Console.WriteLine($"     MĂSURAT ({id}): {contraponderi.Count} contraponderi; "
+            + string.Join(", ", numarate.Select(n => $"{n.Nume} {n.Numar}")) + ".");
+        Verifica(id, $"T-r14: {asteptate} contraponderi Transformare în cub, zero pe fiecare intrare comună",
+            contraponderi.Count == asteptate && numarate.All(n => n.Numar == 0));
+    }
+
+    // N-r8: jurnalul și fișa de cont nu listează `Transfer` și inversele lui; intrarea pe unitate le listează cu felul lor.
+    protected void ListareTransfer(string id, string intrare, params Guid[] documente) {
+        using var os = Deschide();
+        var transfer = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId != null && documente.Contains(p.DocumentId.Value)
+            && p.Tranzactie.Fel == N.FelTranzactie.Transfer).Select(p => new { p.ID, p.Cont }).ToList();
+        var idTransfer = transfer.Select(p => p.ID).ToList();
+        var inverse = os.GetObjectsQuery<C.Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Storno
+            && p.InversaDinId != null && idTransfer.Contains(p.InversaDinId.Value)).Select(p => new { p.ID, p.Cont }).ToList();
+        var toate = transfer.Concat(inverse).Select(p => p.ID).ToList();
+        var jurnal = ContabilProiectii.RegistruJurnal(os).Count(r => toate.Contains(r.Id));
+        var fisa = transfer.Concat(inverse).Select(p => p.Cont).Distinct().ToList()
+            .Sum(cont => ContabilProiectii.FisaCont(os, cont, DateOnly.MinValue, DateOnly.MaxValue).Count(r => toate.Contains(r.Id)));
+        var peUnitate = ProbeTransferCititori.Intrari.Single(i => i.Nume == intrare).Postari(os).Where(i => toate.Contains(i)).ToList();
+        var feluri = os.GetObjectsQuery<C.Postare>().Where(p => peUnitate.Contains(p.ID))
+            .GroupBy(p => p.Tranzactie.Fel).Select(g => new { g.Key, Numar = g.Count() }).ToDictionary(g => g.Key, g => g.Numar);
+        var listate = transfer.Concat(inverse).Count(p => peUnitate.Contains(p.ID));
+        Console.WriteLine($"     MĂSURAT ({id}): {transfer.Count} postări Transfer, {inverse.Count} inverse; jurnal {jurnal}, fișă de cont {fisa}; "
+            + $"`{intrare}` {listate} [{string.Join(", ", feluri.OrderBy(f => f.Key).Select(f => $"{f.Key} {f.Value}"))}].");
+        Verifica(id, $"N-r8: jurnalul și fișa de cont nu listează `Transfer` și inversele lui; `{intrare}` le listează cu felul fiecăruia",
+            transfer.Count > 0 && jurnal == 0 && fisa == 0 && listate > 0
+            && feluri.GetValueOrDefault(N.FelTranzactie.Transfer) == transfer.Count(p => peUnitate.Contains(p.ID))
+            && feluri.GetValueOrDefault(N.FelTranzactie.Storno) == inverse.Count(p => peUnitate.Contains(p.ID))
+            && feluri.Keys.All(f => f is N.FelTranzactie.Transfer or N.FelTranzactie.Storno));
     }
 
     protected void Postari(string id, Guid doc, N.FelTranzactie fel, DateOnly data, params RandScena[] asteptate) {

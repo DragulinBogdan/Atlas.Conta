@@ -86,6 +86,16 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica("SC-ASM-07", "repetarea nu scrie", stamp == Amprenta(d.Id));
         Multiple(); Refuzuri(); Rotunjiri(); Capcana(); DeltaFaraAncora(); Dependenti(); LantRetur();
         var mixt = Mixt("SC-ASM-05");
+        var tMixt = Tranzactii(mixt.Doc.Id);
+        var eMixt = Explicatia(mixt.Doc.Id, N.FelTranzactie.Transfer).Origini;
+        Console.WriteLine($"     MĂSURAT (SC-CIT-98): {tMixt.Count} tranzacții, {eMixt.Count} explicații; decizii ["
+            + string.Join(", ", eMixt.SelectMany(o => o.Explicatie.Decizii).GroupBy(d => d.GetType().Name).Select(g => $"{g.Key} {g.Count()}")) + "].");
+        Verifica("SC-CIT-98", "ASM mixt: o singură explicație, pe Operare, referită de Transfer; consumurile 60 și 40 evaluate din sold",
+            tMixt.Count == 2 && tMixt.Single(t => t.Fel == N.FelTranzactie.Operare) is { Explicata: true, Din: null } purtator
+            && tMixt.Single(t => t.Fel == N.FelTranzactie.Transfer) is { Explicata: false } referitor && referitor.Din == purtator.Id
+            && eMixt.Single().Purtator == purtator.Id && eMixt[0].Explicatie.Declarant == nameof(DeclarantAsamblare)
+            && eMixt[0].Explicatie.IesiriEvaluate().Select(i => (i.Iesire.Valoare, i.Inainte?.Net)).SequenceEqual([(60m, 60m), (40m, 40m)])
+            && eMixt[0].Explicatie.Decizii.OfType<N.AbsorbtieEvaluare>().Any());
         Rapoarte(mixt.Doc, false);
         Verifica("SC-CIT-04", "ASM mixt: două postări economice de 40, fără Transfer/contrapondere", CuSpatiu(os => {
             var randuri = C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == mixt.Doc.Id).ToList();
@@ -113,6 +123,8 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         var intarziat = Culege([(Receptioneaza(new LinieFctScena(2, 50)).Linii[0], 2)], [(1, 100, null)]);
         InchideIanuarie();
         Storneaza(mixt.Doc.Id, Februarie);
+        Verifica("SC-CIT-98", "storno ASM mixt: inversează ambele tranzacții și are o singură explicație de origine",
+            Explicatia(mixt.Doc.Id, N.FelTranzactie.Storno).Origini.Count == 1);
         Rapoarte(mixt.Doc, true);
         if (Privat) Verifica("SC-SAFT-10", "storno ASM mixt în februarie: numai inversele Operare −40/−40 în GL",
             CuSpatiu(os => {
@@ -127,6 +139,10 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
             return randuri.Count == 4 && randuri.Count(p => p.Valoare == -40) == 2
                 && randuri.All(p => p.Gestiune == Magazie);
         }));
+        TransferPeCititori("SC-CIT-102", "Loturi.Postari", mixt.Transfer.Length, mixt.Transfer.Length,
+            2 * mixt.Transfer.Count(r => r.Unitate != null), mixt.Doc.Id);
+        ListareTransfer("SC-CIT-107", "Loturi.Postari", mixt.Doc.Id);
+        ContraponderiPeCititori("SC-CIT-106", 2 * mixt.Transfer.Concat(mixt.Operare).Count(r => r.Unitate == null), mixt.Doc.Id);
         Sold("SC-ASM-08", mixt.Doc.Linii[0], 0, 0);
         Sold("SC-ASM-08", mixt.Doc.Linii[0], 1, 60, Februarie);
         Corectie("SC-ASM-10", corectieDoc, corectieLot, 1, 50, 1, 50);
@@ -248,6 +264,8 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
             var contract = CuSpatiu(os => Contractare.Contracteaza(os, os.GetObjectByKey<Document>(d.Id)));
             Verifica("SC-ASM-17", "decizie Δ exactă", contract.EsteAcceptat && contract.Decizii.OfType<N.AbsorbtieEvaluare>().Sum(x => x.Delta) == c[i] - p[i]);
             Opereaza(d.Id);
+            Verifica("SC-CIT-98", "absorbția Δ a evaluării e persistată pe purtătorul Transfer", Explicatia(d.Id, N.FelTranzactie.Transfer)
+                .Origini.Single().Explicatie.Decizii.OfType<N.AbsorbtieEvaluare>().Sum(x => x.Delta) == c[i] - p[i]);
             Verifica("SC-ASM-17", "absorbția nu schimbă prețul cules, valoarea liniei sau prețul lotului", CuSpatiu(os => {
                 var l = os.GetObjectByKey<AsamblareDetaliu>(d.Linii[1].Id);
                 return l.PretEvaluare == p[i] && l.Valoare == p[i]

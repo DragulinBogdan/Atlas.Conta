@@ -17,6 +17,7 @@ public static partial class Imobilizari {
     }
 
     public static IQueryable<Postare> PozitiiFaraFisa(IObjectSpace os) => os.GetObjectsQuery<Postare>()
+        .Where(Transformare.FaraContrapondere)
         .Where(p => p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil && p.Unitate == null);
 
     public static IReadOnlyDictionary<Guid, ConturiFisa> Conturi(IObjectSpace os, List<Guid> fise,

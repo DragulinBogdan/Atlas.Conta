@@ -874,3 +874,24 @@ detaliat în jurnal):
   (`20260928-005014-921`), HTTP și browser XAF; commit aprobat de owner.
   Proveniența ajustărilor rămâne 103-r2; validarea semnului taxei, 103-r3.
   Bazele de verificare sunt izolate.
+
+- **2026-10-04 — TR-D8 gate-ul transversal (decizia 108), pașii 1–6 pe
+  `tr-d8-transversal`.** Proba registrelor cu lista nominală și regimul
+  `Transfer` pe intrările comune (X-D2); explicația deciziei persistată pe
+  tranzacție, cu cititor, `GET` și acces complet (X-D4); scrierea serială
+  per bază, probată pe două conexiuni (X-D6); acoperirea cantitativă a
+  stocului, `PosteazaInCub` ireversibil, refuzul desfacerii fără efect
+  (X-D7); scara `PerfCub` în container și reconcilierea (a)–(g) cu zero Δ
+  pe baza de volum (X-D5, X-D3), cu un criteriu amânat de owner
+  (`PartideCuRest`, F27-r16). Integrala **3.387 bugetar / 4.597 privat OK**,
+  nucleu 180/180, matricea de refuzuri 300/300 de două ori,
+  `SCRIERE_OCUPATA` pe ușa HTTP, drift zero. Închise: S-r2, S-r9, S-r11,
+  F27-r8, T-r11, T-r14, N-r8, 097-r1, 102-r4, SAFT-r4, FZ-r1. Noi: X-r1,
+  X-r2, X-r3. Review-ul implementării (Codex, la `2b57aa5`): patru
+  observații P2 pe verificările feliei, X-RI1…X-RI4, corectate — mecanismul
+  explicației ținut de declarant, conservarea pe cont a transferului
+  persistat, planul respins care invalidează măsurarea, controlul D300 pe
+  rezultatul D300; integrala **3.394 / 4.604 OK**, scara 1.526 / 996 OK.
+  Reverificarea Codex la `7223abc` închide X-RI1…X-RI4: integrala proprie
+  3.394 / 4.604 OK, zero FAIL, inclusiv mutanții și `X-D5-PLAN`;
+  `run-verificari/20261004-102241-857/`. Branch-ul nu e mers.

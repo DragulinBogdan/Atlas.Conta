@@ -11,5 +11,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 public interface IDeclarant {
     bool CereSoldRegistruPentruEvaluare => false;
     bool PermiteDeclaratieFaraMiscari(Operand operand) => false;
+    /// <summary>Sursa din <see cref="SurseValoare"/> a ieșirilor pe lot valorizate de declarant; null când ieșirile se evaluează din sold.</summary>
+    string? SursaValoareDeclarata => null;
     N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri);
 }

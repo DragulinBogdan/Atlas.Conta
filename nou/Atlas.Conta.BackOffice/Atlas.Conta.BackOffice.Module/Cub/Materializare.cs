@@ -15,6 +15,12 @@ public static partial class Materializare {
     public static bool EsteConexAcoperit(IObjectSpace os, Document doc) =>
         ReceptiiConexe.EsteAcoperita(os, doc);
 
+    /// <summary>Un tip cu tranzacții în cub nu mai iese din regimul <c>PosteazaInCub</c>.</summary>
+    public static bool AreTranzactii(IObjectSpace os, string clrType) {
+        var documente = os.GetObjectsQuery<Document>().Where(d => d.ClrType == clrType).Select(d => (Guid?)d.ID);
+        return os.GetObjectsQuery<Tranzactie>().Any(t => documente.Contains(t.DocumentId));
+    }
+
     public static void Opereaza(IObjectSpace os, Document doc, TipDocument tip) {
         using var receptie = ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: true);
         ArgumentNullException.ThrowIfNull(doc);
@@ -30,8 +36,12 @@ public static partial class Materializare {
         ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
         Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
         VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: true);
-        foreach (var tranzactie in contract.Tranzactii.Where(t => t.Postari.Count > 0))
-            Scrie(os, doc.ID, tranzactie);
+        var explicatie = Explicatie.Din(contract, doc.Declarant().GetType().Name).Scrie();
+        Guid? purtator = null;
+        foreach (var tranzactie in contract.Tranzactii.Where(t => t.Postari.Count > 0)) {
+            var id = Scrie(os, doc.ID, tranzactie, purtator == null ? explicatie : null, purtator);
+            purtator ??= id;
+        }
     }
 
     /// <summary>Refuzurile declarației pentru dry-run (S-D4): citește, nu scrie nimic.</summary>
@@ -158,10 +168,8 @@ public static partial class Materializare {
             data, PartenerCerut: contrapartidaId));
         if (rezultat.Refuz is { } refuz)
             throw new OperareException(string.Join("\n", Mesaje([refuz])));
-        if (rezultat.Mutare is not { } mutare) {
-            if (suma < 0m) return null;
+        if (rezultat.Mutare is not { } mutare)
             throw new OperareException($"IMPERECHERE_FARA_EFECT: {rezultat.Sarit}.");
-        }
         if (suma > 0m) VerificaDisponibilTemporal(os, mutare, data);
         var contract = N.Motor.Transfera(
             stingator.ID, rezultat.Data, [mutare], new N.Rotunjire(Scara.ConventieBani));
@@ -271,7 +279,8 @@ public static partial class Materializare {
                 + $"{MotorOperare.ClasaReala(doc).Name} nu declară.")
             : Contractare.Contracteaza(os, doc);
 
-    static Guid Scrie(IObjectSpace os, Guid? documentId, N.Tranzactie tranzactie) {
+    static Guid Scrie(IObjectSpace os, Guid? documentId, N.Tranzactie tranzactie,
+            string explicatie = null, Guid? explicatieDin = null) {
         var tracker = (os as EFCoreObjectSpace)?.DbContext.ChangeTracker;
         var incarcare = tracker?.LazyLoadingEnabled;
         try {
@@ -281,6 +290,8 @@ public static partial class Materializare {
             rand.Fel = tranzactie.Fel;
             rand.Data = tranzactie.Data;
             rand.ScrisLa = DateTime.UtcNow;
+            rand.Explicatie = explicatie;
+            rand.ExplicatieDinId = explicatieDin;
             foreach (var postare in tranzactie.Postari)
                 Randuri.Scrie(postare, rand, os.CreateObject<Postare>());
             return rand.ID;

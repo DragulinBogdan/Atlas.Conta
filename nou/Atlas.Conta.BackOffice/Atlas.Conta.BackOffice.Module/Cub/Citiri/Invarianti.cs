@@ -12,6 +12,7 @@ public static class Invarianti {
     public static void Verifica(IObjectSpace os) {
         VerificaProvenienta(os);
         VerificaFiscal(os);
+        Loturi.VerificaAcoperire(os);
         var ctx = ((EFCoreObjectSpace)os).DbContext;
         var postari = os.GetObjectsQuery<Postare>();
         var lipsuri = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null
@@ -35,6 +36,8 @@ public static class Invarianti {
         if (dezechilibrate != 0)
             throw new OperareException($"CITIRE_CUB_DEZECHILIBRAT: {dezechilibrate} tranzacții/cărți cu debit diferit de credit.");
 
+        VerificaTransferuri(os);
+
         var deschideri = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == null);
         if (deschideri.Any()) {
             var vechi = deschideri.Select(r => new { Cont = r.ContDebitId, Debit = r.Valoare, Credit = 0m })
@@ -51,6 +54,22 @@ public static class Invarianti {
         Partide.VerificaAcoperire(os);
         Proiectii.ImperecheriProiectii.VerificaAcoperire(os);
         Imobilizari.VerificaAcoperire(os);
+        Explicatii.VerificaAcoperire(os);
+    }
+
+    public const string TransferNeconservat = "CITIRE_TRANSFER_NECONSERVAT";
+
+    /// <summary>Un transfer persistat conservă valoarea pe (cont, latură) și cantitatea pe (cont, produs), ca la contractare (090f).</summary>
+    public static void VerificaTransferuri(IObjectSpace os) {
+        var transferuri = os.GetObjectsQuery<Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Transfer);
+        var valoric = transferuri.GroupBy(p => new { p.TranzactieId, p.Cont, p.Latura })
+            .Where(g => g.Sum(p => p.Valoare) != 0m).Select(g => g.Key.TranzactieId).Take(10).ToList();
+        var cantitativ = transferuri.Where(p => p.Cantitate != 0m).GroupBy(p => new { p.TranzactieId, p.Cont, p.Produs })
+            .Where(g => g.Sum(p => p.Cantitate) != 0m).Select(g => g.Key.TranzactieId).Take(10).ToList();
+        var neconservate = valoric.Concat(cantitativ).Distinct().Take(10).ToList();
+        if (neconservate.Count != 0)
+            throw new OperareException($"{TransferNeconservat}: transferuri care nu conservă valoarea pe (cont, latură) "
+                + "sau cantitatea pe (cont, produs); exemple: " + string.Join(", ", neconservate));
     }
 
     public static void VerificaProvenienta(IObjectSpace os) {

@@ -1,0 +1,945 @@
+# TR-D8 — gate-ul transversal: contract pentru aprobare
+
+- Data: 2026-10-01
+- Stare: **aprobat de owner, 2026-10-03** (X-Q1…X-Q4 = A/A/A/A; nivelul 3 al
+  blocajului ales 2026-10-01); review-ul advers Codex al contractului e
+  închis (X-RV1…X-RV7, inclusiv 1.1/1.2/5.1,
+  `comunicari/2026-10-01-1400-codex-claude-tr-d8-transversal-contract-inchis.md`).
+  Branch `tr-d8-transversal`, tăiat din `main` = `02f7788` (după PR #14).
+  Implementarea pornește cu pasul 1 din X-D8, un commit per pas.
+  **Pasul 1 (X-D2) implementat și verificat, 2026-10-03** — vezi „Execuție".
+  **Pasul 2 (X-D4) implementat și verificat, 2026-10-03.**
+  **Pasul 3 (X-D6) implementat și verificat, 2026-10-03.**
+  **Pasul 4 (X-D7) implementat și verificat, 2026-10-03.**
+  **Pasul 5 (X-D5 + X-D3) implementat și măsurat, 2026-10-04; criteriul
+  picat pe `PartideCuRest` este amânat prin amendamentul owner-ului, iar
+  metoda probei din plan e confirmată — vezi „Execuție”.**
+  **Pasul 6 (X-D8) verificat, 2026-10-04: integrala, probele HTTP, driftul
+  și decizia 108; review-ul advers al feliei este închis după corecturile
+  X-RI1…X-RI4, reverificate de Codex la `7223abc`, 2026-10-04.**
+- Bază: [D8-B5](tr-d8-citiri-contract.md) pasul 5 și „Limite care împiedică
+  închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
+  091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
+  restanțele cu starea `activă, TR-D8` din `docs/decizii/restante.md`.
+- Închiderea: decizia **108** (106 este luată de `c106-regim-stare`, 107 de
+  `m1-deschidere-terti`, ambele nemerse; numerele nu se refolosesc).
+
+## De ce o felie separată
+
+Toate consumatoarele din [inventar](tr-d8-citiri-inventar.md) sunt portate
+nominal (contabil, stoc, partide, fiscal, SAF-T, imobilizări, snapshot-uri).
+Ce nu s-a făcut este ce niciun raport nu poartă singur: dovada că nimic din
+producție nu mai citește registrele în domeniul portat, reconcilierea (a)–(h)
+pe o bază întreagă, explicația deciziei persistată (S-r2), concurența pe două
+conexiuni reale, costul cititorilor pe scară și probele de acoperire ale
+regimului dual (în ModelCheck, pe fapte, înaintea purjei — nu la pornirea
+hosturilor, 102d). Fără ele, TR-D8 rămâne „portat raport cu raport", nu
+„închis".
+
+## Ce spun sursele că înseamnă gate-ul transversal
+
+| Sursa | Cerința | Litera de aici |
+|---|---|---|
+| D8-B5 (5) | auditul deciziei (S-r2), perf A/B pe aceeași bază, arhitectură, integral ambele profiluri, review advers și docs | X-D4, X-D5, X-D2, X-D8 |
+| D8-B5 final | lista nominală a consumatorilor portați; niciun raport complet alimentat dintr-un cub incomplet | X-D2, X-D7 |
+| D8-B4 / T-D10 | diagnosticul transversal (h) nu e finalizat; (a)–(g) toleranță 0 | X-D3 |
+| review propriu §Limite | activarea stocului și politica modificată în mers; concurența pe lot (două conexiuni, consum–retragere) | X-D7, X-D6 |
+| 091 (g)(4) | concurența probată cu două sesiuni reale pe același lot, pe aceeași partidă, operare simultană cu închiderea (F27-r8, S-r9) | X-D6 |
+| 091 (g)(5), 091-r3 | accesul la `Postare` în afara cititorilor refuzat de test de arhitectură; `Transfer` exclus într-un singur loc (N-r8) | X-D2 |
+| 090 (j), S-r2 | explicația deciziei persistată compact pe tranzacție; scenariile o asertează („de ce acest lot") | X-D4 |
+| 090 (i), FZ-r1, SAFT-r4, FZ-r3, 103h | materializare doar pe cifră măsurată; granul `Sold`; balanța din snapshot; planul pe volum al lookup-ului de partidă; costurile R6 | X-D5 |
+| T-r11, T-r13, T-r14, N-r8, 097-r1, 102-r4, S-r11 | restanțele marcate TR-D8 | X-D7 |
+
+## X-D1 — Perimetrul și ce NU închide
+
+TR-D8 se închide numai când sunt verzi împreună: X-D2 (arhitectura
+registrelor cu lista nominală), X-D3 (reconcilierea pe baza de volum), X-D4
+(explicația deciziei), X-D5 (scara transversală cu criteriile de formă), X-D6
+(concurența), X-D7 (activarea și restanțele TR-D8), X-D8 (integrala, review-ul
+advers, docs). Fiecare literă are probă în ModelCheck sau artefact în
+`run-verificari/`; nicio literă nu se închide prin text.
+
+Rămân explicit în afara feliei: tăierea scriitorilor vechi și a regimului
+dual (TR-D9); stornoul după reevaluare N-r5 și `Atribuit` (091 (h), TR-D9);
+evaluările noi ale reziduului dual T-r13 (TR-D9; aici numai diagnosticul
+existent); probele de formă TR-r9 (rescrise când mor registrele); pragul
+absolut de perf pe volum REAL (FZ-r3, migrare); 102-r5 (după PoC); B8-r*
+și restanțele `după PoC`. Import1C rămâne înghețat (091-r4).
+
+### Modelul perioadei rămâne cel din 088 (confirmat de owner, 2026-10-01)
+
+Discuția despre „trasul de linie prin materializare, cu redeschidere logată
+și reevaluare" s-a tranșat pe ce există: închiderea e comandă care
+materializează soldurile pe perioadele de referință (088 b/d), snapshot-ul
+se reconstruiește exact din postări (090 i) și nu devine tranzacție de
+`Deschidere` lunară (094 interzice dublarea faptelor); redeschiderea e
+explicită, cu motiv, logată, numai pe ultima perioadă închisă, în lanț
+(088 a/c), și readuce perioada la regulile uneia deschise: retroactivul e
+permis dacă nu produce stoc negativ în nicio zi, iar **valoarea ieșirilor
+deja operate nu se rescrie** — reevaluarea la redeschidere ar fi mecanismul
+`Atribuit` (090 k, N-r5) și rămâne TR-D9; fiscalul declarat nu se
+redeschide, se regularizează (103). Corecția în perioadă închisă rămâne
+storno legat + document nou (088 h). Felia nu atinge acest model; X-D5
+dovedește consecința lui pentru cititori: după cutoff, citirea pornește din
+snapshot și nu atinge istoricul.
+
+## X-D2 — Testul de arhitectură al registrelor și lista nominală (T-r11 pe întregul inventar)
+
+`ProbeCititoriCub` (091-r3) apără azi numai rândurile cubului. Se adaugă
+proba inversă: **niciun cititor de producție** (`Proiectii/`, `Api/`,
+controllere WebApi/OData, `Culegere/`, `Saft/`, `Declaratii/`) nu citește
+`RegistruContabil`, `RegistruStoc`, `RegistruTva`, `RegistruImobilizari` sau
+`Imperechere` ca sursă de sold/rulaj/rest. Excepțiile permise sunt o listă
+închisă, cu rolul fiecărei intrări, și se împart în trei clase:
+
+1. **scriitori ai regimului dual** (`MotorOperare`, `StocService.R` pentru
+   absorbția ASM, `CorectieService`, `LoturiCulegereService` cât timp culeg
+   din registre — de verificat la prima rulare);
+2. **martori și diagnostice** (`Invarianti`, `Imobilizari.VerificaAcoperire`,
+   `RegistruTva` ca martor în `TvaProiectii` dacă mai există, `Asignari`);
+3. **suprafețe de evidență XAF** ale registrelor (`ContaUiBaseline`, listele
+   de registre): rămân până la TR-D9 și se declară ca atare.
+
+Prima rulare a probei produce lista reală; fiecare intrare intră într-una din
+clase sau este defect corectat în felie. O intrare numește **utilizarea**
+permisă (fișier + metodă + registrul + rolul), nu absolvă un serviciu întreg
+prin apartenența la o clasă; `LoturiCulegereService` sau `CorectieService`
+intră cu metoda care scrie/culege din registru, iar orice altă citire a lor
+rămâne încălcare. Lista finală este „lista nominală a
+consumatorilor portați" cerută de D8-B5 și se copiază în
+`stare-curenta/dezvoltare-si-validare.md`. Regula N-r8 se probează pe fiecare
+cititor comun: `Contabil` exclude `Transfer` și inversa lui, `Loturi` și
+`Partide` le includ, niciun consumator nu refiltrează.
+
+## X-D3 — Reconcilierea transversală (a)–(h) pe o bază întreagă
+
+`--reconciliere-cub` rulează azi pe scenă (`STR-RECONCILIERE`, set restrâns)
+și a rulat integral numai pe Flax, care nu mai există (102). Litera (h) e
+livrată pentru delimitarea ASM, nu măsurată pe o bază întreagă. Se pin-uiește:
+
+- (a) reconcilierea integrală (`documente = null`) rulează pe baza de volum
+  sintetică din X-D5, la fiecare treaptă m (0, 6, 12 luni închise), pe ambele
+  profiluri, **înaintea purjei**: (a)–(g) = 0 rânduri Δ, exit 0; (h)
+  descompusă pe grupul-sursă și raportată în `run-verificari/`;
+- (b) `Invarianti.Verifica` (INV-CUB) rulează pe aceeași bază, în același
+  punct, nu doar pe scenele suitei;
+- (c) diagnosticul ASM-B7 (lot × gestiune × cont, cu proveniență) rulează pe
+  aceeași bază și își raportează pozițiile cu cantitate zero și valoare
+  nenulă; nicio diferență nu se declară N-r3 automat;
+- (d) întrebarea T-D10 „cine are dreptate, cubul sau registrul" pe datele 1C
+  este a migrării (091-r4), nu a acestui gate; aici cubul și registrele sunt
+  scrise de aceleași comenzi și orice Δ (a)–(g) este defect, nu consecință.
+
+## X-D4 — Explicația deciziei persistată (S-r2, 090 j)
+
+Fapt măsurat în cod: `Contractare.Contracteaza` întoarce `N.Contract` cu
+`Decizii` (`AlocareFifo`, `ValoareIesire`, `PartidaDeschisa`, `ContRezolvat`,
+`AbsorbtieEvaluare`), `Ipoteze` (`SoldUnitateCitit`, `PerioadaDeschisa`,
+`VersiunePolitica`) și `JumatatiDeBan`; `Materializare.Opereaza` scrie numai
+`contract.Tranzactii`. Explicația se pierde la fiecare operare.
+
+Se pin-uiește:
+
+- (a) **ce se persistă**: explicația unui contract se scrie **o singură
+  dată**, pe **prima tranzacție efectiv produsă** de contract — `Operare`
+  când există, altfel `Transfer` (BTR produce numai `Transfer`, X-RV5.1); a
+  doua tranzacție a aceleiași declarații poartă numai referința la ea
+  (`ExplicatieDin`), ca nicio decizie să nu fie numărată de două ori
+  (X-RV5). Conținutul: lista ordonată a deciziilor și ipotezelor, cu
+  `Linie` și `Unitate` acolo unde le au, `JumatatiDeBan`, numele
+  declarantului, versiunea schemei; pentru `Storno` originea este
+  `InversaDin` și explicația este a originalului, nu se duplică; pentru
+  `Transfer` din împerechere (`Motor.Transfera`) și pentru `Deschidere`
+  explicația este goală, declarat;
+- (b) **forma** este alegerea owner-ului (X-Q1); recomandarea este o coloană
+  `Explicatie jsonb` pe `Tranzactie`, scrisă în aceeași instrucțiune cu rândul,
+  cu schemă versionată (`v`, `declarant`, `jumatati`, `decizii[]`,
+  `ipoteze[]`), migrație scrisă în SQL (S-r4), append-only ca tot cubul;
+- (c) **cititorul** `Cub.Citiri.Explicatii` întoarce înregistrări tipizate pe
+  tranzacție și pe linie („de ce acest lot": alocările și valoarea ieșirii
+  per unitate, soldul citit, versiunea politicii); intră în lista permisă
+  091-r3; se expune read-only prin API (`GET` pe tranzacție), fără pagină React
+  nouă (104d). **Autorizarea** (X-RV2): explicația dezvăluie solduri
+  integrale ale unităților (`SoldUnitateCitit`) și valori ale altor linii,
+  pe care vizibilitatea tranzacției nu le acoperă; de aceea citirea
+  explicației cere **acces complet** la domeniul ei (tipurile, membrii
+  valorici și istoricul unităților atinse), verificat înaintea proiecției
+  după precedentul `SaftAcces`/SAF-D4; fără acces complet, refuz
+  `EXPLICATIE_ACCES_INCOMPLET` (403 pe tranzacție vizibilă, 404 pe
+  invizibilă), niciodată o proiecție parțială;
+- (d) **invariantul de audit** (probă ModelCheck, ambele profiluri), pe
+  mecanism, cu domeniu și semn explicite (X-RV5): (1) o postare de ieșire
+  pe lot evaluată din sold (BCS, DSC, LDI minus, ASM consum, NTC pe lot în
+  `Operare`; BTR și celelalte transferuri evaluate în `Transfer`, unde
+  capătul-sursă −Q/−V se normalizează față de decizia +Q/+V, X-RV5.1) are
+  exact o `ValoareIesire` a aceleiași linii și unități, cu valoarea
+  postată, și un `SoldUnitateCitit` al unității; (2) o ieșire a cărei valoare nu vine din sold (RLF la valoare
+  fiscală, NIR-delta) are exact o decizie nouă `ValoareDeclarata(Linie,
+  Unitate, Cantitate, Valoare, Sursa)` în nucleu (ierarhie închisă N-D11,
+  cu teste), fără schimbarea evaluării aprobate; (3) stornoul unei intrări
+  (cantitate negativă pe lot în tranzacție `Storno`) nu are explicație
+  proprie: verifică inversa și explicația originalului; (4) o stingere FIFO
+  are `AlocareFifo` per unitate; (5) anularea fizică șterge explicația odată
+  cu tranzacția (excepția declarată în 091, punctul 5, de tranșat la TR-D9);
+  (6) proba cade dacă explicația e eliminată sau alterată (mutant);
+- (e) **scenariile** SC-CIT-96…99 (catalogul [CITIRI](scenarii/CITIRI.md)):
+  „de ce acest lot" pe BCS din două loturi cu prețuri diferite, pe NTC cu
+  stingere FIFO pe două partide, pe ASM cu `AbsorbtieEvaluare` și
+  `Operare` + `Transfer` (o singură explicație, referită), pe BTR (purtător
+  `Transfer`, semnul sursei normalizat), pe RLF la golire cu reziduu și
+  NIR-minus (`ValoareDeclarata`), plus **HTTP pe host viu**:
+  tranzacție vizibilă cu (1) membru valoric refuzat, (2) altă linie refuzată,
+  (3) istoric parțial al unității — răspunsul este 403 fără nicio valoare
+  derivată; storno → explicația originii;
+- (f) dry-run-ul nu persistă nimic; S-r11 se închide aici: excepțiile de
+  construcție (`InvalidOperationException` din `Contractare`,
+  `ArgumentException` din nucleu) devin refuz cu cod stabil
+  `DECLARATIE_INVALIDA`, 422 pe ușa API, nu 500.
+
+## X-D5 — Scara transversală: costul cititorilor comuni, criterii de formă
+
+Nu există bază de volum reală (102); o cifră se compară doar cu ea însăși pe
+aceeași bază. Precedentul aprobat este B8-Q2 = A (scară sintetică) și
+B8-RV3-P (rulare în container, `ANALYZE` înaintea măsurării, proces nou per
+punct, rece/cald). Se pin-uiește, sub rezerva X-Q2:
+
+- (a) **scena** `PerfCub` generalizează `PerfSaft`: aceeași unitate (FCT+NIR,
+  PLT, BCS, BTR, DSC, ASM, FCL+INC) pe privat; pe bugetar unitatea fără DSC și
+  cu ASM/LDI după disponibilitatea tipului; k ∈ {1, 4, 16, 64} unități în luna
+  măsurată, m ∈ {0, 6, 12} luni închise × 16 unități, lotul „lung". Ca
+  ramurile reconcilierii și INV-CUB să nu fie verzi pe mulțime vidă (102d),
+  scena mai conține, o dată per bază: `Deschidere` (bloc + lot + partidă)
+  la începutul istoricului când m > 0, o NTC cu împerechere explicită
+  (transfer pe partidă), un PIF cu AMO lunară, o LDI minus, și pe privat o
+  DVI legată la FCT și un RLF; artefactul X-D3 listează per ramură faptele
+  exercitate și contoarele/notele (grupuri incomplete, (f) vacuă), nu numai
+  exit 0;
+- (b) **ce se măsoară**, fiecare într-un proces nou, rece și cald, cu numărul
+  comenzilor SQL, `ms`, `ms SQL`, rânduri citite, alocări, vârfuri: balanța
+  lunii, fișa contului cu cele mai multe postări, jurnalul lunii, soldul
+  partenerilor, `PartideCuRest`, raportul de stoc, disponibilul FIFO al unui
+  BCS nou (costul operării), reconstrucția snapshot-urilor (contabil, stoc,
+  partide), jurnalele TVA, D300, D394, SAF-T L și S (deja măsurate, se
+  reiau pe aceeași bază), raportul de impact R6 (103h), `PartideDisponibile`
+  (102-r5, numai măsurat), închiderea unei luni; fiecare pe ObjectSpace
+  securizat (`Admin`) și nesecurizat acolo unde produsul are ambele căi;
+- (c) **criteriile**, fără prag absolut, într-o matrice operație × rută ×
+  criteriu (X-RV7): rutele sunt „citire din snapshot valid", „reconstrucție"
+  (citește legitim istoricul pe care îl reconstruiește), „recitire fără
+  graniță sigură" (acces parțial, excluderea unui document); comenzi SQL
+  constante în k și m (fără N+1); pentru rutele cu snapshot, **proba din
+  plan**: la k fix, `EXPLAIN (ANALYZE, BUFFERS)` pe m = 0/6/12 arată același
+  număr de partiții/intervale atinse pe `Postare`, `actual rows × loops` și
+  buffers pe nodurile de scanare independente de m — „rândurile livrate" nu
+  sunt proba, un `SUM` pe tot istoricul întoarce un rând; liniaritate
+  f(4k) ≤ 1,25 × 4 × f(k) pe durată și alocări la cald; cardinalitatea
+  rezultatului se fixează sau creșterea ei justificată se raportează
+  separat; XSD/DUK pe SAF-T la k = 64; **controlul numeric**: fiecare cititor
+  măsurat se compară pe aceeași stare cu un oracol independent (așteptările
+  scenei, nu alt cititor) înainte și după orice optimizare, ca un cititor
+  „rapid" care omite soldul inițial să cadă; **un criteriu picat lasă X-D5
+  și TR-D8 deschise** (X-RV6): o amânare este amendament explicit al
+  owner-ului, cu cititorul, criteriul, cifra și restanța numite, nu o
+  linie adăugată în `limite-curente`;
+- (d) **ce tranșează cifrele**: SAFT-r4 (balanța L/S pornește din snapshot
+  când accesul e complet; se închide dacă rândurile citite devin independente
+  de m), FZ-r1 (granul `Sold`: A/B snapshot contra recitire pe aceeași bază;
+  se închide cu cifra, fără al doilea read model dacă nu o cere), FZ-r3
+  (planul `(Unitate, Data)` la k = 64 și m = 12; volumul real rămâne
+  migrare), 103h (costurile R6 primesc buget măsurat, nu estimat);
+- (e) rularea: `ModelCheck --perf-cub` în containerul `dotnet/aspnet:10.0`
+  din `perf-saft-container.ps1` generalizat, artefacte `run-verificari/perf-cub-*`
+  (tabel, planuri `EXPLAIN (ANALYZE, BUFFERS)` la k = 64, `rulare.json` cu
+  commit și hash DLL); raportul intră în `docs/api/p5-perf-masuratori.md`.
+
+## X-D6 — Concurența pe două conexiuni reale (091 g4)
+
+Blocajele existente: perioada este deja serializată (F27-D1: gardianul de
+operare ia `FOR SHARE` pe rândul perioadei, închiderea ia `FOR UPDATE` ca
+primă instrucțiune; două operări nu se blochează între ele); `FOR UPDATE` pe
+tranzacția de deschidere și pe documentele stingerii (DES, în ordinea `ID`);
+`pg_advisory_xact_lock` pe suport (97001), pe sursa recepției (97002) și pe
+depuneri (fiscal). **Nu există blocaj pe lot și nici pe partidă**;
+`VerificaSoldIntermediar` și `VerificaDisponibilTemporal` citesc și verifică
+fără a ține rândul. Direcția fixată de 091: blocaj pesimist în tranzacția
+de comandă, nu `Serializable` cu reluare.
+
+**Alegerea owner-ului, 2026-10-01: scrierea în cub este serială per bază
+(nivelul 3).** Dintre cele trei granularități discutate (chei fine pe
+unitate, X-RV1.1/1.2; gestiune + partener; un singur blocaj per bază),
+owner-ul a ales modelul natural: o comandă care scrie în cub (operare,
+storno, anulare, corecție, împerechere, desfacere, stingere de deschidere,
+reconstrucție) ia la intrare un `pg_advisory_xact_lock` constant și îl ține
+până la commit; citirile nu-l ating niciodată. Limita se transferă către
+modul de operare: doi operatori nu scriu simultan în cub, al doilea așteaptă
+durata unei comenzi. Prețul primește cifră în X-D5 (durata fiecărei comenzi
+la k = 64, m = 12). Rafinarea pe gestiune + partener intră ca restanță
+`X-r1`, cu criteriul ei: așteptare pe blocaj măsurată peste un prag fixat de
+owner atunci, nu acum. X-RV1.1 și X-RV1.2 se închid prin construcție: nu
+există chei de derivat și nici ordine între ele.
+
+Se pin-uiește:
+
+- (a) **probele**, fiecare cu două `IObjectSpace`-uri pe conexiuni distincte,
+  pe ambele profiluri, cu o **matrice a rezultatelor seriale permise** per
+  scenariu și per ordine (X-RV4), nu regula globală „exact una trece":
+  două consumuri pe același lot când încape unul singur → un succes și un
+  refuz de domeniu; două consumuri care încap amândouă pe lot 3/1,00 →
+  **ambele acceptate, cu valorile 0,33 și 0,34 în ordinea serializată și
+  rest 1/0,33**, explicațiile persistate dovedind cele două solduri citite
+  diferite (X-RV1); consum contra retragerea intrării (storno FCT/NIR) →
+  un succes și un refuz, în ambele ordini; două stingeri pe aceeași partidă
+  peste rest → un succes și un refuz; operare contra închiderea perioadei
+  ei → operare → închidere ambele acceptate, închidere → operare refuzată
+  (F27-r8); două detalii noi pe același document → poziții distincte,
+  ambele acceptate (S-r9 e despre `DocumentDetaliu.Pozitie`); două
+  împerecheri pe aceeași pereche → rezultatul din sumele fixture-ului. În
+  toate: niciun 500, nicio excepție de unicitate, cubul conservat, `INV-CUB`
+  verde. Sincronizarea testului lasă prima sesiune să facă commit când a
+  doua a intrat în așteptarea blocajului (timeout și rollback controlate),
+  nu cere ambelor să fie simultan în secțiunea protejată;
+- (b) **mecanismul**: blocajul protejează **citirea care decide valoarea**,
+  nu doar scrierea (X-RV1). Un singur `pg_advisory_xact_lock` cu cheie
+  constantă, luat într-un singur loc (`TranzactieComanda.Incepe` sau
+  echivalentul de la intrarea comenzii), **înaintea** planului registrelor
+  (`MotorOperare.Opereaza`), a contractului (`Contractare`) și a oricărui
+  alt blocaj existent; toate celelalte blocaje (perioada F27-D1, documentele
+  stingerii, 97001, 97002, depunerile) rămân și se iau după el, deci
+  ordinea comună e „global → restul", fără cicluri posibile. Dry-run-ul
+  (`Valideaza`/`Refuzuri`) și citirile nu iau blocajul; `Pozitie` pe
+  detalii se atribuie sub blocajul global, ca orice scriere;
+- (c) **proba structurală**: fiecare comandă care scrie în cub ia blocajul
+  global ca primă instrucțiune (probă ModelCheck pe captura SQL a fiecărui
+  tip de comandă, inclusiv împerecherea, stingerea de deschidere,
+  reconstrucția și închiderea), plus proba că nicio citire de producție nu
+  îl ia; probele de interacțiune din (a) rămân toate și trec prin
+  construcție, dar se rulează pe două conexiuni reale ca să dovedească
+  serializarea, nu s-o presupună;
+- (d) 097-r3 (blocajul comun IMO) și blocajele fine existente rămân așa cum
+  sunt; blocajul global le acoperă, scoaterea lor e a lui TR-D9 dacă se
+  dovedește redundantă.
+
+## X-D7 — Activarea, regimul dual și restanțele TR-D8
+
+- (a) **istoric de stoc incomplet** (probă ModelCheck pe fapte, înaintea
+  purjei, nu la pornirea hosturilor, 102d): `Invarianti.Verifica` acoperă
+  azi contabilul (din `RegistruContabil`, pe grupul recepției prin
+  `Receptii.Legaturi`), deschiderea, partidele și fișele; se adaugă
+  acoperirea cantitativă **pe eveniment/grup și proveniență**, nu pe rând
+  (X-RV3): registrele recepției conexe aparțin NIR-ului, cubul are recepția
+  pe FCT și numai delta pe NIR (NIR-D1/D2, 098/099), deci corespondența se
+  face pe grupul-sursă (lot, gestiune, cont, sens, origine de storno), cu
+  Σ cantitate egală per grup și fără ca o postare să acopere două rânduri;
+  transferurile cantitative (BTR) au ambele capete; lipsa =
+  `CITIRE_ISTORIC_STOC_INCOMPLET`. Probe: recepție conexă cu delta zero,
+  minus, plus și storno trec nemodificate; ștergerea unui efect sau a
+  provenienței și lipsa unui capăt BTR sunt detectate; așteptările
+  cantitative sunt independente de interogarea invariantului;
+- (b) **`PosteazaInCub` nu se stinge**: odată ce un tip are tranzacții în
+  cub, trecerea pe `false` este refuzată de gardian (X-Q4), iar seed-ul nu o
+  aliniază pe `false`; altfel un document nou ar produce fapte doar în
+  registre și cititorii ar minți tăcut;
+- (c) **T-r14**: `Transformare.FaraContrapondere` e aplicat în `Contabil`,
+  `Partide` și `Invarianti`; se probează pe fiecare cititor comun (fișă,
+  jurnal, GL, MovementOfGoods, `Loturi`) că contraponderile nu apar și că
+  diagnosticul `Comparabil` le numără; restanța se închide cu probele;
+- (d) **N-r8**: regula listării: jurnalul și fișa de cont nu arată `Transfer`
+  și nici stornoul lui; fișa partidei și a lotului le arată ca rânduri cu
+  eticheta felului; probă pe fiecare;
+- (e) **097-r1**: `Imobilizari.VerificaAcoperire` există; se probează pe
+  istoric fără fișă/origine/suport că refuză, și restanța se închide;
+- (f) **102-r4**: alegerea owner-ului (X-Q3); recomandarea este refuz
+  `IMPERECHERE_FARA_EFECT` pe ramura negativă a desfacerii automate, cu
+  proba mutantului;
+- (g) **T-r11**: se închide prin X-D2 (o singură intrare `Carte=Contabil`,
+  probele cu DVI fiscală prezentă pe rulaje și solduri filtrate pe partener
+  există în SC-DVI/SC-CIT; se listează în închidere);
+- (h) **T-r13** rămâne activă (TR-D9): aici doar diagnosticul ASM-B7 pe baza
+  de volum (X-D3 c).
+
+## X-D8 — Integrala, review-ul advers și închiderea
+
+Ordinea pașilor, un commit per pas pe `tr-d8-transversal`:
+
+0. Contractul (acest fișier) → review Codex → aprobarea owner-ului pe
+   X-D1…X-D8 și răspunsurile X-Q1…X-Q4.
+1. X-D2: proba registrelor, lista nominală, N-r8 pe cititori.
+2. X-D4: migrația SQL, materializarea explicației, cititorul, API,
+   SC-CIT-96…99, S-r11.
+3. X-D6: probele de concurență, blocajul per unitate, S-r9, deadlock.
+4. X-D7: acoperirea cantitativă, gardianul `PosteazaInCub`, T-r14, N-r8,
+   097-r1, 102-r4.
+5. X-D5 + X-D3: `PerfCub`, reconcilierea integrală și INV-CUB pe baza de
+   volum, măsurătorile în container, tranșarea SAFT-r4/FZ-r1/FZ-r3/103h.
+6. Integrala ambele profiluri, `refuzuri.ps1` pe host viu, drift OpenAPI,
+   review advers Codex prin `comunicari/`, decizia 108, `stare-curenta/`,
+   `restante.md`, `istoric-plan-de-lucru.md`, CLAUDE.md §Stare.
+
+Regula de oprire:
+
+- un rând Δ pe (a)–(g) în X-D3 este defect, nu declarație; felia nu se
+  închide cu Δ;
+- o probă de concurență al cărei rezultat diferă de matricea serială din
+  X-D6 (a) este oprire până la corectarea mecanismului;
+- un cititor de producție pe registre în afara listei nominale este defect;
+- niciun prag absolut de perf nu se inventează; un criteriu de formă picat
+  lasă gate-ul deschis; amânarea e amendament explicit al owner-ului, nu
+  text în `limite-curente`;
+- ModelCheck roșu pe oricare profil = oprire; o singură rulare grea o dată;
+  baza de volum se măsoară în container, nu prin proxy-ul Docker Desktop.
+
+## X-Q — întrebările pentru owner
+
+**Pin-urile owner-ului, 2026-10-03: X-Q1 = A, X-Q2 = A, X-Q3 = A, X-Q4 = A.**
+Recomandarea Claude și Codex a fost aceeași. Opțiunile B rămân mai jos ca
+istoric al tranșării, nu se implementează.
+
+- **X-Q1** forma explicației deciziei: **A** = `Explicatie jsonb` pe
+  `Tranzactie`, schemă versionată, cititor + `GET` read-only (recomandat:
+  compact, o singură scriere, append-only, interogabil); **B** = tabelă copil
+  normalizată `Decizie` (rând per decizie/ipoteză). Ambele fără pagină React.
+- **X-Q2** gate-ul de perf: **A** = scara sintetică `PerfCub` cu criteriile de
+  formă din X-D5 (c), fără prag absolut, în container (recomandat; precedentul
+  B8-Q2 = A); **B** = amendament de perimetru: X-D5 iese din gate și
+  rămâne restanță până la o bază de volum reală (migrare); TR-D8 s-ar
+  închide fără cifre de perf, declarat în decizia 108.
+- **X-Q3** 102-r4: **A** = refuz `IMPERECHERE_FARA_EFECT` pe ramura negativă a
+  desfacerii automate (recomandat: o singură sursă de reguli, fără urmă
+  tăcută); **B** = invariant `INV-CUB` „legăturile vii ale perechii nu depășesc
+  efectul pe partide", desfacerea rămâne permisă.
+- **X-Q4** `PosteazaInCub` după prima tranzacție în cub: **A** = ireversibil,
+  refuz în gardian și seed (recomandat); **B** = permis cu diagnostic la
+  activare (`CITIRE_ISTORIC_INCOMPLET` ar prinde documentele ulterioare).
+
+## Amendamente după review-ul Codex (2026-10-01)
+
+[Review-ul](tr-d8-transversal-review-codex.md) a adus șapte observații;
+toate sunt acceptate și încorporate mai sus, cu probele lor de închidere:
+
+| Obs. | Ce schimbă în contract |
+|---|---|
+| X-RV1 (P1) | X-D6 (b): blocajul se ia la intrarea comenzii, pe chei grosiere derivate din linii, înaintea planului registrelor și a contractului; proba pozitivă 3/1,00 → 0,33 + 0,34; inventarul ordinii comune a blocajelor; X-D6 (c) căile mixte reale |
+| X-RV2 (P1) | X-D4 (c): explicația cere acces complet pe domeniul ei (precedent SAF-D4), altfel refuz; X-D4 (e) probe HTTP cu membru/linie/istoric refuzate |
+| X-RV3 (P2) | X-D7 (a): acoperirea cantitativă pe grup și proveniență, nu pe rând; probele NIR conex delta zero/minus/plus/storno |
+| X-RV4 (P2) | X-D6 (a): matrice a rezultatelor seriale per scenariu și ordine; S-r9 = `DocumentDetaliu.Pozitie`; sincronizarea testului fără secțiune simultană |
+| X-RV5 (P2) | X-D4 (a)/(d): explicația o singură dată per contract, referită de `Transfer`; invariant pe mecanism; `ValoareDeclarata` pentru RLF/NIR-delta; stornoul verifică originea |
+| X-RV6 (P2) | X-D5 (c), regula de oprire, X-Q2 (B): criteriu picat = gate deschis; amânarea = amendament explicit al owner-ului |
+| X-RV7 (P2) | X-D5 (c): matrice operație × rută × criteriu, proba din plan (partiții, `actual rows × loops`, buffers), reconstrucția separată, controlul numeric cu oracol independent |
+| răspunsuri 1, 5 | X-D5 (a): fixture-ul exercită Deschidere, NTC + împerechere, PIF/AMO, LDI, DVI, RLF; artefactul X-D3 arată contoarele și notele per ramură; X-D2: intrarea permisă numește utilizarea; „la pornire" scos (102d) |
+| X-RV1.1, X-RV1.2 (reverificare) | închise prin alegerea owner-ului: blocaj global per bază (X-D6), fără chei de derivat și fără ordine între ele; rafinarea = restanța X-r1 |
+| X-RV5.1 (reverificare) | X-D4 (a)/(d)/(e): purtătorul explicației e prima tranzacție efectiv produsă (BTR = `Transfer`); transferurile evaluate intră în invariant cu semnul sursei normalizat; BTR în probele auditului |
+
+Reverificarea Codex (`comunicari/2026-10-01-1122-…`) a închis X-RV2, X-RV3,
+X-RV4, X-RV6, X-RV7. Recomandarea lui Codex pe X-Q1…X-Q4 este A/A/A/A, ca a
+mea; pin-ul rămâne al owner-ului.
+
+## Execuție
+
+### Pasul 1 — X-D2: proba registrelor, lista nominală, N-r8 pe cititori (2026-10-03)
+
+Livrat: `tools/ModelCheck/ProbeCititoriRegistre.cs` + `.Lista.cs` (proba
+`X-D2`), `ProbeTransferCititori.cs` (proba `N-r8`), `SursaProductie.cs`
+(arborii sintactici ai sursei de producție), SC-CIT-100…102 și modul
+`ModelCheck --probe-sursa [--lista]`. Regula, lista nominală și limitele
+probei stau în `stare-curenta/dezvoltare-si-validare.md` și
+`limite-curente.md`.
+
+Ce a arătat prima rulare (87 de utilizări fișier × membru × registru în 291
+de fișiere) și cum amendează X-D2:
+
+1. **Trei clase în plus față de cele trei din contract.** *Maparea EF*
+   (`BackOfficeEFCoreDbContext`). *Autorizarea*: rutele care întorc cifre cer
+   dreptul de citire pe tipul registrului (`RegistrulCitibil` în trei
+   controllere, `PerioadeController.TipuriInsumate`), deși cifrele vin din cub
+   (F22-D5, 80e). *Legătura*: `Imperechere` nu este registru, este legătura
+   explicită dintre două documente și rămâne după TR-D9; proba îi fixează
+   membrii, ca suma legăturilor să nu redevină sursă de rest. Singurul calcul
+   care o citește este `Partide.NominalizataLibera` (101).
+2. **Un defect, corectat.** `TvaProiectii.IntreLuni(IQueryable<RegistruTva>)`
+   era un cititor de registru rămas în `Proiectii/`, fără apelant de producție;
+   a ieșit, iar oracolul pe registrul fiscal stă în ModelCheck.
+3. **Intrările „de verificat" din contract.** `LoturiCulegereService` nu culege
+   din registru: `LoturiLiniiSterse.Curata` întreabă numai dacă lotul are urmă
+   (martor). `CorectieService.Corecteaza` scrie perioada inversei (scriitor).
+   `ImperecheriProiectii.Asignari` și martorul `RegistruTva` din `TvaProiectii`
+   nu mai există.
+4. **Perimetrul cititorilor.** În `Proiectii/`, `Api/`, `Culegere/`, `Saft/`,
+   `Declaratii/` și WebApi sunt 12 intrări: 4 de autorizare, 7 ale legăturii
+   și una singură care consumă un sold de registru, absorbția ASM-B6 din
+   `DeclarantAsamblare.Declara` (clasa 1 a contractului, „`StocService.R`").
+   Evaluarea cubului citește `Loturi.Cumulate`, nu registrul.
+5. **Cod fără apelant de producție.** `StocService.Sold`, `AlocaFifoTolerant`
+   și `AlocaFifo` sunt chemate numai de ModelCheck. Rămân declarate în clasa 1
+   până la TR-D9; proba refuză orice apelant nou.
+6. **N-r8.** Regimul fiecărei intrări publice pe rânduri de cub este declarat
+   și probat numeric. `Fiscale.Postari` și `Imobilizari.PozitiiFaraFisa` nu
+   filtrează felul; `PozitiiFaraFisa` întoarce contraponderile ASM, cu valoare
+   zero, iar consumatorul ei filtrează pe conturile imobilizărilor. Regula
+   listării rămâne la X-D7 (d).
+
+Limita probei: scanarea e sintactică, iar purtătorii netipizați de date de
+registru sunt declarați de mână (`Purtatori`).
+
+De înregistrat ca restanță la decizia de închidere: **X-r2** — subiectul
+permisiunii care păzește cifrele citite din cub, după tăierea tipurilor de
+registru (TR-D9).
+
+**Numărul deciziei de închidere: 108 (owner, 2026-10-03).** Contractul o
+numea 107, dar 107 este luat de `107-deschiderea-de-terti-din-balanta-nivel3.md`
+pe branch-ul nemers `m1-deschidere-terti`. Numerele nu se refolosesc: M1 își
+păstrează 107, închiderea gate-ului este 108.
+
+Validare: integrala **3.277 bugetar / 4.485 privat OK**, zero FAIL,
+`run-verificari/20261003-173905-898/`; scenele ASM, BTR și PLT separat pe ambele
+profiluri, `run-verificari/20261003-173755-531/`. Bazele: clonele `.ClaudeX1`.
+
+### Pasul 2 — X-D4: explicația deciziei persistată, S-r11 (2026-10-03)
+
+Livrat: `ValoareDeclarata` în nucleu; `Cub/Explicatie.cs` (forma versionată
+și derivarea pe linii); coloanele `Explicatie` și `ExplicatieDinId` pe
+`Tranzactie`, cu migrația `ExplicatieTranzactie` scrisă în SQL;
+`Materializare.Opereaza` scrie explicația pe prima tranzacție a contractului;
+`Cub/Citiri/Explicatii.cs` (cititorul și invariantul de audit, în `INV-CUB`);
+`GET api/proiectii/explicatii/{tranzactieId}` cu `ExplicatieAcces` și
+`Api/AccesComplet.cs`; `DECLARATIE_INVALIDA` în `Contractare`; scena
+`ScenariiExplicatii`, SC-CIT-96…99, șapte mutanți `INV-CUB-EXPLICATIE-*` și
+proba HTTP `ProbeHttp/explicatii.py`. Regula stă în
+`stare-curenta/domeniu-si-operare.md` și `api-si-client.md`, limitele în
+`limite-curente.md`.
+
+Ce a arătat implementarea și cum amendează X-D4:
+
+1. **Domeniul invariantului e mecanismul, nu lista de tipuri.** Orice postare
+   pe lot cu cantitate negativă dintr-o tranzacție `Operare` sau `Transfer`
+   cere exact o decizie de valoare. Invariantul e verde pe cele 53 de scene
+   ale fiecărui profil după ce RLF, RDC și NIR-minus emit `ValoareDeclarata`;
+   mutantul `EXPLICATIE-DECLARATA` dovedește că lipsa ei e prinsă.
+2. **„NTC pe lot în `Operare`" din (d)(1) nu există.** Nota contabilă nu
+   poartă loturi; din NTC intră în invariant numai stingerea FIFO, la (d)(4).
+3. **RDC intră la (d)(2) alături de RLF și NIR-minus.** O linie de retur de
+   la client cu cantitate pozitivă scoate lotul la valoarea culeasă, deci
+   primește `ValoareDeclarata`. Evaluarea aprobată nu se schimbă.
+4. **(d)(1) e mai tare decât pinul.** Pe lângă „o decizie cu valoarea
+   postată și un sold citit", invariantul recalculează fiecare `ValoareIesire`
+   din soldul persistat, în ordinea deciziilor, cu rotunjirea bazei
+   (`CITIRE_EXPLICATIE_EVALUARE`). Altfel soldul citit ar fi fost text
+   neverificat, iar mutantul care îl alterează ar fi supraviețuit.
+5. **Soldul citit e net.** Operandul construiește `Sold(net, 0, cantitate)`
+   din `Loturi.Cumulate`, nu rulajele debit/credit ale lotului.
+6. **Referința e apărată de bază.** `ExplicatieDinId` are FK spre `Tranzactie`
+   și două CHECK-uri: explicația numai pe `Operare`/`Transfer` cu document,
+   referința numai pe `Transfer`. Relația e și în modelul EF, ca inserarea și
+   ștergerea celor două tranzacții să-și respecte ordinea (anularea ASM mixt,
+   SC-ASM-09).
+7. **(d)(4) are și direcția inversă.** Fiecare `AlocareFifo` își are postarea,
+   iar fiecare postare `Operare` pe partida altui document are `AlocareFifo`.
+   Toți declaranții cu partide o respectă fără modificări.
+8. **S-r11.** `Contractare` nu mai aruncă pentru declarația neconstruibilă:
+   întoarce contract refuzat cu `DECLARATIE_INVALIDA`. Rămâne excepție numai
+   documentul al cărui tip nu declară, pe care coaja îl refuză înainte.
+   Declanșatorul probat e o cantitate în afara scării, ținută în memorie; pe
+   ușa HTTP codul nu e probat separat (limită declarată).
+9. **Accesul.** Mecanismul SAF-D4 s-a mutat din `SaftAcces` în
+   `Api.AccesComplet`, cu lista tipurilor ca parametru; `SaftAcces` îl
+   apelează. DTO-ul se numește `ExplicatieContractDto`, fiindcă
+   `Politici.ExplicatieDto` exista.
+10. **Proba HTTP lasă reziduu.** Stornoul nu se poate anula, deci
+    `explicatii.py` rulează pe o clonă de unică folosință.
+
+De dus la pasul 6: ușa explicației în matricea `refuzuri.ps1`.
+
+Validare: nucleu **180/180**; integrala **3.309 bugetar / 4.518 privat OK**,
+zero FAIL, `run-verificari/20261003-182901-833/`, pe clonele `.ClaudeX2`;
+SC-CIT-99 pe host viu 8/8 PASS, `run-verificari/x2-expl-http/proba.log`;
+`--probe-sursa` verde.
+
+### Pasul 3 — X-D6: scrierea serială per bază, probele pe două conexiuni, S-r9 (2026-10-03)
+
+Livrat: blocajul scrierii în `TranzactieComanda.Incepe`
+(`BlocajScriere`, refuzul `SCRIERE_OCUPATA`); `Materializare.CereScriere` pe
+deschidere și pe stingerea ei; `Pozitie` atribuită sub blocaj, în tranzacția
+salvării (`BackOfficeEFCoreDbContext.SaveChanges`); proba pe sursă `X-D6`
+(`tools/ModelCheck/ProbeBlocajScriere.cs`) și scena `ScenariiConcurenta`
+(SC-X-15…SC-X-23, `--scenarii X`). Regula stă în
+`stare-curenta/domeniu-si-operare.md` („Scrierea serială per bază”),
+limitele în `limite-curente.md`. S-r9 și F27-r8 închise.
+
+Ce a arătat implementarea și cum amendează X-D6:
+
+1. **Locul unic exista deja.** Toate comenzile își deschideau tranzacția prin
+   `TranzactieComanda.Incepe`/`Asigura` (18 apeluri), deci blocajul a intrat
+   acolo, fără nicio atingere în `MotorOperare`. Îl iau și comenzile care nu
+   scriu cubul direct — generarea și regenerarea AMO și ITV, confirmarea
+   depunerii: citirile lor decid ce scriu, iar „luna liberă” (79) e aceeași
+   cursă.
+2. **Două uși rulează în tranzacția apelantului.** `Materializare.Deschide`
+   și stingerea de deschidere nu au apelant de producție și nu își deschid
+   tranzacția; iau blocajul la intrare, reentrant, prin `CereScriere`.
+3. **S-r9 întinde blocajul peste salvarea draftului.** `Pozitie` se calcula
+   înaintea tranzacției salvării. Acum salvarea care adaugă detalii fără
+   poziție își deschide tranzacția, ia blocajul și abia apoi citește maximul;
+   la eșec, pozițiile atribuite se șterg, ca reluarea să recitească. Prețul:
+   o asemenea salvare așteaptă comanda în curs (limită declarată; rafinarea
+   e tot X-r1).
+4. **Așteptarea are capăt: `SCRIERE_OCUPATA`.** Contractul spunea doar că al
+   doilea operator așteaptă durata unei comenzi. Npgsql întrerupe orice
+   instrucțiune la timpul de comandă al conexiunii (30 s implicit), deci o
+   așteptare lungă ar fi ieșit ca eroare de bază. Întreruperea blocajului e
+   tradusă în refuz de domeniu cu cod stabil, fără nimic scris (SC-X-23).
+   Pragul propriu al așteptării, separat de timpul comenzilor, nu e ales.
+5. **Sincronizarea probelor e o poartă, nu o barieră.** Comenzile reale își
+   comit singure tranzacția, deci „prima ține tranzacția până intră a doua în
+   așteptare” ar fi cerut ocolirea cojii. Scena ține ea blocajul scrierii;
+   cele două comenzi pornesc pe fire și conexiuni proprii și intră pe rând în
+   coada lui (observate în `pg_stat_activity`, cu interogarea blocajului);
+   eliberarea le rulează în ordinea cozii. Ambele parcurg calea reală, de la
+   intrarea cojii, iar a doua așteaptă efectiv commit-ul primei.
+6. **Matricea măsurată**, identică pe ambele profiluri: două consumuri de 6
+   din 10/100 — succes și `STOC_INSUFICIENT`, lot 4/40 (SC-X-15); două
+   consumuri de 1 din 3/1,00 — 0,33 și 0,34, cu soldurile citite 3/1,00 și
+   2/0,67 în explicații, rest 1/0,33 (SC-X-16); consum contra retragere —
+   succes și refuz în ambele ordini (SC-X-17); două stingeri de 60 pe 100 —
+   succes și refuz peste rest (SC-X-18); aceeași pereche — 40 + 40 trec,
+   din 15 + 15 trece una (SC-X-19); două detalii noi — pozițiile 1, 2, 3
+   (SC-X-20); operare → închidere — ambele trec, snapshot 6/60; închidere →
+   operare — operarea e refuzată (SC-X-21). Nicio excepție în afara
+   refuzului de domeniu; `INV-CUB` verde pe scenă.
+7. **„Retragerea intrării” e stornoul FCT cu NIR-ul conex încă draft.** Cu
+   NIR-ul operat, stornoul FCT e refuzat de conex indiferent de consum, iar
+   stornoul NIR cu delta zero nu retrage nimic (SC-X-01); cursa reală există
+   numai pe FCT.
+8. **Proba structurală (c) are două jumătăți.** Pe sursă: lista nominală a
+   celor 21 de membri care intră sub blocaj, tranzacțiile deschise numai prin
+   `TranzactieComanda` și prin citirea declarată, cheia într-un singur
+   fișier, cu doi mutanți. Pe captura SQL (SC-X-22): 16 feluri de comandă
+   încep cu blocajul; dry-run-ul, cinci citiri și salvarea fără detalii noi nu
+   îl iau.
+9. **Trei probe vechi presupuneau două comenzi simultan în scriere** și s-au
+   rescris: SC-DES-05, SC-DES-21, SC-IMO-32. Blocajele fine (97001, 97002,
+   `FOR UPDATE` pe documente și perioadă) au rămas neatinse, cum cere (d).
+
+De dus mai departe: X-D5 măsoară durata fiecărei comenzi la k = 64, m = 12,
+adică prețul blocajului; **X-r1** se înregistrează la decizia de închidere,
+cu două fețe — rafinarea pe gestiune și partener și scoaterea salvării de
+draft de sub blocajul comenzilor; la pasul 6, `SCRIERE_OCUPATA` pe ușa HTTP.
+Probele nu exercită ușa HTTP și contextul securizat (același cod de blocaj)
+și nu măsoară debitul.
+
+Validare: integrala **3.361 bugetar / 4.570 privat OK**, zero FAIL,
+`run-verificari/20261003-211029-736/`, pe clonele `.ClaudeX2`; scena de concurență separat pe
+ambele profiluri; `--probe-sursa` verde.
+
+### Pasul 4 — X-D7: acoperirea stocului, regimul ireversibil, restanțele TR-D8 (2026-10-03)
+
+Livrat: `Loturi.VerificaAcoperire` (`CITIRE_ISTORIC_STOC_INCOMPLET`) în
+`INV-CUB`; regula `Materializare.AreTranzactii`, chemată de gardian
+(`POSTEAZA_IN_CUB_IREVERSIBIL`) și de seed; refuzul `IMPERECHERE_FARA_EFECT`
+pe ramura negativă a desfacerii; `FaraContrapondere` în
+`Imobilizari.PozitiiFaraFisa`; mutanții `IMO-ORIGINE` și `IMO-SUPORT`;
+SC-CIT-103…109. Regulile stau în `stare-curenta/domeniu-si-operare.md` și
+`dezvoltare-si-validare.md`, limitele în `limite-curente.md`. T-r14, N-r8,
+097-r1 și 102-r4 sunt închise.
+
+Ce a arătat implementarea și cum amendează X-D7:
+
+1. **Cheia grupului nu are cont.** Contractul numea „lot, gestiune, cont,
+   sens, origine de storno”. Rândul `RegistruStoc` nu poartă contul, iar
+   derivarea lui din nomenclatorul de azi ar rescrie istoricul după o
+   schimbare de politică (093c, NIR-D3). Cheia este document × lot ×
+   gestiune × storno × semn. Valoarea pe cont rămâne la reconcilierea (a)
+   din X-D3 pentru operări; pentru transferuri, pe care (a) le exclude, la
+   conservarea pe cont din `INV-CUB` (X-RI2).
+2. **Recepția conexă se compară net, pe grupul sursei.** Factura și
+   recepțiile ei formează un grup (`Receptii.Legaturi`). În el semnul și
+   stornoul nu se separă: registrul ține cumulul pe NIR, cubul ține recepția
+   pe factură și delta pe NIR. Fără nicio recepție operată, cubul păstrează
+   recepția facturii, iar registrul grupului trebuie să fie zero (precedentul
+   `GrupulComplet` din reconciliere).
+3. **Direcția este registru → cub.** Deschiderea generică și recepția
+   facturii cu NIR neoperat au postări pe lot fără rând de registru și nu
+   sunt lipsuri. Un rând de registru fără document cere postare pe lot fără
+   document.
+4. **Domeniul este `Magazie`, `Marfuri`, `Folosinta`.** `Custodie` rămâne în
+   afara cubului (093d).
+5. **Invariantul a trecut pe toate scenele fără nicio corecție de
+   producție.** Rulează primul dintre acoperiri, ca ștergerea provenienței
+   să nu fie prinsă întâi de acoperirea contabilă. Mutantul
+   `EXPLICATIE-STORNO` schimba cantitatea unei inverse pe lot și era prins
+   acum de acoperirea stocului; aplică aceeași abatere rândului de registru,
+   ca să ajungă la ramura lui.
+6. **Probele sunt de scenă, nu mutanți generici.** SC-CIT-103…105 citesc
+   registrul și cubul direct, cu cifrele scrise din regula recepției conexe
+   și a transferului.
+7. **(b) O singură regulă.** Gardianul și seed-ul întreabă același
+   `AreTranzactii`. Activarea unui tip cu documente operate numai în registre
+   nu e refuzată la scriere; o arată `INV-CUB` (limită declarată).
+8. **(c) O singură intrare întorcea contraponderi.** `PozitiiFaraFisa` le
+   exclude acum, deci regula e uniformă pe cele șapte intrări comune.
+9. **(d) Produsul nu are fișa lotului sau a partidei.** Regula „le arată cu
+   eticheta felului” e fixată pe intrările comune `Loturi.Postari` și
+   `Partide.Postari`, care întorc `Transfer` și inversa lui cu
+   `Tranzactie.Fel`, și e probată pe ele. Nu s-a adăugat o listare fără
+   consumator; singura listare pe lot din producție rămâne mișcarea SAF-T.
+10. **(e) Două ramuri nu aveau mutant.** Fișa fără origine a inversei și
+    transferul valoric fără suport.
+11. **(f) Niciun flux existent nu ajungea pe ramura negativă fără efect.**
+    Integrala a rămas verde după refuz. Proba mută nominalizarea plății pe
+    altă partidă și cheamă comenzile reale `Sterge` și `Desfa`.
+12. **(g), (h).** T-r11 se listează la decizia 108, prin X-D2. T-r13 rămâne
+    activă; diagnosticul ASM-B7 pe baza de volum e al pasului 5.
+
+Validare: integrala **3.387 bugetar / 4.597 privat OK**, zero FAIL,
+`run-verificari/20261003-214312-683/`, pe clonele `.ClaudeX2`; 54 de scene
+per profil sub `INV-CUB`, toți mutanții uciși; `--probe-sursa` verde.
+
+### Pasul 5 — X-D5 + X-D3: scara transversală și reconcilierea pe baza de volum (2026-10-04)
+
+Livrat: scena `PerfCub` (`tools/ModelCheck/PerfCub*.cs`), modurile
+`ModelCheck --perf-cub` și `--perf-cub-masura`, rețeta
+`scripts/perf-cub-container.ps1`; reconcilierea integrală, `INV-CUB` și
+diagnosticul ASM-B7 pe baza de volum, la fiecare m, pe ambele profiluri;
+patru corecturi de formă în cititori și migrația `IndecsiCititoriCub`.
+Cifrele și tabelele sunt în `docs/api/p5-perf-masuratori.md` („TR-D8 gate-ul
+transversal”), regulile în `stare-curenta/`, limitele în `limite-curente.md`.
+
+Ce a arătat implementarea și cum amendează X-D5 și X-D3:
+
+1. **Scena.** Unitatea e cea din SAF-B8, pe ambele profiluri (bugetarul fără
+   DSC și fără TVA). Faptele „o dată per bază” stau în prima lună, pe parteneri
+   proprii, ca luna măsurată să conțină numai unități. La m = 0 luna întâi
+   rămâne deschisă, iar luna măsurată este a doua. Față de (a) s-au adăugat un
+   ASM pe conturi diferite, trei transformări 1 + 1 + 1 din 3 × 3,333333, o
+   factură de vânzare stornată și stingerea partidei de deschidere: fără ele
+   ramurile (g), (h) și ASM-B7 erau vide.
+2. **Rutele din producție.** Rapoartele API (balanță, fișă, sold parteneri,
+   partide cu rest, stoc) citesc `Vizibila`, deci recitesc postările (104b).
+   Din snapshot citesc motorul (evaluarea ieșirii, gardul de sold, închiderea,
+   TVA-ul lunii) și SAF-T. Matricea măsoară fiecare raport cumulat de trei ori:
+   securizat `Vizibila` (produsul), nesecurizat `Vizibila` și nesecurizat
+   `Integrala` (A/B-ul lui FZ-r1). S-a adăugat a patra rută, *interval*, pentru
+   cititorii care cer numai luna (jurnal, jurnale de TVA, D300, D394, raportul
+   de impact); criteriul din plan e același ca la *snapshot*.
+3. **Ușa securizată** e un `SecuredEFCoreObjectSpaceProvider` cu un utilizator
+   administrativ al scenei. Logonul precede măsurarea rece.
+4. **Controlul numeric** are așteptările scrise din regula contabilă a
+   unității: 1.280 de măsurători, toate trecute, aceleași înainte și după
+   corecturi. A prins o constatare de produs (punctul 11).
+5. **Proba din plan se evaluează fără scanare secvențială (amendament de
+   metodă, confirmat de owner, 2026-10-04).** La k = 64 luna măsurată e un sfert din
+   bază, iar tabelele au sub 300 de pagini: planificatorul alege legitim
+   scanarea secvențială, care atinge istoricul oricât de bună ar fi forma
+   interogării. Criteriul numără rândurile atinse pe `Postare` (livrate plus
+   respinse de filtru) cu `enable_seqscan = off`: trece numai dacă există o
+   cale de acces independentă de m și nu rămâne nicio scanare secvențială.
+   Planul ales de planificator se raportează alături. Bufferele se cer
+   mărginite de rândurile atinse, nu egale între trepte: un `Index Scan`
+   numără fiecare acces la pagină, un `Bitmap Heap Scan` paginile distincte.
+6. **Prima rulare a picat criteriul pe aproape toți cititorii; cauzele au fost
+   de formă și s-au corectat în felie:**
+   - fereastra de după referință din `CumulPerioade.Citeste` compara
+     `an × 12 + lună` calculat din `Data`, deci nu putea folosi niciun index;
+     acum compară `Data` cu sfârșitul referinței, în aceeași instrucțiune;
+   - `Loturi.Postari` și `Partide.Postari` nu filtrau `Spatiu`, deci fiecare
+     citire parcurgea și partiția străină;
+   - gardul de sold intermediar citea tot istoricul lotului; acum pornește
+     din cumulul de dinaintea primei date propuse și citește zilele de la ea;
+   - raportul de impact încărca leneș tranzacția fiecărui document pe ușa
+     securizată (19 → 145 de comenzi SQL între k = 1 și k = 64); acum 17;
+   - lipseau indecși: `Data` și `(PerioadaDeclarare, TipTvaId)` pe partiția
+     de stoc, `PerioadaD394`, `DataExigibilitate` și `(Unitate, Data)` pe
+     ambele. Fiecare e folosit de cel puțin un plan ales la m = 12. Durata
+     scrierii nu s-a schimbat măsurabil.
+7. **SAFT-r4 e închisă.** Balanța de cont și soldurile terților din L și S
+   pornesc din snapshot. `SaftAcces.Citite` și `CititeStocuri` cer acum și
+   `PerioadaFiscala` și `SoldPerioadaContabil`.
+8. **FZ-r1 e închisă cu cifra.** Balanța din snapshot atinge 1.926 de rânduri
+   la orice m, cea recitită 7.827 la m = 12; la acest volum recitirea durează
+   8,1 ms, snapshot-ul 12,9 ms. Nu se adaugă un al doilea read model.
+9. **FZ-r3: planul e măsurat.** Indexul `(Unitate, Data)` e ales fără
+   constrângere de plățile SAF-T L, partidele cu rest, dry-run-ul consumului,
+   închidere și reconstrucție. Pragul pe volum real rămâne al migrării.
+10. **103h are cifră:** raportul de impact, la 128 de documente fiscale în
+    lună, 33 ms nesecurizat și 104 ms securizat, 17 comenzi SQL, independent
+    de istoric. 102-r5 e numai măsurat (dry-run-ul notei stingătoare citește
+    toate partidele deschise ale partenerului). Explicația unui document de 64
+    de linii are 58.066 de octeți.
+11. **Raportul de stoc listează capătul de consum al bonului.** Postarea de
+    debit a BCS poartă lotul ca unitate, pe contul de cheltuială și la locul
+    de consum, iar `Loturi.Postari` o ia ca poziție. Controlul numeric le
+    separă și le probează pe amândouă. Semantica raportului nu s-a schimbat
+    aici: e întrebare pentru owner.
+12. **Prețul blocajului (X-D6).** O comandă a unității durează 19–39 ms la
+    orice m; unitatea întreagă 284 ms pe privat și 237 ms pe bugetar la
+    m = 12; documentul de 64 de linii 110 ms; închiderea unei luni 79 ms.
+13. **X-D3: reconcilierea (f) nu cunoștea stornoul și deschiderea.** Prima
+    rulare integrală a dat două rânduri Δ: o factură stornată numărată fără
+    inversa ei și partida de deschidere, care nu are document. Defectul era
+    al diagnosticului: suma cubului lua numai `Operare` și `Transfer`. Acum
+    ia toate felurile, iar partidele de deschidere se compară pe unitate cu
+    rândurile de snapshot fără document.
+14. **X-D3 pe baza de volum:** (a)–(g) zero rânduri Δ și `INV-CUB` verde la
+    m = 0, 6 și 12, pe ambele profiluri. Artefactul `xd3-<profil>-m<m>.md`
+    listează faptele exercitate pe ramuri (toate nevide), notele, (h) și
+    ASM-B7. (h) raportează ASM-ul pe conturi diferite (cub 40, registre 0);
+    ASM-B7 raportează transformările 1 + 1 + 1 (±0,01) și loturile de
+    deschidere, fără corespondent în registre. Niciuna nu e declarată N-r3.
+    Trei mutanți `INV-CUB` nu au fapte în scenă (`IMO-ORIGINE`,
+    `EXPLICATIE-STORNO`, `EXPLICATIE-STINGERE`); pe bugetar și
+    `EXPLICATIE-DECLARATA`. Îi ucide catalogul de scenarii.
+15. **Criteriile de comenzi SQL** se citesc pe structură: reconstrucția are 4
+    comenzi fără referință și 14 cu una; închiderea lunii măsurate are 67 la
+    m = 6 și 64 la m = 12 (după decembrie referința precedentă rămâne);
+    amortizarea și închiderea se compară de la a treia lună încolo. La m = 0
+    închiderea lunii măsurate nu se poate măsura: lanțul cere luna întâi
+    închisă.
+
+**Criteriu picat, amânat prin amendament (regula de oprire, X-RV6).**
+`PREST-NI` — partidele cu rest, din snapshot: rândurile atinse pe `Postare` cresc cu m (2.242 /
+3.366 / 4.504 pe privat, 1.579 / 2.418 / 3.282 pe bugetar, la k = 64).
+Fereastra e constantă; crește `Partide.Origini`, care caută documentul
+deschizător parcurgând toate postările de partidă. E forma proiecției
+`DocumenteCuRest`, restanța F27-r16, care cade la TR-D9. Consumatorul de
+producție al rutei e constatarea de rest scadent de la închidere.
+
+**Amendamentul owner-ului, 2026-10-04.** Cititorul `PartideCuRest`, criteriul
+„accesul la `Postare` nu depinde de m” (proba din plan), cifrele de mai sus,
+restanța F27-r16: criteriul se amână odată cu ea, la TR-D9. X-D5 se închide
+cu această singură amânare; scara o raportează nominal (`AMÂNAT`), nu ca
+eșec. Tot owner-ul a confirmat metoda de la punctul 5 și a trimis punctul 11
+la decizia de închidere.
+
+De înregistrat la decizia 108: **X-r3** — raportul de stoc și capătul de
+consum al BCS (punctul 11).
+
+Validare: scara completă `run-verificari/perf-cub-20261004-002621/` —
+**1.488 OK / 1 FAIL privat, 970 OK / 1 FAIL bugetar** (același criteriu,
+`PREST-NI`), DUK fără atenționări pe cele 12 fișiere SAF-T; integrala
+**3.387 bugetar / 4.597 privat OK**, zero FAIL,
+`run-verificari/20261004-001917-630/`, pe clonele `.ClaudeX2`;
+`--probe-sursa` verde. Starea de dinaintea corecturilor:
+`run-verificari/perf-cub-20261003-231254/`.
+
+### Pasul 6 — X-D8: integrala, probele pe ușa HTTP, driftul, închiderea (2026-10-04)
+
+Livrat: ușa explicației în matricea `refuzuri.ps1`; proba
+`nou/tools/ProbeHttp/scriere-ocupata.py`; rețeta
+`run-verificari/x6-http.ps1`; decizia
+[108](../decizii/108-gate-transversal-tr-d8.md); restanțele X-r1, X-r2 și
+X-r3; T-r11 închisă. Nicio schimbare de producție.
+
+1. **Baza probelor HTTP** e recreată din seed, nu clonată:
+   `database update` pe o bază nouă, apoi updater-ul Blazor pe profilul
+   privat. Matricea rulează deci pe baza pe care o promite (104-r5), cu
+   migrațiile feliei aplicate de la zero.
+2. **Ușa explicației în matrice** (șase rânduri). Tranzacția e a facturii
+   fixture-ului, aflată din jurnal (`TranzactieId` pe rândul documentului):
+   `Admin`, `Cititor` și `Configurator` primesc 200 cu originea; `User`
+   primește 404 și pe tranzacția existentă, și pe un id inexistent, cu
+   același corp. 403 `EXPLICATIE_ACCES_INCOMPLET` cere un rol cu citire
+   restricționată, pe care cei patru utilizatori nu-l au: rămâne probat de
+   `explicatii.py`.
+3. **`SCRIERE_OCUPATA` pe ușa HTTP.** Proba ține blocajul scrierii pe o a
+   doua conexiune (`pg_advisory_xact_lock(97000)` într-o tranzacție psycopg)
+   și trimite cererile ca `Admin`, pe contextul securizat. Sub blocaj:
+   citirea, dry-run-ul și salvarea fără detalii noi răspund imediat cu 200;
+   operarea și salvarea unui draft cu o linie nouă ies 422 cu un singur
+   `SCRIERE_OCUPATA` după 30,2 și 30,0 s (timpul de comandă al conexiunii),
+   fără nimic scris; după eliberare aceeași operare trece în 0,4 s.
+   Fixture-ul (furnizor și FCT) se desface în `finally`.
+4. **Refuzul trece neîmpachetat prin `SaveChanges`-ul contextului
+   securizat.** Salvarea cu detalii noi aruncă `OperareException` din
+   `BackOfficeEFCoreDbContext.SaveChanges`, sub `CommitChanges`; învelișul
+   `Domeniu` îl vede ca atare și răspunde 422, nu 500. Era limita declarată
+   la pasul 3.
+5. **Codul HTTP.** `SCRIERE_OCUPATA` e 422, ca orice `OperareException`;
+   regula refuzurilor (80) nu are un cod separat pentru „ocupat, reîncearcă”.
+   Declarat în decizia 108.
+
+Validare: matricea **300/300 PASS** de două ori consecutiv (294 + cele șase
+rânduri noi), aceleași verdicte, zero reziduu, numărul de documente,
+tranzacții, postări și repartitori identic înainte și după;
+`scriere-ocupata.py` 7/7; `comenzi-coaja.py` 28/28; `explicatii.py` 8/8 —
+`run-verificari/x6-http/`. Integrala la `ff08a8c`: **3.387 bugetar / 4.597
+privat OK**, zero FAIL, `run-verificari/20261004-081014-672/`, pe clonele
+`.ClaudeX2`. Nucleu **180/180**. `--probe-sursa` verde. `verifica:drift`
+exit 0: OpenAPI și tipurile TS regenerate identic.
+
+Review-ul advers al feliei: cerut lui Codex prin
+`comunicari/2026-10-04-0830-claude-codex-tr-d8-transversal-review.md`.
+Rezultat la `2b57aa5`, 2026-10-04: [review-ul implementării](tr-d8-transversal-implementare-review-codex.md)
+are patru observații P2, X-RI1…X-RI4: integrala era verde, dar mutanții
+documentați supraviețuiau. Toate patru sunt acceptate, corectate mai jos și
+închise prin reverificarea Codex la `7223abc`. Review-ul contractului X-RV1…X-RV7 rămâne
+închis.
+
+### Corecturile review-ului implementării — X-RI1…X-RI4 (2026-10-04)
+
+Cele patru observații privesc verificările care certifică felia, nu fluxurile
+normale. Niciuna nu a cerut schimbarea unei cifre postate.
+
+1. **X-RI1 — mecanismul nu-l mai alege explicația.** Invariantul trata la fel
+   `ValoareIesire` și `ValoareDeclarata` și recalcula numai ce rămânea
+   evaluat, deci redenumirea deciziei ocolea dovada. Acum mecanismul e al
+   declarantului: `IDeclarant.SursaValoareDeclarata` e `null` la declaranții
+   care evaluează din sold și numește sursa la cei trei care declară valoarea
+   (NIR `Receptie`, RLF și RDC `Linie`). Invariantul ia declarantul din
+   document, nu din explicație, și refuză cu `CITIRE_EXPLICATIE_MECANISM`:
+   numele declarantului diferit de al documentului, o valoare declarată la un
+   declarant care evaluează, o valoare evaluată sau altă sursă la unul care
+   declară. Niciun declarant nu amestecă mecanismele, deci discriminarea e
+   completă.
+2. **X-RI1 — soldul citit al partidei stinse e obligatoriu.** Fiecare partidă
+   cu `AlocareFifo` cere `SoldUnitateCitit` al ei, iar suma alocărilor nu
+   depășește soldul citit; altfel `CITIRE_EXPLICATIE_STINGERE`. Soldul curent
+   nu se recitește în locul celui istoric, deci un sold citit alterat în sus
+   rămâne nedetectat (limită declarată).
+3. **X-RI2 — transferul persistat conservă pe cont.** Reconcilierea (a)
+   exclude transferurile, iar cheia cantitativă nu are cont, deci contul
+   destinației unui BTR nu era păzit de nimic. Nucleul cere deja la contractare
+   ca un transfer să conserve valoarea pe (cont, latură) și cantitatea pe
+   (cont, produs) (090f, `Conservare.VerificaTransferul`). Aceeași regulă se
+   reverifică acum pe cub: `Invarianti.VerificaTransferuri`,
+   `CITIRE_TRANSFER_NECONSERVAT`. Nu derivă niciun cont din politica de azi:
+   cere numai ca cele două capete să stea pe același cont. Fraza „valoarea pe
+   cont rămâne la reconcilierea (a)” de la pasul 4 e corectată.
+4. **X-RI3 — un plan respins invalidează măsurarea.** `Planuri` numără
+   citirile eligibile și planurile respinse. O respingere devine eroarea
+   măsurării, iar evaluatorul cere, la fiecare operație, ca toate citirile să
+   aibă plan în ambele treceri; criteriul din plan nu mai trece fără nicio
+   probă. Proba `X-D5-PLAN` rulează în orice ModelCheck: un `EXPLAIN` cu
+   împărțire la zero e numărat ca respins, unul legitim pe zero rânduri nu,
+   iar evaluatorul real refuză planul respins și planul absent și acceptă
+   zeroul legitim.
+5. **X-RI4 — controlul D300 citește D300.** Operația nu mai cheamă
+   `DecontTva`. Cifrele de control sunt rândurile 9 și 24 (baza și taxa) și
+   totalurile 19 și 30 din rezultatul D300, comparate cu constantele scenei.
+   Durata și comenzile SQL atribuite D300 sunt acum numai ale lui (11 comenzi
+   pe ușa securizată și 6 pe cea nesecurizată, față de 12 și 7).
+
+Mutanți noi în `INV-CUB`, toți uciși pe ambele profiluri:
+`EXPLICATIE-MECANISM`, `EXPLICATIE-DECLARANT`, `EXPLICATIE-SOLD-FIFO`,
+`EXPLICATIE-SOLD-FIFO-MIC`, `TRANSFER-CONT`. `Invarianti.VerificaTransferuri`
+intră în lista N-r8 ca martor.
+
+Validare: integrala **3.394 bugetar / 4.604 privat OK**, zero FAIL,
+`run-verificari/20261004-092403-010/`, pe clonele `.ClaudeX2`; `--probe-sursa`
+verde; scara completă `run-verificari/perf-cub-20261004-093104/` — **1.526 OK
+privat, 996 OK bugetar**, zero FAIL, `PREST-NI` raportat `AMÂNAT`, DUK fără
+atenționări; controlul numeric are aceleași 1.280 de măsurători, toate
+trecute.
+
+Reverificare Codex la `7223abc`, 2026-10-04: X-RI1…X-RI4 închise, fără
+observații noi. Integrala proprie **3.394 bugetar / 4.604 privat OK**, zero
+FAIL, `run-verificari/20261004-102241-857/`, clone `.CodexXReview`; cei cinci
+mutanți noi și `X-D5-PLAN` trec pe ambele profiluri. Scara predată a fost
+inspectată, nu rerulată. Dovezile și limitele sunt în
+[review-ul implementării](tr-d8-transversal-implementare-review-codex.md#reverificarea-corecturilor--2026-10-04).
+
+## Ce NU intră (amânări cu nume)
+
+- TR-D9: tăierea registrelor și a `DescarcareService`, N-r5/`Atribuit`,
+  T-r13 evaluări noi, TR-r9, 097-r2, T-r2/T-r3/T-r5, B-r3/B-r6/B-r8/S-r3.
+- Migrare (091-r4): contractul 1 al reconcilierii 1C, pragul real FZ-r3,
+  bazele de volum reale.
+- După PoC: 102-r5 (numai măsurat aici), ecranele explicației, F27-r8 în
+  afara probei de închidere, B8-r*.

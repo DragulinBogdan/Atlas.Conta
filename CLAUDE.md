@@ -133,9 +133,10 @@ cu Custodie explicit neacoperită. NIR conex postează diferența față de
 recepția istorică a facturii, cu proveniență păstrată la corecție (098, 099). Deschiderea generică detaliază soldul inițial
 prin loturi și partide, fără dublare, cu refuz atomic al diferențelor (094).
 Fișa imobilizării este citită din cub de AMO/CAS și API Imo (097).
-Citirile contabile/stoc/partide și snapshot-urile lor sunt pe cub; felia
-fiscală este portată (103). Restul SAF-T rămâne TR-D8; scrierea registrelor
-se taie la TR-D9.
+Citirile contabile/stoc/partide, fiscale și SAF-T și snapshot-urile lor
+sunt pe cub (103, 105). Registrele se ating în producție numai prin lista
+nominală, scrierea în cub e serială per bază, iar explicația deciziei e
+persistată pe tranzacție (108). Scrierea registrelor se taie la TR-D9.
 
 **Proba supremă (91, 2026-09-22)** e catalogul de scenarii
 `docs/nucleu/scenarii/`: așteptări scrise de mână din regula contabilă, ciclul
@@ -154,7 +155,11 @@ R6 este implementat și verificat (103h/i, 2026-09-28), cu review advers închis
 `docs/nucleu/tr-d8-tva-intervale-contract.md`. Proveniența fiscală a ajustărilor
 rămâne delimitată în 103-r2. SAF-T L și S sunt pe cub, cu ruta pe registre
 scoasă; review-ul B8 e închis (RV1.2 corectat și reverificat, decizia 105).
-Urmează reconcilierea, auditul și gate-ul transversal de performanță din TR-D8. Felia fiscală
+Gate-ul transversal TR-D8 e implementat și verificat pe `tr-d8-transversal`
+(decizia 108, contractul `docs/nucleu/tr-d8-transversal-contract.md`, pașii
+1–6); review-ul implementării (X-RI1…X-RI4) este închis după reverificarea
+Codex la `7223abc`, 2026-10-04. Branch-ul nu este mers.
+După el urmează TR-D9: tăierea scriitorilor vechi și a regimului dual. Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
 `docs/nucleu/scenarii/CITIRI.md`.

@@ -264,7 +264,7 @@ public static class ContaSeeder {
     }
 
     // Decizia 20: nomenclatorul de tipuri oglindește clasele 1:1 — doar ancoră FK + UI.
-    static void SeedTipuriDocument(IObjectSpace os, ProfilContabil profil) {
+    public static void SeedTipuriDocument(IObjectSpace os, ProfilContabil profil) {
         // S-D3, B-r2: `PosteazaInCub` și `LaturaContPropriu` sunt date de seed.
         (string Cod, string Denumire, string ClrType, LaturaDocument? ContPropriu)[] tipuri = [
             ("FCT", "Factură intrare", nameof(FacturaIntrare), null),
@@ -310,7 +310,8 @@ public static class ContaSeeder {
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
                 tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR" or "FCL" or "NTC" or "ASM" or "LDI" or "NIR" or "DEC" or "PIF" or "AMO" or "CAS"
-                    || (t.Cod is "DSC" or "ITV" or "RDC" or "RLF" or "DVI" && profil == ProfilContabil.Privat);
+                    || (t.Cod is "DSC" or "ITV" or "RDC" or "RLF" or "DVI" && profil == ProfilContabil.Privat)
+                    || tip.PosteazaInCub && Cub.Materializare.AreTranzactii(os, t.ClrType);
                 tip.LaturaContPropriu = t.ContPropriu;
             });
     }

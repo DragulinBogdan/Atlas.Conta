@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-09-27.** [Index](README.md)
+**Actualizat: 2026-10-04.** [Index](README.md)
 
 ## Modelul comun
 
@@ -332,9 +332,9 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
   operare, generarea și regenerarea închiderii de TVA și a amortizării,
   închiderea, redeschiderea și reconstrucția perioadei. Gardianul de perioadă
   citește starea lunii blocând rândul în citire, iar comenzile perioadei îl
-  blochează în scriere înainte de orice calcul. Cele două comenzi se
-  serializează astfel între ele, iar două operări concurente nu se blochează
-  una pe alta. (F27-D1)
+  blochează în scriere înainte de orice calcul. (F27-D1) Tranzacția comenzii
+  începe cu blocajul scrierii, deci comenzile se serializează toate între
+  ele; vezi „Scrierea serială per bază”. (X-D6)
 
 ### Soldurile materializate la închidere
 
@@ -385,11 +385,16 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
 - Raportul de stoc, FIFO și pinurile folosesc `Cub.Citiri.Loturi.Cumulate`:
   referință plus fereastră, pe cheia completă. `CumulPerioade.Citeste` alege
   referința și citește sumele în aceeași instrucțiune SQL pentru contabil,
-  stoc și partide. Citirile securizate recitesc postările. Evaluarea ieșirii
+  stoc și partide. Fereastra de după referință se filtrează pe `Data`,
+  comparată cu sfârșitul referinței, deci folosește indexul pe dată; cititorii
+  de loturi și de partide citesc numai partiția lor (`Spatiu`). Citirile
+  securizate recitesc postările. Evaluarea ieșirii
   transmite o graniță strict anterioară datei documentului exclus; fără
-  această garanție, excluderea recitește integral postările. Gardul de sold intermediar
-  verifică prefixele zilnice direct în cub. `StocService` rămâne cititorul
+  această garanție, excluderea recitește integral postările. Gardul de sold
+  intermediar pornește din cumulul de dinaintea primei date propuse și
+  verifică prefixele zilnice de la ea încolo, în cub. `StocService` rămâne cititorul
   explicit al registrului în regimul dual și nu consumă snapshot-ul cubului.
+  (F27-D3, X-D5)
   (TR-D8 D8-B1/B5)
 - Soldurile conturilor de TVA ale închiderii lunare vin din aceeași sursă
   cumulată. (F27-D3)
@@ -1009,6 +1014,13 @@ ambele profiluri, ITV/RDC/RLF/DVI numai pe privat. Restul tipurilor postează do
 (`Document.Declarant()` întoarce `null`) e eroare de configurare: operarea
 refuză, nu tace. (S-D3)
 
+Regimul nu se stinge (X-D7 b, X-Q4). După prima tranzacție în cub a unui tip,
+trecerea lui `PosteazaInCub` pe `false` e refuzată de gardian cu
+`POSTEAZA_IN_CUB_IREVERSIBIL`, iar seed-ul nu o mai aliniază pe `false`
+(`Materializare.AreTranzactii`). Altfel documentele noi ale tipului ar scrie
+numai registrele, iar cititorii de pe cub le-ar omite tăcut. Un tip fără
+tranzacții în cub poate ieși din regim.
+
 ### Materializarea, stornoul, anularea
 
 `Module/Cub/Materializare.cs` rulează din `MotorOperare`, deci pe toate ușile
@@ -1236,6 +1248,104 @@ efectul. Stornarea directă a plății automate inversează nominalizarea o
 singură dată. Gardul de dependențe include inversele încă necomise din
 aceeași comandă și verifică soldurile intermediare pe dată.
 
+### Explicația deciziei (X-D4, 2026-10-03)
+
+Contractul acceptat își persistă deciziile și ipotezele: de ce a costat
+ieșirea atât, din ce sold, ce partide a stins.
+
+- **Unde**: `Tranzactie.Explicatie` (`jsonb`), pe prima tranzacție scrisă a
+  contractului — `Operare` când există, altfel `Transfer` (BTR, ASM fără
+  schimb de cont). A doua tranzacție a aceluiași contract o referă prin
+  `ExplicatieDinId`. Se scrie în același `INSERT` cu rândul și nu se mai
+  modifică. `Storno`, `Deschidere`, transferul împerecherii, desfacerea și
+  stingerea de deschidere nu au explicație; baza refuză prin
+  `CK_Tranzactie_Explicatie` și `CK_Tranzactie_ExplicatieDin`.
+- **Ce**: `Cub.Explicatie` — versiunea schemei (`v` = 1), numele
+  declarantului, `JumatatiDeBan`, deciziile și ipotezele contractului în
+  ordinea declarației, cu linia și unitatea lor. Un cititor refuză o versiune,
+  o decizie sau o ipoteză pe care nu o cunoaște.
+- **Ieșirea pe lot** are exact o decizie de valoare: `ValoareIesire` când
+  valoarea vine din soldul citit (BCS, DSC, BTR, LDI minus, consumul ASM),
+  `ValoareDeclarata` când o dă altă sursă — linia documentului (RLF și RDC, la
+  valoarea culeasă) sau recepția facturii (NIR-minus). Sursele sunt
+  `Declaratii.SurseValoare`. Decizia poartă cantitatea și valoarea pozitive;
+  postarea-sursă a unui transfer le are negative. Mecanismul e al
+  declarantului, nu al explicației: `IDeclarant.SursaValoareDeclarata` e
+  `null` pentru declaranții care evaluează din sold și numește sursa pentru
+  cei trei care declară valoarea (NIR, RLF, RDC). Niciun declarant nu le
+  amestecă.
+- **Soldul citit** (`SoldUnitateCitit`) e soldul net al unității la data
+  documentului, fără documentul curent, o dată per unitate. Soldul dinaintea
+  fiecărei ieșiri următoare de pe aceeași unitate se derivă din deciziile
+  anterioare (`Explicatie.IesiriEvaluate`).
+- **Stingerea FIFO** are câte o `AlocareFifo` per linie și partidă stinsă,
+  iar partida stinsă are soldul ei citit între ipoteze; partida proprie a
+  documentului are `PartidaDeschisa`.
+- **Stornoul** se explică prin original: `Cub.Citiri.Explicatii.PeTranzactie`
+  urmează `InversaDin` și întoarce explicațiile purtătorilor de origine.
+  **Anularea operării** șterge explicația odată cu tranzacția.
+- **Invariantul** (`Explicatii.VerificaAcoperire`, în `INV-CUB`):
+  `CITIRE_EXPLICATIE_LIPSA` (o tranzacție `Operare` sau o ieșire pe lot fără
+  explicație), `…_REFERINTA` (referință spre o tranzacție fără explicație sau
+  a altui document), `…_STORNO` (inversa pe lot nu oglindește originalul),
+  `…_IESIRE` (ieșirile postate și deciziile de valoare nu corespund una la
+  una pe linie, unitate, cantitate și valoare), `…_EVALUARE` (valoarea unei
+  `ValoareIesire` nu rezultă din soldul persistat, cu rotunjirea bazei),
+  `…_STINGERE` (alocare fără postare, postare pe partida altui document
+  fără alocare, partidă stinsă fără sold citit sau cu alocări peste soldul
+  citit), `…_MECANISM` (explicația numește alt declarant decât cel al
+  documentului, poartă o valoare declarată la un declarant care evaluează
+  din sold, sau o valoare evaluată ori altă sursă la unul care declară).
+  Declarantul se ia din document, nu din explicație.
+- **Transferul persistat conservă pe cont** (`Invarianti.VerificaTransferuri`,
+  `CITIRE_TRANSFER_NECONSERVAT`, în `INV-CUB`): în orice tranzacție `Transfer`
+  valoarea se anulează pe (cont, latură) și cantitatea pe (cont, produs). E
+  regula de la contractare (090f), reverificată pe ce s-a scris. Acoperă
+  contul capătului de destinație, pe care nici acoperirea cantitativă a
+  stocului, nici reconcilierea (a) nu îl văd.
+
+Dry-run-ul nu persistă nimic. O declarație pe care nucleul nu o poate
+construi (`ArgumentException`) sau un declarant care nu întoarce nici
+declarație, nici refuz dau refuzul `DECLARATIE_INVALIDA`, pe dry-run și pe
+operare, în aceeași formă ca orice refuz al declarației (S-r11).
+
+### Scrierea serială per bază (X-D6, 2026-10-03)
+
+- **O singură comandă scrie la un moment dat.** Tranzacția unei comenzi se
+  deschide prin `TranzactieComanda.Incepe`, care ia ca primă instrucțiune
+  blocajul scrierii — un `pg_advisory_xact_lock` cu cheie constantă
+  (`TranzactieComanda.BlocajScriere`), ținut până la commit sau rollback.
+  Blocajul protejează citirea care decide valoarea, nu doar scrierea: soldul
+  lotului, restul partidei, starea perioadei și planul registrelor se citesc
+  după el, pe starea lăsată de comanda precedentă.
+- **Cine îl ia**: operarea, anularea, stornoul și corecția; împerecherea,
+  desfacerea și ștergerea ei; închiderea, redeschiderea și reconstrucția
+  perioadei; generarea și regenerarea AMO și ITV; confirmarea depunerii;
+  deschiderea și stingerea ei, care rulează în tranzacția apelantului și iau
+  blocajul la intrare (`Materializare.CereScriere`); salvarea care adaugă
+  detalii fără poziție. Lista e nominală și probată pe sursă.
+- **Cine nu îl ia**: citirile, dry-run-ul (`Valideaza`, `Refuzuri`) și
+  salvarea unui draft fără detalii noi.
+- **Ordinea blocajelor** e „scrierea, apoi restul”: perioada (F27-D1),
+  documentele stingerii, suportul și fișele IMO (97001), sursa recepției
+  (97002) și depunerile rămân și se iau după blocajul scrierii, deci nu pot
+  forma cicluri între comenzi.
+- **Așteptarea** durează cât comanda din față. Dacă depășește timpul de
+  comandă al conexiunii, a doua comandă primește refuzul `SCRIERE_OCUPATA`
+  (422), fără nimic scris, și se poate relua.
+- **`Pozitie` pe detalii** (S-r9): salvarea care adaugă detalii fără poziție
+  deschide tranzacția ei, ia blocajul scrierii și abia apoi citește maximul
+  pe document; două sesiuni care adaugă pe același document primesc poziții
+  distincte, în ordinea intrării.
+- **Rezultatele seriale probate pe două conexiuni** (SC-X-15…SC-X-23, ambele
+  profiluri): două consumuri peste lot — un succes și `STOC_INSUFICIENT`;
+  două consumuri care încap pe 3/1,00 — 0,33 și 0,34, cu soldurile citite
+  3/1,00 și 2/0,67 în explicațiile persistate; consum contra stornoul
+  recepției — un succes și un refuz, în ambele ordini; două stingeri peste
+  restul aceleiași partide — un succes și un refuz; aceeași pereche — după
+  sume; operare, apoi închidere — ambele trec și snapshot-ul poartă
+  operarea; închidere, apoi operare — operarea e refuzată.
+
 ### Gardurile declaranților, ca dată sau ca regulă
 
 - Valoarea negativă e admisă în `Operare`: e reprezentarea „în roșu” a liniei
@@ -1395,7 +1505,10 @@ legăturii sau, la stingerea automată, desfacerea nominalizării într-o partid
 proprie a stingătorului. Asocierea manuală fără transfer nu inversează operarea.
 La stingerea automată, suma legăturii se confirmă din nominalizarea cubului.
 Lipsa efectului, insuficiența și ambiguitatea se refuză înaintea creării
-legăturii. CRUD-ul direct de creare/ștergere este refuzat; se folosesc comenzile.
+legăturii. La fel la desfacere: nominalizarea automată care nu-și mai găsește
+efectul pe partida stinsului dă `IMPERECHERE_FARA_EFECT`, iar legătura rămâne
+și rândul invers nu se scrie fără transferul lui (102-r4, X-D7 f).
+CRUD-ul direct de creare/ștergere este refuzat; se folosesc comenzile.
 Scrierea registrelor rămâne până la TR-D9.
 
 Sursa nominalizării automate se citește tot din cub, inclusiv recepția

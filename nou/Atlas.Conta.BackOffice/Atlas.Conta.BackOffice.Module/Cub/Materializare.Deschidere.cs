@@ -42,7 +42,7 @@ public static partial class Materializare {
         ArgumentNullException.ThrowIfNull(solduri);
         ArgumentNullException.ThrowIfNull(loturi);
         ArgumentNullException.ThrowIfNull(partide);
-        CereTranzactie(os);
+        CereScriere(os);
         GardianPerioada.VerificaDeschisa(os, data);
         if (os.ModifiedObjects.OfType<Tranzactie>().Any(t => t.Fel == N.FelTranzactie.Deschidere)
             || os.GetObjectsQuery<Tranzactie>().Any(t => t.Fel == N.FelTranzactie.Deschidere))
@@ -141,6 +141,11 @@ public static partial class Materializare {
     static void CereTranzactie(IObjectSpace os) {
         if (os is not EFCoreObjectSpace ef || ef.DbContext.Database.CurrentTransaction is null)
             throw new InvalidOperationException("Comanda cere tranzacție explicită a apelantului.");
+    }
+
+    static void CereScriere(IObjectSpace os) {
+        CereTranzactie(os);
+        TranzactieComanda.Asigura(((EFCoreObjectSpace)os).DbContext.Database);
     }
 
     static void VerificaMasura(decimal valoare, int scara) {

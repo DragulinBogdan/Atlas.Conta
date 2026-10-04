@@ -176,7 +176,7 @@ public static class Partide {
                 Debit = g.Sum(p => p.Debit), Credit = g.Sum(p => p.Credit) });
     }
     public static IQueryable<Postare> Postari(IObjectSpace os) => os.GetObjectsQuery<Postare>().Where(Transformare.FaraContrapondere)
-        .Where(p => p.Carte == N.Carte.Contabil
+        .Where(p => p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil
             && p.FelUnitate == N.FelUnitate.Partida && p.Unitate != null
             && p.Partener != null && p.UnitateDeschisa != null);
 

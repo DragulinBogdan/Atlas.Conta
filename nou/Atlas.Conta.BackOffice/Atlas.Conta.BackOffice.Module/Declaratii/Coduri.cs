@@ -6,6 +6,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// românesc al motorului vechi rămâne al lui până la TR-D7 (B-D3).
 /// </summary>
 public static class CoduriRefuz {
+    public const string PosteazaInCubIreversibil = "POSTEAZA_IN_CUB_IREVERSIBIL";
     public const string NirDeltaStructura = "NIR_DELTA_STRUCTURA";
     public const string NirDeltaCauza = "NIR_DELTA_CAUZA";
     public const string NirDeltaPolitica = "NIR_DELTA_POLITICA";
@@ -50,4 +51,11 @@ public static class CoduriRefuz {
     public const string PozitieFaraFisaNegativa = "POZITIE_FARA_FISA_NEGATIVA";
     public const string SuportInsuficient = "SUPORT_INSUFICIENT";
     public const string SuportCuDependenti = "SUPORT_CU_DEPENDENTI";
+    public const string DeclaratieInvalida = "DECLARATIE_INVALIDA";
+}
+
+/// <summary>Sursele unei <c>ValoareDeclarata</c>: de unde vine valoarea ieșirii care nu se evaluează din sold.</summary>
+public static class SurseValoare {
+    public const string Linie = "Linie";
+    public const string Receptie = "Receptie";
 }

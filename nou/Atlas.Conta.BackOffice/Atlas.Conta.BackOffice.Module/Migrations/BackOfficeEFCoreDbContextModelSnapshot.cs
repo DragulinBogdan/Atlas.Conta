@@ -3027,6 +3027,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("DocumentId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Explicatie")
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid?>("ExplicatieDinId")
+                        .HasColumnType("uuid");
+
                     b.Property<short>("Fel")
                         .HasColumnType("smallint");
 
@@ -3037,11 +3043,18 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("DocumentId");
 
+                    b.HasIndex("ExplicatieDinId");
+
                     b.HasIndex("Fel")
                         .IsUnique()
                         .HasFilter("\"Fel\" = 4");
 
-                    b.ToTable("Tranzactie", (string)null);
+                    b.ToTable("Tranzactie", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Tranzactie_Explicatie", "\"Explicatie\" IS NULL OR (\"ExplicatieDinId\" IS NULL AND \"DocumentId\" IS NOT NULL AND \"Fel\" IN (1, 3))");
+
+                            t.HasCheckConstraint("CK_Tranzactie_ExplicatieDin", "\"ExplicatieDinId\" IS NULL OR (\"DocumentId\" IS NOT NULL AND \"Fel\" = 3)");
+                        });
                 });
 
             modelBuilder.Entity("DevExpress.Persistent.BaseImpl.EF.DashboardData", b =>
@@ -6102,6 +6115,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Document", null)
                         .WithMany()
                         .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.Cub.Tranzactie", null)
+                        .WithMany()
+                        .HasForeignKey("ExplicatieDinId")
                         .OnDelete(DeleteBehavior.NoAction);
                 });
 

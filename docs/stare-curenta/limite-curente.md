@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-09-30.** [Index](README.md)
+**Actualizat: 2026-10-04.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -18,8 +18,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   auditul durabil după anularea fizică rămâne în delimitarea TR-D9 (091j).
 
 - Deschiderea generică (094) este o comandă de motor și scrie numai cubul.
-  Rapoartele și evaluarea/FIFO care încă citesc registrele nu văd aceste
-  solduri până la TR-D8. Intrarea păstrează analiza și valuta, dar stingerea
+  Registrele regimului dual nu primesc aceste solduri; cititorii și
+  evaluarea le iau din cub (X-D2). Intrarea păstrează analiza și valuta, dar stingerea
   unei partide inițiale în valută este refuzată explicit până la TR-D9;
   soldurile nedetaliate nu se împart pe mai multe analize în aceeași cheie
   de control. Ștergerea concurentă a nomenclatoarelor referite nu este
@@ -27,9 +27,20 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   Stingerea prin motor a unei partide inițiale în lei și
   inversarea ei prin storno PLT sunt probate; nu există încă o ușă UI/HTTP
   pentru această comandă. Conectorul 1C rămâne înghețat (091-r4).
-- Serializarea operațiilor concurente și reluarea idempotentă generală a
-  comenzilor nu sunt acoperite complet. Validarea într-o singură operație
-  nu dovedește protecția față de două comenzi simultane. (25f, 42f)
+- Comenzile care scriu sunt seriale per bază (X-D6): doi operatori nu scriu
+  simultan, al doilea așteaptă comanda primului, oricât de străine ar fi
+  documentele lor. Așteaptă și salvarea unui draft care adaugă detalii fără
+  poziție. Pe scara sintetică (X-D5) o comandă durează 19–39 ms la orice
+  istoric, o unitate de 11–12 comenzi sub 300 ms, un consum de 64 de linii
+  110 ms și o închidere de lună 79 ms; debitul cu mai mulți operatori nu e
+  măsurat. Rafinarea blocajului pe gestiune și partener e restanța X-r1. Peste timpul
+  de comandă al conexiunii (30 s implicit), așteptarea iese ca refuz
+  `SCRIERE_OCUPATA`; pragul nu e configurat separat de timpul comenzilor.
+- Reluarea idempotentă generală a comenzilor nu este acoperită. (42f)
+- Blocajul scrierii îl ia `TranzactieComanda`. O unealtă care își deschide
+  singură tranzacția (`Database.BeginTransaction`) și cheamă motorul nu îl
+  are; proba pe sursă refuză asta în `Module`, WebApi și Blazor, nu și în
+  uneltele standalone. Deschiderea și stingerea ei îl iau oricum, la intrare.
 - Baza nu verifică tipul unui rând: discriminatorul `ClrType` al documentelor
   nu are FK spre `TipDocument.ClrType`, iar un FK spre o frunză (de exemplu
   `Lot.GestiuneId`) acceptă în schemă id-ul oricărui repartitor. Pe ușa
@@ -38,11 +49,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   probele ModelCheck și SQL-ul din `--dump-integritate-tph` rulat după
   import. (89a, 89e)
 - Închiderea unei perioade și operarea unui document în ea sunt serializate
-  numai pe căile care trec prin adaptorul de operare și prin comenzile de
-  generare ale închiderii de TVA și ale amortizării. Uneltele standalone —
-  ModelCheck, Import1C, Migrare — pot chema motorul direct; acesta asigură
-  acum o tranzacție dacă apelantul nu are deja una (097). Aceasta nu adaugă
-  implicit blocajul de închidere al adaptorului API pe toate ușile. (F27-D1)
+  pe toate căile care deschid tranzacția prin `TranzactieComanda`: adaptorul
+  de operare, comenzile de generare, și motorul chemat direct de uneltele
+  standalone, care își asigură tranzacția dacă apelantul nu are una (097).
+  (F27-D1, X-D6)
 - Balanța, balanța pe plan, fișa de cont, soldul de stoc, soldurile pe loturi,
   soldul unei chei, alocarea FIFO, gardianul de sold negativ și soldurile de
   TVA ale închiderii lunare pornesc de la ultima perioadă de referință. Trei
@@ -50,11 +60,28 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   al fișelor cerute (097); oracolul golirilor, care
   citește rânduri concrete, nu solduri; împerecherile și restul documentelor,
   până la felia care le datează. (F27-D3)
-- Inițialul de stoc al SAF-T rămâne pe registrul integral: agregatul lui
-  raportează și NUMĂRUL de rânduri de registru pe tipurile de stoc
-  nedeclarate, iar dintr-un snapshot numărul nu se mai poate afla. Inițialul
-  de CONT al SAF-T trece prin balanță, deci pornește de la referință.
-  (F27-D3, F27-r10)
+- Inițialul de stoc și cel de cont ale SAF-T, ca și soldurile terților, pornesc
+  din snapshot, sub accesul complet verificat înaintea proiecției (105,
+  SAFT-r4 închisă, X-D5). Rapoartele API cumulate (balanță, fișă, sold
+  parteneri, partide cu rest, stoc) citesc `Vizibila` și recitesc tot
+  istoricul la fiecare cerere: pe scara sintetică, 7.827 de rânduri din
+  `Postare` pentru balanța de după 12 luni, față de 1.926 din snapshot. La acel
+  volum recitirea e mai rapidă (8 ms față de 13 ms), deci nu există un al
+  doilea read model. (104b, FZ-r1 închisă, X-D5)
+- Raportul de stoc listează și capătul de consum al bonului: postarea de debit
+  a BCS poartă lotul ca unitate, pe contul de cheltuială și la locul de
+  consum, iar `Loturi.Postari` o ia ca poziție. Rândurile acestea cresc cu tot
+  ce s-a consumat, și în raport, și în snapshot-ul de stoc. (X-D5; X-r3)
+- `PartideCuRest` caută documentul deschizător al fiecărei partide parcurgând
+  toate postările de partidă (`Partide.Origini`), și când soldurile vin din
+  snapshot. E singurul criteriu de formă picat al scării transversale:
+  rândurile atinse cresc cu istoricul. Amânat prin amendamentul owner-ului
+  (2026-10-04), odată cu F27-r16. (F27-r16, X-D5)
+- Scara transversală este sintetică și mică: 7.951 de postări la 12 luni. Nu
+  are prag absolut. Proba din plan se evaluează cu scanarea secvențială
+  interzisă, fiindcă la acest volum planificatorul o alege legitim; planul
+  ales e raportat alături. Pragul pe volum real rămâne al migrării. (X-D5,
+  FZ-r3)
 - Rândurile integral nule dispar din rapoarte după prima închidere. O cheie cu
   debitul și creditul cumulate zero la referință nu are rând de snapshot, deci
   un cont sau un cont cu repartitor fără nicio mișcare în perioada cerută nu
@@ -66,7 +93,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   rol care ar putea citi perioada fiscală fără să poată citi tabelele de
   solduri ar primi soldul inițial zero, fără avertisment. Rolurile livrate nu
   au această formă: cine citește perioada citește și soldurile, iar un rol care
-  nu vede perioadele cade pe citirea din registrul integral. (F27-D3)
+  nu vede perioadele cade pe citirea integrală a cubului. (F27-D3)
 - Integritatea snapshot-ului nu e verificată la citire. Un rând de snapshot
   șters direct din bază dă o balanță tăcut greșită (inițialul scade), fără
   niciun semnal; singura detecție e reconstrucția la cerere, care raportează
@@ -181,7 +208,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   Compensarea prin notă contabilă nu apare în Payments (SAFT-r1). Valuta și
   TVA la încasare pe plăți nu există în cub, iar exportul le refuză. Factura
   în valută se declară în RON, cu avertismentul `FacturaInValuta` (B-r6). Citirea
-  alocărilor filtrează postările contabile pe `Unitate`, fără index dedicat.
+  alocărilor filtrează postările contabile pe `Unitate`, prin indexul
+  `(Unitate, Data)` (X-D5).
   Pe scara sintetică (SAF-B8: k ∈ {1, 4, 16, 64} unități/lună × m ∈ {0, 6, 12}
   luni de istoric, proces rece și cald) L emite 43 de comenzi SQL și S 26,
   constant. Istoricul nu se citește din `Postare`. Durata și alocările cresc
@@ -192,7 +220,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   dezvoltare aparține proxy-ului de porturi Docker Desktop, nu produsului.
   Lotul pe două conturi de stoc nu are azi producător; dacă apare, poziția
   îl separă prin `ProductType`, iar garda de injectivitate refuză cheile
-  duplicate (SC-SAFT-12 parțial). Balanța SAF-T recitește postările (SAFT-r4).
+  duplicate (SC-SAFT-12 parțial).
   Validatorul se rulează numai pe lună întreagă (antetul cu o singură lună).
   (103, D8-B8, S1-R8, S0-R4, S2)
 - Corecția unui document operat: motivul decide efectul fiscal, nu contarea.
@@ -221,10 +249,73 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   creanța unui retur e negativă după operare (venit stornat), iar filtrul
   `Rest > 0` o taie. Împerecherea unui retur rămâne pe calea directă
   (serviciu / XAF). (F27-D7)
-- Rămân pe registrul integral, fără partide: `ImperecheriProiectii.Asignari`
-  (unpivot-ul folosit de panoul notei de compensare) și `ImperechereService`
-  pe un document anume — ambele sunt căi de COMANDĂ, pe mulțimi mărginite.
-  (F27-D7)
+- `Imperechere` rămâne legătura explicită: panoul stingerilor îi afișează
+  rândurile, iar restul, totalul și candidații vin din `Cub.Citiri.Partide`.
+  Singurul calcul care citește sumele legăturilor este
+  `Partide.NominalizataLibera`, pe o pereche de documente (101, X-D2).
+- Proba X-D2 este sintactică. Un rezultat netipizat derivat dintr-un registru
+  se urmărește la apelanți numai dacă membrul e declarat în `Purtatori`; un
+  purtător nou, nedeclarat, nu e văzut. `StocService.Sold`, `AlocaFifoTolerant`
+  și `AlocaFifo` nu mai au apelant de producție și rămân în `Module` numai ca
+  oracol al probelor, până la TR-D9.
+- Cifrele citite din cub sunt păzite de dreptul de citire pe tipul registrului
+  (`RegistruContabil` pentru închiderea de TVA, `RegistruImobilizari` pentru
+  fișă și amortizare). Subiectul permisiunii după tăierea registrelor nu este
+  ales. (F22-D5, X-D2; TR-D9)
+- Acoperirea cantitativă a stocului (X-D7 a) compară registrul cu cubul pe
+  document × lot × gestiune × storno × semn, pe `Magazie`, `Marfuri` și
+  `Folosinta`. Contul nu intră în cheie: rândul de registru nu îl poartă, iar
+  derivarea lui din politica de azi ar rescrie istoricul (093c). Valoarea pe
+  cont a operărilor rămâne la reconcilierea (a); a transferurilor, pe care
+  (a) le exclude, la conservarea pe cont din `INV-CUB`
+  (`CITIRE_TRANSFER_NECONSERVAT`), care nu compară cu registrul, ci cere ca
+  cele două capete să stea pe același cont. Direcția e registru → cub: o postare pe
+  lot fără rând de registru (deschiderea, recepția facturii cu NIR neoperat)
+  nu e lipsă. Grupul recepției conexe se compară net, pe factură și
+  recepțiile ei; fără nicio recepție operată, registrul grupului trebuie să
+  fie zero. `Custodie` și celelalte tipuri de stoc nu se compară. Invariantul
+  rulează în ModelCheck, nu la pornirea hosturilor (102d).
+- Gardianul refuză numai stingerea regimului (X-D7 b). Activarea
+  `PosteazaInCub` pe un tip cu documente operate numai în registre nu e
+  refuzată la scriere; o arată `INV-CUB`, ca istoric incomplet.
+- Produsul nu are o listare a postărilor pe lot sau pe partidă. Regula
+  listării N-r8 e fixată pe intrările comune și probată pe ele; singura
+  listare pe lot din producție este mișcarea de stoc SAF-T, care poartă
+  eticheta felului. O fișă a lotului sau a partidei se construiește peste
+  `Loturi.Postari`, respectiv `Partide.Postari`, fără filtru pe fel.
+- Probele de concurență (X-D6) pun cele două comenzi în coada blocajului
+  ținut de scenă și le lasă să ruleze în ordinea cozii. Dovedesc rezultatul
+  serial și așteptarea pe conexiuni distincte; nu măsoară debitul. Pe ușa
+  HTTP și pe contextul securizat e probat numai refuzul `SCRIERE_OCUPATA`
+  și ce nu ia blocajul (`scriere-ocupata.py`), nu matricea rezultatelor
+  seriale.
+- `SCRIERE_OCUPATA` iese 422, ca orice refuz de domeniu. Un client nu îl
+  deosebește de un refuz definitiv decât după cod. (108)
+- Explicația deciziei (X-D4) există numai pe tranzacțiile scrise de un
+  contract. Împerecherea, desfacerea, stingerea de deschidere și deschiderea
+  nu au decizii de explicat și nu au explicație. Un document operat înaintea
+  migrației n-ar avea explicație, iar invariantul l-ar refuza: baza se
+  recreează (102b).
+- Refuzul `EXPLICATIE_ACCES_INCOMPLET` se decide pe tip, nu pe tranzacția
+  cerută: un criteriu de rând pe `Postare` sau pe o frunză de document refuză
+  explicația oricărei tranzacții, inclusiv a uneia pe care criteriul n-o
+  atinge. E prețul regulii „fără proiecție parțială” (SAF-D4).
+- `DECLARATIE_INVALIDA` (S-r11) e probată pe coaja comenzii, cu o cantitate
+  în afara scării ținută în memorie. Un declanșator persistabil pe ușa HTTP
+  nu a fost construit; răspunsul ușii e cel al oricărui refuz de declarație
+  (422 la operare, listă la dry-run), neprobat separat pentru acest cod.
+- Explicația repetă câte două `ContRezolvat` și unitatea întreagă pe fiecare
+  linie. Măsurat în X-D5: 907 octeți pe linie, 58.066 pentru un consum de 64
+  de linii.
+- Invariantul explicației nu recitește istoricul: verifică soldul citit al
+  unei partide stinse numai ca prezență și ca plafon al alocărilor. Un sold
+  citit alterat în sus trece. La fel, o valoare declarată e comparată cu
+  postarea ei și cu sursa permisă declarantului, nu recalculată din linia
+  sau recepția de origine. (X-RI1)
+- Matricea `refuzuri.ps1` probează ușa explicației numai cu cei patru
+  utilizatori ai ei: 200 și 404. 403 `EXPLICATIE_ACCES_INCOMPLET` cere un
+  rol cu citire restricționată și rămâne al probei `explicatii.py`, care
+  lasă un bon stornat pe baza ei. (X-D8)
 - `documente-cu-rest` rămâne proiecția scumpă, iar partidele nu schimbă asta:
   pe baza de import costă 181 ms filtrat pe o contrapartidă (171 ms cu lanțul
   desfăcut — diferență în zgomot), 423 ms nefiltrat pe grilă și 220 ms pe
@@ -284,11 +375,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   L3; abaterea este diagnosticată aritmetic. Un refuz pentru semne
   incompatibile și înlocuirea lui `ILinieCuAvans` ca proxy pentru linia de
   factură rămân de tratat la următoarea atingere a validării. (103-r3)
-- Raportul R6 are costuri de măsurat la gate-ul transversal de performanță:
-  acces leneș la `Tranzactie` și verificări de securitate per postare,
-  rezolvarea tipului/politicii per draft, citire fără limită temporală când
-  perioada lipsește și self-join pe postările fiscale la deschiderea
-  lookup-ului de avans. Nu există încă un buget de cost probat. (103h; gate-ul transversal TR-D8, 090/091)
+- Raportul R6, măsurat pe scara sintetică la 128 de documente fiscale în
+  lună: 33 ms pe ușa nesecurizată, 104 ms și 24,9 MiB alocați pe cea
+  securizată (verificarea de permisiune per obiect), 17 comenzi SQL,
+  independent de istoric. Accesul leneș la `Tranzactie` a ieșit. Rămân
+  nemăsurate rezolvarea tipului și a politicii per draft, citirea fără
+  perioadă și deschiderea lookup-ului de avans. (103h, X-D5)
 - Implicitele Privat `FCT|RLF/UE → TI21` și `DVI → IMP21` sunt nedatate.
   Înainte de 2025-08-01, tipurile nu sunt eligibile; rămâne alegerea
   explicită cu explicație conform R6-B5. Adăugarea rândurilor istorice

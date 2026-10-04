@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
@@ -19,7 +20,22 @@ static class AcoperireInvarianti {
         new("POLITICA", "CITIRE_PARTIDE_POLITICA", TotalDecontareDiferit),
         new("IMO-FISA", "fără fișă pe cub", FisaPeAltaUnitate),
         new("IMO-CAUZA", "fără cauză", FisaFaraLinie),
+        new("IMO-ORIGINE", "fără cauză", FisaFaraOrigine),
+        new("IMO-SUPORT", "fără cauză", FisaFaraSuport),
         new("IMO-REGISTRU", "diferă de cub", RegistruImobilizariDiferit),
+        new("EXPLICATIE-LIPSA", C.Citiri.Explicatii.Lipsa, ExplicatieStearsa),
+        new("EXPLICATIE-REFERINTA", C.Citiri.Explicatii.Referinta, ExplicatieReferitaGresit),
+        new("EXPLICATIE-STORNO", C.Citiri.Explicatii.Storno, InversaPeLotDiferita),
+        new("EXPLICATIE-IESIRE", C.Citiri.Explicatii.Iesire, (os, db) => Rescrie(os, db, ValoareIesireDiferita)),
+        new("EXPLICATIE-DECLARATA", C.Citiri.Explicatii.Iesire, (os, db) => Rescrie(os, db, Fara<N.ValoareDeclarata>)),
+        new("EXPLICATIE-EVALUARE", C.Citiri.Explicatii.Evaluare, (os, db) => Rescrie(os, db, SoldCititDiferit)),
+        new("EXPLICATIE-STINGERE", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, Fara<N.AlocareFifo>)),
+        new("EXPLICATIE-MECANISM", C.Citiri.Explicatii.Mecanism, (os, db) => Rescrie(os, db, EvaluatDeclarat)),
+        new("EXPLICATIE-DECLARANT", C.Citiri.Explicatii.Mecanism, (os, db) => Rescrie(os, db,
+            e => EvaluatDeclarat(e) is { } declarata ? declarata with { Declarant = nameof(DeclarantReturFurnizor) } : null)),
+        new("EXPLICATIE-SOLD-FIFO", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, e => SoldFifo(e, null))),
+        new("EXPLICATIE-SOLD-FIFO-MIC", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, e => SoldFifo(e, N.Sold.Zero))),
+        new("TRANSFER-CONT", C.Citiri.Invarianti.TransferNeconservat, DestinatieTransferPeAltCont),
     ];
 
     static readonly HashSet<string> ucise = [];
@@ -125,11 +141,126 @@ static class AcoperireInvarianti {
         return true;
     }
 
+    static bool FisaFaraOrigine(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.FelUnitate == N.FelUnitate.Fisa && p.Carte != N.Carte.Contabil
+                && p.Tranzactie.Fel == N.FelTranzactie.Storno && p.InversaDinId != null)
+            .Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.InversaDinId, (Guid?)null).SetProperty(p => p.InversaDinSpatiu, (N.Spatiu?)null));
+        return true;
+    }
+
+    static bool FisaFaraSuport(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.FelUnitate == N.FelUnitate.Fisa && p.Tranzactie.Fel == N.FelTranzactie.Transfer
+                && p.Valoare != 0m && p.SuportId != null)
+            .Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.SuportId, (Guid?)null).SetProperty(p => p.SuportSpatiu, (N.Spatiu?)null));
+        return true;
+    }
+
     static bool RegistruImobilizariDiferit(IObjectSpace os, DbContext db) {
         var tinta = os.GetObjectsQuery<RegistruImobilizari>().Select(r => (Guid?)r.ID).FirstOrDefault();
         if (tinta == null) return false;
         db.Set<RegistruImobilizari>().Where(r => r.ID == tinta)
             .ExecuteUpdate(s => s.SetProperty(r => r.Valoare, r => r.Valoare + 1));
+        return true;
+    }
+
+    static bool Rescrie(IObjectSpace os, DbContext db, Func<C.Explicatie, C.Explicatie> schimba) {
+        foreach (var t in os.GetObjectsQuery<C.Tranzactie>().Where(t => t.Explicatie != null)
+                .OrderBy(t => t.ID).Select(t => new { t.ID, t.Explicatie }).ToList()) {
+            if (schimba(C.Explicatie.Citeste(t.Explicatie)) is not { } schimbata) continue;
+            var json = schimbata.Scrie();
+            db.Set<C.Tranzactie>().Where(x => x.ID == t.ID).ExecuteUpdate(s => s.SetProperty(x => x.Explicatie, json));
+            return true;
+        }
+        return false;
+    }
+
+    static C.Explicatie ValoareIesireDiferita(C.Explicatie e) {
+        var tinta = e.Decizii.OfType<N.ValoareIesire>().FirstOrDefault();
+        return tinta == null ? null : e with {
+            Decizii = [.. e.Decizii.Select(d => ReferenceEquals(d, tinta) ? tinta with { Valoare = tinta.Valoare + 0.01m } : d)],
+        };
+    }
+
+    static C.Explicatie SoldCititDiferit(C.Explicatie e) {
+        var iesire = e.Decizii.OfType<N.ValoareIesire>().FirstOrDefault();
+        var tinta = iesire == null ? null : e.Ipoteze.OfType<N.SoldUnitateCitit>()
+            .FirstOrDefault(i => i.Unitate.Id == iesire.Unitate.Id && i.Unitate.Cont == iesire.Unitate.Cont);
+        return tinta == null ? null : e with {
+            Ipoteze = [.. e.Ipoteze.Select(i => ReferenceEquals(i, tinta)
+                ? tinta with { Sold = tinta.Sold with { Debit = tinta.Sold.Debit + 1000m } } : i)],
+        };
+    }
+
+    // X-RI1: aceleași cifre, alt mecanism — ieșirile evaluate redenumite „declarate”, fără soldurile citite.
+    static C.Explicatie EvaluatDeclarat(C.Explicatie e) => !e.Decizii.OfType<N.ValoareIesire>().Any() ? null : e with {
+        Decizii = [.. e.Decizii.Select(d => d is N.ValoareIesire i
+            ? new N.ValoareDeclarata(i.Linie, i.Unitate, i.Cantitate, i.Valoare, SurseValoare.Linie) : d)],
+        Ipoteze = [.. e.Ipoteze.Where(i => i is not N.SoldUnitateCitit)],
+    };
+
+    static C.Explicatie SoldFifo(C.Explicatie e, N.Sold inlocuit) {
+        var alocare = e.Decizii.OfType<N.AlocareFifo>().FirstOrDefault();
+        var tinta = alocare == null ? null : e.Ipoteze.OfType<N.SoldUnitateCitit>()
+            .FirstOrDefault(i => i.Unitate.Id == alocare.Unitate.Id && i.Unitate.Cont == alocare.Unitate.Cont);
+        return tinta == null ? null : e with {
+            Ipoteze = [.. e.Ipoteze.Where(i => inlocuit != null || !ReferenceEquals(i, tinta))
+                .Select(i => ReferenceEquals(i, tinta) ? tinta with { Sold = inlocuit } : i)],
+        };
+    }
+
+    // X-RI2: numai contul capătului de destinație al unui transfer pe lot.
+    static bool DestinatieTransferPeAltCont(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Transfer && p.FelUnitate == N.FelUnitate.Lot
+                && p.Carte == N.Carte.Contabil && p.Cantitate > 0m && p.Valoare != 0m)
+            .Select(p => new { p.ID, p.Spatiu, p.Cont }).FirstOrDefault();
+        if (tinta == null) return false;
+        var altCont = os.GetObjectsQuery<Cont>().Where(c => c.ID != tinta.Cont).OrderBy(c => c.Simbol).Select(c => c.ID).First();
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Cont, altCont));
+        return true;
+    }
+
+    static C.Explicatie Fara<T>(C.Explicatie e) where T : N.Decizie =>
+        e.Decizii.OfType<T>().Any() ? e with { Decizii = [.. e.Decizii.Where(d => d is not T)] } : null;
+
+    static bool ExplicatieStearsa(IObjectSpace os, DbContext db) {
+        var cuIesiri = os.GetObjectsQuery<C.Postare>().Where(p => p.FelUnitate == N.FelUnitate.Lot && p.Cantitate < 0m
+            && p.Tranzactie.Explicatie != null).Select(p => (Guid?)p.TranzactieId).FirstOrDefault();
+        return cuIesiri != null && db.Set<C.Tranzactie>().Where(t => t.ID == cuIesiri)
+            .ExecuteUpdate(s => s.SetProperty(t => t.Explicatie, (string)null)) > 0;
+    }
+
+    static bool ExplicatieReferitaGresit(IObjectSpace os, DbContext db) {
+        var referinta = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.ExplicatieDinId != null)
+            .Select(t => new { t.ID, t.DocumentId }).FirstOrDefault();
+        if (referinta == null) return false;
+        var strain = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.Explicatie != null && t.DocumentId != referinta.DocumentId)
+            .Select(t => (Guid?)t.ID).FirstOrDefault();
+        return strain != null && db.Set<C.Tranzactie>().Where(t => t.ID == referinta.ID)
+            .ExecuteUpdate(s => s.SetProperty(t => t.ExplicatieDinId, strain)) > 0;
+    }
+
+    static bool InversaPeLotDiferita(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Storno && p.FelUnitate == N.FelUnitate.Lot)
+            .Select(p => new { p.ID, p.Spatiu, p.DocumentId, p.Unitate, p.Gestiune }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Cantitate, p => p.Cantitate + 1m));
+        // Registrul primește aceeași abatere, ca mutantul să ajungă la ramura explicației, nu la acoperirea stocului.
+        var rand = os.GetObjectsQuery<RegistruStoc>().Where(r => r.Storno && r.DocumentId == tinta.DocumentId
+            && r.LotId == tinta.Unitate && r.RepartitorId == tinta.Gestiune
+            && (r.TipStoc == TipStoc.Magazie || r.TipStoc == TipStoc.Marfuri || r.TipStoc == TipStoc.Folosinta)).Select(r => (Guid?)r.ID).FirstOrDefault();
+        db.Set<RegistruStoc>().Where(r => r.ID == rand).ExecuteUpdate(s => s.SetProperty(r => r.Cantitate, r => r.Cantitate + 1m));
         return true;
     }
 }

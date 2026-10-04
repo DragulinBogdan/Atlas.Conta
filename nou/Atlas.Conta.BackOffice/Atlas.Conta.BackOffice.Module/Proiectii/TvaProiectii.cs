@@ -87,20 +87,6 @@ public static class TvaProiectii {
         IQueryable<FaptFiscal> randuri, DateOnly? dataStart, DateOnly? dataEnd) =>
         Fiscale.IntreLuni(randuri, dataStart, dataEnd);
 
-    public static IQueryable<RegistruTva> IntreLuni(
-        IQueryable<RegistruTva> randuri, DateOnly? dataStart, DateOnly? dataEnd) {
-
-        if (dataStart is DateOnly ds) {
-            var de = ds.Year * 100 + ds.Month;
-            randuri = randuri.Where(r => r.PerioadaAn * 100 + r.PerioadaLuna >= de);
-        }
-        if (dataEnd is DateOnly df) {
-            var panaLa = df.Year * 100 + df.Month;
-            randuri = randuri.Where(r => r.PerioadaAn * 100 + r.PerioadaLuna <= panaLa);
-        }
-        return randuri;
-    }
-
     public static IQueryable<JurnalTvaRand> JurnalTva(
         IObjectSpace os, SensTva sens, DateOnly? dataStart = null, DateOnly? dataEnd = null) {
 

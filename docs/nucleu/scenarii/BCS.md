@@ -94,8 +94,8 @@ cubului.
 | Explicația evaluării | SC-BCS-07 explică baza 3/1, alocarea 1/0,33 și restul 2/0,67 prin date persistate pe tranzacție. | amânat la TR-D8, 091 (j) |
 | SC-X-05/06/07 | Inversare + compensarea exclusiv a reevaluărilor active; cifrele din README. | amânat la TR-D9, 091 (h) |
 | SC-X-01 și SC-X-08 | Refuzul stornării sursei cu consum ulterior, distinct de blocarea prin NIR conex. | specificat, de probat independent |
-| SC-BCS-13: două sesiuni reale | L:10/100; două comenzi concurente de câte 6. Exact una reușește, cealaltă refuză; sold 4/40, fără dublă cheltuială. | specificat; F27-r8/S-r9 |
-| SC-BCS-14: consum vs. închidere | Serializare: fie consumul de 4 intră în luna închisă și snapshot = 6/60, fie închiderea câștigă și consumul refuză, snapshot = 10/100. | specificat; F27-r8/S-r9 |
+| SC-BCS-13: două sesiuni reale | L:10/100; două comenzi concurente de câte 6. Exact una reușește, cealaltă refuză; sold 4/40, fără dublă cheltuială. | verificat pe ambele profiluri ca SC-X-15 (X-D6, 2026-10-03) |
+| SC-BCS-14: consum vs. închidere | Serializare: fie consumul de 4 intră în luna închisă și snapshot = 6/60, fie închiderea câștigă și consumul refuză. | verificat pe ambele profiluri ca SC-X-21, în ambele ordini (X-D6, 2026-10-03) |
 | Re-intrare / lot cu sold negativ | De completat numeric împreună cu tipul care recepționează/corectează; BCS negativ rămâne refuzat. | specificare restantă |
 
 ## Legătura cu probele existente

@@ -75,6 +75,62 @@ nesecurizată poate întoarce tot clasa `SecuredEFCoreObjectSpace`.
 SC-CIT-74 HTTP verifică închiderea/reconstrucția prin fabrica reală și
 citirea filtrată prin utilizatorii reali.
 
+### `Transfer` pe cititorii comuni — N-r8, X-D2 (2026-10-03)
+
+Așteptările sunt numărate de mână din scenă. Oracolul citește cubul direct:
+rândurile tranzacțiilor `Transfer` ale documentelor și rândurile `Storno` a
+căror origine `InversaDin` este unul dintre ele. Fiecare intrare comună cu
+regim declarat le numără pe aceleași identități.
+
+| ID | Scenariu | Așteptare | Stare |
+|---|---|---|---|
+| SC-CIT-100 | BTR 4 × 10 pe lot, stornat în ianuarie | 2 postări Transfer și 2 inverse; `Loturi.Postari` le întoarce pe toate 4; `Contabil.Postari`, `Contabil.Jurnal`, `Plati.Postari` și `Partide.Postari` întorc zero | verificat pe ambele profiluri |
+| SC-CIT-101 | FCT 100, plăți 40 și 60 împerecheate; plata de 60 stornată în februarie cu desfacerea legăturii | 6 postări Transfer (40, 60 și desfacerea −60, câte două), nicio inversă `Storno`; `Partide.Postari` le întoarce pe toate 6; intrările contabile și `Loturi.Postari` întorc zero | verificat pe ambele profiluri |
+| SC-CIT-102 | ASM mixt (Operare + Transfer) stornat în februarie | 4 postări Transfer și 4 inverse într-un `Storno` care poartă și inversele `Operare`; `Loturi.Postari` întoarce cele 4 rânduri pe lot; intrările contabile întorc zero, deși inversele `Operare` ale aceluiași storno rămân în jurnal (SC-CIT-04) | verificat pe ambele profiluri |
+
+`Fiscale.Postari` și `Imobilizari.PozitiiFaraFisa` nu filtrează felul și sunt
+doar măsurate. Proba structurală `N-r8` cere regimul declarat pentru orice
+intrare publică nouă.
+
+### Activarea, regimul dual și restanțele TR-D8 — X-D7 (2026-10-03)
+
+Așteptările cantitative sunt scrise de mână din regula recepției conexe
+(098, 099): registrul ține cumulul constatat pe NIR, cubul ține recepția pe
+factură și numai diferența pe NIR. Probele citesc registrul și cubul direct,
+nu prin interogarea invariantului.
+
+| ID | Scenariu | Așteptare | Stare |
+|---|---|---|---|
+| SC-CIT-103 | FCT 4 × 25 cu recepție conexă, de trei ori: constatat 4, constatat 3, constatat 4 plus un lot nou de 1; recepția cu 3 stornată; recepția cu 4 corectată la 2 | pe lotul sursei, registrul grupului ține 4, 3 și 4, iar cubul 4 pe factură cu 0, −1 și 0 pe recepție; lotul adăugat are 1 în registru și 1 pe recepție; după storno registrul e 0 și cubul rămâne 4 pe factură, fără cumul activ; după corecție registrul e 4 − 4 + 2, iar cubul 4 pe factură și −2 pe corecție; acoperirea trece în fiecare stare | verificat pe ambele profiluri |
+| SC-CIT-104 | aceleași fapte, cu trei alterări în tranzacție anulată: cantitatea recepției de pe factură pusă pe zero, cantitatea deltei pusă pe zero, `SursaReceptieiId` ștearsă | `CITIRE_ISTORIC_STOC_INCOMPLET` de fiecare dată | verificat pe ambele profiluri |
+| SC-CIT-105 | BTR 4 din lotul 10 × 10 | −4 pe sursă și +4 pe destinație, în registru și în cub; cu cantitatea unui capăt pusă pe zero, pe rând, `CITIRE_ISTORIC_STOC_INCOMPLET` | verificat pe ambele profiluri |
+| SC-CIT-106 | ASM mixt stornat (faptele SC-CIT-102) | 8 contraponderi Transformare (4 linii și inversele lor); zero pe fiecare dintre cele șapte intrări comune | verificat pe ambele profiluri |
+| SC-CIT-107 | BTR stornat; plățile împerecheate, una desfăcută; ASM mixt stornat | `RegistruJurnal` și `FisaCont` nu listează nicio postare `Transfer` și nicio inversă a ei; `Loturi.Postari` le întoarce cu felul fiecăreia (2 `Transfer` și 2 `Storno`, în ambele scene), `Partide.Postari` la fel (6 `Transfer`) | verificat pe ambele profiluri |
+| SC-CIT-108 | plată nominalizată automat pe factură; nominalizarea mutată în cub pe altă partidă, apoi readusă | ștergerea și desfacerea legăturii dau `IMPERECHERE_FARA_EFECT`; legătura rămâne, rândul invers nu se scrie, cubul plății e neschimbat | verificat pe ambele profiluri |
+| SC-CIT-109 | FCT cu tranzacții în cub, CAS fără; pe privat, seed-ul profilului bugetar rulat nesalvat după un RLF operat | `PosteazaInCub = false` pe FCT dă `POSTEAZA_IN_CUB_IREVERSIBIL`, pe CAS trece; seed-ul lasă RLF în cub și scoate ITV | verificat (gardianul pe ambele profiluri, seed-ul pe privat) |
+
+`Imobilizari.PozitiiFaraFisa` exclude acum contraponderile ASM, ca celelalte
+intrări. Ramurile fișei fără origine și fără suport (097-r1) au mutanții
+`IMO-ORIGINE` și `IMO-SUPORT` în `INV-CUB`.
+
+### Explicația deciziei — X-D4 (2026-10-03)
+
+Așteptările sunt scrise de mână din regula evaluării: ieșirea ia
+`q × sold / cantitate`, ultima ieșire ia restul, stingerea ia partidele în
+ordinea deschiderii. Explicația se citește prin `Cub.Citiri.Explicatii`, nu
+din contractul recalculat.
+
+| ID | Scenariu | Așteptare | Stare |
+|---|---|---|---|
+| SC-CIT-96 | Recepție 3 × 0,333333 și 10 × 12,50; BCS cu liniile 1 (lot ieftin), 4 (lot scump), 1 (lot ieftin); BTR 2 din lotul scump, după bon; storno al amândurora; alt BCS operat și anulat | dry-run-ul nu persistă nimic; o singură explicație, pe `Operare`, cu declarantul, perioada, versiunea politicii și două solduri citite; pe linii: 0,33 din 1,00/3, 50 din 125/10, 0,34 din soldul curent 0,67/2; BTR: purtătorul e `Transfer`, decizia +2/+25 din soldul net 75/6 explică sursa postată −2/−25; `Storno` nu are explicație proprie, iar cititorul întoarce explicația originalului; baza refuză explicația pe `Storno` (`CK_Tranzactie_Explicatie`); anularea nu lasă nici tranzacție, nici explicație; forma persistată se citește înapoi identic, și după trecerea prin `jsonb`; versiune, decizie sau ipoteză necunoscută = refuz | verificat pe ambele profiluri |
+| SC-CIT-97 | Două facturi de 60 și 40 ale aceluiași furnizor; NTC cu liniile 70 și 50 pe contul furnizorului; separat, plată împerecheată cu factura | linia 70 stinge 60 + 10, linia 50 stinge 30 și deschide partida proprie pentru 20; soldurile citite ale partidelor sunt −60 și −40; transferul împerecherii nu are explicație, operarea plății o are pe a ei | verificat pe ambele profiluri |
+| SC-CIT-98 | ASM mixt (consum 60 pe contul produsului, consum 40 pe alt cont); ASM cu Δ de rotunjire; RLF 1 bucată la golirea lotului 3 × 10,006667 după două ieșiri; NIR conex care constată 3 din 4 × 25 | ASM mixt: o explicație, pe `Operare`, referită de `Transfer` prin `ExplicatieDinId`; consumurile 60 și 40 evaluate din soldurile 60 și 40; stornoul inversează ambele tranzacții și are o singură explicație de origine; Δ-ul absorbit e în explicația purtătorului `Transfer`; RLF: 1/10,01 `ValoareDeclarata` cu sursa `Linie`, fără sold citit, reziduul −0,01 rămâne pe lot; NIR-minus: 1/25 `ValoareDeclarata` cu sursa `Receptie` | verificat pe ambele profiluri; RLF numai privat |
+| SC-CIT-99 | HTTP pe host viu, bază privată clonată: FCT 10 × 10 și 5 × 5, BCS 4 și 1, apoi storno | `Admin` și `Cititor`: 200, 40 din 100/10 și 5 din 25/5; `User` și un id inexistent: același 404; trei roluri cu citire implicită și o restricție — membrul `Postare.Valoare`, rândul `DocumentDetaliu` cu cantitatea 1, rândurile `Postare` dinaintea datei bonului: 403 `EXPLICATIE_ACCES_INCOMPLET` cu tipul restricționat și fără nicio valoare, linie sau lot; tranzacția `Storno`: 200 cu explicația originalului | verificat (`nou/tools/ProbeHttp/explicatii.py`) |
+
+Invariantul de audit rulează în `INV-CUB`, pe faptele fiecărei scene a
+catalogului, cu șapte mutanți proprii. S-r11 e probată în scena SC-CIT-96:
+o cantitate cu patru zecimale, necomisă, dă refuzul `DECLARATIE_INVALIDA`.
+
 ### Cititorul declarat — C104 pasul 2, 2026-09-27
 
 SC-CIT-95: în tranzacția SC-CIT-76, după alterarea snapshot-ului lui

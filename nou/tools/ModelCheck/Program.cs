@@ -50,6 +50,11 @@ static string Conexiunea(string baza) =>
     "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=" + baza
     + (Environment.GetEnvironmentVariable("MODELCHECK_CONEXIUNE_EXTRA") is { Length: > 0 } extra ? ";" + extra : "");
 
+// Oracolul pe registrul fiscal: rândurile lunilor de declarare din interval.
+static IQueryable<RegistruTva> RegistruTvaIntreLuni(IObjectSpace os, DateOnly deLa, DateOnly panaLa) =>
+    os.GetObjectsQuery<RegistruTva>().Where(r => r.PerioadaAn * 100 + r.PerioadaLuna >= deLa.Year * 100 + deLa.Month
+        && r.PerioadaAn * 100 + r.PerioadaLuna <= panaLa.Year * 100 + panaLa.Month);
+
 // Validare model EF + (dacă baza există) verificare migrații/seed + scenariile
 // end-to-end ale motorului de operare pe un IObjectSpace real — aceeași
 // infrastructură XAF pe care o folosește și UI-ul (docs 113709).
@@ -219,6 +224,17 @@ void PurjaIstoricPerioade(IObjectSpace os, int an) {
         .Where(i => ids.Contains(i.PerioadaId))).Executa();
 }
 
+// X-D2 — `ModelCheck --probe-sursa [--lista]`: numai probele pe sursă, fără bază.
+if (args.Contains("--probe-sursa")) {
+    ProbeCulegere.VerificaSursa(Check);
+    ProbeCititoriCub.VerificaSursa(Check);
+    ProbeCititoriRegistre.VerificaSursa(Check, args.Contains("--lista"));
+    ProbeTransferCititori.VerificaSursa(Check);
+    ProbeBlocajScriere.VerificaSursa(Check);
+    Rezumat();
+    return;
+}
+
 // SAF-B8 D3: procesul-copil al unui punct perf (rece = proces nou, pool gol) și DUK-ul separat pe XML-urile lui.
 if (args.Contains("--perf-saft-masura")) {
     var i = Array.IndexOf(args, "--perf-saft-masura");
@@ -230,6 +246,12 @@ if (args.Contains("--perf-saft-masura")) {
     var masuri = PerfSaft.MasoaraInProces(() => providerPerf.CreateObjectSpace(), punct, args[i + 7], Check);
     Console.WriteLine(PerfSaft.Json(masuri));
     Rezumat();
+    return;
+}
+// X-D5: procesul-copil al unui punct (m, k, operație) al scării transversale.
+if (args.Contains("--perf-cub-masura")) {
+    var i = Array.IndexOf(args, "--perf-cub-masura");
+    Console.WriteLine(PerfCub.Json(PerfCub.MasoaraInProces(connectionString, PerfCub.DinArgument(args[i + 1]), args[i + 2])));
     return;
 }
 if (args.Contains("--perf-saft-duk")) {
@@ -266,6 +288,9 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     ProbeStraturi.VerificaCoaja(Check);
     ProbeCulegere.VerificaSursa(Check);
     ProbeCititoriCub.VerificaSursa(Check);
+    ProbeCititoriRegistre.VerificaSursa(Check);
+    ProbeTransferCititori.VerificaSursa(Check);
+    ProbeBlocajScriere.VerificaSursa(Check);
 
     if (profil == ProfilContabil.Privat) {
         // Baza privată aparține uneltei: se creează/migrează aici.
@@ -296,6 +321,9 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         .UseObjectSpaceLinkProxies()
         .UseLazyLoadingProxies()
         .AddInterceptors(NumaratorSql.Instanta));
+
+using (var osPlan = provider.CreateObjectSpace())
+    PerfCub.ProbaPlanRespins(osPlan, profil == ProfilContabil.Privat, Check);
 
 // 104c: regulile culegerii (scara coloanei) sunt ale gardianului, pe ușa securizată a API-ului.
 IObjectSpace OsCuGardian() {
@@ -711,6 +739,49 @@ if (args.Contains("--perf-saft")) {
         Console.WriteLine($"     PERF m{istoricPerf}: {ceasPerf.Elapsed.TotalSeconds:0} s");
     }
     PerfSaft.Evalueaza(masuriPerf, Check, directorPerf);
+    Rezumat();
+    return;
+}
+
+// X-D5 / X-D3: `ModelCheck --perf-cub [privat]` — scara transversală a cititorilor comuni și reconcilierea pe baza de volum.
+if (args.Contains("--perf-cub")) {
+    var privatPerf = profil == ProfilContabil.Privat;
+    var directorPerf = Environment.GetEnvironmentVariable("PERF_CUB_DIR")
+        ?? Path.Combine(Duk.DirectorTemporar(), $"perf-cub-{DateTime.UtcNow:yyyyMMdd-HHmmss}");
+    Directory.CreateDirectory(directorPerf);
+    int[] Lista(string nume, string lipsa) => (Environment.GetEnvironmentVariable(nume) ?? lipsa)
+        .Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToArray();
+    var istoricePerf = Lista("PERF_CUB_M", "0,6,12");
+    var treptePerf = Lista("PERF_CUB_K", "1,4,16,64");
+    var unitatiPerf = Lista("PERF_CUB_UNITATI", "16")[0];
+    List<PerfCub.Masura> MasoaraProces(PerfCub.Punct p) {
+        var psi = new ProcessStartInfo(Environment.ProcessPath!) { RedirectStandardOutput = true, UseShellExecute = false };
+        foreach (var a in new[] { typeof(PerfCub).Assembly.Location, "--perf-cub-masura", PerfCub.Argument(p), directorPerf }
+                     .Concat(privatPerf ? ["privat"] : Array.Empty<string>()))
+            psi.ArgumentList.Add(a);
+        using var copil = Process.Start(psi)!;
+        List<PerfCub.Masura> masuri = null;
+        for (string linie; (linie = copil.StandardOutput.ReadLine()) != null;) {
+            if (linie.StartsWith(PerfCub.PrefixJson, StringComparison.Ordinal)) masuri = PerfCub.DinJson(linie);
+            else if (linie.StartsWith("     ") || linie.StartsWith("FAIL")) Console.WriteLine(linie);
+        }
+        copil.WaitForExit();
+        Check($"X-D5: procesul de măsurare {p.Operatie} m{p.Istoric} k{p.Unitati} se încheie fără eșec", copil.ExitCode == 0 && masuri != null);
+        return masuri ?? [];
+    }
+    var scenePerf = new List<PerfCub>();
+    foreach (var istoricPerf in istoricePerf) {
+        var scenaPerf = new PerfCub(() => provider.CreateObjectSpace(), Check, privatPerf, (os, an, luna) => InchideAcceptTot(os, an, luna),
+            2060 + istoricPerf / 3, istoricPerf, unitatiPerf, treptePerf, MasoaraProces, directorPerf, opts);
+        var ceasPerf = Stopwatch.StartNew();
+        scenaPerf.Ruleaza();
+        scenePerf.Add(scenaPerf);
+        var neucise = AcoperireInvarianti.Neucise.ToList();
+        File.AppendAllText(Path.Combine(directorPerf, $"xd3-{(privatPerf ? "privat" : "bugetar")}-m{istoricPerf}.md"),
+            $"\n## Mutanții INV-CUB după m = {istoricPerf}\n\nNeuciși încă: {(neucise.Count == 0 ? "niciunul" : string.Join(", ", neucise))}.\n");
+        Console.WriteLine($"     PERFCUB m{istoricPerf}: {ceasPerf.Elapsed.TotalSeconds:0} s; mutanți INV-CUB neuciși: {(neucise.Count == 0 ? "niciunul" : string.Join(", ", neucise))}");
+    }
+    PerfCub.Evalueaza(scenePerf, Check, directorPerf, privatPerf);
     Rezumat();
     return;
 }
@@ -12597,7 +12668,7 @@ void VerificaSaft(bool privat) {
         rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft == rez.TvaRegistru && rez.TvaRegistru != 0m);
     // Registrul fiscal al lunii, citit INDEPENDENT de proiecție (altfel cusătura
     // 3 s-ar măsura tot pe cifrele ei): baza tipurilor FĂRĂ secțiune de facturi.
-    var randuriTvaScena = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), pStart, pEnd)
+    var randuriTvaScena = RegistruTvaIntreLuni(os, pStart, pEnd)
         .Select(r => new { r.DocumentId, r.Baza }).ToList();
     // Tipurile de factură se citesc pe CLASELE CLR (FCL/FCT/RDC/RLF), nu prin
     // `CoduriTip` — ca proba să nu depindă de aceeași funcție pe care o folosește
@@ -16541,7 +16612,7 @@ void VerificaD394(bool cuTva) {
     var cuV = D394Proiectii.D394(os, pStart, pEnd);
     var vCuTva = cuV.Operatiuni.Single(o => o.CuiP == "33333333" && o.Tip == "V");
     var avV = cuV.Avertismente.FirstOrDefault(a => a.Cod == "TvaPeTipFaraColoana");
-    var brutV = TvaProiectii.IntreLuni(os.GetObjectsQuery<RegistruTva>(), pStart, pEnd)
+    var brutV = RegistruTvaIntreLuni(os, pStart, pEnd)
         .Where(r => r.Sens == SensTva.Livrare)
         .Sum(r => (decimal?)r.Tva) ?? 0m;
     var opVTva = cuV.Operatiuni.Where(o => o.Sens == "Livrare").Sum(o => (o.Tva ?? 0m) + o.TvaNedeclarat)
@@ -30381,7 +30452,7 @@ void VerificaReviewF27(bool privat) {
             Console.WriteLine($"     MĂSURAT (F27-R11/{eticheta}): T0 → „{rezultate[0] ?? "<a trecut>"}”, "
                 + $"T1 → „{rezultate[1] ?? "<a trecut>"}”, rânduri de istoric {istoric}.");
             Check($"F27-R11 ({eticheta}) două închideri concurente ale lui {luna:00}/{An}: exact una trece, cealaltă "
-                + "așteaptă `FOR UPDATE` și cade CURAT pe „e deja închisă” (422), cu un singur rând de istoric",
+                + "așteaptă și cade CURAT pe „e deja închisă” (422), cu un singur rând de istoric",
                 rezultate.Count(r => r == null) == 1
                 && rezultate.Any(r => r != null && r.Contains("deja închisă")) && istoric == 1);
         }
@@ -30937,6 +31008,12 @@ List<Scena> ScenelePeTip(bool privat) {
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiSnapshotStoc), ["CITIRI"], () => new ScenariiSnapshotStoc(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiExplicatii), ["CITIRI"], () => new ScenariiExplicatii(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiConcurenta), ["X"], () => new ScenariiConcurenta(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
         new(nameof(ScenariiCitiri), ["CITIRI"], () => new ScenariiCitiri(

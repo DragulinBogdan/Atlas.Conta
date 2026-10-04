@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-09-27.** [Index](README.md)
+**Actualizat: 2026-10-04.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -36,6 +36,14 @@ dreptul `DreptComandaXaf` pe ușa `T` (și restricția ei, ex. NTC fără
 singură contextul motorului; `SubiectInvizibil` iese 404, `RefuzAcces` 403,
 `OperareException` 422. Niciun identificator furnizat de client nu
 autorizează singur accesul prin contextul nesecurizat. (42b, 55b, 80, 104b)
+
+Comenzile care scriu sunt seriale per bază (X-D6): o comandă trimisă cât
+timp alta scrie așteaptă. Dacă așteptarea depășește timpul de comandă al
+conexiunii, răspunsul e 422 cu `SCRIERE_OCUPATA`, fără nimic scris; cererea
+se poate retrimite. Același refuz îl poate da salvarea unui draft care
+adaugă linii. Citirile, dry-run-ul și salvarea fără linii noi nu așteaptă.
+Măsurat pe host viu, cu blocajul ținut de altă conexiune: 422 după 30 s,
+timpul de comandă implicit. (108f)
 
 PUT reprezintă starea completă a formularului: liniile sunt reconciliate,
 iar câmpurile opționale absente se golesc conform contractului. PATCH OData
@@ -465,3 +473,27 @@ ecranului S compară fiecare poziție cu postările pe lot ale lunii și stocul
 pe cont cu soldul contabil; diferența pe cont se sparge în „(sold inițial)”
 (din snapshot) și componentele lunii pe tipul documentului, fără a citi
 istoricul (B8-Q3). (SAF-D4, S2-D5, S3-D6)
+Soldurile de cont și ale terților din L și S pornesc din snapshot-ul contabil,
+deci accesul complet cerut include perioadele fiscale și soldurile de perioadă.
+(SAFT-r4, X-D5)
+
+## Explicația deciziei (X-D4)
+
+`GET api/proiectii/explicatii/{tranzactieId}` întoarce `ExplicatieTranzactieDto`:
+felul tranzacției, documentul și `Origini` — explicația proprie, cea referită
+sau, la storno, ale originalelor; lista e goală pe împerechere, desfacere și
+deschidere. Fiecare origine are purtătorul, declarantul, versiunea, perioada,
+politica și liniile cu ieșirile (unitate, cantitate, valoare, soldul dinainte
+sau sursa valorii declarate), stingerile (partidă, măsură, sold citit),
+conturile rezolvate, partidele deschise și absorbțiile. Nu există pagină
+React (104d).
+
+Tranzacția pe care contextul securizat nu o vede dă 404, ca una inexistentă.
+Explicația dezvăluie solduri întregi ale unităților și valori ale altor linii,
+deci cere citire necondiționată pe `ExplicatieAcces.Citite` (`Tranzactie`,
+`Postare`, `Document`, `DocumentDetaliu`, `Lot`, `Produs`, `Cont`,
+`Repartitor`, cu toate tipurile mapate în aceleași tabele). Orice criteriu de
+rând sau de membru dă 403 `EXPLICATIE_ACCES_INCOMPLET` înaintea citirii, cu
+tipurile și membrii restricționați în corp și fără nicio valoare; nu există
+proiecție parțială. Mecanismul e `Api.AccesComplet`, comun cu D406
+(`SaftAcces` îl apelează cu listele lui).
