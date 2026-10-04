@@ -9,6 +9,11 @@ acest review.** Predarea spune explicit că 106(k) așteaptă aprobarea
 owner-ului; trecerea lui 106-r7 în backlog „după PoC” nu constituie acea
 aprobare.
 
+**Actualizare la `86978f7`: [RV2](c106-review-codex-rv2.md) închide C106-R5.**
+SC-X-24 detectează acum mutantul cu dependent permanent omis; 106-r7
+rămâne la comandă prin tranșarea owner-ului consemnată în decizia 106(k).
+Constatările de mai jos descriu starea anterioară, la `5941b28`.
+
 ## Reverificarea observațiilor inițiale
 
 | Observație | Rezultat |

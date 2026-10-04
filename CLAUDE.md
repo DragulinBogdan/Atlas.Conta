@@ -160,7 +160,7 @@ TR-D8 este închis: gate-ul transversal (decizia 108, contractul
 PR #15 (2026-10-04), cu review-ul implementării închis (X-RI1…X-RI4).
 Felia C106 (decizia 106: regimul pe stare, liniile pe roluri, ștergerea pe
 stare) e mersă în main prin PR #17 (2026-10-04), cu 106-r1 închisă; review-ul
-advers al feliei e deschis. Urmează, în ordine: discuția și aducerea pe main
+advers al feliei e închis (C106-R1…R5, corectat prin 106 (k)). Urmează, în ordine: discuția și aducerea pe main
 a branch-ului `m1-deschidere-terti` (decizia 107), apoi TR-D9: tăierea
 scriitorilor vechi și a regimului dual. Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;

@@ -1,7 +1,7 @@
 # 106 — Regimul pe stare: o singură sursă a editabilității și a comenzilor disponibile
 
 Data: 2026-09-30
-Stare: activă; amendează 042(e) (affordance-urile pe resursă au acum o sursă comună) și precizează 104(c); (h) adăugat 2026-10-01 (axa 2 făcută, închide 106-r4); (i) și (j) adăugate 2026-10-04 (delimitarea față de 108; ștergerea pe stare, aplicată și pe lista de documente); (k) adăugat 2026-10-04 după review-ul advers C106-R1…R4 (gardienii citibili ai retragerii; amendează (b), precizează (f) și (i))
+Stare: activă; amendează 042(e) (affordance-urile pe resursă au acum o sursă comună) și precizează 104(c); (h) adăugat 2026-10-01 (axa 2 făcută, închide 106-r4); (i) și (j) adăugate 2026-10-04 (delimitarea față de 108; ștergerea pe stare, aplicată și pe lista de documente); (k) adăugat 2026-10-04 după review-ul advers C106-R1…R5 (gardienii citibili ai retragerii; amendează (b), precizează (f) și (i)), aprobat de owner 2026-10-04; review-ul e închis (RV2)
 Docs: `docs/nucleu/scenarii/REGIM.md`; `design/format-xaf-documente.md`; `docs/stare-curenta/domeniu-si-operare.md`, `api-si-client.md`, `dezvoltare-si-validare.md`
 
 ## Regula durabilă
@@ -258,6 +258,14 @@ Integrala după corectură: 3.459 bugetar / 4.680 privat, zero FAIL
 
 Tranșarea owner-ului, 2026-10-04: 106-r7 rămâne la comandă. Regimul
 stornării nu simulează desfacerea legăturilor.
+
+Reverificare Codex la `86978f7`: [RV2](../nucleu/c106-review-codex-rv2.md)
+închide C106-R5, fără observații noi. REGIM/NTC/IMO trec pe ambele
+profiluri; omisiunea temporară a nominalizărilor din regim este detectată
+de SC-X-24 în scena NTC (exit 1 așteptat), iar după restaurare REGIM/NTC
+trec din nou. Review-ul C106-R1…R5 este închis în delimitarea (k).
+
+Owner, 2026-10-04: (k) aprobat.
 
 ## Ce rămâne deschis
 

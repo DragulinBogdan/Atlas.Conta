@@ -14,6 +14,9 @@ Reverificare la `5941b28`: R1…R4 închise tehnic;
 probei SC-X-24 și delimitarea limitei 106-r7, încă dependentă de aprobarea
 owner-ului.
 
+Reverificarea finală la `86978f7`: [RV2](c106-review-codex-rv2.md) închide
+și C106-R5; limita 106-r7 este acceptată la comandă prin decizia owner-ului.
+
 În referințele de mai jos, `Module/` înseamnă
 `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/`.
 

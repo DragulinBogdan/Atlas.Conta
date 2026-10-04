@@ -70,3 +70,8 @@ R1…R4 închise tehnic. C106-R5 (excepția globală pentru
 `PARTIDA_CU_DEPENDENTI` din SC-X-24) e corectată prin clasificarea de mai
 sus; proba adversă din RV1 a devenit SC-REGIM-14. Owner, 2026-10-04: limita
 106-r7 rămâne la comandă.
+
+Reverificare Codex la `86978f7`: [RV2](../c106-review-codex-rv2.md),
+C106-R5 închisă. REGIM/NTC/IMO trec pe ambele profiluri; mutantul care
+omite nominalizările din regimul stornării pică SC-X-24 în scena NTC,
+fără a selecta aserțiunea explicită SC-REGIM-15.
