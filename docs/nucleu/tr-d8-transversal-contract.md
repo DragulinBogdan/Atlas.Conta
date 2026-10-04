@@ -15,7 +15,8 @@
   picat pe `PartideCuRest` este amânat prin amendamentul owner-ului, iar
   metoda probei din plan e confirmată — vezi „Execuție”.**
   **Pasul 6 (X-D8) verificat, 2026-10-04: integrala, probele HTTP, driftul
-  și decizia 108; review-ul advers al feliei e cerut lui Codex.**
+  și decizia 108; review-ul advers al feliei este închis după corecturile
+  X-RI1…X-RI4, reverificate de Codex la `7223abc`, 2026-10-04.**
 - Bază: [D8-B5](tr-d8-citiri-contract.md) pasul 5 și „Limite care împiedică
   închiderea TR-D8" din [review-ul propriu](tr-d8-review-codex.md); 090 (i)(j),
   091 (g)(4)(5), 091-r3; decizia 105 §„Ce rămâne deschis";
@@ -867,8 +868,8 @@ Review-ul advers al feliei: cerut lui Codex prin
 `comunicari/2026-10-04-0830-claude-codex-tr-d8-transversal-review.md`.
 Rezultat la `2b57aa5`, 2026-10-04: [review-ul implementării](tr-d8-transversal-implementare-review-codex.md)
 are patru observații P2, X-RI1…X-RI4: integrala era verde, dar mutanții
-documentați supraviețuiau. Toate patru sunt acceptate și corectate mai jos;
-reverificarea e cerută lui Codex. Review-ul contractului X-RV1…X-RV7 rămâne
+documentați supraviețuiau. Toate patru sunt acceptate, corectate mai jos și
+închise prin reverificarea Codex la `7223abc`. Review-ul contractului X-RV1…X-RV7 rămâne
 închis.
 
 ### Corecturile review-ului implementării — X-RI1…X-RI4 (2026-10-04)
@@ -926,6 +927,13 @@ verde; scara completă `run-verificari/perf-cub-20261004-093104/` — **1.526 OK
 privat, 996 OK bugetar**, zero FAIL, `PREST-NI` raportat `AMÂNAT`, DUK fără
 atenționări; controlul numeric are aceleași 1.280 de măsurători, toate
 trecute.
+
+Reverificare Codex la `7223abc`, 2026-10-04: X-RI1…X-RI4 închise, fără
+observații noi. Integrala proprie **3.394 bugetar / 4.604 privat OK**, zero
+FAIL, `run-verificari/20261004-102241-857/`, clone `.CodexXReview`; cei cinci
+mutanți noi și `X-D5-PLAN` trec pe ambele profiluri. Scara predată a fost
+inspectată, nu rerulată. Dovezile și limitele sunt în
+[review-ul implementării](tr-d8-transversal-implementare-review-codex.md#reverificarea-corecturilor--2026-10-04).
 
 ## Ce NU intră (amânări cu nume)
 

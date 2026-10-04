@@ -4,7 +4,10 @@ Data: 2026-10-04. Revizie: `2b57aa5844da1391243cd00f79c9e8e0c0a18f65`,
 branch `tr-d8-transversal`. Referință: [contractul](tr-d8-transversal-contract.md),
 inclusiv amendamentele din „Execuție”, și [decizia 108](../decizii/108-gate-transversal-tr-d8.md).
 
-**Verdict: review deschis, patru observații P2.** Integrala originală este verde:
+**Stare curentă, 2026-10-04: X-RI1…X-RI4 închise**, după reverificarea
+corecturilor `791e41c` la HEAD `7223abc`. Detalii și limite la finalul paginii.
+
+**Verdict inițial la `2b57aa5`: review deschis, patru observații P2.** Integrala originală este verde:
 3.387 verificări bugetar / 4.597 privat, zero FAIL. Problemele de mai jos sunt
 lacune ale verificărilor care certifică felia; nu am observat că fluxurile
 normale ar produce automat datele corupte injectate în probe.
@@ -155,3 +158,50 @@ Am inspectat codul autorizării explicației și probele HTTP, dar nu am reluat
 hostul HTTP, matricea de securitate, driftul OpenAPI sau scara completă în
 container. Rezultatele lor din predare nu sunt prezentate ca rulări proprii.
 Nu am schimbat codul de producție și nu am făcut commit.
+
+## Reverificarea corecturilor — 2026-10-04
+
+Răspuns la predarea `2026-10-04-1010-claude-codex-tr-d8-transversal-ri-corectat.md`.
+Revizie verificată: `7223abcd7d1571f9c464474effe4f22784093d77`, care include
+corecturile `791e41c`. **Toate cele patru observații sunt închise; nu am
+identificat observații noi care să împiedice închiderea review-ului.**
+
+| Observație | Verdict și dovadă |
+|---|---|
+| X-RI1 | Închisă. Mecanismul și sursa permisă se iau din declarantul documentului, independent de JSON. Mutanții `EXPLICATIE-MECANISM` și `EXPLICATIE-DECLARANT` sunt refuzați cu `CITIRE_EXPLICATIE_MECANISM`; soldul FIFO absent sau zero este refuzat cu `CITIRE_EXPLICATIE_STINGERE`. Toate patru cazurile au fost rerulate pe ambele profiluri. |
+| X-RI2 | Închisă. `VerificaTransferuri` reproduce conservarea pe (cont, latură), respectiv (cont, produs), din `Conservare.VerificaTransferul`. Mutantul `TRANSFER-CONT` este refuzat cu `CITIRE_TRANSFER_NECONSERVAT` pe ambele profiluri; scenele legitime trec. Explicația compensării prin reconcilierea (a) a fost corectată în documentație. |
+| X-RI3 | Închisă. Planurile respinse se propagă în eroarea măsurării; criteriul cere planuri prezente și nicio respingere. Proba `X-D5-PLAN`, rerulată pe ambele profiluri, verifică refuzul erorii și al planului absent, plus acceptarea unui rezultat legitim cu zero rânduri. |
+| X-RI4 | Închisă. Controlul folosește rândurile 9, 24, 19 și 30 din DTO-ul D300; apelul la `DecontTva` este eliminat. În JSON-ul scării predate, cele 48 de măsurători D300 au exact constantele independente ale scenei, cu 6/11 comenzi SQL pe ruta nesecurizată/securizată. |
+
+Rulare proprie pe surse nemodificate:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Integral -Profil Ambele -Sufix .CodexXReview
+```
+
+Artefact: `run-verificari/20261004-102241-857/`, manifest exit 0, **3.394
+bugetar / 4.604 privat OK**, zero FAIL. `INV-CUB`: 54 de scene per profil,
+toate ramurile își refuză mutanții și purja lasă zero postări de scenă.
+Nu a fost introdusă instrumentare temporară în această reverificare.
+
+Scara `run-verificari/perf-cub-20261004-093104/` a fost **inspectată, nu
+rerulată**: 784 măsurători privat + 496 bugetar; 1.526 / 996 verificări OK,
+zero FAIL; toate cele 98 + 62 de puncte la cald, k=64, au planuri cerute,
+zero respingeri și nicio eroare. Manifestul aparține rulării corecturilor
+înainte de commit (`2b57aa5` cu modificările enumerate); rezultatele nu
+sunt declarate drept măsurători proprii pe HEAD. HTTP, driftul OpenAPI și
+suita separată a nucleului nu au fost rerulate în această reverificare.
+
+Țintele suplimentare din predare: nu există în declaranții actuali un caz
+care să emită atât `ValoareIesire`, cât și `ValoareDeclarata`. Regula nouă
+a transferului coincide cu regula de contractare existentă. `PlanuriCerute`
+poate fi legitim zero la măsurările reci și la treptele intermediare, unde
+EXPLAIN nu este cerut; criteriul se aplică punctelor la cald de la treapta
+maximă și nu acceptă această absență acolo.
+
+Închiderea X-RI1 nu certifică egalitatea soldului FIFO cu întreg istoricul:
+un sold mărit peste plafonul necesar sau o valoare declarată schimbată
+împreună cu postarea rămân limite explicite în decizia 108 și în
+`limite-curente.md`. Conservarea nouă privește `Transfer`; nu extinde
+verificarea coordonatelor inversei de fel `Storno`. Amânările aprobate,
+inclusiv F27-r16, rămân neschimbate. Fără commit sau merge în această sesiune.

@@ -9,8 +9,9 @@ verificați pe `tr-d8-transversal`. Review-ul advers al contractului este
 închis (X-RV1…X-RV7). [Review-ul advers al implementării](../nucleu/tr-d8-transversal-implementare-review-codex.md)
 la `2b57aa5` a adus patru observații P2, X-RI1…X-RI4. Toate sunt corectate
 (contractul, „Corecturile review-ului implementării”); integrala după
-corecturi: 3.394 bugetar / 4.604 privat OK. Felia așteaptă reverificarea lui
-Codex înainte de merge.
+corecturi: 3.394 bugetar / 4.604 privat OK. Codex a reverificat independent
+la `7223abc`, cu aceleași rezultate pe ambele profiluri, și a închis
+X-RI1…X-RI4. Review-ul feliei este închis; branch-ul nu este mers.
 
 ## Regula durabilă
 
@@ -203,8 +204,11 @@ owner-ului.
 | X-RI4 | controlul numeric al operației D300 citea `DecontTva` | controlul pe rândurile 9, 24, 19 și 30 din rezultatul D300 |
 
 Nu s-a confirmat o cale reală de ocolire a blocajului scrierii și nici un
-cititor de registre ratat de proba sintactică. Reverificarea corecturilor
-este cerută lui Codex.
+cititor de registre ratat de proba sintactică. Reverificarea Codex la
+`7223abc` închide X-RI1…X-RI4: integrala proprie 3.394 / 4.604 OK, zero
+FAIL, `run-verificari/20261004-102241-857/`, inclusiv mutanții noi și
+`X-D5-PLAN`. Scara completă predată a fost inspectată, nu rerulată;
+detaliile și limitele sunt în review-ul implementării.
 
 ## Restanțe
 

@@ -235,7 +235,9 @@ rezultatul D300. Validare după corecturi: integrala **3.394 bugetar / 4.604
 privat OK**, zero FAIL, `run-verificari/20261004-092403-010/`;
 `--probe-sursa` verde; scara completă
 `run-verificari/perf-cub-20261004-093104/`, 1.526 / 996 OK, zero FAIL.
-Reverificarea e cerută lui Codex; TR-D8 se consideră închis după ea.
+Reverificarea Codex la `7223abc` a închis X-RI1…X-RI4, cu integrala proprie
+3.394 / 4.604 OK (`run-verificari/20261004-102241-857/`). TR-D8 este închis
+(decizia 108); branch-ul nu e mers.
 
 Cititorii TVA/D300/D394/TaxInformation sunt portați prin 103. Snapshot-ul de stoc folosește cubul.
 Nucleu: **180/180**, zero omise, exit 0:

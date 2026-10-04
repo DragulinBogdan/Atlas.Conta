@@ -892,4 +892,6 @@ detaliat în jurnal):
   explicației ținut de declarant, conservarea pe cont a transferului
   persistat, planul respins care invalidează măsurarea, controlul D300 pe
   rezultatul D300; integrala **3.394 / 4.604 OK**, scara 1.526 / 996 OK.
-  Reverificarea e cerută; branch-ul nu e mers.
+  Reverificarea Codex la `7223abc` închide X-RI1…X-RI4: integrala proprie
+  3.394 / 4.604 OK, zero FAIL, inclusiv mutanții și `X-D5-PLAN`;
+  `run-verificari/20261004-102241-857/`. Branch-ul nu e mers.
