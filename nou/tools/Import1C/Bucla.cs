@@ -245,6 +245,7 @@ sealed class BuclaImport {
     public Catalog Catalog { get; }
     public ContorPunti ContorPunti { get; } = new();
     public Action<string> Avert => avert;
+    public Action<string, bool> Check => check;
 
     // Registrul divergențelor cunoscute (pasul 4 al lotului de robustețe): tot ce
     // unealta ARUNCĂ sau nu poate posta se înregistrează la locul faptei, ca
@@ -572,7 +573,12 @@ sealed class BuclaImport {
     // Stingerile din subconto → `Imperechere`, trecerea 2 a lunii (§12.2 —
     // imperecherea nu postează registre, deci amânarea față de operare e gratuită
     // și scapă de problema de ordine). Vezi Imperecheri.cs.
-    void Imperecheri(ContextLuna ctx) => Imperecheri1C.Executa(ctx);
+    void Imperecheri(ContextLuna ctx) {
+        var inainte = Imperecheri1C.EsecuriTehnice;
+        Imperecheri1C.Executa(ctx);
+        var esecuri = Imperecheri1C.EsecuriTehnice - inainte;
+        check($"Luna {ctx.Luna:00}/{ctx.An}: trecerea 2 fără erori tehnice ({esecuri})", esecuri == 0);
+    }
 
     // PASUL 6: `InchidereTvaService.Genereaza` + operarea ei, la fine de lună
     // (§12.4 — fără ea, contractul de sold ar pica lunar pe 4426/4427/4423,

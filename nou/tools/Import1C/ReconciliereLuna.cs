@@ -275,9 +275,18 @@ static partial class ReconciliereLuna {
             .Select(p => new { p.Unitate, Sold = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare }).ToList()
             .ToDictionary(x => x.Unitate.Value, x => x.Sold);
 
-        var picate = new List<(string Cheie, decimal Cub, decimal Sursa, decimal Sarit)>();
+        var directe = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare && p.Carte == N.Carte.Contabil
+                && p.Data <= ctx.Ultima && unitatiInitiale.Contains(p.Unitate))
+            .GroupBy(p => p.Unitate)
+            .Select(g => new { Unitate = g.Key, Sold = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+            .ToList()
+            .ToDictionary(x => x.Unitate.Value, x => x.Sold);
+
+        var picate = new List<(string Cheie, decimal Cub, decimal Sursa, decimal Refuzat, decimal Plafonat, decimal? Direct)>();
         var explicate = 0;
         var plafonate = 0;
+        var cumulate = 0;
         var declarate = new List<(string Cheie, decimal Cub, decimal Sursa)>();
         var neatinse = new List<(string Cheie, decimal Cub, decimal Sursa)>();
         var stinseIntegral = 0;
@@ -291,33 +300,31 @@ static partial class ReconciliereLuna {
             var delta = cub - sold;
             if (Math.Abs(delta) < EpsV)
                 continue;
-            var sarit = Imperecheri1C.SaritPePartida.GetValueOrDefault(partida);
+            var refuzat = Imperecheri1C.RefuzatPePartida.GetValueOrDefault(partida);
             var plafonat = Imperecheri1C.PlafonatPePartida.GetValueOrDefault(partida);
-            var semn = Math.Sign(deschidere.GetValueOrDefault(partida));
-            // 107h: refuzul lasă restul mai mare în sensul partidei, plafonarea mai mic.
-            if (sarit != 0m && Math.Abs(delta - semn * sarit) < EpsV) {
-                explicate++;
-                stare.Jurnalizeaza($"  ok   partidă {cheie}: cub {cub:N2} = sursă {sold:N2} + refuzate {sarit:N2}");
-                continue;
-            }
-            if (plafonat != 0m && Math.Abs(delta - semn * plafonat) < EpsV) {
-                plafonate++;
-                stare.Jurnalizeaza($"  ok   partidă {cheie}: cub {cub:N2} = sursă {sold:N2} − plafonat {plafonat:N2}");
+            var explicatie = Explica(delta, refuzat, plafonat);
+            if (explicatie != ExplicatiePartida.Fara) {
+                if (explicatie == ExplicatiePartida.Refuz) explicate++;
+                else if (explicatie == ExplicatiePartida.Plafonare) plafonate++;
+                else cumulate++;
+                stare.Jurnalizeaza($"  ok   partidă {cheie}: cub {cub:N2} = sursă {sold:N2} − neaplicat "
+                    + $"(refuzat {refuzat:N2}, plafonat {plafonat:N2}; debit − credit)");
                 continue;
             }
             if (generice.Contains(partida)) {
                 declarate.Add((cheie, cub, sold));
                 continue;
             }
-            if (deschidere.TryGetValue(partida, out var initial) && Math.Abs(cub - initial) < EpsV && sarit == 0m) {
+            if (deschidere.TryGetValue(partida, out var initial) && Math.Abs(cub - initial) < EpsV
+                    && refuzat == 0m && plafonat == 0m) {
                 neatinse.Add((cheie, cub, sold));
                 continue;
             }
-            picate.Add((cheie, cub, sold, sarit));
+            picate.Add((cheie, cub, sold, refuzat, plafonat, directe.TryGetValue(partida, out var direct) ? direct : null));
         }
         stare.Jurnalizeaza($"\n[5] Partide inițiale la {ctx.Ultima:yyyy-MM-dd} — {legaturi.Count} partide, "
             + $"{stinseIntegral} stinse integral în ambele părți, {explicate} explicate de refuzuri, "
-            + $"{plafonate} explicate de plafonare, {declarate.Count} declarate pe partenerul generic, "
+            + $"{plafonate} explicate de plafonare, {cumulate} de refuz și plafonare, {declarate.Count} declarate pe partenerul generic, "
             + $"{neatinse.Count} neatinse de trecerea 2 (stinse în sursă de alt tip), {picate.Count} FAIL:");
         foreach (var x in declarate)
             stare.Jurnalizeaza($"  decl partidă {x.Cheie}: cub {x.Cub:N2}, sursă {x.Sursa:N2} — partener nedefinit în sursă (M1-D5)");
@@ -327,18 +334,31 @@ static partial class ReconciliereLuna {
             .Select(g => $"{g.Key} × {g.Count()} (Σ Δ {g.Sum(x => x.Cub - x.Sursa):N2})");
         if (neatinse.Count > 0)
             Console.WriteLine($"     [5] neatinse de trecerea 2: {string.Join(", ", neatinsePeCont)}");
-        foreach (var x in picate.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)))
-            stare.Jurnalizeaza($"  FAIL partidă {x.Cheie}: cub {x.Cub:N2} = sursă {x.Sursa:N2} (Δ {x.Cub - x.Sursa:N2}, refuzate {x.Sarit:N2})");
-        foreach (var x in picate.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)).Take(10))
-            contract($"  partidă {x.Cheie}: cub {x.Cub:N2} = sursă 1C {x.Sursa:N2} (Δ {x.Cub - x.Sursa:N2}, refuzate {x.Sarit:N2})", false);
+        string Origine((string Cheie, decimal Cub, decimal Sursa, decimal Refuzat, decimal Plafonat, decimal? Direct) x) =>
+            $"Δ {x.Cub - x.Sursa:N2}, refuzat {x.Refuzat:N2}, plafonat {x.Plafonat:N2}"
+            + (x.Direct is { } d ? $", mișcată direct la operare Σ {d:N2} (107-r9)" : "");
+        foreach (var x in picate.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)).ThenBy(x => x.Cheie, StringComparer.Ordinal))
+            stare.Jurnalizeaza($"  FAIL partidă {x.Cheie}: cub {x.Cub:N2} = sursă {x.Sursa:N2} ({Origine(x)})");
+        foreach (var x in picate.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)).ThenBy(x => x.Cheie, StringComparer.Ordinal).Take(10))
+            contract($"  partidă {x.Cheie}: cub {x.Cub:N2} = sursă 1C {x.Sursa:N2} ({Origine(x)})", false);
         var peCont = picate.GroupBy(x => x.Cheie.Split('|')[0])
             .Select(g => $"{g.Key} × {g.Count()} (Σ Δ {g.Sum(x => x.Cub - x.Sursa):N2})");
         contract($"5. Partide inițiale: {legaturi.Count} partide, {stinseIntegral} stinse integral, "
-            + $"{explicate} explicate de refuzuri, {plafonate} de plafonare, {declarate.Count} declarate (partener generic, "
+            + $"{explicate} explicate de refuzuri, {plafonate} de plafonare, {cumulate} de refuz și plafonare, "
+            + $"{declarate.Count} declarate (partener generic, "
             + $"Σ cub {declarate.Sum(x => x.Cub):N2}), {neatinse.Count} neatinse de trecerea 2 "
             + $"(Σ cub {neatinse.Sum(x => x.Cub):N2}), {picate.Count} fără explicație"
             + (picate.Count == 0 ? "" : $" — pe conturi: {string.Join(", ", peCont)}"), picate.Count == 0);
     }
+
+    internal enum ExplicatiePartida { Fara, Refuz, Plafonare, RefuzSiPlafonare }
+
+    // 107h: sursa = cubul + mișcarea neaplicată, deci Δ (cub − sursă) = −(refuzat + plafonat).
+    internal static ExplicatiePartida Explica(decimal delta, decimal refuzat, decimal plafonat) =>
+        (refuzat == 0m && plafonat == 0m) || Math.Abs(delta + refuzat + plafonat) >= EpsV ? ExplicatiePartida.Fara
+        : plafonat == 0m ? ExplicatiePartida.Refuz
+        : refuzat == 0m ? ExplicatiePartida.Plafonare
+        : ExplicatiePartida.RefuzSiPlafonare;
 
     // ==================== 1. Sold per cont sintetic OMFP ====================
 

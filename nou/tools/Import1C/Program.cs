@@ -127,6 +127,9 @@ for (var i = 0; i < args.Length; i++) {
         case "--cititori":
             smokeCititori = true;
             break;
+        case "--probe-stingeri":
+            Imperecheri1C.ProbaEsec = true;
+            break;
         case "--recreeaza":
             recreeaza = true;
             break;
@@ -195,7 +198,7 @@ for (var i = 0; i < args.Length; i++) {
             break;
         default:
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
-                + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--recreeaza] "
+                + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--probe-stingeri] [--recreeaza] "
                 + "[--reclasifica] [--anaf] [--anaf-url <url>] [--deblocheaza <view>:<cheie>] "
                 + "[--societate] [--um-nc] [--inchide-lunile] [--saft <an> <lună>] [--saft-s <an> <lună>]");
             return 2;
@@ -579,6 +582,9 @@ using (var os = provider.CreateObjectSpace()) {
         .Select(t => t.ContImplicitId.Value).ToList()
         .Select(id => simbolPeIdAtlas[id]).ToHashSet();
 }
+
+Console.WriteLine("\n--- Probele verificărilor M1 (fără bază) ---");
+ProbeM1.Ruleaza(Check);
 
 Console.WriteLine($"\n--- Partidele inițiale ale terților la {dataCub:yyyy-MM-dd} (M1-D4) ---");
 var rezPartide = Deschidere.Partide(provider, laCerere, flax, pozitiiTert, Mapeaza, planAtlas, urmarite, Avert, Check);

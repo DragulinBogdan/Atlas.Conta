@@ -172,6 +172,32 @@ static partial class Deschidere {
     public sealed record RezultatCub(bool Scrisa, Guid Tranzactie, int Postari, int PartideScrise,
         int LoturiScrise, int LegaturiNoi);
 
+    public sealed record Detaliu(N.FelUnitate Fel, Guid Unitate, Guid? Gestiune, Guid Cont, N.Latura Latura,
+        decimal Valoare, decimal Cantitate, Guid? Partener);
+
+    internal static IReadOnlyList<string> DiferenteDetaliu(IEnumerable<Detaliu> sursa, IEnumerable<Detaliu> cub) {
+        var dinSursa = sursa.ToLookup(d => (d.Fel, d.Unitate, d.Gestiune));
+        var dinCub = cub.ToLookup(d => (d.Fel, d.Unitate, d.Gestiune));
+        var diferente = new List<string>();
+        foreach (var cheie in dinSursa.Select(g => g.Key).Union(dinCub.Select(g => g.Key))
+                     .OrderBy(k => k.Fel).ThenBy(k => k.Unitate).ThenBy(k => k.Gestiune)) {
+            var s = dinSursa[cheie].ToList();
+            var c = dinCub[cheie].ToList();
+            if (s.Count == 1 && c.Count == 1 && s[0] == c[0])
+                continue;
+            var eticheta = $"{cheie.Fel} {cheie.Unitate}" + (cheie.Gestiune is { } g ? $" × gestiune {g}" : "");
+            diferente.Add(c.Count == 0 ? $"{eticheta} e în sursă ({Masura(s[0])}), dar nu în cub"
+                : s.Count == 0 ? $"{eticheta} e în cub ({Masura(c[0])}), dar nu în sursă"
+                : s.Count > 1 || c.Count > 1 ? $"{eticheta} apare de {s.Count} ori în sursă și de {c.Count} ori în cub"
+                : $"{eticheta}: sursă {Masura(s[0])}, cub {Masura(c[0])}");
+        }
+        return diferente;
+    }
+
+    static string Masura(Detaliu d) =>
+        $"{d.Latura} {d.Valoare:N2}" + (d.Cantitate != 0m ? $" / {d.Cantitate:N3} buc" : "")
+        + $" pe contul {d.Cont}" + (d.Partener is { } p ? $", partener {p}" : "");
+
     public static RezultatCub Cub(IObjectSpaceProvider provider, DateOnly data,
             IReadOnlyList<Control> controale, IReadOnlyList<LotInitial> loturi,
             IReadOnlyList<PartidaInitiala> partide, IReadOnlyList<PartidaSursa> partideSursa,
@@ -196,9 +222,42 @@ static partial class Deschidere {
             }
         }
 
+        var asteptat = partide.Select(p => new Detaliu(N.FelUnitate.Partida,
+                N.Unitate.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, data).Id, null, p.Cont, p.Latura,
+                p.Valoare, 0m, p.Partener))
+            .Concat(loturi.Select(l => new Detaliu(N.FelUnitate.Lot, l.Lot, l.Gestiune, l.Cont, N.Latura.Debit,
+                l.Valoare, l.Cantitate, null)))
+            .ToList();
+        List<Detaliu> scris;
+        int postari;
+        Dictionary<(string Simbol, N.Latura Latura), decimal> cub;
+        using (var os = provider.CreateObjectSpace()) {
+            var ale = os.GetObjectsQuery<Postare>().Where(p => p.TranzactieId == tranzactie)
+                .Select(p => new { p.Cont, p.Latura, p.Valoare, p.Cantitate, p.FelUnitate, p.Unitate, p.Gestiune, p.Partener })
+                .ToList();
+            postari = ale.Count;
+            var simbolPeId = plan.ToDictionary(x => x.Value, x => x.Key);
+            cub = ale.GroupBy(p => (Simbol: simbolPeId[p.Cont], p.Latura))
+                .ToDictionary(g => g.Key, g => g.Sum(p => p.Valoare));
+            scris = ale.Where(p => p.Unitate != null && p.FelUnitate is N.FelUnitate.Partida or N.FelUnitate.Lot)
+                .Select(p => new Detaliu(p.FelUnitate.Value, p.Unitate.Value,
+                    p.FelUnitate == N.FelUnitate.Lot ? p.Gestiune : null, p.Cont, p.Latura, p.Valoare, p.Cantitate,
+                    p.FelUnitate == N.FelUnitate.Partida ? p.Partener : null))
+                .ToList();
+        }
+        var partideScrise = scris.Count(d => d.Fel == N.FelUnitate.Partida);
+        var loturiScrise = scris.Count(d => d.Fel == N.FelUnitate.Lot);
+        var diferenteDetaliu = DiferenteDetaliu(asteptat, scris);
+        foreach (var d in diferenteDetaliu.Take(10))
+            check($"  detaliu deschidere: {d}", false);
+        check($"Cub: detaliul deschiderii (identitatea și măsurile celor {partideScrise} partide și {loturiScrise} loturi) "
+            + $"= sursa, {diferenteDetaliu.Count} diferențe", diferenteDetaliu.Count == 0);
+
         var legaturiNoi = 0;
         using (var os = provider.CreateObjectSpace()) {
+            var materializate = scris.Where(d => d.Fel == N.FelUnitate.Partida).Select(d => d.Unitate).ToHashSet();
             var legaturi = Legaturi.Incarca(os, ViewPartide);
+            var nematerializate = 0;
             foreach (var p in partideSursa) {
                 var id = N.Unitate.DeschidePartidaInitiala(plan[p.Simbol], p.Partener, p.Referinta, data).Id;
                 if (legaturi.TryGetValue(p.Cheie, out var existent)) {
@@ -206,28 +265,27 @@ static partial class Deschidere {
                         check($"Legătura 1C:{ViewPartide}/{p.Cheie} indică partida {existent}, sursa dă {id}", false);
                     continue;
                 }
+                if (!materializate.Contains(id)) {
+                    nematerializate++;
+                    continue;
+                }
                 Legaturi.Leaga(os, ViewPartide, p.Cheie, id);
                 legaturiNoi++;
             }
             os.CommitChanges();
+            var cheiSursa = partideSursa.Select(p => p.Cheie).ToHashSet(StringComparer.Ordinal);
+            var orfane = legaturi.Keys.Count(k => !cheiSursa.Contains(k));
+            check($"Legăturile 1C:{ViewPartide}: {nematerializate} partide ale sursei nematerializate în cub (fără legătură), "
+                + $"{orfane} legături fără poziție în sursă", nematerializate == 0 && orfane == 0);
         }
 
-        int postari, partideScrise, loturiScrise;
         using (var os = provider.CreateObjectSpace()) {
-            var ale = os.GetObjectsQuery<Postare>().Where(p => p.TranzactieId == tranzactie)
-                .Select(p => new { p.Cont, p.Latura, p.Valoare, p.FelUnitate }).ToList();
-            postari = ale.Count;
-            partideScrise = ale.Count(p => p.FelUnitate == N.FelUnitate.Partida);
-            loturiScrise = ale.Count(p => p.FelUnitate == N.FelUnitate.Lot);
-            var simbolPeId = plan.ToDictionary(x => x.Value, x => x.Key);
-            var cub = ale.GroupBy(p => (Simbol: simbolPeId[p.Cont], p.Latura))
-                .ToDictionary(g => g.Key, g => g.Sum(p => p.Valoare));
-            var asteptat = controale.ToDictionary(c => (c.Simbol, c.Latura), c => c.Valoare);
-            var diferente = cub.Keys.Union(asteptat.Keys)
-                .Where(k => Math.Abs(cub.GetValueOrDefault(k) - asteptat.GetValueOrDefault(k)) >= EpsV)
+            var controlat = controale.ToDictionary(c => (c.Simbol, c.Latura), c => c.Valoare);
+            var diferente = cub.Keys.Union(controlat.Keys)
+                .Where(k => Math.Abs(cub.GetValueOrDefault(k) - controlat.GetValueOrDefault(k)) >= EpsV)
                 .ToList();
             foreach (var k in diferente)
-                check($"  cub {k.Simbol} {k.Latura}: {cub.GetValueOrDefault(k):N2} = control {asteptat.GetValueOrDefault(k):N2}", false);
+                check($"  cub {k.Simbol} {k.Latura}: {cub.GetValueOrDefault(k):N2} = control {controlat.GetValueOrDefault(k):N2}", false);
             check($"Cub: tranzacția Deschidere are {postari} postări pe {cub.Count} chei (cont, latură) = "
                 + $"{controale.Count} controale, {diferente.Count} diferențe", diferente.Count == 0);
             check($"Cub: {partideScrise} partide inițiale = {partide.Count} din sursă; {loturiScrise} loturi = {loturi.Count}",
