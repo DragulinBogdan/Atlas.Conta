@@ -1,8 +1,9 @@
 # TR-D9a — tăierea registrelor și a regimului dual: contract pentru aprobare
 
 - Data: 2026-10-05
-- Stare: **draft, neaprobat**. D9-Q1…D9-Q5 sunt tranșate de owner,
-  2026-10-05 (A/A/A/A/A). Review-ul advers Codex al contractului la `63801a8`
+- Stare: **aprobat de owner, 2026-10-05**, după închiderea review-ului
+  advers Codex. D9-Q1…D9-Q5 sunt tranșate de owner, 2026-10-05 (A/A/A/A/A).
+  Implementarea pornește cu pasul 1 din D9-D15, un commit per pas. Review-ul advers Codex al contractului la `63801a8`
   a adus șase observații, D9-RV1…D9-RV6
   (`comunicari/2026-10-05-1032-codex-claude-tr-d9a-contract-review.md`);
   reverificarea la `1fe9cb7` a adus încă trei, D9-RV7…D9-RV9
@@ -10,7 +11,6 @@
   nouă sunt acceptate și aplicate aici, vezi „Amendamente după review-ul
   Codex". **Review-ul advers al contractului e închis la `75138d7`**
   (`comunicari/2026-10-05-1130-codex-claude-tr-d9a-contract-review-inchis.md`).
-  Așteaptă aprobarea owner-ului, înaintea codului.
   Branch `tr-d9-taierea`, tăiat din `main` = `0bcd8b0` (după PR #21).
 - Bază: 090 (a)(l)(m) și rândul TR-D9 din „Ordinea și regula de oprire";
   091 (g)(6), (h), (k); 108 (a) și „Ce rămâne deschis"; lista nominală X-D2
@@ -599,7 +599,7 @@ ating numai cât cere un câmp scos.
 
 ## D9-D13 — Verdictul restanțelor
 
-Propunere; se confirmă la aprobare și se scrie în `restante.md` la închidere.
+Aprobat odată cu contractul; se scrie în `restante.md` la închidere.
 
 | Id | Verdict |
 |---|---|

@@ -169,8 +169,11 @@ marchează taxa sursei; reîncărcarea nu e culegere), aprobată de owner
 2026-10-04, mersă în main prin PR #21 (2026-10-05), cu review-ul advers
 Codex închis (109-R1 corectată și reverificată,
 `docs/nucleu/109-review-codex.md`). Urmează TR-D9: tăierea scriitorilor
-vechi și a regimului dual; contractul e în draft, neaprobat, pe
-`tr-d9-taierea` (`docs/nucleu/tr-d9-taierea-contract.md`). Felia fiscală
+vechi și a regimului dual. TR-D9 e împărțit în TR-D9a (tăierea) și TR-D9b
+(unitățile). Contractul TR-D9a e aprobat de owner (2026-10-05), cu review-ul
+advers Codex al contractului închis, pe `tr-d9-taierea`
+(`docs/nucleu/tr-d9-taierea-contract.md`); urmează pasul 1, inventarul.
+Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
 `docs/nucleu/scenarii/CITIRI.md`.
