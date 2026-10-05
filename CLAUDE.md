@@ -178,7 +178,10 @@ constatările I1…I8 și rezultatul consultării cub vs registre sunt tranșate
 owner (2026-10-05) prin amendamentul 1, transcris în contract
 (`docs/nucleu/tr-d9-taierea-amendament-1.md`, D9-A1…D9-A9: probele dinaintea
 tăierii, cheia de pereche pe postare, I2, I5 ca refuz la editare, inversa
-fiscală născută finală, regula care a decis în explicație). Urmează pasul 2.
+fiscală născută finală, regula care a decis în explicație). Pasul 2 e făcut
+(gardul analizei pe mișcările contractului, probele dinaintea tăierii,
+constatările G1 și G2 pentru owner: `docs/nucleu/tr-d9-pas2-probe.md`).
+Urmează pasul 3.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

@@ -10,8 +10,12 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// declarantul frunzei și dă nucleului declarația. Nu materializează nimic.
 /// </summary>
 public static class Contractare {
-    public static N.Contract Contracteaza(IObjectSpace os, Document doc) {
+    public static N.Contract Contracteaza(IObjectSpace os, Document doc) => Contracteaza(os, doc, out _);
+
+    /// <summary>Contractul, cu mișcările declarației acceptate (goale la refuz).</summary>
+    public static N.Contract Contracteaza(IObjectSpace os, Document doc, out IReadOnlyList<N.Miscare> miscari) {
         ArgumentNullException.ThrowIfNull(doc);
+        miscari = [];
         var declarant = doc.Declarant()
             ?? throw new InvalidOperationException(
                 $"Documentul {doc.ID} e de un tip care nu declară încă — driverul nu se cheamă pe el.");
@@ -40,7 +44,10 @@ public static class Contractare {
         if (declaratie is null)
             return Invalida($"Declarantul {declarant.GetType().Name} a întors null fără niciun refuz.");
         try {
-            return N.Motor.Opereaza(declaratie, rotunjire);
+            var contract = N.Motor.Opereaza(declaratie, rotunjire);
+            if (contract.EsteAcceptat)
+                miscari = declaratie.Miscari;
+            return contract;
         }
         catch (ArgumentException e) {
             return Invalida(e.Message);

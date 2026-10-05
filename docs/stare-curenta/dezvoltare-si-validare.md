@@ -1,6 +1,20 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-04.** [Index](README.md)
+**Actualizat: 2026-10-05.** [Index](README.md)
+
+TR-D9a, pasul 2 (regim dual): gardul analizei obligatorii pe mișcările
+contractului are proba lui directă, `GARD-ANALIZA` (`ProbeGardAnaliza`, pe
+funcția pură, fără bază), și proba prin comandă SC-FCT-12…14. Scena
+`ScenariiTaiere` (codul `X`) fixează numeric comportamentul dinaintea
+tăierii: tipul care nu declară (SC-X-25), regula de contare fără consumator
+(SC-X-26), registrul negativ după stornarea recepției (SC-X-27). Scenele BCS,
+ASM, RLF, RDC și DESCHIDERE asertează acum și valoarea LINIILOR, nu numai
+postările. Rândurile cu două coloane, „azi" și „după tăiere", se verifică azi
+pe prima; a doua intră la pasul 6. Validare: integrala **3.527 bugetar /
+4.835 privat OK**, zero FAIL; nucleu 180/180; `run-nucleu/tr-d9a/pas2/`.
+O rulare-diagnostic care dezactivează un gard și cade lasă documente în baza
+bugetară; scena e2e își curăță singură reziduul la următoarea integrală, dar
+`--scenarii` nu, deci după o cădere se rulează întâi integrala.
 
 TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
 evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și

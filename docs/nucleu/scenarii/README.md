@@ -98,6 +98,9 @@ scena ține blocajul scrierii, cele două comenzi intră pe rând în coada lui
 | SC-X-22 | cele 16 feluri de comandă, pe captura SQL | fiecare începe cu blocajul scrierii; dry-run-ul, citirile și salvarea fără detalii noi nu îl iau |
 | SC-X-23 | comandă care așteaptă peste timpul ei | refuz `SCRIERE_OCUPATA`, fără efecte; după eliberare trece |
 | SC-X-24 | fiecare Anulează, Stornează și Corectează din scenele catalogului, cu regimul citit înaintea comenzii | regimul care refuză ⇒ comanda refuză; comanda care refuză ⇒ regimul refuza, în afara refuzurilor dovedite pe valori, pe data cerută ori pe limita 106-r7 declarată de scenă (106k, [REGIM](REGIM.md)) |
+| SC-X-25 | BPR (nu declară, fără politici), pe ambele profiluri | azi: dry-run fără refuz; fără număr, refuz pe numerotare; cu număr cules, Operat fără nicio postare și fără niciun rând de registru. După tăiere (pasul 6): refuz cu codul unic al tipului care nu declară, pe toate ușile (D9-D5, schimbarea 4). Geamănele pe profil: SC-RLF-12/14, SC-RDC-16/19, SC-DSC-09, SC-DVI-12 |
+| SC-X-26 | regulă de contare adăugată pe BTR, al cărui declarant nu contează prin reguli; BTR 4/40 | azi: regula e acceptată la editare; operarea scrie o notă de 40 numai în registru, cubul are doar mutarea; acoperirea registru → cub o semnalează (`CITIRE_ISTORIC_INCOMPLET`). După tăiere (pasul 6): regula e refuzată la editare (D9-A4, schimbarea 6; cod propus `REGULA_CONTARE_FARA_CONSUMATOR`) |
+| SC-X-27 | FCT 10/100 → NIR → BCS 4 → storno NIR; apoi BCS 2 datat înaintea stornării și BCS 4 după ea | registrul lotului e −4, apoi −10; nimic nu e refuzat, nici azi, nici după tăiere; cubul 6/60 → 0/0, cu 20 și 40 pe ieșiri (098-r3) |
 
 ## Tipurile și starea lor
 

@@ -444,3 +444,13 @@ declarată N-r3: 50 în registru, 75 pe cub).
 injectat prin SQL la `16611`, cu aserția `16627`, care rămâne fără obiect.
 Fiecare scenă primește la pasul 3 un montaj pe cub (deschidere sau operare
 reală) sau pierde aserția, cu rând în contabilitatea probelor (D9-D7 e).
+
+## 14. Corecții după măsurătorile pasului 2 (2026-10-05)
+
+Rândurile marcate *din cod* au fost măsurate la pasul 2. Trei diferă de ce
+scrie mai sus: DSC pe bugetar e refuzat de frunză, nu rămâne Operat fără
+efect (§6); DVI pe bugetar n-are tip de TVA de import, deci e refuzat
+întotdeauna de frunză (§6); după stornarea NIR-ului acoperit cu consum
+nimic nu e refuzat azi pe lot (098-r3, §12). Tabelul complet, cu probele și
+cu cele două constatări despre gardul analizei (repartitorul și materialul):
+[`tr-d9-pas2-probe.md`](tr-d9-pas2-probe.md).

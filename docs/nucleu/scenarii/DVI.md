@@ -47,7 +47,7 @@ se referă la proiecția fiscală, nu la o sumă adăugată balanței contabile.
 | SC-DVI-09 | Bază 100 IMPTI21: D 4426 / C 4427: 21; bază 100 / taxă deductibilă 21; fără partidă; B-r4 privind faptul colectat rămâne explicită. | acceptat, limită declarată | verificat privat |
 | SC-DVI-10 | MRN absent / fără linii / bază ≤ 0 / TVA obișnuit N21 / IMP cu cotă 0 / FCT legată neoperată: refuz cu zero efecte. | refuzat | verificat privat |
 | SC-DVI-11 | Două FCT operate legate la aceeași DVI; operarea DVI nu dublează recepțiile/datoriile lor. DVI fără legături este permisă. | acceptat | verificat privat |
-| SC-DVI-12 | Bugetar: seed inert; încercare de operare fără politica necesară, zero postări. | refuzat / inert | verificat bugetar |
+| SC-DVI-12 | Bugetar: fără politică fiscală, tip în afara cubului; seed-ul bugetar nu are niciun tip de TVA de import (numai CAP0/11/19/21). Azi: operarea e refuzată de validarea frunzei („TVA de import"), zero postări; calea „Operat fără efect" nu există pe acest profil. După tăiere (pasul 6): refuz cu codul unic al tipului fără politică pe profil (propus `TIP_FARA_DECLARATIE`), zero efecte. | refuzat / inert | verificat azi, bugetar |
 | SC-DVI-13 | Bază 100, taxă culeasă 21,03, toleranța implicită null: D 4426 / C 446: 21,03 contabil, pereche fiscală 100 / 100; jurnal 100 / 21,03. | acceptat | verificat privat |
 | SC-DVI-14 | Două DVI cu baze 100 și 100,01, taxe calculate 21 și 21: cubul păstrează distinct bazele; jurnal cumulat 200,01 / 42. | acceptat | verificat privat |
 | SC-DVI-15 | Bază 0,01 IMP21, taxă calculată 0: exact 2 postări fiscale, contabil 0, zero partidă. Storno → −0,01 fiscal, net 0; originalele intacte. | acceptat | verificat privat |

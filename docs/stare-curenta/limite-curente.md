@@ -1,12 +1,17 @@
 # Limite curente
 
-**Actualizat: 2026-10-04.** [Index](README.md)
+**Actualizat: 2026-10-05.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Domeniu și operare
 
+- Analiza obligatorie per cont: cerința de repartitor nu refuză niciun
+  document, fiindcă repartitorul cade pe latura antetului; cubul nu păstrează
+  partenerul pe conturile fără rol de terț. Cerința de material citește
+  numai produsul lotului, nu și materialul fix al unei reguli de contare.
+  BTR, ASM și PIF nu sunt păzite (D9-r1). (`docs/nucleu/tr-d9-pas2-probe.md`, G1, G2)
 - PIF/AMO/CAS scriu cubul, iar situația fișei se citește din el (095, 097).
   Storno
   rămâne limitat la luna documentului (087g), inclusiv în corecție.

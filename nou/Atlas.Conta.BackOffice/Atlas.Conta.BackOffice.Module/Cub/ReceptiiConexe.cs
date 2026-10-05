@@ -222,12 +222,9 @@ public static class ReceptiiConexe {
         foreach (var p in postari) {
             var c = p.Coordonate;
             var cont = conturi[c.Cont];
-            MotorOperare.VerificaLatura(cont.Simbol, cont.DimensiuniObligatorii, new Dimensiuni {
-                RepartitorId = c.Partener ?? (c.Gestiune == N.GestiuniVirtuale.Inventar ? null : c.Gestiune),
-                MaterialId = c.Produs, CodFunctionalId = c.Analiza.CodFunctional,
-                CodEconomicId = c.Analiza.CodEconomic, SursaFinantareId = c.Analiza.SursaFinantare,
-                UnitateId = c.Analiza.UnitateOrganizatorica, ProiectId = c.Analiza.Proiect, CentruCostId = c.Analiza.CentruCost,
-            }, p.Cauza.Linie is Guid id ? angajamente.GetValueOrDefault(id) : null,
+            MotorOperare.VerificaLatura(cont.Simbol, cont.DimensiuniObligatorii,
+                GardAnaliza.Dimensiuni(c.Partener, c.Produs, c.Analiza),
+                p.Cauza.Linie is Guid id ? angajamente.GetValueOrDefault(id) : null,
                 c.Latura.ToString(), p.Cauza.Linie?.ToString(), erori);
         }
         if (erori.Count > 0) throw new OperareException(string.Join("\n", erori));

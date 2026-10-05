@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-10-04.** [Index](README.md)
+**Actualizat: 2026-10-05.** [Index](README.md)
 
 ## Modelul comun
 
@@ -508,6 +508,16 @@ laturii din regulă → valorile comune ale regulii → default-ul polimorf al
 antetului → materialul din lot. Postarea explicită a liniei are prioritate.
 `Cont.DimensiuniObligatorii` se verifică pe rezultatul rezolvat. În validarea
 clasificației bugetare, angajamentul poate satisface cerința de cod economic. (25f, 32c, 33a)
+
+Aceeași regulă se verifică și pe mișcările contabile ale contractului
+(`Cub/GardAnaliza`), cu același text de refuz: repartitorul e partenerul sau
+gestiunea capătului, apoi latura documentului; materialul e produsul; restul
+e analiza postării; angajamentul liniei ține loc de cod economic. Mutările
+(BTR, PIF), transformările (ASM) și cartea fiscală nu intră. Recepția liniei
+de stoc a facturii e păzită la operarea facturii, nu a NIR-ului conex;
+diferența NIR-ului acoperit rămâne la gardul recepției conexe. Până la
+tăierea registrelor cele două verificări rulează amândouă. (TR-D9a: D9-D4,
+D9-A3; `docs/nucleu/tr-d9-pas2-probe.md`)
 
 ## Precizie numerică
 

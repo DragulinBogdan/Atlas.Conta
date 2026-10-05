@@ -30,10 +30,10 @@ public static partial class Materializare {
         if (doc.Detalii.OfType<ILinieCuImobilizare>().Any())
             BlocheazaNominalizarea(os);
         ReceptiiConexe.Fixeaza(os, doc);
-        var contract = Contracteaza(os, doc, tip);
+        var contract = Contracteaza(os, doc, tip, out var miscari);
         if (!contract.EsteAcceptat)
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
-        ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
+        VerificaAnaliza(os, doc, contract, miscari);
         Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
         VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: true);
         var explicatie = Explicatie.Din(contract, doc.Declarant().GetType().Name).Scrie();
@@ -53,9 +53,9 @@ public static partial class Materializare {
             return [];
         N.Contract contract;
         try {
-            contract = Contracteaza(os, doc, tip);
+            contract = Contracteaza(os, doc, tip, out var miscari);
             if (contract.EsteAcceptat)
-                ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
+                VerificaAnaliza(os, doc, contract, miscari);
             if (contract.EsteAcceptat)
                 Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
             if (contract.EsteAcceptat)
@@ -306,12 +306,20 @@ public static partial class Materializare {
         return [.. dependenti, .. inCurs];
     }
 
-    static N.Contract Contracteaza(IObjectSpace os, Document doc, TipDocument tip) =>
+    static N.Contract Contracteaza(IObjectSpace os, Document doc, TipDocument tip, out IReadOnlyList<N.Miscare> miscari) =>
         doc.Declarant() is null
             ? throw new OperareException(
                 $"Tipul {tip.Cod} e marcat PosteazaInCub, dar clasa "
                 + $"{MotorOperare.ClasaReala(doc).Name} nu declară.")
-            : Contractare.Contracteaza(os, doc);
+            : Contractare.Contracteaza(os, doc, out miscari);
+
+    // Diferența recepției acoperite o păzește insula ei; restul, gardul mișcărilor (D9-D4).
+    static void VerificaAnaliza(IObjectSpace os, Document doc, N.Contract contract, IReadOnlyList<N.Miscare> miscari) {
+        if (ReceptiiConexe.EsteAcoperita(os, doc))
+            ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
+        else
+            GardAnaliza.Verifica(os, doc, miscari);
+    }
 
     static Guid Scrie(IObjectSpace os, Guid? documentId, N.Tranzactie tranzactie,
             string explicatie = null, Guid? explicatieDin = null) {

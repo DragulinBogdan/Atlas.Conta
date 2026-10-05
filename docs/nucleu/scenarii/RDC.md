@@ -31,9 +31,10 @@ proprie negativă, fără nominalizare automată pe FCL (aceasta rămâne TR-D9)
 | SC-RDC-13 | Fără linii / venit0 / venit cu Tip de stoc fără lot / cost cu cantitate0 / TVA capitalizat pe venit / latură internă în loc de client: refuz, zero efecte. | refuzat, coduri stabile pe declarație; gardienii existenți pe comandă | T-D8, 076 | `ScenariiRdc` / ID | verificat, privat |
 | SC-RDC-14 | Venit100 cu taxare inversă: D4111−100/C704−100, fapt de bază; fără 4427 și fără taxă. | acceptat | politica Colectat, T-D8 | `ScenariiRdc` / ID | verificat, privat |
 | SC-RDC-15 | Cost pe lot cu preț0: retur2 → +2/0 pe lot, −2/0 pe capătul virtual Client, fără partidă/TVA. | acceptat | recensământ: 3 linii de cost zero; T-D8 | `ScenariiRdc` / ID | verificat, privat |
-| SC-RDC-16 | Bugetar: zero reguli RDC, PosteazaInCub=false; documentul încercat este refuzat de politica lipsă, zero postări. | refuzat / profil inert | seed curent | `ScenariiRdc` / ID | verificat, bugetar |
+| SC-RDC-16 | Bugetar: zero reguli RDC, tip în afara cubului. Azi: dry-run fără refuz; operarea fără număr e refuzată de politica de numerotare absentă, zero efecte. După tăiere (pasul 6): dry-run și operare refuzate cu codul unic al tipului fără politică pe profil (propus `TIP_FARA_DECLARATIE`), cu sau fără număr, zero efecte. | refuzat / profil inert | seed curent; D9-D5, D9-A6 (I6) | `ScenariiRdc` / ID | verificat azi, bugetar |
 | SC-RDC-17 | Recepție2/20 → DSC2 → RDC cost2 → DSC2: stoc0; storno RDC refuzat fără efecte. Inversarea ultimului DSC redeschide2/20, apoi storno RDC readuce0/0. | refuzat, apoi acceptat | review dependență de stoc, înaintea probei | `ScenariiRdc` / ID | verificat, privat |
 | SC-RDC-18 | Recepție10/100 → DSC4/40 → două RDC cu cost2/20 fiecare, adăugate veniturilor SC10/11: stoc10/100 la31.01. În februarie storno primului și corecția celui de-al doilea la cost1/10: stoc7/70; istoricul lui ianuarie rămâne10/100. | acceptat | review ciclu mixt, înaintea probei | `ScenariiRdc` / ID | verificat, privat |
+| SC-RDC-19 | Bugetar, același RDC cu număr cules. Azi: operarea trece și documentul rămâne Operat fără nicio postare și fără niciun rând de registru. După tăiere (pasul 6): același refuz ca SC-RDC-16, documentul rămâne Draft. | acceptat fără efect azi; refuzat după | D9-D5, schimbarea 4 | `ScenariiRdc` / ID | verificat azi, bugetar |
 
 ## Recensământ și limite
 
@@ -58,3 +59,11 @@ de stoc și corecția mixtă sunt incluse, fără modificarea registrelor din pr
 Gate integral pe aceleași baze: 1.743 OK bugetar / 2.383 OK privat,
 zero FAIL, exit0 la build și ambele rulări. Manifest:
 `run-verificari/20260923-122814-720/rezultat.json`.
+
+## TR-D9a, pasul 2 (2026-10-05): costul returului la prețul de intrare
+
+Sursa (b) din D9-D3 ([contractul TR-D9a](../tr-d9-taierea-contract.md)). Măsurat pe LINIE (`ScenariiRdc`, privat);
+neschimbat la tăiere. SC-RDC-07, lot golit prin DSC (recepție 10/100, ieșire
+10/100): linia de cost a returului de 2 poartă −20,00 (2 × prețul de intrare
+10), deși soldul lotului e 0/0; aceeași cifră după anulare și reoperare;
+stoc 2/20.

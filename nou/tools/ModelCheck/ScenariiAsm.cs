@@ -273,6 +273,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
             }));
             Postari("SC-ASM-17", d.Id, N.FelTranzactie.Transfer, Ianuarie,
                 [.. Rand(d, 0, -1, c[i]), .. Rand(d, 1, 1, c[i])]);
+            ValoriLinii("SC-ASM-17", "consumul din soldul registrului, produsul cules", d.Id, -p[i], p[i]);
             if (i == 1) alDoilea = d;
         }
         Sold("SC-ASM-17/T-r13: evaluare din cub", dual, 0, 0);

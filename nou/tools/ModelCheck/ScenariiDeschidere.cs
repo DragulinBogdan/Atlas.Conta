@@ -159,6 +159,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Rest("SC-DES-03", ref1, Furnizor, 40); Rest("SC-DES-03", ref2, Furnizor, 40); Rest("SC-DES-03", ref1, Client, 50);
         PlataPePartidaInitiala(plata.Id, 1, 20);
         Refuza("SC-DES-09", () => Stinge(Partida(ref2, Furnizor), 1, dataPlata), C.Materializare.StingereDeschidereInvalida);
+        ReturFaraPretDeIntrare();
         InchideIanuarie();
         Refuza("SC-DES-09", () => Stinge(Partida(ref2, Furnizor), 1, dataPlata), "închis");
         Storneaza(plata.Id, Februarie);
@@ -167,6 +168,32 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Verifica("SC-DES-03", "originalul deschiderii păstrat", initial == Original());
     }
 
+
+    // D9-A6 (I7): prețul de intrare al lotului inițial e ce a pus creatorul lotului.
+    void ReturFaraPretDeIntrare() {
+        if (!Privat) return;
+        var lot = loturi[1].Lot;
+        var pret = CuSpatiu(os => os.GetObjectByKey<Lot>(lot).PretUnitar);
+        Comanda(os => { os.GetObjectByKey<Lot>(lot).PretUnitar = 0; os.CommitChanges(); });
+        try {
+            var retur = CuSpatiu(os => {
+                var d = os.CreateObject<ReturFurnizor>(); d.Data = Ianuarie; d.PredatorId = Magazie; d.PrimitorId = Furnizor;
+                var l = os.CreateObject<DocumentDetaliu>(); l.Document = d; l.Pozitie = 1;
+                l.TipMaterialId = Tip(os, Stoc); l.LotId = lot; l.Cantitate = 1;
+                os.CommitChanges(); return d.ID;
+            });
+            Opereaza(retur);
+            ValoriLinii("SC-DES-22", "retur 1 din lotul inițial 3/60 fără preț de intrare", retur, 0);
+            Verifica("SC-DES-22", "returul scoate cantitatea cu valoare zero; lotul rămâne 2/60", CuSpatiu(os => {
+                var p = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == retur && p.Unitate == lot).ToList();
+                return p.Count == 1 && p[0].Cantitate == -1 && p[0].Valoare == 0;
+            }));
+            SoldLot("SC-DES-22", lot, Magazie, Ianuarie, 2, 60);
+            Anuleaza(retur);
+            SoldLot("SC-DES-22", lot, Magazie, Ianuarie, 3, 60);
+        }
+        finally { Comanda(os => { os.GetObjectByKey<Lot>(lot).PretUnitar = pret; os.CommitChanges(); }); }
+    }
 
     void DeschidereInSaftS() {
         if (!Privat) return;

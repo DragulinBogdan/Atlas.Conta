@@ -25,6 +25,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         try {
             OperareSiStorno();
             MaiMulteLinii();
+            ValoriLinii();
             Anulare();
             UltimaIesire();
             Refuzuri();
@@ -223,6 +224,49 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         Sold("SC-BCS-02c", fractionar, Sfarsit, 9.875m, 79m);
     }
 
+    void Linii(string id, string mesaj, Guid docId, decimal[] peLinie, decimal[] postate) {
+        using var os = deschide();
+        var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == docId)
+            .OrderBy(d => d.Pozitie).Select(d => new { d.ID, d.Valoare }).ToList();
+        var iesiri = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == docId && p.Cont == credit
+            && p.Latura == N.Latura.Credit && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .Select(p => new { p.LinieId, p.Valoare }).ToList();
+        var alePostarilor = linii.Select(l => iesiri.Where(p => p.LinieId == l.ID).Sum(p => p.Valoare)).ToArray();
+        Verifica(id, $"{mesaj}: linii {string.Join("; ", peLinie)} (obținut {string.Join("; ", linii.Select(l => l.Valoare))}), "
+            + $"postări de ieșire {string.Join("; ", postate)} (obținut {string.Join("; ", alePostarilor)})",
+            linii.Select(l => l.Valoare).SequenceEqual(peLinie) && alePostarilor.SequenceEqual(postate));
+    }
+
+    void ValoriLinii() {
+        var lot = Receptioneaza(3m, 3.333333m);
+        Guid doc;
+        using (var os = deschide()) {
+            var bon = os.CreateObject<BonConsum>();
+            bon.Data = Consum;
+            bon.Predator = os.GetObjectsQuery<Gestiune>().Single(g => g.ID == magazie);
+            bon.Primitor = os.GetObjectsQuery<UnitateInterna>().Single(g => g.ID == loc);
+            foreach (var pozitie in new[] { 1, 2 }) {
+                var d = os.CreateObject<DocumentDetaliu>();
+                d.Document = bon; d.Pozitie = pozitie;
+                d.TipMaterial = os.GetObjectsQuery<TipMaterial>().Single(t => t.ID == tip);
+                d.Lot = os.GetObjectsQuery<Lot>().Single(l => l.ID == lot);
+                d.Cantitate = 1m;
+            }
+            os.CommitChanges();
+            doc = bon.ID;
+        }
+        Verifica("SC-BCS-16", "dry-run acceptat", Citeste(os => ComenziDocument.Sistem(os).Valideaza(doc)).Count == 0);
+        FaraEfecte("SC-BCS-16", doc);
+        Linii("SC-BCS-16", "dry-run-ul nu lasă valori pe linii", doc, [0m, 0m], [0m, 0m]);
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(doc));
+        Linii("SC-BCS-16", "două linii de câte 1 din lotul 3/10", doc, [3.33m, 3.33m], [3.33m, 3.34m]);
+        Sold("SC-BCS-16", lot, Sfarsit, 1m, 3.33m);
+        var ultima = Culege(new(An, 1, 11), (lot, 1m));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(ultima));
+        Linii("SC-BCS-16", "ultima bucată", ultima, [3.34m], [3.33m]);
+        Sold("SC-BCS-16", lot, Sfarsit, 0m, 0m);
+    }
+
     void Anulare() {
         var lot = Receptioneaza();
         var doc = Culege(Consum, (lot, 4m));
@@ -248,11 +292,13 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
 
         var dual = Receptioneaza(3m, 3.333333m);
         var valori = new[] { 3.33m, 3.34m, 3.33m };
+        var peLinie = new[] { 3.33m, 3.33m, 3.34m };
         for (var i = 0; i < valori.Length; i++) {
             var data = new DateOnly(An, 1, 12 + i);
             var doc = Culege(data, (dual, 1m));
             Comanda(os => ComenziDocument.Sistem(os).Opereaza(doc));
             Postari("SC-BCS-15", doc, N.FelTranzactie.Operare, data, (dual, 1m, valori[i]));
+            Linii("SC-BCS-15", "linia din soldul registrului", doc, [peLinie[i]], [valori[i]]);
         }
         Sold("SC-BCS-15 (T-r13: evaluare din cub, 0/0)", dual, Sfarsit, 0m, 0m);
     }

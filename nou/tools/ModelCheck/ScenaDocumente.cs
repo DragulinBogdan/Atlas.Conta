@@ -395,6 +395,15 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             && sold.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) == v);
     }
 
+    protected decimal[] ValoriLinii(Guid doc) => CuSpatiu(os => os.GetObjectsQuery<DocumentDetaliu>()
+        .Where(l => l.DocumentId == doc).OrderBy(l => l.Pozitie).Select(l => l.Valoare).ToArray());
+
+    protected void ValoriLinii(string id, string mesaj, Guid doc, params decimal[] asteptate) {
+        var valori = ValoriLinii(doc);
+        Verifica(id, $"{mesaj}: valorile liniilor {string.Join("; ", asteptate)} (obținut {string.Join("; ", valori)})",
+            valori.SequenceEqual(asteptate));
+    }
+
     protected void SoldPartida(string id, Guid unitate, DateOnly data, decimal net) {
         var sold = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == unitate
             && p.Data <= data && p.Carte == N.Carte.Contabil).ToList());
@@ -412,6 +421,14 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             && !os.GetObjectsQuery<RegistruStoc>().Any(p => p.DocumentId == doc)
             && !os.GetObjectsQuery<RegistruTva>().Any(p => p.DocumentId == doc));
     }
+
+    protected void OperatFaraEfecte(string id, string mesaj, Guid doc) => Verifica(id, mesaj, CuSpatiu(os =>
+        os.GetObjectByKey<Document>(doc).Stare == StareDocument.Operat
+        && !os.GetObjectsQuery<C.Tranzactie>().Any(t => t.DocumentId == doc)
+        && !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == doc)
+        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == doc)
+        && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == doc)
+        && !os.GetObjectsQuery<RegistruTva>().Any(r => r.DocumentId == doc)));
 
     protected void Refuza(string id, Action actiune, string fragment) {
         try { actiune(); Verifica(id, "trebuia refuzat", false); }

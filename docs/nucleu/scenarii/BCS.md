@@ -135,3 +135,20 @@ de material, 22 gestiuni predatoare și un loc de consum. Zero cantități
 nule/negative, zero loturi lipsă, zero corecții legate și zero documente cu
 data fizică diferită de data înregistrării. Combinațiile observate motivează
 SC-BCS-02/02b/02c; cifrele așteptate nu sunt copiate din această bază.
+
+## TR-D9a, pasul 2 (2026-10-05): valoarea liniei evaluate din sold
+
+Schimbarea 1 din D9-D1 ([contractul TR-D9a](../tr-d9-taierea-contract.md), D9-D3 a). Azi valoarea scrisă pe LINIE
+vine din soldul registrului, iar postarea din soldul cubului, în secvența
+liniilor; după pasul 6 linia primește decizia `ValoareIesire`, deci e egală cu
+postarea. Coloana „azi" e măsurată (`ScenariiBcs`, ambele profiluri); coloana
+„după tăiere" e așteptarea scrisă înaintea codului și se verifică la pasul 6.
+
+| ID | Comenzi | Azi (regim dual) | După tăiere |
+|---|---|---|---|
+| SC-BCS-15 | lot 3/10; trei BCS de câte 1 | linii 3,33; 3,33; 3,34 — postări 3,33; 3,34; 3,33 — lot 0/0 | linii = postări = 3,33; 3,34; 3,33 — lot 0/0 |
+| SC-BCS-16 | lot 3/10; un BCS cu două linii de câte 1 pe același lot; apoi un BCS de 1 | dry-run fără refuz, nimic persistat, liniile rămân 0; operare: linii 3,33; 3,33, postări 3,33; 3,34, sold 1/3,33; ultimul BCS: linia 3,34, postarea 3,33; lot 0/0 | dry-run la fel; linii = postări = 3,33; 3,34; ultimul BCS: linia = postarea = 3,33; lot 0/0 |
+
+Diferența dintre linie și postare e cea declarată N-r3 (evaluarea în
+secvență pe soldul curent, nu `cantitate × preț`); ținta 0/0 din ASM-B7 se
+atinge în ambele regimuri.

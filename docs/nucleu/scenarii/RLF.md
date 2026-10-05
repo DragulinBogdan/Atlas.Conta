@@ -24,8 +24,9 @@ T-D6/T-r2 și nu se ascunde într-o ajustare de preț.
 | SC-RLF-09 | RLF Data05.01, înregistrat05.02: stoc10/100 la31.01,8/80 la05.02, partida+20 numai în februarie. | acceptat | 088 | `ScenariiRlf` / ID | verificat, privat |
 | SC-RLF-10 | Lot10/100, retur2 TI21: baza−20 pe371, taxă−4,20 pe4426 contra4427; partida401+20; fără fapt colectat suplimentar (B-r4). | acceptat, limită declarată | recensământ:96 linii TI | `ScenariiRlf` / ID | verificat, privat |
 | SC-RLF-11 | Fără linii / lot absent / cantitate0 / Tip incompatibil / TVA capitalizat / cantitate peste stoc: refuz cu zero efecte. Coduri de declarație unde operandul permite; insuficiența stocului prin gardianul registrelor. | refuzat | T-D6, 076 | `ScenariiRlf` / ID | verificat, privat |
-| SC-RLF-12 | Bugetar fără politici RLF și activare cub; document fără număr refuzat de politica de numerotare absentă, zero efecte. | refuzat / inert | seed | `ScenariiRlf` / ID | verificat, bugetar |
+| SC-RLF-12 | Bugetar: zero politici RLF, tip în afara cubului. Azi: dry-run fără refuz; operarea fără număr e refuzată de politica de numerotare absentă, zero efecte. După tăiere (pasul 6): dry-run și operare refuzate cu codul unic al tipului fără politică pe profil (propus `TIP_FARA_DECLARATIE`), cu sau fără număr, zero efecte. | refuzat / inert | seed; D9-D5, D9-A6 (I6) | `ScenariiRlf` / ID | verificat azi, bugetar |
 | SC-RLF-13 | După lotul gol cu reziduu−0,01 din SC05, RDC readuce1 la10,01: lot1/10. DSC golește lotul la soldul cubului10: lot0/0. Valoarea notei RLF și partida10,01 rămân intacte. | acceptat, diferență de evaluare declarată | review T-D7b pas8, T-D6/T-r2/T-r7 | `ScenariiRlf` / ID | verificat, privat |
+| SC-RLF-14 | Bugetar, același RLF cu număr cules. Azi: operarea trece și documentul rămâne Operat fără nicio postare și fără niciun rând de registru; lotul rămâne 10/100. După tăiere (pasul 6): același refuz ca SC-RLF-12, documentul rămâne Draft. | acceptat fără efect azi; refuzat după | D9-D5, schimbarea 4 | `ScenariiRlf` / ID | verificat azi, bugetar |
 
 Recensământ read-only `Atlas.Conta.Import1C.Flax.TrD7b`, script
 `recensamant-retururi-dvi.sql`:398 documente/477 linii,35 multiline,
@@ -47,3 +48,22 @@ scenariile prezente nu îl declară acoperit.
 Gate integral pe aceleași baze: 1.746 OK bugetar / 2.455 OK privat,
 zero FAIL, exit0 la build și ambele rulări. Manifest:
 `run-verificari/20260923-124346-478/rezultat.json`.
+
+## TR-D9a, pasul 2 (2026-10-05): valoarea liniei la prețul de intrare
+
+Sursa (b) din D9-D3 ([contractul TR-D9a](../tr-d9-taierea-contract.md)): linia de retur ia `cantitate × Lot.PretUnitar`
+și declarantul o postează ca `ValoareDeclarata`. Nu se schimbă la tăiere;
+cifrele de mai jos sunt măsurate pe LINII (`ScenariiRlf`, privat) și rămân
+aceleași după pasul 6. Linia operată poartă semnul operării.
+
+| ID | Pasul | Valoarea liniei |
+|---|---|---|
+| SC-RLF-05 | retur 1 din lotul 3 × 0,333333 după DSC 2 | −0,33; lot 0/0 |
+| SC-RLF-05 | retur 1 din lotul 3 × 10,006667 după două DSC de 1 | −10,01, nu soldul rămas 10,00; lot 0/−0,01 |
+| SC-RLF-05 | același retur, anulat și reoperat | −10,01; lot din nou 0/−0,01 |
+| SC-RLF-08 | corecția în februarie, cantitate 1 | −10,00 |
+| SC-RLF-13 | RDC readuce 1 pe lotul cu reziduu | costul −10,01; lot 1/10 |
+| SC-RLF-13 | DSC golește lotul | 10,00, evaluată din sold (sursa a); lot 0/0 |
+
+Returul pe un lot inițial fără preț de intrare: SC-DES-22 în
+[DESCHIDERE](DESCHIDERE.md).

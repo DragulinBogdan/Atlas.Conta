@@ -956,3 +956,21 @@ detaliat în jurnal):
   binar recompilat. Proba pe HTTP și cea din browser (a treia linie adăugată
   din ecran, FCL-6 și FCL-7) trec; ianuarie pe Flax păstrează contractele 1–4.
   `docs/nucleu/109-review-codex.md`, `run-verificari/r3-ui/r1-*`, `r3-ian-r1/`.
+
+- **2026-10-05 — TR-D9a, pașii 0–2: contractul tăierii, inventarul și
+  probele dinaintea ei.** Contract aprobat de owner cu review Codex închis
+  (`docs/nucleu/tr-d9-taierea-contract.md`), inventarul nominal
+  (`tr-d9-inventar.md`), amendamentul 1 (D9-A1…A9). Pasul 2, sub regim dual:
+  gardul analizei obligatorii portat pe mișcările contractului
+  (`Cub/GardAnaliza`), cu domeniul structural (mișcările din cartea
+  contabilă) și cu recepția facturii păzită la operarea facturii (schimbarea
+  5). Echivalența cu gardul vechi e probată prin trei integrale bugetare: cu
+  amândouă, numai cu cel nou, cu niciunul. Scenarii noi, cu cifra de azi
+  măsurată și cu cea de după tăiere scrisă înaintea codului: SC-BCS-16,
+  SC-FCT-12…14, SC-RLF-14, SC-RDC-19, SC-DSC-09, SC-DES-22, SC-X-25…27;
+  SC-ASM-17…26 rescrise nominal. Măsurătorile au corectat trei rânduri ale
+  inventarului și au arătat că limita 098-r3 nu refuză nimic azi. Două
+  constatări lăsate owner-ului: cerința de repartitor nu refuză niciun
+  document (G1) și materialul din regulă nu ajunge pe postare (G2). ModelCheck
+  integral **3.527 / 4.835 OK**, zero FAIL; nucleu 180/180.
+  `docs/nucleu/tr-d9-pas2-probe.md`, `run-nucleu/tr-d9a/pas2/`.

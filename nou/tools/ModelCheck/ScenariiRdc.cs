@@ -68,7 +68,12 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
                 !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocument.Cod == "RDC")
                 && !os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == "RDC").PosteazaInCub));
             var inert = Retur(new LinieRdcScena(100));
-            Refuza("SC-RDC-16", () => Opereaza(inert.Id), "politică de numerotare"); FaraEfecte("SC-RDC-16", inert.Id); return;
+            Verifica("SC-RDC-16", "dry-run fără refuz", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(inert.Id)).Count == 0);
+            Refuza("SC-RDC-16", () => Opereaza(inert.Id), "politică de numerotare"); FaraEfecte("SC-RDC-16", inert.Id);
+            Comanda(os => { os.GetObjectByKey<Document>(inert.Id).Numar = Marcaj + "-INERT"; os.CommitChanges(); });
+            Opereaza(inert.Id);
+            OperatFaraEfecte("SC-RDC-19", "cu număr cules: Operat, fără nicio postare și fără niciun rând de registru", inert.Id);
+            return;
         }
         Venituri(); Stocuri(); Compensare(); Refuzuri(); PestePerioada();
     }
@@ -120,6 +125,11 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
         Opereaza(Iesire(false, (gol, 10)).Id);
         var inapoi = Retur(new LinieRdcScena(0, Lot: gol, Cantitate: 2)); Opereaza(inapoi.Id);
         Postari("SC-RDC-07", inapoi.Id, N.FelTranzactie.Operare, Ianuarie, Cost(inapoi, 0, 2, 20));
+        ValoriLinii("SC-RDC-07", "costul pe lotul golit, la prețul de intrare", inapoi.Id, -20);
+        Anuleaza(inapoi.Id); SoldLot("SC-RDC-07", gol.Lot!.Value, Magazie, Ianuarie, 0, 0);
+        Opereaza(inapoi.Id);
+        Postari("SC-RDC-07", inapoi.Id, N.FelTranzactie.Operare, Ianuarie, Cost(inapoi, 0, 2, 20));
+        ValoriLinii("SC-RDC-07", "aceeași cifră după anulare și reoperare", inapoi.Id, -20);
         Verifica("SC-SAFT-18", "RDC pe cub: retur 381 −40/−8,40/−48,40 fără linia de cost; RDC numai de stoc nu e factură și nu refuză",
             CuSpatiu(os => {
                 var saft = SaftProiectii.SaftPeCub(os, An, 1);

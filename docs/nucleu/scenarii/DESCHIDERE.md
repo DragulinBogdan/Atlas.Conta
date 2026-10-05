@@ -32,6 +32,7 @@ probă de mecanism pe ambele profiluri (096).
 | SC-DES-19 | FCT/NIR 5/50 pe 5 ian, deschidere pe 6 ian: refuz din cauza istoriei existente. | refuz |
 | SC-DES-20 | Lot cu recepție existentă 5/50 sau lot nou atașat unei linii de intrare: refuz, fără dublare. | refuz |
 | SC-DES-21 | Două sesiuni reale: stingere ținută necomisă vs. storno/anulare, apoi storno necomis vs. stingere. Se observă FOR UPDATE înaintea citirii cubului; stornoul include transferul, anularea refuză, stingerea recitește Stornat. Partida rămâne 40. | serializare și sold exact |
+| SC-DES-22 | Privat. Lotul inițial B 3/60 are prețul de intrare 0 (nepus de creatorul lotului). RLF de 1 din el: linia iese cu valoarea 0, postarea scoate cantitatea 1 cu valoare 0, fără refuz; lot 2/60. După anulare lotul revine la 3/60. Neschimbat la tăiere (D9-A6, I7). | acceptat; valoarea rămâne pe cantitatea rămasă |
 
 Storno-ul plății și refuzurile se execută prin comenzile reale. Deschiderea
 nu are anulare/storno de document; resetarea bazei de test este curățenie.

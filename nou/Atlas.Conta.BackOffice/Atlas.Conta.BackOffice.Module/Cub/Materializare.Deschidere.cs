@@ -120,14 +120,12 @@ public static partial class Materializare {
         }
         var lipsuri = new List<string>();
         foreach (var p in postari) {
-            var c = p.Coordonate; var a = c.Analiza;
+            var c = p.Coordonate;
             VerificaMasura(p.ValoareValuta, N.Scara.Bani);
             if (c.Valuta == Guid.Empty || (c.Valuta == null && p.ValoareValuta != 0))
                 RefuzaDeschidere("Valuta și suma în valută sunt incompatibile.");
             MotorOperare.VerificaLatura(conturi[c.Cont].Simbol, conturi[c.Cont].DimensiuniObligatorii,
-                new Dimensiuni { RepartitorId = c.Partener ?? c.Gestiune, MaterialId = c.Produs,
-                    CodFunctionalId = a.CodFunctional, CodEconomicId = a.CodEconomic, SursaFinantareId = a.SursaFinantare,
-                    UnitateId = a.UnitateOrganizatorica, ProiectId = a.Proiect, CentruCostId = a.CentruCost },
+                GardAnaliza.Dimensiuni(c.Partener ?? c.Gestiune, c.Produs, c.Analiza),
                 null, c.Latura.ToString(), "deschidere", lipsuri);
         }
         if (lipsuri.Count > 0) RefuzaDeschidere(string.Join("\n", lipsuri));
