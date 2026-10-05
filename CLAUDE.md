@@ -180,8 +180,12 @@ owner (2026-10-05) prin amendamentul 1, transcris în contract
 tăierii, cheia de pereche pe postare, I2, I5 ca refuz la editare, inversa
 fiscală născută finală, regula care a decis în explicație). Pasul 2 e făcut
 (gardul analizei pe mișcările contractului, probele dinaintea tăierii,
-constatările G1 și G2 pentru owner: `docs/nucleu/tr-d9-pas2-probe.md`).
-Urmează pasul 3.
+constatările G1 și G2: `docs/nucleu/tr-d9-pas2-probe.md`). G1 și G2 sunt
+tranșate de owner (2026-10-06) prin amendamentul 2, transcris în contract
+(`docs/nucleu/tr-d9-taierea-amendament-2.md`, D9-A10 și D9-A11: partenerul pe
+piciorul de terț al conturilor care cer repartitor, gardul strict pe postare,
+pas nou 2c; materialul din regulă rămâne limită consemnată). Urmează pasul 3
+și pasul 2c, în orice ordine, amândouă înaintea pasului 5b.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
