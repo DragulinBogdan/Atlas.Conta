@@ -8,8 +8,9 @@
   reverificarea la `1fe9cb7` a adus încă trei, D9-RV7…D9-RV9
   (`comunicari/2026-10-05-1108-codex-claude-tr-d9a-reverificare.md`). Toate
   nouă sunt acceptate și aplicate aici, vezi „Amendamente după review-ul
-  Codex". Așteaptă închiderea review-ului și aprobarea owner-ului, înaintea
-  codului.
+  Codex". **Review-ul advers al contractului e închis la `75138d7`**
+  (`comunicari/2026-10-05-1130-codex-claude-tr-d9a-contract-review-inchis.md`).
+  Așteaptă aprobarea owner-ului, înaintea codului.
   Branch `tr-d9-taierea`, tăiat din `main` = `0bcd8b0` (după PR #21).
 - Bază: 090 (a)(l)(m) și rândul TR-D9 din „Ordinea și regula de oprire";
   091 (g)(6), (h), (k); 108 (a) și „Ce rămâne deschis"; lista nominală X-D2
@@ -317,11 +318,11 @@ Niciunul nu se reclasifică drept probă de formă:
 | SC-ASM-17 | al doilea și al treilea ASM (culese 3,33 și 3,34 contra C = 3,34 și 3,33) sunt refuzate până la redistribuire; după ea produsele sunt 3,33; 3,34; 3,33 și sursa 0/0 |
 | SC-ASM-18 | stornoul inversează exact 3,34; corecția cere produsul la valoarea evaluată, fără Δ |
 | SC-ASM-19 | proba-capcană rulează prin comanda reală `DistribuieValoarea`: refuz înaintea redistribuirii, operare după, pe aceleași fapte |
-| SC-ASM-20 | P_total 13,33 contra C 13,34: refuz. Felurile și măsurile de după redistribuire se scriu din regula reală de distribuire; nu se presupune că amândouă grupurile rămân balansate |
+| SC-ASM-20 | P_total 13,33 contra C 13,34: refuz. După redistribuire, așteptare derivată, nerulată: distribuirea proporțională a lui 13,34 dă 3,33 și 10,01 (ultimul ia restul), deci contra consumurilor 3,34 și 10 amândouă grupurile sunt nebalansate și intră într-o singură Operare, fără Transfer. Fixture-ul exact și măsurile complete se fixează la pasul 2 |
 | SC-ASM-21 | grup numai-consum C = 3,34 și produs 3,33 pe alt cont: refuz; după redistribuire, Operare cu produsul 3,34 |
-| SC-ASM-22 | ΣC = 9,98 + 1,02 = 11 = ΣP: trece fără redistribuire, produsele rămân 10,99 și 0,01; acumularea Δ rămâne fără obiect |
-| SC-ASM-23 | nu mai e `ASAMBLARE_DELTA_FARA_ANCORA`: ΣC = 1,01 contra ΣP = 1 e `ASAMBLARE_NEBALANSATA`; după redistribuire trece. Limitarea duală dispare |
-| SC-ASM-24 | fără obiect în forma cu Δ; rămâne proba refuzului pe produsul cules nepozitiv |
+| SC-ASM-22 | ΣC = 9,98 + 1,02 = 11 = ΣP: trece fără redistribuire, produsele rămân 10,99 și 0,01; grupul numai-consum și grupul produselor intră în Operare. Dispare aserția acumulării Δ, rămân cifrele și acceptarea |
+| SC-ASM-23 | nu mai e `ASAMBLARE_DELTA_FARA_ANCORA`: ΣC = 1,01 contra ΣP = 1 e `ASAMBLARE_NEBALANSATA`; după distribuirea lui 1,01, grupul numai-consum de 0,01 și grupul cu consum 1 și produs 1,01 intră în Operare. Limitarea duală dispare |
+| SC-ASM-24 | fără obiect în forma cu Δ. Datele probei vechi (P = 10 contra C = 9,99 sau 9) dau acum refuz de DEZECHILIBRU și pot proba gardul P = C; refuzul pe produsul cules nepozitiv e alt motiv și are proba lui separată |
 | SC-ASM-25 | lanțul rămâne numai pe cub: produsul 1/3,34 golit de BCS la 3,34, lot 0/0 |
 | SC-ASM-26 | fără obiect în greenfield (102 b) |
 
@@ -746,6 +747,11 @@ observații noi, verificate pe sursă și acceptate.
 | D9-RV7 (P1) | „absorbția dispare, Δ-ul local rămâne, catalogul nu se schimbă" nu puteau fi adevărate împreună: SC-ASM-17 trece azi numai prin absorbție | D9-D3 „ASM după tăiere": gardul ΣP = ΣC, clasificarea pe C, fără Δ; schimbare de comportament declarată (D9-D1, 2); SC-ASM-17…26 rescrise nominal |
 | D9-RV8 (P1) | `DistribuieValoarea` își ia ținta din valorile lăsate de dry-run pe linii; după tăiere ar fi prezis estimarea și operatorul n-ar fi putut ieși din refuz | distribuirea citește evaluarea consumurilor de la declarant, disponibilă înaintea gardului de balansare (ASM-B6, ultimul paragraf); apelanții lui `Valideaza` care citesc valori intră în inventar (D9-D2) |
 | D9-RV9 (P2) | invariantul compara o magnitudine cu o sumă semnată: ieșirea prin Transfer e pe Debit, negativă | D9-D3 (a): postarea de ieșire aleasă, normalizată pe latură, două egalități semnate, fără `Abs`; probe pe BCS, BTR și ASM cu Transfer |
+
+Închiderea review-ului la `75138d7`
+(`comunicari/2026-10-05-1130-codex-claude-tr-d9a-contract-review-inchis.md`)
+a confirmat tabelul SC-ASM și a adus precizări pentru rândurile 20, 22, 23 și
+24, transcrise în tabel. Închiderea nu certifică implementarea.
 
 Din răspunsurile la întrebări: pasul 6 aduce la zi lista nominală și probele
 vechilor scriitori (D9-D15); gardul analizei nu se întinde la ASM și BTR,
