@@ -12,6 +12,10 @@
   Codex". **Review-ul advers al contractului e închis la `75138d7`**
   (`comunicari/2026-10-05-1130-codex-claude-tr-d9a-contract-review-inchis.md`).
   Branch `tr-d9-taierea`, tăiat din `main` = `0bcd8b0` (după PR #21).
+- **Amendamentul 1 (2026-10-05)**: hotărârile owner-ului după consultarea cub
+  vs registre și după inventarul pasului 1, D9-A1…D9-A9, cu textul întreg în
+  [`tr-d9-taierea-amendament-1.md`](tr-d9-taierea-amendament-1.md); aplicat
+  aici, vezi „Amendamentul 1".
 - Bază: 090 (a)(l)(m) și rândul TR-D9 din „Ordinea și regula de oprire";
   091 (g)(6), (h), (k); 108 (a) și „Ce rămâne deschis"; lista nominală X-D2
   (`nou/tools/ModelCheck/ProbeCititoriRegistre.Lista.cs`); restanțele cu
@@ -169,7 +173,15 @@ altceva schimbat e defect.
    subiectul se unifică și verificarea e mai strictă decât cea pe tip, de azi
    (D9-D9).
 4. Dacă pasul 1 arată că un tip inert pe profil se operează azi fără efect,
-   refuzul lui (D9-D5).
+   refuzul lui (D9-D5). Pasul 1 a confirmat-o (I6).
+5. Recepția liniei de stoc a facturii e păzită de gardul analizei
+   obligatorii la operarea facturii; refuzul se mută de pe NIR-ul conex pe
+   factură (D9-A3).
+6. Regula de contare pe un tip al cărui declarant nu contează prin reguli e
+   refuzată la editare (D9-A4).
+7. Explicația persistată și API-ul ei rețin regulile de politică consumate,
+   cu contorul rândului, în locul textului fix; formatul trece la versiunea 2
+   (D9-A8).
 
 ## D9-D2 — Un singur scriitor: coaja comenzii după tăiere
 
@@ -391,7 +403,11 @@ Cunoscute înaintea inventarului:
   NOU, nu echivalent, și rămâne restanța D9-r1. Pasul 1 confirmă domeniul tip
   cu tip, contra notelor pe care planul vechi le verifică azi, și pe
   politicile editabile, nu numai pe seed: o regulă de contare adăugată de
-  client pe un tip din afara domeniului se numește în inventar cu verdict.
+  client pe un tip din afara domeniului se numește în inventar cu verdict;
+- **recepția facturii (D9-A3)**: intră și postările recepției liniei de stoc
+  făcute de factură (`DeclarantFacturaIntrare.Receptia`), deși nu se nasc
+  dintr-o regulă de contare. Diferența postată de NIR-ul conex rămâne păzită
+  de `ReceptiiConexe.VerificaAnaliza`.
 
 Gardul se adaugă pe partea contractului **înaintea** tăierii (pasul 2), cât
 timp planul vechi încă rulează: aceleași documente trebuie refuzate de
@@ -629,6 +645,14 @@ Restanță nouă a feliei:
 - **D9-r1** — gardul analizei obligatorii pe mutări și transformări (BTR,
   ASM): azi nepăzite, fiindcă planul vechi nu le face note; rămân nepăzite.
   `după PoC`.
+- **D9-r2** — nu se deschide: regula de contare fără consumator e refuzată
+  la editare, în felie (D9-A4).
+- **D9-r3** — explicația de audit dincolo de nivelul 1: conținutul regulii
+  la momentul operării (din jurnalul de audit sau din politici cu istoric
+  propriu) și nomenclatoarele care decid contarea (D9-A8). `după PoC`.
+- **D9-r4** — cititorii care folosesc cheia de pereche: contrapartida din
+  fișa contului și conturile corespondente din registrul jurnal (D9-A2).
+  `după PoC`.
 
 Rândurile de catalog cu starea `amânat la TR-D9` se împart la fel: cele care
 privesc registrele (limita duală din SC-X-01, garda din NIR, SC-ASM-19) se
@@ -658,13 +682,16 @@ dual; simbolurile dispar la sfârșit, într-un pas atomic.**
 |---|---|---|
 | 0 | contractul aprobat; review advers Codex al contractului | nu |
 | 1 | inventarul nominal, în `docs/nucleu/tr-d9-inventar.md`: refuzurile planului vechi cu verdict și domeniul gardului analizei, tip cu tip, pe seed și pe politicile editabile (D9-D4); fiecare referință ModelCheck cu verdict (D9-D7 c); validările de frunză pe valoarea finală, apelanții lui `Valideaza` care citesc valori din OS-ul temporar și returul pe lot fără preț de intrare (D9-D2, D9-D3); consumatorii `RegulaStoc`; operarea tipului inert azi (D9-D5); membrii rămași ai serviciilor vechi (D9-D2); 63f | nu |
-| 2 | sub dual: gardul analizei obligatorii pe postări, cu proba lui directă; scenariile D9-D3 pe valorile liniilor, cu cifra de azi și cu cea de după; rândurile ASM rescrise nominal, cu felurile și măsurile de după; scenariul 098-r3; scenariul tipului care nu declară | numai refuzuri echivalente cu cele de azi |
+| 2 | sub dual: gardul analizei obligatorii pe postări, cu proba lui directă; scenariile D9-D3 pe valorile liniilor, cu cifra de azi și cu cea de după; rândurile ASM rescrise nominal, cu felurile și măsurile de după; scenariul 098-r3; scenariul tipului care nu declară; recepția facturii în gardul analizei, cu scena ei bugetară (D9-A3); scenariul regulii de contare fără consumator (D9-A4) | numai refuzuri echivalente cu cele de azi; schimbarea 5 |
 | 3 | sub dual: re-țintirea aserțiilor de regulă pe cititorii cubului (D9-D7 d) | nu |
-| 4 | sub dual: consumatorii din produs — lista XAF pe `Postare` cu gardul ei, permisiunea unică pe cele trei porți și pe verificarea închiderii, proiecția moartă `TotalStingere` și forma proiecției de rest, clientul fără câmpurile care vor ieși (D9-D9, D9-D10, D9-D12). Listele vechi de registre rămân până la pasul 7 | schimbarea 3: subiectul unic și citirea completă |
+| 4 | sub dual: consumatorii din produs — lista XAF pe `Postare` cu gardul ei, permisiunea unică pe cele trei porți și pe verificarea închiderii, proiecția moartă `TotalStingere` și forma proiecției de rest, clientul fără câmpurile care vor ieși (D9-D9, D9-D10, D9-D12). Listele vechi de registre rămân până la pasul 7. Precizările I3, I4 și I8 (D9-A6) | schimbarea 3: subiectul unic și citirea completă |
 | 5 | sub dual: uneltele — Import1C și Migrare pe cititorii cubului, fără `StocService` și fără planul vechi; BackfillTva șters (D9-D11) | nu |
-| 6 | nimic nu mai scrie, nu mai citește și nu mai ramifică pe registre și pe regim: planul vechi, valoarea liniei din contract, ASM pe gardul P = C cu clasificarea pe C și distribuirea pe evaluarea pură, ramurile `PosteazaInCub` și refuzul tipului care nu declară, oracolul și martorii registru → cub cu mutanții lor (D9-D2, D9-D3, D9-D5, D9-D7 a). În același pas, lista nominală X-D2 și probele care asertează vechii scriitori se aduc la zi; nu rămâne o listă exactă învechită până la 7. Rămân numai declarațiile: entitățile, maparea, coloanele, listele XAF vechi, cazurile gardianului | schimbările 1 și 2; 4 dacă pasul 1 o confirmă |
+| 5b | probele dinaintea tăierii, fără cod de produs: ultima reconciliere registre ↔ cub arhivată, `PerfCub` în regim dual ca termen de comparație, scara de volum cu ruta securizată, raportată owner-ului (D9-A1) | nu |
+| 6 | nimic nu mai scrie, nu mai citește și nu mai ramifică pe registre și pe regim: planul vechi, valoarea liniei din contract, ASM pe gardul P = C cu clasificarea pe C și distribuirea pe evaluarea pură, ramurile `PosteazaInCub` și refuzul tipului care nu declară, oracolul și martorii registru → cub cu mutanții lor (D9-D2, D9-D3, D9-D5, D9-D7 a). Refuzul regulii de contare fără consumator (D9-A4). Inversa fiscală născută finală, fără `ReatribuieInversaFiscala` (D9-A5). În același pas, lista nominală X-D2 și probele care asertează vechii scriitori se aduc la zi; nu rămâne o listă exactă învechită până la 7. Rămân numai declarațiile: entitățile, maparea, coloanele, listele XAF vechi, cazurile gardianului | schimbările 1, 2, 4 și 6 |
 | 7 | eliminarea atomică a declarațiilor: entitățile de registru, coloanele scoase, maparea, listele XAF vechi, cazurile gardianului, `InitialCreate`, seed-ul fără rânduri moarte, recrearea bazelor, regenerarea metadatei și a tipurilor clientului, lista nominală redusă și activarea probei numelor interzise (D9-D6, D9-D7 b, D9-D8, D9-D12) | nu |
-| 8 | închiderea: integrala, nucleul, `--probe-sursa`, `refuzuri.ps1` pe host viu, `PerfCub`, probele din browser (operarea și lista pe `Postare`), rularea-diagnostic Import1C pe ianuarie, docs, decizia 110, restanțele, review advers Codex | nu |
+| 7b | cheia de pereche pe postare: ordinalul dat în nucleu, materializarea, coloana în `InitialCreate`, invariantul în `Conservare` și în `INV-CUB`; cititorii neschimbați (D9-A2) | nu |
+| 7c | versiunea politicii în explicație: ipoteza, decizia `ContRezolvat`, DTO-ul, formatul 2, cu lista nominală a faptelor de politică scrisă înaintea codului (D9-A8) | schimbarea 7 |
+| 8 | închiderea: integrala, nucleul, `--probe-sursa`, `refuzuri.ps1` pe host viu, `PerfCub`, probele din browser (operarea și lista pe `Postare`), rularea-diagnostic Import1C pe ianuarie, docs, decizia 110 cu limitele din D9-A9 și cu rezultatul scării de volum, restanțele, review advers Codex | nu |
 
 După pasul 5, în afara motorului vechi, a martorilor lui și a declarațiilor,
 nimic nu mai referă registrele; asta se verifică atunci cu lista nominală
@@ -681,7 +708,7 @@ Pasul 1 citește tot `Program.cs`; e pasul pentru care se propune delegarea
 2. integrala e verde pe ambele profiluri, pe baze recreate din
    `InitialCreate`; numărul de `Check` se reconciliază cu inventarul;
 3. catalogul de scenarii e verde; cifrele și rezultatele lui sunt
-   neschimbate în afara celor patru schimbări declarate în D9-D1, fiecare cu
+   neschimbate în afara celor șapte schimbări declarate în D9-D1, fiecare cu
    rândurile ei rescrise nominal înaintea codului;
 4. fiecare refuz al planului vechi are rând în inventar, cu echivalentul lui
    probat direct sau cu verdictul „al registrului" (D9-D4);
@@ -692,9 +719,15 @@ Pasul 1 citește tot `Program.cs`; e pasul pentru care se propune delegarea
    `--dump-integritate-tph` e zero;
 6. scara `PerfCub` își păstrează criteriile de formă; criteriul
    `PartideCuRest` e închis sau re-amânat explicit (D9-D10); costul comenzii
-   fără registre se raportează A/B pe aceeași bază;
+   fără registre se raportează A/B pe aceeași bază, cu termenul A măsurat la
+   pasul 5b;
 7. `stare-curenta/` și invarianții nu mai descriu regimul dual;
-8. review-ul advers Codex e închis și decizia 110 e scrisă.
+8. review-ul advers Codex e închis și decizia 110 e scrisă;
+9. probele dinaintea tăierii sunt arhivate și scara de volum e raportată
+   owner-ului înaintea pasului 6 (D9-A1);
+10. invariantul perechii e verde în nucleu și în `INV-CUB`; nicio postare
+    existentă nu ajunge modificată la commit (D9-A2, D9-A5);
+11. probele versiunii politicii sunt verzi (D9-A8).
 
 **Oprire înaintea termenului** (se raportează owner-ului, nu se ocolește):
 un refuz al planului vechi fără echivalent exprimabil pe contract; un cititor
@@ -759,8 +792,35 @@ care azi n-au note — restanța D9-r1 (D9-D4); citirea completă pe `Postare` e
 consemnată ca schimbare mai strictă, iar `TipuriInsumate` își păstrează
 drepturile și primește `Postare` pe lângă ele (D9-D9).
 
+## Amendamentul 1 (2026-10-05)
+
+Hotărât de owner punct cu punct, după consultarea cub vs registre
+(`docs/consultations/2026-10-05-cub-vs-registre/`) și după inventarul pasului
+1. Textul întreg, cu motivele și probele fiecărui punct:
+[`tr-d9-taierea-amendament-1.md`](tr-d9-taierea-amendament-1.md). Unde cele
+două texte diferă, câștigă amendamentul.
+
+| Id | Ce aduce | Unde e aplicat |
+|---|---|---|
+| D9-A1 | probele dinaintea tăierii: reconcilierea arhivată, `PerfCub` dual, scara de volum ca raport | D9-D15, pasul 5b; regula de oprire 6 și 9 |
+| D9-A2 | cheia de pereche pe postare; transformările și deschiderile rămân fără pereche; cititorii neschimbați | D9-D15, pasul 7b; regula de oprire 10; D9-r4 |
+| D9-A3 | I2: recepția facturii în gardul analizei obligatorii | D9-D1, schimbarea 5; D9-D4; pasul 2 |
+| D9-A4 | I5: regula de contare fără consumator, refuzată la editare prin declarant | D9-D1, schimbarea 6; pașii 2 și 6; D9-r2 nu se deschide |
+| D9-A5 | inversa fiscală se naște finală; `ReatribuieInversaFiscala` dispare | pasul 6; regula de oprire 10 |
+| D9-A6 | precizările I1, I3, I4, I6, I7, I8 din inventar | D9-D2, D9-D3, D9-D4, D9-D5, D9-D6, D9-D10, cum le formulează amendamentul; pasul 4 |
+| D9-A7 | poziția fără unitate rămâne cum e azi; limită consemnată | decizia 110; NG-r4 |
+| D9-A8 | explicația reține regula care a decis și contorul ei; formatul 2 | D9-D1, schimbarea 7; pasul 7c; regula de oprire 11; D9-r3 |
+| D9-A9 | limitele consemnate în decizia 110 | pasul 8 |
+
+Registrele derivate (opțiunea B a consultării) nu se construiesc; se pot
+deriva din cub ulterior. Explorarea nodului de transformare cu valoare, a
+regimului declarat pentru poziția fără unitate și a semnului pe postare s-a
+închis fără schimbare de model
+(`docs/consultations/2026-10-05-nod-si-galeata/`).
+
 ## Ce NU intră (amânări cu nume)
 
 TR-D9b (N-r5, T-r2, 86-r1, B-r6, 107-r4, 51e, 097-r2 și hook-urile de
 stingere cu 76-r1…r3, 86-r11, T-r5); 104-r2; TR-r7; X-r1; IM-r2; IM-r5; 091-r4 și rularea integrală 12/12;
-104-r3, 104-r4; restanțele `după PoC`.
+104-r3, 104-r4; restanțele `după PoC`; NG-r2 și NG-r4, candidate pentru
+TR-D9b; NG-r1, de probat separat; NG-r3, odată cu BPR.
