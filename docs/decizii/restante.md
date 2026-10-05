@@ -1,12 +1,13 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-10-04.** [Index](README.md)
+**Actualizat: 2026-10-05.** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
 deciziei 36, `69-r1` = restanța 1 a deciziei 69, `D4-r1` = restanțele
 D394 (decizia 71), `DIM-4` = pasul 4 al feliei dimensiunilor (decizia 54),
-`C1a` = `docs/architecture-notes-2026-07-28.md`. Numele stă aici ca să nu se
+`C1a` = `docs/architecture-notes-2026-07-28.md`. `NG-rN` =
+`docs/consultations/2026-10-05-nod-si-galeata/README.md`, secțiunea „Ce s-a reținut”. Numele stă aici ca să nu se
 piardă; motivul și contextul stau doar în fișierul deciziei. O restanță
 închisă își schimbă starea, nu dispare. Limitele produsului, în forma
 văzută de utilizator, sunt în
@@ -375,3 +376,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | X-r1 | Rafinarea blocajului scrierii: granularitatea pe gestiune + partener și scoaterea salvării de draft de sub blocajul comenzilor; pragul de așteptare separat de timpul comenzii (108) | după PoC; se deschide la așteptare măsurată peste un prag fixat de owner |
 | X-r2 | Subiectul permisiunii care păzește cifrele citite din cub, după tăierea tipurilor de registru; azi `RegistrulCitibil` (108) | cade la TR-D9 |
 | X-r3 | Raportul de stoc listează capătul de consum al BCS (postarea de debit poartă lotul ca unitate, pe contul de cheltuială); semantica raportului e întrebare pentru owner (108) | activă: întrebare deschisă pentru owner |
+| NG-r1 | Balanța și fișa contului filtrate pe gestiune sau pe material nu văd transferurile (BTR, ASM): valoarea rămâne la sursă. Citit din cod, nerulat | activă: de probat, apoi întrebare pentru owner (semantica filtrului pe conturile de stoc) |
+| NG-r2 | Contul lotului vine din tipul curent de material al produsului; schimbarea tipului după recepție poate da refuz de stoc insuficient cu stoc existent. Dedus, nedemonstrat | activă, TR-D9b: de probat |
+| NG-r3 | ASM pe același cont, cu trecerea între conturi lăsată bonului de producție; nu intră cât timp BPR e rezervat (019) | după PoC; se deschide cu BPR |
+| NG-r4 | Raportul soldului fără unitate, detaliat pe cont și coordonată (loturi, partide, fișe); numai citire | după PoC; candidat TR-D9b |
