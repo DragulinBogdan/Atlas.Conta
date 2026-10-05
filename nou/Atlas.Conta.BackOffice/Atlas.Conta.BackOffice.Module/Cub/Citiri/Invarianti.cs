@@ -12,6 +12,7 @@ public static class Invarianti {
     public static void Verifica(IObjectSpace os) {
         VerificaProvenienta(os);
         VerificaFiscal(os);
+        VerificaTaxaLiniilor(os);
         Loturi.VerificaAcoperire(os);
         var ctx = ((EFCoreObjectSpace)os).DbContext;
         var postari = os.GetObjectsQuery<Postare>();
@@ -70,6 +71,24 @@ public static class Invarianti {
         if (neconservate.Count != 0)
             throw new OperareException($"{TransferNeconservat}: transferuri care nu conservă valoarea pe (cont, latură) "
                 + "sau cantitatea pe (cont, produs); exemple: " + string.Join(", ", neconservate));
+    }
+
+    public const string TaxaDiferitaDeLinie = "CITIRE_TAXA_DIFERITA_DE_LINIE";
+
+    /// <summary>Taxa postată separat la operare este taxa liniei documentului (109b).</summary>
+    public static void VerificaTaxaLiniilor(IObjectSpace os) {
+        var diferite = os.GetObjectsQuery<Postare>()
+            .Where(p => p.RolTva == N.RolTva.Taxa && p.RegimTva != N.RegimTva.Capitalizat && p.LinieId != null
+                && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .GroupBy(p => p.LinieId)
+            .Select(g => new { Linie = g.Key, Taxa = g.Sum(p => p.Valoare) })
+            .Join(os.GetObjectsQuery<DocumentDetaliu>(), t => t.Linie, l => l.ID,
+                (t, l) => new { l.DocumentId, t.Taxa, l.ValoareTva })
+            .Where(x => x.Taxa != x.ValoareTva)
+            .Take(10).ToList();
+        if (diferite.Count != 0)
+            throw new OperareException($"{TaxaDiferitaDeLinie}: documente a căror taxă postată diferă de taxa liniei; exemple: "
+                + string.Join(", ", diferite.Select(x => $"{x.DocumentId} (postat {x.Taxa}, pe linie {x.ValoareTva})")));
     }
 
     public static void VerificaProvenienta(IObjectSpace os) {

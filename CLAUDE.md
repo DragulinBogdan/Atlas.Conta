@@ -163,9 +163,12 @@ stare) e mersă în main prin PR #17 (2026-10-04), cu 106-r1 închisă; review-u
 advers al feliei e închis (C106-R1…R5, corectat prin 106 (k)). Felia M1 (decizia 107: Import1C
 deschide terții per partidă din `BalantaNivel3`, stingerile anului pe partide
 inițiale) e mersă în main prin PR #20 (2026-10-04), cu M1-D10 amendat și
-review-ul advers închis (M1-R1…R4, M1-R3a). Urmează, în ordine: 107-r3
-(drift-ul motorului față de baseline: scenarii + decizie), apoi TR-D9: tăierea
-scriitorilor vechi și a regimului dual. Felia fiscală
+review-ul advers închis (M1-R1…R4, M1-R3a). 107-r3 e tratată prin decizia 109
+(taxa nemarcată decisă pe document × cotă și scrisă pe linie; conectorul
+marchează taxa sursei; reîncărcarea nu e culegere), aprobată de owner
+2026-10-04, pe `107-r3-drift-tva`, cu review-ul advers Codex închis (109-R1
+corectată și reverificată, `docs/nucleu/109-review-codex.md`). Urmează
+TR-D9: tăierea scriitorilor vechi și a regimului dual. Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
 `docs/nucleu/scenarii/CITIRI.md`.

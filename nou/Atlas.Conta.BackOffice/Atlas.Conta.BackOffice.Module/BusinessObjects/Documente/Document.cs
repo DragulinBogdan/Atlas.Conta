@@ -207,12 +207,17 @@ public abstract class Document : Editabila {
         var cuBaza = linii.Select(l => (Linie: l, Baza: BazaLinie(os, l))).Where(x => x.Baza != null).ToList();
         if (cuBaza.Count == 0)
             return;
-        var tva = CuTva()
-            ? new Motor.ContextTva(Motor.TvaService.IncarcaTipuri(os, cuBaza.Select(x => x.Linie)),
+        var fiscale = CuTva()
+            ? Detalii.Where(l => !os.IsObjectToDelete(l) && LinieFiscala(l)).ToList()
+            : null;
+        var tva = fiscale != null
+            ? new Motor.ContextTva(Motor.TvaService.IncarcaTipuri(os, fiscale.Union(cuBaza.Select(x => x.Linie))),
                 Motor.TvaService.DirectiePentru(os, this))
             : null;
         foreach (var (linie, baza) in cuBaza)
             CalculeazaLinie(linie, baza.Value, tva, pastreazaTvaCules);
+        if (tva != null)
+            Motor.TvaService.RepartizeazaTaxa(os, fiscale, tva);
     }
 
     /// <summary>Baza netă, nerotunjită, a liniei; null = valoarea liniei nu se calculează pe tipul ăsta.</summary>

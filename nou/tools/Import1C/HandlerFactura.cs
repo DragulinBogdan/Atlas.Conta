@@ -357,7 +357,7 @@ static class HandlerFactura {
             d.Cantitate = m.Cantitate;
             d.PretUnitar = m.Net / m.Cantitate;
             d.TipTvaId = m.TipTvaId;
-            d.ValoareTva = m.Tva;
+            Catalog.TaxaDinSursa(d, m.Tva);
             // Lotul se naște pe linia FACTURII (26e) — NIR-ul conex îl preia.
             var lot = d.CreeazaLot(os, os.GetObjectByKey<Produs>(m.ProdusId), gestiune);
             cat.LeagaLotNou(os, m.CheieLot, lot.ID);
@@ -369,7 +369,7 @@ static class HandlerFactura {
             d.Cantitate = s.Cantitate;
             d.PretUnitar = s.Net / s.Cantitate;
             d.TipTvaId = s.TipTvaId;
-            d.ValoareTva = s.Tva;
+            Catalog.TaxaDinSursa(d, s.Tva);
         }
         return fct;
     }

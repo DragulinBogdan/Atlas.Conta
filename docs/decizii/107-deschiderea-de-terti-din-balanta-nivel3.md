@@ -133,7 +133,8 @@ din sursă se agregă semnat, iar netul zero nu e sens necunoscut. RV2 a
   maparea lor pe partenerul generic ar închide partidele generice (461, 411.8).
 - 107-r3 — drift-ul contractului 1 față de baseline (TVA ±0,03 pe linie, RLF,
   ITV): scenarii + decizie pe motor (091 r5), nu normalizare în conector.
-  Owner, 2026-10-04: se tratează înaintea TR-D9.
+  Owner, 2026-10-04: se tratează înaintea TR-D9. Închisă prin 109
+  (2026-10-04): cauza era conectorul fără marcajul `TvaCules`, nu motorul.
 - 107-r4 — valuta: partide inițiale în valută cu curs propriu, la TR-D9.
 - 107-r6 — performanța importului: 25 → 50 min/lună față de 8–10 la baseline
   (~5×) la 2026-10-01; după gate-ul TR-D8 (108) ianuarie durează 21:27, tot

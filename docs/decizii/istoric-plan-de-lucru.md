@@ -915,3 +915,44 @@ detaliat în jurnal):
   M1-R3a corectate, închise la RV2 pe `111b89a`; importul proaspăt nu a fost
   repetat cu binarul final. `run-verificari/m1-ian-r1r4/`. Mers în main prin
   PR #20.
+
+- **2026-10-04 — 107-r3, drift-ul contractului 1 față de baseline (decizia
+  109), pe `107-r3-drift-tva`.** Cauza nu era motorul: R6 (103i) a înlocuit
+  proxy-ul „taxă nenulă = culeasă” cu marcajul `TvaCules`, iar conectorul
+  scria taxa sursei fără marcaj, deci toate cele 7.242 de linii cu taxă din
+  ianuarie erau recalculate la cotă. Conectorul marchează acum taxa sursei
+  (`Catalog.TaxaDinSursa`). Pe drum a ieșit o diferență de fond: pe
+  documentele nemarcate linia purta taxa rotunjită pe linie, iar cubul taxa pe
+  document × cotă (481 din 4.926 de documente pe Flax, cel mult 0,02). Taxa
+  nemarcată se decide acum pe document × cotă în formula entității și se scrie
+  pe linii, la culegere și la operare; declarația postează taxa liniei;
+  INV-CUB refuză divergența (`CITIRE_TAXA_DIFERITA_DE_LINIE`). Scenarii noi:
+  SC-FCL-11, SC-FCL-12, SC-FCT-11, roșii pe motorul vechi. ModelCheck integral
+  **3.459 / 4.705 OK**, zero FAIL. Ianuarie pe Flax, numai cu conectorul
+  corectat (`.Flax.R3`): contractele 1 și 2 verzi la ban, egale cu baseline-ul
+  în afara Δ-ului declarat al stocului (107 e); împerecherile refuzate „peste
+  totalul documentului” 212 → 46. Importul proaspăt cu binarul final
+  (`.Flax.R3f`): aceleași contracte 1–4, INV-CUB verde cu invariantul nou.
+  Contractul 5 a dat 12, 10 și 8 partide fără explicație la trei importuri
+  proaspete (107-r7, 107-r9). Proba din browser (109-r2) a găsit un conflict
+  de versiune la operarea din tabul documentului după salvarea unei linii în
+  tabul ei: reîncărcarea liniei era tratată ca editare. Corectat: adaptorul
+  XAF nu recalculează la reîncărcare și reîncarcă liniile surori (109 f), iar
+  formula scrie fiecare câmp o singură dată (109 g). După corecție: 2,11 /
+  2,10 / 4,20, total 48,47 pe ecran, pe totalul de stins, în cub și în
+  registre. Închise: 107-r3, 109-r2. Noi: 109-r1, 109-r3, 109-r4. Decizia e
+  aprobată de owner (2026-10-04); review-ul advers e nefăcut.
+  `run-verificari/r3-ian/`, `r3-ian-final/`, `r3-motor/`.
+
+- **2026-10-05 — review-ul advers Codex al deciziei 109, o observație
+  (109-R1), corectată de Codex și reverificată independent.** Poziția liniei
+  noi se atribuie la salvare, deci la culegere linia nouă era prima în
+  repartizare și ultima după salvare: cu o linie marcată, draftul salvat arăta
+  36,46, iar operarea 36,45. Liniile fără poziție vin acum după cele
+  numerotate, în ordinea colecției documentului, aceeași la calcul și la
+  atribuirea pozițiilor (`BackOfficeEFCoreDbContext.InOrdineaPozitiilor`).
+  SC-FCL-13, SC-FCL-14 (0/1/2 linii salvate, fără și cu taxă culeasă), roșii
+  pe ordonarea veche. ModelCheck integral **3.459 / 4.771 OK**, zero FAIL, pe
+  binar recompilat. Proba pe HTTP și cea din browser (a treia linie adăugată
+  din ecran, FCL-6 și FCL-7) trec; ianuarie pe Flax păstrează contractele 1–4.
+  `docs/nucleu/109-review-codex.md`, `run-verificari/r3-ui/r1-*`, `r3-ian-r1/`.

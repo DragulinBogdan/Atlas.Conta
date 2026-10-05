@@ -1,3 +1,4 @@
+using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Cub;
 using Atlas.Conta.BackOffice.Module.Motor;
 using N = Atlas.Conta.Nucleu;
@@ -74,5 +75,12 @@ static class ProbeM1 {
         check("probă M1-R4: blocajul ocupat și excepțiile neașteptate sunt erori tehnice pe calea documentelor",
             Imperecheri1C.EsteEroareTehnica(ocupata) && Imperecheri1C.EsteEroareTehnica(new TimeoutException())
                 && !Imperecheri1C.EsteEroareTehnica(new OperareException("Suma depășește restul nestins.")));
+
+        var cuTaxa = new DocumentDetaliu();
+        var faraTaxa = new DocumentDetaliu();
+        Catalog.TaxaDinSursa(cuTaxa, 19.03m);
+        Catalog.TaxaDinSursa(faraTaxa, 0m);
+        check("probă 107-r3: taxa nenulă a sursei e marcată culeasă, zeroul nu",
+            cuTaxa is { ValoareTva: 19.03m, TvaCules: true } && faraTaxa is { ValoareTva: 0m, TvaCules: false });
     }
 }

@@ -2,7 +2,7 @@
 toate constatările B8 sunt închise.** 21 de mutanți ai facturilor sunt
 respinși; raportul A/B regenerat păstrează 111 diferențe clasificate.
 Integrala istorică: **3.269 / 4.521 OK**, zero FAIL, pe `.CodexB8Rv12`.
-Corecția este reverificată de Claude și comisă pe `tr-d8-saft-ab-rv1`.
+Corecția este reverificată de Claude și comisă pe `tr-d8-saft-ab-rv1` (tag, fost branch).
 [Cod, probe și limite](../tr-d8-saft-b8-rv12-corectie.md).
 
 Istoricul constatărilor:

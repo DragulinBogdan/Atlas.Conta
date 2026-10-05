@@ -387,6 +387,12 @@ sealed class Catalog {
 
     public int LiniiTvaZeroFaraTip { get; private set; }
 
+    // 103i
+    public static void TaxaDinSursa(DocumentDetaliu linie, decimal tva) {
+        linie.ValoareTva = tva;
+        linie.TvaCules = tva != 0m;
+    }
+
     public Guid? TipTvaPentru(string cota1C) {
         if (string.IsNullOrEmpty(cota1C))
             return null;

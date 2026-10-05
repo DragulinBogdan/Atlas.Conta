@@ -32853,10 +32853,7 @@ void VerificaNucleuFct(bool privat) {
         && cititImo.Unitate.Id == partidaFctImo && cititImo.Sold.Credit == 105m);
     ProbeNucleu.Proba(os, Check, $"NUC-PLT-IMO-{eticheta}", [plataImo]);
 
-    // --- (2c) MEDIU-1: taxa culeasă e autoritară PER LINIE, ca `pastreazaTvaCules` ---
-    // Motorul vechi umple linia lăsată la zero în `PregatesteOperare`, deci cazul se
-    // vede doar pe un operand care o citește goală: același document, într-un
-    // ObjectSpace propriu, cu taxa liniei a doua ștearsă și NECOMISĂ.
+    // --- (2c) 109: taxa nemarcată se decide la pregătire, iar declarația postează taxa liniei ---
     var fctCulese = Factura("-F5", new DateOnly(2026, 3, 7));
     var culeasa = Linie(fctCulese, tipServicii, 1m, 100m, n21);
     var lasata = Linie(fctCulese, tipServicii, 1m, 50m, n21);
@@ -32868,6 +32865,7 @@ void VerificaNucleuFct(bool privat) {
     using (var osCulese = provider.CreateObjectSpace()) {
         var alDoilea = osCulese.GetObjectByKey<FacturaIntrare>(fctCulese.ID);
         alDoilea.Detalii.Single(d => d.ID == lasata.ID).ValoareTva = 0m;
+        alDoilea.PregatesteOperare(osCulese);
         var contractCulese = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(
             osCulese, alDoilea);
         var taxePeLinie = contractCulese.Tranzactii.SelectMany(t => t.Postari)
@@ -32875,16 +32873,15 @@ void VerificaNucleuFct(bool privat) {
             .ToDictionary(x => x.Cauza.Linie, x => x.Valoare);
         foreach (var refuz in contractCulese.Refuzuri)
             Console.WriteLine($"       refuz {refuz.Cod}: {refuz.Mesaj}");
-        Check($"NUC-FCT-CULESE-2 ({eticheta}): taxa CULEASĂ e a liniei ei (21 pe prima), iar linia lăsată "
-            + "la zero o primește pe a nucleului (10,50) — validarea per cotă compară Σ valorilor ALESE "
-            + "(31,50) cu cea decisă pe document, deci documentul nu cade (MEDIU-1)",
+        Check($"NUC-FCT-CULESE-2 ({eticheta}): linia lăsată la zero primește la pregătire repartizarea "
+            + "documentului (10,50), iar declarația postează taxa fiecărei linii (21 și 10,50)",
             contractCulese.EsteAcceptat
             && taxePeLinie.Count == 2
             && taxePeLinie.GetValueOrDefault(culeasa.ID) == 21m
             && taxePeLinie.GetValueOrDefault(lasata.ID) == 10.5m);
     }
 
-    // --- (3) N-r4 MĂSURAT: taxa se decide pe DOCUMENT × cotă, nu pe linie ---
+    // --- (3) N-r4, 109: taxa se decide pe DOCUMENT × cotă și ajunge aceeași pe linie, în registre și în cub ---
     var fctR4 = Factura("-F3", new DateOnly(2026, 3, 5));
     foreach (var _ in Enumerable.Range(0, 3))
         Linie(fctR4, tipServicii, 1m, 0.01m, n21);
@@ -32893,22 +32890,20 @@ void VerificaNucleuFct(bool privat) {
     var taxaVeche = os.GetObjectsQuery<RegistruContabil>()
         .Where(r => r.DocumentId == fctR4.ID).ToList()
         .Where(r => r.ContDebitId == cont4426.ID).Sum(r => r.Valoare);
-    Check($"NUC-FCT-N-R4-1 ({eticheta}): trei linii de 0,01 la 21% — motorul vechi rotunjește PER LINIE "
-        + $"(0,0021 → 0,00), deci X = {taxaVeche} și niciun rând 4426; rândurile fiscale au bază fără taxă",
-        taxaVeche == 0m
-        && fctR4.Detalii.All(d => d.Valoare == 0.01m && d.ValoareTva == 0m)
-        && os.GetObjectsQuery<RegistruTva>().Count(r => r.DocumentId == fctR4.ID && r.Tva == 0m) == 3);
+    Check($"NUC-FCT-N-R4-1 ({eticheta}): trei linii de 0,01 la 21% — taxa documentului (0,0063 → 0,01) stă pe o "
+        + $"singură linie, iar registrele o poartă la fel: X = {taxaVeche}",
+        taxaVeche == 0.01m
+        && fctR4.Detalii.All(d => d.Valoare == 0.01m) && fctR4.Detalii.Sum(d => d.ValoareTva) == 0.01m
+        && fctR4.Detalii.Count(d => d.ValoareTva == 0.01m) == 1
+        && os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == fctR4.ID).ToList() is { Count: 3 } fiscaleR4
+        && fiscaleR4.Sum(r => r.Tva) == 0.01m);
 
     var contractR4 = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fctR4);
     var taxaNoua = contractR4.Tranzactii.SelectMany(t => t.Postari)
         .Where(p => p.Coordonate.Cont == cont4426.ID).Sum(p => p.Valoare);
-    Console.WriteLine($"     MĂSURAT (N-r4/{eticheta}): trei linii de 0,01 net la 21% FĂRĂ taxă culeasă → "
-        + $"motorul vechi X = {taxaVeche} (0,0021 rotunjit per linie, de trei ori), nucleul "
-        + $"Y = {taxaNoua} (0,0063 rotunjit o dată pe document × cotă, repartizat Hamilton), "
-        + $"Δ = Y − X = {taxaNoua - taxaVeche}.");
-    Check($"NUC-FCT-N-R4-2 ({eticheta}): nucleul decide taxa pe document × cotă — Y = {taxaNoua}, "
-        + $"Δ = {taxaNoua - taxaVeche}, pusă integral pe o singură linie (Hamilton)",
-        contractR4.EsteAcceptat && taxaNoua == 0.01m && taxaNoua - taxaVeche == 0.01m
+    Check($"NUC-FCT-N-R4-2 ({eticheta}): cubul postează taxa liniei — Y = {taxaNoua}, "
+        + $"Δ = Y − X = {taxaNoua - taxaVeche}, pe o singură linie (Hamilton)",
+        contractR4.EsteAcceptat && taxaNoua == 0.01m && taxaNoua == taxaVeche
         && contractR4.Tranzactii.SelectMany(t => t.Postari).Count(p => p.Coordonate.Cont == cont4426.ID) == 1);
 
     Normalizari.Reseteaza();
@@ -32919,12 +32914,9 @@ void VerificaNucleuFct(bool privat) {
         Comparabil.Proiecteaza(contractR4.Tranzactii),
         ProbeNucleu.Nume(os, oracolR4, [.. contractR4.Tranzactii]));
     Console.WriteLine(raportR4.ToString());
-    Check($"NUC-FCT-N-R4-3 ({eticheta}): comparația cu oracolul pică EXACT pe taxă — două postări în plus "
-        + "(D 4426 / C 401 de 0,01), niciuna lipsă; N-r4 e diferență CONSEMNATĂ, nu normalizare (B-D8 pct. 7)",
-        raportR4.Lipsa.Count == 0 && raportR4.InPlus.Count == 2
-        && raportR4.InPlus.All(p => Math.Abs(p.ValoareSemnata) == 0.01m)
-        && raportR4.InPlus.Any(p => p.Cont == cont4426.ID)
-        && Normalizari.Avertismente.Count == 0);
+    Check($"NUC-FCT-N-R4-3 ({eticheta}): comparația cu oracolul e egală și pe taxă — registrele și cubul "
+        + "postează aceeași repartizare (109)",
+        raportR4.Lipsa.Count == 0 && raportR4.InPlus.Count == 0 && Normalizari.Avertismente.Count == 0);
 
     // --- Felia 31 (TR-D7a), S-D8: cubul PERSISTAT pe FCT ---
     ProbeCub.FaraRanduri(os, Check,

@@ -2033,8 +2033,8 @@ comun cu D300/D394, în afara B8) și păstrarea criteriului picat.
 
 ### B8-RV-C — constatările corectate, în așteptarea reverificării Codex (2026-09-30)
 
-- **B8-RV1.** Clasificatorul (`ddcac79` peste `900cf7b`, branch
-  `tr-d8-saft-ab-rv1`) are martori strânși:
+- **B8-RV1.** Clasificatorul (`ddcac79` peste `900cf7b`, tag-ul
+  `tr-d8-saft-ab-rv1`, fost branch) are martori strânși:
   - perechea document ↔ conex cumulează pe lot × gestiune × storno × cod, iar
     documentul purtător are poziția strictă;
   - S3-R2 cere Q/V nou = exact postările cubului pe document × lot ×
@@ -2098,7 +2098,7 @@ pentru RV1.1, fără redeschiderea S0–S3.
 
 ### B8-RV1.1-C — martorul pe document, corectat (2026-09-30)
 
-Clasificatorul `3a4372d` (branch `tr-d8-saft-ab-rv1`, peste `ddcac79`)
+Clasificatorul `3a4372d` (tag `tr-d8-saft-ab-rv1`, fost branch, peste `ddcac79`)
 leagă fiecare document al perechii FCT ↔ NIR de postările lui din cub în
 lună. Mișcarea nouă = Σ postărilor documentului pe lot × gestiune × storno,
 iar NIR-ul fără delta are zero. Linia GL nouă = Σ postărilor documentului pe
@@ -2145,5 +2145,5 @@ legat de sursele reale ale documentului/evenimentului. Cele 21 de probe
 adverse sunt respinse; cele 111 diferențe legitime rămân clasificate.
 Integrala pe ambele rute: **3.269 / 4.521 OK**, zero FAIL, exit 0.
 **B8-RV1.2 este rezolvată; toate constatările B8 sunt închise.**
-Codul este reverificat de Claude și comis pe `tr-d8-saft-ab-rv1`. SAFT-r4/r5 și gate-ul transversal rămân.
+Codul este reverificat de Claude și comis pe `tr-d8-saft-ab-rv1` (tag, fost branch). SAFT-r4/r5 și gate-ul transversal rămân.
 [Surse, martori, comandă și manifest](tr-d8-saft-b8-rv12-corectie.md).

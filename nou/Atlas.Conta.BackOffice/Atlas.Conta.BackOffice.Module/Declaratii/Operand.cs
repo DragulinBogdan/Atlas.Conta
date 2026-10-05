@@ -84,7 +84,6 @@ public sealed record LinieOperand(
     Guid? AngajamentId) {
 
     public TransformareFapt? Transformare { get; init; }
-    public bool TvaCules { get; init; }
     public DiferentaInventarFapt? DiferentaInventar { get; init; }
     public ImobilizareCuleasa? Imobilizare { get; init; }
 

@@ -1,5 +1,7 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
+using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
@@ -23,38 +25,43 @@ public static class TvaService {
         d.Valoare + (d.TipTvaId is Guid id && tipuri.TryGetValue(id, out var tip) && tip.Regim == RegimTva.TaxareInversa
             ? 0m : d.ValoareTva);
 
-    /// <summary>Calculează valorile liniei; păstrează taxa numai când este marcată drept culeasă.</summary>
+    /// <summary>
+    /// Valoarea liniei și, pe tipul fără politică de TVA, taxa ei; cu politică, taxa nemarcată e a
+    /// repartizării pe document (109a). Fiecare câmp se scrie o singură dată, rotunjit (109g).
+    /// </summary>
     public static void CalculeazaValori(DocumentDetaliu d, decimal net,
         IReadOnlyDictionary<Guid, InfoTva> tipuri, DirectieTva? directie,
         bool pastreazaTvaCules = false) {
         var info = d.TipTvaId != null ? tipuri.GetValueOrDefault(d.TipTvaId.Value) : default;
-        switch (info.Regim) {
-            case RegimTva.Capitalizat:
-                d.Valoare = net * (1 + info.Cota / 100m);
-                d.ValoareTva = 0m;
-                break;
-            // F13-D1: pe LIVRARE taxarea inversă se poartă ca un regim fără taxă.
-            case RegimTva.TaxareInversa when directie == DirectieTva.Colectat:
-                d.Valoare = net;
-                d.ValoareTva = 0m;
-                break;
-            case RegimTva.Normal:
-            case RegimTva.TaxareInversa:
-                d.Valoare = net;
-                if (!(pastreazaTvaCules && d.TvaCules))
-                    d.ValoareTva = net * info.Cota / 100m;
-                break;
-            default: // Scutit / Neimpozabil / fără TipTva
-                d.Valoare = net;
-                d.ValoareTva = 0m;
-                break;
-        }
-        // Cele două valori de POSTARE se rotunjesc la bani (`Scara`) — inclusiv
-        // TVA-ul cules pe calea `pastreazaTvaCules`, ca instanța din memorie să
-        // fie exact ce ajunge în `numeric(18,2)`. `net` rămâne nerotunjit până
-        // aici: rotunjirea se face o singură dată, pe rezultat.
-        d.Valoare = Scara.RotunjesteBani(d.Valoare);
-        d.ValoareTva = Scara.RotunjesteBani(d.ValoareTva);
+        // F13-D1: pe livrare taxarea inversă se poartă ca un regim fără taxă.
+        var poartaTaxa = info.Regim == RegimTva.Normal
+            || info.Regim == RegimTva.TaxareInversa && directie != DirectieTva.Colectat;
+        var valoare = info.Regim == RegimTva.Capitalizat ? net * (1 + info.Cota / 100m) : net;
+        var taxa = !poartaTaxa ? 0m
+            : directie == null && !(pastreazaTvaCules && d.TvaCules) ? net * info.Cota / 100m
+            : d.ValoareTva;
+        d.Valoare = Scara.RotunjesteBani(valoare);
+        d.ValoareTva = Scara.RotunjesteBani(taxa);
+    }
+
+    /// <summary>
+    /// Taxa nemarcată a documentului: decisă pe document × cotă din valorile liniilor și repartizată
+    /// pe linii, în ordinea operării (109a). Fără politică de TVA rămâne taxa de linie.
+    /// </summary>
+    public static void RepartizeazaTaxa(IObjectSpace os, IEnumerable<DocumentDetaliu> linii, ContextTva tva) {
+        if (tva.Directie is not DirectieTva directie)
+            return;
+        var db = (BackOfficeEFCoreDbContext)((EFCoreObjectSpace)os).DbContext;
+        var fiscale = db.InOrdineaPozitiilor(linii.Where(l => l.TipTvaId is Guid id && tva.Tipuri.ContainsKey(id)))
+            .Select(l => (Linie: l, Cheie: Guid.NewGuid(), Tip: tva.Tipuri[l.TipTvaId.Value]))
+            .ToList();
+        if (fiscale.All(f => f.Linie.TvaCules))
+            return;
+        var taxa = N.Tva.PeDocument(
+            [.. fiscale.Select(f => new N.LinieTva(f.Cheie, f.Linie.Valoare, (N.RegimTva)(int)f.Tip.Regim, f.Tip.Cota))],
+            (N.DirectieTva)(int)directie, new N.Rotunjire(Scara.ConventieBani));
+        foreach (var f in fiscale.Where(f => !f.Linie.TvaCules))
+            f.Linie.ValoareTva = taxa.PerLinie[f.Cheie];
     }
 
     // Latura fiscală a tipului de document (36b): `Deductibil` = achiziție,

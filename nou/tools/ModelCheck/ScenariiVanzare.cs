@@ -1,8 +1,12 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
+using Microsoft.EntityFrameworkCore;
+using C = Atlas.Conta.BackOffice.Module.Cub;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
@@ -109,6 +113,7 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         Postari("SC-FCL-07", fiscal.Id, N.FelTranzactie.Operare, Ianuarie,
             [.. Venituri(fiscal, 0, 100, 21, "N21"), .. Venituri(fiscal, 1, 50, 5.50m, "N11")]);
         SoldPartida("SC-FCL-07", Partida(fiscal.Id, ContClient, Client)!.Value, Ianuarie, 176.50m);
+        TaxaPeDocument();
         var lot = Receptioneaza(new LinieFctScena(10, 10, Tip: "371")).Linii[0];
         var vanzare = Vinde(new LinieFclScena(4, 20, Lot: lot));
         var conex = Opereaza(vanzare.Id).ConexId!.Value;
@@ -121,6 +126,100 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         var inainte = Amprenta(vanzare.Id) + Amprenta(conex);
         Refuza("SC-FCL-10", () => Storneaza(vanzare.Id, new(An, 1, 20)), "conex");
         Verifica("SC-FCL-10", "refuzul păstrează factură și descărcare", Amprenta(vanzare.Id) + Amprenta(conex) == inainte);
+    }
+
+    FacturaScena TreiLinii() => Vinde(new LinieFclScena(1, 10.03m, "N21"), new LinieFclScena(1, 10.03m, "N21"),
+        new LinieFclScena(1, 10.03m, "N21"));
+
+    (decimal[] Taxe, decimal Total) Document(Guid id) => CuSpatiu(os => {
+        var d = os.GetObjectByKey<FacturaIesire>(id);
+        return (d.Detalii.OrderBy(l => l.Pozitie).Select(l => l.ValoareTva).ToArray(), d.Total);
+    });
+
+    void TaxaPeDocument() {
+        foreach (var salvate in new[] { 0, 1, 2 })
+            foreach (var cules in new[] { false, true })
+                TaxaLiniilorNoi(salvate, cules);
+        var f = TreiLinii();
+        Comanda(os => { CulegereDocument.Normalizeaza(os, os.GetObjectByKey<FacturaIesire>(f.Id)); os.CommitChanges(); });
+        Verifica("SC-FCL-11", "draftul cules poartă taxa documentului: 2,11 / 2,11 / 2,10, total 36,41",
+            Document(f.Id) is { Taxe: [2.11m, 2.11m, 2.10m], Total: 36.41m });
+        Verifica("SC-FCL-11", "renormalizarea draftului neschimbat nu modifică nicio linie",
+            CuSpatiu(os => { CulegereDocument.Normalizeaza(os, os.GetObjectByKey<FacturaIesire>(f.Id)); return os.ModifiedObjects.Count; }) == 0);
+        Opereaza(f.Id);
+        Postari("SC-FCL-11", f.Id, N.FelTranzactie.Operare, Ianuarie, [.. Venituri(f, 0, 10.03m, 2.11m, "N21"),
+            .. Venituri(f, 1, 10.03m, 2.11m, "N21"), .. Venituri(f, 2, 10.03m, 2.10m, "N21")]);
+        Verifica("SC-FCL-11", "documentul operat poartă taxa postată: total 36,41",
+            Document(f.Id) is { Taxe: [2.11m, 2.11m, 2.10m], Total: 36.41m });
+        Comanda(os => {
+            var db = ((EFCoreObjectSpace)os).DbContext;
+            using var tx = db.Database.BeginTransaction();
+            db.Database.ExecuteSqlInterpolated(
+                $"UPDATE \"DocumentDetalii\" SET \"ValoareTva\" = 2.11 WHERE \"ID\" = {f.Linii[2].Id}");
+            Refuza("SC-FCL-11", () => C.Citiri.Invarianti.VerificaTaxaLiniilor(os), C.Citiri.Invarianti.TaxaDiferitaDeLinie);
+            tx.Rollback();
+        });
+        var partida = Partida(f.Id, ContClient, Client)!.Value;
+        SoldPartida("SC-FCL-11", partida, Ianuarie, 36.41m);
+        var inc = Trezorerie(true, 36.41m); Opereaza(inc.Id);
+        Imperecheaza(inc.Id, f.Id, 36.41m, Ianuarie);
+        SoldPartida("SC-FCL-11", partida, Ianuarie, 0);
+
+        var m = TreiLinii();
+        Comanda(os => {
+            var l = os.GetObjectByKey<FacturaIesireDetaliu>(m.Linii[0].Id);
+            var d = os.GetObjectByKey<FacturaIesire>(m.Id);
+            CulegereDocument.Mapata(os, d, l, CulegereDocument.Urmareste(os, d, l), 2.15m);
+            CulegereDocument.Normalizeaza(os, d); os.CommitChanges();
+        });
+        Verifica("SC-FCL-12", "taxa culeasă 2,15 rămâne, nemarcatele iau repartizarea: 2,11 / 2,10, total 36,45",
+            Document(m.Id) is { Taxe: [2.15m, 2.11m, 2.10m], Total: 36.45m });
+        Opereaza(m.Id);
+        Postari("SC-FCL-12", m.Id, N.FelTranzactie.Operare, Ianuarie, [.. Venituri(m, 0, 10.03m, 2.15m, "N21"),
+            .. Venituri(m, 1, 10.03m, 2.11m, "N21"), .. Venituri(m, 2, 10.03m, 2.10m, "N21")]);
+        SoldPartida("SC-FCL-12", Partida(m.Id, ContClient, Client)!.Value, Ianuarie, 36.45m);
+    }
+
+    void TaxaLiniilorNoi(int salvate, bool cules) {
+        var cod = cules ? "SC-FCL-14" : "SC-FCL-13";
+        decimal[] asteptate = cules ? [2.11m, 2.15m, 2.10m] : [2.11m, 2.11m, 2.10m];
+        var total = cules ? 36.45m : 36.41m;
+        FacturaScena f;
+        using (var os = Deschide()) {
+            var d = os.CreateObject<FacturaIesire>(); d.Data = Ianuarie;
+            d.PredatorId = Magazie; d.PrimitorId = Client;
+            var linii = new List<FacturaIesireDetaliu>();
+            for (var i = 0; i < 3; i++) {
+                var l = os.CreateObject<FacturaIesireDetaliu>();
+                l.Document = d; l.Cantitate = 1; l.PretUnitar = 10.03m;
+                l.TipMaterialId = Tip(os, Venit); l.CodEconomicId = Economic;
+                l.TipTva = os.GetObjectsQuery<TipTva>().Single(t => t.Cod == "N21");
+                linii.Add(l);
+                if (i + 1 == salvate) os.CommitChanges();
+            }
+            if (cules) CulegereDocument.Mapata(os, d, linii[1], CulegereDocument.Urmareste(os, d, linii[1]), 2.15m);
+            CulegereDocument.Normalizeaza(os, d);
+            Verifica(cod, $"{salvate} linii salvate: culegerea are taxele și totalul finale",
+                linii.Select(l => l.ValoareTva).SequenceEqual(asteptate) && d.Total == total);
+            Verifica(cod, $"{salvate} linii salvate: calculul nu atribuie poziții definitive",
+                linii.Skip(salvate).All(l => l.Pozitie == 0));
+            os.CommitChanges();
+            f = new(d.ID, linii.Select(l => new LinieScena(l.ID, null, null)).ToArray());
+        }
+        var draft = Document(f.Id);
+        Verifica(cod, $"{salvate} linii salvate: prima citire după salvare păstrează taxele și totalul",
+            draft.Taxe.SequenceEqual(asteptate) && draft.Total == total);
+        Verifica(cod, $"{salvate} linii salvate: renormalizarea fără editări nu modifică linii", CuSpatiu(os => {
+            CulegereDocument.Normalizeaza(os, os.GetObjectByKey<FacturaIesire>(f.Id));
+            return os.ModifiedObjects.Count;
+        }) == 0);
+        Opereaza(f.Id);
+        var operat = Document(f.Id);
+        Verifica(cod, $"{salvate} linii salvate: operarea păstrează taxele și totalul",
+            operat.Taxe.SequenceEqual(asteptate) && operat.Total == total);
+        Postari(cod, f.Id, N.FelTranzactie.Operare, Ianuarie, [.. Venituri(f, 0, 10.03m, 2.11m, "N21"),
+            .. Venituri(f, 1, 10.03m, cules ? 2.15m : 2.11m, "N21"), .. Venituri(f, 2, 10.03m, 2.10m, "N21")]);
+        SoldPartida(cod, Partida(f.Id, ContClient, Client)!.Value, Ianuarie, total);
     }
 
     void FacturiInchise(FacturaScena p, FacturaScena c, string tva) {

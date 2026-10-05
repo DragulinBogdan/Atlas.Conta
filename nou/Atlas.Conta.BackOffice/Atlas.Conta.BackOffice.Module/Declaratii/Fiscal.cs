@@ -6,16 +6,16 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 /// <summary>
-/// Faptul fiscal al unui document cu TVA, comun oricărui declarant: taxa decisă
-/// pe document × cotă (090j), taxa culeasă ca autoritate PER LINIE, atributele
-/// fiscale ale postării (B-D8 pct. 5) și mișcarea de taxă pe direcția politicii.
+/// Faptul fiscal al unui document cu TVA, comun oricărui declarant: taxa liniei
+/// postată ca atare (109b), taxa documentului × cotă pentru gardul toleranței,
+/// atributele fiscale ale postării (B-D8 pct. 5) și mișcarea de taxă pe direcția politicii.
 /// </summary>
 static class Fiscal {
     /// <summary>
-    /// Taxa nucleului per document × cotă, validată contra celei culese CÂND politica
-    /// declară o toleranță: Σ per cotă a valorii ALESE pe fiecare linie, cu toleranța
-    /// per linie înmulțită cu liniile cotei (MEDIU-4). Fără toleranță (S-D15) taxa
-    /// culeasă e autoritară fără gard. <c>null</c> = documentul n-are linie cu TVA.
+    /// Taxa nucleului per document × cotă, validată contra celei de pe linii CÂND politica
+    /// declară o toleranță: Σ per cotă a taxei liniilor, cu toleranța per linie înmulțită
+    /// cu liniile cotei (MEDIU-4). Fără toleranță (S-D15) taxa culeasă e autoritară fără
+    /// gard. <c>null</c> = documentul n-are linie cu TVA.
     /// </summary>
     public static N.TaxaDocument? Taxa(Operand operand, IReadOnlyList<TipTvaFapt?> tipuri,
             N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
@@ -43,22 +43,13 @@ static class Fiscal {
         foreach (var cheie in chei) {
             var aleCheii = aleLor.Where(a => a.Cheie == cheie).ToList();
             var refuz = N.Tva.ValideazaData(
-                aleCheii.Sum(a => Valoarea(a.Linie, taxa)),
+                aleCheii.Sum(a => a.Linie.ValoareTva),
                 taxa.PerCota[cheie],
                 toleranta * aleCheii.Count);
             if (refuz is not null)
                 refuzuri.Add(refuz);
         }
         return taxa;
-    }
-
-    /// <summary>
-    /// Taxa marcată este păstrată; restul liniilor primesc repartizarea pe document.
-    /// </summary>
-    public static decimal Valoarea(LinieOperand linie, N.TaxaDocument taxa) {
-        ArgumentNullException.ThrowIfNull(linie);
-        ArgumentNullException.ThrowIfNull(taxa);
-        return linie.TvaCules ? linie.ValoareTva : taxa.PerLinie.GetValueOrDefault(linie.Id);
     }
 
     /// <summary>
@@ -114,7 +105,7 @@ static class Fiscal {
                 linie.Id));
             return null;
         }
-        var valoare = Valoarea(linie, taxa);
+        var valoare = linie.ValoareTva;
         if (valoare == 0m)
             return null;
         var alDirectiei = asteptata == DirectieTva.Deductibil

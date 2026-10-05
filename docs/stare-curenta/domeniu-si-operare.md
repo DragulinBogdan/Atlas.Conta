@@ -187,6 +187,14 @@ XAF (`CulegereDocumentController`, geamănul pe linie) și `Api/*Apply` sunt
 adaptori: traduc evenimentele ecranului, respectiv PUT-ul agregatului, în
 aceleași apeluri. (104c)
 
+În XAF linia se editează în tabul ei, cu spațiul ei de obiecte; salvarea de
+acolo normalizează tot documentul. Reîncărcarea unui obiect nu e culegere:
+adaptorul nu recalculează pe evenimentele ei. Când o linie a documentului e
+reîncărcată, tabul documentului reîncarcă și liniile surori nemodificate de
+el, deci arată taxele și totalul salvate și poate opera fără conflict de
+versiune. Tabul liniei care nu a fost deschis din grila documentului nu
+declanșează reîncărcarea (109-r4). (109 f)
+
 - Documentul nou primește data de azi, dacă apelantul nu i-a dat-o. Data
   înregistrării urmează data documentului cât timp erau egale. (F27-D4)
 - La alegerea produsului, linia primește tipul (cont/clasă) din
@@ -856,9 +864,9 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   de distribuție. **TVA**: taxa se decide și se rotunjește pe document ×
   cotă, se postează per linie prin Hamilton peste |net|, pe fiecare semn
   separat; taxa dată pe facturile primite se validează cu toleranță, nu se
-  recalculează. Azi rotunjirea e per linie; pilotul FCT a măsurat: 3 × 0,01
-  la 21 % ⇒ 0,00 azi, 0,01 în nucleu (Δ = 0,01, pe o singură linie prin
-  Hamilton). Toleranța de pilot e `0,01 × liniile cu TVA` (constantă în
+  recalculează. Aceeași taxă stă pe linia documentului și în registre: 3 × 0,01
+  la 21 % ⇒ 0,01 pe o singură linie, peste tot (109; pilotul FCT măsurase
+  0,00 pe linie și în registre contra 0,01 în nucleu). Toleranța de pilot e `0,01 × liniile cu TVA` (constantă în
   adaptor) și REFUZĂ o taxă culeasă cu abatere mai mare (o factură a scenei
   P1 cu abatere 0,10 e refuzată, unde motorul vechi operează) — devine rând
   de politică la TR-D7. (N-D8, 090j, N-r4)
@@ -921,7 +929,8 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   născut de linie, `+q`; capătul virtual `Furnizor` cu `−q` pe postarea de
   terț, N-D4); netul celorlalte naturi pe regula lor (imobilizări → 404);
   taxa se DECIDE per document × cotă — culeasă = autoritară cu toleranță,
-  nedată = Hamilton per linie; faptul fiscal e atribut al postării interne
+  nedată = Hamilton per linie, scrisă pe linie la pregătire și postată de
+  acolo (109); faptul fiscal e atribut al postării interne
   (`CodTva` tip × sens × rol, perioada declarării, partenerul fiscal);
   `Normal` 4426 = 401, `TaxareInversa` 4426 = 4427 (4427 fără `CodTva`: azi
   nu există fapt fiscal colectat pe TI), `Capitalizat` = bază + taxă pe

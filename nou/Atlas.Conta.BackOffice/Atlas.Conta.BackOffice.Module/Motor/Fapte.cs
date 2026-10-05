@@ -283,7 +283,6 @@ internal static class Fapte {
             explicita?.RepartitorCreditId,
             Analiza(d.DimensiuniCulese()),
             d.AngajamentId) {
-                TvaCules = d.TvaCules,
                 Transformare = d is ILinieCuTransformare transformare ? transformare.TransformareCuleasa() : null,
                 DiferentaInventar = d is ILinieCuDiferentaInventar inventar ? inventar.DiferentaCuleasa() : null,
                 Imobilizare = d is ILinieCuImobilizare imobilizare ? imobilizare.ImobilizareCuleasa() : null,

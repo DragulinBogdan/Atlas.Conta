@@ -860,9 +860,19 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             }
         }
 
+        internal IEnumerable<DocumentDetaliu> InOrdineaPozitiilor(IEnumerable<DocumentDetaliu> linii) {
+            var noi = DetaliiFaraPozitie().Select((e, i) => (e.Entity, Ordine: i))
+                .ToDictionary(x => x.Entity, x => x.Ordine);
+            return linii.OrderBy(l => noi.ContainsKey(l))
+                .ThenBy(l => noi.TryGetValue(l, out var ordine) ? ordine : l.Pozitie)
+                .ThenBy(l => l.ID);
+        }
+
         private List<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<DocumentDetaliu>> DetaliiFaraPozitie() =>
             ChangeTracker.Entries<DocumentDetaliu>()
                 .Where(e => e.State == EntityState.Added && e.Entity.Pozitie == 0)
+                .ToList()
+                .OrderBy(e => e.Entity.Document?.Detalii.IndexOf(e.Entity) ?? int.MaxValue)
                 .ToList();
 
         private static void FaraPozitie(List<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<DocumentDetaliu>> noi) {

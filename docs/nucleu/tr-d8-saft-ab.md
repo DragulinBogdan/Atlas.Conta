@@ -3,7 +3,7 @@
 **B8-RV1.2 corectat și verificat de Codex, 2026-09-30: constatările B8 închise.**
 Ambele ramuri SAF-B5 ale facturilor sunt legate de sursele reale, cu 21 de
 mutanți respinși. Raport regenerat pe `3a4372d` + corecția RV1.2 comisă pe
-`tr-d8-saft-ab-rv1`: **111 diferențe**, aceleași numărători
+`tr-d8-saft-ab-rv1` (tag, fost branch): **111 diferențe**, aceleași numărători
 pe clase, toate clasificate; integrală **3.269 / 4.521 OK**, zero FAIL.
 Sursa, SHA-256 și manifestul exact sunt în
 [raportul corecției](tr-d8-saft-b8-rv12-corectie.md). Rândurile de mai jos

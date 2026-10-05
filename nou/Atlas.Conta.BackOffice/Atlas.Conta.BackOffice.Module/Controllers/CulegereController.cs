@@ -14,9 +14,11 @@ public class CulegereDocumentController : ObjectViewController<DetailView, Docum
         Nou();
         View.CurrentObjectChanged += OnCurrentObjectChanged;
         ObjectSpace.ObjectChanged += OnObjectChanged;
+        ObjectSpace.ObjectReloaded += OnObjectReloaded;
     }
 
     protected override void OnDeactivated() {
+        ObjectSpace.ObjectReloaded -= OnObjectReloaded;
         ObjectSpace.ObjectChanged -= OnObjectChanged;
         View.CurrentObjectChanged -= OnCurrentObjectChanged;
         base.OnDeactivated();
@@ -31,7 +33,7 @@ public class CulegereDocumentController : ObjectViewController<DetailView, Docum
 
     // `OldValue` e populat pe EF Core (`EFCoreObjectSpace.EFCoreObject_PropertyChanged`).
     void OnObjectChanged(object sender, ObjectChangedEventArgs e) {
-        if (inCulegere || string.IsNullOrEmpty(e.PropertyName))
+        if (inCulegere || ObjectSpace.IsReloading || string.IsNullOrEmpty(e.PropertyName))
             return;
         inCulegere = true;
         try {
@@ -41,6 +43,23 @@ public class CulegereDocumentController : ObjectViewController<DetailView, Docum
                 CulegereDocument.LinieSchimbata(ObjectSpace, gazda, linie, e.PropertyName);
                 ReimprospateazaTotal();
             }
+        }
+        finally {
+            inCulegere = false;
+        }
+    }
+
+    // 109f: linia reîncărcată a fost salvată în alt spațiu, care a renormalizat tot documentul.
+    void OnObjectReloaded(object sender, ObjectManipulatingEventArgs e) {
+        if (inCulegere || e.Object is not DocumentDetaliu linie || Gazda(linie) is not Document gazda)
+            return;
+        inCulegere = true;
+        try {
+            var modificate = ObjectSpace.ModifiedObjects;
+            foreach (var sora in gazda.Detalii.Where(l => l != linie && !ObjectSpace.IsNewObject(l)
+                    && !modificate.Contains(l)).ToList())
+                ObjectSpace.ReloadObject(sora);
+            ReimprospateazaTotal();
         }
         finally {
             inCulegere = false;
@@ -74,8 +93,8 @@ public class CulegereLinieController : ObjectViewController<DetailView, Document
     }
 
     void OnObjectChanged(object sender, ObjectChangedEventArgs e) {
-        if (inCulegere || string.IsNullOrEmpty(e.PropertyName) || e.Object is not DocumentDetaliu linie
-                || linie.Document is not Document gazda)
+        if (inCulegere || ObjectSpace.IsReloading || string.IsNullOrEmpty(e.PropertyName)
+                || e.Object is not DocumentDetaliu linie || linie.Document is not Document gazda)
             return;
         inCulegere = true;
         try {
