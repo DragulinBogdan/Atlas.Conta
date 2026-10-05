@@ -166,9 +166,11 @@ inițiale) e mersă în main prin PR #20 (2026-10-04), cu M1-D10 amendat și
 review-ul advers închis (M1-R1…R4, M1-R3a). 107-r3 e tratată prin decizia 109
 (taxa nemarcată decisă pe document × cotă și scrisă pe linie; conectorul
 marchează taxa sursei; reîncărcarea nu e culegere), aprobată de owner
-2026-10-04, pe `107-r3-drift-tva`, cu review-ul advers Codex închis (109-R1
-corectată și reverificată, `docs/nucleu/109-review-codex.md`). Urmează
-TR-D9: tăierea scriitorilor vechi și a regimului dual. Felia fiscală
+2026-10-04, mersă în main prin PR #21 (2026-10-05), cu review-ul advers
+Codex închis (109-R1 corectată și reverificată,
+`docs/nucleu/109-review-codex.md`). Urmează TR-D9: tăierea scriitorilor
+vechi și a regimului dual; contractul e în draft, neaprobat, pe
+`tr-d9-taierea` (`docs/nucleu/tr-d9-taierea-contract.md`). Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
 `docs/nucleu/scenarii/CITIRI.md`.
