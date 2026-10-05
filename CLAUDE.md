@@ -172,7 +172,10 @@ Codex închis (109-R1 corectată și reverificată,
 vechi și a regimului dual. TR-D9 e împărțit în TR-D9a (tăierea) și TR-D9b
 (unitățile). Contractul TR-D9a e aprobat de owner (2026-10-05), cu review-ul
 advers Codex al contractului închis, pe `tr-d9-taierea`
-(`docs/nucleu/tr-d9-taierea-contract.md`); urmează pasul 1, inventarul.
+(`docs/nucleu/tr-d9-taierea-contract.md`). Pasul 1, inventarul, e făcut
+(`docs/nucleu/tr-d9-inventar.md`, anexa `tr-d9-inventar-modelcheck.md`);
+constatările I1…I8 din el cer precizări în contract și două decizii ale
+owner-ului (I2, I5) înaintea pasului 2.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
