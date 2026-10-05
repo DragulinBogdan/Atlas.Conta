@@ -5,8 +5,10 @@
   2026-10-05 (A/A/A/A/A). Review-ul advers Codex al contractului la `63801a8`
   a adus șase observații, D9-RV1…D9-RV6
   (`comunicari/2026-10-05-1032-codex-claude-tr-d9a-contract-review.md`);
-  toate sunt acceptate și aplicate aici, vezi „Amendamente după review-ul
-  Codex". Așteaptă reverificarea Codex și aprobarea owner-ului, înaintea
+  reverificarea la `1fe9cb7` a adus încă trei, D9-RV7…D9-RV9
+  (`comunicari/2026-10-05-1108-codex-claude-tr-d9a-reverificare.md`). Toate
+  nouă sunt acceptate și aplicate aici, vezi „Amendamente după review-ul
+  Codex". Așteaptă închiderea review-ului și aprobarea owner-ului, înaintea
   codului.
   Branch `tr-d9-taierea`, tăiat din `main` = `0bcd8b0` (după PR #21).
 - Bază: 090 (a)(l)(m) și rândul TR-D9 din „Ordinea și regula de oprire";
@@ -101,7 +103,15 @@ livrabilul pasului 1.
 - `NumarNota`: coloană pe `RegistruContabil`; proiecțiile contabile de pe cub
   pun deja numărul documentului în câmpul cu acest nume.
 - Autorizare: `RegistrulCitibil` pe trei controllere (ITV, AMO, Imobilizări)
-  și `PerioadeController.TipuriInsumate`.
+  cere citirea pe tipul unui registru. `PerioadeController.TipuriInsumate` nu
+  conține registre: enumeră `Document`, `InchidereTva`, `AmortizareLunara`,
+  `Imperechere` și `PoliticaInchidere`.
+- ASM: declarantul verifică azi ΣP = ΣR (produsele culese contra consumului
+  evaluat de REGISTRE), clasifică grupurile pe P_g = R_g și adaugă produselor
+  Δ = C − R, unde C e consumul evaluat pe cub (`DeclarantAsamblare.cs:78–108`).
+  Comanda `DistribuieValoarea` își ia ținta din `AsamblareApply.PrezicSumaConsum`,
+  care cheamă `MotorOperare.Valideaza` și citește apoi valorile liniilor de
+  consum din ObjectSpace-ul temporar — adică valorile scrise de planul vechi.
 - XAF: patru liste `[NavigationItem("Registre")]`, configurate în
   `ContaUiBaseline`. Blazor.Server nu referă registrele.
 
@@ -145,11 +155,20 @@ re-cheierea `PoliticaMiscareSaft` pe cont (TR-r7); hostul fără XAF și async
 (IM-r2, IM-r5); rafinarea blocajului scrierii (X-r1); migrarea 1C (091-r4);
 orice cerință de produs nouă (090 m).
 
-Felia nu schimbă nicio cifră postată în cub. Schimbă, declarat, valoarea
-scrisă pe LINIA de ieșire evaluată din sold (D9-D3): ea nu mai vine din
-soldul registrului, ci din decizia contractului, deci devine egală cu
-postarea. Dacă pasul 1 arată că un tip inert pe profil se operează azi fără
-efect, refuzul lui e a doua schimbare declarată (D9-D5).
+**Schimbările de comportament ale feliei** sunt o listă închisă. Orice
+altceva schimbat e defect.
+
+1. Valoarea scrisă pe LINIA de ieșire evaluată din sold nu mai vine din
+   soldul registrului, ci din decizia contractului, deci devine egală cu
+   postarea (D9-D3 a).
+2. ASM: o culegere cu P = R ≠ C, acceptată azi prin absorbție, e refuzată
+   până la redistribuire; după redistribuire, felul tranzacțiilor poate
+   diferi de cel de azi (D9-D3, „ASM după tăiere").
+3. Cifrele citite din cub cer un singur drept, citirea COMPLETĂ pe `Postare`:
+   subiectul se unifică și verificarea e mai strictă decât cea pe tip, de azi
+   (D9-D9).
+4. Dacă pasul 1 arată că un tip inert pe profil se operează azi fără efect,
+   refuzul lui (D9-D5).
 
 ## D9-D2 — Un singur scriitor: coaja comenzii după tăiere
 
@@ -172,6 +191,11 @@ efect, refuzul lui e a doua schimbare declarată (D9-D5).
 dar modifică obiectele din ObjectSpace-ul lui temporar (`PregatesteOperare`),
 care se aruncă după apel. Nu ia blocajul scrierii (108 e): spune ce ar refuza
 operarea pe faptele citite atunci, nu pe cele de la momentul comenzii.
+
+Valorile lăsate de dry-run pe obiectele din memorie nu sunt rezultat: după
+tăiere sunt estimări (D9-D3). Un apelant care le citește azi ca rezultat
+trebuie mutat pe evaluarea contractului. Cunoscut: `PrezicSumaConsum` al ASM
+(D9-D3); inventarul îi caută pe toți apelanții lui `MotorOperare.Valideaza`.
 
 Un refuz din orice pas anulează întreaga tranzacție de comandă.
 
@@ -200,14 +224,27 @@ declarant (108 c).
 este decizia `ValoareIesire` a contractului: evaluarea pe soldul cubului, în
 secvența liniilor, ultima ia restul (090 j). Coaja o scrie pe linie la
 operare, în tranzacția comenzii. Azi o scrie planul vechi, din soldul
-registrului; aici e schimbarea feliei.
+registrului; aici e schimbarea 1 din D9-D1.
 
-Invariantul nou din `INV-CUB`, cu mutant: pentru fiecare linie evaluată din
-sold a unui document operat, **magnitudinea** valorii liniei = suma
-postărilor de ieșire cauzate de linie pe unitatea-lot — capătul care scade
-stocul: creditul contului de stoc, respectiv gestiunea-sursă la transfer.
-Semnul liniei rămâne al convenției frunzei: consumul ASM și minusul LDI stau
-negative pe linie, iar decizia poartă magnitudinea.
+Invariantul nou din `INV-CUB`, cu mutant. Pentru fiecare linie evaluată din
+sold a unui document operat se alege **postarea de ieșire**: cea cauzată de
+linie, pe lotul real al liniei, la capătul din care stocul pleacă. Nu se
+însumează amândouă capetele și nu intră contraponderea de transformare.
+Valoarea ei normalizată este:
+
+- `Valoare`, când postarea e pe Credit (BCS, DSC, minusul LDI, consumul ASM
+  în Operare);
+- `−Valoare`, când ieșirea e pe Debit, într-un Transfer: gestiunea-sursă a
+  BTR (un transfer 4/40 postează acolo Debit −40) și consumul ASM din
+  Transfer.
+
+Se cer două egalități, amândouă semnate: valoarea normalizată = valoarea
+deciziei `ValoareIesire` a liniei; valoarea deciziei = valoarea liniei
+înmulțită cu semnul convenției frunzei (−1 unde frunza ține ieșirea negativă
+pe linie: consumul ASM, minusul LDI; +1 la BCS, BTR, DSC). Nu există `Abs`
+global: un lot evaluat negativ (S-r7) dă o decizie negativă, iar egalitățile
+rămân adevărate cu semn. Invariantul și mutantul se probează pe BCS, pe BTR
+și pe un ASM cu Transfer, nu numai pe o ieșire pe Credit.
 
 **(b) Declarată la prețul de intrare.** RLF, costul RDC, linia NIR-ului conex
 pe lot străin. `PregatesteOperare` calculează valoarea liniei din cantitate ×
@@ -238,13 +275,60 @@ tranzacției.
 **Validările de frunză pe valoarea finală.** Azi `ValideazaOperare` rulează
 după ce planul vechi a scris valoarea de golire; după tăiere ar vedea
 estimarea. O validare care judecă valoarea finală (invariantul valoric ASM)
-se mută după contract sau în declarant. Inventarul le numește pe toate;
-SC-ASM-19 e proba-capcană.
+se mută după contract sau în declarant. Inventarul le numește pe toate.
 
-**ASM.** Absorbția față de REGISTRU (ASM-B6) dispare. Δ-ul local al
-transformării (ASM-B2) și sursa valorii produsului (`PretEvaluare`, 75-r4)
-rămân neatinse. Ținta 0/0 din ASM-B7 devine probă: trei BCS sau ASM de câte 1
-dintr-un lot 3/10 lasă lotul la 0/0, nu la 0/−0,01.
+**ASM după tăiere.** ASM-B6 a fost aprobată „numai în regimul dual" și
+spune ce urmează: absorbția se scoate pentru operațiile noi, iar distribuirea
+folosește calculul pur, disponibil înaintea gardului de balansare. Aici se
+fixează:
+
+- R dispare. Gardul de balansare devine **ΣP = ΣC**: produsele culese contra
+  consumului evaluat pe cub. Dezechilibrul refuză atomic cu
+  `ASAMBLARE_NEBALANSATA`, cu C, P și diferența;
+- grupurile pe cont se clasifică pe **P_g = C_g**: grupul balansat intră în
+  Transfer, restul în Operare. Forma ASM-B2 și regula n→m din ASM-B3 nu se
+  schimbă: contraponderile cantitative, cel mult o Operare și un Transfer;
+- nu mai există Δ. Produsul postează valoarea culeasă, consumul valoarea
+  evaluată. Dispar decizia `AbsorbtieEvaluare` și refuzul
+  `ASAMBLARE_DELTA_FARA_ANCORA`; `ASAMBLARE_PRODUS_NEPOZITIV` rămâne pe
+  valoarea culeasă a produsului;
+- **distribuirea citește evaluarea, nu liniile.** `DistribuieValoarea` își ia
+  ținta din evaluarea consumurilor făcută de declarant pe operandul închis al
+  draftului — același cod pe care `Declara` îl rulează înaintea gardului de
+  balansare, nu o a doua formulă. Evaluarea e disponibilă și când contractul
+  întreg refuză tocmai fiindcă produsul nu e încă balansat; o oprește numai
+  un refuz al evaluării înseși (lot lipsă, stoc insuficient). Nu trece prin
+  `MotorOperare.Valideaza`, nu persistă nimic și nu schimbă contractul HTTP;
+- sursa valorii produsului (`PretEvaluare`) și regula distribuirii pe
+  produse nu se ating; 75-r4 rămâne la TR-D9b.
+
+Consecința e schimbare de comportament, nu numai de cod. SC-ASM-17: după
+prima ieșire 1/3,33 din lotul 3/10, soldul cubului e 2/6,67; al doilea ASM
+consumă 1 la 3,34 cu produsul cules la 3,33. Azi trece (P = R = 3,33, Δ =
++0,01 pe produs). După tăiere e refuzat până la redistribuire; după ea,
+produsul e 3,34 și operarea trece. Fără o distribuire care citește evaluarea,
+operatorul n-ar putea ieși din refuz: predicția ar da tot 3,33.
+
+Rândurile de catalog atinse se rescriu nominal la pasul 2, înaintea codului.
+Niciunul nu se reclasifică drept probă de formă:
+
+| Rând | După tăiere |
+|---|---|
+| SC-ASM-17 | al doilea și al treilea ASM (culese 3,33 și 3,34 contra C = 3,34 și 3,33) sunt refuzate până la redistribuire; după ea produsele sunt 3,33; 3,34; 3,33 și sursa 0/0 |
+| SC-ASM-18 | stornoul inversează exact 3,34; corecția cere produsul la valoarea evaluată, fără Δ |
+| SC-ASM-19 | proba-capcană rulează prin comanda reală `DistribuieValoarea`: refuz înaintea redistribuirii, operare după, pe aceleași fapte |
+| SC-ASM-20 | P_total 13,33 contra C 13,34: refuz. Felurile și măsurile de după redistribuire se scriu din regula reală de distribuire; nu se presupune că amândouă grupurile rămân balansate |
+| SC-ASM-21 | grup numai-consum C = 3,34 și produs 3,33 pe alt cont: refuz; după redistribuire, Operare cu produsul 3,34 |
+| SC-ASM-22 | ΣC = 9,98 + 1,02 = 11 = ΣP: trece fără redistribuire, produsele rămân 10,99 și 0,01; acumularea Δ rămâne fără obiect |
+| SC-ASM-23 | nu mai e `ASAMBLARE_DELTA_FARA_ANCORA`: ΣC = 1,01 contra ΣP = 1 e `ASAMBLARE_NEBALANSATA`; după redistribuire trece. Limitarea duală dispare |
+| SC-ASM-24 | fără obiect în forma cu Δ; rămâne proba refuzului pe produsul cules nepozitiv |
+| SC-ASM-25 | lanțul rămâne numai pe cub: produsul 1/3,34 golit de BCS la 3,34, lot 0/0 |
+| SC-ASM-26 | fără obiect în greenfield (102 b) |
+
+Probele pure ale absorbției (`ProbeAsmOperand`, proprietățile nucleului pe
+`AbsorbtieEvaluare`) se rescriu pe gardul P = C sau rămân fără obiect, rând
+cu rând în inventar. Ținta 0/0 din ASM-B7 devine probă: trei BCS sau ASM de
+câte 1 dintr-un lot 3/10 lasă lotul la 0/0, nu la 0/−0,01.
 
 **Ce se închide.** T-r13 și T-r7: bazele se recreează (102 b), deci nu există
 istoric divergent de tratat; SC-ASM-26 (stornoul unui original dual) rămâne
@@ -258,6 +342,10 @@ după, pe valorile LINIILOR, nu numai pe soldul final:
 - sursa (a): un BCS cu două linii de câte 1 pe același lot 3/10 — 3,33 și
   3,34 pe linii și pe postări; dry-run-ul dinainte fără refuz și fără nimic
   persistat; ținta 0/0 de mai sus;
+- ASM: aceeași culegere P = 3,33 / C = 3,34 refuzată atomic, `DistribuieValoarea`
+  dă 3,34, operarea trece pe aceleași fapte; a doua distribuire nu schimbă
+  nimic; predicția nu lasă nimic persistat; un caz cu grupuri pe conturi
+  diferite, cu felurile și măsurile așteptate scrise înaintea implementării;
 - sursa (b): SC-RDC-07, SC-RLF-05 și SC-RLF-13 își păstrează cifrele, pe
   linii și pe partidă, inclusiv după anulare și reoperare și prin corecție.
 
@@ -292,12 +380,17 @@ Cunoscute înaintea inventarului:
   prin `LinieId`). `Materializare.Deschidere` trimite `null` fiindcă
   deschiderea n-are linie; modelul ei nu se copiază ca gard general;
 - **domeniul** sunt postările contractului care țin locul notelor de azi:
-  felul `Operare`, `Carte = Contabil`, în afara contraponderilor de
-  transformare. Nu intră cartea fiscală, transferul (BTR pe bugetar nu are
-  azi note, 23c) și ce păzesc deja `ReceptiiConexe` și deschiderea. Pasul 1
-  confirmă domeniul tip cu tip, contra notelor pe care planul vechi le
-  verifică azi; o postare din domeniu fără notă corespondentă se numește în
-  inventar cu verdict.
+  cele născute din contarea unei linii — regula de contare, postarea
+  explicită, taxa — în `Carte = Contabil`. Nu intră cartea fiscală, mutările
+  (BTR) și transformările (ASM, în amândouă felurile, cu contraponderile
+  lor): planul vechi nu le face note, fiindcă BTR și ASM n-au reguli de
+  contare în seed pe niciun profil, deci azi nu sunt păzite. Nu intră nici ce
+  păzesc deja `ReceptiiConexe` și deschiderea. Un ASM de fel `Operare`
+  postează pe conturi, dar n-a avut niciodată notă: păzirea lui ar fi refuz
+  NOU, nu echivalent, și rămâne restanța D9-r1. Pasul 1 confirmă domeniul tip
+  cu tip, contra notelor pe care planul vechi le verifică azi, și pe
+  politicile editabile, nu numai pe seed: o regulă de contare adăugată de
+  client pe un tip din afara domeniului se numește în inventar cu verdict.
 
 Gardul se adaugă pe partea contractului **înaintea** tăierii (pasul 2), cât
 timp planul vechi încă rulează: aceleași documente trebuie refuzate de
@@ -416,11 +509,17 @@ owner:
   contul, latura, partenerul, gestiunea, unitatea și cele trei măsuri; fără
   editare, fără detaliu editabil. E dezghețarea declarată de 090 (m);
 - subiectul permisiunii devine dreptul de citire pe `Postare`, unic. Cele
-  trei porți `RegistrulCitibil` și `TipuriInsumate` îl cer. Cifrele se
-  însumează pe ușa de sistem, deci dreptul cerut e citirea COMPLETĂ: un rol
-  cu criteriu de rând sau de membru pe `Postare` primește 403 înaintea
-  citirii, prin `Api.AccesComplet`, ca la explicație (108 d). Separarea
-  contabil / imobilizări de azi se pierde, declarat.
+  trei porți `RegistrulCitibil` îl cer în locul tipului de registru.
+  Verificarea închiderii își păstrează toate drepturile din `TipuriInsumate`
+  (documente, AMO, ITV, împerecheri, politica închiderii) și primește
+  `Postare` pe lângă ele: constatările ei însumează postări. Dreptul pe
+  `Postare` completează, nu înlocuiește drepturile pe celelalte date
+  consumate;
+- cifrele se însumează pe ușa de sistem, deci dreptul cerut e citirea
+  COMPLETĂ: un rol cu criteriu de rând sau de membru pe `Postare` primește
+  403 înaintea citirii, prin `Api.AccesComplet`, ca la explicație (108 d).
+  E mai strict decât verificarea pe tip de azi și e schimbare declarată
+  (D9-D1), împreună cu pierderea separării contabil / imobilizări.
 
 `Postare` și `Tranzactie` devin tipuri vizibile pe ușa securizată XAF. Ce
 urmează din asta se pin-uiește aici, fiindcă azi cubul nu apare în UI și nu
@@ -445,8 +544,8 @@ Probele, fiecare pe ce poate dovedi:
   găsesc rută, iar tipurile nu apar în `$metadata` și în `api-types.ts`. Asta
   dovedește neexpunerea, nu gardul;
 - **matricea de acces** (`refuzuri.ps1`, pe host viu): dreptul unic de
-  citire pe cele patru porți, plus restricția de rând și cea de membru pe
-  `Postare`. Numărul de verificări crește cu rândurile noi; criteriul e zero
+  citire pe cele trei porți și pe verificarea închiderii, plus restricția de
+  rând și cea de membru pe `Postare`. Numărul de verificări crește cu rândurile noi; criteriul e zero
   FAIL de două ori la rând, nu un total fix;
 - **lista în browser**, pe hostul real: paginare și filtrare în `ServerView`,
   rânduri din amândouă partițiile identificate corect, navigația spre
@@ -524,6 +623,12 @@ Propunere; se confirmă la aprobare și se scrie în `restante.md` la închidere
 | B-r3 | se rejudecă la pasul 6: conexul nu mai are registre de servit |
 | 63f | se judecă la pasul 1, pe cod |
 
+Restanță nouă a feliei:
+
+- **D9-r1** — gardul analizei obligatorii pe mutări și transformări (BTR,
+  ASM): azi nepăzite, fiindcă planul vechi nu le face note; rămân nepăzite.
+  `după PoC`.
+
 Rândurile de catalog cu starea `amânat la TR-D9` se împart la fel: cele care
 privesc registrele (limita duală din SC-X-01, garda din NIR, SC-ASM-19) se
 închid aici; reevaluările și compensările (SC-X-05/06/07, SC-X-09, SC-X-13)
@@ -551,12 +656,12 @@ dual; simbolurile dispar la sfârșit, într-un pas atomic.**
 | Pas | Ce | Schimbă comportament |
 |---|---|---|
 | 0 | contractul aprobat; review advers Codex al contractului | nu |
-| 1 | inventarul nominal, în `docs/nucleu/tr-d9-inventar.md`: refuzurile planului vechi cu verdict și domeniul gardului analizei, tip cu tip (D9-D4); fiecare referință ModelCheck cu verdict (D9-D7 c); validările de frunză pe valoarea finală și returul pe lot fără preț de intrare (D9-D3); consumatorii `RegulaStoc`; operarea tipului inert azi (D9-D5); membrii rămași ai serviciilor vechi (D9-D2); 63f | nu |
-| 2 | sub dual: gardul analizei obligatorii pe postări, cu proba lui directă; scenariile D9-D3 pe valorile liniilor, cu cifra de azi și cu cea de după; scenariul 098-r3; scenariul tipului care nu declară | numai refuzuri echivalente cu cele de azi |
+| 1 | inventarul nominal, în `docs/nucleu/tr-d9-inventar.md`: refuzurile planului vechi cu verdict și domeniul gardului analizei, tip cu tip, pe seed și pe politicile editabile (D9-D4); fiecare referință ModelCheck cu verdict (D9-D7 c); validările de frunză pe valoarea finală, apelanții lui `Valideaza` care citesc valori din OS-ul temporar și returul pe lot fără preț de intrare (D9-D2, D9-D3); consumatorii `RegulaStoc`; operarea tipului inert azi (D9-D5); membrii rămași ai serviciilor vechi (D9-D2); 63f | nu |
+| 2 | sub dual: gardul analizei obligatorii pe postări, cu proba lui directă; scenariile D9-D3 pe valorile liniilor, cu cifra de azi și cu cea de după; rândurile ASM rescrise nominal, cu felurile și măsurile de după; scenariul 098-r3; scenariul tipului care nu declară | numai refuzuri echivalente cu cele de azi |
 | 3 | sub dual: re-țintirea aserțiilor de regulă pe cititorii cubului (D9-D7 d) | nu |
-| 4 | sub dual: consumatorii din produs — lista XAF pe `Postare` cu gardul ei, permisiunea unică pe cele patru porți, proiecția moartă `TotalStingere` și forma proiecției de rest, clientul fără câmpurile care vor ieși (D9-D9, D9-D10, D9-D12). Listele vechi de registre rămân până la pasul 7 | D9-D9: subiectul permisiunii |
+| 4 | sub dual: consumatorii din produs — lista XAF pe `Postare` cu gardul ei, permisiunea unică pe cele trei porți și pe verificarea închiderii, proiecția moartă `TotalStingere` și forma proiecției de rest, clientul fără câmpurile care vor ieși (D9-D9, D9-D10, D9-D12). Listele vechi de registre rămân până la pasul 7 | schimbarea 3: subiectul unic și citirea completă |
 | 5 | sub dual: uneltele — Import1C și Migrare pe cititorii cubului, fără `StocService` și fără planul vechi; BackfillTva șters (D9-D11) | nu |
-| 6 | nimic nu mai scrie, nu mai citește și nu mai ramifică pe registre și pe regim: planul vechi, valoarea liniei din contract, ramurile `PosteazaInCub` și refuzul tipului care nu declară, absorbția ASM-B6, oracolul și martorii registru → cub cu mutanții lor (D9-D2, D9-D3, D9-D5, D9-D7 a). Rămân numai declarațiile: entitățile, maparea, coloanele, listele XAF vechi, cazurile gardianului | D9-D3; D9-D5 dacă pasul 1 o confirmă |
+| 6 | nimic nu mai scrie, nu mai citește și nu mai ramifică pe registre și pe regim: planul vechi, valoarea liniei din contract, ASM pe gardul P = C cu clasificarea pe C și distribuirea pe evaluarea pură, ramurile `PosteazaInCub` și refuzul tipului care nu declară, oracolul și martorii registru → cub cu mutanții lor (D9-D2, D9-D3, D9-D5, D9-D7 a). În același pas, lista nominală X-D2 și probele care asertează vechii scriitori se aduc la zi; nu rămâne o listă exactă învechită până la 7. Rămân numai declarațiile: entitățile, maparea, coloanele, listele XAF vechi, cazurile gardianului | schimbările 1 și 2; 4 dacă pasul 1 o confirmă |
 | 7 | eliminarea atomică a declarațiilor: entitățile de registru, coloanele scoase, maparea, listele XAF vechi, cazurile gardianului, `InitialCreate`, seed-ul fără rânduri moarte, recrearea bazelor, regenerarea metadatei și a tipurilor clientului, lista nominală redusă și activarea probei numelor interzise (D9-D6, D9-D7 b, D9-D8, D9-D12) | nu |
 | 8 | închiderea: integrala, nucleul, `--probe-sursa`, `refuzuri.ps1` pe host viu, `PerfCub`, probele din browser (operarea și lista pe `Postare`), rularea-diagnostic Import1C pe ianuarie, docs, decizia 110, restanțele, review advers Codex | nu |
 
@@ -574,9 +679,9 @@ Pasul 1 citește tot `Program.cs`; e pasul pentru care se propune delegarea
    `--probe-sursa`;
 2. integrala e verde pe ambele profiluri, pe baze recreate din
    `InitialCreate`; numărul de `Check` se reconciliază cu inventarul;
-3. catalogul de scenarii e verde, cu cifrele neschimbate în afara valorilor
-   de linie declarate la D9-D3 și, dacă pasul 1 l-a confirmat ca schimbare,
-   a refuzului de la D9-D5;
+3. catalogul de scenarii e verde; cifrele și rezultatele lui sunt
+   neschimbate în afara celor patru schimbări declarate în D9-D1, fiecare cu
+   rândurile ei rescrise nominal înaintea codului;
 4. fiecare refuz al planului vechi are rând în inventar, cu echivalentul lui
    probat direct sau cu verdictul „al registrului" (D9-D4);
 5. nucleul trece integral; `refuzuri.ps1` trece de două ori la rând cu zero
@@ -594,7 +699,7 @@ Pasul 1 citește tot `Program.cs`; e pasul pentru care se propune delegarea
 un refuz al planului vechi fără echivalent exprimabil pe contract; un cititor
 de producție al registrelor în afara listei nominale; o aserție de regulă
 care nu se re-țintește fără altă cifră nedeclarată; o cifră de catalog
-schimbată în afara D9-D3; un pas care nu poate avea integrala verde în
+schimbată în afara listei din D9-D1; un pas care nu poate avea integrala verde în
 ordinea scrisă; lista pe `Postare` care nu funcționează pe hostul real.
 
 ## D9-Q — tranșările owner-ului (2026-10-05)
@@ -627,11 +732,26 @@ cele șase observații sunt verificate pe sursă și acceptate.
 | D9-RV5 (P2) | dry-run-ul promitea valori fără contract de ieșire | D9-D2 și D9-D3: întoarce numai refuzuri; nu persistă, dar modifică OS-ul temporar; nu ia blocajul scrierii |
 | D9-RV6 (P2) | ruta HTTP absentă nu proba gardianul pe tipurile noi | D9-D9: gardul probat pe ObjectSpace securizat, proba pozitivă pe cel de sistem, HTTP numai pentru neexpunere, matricea fără total fix, lista în browser pe hostul real |
 
-Din constatările fără număr: invariantul linie = postare își numește semnul
-și capătul (D9-D3 a); faptul despre `TotalStingere` e nuanțat și scoaterea
-proiecției moarte e separată de semantica proiecției (D9-D10); 098-r3 cere
-proba operației acceptate (D9-D13); refuzul tipului inert intră în tabelul
-pașilor și în excepțiile regulii de oprire (D9-D5, D9-D15).
+Din constatările fără număr: faptul despre `TotalStingere` e nuanțat și
+scoaterea proiecției moarte e separată de semantica proiecției (D9-D10);
+098-r3 cere proba operației acceptate (D9-D13); refuzul tipului inert intră
+în tabelul pașilor și în schimbările declarate (D9-D5, D9-D1).
+
+Reverificarea la `1fe9cb7`:
+`comunicari/2026-10-05-1108-codex-claude-tr-d9a-reverificare.md`. Trei
+observații noi, verificate pe sursă și acceptate.
+
+| Obs. | Ce era greșit | Corecția |
+|---|---|---|
+| D9-RV7 (P1) | „absorbția dispare, Δ-ul local rămâne, catalogul nu se schimbă" nu puteau fi adevărate împreună: SC-ASM-17 trece azi numai prin absorbție | D9-D3 „ASM după tăiere": gardul ΣP = ΣC, clasificarea pe C, fără Δ; schimbare de comportament declarată (D9-D1, 2); SC-ASM-17…26 rescrise nominal |
+| D9-RV8 (P1) | `DistribuieValoarea` își ia ținta din valorile lăsate de dry-run pe linii; după tăiere ar fi prezis estimarea și operatorul n-ar fi putut ieși din refuz | distribuirea citește evaluarea consumurilor de la declarant, disponibilă înaintea gardului de balansare (ASM-B6, ultimul paragraf); apelanții lui `Valideaza` care citesc valori intră în inventar (D9-D2) |
+| D9-RV9 (P2) | invariantul compara o magnitudine cu o sumă semnată: ieșirea prin Transfer e pe Debit, negativă | D9-D3 (a): postarea de ieșire aleasă, normalizată pe latură, două egalități semnate, fără `Abs`; probe pe BCS, BTR și ASM cu Transfer |
+
+Din răspunsurile la întrebări: pasul 6 aduce la zi lista nominală și probele
+vechilor scriitori (D9-D15); gardul analizei nu se întinde la ASM și BTR,
+care azi n-au note — restanța D9-r1 (D9-D4); citirea completă pe `Postare` e
+consemnată ca schimbare mai strictă, iar `TipuriInsumate` își păstrează
+drepturile și primește `Postare` pe lângă ele (D9-D9).
 
 ## Ce NU intră (amânări cu nume)
 
