@@ -132,6 +132,12 @@ Din consultare, de verificat la poartă:
 - Custodia (stoc al mai multor proprietari în aceeași gestiune) rămâne
   neacoperită; candidat: proprietarul în identitatea lotului.
 
+Re-amânat aici de owner (2026-10-06), din TR-D9a: criteriul de formă al
+partidelor (F27-r16, D9-D10 (b)). Documentul deschizător al partidei se
+recunoaște azi la citire, parcurgând postările de partidă; cu originea
+scrisă, o linie pe partidă, citirea măsurată scade de la 2,9 s la 0,8 s la
+651.644 de partide (`docs/nucleu/tr-d9-pas5c-imbinare-partide.md` §3).
+
 ## Ce rămâne în afara acestei decizii
 
 Registrele bugetare (ALOP: credite, angajamente, rectificative) au decizie

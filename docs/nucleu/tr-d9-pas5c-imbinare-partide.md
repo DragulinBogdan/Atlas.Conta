@@ -90,8 +90,17 @@ deschizător se citește tot parcurgând postările de partidă. Parcurgerea e
 liniară. Ce creștea pătratic era altceva, îmbinarea, și e corectat.
 
 D9-D10 (b) e deci **re-amânat explicit, cu cifra**: 2,7 s de SQL pentru
-488.733 de partide cu rest la 5 milioane de postări. Închiderea criteriului
-ar cere ca originea să fie scrisă, nu recunoscută la citire.
+488.733 de partide cu rest la 5 milioane de postări. Owner-ul a confirmat
+re-amânarea (2026-10-06): rămâne până la decizia 111.
+
+Închiderea criteriului cere ca originea să fie scrisă, nu recunoscută la
+citire. Reper pentru decizia 111, măsurat pe `.D9Vol` cu un tabel temporar
+care ține o linie pe partidă (unitatea și documentul ei, 651.015 linii):
+aceeași citire durează 0,8 s integral și 0,6 s pe ruta din snapshot, față de
+2,9 s. Pe ruta din snapshot, `Postare` se mai citește numai pentru mișcările
+de după închidere. Coordonatele ne-nule (identificator gol în loc de nul) nu
+schimbă această parcurgere: ele scot ramura de nul din îmbinări, nu
+recunoașterea originii.
 
 ## 4. Proba
 

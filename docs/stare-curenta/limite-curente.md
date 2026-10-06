@@ -88,7 +88,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   rândurile atinse cresc cu istoricul. Amânat prin amendamentul owner-ului
   (2026-10-04), odată cu F27-r16, și re-amânat cu cifră la TR-D9a
   (2026-10-06): parcurgerea e liniară, 2,7 s de SQL pentru 488.733 de
-  partide cu rest la 5 milioane de postări. (F27-r16, X-D5, D9-D10 (b))
+  partide cu rest la 5 milioane de postări. Rămâne până la decizia 111.
+  (F27-r16, X-D5, D9-D10 (b))
 - O îmbinare pe două chei nulabile ale lui `Postare` (unitatea, partenerul,
   documentul) iese din EF cu ramură de nul și crește pătratic. Cititorii de
   partide o ocolesc ținând o parte ne-nulă, iar `SC-CIT-110` o probează

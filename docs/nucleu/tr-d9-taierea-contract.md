@@ -606,6 +606,7 @@ semantică și fără schimbare de schemă. Criteriul de formă propriu-zis răm
 picat și e re-amânat explicit, cu cifra: 2,7 s de SQL pentru 488.733 de
 partide cu rest la 5 milioane de postări
 ([`tr-d9-pas5c-imbinare-partide.md`](tr-d9-pas5c-imbinare-partide.md) §3).
+Re-amânarea e confirmată de owner și ține până la decizia 111.
 
 Hook-urile de stingere nu citesc registre și rămân neatinse în felie
 (D9-Q4 = A): `ImperechereService` și cele două adaptoare le cheamă ca azi.
