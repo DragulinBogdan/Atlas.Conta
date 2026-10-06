@@ -167,7 +167,7 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
 - Implicitul este data documentului și se aplică la seam-uri, nu în setter: la
   creare și la schimbarea datei în ecranul XAF cât timp cele două erau egale,
   în adaptorul de scriere când clientul nu trimite câmpul, iar în motor ca
-  normalizare pentru orice cale care nu-l culege (Import1C, Migrare, generate).
+  normalizare pentru orice cale care nu-l culege (Import1C, generate).
   Registrele unui document fără câmp cules cad acolo unde cădeau înainte. (F27-D4)
 - Documentul conex și cele secundare care copiază data sursei moștenesc și data
   înregistrării ei. Documentele generate (amortizarea lunară, închiderea de TVA,

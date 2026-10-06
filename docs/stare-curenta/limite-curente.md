@@ -54,8 +54,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Baza nu verifică tipul unui rând: discriminatorul `ClrType` al documentelor
   nu are FK spre `TipDocument.ClrType`, iar un FK spre o frunză (de exemplu
   `Lot.GestiuneId`) acceptă în schemă id-ul oricărui repartitor. Pe ușa
-  securizată tipul îl verifică gardianul; pe ușa de sistem (Import1C, seed,
-  Migrare) nimic nu-l verifică la scriere, iar abaterile le găsesc doar
+  securizată tipul îl verifică gardianul; pe ușa de sistem (Import1C, seed)
+  nimic nu-l verifică la scriere, iar abaterile le găsesc doar
   probele ModelCheck și SQL-ul din `--dump-integritate-tph` rulat după
   import. (89a, 89e)
 - Închiderea unei perioade și operarea unui document în ea sunt serializate
@@ -273,6 +273,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   nomenclatoare, iar maparea cubului nu se schimbă în TR-D9a. Evidența se
   citește azi mai ușor din listele vechi de registre, care dispar la tăiere.
   (D9-D9; 2026-10-06)
+- Portarea Import1C pe cititorii cubului e probată numai prin compilare:
+  unealta nu se rulează între pașii 5 și 6, fiindcă sub regimul dual motorul
+  încă evaluează ieșirea din soldul registrului, iar deschiderea nu mai scrie
+  registre. Prima rulare e diagnosticul de la închiderea feliei. Sensibilitatea
+  contractelor 1 și 3 nu mai are probă proprie (`--sabotaj` a ieșit), iar
+  unealta n-are un mod de reconciliere fără scriere. (D9-D11; 2026-10-06)
 - Refuzul de acces pe cifrele din cub e fraza generică de citire pe `Postare`:
   nu spune dacă lipsește dreptul pe tip sau dacă rolul are un criteriu de rând
   ori de membru. (D9-D9)

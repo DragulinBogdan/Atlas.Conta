@@ -299,7 +299,6 @@ Comenzile, încercările intermediare și limitele sunt în
 | `nou/tools/ModelCheck` | Verificarea modelului și scenarii de domeniu pe PostgreSQL (23) |
 | `nou/tools/ProbeHttp` | Probe ale contractului HTTP și ale permisiunilor reale (80i, 81j) |
 | `nou/tools/Import1C` | Import operațional și reconcilierea sursei (45f); `ANALYZE` după ultima scriere (SAFT-r5) |
-| `nou/tools/Migrare` | Prototipul migrării nomenclatoarelor și soldurilor legacy (34, 35a); `ANALYZE` după ultima scriere (SAFT-r5) |
 | `legacy`, `db` | Dovezi despre aplicația și datele vechi (21, 35b) |
 
 Într-un repository cu `.codegraph/`, explorarea codului începe cu CodeGraph.
@@ -835,8 +834,18 @@ sursei. (45e, 47e, 51d)
 
 Rulajele pe lot nu sunt țintă când identitatea lotului nu este comparabilă
 structural. Evaluarea exactă, excepția returului fiscal și efectele
-retroactivității se verifică separat. Probele deliberate de sabotaj trebuie
-să demonstreze că reconcilierea detectează abaterile. (45e, 47a, 75c)
+retroactivității se verifică separat. (45e, 47a, 75c)
+
+Import1C citește cubul prin `Cub/Citiri` și nu mai referă registrele
+(TR-D9a pasul 5, 2026-10-06). Contractul 1 citește `Contabil.Postari`, intrarea
+balanței. Contractul 2 reface perechea debit / credit a unei linii ITV din
+cele două postări ale ei; o linie de altă formă e eșec, nu se sare. Contractul
+3 citește `Loturi`; la deschidere, celulele sursei cu valoare fără cantitate,
+care nu intră în cub, sunt o categorie de justificare numită, pe exact
+cheile măsurate. Predicția de valoare a alocării cheamă `Nucleu.Evaluare.Iesire`
+pe soldul din cub, pe orice ieșire evaluată din sold. `--sabotaj`, oracolul
+golirii din raport și scrierea deschiderii în registre au ieșit. `Migrare` și
+`BackfillTva` sunt șterse. (D9-D11; `docs/import/faza-1c-design.md` §16)
 
 Formula amortizării se reconciliază cu cifrele postate în 1C prin blocul
 `RECONCILIERE-MF` din ModelCheck, condiționat de fixture-ul gitignored

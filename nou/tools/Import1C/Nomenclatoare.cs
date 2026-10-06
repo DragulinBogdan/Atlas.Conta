@@ -1,5 +1,6 @@
 using Atlas.Conta.BackOffice.Module.Anaf;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using DevExpress.ExpressApp;
 using DevExpress.Persistent.BaseImpl.EF;
 
@@ -687,8 +688,8 @@ class ImportLaCerere {
     //  1. SURSA: `AplicaClasificare` pe fiecare partener legat (nu doar pe cei
     //     referiți în rularea curentă — cosmetica 13 a review-ului), sărind pe
     //     cei clasificați deja în rularea asta (idempotent, aceeași sursă);
-    //  2. REGISTRUL: partenerii care apar ca `PartenerId` pe rânduri `RegistruTva`
-    //     cu `Sens = Achizitie` și `Tva ≠ 0` (A sau C cu TVA deductibilă) sunt
+    //  2. FAPTELE FISCALE: partenerii care apar pe fapte fiscale ale cubului cu
+    //     `Sens = Achizitie` și taxă ≠ 0 (A sau C cu TVA deductibilă) sunt
     //     ÎNREGISTRAȚI în scopuri de TVA — un furnizor care ne-a facturat TVA e
     //     înregistrat; evidența bate eticheta (34f). Contorizat separat.
     // Rulează ca pas final al importului normal ȘI ca mod propriu `--reclasifica`
@@ -718,9 +719,9 @@ class ImportLaCerere {
             os.CommitChanges();
         }
         using (var os = provider.CreateObjectSpace()) {
-            var ids = os.GetObjectsQuery<RegistruTva>()
-                .Where(r => r.Sens == SensTva.Achizitie && r.Tva != 0m && r.PartenerId != null)
-                .Select(r => r.PartenerId.Value)
+            var ids = Fiscale.Fapte(os)
+                .Where(f => f.Sens == SensTva.Achizitie && f.Tva + f.Autocolectare != 0m && f.PartenerId != null)
+                .Select(f => f.PartenerId.Value)
                 .Distinct()
                 .ToList();
             var neinregistrati = os.GetObjectsQuery<Partener>()

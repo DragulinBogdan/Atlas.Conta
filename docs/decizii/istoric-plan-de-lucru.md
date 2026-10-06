@@ -1005,3 +1005,15 @@ detaliat în jurnal):
   ori la rând 324 / 324, cu 24 de rânduri noi pe dreptul unic; neexpunerea
   0 FAIL; lista, detaliul postării și al tranzacției văzute în browser.
   `run-nucleu/tr-d9a/pas4/`, `run-verificari/d9-pas4-http/`.
+
+- **2026-10-06 — TR-D9a, pasul 5: uneltele.** Import1C citește cubul prin
+  `Cub/Citiri` și nu mai referă registrele, `StocService` sau planul vechi.
+  Contractul 2 al reconcilierii își păstrează sensul: perechea debit / credit
+  a liniei ITV se reface din cele două postări ale ei. Predicția de valoare a
+  alocării cheamă evaluarea nucleului. Reconcilierea deschiderii justifică pe
+  chei celulele cu valoare fără cantitate, care nu intră în cub. Au ieșit
+  `--sabotaj`, oracolul golirii din raport, scrierea deschiderii în registre
+  și purja defensivă. `Migrare` și `BackfillTva` sunt șterse. Totul e probat
+  numai prin compilare: unealta nu se rulează între pașii 5 și 6. ModelCheck
+  integral neschimbat, **3.552 / 4.860 OK**.
+  `docs/import/faza-1c-design.md` §16, `run-nucleu/tr-d9a/pas5/`.

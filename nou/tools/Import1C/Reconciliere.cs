@@ -1,17 +1,18 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Citiri = Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using DevExpress.ExpressApp;
+using N = Atlas.Conta.Nucleu;
 
 namespace Import1C;
 
 // PASUL 4 al feliei 1C-b: RECONCILIEREA DESCHIDERII — contractul design §8
-// (decizia 45e) restrâns la deschidere, precedentul de formă fiind faza 6 din
-// `tools/Migrare` (decizia 34f).
+// (decizia 45e) restrâns la deschidere (34f).
 //
 // PRINCIPIUL, și e singurul lucru care face reconcilierea să valoreze ceva:
 // aici NU se refolosește NIMIC din structurile în memorie ale fazei de
 // deschidere — nici celulele, nici descriptorii, nici rezultatele netării.
-// Baza se recitește INTEGRAL din Postgres (rândurile cu `DocumentId == null`,
-// decizia 25e) prin proiecții proprii, iar sursa se re-agregă din listele brute
+// Baza se recitește INTEGRAL din Postgres (tranzacția `Deschidere` a cubului)
+// prin cititorii cubului, iar sursa se re-agregă din listele brute
 // FlaxDb. O reconciliere care ar compara calculul cu el însuși ar trece și
 // atunci când scrierea în bază a eșuat — ceea ce e exact ce trebuie prins.
 //
@@ -20,7 +21,8 @@ namespace Import1C;
 // sunt nepotriviri AȘTEPTATE — sursa are bani pe care Atlas nu-i poate
 // reprezenta ca lot (34f: diferențele sursei se raportează, nu se ascund). Nu se
 // scad din comparație și nu lărgesc toleranța: se raportează ca AVERT, cu
-// eticheta lor. Orice ALTĂ nepotrivire e eșec.
+// eticheta lor. La fel valorile fără cantitate, care nu intră în cub: fiecare
+// cheie se justifică numai cu valoarea ei. Orice ALTĂ nepotrivire e eșec.
 static class Reconciliere {
 
     // Toleranța contractului (design §8): per poziție, la bani. Cantitățile se
@@ -33,7 +35,8 @@ static class Reconciliere {
         int SimboluriContabile, int DiferenteContabile,
         decimal AncoraDb, decimal AncoraSursa,
         int CheiStoc, int Nejustificate, int JustificateGasite,
-        decimal JustificatQ, decimal JustificatV);
+        decimal JustificatQ, decimal JustificatV,
+        int CheiFaraCantitate, decimal ValoareFaraCantitate);
 
     public static Rezultat Executa(
             IObjectSpaceProvider provider,
@@ -42,6 +45,7 @@ static class Reconciliere {
             IReadOnlyList<FlaxPozitieStoc> stoc,
             IReadOnlyList<FlaxPozitieStoc> stocOrfan,
             IReadOnlyList<Deschidere.DiferentaSursa> justificate,
+            IReadOnlyDictionary<(string ProdusHex, string DepozitHex), decimal> valoriFaraCantitate,
             IReadOnlyDictionary<string, decimal> declarateStoc,
             Func<string, string> mapeaza,
             Action<string> avert, Action<string, bool> check) {
@@ -49,11 +53,11 @@ static class Reconciliere {
 
         var (simboluri, difContabile, ancoraDb, ancoraSursa) =
             Contabil(os, solduri, extrabilantiere1C, declarateStoc, mapeaza, avert, check);
-        var (chei, nejustificate, gasite, q, v) =
-            Stoc(os, stoc, stocOrfan, justificate, avert, check);
+        var (chei, nejustificate, gasite, q, v, faraCantitate, valoareFaraCantitate) =
+            Stoc(os, stoc, stocOrfan, justificate, valoriFaraCantitate, avert, check);
 
         return new Rezultat(simboluri, difContabile, ancoraDb, ancoraSursa,
-            chei, nejustificate, gasite, q, v);
+            chei, nejustificate, gasite, q, v, faraCantitate, valoareFaraCantitate);
     }
 
     // ============ 1 + 2. Sold per cont OMFP, și ancora separat ============
@@ -71,15 +75,17 @@ static class Reconciliere {
             Action<string> avert,
             Action<string, bool> check) {
 
-        // ---- Partea BAZĂ: rândurile de deschidere, netate per simbol ----
-        var randuri = os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => r.DocumentId == null)
-            .Select(r => new { D = r.ContDebit.Simbol, C = r.ContCredit.Simbol, r.Valoare })
+        // ---- Partea BAZĂ: postările tranzacției Deschidere, netate per simbol ----
+        var simbolPeId = os.GetObjectsQuery<Cont>().Select(c => new { c.ID, c.Simbol }).ToList()
+            .ToDictionary(c => c.ID, c => c.Simbol);
+        var postari = Citiri.Contabil.Postari(os)
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere)
+            .Select(p => new { p.Cont, p.Latura, p.Valoare })
             .ToList();
         var db = new Dictionary<string, decimal>(StringComparer.Ordinal);
-        foreach (var r in randuri) {
-            db[r.D] = db.GetValueOrDefault(r.D) + r.Valoare;
-            db[r.C] = db.GetValueOrDefault(r.C) - r.Valoare;
+        foreach (var p in postari) {
+            var simbol = simbolPeId[p.Cont];
+            db[simbol] = db.GetValueOrDefault(simbol) + (p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare);
         }
 
         // ---- Partea SURSĂ: soldurile 1C, mapate și agregate ----
@@ -137,7 +143,7 @@ static class Reconciliere {
             check($"  cont {simbol}: bază {valDb:N2} = sursă 1C {valSursa:N2} "
                 + $"(Δ {valDb - valSursa:N2})", false);
         check($"Sold per cont OMFP: {simboluri.Count} simboluri comparate, "
-            + $"{diferente.Count} diferențe (din {randuri.Count} rânduri de deschidere)",
+            + $"{diferente.Count} diferențe (din {postari.Count} postări de deschidere)",
             diferente.Count == 0);
 
         // Contractul „891 → 0" se citește „ancora reproduce EXACT sursa": zero e
@@ -159,25 +165,31 @@ static class Reconciliere {
     // rearanjează deliberat ÎN INTERIORUL grupei produs × depozit — exact cheia
     // de aici. Per lot n-ar fi comparabile; per produs × gestiune netarea e
     // invizibilă, deci orice diferență e reală.
-    static (int Chei, int Nejustificate, int JustificateGasite, decimal Q, decimal V) Stoc(
+    static (int Chei, int Nejustificate, int JustificateGasite, decimal Q, decimal V,
+            int CheiFaraCantitate, decimal ValoareFaraCantitate) Stoc(
             IObjectSpace os,
             IReadOnlyList<FlaxPozitieStoc> stoc,
             IReadOnlyList<FlaxPozitieStoc> stocOrfan,
             IReadOnlyList<Deschidere.DiferentaSursa> justificate,
+            IReadOnlyDictionary<(string ProdusHex, string DepozitHex), decimal> valoriFaraCantitate,
             Action<string> avert, Action<string, bool> check) {
 
-        // ---- Partea BAZĂ: rândurile de stoc de deschidere ----
-        // Proiecție cu Select pe FK-uri + denumiri (join în SQL), NU navigații
-        // lazy într-o buclă peste mii de rânduri (decizia 25b).
-        var randuri = os.GetObjectsQuery<RegistruStoc>()
-            .Where(r => r.DocumentId == null)
-            .Select(r => new {
-                ProdusId = r.Lot.ProdusId,
-                ProdusDesc = r.Lot.Produs.Denumire,
-                r.RepartitorId,
-                RepartitorDesc = r.Repartitor.Denumire,
-                r.Cantitate,
-                r.Valoare,
+        // ---- Partea BAZĂ: loturile tranzacției Deschidere ----
+        var denumireProdus = os.GetObjectsQuery<Produs>().Select(p => new { p.ID, p.Denumire }).ToList()
+            .ToDictionary(p => p.ID, p => p.Denumire);
+        var denumireGestiune = os.GetObjectsQuery<Gestiune>().Select(g => new { g.ID, g.Denumire }).ToList()
+            .ToDictionary(g => g.ID, g => g.Denumire);
+        var randuri = Citiri.Loturi.Postari(os)
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere)
+            .Select(p => new { p.Produs, p.Gestiune, p.Cantitate, p.Latura, p.Valoare })
+            .ToList()
+            .Select(p => new {
+                ProdusId = p.Produs.Value,
+                ProdusDesc = denumireProdus.GetValueOrDefault(p.Produs.Value),
+                RepartitorId = p.Gestiune.Value,
+                RepartitorDesc = denumireGestiune.GetValueOrDefault(p.Gestiune.Value),
+                p.Cantitate,
+                Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare,
             })
             .ToList();
 
@@ -251,12 +263,22 @@ static class Reconciliere {
         var gasite = 0;
         var sumaQ = 0m;
         var sumaV = 0m;
+        var faraCantitate = 0;
+        var valoareFaraCantitate = 0m;
         foreach (var k in chei) {
             var (qDb, vDb) = db.GetValueOrDefault(k);
             var (qSursa, vSursa) = sursa.GetValueOrDefault(k);
             if (Math.Abs(qDb - qSursa) < Eps && Math.Abs(vDb - vSursa) < Eps)
                 continue;
             var eticheta = $"„{Descrie(nume, k.P)}” × gestiune „{Descrie(nume, k.D)}”";
+            if (valoriFaraCantitate.TryGetValue(k, out var vFaraQ)
+                    && Math.Abs(qDb - qSursa) < Eps && Math.Abs(vDb - vSursa + vFaraQ) < Eps) {
+                faraCantitate++;
+                valoareFaraCantitate += vFaraQ;
+                avert($"Stoc {eticheta}: bază {qDb:N3} buc / {vDb:N2} lei vs sursă "
+                    + $"{qSursa:N3} buc / {vSursa:N2} lei — {MotivFaraCantitate} ({vFaraQ:N2} lei).");
+                continue;
+            }
             if (justificateHex.TryGetValue(k, out var j)) {
                 gasite++;
                 sumaQ += Math.Abs(qDb - qSursa);
@@ -271,7 +293,8 @@ static class Reconciliere {
                 + $"= sursă {qSursa:N3} buc / {vSursa:N2} lei", false);
         }
         check($"Stoc per produs × gestiune: {chei.Count} chei comparate, {nejustificate} nepotriviri "
-            + $"nejustificate ({gasite} justificate — diferențe ale sursei)", nejustificate == 0);
+            + $"nejustificate ({gasite} justificate — diferențe ale sursei; {faraCantitate} — "
+            + $"{MotivFaraCantitate})", nejustificate == 0);
         // Restul listei justificate = grupe al căror total cade SUB toleranță
         // (skip-ul din faza 3 lucrează la gram, reconcilierea la ban): nu apar ca
         // diferență, deci nu sunt eșec — dar nici nu se pierd din raport.
@@ -281,9 +304,13 @@ static class Reconciliere {
                 + $"{Eps} — nesemnificative la nivel de produs × gestiune).");
         Console.WriteLine($"Diferențe justificate (diferențe ale sursei, raportate): {gasite} chei "
             + $"din {justificateHex.Count}, Σ absolută {sumaQ:N3} buc / {sumaV:N2} lei.");
+        Console.WriteLine($"Diferențe justificate ({MotivFaraCantitate}): {faraCantitate} chei "
+            + $"din {valoriFaraCantitate.Count}, Σ {valoareFaraCantitate:N2} lei.");
 
-        return (chei.Count, nejustificate, gasite, sumaQ, sumaV);
+        return (chei.Count, nejustificate, gasite, sumaQ, sumaV, faraCantitate, valoareFaraCantitate);
     }
+
+    const string MotivFaraCantitate = "valoare fără cantitate, neintrată în cub";
 
     // Legăturile 1C, inversate. Duplicatele de țintă n-ar trebui să existe
     // (`ImportLaCerere.Materializeaza` recuperează doar entități NELEGATE), dar

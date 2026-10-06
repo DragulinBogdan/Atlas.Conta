@@ -610,7 +610,9 @@ Hook-urile de stingere nu citesc registre și rămân neatinse în felie
   sens fără registre se șterge, cu rând în inventar. O rulare pe ianuarie se
   face la închidere ca diagnostic, cu raportul comparat cu
   `run-verificari/r3-ian-final2/`; nu e gate (091 d).
-- **Migrare**: se portează sau se șterge, după ce arată inventarul.
+- **Migrare**: se portează sau se șterge, după ce arată inventarul. Ștearsă
+  la pasul 5 (2026-10-06): scria deschiderea numai în registre, fără nimic în
+  cub, deci o bază deschisă de ea era deja refuzată de invarianții cubului.
 - **BackfillTva** scrie `RegistruTva` și nu are obiect pe cub: se șterge.
 
 ## D9-D12 — Clientul React și contractul HTTP
@@ -683,7 +685,8 @@ rezumat de felie (091 l).
 ## D9-D15 — Pașii, verificarea, regula de oprire
 
 Un commit per pas. Fiecare pas compilează toată soluția, cu uneltele
-(Import1C, Migrare, ProbeHttp), și are integrala verde pe ambele profiluri.
+(Import1C, ProbeHttp; Migrare până la ștergerea ei, la pasul 5), și are
+integrala verde pe ambele profiluri.
 Nu există derogare tacită: un pas care nu poate fi verde singur se unește cu
 vecinul lui, în contract, înaintea execuției.
 

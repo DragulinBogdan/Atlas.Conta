@@ -30,7 +30,7 @@ aplicat pe cantitate per tip × filtru. Statut: **evidență, niciodată canonic
 /db       → export schemă + conținutul tabelelor de configurare (SQL Server local,
             Contabilitate_2026); inventarul legacy în db/inventar/
 /nou      → soluția nouă: BackOffice (XAF Blazor + Module), WebApi, Client (React),
-            tools/ (ModelCheck, Migrare, Import1C, BackfillTva, ProbeHttp)
+            tools/ (ModelCheck, Import1C, ProbeHttp)
 /docs     → invarianți, jurnal, stare curentă, design-uri și contracte per felie
 ```
 
@@ -190,8 +190,9 @@ direcția repartitorului unic și a registrelor tipate, cu poarta la contractul
 TR-D9b. Pasul 3 e făcut (aserțiile de regulă din ModelCheck re-țintite pe
 cititorii cubului, cu aceleași cifre: `docs/nucleu/tr-d9-pas3-retintire.md`).
 Pasul 4 e făcut (consumatorii din produs pe cub; dreptul unic e citirea
-completă pe `Postare`; lista XAF `Postare`; gardul scrierii cubului). Urmează
-pasul 5.
+completă pe `Postare`; lista XAF `Postare`; gardul scrierii cubului). Pasul 5
+e făcut (Import1C pe cititorii cubului, probat numai prin compilare; Migrare
+și BackfillTva șterse). Urmează review-ul Codex pe lotul 3–5, apoi pasul 5b.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

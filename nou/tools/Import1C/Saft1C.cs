@@ -132,14 +132,14 @@ static class Saft1C {
         // și pierde bani între registre e tot un fișier greșit (validatorul nu
         // verifică semantica fiscală, §5 al contractului).
         s.AppendLine("--- Cusăturile (D16-D4), la cent ---");
-        Cusatura(s, "1 partidă dublă: Σ debit == Σ credit == Σ RegistruContabil",
+        Cusatura(s, "1 partidă dublă: Σ debit == Σ credit == Σ rulaj debit al balanței din cub",
             rez.TotalDebit == rez.TotalCredit && rez.TotalDebit == rez.ValoareRegistruContabil,
-            $"D {rez.TotalDebit:N2} · C {rez.TotalCredit:N2} · registru {rez.ValoareRegistruContabil:N2}");
-        Cusatura(s, "2 TVA: Σ TaxAmount GL + capitalizat + fără cod SAF-T == Σ RegistruTva.Tva",
+            $"D {rez.TotalDebit:N2} · C {rez.TotalCredit:N2} · balanță {rez.ValoareRegistruContabil:N2}");
+        Cusatura(s, "2 TVA: Σ TaxAmount GL + capitalizat + fără cod SAF-T == Σ TVA a faptelor fiscale din cub",
             rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft == rez.TvaRegistru,
             $"GL {rez.TvaGl:N2} + capitalizat {rez.TvaCapitalizat:N2} + fără cod {rez.TvaFaraCodSaft:N2} "
-                + $"= {rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft:N2} vs registru {rez.TvaRegistru:N2}");
-        Cusatura(s, "3a facturi (achiziție): Σ bază linii + Σ bază neincluse == Σ RegistruTva.Baza (TOATE tipurile)",
+                + $"= {rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft:N2} vs cub {rez.TvaRegistru:N2}");
+        Cusatura(s, "3a facturi (achiziție): Σ bază linii + Σ bază neincluse == Σ baza faptelor fiscale din cub (TOATE tipurile)",
             rez.BazaFacturiAchizitie + rez.BazaNeincluseAchizitie == rez.BazaRegistruAchizitie,
             $"{rez.BazaFacturiAchizitie:N2} + {rez.BazaNeincluseAchizitie:N2} "
                 + $"= {rez.BazaFacturiAchizitie + rez.BazaNeincluseAchizitie:N2} vs {rez.BazaRegistruAchizitie:N2}");
@@ -265,11 +265,11 @@ static class Saft1C {
                 + $"{rez.StocClosingCantitate:0.###}; valoare {rez.StocOpeningValoare:N2} + "
                 + $"{rez.StocEmiseValoare:N2} = {rez.StocOpeningValoare + rez.StocEmiseValoare:N2} vs "
                 + $"{rez.StocClosingValoare:N2}");
-        Cusatura(s, "S2 nimic nu se pierde: Σ mișcări + Σ Excluse (deliberat) + Σ Neincluse == Σ RegistruStoc "
-                + "pe documentele lunii (TOATE tipurile de stoc)",
+        Cusatura(s, "S2 nimic nu se pierde: Σ mișcări + Σ Excluse (deliberat) + Σ Neincluse == Σ postărilor pe loturi "
+                + "din cub pe documentele lunii (TOATE categoriile de stoc)",
             rez.RegistruStocBate,
             $"valoare {rez.MiscariValoare:N2} + {rez.ExcluseValoare:N2} + {rez.NeincluseStocValoare:N2} = "
-                + $"{rez.MiscariValoare + rez.ExcluseValoare + rez.NeincluseStocValoare:N2} vs registru "
+                + $"{rez.MiscariValoare + rez.ExcluseValoare + rez.NeincluseStocValoare:N2} vs cub "
                 + $"{rez.RegistruStocValoare:N2}; cantitate {rez.MiscariCantitate:0.###} + "
                 + $"{rez.ExcluseCantitate:0.###} + {rez.NeincluseStocCantitate:0.###} = "
                 + $"{rez.MiscariCantitate + rez.ExcluseCantitate + rez.NeincluseStocCantitate:0.###} vs "
