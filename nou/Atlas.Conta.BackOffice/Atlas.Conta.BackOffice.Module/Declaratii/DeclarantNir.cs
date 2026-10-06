@@ -47,7 +47,7 @@ public sealed partial class DeclarantNir : IDeclarant {
                 Refuza(CoduriRefuz.ContStocLipsa, "Contul de recepție trebuie să fie contul lotului."); continue;
             }
             Partide.Numeste(operand, cont.ContCredit, doc.Predator.Id, linie.Id, partide, decizii);
-            var externCapat = Partide.CuPartida(new N.Capat {
+            var externCapat = Terti.Capat(operand, new N.Capat {
                 Cont = cont.ContCredit, Gestiune = N.GestiuniVirtuale.Furnizor, Produs = lot.ProdusId,
                 Analiza = Contari.Analiza(linie.Analiza, cont.Regula.OverrideCredit, cont.Regula.Comun),
             }, doc.Predator.Id, partide);

@@ -516,13 +516,19 @@ antetului → materialul din lot. Postarea explicită a liniei are prioritate.
 cod economic. (25f, 32c, 33a)
 
 `Cont.DimensiuniObligatorii` se verifică pe mișcările contabile ale
-contractului (`Cub/GardAnaliza`): repartitorul e partenerul sau
-gestiunea capătului, apoi latura documentului; materialul e produsul; restul
-e analiza postării; angajamentul liniei ține loc de cod economic. Mutările
-(BTR, PIF), transformările (ASM) și cartea fiscală nu intră. Recepția liniei
-de stoc a facturii e păzită la operarea facturii, nu a NIR-ului conex;
-diferența NIR-ului acoperit rămâne la gardul recepției conexe. (TR-D9a:
-D9-D4, D9-A3; `docs/nucleu/tr-d9-pas2-probe.md`)
+contractului (`Cub/GardAnaliza`): gardul judecă numai capătul — repartitorul
+lui e o singură funcție, `Citiri.Contabil.Repartitor` (partenerul piciorului
+de terț sau gestiunea piciorului intern); latura documentului nu se mai
+citește, iar `Document.RepartitorImplicitDebit/Credit` nu mai există.
+Materialul e produsul; restul e analiza postării; angajamentul liniei ține
+loc de cod economic. Mutările (BTR, PIF), transformările (ASM) și cartea
+fiscală nu intră. Recepția liniei de stoc a facturii e păzită la operarea
+facturii, nu a NIR-ului conex; diferența NIR-ului acoperit rămâne la gardul
+recepției conexe. Pe seed niciun document din catalog nu purta repartitorul
+numai prin latura documentului, deci gardul strict nu refuză nimic acceptat
+înainte; refuză declarantul care uită coordonata (proba directă
+`GARD-ANALIZA`). (TR-D9a: D9-D4, D9-A3, D9-A10;
+`docs/nucleu/tr-d9-pas6b-repartitor.md`)
 
 ## Precizie numerică
 
@@ -918,11 +924,20 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   Rezolvările comune (`Contari`): contul fiecărei laturi prin
   `Potrivire.Contare/Cont` și coalesce-ul dimensiunilor prin
   `DimensiuniResolver` — aceleași funcții pure ca motorul vechi.
-- **Regula coordonatelor** (B-D8 pct. 9, 10): capătul intern poartă
-  `Gestiune` = repartitorul intern al documentului; capătul de terț poartă
-  `Partener` + partida DOAR pe un cont cu `UrmarestePartide` și nicio gestiune (azi nota pune pe
-  fiecare picior repartitorul CONTRAPARTIDEI — „contrapartida pe fiecare
-  latură", respinsă de design §3).
+- **Regula coordonatelor** (B-D8 pct. 9, 10; pct. 4 amendat de D9-A10):
+  capătul intern poartă `Gestiune` = repartitorul intern al documentului;
+  capătul de terț poartă `Partener` + partida pe un cont cu `UrmarestePartide`
+  și `Partener` singur pe un cont care cere `Repartitor`
+  (`ContFapt.CereRepartitor`), și când contul nu urmărește partide. Un singur
+  helper, `Declaratii/Terti.Capat`, pune ambele; capătul cu gestiune reală e
+  intern și rămâne neatins, capătul din cartea fiscală nu primește partener.
+  Terțul capătului e latura externă a documentului; la DEC și NTC e
+  repartitorul liniei, iar DEC, NTC, DSC și diferența NIR îl pun pe capătul
+  extern necondiționat (T-D13 g). Convenția pozițională a notei vechi
+  (debit ← predator, credit ← primitor) nu se reproduce. Coordonata nu
+  deschide partidă și nu schimbă unitatea. Proba: SC-PLT-08 pe ambele
+  profiluri; pe seed, 462.01.09 (bugetar) e singurul cont fără partide care
+  cere repartitor și e atins de catalog.
 - **BCS** (`DeclarantBonConsum`): o mișcare per linie — lotul iese de pe
   contul creditor al regulii din gestiunea predatoare și intră pe contul de
   cheltuială al locului de consum (repartitorul real, cu lotul ca unitate

@@ -53,8 +53,8 @@ public sealed class DeclarantFacturaIesire : IDeclarant {
             doc.Id,
             doc.DataInregistrare,
             [.. miscari.Select(m => m with {
-                DeLa = Partide.CuPartida(m.DeLa, doc.Primitor.Id, partide),
-                La = Partide.CuPartida(m.La, doc.Primitor.Id, partide),
+                DeLa = Terti.Capat(operand, m.DeLa, doc.Primitor.Id, partide),
+                La = Terti.Capat(operand, m.La, doc.Primitor.Id, partide),
             })],
             decizii,
             [operand.PerioadaDeschisa, operand.VersiunePolitica]);

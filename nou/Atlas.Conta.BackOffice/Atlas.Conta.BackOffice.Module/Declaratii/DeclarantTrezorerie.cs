@@ -65,14 +65,19 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                 Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
             };
 
-            var peDebit = tert is not null && Partide.Urmareste(operand, contare.ContDebit);
-            var contTert = peDebit ? contare.ContDebit
-                : tert is not null && Partide.Urmareste(operand, contare.ContCredit) ? contare.ContCredit
-                : (Guid?)null;
-            if (contTert is not Guid cont || tert is not Guid partener) {
+            if (tert is not Guid partener) {
                 miscari.Add(new N.Miscare(credit, debit, 0m, 0m, linie.Valoare, new N.Cauza(doc.Id, linie.Id)));
                 continue;
             }
+            var peDebit = Partide.Urmareste(operand, contare.ContDebit);
+            if (!peDebit && !Partide.Urmareste(operand, contare.ContCredit)) {
+                miscari.Add(new N.Miscare(
+                    Terti.Capat(operand, credit, partener, (N.Unitate?)null),
+                    Terti.Capat(operand, debit, partener, (N.Unitate?)null),
+                    0m, 0m, linie.Valoare, new N.Cauza(doc.Id, linie.Id)));
+                continue;
+            }
+            var cont = peDebit ? contare.ContDebit : contare.ContCredit;
 
             var proprie = Partide.Proprie(operand, cont, partener);
             var bucati = new List<(N.Unitate Partida, decimal Suma)>(2);
@@ -118,8 +123,8 @@ public sealed class DeclarantTrezorerie : IDeclarant {
             }
             foreach (var (partida, suma) in bucati)
                 miscari.Add(new N.Miscare(
-                    peDebit ? credit : credit with { Partener = partener, Unitate = partida },
-                    peDebit ? debit with { Partener = partener, Unitate = partida } : debit,
+                    Terti.Capat(operand, credit, partener, peDebit ? null : partida),
+                    Terti.Capat(operand, debit, partener, peDebit ? partida : null),
                     0m,
                     0m,
                     suma,

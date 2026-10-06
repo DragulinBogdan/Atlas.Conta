@@ -26,30 +26,31 @@ public static class GardAnaliza {
         CentruCostId = analiza.CentruCost,
     };
 
-    /// <summary>
-    /// Lipsurile pe capetele mișcărilor din <c>Carte = Contabil</c>. Repartitorul unei laturi
-    /// e partenerul sau gestiunea capătului, apoi cel al documentului, dacă e dat.
-    /// </summary>
+    /// <summary>Repartitorul capătului: partenerul piciorului de terț sau gestiunea piciorului intern (D9-A10).</summary>
+    public static Guid? Repartitor(N.Capat capat) {
+        ArgumentNullException.ThrowIfNull(capat);
+        return Citiri.Contabil.Repartitor(capat.Partener, capat.Gestiune);
+    }
+
+    /// <summary>Lipsurile pe capetele mișcărilor din <c>Carte = Contabil</c>; gardul judecă numai capătul.</summary>
     public static IReadOnlyList<string> Lipsuri(
             IEnumerable<N.Miscare> miscari,
             IReadOnlyDictionary<Guid, ContFapt> conturi,
-            IReadOnlyDictionary<Guid, LinieFapt> linii,
-            Guid? repartitorDebit = null,
-            Guid? repartitorCredit = null) {
+            IReadOnlyDictionary<Guid, LinieFapt> linii) {
         ArgumentNullException.ThrowIfNull(miscari);
         ArgumentNullException.ThrowIfNull(conturi);
         ArgumentNullException.ThrowIfNull(linii);
         var lipsuri = new List<string>();
         foreach (var miscare in miscari) {
             var linie = miscare.Cauza.Linie is Guid id ? linii.GetValueOrDefault(id) : default;
-            Latura(miscare.La, "debit", repartitorDebit);
-            Latura(miscare.DeLa, "credit", repartitorCredit);
+            Latura(miscare.La, "debit");
+            Latura(miscare.DeLa, "credit");
 
-            void Latura(N.Capat capat, string latura, Guid? alDocumentului) {
+            void Latura(N.Capat capat, string latura) {
                 if (capat.Carte != N.Carte.Contabil || !conturi.TryGetValue(capat.Cont, out var cont))
                     return;
                 VerificaLatura(cont.Simbol, cont.Flags,
-                    Dimensiuni(capat.Partener ?? capat.Gestiune ?? alDocumentului, capat.Produs, capat.Analiza),
+                    Dimensiuni(Repartitor(capat), capat.Produs, capat.Analiza),
                     linie.Angajament, latura, linie.Denumire, lipsuri);
             }
         }
@@ -99,9 +100,7 @@ public static class GardAnaliza {
         var denumiri = Fapte.ClaseTip(os, doc.Detalii.Select(d => d.TipMaterialId));
         var linii = doc.Detalii.ToDictionary(d => d.ID,
             d => new LinieFapt(denumiri.GetValueOrDefault(d.TipMaterialId).Denumire, d.AngajamentId));
-        // D9-D4: repartitorul cade pe latura documentului, ca pe nota planului vechi.
-        var lipsuri = Lipsuri(miscari, conturi, linii,
-            doc.RepartitorImplicitDebit(os), doc.RepartitorImplicitCredit(os));
+        var lipsuri = Lipsuri(miscari, conturi, linii);
         if (lipsuri.Count > 0)
             throw new OperareException(string.Join("\n", lipsuri));
     }

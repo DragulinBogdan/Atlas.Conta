@@ -117,9 +117,8 @@ public static class ReceptiiConexe {
             .Select(p => new PoliticaDiferentaFapt(p.ClasaId, p.Cauza, p.ContId, p.ContPersonalId)).ToList();
         var idsCont = politici.SelectMany(p => new[] { p.Cont, p.ContPersonal ?? p.Cont }).Distinct().ToList();
         var conturi = operand.Conturi.ToDictionary(p => p.Key, p => p.Value);
-        foreach (var c in os.GetObjectsQuery<Cont>().Where(c => idsCont.Contains(c.ID))
-                .Select(c => new { c.ID, c.Simbol, c.UrmarestePartide }).ToList())
-            conturi[c.ID] = new(c.ID, c.Simbol, c.UrmarestePartide);
+        foreach (var (id, cont) in Fapte.Conturi(os, idsCont))
+            conturi[id] = cont;
         var repartitori = operand.Repartitori.ToDictionary(p => p.Key, p => p.Value);
         var idsTerti = constatari.Values.Select(c => c.Imputat).OfType<Guid>().Distinct().ToList();
         foreach (var r in Fapte.Repartitori(os, idsTerti)) repartitori[r.Key] = r.Value;

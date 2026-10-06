@@ -7,11 +7,18 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Domeniu și operare
 
-- Analiza obligatorie per cont: cerința de repartitor nu refuză niciun
-  document, fiindcă repartitorul cade pe latura antetului; cubul nu păstrează
-  partenerul pe conturile fără rol de terț. Cerința de material citește
-  numai produsul lotului, nu și materialul fix al unei reguli de contare.
-  BTR, ASM și PIF nu sunt păzite (D9-r1). (`docs/nucleu/tr-d9-pas2-probe.md`, G1, G2)
+- Analiza obligatorie per cont: repartitorul e al capătului (D9-A10);
+  partenerul stă pe piciorul de terț numai când contul cere repartitor sau
+  urmărește partide — pe un cont fără flag și fără partide (446 privat)
+  partenerul rămâne absent, iar partenerul pe conturile de cheltuieli și
+  venituri e al deciziei 111. Pe piciorul intern cu fapt fiscal `Partener` e
+  partenerul fiscal (B-D8 pct. 5), deci `Contabil.Repartitor` îl întoarce pe
+  el înaintea gestiunii; separarea e a deciziei 111. Pe trezorerie, când
+  regula de contare numește ambele conturi explicit, piciorul propriu n-are
+  gestiune și, dacă contul lui cere repartitor, primește partenerul terțului.
+  Cerința de material citește numai produsul lotului, nu și materialul fix al
+  unei reguli de contare. BTR, ASM și PIF nu sunt păzite (D9-r1).
+  (`docs/nucleu/tr-d9-pas6b-repartitor.md`; `tr-d9-pas2-probe.md`, G2)
 - PIF/AMO/CAS scriu cubul, iar situația fișei se citește din el (095, 097).
   Storno
   rămâne limitat la luna documentului (087g), inclusiv în corecție.
@@ -249,15 +256,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   raportare proprie. (F27-D7, F27-r2)
 - Soldul partenerului nu apare în lookup-urile de partener din culegere:
   există ca ecran și ca rută, nu ca o coloană `Sold` pe `Partener`. (F27-r7)
-- `sold-parteneri` grupează pe dimensiunea **Repartitor**, care urmează
-  laturile documentului (debit←predator, credit←primitor — 00 §5), NU contul
-  de terț: pe o factură de client atomul de debit al lui 4111 poartă
-  emitentul, iar clientul apare pe atomul de credit al venitului (măsurat pe
-  baza Privat: 103.301 din 108.912 rânduri de 4111 au „Sediul central" pe
-  debit). Ecranul dă deci soldul pe cheia contabilă așa cum e ea, nu creanța
-  per partener; creanța per partener se citește din partidele deschise
-  (`documente-cu-rest`). Dimensionarea contului de terț pe partener e decizie
-  separată, nu a acestei felii. (F27-D7)
+- `sold-parteneri` și balanța analitică grupează pe `AtomContabil.RepartitorId`
+  = `Postare.Partener`: pe contul de terț e partenerul capătului (partida sau
+  flag-ul `Repartitor`, D9-A10), pe piciorul intern cu fapt fiscal e
+  partenerul fiscal, pe restul e nul; gestiunea e axă separată (`GestiuneId`).
+  Creanța per partener se citește din partidele deschise
+  (`documente-cu-rest`); unificarea repartitorului e a deciziei 111. (F27-D7, D9-A10)
 - `ReturClient` intră în proiecția de rest, dar rândurile lui nu apar:
   creanța unui retur e negativă după operare (venit stornat), iar filtrul
   `Rest > 0` o taie. Împerecherea unui retur rămâne pe calea directă

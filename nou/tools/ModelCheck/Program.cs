@@ -918,6 +918,9 @@ if (profil == ProfilContabil.Privat) {
             noteFctCub.Any(p => p.LinieId == linieStoc.ID && p.Debit && p.Cont == cont4426.ID && p.Valoare == 10.5m));
         Check("Rândul 4426 al serviciului: 21; dimensiunile din default-ul polimorf al header-ului [cub]",
             noteFctCub.Any(p => p.LinieId == linieServiciu.ID && p.Debit && p.Cont == cont4426.ID && p.Valoare == 21m));
+        Check("D9-A10 FCT: piciorul intern (628, 4426) poartă gestiunea primitoare, piciorul de terț (401) furnizorul",
+            noteFctCub.Where(p => p.Debit).All(p => p.Gestiune == mag1.ID)
+            && noteFctCub.Where(p => p.Cont == cont401.ID).All(p => p.Repartitor == furnizor.ID));
 
         // --- NIR conex: netul, fără TVA ---
         Check("Conex: NIR draft cu linia de stoc la NET, TipTva clonat ca informație, ValoareTva 0",
@@ -988,6 +991,8 @@ if (profil == ProfilContabil.Privat) {
         Check("DEC: cheltuiala net (628 = 542, 30) + TVA justificat (4426 = 542, 6,3), creditul pe TITULAR [cub]",
             noteDecCub.Nota(tip628.ContImplicitId, cont542.ID, 30m)
             && noteDecCub.Nota(cont4426.ID, cont542.ID, 6.3m));
+        Check("D9-A10 DEC: creditul 542 poartă titularul pe ambele linii (terțul liniei)",
+            noteDecCub.Where(p => p.Credit).All(p => p.Cont == cont542.ID && p.Repartitor == angajat.ID));
 
         // --- Taxare inversă: 4426 = 4427, apoi storno cu rândurile TVA inverse ---
         var fctTi = os.CreateObject<FacturaIntrare>();
@@ -1495,6 +1500,11 @@ if (profil == ProfilContabil.Privat) {
         Check("Cost produs finit: 711 = 345, 24; exact 4 note pe DSC",
             noteDscCub.Count(p => p.Debit && p.Cont == cont711.ID) == 1
             && noteDscCub.Nota(cont711.ID, tip345.ContImplicitId, 24m));
+        Check("D9-A10 DSC: creditul de stoc poartă gestiunea predatoare, debitul de cost clientul primitor (T-D13 g); materialul din lot",
+            noteDscCub.Where(p => p.Credit).All(p => p.Gestiune == mag1.ID)
+            && noteDscCub.Where(p => p.Debit).All(p => p.Repartitor == client.ID)
+            && noteDscCub.Where(p => p.Debit && p.Cont == cont607.ID).All(p => p.Produs == produsA.ID)
+            && noteDscCub.Single(p => p.Debit && p.Cont == cont711.ID).Produs == produsC.ID);
         var stocDscCub = CubScena.Stoc(os, dsc.ID);
         Check("DSC stoc: −10 A1, −7 A2 (Marfuri), −3 C1 (Magazie), toate pe gestiune",
             stocDscCub.Where(p => p.Unitate == lotA1.ID).Sum(p => p.Cantitate) == -10m
@@ -1787,6 +1797,9 @@ if (profil == ProfilContabil.Privat) {
                 && notePrvCub.Nota(cont471.ID, cont605.ID));
             Check("Privat: valorile CA ATARE (300 / −50)",
                 notePrvCub.Any(p => p.Valoare == 300m) && notePrvCub.Any(p => p.Valoare == -50m));
+            Check("D9-A10 NTC privat: linia fără repartitor ia implicitul laturii antetului (debit←predator SEDIU, credit←primitor)",
+                notePrvCub.Where(p => p.Debit).All(p => p.Gestiune == sediu.ID)
+                && notePrvCub.Where(p => p.Credit).All(p => p.Gestiune == unitate.ID));
 
             Check("Privat: nota nu postează TVA (fără TipTva pe linii) și nu mișcă stoc",
                 notePrvCub.All(p => p.LinieId != null)
@@ -4850,6 +4863,9 @@ using (var os = provider.CreateObjectSpace()) {
         && noteFctCub.Nota(tipServicii.ContImplicitId, cont401.ID, 100m, linieServiciu.ID));
     Check("Nota FCT: dimensiuni rezolvate (cod economic + repartitori laturi) [cub]",
         noteFctCub.Any(p => p.LinieId == linieServiciu.ID && p.Debit && p.CodEconomic == codEc.ID));
+    Check("D9-A10 FCT: debitul 628 poartă gestiunea primitoare MAG1, creditul 401 furnizorul (nu convenția pozițională)",
+        noteFctCub.Where(p => p.LinieId == linieServiciu.ID && p.Debit).All(p => p.Gestiune == mag1.ID)
+        && noteFctCub.Where(p => p.LinieId == linieServiciu.ID && p.Credit).All(p => p.Repartitor == furnizor.ID));
 
     Check("Conex generat: NIR draft autogenerat, aceleași laturi",
         conex is NIR { Stare: StareDocument.Draft, Autogenerat: true }
@@ -5425,6 +5441,8 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Contare: 602.01.00 = 302.01.00 (creditul din contul Tipului), 40",
         noteBcsCub.Count == 2
         && noteBcsCub.Nota(regulaMat.ContDebitId, tipMaterial.ContImplicitId, 40m));
+    Check("D9-A10 BCS: creditul de stoc poartă gestiunea predatoare MAG1, debitul de consum locul primitor",
+        noteBcsCub.Single(p => p.Credit).Gestiune == mag1.ID && noteBcsCub.Single(p => p.Debit).Gestiune == loc.ID);
 
     // --- NUC-BCS (B-D4, pas 3): declarantul frunzei ---
     ProbeNucleu.Proba(os, Check, "NUC-BCS", [bcs1]);
@@ -5733,6 +5751,9 @@ using (var os = provider.CreateObjectSpace()) {
         noteCub.Nota(cont411.ID, tipServiciiVenit.ContImplicitId, 200m));
     Check("Contare chirie: 411.01.01 = 750.02.00, 50",
         noteCub.Nota(cont411.ID, tipChirii.ContImplicitId, 50m));
+    Check("D9-A10 FCL: debitul 411 poartă clientul (partida lui), creditul de venit gestiunea emitentă SEDIU",
+        noteCub.Where(p => p.Cont == cont411.ID).All(p => p.Repartitor == client.ID)
+        && noteCub.Where(p => p.Credit).All(p => p.Gestiune == sediu.ID));
 
 
     // --- Debit particularizat (461) + scadență culeasă + TVA în valoare ---
@@ -6018,6 +6039,10 @@ using (var os = provider.CreateObjectSpace()) {
     os.CommitChanges();
     MotorOperare.Opereaza(os, avans);
     Check("Avans operat cu număr din politică", avans.Numar?.StartsWith("PLT-") == true);
+    Check("D9-A10 avans: debitul 542 poartă angajatul, creditul casei contul propriu",
+        NoteCub(avans) is { Count: 2 } noteAvansCub
+        && noteAvansCub.Single(p => p.Debit).Repartitor == angajat.ID
+        && noteAvansCub.Single(p => p.Credit).Gestiune == casa.ID);
 
     var contractAvans = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, avans);
     var postariAvans = contractAvans.Tranzactii.SelectMany(t => t.Postari).ToArray();
@@ -7127,6 +7152,10 @@ using (var os = provider.CreateObjectSpace()) {
     Check("Dimensiuni debit: default←titular la deplasare, repartitorul EXPLICIT (MAG1) la protocol [cub]",
         noteCub.Any(p => p.LinieId == linieDeplasare.ID && p.Debit)
         && noteCub.Where(p => p.LinieId == linieDeplasare.ID && p.Debit).All(p => p.CodEconomic == codEc.ID));
+    Check("D9-A10 DEC: debitul deplasării poartă titularul (implicit), al protocolului gestiunea culeasă MAG1; creditul 542 titularul pe ambele",
+        noteCub.Where(p => p.LinieId == linieDeplasare.ID && p.Debit).All(p => p.Repartitor == angajat.ID)
+        && protocolCub.Where(p => p.Debit).All(p => p.Gestiune == mag1.ID)
+        && noteCub.Where(p => p.Credit).All(p => p.Repartitor == angajat.ID));
 
 
     // --- Tip fără cont și fără postare explicită = refuz clar; fallback 542 ---
@@ -7149,6 +7178,8 @@ using (var os = provider.CreateObjectSpace()) {
     var creditDec2Cub = NoteCub(dec2).Where(p => p.Credit).ToList();
     Check("Angajat fără ContImplicit → creditul cade pe fallback-ul 542.01.00 [cub]",
         creditDec2Cub.Count > 0 && creditDec2Cub.All(p => p.Cont == cont542.ID));
+    Check("D9-A10 DEC: creditul 542 de fallback poartă titularul fără cont implicit",
+        creditDec2Cub.All(p => p.Repartitor == angajat2.ID));
 
     // --- Lanțul avans ↔ decont ↔ regularizare prin imperechere (31d) ---
     var impDecont = ImperechereService.Imperecheaza(os, avans, dec, 53.8m);
@@ -7313,6 +7344,10 @@ using (var os = provider.CreateObjectSpace()) {
         && noteNtcCub.Where(p => p.LinieId == linieViramente.ID).All(p => p.Valoare == 100m && p.Fel == N.FelTranzactie.Operare)
         && noteNtcCub.Where(p => p.LinieId == linieStorno.ID).All(p => p.Valoare == -40m && p.Fel == N.FelTranzactie.Operare)
         && noteNtcCub.Count(p => p.LinieId == linieViramente.ID) == 2 && noteNtcCub.Count(p => p.LinieId == linieStorno.ID) == 2);
+    Check("D9-A10 NTC: debitul cules MAG1 pe prima linie, implicitul predator SEDIU pe a doua; creditul implicit primitor pe ambele",
+        noteNtcCub.Single(p => p.Debit && p.LinieId == linieViramente.ID).Gestiune == mag1.ID
+        && noteNtcCub.Single(p => p.Debit && p.LinieId == linieStorno.ID).Gestiune == sediu.ID
+        && noteNtcCub.Where(p => p.Credit).All(p => p.Gestiune == unitate.ID));
 
 
     // --- Refuzurile: invarianții tipului + gardianul generic de dimensiuni ---
@@ -8842,6 +8877,10 @@ using (var os = provider.CreateObjectSpace()) {
     Check("ANCORA F8-D13.2: repartitorul CULES (MAG1) e nivelul MAXIM al coalesce-ului de dimensiuni; pe linia fără el cade default-ul polimorf (debit←Predator = titularul) [cub]",
         noteDecCub.Any(p => p.Debit && p.LinieId == linieDeplasare.Id)
         && noteDecCub.Where(p => p.Debit && p.LinieId == linieDeplasare.Id).All(p => p.CodEconomic == codEcDec.ID));
+    Check("D9-A10 Api DEC: debitul protocolului poartă gestiunea culeasă MAG1, al deplasării titularul; creditul 542 titularul pe ambele",
+        debitProtocolCub.All(p => p.Gestiune == mag1.ID)
+        && noteDecCub.Where(p => p.Debit && p.LinieId == linieDeplasare.Id).All(p => p.Repartitor == titular.ID)
+        && noteDecCub.Where(p => p.Credit).All(p => p.Repartitor == titular.ID));
 
     CheckRefuza("Apply peste DEC Operat → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
         () => DecontApply.Aplica(os, idDec, writeDec));
@@ -16925,6 +16964,11 @@ void VerificaApiNtc(bool privat) {
         + "necompletată cade default-ul polimorf al header-ului (32c) [cub]",
         noteCub.Any(p => p.Debit && p.LinieId == lCompensare.Id)
         && noteCub.Where(p => p.Debit && p.LinieId == lCompensare.Id).All(p => p.CodEconomic == codEc.ID));
+    Check("D9-A10 Api NTC: repartitorul cules al liniei pe capătul lui (X / X; Y / implicitul primitor); linia fără el ia implicitul antetului",
+        noteCub.Where(p => p.LinieId == lCompensare.Id).All(p => p.Repartitor == partenerX.ID)
+        && noteCub.Single(p => p.Debit && p.LinieId == lPreluare.Id).Repartitor == partenerY.ID
+        && noteCub.Single(p => p.Credit && p.LinieId == lPreluare.Id).Gestiune == unitate.ID
+        && noteCub.Single(p => p.Debit && p.LinieId == lMinus.Id).Gestiune == unitate.ID);
     CheckRefuza("Api NTC: Apply peste o notă OPERATĂ → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
         () => NotaContabilaApply.Aplica(os, idNtc, rescriere));
     CheckRefuza("Api NTC: Sterge peste o notă OPERATĂ → același refuz de domeniu",
@@ -21681,6 +21725,9 @@ void VerificaDvi(bool privat) {
             && noteCub.Nota(cont4426.ID, cont446.ID, 210m)
             && noteCub.Nota(cont4426.ID, cont4427.ID, 105m)
             && linieTi.ValoareTva == 105m);
+        Check("D9-A10 DVI: creditul 446 al declarației rămâne fără repartitor — 446 nu urmărește partide și nu cere repartitor (forma îngustă)",
+            noteCub.Where(p => p.Credit && p.Cont == cont446.ID).ToList() is { Count: 1 } credit446
+            && credit446[0].Repartitor == null && credit446[0].Partener == null);
         var randuriTvaCub = CubScena.Fapte(os, idDvi);
         Check("DVI-V5 (privat) jurnalul fiscal: două rânduri de ACHIZIȚIE (direcția vine din `PoliticaTva`), "
             + "amândouă pe contrapartida declarată de politică — biroul vamal, nu furnizorul extern —, cu "

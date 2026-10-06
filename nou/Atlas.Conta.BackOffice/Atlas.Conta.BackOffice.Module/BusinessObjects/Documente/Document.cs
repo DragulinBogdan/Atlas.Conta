@@ -249,16 +249,6 @@ public abstract class Document : Editabila {
             linie.Valoare = Scara.RotunjesteBani(baza);
     }
 
-    // Convenția 00 §5 (dimensiunea Repartitor default pe notă: debit←Predator,
-    // credit←Primitor) devine default POLIMORF — ultimul nivel al coalesce-ului
-    // din motor. Decont o ajustează: creditul (contul de avans 542) urmărește
-    // titularul, nu primitorul justificării.
-    // Primesc `IObjectSpace` ca toate celelalte hook-uri ale motorului (vezi
-    // nota de mai sus): trezoreria are nevoie de el ca să distingă viramentul
-    // intern după TIPUL repartitorului de pe latură (F7-D5b).
-    public virtual Guid RepartitorImplicitDebit(DevExpress.ExpressApp.IObjectSpace os) => PredatorId;
-    public virtual Guid RepartitorImplicitCredit(DevExpress.ExpressApp.IObjectSpace os) => PrimitorId;
-
     // Gestiunea în care se NASC loturile culese pe liniile documentului
     // (F5-D2) — hook polimorf consumat de `LoturiCulegereService`, pe FK-uri +
     // IObjectSpace ca toate hook-urile motorului (25b: apelanții nu garantează

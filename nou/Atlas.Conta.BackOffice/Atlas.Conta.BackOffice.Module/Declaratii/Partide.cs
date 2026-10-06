@@ -44,15 +44,29 @@ static class Partide {
         decizii.Add(new N.PartidaDeschisa(linie, partida));
     }
 
-    /// <summary>
-    /// Partida se pune pe capătul care n-are deja unitate: pe un cont nominalizat
-    /// altfel (lotul recepției) partida n-ar avea ce nominaliza.
-    /// </summary>
-    public static N.Capat CuPartida(
-            N.Capat tert, Guid partener, IReadOnlyDictionary<Guid, N.Unitate> partide) {
-        ArgumentNullException.ThrowIfNull(tert);
-        return tert.Unitate is null && partide.TryGetValue(tert.Cont, out var partida)
-            ? tert with { Partener = partener, Unitate = partida }
-            : tert;
+}
+
+/// <summary>
+/// Capătul de terț (D9-A10): partida când contul o urmărește, partenerul când contul
+/// cere repartitor. Capătul cu gestiune reală e intern și rămâne neatins.
+/// </summary>
+static class Terti {
+    public static N.Capat Capat(Operand operand, N.Capat capat, Guid tert, N.Unitate? partida) {
+        ArgumentNullException.ThrowIfNull(capat);
+        if (partida is not null)
+            return capat with { Partener = tert, Unitate = partida };
+        return capat.Partener is null && CereRepartitor(operand, capat) ? capat with { Partener = tert } : capat;
     }
+
+    /// <summary>Partida se pune pe capătul care n-are deja unitate: lotul recepției nu e partidă.</summary>
+    public static N.Capat Capat(
+            Operand operand, N.Capat capat, Guid tert, IReadOnlyDictionary<Guid, N.Unitate> partide) {
+        ArgumentNullException.ThrowIfNull(capat);
+        return Capat(operand, capat, tert, capat.Unitate is null ? partide.GetValueOrDefault(capat.Cont) : null);
+    }
+
+    static bool CereRepartitor(Operand operand, N.Capat capat) =>
+        capat.Carte == N.Carte.Contabil
+        && operand.Conturi.GetValueOrDefault(capat.Cont)?.CereRepartitor == true
+        && (capat.Gestiune is null || N.GestiuniVirtuale.Este(capat.Gestiune));
 }

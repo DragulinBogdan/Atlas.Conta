@@ -20,7 +20,7 @@ public sealed record RepartitorFapt(Guid Id, FelRepartitor? Fel, Guid? ContImpli
     public Parte? Parte => Laturi.ParteA(Fel);
 }
 
-public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide);
+public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide, bool CereRepartitor);
 
 public sealed record SoldPartidaFapt(N.Unitate Unitate, N.Sold Sold, decimal Disponibil);
 

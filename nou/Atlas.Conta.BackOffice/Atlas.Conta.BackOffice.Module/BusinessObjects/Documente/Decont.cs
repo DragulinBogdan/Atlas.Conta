@@ -32,11 +32,6 @@ public class Decont : Document, IDocumentCuPV, IDocumentFiscalPrimit {
     [XafDisplayName("Dată PV")]
     public virtual DateOnly? DataPV { get; set; }
 
-    // Creditul (contul de avans 542) se dimensionează pe TITULAR, nu pe
-    // primitorul justificării — soldul avansurilor se ține per angajat;
-    // convenția 00 §5 (credit←Primitor) rămâne default-ul celorlalte tipuri.
-    public override Guid RepartitorImplicitCredit(DevExpress.ExpressApp.IObjectSpace os) => PredatorId;
-
     public override void PregatesteOperare(DevExpress.ExpressApp.IObjectSpace os) =>
         CalculeazaValori(os, Detalii, pastreazaTvaCules: true);
 

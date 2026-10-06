@@ -82,8 +82,8 @@ public sealed class DeclarantReturClient : IDeclarant {
         }
         if (refuzuri.Count > 0) return null;
         return new(doc.Id, doc.DataInregistrare, [.. miscari.Select(m => m with {
-            DeLa = Partide.CuPartida(m.DeLa, doc.Predator.Id, partide),
-            La = Partide.CuPartida(m.La, doc.Predator.Id, partide),
+            DeLa = Terti.Capat(operand, m.DeLa, doc.Predator.Id, partide),
+            La = Terti.Capat(operand, m.La, doc.Predator.Id, partide),
         })], decizii, [operand.PerioadaDeschisa, operand.VersiunePolitica]);
     }
 }

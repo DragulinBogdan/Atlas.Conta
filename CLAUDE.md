@@ -203,7 +203,11 @@ motorul nu mai scrie, nu mai citește și nu mai ramifică pe registre și pe
 regim; valoarea liniei din decizia contractului; ASM pe P = C; refuzul tipului
 inert și al regulii fără consumator; inversa fiscală născută finală; oracolul
 și martorii scoși din ModelCheck; `docs/nucleu/tr-d9-pas6-taierea.md`, 2026-10-07).
-Urmează pasul 6b, apoi review-ul Codex principal înaintea lui 7.
+Pasul 6b e făcut (repartitorul pe
+capătul de terț prin `Terti.Capat`, gardul pe capăt prin funcția unică
+`Contabil.Repartitor`, SC-PLT-08, cele 17 aserții rescrise pe cititori:
+`docs/nucleu/tr-d9-pas6b-repartitor.md`, 2026-10-07). Urmează review-ul
+Codex principal al lotului 6 + 6b înaintea lui 7.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

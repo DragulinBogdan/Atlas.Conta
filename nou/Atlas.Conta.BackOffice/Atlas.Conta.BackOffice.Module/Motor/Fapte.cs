@@ -360,14 +360,15 @@ internal static class Fapte {
                 .ToDictionary(r => r.Id);
     }
 
-    static Dictionary<Guid, Declaratii.ContFapt> Conturi(IObjectSpace os, IReadOnlyList<Guid> ids) =>
+    internal static Dictionary<Guid, Declaratii.ContFapt> Conturi(IObjectSpace os, IReadOnlyList<Guid> ids) =>
         ids.Count == 0
             ? []
             : os.GetObjectsQuery<Cont>()
                 .Where(c => ids.Contains(c.ID))
-                .Select(c => new { c.ID, c.Simbol, c.UrmarestePartide })
+                .Select(c => new { c.ID, c.Simbol, c.UrmarestePartide, c.DimensiuniObligatorii })
                 .ToList()
-                .Select(c => new Declaratii.ContFapt(c.ID, c.Simbol, c.UrmarestePartide))
+                .Select(c => new Declaratii.ContFapt(c.ID, c.Simbol, c.UrmarestePartide,
+                    c.DimensiuniObligatorii.HasFlag(DimensiuneFlags.Repartitor)))
                 .ToDictionary(c => c.Id);
 
     static Declaratii.PoliticaTvaFapt Tva(PoliticaTva politica) =>

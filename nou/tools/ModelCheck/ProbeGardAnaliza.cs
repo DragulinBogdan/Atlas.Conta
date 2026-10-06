@@ -20,10 +20,9 @@ static class ProbeGardAnaliza {
             new N.Capat { Cont = credit, Carte = carte, Analiza = analiza, Partener = pePartener, Produs = produs },
             new N.Capat { Cont = debit, Carte = carte, Analiza = analiza, Gestiune = peGestiune, Produs = produs },
             0m, 0m, 100m, new N.Cauza(document, linie));
-        IReadOnlyList<string> Lipsuri(N.Miscare miscare, Guid? angajament, Guid? alDocumentului = null,
+        IReadOnlyList<string> Lipsuri(N.Miscare miscare, Guid? angajament,
                 IReadOnlyDictionary<Guid, C.GardAnaliza.ContFapt> pe = null) => C.GardAnaliza.Lipsuri([miscare], pe ?? conturi,
-            new Dictionary<Guid, C.GardAnaliza.LinieFapt> { [linie] = new("Servicii", angajament) },
-            alDocumentului, alDocumentului);
+            new Dictionary<Guid, C.GardAnaliza.LinieFapt> { [linie] = new("Servicii", angajament) });
         var cuCod = N.Analiza.Fara with { CodEconomic = economic };
         void Verifica(string nume, bool rezultat) => check("GARD-ANALIZA: " + nume, rezultat);
 
@@ -43,12 +42,14 @@ static class ProbeGardAnaliza {
             Lipsuri(Miscare(liber, liber, N.Analiza.Fara), null).Count == 0);
 
         var faraRepartitor = Lipsuri(Miscare(cheltuiala, furnizor, cuCod), null);
-        Verifica("repartitorul lipsește numai când nu-l poartă nici capătul, nici documentul — "
+        Verifica("D9-A10: repartitorul e al capătului — partenerul sau gestiunea; fără el gardul refuză — "
             + string.Join(" | ", faraRepartitor),
             faraRepartitor.SequenceEqual(["Contul 401 (credit, linia cu Servicii) cere: Repartitor."])
-            && Lipsuri(Miscare(cheltuiala, furnizor, cuCod), null, alDocumentului: partener).Count == 0
             && Lipsuri(Miscare(cheltuiala, furnizor, cuCod, pePartener: partener), null).Count == 0
-            && Lipsuri(Miscare(furnizor, cheltuiala, cuCod, peGestiune: gestiune), null).Count == 0);
+            && Lipsuri(Miscare(furnizor, cheltuiala, cuCod, peGestiune: gestiune), null).Count == 0
+            && C.GardAnaliza.Repartitor(new N.Capat { Cont = furnizor, Partener = partener, Gestiune = gestiune }) == partener
+            && C.GardAnaliza.Repartitor(new N.Capat { Cont = furnizor, Gestiune = gestiune }) == gestiune
+            && C.GardAnaliza.Repartitor(new N.Capat { Cont = furnizor }) == null);
 
         var axe = new (DimensiuneFlags Flag, string Nume, N.Analiza Cu)[] {
             (DimensiuneFlags.CodFunctional, "Cod funcțional", N.Analiza.Fara with { CodFunctional = Guid.NewGuid() }),

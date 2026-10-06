@@ -2,6 +2,8 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using DevExpress.ExpressApp;
+using Atlas.Conta.BackOffice.Module.Proiectii;
+using C = Atlas.Conta.BackOffice.Module.Cub;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
@@ -63,6 +65,50 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
             SoldPartida("SC-X-04", Partida(p2.Id, ContFurnizor)!.Value, Februarie, 0);
         }
         for (var i = 0; i < 2; i++) PestePerioada(peste[i], corectate[i], i == 1);
+        RepartitorPeTert();
+    }
+
+    // D9-A10: piciorul de terț al contului care cere repartitor poartă partenerul și fără partidă;
+    // contul fără flag și fără partide rămâne fără coordonată.
+    void RepartitorPeTert() {
+        var faraFlag = Cont(Privat ? "462" : "462.01.03");
+        var cuFlag = Cont(Privat ? "462" : "462.01.09");
+        var flags = CuSpatiu(os => os.GetObjectByKey<Cont>(cuFlag).DimensiuniObligatorii);
+        Guid Creditor(Guid cont) => CuSpatiu(os => {
+            var p = os.CreateObject<Partener>();
+            p.Cod = Marcaj + "-CRED-" + os.GetObjectByKey<Cont>(cont).Simbol; p.Denumire = p.Cod; p.ContImplicitId = cont;
+            os.CommitChanges(); return p.ID;
+        });
+        FacturaScena Plata(Guid creditor) => CuSpatiu(os => {
+            var doc = os.CreateObject<Plata>();
+            doc.Data = Februarie; doc.PredatorId = casa; doc.PrimitorId = creditor;
+            var l = os.CreateObject<DocumentTrezorerieDetaliu>(); l.Document = doc;
+            l.Pozitie = 1; l.TipMaterialId = Tip(os, "TRZ"); l.Valoare = 100; l.CodEconomicId = Economic;
+            os.CommitChanges(); return new FacturaScena(doc.ID, [new(l.ID, null, null)]);
+        });
+        var liber = Creditor(faraFlag);
+        var p1 = Plata(liber); Opereaza(p1.Id);
+        Postari("SC-PLT-08", p1.Id, N.FelTranzactie.Operare, Februarie,
+            new RandScena(faraFlag, N.Latura.Debit, 100, Linie: p1.Linii[0].Id, Economic: Economic),
+            new RandScena(Cont(Numerar), N.Latura.Credit, 100, Gestiune: casa, Linie: p1.Linii[0].Id, Economic: Economic));
+        try {
+            if (Privat) Comanda(os => { os.GetObjectByKey<Cont>(cuFlag).DimensiuniObligatorii = flags | DimensiuneFlags.Repartitor; os.CommitChanges(); });
+            var creditor = Creditor(cuFlag);
+            var p2 = Plata(creditor); Opereaza(p2.Id);
+            Postari("SC-PLT-08", p2.Id, N.FelTranzactie.Operare, Februarie,
+                new RandScena(cuFlag, N.Latura.Debit, 100, Partener: creditor, Linie: p2.Linii[0].Id, Economic: Economic),
+                new RandScena(Cont(Numerar), N.Latura.Credit, 100, Gestiune: casa, Linie: p2.Linii[0].Id, Economic: Economic));
+            Verifica("SC-PLT-08", "pe cititori: repartitorul piciorului de terț e creditorul, fără partidă deschisă; "
+                + "pe contul fără flag repartitorul lipsește", CuSpatiu(os => {
+                    var tert = CubScena.Note(os, p2.Id).Single(p => p.Cont == cuFlag);
+                    var liberul = CubScena.Note(os, p1.Id).Single(p => p.Cont == faraFlag);
+                    var partide = C.Citiri.Partide.Postari(os).Count(p => p.DocumentId == p2.Id || p.DocumentId == p1.Id);
+                    var balanta = ContabilProiectii.Balanta(os, Februarie, Februarie, analitic: true, repartitorId: creditor).ToList();
+                    return tert.Repartitor == creditor && tert.Unitate == null && liberul.Repartitor == null && partide == 0
+                        && balanta.Count == 1 && balanta[0].ContId == cuFlag && balanta[0].RulajDebit == 100;
+                }));
+        }
+        finally { if (Privat) Comanda(os => { os.GetObjectByKey<Cont>(cuFlag).DimensiuniObligatorii = flags; os.CommitChanges(); }); }
     }
 
     void CicluDeschis(bool inc) {

@@ -14,6 +14,7 @@ record PostareScena(Guid TranzactieId, Guid? DocumentId, Guid? LinieId, N.FelTra
     public bool Debit => Latura == N.Latura.Debit;
     public bool Credit => Latura == N.Latura.Credit;
     public decimal Semnata => Latura == N.Latura.Debit ? Valoare : -Valoare;
+    public Guid? Repartitor => Contabil.Repartitor(Partener, Gestiune);
 }
 
 /// <summary>Intrările comune ale cubului, restrânse la documentele unei scene.</summary>

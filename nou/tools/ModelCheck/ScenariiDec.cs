@@ -155,8 +155,8 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
             [new(Guid.NewGuid(), null, NaturaClasa.Serviciu, null, false,
                 SursaCont.TipMaterial, null, SursaCont.RepartitorPredator, Cont(Avans), true, null, null, null)],
             [], null, new Dictionary<Guid, TipTvaFapt>(),
-            new Dictionary<Guid, ContFapt> { [Cont(Serviciu)] = new(Cont(Serviciu), Serviciu, false),
-                [Cont(Avans)] = new(Cont(Avans), Avans, true) },
+            new Dictionary<Guid, ContFapt> { [Cont(Serviciu)] = new(Cont(Serviciu), Serviciu, false, false),
+                [Cont(Avans)] = new(Cont(Avans), Avans, true, false) },
             new Dictionary<CheieLotFapt, N.Sold>(), null, [], null, null, null,
             new(An, 1), new("scena-dec", Ianuarie)) {
                 Repartitori = new Dictionary<Guid, RepartitorFapt> { [titular] = titularFapt, [Loc] = locFapt },

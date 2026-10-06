@@ -39,9 +39,8 @@ internal static class ImobilizariFapte {
         var lipsa = conturi.Where(c => c != Guid.Empty && !operand.Conturi.ContainsKey(c)).ToList();
         if (lipsa.Count > 0) {
             var conturiOperand = operand.Conturi.ToDictionary();
-            foreach (var c in os.GetObjectsQuery<Cont>().Where(c => lipsa.Contains(c.ID))
-                    .Select(c => new { c.ID, c.Simbol, c.UrmarestePartide }).ToList())
-                conturiOperand[c.ID] = new(c.ID, c.Simbol, c.UrmarestePartide);
+            foreach (var (id, cont) in Fapte.Conturi(os, lipsa))
+                conturiOperand[id] = cont;
             operand = operand with { Conturi = conturiOperand };
         }
         var note = os.GetObjectsQuery<NotaContabila>().Where(d => d.Stare == StareDocument.Operat).Select(d => d.ID);
