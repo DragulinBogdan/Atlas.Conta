@@ -6,7 +6,10 @@
   G2 din [`tr-d9-pas2-probe.md`](tr-d9-pas2-probe.md), §1.
 - Stare: aprobat de owner (2026-10-06, în chat), în forma îngustă: partenerul
   numai pe piciorul de terț al conturilor care cer repartitor. Transcris în
-  contract, secțiunea „Amendamentul 2".
+  contract, secțiunea „Amendamentul 2". Owner, 2026-10-06 (noaptea): pasul
+  se mută după pasul 6, ca 6b, în forma minimală din decizia 111 (h); fără
+  normalizare de oracol. „Latura externă a documentului" se citește „terțul
+  capătului" (la decont și la nota contabilă terțul e al liniei).
 - Respinsă: partenerul pe toate postările documentului cu terț. Ar schimba
   sensul coordonatei din „al cui e soldul" în „cu cine s-a întâmplat
   evenimentul" și ar strica soldul pe partener al conturilor de stoc și de
@@ -14,7 +17,7 @@
   Partenerul și pe conturile de cheltuieli și venituri e candidat pentru
   TR-D9b, cu scenariile lui.
 
-## D9-A10 — G1: repartitorul e pe postare, gardul e strict (pas nou, 2c)
+## D9-A10 — G1: repartitorul e pe postare, gardul e strict (pas nou, 6b; inițial 2c)
 
 **Ce e azi.** Flag-ul `Repartitor` al unui cont nu refuză nimic pe documente.
 Nota planului vechi își ia repartitorul, în ultimă instanță, de pe latura
@@ -35,8 +38,9 @@ registrul.
 - (a) Pe o postare din cartea contabilă, pe un cont cu flag-ul `Repartitor`,
   declarantul pune repartitorul pe capăt după sensul piciorului, ca în restul
   cubului: piciorul intern poartă `Gestiune`, cum o poartă deja; piciorul de
-  terț poartă `Partener` = latura externă a documentului, și când contul nu
-  urmărește partide. Convenția pozițională a notei vechi (debit ← predator,
+  terț poartă `Partener` = terțul capătului, de regulă latura externă a
+  documentului, la decont și la nota contabilă terțul liniei, și când contul
+  nu urmărește partide. Convenția pozițională a notei vechi (debit ← predator,
   credit ← primitor) NU se reproduce.
 - (b) Coordonata nu deschide partidă și nu schimbă unitatea postării.
   Urmărirea partidelor rămâne pe `UrmarestePartide`.
@@ -61,15 +65,16 @@ deci gardul strict refuză efectiv numai un declarant care uită coordonata.
    de azi și cea de după;
 3. invarianții nucleului și `INV-CUB` care presupun „partener numai cu
    partidă" sau „gestiune numai cu stoc";
-4. oracolul registre → cub, cât mai trăiește: nota veche poartă pe
-   piciorul de terț latura pozițională, nu partenerul, deci coordonata nouă
-   nu are geamăn în registru. Diferența se declară cu nume în normalizările
-   oracolului și moare cu el la pasul 6.
+4. (căzut la mutarea după pasul 6) oracolul registre → cub nu mai există
+   când intră schimbarea; nota veche purta pe piciorul de terț latura
+   pozițională, nu partenerul, deci oricum n-ar fi putut proba coordonata.
 
-**Unde intră.** Pas nou 2c, sub regimul dual, făcut de main, înaintea pasului
-5b. Proba coordonatei e catalogul, nu oracolul. Cele 17 aserții din clasa
-„repartitorul de pe latura notei" (inventar, §13) se rescriu în acest pas;
-pasul 3 le lasă neatinse.
+**Unde intră.** Pas 6b, după tăiere, făcut de main, în forma minimală din
+decizia 111 (h): un singur helper al capătului de terț, gardul pe o singură
+funcție a repartitorului capătului, aserțiile pe cititori. Proba coordonatei
+e catalogul. Cele 17 aserții din clasa „repartitorul de pe latura notei"
+(inventar, §13) se rescriu în acest pas; pasul 3 le lasă neatinse. Până la 6b
+gardul mai citește latura documentului.
 
 **Oprire înaintea termenului.** Un document de catalog acceptat azi ajunge
 refuzat; o cifră a unui cititor se schimbă altfel decât prin apariția
@@ -89,6 +94,6 @@ profil.
 |---|---|
 | D9-D1 | schimbarea 8: repartitorul pe postare, gardul strict |
 | D9-D4 | maparea `Repartitor`, fără latura documentului; trimiterea la B-D8 pct. 4 amendat |
-| D9-D15 | pasul 2c în tabel; regula de oprire primește probele lui |
-| D9-D13 | 64h, 86-r13, F27-r11: proba pe `Partener` vine din pasul 2c |
+| D9-D15 | pasul 6b în tabel (inițial 2c, mutat 2026-10-06); regula de oprire primește probele lui |
+| D9-D13 | 64h, 86-r13, F27-r11: proba pe `Partener` vine din pasul 6b |
 | decizia 110 | limita din D9-A11 |

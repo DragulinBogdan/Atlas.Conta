@@ -413,11 +413,13 @@ Cunoscute înaintea inventarului:
   de `ReceptiiConexe.VerificaAnaliza`;
 - **repartitorul (D9-A10)**: gardul judecă numai capătul postării, `Partener`
   sau `Gestiune`. Piciorul intern poartă gestiunea, ca azi. Piciorul de terț
-  al unui cont cu flag-ul `Repartitor` poartă partenerul, adică latura externă
-  a documentului, și când contul nu urmărește partide; partida rămâne legată
-  de `UrmarestePartide`. Convenția pozițională a notei vechi (debit ←
-  predator, credit ← primitor) nu se reproduce. B-D8 pct. 4 se amendează
-  corespunzător. Până la pasul 2c gardul mai citește latura documentului.
+  al unui cont cu flag-ul `Repartitor` poartă partenerul, adică terțul
+  capătului (la decont și la nota contabilă terțul e al liniei, nu latura
+  externă a documentului), și când contul nu urmărește partide; partida
+  rămâne legată de `UrmarestePartide`. Convenția pozițională a notei vechi
+  (debit ← predator, credit ← primitor) nu se reproduce. B-D8 pct. 4 se
+  amendează corespunzător. Până la pasul 6b gardul mai citește latura
+  documentului.
 
 Gardul se adaugă pe partea contractului **înaintea** tăierii (pasul 2), cât
 timp planul vechi încă rulează: aceleași documente trebuie refuzate de
@@ -631,7 +633,7 @@ Aprobat odată cu contractul; se scrie în `restante.md` la închidere.
 |---|---|
 | S-r6, T-r7, T-r13, IM-r1, IM-r3 | se închid prin tăiere (D9-D2, D9-D3, D9-D5) |
 | 098-r3 | se închide numai cu proba: după stornoul sau anularea unui NIR acoperit cu consum (SC-X-01), o operație ulterioară pe același lot, refuzată azi de garda registrului, e acceptată; dispariția codului nu ajunge |
-| 64h, 86-r13, F27-r11 | dimensiunea `Repartitor` a rândului de registru dispare, partenerul stă pe postare (090 c); se închid dacă pasul 1 confirmă că niciun cititor nu mai grupează pe laturile documentului, cu proba pe `Partener`, care vine din pasul 2c (D9-A10) |
+| 64h, 86-r13, F27-r11 | dimensiunea `Repartitor` a rândului de registru dispare, partenerul stă pe postare (090 c); se închid dacă pasul 1 confirmă că niciun cititor nu mai grupează pe laturile documentului, cu proba pe `Partener`, care vine din pasul 6b (D9-A10) |
 | 75-r4 | NU se închide: privește `AsamblareDetaliu.PretEvaluare`, sursa valorii produsului (`round(q × preț)` ≠ Σ consum pe cantități mari: consum 100,00, produs 30.000 ⇒ 99,99), care supraviețuiește tăierii. Rămâne deschisă, cu destinația TR-D9b: valoarea produsului ca repartizare a consumului |
 | TR-r9 | în felie (D9-D7) |
 | F27-r16, F28-r1 | în felie (D9-D10) |
@@ -693,12 +695,12 @@ dual; simbolurile dispar la sfârșit, într-un pas atomic.**
 | 0 | contractul aprobat; review advers Codex al contractului | nu |
 | 1 | inventarul nominal, în `docs/nucleu/tr-d9-inventar.md`: refuzurile planului vechi cu verdict și domeniul gardului analizei, tip cu tip, pe seed și pe politicile editabile (D9-D4); fiecare referință ModelCheck cu verdict (D9-D7 c); validările de frunză pe valoarea finală, apelanții lui `Valideaza` care citesc valori din OS-ul temporar și returul pe lot fără preț de intrare (D9-D2, D9-D3); consumatorii `RegulaStoc`; operarea tipului inert azi (D9-D5); membrii rămași ai serviciilor vechi (D9-D2); 63f | nu |
 | 2 | sub dual: gardul analizei obligatorii pe postări, cu proba lui directă; scenariile D9-D3 pe valorile liniilor, cu cifra de azi și cu cea de după; rândurile ASM rescrise nominal, cu felurile și măsurile de după; scenariul 098-r3; scenariul tipului care nu declară; recepția facturii în gardul analizei, cu scena ei bugetară (D9-A3); scenariul regulii de contare fără consumator (D9-A4) | numai refuzuri echivalente cu cele de azi; schimbarea 5 |
-| 2c | sub dual: repartitorul pe postare și gardul strict (D9-A10). Înaintea codului se măsoară și se scriu în catalog: postările care capătă coordonata, cititorii care grupează pe partener sau pe gestiune, invarianții care presupun partener numai cu partidă. Diferența față de oracol se declară cu nume. Cele 17 aserții ale clasei „repartitorul de pe latura notei" se rescriu aici. Se închide înaintea pasului 5b; ordinea față de pașii 3–5 e liberă | schimbarea 8 |
-| 3 | sub dual: re-țintirea aserțiilor de regulă pe cititorii cubului (D9-D7 d); clasa „repartitorul de pe latura notei" rămâne pasului 2c | nu |
+| 3 | sub dual: re-țintirea aserțiilor de regulă pe cititorii cubului (D9-D7 d); clasa „repartitorul de pe latura notei" rămâne pasului 6b | nu |
 | 4 | sub dual: consumatorii din produs — lista XAF pe `Postare` cu gardul ei, permisiunea unică pe cele trei porți și pe verificarea închiderii, proiecția moartă `TotalStingere` și forma proiecției de rest, clientul fără câmpurile care vor ieși (D9-D9, D9-D10, D9-D12). Listele vechi de registre rămân până la pasul 7. Precizările I3, I4 și I8 (D9-A6) | schimbarea 3: subiectul unic și citirea completă |
 | 5 | sub dual: uneltele — Import1C și Migrare pe cititorii cubului, fără `StocService` și fără planul vechi; BackfillTva șters (D9-D11) | nu |
 | 5b | probele dinaintea tăierii, fără cod de produs: ultima reconciliere registre ↔ cub arhivată, `PerfCub` în regim dual ca termen de comparație, scara de volum cu ruta securizată, raportată owner-ului (D9-A1) | nu |
 | 6 | nimic nu mai scrie, nu mai citește și nu mai ramifică pe registre și pe regim: planul vechi, valoarea liniei din contract, ASM pe gardul P = C cu clasificarea pe C și distribuirea pe evaluarea pură, ramurile `PosteazaInCub` și refuzul tipului care nu declară, oracolul și martorii registru → cub cu mutanții lor (D9-D2, D9-D3, D9-D5, D9-D7 a). Refuzul regulii de contare fără consumator (D9-A4). Inversa fiscală născută finală, fără `ReatribuieInversaFiscala` (D9-A5). În același pas, lista nominală X-D2 și probele care asertează vechii scriitori se aduc la zi; nu rămâne o listă exactă învechită până la 7. Rămân numai declarațiile: entitățile, maparea, coloanele, listele XAF vechi, cazurile gardianului | schimbările 1, 2, 4 și 6 |
+| 6b | după tăiere, fără oracol: repartitorul pe postare și gardul strict (D9-A10, mutat aici 2026-10-06). Forma minimală din 111 (h): un singur helper al capătului de terț, cu regula „terțul capătului"; gardul citește repartitorul capătului dintr-o singură funcție; aserțiile se scriu pe cititori, nu pe coloanele postării. Înaintea codului se măsoară și se scriu în catalog: postările care capătă coordonata, cititorii care grupează pe partener sau pe gestiune, invarianții care presupun partener numai cu partidă. Cele 17 aserții ale clasei „repartitorul de pe latura notei" se rescriu aici. Nu există diferență de declarat față de oracol: oracolul a murit la 6 | schimbarea 8 |
 | 7 | eliminarea atomică a declarațiilor: entitățile de registru, coloanele scoase, maparea, listele XAF vechi, cazurile gardianului, `InitialCreate`, seed-ul fără rânduri moarte, recrearea bazelor, regenerarea metadatei și a tipurilor clientului, lista nominală redusă și activarea probei numelor interzise (D9-D6, D9-D7 b, D9-D8, D9-D12) | nu |
 | 7b | cheia de pereche pe postare: ordinalul dat în nucleu, materializarea, coloana în `InitialCreate`, invariantul în `Conservare` și în `INV-CUB`; cititorii neschimbați (D9-A2) | nu |
 | 7c | versiunea politicii în explicație: ipoteza, decizia `ContRezolvat`, DTO-ul, formatul 2, cu lista nominală a faptelor de politică scrisă înaintea codului (D9-A8) | schimbarea 7 |
@@ -739,7 +741,7 @@ Pasul 1 citește tot `Program.cs`; e pasul pentru care se propune delegarea
 10. invariantul perechii e verde în nucleu și în `INV-CUB`; nicio postare
     existentă nu ajunge modificată la commit (D9-A2, D9-A5);
 11. probele versiunii politicii sunt verzi (D9-A8);
-12. niciun document de catalog acceptat înaintea pasului 2c nu e refuzat de
+12. niciun document de catalog acceptat înaintea pasului 6b nu e refuzat de
     gardul strict; postările care au căpătat partenerul sunt numite în
     catalog (D9-A10).
 
@@ -841,7 +843,7 @@ două texte diferă, câștigă amendamentul.
 
 | Id | Ce aduce | Unde e aplicat |
 |---|---|---|
-| D9-A10 | G1: partenerul pe piciorul de terț al conturilor cu flag-ul `Repartitor`; gardul strict pe postare | D9-D1, schimbarea 8; D9-D4; D9-D15, pasul 2c; regula de oprire 12; D9-D13 |
+| D9-A10 | G1: partenerul pe piciorul de terț al conturilor cu flag-ul `Repartitor`; gardul strict pe postare | D9-D1, schimbarea 8; D9-D4; D9-D15, pasul 6b (mutat din 2c la 2026-10-06, forma minimală din 111 h); regula de oprire 12; D9-D13 |
 | D9-A11 | G2: materialul din regulă nu ajunge pe postare; limită acceptată | decizia 110 |
 
 Respinsă: partenerul pe toate postările documentului cu terț. Partenerul și

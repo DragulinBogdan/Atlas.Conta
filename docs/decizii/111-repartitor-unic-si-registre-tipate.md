@@ -7,7 +7,7 @@
   owner-ul. Numărul 110 e rezervat închiderii TR-D9a.
 - Docs: `docs/consultations/2026-10-06-repartitor-pe-postare/` (consultare
   Fable + Codex, două runde, README cu verdictele); `docs/nucleu/tr-d9-taierea-amendament-2.md`
-  (D9-A10, forma îngustă aprobată pentru pasul 2c); 090 (c), B-D8 pct. 4 și 9.
+  (D9-A10, forma îngustă aprobată; pasul 6b, mutat de owner după tăiere); 090 (c), B-D8 pct. 4 și 9.
 
 ## Direcția propusă
 
@@ -62,7 +62,7 @@ devine o linie în §„Constatări strânse", nu cod și nu amendament.
 
 (h) **Anticipări cu cost mic, permise în TR-D9a** fiindcă nu schimbă
 comportament și nu schimbă schema:
-- pasul 2c se face printr-un singur helper al capătului de terț, cu regula
+- pasul 6b (D9-A10, inițial 2c) se face printr-un singur helper al capătului de terț, cu regula
   „terțul capătului" (la decont și la nota contabilă terțul e al liniei, nu
   latura externă a documentului); textul D9-A10 se precizează la prima
   redeschidere a contractului;

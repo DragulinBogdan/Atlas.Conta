@@ -184,8 +184,10 @@ constatările G1 și G2: `docs/nucleu/tr-d9-pas2-probe.md`). G1 și G2 sunt
 tranșate de owner (2026-10-06) prin amendamentul 2, transcris în contract
 (`docs/nucleu/tr-d9-taierea-amendament-2.md`, D9-A10 și D9-A11: partenerul pe
 piciorul de terț al conturilor care cer repartitor, gardul strict pe postare,
-pas nou 2c; materialul din regulă rămâne limită consemnată). Urmează pasul 3
-și pasul 2c, în orice ordine, amândouă înaintea pasului 5b.
+pas nou 6b, după tăiere, în forma minimală din decizia 111 (h); materialul
+din regulă rămâne limită consemnată). Decizia 111 e propusă, nu aprobată:
+direcția repartitorului unic și a registrelor tipate, cu poarta la contractul
+TR-D9b. Urmează pasul 3.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
