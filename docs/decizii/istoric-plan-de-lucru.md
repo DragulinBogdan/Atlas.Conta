@@ -1017,3 +1017,13 @@ detaliat în jurnal):
   numai prin compilare: unealta nu se rulează între pașii 5 și 6. ModelCheck
   integral neschimbat, **3.552 / 4.860 OK**.
   `docs/import/faza-1c-design.md` §16, `run-nucleu/tr-d9a/pas5/`.
+
+- **2026-10-06 — TR-D9a, review-ul advers Codex al lotului 3–5, închis.**
+  Două constatări în probele pasului 3, corectate și reverificate. D9-L35-R1:
+  două aserții își pierduseră clauza pe nota persistată, fiindcă perechea
+  numită în inventar recalcula declarația; clauzele sunt readuse pe cub.
+  D9-L35-R2: `CubScena.Nota` nu compara tranzacția; acum demonstrează perechea
+  numai pe aceeași tranzacție și linie, cu un singur debit și un singur credit
+  la valoarea aceea. `Aloca` din Import1C refuză lotul cu sold pe două conturi
+  ale aceleiași categorii. Integrala rulată independent de Codex: 3.552 /
+  4.860 OK. `docs/nucleu/tr-d9-pas3-retintire.md` §6.
