@@ -821,7 +821,7 @@ două texte diferă, câștigă amendamentul.
 
 | Id | Ce aduce | Unde e aplicat |
 |---|---|---|
-| D9-A1 | probele dinaintea tăierii: reconcilierea arhivată, `PerfCub` dual, scara de volum ca raport | D9-D15, pasul 5b; regula de oprire 6 și 9 |
+| D9-A1 | probele dinaintea tăierii: reconcilierea arhivată, `PerfCub` dual, scara de volum ca raport. Precizat de owner la 2026-10-06: baza reconcilierii e `.Flax.R3f` | D9-D15, pasul 5b; regula de oprire 6 și 9; făcut: [`tr-d9-pas5b-probe.md`](tr-d9-pas5b-probe.md) |
 | D9-A2 | cheia de pereche pe postare; transformările și deschiderile rămân fără pereche; cititorii neschimbați | D9-D15, pasul 7b; regula de oprire 10; D9-r4 |
 | D9-A3 | I2: recepția facturii în gardul analizei obligatorii | D9-D1, schimbarea 5; D9-D4; pasul 2 |
 | D9-A4 | I5: regula de contare fără consumator, refuzată la editare prin declarant | D9-D1, schimbarea 6; pașii 2 și 6; D9-r2 nu se deschide |

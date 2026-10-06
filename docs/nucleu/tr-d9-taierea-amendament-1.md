@@ -47,6 +47,15 @@ cu cheie de vizibilitate se poate construi din cub și după ea: cu cheia de
 pereche (D9-A2) forma pe perechi a registrelor devine derivabilă din cub, iar
 `TipStoc` dispare oricum (D9-D8).
 
+**Precizare (owner, 2026-10-06).** Baza reconcilierii de la punctul 1 e
+`.Flax.R3f`, nu `.Flax.M1s`: `.Flax.M1s` e scrisă înaintea deciziei 109 și
+nu corespunde codului (497 de linii cu taxa postată diferită de a liniei),
+iar `.Flax.R3f` e aceeași lună, importată cu codul 109-R1. Cifra TR-r12,
++585.404,66, e a unei baze de an întreg care nu mai există; se consemnează
+valorile lui ianuarie 2025. Importul pe an nu se reia cât modelul nu e
+aproape de forma finală. Rezultatul:
+[`tr-d9-pas5b-probe.md`](tr-d9-pas5b-probe.md).
+
 ## D9-A2 — Cheia de pereche pe postare (pas nou, 7b)
 
 Azi cubul nu ține corespondența dintre cele două postări ale unei mișcări;

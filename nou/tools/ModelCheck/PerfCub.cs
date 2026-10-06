@@ -78,8 +78,10 @@ sealed partial class PerfCub(Func<IObjectSpace> deschide, Action<string, bool> c
                     soc.Telefon = societate.Telefon; soc.ContBancarId = societate.ContBancarId;
                     os.GetObjectsQuery<ContPropriu>().Single(c => c.Cod == "BANCA").Iban = iban;
                 }
-                foreach (var u in os.GetObjectsQuery<ApplicationUser>().Where(u => u.UserName == Utilizator).ToList()) os.Delete(u);
-                foreach (var r in os.GetObjectsQuery<PermissionPolicyRole>().Where(r => r.Name == Utilizator).ToList()) os.Delete(r);
+                if (!Pastrata) {
+                    foreach (var u in os.GetObjectsQuery<ApplicationUser>().Where(u => u.UserName == Utilizator).ToList()) os.Delete(u);
+                    foreach (var r in os.GetObjectsQuery<PermissionPolicyRole>().Where(r => r.Name == Utilizator).ToList()) os.Delete(r);
+                }
                 os.CommitChanges();
             });
         }

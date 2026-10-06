@@ -48,7 +48,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         }
         catch (Exception e) { initiala = e; throw; }
         finally {
-            try { Curata(); }
+            try { if (!Pastreaza || initiala != null) Curata(); }
             catch (Exception e) when (initiala != null) { throw new AggregateException(initiala, e); }
         }
     }
@@ -56,6 +56,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected abstract void Executa();
     protected virtual void CurataCubSuplimentar(IObjectSpace os, Purja purja) { }
     protected virtual void CurataNomenclatoare(IObjectSpace os, Purja purja) { }
+    protected virtual bool Pastreaza => false;
 
     protected FacturaScena Nota(DateOnly data, params LinieNtcScena[] linii) {
         using var os = Deschide();

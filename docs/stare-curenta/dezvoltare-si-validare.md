@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-05.** [Index](README.md)
+**Actualizat: 2026-10-06.** [Index](README.md)
 
 TR-D9a, pasul 2 (regim dual): gardul analizei obligatorii pe mișcările
 contractului are proba lui directă, `GARD-ANALIZA` (`ProbeGardAnaliza`, pe
@@ -575,6 +575,24 @@ este o rulare grea: nu se suprapune cu alta pe aceleași baze. O rulare
 societății de pe profilul privat rămân cele ale scenei și se refac de mână.
 Un cititor nou care citește cumulat sau pe interval intră în `PerfCub.Operatii`
 cu ruta și cifrele lui de control. (X-D5, X-D3)
+
+### Scara de volum (`scripts/scara-volum-container.ps1`)
+
+`ModelCheck --scara-volum privat` păstrează scena scării transversale la
+m = 12, k = 64 și o multiplică în lățime, direct în SQL, pe treptele ×1, ×10,
+×100 și cea care trece de 5 milioane de postări. Fiecare copie are
+identități proprii pentru tranzacții, postări, documente, loturi și
+partenerii scenei; partidele își primesc identitatea prin `cub_partida_id`.
+La fiecare treaptă rulează probele de corectitudine (numărători și sume
+egale cu factorul × scena, originile partidelor recunoscute de cititorul
+produsului), reconstrucția snapshot-urilor pe calea produsului și măsurarea
+cititorilor comuni, rece și cald, pe ruta securizată și pe cea de sistem,
+cu planurile. O măsurare se oprește la 10 minute, reconstrucția la 30. E
+raport, fără prag. Rețeta rulează pe o clonă cu sufix (`.D9Vol` implicit),
+care rămâne bază de citire: liniile de document, registrele și împerecherile
+nu se multiplică. Rularea completă durează circa 95 de minute și e rulare
+grea. Rezultatul din 2026-10-06 și limitele lui:
+`docs/nucleu/tr-d9-pas5b-probe.md` §3. (D9-A1)
 
 ## Verificări proporționale cu modificarea
 

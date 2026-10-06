@@ -255,6 +255,11 @@ if (args.Contains("--perf-cub-masura")) {
     Console.WriteLine(PerfCub.Json(PerfCub.MasoaraInProces(connectionString, PerfCub.DinArgument(args[i + 1]), args[i + 2])));
     return;
 }
+// D9-A1: procesul-copil al primei reconstrucții de după multiplicare.
+if (args.Contains("--scara-volum-reconstructie")) {
+    Console.WriteLine(ScaraVolum.ReconstruiesteInProces(connectionString));
+    return;
+}
 if (args.Contains("--perf-saft-duk")) {
     PerfSaft.ValideazaDuk(args[Array.IndexOf(args, "--perf-saft-duk") + 1], Check);
     Rezumat();
@@ -786,6 +791,18 @@ if (args.Contains("--perf-cub")) {
         Console.WriteLine($"     PERFCUB m{istoricPerf}: {ceasPerf.Elapsed.TotalSeconds:0} s; mutanți INV-CUB neuciși: {(neucise.Count == 0 ? "niciunul" : string.Join(", ", neucise))}");
     }
     PerfCub.Evalueaza(scenePerf, Check, directorPerf, privatPerf);
+    Rezumat();
+    return;
+}
+
+// D9-A1: `ModelCheck --scara-volum privat` — cititorii comuni pe scena PerfCub multiplicată; raport, fără prag.
+if (args.Contains("--scara-volum")) {
+    if (profil != ProfilContabil.Privat) {
+        Console.WriteLine("Folosire: ModelCheck --scara-volum privat");
+        Environment.ExitCode = 2;
+        return;
+    }
+    ScaraVolum.Ruleaza(connectionString, () => provider.CreateObjectSpace(), Check, (os, an, luna) => InchideAcceptTot(os, an, luna), opts);
     Rezumat();
     return;
 }

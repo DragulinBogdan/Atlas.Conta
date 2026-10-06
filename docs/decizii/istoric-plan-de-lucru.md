@@ -1027,3 +1027,16 @@ detaliat în jurnal):
   la valoarea aceea. `Aloca` din Import1C refuză lotul cu sold pe două conturi
   ale aceleiași categorii. Integrala rulată independent de Codex: 3.552 /
   4.860 OK. `docs/nucleu/tr-d9-pas3-retintire.md` §6.
+
+- **2026-10-06 — TR-D9a, pasul 5b: probele dinaintea tăierii.** Fără cod de
+  produs. Ultima reconciliere registre ↔ cub e arhivată pe `.Flax.R3f`
+  (precizarea owner-ului: `.Flax.M1s` e dinaintea deciziei 109): șase
+  rânduri Δ, toate explicate, nicio clasă nouă. `PerfCub` în regim dual dă
+  termenul A al comparației de după tăiere, cu două mostre pentru zgomot:
+  1.541 privat / 1.011 bugetar OK. Scara de volum, mod nou `ModelCheck
+  --scara-volum`, duce scena la 5.001.179 de postări: cititorii cresc liniar
+  și rămân sub două secunde, ruta securizată nu costă, iar partidele cu rest
+  și snapshot-ul de partide cresc pătratic, din forma unei îmbinări pe chei
+  nulabile (8,9 s cu egalitate simplă, față de peste 10 minute).
+  D9-D10 (b) rămâne al owner-ului, cu cifra. ModelCheck integral neschimbat,
+  **3.552 / 4.860 OK**. `docs/nucleu/tr-d9-pas5b-probe.md`.

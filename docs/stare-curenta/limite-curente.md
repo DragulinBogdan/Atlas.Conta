@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-10-05.** [Index](README.md)
+**Actualizat: 2026-10-06.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -87,11 +87,27 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   snapshot. E singurul criteriu de formă picat al scării transversale:
   rândurile atinse cresc cu istoricul. Amânat prin amendamentul owner-ului
   (2026-10-04), odată cu F27-r16. (F27-r16, X-D5)
+- Îmbinarea dintre soldurile partidelor și originile lor crește pătratic cu
+  numărul de partide de pe cont. Cheile ei, unitatea și partenerul, sunt
+  nulabile pe `Postare`, iar interogarea generată le compară cu
+  `a = b OR (a IS NULL AND b IS NULL)`, deci Postgres îmbină numai pe cont.
+  Forma e în `PartideCuRest`, în snapshot-ul de partide scris la închiderea
+  lunii și la reconstrucție (`SolduriService.SursaPartide`) și în
+  `Partide.Proprii`. Măsurat pe scara de volum: partidele cu rest durează
+  1,2 s la 10.360 de partide, 79 s la 103.600 și peste 10 minute la 651.644;
+  aceeași interogare cu egalitate simplă durează 8,9 s la 651.644.
+  Necorectat; hotărârea e a owner-ului, odată cu D9-D10 (b).
+  (`docs/nucleu/tr-d9-pas5b-probe.md` §4)
 - Scara transversală este sintetică și mică: 7.951 de postări la 12 luni. Nu
   are prag absolut. Proba din plan se evaluează cu scanarea secvențială
   interzisă, fiindcă la acest volum planificatorul o alege legitim; planul
   ales e raportat alături. Pragul pe volum real rămâne al migrării. (X-D5,
   FZ-r3)
+- Scara de volum (5 milioane de postări) e tot sintetică: scena scării
+  transversale multiplicată în lățime, citită de utilizatorul administrativ,
+  pe Postgres neconfigurat. Nu măsoară scrierea, închiderea de lună,
+  cititorii fiscali și SAF-T, nici filtrele de rând ale unui rol restrâns.
+  (D9-A1)
 - Rândurile integral nule dispar din rapoarte după prima închidere. O cheie cu
   debitul și creditul cumulate zero la referință nu are rând de snapshot, deci
   un cont sau un cont cu repartitor fără nicio mișcare în perioada cerută nu
