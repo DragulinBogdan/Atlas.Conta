@@ -594,6 +594,21 @@ nu se multiplică. Rularea completă durează circa 95 de minute și e rulare
 grea. Rezultatul din 2026-10-06 și limitele lui:
 `docs/nucleu/tr-d9-pas5b-probe.md` §3. (D9-A1)
 
+Un singur cititor se re-măsoară pe baza scării fără a o reface: procesul-copil
+`--perf-cub-masura` sau `--scara-volum-reconstructie`, cu
+`MODELCHECK_BAZA_SUFIX` pe sufixul bazei, în același container ca rețeta.
+Așa s-a măsurat corectura îmbinării partidelor
+(`docs/nucleu/tr-d9-pas5c-imbinare-partide.md` §2).
+
+### Îmbinările pe chei nulabile ale cubului
+
+Unitatea, partenerul și documentul sunt nulabile pe `Postare`. O îmbinare
+LINQ cu ambele părți nulabile iese din EF cu
+`a = b OR (a IS NULL AND b IS NULL)`, pe care Postgres o execută pătratic.
+Cu o parte ne-nulă iese egalitate simplă. Soldurile de partide se îmbină cu
+documentul deschizător numai prin `Partide.CuOrigine`; `SC-CIT-110` probează
+SQL-ul generat al cititorilor de partide și al snapshot-ului. (D9-D10 (b))
+
 ## Verificări proporționale cu modificarea
 
 | Schimbare | Verificare necesară |

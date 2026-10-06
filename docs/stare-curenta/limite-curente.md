@@ -86,18 +86,15 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   toate postările de partidă (`Partide.Origini`), și când soldurile vin din
   snapshot. E singurul criteriu de formă picat al scării transversale:
   rândurile atinse cresc cu istoricul. Amânat prin amendamentul owner-ului
-  (2026-10-04), odată cu F27-r16. (F27-r16, X-D5)
-- Îmbinarea dintre soldurile partidelor și originile lor crește pătratic cu
-  numărul de partide de pe cont. Cheile ei, unitatea și partenerul, sunt
-  nulabile pe `Postare`, iar interogarea generată le compară cu
-  `a = b OR (a IS NULL AND b IS NULL)`, deci Postgres îmbină numai pe cont.
-  Forma e în `PartideCuRest`, în snapshot-ul de partide scris la închiderea
-  lunii și la reconstrucție (`SolduriService.SursaPartide`) și în
-  `Partide.Proprii`. Măsurat pe scara de volum: partidele cu rest durează
-  1,2 s la 10.360 de partide, 79 s la 103.600 și peste 10 minute la 651.644;
-  aceeași interogare cu egalitate simplă durează 8,9 s la 651.644.
-  Necorectat; hotărârea e a owner-ului, odată cu D9-D10 (b).
-  (`docs/nucleu/tr-d9-pas5b-probe.md` §4)
+  (2026-10-04), odată cu F27-r16, și re-amânat cu cifră la TR-D9a
+  (2026-10-06): parcurgerea e liniară, 2,7 s de SQL pentru 488.733 de
+  partide cu rest la 5 milioane de postări. (F27-r16, X-D5, D9-D10 (b))
+- O îmbinare pe două chei nulabile ale lui `Postare` (unitatea, partenerul,
+  documentul) iese din EF cu ramură de nul și crește pătratic. Cititorii de
+  partide o ocolesc ținând o parte ne-nulă, iar `SC-CIT-110` o probează
+  numai pe ei; un cititor nou cu aceeași formă nu e prins. `DocumenteCuRest`
+  are forma corectată, dar nu are cifră la volum.
+  (`docs/nucleu/tr-d9-pas5c-imbinare-partide.md`)
 - Scara transversală este sintetică și mică: 7.951 de postări la 12 luni. Nu
   are prag absolut. Proba din plan se evaluează cu scanarea secvențială
   interzisă, fiindcă la acest volum planificatorul o alege legitim; planul

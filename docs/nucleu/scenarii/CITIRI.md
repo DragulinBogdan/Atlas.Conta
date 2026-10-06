@@ -198,6 +198,12 @@ rescriere; a doua reconstrucție are zero diferențe.
 
 SC-CIT-53: identitatea documentului deschizător este verificată prin regula
 092; plata care nominalizează partida facturii nu devine eticheta acesteia.
+
+SC-CIT-110 (TR-D9a pasul 5c): pe faptele SC-CIT-42 și SC-CIT-52, SQL-ul
+generat pentru `PartideCuRest` și `DocumenteCuRest` pe ambele feluri de
+citire, pentru `Proprii`, `Perechi` și `MiscariPePartidele` și pentru
+verificarea și scrierea snapshot-ului de partide nu conține nicio îmbinare cu
+`a = b OR (a IS NULL AND b IS NULL)`. Verificat pe ambele profiluri.
 Traducerea SQL a identității este identică funcției nucleului pentru UUID-uri
 distincte; deschiderea inițială nu se confundă cu identitatea unui document.
 Cheia veche document + cont a ieșit (102c).

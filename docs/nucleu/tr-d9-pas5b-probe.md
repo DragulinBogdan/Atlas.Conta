@@ -266,6 +266,11 @@ Al doilea rând e cel care apasă: **închiderea de lună scrie snapshot-ul de
 partide prin aceeași îmbinare**. Scara n-a măsurat închiderea, fiindcă
 scrie, dar instrucțiunea e aceeași.
 
+**Hotărât de owner (2026-10-06):** îmbinarea s-a corectat în felie, la pasul
+5c, iar criteriul de formă e re-amânat cu cifra nouă:
+[`tr-d9-pas5c-imbinare-partide.md`](tr-d9-pas5c-imbinare-partide.md). Lista
+de mai jos e cea de la închiderea pasului 5b.
+
 Ce rămâne de hotărât de owner, cu cifra:
 
 1. îmbinarea se corectează în felie sau după ea. E cod de produs, deci nu a

@@ -146,7 +146,7 @@ public static class ImperecheriProiectii {
         var raport = from a in antete
                join s in solduri on new { DocumentId = (Guid?)a.DocumentId, a.ContrapartidaId, a.Sens }
                    equals new { s.DocumentId, s.ContrapartidaId, s.Sens }
-               join t in totale on new { s.DocumentId, ContrapartidaId = (Guid?)s.ContrapartidaId }
+               join t in totale on new { DocumentId = (Guid?)a.DocumentId, ContrapartidaId = (Guid?)a.ContrapartidaId }
                    equals new { t.DocumentId, t.ContrapartidaId }
                let total = a.Sens == SensDatorie ? t.Datorie : t.Creanta
                select new DocumentCuRestRand {
@@ -172,11 +172,8 @@ public static class ImperecheriProiectii {
         if (contrapartidaId is { } cp) solduri = solduri.Where(s => s.PartenerId == cp);
         if (sens == SensStingere.Datorie) solduri = solduri.Where(s => s.Credit > s.Debit);
         if (sens == SensStingere.Creanta) solduri = solduri.Where(s => s.Debit > s.Credit);
-        return from s in solduri
-               join o in P.Origini(os) on new { s.UnitateId, s.ContId, s.PartenerId }
-                   equals new { o.UnitateId, o.ContId, o.PartenerId } into origine
-               from o in origine.DefaultIfEmpty()
-               join d in os.GetObjectsQuery<Document>() on o.DocumentId equals (Guid?)d.ID into document
+        return from s in P.CuOrigine(os, solduri)
+               join d in os.GetObjectsQuery<Document>() on s.DocumentId equals (Guid?)d.ID into document
                from d in document.DefaultIfEmpty()
                join c in os.GetObjectsQuery<Cont>() on s.ContId equals c.ID into cont
                from c in cont.DefaultIfEmpty()

@@ -32,6 +32,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         Rest(f.Id, -60); Rest(plata.Id, 0);
         Comanda(os => ImperechereService.Desfa(os, imp, Ianuarie));
         Rest(f.Id, -100); Rest(plata.Id, 40);
+        FormaImbinarilor(f.Id);
         Acoperire(f.Id);
         Furnizor = CuSpatiu(os => {
             var p = os.CreateObject<Partener>(); p.Cod = Marcaj + "-DES"; p.Denumire = p.Cod;
@@ -337,6 +338,25 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         Furnizor = furnizor;
     }
 
+    static readonly System.Text.RegularExpressions.Regex RamuraDeNul =
+        new(@" ON [^\n]*\bOR \([^()\n]* IS NULL AND [^()\n]* IS NULL\)");
+
+    void FormaImbinarilor(Guid document) {
+        var sql = CuSpatiu(os => CapturaSql.Comenzi(() => {
+            foreach (var citire in new[] { CitireCumul.Vizibila, CitireCumul.Integrala }) {
+                _ = ImperecheriProiectii.PartideCuRest(os, laData: Ianuarie, citire: citire).ToList();
+                _ = ImperecheriProiectii.DocumenteCuRest(os, laData: Ianuarie, citire: citire).ToList();
+                _ = ImperecheriProiectii.DocumenteCuRest(os, laData: Ianuarie, documentCurentId: document, citire: citire).ToList();
+            }
+            _ = P.Proprii(os, Ianuarie).ToList();
+            _ = P.Perechi(os, document, true).ToList();
+            _ = P.MiscariPePartidele(os, document, Guid.Empty).ToList();
+        }));
+        foreach (var c in sql.Where(c => RamuraDeNul.IsMatch(c))) Console.WriteLine("     SC-CIT-110 ramură de nul: " + RamuraDeNul.Match(c).Value);
+        Verifica("SC-CIT-110", "cititorii de partide îmbină fără ramură de nul pe cheile nulabile",
+            sql.Count(c => c.Contains("cub_partida_id")) >= 9 && !sql.Any(RamuraDeNul.IsMatch));
+    }
+
     void Rest(Guid doc, decimal net) {
         Verifica("SC-CIT-42", $"rest partidă {net}", CuSpatiu(os => {
             var id = Partida(doc, ContFurnizor).Value;
@@ -376,7 +396,10 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             && os.GetObjectsQuery<PartidaDeschisa>().Count(s => s.An == An && s.Luna == 1 && s.PartenerId == Furnizor && s.DocumentId == null) == 2);
         var id = os.GetObjectsQuery<PartidaDeschisa>().Where(s => s.An == An && s.Luna == 1 && s.PartenerId == Furnizor).Select(s => s.ID).First();
         ctx.Database.ExecuteSqlInterpolated($"UPDATE \"PartideDeschise\" SET \"Rest\" = \"Rest\" + 7 WHERE \"ID\" = {id}");
-        var raport = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1);
+        RandReconstructie raport = null;
+        var sql = CapturaSql.Comenzi(() => raport = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1));
+        Verifica("SC-CIT-110", "snapshot-ul de partide: verificarea și scrierea îmbină fără ramură de nul",
+            sql.Count(c => c.Contains("cub_partida_id")) >= 2 && !sql.Any(RamuraDeNul.IsMatch));
         Verifica("SC-CIT-52", "raportează diferența 7 înainte de reparare", raport.PartideDiferite == 1 && raport.DiferentaRest == 7);
         raport = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1);
         Verifica("SC-CIT-52", "a doua reconstrucție fără diferențe", raport.PartideDiferite == 0 && raport.DiferentaRest == 0);

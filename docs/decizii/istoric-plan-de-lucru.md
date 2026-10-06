@@ -1040,3 +1040,17 @@ detaliat în jurnal):
   nulabile (8,9 s cu egalitate simplă, față de peste 10 minute).
   D9-D10 (b) rămâne al owner-ului, cu cifra. ModelCheck integral neschimbat,
   **3.552 / 4.860 OK**. `docs/nucleu/tr-d9-pas5b-probe.md`.
+
+- **2026-10-06 — TR-D9a, pasul 5c: îmbinarea partidelor pe chei nulabile.**
+  Aprobat de owner pe cifra pasului 5b. Cititorii de partide îmbină
+  soldurile cu documentul deschizător într-un singur loc
+  (`Partide.CuOrigine`), cu o parte a cheii ne-nulă, deci prin egalitate
+  simplă; originea de document se recunoaște numai după identitate. Aceeași
+  formă era în cinci locuri: snapshot-ul de partide, `PartideCuRest`,
+  `Partide.Proprii`, restul sursei din `Fapte` și `DocumenteCuRest`, ultimul
+  găsit de proba nouă. Pe scara de volum, la 651.644 de partide: partidele
+  cu rest trec de la peste 10 minute la 6 s, reconstrucția snapshot-urilor
+  de la „oprită la 30 de minute" la 48 s. Fără schimbare de schemă. Proba
+  nouă `SC-CIT-110` verifică SQL-ul generat. D9-D10 (b) e re-amânat explicit,
+  cu cifra. ModelCheck integral **3.554 / 4.862 OK**.
+  `docs/nucleu/tr-d9-pas5c-imbinare-partide.md`.

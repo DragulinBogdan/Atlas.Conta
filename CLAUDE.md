@@ -196,8 +196,9 @@ e făcut (Import1C pe cititorii cubului, probat numai prin compilare; Migrare
 (D9-L35-R1 și R2 corectate și reverificate). Pasul 5b e făcut (probele
 dinaintea tăierii: reconcilierea arhivată pe `.Flax.R3f`, termenul A al
 `PerfCub`, scara de volum la 5 milioane de postări:
-`docs/nucleu/tr-d9-pas5b-probe.md`); D9-D10 (b) așteaptă verdictul
-owner-ului, cu cifra din §4. Urmează pasul 6.
+`docs/nucleu/tr-d9-pas5b-probe.md`). Pasul 5c e făcut (îmbinarea
+partidelor pe chei nulabile corectată, D9-D10 (b) re-amânat cu cifra:
+`docs/nucleu/tr-d9-pas5c-imbinare-partide.md`). Urmează pasul 6.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

@@ -598,6 +598,15 @@ parcurgerea tuturor postărilor de partidă —, ori owner-ul îl re-amână
 explicit, cu cifra. Nu se închide prin tăcere. Orice schimbare a mulțimii de
 candidați e schimbare de semantică și cere scenariu; (a) nu depinde de (b).
 
+**Precizare (owner, 2026-10-06).** Scara de volum a arătat o creștere
+pătratică a partidelor cu rest și a snapshot-ului de partide. Cauza nu e
+criteriul de formă, ci îmbinarea soldurilor cu originile pe chei nulabile.
+Ea se corectează în felie, la pasul 5c, înaintea tăierii, fără schimbare de
+semantică și fără schimbare de schemă. Criteriul de formă propriu-zis rămâne
+picat și e re-amânat explicit, cu cifra: 2,7 s de SQL pentru 488.733 de
+partide cu rest la 5 milioane de postări
+([`tr-d9-pas5c-imbinare-partide.md`](tr-d9-pas5c-imbinare-partide.md) §3).
+
 Hook-urile de stingere nu citesc registre și rămân neatinse în felie
 (D9-Q4 = A): `ImperechereService` și cele două adaptoare le cheamă ca azi.
 
@@ -702,6 +711,7 @@ dual; simbolurile dispar la sfârșit, într-un pas atomic.**
 | 4 | sub dual: consumatorii din produs — lista XAF pe `Postare` cu gardul ei, permisiunea unică pe cele trei porți și pe verificarea închiderii, proiecția moartă `TotalStingere` și forma proiecției de rest, clientul fără câmpurile care vor ieși (D9-D9, D9-D10, D9-D12). Listele vechi de registre rămân până la pasul 7. Precizările I3, I4 și I8 (D9-A6) | schimbarea 3: subiectul unic și citirea completă |
 | 5 | sub dual: uneltele — Import1C și Migrare pe cititorii cubului, fără `StocService` și fără planul vechi; BackfillTva șters (D9-D11) | nu |
 | 5b | probele dinaintea tăierii, fără cod de produs: ultima reconciliere registre ↔ cub arhivată, `PerfCub` în regim dual ca termen de comparație, scara de volum cu ruta securizată, raportată owner-ului (D9-A1) | nu |
+| 5c | îmbinarea partidelor pe chei nulabile: cititorii de partide îmbină soldurile cu originile prin egalitate simplă, originea de document se recunoaște numai după identitate; scara re-măsurată pe aceeași bază (D9-D10 (b), precizarea din 2026-10-06). Făcut: [`tr-d9-pas5c-imbinare-partide.md`](tr-d9-pas5c-imbinare-partide.md) | nu |
 | 6 | nimic nu mai scrie, nu mai citește și nu mai ramifică pe registre și pe regim: planul vechi, valoarea liniei din contract, ASM pe gardul P = C cu clasificarea pe C și distribuirea pe evaluarea pură, ramurile `PosteazaInCub` și refuzul tipului care nu declară, oracolul și martorii registru → cub cu mutanții lor (D9-D2, D9-D3, D9-D5, D9-D7 a). Refuzul regulii de contare fără consumator (D9-A4). Inversa fiscală născută finală, fără `ReatribuieInversaFiscala` (D9-A5). În același pas, lista nominală X-D2 și probele care asertează vechii scriitori se aduc la zi; nu rămâne o listă exactă învechită până la 7. Rămân numai declarațiile: entitățile, maparea, coloanele, listele XAF vechi, cazurile gardianului | schimbările 1, 2, 4 și 6 |
 | 6b | după tăiere, fără oracol: repartitorul pe postare și gardul strict (D9-A10, mutat aici 2026-10-06). Forma minimală din 111 (h): un singur helper al capătului de terț, cu regula „terțul capătului"; gardul citește repartitorul capătului dintr-o singură funcție; aserțiile se scriu pe cititori, nu pe coloanele postării. Înaintea codului se măsoară și se scriu în catalog: postările care capătă coordonata, cititorii care grupează pe partener sau pe gestiune, invarianții care presupun partener numai cu partidă. Cele 17 aserții ale clasei „repartitorul de pe latura notei" se rescriu aici. Nu există diferență de declarat față de oracol: oracolul a murit la 6 | schimbarea 8 |
 | 7 | eliminarea atomică a declarațiilor: entitățile de registru, coloanele scoase, maparea, listele XAF vechi, cazurile gardianului, `InitialCreate`, seed-ul fără rânduri moarte, recrearea bazelor, regenerarea metadatei și a tipurilor clientului, lista nominală redusă și activarea probei numelor interzise (D9-D6, D9-D7 b, D9-D8, D9-D12) | nu |

@@ -215,18 +215,11 @@ internal static class Fapte {
         // Factura nominalizează și recepția în cub înaintea NIR-ului conex.
         // Restul sursei este al unităților ei, cu efectul documentului curent exclus.
         var zi = doc.DataInregistrare;
-        var peZile = (from p in Cub.Citiri.Partide.Postari(os)
-                     join o in Cub.Citiri.Partide.Origini(os)
-                       on new { UnitateId = p.Unitate.Value, ContId = p.Cont, PartenerId = p.Partener.Value }
-                       equals new { o.UnitateId, o.ContId, o.PartenerId }
-                     where o.DocumentId == sursaId && p.DocumentId != doc.ID
-                     group p by new { p.Unitate, p.Cont, p.Partener, p.Data } into g
-                     select new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data,
-                         Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToArray();
-        var partide = peZile.GroupBy(p => new { p.Unitate, p.Cont, p.Partener }).Select(g => {
+        var peZile = Cub.Citiri.Partide.MiscariPePartidele(os, sursaId, doc.ID).ToArray();
+        var partide = peZile.GroupBy(p => new { p.UnitateId, p.ContId, p.PartenerId }).Select(g => {
             var miscari = g.Select(p => (p.Data, p.Net)).ToArray();
             var initial = Cub.Citiri.Partide.Evolutie(miscari, zi).First().Sold;
-            return (g.Key.Cont, Net: initial, Disponibil: Cub.Citiri.Partide.DisponibilTemporal(miscari, zi, Math.Sign(initial)));
+            return (Cont: g.Key.ContId, Net: initial, Disponibil: Cub.Citiri.Partide.DisponibilTemporal(miscari, zi, Math.Sign(initial)));
         }).ToArray();
         return (partide.Sum(p => p.Disponibil), sursa.DataInregistrare,
             [.. partide.GroupBy(p => p.Cont).Select(g => (g.Key, g.Sum(p => p.Net)))
