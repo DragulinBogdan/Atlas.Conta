@@ -623,8 +623,8 @@ ultimului eveniment. (87a)
 
 Gardianul fișei: tipul material este de clasă de imobilizări și se schimbă
 doar cât fișa este nouă; locul și codul economic cât este nouă sau în
-funcțiune; nimic pe fișa ieșită; ștergerea doar pe fișa nouă, fără rânduri
-de registru și fără linii de documente care o poartă, chiar în Draft;
+funcțiune; nimic pe fișa ieșită; ștergerea doar pe fișa nouă, fără postări
+care o au ca unitate și fără linii de documente care o poartă, chiar în Draft;
 starea și datele le scrie doar motorul. Transferul este schimbarea locului pe fișă, fără
 document: următoarea amortizare postează pe noul loc, istoricul locului
 este pe rândurile lunare. (87a, 87h)
@@ -1025,7 +1025,14 @@ pe registre (TR-D8). Contractul feliei: `docs/nucleu/tr-d7a-strangler-contract.m
 cubul e append-only, deci fără `OptimisticLockField` și fără filtru global de
 interogare. Proprietățile sunt `virtual` și colecția e
 `ObservableCollection`, cât timp hosturile folosesc proxy-uri de change
-tracking. Niciuna nu apare în UI și niciuna nu intră în metadata clientului. (S-D1)
+tracking. Niciuna nu intră în metadata clientului. (S-D1) În XAF apar numai
+ca evidență read-only (lista `Postare` de sub „Registre”). Pe orice ușă
+securizată gardianul le refuză crearea, modificarea și ștergerea, inclusiv
+administratorului: le scrie numai motorul, pe ușa de sistem. Refuzurile de
+ștergere care se sprijineau pe registre citesc cubul: lotul propriu al unei
+linii șterse rămâne cât e unitatea unei postări, tipul de TVA purtat de o
+postare nu se șterge, fișa care e unitatea unei postări nu se șterge.
+(D9-D9, D9-A6; 2026-10-06)
 
 | Entitate | Coloane |
 |---|---|

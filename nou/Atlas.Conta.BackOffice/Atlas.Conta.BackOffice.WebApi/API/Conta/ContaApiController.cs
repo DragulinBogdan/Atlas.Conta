@@ -292,6 +292,14 @@ public abstract class ContaApiController : ControllerBase {
     protected bool PoateCiti(Type tip, IObjectSpace os) =>
         securitate is IRequestSecurityStrategy cerinte && cerinte.CanRead(tip, os);
 
+    /// <summary>Dreptul unic pe cifrele însumate din cub pe ușa de sistem: citirea completă pe `Postare`, fără criteriu de rând sau de membru (108 d). `null` = are voie.</summary>
+    protected IActionResult PostariCitibile() {
+        var tip = typeof(Module.Cub.Postare);
+        using var os = Secured(tip);
+        return PoateCiti(tip, os) && CriteriiCitire is { } criterii && AccesComplet.Lipsuri(os, criterii, [tip]).Count == 0
+            ? null : RefuzCitire(tip);
+    }
+
     /// <summary>Sursa criteriilor de citire ale utilizatorului curent (aceeași din care EF Core filtrează rândurile).</summary>
     protected DevExpress.ExpressApp.Security.ISelectDataSecurityProvider CriteriiCitire =>
         securitate as DevExpress.ExpressApp.Security.ISelectDataSecurityProvider;

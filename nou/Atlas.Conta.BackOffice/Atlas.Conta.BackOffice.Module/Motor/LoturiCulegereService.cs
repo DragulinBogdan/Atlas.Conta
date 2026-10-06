@@ -285,7 +285,7 @@ static class LoturiLiniiSterse {
                     os.Delete(lot);
                     continue;
                 }
-                if (os.GetObjectsQuery<RegistruStoc>().Any(r => r.LotId == lot.ID))
+                if (Cub.Citiri.Loturi.AreMiscari(os, lot.ID))
                     continue;
                 var referinte = os.GetObjectsQuery<DocumentDetaliu>()
                     .Where(d => d.LotId == lot.ID)

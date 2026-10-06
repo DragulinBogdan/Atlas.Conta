@@ -268,10 +268,18 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   purtător nou, nedeclarat, nu e văzut. `StocService.Sold`, `AlocaFifoTolerant`
   și `AlocaFifo` nu mai au apelant de producție și rămân în `Module` numai ca
   oracol al probelor, până la TR-D9.
-- Cifrele citite din cub sunt păzite de dreptul de citire pe tipul registrului
-  (`RegistruContabil` pentru închiderea de TVA, `RegistruImobilizari` pentru
-  fișă și amortizare). Subiectul permisiunii după tăierea registrelor nu este
-  ales. (F22-D5, X-D2; TR-D9)
+- Lista XAF `Postare` arată identificatori bruți pentru tranzacție, document,
+  cont, partener, gestiune și unitate: `Postare` e POCO fără navigații spre
+  nomenclatoare, iar maparea cubului nu se schimbă în TR-D9a. Evidența se
+  citește azi mai ușor din listele vechi de registre, care dispar la tăiere.
+  (D9-D9; 2026-10-06)
+- Refuzul de acces pe cifrele din cub e fraza generică de citire pe `Postare`:
+  nu spune dacă lipsește dreptul pe tip sau dacă rolul are un criteriu de rând
+  ori de membru. (D9-D9)
+- Refuzurile de ștergere pentru lot, tip de TVA și fișă citesc cubul, dar
+  textele lor numesc încă registrul. Cât regimul e dual, un lot cu rânduri de
+  registru numai pe un tip de stoc pe care cubul nu-l poartă (Custodie, 093)
+  nu mai e ținut de aceste rânduri la ștergerea liniei lui. (D9-A6)
 - Acoperirea cantitativă a stocului (X-D7 a) compară registrul cu cubul pe
   document × lot × gestiune × storno × semn, pe `Magazie`, `Marfuri` și
   `Folosinta`. Contul nu intră în cheie: rândul de registru nu îl poartă, iar

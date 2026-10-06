@@ -71,8 +71,21 @@ FIXTURE PROPRIU (104-r5)
   `-CadeDupa <punct>` injectează o cădere după mutația numită; `refuzuri-caderi.ps1`
   le parcurge pe toate și cere, la fiecare, cod 2 și zero rezidu.
 
+DREPTUL UNIC PE CIFRELE DIN CUB (D9-D9)
+  Rutele care întorc cifre însumate din cub pe ușa de sistem (`itv/{id}`,
+  `itv/previzualizare`, `amo/previzualizare`, `imobilizari/{id}/fisa`,
+  `imobilizari/registru`, `perioade/{an}/{luna}/verificare`) cer citirea
+  COMPLETĂ pe `Postare`: niciun tip de registru, niciun criteriu de rând sau de
+  membru. Cei patru utilizatori de mai sus nu pot izola dreptul (`User` cade pe
+  primul drept al rutei, ceilalți citesc tot), deci rândurile lui cer patru
+  roluri temporare, scrise în bază de `postare-restrictii.py` și șterse în
+  `finally`: `FaraRegistre` (200), `FaraPostare`, `RandPostare`, `MembruPostare`
+  (403 înaintea citirii). Se rulează numai cu `-Baza <baza hostului>`; fără ea
+  scriptul o spune și sare rândurile.
+
 UTILIZARE
   pwsh -File nou/tools/ProbeHttp/refuzuri.ps1
+  pwsh -File nou/tools/ProbeHttp/refuzuri.ps1 -Baza Atlas.Conta.BackOffice.Privat
   pwsh -File nou/tools/ProbeHttp/refuzuri.ps1 -Host https://localhost:5001 -Utilizatori Admin,Cititor,User,Configurator
   Cod de ieșire: 0 = toate PASS, 1 = cel puțin un FAIL, 2 = descoperirea a picat,
   3 = fixture-ul a lăsat rezidu.
@@ -84,7 +97,8 @@ param(
     [string]$HostUrl = 'https://localhost:5001',
     [string[]]$Utilizatori = @('Admin', 'Cititor', 'User', 'Configurator'),
     [ValidateSet('', 'Furnizor', 'Fct', 'OperareFct', 'OperarePlt', 'Imperechere', 'Itv', 'Angajat')]
-    [string]$CadeDupa = ''
+    [string]$CadeDupa = '',
+    [string]$Baza = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -239,6 +253,17 @@ function Proba {
     $rand
 }
 
+# D9-D9: cele patru rânduri ale dreptului unic pe o rută cu cifre din cub.
+$script:Restrictii = $null
+function Proba-AccesPostari {
+    param([string]$Cerere, [string]$Cale, [string[]]$Contine200 = @())
+    if (-not $script:Restrictii) { return }
+    Proba -Cerere $Cerere -User $script:Restrictii.FaraRegistre -Asteptat 200 -Metoda GET -Cale $Cale -Contine $Contine200 -Nota 'D9-D9: fără niciun registru, cu Postare' | Out-Null
+    Proba -Cerere $Cerere -User $script:Restrictii.FaraPostare -Asteptat 403 -Metoda GET -Cale $Cale -Contine 'citi', 'Postare' -Nota 'D9-D9: dreptul unic' | Out-Null
+    Proba -Cerere $Cerere -User $script:Restrictii.RandPostare -Asteptat 403 -Metoda GET -Cale $Cale -Contine 'citi', 'Postare' -Nota 'D9-D9: criteriu de rând, 403 înaintea citirii' | Out-Null
+    Proba -Cerere $Cerere -User $script:Restrictii.MembruPostare -Asteptat 403 -Metoda GET -Cale $Cale -Contine 'citi', 'Postare' -Nota 'D9-D9: restricție de membru, 403 înaintea citirii' | Out-Null
+}
+
 # ═══ 1. Autentificare ═══════════════════════════════════════════════════════
 Write-Host "Host: $HostUrl" -ForegroundColor Cyan
 $script:Tokenuri = @{}
@@ -304,6 +329,22 @@ try {
     $gestiune = Get-PrimaEntitate 'Gestiune'
     $unitate = Get-PrimaEntitate 'UnitateInterna'
     Write-Host "  partener: $($partener.Cod)  gestiune: $($gestiune.Cod)  unitate: $($unitate.Cod)" -ForegroundColor DarkGray
+
+    # ── D9-D9: rolurile temporare ale dreptului pe `Postare` (numai cu -Baza) ─
+    if ($Baza) {
+        $marcajRestrictii = "PROBA-D9-$timbru"
+        $unealtaRestrictii = Join-Path $PSScriptRoot 'postare-restrictii.py'
+        $fixture.Add({
+                python -X utf8 $unealtaRestrictii sterge --baza $Baza --marcaj $marcajRestrictii
+                if ($LASTEXITCODE -ne 0) { throw "postare-restrictii sterge: cod $LASTEXITCODE" }
+            }.GetNewClosure())
+        $iesireRestrictii = python -X utf8 $unealtaRestrictii creeaza --baza $Baza --marcaj $marcajRestrictii
+        if ($LASTEXITCODE -ne 0) { throw "fixture: postare-restrictii creeaza a picat (cod $LASTEXITCODE)" }
+        $script:Restrictii = $iesireRestrictii | ConvertFrom-Json
+        foreach ($nume in $script:Restrictii.PSObject.Properties.Value) { $script:Tokenuri[$nume] = Get-Token $nume }
+        Write-Host "  roluri pe Postare: $($script:Restrictii.PSObject.Properties.Value -join ', ')" -ForegroundColor DarkGray
+    }
+    else { Write-Host '  fără -Baza: rândurile D9-D9 (dreptul unic pe Postare) NU se rulează' -ForegroundColor Yellow }
 
     # ── Fixture-ul propriu (104-r5), desfăcut în ordine inversă în `finally` ─
     $lunaFixture = @(Invoke-Fixture GET '/api/perioade') | Where-Object { -not $_.Inchisa } |
@@ -426,6 +467,8 @@ try {
     Proba -Cerere 'previzualizare ITV' -User 'User' -Asteptat 403 -Metoda GET -Cale "/api/itv/previzualizare?an=$anItv&luna=$lunaItv" -Contine 'citi' | Out-Null
     Proba -Cerere 'citire ITV' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/itv/$idItv" | Out-Null
     Proba -Cerere 'citire ITV' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/itv/$idItv" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba-AccesPostari -Cerere 'previzualizare ITV' -Cale "/api/itv/previzualizare?an=$anItv&luna=$lunaItv"
+    Proba-AccesPostari -Cerere 'citire ITV' -Cale "/api/itv/$idItv"
     # `genereaza` NUMAI pe cei doi fără drept: pe Admin ar scrie un draft.
     $corpItv = @{ An = $anItv; Luna = $lunaItv; UnitateId = $unitate.ID }
     Proba -Cerere 'generare ITV' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/itv/genereaza' -Corp $corpItv -Contine 'crea' | Out-Null
@@ -603,7 +646,7 @@ try {
     #   * cele două politici noi sunt citite de `Configurator` și refuzate
     #     `Cititor`-ului la scriere;
     #   * `fisa`/`registru`/`previzualizare` cer, pe lângă dreptul pe subiect, și
-    #     citirea pe `RegistruImobilizari` (F22-D5) — de aceea `User` ia 404 pe
+    #     citirea completă pe `Postare` (F22-D5, D9-D9) — de aceea `User` ia 404 pe
     #     instanță (ordinea 80a) și 403 pe rutele fără subiect;
     #   * `genereaza` NU se cheamă niciodată ca `Admin` (capcana 79: scrie ori de
     #     câte ori luna e liberă), iar perechea `Admin → 422` de domeniu se ia pe
@@ -736,18 +779,21 @@ try {
     Proba -Cerere 'previzualizare AMO' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/amo/previzualizare?an=2001&luna=1' | Out-Null
     Proba -Cerere 'previzualizare AMO' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/amo/previzualizare?an=2001&luna=1' -Nota 'Read pe tot, inclusiv registru' | Out-Null
     Proba -Cerere 'previzualizare AMO' -User 'User' -Asteptat 403 -Metoda GET -Cale '/api/amo/previzualizare?an=2001&luna=1' -Contine 'citi' -Nota 'F22-D5: sume peste registru' | Out-Null
+    Proba-AccesPostari -Cerere 'previzualizare AMO' -Cale '/api/amo/previzualizare?an=2001&luna=1'
     Proba -Cerere 'previzualizare AMO fără lună' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/amo/previzualizare?an=2001' -Contine 'obligatoriu' | Out-Null
     Proba -Cerere 'listă AMO' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/amo?take=5' -Contine '"data":[]' -Nota '200 filtrat' | Out-Null
     Proba -Cerere 'regenerare AMO inexistentă' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/amo/$idInexistent/regenereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
 
-    # ── Fisa si registrul: cifre peste `RegistruImobilizari` (F22-D5) ───────
+    # ── Fisa si registrul: cifre însumate din cub, deci citirea completă pe `Postare` (F22-D5, D9-D9) ──
     Proba -Cerere 'fișa imobilizării' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/imobilizari/$idFisaImo/fisa" | Out-Null
     Proba -Cerere 'fișa imobilizării' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/imobilizari/$idFisaImo/fisa" -Nota 'Read pe tot, inclusiv registru' | Out-Null
     Proba -Cerere 'fișa imobilizării' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/imobilizari/$idFisaImo/fisa" -Contine 'nu există sau nu e vizibil' -Nota '404 înaintea lui 403' | Out-Null
+    Proba-AccesPostari -Cerere 'fișa imobilizării' -Cale "/api/imobilizari/$idFisaImo/fisa"
     Proba -Cerere 'fișa unei imobilizări inexistente' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/imobilizari/$idInexistent/fisa" -Contine 'nu există sau nu e vizibil' | Out-Null
     Proba -Cerere 'registrul imobilizărilor' -User 'Admin' -Asteptat 200 -Metoda GET -Cale '/api/imobilizari/registru' | Out-Null
     Proba -Cerere 'registrul imobilizărilor' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/imobilizari/registru' | Out-Null
     Proba -Cerere 'registrul imobilizărilor' -User 'User' -Asteptat 403 -Metoda GET -Cale '/api/imobilizari/registru' -Contine 'citi' -Nota 'F22-D5: sume peste registru' | Out-Null
+    Proba-AccesPostari -Cerere 'registrul imobilizărilor' -Cale '/api/imobilizari/registru'
     # A doua usa de citire pe acelasi nomenclator NU exista (F2-D4): ruta lipseste.
     Proba -Cerere 'listă REST de imobilizări' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/imobilizari' -FaraJson -Nota 'F2-D4: nomenclatorul e pe OData' | Out-Null
 
@@ -1148,6 +1194,7 @@ try {
     Proba -Cerere 'verificarea închiderii' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA', '"Severitate":"Blocant"' | Out-Null
     Proba -Cerere 'verificarea închiderii' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA' -Nota 'citește tot ce însumează verdictul' | Out-Null
     Proba -Cerere 'verificarea închiderii' -User 'User' -Asteptat 404 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba-AccesPostari -Cerere 'verificarea închiderii' -Cale "$calePerioada/verificare" -Contine200 'PRECEDENTA-DESCHISA'
     Proba -Cerere 'verificarea unei luni nedefinite' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/perioade/2099/12/verificare' -Contine 'nu există sau nu e vizibil' | Out-Null
     # Istoricul (F27-D2): citire, cu același subiect — luna. Pe o lună niciodată
     # închisă e o listă GOALĂ, adică un răspuns adevărat, nu un refuz.

@@ -62,18 +62,12 @@ static partial class ProbeCititoriRegistre {
         new(M + "Cub/Citiri/Imobilizari.cs", "Imobilizari.VerificaAcoperire", "RegistruImobilizari", Clasa.Martor, "acoperirea fișelor (097-r1)"),
         new(M + "Cub/Citiri/Loturi.cs", "Loturi.VerificaAcoperire", "RegistruStoc", Clasa.Martor, "INV-CUB: acoperirea cantitativă a stocului pe grup"),
         new(M + "Cub/Materializare.Deschidere.cs", "Materializare.Deschide", "RegistruStoc", Clasa.Martor, "refuză lotul de deschidere care are deja mișcări"),
-        new(M + "Motor/LoturiCulegereService.cs", "LoturiLiniiSterse.Curata", "RegistruStoc", Clasa.Martor, "urma lotului înaintea ștergerii lui"),
-        new(M + "Motor/GardianEditare.cs", "GardianEditare.VerificaTipTva", "RegistruTva", Clasa.Martor, "referința care oprește ștergerea tipului de TVA"),
-        new(M + "BusinessObjects/Nomenclatoare/Imobilizari.cs", "Imobilizare.Verifica", "RegistruImobilizari", Clasa.Martor, "referința care oprește ștergerea fișei"),
 
         // ── 3. suprafețele de evidență XAF (rămân până la TR-D9) ──
         new(M + "UI/ContaUiBaseline.cs", "ContaUiBaseline.AscundeFkuriBrute", Motor3 + "|Imperechere", Clasa.Evidenta, "listele XAF ale registrelor"),
         new(M + "UI/ContaUiBaseline.cs", "ContaUiBaseline.Imobilizari", "RegistruImobilizari", Clasa.Evidenta, "lista XAF a registrului de imobilizări"),
 
-        // ── cheia de autorizare a cifrelor (F22-D5) ──
-        new(W + "API/Conta/ItvController.cs", "ItvController.RegistrulCitibil", "RegistruContabil", Clasa.Autorizare, "dreptul de citire cerut de cifrele închiderii de TVA"),
-        new(W + "API/Conta/AmoController.cs", "AmoController.RegistrulCitibil", "RegistruImobilizari", Clasa.Autorizare, "dreptul de citire cerut de cifrele amortizării"),
-        new(W + "API/Conta/ImobilizariController.cs", "ImobilizariController.RegistrulCitibil", "RegistruImobilizari", Clasa.Autorizare, "dreptul de citire cerut de fișă și registru"),
+        // ── autorizarea verificării închiderii (80e) ──
         new(W + "API/Conta/PerioadeController.cs", "PerioadeController.TipuriInsumate", "Imperechere", Clasa.Autorizare, "tipurile însumate de verificarea închiderii (80e)"),
 
         // ── `Imperechere` e legătura explicită, nu registru: rămâne și după TR-D9 ──

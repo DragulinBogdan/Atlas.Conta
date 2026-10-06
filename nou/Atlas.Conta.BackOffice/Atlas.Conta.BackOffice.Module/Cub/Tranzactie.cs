@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
+using Atlas.DXF.Core.Appearance.Attributes;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
 // S-D1: POCO EF, nu `EntitateConta` — cubul e append-only (fără timbru optimist).
+[ForbidCRUD("ListView", "DetailView")]
 public class Tranzactie {
     public virtual Guid ID { get; set; }
 

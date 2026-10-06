@@ -189,7 +189,9 @@ din regulă rămâne limită consemnată). Decizia 111 e propusă, nu aprobată:
 direcția repartitorului unic și a registrelor tipate, cu poarta la contractul
 TR-D9b. Pasul 3 e făcut (aserțiile de regulă din ModelCheck re-țintite pe
 cititorii cubului, cu aceleași cifre: `docs/nucleu/tr-d9-pas3-retintire.md`).
-Urmează pasul 4.
+Pasul 4 e făcut (consumatorii din produs pe cub; dreptul unic e citirea
+completă pe `Postare`; lista XAF `Postare`; gardul scrierii cubului). Urmează
+pasul 5.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

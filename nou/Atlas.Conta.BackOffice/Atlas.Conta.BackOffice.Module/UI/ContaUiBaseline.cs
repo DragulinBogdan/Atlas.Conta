@@ -66,6 +66,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         Asamblare(registry);
         Dvi(registry);
         Imobilizari(registry);
+        Postari(registry);
         Perioade(registry);
         ColoanaTip(registry);
         registry.For<DocumentDetaliu>().ListView(nameof(DocumentDetaliu) + "_LookupListView")
@@ -75,6 +76,36 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.Valoare, c => c.Index = 3);
         registry.For<FacturaIntrareDetaliu>().HideMembers(d => d.LinieAvansId);
         registry.For<FacturaIesireDetaliu>().HideMembers(d => d.LinieAvansId);
+    }
+
+    /// <summary>Coloanele listei de evidență a cubului (D9-D9), în ordinea afișării.</summary>
+    public static readonly (string Cale, string Titlu)[] ColoanePostari = [
+        (nameof(Cub.Postare.TranzactieId), "Tranzacție"),
+        (nameof(Cub.Postare.Tranzactie) + "." + nameof(Cub.Tranzactie.Fel), "Fel"),
+        (nameof(Cub.Postare.DocumentId), "Document"),
+        (nameof(Cub.Postare.Cont), "Cont"),
+        (nameof(Cub.Postare.Latura), "Latură"),
+        (nameof(Cub.Postare.Partener), "Partener"),
+        (nameof(Cub.Postare.Gestiune), "Gestiune"),
+        (nameof(Cub.Postare.Unitate), "Unitate"),
+        (nameof(Cub.Postare.Cantitate), "Cantitate"),
+        (nameof(Cub.Postare.Valoare), "Valoare"),
+        (nameof(Cub.Postare.ValoareValuta), "Valoare în valută"),
+    ];
+
+    static void Postari(UiBaselineRegistry registry) {
+        static void Coloane(IModelListView lv) {
+            foreach (var coloana in lv.Columns)
+                coloana.Index = -1;
+            for (var i = 0; i < ColoanePostari.Length; i++)
+                ColoanaPeCale(lv, ColoanePostari[i].Cale, i, ColoanePostari[i].Titlu);
+        }
+        registry.For<Cub.Postare>()
+            .ListView(nameof(Cub.Postare) + ListView, Coloane)
+            .ListView("Tranzactie_Postari" + ListView, lv => {
+                ReadOnly(lv);
+                Coloane(lv);
+            });
     }
 
     // 89 — „Tip” doar pe listele care amestecă tipuri; pe frunze e constant.

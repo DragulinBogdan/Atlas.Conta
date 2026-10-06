@@ -986,3 +986,22 @@ detaliat în jurnal):
   `nou/tools/ModelCheck/`, niciun cititor nou în produs. ModelCheck integral
   **3.531 / 4.839 OK**, zero FAIL.
   `docs/nucleu/tr-d9-pas3-retintire.md`, `run-nucleu/tr-d9a/pas3/`.
+
+- **2026-10-06 — TR-D9a, pasul 4: consumatorii din produs pe cub.** Sub
+  regim dual, tot ce în produs mai citea registrele în afara motorului vechi
+  trece pe cub. Cele trei porți `RegistrulCitibil` și verificarea închiderii
+  cer citirea completă pe `Postare` (schimbarea 3 din D9-D1): 403 înaintea
+  citirii pentru rolul cu criteriu de rând sau de membru. Gardianul refuză
+  scrierea unei `Postare` și a unei `Tranzactie` pe ușile securizate. Lista
+  XAF `Postare`, `ServerView`, fără editare. Cele trei refuzuri de ștergere
+  (lot, tip de TVA, fișă) și latura contului propriu din plățile SAF-T citesc
+  cubul, respectiv `Document.Laturi()`; `DocumenteCuRest` nu mai proiectează
+  totalul din antet. Rolurile din seed nu s-au schimbat: drepturile pe cub
+  vin din politica rolului. Lista nominală X-D2 scade de la 75 la 69 de
+  intrări. Proba pe host viu a corectat un pin: `$metadata` descrie orice tip
+  al contextului ca `EntityType`, deci neexpunerea se probează pe
+  `EntitySet` și pe rute. Limite noi: lista arată identificatori bruți.
+  ModelCheck integral **3.552 / 4.860 OK**, zero FAIL; `refuzuri.ps1` de două
+  ori la rând 324 / 324, cu 24 de rânduri noi pe dreptul unic; neexpunerea
+  0 FAIL; lista, detaliul postării și al tranzacției văzute în browser.
+  `run-nucleu/tr-d9a/pas4/`, `run-verificari/d9-pas4-http/`.

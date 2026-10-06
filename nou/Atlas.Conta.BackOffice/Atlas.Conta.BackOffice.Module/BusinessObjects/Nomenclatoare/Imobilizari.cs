@@ -77,7 +77,7 @@ public class Imobilizare : Nomenclator, ICuCautare, IVerificabilLaCommit {
             if (stareOriginala != StareImobilizare.Noua)
                 erori.Add($"Fișa {Eticheta()} e în starea „{stareOriginala}” — se șterge doar cât e Nouă. "
                     + "Anulați sau stornați documentele care au mișcat-o.");
-            else if (os.GetObjectsQuery<RegistruImobilizari>().Any(r => r.ImobilizareId == id))
+            else if (Cub.Citiri.Imobilizari.AreMiscari(os, id))
                 erori.Add($"Fișa {Eticheta()} are rânduri de registru — nu se șterge.");
             else if (os.GetObjectsQuery<PunereInFunctiuneDetaliu>().Any(d => d.ImobilizareId == id)
                     || os.GetObjectsQuery<IesireImobilizareDetaliu>().Any(d => d.ImobilizareId == id)

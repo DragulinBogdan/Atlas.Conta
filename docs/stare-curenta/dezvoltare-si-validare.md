@@ -185,10 +185,9 @@ Lista nominală (71 de intrări, 87 de utilizări fișier × membru × registru)
 | | `Fapte.SolduriLoturiRegistru`, `Fapte.Operand`, `DeclarantAsamblare.Declara` | absorbția Δ a ASM față de soldul registrului (ASM-B6) |
 | | `PunereInFunctiune`, `IesireImobilizare`, `AmortizareLunara`: `MaterializeazaRegistrul`, `EliminaRegistrul`, `StorneazaRegistrul`; `PunereInFunctiune.RanduriProprii`, `Inverseaza` | scriu `RegistruImobilizari` |
 | 2. martor | `Invarianti.Verifica`, `Loturi.VerificaAcoperire`, `Imobilizari.VerificaAcoperire` | acoperirea cubului față de registru (`INV-CUB`, X-D7 a, 097-r1) |
-| | `Materializare.Deschide`, `LoturiLiniiSterse.Curata` | urma lotului în `RegistruStoc` |
-| | `GardianEditare.VerificaTipTva`, `Imobilizare.Verifica` | referința care oprește ștergerea nomenclatorului |
+| | `Materializare.Deschide` | urma lotului în `RegistruStoc` |
 | 3. evidență XAF | `ContaUiBaseline`: `AscundeFkuriBrute`, `Imobilizari` | listele registrelor |
-| autorizare | `RegistrulCitibil` din `ItvController`, `AmoController`, `ImobilizariController`; `PerioadeController.TipuriInsumate` | dreptul de citire pe tipul registrului păzește cifrele (F22-D5, 80e) |
+| autorizare | `PerioadeController.TipuriInsumate` | `Imperechere` între tipurile însumate de verificarea închiderii (80e); cifrele din cub le păzește citirea completă pe `Postare`, nu un tip de registru (D9-D9) |
 | legătură | `ImperechereService` (8), `GardianEditare` (4), `MotorOperare.MotivImperecheri`, `Partide.NominalizataLibera`, `Materializare.Imperecheaza`, `ImperechereApply` (3), `ImperechereController` (5), `ImperecheriController` (3) | `Imperechere` este legătura explicită, nu registru; restul și candidații vin din `Partide` |
 
 Clasele 1–3 sunt ale contractului X-D2. Maparea, autorizarea și legătura le-a

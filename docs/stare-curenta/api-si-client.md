@@ -174,6 +174,18 @@ Listele securizate pot răspunde 200 cu rezultate filtrate. Rapoartele care
 cer cifre complete verifică separat accesul necesar și refuză cererea dacă
 filtrarea ar produce un rezultat incomplet prezentat ca total. (70f, 80a, 80e)
 
+Rutele care întorc cifre însumate din cub pe ușa de sistem cer citirea
+COMPLETĂ pe `Postare`: `itv/{id}`, `itv/previzualizare`, `amo/{id}`,
+`amo/previzualizare`, `imobilizari/{id}/fisa`, `imobilizari/registru` și
+`perioade/{an}/{luna}/verificare`. Un rol fără dreptul pe tip, ori cu un
+criteriu de rând sau de membru pe `Postare`, primește 403 înaintea citirii.
+Niciun tip de registru nu mai e cerut, deci separarea contabil / imobilizări
+a dispărut. Dreptul completează, nu înlocuiește: ruta cere mai întâi dreptul
+pe subiectul ei, iar verificarea închiderii pe toate tipurile pe care le
+însumează. `Postare` și `Tranzactie` n-au rută OData sau REST și nu intră în
+contractul clientului; `$metadata` le descrie ca `EntityType` fără
+`EntitySet`, ca pe orice tip neexpus. (F22-D5, 80e, 108 d, D9-D9; 2026-10-06)
+
 Crearea cere drepturile de creare și scriere; modificarea cere scriere, iar
 ștergerea dreptul aferent. Verificările nu se amână până după execuția
 regulilor de domeniu. Un context nesecurizat nu are strategie de securitate
@@ -349,7 +361,12 @@ detaliul din listă, acțiunile și editarea inline funcționează neschimbate.
 `Client` nu este implicit pe niciun ListView root. (85a)
 
 `ServerView` este opt-in per view, doar pe registre append-only citite:
-`RegistruStoc`, `RegistruContabil`, `RegistruTva`. Pagina proiectează doar
+`RegistruStoc`, `RegistruContabil`, `RegistruTva` și `Postare`. Lista
+`Postare` de sub „Registre” e evidența brută a cubului: fără editare și fără
+totaluri, cu tranzacția, felul, documentul, contul, latura, partenerul,
+gestiunea, unitatea și cele trei măsuri; din rând se deschide detaliul
+postării, iar detaliul tranzacției își arată postările, tot fără editare.
+Listele vechi de registre rămân până la tăiere. (D9-D9) Pagina proiectează doar
 coloanele vizibile; detaliul rândului se deschide normal. Precondițiile sunt
 verificate de ModelCheck: toate coloanele vizibile sunt mapate sau
 `[Calculated]`, orice coloană de referință are `DefaultProperty` pe clasa

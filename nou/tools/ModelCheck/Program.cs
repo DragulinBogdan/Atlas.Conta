@@ -21099,8 +21099,9 @@ void VerificaF24Rol(bool privat) {
             && p.DeleteState == SecurityPermissionState.Allow);
         var faraDrept = Politici.TipuriConfigurabile.Where(t => !Scrie(t)).Select(t => t.Name).ToList();
         Type[] interzise = [typeof(Document), typeof(RegistruContabil), typeof(RegistruStoc),
-            typeof(RegistruTva), typeof(Societate), typeof(SetareProfil), typeof(ApplicationUser),
-            typeof(PermissionPolicyRole)];
+            typeof(RegistruTva), typeof(RegistruImobilizari), typeof(Atlas.Conta.BackOffice.Module.Cub.Postare),
+            typeof(Atlas.Conta.BackOffice.Module.Cub.Tranzactie), typeof(Societate), typeof(SetareProfil),
+            typeof(ApplicationUser), typeof(PermissionPolicyRole)];
         var scrieriInterzise = interzise.Where(t => permisiuni.Any(p =>
                 p.TargetTypeFullName == t.FullName
                 && (p.CreateState == SecurityPermissionState.Allow
@@ -21116,7 +21117,7 @@ void VerificaF24Rol(bool privat) {
         Check($"F24-R3 ({eticheta}) `Updater.SeedRolConfigurator` e idempotent (un singur rând după două "
             + "apeluri) și scrie exact separarea din 83h: `ReadOnlyAllByDefault` (deci Read și Navigate pe "
             + "tot, fără enumerare) + Create/Write/Delete pe fiecare tip din listă, și pe niciun document, "
-            + "registru, `Societate`, `SetareProfil`, user sau rol",
+            + "registru, `Postare`, `Tranzactie`, `Societate`, `SetareProfil`, user sau rol",
             randuri == 1 && politicaOk && faraDrept.Count == 0 && scrieriInterzise.Count == 0);
     }
 }
@@ -21982,6 +21983,46 @@ void VerificaD85(bool privat) {
     Check($"D85-R1 ({eticheta}) pe `RegistruStoc_ListView` real, fiecare coloană cerută de grilă rămâne în proiecție "
         + "și o pagină se citește pe toate coloanele fără excepție",
         lvRs != null && eroareRs == null && lipsaRs.Count == 0);
+
+    // ---- D9-P4-LISTA-1 (Postare_ListView real): geamănul probei de pe `RegistruStoc_ListView` ----
+    var lvPostari = Lv(nameof(Atlas.Conta.BackOffice.Module.Cub.Postare) + "_ListView");
+    string eroarePostari = null;
+    var cerutePostari = lvPostari == null ? [] : Coloane(lvPostari);
+    string[] proiectatePostari = [];
+    if (lvPostari != null)
+        using (var os = providerHost.CreateObjectSpace()) {
+            try {
+                var cs = new CollectionSource(os, typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), lvPostari.DataAccessMode);
+                cs.DisplayableProperties = string.Join(";", cerutePostari);
+                var lista = ((System.ComponentModel.IListSource)cs.Collection).GetList();
+                proiectatePostari = cs.DisplayableProperties.Split(';');
+                for (var i = 0; i < Math.Min(lista.Count, 20); i++) {
+                    var rand = (XafDataViewRecord)lista[i];
+                    foreach (var nume in cerutePostari)
+                        _ = rand[nume];
+                }
+            }
+            catch (Exception ex) {
+                eroarePostari = $"{ex.GetType().Name}: {ex.Message}";
+            }
+        }
+    var asteptatePostari = Atlas.Conta.BackOffice.Module.UI.ContaUiBaseline.ColoanePostari.Select(c => c.Cale).ToArray();
+    var vizibilePostari = lvPostari == null ? [] : lvPostari.Columns.Where(Vizibila).OrderBy(c => c.Index).Select(c => c.PropertyName).ToArray();
+    var lvImbricata = Lv("Tranzactie_Postari_ListView");
+    var navigarePostari = model == null ? [] : ((DevExpress.ExpressApp.SystemModule.IModelApplicationNavigationItems)model).NavigationItems.AllItems
+        .Where(i => i.View?.Id == lvPostari?.Id).Select(i => (i.Parent?.Parent as DevExpress.ExpressApp.SystemModule.IModelNavigationItem)?.Caption ?? "").ToList();
+    Console.WriteLine($"     MĂSURAT (D9-P4-LISTA-1/{eticheta}, Postare_ListView={lvPostari?.DataAccessMode}): vizibile "
+        + $"[{string.Join(";", vizibilePostari)}], cerute [{string.Join(";", cerutePostari)}], proiectate [{string.Join(";", proiectatePostari)}], "
+        + $"navigare [{string.Join(";", navigarePostari)}]; Tranzactie_Postari_ListView={lvImbricata?.DataAccessMode}, "
+        + $"editare {lvImbricata?.AllowEdit}/{lvImbricata?.AllowNew}/{lvImbricata?.AllowDelete}"
+        + (eroarePostari != null ? $"; EROARE {eroarePostari}" : ""));
+    Check($"D9-P4-LISTA-1 ({eticheta}) `Postare_ListView` real e în mod ServerView, sub grupul de navigare „Registre”, cu exact "
+        + "coloanele listei de evidență, fiecare rămasă în proiecție, iar o pagină se citește fără excepție; lista imbricată a "
+        + "tranzacției e Client, fără editare",
+        lvPostari != null && lvPostari.DataAccessMode == CollectionSourceDataAccessMode.ServerView && eroarePostari == null
+        && vizibilePostari.SequenceEqual(asteptatePostari) && cerutePostari.All(proiectatePostari.Contains)
+        && navigarePostari.Count == 1 && navigarePostari[0] == "Registre"
+        && lvImbricata is { DataAccessMode: CollectionSourceDataAccessMode.Client, AllowEdit: false, AllowNew: false, AllowDelete: false });
 
     // ---- D85-R2: Server (entități) — pagina = interogare + COUNT, fără interogare per rând ----
     (int Pagina1, int Pagina2, int Randuri, string Eroare) Pagini(Type tip, IModelListView lv, bool prefetch) {
@@ -31113,6 +31154,9 @@ List<Scena> ScenelePeTip(bool privat) {
         new(nameof(ScenariiTaiere), ["X", "DSC"], () => new ScenariiTaiere(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),
+        new(nameof(ScenariiConsumatori), ["X"], () => new ScenariiConsumatori(
+            () => provider.CreateObjectSpace(), Check, privat,
+            (os, an, luna) => InchideAcceptTot(os, an, luna), connectionString).Ruleaza()),
         new(nameof(ScenariiTrezorerie), ["PLT", "INC"], () => new ScenariiTrezorerie(
             () => provider.CreateObjectSpace(), Check, privat,
             (os, an, luna) => InchideAcceptTot(os, an, luna)).Ruleaza()),

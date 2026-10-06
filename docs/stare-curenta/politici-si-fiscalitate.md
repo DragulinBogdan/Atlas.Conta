@@ -482,7 +482,8 @@ RepeatableRead și refuză o tranzacție ambiantă mai slabă. Regulile complete
 
 Plata este evenimentul cubului (`Operare`/`Storno`) al unui document de
 trezorerie, cu `TransactionID`-ul tranzacției GL. Liniile ei sunt postările
-de pe latura contrapartidei (opusă `TipDocument.LaturaContPropriu`), grupate
+de pe latura contrapartidei (opusă laturii pe care `Document.Laturi()` admite
+numai contul propriu), grupate
 pe cont, partener și țintă. Ținta se află la capătul lunii operării: partida
 străină nominalizată la operare, perechile `Transfer` de pe partida proprie
 datate până atunci (legătură, desfacere, notă care stinge avansul) și restul.

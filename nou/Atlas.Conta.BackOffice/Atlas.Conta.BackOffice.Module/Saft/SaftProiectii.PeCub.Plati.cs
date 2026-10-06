@@ -22,13 +22,10 @@ public static partial class SaftProiectii {
             var proprii = os.GetObjectsQuery<ContPropriu>().Where(c => laturi.Contains(c.ID)).Select(c => c.ID).ToList().ToHashSet();
             var angajati = os.GetObjectsQuery<Angajat>().Where(c => laturi.Contains(c.ID)).Select(c => c.ID).ToList().ToHashSet();
             var externi = os.GetObjectsQuery<Partener>().Where(c => laturi.Contains(c.ID)).Select(c => c.ID).ToList().ToHashSet();
-            var clase = docs.Select(d => d.ClrType).Distinct().ToList();
-            var laturaPropriu = os.GetObjectsQuery<TipDocument>().Where(t => clase.Contains(t.ClrType))
-                .Select(t => new { t.ClrType, t.LaturaContPropriu }).ToList()
-                .GroupBy(t => t.ClrType, StringComparer.Ordinal)
-                .ToDictionary(g => g.Key, g => g.Select(t => t.LaturaContPropriu).Distinct().ToList(), StringComparer.Ordinal);
+            var laturaPropriu = docs.Select(d => d.ClrType).Distinct()
+                .ToDictionary(c => c, LaturaContPropriu, StringComparer.Ordinal);
             return docs.ToDictionary(d => d.ID, d => {
-                var propriu = laturaPropriu.TryGetValue(d.ClrType, out var l) && l.Count == 1 ? l[0] : null;
+                var propriu = laturaPropriu[d.ClrType];
                 Guid? extern_ = propriu switch {
                     LaturaDocument.Predator => d.PrimitorId,
                     LaturaDocument.Primitor => d.PredatorId,
@@ -45,6 +42,18 @@ public static partial class SaftProiectii {
                 };
                 return new DocPlata(d.ID, d.TipInstrument, contrapartida, extern_, fel);
             });
+        }
+
+        /// <summary>Latura pe care contractul clasei admite numai contul propriu; null dacă nu e exact una.</summary>
+        static LaturaDocument? LaturaContPropriu(string clrType) {
+            if (Api.CititorTipDocument.Clasa(clrType) is not { } clasa || Activator.CreateInstance(clasa) is not Document model)
+                return null;
+            var laturi = model.Laturi();
+            return (laturi.Predator.Permisa == Declaratii.Parte.Propriu, laturi.Primitor.Permisa == Declaratii.Parte.Propriu) switch {
+                (true, false) => LaturaDocument.Predator,
+                (false, true) => LaturaDocument.Primitor,
+                _ => null,
+            };
         }
 
         void Plati(List<PostareJurnal> jurnal, Dictionary<Guid, DocPlata> plati) {

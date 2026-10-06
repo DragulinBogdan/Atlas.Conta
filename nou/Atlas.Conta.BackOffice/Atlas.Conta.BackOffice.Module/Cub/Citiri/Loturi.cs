@@ -22,6 +22,10 @@ public static class Loturi {
         .Where(p => p.Spatiu == N.Spatiu.Stoc && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Lot
             && p.Unitate != null && p.Produs != null && p.Gestiune != null);
 
+    /// <summary>Lotul e unitatea a cel puțin unei postări, pe orice fel de tranzacție.</summary>
+    public static bool AreMiscari(IObjectSpace os, Guid lot) =>
+        os.GetObjectsQuery<Postare>().Any(p => p.FelUnitate == N.FelUnitate.Lot && p.Unitate == lot);
+
     public static IQueryable<RandDatat<SoldLot>> Miscari(IObjectSpace os, Guid? faraDocumentId = null) {
         var postari = Postari(os);
         if (faraDocumentId is { } document) postari = postari.Where(p => p.DocumentId != document);

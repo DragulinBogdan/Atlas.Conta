@@ -68,6 +68,9 @@ public static class Fiscale {
     public static IQueryable<Postare> Postari(IObjectSpace os) =>
         os.GetObjectsQuery<Postare>().Where(p => p.TipTvaId != null);
 
+    /// <summary>Tipul de TVA e purtat de cel puțin o postare, pe orice fel de tranzacție.</summary>
+    public static bool EsteReferit(IObjectSpace os, Guid tipTva) => Postari(os).Any(p => p.TipTvaId == tipTva);
+
     public static IQueryable<FaptFiscal> Fapte(IObjectSpace os) => Postari(os)
         .GroupBy(p => new {
             p.TranzactieId, p.DocumentId, p.DocumentFiscalId, p.LinieId, p.TipTvaId,

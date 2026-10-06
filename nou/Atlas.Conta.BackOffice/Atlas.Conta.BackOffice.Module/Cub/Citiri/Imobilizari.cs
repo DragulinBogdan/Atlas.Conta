@@ -36,6 +36,10 @@ public static partial class Imobilizari {
             throw new OperareException("Registrul imobilizărilor diferă de cub: " + string.Join(", ", diferite));
     }
 
+    /// <summary>Fișa e unitatea a cel puțin unei postări, pe orice fel de tranzacție.</summary>
+    public static bool AreMiscari(IObjectSpace os, Guid fisa) =>
+        os.GetObjectsQuery<Postare>().Any(p => p.FelUnitate == N.FelUnitate.Fisa && p.Unitate == fisa);
+
     public sealed record RandCuDocument(RandImobilizare Rand, Guid DocumentId);
     sealed record Atribute(FelMiscareImobilizare Fel, decimal Deductibil, int Luni,
         MetodaAmortizare? Metoda = null, int? Durata = null, decimal? Reziduala = null,

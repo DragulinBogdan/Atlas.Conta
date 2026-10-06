@@ -176,6 +176,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     public static void Verifica(IObjectSpace os) {
         var erori = new List<string>();
         var registruRaportat = false;
+        var cubRaportat = false;
         var istoricRaportat = false;
         // Lista se materializează: ramura de PROVENIENȚĂ (F23-D4) SCRIE pe
         // obiectele parcurse (`DinSeed = false`), iar `ModifiedObjects` e o
@@ -239,6 +240,14 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                         registruRaportat = true;
                         erori.Add("Registrele (stoc/contabil/TVA/imobilizări/solduri și partide de perioadă) se scriu "
                             + "doar de motor, la operare — nu se creează, modifică sau șterg direct.");
+                    }
+                    break;
+                case Cub.Tranzactie:
+                case Cub.Postare:
+                    if (!cubRaportat) {
+                        cubRaportat = true;
+                        erori.Add("Tranzacțiile și postările cubului se scriu doar de motor, la operare — "
+                            + "nu se creează, modifică sau șterg direct.");
                     }
                     break;
                 // (m) F27-D1 — istoricul perioadei e registrul închiderilor: îl
@@ -1063,7 +1072,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             var folosit = ReferinteImplicite(os, id);
             if (os.GetObjectsQuery<DocumentDetaliu>().Any(d => d.TipTvaId == id))
                 folosit.Add("linii de document");
-            if (os.GetObjectsQuery<RegistruTva>().Any(r => r.TipTvaId == id))
+            if (Cub.Citiri.Fiscale.EsteReferit(os, id))
                 folosit.Add("rânduri din jurnalul de TVA");
             if (folosit.Count > 0)
                 erori.Add($"Tipul de TVA „{tip.Cod ?? tip.Denumire}” nu se poate șterge: e referit de "
