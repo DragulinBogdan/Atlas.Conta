@@ -175,7 +175,11 @@ sealed class AlocareIesire {
             .ToList()
             .Where(s => categorii.Rezolva(s.ContId) == tipStoc)
             .GroupBy(s => s.LotId)
-            .ToDictionary(g => g.Key, g => new SoldAlocat(g.Sum(s => s.Cantitate), g.Sum(s => s.Valoare)));
+            .ToDictionary(g => g.Key, g => g.Select(s => s.ContId).Distinct().Count() == 1
+                ? new SoldAlocat(g.Sum(s => s.Cantitate), g.Sum(s => s.Valoare))
+                : throw new InvalidOperationException(
+                    $"Lotul {g.Key} are sold pe mai multe conturi din categoria {tipStoc}, în gestiunea {gestiuneId}: "
+                    + "motorul evaluează pe cont, deci predicția nu se poate face pe suma lor."));
         var ids = solduri.Keys.ToList();
         var loturi = os.GetObjectsQuery<Lot>()
             .Where(l => ids.Contains(l.ID))

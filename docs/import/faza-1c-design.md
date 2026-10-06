@@ -885,7 +885,9 @@ compilare până la rularea-diagnostic de la închiderea TR-D9a.
 - **Predicția de valoare a alocării** (§12.1, §15) cheamă
   `Nucleu.Evaluare.Iesire` pe soldul lotului din cub, pentru orice ieșire
   evaluată din sold, nu numai la golire. Returul cu valoare declarată rămâne
-  pe preț × cantitate.
+  pe preț × cantitate. Motorul evaluează pe (lot, cont, produs, gestiune);
+  alocarea lucrează pe lot, deci un lot cu sold pe două conturi ale aceleiași
+  categorii de stoc, în aceeași gestiune, e refuzat cu mesaj, nu însumat.
 - **Au ieșit**: `--sabotaj` (proba de sensibilitate a contractelor 1 și 3),
   oracolul golirii `1'. D18-D4` cu blocul lui de raport, scrierea deschiderii
   în registre cu cele șapte verificări de citire înapoi, purja defensivă a

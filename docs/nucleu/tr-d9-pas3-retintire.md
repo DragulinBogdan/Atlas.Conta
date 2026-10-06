@@ -90,8 +90,15 @@ geamănul pe cub. La verificare a ținut întocmai pentru una. Restul:
   (soldurile de după BTR, BCS și LDI; `COR-V14`, `COR-V17`). Au fost
   re-țintite cu toate cifrele, nu șterse (D9-D7 c: o aserție de regulă nu se
   șterge fără rândul `SC-…` care o acoperă);
-- la 11, perechea era în aceeași aserție sau aserția purta și clauze fără
-  registru: s-au șters numai clauzele de registru;
+- la 9, perechea era în aceeași aserție sau aserția purta și clauze fără
+  registru: s-au șters numai clauzele de registru (atomicitatea, păzită pe
+  cub de `FaraEfecte` / `FaraRanduri`, și totalul de stins, păzit de
+  `ImperechereService.Total`);
+- la 2, perechea numită era o declarație recalculată, nu rezultatul
+  persistat: „Capitalizat (NED21)” și „ValoareTva culeasă manual (20,9)”.
+  Clauzele lor de notă au fost șterse la pasul 3 și readuse pe cub după
+  review-ul Codex (D9-L35-R1): 121 pe debitul contului de cost și pe
+  creditul 401, nimic pe 4426; respectiv 20,90 pe debitul 4426;
 - la 7, perechea nu purta cifra: geamăn complet;
 - una e în tabelul de la §3.
 
@@ -99,5 +106,24 @@ Constatare în afara pasului: aserțiile „Cautare == Normalizeaza pe … (N
 rânduri)" își poartă numărătoarea în nume, iar N crește cu unu la fiecare
 rulare a integralei. O scenă lasă câte un rând de nomenclator în urmă. E
 dinaintea pasului.
+
+## 6. Review-ul Codex al lotului 3–5 (2026-10-06)
+
+Două constatări, amândouă corectate
+(`comunicari/2026-10-06-1504-codex-claude-tr-d9a-lot-3-5-review.md`):
+
+- **D9-L35-R1**: cele două clauze de la §5, readuse pe cubul persistat.
+- **D9-L35-R2**: `CubScena.Nota` compara documentul, linia, valoarea și
+  felul, nu tranzacția, și putea confirma o pereche inexistentă pe o linie
+  nulă sau pe o linie cu două mișcări de aceeași valoare. Acum perechea se
+  demonstrează numai în aceeași tranzacție și pe aceeași linie, când linia
+  are la valoarea aceea exact un debit și exact un credit; altfel întoarce
+  fals. Toate cele 68 de apeluri trec pe forma strictă, deci nicio aserție
+  nu se sprijinea pe forma laxă.
+
+Limita rămasă, numită de review: `Nota` e existențială. O aserție care
+cere „aceste note” nu exclude o mișcare în plus pe același document.
+Exhaustivitatea o poartă catalogul de scenarii, care compară multiseturi;
+proba directă a perechii vine cu cheia de la pasul 7b.
 
 Urmele rulărilor: `run-nucleu/tr-d9a/pas3/` (necomis).

@@ -1206,7 +1206,10 @@ if (profil == ProfilContabil.Privat) {
         os.CommitChanges();
         MotorOperare.Opereaza(os, fctNed);
         Check("Capitalizat (NED21): Valoare = brut 121, ValoareTva 0, o singură notă 628 = 401 — fără rând 4426",
-            linieNed.Valoare == 121m && linieNed.ValoareTva == 0m);
+            linieNed.Valoare == 121m && linieNed.ValoareTva == 0m
+            && NoteCub(fctNed).Rulaj(tip628.ContImplicitId, N.Latura.Debit) == 121m
+            && NoteCub(fctNed).Rulaj(cont401.ID, N.Latura.Credit) == 121m
+            && !NoteCub(fctNed).Any(p => p.Cont == cont4426.ID));
 
         // --- NUC-FCT-CAP (B-D6, pas 5): brutul se declară ca bază (100) + taxă (21) pe
         //     ACELAȘI cont de cost, fiindcă jurnalul are două cifre acolo unde registrul
@@ -1241,7 +1244,8 @@ if (profil == ProfilContabil.Privat) {
         os.CommitChanges();
         MotorOperare.Opereaza(os, fctManual);
         Check("ValoareTva culeasă manual (20,9) nu se suprascrie la operare; rândul 4426 o postează",
-            linieManual.ValoareTva == 20.9m);
+            linieManual.ValoareTva == 20.9m
+            && NoteCub(fctManual).Rulaj(cont4426.ID, N.Latura.Debit) == 20.9m);
 
         // --- NUC-FCT-OVERRIDE (B-D6, pas 5): COMPORTAMENT NOU (090j) — taxa culeasă
         //     rămâne autoritară, dar se validează contra celei decise pe document ×

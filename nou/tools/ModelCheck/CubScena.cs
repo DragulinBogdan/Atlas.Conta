@@ -7,7 +7,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-record PostareScena(Guid? DocumentId, Guid? LinieId, N.FelTranzactie Fel, DateOnly Data, Guid Cont, N.Latura Latura,
+record PostareScena(Guid TranzactieId, Guid? DocumentId, Guid? LinieId, N.FelTranzactie Fel, DateOnly Data, Guid Cont, N.Latura Latura,
     decimal Valoare, decimal Cantitate, Guid? Partener, Guid? Gestiune, Guid? Unitate, Guid? Produs,
     Guid? CodEconomic, Guid? CodFunctional, Guid? SursaFinantare, Guid? Proiect, Guid? CentruCost, Guid? TipTvaId) {
     public bool Storno => Fel == N.FelTranzactie.Storno;
@@ -19,7 +19,7 @@ record PostareScena(Guid? DocumentId, Guid? LinieId, N.FelTranzactie Fel, DateOn
 /// <summary>Intrările comune ale cubului, restrânse la documentele unei scene.</summary>
 static class CubScena {
     static List<PostareScena> Citeste(IQueryable<C.Postare> postari) => postari
-        .Select(p => new PostareScena(p.DocumentId, p.LinieId, p.Tranzactie.Fel, p.Data, p.Cont, p.Latura,
+        .Select(p => new PostareScena(p.TranzactieId, p.DocumentId, p.LinieId, p.Tranzactie.Fel, p.Data, p.Cont, p.Latura,
             p.Valoare, p.Cantitate, p.Partener, p.Gestiune, p.Unitate, p.Produs,
             p.CodEconomic, p.CodFunctional, p.SursaFinantare, p.Proiect, p.CentruCost, p.TipTvaId)).ToList();
 
@@ -54,11 +54,17 @@ static class CubScena {
     public static bool FaraPostari(IObjectSpace os, Guid document) =>
         FaraNote(os, document) && FaraStoc(os, document) && FaraFapte(os, document);
 
-    /// <summary>O notă contabilă = două postări ale aceleiași linii: debitul și creditul, cu aceeași valoare.</summary>
+    /// <summary>
+    /// Nota debit = credit a unei linii, în aceeași tranzacție. Perechea se demonstrează numai când linia are, la
+    /// valoarea aceea, exact un debit și exact un credit; pe o linie nulă sau cu două mișcări de aceeași valoare
+    /// întoarce fals, iar aserția se scrie pe rulajul contului (`Rulaj`).
+    /// </summary>
     public static bool Nota(this IEnumerable<PostareScena> postari, Guid? debit, Guid? credit, decimal? valoare = null, Guid? linie = null) =>
-        postari.Any(d => d.Debit && d.Cont == debit && (valoare == null || d.Valoare == valoare) && (linie == null || d.LinieId == linie)
-            && postari.Any(c => c.Credit && c.Cont == credit && c.Valoare == d.Valoare
-                && c.LinieId == d.LinieId && c.DocumentId == d.DocumentId && c.Fel == d.Fel));
+        postari.Where(p => p.LinieId != null && (linie == null || p.LinieId == linie))
+            .GroupBy(p => (p.TranzactieId, p.LinieId))
+            .Any(g => g.Where(d => d.Debit && d.Cont == debit && (valoare == null || d.Valoare == valoare))
+                .Any(d => g.Count(p => p.Debit && p.Valoare == d.Valoare) == 1
+                    && g.Where(p => p.Credit && p.Valoare == d.Valoare).ToList() is [var c] && c.Cont == credit));
 
     public static decimal Rulaj(this IEnumerable<PostareScena> postari, Guid? cont, N.Latura latura) =>
         postari.Where(p => p.Cont == cont && p.Latura == latura).Sum(p => p.Valoare);
