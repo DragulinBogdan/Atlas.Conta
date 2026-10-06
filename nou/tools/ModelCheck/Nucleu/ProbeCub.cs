@@ -250,13 +250,13 @@ static class ProbeCub {
             && operare.Count(p => p.Coordonate.PerioadaDeclarare != null) == fiscale.Count);
 
         var solduri = operare.Concat(storno)
-            .Select(Comparabil.Proiecteaza)
-            .GroupBy(p => p with { Cantitate = 0m, ValoareSemnata = 0m, PerioadaDeclarare = null })
-            .Select(g => (g.Sum(p => p.ValoareSemnata), g.Sum(p => p.Cantitate)))
+            .GroupBy(p => (p.Coordonate.Cont, p.Coordonate.Latura, p.Coordonate.Gestiune, p.Coordonate.Produs,
+                p.Coordonate.Unitate, p.Coordonate.Partener, p.Coordonate.CodTva, p.Coordonate.Analiza, p.Cauza.Linie))
+            .Select(g => (Valoare: g.Sum(p => p.Valoare), Cantitate: g.Sum(p => p.Cantitate)))
             .ToList();
         check($"STR-STORNO {prefix}: Σ cub a documentului = 0 pe FIECARE coordonată "
             + $"({solduri.Count} coordonate distincte), valoare și cantitate",
-            solduri.Count > 0 && solduri.All(s => s.Item1 == 0m && s.Item2 == 0m));
+            solduri.Count > 0 && solduri.All(s => s.Valoare == 0m && s.Cantitate == 0m));
     }
 
     static bool MultisetEgal(IEnumerable<N.Postare> unele, IEnumerable<N.Postare> altele) {

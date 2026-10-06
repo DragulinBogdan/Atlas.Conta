@@ -974,3 +974,15 @@ detaliat în jurnal):
   document (G1) și materialul din regulă nu ajunge pe postare (G2). ModelCheck
   integral **3.527 / 4.835 OK**, zero FAIL; nucleu 180/180.
   `docs/nucleu/tr-d9-pas2-probe.md`, `run-nucleu/tr-d9a/pas2/`.
+
+- **2026-10-06 — TR-D9a, pasul 3: aserțiile de regulă pe cititorii cubului.**
+  338 de aserții ModelCheck care păzeau o cifră citită din registre: 313
+  re-țintite pe `Cub/Citiri` cu același nume și aceleași literale, după ce
+  forma veche și cea nouă au rulat verzi pe aceeași scenă; una ștearsă cu
+  rând de catalog (SC-DEC-16); 17 din clasa repartitorului amânate la 6b;
+  șase rămase pe forma veche, fiindcă cubul dă altă cifră, toate diferențe
+  declarate (D9-D3, SC-NIR-09, o scenă de oracol). Verificarea main-ului a
+  întors zece ștergeri ale căror perechi nu purtau valoarea. Numai
+  `nou/tools/ModelCheck/`, niciun cititor nou în produs. ModelCheck integral
+  **3.531 / 4.839 OK**, zero FAIL.
+  `docs/nucleu/tr-d9-pas3-retintire.md`, `run-nucleu/tr-d9a/pas3/`.

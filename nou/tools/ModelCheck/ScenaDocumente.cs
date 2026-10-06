@@ -416,10 +416,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         Verifica(id, "Draft și zero efecte persistate proprii",
             os.GetObjectsQuery<Document>().Single(d => d.ID == doc).Stare == StareDocument.Draft
             && !os.GetObjectsQuery<C.Tranzactie>().Any(p => p.DocumentId == doc)
-            && !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == doc)
-            && !os.GetObjectsQuery<RegistruContabil>().Any(p => p.DocumentId == doc)
-            && !os.GetObjectsQuery<RegistruStoc>().Any(p => p.DocumentId == doc)
-            && !os.GetObjectsQuery<RegistruTva>().Any(p => p.DocumentId == doc));
+            && !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == doc));
     }
 
     protected void OperatFaraEfecte(string id, string mesaj, Guid doc) => Verifica(id, mesaj, CuSpatiu(os =>

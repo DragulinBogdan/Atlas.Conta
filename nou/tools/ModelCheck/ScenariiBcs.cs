@@ -181,9 +181,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica(id, "Draft; zero tranzacții/postări/registre proprii",
             os.GetObjectsQuery<Document>().Single(d => d.ID == docId).Stare == StareDocument.Draft
             && !os.GetObjectsQuery<C.Tranzactie>().Any(t => t.DocumentId == docId)
-            && !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == docId)
-            && !os.GetObjectsQuery<RegistruStoc>().Any(p => p.DocumentId == docId)
-            && !os.GetObjectsQuery<RegistruContabil>().Any(p => p.DocumentId == docId));
+            && !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == docId));
     }
 
     void OperareSiStorno() {

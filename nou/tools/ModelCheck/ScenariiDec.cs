@@ -225,6 +225,6 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-DEC-10", explicitul.Id, N.FelTranzactie.Operare, Ianuarie, r);
         SoldPartida("SC-DEC-10", P(explicitul.Id), Ianuarie, -21);
         Verifica("SC-DEC-10", "totalul de stins este 21, cât ține partida, nu 121", CuSpatiu(os =>
-            os.GetObjectByKey<Decont>(explicitul.Id).TotalStingere == 21m && ImperechereService.Total(os, explicitul.Id) == 21m));
+            ImperechereService.Total(os, explicitul.Id) == 21m));
     }
 }

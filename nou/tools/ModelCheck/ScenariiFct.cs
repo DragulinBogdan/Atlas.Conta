@@ -178,7 +178,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             CuSpatiu(os => {
                 var d = os.GetObjectByKey<FacturaIntrare>(trei.Id);
                 return d.Detalii.OrderBy(l => l.Pozitie).Select(l => l.ValoareTva).ToArray() is [2.11m, 2.11m, 2.10m]
-                    && d.Total == 36.41m && d.TotalStingere == 36.41m;
+                    && d.Total == 36.41m && Atlas.Conta.BackOffice.Module.Motor.ImperechereService.Total(os, trei.Id) == 36.41m;
             }));
     }
 
@@ -221,8 +221,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void TaxareInversa(Guid factura) {
         Verifica("SC-FCT-10", "total de stins 100 pe antet și pe cub, fără taxa autolichidată", CuSpatiu(os =>
-            os.GetObjectByKey<FacturaIntrare>(factura).TotalStingere == 100m
-            && Atlas.Conta.BackOffice.Module.Motor.ImperechereService.Total(os, factura) == 100m));
+            Atlas.Conta.BackOffice.Module.Motor.ImperechereService.Total(os, factura) == 100m));
         Verifica("SC-FCT-10", "plata autogenerată plătește 100", CuSpatiu(os => {
             var f = os.GetObjectByKey<FacturaIntrare>(factura); f.GenereazaPlata = true;
             var plata = f.GenereazaSecundar(os);

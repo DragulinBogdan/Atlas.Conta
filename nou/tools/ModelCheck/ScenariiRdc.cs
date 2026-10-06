@@ -109,8 +109,8 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
             [.. Venit(d, 0, -40, -8.40m, "N21", cont: "707"), .. Cost(d, 1, 2, 20)]);
         SoldLot("SC-RDC-05", lot.Lot!.Value, Magazie, Ianuarie, 6, 60);
         SoldPartida("SC-RDC-05", P(f.Id), Ianuarie, 145.20m); SoldPartida("SC-RDC-05", P(d.Id), Ianuarie, -48.40m);
-        Verifica("SC-RDC-05", "numai venitul intră în jurnalul TVA", CuSpatiu(os =>
-            os.GetObjectsQuery<RegistruTva>().Count(r => r.DocumentId == d.Id) == 1));
+        Verifica("SC-RDC-05", "numai venitul intră în jurnalul TVA",
+            CuSpatiu(os => CubScena.Fapte(os, d.Id).Count == 1));
         var rest = Retur(new LinieRdcScena(80, "N21", Tip: "707"), new LinieRdcScena(0, Lot: lot, Cantitate: 4));
         Opereaza(rest.Id);
         Postari("SC-RDC-06", rest.Id, N.FelTranzactie.Operare, Ianuarie,
