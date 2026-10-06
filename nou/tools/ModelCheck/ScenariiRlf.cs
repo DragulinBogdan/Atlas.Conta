@@ -47,27 +47,19 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
 
     protected override void Executa() {
         if (!Privat) {
-            Verifica("SC-RLF-12", "profil fără politică RLF și fără activare cub", CuSpatiu(os =>
-                !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocument.Cod == "RLF")
-                && !os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == "RLF").PosteazaInCub));
+            Verifica("SC-RLF-12", "profil fără politică RLF", CuSpatiu(os =>
+                !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocument.Cod == "RLF")));
             var lot = Receptioneaza(new LinieFctScena(10, 10)).Linii[0];
             var inert = Retur(new LinieRlfScena(lot, 2));
-            Verifica("SC-RLF-12", "dry-run fără refuz", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(inert.Id)).Count == 0);
-            Refuza("SC-RLF-12", () => Opereaza(inert.Id), "politică de numerotare"); FaraEfecte("SC-RLF-12", inert.Id);
+            Verifica("SC-RLF-12", $"dry-run refuzat cu {CoduriRefuz.TipFaraDeclaratie}",
+                CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(inert.Id)).Any(e => e.Contains(CoduriRefuz.TipFaraDeclaratie)));
+            Refuza("SC-RLF-12", () => Opereaza(inert.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RLF-12", inert.Id);
             Comanda(os => { os.GetObjectByKey<Document>(inert.Id).Numar = Marcaj + "-INERT"; os.CommitChanges(); });
-            Opereaza(inert.Id);
-            OperatFaraEfecte("SC-RLF-14", "cu număr cules: Operat, fără nicio postare și fără niciun rând de registru", inert.Id);
+            Refuza("SC-RLF-14", () => Opereaza(inert.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RLF-14", inert.Id);
             SoldLot("SC-RLF-14", lot.Lot!.Value, Magazie, Ianuarie, 10, 100);
             return;
         }
         Simple(); Reziduu(); Compensare(); Refuzuri(); PestePerioada();
-        // X-D7 (b): seed-ul profilului bugetar cere RLF și ITV în afara cubului; nimic nu se salvează.
-        Comanda(os => {
-            ContaSeeder.SeedTipuriDocument(os, ProfilContabil.Bugetar);
-            bool InCub(string cod) => os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == cod).PosteazaInCub;
-            Verifica("SC-CIT-109", "seed-ul care cere ieșirea din regim: RLF, cu tranzacții în cub, rămâne; ITV, fără tranzacții, iese",
-                InCub("RLF") && !InCub("ITV") && InCub("FCT"));
-        });
     }
 
     void Simple() {

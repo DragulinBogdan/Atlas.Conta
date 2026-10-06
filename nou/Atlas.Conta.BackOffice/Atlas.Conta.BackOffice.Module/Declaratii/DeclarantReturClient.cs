@@ -9,6 +9,8 @@ public sealed class DeclarantReturClient : IDeclarant {
     public static readonly DeclarantReturClient Instanta = new();
     public string SursaValoareDeclarata => SurseValoare.Linie;
     DeclarantReturClient() { }
+    public bool ConteazaPrinReguli => true;
+    public PoliticaProfil PoliticaCeruta => PoliticaProfil.Contare;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);

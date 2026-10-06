@@ -18,13 +18,11 @@ static class ProbeNucleu {
     /// </summary>
     public const int PragInterogari = 16;
 
-    /// <param name="conexe">documentul conex autogenerat → documentul sursă (TR-D3).</param>
     public static void Proba(
             IObjectSpace os,
             Action<string, bool> check,
             string prefix,
-            IReadOnlyList<Document> documente,
-            IReadOnlyDictionary<Guid, Guid>? conexe = null) {
+            IReadOnlyList<Document> documente) {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(check);
         ArgumentNullException.ThrowIfNull(documente);
@@ -44,29 +42,6 @@ static class ProbeNucleu {
             if (contract.Tranzactii.Count == 0)
                 continue;
 
-            var aleLui = new List<Guid> { doc.ID };
-            var conexeAleLui = new Dictionary<Guid, Guid>();
-            if (conexe is not null)
-                foreach (var (conex, sursa) in conexe)
-                    if (sursa == doc.ID) {
-                        aleLui.Add(conex);
-                        conexeAleLui[conex] = sursa;
-                    }
-
-            Normalizari.Reseteaza();
-            var oracol = Normalizari.Toate(
-                CubDinRegistre.Transforma(os, aleLui),
-                Normalizari.Citeste(os, aleLui, conexeAleLui));
-            check($"{eticheta}: normalizările B-D8 fără reziduu", Normalizari.Avertismente.Count == 0);
-
-            var raport = Comparabil.Compara(
-                Comparabil.Proiecteaza(oracol),
-                Comparabil.Proiecteaza(contract.Tranzactii),
-                Nume(os, oracol, [.. contract.Tranzactii]));
-            if (!raport.Egal)
-                Console.WriteLine(raport.ToString());
-            check($"{eticheta}: postările = registrele normalizate", raport.Egal);
-
             var conservare = contract.Tranzactii.SelectMany(N.Conservare.Verifica).ToList();
             foreach (var refuz in conservare)
                 Console.WriteLine($"       conservare {refuz.Cod}: {refuz.Mesaj}");
@@ -80,23 +55,5 @@ static class ProbeNucleu {
             check($"{eticheta}: Fapte.Operand ≤ {PragInterogari} interogări (citire pe seturi)",
                 interogari <= PragInterogari);
         }
-    }
-
-    /// <summary>Simbolurile conturilor atinse, ca diff-ul să se poată citi fără bază.</summary>
-    public static Func<Guid, string> Nume(
-            IObjectSpace os, IEnumerable<N.Tranzactie> oracol, params N.Tranzactie[] obtinut) {
-        var ids = oracol.Concat(obtinut)
-            .SelectMany(t => t.Postari)
-            .Select(p => p.Coordonate.Cont)
-            .Distinct()
-            .ToList();
-        var simboluri = ids.Count == 0
-            ? []
-            : os.GetObjectsQuery<Cont>()
-                .Where(c => ids.Contains(c.ID))
-                .Select(c => new { c.ID, c.Simbol })
-                .ToList()
-                .ToDictionary(c => c.ID, c => c.Simbol);
-        return id => simboluri.GetValueOrDefault(id) ?? id.ToString()[..8];
     }
 }

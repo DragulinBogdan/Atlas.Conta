@@ -57,6 +57,15 @@ public static class Contractare {
             N.Contract.Refuza([new(CoduriRefuz.DeclaratieInvalida, mesaj, null)], [], [], rotunjire.JumatatiDeBan);
     }
 
+    /// <summary>Declarantul clasei de document cu numele CLR dat; null când clasa lipsește sau nu declară.</summary>
+    public static IDeclarant? DeclarantulTipului(string? clrType) =>
+        clrType is null ? null : declaranti.GetOrAdd(clrType, static nume =>
+            typeof(Document).Assembly.GetTypes()
+                .FirstOrDefault(t => t.Name == nume && !t.IsAbstract && typeof(Document).IsAssignableFrom(t))
+                is { } clasa ? ((Document)Activator.CreateInstance(clasa)!).Declarant() : null);
+
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, IDeclarant?> declaranti = new();
+
     /// <summary>Textul unui refuz pentru operator: codul stabil, mesajul, linia dacă e a ei.</summary>
     public static string Mesaj(N.Refuz refuz) {
         ArgumentNullException.ThrowIfNull(refuz);

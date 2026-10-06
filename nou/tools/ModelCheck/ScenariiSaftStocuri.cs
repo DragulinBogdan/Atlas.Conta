@@ -167,7 +167,9 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
         var rdc = Rdc(l1, 1); Opereaza(rdc);
         var fld = Receptioneaza(new LinieFctScena(3, 3.333333m)); var ld = fld.Linii[0];
         var asm1 = Asamblare(ld, 1, 3.33m); Opereaza(asm1.Id);
-        var asm2 = Asamblare(ld, 1, 3.33m); Opereaza(asm2.Id);
+        var asm2 = Asamblare(ld, 1, 3.33m);
+        Comanda(os => { Atlas.Conta.BackOffice.Module.Api.Asm.AsamblareApply.DistribuieValoarea(os, () => Deschide(), asm2.Id); os.CommitChanges(); });
+        Opereaza(asm2.Id);
         var flm = Receptioneaza(new LinieFctScena(3, 10)); var lm = flm.Linii[0];
         var asm3 = Asamblare(lm, 2, 20m); Opereaza(asm3.Id);
         var fnir = Factura(Ianuarie, new LinieFctScena(4, 25, "N21"));
@@ -271,7 +273,6 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
 
         Verifica("SC-SAFT-49", "reexportul lui ianuarie după mișcările din februarie e identic octet cu octet",
             Xml(Export(1)).AsSpan().SequenceEqual(artefactIan));
-        ProbaDuala(ian);
         Perf();
         Certificare((ian, artefactIan), (feb, Xml(feb)), (Export(3), null));
         OracolSiCoerenta();
@@ -416,28 +417,6 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
             var p = os.CreateObject<PoliticaMiscareSaft>(); p.TipDocumentId = fct; p.TipStoc = TipStoc.Magazie; p.Semn = -1;
             p.Motiv = "probă"; GardianEditare.Verifica(os);
         }), "nu poate exclude");
-    }
-
-    void ProbaDuala(SaftDto d) {
-        var categorii = CuSpatiu(os => {
-            var c = new CategoriiStoc(os);
-            var ids = d.StocFizic.Select(e => e.ContId).Distinct().ToList();
-            return ids.ToDictionary(id => id, id => c.Rezolva(id));
-        });
-        var registru = CuSpatiu(os => {
-            var loturi = d.StocFizic.Select(e => e.LotId).Distinct().ToList();
-            return os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId))
-                .Select(r => new { r.LotId, r.RepartitorId, r.TipStoc }).Distinct().ToList();
-        });
-        var rezultat = d.StocFizic.Select(e => {
-            var vechi = registru.Where(r => r.LotId == e.LotId && r.RepartitorId == e.RepartitorId).Select(r => r.TipStoc).Distinct().ToList();
-            var nou = categorii[e.ContId];
-            return (e.LotId, Stare: vechi.Count == 0 ? "absent" : vechi.Count > 1 ? "ambiguu" : vechi[0] == nou ? "egal" : "diferit");
-        }).ToList();
-        Console.WriteLine("     MĂSURAT (S3-D7e proba duală, ianuarie): " + string.Join(", ",
-            rezultat.GroupBy(x => x.Stare).OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => $"{g.Key} {g.Count()}")));
-        Verifica("SC-SAFT-49", "proba duală: categoria derivată din cont coincide cu TipStoc-ul registrului pe fiecare poziție cu corespondent unic",
-            rezultat.Any(x => x.Stare == "egal") && rezultat.All(x => x.Stare is "egal" or "absent"));
     }
 
     void Perf() {

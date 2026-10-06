@@ -64,15 +64,14 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
 
     protected override void Executa() {
         if (!Privat) {
-            Verifica("SC-RDC-16", "profil fără politică RDC și fără activare cub", CuSpatiu(os =>
-                !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocument.Cod == "RDC")
-                && !os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == "RDC").PosteazaInCub));
+            Verifica("SC-RDC-16", "profil fără politică RDC", CuSpatiu(os =>
+                !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocument.Cod == "RDC")));
             var inert = Retur(new LinieRdcScena(100));
-            Verifica("SC-RDC-16", "dry-run fără refuz", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(inert.Id)).Count == 0);
-            Refuza("SC-RDC-16", () => Opereaza(inert.Id), "politică de numerotare"); FaraEfecte("SC-RDC-16", inert.Id);
+            Verifica("SC-RDC-16", $"dry-run refuzat cu {CoduriRefuz.TipFaraDeclaratie}",
+                CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(inert.Id)).Any(e => e.Contains(CoduriRefuz.TipFaraDeclaratie)));
+            Refuza("SC-RDC-16", () => Opereaza(inert.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RDC-16", inert.Id);
             Comanda(os => { os.GetObjectByKey<Document>(inert.Id).Numar = Marcaj + "-INERT"; os.CommitChanges(); });
-            Opereaza(inert.Id);
-            OperatFaraEfecte("SC-RDC-19", "cu număr cules: Operat, fără nicio postare și fără niciun rând de registru", inert.Id);
+            Refuza("SC-RDC-19", () => Opereaza(inert.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RDC-19", inert.Id);
             return;
         }
         Venituri(); Stocuri(); Compensare(); Refuzuri(); PestePerioada();

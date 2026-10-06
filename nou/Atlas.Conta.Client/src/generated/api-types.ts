@@ -10107,18 +10107,6 @@ export interface components {
             NaturaInterzisa?: string | null;
             DinSeed?: boolean;
         };
-        ExplicatieAbsorbtieDto: {
-            /** Format: uuid */
-            ContSursaId?: string;
-            /** Format: double */
-            R?: number;
-            /** Format: double */
-            C?: number;
-            /** Format: double */
-            P?: number;
-            /** Format: double */
-            Delta?: number;
-        };
         ExplicatieContDto: {
             /** Format: uuid */
             ContId?: string;
@@ -10185,7 +10173,6 @@ export interface components {
             Stingeri?: components["schemas"]["ExplicatieStingereDto"][] | null;
             Conturi?: components["schemas"]["ExplicatieContDto"][] | null;
             PartideDeschise?: components["schemas"]["ExplicatieUnitateDto"][] | null;
-            Absorbtii?: components["schemas"]["ExplicatieAbsorbtieDto"][] | null;
         };
         ExplicatieSoldDto: {
             /** Format: double */

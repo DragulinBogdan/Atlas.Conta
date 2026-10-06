@@ -16,6 +16,7 @@ public sealed class DeclarantTrezorerie : IDeclarant {
     public static readonly DeclarantTrezorerie Instanta = new();
 
     DeclarantTrezorerie() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);

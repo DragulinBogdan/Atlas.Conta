@@ -3,10 +3,46 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
+/// <summary>Consumul unei linii, evaluat pe soldul cubului; <paramref name="SoldCitit"/> e nenul la prima atingere a unității.</summary>
+public sealed record ConsumEvaluat(LinieOperand Linie, N.Unitate Unitate, decimal Cantitate, decimal Valoare, N.Sold? SoldCitit);
+
 public sealed class DeclarantAsamblare : IDeclarant {
     public static readonly DeclarantAsamblare Instanta = new();
     DeclarantAsamblare() { }
-    public bool CereSoldRegistruPentruEvaluare => true;
+
+    /// <summary>
+    /// Consumurile evaluate în secvența liniilor (090 j). Refuză numai evaluarea însăși:
+    /// lotul, contul lui de stoc, soldul. Nu judecă produsele și nici balansarea.
+    /// </summary>
+    public IReadOnlyList<ConsumEvaluat> Consum(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
+        ArgumentNullException.ThrowIfNull(operand);
+        ArgumentNullException.ThrowIfNull(rotunjire);
+        ArgumentNullException.ThrowIfNull(refuzuri);
+        var solduri = new Dictionary<CheieLotFapt, N.Sold>();
+        var evaluate = new List<ConsumEvaluat>();
+        foreach (var l in operand.Linii.Where(l => l.Transformare?.Rol == N.RolTransformare.Consum)) {
+            if (l.Lot is not { } lot) {
+                refuzuri.Add(new(CoduriRefuz.LotLipsa, "Linia cere un lot.", l.Id));
+                continue;
+            }
+            if (lot.ContImplicitId is not Guid cont) {
+                refuzuri.Add(new(CoduriRefuz.ContStocLipsa, "Lotul cere cont de stoc.", l.Id));
+                continue;
+            }
+            var cheie = new CheieLotFapt(lot.Id, cont, lot.ProdusId, operand.Document.Predator.Id);
+            var unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, cont, null, lot.ProdusId, lot.Data);
+            N.Sold? citit = null;
+            if (!solduri.TryGetValue(cheie, out var sold))
+                citit = sold = operand.SolduriLoturi.GetValueOrDefault(cheie) ?? N.Sold.Zero;
+            var q = Math.Abs(l.Cantitate);
+            decimal c;
+            try { c = N.Evaluare.Iesire(sold, q, rotunjire); }
+            catch (N.RefuzException e) { refuzuri.Add(e.Refuz with { Linie = l.Id }); continue; }
+            solduri[cheie] = sold with { Credit = sold.Credit + c, Cantitate = sold.Cantitate - q };
+            evaluate.Add(new(l, unitate, q, c, citit));
+        }
+        return evaluate;
+    }
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -43,82 +79,51 @@ public sealed class DeclarantAsamblare : IDeclarant {
         }
         if (refuzuri.Count > 0) return null;
 
+        var consum = Consum(operand, rotunjire, refuzuri).ToDictionary(c => c.Linie.Id);
+        if (refuzuri.Count > 0) return null;
+
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza> { operand.PerioadaDeschisa, operand.VersiunePolitica };
-        var solduriCub = new Dictionary<CheieLotFapt, N.Sold>();
-        var solduriRegistru = new Dictionary<Guid, N.Sold>();
         var valori = new List<ValoriLinie>();
         foreach (var l in linii) {
-            var lot = l.Lot!;
-            var cheie = new CheieLotFapt(lot.Id, lot.ContImplicitId!.Value, lot.ProdusId, doc.Predator.Id);
-            var unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, lot.ContImplicitId!.Value,
-                null, lot.ProdusId, lot.Data);
-            var q = Math.Abs(l.Cantitate);
-            var produs = l.Transformare!.Rol == N.RolTransformare.Produs;
-            decimal r = 0m, c = 0m, p = 0m;
-            if (produs) p = rotunjire.Bani(q * l.Transformare.PretProdus!.Value);
-            else {
-                if (!solduriCub.TryGetValue(cheie, out var sold)) {
-                    sold = operand.SolduriLoturi.GetValueOrDefault(cheie) ?? N.Sold.Zero;
-                    solduriRegistru[lot.Id] = operand.SolduriLoturiRegistru.GetValueOrDefault(lot.Id) ?? N.Sold.Zero;
-                    ipoteze.Add(new N.SoldUnitateCitit(unitate, sold));
-                }
-                try { c = N.Evaluare.Iesire(sold, q, rotunjire); }
-                catch (N.RefuzException e) { refuzuri.Add(e.Refuz with { Linie = l.Id }); continue; }
-                var registru = solduriRegistru[lot.Id];
-                r = q == registru.Cantitate ? registru.Net : rotunjire.Bani(q * lot.PretUnitar);
-                solduriCub[cheie] = sold with { Credit = sold.Credit + c, Cantitate = sold.Cantitate - q };
-                solduriRegistru[lot.Id] = registru with { Credit = registru.Credit + r, Cantitate = registru.Cantitate - q };
-                decizii.Add(new N.ValoareIesire(l.Id, unitate, q, c));
+            if (consum.TryGetValue(l.Id, out var evaluat)) {
+                if (evaluat.SoldCitit is { } citit)
+                    ipoteze.Add(new N.SoldUnitateCitit(evaluat.Unitate, citit));
+                decizii.Add(new N.ValoareIesire(l.Id, evaluat.Unitate, evaluat.Cantitate, evaluat.Valoare));
+                valori.Add(new(l, evaluat.Unitate, evaluat.Cantitate, evaluat.Valoare, false));
             }
-            valori.Add(new(l, unitate, q, r, c, p, produs));
-            decizii.Add(new N.ContRezolvat(l.Id, unitate.Cont, "TipMaterial"));
+            else {
+                var lot = l.Lot!;
+                var unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, lot.ContImplicitId!.Value,
+                    null, lot.ProdusId, lot.Data);
+                var q = Math.Abs(l.Cantitate);
+                var p = rotunjire.Bani(q * l.Transformare!.PretProdus!.Value);
+                if (p <= 0m)
+                    refuzuri.Add(new(CoduriRefuz.AsamblareProdusNepozitiv,
+                        $"Valoarea produsului este {p}; trebuie să fie pozitivă.", l.Id));
+                valori.Add(new(l, unitate, q, p, true));
+            }
+            decizii.Add(new N.ContRezolvat(l.Id, valori[^1].Unitate.Cont, "TipMaterial"));
         }
         if (refuzuri.Count > 0) return null;
-        var totalR = valori.Sum(l => l.R);
-        var totalP = valori.Sum(l => l.P);
-        if (totalP != totalR) {
+        var totalC = valori.Where(l => !l.Produs).Sum(l => l.Valoare);
+        var totalP = valori.Where(l => l.Produs).Sum(l => l.Valoare);
+        if (totalP != totalC) {
             refuzuri.Add(new(CoduriRefuz.AsamblareNebalansata,
-                $"Consum R={totalR}; produse P={totalP}; diferență P−R={totalP - totalR}. Redistribuiți valoarea.", null));
+                $"Consum C={totalC}; produse P={totalP}; diferență P−C={totalP - totalC}. Redistribuiți valoarea.", null));
             return null;
         }
 
-        var grupuri = valori.GroupBy(l => l.Unitate.Cont).ToList();
-        var feluri = grupuri.ToDictionary(g => g.Key,
-            g => g.Sum(l => l.P) == g.Sum(l => l.R) ? N.FelTranzactie.Transfer : N.FelTranzactie.Operare);
-        var tintaOperare = valori.LastOrDefault(l => l.Produs && feluri[l.Unitate.Cont] == N.FelTranzactie.Operare);
-        var ajustari = new Dictionary<Guid, decimal>();
-        foreach (var g in grupuri) {
-            var r = g.Sum(l => l.R);
-            var c = g.Sum(l => l.C);
-            var delta = c - r;
-            var tinta = g.LastOrDefault(l => l.Produs)
-                ?? (feluri[g.Key] == N.FelTranzactie.Operare ? tintaOperare : null);
-            if (tinta is null) {
-                if (delta != 0m)
-                    refuzuri.Add(new(CoduriRefuz.AsamblareDeltaFaraAncora,
-                        $"Cont {g.Key}: Δ={delta}, fără produs eligibil pentru absorbție.", null));
-                continue;
-            }
-            ajustari[tinta.Linie.Id] = ajustari.GetValueOrDefault(tinta.Linie.Id) + delta;
-            decizii.Add(new N.AbsorbtieEvaluare(doc.Id, tinta.Linie.Id, g.Key, r, c, tinta.P, delta));
-        }
-        var transformari = new List<N.Transformare>();
-        foreach (var l in valori) {
-            var valoare = l.Produs ? l.P + ajustari.GetValueOrDefault(l.Linie.Id) : l.C;
-            if (l.Produs && valoare <= 0m)
-                refuzuri.Add(new(CoduriRefuz.AsamblareProdusNepozitiv,
-                    $"Valoarea produsului după absorbție este {valoare}; trebuie să fie pozitivă.", l.Linie.Id));
-            transformari.Add(new(new N.Capat {
+        var feluri = valori.GroupBy(l => l.Unitate.Cont).ToDictionary(g => g.Key,
+            g => g.Where(l => l.Produs).Sum(l => l.Valoare) == g.Where(l => !l.Produs).Sum(l => l.Valoare)
+                ? N.FelTranzactie.Transfer : N.FelTranzactie.Operare);
+        var transformari = valori.Select(l => new N.Transformare(new N.Capat {
                 Cont = l.Unitate.Cont, Unitate = l.Unitate, Produs = l.Unitate.Produs,
                 Gestiune = doc.Predator.Id, Analiza = l.Linie.Analiza,
             }, l.Produs ? N.RolTransformare.Produs : N.RolTransformare.Consum,
-                feluri[l.Unitate.Cont], l.Q, valoare, new N.Cauza(doc.Id, l.Linie.Id)));
-        }
-        return refuzuri.Count > 0 ? null
-            : new N.Declaratie(doc.Id, doc.DataInregistrare, [], [], transformari, decizii, ipoteze);
+            feluri[l.Unitate.Cont], l.Cantitate, l.Valoare, new N.Cauza(doc.Id, l.Linie.Id))).ToList();
+        return new N.Declaratie(doc.Id, doc.DataInregistrare, [], [], transformari, decizii, ipoteze);
     }
 
-    sealed record ValoriLinie(LinieOperand Linie, N.Unitate Unitate, decimal Q,
-        decimal R, decimal C, decimal P, bool Produs);
+    sealed record ValoriLinie(LinieOperand Linie, N.Unitate Unitate, decimal Cantitate, decimal Valoare, bool Produs);
 }

@@ -43,7 +43,7 @@ Fără TVA, partidă sau valută. Proveniență: regulă, dacă nu se spune altf
 | SC-LDI-19 | Folosinta: Plus LDI MAG2 1/25; anulare/reoperare, apoi storno, lot 0/0; D 303.02.00/C 791.00.00 25 și inverse. | acceptat |
 | SC-LDI-20 | Plus 0,001 bucăți la preț pozitiv 0,001: cantitate 0,001 și valoare rotunjită 0; două postări, fără inventarea unui ban. | acceptat |
 | SC-LDI-21 | Folosinta: Plus MAG2 2/50; corecție după închiderea lunii, noul plus 3/60 pe lot nou; la 31.01 original 2/50, în februarie original 0/0 și nou 3/60. | acceptat |
-| SC-LDI-22 | Lot OF creat real prin LDI sub politica Magazie; restaurare Folosinta. BTR nou refuză stocul inexistent pe noua cheie. Storno inversează exact Magazie 1/25, original intact; diagnosticul arată separat cheia veche și inversul, chiar la sold net zero. | refuz fără fallback / inversare acceptată |
+| SC-LDI-22 | Lot OF creat real prin LDI sub politica Magazie; restaurare Folosinta. BTR nou refuză stocul inexistent pe noua cheie. Storno inversează exact 1/25, original intact. | refuz fără fallback / inversare acceptată |
 
 ## Limite
 

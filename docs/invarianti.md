@@ -21,9 +21,10 @@ există tip de document fără semantica ambelor laturi definită — dacă o ce
 e operație — e **relație între documente** (imperecherea) sau **proiecție
 peste registre** (solduri, balanțe).
 
-*Reconciliere* (**decizia 90**, 2026-09-20; starea-țintă, codul rămâne pe
-litera veche până la TR-D9): împerecherea DEVINE operație — document tipat
-`Împerechere` cu tranzacție de fel `Transfer`, iar stingerea la operare e
+*Reconciliere* (**decizia 90**, 2026-09-20; literă curentă de la TR-D9a,
+2026-10-06: urma operației e postarea din cub, registrele nu mai sunt
+scrise): împerecherea e operație — legătura `Imperechere` cu tranzacție de
+fel `Transfer` (101) —, iar stingerea la operare e
 nominalizarea partidei de pe postarea de terț a stingătorului. Excepția
 deschiderii rămâne unică, ca tranzacție de fel `Deschidere` fără document,
 dar CU unitate (lot / partidă) și cu partener pe conturile de terț.
@@ -62,9 +63,9 @@ faptul că stă fizic pe tabela bazei nu o face câmp al bazei. Testul celor dou
 condiții de mai sus rămâne singura cale spre bază.
 
 *Întărire* (**decizia 90**): motorul nu cunoaște frunzele fiindcă nu
-cunoaște documente, ci operanzi închiși (DTO); regimul dual al tranziției
-e DATĂ pe tip (`PosteazaInCub`), nu `is` pe frunză; `RolTert` e atribut al
-contului, nu al frunzei.
+cunoaște documente, ci operanzi închiși (DTO); tipul care nu declară pe
+profil e refuzat prin declarantul lui, nu prin `is` pe frunză (D9-D5);
+`RolTert` e atribut al contului, nu al frunzei.
 
 ## III. Registrele sunt singurul adevăr al agregării: append-only, complete, scrise doar de motor
 
@@ -82,17 +83,17 @@ pe document* (restul de stins al imperecherii e calcul operațional
 per-document, nu agregare). Soldul lui 401 nu se calculează niciodată din
 facturi.
 
-*Reconciliere* (**decizia 90**; starea-țintă până la TR-D9): „registrele”
-devin UN SINGUR cub de postări — append-only, complet rezolvat, scris doar
+*Reconciliere* (**decizia 90**; literă curentă de la TR-D9a, 2026-10-06):
+„registrele” sunt UN SINGUR cub de postări — append-only, complet rezolvat, scris doar
 de motor, cu stornoul ca tranzacție distinctă. Restul de stins NU mai e
 stare a documentului: e `Σ[Unitate]` pe partidă, sumă pe cub. Demarcația
 rămâne pentru ATRIBUTELE documentului (număr, dată fizică, instrument),
 citite prin `Cauza`; tranzacțiile de fel `Transfer` (Σ per cont și latură
 = 0) sunt excluse din rapoartele pe cont și incluse în cele pe unitate.
-Pe tipurile deja migrate (**TR-D7a**, 2026-09-21) cubul se scrie lângă
-registre, în aceeași tranzacție de comandă: anularea operării șterge
-tranzacția `Operare` și postările ei, simetric cu ștergerea registrelor,
-iar stornoul rămâne a doua tranzacție (S-D5).
+Anularea operării șterge tranzacțiile `Operare` și `Transfer` ale
+documentului, cu postările lor; stornoul e o a doua tranzacție (S-D5). O
+postare scrisă nu se rescrie: și inversa fiscală a unei corecții se naște
+finală (D9-A5).
 
 ## IV. Structura e cod; politica e date; politica nu inventează comportament
 
@@ -150,12 +151,16 @@ rotunjirea — supapa `PoliticaEvaluare` (CMP periodic, decizia 51e) e parcată
 *cu nume*: când va veni, schimbă funcția de evaluare în punctele de
 descărcare, nu structura, și intră tot sub gheața per bază.
 
-*Reconciliere* (**decizia 90**; starea-țintă până la TR-D9): lotul e o
+*Reconciliere* (**decizia 90**; evaluarea ieșirii din soldul unității e literă
+curentă de la TR-D9a, 2026-10-06; corecția de preț prin `Atribuit` și unitatea
+de evaluare rămân țintă, TR-D9b): lotul e o
 UNITATE nominalizată (același concept cu partida și cu fișa de imobilizare);
 prețul lui e raportul `ΣValoare / ΣCantitate` al postărilor unității,
 fiecare postare e fapt, iar corecția de preț e postare de valoare cu
-`Atribuit`, nu rescriere. Interdicțiile rămân: valoarea ieșirii e fapt
-scris la operare, o singură metodă per bază; supapa 51e devine parametrul
+`Atribuit`, nu rescriere. `Lot.PretUnitar` rămâne, ca preț de intrare al
+lotului: servește ieșirile declarate la prețul de intrare și estimarea de
+draft, nu evaluarea din sold (D9-Q5). Interdicțiile rămân: valoarea ieșirii e
+fapt scris la operare, o singură metodă per bază; supapa 51e devine parametrul
 „unitatea de evaluare” (lot = FIFO; gestiune × produs sau produs = medie).
 
 ---

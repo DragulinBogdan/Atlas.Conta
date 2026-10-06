@@ -1,8 +1,9 @@
 # ASM — asamblare
 
-2026-09-23. **Aprobat, implementat și verificat; review advers aplicat.** Delimitarea contabilă (a)/(h) e aprobată numai pentru regimul dual (D8-B4, T-r15 închisă). Forma exactă a postărilor este
+2026-09-23; adus la zi 2026-10-07 (TR-D9a, pasul 6: gardul ΣP = ΣC, fără absorbție). **Aprobat, implementat și verificat; review advers aplicat.** Forma exactă a postărilor este
 în [contractul transformării](../tr-d7b-asm-transformare-contract.md),
-ASM-B2…B7; activarea cere verificarea scenariilor.
+ASM-B2 și ASM-B3; absorbția ASM-B6 și ținta ASM-B7 sunt înlocuite de D9-D3
+din [contractul TR-D9a](../tr-d9-taierea-contract.md).
 Reguli: 090 (f/g/j), TR-D7b T-D2, amendamentul 091 (a–d).
 
 ## Recensământ
@@ -22,7 +23,7 @@ bugetar folosește conturile echivalente ale politicii, cu aceleași măsuri.
 Proba este `ScenariiAsm`, cu ID-urile de mai jos. SC-ASM-22/24 și contul lipsă
 din 13 sunt probate și pe operandul închis (`ProbeAsmOperand`); refuzul atomic
 al contului lipsă pe operare este verificat în scena SAF-T S.
-SC-ASM-26 rămâne specificat pentru TR-D9. Proveniența este regula, dacă nu este indicată
+SC-ASM-26 e fără obiect după tăiere. Proveniența este regula, dacă nu este indicată
 altfel. Contraponderile din Transformare au valoare 0 în toate exemplele.
 
 | ID / probă | Scenariu și așteptare după comandă | Rezultat așteptat | Proveniență |
@@ -43,17 +44,16 @@ altfel. Contraponderile din Transformare au valoare 0 în toate exemplele.
 | SC-ASM-14 | ASM produce 1/100, apoi BCS consumă 1/100: storno ASM refuzat pentru dependență. După inversarea BCS se permite inversarea ASM; toate loturile revin exact. | refuz dependență, apoi acceptat | regulă |
 | SC-ASM-15 | Data 05.01, înregistrare 05.02, ianuarie închis: mișcarea 2/100→1/100 apare numai în februarie; operarea cu înregistrare în ianuarie este refuzată atomic. | acceptat / refuz perioadă | regulă |
 | SC-ASM-16 | Pe toate operările și inversările: 0 fapte TVA, contraponderi fără unitate și valoare 0; SC-X-14 inclus. | acceptat | review |
-| SC-ASM-17 | Trei ASM succesive de câte 1 din lot 3/10, produse culese 3,33; 3,33; 3,34: cub 3,33; 3,34; 3,33. Sursa 0/0. Produse 3,33; 3,34; 3,33, Δ=0; +0,01; −0,01. | TR-D8: soldul propriu al cubului | ASM-B7, T-r13 |
-| SC-ASM-18 | După primele două ASM din 17, storno al doilea inversează exact 3,34, sursa 2/6,67; corecție în februarie după ianuarie închis, consum 2 și produs nou 1/6,67: Δ nou 0 și sursa 0/0. | acceptat | ASM-B6 |
-| SC-ASM-19 | Lot 2/10,01, ASM draft consumă 1 și distribuie valoarea; BCS intermediar consumă 1. Fără redistribuire ASM refuză valoric cu stoc suficient; după redistribuire golește exact. Away: 5,01→5,00; ToEven: 5,00→5,01. | refuz atomic, apoi acceptat | proba-capcană dual/TR-D9 |
-| SC-ASM-20 | Două grupuri balansate: R/C/P = 3,33/3,34/3,33 și 10/10/10; produse finale 3,34 și 10. O singură Transfer, fără Operare. | acceptat | Δ local |
-| SC-ASM-21 | Grup numai-consum R=3,33/C=3,34 și alt cont numai-produs P=3,33: produs final 3,34 în Operare. | acceptat | Δ fără produs local |
-| SC-ASM-22 | Grup numai-consum R=10/C=9,98 și grup R=1/C=1,02/P=11 cu produse 10,99 și 0,01: ultimul rămâne 0,01 după −0,02 +0,02; nicio validare intermediară. | acceptat; probă pe operand închis | acumularea Δ |
-| SC-ASM-23 | Lot 5/0,02, BCS de 0,5 și 1, apoi ASM consumă 1: R=0/C=0,01, fără produs pe acel cont; alt grup R=C=P=1. | ASAMBLARE_DELTA_FARA_ANCORA, zero efecte | limitare duală aprobată |
-| SC-ASM-24 | Δ negativ face ultimul produs final zero sau negativ, deși ΣP=ΣR inițial; refuz înaintea materializării. | ASAMBLARE_PRODUS_NEPOZITIV, zero efecte | ASM-B6 |
-| SC-ASM-25 | Produsul ASM-2 din 17 are 1/3,34 în cub și 1/3,33 în registre; BCS îl golește cu 3,34, rămâne 0/0 în cub; registrul păstrează 3,33. | TR-D8: citire pe cub | lanț Δ → consum → golire |
-| SC-ASM-26 | Storno după TR-D9 al unui original dual cu valoare ajustată 3,34 inversează 3,34 și toate contraponderile, fără recalcul Δ. | specificat pentru TR-D9 | compatibilitate istorică |
-| NUC-ASM-RECONCILIERE | Pe SC-ASM-05: (a)–(g) fără diferențe, exit 0; (h) exact ASM D 345 = 40 față de 0 și C 301 = 40 față de 0 (conturi echivalente bugetare), 1 document și 4 postări Operare, inclusiv 2 contraponderi zero. Raportul declară excepția; orice abatere comparabilă păstrează exit 1, iar filtrul de documente se aplică și în (h). | delimitare duală aprobată, probe independente obligatorii | owner 2026-09-24, D8-B4, T-r15 |
+| SC-ASM-17 | Lot 3/10; trei ASM de câte 1, produse culese 3,33; 3,33; 3,34. ASM-1: C = P = 3,33, Transfer −1/−3,33 și +1/+3,33; sursa 2/6,67. ASM-2: C = 3,34 ≠ P = 3,33 ⇒ `ASAMBLARE_NEBALANSATA` (C 3,34, P 3,33, diferența 0,01), zero efecte; `DistribuieValoarea` pune produsul la 3,34; Transfer −1/−3,34 și +1/+3,34; sursa 1/3,33. ASM-3: C = 3,33 ≠ P = 3,34 ⇒ același refuz; după distribuire produsul e 3,33; Transfer −1/−3,33 și +1/+3,33; sursa 0/0. Produse finale 3,33; 3,34; 3,33. Liniile de consum poartă −3,33; −3,34; −3,33, egale cu postările. | refuz până la redistribuire, apoi acceptat | D9-D3 |
+| SC-ASM-18 | Primele două ASM din 17, al doilea redistribuit la 3,34. Storno al doilea: inversează exact −1/−3,34 și +1/+3,34 cu contraponderile; sursa 2/6,67. Corecție în februarie, ianuarie închis: consum 2 (C = 6,67), produs nou cules 1/6,67 ⇒ P = C, Transfer −2/−6,67 și +1/+6,67; sursa 0/0. Fără decizie de absorbție. | acceptat | D9-D3 |
+| SC-ASM-19 | Lot 2/10,01; ASM draft consumă 1 și distribuie; BCS intermediar consumă 1. Distribuirea inițială dă produsului valoarea evaluată atunci (5,01 la Away, 5,00 la ToEven); BCS ia aceeași cifră, restul lotului e 5,00, respectiv 5,01. Operarea ASM fără redistribuire: `ASAMBLARE_NEBALANSATA`, zero efecte, BCS neatins. Aceeași comandă reală `DistribuieValoarea`, pe aceleași fapte, pune produsul la rest; operarea trece cu Transfer −1/−rest și +1/+rest; lot 0/0. Predicția nu persistă nimic; a doua distribuire nu schimbă nimic. | refuz atomic, apoi acceptat | D9-D3 |
+| SC-ASM-20 | Lot A 3/10 pe un cont de stoc, din care un ASM anterior a scos 1/3,33; lot B 1/10 pe alt cont de stoc. ASM: consum A 1 și B 1; produse culese 1/3,33 pe contul lui A și 1/10 pe contul lui B. C = 3,34 + 10 = 13,34 ≠ P = 13,33 ⇒ `ASAMBLARE_NEBALANSATA` (diferența 0,01), zero efecte. `DistribuieValoarea` repartizează 13,34 proporțional cu valorile culese, ultimul ia restul: 3,33 și 10,01. Grupul lui A are C 3,34 și P 3,33; grupul lui B are C 10 și P 10,01: amândouă nebalansate ⇒ o singură Operare, fără Transfer, cu 8 postări: Credit A 3,34 (−1), Credit B 10 (−1), Debit produs pe contul lui A 3,33 (+1), Debit produs pe contul lui B 10,01 (+1), plus cele 4 contraponderi cu valoare 0. Debit = Credit = 13,34. Loturi după: A 1/3,33, B 0/0, produsele 1/3,33 și 1/10,01. | refuz, apoi acceptat | D9-D3 |
+| SC-ASM-21 | Lot 3/10, primul ASM a scos 1/3,33; al doilea consumă 1 și produce 1 cules la 3,33 pe alt cont. C = 3,34 ≠ P = 3,33 ⇒ `ASAMBLARE_NEBALANSATA`. După distribuire produsul e 3,34: Operare cu Credit consum 3,34 (−1) și Debit produs 3,34 (+1) pe celălalt cont, plus două contraponderi 0. | refuz, apoi acceptat | D9-D3 |
+| SC-ASM-22 | Grup numai-consum cu C = 9,98; al doilea grup cu C = 1,02 și produse culese 10,99 și 0,01. ΣC = 11 = ΣP ⇒ acceptat fără redistribuire; produsele rămân 10,99 și 0,01. Niciun grup nu e balansat (9,98 contra 0; 1,02 contra 11) ⇒ o singură Operare: Credit 9,98 și 1,02, Debit 10,99 și 0,01. Aserția acumulării Δ dispare; cifrele și acceptarea rămân. | acceptat; probă pe operand închis | D9-D3 |
+| SC-ASM-23 | Lot 5/0,02; BCS de 0,5 și de 1 (valoare 0 fiecare, lot 3,5/0,02); ASM consumă 1 din el (C = 0,01) și 1/1 dintr-un lot pe alt cont, cu un produs cules la 1 pe acel cont. ΣC = 1,01 ≠ ΣP = 1 ⇒ `ASAMBLARE_NEBALANSATA`, zero efecte; `ASAMBLARE_DELTA_FARA_ANCORA` nu mai există. După distribuirea lui 1,01 produsul e 1,01; grupul numai-consum (0,01) și grupul cu C 1 și P 1,01 sunt nebalansate ⇒ o singură Operare: Credit 0,01 și 1, Debit 1,01. | refuz, apoi acceptat | D9-D3 |
+| SC-ASM-24 | P = 10 contra C = 9,99 sau 9: `ASAMBLARE_NEBALANSATA`, fără altă decizie; evaluarea consumului e disponibilă înaintea gardului de balansare. Separat: produsul cules care se rotunjește la zero e refuzat cu `ASAMBLARE_PRODUS_NEPOZITIV`. | refuz atomic; probă pe operand închis | D9-D3 |
+| SC-ASM-25 | Produsul ASM-2 din 17, redistribuit la 3,34. Lotul produsului e 1/3,34; BCS îl golește la 3,34, pe linie și pe postare; lot 0/0. | acceptat | D9-D3 |
+| SC-ASM-26 | Stornoul unui original dual. | fără obiect: bazele se recreează (102 b), nu există original dual | D9-D3 |
 | SC-X-09 | Privat: surse A 4/200 și B 3/60; ASM consumă A 2/100 și B 3/60, produce marfă 4/160. DSC descarcă produs 1/40 (D 607/C 371). RLF returnează A 1/50 (D 302/C 401 cu −50): A rămâne 1/50, produsul rămâne 3/120, partida RLF +50, postările ASM/DSC intacte. Storno ASM refuzat cât DSC este activ; inversarea RLF și DSC, apoi ASM restabilește A 4/200, B 3/60, produs 0/0 și partida RLF 0. | acceptat / refuz dependență | lanț transversal pe politica privată |
 
 ASM nu deschide partidă; împerecherea nu se aplică. Un ASM valid are minimum
@@ -138,14 +138,14 @@ Actualizare TR-D8 în lucru (2026-09-25): SC-ASM-17/25 folosesc soldul
 cubului pentru C; registrul este separat pentru R. Rezultatele istorice de
 mai sus descriu implementarea anterioară. Diagnosticul Δ rămâne activ.
 
-## TR-D9a, pasul 2 (2026-10-05): rândurile 17–26 după tăiere
+## După tăierea registrelor (TR-D9a, pasul 6, 2026-10-07)
 
-Schimbarea 2 din D9-D1 ([contractul TR-D9a](../tr-d9-taierea-contract.md), D9-D3 „ASM după tăiere"). Tabelul de sus
-descrie regimul dual și rămâne verificat până la pasul 6. Mai jos e forma de
-după tăiere, scrisă înaintea codului: R dispare, gardul devine ΣP = ΣC,
-grupurile se clasifică pe P_g = C_g, nu mai există Δ, iar `DistribuieValoarea`
-își ia ținta din evaluarea consumurilor făcută de declarant. Niciun rând nu
-devine probă de formă.
+Rândurile 17–26 din tabelul de sus sunt în forma de după tăiere: R a dispărut,
+gardul e ΣP = ΣC, grupurile se clasifică pe P_g = C_g, nu există Δ, iar
+`DistribuieValoarea` își ia ținta din evaluarea consumurilor făcută de
+declarant. Secțiunile „Execuție", „După review-ul advers" și „Delimitarea
+aprobată la TR-D8" de mai sus descriu regimul dual și rămân ca istoric;
+`NUC-ASM-RECONCILIERE` și diagnosticul Δ au ieșit odată cu oracolul.
 
 Notație: C = consumul evaluat pe soldul cubului, în secvența liniilor (ultima
 ieșire ia restul); P = valoarea culeasă a produselor. Într-un `Transfer`
@@ -154,22 +154,8 @@ ele pozitive; într-o `Operare` consumul stă pe Credit, produsul pe Debit.
 Fiecare linie are și contraponderea ei pe gestiunea virtuală Transformare,
 cu valoare 0 și cantitatea opusă.
 
-| ID | Fapte | După tăiere: rezultat, fel și măsuri |
-|---|---|---|
-| SC-ASM-17 | lot 3/10; trei ASM de câte 1, produse culese 3,33; 3,33; 3,34 | ASM-1: C = P = 3,33, Transfer −1/−3,33 și +1/+3,33; sursa 2/6,67. ASM-2: C = 3,34 ≠ P = 3,33 ⇒ `ASAMBLARE_NEBALANSATA` (C 3,34, P 3,33, diferența 0,01), zero efecte; `DistribuieValoarea` pune produsul la 3,34; Transfer −1/−3,34 și +1/+3,34; sursa 1/3,33. ASM-3: C = 3,33 ≠ P = 3,34 ⇒ același refuz; după distribuire produsul e 3,33; Transfer −1/−3,33 și +1/+3,33; sursa 0/0. Produse finale 3,33; 3,34; 3,33. Liniile de consum poartă −3,33; −3,34; −3,33, egale cu postările |
-| SC-ASM-18 | primele două ASM din 17, al doilea redistribuit la 3,34 | storno al doilea: inversează exact −1/−3,34 și +1/+3,34 cu contraponderile; sursa 2/6,67. Corecție în februarie, ianuarie închis: consum 2 (C = 6,67), produs nou cules 1/6,67 ⇒ P = C, Transfer −2/−6,67 și +1/+6,67; sursa 0/0. Fără decizie de absorbție |
-| SC-ASM-19 | lot 2/10,01; ASM draft consumă 1 și distribuie; BCS intermediar consumă 1 | distribuirea inițială dă produsului valoarea evaluată atunci (5,01 la Away, 5,00 la ToEven); BCS ia aceeași cifră, restul lotului e 5,00, respectiv 5,01. Operarea ASM fără redistribuire: `ASAMBLARE_NEBALANSATA`, zero efecte, BCS neatins. Aceeași comandă reală `DistribuieValoarea`, pe aceleași fapte, pune produsul la rest; operarea trece cu Transfer −1/−rest și +1/+rest; lot 0/0. Predicția nu persistă nimic; a doua distribuire nu schimbă nimic |
-| SC-ASM-20 | lot A 3/10 pe un cont de stoc, din care un ASM anterior a scos 1/3,33; lot B 1/10 pe alt cont de stoc. ASM: consum A 1 și B 1; produse culese 1/3,33 pe contul lui A și 1/10 pe contul lui B | C = 3,34 + 10 = 13,34 ≠ P = 13,33 ⇒ `ASAMBLARE_NEBALANSATA` (diferența 0,01), zero efecte. `DistribuieValoarea` repartizează 13,34 proporțional cu valorile culese, ultimul ia restul: 3,33 și 10,01. Grupul lui A are C 3,34 și P 3,33; grupul lui B are C 10 și P 10,01: amândouă nebalansate ⇒ o singură Operare, fără Transfer, cu 8 postări: Credit A 3,34 (−1), Credit B 10 (−1), Debit produs pe contul lui A 3,33 (+1), Debit produs pe contul lui B 10,01 (+1), plus cele 4 contraponderi cu valoare 0. Debit = Credit = 13,34. Loturi după: A 1/3,33, B 0/0, produsele 1/3,33 și 1/10,01 |
-| SC-ASM-21 | lot 3/10, primul ASM a scos 1/3,33; al doilea consumă 1 și produce 1 cules la 3,33 pe alt cont | C = 3,34 ≠ P = 3,33 ⇒ `ASAMBLARE_NEBALANSATA`. După distribuire produsul e 3,34: Operare cu Credit consum 3,34 (−1) și Debit produs 3,34 (+1) pe celălalt cont, plus două contraponderi 0 |
-| SC-ASM-22 | grup numai-consum cu C = 9,98; al doilea grup cu C = 1,02 și produse culese 10,99 și 0,01 | ΣC = 11 = ΣP ⇒ acceptat fără redistribuire; produsele rămân 10,99 și 0,01. Niciun grup nu e balansat (9,98 contra 0; 1,02 contra 11) ⇒ o singură Operare: Credit 9,98 și 1,02, Debit 10,99 și 0,01. Aserția acumulării Δ dispare; cifrele și acceptarea rămân |
-| SC-ASM-23 | lot 5/0,02; BCS de 0,5 și de 1 (valoare 0 fiecare, lot 3,5/0,02); ASM consumă 1 din el (C = 0,01) și 1/1 dintr-un lot pe alt cont, cu un produs cules la 1 pe acel cont | ΣC = 1,01 ≠ ΣP = 1 ⇒ `ASAMBLARE_NEBALANSATA`, zero efecte; `ASAMBLARE_DELTA_FARA_ANCORA` nu mai există. După distribuirea lui 1,01 produsul e 1,01; grupul numai-consum (0,01) și grupul cu C 1 și P 1,01 sunt nebalansate ⇒ o singură Operare: Credit 0,01 și 1, Debit 1,01 |
-| SC-ASM-24 | P = 10 contra C = 9,99 sau 9 | fără obiect în forma cu Δ. Aceleași date probează gardul P = C: `ASAMBLARE_NEBALANSATA`, zero efecte. Refuzul produsului cules nepozitiv (`ASAMBLARE_PRODUS_NEPOZITIV`) e alt motiv și are proba lui, pe valoarea culeasă |
-| SC-ASM-25 | produsul ASM-2 din 17, redistribuit la 3,34 | lotul produsului e 1/3,34; BCS îl golește la 3,34, pe linie și pe postare; lot 0/0 |
-| SC-ASM-26 | stornoul unui original dual | fără obiect: bazele se recreează (102 b), nu există original dual |
-
-Azi (măsurat, `ScenariiAsm`, SC-ASM-17): liniile de consum poartă valorile
-registrului, −3,33; −3,33; −3,34, iar postările cubului 3,33; 3,34; 3,33;
-produsul rămâne la valoarea culeasă pe linie și primește Δ numai pe postare.
-
-Probele pure ale absorbției (`ProbeAsmOperand`, proprietățile nucleului pe
-`AbsorbtieEvaluare`) se rescriu pe gardul P = C la pasul 6.
+Probe: `ScenariiAsm` (SC-ASM-17…21, 23, 25, prin comanda reală
+`DistribuieValoarea`: refuz, distribuire, a doua distribuire fără schimbare,
+operare) și `ProbeAsmOperand` (SC-ASM-22 și 24, pe operandul închis, în
+ambele convenții de rotunjire). Invariantul valorii liniei și mutanții lui
+(`LINIE-ASM`, `LINIE-SEMN-ASM`, `IESIRE-SEMN-ASM`) rulează în `INV-CUB`.

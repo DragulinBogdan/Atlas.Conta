@@ -247,12 +247,13 @@ sealed class ScenariiFiscale(Func<IObjectSpace> deschide, Action<string, bool> c
         foreach (var defect in new[] { "calificare", "autocolectare", "duplicat" }) {
             using var os = Deschide();
             using var tx = TranzactieComanda.Incepe(os);
-            var p = Fiscale.Postari(os).First(p => p.DocumentId == document && p.Tranzactie.Fel == N.FelTranzactie.Operare
-                && p.RolTva == N.RolTva.Taxa);
-            if (defect == "calificare") p.CotaTva = 21;
-            if (defect == "autocolectare") p.RolTva = N.RolTva.Autocolectare;
-            if (defect == "duplicat") p.RolTva = N.RolTva.Baza;
-            os.CommitChanges();
+            var p = Fiscale.Postari(os).Where(p => p.DocumentId == document && p.Tranzactie.Fel == N.FelTranzactie.Operare
+                && p.RolTva == N.RolTva.Taxa).Select(p => p.ID).First();
+            var db = ((EFCoreObjectSpace)os).DbContext.Database;
+            if (defect == "calificare")
+                db.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"CotaTva\" = 21 WHERE \"ID\" = {p}");
+            else
+                db.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"RolTva\" = {(short)(defect == "duplicat" ? N.RolTva.Baza : N.RolTva.Autocolectare)} WHERE \"ID\" = {p}");
             var cod = defect switch { "calificare" => "CITIRE_FISCAL_CALIFICARE",
                 "duplicat" => "CITIRE_FISCAL_DUPLICAT", _ => "CITIRE_FISCAL_AUTOLICHIDARE" };
             Refuza("SC-CIT-80", () => Invarianti.VerificaFiscal(os), cod);

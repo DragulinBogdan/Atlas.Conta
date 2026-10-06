@@ -59,9 +59,6 @@ public sealed class ExplicatieContractDto {
                 })],
                 Conturi = [.. l.Conturi.Select(c => new ExplicatieContDto { ContId = c.Cont, Sursa = c.Sursa })],
                 PartideDeschise = [.. l.PartideDeschise.Select(p => ExplicatieUnitateDto.Din(p.Unitate))],
-                Absorbtii = [.. l.Absorbtii.Select(a => new ExplicatieAbsorbtieDto {
-                    ContSursaId = a.ContSursa, R = a.R, C = a.C, P = a.P, Delta = a.Delta,
-                })],
             })],
         };
     }
@@ -73,7 +70,6 @@ public sealed class ExplicatieLinieDto {
     public List<ExplicatieStingereDto> Stingeri { get; set; } = [];
     public List<ExplicatieContDto> Conturi { get; set; } = [];
     public List<ExplicatieUnitateDto> PartideDeschise { get; set; } = [];
-    public List<ExplicatieAbsorbtieDto> Absorbtii { get; set; } = [];
 }
 
 public sealed class ExplicatieUnitateDto {
@@ -119,12 +115,4 @@ public sealed class ExplicatieStingereDto {
 public sealed class ExplicatieContDto {
     public Guid ContId { get; set; }
     public string Sursa { get; set; } = "";
-}
-
-public sealed class ExplicatieAbsorbtieDto {
-    public Guid ContSursaId { get; set; }
-    public decimal R { get; set; }
-    public decimal C { get; set; }
-    public decimal P { get; set; }
-    public decimal Delta { get; set; }
 }

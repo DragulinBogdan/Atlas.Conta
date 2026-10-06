@@ -270,8 +270,7 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
             p.Spatiu = N.Spatiu.Stoc; p.Cont = Cont(Stoc); p.FelUnitate = N.FelUnitate.Lot; p.Unitate = lot.Lot;
             p.UnitateDeschisa = Ianuarie; p.Produs = lot.Produs; p.Gestiune = Magazie; p.Cantitate = 1m; p.Valoare = 10m;
         }));
-        premisa = Finalizat(lot.Lot) && CuSpatiu(os => C.Citiri.Loturi.AreMiscari(os, lot.Lot!.Value)
-            && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.LotId == lot.Lot));
+        premisa = Finalizat(lot.Lot) && CuSpatiu(os => C.Citiri.Loturi.AreMiscari(os, lot.Lot!.Value));
         Comanda(os => FacturaIntrareApply.Sterge(os, purtat.Id));
         Verifica("D9-P4-I4-LOT-2", "refuză: lotul cu o postare în cub (și niciun rând de registru) rămâne după ștergerea liniei lui",
             premisa && Exista(lot.Lot) && CuSpatiu(os => !os.GetObjectsQuery<Document>().Any(d => d.ID == purtat.Id)));
@@ -305,8 +304,7 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
         var refuz = RefuzStergere<TipTva>(tip);
         Console.WriteLine($"     MĂSURAT (D9-P4-I4-TVA-2): „{refuz?.Split('\n')[0] ?? "ACCEPTATĂ"}”.");
         Verifica("D9-P4-I4-TVA-2", "refuză: tipul de TVA purtat de o postare (fără linie de document și fără rând de registru) nu se șterge",
-            refuz?.Contains("rânduri din jurnalul de TVA") == true && !refuz.Contains("linii de document")
-            && CuSpatiu(os => !os.GetObjectsQuery<RegistruTva>().Any(r => r.TipTvaId == tip)));
+            refuz?.Contains("rânduri din jurnalul de TVA") == true && !refuz.Contains("linii de document"));
         StergeBrut(brut);
     }
 
@@ -327,8 +325,7 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
         var refuz = RefuzStergere<Imobilizare>(fisa);
         Console.WriteLine($"     MĂSURAT (D9-P4-I4-FISA-2): „{refuz?.Split('\n')[0] ?? "ACCEPTATĂ"}”.");
         Verifica("D9-P4-I4-FISA-2", "refuză: fișa Nouă care e unitatea unei postări (fără niciun rând de registru) nu se șterge",
-            refuz?.Contains("are rânduri de registru") == true
-            && CuSpatiu(os => !os.GetObjectsQuery<RegistruImobilizari>().Any(r => r.ImobilizareId == fisa)));
+            refuz?.Contains("are rânduri de registru") == true);
         StergeBrut(brut);
     }
 }

@@ -880,8 +880,15 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 intrare.Entity.Pozitie = 0;
         }
 
+        // 14, D9-A5: cubul primește numai rânduri noi; o inversă se naște finală.
+        private void VerificaPostariNemodificate() {
+            if (ChangeTracker.Entries<Cub.Postare>().Any(e => e.State == EntityState.Modified))
+                throw new InvalidOperationException("POSTARE_MODIFICATA: o postare existentă nu se rescrie.");
+        }
+
         // Maximul se citește sub blocajul scrierii, în tranzacția salvării (S-r9).
         public override int SaveChanges(bool acceptAllChangesOnSuccess) {
+            VerificaPostariNemodificate();
             var noi = DetaliiFaraPozitie();
             if (noi.Count == 0)
                 return base.SaveChanges(acceptAllChangesOnSuccess);
@@ -900,6 +907,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
         public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
                 CancellationToken cancellationToken = default) {
+            VerificaPostariNemodificate();
             var noi = DetaliiFaraPozitie();
             if (noi.Count == 0)
                 return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);

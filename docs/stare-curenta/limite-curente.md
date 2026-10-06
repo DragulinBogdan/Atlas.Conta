@@ -22,10 +22,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   istoricul inversat chiar dacă suportul eliberat este ulterior anulat;
   auditul durabil după anularea fizică rămâne în delimitarea TR-D9 (091j).
 
-- Deschiderea generică (094) este o comandă de motor și scrie numai cubul.
-  Registrele regimului dual nu primesc aceste solduri; cititorii și
-  evaluarea le iau din cub (X-D2). Intrarea păstrează analiza și valuta, dar stingerea
-  unei partide inițiale în valută este refuzată explicit până la TR-D9;
+- Deschiderea generică (094) este o comandă de motor și scrie cubul; cititorii
+  și evaluarea iau soldurile de acolo (X-D2). Intrarea păstrează analiza și
+  valuta, dar stingerea unei partide inițiale în valută este refuzată explicit
+  până la TR-D9b;
   soldurile nedetaliate nu se împart pe mai multe analize în aceeași cheie
   de control. Ștergerea concurentă a nomenclatoarelor referite nu este
   serializată de comandă (review Deschidere, MINOR-3).
@@ -163,39 +163,28 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   Documentele retroactive nu reevaluează ieșirile deja operate. (75a)
 - Unele distribuiri ASM nu sunt reprezentabile exact la precizia prețului.
   Cazurile refuzate nu sunt corectate prin prețuri sau valori forțate. (75-r4, 76c)
-- Regimul dual evaluează încă ieșirile cubului pe soldul registrelor: trei
-  BCS/ASM de câte 1 din 3/10 lasă în cub 0/−0,01; un produs ASM ajustat prin
-  Δ poate păstra 0/+0,01 după consum. Sunt probe exacte ale limitei curente,
-  fără toleranță; ținta rămâne 0/0. T-r13 cere atât evaluarea pe propriul sold
-  complet, cât și tratarea explicită a istoricului divergent. (ASM-B7)
-- Diagnosticul valoric citește întreg istoricul semnat pe lot/gestiune/cont,
-  cu proveniență. Compară stocul Magazie/Marfuri/Folosinta; alte tipuri de registru și
-  postările cubului identificate în afara domeniului sunt numărate separat.
-  Postările fără corespondent rămân istoric incomplet, nu sunt excluse.
-  Contul registrelor este rezolvat din nomenclatorul curent,
-  fără a pretinde un snapshot istoric. Diferențele complete rămân neexplicate
-  până la certificarea cauzei; lipsa unei corespondențe se raportează separat.
-  Nu deduce automat N-r3 din tipul documentului. (ASM-B7, T-r13)
+- Golirea lotului se decide la momentul operării. Un document retroactiv nu
+  reevaluează ieșirile deja operate și poate lăsa reziduu valoric pe un lot
+  fără cantitate; eliminarea lui e reevaluare (TR-D9b). O asamblare culeasă
+  înaintea unei alte ieșiri din același lot poate fi refuzată la operare cu
+  `ASAMBLARE_NEBALANSATA`, până la redistribuire. (D9-D3)
+- Valoarea de pe linia unui draft cu ieșire evaluată din sold e estimarea
+  `cantitate × preț de intrare`, nu promisiune; dry-run-ul nu întoarce
+  valoarea decisă. Ea se vede pe linie după operare și în explicația
+  tranzacției. (D9-D3, D9-D12)
 - Folosința păstrează gestiunea reală pe lanțul FCT/NIR/BTR/BCS/LDI.
-  Istoricul pe alt TipStoc nu se mută și nu alimentează noua cheie prin
-  fallback. Diagnosticul listează separat lotul, gestiunea, TipStoc,
-  documentul și stornoul pentru loturile cu mișcări Folosinta ori din clase
-  acoperite de o politică Folosinta curentă; aceasta este evidență pentru
-  verificare, nu o reclasificare a istoricului. Custodie rămâne refuzată la
-  LDI; Gratuit și injectivitatea SAF-T rămân TR-r7. (093, LDI-B3)
-- Reconcilierea contabilă (a) exclude nominal Operare ASM în regimul dual;
-  (h) păstrează numărul și diferențele vizibile, fără efect asupra exit-ului.
-  Pentru ASM, comparația cu registrele nu mai detectează erori valorice:
-  probele numerice independente sunt obligatorii, conservarea singură nu
-  ajunge. Cititorii contabili includ efectul ASM. Diagnosticul valoric pe
-  lot rămâne raport. (D8-B4 aprobat, T-D10, T-r15)
+  Custodie rămâne refuzată la LDI; Gratuit și injectivitatea SAF-T rămân
+  TR-r7. (093, LDI-B3)
+- Nu există un al doilea scriitor cu care cubul să fie comparat: corectitudinea
+  valorică o poartă catalogul de scenarii și invarianții interni ai cubului
+  (echilibrul, conservarea transferului, explicația, taxa și valoarea liniei).
+  Conservarea singură nu dovedește cifra. (D9-D7 a)
 - Recepția unui NIR nu declanșează automat completarea DSC pentru facturile
   cu acoperire parțială. Există comanda de generare suplimentară pe FCL. (37g, 38d)
 - NIR manual postează pe cub la net, fără fapt fiscal; nu acoperă avizul pe
   408 sau factura ulterioară pe un lot recepționat anterior (TR-r4/B-r5).
-  NIR conex sursei migrate rămâne necesar registrelor până la TR-D9 (B-r3).
-  Excluderea se aplică numai cu Autogenerat, sursă și PoliticaConex potrivită,
-  cu sursa PosteazaInCub; simpla legătură cu o sursă nu este suficientă.
+  Recepția facturii n-are regulă de contare proprie: contrapartida vine de pe
+  regula de servicii ori cheltuieli a facturii sau din politica de TVA (B-r3).
 - Fluxurile de rezervare, comenzi de vânzare și distribuire a aceleiași
   facturi din mai multe gestiuni nu sunt acoperite complet. (37g, C1a)
 - Retururile nu au un flux general propriu de compensare; se folosește NTC. (46f, 76g)
@@ -279,43 +268,27 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   `Partide.NominalizataLibera`, pe o pereche de documente (101, X-D2).
 - Proba X-D2 este sintactică. Un rezultat netipizat derivat dintr-un registru
   se urmărește la apelanți numai dacă membrul e declarat în `Purtatori`; un
-  purtător nou, nedeclarat, nu e văzut. `StocService.Sold`, `AlocaFifoTolerant`
-  și `AlocaFifo` nu mai au apelant de producție și rămân în `Module` numai ca
-  oracol al probelor, până la TR-D9.
+  purtător nou, nedeclarat, nu e văzut.
 - Lista XAF `Postare` arată identificatori bruți pentru tranzacție, document,
   cont, partener, gestiune și unitate: `Postare` e POCO fără navigații spre
-  nomenclatoare, iar maparea cubului nu se schimbă în TR-D9a. Evidența se
-  citește azi mai ușor din listele vechi de registre, care dispar la tăiere.
+  nomenclatoare, iar maparea cubului nu se schimbă în TR-D9a. Listele vechi
+  de registre sunt goale pentru documentele noi și dispar la pasul 7.
   (D9-D9; 2026-10-06)
-- Portarea Import1C pe cititorii cubului e probată numai prin compilare:
-  unealta nu se rulează între pașii 5 și 6, fiindcă sub regimul dual motorul
-  încă evaluează ieșirea din soldul registrului, iar deschiderea nu mai scrie
-  registre. Prima rulare e diagnosticul de la închiderea feliei. Sensibilitatea
+- Portarea Import1C pe cititorii cubului e probată numai prin compilare.
+  Prima rulare e diagnosticul de la închiderea feliei. Sensibilitatea
   contractelor 1 și 3 nu mai are probă proprie (`--sabotaj` a ieșit), iar
   unealta n-are un mod de reconciliere fără scriere. (D9-D11; 2026-10-06)
 - Refuzul de acces pe cifrele din cub e fraza generică de citire pe `Postare`:
   nu spune dacă lipsește dreptul pe tip sau dacă rolul are un criteriu de rând
   ori de membru. (D9-D9)
 - Refuzurile de ștergere pentru lot, tip de TVA și fișă citesc cubul, dar
-  textele lor numesc încă registrul. Cât regimul e dual, un lot cu rânduri de
-  registru numai pe un tip de stoc pe care cubul nu-l poartă (Custodie, 093)
-  nu mai e ținut de aceste rânduri la ștergerea liniei lui. (D9-A6)
-- Acoperirea cantitativă a stocului (X-D7 a) compară registrul cu cubul pe
-  document × lot × gestiune × storno × semn, pe `Magazie`, `Marfuri` și
-  `Folosinta`. Contul nu intră în cheie: rândul de registru nu îl poartă, iar
-  derivarea lui din politica de azi ar rescrie istoricul (093c). Valoarea pe
-  cont a operărilor rămâne la reconcilierea (a); a transferurilor, pe care
-  (a) le exclude, la conservarea pe cont din `INV-CUB`
-  (`CITIRE_TRANSFER_NECONSERVAT`), care nu compară cu registrul, ci cere ca
-  cele două capete să stea pe același cont. Direcția e registru → cub: o postare pe
-  lot fără rând de registru (deschiderea, recepția facturii cu NIR neoperat)
-  nu e lipsă. Grupul recepției conexe se compară net, pe factură și
-  recepțiile ei; fără nicio recepție operată, registrul grupului trebuie să
-  fie zero. `Custodie` și celelalte tipuri de stoc nu se compară. Invariantul
-  rulează în ModelCheck, nu la pornirea hosturilor (102d).
-- Gardianul refuză numai stingerea regimului (X-D7 b). Activarea
-  `PosteazaInCub` pe un tip cu documente operate numai în registre nu e
-  refuzată la scriere; o arată `INV-CUB`, ca istoric incomplet.
+  textele lor numesc încă registrul. (D9-A6)
+- O postare existentă nu se rescrie: garda e la salvare (`POSTARE_MODIFICATA`),
+  pe starea `Modified` a entității, deci nu vede o actualizare făcută direct în
+  SQL. Ștergerea postărilor la anulare rămâne permisă motorului. (D9-A5)
+- Refuzul tipului fără politică pe profil (`TIP_FARA_DECLARATIE`) apare la
+  dry-run și la operare, nu în regimul pe stare al documentului: butonul de
+  operare rămâne activ pe un tip inert. (D9-D5)
 - Produsul nu are o listare a postărilor pe lot sau pe partidă. Regula
   listării N-r8 e fixată pe intrările comune și probată pe ele; singura
   listare pe lot din producție este mișcarea de stoc SAF-T, care poartă

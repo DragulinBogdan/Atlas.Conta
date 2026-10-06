@@ -1,22 +1,14 @@
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-// Lista nominală X-D2. Clasele 1–3 sunt ale contractului (scriitor dual, martor, evidență XAF);
-// `Mapare`, `Autorizare` și `Legatura` le-a cerut prima rulare.
+// Lista nominală X-D2: maparea, cazurile gardianului, evidența XAF, autorizarea și legătura.
 static partial class ProbeCititoriRegistre {
     const string M = SursaProductie.Modul;
     const string W = SursaProductie.WebApi;
     const string Cele4 = "RegistruContabil|RegistruStoc|RegistruTva|RegistruImobilizari";
     const string Motor3 = "RegistruContabil|RegistruStoc|RegistruTva";
-    const string AbsorbtieAsm = "ASM-B6";
 
-    // Rezultate netipizate derivate din registru: apelanții lor citesc registrul.
+    // Rezultate netipizate derivate dintr-o tabelă din listă: apelanții lor o citesc.
     static readonly Sursa[] Purtatori = [
-        new("StocService", "SolduriLaData", true, ["RegistruStoc"]),
-        new("StocService", "Sold", true, ["RegistruStoc"]),
-        new("StocService", "AlocaFifoTolerant", true, ["RegistruStoc"]),
-        new("StocService", "AlocaFifo", true, ["RegistruStoc"]),
-        new("Fapte", "SolduriLoturiRegistru", true, ["RegistruStoc"]),
-        new("Operand", "SolduriLoturiRegistru", false, ["RegistruStoc"]),
         new("Partide", "NominalizataLibera", true, ["Imperechere"]),
     ];
 
@@ -29,41 +21,10 @@ static partial class ProbeCititoriRegistre {
         new(M + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.RegistruImobilizari", "RegistruImobilizari", Clasa.Mapare, "DbSet"),
         new(M + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.Imperecheri", "Imperechere", Clasa.Mapare, "DbSet"),
 
-        // ── 1. scriitorii regimului dual (cad la TR-D9) ──
-        new(M + "Motor/MotorOperare.cs", "MotorOperare.Opereaza", Motor3, Clasa.ScriitorDual, "scrie rândurile operării"),
-        new(M + "Motor/MotorOperare.cs", "MotorOperare.AnuleazaOperarea", Motor3, Clasa.ScriitorDual, "șterge rândurile documentului anulat și reverifică soldul"),
-        new(M + "Motor/MotorOperare.cs", "MotorOperare.Storneaza", Motor3, Clasa.ScriitorDual, "scrie inversele rândurilor documentului"),
-        new(M + "Motor/CorectieService.cs", "CorectieService.Corecteaza", "RegistruTva", Clasa.ScriitorDual, "reatribuie perioada inversei fiscale"),
-        new(M + "Motor/GardianEditare.cs", "GardianEditare.Verifica", Cele4, Clasa.ScriitorDual, "refuză scrierea registrelor pe uși securizate (14)"),
-        new(M + "Motor/StocService.cs", "StocService.MiscariRegistru", "RegistruStoc", Clasa.ScriitorDual, "rădăcina citirilor planului registrelor"),
-        new(M + "Motor/StocService.cs", "StocService.SolduriLaData", "RegistruStoc", Clasa.ScriitorDual, "soldul pe cheie pentru valoarea ieșirii din registru"),
-        new(M + "Motor/StocService.cs", "StocService.AplicaValoareIesire", "RegistruStoc", Clasa.ScriitorDual, "regula golirii pe rândul de registru (D18-D2)"),
-        new(M + "Motor/StocService.cs", "StocService.VerificaSoldIntermediar", "RegistruStoc", Clasa.ScriitorDual, "garda de sold a planului registrelor"),
-        new(M + "Motor/StocService.cs", "StocService.Sold", "RegistruStoc", Clasa.ScriitorDual, "fără apelant de producție; oracol al probelor"),
-        new(M + "Motor/StocService.cs", "StocService.AlocaFifoTolerant", "RegistruStoc", Clasa.ScriitorDual, "fără apelant de producție; oracol al probelor"),
-        new(M + "Motor/StocService.cs", "StocService.AlocaFifo", "RegistruStoc", Clasa.ScriitorDual, "fără apelant de producție; oracol al probelor"),
-        new(M + "Motor/Fapte.cs", "Fapte.SolduriLoturiRegistru", "RegistruStoc", Clasa.ScriitorDual, AbsorbtieAsm + ": soldul registrului pentru R"),
-        new(M + "Motor/Fapte.cs", "Fapte.Operand", "RegistruStoc", Clasa.ScriitorDual, AbsorbtieAsm + ": operandul poartă soldul registrului numai la cererea declarantului"),
-        new(M + "Declaratii/DeclarantAsamblare.cs", "DeclarantAsamblare.Declara", "RegistruStoc", Clasa.ScriitorDual, AbsorbtieAsm + ": absorbția Δ față de registru"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "PunereInFunctiune.MaterializeazaRegistrul", "RegistruImobilizari", Clasa.ScriitorDual, "scrie fișa PIF"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "PunereInFunctiune.EliminaRegistrul", "RegistruImobilizari", Clasa.ScriitorDual, "șterge rândurile la anulare"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "PunereInFunctiune.StorneazaRegistrul", "RegistruImobilizari", Clasa.ScriitorDual, "scrie inversele"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "PunereInFunctiune.RanduriProprii", "RegistruImobilizari", Clasa.ScriitorDual, "rândurile proprii ale documentului"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "PunereInFunctiune.Inverseaza", "RegistruImobilizari", Clasa.ScriitorDual, "inversa unui rând"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "IesireImobilizare.MaterializeazaRegistrul", "RegistruImobilizari", Clasa.ScriitorDual, "scrie ieșirea CAS"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "IesireImobilizare.EliminaRegistrul", "RegistruImobilizari", Clasa.ScriitorDual, "șterge rândurile la anulare"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "IesireImobilizare.StorneazaRegistrul", "RegistruImobilizari", Clasa.ScriitorDual, "scrie inversele"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "AmortizareLunara.MaterializeazaRegistrul", "RegistruImobilizari", Clasa.ScriitorDual, "scrie amortizarea lunii"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "AmortizareLunara.EliminaRegistrul", "RegistruImobilizari", Clasa.ScriitorDual, "șterge rândurile la anulare"),
-        new(M + "BusinessObjects/Documente/Imobilizari.cs", "AmortizareLunara.StorneazaRegistrul", "RegistruImobilizari", Clasa.ScriitorDual, "scrie inversele"),
+        // ── cazurile gardianului: refuză scrierea registrelor pe uși securizate (14); cad cu entitățile ──
+        new(M + "Motor/GardianEditare.cs", "GardianEditare.Verifica", Cele4, Clasa.Gardian, "refuză scrierea registrelor pe uși securizate (14)"),
 
-        // ── 2. martori și diagnostice ──
-        new(M + "Cub/Citiri/Invarianti.cs", "Invarianti.Verifica", "RegistruContabil", Clasa.Martor, "INV-CUB: acoperirea contabilă a cubului"),
-        new(M + "Cub/Citiri/Imobilizari.cs", "Imobilizari.VerificaAcoperire", "RegistruImobilizari", Clasa.Martor, "acoperirea fișelor (097-r1)"),
-        new(M + "Cub/Citiri/Loturi.cs", "Loturi.VerificaAcoperire", "RegistruStoc", Clasa.Martor, "INV-CUB: acoperirea cantitativă a stocului pe grup"),
-        new(M + "Cub/Materializare.Deschidere.cs", "Materializare.Deschide", "RegistruStoc", Clasa.Martor, "refuză lotul de deschidere care are deja mișcări"),
-
-        // ── 3. suprafețele de evidență XAF (rămân până la TR-D9) ──
+        // ── suprafețele de evidență XAF (rămân până la pasul 7) ──
         new(M + "UI/ContaUiBaseline.cs", "ContaUiBaseline.AscundeFkuriBrute", Motor3 + "|Imperechere", Clasa.Evidenta, "listele XAF ale registrelor"),
         new(M + "UI/ContaUiBaseline.cs", "ContaUiBaseline.Imobilizari", "RegistruImobilizari", Clasa.Evidenta, "lista XAF a registrului de imobilizări"),
 

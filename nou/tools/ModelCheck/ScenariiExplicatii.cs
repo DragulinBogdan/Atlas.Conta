@@ -129,7 +129,6 @@ sealed class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<string, bool
             new N.ValoareDeclarata(linie, lot, 2m, .33m, SurseValoare.Receptie),
             new N.AlocareFifo(linie, partida, 61m),
             new N.PartidaDeschisa(linie, partida),
-            new N.AbsorbtieEvaluare(Guid.NewGuid(), linie, lot.Cont, 3.33m, 3.34m, 3.33m, .01m),
         ], [
             new N.SoldUnitateCitit(lot, new N.Sold(100m, 20.10m, 8.5m, 0m)),
             new N.SoldUnitateCitit(partida, new N.Sold(0m, 61m, 0m, 12.5m)),

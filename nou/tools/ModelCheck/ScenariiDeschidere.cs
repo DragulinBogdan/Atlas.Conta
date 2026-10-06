@@ -117,8 +117,6 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         var consumInitial = Consum(loturi[0].Lot, 2);
         Opereaza(consumInitial);
         SoldLot("SC-CIT-36", loturi[0].Lot, Magazie, new(An, 1, 31), 2, 20);
-        Verifica("SC-CIT-36", "consumul folosește deschiderea fără recepție în registru", CuSpatiu(os =>
-            !os.GetObjectsQuery<RegistruStoc>().Any(r => r.LotId == loturi[0].Lot && r.RepartitorId == Magazie && r.Cantitate > 0)));
         Storneaza(consumInitial, new(An, 1, 20));
         SoldLot("SC-CIT-36", loturi[0].Lot, Magazie, new(An, 1, 31), 4, 40);
         DeschidereInSaftS();

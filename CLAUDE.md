@@ -198,7 +198,12 @@ dinaintea tăierii: reconcilierea arhivată pe `.Flax.R3f`, termenul A al
 `PerfCub`, scara de volum la 5 milioane de postări:
 `docs/nucleu/tr-d9-pas5b-probe.md`). Pasul 5c e făcut (îmbinarea
 partidelor pe chei nulabile corectată, D9-D10 (b) re-amânat cu cifra:
-`docs/nucleu/tr-d9-pas5c-imbinare-partide.md`). Urmează pasul 6.
+`docs/nucleu/tr-d9-pas5c-imbinare-partide.md`). Pasul 6 e făcut (tăierea:
+motorul nu mai scrie, nu mai citește și nu mai ramifică pe registre și pe
+regim; valoarea liniei din decizia contractului; ASM pe P = C; refuzul tipului
+inert și al regulii fără consumator; inversa fiscală născută finală; oracolul
+și martorii scoși din ModelCheck; `docs/nucleu/tr-d9-pas6-taierea.md`, 2026-10-07).
+Urmează pasul 6b, apoi review-ul Codex principal înaintea lui 7.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

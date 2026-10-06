@@ -15,6 +15,7 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
     public static readonly DeclarantFacturaIntrare Instanta = new();
 
     DeclarantFacturaIntrare() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -173,8 +174,8 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
             0m);
     }
 
-    // Capitalizatul e BRUT pe linie, dar jurnalul îl desface în bază + taxă
-    // (`RegistruTvaService.Cifre`), iar jurnalul e proiecția pe `CodTva` (090a):
+    // Capitalizatul e BRUT pe linie, dar jurnalul îl desface în bază + taxă,
+    // iar jurnalul e proiecția pe `CodTva` (090a):
     // netul devine DOUĂ mișcări pe același cont de cost, cu Σ neschimbată.
     static IEnumerable<N.Miscare> Netele(Operand operand, LinieOperand linie, N.Capat intern, N.Capat tert,
             decimal cantitate, TipTvaFapt? tip, N.Rotunjire rotunjire) {

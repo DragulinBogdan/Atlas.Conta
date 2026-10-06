@@ -555,7 +555,7 @@ sau, la storno, ale originalelor; lista e goală pe împerechere, desfacere și
 deschidere. Fiecare origine are purtătorul, declarantul, versiunea, perioada,
 politica și liniile cu ieșirile (unitate, cantitate, valoare, soldul dinainte
 sau sursa valorii declarate), stingerile (partidă, măsură, sold citit),
-conturile rezolvate, partidele deschise și absorbțiile. Nu există pagină
+conturile rezolvate și partidele deschise. Nu există pagină
 React (104d).
 
 Tranzacția pe care contextul securizat nu o vede dă 404, ca una inexistentă.

@@ -13,6 +13,7 @@ public sealed class DeclarantBonConsum : IDeclarant {
     public static readonly DeclarantBonConsum Instanta = new();
 
     DeclarantBonConsum() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);

@@ -4,8 +4,10 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 public sealed class DeclarantNotaContabila : IDeclarant {
-    public static readonly DeclarantNotaContabila Instanta = new();
-    DeclarantNotaContabila() { }
+    public static readonly DeclarantNotaContabila Instanta = new(PoliticaProfil.Niciuna);
+    public static readonly DeclarantNotaContabila InchidereTva = new(PoliticaProfil.InchidereTva);
+    DeclarantNotaContabila(PoliticaProfil politica) => PoliticaCeruta = politica;
+    public PoliticaProfil PoliticaCeruta { get; }
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);

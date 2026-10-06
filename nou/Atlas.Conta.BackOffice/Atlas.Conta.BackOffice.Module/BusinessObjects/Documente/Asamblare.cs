@@ -45,9 +45,6 @@ public class Asamblare : Document {
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Gestiune, Declaratii.Latura.Gestiune);
 
-    // Toleranța invariantului = toleranța de reconciliere a fazei (design §9).
-    const decimal Toleranta = 0.005m;
-
     // F19-D3 (închide 53i pe ASM): lotul liniei de PRODUS se naște în gestiunea
     // în care se asamblează — PREDATORUL (46d: regulile de stoc lucrează pe
     // predator), nu primitorul (default-ul bazei). Laturile POT diferi („de
@@ -164,15 +161,6 @@ public class Asamblare : Document {
                 erori.Add("Lotul liniei aparține unui produs cu alt Tip decât Tipul liniei — "
                     + "corectați Tipul sau lotul.");
         }
-
-        // Invariantul alocării (§7): valoarea produsă = valoarea consumată.
-        // Rulează DUPĂ semnare (motorul cheamă PregatesteOperare înaintea
-        // validării), deci consumurile sunt negative și suma trebuie să dea 0.
-        var linii = Detalii.OfType<AsamblareDetaliu>().ToList();
-        var sumaProduse = linii.Where(d => d.Directie == DirectieAsamblare.Produs).Sum(d => d.Valoare);
-        var sumaConsumuri = linii.Where(d => d.Directie == DirectieAsamblare.Consum).Sum(d => d.Valoare);
-        if (Math.Abs(sumaProduse + sumaConsumuri) > Toleranta)
-            erori.Add($"Valoarea produsă ({sumaProduse}) trebuie să fie egală cu valoarea consumată ({-sumaConsumuri}) — asamblarea nu creează și nu distruge valoare.");
     }
 }
 

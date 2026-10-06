@@ -97,26 +97,6 @@ public static class ImperecheriProiectii {
 
     }
 
-    public static void VerificaAcoperire(IObjectSpace os) {
-        // Antetul este martor de diagnostic al acoperirii, nu sursă de rest.
-        // Numai Operare: storno/transferurile nu schimbă obligația de a avea unități.
-        var parti = Nete(P.Postari(os).Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare))
-            .GroupBy(n => n.DocumentId)
-            .Select(g => new { DocumentId = g.Key,
-                Datorie = g.Sum(n => n.Net < 0m ? -n.Net : 0m), Creanta = g.Sum(n => n.Net > 0m ? n.Net : 0m) });
-        var lipsuri = from a in Antete(os, istoric: true)
-                      join d in os.GetObjectsQuery<Document>() on a.DocumentId equals d.ID
-                      join p in parti on (Guid?)a.DocumentId equals p.DocumentId into acoperire
-                      from p in acoperire.DefaultIfEmpty()
-                      let asteptat = d.TotalStingere ?? 0m
-                      let gasit = (a.Sens == SensDatorie ? (decimal?)p.Datorie : (decimal?)p.Creanta) ?? 0m
-                      where gasit != asteptat
-                      select new { a.DocumentId, Asteptat = asteptat, Gasit = gasit };
-        var exemple = lipsuri.Take(10).ToArray();
-        if (exemple.Length != 0) throw new OperareException("CITIRE_PARTIDE_POLITICA: total de decontare fără acoperire integrală pe partide; "
-            + string.Join("; ", exemple.Select(p => $"document {p.DocumentId}, așteptat {p.Asteptat}, găsit {p.Gasit}")));
-    }
-
     public static IQueryable<DocumentCuRestRand> DocumenteCuRest(
         IObjectSpace os, Guid? contrapartidaId = null, SensStingere? sens = null,
         DateOnly? laData = null, Guid? documentCurentId = null, bool stinge = true,

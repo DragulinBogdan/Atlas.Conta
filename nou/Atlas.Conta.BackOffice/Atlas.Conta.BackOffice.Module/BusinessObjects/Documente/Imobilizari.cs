@@ -11,7 +11,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // 097: nominalizare contabilă și bază fiscală distinctă.
 [TipDetaliu(typeof(PunereInFunctiuneDetaliu))]
 [XafDisplayName("Punere în funcțiune")]
-public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
+public class PunereInFunctiune : Document, IDocumentCuEfecteProprii {
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantImobilizari.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Interna, Declaratii.Latura.Interna);
@@ -190,30 +190,9 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
             .ToDictionary(g => g.Key, g => g.Sum(x => x.Valoare));
     }
 
-    public void MaterializeazaRegistrul(IObjectSpace os) {
+    public void LaOperare(IObjectSpace os) {
         var fise = Fise(os, Detalii);
         foreach (var l in Detalii.OfType<PunereInFunctiuneDetaliu>()) {
-            var rand = os.CreateObject<RegistruImobilizari>();
-            rand.Data = DataInregistrare;
-            rand.ImobilizareId = l.ImobilizareId;
-            rand.Fel = Fel(l.Fel);
-            rand.Valoare = l.Valoare;
-            rand.ValoareFiscala = l.Fel == FelLiniePif.Revizuire ? 0m : l.ValoareFiscala;
-            rand.Amortizare = l.AmortizareInitiala;
-            rand.AmortizareFiscala = l.AmortizareFiscalaInitiala;
-            rand.AmortizareDeductibila = l.AmortizareFiscalaInitiala;
-            rand.Luni = l.LuniAmortizateInitial;
-            rand.Metoda = l.Metoda;
-            rand.DurataLuni = l.DurataLuni;
-            rand.ValoareReziduala = l.ValoareReziduala;
-            rand.MetodaFiscala = l.MetodaFiscala;
-            rand.DurataFiscalaLuni = l.DurataFiscalaLuni;
-            rand.CategorieFiscala = l.CategorieFiscala;
-            rand.UtilizareExclusiva = l.UtilizareExclusiva;
-            rand.RepartitorId = PrimitorId;
-            rand.Document = this;
-            rand.Detaliu = l;
-
             var fisa = fise[l.ImobilizareId];
             fisa.Stare = StareImobilizare.InFunctiune;
             if (l.Fel == FelLiniePif.Intrare)
@@ -226,21 +205,18 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
 
     public string MotivPerioadaStornarii(IObjectSpace os) => MotivLunaStornarii(os, DataInregistrare);
 
-    public void EliminaRegistrul(IObjectSpace os) {
+    public void LaAnulare(IObjectSpace os) {
         var fise = Fise(os, Detalii);
         MotorOperare.Refuza(MotivFapteUlterioare(os, ID, DataInregistrare, fise.Keys));
-        os.Delete(RanduriProprii(os));
         foreach (var l in Detalii.OfType<PunereInFunctiuneDetaliu>())
             if (l.Fel == FelLiniePif.Intrare)
                 ReaduLaNoua(fise[l.ImobilizareId]);
     }
 
-    public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
+    public void LaStornare(IObjectSpace os, DateOnly data) {
         var fise = Fise(os, Detalii);
         MotorOperare.Refuza(MotivFapteUlterioare(os, ID, DataInregistrare, fise.Keys));
         VerificaLunaStornarii(DataInregistrare, data);
-        foreach (var r in RanduriProprii(os))
-            Inverseaza(os, r, data);
         foreach (var l in Detalii.OfType<PunereInFunctiuneDetaliu>())
             if (l.Fel == FelLiniePif.Intrare)
                 ReaduLaNoua(fise[l.ImobilizareId]);
@@ -249,11 +225,6 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
     static void ReaduLaNoua(Imobilizare fisa) {
         fisa.Stare = StareImobilizare.Noua;
         fisa.DataPunereInFunctiune = null;
-    }
-
-    List<RegistruImobilizari> RanduriProprii(IObjectSpace os) {
-        var id = ID;
-        return os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList();
     }
 
     // Corecția directă doar fără dependenți (14): un fapt ulterior viu s-a calculat pe cifrele astea.
@@ -283,30 +254,6 @@ public class PunereInFunctiune : Document, IDocumentCuRegistruPropriu {
             throw new OperareException(
                 $"Un document de imobilizări se stornează cu o dată din luna lui ({dataDocument:MM.yyyy}) — "
                 + $"stornarea pe {dataStorno:dd.MM.yyyy} ar lăsa situația fișelor falsă între cele două date.");
-    }
-
-    internal static void Inverseaza(IObjectSpace os, RegistruImobilizari r, DateOnly data) {
-        var invers = os.CreateObject<RegistruImobilizari>();
-        invers.Data = data;
-        invers.ImobilizareId = r.ImobilizareId;
-        invers.Fel = r.Fel;
-        invers.Valoare = -r.Valoare;
-        invers.ValoareFiscala = -r.ValoareFiscala;
-        invers.Amortizare = -r.Amortizare;
-        invers.AmortizareFiscala = -r.AmortizareFiscala;
-        invers.AmortizareDeductibila = -r.AmortizareDeductibila;
-        invers.Luni = -r.Luni;
-        invers.Metoda = r.Metoda;
-        invers.DurataLuni = r.DurataLuni;
-        invers.ValoareReziduala = r.ValoareReziduala;
-        invers.MetodaFiscala = r.MetodaFiscala;
-        invers.DurataFiscalaLuni = r.DurataFiscalaLuni;
-        invers.CategorieFiscala = r.CategorieFiscala;
-        invers.UtilizareExclusiva = r.UtilizareExclusiva;
-        invers.RepartitorId = r.RepartitorId;
-        invers.DocumentId = r.DocumentId;
-        invers.DetaliuId = r.DetaliuId;
-        invers.Storno = true;
     }
 
     internal static int Luna(DateOnly data) => data.Year * 12 + data.Month;
@@ -375,7 +322,7 @@ public class PunereInFunctiuneDetaliu : DocumentDetaliu, ILinieCuImobilizare {
 // CAS: ieșirea din patrimoniu, două note per fișă din politică (F26-D6).
 [TipDetaliu(typeof(IesireImobilizareDetaliu))]
 [XafDisplayName("Ieșire de imobilizări")]
-public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumentCuRegistruPropriu {
+public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumentCuEfecteProprii {
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantImobilizari.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Interna, Declaratii.Latura.Interna);
@@ -445,25 +392,10 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
         }
     }
 
-    public void MaterializeazaRegistrul(IObjectSpace os) {
+    public void LaOperare(IObjectSpace os) {
         var fise = PunereInFunctiune.Fise(os, Detalii);
-        foreach (var grup in Detalii.OfType<IesireImobilizareDetaliu>().GroupBy(l => l.ImobilizareId)) {
-            var situatie = AmortizareService.Situatie(os, grup.Key, DataInregistrare);
-            var rand = os.CreateObject<RegistruImobilizari>();
-            rand.Data = DataInregistrare;
-            rand.ImobilizareId = grup.Key;
-            rand.Fel = FelMiscareImobilizare.Iesire;
-            rand.Valoare = -situatie.Valoare;
-            rand.ValoareFiscala = -situatie.ValoareFiscala;
-            rand.Amortizare = -situatie.Amortizare;
-            rand.AmortizareFiscala = -situatie.AmortizareFiscala;
-            rand.AmortizareDeductibila = -situatie.AmortizareDeductibila;
-            rand.Luni = 0;
-            rand.RepartitorId = PredatorId;
-            rand.Document = this;
-            rand.Detaliu = grup.First();
-
-            var fisa = fise[grup.Key];
+        foreach (var id in Detalii.OfType<IesireImobilizareDetaliu>().Select(l => l.ImobilizareId).Distinct()) {
+            var fisa = fise[id];
             fisa.Stare = StareImobilizare.Iesita;
             fisa.DataIesire = Data;
         }
@@ -471,19 +403,14 @@ public class IesireImobilizare : Document, IDocumentCuPostareExplicita, IDocumen
 
     public string MotivPerioadaStornarii(IObjectSpace os) => PunereInFunctiune.MotivLunaStornarii(os, DataInregistrare);
 
-    public void EliminaRegistrul(IObjectSpace os) {
+    public void LaAnulare(IObjectSpace os) {
         MotorOperare.Refuza(MotivDependenti(os));
-        var id = ID;
-        os.Delete(os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList());
         ReaduInFunctiune(os);
     }
 
-    public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
+    public void LaStornare(IObjectSpace os, DateOnly data) {
         MotorOperare.Refuza(MotivDependenti(os));
         PunereInFunctiune.VerificaLunaStornarii(DataInregistrare, data);
-        var id = ID;
-        foreach (var r in os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList())
-            PunereInFunctiune.Inverseaza(os, r, data);
         ReaduInFunctiune(os);
     }
 
@@ -567,7 +494,7 @@ public class IesireImobilizareDetaliu : DocumentDetaliu, ILinieCuPostareExplicit
 // AMO: amortizarea lunii, GENERATĂ pe tiparul ITV; derivă din `Document`, nu din NTC (F26-D7).
 [TipDetaliu(typeof(AmortizareLunaraDetaliu))]
 [XafDisplayName("Amortizare lunară")]
-public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocumentCuRegistruPropriu {
+public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocumentCuEfecteProprii {
     public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantImobilizari.Instanta;
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Interna, Declaratii.Latura.Interna);
@@ -645,36 +572,15 @@ public class AmortizareLunara : Document, IDocumentCuPostareExplicita, IDocument
         (d.ImobilizareId, d.Valoare, d.ValoareFiscala, d.ValoareDeductibila, d.Luni,
             d.ContDebitId, d.ContCreditId, d.RepartitorDebitId, d.CentruCostId, d.CodEconomicId);
 
-    public void MaterializeazaRegistrul(IObjectSpace os) {
-        foreach (var l in Detalii.OfType<AmortizareLunaraDetaliu>()) {
-            var rand = os.CreateObject<RegistruImobilizari>();
-            rand.Data = DataInregistrare;
-            rand.ImobilizareId = l.ImobilizareId;
-            rand.Fel = FelMiscareImobilizare.Amortizare;
-            rand.Amortizare = l.Valoare;
-            rand.AmortizareFiscala = l.ValoareFiscala;
-            rand.AmortizareDeductibila = l.ValoareDeductibila;
-            rand.Luni = l.Luni;
-            rand.RepartitorId = l.RepartitorDebitId ?? PrimitorId;
-            rand.Document = this;
-            rand.Detaliu = l;
-        }
-    }
+    public void LaOperare(IObjectSpace os) { }
 
     public string MotivPerioadaStornarii(IObjectSpace os) => PunereInFunctiune.MotivLunaStornarii(os, DataInregistrare);
 
-    public void EliminaRegistrul(IObjectSpace os) {
-        MotorOperare.Refuza(MotivDependenti(os));
-        var id = ID;
-        os.Delete(os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList());
-    }
+    public void LaAnulare(IObjectSpace os) => MotorOperare.Refuza(MotivDependenti(os));
 
-    public void StorneazaRegistrul(IObjectSpace os, DateOnly data) {
+    public void LaStornare(IObjectSpace os, DateOnly data) {
         MotorOperare.Refuza(MotivDependenti(os));
         PunereInFunctiune.VerificaLunaStornarii(DataInregistrare, data);
-        var id = ID;
-        foreach (var r in os.GetObjectsQuery<RegistruImobilizari>().Where(r => r.DocumentId == id).ToList())
-            PunereInFunctiune.Inverseaza(os, r, data);
     }
 
     public string MotivDependenti(IObjectSpace os) =>
@@ -707,7 +613,7 @@ public class AmortizareLunaraDetaliu : DocumentDetaliu, ILinieCuPostareExplicita
     [XafDisplayName("Amortizare deductibilă")]
     public virtual decimal ValoareDeductibila { get; set; }
 
-    // > 1 pe recuperarea unei fișe puse în funcțiune întârziat; ajunge pe `RegistruImobilizari.Luni` (F27-D4).
+    // > 1 pe recuperarea unei fișe puse în funcțiune întârziat (F27-D4).
     [XafDisplayName("Luni acoperite")]
     [ModelDefault("AllowEdit", "False")]
     public virtual int Luni { get; set; } = 1;

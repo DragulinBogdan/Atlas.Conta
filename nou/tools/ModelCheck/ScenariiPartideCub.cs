@@ -21,7 +21,6 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         EfectObligatoriu();
         EfectPartialSiTemporal();
         NominalizareAutomata();
-        RegimIreversibil();
         NotaInainteaStingerii();
         StingereDupaDesfacere(nota: false);
         StingereDupaDesfacere(nota: true);
@@ -203,22 +202,6 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         finally { Muta(straina, partida); }
         Verifica("SC-CIT-108", "cubul plății este cel dinaintea probei", Amprenta(plata) == inainte);
     }
-
-    // X-D7 (b): un tip cu tranzacții în cub nu iese din regim; unul fără tranzacții poate.
-    void RegimIreversibil() => Comanda(os => {
-        TipDocument Tip(string cod) => os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == cod);
-        var cuFapte = Tip("FCT"); var faraFapte = Tip("CAS");
-        Verifica("SC-CIT-109", "FCT are tranzacții în cub, CAS nu are", C.Materializare.AreTranzactii(os, cuFapte.ClrType)
-            && !C.Materializare.AreTranzactii(os, faraFapte.ClrType) && cuFapte.PosteazaInCub && faraFapte.PosteazaInCub);
-        cuFapte.PosteazaInCub = false;
-        Refuza("SC-CIT-109", () => GardianEditare.Verifica(os), Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.PosteazaInCubIreversibil);
-        cuFapte.PosteazaInCub = true;
-        faraFapte.PosteazaInCub = false;
-        string refuz = null;
-        try { GardianEditare.Verifica(os); } catch (OperareException e) { refuz = e.Message; }
-        Verifica("SC-CIT-109", "tipul fără tranzacții în cub poate ieși din regim" + (refuz == null ? "" : " — " + refuz), refuz == null);
-        faraFapte.PosteazaInCub = true;
-    });
 
     void NominalizareAutomata() {
         var f = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false)); Opereaza(f.Id);
@@ -439,8 +422,6 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             var cont = Cont(ContFurnizor);
             ctx.Database.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"Unitate\" = null, \"FelUnitate\" = null, \"UnitateDeschisa\" = null, \"Partener\" = null WHERE \"DocumentId\" = {factura} AND \"Cont\" = {cont}");
             Refuza("SC-CIT-43", () => C.Citiri.Invarianti.Verifica(os), "CITIRE_PARTIDE_INCOMPLETE");
-            ctx.Database.ExecuteSqlInterpolated($"UPDATE \"Conturi\" SET \"UrmarestePartide\" = false WHERE \"ID\" = {cont}");
-            Refuza("SC-CIT-43", () => C.Citiri.Invarianti.Verifica(os), "CITIRE_PARTIDE_POLITICA");
             tx.Rollback();
         });
         Anuleaza(nota.Id);

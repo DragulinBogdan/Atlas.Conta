@@ -8,6 +8,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 public sealed class DeclarantDvi : IDeclarant {
     public static readonly DeclarantDvi Instanta = new();
     DeclarantDvi() { }
+    public PoliticaProfil PoliticaCeruta => PoliticaProfil.Tva;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);

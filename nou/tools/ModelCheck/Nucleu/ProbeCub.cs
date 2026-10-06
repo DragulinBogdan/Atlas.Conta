@@ -14,26 +14,6 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 /// </summary>
 static class ProbeCub {
     /// <summary>
-    /// Comută `PosteazaInCub` pe tipurile documentelor date și îl RESTAUREAZĂ la
-    /// ieșire (S-D8): tipurile pe care seed-ul nu le-a migrat încă.
-    /// </summary>
-    public static IDisposable Migrat(IObjectSpace os, params Document[] documente) {
-        ArgumentNullException.ThrowIfNull(os);
-        ArgumentNullException.ThrowIfNull(documente);
-        return new Comutator(os, [.. documente.Select(d => MotorOperare.ClasaReala(d).Name).Distinct()], true);
-    }
-
-    /// <summary>Inversul: tipul migrat prin seed se probează ca NEMIGRAT (STR-NEMIGRAT).</summary>
-    public static IDisposable Nemigrat(IObjectSpace os, params Document[] documente) {
-        ArgumentNullException.ThrowIfNull(os);
-        ArgumentNullException.ThrowIfNull(documente);
-        return new Comutator(os, [.. documente.Select(d => MotorOperare.ClasaReala(d).Name).Distinct()], false);
-    }
-
-    public static IDisposable MigratPeClasa(IObjectSpace os, params string[] clrTypes) =>
-        new Comutator(os, clrTypes, true);
-
-    /// <summary>
     /// S-D15: seed-ul lasă `PoliticaTva.TolerantaTaxa` pe `null` (taxa culeasă
     /// autoritară); scena care probează gardul o pune LOCAL și o restaurează.
     /// </summary>
@@ -106,43 +86,6 @@ static class ProbeCub {
             .ToList()
             .Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare);
 
-    /// <summary>
-    /// STR-TRANSFER-3: cubul PERSISTAT al stingătorului (`Operare` ⊕ `Transfer`), pliat
-    /// de aceeași normalizare ca oracolul (TR-D2a), = registrele normalizate.
-    /// </summary>
-    public static void ProbaTransferPliat(
-            IObjectSpace os, Action<string, bool> check, string prefix, Document doc) {
-        ArgumentNullException.ThrowIfNull(os);
-        ArgumentNullException.ThrowIfNull(check);
-        ArgumentNullException.ThrowIfNull(doc);
-        var randuri = Postari(os, doc.ID);
-        var persistate = Tranzactii(os, doc.ID)
-            .OrderBy(t => t.Fel == N.FelTranzactie.Operare ? 0 : 1)
-            .ThenBy(t => t.ScrisLa)
-            .Select(t => new N.Tranzactie(t.Fel, t.Data, doc.ID,
-                [.. randuri.Where(r => r.TranzactieId == t.ID).Select(C.Randuri.Citeste)]))
-            .ToList();
-        Normalizari.Reseteaza();
-        var pliate = Normalizari.TrD2NominalizeazaPrinImperechere(persistate);
-        var aleDeclaratiei = Normalizari.Avertismente.Count;
-        // MEDIU-3: plafonul unei împerecheri e RESTUL partidei stinsului, deci oracolul
-        // are nevoie de TOATE împerecherile ei — inclusiv ale celorlalți stingători.
-        var set = new List<Guid> { doc.ID };
-        set.AddRange(CubDinRegistre.StingatoriiVecini(os, doc.ID));
-        Normalizari.Reseteaza();
-        var oracol = Normalizari
-            .Toate(CubDinRegistre.Transforma(os, set), Normalizari.Citeste(os, set))
-            .Where(t => t.Document == doc.ID)
-            .ToList();
-        var raport = Comparabil.Compara(
-            Comparabil.Proiecteaza(oracol), Comparabil.Proiecteaza(pliate), ProbeNucleu.Nume(os, oracol));
-        if (!raport.Egal)
-            Console.WriteLine(raport.ToString());
-        check($"STR-TRANSFER-3 {prefix}: cubul persistat `Operare` ⊕ `Transfer`, pliat ca oracolul "
-            + "(TR-D2a), = registrele normalizate (B-D8)",
-            raport.Egal && aleDeclaratiei == 0 && Normalizari.Avertismente.Count == 0);
-    }
-
     public static void FaraRanduri(IObjectSpace os, Action<string, bool> check, string nume, Guid document) {
         ArgumentNullException.ThrowIfNull(check);
         check(nume, Tranzactii(os, document).Count == 0 && Postari(os, document).Count == 0);
@@ -153,8 +96,7 @@ static class ProbeCub {
             IObjectSpace os,
             Action<string, bool> check,
             string prefix,
-            Document doc,
-            IReadOnlyDictionary<Guid, Guid>? conexe = null) {
+            Document doc) {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(check);
         ArgumentNullException.ThrowIfNull(doc);
@@ -174,35 +116,6 @@ static class ProbeCub {
             + "(`Spatiu` = `postare.Spatiu()`)",
             randuri.Count > 0
             && randuri.Zip(citite).All(pereche => pereche.First.Spatiu == N.Postari.Spatiu(pereche.Second)));
-
-        var aleLui = new List<Guid> { doc.ID };
-        var conexeAleLui = new Dictionary<Guid, Guid>();
-        if (conexe is not null)
-            foreach (var (conex, sursa) in conexe)
-                if (sursa == doc.ID) {
-                    aleLui.Add(conex);
-                    conexeAleLui[conex] = sursa;
-                }
-
-        Normalizari.Reseteaza();
-        var oracol = Normalizari.Toate(
-            CubDinRegistre.Transforma(os, aleLui),
-            Normalizari.Citeste(os, aleLui, conexeAleLui));
-        Normalizari.Reseteaza();
-        var iar = Normalizari.Toate(
-            CubDinRegistre.Transforma(os, aleLui),
-            Normalizari.Citeste(os, aleLui, conexeAleLui));
-        check($"STR-ORACOL {prefix}: două transformări consecutive dau ACELAȘI oracol — citirile sunt "
-            + "ordonate pe secvența liniilor, nu pe heap-ul Postgres (S-D6/B-r11)",
-            MultisetEgal(oracol.SelectMany(t => t.Postari), iar.SelectMany(t => t.Postari)));
-        var raport = Comparabil.Compara(
-            Comparabil.Proiecteaza(oracol),
-            [.. citite.Select(Comparabil.Proiecteaza)],
-            ProbeNucleu.Nume(os, oracol));
-        if (!raport.Egal)
-            Console.WriteLine(raport.ToString());
-        check($"STR-OPERARE {prefix}: postările PERSISTATE = registrele normalizate (B-D8)",
-            raport.Egal && Normalizari.Avertismente.Count == 0);
 
         var contract = Contractare.Contracteaza(os, doc);
         var asteptate = contract.Tranzactii.SelectMany(t => t.Postari).ToList();
@@ -274,14 +187,12 @@ static class ProbeCub {
     }
 
     static void Scrie(IObjectSpace os, IReadOnlyList<N.Postare> obtinut, IReadOnlyList<N.Postare> asteptat) {
-        var nume = ProbeNucleu.Nume(
-            os,
-            [new N.Tranzactie(N.FelTranzactie.Operare, default, Guid.Empty, asteptat)],
-            new N.Tranzactie(N.FelTranzactie.Operare, default, Guid.Empty, obtinut));
-        Console.WriteLine(Comparabil.Compara(
-            [.. asteptat.Select(Comparabil.Proiecteaza)],
-            [.. obtinut.Select(Comparabil.Proiecteaza)],
-            nume).ToString());
+        var stanga = Numara(obtinut);
+        var dreapta = Numara(asteptat);
+        foreach (var (postare, cate) in dreapta.Where(p => stanga.GetValueOrDefault(p.Key) != p.Value))
+            Console.WriteLine($"       așteptat ×{cate}, obținut ×{stanga.GetValueOrDefault(postare)}: {postare}");
+        foreach (var (postare, cate) in stanga.Where(p => !dreapta.ContainsKey(p.Key)))
+            Console.WriteLine($"       în plus ×{cate}: {postare}");
     }
 
     sealed class ComutatorToleranta : IDisposable {
@@ -299,28 +210,6 @@ static class ProbeCub {
 
         public void Dispose() {
             politica.TolerantaTaxa = vechi;
-            os.CommitChanges();
-        }
-    }
-
-    sealed class Comutator : IDisposable {
-        readonly IObjectSpace os;
-        readonly List<(TipDocument Tip, bool Vechi)> stari = [];
-
-        public Comutator(IObjectSpace os, IReadOnlyList<string> clrTypes, bool valoare) {
-            this.os = os;
-            foreach (var clrType in clrTypes.Distinct()) {
-                var tip = os.FirstOrDefault<TipDocument>(t => t.ClrType == clrType)
-                    ?? throw new InvalidOperationException($"Lipsește ancora TipDocument pentru {clrType}.");
-                stari.Add((tip, tip.PosteazaInCub));
-                tip.PosteazaInCub = valoare;
-            }
-            os.CommitChanges();
-        }
-
-        public void Dispose() {
-            foreach (var (tip, vechi) in stari)
-                tip.PosteazaInCub = vechi;
             os.CommitChanges();
         }
     }

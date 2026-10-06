@@ -143,8 +143,6 @@ internal static class Fapte {
             new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month),
             new N.VersiunePolitica("seed", doc.DataInregistrare)) {
                 ReperFiscal = fiscal?.Reper,
-                SolduriLoturiRegistru = doc.Declarant()?.CereSoldRegistruPentruEvaluare == true
-                    ? SolduriLoturiRegistru(os, doc, linii, claseTip, reguliStoc, idsLot) : new Dictionary<Guid, N.Sold>(),
                 Repartitori = repartitori,
                 PartideDisponibile = PartideDisponibile(os, doc, explicite, conturi, repartitori),
                 UnitatiSursa = UnitatiSursa(os, doc),
@@ -294,42 +292,6 @@ internal static class Fapte {
             .ToList().ToDictionary(s => new Declaratii.CheieLotFapt(s.LotId, s.ContId, s.ProdusId, s.GestiuneId),
                 s => new N.Sold(s.Valoare > 0m ? s.Valoare : 0m,
                     s.Valoare < 0m ? -s.Valoare : 0m, s.Cantitate, 0m));
-
-    // Citire tranzitorie exclusiv pentru R din ASM-B6, nu pentru evaluarea cubului.
-    // Soldul lotului pe cheia de stoc a laturii PREDATOARE, la `DataInregistrare`
-    // și FĂRĂ documentul curent: `TipStoc`-ul e al regulii potrivite, deci cheia
-    // se află aici (citirea are nevoie de ea), iar mișcarea o declară frunza.
-    static Dictionary<Guid, N.Sold> SolduriLoturiRegistru(IObjectSpace os, Document doc,
-            IReadOnlyList<DocumentDetaliu> linii,
-            IReadOnlyDictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
-            IReadOnlyList<RegulaStocFapt> reguliStoc, IReadOnlyList<Guid> idsLot) {
-        var solduri = new Dictionary<Guid, N.Sold>();
-        if (idsLot.Count == 0)
-            return solduri;
-        // Cheia se află înaintea citirii: fără nicio latură predatoare (factura își
-        // naște loturile) nu e nimic de citit, deci nici interogare (MINOR-7).
-        var chei = new List<(Guid Lot, CheieStoc Cheie)>();
-        foreach (var d in linii) {
-            if (d.LotId is not Guid lotId || chei.Any(c => c.Lot == lotId))
-                continue;
-            var tipStoc = Potrivire.Stoc(reguliStoc, Linie(d, claseTip))
-                .Where(p => p.Latura == LaturaDocument.Predator)
-                .SelectMany(p => p.Reguli)
-                .Select(r => (TipStoc?)r.TipStoc)
-                .FirstOrDefault();
-            if (tipStoc is TipStoc tip)
-                chei.Add((lotId, new CheieStoc(lotId, doc.PredatorId, tip)));
-        }
-        if (chei.Count == 0)
-            return solduri;
-        var peCheie = StocService.SolduriLaData(os, idsLot, doc.DataInregistrare, doc.ID);
-        foreach (var (lotId, cheie) in chei)
-            solduri[lotId] = Sold(peCheie.GetValueOrDefault(cheie));
-        return solduri;
-    }
-
-    static N.Sold Sold(SoldStoc sold) =>
-        new(sold.Valoare > 0m ? sold.Valoare : 0m, sold.Valoare < 0m ? -sold.Valoare : 0m, sold.Cantitate, 0m);
 
     static List<Guid> ConturiAtinse(IReadOnlyList<DocumentDetaliu> linii,
             IReadOnlyDictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,

@@ -63,7 +63,7 @@ comună a entităților proprii și a celor de securitate. (104e)
 Nu există ștergere amânată: modelul nu are `GCRecord` și nici filtru global
 de interogare. Draftul se șterge fizic, documentul operat se stornează,
 nomenclatorul se inactivează (`Activ`, fără default în schemă), iar
-registrele le șterge doar motorul, la corecția directă. `Cascade` apare numai
+tranzacțiile și postările cubului le șterge doar motorul, la corecția directă. `Cascade` apare numai
 pe compoziții, adică pe colecțiile `[Aggregated]` (`Document.Detalii`,
 `Dvi.Facturi`). Restul FK-urilor de domeniu sunt `ClientNoAction` în EF și
 `NO ACTION` în schemă: refuzul vine mereu din bază, chiar dacă dependentul e
@@ -85,19 +85,18 @@ identitatea este exclusivă și schema diferă. (16)
 
 ## Registre și ciclu de viață
 
-| Registru | Fapt persistat | Deschidere fără document |
-|---|---|---|
-| `RegistruContabil` | Corespondență debit/credit, valoare și dimensiuni per latură | Da (14, 25e) |
-| `RegistruStoc` | Mișcare de cantitate și valoare pe lot, repartitor și tip de stoc | Da (14, 25e) |
-| `RegistruTva` | Fapt fiscal per linie, sens, cotă, regim, bază și TVA | Nu (68) |
-| `RegistruImobilizari` | Eveniment sau lună per fișă de imobilizare: efecte semnate pe brut, brut fiscal, cumulat contabil/fiscal/deductibil și luni, parametrii de amortizare pe evenimente, locul la data faptului | Nu (87b) |
-
-Registrele sunt scrise prin mecanismele motorului. Nu se editează prin CRUD.
-Al patrulea registru este scris de documentul care îl declară prin
-`IDocumentCuRegistruPropriu` (materializare, eliminare, storno), pe care
-motorul îl cheamă prin interfață în cele trei puncte ale ciclului de viață;
-dependențele dintre faptele aceleiași fișe le refuză tipul, nu motorul. (87c)
-Un rând operat se citește cu valorile și dimensiunile deja rezolvate.
+Faptele operate stau numai în cub (`Tranzactie`, `Postare`); forma lor e la
+„Cubul persistat". Cele patru tabele de registru (`RegistruContabil`,
+`RegistruStoc`, `RegistruTva`, `RegistruImobilizari`) nu mai sunt scrise și
+nici citite de produs: rămân ca declarații până la eliminarea lor atomică
+(TR-D9a, pasul 7). Cubul se scrie numai prin motor și nu se editează prin
+CRUD; o postare existentă nu se rescrie (`POSTARE_MODIFICATA`, la salvare, pe
+orice ușă). Efectele proprii ale unei frunze la comenzile de stare — starea
+fișei de imobilizare și refuzurile ei de dependență — trec prin
+`IDocumentCuEfecteProprii` (`LaOperare`, `LaAnulare`, `LaStornare`), chemat de
+motor prin interfață; dependențele dintre faptele aceleiași fișe le refuză
+tipul, nu motorul. (87c, D9-D2, D9-A5, D9-A6)
+Un fapt operat se citește cu valorile și coordonatele deja rezolvate.
 Excepția scrierii directe pentru migrare este deschiderea contabilă/de stoc,
 marcată prin `DocumentId = null`; rândurile ei sunt brute per (cont, latură),
 scrise din aceleași controale ca tranzacția `Deschidere` a cubului, pe care
@@ -118,12 +117,12 @@ Stornează și Corectează le compune `Motor/GardieniRetragere.Citeste`, în
 ordinea motorului, din predicatele pe care comanda le aruncă. Anularea are
 data fixă și își citește toți gardienii: TVA deja declarată, perioada
 înregistrării, latura pereche, conexele operate, orice împerechere, loturile
-proprii folosite de alte documente, dependenții registrului propriu (PIF,
+proprii folosite de alte documente, dependenții proprii ai frunzei (PIF,
 CAS, AMO), recepția activă, nominalizările active pe partidele și pe suportul
 documentului, stingerea unei partide inițiale. Stornarea și corecția își aleg
 data la comandă, deci regimul refuză numai ce refuză la orice dată: latura
 pereche, conexele, împerecherea vie dintr-o perioadă deschisă (cele din
-perioade închise le inversează stornoul), dependenții registrului propriu,
+perioade închise le inversează stornoul), dependenții proprii ai frunzei,
 luna închisă a documentului de imobilizări, recepția activă, nominalizările
 cu net rămas nenul. Stornat: nimic. Ștergerea se decide numai pe stare
 (Draft), fără hook de tip (106j). Tipul contribuie comenzile proprii prin
@@ -146,9 +145,9 @@ Documentul poartă două date. `Data` este a documentului fizic: numerotarea,
 scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
 `DataInregistrare` este data la care documentul intră în evidență. (F27-D4)
 
-- Registrele contabil, de stoc și de imobilizări, precum și lotul născut din
-  liniile documentului, se scriu la data înregistrării. `RegistruTva.Data`
-  rămâne data faptului fiscal, adică data documentului; perioada în care faptul
+- Postările contabile, de stoc și de imobilizări, precum și lotul născut din
+  liniile documentului, se scriu la data înregistrării. Faptul fiscal își
+  păstrează data documentului; perioada în care faptul
   se declară este o coordonată separată pe rândul fiscal, decisă de politică
   atunci când perioada faptului e închisă. Regulile ei sunt în
   [politici și fiscalitate](politici-si-fiscalitate.md). (F27-D4, F27-D5)
@@ -168,7 +167,7 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
   creare și la schimbarea datei în ecranul XAF cât timp cele două erau egale,
   în adaptorul de scriere când clientul nu trimite câmpul, iar în motor ca
   normalizare pentru orice cale care nu-l culege (Import1C, generate).
-  Registrele unui document fără câmp cules cad acolo unde cădeau înainte. (F27-D4)
+  Postările unui document fără câmp cules cad pe data documentului. (F27-D4)
 - Documentul conex și cele secundare care copiază data sursei moștenesc și data
   înregistrării ei. Documentele generate (amortizarea lunară, închiderea de TVA,
   descărcarea de gestiune) o primesc egală cu data lor chiar la creare, nu abia
@@ -254,37 +253,45 @@ declanșează reîncărcarea (109-r4). (109 f)
    perioadei peste `CommitChanges`. Ușa de sistem
    (`ComenziDocument.Sistem(os)`) e a uneltelor standalone (ModelCheck):
    primește contextul apelantului și nu verifică drepturi. (42b, F27-D1, 104-r2)
-4. Calculează valorile prin contractele tipului, aplică evaluarea ieșirilor
-   și validează perioada, starea, liniile, politicile, dimensiunile și stocul. (33d, 75a)
-5. Materializează numărul și scadența implicite, finalizează loturile și
-   creează rândurile de registru și documentele generate. (25c, 25f, 26d)
-6. Asignează `Operat` și `DataOperare`, materializează stingerea automată
-   cerută de contract și comite operația. (82c)
+4. Verifică starea, data și perioada. Refuză tipul care nu declară sau n-are
+   politică pe profil (`TIP_FARA_DECLARATIE`), înaintea oricărei validări a
+   frunzei. Pregătește documentul (`PregatesteOperare`) și rulează validările
+   care nu țin de postări: TVA cules la taxare inversă, `PoliticaValidare`,
+   `ValideazaOperare`. (33d, D9-D2, D9-D5)
+5. Contractează declarația frunzei și rulează gardurile de pe postările ei:
+   analiza obligatorie, soldul intermediar al loturilor, poziția fără fișă,
+   recepțiile conexe. Până aici nimic nu e scris. (D9-D2, D9-D4)
+6. Scrie pe document numărul și scadența implicite, finalizează loturile
+   născute, aplică efectele proprii ale frunzei și creează documentele
+   generate. Asignează `Operat` și `DataOperare`. (25c, 25f, 26d)
+7. Materializează contractul în cub, cu explicația lui, și scrie pe liniile
+   ieșirilor evaluate din sold valoarea decisă de contract. Materializează
+   stingerea automată și comite. (82c, 108c, D9-D3)
 
-Validările calculului preced materializarea registrelor. Validările relațiilor
+Validările și contractul preced orice scriere pe document. Validările relațiilor
 create pot încă refuza operația înainte de commit. La refuz, ObjectSpace-ul
 comenzii se abandonează: lipsa commit-ului nu înseamnă că instanțele din
 memorie au rămas nemodificate. (33d, 82)
 
 `Valideaza` folosește aceeași cale de calcul și validare ca operarea, fără
 commit. Poate modifica obiecte în memorie, deci cere un ObjectSpace propriu,
-de unică folosință. `MesajeDupaOperare` este doar informare după commit și
+de unică folosință. Întoarce numai refuzurile: valorile lăsate pe liniile din
+memorie sunt estimări, nu rezultat (D9-D3). `MesajeDupaOperare` este doar informare după commit și
 nu trebuie să transforme o operație reușită într-un eșec aparent. (55b, 76c, 82c)
 
 ### Anulare și storno
 
-În cub, pentru toate tipurile, storno/anularea urmăresc postările deja
-existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
+Stornoul și anularea urmăresc postările existente ale documentului.
 
-- Anularea operării readuce documentul în Draft și elimină rândurile sale
-  de registru. Este permisă numai în perioadă deschisă și fără dependenți. (14, 25d)
+- Anularea operării readuce documentul în Draft și șterge tranzacțiile și
+  postările lui. Este permisă numai în perioadă deschisă și fără dependenți. (14, 25d)
 - Eliminarea mișcărilor proprii nu poate produce sold intermediar negativ.
   Un lot creat de document nu poate fi deja folosit de alt document. (25d)
 - Copiii operați, laturile pereche operate care îl referă și împerecherile
   existente blochează corecțiile conform relațiilor lor. (26d, 31d, 65)
 - Drafturile autogenerate ale sursei se elimină la anularea sursei. (26d)
-- Stornoul adaugă rânduri inverse la data stornării, cu valori negative pe
-  corespondența originală și marcaj `Storno`; nu inversează conturile. (25d, 46a)
+- Stornoul adaugă o tranzacție `Storno` la data stornării, cu postările
+  originalului la valori negative; nu inversează laturile. (25d, 46a)
 - O perioadă absentă se consideră închisă. Administratorul nu ocolește
   granița perioadei fiscale închise. (14, 25d)
 
@@ -398,7 +405,7 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
   înainte ca luna să fie marcată închisă. Fără snapshot precedent, luna se
   calculează prin sumă peste tot istoricul. Redeschiderea șterge snapshot-ul
   lunii și îl reconstruiește pe al precedentei, tot prin sumă integrală.
-  Registrele nu se ating. (F27-D3, review advers F27, L1)
+  Postările nu se ating. (F27-D3, review advers F27, L1)
 - Reconstrucția recalculează integral fiecare perioadă de referință,
   raportează diferențele pe rânduri și pe sume înainte de a rescrie, apoi
   șterge snapshot-urile perioadelor care nu mai sunt referințe. Raportul iese
@@ -435,8 +442,7 @@ existente; schimbarea PosteazaInCub nu dezactivează inversarea lor.
   transmite o graniță strict anterioară datei documentului exclus; fără
   această garanție, excluderea recitește integral postările. Gardul de sold
   intermediar pornește din cumulul de dinaintea primei date propuse și
-  verifică prefixele zilnice de la ea încolo, în cub. `StocService` rămâne cititorul
-  explicit al registrului în regimul dual și nu consumă snapshot-ul cubului.
+  verifică prefixele zilnice de la ea încolo, în cub.
   (F27-D3, X-D5)
   (TR-D8 D8-B1/B5)
 - Soldurile conturilor de TVA ale închiderii lunare vin din aceeași sursă
@@ -506,18 +512,17 @@ un value object nepersistat. Regulile și registrele păstrează câmpurile plat
 Pentru fiecare latură, rezolvarea urmează: valoarea liniei → override-ul
 laturii din regulă → valorile comune ale regulii → default-ul polimorf al
 antetului → materialul din lot. Postarea explicită a liniei are prioritate.
-`Cont.DimensiuniObligatorii` se verifică pe rezultatul rezolvat. În validarea
-clasificației bugetare, angajamentul poate satisface cerința de cod economic. (25f, 32c, 33a)
+În validarea clasificației bugetare, angajamentul poate satisface cerința de
+cod economic. (25f, 32c, 33a)
 
-Aceeași regulă se verifică și pe mișcările contabile ale contractului
-(`Cub/GardAnaliza`), cu același text de refuz: repartitorul e partenerul sau
+`Cont.DimensiuniObligatorii` se verifică pe mișcările contabile ale
+contractului (`Cub/GardAnaliza`): repartitorul e partenerul sau
 gestiunea capătului, apoi latura documentului; materialul e produsul; restul
 e analiza postării; angajamentul liniei ține loc de cod economic. Mutările
 (BTR, PIF), transformările (ASM) și cartea fiscală nu intră. Recepția liniei
 de stoc a facturii e păzită la operarea facturii, nu a NIR-ului conex;
-diferența NIR-ului acoperit rămâne la gardul recepției conexe. Până la
-tăierea registrelor cele două verificări rulează amândouă. (TR-D9a: D9-D4,
-D9-A3; `docs/nucleu/tr-d9-pas2-probe.md`)
+diferența NIR-ului acoperit rămâne la gardul recepției conexe. (TR-D9a:
+D9-D4, D9-A3; `docs/nucleu/tr-d9-pas2-probe.md`)
 
 ## Precizie numerică
 
@@ -535,9 +540,7 @@ clientul nu introduce o rotunjire contabilă independentă. (42c, 51c, 52a)
 
 - Doar `ClasaProdus.Natura = Stoc` intră în regulile de stoc. Natura și tipul
   material sunt date distincte de identificarea produsului. (23b)
-- Cheia soldului pe cub este `(Lot, Cont, Produs, Gestiune)`.
-  `(Lot, Repartitor, TipStoc)` rămâne cheia registrului din regimul dual.
-  (25d, 27b, TR-D8)
+- Cheia soldului este `(Lot, Cont, Produs, Gestiune)`. (25d, 27b, TR-D8)
 - Soldul cantitativ intermediar trebuie să fie nenegativ la orice dată
   afectată, inclusiv pentru documente introduse retroactiv. (25d)
 - Lotul se naște la culegerea liniei de intrare și se finalizează la operare.
@@ -548,9 +551,15 @@ clientul nu introduce o rotunjire contabilă independentă. (42c, 51c, 52a)
 - Evaluarea este identificare specifică pe lot. Alegerea automată este FIFO
   în produs × gestiune; pin-ul manual are prioritate. Un pin nu completează
   automat lipsa sa cu alte loturi. (13, 37d, 38b)
-- La ieșirea care golește cheia de stoc se preia întregul sold valoric rămas.
-  Acest calcul aparține motorului. Ieșirea fiscală RLF păstrează valoarea
-  documentului furnizorului și nu absoarbe reziduul lotului. (75a)
+- Ieșirea are una din două surse de valoare, numită de declarant. Evaluată
+  din sold (BCS, BTR, DSC, minusul LDI, consumul ASM): contractul o evaluează
+  pe soldul cubului, în secvența liniilor, iar ultima bucată ia restul; linia
+  primește la operare valoarea decisă, cu semnul cantității ei, deci linia și
+  postarea sunt egale. Pe draft și la dry-run linia poartă estimarea
+  `cantitate × preț de intrare`. Declarată la prețul de intrare (RLF, costul
+  RDC, linia NIR-ului conex pe lot străin): `cantitate × Lot.PretUnitar`; nu
+  absoarbe reziduul lotului. `Lot.PretUnitar` e prețul de intrare, scris o
+  dată, la operarea liniei care naște lotul. (75a, 090 j, D9-D3)
 - O operație retroactivă nu recalculează valorile unor ieșiri deja operate. (75a)
 
 ## Tipuri de document
@@ -569,7 +578,7 @@ clientul nu introduce o rotunjire contabilă independentă. (42c, 51c, 52a)
 | NTC — notă contabilă | Postare explicită. Poate stinge manual pe contrapartidă și sens; nu se înscrie implicit în stingerea automată a sursei. ITV nu este editabil prin această felie. (46b, 79c, 82a) |
 | ITV — închidere TVA | Rezultatul serviciului lunar, cu conturi din politică. Nu se culege ca agregat liber și nu închide perioada fiscală. (46c, 79a) |
 | DVI — declarație vamală de import | Linii pe detaliul de bază: valoarea în vamă ca bază, taxa declarată (0 = din cotă la operare). Nu postează valoarea și nu mișcă stocul; postează doar taxa din politica TVA (4426 contra contului implicit al predatorului — biroul vamal/comisionarul — sau 4426 = 4427 la amânarea plății). MRN cules, fără numerotare. Legătura n→m cu facturile de import este evidență, doar în Draft, prin agregat. Nu este document stins: taxa se plătește ca orice taxă, fără împerechere. (86a, 86b, 86e, 86g) |
-| ASM — asamblare/dezasamblare | Transformare n→m cu linii de produs și consum. Registrele păstrează gardul valoric 46d, la scara banilor P = R. Cubul grupează pe cont în Transfer/Operare și folosește contraponderi cantitative Transformare. Absorbția Δ este numai în cub. Nu consumă un lot produs de același document. (46d, ASM-B2…B7) |
+| ASM — asamblare/dezasamblare | Transformare n→m cu linii de produs și consum. Gardul valoric e ΣP = ΣC: produsele culese contra consumului evaluat pe cub (`ASAMBLARE_NEBALANSATA`, cu ambele sume). Grupurile pe cont cu P = C intră în Transfer, restul în Operare, cu contraponderi cantitative Transformare; nu există absorbție. `DistribuieValoarea` aduce produsele la consumul evaluat de declarant pe operandul draftului (D9-D3). Nu consumă un lot produs de același document. (46d, ASM-B2…B7) |
 | RLF — retur la furnizor | Folosește lotul original; culegere pozitivă, postare cu semn negativ pe corespondența originală. (46e, 76d) |
 | RDC — retur de la client | Un document cu linii de venit și cost pe lotul original. Totalul include doar venitul; linia de cost nu are tip TVA. Rolul unei linii salvate nu se convertește prin editare. (46e, 76d) |
 | PIF — punere în funcțiune | Unitate internă → loc; linii per fișă cu `Intrare`, `Modernizare` sau `Revizuire`. Nominalizează valoarea contabilă existentă pe fișă prin Transfer, cu suport obligatoriu și fără modificarea rulajelor generale; baza fiscală se postează distinct (097). Scrie dual registrul imobilizărilor până la TR-D9 și materializează starea fișei. `Intrare` cere fișă nouă și parametri completi, cu linie sursă (linia unei FCT operate de clasă F, cu plafonul consumului) sau cu valoare culeasă și inițiale; `Modernizare`/`Revizuire` cer fișă în funcțiune. Refuzat dacă o AMO operată există într-o lună ulterioară. (87e) |
@@ -632,10 +641,9 @@ este pe rândurile lunare. (87a, 87h)
 Situația fișei, AMO/CAS și API Imo citesc aceeași intrare
 `Cub/Citiri/Imobilizari`: sume pe fișă și carte, parametri din evenimentele
 vii identificate prin cauză. Amortizarea fiscală postează în Carte=Fiscal;
-deductibilul și lunile rămân atribute istorice ale liniei AMO. Registrul
-imobilizărilor se scrie dual până la TR-D9, fără reuniune la citire.
-Invarianții refuză registrul fără fișă, fișa fără proveniență ori diferențele
-valorice față de cub. (095, 097, 102d)
+deductibilul și lunile rămân atribute istorice ale liniei AMO. Invarianții
+refuză fișa fără cauză, fără suport ori fără originea inversei. (095, 097,
+102d)
 
 Conturile nominalizate ale activului și amortizării se citesc pe set din
 cub, prin aceeași intrare pentru generatorul AMO, CAS și declarant. Politica
@@ -669,7 +677,7 @@ până la M inclusiv (luna punerii nu se amortizează), acoperite = suma
 coloanei de luni a rândurilor de amortizare până la sfârșitul lui M.
 Diferența nulă sau negativă scoate fișa din lună. Diferența mai mare decât
 unu este o RECUPERARE: fișa a intrat în evidență după luna punerii în
-funcțiune, fiindcă registrul se scrie la data înregistrării. Cota lunii este
+funcțiune, fiindcă fișa se postează la data înregistrării. Cota lunii este
 atunci suma cotelor celor n luni, calculată iterativ — pragurile
 degresivului și ale acceleratului avansează la fiecare pas, iar restul scade
 după fiecare — nu cota lunii înmulțită cu n; recuperarea nu depășește restul
@@ -783,13 +791,9 @@ distincte (SC-NIR-37). Rămân în afara lui: taxa autolichidată
 Plata autogenerată a FCT preia pe linie valoarea datorată terțului
 (`TvaService.DatoratTertului`, SC-FCT-10). (102)
 
-Totalul este **fapt scris**: motorul îl pune pe `Document.TotalStingere` la
-operare, după materializarea cubului, în aceeași tranzacție. Îl șterge la anulare
-și nu îl atinge la storno. Un tip care nu postează în cub pe profil are total 0.
-`ImperechereService.Total` și coloana „Total" din `DocumenteCuRest` citesc
-aceeași formulă din cub. `INV-CUB` (`CITIRE_PARTIDE_POLITICA`) verifică
-antetul față de cub. Câmpul este al motorului: gardianul refuză scrierea lui pe
-ușa securizată. (F27-D7, 102)
+Totalul se citește din cub: `ImperechereService.Total` și coloana „Total" din
+`DocumenteCuRest` folosesc aceeași formulă. Coloana `Document.TotalStingere`
+nu mai e scrisă și dispare la pasul 7 al TR-D9a. (F27-D7, 102, D9-D10)
 
 ### Partide deschise
 
@@ -874,9 +878,8 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   de distribuție. **TVA**: taxa se decide și se rotunjește pe document ×
   cotă, se postează per linie prin Hamilton peste |net|, pe fiecare semn
   separat; taxa dată pe facturile primite se validează cu toleranță, nu se
-  recalculează. Aceeași taxă stă pe linia documentului și în registre: 3 × 0,01
-  la 21 % ⇒ 0,01 pe o singură linie, peste tot (109; pilotul FCT măsurase
-  0,00 pe linie și în registre contra 0,01 în nucleu). Toleranța de pilot e `0,01 × liniile cu TVA` (constantă în
+  recalculează. Aceeași taxă stă pe linia documentului și pe postare: 3 × 0,01
+  la 21 % ⇒ 0,01 pe o singură linie, peste tot (109). Toleranța de pilot e `0,01 × liniile cu TVA` (constantă în
   adaptor) și REFUZĂ o taxă culeasă cu abatere mai mare (o factură a scenei
   P1 cu abatere 0,10 e refuzată, unde motorul vechi operează) — devine rând
   de politică la TR-D7. (N-D8, 090j, N-r4)
@@ -884,7 +887,7 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   parametru al citirii; snapshot-ul e lema `Sold(≤t) = Sold(≤t0) +
   Sold(t0<d≤t)`. **Stornoul** = inversul cauzat ∪ atribuit, fără schimb de
   latură, tranzacție distinctă; contrapartida unei postări atribuite
-  inversate rămâne nedefinită până la TR-D9 (N-r5). (N-D9, N-D10)
+  inversate rămâne nedefinită până la TR-D9b (N-r5). (N-D9, N-D10)
 - **Motorul**: `Declaratie` (mișcări pe coordonate rezolvate + decizii +
   ipoteze) → exact o tranzacție `Operare` (sau `Transfer` din mutări pe
   același cont) → `Contract` acceptat/refuzat, determinist, cu contorul de
@@ -945,28 +948,17 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   `Normal` 4426 = 401, `TaxareInversa` 4426 = 4427 (4427 fără `CodTva`: azi
   nu există fapt fiscal colectat pe TI), `Capitalizat` = bază + taxă pe
   ACELAȘI cont de cost (jurnalul rămâne proiecție), `Scutit`/`Neimpozabil`
-  doar bază; o singură partidă per cont de terț. NIR-ul conex rămâne în
-  registre, cu recepția deja reprezentată în cubul FCT (T-D5). Plata
+  doar bază; o singură partidă per cont de terț. NIR-ul conex postează numai
+  diferența față de recepția deja reprezentată în cubul FCT (098, 099). Plata
   autogenerată are document și postări proprii.
-- **Oracolul** (`nou/tools/ModelCheck/Nucleu/`): registrele documentului
-  transformate în cub prin portul fidel al mapării fizicii
-  (`CubDinRegistre`), normalizate DOAR prin lista închisă B-D8
-  (`Normalizari`: NIR-ul conex absorbit în tranzacția facturii, stoc +
-  contabil unificate, împerecherea ca partidă numită, repartitorul pe
-  piciorul propriu, faptul fiscal ca atribut, partenerul doar pe terț/fiscal,
-  linia nominalizată parțial) și comparate EXACT pe multiset
-  (`Comparabil`; cantitatea doar pe unități-lot, gestiunile virtuale ca
-  `null`). Egalitate exactă pe toate documentele celor trei tipuri ale
-  scenelor ModelCheck, pe ambele profiluri; singurele diferențe sunt cele
-  două cifre consemnate (N-r3, N-r4) și refuzul de toleranță.
 
-## Cubul persistat și regimul dual (TR-D7a, felia 31)
+## Cubul persistat
 
 RDC folosește `DeclarantReturClient`, activat numai pe profilul privat
 (T-D8, pasul 4). Linia fără lot inversează venitul și TVA-ul, deschizând
 partida proprie negativă; linia cu lot readuce cantitatea și valoarea
 pe lotul original, fără fapt fiscal. NTC poate compensa partida returului
-cu cea a facturii; nominalizarea directă pe factura originală rămâne TR-D9.
+cu cea a facturii; nominalizarea directă pe factura originală rămâne TR-D9b.
 Catalogul `docs/nucleu/scenarii/RDC.md` acoperă și stocul returnat deja
 consumat, anularea/reoperarea și corecția mixtă peste luna închisă.
 
@@ -975,8 +967,7 @@ Pe lotul original scade cantitatea și valoarea notei fiscale, fără
 preluarea soldului valoric la golire. Partida proprie401 are rest pozitiv;
 compensarea cu factura folosește NTC. Catalogul `scenarii/RLF.md` probează
 și reziduul−0,01 pe lot gol, reintrarea prin RDC și descărcarea ulterioară
-la soldul cubului. Eliminarea reziduului prin reevaluare rămâne T-r2/TR-D9;
-diferența de evaluare față de registre rămâne declarată prin T-r7.
+la soldul cubului. Eliminarea reziduului prin reevaluare rămâne T-r2/TR-D9b.
 
 DVI folosește `DeclarantDvi`, activat numai pe privat. Taxa este contabilă;
 baza vamală este o pereche debit/credit pe contul deductibil în
@@ -989,11 +980,8 @@ NTC. Contract: `docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md`; probe:
 fiscală; modelul pur și schema nu se schimbă.
 
 Citirile contabile cer `Carte=Contabil`, jurnalul TVA citește ambele cărți
-și numai faptele cu cod, adunând valorile semnate. `ReconciliereCub.Contabile`
-impune filtrul; SC-DVI-16 detectează lipsa lui inclusiv pe soldul cont ×
-partener. Cititorii de producție rămân pe registre până la TR-D8; intrarea
-comună pe cub rămâne T-r11. `Normalizari.Fiscal` reconstruiește explicit
-perechea bazei DVI și gestiunea taxei, cu contoare, inclusiv la taxa zero.
+și numai faptele cu cod, adunând valorile semnate. SC-DVI-16 detectează lipsa
+filtrului de carte inclusiv pe soldul cont × partener.
 
 NTC și ITV folosesc același `DeclarantNotaContabila` (T-D3, pasul 3).
 Nota păstrează conturile explicite și valoarea semnată; cantitatea este 0.
@@ -1006,7 +994,6 @@ nu se inventează partidă; pe 3xx fără lot postarea rămâne doar contabilă.
 valoarea deja nominalizată. Sursele cu nominalizări active sunt protejate
 la anulare/storno, inclusiv în intervalul dintre nominalizare și inversarea
 ei ulterioară: un dependent stornat pe 20 nu permite stornarea sursei pe 10.
-Registrele și cititorii lor rămân în regimul dual.
 
 ITV postează explicit liniile generate din `SolduriService`, fără fapte
 fiscale noi. Corecția legată verifică soldurile la `DataInregistrare`, unde
@@ -1014,10 +1001,10 @@ stornoul a redeschis sumele; închiderea obișnuită folosește `Data`.
 Validarea și citirea `Stale` folosesc aceeași regulă. Cataloagele și
 validarea independentă: `docs/nucleu/scenarii/NTC.md`, `ITV.md`.
 
-Motorul scrie `Tranzactie`/`Postare` în ACEEAȘI tranzacție de comandă în care
-scrie registrele, pentru tipurile marcate cu `PosteazaInCub`. Citirile rămân
-pe registre (TR-D8). Contractul feliei: `docs/nucleu/tr-d7a-strangler-contract.md`
-(S-D1…S-D16).
+Motorul scrie `Tranzactie`/`Postare` în tranzacția comenzii, pentru orice tip
+care declară; e singurul scriitor al faptelor. Contractul formei:
+`docs/nucleu/tr-d7a-strangler-contract.md` (S-D1…S-D16); tăierea registrelor:
+`docs/nucleu/tr-d9-taierea-contract.md` (D9-D2).
 
 ### Entitățile și forma lor fizică
 
@@ -1062,49 +1049,44 @@ Orice migrație care atinge `Postare` sau `Tranzactie` se scrie în SQL, nu se
 lasă generată: snapshot-ul EF poartă cheia simplă și FK-ul pe părinte, baza are
 cheia compusă și FK-urile per partiție. (S-r4)
 
-### Regimul dual ca dată
+### Tipul care nu declară
 
-`TipDocument.PosteazaInCub` spune dacă tipul materializează în cub. Valoarea e
-aliniată de seed ca orice rând `DinSeed`: migrarea unui tip e a PROFILULUI, nu
-a bazei (S-r6). Migrate sunt BCS, FCT, PLT, INC (felia 31), BTR (felia 32,
-pasul 1, 2026-09-21) și FCL (pasul 2, 2026-09-22), pe ambele profiluri, plus
-DSC doar pe privat (pe bugetar e tip inert, fără politici — decizia stă în
-`ContaSeeder.SeedTipuriDocument(os, profil)`). Pașii 3–5 adaugă NTC și ASM pe
-ambele profiluri, ITV/RDC/RLF/DVI numai pe privat. Restul tipurilor postează doar
-în registre. Un tip marcat a cărui clasă nu declară
-(`Document.Declarant()` întoarce `null`) e eroare de configurare: operarea
-refuză, nu tace. (S-D3)
+Orice tip operabil declară. Tipul fără declarant (BPR) sau fără politica de
+profil pe care declarantul lui o cere (`IDeclarant.PoliticaCeruta`: regulile
+de contare pentru DSC, RDC și RLF, politica de TVA pentru DVI, politica
+închiderii de TVA pentru ITV — absente pe bugetar) e refuzat la dry-run și la
+operare cu `TIP_FARA_DECLARATIE`, înaintea validării frunzei, cu sau fără
+număr cules. `TipDocument.PosteazaInCub` nu mai e citit de nimic; coloana
+dispare la pasul 7. (D9-D5)
 
-Regimul nu se stinge (X-D7 b, X-Q4). După prima tranzacție în cub a unui tip,
-trecerea lui `PosteazaInCub` pe `false` e refuzată de gardian cu
-`POSTEAZA_IN_CUB_IREVERSIBIL`, iar seed-ul nu o mai aliniază pe `false`
-(`Materializare.AreTranzactii`). Altfel documentele noi ale tipului ar scrie
-numai registrele, iar cititorii de pe cub le-ar omite tăcut. Un tip fără
-tranzacții în cub poate ieși din regim.
+O regulă de contare pe un tip al cărui declarant nu contează prin reguli
+(`IDeclarant.ConteazaPrinReguli` fals: ASM, BTR, PIF, AMO, CAS, NTC, ITV, DVI)
+sau care nu declară e refuzată la editare, pe ușa gardianului, cu
+`REGULA_CONTARE_FARA_CONSUMATOR`: politica nu descrie comportament pe care
+motorul nu-l are. (4, D9-A4)
 
 ### Materializarea, stornoul, anularea
 
 `Module/Cub/Materializare.cs` rulează din `MotorOperare`, deci pe toate ușile
 (UI, WebApi, Import1C):
 
-- **Operarea** — după registre și după împerecherea automată, înainte de
-  commit: contractul declarantului devine cel mult o tranzacție `Operare` și
+- **Operarea** — după scrierile pe document, înainte de commit: contractul declarantului devine cel mult o tranzacție `Operare` și
   cel mult una `Transfer` (cel puțin una din ele; felul mixt de mai jos, T-D2),
   datate cu `DataInregistrare`, o postare per postare a contractului. Refuzul
   declarației E refuzul operației: o singură eroare cu toate refuzurile, iar
-  tranzacția de comandă se anulează integral — nimic în cub, nimic în registre.
+  tranzacția de comandă se anulează integral — nimic în cub, nimic pe document.
   Dry-run-ul arată aceleași refuzuri, în forma `EroriDto` de azi. (S-D4)
 - **Stornoul** — o singură tranzacție de fel `Storno`: inversul exact al
   postărilor `Operare` ale documentului, al transferului lui de STOC (unități
   de fel `Lot`; transferurile pe partidă sunt ale împerecherii și le inversează
   rândul ei invers, S-D13) și al celor `Atribuit` spre ele, datat
   la data stornării, cu `PerioadaDeclarare` re-ștampilată la perioada
-  stornării. Corecția cu motivul `EroareMateriala` o re-ștampilează la perioada
-  originalului și pe postările `Storno`, ca pe rândurile de TVA. Un document
-  operat înainte ca tipul lui să fie migrat n-are tranzacție `Operare`, deci
-  stornoul lui nu atinge cubul. (S-D5)
+  stornării. La corecția cu motivul `EroareMateriala`, postările fiscale ale
+  inversei se nasc cu atribuirea corecției — perioada originalului sau, dacă e
+  depusă, regularizarea — și cu marcajul de inversă tehnică; nicio postare
+  existentă nu se rescrie. (S-D5, D9-A5)
 - **Anularea operării** șterge fizic tranzacțiile `Operare` și `Transfer` ale
-  documentului și postările lor, simetric cu ștergerea registrelor; e gardată
+  documentului și postările lor; e gardată
   de „fără împerecheri", deci orice `Transfer` al documentului e al lui. (S-D5, T-D2)
 
 ### Felul mixt: `Transfer` pe linia care nu schimbă contul (T-D2, felia 32)
@@ -1119,8 +1101,8 @@ lui 090 (a), T-r1. Fiecare capăt real al unui `Transfer` de stoc poartă `Gesti
 Rapoartele pe cont exclud Transfer (Σ per (cont, latură) = 0),
 cele pe gestiune și pe lot îl includ.
 
-- **BTR** (`DeclarantNotaTransfer`): cheia de stoc e `(Lot, Repartitor,
-  TipStoc)`, deci lotul își schimbă gestiunea și contul lui rămâne — pe modelul
+- **BTR** (`DeclarantNotaTransfer`): lotul își schimbă gestiunea și contul lui
+  rămâne — pe modelul
   de azi BTR produce NUMAI `Transfer` (T-D2.1: pe Flax 85.027 linii, toate cu
   același lot pe ambele capete, zero rânduri contabile). Contul e al lotului
   (`TipMaterial.ContImplicitId`), fără regulă de contare; refuzuri:
@@ -1188,10 +1170,6 @@ ajustarea istorică exact; corecția calculează din nou. Contractul detaliat:
   47.505 goliri sunt egale), Σ semnată +31,01 lei, |Δ| max 16,50 lei (lot cu
   preț înghețat 0), 909 din 919 linii ≤ 6 bani, pe 79.199.898,27 lei mutați.
   Nu se normalizează (T-r7).
-- **T-D4.3**: `StocService.SolduriLaData` citit „fără documentul curent" ia
-  referința strict înaintea datei (`granita = data − 1 zi`): snapshot-ul unei
-  luni închise conținea chiar ieșirea documentului datat în ultima ei zi.
-  Neutru în operarea vie; fixează artefactul de gate al feliei 31.
 
 ### Laturile documentului ca structură (T-D13, felia 32, pasul 2b)
 
@@ -1267,8 +1245,7 @@ inițializează noul atribut pe conturile cu rol comercial, inclusiv manuale;
 postările istorice rămân neschimbate.
 
 Catalog: [DEC](../nucleu/scenarii/DEC.md), inclusiv PLT 150 → DEC 100 →
-INC 50, storno/corecție după închidere și refuzuri atomice. Citirile de
-generale sunt încă pe registre, până la TR-D8. PIF/AMO/CAS au declarant și
+INC 50, storno/corecție după închidere și refuzuri atomice. PIF/AMO/CAS au declarant și
 cititor comun pe cub, conform [contractului complet](../nucleu/tr-d7c-imobilizari-contract.md).
 
 ### Împerecherea ulterioară operării = tranzacție `Transfer`
@@ -1289,7 +1266,7 @@ ACELAȘI cont și aceeași latură, deci Σ = 0 per cont × latură. Împerecher
   `PARTIDA_PROPRIE_INSUFICIENTA`. Rândul invers desface exact cât a mutat
   perechea lui, nu restul de azi al partidei.
 - **Data** tranzacției e `Imperechere.Data` a rândului, original sau invers —
-  reperul pe care registrele taie partidele, deja garantat de gardieni ca fiind
+  reperul pe care se taie partidele, deja garantat de gardieni ca fiind
   în perioadă deschisă și nu înaintea datelor de înregistrare.
 - Se scrie doar când ambele documente au tranzacție `Operare` în cub. Pe un
   cont fără `UrmarestePartide` nu există partide, deci nu există ce muta.
@@ -1445,12 +1422,9 @@ loturile deja folosite și deschiderea datată după istorie sunt refuzate.
 Intrarea păstrează analiza/valuta și verifică dimensiunile obligatorii;
 limitele intrării și ale stingerii sunt în DES-B4. (094, DES-B1…B4)
 
-Citirile — sold, proiecții, fișe, SAF-T, D394, D406 — rămân pe registre până la
-TR-D8. Tipurile nemigrate postează doar în registre; notele pe conturi de
-stoc fără lot (TR-r2) și Δ de sold 3xx (TR-r12) rămân delimitate prin
-contractele tipurilor. Deschiderea generică scrie exclusiv cubul; loturile
-ei nu sunt încă disponibile consumului prin StocService, care citește
-registrele. Portarea acestei citiri operaționale este necesară la TR-D8.
+Citirile — sold, proiecții, fișe, SAF-T, D394, D406 — sunt pe cub. Notele pe
+conturi de stoc fără lot (TR-r2) rămân delimitate prin contractele tipurilor.
+Deschiderea generică scrie cubul, iar loturile ei se consumă ca oricare altele.
 
 ## Locurile regulilor în cod
 
@@ -1479,15 +1453,10 @@ Bugetarul folosește maparea aprobată 473.01.09/408.00.00/461.01.09,
 analizelor obligatorii este refuz atomic. Stocul istoric, datoria și TVA-ul
 facturii nu se rescriu; inversarea utilizează delta existentă.
 
-Reconcilierea raportează separat în (h) numai grupurile FCT + NIR/corecții
-cu deltă, cu diferența completă inclusiv furnizorul; celelalte rămân în (a),
-iar (f) rămâne activ. `Citiri/Receptii` este intrarea comună pentru
-proveniența grupurilor din reconciliere și diagnosticul stocului. Pentru NIR acoperit, storno/anularea simplă după consum, precum și intervalul
-până la operarea cumulului corectat, pot lăsa registrul lotului negativ.
-Grupul fără cumul activ se raportează incomplet. Cubul păstrează recepția
-FCT și gardianul său de stoc. În felia TR-D8 curentă, tipurile pe cub
-folosesc gardul cantitativ comun în locul celui al registrelor; scriitorul
-vechi și diferențele istorice rămân pentru diagnosticul dual (098-r3).
+`Citiri/Receptii` este intrarea comună pentru proveniența recepțiilor conexe.
+Pentru NIR acoperit, cubul păstrează recepția pe factură și gardul ei de stoc:
+după stornarea sau anularea NIR-ului acoperit cu consum, operațiile următoare
+pe lot se judecă numai pe soldul cubului (098-r3, SC-X-27).
 Refuzul retragerii este verificat înaintea modificării tracker-ului, iar
 cel al operării înaintea numerotării.
 
@@ -1496,9 +1465,10 @@ verifică în ModelCheck (`INV-CUB`), pe faptele fiecărei scene a catalogului,
 înaintea purjei ei, invarianții pe care scrierea nu-i garantează prin
 construcție (schema garantează deja, prin `CK_Postare_FelUnitate`, unitatea și
 nașterea partidei): proveniența
-(`CITIRE_PROVENIENTA_LIPSA`), acoperirea registru ↔ cub pe linie și latură
-cât durează regimul dual, echilibrul pe tranzacție și carte, deschiderea,
-unitățile de partidă, totalul de decontare și imobilizările. Hosturile nu
+(`CITIRE_PROVENIENTA_LIPSA`), echilibrul pe tranzacție și carte, conservarea
+transferului, taxa postată = taxa liniei, unitățile de partidă, proveniența
+fișelor și explicația, inclusiv valoarea liniei = decizia ieșirii, cu semn
+(`CITIRE_EXPLICATIE_LINIE`, D9-D3). Hosturile nu
 scanează istoria la pornire; o bază care nu corespunde codului se recreează
 (102b, 102d).
 `Postari` compune interogarea fără diagnostic global per apel;
@@ -1511,8 +1481,8 @@ pe rând și membru. Fișa afișează toate conturile corespondente, fără să
 inventeze o pereche; jurnalul are identitatea postare × spațiu.
 
 Cititorul de lot folosește cheia lot/cont/produs/gestiune, cu Transfer și
-inversele lui. BCS/BTR/DSC/LDI/ASM evaluează ieșirile din soldul cubului;
-R pentru absorbția ASM rămâne separat, din registru. FIFO și pinurile DSC
+inversele lui. BCS/BTR/DSC/LDI/ASM evaluează ieșirile din soldul cubului.
+FIFO și pinurile DSC
 folosesc data înregistrării și coordonatele complete. Raportul de stoc
 arată contul, gestiunea și costul unitar din sold; etichetele lipsă nu
 elimină sumele. Snapshot-ul de stoc se scrie numai din cub pe aceeași cheie,
@@ -1570,7 +1540,6 @@ legăturii. La fel la desfacere: nominalizarea automată care nu-și mai găseș
 efectul pe partida stinsului dă `IMPERECHERE_FARA_EFECT`, iar legătura rămâne
 și rândul invers nu se scrie fără transferul lui (102-r4, X-D7 f).
 CRUD-ul direct de creare/ștergere este refuzat; se folosesc comenzile.
-Scrierea registrelor rămâne până la TR-D9.
 
 Sursa nominalizării automate se citește tot din cub, inclusiv recepția
 facturii înaintea NIR-ului. Disponibilul este limitat de fiecare dată

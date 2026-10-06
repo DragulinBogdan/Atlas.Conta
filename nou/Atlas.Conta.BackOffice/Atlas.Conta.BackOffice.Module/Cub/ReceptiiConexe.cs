@@ -222,7 +222,7 @@ public static class ReceptiiConexe {
         foreach (var p in postari) {
             var c = p.Coordonate;
             var cont = conturi[c.Cont];
-            MotorOperare.VerificaLatura(cont.Simbol, cont.DimensiuniObligatorii,
+            GardAnaliza.VerificaLatura(cont.Simbol, cont.DimensiuniObligatorii,
                 GardAnaliza.Dimensiuni(c.Partener, c.Produs, c.Analiza),
                 p.Cauza.Linie is Guid id ? angajamente.GetValueOrDefault(id) : null,
                 c.Latura.ToString(), p.Cauza.Linie?.ToString(), erori);

@@ -14,6 +14,7 @@ public sealed class DeclarantFacturaIesire : IDeclarant {
     public static readonly DeclarantFacturaIesire Instanta = new();
 
     DeclarantFacturaIesire() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);

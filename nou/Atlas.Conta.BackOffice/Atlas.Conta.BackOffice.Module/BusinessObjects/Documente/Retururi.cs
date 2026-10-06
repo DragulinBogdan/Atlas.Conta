@@ -26,7 +26,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // RLF: marfa se întoarce la furnizor pe LOTUL ORIGINAL. Laturi Gestiune →
 // Partener; stoc −q (regula +1 pe predator × linia negativă); contare
 // 3xx = 401 cu −V (stornarea achiziției) + 4426 = 401 cu −TVA (PoliticaTva).
-public class ReturFurnizor : Document, IDocumentCuIesireFiscala, IDocumentFiscalPrimit {
+public class ReturFurnizor : Document, IDocumentFiscalPrimit {
     [DevExpress.ExpressApp.DC.XafDisplayName("Exigibilitate TVA")]
     public virtual DateOnly? DataExigibilitate { get; set; }
     [DevExpress.ExpressApp.DC.XafDisplayName("Data primirii")]
@@ -59,7 +59,7 @@ public class ReturFurnizor : Document, IDocumentCuIesireFiscala, IDocumentFiscal
     public override bool CuTva() => true;
     public override bool SemnulEAlOperarii() => true;
 
-    // F18: returul care golește lotul nu preia soldul valoric rămas (IDocumentCuIesireFiscala).
+    // F18: returul care golește lotul nu preia soldul valoric rămas; valoarea e declarată din linie.
     public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
         Lot.ValoareLaPretulLotului(os, linie, Math.Abs(linie.Cantitate));
 

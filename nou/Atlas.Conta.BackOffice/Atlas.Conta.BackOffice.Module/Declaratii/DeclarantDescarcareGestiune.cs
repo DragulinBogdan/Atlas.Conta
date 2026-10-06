@@ -14,6 +14,8 @@ public sealed class DeclarantDescarcareGestiune : IDeclarant {
     public static readonly DeclarantDescarcareGestiune Instanta = new();
 
     DeclarantDescarcareGestiune() { }
+    public bool ConteazaPrinReguli => true;
+    public PoliticaProfil PoliticaCeruta => PoliticaProfil.Contare;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);

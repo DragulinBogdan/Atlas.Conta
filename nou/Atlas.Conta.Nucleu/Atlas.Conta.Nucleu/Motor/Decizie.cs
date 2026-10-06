@@ -15,6 +15,3 @@ public sealed record ValoareDeclarata(Guid Linie, Unitate Unitate, decimal Canti
 public sealed record PartidaDeschisa(Guid Linie, Unitate Unitate) : Decizie;
 
 public sealed record ContRezolvat(Guid Linie, Guid Cont, string Sursa) : Decizie;
-
-public sealed record AbsorbtieEvaluare(Guid Document, Guid Linie, Guid ContSursa,
-    decimal R, decimal C, decimal P, decimal Delta) : Decizie;

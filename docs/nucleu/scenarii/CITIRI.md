@@ -101,13 +101,13 @@ nu prin interogarea invariantului.
 
 | ID | Scenariu | Așteptare | Stare |
 |---|---|---|---|
-| SC-CIT-103 | FCT 4 × 25 cu recepție conexă, de trei ori: constatat 4, constatat 3, constatat 4 plus un lot nou de 1; recepția cu 3 stornată; recepția cu 4 corectată la 2 | pe lotul sursei, registrul grupului ține 4, 3 și 4, iar cubul 4 pe factură cu 0, −1 și 0 pe recepție; lotul adăugat are 1 în registru și 1 pe recepție; după storno registrul e 0 și cubul rămâne 4 pe factură, fără cumul activ; după corecție registrul e 4 − 4 + 2, iar cubul 4 pe factură și −2 pe corecție; acoperirea trece în fiecare stare | verificat pe ambele profiluri |
-| SC-CIT-104 | aceleași fapte, cu trei alterări în tranzacție anulată: cantitatea recepției de pe factură pusă pe zero, cantitatea deltei pusă pe zero, `SursaReceptieiId` ștearsă | `CITIRE_ISTORIC_STOC_INCOMPLET` de fiecare dată | verificat pe ambele profiluri |
-| SC-CIT-105 | BTR 4 din lotul 10 × 10 | −4 pe sursă și +4 pe destinație, în registru și în cub; cu cantitatea unui capăt pusă pe zero, pe rând, `CITIRE_ISTORIC_STOC_INCOMPLET` | verificat pe ambele profiluri |
+| SC-CIT-103 | FCT 4 × 25 cu recepție conexă, de trei ori: constatat 4, constatat 3, constatat 4 plus un lot nou de 1; recepția cu 3 stornată; recepția cu 4 corectată la 2 | pe lotul sursei cubul ține 4 pe factură cu 0, −1 și 0 pe recepție; lotul adăugat are 1 pe recepție; după storno cubul rămâne 4 pe factură; după corecție, 4 pe factură și −2 pe corecție. Comparația cu registrul grupului a ieșit odată cu registrele (TR-D9a, pasul 6) | verificat pe ambele profiluri |
+| SC-CIT-104 | aceleași fapte, cu trei alterări în tranzacție anulată: cantitatea recepției de pe factură pusă pe zero, cantitatea deltei pusă pe zero, `SursaReceptieiId` ștearsă | fără obiect după tăiere: mutanții erau ai acoperirii registru → cub (`CITIRE_ISTORIC_STOC_INCOMPLET`) | scos (TR-D9a, pasul 6) |
+| SC-CIT-105 | BTR 4 din lotul 10 × 10 | −4 pe sursă și +4 pe destinație în cub; cu cantitatea unui capăt pusă pe zero, pe rând, `CITIRE_TRANSFER_NECONSERVAT` | verificat pe ambele profiluri |
 | SC-CIT-106 | ASM mixt stornat (faptele SC-CIT-102) | 8 contraponderi Transformare (4 linii și inversele lor); zero pe fiecare dintre cele șapte intrări comune | verificat pe ambele profiluri |
 | SC-CIT-107 | BTR stornat; plățile împerecheate, una desfăcută; ASM mixt stornat | `RegistruJurnal` și `FisaCont` nu listează nicio postare `Transfer` și nicio inversă a ei; `Loturi.Postari` le întoarce cu felul fiecăreia (2 `Transfer` și 2 `Storno`, în ambele scene), `Partide.Postari` la fel (6 `Transfer`) | verificat pe ambele profiluri |
 | SC-CIT-108 | plată nominalizată automat pe factură; nominalizarea mutată în cub pe altă partidă, apoi readusă | ștergerea și desfacerea legăturii dau `IMPERECHERE_FARA_EFECT`; legătura rămâne, rândul invers nu se scrie, cubul plății e neschimbat | verificat pe ambele profiluri |
-| SC-CIT-109 | FCT cu tranzacții în cub, CAS fără; pe privat, seed-ul profilului bugetar rulat nesalvat după un RLF operat | `PosteazaInCub = false` pe FCT dă `POSTEAZA_IN_CUB_IREVERSIBIL`, pe CAS trece; seed-ul lasă RLF în cub și scoate ITV | verificat (gardianul pe ambele profiluri, seed-ul pe privat) |
+| SC-CIT-109 | FCT cu tranzacții în cub, CAS fără; pe privat, seed-ul profilului bugetar rulat nesalvat după un RLF operat | fără obiect după tăiere: regimul `PosteazaInCub` nu mai există (D9-D5) | scos (TR-D9a, pasul 6) |
 
 `Imobilizari.PozitiiFaraFisa` exclude acum contraponderile ASM, ca celelalte
 intrări. Ramurile fișei fără origine și fără suport (097-r1) au mutanții
@@ -315,7 +315,7 @@ jurnalului. Soft-delete-ul unei note de registru devine anularea comenzii.
 
 | ID | Scenariu | Așteptare |
 |---|---|---|
-| SC-CIT-23 | Invarianții pe baza completă și apoi eliminarea controlată a postărilor unei note, în tranzacție anulată | baza completă trece; nota fără postări refuză cu CITIRE_ISTORIC_INCOMPLET (acoperirea registru ↔ cub cât durează regimul dual) |
+| SC-CIT-23 | Invarianții pe baza completă și apoi eliminarea controlată a postărilor unei note, în tranzacție anulată | baza completă trece. Mutantul notei fără postări a ieșit odată cu acoperirea registru ↔ cub (TR-D9a, pasul 6) |
 | SC-CIT-24 | — | depășit de 102: hosturile nu verifică la pornire, snapshot-ul se scrie numai din cub |
 
 Snapshot-urile contabile se folosesc în ObjectSpace-urile de sistem.
@@ -350,17 +350,18 @@ nu reconstruiește vechea dimensiune Repartitor. Pe 446 fără urmărire,
 fișa nefiltrată are C 210/D 210 și sold zero; cea filtrată pe biroul vamal
 este goală. Acoperirea bugetară a partidelor așteaptă alegerea D8-B6.
 
-SC-CIT-34: eliminarea ambelor postări ale unei singure linii NTC lasă
-tranzacția echilibrată, dar invarianții o refuză prin acoperirea pe linie/latură.
-Alterarea debitului cu 1 păstrează prezența liniilor, dar refuză conservarea
-pe tranzacție/carte. Ambele alterări sunt în tranzacții cu rollback.
+SC-CIT-34: alterarea debitului cu 1 refuză conservarea pe tranzacție/carte,
+în tranzacție cu rollback. Eliminarea ambelor postări ale unei singure linii
+NTC lasă tranzacția echilibrată și nu mai e văzută de niciun invariant:
+acoperirea pe linie/latură era a registrelor și a ieșit odată cu ele
+(TR-D9a, pasul 6; limită consemnată).
 
 ### Evaluarea operațională a loturilor — în lucru
 
 | ID | Scenariu | Așteptare |
 |---|---|---|
 | SC-CIT-35 | Recepție 3/10, trei consumuri succesive de câte 1 | cub: ieșiri 3,33 + 3,34 + 3,33; lot final 0/0; evaluarea nu reia soldul registrului vechi |
-| SC-CIT-36 | Deschidere numai în cub, lot 4/40, consum 2 și storno | consum 20; disponibil 2/20, apoi 4/40; fără recepție artificială în registru |
+| SC-CIT-36 | Deschidere numai în cub, lot 4/40, consum 2 și storno | consum 20; disponibil 2/20, apoi 4/40 |
 | SC-CIT-37 | Același lot mutat între gestiuni; consum și inversări retroactive | soldurile sunt verificate pe lot/cont/produs/gestiune, în fiecare zi; retragerea intrării cu consum dependent refuză atomic |
 
 În regimul dual, ASM păstrează separat soldul registrului pentru R și
@@ -487,9 +488,10 @@ SC-CIT-61: stingerea retroactivă nu poate consuma un sold redevenit disponibil
 numai după desfacerea ulterioară: la fiecare dată deja scrisă, restul ambelor
 partide rămâne în sensul său. Refuz înaintea materializării.
 
-Completare SC-CIT-43: contul devine manual, fără urmărire, iar factura
-nu are unități: invarianții refuză `CITIRE_PARTIDE_POLITICA`, distinct
-de cazul cu urmărire activă și unități lipsă. SC-CIT-58 probează ambiguitatea
+Completare SC-CIT-43: cazul contului devenit manual, fără urmărire, cu
+factura fără unități, era refuzat de `CITIRE_PARTIDE_POLITICA`; invariantul
+compara totalul din antet cu partidele și a ieșit odată cu el (TR-D9a, D9-A6
+I8). Rămâne cazul cu urmărire activă și unități lipsă. SC-CIT-58 probează ambiguitatea
 în funcția pură; limita 40 din factura 40 + 60 trece prin documente reale.
 NTC bugetar nu culege toate analizele cerute de 404, deci nu este folosit
 ca fixture artificial pentru această ramură.
@@ -513,10 +515,9 @@ cer nota de compensare, conform 101(b); F19-D16 probează această limită.
 SC-CIT-64: RDC fără factură de nominalizat, venit stornat 100 + TVA 21,
 cost revenit 30: totalul documentului rămâne −121, partida este datorie
 121; raportul și lista de datorii o includ cu 121, fără costul de 30.
-SC-CIT-65: gardul de acoperire acceptă factura/returul cu postări de cost
-fără partide; verifică acoperirea totalului de decontare prin partidele
-Operare. Totalul antetului este numai martor de diagnostic, niciodată sursă
-a restului. O politică manuală fără partide rămâne refuzată (SC-CIT-43).
+SC-CIT-65: fără obiect după tăiere. Proba compara totalul scris pe antet cu
+partidele cubului (`CITIRE_PARTIDE_POLITICA`); totalul nu mai e scris, iar
+restul și totalul se citesc numai din postări (TR-D9a, D9-D10, D9-A6 I8).
 SC-CIT-62, precizare: soldul efectiv citit la data plății rămâne 121;
 disponibilul pe cont este separat, 61 după rezervarea stingerii viitoare 60.
 

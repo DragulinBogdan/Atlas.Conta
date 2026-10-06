@@ -8,6 +8,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 public sealed class DeclarantDiferenteInventar : IDeclarant {
     public static readonly DeclarantDiferenteInventar Instanta = new();
     DeclarantDiferenteInventar() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);

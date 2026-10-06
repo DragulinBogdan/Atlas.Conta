@@ -48,12 +48,38 @@ public static class GardAnaliza {
             void Latura(N.Capat capat, string latura, Guid? alDocumentului) {
                 if (capat.Carte != N.Carte.Contabil || !conturi.TryGetValue(capat.Cont, out var cont))
                     return;
-                MotorOperare.VerificaLatura(cont.Simbol, cont.Flags,
+                VerificaLatura(cont.Simbol, cont.Flags,
                     Dimensiuni(capat.Partener ?? capat.Gestiune ?? alDocumentului, capat.Produs, capat.Analiza),
                     linie.Angajament, latura, linie.Denumire, lipsuri);
             }
         }
         return [.. lipsuri.Distinct()];
+    }
+
+    // 15: angajamentul liniei ține loc de cod economic.
+    internal static void VerificaLatura(string simbol, DimensiuneFlags flags, Dimensiuni dims,
+        Guid? angajamentId, string latura, string denumireLinie, ICollection<string> lipsuri) {
+        if (flags == DimensiuneFlags.Niciuna)
+            return;
+        var lipsa = new List<string>();
+        if (flags.HasFlag(DimensiuneFlags.Repartitor) && dims.RepartitorId == null)
+            lipsa.Add("Repartitor");
+        if (flags.HasFlag(DimensiuneFlags.Material) && dims.MaterialId == null)
+            lipsa.Add("Material");
+        if (flags.HasFlag(DimensiuneFlags.CodFunctional) && dims.CodFunctionalId == null)
+            lipsa.Add("Cod funcțional");
+        if (flags.HasFlag(DimensiuneFlags.CodEconomic) && dims.CodEconomicId == null && angajamentId == null)
+            lipsa.Add("Cod economic");
+        if (flags.HasFlag(DimensiuneFlags.SursaFinantare) && dims.SursaFinantareId == null)
+            lipsa.Add("Sursă de finanțare");
+        if (flags.HasFlag(DimensiuneFlags.Unitate) && dims.UnitateId == null)
+            lipsa.Add("Unitate");
+        if (flags.HasFlag(DimensiuneFlags.Proiect) && dims.ProiectId == null)
+            lipsa.Add("Proiect");
+        if (flags.HasFlag(DimensiuneFlags.CentruCost) && dims.CentruCostId == null)
+            lipsa.Add("Centru de cost");
+        if (lipsa.Count > 0)
+            lipsuri.Add($"Contul {simbol} ({latura}, linia cu {denumireLinie}) cere: {string.Join(", ", lipsa)}.");
     }
 
     /// <summary>Refuză atomic documentul ale cărui mișcări lasă o analiză obligatorie necompletată.</summary>

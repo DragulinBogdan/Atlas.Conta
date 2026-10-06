@@ -71,7 +71,7 @@ Rândurile noi sunt verificate pe ambele profiluri; execuțiile sunt raportate m
 | SC-NIR-28 | Corecție peste închidere: 4/100 → 3/75 în ianuarie → 2/50 în februarie | ianuarie 3/75; februarie 2/50; proveniența FCT păstrată fără Autogenerat |
 | SC-NIR-29 | FCT 4/121 cu TVA capitalizat 21 → constatat 3 bucăți | stoc 90,75; delta valorică −30,25; zero fapte TVA noi pe NIR |
 | SC-NIR-30 | Conex nemodificat, apoi politica eliminată; FCT de avans | primul are delta zero cu proveniență; avansul nu produce recepție absorbită |
-| SC-NIR-31 | Reconciliere grup cu minus 25 și grup separat nemodificat | numai grupul modificat raportat separat, inclusiv diferența F de 25; grupa nemodificată rămâne în (a); partidele și inversele auditate |
+| SC-NIR-31 | Fără obiect după tăiere: proba era a reconcilierii registre ↔ cub pe grupul cu deltă | scos (TR-D9a, pasul 6); diferența de 25 pe furnizor rămâne probată de rândurile de diferență ale catalogului |
 
 Recensământ 098-r2: `recensamant-nir-delta.sql`, read-only pe Flax.Api și
 Flax.TrD7b: fiecare cu 17.814 NIR/FCT, zero laturi diferite, zero diferențe

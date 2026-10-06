@@ -20,6 +20,7 @@ public static class Explicatii {
     public const string Referinta = "CITIRE_EXPLICATIE_REFERINTA";
     public const string Iesire = "CITIRE_EXPLICATIE_IESIRE";
     public const string Evaluare = "CITIRE_EXPLICATIE_EVALUARE";
+    public const string Linie = "CITIRE_EXPLICATIE_LINIE";
     public const string Mecanism = "CITIRE_EXPLICATIE_MECANISM";
     public const string Stingere = "CITIRE_EXPLICATIE_STINGERE";
     public const string Storno = "CITIRE_EXPLICATIE_STORNO";
@@ -95,6 +96,9 @@ public static class Explicatii {
         var documente = purtatori.Select(p => p.Document).Distinct().ToList();
         var declaranti = os.GetObjectsQuery<Document>().Where(d => documente.Contains(d.ID)).ToList()
             .ToDictionary(d => d.ID, d => d.Declarant());
+        var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(l => documente.Contains(l.DocumentId))
+            .Select(l => new { l.ID, l.Cantitate, l.Valoare }).ToList()
+            .ToDictionary(l => l.ID, l => (l.Cantitate, l.Valoare));
 
         var rotunjire = new N.Rotunjire(Scara.ConventieBani);
         foreach (var purtator in purtatori) {
@@ -126,6 +130,14 @@ public static class Explicatii {
                 if (inainte is null || !Evaluata(inainte, iesire, rotunjire))
                     throw new OperareException($"{Evaluare}: tranzacția {purtator.ID}, linia {iesire.Linie}: valoarea "
                         + $"{iesire.Valoare} nu rezultă din soldul citit al unității {iesire.Unitate.Id}.");
+
+            // D9-D3 (a): linia poartă valoarea deciziei, cu semnul cantității ei.
+            foreach (var peLinie in explicatie.Decizii.OfType<N.ValoareIesire>().GroupBy(i => i.Linie)) {
+                var decisa = peLinie.Sum(i => i.Valoare);
+                if (!linii.TryGetValue(peLinie.Key, out var linie) || linie.Valoare != Math.Sign(linie.Cantitate) * decisa)
+                    throw new OperareException($"{Linie}: tranzacția {purtator.ID}, linia {peLinie.Key}: valoarea liniei "
+                        + $"({(linii.ContainsKey(peLinie.Key) ? linie.Valoare : "absentă")}) nu e valoarea decisă a ieșirii ({decisa}).");
+            }
 
             foreach (var pePartida in explicatie.Decizii.OfType<N.AlocareFifo>().GroupBy(a => (a.Unitate.Id, a.Unitate.Cont))) {
                 var citit = explicatie.SoldCitit(pePartida.First().Unitate);

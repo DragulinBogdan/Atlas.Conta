@@ -18,8 +18,7 @@ public sealed record LinieExplicata(
     IReadOnlyList<IesireExplicata> Iesiri,
     IReadOnlyList<StingereExplicata> Stingeri,
     IReadOnlyList<N.ContRezolvat> Conturi,
-    IReadOnlyList<N.PartidaDeschisa> PartideDeschise,
-    IReadOnlyList<N.AbsorbtieEvaluare> Absorbtii);
+    IReadOnlyList<N.PartidaDeschisa> PartideDeschise);
 
 /// <summary>Explicația unui contract acceptat (090 j): deciziile și ipotezele lui, în ordinea declarației.</summary>
 public sealed record Explicatie(
@@ -73,8 +72,7 @@ public sealed record Explicatie(
                 }).OfType<IesireExplicata>()],
                 [.. ale.OfType<N.AlocareFifo>().Select(a => new StingereExplicata(a.Unitate, a.Masura, SoldCitit(a.Unitate)))],
                 [.. ale.OfType<N.ContRezolvat>()],
-                [.. ale.OfType<N.PartidaDeschisa>()],
-                [.. ale.OfType<N.AbsorbtieEvaluare>()]);
+                [.. ale.OfType<N.PartidaDeschisa>()]);
         })];
     }
 
@@ -84,7 +82,6 @@ public sealed record Explicatie(
         N.ValoareDeclarata d => d.Linie,
         N.PartidaDeschisa d => d.Linie,
         N.ContRezolvat d => d.Linie,
-        N.AbsorbtieEvaluare d => d.Linie,
         _ => null,
     };
 
@@ -151,15 +148,6 @@ public sealed record Explicatie(
                 w.WriteString("cont", d.Cont);
                 w.WriteString("sursa", d.Sursa);
                 break;
-            case N.AbsorbtieEvaluare d:
-                w.WriteString("document", d.Document);
-                w.WriteString("linie", d.Linie);
-                w.WriteString("contSursa", d.ContSursa);
-                w.WriteNumber("r", d.R);
-                w.WriteNumber("c", d.C);
-                w.WriteNumber("p", d.P);
-                w.WriteNumber("delta", d.Delta);
-                break;
             default:
                 throw new InvalidOperationException($"Decizia {decizie.GetType().Name} nu are formă persistată.");
         }
@@ -175,9 +163,6 @@ public sealed record Explicatie(
         nameof(N.PartidaDeschisa) => new N.PartidaDeschisa(e.GetProperty("linie").GetGuid(), Unitatea(e)),
         nameof(N.ContRezolvat) => new N.ContRezolvat(e.GetProperty("linie").GetGuid(), e.GetProperty("cont").GetGuid(),
             e.GetProperty("sursa").GetString()!),
-        nameof(N.AbsorbtieEvaluare) => new N.AbsorbtieEvaluare(e.GetProperty("document").GetGuid(),
-            e.GetProperty("linie").GetGuid(), e.GetProperty("contSursa").GetGuid(), e.GetProperty("r").GetDecimal(),
-            e.GetProperty("c").GetDecimal(), e.GetProperty("p").GetDecimal(), e.GetProperty("delta").GetDecimal()),
         var fel => throw new InvalidOperationException($"Decizie necunoscută în explicație: {fel}."),
     };
 

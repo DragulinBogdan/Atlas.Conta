@@ -8,6 +8,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 public sealed class DeclarantDecont : IDeclarant {
     public static readonly DeclarantDecont Instanta = new();
     DeclarantDecont() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         var miscari = new List<N.Miscare>();

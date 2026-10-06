@@ -9,6 +9,8 @@ public sealed class DeclarantReturFurnizor : IDeclarant {
     public static readonly DeclarantReturFurnizor Instanta = new();
     public string SursaValoareDeclarata => SurseValoare.Linie;
     DeclarantReturFurnizor() { }
+    public bool ConteazaPrinReguli => true;
+    public PoliticaProfil PoliticaCeruta => PoliticaProfil.Contare;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);

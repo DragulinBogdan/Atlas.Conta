@@ -1,20 +1,33 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-06.** [Index](README.md)
+**Actualizat: 2026-10-07.** [Index](README.md)
 
-TR-D9a, pasul 2 (regim dual): gardul analizei obligatorii pe mișcările
+TR-D9a, pasul 6 (tăierea, 2026-10-07): motorul nu mai scrie, nu mai citește și
+nu mai ramifică pe registre și pe regim; oracolul registre → cub a ieșit din
+ModelCheck (`CubDinRegistre`, `Normalizari`, `Comparabil`, `ReconciliereCub`,
+`GatePeBaza`, `DiagnosticValoriStoc`, modurile `--reconciliere-cub` și
+`--declaratie-pe-baza`, `STR-RECONCILIERE`, probele `NUC-ORACOL-*`,
+`STR-NEMIGRAT`, `STR-TRANSFER-3`), odată cu acoperirile registru → cub din
+`INV-CUB` și cu mutanții lor. Fiecare aserție care citea un registru are
+verdict nominal (`run-nucleu/tr-d9a/pas6/lucru.tsv`): formă, oracol, regulă
+re-țintită, comportament declarat (D9-D1: 1, 2, 4, 6), repartitor (17, de
+rescris la pasul 6b) sau montaj mutat pe cub. Validare: integrala **3.481
+bugetar / 4.763 privat OK**, zero FAIL (linia de bază duală 3.554 / 4.862);
+nucleu 180/180; `--probe-sursa` 10/10; `verifica:drift` zero după regenerare
+(a ieșit `ExplicatieAbsorbtieDto`). Un reziduu lăsat de o cădere în scena F27
+nu e curățat de integrala următoare (PER/SOL rulează înainte și pică pe
+precondiții globale); se purjează prin funcțiile celor două scene.
+
+TR-D9a, pasul 2 (2026-10-05): gardul analizei obligatorii pe mișcările
 contractului are proba lui directă, `GARD-ANALIZA` (`ProbeGardAnaliza`, pe
 funcția pură, fără bază), și proba prin comandă SC-FCT-12…14. Scena
-`ScenariiTaiere` (codul `X`) fixează numeric comportamentul dinaintea
-tăierii: tipul care nu declară (SC-X-25), regula de contare fără consumator
-(SC-X-26), registrul negativ după stornarea recepției (SC-X-27). Scenele BCS,
-ASM, RLF, RDC și DESCHIDERE asertează acum și valoarea LINIILOR, nu numai
-postările. Rândurile cu două coloane, „azi" și „după tăiere", se verifică azi
-pe prima; a doua intră la pasul 6. Validare: integrala **3.527 bugetar /
-4.835 privat OK**, zero FAIL; nucleu 180/180; `run-nucleu/tr-d9a/pas2/`.
-O rulare-diagnostic care dezactivează un gard și cade lasă documente în baza
-bugetară; scena e2e își curăță singură reziduul la următoarea integrală, dar
-`--scenarii` nu, deci după o cădere se rulează întâi integrala.
+`ScenariiTaiere` (codul `X`) fixează numeric tipul care nu declară (SC-X-25),
+regula de contare fără consumator (SC-X-26) și lotul după stornarea recepției
+(SC-X-27). Scenele BCS, ASM, RLF, RDC și DESCHIDERE asertează și valoarea
+LINIILOR, nu numai postările. O rulare-diagnostic care dezactivează un gard și
+cade lasă documente în baza bugetară; scena e2e își curăță singură reziduul la
+următoarea integrală, dar `--scenarii` nu, deci după o cădere se rulează întâi
+integrala.
 
 TR-D8 în lucru peste `c10d0fe`: rapoartele contabile, snapshot-ul contabil,
 evaluarea operațională pe lot, pin/FIFO DSC, raportul de stoc și
@@ -164,34 +177,25 @@ arborele sintactic al sursei (`SursaProductie.cs`) și numără trei feluri de
 utilizare: mențiunea tipului, inclusiv prin alias `using`; numele tabelei
 într-un literal; apelul unui purtător. Purtător este orice membru al cărui tip
 declarat conține o colecție de rânduri de registru, plus lista declarată
-`Purtatori` pentru rezultatele netipizate: soldurile din `StocService`,
-`Operand.SolduriLoturiRegistru` și `Partide.NominalizataLibera`. `nameof` și
-definiția tipului nu contează. Proba pică și pe o intrare rămasă fără
-utilizare, iar șase mutanți îi probează detecția. În `Proiectii/`, `Api/`,
-`Culegere/`, `Saft/`, `Declaratii/` și WebApi cele patru registre apar numai
-ca cheie de autorizare; singura excepție numită este absorbția ASM-B6 din
-`DeclarantAsamblare`.
+`Purtatori` pentru rezultatele netipizate (`Partide.NominalizataLibera`).
+`nameof` și definiția tipului nu contează. Proba pică și pe o intrare rămasă
+fără utilizare, iar mutanții îi probează detecția. În `Motor/`, `Cub/`,
+`Declaratii/`, `Proiectii/`, `Api/`, `Culegere/`, `Saft/` și WebApi cele patru
+registre nu mai apar deloc.
 
-Lista nominală (71 de intrări, 87 de utilizări fișier × membru × registru):
+Lista nominală (40 de intrări; TR-D9a pasul 6, 2026-10-07):
 
 | Clasa | Membrii | Rolul |
 |---|---|---|
-| maparea EF | `BackOfficeEFCoreDbContext`: `OnModelCreating` și cele cinci `DbSet` | definiția și maparea |
-| 1. scriitor dual | `MotorOperare`: `Opereaza`, `AnuleazaOperarea`, `Storneaza` | scriu, șterg și inversează rândurile din `RegistruContabil`, `RegistruStoc`, `RegistruTva` |
-| | `CorectieService.Corecteaza` | reatribuie perioada inversei în `RegistruTva` |
-| | `GardianEditare.Verifica` | refuză scrierea celor patru registre pe ușile securizate (14) |
-| | `StocService`: `MiscariRegistru`, `SolduriLaData`, `AplicaValoareIesire`, `VerificaSoldIntermediar` | valoarea ieșirii și garda de sold ale rândului de registru |
-| | `StocService`: `Sold`, `AlocaFifoTolerant`, `AlocaFifo` | fără apelant de producție; oracol al probelor |
-| | `Fapte.SolduriLoturiRegistru`, `Fapte.Operand`, `DeclarantAsamblare.Declara` | absorbția Δ a ASM față de soldul registrului (ASM-B6) |
-| | `PunereInFunctiune`, `IesireImobilizare`, `AmortizareLunara`: `MaterializeazaRegistrul`, `EliminaRegistrul`, `StorneazaRegistrul`; `PunereInFunctiune.RanduriProprii`, `Inverseaza` | scriu `RegistruImobilizari` |
-| 2. martor | `Invarianti.Verifica`, `Loturi.VerificaAcoperire`, `Imobilizari.VerificaAcoperire` | acoperirea cubului față de registru (`INV-CUB`, X-D7 a, 097-r1) |
-| | `Materializare.Deschide` | urma lotului în `RegistruStoc` |
-| 3. evidență XAF | `ContaUiBaseline`: `AscundeFkuriBrute`, `Imobilizari` | listele registrelor |
-| autorizare | `PerioadeController.TipuriInsumate` | `Imperechere` între tipurile însumate de verificarea închiderii (80e); cifrele din cub le păzește citirea completă pe `Postare`, nu un tip de registru (D9-D9) |
-| legătură | `ImperechereService` (8), `GardianEditare` (4), `MotorOperare.MotivImperecheri`, `Partide.NominalizataLibera`, `Materializare.Imperecheaza`, `ImperechereApply` (3), `ImperechereController` (5), `ImperecheriController` (3) | `Imperechere` este legătura explicită, nu registru; restul și candidații vin din `Partide` |
+| maparea EF (6) | `BackOfficeEFCoreDbContext`: `OnModelCreating` și cele cinci `DbSet` | definiția și maparea; cele patru registre dispar la pasul 7 |
+| gardian (1) | `GardianEditare.Verifica` | refuză scrierea celor patru registre pe ușile securizate (14); cade cu entitățile |
+| evidență XAF (2) | `ContaUiBaseline`: `AscundeFkuriBrute`, `Imobilizari` | listele vechi ale registrelor, goale pentru documentele noi; dispar la pasul 7 |
+| autorizare (1) | `PerioadeController.TipuriInsumate` | `Imperechere` între tipurile însumate de verificarea închiderii (80e); cifrele din cub le păzește citirea completă pe `Postare` (D9-D9) |
+| legătură (30) | `ImperechereService`, `GardianEditare`, `MotorOperare.MotivImperecheri`, `Partide.NominalizataLibera`, `Materializare.Imperecheaza`, `ImperechereApply`, `ImperechereController`, `ImperecheriController` | `Imperechere` este legătura explicită, nu registru; rămâne |
 
-Clasele 1–3 sunt ale contractului X-D2. Maparea, autorizarea și legătura le-a
-cerut prima rulare. Clasa 1 și evidența XAF cad la TR-D9; `Imperechere` rămâne.
+Nu mai există scriitor dual și nici martor: clasele au ieșit din enum odată
+cu codul lor (D9-D15, pasul 6). Maparea, gardianul și evidența XAF dispar
+la pasul 7, când se activează proba numelor interzise (D9-D7 b).
 Prima rulare a găsit un singur defect: supraîncărcarea
 `TvaProiectii.IntreLuni(IQueryable<RegistruTva>)`, fără apelant de producție, a
 ieșit din `Proiectii/`; oracolul pe registrul fiscal stă acum în ModelCheck.
@@ -627,7 +631,7 @@ SQL-ul generat al cititorilor de partide și al snapshot-ului. (D9-D10 (b))
 | Entitățile sau migrațiile cubului (`Postare`, `Tranzactie`) | ModelCheck pe ambele profiluri: probele `STR-SCHEMA-*` (partiționarea LIST, cheia `(Spatiu, ID)`, setul ÎNCHIS de FK-uri per partiție, indexii, absența timbrelor XAF); migrația se scrie în SQL, nu se lasă generată (S-D2, S-r4) |
 | Contractul laturilor (`Document.Laturi()`, T-D13) | ModelCheck pe ambele profiluri, ultima scenă (`VerificaLaturi`): `STR-LATURI-CONTRACT` (fiecare `TipDocument` din seed → clasa → contract cu părți nevide; metoda e abstractă, deci și compilatorul o cere), `STR-LATURI-REFUZ` (latura de partea greșită refuzată pe ușa declarației și pe ușa entității cu ACEEAȘI linie `COD: mesaj`; calitatea lipsă numită; un tip fără declarant refuzat pe ușa entității), `STR-LATURA` (PLT inversată = doar `PREDATOR_NEPOTRIVIT`, înaintea declarantului). Probele de laturi ale tipurilor asertează CODUL, nu textul vechi. Pe date reale: recensământul laturilor pe clona Flax (contract T-D13); după 091 clona e sursă de recensământ, nu gate |
 | Materializare, declarant al unui tip migrat, împerecherea ca `Transfer` | ModelCheck pe ambele profiluri: probele `STR-*` pe scenele BCS, Trezorerie și FCT — operare, roundtrip, storno, anulare, refuz, configurație, poziție, transfer, latură, corecție, reconciliere — cu comutarea locală a regimului (`ProbeCub.Migrat`/`Nemigrat`/`CuToleranta`, cu restaurare) și purja rândurilor de cub ale documentelor scenei (S-D8) |
-| Tip trecut pe `PosteazaInCub` | fișierul tipului din `docs/nucleu/scenarii/` complet și verde pe ambele profiluri (în lucru: `--scenarii <TIP>`; la commit: suita integrală): ciclul 1–8 (operare, linii multiple, storno în perioadă și peste graniță, anulare, corecție în perioadă închisă, stingere, citiri) + cazurile-limită aplicabile + lanțurile `SC-X-*` care îl ating; așteptările scrise de mână din regula contabilă, nu din registre sau oracol (091 (a)–(c)). `--declaratie-pe-baza` și `--reconciliere-cub` rămân unelte de diagnostic pentru migrare, nu gate (S-D9 amendat de 091) |
+| Tip care declară (orice tip operabil) | fișierul tipului din `docs/nucleu/scenarii/` complet și verde pe ambele profiluri (în lucru: `--scenarii <TIP>`; la commit: suita integrală): ciclul 1–8 (operare, linii multiple, storno în perioadă și peste graniță, anulare, corecție în perioadă închisă, stingere, citiri) + cazurile-limită aplicabile + lanțurile `SC-X-*` care îl ating; așteptările scrise de mână din regula contabilă, nu din registre sau oracol (091 (a)–(c)). `--declaratie-pe-baza` și `--reconciliere-cub` rămân unelte de diagnostic pentru migrare, nu gate (S-D9 amendat de 091) |
 | Documentație | Concordanță cu implementarea, link-uri locale și diff |
 
 ModelCheck verifică modelul și execută scenarii de integrare, inclusiv probe
@@ -676,48 +680,19 @@ vechi); redirectarea `*>` din PowerShell scrie log-ul UTF-16 — rețeta
 `run-nucleu/tr-d6b/pas4-final/run.sh` (bash) scrie UTF-8 și numără
 `OK`/`FAIL`. (TR-D6b)
 
-Diagnosticul reconcilierii cubului are două unelte, ambele în ModelCheck și
-ambele ieșind înainte de bootstrap: (S-D9)
-
-- `ModelCheck --declaratie-pe-baza <baza> <COD…> [--raport <director>]` —
-  READ-ONLY, în loturi de 200 de documente cu ObjectSpace nou per lot:
-  contractul declarantului contra oracolul registrelor normalizate, pe fiecare
-  document operat al tipurilor cerute. Raportul dă, per tip: egale, refuzate pe
-  cod cu id-uri exemplu, diferite pe fel de reziduu, excepțiile DECLARATE ale
-  oracolului, histograma abaterii taxei culese și, pe tipurile de trezorerie,
-  transferurile scrise, cele plafonate la restul partidei și cele sărite.
-- `ModelCheck --reconciliere-cub <baza>` — SQL pe set, toleranță 0, pe
-  tipurile cu `PosteazaInCub`: (a) Σ valoare per grup × cont × latură × lună,
-  (b) Σ cantitate per lot × lună pe spațiul Stoc, din `Operare` ⊕ transferul
-  de stoc (T-D2), (c) TVA per tip × sens × rol × perioadă, (d) Σ D = Σ C per
-  carte în fiecare tranzacție, (e) per document operat al unui tip migrat cel
-  mult o `Operare`, cel mult un `Transfer` de stoc (postări în spațiul Stoc) și
-  cel puțin una din ele, și niciuna dintre cele două pe celelalte (T-D2, T-r1),
-  (f) Σ per partidă la ultima perioadă închisă, (g) TVA pe postările de storno.
-  Gate-ul `--declaratie-pe-baza` pe BTR se citește „100 % egal în afara celor
-  535 declarate în T-D2.2" (oracolul pliază rândurile de stoc ± ale aceluiași
-  lot, fără picior contabil, într-un `Transfer`); pe DSC „100 % egal în afara
-  celor 842 declarate în T-D4.2" (normalizarea T-D4.1: piciorul contabil fără
-  stoc al unei linii care doar iese își pierde gestiunea în oracol, fiindcă în
-  cub e pe gestiunea virtuală `Client`; normalizarea T-D13: același picior
-  primește terțul de pe primitorul extern, pe care rândul vechi nu-l poartă —
-  numărată în `Normalizari.Contoare` și tipărită de gate ca
-  `Normalizari.Contoare ×n`, spre deosebire de avertismente, care pică
-  probele); pe FCL 100 % egal. FCL și DSC sunt
-  fiecare grupul lui (DSC nu e conex). Grupul unui FCT e documentul ∪ NIR-ul lui conex; grupurile cu
-  conex neoperat se RAPORTEAZĂ separat, nu se numără ca Δ. Litera (f) e vacuă
-  cât timp un tip nemigrat mai postează pe conturi cu `RolTert`, iar nota se
-  tipărește.
-
-Exit-ul `--reconciliere-cub` depinde numai de (a)–(g). Diagnosticul valoric
-pe lot × gestiune × cont din ASM-B7 rămâne raport; identifică și numără
-separat mișcările din afara domeniului Magazie/Marfuri/Folosinta, fără să excludă
-postările cubului cu istoric lipsă. ASM mixt este probat prin
-`NUC-ASM-RECONCILIERE`: Operare ASM este exclusă nominal din (a), numai în
-regimul dual (D8-B4 aprobat de owner, T-r15). (h) raportează exact D 40/C 40
-față de zero în registre, 1 document și 4 postări Operare. (a)–(g) rămân
-fără diferențe, exit 0; raportul declară excepția. Verificările independente
-pe cub rămân obligatorii; egalitatea completă cub–registre nu este afirmată.
+Nu există al doilea scriitor cu care cubul să fie comparat (TR-D9a, pasul 6).
+Uneltele de reconciliere registre ↔ cub (`--declaratie-pe-baza`,
+`--reconciliere-cub`, diagnosticul valoric pe lot) au ieșit odată cu
+registrele; ultima lor rulare e arhivată în `docs/nucleu/tr-d9-pas5b-probe.md`.
+Corectitudinea o poartă catalogul de scenarii (091) și invarianții interni ai
+cubului din `INV-CUB`: proveniența inverselor, calificarea fiscală, taxa
+postată = taxa liniei, echilibrul pe tranzacție și carte, conservarea
+transferului, unitățile de partidă, proveniența fișelor și explicația
+(ieșirile = deciziile, soldul citit, FIFO, declarantul), inclusiv valoarea
+liniei = decizia ieșirii, cu semnul cantității (`CITIRE_EXPLICATIE_LINIE`,
+D9-D3). Mutanții `INV-CUB` îi probează pe BCS, BTR și ASM cu `Transfer`
+(`LINIE-*`, `LINIE-SEMN-*`, `IESIRE-SEMN-*`: o decizie cu semn opus sau o
+linie cu altă valoare e refuzată).
 
 Rețeta istorică a verificării importului este `run-nucleu/tr-d7a/import/run.ps1`: Import1C integral
 (`--recreeaza --cititori --inchide-lunile`), apoi `--reclasifica`,

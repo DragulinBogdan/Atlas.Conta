@@ -121,7 +121,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
     });
     void Sold(string id, Guid fisa, decimal brut, decimal cumul, decimal fiscal, decimal cumulFiscal,
             DateOnly? data = null) {
-        Comanda(C.Citiri.Imobilizari.VerificaAcoperire);
+        Comanda(C.Citiri.Imobilizari.VerificaProvenienta);
         var randuri = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == fisa
             && p.Data <= (data ?? new DateOnly(An, 12, 31))).ToList());
         decimal Net(Guid cont, N.Carte carte) => randuri.Where(p => p.Cont == cont && p.Carte == carte)

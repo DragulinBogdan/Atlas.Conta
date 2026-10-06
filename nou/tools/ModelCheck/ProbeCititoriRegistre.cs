@@ -8,7 +8,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 
 // X-D2: registrele se ating în producție numai prin utilizările numite în `Permise`.
 static partial class ProbeCititoriRegistre {
-    public enum Clasa { Mapare, ScriitorDual, Martor, Evidenta, Autorizare, Legatura }
+    public enum Clasa { Mapare, Evidenta, Autorizare, Legatura, Gardian }
 
     public sealed record Permisa(string Fisier, string Membru, string Registre, Clasa Clasa, string Rol);
     public sealed record Utilizare(string Fisier, string Membru, string Registru, int Linie, string Fel);
@@ -41,8 +41,7 @@ static partial class ProbeCititoriRegistre {
             + "nicio intrare permisă nu rămâne fără utilizare", arbori.Count > 100 && incalcari.Count == 0 && nefolosite.Count == 0 && dubluri.Count == 0);
 
         var cititori = Permise.Where(p => Cititori.Any(c => p.Fisier.StartsWith(c, StringComparison.Ordinal))).ToList();
-        var surseDeSold = cititori.Where(p => p.Clasa is Clasa.Mapare or Clasa.Evidenta or Clasa.Martor
-            || p.Clasa == Clasa.ScriitorDual && !p.Rol.StartsWith(AbsorbtieAsm, StringComparison.Ordinal)
+        var surseDeSold = cititori.Where(p => p.Clasa is Clasa.Mapare or Clasa.Evidenta or Clasa.Gardian
             || p.Clasa == Clasa.Legatura && p.Registre != "Imperechere").ToList();
         Console.WriteLine($"     MĂSURAT (X-D2): {cititori.Count} intrări în perimetrul cititorilor [{PeClase(cititori)}]; "
             + $"citiri de registru [{string.Join("; ", surseDeSold.Select(p => $"{p.Fisier} {p.Membru}"))}].");
@@ -146,12 +145,12 @@ static partial class ProbeCititoriRegistre {
                 + "static class Mutant { static bool Are(IObjectSpace os) => os.GetObjectsQuery<R>().Any(); }",
             "Api/Mutant.cs:2 Mutant.Are RegistruTva (tip)"),
         new("purtător", Modul + "Culegere/Mutant.cs",
-            () => "static class Mutant { static decimal Sold(IObjectSpace os, CheieStoc cheie) => StocService.Sold(os, cheie); }",
-            "Culegere/Mutant.cs:1 Mutant.Sold RegistruStoc (prin StocService.Sold)"),
-        new("membru nou în fișier permis", Modul + "Motor/StocService.cs",
-            () => Inainte(Modul + "Motor/StocService.cs", "public static decimal? ValoareGolire",
+            () => "static class Mutant { static decimal Libera(IObjectSpace os, Guid a, Guid b) => Partide.NominalizataLibera(os, a, b); }",
+            "Culegere/Mutant.cs:1 Mutant.Libera Imperechere (prin Partide.NominalizataLibera)"),
+        new("membru nou în fișier permis", Modul + "Motor/ImperechereService.cs",
+            () => Inainte(Modul + "Motor/ImperechereService.cs", "public static decimal Total(IObjectSpace os, Guid documentId)",
                 "public static bool AreTva(IObjectSpace os) => os.GetObjectsQuery<RegistruTva>().Any();\n    "),
-            "StocService.AreTva RegistruTva (tip)"),
+            "ImperechereService.AreTva RegistruTva (tip)"),
         new("nameof", Modul + "Proiectii/Mutant.cs",
             () => "static class Mutant { const string Nume = nameof(RegistruContabil); }", null),
     ];

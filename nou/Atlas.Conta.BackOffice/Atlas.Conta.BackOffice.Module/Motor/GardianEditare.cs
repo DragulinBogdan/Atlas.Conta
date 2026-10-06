@@ -318,7 +318,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                     VerificaPoliticaTva(politicaTva, erori);
                     break;
                 case RegulaContare regulaContare:
-                    VerificaRegulaContare(regulaContare, erori);
+                    VerificaRegulaContare(os, regulaContare, erori);
                     break;
                 case RegulaStoc regulaStoc:
                     VerificaRegulaStoc(regulaStoc, erori);
@@ -1049,10 +1049,6 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (!string.Equals(originale[nameof(TipDocument.ClrType)] as string, tip.ClrType, StringComparison.Ordinal))
                 erori.Add($"Clasa CLR a tipului de document {tip.Cod} ({originale[nameof(TipDocument.ClrType)]}) "
                     + "e legătura cu codul — o scrie release-ul, nu culegerea.");
-            if ((originale[nameof(TipDocument.PosteazaInCub)] as bool?) == true && !tip.PosteazaInCub
-                    && Cub.Materializare.AreTranzactii(os, tip.ClrType))
-                erori.Add($"{Declaratii.CoduriRefuz.PosteazaInCubIreversibil}: tipul {tip.Cod} are tranzacții în cub; "
-                    + "documentele lui nu mai pot posta numai în registre.");
         }
         VerificaTipTvaActiv(os, tip.TipTvaImplicitId ?? tip.TipTvaImplicit?.ID,
             $"ancora tipului de document {tip.Cod}", erori);
@@ -1171,8 +1167,13 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     }
 
     // `RegulaContare`: trei invarianți, toți despre potrivirea din motor.
-    static void VerificaRegulaContare(RegulaContare regula, ICollection<string> erori) {
+    static void VerificaRegulaContare(IObjectSpace os, RegulaContare regula, ICollection<string> erori) {
         var eticheta = regula.TipDocument?.Cod ?? "(fără tip)";
+        // D9-A4: o regulă pe un tip al cărui declarant nu contează prin reguli n-ar avea niciun efect.
+        var tip = regula.TipDocument ?? os.GetObjectByKey<TipDocument>(regula.TipDocumentId);
+        if (!EsteSters(os, regula) && Declaratii.Contractare.DeclarantulTipului(tip?.ClrType) is not { ConteazaPrinReguli: true })
+            erori.Add($"{Declaratii.CoduriRefuz.RegulaContareFaraConsumator}: tipul {eticheta} nu contează prin reguli de contare "
+                + "— regula n-ar avea niciun efect.");
         if (regula.SursaContDebit == SursaCont.Explicit
                 && regula.ContDebitId == null && regula.ContDebit == null)
             erori.Add($"Regula de contare pe {eticheta} are sursa contului debitor „Explicit”, "

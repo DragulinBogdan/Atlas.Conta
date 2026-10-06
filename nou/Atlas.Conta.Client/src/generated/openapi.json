@@ -323240,32 +323240,6 @@
         },
         "additionalProperties": false
       },
-      "ExplicatieAbsorbtieDto": {
-        "type": "object",
-        "properties": {
-          "ContSursaId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "R": {
-            "type": "number",
-            "format": "double"
-          },
-          "C": {
-            "type": "number",
-            "format": "double"
-          },
-          "P": {
-            "type": "number",
-            "format": "double"
-          },
-          "Delta": {
-            "type": "number",
-            "format": "double"
-          }
-        },
-        "additionalProperties": false
-      },
       "ExplicatieContDto": {
         "type": "object",
         "properties": {
@@ -323482,13 +323456,6 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ExplicatieUnitateDto"
-            },
-            "nullable": true
-          },
-          "Absorbtii": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExplicatieAbsorbtieDto"
             },
             "nullable": true
           }

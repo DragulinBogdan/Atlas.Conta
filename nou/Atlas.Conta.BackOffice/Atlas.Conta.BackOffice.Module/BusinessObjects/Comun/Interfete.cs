@@ -113,18 +113,6 @@ public sealed class GardContareAttribute : Attribute {
     public string Mesaj { get; }
 }
 
-// Documentul ale cărui IEȘIRI de stoc au valoare FISCALĂ, nu de evaluare
-// (F18, review advers F5): suma returului la furnizor e a facturii / notei de
-// credit a furnizorului — `cantitate × prețul lotului`, cifra de pe hârtie —
-// nu soldul valoric rămas pe lot. Regula D18-D2 („ieșirea care GOLEȘTE cheia
-// preia restul", `StocService.AplicaValoareIesire`) SARE documentele care
-// declară marker-ul; cenții de rotunjire rămân pe lot (vizibili în SAF-T S ca
-// `ReziduValoricFaraCantitate`, contorizați de reconcilierea Import1C ca
-// „golită fiscal") și NU cad pe 401 — un cont de furnizori nu poartă reziduul
-// de evaluare al stocului. Marker pe DOCUMENT (nu pe linie): RLF folosește
-// detaliul de bază, iar semantica e a tipului întreg. Declarat de `ReturFurnizor`.
-public interface IDocumentCuIesireFiscala { }
-
 // Invarianții pe care o entitate și-i verifică singură la commit-ul unui
 // ObjectSpace SECURIZAT (DVI-D3). Punct de extensie GENERIC al gardianului:
 // regula stă pe entitate, gardianul o cheamă fără să cunoască tipul — ca
@@ -134,15 +122,12 @@ public interface IVerificabilLaCommit {
     void Verifica(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori);
 }
 
-// Documentul cu registru PROPRIU, în afara celor trei ale nucleului (F26-D3).
-public interface IDocumentCuRegistruPropriu {
-    /// <summary>Scrie rândurile proprii, la operare, după registrele nucleului.</summary>
-    void MaterializeazaRegistrul(DevExpress.ExpressApp.IObjectSpace os);
-    /// <summary>Șterge rândurile proprii, la anularea operării.</summary>
-    void EliminaRegistrul(DevExpress.ExpressApp.IObjectSpace os);
-    /// <summary>Adaugă rândurile inverse, la data stornării.</summary>
-    void StorneazaRegistrul(DevExpress.ExpressApp.IObjectSpace os, DateOnly data);
-    /// <summary>Motivul pentru care rândurile proprii nu se retrag cât au fapte dependente, citit fără comandă; null = liber.</summary>
+// Efectele proprii ale frunzei la comenzile de stare (F26-D3, D9-A6): fără registru, fără postări.
+public interface IDocumentCuEfecteProprii {
+    void LaOperare(DevExpress.ExpressApp.IObjectSpace os);
+    void LaAnulare(DevExpress.ExpressApp.IObjectSpace os);
+    void LaStornare(DevExpress.ExpressApp.IObjectSpace os, DateOnly data);
+    /// <summary>Motivul pentru care documentul nu se retrage cât are fapte dependente, citit fără comandă; null = liber.</summary>
     string MotivDependenti(DevExpress.ExpressApp.IObjectSpace os);
     /// <summary>Motivul pentru care stornarea nu are nicio dată admisă, citit fără comandă; null = există.</summary>
     string MotivPerioadaStornarii(DevExpress.ExpressApp.IObjectSpace os);

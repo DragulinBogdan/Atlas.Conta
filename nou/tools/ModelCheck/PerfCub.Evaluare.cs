@@ -12,8 +12,7 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 sealed partial class PerfCub {
-    public sealed record Volum(int Istoric, long Tranzactii, long Postari, long Documente, double MsReconciliere, double MsInvarianti,
-        double MsValoriStoc, int Delta, int Reziduuri);
+    public sealed record Volum(int Istoric, long Tranzactii, long Postari, long Documente, double MsInvarianti);
 
     string Profil => Privat ? "privat" : "bugetar";
 
@@ -69,20 +68,14 @@ sealed partial class PerfCub {
         Verifica("X-D5", $"controlul numeric {op.Cod} m={istoric} k={k} {m.Faza}: cifrele cititorului sunt cele ale scenei", egale);
     }
 
-    // X-D3: reconcilierea integrală, INV-CUB și diagnosticul ASM-B7 pe baza de volum, cu faptele exercitate pe ramuri.
-    void Reconciliaza(Guid fisa) {
+    // X-D3: INV-CUB pe baza de volum, cu faptele exercitate pe ramuri.
+    void VerificaVolumul(Guid fisa) {
         using var ctx = new BackOfficeEFCoreDbContext(optiuni);
         var ceas = Stopwatch.StartNew();
-        var note = new List<string>();
-        var randuri = ReconciliereCub.Ruleaza(ctx, null, note);
-        var msReconciliere = ceas.Elapsed.TotalMilliseconds; ceas.Restart();
         string refuz = null;
         try { Comanda(C.Citiri.Invarianti.Verifica); }
         catch (OperareException e) { refuz = e.Message; }
-        var msInvarianti = ceas.Elapsed.TotalMilliseconds; ceas.Restart();
-        var valori = DiagnosticValoriStoc.Citeste(ctx, DateOnly.MaxValue);
-        var msValori = ceas.Elapsed.TotalMilliseconds;
-        var reziduuri = valori.Pozitii.Count(p => p.Reziduu);
+        var msInvarianti = ceas.Elapsed.TotalMilliseconds;
 
         var feluri = ctx.Set<C.Tranzactie>().GroupBy(t => t.Fel).Select(g => new { g.Key, Numar = g.LongCount() }).ToDictionary(g => g.Key, g => g.Numar);
         long Fel(N.FelTranzactie fel) => feluri.GetValueOrDefault(fel);
@@ -90,13 +83,10 @@ sealed partial class PerfCub {
         var documente = ctx.Set<Document>().GroupBy(d => new { d.ClrType, d.Stare }).Select(g => new { g.Key.ClrType, g.Key.Stare, Numar = g.LongCount() })
             .ToList().OrderBy(d => d.ClrType).ThenBy(d => d.Stare).ToList();
         var contoare = new (string Ramura, string Fapt, long Numar, bool Cerut)[] {
-            ("(a) contabil", "rânduri RegistruContabil cu document", ctx.Set<RegistruContabil>().LongCount(r => r.DocumentId != null), true),
             ("(a) contabil", "postări Carte=Contabil", postari.Where(p => p.Carte == N.Carte.Contabil).Sum(p => p.Numar), true),
-            ("(b) stoc", "rânduri RegistruStoc", ctx.Set<RegistruStoc>().LongCount(), true),
             ("(b) stoc", "postări în spațiul Stoc", postari.Where(p => p.Spatiu == N.Spatiu.Stoc).Sum(p => p.Numar), true),
             ("(b) stoc", "postări LDI pe lot", ctx.Set<C.Postare>().LongCount(p => p.Unitate != null && p.Cantitate != 0
                 && ctx.Set<ListaDiferenteInventar>().Any(d => d.ID == p.DocumentId)), true),
-            ("(c) fiscal", "rânduri RegistruTva", ctx.Set<RegistruTva>().LongCount(), Privat),
             ("(c) fiscal", "postări cu rol fiscal", ctx.Set<C.Postare>().LongCount(p => p.RolTva != null), Privat),
             ("(c) fiscal", "postări Carte=Fiscal", postari.Where(p => p.Carte == N.Carte.Fiscal).Sum(p => p.Numar), true),
             ("(c) fiscal", "legături DVI–factură", ctx.Set<DviFactura>().LongCount(), Privat),
@@ -112,12 +102,10 @@ sealed partial class PerfCub {
             ("(g) fiscal storno", "tranzacții Storno", Fel(N.FelTranzactie.Storno), true),
             ("(g) fiscal storno", "postări fiscale în Storno", ctx.Set<C.Postare>().LongCount(p => p.RolTva != null && p.Tranzactie.Fel == N.FelTranzactie.Storno), Privat),
             ("INV-CUB", "postări pe fișa imobilizării", ctx.Set<C.Postare>().LongCount(p => p.Unitate == fisa), true),
-            ("INV-CUB", "rânduri RegistruImobilizari", ctx.Set<RegistruImobilizari>().LongCount(), true),
             ("INV-CUB", "tranzacții cu explicație", ctx.Set<C.Tranzactie>().LongCount(t => t.Explicatie != null), true),
         };
         var vide = contoare.Where(c => c.Cerut && c.Numar == 0).ToList();
-        VolumFinal = new(istoric, feluri.Values.Sum(), postari.Sum(p => p.Numar), documente.Sum(d => d.Numar),
-            msReconciliere, msInvarianti, msValori, randuri.Count, reziduuri);
+        VolumFinal = new(istoric, feluri.Values.Sum(), postari.Sum(p => p.Numar), documente.Sum(d => d.Numar), msInvarianti);
 
         var sb = new StringBuilder($"# X-D3 — {Profil}, m = {istoric} luni închise × {unitatiIstoric} unități, luna măsurată cu {trepte[^1]} unități\n\n");
         sb.AppendLine($"Baza: {VolumFinal.Tranzactii} tranzacții, {VolumFinal.Postari} postări, {VolumFinal.Documente} documente.\n");
@@ -126,24 +114,13 @@ sealed partial class PerfCub {
         sb.AppendLine("\nTranzacții pe fel: " + string.Join(", ", feluri.OrderBy(f => f.Key).Select(f => $"{f.Key} {f.Value}")) + ".");
         sb.AppendLine("Postări pe spațiu × carte: " + string.Join(", ", postari.OrderBy(p => p.Spatiu).ThenBy(p => p.Carte).Select(p => $"{p.Spatiu}/{p.Carte} {p.Numar}")) + ".");
         sb.AppendLine("Documente pe tip × stare: " + string.Join(", ", documente.Select(d => $"{d.ClrType}/{d.Stare} {d.Numar}")) + ".");
-        sb.AppendLine($"\n## (a)–(g): {randuri.Count} rânduri Δ, {msReconciliere:0} ms\n");
-        if (randuri.Count > 0) sb.AppendLine("```\n" + ReconciliereCub.Raport(randuri) + "\n```");
-        sb.AppendLine("Note și (h):\n");
-        foreach (var n in note) sb.AppendLine("- " + n);
         sb.AppendLine($"\n## INV-CUB: {(refuz == null ? "verde" : "REFUZ — " + refuz)}, {msInvarianti:0} ms");
-        sb.AppendLine($"\n## ASM-B7 (lot × gestiune × cont): {valori.Pozitii.Count} poziții, {reziduuri} cu cantitate zero și valoare nenulă, {msValori:0} ms\n");
-        foreach (var l in valori.Linii()) sb.AppendLine("- " + l);
         File.WriteAllText(Path.Combine(director, $"xd3-{Profil}-m{istoric}.md"), sb.ToString());
 
-        Console.WriteLine($"     MĂSURAT (X-D3 m{istoric}): {VolumFinal.Tranzactii} tranzacții, {VolumFinal.Postari} postări; reconciliere {msReconciliere:0} ms, "
-            + $"INV-CUB {msInvarianti:0} ms, ASM-B7 {msValori:0} ms; {randuri.Count} rânduri Δ, {reziduuri} reziduuri.");
-        foreach (var n in note) Console.WriteLine("     " + n);
-        if (randuri.Count > 0) Console.WriteLine(ReconciliereCub.Raport(randuri));
-        Verifica("X-D3", $"m={istoric}: reconcilierea integrală (a)–(g) pe baza de volum — 0 rânduri Δ", randuri.Count == 0);
+        Console.WriteLine($"     MĂSURAT (X-D3 m{istoric}): {VolumFinal.Tranzactii} tranzacții, {VolumFinal.Postari} postări; INV-CUB {msInvarianti:0} ms.");
         Verifica("X-D3", $"m={istoric}: INV-CUB pe baza de volum" + (refuz == null ? "" : " — " + refuz.Split('\n')[0]), refuz == null);
         Verifica("X-D3", $"m={istoric}: fiecare ramură are fapte"
             + (vide.Count == 0 ? "" : " — vide: " + string.Join("; ", vide.Select(v => $"{v.Ramura} {v.Fapt}"))), vide.Count == 0);
-        Verifica("X-D3", $"m={istoric}: diagnosticul ASM-B7 rulat pe {valori.Pozitii.Count} poziții, {reziduuri} cu cantitate zero și valoare nenulă", valori.Pozitii.Count > 0);
     }
 
     // Criteriile din plan amânate nominal prin amendamentul owner-ului (X-RV6), cu restanța fiecăruia.
@@ -246,11 +223,11 @@ sealed partial class PerfCub {
                 + $"{g.Max(c => c.Ms).ToString("0.0", CultureInfo.InvariantCulture)} | {Mediana(g.Select(c => (double)c.Comenzi)):0} | {g.Max(c => c.Comenzi)} | "
                 + $"{Mediana(g.Select(c => c.MsSql)).ToString("0.0", CultureInfo.InvariantCulture)} |");
         sb.AppendLine($"\n### Baza de volum și X-D3 — {profil}\n");
-        sb.AppendLine("| m | tranzacții | postări | documente | reconciliere ms | INV-CUB ms | ASM-B7 ms | rânduri Δ (a)–(g) | reziduuri ASM-B7 | explicația documentului lung | explicații (număr / octeți / maxim) |");
-        sb.AppendLine("|---|---|---|---|---|---|---|---|---|---|---|");
+        sb.AppendLine("| m | tranzacții | postări | documente | INV-CUB ms | explicația documentului lung | explicații (număr / octeți / maxim) |");
+        sb.AppendLine("|---|---|---|---|---|---|---|");
         foreach (var s in scene.Where(s => s.VolumFinal != null)) {
             var v = s.VolumFinal; var e = s.Explicatii;
-            sb.AppendLine($"| {v.Istoric} | {v.Tranzactii} | {v.Postari} | {v.Documente} | {v.MsReconciliere:0} | {v.MsInvarianti:0} | {v.MsValoriStoc:0} | {v.Delta} | {v.Reziduuri} | "
+            sb.AppendLine($"| {v.Istoric} | {v.Tranzactii} | {v.Postari} | {v.Documente} | {v.MsInvarianti:0} | "
                 + $"{e.Linii} linii / {e.Octeti} octeți | {e.Tranzactii} / {e.Total} / {e.Maxim} |");
         }
         File.WriteAllText(Path.Combine(director, $"perf-cub-{profil}.md"), sb.ToString());

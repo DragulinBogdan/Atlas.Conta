@@ -103,8 +103,8 @@ cubului.
 SC-BCS-15 (implementat și verificat pe ambele profiluri, 2026-09-23): lot 3/10, trei documente
 succesive de câte 1. TR-D8 (2026-09-25, în lucru): cub 3,33 / 3,34 / 3,33; sold final 0/0.
 Soldul propriu înlocuiește citirea registrului care producea reziduul
-istoric −0,01. Registrele continuă scrierea duală; diagnosticul diferențelor
-istorice T-r13 nu se închide prin această probă.
+istoric −0,01. De la TR-D9a, pasul 6, și linia poartă aceeași valoare; T-r13
+se închide prin tăiere.
 
 `VerificaNucleuBcs` rămâne în aceeași selecție: `NUC-BCS-*`, inclusiv
 `NUC-BCS-N-R3-*` (evaluare 5 × 300/20 = 75, vechiul preț ar da 50),
@@ -138,13 +138,11 @@ SC-BCS-02/02b/02c; cifrele așteptate nu sunt copiate din această bază.
 
 ## TR-D9a, pasul 2 (2026-10-05): valoarea liniei evaluate din sold
 
-Schimbarea 1 din D9-D1 ([contractul TR-D9a](../tr-d9-taierea-contract.md), D9-D3 a). Azi valoarea scrisă pe LINIE
-vine din soldul registrului, iar postarea din soldul cubului, în secvența
-liniilor; după pasul 6 linia primește decizia `ValoareIesire`, deci e egală cu
-postarea. Coloana „azi" e măsurată (`ScenariiBcs`, ambele profiluri); coloana
-„după tăiere" e așteptarea scrisă înaintea codului și se verifică la pasul 6.
+Schimbarea 1 din D9-D1 ([contractul TR-D9a](../tr-d9-taierea-contract.md), D9-D3 a), în vigoare de la pasul 6
+(2026-10-07): linia primește la operare decizia `ValoareIesire`, deci e egală
+cu postarea. Coloana „regim dual" e ce se măsura înaintea tăierii.
 
-| ID | Comenzi | Azi (regim dual) | După tăiere |
+| ID | Comenzi | Regim dual (istoric) | După tăiere (curent) |
 |---|---|---|---|
 | SC-BCS-15 | lot 3/10; trei BCS de câte 1 | linii 3,33; 3,33; 3,34 — postări 3,33; 3,34; 3,33 — lot 0/0 | linii = postări = 3,33; 3,34; 3,33 — lot 0/0 |
 | SC-BCS-16 | lot 3/10; un BCS cu două linii de câte 1 pe același lot; apoi un BCS de 1 | dry-run fără refuz, nimic persistat, liniile rămân 0; operare: linii 3,33; 3,33, postări 3,33; 3,34, sold 1/3,33; ultimul BCS: linia 3,34, postarea 3,33; lot 0/0 | dry-run la fel; linii = postări = 3,33; 3,34; ultimul BCS: linia = postarea = 3,33; lot 0/0 |

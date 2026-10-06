@@ -420,14 +420,6 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             && !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == doc));
     }
 
-    protected void OperatFaraEfecte(string id, string mesaj, Guid doc) => Verifica(id, mesaj, CuSpatiu(os =>
-        os.GetObjectByKey<Document>(doc).Stare == StareDocument.Operat
-        && !os.GetObjectsQuery<C.Tranzactie>().Any(t => t.DocumentId == doc)
-        && !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == doc)
-        && !os.GetObjectsQuery<RegistruContabil>().Any(r => r.DocumentId == doc)
-        && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == doc)
-        && !os.GetObjectsQuery<RegistruTva>().Any(r => r.DocumentId == doc)));
-
     protected void Refuza(string id, Action actiune, string fragment) {
         try { actiune(); Verifica(id, "trebuia refuzat", false); }
         catch (OperareException e) {

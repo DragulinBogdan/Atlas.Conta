@@ -114,8 +114,6 @@ public sealed record Operand(
 
     public ReceptieSursaFapt? ReceptieSursa { get; init; }
     public N.ReperFiscal? ReperFiscal { get; init; }
-    // ASM-B6: R rămâne o măsură a registrului în regimul dual; C vine din cub.
-    public IReadOnlyDictionary<Guid, N.Sold> SolduriLoturiRegistru { get; init; } = new Dictionary<Guid, N.Sold>();
     public IReadOnlyDictionary<Guid, RepartitorFapt> Repartitori { get; init; } = new Dictionary<Guid, RepartitorFapt>();
     public IReadOnlyList<SoldPartidaFapt> PartideDisponibile { get; init; } = [];
     public IReadOnlyList<N.Unitate> UnitatiSursa { get; init; } = [];

@@ -42,17 +42,6 @@ sealed partial class ScenariiLdi {
                 Linie: linieBcs, Spatiu: N.Spatiu.Stoc)];
         Postari("SC-LDI-18", bcs, N.FelTranzactie.Operare, new(An, 1, 10), consum);
         Sold("SC-LDI-18", lot, 2, 50); Sold("SC-LDI-18", lot, 0, 0, gest: Destinatie);
-        Verifica("SC-LDI-18", "registrele păstrează Folosinta pe cele două gestiuni", CuSpatiu(os => {
-            var r = os.GetObjectsQuery<RegistruStoc>().Where(r => r.LotId == lot.Lot).ToList();
-            return r.Where(r => r.RepartitorId == Magazie || r.RepartitorId == Destinatie).All(r => r.TipStoc == TipStoc.Folosinta)
-                && r.Where(r => r.RepartitorId == Magazie).Sum(r => r.Cantitate) == 2
-                && r.Where(r => r.RepartitorId == Destinatie).Sum(r => r.Cantitate) == 0;
-        }));
-        using (var os = Deschide()) {
-            var raport = DiagnosticValoriStoc.Citeste(((EFCoreObjectSpace)os).DbContext, new(An, 1, 31), [lot.Lot.Value]);
-            Verifica("SC-LDI-18", "diagnostic comun complet, două gestiuni, fără diferențe", !raport.AreAbateri
-                && raport.Pozitii.Count == 2 && raport.IstoricFolosinta.Any(r => r.Cheie.Tip == TipStoc.Folosinta));
-        }
         var insuf = CulegeLa(Destinatie, Ianuarie, new Linie(DirectieDiferenta.Minus, 3, Lot: lot, Tip: TipFolosinta));
         RefuzDeclaratie("SC-LDI-18", insuf.Id, "STOC_INSUFICIENT");
         Refuza("SC-LDI-18", () => Opereaza(insuf.Id), "STOC_INSUFICIENT"); FaraEfecte("SC-LDI-18", insuf.Id);
@@ -100,15 +89,8 @@ sealed partial class ScenariiLdi {
     }
 
     void IstoricFolosinta() {
-        var regula = CuSpatiu(os => os.GetObjectsQuery<RegulaStoc>()
-            .Single(r => r.TipDocument.Cod == "LDI" && r.Clasa.Cod == "OF" && r.Latura == LaturaDocument.Predator).ID);
-        void Schimba(TipStoc tip) => Comanda(os => { os.GetObjectByKey<RegulaStoc>(regula).TipStoc = tip; os.CommitChanges(); });
         var original = Culege(new Linie(DirectieDiferenta.Plus, 1, 25, Tip: TipFolosinta));
-        try { Schimba(TipStoc.Magazie); Opereaza(original.Id); }
-        finally { Schimba(TipStoc.Folosinta); }
-        var istoric = CuSpatiu(os => os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == original.Id)
-            .Select(r => new { r.ID, r.TipStoc, r.LotId, r.RepartitorId, r.Cantitate, r.Valoare }).Single());
-        Verifica("SC-LDI-22", "fixture real: cheia veche Magazie", istoric.TipStoc == TipStoc.Magazie);
+        Opereaza(original.Id);
         var btr = Iesire(true, (original.Linii[0], 1));
         Opereaza(btr.Id);
         Sold("SC-LDI-22/TR-D8", original.Linii[0], 0, 0);
@@ -118,16 +100,5 @@ sealed partial class ScenariiLdi {
         Storneaza(original.Id, new(An, 1, 20));
         Postari("SC-LDI-22", original.Id, N.FelTranzactie.Storno, new(An, 1, 20),
             Inverse(Randuri(original, 0, 1, 25, TipFolosinta, CostFolosinta)));
-        Verifica("SC-LDI-22", "storno pe cheia istorică; original intact după schimbarea politicii", CuSpatiu(os => {
-            var r = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == original.Id).ToList();
-            return r.Count == 2 && r.All(r => r.TipStoc == TipStoc.Magazie && r.LotId == istoric.LotId
-                && r.RepartitorId == istoric.RepartitorId) && r.Sum(r => r.Cantitate) == 0 && r.Sum(r => r.Valoare) == 0
-                && r.Any(r => r.ID == istoric.ID && r.Cantitate == 1 && r.Valoare == 25 && !r.Storno);
-        }));
-        using var os = Deschide();
-        var raport = DiagnosticValoriStoc.Citeste(((EFCoreObjectSpace)os).DbContext, new(An, 1, 31), [istoric.LotId]);
-        Verifica("SC-LDI-22", "diagnostic: sold net zero nu ascunde cheia veche și inversarea ei", !raport.AreAbateri
-            && raport.IstoricFolosinta.Count == 2 && raport.IstoricFolosinta.All(r => r.Cheie.Tip == TipStoc.Magazie)
-            && raport.Linii().Count(l => l.StartsWith("CHEIE ISTORICĂ")) == 2);
     }
 }

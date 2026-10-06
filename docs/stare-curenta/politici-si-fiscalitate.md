@@ -187,9 +187,8 @@ are cel mult o Bază și o Taxă; achiziția cu taxare inversă adaugă o
 Autocolectare pe contrapartea colectată, cu același sens Achiziție.
 Nomenclatorul curent oferă etichete, fără să recalculeze cota istorică. (103)
 
-Registrul TVA vechi rămâne diagnostic în regimul dual. Cititorii fiscali
-portați nu îl folosesc drept sursă. Nu există snapshot fiscal cumulativ și
-nici compatibilizare a istoricului de dezvoltare. (102, 103)
+Faptele fiscale stau numai pe postări. Nu există snapshot fiscal cumulativ și
+nici compatibilizare a istoricului de dezvoltare. (102, 103, D9-D2)
 
 ### Intervale și diagnostic TVA
 

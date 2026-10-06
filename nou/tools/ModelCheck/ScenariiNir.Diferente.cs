@@ -89,7 +89,7 @@ sealed partial class ScenariiNir {
         SoldPartida("SC-NIR-22", N.Unitate.DeschidePartida(Cont(Imputat), Client, ni, Ianuarie).Id, Ianuarie, 25);
         Identitate(); PoliticaIstorica(); PeDrumCumulativ(); RefuzStoc(); DouaActive();
         Capitalizat(); Avans();
-        ImputariDistincte(); Concurenta(); ReconciliereDelta(); ZeroIstoric();
+        ImputariDistincte(); Concurenta();  ZeroIstoric();
         ProvenientaCorectiei(); CitireaSursei(); AnalizaIstorica(); ImputatInert(); FacturaPe408();
         AcoperireStoc();
         (facturaDeCorectat, nirDeCorectat) = Constatat(3); Opereaza(nirDeCorectat);
@@ -139,10 +139,7 @@ sealed partial class ScenariiNir {
         }
         finally { Comanda(os => { os.GetObjectByKey<PoliticaDiferenta>(politica).ContId = contVechi; os.CommitChanges(); }); }
         var (fa, na) = Constatat(3); Opereaza(na);
-        var tip = CuSpatiu(os => os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == "NIR").ID);
-        Comanda(os => { os.GetObjectByKey<TipDocument>(tip).PosteazaInCub = false; os.CommitChanges(); });
-        try { Anuleaza(na); FaraEfecte("SC-NIR-26", na); Sold("SC-NIR-26", fa.Linii[0], 4, 100); }
-        finally { Comanda(os => { os.GetObjectByKey<TipDocument>(tip).PosteazaInCub = true; os.CommitChanges(); }); }
+        Anuleaza(na); FaraEfecte("SC-NIR-26", na); Sold("SC-NIR-26", fa.Linii[0], 4, 100);
         Opereaza(na); Delta("SC-NIR-26", na, Clarificare, 25);
     }
 
@@ -263,23 +260,6 @@ sealed partial class ScenariiNir {
         FaraEfecte("SC-NIR-27/concurent", alt); Sold("SC-NIR-27/concurent", f.Linii[0], 3, 75);
     }
 
-    void ReconciliereDelta() {
-        var (f, nir) = Constatat(3); Opereaza(nir);
-        var (f0, n0) = Constatat(4); Opereaza(n0);
-        using var os = Deschide(); var db = ((EFCoreObjectSpace)os).DbContext;
-        Guid[] set = [f.Id, nir, f0.Id, n0];
-        var raport = ReconciliereCub.Nir(db, set);
-        Verifica("SC-NIR-31", "exact un grup cu deltă, inclusiv diferența 401 de 25",
-            raport.Grupuri == 1 && raport.Diferente.Any(r => r.Cheie.Contains(" C " + ContFurnizor + " ") && r.Delta == 25));
-        var abateri = ReconciliereCub.Ruleaza(db, set);
-        Verifica("SC-NIR-31", "(a)/(b) rămân verzi, grupul fără deltă rămâne comparabil", abateri.Count == 0);
-        var lot = f0.Linii[0].Lot!.Value;
-        using var tx = db.Database.BeginTransaction();
-        db.Database.ExecuteSqlInterpolated($"""UPDATE "Postare" SET "Valoare" = "Valoare" + 1 WHERE "DocumentId" = {f0.Id} AND "Unitate" = {lot} AND "Spatiu" = 2""");
-        Verifica("SC-NIR-31", "capcana grupului fără deltă nu este exclusă", ReconciliereCub.Ruleaza(db, set).Any(r => r.Litera == "(a) contabil"));
-        tx.Rollback();
-    }
-
     void Avans() {
         var cod = Privat ? "4091" : "409.01.01";
         var f = Factura(Ianuarie, new LinieFctScena(1, 100, Privat ? "SFD" : "CAP0", false, Tip: cod));
@@ -315,12 +295,11 @@ sealed partial class ScenariiNir {
     void ZeroIstoric() {
         var (f, nir) = Constatat(4);
         var politica = CuSpatiu(os => os.GetObjectsQuery<PoliticaConex>().Single(p => p.TipDocumentSursa.Cod == "FCT").ID);
-        var tip = CuSpatiu(os => os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == "FCT").ID);
         var valori = CuSpatiu(os => {
             var v = ((EFCoreObjectSpace)os).DbContext.Entry(os.GetObjectByKey<PoliticaConex>(politica)).CurrentValues;
             return v.Properties.ToDictionary(p => p.Name, p => v[p]);
         });
-        Comanda(os => { os.Delete(os.GetObjectByKey<PoliticaConex>(politica)); os.GetObjectByKey<TipDocument>(tip).PosteazaInCub = false; os.CommitChanges(); });
+        Comanda(os => { os.Delete(os.GetObjectByKey<PoliticaConex>(politica)); os.CommitChanges(); });
         try {
             Opereaza(nir); Sold("SC-NIR-30", f.Linii[0], 4, 100);
             Verifica("SC-NIR-30", "dovada istorică ține fără politica conexului și cu flagul sursei oprit", CuSpatiu(os =>
@@ -331,7 +310,7 @@ sealed partial class ScenariiNir {
             Comanda(os => {
                 var p = os.CreateObject<PoliticaConex>();
                 ((EFCoreObjectSpace)os).DbContext.Entry(p).CurrentValues.SetValues(valori);
-                os.GetObjectByKey<TipDocument>(tip).PosteazaInCub = true; os.CommitChanges();
+                os.CommitChanges();
             });
         }
     }

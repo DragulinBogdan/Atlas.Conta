@@ -129,7 +129,7 @@ sealed partial class PerfCub(Func<IObjectSpace> deschide, Action<string, bool> c
         }
         Lung(sfarsit);
         Comanda(os => ((EFCoreObjectSpace)os).DbContext.Database.ExecuteSqlRaw("ANALYZE"));
-        Reconciliaza(fisa);
+        VerificaVolumul(fisa);
     }
 
     void Cronometrat(string tip, Action actiune) {
