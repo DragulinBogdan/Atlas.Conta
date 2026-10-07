@@ -176,7 +176,7 @@ amendamentele 1–3, pașii în `docs/nucleu/tr-d9-pas*.md`, închiderea în
 `tr-d9-pas8-inchiderea.md`. Decizia 110 e aprobată de owner; review-ul advers
 Codex al închiderii e închis (D9-F-R1…R4, IZ-R1, IZ-R2), iar proba PerfCub pe
 clone diferite e acceptată de owner ca abatere de la „aceeași bază”.
-Mersă în main prin PR-ul feliei (2026-10-07). Bazele de dezvoltare sunt recreate din
+Mersă în main prin PR #22 (2026-10-07). Bazele de dezvoltare sunt recreate din
 `InitialCreate`; clonele vechi de import și de perf (`.Flax.R3f`, `.D9P5b`,
 `.D9Vol`) sunt pe schema dinaintea tăierii. Urmează contractul TR-D9b, cu
 poarta de decizie 111 (propusă, neaprobată).
