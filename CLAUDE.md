@@ -214,9 +214,19 @@ integrala identică pe secvență; `docs/nucleu/tr-d9-pas6c-spargere-modelcheck.
 (2026-10-07): proiecție de citire `PostareVizual` ca view SQL, amendamentul 3
 (`docs/nucleu/tr-d9-taierea-amendament-3.md`, D9-A12), intră în pasul 7.
 Codex rămâne pentru deciziile importante, la cererea owner-ului; decizia pe
-view n-a cerut review. Urmează pasul 7, pe context nou: spec-ul e scris
-(`run-nucleu/tr-d9a/pas7/spec.md`, două jaloane), pornirea e în
-`run-nucleu/tr-d9a/coordonare.md`.
+view n-a cerut review. Pasul 7 e făcut (2026-10-07, agent Opus `d9-pas7`,
+`docs/nucleu/tr-d9-pas7-declaratii.md`): jalonul 7.1 (`bb2f05f`) a scos atomic
+entitățile de registru, cele trei coloane, maparea, listele vechi, cazurile
+gardianului, `HCategory` și rândurile `RegulaStoc` fără consumator, a
+recomprimat lanțul în `20261007072615_InitialCreate`, a redus X-D2 la
+`Imperechere` și a activat proba numelor interzise; jalonul 7.2 (`6855658`) a
+pus lista „Registre → Postări" pe `PostareVizual` (view în migrație proprie,
+`ServerView`, gard la activare, gardian, neexpunere, `STR-VIZUAL-*`), cu
+probele HTTP și din browser făcute de main. Integrala: 4.791 privat / 3.512
+bugetar, zero FAIL. Bazele de dezvoltare sunt recreate; clonele de import și
+de perf rămân pe schema veche (Import1C cere `--recreeaza`). Urmează pasul 8
+(închiderea: D9-D15 rândul 8, decizia 110, review advers Codex), pe context
+nou, pornirea în `run-nucleu/tr-d9a/coordonare.md`.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
