@@ -208,7 +208,10 @@ capătul de terț prin `Terti.Capat`, gardul pe capăt prin funcția unică
 `Contabil.Repartitor`, SC-PLT-08, cele 17 aserții rescrise pe cititori:
 `docs/nucleu/tr-d9-pas6b-repartitor.md`, 2026-10-07). Review-ul Codex al lotului
 6 + 6b e închis (D9-6B-R1 corectată la `ea5d0bc`, reverificată, 2026-10-07).
-Urmează pasul 7.
+Pasul 6c e făcut (`Program.cs` din ModelCheck spart în `Suita` + `Suita/*.cs`,
+integrala identică pe secvență; `docs/nucleu/tr-d9-pas6c-spargere-modelcheck.md`,
+2026-10-07). Urmează pasul 7, după decizia owner-ului pe identificatorii din
+lista XAF `Postare` (trei alternative, consemnate în coordonare).
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
