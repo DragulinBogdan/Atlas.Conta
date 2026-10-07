@@ -15,10 +15,15 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 public readonly record struct RegulaContareFapt(Guid Id, Guid? TipMaterialId, NaturaClasa? NaturaFiltru,
     int? SemnFiltru, bool PastreazaSemn, SursaCont SursaContDebit, Guid? ContDebitId,
     SursaCont SursaContCredit, Guid? ContCreditId, bool DinSeed,
-    Dimensiuni Comun, Dimensiuni OverrideDebit, Dimensiuni OverrideCredit);
+    Dimensiuni Comun, Dimensiuni OverrideDebit, Dimensiuni OverrideCredit) {
+    /// <summary>Contorul rândului (`OptimisticLockField`) la citirea operandului (D9-A8).</summary>
+    public int Versiune { get; init; }
+}
 
 public readonly record struct RegulaStocFapt(Guid Id, LaturaDocument Latura, Guid? ClasaId,
-    TipStoc TipStoc, int Semn, bool DinSeed);
+    TipStoc TipStoc, int Semn, bool DinSeed) {
+    public int Versiune { get; init; }
+}
 
 // `Natura`/`ClasaId` null = Tipul liniei nu e în nomenclator; nicio treaptă de
 // natură și nicio regulă specifică pe clasă nu potrivesc.

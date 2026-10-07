@@ -14,15 +14,16 @@ internal static class Fapte {
             .ToList()
             .Select(r => new RegulaContareFapt(r.ID, r.TipMaterialId, r.NaturaFiltru, r.SemnFiltru,
                 r.PastreazaSemn, r.SursaContDebit, r.ContDebitId, r.SursaContCredit, r.ContCreditId,
-                r.DinSeed, r.DimensiuniComun(), r.DimensiuniOverrideDebit(), r.DimensiuniOverrideCredit()))
+                r.DinSeed, r.DimensiuniComun(), r.DimensiuniOverrideDebit(), r.DimensiuniOverrideCredit())
+                { Versiune = r.OptimisticLockField })
             .ToList();
 
     public static List<RegulaStocFapt> ReguliStoc(IObjectSpace os, Guid tipDocumentId) =>
         os.GetObjectsQuery<RegulaStoc>()
             .Where(r => r.TipDocumentId == tipDocumentId)
-            .Select(r => new { r.ID, r.Latura, r.ClasaId, r.TipStoc, r.Semn, r.DinSeed })
+            .Select(r => new { r.ID, r.Latura, r.ClasaId, r.TipStoc, r.Semn, r.DinSeed, r.OptimisticLockField })
             .ToList()
-            .Select(r => new RegulaStocFapt(r.ID, r.Latura, r.ClasaId, r.TipStoc, r.Semn, r.DinSeed))
+            .Select(r => new RegulaStocFapt(r.ID, r.Latura, r.ClasaId, r.TipStoc, r.Semn, r.DinSeed) { Versiune = r.OptimisticLockField })
             .ToList();
 
     public static PoliticaConexFapt? Conex(IObjectSpace os, Guid tipDocumentId) {
@@ -140,8 +141,7 @@ internal static class Fapte {
             sursa.Data,
             perioadaDeclarare,
             politicaTvaEntitate?.TolerantaTaxa,
-            new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month),
-            new N.VersiunePolitica("seed", doc.DataInregistrare)) {
+            new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month)) {
                 ReperFiscal = fiscal?.Reper,
                 Repartitori = repartitori,
                 PartideDisponibile = PartideDisponibile(os, doc, explicite, conturi, repartitori),
@@ -375,5 +375,5 @@ internal static class Fapte {
         politica == null
             ? null
             : new Declaratii.PoliticaTvaFapt(politica.Directie, politica.SursaContrapartida,
-                politica.ContrapartidaFallbackId);
+                politica.ContrapartidaFallbackId) { Id = politica.ID, Versiune = politica.OptimisticLockField };
 }

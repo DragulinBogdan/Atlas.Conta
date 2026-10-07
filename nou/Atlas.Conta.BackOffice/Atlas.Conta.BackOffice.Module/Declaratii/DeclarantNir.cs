@@ -57,10 +57,9 @@ public sealed partial class DeclarantNir : IDeclarant {
                 Analiza = Contari.Analiza(linie.Analiza, cont.Regula.OverrideDebit, cont.Regula.Comun),
             };
             miscari.Add(new(externCapat, internCapat, linie.Cantitate, 0, valoare, new(doc.Id, linie.Id)));
-            decizii.Add(new N.ContRezolvat(linie.Id, cont.ContDebit, cont.SursaDebit.ToString()));
-            decizii.Add(new N.ContRezolvat(linie.Id, cont.ContCredit, cont.SursaCredit.ToString()));
+            Contari.Decide(cont, linie.Id, decizii);
         }
         return refuzuri.Count > 0 ? null : new(doc.Id, doc.DataInregistrare, miscari, decizii,
-            [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+            PoliticiConsumate.Ipoteze(operand, decizii));
     }
 }

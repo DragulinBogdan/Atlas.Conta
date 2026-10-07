@@ -14,6 +14,7 @@ public sealed partial class DeclarantNir {
         var doc = operand.Document;
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
+        var consumate = new List<N.VersiunePolitica>();
         var partide = new HashSet<Guid>();
         foreach (var original in sursa.Linii)
             if (sursa.Constatari.Values.Count(c => c.LinieSursa == original.Linie) != 1)
@@ -51,6 +52,7 @@ public sealed partial class DeclarantNir {
                 if (contare is not { } cont || cont.ContDebit != lot.ContImplicitId) {
                     Refuza(Structura, "Plusul cere contul lotului."); continue;
                 }
+                consumate.Add(PoliticiConsumate.Versiunea(cont.Regula));
                 stoc = new N.Capat { Cont = cont.ContDebit, Gestiune = doc.Primitor.Id, Produs = lot.ProdusId,
                     Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, cont.ContDebit, null, lot.ProdusId, lot.Data),
                     Analiza = Contari.Analiza(linie.Analiza, cont.Regula.OverrideDebit, cont.Regula.Comun) };
@@ -71,6 +73,7 @@ public sealed partial class DeclarantNir {
                 Refuza(CauzaInvalida, "Lipsa imputabilă cere furnizorul, transportatorul sau angajatul pe linie."); continue;
             }
             var politica = politici[0];
+            consumate.Add(PoliticiConsumate.Versiunea(politica));
             var contDiferenta = tert?.Fel == FelRepartitor.Angajat ? politica.ContPersonal ?? politica.Cont : politica.Cont;
             if (!operand.Conturi.ContainsKey(contDiferenta)
                     || cauza == CauzaDiferentei.Imputabila && !Partide.Urmareste(operand, contDiferenta)) {
@@ -92,6 +95,6 @@ public sealed partial class DeclarantNir {
                 decizii.Add(new N.ValoareDeclarata(linie.Id, stoc.Unitate!, -q, -v, SurseValoare.Receptie));
         }
         return refuzuri.Count > 0 || miscari.Count == 0 ? null : new(doc.Id, doc.DataInregistrare, miscari, decizii,
-            [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+            PoliticiConsumate.Ipoteze(operand, decizii, [.. consumate]));
     }
 }

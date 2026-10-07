@@ -45,8 +45,7 @@ public sealed class DeclarantReturFurnizor : IDeclarant {
         var partide = new Dictionary<Guid, N.Unitate>();
         for (var i = 0; i < operand.Linii.Count; i++) {
             var l = operand.Linii[i]; var lot = l.Lot!; var contare = contari[i]!.Value;
-            decizii.Add(new N.ContRezolvat(l.Id, contare.ContDebit, contare.SursaDebit.ToString()));
-            decizii.Add(new N.ContRezolvat(l.Id, contare.ContCredit, contare.SursaCredit.ToString()));
+            Contari.Decide(contare, l.Id, decizii);
             var intern = new N.Capat {
                 Cont = contare.ContDebit, Gestiune = doc.Predator.Id, Produs = lot.ProdusId,
                 Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, contare.ContDebit, null, lot.ProdusId, lot.Data),
@@ -75,6 +74,6 @@ public sealed class DeclarantReturFurnizor : IDeclarant {
         return new(doc.Id, doc.DataInregistrare, [.. miscari.Select(m => m with {
             DeLa = Terti.Capat(operand, m.DeLa, doc.Primitor.Id, partide),
             La = Terti.Capat(operand, m.La, doc.Primitor.Id, partide),
-        })], decizii, [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+        })], decizii, PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, fiscale)));
     }
 }

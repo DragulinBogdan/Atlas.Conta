@@ -571,10 +571,15 @@ deci accesul complet cerut include perioadele fiscale și soldurile de perioadă
 felul tranzacției, documentul și `Origini` — explicația proprie, cea referită
 sau, la storno, ale originalelor; lista e goală pe împerechere, desfacere și
 deschidere. Fiecare origine are purtătorul, declarantul, versiunea, perioada,
-politica și liniile cu ieșirile (unitate, cantitate, valoare, soldul dinainte
+politicile și liniile cu ieșirile (unitate, cantitate, valoare, soldul dinainte
 sau sursa valorii declarate), stingerile (partidă, măsură, sold citit),
-conturile rezolvate și partidele deschise. Nu există pagină
-React (104d).
+conturile rezolvate (cu `RegulaId` când contul vine dintr-o regulă de
+contare) și partidele deschise. `Politici` sunt rândurile de politică
+reținute la operare: `Fel`, `RandId`, `Versiune`, `VersiuneCurenta` și
+`Schimbata` — adevărat când contorul de azi diferă sau rândul a dispărut
+(`VersiuneCurenta` nul). Contorul curent se citește la cerere, prin
+`Cub.Citiri.VersiuniPolitica`; explicația persistată nu se rescrie. Nu există
+pagină React (104d). (D9-A8; 2026-10-07)
 
 Tranzacția pe care contextul securizat nu o vede dă 404, ca una inexistentă.
 Explicația dezvăluie solduri întregi ale unităților și valori ale altor linii,

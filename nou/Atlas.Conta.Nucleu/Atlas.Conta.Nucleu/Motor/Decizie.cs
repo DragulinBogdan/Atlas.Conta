@@ -14,4 +14,5 @@ public sealed record ValoareDeclarata(Guid Linie, Unitate Unitate, decimal Canti
 
 public sealed record PartidaDeschisa(Guid Linie, Unitate Unitate) : Decizie;
 
-public sealed record ContRezolvat(Guid Linie, Guid Cont, string Sursa) : Decizie;
+/// <summary><paramref name="Regula"/>: regula de contare care a dat contul, când vine dintr-una (D9-A8).</summary>
+public sealed record ContRezolvat(Guid Linie, Guid Cont, string Sursa, Guid? Regula = null) : Decizie;

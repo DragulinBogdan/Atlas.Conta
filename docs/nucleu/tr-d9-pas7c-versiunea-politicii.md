@@ -58,20 +58,59 @@ Un declarant care nu consumă niciun rând reținut nu scrie ipoteza (ASM, BTR, 
 
 Scena SC-CIT-111 (în `ScenariiExplicatii`, ambele profiluri):
 
-1. operarea reține regula câștigătoare și contorul ei: ipotezele `VersiunePolitica` ale BCS-ului sunt exact
-   regulile de contare câștigătoare, cu `OptimisticLockField` al rândului; fiecare `ContRezolvat` al liniilor
-   numește regula;
-2. după editarea regulii prin ușa gardianului (`GardianEditare.Verifica` înaintea commit-ului), contorul
-   rândului crește; o operare nouă reține contorul nou; explicația veche rămâne neschimbată (JSON identic) și
-   e arătată ca „schimbată", cea nouă ca neschimbată;
-3. o regulă a clientului ștearsă apare ca „schimbată", fără contor curent;
-4. tipul fără reguli (NTC) dă lista vidă;
+1. operarea reține regula câștigătoare și contorul ei: singura ipoteză `VersiunePolitica` a BCS-ului e regula de
+   contare câștigătoare, cu `OptimisticLockField` al rândului; ambele `ContRezolvat` ale liniei o numesc; DTO-ul
+   o arată neschimbată;
+2. editarea regulii prin ușa gardianului (`GardianEditare.Verifica` înaintea commit-ului) crește contorul cu 1
+   și timbrează rândul ca al clientului; o operare nouă reține contorul nou; explicația veche rămâne neschimbată
+   (JSON identic) și e arătată „schimbată", cea nouă nu;
+3. regula clientului ștearsă apare ca „schimbată", fără contor curent;
+4. tipul fără reguli (BTR) nu scrie ipoteza: lista vidă, conturile fără regulă;
 5. forma persistată e versiunea 2; versiunea 1 e refuzată de cititor.
 
-Constatare de harness: providerul ModelCheck nu avea `EFCoreOptimisticLockInterceptor` (lista „ce NU s-a adus
-din AddEFCore"); fără el contorul nu crește în harness, deși crește pe hosturi. Interceptorul intră în
-providerul principal al suitei, ca proba 2 să măsoare ce face hostul.
+Pe host viu (`nou/tools/ProbeHttp/explicatii.py`): aceeași regulă editată de două ori pe ușa OData
+(`PATCH api/odata/RegulaContare(id)`, dus-întors) are contorul curent +2, iar explicația bonului operat înainte o
+arată „schimbată".
+
+Abaterea de la schița de mai sus, declarată: proba nu creează o regulă a clientului pe lângă cea din seed.
+Regula BCS din seed e deja pe `TipMaterial` exact; o copie ar fi dublură (indexul unic
+`IX_ReguliContare_TipDocumentId_TipMaterialId_NaturaFiltru_Semn~`) și n-ar câștiga (primul din listă ia nivelul).
+Proba editează și șterge chiar rândul din seed prin ușa gardianului — care îl face al clientului — și îl reface
+identic într-un `finally`, pe ușa de sistem. Câmpul editat e `PastreazaSemn`, pe care nu-l citește niciun
+declarant (constatarea 3 de mai jos), deci postările nu se schimbă.
 
 ## 4. Rezultate
 
-(se completează după execuție)
+| Probă | Rezultat |
+|---|---|
+| Nucleu | 190/190 |
+| `--probe-sursa` | 11/11 |
+| `--dump-metadata` | fără diferență (DTO-urile nu sunt în metadată) |
+| `gen:openapi` + `gen:types` | diferența declarată: `ExplicatieContractDto` pierde `Politica` și `PoliticaValabilaDeLa`, primește `Politici`; `ExplicatieContDto.RegulaId`; schema nouă `ExplicatiePoliticaDto`. A doua regenerare e stabilă; `tsc -b` verde |
+| Integrala privat | 4.803 OK / 0 FAIL (`.P7b`) |
+| Integrala bugetar | 3.524 OK / 0 FAIL (`.P7b`) |
+| Diferența față de 7b (`compara.py`) | numai adaos: +8 pe fiecare profil (aserțiile SC-CIT-111); zero dispărute |
+| A/B pe aceeași bază | fără interceptorul de blocare în providerul harness-ului, aserțiile 2 pică (contorul nu crește); cu el trec |
+| HTTP pe host viu (`run-verificari/d9-pas8-http.ps1`, baza nouă `.Privat.D9P8`) | `refuzuri.ps1` 318/318 de două ori la rând; `neexpunere-cub.py` 0 FAIL; `explicatii.py` 9 PASS, cu SC-CIT-111 |
+
+Log-urile: `run-nucleu/tr-d9a/pas7b/7c-*`, `run-verificari/d9-pas8-http/` (gitignored).
+
+## 5. Constatări
+
+1. **Contorul și ușile de scriere** (condiția de oprire din D9-A8). Contorul se citește în proiecția faptelor
+   (`OptimisticLockField` în `Select`) și crește pe ușile hosturilor: `AddSecuredEFCore` înregistrează
+   `EFCoreOptimisticLockInterceptor` pe context, deci pe XAF Blazor, pe OData/REST și pe updater-ul de seed.
+   Providerele standalone nu-l aveau: ModelCheck (lista „ce nu s-a adus din `AddEFCore`") și Import1C, care
+   rulează `ContaSeeder.Seed`. Ambele îl primesc acum explicit. Import1C rămâne probat numai prin compilare.
+   Nu e oprire: nicio ușă a produsului nu ocolește contorul.
+2. **Ce nu vede contorul.** O scriere SQL directă pe rândul de politică și restaurarea unei baze nu-l ating.
+   Un rând șters și recreat are alt identificator, deci apare ca „dispărut". Limită consemnată.
+3. **`RegulaContare.PastreazaSemn` nu mai are consumator.** După tăiere, câmpul ajunge în `RegulaContareFapt`
+   și în „Explică", dar niciun declarant nu-l citește (RDC și RLF culeg semnul pe linie). E politică editabilă
+   fără efect, de felul celei refuzate de D9-A4 la nivel de regulă. Nedecis: se scoate sau se leagă; se trece
+   în decizia 110 și în restanțe.
+4. **Proveniența conturilor fișei.** `FisaFapt` ia contul de amortizare din cub când fișa îl are deja și din
+   `PoliticaAmortizare` altfel; ipoteza reține rândul politicii pe orice fișă atinsă care îl are, fără să spună
+   care cont a venit de unde. Reține mai mult decât a decis, niciodată mai puțin.
+5. **Contrapartida recepției facturii** vine din `PoliticaTva` și se reține și pe factura fără fapt fiscal;
+   când politica nu dă cont, o dă regula de contare de rezervă, numită pe `ContRezolvat`.

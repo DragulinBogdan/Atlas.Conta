@@ -52,8 +52,7 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         for (var i = 0; i < operand.Linii.Count; i++) {
             var linie = operand.Linii[i];
             var contare = contari[i]!.Value;
-            decizii.Add(new N.ContRezolvat(linie.Id, contare.ContDebit, contare.SursaDebit.ToString()));
-            decizii.Add(new N.ContRezolvat(linie.Id, contare.ContCredit, contare.SursaCredit.ToString()));
+            Contari.Decide(contare, linie.Id, decizii);
 
             var (gestiuneDebit, gestiuneCredit) = Gestiuni(doc, contare.Regula, esteVirament);
             var debit = new N.Capat {
@@ -133,8 +132,7 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         }
         if (refuzuri.Count > 0)
             return null;
-        ipoteze.Add(operand.PerioadaDeschisa);
-        ipoteze.Add(operand.VersiunePolitica);
+        ipoteze.AddRange(PoliticiConsumate.Ipoteze(operand, decizii));
         return new N.Declaratie(doc.Id, doc.DataInregistrare, miscari, decizii, ipoteze);
     }
 

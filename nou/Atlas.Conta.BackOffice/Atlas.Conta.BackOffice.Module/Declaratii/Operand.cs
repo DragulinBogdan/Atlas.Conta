@@ -44,7 +44,10 @@ public sealed record DiferentaInventarFapt(DirectieDiferenta Directie, decimal? 
 public sealed record PoliticaTvaFapt(
     DirectieTva Directie,
     SursaCont SursaContrapartida,
-    Guid? ContrapartidaFallbackId);
+    Guid? ContrapartidaFallbackId) {
+    public Guid Id { get; init; }
+    public int Versiune { get; init; }
+}
 
 public sealed record DocumentFapt(
     Guid Id,
@@ -109,8 +112,7 @@ public sealed record Operand(
     DateOnly? DataInregistrareSursa,
     int? PerioadaDeclarare,
     decimal? TolerantaTaxa,
-    N.PerioadaDeschisa PerioadaDeschisa,
-    N.VersiunePolitica VersiunePolitica) {
+    N.PerioadaDeschisa PerioadaDeschisa) {
 
     public ReceptieSursaFapt? ReceptieSursa { get; init; }
     public N.ReperFiscal? ReperFiscal { get; init; }

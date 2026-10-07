@@ -26,7 +26,7 @@ public sealed record Explicatie(
         int JumatatiDeBan,
         IReadOnlyList<N.Decizie> Decizii,
         IReadOnlyList<N.Ipoteza> Ipoteze) {
-    public const int Versiune = 1;
+    public const int Versiune = 2;
 
     public static Explicatie Din(N.Contract contract, string declarant) {
         ArgumentNullException.ThrowIfNull(contract);
@@ -147,6 +147,7 @@ public sealed record Explicatie(
                 w.WriteString("linie", d.Linie);
                 w.WriteString("cont", d.Cont);
                 w.WriteString("sursa", d.Sursa);
+                if (d.Regula is Guid regula) w.WriteString("regula", regula);
                 break;
             default:
                 throw new InvalidOperationException($"Decizia {decizie.GetType().Name} nu are formă persistată.");
@@ -162,7 +163,7 @@ public sealed record Explicatie(
             e.GetProperty("cantitate").GetDecimal(), e.GetProperty("valoare").GetDecimal(), e.GetProperty("sursa").GetString()!),
         nameof(N.PartidaDeschisa) => new N.PartidaDeschisa(e.GetProperty("linie").GetGuid(), Unitatea(e)),
         nameof(N.ContRezolvat) => new N.ContRezolvat(e.GetProperty("linie").GetGuid(), e.GetProperty("cont").GetGuid(),
-            e.GetProperty("sursa").GetString()!),
+            e.GetProperty("sursa").GetString()!, e.TryGetProperty("regula", out var regula) ? regula.GetGuid() : null),
         var fel => throw new InvalidOperationException($"Decizie necunoscută în explicație: {fel}."),
     };
 
@@ -184,8 +185,9 @@ public sealed record Explicatie(
                 w.WriteNumber("luna", i.Luna);
                 break;
             case N.VersiunePolitica i:
-                w.WriteString("nume", i.Nume);
-                w.WriteString("valabilDeLa", Zi(i.ValabilDeLa));
+                w.WriteString("politica", i.Fel);
+                w.WriteString("rand", i.Rand);
+                w.WriteNumber("versiune", i.Versiune);
                 break;
             default:
                 throw new InvalidOperationException($"Ipoteza {ipoteza.GetType().Name} nu are formă persistată.");
@@ -203,7 +205,8 @@ public sealed record Explicatie(
             case nameof(N.PerioadaDeschisa):
                 return new N.PerioadaDeschisa(e.GetProperty("an").GetInt32(), e.GetProperty("luna").GetInt32());
             case nameof(N.VersiunePolitica):
-                return new N.VersiunePolitica(e.GetProperty("nume").GetString()!, Zi(e.GetProperty("valabilDeLa")));
+                return new N.VersiunePolitica(e.GetProperty("politica").GetString()!, e.GetProperty("rand").GetGuid(),
+                    e.GetProperty("versiune").GetInt32());
             case var fel:
                 throw new InvalidOperationException($"Ipoteză necunoscută în explicație: {fel}.");
         }

@@ -331,6 +331,17 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   în afara scării ținută în memorie. Un declanșator persistabil pe ușa HTTP
   nu a fost construit; răspunsul ușii e cel al oricărui refuz de declarație
   (422 la operare, listă la dry-run), neprobat separat pentru acest cod.
+- Explicația reține care rând de politică a decis și dacă s-a schimbat de la
+  operare, nu și cum arăta atunci; nomenclatoarele care decid contarea
+  (contul tipului de material, conturile tipului de TVA, steagurile contului)
+  nu se rețin (D9-r3). Contorul e `OptimisticLockField`: nu-l mișcă o scriere
+  SQL directă sau restaurarea bazei, iar un rând șters și recreat apare ca
+  dispărut. Politica de amortizare se reține pe orice fișă atinsă care are
+  rând, fără să spună care cont a venit din ea și care din cub. (D9-A8;
+  2026-10-07)
+- `RegulaContare.PastreazaSemn` nu mai e citit de niciun declarant: se
+  editează, apare în „Explică", dar nu schimbă postările. Nedecis: se scoate
+  sau se leagă. (constatat la TR-D9a pasul 7c; 2026-10-07)
 - Explicația repetă câte două `ContRezolvat` și unitatea întreagă pe fiecare
   linie. Măsurat în X-D5: 907 octeți pe linie, 58.066 pentru un consum de 64
   de linii.

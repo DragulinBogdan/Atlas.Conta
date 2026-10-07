@@ -27,7 +27,7 @@ static class ProbeAsmOperand {
                 false, null, repartitor, repartitor, null, null, null);
             Operand Operand(params LinieOperand[] linii) => new(doc, linii, [], [], null,
                 new Dictionary<Guid, TipTvaFapt>(), new Dictionary<Guid, ContFapt>(), solduri,
-                null, [], null, null, null, new(2014, 1), new("probă", data));
+                null, [], null, null, null, new(2014, 1));
             N.Declaratie Declara(Operand o, out List<N.Refuz> refuzuri) {
                 refuzuri = [];
                 return DeclarantAsamblare.Instanta.Declara(o, new(conventie), refuzuri);

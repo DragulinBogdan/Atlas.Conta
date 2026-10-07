@@ -919,7 +919,8 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   contare/stoc, politica de TVA, tipurile de TVA cu conturile lor, conturile
   atinse cu `UrmarestePartide`), starea citită (soldurile loturilor la data
   înregistrării fără documentul curent, restul partidei sursei, perioada
-  de declarare, perioada deschisă, versiunea politicii, toleranța taxei).
+  de declarare, perioada deschisă, toleranța taxei). Faptele de politică
+  poartă contorul rândului (`OptimisticLockField`, D9-A8).
   Îl construiește `Motor/Fapte.Operand(os, doc)` PE SETURI (o interogare
   per tabelă, probat `≤ 16` cu `NumaratorSql`). Câmpurile de frunză fără
   interfață declarată (`Valuta`/`Curs` pe FCT) NU intră.
@@ -1327,10 +1328,23 @@ ieșirea atât, din ce sold, ce partide a stins.
   modifică. `Storno`, `Deschidere`, transferul împerecherii, desfacerea și
   stingerea de deschidere nu au explicație; baza refuză prin
   `CK_Tranzactie_Explicatie` și `CK_Tranzactie_ExplicatieDin`.
-- **Ce**: `Cub.Explicatie` — versiunea schemei (`v` = 1), numele
+- **Ce**: `Cub.Explicatie` — versiunea schemei (`v` = 2), numele
   declarantului, `JumatatiDeBan`, deciziile și ipotezele contractului în
   ordinea declarației, cu linia și unitatea lor. Un cititor refuză o versiune,
-  o decizie sau o ipoteză pe care nu o cunoaște.
+  o decizie sau o ipoteză pe care nu o cunoaște; versiunea 1 nu are cititor.
+- **Regula care a decis** (D9-A8): pentru fiecare rând de politică din care
+  declarantul a luat un fapt folosit la o postare, ipoteza
+  `VersiunePolitica(Fel, Rand, Versiune)` — clasa rândului, identificatorul
+  și contorul lui la operare, una pe rând, fără dubluri
+  (`Declaratii/PoliticiConsumate`). Se rețin: regula de contare câștigătoare
+  a fiecărei linii (numită și pe `ContRezolvat.Regula`), regula de stoc a
+  LDI, politica de TVA când declarația are fapt fiscal sau contrapartida
+  recepției vine din ea, politica de diferență a NIR-ului conex și politica
+  de amortizare a fișelor atinse. Nu se rețin nomenclatoarele care decid
+  (tipul de material, tipul de TVA, steagurile contului) și nici conținutul
+  regulii la operare (D9-r3). Un declarant care nu consumă reguli (ASM, BTR,
+  NTC) nu scrie ipoteza. Lista nominală, declarant cu declarant:
+  `docs/nucleu/tr-d9-pas7c-versiunea-politicii.md`.
 - **Ieșirea pe lot** are exact o decizie de valoare: `ValoareIesire` când
   valoarea vine din soldul citit (BCS, DSC, BTR, LDI minus, consumul ASM),
   `ValoareDeclarata` când o dă altă sursă — linia documentului (RLF și RDC, la

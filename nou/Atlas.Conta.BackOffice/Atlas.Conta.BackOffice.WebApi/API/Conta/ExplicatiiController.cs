@@ -27,6 +27,6 @@ public class ExplicatiiController(IObjectSpaceFactory secured, INonSecuredObject
                 + $"restricționate: {string.Join(", ", lipsuri.Take(Afisate))}"
                 + (lipsuri.Count > Afisate ? $" și încă {lipsuri.Count - Afisate}." : ".")]));
         }
-        return Ok(ExplicatieTranzactieDto.Din(Explicatii.PeTranzactie(os, tranzactieId)));
+        return Ok(ExplicatieTranzactieDto.Din(Explicatii.PeTranzactie(os, tranzactieId), v => VersiuniPolitica.Contor(os, v)));
     }
 }

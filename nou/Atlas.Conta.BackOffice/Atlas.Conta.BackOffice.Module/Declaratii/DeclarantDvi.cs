@@ -61,6 +61,6 @@ public sealed class DeclarantDvi : IDeclarant {
                 0m, 0m, l.Valoare, new(doc.Id, l.Id)));
         }
         return refuzuri.Count > 0 ? null : new(doc.Id, doc.DataInregistrare, miscari, decizii,
-            [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+            PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, tipuri)));
     }
 }

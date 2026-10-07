@@ -212,7 +212,8 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         .UseChangeTrackingProxies()
         .UseObjectSpaceLinkProxies()
         .UseLazyLoadingProxies()
-        .AddInterceptors(NumaratorSql.Instanta));
+        // D9-A8: contorul rândului de politică crește la salvare ca pe hosturi (`AddSecuredEFCore`).
+        .AddInterceptors(NumaratorSql.Instanta, new DevExpress.ExpressApp.EFCore.DataLocking.EFCoreOptimisticLockInterceptor()));
 s.Provider = provider;
 
 using (var osPlan = provider.CreateObjectSpace())

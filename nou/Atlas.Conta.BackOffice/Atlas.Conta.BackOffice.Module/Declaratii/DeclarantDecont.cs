@@ -48,8 +48,8 @@ public sealed class DeclarantDecont : IDeclarant {
                 ?? regula.Value.Comun?.RepartitorId ?? operand.Document.Predator.Id;
             var rc = l.RepartitorCreditId ?? regula.Value.OverrideCredit?.RepartitorId
                 ?? regula.Value.Comun?.RepartitorId ?? operand.Document.Predator.Id;
-            var capD = Capat(d, rd, Contari.Analiza(l.Analiza, regula.Value.OverrideDebit, regula.Value.Comun), l.Id);
-            var capC = Capat(c, rc, Contari.Analiza(l.Analiza, regula.Value.OverrideCredit, regula.Value.Comun), l.Id);
+            var capD = Capat(d, rd, Contari.Analiza(l.Analiza, regula.Value.OverrideDebit, regula.Value.Comun), l.Id, regula.Value.Id);
+            var capC = Capat(c, rc, Contari.Analiza(l.Analiza, regula.Value.OverrideCredit, regula.Value.Comun), l.Id, regula.Value.Id);
             var baza = tipuri[i] is { } tipBaza ? Fiscal.CuFapt(operand, capD, tipBaza, N.RolTva.Baza) : capD;
             var cauza = new N.Cauza(operand.Document.Id, l.Id);
             if (tipuri[i] is { Regim: RegimTva.Capitalizat } cap) {
@@ -61,16 +61,16 @@ public sealed class DeclarantDecont : IDeclarant {
             else miscari.Add(new(capC, baza, 0, 0, l.Valoare, cauza));
             if (Fiscal.Impozitul(operand, l, tipuri[i], taxa, DirectieTva.Deductibil, refuzuri) is { } impozit)
                 miscari.Add(impozit with { DeLa = Capat(impozit.DeLa.Cont, operand.Document.Predator.Id,
-                    impozit.DeLa.Analiza, l.Id) with {
+                    impozit.DeLa.Analiza, l.Id, null) with {
                         CodTva = impozit.DeLa.CodTva, ReperFiscal = impozit.DeLa.ReperFiscal,
                         PerioadaDeclarare = impozit.DeLa.PerioadaDeclarare,
                     } });
         }
         return refuzuri.Count > 0 ? null : new(operand.Document.Id, operand.Document.DataInregistrare,
-            miscari, decizii, [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+            miscari, decizii, PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, tipuri)));
 
-        N.Capat Capat(Guid cont, Guid repartitor, N.Analiza analiza, Guid linie) {
-            decizii.Add(new N.ContRezolvat(linie, cont, "decont"));
+        N.Capat Capat(Guid cont, Guid repartitor, N.Analiza analiza, Guid linie, Guid? regula) {
+            decizii.Add(new N.ContRezolvat(linie, cont, "decont", regula));
             if (!operand.Repartitori.TryGetValue(repartitor, out var r) || r.Parte == null) {
                 refuzuri.Add(new(CoduriRefuz.RepartitorExplicitLipsa, "Repartitorul liniei nu poate fi rezolvat.", linie));
                 return new() { Cont = cont, Analiza = analiza };

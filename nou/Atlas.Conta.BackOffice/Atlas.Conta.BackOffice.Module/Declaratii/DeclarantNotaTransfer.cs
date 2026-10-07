@@ -87,8 +87,7 @@ public sealed class DeclarantNotaTransfer : IDeclarant {
         }
         if (refuzuri.Count > 0)
             return null;
-        ipoteze.Add(operand.PerioadaDeschisa);
-        ipoteze.Add(operand.VersiunePolitica);
+        ipoteze.AddRange(PoliticiConsumate.Ipoteze(operand, decizii));
         return new N.Declaratie(doc.Id, doc.DataInregistrare, [], mutari, decizii, ipoteze);
     }
 }

@@ -83,7 +83,7 @@ public sealed class DeclarantAsamblare : IDeclarant {
         if (refuzuri.Count > 0) return null;
 
         var decizii = new List<N.Decizie>();
-        var ipoteze = new List<N.Ipoteza> { operand.PerioadaDeschisa, operand.VersiunePolitica };
+        var ipoteze = new List<N.Ipoteza> { operand.PerioadaDeschisa };
         var valori = new List<ValoriLinie>();
         foreach (var l in linii) {
             if (consum.TryGetValue(l.Id, out var evaluat)) {

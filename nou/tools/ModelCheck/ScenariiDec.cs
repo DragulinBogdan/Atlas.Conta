@@ -158,7 +158,7 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
             new Dictionary<Guid, ContFapt> { [Cont(Serviciu)] = new(Cont(Serviciu), Serviciu, false, false),
                 [Cont(Avans)] = new(Cont(Avans), Avans, true, false) },
             new Dictionary<CheieLotFapt, N.Sold>(), null, [], null, null, null,
-            new(An, 1), new("scena-dec", Ianuarie)) {
+            new(An, 1)) {
                 Repartitori = new Dictionary<Guid, RepartitorFapt> { [titular] = titularFapt, [Loc] = locFapt },
             };
         foreach (var (o, cod) in new[] {

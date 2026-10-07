@@ -20,7 +20,7 @@ static class ProbeNirOperand {
             SursaCont.TipMaterial, null, SursaCont.Explicit, furnizor, true, null, null, null);
         Operand Operand(params LinieOperand[] linii) => new(doc, linii, [regula], [], null,
             new Dictionary<Guid, TipTvaFapt>(), new Dictionary<Guid, ContFapt>(),
-            new Dictionary<CheieLotFapt, N.Sold>(), null, [], null, null, null, new(2016, 1), new("probă", data));
+            new Dictionary<CheieLotFapt, N.Sold>(), null, [], null, null, null, new(2016, 1));
         foreach (var conventie in new[] { MidpointRounding.ToEven, MidpointRounding.AwayFromZero }) {
             N.Contract Contract(Operand o) {
                 var refuzuri = new List<N.Refuz>(); var rot = new N.Rotunjire(conventie);

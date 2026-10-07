@@ -29,7 +29,7 @@ public sealed class DeclarantNotaContabila : IDeclarant {
 
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
-        var ipoteze = new List<N.Ipoteza> { operand.PerioadaDeschisa, operand.VersiunePolitica };
+        var ipoteze = new List<N.Ipoteza> { operand.PerioadaDeschisa };
         var solduri = operand.PartideDisponibile.ToDictionary(p => p.Unitate.Id, p => Math.Sign(p.Sold.Net) * p.Disponibil);
         var citite = new HashSet<Guid>();
         var deschise = new HashSet<Guid>();

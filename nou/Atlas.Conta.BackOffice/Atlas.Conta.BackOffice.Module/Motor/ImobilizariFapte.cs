@@ -16,7 +16,7 @@ internal static class ImobilizariFapte {
             .ToList();
         var tipuri = fise.Select(f => f.TipMaterialId).Distinct().ToList();
         var politici = os.GetObjectsQuery<PoliticaAmortizare>().Where(p => tipuri.Contains(p.TipMaterialId))
-            .Select(p => new { p.TipMaterialId, p.ContAmortizareId, p.ContCheltuialaAmortizareId, p.ContCheltuialaCedareId })
+            .Select(p => new { p.ID, p.TipMaterialId, p.ContAmortizareId, p.ContCheltuialaAmortizareId, p.ContCheltuialaCedareId, p.OptimisticLockField })
             .ToDictionary(p => p.TipMaterialId);
         var situatii = C.Citiri.Imobilizari.Randuri(os, ids, operand.Document.DataInregistrare)
             .Where(r => r.DocumentId != operand.Document.Id).GroupBy(r => r.Rand.ImobilizareId)
@@ -30,7 +30,9 @@ internal static class ImobilizariFapte {
                 conturi?.Amortizare ?? p?.ContAmortizareId ?? Guid.Empty,
                 p?.ContCheltuialaAmortizareId ?? Guid.Empty, p?.ContCheltuialaCedareId ?? Guid.Empty,
                 f.LocId, f.DataPunereInFunctiune ?? operand.Document.Data,
-                s?.ValoareFiscala ?? 0m, s?.AmortizareFiscala ?? 0m);
+                s?.ValoareFiscala ?? 0m, s?.AmortizareFiscala ?? 0m) {
+                    Politica = p == null ? null : new N.VersiunePolitica(nameof(PoliticaAmortizare), p.ID, p.OptimisticLockField),
+                };
         });
         if (!linii.Any(l => l.Imobilizare is PifCules { Fel: not FelLiniePif.Revizuire }))
             return operand with { Fise = rezultat };

@@ -323250,6 +323250,11 @@
           "Sursa": {
             "type": "string",
             "nullable": true
+          },
+          "RegulaId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -323283,13 +323288,11 @@
             "format": "int32",
             "nullable": true
           },
-          "Politica": {
-            "type": "string",
-            "nullable": true
-          },
-          "PoliticaValabilaDeLa": {
-            "type": "string",
-            "format": "date",
+          "Politici": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExplicatiePoliticaDto"
+            },
             "nullable": true
           },
           "Linii": {
@@ -323458,6 +323461,32 @@
               "$ref": "#/components/schemas/ExplicatieUnitateDto"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExplicatiePoliticaDto": {
+        "type": "object",
+        "properties": {
+          "Fel": {
+            "type": "string",
+            "nullable": true
+          },
+          "RandId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "Versiune": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "VersiuneCurenta": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "Schimbata": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

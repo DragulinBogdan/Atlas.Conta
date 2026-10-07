@@ -227,7 +227,9 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         .UseNpgsql(pgCs)
         .UseChangeTrackingProxies()
         .UseObjectSpaceLinkProxies()
-        .UseLazyLoadingProxies());
+        .UseLazyLoadingProxies()
+        // D9-A8: seed-ul rulat aici crește contorul rândului de politică, ca pe hosturi.
+        .AddInterceptors(new DevExpress.ExpressApp.EFCore.DataLocking.EFCoreOptimisticLockInterceptor()));
 
 // Seed-ul profilului privat pe calea updater-ului; idempotent la re-rulare, iar
 // `VerificaProfil` din seeder protejează ancora (o bază cu alt plan e refuzată).

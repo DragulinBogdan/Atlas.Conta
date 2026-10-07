@@ -230,9 +230,13 @@ invariantul în `Conservare` și în `INV-CUB` cu doi mutanți, stornoul pe surs
 `InitialCreate`; nucleu 190/190, integrala 4.795 privat / 3.516 bugetar, zero
 FAIL, numai adaos față de 7. Bazele de dezvoltare se recreează din
 `InitialCreate`; clonele de import și de perf rămân pe schema veche (Import1C
-cere `--recreeaza`). Urmează pasul 7c (D9-A8, versiunea politicii în
-explicație; lista faptelor de politică înaintea codului), apoi pasul 8
-(închiderea: D9-D15 rândul 8, decizia 110, review advers Codex), pornirea în
+cere `--recreeaza`). Pasul 7c e făcut (2026-10-07, main direct,
+`docs/nucleu/tr-d9-pas7c-versiunea-politicii.md`): explicația reține rândurile
+de politică consumate cu contorul lor (`VersiunePolitica(Fel, Rand,
+Versiune)`, `ContRezolvat.Regula`), formatul 2, DTO-ul cu `Politici` și
+`Schimbata`, SC-CIT-111 în ModelCheck și pe HTTP; integrala 4.803 privat /
+3.524 bugetar, zero FAIL. Urmează pasul 8 (închiderea: D9-D15 rândul 8,
+decizia 110, review advers Codex), pornirea în
 `run-nucleu/tr-d9a/coordonare.md`.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;

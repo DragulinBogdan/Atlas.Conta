@@ -192,7 +192,7 @@ public static class Gen {
                     Zecimal(aleator, 0.001m, 999.999m, Scara.Cantitate),
                     Zecimal(aleator, 0m, 9999.99m, Scara.Bani),
                     "document"),
-                _ => new ContRezolvat(linie, cont, "politica"),
+                _ => new ContRezolvat(linie, cont, "politica", aleator.Next(2) == 0 ? Unul(aleator, Linii) : null),
             });
         }
         return decizii;
@@ -211,7 +211,7 @@ public static class Gen {
                         Zecimal(aleator, 0m, 999.999m, Scara.Cantitate),
                         0m)),
                 1 => new PerioadaDeschisa(2026, 1 + aleator.Next(12)),
-                _ => new VersiunePolitica("politica", Data(aleator)),
+                _ => new VersiunePolitica("RegulaContare", Unul(aleator, Linii), aleator.Next(5)),
             });
         return ipoteze;
     }

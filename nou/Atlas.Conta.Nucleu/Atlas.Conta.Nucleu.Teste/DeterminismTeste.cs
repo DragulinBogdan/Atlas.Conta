@@ -32,7 +32,7 @@ public class DeterminismTeste {
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var declaratie = Gen.Declaratie(aleator);
             var alta = declaratie with {
-                Ipoteze = [new VersiunePolitica("altă politică", Gen.Data(aleator))],
+                Ipoteze = [new VersiunePolitica("altă politică", Gen.Unul(aleator, Gen.Linii), 1)],
             };
             var unul = Motor.Opereaza(declaratie, new Rotunjire(MidpointRounding.AwayFromZero));
             var altul = Motor.Opereaza(alta, new Rotunjire(MidpointRounding.AwayFromZero));

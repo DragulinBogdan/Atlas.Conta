@@ -40,7 +40,7 @@ public static class Contractare {
         // Materializarea păstrează proveniența pe agregat și omite tranzacția goală.
         if (declaratie is null && declarant.PermiteDeclaratieFaraMiscari(operand))
             return N.Contract.Accepta([new(N.FelTranzactie.Operare, doc.DataInregistrare, doc.ID, [])],
-                [], [operand.PerioadaDeschisa, operand.VersiunePolitica], rotunjire.JumatatiDeBan);
+                [], [operand.PerioadaDeschisa], rotunjire.JumatatiDeBan);
         if (declaratie is null)
             return Invalida($"Declarantul {declarant.GetType().Name} a întors null fără niciun refuz.");
         try {

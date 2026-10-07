@@ -41,6 +41,12 @@ static class Contari {
         return new ContareLinie(regula, contDebit, contCredit, debit.Sursa, credit.Sursa);
     }
 
+    /// <summary>Cele două conturi ale liniei, decise de regula ei (D9-A8).</summary>
+    public static void Decide(ContareLinie contare, Guid linie, List<N.Decizie> decizii) {
+        decizii.Add(new N.ContRezolvat(linie, contare.ContDebit, contare.SursaDebit.ToString(), contare.Regula.Id));
+        decizii.Add(new N.ContRezolvat(linie, contare.ContCredit, contare.SursaCredit.ToString(), contare.Regula.Id));
+    }
+
     // B-D8 pct. 8: același coalesce ca motorul vechi, pe funcția pură existentă —
     // repartitorul și materialul nu sunt axe de `Analiza` (sunt `Gestiune`/`Produs`).
     public static N.Analiza Analiza(N.Analiza aLiniei, Dimensiuni? overrideLatura, Dimensiuni? comun) {

@@ -50,8 +50,7 @@ public sealed class DeclarantReturClient : IDeclarant {
         var partide = new Dictionary<Guid, N.Unitate>();
         for (var i = 0; i < operand.Linii.Count; i++) {
             var l = operand.Linii[i]; var contare = contari[i]!.Value;
-            decizii.Add(new N.ContRezolvat(l.Id, contare.ContDebit, contare.SursaDebit.ToString()));
-            decizii.Add(new N.ContRezolvat(l.Id, contare.ContCredit, contare.SursaCredit.ToString()));
+            Contari.Decide(contare, l.Id, decizii);
             var credit = new N.Capat {
                 Cont = contare.ContCredit, Gestiune = doc.Primitor.Id,
                 Produs = l.Lot?.ProdusId,
@@ -84,6 +83,6 @@ public sealed class DeclarantReturClient : IDeclarant {
         return new(doc.Id, doc.DataInregistrare, [.. miscari.Select(m => m with {
             DeLa = Terti.Capat(operand, m.DeLa, doc.Predator.Id, partide),
             La = Terti.Capat(operand, m.La, doc.Predator.Id, partide),
-        })], decizii, [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+        })], decizii, PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, fiscale)));
     }
 }

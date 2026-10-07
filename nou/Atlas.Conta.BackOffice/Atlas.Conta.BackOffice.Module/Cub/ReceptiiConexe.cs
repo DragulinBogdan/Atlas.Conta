@@ -114,7 +114,9 @@ public static class ReceptiiConexe {
         var constatari = doc.Detalii.ToDictionary(d => d.ID, d => new ConstatareReceptie(
             Identifica(d, sursa.Linii), (d as NirDetaliu)?.CauzaDiferentei, (d as NirDetaliu)?.PartenerDiferentaId));
         var politici = os.GetObjectsQuery<PoliticaDiferenta>().Where(p => p.TipDocumentId == operand.Document.TipDocumentId)
-            .Select(p => new PoliticaDiferentaFapt(p.ClasaId, p.Cauza, p.ContId, p.ContPersonalId)).ToList();
+            .Select(p => new { p.ID, p.ClasaId, p.Cauza, p.ContId, p.ContPersonalId, p.OptimisticLockField }).ToList()
+            .Select(p => new PoliticaDiferentaFapt(p.ClasaId, p.Cauza, p.ContId, p.ContPersonalId)
+                { Id = p.ID, Versiune = p.OptimisticLockField }).ToList();
         var idsCont = politici.SelectMany(p => new[] { p.Cont, p.ContPersonal ?? p.Cont }).Distinct().ToList();
         var conturi = operand.Conturi.ToDictionary(p => p.Key, p => p.Value);
         foreach (var (id, cont) in Fapte.Conturi(os, idsCont))
