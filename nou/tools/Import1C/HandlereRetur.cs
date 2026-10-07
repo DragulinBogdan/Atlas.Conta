@@ -6,8 +6,7 @@ namespace Import1C;
 // PASUL 4, tipurile 5–6: retururile (RLF/RDC — tipurile de produs din felia 1C-a,
 // decizia 46e). Reprezentarea e a motorului, nu a importului: liniile se culeg
 // POZITIVE, iar `PregatesteOperare` le semnează negativ pe corespondența
-// ORIGINALĂ (achiziție/vânzare), cu `RegulaContare.PastreazaSemn` — exact
-// rândurile negative ale sursei.
+// ORIGINALĂ (achiziție/vânzare) — exact rândurile negative ale sursei.
 //
 // Amândouă construiesc liniile de STOC din rândurile de notă + subconto (ca
 // BTR/BCS la pasul 3): secțiunile n-au lotul, iar câmpul `DocumentIntrare` /

@@ -12,10 +12,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 //  * liniile se CULEG pozitive, `PregatesteOperare` le semnează negativ
 //    (idempotent prin Abs — precedentul LDI 28a); direcția e fixă per tip,
 //    deci nu e nevoie de enum pe linie;
-//  * stocul și pasul TVA din motor NU se schimbă: semnul liniei face treaba,
-//    regula spune doar latura și registrul;
-//  * singura extensie de motor e `RegulaContare.PastreazaSemn` (valoarea se
-//    postează cu semnul ei, fără normalizarea SemnFiltru).
+//  * semnul liniei face treaba: declarantul postează valoarea cu semnul ei,
+//    regula spune doar conturile.
 // Flag-ul `Storno` rămâne al meta-operației `Storneaza`: stornarea unui retur
 // produce rânduri POZITIVE cu Storno=true — consecință naturală a convenției.
 // Proveniența unui rând de retur se citește din TipDocument.

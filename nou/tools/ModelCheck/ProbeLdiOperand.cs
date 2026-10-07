@@ -24,9 +24,9 @@ static class ProbeLdiOperand {
             };
         }
         var p = Linie(true); var m = Linie(false);
-        RegulaContareFapt[] contare = [new(Guid.NewGuid(), null, NaturaClasa.Stoc, 1, false,
+        RegulaContareFapt[] contare = [new(Guid.NewGuid(), null, NaturaClasa.Stoc, 1,
             SursaCont.TipMaterial, null, SursaCont.Explicit, venit, true, null, null, null),
-            new(Guid.NewGuid(), tip, null, -1, false, SursaCont.Explicit, cost,
+            new(Guid.NewGuid(), tip, null, -1, SursaCont.Explicit, cost,
                 SursaCont.TipMaterial, null, true, null, null, null)];
         RegulaStocFapt regula = new(Guid.NewGuid(), LaturaDocument.Predator, null, TipStoc.Magazie, 1, true);
         Operand Operand(params LinieOperand[] linii) => new(doc, linii, contare, [regula], null,

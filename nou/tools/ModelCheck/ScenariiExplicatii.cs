@@ -137,7 +137,7 @@ sealed partial class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<stri
 
         var contorInitial = Contor(regula);
         try {
-            PrinGardian(os => { var r = os.GetObjectByKey<RegulaContare>(regula); r.PastreazaSemn = !r.PastreazaSemn; });
+            PrinGardian(os => EditeazaNeutru(os.GetObjectByKey<RegulaContare>(regula)));
             Verifica("SC-CIT-111", "editarea prin ușa gardianului crește contorul rândului cu 1 și îl timbrează ca al clientului",
                 Contor(regula) == contorInitial + 1 && CuSpatiu(os => !os.GetObjectByKey<RegulaContare>(regula).DinSeed));
             var bon2 = Bon((propriu, 1)); Opereaza(bon2.Id);

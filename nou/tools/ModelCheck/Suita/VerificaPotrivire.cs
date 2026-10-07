@@ -76,7 +76,7 @@ static class VerificaPotrivire {
         var clasaUnu = Guid.NewGuid();
         var clasaDoi = Guid.NewGuid();
         RegulaContareFapt Rc(Guid? tipMaterial, NaturaClasa? naturaFiltru, int? semnFiltru) =>
-            new(Guid.NewGuid(), tipMaterial, naturaFiltru, semnFiltru, false, SursaCont.Explicit, null,
+            new(Guid.NewGuid(), tipMaterial, naturaFiltru, semnFiltru, SursaCont.Explicit, null,
                 SursaCont.Explicit, null, false, null, null, null);
         RegulaStocFapt Rs(LaturaDocument latura, Guid? clasaId, TipStoc tipStoc, int semn) =>
             new(Guid.NewGuid(), latura, clasaId, tipStoc, semn, false);

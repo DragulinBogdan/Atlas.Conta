@@ -43,7 +43,7 @@ const SETURI = [
 ];
 
 const GRUPURI: GrupFormular[] = [
-  { titlu: 'Potrivire', campuri: ['TipDocumentId', 'TipMaterialId', 'NaturaFiltru', 'SemnFiltru', 'PastreazaSemn'] },
+  { titlu: 'Potrivire', campuri: ['TipDocumentId', 'TipMaterialId', 'NaturaFiltru', 'SemnFiltru'] },
   { titlu: 'Conturi', campuri: ['SursaContDebit', 'ContDebitId', 'SursaContCredit', 'ContCreditId'] },
   ...SETURI.map((s) => ({
     titlu: s.titlu,
@@ -118,7 +118,6 @@ export function ReguliContare() {
         <Lookup dataSource={naturi} valueExpr="valoare" displayExpr="label" />
       </Column>
       <Column dataField="SemnFiltru" caption="Filtru de semn" dataType="number" width={130} />
-      <Column dataField="PastreazaSemn" caption="Păstrează semnul" dataType="boolean" width={150} />
       <Column dataField="SursaContDebit" caption="Sursa contului debitor" width={180}>
         <Lookup dataSource={surse} valueExpr="valoare" displayExpr="label" />
       </Column>

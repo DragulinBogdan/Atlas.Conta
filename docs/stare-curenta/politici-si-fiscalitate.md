@@ -26,7 +26,7 @@ tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e
 |---|---|
 | Tip TVA | Cotă între 0 și 100; referințele pentru implicite trebuie să indice tipuri active (81e) |
 | Regulă de contare / politică TVA | Sursa de cont explicită cere cont explicit (81e) |
-| Regulă de contare | Filtrul de semn este `-1`, `1` sau absent; un filtru de tip material exclude completarea filtrului de natură (81e) |
+| Regulă de contare | Filtrul de semn este `-1`, `1` sau absent; un filtru de tip material exclude completarea filtrului de natură (81e). Filtrul doar potrivește: regula nu poartă și nu schimbă semnul valorii, care e al liniei (113) |
 | Regulă de stoc | Semnul este `-1` sau `1` (81e) |
 | Orice politică sau nomenclator cu proveniență | Fiecare câmp enum poartă un membru definit; enum-urile fără membru 0 nu acceptă valoarea implicită scrisă prin omisiune (84i) |
 | Tip TVA | Ștergerea unui tip referit (implicite, ancoră, parteneri, produse, linii de document, registrul TVA) se refuză, ca dezactivarea (84j) |

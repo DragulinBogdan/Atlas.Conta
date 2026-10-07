@@ -152,7 +152,7 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
                 titularFapt, locFapt, null, null, null),
             [new(linie, tip, null, NaturaClasa.Serviciu, Cont(Serviciu), null, null, 1, 100, 0,
                 null, 100, null, null, null, null, null, null, N.Analiza.Fara, null)],
-            [new(Guid.NewGuid(), null, NaturaClasa.Serviciu, null, false,
+            [new(Guid.NewGuid(), null, NaturaClasa.Serviciu, null,
                 SursaCont.TipMaterial, null, SursaCont.RepartitorPredator, Cont(Avans), true, null, null, null)],
             [], null, new Dictionary<Guid, TipTvaFapt>(),
             new Dictionary<Guid, ContFapt> { [Cont(Serviciu)] = new(Cont(Serviciu), Serviciu, false, false),

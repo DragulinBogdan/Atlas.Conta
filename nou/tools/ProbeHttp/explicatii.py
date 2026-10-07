@@ -105,14 +105,17 @@ def main():
             # D9-A8: regula editată pe ușa OData a hostului își crește contorul; explicația veche o arată „schimbată”.
             retinuta, = call('Admin', path)['Origini'][0]['Politici']
             rand = f"/api/odata/RegulaContare({retinuta['RandId']})"
-            initial = call('Admin', rand)['PastreazaSemn']
-            for valoare in (not initial, initial):
-                request = urllib.request.Request(args.host.rstrip('/') + rand, data=json.dumps({'PastreazaSemn': valoare}).encode(),
+            # Contul creditor explicit e rezervă pe sursa TipMaterial: editarea lui nu schimbă postările.
+            regula = call('Admin', rand)
+            initial = regula['ContCreditId']
+            assert initial is None and regula['SursaContCredit'] == 'TipMaterial' and regula['ContDebitId'], regula
+            for valoare in (regula['ContDebitId'], initial):
+                request = urllib.request.Request(args.host.rstrip('/') + rand, data=json.dumps({'ContCreditId': valoare}).encode(),
                     headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokens['Admin']}, method='PATCH')
                 with urllib.request.urlopen(request, timeout=90) as response:
                     assert response.status in (200, 204), response.status
             dupa, = call('Admin', path)['Origini'][0]['Politici']
-            assert call('Admin', rand)['PastreazaSemn'] == initial
+            assert call('Admin', rand)['ContCreditId'] == initial
             assert dupa['Schimbata'] and dupa['Versiune'] == retinuta['Versiune'] \
                 and dupa['VersiuneCurenta'] == retinuta['Versiune'] + 2, (retinuta, dupa)
             print('PASS SC-CIT-111 regula editată de două ori pe OData: contorul curent +2, explicația veche „schimbată”', flush=True)

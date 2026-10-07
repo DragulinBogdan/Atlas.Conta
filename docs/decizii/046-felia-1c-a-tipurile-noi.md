@@ -1,7 +1,7 @@
 # Decizia 46 — Felia 1C-a — tipurile noi de model
 
 - **Data**: 2026-07-25 (primul commit în jurnal)
-- **Stare**: activă
+- **Stare**: activă; (a) amendată de 113: `RegulaContare.PastreazaSemn` a ieșit, semnul valorii e al liniei
 - **Docs**: docs/import/faza-1c-design.md
 
 ## Regula durabilă

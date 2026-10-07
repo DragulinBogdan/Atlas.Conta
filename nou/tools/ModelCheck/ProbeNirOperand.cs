@@ -16,7 +16,7 @@ static class ProbeNirOperand {
         var lot = new LotFapt(Guid.NewGuid(), produs, tip, stoc, data, 0m) { GestiuneId = gest, LinieIntrareId = id };
         var linie = new LinieOperand(id, tip, Guid.NewGuid(), NaturaClasa.Stoc, stoc, lot.Id, lot, 6m, 999m, 0m,
             null, null, produs, tip, null, null, null, null, N.Analiza.Fara, null) { PretUnitar = 12.5m };
-        RegulaContareFapt regula = new(Guid.NewGuid(), null, NaturaClasa.Stoc, 1, false,
+        RegulaContareFapt regula = new(Guid.NewGuid(), null, NaturaClasa.Stoc, 1,
             SursaCont.TipMaterial, null, SursaCont.Explicit, furnizor, true, null, null, null);
         Operand Operand(params LinieOperand[] linii) => new(doc, linii, [regula], [], null,
             new Dictionary<Guid, TipTvaFapt>(), new Dictionary<Guid, ContFapt>(),
