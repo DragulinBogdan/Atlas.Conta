@@ -33,9 +33,10 @@ static class ProbeTransferCititori {
         (Modul + "Declaratii/DeclarantAsamblare.cs", "DeclarantAsamblare.Declara", "producătorul alege felul tranzacției"),
         (Modul + "Cub/Citiri/Loturi.cs", "Loturi.VerificaRetragere", "retragerea reverifică soldul și pe transferurile proprii"),
         (Modul + "Cub/Citiri/Plati.cs", "Plati.Alocari", "alocarea plăților urmează transferurile pe partida proprie"),
-        (Modul + "Cub/Citiri/Imobilizari.cs", "Imobilizari.VerificaAcoperire", "martor: transfer valoric fără suport"),
+        (Modul + "Cub/Citiri/Imobilizari.cs", "Imobilizari.VerificaProvenienta", "martor: transfer valoric fără suport"),
         (Modul + "Cub/Citiri/Explicatii.cs", "Explicatii.VerificaAcoperire", "martor: ieșirile pe lot din transferuri cer explicație"),
         (Modul + "Cub/Citiri/Invarianti.cs", "Invarianti.VerificaTransferuri", "martor: transferul persistat conservă pe cont (090f)"),
+        (Modul + "Cub/Citiri/Invarianti.cs", "Invarianti.VerificaPerechi", "martor: perechea transferului stă pe aceeași latură (D9-A2)"),
         (Modul + "Saft/SaftProiectii.PeCub.Stocuri.cs", "StocuriPeCub.Referinta", "eticheta mișcării, nu filtru"),
     ];
 

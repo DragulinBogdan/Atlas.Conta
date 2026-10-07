@@ -30,6 +30,9 @@ public sealed class PostareJurnal {
 }
 
 public static class Contabil {
+    /// <summary>Repartitorul unei postări contabile: partenerul piciorului de terț sau gestiunea piciorului intern (D9-A10).</summary>
+    public static Guid? Repartitor(Guid? partener, Guid? gestiune) => partener ?? gestiune;
+
     static IQueryable<Postare> Domeniu(IObjectSpace os) => os.GetObjectsQuery<Postare>()
         .Where(p => p.Carte == N.Carte.Contabil).Where(Transformare.FaraContrapondere);
 

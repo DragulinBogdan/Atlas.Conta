@@ -10,7 +10,7 @@ public class DeterminismTeste {
         nameof(Miscare), nameof(Mutare), nameof(Capat), nameof(Unitate), nameof(Sold), nameof(Cauza),
         nameof(CodTva), nameof(Analiza), nameof(Refuz),
         nameof(Decizie), nameof(AlocareFifo), nameof(ValoareIesire), nameof(PartidaDeschisa),
-        nameof(ContRezolvat), nameof(Transformare), nameof(AbsorbtieEvaluare), nameof(ValoareDeclarata),
+        nameof(ContRezolvat), nameof(Transformare), nameof(ValoareDeclarata),
         nameof(Ipoteza), nameof(SoldUnitateCitit), nameof(PerioadaDeschisa), nameof(VersiunePolitica),
     ];
 
@@ -32,7 +32,7 @@ public class DeterminismTeste {
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var declaratie = Gen.Declaratie(aleator);
             var alta = declaratie with {
-                Ipoteze = [new VersiunePolitica("altă politică", Gen.Data(aleator))],
+                Ipoteze = [new VersiunePolitica("altă politică", Gen.Unul(aleator, Gen.Linii), 1)],
             };
             var unul = Motor.Opereaza(declaratie, new Rotunjire(MidpointRounding.AwayFromZero));
             var altul = Motor.Opereaza(alta, new Rotunjire(MidpointRounding.AwayFromZero));
@@ -99,7 +99,7 @@ public class DeterminismTeste {
             .Where(t => t != typeof(Decizie) && t != typeof(Ipoteza)
                 && (typeof(Decizie).IsAssignableFrom(t) || typeof(Ipoteza).IsAssignableFrom(t)))
             .ToList();
-        Assert.Equal(9, cazuri.Count);
+        Assert.Equal(8, cazuri.Count);
         Assert.All(cazuri, t => Assert.True(t.IsSealed, $"{t.Name} nu e sigilat"));
     }
 

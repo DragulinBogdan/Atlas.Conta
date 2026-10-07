@@ -9,4 +9,5 @@ public sealed record SoldUnitateCitit(Unitate Unitate, Sold Sold) : Ipoteza;
 
 public sealed record PerioadaDeschisa(int An, int Luna) : Ipoteza;
 
-public sealed record VersiunePolitica(string Nume, DateOnly ValabilDeLa) : Ipoteza;
+/// <summary>Rândul de politică consumat la o postare: felul (clasa rândului), identificatorul și contorul lui la operare (D9-A8).</summary>
+public sealed record VersiunePolitica(string Fel, Guid Rand, int Versiune) : Ipoteza;

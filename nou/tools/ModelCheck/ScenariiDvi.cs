@@ -57,11 +57,10 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
             os.CommitChanges(); return p.ID;
         });
         if (!Privat) {
-            Verifica("SC-DVI-12", "fără politică fiscală și fără activare cub", CuSpatiu(os =>
-                !os.GetObjectsQuery<PoliticaTva>().Any(p => p.TipDocument.Cod == "DVI")
-                && !os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == "DVI").PosteazaInCub));
+            Verifica("SC-DVI-12", "fără politică fiscală", CuSpatiu(os =>
+                !os.GetObjectsQuery<PoliticaTva>().Any(p => p.TipDocument.Cod == "DVI")));
             var d = Declaratie(new LinieDviScena(100, null));
-            Refuza("SC-DVI-12", () => Opereaza(d.Id), "TVA de import"); FaraEfecte("SC-DVI-12", d.Id);
+            Refuza("SC-DVI-12", () => Opereaza(d.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-DVI-12", d.Id);
             return;
         }
         Simple(); Variante(); Refuzuri(); FacturiLegate(); Dependenti(); TransferPur(); PestePerioada();
@@ -78,7 +77,7 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
                 && randuri.Single(p => p.Cont == Cont("4426")).Latura == N.Latura.Debit;
         }));
         Jurnal("SC-DVI-01", [d.Id], An * 100 + 1, 100, 21);
-        Citiri(d); Normalizare(d, Randuri(d, 0, 100, 21));
+        Citiri(d);
         Anuleaza(d.Id); FaraEfecte("SC-DVI-03", d.Id); Opereaza(d.Id);
         Postari("SC-DVI-03", d.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(d, 0, 100, 21));
         Storneaza(d.Id, new(An, 1, 20));
@@ -105,10 +104,10 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
             Randuri(broker, 0, -100, -21, contra: "401", partener: Furnizor));
         var ti = Declaratie(new LinieDviScena(100, "IMPTI21")); Opereaza(ti.Id);
         var rt = Randuri(ti, 0, 100, 21, "IMPTI21", contra: "4427");
-        Postari("SC-DVI-09", ti.Id, N.FelTranzactie.Operare, Ianuarie, rt); Normalizare(ti, rt);
+        Postari("SC-DVI-09", ti.Id, N.FelTranzactie.Operare, Ianuarie, rt);
         var cules = Declaratie(new LinieDviScena(100, Taxa: 21.03m)); Opereaza(cules.Id);
         var rc = Randuri(cules, 0, 100, 21.03m);
-        Postari("SC-DVI-13", cules.Id, N.FelTranzactie.Operare, Ianuarie, rc); Normalizare(cules, rc);
+        Postari("SC-DVI-13", cules.Id, N.FelTranzactie.Operare, Ianuarie, rc);
         var a = Declaratie(new LinieDviScena(100)); var b = Declaratie(new LinieDviScena(100.01m));
         Opereaza(a.Id); Opereaza(b.Id);
         Postari("SC-DVI-14", a.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(a, 0, 100, 21));
@@ -116,7 +115,7 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
         Jurnal("SC-DVI-14", [a.Id, b.Id], An * 100 + 1, 200.01m, 42);
         var mic = Declaratie(new LinieDviScena(.01m)); Opereaza(mic.Id);
         var rm = Randuri(mic, 0, .01m, 0);
-        Postari("SC-DVI-15", mic.Id, N.FelTranzactie.Operare, Ianuarie, rm); Normalizare(mic, rm);
+        Postari("SC-DVI-15", mic.Id, N.FelTranzactie.Operare, Ianuarie, rm);
         Storneaza(mic.Id, Ianuarie);
         Postari("SC-DVI-15", mic.Id, N.FelTranzactie.Storno, Ianuarie, Randuri(mic, 0, -.01m, 0));
         Jurnal("SC-DVI-15", [mic.Id], An * 100 + 1, 0, 0);
@@ -149,8 +148,6 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
             p.Where(p => p.Latura == N.Latura.Debit).Sum(p => p.Valoare) == 121
             && p.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare) == 121
             && Sold(p.Where(p => p.Cont == Cont("4426") && p.Partener == vama)) == 121);
-        var delta = ReconciliereCub.Ruleaza(((EFCoreObjectSpace)os).DbContext, [d.Id]);
-        Verifica("SC-DVI-16", "reconciliere contabilă (a) fără diferențe", !delta.Any(r => r.Litera.StartsWith("(a)")));
         Jurnal("SC-DVI-16", [d.Id], An * 100 + 1, 100, 21);
     }
 
@@ -160,24 +157,6 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica(id, $"jurnal {perioada}: {baza}/{taxa}", p.Where(p => p.RolTva == N.RolTva.Baza).Sum(p => p.Valoare) == baza
             && p.Where(p => p.RolTva == N.RolTva.Taxa).Sum(p => p.Valoare) == taxa
             && p.All(p => p.SensTva == N.SensTva.Achizitie));
-    }
-
-    void Normalizare(FacturaScena d, RandScena[] asteptate) {
-        using var os = Deschide(); Normalizari.Reseteaza();
-        var t = Normalizari.Toate(CubDinRegistre.Transforma(os, [d.Id]), Normalizari.Citeste(os, [d.Id]));
-        var p = t.SelectMany(t => t.Postari).ToList();
-        var actual = p.Select(p => new RandScena(p.Coordonate.Cont, p.Coordonate.Latura, p.Valoare, p.Cantitate,
-            p.Coordonate.Gestiune, p.Coordonate.Unitate?.Id, p.Coordonate.Produs, p.Coordonate.Partener,
-            p.Cauza.Linie, p.Coordonate.CodTva?.TipTva, p.Coordonate.CodTva?.Rol, p.Coordonate.PerioadaDeclarare,
-            p.Coordonate.CodTva?.Sens, N.Postari.Spatiu(p), p.Coordonate.Analiza.CodEconomic, p.Coordonate.Carte)).ToList();
-        var ok = t.Count == 1 && t[0].Data == Ianuarie && actual.Count == asteptate.Length
-            && asteptate.All(a => actual.Count(r => r == a) == asteptate.Count(r => r == a))
-            && p.All(p => p.Coordonate.Data == Ianuarie && p.Cauza.Document == d.Id && p.Atribuit == null
-                && p.Coordonate.Valuta == null && p.ValoareValuta == 0)
-            && Normalizari.Avertismente.Count == 0
-            && Normalizari.Contoare.GetValueOrDefault("DVI-B2: pereche de bază în cartea fiscală") == 1;
-        Verifica("SC-DVI-19", $"adaptor: {asteptate.Length} postări exacte, contor 1, fără diagnostic", ok);
-        if (!ok) foreach (var a in actual) Console.WriteLine("     NORMALIZAT " + a);
     }
 
     void Refuzuri() {

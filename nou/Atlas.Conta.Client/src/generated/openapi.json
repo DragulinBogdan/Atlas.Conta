@@ -323240,32 +323240,6 @@
         },
         "additionalProperties": false
       },
-      "ExplicatieAbsorbtieDto": {
-        "type": "object",
-        "properties": {
-          "ContSursaId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "R": {
-            "type": "number",
-            "format": "double"
-          },
-          "C": {
-            "type": "number",
-            "format": "double"
-          },
-          "P": {
-            "type": "number",
-            "format": "double"
-          },
-          "Delta": {
-            "type": "number",
-            "format": "double"
-          }
-        },
-        "additionalProperties": false
-      },
       "ExplicatieContDto": {
         "type": "object",
         "properties": {
@@ -323275,6 +323249,11 @@
           },
           "Sursa": {
             "type": "string",
+            "nullable": true
+          },
+          "RegulaId": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           }
         },
@@ -323309,13 +323288,11 @@
             "format": "int32",
             "nullable": true
           },
-          "Politica": {
-            "type": "string",
-            "nullable": true
-          },
-          "PoliticaValabilaDeLa": {
-            "type": "string",
-            "format": "date",
+          "Politici": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExplicatiePoliticaDto"
+            },
             "nullable": true
           },
           "Linii": {
@@ -323484,13 +323461,32 @@
               "$ref": "#/components/schemas/ExplicatieUnitateDto"
             },
             "nullable": true
-          },
-          "Absorbtii": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExplicatieAbsorbtieDto"
-            },
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExplicatiePoliticaDto": {
+        "type": "object",
+        "properties": {
+          "Fel": {
+            "type": "string",
             "nullable": true
+          },
+          "RandId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "Versiune": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "VersiuneCurenta": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "Schimbata": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -332770,12 +332766,6 @@
           "TipTvaImplicit": {
             "$ref": "#/components/schemas/TipTva"
           },
-          "PosteazaInCub": {
-            "type": "boolean"
-          },
-          "LaturaContPropriu": {
-            "$ref": "#/components/schemas/LaturaDocument"
-          },
           "Cautare": {
             "type": "string",
             "nullable": true
@@ -332809,12 +332799,6 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
-          },
-          "PosteazaInCub": {
-            "type": "boolean"
-          },
-          "LaturaContPropriu": {
-            "$ref": "#/components/schemas/LaturaDocument"
           },
           "Cautare": {
             "type": "string",

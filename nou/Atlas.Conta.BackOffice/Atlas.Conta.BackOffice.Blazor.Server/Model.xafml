@@ -9,9 +9,7 @@
     <SchemaModule Name="SystemModule" Version="26.1.4.0" IsNewNode="True" />
   </SchemaModules>
   <Views>
-    <ListView Id="RegistruContabil_ListView" DataAccessMode="ServerView" />
-    <ListView Id="RegistruStoc_ListView" DataAccessMode="ServerView" />
-    <ListView Id="RegistruTva_ListView" DataAccessMode="ServerView" />
+    <ListView Id="PostareVizual_ListView" DataAccessMode="ServerView" />
     <ListView Id="RegulaStoc_ListView" DataAccessMode="Server" />
   </Views>
 </Application>

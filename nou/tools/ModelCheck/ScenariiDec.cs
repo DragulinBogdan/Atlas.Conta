@@ -155,10 +155,10 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
             [new(Guid.NewGuid(), null, NaturaClasa.Serviciu, null, false,
                 SursaCont.TipMaterial, null, SursaCont.RepartitorPredator, Cont(Avans), true, null, null, null)],
             [], null, new Dictionary<Guid, TipTvaFapt>(),
-            new Dictionary<Guid, ContFapt> { [Cont(Serviciu)] = new(Cont(Serviciu), Serviciu, false),
-                [Cont(Avans)] = new(Cont(Avans), Avans, true) },
+            new Dictionary<Guid, ContFapt> { [Cont(Serviciu)] = new(Cont(Serviciu), Serviciu, false, false),
+                [Cont(Avans)] = new(Cont(Avans), Avans, true, false) },
             new Dictionary<CheieLotFapt, N.Sold>(), null, [], null, null, null,
-            new(An, 1), new("scena-dec", Ianuarie)) {
+            new(An, 1)) {
                 Repartitori = new Dictionary<Guid, RepartitorFapt> { [titular] = titularFapt, [Loc] = locFapt },
             };
         foreach (var (o, cod) in new[] {
@@ -225,6 +225,6 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-DEC-10", explicitul.Id, N.FelTranzactie.Operare, Ianuarie, r);
         SoldPartida("SC-DEC-10", P(explicitul.Id), Ianuarie, -21);
         Verifica("SC-DEC-10", "totalul de stins este 21, cât ține partida, nu 121", CuSpatiu(os =>
-            os.GetObjectByKey<Decont>(explicitul.Id).TotalStingere == 21m && ImperechereService.Total(os, explicitul.Id) == 21m));
+            ImperechereService.Total(os, explicitul.Id) == 21m));
     }
 }

@@ -1,0 +1,38 @@
+[judecată] **Mențin A, cu TR-D9a amendat. Nu preiau verdictul lui Y că B este deja infirmată.** Îmi întăresc cerințele privind auditul și păstrarea probelor înaintea ștergerii.
+
+Ancore: `X` și `Y` = `docs/consultare/raport-X.md`, respectiv `raport-Y.md`; `M` = `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module`; `N` = `nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu`; `D` = `docs/nucleu`; `P` = `docs/api/p5-perf-masuratori.md`.
+
+Cele mai slabe trei afirmații ale lui Y sunt următoarele.
+
+1. **„B există deja” și materializarea a fost „respinsă pe cifră”.** (`Y:68–87,186`) Codul oferă interogări peste postări și solduri materializate: jurnalul construiește un `IQueryable`, iar snapshot-ul contabil păstrează dimensiuni și totaluri debit/credit, nu jurnalul documentelor. (`M/Cub/Citiri/Contabil.cs:48–57`; `M/BusinessObjects/Registre/SolduriPerioada.cs:14–52`) Măsurarea compară balanța recitită cu balanța din snapshot: 8,1 versus 12,9 ms, pe o scenă privată cu 7.951 postări; API-ul continuă să recitească istoricul. (`P:1023–1024,1204–1209`) [judecată] Aceasta respinge un avantaj local al snapshot-ului, nu opțiunea B definită în întrebare. Nici dificultatea autorizării agregatelor nu demonstrează imposibilitatea unei proiecții care păstrează granularitatea necesară autorizării.
+
+2. **„Defectul rândurilor rescrise nu e reparat”, demonstrat prin reatribuirea fiscală.** (`Y:61,106`) Actualizarea există: metoda schimbă perioadele și marcajele postărilor inverse. (`M/Cub/Materializare.cs:213–220`) Dar corecția deschide tranzacția înaintea stornării, reatribuie fiscalitatea și abia apoi face commit-ul final. (`M/Motor/CorectieService.cs:54,72,95–111`) Stornarea reutilizează tranzacția existentă; commit-ul său condițional nu o încheie. (`M/Motor/TranzactieComanda.cs:17–18`; `M/Motor/MotorOperare.cs:638,721–722`) [judecată] Y identifică o încălcare a disciplinei stricte „fără UPDATE”, însă nu demonstrează rescrierea unui fapt anterior confirmat. Remediul preferabil este calcularea inversei fiscale finale înaintea inserării; un rând compensator suplimentar nu rezultă obligatoriu din această probă.
+
+3. **În C „s-ar arunca nucleul, declaranții și Cub”.** (`Y:99`) Declarația este calculată înaintea materializării; motorul transformă mișcările, mutările și transformările în efecte. (`M/Declaratii/Contractare.cs:18–43`; `N/Motor/Motor.cs:10–31`) Evaluarea ultimei ieșiri operează numai cu soldul, cantitatea și rotunjirea. (`N/Masura/Evaluare.cs:4–17`) [judecată] Persistența și cititorii ar necesita adaptare, dar algoritmii și declaranții nu trebuie aruncați integral. Y admite chiar că declarația poate alimenta registrele (`Y:51`). Costul revenirii rămâne un argument împotriva C; numărarea întregului nucleu drept pierdere inevitabilă îl umflă.
+
+Ce a văzut el și mi-a scăpat: **asimetria concretă a pozițiilor fără unitate**. Eu discutam predominant loturile și partidele (`X:114–120`); Y adaugă poziția fără fișă (`Y:116`). Codul acesteia verifică soldul fiecărui prefix zilnic și refuză negativul, pe coordonatele afectate. (`M/Cub/Materializare.PozitieFaraFisa.cs:33–60`) [judecată] Este un precedent util pentru proiectarea portiței, dar nu justifică automat aceeași regulă pentru orice cont 3xx.
+
+Mi-au scăpat și reatribuirea fiscală concretă, discutată mai sus, și includerea explicită a divergenței istorice de **585.404,66** în condițiile premergătoare eliminării martorului. Y cere ultima reconciliere (`Y:202`); restanța consemnează diferența între registrele importului, cu statut „migrare”. (`docs/decizii/restante.md:251`) [judecată] Preiau cerința de explicație și arhivare, fără să transform acea diferență într-un defect demonstrat al cubului.
+
+Dezacordurile de verdict și probele care le-ar tranșa sunt acestea. Propunerile de probă sunt [judecată].
+
+| Dezacord | Dovada decisivă; fără prototip? |
+|---|---|
+| **Simplitate:** eu prefer continuarea A; Y pune A ≈ C. (`X:14`; `Y:173`) | Același document nou și aceeași modificare economică, implementate cu aceleași cerințe; comparate timpul, suprafața modificată și defectele. **Nu** pentru productivitate; numai dependențele pot fi inventariate static. |
+| **Reprezentarea tipului:** eu dau verdict mixt; Y preferă A la citire și C la configurare. (`X:15`; `Y:174`) | Matricea cerințelor configurabile și urmărirea fiecăreia până la efect. **Da**, pentru acoperire; **nu**, pentru ușurința efectivă de modificare. Gardianul verifică forma regulii, fără verificarea consumatorului ei. (`M/Motor/GardianEditare.cs:1165–1188`) |
+| **Portița:** Y legitimează general poziția fără unitate; eu cer refuz implicit sau excepție explicită. (`Y:128,192`; `X:120`) | Clasificarea economică a notelor fără lot/partener și acceptarea explicită a cazurilor permise. **Da** pentru decizia semantică; apoi trebuie probe ale gardurilor. Catalogul actual acceptă ambele situații. (`D/scenarii/NTC.md:41–42`) |
+| **Optimizări/B:** eu păstrez B; Y o exclude. (`X:17`; `Y:176`) | Rapoarte complete A/B, aceeași populație mare, aceleași permisiuni; latențe, scriere, spațiu și reconstrucție. **Nu**: trebuie o proiecție reprezentativă B. |
+| **Audit:** Y își întărește verdictul; eu îl limitez prin lipsa politicii istorice. (`Y:177`; `X:18`) | Reconstituirea deciziei după schimbarea politicii. **Parțial**: codul arată deja eticheta constantă `"seed"`; demonstrarea reproducerii cere implementare și probă. (`M/Motor/Fapte.cs:144`) |
+| **Reversibilitate:** Y impune cheia de pereche; eu condiționez necesitatea de contractul auditului. (`Y:191`; `X:147`) | Cerință explicită privind corespondențele originale, plus exemple FCT, NTC și ASM. **Da** pentru necesitate. Ordinalul mișcării nu rezolvă singur ASM: transformarea produce o poziție reală și o contrapondere cantitativă cu valoare zero. (`N/Motor/Transformare.cs:26–32`) |
+
+Coerența și alegerea imediată A nu constituie dezacorduri de fond. (`X:1,13`; `Y:3,172`) [judecată] Retrag însă precizia excesivă a propriului clasament general al optimizărilor: numărul posibilităților nu dovedește avantajul lor economic.
+
+Lista mea finală de amendamente, în ordinea priorității, este [judecată]:
+
+1. **Înaintea pasului 6**, arhivarea reconcilierii explicate, a așteptărilor independente și comparația limitată A/B la volum. Acolo dispar scriitorul vechi și martorii. (`D/tr-d9-taierea-contract.md:665`)
+2. Integrarea I1–I8; prioritate gardurilor de domeniu, analizei recepției și refuzului politicilor fără efect. Inventarul identifică aceste obligații. (`D/tr-d9-inventar.md:22–29`)
+3. Contract explicit pentru poziția fără unitate: cazuri permise, raport de reconciliere, nominalizare și garduri motivate economic.
+4. Contract de audit: perechi unde există, grupuri pentru transformări, proveniență verificabilă a politicii și inversă fiscală finalizată înaintea inserării.
+5. Reevaluarea și ALOP rămân extensii separate; tăierea nu trebuie prezentată drept dovada acoperirii lor.
+
+[judecată] **Owner-ului, într-un minut:** A rămâne alegerea mea. Câștigul este localizarea calculului și o autoritate comună; prețul este vocabularul suplimentar și informația de audit care trebuie păstrată deliberat. Nu reveni la C doar pentru că registrele par familiare și nu elimina B pe baza unei balanțe mici. Înainte să tai martorii, cere comparația relevantă, explicarea diferențelor și reguli clare pentru notele fără unitate. Accept dezacordul cu Y: el consideră B nejustificată; eu consider nejustificată închiderea acestei opțiuni fără proba care ar putea-o respinge.

@@ -30,8 +30,8 @@ sealed class ScenariiItv(Func<IObjectSpace> deschide, Action<string, bool> check
                 new(Cont(l.Credit), N.Latura.Credit, l.V, Gestiune: Loc, Linie: linie.ID) };
         }).ToArray();
         Postari(id, doc, fel, data, randuri);
-        Verifica(id, "numărul de linii și absența faptelor fiscale", detalii.Count == linii.Length
-            && !os.GetObjectsQuery<RegistruTva>().Any(r => r.DocumentId == doc));
+        Verifica(id, "numărul de linii și absența faptelor fiscale",
+            detalii.Count == linii.Length && CubScena.FaraFapte(os, doc));
     }
     void Solduri(string id, DateOnly data, decimal deductibila, decimal colectata, decimal plata, decimal recuperat) {
         foreach (var (cont, asteptat) in new[] { ("4426", deductibila), ("4427", -colectata), ("4423", -plata), ("4424", recuperat) }) {

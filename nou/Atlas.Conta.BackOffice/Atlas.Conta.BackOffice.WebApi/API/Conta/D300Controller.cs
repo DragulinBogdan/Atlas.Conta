@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 
-// Decontul de TVA — formularul 300 (D3-D6): proiecția `RegistruTva` → cele 55 de
+// Decontul de TVA — formularul 300 (D3-D6): proiecția faptelor fiscale din cub → cele 55 de
 // poziții ale formularului. READ-ONLY prin construcție, ca toate proiecțiile de
 // registru — nu există verb de scriere pe registre nicăieri în API.
 //

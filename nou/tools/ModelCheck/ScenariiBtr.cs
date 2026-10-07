@@ -23,19 +23,16 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
     }
 
     void Capete(Guid doc, Guid lot) => Comanda(os => {
-        decimal Registru(Guid gestiune) => os.GetObjectsQuery<RegistruStoc>()
-            .Where(r => r.DocumentId == doc && r.LotId == lot && r.RepartitorId == gestiune).Sum(r => (decimal?)r.Cantitate) ?? 0m;
         decimal Cub(Guid gestiune) => os.GetObjectsQuery<C.Postare>()
             .Where(p => p.DocumentId == doc && p.Unitate == lot && p.Gestiune == gestiune).Sum(p => (decimal?)p.Cantitate) ?? 0m;
-        C.Citiri.Loturi.VerificaAcoperire(os);
-        Verifica("SC-CIT-105", "transferul are ambele capete: −4 pe sursă și +4 pe destinație, în registru și în cub",
-            Registru(Magazie) == -4 && Registru(Destinatie) == 4 && Cub(Magazie) == -4 && Cub(Destinatie) == 4);
+        Verifica("SC-CIT-105", "transferul are ambele capete în cub: −4 pe sursă și +4 pe destinație",
+            Cub(Magazie) == -4 && Cub(Destinatie) == 4);
         var db = ((EFCoreObjectSpace)os).DbContext;
         foreach (var (caz, gestiune) in new[] { ("destinației", Destinatie), ("sursei", Magazie) }) {
             using var tx = db.Database.BeginTransaction();
             db.Database.ExecuteSqlInterpolated(
                 $"UPDATE \"Postare\" SET \"Cantitate\" = 0 WHERE \"DocumentId\" = {doc} AND \"Gestiune\" = {gestiune}");
-            Refuza("SC-CIT-105/fără capătul " + caz, () => C.Citiri.Invarianti.Verifica(os), C.Citiri.Loturi.IstoricIncomplet);
+            Refuza("SC-CIT-105/fără capătul " + caz, () => C.Citiri.Invarianti.Verifica(os), C.Citiri.Invarianti.TransferNeconservat);
             tx.Rollback();
         }
     });

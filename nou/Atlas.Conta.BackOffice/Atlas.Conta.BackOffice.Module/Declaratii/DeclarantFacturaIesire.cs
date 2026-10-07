@@ -14,6 +14,7 @@ public sealed class DeclarantFacturaIesire : IDeclarant {
     public static readonly DeclarantFacturaIesire Instanta = new();
 
     DeclarantFacturaIesire() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -52,11 +53,11 @@ public sealed class DeclarantFacturaIesire : IDeclarant {
             doc.Id,
             doc.DataInregistrare,
             [.. miscari.Select(m => m with {
-                DeLa = Partide.CuPartida(m.DeLa, doc.Primitor.Id, partide),
-                La = Partide.CuPartida(m.La, doc.Primitor.Id, partide),
+                DeLa = Terti.Capat(operand, m.DeLa, doc.Primitor.Id, partide),
+                La = Terti.Capat(operand, m.La, doc.Primitor.Id, partide),
             })],
             decizii,
-            [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+            PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, tipuri)));
     }
 
     static void Antetul(DocumentFapt doc, Operand operand, ICollection<N.Refuz> refuzuri) {
@@ -90,8 +91,7 @@ public sealed class DeclarantFacturaIesire : IDeclarant {
     static N.Miscare Venitul(Operand operand, LinieOperand linie, ContareLinie contare, TipTvaFapt? tip,
             List<N.Decizie> decizii) {
         var doc = operand.Document;
-        decizii.Add(new N.ContRezolvat(linie.Id, contare.ContDebit, contare.SursaDebit.ToString()));
-        decizii.Add(new N.ContRezolvat(linie.Id, contare.ContCredit, contare.SursaCredit.ToString()));
+        Contari.Decide(contare, linie.Id, decizii);
         var intern = new N.Capat {
             Cont = contare.ContCredit,
             Gestiune = doc.Predator.Id,

@@ -1,6 +1,8 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
-using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
+using Atlas.Conta.BackOffice.Module.Saft;
 using DevExpress.ExpressApp;
+using N = Atlas.Conta.Nucleu;
 
 namespace Import1C;
 
@@ -24,7 +26,7 @@ namespace Import1C;
 // inclusiv. Până la ordinea cronologică a buclei (pasul 1 al lotului de robustețe)
 // era minimul sumelor cumulate pe zilele ≥ data: importul scria documentele
 // grupate pe TIP, deci în momentul în care se planifica o vânzare de pe 3 ianuarie
-// registrul putea conține deja transferul de pe 17, iar un „sold la dată" ar fi
+// baza putea conține deja transferul de pe 17, iar un „sold la dată" ar fi
 // spus că lotul are marfă pe care operarea ar fi refuzat-o la 17. Prudența aia
 // costa exact ce trebuia să apere: vânzarea de pe 3 rămânea fără linie de stoc
 // deși la data ei lotul era acoperit. De când unitățile lunii se execută în
@@ -32,17 +34,21 @@ namespace Import1C;
 // minimul pe viitor n-are obiect. Gardianul de sold al motorului (prefix-sum pe
 // zile, 25d) rămâne autoritatea finală la operare: o alocare învechită e refuzată
 // zgomotos, nu strecurată.
-// Ce a alocat deja ACELAȘI document pe fiecare lot, încă necomis (registrul nu
+// Ce a alocat deja ACELAȘI document pe fiecare lot, încă necomis (cubul nu
 // vede liniile lui): cantitatea — ca a doua linie să nu re-aloce ce a prins prima
 // — ȘI valoarea cu care motorul o va scrie, ca a doua linie să vadă soldul
-// VALORIC de după prima (D18-D2: linia care golește lotul preia restul). Cheia e
-// lotul (grupa produs × gestiune × registru e fixă în interiorul unei alocări,
-// iar un document nu iese din același lot pe două gestiuni).
+// VALORIC de după prima. Cheia e lotul (grupa produs × gestiune × categorie de
+// stoc e fixă în interiorul unei alocări, iar un document nu iese din același
+// lot pe două gestiuni).
+readonly record struct SoldAlocat(decimal Cantitate, decimal Valoare);
+
 sealed class AlocatInDocument {
-    readonly Dictionary<Guid, SoldStoc> peLot = [];
-    public SoldStoc Ia(Guid lotId) => peLot.GetValueOrDefault(lotId);
-    public void Adauga(Guid lotId, decimal cantitate, decimal valoare) =>
-        peLot[lotId] = peLot.GetValueOrDefault(lotId) + new SoldStoc(cantitate, valoare);
+    readonly Dictionary<Guid, SoldAlocat> peLot = [];
+    public SoldAlocat Ia(Guid lotId) => peLot.GetValueOrDefault(lotId);
+    public void Adauga(Guid lotId, decimal cantitate, decimal valoare) {
+        var acum = Ia(lotId);
+        peLot[lotId] = new SoldAlocat(acum.Cantitate + cantitate, acum.Valoare + valoare);
+    }
 }
 
 sealed class AlocareIesire {
@@ -140,21 +146,19 @@ sealed class AlocareIesire {
     public (int Realocari, decimal Cantitate) DeltaLunii() =>
         (Realocari - realocariLaStart, CantitateRealocata - cantitateLaStart);
 
+    CategoriiStoc categorii;
+
     // `dejaAlocat` = alocările deja făcute în ACELAȘI document, încă necomise
-    // (registrul nu le vede — pattern-ul DescarcareService, 38b). Se ACTUALIZEAZĂ
+    // (cubul nu le vede — pattern-ul DescarcareService, 38b). Se ACTUALIZEAZĂ
     // aici: apelantul îl ține per document și îl transmite la fiecare linie.
     //
     // `Valoare` pe fiecare alocare = PREDICȚIA valorii pe care motorul o va
-    // materializa pe linia de ieșire (riscul 5 al contractului F18): aceeași
-    // regulă ca `StocService.AplicaValoareIesire` — `preț lot × cantitate`
-    // rotunjit la bani, iar pe alocarea care GOLEȘTE lotul la data documentului
-    // tot soldul valoric rămas (`StocService.ValoareGolire`, funcția comună).
-    // Punțile și divergențele calculate din ea declară exact ce postează motorul,
-    // nu cifra cu cenții vechi.
+    // scrie pe linia de ieșire (riscul 5 al contractului F18): evaluarea
+    // nucleului pe soldul lotului de dinaintea liniei, aceeași funcție pe care
+    // o cheamă declaranții ieșirilor evaluate din sold (D9-D3 a).
     // `absoarbeLaGolire: false` = apelantul materializează un document cu
-    // `IDocumentCuIesireFiscala` (RLF, review F5): motorul SARE regula de golire
-    // acolo, deci și predicția rămâne `preț × cantitate` — altfel puntea ar
-    // declara altă cifră decât cea postată.
+    // valoare declarată la prețul de intrare (RLF, D9-D3 b): predicția rămâne
+    // `preț × cantitate`.
     public (IReadOnlyList<(Guid LotId, decimal Cantitate, decimal Valoare)> Alocari, decimal Ramas) Aloca(
             IObjectSpace os, Guid? lotDoritId, Guid produsId, Guid gestiuneId, TipStoc tipStoc,
             DateOnly data, decimal cantitate, AlocatInDocument dejaAlocat, bool absoarbeLaGolire = true) {
@@ -163,34 +167,39 @@ sealed class AlocareIesire {
         if (cantitate <= 0)
             return (alocari, 0m);
 
-        // O singură interogare per cerere, pentru toată grupa produs × gestiune ×
-        // registru: pinul și FIFO-ul se servesc din aceleași rânduri (înainte era
-        // un `Sold` per lot). Valoarea vine din aceleași rânduri (D18-D2).
-        var randuri = os.GetObjectsQuery<RegistruStoc>()
-            .Where(r => r.Lot.ProdusId == produsId && r.RepartitorId == gestiuneId
-                && r.TipStoc == tipStoc)
-            .Select(r => new { r.LotId, r.Data, r.Cantitate, r.Valoare, DataLot = r.Lot.Data, PretLot = r.Lot.PretUnitar })
-            .ToList();
-        var loturi = randuri.GroupBy(r => r.LotId)
-            .Select(g => new {
-                LotId = g.Key,
-                DataLot = g.Min(x => x.DataLot),
-                PretLot = g.First().PretLot,
-                Disponibil = Disponibil(g.Select(x => (x.Data, x.Cantitate, x.Valoare)), data),
-            })
-            .ToDictionary(x => x.LotId);
+        // Soldul la dată al loturilor grupei produs × gestiune, pe conturile cu
+        // categoria de stoc cerută: pinul și FIFO-ul se servesc din el.
+        categorii ??= new CategoriiStoc(os);
+        var solduri = Loturi.Solduri(os, data)
+            .Where(s => s.ProdusId == produsId && s.GestiuneId == gestiuneId)
+            .ToList()
+            .Where(s => categorii.Rezolva(s.ContId) == tipStoc)
+            .GroupBy(s => s.LotId)
+            .ToDictionary(g => g.Key, g => g.Select(s => s.ContId).Distinct().Count() == 1
+                ? new SoldAlocat(g.Sum(s => s.Cantitate), g.Sum(s => s.Valoare))
+                : throw new InvalidOperationException(
+                    $"Lotul {g.Key} are sold pe mai multe conturi din categoria {tipStoc}, în gestiunea {gestiuneId}: "
+                    + "motorul evaluează pe cont, deci predicția nu se poate face pe suma lor."));
+        var ids = solduri.Keys.ToList();
+        var loturi = os.GetObjectsQuery<Lot>()
+            .Where(l => ids.Contains(l.ID))
+            .Select(l => new { LotId = l.ID, DataLot = l.Data, PretLot = l.PretUnitar })
+            .ToList()
+            .ToDictionary(l => l.LotId);
+        var rotunjire = new N.Rotunjire(Scara.ConventieBani);
 
-        // Soldul lotului de dinaintea liniei curente: registrul la dată minus ce a
+        // Soldul lotului de dinaintea liniei curente: cubul la dată minus ce a
         // luat deja documentul (pe ambele axe).
-        SoldStoc Inainte(Guid lotId) => loturi.TryGetValue(lotId, out var l)
-            ? new SoldStoc(l.Disponibil.Cantitate - dejaAlocat.Ia(lotId).Cantitate,
-                l.Disponibil.Valoare - dejaAlocat.Ia(lotId).Valoare)
+        SoldAlocat Inainte(Guid lotId) => solduri.TryGetValue(lotId, out var s)
+            ? new SoldAlocat(s.Cantitate - dejaAlocat.Ia(lotId).Cantitate, s.Valoare - dejaAlocat.Ia(lotId).Valoare)
             : default;
         decimal Liber(Guid lotId) => Math.Max(0m, Inainte(lotId).Cantitate);
 
         void Ia(Guid lotId, decimal cantitateLuata) {
-            var valoare = (absoarbeLaGolire ? StocService.ValoareGolire(Inainte(lotId), cantitateLuata) : null)
-                ?? Scara.RotunjesteBani(cantitateLuata * loturi[lotId].PretLot);
+            var inainte = Inainte(lotId);
+            var valoare = absoarbeLaGolire
+                ? N.Evaluare.Iesire(new N.Sold(inainte.Valoare, 0m, inainte.Cantitate, 0m), cantitateLuata, rotunjire)
+                : Scara.RotunjesteBani(cantitateLuata * loturi[lotId].PretLot);
             alocari.Add((lotId, cantitateLuata, valoare));
             dejaAlocat.Adauga(lotId, cantitateLuata, valoare);
             ramas -= cantitateLuata;
@@ -205,8 +214,7 @@ sealed class AlocareIesire {
                 PinuriGoale++;
         }
 
-        // 2. Deficitul, FIFO în produs × gestiune (vechimea lotului, apoi ID-ul —
-        //    aceeași ordine ca `StocService.AlocaFifoTolerant`).
+        // 2. Deficitul, FIFO în produs × gestiune (vechimea lotului, apoi ID-ul).
         var inainteDeFifo = ramas;
         foreach (var lot in loturi.Values.OrderBy(l => l.DataLot).ThenBy(l => l.LotId)) {
             if (ramas <= 0)
@@ -233,17 +241,5 @@ sealed class AlocareIesire {
 
         Nedescarcat += ramas;
         return (alocari, ramas);
-    }
-
-    // Soldul lotului la sfârșitul zilei `data`: ce marfă exista în momentul
-    // documentului. Mișcările de după (dacă totuși există — un document al lunii
-    // scris deja, cu timestamp mai mare) nu scad disponibilul: le acoperă
-    // gardianul motorului la operare.
-    // Pe ambele axe: valoarea la dată e soldul pe care linia care golește lotul îl
-    // preia integral (D18-D2) — aceeași convenție (prefix-sum ≤ dată) ca
-    // `StocService.SolduriLaData`.
-    static SoldStoc Disponibil(IEnumerable<(DateOnly Data, decimal Cantitate, decimal Valoare)> miscari, DateOnly data) {
-        var laData = miscari.Where(m => m.Data <= data).ToList();
-        return new SoldStoc(laData.Sum(m => m.Cantitate), laData.Sum(m => m.Valoare));
     }
 }

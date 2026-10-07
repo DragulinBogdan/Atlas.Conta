@@ -23,11 +23,6 @@ public class Dvi : Document, IDocumentFiscalPrimit {
     // nu prin imperechere — soldul lui 446 pe biroul vamal e ce rămâne de plătit.
     public override bool PoateFiStins(DevExpress.ExpressApp.IObjectSpace os) => false;
 
-    // Creditul notei de TVA e contul de taxă al PREDATORULUI (446 al biroului
-    // vamal), deci dimensiunea Repartitor îl urmărește pe el, nu unitatea
-    // primitoare — precedentul `Decont`/`DescarcareGestiune` (00 §5).
-    public override Guid RepartitorImplicitCredit(DevExpress.ExpressApp.IObjectSpace os) => PredatorId;
-
     [DevExpress.ExpressApp.DC.Aggregated]
     [XafDisplayName("Facturi de import")]
     public virtual ObservableCollection<DviFactura> Facturi { get; set; } = new();

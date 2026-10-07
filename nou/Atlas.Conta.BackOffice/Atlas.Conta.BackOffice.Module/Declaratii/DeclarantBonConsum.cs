@@ -13,6 +13,7 @@ public sealed class DeclarantBonConsum : IDeclarant {
     public static readonly DeclarantBonConsum Instanta = new();
 
     DeclarantBonConsum() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -68,8 +69,7 @@ public sealed class DeclarantBonConsum : IDeclarant {
             solduri[cheie] = new N.Sold(
                 sold.Debit, sold.Credit + valoare, sold.Cantitate - linie.Cantitate, sold.ValoareValuta);
 
-            decizii.Add(new N.ContRezolvat(linie.Id, contare.ContDebit, contare.SursaDebit.ToString()));
-            decizii.Add(new N.ContRezolvat(linie.Id, contare.ContCredit, contare.SursaCredit.ToString()));
+            Contari.Decide(contare, linie.Id, decizii);
             decizii.Add(new N.ValoareIesire(linie.Id, iesit, linie.Cantitate, valoare));
 
             miscari.Add(new N.Miscare(
@@ -95,8 +95,7 @@ public sealed class DeclarantBonConsum : IDeclarant {
         }
         if (refuzuri.Count > 0)
             return null;
-        ipoteze.Add(operand.PerioadaDeschisa);
-        ipoteze.Add(operand.VersiunePolitica);
+        ipoteze.AddRange(PoliticiConsumate.Ipoteze(operand, decizii));
         return new N.Declaratie(doc.Id, doc.DataInregistrare, miscari, decizii, ipoteze);
     }
 }

@@ -32,7 +32,7 @@ static class ProbeLdiOperand {
         Operand Operand(params LinieOperand[] linii) => new(doc, linii, contare, [regula], null,
             new Dictionary<Guid, TipTvaFapt>(), new Dictionary<Guid, ContFapt>(),
             new Dictionary<CheieLotFapt, N.Sold> { [new(m.Lot!.Id, stoc, m.Lot.ProdusId, gest)] = new(50m, 0m, 5m, 0m) }, null, [], null, null, null,
-            new(2015, 1), new("probă", data));
+            new(2015, 1));
         foreach (var conventie in new[] { MidpointRounding.ToEven, MidpointRounding.AwayFromZero }) {
             N.Contract Contract(Operand o) {
                 var refuzuri = new List<N.Refuz>(); var rot = new N.Rotunjire(conventie);

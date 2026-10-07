@@ -16,6 +16,7 @@ public sealed class DeclarantTrezorerie : IDeclarant {
     public static readonly DeclarantTrezorerie Instanta = new();
 
     DeclarantTrezorerie() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -35,9 +36,11 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         if (refuzuri.Count > 0)
             return null;
 
-        var tert = doc.Predator.Parte == Parte.Extern ? doc.Predator.Id
-            : doc.Primitor.Parte == Parte.Extern ? doc.Primitor.Id
-            : (Guid?)null;
+        // Banii trec de pe contul predatorului (credit) pe al primitorului (debit):
+        // piciorul de terț e al laturii externe, nu al contului fără gestiune (D9-A10 a).
+        var (tert, peDebit) = doc.Predator.Parte == Parte.Extern ? (doc.Predator.Id, false)
+            : doc.Primitor.Parte == Parte.Extern ? (doc.Primitor.Id, true)
+            : ((Guid?)null, false);
         var miscari = new List<N.Miscare>(operand.Linii.Count);
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza>();
@@ -49,8 +52,7 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         for (var i = 0; i < operand.Linii.Count; i++) {
             var linie = operand.Linii[i];
             var contare = contari[i]!.Value;
-            decizii.Add(new N.ContRezolvat(linie.Id, contare.ContDebit, contare.SursaDebit.ToString()));
-            decizii.Add(new N.ContRezolvat(linie.Id, contare.ContCredit, contare.SursaCredit.ToString()));
+            Contari.Decide(contare, linie.Id, decizii);
 
             var (gestiuneDebit, gestiuneCredit) = Gestiuni(doc, contare.Regula, esteVirament);
             var debit = new N.Capat {
@@ -64,12 +66,16 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                 Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
             };
 
-            var peDebit = tert is not null && Partide.Urmareste(operand, contare.ContDebit);
-            var contTert = peDebit ? contare.ContDebit
-                : tert is not null && Partide.Urmareste(operand, contare.ContCredit) ? contare.ContCredit
-                : (Guid?)null;
-            if (contTert is not Guid cont || tert is not Guid partener) {
+            if (tert is not Guid partener) {
                 miscari.Add(new N.Miscare(credit, debit, 0m, 0m, linie.Valoare, new N.Cauza(doc.Id, linie.Id)));
+                continue;
+            }
+            var cont = peDebit ? contare.ContDebit : contare.ContCredit;
+            if (!Partide.Urmareste(operand, cont)) {
+                miscari.Add(new N.Miscare(
+                    peDebit ? credit : Terti.Capat(operand, credit, partener, (N.Unitate?)null),
+                    peDebit ? Terti.Capat(operand, debit, partener, (N.Unitate?)null) : debit,
+                    0m, 0m, linie.Valoare, new N.Cauza(doc.Id, linie.Id)));
                 continue;
             }
 
@@ -117,8 +123,8 @@ public sealed class DeclarantTrezorerie : IDeclarant {
             }
             foreach (var (partida, suma) in bucati)
                 miscari.Add(new N.Miscare(
-                    peDebit ? credit : credit with { Partener = partener, Unitate = partida },
-                    peDebit ? debit with { Partener = partener, Unitate = partida } : debit,
+                    peDebit ? credit : Terti.Capat(operand, credit, partener, partida),
+                    peDebit ? Terti.Capat(operand, debit, partener, partida) : debit,
                     0m,
                     0m,
                     suma,
@@ -126,8 +132,7 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         }
         if (refuzuri.Count > 0)
             return null;
-        ipoteze.Add(operand.PerioadaDeschisa);
-        ipoteze.Add(operand.VersiunePolitica);
+        ipoteze.AddRange(PoliticiConsumate.Ipoteze(operand, decizii));
         return new N.Declaratie(doc.Id, doc.DataInregistrare, miscari, decizii, ipoteze);
     }
 

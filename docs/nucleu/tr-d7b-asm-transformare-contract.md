@@ -35,6 +35,14 @@ valoarea semnată totală zero. 1.225 au cantități nete nenule pe produs;
 541 au mai multe consumuri, 113 mai multe produse rezultate. Datele sunt
 evidență pentru combinatorică, nu așteptări ale motorului nou (091d).
 
+Notă (2026-10-05): „367 folosesc mai multe conturi" numără contul implicit
+al tipului de material al produsului, pe clona de import, nu contul de pe
+linia sursei. Pe contul liniei (`ContEvidenta_ID`), în sursa Flax
+`EServicesFlx`, din 10.198 asamblări nemarcate una singură are două conturi:
+54.982 de linii pe 371.1 și una pe 302.8. Cifra de 367 măsoară deci maparea
+tipurilor pe conturi, nu practica documentului; SC-ASM-04 se citește cu
+această rezervă (NG-r3).
+
 ## ASM-B2 — Forma recomandată: capăt virtual de transformare
 
 Se adaugă `GestiuniVirtuale.Transformare`, identitate deterministă, recunoscută

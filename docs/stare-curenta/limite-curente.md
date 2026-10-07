@@ -1,12 +1,25 @@
 # Limite curente
 
-**Actualizat: 2026-10-04.** [Index](README.md)
+**Actualizat: 2026-10-06.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Domeniu și operare
 
+- Analiza obligatorie per cont: repartitorul e al capătului (D9-A10);
+  partenerul stă pe piciorul de terț numai când contul cere repartitor sau
+  urmărește partide — pe un cont fără flag și fără partide (446 privat)
+  partenerul rămâne absent, iar partenerul pe conturile de cheltuieli și
+  venituri e al deciziei 111. Pe piciorul intern cu fapt fiscal `Partener` e
+  partenerul fiscal (B-D8 pct. 5), deci `Contabil.Repartitor` îl întoarce pe
+  el înaintea gestiunii; separarea e a deciziei 111. Pe trezorerie, când
+  regula de contare numește ambele conturi explicit, piciorul propriu n-are
+  gestiune (B-D8 pct. 9 o ia din `SursaCont`); dacă contul lui cere
+  repartitor documentul e refuzat (SC-PLT-09), nu reparat cu terțul.
+  Cerința de material citește numai produsul lotului, nu și materialul fix al
+  unei reguli de contare. BTR, ASM și PIF nu sunt păzite (D9-r1).
+  (`docs/nucleu/tr-d9-pas6b-repartitor.md`; `tr-d9-pas2-probe.md`, G2)
 - PIF/AMO/CAS scriu cubul, iar situația fișei se citește din el (095, 097).
   Storno
   rămâne limitat la luna documentului (087g), inclusiv în corecție.
@@ -17,10 +30,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   istoricul inversat chiar dacă suportul eliberat este ulterior anulat;
   auditul durabil după anularea fizică rămâne în delimitarea TR-D9 (091j).
 
-- Deschiderea generică (094) este o comandă de motor și scrie numai cubul.
-  Registrele regimului dual nu primesc aceste solduri; cititorii și
-  evaluarea le iau din cub (X-D2). Intrarea păstrează analiza și valuta, dar stingerea
-  unei partide inițiale în valută este refuzată explicit până la TR-D9;
+- Deschiderea generică (094) este o comandă de motor și scrie cubul; cititorii
+  și evaluarea iau soldurile de acolo (X-D2). Intrarea păstrează analiza și
+  valuta, dar stingerea unei partide inițiale în valută este refuzată explicit
+  până la TR-D9b;
   soldurile nedetaliate nu se împart pe mai multe analize în aceeași cheie
   de control. Ștergerea concurentă a nomenclatoarelor referite nu este
   serializată de comandă (review Deschidere, MINOR-3).
@@ -49,8 +62,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Baza nu verifică tipul unui rând: discriminatorul `ClrType` al documentelor
   nu are FK spre `TipDocument.ClrType`, iar un FK spre o frunză (de exemplu
   `Lot.GestiuneId`) acceptă în schemă id-ul oricărui repartitor. Pe ușa
-  securizată tipul îl verifică gardianul; pe ușa de sistem (Import1C, seed,
-  Migrare) nimic nu-l verifică la scriere, iar abaterile le găsesc doar
+  securizată tipul îl verifică gardianul; pe ușa de sistem (Import1C, seed)
+  nimic nu-l verifică la scriere, iar abaterile le găsesc doar
   probele ModelCheck și SQL-ul din `--dump-integritate-tph` rulat după
   import. (89a, 89e)
 - Închiderea unei perioade și operarea unui document în ea sunt serializate
@@ -81,12 +94,26 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   toate postările de partidă (`Partide.Origini`), și când soldurile vin din
   snapshot. E singurul criteriu de formă picat al scării transversale:
   rândurile atinse cresc cu istoricul. Amânat prin amendamentul owner-ului
-  (2026-10-04), odată cu F27-r16. (F27-r16, X-D5)
+  (2026-10-04), odată cu F27-r16, și re-amânat cu cifră la TR-D9a
+  (2026-10-06): parcurgerea e liniară, 2,7 s de SQL pentru 488.733 de
+  partide cu rest la 5 milioane de postări. Rămâne până la decizia 111.
+  (F27-r16, X-D5, D9-D10 (b))
+- O îmbinare pe două chei nulabile ale lui `Postare` (unitatea, partenerul,
+  documentul) iese din EF cu ramură de nul și crește pătratic. Cititorii de
+  partide o ocolesc ținând o parte ne-nulă, iar `SC-CIT-110` o probează
+  numai pe ei; un cititor nou cu aceeași formă nu e prins. `DocumenteCuRest`
+  are forma corectată, dar nu are cifră la volum.
+  (`docs/nucleu/tr-d9-pas5c-imbinare-partide.md`)
 - Scara transversală este sintetică și mică: 7.951 de postări la 12 luni. Nu
   are prag absolut. Proba din plan se evaluează cu scanarea secvențială
   interzisă, fiindcă la acest volum planificatorul o alege legitim; planul
   ales e raportat alături. Pragul pe volum real rămâne al migrării. (X-D5,
   FZ-r3)
+- Scara de volum (5 milioane de postări) e tot sintetică: scena scării
+  transversale multiplicată în lățime, citită de utilizatorul administrativ,
+  pe Postgres neconfigurat. Nu măsoară scrierea, închiderea de lună,
+  cititorii fiscali și SAF-T, nici filtrele de rând ale unui rol restrâns.
+  (D9-A1)
 - Rândurile integral nule dispar din rapoarte după prima închidere. O cheie cu
   debitul și creditul cumulate zero la referință nu are rând de snapshot, deci
   un cont sau un cont cu repartitor fără nicio mișcare în perioada cerută nu
@@ -144,39 +171,28 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   Documentele retroactive nu reevaluează ieșirile deja operate. (75a)
 - Unele distribuiri ASM nu sunt reprezentabile exact la precizia prețului.
   Cazurile refuzate nu sunt corectate prin prețuri sau valori forțate. (75-r4, 76c)
-- Regimul dual evaluează încă ieșirile cubului pe soldul registrelor: trei
-  BCS/ASM de câte 1 din 3/10 lasă în cub 0/−0,01; un produs ASM ajustat prin
-  Δ poate păstra 0/+0,01 după consum. Sunt probe exacte ale limitei curente,
-  fără toleranță; ținta rămâne 0/0. T-r13 cere atât evaluarea pe propriul sold
-  complet, cât și tratarea explicită a istoricului divergent. (ASM-B7)
-- Diagnosticul valoric citește întreg istoricul semnat pe lot/gestiune/cont,
-  cu proveniență. Compară stocul Magazie/Marfuri/Folosinta; alte tipuri de registru și
-  postările cubului identificate în afara domeniului sunt numărate separat.
-  Postările fără corespondent rămân istoric incomplet, nu sunt excluse.
-  Contul registrelor este rezolvat din nomenclatorul curent,
-  fără a pretinde un snapshot istoric. Diferențele complete rămân neexplicate
-  până la certificarea cauzei; lipsa unei corespondențe se raportează separat.
-  Nu deduce automat N-r3 din tipul documentului. (ASM-B7, T-r13)
+- Golirea lotului se decide la momentul operării. Un document retroactiv nu
+  reevaluează ieșirile deja operate și poate lăsa reziduu valoric pe un lot
+  fără cantitate; eliminarea lui e reevaluare (TR-D9b). O asamblare culeasă
+  înaintea unei alte ieșiri din același lot poate fi refuzată la operare cu
+  `ASAMBLARE_NEBALANSATA`, până la redistribuire. (D9-D3)
+- Valoarea de pe linia unui draft cu ieșire evaluată din sold e estimarea
+  `cantitate × preț de intrare`, nu promisiune; dry-run-ul nu întoarce
+  valoarea decisă. Ea se vede pe linie după operare și în explicația
+  tranzacției. (D9-D3, D9-D12)
 - Folosința păstrează gestiunea reală pe lanțul FCT/NIR/BTR/BCS/LDI.
-  Istoricul pe alt TipStoc nu se mută și nu alimentează noua cheie prin
-  fallback. Diagnosticul listează separat lotul, gestiunea, TipStoc,
-  documentul și stornoul pentru loturile cu mișcări Folosinta ori din clase
-  acoperite de o politică Folosinta curentă; aceasta este evidență pentru
-  verificare, nu o reclasificare a istoricului. Custodie rămâne refuzată la
-  LDI; Gratuit și injectivitatea SAF-T rămân TR-r7. (093, LDI-B3)
-- Reconcilierea contabilă (a) exclude nominal Operare ASM în regimul dual;
-  (h) păstrează numărul și diferențele vizibile, fără efect asupra exit-ului.
-  Pentru ASM, comparația cu registrele nu mai detectează erori valorice:
-  probele numerice independente sunt obligatorii, conservarea singură nu
-  ajunge. Cititorii contabili includ efectul ASM. Diagnosticul valoric pe
-  lot rămâne raport. (D8-B4 aprobat, T-D10, T-r15)
+  Custodie rămâne refuzată la LDI; Gratuit și injectivitatea SAF-T rămân
+  TR-r7. (093, LDI-B3)
+- Nu există un al doilea scriitor cu care cubul să fie comparat: corectitudinea
+  valorică o poartă catalogul de scenarii și invarianții interni ai cubului
+  (echilibrul, conservarea transferului, explicația, taxa și valoarea liniei).
+  Conservarea singură nu dovedește cifra. (D9-D7 a)
 - Recepția unui NIR nu declanșează automat completarea DSC pentru facturile
   cu acoperire parțială. Există comanda de generare suplimentară pe FCL. (37g, 38d)
 - NIR manual postează pe cub la net, fără fapt fiscal; nu acoperă avizul pe
   408 sau factura ulterioară pe un lot recepționat anterior (TR-r4/B-r5).
-  NIR conex sursei migrate rămâne necesar registrelor până la TR-D9 (B-r3).
-  Excluderea se aplică numai cu Autogenerat, sursă și PoliticaConex potrivită,
-  cu sursa PosteazaInCub; simpla legătură cu o sursă nu este suficientă.
+  Recepția facturii n-are regulă de contare proprie: contrapartida vine de pe
+  regula de servicii ori cheltuieli a facturii sau din politica de TVA (B-r3).
 - Fluxurile de rezervare, comenzi de vânzare și distribuire a aceleiași
   facturi din mai multe gestiuni nu sunt acoperite complet. (37g, C1a)
 - Retururile nu au un flux general propriu de compensare; se folosește NTC. (46f, 76g)
@@ -241,15 +257,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   raportare proprie. (F27-D7, F27-r2)
 - Soldul partenerului nu apare în lookup-urile de partener din culegere:
   există ca ecran și ca rută, nu ca o coloană `Sold` pe `Partener`. (F27-r7)
-- `sold-parteneri` grupează pe dimensiunea **Repartitor**, care urmează
-  laturile documentului (debit←predator, credit←primitor — 00 §5), NU contul
-  de terț: pe o factură de client atomul de debit al lui 4111 poartă
-  emitentul, iar clientul apare pe atomul de credit al venitului (măsurat pe
-  baza Privat: 103.301 din 108.912 rânduri de 4111 au „Sediul central" pe
-  debit). Ecranul dă deci soldul pe cheia contabilă așa cum e ea, nu creanța
-  per partener; creanța per partener se citește din partidele deschise
-  (`documente-cu-rest`). Dimensionarea contului de terț pe partener e decizie
-  separată, nu a acestei felii. (F27-D7)
+- `sold-parteneri` și balanța analitică grupează pe `AtomContabil.RepartitorId`
+  = `Postare.Partener`: pe contul de terț e partenerul capătului (partida sau
+  flag-ul `Repartitor`, D9-A10), pe piciorul intern cu fapt fiscal e
+  partenerul fiscal, pe restul e nul; gestiunea e axă separată (`GestiuneId`).
+  Creanța per partener se citește din partidele deschise
+  (`documente-cu-rest`); unificarea repartitorului e a deciziei 111. (F27-D7, D9-A10)
 - `ReturClient` intră în proiecția de rest, dar rândurile lui nu apar:
   creanța unui retur e negativă după operare (venit stornat), iar filtrul
   `Rest > 0` o taie. Împerecherea unui retur rămâne pe calea directă
@@ -260,29 +273,42 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   `Partide.NominalizataLibera`, pe o pereche de documente (101, X-D2).
 - Proba X-D2 este sintactică. Un rezultat netipizat derivat dintr-un registru
   se urmărește la apelanți numai dacă membrul e declarat în `Purtatori`; un
-  purtător nou, nedeclarat, nu e văzut. `StocService.Sold`, `AlocaFifoTolerant`
-  și `AlocaFifo` nu mai au apelant de producție și rămân în `Module` numai ca
-  oracol al probelor, până la TR-D9.
-- Cifrele citite din cub sunt păzite de dreptul de citire pe tipul registrului
-  (`RegistruContabil` pentru închiderea de TVA, `RegistruImobilizari` pentru
-  fișă și amortizare). Subiectul permisiunii după tăierea registrelor nu este
-  ales. (F22-D5, X-D2; TR-D9)
-- Acoperirea cantitativă a stocului (X-D7 a) compară registrul cu cubul pe
-  document × lot × gestiune × storno × semn, pe `Magazie`, `Marfuri` și
-  `Folosinta`. Contul nu intră în cheie: rândul de registru nu îl poartă, iar
-  derivarea lui din politica de azi ar rescrie istoricul (093c). Valoarea pe
-  cont a operărilor rămâne la reconcilierea (a); a transferurilor, pe care
-  (a) le exclude, la conservarea pe cont din `INV-CUB`
-  (`CITIRE_TRANSFER_NECONSERVAT`), care nu compară cu registrul, ci cere ca
-  cele două capete să stea pe același cont. Direcția e registru → cub: o postare pe
-  lot fără rând de registru (deschiderea, recepția facturii cu NIR neoperat)
-  nu e lipsă. Grupul recepției conexe se compară net, pe factură și
-  recepțiile ei; fără nicio recepție operată, registrul grupului trebuie să
-  fie zero. `Custodie` și celelalte tipuri de stoc nu se compară. Invariantul
-  rulează în ModelCheck, nu la pornirea hosturilor (102d).
-- Gardianul refuză numai stingerea regimului (X-D7 b). Activarea
-  `PosteazaInCub` pe un tip cu documente operate numai în registre nu e
-  refuzată la scriere; o arată `INV-CUB`, ca istoric incomplet.
+  purtător nou, nedeclarat, nu e văzut.
+- Lista de evidență a cubului (`PostareVizual`): eticheta lotului e codul
+  produsului și data lotului, deci două loturi ale aceluiași produs din
+  aceeași zi au aceeași etichetă; nu există cod de valută (`Postare.Valuta`
+  n-are nomenclator, view-ul nu-l etichetează); rândul n-are navigație spre
+  tranzacție (view fără referințe EF, respinse de owner); sortarea pe o
+  coloană de cod scanează tot cubul (9,1 s la 5 milioane de postări, fără
+  index), iar pe containerul Postgres de dezvoltare, cu `/dev/shm` de 64 MB,
+  sortarea paralelă pică (`could not resize shared memory segment`); costul
+  e raportat fără prag în `docs/nucleu/tr-d9-pas7-declaratii.md`. (D9-A12;
+  2026-10-07)
+- Cheia de pereche (`Postare.Pereche`) nu acoperă transformările (consumul și
+  produsul sunt corespondență de grup) și nu e citită de nimeni: fișa
+  contului întoarce contrapartida nulă când tranzacția are mai multe conturi
+  pe sensul opus (D9-r4). Stornoul cu mai multe surse decalează ordinalele
+  surselor după prima, deci ordinalul stornoului nu e literal al
+  originalului. (D9-A2; 2026-10-07)
+- Import1C rulează pe cititorii cubului, dar reconcilierea lui nu e verde.
+  Pe ianuarie 2025 (2026-10-07): 15.232 de documente, zero eșecuri de import,
+  `INV-CUB` verde; contractul 1 are trei conturi fără explicație (371, 3028,
+  303: nota-punte a reclasificării dublează ASM-ul care postează acum,
+  110-r2), iar contractul 5 are 5 partide inițiale neexplicate, neatribuite.
+  Sensibilitatea contractelor 1 și 3 nu mai are probă proprie (`--sabotaj` a
+  ieșit), iar unealta n-are un mod de reconciliere fără scriere.
+  (D9-D11; `docs/nucleu/tr-d9-pas8-inchiderea.md` §6)
+- Refuzul de acces pe cifrele din cub e fraza generică de citire pe `Postare`:
+  nu spune dacă lipsește dreptul pe tip sau dacă rolul are un criteriu de rând
+  ori de membru. (D9-D9)
+- Refuzurile de ștergere pentru lot, tip de TVA și fișă citesc cubul, dar
+  textele lor numesc încă registrul. (D9-A6)
+- O postare existentă nu se rescrie: garda e la salvare (`POSTARE_MODIFICATA`),
+  pe starea `Modified` a entității, deci nu vede o actualizare făcută direct în
+  SQL. Ștergerea postărilor la anulare rămâne permisă motorului. (D9-A5)
+- Refuzul tipului fără politică pe profil (`TIP_FARA_DECLARATIE`) apare la
+  dry-run și la operare, nu în regimul pe stare al documentului: butonul de
+  operare rămâne activ pe un tip inert. (D9-D5)
 - Produsul nu are o listare a postărilor pe lot sau pe partidă. Regula
   listării N-r8 e fixată pe intrările comune și probată pe ele; singura
   listare pe lot din producție este mișcarea de stoc SAF-T, care poartă
@@ -309,6 +335,17 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   în afara scării ținută în memorie. Un declanșator persistabil pe ușa HTTP
   nu a fost construit; răspunsul ușii e cel al oricărui refuz de declarație
   (422 la operare, listă la dry-run), neprobat separat pentru acest cod.
+- Explicația reține care rând de politică a decis și dacă s-a schimbat de la
+  operare, nu și cum arăta atunci; nomenclatoarele care decid contarea
+  (contul tipului de material, conturile tipului de TVA, steagurile contului)
+  nu se rețin (D9-r3). Contorul e `OptimisticLockField`: nu-l mișcă o scriere
+  SQL directă sau restaurarea bazei, iar un rând șters și recreat apare ca
+  dispărut. Politica de amortizare se reține pe orice fișă atinsă care are
+  rând, fără să spună care cont a venit din ea și care din cub. (D9-A8;
+  2026-10-07)
+- `RegulaContare.PastreazaSemn` nu mai e citit de niciun declarant: se
+  editează, apare în „Explică", dar nu schimbă postările. Nedecis: se scoate
+  sau se leagă. (constatat la TR-D9a pasul 7c; 2026-10-07)
 - Explicația repetă câte două `ContRezolvat` și unitatea întreagă pe fiecare
   linie. Măsurat în X-D5: 907 octeți pe linie, 58.066 pentru un consum de 64
   de linii.
@@ -379,6 +416,14 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 - `SDD`/`SFD` nu au cod SAF-T de achiziție; `N9` poartă codul de livrare al
   rândului 10.1 în timp ce maparea D300 îl pune pe rândul 11. (84-r1, 84-r2)
+- Acoperirea politicii de mișcări SAF-T (D17-V1) se probează într-o singură
+  direcție: fiecare pereche tip × categorie pe care cubul o produce în scena
+  SAF-T are politică, iar scena atinge cele opt tipuri care mișcă stocul
+  (FCT în locul NIR: pe cub recepția mișcă pe factură, NIR-ul conex egal nu
+  mișcă). Direcția inversă, „politica n-are perechi fără mișcare”, nu se mai
+  măsoară de la tăierea regulilor de stoc fără consumator: perechile pe
+  Magazie și NIR/Marfuri rămân în politică fără scenă care să le producă.
+  Limită consemnată pentru decizia 110. (TR-D9a pasul 7, D9-D8, 2026-10-07)
 
 - R6 verifică intervale configurate, nu toate condițiile legale ale unei cote.
   Proveniența fiscală a ajustărilor RDC/RLF/reduceri rămâne neacoperită:

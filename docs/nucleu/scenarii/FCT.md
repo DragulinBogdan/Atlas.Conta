@@ -29,6 +29,9 @@ la bugetar se verifică postările fără unitate de terț. Toate valorile sunt 
 | SC-FCT-08 | Privat: două linii N21 cu net0,01 fiecare → taxa documentului rotunjită0,00, datorie0,02. Separat, net100 și TVA culeasă21,01 → datorie121,01 (politica fără toleranță). | acceptat | 090 (j), S-D15 | `ScenariiFct` / ID-ul rândului | verificat privat; neaplicabil bugetar |
 | SC-FCT-10 | Privat TI21: net100 cu taxă autolichidată21 (4426 = 4427). Totalul de stins pe antet și pe cub este100, iar plata autogenerată plătește100, nu121. | acceptat | 102 (d): găsit de INV-CUB pe faptele scenei (review Codex R1) | `ScenariiFct` / ID-ul rândului | verificat privat; neaplicabil bugetar |
 | SC-FCT-11 | Privat: trei linii de serviciu net 10,03 la N21, fără taxă culeasă. Taxa documentului 6,32, repartizată 2,11 / 2,11 / 2,10 pe 4426; datoria 401 = 36,41 = totalul documentului = totalul de stins. | acceptat | 109 (a,b) | `ScenariiFct` / ID-ul rândului | verificat privat; neaplicabil bugetar |
+| SC-FCT-12 | Bugetar, `PoliticaValidare` a clasificației oprită pe durata probei, ca gardul să judece singur. Recepție 10 × 10 pe 302.01.00 de la furnizorul cu 401.01.00 (cere cod economic), linia fără cod economic și fără angajament: dry-run și operare refuzate cu „Contul 401.01.00 (credit, linia cu …) cere: Cod economic."; factura rămâne Draft, fără postări, fără NIR conex. Înaintea pasului 2 (din cod, nemăsurat) factura trecea, iar analiza se cerea la operarea NIR-ului conex. | refuzat, atomic | D9-A3, schimbarea 5 | `ScenariiFct` / ID-ul rândului | verificat bugetar; neaplicabil privat |
+| SC-FCT-13 | Aceeași recepție cu angajament pe linie și fără cod economic: acceptată; D stoc 100/+10 și C furnizor 100/−10, fără cod economic pe postări; NIR conex operat, lot 10/100. | acceptat | D9-D4: angajamentul ține loc de cod economic | `ScenariiFct` / ID-ul rândului | verificat bugetar; neaplicabil privat |
+| SC-FCT-14 | Aceeași recepție cu cod economic explicit: acceptată; aceleași două postări, cu codul economic pe amândouă; lot 10/100. | acceptat | D9-D4 | `ScenariiFct` / ID-ul rândului | verificat bugetar; neaplicabil privat |
 | SC-FCT-09a/b/c | Număr lipsă / cantitate zero / lot lipsă: coduri NUMAR_LIPSA / CANTITATE_NEPOZITIVA / LOT_LIPSA prin declarație, refuz pe comandă și zero efecte. | refuzat | declarant și gardienii entității | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 | SC-X-01 | FCT 10/100 → NIR operat → BCS 4/40 → storno FCT: refuz conex operat. Storno NIR cu deltă zero: acceptat, fără inversă economică; sold cub 6/60, datorie 100 și BCS 40 intacte. Registrul lotului rămâne −4: limită duală acceptată, poate refuza alte operații pe lot până la TR-D9 (098-r3). | FCT refuzat; NIR acceptat | 098(a), 099: NIR inversează numai delta proprie | `ScenariiFct` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 
@@ -69,3 +72,12 @@ corecție) ale ciclurilor comune se aplică acum ambelor profiluri.
 Mențiunile anterioare „numai privat” descriu acoperirea de la data probării
 inițiale; fiscalul, DSC și contul 419 rămân specifice profilului privat.
 Probele TR-D8 SC-CIT-41…45 verifică separat politica și istoricul.
+
+## TR-D9a, pasul 2 (2026-10-05): SC-X-01 și limita 098-r3
+
+Măsurat în SC-X-27 ([README](README.md#lanțurile-transversale-sc-x-)): după
+stornarea NIR-ului acoperit cu consum, registrul lotului e −4, dar nicio
+operație ulterioară pe lot nu e refuzată. Garda de sold a registrului rulează
+numai pe tipurile din afara cubului, iar acestea nu au reguli de stoc.
+Formularea „poate refuza alte operații pe lot" din rândul SC-X-01 nu se
+confirmă pe starea de azi.

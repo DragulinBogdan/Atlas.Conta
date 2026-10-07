@@ -1,3 +1,4 @@
+using Atlas.DXF.Core.Appearance.Attributes;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub;
@@ -5,6 +6,7 @@ namespace Atlas.Conta.BackOffice.Module.Cub;
 // S-D1: POCO EF, nu `EntitateConta`. `Spatiu` e cheia partiției (S-D2), calculată
 // la materializare din `postare.Spatiu()`; `UnitateDeschisa` e amendamentul la
 // FZ-D2 (cheia FIFO `(Deschisa, Id)`, partida n-are rând de nomenclator).
+[ForbidCRUD("ListView", "DetailView")]
 public class Postare {
     public virtual Guid ID { get; set; }
 
@@ -58,6 +60,7 @@ public class Postare {
     public virtual Guid? CentruCost { get; set; }
 
     public virtual Guid? Atribuit { get; set; }
+    public virtual int? Pereche { get; set; }
 
     public virtual decimal Cantitate { get; set; }
     public virtual decimal ValoareValuta { get; set; }

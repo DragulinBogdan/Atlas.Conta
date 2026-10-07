@@ -414,10 +414,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("Stare")
                         .HasColumnType("integer");
 
-                    b.Property<decimal?>("TotalStingere")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
                     b.HasKey("ID");
 
                     b.HasIndex("ClrType");
@@ -1628,349 +1624,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.ToTable("RefuzuriSeed");
                 });
 
-            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruContabil", b =>
-                {
-                    b.Property<Guid>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ContCreditId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ContDebitId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("CreditCentruCostId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniCredit_CentruCostId");
-
-                    b.Property<Guid?>("CreditCodEconomicId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniCredit_CodEconomicId");
-
-                    b.Property<Guid?>("CreditCodFunctionalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniCredit_CodFunctionalId");
-
-                    b.Property<Guid?>("CreditMaterialId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniCredit_MaterialId");
-
-                    b.Property<Guid?>("CreditProiectId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniCredit_ProiectId");
-
-                    b.Property<Guid?>("CreditRepartitorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniCredit_RepartitorId");
-
-                    b.Property<Guid?>("CreditSursaFinantareId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniCredit_SursaFinantareId");
-
-                    b.Property<Guid?>("CreditUnitateId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniCredit_UnitateId");
-
-                    b.Property<DateOnly>("Data")
-                        .HasColumnType("date");
-
-                    b.Property<Guid?>("DebitCentruCostId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniDebit_CentruCostId");
-
-                    b.Property<Guid?>("DebitCodEconomicId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniDebit_CodEconomicId");
-
-                    b.Property<Guid?>("DebitCodFunctionalId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniDebit_CodFunctionalId");
-
-                    b.Property<Guid?>("DebitMaterialId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniDebit_MaterialId");
-
-                    b.Property<Guid?>("DebitProiectId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniDebit_ProiectId");
-
-                    b.Property<Guid?>("DebitRepartitorId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniDebit_RepartitorId");
-
-                    b.Property<Guid?>("DebitSursaFinantareId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniDebit_SursaFinantareId");
-
-                    b.Property<Guid?>("DebitUnitateId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DimensiuniDebit_UnitateId");
-
-                    b.Property<Guid?>("DetaliuId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("DocumentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("NumarNota")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("Storno")
-                        .HasColumnType("boolean");
-
-                    b.Property<decimal>("Valoare")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("ContCreditId");
-
-                    b.HasIndex("ContDebitId");
-
-                    b.HasIndex("CreditCentruCostId");
-
-                    b.HasIndex("CreditCodEconomicId");
-
-                    b.HasIndex("CreditCodFunctionalId");
-
-                    b.HasIndex("CreditMaterialId");
-
-                    b.HasIndex("CreditProiectId");
-
-                    b.HasIndex("CreditRepartitorId");
-
-                    b.HasIndex("CreditSursaFinantareId");
-
-                    b.HasIndex("CreditUnitateId");
-
-                    b.HasIndex("Data");
-
-                    b.HasIndex("DebitCentruCostId");
-
-                    b.HasIndex("DebitCodEconomicId");
-
-                    b.HasIndex("DebitCodFunctionalId");
-
-                    b.HasIndex("DebitMaterialId");
-
-                    b.HasIndex("DebitProiectId");
-
-                    b.HasIndex("DebitRepartitorId");
-
-                    b.HasIndex("DebitSursaFinantareId");
-
-                    b.HasIndex("DebitUnitateId");
-
-                    b.HasIndex("DetaliuId");
-
-                    b.HasIndex("DocumentId");
-
-                    b.ToTable("RegistruContabil");
-                });
-
-            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruImobilizari", b =>
-                {
-                    b.Property<Guid>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Amortizare")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal>("AmortizareDeductibila")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal>("AmortizareFiscala")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<int?>("CategorieFiscala")
-                        .HasColumnType("integer");
-
-                    b.Property<DateOnly>("Data")
-                        .HasColumnType("date");
-
-                    b.Property<Guid>("DetaliuId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("DocumentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("DurataFiscalaLuni")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("DurataLuni")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Fel")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ImobilizareId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Luni")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("Metoda")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("MetodaFiscala")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("RepartitorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("Storno")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool?>("UtilizareExclusiva")
-                        .HasColumnType("boolean");
-
-                    b.Property<decimal>("Valoare")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal>("ValoareFiscala")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal?>("ValoareReziduala")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("DetaliuId");
-
-                    b.HasIndex("DocumentId");
-
-                    b.HasIndex("ImobilizareId");
-
-                    b.HasIndex("RepartitorId");
-
-                    b.ToTable("RegistruImobilizari");
-                });
-
-            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruStoc", b =>
-                {
-                    b.Property<Guid>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Cantitate")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)");
-
-                    b.Property<DateOnly>("Data")
-                        .HasColumnType("date");
-
-                    b.Property<Guid?>("DetaliuId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("DocumentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("LotId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RepartitorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("Storno")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("TipStoc")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("Valoare")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("Data");
-
-                    b.HasIndex("DetaliuId");
-
-                    b.HasIndex("DocumentId");
-
-                    b.HasIndex("LotId");
-
-                    b.HasIndex("RepartitorId");
-
-                    b.ToTable("RegistruStoc");
-                });
-
-            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruTva", b =>
-                {
-                    b.Property<Guid>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Baza")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal>("Cota")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<DateOnly>("Data")
-                        .HasColumnType("date");
-
-                    b.Property<Guid>("DetaliuId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("DocumentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("PartenerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("PerioadaAn")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PerioadaLuna")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Regim")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("ScrisLa")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Sens")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Storno")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("TipTvaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("Tva")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("DetaliuId");
-
-                    b.HasIndex("DocumentId");
-
-                    b.HasIndex("PartenerId");
-
-                    b.HasIndex("TipTvaId");
-
-                    b.HasIndex("PerioadaAn", "PerioadaLuna");
-
-                    b.ToTable("RegistruTva");
-                });
-
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegulaContare", b =>
                 {
                     b.Property<Guid>("ID")
@@ -2619,17 +2272,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<bool>("DinSeed")
                         .HasColumnType("boolean");
 
-                    b.Property<int?>("LaturaContPropriu")
-                        .HasColumnType("integer");
-
                     b.Property<int>("OptimisticLockField")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
-
-                    b.Property<bool>("PosteazaInCub")
-                        .HasColumnType("boolean");
 
                     b.Property<Guid?>("TipTvaImplicitId")
                         .HasColumnType("uuid");
@@ -2941,6 +2588,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("Partener")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("Pereche")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("PerioadaD394")
                         .HasColumnType("integer");
 
@@ -3013,6 +2663,199 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         {
                             t.HasCheckConstraint("CK_Postare_FiscalComplet", "\"TipTvaId\" IS NULL OR (\n    \"DocumentId\" IS NOT NULL AND \"LinieId\" IS NOT NULL AND\n    \"SensTva\" IS NOT NULL AND \"RolTva\" IS NOT NULL AND\n    \"RegimTva\" IS NOT NULL AND \"CotaTva\" IS NOT NULL AND \"DeImport\" IS NOT NULL AND\n    \"DocumentFiscalId\" IS NOT NULL AND \"DataDocument\" IS NOT NULL AND\n    \"DataExigibilitate\" IS NOT NULL AND \"DataInregistrare\" IS NOT NULL AND\n    \"PerioadaDeclarare\" IS NOT NULL AND \"PerioadaD394\" IS NOT NULL AND\n    (\"SensTva\" <> 1 OR \"DataPrimire\" IS NOT NULL))");
                         });
+                });
+
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.Cub.PostareVizual", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("Atribuit")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Cantitate")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("numeric(18,3)");
+
+                    b.Property<short>("Carte")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid?>("CentruCost")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CentruCostCod")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("CodEconomic")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CodEconomicCod")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("CodFunctional")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CodFunctionalCod")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("Cont")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContSimbol")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("CotaTva")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateOnly>("Data")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataDocument")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataExigibilitate")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataInregistrare")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("DataPrimire")
+                        .HasColumnType("date");
+
+                    b.Property<bool?>("DeImport")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("DocumentFiscalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DocumentNumar")
+                        .HasColumnType("text");
+
+                    b.Property<short?>("FelUnitate")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid?>("Gestiune")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("GestiuneCod")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("InversaDinId")
+                        .HasColumnType("uuid");
+
+                    b.Property<short?>("InversaDinSpatiu")
+                        .HasColumnType("smallint");
+
+                    b.Property<bool>("InversaTehnica")
+                        .HasColumnType("boolean");
+
+                    b.Property<short>("Latura")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid?>("LinieId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("Partener")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PartenerCod")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("Pereche")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PerioadaD394")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PerioadaDeclarare")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("Produs")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProdusCod")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("Proiect")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ProiectCod")
+                        .HasColumnType("text");
+
+                    b.Property<short?>("RegimTva")
+                        .HasColumnType("smallint");
+
+                    b.Property<bool>("RegularizareD300")
+                        .HasColumnType("boolean");
+
+                    b.Property<short?>("RolTva")
+                        .HasColumnType("smallint");
+
+                    b.Property<short?>("SensTva")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Spatiu")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid?>("SuportId")
+                        .HasColumnType("uuid");
+
+                    b.Property<short?>("SuportSpatiu")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid?>("SursaFinantare")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SursaFinantareCod")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TipTvaCod")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("TipTvaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<short>("TranzactieFel")
+                        .HasColumnType("smallint");
+
+                    b.Property<Guid>("TranzactieId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("Unitate")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UnitateCod")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("UnitateDeschisa")
+                        .HasColumnType("date");
+
+                    b.Property<Guid?>("UnitateOrganizatorica")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UnitateOrganizatoricaCod")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Valoare")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ValoareValuta")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid?>("Valuta")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ID");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("PostareVizual", (string)null);
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.Cub.Tranzactie", b =>
@@ -3173,31 +3016,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("FileData");
-                });
-
-            modelBuilder.Entity("DevExpress.Persistent.BaseImpl.EF.HCategory", b =>
-                {
-                    b.Property<Guid>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("text");
-
-                    b.Property<int>("OptimisticLockField")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
-
-                    b.Property<Guid?>("ParentID")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("ID");
-
-                    b.HasIndex("ParentID");
-
-                    b.ToTable("HCategories");
                 });
 
             modelBuilder.Entity("DevExpress.Persistent.BaseImpl.EF.ModelDifference", b =>
@@ -5477,253 +5295,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Navigation("Parinte");
                 });
 
-            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruContabil", b =>
-                {
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Cont", "ContCredit")
-                        .WithMany()
-                        .HasForeignKey("ContCreditId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Cont", "ContDebit")
-                        .WithMany()
-                        .HasForeignKey("ContDebitId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "CreditCentruCost")
-                        .WithMany()
-                        .HasForeignKey("CreditCentruCostId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.CodEconomic", "CreditCodEconomic")
-                        .WithMany()
-                        .HasForeignKey("CreditCodEconomicId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.CodFunctional", "CreditCodFunctional")
-                        .WithMany()
-                        .HasForeignKey("CreditCodFunctionalId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Produs", "CreditMaterial")
-                        .WithMany()
-                        .HasForeignKey("CreditMaterialId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Proiect", "CreditProiect")
-                        .WithMany()
-                        .HasForeignKey("CreditProiectId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "CreditRepartitor")
-                        .WithMany()
-                        .HasForeignKey("CreditRepartitorId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.SursaFinantare", "CreditSursaFinantare")
-                        .WithMany()
-                        .HasForeignKey("CreditSursaFinantareId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Unitate", "CreditUnitate")
-                        .WithMany()
-                        .HasForeignKey("CreditUnitateId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "DebitCentruCost")
-                        .WithMany()
-                        .HasForeignKey("DebitCentruCostId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.CodEconomic", "DebitCodEconomic")
-                        .WithMany()
-                        .HasForeignKey("DebitCodEconomicId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.CodFunctional", "DebitCodFunctional")
-                        .WithMany()
-                        .HasForeignKey("DebitCodFunctionalId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Produs", "DebitMaterial")
-                        .WithMany()
-                        .HasForeignKey("DebitMaterialId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Proiect", "DebitProiect")
-                        .WithMany()
-                        .HasForeignKey("DebitProiectId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "DebitRepartitor")
-                        .WithMany()
-                        .HasForeignKey("DebitRepartitorId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.SursaFinantare", "DebitSursaFinantare")
-                        .WithMany()
-                        .HasForeignKey("DebitSursaFinantareId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Unitate", "DebitUnitate")
-                        .WithMany()
-                        .HasForeignKey("DebitUnitateId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.DocumentDetaliu", "Detaliu")
-                        .WithMany()
-                        .HasForeignKey("DetaliuId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Document", "Document")
-                        .WithMany()
-                        .HasForeignKey("DocumentId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.Navigation("ContCredit");
-
-                    b.Navigation("ContDebit");
-
-                    b.Navigation("CreditCentruCost");
-
-                    b.Navigation("CreditCodEconomic");
-
-                    b.Navigation("CreditCodFunctional");
-
-                    b.Navigation("CreditMaterial");
-
-                    b.Navigation("CreditProiect");
-
-                    b.Navigation("CreditRepartitor");
-
-                    b.Navigation("CreditSursaFinantare");
-
-                    b.Navigation("CreditUnitate");
-
-                    b.Navigation("DebitCentruCost");
-
-                    b.Navigation("DebitCodEconomic");
-
-                    b.Navigation("DebitCodFunctional");
-
-                    b.Navigation("DebitMaterial");
-
-                    b.Navigation("DebitProiect");
-
-                    b.Navigation("DebitRepartitor");
-
-                    b.Navigation("DebitSursaFinantare");
-
-                    b.Navigation("DebitUnitate");
-
-                    b.Navigation("Detaliu");
-
-                    b.Navigation("Document");
-                });
-
-            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruImobilizari", b =>
-                {
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.DocumentDetaliu", "Detaliu")
-                        .WithMany()
-                        .HasForeignKey("DetaliuId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Document", "Document")
-                        .WithMany()
-                        .HasForeignKey("DocumentId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Imobilizare", "Imobilizare")
-                        .WithMany()
-                        .HasForeignKey("ImobilizareId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "Repartitor")
-                        .WithMany()
-                        .HasForeignKey("RepartitorId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.Navigation("Detaliu");
-
-                    b.Navigation("Document");
-
-                    b.Navigation("Imobilizare");
-
-                    b.Navigation("Repartitor");
-                });
-
-            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruStoc", b =>
-                {
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.DocumentDetaliu", "Detaliu")
-                        .WithMany()
-                        .HasForeignKey("DetaliuId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Document", "Document")
-                        .WithMany()
-                        .HasForeignKey("DocumentId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Lot", "Lot")
-                        .WithMany()
-                        .HasForeignKey("LotId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "Repartitor")
-                        .WithMany()
-                        .HasForeignKey("RepartitorId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.Navigation("Detaliu");
-
-                    b.Navigation("Document");
-
-                    b.Navigation("Lot");
-
-                    b.Navigation("Repartitor");
-                });
-
-            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruTva", b =>
-                {
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.DocumentDetaliu", "Detaliu")
-                        .WithMany()
-                        .HasForeignKey("DetaliuId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Document", "Document")
-                        .WithMany()
-                        .HasForeignKey("DocumentId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "Partener")
-                        .WithMany()
-                        .HasForeignKey("PartenerId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
-
-                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.TipTva", "TipTva")
-                        .WithMany()
-                        .HasForeignKey("TipTvaId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
-
-                    b.Navigation("Detaliu");
-
-                    b.Navigation("Document");
-
-                    b.Navigation("Partener");
-
-                    b.Navigation("TipTva");
-                });
-
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.RegulaContare", b =>
                 {
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "ComunCentruCost")
@@ -6130,15 +5701,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasForeignKey("RecurrencePatternID");
 
                     b.Navigation("RecurrencePattern");
-                });
-
-            modelBuilder.Entity("DevExpress.Persistent.BaseImpl.EF.HCategory", b =>
-                {
-                    b.HasOne("DevExpress.Persistent.BaseImpl.EF.HCategory", "Parent")
-                        .WithMany("Children")
-                        .HasForeignKey("ParentID");
-
-                    b.Navigation("Parent");
                 });
 
             modelBuilder.Entity("DevExpress.Persistent.BaseImpl.EF.ModelDifferenceAspect", b =>
@@ -6752,11 +6314,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
             modelBuilder.Entity("DevExpress.Persistent.BaseImpl.EF.Event", b =>
                 {
                     b.Navigation("RecurrenceEvents");
-                });
-
-            modelBuilder.Entity("DevExpress.Persistent.BaseImpl.EF.HCategory", b =>
-                {
-                    b.Navigation("Children");
                 });
 
             modelBuilder.Entity("DevExpress.Persistent.BaseImpl.EF.ModelDifference", b =>

@@ -42,6 +42,35 @@ public class MotorTeste {
             }
         });
 
+    // D9-A2
+    [Fact]
+    public void PerechileNumeroteazaMiscarileSiMutarileInTranzactiaLor() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var declaratie = Gen.Declaratie(aleator, cuMutari: true);
+            var tranzactii = Tranzactiile(Motor.Opereaza(declaratie, Rotunjire()));
+            Assert.Equal(2, tranzactii.Count);
+            foreach (var tranzactie in tranzactii) {
+                var cate = tranzactie.Fel == FelTranzactie.Operare ? declaratie.Miscari.Count : declaratie.Mutari.Count;
+                for (var i = 0; i < cate; i++) {
+                    Assert.Equal(i + 1, tranzactie.Postari[2 * i].Pereche);
+                    Assert.Equal(i + 1, tranzactie.Postari[2 * i + 1].Pereche);
+                }
+            }
+            var transfer = Acceptata(Motor.Transfera(declaratie.Document, declaratie.Data, declaratie.Mutari, Rotunjire()));
+            Assert.Equal(
+                Enumerable.Range(1, declaratie.Mutari.Count).SelectMany(i => new int?[] { i, i }),
+                transfer.Postari.Select(p => p.Pereche));
+        });
+
+    [Fact]
+    public void OrdinalulPerechiiIncepeDeLa1() {
+        var aleator = new Random(Gen.Samanta);
+        var miscare = Gen.Miscare(aleator, Gen.Documente[0], false);
+        Assert.Throws<ArgumentOutOfRangeException>(() => Miscare.Postari(miscare, Gen.Data(aleator), 0));
+        var mutare = Gen.Mutari(aleator, Gen.Documente[0])[0];
+        Assert.Throws<ArgumentOutOfRangeException>(() => Mutare.Postari(mutare, Gen.Data(aleator), 0));
+    }
+
     [Fact]
     public void ValoareaPerturbataPeOSinguraPostarePica() =>
         Perturbarea(

@@ -18,8 +18,7 @@ public sealed record LinieExplicata(
     IReadOnlyList<IesireExplicata> Iesiri,
     IReadOnlyList<StingereExplicata> Stingeri,
     IReadOnlyList<N.ContRezolvat> Conturi,
-    IReadOnlyList<N.PartidaDeschisa> PartideDeschise,
-    IReadOnlyList<N.AbsorbtieEvaluare> Absorbtii);
+    IReadOnlyList<N.PartidaDeschisa> PartideDeschise);
 
 /// <summary>Explicația unui contract acceptat (090 j): deciziile și ipotezele lui, în ordinea declarației.</summary>
 public sealed record Explicatie(
@@ -27,7 +26,7 @@ public sealed record Explicatie(
         int JumatatiDeBan,
         IReadOnlyList<N.Decizie> Decizii,
         IReadOnlyList<N.Ipoteza> Ipoteze) {
-    public const int Versiune = 1;
+    public const int Versiune = 2;
 
     public static Explicatie Din(N.Contract contract, string declarant) {
         ArgumentNullException.ThrowIfNull(contract);
@@ -73,8 +72,7 @@ public sealed record Explicatie(
                 }).OfType<IesireExplicata>()],
                 [.. ale.OfType<N.AlocareFifo>().Select(a => new StingereExplicata(a.Unitate, a.Masura, SoldCitit(a.Unitate)))],
                 [.. ale.OfType<N.ContRezolvat>()],
-                [.. ale.OfType<N.PartidaDeschisa>()],
-                [.. ale.OfType<N.AbsorbtieEvaluare>()]);
+                [.. ale.OfType<N.PartidaDeschisa>()]);
         })];
     }
 
@@ -84,7 +82,6 @@ public sealed record Explicatie(
         N.ValoareDeclarata d => d.Linie,
         N.PartidaDeschisa d => d.Linie,
         N.ContRezolvat d => d.Linie,
-        N.AbsorbtieEvaluare d => d.Linie,
         _ => null,
     };
 
@@ -150,15 +147,7 @@ public sealed record Explicatie(
                 w.WriteString("linie", d.Linie);
                 w.WriteString("cont", d.Cont);
                 w.WriteString("sursa", d.Sursa);
-                break;
-            case N.AbsorbtieEvaluare d:
-                w.WriteString("document", d.Document);
-                w.WriteString("linie", d.Linie);
-                w.WriteString("contSursa", d.ContSursa);
-                w.WriteNumber("r", d.R);
-                w.WriteNumber("c", d.C);
-                w.WriteNumber("p", d.P);
-                w.WriteNumber("delta", d.Delta);
+                if (d.Regula is Guid regula) w.WriteString("regula", regula);
                 break;
             default:
                 throw new InvalidOperationException($"Decizia {decizie.GetType().Name} nu are formă persistată.");
@@ -174,10 +163,7 @@ public sealed record Explicatie(
             e.GetProperty("cantitate").GetDecimal(), e.GetProperty("valoare").GetDecimal(), e.GetProperty("sursa").GetString()!),
         nameof(N.PartidaDeschisa) => new N.PartidaDeschisa(e.GetProperty("linie").GetGuid(), Unitatea(e)),
         nameof(N.ContRezolvat) => new N.ContRezolvat(e.GetProperty("linie").GetGuid(), e.GetProperty("cont").GetGuid(),
-            e.GetProperty("sursa").GetString()!),
-        nameof(N.AbsorbtieEvaluare) => new N.AbsorbtieEvaluare(e.GetProperty("document").GetGuid(),
-            e.GetProperty("linie").GetGuid(), e.GetProperty("contSursa").GetGuid(), e.GetProperty("r").GetDecimal(),
-            e.GetProperty("c").GetDecimal(), e.GetProperty("p").GetDecimal(), e.GetProperty("delta").GetDecimal()),
+            e.GetProperty("sursa").GetString()!, e.TryGetProperty("regula", out var regula) ? regula.GetGuid() : null),
         var fel => throw new InvalidOperationException($"Decizie necunoscută în explicație: {fel}."),
     };
 
@@ -199,8 +185,9 @@ public sealed record Explicatie(
                 w.WriteNumber("luna", i.Luna);
                 break;
             case N.VersiunePolitica i:
-                w.WriteString("nume", i.Nume);
-                w.WriteString("valabilDeLa", Zi(i.ValabilDeLa));
+                w.WriteString("politica", i.Fel);
+                w.WriteString("rand", i.Rand);
+                w.WriteNumber("versiune", i.Versiune);
                 break;
             default:
                 throw new InvalidOperationException($"Ipoteza {ipoteza.GetType().Name} nu are formă persistată.");
@@ -218,7 +205,8 @@ public sealed record Explicatie(
             case nameof(N.PerioadaDeschisa):
                 return new N.PerioadaDeschisa(e.GetProperty("an").GetInt32(), e.GetProperty("luna").GetInt32());
             case nameof(N.VersiunePolitica):
-                return new N.VersiunePolitica(e.GetProperty("nume").GetString()!, Zi(e.GetProperty("valabilDeLa")));
+                return new N.VersiunePolitica(e.GetProperty("politica").GetString()!, e.GetProperty("rand").GetGuid(),
+                    e.GetProperty("versiune").GetInt32());
             case var fel:
                 throw new InvalidOperationException($"Ipoteză necunoscută în explicație: {fel}.");
         }

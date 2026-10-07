@@ -18,8 +18,9 @@ public static class GestiuniVirtuale {
 
     public static Guid Inventar { get; } = Identitate("Atlas.Conta.GestiuneVirtuala:Inventar");
 
-    public static bool Este(Guid? gestiune) =>
-        gestiune == Furnizor || gestiune == Client || gestiune == Consum || gestiune == Transformare || gestiune == Inventar;
+    public static IReadOnlyList<Guid> Toate { get; } = [Furnizor, Client, Consum, Transformare, Inventar];
+
+    public static bool Este(Guid? gestiune) => gestiune is { } id && Toate.Contains(id);
 
     // Aceeași amprentă ca `Unitate.DeschidePartida` (N-D6): SHA-256, primii 16
     // octeți, nibble-ul de versiune (octetul 7) pus pe 8.

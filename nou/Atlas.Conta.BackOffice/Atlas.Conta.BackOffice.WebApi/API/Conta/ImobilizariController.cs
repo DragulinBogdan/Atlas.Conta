@@ -15,13 +15,13 @@ public class ImobilizariController : ContaApiController {
         DevExpress.ExpressApp.Security.ISecurityStrategyBase securitate)
         : base(secured, nonSecured, securitate) { }
 
-    // F22-D5: cifrele se fac non-secured, dar cer și dreptul pe registru — după 404-ul instanței (80a).
+    // F22-D5: cifrele se fac non-secured, dar cer și citirea completă pe `Postare` — după 404-ul instanței (80a).
     [HttpGet("{id:guid}/fisa")]
     [ProducesResponseType(typeof(FisaImobilizareDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Fisa(Guid id, [FromQuery] DateOnly? laData = null) {
-        var refuz = AutorizeazaCitire<Imobilizare>(id) ?? RegistrulCitibil();
+        var refuz = AutorizeazaCitire<Imobilizare>(id) ?? PostariCitibile();
         if (refuz != null)
             return refuz;
         using var os = NonSecured(typeof(Imobilizare));
@@ -38,19 +38,12 @@ public class ImobilizariController : ContaApiController {
             if (!PoateCiti(typeof(Imobilizare), osSecured))
                 return RefuzCitire(typeof(Imobilizare));
         }
-        var refuzRegistru = RegistrulCitibil();
-        if (refuzRegistru != null)
-            return refuzRegistru;
+        var refuzPostari = PostariCitibile();
+        if (refuzPostari != null)
+            return refuzPostari;
         return Domeniu(() => {
             using var os = NonSecured(typeof(Imobilizare));
             return Ok(ImobilizariApply.Registru(os, laData ?? DateOnly.FromDateTime(DateTime.Today)));
         });
-    }
-
-    IActionResult RegistrulCitibil() {
-        using var os = Secured(typeof(RegistruImobilizari));
-        return PoateCiti(typeof(RegistruImobilizari), os)
-            ? null
-            : RefuzCitire(typeof(RegistruImobilizari));
     }
 }

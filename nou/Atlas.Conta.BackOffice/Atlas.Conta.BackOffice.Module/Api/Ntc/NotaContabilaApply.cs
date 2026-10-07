@@ -25,8 +25,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Ntc;
 // (F19-D7). Notele ISTORICE de import le pot avea completate; un PUT care le-ar
 // goli „ca să fie curat" ar RESCRIE date pe care operatorul nu le-a văzut și nu
 // le-a cerut. Sunt oricum inerte: fără reguli de stoc nimic nu citește
-// `Cantitate`/`Lot`, iar fără `PoliticaTva` `RegistruTvaService` nu scrie niciun
-// rând pentru ele (riscul 9 al contractului).
+// `Cantitate`/`Lot`, iar fără `PoliticaTva` declarantul nu postează niciun fapt
+// fiscal pentru ele (riscul 9 al contractului).
 public static class NotaContabilaApply {
 
     // ═══════════════════════ Scriere ═══════════════════════

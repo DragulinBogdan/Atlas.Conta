@@ -30,7 +30,7 @@ aplicat pe cantitate per tip × filtru. Statut: **evidență, niciodată canonic
 /db       → export schemă + conținutul tabelelor de configurare (SQL Server local,
             Contabilitate_2026); inventarul legacy în db/inventar/
 /nou      → soluția nouă: BackOffice (XAF Blazor + Module), WebApi, Client (React),
-            tools/ (ModelCheck, Migrare, Import1C, BackfillTva, ProbeHttp)
+            tools/ (ModelCheck, Import1C, ProbeHttp)
 /docs     → invarianți, jurnal, stare curentă, design-uri și contracte per felie
 ```
 
@@ -124,26 +124,27 @@ zero pachete, teste de proprietate). Declarația fluxului stă în
 `Module/Declaratii/` (`IDeclarant` numit prin `Document.Declarant()`, driverul
 `Contractare`, laturile ca structură prin `Document.Laturi()`). Cubul e
 persistat în `Module/Cub/` (`Tranzactie` / `Postare`, POCO, tabelă
-partiționată pe `Spatiu`, migrații scrise în SQL) și se scrie în aceeași
-tranzacție de comandă cu registrele pentru tipurile cu `PosteazaInCub` (regim
-dual, dată de profil). Pe cub azi: BCS, FCT, PLT, INC, BTR, FCL, NTC,
-DSC, ITV, RDC, RLF și DVI (ultimele cinci numai privat), plus ASM, LDI, NIR, DEC și PIF/AMO/CAS pe ambele profiluri;
+partiționată pe `Spatiu`, migrații scrise în SQL) și e singurul efect contabil
+al operării (110): registrele, regimul dual și oracolul lor au ieșit la TR-D9a.
+Declară: BCS, FCT, PLT, INC, BTR, FCL, NTC, ASM, LDI, NIR, DEC și PIF/AMO/CAS pe
+ambele profiluri, plus DSC, ITV, RDC, RLF și DVI numai pe privat; un tip fără
+declarant sau fără politica cerută pe profil e refuzat (`TIP_FARA_DECLARATIE`);
 LDI acoperă Magazie/Marfuri și lanțul Folosință în gestiune reală (093),
 cu Custodie explicit neacoperită. NIR conex postează diferența față de
 recepția istorică a facturii, cu proveniență păstrată la corecție (098, 099). Deschiderea generică detaliază soldul inițial
 prin loturi și partide, fără dublare, cu refuz atomic al diferențelor (094).
 Fișa imobilizării este citită din cub de AMO/CAS și API Imo (097).
 Citirile contabile/stoc/partide, fiscale și SAF-T și snapshot-urile lor
-sunt pe cub (103, 105). Registrele se ating în producție numai prin lista
-nominală, scrierea în cub e serială per bază, iar explicația deciziei e
-persistată pe tranzacție (108). Scrierea registrelor se taie la TR-D9.
+sunt pe cub (103, 105). Scrierea în cub e serială per bază (108), postarea
+poartă ordinalul perechii ei, iar explicația persistată pe tranzacție reține
+regulile de politică consumate, cu contorul lor (110). Corectitudinea o poartă
+catalogul și invarianții interni ai cubului (`INV-CUB`).
 
 **Proba supremă (91, 2026-09-22)** e catalogul de scenarii
 `docs/nucleu/scenarii/`: așteptări scrise de mână din regula contabilă, ciclul
 complet per tip, lanțuri transversale, pe ambele profiluri. Import1C e unealtă
 de migrare, înghețată, la sfârșit (091-r4); clona Flax e sursă de întrebări
-prin recensământ, nu gate; `--declaratie-pe-baza` și `--reconciliere-cub` sunt
-diagnostic. „Rotund" (regula de oprire a PoC-ului) e 091 (g). Restanțele au
+prin recensământ, nu gate. „Rotund" (regula de oprire a PoC-ului) e 091 (g). Restanțele au
 patru stări (091 (k)); lista `activă` din `restante.md` e singurul backlog al
 PoC-ului.
 
@@ -166,9 +167,20 @@ inițiale) e mersă în main prin PR #20 (2026-10-04), cu M1-D10 amendat și
 review-ul advers închis (M1-R1…R4, M1-R3a). 107-r3 e tratată prin decizia 109
 (taxa nemarcată decisă pe document × cotă și scrisă pe linie; conectorul
 marchează taxa sursei; reîncărcarea nu e culegere), aprobată de owner
-2026-10-04, pe `107-r3-drift-tva`, cu review-ul advers Codex închis (109-R1
-corectată și reverificată, `docs/nucleu/109-review-codex.md`). Urmează
-TR-D9: tăierea scriitorilor vechi și a regimului dual. Felia fiscală
+2026-10-04, mersă în main prin PR #21 (2026-10-05), cu review-ul advers
+Codex închis (109-R1 corectată și reverificată,
+`docs/nucleu/109-review-codex.md`).
+TR-D9 e împărțit în TR-D9a (tăierea) și TR-D9b (unitățile). TR-D9a e închisă
+(2026-10-07): contractul `docs/nucleu/tr-d9-taierea-contract.md` cu
+amendamentele 1–3, pașii în `docs/nucleu/tr-d9-pas*.md`, închiderea în
+`tr-d9-pas8-inchiderea.md`. Decizia 110 e aprobată de owner; review-ul advers
+Codex al închiderii e închis (D9-F-R1…R4, IZ-R1, IZ-R2), iar proba PerfCub pe
+clone diferite e acceptată de owner ca abatere de la „aceeași bază”.
+Mersă în main prin PR #22 (2026-10-07). Bazele de dezvoltare sunt recreate din
+`InitialCreate`; clonele vechi de import și de perf (`.Flax.R3f`, `.D9P5b`,
+`.D9Vol`) sunt pe schema dinaintea tăierii. Urmează contractul TR-D9b, cu
+poarta de decizie 111 (propusă, neaprobată).
+Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
 `docs/nucleu/scenarii/CITIRI.md`.

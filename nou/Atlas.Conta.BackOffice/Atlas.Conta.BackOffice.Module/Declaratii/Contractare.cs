@@ -10,8 +10,12 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// declarantul frunzei și dă nucleului declarația. Nu materializează nimic.
 /// </summary>
 public static class Contractare {
-    public static N.Contract Contracteaza(IObjectSpace os, Document doc) {
+    public static N.Contract Contracteaza(IObjectSpace os, Document doc) => Contracteaza(os, doc, out _);
+
+    /// <summary>Contractul, cu mișcările declarației acceptate (goale la refuz).</summary>
+    public static N.Contract Contracteaza(IObjectSpace os, Document doc, out IReadOnlyList<N.Miscare> miscari) {
         ArgumentNullException.ThrowIfNull(doc);
+        miscari = [];
         var declarant = doc.Declarant()
             ?? throw new InvalidOperationException(
                 $"Documentul {doc.ID} e de un tip care nu declară încă — driverul nu se cheamă pe el.");
@@ -36,11 +40,14 @@ public static class Contractare {
         // Materializarea păstrează proveniența pe agregat și omite tranzacția goală.
         if (declaratie is null && declarant.PermiteDeclaratieFaraMiscari(operand))
             return N.Contract.Accepta([new(N.FelTranzactie.Operare, doc.DataInregistrare, doc.ID, [])],
-                [], [operand.PerioadaDeschisa, operand.VersiunePolitica], rotunjire.JumatatiDeBan);
+                [], [operand.PerioadaDeschisa], rotunjire.JumatatiDeBan);
         if (declaratie is null)
             return Invalida($"Declarantul {declarant.GetType().Name} a întors null fără niciun refuz.");
         try {
-            return N.Motor.Opereaza(declaratie, rotunjire);
+            var contract = N.Motor.Opereaza(declaratie, rotunjire);
+            if (contract.EsteAcceptat)
+                miscari = declaratie.Miscari;
+            return contract;
         }
         catch (ArgumentException e) {
             return Invalida(e.Message);
@@ -49,6 +56,15 @@ public static class Contractare {
         N.Contract Invalida(string mesaj) =>
             N.Contract.Refuza([new(CoduriRefuz.DeclaratieInvalida, mesaj, null)], [], [], rotunjire.JumatatiDeBan);
     }
+
+    /// <summary>Declarantul clasei de document cu numele CLR dat; null când clasa lipsește sau nu declară.</summary>
+    public static IDeclarant? DeclarantulTipului(string? clrType) =>
+        clrType is null ? null : declaranti.GetOrAdd(clrType, static nume =>
+            typeof(Document).Assembly.GetTypes()
+                .FirstOrDefault(t => t.Name == nume && !t.IsAbstract && typeof(Document).IsAssignableFrom(t))
+                is { } clasa ? ((Document)Activator.CreateInstance(clasa)!).Declarant() : null);
+
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<string, IDeclarant?> declaranti = new();
 
     /// <summary>Textul unui refuz pentru operator: codul stabil, mesajul, linia dacă e a ei.</summary>
     public static string Mesaj(N.Refuz refuz) {

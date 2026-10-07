@@ -6,22 +6,25 @@ using static Atlas.Conta.BackOffice.ModelCheck.SursaProductie;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-// X-D2: registrele se ating în producție numai prin utilizările numite în `Permise`.
+// X-D2: `Imperechere` se atinge în producție numai prin utilizările numite în `Permise`.
+// D9-D7 (b): numele registrelor tăiate nu mai apar în codul din `nou/`.
 static partial class ProbeCititoriRegistre {
-    public enum Clasa { Mapare, ScriitorDual, Martor, Evidenta, Autorizare, Legatura }
+    public enum Clasa { Legatura }
 
     public sealed record Permisa(string Fisier, string Membru, string Registre, Clasa Clasa, string Rol);
     public sealed record Utilizare(string Fisier, string Membru, string Registru, int Linie, string Fel);
     sealed record Sursa(string Tip, string Nume, bool Calificata, string[] Registre);
     sealed record Mutant(string Nume, string Fisier, Func<string> Text, string Asteptat);
 
-    static readonly string[] Registre = ["RegistruContabil", "RegistruStoc", "RegistruTva", "RegistruImobilizari", "Imperechere"];
-    static readonly Regex Tabele = new(@"(?<!\w)(RegistruContabil|RegistruStoc|RegistruTva|RegistruImobilizari|Imperecheri)(?!\w)");
-    static readonly string[] Cititori = [
-        Modul + "Proiectii/", Modul + "Api/", Modul + "Culegere/", Modul + "Saft/", Modul + "Declaratii/", WebApi,
-    ];
+    static readonly string[] Registre = ["Imperechere"];
+    static readonly Regex Tabele = new(@"(?<!\w)(Imperecheri)(?!\w)");
 
     public static void VerificaSursa(Action<string, bool> check, bool lista = false) {
+        VerificaLegatura(check, lista);
+        VerificaNumeInterzise(check);
+    }
+
+    static void VerificaLegatura(Action<string, bool> check, bool lista) {
         var arbori = Arbori();
         var utilizari = Scaneaza(arbori);
         if (lista)
@@ -37,25 +40,15 @@ static partial class ProbeCititoriRegistre {
         Console.WriteLine($"     MĂSURAT (X-D2): {arbori.Count} fișiere de producție; {chei.Count} utilizări (fișier × membru × registru), "
             + $"{Permise.Length} intrări permise [{PeClase(Permise)}]; încălcări [{string.Join("; ", incalcari)}]; "
             + $"permise nefolosite [{string.Join("; ", nefolosite)}]; dubluri [{string.Join("; ", dubluri)}].");
-        check("X-D2: registrele și `Imperechere` se ating în producție numai prin lista nominală (fișier × membru × registru × rol); "
+        check("X-D2: `Imperechere` se atinge în producție numai prin lista nominală a legăturii (fișier × membru × rol); "
             + "nicio intrare permisă nu rămâne fără utilizare", arbori.Count > 100 && incalcari.Count == 0 && nefolosite.Count == 0 && dubluri.Count == 0);
-
-        var cititori = Permise.Where(p => Cititori.Any(c => p.Fisier.StartsWith(c, StringComparison.Ordinal))).ToList();
-        var surseDeSold = cititori.Where(p => p.Clasa is Clasa.Mapare or Clasa.Evidenta or Clasa.Martor
-            || p.Clasa == Clasa.ScriitorDual && !p.Rol.StartsWith(AbsorbtieAsm, StringComparison.Ordinal)
-            || p.Clasa == Clasa.Legatura && p.Registre != "Imperechere").ToList();
-        Console.WriteLine($"     MĂSURAT (X-D2): {cititori.Count} intrări în perimetrul cititorilor [{PeClase(cititori)}]; "
-            + $"citiri de registru [{string.Join("; ", surseDeSold.Select(p => $"{p.Fisier} {p.Membru}"))}].");
-        check("X-D2: în `Proiectii/`, `Api/`, `Culegere/`, `Saft/`, `Declaratii/` și WebApi cele patru registre apar numai ca "
-            + "cheie de autorizare și în absorbția ASM-B6 a regimului dual, iar `Imperechere` numai ca legătură sau autorizare",
-            cititori.Count > 0 && surseDeSold.Count == 0);
 
         var mutanti = Mutanti.Select(m => {
             var gasite = Incalcari(Scaneaza(Cu(m.Fisier, m.Text())));
             return (m.Nume, Ok: m.Asteptat == null ? gasite.Count == 0 : gasite.Count == 1 && gasite[0].Contains(m.Asteptat), gasite);
         }).ToList();
         Console.WriteLine("     MĂSURAT (X-D2): mutanți " + string.Join("; ", mutanti.Select(m => $"{m.Nume} → [{string.Join(" | ", m.gasite)}]")) + ".");
-        check("X-D2: proba cade pe o citire nouă de registru (interogare, SQL, alias, apel al unui purtător de date de registru, "
+        check("X-D2: proba cade pe o atingere nouă a legăturii (interogare, SQL, alias, apel al unui purtător, "
             + "membru nou într-un fișier permis) și nu cade pe `nameof`", mutanti.Count == Mutanti.Length && mutanti.All(m => m.Ok));
     }
 
@@ -136,23 +129,23 @@ static partial class ProbeCititoriRegistre {
 
     static readonly Mutant[] Mutanti = [
         new("interogare", Modul + "Proiectii/Mutant.cs",
-            () => "static class Mutant { static decimal Rulaj(IObjectSpace os) => os.GetObjectsQuery<RegistruContabil>().Sum(r => r.Valoare); }",
-            "Proiectii/Mutant.cs:1 Mutant.Rulaj RegistruContabil (tip)"),
+            () => "static class Mutant { static decimal Stins(IObjectSpace os) => os.GetObjectsQuery<Imperechere>().Sum(r => r.Suma); }",
+            "Proiectii/Mutant.cs:1 Mutant.Stins Imperechere (tip)"),
         new("sql", Modul + "Saft/Mutant.cs",
-            () => "static class Mutant { const string Sql = \"SELECT SUM(\\\"Cantitate\\\") FROM \\\"RegistruStoc\\\"\"; }",
-            "Saft/Mutant.cs:1 Mutant.Sql RegistruStoc (sql)"),
+            () => "static class Mutant { const string Sql = \"SELECT SUM(\\\"Suma\\\") FROM \\\"Imperecheri\\\"\"; }",
+            "Saft/Mutant.cs:1 Mutant.Sql Imperechere (sql)"),
         new("alias", Modul + "Api/Mutant.cs",
-            () => "using R = Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruTva;\n"
+            () => "using R = Atlas.Conta.BackOffice.Module.BusinessObjects.Imperechere;\n"
                 + "static class Mutant { static bool Are(IObjectSpace os) => os.GetObjectsQuery<R>().Any(); }",
-            "Api/Mutant.cs:2 Mutant.Are RegistruTva (tip)"),
+            "Api/Mutant.cs:2 Mutant.Are Imperechere (tip)"),
         new("purtător", Modul + "Culegere/Mutant.cs",
-            () => "static class Mutant { static decimal Sold(IObjectSpace os, CheieStoc cheie) => StocService.Sold(os, cheie); }",
-            "Culegere/Mutant.cs:1 Mutant.Sold RegistruStoc (prin StocService.Sold)"),
-        new("membru nou în fișier permis", Modul + "Motor/StocService.cs",
-            () => Inainte(Modul + "Motor/StocService.cs", "public static decimal? ValoareGolire",
-                "public static bool AreTva(IObjectSpace os) => os.GetObjectsQuery<RegistruTva>().Any();\n    "),
-            "StocService.AreTva RegistruTva (tip)"),
+            () => "static class Mutant { static decimal Libera(IObjectSpace os, Guid a, Guid b) => Partide.NominalizataLibera(os, a, b); }",
+            "Culegere/Mutant.cs:1 Mutant.Libera Imperechere (prin Partide.NominalizataLibera)"),
+        new("membru nou în fișier permis", Modul + "Motor/ImperechereService.cs",
+            () => Inainte(Modul + "Motor/ImperechereService.cs", "public static decimal Total(IObjectSpace os, Guid documentId)",
+                "public static bool AreLegaturi(IObjectSpace os) => os.GetObjectsQuery<Imperechere>().Any();\n    "),
+            "ImperechereService.AreLegaturi Imperechere (tip)"),
         new("nameof", Modul + "Proiectii/Mutant.cs",
-            () => "static class Mutant { const string Nume = nameof(RegistruContabil); }", null),
+            () => "static class Mutant { const string Nume = nameof(Imperechere); }", null),
     ];
 }

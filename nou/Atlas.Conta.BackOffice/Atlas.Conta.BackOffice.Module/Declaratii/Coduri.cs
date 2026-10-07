@@ -2,24 +2,22 @@
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 /// <summary>
-/// Codurile de refuz ale declaranților: stabile, fără localizare — mesajul
-/// românesc al motorului vechi rămâne al lui până la TR-D7 (B-D3).
+/// Codurile de refuz ale declaranților: stabile, fără localizare (B-D3).
 /// </summary>
 public static class CoduriRefuz {
-    public const string PosteazaInCubIreversibil = "POSTEAZA_IN_CUB_IREVERSIBIL";
+    public const string TipFaraDeclaratie = "TIP_FARA_DECLARATIE";
+    public const string RegulaContareFaraConsumator = "REGULA_CONTARE_FARA_CONSUMATOR";
     public const string NirDeltaStructura = "NIR_DELTA_STRUCTURA";
     public const string NirDeltaCauza = "NIR_DELTA_CAUZA";
     public const string NirDeltaPolitica = "NIR_DELTA_POLITICA";
     public const string NirProvenientaInvalida = "NIR_PROVENIENTA_INVALIDA";
     public const string NirReceptieActiva = "NIR_RECEPTIE_ACTIVA";
     public const string NirStocInsuficient = "NIR_STOC_INSUFICIENT";
-    public const string NirRegimInactiv = "NIR_REGIM_INACTIV";
     public const string ReceptieStructuraInvalida = "RECEPTIE_STRUCTURA_INVALIDA";
     public const string InventarStructuraInvalida = "INVENTAR_STRUCTURA_INVALIDA";
     public const string InventarStocNeacoperit = "INVENTAR_STOC_NEACOPERIT";
     public const string AsamblareNebalansata = "ASAMBLARE_NEBALANSATA";
     public const string AsamblareStructuraInvalida = "ASAMBLARE_STRUCTURA_INVALIDA";
-    public const string AsamblareDeltaFaraAncora = "ASAMBLARE_DELTA_FARA_ANCORA";
     public const string AsamblareProdusNepozitiv = "ASAMBLARE_PRODUS_NEPOZITIV";
     public const string PredatorNepotrivit = "PREDATOR_NEPOTRIVIT";
     public const string PrimitorNepotrivit = "PRIMITOR_NEPOTRIVIT";

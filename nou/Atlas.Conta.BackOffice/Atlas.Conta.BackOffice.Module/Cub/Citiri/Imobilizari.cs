@@ -6,15 +6,8 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Cub.Citiri;
 
 public static partial class Imobilizari {
-    public static void VerificaAcoperire(IObjectSpace os) {
-        var lipsuri = os.GetObjectsQuery<RegistruImobilizari>().Where(r =>
-            !os.GetObjectsQuery<Postare>().Any(p => p.FelUnitate == N.FelUnitate.Fisa
-                && p.Unitate == r.ImobilizareId && p.DocumentId == r.DocumentId
-                && (p.Tranzactie.Fel == N.FelTranzactie.Storno) == r.Storno))
-            .Select(r => r.DocumentId).Distinct().Take(10).ToList();
-        if (lipsuri.Count > 0)
-            throw new OperareException("Registrul imobilizărilor fără fișă pe cub: "
-                + string.Join(", ", lipsuri));
+    /// <summary>Fișele de pe cub își poartă cauza, suportul și originea inversei.</summary>
+    public static void VerificaProvenienta(IObjectSpace os) {
         var incomplete = os.GetObjectsQuery<Postare>().Where(p => p.FelUnitate == N.FelUnitate.Fisa
             && (p.DocumentId == null || p.LinieId == null
                 || (p.Tranzactie.Fel == N.FelTranzactie.Storno && p.InversaDinId == null)
@@ -22,19 +15,11 @@ public static partial class Imobilizari {
             .Select(p => p.ID).Take(10).ToList();
         if (incomplete.Count > 0)
             throw new OperareException("Fișe pe cub fără cauză, suport sau origine a inversei: " + string.Join(", ", incomplete));
-        var registru = os.GetObjectsQuery<RegistruImobilizari>()
-            .Select(r => new { r.DocumentId, r.ImobilizareId, r.Data, r.Storno,
-                r.Valoare, r.ValoareFiscala, r.Amortizare, r.AmortizareFiscala }).ToList();
-        if (registru.Count == 0) return;
-        var cub = Randuri(os, registru.Select(r => r.ImobilizareId).Distinct().ToList(), DateOnly.MaxValue)
-            .ToDictionary(r => (r.DocumentId, r.Rand.ImobilizareId, r.Rand.Data, r.Rand.Storno), r => r.Rand);
-        var diferite = registru.GroupBy(r => (r.DocumentId, r.ImobilizareId, r.Data, r.Storno)).Where(g =>
-            !cub.TryGetValue(g.Key, out var c) || c.Valoare != g.Sum(r => r.Valoare)
-                || c.ValoareFiscala != g.Sum(r => r.ValoareFiscala) || c.Amortizare != g.Sum(r => r.Amortizare)
-                || c.AmortizareFiscala != g.Sum(r => r.AmortizareFiscala)).Select(g => g.Key.DocumentId).Distinct().Take(10).ToList();
-        if (diferite.Count > 0)
-            throw new OperareException("Registrul imobilizărilor diferă de cub: " + string.Join(", ", diferite));
     }
+
+    /// <summary>Fișa e unitatea a cel puțin unei postări, pe orice fel de tranzacție.</summary>
+    public static bool AreMiscari(IObjectSpace os, Guid fisa) =>
+        os.GetObjectsQuery<Postare>().Any(p => p.FelUnitate == N.FelUnitate.Fisa && p.Unitate == fisa);
 
     public sealed record RandCuDocument(RandImobilizare Rand, Guid DocumentId);
     sealed record Atribute(FelMiscareImobilizare Fel, decimal Deductibil, int Luni,

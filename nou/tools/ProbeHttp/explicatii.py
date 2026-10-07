@@ -89,7 +89,10 @@ def main():
                 origin, = e['Origini']
                 first, second = origin['Linii']
                 assert e['Fel'] == 'Operare' and e['DocumentId'] == bcs and origin['PurtatorId'] == operare, e
-                assert origin['Declarant'] == 'DeclarantBonConsum' and origin['Versiune'] == 1, origin
+                assert origin['Declarant'] == 'DeclarantBonConsum' and origin['Versiune'] == 2, origin
+                assert origin['Politici'] and all(p['Fel'] == 'RegulaContare' and not p['Schimbata']
+                    and p['VersiuneCurenta'] == p['Versiune'] for p in origin['Politici']), origin['Politici']
+                assert all(c['RegulaId'] for line in origin['Linii'] for c in line['Conturi']), origin['Linii']
                 assert (origin['PerioadaAn'], origin['PerioadaLuna']) == (year, 1), origin
                 out1, out2 = first['Iesiri'][0], second['Iesiri'][0]
                 assert (out1['Unitate']['Id'], out1['Cantitate'], out1['Valoare']) == (lots[0], 4, 40), out1
@@ -98,6 +101,21 @@ def main():
                 assert (out2['SoldInainte']['Debit'], out2['SoldInainte']['Cantitate']) == (25, 5), out2
                 assert out1['Sursa'] is None and len(first['Conturi']) == 2, first
                 print('PASS SC-CIT-99', name, 'acces complet: 200, 4 din 10/100 = 40 și 1 din 5/25 = 5', flush=True)
+
+            # D9-A8: regula editată pe ușa OData a hostului își crește contorul; explicația veche o arată „schimbată”.
+            retinuta, = call('Admin', path)['Origini'][0]['Politici']
+            rand = f"/api/odata/RegulaContare({retinuta['RandId']})"
+            initial = call('Admin', rand)['PastreazaSemn']
+            for valoare in (not initial, initial):
+                request = urllib.request.Request(args.host.rstrip('/') + rand, data=json.dumps({'PastreazaSemn': valoare}).encode(),
+                    headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokens['Admin']}, method='PATCH')
+                with urllib.request.urlopen(request, timeout=90) as response:
+                    assert response.status in (200, 204), response.status
+            dupa, = call('Admin', path)['Origini'][0]['Politici']
+            assert call('Admin', rand)['PastreazaSemn'] == initial
+            assert dupa['Schimbata'] and dupa['Versiune'] == retinuta['Versiune'] \
+                and dupa['VersiuneCurenta'] == retinuta['Versiune'] + 2, (retinuta, dupa)
+            print('PASS SC-CIT-111 regula editată de două ori pe OData: contorul curent +2, explicația veche „schimbată”', flush=True)
 
             for name, target in (('User', path), ('Admin', f'/api/proiectii/explicatii/{uuid.uuid4()}')):
                 refused = json.dumps(call(name, target, expected=404), ensure_ascii=False)

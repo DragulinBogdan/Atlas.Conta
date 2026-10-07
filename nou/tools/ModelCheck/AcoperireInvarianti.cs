@@ -10,19 +10,14 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 /// <summary>INV-CUB pe faptele fiecărei scene, înaintea purjei; fiecare ramură fără probă proprie își ucide mutantul o dată per profil (102d).</summary>
-static class AcoperireInvarianti {
-    sealed record Mutant(string Ramura, string Fragment, Func<IObjectSpace, DbContext, bool> Aplica);
+static partial class AcoperireInvarianti {
+    sealed record Mutant(string Ramura, string Fragment, Func<IObjectSpace, DbContext, bool> Aplica, bool NumaiPerechi = false);
 
     static readonly Mutant[] mutanti = [
-        new("DESCHIDERE-EGALA", null, (os, db) => RegistruIstoric(os, db) != null),
-        new("DESCHIDERE", "CITIRE_DESCHIDERE_INCOMPLETA", RegistruIstoricDiferit),
         new("PARTIDE", "CITIRE_PARTIDE_INCOMPLETE", PartidaFaraPartener),
-        new("POLITICA", "CITIRE_PARTIDE_POLITICA", TotalDecontareDiferit),
-        new("IMO-FISA", "fără fișă pe cub", FisaPeAltaUnitate),
         new("IMO-CAUZA", "fără cauză", FisaFaraLinie),
         new("IMO-ORIGINE", "fără cauză", FisaFaraOrigine),
         new("IMO-SUPORT", "fără cauză", FisaFaraSuport),
-        new("IMO-REGISTRU", "diferă de cub", RegistruImobilizariDiferit),
         new("EXPLICATIE-LIPSA", C.Citiri.Explicatii.Lipsa, ExplicatieStearsa),
         new("EXPLICATIE-REFERINTA", C.Citiri.Explicatii.Referinta, ExplicatieReferitaGresit),
         new("EXPLICATIE-STORNO", C.Citiri.Explicatii.Storno, InversaPeLotDiferita),
@@ -36,6 +31,28 @@ static class AcoperireInvarianti {
         new("EXPLICATIE-SOLD-FIFO", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, e => SoldFifo(e, null))),
         new("EXPLICATIE-SOLD-FIFO-MIC", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, e => SoldFifo(e, N.Sold.Zero))),
         new("TRANSFER-CONT", C.Citiri.Invarianti.TransferNeconservat, DestinatieTransferPeAltCont),
+        new("PERECHE-RUPTA", C.Citiri.Invarianti.PerecheInvalida, PerecheRupta),
+        new("PERECHE-LIPSA", C.Citiri.Invarianti.PerecheLipsa, PerecheLipsa),
+        new("PERECHE-ORDINAL", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "ordinal"), true),
+        new("PERECHE-CAUZA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "cauza"), true),
+        new("PERECHE-VALOARE", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "valoare"), true),
+        new("PERECHE-VALUTA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "valuta"), true),
+        new("PERECHE-CANTITATE", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "cantitate"), true),
+        new("PERECHE-LATURA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "latura"), true),
+        new("PERECHE-DOCUMENT", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "document"), true),
+        new("PERECHE-TRANSFER-LATURA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "latura", N.FelTranzactie.Transfer), true),
+        new("PERECHE-TRANSFER-VALOARE", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "valoare", N.FelTranzactie.Transfer), true),
+        new("PERECHE-TRANSFER-VALUTA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "valuta", N.FelTranzactie.Transfer), true),
+        new("PERECHE-DESCHIDERE", C.Citiri.Invarianti.PerecheInvalida, PerecheInDeschidere, true),
+        new("PERECHE-TRANSFORMARE-VALORICA", C.Citiri.Invarianti.PerecheLipsa, (os, db) => PerecheLangaTransformare(os, db, 0m), true),
+        new("PERECHE-TRANSFORMARE-CANTITATIVA", C.Citiri.Invarianti.PerecheLipsa, (os, db) => PerecheLangaTransformare(os, db, 1m), true),
+        new("LINIE-BCS", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<BonConsum>(os, db, N.FelTranzactie.Operare, v => v + 1m)),
+        new("LINIE-BTR", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<NotaTransfer>(os, db, N.FelTranzactie.Transfer, v => v + 1m)),
+        new("LINIE-ASM", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<Asamblare>(os, db, N.FelTranzactie.Transfer, v => v + 1m)),
+        new("LINIE-SEMN-BCS", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<BonConsum>(os, db, N.FelTranzactie.Operare, v => -v)),
+        new("LINIE-SEMN-ASM", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<Asamblare>(os, db, N.FelTranzactie.Transfer, v => -v)),
+        new("IESIRE-SEMN-BTR", C.Citiri.Explicatii.Iesire, (os, db) => Rescrie(os, db, IesireCuSemnOpus, Purtatori<NotaTransfer>(os, N.FelTranzactie.Transfer))),
+        new("IESIRE-SEMN-ASM", C.Citiri.Explicatii.Iesire, (os, db) => Rescrie(os, db, IesireCuSemnOpus, Purtatori<Asamblare>(os, N.FelTranzactie.Transfer))),
     ];
 
     static readonly HashSet<string> ucise = [];
@@ -59,7 +76,7 @@ static class AcoperireInvarianti {
                 aplicat = false;
             }
             if (aplicat) {
-                refuz = Refuz(os);
+                refuz = Refuz(os, m.NumaiPerechi);
                 var ok = m.Fragment == null ? refuz == null : refuz?.Contains(m.Fragment, StringComparison.OrdinalIgnoreCase) == true;
                 verifica("INV-CUB-" + m.Ramura, (m.Fragment == null ? "martorul trece" : $"mutantul refuză cu {m.Fragment}")
                     + (ok ? "" : $" — {refuz ?? "trecut"}"), ok);
@@ -70,34 +87,13 @@ static class AcoperireInvarianti {
         }
     }
 
-    static string Refuz(IObjectSpace os) {
-        try { C.Citiri.Invarianti.Verifica(os); return null; }
-        catch (OperareException e) { return e.Message; }
-    }
-
-    static Guid? RegistruIstoric(IObjectSpace os, DbContext db) {
-        var postari = C.Citiri.Contabil.Postari(os).Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.Valoare != 0m)
-            .Select(p => new { p.Cont, p.Latura, p.Valoare, p.Data }).ToList();
-        if (postari.Count == 0) return null;
-        var debite = postari.Where(p => p.Latura == N.Latura.Debit).Select(p => (p.Cont, Sold: p.Valoare)).ToArray();
-        var credite = postari.Where(p => p.Latura == N.Latura.Credit).Select(p => (p.Cont, Sold: p.Valoare)).ToArray();
-        Guid? primul = null;
-        for (int i = 0, j = 0; i < debite.Length && j < credite.Length;) {
-            var valoare = Math.Min(debite[i].Sold, credite[j].Sold);
-            var id = Guid.NewGuid(); primul ??= id;
-            db.Database.ExecuteSqlInterpolated($@"INSERT INTO ""RegistruContabil""
-                (""ID"", ""Data"", ""ContDebitId"", ""ContCreditId"", ""Valoare"", ""Storno"")
-                VALUES ({id}, {postari[0].Data}, {debite[i].Cont}, {credite[j].Cont}, {valoare}, false)");
-            if ((debite[i].Sold -= valoare) == 0m) i++;
-            if ((credite[j].Sold -= valoare) == 0m) j++;
+    static string Refuz(IObjectSpace os, bool numaiPerechi = false) {
+        try {
+            if (numaiPerechi) C.Citiri.Invarianti.VerificaPerechi(os);
+            else C.Citiri.Invarianti.Verifica(os);
+            return null;
         }
-        return primul;
-    }
-
-    static bool RegistruIstoricDiferit(IObjectSpace os, DbContext db) {
-        if (RegistruIstoric(os, db) is not Guid rand) return false;
-        db.Database.ExecuteSqlInterpolated($@"UPDATE ""RegistruContabil"" SET ""Valoare"" = ""Valoare"" + 1 WHERE ""ID"" = {rand}");
-        return true;
+        catch (OperareException e) { return e.Message; }
     }
 
     static bool PartidaFaraPartener(IObjectSpace os, DbContext db) {
@@ -108,27 +104,6 @@ static class AcoperireInvarianti {
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
             .ExecuteUpdate(s => s.SetProperty(p => p.Partener, (Guid?)null));
         return true;
-    }
-
-    static bool TotalDecontareDiferit(IObjectSpace os, DbContext db) {
-        var tinta = os.GetObjectsQuery<Document>()
-            .Where(d => (d is FacturaIntrare || d is FacturaIesire || d is Decont || d is ReturClient)
-                && (d.Stare == StareDocument.Operat || d.Stare == StareDocument.Stornat))
-            .Select(d => new { d.ID, d.TotalStingere }).FirstOrDefault();
-        if (tinta == null) return false;
-        var total = tinta.TotalStingere ?? 0m;
-        var nou = total >= 0 ? total + 1 : total - 1;
-        db.Set<Document>().Where(d => d.ID == tinta.ID).ExecuteUpdate(s => s.SetProperty(d => d.TotalStingere, nou));
-        return true;
-    }
-
-    static bool FisaPeAltaUnitate(IObjectSpace os, DbContext db) {
-        var tinta = os.GetObjectsQuery<RegistruImobilizari>().Select(r => new { r.DocumentId, r.ImobilizareId }).FirstOrDefault();
-        if (tinta == null) return false;
-        Guid? alta = Guid.NewGuid();
-        return db.Set<C.Postare>().Where(p => p.FelUnitate == N.FelUnitate.Fisa
-                && p.Unitate == tinta.ImobilizareId && p.DocumentId == tinta.DocumentId)
-            .ExecuteUpdate(s => s.SetProperty(p => p.Unitate, alta)) > 0;
     }
 
     static bool FisaFaraLinie(IObjectSpace os, DbContext db) {
@@ -163,16 +138,34 @@ static class AcoperireInvarianti {
         return true;
     }
 
-    static bool RegistruImobilizariDiferit(IObjectSpace os, DbContext db) {
-        var tinta = os.GetObjectsQuery<RegistruImobilizari>().Select(r => (Guid?)r.ID).FirstOrDefault();
-        if (tinta == null) return false;
-        db.Set<RegistruImobilizari>().Where(r => r.ID == tinta)
-            .ExecuteUpdate(s => s.SetProperty(r => r.Valoare, r => r.Valoare + 1));
-        return true;
+    // Explicațiile purtate de tranzacțiile de felul dat ale documentelor de tipul T.
+    static IQueryable<C.Tranzactie> Purtatori<T>(IObjectSpace os, N.FelTranzactie fel) where T : Document =>
+        os.GetObjectsQuery<C.Tranzactie>().Where(t => t.Explicatie != null && t.Fel == fel
+            && os.GetObjectsQuery<T>().Any(d => d.ID == t.DocumentId));
+
+    // D9-D3 (a): linia unei ieșiri evaluate primește altă valoare decât decizia ei.
+    static bool LinieDiferita<T>(IObjectSpace os, DbContext db, N.FelTranzactie fel, Func<decimal, decimal> schimba) where T : Document {
+        foreach (var json in Purtatori<T>(os, fel).OrderBy(t => t.ID).Select(t => t.Explicatie).ToList()) {
+            if (C.Explicatie.Citeste(json).Decizii.OfType<N.ValoareIesire>().FirstOrDefault() is not { } iesire) continue;
+            var valoare = db.Set<DocumentDetaliu>().Where(l => l.ID == iesire.Linie).Select(l => (decimal?)l.Valoare).FirstOrDefault();
+            if (valoare is not decimal v || schimba(v) == v) continue;
+            var noua = schimba(v);
+            return db.Set<DocumentDetaliu>().Where(l => l.ID == iesire.Linie)
+                .ExecuteUpdate(s => s.SetProperty(l => l.Valoare, noua)) > 0;
+        }
+        return false;
     }
 
-    static bool Rescrie(IObjectSpace os, DbContext db, Func<C.Explicatie, C.Explicatie> schimba) {
-        foreach (var t in os.GetObjectsQuery<C.Tranzactie>().Where(t => t.Explicatie != null)
+    // Normalizarea pe latură e semnată: o decizie cu semnul opus nu trece drept aceeași ieșire.
+    static C.Explicatie IesireCuSemnOpus(C.Explicatie e) {
+        var tinta = e.Decizii.OfType<N.ValoareIesire>().FirstOrDefault(i => i.Valoare != 0m);
+        return tinta == null ? null : e with {
+            Decizii = [.. e.Decizii.Select(d => ReferenceEquals(d, tinta) ? tinta with { Valoare = -tinta.Valoare } : d)],
+        };
+    }
+
+    static bool Rescrie(IObjectSpace os, DbContext db, Func<C.Explicatie, C.Explicatie> schimba, IQueryable<C.Tranzactie> purtatori = null) {
+        foreach (var t in (purtatori ?? os.GetObjectsQuery<C.Tranzactie>().Where(t => t.Explicatie != null))
                 .OrderBy(t => t.ID).Select(t => new { t.ID, t.Explicatie }).ToList()) {
             if (schimba(C.Explicatie.Citeste(t.Explicatie)) is not { } schimbata) continue;
             var json = schimbata.Scrie();
@@ -229,6 +222,28 @@ static class AcoperireInvarianti {
         return true;
     }
 
+    // D9-A2: o postare a perechii fără ordinal lasă cealaltă singură.
+    static bool PerecheRupta(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.Pereche != null && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Pereche, (int?)null));
+        return true;
+    }
+
+    // D9-A2: ambele postări ale perechii fără ordinal nu mai sunt nici pereche, nici transformare.
+    static bool PerecheLipsa(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.Pereche != null && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .OrderBy(p => p.ID).Select(p => new { p.TranzactieId, p.Pereche }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.TranzactieId == tinta.TranzactieId && p.Pereche == tinta.Pereche)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Pereche, (int?)null));
+        return true;
+    }
+
     static C.Explicatie Fara<T>(C.Explicatie e) where T : N.Decizie =>
         e.Decizii.OfType<T>().Any() ? e with { Decizii = [.. e.Decizii.Where(d => d is not T)] } : null;
 
@@ -256,11 +271,6 @@ static class AcoperireInvarianti {
         if (tinta == null) return false;
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
             .ExecuteUpdate(s => s.SetProperty(p => p.Cantitate, p => p.Cantitate + 1m));
-        // Registrul primește aceeași abatere, ca mutantul să ajungă la ramura explicației, nu la acoperirea stocului.
-        var rand = os.GetObjectsQuery<RegistruStoc>().Where(r => r.Storno && r.DocumentId == tinta.DocumentId
-            && r.LotId == tinta.Unitate && r.RepartitorId == tinta.Gestiune
-            && (r.TipStoc == TipStoc.Magazie || r.TipStoc == TipStoc.Marfuri || r.TipStoc == TipStoc.Folosinta)).Select(r => (Guid?)r.ID).FirstOrDefault();
-        db.Set<RegistruStoc>().Where(r => r.ID == rand).ExecuteUpdate(s => s.SetProperty(r => r.Cantitate, r => r.Cantitate + 1m));
         return true;
     }
 }

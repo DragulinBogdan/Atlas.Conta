@@ -128,12 +128,6 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
         Verifica("SC-NIR-09", "dry-run conex acceptat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(nir)).Count == 0);
         Opereaza(nir); Neschimbat("operare");
         Sold("SC-NIR-09", f.Linii[0], 4, 100);
-        using (var os = Deschide()) {
-            var raport = DiagnosticValoriStoc.Citeste(((EFCoreObjectSpace)os).DbContext, new(An, 1, 31), [f.Linii[0].Lot!.Value]);
-            Verifica("SC-NIR-09", "diagnostic: conexul atribuit sursei chiar cu tipul NIR migrat", !raport.AreAbateri);
-            var abateri = ReconciliereCub.Ruleaza(((EFCoreObjectSpace)os).DbContext, [f.Id, nir]);
-            Verifica("SC-NIR-09", "reconciliere: conexul nu este un al doilea cap de grup", abateri.Count == 0);
-        }
         Anuleaza(nir); Neschimbat("anulare"); Opereaza(nir); Neschimbat("reoperare");
         Comanda(os => ComenziDocument.Sistem(os).Storneaza(nir, new(An, 1, 20))); Neschimbat("storno");
         Storneaza(f.Id, new(An, 1, 20)); Sold("SC-NIR-09", f.Linii[0], 0, 0);

@@ -956,3 +956,153 @@ detaliat în jurnal):
   binar recompilat. Proba pe HTTP și cea din browser (a treia linie adăugată
   din ecran, FCL-6 și FCL-7) trec; ianuarie pe Flax păstrează contractele 1–4.
   `docs/nucleu/109-review-codex.md`, `run-verificari/r3-ui/r1-*`, `r3-ian-r1/`.
+
+- **2026-10-05 — TR-D9a, pașii 0–2: contractul tăierii, inventarul și
+  probele dinaintea ei.** Contract aprobat de owner cu review Codex închis
+  (`docs/nucleu/tr-d9-taierea-contract.md`), inventarul nominal
+  (`tr-d9-inventar.md`), amendamentul 1 (D9-A1…A9). Pasul 2, sub regim dual:
+  gardul analizei obligatorii portat pe mișcările contractului
+  (`Cub/GardAnaliza`), cu domeniul structural (mișcările din cartea
+  contabilă) și cu recepția facturii păzită la operarea facturii (schimbarea
+  5). Echivalența cu gardul vechi e probată prin trei integrale bugetare: cu
+  amândouă, numai cu cel nou, cu niciunul. Scenarii noi, cu cifra de azi
+  măsurată și cu cea de după tăiere scrisă înaintea codului: SC-BCS-16,
+  SC-FCT-12…14, SC-RLF-14, SC-RDC-19, SC-DSC-09, SC-DES-22, SC-X-25…27;
+  SC-ASM-17…26 rescrise nominal. Măsurătorile au corectat trei rânduri ale
+  inventarului și au arătat că limita 098-r3 nu refuză nimic azi. Două
+  constatări lăsate owner-ului: cerința de repartitor nu refuză niciun
+  document (G1) și materialul din regulă nu ajunge pe postare (G2). ModelCheck
+  integral **3.527 / 4.835 OK**, zero FAIL; nucleu 180/180.
+  `docs/nucleu/tr-d9-pas2-probe.md`, `run-nucleu/tr-d9a/pas2/`.
+
+- **2026-10-06 — TR-D9a, pasul 3: aserțiile de regulă pe cititorii cubului.**
+  338 de aserții ModelCheck care păzeau o cifră citită din registre: 313
+  re-țintite pe `Cub/Citiri` cu același nume și aceleași literale, după ce
+  forma veche și cea nouă au rulat verzi pe aceeași scenă; una ștearsă cu
+  rând de catalog (SC-DEC-16); 17 din clasa repartitorului amânate la 6b;
+  șase rămase pe forma veche, fiindcă cubul dă altă cifră, toate diferențe
+  declarate (D9-D3, SC-NIR-09, o scenă de oracol). Verificarea main-ului a
+  întors zece ștergeri ale căror perechi nu purtau valoarea. Numai
+  `nou/tools/ModelCheck/`, niciun cititor nou în produs. ModelCheck integral
+  **3.531 / 4.839 OK**, zero FAIL.
+  `docs/nucleu/tr-d9-pas3-retintire.md`, `run-nucleu/tr-d9a/pas3/`.
+
+- **2026-10-06 — TR-D9a, pasul 4: consumatorii din produs pe cub.** Sub
+  regim dual, tot ce în produs mai citea registrele în afara motorului vechi
+  trece pe cub. Cele trei porți `RegistrulCitibil` și verificarea închiderii
+  cer citirea completă pe `Postare` (schimbarea 3 din D9-D1): 403 înaintea
+  citirii pentru rolul cu criteriu de rând sau de membru. Gardianul refuză
+  scrierea unei `Postare` și a unei `Tranzactie` pe ușile securizate. Lista
+  XAF `Postare`, `ServerView`, fără editare. Cele trei refuzuri de ștergere
+  (lot, tip de TVA, fișă) și latura contului propriu din plățile SAF-T citesc
+  cubul, respectiv `Document.Laturi()`; `DocumenteCuRest` nu mai proiectează
+  totalul din antet. Rolurile din seed nu s-au schimbat: drepturile pe cub
+  vin din politica rolului. Lista nominală X-D2 scade de la 75 la 69 de
+  intrări. Proba pe host viu a corectat un pin: `$metadata` descrie orice tip
+  al contextului ca `EntityType`, deci neexpunerea se probează pe
+  `EntitySet` și pe rute. Limite noi: lista arată identificatori bruți.
+  ModelCheck integral **3.552 / 4.860 OK**, zero FAIL; `refuzuri.ps1` de două
+  ori la rând 324 / 324, cu 24 de rânduri noi pe dreptul unic; neexpunerea
+  0 FAIL; lista, detaliul postării și al tranzacției văzute în browser.
+  `run-nucleu/tr-d9a/pas4/`, `run-verificari/d9-pas4-http/`.
+
+- **2026-10-06 — TR-D9a, pasul 5: uneltele.** Import1C citește cubul prin
+  `Cub/Citiri` și nu mai referă registrele, `StocService` sau planul vechi.
+  Contractul 2 al reconcilierii își păstrează sensul: perechea debit / credit
+  a liniei ITV se reface din cele două postări ale ei. Predicția de valoare a
+  alocării cheamă evaluarea nucleului. Reconcilierea deschiderii justifică pe
+  chei celulele cu valoare fără cantitate, care nu intră în cub. Au ieșit
+  `--sabotaj`, oracolul golirii din raport, scrierea deschiderii în registre
+  și purja defensivă. `Migrare` și `BackfillTva` sunt șterse. Totul e probat
+  numai prin compilare: unealta nu se rulează între pașii 5 și 6. ModelCheck
+  integral neschimbat, **3.552 / 4.860 OK**.
+  `docs/import/faza-1c-design.md` §16, `run-nucleu/tr-d9a/pas5/`.
+
+- **2026-10-06 — TR-D9a, review-ul advers Codex al lotului 3–5, închis.**
+  Două constatări în probele pasului 3, corectate și reverificate. D9-L35-R1:
+  două aserții își pierduseră clauza pe nota persistată, fiindcă perechea
+  numită în inventar recalcula declarația; clauzele sunt readuse pe cub.
+  D9-L35-R2: `CubScena.Nota` nu compara tranzacția; acum demonstrează perechea
+  numai pe aceeași tranzacție și linie, cu un singur debit și un singur credit
+  la valoarea aceea. `Aloca` din Import1C refuză lotul cu sold pe două conturi
+  ale aceleiași categorii. Integrala rulată independent de Codex: 3.552 /
+  4.860 OK. `docs/nucleu/tr-d9-pas3-retintire.md` §6.
+
+- **2026-10-06 — TR-D9a, pasul 5b: probele dinaintea tăierii.** Fără cod de
+  produs. Ultima reconciliere registre ↔ cub e arhivată pe `.Flax.R3f`
+  (precizarea owner-ului: `.Flax.M1s` e dinaintea deciziei 109): șase
+  rânduri Δ, toate explicate, nicio clasă nouă. `PerfCub` în regim dual dă
+  termenul A al comparației de după tăiere, cu două mostre pentru zgomot:
+  1.541 privat / 1.011 bugetar OK. Scara de volum, mod nou `ModelCheck
+  --scara-volum`, duce scena la 5.001.179 de postări: cititorii cresc liniar
+  și rămân sub două secunde, ruta securizată nu costă, iar partidele cu rest
+  și snapshot-ul de partide cresc pătratic, din forma unei îmbinări pe chei
+  nulabile (8,9 s cu egalitate simplă, față de peste 10 minute).
+  D9-D10 (b) rămâne al owner-ului, cu cifra. ModelCheck integral neschimbat,
+  **3.552 / 4.860 OK**. `docs/nucleu/tr-d9-pas5b-probe.md`.
+
+- **2026-10-06 — TR-D9a, pasul 5c: îmbinarea partidelor pe chei nulabile.**
+  Aprobat de owner pe cifra pasului 5b. Cititorii de partide îmbină
+  soldurile cu documentul deschizător într-un singur loc
+  (`Partide.CuOrigine`), cu o parte a cheii ne-nulă, deci prin egalitate
+  simplă; originea de document se recunoaște numai după identitate. Aceeași
+  formă era în cinci locuri: snapshot-ul de partide, `PartideCuRest`,
+  `Partide.Proprii`, restul sursei din `Fapte` și `DocumenteCuRest`, ultimul
+  găsit de proba nouă. Pe scara de volum, la 651.644 de partide: partidele
+  cu rest trec de la peste 10 minute la 6 s, reconstrucția snapshot-urilor
+  de la „oprită la 30 de minute" la 48 s. Fără schimbare de schemă. Proba
+  nouă `SC-CIT-110` verifică SQL-ul generat. D9-D10 (b) e re-amânat explicit,
+  cu cifra. ModelCheck integral **3.554 / 4.862 OK**.
+  `docs/nucleu/tr-d9-pas5c-imbinare-partide.md`.
+
+- **2026-10-07 — TR-D9a, pasul 6: tăierea.** Motorul nu mai scrie, nu mai
+  citește și nu mai ramifică pe registre și pe regim. Valoarea liniei vine din
+  decizia contractului; ASM cere P = C; tipul inert și regula de contare fără
+  consumator sunt refuzate; inversa fiscală se naște finală. Oracolul și
+  martorii au ieșit din ModelCheck, cu verdict nominal pe fiecare aserție.
+  ModelCheck integral **3.481 / 4.763 OK** (linia duală 3.554 / 4.862).
+  `docs/nucleu/tr-d9-pas6-taierea.md`.
+
+- **2026-10-07 — TR-D9a, pasul 6b: repartitorul pe capătul de terț.**
+  Partenerul stă pe piciorul de terț al conturilor care cer repartitor, și
+  fără partide; gardul analizei judecă numai postarea (D9-A10). Review-ul
+  Codex al lotului 6 + 6b: D9-6B-R1 corectată (piciorul de terț al
+  trezoreriei ales structural), închis la `ea5d0bc`. **3.505 / 4.784 OK**.
+  `docs/nucleu/tr-d9-pas6b-repartitor.md`.
+
+- **2026-10-07 — TR-D9a, pasul 6c: spargerea `Program.cs` din ModelCheck.**
+  32.499 de linii în `Suita` + `Suita/*.cs`, cu secvența OK/FAIL identică pe
+  ambele profiluri, după repararea a două probe nedeterministe.
+  `docs/nucleu/tr-d9-pas6c-spargere-modelcheck.md`.
+
+- **2026-10-07 — TR-D9a, pasul 7: declarațiile dispar atomic.** Entitățile
+  de registru, cele trei coloane, maparea, listele XAF vechi și cazurile
+  gardianului au ieșit; lanțul de migrații e `InitialCreate`; proba numelor
+  interzise e activă. Lista „Registre → Postări" stă pe view-ul
+  `PostareVizual` (D9-A12). **3.512 / 4.791 OK**.
+  `docs/nucleu/tr-d9-pas7-declaratii.md`.
+
+- **2026-10-07 — TR-D9a, pasul 7b: cheia de pereche pe postare.**
+  `Postare.Pereche` e ordinalul mișcării sau mutării, dat de nucleu;
+  invariantul e în `Conservare` și în `INV-CUB`, cu doi mutanți. Stornoul
+  peste mai multe tranzacții sursă decalează ordinalele. Coloana e în
+  `InitialCreate`, bazele sunt recreate. Nucleu 190/190, **3.516 / 4.795 OK**.
+  `docs/nucleu/tr-d9-pas7b-pereche.md`.
+
+- **2026-10-07 — TR-D9a, pasul 7c: regula care a decis, în explicație.**
+  Explicația reține rândurile de politică consumate, cu contorul lor, în
+  locul textului fix; formatul 2; API-ul arată dacă rândul s-a schimbat de la
+  operare. Lista nominală a faptelor de politică e scrisă înaintea codului.
+  SC-CIT-111 în ModelCheck și pe HTTP. **3.524 / 4.803 OK**.
+  `docs/nucleu/tr-d9-pas7c-versiunea-politicii.md`.
+
+- **2026-10-07 — TR-D9a, pasul 8: închiderea; decizia 110 scrisă.** Pe baze
+  din `InitialCreate`: integrala **3.524 / 4.803 OK**, nucleu 190/190,
+  `refuzuri.ps1` 318/318 de două ori, TPH și drift zero. `PerfCub` după
+  tăiere: 1.010 / 1.540 OK; comenzile de document fac cu 6 până la 16 comenzi
+  SQL mai puțin și durează cu 11–24 % mai puțin, iar niciuna nu face mai multe. Operarea și lista
+  postărilor probate în browser. Import1C pe ianuarie rulează pe cub, cu
+  reconcilierea neverde: contractul 1 arată dublarea reclasificării de către
+  nota-punte. Verdictul restanțelor e scris. Decizia 110 așteaptă aprobarea
+  owner-ului, iar review-ul advers Codex al închiderii e cerut: felia nu e
+  închisă până atunci. `docs/nucleu/tr-d9-pas8-inchiderea.md`.

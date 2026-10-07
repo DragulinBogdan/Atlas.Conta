@@ -14,7 +14,7 @@ import { CasetaPerioada, lunaCurenta } from '../raportare/comune';
 import { BandaRectificativa } from './BandaRectificativa';
 
 // D300 — decontul de TVA (felia 12, D3-D7): cele 55 de poziții ale formularului
-// OPANAF 174/2026, alimentate din `RegistruTva`.
+// OPANAF 174/2026, alimentate din faptele fiscale ale cubului.
 //
 // Ecran separat de `/decont-tva`, nu un mod al lui, din același motiv pentru care
 // balanța pliată e separată de cea plată: datele vin ALTFEL. Decontul-schelet e

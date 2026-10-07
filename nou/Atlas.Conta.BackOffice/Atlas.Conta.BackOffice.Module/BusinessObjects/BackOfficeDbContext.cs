@@ -8,9 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
-// Numele DbSet-ului `RegistruContabil` umbrește tipul în interiorul contextului —
-// alias pentru nameof-urile de mai jos (AutoInclude pe navigațiile plate).
-using RegistruContabilEntitate = Atlas.Conta.BackOffice.Module.BusinessObjects.RegistruContabil;
 
 namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
     // Factory pentru design-time (dotnet ef migrations/database) — schema e
@@ -41,7 +38,6 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<AuditDataItemPersistent> AuditData { get; set; }
         public DbSet<AuditEFCoreWeakReference> AuditEFCoreWeakReferences { get; set; }
         public DbSet<Event> Events { get; set; }
-        public DbSet<HCategory> HCategories { get; set; }
 
         // Nomenclatoare
         public DbSet<Repartitor> Repartitori { get; set; }
@@ -127,21 +123,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<AmortizareLunaraDetaliu> AmortizariLunareDetalii { get; set; }
         public DbSet<Imperechere> Imperecheri { get; set; }
 
-        // Registre + politici
-        public DbSet<RegistruStoc> RegistruStoc { get; set; }
-        public DbSet<RegistruContabil> RegistruContabil { get; set; }
-        // Fără `AutoInclude` pe navigațiile lui — deliberat, spre deosebire de
-        // `RegistruContabil` (41c). Acolo dimensiunile CHIAR se afișează pe
-        // fiecare rând al grilei, deci lazy însemna N+1 per pagină plus
-        // lazy-load pe OS disposed la render târziu. Aici view-ul XAF e o
-        // suprafață de diagnostic — navigațiile se ascund din ListView
-        // (`ContaUiBaseline`), iar consumatorii reali sunt proiecțiile, care
-        // își fac join-urile explicit în `Select`. Nu există N+1 de prevenit.
-        // Bonus: numele DbSet-ului poate coincide cu al clasei fără să ceară
-        // alias-ul `using ...Entitate =` de care are nevoie `RegistruContabil`.
-        public DbSet<RegistruTva> RegistruTva { get; set; }
+        // Snapshot-uri de perioadă + politici
         public DbSet<DepunereDeclaratie> DepuneriDeclaratii { get; set; }
-        public DbSet<RegistruImobilizari> RegistruImobilizari { get; set; }
         public DbSet<SoldPerioadaContabil> SolduriPerioadaContabil { get; set; }
         public DbSet<SoldPerioadaStoc> SolduriPerioadaStoc { get; set; }
         public DbSet<PartidaDeschisa> PartideDeschise { get; set; }
@@ -182,6 +165,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Cubul de postări (S-D1): tabele proprii, în afara `EntitateConta`.
         public DbSet<Cub.Tranzactie> Tranzactii { get; set; }
         public DbSet<Cub.Postare> Postari { get; set; }
+        public DbSet<Cub.PostareVizual> PostariVizuale { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             base.OnModelCreating(modelBuilder);
@@ -273,8 +257,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // UNICĂ per perioadă, cu `NULLS NOT DISTINCT` (Postgres 15+) —
             // dimensiunile sunt nullable, iar semantica cerută e „aceleași
             // dimensiuni lipsă = aceeași cheie", nu „fiecare NULL e altceva".
-            // FK-uri `Restrict` și fără `AutoInclude`: consumatorii agregă, nu
-            // afișează — spre deosebire de `RegistruContabil` (41c).
+            // FK-uri `Restrict` și fără `AutoInclude`: consumatorii agregă, nu afișează.
             modelBuilder.Entity<SoldPerioadaContabil>(b => {
                 b.HasIndex(s => new {
                     s.An, s.Luna, s.ContId, s.RepartitorId, s.GestiuneId, s.MaterialId, s.CodFunctionalId,
@@ -325,14 +308,6 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     .OnDelete(DeleteBehavior.Restrict);
             });
 
-            // Rulajele unei luni se citesc pe `Data` (spike B.4: 70,6 → 37,9 ms
-            // pe contabil, 16,2 → 14,1 pe stoc, plan de index scan în loc de
-            // parallel seq scan).
-            modelBuilder.Entity<RegistruContabil>()
-                .HasIndex(r => r.Data);
-            modelBuilder.Entity<RegistruStoc>()
-                .HasIndex(r => r.Data);
-
             // F27-D4: consumatorii de perioadă filtrează documentele pe data înregistrării.
             modelBuilder.Entity<Document>()
                 .HasIndex(d => d.DataInregistrare);
@@ -347,11 +322,6 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<Document>()
                 .HasIndex(d => d.CorecteazaId);
 
-            // F27-D5: jurnalele, decontul, D300, D394 și SAF-T filtrează registrul
-            // fiscal pe PERIOADA DE DECLARARE, nu pe data faptului.
-            modelBuilder.Entity<RegistruTva>()
-                .HasIndex(r => new { r.PerioadaAn, r.PerioadaLuna });
-
             // FK-uri `Restrict`: convenția globală `SetNull`/`Cascade` ar goli tăcut fișa sau linia-sursă (F26-D1/D2/D5).
             modelBuilder.Entity<Imobilizare>(b => {
                 b.HasOne(f => f.TipMaterial).WithMany().HasForeignKey(f => f.TipMaterialId)
@@ -365,16 +335,6 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 b.HasOne(f => f.CodEconomic).WithMany().HasForeignKey(f => f.CodEconomicId)
                     .OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(f => f.Responsabil).WithMany().HasForeignKey(f => f.ResponsabilId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
-            modelBuilder.Entity<RegistruImobilizari>(b => {
-                b.HasOne(r => r.Imobilizare).WithMany().HasForeignKey(r => r.ImobilizareId)
-                    .OnDelete(DeleteBehavior.Restrict);
-                b.HasOne(r => r.Repartitor).WithMany().HasForeignKey(r => r.RepartitorId)
-                    .OnDelete(DeleteBehavior.Restrict);
-                b.HasOne(r => r.Document).WithMany().HasForeignKey(r => r.DocumentId)
-                    .OnDelete(DeleteBehavior.Restrict);
-                b.HasOne(r => r.Detaliu).WithMany().HasForeignKey(r => r.DetaliuId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
             modelBuilder.Entity<PunereInFunctiuneDetaliu>(b => {
@@ -407,24 +367,6 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.Entity<DescarcareGestiuneDetaliu>()
                 .HasOne(d => d.LinieSursa).WithMany().HasForeignKey(d => d.LinieSursaId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            // DIM-3 (decizia 54c): maparea owned Dimensiuni a MURIT — registrul și
-            // regula de contare poartă coloane plate ([Column] pe entități conservă
-            // schema); `Dimensiuni` e value object ne-persistat al motorului.
-            // Navigațiile dimensiunilor registrului se încarcă EAGER (motivul 41c,
-            // neschimbat): grid-urile le afișează pe fiecare rând — lazy ar fi N+1
-            // per rând plus lazy-load pe OS disposed la render târziu. Doar
-            // registrul — regulile de contare rămân lazy (motorul citește scalari).
-            foreach (var nav in new[] {
-                         nameof(RegistruContabilEntitate.DebitRepartitor), nameof(RegistruContabilEntitate.DebitMaterial),
-                         nameof(RegistruContabilEntitate.DebitCodFunctional), nameof(RegistruContabilEntitate.DebitCodEconomic),
-                         nameof(RegistruContabilEntitate.DebitSursaFinantare), nameof(RegistruContabilEntitate.DebitUnitate),
-                         nameof(RegistruContabilEntitate.DebitProiect), nameof(RegistruContabilEntitate.DebitCentruCost),
-                         nameof(RegistruContabilEntitate.CreditRepartitor), nameof(RegistruContabilEntitate.CreditMaterial),
-                         nameof(RegistruContabilEntitate.CreditCodFunctional), nameof(RegistruContabilEntitate.CreditCodEconomic),
-                         nameof(RegistruContabilEntitate.CreditSursaFinantare), nameof(RegistruContabilEntitate.CreditUnitate),
-                         nameof(RegistruContabilEntitate.CreditProiect), nameof(RegistruContabilEntitate.CreditCentruCost) })
-                modelBuilder.Entity<RegistruContabilEntitate>().Navigation(nav).AutoInclude();
 
             modelBuilder.Entity<MigrareLegatura>()
                 .HasIndex(m => new { m.Tabela, m.CheieLegacy }).IsUnique();
@@ -837,6 +779,20 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     .OnDelete(DeleteBehavior.NoAction);
                 b.HasIndex(p => p.DocumentId);
             });
+            modelBuilder.Entity<Cub.PostareVizual>(b => {
+                b.ToView("PostareVizual");
+                b.HasKey(p => p.ID);
+                b.Property(p => p.Spatiu).HasConversion<short>();
+                b.Property(p => p.TranzactieFel).HasConversion<short>();
+                b.Property(p => p.Latura).HasConversion<short>();
+                b.Property(p => p.Carte).HasConversion<short>();
+                b.Property(p => p.SensTva).HasConversion<short>();
+                b.Property(p => p.RolTva).HasConversion<short>();
+                b.Property(p => p.RegimTva).HasConversion<short>();
+                b.Property(p => p.FelUnitate).HasConversion<short>();
+                b.Property(p => p.SuportSpatiu).HasConversion<short>();
+                b.Property(p => p.InversaDinSpatiu).HasConversion<short>();
+            });
         }
 
         // O interogare per salvare, grupată pe document — nu una per linie. // S-D6
@@ -880,8 +836,15 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 intrare.Entity.Pozitie = 0;
         }
 
+        // 14, D9-A5: cubul primește numai rânduri noi; o inversă se naște finală.
+        private void VerificaPostariNemodificate() {
+            if (ChangeTracker.Entries<Cub.Postare>().Any(e => e.State == EntityState.Modified))
+                throw new InvalidOperationException("POSTARE_MODIFICATA: o postare existentă nu se rescrie.");
+        }
+
         // Maximul se citește sub blocajul scrierii, în tranzacția salvării (S-r9).
         public override int SaveChanges(bool acceptAllChangesOnSuccess) {
+            VerificaPostariNemodificate();
             var noi = DetaliiFaraPozitie();
             if (noi.Count == 0)
                 return base.SaveChanges(acceptAllChangesOnSuccess);
@@ -900,6 +863,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
         public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
                 CancellationToken cancellationToken = default) {
+            VerificaPostariNemodificate();
             var noi = DetaliiFaraPozitie();
             if (noi.Count == 0)
                 return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);

@@ -2,6 +2,7 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
+using System.Text.Json;
 using DevExpress.ExpressApp;
 using Microsoft.EntityFrameworkCore;
 using C = Atlas.Conta.BackOffice.Module.Cub;
@@ -48,7 +49,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         }
         catch (Exception e) { initiala = e; throw; }
         finally {
-            try { Curata(); }
+            try { if (!Pastreaza || initiala != null) Curata(); }
             catch (Exception e) when (initiala != null) { throw new AggregateException(initiala, e); }
         }
     }
@@ -56,6 +57,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected abstract void Executa();
     protected virtual void CurataCubSuplimentar(IObjectSpace os, Purja purja) { }
     protected virtual void CurataNomenclatoare(IObjectSpace os, Purja purja) { }
+    protected virtual bool Pastreaza => false;
 
     protected FacturaScena Nota(DateOnly data, params LinieNtcScena[] linii) {
         using var os = Deschide();
@@ -79,6 +81,31 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         check($"{id} ({(Privat ? "privat" : "bugetar")}): {mesaj}", rezultat);
     protected Guid Cont(string simbol) => conturi[simbol];
     protected Guid Tip(IObjectSpace os, string codTip) => os.GetObjectsQuery<TipMaterial>().Single(t => t.Cod == codTip).ID;
+
+    protected TipMaterial TipPropriu(IObjectSpace os, string cod) {
+        if (os.GetObjectsQuery<TipMaterial>().SingleOrDefault(t => t.Cod == cod) is { } existent) return existent;
+        var model = os.GetObjectByKey<TipMaterial>(Tip(os, Stoc));
+        var tip = os.CreateObject<TipMaterial>(); tip.Cod = cod; tip.Denumire = cod;
+        tip.ClasaId = model.ClasaId; tip.ContImplicitId = model.ContImplicitId;
+        return tip;
+    }
+
+    /// <summary>Regulile de contare ale tipului de material dat și refuzurile lor de seed, pe identitate.</summary>
+    protected static void CurataPolitica(IObjectSpace os, Purja purja, string codTip) {
+        var tipuri = os.GetObjectsQuery<TipMaterial>().Where(t => t.Cod == codTip).Select(t => t.ID).ToHashSet();
+        var refuzuri = os.GetObjectsQuery<RefuzSeed>().Where(r => r.Tip == nameof(RegulaContare)).ToList()
+            .Where(r => JsonSerializer.Deserialize<Dictionary<string, string>>(r.Cheie)
+                .TryGetValue(nameof(RegulaContare.TipMaterialId), out var id)
+                && Guid.TryParse(id, out var tip) && tipuri.Contains(tip));
+        purja.Adauga(refuzuri);
+        purja.Adauga(os.GetObjectsQuery<RegulaContare>().Where(r => r.TipMaterialId != null && tipuri.Contains(r.TipMaterialId.Value)));
+    }
+
+    protected Guid[] RefuzuriSeed() => CuSpatiu(os => os.GetObjectsQuery<RefuzSeed>().Select(r => r.ID).OrderBy(id => id).ToArray());
+
+    protected void PurjeazaNomenclatoare() => Comanda(os => {
+        var purja = new Purja(os); CurataNomenclatoare(os, purja); purja.Executa();
+    });
     protected Guid Tva(string codTva) => CuSpatiu(os => os.GetObjectsQuery<TipTva>().Single(t => t.Cod == codTva).ID);
     protected Guid? Partida(Guid doc, string simbol, Guid? partener = null) =>
         N.Unitate.DeschidePartida(Cont(simbol), partener ?? Furnizor, doc, Ianuarie).Id;
@@ -395,6 +422,15 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             && sold.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) == v);
     }
 
+    protected decimal[] ValoriLinii(Guid doc) => CuSpatiu(os => os.GetObjectsQuery<DocumentDetaliu>()
+        .Where(l => l.DocumentId == doc).OrderBy(l => l.Pozitie).Select(l => l.Valoare).ToArray());
+
+    protected void ValoriLinii(string id, string mesaj, Guid doc, params decimal[] asteptate) {
+        var valori = ValoriLinii(doc);
+        Verifica(id, $"{mesaj}: valorile liniilor {string.Join("; ", asteptate)} (obținut {string.Join("; ", valori)})",
+            valori.SequenceEqual(asteptate));
+    }
+
     protected void SoldPartida(string id, Guid unitate, DateOnly data, decimal net) {
         var sold = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == unitate
             && p.Data <= data && p.Carte == N.Carte.Contabil).ToList());
@@ -407,10 +443,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         Verifica(id, "Draft și zero efecte persistate proprii",
             os.GetObjectsQuery<Document>().Single(d => d.ID == doc).Stare == StareDocument.Draft
             && !os.GetObjectsQuery<C.Tranzactie>().Any(p => p.DocumentId == doc)
-            && !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == doc)
-            && !os.GetObjectsQuery<RegistruContabil>().Any(p => p.DocumentId == doc)
-            && !os.GetObjectsQuery<RegistruStoc>().Any(p => p.DocumentId == doc)
-            && !os.GetObjectsQuery<RegistruTva>().Any(p => p.DocumentId == doc));
+            && !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == doc));
     }
 
     protected void Refuza(string id, Action actiune, string fragment) {
@@ -451,10 +484,6 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         pj.Adauga(os.GetObjectsQuery<PartidaDeschisa>().Where(s => s.An >= An && s.An <= UltimulAn));
         pj.Adauga(os.GetObjectsQuery<Imperechere>().Where(i => docs.Contains(i.DocumentId) || docs.Contains(i.DocumentStingatorId)));
         pj.Adauga(os.GetObjectsQuery<DviFactura>().Where(i => docs.Contains(i.DviId) || docs.Contains(i.FacturaId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => docs.Contains(r.DocumentId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>().Where(r => docs.Contains(r.DocumentId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docs.Contains(r.DocumentId.Value)));
         pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docs.Contains(d.DocumentId)));
         pj.Adauga(os.GetObjectsQuery<Document>().Where(d => docs.Contains(d.ID)));
         CurataNomenclatoare(os, pj);
@@ -463,10 +492,10 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         pj.Adauga(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(Marcaj)));
         pj.Adauga(os.GetObjectsQuery<TipMaterial>().Where(t => t.Cod.StartsWith(Marcaj)));
         pj.Adauga(os.GetObjectsQuery<Repartitor>().Where(r => reps.Contains(r.ID)));
-        pj.Adauga(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == Marcaj));
-        pj.Adauga(os.GetObjectsQuery<CodFunctional>().Where(c => c.Cod == Marcaj));
-        pj.Adauga(os.GetObjectsQuery<SursaFinantare>().Where(c => c.Cod == Marcaj));
-        pj.Adauga(os.GetObjectsQuery<Proiect>().Where(c => c.Cod == Marcaj));
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod.StartsWith(Marcaj)));
+        pj.Adauga(os.GetObjectsQuery<CodFunctional>().Where(c => c.Cod.StartsWith(Marcaj)));
+        pj.Adauga(os.GetObjectsQuery<SursaFinantare>().Where(c => c.Cod.StartsWith(Marcaj)));
+        pj.Adauga(os.GetObjectsQuery<Proiect>().Where(c => c.Cod.StartsWith(Marcaj)));
         pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().Where(i => i.Perioada.An >= An && i.Perioada.An <= UltimulAn));
         pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().Where(p => p.An >= An && p.An <= UltimulAn));
         pj.Executa();

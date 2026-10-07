@@ -11,7 +11,7 @@ public sealed record GardieniRetragere(string Anulare, string Stornare) {
             return new(FiscalitateService.MotivAnulare(os, doc)
                 ?? GardianPerioada.MotivInchisa(os, doc.DataInregistrare) ?? legaturi, legaturi);
 
-        var propriu = doc as IDocumentCuRegistruPropriu;
+        var propriu = doc as IDocumentCuEfecteProprii;
         var imperecheri = ImperechereService.Motive(os, doc);
         var dependentiProprii = propriu?.MotivDependenti(os);
         var receptii = Cub.ReceptiiConexe.MotivDependenti(os, doc);

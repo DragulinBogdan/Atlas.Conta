@@ -17,6 +17,7 @@ virtuală Client, cu partenerul client, fără unitate. Nu deschide partidă.
 | SC-DSC-06 | Corecție legată în februarie a descărcării4/40: invers, noua ieșire3/30; lot7/70, cost net30. | acceptat | 088h | `ScenariiVanzare` / ID-ul rândului | verificat privat; neaplicabil bugetar |
 | SC-DSC-07 | Lot3/1; două linii1 și2 → cost0,33+0,67; lot0/0. | acceptat | 325 documente cu lot repetat; golirea ia restul | `ScenariiVanzare` / ID-ul rândului | verificat privat; neaplicabil bugetar |
 | SC-DSC-08 | Ieșire11 din10: STOC_INSUFICIENT prin declarație; comanda refuzată de gardianul registrului, zero efecte. | refuzat | 090j | `ScenariiVanzare` / ID-ul rândului | verificat privat; neaplicabil bugetar |
+| SC-DSC-09 | Bugetar: zero reguli DSC; lot 10/100, descărcare 2. Dry-run și operare refuzate cu `TIP_FARA_DECLARATIE`, înaintea validării frunzei, cu sau fără număr cules; zero efecte, lot 10/100. Înaintea tăierii refuza frunza („nu are regulă de contare de cost"). | refuzat | D9-D5, D9-A6 (I6) | `ScenariiTaiere` / ID-ul rândului | verificat, bugetar (TR-D9a, pasul 6) |
 
 Lanțul real FCL→DSC este SC-FCL-10. Cititorii de producție la TR-D8,
 reevaluarea/compensările la TR-D9; FIFO pe mai multe loturi ale aceluiași

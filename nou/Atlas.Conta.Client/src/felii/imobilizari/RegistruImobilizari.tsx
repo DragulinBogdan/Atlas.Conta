@@ -16,7 +16,7 @@ import { imobilizari, type RandRegistruImobilizariDto } from './api';
 
 const BANI = { dataType: 'number', format: '#,##0.00', alignment: 'right', width: 130 } as const;
 
-export function RegistruImobilizari() {
+export function PaginaRegistruImobilizari() {
   const navigheaza = useNavigate();
   const [stare, seteaza] = useUrlStare({ laData: azi() });
 

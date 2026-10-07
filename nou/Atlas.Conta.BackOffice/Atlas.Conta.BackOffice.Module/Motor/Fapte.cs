@@ -14,15 +14,16 @@ internal static class Fapte {
             .ToList()
             .Select(r => new RegulaContareFapt(r.ID, r.TipMaterialId, r.NaturaFiltru, r.SemnFiltru,
                 r.PastreazaSemn, r.SursaContDebit, r.ContDebitId, r.SursaContCredit, r.ContCreditId,
-                r.DinSeed, r.DimensiuniComun(), r.DimensiuniOverrideDebit(), r.DimensiuniOverrideCredit()))
+                r.DinSeed, r.DimensiuniComun(), r.DimensiuniOverrideDebit(), r.DimensiuniOverrideCredit())
+                { Versiune = r.OptimisticLockField })
             .ToList();
 
     public static List<RegulaStocFapt> ReguliStoc(IObjectSpace os, Guid tipDocumentId) =>
         os.GetObjectsQuery<RegulaStoc>()
             .Where(r => r.TipDocumentId == tipDocumentId)
-            .Select(r => new { r.ID, r.Latura, r.ClasaId, r.TipStoc, r.Semn, r.DinSeed })
+            .Select(r => new { r.ID, r.Latura, r.ClasaId, r.TipStoc, r.Semn, r.DinSeed, r.OptimisticLockField })
             .ToList()
-            .Select(r => new RegulaStocFapt(r.ID, r.Latura, r.ClasaId, r.TipStoc, r.Semn, r.DinSeed))
+            .Select(r => new RegulaStocFapt(r.ID, r.Latura, r.ClasaId, r.TipStoc, r.Semn, r.DinSeed) { Versiune = r.OptimisticLockField })
             .ToList();
 
     public static PoliticaConexFapt? Conex(IObjectSpace os, Guid tipDocumentId) {
@@ -140,11 +141,8 @@ internal static class Fapte {
             sursa.Data,
             perioadaDeclarare,
             politicaTvaEntitate?.TolerantaTaxa,
-            new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month),
-            new N.VersiunePolitica("seed", doc.DataInregistrare)) {
+            new N.PerioadaDeschisa(doc.DataInregistrare.Year, doc.DataInregistrare.Month)) {
                 ReperFiscal = fiscal?.Reper,
-                SolduriLoturiRegistru = doc.Declarant()?.CereSoldRegistruPentruEvaluare == true
-                    ? SolduriLoturiRegistru(os, doc, linii, claseTip, reguliStoc, idsLot) : new Dictionary<Guid, N.Sold>(),
                 Repartitori = repartitori,
                 PartideDisponibile = PartideDisponibile(os, doc, explicite, conturi, repartitori),
                 UnitatiSursa = UnitatiSursa(os, doc),
@@ -215,18 +213,11 @@ internal static class Fapte {
         // Factura nominalizează și recepția în cub înaintea NIR-ului conex.
         // Restul sursei este al unităților ei, cu efectul documentului curent exclus.
         var zi = doc.DataInregistrare;
-        var peZile = (from p in Cub.Citiri.Partide.Postari(os)
-                     join o in Cub.Citiri.Partide.Origini(os)
-                       on new { UnitateId = p.Unitate.Value, ContId = p.Cont, PartenerId = p.Partener.Value }
-                       equals new { o.UnitateId, o.ContId, o.PartenerId }
-                     where o.DocumentId == sursaId && p.DocumentId != doc.ID
-                     group p by new { p.Unitate, p.Cont, p.Partener, p.Data } into g
-                     select new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data,
-                         Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToArray();
-        var partide = peZile.GroupBy(p => new { p.Unitate, p.Cont, p.Partener }).Select(g => {
+        var peZile = Cub.Citiri.Partide.MiscariPePartidele(os, sursaId, doc.ID).ToArray();
+        var partide = peZile.GroupBy(p => new { p.UnitateId, p.ContId, p.PartenerId }).Select(g => {
             var miscari = g.Select(p => (p.Data, p.Net)).ToArray();
             var initial = Cub.Citiri.Partide.Evolutie(miscari, zi).First().Sold;
-            return (g.Key.Cont, Net: initial, Disponibil: Cub.Citiri.Partide.DisponibilTemporal(miscari, zi, Math.Sign(initial)));
+            return (Cont: g.Key.ContId, Net: initial, Disponibil: Cub.Citiri.Partide.DisponibilTemporal(miscari, zi, Math.Sign(initial)));
         }).ToArray();
         return (partide.Sum(p => p.Disponibil), sursa.DataInregistrare,
             [.. partide.GroupBy(p => p.Cont).Select(g => (g.Key, g.Sum(p => p.Net)))
@@ -302,42 +293,6 @@ internal static class Fapte {
                 s => new N.Sold(s.Valoare > 0m ? s.Valoare : 0m,
                     s.Valoare < 0m ? -s.Valoare : 0m, s.Cantitate, 0m));
 
-    // Citire tranzitorie exclusiv pentru R din ASM-B6, nu pentru evaluarea cubului.
-    // Soldul lotului pe cheia de stoc a laturii PREDATOARE, la `DataInregistrare`
-    // și FĂRĂ documentul curent: `TipStoc`-ul e al regulii potrivite, deci cheia
-    // se află aici (citirea are nevoie de ea), iar mișcarea o declară frunza.
-    static Dictionary<Guid, N.Sold> SolduriLoturiRegistru(IObjectSpace os, Document doc,
-            IReadOnlyList<DocumentDetaliu> linii,
-            IReadOnlyDictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
-            IReadOnlyList<RegulaStocFapt> reguliStoc, IReadOnlyList<Guid> idsLot) {
-        var solduri = new Dictionary<Guid, N.Sold>();
-        if (idsLot.Count == 0)
-            return solduri;
-        // Cheia se află înaintea citirii: fără nicio latură predatoare (factura își
-        // naște loturile) nu e nimic de citit, deci nici interogare (MINOR-7).
-        var chei = new List<(Guid Lot, CheieStoc Cheie)>();
-        foreach (var d in linii) {
-            if (d.LotId is not Guid lotId || chei.Any(c => c.Lot == lotId))
-                continue;
-            var tipStoc = Potrivire.Stoc(reguliStoc, Linie(d, claseTip))
-                .Where(p => p.Latura == LaturaDocument.Predator)
-                .SelectMany(p => p.Reguli)
-                .Select(r => (TipStoc?)r.TipStoc)
-                .FirstOrDefault();
-            if (tipStoc is TipStoc tip)
-                chei.Add((lotId, new CheieStoc(lotId, doc.PredatorId, tip)));
-        }
-        if (chei.Count == 0)
-            return solduri;
-        var peCheie = StocService.SolduriLaData(os, idsLot, doc.DataInregistrare, doc.ID);
-        foreach (var (lotId, cheie) in chei)
-            solduri[lotId] = Sold(peCheie.GetValueOrDefault(cheie));
-        return solduri;
-    }
-
-    static N.Sold Sold(SoldStoc sold) =>
-        new(sold.Valoare > 0m ? sold.Valoare : 0m, sold.Valoare < 0m ? -sold.Valoare : 0m, sold.Cantitate, 0m);
-
     static List<Guid> ConturiAtinse(IReadOnlyList<DocumentDetaliu> linii,
             IReadOnlyDictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
             IReadOnlyDictionary<Guid, Declaratii.RepartitorFapt> repartitori,
@@ -405,19 +360,20 @@ internal static class Fapte {
                 .ToDictionary(r => r.Id);
     }
 
-    static Dictionary<Guid, Declaratii.ContFapt> Conturi(IObjectSpace os, IReadOnlyList<Guid> ids) =>
+    internal static Dictionary<Guid, Declaratii.ContFapt> Conturi(IObjectSpace os, IReadOnlyList<Guid> ids) =>
         ids.Count == 0
             ? []
             : os.GetObjectsQuery<Cont>()
                 .Where(c => ids.Contains(c.ID))
-                .Select(c => new { c.ID, c.Simbol, c.UrmarestePartide })
+                .Select(c => new { c.ID, c.Simbol, c.UrmarestePartide, c.DimensiuniObligatorii })
                 .ToList()
-                .Select(c => new Declaratii.ContFapt(c.ID, c.Simbol, c.UrmarestePartide))
+                .Select(c => new Declaratii.ContFapt(c.ID, c.Simbol, c.UrmarestePartide,
+                    c.DimensiuniObligatorii.HasFlag(DimensiuneFlags.Repartitor)))
                 .ToDictionary(c => c.Id);
 
     static Declaratii.PoliticaTvaFapt Tva(PoliticaTva politica) =>
         politica == null
             ? null
             : new Declaratii.PoliticaTvaFapt(politica.Directie, politica.SursaContrapartida,
-                politica.ContrapartidaFallbackId);
+                politica.ContrapartidaFallbackId) { Id = politica.ID, Versiune = politica.OptimisticLockField };
 }

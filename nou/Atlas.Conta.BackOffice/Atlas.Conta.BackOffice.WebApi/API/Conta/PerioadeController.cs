@@ -124,15 +124,15 @@ public class PerioadeController : ContaApiController {
     // Tipurile pe care verificarea le ÎNSUMEAZĂ pe ușa non-secured (80e).
     static readonly Type[] TipuriInsumate = [
         typeof(Document), typeof(InchidereTva), typeof(AmortizareLunara),
-        typeof(Imperechere), typeof(PoliticaInchidere),
+        typeof(Imperechere), typeof(PoliticaInchidere), typeof(Module.Cub.Postare),
     ];
 
     IActionResult CititeIntegral() {
-        using var os = Secured(typeof(Document));
-        foreach (var tip in TipuriInsumate)
-            if (!PoateCiti(tip, os))
-                return RefuzCitire(tip);
-        return null;
+        using (var os = Secured(typeof(Document)))
+            foreach (var tip in TipuriInsumate)
+                if (!PoateCiti(tip, os))
+                    return RefuzCitire(tip);
+        return PostariCitibile();
     }
 
     IActionResult Comanda(int an, int luna, Func<IObjectSpace, InchiderePerioadaRezultatDto> comanda) {

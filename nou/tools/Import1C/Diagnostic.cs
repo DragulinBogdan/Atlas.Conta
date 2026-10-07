@@ -1,5 +1,7 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using DevExpress.ExpressApp;
+using N = Atlas.Conta.Nucleu;
 
 namespace Import1C;
 
@@ -43,28 +45,35 @@ static class Diagnostic {
             Console.WriteLine($"   {l.ID} {l.Data:yyyy-MM-dd} preț {l.PretUnitar,12:N4} "
                 + $"gestiune-naștere „{l.Gestiune}” cheie 1C {cheiLot.GetValueOrDefault(l.ID) ?? "(fără)"}");
 
-        var ids = loturi.Select(l => l.ID).ToList();
-        var randuri = os.GetObjectsQuery<RegistruStoc>()
-            .Where(r => ids.Contains(r.LotId))
-            .Select(r => new {
-                r.Data, r.TipStoc, r.LotId, Gestiune = r.Repartitor.Denumire, r.Cantitate, r.Valoare,
-                r.Storno, Document = r.Document.Numar, r.DocumentId,
-            })
-            .ToList()
-            .OrderBy(r => r.Data).ThenBy(r => r.Document)
+        var ids = loturi.Select(l => (Guid?)l.ID).ToList();
+        var simbolPeCont = os.GetObjectsQuery<Cont>().Select(c => new { c.ID, c.Simbol }).ToList()
+            .ToDictionary(c => c.ID, c => c.Simbol);
+        var gestiuni = os.GetObjectsQuery<Gestiune>().Select(g => new { g.ID, g.Denumire }).ToList()
+            .ToDictionary(g => g.ID, g => g.Denumire);
+        var postari = Loturi.Postari(os)
+            .Where(p => ids.Contains(p.Unitate))
+            .Select(p => new { p.Data, p.Cont, p.Gestiune, p.Cantitate, p.Latura, p.Valoare, p.Tranzactie.Fel, p.DocumentId })
             .ToList();
-        // Tipul documentului se citește separat (baza `Document` nu poartă
-        // navigația spre `TipDocument` — ancora e a politicilor, nu a documentului).
-        var tipuri = os.GetObjectsQuery<Document>()
-            .Where(d => randuri.Select(x => x.DocumentId).Contains(d.ID))
-            .Select(d => new { d.ID, Tip = d.GetType().Name })
+        var idsDocumente = postari.Select(p => p.DocumentId).Distinct().ToList();
+        var documente = os.GetObjectsQuery<Document>()
+            .Where(d => idsDocumente.Contains(d.ID))
+            .Select(d => new { d.ID, d.Numar, Tip = d.GetType().Name })
             .ToList()
-            .ToDictionary(d => d.ID, d => d.Tip);
-        Console.WriteLine($"Rânduri de registru de stoc: {randuri.Count}");
+            .ToDictionary(d => d.ID);
+        var randuri = postari
+            .Select(p => new {
+                p.Data, Cont = simbolPeCont.GetValueOrDefault(p.Cont),
+                Gestiune = gestiuni.GetValueOrDefault(p.Gestiune.Value), p.Cantitate,
+                Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare,
+                Storno = p.Fel == N.FelTranzactie.Storno,
+                Document = p.DocumentId is { } id && documente.TryGetValue(id, out var d) ? $"{d.Tip} {d.Numar}" : "deschidere",
+            })
+            .OrderBy(r => r.Data).ThenBy(r => r.Document, StringComparer.Ordinal)
+            .ToList();
+        Console.WriteLine($"Postări pe loturi: {randuri.Count}");
         foreach (var r in randuri)
-            Console.WriteLine($"   {r.Data:yyyy-MM-dd} {r.TipStoc,-8} {r.Cantitate,10:N3} buc "
-                + $"{r.Valoare,14:N2} lei  gestiune „{r.Gestiune}”  "
-                + $"{(r.DocumentId is { } id2 ? tipuri.GetValueOrDefault(id2, "?") : "deschidere")} {r.Document}"
+            Console.WriteLine($"   {r.Data:yyyy-MM-dd} {r.Cont,-8} {r.Cantitate,10:N3} buc "
+                + $"{r.Valoare,14:N2} lei  gestiune „{r.Gestiune}”  {r.Document}"
                 + (r.Storno ? "  [STORNO]" : ""));
         Console.WriteLine($"Sold pe gestiune: " + string.Join("; ", randuri
             .GroupBy(r => r.Gestiune)

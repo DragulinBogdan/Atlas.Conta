@@ -85,7 +85,7 @@ public enum MotivCorectie {
 // Latura jurnalului de TVA (JT-D1): cumpărări sau vânzări. Sensul NU e o a doua
 // axă de configurare — se derivă din `PoliticaTva.Directie` a tipului de
 // document (Deductibil → Achiziție, Colectat → Livrare), acolo unde profilul a
-// declarat deja că tipul e un eveniment de TVA. Pe rândul de `RegistruTva` e
+// declarat deja că tipul e un eveniment de TVA. Pe postarea fiscală e
 // SNAPSHOT, ca `Regim` și `Cota` (JT-D3): politica e dată editabilă, iar
 // jurnalul unei perioade declarate nu are voie să-și schimbe latura fiindcă
 // cineva a rescris politica anul următor. Fără valoarea 0 — convenția locală:
@@ -230,7 +230,7 @@ public enum TipOperatiuneD394 {
 // Cauza pentru care un grup de registru fiscal nu are unde să cadă în D394 —
 // parte din contract (`Neincluse`, D4-D4), cu etichetă pentru ecran.
 public enum CauzaNeincludere {
-    // `RegistruTva.PartenerId` e null: `SursaContrapartida` Explicit/TipMaterial.
+    // Postarea fiscală n-are partener: `SursaContrapartida` Explicit/TipMaterial.
     [XafDisplayName("Fără partener pe rândul de registru")] FaraPartener = 1,
     // Contrapartida e un `Repartitor` care nu e `Partener` (Angajatul de pe DEC).
     [XafDisplayName("Contrapartida nu e partener (angajat/intern)")] RepartitorNePartener = 2,

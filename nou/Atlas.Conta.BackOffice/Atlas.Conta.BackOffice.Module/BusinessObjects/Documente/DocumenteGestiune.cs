@@ -64,9 +64,6 @@ public class NIR : Document, IVerificabilLaCommit {
 
     public override void ValideazaOperare(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         base.ValideazaOperare(os, erori);
-        if (Cub.ReceptiiConexe.EsteAcoperita(os, this)
-                && !Motor.MotorOperare.GasesteTipDocument(os, this).PosteazaInCub)
-            erori.Add($"{Declaratii.CoduriRefuz.NirRegimInactiv}: Recepția sursei există în cub; activați postarea NIR înaintea operării diferenței.");
         // Natura Clasei per Tip prin PROIECȚIE (disciplina 25b): nicio navigație
         // lazy atinsă în enumerare.
         var idsTip = Detalii.Select(d => d.TipMaterialId).Distinct().ToList();
@@ -210,16 +207,8 @@ public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteL
     }
 }
 
-// BCS (03): −magazie (predator) / +consum (primitor) — consumul nu „dispare",
-// alimentează DOUĂ registre simultan (rămâne pe responsabilul locului de
-// consum). Valoarea vine din lot (prețul nu se culege). Lotul NU e legat de
-// gestiunea predatoare prin schemă — locația curentă e soldul din registru,
-// iar gardianul de sold intermediar refuză consumul de unde lotul nu există.
-// `preț × cantitate` de aici e valoarea IMPLICITĂ a ieșirii: pe linia care
-// golește cheia de stoc motorul o înlocuiește cu tot soldul valoric rămas
-// (D18-D2, `StocService.AplicaValoareIesire`) — valabil pentru frunzele cu
-// ieșiri de EVALUARE (BCS, BTR, DSC, LDI−, ASM consum); RLF declară
-// `IDocumentCuIesireFiscala` și rămâne la `preț × cantitate` (review F5).
+// BCS (03): iese din gestiunea predatoare, intră pe locul de consum. `preț × cantitate` e
+// estimarea de draft; la operare linia ia valoarea evaluată pe soldul lotului (D9-D3 a).
 public class BonConsum : Document {
     public override Declaratii.ContractLaturi Laturi() =>
         new(Declaratii.Latura.Gestiune, Declaratii.Latura.Interna.Cu(CalitateRepartitor.LocConsum));

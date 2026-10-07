@@ -202,19 +202,6 @@ public abstract class DocumentTrezorerie : Document {
             ? DocumentSursaId
             : null;
 
-    // Dimensiunea Repartitor a notei (F7-D5b): pe virament AMBELE laturi
-    // primesc contul propriu AL PICIORULUI. Default-ul bazei (debit←Predator,
-    // credit←Primitor) pune pe fiecare rând contrapartida laturii — corect când
-    // contrapartida e un partener, dar la un virament între două conturi pe
-    // același sintetic (două bănci, ambele 5121 — analiticul se derivă din
-    // dimensiuni, decizia 10) ieșirea lui A s-ar atribui lui B și invers:
-    // soldul per cont propriu ar ieși exact inversat. Precedentul mecanismului:
-    // Decont (32c) și DescarcareGestiune (37a).
-    public override Guid RepartitorImplicitDebit(DevExpress.ExpressApp.IObjectSpace os) =>
-        EsteVirament(os) ? GetContPropriuId() : base.RepartitorImplicitDebit(os);
-    public override Guid RepartitorImplicitCredit(DevExpress.ExpressApp.IObjectSpace os) =>
-        EsteVirament(os) ? GetContPropriuId() : base.RepartitorImplicitCredit(os);
-
     // Latura pereche a viramentului (F7-D4): Plata → Incasare, Incasare → Plata.
     // Contract, nu `is`/`switch` pe tip în clasa de bază (invariantul II).
     protected abstract DocumentTrezorerie CreeazaPereche(DevExpress.ExpressApp.IObjectSpace os);

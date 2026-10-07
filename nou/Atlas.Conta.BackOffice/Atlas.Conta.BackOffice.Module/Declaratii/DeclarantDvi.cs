@@ -8,6 +8,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 public sealed class DeclarantDvi : IDeclarant {
     public static readonly DeclarantDvi Instanta = new();
     DeclarantDvi() { }
+    public PoliticaProfil PoliticaCeruta => PoliticaProfil.Tva;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -48,8 +49,8 @@ public sealed class DeclarantDvi : IDeclarant {
                 Partide.Numeste(operand, impozit.DeLa.Cont, doc.Predator.Id, l.Id, partide, decizii);
                 Partide.Numeste(operand, impozit.La.Cont, doc.Predator.Id, l.Id, partide, decizii);
                 miscari.Add(impozit with {
-                    DeLa = Partide.CuPartida(impozit.DeLa, doc.Predator.Id, partide),
-                    La = Partide.CuPartida(impozit.La, doc.Predator.Id, partide),
+                    DeLa = Terti.Capat(operand, impozit.DeLa, doc.Predator.Id, partide),
+                    La = Terti.Capat(operand, impozit.La, doc.Predator.Id, partide),
                 });
             }
             var ancora = new N.Capat {
@@ -60,6 +61,6 @@ public sealed class DeclarantDvi : IDeclarant {
                 0m, 0m, l.Valoare, new(doc.Id, l.Id)));
         }
         return refuzuri.Count > 0 ? null : new(doc.Id, doc.DataInregistrare, miscari, decizii,
-            [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+            PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, tipuri)));
     }
 }

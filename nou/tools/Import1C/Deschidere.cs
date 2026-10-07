@@ -9,14 +9,11 @@ namespace Import1C;
 
 // PASUL 3 al feliei 1C-b: DESCHIDEREA la 01.01.2025.
 //
-// Rândurile de deschidere sunt SINGURELE cu `DocumentId = null` (decizia 25e) —
-// proprietate exclusivă a importului, deci se rescriu INTEGRAL la fiecare rulare
-// (nu au nevoie de legături: identitatea lor e „tot ce n-are document"). Restul —
-// produsele și loturile — sunt nomenclator și se upsert-ează prin
-// `MigrareLegatura` ca tot ce ține de idempotența importului (decizia 34b).
-//
-// Precedentul mecanic e faza 5 din `tools/Migrare` (decizia 34d/34e); diferența
-// de fond ține de sursă, nu de mecanică: 1C nu ține soldurile de deschidere pe
+// Soldurile de deschidere se scriu o singură dată, în tranzacția `Deschidere` a
+// cubului (`Deschidere.Cub`, 107a). Produsele și loturile sunt nomenclator și se
+// upsert-ează prin `MigrareLegatura`, ca tot ce ține de idempotența importului
+// (decizia 34b). Diferența față de o deschidere din solduri gata detaliate ține
+// de sursă: 1C nu ține soldurile de deschidere pe
 // dimensiuni (BalantaNivel1 nu defalcă 401/411 pe partener la 01.01), iar
 // „lotul" 1C e un subconto (produs × document creator × depozit) ale cărui
 // poziții pot fi NEGATIVE — artefactul returului-ca-lot (design §3). Atlas cere
@@ -33,11 +30,6 @@ static partial class Deschidere {
     const decimal EpsQ = 0.0005m;
 
     // ==================== C. Soldurile contabile ====================
-
-    public record RezultatContabil(
-        int Randuri, int Nerezolvate, int PeSumator,
-        int Extrabilantiere, decimal SumaExtrabilantiera,
-        decimal ReziduuAncora);
 
     public sealed record SolduriNete(IReadOnlyDictionary<string, decimal> Net, decimal ReziduuAncora,
         int Nerezolvate, int PeSumator, int Extrabilantiere, decimal SumaExtrabilantiera);
@@ -88,59 +80,10 @@ static partial class Deschidere {
         return new SolduriNete(net, reziduu, nerezolvate.Count, peSumator.Count, extra.Count, extra.Sum(s => s.SoldIni));
     }
 
-    public static RezultatContabil Contabile(IObjectSpaceProvider provider, SolduriNete nete,
-            IReadOnlyList<Control> controale, IReadOnlyDictionary<string, decimal> declarate,
-            DateOnly data, Action<string, bool> check) {
-        using var os = provider.CreateObjectSpace();
-        os.Delete(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == null).ToList());
-        os.CommitChanges();
-        var plan = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
-        var ancora = plan[Ancora];
-        var randuri = 0;
-        foreach (var c in controale.Where(c => c.Simbol != Ancora)) {
-            var r = os.CreateObject<RegistruContabil>();
-            r.Data = data;
-            r.NumarNota = "DESCHIDERE";
-            r.Valoare = c.Valoare;
-            if (c.Latura == N.Latura.Debit) {
-                r.ContDebitId = plan[c.Simbol];
-                r.ContCreditId = ancora;
-            }
-            else {
-                r.ContDebitId = ancora;
-                r.ContCreditId = plan[c.Simbol];
-            }
-            randuri++;
-        }
-        os.CommitChanges();
-
-        var scrise = os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => r.DocumentId == null)
-            .Select(r => new { D = r.ContDebit.Simbol, C = r.ContCredit.Simbol, r.Valoare })
-            .ToList();
-        var net = new Dictionary<string, decimal>();
-        foreach (var r in scrise) {
-            net[r.D] = net.GetValueOrDefault(r.D) + r.Valoare;
-            net[r.C] = net.GetValueOrDefault(r.C) - r.Valoare;
-        }
-        check($"Registru contabil: {scrise.Count} rânduri de deschidere citite înapoi "
-            + $"= {randuri} scrise", scrise.Count == randuri);
-        check($"Σ debit = Σ credit pe rândurile scrise (net pe toate conturile: "
-            + $"{net.Values.Sum():N2})", Math.Abs(net.Values.Sum()) < EpsV);
-        var asteptat = nete.ReziduuAncora - declarate.Values.Sum();
-        check($"Ancora {Ancora} reproduce soldul 1C al aceluiași cont ± diferențele declarate: "
-            + $"{net.GetValueOrDefault(Ancora):N2} = {nete.ReziduuAncora:N2} − ({declarate.Values.Sum():N2})",
-            Math.Abs(net.GetValueOrDefault(Ancora) - asteptat) < EpsV);
-
-        return new RezultatContabil(randuri, nete.Nerezolvate, nete.PeSumator,
-            nete.Extrabilantiere, nete.SumaExtrabilantiera, nete.ReziduuAncora);
-    }
-
     // ==================== D + E. Stocul de deschidere ====================
 
-    // O celulă = (lot × depozit): exact granularitatea rândului de RegistruStoc
-    // (Atlas ține soldul per Lot × Repartitor × TipStoc). Mutabilă — netarea
-    // lucrează pe ea în memorie, înainte de orice scriere.
+    // O celulă = (lot × depozit): granularitatea lotului de deschidere din cub.
+    // Mutabilă — netarea lucrează pe ea în memorie, înainte de orice scriere.
     sealed class Celula {
         public string CheieLot;
         public string ProdusHex;
@@ -178,7 +121,7 @@ static partial class Deschidere {
 
     public record RezultatStoc(
         int Loturi, int LoturiNoi, int Produse, int ProduseNoi, int ProduseFaraTip,
-        int RanduriStoc, int PozitiiNegative, int GrupeSarite,
+        int LoturiInCub, int PozitiiNegative, int GrupeSarite,
         decimal CantitateSarita, decimal ValoareSarita,
         int CeluleDegenerate, int DateNeparsate,
         decimal CantitateScrisa, decimal ValoareScrisa,
@@ -190,15 +133,9 @@ static partial class Deschidere {
         // depozit: un transfer duce lotul netat în altă gestiune, iar prețul
         // călătorește cu el.
         IReadOnlySet<string> ProduseNetate,
-        // CELULELE SURSEI CU VALOARE FĂRĂ CANTITATE, per cheie a contractului.
-        // 1C ține poziții cu bani și zero bucăți; Atlas le scrie (sunt bani reali
-        // ai deschiderii), dar nu le poate stinge NICIODATĂ: fără cantitate n-are
-        // ce mișca, iar prețul unitar al lotului e zero, deci orice descărcare
-        // scoate zero valoare. Sursa își pierde celula pe parcursul anului, noi
-        // rămânem cu valoarea agățată — o diferență permanentă, cunoscută din
-        // prima zi. Se dă contractului ca MĂSURĂTOARE per cheie (nu ca justificare
-        // în alb a cheii: cantitatea rămâne verificată, doar restul ăsta de
-        // valoare e explicat).
+        // Celulele sursei cu valoare fără cantitate, per cheie a contractului: nu
+        // intră în cub (un lot de deschidere cere cantitate), deci cheia diferă de
+        // sursă exact cu valoarea de aici.
         IReadOnlyDictionary<(string ProdusHex, string DepozitHex), decimal> ValoriFaraCantitate);
 
     public static RezultatStoc Stoc(
@@ -343,9 +280,9 @@ static partial class Deschidere {
         // Identitatea produsului de import e (nomenclator × SIMBOL DE CONT) —
         // vezi nota din `ImportLaCerere`. Un nomenclator ținut de 1C pe mai multe
         // conturi de stoc dă produse-gemene, fiecare cu Tipul contului lui, deci
-        // lotul primește ÎNTOTDEAUNA produsul propriului simbol: registrul scris
-        // mai jos (din simbolul lotului) și registrul Tipului produsului coincid
-        // prin construcție. Alegerea „contului dominant pe valoare" din 1C-b a
+        // lotul primește ÎNTOTDEAUNA produsul propriului simbol: contul lotului
+        // din cub (simbolul lui) și contul Tipului produsului coincid prin
+        // construcție. Alegerea „contului dominant pe valoare" din 1C-b a
         // dispărut odată cu premisa ei (un singur produs pentru toate conturile).
         var multiCont = descriptori.Values
             .GroupBy(d => d.ProdusHex, StringComparer.Ordinal)
@@ -453,107 +390,41 @@ static partial class Deschidere {
                 faraDepozit.Count == 0);
         }
 
-        // 107a: cubul înaintea rândurilor bloc; `Deschide` refuză un lot cu mișcări în registru.
-        if (cub != null) {
-            var loturiCub = new List<LotInitial>();
-            using (var os = provider.CreateObjectSpace()) {
-                var depoziteCub = Legaturi.Incarca(os, "Depozite");
-                foreach (var c in deScris.OrderBy(c => c.CheieLot, StringComparer.Ordinal)
-                             .ThenBy(c => c.DepozitHex, StringComparer.Ordinal)) {
-                    if (!lotId.TryGetValue(c.CheieLot, out var id)
-                        || !depoziteCub.TryGetValue(c.DepozitHex, out var gestiune)
-                        || c.Cantitate < EpsQ)
-                        continue;
-                    var simbol = descriptori[c.CheieLot].SimbolCont;
-                    loturiCub.Add(new LotInitial(plan[simbol], id, gestiune, c.Cantitate, c.Valoare));
-                }
-            }
-            cub(loturiCub);
-        }
-
-        // ---- 6. Rândurile de RegistruStoc ----
-        int randuri;
+        var loturiCub = new List<LotInitial>();
         using (var os = provider.CreateObjectSpace()) {
-            os.Delete(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == null).ToList());
-            os.CommitChanges();
-
-            var depozite = Legaturi.Incarca(os, "Depozite");
-            // TipStoc-ul oglindește regulile de stoc private (NIR/LDI/DSC, decizia
-            // 37a): marfa merge în registrul Marfuri, restul în Magazie —
-            // reconcilierea pasului 1C-c citește aceleași chei. Se derivă din
-            // SIMBOLUL lotului (fix review 1C-b), care de la amendamentul
-            // „produs = nomenclator × cont" E și simbolul Tipului produsului:
-            // registrul în care stă soldul și registrul pe care îl va ținti orice
-            // linie de ieșire coincid, prin construcție.
-            var tipStocPerSimbol = os.GetObjectsQuery<TipMaterial>()
-                .Select(t => new { t.Cod, Clasa = t.Clasa.Cod })
-                .ToList()
-                .ToDictionary(x => x.Cod, x => x.Clasa == "MF" ? TipStoc.Marfuri : TipStoc.Magazie);
-
-            randuri = 0;
+            var depoziteCub = Legaturi.Incarca(os, "Depozite");
             foreach (var c in deScris.OrderBy(c => c.CheieLot, StringComparer.Ordinal)
                          .ThenBy(c => c.DepozitHex, StringComparer.Ordinal)) {
                 if (!lotId.TryGetValue(c.CheieLot, out var id)
-                    || !depozite.TryGetValue(c.DepozitHex, out var repartitorId))
-                    continue; // raportat mai sus (produs fără Tip / depozit nelegat)
+                    || !depoziteCub.TryGetValue(c.DepozitHex, out var gestiune)
+                    || c.Cantitate < EpsQ)
+                    continue;
                 var simbol = descriptori[c.CheieLot].SimbolCont;
-                var r = os.CreateObject<RegistruStoc>();
-                r.Data = data;
-                r.LotId = id;
-                r.RepartitorId = repartitorId;
-                r.TipStoc = simbol != null && tipStocPerSimbol.TryGetValue(simbol, out var t)
-                    ? t : TipStoc.Magazie;
-                r.Cantitate = c.Cantitate;
-                r.Valoare = c.Valoare;
-                randuri++;
+                loturiCub.Add(new LotInitial(plan[simbol], id, gestiune, c.Cantitate, c.Valoare));
             }
-            os.CommitChanges();
-
-            // Citire ÎNAPOI, ca la deschiderea contabilă: ce s-a scris trebuie să
-            // fie exact ce s-a calculat. Și, mai important, rândurile trebuie să
-            // fie NENEGATIVE pe ambele coordonate — un sold de deschidere negativ
-            // per Lot × Repartitor ar bloca prima ieșire din 2025 în gardianul de
-            // sold intermediar (decizia 25d), adică netarea ar fi eșuat tăcut.
-            var scrise = os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId == null)
-                .Select(r => new { r.Cantitate, r.Valoare })
-                .ToList();
-            check($"Registru stoc: {scrise.Count} rânduri citite înapoi = {randuri} scrise",
-                scrise.Count == randuri);
-            check($"Registru stoc: Σ cantitate {scrise.Sum(r => r.Cantitate):N3} "
-                + $"= {deScris.Sum(c => c.Cantitate):N3} calculat",
-                Math.Abs(scrise.Sum(r => r.Cantitate) - deScris.Sum(c => c.Cantitate)) < EpsQ);
-            check($"Registru stoc: Σ valoare {scrise.Sum(r => r.Valoare):N2} "
-                + $"= {deScris.Sum(c => c.Valoare):N2} calculat",
-                Math.Abs(scrise.Sum(r => r.Valoare) - deScris.Sum(c => c.Valoare)) < EpsV);
-            check($"Registru stoc: niciun sold de deschidere negativ "
-                + $"({scrise.Count(r => r.Cantitate < 0)} cantități, "
-                + $"{scrise.Count(r => r.Valoare < 0)} valori)",
-                !scrise.Any(r => r.Cantitate < 0 || r.Valoare < 0));
         }
+        cub?.Invoke(loturiCub);
 
         foreach (var g in grupeSarite.OrderBy(g => g.Valoare))
             avert($"Grupă „{g.ProdusDesc ?? g.ProdusHex}” × depozit „{g.DepozitDesc ?? g.DepozitHex}” "
                 + $"cu TOTAL negativ ({g.Cantitate:N3} buc, {g.Valoare:N2} lei) — nereprezentabilă "
                 + "(Atlas cere sold ≥ 0 per lot); NU se scrie. Diferență a sursei.");
 
-        // Diferențele sursei se RAPORTEAZĂ, nu se ascund (34f) — inclusiv cele care
-        // se scriu, dar nu se vor putea stinge niciodată.
+        // Diferențele sursei se RAPORTEAZĂ, nu se ascund (34f).
         if (valoriFaraCantitate.Count > 0)
             avert($"Deschidere: {valoriFaraCantitate.Count} chei produs × depozit au în sursă "
-                + $"VALOARE FĂRĂ CANTITATE (Σ {valoriFaraCantitate.Values.Sum():N2} lei) — se scriu "
-                + "(sunt bani reali ai deschiderii), dar nu se pot stinge niciodată: fără cantitate "
-                + "n-are ce ieși, iar prețul unitar e zero. Rămân diferență a sursei, explicată "
-                + "măsurat în fiecare lună.");
+                + $"VALOARE FĂRĂ CANTITATE (Σ {valoriFaraCantitate.Values.Sum():N2} lei) — nu intră în cub "
+                + "(un lot de deschidere cere cantitate). Rămân diferență a sursei, justificată pe "
+                + "cheie la reconciliere.");
 
         return new RezultatStoc(
             descriptori.Count, loturiNoi,
             descriptori.Values.Select(d => d.ProdusHex).Distinct().Count(),
             laCerere.ProduseNoi, faraTip.Count,
-            randuri, negativeInitial, grupeSarite.Count,
+            loturiCub.Count, negativeInitial, grupeSarite.Count,
             grupeSarite.Sum(g => g.Cantitate), grupeSarite.Sum(g => g.Valoare),
             degenerate, descriptori.Values.Count(d => !d.DataParsata),
-            deScris.Sum(c => c.Cantitate), deScris.Sum(c => c.Valoare),
+            loturiCub.Sum(l => l.Cantitate), loturiCub.Sum(l => l.Valoare),
             grupeSarite, produseNetate, valoriFaraCantitate);
     }
 

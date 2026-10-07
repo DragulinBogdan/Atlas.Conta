@@ -13,11 +13,10 @@ using Microsoft.EntityFrameworkCore;
 // finalizează PRIN import + reconciliere pe un an fiscal complet (2025), NU în
 // abstract. 1C are statutul deciziei 21 — evidență și direcție, niciodată canon.
 //
-// Unealta e consolă ca `Migrare` (precedentul de formă, decizia 45f): fără XAF
-// Application, `EFCoreObjectSpaceProvider` standalone, idempotență prin
-// `MigrareLegatura` (cheiată "1C:<view>"). Diferența de fond față de Migrare:
-// documentele NU se copiază în registre, ci se OPEREAZĂ prin MotorOperare
-// (pasul 3 al feliei încolo) — deschiderea rămâne singurul lucru scris direct.
+// Unealta e consolă (decizia 45f): fără XAF Application,
+// `EFCoreObjectSpaceProvider` standalone, idempotență prin `MigrareLegatura`
+// (cheiată "1C:<view>"). Documentele se OPEREAZĂ prin MotorOperare; deschiderea
+// se scrie prin `Materializare.Deschide`.
 //
 // Baza țintă e DEDICATĂ și aparține uneltei: o migrează și o seed-uiește
 // singură pe profilul Privat, exact calea updater-ului (ContaSeeder) — la fel
@@ -26,8 +25,8 @@ using Microsoft.EntityFrameworkCore;
 // PASUL 1 (felia 1C-b): schelet + citirea sursei + baza pregătită.
 // PASUL 2: nomenclatoarele mici (integral) + helper-ele de import la cerere
 // pentru cele mari (Nomenclatoare.cs).
-// PASUL 3: DESCHIDEREA la 01.01.2025 — solduri contabile + loturi/stoc, scrise
-// direct în registre cu `DocumentId = null` (Deschidere.cs).
+// PASUL 3: DESCHIDEREA la 01.01.2025 — solduri contabile, loturi și partide,
+// scrise în tranzacția `Deschidere` a cubului (Deschidere.cs, DeschidereCub.cs).
 // PASUL 4: RECONCILIEREA deschiderii (Reconciliere.cs) — contractul design §8:
 // baza se RECITEȘTE din Postgres și se compară cu sursa brută, independent de
 // structurile fazei 3.
@@ -36,20 +35,6 @@ using Microsoft.EntityFrameworkCore;
 // Parsarea e explicită (nu un filtru pe prefix) fiindcă `--pana-la` are VALOARE:
 // un filtru ar lăsa „3" să treacă drept connection string.
 var pozitionale = new List<string>();
-// Auto-testul reconcilierii (`--sabotaj`): alterează rânduri deja SCRISE, între
-// deschidere și reconciliere. E singura cale onestă de a dovedi sensibilitatea —
-// deschiderea se rescrie integral la fiecare rulare, deci o alterare făcută
-// înaintea ei ar fi reparată de ea însăși, iar una făcută pe sursă n-ar testa
-// citirea din bază. Flag-ul rămâne ca unealtă permanentă: contractul de
-// reconciliere e cod ca oricare altul și trebuie să poată fi verificat că mai e
-// viu, nu doar că e verde.
-//
-// Două etaje: contractul DESCHIDERII (mai jos, +1 leu pe câte un rând scris de
-// ea) și contractul LUNAR (Sabotaj.cs — două probe, contabilă și de stoc, cu
-// țintele derivate din politici și verdict pe ce anume a picat). Codul de ieșire:
-// 1 = probele au fost detectate (succesul auto-testului), 3 = o probă a scăpat
-// sau n-a putut fi pusă.
-var sabotaj = false;
 // `--pana-la N` = importă lunile 1..N (măsurătoarea cerută de §12.4 pornește de
 // la ianuarie singur); `--continua` = o lună picată nu oprește rularea, se
 // raportează și diferențele se poartă înainte.
@@ -118,9 +103,6 @@ for (var i = 0; i < args.Length; i++) {
     }
     var (nume, valoare) = arg.Split('=', 2) is [var n, var v] ? (n, v) : (arg, null);
     switch (nume) {
-        case "--sabotaj":
-            sabotaj = true;
-            break;
         case "--continua":
             continua = true;
             break;
@@ -198,7 +180,7 @@ for (var i = 0; i < args.Length; i++) {
             break;
         default:
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
-                + "[--pana-la <lună>] [--continua] [--sabotaj] [--cititori] [--probe-stingeri] [--recreeaza] "
+                + "[--pana-la <lună>] [--continua] [--cititori] [--probe-stingeri] [--recreeaza] "
                 + "[--reclasifica] [--anaf] [--anaf-url <url>] [--deblocheaza <view>:<cheie>] "
                 + "[--societate] [--um-nc] [--inchide-lunile] [--saft <an> <lună>] [--saft-s <an> <lună>]");
             return 2;
@@ -245,7 +227,9 @@ using var provider = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(
         .UseNpgsql(pgCs)
         .UseChangeTrackingProxies()
         .UseObjectSpaceLinkProxies()
-        .UseLazyLoadingProxies());
+        .UseLazyLoadingProxies()
+        // D9-A8: seed-ul rulat aici crește contorul rândului de politică, ca pe hosturi.
+        .AddInterceptors(new DevExpress.ExpressApp.EFCore.DataLocking.EFCoreOptimisticLockInterceptor()));
 
 // Seed-ul profilului privat pe calea updater-ului; idempotent la re-rulare, iar
 // `VerificaProfil` din seeder protejează ancora (o bază cu alt plan e refuzată).
@@ -626,15 +610,12 @@ Console.WriteLine($"Netare: {rezStoc.PozitiiNegative} celule negative absorbite;
     + $"{rezStoc.GrupeSarite} grupe produs×depozit cu total negativ SĂRITE "
     + $"({rezStoc.CantitateSarita:N3} buc, {rezStoc.ValoareSarita:N2} lei); "
     + $"{rezStoc.CeluleDegenerate} celule rămase cu o singură coordonată nenulă.");
-Console.WriteLine($"Registru stoc: {rezStoc.RanduriStoc} rânduri de deschidere; "
+Console.WriteLine($"Loturi de deschidere date cubului: {rezStoc.LoturiInCub}; "
     + $"Σ {rezStoc.ValoareScrisa:N2} lei / {rezStoc.CantitateScrisa:N3} buc.");
 
-Console.WriteLine($"\n--- Deschiderea contabilă la {dataRanduri:yyyy-MM-dd} (rândurile bloc, M1-D3) ---");
-var rezContabil = Deschidere.Contabile(provider, nete, controale.Controale, controale.DeclarateStoc, dataRanduri, Check);
-Console.WriteLine($"Registru contabil: {rezContabil.Randuri} rânduri contra ancorei "
-    + $"{Deschidere.Ancora}; extrabilanțiere sărite: {rezContabil.Extrabilantiere} "
-    + $"({rezContabil.SumaExtrabilantiera:N2}); reziduul propriu al sursei pe ancoră: "
-    + $"{rezContabil.ReziduuAncora:N2}.");
+Console.WriteLine($"Deschiderea contabilă: extrabilanțiere sărite: {nete.Extrabilantiere} "
+    + $"({nete.SumaExtrabilantiera:N2}); reziduul propriu al sursei pe ancora {Deschidere.Ancora}: "
+    + $"{nete.ReziduuAncora:N2}.");
 Console.WriteLine($"La cerere: {laCerere.ParteneriNoi} parteneri noi, {laCerere.ProduseNoi} produse noi, "
     + $"{laCerere.Recuperate} recuperate, {laCerere.ReferinteMoarte} referințe moarte, "
     + $"{laCerere.ProduseFaraTip} fără TipMaterial.");
@@ -653,7 +634,7 @@ Console.WriteLine($"Durata fazei de deschidere: {durataDeschidere:hh\\:mm\\:ss}.
 Console.WriteLine($"Diferență stoc↔contabilitate a sursei: {stocOrfan.Count} poziții orfane "
     + $"({stocOrfan.Sum(s => s.Valoare):N2} lei) + {rezStoc.GrupeSarite} grupe total-negative "
     + $"({rezStoc.ValoareSarita:N2} lei) = {stocOrfan.Sum(s => s.Valoare) + rezStoc.ValoareSarita:N2} lei "
-    + "diferență algebrică sold contabil − registru de stoc.");
+    + "diferență algebrică sold contabil − stocul pe loturi.");
 
 // ============================ Faza SMOKE ============================
 // Verifică invarianții pe care se sprijină pașii 3-4: planul Atlas are ancorele,
@@ -846,28 +827,9 @@ using (var os = provider.CreateObjectSpace()) {
 // Contractul design §8, restrâns la deschidere. Recitește TOTUL din Postgres și
 // compară cu sursa brută — vezi principiul din Reconciliere.cs.
 
-if (sabotaj) {
-    using var os = provider.CreateObjectSpace();
-    var rc = os.GetObjectsQuery<RegistruContabil>()
-        .Where(r => r.DocumentId == null)
-        .OrderBy(r => r.Valoare).ThenBy(r => r.ID)
-        .FirstOrDefault();
-    var rs = os.GetObjectsQuery<RegistruStoc>()
-        .Where(r => r.DocumentId == null)
-        .OrderBy(r => r.Valoare).ThenBy(r => r.ID)
-        .FirstOrDefault();
-    if (rc != null)
-        rc.Valoare += 1m;
-    if (rs != null)
-        rs.Valoare += 1m;
-    os.CommitChanges();
-    Console.WriteLine($"\n*** SABOTAJ (--sabotaj): +1 leu pe rândul contabil {rc?.ID} și pe "
-        + $"rândul de stoc {rs?.ID}. Reconcilierea TREBUIE să pice. ***");
-}
-
 Console.WriteLine($"\n=== Reconcilierea deschiderii la {dataRanduri:yyyy-MM-dd} ===");
 var rezRec = Reconciliere.Executa(provider, solduri, extrabilantiere1C, stoc, stocOrfan,
-    rezStoc.DiferenteJustificate, controale.DeclarateStoc, Mapeaza, Avert, Check);
+    rezStoc.DiferenteJustificate, rezStoc.ValoriFaraCantitate, controale.DeclarateStoc, Mapeaza, Avert, Check);
 
 // ==================== Faza DOCUMENTE: bucla lunară (pasul 1) ====================
 // Perioadele fiscale întâi (motorul tratează perioada LIPSĂ ca închisă, decizia
@@ -898,12 +860,9 @@ Console.WriteLine($"Raportul integral al contractului lunar se scrie în „{jur
 bucla.StareContract.Jurnal = jurnal;
 bucla.StareContract.ProduseNetate = rezStoc.ProduseNetate;
 bucla.StareContract.JustificateDeschidere = rezStoc.DiferenteJustificate;
-bucla.StareContract.ValoriFaraCantitateDeschidere = rezStoc.ValoriFaraCantitate;
 bucla.StareContract.Extrabilantiere1C = extrabilantiere1C;
 bucla.StareContract.DeclarateDeschidere = controale.DeclarateStoc;
 bucla.StareContract.PartenerGeneric = rezPartide.PartenerGeneric;
-if (sabotaj)
-    bucla.ActiveazaSabotajLuna();
 var luni = new List<RezultatLuna>();
 var lunaPicata = 0;
 var inchideri = new List<(int An, int Luna, int Acceptate, string PeFel, TimeSpan Durata,
@@ -1144,11 +1103,10 @@ Console.WriteLine($"""
     ║   parteneri (la cerere)    {laCerere.ParteneriClasificati,10} clasificați / {laCerere.ParteneriNoi} noi (tip persoană derivat {laCerere.TipPersoanaDerivat}, TVA din prefix RO {laCerere.InregistratTvaDerivat}, TVA la încasare {laCerere.TvaLaIncasareDinSursa}, PFA cu CUI RO {laCerere.PfaInregistrate}, țară nerezolvată {laCerere.TaraNerezolvata}, NuIncludeInDec394 {laCerere.NuIncludeInDec394})
     ║   reclasificare finală     {laCerere.ParteneriLegati,10} legați: {laCerere.ReclasificatiDinSursa} reclasificați din sursă, din registru {laCerere.InregistratiDinRegistru} marcați înregistrați (achiziții cu TVA ≠ 0)
     ║   adrese din 1C            {laCerere.AdresePreluate,10} preluate ({laCerere.FaraAdresaInSursa} fără adresă în sursă, {laCerere.AdreseDejaCompletate} deja completate; județ: {laCerere.JudetDinCodCnp} din cod CNP, {laCerere.JudetDinDenumire} din denumire, {laCerere.JudetNerezolvat} nerezolvat, {laCerere.JudetPeTaraStraina} pe țară ≠ RO; {laCerere.AdreseTrunchiate} câmpuri tăiate)
-    ║ DESCHIDEREA SCRISĂ (DocumentId = null)
-    ║   rânduri contabile        {rezContabil.Randuri,10} contra ancorei {Deschidere.Ancora}
-    ║   extrabilanțiere sărite   {rezContabil.Extrabilantiere,10} (Σ {rezContabil.SumaExtrabilantiera:N2} lei — clasa 8, alt modul)
+    ║ DESCHIDEREA SCRISĂ (tranzacția Deschidere a cubului)
+    ║   extrabilanțiere sărite   {nete.Extrabilantiere,10} (Σ {nete.SumaExtrabilantiera:N2} lei — clasa 8, alt modul)
     ║   loturi                   {rezStoc.Loturi,10} ({rezStoc.LoturiNoi} noi; data FIFO parsată pe {rezStoc.Loturi - rezStoc.DateNeparsate})
-    ║   rânduri de stoc          {rezStoc.RanduriStoc,10} (Σ {rezStoc.ValoareScrisa:N2} lei / {rezStoc.CantitateScrisa:N3} buc)
+    ║   loturi date cubului      {rezStoc.LoturiInCub,10} (Σ {rezStoc.ValoareScrisa:N2} lei / {rezStoc.CantitateScrisa:N3} buc)
     ║ DIFERENȚELE SURSEI (raportate, nu ascunse — decizia 34f)
     ║   grupe total-negative     {rezStoc.GrupeSarite,10} (Σ {rezStoc.ValoareSarita:N2} lei / {rezStoc.CantitateSarita:N3} buc)
     ║   poziții orfane           {stocOrfan.Count,10} (Σ {stocOrfan.Sum(s => s.Valoare):N2} lei)
@@ -1158,6 +1116,7 @@ Console.WriteLine($"""
     ║   2. ancora {Deschidere.Ancora,-14}  {rezRec.AncoraDb,10:N2} în bază = {rezRec.AncoraSursa:N2} în sursă
     ║   3. stoc produs×gestiune  {rezRec.CheiStoc,10} chei comparate, {rezRec.Nejustificate} nejustificate
     ║      justificate           {rezRec.JustificateGasite,10} chei (Σ {rezRec.JustificatV:N2} lei / {rezRec.JustificatQ:N3} buc)
+    ║      fără cantitate        {rezRec.CheiFaraCantitate,10} chei (Σ {rezRec.ValoareFaraCantitate:N2} lei, neintrate în cub)
     ║ DOCUMENTELE {anImport} (lunile 1..{panaLa}{(lunaPicata > 0 && !continua ? $", oprit la {lunaPicata:00}" : "")})
     ║   importate / sărite      {luni.Sum(l => l.Documente),10} / {luni.Sum(l => l.Sarite)} ({luni.Sum(l => l.Copii)} copii autogenerați operați)
     ║   eșecuri de operare      {luni.Sum(l => l.Esecuri),10} pe {luni.Count(l => l.Esecuri > 0)} luni
@@ -1180,35 +1139,4 @@ Console.WriteLine(esecuri == 0
     ? "\nImport 1C (deschidere + reconciliere) încheiat fără eșecuri."
     : $"\nImport 1C (deschidere + reconciliere) încheiat cu {esecuri} eșecuri.");
 
-// CODURILE DE IEȘIRE ale auto-testului (`--sabotaj`), păstrând semantica de până
-// acum: o rulare de sabotaj TREBUIE să iasă cu eșecuri, deci `1` e SUCCESUL
-// auto-testului, nu al importului. Ce s-a adăugat e distincția pe care exit-ul
-// n-o putea face (defectul D6): două probe, iar una singură detectată dădea tot
-// `1` și trecea drept probă. De acum orice probă scăpată — sau nepusă — are codul
-// ei, `3`, ca să nu se poată ascunde în eșecurile celeilalte.
-if (sabotaj) {
-    var verdict = bucla.Sabotaj;
-    Console.WriteLine($"""
-
-        ╔══════════════════ AUTO-TESTUL CONTRACTULUI (--sabotaj) ══════════════════
-        ║ {(verdict == null ? "PICAT: probele nu s-au pus deloc (nicio lună importată)."
-            : verdict.Trecut
-                ? "TRECUT: ambele probe au fost detectate de contractele lor."
-                : "PICAT: cel puțin o probă a scăpat — contractul NU e sensibil pe ea.")}
-        {string.Join("\n", (verdict?.Mesaje ?? []).Select(m => $"║   {m}"))}
-        ║ Baza rămâne SABOTATĂ (rândurile de document nu se rescriu): rulează din nou
-        ║ cu --recreeaza înainte de orice import de lucru.
-        ╚══════════════════════════════════════════════════════════════════════════
-        """);
-    if (verdict?.Trecut != true)
-        return 3;
-    // Sabotajul detectat ⇒ contractele au picat ⇒ `esecuri > 0` prin construcție.
-    // Dacă totuși n-ar fi, verdictul ar fi mincinos și se strigă.
-    if (esecuri == 0) {
-        Console.Error.WriteLine("--sabotaj: probele au fost declarate detectate, dar rularea n-are "
-            + "niciun eșec — verdictul și contorul de verificări s-au despărțit.");
-        return 3;
-    }
-    return 1;
-}
 return esecuri == 0 ? 0 : 1;

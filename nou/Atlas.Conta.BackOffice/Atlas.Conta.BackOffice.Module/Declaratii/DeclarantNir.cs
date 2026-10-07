@@ -8,6 +8,7 @@ public sealed partial class DeclarantNir : IDeclarant {
     public static readonly DeclarantNir Instanta = new();
     public string SursaValoareDeclarata => SurseValoare.Receptie;
     DeclarantNir() { }
+    public bool ConteazaPrinReguli => true;
     public bool PermiteDeclaratieFaraMiscari(Operand operand) => operand.ReceptieSursa is not null;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
@@ -46,7 +47,7 @@ public sealed partial class DeclarantNir : IDeclarant {
                 Refuza(CoduriRefuz.ContStocLipsa, "Contul de recepție trebuie să fie contul lotului."); continue;
             }
             Partide.Numeste(operand, cont.ContCredit, doc.Predator.Id, linie.Id, partide, decizii);
-            var externCapat = Partide.CuPartida(new N.Capat {
+            var externCapat = Terti.Capat(operand, new N.Capat {
                 Cont = cont.ContCredit, Gestiune = N.GestiuniVirtuale.Furnizor, Produs = lot.ProdusId,
                 Analiza = Contari.Analiza(linie.Analiza, cont.Regula.OverrideCredit, cont.Regula.Comun),
             }, doc.Predator.Id, partide);
@@ -56,10 +57,9 @@ public sealed partial class DeclarantNir : IDeclarant {
                 Analiza = Contari.Analiza(linie.Analiza, cont.Regula.OverrideDebit, cont.Regula.Comun),
             };
             miscari.Add(new(externCapat, internCapat, linie.Cantitate, 0, valoare, new(doc.Id, linie.Id)));
-            decizii.Add(new N.ContRezolvat(linie.Id, cont.ContDebit, cont.SursaDebit.ToString()));
-            decizii.Add(new N.ContRezolvat(linie.Id, cont.ContCredit, cont.SursaCredit.ToString()));
+            Contari.Decide(cont, linie.Id, decizii);
         }
         return refuzuri.Count > 0 ? null : new(doc.Id, doc.DataInregistrare, miscari, decizii,
-            [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+            PoliticiConsumate.Ipoteze(operand, decizii));
     }
 }

@@ -25,7 +25,7 @@ public static class SaftReguli {
     public const string TaxTypeNefiscal = "000";
     public const string TaxCodeNefiscal = "000000";
     // Închiderea lunară de TVA (ITV): rândurile 4426/4427 = 4423/4424 nu sunt
-    // operațiuni taxabile (n-au rând în `RegistruTva`), dar ating conturile de
+    // operațiuni taxabile (n-au postare fiscală), dar ating conturile de
     // TVA — codul lor e `TVA_NoteContabile` (riscul 4 al contractului).
     public const string TaxCodeInchidereTva = "380200";
 

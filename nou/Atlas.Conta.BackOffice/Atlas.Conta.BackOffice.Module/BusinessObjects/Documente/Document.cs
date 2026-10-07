@@ -157,11 +157,6 @@ public abstract class Document : Editabila {
     [XafDisplayName("Motivul corecției")]
     public virtual MotivCorectie? MotivCorectie { get; set; }
 
-    /// <summary>Totalul de stins din partidele cubului, în sensul de stins; scris de motor la operare, null în Draft (F27-D7, 102).</summary>
-    [ModelDefault("AllowEdit", "False")]
-    [XafDisplayName("Total de stins")]
-    public virtual decimal? TotalStingere { get; set; }
-
     [DevExpress.ExpressApp.DC.Aggregated]
     public virtual ObservableCollection<DocumentDetaliu> Detalii { get; set; } = new();
 
@@ -248,16 +243,6 @@ public abstract class Document : Editabila {
         else
             linie.Valoare = Scara.RotunjesteBani(baza);
     }
-
-    // Convenția 00 §5 (dimensiunea Repartitor default pe notă: debit←Predator,
-    // credit←Primitor) devine default POLIMORF — ultimul nivel al coalesce-ului
-    // din motor. Decont o ajustează: creditul (contul de avans 542) urmărește
-    // titularul, nu primitorul justificării.
-    // Primesc `IObjectSpace` ca toate celelalte hook-uri ale motorului (vezi
-    // nota de mai sus): trezoreria are nevoie de el ca să distingă viramentul
-    // intern după TIPUL repartitorului de pe latură (F7-D5b).
-    public virtual Guid RepartitorImplicitDebit(DevExpress.ExpressApp.IObjectSpace os) => PredatorId;
-    public virtual Guid RepartitorImplicitCredit(DevExpress.ExpressApp.IObjectSpace os) => PrimitorId;
 
     // Gestiunea în care se NASC loturile culese pe liniile documentului
     // (F5-D2) — hook polimorf consumat de `LoturiCulegereService`, pe FK-uri +

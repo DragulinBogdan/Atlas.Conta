@@ -24,6 +24,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // [TipDetaliu] se re-declară: atributul e Inherited=false (UI/TipDetaliuAttribute).
 [TipDetaliu(typeof(NotaContabilaDetaliu))]
 public class InchidereTva : NotaContabila {
+    public override Declaratii.IDeclarant Declarant() => Declaratii.DeclarantNotaContabila.InchidereTva;
+
     // Închiderea nu stinge manual (79c); se regenerează cât e draft.
     public override void ContribuieRegim(DevExpress.ExpressApp.IObjectSpace os, Api.RegimDocument.Constructor regim) =>
         regim.Decide(Api.RegimDocument.Regenereaza, regim.Draft ? null : "Se regenerează doar un draft.");

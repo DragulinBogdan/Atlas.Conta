@@ -45,7 +45,6 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
             [.. R(m, 0, Serviciu, ContFurnizor, 100), .. R(m, 1, Serviciu, ContFurnizor, -25), .. R(m, 2, ContFurnizor, ContFurnizor, 40)]);
         var stoc = Nota(Ianuarie, new LinieNtcScena(Serviciu, Stoc, 50)); Opereaza(stoc.Id);
         Postari("SC-NTC-14", stoc.Id, N.FelTranzactie.Operare, Ianuarie, R(stoc, 0, Serviciu, Stoc, 50));
-        Verifica("SC-NTC-14", "fără registru de stoc", CuSpatiu(os => !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == stoc.Id)));
         Refuzuri();
         Fifo(); Parteneri(); TransferFaraPartidaProprie(); DependentaInTimp();
         if (Privat) Avans();

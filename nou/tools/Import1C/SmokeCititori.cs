@@ -1,6 +1,6 @@
 namespace Import1C;
 
-// Auto-testul CONTRACTULUI DE COLOANE (design §2), pereche cu `--sabotaj`.
+// Auto-testul CONTRACTULUI DE COLOANE (design §2).
 //
 // Cititorii din `FlaxDocumente.cs` sunt SQL construit din nume de coloane: o
 // coloană redenumită sau dispărută la regenerarea view-urilor nu se vede la

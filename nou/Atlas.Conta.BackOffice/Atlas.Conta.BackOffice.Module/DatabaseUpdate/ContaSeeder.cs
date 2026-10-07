@@ -28,7 +28,7 @@ public static class ContaSeeder {
     // AwayFromZero la bază nouă — comportamentul de dinainte de 51c).
     public static RaportSeed Seed(IObjectSpace os, ProfilContabil profil, MidpointRounding? conventie = null) {
         var raport = raportCurent = new RaportSeed();
-        SeedTipuriDocument(os, profil);
+        SeedTipuriDocument(os);
         SeedPerioadeFiscale(os);
         VerificaProfil(os, profil);
         var rotunjire = SeedSetareProfil(os, profil, conventie);
@@ -264,55 +264,50 @@ public static class ContaSeeder {
     }
 
     // Decizia 20: nomenclatorul de tipuri oglindește clasele 1:1 — doar ancoră FK + UI.
-    public static void SeedTipuriDocument(IObjectSpace os, ProfilContabil profil) {
-        // S-D3, B-r2: `PosteazaInCub` și `LaturaContPropriu` sunt date de seed.
-        (string Cod, string Denumire, string ClrType, LaturaDocument? ContPropriu)[] tipuri = [
-            ("FCT", "Factură intrare", nameof(FacturaIntrare), null),
-            ("FCL", "Factură ieșire", nameof(FacturaIesire), null),
-            ("NIR", "Notă de intrare-recepție", nameof(NIR), null),
-            ("BCS", "Bon de consum", nameof(BonConsum), null),
-            ("BTR", "Notă de transfer", nameof(NotaTransfer), null),
-            ("BPR", "Raport de producție", nameof(RaportProductie), null),
-            ("LDI", "Listă diferențe inventar", nameof(ListaDiferenteInventar), null),
-            ("DEC", "Decont", nameof(Decont), null),
-            ("PLT", "Plată", nameof(Plata), LaturaDocument.Predator),
-            ("INC", "Încasare", nameof(Incasare), LaturaDocument.Primitor),
+    public static void SeedTipuriDocument(IObjectSpace os) {
+        (string Cod, string Denumire, string ClrType)[] tipuri = [
+            ("FCT", "Factură intrare", nameof(FacturaIntrare)),
+            ("FCL", "Factură ieșire", nameof(FacturaIesire)),
+            ("NIR", "Notă de intrare-recepție", nameof(NIR)),
+            ("BCS", "Bon de consum", nameof(BonConsum)),
+            ("BTR", "Notă de transfer", nameof(NotaTransfer)),
+            ("BPR", "Raport de producție", nameof(RaportProductie)),
+            ("LDI", "Listă diferențe inventar", nameof(ListaDiferenteInventar)),
+            ("DEC", "Decont", nameof(Decont)),
+            ("PLT", "Plată", nameof(Plata)),
+            ("INC", "Încasare", nameof(Incasare)),
             // Al 11-lea derivat (P2, decizia 37a): ancora e în nucleu pentru
             // AMBELE profiluri; la bugetar rămâne tip inert (fără politici), ca BPR.
-            ("DSC", "Descărcare de gestiune", nameof(DescarcareGestiune), null),
+            ("DSC", "Descărcare de gestiune", nameof(DescarcareGestiune)),
             // Al 12-lea derivat (FAZA 1C §5): nota contabilă — ușa de import
             // (decizia 9) și tip de culegere manuală, în AMBELE profiluri.
-            ("NTC", "Notă contabilă", nameof(NotaContabila), null),
+            ("NTC", "Notă contabilă", nameof(NotaContabila)),
             // Al 13-lea derivat (FAZA 1C §6): închiderea lunară de TVA — notă
             // contabilă GENERATĂ. Ancora e în nucleu pentru AMBELE profiluri; la
             // bugetar rămâne tip inert (fără PoliticaInchidereTva, fără
             // numerotare), ca DSC/BPR.
-            ("ITV", "Închidere TVA", nameof(InchidereTva), null),
-            ("ASM", "Asamblare", nameof(Asamblare), null),
+            ("ITV", "Închidere TVA", nameof(InchidereTva)),
+            ("ASM", "Asamblare", nameof(Asamblare)),
             // Al 15-lea și al 16-lea derivat (FAZA 1C §7): retururile, pe
             // corespondența de STORNO (valori negative pe latura originală).
             // Ancorele sunt în nucleu pentru AMBELE profiluri; la bugetar rămân
             // tipuri inerte (fără politici), ca DSC/ITV/BPR.
-            ("RLF", "Retur la furnizor", nameof(ReturFurnizor), null),
-            ("RDC", "Retur de la client", nameof(ReturClient), null),
+            ("RLF", "Retur la furnizor", nameof(ReturFurnizor)),
+            ("RDC", "Retur de la client", nameof(ReturClient)),
             // Declarația vamală de import (86c).
             // Ancora e în nucleu pentru AMBELE profiluri; la bugetar rămâne tip
             // inert (fără politici), ca DSC/ITV/BPR.
-            ("DVI", "Declarație vamală de import", nameof(Dvi), null),
+            ("DVI", "Declarație vamală de import", nameof(Dvi)),
             // Imobilizările: ancore ACTIVE pe ambele profiluri (F26-D4).
-            ("PIF", "Punere în funcțiune", nameof(PunereInFunctiune), null),
-            ("CAS", "Ieșire de imobilizări", nameof(IesireImobilizare), null),
-            ("AMO", "Amortizare lunară", nameof(AmortizareLunara), null),
+            ("PIF", "Punere în funcțiune", nameof(PunereInFunctiune)),
+            ("CAS", "Ieșire de imobilizări", nameof(IesireImobilizare)),
+            ("AMO", "Amortizare lunară", nameof(AmortizareLunara)),
         ];
         foreach (var t in tipuri)
             Aliniaza<TipDocument>(os, t.Cod, x => x.Cod == t.Cod, tip => {
                 tip.Cod = t.Cod;
                 tip.Denumire = t.Denumire;
                 tip.ClrType = t.ClrType;
-                tip.PosteazaInCub = t.Cod is "BCS" or "FCT" or "PLT" or "INC" or "BTR" or "FCL" or "NTC" or "ASM" or "LDI" or "NIR" or "DEC" or "PIF" or "AMO" or "CAS"
-                    || (t.Cod is "DSC" or "ITV" or "RDC" or "RLF" or "DVI" && profil == ProfilContabil.Privat)
-                    || tip.PosteazaInCub && Cub.Materializare.AreTranzactii(os, t.ClrType);
-                tip.LaturaContPropriu = t.ContPropriu;
             });
     }
 
@@ -648,7 +643,7 @@ public static class ContaSeeder {
         }
         var mapari = os.GetObjectsQuery<MapareD300>().ToList();
         if (profil == ProfilContabil.Bugetar) {
-            // Bugetarul n-are `PoliticaTva`, deci `RegistruTva` îi rămâne gol:
+            // Bugetarul n-are `PoliticaTva`, deci nu postează fapte fiscale:
             // o mapare acolo ar fi politică orfană, nu configurare.
             if (mapari.Count > 0)
                 throw new InvalidOperationException(

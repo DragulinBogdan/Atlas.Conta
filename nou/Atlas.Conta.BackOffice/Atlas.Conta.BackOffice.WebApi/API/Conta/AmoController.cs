@@ -9,7 +9,7 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 
 // Amortizarea lunară (F26-D7/D10), oglinda lui `ItvController`: document GENERAT, fără `WriteDto`.
 // Derivă din `Document`, nu din `NotaContabila`, deci un id de AMO pe ușa NTC dă 404 fără predicat.
-// F22-D5: rutele cu cifre de registru cer și dreptul pe el; `genereaza`/`regenereaza` cer CREARE.
+// F22-D5: rutele cu cifre însumate din cub cer și citirea completă pe `Postare`; `genereaza`/`regenereaza` cer CREARE.
 [Route("api/amo")]
 public class AmoController : ContaApiController {
     public AmoController(IObjectSpaceFactory secured, INonSecuredObjectSpaceFactory nonSecured,
@@ -33,7 +33,7 @@ public class AmoController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id) {
-        var refuz = AutorizeazaCitire<AmortizareLunara>(id) ?? RegistrulCitibil();
+        var refuz = AutorizeazaCitire<AmortizareLunara>(id) ?? PostariCitibile();
         if (refuz != null)
             return refuz;
         using var os = NonSecured(typeof(AmortizareLunara));
@@ -57,9 +57,9 @@ public class AmoController : ContaApiController {
             if (!PoateCiti(typeof(AmortizareLunara), osSecured))
                 return RefuzCitire(typeof(AmortizareLunara));
         }
-        var refuzRegistru = RegistrulCitibil();
-        if (refuzRegistru != null)
-            return refuzRegistru;
+        var refuzPostari = PostariCitibile();
+        if (refuzPostari != null)
+            return refuzPostari;
         return Domeniu(() => {
             using var os = NonSecured(typeof(AmortizareLunara));
             return Ok(AmoApply.Previzualizeaza(os, an.Value, luna.Value));
@@ -134,13 +134,6 @@ public class AmoController : ContaApiController {
 
     IActionResult Comanda(Func<ComenziDocument, OperareRezultat> comanda) =>
         ComandaDocument<AmortizareLunara>(c => OperareRezultatDto.Din(comanda(c)));
-
-    IActionResult RegistrulCitibil() {
-        using var os = Secured(typeof(RegistruImobilizari));
-        return PoateCiti(typeof(RegistruImobilizari), os)
-            ? null
-            : RefuzCitire(typeof(RegistruImobilizari));
-    }
 
     static List<string> Perioada(int? an, int? luna) {
         var erori = new List<string>();

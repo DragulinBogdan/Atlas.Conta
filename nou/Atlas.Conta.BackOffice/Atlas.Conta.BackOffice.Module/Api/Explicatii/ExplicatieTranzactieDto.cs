@@ -23,9 +23,10 @@ public sealed class ExplicatieTranzactieDto {
     /// <summary>Goală pe împerechere, desfacere și deschidere; la storno, explicațiile originalelor.</summary>
     public List<ExplicatieContractDto> Origini { get; set; } = [];
 
-    public static ExplicatieTranzactieDto Din(ExplicatieTranzactie citita) => new() {
+    /// <param name="contorCurent">contorul de azi al unui rând de politică reținut; null = rândul a dispărut.</param>
+    public static ExplicatieTranzactieDto Din(ExplicatieTranzactie citita, Func<N.VersiunePolitica, int?> contorCurent) => new() {
         TranzactieId = citita.Tranzactie, Fel = citita.Fel.ToString(), DocumentId = citita.Document,
-        Origini = [.. citita.Origini.Select(o => ExplicatieContractDto.Din(o.Purtator, o.Explicatie))],
+        Origini = [.. citita.Origini.Select(o => ExplicatieContractDto.Din(o.Purtator, o.Explicatie, contorCurent))],
     };
 }
 
@@ -36,17 +37,21 @@ public sealed class ExplicatieContractDto {
     public int JumatatiDeBan { get; set; }
     public int? PerioadaAn { get; set; }
     public int? PerioadaLuna { get; set; }
-    public string? Politica { get; set; }
-    public DateOnly? PoliticaValabilaDeLa { get; set; }
+    /// <summary>Rândurile de politică care au decis postări, cu contorul lor la operare și de azi (D9-A8).</summary>
+    public List<ExplicatiePoliticaDto> Politici { get; set; } = [];
     public List<ExplicatieLinieDto> Linii { get; set; } = [];
 
-    public static ExplicatieContractDto Din(Guid purtator, C.Explicatie e) {
+    public static ExplicatieContractDto Din(Guid purtator, C.Explicatie e, Func<N.VersiunePolitica, int?> contorCurent) {
         var perioada = e.Ipoteze.OfType<N.PerioadaDeschisa>().FirstOrDefault();
-        var politica = e.Ipoteze.OfType<N.VersiunePolitica>().FirstOrDefault();
         return new() {
             PurtatorId = purtator, Versiune = C.Explicatie.Versiune, Declarant = e.Declarant,
             JumatatiDeBan = e.JumatatiDeBan, PerioadaAn = perioada?.An, PerioadaLuna = perioada?.Luna,
-            Politica = politica?.Nume, PoliticaValabilaDeLa = politica?.ValabilDeLa,
+            Politici = [.. e.Ipoteze.OfType<N.VersiunePolitica>().Select(p => {
+                var azi = contorCurent(p);
+                return new ExplicatiePoliticaDto {
+                    Fel = p.Fel, RandId = p.Rand, Versiune = p.Versiune, VersiuneCurenta = azi, Schimbata = azi != p.Versiune,
+                };
+            })],
             Linii = [.. e.Linii().Select(l => new ExplicatieLinieDto {
                 LinieId = l.Linie,
                 Iesiri = [.. l.Iesiri.Select(i => new ExplicatieIesireDto {
@@ -57,11 +62,8 @@ public sealed class ExplicatieContractDto {
                     Unitate = ExplicatieUnitateDto.Din(s.Unitate), Masura = s.Masura,
                     SoldCitit = ExplicatieSoldDto.Din(s.SoldCitit),
                 })],
-                Conturi = [.. l.Conturi.Select(c => new ExplicatieContDto { ContId = c.Cont, Sursa = c.Sursa })],
+                Conturi = [.. l.Conturi.Select(c => new ExplicatieContDto { ContId = c.Cont, Sursa = c.Sursa, RegulaId = c.Regula })],
                 PartideDeschise = [.. l.PartideDeschise.Select(p => ExplicatieUnitateDto.Din(p.Unitate))],
-                Absorbtii = [.. l.Absorbtii.Select(a => new ExplicatieAbsorbtieDto {
-                    ContSursaId = a.ContSursa, R = a.R, C = a.C, P = a.P, Delta = a.Delta,
-                })],
             })],
         };
     }
@@ -73,7 +75,6 @@ public sealed class ExplicatieLinieDto {
     public List<ExplicatieStingereDto> Stingeri { get; set; } = [];
     public List<ExplicatieContDto> Conturi { get; set; } = [];
     public List<ExplicatieUnitateDto> PartideDeschise { get; set; } = [];
-    public List<ExplicatieAbsorbtieDto> Absorbtii { get; set; } = [];
 }
 
 public sealed class ExplicatieUnitateDto {
@@ -119,12 +120,15 @@ public sealed class ExplicatieStingereDto {
 public sealed class ExplicatieContDto {
     public Guid ContId { get; set; }
     public string Sursa { get; set; } = "";
+    /// <summary>Regula de contare care a dat contul; null când contul vine din altă sursă.</summary>
+    public Guid? RegulaId { get; set; }
 }
 
-public sealed class ExplicatieAbsorbtieDto {
-    public Guid ContSursaId { get; set; }
-    public decimal R { get; set; }
-    public decimal C { get; set; }
-    public decimal P { get; set; }
-    public decimal Delta { get; set; }
+/// <summary>Un rând de politică reținut la operare: <see cref="Schimbata"/> = contorul de azi diferă sau rândul a dispărut.</summary>
+public sealed class ExplicatiePoliticaDto {
+    public string Fel { get; set; } = "";
+    public Guid RandId { get; set; }
+    public int Versiune { get; set; }
+    public int? VersiuneCurenta { get; set; }
+    public bool Schimbata { get; set; }
 }

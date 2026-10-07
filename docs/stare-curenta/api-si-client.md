@@ -174,6 +174,18 @@ Listele securizate pot răspunde 200 cu rezultate filtrate. Rapoartele care
 cer cifre complete verifică separat accesul necesar și refuză cererea dacă
 filtrarea ar produce un rezultat incomplet prezentat ca total. (70f, 80a, 80e)
 
+Rutele care întorc cifre însumate din cub pe ușa de sistem cer citirea
+COMPLETĂ pe `Postare`: `itv/{id}`, `itv/previzualizare`, `amo/{id}`,
+`amo/previzualizare`, `imobilizari/{id}/fisa`, `imobilizari/registru` și
+`perioade/{an}/{luna}/verificare`. Un rol fără dreptul pe tip, ori cu un
+criteriu de rând sau de membru pe `Postare`, primește 403 înaintea citirii.
+Niciun tip de registru nu mai e cerut, deci separarea contabil / imobilizări
+a dispărut. Dreptul completează, nu înlocuiește: ruta cere mai întâi dreptul
+pe subiectul ei, iar verificarea închiderii pe toate tipurile pe care le
+însumează. `Postare` și `Tranzactie` n-au rută OData sau REST și nu intră în
+contractul clientului; `$metadata` le descrie ca `EntityType` fără
+`EntitySet`, ca pe orice tip neexpus. (F22-D5, 80e, 108 d, D9-D9; 2026-10-06)
+
 Crearea cere drepturile de creare și scriere; modificarea cere scriere, iar
 ștergerea dreptul aferent. Verificările nu se amână până după execuția
 regulilor de domeniu. Un context nesecurizat nu are strategie de securitate
@@ -349,7 +361,30 @@ detaliul din listă, acțiunile și editarea inline funcționează neschimbate.
 `Client` nu este implicit pe niciun ListView root. (85a)
 
 `ServerView` este opt-in per view, doar pe registre append-only citite:
-`RegistruStoc`, `RegistruContabil`, `RegistruTva`. Pagina proiectează doar
+azi numai lista de evidență a cubului, `PostareVizual_ListView` de sub
+„Registre” (D9-A12). `Cub.PostareVizual` e o entitate de citire mapată
+`ToView("PostareVizual")`, fără `BaseObject`, cu cheia `ID`, toate coloanele
+postării și codurile nomenclatoarelor alături (`ContSimbol`, `PartenerCod`,
+`GestiuneCod`, `ProdusCod`, `UnitateCod`, `DocumentNumar`, `TipTvaCod`,
+dimensiunile bugetare, `TranzactieFel`); view-ul SQL stă în migrația proprie
+`20261007080233_PostareVizual`, cu `LEFT JOIN` pe nomenclatoare și expresii
+pentru coordonatele fără rând (gestiunea virtuală = numele constantei
+nucleului, `CASE` generat din `GestiuniVirtuale`; partida = codul
+partenerului + data deschiderii; lotul = codul produsului + data lotului;
+fișa = numărul de inventar). Coloanele vizibile, în ordine: tranzacție,
+document, data, cont, latură, partener, gestiune, produs, unitate, cantitate,
+valoare, valoare în valută; fără identificatori bruți, fără editare, fără
+totaluri; detaliul rândului se deschide în citire. La activarea listei,
+`PostareVizualController` cere `Cub.Citiri.Vizibilitate.AccesLista` (lipsurile
+de citire completă pe `Postare`, prin `AccesComplet.Lipsuri`): cu lipsuri,
+criteriul listei e fals și se arată fraza porților (108 d); nu există drept
+propriu pe `PostareVizual`. Gardianul refuză crearea, modificarea și ștergerea
+unei `PostareVizual` pe orice ușă securizată, ca pe `Postare`; tipul nu e expus
+pe OData, în OpenAPI și în metadata clientului (`neexpunere-cub.py`).
+`Postare` nu mai are intrare de navigare; lista imbricată a tranzacției
+(`Tranzactie_Postari`) rămâne pe `Postare`, `Client`, fără editare. Listele
+vechi de registre au dispărut odată cu entitățile lor (2026-10-07, D9-D6).
+(D9-D9, D9-A12) Pagina proiectează doar
 coloanele vizibile; detaliul rândului se deschide normal. Precondițiile sunt
 verificate de ModelCheck: toate coloanele vizibile sunt mapate sau
 `[Calculated]`, orice coloană de referință are `DefaultProperty` pe clasa
@@ -536,10 +571,15 @@ deci accesul complet cerut include perioadele fiscale și soldurile de perioadă
 felul tranzacției, documentul și `Origini` — explicația proprie, cea referită
 sau, la storno, ale originalelor; lista e goală pe împerechere, desfacere și
 deschidere. Fiecare origine are purtătorul, declarantul, versiunea, perioada,
-politica și liniile cu ieșirile (unitate, cantitate, valoare, soldul dinainte
+politicile și liniile cu ieșirile (unitate, cantitate, valoare, soldul dinainte
 sau sursa valorii declarate), stingerile (partidă, măsură, sold citit),
-conturile rezolvate, partidele deschise și absorbțiile. Nu există pagină
-React (104d).
+conturile rezolvate (cu `RegulaId` când contul vine dintr-o regulă de
+contare) și partidele deschise. `Politici` sunt rândurile de politică
+reținute la operare: `Fel`, `RandId`, `Versiune`, `VersiuneCurenta` și
+`Schimbata` — adevărat când contorul de azi diferă sau rândul a dispărut
+(`VersiuneCurenta` nul). Contorul curent se citește la cerere, prin
+`Cub.Citiri.VersiuniPolitica`; explicația persistată nu se rescrie. Nu există
+pagină React (104d). (D9-A8; 2026-10-07)
 
 Tranzacția pe care contextul securizat nu o vede dă 404, ca una inexistentă.
 Explicația dezvăluie solduri întregi ale unităților și valori ale altor linii,

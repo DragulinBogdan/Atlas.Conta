@@ -11,6 +11,9 @@ public sealed record Postare(
     public ReferintaPostare? Suport { get; init; }
     public ReferintaPostare? InversaDin { get; init; }
 
+    /// <summary>Ordinalul mișcării sau mutării în tranzacția ei; nul la transformări și la deschidere (D9-A2).</summary>
+    public int? Pereche { get; init; }
+
     // `with` ocolește constructorul; scara se apără și în `init` (N-D2).
     readonly decimal cantitate = LaScara(Cantitate, Scara.Cantitate, nameof(Cantitate));
     readonly decimal valoareValuta = LaScara(ValoareValuta, Scara.Bani, nameof(ValoareValuta));

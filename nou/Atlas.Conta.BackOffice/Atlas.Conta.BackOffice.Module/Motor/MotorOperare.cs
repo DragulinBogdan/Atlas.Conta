@@ -9,48 +9,20 @@ public class OperareException : UserFriendlyException {
     public OperareException(string message) : base(message) { }
 }
 
-// Decizia 14: motorul generic de operare — consumă DOAR clasa de bază; ce e
-// specific tipului intră prin hooks (PregatesteOperare/ValideazaOperare) și
-// prin politici (RegulaStoc/RegulaContare). Fiecare metodă publică e o
-// tranzacție: un singur CommitChanges la final.
-//
-// Limitare asumată (single-operator back-office): verificarea de sold și
-// commit-ul nu sunt serializate între utilizatori concurenți; la nevoie se
-// adaugă advisory lock Postgres per cheie de stoc — aditiv, doar aici.
+/// <summary>
+/// Coaja comenzii (14, 33d): gardurile, contractul declarației, materializarea în cub și
+/// scrierile pe document. Consumă numai clasa de bază; fiecare metodă publică e o tranzacție.
+/// </summary>
 public static class MotorOperare {
-    // Rezultatul fazelor „calculează + validează" (33d) — tot ce materializarea
-    // are nevoie, fără ca nimic să fi fost scris în registre. Extras ca să existe
-    // O SINGURĂ cale de reguli pentru operare și pentru dry-run (`Valideaza`,
-    // spike pasul 5 / D3): ordinea fazelor și comportamentul lui `Opereaza` sunt
-    // NESCHIMBATE — codul e mutat, nu rescris.
-    sealed class PlanOperare {
-        public TipDocument TipDoc;
-        public Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> ClaseTip;
-        public List<(DocumentDetaliu Detaliu, RegulaStocFapt Regula, MiscareStoc Miscare)> Miscari;
-        public List<(DocumentDetaliu Detaliu, Guid ContDebit, Guid ContCredit,
-            decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)> Note;
-        // Felia 11 (JT-D1): faptele fiscale ale liniilor, derivate de
-        // `RegistruTvaService` tot în faza de CALCUL — un refuz al oricărui
-        // gardian nu lasă rânduri-fantomă în ObjectSpace-ul apelantului (33d).
-        public List<RegistruTvaService.RandTva> RanduriTva;
-    }
-
-    // Dry-run-ul comenzii de operare (D3): rulează EXACT fazele de calcul și
-    // validare ale lui `Opereaza` (gard stare/perioadă → PregatesteOperare →
-    // validare declarativă + hook-ul tipului → mișcări de stoc + gardianul de
-    // sold → note → pasul TVA → dimensiuni obligatorii) și se oprește ÎNAINTE de
-    // materializare. Listă goală = documentul trece toți gardienii.
-    //
-    // ATENȚIE (contract de apelant): dry-run-ul NU e read-only pe ObjectSpace-ul
-    // primit — `PregatesteOperare` scrie `Valoare`/`Cantitate` pe linii, iar
-    // gardienii pot lăsa alte instanțe atinse. Nimic nu se comite aici, dar
-    // apelantul trebuie să folosească un ObjectSpace PROPRIU, aruncat după apel
-    // (calea vie: OS non-secured creat de adaptorul `ComenziDocument`).
+    /// <summary>
+    /// Refuzurile operării, fără nimic persistat. Modifică obiectele din ObjectSpace-ul primit
+    /// (<c>PregatesteOperare</c>): apelantul îl aruncă după apel. Valorile lăsate pe linii sunt estimări.
+    /// </summary>
     public static IReadOnlyList<string> Valideaza(IObjectSpace os, Document doc) {
         using var receptie = Cub.ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: false);
         try {
-            var plan = CalculeazaSiValideaza(os, doc);
-            return Cub.Materializare.Refuzuri(os, doc, plan.TipDoc);                  // S-D4
+            var (tipDoc, _) = PregatesteSiValideaza(os, doc);
+            return Cub.Materializare.Refuzuri(os, doc, tipDoc);
         }
         catch (OperareException ex) {
             return ex.Message
@@ -60,359 +32,58 @@ public static class MotorOperare {
         }
     }
 
-    static PlanOperare CalculeazaSiValideaza(IObjectSpace os, Document doc) {
+    static (TipDocument Tip, Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> ClaseTip)
+            PregatesteSiValideaza(IObjectSpace os, Document doc) {
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException("Doar un document în starea Draft poate fi operat.");
-        // F27-D4: căile care nu culeg câmpul (Import1C, Migrare, generatele) intră cu `default`.
+        // F27-D4: căile care nu culeg câmpul intră cu `default`.
         if (doc.DataInregistrare == default)
             doc.DataInregistrare = doc.Data;
         if (doc.DataInregistrare < doc.Data)
             throw new OperareException("Data înregistrării nu poate preceda data documentului.");
         GardianPerioada.VerificaDeschisa(os, doc.DataInregistrare);
+        var tipDoc = GasesteTipDocument(os, doc);
+        Refuza(Cub.Materializare.MotivNuDeclara(os, doc, tipDoc));
 
-        // F13-D1: TVA-ul CULES pe o linie de taxare inversă la LIVRARE nu are
-        // unde să meargă, iar `PregatesteOperare` îl aduce la 0 (regula D1) —
-        // deci gardul trebuie să vadă valorile ÎNAINTE de pregătire, altfel ar
-        // tăcea exact acolo unde 62f cere să strige. Se capturează aici, se
-        // judecă mai jos, după ce pregătirea a putut să schimbe (sau să
-        // golească) tipul de TVA al liniei.
+        // F13-D1: `PregatesteOperare` aduce la 0 taxa culeasă pe taxare inversă la livrare; gardul o judecă pe valoarea dinainte.
         var tvaCulesInainte = Liniile(doc)
             .Select((d, i) => (Linie: d, Pozitie: i + 1, TvaCules: d.TvaCules ? d.ValoareTva : 0m))
             .ToList();
 
         doc.PregatesteOperare(os);
-        var tipDoc = GasesteTipDocument(os, doc);
-
-        // Clasa/natura/contul fiecărui Tip de pe linii, preîncărcate — motorul nu
-        // se bazează pe navigații (contextul apelant nu garantează lazy loading).
         var claseTip = Fapte.ClaseTip(os, doc.Detalii.Select(d => d.TipMaterialId));
 
-        // Obligativitățile per tip (PoliticaValidare — profil de validare, 3d)
-        // rulează generic, alături de invariantele proprii tipului din hook.
         var erori = new List<string>();
-        // Gardul F13-D1 stă AICI, nu în `ValideazaOperare` al frunzelor: regula
-        // e a perechii (regim de TVA × direcția politicii), deci a MOTORULUI —
-        // fiecare tip de livrare care ar declara-o singur (FCL, RDC, cele care
-        // vor veni) ar fi o copie în plus care poate rămâne în urmă (42a: o
-        // singură sursă de reguli). Locul acoperă amândouă căile de scriere,
-        // fiindcă amândouă operează prin motor: XAF prin `Opereaza`, API-ul prin
-        // `ComenziDocument` → `Opereaza`/`Valideaza` (dry-run-ul îl arată clientului
-        // înainte de comandă).
         TvaService.VerificaTvaCulesTaxareInversa(os, tipDoc, tvaCulesInainte, erori);
         ValideazaDeclarativ(os, doc, tipDoc, claseTip, erori);
-
-        // D18-D2: ieșirea care GOLEȘTE o cheie de stoc preia valoarea rămasă pe
-        // ea (identificarea specifică: lotul consumat integral iese cu valoarea
-        // lui integrală, nu cu `preț × cantitate` rotunjit). Regula stă în MOTOR,
-        // nu în `PregatesteOperare` al frunzelor, fiindcă are nevoie de cheia și
-        // semnul REGULII de stoc (pe ce `TipStoc`, pe ce latură) — date pe care
-        // frunza nu le cunoaște și nu are voie să le re-potrivească (42a). Ordinea
-        // 33d e respectată: e tot faza de CALCUL, înainte de hook-ul de validare
-        // al tipului (ASM își verifică invariantul valoric pe valorile FINALE) și
-        // înainte de orice materializare. Potrivirea e TOLERANTĂ aici (linia
-        // fără lot e sărită — o refuză validarea de mai jos, cu mesajul ei);
-        // pasul 1 o reface STRICT, pe aceleași reguli.
-        var reguliStoc = Fapte.ReguliStoc(os, tipDoc.ID);
-        StocService.AplicaValoareIesire(os, doc, PotrivesteReguliStoc(doc, claseTip, reguliStoc, strict: false));
-
         doc.ValideazaOperare(os, erori);
         if (erori.Count > 0)
             throw new OperareException(string.Join("\n", erori));
-
-        // 1. Mișcările de stoc se CALCULEAZĂ întâi (delta), gardianul de sold
-        //    le verifică, abia apoi se materializează rândurile. Per latură,
-        //    regula specifică pe Clasa liniei bate regula generică (Clasa=null =
-        //    orice clasă cu Natura=Stoc) — altfel s-ar aplica amândouă.
-        var miscari = PotrivesteReguliStoc(doc, claseTip, reguliStoc, strict: true);
-        if (!tipDoc.PosteazaInCub)
-            StocService.VerificaSoldIntermediar(os, miscari.Select(m => m.Miscare).ToList());
-
-        // 2. Rândurile contabile se CALCULEAZĂ și se validează tot înainte de
-        //    materializare: potrivirea regulii pe linie = TipMaterial exact →
-        //    NaturaFiltru → regula generică; fără regulă = linia nu contează pe
-        //    acest tip de document (NotaTransfer — 23c; liniile de stoc pe FCT —
-        //    recepția contează pe NIR). Conturile se rezolvă din sursa declarată
-        //    (TipMaterial / repartitorul unei laturi), cu contul explicit
-        //    fallback. Toți gardienii (sold, cont nerezolvabil, dimensiuni
-        //    obligatorii) refuză ÎNAINTE de primul rând creat — un refuz nu
-        //    lasă nimic în ObjectSpace-ul apelantului.
-        var reguliContare = Fapte.ReguliContare(os, tipDoc.ID);
-        var laturi = Fapte.Laturi(os.GetObjectByKey<Repartitor>(doc.PredatorId),
-            os.GetObjectByKey<Repartitor>(doc.PrimitorId));
-        // Dimensiunea Material = Produsul lotului liniei (analitic de stoc) —
-        // default de motor pe ambele laturi, ca repartitorul implicit al
-        // header-ului; liniile fără lot rămân pe ce s-a cules.
-        var idsLoturi = doc.Detalii.Where(d => d.LotId != null).Select(d => d.LotId.Value).Distinct().ToList();
-        var produsPerLot = os.GetObjectsQuery<Lot>()
-            .Where(l => idsLoturi.Contains(l.ID))
-            .Select(l => new { l.ID, l.ProdusId })
-            .ToDictionary(l => l.ID, l => l.ProdusId);
-        var note = new List<(DocumentDetaliu Detaliu, Guid ContDebit, Guid ContCredit,
-            decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)>();
-        foreach (var d in Liniile(doc)) {
-            var info = claseTip.GetValueOrDefault(d.TipMaterialId);
-            var linie = Fapte.Linie(d, claseTip);
-            var regula = Potrivire.Contare(reguliContare, linie).Castigator;
-            // Postarea explicită pe linie (Decont — inventar 06): contul setat
-            // pe linie bate rezolvarea declarativă; contract de interfață, nu
-            // mecanism generic — doar tipurile care o declară o au.
-            var explicita = d as ILinieCuPostareExplicita;
-            // Mecanismul 32a EXTINS (NotaContabila — design FAZA 1C §5): postarea
-            // explicită COMPLETĂ (ambele conturi) bate și ABSENȚA regulii — NTC
-            // n-are nicio RegulaContare, fiecare linie își poartă nota. Extensia
-            // e OPT-IN pe tipul DOCUMENTULUI (IDocumentCuPostareExplicita —
-            // review advers 1C-a): o linie străină cu conturi explicite atașată
-            // unui tip fără reguli (BTR/NIR/ASM) rămâne sărită, ca înainte —
-            // altfel ar injecta note arbitrare sau dublă postare pe lanțul conex.
-            // Tipurile CU reguli (Decont) rămân neschimbate: regula lor se
-            // potrivește, iar contul explicit continuă să o bată punctual.
-            if (regula == null && (doc is not IDocumentCuPostareExplicita
-                    || explicita?.ContDebitId == null || explicita.ContCreditId == null))
-                continue;
-            // Când regula lipsește, conturile explicite sunt garantat nenule mai
-            // sus, deci ramura de rezolvare declarativă nici nu se evaluează.
-            var contDebit = explicita?.ContDebitId
-                ?? Potrivire.Cont(regula.Value.SursaContDebit, regula.Value.ContDebitId,
-                    linie.ContImplicitTipId, laturi).ContId
-                ?? throw new OperareException(
-                    $"Contul debitor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.Value.SursaContDebit}).");
-            var contCredit = explicita?.ContCreditId
-                ?? Potrivire.Cont(regula.Value.SursaContCredit, regula.Value.ContCreditId,
-                    linie.ContImplicitTipId, laturi).ContId
-                ?? throw new OperareException(
-                    $"Contul creditor nu se poate rezolva pentru linia cu {info.Denumire} ({tipDoc.Cod}, sursă {regula.Value.SursaContCredit}).");
-            // Repartitorul explicit al liniei (aceeași trăsătură) intră ca
-            // nivel maxim; default-ul de capăt e polimorf (00 §5 pe bază,
-            // Decont mută creditul pe titular) + Materialul din lot.
-            var materialImplicit = d.LotId != null && produsPerLot.TryGetValue(d.LotId.Value, out var produsId)
-                ? produsId : (Guid?)null;
-
-            // Fără regulă (NTC) coalesce-ul sare peste nivelurile ei de
-            // override/comun — Rezolva ignoră sursele null.
-            var dimensiuniLinie = d.DimensiuniCulese();
-            var dimensiuniDebit = DimensiuniResolver.Rezolva(
-                new Dimensiuni { RepartitorId = explicita?.RepartitorDebitId },
-                dimensiuniLinie, regula?.OverrideDebit, regula?.Comun,
-                new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit(os), MaterialId = materialImplicit });
-            var dimensiuniCredit = DimensiuniResolver.Rezolva(
-                new Dimensiuni { RepartitorId = explicita?.RepartitorCreditId },
-                dimensiuniLinie, regula?.OverrideCredit, regula?.Comun,
-                new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit(os), MaterialId = materialImplicit });
-
-            // Normalizarea cu semnul filtrului: valoarea liniei poartă semnul
-            // cantității (LDI minus = negativă), dar conturile regulii deja
-            // codifică direcția — nota se postează pozitivă. Fără regulă nu
-            // există filtru de semn: valoarea culeasă se postează CA ATARE
-            // (nota storno de import rămâne negativă).
-            // Excepția declarativă: `PastreazaSemn` (FAZA 1C §7) — corespondența
-            // de STORNO a retururilor (RLF/RDC) postează minus pe corespondența
-            // ORIGINALĂ, deci semnul liniei trece nealterat prin normalizare.
-            note.Add((d, contDebit, contCredit,
-                regula is { PastreazaSemn: true } ? d.Valoare : (regula?.SemnFiltru ?? +1) * d.Valoare,
-                dimensiuniDebit, dimensiuniCredit));
-        }
-
-        // Pasul TVA (P1, design §4): postarea 4426/4427 e INDEPENDENTĂ de
-        // potrivirea regulii principale — liniile de stoc ale FCT nu au regulă
-        // de contare (netul postează pe NIR-ul conex), dar TVA-ul lor deductibil
-        // se postează pe factură. Fără rând PoliticaTva pe tip = niciun rând TVA
-        // (profilul bugetar rămâne neschimbat). Rândul e per linie (DetaliuId ca
-        // tot restul); dimensiunile folosesc același coalesce, fără override-uri
-        // de regulă: linie → default polimorf header (+ Materialul din lot).
-        var politicaTva = os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipDoc.ID);
-        if (politicaTva != null) {
-            var idsTipTva = doc.Detalii.Where(d => d.TipTvaId != null && d.ValoareTva != 0m)
-                .Select(d => d.TipTvaId.Value).Distinct().ToList();
-            var tipuriTva = os.GetObjectsQuery<TipTva>()
-                .Where(t => idsTipTva.Contains(t.ID))
-                .Select(t => new { t.ID, t.Cod, t.Regim, t.ContTvaDeductibilId, t.ContTvaColectatId })
-                .ToDictionary(t => t.ID, t => (t.Cod, t.Regim, t.ContTvaDeductibilId, t.ContTvaColectatId));
-            foreach (var d in Liniile(doc)) {
-                if (d.TipTvaId == null || d.ValoareTva == 0m)
-                    continue;
-                // Geamănul gardului din `RegistruTvaService` (review advers D4).
-                if (!tipuriTva.TryGetValue(d.TipTvaId.Value, out var tva))
-                    throw new OperareException(
-                        "Tipul de TVA al unei linii nu mai există în nomenclator (a fost șters) — "
-                        + "reatribuiți-l pe linie înainte de operare.");
-                if (tva.Regim is not (RegimTva.Normal or RegimTva.TaxareInversa))
-                    continue;
-                Guid ContTva(Guid? id, string rol) => id ?? throw new OperareException(
-                    $"Tipul de TVA {tva.Cod} nu are contul de TVA {rol} configurat.");
-                Guid contDebit, contCredit;
-                if (tva.Regim == RegimTva.TaxareInversa) {
-                    // Autolichidare: 4426 = 4427, sold zero — dar DOAR pe latura
-                    // care autolichidează. F13-D1: pe `Colectat` (livrare)
-                    // furnizorul emite fără TVA, deci niciun rând, ca la
-                    // `Scutit`. Gard explicit, nu doar consecință a lui
-                    // `ValoareTva = 0` de mai sus: o valoare intrată pe altă cale
-                    // (import, backfill, o linie scrisă direct) n-are voie să
-                    // reînvie corespondența aici.
-                    if (politicaTva.Directie != DirectieTva.Deductibil)
-                        continue;
-                    contDebit = ContTva(tva.ContTvaDeductibilId, "deductibilă");
-                    contCredit = ContTva(tva.ContTvaColectatId, "colectată");
-                }
-                else {
-                    var contrapartida = Potrivire.Cont(politicaTva.SursaContrapartida,
-                            politicaTva.ContrapartidaFallbackId, null, laturi).ContId
-                        ?? throw new OperareException(
-                            $"Contrapartida rândului de TVA nu se poate rezolva ({tipDoc.Cod}, sursă {politicaTva.SursaContrapartida}).");
-                    if (politicaTva.Directie == DirectieTva.Deductibil) {
-                        contDebit = ContTva(tva.ContTvaDeductibilId, "deductibilă");
-                        contCredit = contrapartida;
-                    }
-                    else {
-                        contDebit = contrapartida;
-                        contCredit = ContTva(tva.ContTvaColectatId, "colectată");
-                    }
-                }
-                var materialTva = d.LotId != null && produsPerLot.TryGetValue(d.LotId.Value, out var produsTva)
-                    ? produsTva : (Guid?)null;
-
-                var dimensiuniLinie = d.DimensiuniCulese();
-
-                note.Add((d, contDebit, contCredit, d.ValoareTva,
-                    DimensiuniResolver.Rezolva(dimensiuniLinie,
-                        new Dimensiuni { RepartitorId = doc.RepartitorImplicitDebit(os), MaterialId = materialTva }),
-                    DimensiuniResolver.Rezolva(dimensiuniLinie,
-                        new Dimensiuni { RepartitorId = doc.RepartitorImplicitCredit(os), MaterialId = materialTva })));
-            }
-        }
-
-        // Faptele fiscale (felia 11, JT-D1): registrul de TVA e derivat de
-        // serviciul-insulă `RegistruTvaService`, pe același criteriu de politică
-        // ca pasul de mai sus — dar ACOPERĂ MAI MULT: rândurile `Scutit`,
-        // `Neimpozabil` și `Capitalizat` nu postează nimic contabil, însă apar
-        // legal în jurnalul de cumpărări/vânzări și în D300. Derivarea stă tot în
-        // faza de CALCUL (33d), deci un refuz de mai jos n-o materializează.
-        var randuriTva = RegistruTvaService.Deriva(os, doc, tipDoc, doc.Detalii);
-
-        // Dimensiunile obligatorii per cont (decizia 15: flag-urile de defalcare
-        // din plan = date de validare) se verifică pe seturile REZOLVATE, per
-        // latură — abia aici se știe și contul, și rezultatul coalesce-ului.
-        VerificaDimensiuniObligatorii(os, note, claseTip);
-
-        return new PlanOperare {
-            TipDoc = tipDoc, ClaseTip = claseTip, Miscari = miscari, Note = note, RanduriTva = randuriTva
-        };
+        return (tipDoc, claseTip);
     }
 
-    // Întoarce documentul conex generat (draft autogenerat, decizia 17) sau null.
+    /// <summary>Operează documentul; întoarce documentul conex sau secundar generat, dacă există.</summary>
     public static Document Opereaza(IObjectSpace os, Document doc) {
         using var tranzactie = TranzactieComanda.Asigura(os);
         FiscalitateService.BlocheazaScrierea(os, doc);
         using var receptie = Cub.ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: true);
-        var plan = CalculeazaSiValideaza(os, doc);
-        var refuzuriCub = Cub.Materializare.Refuzuri(os, doc, plan.TipDoc);
-        if (refuzuriCub.Count > 0)
-            throw new OperareException(string.Join("\n", refuzuriCub));
-        var tipDoc = plan.TipDoc;
-        var claseTip = plan.ClaseTip;
-        var miscari = plan.Miscari;
-        var note = plan.Note;
+        var (tipDoc, claseTip) = PregatesteSiValideaza(os, doc);
+        var refuzuri = Cub.Materializare.Refuzuri(os, doc, tipDoc);
+        if (refuzuri.Count > 0)
+            throw new OperareException(string.Join("\n", refuzuri));
 
-        // 3. Materializarea — toți gardienii au trecut.
-        //
-        //    Numărul se consumă ABIA ACUM (GATE XAF D6, alinierea cu propriul
-        //    principiu 33d): asignat înaintea gardienilor, un refuz lăsa
-        //    `doc.Numar` completat și `PoliticaNumerotare.UrmatorulNumar`
-        //    incrementat în ObjectSpace-ul VIU al apelantului — necomise, dar un
-        //    Save ulterior (UI-ul rulează motorul în OS-ul View-ului) le
-        //    persista și rupea seria fiscală cu un gol. Ordinea față de
-        //    conex/secundar e neschimbată: niciunul nu citește `Numar` (clona
-        //    header-ului copiază doar data și laturile, iar plata automată își
-        //    ia numărul din câmpul cules `PlataNumar`).
+        // 33d: prima scriere pe document vine după ultimul refuz citit fără scriere.
         AsignaNumar(os, doc, tipDoc);
-        //    Scadența default (PoliticaScadenta, 30c) e tot o SCRIERE pe document,
-        //    deci aparține aceleiași faze (review advers D8): înaintea gardienilor,
-        //    un refuz o lăsa scrisă în ObjectSpace-ul viu al apelantului, pe care
-        //    un Save ulterior o persista pe un document rămas Draft.
         AplicaScadenta(os, doc, tipDoc);
+        FinalizeazaLoturile(os, doc);
+        if (doc is IDocumentCuEfecteProprii propriu)
+            propriu.LaOperare(os);
 
-        //    Întâi finalizarea loturilor născute de liniile documentului (NIR
-        //    manual, FacturaIntrare pentru lanțul conex, plus de inventar,
-        //    producție): lotul e creat la culegere de linia de intrare (baza nu
-        //    poartă ProdusId — testul bazei §2); motorul îi fixează prețul
-        //    (= Valoare/Cantitate, decizia 13), data și atributele culese.
-        var idsDetalii = Liniile(doc).Select(d => d.ID).ToList();
-        foreach (var lot in os.GetObjectsQuery<Lot>().Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
-            var linie = doc.Detalii.First(d => d.ID == lot.LinieIntrareId);
-            if (linie.Cantitate <= 0)
-                throw new OperareException("O linie care creează lot trebuie să aibă cantitate pozitivă.");
-            // Împărțirea e sursa istorică a scării nemărginite (vezi `Scara`):
-            // `decimal` păstrează toate zecimalele câtului, iar prețul se
-            // propaga în fiecare `Valoare = Preț × Cantitate` de mai departe.
-            // Prețul rămâne FIN (6 zecimale — identificarea specifică), doar
-            // mărginit; coloana e oricum `numeric(18,6)`, rotunjirea aici ține
-            // instanța din ObjectSpace-ul viu egală cu ce se persistă.
-            lot.PretUnitar = Scara.RotunjestePret(linie.Valoare / linie.Cantitate);
-            lot.Data = doc.DataInregistrare;
-            if (linie is ILinieCuAtributeLot atribute) {
-                lot.DataExpirare = atribute.DataExpirare;
-                lot.LotFabricatie = atribute.LotFabricatie;
-            }
-        }
-
-        foreach (var (detaliu, regula, miscare) in miscari) {
-            var rand = os.CreateObject<RegistruStoc>();
-            rand.Data = doc.DataInregistrare;
-            rand.TipStoc = miscare.Cheie.TipStoc;
-            rand.LotId = miscare.Cheie.LotId;
-            rand.RepartitorId = miscare.Cheie.RepartitorId;
-            rand.Cantitate = miscare.Cantitate;
-            rand.Valoare = regula.Semn * detaliu.Valoare;
-            rand.Document = doc;
-            rand.Detaliu = detaliu;
-        }
-
-        foreach (var n in note) {
-            var rand = os.CreateObject<RegistruContabil>();
-            rand.Data = doc.DataInregistrare;
-            rand.ContDebitId = n.ContDebit;
-            rand.ContCreditId = n.ContCredit;
-            rand.Valoare = n.Valoare;
-            rand.AplicaDimensiuniDebit(n.DimensiuniDebit);
-            rand.AplicaDimensiuniCredit(n.DimensiuniCredit);
-            rand.Document = doc;
-            rand.Detaliu = n.Detaliu;
-        }
-
-        var scrisLa = DateTime.UtcNow;
-        foreach (var t in plan.RanduriTva) {
-            var rand = os.CreateObject<RegistruTva>();
-            rand.Data = doc.Data;
-            var (perioadaAn, perioadaLuna) = RegistruTvaService.PerioadaDeclarare(
-                os, doc);
-            rand.PerioadaAn = perioadaAn;
-            rand.PerioadaLuna = perioadaLuna;
-            rand.ScrisLa = scrisLa;
-            rand.Document = doc;
-            rand.DetaliuId = t.DetaliuId;
-            rand.Sens = t.Sens;
-            rand.PartenerId = t.PartenerId;
-            rand.TipTvaId = t.TipTvaId;
-            rand.Regim = t.Regim;
-            rand.Cota = t.Cota;
-            rand.Baza = t.Baza;
-            rand.Tva = t.Tva;
-        }
-
-        // 3b. Registrul PROPRIU al tipului, prin interfață (F26-D3).
-        if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
-            cuRegistruPropriu.MaterializeazaRegistrul(os);
-
-        // 4. Documentul conex (decizia 17, 00 §6): draft autogenerat în aceeași
-        //    tranzacție cu operarea sursei; utilizatorul îl completează și îl
-        //    operează separat (abia atunci mișcă registre și primește număr).
         Document conex = null;
         var politicaConex = Fapte.Conex(os, tipDoc.ID);
         if (politicaConex != null)
             conex = GenereazaConex(os, doc, politicaConex.Value, claseTip);
 
-        // 5. Documentul secundar (decizia 31 — plata automată din 00 §7):
-        //    construit de derivată din datele culese (hook), tratat ca orice
-        //    copil autogenerat al grupului conex.
         var secundar = doc.GenereazaSecundar(os);
         if (secundar != null) {
             secundar.DocumentSursa = doc;
@@ -422,16 +93,37 @@ public static class MotorOperare {
         doc.Stare = StareDocument.Operat;
         doc.DataOperare = DateTime.UtcNow;
 
-        // 6. Stingerea automată (82): tipul declară sursa prin contract,
-        //    serviciul materializează relația în aceeași tranzacție.
-        // 7. Regimul dual (S-D4): declarația frunzei, în aceeași tranzacție.
-        Cub.Materializare.Opereaza(os, doc, tipDoc);
-        doc.TotalStingere = Scara.RotunjesteBani(ImperechereService.Total(os, doc.ID));  // F27-D7, 102
+        ScrieValorileEvaluate(doc, Cub.Materializare.Opereaza(os, doc, tipDoc));
         ImperechereService.CreeazaAutomataLaOperare(os, doc);
 
         os.CommitChanges();
         tranzactie?.Commit();
         return conex ?? secundar;
+    }
+
+    // 13, 26e: lotul născut de o linie își primește prețul de intrare și data la operare.
+    static void FinalizeazaLoturile(IObjectSpace os, Document doc) {
+        var idsDetalii = Liniile(doc).Select(d => d.ID).ToList();
+        foreach (var lot in os.GetObjectsQuery<Lot>()
+                .Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
+            var linie = doc.Detalii.First(d => d.ID == lot.LinieIntrareId);
+            if (linie.Cantitate <= 0)
+                throw new OperareException("O linie care creează lot trebuie să aibă cantitate pozitivă.");
+            lot.PretUnitar = Scara.RotunjestePret(linie.Valoare / linie.Cantitate);
+            lot.Data = doc.DataInregistrare;
+            if (linie is ILinieCuAtributeLot atribute) {
+                lot.DataExpirare = atribute.DataExpirare;
+                lot.LotFabricatie = atribute.LotFabricatie;
+            }
+        }
+    }
+
+    // D9-D3 (a): linia ieșirii evaluate din sold poartă valoarea deciziei, cu semnul cantității ei.
+    static void ScrieValorileEvaluate(Document doc, Nucleu.Contract contract) {
+        foreach (var iesiri in contract.Decizii.OfType<Nucleu.ValoareIesire>().GroupBy(d => d.Linie)) {
+            var linie = doc.Detalii.First(d => d.ID == iesiri.Key);
+            linie.Valoare = Math.Sign(linie.Cantitate) * iesiri.Sum(d => d.Valoare);
+        }
     }
 
     // Obligativitățile per tip din PoliticaValidare (3d): reguli de PROFIL, nu
@@ -451,86 +143,6 @@ public static class MotorOperare {
             if (politica.NaturaInterzisa != null && info.Natura == politica.NaturaInterzisa)
                 erori.Add($"Liniile cu natura {politica.NaturaInterzisa} nu sunt permise pe {tipDoc.Cod} (linia cu {info.Denumire}).");
         }
-    }
-
-    // Mișcările de stoc ale liniilor, pe potrivirea din `Potrivire.Stoc`, chemată
-    // de două ori în `CalculeazaSiValideaza`: tolerant înaintea validării (D18-D2
-    // are nevoie de cheile ieșirilor ca să decidă valoarea) și strict la calculul
-    // mișcărilor (linia care intră în reguli fără lot = refuz).
-    static List<(DocumentDetaliu Detaliu, RegulaStocFapt Regula, MiscareStoc Miscare)> PotrivesteReguliStoc(
-        Document doc,
-        Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
-        List<RegulaStocFapt> reguliStoc, bool strict) {
-        var miscari = new List<(DocumentDetaliu Detaliu, RegulaStocFapt Regula, MiscareStoc Miscare)>();
-        foreach (var d in Liniile(doc)) {
-            var info = claseTip.GetValueOrDefault(d.TipMaterialId);
-            foreach (var potrivit in Potrivire.Stoc(reguliStoc, Fapte.Linie(d, claseTip)))
-                foreach (var regula in potrivit.Reguli) {
-                    if (d.LotId == null) {
-                        if (!strict)
-                            continue;
-                        throw new OperareException(
-                            $"Linia cu {info.Denumire} intră în regulile de stoc dar nu are lot.");
-                    }
-                    var repartitorId = regula.Latura == LaturaDocument.Predator ? doc.PredatorId : doc.PrimitorId;
-                    miscari.Add((d, regula, new MiscareStoc(
-                        new CheieStoc(d.LotId.Value, repartitorId, regula.TipStoc), doc.DataInregistrare, regula.Semn * d.Cantitate)));
-                }
-        }
-        return miscari;
-    }
-
-    // Decizia 15: flag-urile de defalcare din plan (R/M/E/B/F/P) = dimensiuni
-    // obligatorii per cont, verificate pe rândul de registru rezolvat (per
-    // latură). Punte până la modulul de angajamente: angajamentul liniei ține
-    // loc de cod economic (clasificația trăiește în angajament; când modulul
-    // apare, rezolvarea va materializa CodEconomic din angajament și puntea moare).
-    static void VerificaDimensiuniObligatorii(IObjectSpace os,
-        List<(DocumentDetaliu Detaliu, Guid ContDebit, Guid ContCredit,
-            decimal Valoare, Dimensiuni DimensiuniDebit, Dimensiuni DimensiuniCredit)> note,
-        Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip) {
-        if (note.Count == 0)
-            return;
-        var idsConturi = note.SelectMany(n => new[] { n.ContDebit, n.ContCredit }).Distinct().ToList();
-        var conturi = os.GetObjectsQuery<Cont>()
-            .Where(c => idsConturi.Contains(c.ID))
-            .Select(c => new { c.ID, c.Simbol, c.DimensiuniObligatorii })
-            .ToDictionary(c => c.ID, c => (c.Simbol, c.DimensiuniObligatorii));
-        var lipsuri = new List<string>();
-        foreach (var n in note) {
-            var denumire = claseTip.GetValueOrDefault(n.Detaliu.TipMaterialId).Denumire;
-            var (simbolDebit, flagsDebit) = conturi[n.ContDebit];
-            VerificaLatura(simbolDebit, flagsDebit, n.DimensiuniDebit, n.Detaliu.AngajamentId, "debit", denumire, lipsuri);
-            var (simbolCredit, flagsCredit) = conturi[n.ContCredit];
-            VerificaLatura(simbolCredit, flagsCredit, n.DimensiuniCredit, n.Detaliu.AngajamentId, "credit", denumire, lipsuri);
-        }
-        if (lipsuri.Count > 0)
-            throw new OperareException(string.Join("\n", lipsuri));
-    }
-
-    internal static void VerificaLatura(string simbol, DimensiuneFlags flags, Dimensiuni dims,
-        Guid? angajamentId, string latura, string denumireLinie, ICollection<string> lipsuri) {
-        if (flags == DimensiuneFlags.Niciuna)
-            return;
-        var lipsa = new List<string>();
-        if (flags.HasFlag(DimensiuneFlags.Repartitor) && dims.RepartitorId == null)
-            lipsa.Add("Repartitor");
-        if (flags.HasFlag(DimensiuneFlags.Material) && dims.MaterialId == null)
-            lipsa.Add("Material");
-        if (flags.HasFlag(DimensiuneFlags.CodFunctional) && dims.CodFunctionalId == null)
-            lipsa.Add("Cod funcțional");
-        if (flags.HasFlag(DimensiuneFlags.CodEconomic) && dims.CodEconomicId == null && angajamentId == null)
-            lipsa.Add("Cod economic");
-        if (flags.HasFlag(DimensiuneFlags.SursaFinantare) && dims.SursaFinantareId == null)
-            lipsa.Add("Sursă de finanțare");
-        if (flags.HasFlag(DimensiuneFlags.Unitate) && dims.UnitateId == null)
-            lipsa.Add("Unitate");
-        if (flags.HasFlag(DimensiuneFlags.Proiect) && dims.ProiectId == null)
-            lipsa.Add("Proiect");
-        if (flags.HasFlag(DimensiuneFlags.CentruCost) && dims.CentruCostId == null)
-            lipsa.Add("Centru de cost");
-        if (lipsa.Count > 0)
-            lipsuri.Add($"Contul {simbol} ({latura}, linia cu {denumireLinie}) cere: {string.Join(", ", lipsa)}.");
     }
 
     // Clonarea 00 §6: header (cu InverseazaLaturi), DOAR liniile care trec
@@ -580,9 +192,7 @@ public static class MotorOperare {
         return conex;
     }
 
-    // Corecția directă din decizia 14: întoarcerea în Draft, permisă DOAR fără
-    // dependenți (simularea eliminării rândurilor proprii ține soldurile ≥ 0 și
-    // niciun alt document nu a atins loturile create) și în perioadă deschisă.
+    /// <summary>Corecția directă (14): întoarcerea în Draft, numai fără dependenți și în perioadă deschisă.</summary>
     public static void AnuleazaOperarea(IObjectSpace os, Document doc) {
         using var tranzactie = TranzactieComanda.Asigura(os);
         FiscalitateService.BlocheazaScrierea(os, doc);
@@ -598,43 +208,23 @@ public static class MotorOperare {
         Cub.Citiri.Loturi.VerificaRetragere(os, doc);
         StergeConexeDraftAutogenerate(os, doc);
 
-        var randuriStoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID).ToList();
-        var randuriContabile = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList();
-        // Faptele fiscale se șterg pe aceeași cale ca celelalte două registre
-        // (JT-D5): niciun gardian propriu — TVA-ul nu e o resursă cu sold, deci
-        // n-are ce verifica înainte, spre deosebire de stoc.
-        var randuriTva = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == doc.ID).ToList();
-
-        // Simularea eliminării: delta goală, rândurile proprii excluse, dar
-        // cheile lor re-verificate de la prima dată afectată.
-        if (randuriStoc.Count > 0 && !GasesteTipDocument(os, doc).PosteazaInCub) {
-            var primaData = randuriStoc.Min(r => r.Data);
-            var santinele = randuriStoc
-                .Select(r => new CheieStoc(r.LotId, r.RepartitorId, r.TipStoc)).Distinct()
-                .Select(c => new MiscareStoc(c, primaData, 0m)).ToList();
-            StocService.VerificaSoldIntermediar(os, santinele, randuriStoc.Select(r => r.ID).ToList());
-        }
-
         Refuza(MotivLoturiFolosite(os, doc));
 
-        os.Delete(randuriStoc);
-        os.Delete(randuriContabile);
-        os.Delete(randuriTva);
-        if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
-            cuRegistruPropriu.EliminaRegistrul(os);
-        Cub.Materializare.Anuleaza(os, doc);                                          // S-D5
+        if (doc is IDocumentCuEfecteProprii propriu)
+            propriu.LaAnulare(os);
+        Cub.Materializare.Anuleaza(os, doc);
         doc.Stare = StareDocument.Draft;
         doc.DataOperare = null;
-        doc.TotalStingere = null;                                                    // F27-D7
         os.CommitChanges();
         tranzactie?.Commit();
     }
 
-    // Storno (decizia 14): rânduri inverse la data stornării, registrele rămân
-    // append-only. Singura cale de corecție peste graniță (perioada documentului
-    // închisă sau dependenți existenți), cât timp perioada stornării e deschisă
-    // și soldurile rămân ≥ 0 din data stornării încolo.
-    public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
+    /// <summary>
+    /// Stornează documentul la data dată (14). <paramref name="inversaFiscala"/> e atribuirea
+    /// fiscală a inversei, când stornarea e a unei corecții de eroare materială (D9-A5).
+    /// </summary>
+    public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno,
+            FiscalitateService.Atribuire inversaFiscala = null) {
         using var tranzactie = TranzactieComanda.Asigura(os);
         FiscalitateService.BlocheazaScrierea(os, doc);
         Cub.Materializare.BlocheazaFise(os, doc);
@@ -650,72 +240,10 @@ public static class MotorOperare {
         ImperechereService.InverseazaLaStorno(os, doc, dataStorno);                   // F27-D8
         StergeConexeDraftAutogenerate(os, doc);
 
-        var randuriStoc = os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == doc.ID).ToList();
-        var randuriContabile = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList();
-        var randuriTva = os.GetObjectsQuery<RegistruTva>().Where(r => r.DocumentId == doc.ID).ToList();
+        if (doc is IDocumentCuEfecteProprii propriu)
+            propriu.LaStornare(os, dataStorno);
 
-        var delta = randuriStoc
-            .Select(r => new MiscareStoc(new CheieStoc(r.LotId, r.RepartitorId, r.TipStoc), dataStorno, -r.Cantitate))
-            .ToList();
-        if (!GasesteTipDocument(os, doc).PosteazaInCub)
-            StocService.VerificaSoldIntermediar(os, delta);
-
-        foreach (var r in randuriStoc) {
-            var invers = os.CreateObject<RegistruStoc>();
-            invers.Data = dataStorno;
-            invers.TipStoc = r.TipStoc;
-            invers.LotId = r.LotId;
-            invers.RepartitorId = r.RepartitorId;
-            invers.Cantitate = -r.Cantitate;
-            invers.Valoare = -r.Valoare;
-            invers.Storno = true;
-            invers.Document = doc;
-            invers.DetaliuId = r.DetaliuId;
-        }
-        foreach (var r in randuriContabile) {
-            var invers = os.CreateObject<RegistruContabil>();
-            invers.Data = dataStorno;
-            invers.NumarNota = r.NumarNota;
-            invers.ContDebitId = r.ContDebitId;
-            invers.ContCreditId = r.ContCreditId;
-            invers.Valoare = -r.Valoare;
-            invers.AplicaDimensiuniDebit(r.DimensiuniDebit());
-            invers.AplicaDimensiuniCredit(r.DimensiuniCredit());
-            invers.Storno = true;
-            invers.Document = doc;
-            invers.DetaliuId = r.DetaliuId;
-        }
-        // Faptele fiscale se inversează la fel (JT-D5): jurnalul nu filtrează
-        // NICIODATĂ `Storno` — registrul e append-only și suma lui algebrică e
-        // adevărul (R-D7). Consecință acceptată: rândul invers cade în luna
-        // stornării, deci jurnalul lunii deja declarate rămâne cum a fost declarat.
-        // Identitatea fiscală (`Sens`/`TipTva`/`Regim`/`Cota`/partener) se copiază
-        // ca atare — snapshot-ul rândului original, nu o re-derivare din politica
-        // de azi, care între timp poate fi alta.
-        var scrisLaStorno = DateTime.UtcNow;
-        foreach (var r in randuriTva) {
-            var invers = os.CreateObject<RegistruTva>();
-            invers.Data = dataStorno;
-            // Perioada stornării e deschisă prin gardian, deci faptul se declară
-            // în ea (JT-D5/F27-D5); excepția cu motiv e a corecției (F27-D6).
-            invers.PerioadaAn = dataStorno.Year;
-            invers.PerioadaLuna = dataStorno.Month;
-            invers.ScrisLa = scrisLaStorno;
-            invers.Sens = r.Sens;
-            invers.Document = doc;
-            invers.DetaliuId = r.DetaliuId;
-            invers.PartenerId = r.PartenerId;
-            invers.TipTvaId = r.TipTvaId;
-            invers.Regim = r.Regim;
-            invers.Cota = r.Cota;
-            invers.Baza = -r.Baza;
-            invers.Tva = -r.Tva;
-            invers.Storno = true;
-        }
-        if (doc is IDocumentCuRegistruPropriu cuRegistruPropriu)
-            cuRegistruPropriu.StorneazaRegistrul(os, dataStorno);
-
-        Cub.Materializare.Storneaza(os, doc, dataStorno);                             // S-D5
+        Cub.Materializare.Storneaza(os, doc, dataStorno, inversaFiscala);
 
         doc.Stare = StareDocument.Stornat;
         os.CommitChanges();

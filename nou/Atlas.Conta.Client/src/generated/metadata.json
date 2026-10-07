@@ -469,8 +469,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "AmortizareLunaraDetaliu": {
@@ -557,8 +556,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "AsamblareDetaliu": {
@@ -610,8 +608,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "ClasaProdus": {
@@ -718,8 +715,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "DecontDetaliu": {
@@ -787,8 +783,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "DescarcareGestiuneDetaliu": {
@@ -847,8 +842,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "DocumentDetaliu": {
@@ -898,8 +892,7 @@
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
         "TipInstrument": "Instrument de plată",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "DocumentTrezorerieDetaliu": {
@@ -956,8 +949,7 @@
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
         "Taxa": "TVA în vamă",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "DviFactura": {
@@ -994,8 +986,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "FacturaIesireDetaliu": {
@@ -1067,7 +1058,6 @@
         "Stare": "Stare",
         "TethysId": "TethysId",
         "Total": "Total (brut)",
-        "TotalStingere": "Total de stins",
         "Valuta": "Valută"
       }
     },
@@ -1145,8 +1135,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "IesireImobilizareDetaliu": {
@@ -1250,8 +1239,7 @@
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
         "TipInstrument": "Instrument de plată",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "InchiderePerioada": {
@@ -1288,8 +1276,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "Judet": {
@@ -1324,8 +1311,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "ListaDiferenteInventarDetaliu": {
@@ -1451,7 +1437,6 @@
         "Stare": "Stare",
         "SursaReceptieiId": "Sursa recepției",
         "Total": "Total (brut)",
-        "TotalStingere": "Total de stins",
         "TranzactieReceptieSursaId": "Tranzacția recepției-sursă"
       }
     },
@@ -1514,8 +1499,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "NotaContabilaDetaliu": {
@@ -1573,8 +1557,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "Partener": {
@@ -1661,8 +1644,7 @@
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
         "TipInstrument": "Instrument de plată",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "PoliticaAmortizare": {
@@ -1857,8 +1839,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "PunereInFunctiuneDetaliu": {
@@ -1937,8 +1918,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "RefuzSeed": {
@@ -1948,129 +1928,6 @@
         "ID": "ID",
         "La": "Refuzat la",
         "Tip": "Tip"
-      }
-    },
-    "RegistruContabil": {
-      "DefaultProperty": null,
-      "Membri": {
-        "ContCredit": "ContCredit",
-        "ContCreditId": "ContCredit",
-        "ContDebit": "ContDebit",
-        "ContDebitId": "ContDebit",
-        "CreditCentruCost": "Centru cost credit",
-        "CreditCentruCostId": "Centru cost credit",
-        "CreditCodEconomic": "Cod economic credit",
-        "CreditCodEconomicId": "Cod economic credit",
-        "CreditCodFunctional": "Cod funcțional credit",
-        "CreditCodFunctionalId": "Cod funcțional credit",
-        "CreditMaterial": "Material credit",
-        "CreditMaterialId": "Material credit",
-        "CreditProiect": "Proiect credit",
-        "CreditProiectId": "Proiect credit",
-        "CreditRepartitor": "Repartitor credit",
-        "CreditRepartitorId": "Repartitor credit",
-        "CreditSursaFinantare": "Sursă finanțare credit",
-        "CreditSursaFinantareId": "Sursă finanțare credit",
-        "CreditUnitate": "Unitate credit",
-        "CreditUnitateId": "Unitate credit",
-        "Data": "Data",
-        "DebitCentruCost": "Centru cost debit",
-        "DebitCentruCostId": "Centru cost debit",
-        "DebitCodEconomic": "Cod economic debit",
-        "DebitCodEconomicId": "Cod economic debit",
-        "DebitCodFunctional": "Cod funcțional debit",
-        "DebitCodFunctionalId": "Cod funcțional debit",
-        "DebitMaterial": "Material debit",
-        "DebitMaterialId": "Material debit",
-        "DebitProiect": "Proiect debit",
-        "DebitProiectId": "Proiect debit",
-        "DebitRepartitor": "Repartitor debit",
-        "DebitRepartitorId": "Repartitor debit",
-        "DebitSursaFinantare": "Sursă finanțare debit",
-        "DebitSursaFinantareId": "Sursă finanțare debit",
-        "DebitUnitate": "Unitate debit",
-        "DebitUnitateId": "Unitate debit",
-        "Detaliu": "Detaliu",
-        "DetaliuId": "Detaliu",
-        "Document": "Document",
-        "DocumentId": "Document",
-        "ID": "ID",
-        "NumarNota": "NumarNota",
-        "Storno": "Storno",
-        "Valoare": "Valoare"
-      }
-    },
-    "RegistruImobilizari": {
-      "DefaultProperty": null,
-      "Membri": {
-        "Amortizare": "Amortizare contabilă",
-        "AmortizareDeductibila": "Amortizare deductibilă",
-        "AmortizareFiscala": "Amortizare fiscală",
-        "CategorieFiscala": "Categorie fiscală",
-        "Data": "Data",
-        "Detaliu": "Detaliu",
-        "DetaliuId": "Detaliu",
-        "Document": "Document",
-        "DocumentId": "Document",
-        "DurataFiscalaLuni": "Durată fiscală (luni)",
-        "DurataLuni": "Durată (luni)",
-        "Fel": "Fel",
-        "ID": "ID",
-        "Imobilizare": "Imobilizare",
-        "ImobilizareId": "Imobilizare",
-        "Luni": "Luni",
-        "Metoda": "Metodă",
-        "MetodaFiscala": "Metodă fiscală",
-        "Repartitor": "Loc",
-        "RepartitorId": "Loc",
-        "Storno": "Storno",
-        "UtilizareExclusiva": "Utilizare exclusivă",
-        "Valoare": "Valoare (brut contabil)",
-        "ValoareFiscala": "Valoare fiscală (brut fiscal)",
-        "ValoareReziduala": "Valoare reziduală"
-      }
-    },
-    "RegistruStoc": {
-      "DefaultProperty": null,
-      "Membri": {
-        "Cantitate": "Cantitate",
-        "Data": "Data",
-        "Detaliu": "Detaliu",
-        "DetaliuId": "Detaliu",
-        "Document": "Document",
-        "DocumentId": "Document",
-        "ID": "ID",
-        "Lot": "Lot",
-        "LotId": "Lot",
-        "Repartitor": "Repartitor",
-        "RepartitorId": "Repartitor",
-        "Storno": "Storno",
-        "TipStoc": "TipStoc",
-        "Valoare": "Valoare"
-      }
-    },
-    "RegistruTva": {
-      "DefaultProperty": null,
-      "Membri": {
-        "Baza": "Bază impozabilă",
-        "Cota": "Cotă",
-        "Data": "Data",
-        "Detaliu": "Detaliu",
-        "DetaliuId": "Detaliu",
-        "Document": "Document",
-        "DocumentId": "Document",
-        "ID": "ID",
-        "Partener": "Partener",
-        "PartenerId": "Partener",
-        "PerioadaAn": "Perioada (an)",
-        "PerioadaLuna": "Perioada (luna)",
-        "Regim": "Regim TVA",
-        "ScrisLa": "Scris la",
-        "Sens": "Sens",
-        "Storno": "Storno",
-        "TipTva": "TipTva",
-        "TipTvaId": "TipTva",
-        "Tva": "TVA"
       }
     },
     "RegulaContare": {
@@ -2204,8 +2061,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "ReturFurnizor": {
@@ -2230,8 +2086,7 @@
         "Primitor": "Primitor (către)",
         "PrimitorId": "Primitor (către)",
         "Stare": "Stare",
-        "Total": "Total (brut)",
-        "TotalStingere": "Total de stins"
+        "Total": "Total (brut)"
       }
     },
     "SetareProfil": {
@@ -2332,8 +2187,6 @@
         "Denumire": "Denumire",
         "DinSeed": "Din seed",
         "ID": "ID",
-        "LaturaContPropriu": "Latura contului propriu",
-        "PosteazaInCub": "Postează în cub",
         "TipTvaImplicit": "TipTvaImplicit",
         "TipTvaImplicitId": "TipTvaImplicit"
       }

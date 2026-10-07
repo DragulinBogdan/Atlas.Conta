@@ -121,7 +121,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
     });
     void Sold(string id, Guid fisa, decimal brut, decimal cumul, decimal fiscal, decimal cumulFiscal,
             DateOnly? data = null) {
-        Comanda(C.Citiri.Imobilizari.VerificaAcoperire);
+        Comanda(C.Citiri.Imobilizari.VerificaProvenienta);
         var randuri = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == fisa
             && p.Data <= (data ?? new DateOnly(An, 12, 31))).ToList());
         decimal Net(Guid cont, N.Carte carte) => randuri.Where(p => p.Cont == cont && p.Carte == carte)
@@ -147,8 +147,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         RefuzDeclaratie("SC-IMO-03", lipsa.Id, CoduriRefuz.SuportInsuficient);
         Refuza("SC-IMO-03", () => Opereaza(lipsa.Id), CoduriRefuz.SuportInsuficient); FaraEfecte("SC-IMO-03", lipsa.Id);
         Verifica("SC-IMO-03", "refuzul nu schimbă fișa și nu scrie registrul dual", CuSpatiu(os =>
-            os.GetObjectByKey<Imobilizare>(f).Stare == StareImobilizare.Noua
-            && !os.GetObjectsQuery<RegistruImobilizari>().Any(r => r.DocumentId == lipsa.Id)));
+            os.GetObjectByKey<Imobilizare>(f).Stare == StareImobilizare.Noua));
         var factura = Factura(Ianuarie, new LinieFctScena(1, 1200, Stoc: false, Tip: Activ));
         if (!Privat) Comanda(os => {
             var cf = os.CreateObject<CodFunctional>(); cf.Cod = Marcaj; cf.Denumire = Marcaj;

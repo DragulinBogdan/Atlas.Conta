@@ -8,6 +8,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 public sealed class DeclarantDiferenteInventar : IDeclarant {
     public static readonly DeclarantDiferenteInventar Instanta = new();
     DeclarantDiferenteInventar() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -18,6 +19,7 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza>();
+        var reguliStoc = new List<N.VersiunePolitica>();
         var solduri = new Dictionary<CheieLotFapt, N.Sold>();
         if (operand.Linii.Count == 0)
             refuzuri.Add(new(CoduriRefuz.LiniiLipsa, "Lista de inventar cere cel puțin o linie.", null));
@@ -55,6 +57,7 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
                 Refuza(CoduriRefuz.InventarStocNeacoperit, "Lista cere o singură regulă Magazie/Marfuri/Folosinta, +1 pe gestiunea inventariată.");
             var contare = Contari.Rezolva(operand, linie, refuzuri);
             if (refuzuri.Count != initial) continue;
+            reguliStoc.Add(PoliticiConsumate.Versiunea(stoc[0]));
             var cont = contare!.Value;
             var contStoc = plus ? cont.ContDebit : cont.ContCredit;
             if (contStoc != lot.ContImplicitId) {
@@ -85,11 +88,10 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
                 Produs = lot.ProdusId, Analiza = Contari.Analiza(linie.Analiza,
                     plus ? cont.Regula.OverrideCredit : cont.Regula.OverrideDebit, cont.Regula.Comun) };
             miscari.Add(new(plus ? virtuala : real, plus ? real : virtuala, q, 0m, v, new(doc.Id, linie.Id)));
-            decizii.Add(new N.ContRezolvat(linie.Id, cont.ContDebit, cont.SursaDebit.ToString()));
-            decizii.Add(new N.ContRezolvat(linie.Id, cont.ContCredit, cont.SursaCredit.ToString()));
+            Contari.Decide(cont, linie.Id, decizii);
         }
         if (refuzuri.Count > 0) return null;
-        ipoteze.Add(operand.PerioadaDeschisa); ipoteze.Add(operand.VersiunePolitica);
+        ipoteze.AddRange(PoliticiConsumate.Ipoteze(operand, decizii, [.. reguliStoc]));
         return new(doc.Id, doc.DataInregistrare, miscari, decizii, ipoteze);
     }
 }

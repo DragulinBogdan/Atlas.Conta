@@ -45,12 +45,12 @@ namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 // ═══ Al doilea drept al celor două rute cu CIFRE (felia 22, F22-D5) ═══
 // Închide 79-r6. Dreptul de citire pe `InchidereTva` spune că ai voie să vezi
 // ÎNCHIDEREA; el nu spune nimic despre soldurile 4426/4427 ale societății, care
-// vin din `RegistruContabil` și se însumează pe ușa NON-SECURED tocmai ca să nu
-// fie filtrate. Cine n-are drept pe registru vedea deci, prin previzualizare,
+// vin din postările cubului și se însumează pe ușa NON-SECURED tocmai ca să nu
+// fie filtrate. Cine n-are drept pe ele vedea deci, prin previzualizare,
 // exact cifra pe care permisiunile lui i-o ascund în balanță și în fișă — o
-// scurgere, nu o afordanță. Regula generală a feliei 22: **o rută care întoarce
-// o SUMĂ peste un registru, calculată pe ușa non-secured, cere dreptul de
-// CITIRE pe tipul acelui registru** (aceeași regulă ca fișierul SAF-T, 73g).
+// scurgere, nu o afordanță. Regula: **o rută care întoarce o SUMĂ peste cub,
+// calculată pe ușa non-secured, cere citirea COMPLETĂ pe `Postare`**
+// (`PostariCitibile`; aceeași regulă ca fișierul SAF-T, 73g, 108 d).
 // `genereaza`/`regenereaza` NU-l cer: ele produc rânduri (un draft), nu cifre
 // arătate operatorului — iar dreptul lor e cel de CREARE.
 [Route("api/itv")]
@@ -90,21 +90,12 @@ public class ItvController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id) {
-        var refuz = AutorizeazaCitire<InchidereTva>(id) ?? RegistrulCitibil();
+        var refuz = AutorizeazaCitire<InchidereTva>(id) ?? PostariCitibile();
         if (refuz != null)
             return refuz;
         using var os = NonSecured(typeof(InchidereTva));
         var dto = InchidereTvaApply.Citeste(os, id);
         return dto == null ? Invizibil() : Ok(dto);
-    }
-
-    // F22-D5: al doilea drept al rutelor care întorc CIFRE ale registrului.
-    // Ordinea contează și e cea a lui F22-D1 — întâi 404-ul instanței (ce nu-ți
-    // e vizibil nici nu-ți spune că există), abia apoi 403-ul registrului.
-    // `null` = are voie.
-    IActionResult RegistrulCitibil() {
-        using var os = Secured(typeof(RegistruContabil));
-        return PoateCiti(typeof(RegistruContabil), os) ? null : RefuzCitire(typeof(RegistruContabil));
     }
 
     // Dry-run-ul comenzii. NU scrie nimic — de aceea e GET, și de aceea gate-ul e
@@ -125,15 +116,15 @@ public class ItvController : ContaApiController {
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
 
-        // DOUĂ drepturi, nu unul (F22-D5): închiderea (tipul cerut) ȘI registrul
+        // DOUĂ drepturi, nu unul (F22-D5): închiderea (tipul cerut) ȘI postările
         // din care se însumează soldurile arătate în raport.
         using (var osSecured = Secured(typeof(InchidereTva))) {
             if (!PoateCiti(typeof(InchidereTva), osSecured))
                 return RefuzCitire(typeof(InchidereTva));
         }
-        var refuzRegistru = RegistrulCitibil();
-        if (refuzRegistru != null)
-            return refuzRegistru;
+        var refuzPostari = PostariCitibile();
+        if (refuzPostari != null)
+            return refuzPostari;
         // `Domeniu` și aici (review 79 M7): ancora `TipDocument` lipsă din seed
         // aruncă `OperareException`, care fără traducere ar ieși 400 text/plain
         // prin filtrul DevExpress — în afara contractului „un singur 400" (70f).

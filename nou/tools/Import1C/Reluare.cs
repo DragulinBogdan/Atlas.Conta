@@ -1,4 +1,5 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 
@@ -29,7 +30,7 @@ namespace Import1C;
 
 // Ce a atins o ștergere de draft — pentru raport și pentru curățarea indexului de
 // loturi din memorie (`Catalog.UitaLot`).
-sealed record RezultatStergere(int Documente, int Linii, int Loturi, int Registre, int Legaturi,
+sealed record RezultatStergere(int Documente, int Linii, int Loturi, int Legaturi,
     IReadOnlyList<Guid> LoturiSterse);
 
 static class Drafturi {
@@ -81,10 +82,10 @@ static class Drafturi {
                     + $"{strain.DocumentId}";
                 return null;
             }
-            var miscareStraina = os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => loturi.Contains(r.LotId))
-                .Select(r => new { r.ID, r.DocumentId }).ToList()
-                .FirstOrDefault(r => r.DocumentId == null || !documente.Contains(r.DocumentId.Value));
+            var miscareStraina = Loturi.Postari(os)
+                .Where(p => loturiN.Contains(p.Unitate))
+                .Select(p => new { p.ID, p.DocumentId }).ToList()
+                .FirstOrDefault(p => p.DocumentId == null || !documente.Contains(p.DocumentId.Value));
             if (miscareStraina != null) {
                 refuz = $"un lot născut de draft are mișcări de stoc ale altui document "
                     + $"({miscareStraina.DocumentId?.ToString() ?? "deschidere"})";
@@ -105,9 +106,7 @@ static class Drafturi {
         return refuz;
     }
 
-    // Ștergerea propriu-zisă, într-un singur commit: rândurile de registru (un
-    // draft n-ar trebui să aibă — motorul nu lasă rânduri la refuz, 33d — dar dacă
-    // are, sunt ale lui și pleacă odată cu el), liniile, documentele, loturile
+    // Ștergerea propriu-zisă, într-un singur commit: liniile, documentele, loturile
     // născute de linii și TOATE legăturile care trimit la ele (documentul, lotul,
     // aliasul de lot). `null` = refuz (mesajul în `refuz`).
     // `inainteDeCommit` (D5): apelantul își strecoară propriile ștergeri în ACEEAȘI
@@ -124,29 +123,12 @@ static class Drafturi {
             var orfane = StergeLegaturi(os, [documentId]);
             inainteDeCommit?.Invoke(os);
             os.CommitChanges();
-            return new RezultatStergere(0, 0, 0, 0, orfane, []);
+            return new RezultatStergere(0, 0, 0, orfane, []);
         }
         var grup = Aduna(os, documentId, out refuz);
         if (grup == null)
             return null;
 
-        var documenteN = grup.Documente.Select(d => (Guid?)d).ToList();
-        var registre = os.GetObjectsQuery<RegistruStoc>()
-            .Where(r => documenteN.Contains(r.DocumentId)).ToList();
-        var contabile = os.GetObjectsQuery<RegistruContabil>()
-            .Where(r => documenteN.Contains(r.DocumentId)).ToList();
-        // Al treilea registru (felia 11, review advers D5): calea e apărată — grupul
-        // e obligatoriu `Draft`, iar un draft n-ar trebui să aibă rânduri de registru,
-        // deci ștergerea de aici e defensivă prin comentariul de mai sus. Dar ăsta e
-        // SINGURUL loc din repo care șterge rânduri de registru pe document în afara
-        // motorului, iar un registru lipsă dintr-o listă defensivă e o bombă cu
-        // ceas care se declanșează tocmai când apărarea chiar contează.
-        // `DocumentId` e NENUL pe `RegistruTva` (JT-D1), deci lista negrupată.
-        var fiscale = os.GetObjectsQuery<RegistruTva>()
-            .Where(r => grup.Documente.Contains(r.DocumentId)).ToList();
-        os.Delete(registre);
-        os.Delete(contabile);
-        os.Delete(fiscale);
         // Ordinea contează pentru FK-ul `DocumentDetaliu.LotId` (Restrict): liniile
         // pleacă înaintea loturilor. `Lot.LinieIntrareId` e coloană FĂRĂ FK
         // (decizia 26e), deci sensul celălalt nu constrânge nimic.
@@ -160,7 +142,7 @@ static class Drafturi {
         os.CommitChanges();
 
         return new RezultatStergere(grup.Documente.Count, grup.Linii.Count, grup.Loturi.Count,
-            registre.Count + contabile.Count, legaturi, grup.Loturi);
+            legaturi, grup.Loturi);
     }
 
     // Loturile NĂSCUTE de un document stornat rămân în bază (registrele sunt

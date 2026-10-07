@@ -114,12 +114,13 @@ public static class ReceptiiConexe {
         var constatari = doc.Detalii.ToDictionary(d => d.ID, d => new ConstatareReceptie(
             Identifica(d, sursa.Linii), (d as NirDetaliu)?.CauzaDiferentei, (d as NirDetaliu)?.PartenerDiferentaId));
         var politici = os.GetObjectsQuery<PoliticaDiferenta>().Where(p => p.TipDocumentId == operand.Document.TipDocumentId)
-            .Select(p => new PoliticaDiferentaFapt(p.ClasaId, p.Cauza, p.ContId, p.ContPersonalId)).ToList();
+            .Select(p => new { p.ID, p.ClasaId, p.Cauza, p.ContId, p.ContPersonalId, p.OptimisticLockField }).ToList()
+            .Select(p => new PoliticaDiferentaFapt(p.ClasaId, p.Cauza, p.ContId, p.ContPersonalId)
+                { Id = p.ID, Versiune = p.OptimisticLockField }).ToList();
         var idsCont = politici.SelectMany(p => new[] { p.Cont, p.ContPersonal ?? p.Cont }).Distinct().ToList();
         var conturi = operand.Conturi.ToDictionary(p => p.Key, p => p.Value);
-        foreach (var c in os.GetObjectsQuery<Cont>().Where(c => idsCont.Contains(c.ID))
-                .Select(c => new { c.ID, c.Simbol, c.UrmarestePartide }).ToList())
-            conturi[c.ID] = new(c.ID, c.Simbol, c.UrmarestePartide);
+        foreach (var (id, cont) in Fapte.Conturi(os, idsCont))
+            conturi[id] = cont;
         var repartitori = operand.Repartitori.ToDictionary(p => p.Key, p => p.Value);
         var idsTerti = constatari.Values.Select(c => c.Imputat).OfType<Guid>().Distinct().ToList();
         foreach (var r in Fapte.Repartitori(os, idsTerti)) repartitori[r.Key] = r.Value;
@@ -222,12 +223,9 @@ public static class ReceptiiConexe {
         foreach (var p in postari) {
             var c = p.Coordonate;
             var cont = conturi[c.Cont];
-            MotorOperare.VerificaLatura(cont.Simbol, cont.DimensiuniObligatorii, new Dimensiuni {
-                RepartitorId = c.Partener ?? (c.Gestiune == N.GestiuniVirtuale.Inventar ? null : c.Gestiune),
-                MaterialId = c.Produs, CodFunctionalId = c.Analiza.CodFunctional,
-                CodEconomicId = c.Analiza.CodEconomic, SursaFinantareId = c.Analiza.SursaFinantare,
-                UnitateId = c.Analiza.UnitateOrganizatorica, ProiectId = c.Analiza.Proiect, CentruCostId = c.Analiza.CentruCost,
-            }, p.Cauza.Linie is Guid id ? angajamente.GetValueOrDefault(id) : null,
+            GardAnaliza.VerificaLatura(cont.Simbol, cont.DimensiuniObligatorii,
+                GardAnaliza.Dimensiuni(c.Partener, c.Produs, c.Analiza),
+                p.Cauza.Linie is Guid id ? angajamente.GetValueOrDefault(id) : null,
                 c.Latura.ToString(), p.Cauza.Linie?.ToString(), erori);
         }
         if (erori.Count > 0) throw new OperareException(string.Join("\n", erori));

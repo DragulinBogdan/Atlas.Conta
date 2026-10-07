@@ -1,0 +1,13 @@
+01:25:35 clona la 717c3b5 TR-D9a: amendamentul 2 aprobat de owner (2026-10-06)
+01:25:35 GATA clona
+01:25:42 r1-astra start
+01:29:21 r1-astra exit=0 bytes=13708
+01:29:21 GATA r1-astra
+01:29:25 r1-fable start
+01:34:03 r1-fable exit=0 bytes=14708
+01:34:03 GATA r1-fable
+01:34:09 r2-astra start
+01:41:08 r2-astra exit=0 bytes=21687
+01:41:08 r2-fable start
+01:53:48 r2-fable exit=0 bytes=23176
+01:53:48 GATA r2-astra r2-fable

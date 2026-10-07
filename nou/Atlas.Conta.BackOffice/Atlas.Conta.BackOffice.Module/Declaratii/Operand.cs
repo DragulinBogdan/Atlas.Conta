@@ -20,7 +20,7 @@ public sealed record RepartitorFapt(Guid Id, FelRepartitor? Fel, Guid? ContImpli
     public Parte? Parte => Laturi.ParteA(Fel);
 }
 
-public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide);
+public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide, bool CereRepartitor);
 
 public sealed record SoldPartidaFapt(N.Unitate Unitate, N.Sold Sold, decimal Disponibil);
 
@@ -44,7 +44,10 @@ public sealed record DiferentaInventarFapt(DirectieDiferenta Directie, decimal? 
 public sealed record PoliticaTvaFapt(
     DirectieTva Directie,
     SursaCont SursaContrapartida,
-    Guid? ContrapartidaFallbackId);
+    Guid? ContrapartidaFallbackId) {
+    public Guid Id { get; init; }
+    public int Versiune { get; init; }
+}
 
 public sealed record DocumentFapt(
     Guid Id,
@@ -109,13 +112,10 @@ public sealed record Operand(
     DateOnly? DataInregistrareSursa,
     int? PerioadaDeclarare,
     decimal? TolerantaTaxa,
-    N.PerioadaDeschisa PerioadaDeschisa,
-    N.VersiunePolitica VersiunePolitica) {
+    N.PerioadaDeschisa PerioadaDeschisa) {
 
     public ReceptieSursaFapt? ReceptieSursa { get; init; }
     public N.ReperFiscal? ReperFiscal { get; init; }
-    // ASM-B6: R rămâne o măsură a registrului în regimul dual; C vine din cub.
-    public IReadOnlyDictionary<Guid, N.Sold> SolduriLoturiRegistru { get; init; } = new Dictionary<Guid, N.Sold>();
     public IReadOnlyDictionary<Guid, RepartitorFapt> Repartitori { get; init; } = new Dictionary<Guid, RepartitorFapt>();
     public IReadOnlyList<SoldPartidaFapt> PartideDisponibile { get; init; } = [];
     public IReadOnlyList<N.Unitate> UnitatiSursa { get; init; } = [];

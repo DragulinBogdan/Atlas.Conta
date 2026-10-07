@@ -155,48 +155,21 @@ public static class AsamblareApply {
 
     // ═══════════════════════ F19-D4: distribuirea valorii consumului ═══════════════════════
     //
-    // PROBLEMA (restanța 75-r1). Din D18-D2 consumul care GOLEȘTE cheia de stoc
-    // preia tot soldul valoric rămas pe ea, nu `preț × cantitate`. Operatorul
-    // care evaluează produsul la `preț lot × cantitate` primește refuz pe
-    // invariantul 46d cu un rest de cenți și n-are NICIO cale să nimerească
-    // cifra din ecran (prețul lotului are 6 zecimale, restul e al acumulării
-    // rotunjirilor de pe ieșirile anterioare). Fără mecanismul de mai jos ecranul
-    // ASM ar fi o capcană — de aia felia livrează comanda, nu doar formularul.
+    // PROBLEMA (75-r1). Consumul iese la valoarea evaluată pe soldul lotului, nu la
+    // `preț × cantitate`: operatorul care evaluează produsul la prețul lotului primește
+    // `ASAMBLARE_NEBALANSATA` cu un rest de cenți pe care nu-l poate nimeri din ecran.
     //
     // CE FACE. Rescrie `PretEvaluare` pe liniile de PRODUS astfel încât
-    // `Σ Valoare(produse) == Σ |Valoare(consumuri)|` EXACT (nu „în toleranță":
-    // invariantul are 0,005, dar o comandă care lasă cenți pe masă ar fi tot o
-    // capcană, cu un pas mai departe).
+    // `Σ Valoare(produse) == Σ consum evaluat`, exact.
     //
-    // PREDICȚIA. Valoarea consumurilor NU se recalculează aici: se cere
-    // MOTORULUI, prin `MotorOperare.Valideaza` (dry-run) pe un ObjectSpace de
-    // UNICĂ FOLOSINȚĂ. Dry-run-ul rulează exact fazele de calcul ale operării —
-    // `PregatesteOperare` (semnare + `preț × cantitate`) urmat de
-    // `StocService.AplicaValoareIesire` (regula golirii, pe cheia și semnul
-    // REGULII de stoc) — și se oprește înainte de materializare. Deci cifra pe
-    // care o citim de pe liniile lui e, la cent, cifra pe care operarea o va
-    // scrie: NU există aici o a doua formulă a golirii, nici o a doua potrivire
-    // de reguli de stoc. Erorile dry-run-ului (inclusiv chiar invariantul 46d, pe
-    // care tocmai îl reparăm) se IGNORĂ deliberat — ne interesează valorile
-    // calculate, nu verdictul; ce nu se poate ignora e ca faza de calcul să NU fi
-    // rulat, și asta se vede structural (vezi `PrezicSumaConsum`).
+    // PREDICȚIA E A MOMENTULUI (`PrezicSumaConsum`): citește soldul cubului așa cum e acum.
+    // Dacă între distribuire și operare soldul lotului se schimbă, operarea refuză cu ambele
+    // sume, iar reparația e re-rularea comenzii. ObjectSpace-ul predicției e altul decât al
+    // comenzii: nimic din ce citește evaluarea nu ajunge în commit.
     //
-    // ObjectSpace-ul predicției e OBLIGATORIU altul decât cel al comenzii:
-    // `PregatesteOperare` SEMNEAZĂ cantitățile pe linii (contractul lui
-    // `MotorOperare.Valideaza`), iar un commit peste ele ar lăsa draftul cu
-    // cantități negative culese.
-    //
-    // PREDICȚIA E A MOMENTULUI. Se citește registrul de stoc AȘA CUM E ACUM. Dacă
-    // între distribuire și operare se schimbă ceva ce mișcă golirea (alt document
-    // golește lotul primul, o anulare readuce cantitate, se schimbă data
-    // documentului), invariantul 46d refuză la operare — cu AMBELE sume, ca azi.
-    // NU încercăm să prevenim asta (ar cere blocarea lotului între două cereri
-    // HTTP, adică exact concurența parcată în 25f): reparația e re-rularea
-    // comenzii, iar refuzul motorului rămâne autoritatea.
-    //
-    // Idempotentă: a doua rulare pe același document, cu același registru, dă
-    // aceleași cifre — cheia de repartizare devine chiar valorile scrise de prima
-    // rulare, iar prețul e normalizat ca funcție a valorii finale (vezi mai jos).
+    // Idempotentă: a doua rulare pe aceleași fapte dă aceleași cifre — cheia de repartizare
+    // devine chiar valorile scrise de prima rulare, iar prețul e normalizat ca funcție a
+    // valorii finale (vezi mai jos).
     public static AsmDistribuireDto DistribuieValoarea(IObjectSpace os, Func<IObjectSpace> fabricaPredictie, Guid id) {
         var doc = Rezolva.Cere<Asamblare>(os, id, "Asamblarea");
         if (doc.Stare != StareDocument.Draft)
@@ -347,32 +320,19 @@ public static class AsamblareApply {
         };
     }
 
-    // Cifra pe care o vor scrie consumurile la operare, cerută MOTORULUI.
-    //
-    // `MotorOperare.Valideaza` rulează, în ordine: gardul de stare, gardul de
-    // perioadă, `PregatesteOperare` (semnează cantitățile și pune `preț ×
-    // cantitate`), potrivirea regulilor de stoc + `StocService.AplicaValoareIesire`
-    // (regula golirii D18-D2), abia apoi validările. Erorile lui nu ne
-    // interesează — le va spune operarea; ne interesează VALORILE.
-    //
-    // Ce trebuie totuși deosebit: cazul în care faza de calcul NU s-a executat
-    // (perioadă închisă, tip de document lipsă din seed — refuzuri care cad
-    // ÎNAINTE de `PregatesteOperare`). Se vede STRUCTURAL, fără să ghicim din
-    // textul erorilor: `PregatesteOperare` al ASM semnează consumurile la
-    // `−Abs(Cantitate)`, iar apelantul a verificat deja că nicio cantitate nu e 0
-    // ⇒ dacă vreun consum a rămas cu cantitate pozitivă, calculul n-a rulat.
+    // D9-D3: ținta distribuirii e consumul evaluat de declarant pe operandul draftului,
+    // același calcul pe care operarea îl face înaintea gardului de balansare.
     static decimal PrezicSumaConsum(IObjectSpace osPredictie, Guid id) {
         var doc = Rezolva.Cere<Asamblare>(osPredictie, id, "Asamblarea");
-        var erori = MotorOperare.Valideaza(osPredictie, doc);
-        var consumuri = doc.Detalii.OfType<AsamblareDetaliu>()
-            .Where(d => d.Directie == DirectieAsamblare.Consum).ToList();
-        if (consumuri.Count == 0 || consumuri.Any(d => d.Cantitate >= 0m))
-            throw new OperareException(
-                "Valoarea consumului nu se poate prezice — motorul se oprește înaintea calculului"
-                + (erori.Count > 0 ? ":\n" + string.Join("\n", erori) : "."));
-        // Convenția frunzei: consumurile poartă valori NEGATIVE (F19-D8), deci
-        // magnitudinea e `−Σ`.
-        return -consumuri.Sum(d => d.Valoare);
+        if (doc.DataInregistrare == default)
+            doc.DataInregistrare = doc.Data;
+        var refuzuri = new List<Nucleu.Refuz>();
+        var consum = Declaratii.DeclarantAsamblare.Instanta.Consum(
+            Fapte.Operand(osPredictie, doc), new Nucleu.Rotunjire(Scara.ConventieBani), refuzuri);
+        if (refuzuri.Count > 0)
+            throw new OperareException("Valoarea consumului nu se poate evalua:\n"
+                + string.Join("\n", refuzuri.Select(Declaratii.Contractare.Mesaj)));
+        return consum.Sum(c => c.Valoare);
     }
 
     static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)

@@ -1,8 +1,6 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
-using DevExpress.ExpressApp.EFCore;
-using Microsoft.EntityFrameworkCore;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub.Citiri;
@@ -13,25 +11,7 @@ public static class Invarianti {
         VerificaProvenienta(os);
         VerificaFiscal(os);
         VerificaTaxaLiniilor(os);
-        Loturi.VerificaAcoperire(os);
-        var ctx = ((EFCoreObjectSpace)os).DbContext;
         var postari = os.GetObjectsQuery<Postare>();
-        var lipsuri = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null
-            && (!postari.Any(p => p.DocumentId == r.DocumentId && p.Carte == N.Carte.Contabil
-                && (r.DetaliuId == null || p.LinieId == r.DetaliuId)
-                && p.Cont == r.ContDebitId && p.Latura == N.Latura.Debit
-                && (p.Tranzactie.Fel == N.FelTranzactie.Storno) == r.Storno)
-                || !postari.Any(p => p.DocumentId == r.DocumentId && p.Carte == N.Carte.Contabil
-                    && (r.DetaliuId == null || p.LinieId == r.DetaliuId)
-                    && p.Cont == r.ContCreditId && p.Latura == N.Latura.Credit
-                    && (p.Tranzactie.Fel == N.FelTranzactie.Storno) == r.Storno)))
-            .Select(r => r.DocumentId.Value).Distinct().ToList();
-        var absorbite = Receptii.Legaturi(ctx, lipsuri);
-        lipsuri = lipsuri.Where(id => !absorbite.ContainsKey(id)).ToList();
-        if (lipsuri.Count != 0)
-            throw new OperareException($"CITIRE_ISTORIC_INCOMPLET: {lipsuri.Count} documente cu linii sau laturi contabile neacoperite; exemple: "
-                + string.Join(", ", lipsuri.Take(10)));
-
         var dezechilibrate = postari.GroupBy(p => new { p.TranzactieId, p.Carte })
             .Where(g => g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) != 0m).LongCount();
         if (dezechilibrate != 0)
@@ -39,23 +19,64 @@ public static class Invarianti {
 
         VerificaTransferuri(os);
 
-        var deschideri = os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == null);
-        if (deschideri.Any()) {
-            var vechi = deschideri.Select(r => new { Cont = r.ContDebitId, Debit = r.Valoare, Credit = 0m })
-                .Concat(deschideri.Select(r => new { Cont = r.ContCreditId, Debit = 0m, Credit = r.Valoare }))
-                .GroupBy(r => r.Cont).Select(g => new { Cont = g.Key, Debit = g.Sum(r => r.Debit), Credit = g.Sum(r => r.Credit) })
-                .ToList();
-            var noi = Contabil.Postari(os).Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere)
-                .GroupBy(p => p.Cont).Select(g => new { Cont = g.Key,
-                    Debit = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : 0m),
-                    Credit = g.Sum(p => p.Latura == N.Latura.Credit ? p.Valoare : 0m) }).ToDictionary(r => r.Cont);
-            if (vechi.Any(v => !noi.TryGetValue(v.Cont, out var n) || n.Debit != v.Debit || n.Credit != v.Credit))
-                throw new OperareException("CITIRE_DESCHIDERE_INCOMPLETA: soldurile istorice fără document nu sunt acoperite de deschiderea cubului.");
-        }
         Partide.VerificaAcoperire(os);
-        Proiectii.ImperecheriProiectii.VerificaAcoperire(os);
-        Imobilizari.VerificaAcoperire(os);
+        Imobilizari.VerificaProvenienta(os);
         Explicatii.VerificaAcoperire(os);
+        VerificaPerechi(os);
+    }
+
+    public const string PerecheInvalida = "CITIRE_PERECHE_INVALIDA";
+    public const string PerecheLipsa = "CITIRE_PERECHE_LIPSA";
+
+    /// <summary>Perechea persistată e cea de la contractare (D9-A2): exact două postări pe (tranzacție, ordinal), mișcarea și contrapartida ei; fără ordinal rămân numai transformările și deschiderea.</summary>
+    public static void VerificaPerechi(IObjectSpace os) {
+        var postari = os.GetObjectsQuery<Postare>();
+        var invalide = postari.Where(p => p.Pereche != null)
+            .GroupBy(p => new { p.TranzactieId, p.Tranzactie.Fel, p.Pereche })
+            .Select(g => new {
+                g.Key.TranzactieId, g.Key.Fel, g.Key.Pereche,
+                Cate = g.Count(),
+                Documente = g.Select(p => p.DocumentId ?? Guid.Empty).Distinct().Count(),
+                Linii = g.Select(p => p.LinieId ?? Guid.Empty).Distinct().Count(),
+                Laturi = g.Select(p => p.Latura).Distinct().Count(),
+                Cantitate = g.Sum(p => p.Cantitate),
+                Valoare = g.Sum(p => p.Valoare), ValoareMin = g.Min(p => p.Valoare), ValoareMax = g.Max(p => p.Valoare),
+                Valuta = g.Sum(p => p.ValoareValuta), ValutaMin = g.Min(p => p.ValoareValuta), ValutaMax = g.Max(p => p.ValoareValuta),
+            })
+            .Where(x => x.Pereche < 1 || x.Cate != 2 || x.Documente != 1 || x.Linii != 1 || x.Cantitate != 0m
+                || x.Fel == N.FelTranzactie.Deschidere
+                || (x.Fel == N.FelTranzactie.Operare && x.Laturi != 2)
+                || (x.Fel == N.FelTranzactie.Transfer && x.Laturi != 1)
+                || !((x.Laturi == 2 && x.ValoareMin == x.ValoareMax && x.ValutaMin == x.ValutaMax)
+                    || (x.Laturi == 1 && x.Valoare == 0m && x.Valuta == 0m)))
+            .Select(x => new { x.TranzactieId, x.Pereche })
+            .Take(10).ToList();
+        if (invalide.Count != 0)
+            throw new OperareException($"{PerecheInvalida}: perechi care nu sunt o mișcare cu contrapartida ei; exemple: "
+                + string.Join(", ", invalide.Select(x => $"{x.TranzactieId}/{x.Pereche}")));
+        var virtuale = N.GestiuniVirtuale.Toate.ToArray();
+        var lipsa = postari.Where(p => p.Pereche == null && p.Tranzactie.Fel != N.FelTranzactie.Deschidere)
+            .Select(p => new {
+                p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Produs, p.Latura,
+                p.CodFunctional, p.CodEconomic, p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost,
+                Cantitate = p.Gestiune == N.GestiuniVirtuale.Transformare ? -p.Cantitate : p.Cantitate,
+                Contrapondere = p.Gestiune == N.GestiuniVirtuale.Transformare,
+                Forma = p.Cantitate != 0m && p.Produs != null && p.Carte == N.Carte.Contabil
+                    && p.Partener == null && p.TipTvaId == null && p.PerioadaDeclarare == null
+                    && p.Valuta == null && p.ValoareValuta == 0m
+                    && (p.Gestiune == N.GestiuniVirtuale.Transformare
+                        ? p.Unitate == null && p.Valoare == 0m
+                        : p.Unitate != null && p.FelUnitate == N.FelUnitate.Lot
+                            && p.Gestiune != null && !virtuale.Contains(p.Gestiune.Value)),
+            })
+            .GroupBy(p => new { p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Produs, p.Latura,
+                p.CodFunctional, p.CodEconomic, p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost,
+                p.Cantitate })
+            .Where(g => g.Any(p => !p.Forma) || g.Count(p => p.Contrapondere) * 2 != g.Count())
+            .Select(g => g.Key.TranzactieId).Distinct().Take(10).ToList();
+        if (lipsa.Count != 0)
+            throw new OperareException($"{PerecheLipsa}: postări fără ordinal de pereche în afara transformărilor și a deschiderii; exemple: "
+                + string.Join(", ", lipsa));
     }
 
     public const string TransferNeconservat = "CITIRE_TRANSFER_NECONSERVAT";

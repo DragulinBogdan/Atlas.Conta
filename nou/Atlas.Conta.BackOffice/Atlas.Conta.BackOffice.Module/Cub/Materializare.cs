@@ -8,32 +8,46 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
 /// <summary>
-/// Regimul dual (S-D3, S-D4, S-D5): pe tipurile cu <c>PosteazaInCub</c> declarația
-/// frunzei se materializează în ACEEAȘI tranzacție de comandă cu registrele vechi.
+/// Materializarea declarației în cub, în tranzacția comenzii (S-D4, S-D5): singurul scriitor
+/// al tranzacțiilor și al postărilor.
 /// </summary>
 public static partial class Materializare {
     public static bool EsteConexAcoperit(IObjectSpace os, Document doc) =>
         ReceptiiConexe.EsteAcoperita(os, doc);
 
-    /// <summary>Un tip cu tranzacții în cub nu mai iese din regimul <c>PosteazaInCub</c>.</summary>
-    public static bool AreTranzactii(IObjectSpace os, string clrType) {
-        var documente = os.GetObjectsQuery<Document>().Where(d => d.ClrType == clrType).Select(d => (Guid?)d.ID);
-        return os.GetObjectsQuery<Tranzactie>().Any(t => documente.Contains(t.DocumentId));
+    /// <summary>Motivul pentru care tipul nu declară pe profil (D9-D5); null = declară.</summary>
+    public static string MotivNuDeclara(IObjectSpace os, Document doc, TipDocument tip) {
+        ArgumentNullException.ThrowIfNull(doc);
+        ArgumentNullException.ThrowIfNull(tip);
+        var id = tip.ID;
+        var lipsa = doc.Declarant() switch {
+            null => "clasa documentului nu declară",
+            { PoliticaCeruta: PoliticaProfil.Contare }
+                when !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == id)
+                => "profilul nu are reguli de contare pentru el",
+            { PoliticaCeruta: PoliticaProfil.Tva }
+                when !os.GetObjectsQuery<PoliticaTva>().Any(p => p.TipDocumentId == id)
+                => "profilul nu are politică de TVA pentru el",
+            { PoliticaCeruta: PoliticaProfil.InchidereTva }
+                when !os.GetObjectsQuery<PoliticaInchidereTva>().Any(p => p.TipDocumentId == id)
+                => "profilul nu are politica închiderii de TVA",
+            _ => null,
+        };
+        return lipsa == null ? null : $"{CoduriRefuz.TipFaraDeclaratie}: Tipul {tip.Cod} nu se operează: {lipsa}.";
     }
 
-    public static void Opereaza(IObjectSpace os, Document doc, TipDocument tip) {
+    /// <summary>Scrie tranzacțiile contractului acceptat și îl întoarce; un refuz anulează comanda.</summary>
+    public static N.Contract Opereaza(IObjectSpace os, Document doc, TipDocument tip) {
         using var receptie = ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: true);
         ArgumentNullException.ThrowIfNull(doc);
         ArgumentNullException.ThrowIfNull(tip);
-        if (!tip.PosteazaInCub)
-            return;
         if (doc.Detalii.OfType<ILinieCuImobilizare>().Any())
             BlocheazaNominalizarea(os);
         ReceptiiConexe.Fixeaza(os, doc);
-        var contract = Contracteaza(os, doc, tip);
+        var contract = Contracteaza(os, doc, tip, out var miscari);
         if (!contract.EsteAcceptat)
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
-        ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
+        VerificaAnaliza(os, doc, contract, miscari);
         Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
         VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: true);
         var explicatie = Explicatie.Din(contract, doc.Declarant().GetType().Name).Scrie();
@@ -42,20 +56,19 @@ public static partial class Materializare {
             var id = Scrie(os, doc.ID, tranzactie, purtator == null ? explicatie : null, purtator);
             purtator ??= id;
         }
+        return contract;
     }
 
-    /// <summary>Refuzurile declarației pentru dry-run (S-D4): citește, nu scrie nimic.</summary>
+    /// <summary>Refuzurile contractului și ale gardurilor de pe postările lui: citește, nu scrie nimic.</summary>
     public static IReadOnlyList<string> Refuzuri(IObjectSpace os, Document doc, TipDocument tip) {
         using var receptie = ReceptiiConexe.IncepeCitirea(os, doc, blocheaza: false);
         ArgumentNullException.ThrowIfNull(doc);
         ArgumentNullException.ThrowIfNull(tip);
-        if (!tip.PosteazaInCub)
-            return [];
         N.Contract contract;
         try {
-            contract = Contracteaza(os, doc, tip);
+            contract = Contracteaza(os, doc, tip, out var miscari);
             if (contract.EsteAcceptat)
-                ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
+                VerificaAnaliza(os, doc, contract, miscari);
             if (contract.EsteAcceptat)
                 Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
             if (contract.EsteAcceptat)
@@ -67,7 +80,8 @@ public static partial class Materializare {
         return contract.EsteAcceptat ? [] : Mesaje(contract.Refuzuri);
     }
 
-    public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno) {
+    public static void Storneaza(IObjectSpace os, Document doc, DateOnly dataStorno,
+            FiscalitateService.Atribuire inversaFiscala = null) {
         ArgumentNullException.ThrowIfNull(doc);
         ReceptiiConexe.VerificaFaraDependenti(os, doc);
         if (StingeriDeschidere(os, doc.ID).Any(p => p.Data > dataStorno))
@@ -89,7 +103,7 @@ public static partial class Materializare {
                 && (p.Tranzactie.Fel == N.FelTranzactie.Operare
                     || transferuriStoc.Contains(p.TranzactieId) || transferuriDeschidere.Contains(p.TranzactieId)))
             .ToList();
-        // Declarație goală (NIR conex fără diferență, 099) sau tip inert pe profil: nimic de inversat.
+        // Declarație goală (NIR conex fără diferență, 099): nimic de inversat.
         if (aleDocumentului.Count == 0)
             return;
         var tinte = aleDocumentului.Select(p => p.ID).ToList();
@@ -98,7 +112,7 @@ public static partial class Materializare {
             .ToList();
         var citite = aleDocumentului.Concat(atribuite)
             .DistinctBy(p => p.ID)
-            .Select(p => (p.ID, Randuri.Citeste(p) with {
+            .Select(p => (p.ID, p.TranzactieId, Randuri.Citeste(p) with {
                 InversaDin = new N.ReferintaPostare(p.ID, p.Spatiu),
             }))
             .ToList();
@@ -107,6 +121,8 @@ public static partial class Materializare {
             doc.ID,
             dataStorno,
             (dataStorno.Year * 100) + dataStorno.Month);
+        if (inversaFiscala != null)
+            tranzactie = CuInversaFiscala(tranzactie, doc.ID, inversaFiscala);
         var refuzuri = N.Conservare.Verifica(tranzactie);
         if (refuzuri.Count > 0)
             throw new OperareException(string.Join("\n", Mesaje(refuzuri)));
@@ -125,9 +141,6 @@ public static partial class Materializare {
         ArgumentNullException.ThrowIfNull(os);
         ArgumentNullException.ThrowIfNull(stingator);
         ArgumentNullException.ThrowIfNull(stins);
-        if (!MotorOperare.GasesteTipDocument(os, stingator).PosteazaInCub
-            || !MotorOperare.GasesteTipDocument(os, stins).PosteazaInCub)
-            throw new OperareException("IMPERECHERE_FARA_EFECT: ambele documente trebuie să posteze în cub.");
         if (suma > 0m) {
             suma -= Math.Min(suma, Citiri.Partide.NominalizataLibera(os, stingator.ID, stins.ID, data, contrapartidaId));
             if (suma == 0m) return null;
@@ -210,16 +223,20 @@ public static partial class Materializare {
         return Scrie(os, document, invers);
     }
 
-    public static void ReatribuieInversaFiscala(IObjectSpace os, Guid document, FiscalitateService.Atribuire atribuire) {
-        foreach (var postare in os.GetObjectsQuery<Postare>()
-                .Where(p => p.DocumentId == document && p.TipTvaId != null
-                    && p.Tranzactie.Fel == N.FelTranzactie.Storno).ToList()) {
-            postare.PerioadaDeclarare = atribuire.PerioadaD300;
-            postare.PerioadaD394 = atribuire.Reper.PerioadaD394;
-            postare.RegularizareD300 = atribuire.Reper.RegularizareD300;
-            postare.InversaTehnica = true;
-        }
-    }
+    // D9-A5: inversa unei corecții de eroare materială se naște cu atribuirea ei fiscală.
+    static N.Tranzactie CuInversaFiscala(N.Tranzactie tranzactie, Guid document, FiscalitateService.Atribuire atribuire) =>
+        tranzactie with {
+            Postari = [.. tranzactie.Postari.Select(p =>
+                p.Cauza.Document != document || p.Coordonate is not { CodTva: not null, ReperFiscal: { } reper } ? p
+                : p with { Coordonate = p.Coordonate with {
+                    PerioadaDeclarare = atribuire.PerioadaD300,
+                    ReperFiscal = reper with {
+                        PerioadaD394 = atribuire.Reper.PerioadaD394,
+                        RegularizareD300 = atribuire.Reper.RegularizareD300,
+                        InversaTehnica = true,
+                    },
+                } })],
+        };
 
     static IEnumerable<N.Postare> Citeste(IEnumerable<Postare> randuri, N.FelTranzactie fel) =>
         randuri.Where(p => p.Tranzactie.Fel == fel).Select(Randuri.Citeste);
@@ -306,12 +323,18 @@ public static partial class Materializare {
         return [.. dependenti, .. inCurs];
     }
 
-    static N.Contract Contracteaza(IObjectSpace os, Document doc, TipDocument tip) =>
-        doc.Declarant() is null
-            ? throw new OperareException(
-                $"Tipul {tip.Cod} e marcat PosteazaInCub, dar clasa "
-                + $"{MotorOperare.ClasaReala(doc).Name} nu declară.")
-            : Contractare.Contracteaza(os, doc);
+    static N.Contract Contracteaza(IObjectSpace os, Document doc, TipDocument tip, out IReadOnlyList<N.Miscare> miscari) {
+        MotorOperare.Refuza(MotivNuDeclara(os, doc, tip));
+        return Contractare.Contracteaza(os, doc, out miscari);
+    }
+
+    // Diferența recepției acoperite o păzește insula ei; restul, gardul mișcărilor (D9-D4).
+    static void VerificaAnaliza(IObjectSpace os, Document doc, N.Contract contract, IReadOnlyList<N.Miscare> miscari) {
+        if (ReceptiiConexe.EsteAcoperita(os, doc))
+            ReceptiiConexe.VerificaAnaliza(os, doc, contract.Tranzactii.SelectMany(t => t.Postari));
+        else
+            GardAnaliza.Verifica(os, doc, miscari);
+    }
 
     static Guid Scrie(IObjectSpace os, Guid? documentId, N.Tranzactie tranzactie,
             string explicatie = null, Guid? explicatieDin = null) {

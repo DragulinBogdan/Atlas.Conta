@@ -22,11 +22,29 @@ public struct OriginePartida {
     public Guid? DocumentId { get; set; }
 }
 
+public struct PartidaCuOrigine {
+    public Guid UnitateId { get; set; }
+    public Guid ContId { get; set; }
+    public Guid PartenerId { get; set; }
+    public DateOnly Deschisa { get; set; }
+    public Guid? DocumentId { get; set; }
+    public decimal Debit { get; set; }
+    public decimal Credit { get; set; }
+}
+
 public struct PartidaProprie {
     public Guid DocumentId { get; set; }
     public Guid UnitateId { get; set; }
     public Guid ContId { get; set; }
     public Guid PartenerId { get; set; }
+    public decimal Net { get; set; }
+}
+
+public struct MiscarePartida {
+    public Guid UnitateId { get; set; }
+    public Guid ContId { get; set; }
+    public Guid PartenerId { get; set; }
+    public DateOnly Data { get; set; }
     public decimal Net { get; set; }
 }
 
@@ -44,7 +62,8 @@ public static class Partide {
         var tinte = stinge ? proprii : proprii.Where(p => p.DocumentId == document);
         if (partener is { } cp) surse = surse.Where(p => p.PartenerId == cp);
         return (from s in surse
-                join t in tinte on new { s.ContId, s.PartenerId } equals new { t.ContId, t.PartenerId }
+                join t in tinte on new { s.ContId, PartenerId = (Guid?)s.PartenerId ?? Guid.Empty }
+                    equals new { t.ContId, t.PartenerId }
                 where s.DocumentId != t.DocumentId && s.Net * t.Net < 0m
                 select new { StingatorId = s.DocumentId, StinsId = t.DocumentId,
                     Disponibil = Math.Min(Math.Abs(s.Net), Math.Abs(t.Net)) })
@@ -54,12 +73,32 @@ public static class Partide {
                 Disponibil = g.Sum(p => p.Disponibil) });
     }
     public static IQueryable<PartidaProprie> Proprii(IObjectSpace os, DateOnly panaLa) =>
-        from s in Solduri(os, panaLa)
-        join o in Origini(os) on new { s.UnitateId, s.ContId, s.PartenerId }
+        CuOrigine(os, Solduri(os, panaLa)).Where(s => s.DocumentId != null)
+            .Select(s => new PartidaProprie { DocumentId = s.DocumentId.Value, UnitateId = s.UnitateId,
+                ContId = s.ContId, PartenerId = s.PartenerId, Net = s.Debit - s.Credit });
+
+    // D9-D10: cheia ne-nulă pe o parte; cu ambele nulabile EF adaugă ramura de nul și Postgres îmbină numai pe cont (SC-CIT-110).
+    /// <summary>Soldurile cu documentul deschizător al partidei; nul la partida fără document.</summary>
+    public static IQueryable<PartidaCuOrigine> CuOrigine(IObjectSpace os, IQueryable<SoldPartida> solduri) =>
+        from s in solduri
+        join o in OriginiDocument(os)
+            on new { UnitateId = (Guid?)s.UnitateId ?? Guid.Empty, s.ContId, PartenerId = (Guid?)s.PartenerId ?? Guid.Empty }
+            equals new { o.UnitateId, o.ContId, o.PartenerId } into origine
+        from o in origine.DefaultIfEmpty()
+        select new PartidaCuOrigine { UnitateId = s.UnitateId, ContId = s.ContId, PartenerId = s.PartenerId,
+            Deschisa = s.Deschisa, DocumentId = o.DocumentId, Debit = s.Debit, Credit = s.Credit };
+
+    /// <summary>Netul pe zile al partidelor deschise de document, fără postările documentului exclus.</summary>
+    public static IQueryable<MiscarePartida> MiscariPePartidele(IObjectSpace os, Guid document, Guid faraDocument) =>
+        from p in Postari(os)
+        join o in OriginiDocument(os).Where(o => o.DocumentId == document)
+            on new { UnitateId = p.Unitate ?? Guid.Empty, ContId = p.Cont, PartenerId = p.Partener ?? Guid.Empty }
             equals new { o.UnitateId, o.ContId, o.PartenerId }
-        where o.DocumentId != null
-        select new PartidaProprie { DocumentId = o.DocumentId.Value, UnitateId = s.UnitateId,
-            ContId = s.ContId, PartenerId = s.PartenerId, Net = s.Debit - s.Credit };
+        where p.DocumentId != faraDocument
+        group p by new { p.Unitate, p.Cont, p.Partener, p.Data } into g
+        select new MiscarePartida { UnitateId = g.Key.Unitate.Value, ContId = g.Key.Cont,
+            PartenerId = g.Key.Partener.Value, Data = g.Key.Data,
+            Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) };
 
     /// <summary>Restul documentului pe partidele proprii, cu aceeași selecție pe sens ca <see cref="Total"/>.</summary>
     public static decimal Ramas(IObjectSpace os, Guid document, SensStingere? sens) {
@@ -153,6 +192,12 @@ public static class Partide {
     public static IQueryable<OriginePartida> Origini(IObjectSpace os) => Postari(os)
         .Where(p => p.DocumentId == null && p.Tranzactie.Fel == N.FelTranzactie.Deschidere
             || p.DocumentId != null && p.Unitate == Identitate(p.DocumentId.Value, p.Cont, p.Partener.Value))
+        .Select(p => new OriginePartida { UnitateId = p.Unitate.Value, ContId = p.Cont,
+            PartenerId = p.Partener.Value, DocumentId = p.DocumentId }).Distinct();
+
+    /// <summary>Partidele deschise de un document, recunoscute după identitate.</summary>
+    public static IQueryable<OriginePartida> OriginiDocument(IObjectSpace os) => Postari(os)
+        .Where(p => p.DocumentId != null && p.Unitate == Identitate(p.DocumentId.Value, p.Cont, p.Partener.Value))
         .Select(p => new OriginePartida { UnitateId = p.Unitate.Value, ContId = p.Cont,
             PartenerId = p.Partener.Value, DocumentId = p.DocumentId }).Distinct();
 

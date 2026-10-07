@@ -15,6 +15,7 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
     public static readonly DeclarantFacturaIntrare Instanta = new();
 
     DeclarantFacturaIntrare() { }
+    public bool ConteazaPrinReguli => true;
 
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         ArgumentNullException.ThrowIfNull(operand);
@@ -59,11 +60,11 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
             doc.Id,
             doc.DataInregistrare,
             [.. miscari.Select(m => m with {
-                DeLa = Partide.CuPartida(m.DeLa, doc.Predator.Id, partide),
-                La = Partide.CuPartida(m.La, doc.Predator.Id, partide),
+                DeLa = Terti.Capat(operand, m.DeLa, doc.Predator.Id, partide),
+                La = Terti.Capat(operand, m.La, doc.Predator.Id, partide),
             })],
             decizii,
-            [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+            PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, tipuri), receptia?.Politica));
     }
 
     static void Antetul(DocumentFapt doc, Operand operand, ICollection<N.Refuz> refuzuri) {
@@ -107,19 +108,21 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
     // TR-D3: recepția e a facturii, dar regula ei de contare e a NIR-ului conex,
     // care nu e în operand; contrapartida e cea DECLARATĂ de politica de TVA a
     // tipului, iar regula naturii care postează pe factură rămâne rezerva (MINOR-5).
-    static RezolvareCont? Contrapartida(Operand operand, ICollection<N.Refuz> refuzuri) {
+    readonly record struct ContrapartidaRezolvata(RezolvareCont Cont, N.VersiunePolitica? Politica, Guid? Regula);
+
+    static ContrapartidaRezolvata? Contrapartida(Operand operand, ICollection<N.Refuz> refuzuri) {
         if (operand.PoliticaTva is { } politica) {
             var alPoliticii = Potrivire.Cont(
                 politica.SursaContrapartida, politica.ContrapartidaFallbackId, null, operand.Laturi);
             if (alPoliticii.ContId != null)
-                return alPoliticii;
+                return new(alPoliticii, PoliticiConsumate.Versiunea(politica), null);
         }
         foreach (var regula in operand.ReguliContare) {
             if (regula.NaturaFiltru is not (NaturaClasa.Serviciu or NaturaClasa.Cheltuiala))
                 continue;
             var alRegulii = Potrivire.Cont(regula.SursaContCredit, regula.ContCreditId, null, operand.Laturi);
             if (alRegulii.ContId != null)
-                return alRegulii;
+                return new(alRegulii, null, regula.Id);
         }
         refuzuri.Add(new N.Refuz(CoduriRefuz.RegulaContareLipsa,
             "Recepția n-are cont de furnizor: nicio politică de TVA și nicio regulă de contare pe "
@@ -128,14 +131,14 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
     }
 
     static (N.Capat Intern, N.Capat Tert, decimal Cantitate) Receptia(
-            Operand operand, LinieOperand linie, RezolvareCont contrapartida, List<N.Decizie> decizii) {
+            Operand operand, LinieOperand linie, ContrapartidaRezolvata contrapartida, List<N.Decizie> decizii) {
         var lot = linie.Lot!;
         var contStoc = linie.ContImplicitTipId!.Value;
-        var contTert = contrapartida.ContId!.Value;
+        var contTert = contrapartida.Cont.ContId!.Value;
         // Recepția n-are regulă proprie: rămâne coalesce-ul liniei, ca pe NIR.
         var analiza = Contari.Analiza(linie.Analiza, null, null);
         decizii.Add(new N.ContRezolvat(linie.Id, contStoc, SursaRezolvata.TipMaterial.ToString()));
-        decizii.Add(new N.ContRezolvat(linie.Id, contTert, contrapartida.Sursa.ToString()));
+        decizii.Add(new N.ContRezolvat(linie.Id, contTert, contrapartida.Cont.Sursa.ToString(), contrapartida.Regula));
         return (
             new N.Capat {
                 Cont = contStoc,
@@ -156,8 +159,7 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
 
     static (N.Capat Intern, N.Capat Tert, decimal Cantitate) Netul(
             Operand operand, LinieOperand linie, ContareLinie contare, List<N.Decizie> decizii) {
-        decizii.Add(new N.ContRezolvat(linie.Id, contare.ContDebit, contare.SursaDebit.ToString()));
-        decizii.Add(new N.ContRezolvat(linie.Id, contare.ContCredit, contare.SursaCredit.ToString()));
+        Contari.Decide(contare, linie.Id, decizii);
         return (
             new N.Capat {
                 Cont = contare.ContDebit,
@@ -173,8 +175,8 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
             0m);
     }
 
-    // Capitalizatul e BRUT pe linie, dar jurnalul îl desface în bază + taxă
-    // (`RegistruTvaService.Cifre`), iar jurnalul e proiecția pe `CodTva` (090a):
+    // Capitalizatul e BRUT pe linie, dar jurnalul îl desface în bază + taxă,
+    // iar jurnalul e proiecția pe `CodTva` (090a):
     // netul devine DOUĂ mișcări pe același cont de cost, cu Σ neschimbată.
     static IEnumerable<N.Miscare> Netele(Operand operand, LinieOperand linie, N.Capat intern, N.Capat tert,
             decimal cantitate, TipTvaFapt? tip, N.Rotunjire rotunjire) {

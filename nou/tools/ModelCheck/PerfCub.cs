@@ -78,8 +78,10 @@ sealed partial class PerfCub(Func<IObjectSpace> deschide, Action<string, bool> c
                     soc.Telefon = societate.Telefon; soc.ContBancarId = societate.ContBancarId;
                     os.GetObjectsQuery<ContPropriu>().Single(c => c.Cod == "BANCA").Iban = iban;
                 }
-                foreach (var u in os.GetObjectsQuery<ApplicationUser>().Where(u => u.UserName == Utilizator).ToList()) os.Delete(u);
-                foreach (var r in os.GetObjectsQuery<PermissionPolicyRole>().Where(r => r.Name == Utilizator).ToList()) os.Delete(r);
+                if (!Pastrata) {
+                    foreach (var u in os.GetObjectsQuery<ApplicationUser>().Where(u => u.UserName == Utilizator).ToList()) os.Delete(u);
+                    foreach (var r in os.GetObjectsQuery<PermissionPolicyRole>().Where(r => r.Name == Utilizator).ToList()) os.Delete(r);
+                }
                 os.CommitChanges();
             });
         }
@@ -127,7 +129,7 @@ sealed partial class PerfCub(Func<IObjectSpace> deschide, Action<string, bool> c
         }
         Lung(sfarsit);
         Comanda(os => ((EFCoreObjectSpace)os).DbContext.Database.ExecuteSqlRaw("ANALYZE"));
-        Reconciliaza(fisa);
+        VerificaVolumul(fisa);
     }
 
     void Cronometrat(string tip, Action actiune) {
@@ -248,13 +250,13 @@ sealed partial class PerfCub(Func<IObjectSpace> deschide, Action<string, bool> c
             os.CommitChanges(); return x.ID;
         });
         Opereaza(ldi);
-        // ASM pe conturi diferite (Operare) și trei transformări 1 + 1 + 1 din 3 × 3,333333 (absorbția Δ a regimului dual).
+        // ASM pe conturi diferite (Operare) și trei transformări 1 + 1 + 1 din 3 × 3,333333, fiecare cu P = C (D9-D3).
         var materie = Factura(d, new LinieFctScena(4, 10, Tip: Privat ? "301" : "302.03.00")); Dateaza(materie.Id, d);
         Opereaza(Opereaza(materie.Id).ConexId.Value);
         Opereaza(Asm(d.AddDays(2), materie.Linii[0], 4, 40, Privat ? "345" : "303.01.00"));
         var treime = Factura(d, new LinieFctScena(3, 3.333333m)); Dateaza(treime.Id, d);
         Opereaza(Opereaza(treime.Id).ConexId.Value);
-        foreach (var valoare in new[] { 3.33m, 3.33m, 3.34m }) Opereaza(Asm(d.AddDays(2), treime.Linii[0], 1, valoare, Stoc));
+        foreach (var valoare in new[] { 3.33m, 3.34m, 3.33m }) Opereaza(Asm(d.AddDays(2), treime.Linii[0], 1, valoare, Stoc));
         if (Privat) {
             var marfa = Factura(d, new LinieFctScena(10, 10, Tip: "371")); Dateaza(marfa.Id, d);
             Opereaza(Opereaza(marfa.Id).ConexId.Value);

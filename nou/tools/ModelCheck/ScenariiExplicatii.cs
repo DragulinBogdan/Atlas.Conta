@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
+using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +12,7 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 // X-D4: explicația deciziei, persistată pe prima tranzacție a contractului (SC-CIT-96, S-r11).
-sealed class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<string, bool> check,
+sealed partial class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<string, bool> check,
     bool privat, Action<IObjectSpace, int, int> inchide)
     : ScenaDocumente(deschide, check, privat, inchide, "EXPL", 2011) {
     FacturaScena Bon(params (LinieScena Lot, decimal Cantitate)[] linii) {
@@ -20,7 +21,8 @@ sealed class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<string, bool
         var rezultat = new List<LinieScena>();
         foreach (var (lot, q) in linii) {
             var l = os.CreateObject<DocumentDetaliu>(); l.Document = d; l.Pozitie = rezultat.Count + 1;
-            l.TipMaterialId = Tip(os, Stoc); l.LotId = lot.Lot; l.Cantitate = q;
+            l.TipMaterialId = os.GetObjectByKey<Lot>(lot.Lot!.Value).Produs.TipMaterialId!.Value;
+            l.LotId = lot.Lot; l.Cantitate = q;
             rezultat.Add(new(l.ID, lot.Lot, lot.Produs));
         }
         os.CommitChanges(); return new(d.ID, rezultat.ToArray());
@@ -95,7 +97,75 @@ sealed class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<string, bool
         Verifica("SC-CIT-96", "operarea scrie explicația", Tranzactii(anulat.Id).Single().Explicata);
         Anuleaza(anulat.Id); FaraEfecte("SC-CIT-96", anulat.Id);
 
+        IzolareaPoliticii();
+        VersiuneaPoliticii(scump);
         DeclaratieInvalida(scump);
+    }
+
+    // SC-CIT-111 (D9-A8): regula care a decis și contorul ei; editarea și ștergerea prin ușa gardianului.
+    void VersiuneaPoliticii(LinieScena lot) {
+        var regula = CreeazaPolitica(CodPoliticii);
+        var propriu = Receptioneaza(new LinieFctScena(4, 12.5m, Tip: CodPoliticii)).Linii.Single();
+        var refuzuriInitiale = RefuzuriSeed();
+        int Contor(Guid regula) => CuSpatiu(os => os.GetObjectByKey<RegulaContare>(regula)?.OptimisticLockField ?? -1);
+        ExplicatieContractDto Dto(C.Citiri.ExplicatiePurtata p) => CuSpatiu(os =>
+            ExplicatieContractDto.Din(p.Purtator, p.Explicatie, v => C.Citiri.VersiuniPolitica.Contor(os, v)));
+        string Json(Guid tranzactie) => CuSpatiu(os =>
+            os.GetObjectsQuery<C.Tranzactie>().Where(t => t.ID == tranzactie).Select(t => t.Explicatie).Single());
+        void PrinGardian(Action<IObjectSpace> actiune) =>
+            Comanda(os => { actiune(os); GardianEditare.Verifica(os); os.CommitChanges(); });
+        static bool Refuza(string text) {
+            try { C.Explicatie.Citeste(text); return false; }
+            catch (InvalidOperationException) { return true; }
+        }
+
+        var bon1 = Bon((propriu, 1)); Opereaza(bon1.Id);
+        var e1 = Explicatia(bon1.Id, N.FelTranzactie.Operare).Origini.Single();
+        var regulaDecisa = e1.Explicatie.Linii().Single().Conturi.Select(c => c.Regula).Distinct().Single();
+        var versiuni1 = e1.Explicatie.Ipoteze.OfType<N.VersiunePolitica>().ToList();
+        Console.WriteLine($"     MĂSURAT (SC-CIT-111): regula {regulaDecisa}, contor {(regulaDecisa is Guid g ? Contor(g) : -1)}; "
+            + $"ipoteze [{string.Join("; ", versiuni1)}].");
+        Verifica("SC-CIT-111", "operarea reține regula câștigătoare și contorul ei: o singură `VersiunePolitica`, pe regula "
+            + "numită de ambele `ContRezolvat`, cu `OptimisticLockField` al rândului",
+            regulaDecisa is Guid r1 && r1 == regula && versiuni1.Count == 1
+            && versiuni1[0] == new N.VersiunePolitica(nameof(RegulaContare), r1, Contor(r1)));
+        var dto1 = Dto(e1);
+        var json1 = Json(e1.Purtator);
+        Verifica("SC-CIT-111", "DTO-ul arată rândul neschimbat, cu contorul curent egal, și regula pe fiecare cont",
+            dto1.Politici is [{ Fel: nameof(RegulaContare), Schimbata: false } p1] && p1.RandId == regula
+            && p1.VersiuneCurenta == p1.Versiune && dto1.Linii.Single().Conturi.All(c => c.RegulaId == regula));
+
+        var contorInitial = Contor(regula);
+        try {
+            PrinGardian(os => { var r = os.GetObjectByKey<RegulaContare>(regula); r.PastreazaSemn = !r.PastreazaSemn; });
+            Verifica("SC-CIT-111", "editarea prin ușa gardianului crește contorul rândului cu 1 și îl timbrează ca al clientului",
+                Contor(regula) == contorInitial + 1 && CuSpatiu(os => !os.GetObjectByKey<RegulaContare>(regula).DinSeed));
+            var bon2 = Bon((propriu, 1)); Opereaza(bon2.Id);
+            var e2 = Explicatia(bon2.Id, N.FelTranzactie.Operare).Origini.Single();
+            var (dto1Dupa, dto2) = (Dto(e1), Dto(e2));
+            Verifica("SC-CIT-111", "operarea nouă reține contorul nou; explicația veche rămâne neschimbată și e arătată „schimbată”, cea nouă nu",
+                e2.Explicatie.Ipoteze.OfType<N.VersiunePolitica>().Single() == new N.VersiunePolitica(nameof(RegulaContare), regula, contorInitial + 1)
+                && Json(e1.Purtator) == json1
+                && dto1Dupa.Politici.Single() is { Schimbata: true } s1 && s1.Versiune == contorInitial && s1.VersiuneCurenta == contorInitial + 1
+                && dto2.Politici.Single() is { Schimbata: false } s2 && s2.Versiune == contorInitial + 1 && s2.VersiuneCurenta == contorInitial + 1);
+            PrinGardian(os => os.Delete(os.GetObjectByKey<RegulaContare>(regula)));
+            var dupa = Dto(e2);
+            Verifica("SC-CIT-111", "regula clientului ștearsă apare ca „schimbată”, fără contor curent",
+                CuSpatiu(os => os.GetObjectByKey<RegulaContare>(regula) == null)
+                && dupa.Politici.Single() is { Schimbata: true, VersiuneCurenta: null });
+        }
+        finally { PurjeazaNomenclatoare(); }
+        Verifica("SC-CIT-111", "regula proprie și refuzul ei de seed sunt curățate; refuzurile preexistente rămân identice",
+            Contor(regula) == -1 && RefuzuriSeed().SequenceEqual(refuzuriInitiale));
+
+        var btr = Iesire(true, (lot, 1)); Opereaza(btr.Id);
+        var eBtr = Explicatia(btr.Id, N.FelTranzactie.Transfer).Origini.Single();
+        Verifica("SC-CIT-111", "tipul fără reguli (BTR) nu scrie ipoteza: lista politicilor e vidă, conturile fără regulă",
+            !eBtr.Explicatie.Ipoteze.OfType<N.VersiunePolitica>().Any() && Dto(eBtr).Politici.Count == 0
+            && eBtr.Explicatie.Linii().SelectMany(l => l.Conturi).All(c => c.Regula == null));
+        Verifica("SC-CIT-111", "forma persistată e versiunea 2; versiunea 1 e refuzată de cititor",
+            System.Text.RegularExpressions.Regex.IsMatch(json1, "\"v\":\\s*2")
+            && Refuza(System.Text.RegularExpressions.Regex.Replace(json1, "\"v\":\\s*2", "\"v\": 1")));
     }
 
     // S-r11: excepția de construcție a nucleului iese ca refuz cu cod stabil, pe dry-run și pe operare.
@@ -125,16 +195,16 @@ sealed class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<string, bool
         var linie = Guid.NewGuid();
         var explicatie = new C.Explicatie("DeclarantDeProba", 3, [
             new N.ContRezolvat(linie, lot.Cont, "Diferență: Plus"),
+            new N.ContRezolvat(linie, lot.Cont, "TipMaterial", Guid.NewGuid()),
             new N.ValoareIesire(linie, lot, 1.5m, 20.10m),
             new N.ValoareDeclarata(linie, lot, 2m, .33m, SurseValoare.Receptie),
             new N.AlocareFifo(linie, partida, 61m),
             new N.PartidaDeschisa(linie, partida),
-            new N.AbsorbtieEvaluare(Guid.NewGuid(), linie, lot.Cont, 3.33m, 3.34m, 3.33m, .01m),
         ], [
             new N.SoldUnitateCitit(lot, new N.Sold(100m, 20.10m, 8.5m, 0m)),
             new N.SoldUnitateCitit(partida, new N.Sold(0m, 61m, 0m, 12.5m)),
             new N.PerioadaDeschisa(An, 1),
-            new N.VersiunePolitica("seed", new(An, 1, 5)),
+            new N.VersiunePolitica(nameof(RegulaContare), Guid.NewGuid(), 3),
         ]);
         var json = explicatie.Scrie();
         var prinBaza = CuSpatiu(os => ((EFCoreObjectSpace)os).DbContext.Database
@@ -145,9 +215,9 @@ sealed class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<string, bool
         }
         Verifica("SC-CIT-96", "forma persistată: toate deciziile și ipotezele se citesc înapoi identic, și după trecerea prin jsonb",
             C.Explicatie.Citeste(json) == explicatie && C.Explicatie.Citeste(prinBaza) == explicatie
-            && json.StartsWith("{\"v\":1,\"declarant\":\"DeclarantDeProba\",\"jumatati\":3,\"decizii\":[", StringComparison.Ordinal));
+            && json.StartsWith("{\"v\":2,\"declarant\":\"DeclarantDeProba\",\"jumatati\":3,\"decizii\":[", StringComparison.Ordinal));
         Verifica("SC-CIT-96", "versiune, decizie sau ipoteză necunoscută: cititorul refuză, nu ghicește",
-            Refuza(json.Replace("\"v\":1", "\"v\":2")) && Refuza(json.Replace(nameof(N.ValoareIesire), "ValoareNoua"))
+            Refuza(json.Replace("\"v\":2", "\"v\":1")) && Refuza(json.Replace(nameof(N.ValoareIesire), "ValoareNoua"))
             && Refuza(json.Replace(nameof(N.PerioadaDeschisa), "PerioadaNoua")));
     }
 }

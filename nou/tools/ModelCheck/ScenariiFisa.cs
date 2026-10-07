@@ -19,11 +19,6 @@ sealed class ScenariiFisa(Func<IObjectSpace> deschide, Action<string, bool> chec
         Comanda(os => {
             Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os);
             Verifica("SC-CIT-23", "cubul acoperă registrul: invarianții trec", true);
-            var db = ((EFCoreObjectSpace)os).DbContext;
-            using var tx = db.Database.BeginTransaction();
-            db.Database.ExecuteSqlInterpolated($"DELETE FROM \"Postare\" WHERE \"DocumentId\" = {initial.Id}");
-            Refuza("SC-CIT-23", () => Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os), "CITIRE_ISTORIC_INCOMPLET");
-            tx.Rollback();
         });
         var debit = N(2, 3, Serviciu, ContFurnizor, 60);
         var credit = N(2, 5, ContFurnizor, Serviciu, 25);
@@ -78,13 +73,6 @@ sealed class ScenariiFisa(Func<IObjectSpace> deschide, Action<string, bool> chec
         var multi = Nota(new(An, 2, 13), new LinieNtcScena(Serviciu, Stoc, 20),
             new LinieNtcScena(ContFurnizor, Stoc, 30));
         Opereaza(multi.Id);
-        Comanda(os => {
-            var db = ((EFCoreObjectSpace)os).DbContext;
-            using var tx = db.Database.BeginTransaction();
-            db.Database.ExecuteSqlInterpolated($"DELETE FROM \"Postare\" WHERE \"DocumentId\" = {multi.Id} AND \"LinieId\" = {multi.Linii[0].Id}");
-            Refuza("SC-CIT-34", () => Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os), "CITIRE_ISTORIC_INCOMPLET");
-            tx.Rollback();
-        });
         Comanda(os => {
             var db = ((EFCoreObjectSpace)os).DbContext;
             using var tx = db.Database.BeginTransaction();

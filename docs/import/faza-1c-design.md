@@ -861,3 +861,37 @@ Limitare cunoscută: rândul invers al unui storno poartă `DataOperare` a
 originalului (stornarea n-are timbru propriu), deci ordinea lui intra-zi e
 aproximată. RLF în Import1C: `Alocare.Aloca(absoarbeLaGolire: false)` din
 `HandlerReturFurnizor`, ca puntea să declare exact cifra postată.
+
+## 16. TR-D9a pasul 5 (2026-10-06) — conectorul pe cititorii cubului
+
+Amendează §8 și §15. Conectorul nu mai referă registrele, `StocService` și
+planul vechi; citirile noi trec prin `Cub/Citiri`. E probat numai prin
+compilare până la rularea-diagnostic de la închiderea TR-D9a.
+
+- **Contractul 1** citește `Contabil.Postari`, aceeași intrare ca balanța
+  produsului.
+- **Contractul 2** compară tot perechi (cont debit, cont credit). Perechea
+  unei linii ITV se reface din cele două postări ale ei din aceeași
+  tranzacție, una pe debit și una pe credit, de aceeași valoare. O linie de
+  altă formă e eșec al contractului, cu documentul și linia numite.
+- **Contractul 3** citește `Loturi`, pe (lot, cont, gestiune). Numărul de
+  mișcări al cheii, intrarea pragului de rotunjire, e acum număr de postări.
+  Categoria „valoare fără cantitate, moștenită din deschidere” a ieșit:
+  valoarea aceea nu mai intră în cub.
+- **Reconcilierea deschiderii**: celulele sursei cu valoare fără cantitate
+  nu sunt în cub. Sunt o categorie de justificare numită, care acoperă exact
+  cheile măsurate la deschidere, fiecare cu valoarea ei; raportul dă numărul
+  lor și suma.
+- **Predicția de valoare a alocării** (§12.1, §15) cheamă
+  `Nucleu.Evaluare.Iesire` pe soldul lotului din cub, pentru orice ieșire
+  evaluată din sold, nu numai la golire. Returul cu valoare declarată rămâne
+  pe preț × cantitate. Motorul evaluează pe (lot, cont, produs, gestiune);
+  alocarea lucrează pe lot, deci un lot cu sold pe două conturi ale aceleiași
+  categorii de stoc, în aceeași gestiune, e refuzat cu mesaj, nu însumat.
+- **Au ieșit**: `--sabotaj` (proba de sensibilitate a contractelor 1 și 3),
+  oracolul golirii `1'. D18-D4` cu blocul lui de raport, scrierea deschiderii
+  în registre cu cele șapte verificări de citire înapoi, purja defensivă a
+  rândurilor de registru ale unui draft. Regula golirii e păzită pe cub de
+  evaluarea nucleului și de catalogul de scenarii.
+- Conectorul n-are un mod care să ruleze numai reconcilierea, fără scriere:
+  orice invocare migrează și seed-uiește baza.

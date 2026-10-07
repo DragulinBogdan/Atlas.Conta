@@ -5,7 +5,7 @@ using DevExpress.ExpressApp.DC;
 
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
-/// <summary>Un rând de `RegistruImobilizari`, citit o dată și consumat în memorie.</summary>
+/// <summary>Un fapt al fișei de imobilizare, citit o dată și consumat în memorie.</summary>
 public readonly record struct RandImobilizare(
     Guid ID, Guid ImobilizareId, DateOnly Data, FelMiscareImobilizare Fel, bool Storno, Guid DetaliuId,
     decimal Valoare, decimal ValoareFiscala,

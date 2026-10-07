@@ -187,9 +187,8 @@ are cel mult o Bază și o Taxă; achiziția cu taxare inversă adaugă o
 Autocolectare pe contrapartea colectată, cu același sens Achiziție.
 Nomenclatorul curent oferă etichete, fără să recalculeze cota istorică. (103)
 
-Registrul TVA vechi rămâne diagnostic în regimul dual. Cititorii fiscali
-portați nu îl folosesc drept sursă. Nu există snapshot fiscal cumulativ și
-nici compatibilizare a istoricului de dezvoltare. (102, 103)
+Faptele fiscale stau numai pe postări. Nu există snapshot fiscal cumulativ și
+nici compatibilizare a istoricului de dezvoltare. (102, 103, D9-D2)
 
 ### Intervale și diagnostic TVA
 
@@ -482,7 +481,8 @@ RepeatableRead și refuză o tranzacție ambiantă mai slabă. Regulile complete
 
 Plata este evenimentul cubului (`Operare`/`Storno`) al unui document de
 trezorerie, cu `TransactionID`-ul tranzacției GL. Liniile ei sunt postările
-de pe latura contrapartidei (opusă `TipDocument.LaturaContPropriu`), grupate
+de pe latura contrapartidei (opusă laturii pe care `Document.Laturi()` admite
+numai contul propriu), grupate
 pe cont, partener și țintă. Ținta se află la capătul lunii operării: partida
 străină nominalizată la operare, perechile `Transfer` de pe partida proprie
 datate până atunci (legătură, desfacere, notă care stinge avansul) și restul.

@@ -16,7 +16,60 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         Fiscal();
         Refuzuri();
         Dependenti();
+        AnalizaReceptiei();
         PestePerioada();
+    }
+
+    protected override void CurataNomenclatoare(IObjectSpace os, Purja purja) =>
+        purja.Adauga(os.GetObjectsQuery<Angajament>().Where(a => a.Cod == Marcaj));
+
+    // D9-A3: analiza obligatorie a recepției se judecă la operarea facturii.
+    void AnalizaReceptiei() {
+        if (Privat) return;
+        var politica = CuSpatiu(os => os.GetObjectsQuery<PoliticaValidare>().Single(p => p.TipDocument.Cod == "FCT").ID);
+        void Clasificatie(bool ceruta) => Comanda(os => {
+            os.GetObjectByKey<PoliticaValidare>(politica).CereClasificatieBugetara = ceruta; os.CommitChanges();
+        });
+        var angajament = CuSpatiu(os => {
+            var a = os.CreateObject<Angajament>(); a.Cod = Marcaj; a.Denumire = Marcaj; os.CommitChanges(); return a.ID;
+        });
+        FacturaScena Culeasa(Guid? economic, Guid? angajat) {
+            var f = Factura(Ianuarie, new LinieFctScena(10, 10));
+            Comanda(os => {
+                var l = os.GetObjectByKey<FacturaIntrareDetaliu>(f.Linii[0].Id);
+                l.CodEconomicId = economic; l.AngajamentId = angajat; os.CommitChanges();
+            });
+            return f;
+        }
+        RandScena[] Receptia(FacturaScena f, Guid? economic) =>
+            [.. Randuri(f, 0, 10, 100).Select(r => r with { Economic = economic })];
+        Verifica("SC-FCT-12", "contul furnizorului cere cod economic, contul de stoc nu cere nimic", CuSpatiu(os =>
+            os.GetObjectByKey<Cont>(Cont(ContFurnizor)).DimensiuniObligatorii.HasFlag(DimensiuneFlags.CodEconomic)
+            && os.GetObjectByKey<Cont>(Cont(Stoc)).DimensiuniObligatorii == DimensiuneFlags.Niciuna));
+        Clasificatie(false);
+        try {
+            var fara = Culeasa(null, null);
+            var dryRun = CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(fara.Id));
+            Verifica("SC-FCT-12", "fără cod economic și fără angajament: dry-run refuzat pe contul furnizorului — "
+                + string.Join(" | ", dryRun), dryRun.Count == 1 && dryRun[0].Contains(ContFurnizor)
+                && dryRun[0].Contains("credit") && dryRun[0].EndsWith("cere: Cod economic."));
+            Refuza("SC-FCT-12", () => Opereaza(fara.Id), "cere: Cod economic"); FaraEfecte("SC-FCT-12", fara.Id);
+            Verifica("SC-FCT-12", "refuzul nu naște NIR conex", CuSpatiu(os =>
+                !os.GetObjectsQuery<Document>().Any(d => d.DocumentSursaId == fara.Id)));
+
+            var angajata = Culeasa(null, angajament);
+            var nirAngajat = Opereaza(angajata.Id).ConexId!.Value;
+            Postari("SC-FCT-13", angajata.Id, N.FelTranzactie.Operare, Ianuarie, Receptia(angajata, null));
+            Opereaza(nirAngajat);
+            SoldLot("SC-FCT-13", angajata.Linii[0].Lot!.Value, Magazie, Ianuarie, 10, 100);
+
+            var explicita = Culeasa(Economic, null);
+            var nirExplicit = Opereaza(explicita.Id).ConexId!.Value;
+            Postari("SC-FCT-14", explicita.Id, N.FelTranzactie.Operare, Ianuarie, Receptia(explicita, Economic));
+            Opereaza(nirExplicit);
+            SoldLot("SC-FCT-14", explicita.Linii[0].Lot!.Value, Magazie, Ianuarie, 10, 100);
+        }
+        finally { Clasificatie(true); }
     }
 
     RandScena[] Randuri(FacturaScena f, int index, decimal q, decimal net, decimal taxa = 0,
@@ -125,7 +178,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             CuSpatiu(os => {
                 var d = os.GetObjectByKey<FacturaIntrare>(trei.Id);
                 return d.Detalii.OrderBy(l => l.Pozitie).Select(l => l.ValoareTva).ToArray() is [2.11m, 2.11m, 2.10m]
-                    && d.Total == 36.41m && d.TotalStingere == 36.41m;
+                    && d.Total == 36.41m && Atlas.Conta.BackOffice.Module.Motor.ImperechereService.Total(os, trei.Id) == 36.41m;
             }));
     }
 
@@ -168,8 +221,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void TaxareInversa(Guid factura) {
         Verifica("SC-FCT-10", "total de stins 100 pe antet și pe cub, fără taxa autolichidată", CuSpatiu(os =>
-            os.GetObjectByKey<FacturaIntrare>(factura).TotalStingere == 100m
-            && Atlas.Conta.BackOffice.Module.Motor.ImperechereService.Total(os, factura) == 100m));
+            Atlas.Conta.BackOffice.Module.Motor.ImperechereService.Total(os, factura) == 100m));
         Verifica("SC-FCT-10", "plata autogenerată plătește 100", CuSpatiu(os => {
             var f = os.GetObjectByKey<FacturaIntrare>(factura); f.GenereazaPlata = true;
             var plata = f.GenereazaSecundar(os);

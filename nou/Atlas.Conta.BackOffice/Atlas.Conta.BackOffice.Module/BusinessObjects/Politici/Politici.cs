@@ -38,16 +38,6 @@ public class TipDocument : Politica, ICuCautare, ICuProvenienta {
     public virtual Guid? TipTvaImplicitId { get; set; }
     public virtual TipTva TipTvaImplicit { get; set; }
 
-    // S-D3 — regimul dual al strangler-ului: documentele acestui tip scriu ȘI
-    // cubul de postări, în aceeași tranzacție cu registrele.
-    [XafDisplayName("Postează în cub")]
-    public virtual bool PosteazaInCub { get; set; }
-
-    // B-r2 — latura pe care stă contul propriu al trezoreriei (plata: predator;
-    // încasarea: primitor); `null` pe tipurile care n-au cont propriu.
-    [XafDisplayName("Latura contului propriu")]
-    public virtual LaturaDocument? LaturaContPropriu { get; set; }
-
     // F20-D1 — coloana GENERATĂ de căutare fără diacritice; valoarea e a
     // BAZEI de date (vezi `Cautare` / `ICuCautare`), EF n-o scrie niciodată.
     [XafDisplayName("Căutare")]
@@ -414,7 +404,7 @@ public class MapareD300 : Politica, ICuProvenienta {
         CustomMessageTemplate = "Tipul de TVA este obligatoriu.")]
     public virtual TipTva TipTva { get; set; }
 
-    // Latura pe care se aplică maparea — aceeași axă ca `RegistruTva.Sens`
+    // Latura pe care se aplică maparea — aceeași axă ca `Postare.SensTva`
     // (achiziție/livrare), fiindcă rândul de decont diferă per sens: N21 e rd. 9
     // pe livrare și rd. 24 pe achiziție.
     public virtual SensTva Sens { get; set; }
@@ -547,7 +537,7 @@ public class MapareD394 : Politica, ICuProvenienta {
         CustomMessageTemplate = "Tipul de TVA este obligatoriu.")]
     public virtual TipTva TipTva { get; set; }
 
-    // Aceeași axă ca `RegistruTva.Sens` și `MapareD300.Sens`.
+    // Aceeași axă ca `Postare.SensTva` și `MapareD300.Sens`.
     public virtual SensTva Sens { get; set; }
 
     [XafDisplayName("Tip operațiune D394")]

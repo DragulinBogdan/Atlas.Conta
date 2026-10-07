@@ -8,12 +8,12 @@ public static class Motor {
         var operare = new List<Postare>();
         var transfer = new List<Postare>();
         foreach (var miscare in declaratie.Miscari) {
-            var (debit, credit) = Miscare.Postari(miscare, declaratie.Data);
+            var (debit, credit) = Miscare.Postari(miscare, declaratie.Data, operare.Count / 2 + 1);
             operare.Add(debit);
             operare.Add(credit);
         }
         foreach (var mutare in declaratie.Mutari) {
-            var (iesire, intrare) = Mutare.Postari(mutare, declaratie.Data);
+            var (iesire, intrare) = Mutare.Postari(mutare, declaratie.Data, transfer.Count / 2 + 1);
             transfer.Add(iesire);
             transfer.Add(intrare);
         }
@@ -51,7 +51,7 @@ public static class Motor {
                 throw new ArgumentException(
                     $"mutarea are cauza pe documentul {mutare.Cauza.Document}, nu pe {document}.",
                     nameof(mutari));
-            var (iesire, intrare) = Mutare.Postari(mutare, data);
+            var (iesire, intrare) = Mutare.Postari(mutare, data, postari.Count / 2 + 1);
             postari.Add(iesire);
             postari.Add(intrare);
         }

@@ -1,0 +1,10 @@
+20:57:31 START
+20:57:32 r1-astra start
+21:01:10 r1-astra exit=0 bytes=13136
+21:01:10 r1-fable start
+21:06:00 r1-fable exit=0 bytes=13521
+21:06:00 r2-astra start
+21:14:59 r2-astra exit=0 bytes=21566
+21:14:59 r2-fable start
+21:26:18 r2-fable exit=0 bytes=20661
+21:26:18 GATA

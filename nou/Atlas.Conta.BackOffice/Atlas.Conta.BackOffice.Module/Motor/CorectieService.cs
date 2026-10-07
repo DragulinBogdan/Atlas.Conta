@@ -16,7 +16,7 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // prin metadata EF — nu o listă scrisă de mână pe 15 tipuri, care ar fi tăcut
 // incompletă la primul câmp nou al unei frunze. Ce NU copiază e o listă mică și
 // justificabilă: identitatea (`ID`, discriminatorul `ClrType`), ce stăpânește motorul (`Stare`,
-// `DataOperare`, `Autogenerat`, `DocumentSursaId`, `TotalStingere`), datele proprii corecției
+// `DataOperare`, `Autogenerat`, `DocumentSursaId`), datele proprii corecției
 // (`DataInregistrare`, `CorecteazaId`, `MotivCorectie`) și câmpurile de
 // blocare optimistă.
 //
@@ -29,7 +29,7 @@ public static class CorectieService {
         nameof(Document.ID), nameof(Document.Stare), nameof(Document.DataOperare),
         nameof(Document.DataInregistrare), nameof(Document.DocumentSursaId),
         nameof(Document.Autogenerat), nameof(Document.CorecteazaId), nameof(Document.MotivCorectie),
-        nameof(Document.TotalStingere), nameof(Document.ClrType),
+        nameof(Document.ClrType),
         nameof(Editabila.OptimisticLockField),
     };
 
@@ -67,9 +67,11 @@ public static class CorectieService {
         if (original.Stare != StareDocument.Operat)
             throw new OperareException("Se corectează doar un document operat.");
 
-        // Storno-ul, cu toți gardienii lui (perioada corecției deschisă, data
-        // ≥ data înregistrării, fără dependenți, fără împerecheri).
-        MotorOperare.Storneaza(os, original, dataCorectie);
+        // D9-A5: atribuirea fiscală a inversei se citește înaintea stornării și intră în ea.
+        var inversa = motiv == MotivCorectie.EroareMateriala && FiscalitateService.Original(os, documentId) is { } fiscal
+            ? FiscalitateService.Corectie(os, fiscal, dataCorectie)
+            : null;
+        MotorOperare.Storneaza(os, original, dataCorectie, inversa);
 
         var db = DbContext(os);
         var corectie = (Document)os.CreateObject(db.Entry(original).Metadata.ClrType);
@@ -90,16 +92,6 @@ public static class CorectieService {
             Copiaza(db, linie, copie, ExcluseLinie);
             copie.Document = corectie;
             RenasteLotul(os, db, linie, copie);
-        }
-
-        if (motiv == MotivCorectie.EroareMateriala && FiscalitateService.Original(os, documentId) is { } fiscal) {
-            var atribuire = FiscalitateService.Corectie(os, fiscal, dataCorectie);
-            foreach (var rand in os.GetObjectsQuery<RegistruTva>()
-                    .Where(r => r.DocumentId == documentId && r.Storno).ToList()) {
-                rand.PerioadaAn = atribuire.PerioadaD300 / 100;
-                rand.PerioadaLuna = atribuire.PerioadaD300 % 100;
-            }
-            Cub.Materializare.ReatribuieInversaFiscala(os, documentId, atribuire);
         }
 
         var erori = new List<string>();

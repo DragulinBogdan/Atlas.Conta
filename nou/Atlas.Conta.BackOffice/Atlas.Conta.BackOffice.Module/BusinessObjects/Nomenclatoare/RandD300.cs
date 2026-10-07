@@ -23,7 +23,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 //
 // DE CE în NUCLEU, nu în pachetul de profil: formularul e al legii, nu al
 // profilului contabil — bugetarul are aceleași 55 de rânduri, doar că fără
-// nicio mapare (`RegistruTva` îi e gol, neavând `PoliticaTva`). Ce diferă per
+// nicio mapare (n-are fapte fiscale, neavând `PoliticaTva`). Ce diferă per
 // profil e POLITICA (`MapareD300`), nu nomenclatorul.
 //
 // DE CE `[ForbidCRUD]` ca registrele: rândurile sunt LEGE, nu configurare —

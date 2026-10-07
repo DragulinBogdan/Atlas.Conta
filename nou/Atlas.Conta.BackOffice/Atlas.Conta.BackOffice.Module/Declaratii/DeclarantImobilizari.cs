@@ -14,6 +14,7 @@ public sealed class DeclarantImobilizari : IDeclarant {
         var folosit = new Dictionary<N.ReferintaPostare, decimal>();
         var peDimensiuni = new Dictionary<(N.Capat, N.Latura), decimal>();
         var iesiriFiscale = new HashSet<Guid>();
+        var consumate = new List<N.VersiunePolitica>();
         if (operand.Linii.Count == 0)
             refuzuri.Add(new(CoduriRefuz.LiniiLipsa, "Documentul cere cel puțin o fișă.", null));
         foreach (var linie in operand.Linii) {
@@ -34,6 +35,7 @@ public sealed class DeclarantImobilizari : IDeclarant {
                     "Fișa cere conturile politicii folosite de operație.", linie.Id));
                 continue;
             }
+            if (fisa.Politica is { } politicaFisei) consumate.Add(politicaFisei);
             var cauza = new N.Cauza(operand.Document.Id, linie.Id);
             N.Capat Capat(Guid cont, N.Carte carte, bool nominalizat) => new() {
                 Cont = cont, Carte = carte, Gestiune = fisa.Loc, Analiza = linie.Analiza,
@@ -102,6 +104,6 @@ public sealed class DeclarantImobilizari : IDeclarant {
             }
         }
         return refuzuri.Count > 0 ? null : new(operand.Document.Id, operand.Document.DataInregistrare,
-            miscari, mutari, [], [operand.PerioadaDeschisa, operand.VersiunePolitica]);
+            miscari, mutari, [], PoliticiConsumate.Ipoteze(operand, [], [.. consumate]));
     }
 }

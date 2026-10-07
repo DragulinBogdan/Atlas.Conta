@@ -1,7 +1,7 @@
 # 109 — Taxa nemarcată se decide pe document × cotă și se scrie pe linie; declarația postează taxa liniei; taxa unui document real adusă de o cale fără culegere e marcată
 
 - Data: 2026-10-04
-- Stare: activă, aprobată de owner 2026-10-04; implementată pe `107-r3-drift-tva`; review advers Codex închis: 109-R1 corectată de Codex și reverificată independent 2026-10-05 (`docs/nucleu/109-review-codex.md`); precizează 090 (j) și 103 (i); închide 107-r3; face din N-r4 o egalitate (registrele și cubul poartă aceeași taxă)
+- Stare: activă, aprobată de owner 2026-10-04; mersă în main prin PR #21 (2026-10-05); review advers Codex închis: 109-R1 corectată de Codex și reverificată independent 2026-10-05 (`docs/nucleu/109-review-codex.md`); precizează 090 (j) și 103 (i); închide 107-r3; face din N-r4 o egalitate (registrele și cubul poartă aceeași taxă)
 - Docs: `docs/nucleu/scenarii/FCL.md` (SC-FCL-11…14), `FCT.md` (SC-FCT-11); `docs/nucleu/109-review-codex.md`; `docs/stare-curenta/politici-si-fiscalitate.md` („TVA la operare”); 107 (i); `docs/nucleu/tr-d8-tva-intervale-contract.md` (R6-B2); dovezile în `run-verificari/r3-ian/`, `r3-ian-final/`, `r3-motor/`
 
 ## Regula durabilă

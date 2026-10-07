@@ -150,7 +150,7 @@ public class CubTeste {
                 0m,
                 100m,
                 new Cauza(document, Gen.Linii[0])),
-            data);
+            data, 1);
         return (new Tranzactie(FelTranzactie.Operare, data, document, [debit, credit]), lot, partida);
     }
 

@@ -102,7 +102,6 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
         var cheltuiala = Cont(Privat ? "602" : "602.01.00");
         Verifica("SC-CIT-69", "snapshot include FCT cu NIR draft și deschiderea fără registru", CuSpatiu(os =>
             os.GetObjectByKey<NIR>(nir).Stare == StareDocument.Draft
-            && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.DocumentId == nir || r.LotId == initial)
             && os.GetObjectsQuery<SoldPerioadaStoc>().Any(s => s.An == An && s.Luna == 1
                 && s.LotId == initial && s.ContId == Cont(Stoc) && s.ProdusId == produsInitial
                 && s.GestiuneId == Magazie && s.Cantitate == 4 && s.Valoare == 40
@@ -117,9 +116,6 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
                 && s.Any(s => s.ContId == cheltuiala && s.GestiuneId == Loc && s.Cantitate == 2 && s.Valoare == 20);
         }));
         Coincid("SC-CIT-70", new(An, 1, 31));
-        Verifica("SC-CIT-69", "citirea registrului dual nu preia snapshot-ul cubului", CuSpatiu(os =>
-            StocService.SolduriLaData(os, [lot], new(An, 1, 31))
-                .Where(s => s.Key.RepartitorId == Magazie).Sum(s => s.Value.Cantitate) == -6));
         Verifica("SC-CIT-73", "FIFO păstrează data deschiderii din snapshot", CuSpatiu(os =>
             C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, produsInitial, Magazie, Cont(Stoc))
                 .Single().Deschisa == new DateOnly(An, 1, 1)));

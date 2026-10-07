@@ -55,8 +55,7 @@ sealed class ScenariiStocCub(Func<IObjectSpace> deschide, Action<string, bool> c
         Verifica("SC-CIT-38", "FIFO din deschidere: 2 + 2 fără registru", CuSpatiu(os => {
             var linii = os.GetObjectByKey<DescarcareGestiune>(dsc).Detalii.ToList();
             return linii.Count == 2 && linii.Single(l => l.LotId == primul).Cantitate == 2
-                && linii.Single(l => l.LotId == alDoilea).Cantitate == 2
-                && !os.GetObjectsQuery<RegistruStoc>().Any(r => r.LotId == primul || r.LotId == alDoilea);
+                && linii.Single(l => l.LotId == alDoilea).Cantitate == 2;
         }));
         Opereaza(dsc);
         Verifica("SC-CIT-38", "cost 60, disponibil 1/20", CuSpatiu(os => {

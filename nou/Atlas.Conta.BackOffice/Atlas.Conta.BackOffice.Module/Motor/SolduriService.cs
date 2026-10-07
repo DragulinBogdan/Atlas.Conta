@@ -52,16 +52,6 @@ public class PerioadaSnapshotSql {
     public virtual int Luna { get; set; }
 }
 
-public struct SnapshotPartida {
-    public Guid UnitateId { get; set; }
-    public Guid ContId { get; set; }
-    public Guid PartenerId { get; set; }
-    public DateOnly Deschisa { get; set; }
-    public Guid? DocumentId { get; set; }
-    public decimal Debit { get; set; }
-    public decimal Credit { get; set; }
-}
-
 // Soldurile materializate la închidere (F27-D3). Scrierea e SQL brut Postgres,
 // în tranzacția comenzii: cheia completă a atomului are 9 coloane și 8 dintre
 // ele sunt nullable, deci incrementala se face `UNION ALL` + `GROUP BY`, nu
@@ -129,15 +119,8 @@ public static class SolduriService {
 
     static string SursaPartide(IObjectSpace os, Func<object, string> parametrul, int an, int luna) {
         CereNesecurizat(os);
-        return SqlInterogare.Compune(
-            from s in Cub.Citiri.Partide.Solduri(os, Sfarsit(an, luna))
-            join o in Cub.Citiri.Partide.Origini(os)
-                on new { s.UnitateId, s.ContId, s.PartenerId } equals new { o.UnitateId, o.ContId, o.PartenerId } into origine
-            from o in origine.DefaultIfEmpty()
-            where s.Debit != s.Credit
-            select new SnapshotPartida { UnitateId = s.UnitateId, ContId = s.ContId,
-                PartenerId = s.PartenerId, Deschisa = s.Deschisa,
-                DocumentId = o.DocumentId, Debit = s.Debit, Credit = s.Credit }, parametrul);
+        return SqlInterogare.Compune(Cub.Citiri.Partide.CuOrigine(os,
+            Cub.Citiri.Partide.Solduri(os, Sfarsit(an, luna)).Where(s => s.Debit != s.Credit)), parametrul);
     }
 
     /// <summary>Perioada are deja snapshot scris?</summary>

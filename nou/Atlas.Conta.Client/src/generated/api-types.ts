@@ -10107,22 +10107,12 @@ export interface components {
             NaturaInterzisa?: string | null;
             DinSeed?: boolean;
         };
-        ExplicatieAbsorbtieDto: {
-            /** Format: uuid */
-            ContSursaId?: string;
-            /** Format: double */
-            R?: number;
-            /** Format: double */
-            C?: number;
-            /** Format: double */
-            P?: number;
-            /** Format: double */
-            Delta?: number;
-        };
         ExplicatieContDto: {
             /** Format: uuid */
             ContId?: string;
             Sursa?: string | null;
+            /** Format: uuid */
+            RegulaId?: string | null;
         };
         ExplicatieContractDto: {
             /** Format: uuid */
@@ -10136,9 +10126,7 @@ export interface components {
             PerioadaAn?: number | null;
             /** Format: int32 */
             PerioadaLuna?: number | null;
-            Politica?: string | null;
-            /** Format: date */
-            PoliticaValabilaDeLa?: string | null;
+            Politici?: components["schemas"]["ExplicatiePoliticaDto"][] | null;
             Linii?: components["schemas"]["ExplicatieLinieDto"][] | null;
         };
         ExplicatieDto: {
@@ -10185,7 +10173,16 @@ export interface components {
             Stingeri?: components["schemas"]["ExplicatieStingereDto"][] | null;
             Conturi?: components["schemas"]["ExplicatieContDto"][] | null;
             PartideDeschise?: components["schemas"]["ExplicatieUnitateDto"][] | null;
-            Absorbtii?: components["schemas"]["ExplicatieAbsorbtieDto"][] | null;
+        };
+        ExplicatiePoliticaDto: {
+            Fel?: string | null;
+            /** Format: uuid */
+            RandId?: string;
+            /** Format: int32 */
+            Versiune?: number;
+            /** Format: int32 */
+            VersiuneCurenta?: number | null;
+            Schimbata?: boolean;
         };
         ExplicatieSoldDto: {
             /** Format: double */
@@ -13529,8 +13526,6 @@ export interface components {
             /** Format: uuid */
             TipTvaImplicitId?: string | null;
             TipTvaImplicit?: components["schemas"]["TipTva"];
-            PosteazaInCub?: boolean;
-            LaturaContPropriu?: components["schemas"]["LaturaDocument"];
             Cautare?: string | null;
         };
         TipDocumentResourceDelta: {
@@ -13542,8 +13537,6 @@ export interface components {
             ClrType?: string | null;
             /** Format: uuid */
             TipTvaImplicitId?: string | null;
-            PosteazaInCub?: boolean;
-            LaturaContPropriu?: components["schemas"]["LaturaDocument"];
             Cautare?: string | null;
         };
         TipMaterial: {

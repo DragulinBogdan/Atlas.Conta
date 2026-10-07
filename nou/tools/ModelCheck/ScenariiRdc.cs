@@ -64,11 +64,15 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
 
     protected override void Executa() {
         if (!Privat) {
-            Verifica("SC-RDC-16", "profil fără politică RDC și fără activare cub", CuSpatiu(os =>
-                !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocument.Cod == "RDC")
-                && !os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == "RDC").PosteazaInCub));
+            Verifica("SC-RDC-16", "profil fără politică RDC", CuSpatiu(os =>
+                !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocument.Cod == "RDC")));
             var inert = Retur(new LinieRdcScena(100));
-            Refuza("SC-RDC-16", () => Opereaza(inert.Id), "politică de numerotare"); FaraEfecte("SC-RDC-16", inert.Id); return;
+            Verifica("SC-RDC-16", $"dry-run refuzat cu {CoduriRefuz.TipFaraDeclaratie}",
+                CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(inert.Id)).Any(e => e.Contains(CoduriRefuz.TipFaraDeclaratie)));
+            Refuza("SC-RDC-16", () => Opereaza(inert.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RDC-16", inert.Id);
+            Comanda(os => { os.GetObjectByKey<Document>(inert.Id).Numar = Marcaj + "-INERT"; os.CommitChanges(); });
+            Refuza("SC-RDC-19", () => Opereaza(inert.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RDC-19", inert.Id);
+            return;
         }
         Venituri(); Stocuri(); Compensare(); Refuzuri(); PestePerioada();
     }
@@ -104,8 +108,8 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
             [.. Venit(d, 0, -40, -8.40m, "N21", cont: "707"), .. Cost(d, 1, 2, 20)]);
         SoldLot("SC-RDC-05", lot.Lot!.Value, Magazie, Ianuarie, 6, 60);
         SoldPartida("SC-RDC-05", P(f.Id), Ianuarie, 145.20m); SoldPartida("SC-RDC-05", P(d.Id), Ianuarie, -48.40m);
-        Verifica("SC-RDC-05", "numai venitul intră în jurnalul TVA", CuSpatiu(os =>
-            os.GetObjectsQuery<RegistruTva>().Count(r => r.DocumentId == d.Id) == 1));
+        Verifica("SC-RDC-05", "numai venitul intră în jurnalul TVA",
+            CuSpatiu(os => CubScena.Fapte(os, d.Id).Count == 1));
         var rest = Retur(new LinieRdcScena(80, "N21", Tip: "707"), new LinieRdcScena(0, Lot: lot, Cantitate: 4));
         Opereaza(rest.Id);
         Postari("SC-RDC-06", rest.Id, N.FelTranzactie.Operare, Ianuarie,
@@ -120,6 +124,11 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
         Opereaza(Iesire(false, (gol, 10)).Id);
         var inapoi = Retur(new LinieRdcScena(0, Lot: gol, Cantitate: 2)); Opereaza(inapoi.Id);
         Postari("SC-RDC-07", inapoi.Id, N.FelTranzactie.Operare, Ianuarie, Cost(inapoi, 0, 2, 20));
+        ValoriLinii("SC-RDC-07", "costul pe lotul golit, la prețul de intrare", inapoi.Id, -20);
+        Anuleaza(inapoi.Id); SoldLot("SC-RDC-07", gol.Lot!.Value, Magazie, Ianuarie, 0, 0);
+        Opereaza(inapoi.Id);
+        Postari("SC-RDC-07", inapoi.Id, N.FelTranzactie.Operare, Ianuarie, Cost(inapoi, 0, 2, 20));
+        ValoriLinii("SC-RDC-07", "aceeași cifră după anulare și reoperare", inapoi.Id, -20);
         Verifica("SC-SAFT-18", "RDC pe cub: retur 381 −40/−8,40/−48,40 fără linia de cost; RDC numai de stoc nu e factură și nu refuză",
             CuSpatiu(os => {
                 var saft = SaftProiectii.SaftPeCub(os, An, 1);
