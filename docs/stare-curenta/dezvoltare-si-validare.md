@@ -480,10 +480,16 @@ probele de model și fără celelalte scene: toate tipurile de pe cub în
 rulate selectiv pe privat; durata depinde de grupul ales. Codurile sunt ale catalogului (`docs/nucleu/scenarii/`,
 inclusiv `DESCHIDERE`, `IMO`, `X`); un cod necunoscut sau un tip fără nicio
 scenă pe profilul cerut iese cu exit 2, nu verde. Scenele și tipurile lor
-stau în `ScenelePeTip` (`Program.cs`), aceeași listă pe care suita integrală
-o rulează în ordine; un scenariu nou intră acolo cu tipul lui, altfel filtrul
-nu-l vede. Suita integrală pe ambele profiluri rămâne gate-ul de commit.
-(091 (e), 091-r1)
+stau în `ScenelePeTip` (`Suita/ScenelePeTip.cs`), aceeași listă pe care suita
+integrală o rulează în ordine; un scenariu nou intră acolo cu tipul lui, altfel
+filtrul nu-l vede. Suita integrală pe ambele profiluri rămâne gate-ul de commit.
+`Program.cs` e numai dispecerul (argumente, conexiune, migrații, secvența
+apelurilor); fiecare scenă veche e o clasă în `Suita/` cu `Ruleaza(Suita s)`,
+iar contextul comun (`Check`, provider, profil, ajutoarele de perioadă) e
+instanța `Suita`, fără stare statică. O probă care emite aserții din rânduri
+citite din bază le ordonează pe o cheie a scenei, nu pe ordinea bazei; purja
+de scenă prinde codurile pe prefixul marcajului. (091 (e), 091-r1; TR-D9a
+pasul 6c, 2026-10-07)
 
 ### Rulare reproductibilă (`scripts/verifica.ps1`)
 
