@@ -1,7 +1,7 @@
 # 110 — Tăierea: cubul e singurul scriitor și singura sursă; registrele, regimul dual și oracolul lor au ieșit (TR-D9a)
 
 - Data: 2026-10-07
-- Stare: **scrisă la închiderea feliei TR-D9a; de aprobat de owner**. Review-ul advers Codex al închiderii e cerut (`comunicari/2026-10-07-1640-claude-codex-tr-d9a-inchidere-review.md`) și nu e încă închis: regula de oprire 8 a contractului rămâne deschisă până atunci. Amendează 108 (a), (g), (h), (j) și 090 (a), (l); precizează D9-A2 (ordinalul perechii la storno); închide S-r6, T-r7, T-r13, TR-r9, X-r2, 109-r1, T-r9, 63f, 64h, 86-r13, F27-r11, 098-r3; nu decide 111
+- Stare: **aprobată de owner, 2026-10-07**. Review-ul advers Codex al închiderii e închis (D9-F-R1…R4 corectate și reverificate; IZ-R1 și IZ-R2 închise). Proba `PerfCub` pe clone diferite e acceptată de owner ca abatere de la „aceeași bază” din regula de oprire 6. Amendează 108 (a), (g), (h), (j) și 090 (a), (l); precizează D9-A2 (ordinalul perechii la storno); închide S-r6, T-r7, T-r13, TR-r9, X-r2, 109-r1, T-r9, 63f, 64h, 86-r13, F27-r11, 098-r3; nu decide 111
 - Docs: contractul `docs/nucleu/tr-d9-taierea-contract.md` cu amendamentele 1–3; pașii `docs/nucleu/tr-d9-inventar.md`, `tr-d9-pas2-probe.md`, `tr-d9-pas3-retintire.md`, `tr-d9-pas5b-probe.md`, `tr-d9-pas5c-imbinare-partide.md`, `tr-d9-pas6-taierea.md`, `tr-d9-pas6b-repartitor.md`, `tr-d9-pas6c-spargere-modelcheck.md`, `tr-d9-pas7-declaratii.md`, `tr-d9-pas7b-pereche.md`, `tr-d9-pas7c-versiunea-politicii.md`, `tr-d9-pas8-inchiderea.md`; `docs/stare-curenta/` (toate paginile); dovezile în `run-nucleu/tr-d9a/` și `run-verificari/d9-pas8-*`
 
 ## Regula durabilă
@@ -85,15 +85,15 @@ Lista a fost închisă; orice altă schimbare ar fi fost defect. Toate au rându
 | 3 | catalogul verde; cifrele neschimbate în afara celor opt schimbări | îndeplinită | catalogul rulează în integrală; diferențele pe pași sunt numai adaos sau rânduri rescrise nominal |
 | 4 | fiecare refuz al planului vechi are rând în inventar | îndeplinită | `tr-d9-inventar.md` §3–§6, măsurat la pasul 2 |
 | 5 | nucleul; `refuzuri.ps1` de două ori; gardul pe `Postare`, `Tranzactie`, `PostareVizual`; drift; metadata; TPH | îndeplinită | nucleu 190/190; `refuzuri.ps1` 318/318 de două ori la rând; `STR-VIZUAL-*` și cazurile gardului în integrală; `verifica:drift` zero; metadata la zi; TPH 111 interogări, zero încălcări pe ambele baze |
-| 6 | scara `PerfCub` își păstrează criteriile de formă; `PartideCuRest` închis sau re-amânat; costul comenzii A/B | îndeplinită | termenul B: 1.540 privat / 1.010 bugetar OK, zero FAIL, `PREST-NI` amânat ca în A; nicio comandă de scriere nu face mai multe comenzi SQL, iar 69 din 73 de perechi fac mai puține; `PartideCuRest` re-amânat explicit, cu cifra |
+| 6 | scara `PerfCub` își păstrează criteriile de formă; `PartideCuRest` închis sau re-amânat; costul comenzii A/B | îndeplinită, cu abaterea acceptată de owner (2026-10-07) | A/B este pe clone diferite, nu pe aceeași bază cerută de contract (D9-F-R4); owner-ul a acceptat proba alternativă, cu limita ei; termenul B: 1.540 privat / 1.010 bugetar OK, zero FAIL, `PREST-NI` amânat ca în A; nicio comandă de scriere nu face mai multe comenzi SQL, iar 69 din 73 de perechi fac mai puține; `PartideCuRest` re-amânat explicit, cu cifra |
 | 7 | `stare-curenta/` și invarianții nu mai descriu regimul dual | îndeplinită | ultimele două mențiuni (PIF, AMO) scoase la pasul 8; invarianții I, III, VI în literă curentă de la pasul 6 |
-| 8 | review-ul advers Codex e închis și decizia 110 e scrisă | **deschisă** | decizia e scrisă; review-ul e cerut, nu închis |
+| 8 | review-ul advers Codex e închis și decizia 110 e scrisă | îndeplinită | decizia e scrisă și aprobată; D9-F-R1…R4 corectate și reverificate; mutanții suplimentari confirmați de Codex; IZ-R1 și IZ-R2 închise (2026-10-07) |
 | 9 | probele dinaintea tăierii arhivate; scara de volum raportată owner-ului înaintea pasului 6 | îndeplinită | `tr-d9-pas5b-probe.md`, raportată 2026-10-06 |
 | 10 | invariantul perechii verde în nucleu și în `INV-CUB`; nicio postare existentă nu ajunge modificată la commit | îndeplinită | pasul 7b; `POSTARE_MODIFICATA` și inversa fiscală născută finală (pasul 6) |
 | 11 | probele versiunii politicii verzi | îndeplinită | SC-CIT-111 pe ambele profiluri și pe HTTP (pasul 7c) |
 | 12 | niciun document de catalog acceptat înaintea pasului 6b nu e refuzat de gardul strict; postările care au căpătat partenerul sunt numite | îndeplinită | pasul 6b: zero postări de catalog capătă coordonata; SC-PLT-08/09, SC-INC-09 |
 
-Felia nu e închisă cât rândul 8 e deschis.
+Felia e închisă (2026-10-07): toate cele douăsprezece condiții sunt îndeplinite, rândul 6 cu abaterea acceptată de owner.
 
 ## Probele închiderii
 
@@ -101,7 +101,7 @@ Detaliul e în `docs/nucleu/tr-d9-pas8-inchiderea.md`. Pe scurt:
 
 | Probă | Rezultat |
 |---|---|
-| Integrala ModelCheck, baze din `InitialCreate` | 4.803 privat / 3.524 bugetar OK, zero FAIL |
+| Integrala ModelCheck, după corecturile D9-F-R1…R4 și review-ul lor | 4.828 privat / 3.549 bugetar OK, zero FAIL; `20261007-223433-979`, pe clone noi `.ClaudeD9Rv2` |
 | Nucleu | 190/190 |
 | `--probe-sursa` | 11/11 |
 | `refuzuri.ps1` pe host viu, bază privată nouă din seed | 318/318 de două ori la rând; `neexpunere-cub.py` 0 FAIL; `explicatii.py` 9 PASS |
@@ -144,7 +144,7 @@ Adunate în felie:
 - stornoul peste mai multe surse decalează ordinalele perechii, deci ordinalul stornoului nu e literal al originalului (litera g);
 - contorul din explicație nu vede o scriere SQL directă pe rândul de politică și nici restaurarea bazei; politica de amortizare se reține pe orice fișă atinsă care are rând, fără să spună care cont a venit din ea;
 - `POSTARE_MODIFICATA` judecă starea entității, nu un `UPDATE` direct în SQL; refuzul `TIP_FARA_DECLARATIE` nu intră în regimul pe stare, deci butonul de operare rămâne activ pe un tip inert;
-- Import1C: conectorul rulează pe cititorii cubului, dar reconcilierea lui pe ianuarie nu e verde. Contractul 1 are trei conturi fără explicație (371, 3028, 303, cu exact sumele notei-punte a reclasificării, 110-r2), iar contractul 5 are 5 partide inițiale neexplicate, altele decât cele 8 dinaintea tăierii și neatribuite unei schimbări cu nume. Sunt ale feliei de migrare (091-r4), nu ale tăierii.
+- Import1C: conectorul rulează pe cititorii cubului, dar reconcilierea lui pe ianuarie nu e verde. Contractul 1 are trei conturi fără explicație (371, 3028, 303, cu exact sumele notei-punte a reclasificării, 110-r2), iar contractul 5 are 5 partide inițiale neexplicate, altele decât cele 8 dinaintea tăierii și neatribuite unei schimbări cu nume. Diagnosticul se urmărește în felia de migrare (091-r4); pentru contractul 5 cauza rămâne neatribuită, inclusiv față de schimbările motorului. Import1C nu este gate-ul tăierii.
 
 Forma văzută de utilizator a fiecărei limite e în `docs/stare-curenta/limite-curente.md`.
 
@@ -177,7 +177,7 @@ Rândurile de catalog „amânat la TR-D9" care privesc registrele (limita dual�
 
 ## Ce rămâne de hotărât de owner
 
-1. **Aprobarea acestei decizii** și, după review-ul Codex, închiderea feliei.
+1. Hotărât (2026-10-07): decizia e aprobată, proba PerfCub pe clone diferite e acceptată ca abatere de la regula de oprire 6, felia e închisă.
 2. **B-r3**: recepția facturii n-are regulă de contare proprie. Motivul amânării a dispărut, dar NIR-ul conex rămâne documentul diferențelor, iar o regulă `FCT/Stoc` e schimbare de politică. Rămâne activă; destinația e a owner-ului.
 3. **110-r1**: `RegulaContare.PastreazaSemn` nu mai e citit de niciun declarant. Se scoate sau se leagă.
 4. **110-r3**: coordonatele ne-nule cu `Guid.Empty`. Dimensionată; recomandată ca subiect al contractului TR-D9b / deciziei 111, nu al tăierii.
@@ -186,4 +186,28 @@ Rândurile de catalog „amânat la TR-D9" care privesc registrele (limita dual�
 
 ## Review
 
-Review-ul advers al închiderii e cerut lui Codex prin `comunicari/`. Rezultatul lui se consemnează aici, sub acest titlu, cu constatările și corecturile; până atunci secțiunea e goală prin construcție, nu prin omisiune.
+Review Codex la `aecd189` (2026-10-07): D9-F-R1…R4, toate P2; regula de oprire 8 rămâne deschisă.
+Corecturi cerute de owner și implementate de Codex, fără commit:
+
+- R1: forma transformărilor se verifică pe mulțimea postărilor fără ordinal; mutanți pentru pierderea
+  perechii lângă transformare și pentru predicatele perechii nenule (`tr-d9-pas7b-pereche.md`).
+- R2/R3: SC-CIT-111 folosește tip și regulă proprii; curățenie pe identitate, inclusiv `RefuzSeed`,
+  probe după editare/ștergere și martor BCS străin (`tr-d9-pas7c-versiunea-politicii.md`).
+- R4: rândul 6 raportează proba alternativă și aprobarea lipsă; contractul nu a fost amendat tacit.
+- Atribuirea diferențelor Import1C contractul 5 rămâne deschisă; apartenența diagnosticului la migrare
+  nu demonstrează excluderea motorului drept cauză.
+
+Rezultatele corecturilor se consemnează în documentul pasului 8. Predarea corecturilor nu închide
+singură review-ul; owner-ul și Claude reverifică înainte de commit.
+
+Review-ul corecturilor (Claude, 2026-10-07): R1…R4 țin, reverificate independent. Două constatări din aceeași
+clasă cu R2/R3 sunt corectate în aceeași schimbare: SC-X-26 purja regulile BTR după `DinSeed` și lăsa un refuz
+de seed; bazele de dezvoltare purtau refuzurile vechilor probe. Cinci mutanți noi acoperă ramurile
+predicatului perechii rămase fără probă pe PostgreSQL, cu izolarea verificată prin scoaterea fiecărei
+disjuncții. Detaliul și cifrele: pasul 8 §11.
+
+Închiderea (2026-10-07): Codex a confirmat cei cinci mutanți suplimentari fără constatări blocante și a găsit
+două defecte în rețeta de izolare, IZ-R1 (un `FAIL` urmat de `OK` trecea drept ucis) și IZ-R2 (sursa era
+modificată înaintea luării blocajului). Ambele sunt corectate și reverificate de Codex
+(`comunicari/2026-10-07-2327-codex-claude-tr-d9a-izolare-iz-r1-r2-review.md`). Owner-ul a acceptat proba
+PerfCub alternativă și a aprobat decizia.

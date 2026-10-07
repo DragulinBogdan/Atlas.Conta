@@ -54,10 +54,26 @@ public static class Invarianti {
         if (invalide.Count != 0)
             throw new OperareException($"{PerecheInvalida}: perechi care nu sunt o mișcare cu contrapartida ei; exemple: "
                 + string.Join(", ", invalide.Select(x => $"{x.TranzactieId}/{x.Pereche}")));
-        var contraponderi = postari.Where(Transformare.Contrapondere);
-        var lipsa = postari.Where(p => p.Pereche == null && p.Tranzactie.Fel != N.FelTranzactie.Deschidere
-                && !contraponderi.Any(c => c.TranzactieId == p.TranzactieId && c.DocumentId == p.DocumentId && c.LinieId == p.LinieId))
-            .Select(p => p.TranzactieId).Distinct().Take(10).ToList();
+        var virtuale = N.GestiuniVirtuale.Toate.ToArray();
+        var lipsa = postari.Where(p => p.Pereche == null && p.Tranzactie.Fel != N.FelTranzactie.Deschidere)
+            .Select(p => new {
+                p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Produs, p.Latura,
+                p.CodFunctional, p.CodEconomic, p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost,
+                Cantitate = p.Gestiune == N.GestiuniVirtuale.Transformare ? -p.Cantitate : p.Cantitate,
+                Contrapondere = p.Gestiune == N.GestiuniVirtuale.Transformare,
+                Forma = p.Cantitate != 0m && p.Produs != null && p.Carte == N.Carte.Contabil
+                    && p.Partener == null && p.TipTvaId == null && p.PerioadaDeclarare == null
+                    && p.Valuta == null && p.ValoareValuta == 0m
+                    && (p.Gestiune == N.GestiuniVirtuale.Transformare
+                        ? p.Unitate == null && p.Valoare == 0m
+                        : p.Unitate != null && p.FelUnitate == N.FelUnitate.Lot
+                            && p.Gestiune != null && !virtuale.Contains(p.Gestiune.Value)),
+            })
+            .GroupBy(p => new { p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Produs, p.Latura,
+                p.CodFunctional, p.CodEconomic, p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost,
+                p.Cantitate })
+            .Where(g => g.Any(p => !p.Forma) || g.Count(p => p.Contrapondere) * 2 != g.Count())
+            .Select(g => g.Key.TranzactieId).Distinct().Take(10).ToList();
         if (lipsa.Count != 0)
             throw new OperareException($"{PerecheLipsa}: postări fără ordinal de pereche în afara transformărilor și a deschiderii; exemple: "
                 + string.Join(", ", lipsa));

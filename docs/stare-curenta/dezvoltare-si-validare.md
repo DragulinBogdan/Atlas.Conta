@@ -60,7 +60,27 @@ hosturile (`AddSecuredEFCore`): contorul rândului de politică crește la
 salvare și în harness, altfel SC-CIT-111 n-ar măsura ce face hostul
 (D9-A8). Pasul 7b
 (D9-A2) a adăugat `PERECHE-RUPTA` (o postare a perechii fără ordinal) și
-`PERECHE-LIPSA` (ambele postări fără ordinal). Ramurile
+`PERECHE-LIPSA` (ambele postări fără ordinal). Corecția D9-F-R1 adaugă
+mutanți separați pentru ordinal, cauză, valoare, valută, cantitate și latură,
+apoi pierderea ambelor ordinale ale unei mutări valorice/cantitative lângă
+o transformare. Aceștia apelează direct invariantul perechii, în tranzacții
+anulate, ca alt invariant să nu mascheze rezultatul. SC-CIT-111 folosește
+un tip de material și o regulă proprii; purja elimină numai regulile și
+refuzurile de seed ale acelui tip. SC-CIT-111-IZOLARE verifică reluarea după
+editare/ștergere, cu reguli BCS străine și refuzuri preexistente păstrate.
+SC-X-26 urmează aceeași regulă: regula ei stă pe un tip de material propriu,
+iar refuzul de seed lăsat de ștergerea prin gardian e curățat pe identitate.
+Curățenia unei scene nu selectează după `DinSeed` (`ScenaDocumente.CurataPolitica`).
+Ținta fiecărui mutant al perechii e aleasă determinist, după `ID`. Fiecare
+disjuncție a predicatului perechii are mutantul ei (documentul, deschiderea cu
+ordinal, latura și sumele transferului, pe lângă cele de mai sus). Izolarea
+celor cinci din urmă e probată și invers: cu disjuncția scoasă din predicat
+supraviețuiește numai mutantul ei
+(`nou/tools/ModelCheck/scripts/izolare-mutanti.ps1`, pasul 8 §11). Rețeta
+ține blocajul verificărilor cât timp sursa invariantului e modificată. Invariantul
+ia gestiunile virtuale din `GestiuniVirtuale.Toate` (nucleu), sursa unică și
+pentru `GestiuniVirtuale.Este`.
+Ramurile
 acoperirii registru ↔ cub, echilibrului și provenienței au probele SC-CIT-23,
 SC-CIT-34 și SC-CIT-10. Acoperirea cantitativă a stocului
 (`Loturi.VerificaAcoperire`, `CITIRE_ISTORIC_STOC_INCOMPLET`, X-D7 a) rulează

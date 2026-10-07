@@ -2,6 +2,7 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
+using System.Text.Json;
 using DevExpress.ExpressApp;
 using Microsoft.EntityFrameworkCore;
 using C = Atlas.Conta.BackOffice.Module.Cub;
@@ -80,6 +81,31 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         check($"{id} ({(Privat ? "privat" : "bugetar")}): {mesaj}", rezultat);
     protected Guid Cont(string simbol) => conturi[simbol];
     protected Guid Tip(IObjectSpace os, string codTip) => os.GetObjectsQuery<TipMaterial>().Single(t => t.Cod == codTip).ID;
+
+    protected TipMaterial TipPropriu(IObjectSpace os, string cod) {
+        if (os.GetObjectsQuery<TipMaterial>().SingleOrDefault(t => t.Cod == cod) is { } existent) return existent;
+        var model = os.GetObjectByKey<TipMaterial>(Tip(os, Stoc));
+        var tip = os.CreateObject<TipMaterial>(); tip.Cod = cod; tip.Denumire = cod;
+        tip.ClasaId = model.ClasaId; tip.ContImplicitId = model.ContImplicitId;
+        return tip;
+    }
+
+    /// <summary>Regulile de contare ale tipului de material dat și refuzurile lor de seed, pe identitate.</summary>
+    protected static void CurataPolitica(IObjectSpace os, Purja purja, string codTip) {
+        var tipuri = os.GetObjectsQuery<TipMaterial>().Where(t => t.Cod == codTip).Select(t => t.ID).ToHashSet();
+        var refuzuri = os.GetObjectsQuery<RefuzSeed>().Where(r => r.Tip == nameof(RegulaContare)).ToList()
+            .Where(r => JsonSerializer.Deserialize<Dictionary<string, string>>(r.Cheie)
+                .TryGetValue(nameof(RegulaContare.TipMaterialId), out var id)
+                && Guid.TryParse(id, out var tip) && tipuri.Contains(tip));
+        purja.Adauga(refuzuri);
+        purja.Adauga(os.GetObjectsQuery<RegulaContare>().Where(r => r.TipMaterialId != null && tipuri.Contains(r.TipMaterialId.Value)));
+    }
+
+    protected Guid[] RefuzuriSeed() => CuSpatiu(os => os.GetObjectsQuery<RefuzSeed>().Select(r => r.ID).OrderBy(id => id).ToArray());
+
+    protected void PurjeazaNomenclatoare() => Comanda(os => {
+        var purja = new Purja(os); CurataNomenclatoare(os, purja); purja.Executa();
+    });
     protected Guid Tva(string codTva) => CuSpatiu(os => os.GetObjectsQuery<TipTva>().Single(t => t.Cod == codTva).ID);
     protected Guid? Partida(Guid doc, string simbol, Guid? partener = null) =>
         N.Unitate.DeschidePartida(Cont(simbol), partener ?? Furnizor, doc, Ianuarie).Id;

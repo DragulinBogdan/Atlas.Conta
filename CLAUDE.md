@@ -170,17 +170,16 @@ marchează taxa sursei; reîncărcarea nu e culegere), aprobată de owner
 2026-10-04, mersă în main prin PR #21 (2026-10-05), cu review-ul advers
 Codex închis (109-R1 corectată și reverificată,
 `docs/nucleu/109-review-codex.md`).
-TR-D9 e împărțit în TR-D9a (tăierea) și TR-D9b (unitățile). TR-D9a e executată
-până la pasul 8 inclusiv (contractul `docs/nucleu/tr-d9-taierea-contract.md` cu
-amendamentele 1–3; pașii în `docs/nucleu/tr-d9-pas*.md`, închiderea în
-`tr-d9-pas8-inchiderea.md`). Decizia 110 e scrisă și așteaptă aprobarea
-owner-ului; review-ul advers Codex al închiderii e cerut, nu închis, deci felia
-nu e încă închisă (regula de oprire 8). Branch-ul e `tr-d9-taierea-pas7b`,
-peste `tr-d9-taierea`, fără PR. Bazele de dezvoltare sunt recreate din
+TR-D9 e împărțit în TR-D9a (tăierea) și TR-D9b (unitățile). TR-D9a e închisă
+(2026-10-07): contractul `docs/nucleu/tr-d9-taierea-contract.md` cu
+amendamentele 1–3, pașii în `docs/nucleu/tr-d9-pas*.md`, închiderea în
+`tr-d9-pas8-inchiderea.md`. Decizia 110 e aprobată de owner; review-ul advers
+Codex al închiderii e închis (D9-F-R1…R4, IZ-R1, IZ-R2), iar proba PerfCub pe
+clone diferite e acceptată de owner ca abatere de la „aceeași bază”.
+Mersă în main prin PR-ul feliei (2026-10-07). Bazele de dezvoltare sunt recreate din
 `InitialCreate`; clonele vechi de import și de perf (`.Flax.R3f`, `.D9P5b`,
-`.D9Vol`) sunt pe schema dinaintea tăierii. Urmează: aprobarea 110 și
-închiderea review-ului, PR-ul feliei, apoi contractul TR-D9b, cu poarta de
-decizie 111 (propusă, neaprobată). Pornirea: `run-nucleu/tr-d9a/coordonare.md`.
+`.D9Vol`) sunt pe schema dinaintea tăierii. Urmează contractul TR-D9b, cu
+poarta de decizie 111 (propusă, neaprobată).
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

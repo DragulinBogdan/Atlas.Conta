@@ -10,8 +10,8 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 /// <summary>INV-CUB pe faptele fiecărei scene, înaintea purjei; fiecare ramură fără probă proprie își ucide mutantul o dată per profil (102d).</summary>
-static class AcoperireInvarianti {
-    sealed record Mutant(string Ramura, string Fragment, Func<IObjectSpace, DbContext, bool> Aplica);
+static partial class AcoperireInvarianti {
+    sealed record Mutant(string Ramura, string Fragment, Func<IObjectSpace, DbContext, bool> Aplica, bool NumaiPerechi = false);
 
     static readonly Mutant[] mutanti = [
         new("PARTIDE", "CITIRE_PARTIDE_INCOMPLETE", PartidaFaraPartener),
@@ -33,6 +33,19 @@ static class AcoperireInvarianti {
         new("TRANSFER-CONT", C.Citiri.Invarianti.TransferNeconservat, DestinatieTransferPeAltCont),
         new("PERECHE-RUPTA", C.Citiri.Invarianti.PerecheInvalida, PerecheRupta),
         new("PERECHE-LIPSA", C.Citiri.Invarianti.PerecheLipsa, PerecheLipsa),
+        new("PERECHE-ORDINAL", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "ordinal"), true),
+        new("PERECHE-CAUZA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "cauza"), true),
+        new("PERECHE-VALOARE", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "valoare"), true),
+        new("PERECHE-VALUTA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "valuta"), true),
+        new("PERECHE-CANTITATE", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "cantitate"), true),
+        new("PERECHE-LATURA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "latura"), true),
+        new("PERECHE-DOCUMENT", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "document"), true),
+        new("PERECHE-TRANSFER-LATURA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "latura", N.FelTranzactie.Transfer), true),
+        new("PERECHE-TRANSFER-VALOARE", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "valoare", N.FelTranzactie.Transfer), true),
+        new("PERECHE-TRANSFER-VALUTA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "valuta", N.FelTranzactie.Transfer), true),
+        new("PERECHE-DESCHIDERE", C.Citiri.Invarianti.PerecheInvalida, PerecheInDeschidere, true),
+        new("PERECHE-TRANSFORMARE-VALORICA", C.Citiri.Invarianti.PerecheLipsa, (os, db) => PerecheLangaTransformare(os, db, 0m), true),
+        new("PERECHE-TRANSFORMARE-CANTITATIVA", C.Citiri.Invarianti.PerecheLipsa, (os, db) => PerecheLangaTransformare(os, db, 1m), true),
         new("LINIE-BCS", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<BonConsum>(os, db, N.FelTranzactie.Operare, v => v + 1m)),
         new("LINIE-BTR", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<NotaTransfer>(os, db, N.FelTranzactie.Transfer, v => v + 1m)),
         new("LINIE-ASM", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<Asamblare>(os, db, N.FelTranzactie.Transfer, v => v + 1m)),
@@ -63,7 +76,7 @@ static class AcoperireInvarianti {
                 aplicat = false;
             }
             if (aplicat) {
-                refuz = Refuz(os);
+                refuz = Refuz(os, m.NumaiPerechi);
                 var ok = m.Fragment == null ? refuz == null : refuz?.Contains(m.Fragment, StringComparison.OrdinalIgnoreCase) == true;
                 verifica("INV-CUB-" + m.Ramura, (m.Fragment == null ? "martorul trece" : $"mutantul refuză cu {m.Fragment}")
                     + (ok ? "" : $" — {refuz ?? "trecut"}"), ok);
@@ -74,8 +87,12 @@ static class AcoperireInvarianti {
         }
     }
 
-    static string Refuz(IObjectSpace os) {
-        try { C.Citiri.Invarianti.Verifica(os); return null; }
+    static string Refuz(IObjectSpace os, bool numaiPerechi = false) {
+        try {
+            if (numaiPerechi) C.Citiri.Invarianti.VerificaPerechi(os);
+            else C.Citiri.Invarianti.Verifica(os);
+            return null;
+        }
         catch (OperareException e) { return e.Message; }
     }
 

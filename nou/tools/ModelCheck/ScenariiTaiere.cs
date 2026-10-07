@@ -18,8 +18,9 @@ sealed class ScenariiTaiere(Func<IObjectSpace> deschide, Action<string, bool> ch
         RegistruNegativ();
     }
 
-    protected override void CurataNomenclatoare(IObjectSpace os, Purja purja) =>
-        purja.Adauga(os.GetObjectsQuery<RegulaContare>().Where(r => !r.DinSeed && r.TipDocument.Cod == "BTR"));
+    string CodRegulii => Marcaj + "-REGULA";
+
+    protected override void CurataNomenclatoare(IObjectSpace os, Purja purja) => CurataPolitica(os, purja, CodRegulii);
 
     void Numeroteaza(Guid doc, string numar) =>
         Comanda(os => { os.GetObjectByKey<Document>(doc).Numar = Marcaj + "-" + numar; os.CommitChanges(); });
@@ -59,10 +60,13 @@ sealed class ScenariiTaiere(Func<IObjectSpace> deschide, Action<string, bool> ch
     void RegulaFaraConsumator() {
         const string faraConsumator = CoduriRefuz.RegulaContareFaraConsumator;
         var cheltuiala = Cont(Privat ? "602" : "602.01.00");
+        var refuzuriInitiale = RefuzuriSeed();
+        var tipPropriu = CuSpatiu(os => { var t = TipPropriu(os, CodRegulii); os.CommitChanges(); return t.ID; });
+        bool Persistata() => CuSpatiu(os => os.GetObjectsQuery<RegulaContare>().Any(r => r.TipMaterialId == tipPropriu));
         RegulaContare Regula(IObjectSpace os, string tip) {
             var r = os.CreateObject<RegulaContare>();
             r.TipDocument = os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == tip);
-            r.NaturaFiltru = NaturaClasa.Stoc;
+            r.TipMaterialId = tipPropriu;
             r.SursaContDebit = SursaCont.Explicit; r.ContDebitId = cheltuiala;
             r.SursaContCredit = SursaCont.Explicit; r.ContCreditId = Cont(Stoc);
             return r;
@@ -77,22 +81,25 @@ sealed class ScenariiTaiere(Func<IObjectSpace> deschide, Action<string, bool> ch
             Verifica("SC-X-26", $"regula de contare pe BTR e refuzată la editare cu {faraConsumator}" + (refuz == null ? "" : " — " + refuz),
                 refuz != null && refuz.Contains(faraConsumator));
         });
-        Verifica("SC-X-26", "regula refuzată nu s-a persistat", CuSpatiu(os =>
-            !os.GetObjectsQuery<RegulaContare>().Any(r => !r.DinSeed && r.TipDocument.Cod == "BTR")));
+        Verifica("SC-X-26", "regula refuzată nu s-a persistat", !Persistata());
         Comanda(os => {
             Regula(os, "BCS");
             var refuz = Gard(os);
             Verifica("SC-X-26", "regula de contare pe BCS (declarant care contează prin reguli) trece gardul" + (refuz == null ? "" : " — " + refuz),
                 refuz == null);
         });
-        Comanda(os => { Regula(os, "BTR"); os.CommitChanges(); });
+        var existenta = CuSpatiu(os => { var r = Regula(os, "BTR"); os.CommitChanges(); return r.ID; });
         Comanda(os => {
-            os.Delete(os.GetObjectsQuery<RegulaContare>().Where(r => !r.DinSeed && r.TipDocument.Cod == "BTR").ToList());
+            os.Delete(os.GetObjectByKey<RegulaContare>(existenta));
             var refuz = Gard(os);
             Verifica("SC-X-26", "ștergerea unei reguli existente pe BTR nu e refuzată de gardul consumatorului" + (refuz == null ? "" : " — " + refuz),
                 refuz == null);
             os.CommitChanges();
         });
+        var refuzLasat = RefuzuriSeed().Length == refuzuriInitiale.Length + 1;
+        PurjeazaNomenclatoare();
+        Verifica("SC-X-26", "ștergerea lasă refuzul de seed al regulii proprii, iar curățenia îl scoate; refuzurile preexistente rămân identice",
+            refuzLasat && !Persistata() && RefuzuriSeed().SequenceEqual(refuzuriInitiale));
         Verifica("SC-X-26", "seed-ul nu are nicio regulă de contare pe un tip al cărui declarant nu contează prin reguli", CuSpatiu(os =>
             os.GetObjectsQuery<RegulaContare>().Where(r => r.DinSeed).Select(r => r.TipDocument.ClrType).Distinct().ToList()
                 .All(clr => Contractare.DeclarantulTipului(clr) is { ConteazaPrinReguli: true })));

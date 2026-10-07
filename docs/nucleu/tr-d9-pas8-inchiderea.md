@@ -2,9 +2,10 @@
 
 Data: 2026-10-07. Execuție: main, direct. Contractul: D9-D15, rândul 8 și regula de oprire; D9-D13, D9-D14;
 amendamentul 1 (D9-A1, D9-A9). Decizia: [`110`](../decizii/110-taierea-cubul-singurul-scriitor.md).
-Fără cod de produs. Codul atins e al uneltelor: scena `PerfCub` și rețetele de probă.
+Execuția inițială a pasului nu a atins cod de produs: scena `PerfCub` și rețetele de probă.
+Corecturile ulterioare ale review-ului ating și `Citiri.Invarianti.VerificaPerechi` din Module.
 
-Felia nu e închisă: regula de oprire 8 cere review-ul advers Codex închis, iar el e abia cerut.
+Felia e închisă (2026-10-07): review-ul advers Codex e închis (§11), owner-ul a acceptat proba PerfCub pe clone diferite ca abatere de la regula de oprire 6 și a aprobat decizia 110.
 
 ## 1. Ce s-a rulat
 
@@ -42,6 +43,8 @@ Rețeta HTTP nouă: `run-verificari/d9-pas8-http.ps1` (`-Cod` = arborele din car
 | 7b | 4.795 | 3.516 | +4 / +4 | cei doi mutanți ai perechii, pe ambele apariții |
 | 7c | 4.803 | 3.524 | +8 / +8 | SC-CIT-111 |
 | 8, pe bazele finale | 4.803 | 3.524 | 0 | — |
+| corecturi D9-F-R1…R4 | 4.821 | 3.542 | +18 / +18 | 14 execuții de mutanți noi + 4 aserții SC-CIT-111-IZOLARE; §10 |
+| review-ul corecturilor | 4.828 | 3.549 | +7 / +7 | curățenia refuzului de seed în SC-X-26 (1) și cinci mutanți noi ai perechii (6 execuții); §11 |
 
 După pasul 6 nicio aserție n-a dispărut: fiecare comparație (`pas3/scripts/compara.py`) dă zero linii dispărute.
 
@@ -53,6 +56,10 @@ Termenul A e din regimul dual (`run-verificari/perf-cub-20261006-161201`, cu a d
 tăierii și nu pot purta codul de azi; B rulează pe clone noi, `.D9P8`, ale bazelor recreate din același seed.
 Scena e construită de unealtă în ambele cazuri, cu aceleași numere de execuții pe fiecare comandă. Tabelul
 complet: `run-nucleu/tr-d9a/pas8/perfcub-AB.md`.
+
+**Stare după D9-F-R4:** proba alternativă a fost prezentată ca abatere de la „aceeași bază”, nu declarată
+îndeplinită. Owner-ul a acceptat-o explicit la 2026-10-07, cu limita ei: baza fizică diferă, scena și cifrele
+de control sunt aceleași.
 
 **Criteriile de formă se păstrează**: zero FAIL pe ambele profiluri; `PREST-NI` rămâne `AMÂNAT` (F27-r16), ca
 în A. Cifrele de control ale cititorilor sunt identice cu A pe toate cele 784 (privat) și 496 (bugetar) de
@@ -171,7 +178,8 @@ Pe contracte (`run-verificari/d9-pas8-import/diff-fata-de-r3f.txt`):
 5. **Partide inițiale: 5 fără explicație, față de 8**, pe alte partide decât înainte (401 × 3, 4111 × 2).
    1.472 stinse integral (1.471), 38 explicate de refuzuri (36). **Neatribuit unei schimbări cu nume**:
    candidații sunt alegerea structurală a piciorului de terț în trezorerie (pasul 6b, `ea5d0bc`) și portarea
-   conectorului (pasul 5). E al feliei de migrare (091-r4, 107-r9), nu al tăierii.
+   conectorului (pasul 5). Diagnosticul se urmărește în felia de migrare (091-r4, 107-r9); cauza rămâne neatribuită.
+   Datele de mai sus nu exclud o contribuție a schimbărilor motorului.
 
 Limita din `limite-curente.md` se actualizează: portarea nu mai e „numai compilată", dar nu e nici verde.
 Import1C rămâne unealtă de migrare, nu gate (091).
@@ -203,7 +211,114 @@ necesară. Ștergerea lor e a owner-ului.
 
 ## 9. Ce rămâne
 
-- **Review-ul advers Codex al închiderii** (regula de oprire 8): cerut prin `comunicari/`.
-- **Aprobarea deciziei 110** de către owner.
+Hotărâte la 2026-10-07: review-ul advers Codex e închis (regula de oprire 8), owner-ul a acceptat abaterea
+PerfCub de la „aceeași bază” (regula de oprire 6) și a aprobat decizia 110; merge în main prin PR-ul feliei.
+
 - Întrebările owner-ului din decizie: B-r3, 110-r1 (`PastreazaSemn`), 110-r3 (`Guid.Empty`).
-- Branch-ul `tr-d9-taierea-pas7b` e împins; PR-ul feliei se deschide după review.
+- Purja politicilor FCT după `DinSeed` în `ScenariiTvaIntervale` și `ScenariiFiscale`; `explicatii.py`, care
+  editează pe HTTP regula reală din seed (§11).
+
+
+## 10. Corecturile review-ului D9-F-R1…R4 (2026-10-07)
+
+Worktree `d9-pas7b`, peste `aecd189`, fără commit. Invariantul perechii verifică forma și
+multiplicitățile transformărilor fără ordinal; SC-CIT-111 folosește exclusiv politica proprie,
+cu purjarea refuzului ei de seed și probe de izolare/recuperare. Condiția 6 rămâne abatere de
+acceptat, iar atribuirea diferențelor Import1C contractul 5 rămâne deschisă.
+
+| Probă | Rezultat | Manifest/loguri în worktree |
+|---|---|---|
+| CITIRI + ASM, ambele profiluri | exit 0 | `run-verificari/20261007-205021-699/rezultat.json` |
+| Integrala finală, bugetar | **3.542 OK, 0 FAIL** | `run-verificari/20261007-205913-703/integral-bugetar.log` |
+| Integrala finală, privat | **4.821 OK, 0 FAIL** | `run-verificari/20261007-205913-703/integral-privat.log` |
+| Nucleu | **190/190**, 0 eșuate, 0 omise | `run-verificari/20261007-210544-728/rezultat.json` |
+
+Integrala: manifest `run-verificari/20261007-205913-703/rezultat.json`, exit 0;
+SHA-256 ModelCheck.dll `24E6CCEA3983894AA689263DCCD1F361278E9CC82E00FF6CAE3D9061AC660166`.
+Diferența față de review este +18 aserții pe fiecare profil: cei șase mutanți de predicate
+apar de două ori (12), cei doi de transformare o dată (2), izolarea politicii adaugă 4.
+Nu s-a eliminat nicio aserție; aserția veche de refacere a seed-ului verifică acum curățenia
+politicii proprii. `SC-DES-21` este verde în rularea finală, fără modificarea sursei sale.
+`git diff --check`: fără erori.
+
+Comenzile de validare, din worktree:
+
+```powershell
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip CITIRI,ASM -Profil Ambele -Sufix .CodexD9Fix -PregatesteBaze
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Scenarii -Tip CITIRI,ASM -Profil Ambele -Sufix .CodexD9Fix
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Integral -Profil Ambele -Sufix .CodexD9Fix
+pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Nucleu
+```
+
+Prima comandă a pregătit bazele, apoi a eșuat la compilarea conversiei `Guid?` → `Guid`
+din helperul BCS nou (`20261007-204935-806`); corectată înaintea scenariilor.
+Prima integrală (`20261007-205233-530`) a avut 3.542 OK bugetar și 4.820 OK / 1 FAIL privat:
+`SC-DES-21`, observația blocajului a surprins textul `BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED`.
+Rezultatul operației concurente a trecut. Proba citește `pg_stat_activity` și `pg_blocking_pids`;
+un dezacord tranzitoriu al observațiilor este plauzibil, dar nu demonstrat. Rularea finală
+recompilează și mutanții ordinal/latură rafinați să izoleze predicatele lor; eșecul anterior
+rămâne raportat, nu este eliminat din evidență.
+
+Bazele folosite: `Atlas.Conta.BackOffice.CodexD9Fix` și `Atlas.Conta.ModelCheck.Privat.CodexD9Fix`.
+HTTP/browser/PerfCub/import și scara de volum nu au fost rerulate; dovezile §1 rămân cele inițiale.
+Nu s-au schimbat scriitorul cubului, API-ul sau schema. Predarea cere reverificarea owner/Claude
+înainte de commit; nu închide singură review-ul.
+
+## 11. Review-ul corecturilor (Claude, 2026-10-07)
+
+Corecturile D9-F-R1…R4 țin. Reverificate independent pe clone noi `.ClaudeD9Rv`: 4.821 privat / 3.542 bugetar,
+zero FAIL (`run-verificari/20261007-213212-607/`). Proba separată a invariantului perechii, prin funcția reală
+`VerificaPerechi` pe date în memorie: 45 din 45 (`run-verificari/claude-d9-corecturi-review/Program.cs`); ea nu
+verifică traducerea EF.
+
+Review-ul a găsit două lucruri din aceeași clasă cu R2/R3, în afara fișierelor corectate, și trei observații
+mici. Toate sunt aplicate în aceeași schimbare:
+
+- **SC-X-26** (`ScenariiTaiere`) purja orice regulă `!DinSeed` pe BTR, iar ștergerea prin gardian lăsa un
+  `RefuzSeed` pe care nu-l curăța nimeni. Regula stă acum pe un tip de material propriu
+  (`E2E-SC-TAI-REGULA`), iar curățenia e cea a SC-CIT-111, mutată în `ScenaDocumente.CurataPolitica`. O aserție
+  nouă cere ca refuzul lăsat de ștergere să fie scos și cele preexistente să rămână identice.
+- **Bazele de dezvoltare** purtau refuzul vechiului SC-CIT-111 (BCS / tipul de stoc) și pe cel al SC-X-26
+  (BTR, natura Stoc). Cele două rânduri din fiecare bază au fost șterse nominal
+  (`run-verificari/claude-d9-corecturi-review/sterge-refuzuri.log`). Clonele `.CodexD9Fix` și `.ClaudeD9Rv`,
+  făcute înainte, le păstrează.
+- Ținta mutanților noi ai perechii e ordonată după `ID`.
+- Invariantul ia gestiunile virtuale din `GestiuniVirtuale.Toate` (nucleu); `Este` se sprijină pe aceeași listă.
+
+La cererea owner-ului, ramurile predicatului perechii rămase fără mutant pe PostgreSQL au primit câte unul.
+Un mutant strică datele, nu codul: un singur fapt al cubului, într-o tranzacție anulată, după care invariantul
+trebuie să refuze.
+
+| Mutant | Stricăciunea | Disjuncția |
+|---|---|---|
+| `PERECHE-DOCUMENT` | alt `DocumentId` pe o postare a unei perechi de operare | `Documente != 1` |
+| `PERECHE-TRANSFER-LATURA` | latura întoarsă pe o postare a unui transfer, cu valorile egalate | `Transfer && Laturi != 1` |
+| `PERECHE-TRANSFER-VALOARE` | +1 la valoarea unei postări a unui transfer | suma valorii pe aceeași latură |
+| `PERECHE-TRANSFER-VALUTA` | +1 la valoarea în valută a unei postări a unui transfer | suma în valută pe aceeași latură |
+| `PERECHE-DESCHIDERE` | o postare a deschiderii primește ordinal și o contrapartidă clonată, cu sumele opuse | `Fel == Deschidere` |
+
+Izolarea e probată și invers: cu câte o disjuncție scoasă din predicat, pe scenele DESCHIDERE, BTR și BCS
+(privat), supraviețuiește exact mutantul ei, iar ceilalți 12 mutanți ai perechii rămân uciși. Rețeta e
+`nou/tools/ModelCheck/scripts/izolare-mutanti.ps1`: fiecare variantă trece prin `verifica.ps1`, iar rezultatul
+așteptat e scris pe variantă. Starea fiecăruia dintre cei 13 mutanți executați e cerută exact: numai FAIL pentru
+cel așteptat, numai OK pentru ceilalți; un FAIL urmat de OK e refuzat (IZ-R1). În varianta fără ramura de latură
+a transferului e așteptat și `N-r8`, proba de sursă care cere mențiunea `FelTranzactie.Transfer` în
+`VerificaPerechi`; e efectul experimentului, nu o mascare. Rețeta ia blocajul verificărilor înaintea citirii
+sursei și îl ține până după restaurare și rularea predicatului întreg; fără blocaj, sursa și binarele rămân
+neatinse (IZ-R2). Rulată: exit 0, `run-verificari/claude-d9-corecturi-review/izolare-mutanti.log`, manifestele
+`20261007-232002-349` … `20261007-232230-055`. Judecata ieșirii are proba ei fără bază (`-ProbaClasificator`,
+12 cazuri), iar refuzul sub blocaj străin e în `proba-blocaj.log`, alături de jurnal.
+
+| Probă | Rezultat | Manifest/loguri în worktree |
+|---|---|---|
+| Nucleu | **190/190** | `run-verificari/20261007-220942-442/rezultat.json` |
+| Integrala după SC-X-26, `OrderBy` și `Toate`, clone noi `.ClaudeD9Rv2` | 3.543 bugetar / 4.822 privat OK, 0 FAIL | `run-verificari/20261007-220946-928/` |
+| Integrala finală, cu cei cinci mutanți, bugetar | **3.549 OK, 0 FAIL** | `run-verificari/20261007-223433-979/integral-bugetar.log` |
+| Integrala finală, cu cei cinci mutanți, privat | **4.828 OK, 0 FAIL** | `run-verificari/20261007-223433-979/integral-privat.log` |
+| `RefuzuriSeed` după rulare, în clone și în bazele de dezvoltare | zero rânduri | interogare numai de citire |
+
+Cele +6 execuții: `PERECHE-DOCUMENT` de două ori, ceilalți patru o dată.
+
+Rămâne deschis: `ScenariiTvaIntervale` și `ScenariiFiscale` purjează politicile FCT `!DinSeed` cu un filtru
+necorelat; nu sunt atinse aici. `explicatii.py` editează pe HTTP regula reală din seed, pe o bază de unică
+folosință.

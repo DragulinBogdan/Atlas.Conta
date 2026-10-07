@@ -72,14 +72,29 @@ Pe host viu (`nou/tools/ProbeHttp/explicatii.py`): aceeași regulă editată de 
 (`PATCH api/odata/RegulaContare(id)`, dus-întors) are contorul curent +2, iar explicația bonului operat înainte o
 arată „schimbată".
 
-Abaterea de la schița de mai sus, declarată: proba nu creează o regulă a clientului pe lângă cea din seed.
-Regula BCS din seed e deja pe `TipMaterial` exact; o copie ar fi dublură (indexul unic
-`IX_ReguliContare_TipDocumentId_TipMaterialId_NaturaFiltru_Semn~`) și n-ar câștiga (primul din listă ia nivelul).
-Proba editează și șterge chiar rândul din seed prin ușa gardianului — care îl face al clientului — și îl reface
-identic într-un `finally`, pe ușa de sistem. Câmpul editat e `PastreazaSemn`, pe care nu-l citește niciun
-declarant (constatarea 3 de mai jos), deci postările nu se schimbă.
+Corecția D9-F-R2/R3: proba are tip de material și regulă proprii (`E2E-SC-EXPL-POLITICA`),
+cu recepție reală 4 × 12,50 și două BCS de câte 1. Regula preia configurația curentă, dar are altă
+cheie exactă, deci nu concurează cu regula din seed. Numai rândul propriu este editat și șters;
+curățenia elimină regulile și refuzurile de seed ale tipului propriu, pe identitate exactă.
+`PastreazaSemn` rămâne câmpul editat, fără efect pe postări.
+
+SC-CIT-111-IZOLARE confirmă stările intermediare după editare și după ștergere, apoi execută curățenia
+într-un ObjectSpace nou. Regula BCS străină martor și regula din seed rămân identice, inclusiv contorul;
+refuzurile de seed preexistente rămân aceleași. La reluarea scenei, aceeași purjă curăță fixture-ul
+abandonat. Nicio altă scenă nu consumă tipul materialului propriu. Nu se repară automat configurația
+lăsată de vechea probă pe alte baze: regula reală/refuzul ei nu pot fi atribuite sigur probei doar din
+`DinSeed`; bazele de verificare afectate se recreează.
+
+Cele două baze de dezvoltare (`Atlas.Conta.BackOffice`, `Atlas.Conta.ModelCheck.Privat`) purtau refuzul vechii
+probe pe BCS / tipul de stoc și refuzul lăsat de SC-X-26 pe BTR. Cele patru rânduri `RefuzSeed` au fost șterse
+nominal la 2026-10-07 (pasul 8 §11). Clonele făcute înainte (`.CodexD9Fix`, `.ClaudeD9Rv`) le păstrează.
 
 ## 4. Rezultate
+
+Corecturile D9-F-R2/R3 sunt verificate pe ambele profiluri în integrala
+`run-verificari/20261007-205913-703/`: SC-CIT-111 și SC-CIT-111-IZOLARE verzi.
+Detaliul și reconcilierea numărului de verificări: pasul 8 §10. Cifrele de mai jos sunt ale pasului inițial.
+
 
 | Probă | Rezultat |
 |---|---|

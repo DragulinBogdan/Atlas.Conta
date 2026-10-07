@@ -159,3 +159,13 @@ Probe: `ScenariiAsm` (SC-ASM-17…21, 23, 25, prin comanda reală
 operare) și `ProbeAsmOperand` (SC-ASM-22 și 24, pe operandul închis, în
 ambele convenții de rotunjire). Invariantul valorii liniei și mutanții lui
 (`LINIE-ASM`, `LINIE-SEMN-ASM`, `IESIRE-SEMN-ASM`) rulează în `INV-CUB`.
+
+## Perechi lângă transformare (D9-F-R1)
+
+`INV-CUB` păstrează drept martori pozitivi transformările și stornourile din catalog.
+În tranzacții anulate, mutanții adaugă lângă o transformare o pereche normală
+cu valori −1/+1 și cantități 0/0, respectiv −1/+1, pe aceeași cauză.
+Cu ordinal perechea trece; cu ambele ordinale șterse rezultatul cerut este
+`CITIRE_PERECHE_LIPSA`. Probele rulează separat invariantul perechii, ca un
+alt invariant să nu mascheze rezultatul. Verificat pe ambele profiluri: integrala
+`run-verificari/20261007-205913-703/`, zero FAIL; vezi pasul 8 §10.

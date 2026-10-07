@@ -22,9 +22,17 @@ Nu schimbă nicio cifră de catalog; schimbă schema (coloana `Pereche` în `Ini
   (view pe `p.*`, entitatea cu proprietatea, STR-VIZUAL-1 cere paritatea). `Randuri.Citeste`/`Scrie` o poartă.
 - **INV-CUB** (`Citiri.Invarianti.VerificaPerechi`): `CITIRE_PERECHE_INVALIDA` — pe (tranzacție, ordinal)
   nu sunt exact două postări cu același document, aceeași linie, cantități opuse și valorile potrivite
-  laturilor felului; `CITIRE_PERECHE_LIPSA` — postare fără ordinal în afara deschiderii și a liniilor
-  transformării (cele care au contrapondere virtuală pe aceeași cauză). Mutanții `PERECHE-RUPTA` (o postare a
-  perechii fără ordinal) și `PERECHE-LIPSA` (ambele fără ordinal).
+  laturilor felului; `CITIRE_PERECHE_LIPSA` — postare fără ordinal în afara deschiderii și a formei
+  transformării. Postările fără ordinal trebuie să aibă forma reală sau virtuală a transformării, cu
+  cantitate nenulă; pe tranzacție, cauză, cont, produs, latură, analiză și cantitate normalizată sunt la fel
+  de multe postări reale și contraponderi. O contrapondere nu scutește alte postări pe aceeași cauză.
+  Pe lângă `PERECHE-RUPTA` și `PERECHE-LIPSA`, mutanții verifică ordinalul sub 1, cauza, valoarea, valuta,
+  cantitatea și latura, precum și pierderea perechii unei mutări valorice/cantitative lângă transformare
+  (D9-F-R1). Transformările și stornourile catalogului sunt martorii pozitivi.
+  `PERECHE-DOCUMENT`, `PERECHE-TRANSFER-LATURA`, `PERECHE-TRANSFER-VALOARE`, `PERECHE-TRANSFER-VALUTA` și
+  `PERECHE-DESCHIDERE` acoperă restul disjuncțiilor; fiecare mutant aprinde una singură, probat și prin
+  scoaterea ei din predicat (pasul 8 §11).
+  Corectura este verde pe ambele profiluri, integrala `20261007-205913-703` (pasul 8 §10).
 - **ModelCheck.** `STR-STORNO` reconstruiește stornoul din rândurile proprii cu tranzacția lor sursă;
   `STR-ROUNDTRIP` compară structural, deci cuprinde ordinalul. `N-r8` are `VerificaPerechi` ca martor permis
   (perechea transferului stă pe aceeași latură).
