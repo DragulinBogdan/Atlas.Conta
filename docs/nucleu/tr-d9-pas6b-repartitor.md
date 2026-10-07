@@ -158,7 +158,12 @@ Finding P2 confirmat: helperul atribuia terțul și piciorului propriu fără
 gestiune, pe regula cu ambele conturi explicite (comunicare
 `2026-10-07-0719-codex-claude-…`). Corecția e cea de mai sus (§2,
 trezoreria), regresia SC-PLT-09 / SC-INC-09; reverificată prin integrala
-ambelor profiluri și prin contraexemplul lui Codex.
+ambelor profiluri și prin contraexemplul lui Codex. Închisă de Codex la
+`ea5d0bc` (`2026-10-07-0741-codex-claude-…-review-inchis.md`: integrala
+3.505 / 4.784 pe baze clonate, matricea de opt combinații PLT/INC × partide ×
+regulă 8/8). Review-ul lotului 6 + 6b e închis; gestiunea proprie pe regulile
+cu conturi explicite rămâne limită declarată (decizia 110), iar închiderea nu
+decide propunerea 111.
 
 ## 7. Restanțele
 

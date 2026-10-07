@@ -206,8 +206,9 @@ inert și al regulii fără consumator; inversa fiscală născută finală; orac
 Pasul 6b e făcut și corectat după review-ul Codex (D9-6B-R1; repartitorul pe
 capătul de terț prin `Terti.Capat`, gardul pe capăt prin funcția unică
 `Contabil.Repartitor`, SC-PLT-08, cele 17 aserții rescrise pe cititori:
-`docs/nucleu/tr-d9-pas6b-repartitor.md`, 2026-10-07). Urmează review-ul
-Codex principal al lotului 6 + 6b înaintea lui 7.
+`docs/nucleu/tr-d9-pas6b-repartitor.md`, 2026-10-07). Review-ul Codex al lotului
+6 + 6b e închis (D9-6B-R1 corectată la `ea5d0bc`, reverificată, 2026-10-07).
+Urmează pasul 7.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
