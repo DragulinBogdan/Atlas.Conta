@@ -13,6 +13,7 @@
 | SC-INC-05 | Anulare în luna deschisă → Draft și zero efecte proprii. | acceptat | invariant III | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 | SC-INC-06 | Corecție în februarie a încasării100 din ianuarie închis: original inversat; corecție80 → sold original0, corecție−80. | acceptat | 088h | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 | SC-INC-07 | Linie0: VALOARE_NEPOZITIVA prin declarație și refuz pe comandă, fără efecte. | refuzat | contract declarant | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-INC-09 | Oglinda lui SC-PLT-09: regulă cu ambele conturi explicite (D cont propriu / C462), predator creditor, primitor cont propriu de mandat. Cu flag pe contul propriu: refuz pe debit, zero efecte. Fără flag: C462 cu partenerul creditorului, D cont propriu fără repartitor. | refuzat / acceptat | D9-6B-R1 (2026-10-07) | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri |
 
 Stingerea FCL→INC este probată în [FCL.md](FCL.md); SC-X-03 cu avans și
 retur rămâne deschis. Conturile bugetare nu au RolTert, deci probele de

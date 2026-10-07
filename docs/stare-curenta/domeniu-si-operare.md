@@ -929,8 +929,11 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   capătul de terț poartă `Partener` + partida pe un cont cu `UrmarestePartide`
   și `Partener` singur pe un cont care cere `Repartitor`
   (`ContFapt.CereRepartitor`), și când contul nu urmărește partide. Un singur
-  helper, `Declaratii/Terti.Capat`, pune ambele; capătul cu gestiune reală e
-  intern și rămâne neatins, capătul din cartea fiscală nu primește partener.
+  helper, `Declaratii/Terti.Capat`, pune ambele pe capătul de terț pe care i-l
+  dă apelantul; capătul cu gestiune reală nu e de terț, capătul din cartea
+  fiscală nu primește partener. Trezoreria alege piciorul de terț structural
+  (predatorul dă pe credit, primitorul primește pe debit), nu după lipsa
+  gestiunii; piciorul propriu fără gestiune rămâne vizibil gardului.
   Terțul capătului e latura externă a documentului; la DEC și NTC e
   repartitorul liniei, iar DEC, NTC, DSC și diferența NIR îl pun pe capătul
   extern necondiționat (T-D13 g). Convenția pozițională a notei vechi

@@ -36,9 +36,11 @@ public sealed class DeclarantTrezorerie : IDeclarant {
         if (refuzuri.Count > 0)
             return null;
 
-        var tert = doc.Predator.Parte == Parte.Extern ? doc.Predator.Id
-            : doc.Primitor.Parte == Parte.Extern ? doc.Primitor.Id
-            : (Guid?)null;
+        // Banii trec de pe contul predatorului (credit) pe al primitorului (debit):
+        // piciorul de terț e al laturii externe, nu al contului fără gestiune (D9-A10 a).
+        var (tert, peDebit) = doc.Predator.Parte == Parte.Extern ? (doc.Predator.Id, false)
+            : doc.Primitor.Parte == Parte.Extern ? (doc.Primitor.Id, true)
+            : ((Guid?)null, false);
         var miscari = new List<N.Miscare>(operand.Linii.Count);
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza>();
@@ -69,15 +71,14 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                 miscari.Add(new N.Miscare(credit, debit, 0m, 0m, linie.Valoare, new N.Cauza(doc.Id, linie.Id)));
                 continue;
             }
-            var peDebit = Partide.Urmareste(operand, contare.ContDebit);
-            if (!peDebit && !Partide.Urmareste(operand, contare.ContCredit)) {
+            var cont = peDebit ? contare.ContDebit : contare.ContCredit;
+            if (!Partide.Urmareste(operand, cont)) {
                 miscari.Add(new N.Miscare(
-                    Terti.Capat(operand, credit, partener, (N.Unitate?)null),
-                    Terti.Capat(operand, debit, partener, (N.Unitate?)null),
+                    peDebit ? credit : Terti.Capat(operand, credit, partener, (N.Unitate?)null),
+                    peDebit ? Terti.Capat(operand, debit, partener, (N.Unitate?)null) : debit,
                     0m, 0m, linie.Valoare, new N.Cauza(doc.Id, linie.Id)));
                 continue;
             }
-            var cont = peDebit ? contare.ContDebit : contare.ContCredit;
 
             var proprie = Partide.Proprie(operand, cont, partener);
             var bucati = new List<(N.Unitate Partida, decimal Suma)>(2);
@@ -123,8 +124,8 @@ public sealed class DeclarantTrezorerie : IDeclarant {
             }
             foreach (var (partida, suma) in bucati)
                 miscari.Add(new N.Miscare(
-                    Terti.Capat(operand, credit, partener, peDebit ? null : partida),
-                    Terti.Capat(operand, debit, partener, peDebit ? partida : null),
+                    peDebit ? credit : Terti.Capat(operand, credit, partener, partida),
+                    peDebit ? Terti.Capat(operand, debit, partener, partida) : debit,
                     0m,
                     0m,
                     suma,

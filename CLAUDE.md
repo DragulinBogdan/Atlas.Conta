@@ -203,7 +203,7 @@ motorul nu mai scrie, nu mai citește și nu mai ramifică pe registre și pe
 regim; valoarea liniei din decizia contractului; ASM pe P = C; refuzul tipului
 inert și al regulii fără consumator; inversa fiscală născută finală; oracolul
 și martorii scoși din ModelCheck; `docs/nucleu/tr-d9-pas6-taierea.md`, 2026-10-07).
-Pasul 6b e făcut (repartitorul pe
+Pasul 6b e făcut și corectat după review-ul Codex (D9-6B-R1; repartitorul pe
 capătul de terț prin `Terti.Capat`, gardul pe capăt prin funcția unică
 `Contabil.Repartitor`, SC-PLT-08, cele 17 aserții rescrise pe cititori:
 `docs/nucleu/tr-d9-pas6b-repartitor.md`, 2026-10-07). Urmează review-ul

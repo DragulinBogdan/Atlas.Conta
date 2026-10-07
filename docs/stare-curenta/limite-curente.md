@@ -15,7 +15,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   partenerul fiscal (B-D8 pct. 5), deci `Contabil.Repartitor` îl întoarce pe
   el înaintea gestiunii; separarea e a deciziei 111. Pe trezorerie, când
   regula de contare numește ambele conturi explicit, piciorul propriu n-are
-  gestiune și, dacă contul lui cere repartitor, primește partenerul terțului.
+  gestiune (B-D8 pct. 9 o ia din `SursaCont`); dacă contul lui cere
+  repartitor documentul e refuzat (SC-PLT-09), nu reparat cu terțul.
   Cerința de material citește numai produsul lotului, nu și materialul fix al
   unei reguli de contare. BTR, ASM și PIF nu sunt păzite (D9-r1).
   (`docs/nucleu/tr-d9-pas6b-repartitor.md`; `tr-d9-pas2-probe.md`, G2)

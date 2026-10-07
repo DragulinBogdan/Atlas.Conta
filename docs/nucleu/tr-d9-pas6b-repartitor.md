@@ -65,10 +65,14 @@ o promisiune pentru conturile cu flag fără partide, probată sintetic.
   atinge capătul cu gestiune reală (e intern), capătul din cartea fiscală sau
   un partener deja pus (faptul fiscal). Supraîncărcarea pe dicționarul de
   partide înlocuiește `Partide.CuPartida` în FCT, FCL, NIR, RTC, RTF, DVI.
-  Trezoreria trece și ea prin helper: linia fără cont cu partide dă ambele
-  capete helperului (piciorul propriu are gestiune, rămâne; piciorul de terț
-  primește partenerul dacă contul îl cere); linia cu partide îl dă cu bucata
-  de partidă.
+  Trezoreria alege piciorul de terț structural, nu după lipsa gestiunii:
+  banii trec de pe contul predatorului (credit) pe al primitorului (debit),
+  deci capătul laturii externe e singurul dat helperului, cu partida când
+  contul o urmărește și fără ea altfel; piciorul propriu nu trece prin helper
+  (corectat la review, D9-6B-R1). În ceilalți declaranți supraîncărcarea pe
+  dicționar primește ambele capete, iar gardul „fără gestiune reală” al
+  helperului e acoperit prin construcție: piciorul intern poartă acolo mereu
+  gestiunea reală a documentului.
 - **Gardul** (`Cub/GardAnaliza`): `Lipsuri` judecă numai capătul, prin
   `GardAnaliza.Repartitor(capăt)` = `Citiri.Contabil.Repartitor(partener,
   gestiune)`, funcția unică a repartitorului pe scriitor și pe cititor.
@@ -85,6 +89,13 @@ o promisiune pentru conturile cu flag fără partide, probată sintetic.
   plata către creditorul cu cont fără partide care cere repartitor → partener
   pe debit, fără partidă (`Partide.Postari` = 0), balanța analitică pe creditor
   cu un singur rând; pe privat flag-ul se pune pe 462 în scenă și se restaurează.
+- **SC-PLT-09 / SC-INC-09** (`ScenariiTrezorerie.ConturiExplicite`, ambele
+  profiluri, regresia D9-6B-R1): regulă de contare cu ambele conturi explicite
+  (cont propriu 552.00.00 / 5121 cu flag, creditor 462.01.09 / 462 cu flag).
+  Cu flag pe contul propriu: refuz „Contul 552.00.00 (credit, …) cere:
+  Repartitor”, Draft și zero efecte. Fără flag pe contul propriu: acceptat,
+  partenerul numai pe piciorul de terț, piciorul propriu fără repartitor,
+  balanța analitică pe creditor numai pe contul de terț.
 - **`GARD-ANALIZA`** (`ProbeGardAnaliza`): fără partener și fără gestiune pe
   capăt gardul refuză; partenerul sau gestiunea îl satisfac;
   `GardAnaliza.Repartitor` întoarce partenerul înaintea gestiunii și nul fără
@@ -105,17 +116,20 @@ o promisiune pentru conturile cu flag fără partide, probată sintetic.
 
 | Probă | Pasul 6 | Pasul 6b |
 |---|---|---|
-| ModelCheck bugetar | 3.481 OK, 0 FAIL | 3.495 OK, 0 FAIL |
-| ModelCheck privat | 4.763 OK, 0 FAIL | 4.774 OK, 0 FAIL |
+| ModelCheck bugetar | 3.481 OK, 0 FAIL | 3.505 OK, 0 FAIL (3.495 înaintea R1) |
+| ModelCheck privat | 4.763 OK, 0 FAIL | 4.784 OK, 0 FAIL (4.774 înaintea R1) |
 | `--probe-sursa` | 10 / 10 | 10 / 10 |
 | nucleu | 180 / 180 | 180 / 180 |
 
 Comparația pe nume (`pas3/scripts/compara.py`): dispărute numai proba
 `GARD-ANALIZA` redenumită, contorul `TRZ: N matrice` (16 → 18, scena nouă) și
 numărătoarea „Cautare == Normalizeaza (N rânduri)”, care crește la fiecare
-rulare (pas 3, constatarea 3); apărute numai Check-urile `D9-A10`, SC-PLT-08
-și matricele ei. Logurile: `run-nucleu/tr-d9a/pas6b/final-*.log`. Nicio
-schimbare de API, deci driftul openapi nu e atins.
+rulare (pas 3, constatarea 3); apărute numai Check-urile `D9-A10`, SC-PLT-08,
+SC-PLT-09, SC-INC-09 și matricele lor. Logurile:
+`run-nucleu/tr-d9a/pas6b/final-*.log` (înaintea R1), `r1-*.log` (după).
+Contraexemplul Codex (`run-nucleu/tr-d9a/review-codex-6-6b/repartitor-explicit.cs`)
+dă după corecție, pe regula explicită, `DeLa: partner=null` și un refuz al
+gardului. Nicio schimbare de API, deci driftul openapi nu e atins.
 
 ## 5. Constatări pentru deciziile 110 și 111
 
@@ -132,12 +146,21 @@ schimbare de API, deci driftul openapi nu e atins.
   Netratat aici: scoaterea ar schimba cifre prin dispariție (regula de oprire).
 - **(110, limită)** Pe trezorerie, o regulă de contare editată cu ambele
   conturi explicite lasă piciorul propriu fără gestiune (B-D8 pct. 9 depinde de
-  `SursaCont`); dacă acel cont cere repartitor, primește partenerul terțului.
-  Niciun cont propriu din seed nu e în situația asta în vreo regulă.
+  `SursaCont`); după D9-6B-R1 lipsa e vizibilă gardului (refuz când contul
+  propriu cere repartitor), nu mai e acoperită de partenerul terțului.
+  Gestiunea structurală a piciorului propriu rămâne de hotărât în 110.
 - **(110)** Coordonata apare pe seed numai pe 16 conturi bugetare fără partide,
   niciunul atins de catalog; proba e sintetică (SC-PLT-08).
 
-## 6. Restanțele
+## 6. Review-ul Codex (D9-6B-R1, 2026-10-07)
+
+Finding P2 confirmat: helperul atribuia terțul și piciorului propriu fără
+gestiune, pe regula cu ambele conturi explicite (comunicare
+`2026-10-07-0719-codex-claude-…`). Corecția e cea de mai sus (§2,
+trezoreria), regresia SC-PLT-09 / SC-INC-09; reverificată prin integrala
+ambelor profiluri și prin contraexemplul lui Codex.
+
+## 7. Restanțele
 
 Proba pe `Partener` cerută de D9-D13 pentru 64h, 86-r13 și F27-r11 există
 acum (cele 14 Check-uri `D9-A10` și SC-PLT-08, pe lângă constatarea
@@ -145,7 +168,7 @@ inventarului §13 că niciun cititor de sold nu mai grupează pe laturile
 documentului). Verdictul se scrie în `restante.md` la închiderea feliei, ca
 restul lui D9-D13.
 
-## 7. Urme
+## 8. Urme
 
 `run-nucleu/tr-d9a/pas6b/`: `masura-bugetar.tsv` și `.log` (instrumentarea),
 `plt-*.log` (scena singură), `final-*.log`, `probe-sursa.log`.

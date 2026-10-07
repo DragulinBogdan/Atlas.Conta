@@ -66,6 +66,66 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         }
         for (var i = 0; i < 2; i++) PestePerioada(peste[i], corectate[i], i == 1);
         RepartitorPeTert();
+        ConturiExplicite();
+    }
+
+    // D9-6B-R1: regula cu ambele conturi explicite nu dă gestiune piciorului propriu; terțul nu-l repară —
+    // lipsa rămâne vizibilă gardului când contul propriu cere repartitor.
+    void ConturiExplicite() {
+        var contPropriu = Cont(Privat ? "5121" : "552.00.00");
+        var contTert = Cont(Privat ? "462" : "462.01.09");
+        var flaguri = CuSpatiu(os => (os.GetObjectByKey<Cont>(contPropriu).DimensiuniObligatorii,
+            os.GetObjectByKey<Cont>(contTert).DimensiuniObligatorii));
+        void Flag(Guid cont, DimensiuneFlags valoare) =>
+            Comanda(os => { os.GetObjectByKey<Cont>(cont).DimensiuniObligatorii = valoare; os.CommitChanges(); });
+        var (mandat, creditor) = CuSpatiu(os => {
+            var m = os.CreateObject<ContPropriu>();
+            m.Cod = Marcaj + "-MANDAT"; m.Denumire = m.Cod; m.EsteBanca = true; m.ContImplicitId = contPropriu;
+            var c = os.CreateObject<Partener>();
+            c.Cod = Marcaj + "-CRED-EXPLICIT"; c.Denumire = c.Cod; c.ContImplicitId = contTert;
+            os.CommitChanges(); return (m.ID, c.ID);
+        });
+        var reguli = new List<Guid>();
+        try {
+            Flag(contPropriu, DimensiuneFlags.Repartitor); Flag(contTert, DimensiuneFlags.Repartitor);
+            foreach (var inc in new[] { false, true }) {
+                var id = Id(inc, "09");
+                reguli.Add(CuSpatiu(os => {
+                    var r = os.CreateObject<RegulaContare>();
+                    r.TipDocumentId = os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == (inc ? "INC" : "PLT")).ID;
+                    r.TipMaterialId = Tip(os, "TRZ");
+                    r.SursaContDebit = SursaCont.Explicit; r.SursaContCredit = SursaCont.Explicit;
+                    r.ContDebitId = inc ? contPropriu : contTert; r.ContCreditId = inc ? contTert : contPropriu;
+                    os.CommitChanges(); return r.ID;
+                }));
+                FacturaScena Document() => CuSpatiu(os => {
+                    DocumentTrezorerie doc = inc ? os.CreateObject<Incasare>() : os.CreateObject<Plata>();
+                    doc.Data = Februarie; doc.PredatorId = inc ? creditor : mandat; doc.PrimitorId = inc ? mandat : creditor;
+                    var l = os.CreateObject<DocumentTrezorerieDetaliu>(); l.Document = doc;
+                    l.Pozitie = 1; l.TipMaterialId = Tip(os, "TRZ"); l.Valoare = 100; l.CodEconomicId = Economic;
+                    os.CommitChanges(); return new FacturaScena(doc.ID, [new(l.ID, null, null)]);
+                });
+                var refuzat = Document();
+                Refuza(id, () => Opereaza(refuzat.Id), CuSpatiu(os => os.GetObjectByKey<Cont>(contPropriu).Simbol));
+                FaraEfecte(id, refuzat.Id);
+                Flag(contPropriu, DimensiuneFlags.Niciuna);
+                var acceptat = Document(); Opereaza(acceptat.Id);
+                var linie = acceptat.Linii[0].Id;
+                Postari(id, acceptat.Id, N.FelTranzactie.Operare, Februarie,
+                    new RandScena(contTert, inc ? N.Latura.Credit : N.Latura.Debit, 100, Partener: creditor, Linie: linie, Economic: Economic),
+                    new RandScena(contPropriu, inc ? N.Latura.Debit : N.Latura.Credit, 100, Linie: linie, Economic: Economic));
+                Verifica(id, "analiticul creditorului poartă numai contul de terț; contul propriu n-are repartitor", CuSpatiu(os => {
+                    var peCreditor = ContabilProiectii.Balanta(os, Februarie, Februarie, analitic: true, repartitorId: creditor).ToList();
+                    var propriu = CubScena.Note(os, acceptat.Id).Single(p => p.Cont == contPropriu);
+                    return peCreditor.All(r => r.ContId == contTert) && propriu.Repartitor == null;
+                }));
+                Flag(contPropriu, DimensiuneFlags.Repartitor);
+            }
+        }
+        finally {
+            Flag(contPropriu, flaguri.Item1); Flag(contTert, flaguri.Item2);
+            Comanda(os => { foreach (var r in reguli) os.Delete(os.GetObjectByKey<RegulaContare>(r)); os.CommitChanges(); });
+        }
     }
 
     // D9-A10: piciorul de terț al contului care cere repartitor poartă partenerul și fără partidă;
