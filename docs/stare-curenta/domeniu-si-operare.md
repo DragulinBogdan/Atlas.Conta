@@ -866,6 +866,14 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   lot ⇒ produs și gestiune; partidă ⇒ partener; unitatea pe contul, produsul
   și partenerul postării; postările datate ca tranzacția; deschiderea fără
   document, scutită de Σ). (N-D3, N-D4)
+- **Perechea** (`Postare.Pereche`, D9-A2): ordinalul mișcării sau mutării în
+  tranzacția ei, dat de `Motor` (mișcările 1…m în `Operare`, mutările 1…k în
+  `Transfer`); transformările și deschiderea n-au ordinal. `Conservare`
+  (`PERECHE_INVALIDA`) cere pe fiecare ordinal nenul exact două postări cu
+  aceeași cauză și cantități opuse: pe laturi opuse cu aceeași valoare
+  (`Operare`), pe aceeași latură cu valori opuse (`Transfer`); stornoul
+  acceptă ambele forme. Nu e coordonată: nu intră în chei de sold și
+  snapshot-uri; cititorii n-o folosesc încă (D9-r4).
 - **Unitatea** (lot = partidă = fișă): raportul = cost / curs / valoare
   rămasă ca citire; partida deschisă de un document are id determinist din
   (document, cont, partener), conform 092; identitățile istorice sunt păstrate
@@ -1042,7 +1050,7 @@ postare nu se șterge, fișa care e unitatea unei postări nu se șterge.
 | Entitate | Coloane |
 |---|---|
 | `Tranzactie` | `ID`, `DocumentId`, `Fel` (`Operare`, `Storno`, `Transfer`, `Deschidere`), `Data`, `ScrisLa` (UTC) |
-| `Postare` | `Spatiu`, `TranzactieId`, `DocumentId`, `LinieId`, `Data`, `Cont`, `Latura`, `Partener`, `Gestiune`, `Produs`, `Unitate`, `UnitateDeschisa`, codul de TVA în trei coloane (`TipTvaId`, `SensTva`, `RolTva`), `PerioadaDeclarare`, `Valuta`, `Carte`, cele șase dimensiuni, `Atribuit`, `Cantitate`, `ValoareValuta`, `Valoare` |
+| `Postare` | `Spatiu`, `TranzactieId`, `DocumentId`, `LinieId`, `Data`, `Cont`, `Latura`, `Partener`, `Gestiune`, `Produs`, `Unitate`, `UnitateDeschisa`, codul de TVA în trei coloane (`TipTvaId`, `SensTva`, `RolTva`), `PerioadaDeclarare`, `Valuta`, `Carte`, cele șase dimensiuni, `Atribuit`, `Pereche`, `Cantitate`, `ValoareValuta`, `Valoare` |
 
 Enumurile nucleului se mapează pe `smallint` cu valorile lor numerice; scara
 măsurilor rămâne a gardianului `Scara` (bani 18,2, cantități 18,3).
@@ -1102,7 +1110,10 @@ motorul nu-l are. (4, D9-A4)
   stornării. La corecția cu motivul `EroareMateriala`, postările fiscale ale
   inversei se nasc cu atribuirea corecției — perioada originalului sau, dacă e
   depusă, regularizarea — și cu marcajul de inversă tehnică; nicio postare
-  existentă nu se rescrie. (S-D5, D9-A5)
+  existentă nu se rescrie. (S-D5, D9-A5) Ordinalul perechii se păstrează pe
+  prima sursă (după identificatorul tranzacției) și se decalează pe celelalte
+  cu maximul surselor dinaintea lor, ca perechile să rămână distincte în
+  unica tranzacție de storno (D9-A2, `Storno.Inverseaza` pe `(Sursa, Postare)`).
 - **Anularea operării** șterge fizic tranzacțiile `Operare` și `Transfer` ale
   documentului și postările lor; e gardată
   de „fără împerecheri", deci orice `Transfer` al documentului e al lui. (S-D5, T-D2)
@@ -1359,6 +1370,11 @@ ieșirea atât, din ce sold, ce partide a stins.
   regula de la contractare (090f), reverificată pe ce s-a scris. Acoperă
   contul capătului de destinație, pe care nici acoperirea cantitativă a
   stocului, nici reconcilierea (a) nu îl văd.
+- **Perechea persistată e cea de la contractare** (`Invarianti.VerificaPerechi`,
+  în `INV-CUB`): `CITIRE_PERECHE_INVALIDA` — pe (tranzacție, ordinal) nu stau
+  exact două postări cu același document, aceeași linie, cantități opuse și
+  valorile potrivite laturilor felului; `CITIRE_PERECHE_LIPSA` — postare fără
+  ordinal în afara deschiderii și a liniilor transformării. (D9-A2)
 
 Dry-run-ul nu persistă nimic. O declarație pe care nucleul nu o poate
 construi (`ArgumentException`) sau un declarant care nu întoarce nici

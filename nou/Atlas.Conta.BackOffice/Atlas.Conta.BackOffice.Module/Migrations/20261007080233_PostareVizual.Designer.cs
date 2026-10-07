@@ -2591,6 +2591,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("Partener")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("Pereche")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("PerioadaD394")
                         .HasColumnType("integer");
 
@@ -2764,6 +2767,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<string>("PartenerCod")
                         .HasColumnType("text");
+
+                    b.Property<int?>("Pereche")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("PerioadaD394")
                         .HasColumnType("integer");

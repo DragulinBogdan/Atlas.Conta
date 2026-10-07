@@ -60,6 +60,7 @@ public class Postare {
     public virtual Guid? CentruCost { get; set; }
 
     public virtual Guid? Atribuit { get; set; }
+    public virtual int? Pereche { get; set; }
 
     public virtual decimal Cantitate { get; set; }
     public virtual decimal ValoareValuta { get; set; }

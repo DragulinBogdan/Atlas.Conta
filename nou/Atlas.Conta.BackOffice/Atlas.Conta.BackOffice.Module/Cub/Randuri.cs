@@ -41,6 +41,7 @@ public static class Randuri {
             rand.Atribuit) {
                 Suport = Referinta(rand.SuportId, rand.SuportSpatiu),
                 InversaDin = Referinta(rand.InversaDinId, rand.InversaDinSpatiu),
+                Pereche = rand.Pereche,
             };
     }
 
@@ -92,6 +93,7 @@ public static class Randuri {
         rand.Proiect = coordonate.Analiza.Proiect;
         rand.CentruCost = coordonate.Analiza.CentruCost;
         rand.Atribuit = postare.Atribuit;
+        rand.Pereche = postare.Pereche;
         rand.Cantitate = postare.Cantitate;
         rand.ValoareValuta = postare.ValoareValuta;
         rand.Valoare = postare.Valoare;

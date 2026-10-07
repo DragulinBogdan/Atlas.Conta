@@ -20,7 +20,47 @@ public static class Conservare {
         VerificaSemnul(tranzactie, refuzuri);
         VerificaFormele(tranzactie, refuzuri);
         VerificaTransformarile(tranzactie, refuzuri);
+        VerificaPerechile(tranzactie, refuzuri);
         return refuzuri;
+    }
+
+    // D9-A2: ordinalul nenul leagă exact două postări, mișcarea și contrapartida ei.
+    static void VerificaPerechile(Tranzactie tranzactie, List<Refuz> refuzuri) {
+        if (tranzactie.Fel == FelTranzactie.Deschidere) {
+            foreach (var postare in tranzactie.Postari)
+                if (postare.Pereche is { } ordinal)
+                    refuzuri.Add(new Refuz(Coduri.PerecheInvalida,
+                        $"deschiderea nu are perechi, dar postarea poartă ordinalul {ordinal}", postare.Cauza.Linie));
+            return;
+        }
+        foreach (var grup in tranzactie.Postari.Where(p => p.Pereche is not null).GroupBy(p => p.Pereche!.Value)) {
+            var perechea = grup.ToArray();
+            if (grup.Key < 1) {
+                refuzuri.Add(new Refuz(Coduri.PerecheInvalida,
+                    $"ordinalul perechii {grup.Key} e sub 1", perechea[0].Cauza.Linie));
+                continue;
+            }
+            if (perechea.Length != 2) {
+                refuzuri.Add(new Refuz(Coduri.PerecheInvalida,
+                    $"perechea {grup.Key} are {perechea.Length} postări, nu două", perechea[0].Cauza.Linie));
+                continue;
+            }
+            var (a, b) = (perechea[0], perechea[1]);
+            var laturiOpuse = a.Coordonate.Latura != b.Coordonate.Latura;
+            var contrapartida = a.Cauza == b.Cauza && a.Cantitate + b.Cantitate == 0m
+                && (laturiOpuse
+                    ? a.Valoare == b.Valoare && a.ValoareValuta == b.ValoareValuta
+                    : a.Valoare == -b.Valoare && a.ValoareValuta == -b.ValoareValuta)
+                && tranzactie.Fel switch {
+                    FelTranzactie.Operare => laturiOpuse,
+                    FelTranzactie.Transfer => !laturiOpuse,
+                    _ => true,
+                };
+            if (!contrapartida)
+                refuzuri.Add(new Refuz(Coduri.PerecheInvalida,
+                    $"perechea {grup.Key} nu e o mișcare cu contrapartida ei (cauză, valoare, cantitate sau laturi nepotrivite)",
+                    a.Cauza.Linie));
+        }
     }
 
     static void VerificaTransformarile(Tranzactie tranzactie, List<Refuz> refuzuri) {

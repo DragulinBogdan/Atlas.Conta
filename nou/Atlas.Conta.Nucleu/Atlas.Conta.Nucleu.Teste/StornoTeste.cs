@@ -177,8 +177,8 @@ public class StornoTeste {
             Assert.Equal(2, contract.Tranzactii.Count);
             var urmator = 0;
             var toate = contract.Tranzactii
-                .SelectMany(t => t.Postari)
-                .Select(p => (Id: new Guid(100, (short)urmator++, 0, 0, 0, 0, 0, 0, 0, 0, 0), Postare: p))
+                .SelectMany((t, i) => t.Postari.Select(p => (Sursa: new Guid(200, (short)i, 0, 0, 0, 0, 0, 0, 0, 0, 0), Postare: p)))
+                .Select(x => (Id: new Guid(100, (short)urmator++, 0, 0, 0, 0, 0, 0, 0, 0, 0), x.Sursa, x.Postare))
                 .ToList();
             var selectate = Storno.Selecteaza(toate, declaratie.Document);
             Assert.Equal(toate.Count, selectate.Count);
@@ -191,6 +191,39 @@ public class StornoTeste {
             Assert.Empty(Conservare.Verifica(stornata));
         });
 
+    // D9-A2: sursele unite într-un storno își păstrează perechile distincte; prima sursă păstrează ordinalele.
+    [Fact]
+    public void StornoulPesteSurseDecaleazaPerechileSiLePastreazaIntregi() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var declaratie = Gen.Declaratie(aleator, cuMutari: true);
+            var contract = Motor.Opereaza(declaratie, new Rotunjire(MidpointRounding.AwayFromZero));
+            var surse = contract.Tranzactii.Select((t, i) => (Sursa: new Guid(200, (short)i, 0, 0, 0, 0, 0, 0, 0, 0, 0), Tranzactie: t)).ToList();
+            if (aleator.Next(2) == 0) surse.Reverse();
+            var intrare = surse.SelectMany(s => s.Tranzactie.Postari.Select(p => (s.Sursa, Postare: p))).ToList();
+            var data = Gen.Data(aleator);
+            var stornata = Storno.Inverseaza(intrare, declaratie.Document, data, null);
+            Assert.Empty(Conservare.Verifica(stornata));
+            var ordinale = stornata.Postari.Select(p => p.Pereche!.Value).ToList();
+            Assert.Equal(Enumerable.Range(1, intrare.Count / 2).SelectMany(i => new[] { i, i }).OrderBy(i => i), ordinale.OrderBy(i => i));
+            for (var i = 0; i < intrare.Count; i++)
+                for (var j = 0; j < intrare.Count; j++)
+                    Assert.Equal(
+                        intrare[i].Sursa == intrare[j].Sursa && intrare[i].Postare.Pereche == intrare[j].Postare.Pereche,
+                        ordinale[i] == ordinale[j]);
+            var prima = surse.MinBy(s => s.Sursa).Sursa;
+            for (var i = 0; i < intrare.Count; i++)
+                if (intrare[i].Sursa == prima)
+                    Assert.Equal(intrare[i].Postare.Pereche, stornata.Postari[i].Pereche);
+        });
+
+    [Fact]
+    public void StornoulUneiSingureSursePastreazaOrdinalele() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator);
+            var stornata = Storno.Inverseaza(tranzactie.Postari, tranzactie.Document!.Value, Gen.Data(aleator));
+            Assert.Equal(tranzactie.Postari.Select(p => p.Pereche), stornata.Postari.Select(p => p.Pereche));
+        });
+
     [Fact]
     public void StornoulFaraPostariERefuzat() =>
         Assert.Throws<ArgumentException>(() =>
@@ -198,7 +231,7 @@ public class StornoTeste {
 
     [Fact]
     public void SelectiaFaraPotrivireEGoala() =>
-        Assert.Empty(Storno.Selecteaza([], Gen.Documente[0]));
+        Assert.Empty(Storno.Selecteaza((IReadOnlyList<(Guid, Postare)>)[], Gen.Documente[0]));
 
     sealed record Scena(
         Guid Document,

@@ -12,8 +12,10 @@ public sealed record Mutare(
     public ReferintaPostare? Suport { get; init; }
 
     // 090f: transferul conservă pe (Cont, Latura), deci cele două postări stau pe ACEEAȘI latură.
-    public static (Postare Iesire, Postare Intrare) Postari(Mutare mutare, DateOnly data) {
+    public static (Postare Iesire, Postare Intrare) Postari(Mutare mutare, DateOnly data, int pereche) {
         ArgumentNullException.ThrowIfNull(mutare);
+        if (pereche < 1)
+            throw new ArgumentOutOfRangeException(nameof(pereche), pereche, "ordinalul perechii începe de la 1.");
         if (mutare.DeLa.Cont != mutare.La.Cont)
             throw new ArgumentException(
                 $"transferul mută între contul {mutare.DeLa.Cont} și contul {mutare.La.Cont}.",
@@ -24,12 +26,12 @@ public sealed record Mutare(
                 -mutare.Cantitate,
                 -mutare.ValoareValuta,
                 -mutare.Valoare,
-                mutare.Cauza) { Suport = mutare.Suport },
+                mutare.Cauza) { Suport = mutare.Suport, Pereche = pereche },
             new Postare(
                 mutare.La.Pe(mutare.Latura, data),
                 mutare.Cantitate,
                 mutare.ValoareValuta,
                 mutare.Valoare,
-                mutare.Cauza) { Suport = mutare.Suport });
+                mutare.Cauza) { Suport = mutare.Suport, Pereche = pereche });
     }
 }

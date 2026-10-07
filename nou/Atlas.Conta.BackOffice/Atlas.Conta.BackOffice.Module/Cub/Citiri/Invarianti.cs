@@ -22,6 +22,45 @@ public static class Invarianti {
         Partide.VerificaAcoperire(os);
         Imobilizari.VerificaProvenienta(os);
         Explicatii.VerificaAcoperire(os);
+        VerificaPerechi(os);
+    }
+
+    public const string PerecheInvalida = "CITIRE_PERECHE_INVALIDA";
+    public const string PerecheLipsa = "CITIRE_PERECHE_LIPSA";
+
+    /// <summary>Perechea persistată e cea de la contractare (D9-A2): exact două postări pe (tranzacție, ordinal), mișcarea și contrapartida ei; fără ordinal rămân numai transformările și deschiderea.</summary>
+    public static void VerificaPerechi(IObjectSpace os) {
+        var postari = os.GetObjectsQuery<Postare>();
+        var invalide = postari.Where(p => p.Pereche != null)
+            .GroupBy(p => new { p.TranzactieId, p.Tranzactie.Fel, p.Pereche })
+            .Select(g => new {
+                g.Key.TranzactieId, g.Key.Fel, g.Key.Pereche,
+                Cate = g.Count(),
+                Documente = g.Select(p => p.DocumentId ?? Guid.Empty).Distinct().Count(),
+                Linii = g.Select(p => p.LinieId ?? Guid.Empty).Distinct().Count(),
+                Laturi = g.Select(p => p.Latura).Distinct().Count(),
+                Cantitate = g.Sum(p => p.Cantitate),
+                Valoare = g.Sum(p => p.Valoare), ValoareMin = g.Min(p => p.Valoare), ValoareMax = g.Max(p => p.Valoare),
+                Valuta = g.Sum(p => p.ValoareValuta), ValutaMin = g.Min(p => p.ValoareValuta), ValutaMax = g.Max(p => p.ValoareValuta),
+            })
+            .Where(x => x.Pereche < 1 || x.Cate != 2 || x.Documente != 1 || x.Linii != 1 || x.Cantitate != 0m
+                || x.Fel == N.FelTranzactie.Deschidere
+                || (x.Fel == N.FelTranzactie.Operare && x.Laturi != 2)
+                || (x.Fel == N.FelTranzactie.Transfer && x.Laturi != 1)
+                || !((x.Laturi == 2 && x.ValoareMin == x.ValoareMax && x.ValutaMin == x.ValutaMax)
+                    || (x.Laturi == 1 && x.Valoare == 0m && x.Valuta == 0m)))
+            .Select(x => new { x.TranzactieId, x.Pereche })
+            .Take(10).ToList();
+        if (invalide.Count != 0)
+            throw new OperareException($"{PerecheInvalida}: perechi care nu sunt o mișcare cu contrapartida ei; exemple: "
+                + string.Join(", ", invalide.Select(x => $"{x.TranzactieId}/{x.Pereche}")));
+        var contraponderi = postari.Where(Transformare.Contrapondere);
+        var lipsa = postari.Where(p => p.Pereche == null && p.Tranzactie.Fel != N.FelTranzactie.Deschidere
+                && !contraponderi.Any(c => c.TranzactieId == p.TranzactieId && c.DocumentId == p.DocumentId && c.LinieId == p.LinieId))
+            .Select(p => p.TranzactieId).Distinct().Take(10).ToList();
+        if (lipsa.Count != 0)
+            throw new OperareException($"{PerecheLipsa}: postări fără ordinal de pereche în afara transformărilor și a deschiderii; exemple: "
+                + string.Join(", ", lipsa));
     }
 
     public const string TransferNeconservat = "CITIRE_TRANSFER_NECONSERVAT";

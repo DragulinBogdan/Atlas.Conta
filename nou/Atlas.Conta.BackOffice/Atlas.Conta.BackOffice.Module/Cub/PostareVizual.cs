@@ -90,6 +90,8 @@ public class PostareVizual {
     public virtual string CentruCostCod { get; set; }
 
     public virtual Guid? Atribuit { get; set; }
+    [XafDisplayName("Pereche")]
+    public virtual int? Pereche { get; set; }
 
     public virtual decimal Cantitate { get; set; }
     [XafDisplayName("Valoare în valută")]

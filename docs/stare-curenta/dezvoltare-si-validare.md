@@ -54,7 +54,9 @@ adăugat cinci: `EXPLICATIE-MECANISM` (ieșirile evaluate redenumite
 `-DECLARANT` (aceeași substituție, cu numele declarantului schimbat într-unul
 care declară valori), `-SOLD-FIFO` (soldul citit al partidei stinse scos),
 `-SOLD-FIFO-MIC` (soldul citit pus sub suma alocată) și `TRANSFER-CONT`
-(numai contul capătului de destinație al unui transfer pe lot). Ramurile
+(numai contul capătului de destinație al unui transfer pe lot). Pasul 7b
+(D9-A2) a adăugat `PERECHE-RUPTA` (o postare a perechii fără ordinal) și
+`PERECHE-LIPSA` (ambele postări fără ordinal). Ramurile
 acoperirii registru ↔ cub, echilibrului și provenienței au probele SC-CIT-23,
 SC-CIT-34 și SC-CIT-10. Acoperirea cantitativă a stocului
 (`Loturi.VerificaAcoperire`, `CITIRE_ISTORIC_STOC_INCOMPLET`, X-D7 a) rulează

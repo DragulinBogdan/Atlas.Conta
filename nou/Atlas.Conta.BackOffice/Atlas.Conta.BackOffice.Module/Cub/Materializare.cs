@@ -112,7 +112,7 @@ public static partial class Materializare {
             .ToList();
         var citite = aleDocumentului.Concat(atribuite)
             .DistinctBy(p => p.ID)
-            .Select(p => (p.ID, Randuri.Citeste(p) with {
+            .Select(p => (p.ID, p.TranzactieId, Randuri.Citeste(p) with {
                 InversaDin = new N.ReferintaPostare(p.ID, p.Spatiu),
             }))
             .ToList();

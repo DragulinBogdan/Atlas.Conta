@@ -6,6 +6,7 @@ public static class Coduri {
     public const string ConservareCantitate = "CONSERVARE_CANTITATE";
     public const string ConservareTransfer = "CONSERVARE_TRANSFER";
     public const string ContrapondereTransformareInvalida = "CONTRAPONDERE_TRANSFORMARE_INVALIDA";
+    public const string PerecheInvalida = "PERECHE_INVALIDA";
     public const string SemnNegativ = "SEMN_NEGATIV";
     public const string UnitateLipsa = "UNITATE_LIPSA";
     public const string GestiuneLipsa = "GESTIUNE_LIPSA";

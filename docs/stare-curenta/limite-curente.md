@@ -284,6 +284,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   sortarea paralelă pică (`could not resize shared memory segment`); costul
   e raportat fără prag în `docs/nucleu/tr-d9-pas7-declaratii.md`. (D9-A12;
   2026-10-07)
+- Cheia de pereche (`Postare.Pereche`) nu acoperă transformările (consumul și
+  produsul sunt corespondență de grup) și nu e citită de nimeni: fișa
+  contului întoarce contrapartida nulă când tranzacția are mai multe conturi
+  pe sensul opus (D9-r4). Stornoul cu mai multe surse decalează ordinalele
+  surselor după prima, deci ordinalul stornoului nu e literal al
+  originalului. (D9-A2; 2026-10-07)
 - Portarea Import1C pe cititorii cubului e probată numai prin compilare.
   Prima rulare e diagnosticul de la închiderea feliei. Sensibilitatea
   contractelor 1 și 3 nu mai are probă proprie (`--sabotaj` a ieșit), iar

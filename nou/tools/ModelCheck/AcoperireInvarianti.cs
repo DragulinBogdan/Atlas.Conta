@@ -31,6 +31,8 @@ static class AcoperireInvarianti {
         new("EXPLICATIE-SOLD-FIFO", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, e => SoldFifo(e, null))),
         new("EXPLICATIE-SOLD-FIFO-MIC", C.Citiri.Explicatii.Stingere, (os, db) => Rescrie(os, db, e => SoldFifo(e, N.Sold.Zero))),
         new("TRANSFER-CONT", C.Citiri.Invarianti.TransferNeconservat, DestinatieTransferPeAltCont),
+        new("PERECHE-RUPTA", C.Citiri.Invarianti.PerecheInvalida, PerecheRupta),
+        new("PERECHE-LIPSA", C.Citiri.Invarianti.PerecheLipsa, PerecheLipsa),
         new("LINIE-BCS", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<BonConsum>(os, db, N.FelTranzactie.Operare, v => v + 1m)),
         new("LINIE-BTR", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<NotaTransfer>(os, db, N.FelTranzactie.Transfer, v => v + 1m)),
         new("LINIE-ASM", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<Asamblare>(os, db, N.FelTranzactie.Transfer, v => v + 1m)),
@@ -200,6 +202,28 @@ static class AcoperireInvarianti {
         var altCont = os.GetObjectsQuery<Cont>().Where(c => c.ID != tinta.Cont).OrderBy(c => c.Simbol).Select(c => c.ID).First();
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
             .ExecuteUpdate(s => s.SetProperty(p => p.Cont, altCont));
+        return true;
+    }
+
+    // D9-A2: o postare a perechii fără ordinal lasă cealaltă singură.
+    static bool PerecheRupta(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.Pereche != null && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Pereche, (int?)null));
+        return true;
+    }
+
+    // D9-A2: ambele postări ale perechii fără ordinal nu mai sunt nici pereche, nici transformare.
+    static bool PerecheLipsa(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.Pereche != null && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .OrderBy(p => p.ID).Select(p => new { p.TranzactieId, p.Pereche }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.TranzactieId == tinta.TranzactieId && p.Pereche == tinta.Pereche)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Pereche, (int?)null));
         return true;
     }
 

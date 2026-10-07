@@ -294,6 +294,60 @@ public class ConservareTeste {
             AreCodul(Conservare.Verifica(perturbata), Coduri.ProdusLipsa);
         });
 
+    [Fact]
+    public void PerecheaRuptaPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = aleator.Next(2) == 0 ? Gen.Operare(aleator) : Gen.Transfer(aleator);
+            var perturbata = Perturba(tranzactie, aleator, p => p with { Pereche = null });
+            AreCodul(Conservare.Verifica(perturbata), Coduri.PerecheInvalida);
+        });
+
+    [Fact]
+    public void PerecheaDublataPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator, cateMiscari: 2 + aleator.Next(3));
+            var perturbata = Perturba(tranzactie, aleator, p => p with { Pereche = p.Pereche == 1 ? 2 : 1 });
+            AreCodul(Conservare.Verifica(perturbata), Coduri.PerecheInvalida);
+        });
+
+    [Fact]
+    public void PerecheaCuOrdinalSub1Pica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator);
+            var perturbata = tranzactie with {
+                Postari = tranzactie.Postari.Select(p => p with { Pereche = p.Pereche - 1 }).ToList(),
+            };
+            AreCodul(Conservare.Verifica(perturbata), Coduri.PerecheInvalida);
+        });
+
+    [Fact]
+    public void PerecheaPeLaturiNepotriviteFeluluiPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var operare = Gen.Operare(aleator);
+            AreCodul(Conservare.Verifica(operare with { Fel = FelTranzactie.Transfer }), Coduri.PerecheInvalida);
+            var transfer = Gen.Transfer(aleator);
+            AreCodul(Conservare.Verifica(transfer with { Fel = FelTranzactie.Operare }), Coduri.PerecheInvalida);
+        });
+
+    [Fact]
+    public void PerecheaCuCauzeDiferitePica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator);
+            var perturbata = Perturba(tranzactie, aleator, p => p with {
+                Cauza = p.Cauza with { Linie = Gen.AltulDecat(aleator, Gen.Linii, p.Cauza.Linie!.Value) },
+            });
+            AreCodul(Conservare.Verifica(perturbata), Coduri.PerecheInvalida);
+        });
+
+    [Fact]
+    public void DeschidereaCuPerechePica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Deschidere(aleator);
+            FaraRefuz(Conservare.Verifica(tranzactie));
+            var perturbata = Perturba(tranzactie, aleator, p => p with { Pereche = 1 });
+            AreCodul(Conservare.Verifica(perturbata), Coduri.PerecheInvalida);
+        });
+
     static decimal SumaPeLaturi(Tranzactie tranzactie) =>
         tranzactie.Postari.Sum(p => p.Coordonate.Latura == Latura.Debit ? p.Valoare : -p.Valoare);
 

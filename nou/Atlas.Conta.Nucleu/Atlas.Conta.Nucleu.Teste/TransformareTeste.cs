@@ -44,6 +44,7 @@ public class TransformareTeste {
                 Assert.Equal(0m, t.Postari.Concat(inverse.Postari).Sum(p => p.Valoare));
                 Assert.Equal(0m, t.Postari.Concat(inverse.Postari).Sum(p => p.Cantitate));
             }
+            Assert.All(c.Tranzactii.SelectMany(t => t.Postari), p => Assert.Null(p.Pereche));
             foreach (var p in c.Tranzactii.SelectMany(t => t.Postari)
                          .Where(p => p.Coordonate.Gestiune == GestiuniVirtuale.Transformare)) {
                 Assert.Null(p.Coordonate.Unitate);

@@ -141,15 +141,16 @@ static class ProbeCub {
             && stornari[0].Data == dataStorno);
 
         var aleLor = propriile.Select(t => t.ID).ToHashSet();
-        var operare = Postari(os, doc.ID)
+        var dinSurse = Postari(os, doc.ID)
             .Where(r => aleLor.Contains(r.TranzactieId))
-            .Select(r => C.Randuri.Citeste(r) with {
+            .Select(r => (r.TranzactieId, C.Randuri.Citeste(r) with {
                 InversaDin = new N.ReferintaPostare(r.ID, r.Spatiu),
-            })
+            }))
             .ToList();
+        var operare = dinSurse.Select(x => x.Item2).ToList();
         var storno = Postari(os, doc.ID, N.FelTranzactie.Storno).Select(C.Randuri.Citeste).ToList();
         var perioada = (dataStorno.Year * 100) + dataStorno.Month;
-        var asteptate = N.Storno.Inverseaza(operare, doc.ID, dataStorno, perioada).Postari;
+        var asteptate = N.Storno.Inverseaza(dinSurse, doc.ID, dataStorno, perioada).Postari;
         if (!MultisetEgal(storno, asteptate))
             Scrie(os, storno, asteptate);
         check($"STR-STORNO {prefix}: postările stornării = `Storno.Inverseaza` pe rândurile proprii citite",

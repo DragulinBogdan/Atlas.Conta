@@ -223,10 +223,17 @@ recomprimat lanțul în `20261007072615_InitialCreate`, a redus X-D2 la
 pus lista „Registre → Postări" pe `PostareVizual` (view în migrație proprie,
 `ServerView`, gard la activare, gardian, neexpunere, `STR-VIZUAL-*`), cu
 probele HTTP și din browser făcute de main. Integrala: 4.791 privat / 3.512
-bugetar, zero FAIL. Bazele de dezvoltare sunt recreate; clonele de import și
-de perf rămân pe schema veche (Import1C cere `--recreeaza`). Urmează pasul 8
-(închiderea: D9-D15 rândul 8, decizia 110, review advers Codex), pe context
-nou, pornirea în `run-nucleu/tr-d9a/coordonare.md`.
+bugetar, zero FAIL. Pasul 7b e făcut (2026-10-07, main direct,
+`docs/nucleu/tr-d9-pas7b-pereche.md`): `Postare.Pereche` dat de `Motor`,
+invariantul în `Conservare` și în `INV-CUB` cu doi mutanți, stornoul pe surse
+(ordinalele decalate după prima sursă, precizare pentru 110), coloana în
+`InitialCreate`; nucleu 190/190, integrala 4.795 privat / 3.516 bugetar, zero
+FAIL, numai adaos față de 7. Bazele de dezvoltare se recreează din
+`InitialCreate`; clonele de import și de perf rămân pe schema veche (Import1C
+cere `--recreeaza`). Urmează pasul 7c (D9-A8, versiunea politicii în
+explicație; lista faptelor de politică înaintea codului), apoi pasul 8
+(închiderea: D9-D15 rândul 8, decizia 110, review advers Codex), pornirea în
+`run-nucleu/tr-d9a/coordonare.md`.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

@@ -3222,6 +3222,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     "Proiect" uuid NULL,
                     "CentruCost" uuid NULL,
                     "Atribuit" uuid NULL,
+                    "Pereche" integer NULL,
                     "Cantitate" numeric(18,3) NOT NULL,
                     "ValoareValuta" numeric(18,2) NOT NULL,
                     "Valoare" numeric(18,2) NOT NULL,
