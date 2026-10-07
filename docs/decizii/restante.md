@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-10-07 (închiderea TR-D9a, decizia 110).** [Index](README.md)
+**Actualizat: 2026-10-08 (B-r3 închisă, decizia 112).** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -280,7 +280,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | N-r9 | `Repartizare.Hamilton` poate depăși `decimal` la ponderi ~1e20 × total ~1e8; inaccesibil cu baze ≤ 1e10; dacă un apelant trimite preț × cantitate brute ca ponderi, se normalizează întâi (TR-D6a) | după PoC (091) |
 | B-r1 | toleranța taxei culese, constantă de pilot în `Fapte.Operand`, refuza facturi pe care motorul vechi le operează (TR-D6b): devine `PoliticaTva.TolerantaTaxa`, MĂSURATĂ pe Flax la TR-D7a (275 de documente refuzate la 0,01 pe linia cotei, 17 la 0,10, maximul 55,87 — abateri reale ale datelor culese, nu rotunjire) și închisă ca politică OPȚIONALĂ: `null` = taxa culeasă autoritară, fără gard, ca azi; valoarea de produs rămâne S-r1 (TR-D7a) | închisă prin S-D15 |
 | B-r2 | sensul laturilor trezoreriei e tip-dependent și declarantul unic nu-l cunoaște (TR-D6b): devenit dată pe `TipDocument` (`LaturaContPropriu` = `Predator` pe plată, `Primitor` pe încasare, seed pe ambele profiluri), cu refuzul `LATURA_CONT_PROPRIU_NEPOTRIVITA`; `CONT_PROPRIU_LIPSA` rămâne pentru lipsă (TR-D7a) | închisă prin S-D7 |
-| B-r3 | recepția facturii (TR-D3) n-are regulă de contare proprie pe FCT: contrapartida se ia de pe regula `FCT/Serviciu`/`Cheltuiala` sau din politica de TVA; la TR-D7, când NIR-ul conex dispare, regula recepției devine rând de politică pe FCT (`FCT/Stoc`) (TR-D6b) | activă: destinația o hotărăște owner-ul (110). Motivul amânării a dispărut (planul vechi nu mai postează recepția de două ori), dar NIR-ul conex rămâne documentul diferențelor (098, 099), iar o regulă proprie `FCT/Stoc` e schimbare de politică |
+| B-r3 | recepția facturii (TR-D3) n-are regulă de contare proprie pe FCT: contrapartida se ia de pe regula `FCT/Serviciu`/`Cheltuiala` sau din politica de TVA; la TR-D7, când NIR-ul conex dispare, regula recepției devine rând de politică pe FCT (`FCT/Stoc`) (TR-D6b) | închisă 2026-10-08 (112): regulă proprie `FCT/Stoc` pe ambele profiluri, fără împrumut din politica de TVA sau din regula altei naturi; fără regulă, recepția e refuzată |
 | B-r4 | Autocolectare distinctă la achiziția TI, cu Sens=Achiziție; D300 citește cele două obligații fără oglindire dublă, D394 o achiziție (103e) | închisă 2026-09-26: SC-CIT-81, matricea tipurilor și integralele verzi |
 | B-r5 | linia FCT care numește un lot recepționat pe aviz (`NIR` manual) ar posta `408 = 401` (TR-D3): CĂUTAT în motor la TR-D7a — fluxul NU există (NIR-ul manual postează `3xx = 401`, iar linia de stoc a facturii își naște singură lotul la culegere); `408` apare doar ca reclasificare de DATE la import (`HandlerFactura`), pe 17 facturi ale bazei Flax. Rămâne deschisă cu constatarea: nu se implementează fără oracol (TR-D7a) | după PoC (091) |
 | B-r6 | `Valuta`/`Curs` sunt câmpuri de frunză pe `FacturaIntrare` fără interfață declarată: operandul le lasă `null`; `IDocumentCuValuta` la primul consumator real (partida în valută, TR-D9) (TR-D6b) | activă (091); TR-D9b (110) |

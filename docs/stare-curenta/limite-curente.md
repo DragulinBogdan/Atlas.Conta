@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-10-06.** [Index](README.md)
+**Actualizat: 2026-10-08.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -191,8 +191,6 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   cu acoperire parțială. Există comanda de generare suplimentară pe FCL. (37g, 38d)
 - NIR manual postează pe cub la net, fără fapt fiscal; nu acoperă avizul pe
   408 sau factura ulterioară pe un lot recepționat anterior (TR-r4/B-r5).
-  Recepția facturii n-are regulă de contare proprie: contrapartida vine de pe
-  regula de servicii ori cheltuieli a facturii sau din politica de TVA (B-r3).
 - Fluxurile de rezervare, comenzi de vânzare și distribuire a aceleiași
   facturi din mai multe gestiuni nu sunt acoperite complet. (37g, C1a)
 - Retururile nu au un flux general propriu de compensare; se folosește NTC. (46f, 76g)

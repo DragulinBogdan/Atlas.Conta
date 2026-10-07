@@ -29,6 +29,7 @@ using Atlas.Conta.BackOffice.Module.Api.Rlf;
 using Atlas.Conta.BackOffice.Module.Api.Trz;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
+using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
 using Atlas.Conta.BackOffice.Module.Saft;
@@ -51,8 +52,8 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // ---------------------------------------------------------------------------
 // `ExplicaApply` n-are algoritm propriu (F24-D6): întreabă `Potrivire` pe fapte
 // fabricate din parametrii cererii, deci probele de aici sunt ale AMBALAJULUI și
-// ale profilului — că o linie de stoc pe FCT „nu contează" și pleacă pe NIR, că
-// semnul schimbă regula pe LDI, că NTC declară postarea explicită. Plus proba de
+// ale profilului — că o linie de stoc pe FCT e recepția pe regula ei și trece și
+// filtrul conexului NIR, că semnul schimbă regula pe LDI, că NTC declară postarea explicită. Plus proba de
 // CONSISTENȚĂ (42c): conturile explicației sunt ACELEAȘI cu cele pe care motorul
 // chiar le postează în cub pe un document echivalent — o explicație
 // care minte e mai rea decât niciuna.
@@ -107,18 +108,22 @@ static class VerificaF24Explica {
             ExplicaApply.Explica(os, new ExplicaCerere(tip.ID, material.ID, semn, azi,
                 furnizor.ID, mag1.ID, null, null));
 
-        // ── F24-E1: linia de stoc pe FCT nu contează, dar pleacă pe NIR ───────────
+        // ── F24-E1: linia de stoc e recepția facturii, pe regula naturii Stoc ─────
         var fctStoc = Explica(fctTip, tipStoc, +1);
         Console.WriteLine($"     MĂSURAT (F24-E1): FCT × {tipStoc.Cod} ⇒ nivel {fctStoc.Contare.Nivel}, "
             + $"{fctStoc.Contare.Candidati.Length} candidați, conex {fctStoc.Conex.Tinta}/trece="
             + $"{fctStoc.Conex.Trece} — „{fctStoc.Contare.Concluzie}”");
-        s.Check("F24-E1 explicația spune ce spune motorul pe linia de STOC a facturii de intrare: nicio regulă de "
-            + "contare (recepția contează pe NIR — 26a), deci `Castigator` null și concluzia „linia nu contează”, "
-            + "iar blocul de conex arată că o linie ca aceasta TRECE filtrul de natură al politicii FCT → NIR",
-            fctStoc.Contare.Castigator == null
-            && fctStoc.Contare.Nivel == nameof(NivelContare.Niciuna)
-            && fctStoc.Contare.ContDebit == null && fctStoc.Contare.ContCredit == null
-            && fctStoc.Contare.Concluzie.Contains("nu contează")
+        s.Check("F24-E1 explicația spune ce spune motorul pe linia de STOC a facturii de intrare: câștigă regula pe "
+            + "`NaturaFiltru` Stoc (112), debitul din contul implicit al Tipului (302), creditul din contul implicit al "
+            + "furnizorului (401), iar blocul de conex arată că o linie ca aceasta TRECE filtrul de natură al politicii "
+            + "FCT → NIR",
+            fctStoc.Contare.Nivel == nameof(NivelContare.Natura)
+            && fctStoc.Contare.Castigator.NaturaFiltru == nameof(NaturaClasa.Stoc)
+            && fctStoc.Contare.ContDebit.Simbol == "302"
+            && fctStoc.Contare.ContDebit.Sursa == nameof(SursaRezolvata.TipMaterial)
+            && fctStoc.Contare.ContCredit.Simbol == "401"
+            && fctStoc.Contare.ContCredit.Sursa == nameof(SursaRezolvata.RepartitorPredator)
+            && fctStoc.Contare.Concluzie.Contains("302 = 401")
             && fctStoc.Conex.Tinta == "NIR" && fctStoc.Conex.Trece
             && fctStoc.Conex.NaturaFiltru == nameof(NaturaClasa.Stoc)
             && fctStoc.Natura == nameof(NaturaClasa.Stoc)
@@ -143,6 +148,21 @@ static class VerificaF24Explica {
             && fctServiciu.Contare.Concluzie.Contains("628 = 401")
             && !fctServiciu.Conex.Trece
             && fctServiciu.Tva.Directie == nameof(DirectieTva.Deductibil));
+
+        // ── F24-E1b: fără regulă, tipul care contează prin reguli refuză linia ────
+        var bcsServiciu = Explica(os.FirstOrDefault<TipDocument>(t => t.Cod == "BCS"), tipServiciu, +1);
+        var btrStoc = Explica(os.FirstOrDefault<TipDocument>(t => t.Cod == "BTR"), tipStoc, +1);
+        Console.WriteLine($"     MĂSURAT (F24-E1b): BCS × {tipServiciu.Cod} ⇒ „{bcsServiciu.Contare.Concluzie}”; "
+            + $"BTR × {tipStoc.Cod} ⇒ „{btrStoc.Contare.Concluzie}”");
+        s.Check("F24-E1b linia fără regulă pe un tip al cărui declarant contează prin reguli (BCS × serviciu) e "
+            + "anunțată ca refuz `REGULA_CONTARE_LIPSA` (112e); pe un tip care nu contează prin reguli (BTR) aceeași "
+            + "absență nu e refuz",
+            bcsServiciu.Contare.Nivel == nameof(NivelContare.Niciuna)
+            && bcsServiciu.Contare.Rezerve.Any(r => r.StartsWith(CoduriRefuz.RegulaContareLipsa + ":"))
+            && bcsServiciu.Contare.Concluzie.Contains("Operarea ar fi refuzată")
+            && btrStoc.Contare.Nivel == nameof(NivelContare.Niciuna)
+            && !btrStoc.Contare.Rezerve.Any(r => r.StartsWith(CoduriRefuz.RegulaContareLipsa))
+            && !btrStoc.Contare.Concluzie.Contains("refuzată"));
 
         // ── F24-E3: pe LDI, SEMNUL schimbă regula ────────────────────────────────
         var ldiPlus = Explica(ldiTip, tipStoc, +1);

@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-10-04.** [Index](README.md)
+**Actualizat: 2026-10-08.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -140,8 +140,9 @@ nivelul potrivirii, candidații eliminați cu motivul lor, proveniența
 fiecărui rând și o concluzie formată pe server. Potrivirea e aceeași funcție
 pură pe care o consumă motorul (`Motor/Potrivire.cs`). Blocul de contare
 declară postarea explicită (NTC, DEC) și rezervele — ce ar refuza operarea
-deși regula s-a potrivit (gardul de nivel minim al tipului, natura interzisă
-de profilul de validare). Dreptul de citire se cere pe toate tipurile
+peste potrivire: gardul de nivel minim al tipului, natura interzisă de
+profilul de validare și, pe un tip care contează prin reguli, linia fără nicio
+regulă (`REGULA_CONTARE_LIPSA`, 112e). Dreptul de citire se cere pe toate tipurile
 configurabile și pe nomenclatoarele citite, înaintea calculului pe contextul
 nesecurizat; o referință inexistentă sau invizibilă e refuzată înaintea
 calculului. Panoul `/politici/explica` afișează răspunsul fără niciun calcul

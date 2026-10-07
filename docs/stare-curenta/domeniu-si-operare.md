@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-10-05.** [Index](README.md)
+**Actualizat: 2026-10-08.** [Index](README.md)
 
 ## Modelul comun
 
@@ -964,10 +964,13 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   documentului. Laturile sunt ale contractului clasei (T-D13: PLT
   `Propriu → Extern | Propriu`, INC `Extern | Propriu → Propriu`), verificat
   înaintea declarantului; declarantul refuză doar laturile identice.
-- **FCT** (`DeclarantFacturaIntrare`): linia de stoc e RECEPȚIA facturii
-  (TR-D3: `3xx` din contul implicit al tipului, gestiunea primitoare, lotul
-  născut de linie, `+q`; capătul virtual `Furnizor` cu `−q` pe postarea de
-  terț, N-D4); netul celorlalte naturi pe regula lor (imobilizări → 404);
+- **FCT** (`DeclarantFacturaIntrare`): fiecare linie postează netul pe
+  regula ei de contare (imobilizări → 404). Linia de stoc e RECEPȚIA facturii
+  (TR-D3), pe regula naturii `Stoc` (112): gestiunea primitoare, lotul născut
+  de linie, `+q`; capătul virtual `Furnizor` cu `−q` pe postarea de terț
+  (N-D4). Fără regulă linia e refuzată cu `REGULA_CONTARE_LIPSA`; debitul
+  regulii pe alt cont decât al lotului, cu `CONT_STOC_LIPSA`. Dimensiunile
+  regulii se aplică peste analiza liniei, ca la celelalte naturi;
   taxa se DECIDE per document × cotă — culeasă = autoritară cu toleranță,
   nedată = Hamilton per linie, scrisă pe linie la pregătire și postată de
   acolo (109); faptul fiscal e atribut al postării interne
@@ -1091,6 +1094,13 @@ O regulă de contare pe un tip al cărui declarant nu contează prin reguli
 sau care nu declară e refuzată la editare, pe ușa gardianului, cu
 `REGULA_CONTARE_FARA_CONSUMATOR`: politica nu descrie comportament pe care
 motorul nu-l are. (4, D9-A4)
+
+Pe tipurile care contează prin reguli, fiecare linie cere regulă: linia fără
+regulă potrivită e refuzată la operare cu `REGULA_CONTARE_LIPSA`; numai
+liniile NIR-ului conex preluate din recepția facturii moștenesc capătul ei de
+stoc și nu cer regulă. Recepția facturii nu face excepție: regula ei e `FCT/Stoc`, în seed-ul ambelor
+profiluri (debit din contul Tipului, credit din contul furnizorului, cu
+rezerva 401 / 401.01.00). (112)
 
 ### Materializarea, stornoul, anularea
 
@@ -1338,8 +1348,8 @@ ieșirea atât, din ce sold, ce partide a stins.
   și contorul lui la operare, una pe rând, fără dubluri
   (`Declaratii/PoliticiConsumate`). Se rețin: regula de contare câștigătoare
   a fiecărei linii (numită și pe `ContRezolvat.Regula`), regula de stoc a
-  LDI, politica de TVA când declarația are fapt fiscal sau contrapartida
-  recepției vine din ea, politica de diferență a NIR-ului conex și politica
+  LDI, politica de TVA când declarația are fapt fiscal, politica de
+  diferență a NIR-ului conex și politica
   de amortizare a fișelor atinse. Nu se rețin nomenclatoarele care decid
   (tipul de material, tipul de TVA, steagurile contului) și nici conținutul
   regulii la operare (D9-r3). Un declarant care nu consumă reguli (ASM, BTR,
