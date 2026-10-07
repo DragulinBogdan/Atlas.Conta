@@ -38,11 +38,12 @@ TR-D9a.
   `DocumentNumar`, …). `ToView` e exclus din snapshot-ul EF: fără drift la
   `has-pending-model-changes`.
 - (b) Coordonatele fără rând sunt expresii SQL, nu îmbinări: partida
-  (`FelUnitate = Partida`) se etichetează din codul partenerului, numărul
-  documentului de deschidere și `UnitateDeschisa`, în forma în care o
-  reconstruiesc cititorii (`IdentitatiPartide`); gestiunea virtuală
-  (`GestiuniVirtuale.*`) se etichetează cu numele constantei. Lista nu
-  interpretează etichetele.
+  (`FelUnitate = Partida`) se etichetează din codul partenerului și
+  `UnitateDeschisa` (documentul de deschidere nu e pe postare; o
+  subinterogare corelată nu intră în view); gestiunea virtuală
+  (`GestiuniVirtuale.*`) se etichetează cu numele constantei, cu `CASE`-ul
+  generat din constantele nucleului, nu copiat. Lista nu interpretează
+  etichetele.
 - (c) `Postare` rămâne POCO, fără `NavigationItem`, cu calea de scriere
   neatinsă (42c, S-D1). Subiectul permisiunii pe cele trei porți și pe
   verificarea închiderii rămâne dreptul de citire completă pe `Postare`
@@ -55,8 +56,9 @@ TR-D9a.
   clientului React; intră în proba de neexpunere alături de `Postare` și
   `Tranzactie`. Gardianul o refuză la scriere pe orice ușă securizată, ca pe
   `Postare` (cazurile gardianului se extind cu ea).
-- (e) Modul listei: `Server` (85); paginarea, sortarea și filtrarea pe
-  coloanele de cod se execută în Postgres. Lista nu are totaluri și nu
+- (e) Modul listei: `ServerView` (85, D9-D9), cu `Server` ca rezervă dacă
+  tipul mapat pe view nu merge în `ServerView`; paginarea, sortarea și
+  filtrarea pe coloanele de cod se execută în Postgres. Lista nu are totaluri și nu
   ocolește regula `Transfer` (108 b): felul tranzacției rămâne coloană.
 - (f) Probe: paritatea coloanelor (fiecare proprietate mapată a lui
   `Postare` e coloană a lui `PostareVizual`; o coloană nouă pe postare uitată

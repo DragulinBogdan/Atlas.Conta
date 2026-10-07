@@ -542,7 +542,7 @@ owner:
   editare, fără detaliu editabil. E dezghețarea declarată de 090 (m).
   **Amendat la 2026-10-07 (D9-A12):** la pasul 7 lista se mută pe
   `Cub.PostareVizual`, proiecție de citire (view SQL în migrație, entitate
-  `ToView`, mod `Server`) care îmbină codurile nomenclatoarelor și
+  `ToView`, mod `ServerView`) care îmbină codurile nomenclatoarelor și
   etichetează coordonatele fără rând; `Postare` rămâne POCO, subiectul
   dreptului rămâne citirea completă pe `Postare`, lista refuză la activare
   prin `Api.AccesComplet`; `PostareVizual` nu se expune și intră în cazurile
@@ -883,7 +883,7 @@ două texte diferă, câștigă amendamentul.
 
 | Id | Ce aduce | Unde e aplicat |
 |---|---|---|
-| D9-A12 | lista de evidență a cubului pe `PostareVizual`, proiecție de citire (view SQL, `ToView`, `Server`); coordonatele fără rând etichetate prin expresii; dreptul rămâne pe `Postare`, cu gardul la activare; neexpunere și cazuri de gardian; fidelitatea istorică nu e cerință | D9-D9; pasul 7; regula de oprire 5; oprirea înaintea termenului |
+| D9-A12 | lista de evidență a cubului pe `PostareVizual`, proiecție de citire (view SQL, `ToView`, `ServerView`); coordonatele fără rând etichetate prin expresii; dreptul rămâne pe `Postare`, cu gardul la activare; neexpunere și cazuri de gardian; fidelitatea istorică nu e cerință | D9-D9; pasul 7; regula de oprire 5; oprirea înaintea termenului |
 
 Respinse: snapshot-ul de valoare la scriere și navigațiile EF pe POCO.
 Decizia n-a cerut review Codex (owner); Codex rămâne pentru deciziile
