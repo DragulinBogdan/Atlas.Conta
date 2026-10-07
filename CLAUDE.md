@@ -213,8 +213,8 @@ integrala identică pe secvență; `docs/nucleu/tr-d9-pas6c-spargere-modelcheck.
 2026-10-07). Identificatorii din lista XAF `Postare` sunt decise de owner
 (2026-10-07): proiecție de citire `PostareVizual` ca view SQL, amendamentul 3
 (`docs/nucleu/tr-d9-taierea-amendament-3.md`, D9-A12), intră în pasul 7.
-Codex a ieșit din buclă (2026-10-07): review-urile adverse rămase le face
-main, pe diff. Urmează pasul 7.
+Codex rămâne pentru deciziile importante, la cererea owner-ului; decizia pe
+view n-a cerut review. Urmează pasul 7.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

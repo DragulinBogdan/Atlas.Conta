@@ -760,8 +760,7 @@ Pasul 1 citește tot `Program.cs`; e pasul pentru care se propune delegarea
    fără registre se raportează A/B pe aceeași bază, cu termenul A măsurat la
    pasul 5b;
 7. `stare-curenta/` și invarianții nu mai descriu regimul dual;
-8. review-ul advers e închis (de main, pe diff; Codex a ieșit din buclă la
-   2026-10-07, amendamentul 3) și decizia 110 e scrisă;
+8. review-ul advers Codex e închis și decizia 110 e scrisă;
 9. probele dinaintea tăierii sunt arhivate și scara de volum e raportată
    owner-ului înaintea pasului 6 (D9-A1);
 10. invariantul perechii e verde în nucleu și în `INV-CUB`; nicio postare
@@ -887,7 +886,8 @@ două texte diferă, câștigă amendamentul.
 | D9-A12 | lista de evidență a cubului pe `PostareVizual`, proiecție de citire (view SQL, `ToView`, `Server`); coordonatele fără rând etichetate prin expresii; dreptul rămâne pe `Postare`, cu gardul la activare; neexpunere și cazuri de gardian; fidelitatea istorică nu e cerință | D9-D9; pasul 7; regula de oprire 5; oprirea înaintea termenului |
 
 Respinse: snapshot-ul de valoare la scriere și navigațiile EF pe POCO.
-Codex iese din buclă: review-urile adverse rămase se fac de main, pe diff.
+Decizia n-a cerut review Codex (owner); Codex rămâne pentru deciziile
+importante, la cererea owner-ului.
 
 ## Ce NU intră (amânări cu nume)
 

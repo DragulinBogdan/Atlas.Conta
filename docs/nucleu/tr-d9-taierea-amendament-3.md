@@ -81,8 +81,7 @@ pasul 7.
 
 ## Review-ul advers
 
-Owner, 2026-10-07: Codex iese din buclă. Review-urile adverse ale pașilor
-rămași (7, 7b, 7c, 8) și al închiderii se fac de main, pe diff, cu probele
-contractului; forma unui review extern, dacă owner-ul o cere, se hotărăște
-atunci (`/consult-external`). Regula de oprire 8 se citește „review-ul advers
-e închis", fără numele instrumentului.
+Owner, 2026-10-07: decizia pe view nu cere review Codex; analiza
+beneficiu / efort a fost suficientă. Codex rămâne în buclă pentru deciziile
+importante, unde un al doilea ochi face diferența, la cererea owner-ului;
+regula de oprire 8 (review-ul advers Codex al închiderii) rămâne neschimbată.
