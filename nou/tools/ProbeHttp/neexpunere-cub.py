@@ -1,6 +1,6 @@
-"""D9-D9: `Postare` și `Tranzactie` nu sunt expuse pe HTTP și nu intră în contractul clientului.
+"""D9-D9, D9-A12: `Postare`, `Tranzactie` și `PostareVizual` nu sunt expuse pe HTTP și nu intră în contractul clientului.
 
-Cere OData și REST pentru cele două tipuri (ca `Admin`, ca refuzul să nu fie de permisiune), caută `EntitySet`-ul lor în
+Cere OData și REST pentru cele trei tipuri (ca `Admin`, ca refuzul să nu fie de permisiune), caută `EntitySet`-ul lor în
 `$metadata` și în artefactele generate ale clientului. Dovedește neexpunerea, nu gardul scrierii (acela e în
 ModelCheck, `D9-P4-GARD-*`). Necesită hostul WebApi pornit.
 """
@@ -11,7 +11,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-TIPURI = ('Postare', 'Tranzactie')
+TIPURI = ('Postare', 'Tranzactie', 'PostareVizual')
 RUTE = [f'/api/odata/{tip}{sufix}' for tip in TIPURI for sufix in ('', '?$top=1', '(00000000-0000-0000-0000-000000000000)')] \
     + ['/api/postare', '/api/postari', '/api/tranzactie', '/api/tranzactii', '/api/cub/postari', '/api/cub/tranzactii']
 

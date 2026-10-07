@@ -60,6 +60,7 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
             Gard(operata.Id);
             Roluri();
             Lista(operata.Id);
+            Vizual(operata);
             LotCuMiscari();
             TipTvaReferit();
             FisaCuMiscari();
@@ -208,6 +209,104 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
         var configurator = roluri.SingleOrDefault(r => r.Name == "Configurator");
         Verifica("D9-P4-ROL-3", "rolul Configurator citește `Postare` și `Tranzactie` și nu le scrie",
             configurator != null && cub.All(t => Citeste(configurator, t) && !Scrie(configurator, t)));
+    }
+
+    // D9-A12: lista de evidență pe view — paritatea, rândurile, etichetele, gardul la activare, gardianul.
+    void Vizual(FacturaScena operata) {
+        var model = CuSpatiu(os => ((EFCoreObjectSpace)os).DbContext.Model);
+        var coloanePostare = model.FindEntityType(typeof(C.Postare)).GetProperties().Select(p => (p.Name, p.ClrType)).ToList();
+        var coloaneVizual = model.FindEntityType(typeof(C.PostareVizual)).GetProperties().Select(p => (p.Name, p.ClrType)).ToHashSet();
+        var lipsa = coloanePostare.Where(c => !coloaneVizual.Contains(c)).Select(c => c.Name).ToList();
+        Console.WriteLine($"     MĂSURAT (STR-VIZUAL-1): {coloanePostare.Count} proprietăți mapate pe `Postare`, {coloaneVizual.Count} pe "
+            + $"`PostareVizual`; lipsă [{string.Join(", ", lipsa)}]; view `{model.FindEntityType(typeof(C.PostareVizual)).GetViewName()}`.");
+        Verifica("STR-VIZUAL-1", "fiecare proprietate mapată a lui `Postare` există pe `PostareVizual` cu același nume și tip",
+            coloanePostare.Count > 40 && lipsa.Count == 0);
+
+        var (postari, vizuale) = CuSpatiu(os => (os.GetObjectsQuery<C.Postare>().Count(), os.GetObjectsQuery<C.PostareVizual>().Count()));
+        Console.WriteLine($"     MĂSURAT (STR-VIZUAL-2): {postari} postări, {vizuale} rânduri în view.");
+        Verifica("STR-VIZUAL-2", "view-ul are exact câte un rând pentru fiecare postare din bază", postari > 0 && vizuale == postari);
+
+        var virtuale = typeof(N.GestiuniVirtuale).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(p => p.PropertyType == typeof(Guid)).ToDictionary(p => (Guid)p.GetValue(null), p => p.Name);
+        var (peVirtuala, partide) = CuSpatiu(os => (
+            os.GetObjectsQuery<C.PostareVizual>().Where(p => p.DocumentId == operata.Id && p.Gestiune != null).ToList()
+                .Where(p => virtuale.ContainsKey(p.Gestiune.Value)).ToList(),
+            os.GetObjectsQuery<C.PostareVizual>().Where(p => p.DocumentId == operata.Id && p.FelUnitate == N.FelUnitate.Partida).ToList()));
+        Console.WriteLine($"     MĂSURAT (STR-VIZUAL-3): FCT pe gestiune virtuală [{string.Join("; ", peVirtuala.Select(p => $"{p.ContSimbol} {p.GestiuneCod}"))}]; "
+            + $"FCT pe partidă [{string.Join("; ", partide.Select(p => $"{p.ContSimbol} {p.UnitateCod}"))}].");
+        Verifica("STR-VIZUAL-3", "eticheta gestiunii virtuale e numele constantei nucleului (FCT: Furnizor), iar unitatea de "
+            + "partidă e codul partenerului și data deschiderii, ISO (FCT pe furnizor)",
+            peVirtuala.Count > 0 && peVirtuala.All(p => p.GestiuneCod == virtuale[p.Gestiune.Value])
+            && peVirtuala.Any(p => p.GestiuneCod == nameof(N.GestiuniVirtuale.Furnizor))
+            && partide.Count > 0 && partide.All(p => p.PartenerCod != null
+                && p.UnitateCod == $"{p.PartenerCod}/{p.UnitateDeschisa:yyyy-MM-dd}" && p.ContSimbol.StartsWith("401")));
+
+        var restrictionat = Marcaj + "-RAND";
+        Comanda(os => {
+            var rol = os.CreateObject<PermissionPolicyRole>(); rol.Name = restrictionat;
+            rol.PermissionPolicy = DevExpress.Persistent.Base.SecurityPermissionPolicy.ReadOnlyAllByDefault;
+            rol.AddObjectPermissionFromLambda<C.Postare>(SecurityOperations.Read, p => p.Valoare > 100m,
+                DevExpress.Persistent.Base.SecurityPermissionState.Deny);
+            var u = os.CreateObject<ApplicationUser>(); u.UserName = restrictionat; u.SetPassword(""); u.Roles.Add(rol);
+            os.CommitChanges();
+            ((ISecurityUserWithLoginInfo)u).CreateUserLoginInfo(SecurityDefaults.PasswordAuthentication, os.GetKeyValueAsString(u));
+            os.CommitChanges();
+        });
+        try {
+            (List<string> Lipsuri, int Randuri, string Refuz) Lista(string utilizator) {
+                using var sesiune = new Sesiune(conexiune, utilizator);
+                using var os = sesiune.Securizat();
+                var lipsuri = C.Citiri.Vizibilitate.AccesLista(os, sesiune.Strategie);
+                var cs = new CollectionSource(os, typeof(C.PostareVizual), CollectionSourceDataAccessMode.ServerView);
+                var refuz = Atlas.Conta.BackOffice.Module.Controllers.PostareVizualController.Aplica(cs, lipsuri);
+                return (lipsuri, ((IListSource)cs.Collection).GetList().Count, refuz);
+            }
+            var rand = Lista(restrictionat);
+            var admin = Lista(Admin);
+            Console.WriteLine($"     MĂSURAT (STR-VIZUAL-4): rolul cu criteriu de rând → lipsuri [{string.Join(", ", rand.Lipsuri)}], "
+                + $"{rand.Randuri} rânduri, „{rand.Refuz}”; administratorul → lipsuri [{string.Join(", ", admin.Lipsuri)}], {admin.Randuri} rânduri.");
+            Verifica("STR-VIZUAL-4", "un rol cu criteriu de rând pe `Postare` primește lipsuri și lista goală, cu fraza porților; "
+                + "administratorul n-are lipsuri și vede rândurile",
+                rand.Lipsuri.Count > 0 && rand.Randuri == 0 && rand.Refuz?.StartsWith("Nu aveți dreptul de a citi") == true
+                && admin.Lipsuri.Count == 0 && admin.Randuri > 0 && admin.Refuz == null);
+        }
+        finally {
+            Comanda(os => {
+                foreach (var u in os.GetObjectsQuery<ApplicationUser>().Where(u => u.UserName == restrictionat).ToList()) os.Delete(u);
+                foreach (var r in os.GetObjectsQuery<PermissionPolicyRole>().Where(r => r.Name == restrictionat).ToList()) {
+                    foreach (var t in r.TypePermissions.ToList()) os.Delete(t);
+                    os.Delete(r);
+                }
+                os.CommitChanges();
+            });
+        }
+
+        using var sesiuneAdmin = new Sesiune(conexiune, Admin);
+        var (idVizual, valoare) = CuSpatiu(os => os.GetObjectsQuery<C.PostareVizual>().Where(p => p.DocumentId == operata.Id)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Valoare }).ToList().Select(p => (p.ID, p.Valoare)).First());
+        string Refuz(Action<IObjectSpace> scrie) {
+            using var os = sesiuneAdmin.Securizat();
+            try { scrie(os); os.CommitChanges(); return null; }
+            catch (OperareException e) { return e.Message; }
+            catch (Exception e) { return $"{e.GetType().Name}: {e.Message}"; }
+        }
+        bool ExistaVizual(Guid id) => CuSpatiu(os => os.GetObjectsQuery<C.PostareVizual>().Any(p => p.ID == id));
+        void Caz(int numar, string ce, string refuz, bool neatins) {
+            Console.WriteLine($"     MĂSURAT (STR-VIZUAL-5.{numar}): „{refuz?.Split('\n')[0] ?? "ACCEPTATĂ"}”.");
+            Verifica($"STR-VIZUAL-5.{numar}", $"{ce} pe ușa securizată, cu administratorul: refuzată la commit, baza neatinsă",
+                refuz?.Contains(FrazaGard) == true && neatins);
+        }
+        Guid nou = default;
+        var refuzCreare = Refuz(os => {
+            var p = os.CreateObject<C.PostareVizual>(); p.ID = Guid.NewGuid(); nou = p.ID;
+            p.TranzactieId = Guid.NewGuid(); p.Data = Ianuarie; p.Cont = Cont(Serviciu); p.Valoare = 1m;
+        });
+        Caz(1, "crearea unei `PostareVizual`", refuzCreare, nou != default && !ExistaVizual(nou));
+        var refuzModificare = Refuz(os => { var p = os.GetObjectsQuery<C.PostareVizual>().Single(p => p.ID == idVizual); p.Valoare += 1m; });
+        Caz(2, "modificarea unei `PostareVizual`", refuzModificare,
+            CuSpatiu(os => os.GetObjectsQuery<C.PostareVizual>().Where(p => p.ID == idVizual).Select(p => p.Valoare).Single()) == valoare);
+        var refuzStergere = Refuz(os => os.Delete(os.GetObjectsQuery<C.PostareVizual>().Single(p => p.ID == idVizual)));
+        Caz(3, "ștergerea unei `PostareVizual`", refuzStergere, ExistaVizual(idVizual));
     }
 
     // D9-D9: o pagină ServerView pe coloanele listei, cu rânduri din amândouă partițiile, regăsite după cheie.

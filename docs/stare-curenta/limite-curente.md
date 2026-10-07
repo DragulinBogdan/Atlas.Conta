@@ -274,11 +274,16 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Proba X-D2 este sintactică. Un rezultat netipizat derivat dintr-un registru
   se urmărește la apelanți numai dacă membrul e declarat în `Purtatori`; un
   purtător nou, nedeclarat, nu e văzut.
-- Lista XAF `Postare` arată identificatori bruți pentru tranzacție, document,
-  cont, partener, gestiune și unitate: `Postare` e POCO fără navigații spre
-  nomenclatoare, iar maparea cubului nu se schimbă în TR-D9a. Listele vechi
-  de registre sunt goale pentru documentele noi și dispar la pasul 7.
-  (D9-D9; 2026-10-06)
+- Lista de evidență a cubului (`PostareVizual`): eticheta lotului e codul
+  produsului și data lotului, deci două loturi ale aceluiași produs din
+  aceeași zi au aceeași etichetă; nu există cod de valută (`Postare.Valuta`
+  n-are nomenclator, view-ul nu-l etichetează); rândul n-are navigație spre
+  tranzacție (view fără referințe EF, respinse de owner); sortarea pe o
+  coloană de cod scanează tot cubul (9,1 s la 5 milioane de postări, fără
+  index), iar pe containerul Postgres de dezvoltare, cu `/dev/shm` de 64 MB,
+  sortarea paralelă pică (`could not resize shared memory segment`); costul
+  e raportat fără prag în `docs/nucleu/tr-d9-pas7-declaratii.md`. (D9-A12;
+  2026-10-07)
 - Portarea Import1C pe cititorii cubului e probată numai prin compilare.
   Prima rulare e diagnosticul de la închiderea feliei. Sensibilitatea
   contractelor 1 și 3 nu mai are probă proprie (`--sabotaj` a ieșit), iar

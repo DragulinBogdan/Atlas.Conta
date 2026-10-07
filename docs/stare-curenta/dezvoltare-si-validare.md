@@ -336,9 +336,12 @@ pasul 7, D9-D6; prima dată la 2026-09-25, C102, 102e): baza inițială este
 modelul nu-l declară (`Postare` partiționată pe `Spatiu` cu cheia
 `(Spatiu, ID)`, cele două partiții, FK-urile și cei 13 indecși pe partiții și
 pe părinte, inclusiv cei ai cititorilor cubului, constrângerile
-`CK_Postare_*`, funcția `cub_partida_id`; `Down` cu `DROP` explicit).
-Snapshot-ul EF rămâne cu cheia `ID` (divergență declarată, probată de
-`STR-SCHEMA`). Migrațiile nu transformă date. Proba structurală a
+`CK_Postare_*`, funcția `cub_partida_id`; `Down` cu `DROP` explicit), apoi
+`20261007080233_PostareVizual` (view-ul listei de evidență a cubului,
+`CREATE VIEW` în `Up`, `DROP VIEW` în `Down`; `ToView` e exclus din
+snapshot, deci `has-pending-model-changes` rămâne curat). Snapshot-ul EF
+rămâne cu cheia `ID` (divergență declarată, probată de `STR-SCHEMA`).
+Migrațiile nu transformă date. Proba structurală a
 recomprimării: față de baza din lanțul vechi diferă, în afara obiectelor
 scoase, numai valoarea implicită `false` pe 17 coloane booleene adăugate
 prin `AddColumn` (`Activ` pe nomenclatoare, `TvaCules`,
@@ -642,6 +645,7 @@ SQL-ul generat al cititorilor de partide și al snapshot-ului. (D9-D10 (b))
 | Nucleul pur (`Atlas.Conta.Nucleu`) | `dotnet test` pe soluția nucleului: testul de arhitectură și invarianții 1–6 ca proprietăți (≥ 500 de cazuri fiecare); ModelCheck doar dacă e atins `Module` (90l) |
 | Declarant, operand, `Fapte.Operand`, oracolul pilotului | Scenariile independente ale tipului, apoi ModelCheck pe AMBELE profiluri; `NUC-*` păstrează comparația normalizată ca regresie, conservarea, determinismul și `≤ 16` interogări per operand. `Metadata clientului e la zi` verifică proprietățile noi pe `Document` (TR-D6b, amendat de 091) |
 | Citire nouă din cub, în orice proiect de producție | Intrare în `Cub/Citiri`, apoi ModelCheck: `091-r3` refuză accesul la `Postare`/`Tranzactie` în afara ei și a excepțiilor numite (scanare pe sursă, fără bază) |
+| Lista de evidență a cubului (`PostareVizual`, view-ul, controllerul, gardul) | ModelCheck pe ambele profiluri: `STR-VIZUAL-1…5` (paritatea coloanelor cu `Postare`, un rând per postare, etichetele gestiunii virtuale și ale partidei, gardul la activare pe rol cu criteriu de rând, cele trei refuzuri ale gardianului) și `D9-P4-LISTA-1` pe modelul real al hostului; `neexpunere-cub.py` pe host viu; lista în browser (D9-A12) |
 | Entitățile sau migrațiile cubului (`Postare`, `Tranzactie`) | ModelCheck pe ambele profiluri: probele `STR-SCHEMA-*` (partiționarea LIST, cheia `(Spatiu, ID)`, setul ÎNCHIS de FK-uri per partiție, indexii, absența timbrelor XAF); migrația se scrie în SQL, nu se lasă generată (S-D2, S-r4) |
 | Contractul laturilor (`Document.Laturi()`, T-D13) | ModelCheck pe ambele profiluri, ultima scenă (`VerificaLaturi`): `STR-LATURI-CONTRACT` (fiecare `TipDocument` din seed → clasa → contract cu părți nevide; metoda e abstractă, deci și compilatorul o cere), `STR-LATURI-REFUZ` (latura de partea greșită refuzată pe ușa declarației și pe ușa entității cu ACEEAȘI linie `COD: mesaj`; calitatea lipsă numită; un tip fără declarant refuzat pe ușa entității), `STR-LATURA` (PLT inversată = doar `PREDATOR_NEPOTRIVIT`, înaintea declarantului). Probele de laturi ale tipurilor asertează CODUL, nu textul vechi. Pe date reale: recensământul laturilor pe clona Flax (contract T-D13); după 091 clona e sursă de recensământ, nu gate |
 | Materializare, declarant al unui tip migrat, împerecherea ca `Transfer` | ModelCheck pe ambele profiluri: probele `STR-*` pe scenele BCS, Trezorerie și FCT — operare, roundtrip, storno, anulare, refuz, configurație, poziție, transfer, latură, corecție, reconciliere — cu comutarea locală a regimului (`ProbeCub.Migrat`/`Nemigrat`/`CuToleranta`, cu restaurare) și purja rândurilor de cub ale documentelor scenei (S-D8) |

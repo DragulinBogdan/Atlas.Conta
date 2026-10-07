@@ -165,6 +165,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Cubul de postări (S-D1): tabele proprii, în afara `EntitateConta`.
         public DbSet<Cub.Tranzactie> Tranzactii { get; set; }
         public DbSet<Cub.Postare> Postari { get; set; }
+        public DbSet<Cub.PostareVizual> PostariVizuale { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
             base.OnModelCreating(modelBuilder);
@@ -777,6 +778,20 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 b.HasOne(p => p.Tranzactie).WithMany(t => t.Postari).HasForeignKey(p => p.TranzactieId)
                     .OnDelete(DeleteBehavior.NoAction);
                 b.HasIndex(p => p.DocumentId);
+            });
+            modelBuilder.Entity<Cub.PostareVizual>(b => {
+                b.ToView("PostareVizual");
+                b.HasKey(p => p.ID);
+                b.Property(p => p.Spatiu).HasConversion<short>();
+                b.Property(p => p.TranzactieFel).HasConversion<short>();
+                b.Property(p => p.Latura).HasConversion<short>();
+                b.Property(p => p.Carte).HasConversion<short>();
+                b.Property(p => p.SensTva).HasConversion<short>();
+                b.Property(p => p.RolTva).HasConversion<short>();
+                b.Property(p => p.RegimTva).HasConversion<short>();
+                b.Property(p => p.FelUnitate).HasConversion<short>();
+                b.Property(p => p.SuportSpatiu).HasConversion<short>();
+                b.Property(p => p.InversaDinSpatiu).HasConversion<short>();
             });
         }
 

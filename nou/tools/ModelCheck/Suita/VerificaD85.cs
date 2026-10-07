@@ -250,15 +250,15 @@ static class VerificaD85 {
             && perechi.Any(p => p.Sql.EndsWith("12.3457"))
             && cautate == 1);
 
-        // ---- D9-P4-LISTA-1 (Postare_ListView real): proiecția păstrează tot ce cere grila ----
-        var lvPostari = Lv(nameof(Atlas.Conta.BackOffice.Module.Cub.Postare) + "_ListView");
+        // ---- D9-P4-LISTA-1 (PostareVizual_ListView real, D9-A12): proiecția păstrează tot ce cere grila ----
+        var lvPostari = Lv(nameof(Atlas.Conta.BackOffice.Module.Cub.PostareVizual) + "_ListView");
         string eroarePostari = null;
         var cerutePostari = lvPostari == null ? [] : Coloane(lvPostari);
         string[] proiectatePostari = [];
         if (lvPostari != null)
             using (var os = providerHost.CreateObjectSpace()) {
                 try {
-                    var cs = new CollectionSource(os, typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), lvPostari.DataAccessMode);
+                    var cs = new CollectionSource(os, typeof(Atlas.Conta.BackOffice.Module.Cub.PostareVizual), lvPostari.DataAccessMode);
                     cs.DisplayableProperties = string.Join(";", cerutePostari);
                     var lista = ((System.ComponentModel.IListSource)cs.Collection).GetList();
                     proiectatePostari = cs.DisplayableProperties.Split(';');
@@ -272,17 +272,17 @@ static class VerificaD85 {
                     eroarePostari = $"{ex.GetType().Name}: {ex.Message}";
                 }
             }
-        var asteptatePostari = Atlas.Conta.BackOffice.Module.UI.ContaUiBaseline.ColoanePostari.Select(c => c.Cale).ToArray();
+        var asteptatePostari = Atlas.Conta.BackOffice.Module.UI.ContaUiBaseline.ColoanePostareVizual.Select(c => c.Cale).ToArray();
         var vizibilePostari = lvPostari == null ? [] : lvPostari.Columns.Where(Vizibila).OrderBy(c => c.Index).Select(c => c.PropertyName).ToArray();
         var lvImbricata = Lv("Tranzactie_Postari_ListView");
         var navigarePostari = model == null ? [] : ((DevExpress.ExpressApp.SystemModule.IModelApplicationNavigationItems)model).NavigationItems.AllItems
             .Where(i => i.View?.Id == lvPostari?.Id).Select(i => (i.Parent?.Parent as DevExpress.ExpressApp.SystemModule.IModelNavigationItem)?.Caption ?? "").ToList();
-        Console.WriteLine($"     MĂSURAT (D9-P4-LISTA-1/{eticheta}, Postare_ListView={lvPostari?.DataAccessMode}): vizibile "
+        Console.WriteLine($"     MĂSURAT (D9-P4-LISTA-1/{eticheta}, PostareVizual_ListView={lvPostari?.DataAccessMode}): vizibile "
             + $"[{string.Join(";", vizibilePostari)}], cerute [{string.Join(";", cerutePostari)}], proiectate [{string.Join(";", proiectatePostari)}], "
             + $"navigare [{string.Join(";", navigarePostari)}]; Tranzactie_Postari_ListView={lvImbricata?.DataAccessMode}, "
             + $"editare {lvImbricata?.AllowEdit}/{lvImbricata?.AllowNew}/{lvImbricata?.AllowDelete}"
             + (eroarePostari != null ? $"; EROARE {eroarePostari}" : ""));
-        s.Check($"D9-P4-LISTA-1 ({eticheta}) `Postare_ListView` real e în mod ServerView, sub grupul de navigare „Registre”, cu exact "
+        s.Check($"D9-P4-LISTA-1 ({eticheta}) `PostareVizual_ListView` real e în mod ServerView, sub grupul de navigare „Registre”, cu exact "
             + "coloanele listei de evidență, fiecare rămasă în proiecție, iar o pagină se citește fără excepție; lista imbricată a "
             + "tranzacției e Client, fără editare",
             lvPostari != null && lvPostari.DataAccessMode == CollectionSourceDataAccessMode.ServerView && eroarePostari == null

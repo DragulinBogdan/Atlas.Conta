@@ -78,7 +78,23 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<FacturaIesireDetaliu>().HideMembers(d => d.LinieAvansId);
     }
 
-    /// <summary>Coloanele listei de evidență a cubului (D9-D9), în ordinea afișării.</summary>
+    /// <summary>Coloanele listei de evidență a cubului (D9-D9, D9-A12), în ordinea afișării.</summary>
+    public static readonly (string Cale, string Titlu)[] ColoanePostareVizual = [
+        (nameof(Cub.PostareVizual.TranzactieFel), "Tranzacție"),
+        (nameof(Cub.PostareVizual.DocumentNumar), "Document"),
+        (nameof(Cub.PostareVizual.Data), "Data"),
+        (nameof(Cub.PostareVizual.ContSimbol), "Cont"),
+        (nameof(Cub.PostareVizual.Latura), "Latură"),
+        (nameof(Cub.PostareVizual.PartenerCod), "Partener"),
+        (nameof(Cub.PostareVizual.GestiuneCod), "Gestiune"),
+        (nameof(Cub.PostareVizual.ProdusCod), "Produs"),
+        (nameof(Cub.PostareVizual.UnitateCod), "Unitate"),
+        (nameof(Cub.PostareVizual.Cantitate), "Cantitate"),
+        (nameof(Cub.PostareVizual.Valoare), "Valoare"),
+        (nameof(Cub.PostareVizual.ValoareValuta), "Valoare în valută"),
+    ];
+
+    /// <summary>Coloanele listei postărilor unei tranzacții, în ordinea afișării.</summary>
     public static readonly (string Cale, string Titlu)[] ColoanePostari = [
         (nameof(Cub.Postare.TranzactieId), "Tranzacție"),
         (nameof(Cub.Postare.Tranzactie) + "." + nameof(Cub.Tranzactie.Fel), "Fel"),
@@ -94,17 +110,18 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
     ];
 
     static void Postari(UiBaselineRegistry registry) {
-        static void Coloane(IModelListView lv) {
+        static Action<IModelListView> Coloane((string Cale, string Titlu)[] coloane) => lv => {
             foreach (var coloana in lv.Columns)
                 coloana.Index = -1;
-            for (var i = 0; i < ColoanePostari.Length; i++)
-                ColoanaPeCale(lv, ColoanePostari[i].Cale, i, ColoanePostari[i].Titlu);
-        }
+            for (var i = 0; i < coloane.Length; i++)
+                ColoanaPeCale(lv, coloane[i].Cale, i, coloane[i].Titlu);
+        };
+        registry.For<Cub.PostareVizual>()
+            .ListView(nameof(Cub.PostareVizual) + ListView, Coloane(ColoanePostareVizual));
         registry.For<Cub.Postare>()
-            .ListView(nameof(Cub.Postare) + ListView, Coloane)
             .ListView("Tranzactie_Postari" + ListView, lv => {
                 ReadOnly(lv);
-                Coloane(lv);
+                Coloane(ColoanePostari)(lv);
             });
     }
 
