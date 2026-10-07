@@ -307,11 +307,8 @@ internal static class ProfilBugetar {
         }
     }
 
-    // Politicile lanțului de cumpărare (inventar 01/02, curățate pe decizia 21).
-    // Tranșarea întrebării 00 §13.1 (cine postează): recepția contează pe NIR
-    // (3xx = furnizor), FacturaIntrare postează DOAR liniile care nu trec pe
-    // NIR (servicii/cheltuieli/imobilizări) — fără dublă postare, granița e
-    // Natura clasei (aceeași care alimentează filtrul conexului).
+    // Politicile lanțului de cumpărare (inventar 01/02, curățate pe decizia 21):
+    // factura postează fiecare natură pe regula ei, recepția inclusiv (112).
     static void SeedPoliticiFacturaIntrareNir(IObjectSpace os) {
         var fct = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCT");
         var nir = os.FirstOrDefault<TipDocument>(x => x.Cod == "NIR");
@@ -342,9 +339,10 @@ internal static class ProfilBugetar {
             receptie.ContCreditId = cont401?.ID;
         });
 
-        // Contare FCT: doar naturile care NU trec pe NIR; debit = contul
-        // Tipului (6xx/47x/2xx), credit = furnizorul (404 la imobilizări).
+        // Contare FCT: debit = contul Tipului (3xx/6xx/47x/2xx), credit =
+        // furnizorul (404 la imobilizări).
         (NaturaClasa Natura, Cont Fallback)[] reguliFct = [
+            (NaturaClasa.Stoc, cont401),
             (NaturaClasa.Serviciu, cont401),
             (NaturaClasa.Cheltuiala, cont401),
             (NaturaClasa.Imobilizare, cont404),

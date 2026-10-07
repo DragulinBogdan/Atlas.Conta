@@ -977,9 +977,9 @@ internal static class ProfilPrivat {
         ContaSeeder.SeedNumerotare(os, "BTR", "BTR-");
     }
 
-    // Lanțul de cumpărare (26a, sub TVA structural — design §6): recepția
-    // contează pe NIR la NET (3xx = 401), factura postează liniile non-stoc
-    // net + rândurile 4426 per linie (inclusiv ale liniilor de stoc).
+    // Lanțul de cumpărare (112, sub TVA structural — design §6): factura postează
+    // fiecare natură la NET pe regula ei (recepția 3xx = 401) + rândurile 4426
+    // per linie; NIR-ul manual are regula lui.
     static void SeedPoliticiFacturaIntrareNir(IObjectSpace os) {
         var fct = os.FirstOrDefault<TipDocument>(x => x.Cod == "FCT");
         var nir = os.FirstOrDefault<TipDocument>(x => x.Cod == "NIR");
@@ -1003,8 +1003,9 @@ internal static class ProfilPrivat {
             receptie.ContCreditId = cont401?.ID;
         });
 
-        // Contare FCT: doar naturile care NU trec pe NIR, la net; 404 la imobilizări.
+        // Contare FCT, la net; 404 la imobilizări.
         (NaturaClasa Natura, Cont Fallback)[] reguliFct = [
+            (NaturaClasa.Stoc, cont401),
             (NaturaClasa.Serviciu, cont401),
             (NaturaClasa.Cheltuiala, cont401),
             (NaturaClasa.Imobilizare, cont404),

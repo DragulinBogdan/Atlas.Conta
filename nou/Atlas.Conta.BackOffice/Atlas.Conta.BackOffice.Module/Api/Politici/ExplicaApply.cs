@@ -204,7 +204,7 @@ public static class ExplicaApply {
                         + "nota o dau conturile culese pe fiecare linie.",
                 FelPostare.Linie =>
                     "Nicio regulă de contare nu se potrivește: postarea o dau conturile culese pe linie.",
-                _ => "Linia nu contează pe acest tip de document: nicio regulă de contare nu se potrivește.",
+                _ => "Nicio regulă de contare nu se potrivește pe acest tip de document.",
             } + refuz;
         var explicita = postare switch {
             FelPostare.Document =>
@@ -374,11 +374,15 @@ public static class ExplicaApply {
             ? FelPostare.Linie : FelPostare.Regula;
     }
 
-    // Ce ar mai refuza operarea peste potrivire: gardul DECLARAT al clasei de
-    // document (38c/64) și natura interzisă de profilul de validare (33c).
+    // Ce ar mai refuza operarea peste potrivire: declarantul care contează prin
+    // reguli (112e), gardul DECLARAT al clasei de document (38c/64) și natura
+    // interzisă de profilul de validare (33c).
     static List<string> Rezerve(string clrType, NivelContare nivel, NaturaClasa? natura,
             NaturaClasa? naturaInterzisa) {
         var rezerve = new List<string>();
+        if (nivel == NivelContare.Niciuna
+                && Declaratii.Contractare.DeclarantulTipului(clrType) is { ConteazaPrinReguli: true })
+            rezerve.Add($"{Declaratii.CoduriRefuz.RegulaContareLipsa}: tipul contează prin reguli, iar linia n-are niciuna.");
         if (ClasaDocumentului(clrType)?.GetCustomAttribute<GardContareAttribute>(false)
                 is GardContareAttribute gard
                 && (gard.Natura == null || gard.Natura == natura) && nivel < gard.NivelMinim)

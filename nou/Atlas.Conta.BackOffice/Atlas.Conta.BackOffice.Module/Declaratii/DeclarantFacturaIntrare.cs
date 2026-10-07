@@ -6,10 +6,10 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 /// <summary>
-/// FCT (B-D6): linia de stoc e RECEPȚIA facturii (TR-D3) — lotul intră în
-/// gestiunea primitoare de pe capătul virtual al furnizorului; celelalte naturi
-/// postează netul pe regula lor. Taxa se decide per document × cotă și se
-/// postează per linie, iar terțul are o singură partidă pe fiecare cont al lui.
+/// FCT (B-D6): fiecare linie postează netul pe regula ei; linia de stoc e
+/// RECEPȚIA facturii (TR-D3) — lotul intră în gestiunea primitoare de pe capătul
+/// virtual al furnizorului. Taxa se decide per document × cotă și se postează
+/// per linie, iar terțul are o singură partidă pe fiecare cont al lui.
 /// </summary>
 public sealed class DeclarantFacturaIntrare : IDeclarant {
     public static readonly DeclarantFacturaIntrare Instanta = new();
@@ -30,9 +30,6 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
         for (var i = 0; i < operand.Linii.Count; i++)
             tipuri[i] = Linia(operand, operand.Linii[i], contari, i, refuzuri);
 
-        var receptia = operand.Linii.Any(l => l.Natura == NaturaClasa.Stoc)
-            ? Contrapartida(operand, refuzuri)
-            : null;
         var taxa = Fiscal.Taxa(operand, tipuri, rotunjire, refuzuri);
         if (refuzuri.Count > 0)
             return null;
@@ -42,9 +39,7 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
         var partide = new Dictionary<Guid, N.Unitate>();
         for (var i = 0; i < operand.Linii.Count; i++) {
             var linie = operand.Linii[i];
-            var (intern, tert, cantitate) = linie.Natura == NaturaClasa.Stoc
-                ? Receptia(operand, linie, receptia!.Value, decizii)
-                : Netul(operand, linie, contari[i]!.Value, decizii);
+            var (intern, tert, cantitate) = Netul(operand, linie, contari[i]!.Value, decizii);
             var aleLiniei = Netele(operand, linie, intern, tert, cantitate, tipuri[i], rotunjire).ToList();
             if (Fiscal.Impozitul(operand, linie, tipuri[i], taxa, DirectieTva.Deductibil, refuzuri) is { } impozit)
                 aleLiniei.Add(impozit);
@@ -64,7 +59,7 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
                 La = Terti.Capat(operand, m.La, doc.Predator.Id, partide),
             })],
             decizii,
-            PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, tipuri), receptia?.Politica));
+            PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, tipuri)));
     }
 
     static void Antetul(DocumentFapt doc, Operand operand, ICollection<N.Refuz> refuzuri) {
@@ -85,16 +80,16 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
         if (tipProdus is Guid alProdusului && alProdusului != linie.TipMaterialId)
             refuzuri.Add(new N.Refuz(CoduriRefuz.ProdusAltTip,
                 "Produsul liniei aparține altui Tip decât Tipul liniei.", linie.Id));
-        if (linie.Natura == NaturaClasa.Stoc) {
-            if (linie.Lot is null)
-                refuzuri.Add(new N.Refuz(CoduriRefuz.LotLipsa,
-                    "Liniile de stoc ale facturii își creează lotul la culegere.", linie.Id));
-            else if (linie.ContImplicitTipId is null)
-                refuzuri.Add(new N.Refuz(CoduriRefuz.RegulaContareLipsa,
-                    "Tipul liniei de stoc n-are cont implicit, deci recepția n-are cont.", linie.Id));
-        }
-        else
+        var receptie = linie.Natura == NaturaClasa.Stoc;
+        if (receptie && linie.Lot is null)
+            refuzuri.Add(new N.Refuz(CoduriRefuz.LotLipsa,
+                "Liniile de stoc ale facturii își creează lotul la culegere.", linie.Id));
+        else {
             contari[indice] = Contari.Rezolva(operand, linie, refuzuri);
+            if (receptie && contari[indice] is { } contare && contare.ContDebit != linie.Lot!.ContImplicitId)
+                refuzuri.Add(new N.Refuz(CoduriRefuz.ContStocLipsa,
+                    "Contul de recepție trebuie să fie contul lotului.", linie.Id));
+        }
         if (operand.PoliticaTva is null || linie.TipTvaId is not Guid tipTva)
             return null;
         if (!operand.TipuriTva.TryGetValue(tipTva, out var tip)) {
@@ -105,74 +100,27 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
         return tip;
     }
 
-    // TR-D3: recepția e a facturii, dar regula ei de contare e a NIR-ului conex,
-    // care nu e în operand; contrapartida e cea DECLARATĂ de politica de TVA a
-    // tipului, iar regula naturii care postează pe factură rămâne rezerva (MINOR-5).
-    readonly record struct ContrapartidaRezolvata(RezolvareCont Cont, N.VersiunePolitica? Politica, Guid? Regula);
-
-    static ContrapartidaRezolvata? Contrapartida(Operand operand, ICollection<N.Refuz> refuzuri) {
-        if (operand.PoliticaTva is { } politica) {
-            var alPoliticii = Potrivire.Cont(
-                politica.SursaContrapartida, politica.ContrapartidaFallbackId, null, operand.Laturi);
-            if (alPoliticii.ContId != null)
-                return new(alPoliticii, PoliticiConsumate.Versiunea(politica), null);
-        }
-        foreach (var regula in operand.ReguliContare) {
-            if (regula.NaturaFiltru is not (NaturaClasa.Serviciu or NaturaClasa.Cheltuiala))
-                continue;
-            var alRegulii = Potrivire.Cont(regula.SursaContCredit, regula.ContCreditId, null, operand.Laturi);
-            if (alRegulii.ContId != null)
-                return new(alRegulii, null, regula.Id);
-        }
-        refuzuri.Add(new N.Refuz(CoduriRefuz.RegulaContareLipsa,
-            "Recepția n-are cont de furnizor: nicio politică de TVA și nicio regulă de contare pe "
-            + "Serviciu/Cheltuiala nu-l dau.", null));
-        return null;
-    }
-
-    static (N.Capat Intern, N.Capat Tert, decimal Cantitate) Receptia(
-            Operand operand, LinieOperand linie, ContrapartidaRezolvata contrapartida, List<N.Decizie> decizii) {
-        var lot = linie.Lot!;
-        var contStoc = linie.ContImplicitTipId!.Value;
-        var contTert = contrapartida.Cont.ContId!.Value;
-        // Recepția n-are regulă proprie: rămâne coalesce-ul liniei, ca pe NIR.
-        var analiza = Contari.Analiza(linie.Analiza, null, null);
-        decizii.Add(new N.ContRezolvat(linie.Id, contStoc, SursaRezolvata.TipMaterial.ToString()));
-        decizii.Add(new N.ContRezolvat(linie.Id, contTert, contrapartida.Cont.Sursa.ToString(), contrapartida.Regula));
-        return (
-            new N.Capat {
-                Cont = contStoc,
-                Gestiune = operand.Document.Primitor.Id,
-                Produs = lot.ProdusId,
-                Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, contStoc, null, lot.ProdusId, lot.Data),
-                Analiza = analiza,
-            },
-            new N.Capat {
-                Cont = contTert,
-                // N-D4: cantitatea vine din afara evidenței, pe gestiunea structurală.
-                Gestiune = N.GestiuniVirtuale.Furnizor,
-                Produs = lot.ProdusId,
-                Analiza = analiza,
-            },
-            linie.Cantitate);
-    }
-
     static (N.Capat Intern, N.Capat Tert, decimal Cantitate) Netul(
             Operand operand, LinieOperand linie, ContareLinie contare, List<N.Decizie> decizii) {
         Contari.Decide(contare, linie.Id, decizii);
+        var receptionat = linie.Natura == NaturaClasa.Stoc ? linie.Lot : null;
         return (
             new N.Capat {
                 Cont = contare.ContDebit,
                 Gestiune = operand.Document.Primitor.Id,
                 Produs = linie.Lot?.ProdusId,
+                Unitate = receptionat is null ? null : new N.Unitate(
+                    receptionat.Id, N.FelUnitate.Lot, contare.ContDebit, null, receptionat.ProdusId, receptionat.Data),
                 Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideDebit, contare.Regula.Comun),
             },
             new N.Capat {
                 Cont = contare.ContCredit,
+                // N-D4: cantitatea vine din afara evidenței, pe gestiunea structurală.
+                Gestiune = receptionat is null ? null : N.GestiuniVirtuale.Furnizor,
                 Produs = linie.Lot?.ProdusId,
                 Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
             },
-            0m);
+            receptionat is null ? 0m : linie.Cantitate);
     }
 
     // Capitalizatul e BRUT pe linie, dar jurnalul îl desface în bază + taxă,

@@ -1,6 +1,7 @@
 using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
+using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using N = Atlas.Conta.Nucleu;
 
@@ -17,7 +18,63 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         Refuzuri();
         Dependenti();
         AnalizaReceptiei();
+        RegulaReceptiei();
         PestePerioada();
+    }
+
+    // 112: operand scris de mână — politica de TVA și regula de servicii duc spre alte conturi decât recepția.
+    void RegulaReceptiei() {
+        Guid stoc = Guid.NewGuid(), datorie = Guid.NewGuid(), alTaxei = Guid.NewGuid(), alServiciilor = Guid.NewGuid();
+        Guid tip = Guid.NewGuid(), produs = Guid.NewGuid(), linie = Guid.NewGuid(), lot = Guid.NewGuid();
+        var predator = new RepartitorFapt(Guid.NewGuid(), FelRepartitor.Partener, datorie, default);
+        var primitor = new RepartitorFapt(Guid.NewGuid(), FelRepartitor.Gestiune, null, default);
+        RegulaContareFapt Regula(NaturaClasa natura, SursaCont sursaCredit, Guid credit) => new(Guid.NewGuid(), null, natura,
+            null, false, SursaCont.TipMaterial, null, sursaCredit, credit, true, null, null, null);
+        var receptie = Regula(NaturaClasa.Stoc, SursaCont.RepartitorPredator, datorie);
+        var servicii = Regula(NaturaClasa.Serviciu, SursaCont.Explicit, alServiciilor);
+        var operand = new Operand(
+            new(Guid.NewGuid(), "FCT", Guid.NewGuid(), Ianuarie, Ianuarie, "F-1", false, null, predator, primitor,
+                null, null, null),
+            [new(linie, tip, null, NaturaClasa.Stoc, stoc, lot,
+                new LotFapt(lot, produs, tip, stoc, Ianuarie, 10) { LinieIntrareId = linie, GestiuneId = primitor.Id },
+                10, 100, 0, null, 10, produs, tip, null, null, null, null, N.Analiza.Fara, null)],
+            [receptie, servicii], [],
+            new PoliticaTvaFapt(DirectieTva.Deductibil, SursaCont.Explicit, alTaxei) { Id = Guid.NewGuid() },
+            new Dictionary<Guid, TipTvaFapt>(),
+            new Dictionary<Guid, ContFapt> { [stoc] = new(stoc, "S", false, false), [datorie] = new(datorie, "F", true, false),
+                [alTaxei] = new(alTaxei, "T", false, false), [alServiciilor] = new(alServiciilor, "V", false, false) },
+            new Dictionary<CheieLotFapt, N.Sold>(), null, [], null, null, null, new(An, 1)) {
+                Repartitori = new Dictionary<Guid, RepartitorFapt> { [predator.Id] = predator, [primitor.Id] = primitor },
+            };
+        (N.Declaratie Declaratie, List<N.Refuz> Refuzuri) Declara(params RegulaContareFapt[] reguli) {
+            var refuzuri = new List<N.Refuz>();
+            return (DeclarantFacturaIntrare.Instanta.Declara(operand with { ReguliContare = reguli },
+                new N.Rotunjire(MidpointRounding.AwayFromZero), refuzuri), refuzuri);
+        }
+
+        var (pe, refuzate) = Declara(receptie, servicii);
+        Verifica("SC-FCT-15", "D stoc 100/+10 pe lot în gestiunea primitoare, C furnizorul regulii 100 pe gestiunea Furnizor, cu partidă",
+            refuzate.Count == 0 && pe.Miscari is [var m] && m.Cantitate == 10 && m.Valoare == 100
+            && m.La.Cont == stoc && m.La.Unitate?.Id == lot && m.La.Gestiune == primitor.Id
+            && m.DeLa.Cont == datorie && m.DeLa.Gestiune == N.GestiuniVirtuale.Furnizor
+            && m.DeLa.Unitate is { Fel: N.FelUnitate.Partida });
+        Verifica("SC-FCT-15", "ambele conturi sunt decise de regula naturii Stoc, singura politică consumată",
+            refuzate.Count == 0
+            && pe.Decizii.OfType<N.ContRezolvat>().Select(d => (d.Cont, d.Regula)).ToArray() is [var debit, var credit]
+            && debit == (stoc, receptie.Id) && credit == (datorie, receptie.Id)
+            && pe.Ipoteze.OfType<N.VersiunePolitica>().ToArray() is [{ Fel: nameof(RegulaContare) } consumata]
+            && consumata.Rand == receptie.Id);
+        var (mutata, refuzMutata) = Declara(receptie with { SursaContCredit = SursaCont.Explicit, ContCreditId = alServiciilor }, servicii);
+        Verifica("SC-FCT-15", "creditul regulii mutat pe un cont explicit fără partide mută contul recepției",
+            refuzMutata.Count == 0 && mutata.Miscari is [var mm] && mm.DeLa.Cont == alServiciilor && mm.DeLa.Unitate == null
+            && mm.La.Cont == stoc && mm.Cantitate == 10 && mm.Valoare == 100);
+
+        var (fara, refuzFara) = Declara(servicii);
+        Verifica("SC-FCT-16", "fără regula naturii Stoc recepția e refuzată pe linie, cu regula de servicii și politica de TVA prezente",
+            fara == null && refuzFara is [{ Cod: CoduriRefuz.RegulaContareLipsa } lipsa] && lipsa.Linie == linie);
+        var (altCont, refuzAltCont) = Declara(receptie with { SursaContDebit = SursaCont.Explicit, ContDebitId = alServiciilor }, servicii);
+        Verifica("SC-FCT-16", "debitul regulii pe alt cont decât al lotului: CONT_STOC_LIPSA",
+            altCont == null && refuzAltCont is [{ Cod: CoduriRefuz.ContStocLipsa }]);
     }
 
     protected override void CurataNomenclatoare(IObjectSpace os, Purja purja) =>

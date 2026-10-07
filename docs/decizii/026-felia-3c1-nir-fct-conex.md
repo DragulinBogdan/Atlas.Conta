@@ -1,7 +1,7 @@
 # Decizia 26 — Felia 3c-1 — NIR + FacturaIntrare + mecanismul conex
 
 - **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- **Stare**: activă; (a) amendată de 112 (recepția se contează pe factură, pe regula `FCT/Stoc`), (c) precizată de 112 (pe tipurile care contează prin reguli, linia fără regulă e refuzată)
 
 ## Regula durabilă
 

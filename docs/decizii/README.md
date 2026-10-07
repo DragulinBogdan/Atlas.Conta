@@ -42,7 +42,7 @@
 | 23 | [Felia 3a](023-felia-3a-persistenta-seed.md) | 2026-07-22 | activă |
 | 24 | [Owned `Dimensiuni` sub XAF/EF Core — limitarea e gestionabilă, rămânem pe EF Core](024-owned-dimensiuni-sub-xaf.md) | 2026-07-22 | DEPĂȘITĂ de 54c (owned-ul a murit din Conta) |
 | 25 | [Felia 3b](025-felia-3b-motorul-de-operare.md) | 2026-07-22 | activă |
-| 26 | [Felia 3c-1 — NIR + FacturaIntrare + mecanismul conex](026-felia-3c1-nir-fct-conex.md) | 2026-07-22 | activă |
+| 26 | [Felia 3c-1 — NIR + FacturaIntrare + mecanismul conex](026-felia-3c1-nir-fct-conex.md) | 2026-07-22 | activă, (a) amendată de 112 |
 | 27 | [Felia 3c-2 — BonConsum](027-felia-3c2-bon-consum.md) | 2026-07-22 | activă |
 | 28 | [Felia 3c-3 — ListaDiferenteInventar](028-felia-3c3-lista-diferente-inventar.md) | 2026-07-22 | activă |
 | 29 | [Profil contabil](029-profil-contabil-privat-first.md) | 2026-07-22 | activă |
@@ -129,3 +129,4 @@
 | 109 | [Taxa nemarcată se decide pe document × cotă și se scrie pe linie; declarația postează taxa liniei; taxa unui document real adusă de o cale fără culegere e marcată](109-taxa-nemarcata-pe-document-scrisa-pe-linie.md) | 2026-10-04 | activă, aprobată de owner 2026-10-04; mersă în main prin PR #21 (2026-10-05); review advers Codex închis (109-R1 corectată și reverificată 2026-10-05); precizează 090 (j) și 103 (i); închide 107-r3 |
 | 110 | [Tăierea: cubul e singurul scriitor și singura sursă; registrele, regimul dual și oracolul lor au ieșit (TR-D9a)](110-taierea-cubul-singurul-scriitor.md) | 2026-10-07 | **activă**, aprobată de owner 2026-10-07; review-ul advers Codex al închiderii închis; amendează 108 (a)(g)(h)(j) și 090 (a)(l); precizează D9-A2 |
 | 111 | [Un singur repartitor de sold pe postare, partenerul fiscal în blocul fiscal, registre tipate pentru ce nu se balansează](111-repartitor-unic-si-registre-tipate.md) | 2026-10-06 | **propusă**, neaprobată; poarta de decizie = contractul TR-D9b (pas 0 măsurători); fără efect asupra TR-D9a; 110 scrisă la închiderea TR-D9a (2026-10-07); fostă „110 rezervată închiderii TR-D9a |
+| 112 | [Recepția facturii se contează pe regula ei de contare (`FCT/Stoc`)](112-receptia-facturii-pe-regula-ei.md) | 2026-10-08 | **activă**, destinația hotărâtă de owner 2026-10-08; amendează 026 (a), precizează 026 (c); închide B-r3 |

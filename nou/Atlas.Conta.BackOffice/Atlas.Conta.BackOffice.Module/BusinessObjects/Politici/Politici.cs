@@ -67,8 +67,7 @@ public class RegulaStoc : Politica, ICuProvenienta {
 // Maparea contabilă: tip document × Clasă/Tip → cont D/C + dimensiuni
 // (decizia 15: Comun / OverrideDebit / OverrideCredit).
 // Potrivirea pe linie (motor): TipMaterial exact → NaturaFiltru → regula
-// generică (ambele null). Fără regulă potrivită = linia nu contează pe acest
-// tip de document (așa se împarte lanțul FCT/NIR fără dublă postare).
+// generică (ambele null).
 [NavigationItem("Politici")]
 public class RegulaContare : Politica, ICuProvenienta {
     // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
@@ -81,8 +80,7 @@ public class RegulaContare : Politica, ICuProvenienta {
     public virtual TipDocument TipDocument { get; set; }
     public virtual Guid? TipMaterialId { get; set; }
     public virtual TipMaterial TipMaterial { get; set; }
-    // Filtru pe natura Clasei liniei (ex. FCT contează DOAR non-stoc — recepția
-    // o postează NIR-ul); mai slab decât potrivirea exactă pe TipMaterial.
+    // Filtru pe natura Clasei liniei; mai slab decât potrivirea exactă pe TipMaterial.
     public virtual NaturaClasa? NaturaFiltru { get; set; }
     // Filtru pe semnul cantității liniei (inventar 05: LDI e singurul tip unde
     // semnul chiar diferențiază — plusul contează venit, minusul cheltuială).

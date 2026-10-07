@@ -88,8 +88,8 @@ export function ReguliContare() {
         <>
           Treptele de potrivire sunt ALTERNATIVE: tipul de material exact bate filtrul de natură, care
           bate regula generică (fără niciunul); o regulă cu amândouă e refuzată. Filtrul de semn scoate
-          regula din joc înaintea treptelor. Fără regulă potrivită, linia nu contează pe acest tip de
-          document — așa se împarte lanțul factură/NIR fără dublă postare. Dimensiunile se editează pe
+          regula din joc înaintea treptelor. Fără regulă potrivită, tipurile care contează prin reguli
+          refuză linia la operare. Dimensiunile se editează pe
           formular, prin butonul de editare al rândului.
         </>
       )}
