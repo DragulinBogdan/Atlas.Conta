@@ -34,7 +34,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
             var documente = os.GetObjectsQuery<BonConsum>().Where(d => d.PredatorId == magazie
                 && d.PrimitorId == loc).Select(d => d.ID).ToList();
             var tranzactii = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.DocumentId != null
-                && documente.Contains(t.DocumentId.Value)).Select(t => new { t.DocumentId, t.Fel }).ToList();
+                && documente.Contains(t.DocumentId.Value)).Select(t => new { t.DocumentId, t.Fel }).OrderBy(t => t.Fel).ToList();
             foreach (var t in tranzactii) {
                 var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(l => l.DocumentId == t.DocumentId)
                     .Select(l => l.ID).ToArray();

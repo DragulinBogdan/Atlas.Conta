@@ -470,10 +470,10 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         pj.Adauga(os.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(Marcaj)));
         pj.Adauga(os.GetObjectsQuery<TipMaterial>().Where(t => t.Cod.StartsWith(Marcaj)));
         pj.Adauga(os.GetObjectsQuery<Repartitor>().Where(r => reps.Contains(r.ID)));
-        pj.Adauga(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod == Marcaj));
-        pj.Adauga(os.GetObjectsQuery<CodFunctional>().Where(c => c.Cod == Marcaj));
-        pj.Adauga(os.GetObjectsQuery<SursaFinantare>().Where(c => c.Cod == Marcaj));
-        pj.Adauga(os.GetObjectsQuery<Proiect>().Where(c => c.Cod == Marcaj));
+        pj.Adauga(os.GetObjectsQuery<CodEconomic>().Where(c => c.Cod.StartsWith(Marcaj)));
+        pj.Adauga(os.GetObjectsQuery<CodFunctional>().Where(c => c.Cod.StartsWith(Marcaj)));
+        pj.Adauga(os.GetObjectsQuery<SursaFinantare>().Where(c => c.Cod.StartsWith(Marcaj)));
+        pj.Adauga(os.GetObjectsQuery<Proiect>().Where(c => c.Cod.StartsWith(Marcaj)));
         pj.Adauga(os.GetObjectsQuery<InchiderePerioada>().Where(i => i.Perioada.An >= An && i.Perioada.An <= UltimulAn));
         pj.Adauga(os.GetObjectsQuery<PerioadaFiscala>().Where(p => p.An >= An && p.An <= UltimulAn));
         pj.Executa();
