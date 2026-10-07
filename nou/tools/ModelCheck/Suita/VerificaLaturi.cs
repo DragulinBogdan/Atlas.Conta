@@ -67,11 +67,6 @@ static class VerificaLaturi {
                 .Select(d => d.ID).ToList();
             ProbeCub.Purjeaza(pj, os, idsDoc);
             DeschidereScena.Curata(os, pj, idsLot);
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => idsLot.Contains(r.LotId)
-                    || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => idsDoc.Contains(d.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<Document>()

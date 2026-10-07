@@ -1,8 +1,7 @@
 """D9-D9: utilizatorii temporari ai matricei de acces pe `Postare`, pentru `refuzuri.ps1 -Baza <bază>`.
 
-`creeaza` scrie patru roluri `ReadOnlyAllByDefault` cu câte un utilizator (parola goală a lui `User`) și
+`creeaza` scrie trei roluri `ReadOnlyAllByDefault` cu câte un utilizator (parola goală a lui `User`) și
 tipărește numele lor ca JSON; `sterge` le șterge după marcaj. Necesită psycopg.
-  FaraRegistre  — citirea refuzată pe cele patru tipuri de registru, `Postare` citită integral;
   FaraPostare   — citirea refuzată pe tipul `Postare`;
   RandPostare   — criteriu de rând pe `Postare`;
   MembruPostare — restricție de membru pe `Postare`.
@@ -14,11 +13,8 @@ import uuid
 import psycopg
 
 POSTARE = 'Atlas.Conta.BackOffice.Module.Cub.Postare'
-REGISTRE = ['Atlas.Conta.BackOffice.Module.BusinessObjects.' + nume
-    for nume in ('RegistruContabil', 'RegistruStoc', 'RegistruTva', 'RegistruImobilizari')]
 # (tipul, tabela restricției sau None pentru tip, câmpul, valoarea)
 ROLURI = {
-    'FaraRegistre': [(tip, None, None, None) for tip in REGISTRE],
     'FaraPostare': [(POSTARE, None, None, None)],
     'RandPostare': [(POSTARE, 'Object', 'Criteria', '[Valoare] > 100')],
     'MembruPostare': [(POSTARE, 'Member', 'Members', 'Valoare')],

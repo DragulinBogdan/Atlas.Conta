@@ -92,10 +92,6 @@ static class E2eApiDec {
                 .Distinct().ToList();
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)));
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)));
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)));
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)));
             pj.Adauga(os.GetObjectsQuery<Document>().Where(d => docIds.Contains(d.ID)));
             pj.Adauga(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajApiDec)));

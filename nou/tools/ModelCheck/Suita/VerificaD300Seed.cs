@@ -229,7 +229,7 @@ static class VerificaD300Seed {
         // ---------------- Politica de așezare (D3-D2) ----------------
         var mapari = os.GetObjectsQuery<MapareD300>().ToList();
         if (!privat) {
-            // Bugetarul n-are `PoliticaTva` ⇒ `RegistruTva` gol ⇒ o mapare acolo ar
+            // Bugetarul n-are `PoliticaTva` ⇒ fără fapte fiscale ⇒ o mapare acolo ar
             // fi politică orfană, nu configurare (D3-V7, partea de seed).
             s.Check("D3-V1 (bugetar) profilul n-are nicio mapare D300 — nu produce rânduri de registru fiscal",
                 mapari.Count == 0);

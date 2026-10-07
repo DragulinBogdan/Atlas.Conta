@@ -60,13 +60,6 @@ static class VerificaValoareIesire {
         using var os = s.Provider.CreateObjectSpace();
         var codTip = privat ? "371" : "302.01.00";
         var tipMat = os.FirstOrDefault<TipMaterial>(t => t.Cod == codTip);
-        var tipBcs = os.FirstOrDefault<TipDocument>(t => t.Cod == "BCS");
-        // Registrul pe care iese BCS-ul din predator (Magazie la bugetar, Marfuri la
-        // privat) — citit din politică, nu presupus.
-        var reguliBcs = os.GetObjectsQuery<RegulaStoc>()
-            .Where(r => r.TipDocumentId == tipBcs.ID && r.Latura == LaturaDocument.Predator && r.Semn < 0).ToList();
-        var tipStoc = (reguliBcs.FirstOrDefault(r => r.ClasaId == tipMat.ClasaId)
-            ?? reguliBcs.First(r => r.ClasaId == null)).TipStoc;
         var sediu = os.FirstOrDefault<UnitateInterna>(u => u.Cod == "SEDIU");
         var n21 = privat ? os.FirstOrDefault<TipTva>(t => t.Cod == "N21") : null;
 
@@ -84,11 +77,6 @@ static class VerificaValoareIesire {
                 .Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => ids.Contains(i.DocumentId) || ids.Contains(i.DocumentStingatorId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => loturi.Contains(r.LotId) || (r.DocumentId != null && ids.Contains(r.DocumentId.Value))).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)).ToList());
             foreach (var doc in os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList()
                          .OrderByDescending(d => d.DocumentSursaId != null))

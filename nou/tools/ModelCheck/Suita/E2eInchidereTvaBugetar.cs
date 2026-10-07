@@ -106,9 +106,8 @@ static class E2eInchidereTvaBugetar {
             var tipAsm = os.FirstOrDefault<TipDocument>(t => t.Cod == "ASM");
             s.Check("Seed bugetar: ancora TipDocument ASM există (nucleu), cu ClrType-ul clasei",
                 tipAsm != null && tipAsm.ClrType == nameof(Asamblare));
-            s.Check("Bugetar: ASM activ pe cub, cu stoc și numerotare; fără politici contabile/fiscale/scadență/validare",
-                os.GetObjectsQuery<RegulaStoc>().Count(r => r.TipDocumentId == tipAsm.ID
-                    && r.Latura == LaturaDocument.Predator && r.Semn == 1) == 2
+            s.Check("Bugetar: ASM cu numerotare; fără reguli de stoc (D9-D8) și fără politici contabile/fiscale/scadență/validare",
+                !os.GetObjectsQuery<RegulaStoc>().Any(r => r.TipDocumentId == tipAsm.ID)
                 && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipAsm.ID)
                 && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipAsm.ID) != null
                 && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipAsm.ID) == null

@@ -53,7 +53,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // celorlalte scene ale suitei.
 //
 // Ce se probează, în ordinea în care se citește regula:
-//   * `TotalStingere` e scris de motor la operare și e Σ `LiniiCreanta` — inclusiv
+//   * totalul de stins din cub e Σ `LiniiCreanta` — inclusiv
 //     pe `ReturClient`, unde filtrul taie liniile de cost;
 //   * partidele deschise ale unei perioade DE REFERINȚĂ = restul fiecărui
 //     document operat la sfârșitul ei, iar `DocumenteCuRest` citit prin ele e
@@ -84,14 +84,6 @@ static class VerificaAcceptare {
             var docIds = os.GetObjectsQuery<Document>()
                 .Where(d => d.Data >= new DateOnly(An - 1, 12, 1) && d.Data <= new DateOnly(An, 12, 31))
                 .Select(d => d.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
             foreach (var imp in os.GetObjectsQuery<Imperechere>()
                     .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId))
                     .OrderByDescending(i => i.InverseazaId != null))

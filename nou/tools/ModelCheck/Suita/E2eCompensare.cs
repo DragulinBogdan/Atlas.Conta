@@ -71,7 +71,6 @@ static class E2eCompensare {
                 var docIds = docs.Select(d => d.ID).Distinct().ToList();
                 pj.Adauga(os.GetObjectsQuery<Imperechere>()
                     .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-                pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
                 pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
                 pj.Adauga(docs);
                 pj.Adauga(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod.StartsWith(MarcajCmp)).ToList());

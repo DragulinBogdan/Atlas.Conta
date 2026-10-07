@@ -370,7 +370,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 106-r2 | Acțiuni XAF pentru comenzile proprii ale tipurilor (Regenerează, Distribuie, Stinge), azi doar în React (106c) | după PoC |
 | 106-r3 | Planul de conturi și D300 pe `DxTreeListEditor` în mod plat (Key/ParentKey), cu opt-out de la `Server` (106, 85a) | după PoC |
 | 106-r4 | Axa 2 a formatului: coloanele grilelor de linii declarate pe roluri, blocajele câmpurilor-rezultat puse o singură dată; primitiva `Columns`/`ReadOnly` în Atlas.DXF 26.1.4.10 (106h) | închisă 2026-10-01 |
-| 106-r5 | StateMachine și ViewVariants scoase din `Startup.cs` și `RequiredModuleTypes`; `HCategory` scos din `DbContext` (106g) | activă |
+| 106-r5 | StateMachine și ViewVariants scoase din `Startup.cs` și `RequiredModuleTypes`; `HCategory` scos din `DbContext` (106g) — partea `HCategory` e făcută la TR-D9a pasul 7 (2026-10-07) | activă |
 | 106-r6 | BCS/BTR/RLF calculează `Valoare` dar stau pe grila generică și pe dialogul comun cu DVI; blocajul rezultatului cere detaliu propriu (106h) | după PoC |
 | 106-r7 | Regimul stornării nu numără nominalizarea partenerului unei legături vii când ea nu vine din transferul legăturii (și legătura manuală fără transfer în cub); refuzul `PARTIDA_CU_DEPENDENTI` rămas după desfacere apare la comandă (106k, SC-REGIM-14) | după PoC; owner 2026-10-04: rămâne la comandă |
 | X-r1 | Rafinarea blocajului scrierii: granularitatea pe gestiune + partener și scoaterea salvării de draft de sub blocajul comenzilor; pragul de așteptare separat de timpul comenzii (108) | după PoC; se deschide la așteptare măsurată peste un prag fixat de owner |

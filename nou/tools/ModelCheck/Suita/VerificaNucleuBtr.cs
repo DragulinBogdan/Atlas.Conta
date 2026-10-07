@@ -70,11 +70,6 @@ static class VerificaNucleuBtr {
                 .Where(p => deschideri.Contains(p.TranzactieId)).Select(p => p.ID).ToList());
             pj.AdaugaCheie<Atlas.Conta.BackOffice.Module.Cub.Tranzactie>(deschideri);
             ProbeCub.Purjeaza(pj, os, idsDoc);                                             // S-D8
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => idsLot.Contains(r.LotId)
-                    || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => idsDoc.Contains(d.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<Document>()
@@ -169,7 +164,7 @@ static class VerificaNucleuBtr {
             MotorOperare.Opereaza(os, btrGolire);
             var postariGolire = ProbeCub.Postari(os, btrGolire.ID);
             s.Check($"STR-BTR-GOLIRE ({eticheta}): linia care golește lotul mută tot restul valoric (300, pe când "
-                + $"cantitatea x prețul înghețat {lotB.PretUnitar} ar fi dat 200), identic cu `RegistruStoc`",
+                + $"cantitatea x prețul înghețat {lotB.PretUnitar} ar fi dat 200)",
                 postariGolire.Count == 2
                 && postariGolire.Single(p => p.Gestiune == mag2.ID).Valoare == 300m);
             ProbeCub.ProbaOperare(os, s.Check, $"NUC-BTR-GOLIRE-{eticheta}", btrGolire);

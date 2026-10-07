@@ -65,14 +65,6 @@ static class VerificaImobilizari {
             var docs = os.GetObjectsQuery<Document>()
                 .Where(d => d.Data >= start && d.Data <= sfarsit).ToList();
             var docIds = docs.Select(d => d.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()

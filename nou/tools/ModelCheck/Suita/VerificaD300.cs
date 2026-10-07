@@ -104,11 +104,6 @@ static class VerificaD300 {
             var ids = idsSursa.Concat(os.GetObjectsQuery<Document>()
                 .Where(d => d.DocumentSursaId != null && idsSursa.Contains(d.DocumentSursaId.Value))
                 .Select(d => d.ID).ToList()).Distinct().ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)).ToList());
             foreach (var doc in os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList()
                     .OrderByDescending(d => d.DocumentSursaId != null))
@@ -166,7 +161,7 @@ static class VerificaD300 {
         // ---------------- Bugetarul: D3-V7, și atât ----------------
         if (!cuTva) {
             var gol = D300Proiectii.D300(os, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), null);
-            s.Check("D3-V7 (bugetar): profilul neplătitor n-are `PoliticaTva` ⇒ `RegistruTva` gol ⇒ formularul se "
+            s.Check("D3-V7 (bugetar): profilul neplătitor n-are `PoliticaTva` ⇒ fără fapte fiscale ⇒ formularul se "
                 + "întoarce ÎNTREG (cele 55 de poziții, în ordinea legii) cu toate cifrele zero, `Nemapate` gol și "
                 + "zero avertismente — decontul unui neplătitor e un formular gol, nu o listă goală",
                 gol.Randuri.Count == ContaSeeder.RanduriD300Asteptate

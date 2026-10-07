@@ -70,20 +70,9 @@ static class VerificaNucleuFct {
                 .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)
                     || d.Numar.StartsWith(MarcajNucFct)).ToList();
             var docIds = docs.Select(d => d.ID).ToList();
-            var idsLot = os.GetObjectsQuery<Lot>()
-                .Where(l => l.Produs.Cod.StartsWith(MarcajNucFct)).Select(l => l.ID).ToList();
             ProbeCub.Purjeaza(pj, os, docIds);                                             // S-D8
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => idsLot.Contains(r.LotId)
-                    || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => docIds.Contains(d.DocumentId)).ToList());
             // Conexele (NIR) înaintea părinților.
@@ -315,7 +304,7 @@ static class VerificaNucleuFct {
                     try { ComenziDocument.Sistem(osConfig).Opereaza(faraDeclarant.ID); }
                     catch (OperareException e) { mesajConfig = e.Message; }
                 using var osDupaConfig = s.Provider.CreateObjectSpace();
-                s.Check($"STR-CONFIG ({eticheta}): `PosteazaInCub` pe un tip FĂRĂ declarant (BPR) refuză operarea "
+                s.Check($"STR-CONFIG ({eticheta}): un tip FĂRĂ declarant (BPR) refuză operarea "
                     + $"ca eroare de configurare — „{mesajConfig?.Split('\n')[0]}” — și nu scrie nimic (S-D3)",
                     mesajConfig != null
                     && mesajConfig.Contains(Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.TipFaraDeclaratie)

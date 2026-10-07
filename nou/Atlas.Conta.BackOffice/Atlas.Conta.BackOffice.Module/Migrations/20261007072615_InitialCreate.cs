@@ -16,8 +16,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: table => new
                 {
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false),
                     Cod = table.Column<string>(type: "text", nullable: false),
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true)
@@ -34,7 +34,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: table => new
                 {
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     TypeName = table.Column<string>(type: "text", nullable: true),
                     Key = table.Column<string>(type: "text", nullable: true),
                     DefaultString = table.Column<string>(type: "text", nullable: true),
@@ -55,8 +54,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     Natura = table.Column<int>(type: "integer", nullable: false),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -73,8 +72,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DurataMinAni = table.Column<int>(type: "integer", nullable: true),
                     DurataMaxAni = table.Column<int>(type: "integer", nullable: true),
                     Grupa = table.Column<string>(type: "text", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false),
                     Cod = table.Column<string>(type: "text", nullable: false),
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true)
@@ -91,8 +90,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: table => new
                 {
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false),
                     Cod = table.Column<string>(type: "text", nullable: false),
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true)
@@ -109,8 +108,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: table => new
                 {
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false),
                     Cod = table.Column<string>(type: "text", nullable: false),
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true)
@@ -136,9 +135,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DimensiuniObligatorii = table.Column<int>(type: "integer", nullable: false),
                     RolTert = table.Column<int>(type: "integer", nullable: false),
                     UrmarestePartide = table.Column<bool>(type: "boolean", nullable: false),
+                    CategorieStoc = table.Column<int>(type: "integer", nullable: true),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Simbol\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -160,12 +160,27 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Content = table.Column<string>(type: "text", nullable: true),
                     Title = table.Column<string>(type: "text", nullable: true),
                     SynchronizeTitle = table.Column<bool>(type: "boolean", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_DashboardData", x => x.ID);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DepuneriDeclaratii",
+                columns: table => new
+                {
+                    ID = table.Column<Guid>(type: "uuid", nullable: false),
+                    Formular = table.Column<int>(type: "integer", nullable: false),
+                    Perioada = table.Column<int>(type: "integer", nullable: false),
+                    VersiuneExportata = table.Column<string>(type: "text", nullable: true),
+                    ConfirmataLa = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ConfirmataDe = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DepuneriDeclaratii", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
@@ -188,7 +203,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     RemindIn = table.Column<TimeSpan>(type: "interval", nullable: true),
                     AlarmTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     IsPostponed = table.Column<bool>(type: "boolean", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -209,32 +223,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Size = table.Column<int>(type: "integer", nullable: false),
                     FileName = table.Column<string>(type: "text", nullable: true),
                     Content = table.Column<byte[]>(type: "bytea", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_FileData", x => x.ID);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "HCategories",
-                columns: table => new
-                {
-                    ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: true),
-                    ParentID = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_HCategories", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_HCategories_HCategories_ParentID",
-                        column: x => x.ParentID,
-                        principalTable: "HCategories",
-                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -247,8 +240,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     CodAuto = table.Column<string>(type: "character varying(2)", maxLength: 2, nullable: true),
                     CodCnp = table.Column<int>(type: "integer", nullable: false),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -264,9 +257,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
                     Tabela = table.Column<string>(type: "text", nullable: true),
                     CheieLegacy = table.Column<string>(type: "text", nullable: true),
-                    TintaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    TintaId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -280,8 +271,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<string>(type: "text", nullable: true),
                     ContextId = table.Column<string>(type: "text", nullable: true),
-                    Version = table.Column<int>(type: "integer", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    Version = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -298,7 +288,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Inchisa = table.Column<bool>(type: "boolean", nullable: false),
                     InchisaLa = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     InchisaPrimaOara = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -317,7 +306,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     PermissionPolicy = table.Column<int>(type: "integer", nullable: false),
                     IsAllowPermissionPriority = table.Column<bool>(type: "boolean", nullable: false),
                     Discriminator = table.Column<string>(type: "character varying(34)", maxLength: 34, nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -337,7 +325,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Discriminator = table.Column<string>(type: "character varying(21)", maxLength: 21, nullable: false),
                     AccessFailedCount = table.Column<int>(type: "integer", nullable: true),
                     LockoutEnd = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -353,7 +340,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DinSeed = table.Column<bool>(type: "boolean", nullable: false),
                     Fel = table.Column<int>(type: "integer", nullable: false),
                     Severitate = table.Column<int>(type: "integer", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -366,8 +352,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: table => new
                 {
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false),
                     Cod = table.Column<string>(type: "text", nullable: false),
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true)
@@ -393,8 +379,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Fel = table.Column<int>(type: "integer", nullable: false),
                     ParinteId = table.Column<Guid>(type: "uuid", nullable: true),
                     OglindaAId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -403,14 +389,27 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_RanduriD300_RanduriD300_OglindaAId",
                         column: x => x.OglindaAId,
                         principalTable: "RanduriD300",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_RanduriD300_RanduriD300_ParinteId",
                         column: x => x.ParinteId,
                         principalTable: "RanduriD300",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RefuzuriSeed",
+                columns: table => new
+                {
+                    ID = table.Column<Guid>(type: "uuid", nullable: false),
+                    Tip = table.Column<string>(type: "text", nullable: true),
+                    Cheie = table.Column<string>(type: "text", nullable: true),
+                    La = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RefuzuriSeed", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
@@ -426,7 +425,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DeLa = table.Column<DateOnly>(type: "date", nullable: false),
                     PanaLa = table.Column<DateOnly>(type: "date", nullable: true),
                     Temei = table.Column<string>(type: "text", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -445,7 +443,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Content = table.Column<byte[]>(type: "bytea", nullable: true),
                     DisplayName = table.Column<string>(type: "text", nullable: true),
                     ParametersObjectTypeName = table.Column<string>(type: "text", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -473,7 +470,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
                     Profil = table.Column<int>(type: "integer", nullable: false),
                     RotunjireBani = table.Column<int>(type: "integer", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -486,8 +482,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: table => new
                 {
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false),
                     Cod = table.Column<string>(type: "text", nullable: false),
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true)
@@ -506,8 +502,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
                     Cod = table.Column<string>(type: "text", nullable: true),
                     Denumire = table.Column<string>(type: "text", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -522,8 +518,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Cod = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false),
                     Denumire = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -578,14 +574,15 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: table => new
                 {
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
+                    RegularizareAvans = table.Column<bool>(type: "boolean", nullable: false),
                     DinSeed = table.Column<bool>(type: "boolean", nullable: false),
                     Cod = table.Column<string>(type: "text", nullable: false),
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     ClasaId = table.Column<Guid>(type: "uuid", nullable: false),
                     ContImplicitId = table.Column<Guid>(type: "uuid", nullable: true),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -596,8 +593,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_TipuriMaterial_ClaseProduse_ClasaId",
                         column: x => x.ClasaId,
                         principalTable: "ClaseProduse",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_TipuriMaterial_Conturi_ContImplicitId",
                         column: x => x.ContImplicitId,
@@ -615,7 +611,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     Cota = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
                     Regim = table.Column<int>(type: "integer", nullable: false),
-                    Activ = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    ValabilDeLa = table.Column<DateOnly>(type: "date", nullable: true),
+                    ValabilPanaLa = table.Column<DateOnly>(type: "date", nullable: true),
                     ContTvaDeductibilId = table.Column<Guid>(type: "uuid", nullable: true),
                     ContTvaColectatId = table.Column<Guid>(type: "uuid", nullable: true),
                     ContTvaNeexigibilId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -623,12 +620,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     CodSafTLivrare = table.Column<string>(type: "text", nullable: true),
                     CodSafTAchizitie = table.Column<string>(type: "text", nullable: true),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_TipuriTva", x => x.ID);
+                    table.CheckConstraint("CK_TipTva_Interval", "\"ValabilDeLa\" IS NULL OR \"ValabilPanaLa\" IS NULL OR \"ValabilDeLa\" <= \"ValabilPanaLa\"");
                     table.CheckConstraint("CK_TipuriTva_Cod_negol", "btrim(\"Cod\") <> ''");
                     table.CheckConstraint("CK_TipuriTva_Denumire_negol", "btrim(\"Denumire\") <> ''");
                     table.ForeignKey(
@@ -655,8 +653,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: true),
                     Xml = table.Column<string>(type: "text", nullable: true),
-                    OwnerID = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OwnerID = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -680,9 +677,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DeId = table.Column<Guid>(type: "uuid", nullable: true),
                     De = table.Column<string>(type: "text", nullable: true),
                     Motiv = table.Column<string>(type: "text", nullable: true),
-                    Acceptari = table.Column<string>(type: "text", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    Acceptari = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -691,8 +686,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_InchideriPerioade_PerioadeFiscale_PerioadaId",
                         column: x => x.PerioadaId,
                         principalTable: "PerioadeFiscale",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -702,7 +696,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
                     RoleID = table.Column<Guid>(type: "uuid", nullable: true),
                     ActionId = table.Column<string>(type: "text", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -725,7 +718,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ItemPath = table.Column<string>(type: "text", nullable: true),
                     TargetTypeFullName = table.Column<string>(type: "text", nullable: true),
                     NavigateState = table.Column<int>(type: "integer", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -751,7 +743,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     CreateState = table.Column<int>(type: "integer", nullable: true),
                     DeleteState = table.Column<int>(type: "integer", nullable: true),
                     NavigateState = table.Column<int>(type: "integer", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -797,7 +788,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     LoginProviderName = table.Column<string>(type: "text", nullable: true),
                     ProviderUserKey = table.Column<string>(type: "text", nullable: true),
                     UserForeignKey = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -845,7 +835,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ContAmortizareId = table.Column<Guid>(type: "uuid", nullable: true),
                     ContCheltuialaAmortizareId = table.Column<Guid>(type: "uuid", nullable: true),
                     ContCheltuialaCedareId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -855,26 +844,22 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiAmortizare_Conturi_ContAmortizareId",
                         column: x => x.ContAmortizareId,
                         principalTable: "Conturi",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_PoliticiAmortizare_Conturi_ContCheltuialaAmortizareId",
                         column: x => x.ContCheltuialaAmortizareId,
                         principalTable: "Conturi",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_PoliticiAmortizare_Conturi_ContCheltuialaCedareId",
                         column: x => x.ContCheltuialaCedareId,
                         principalTable: "Conturi",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_PoliticiAmortizare_TipuriMaterial_TipMaterialId",
                         column: x => x.TipMaterialId,
                         principalTable: "TipuriMaterial",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -886,7 +871,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     TipTvaId = table.Column<Guid>(type: "uuid", nullable: false),
                     Sens = table.Column<int>(type: "integer", nullable: false),
                     RandId = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -896,14 +880,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_MapariD300_RanduriD300_RandId",
                         column: x => x.RandId,
                         principalTable: "RanduriD300",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_MapariD300_TipuriTva_TipTvaId",
                         column: x => x.TipTvaId,
                         principalTable: "TipuriTva",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -915,7 +897,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     TipTvaId = table.Column<Guid>(type: "uuid", nullable: false),
                     Sens = table.Column<int>(type: "integer", nullable: false),
                     Tip = table.Column<int>(type: "integer", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -925,8 +906,35 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_MapariD394_TipuriTva_TipTvaId",
                         column: x => x.TipTvaId,
                         principalTable: "TipuriTva",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MapariTvaSaft",
+                columns: table => new
+                {
+                    ID = table.Column<Guid>(type: "uuid", nullable: false),
+                    DinSeed = table.Column<bool>(type: "boolean", nullable: false),
+                    Versiune = table.Column<string>(type: "text", nullable: true),
+                    Sectiune = table.Column<int>(type: "integer", nullable: false),
+                    TipTvaId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Regim = table.Column<int>(type: "integer", nullable: false),
+                    Cota = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
+                    DeImport = table.Column<bool>(type: "boolean", nullable: false),
+                    Sens = table.Column<int>(type: "integer", nullable: false),
+                    Rol = table.Column<int>(type: "integer", nullable: false),
+                    TaxType = table.Column<string>(type: "text", nullable: true),
+                    TaxCode = table.Column<string>(type: "text", nullable: true),
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MapariTvaSaft", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_MapariTvaSaft_TipuriTva_TipTvaId",
+                        column: x => x.TipTvaId,
+                        principalTable: "TipuriTva",
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -942,8 +950,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     CodNc = table.Column<string>(type: "character varying(8)", maxLength: 8, nullable: true),
                     TipTvaImplicitId = table.Column<Guid>(type: "uuid", nullable: true),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -964,8 +972,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_Produse_UnitatiMasura_UnitateMasuraId",
                         column: x => x.UnitateMasuraId,
                         principalTable: "UnitatiMasura",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -977,7 +984,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Cod = table.Column<string>(type: "text", nullable: false),
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     Calitati = table.Column<int>(type: "integer", nullable: false),
-                    Activ = table.Column<bool>(type: "boolean", nullable: false),
                     ContImplicitId = table.Column<Guid>(type: "uuid", nullable: true),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
                     Marca = table.Column<string>(type: "text", nullable: true),
@@ -998,8 +1004,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     JudetId = table.Column<Guid>(type: "uuid", nullable: true),
                     DataSincronizareAnaf = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     InactivFiscal = table.Column<bool>(type: "boolean", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1015,8 +1021,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_Repartitori_Judete_JudetId",
                         column: x => x.JudetId,
                         principalTable: "Judete",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Repartitori_TipuriTva_TipTvaImplicitId",
                         column: x => x.TipTvaImplicitId,
@@ -1034,10 +1039,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Denumire = table.Column<string>(type: "text", nullable: false),
                     ClrType = table.Column<string>(type: "text", nullable: true),
                     TipTvaImplicitId = table.Column<Guid>(type: "uuid", nullable: true),
-                    PosteazaInCub = table.Column<bool>(type: "boolean", nullable: false),
-                    LaturaContPropriu = table.Column<int>(type: "integer", nullable: true),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"Cod\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1062,7 +1064,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ReadState = table.Column<int>(type: "integer", nullable: true),
                     WriteState = table.Column<int>(type: "integer", nullable: true),
                     TypePermissionObjectID = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1087,7 +1088,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DeleteState = table.Column<int>(type: "integer", nullable: true),
                     NavigateState = table.Column<int>(type: "integer", nullable: true),
                     TypePermissionObjectID = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1118,7 +1118,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Autogenerat = table.Column<bool>(type: "boolean", nullable: false),
                     CorecteazaId = table.Column<Guid>(type: "uuid", nullable: true),
                     MotivCorectie = table.Column<int>(type: "integer", nullable: true),
-                    TotalStingere = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    DataExigibilitate = table.Column<DateOnly>(type: "date", nullable: true),
+                    DataPrimire = table.Column<DateOnly>(type: "date", nullable: true),
                     NumarPV = table.Column<string>(type: "text", nullable: true),
                     DataPV = table.Column<DateOnly>(type: "date", nullable: true),
                     TipInstrument = table.Column<int>(type: "integer", nullable: true),
@@ -1142,7 +1143,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Cauza = table.Column<int>(type: "integer", nullable: true),
                     SursaReceptieiId = table.Column<Guid>(type: "uuid", nullable: true),
                     TranzactieReceptieSursaId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1152,8 +1152,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_Documente_Documente_CorecteazaId",
                         column: x => x.CorecteazaId,
                         principalTable: "Documente",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Documente_Documente_DocumentSursaId",
                         column: x => x.DocumentSursaId,
@@ -1163,8 +1162,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_Documente_Documente_LaturaPerecheId",
                         column: x => x.LaturaPerecheId,
                         principalTable: "Documente",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Documente_Repartitori_GestiuneDescarcareId",
                         column: x => x.GestiuneDescarcareId,
@@ -1179,14 +1177,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_Documente_Repartitori_PredatorId",
                         column: x => x.PredatorId,
                         principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Documente_Repartitori_PrimitorId",
                         column: x => x.PrimitorId,
                         principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1206,8 +1202,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DataPunereInFunctiune = table.Column<DateOnly>(type: "date", nullable: true),
                     DataIesire = table.Column<DateOnly>(type: "date", nullable: true),
                     Cautare = table.Column<string>(type: "text", nullable: true, computedColumnSql: "translate(lower(coalesce(\"NumarInventar\", '') || ' ' || coalesce(\"Denumire\", '')), 'ăâîșşțţéèêëáàäöüçñ', 'aaisstteeeeaaaoucn')", stored: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    Activ = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1218,38 +1214,32 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_Imobilizari_ClasificariImobilizari_ClasificareId",
                         column: x => x.ClasificareId,
                         principalTable: "ClasificariImobilizari",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Imobilizari_CoduriEconomice_CodEconomicId",
                         column: x => x.CodEconomicId,
                         principalTable: "CoduriEconomice",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Imobilizari_Repartitori_CentruCostId",
                         column: x => x.CentruCostId,
                         principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Imobilizari_Repartitori_LocId",
                         column: x => x.LocId,
                         principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Imobilizari_Repartitori_ResponsabilId",
                         column: x => x.ResponsabilId,
                         principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Imobilizari_TipuriMaterial_TipMaterialId",
                         column: x => x.TipMaterialId,
                         principalTable: "TipuriMaterial",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1264,7 +1254,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DataExpirare = table.Column<DateOnly>(type: "date", nullable: true),
                     LotFabricatie = table.Column<string>(type: "text", nullable: true),
                     LinieIntrareId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1274,14 +1263,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_Loturi_Produse_ProdusId",
                         column: x => x.ProdusId,
                         principalTable: "Produse",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Loturi_Repartitori_GestiuneId",
                         column: x => x.GestiuneId,
                         principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1307,7 +1294,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ContBancarId = table.Column<Guid>(type: "uuid", nullable: true),
                     BazaContabila = table.Column<string>(type: "character varying(18)", maxLength: 18, nullable: true),
                     RaporteazaCnp = table.Column<bool>(type: "boolean", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1317,14 +1303,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_Societati_Judete_JudetId",
                         column: x => x.JudetId,
                         principalTable: "Judete",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Societati_Repartitori_ContBancarId",
                         column: x => x.ContBancarId,
                         principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1345,9 +1329,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ProiectId = table.Column<Guid>(type: "uuid", nullable: true),
                     CentruCostId = table.Column<Guid>(type: "uuid", nullable: true),
                     Debit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    Credit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    Credit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1356,56 +1338,47 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_SolduriPerioadaContabil_CoduriEconomice_CodEconomicId",
                         column: x => x.CodEconomicId,
                         principalTable: "CoduriEconomice",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_SolduriPerioadaContabil_CoduriFunctionale_CodFunctionalId",
                         column: x => x.CodFunctionalId,
                         principalTable: "CoduriFunctionale",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_SolduriPerioadaContabil_Conturi_ContId",
                         column: x => x.ContId,
                         principalTable: "Conturi",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_SolduriPerioadaContabil_Produse_MaterialId",
                         column: x => x.MaterialId,
                         principalTable: "Produse",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_SolduriPerioadaContabil_Proiecte_ProiectId",
                         column: x => x.ProiectId,
                         principalTable: "Proiecte",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_SolduriPerioadaContabil_Repartitori_CentruCostId",
                         column: x => x.CentruCostId,
                         principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_SolduriPerioadaContabil_Repartitori_RepartitorId",
                         column: x => x.RepartitorId,
                         principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_SolduriPerioadaContabil_SurseFinantare_SursaFinantareId",
                         column: x => x.SursaFinantareId,
                         principalTable: "SurseFinantare",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_SolduriPerioadaContabil_Unitati_UnitateId",
                         column: x => x.UnitateId,
                         principalTable: "Unitati",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1418,7 +1391,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     TipDocumentTintaId = table.Column<Guid>(type: "uuid", nullable: false),
                     InverseazaLaturi = table.Column<bool>(type: "boolean", nullable: false),
                     NaturaFiltru = table.Column<int>(type: "integer", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1428,14 +1400,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiConex_TipuriDocument_TipDocumentSursaId",
                         column: x => x.TipDocumentSursaId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_PoliticiConex_TipuriDocument_TipDocumentTintaId",
                         column: x => x.TipDocumentTintaId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1449,7 +1419,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Cauza = table.Column<int>(type: "integer", nullable: false),
                     ContId = table.Column<Guid>(type: "uuid", nullable: false),
                     ContPersonalId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1459,14 +1428,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiDiferenta_ClaseProduse_ClasaId",
                         column: x => x.ClasaId,
                         principalTable: "ClaseProduse",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_PoliticiDiferenta_Conturi_ContId",
                         column: x => x.ContId,
                         principalTable: "Conturi",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_PoliticiDiferenta_Conturi_ContPersonalId",
                         column: x => x.ContPersonalId,
@@ -1476,8 +1443,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiDiferenta_TipuriDocument_TipDocumentId",
                         column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1491,7 +1457,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ContColectataId = table.Column<Guid>(type: "uuid", nullable: true),
                     ContDePlataId = table.Column<Guid>(type: "uuid", nullable: true),
                     ContDeRecuperatId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1521,8 +1486,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiInchidereTva_TipuriDocument_TipDocumentId",
                         column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1537,7 +1501,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     CodMiscare = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: true),
                     RolTert = table.Column<int>(type: "integer", nullable: false),
                     Motiv = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1547,8 +1510,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiMiscareSaft_TipuriDocument_TipDocumentId",
                         column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1561,7 +1523,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Serie = table.Column<string>(type: "text", nullable: true),
                     UrmatorulNumar = table.Column<int>(type: "integer", nullable: false),
                     Format = table.Column<string>(type: "text", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1571,8 +1532,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiNumerotare_TipuriDocument_TipDocumentId",
                         column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1583,7 +1543,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DinSeed = table.Column<bool>(type: "boolean", nullable: false),
                     TipDocumentId = table.Column<Guid>(type: "uuid", nullable: false),
                     ZileDefault = table.Column<int>(type: "integer", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1593,8 +1552,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiScadenta_TipuriDocument_TipDocumentId",
                         column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1607,9 +1565,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Directie = table.Column<int>(type: "integer", nullable: false),
                     SursaContrapartida = table.Column<int>(type: "integer", nullable: false),
                     ContrapartidaFallbackId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DeclarareIntarziata = table.Column<int>(type: "integer", nullable: false),
                     TolerantaTaxa = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1624,8 +1580,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiTva_TipuriDocument_TipDocumentId",
                         column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1638,7 +1593,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ClasaFiscala = table.Column<int>(type: "integer", nullable: true),
                     ValabilDeLa = table.Column<DateOnly>(type: "date", nullable: true),
                     TipTvaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1648,14 +1602,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiTvaImplicit_TipuriDocument_TipDocumentId",
                         column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_PoliticiTvaImplicit_TipuriTva_TipTvaId",
                         column: x => x.TipTvaId,
                         principalTable: "TipuriTva",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1667,7 +1619,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     TipDocumentId = table.Column<Guid>(type: "uuid", nullable: false),
                     CereClasificatieBugetara = table.Column<bool>(type: "boolean", nullable: false),
                     NaturaInterzisa = table.Column<int>(type: "integer", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1677,8 +1628,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PoliticiValidare_TipuriDocument_TipDocumentId",
                         column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1720,7 +1670,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DimensiuniOverrideCredit_UnitateId = table.Column<Guid>(type: "uuid", nullable: true),
                     DimensiuniOverrideCredit_ProiectId = table.Column<Guid>(type: "uuid", nullable: true),
                     DimensiuniOverrideCredit_CentruCostId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1845,8 +1794,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_ReguliContare_TipuriDocument_TipDocumentId",
                         column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_ReguliContare_TipuriMaterial_TipMaterialId",
                         column: x => x.TipMaterialId,
@@ -1880,7 +1828,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ClasaId = table.Column<Guid>(type: "uuid", nullable: true),
                     TipStoc = table.Column<int>(type: "integer", nullable: false),
                     Semn = table.Column<int>(type: "integer", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1895,8 +1842,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_ReguliStoc_TipuriDocument_TipDocumentId",
                         column: x => x.TipDocumentId,
                         principalTable: "TipuriDocument",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1906,7 +1852,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     ID = table.Column<Guid>(type: "uuid", nullable: false),
                     DviId = table.Column<Guid>(type: "uuid", nullable: false),
                     FacturaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1917,13 +1862,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         column: x => x.DviId,
                         principalTable: "Documente",
                         principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_DviFacturi_Documente_FacturaId",
                         column: x => x.FacturaId,
                         principalTable: "Documente",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1938,7 +1882,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Data = table.Column<DateOnly>(type: "date", nullable: false),
                     InverseazaId = table.Column<Guid>(type: "uuid", nullable: true),
                     Autogenerat = table.Column<bool>(type: "boolean", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -1948,20 +1891,17 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_Imperecheri_Documente_DocumentId",
                         column: x => x.DocumentId,
                         principalTable: "Documente",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Imperecheri_Documente_DocumentStingatorId",
                         column: x => x.DocumentStingatorId,
                         principalTable: "Documente",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_Imperecheri_Imperecheri_InverseazaId",
                         column: x => x.InverseazaId,
                         principalTable: "Imperecheri",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -1978,9 +1918,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Deschisa = table.Column<DateOnly>(type: "date", nullable: false),
                     Debit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     Credit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    Rest = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    Rest = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1989,8 +1927,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_PartideDeschise_Documente_DocumentId",
                         column: x => x.DocumentId,
                         principalTable: "Documente",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -2001,15 +1938,24 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DocumentId = table.Column<Guid>(type: "uuid", nullable: true),
                     Fel = table.Column<short>(type: "smallint", nullable: false),
                     Data = table.Column<DateOnly>(type: "date", nullable: false),
-                    ScrisLa = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    ScrisLa = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Explicatie = table.Column<string>(type: "jsonb", nullable: true),
+                    ExplicatieDinId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Tranzactie", x => x.ID);
+                    table.CheckConstraint("CK_Tranzactie_Explicatie", "\"Explicatie\" IS NULL OR (\"ExplicatieDinId\" IS NULL AND \"DocumentId\" IS NOT NULL AND \"Fel\" IN (1, 3))");
+                    table.CheckConstraint("CK_Tranzactie_ExplicatieDin", "\"ExplicatieDinId\" IS NULL OR (\"DocumentId\" IS NOT NULL AND \"Fel\" = 3)");
                     table.ForeignKey(
                         name: "FK_Tranzactie_Documente_DocumentId",
                         column: x => x.DocumentId,
                         principalTable: "Documente",
+                        principalColumn: "ID");
+                    table.ForeignKey(
+                        name: "FK_Tranzactie_Tranzactie_ExplicatieDinId",
+                        column: x => x.ExplicatieDinId,
+                        principalTable: "Tranzactie",
                         principalColumn: "ID");
                 });
 
@@ -2027,6 +1973,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Valoare = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     TipTvaId = table.Column<Guid>(type: "uuid", nullable: true),
                     ValoareTva = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    TvaCules = table.Column<bool>(type: "boolean", nullable: false),
                     AngajamentId = table.Column<Guid>(type: "uuid", nullable: true),
                     ImobilizareId = table.Column<Guid>(type: "uuid", nullable: true),
                     ValoareFiscala = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
@@ -2049,6 +1996,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     SursaFinantareId = table.Column<Guid>(type: "uuid", nullable: true),
                     CodFunctionalId = table.Column<Guid>(type: "uuid", nullable: true),
                     ProiectId = table.Column<Guid>(type: "uuid", nullable: true),
+                    LinieAvansId = table.Column<Guid>(type: "uuid", nullable: true),
                     CodCpv = table.Column<string>(type: "text", nullable: true),
                     Fel = table.Column<int>(type: "integer", nullable: true),
                     LinieSursaReceptieId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -2064,12 +2012,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     DurataFiscalaLuni = table.Column<int>(type: "integer", nullable: true),
                     CategorieFiscala = table.Column<int>(type: "integer", nullable: true),
                     UtilizareExclusiva = table.Column<bool>(type: "boolean", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_DocumentDetalii", x => x.ID);
+                    table.CheckConstraint("CK_DocumentDetalii_TvaCules", "NOT \"TvaCules\" OR \"ValoareTva\" <> 0");
                     table.ForeignKey(
                         name: "FK_DocumentDetalii_Angajamente_AngajamentId",
                         column: x => x.AngajamentId,
@@ -2096,11 +2044,15 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         principalTable: "Conturi",
                         principalColumn: "ID");
                     table.ForeignKey(
+                        name: "FK_DocumentDetalii_DocumentDetalii_LinieAvansId",
+                        column: x => x.LinieAvansId,
+                        principalTable: "DocumentDetalii",
+                        principalColumn: "ID");
+                    table.ForeignKey(
                         name: "FK_DocumentDetalii_DocumentDetalii_LinieSursaId",
                         column: x => x.LinieSursaId,
                         principalTable: "DocumentDetalii",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_DocumentDetalii_Documente_DocumentId",
                         column: x => x.DocumentId,
@@ -2111,8 +2063,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_DocumentDetalii_Imobilizari_ImobilizareId",
                         column: x => x.ImobilizareId,
                         principalTable: "Imobilizari",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_DocumentDetalii_Loturi_LotId",
                         column: x => x.LotId,
@@ -2157,8 +2108,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_DocumentDetalii_TipuriMaterial_TipMaterialId",
                         column: x => x.TipMaterialId,
                         principalTable: "TipuriMaterial",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "ID");
                     table.ForeignKey(
                         name: "FK_DocumentDetalii_TipuriTva_TipTvaId",
                         column: x => x.TipTvaId,
@@ -2174,12 +2124,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     An = table.Column<int>(type: "integer", nullable: false),
                     Luna = table.Column<int>(type: "integer", nullable: false),
                     LotId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RepartitorId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TipStoc = table.Column<int>(type: "integer", nullable: false),
+                    ContId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProdusId = table.Column<Guid>(type: "uuid", nullable: false),
+                    GestiuneId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Deschisa = table.Column<DateOnly>(type: "date", nullable: false),
                     Cantitate = table.Column<decimal>(type: "numeric(18,3)", precision: 18, scale: 3, nullable: false),
-                    Valoare = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
+                    Valoare = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -2188,304 +2138,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         name: "FK_SolduriPerioadaStoc_Loturi_LotId",
                         column: x => x.LotId,
                         principalTable: "Loturi",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_SolduriPerioadaStoc_Repartitori_RepartitorId",
-                        column: x => x.RepartitorId,
-                        principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "RegistruContabil",
-                columns: table => new
-                {
-                    ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    Data = table.Column<DateOnly>(type: "date", nullable: false),
-                    NumarNota = table.Column<string>(type: "text", nullable: true),
-                    ContDebitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ContCreditId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Valoare = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    DimensiuniDebit_RepartitorId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniDebit_MaterialId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniDebit_CodFunctionalId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniDebit_CodEconomicId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniDebit_SursaFinantareId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniDebit_UnitateId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniDebit_ProiectId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniDebit_CentruCostId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniCredit_RepartitorId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniCredit_MaterialId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniCredit_CodFunctionalId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniCredit_CodEconomicId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniCredit_SursaFinantareId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniCredit_UnitateId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniCredit_ProiectId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DimensiuniCredit_CentruCostId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Storno = table.Column<bool>(type: "boolean", nullable: false),
-                    DocumentId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DetaliuId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RegistruContabil", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_CoduriEconomice_DimensiuniCredit_CodEconom~",
-                        column: x => x.DimensiuniCredit_CodEconomicId,
-                        principalTable: "CoduriEconomice",
                         principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_CoduriEconomice_DimensiuniDebit_CodEconomi~",
-                        column: x => x.DimensiuniDebit_CodEconomicId,
-                        principalTable: "CoduriEconomice",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_CoduriFunctionale_DimensiuniCredit_CodFunc~",
-                        column: x => x.DimensiuniCredit_CodFunctionalId,
-                        principalTable: "CoduriFunctionale",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_CoduriFunctionale_DimensiuniDebit_CodFunct~",
-                        column: x => x.DimensiuniDebit_CodFunctionalId,
-                        principalTable: "CoduriFunctionale",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Conturi_ContCreditId",
-                        column: x => x.ContCreditId,
-                        principalTable: "Conturi",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Conturi_ContDebitId",
-                        column: x => x.ContDebitId,
-                        principalTable: "Conturi",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_DocumentDetalii_DetaliuId",
-                        column: x => x.DetaliuId,
-                        principalTable: "DocumentDetalii",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Documente_DocumentId",
-                        column: x => x.DocumentId,
-                        principalTable: "Documente",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Produse_DimensiuniCredit_MaterialId",
-                        column: x => x.DimensiuniCredit_MaterialId,
-                        principalTable: "Produse",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Produse_DimensiuniDebit_MaterialId",
-                        column: x => x.DimensiuniDebit_MaterialId,
-                        principalTable: "Produse",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Proiecte_DimensiuniCredit_ProiectId",
-                        column: x => x.DimensiuniCredit_ProiectId,
-                        principalTable: "Proiecte",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Proiecte_DimensiuniDebit_ProiectId",
-                        column: x => x.DimensiuniDebit_ProiectId,
-                        principalTable: "Proiecte",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Repartitori_DimensiuniCredit_CentruCostId",
-                        column: x => x.DimensiuniCredit_CentruCostId,
-                        principalTable: "Repartitori",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Repartitori_DimensiuniCredit_RepartitorId",
-                        column: x => x.DimensiuniCredit_RepartitorId,
-                        principalTable: "Repartitori",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Repartitori_DimensiuniDebit_CentruCostId",
-                        column: x => x.DimensiuniDebit_CentruCostId,
-                        principalTable: "Repartitori",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Repartitori_DimensiuniDebit_RepartitorId",
-                        column: x => x.DimensiuniDebit_RepartitorId,
-                        principalTable: "Repartitori",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_SurseFinantare_DimensiuniCredit_SursaFinan~",
-                        column: x => x.DimensiuniCredit_SursaFinantareId,
-                        principalTable: "SurseFinantare",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_SurseFinantare_DimensiuniDebit_SursaFinant~",
-                        column: x => x.DimensiuniDebit_SursaFinantareId,
-                        principalTable: "SurseFinantare",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Unitati_DimensiuniCredit_UnitateId",
-                        column: x => x.DimensiuniCredit_UnitateId,
-                        principalTable: "Unitati",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruContabil_Unitati_DimensiuniDebit_UnitateId",
-                        column: x => x.DimensiuniDebit_UnitateId,
-                        principalTable: "Unitati",
-                        principalColumn: "ID");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "RegistruImobilizari",
-                columns: table => new
-                {
-                    ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    Data = table.Column<DateOnly>(type: "date", nullable: false),
-                    ImobilizareId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Fel = table.Column<int>(type: "integer", nullable: false),
-                    Valoare = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    ValoareFiscala = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    Amortizare = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    AmortizareFiscala = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    AmortizareDeductibila = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    Luni = table.Column<int>(type: "integer", nullable: false),
-                    Metoda = table.Column<int>(type: "integer", nullable: true),
-                    DurataLuni = table.Column<int>(type: "integer", nullable: true),
-                    ValoareReziduala = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
-                    MetodaFiscala = table.Column<int>(type: "integer", nullable: true),
-                    DurataFiscalaLuni = table.Column<int>(type: "integer", nullable: true),
-                    CategorieFiscala = table.Column<int>(type: "integer", nullable: true),
-                    UtilizareExclusiva = table.Column<bool>(type: "boolean", nullable: true),
-                    RepartitorId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DocumentId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DetaliuId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Storno = table.Column<bool>(type: "boolean", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RegistruImobilizari", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_RegistruImobilizari_DocumentDetalii_DetaliuId",
-                        column: x => x.DetaliuId,
-                        principalTable: "DocumentDetalii",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_RegistruImobilizari_Documente_DocumentId",
-                        column: x => x.DocumentId,
-                        principalTable: "Documente",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_RegistruImobilizari_Imobilizari_ImobilizareId",
-                        column: x => x.ImobilizareId,
-                        principalTable: "Imobilizari",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_RegistruImobilizari_Repartitori_RepartitorId",
-                        column: x => x.RepartitorId,
-                        principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "RegistruStoc",
-                columns: table => new
-                {
-                    ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    Data = table.Column<DateOnly>(type: "date", nullable: false),
-                    TipStoc = table.Column<int>(type: "integer", nullable: false),
-                    LotId = table.Column<Guid>(type: "uuid", nullable: false),
-                    RepartitorId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Cantitate = table.Column<decimal>(type: "numeric(18,3)", precision: 18, scale: 3, nullable: false),
-                    Valoare = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    Storno = table.Column<bool>(type: "boolean", nullable: false),
-                    DocumentId = table.Column<Guid>(type: "uuid", nullable: true),
-                    DetaliuId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RegistruStoc", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_RegistruStoc_DocumentDetalii_DetaliuId",
-                        column: x => x.DetaliuId,
-                        principalTable: "DocumentDetalii",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruStoc_Documente_DocumentId",
-                        column: x => x.DocumentId,
-                        principalTable: "Documente",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruStoc_Loturi_LotId",
-                        column: x => x.LotId,
-                        principalTable: "Loturi",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_RegistruStoc_Repartitori_RepartitorId",
-                        column: x => x.RepartitorId,
-                        principalTable: "Repartitori",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "RegistruTva",
-                columns: table => new
-                {
-                    ID = table.Column<Guid>(type: "uuid", nullable: false),
-                    Data = table.Column<DateOnly>(type: "date", nullable: false),
-                    PerioadaAn = table.Column<int>(type: "integer", nullable: false),
-                    PerioadaLuna = table.Column<int>(type: "integer", nullable: false),
-                    ScrisLa = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Sens = table.Column<int>(type: "integer", nullable: false),
-                    DocumentId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DetaliuId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PartenerId = table.Column<Guid>(type: "uuid", nullable: true),
-                    TipTvaId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Regim = table.Column<int>(type: "integer", nullable: false),
-                    Cota = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
-                    Baza = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    Tva = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    Storno = table.Column<bool>(type: "boolean", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_RegistruTva", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_RegistruTva_DocumentDetalii_DetaliuId",
-                        column: x => x.DetaliuId,
-                        principalTable: "DocumentDetalii",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_RegistruTva_Documente_DocumentId",
-                        column: x => x.DocumentId,
-                        principalTable: "Documente",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_RegistruTva_Repartitori_PartenerId",
-                        column: x => x.PartenerId,
-                        principalTable: "Repartitori",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_RegistruTva_TipuriTva_TipTvaId",
-                        column: x => x.TipTvaId,
-                        principalTable: "TipuriTva",
-                        principalColumn: "ID",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -2505,7 +2158,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Enabled = table.Column<bool>(type: "boolean", nullable: true),
                     Method = table.Column<string>(type: "text", nullable: true),
                     StateID = table.Column<Guid>(type: "uuid", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -2539,7 +2191,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Caption = table.Column<string>(type: "text", nullable: true),
                     MarkerValue = table.Column<string>(type: "text", nullable: true),
                     TargetObjectCriteria = table.Column<string>(type: "text", nullable: true),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -2563,7 +2214,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     TargetStateID = table.Column<Guid>(type: "uuid", nullable: true),
                     Index = table.Column<int>(type: "integer", nullable: false),
                     SaveAndCloseView = table.Column<bool>(type: "boolean", nullable: false),
-                    GCRecord = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     OptimisticLockField = table.Column<int>(type: "integer", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
@@ -2611,15 +2261,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_ClaseProduse_Cod",
                 table: "ClaseProduse",
                 column: "Cod",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ClasificariImobilizari_Cod",
                 table: "ClasificariImobilizari",
                 column: "Cod",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Conturi_ParinteId",
@@ -2630,8 +2278,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_Conturi_Simbol",
                 table: "Conturi",
                 column: "Simbol",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DepuneriDeclaratii_Formular_Perioada_VersiuneExportata",
+                table: "DepuneriDeclaratii",
+                columns: new[] { "Formular", "Perioada", "VersiuneExportata" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_DocumentDetalii_AngajamentId",
@@ -2677,6 +2330,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_DocumentDetalii_ImobilizareId",
                 table: "DocumentDetalii",
                 column: "ImobilizareId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DocumentDetalii_LinieAvansId",
+                table: "DocumentDetalii",
+                column: "LinieAvansId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DocumentDetalii_LinieSursaId",
@@ -2736,14 +2394,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Documente_CorecteazaId",
                 table: "Documente",
-                column: "CorecteazaId",
-                filter: "\"GCRecord\" = 0");
+                column: "CorecteazaId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Documente_DataInregistrare",
                 table: "Documente",
-                column: "DataInregistrare",
-                filter: "\"GCRecord\" = 0");
+                column: "DataInregistrare");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Documente_DocumentSursaId",
@@ -2779,8 +2435,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_DviFacturi_DviId_FacturaId",
                 table: "DviFacturi",
                 columns: new[] { "DviId", "FacturaId" },
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_DviFacturi_FacturaId",
@@ -2796,11 +2451,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_Events_RecurrencePatternID",
                 table: "Events",
                 column: "RecurrencePatternID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_HCategories_ParentID",
-                table: "HCategories",
-                column: "ParentID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Imobilizari_CentruCostId",
@@ -2826,8 +2476,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_Imobilizari_NumarInventar",
                 table: "Imobilizari",
                 column: "NumarInventar",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Imobilizari_ResponsabilId",
@@ -2842,8 +2491,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Imperecheri_Data",
                 table: "Imperecheri",
-                column: "Data",
-                filter: "\"GCRecord\" = 0");
+                column: "Data");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Imperecheri_DocumentId",
@@ -2859,8 +2507,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_Imperecheri_InverseazaId",
                 table: "Imperecheri",
                 column: "InverseazaId",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_InchideriPerioade_PerioadaId",
@@ -2871,8 +2518,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_Judete_Cod",
                 table: "Judete",
                 column: "Cod",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Loturi_GestiuneId",
@@ -2893,15 +2539,24 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_MapariD300_TipTvaId_Sens_RandId",
                 table: "MapariD300",
                 columns: new[] { "TipTvaId", "Sens", "RandId" },
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_MapariD394_TipTvaId_Sens",
                 table: "MapariD394",
                 columns: new[] { "TipTvaId", "Sens" },
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MapariTvaSaft_TipTvaId",
+                table: "MapariTvaSaft",
+                column: "TipTvaId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MapariTvaSaft_Versiune_Sectiune_TipTvaId_Regim_Cota_DeImpor~",
+                table: "MapariTvaSaft",
+                columns: new[] { "Versiune", "Sectiune", "TipTvaId", "Regim", "Cota", "DeImport", "Sens", "Rol" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_MigrareLegaturi_Tabela_CheieLegacy",
@@ -2934,8 +2589,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_PerioadeFiscale_An_Luna",
                 table: "PerioadeFiscale",
                 columns: new[] { "An", "Luna" },
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PermissionPolicyActionPermissionObject_RoleID",
@@ -2997,15 +2651,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_PoliticiAmortizare_TipMaterialId",
                 table: "PoliticiAmortizare",
                 column: "TipMaterialId",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiConex_TipDocumentSursaId",
                 table: "PoliticiConex",
                 column: "TipDocumentSursaId",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiConex_TipDocumentTintaId",
@@ -3031,15 +2683,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_PoliticiDiferenta_TipDocumentId_Cauza_ClasaId",
                 table: "PoliticiDiferenta",
                 columns: new[] { "TipDocumentId", "Cauza", "ClasaId" },
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiInchidere_Fel",
                 table: "PoliticiInchidere",
                 column: "Fel",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiInchidereTva_ContColectataId",
@@ -3065,36 +2715,32 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_PoliticiInchidereTva_TipDocumentId",
                 table: "PoliticiInchidereTva",
                 column: "TipDocumentId",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiMiscareSaft_TipDocumentId_TipStoc",
                 table: "PoliticiMiscareSaft",
                 columns: new[] { "TipDocumentId", "TipStoc" },
                 unique: true,
-                filter: "\"Semn\" IS NULL AND \"GCRecord\" = 0");
+                filter: "\"Semn\" IS NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiMiscareSaft_TipDocumentId_TipStoc_Semn",
                 table: "PoliticiMiscareSaft",
                 columns: new[] { "TipDocumentId", "TipStoc", "Semn" },
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiNumerotare_TipDocumentId",
                 table: "PoliticiNumerotare",
                 column: "TipDocumentId",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiScadenta_TipDocumentId",
                 table: "PoliticiScadenta",
                 column: "TipDocumentId",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiTva_ContrapartidaFallbackId",
@@ -3105,15 +2751,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_PoliticiTva_TipDocumentId",
                 table: "PoliticiTva",
                 column: "TipDocumentId",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PoliticiTvaImplicit_TipDocumentId_ClasaFiscala_ValabilDeLa",
                 table: "PoliticiTvaImplicit",
                 columns: new[] { "TipDocumentId", "ClasaFiscala", "ValabilDeLa" },
-                unique: true,
-                filter: "\"GCRecord\" = 0")
+                unique: true)
                 .Annotation("Npgsql:NullsDistinct", false);
 
             migrationBuilder.CreateIndex(
@@ -3125,8 +2769,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_PoliticiValidare_TipDocumentId",
                 table: "PoliticiValidare",
                 column: "TipDocumentId",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Produse_TipMaterialId",
@@ -3147,8 +2790,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_RanduriD300_Cod",
                 table: "RanduriD300",
                 column: "Cod",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_RanduriD300_OglindaAId",
@@ -3161,182 +2803,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 column: "ParinteId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_ContCreditId",
-                table: "RegistruContabil",
-                column: "ContCreditId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_ContDebitId",
-                table: "RegistruContabil",
-                column: "ContDebitId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_Data",
-                table: "RegistruContabil",
-                column: "Data",
-                filter: "\"GCRecord\" = 0");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DetaliuId",
-                table: "RegistruContabil",
-                column: "DetaliuId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniCredit_CentruCostId",
-                table: "RegistruContabil",
-                column: "DimensiuniCredit_CentruCostId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniCredit_CodEconomicId",
-                table: "RegistruContabil",
-                column: "DimensiuniCredit_CodEconomicId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniCredit_CodFunctionalId",
-                table: "RegistruContabil",
-                column: "DimensiuniCredit_CodFunctionalId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniCredit_MaterialId",
-                table: "RegistruContabil",
-                column: "DimensiuniCredit_MaterialId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniCredit_ProiectId",
-                table: "RegistruContabil",
-                column: "DimensiuniCredit_ProiectId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniCredit_RepartitorId",
-                table: "RegistruContabil",
-                column: "DimensiuniCredit_RepartitorId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniCredit_SursaFinantareId",
-                table: "RegistruContabil",
-                column: "DimensiuniCredit_SursaFinantareId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniCredit_UnitateId",
-                table: "RegistruContabil",
-                column: "DimensiuniCredit_UnitateId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniDebit_CentruCostId",
-                table: "RegistruContabil",
-                column: "DimensiuniDebit_CentruCostId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniDebit_CodEconomicId",
-                table: "RegistruContabil",
-                column: "DimensiuniDebit_CodEconomicId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniDebit_CodFunctionalId",
-                table: "RegistruContabil",
-                column: "DimensiuniDebit_CodFunctionalId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniDebit_MaterialId",
-                table: "RegistruContabil",
-                column: "DimensiuniDebit_MaterialId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniDebit_ProiectId",
-                table: "RegistruContabil",
-                column: "DimensiuniDebit_ProiectId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniDebit_RepartitorId",
-                table: "RegistruContabil",
-                column: "DimensiuniDebit_RepartitorId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniDebit_SursaFinantareId",
-                table: "RegistruContabil",
-                column: "DimensiuniDebit_SursaFinantareId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DimensiuniDebit_UnitateId",
-                table: "RegistruContabil",
-                column: "DimensiuniDebit_UnitateId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruContabil_DocumentId",
-                table: "RegistruContabil",
-                column: "DocumentId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruImobilizari_DetaliuId",
-                table: "RegistruImobilizari",
-                column: "DetaliuId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruImobilizari_DocumentId",
-                table: "RegistruImobilizari",
-                column: "DocumentId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruImobilizari_ImobilizareId",
-                table: "RegistruImobilizari",
-                column: "ImobilizareId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruImobilizari_RepartitorId",
-                table: "RegistruImobilizari",
-                column: "RepartitorId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruStoc_Data",
-                table: "RegistruStoc",
-                column: "Data",
-                filter: "\"GCRecord\" = 0");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruStoc_DetaliuId",
-                table: "RegistruStoc",
-                column: "DetaliuId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruStoc_DocumentId",
-                table: "RegistruStoc",
-                column: "DocumentId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruStoc_LotId",
-                table: "RegistruStoc",
-                column: "LotId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruStoc_RepartitorId",
-                table: "RegistruStoc",
-                column: "RepartitorId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruTva_DetaliuId",
-                table: "RegistruTva",
-                column: "DetaliuId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruTva_DocumentId",
-                table: "RegistruTva",
-                column: "DocumentId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruTva_PartenerId",
-                table: "RegistruTva",
-                column: "PartenerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruTva_PerioadaAn_PerioadaLuna",
-                table: "RegistruTva",
-                columns: new[] { "PerioadaAn", "PerioadaLuna" },
-                filter: "\"GCRecord\" = 0");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_RegistruTva_TipTvaId",
-                table: "RegistruTva",
-                column: "TipTvaId");
+                name: "IX_RefuzuriSeed_Tip_Cheie",
+                table: "RefuzuriSeed",
+                columns: new[] { "Tip", "Cheie" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReguliContare_ContCreditId",
@@ -3472,14 +2942,19 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_ReguliContare_TipDocumentId_TipMaterialId_NaturaFiltru_Semn~",
                 table: "ReguliContare",
                 columns: new[] { "TipDocumentId", "TipMaterialId", "NaturaFiltru", "SemnFiltru" },
-                unique: true,
-                filter: "\"GCRecord\" = 0")
+                unique: true)
                 .Annotation("Npgsql:NullsDistinct", false);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReguliContare_TipMaterialId",
                 table: "ReguliContare",
                 column: "TipMaterialId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ReguliDeductibilitate_Categorie_Fel_DeLa",
+                table: "ReguliDeductibilitate",
+                columns: new[] { "Categorie", "Fel", "DeLa" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReguliStoc_ClasaId",
@@ -3490,8 +2965,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_ReguliStoc_TipDocumentId_Latura_ClasaId",
                 table: "ReguliStoc",
                 columns: new[] { "TipDocumentId", "Latura", "ClasaId" },
-                unique: true,
-                filter: "\"GCRecord\" = 0")
+                unique: true)
                 .Annotation("Npgsql:NullsDistinct", false);
 
             migrationBuilder.CreateIndex(
@@ -3587,20 +3061,15 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: new[] { "An", "Luna" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_SolduriPerioadaStoc_An_Luna_LotId_RepartitorId_TipStoc",
+                name: "IX_SolduriPerioadaStoc_An_Luna_LotId_ContId_ProdusId_GestiuneId",
                 table: "SolduriPerioadaStoc",
-                columns: new[] { "An", "Luna", "LotId", "RepartitorId", "TipStoc" },
+                columns: new[] { "An", "Luna", "LotId", "ContId", "ProdusId", "GestiuneId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_SolduriPerioadaStoc_LotId",
                 table: "SolduriPerioadaStoc",
                 column: "LotId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SolduriPerioadaStoc_RepartitorId",
-                table: "SolduriPerioadaStoc",
-                column: "RepartitorId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_StateMachineAppearances_StateID",
@@ -3631,15 +3100,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_TipuriDocument_ClrType",
                 table: "TipuriDocument",
                 column: "ClrType",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_TipuriDocument_Cod",
                 table: "TipuriDocument",
                 column: "Cod",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_TipuriDocument_TipTvaImplicitId",
@@ -3655,8 +3122,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_TipuriMaterial_Cod",
                 table: "TipuriMaterial",
                 column: "Cod",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_TipuriMaterial_ContImplicitId",
@@ -3667,8 +3133,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_TipuriTva_Cod",
                 table: "TipuriTva",
                 column: "Cod",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_TipuriTva_ContTvaColectatId",
@@ -3691,6 +3156,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 column: "DocumentId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Tranzactie_ExplicatieDinId",
+                table: "Tranzactie",
+                column: "ExplicatieDinId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Tranzactie_Fel",
                 table: "Tranzactie",
                 column: "Fel",
@@ -3701,8 +3171,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "IX_UnitatiMasura_Cod",
                 table: "UnitatiMasura",
                 column: "Cod",
-                unique: true,
-                filter: "\"GCRecord\" = 0");
+                unique: true);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_StateMachineAppearances_StateMachineStates_StateID",
@@ -3719,7 +3188,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 principalTable: "StateMachineStates",
                 principalColumn: "ID");
 
-            // S-D2: Postare partiționată pe Spatiu, cheia (Spatiu, ID), FK-urile și indecșii pe partiții.
+            // S-D2: Postare partiționată pe Spatiu, cheia (Spatiu, ID), FK-urile și indecșii pe partiții (S-r4).
             migrationBuilder.Sql("""
                 CREATE TABLE "Postare" (
                     "ID" uuid NOT NULL,
@@ -3756,6 +3225,17 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     "Cantitate" numeric(18,3) NOT NULL,
                     "ValoareValuta" numeric(18,2) NOT NULL,
                     "Valoare" numeric(18,2) NOT NULL,
+                    "CotaTva" numeric(18,4) NULL,
+                    "DataDocument" date NULL,
+                    "DataExigibilitate" date NULL,
+                    "DataInregistrare" date NULL,
+                    "DataPrimire" date NULL,
+                    "DeImport" boolean NULL,
+                    "DocumentFiscalId" uuid NULL,
+                    "InversaTehnica" boolean NOT NULL DEFAULT false,
+                    "PerioadaD394" integer NULL,
+                    "RegimTva" smallint NULL,
+                    "RegularizareD300" boolean NOT NULL DEFAULT false,
                     CONSTRAINT "PK_Postare" PRIMARY KEY ("Spatiu", "ID"),
                     CONSTRAINT "CK_Postare_FelUnitate" CHECK (
                         ("Unitate" IS NULL AND "FelUnitate" IS NULL AND "UnitateDeschisa" IS NULL)
@@ -3766,7 +3246,16 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         (("InversaDinId" IS NULL AND "InversaDinSpatiu" IS NULL)
                             OR ("InversaDinId" IS NOT NULL AND "InversaDinSpatiu" IS NOT NULL AND "InversaDinSpatiu" IN (1, 2)))
                         AND (("SuportId" IS NULL AND "SuportSpatiu" IS NULL)
-                            OR ("SuportId" IS NOT NULL AND "SuportSpatiu" IS NOT NULL AND "SuportSpatiu" IN (1, 2))))
+                            OR ("SuportId" IS NOT NULL AND "SuportSpatiu" IS NOT NULL AND "SuportSpatiu" IN (1, 2)))),
+                    CONSTRAINT "CK_Postare_FiscalComplet" CHECK (
+                        "TipTvaId" IS NULL OR (
+                            "DocumentId" IS NOT NULL AND "LinieId" IS NOT NULL AND
+                            "SensTva" IS NOT NULL AND "RolTva" IS NOT NULL AND
+                            "RegimTva" IS NOT NULL AND "CotaTva" IS NOT NULL AND "DeImport" IS NOT NULL AND
+                            "DocumentFiscalId" IS NOT NULL AND "DataDocument" IS NOT NULL AND
+                            "DataExigibilitate" IS NOT NULL AND "DataInregistrare" IS NOT NULL AND
+                            "PerioadaDeclarare" IS NOT NULL AND "PerioadaD394" IS NOT NULL AND
+                            ("SensTva" <> 1 OR "DataPrimire" IS NOT NULL)))
                 ) PARTITION BY LIST ("Spatiu");
                 CREATE TABLE "Postare_Contabil" PARTITION OF "Postare" FOR VALUES IN (1);
                 CREATE TABLE "Postare_Stoc" PARTITION OF "Postare" FOR VALUES IN (2);
@@ -3796,6 +3285,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         FOREIGN KEY ("Unitate") REFERENCES "Loturi" ("ID");
                 CREATE INDEX "IX_Postare_Stoc_Produs_Data" ON "Postare_Stoc" ("Produs", "Data")
                     INCLUDE ("Cantitate", "Valoare", "Gestiune", "Unitate");
+                CREATE INDEX "IX_Postare_Stoc_Data" ON "Postare_Stoc" ("Data");
+                CREATE INDEX "IX_Postare_Stoc_PerioadaDeclarare_TipTvaId" ON "Postare_Stoc"
+                    ("PerioadaDeclarare", "TipTvaId") WHERE "PerioadaDeclarare" IS NOT NULL;
                 CREATE INDEX "IX_Postare_Contabil_Partener_Cont_Data" ON "Postare_Contabil"
                     ("Partener", "Cont", "Data") WHERE "Partener" IS NOT NULL;
                 CREATE INDEX "IX_Postare_Contabil_Data" ON "Postare_Contabil" ("Data");
@@ -3805,6 +3297,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 CREATE INDEX "IX_Postare_TranzactieId" ON "Postare" ("TranzactieId");
                 CREATE INDEX "IX_Postare_Suport" ON "Postare" ("SuportSpatiu", "SuportId") WHERE "SuportId" IS NOT NULL;
                 CREATE INDEX "IX_Postare_InversaDin" ON "Postare" ("InversaDinSpatiu", "InversaDinId") WHERE "InversaDinId" IS NOT NULL;
+                CREATE INDEX "IX_Postare_PerioadaD394" ON "Postare" ("PerioadaD394") WHERE "PerioadaD394" IS NOT NULL;
+                CREATE INDEX "IX_Postare_DataExigibilitate" ON "Postare" ("DataExigibilitate") WHERE "DataExigibilitate" IS NOT NULL;
+                CREATE INDEX "IX_Postare_Unitate_Data" ON "Postare" ("Unitate", "Data") WHERE "Unitate" IS NOT NULL;
                 """);
 
             // 092a: identitatea partidei, aceeași cu N.Unitate.DeschidePartida (SC-CIT-53).
@@ -3828,7 +3323,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("DROP FUNCTION cub_partida_id(uuid, uuid, uuid)");
+            migrationBuilder.Sql("""
+                DROP FUNCTION cub_partida_id(uuid, uuid, uuid);
+                DROP TABLE "Postare";
+                """);
 
             migrationBuilder.DropForeignKey(
                 name: "FK_StateMachines_StateMachineStates_StartStateID",
@@ -3841,6 +3339,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "DashboardData");
 
             migrationBuilder.DropTable(
+                name: "DepuneriDeclaratii");
+
+            migrationBuilder.DropTable(
+                name: "DocumentDetalii");
+
+            migrationBuilder.DropTable(
                 name: "DviFacturi");
 
             migrationBuilder.DropTable(
@@ -3848,9 +3352,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
             migrationBuilder.DropTable(
                 name: "FileData");
-
-            migrationBuilder.DropTable(
-                name: "HCategories");
 
             migrationBuilder.DropTable(
                 name: "Imperecheri");
@@ -3863,6 +3364,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
             migrationBuilder.DropTable(
                 name: "MapariD394");
+
+            migrationBuilder.DropTable(
+                name: "MapariTvaSaft");
 
             migrationBuilder.DropTable(
                 name: "MigrareLegaturi");
@@ -3925,19 +3429,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "PoliticiValidare");
 
             migrationBuilder.DropTable(
-                name: "Postare");
-
-            migrationBuilder.DropTable(
-                name: "RegistruContabil");
-
-            migrationBuilder.DropTable(
-                name: "RegistruImobilizari");
-
-            migrationBuilder.DropTable(
-                name: "RegistruStoc");
-
-            migrationBuilder.DropTable(
-                name: "RegistruTva");
+                name: "RefuzuriSeed");
 
             migrationBuilder.DropTable(
                 name: "ReguliContare");
@@ -3973,6 +3465,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "AuditEFCoreWeakReferences");
 
             migrationBuilder.DropTable(
+                name: "Angajamente");
+
+            migrationBuilder.DropTable(
+                name: "Imobilizari");
+
+            migrationBuilder.DropTable(
                 name: "Events");
 
             migrationBuilder.DropTable(
@@ -3997,31 +3495,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "Tranzactie");
 
             migrationBuilder.DropTable(
-                name: "DocumentDetalii");
-
-            migrationBuilder.DropTable(
                 name: "TipuriDocument");
 
             migrationBuilder.DropTable(
-                name: "Unitati");
-
-            migrationBuilder.DropTable(
-                name: "PermissionPolicyRoleBase");
-
-            migrationBuilder.DropTable(
-                name: "Angajamente");
-
-            migrationBuilder.DropTable(
                 name: "CoduriFunctionale");
-
-            migrationBuilder.DropTable(
-                name: "Documente");
-
-            migrationBuilder.DropTable(
-                name: "Imobilizari");
-
-            migrationBuilder.DropTable(
-                name: "Loturi");
 
             migrationBuilder.DropTable(
                 name: "Proiecte");
@@ -4030,10 +3507,22 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 name: "SurseFinantare");
 
             migrationBuilder.DropTable(
+                name: "Unitati");
+
+            migrationBuilder.DropTable(
+                name: "Loturi");
+
+            migrationBuilder.DropTable(
                 name: "ClasificariImobilizari");
 
             migrationBuilder.DropTable(
                 name: "CoduriEconomice");
+
+            migrationBuilder.DropTable(
+                name: "PermissionPolicyRoleBase");
+
+            migrationBuilder.DropTable(
+                name: "Documente");
 
             migrationBuilder.DropTable(
                 name: "Produse");

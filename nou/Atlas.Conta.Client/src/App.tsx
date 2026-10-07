@@ -57,7 +57,7 @@ import { AmoLista } from './felii/amo/AmoLista';
 import { AmoDetaliu } from './felii/amo/AmoDetaliu';
 import { Imobilizari } from './felii/imobilizari/Imobilizari';
 import { ImobilizareDetaliu } from './felii/imobilizari/ImobilizareDetaliu';
-import { RegistruImobilizari } from './felii/imobilizari/RegistruImobilizari';
+import { PaginaRegistruImobilizari } from './felii/imobilizari/RegistruImobilizari';
 import { Parteneri } from './felii/nomenclatoare/Parteneri';
 import { PartenerDetaliu } from './felii/nomenclatoare/PartenerDetaliu';
 import { Produse } from './felii/nomenclatoare/Produse';
@@ -198,7 +198,7 @@ export function App() {
         <Route path="/amo/:id" element={<AmoDetaliu />} />
         <Route path="/imobilizari" element={<Imobilizari />} />
         <Route path="/imobilizari/nou" element={<ImobilizareDetaliu key="nou" />} />
-        <Route path="/imobilizari/registru" element={<RegistruImobilizari />} />
+        <Route path="/imobilizari/registru" element={<PaginaRegistruImobilizari />} />
         <Route path="/imobilizari/:id" element={<ImobilizareDetaliu />} />
         <Route path="/diagnostic-tva" element={<DiagnosticTva />} />
         <Route path="/jurnal-cumparari" element={<JurnalCumparari />} />

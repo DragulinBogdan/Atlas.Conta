@@ -54,7 +54,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // ale profilului — că o linie de stoc pe FCT „nu contează" și pleacă pe NIR, că
 // semnul schimbă regula pe LDI, că NTC declară postarea explicită. Plus proba de
 // CONSISTENȚĂ (42c): conturile explicației sunt ACELEAȘI cu cele pe care motorul
-// chiar le scrie în `RegistruContabil` pe un document echivalent — o explicație
+// chiar le postează în cub pe un document echivalent — o explicație
 // care minte e mai rea decât niciuna.
 //
 // Doar pe privat: bugetarul n-are lanțul FCT→NIR și n-are viramentul, deci
@@ -72,10 +72,6 @@ static class VerificaF24Explica {
             var docs = osC.GetObjectsQuery<Document>()
                 .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
             var docIds = docs.Select(d => d.ID).ToList();
-            pj.Adauga(osC.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(osC.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(osC.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
@@ -229,7 +225,7 @@ static class VerificaF24Explica {
             + $"{string.Join(", ", noteCub.Where(p => p.Credit).Select(p => Simbol(p.Cont)))}; explicația spunea "
             + $"{fctServiciu.Contare.ContDebit.Simbol} = {fctServiciu.Contare.ContCredit.Simbol}");
         s.Check("F24-E6 CONSISTENȚĂ (42c): pe un document REAL echivalent (FCT cu o linie de serviciu, același "
-            + "furnizor și aceeași gestiune), rândul pe care motorul îl scrie în `RegistruContabil` are EXACT "
+            + "furnizor și aceeași gestiune), postarea pe care motorul o scrie în cub are EXACT "
             + "conturile pe care explicația le anunțase — proba că „Explică” nu e o a doua rezolvare, ci aceeași",
             noteCub.Count(p => p.Debit) == 1 && noteCub.Count(p => p.Credit) == 1
             && Simbol(noteCub.Single(p => p.Debit).Cont) == fctServiciu.Contare.ContDebit.Simbol

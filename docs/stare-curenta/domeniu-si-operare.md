@@ -86,10 +86,10 @@ identitatea este exclusivă și schema diferă. (16)
 ## Registre și ciclu de viață
 
 Faptele operate stau numai în cub (`Tranzactie`, `Postare`); forma lor e la
-„Cubul persistat". Cele patru tabele de registru (`RegistruContabil`,
-`RegistruStoc`, `RegistruTva`, `RegistruImobilizari`) nu mai sunt scrise și
-nici citite de produs: rămân ca declarații până la eliminarea lor atomică
-(TR-D9a, pasul 7). Cubul se scrie numai prin motor și nu se editează prin
+„Cubul persistat". Cele patru tabele de registru vechi nu mai există:
+entitățile, maparea, listele XAF și cazurile gardianului au dispărut atomic
+la 2026-10-07 (TR-D9a, pasul 7, D9-D6), iar numele lor sunt interzise în
+sursă (D9-D7 b). Cubul se scrie numai prin motor și nu se editează prin
 CRUD; o postare existentă nu se rescrie (`POSTARE_MODIFICATA`, la salvare, pe
 orice ușă). Efectele proprii ale unei frunze la comenzile de stare — starea
 fișei de imobilizare și refuzurile ei de dependență — trec prin
@@ -798,8 +798,8 @@ Plata autogenerată a FCT preia pe linie valoarea datorată terțului
 (`TvaService.DatoratTertului`, SC-FCT-10). (102)
 
 Totalul se citește din cub: `ImperechereService.Total` și coloana „Total" din
-`DocumenteCuRest` folosesc aceeași formulă. Coloana `Document.TotalStingere`
-nu mai e scrisă și dispare la pasul 7 al TR-D9a. (F27-D7, 102, D9-D10)
+`DocumenteCuRest` folosesc aceeași formulă. Documentul nu mai are coloană de
+total stins: a dispărut la pasul 7 al TR-D9a. (F27-D7, 102, D9-D10)
 
 ### Partide deschise
 
@@ -1074,8 +1074,8 @@ profil pe care declarantul lui o cere (`IDeclarant.PoliticaCeruta`: regulile
 de contare pentru DSC, RDC și RLF, politica de TVA pentru DVI, politica
 închiderii de TVA pentru ITV — absente pe bugetar) e refuzat la dry-run și la
 operare cu `TIP_FARA_DECLARATIE`, înaintea validării frunzei, cu sau fără
-număr cules. `TipDocument.PosteazaInCub` nu mai e citit de nimic; coloana
-dispare la pasul 7. (D9-D5)
+număr cules. Tipul de document nu mai poartă un comutator de postare în cub:
+orice tip operabil postează, prin declarant. (D9-D5, D9-D6)
 
 O regulă de contare pe un tip al cărui declarant nu contează prin reguli
 (`IDeclarant.ConteazaPrinReguli` fals: ASM, BTR, PIF, AMO, CAS, NTC, ITV, DVI)
@@ -1414,11 +1414,10 @@ operare, în aceeași formă ca orice refuz al declarației (S-r11).
   cotei`. (S-D15)
 - O linie cu două conturi cu `UrmarestePartide` numește partidă pe AMBELE capete,
   fiecare pe contul lui. (S-D16)
-- `TipDocument.LaturaContPropriu` (`Predator` / `Primitor`) spune care
-  repartitor al documentului poartă contul propriu: plata predator, încasarea
-  primitor. Declarantul de trezorerie refuză `LATURA_CONT_PROPRIU_NEPOTRIVITA`
-  când contul propriu nu e pe latura declarată; `CONT_PROPRIU_LIPSA` rămâne
-  pentru lipsă. (S-D7)
+- Tipul de document nu mai declară latura contului propriu: declarantul de
+  trezorerie o alege structural, piciorul propriu e cel al cărui cont vine de
+  la repartitorul intern, iar la virament ambele picioare sunt ale contului
+  propriu numit de latura care nu e tranzit. (S-D7, D9-A10, D9-D6)
 - Linia fără regulă de contare e refuzată (`REGULA_CONTARE_LIPSA`) acolo unde
   motorul vechi o sare tăcut: valoarea ei ar dispărea din contare.
 

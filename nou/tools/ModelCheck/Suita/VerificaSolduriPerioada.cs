@@ -76,12 +76,6 @@ static class VerificaSolduriPerioada {
                 .Where(p => p.Cod.StartsWith(Marcaj)).Select(p => p.ID).ToList();
             var lotIds = os.GetObjectsQuery<Lot>()
                 .Where(l => produsIds.Contains(l.ProdusId)).Select(l => l.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in os.GetObjectsQuery<Document>()

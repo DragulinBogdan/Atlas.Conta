@@ -388,6 +388,7 @@ if (profil == ProfilContabil.Privat) {
     VerificaF24Gardian.Ruleaza(s, privat: true);
     // Felia 24 track B — potrivirea ca funcții pure (F24-P1…P7).
     VerificaPotrivire.Ruleaza(s);
+    VerificaExplicaStocGolit.Ruleaza(s, privat: true);
     // Felia 24 track B — explicația configurației (F24-E1…E7), doar pe privat.
     VerificaF24Explica.Ruleaza(s);
     // Felia 25 — declarația vamală de import, pe scenă (DVI-V1…V17, DVI-r7).
@@ -510,6 +511,7 @@ VerificaReviewF26.Ruleaza(s, privat: false);
 VerificaD85.Ruleaza(s, privat: false);
 // Felia 24 track B — potrivirea ca funcții pure (F24-P1…P7).
 VerificaPotrivire.Ruleaza(s);
+VerificaExplicaStocGolit.Ruleaza(s, privat: false);
 // Review advers felia 27, pasul 8b (F27-R*).
 VerificaReviewF27.Ruleaza(s, privat: false);
 // Felia 28 — TPH cu discriminatorul `ClrType` (F28-A…G).

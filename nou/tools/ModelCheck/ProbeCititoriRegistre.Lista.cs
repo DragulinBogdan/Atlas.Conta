@@ -1,11 +1,9 @@
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-// Lista nominală X-D2: maparea, cazurile gardianului, evidența XAF, autorizarea și legătura.
+// Lista nominală X-D2: legătura `Imperechere`, cu maparea și autorizarea ei.
 static partial class ProbeCititoriRegistre {
     const string M = SursaProductie.Modul;
     const string W = SursaProductie.WebApi;
-    const string Cele4 = "RegistruContabil|RegistruStoc|RegistruTva|RegistruImobilizari";
-    const string Motor3 = "RegistruContabil|RegistruStoc|RegistruTva";
 
     // Rezultate netipizate derivate dintr-o tabelă din listă: apelanții lor o citesc.
     static readonly Sursa[] Purtatori = [
@@ -13,25 +11,10 @@ static partial class ProbeCititoriRegistre {
     ];
 
     static readonly Permisa[] Permise = [
-        // ── maparea EF ──
-        new(M + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.OnModelCreating", Cele4 + "|Imperechere", Clasa.Mapare, "maparea EF"),
-        new(M + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.RegistruContabil", "RegistruContabil", Clasa.Mapare, "DbSet"),
-        new(M + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.RegistruStoc", "RegistruStoc", Clasa.Mapare, "DbSet"),
-        new(M + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.RegistruTva", "RegistruTva", Clasa.Mapare, "DbSet"),
-        new(M + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.RegistruImobilizari", "RegistruImobilizari", Clasa.Mapare, "DbSet"),
-        new(M + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.Imperecheri", "Imperechere", Clasa.Mapare, "DbSet"),
-
-        // ── cazurile gardianului: refuză scrierea registrelor pe uși securizate (14); cad cu entitățile ──
-        new(M + "Motor/GardianEditare.cs", "GardianEditare.Verifica", Cele4, Clasa.Gardian, "refuză scrierea registrelor pe uși securizate (14)"),
-
-        // ── suprafețele de evidență XAF (rămân până la pasul 7) ──
-        new(M + "UI/ContaUiBaseline.cs", "ContaUiBaseline.AscundeFkuriBrute", Motor3 + "|Imperechere", Clasa.Evidenta, "listele XAF ale registrelor"),
-        new(M + "UI/ContaUiBaseline.cs", "ContaUiBaseline.Imobilizari", "RegistruImobilizari", Clasa.Evidenta, "lista XAF a registrului de imobilizări"),
-
-        // ── autorizarea verificării închiderii (80e) ──
-        new(W + "API/Conta/PerioadeController.cs", "PerioadeController.TipuriInsumate", "Imperechere", Clasa.Autorizare, "tipurile însumate de verificarea închiderii (80e)"),
-
-        // ── `Imperechere` e legătura explicită, nu registru: rămâne și după TR-D9 ──
+        new(M + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.OnModelCreating", "Imperechere", Clasa.Legatura, "maparea EF"),
+        new(M + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.Imperecheri", "Imperechere", Clasa.Legatura, "DbSet"),
+        new(W + "API/Conta/PerioadeController.cs", "PerioadeController.TipuriInsumate", "Imperechere", Clasa.Legatura, "tipurile însumate de verificarea închiderii (80e)"),
+        new(M + "UI/ContaUiBaseline.cs", "ContaUiBaseline.AscundeFkuriBrute", "Imperechere", Clasa.Legatura, "lista XAF a legăturii (F27-D8)"),
         new(M + "Motor/ImperechereService.cs", "ImperechereService.Imperecheaza", "Imperechere", Clasa.Legatura, "comanda de împerechere"),
         new(M + "Motor/ImperechereService.cs", "ImperechereService.Desfa", "Imperechere", Clasa.Legatura, "comanda de desfacere"),
         new(M + "Motor/ImperechereService.cs", "ImperechereService.CreeazaInvers", "Imperechere", Clasa.Legatura, "legătura inversă"),

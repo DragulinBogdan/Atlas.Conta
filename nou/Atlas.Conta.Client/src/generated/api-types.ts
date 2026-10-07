@@ -13516,8 +13516,6 @@ export interface components {
             /** Format: uuid */
             TipTvaImplicitId?: string | null;
             TipTvaImplicit?: components["schemas"]["TipTva"];
-            PosteazaInCub?: boolean;
-            LaturaContPropriu?: components["schemas"]["LaturaDocument"];
             Cautare?: string | null;
         };
         TipDocumentResourceDelta: {
@@ -13529,8 +13527,6 @@ export interface components {
             ClrType?: string | null;
             /** Format: uuid */
             TipTvaImplicitId?: string | null;
-            PosteazaInCub?: boolean;
-            LaturaContPropriu?: components["schemas"]["LaturaDocument"];
             Cautare?: string | null;
         };
         TipMaterial: {

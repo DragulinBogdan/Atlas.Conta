@@ -72,12 +72,6 @@ static class VerificaCorectie {
                 .Where(p => p.Cod.StartsWith(Marcaj)).Select(p => p.ID).ToList();
             var lotIds = os.GetObjectsQuery<Lot>()
                 .Where(l => produsIds.Contains(l.ProdusId)).Select(l => l.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
@@ -515,7 +509,7 @@ static class VerificaCorectie {
                 var stornoCub = ProbeCub.Postari(os, idFct1, N.FelTranzactie.Storno)
                     .Where(p => p.PerioadaDeclarare != null).ToList();
                 s.Check($"STR-CORECTIE ({eticheta}): la EROARE MATERIALĂ postările `Storno` din CUB poartă "
-                    + $"`PerioadaDeclarare` = {An}01 (a originalului), ca rândurile `RegistruTva` — altfel "
+                    + $"`PerioadaDeclarare` = {An}01 (a originalului), ca faptele fiscale ale originalului — altfel "
                     + "orice jurnal citit din cub ar pune stornoul în luna corecției",
                     stornoCub.Count > 0 && stornoCub.All(p => p.PerioadaDeclarare == (An * 100) + 1));
                 var inverseFiscaleFct1 = ProbeCub.Postari(os, idFct1, N.FelTranzactie.Storno)

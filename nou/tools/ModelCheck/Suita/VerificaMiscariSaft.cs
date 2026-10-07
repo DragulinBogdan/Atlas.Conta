@@ -194,26 +194,6 @@ static class VerificaMiscariSaft {
                 && randuri.Single(r => r.Tip == "BCS" && r.TipStoc == TipStoc.Consum)
                     .Motiv.Contains("responsabil"));
 
-            // Premisa politicii: ea numește registrele pe care `RegulaStoc` chiar le
-            // scrie. Dacă seed-ul de stoc s-ar schimba (o clasă nouă, alt registru),
-            // politica ar rămâne în urmă TĂCUT — de-aia perechea se măsoară, nu se
-            // presupune. `Consum` apare doar la BCS, iar semnul politicii e cel al
-            // rândului rezultat (LDI/ASM își semnează liniile la operare, deci ambele
-            // direcții sunt legitime pe un `RegulaStoc` cu semn fix).
-            var registre = os.GetObjectsQuery<RegulaStoc>()
-                .Select(r => new { Tip = r.TipDocument.Cod, r.TipStoc })
-                .ToList()
-                .Where(r => new[] { "NIR", "BTR", "BCS", "LDI", "DSC", "ASM", "RLF", "RDC" }.Contains(r.Tip))
-                .Select(r => (r.Tip, r.TipStoc)).Distinct().ToList();
-            var acoperite = randuri.Where(r => r.Tip != "FCT").Select(r => (r.Tip, r.TipStoc)).Distinct().ToList();
-            Console.WriteLine($"     MĂSURAT (D17-V1/acoperire): {registre.Count} perechi (tip × registru) scrise de "
-                + $"`RegulaStoc`, {acoperite.Count} acoperite de politică; fără politică: "
-                + $"{(registre.Except(acoperite).Any() ? string.Join(", ", registre.Except(acoperite).Select(x => $"{x.Tip}/{x.TipStoc}")) : "niciuna")}.");
-            s.Check("D17-V1 (privat) politica acoperă FIECARE pereche (tip × registru) pe care regulile de stoc "
-                + "private chiar o scriu, și niciuna în plus în afara FCT (recepția pe cub, fără registru; S3-D3)",
-                registre.Count == acoperite.Count
-                && registre.OrderBy(x => x.Tip, StringComparer.Ordinal).ThenBy(x => x.TipStoc)
-                    .SequenceEqual(acoperite.OrderBy(x => x.Tip, StringComparer.Ordinal).ThenBy(x => x.TipStoc)));
         }
 
         // ---------------- Re-seed-ul nu dublează (funcția REALĂ) ----------------

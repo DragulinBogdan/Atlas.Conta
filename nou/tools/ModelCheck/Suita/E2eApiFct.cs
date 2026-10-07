@@ -69,17 +69,11 @@ static class E2eApiFct {
         void CurataApiFct(IObjectSpace os) {
             // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
             var pj = new Purja(os);
-            var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiFct)).Select(l => l.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)).ToList());
             foreach (var fct in os.GetObjectsQuery<FacturaIntrare>().Where(d => d.Numar.StartsWith("E2E-AF")).ToList()) {
                 foreach (var copil in os.GetObjectsQuery<Document>().Where(x => x.DocumentSursaId == fct.ID).ToList()) {
-                    pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == copil.ID).ToList());
-                    pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == copil.ID).ToList());
                     pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == copil.ID).ToList());
                     pj.Adauga(copil);
                 }
-                pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId == fct.ID).ToList());
-                pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == fct.ID).ToList());
                 pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == fct.ID).ToList());
                 pj.Adauga(fct);
             }

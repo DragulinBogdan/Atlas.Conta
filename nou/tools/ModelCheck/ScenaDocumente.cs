@@ -458,10 +458,6 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         pj.Adauga(os.GetObjectsQuery<PartidaDeschisa>().Where(s => s.An >= An && s.An <= UltimulAn));
         pj.Adauga(os.GetObjectsQuery<Imperechere>().Where(i => docs.Contains(i.DocumentId) || docs.Contains(i.DocumentStingatorId)));
         pj.Adauga(os.GetObjectsQuery<DviFactura>().Where(i => docs.Contains(i.DviId) || docs.Contains(i.FacturaId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => docs.Contains(r.DocumentId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>().Where(r => docs.Contains(r.DocumentId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docs.Contains(r.DocumentId.Value)));
         pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docs.Contains(d.DocumentId)));
         pj.Adauga(os.GetObjectsQuery<Document>().Where(d => docs.Contains(d.ID)));
         CurataNomenclatoare(os, pj);

@@ -78,11 +78,6 @@ static class VerificaNucleuBcs {
                 .Where(p => deschideri.Contains(p.TranzactieId)).Select(p => p.ID).ToList());
             pj.AdaugaCheie<Atlas.Conta.BackOffice.Module.Cub.Tranzactie>(deschideri);
             ProbeCub.Purjeaza(pj, os, idsDoc);                                             // S-D8
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => idsLot.Contains(r.LotId)
-                    || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => idsDoc.Contains(d.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<Document>().Where(d => idsDoc.Contains(d.ID)).ToList());

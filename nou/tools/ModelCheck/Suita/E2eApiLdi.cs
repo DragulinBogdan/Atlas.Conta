@@ -80,10 +80,6 @@ static class E2eApiLdi {
             var idsLot = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiLdi))
                 .Select(l => l.ID).ToList();
             DeschidereScena.Curata(os, pj, idsLot);
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => idsLot.Contains(r.LotId) || (r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value))).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && idsDoc.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => idsDoc.Contains(d.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<Document>().Where(d => idsDoc.Contains(d.ID)).ToList());
             os.CommitChanges();

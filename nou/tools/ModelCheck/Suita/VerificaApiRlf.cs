@@ -85,11 +85,7 @@ static class VerificaApiRlf {
         var cont401 = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
         var cont4426 = os.FirstOrDefault<Cont>(c => c.Simbol == "4426");
 
-        // Registrul pe care iese RLF-ul din predator, citit din POLITICĂ (regula
-        // specifică pe clasa liniei bate genericul — 26c).
         var reguliRlf = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipRlf.ID).ToList();
-        var tipStoc = (reguliRlf.FirstOrDefault(r => r.ClasaId == tip371.ClasaId)
-            ?? reguliRlf.First(r => r.ClasaId == null)).TipStoc;
 
         void Curata() {
             // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
@@ -103,12 +99,6 @@ static class VerificaApiRlf {
                 .Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => loturi.Contains(r.LotId) || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in os.GetObjectsQuery<Document>().Where(d => docIds.Contains(d.ID)).ToList()
@@ -121,12 +111,12 @@ static class VerificaApiRlf {
         }
         Curata();
 
-        s.Check("Api RLF — precondiții de profil: ancora RLF cu seria „RLF-”, reguli de stoc +1 pe PREDATOR (semnul "
-            + "liniei dă ieșirea) și `PoliticaTva` DEDUCTIBIL cu `TipTvaImplicit = N21` — de aceea `TipTvaId`/"
+        s.Check("Api RLF — precondiții de profil: ancora RLF cu seria „RLF-”, NICIO regulă de stoc (D9-D8) "
+            + "și `PoliticaTva` DEDUCTIBIL cu `TipTvaImplicit = N21` — de aceea `TipTvaId`/"
             + "`ValoareTva` INTRĂ în DTO (F19-D7), spre deosebire de NTC/ASM",
             tipRlf != null && tipRlf.ClrType == nameof(ReturFurnizor)
             && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipRlf.ID)?.Serie == "RLF-"
-            && reguliRlf.Count > 0 && reguliRlf.All(r => r.Latura == LaturaDocument.Predator && r.Semn == +1)
+            && reguliRlf.Count == 0
             && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipRlf.ID)?.Directie == DirectieTva.Deductibil
             && tipRlf.TipTvaImplicitId == n21.ID
             && tip371 != null && ned21 != null && sdd != null);

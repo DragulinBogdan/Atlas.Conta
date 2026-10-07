@@ -75,15 +75,6 @@ static class VerificaNucleuTrezorerie {
             ProbeCub.Purjeaza(pj, os, docIds);                                             // S-D8
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
-            var idsLotTrz = os.GetObjectsQuery<Lot>()
-                .Where(l => l.Produs.Cod.StartsWith(MarcajNucTrz)).Select(l => l.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => idsLotTrz.Contains(r.LotId)
-                    || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => docIds.Contains(d.DocumentId)).ToList());
             // Copiii (plata autogenerată, latura pereche) înaintea părinților.
@@ -420,7 +411,7 @@ static class VerificaNucleuTrezorerie {
             && ProbeCub.SoldPartida(os, partidaProprieS) == 0m);
 
         // --- STR-TRANSFER-7 (MEDIU-3): plafonul e RESTUL partidei, nu soldul ei întreg ---
-        // Factura de imobilizare ține netul pe 404 și taxa pe 401, deci `TotalStingere`
+        // Factura de imobilizare ține netul pe 404 și taxa pe 401, deci totalul de stins
         // (605) e mai mare decât ce ține partida de referință (105): a doua stingere
         // trece de plafonul DOCUMENTULUI, dar nu și de restul partidei.
         var fct7 = os.CreateObject<FacturaIntrare>();

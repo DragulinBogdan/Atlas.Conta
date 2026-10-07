@@ -65,7 +65,7 @@ static class VerificaPerioadaDeclarare {
             var politici = osB.GetObjectsQuery<PoliticaTva>().Count();
             Console.WriteLine($"     MĂSURAT (PDT-V0/{eticheta}): {politici} rânduri `PoliticaTva`, "
                 + $"{Atlas.Conta.BackOffice.Module.Cub.Citiri.Fiscale.Fapte(osB).Count()} fapte fiscale.");
-            s.Check($"PDT-V0 ({eticheta}) profilul neplătitor n-are nicio `PoliticaTva`, deci `RegistruTva` e gol și "
+            s.Check($"PDT-V0 ({eticheta}) profilul neplătitor n-are nicio `PoliticaTva`, deci nu are fapte fiscale și "
                 + "atribuirea fiscală e inertă — perioada de declarare nu schimbă nimic acolo unde nu există "
                 + "fapte fiscale",
                 politici == 0 && CubScena.FaraFapte(osB));
@@ -81,12 +81,6 @@ static class VerificaPerioadaDeclarare {
             var docIds = os.GetObjectsQuery<Document>()
                 .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31))
                 .Select(d => d.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()

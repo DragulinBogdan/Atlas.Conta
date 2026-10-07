@@ -88,8 +88,6 @@ static class E2eApiTrz {
             var docIds = docs.Select(d => d.ID).ToList();
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
                 pj.Adauga(doc);
@@ -447,7 +445,7 @@ static class E2eApiTrz {
             var idsRdcOperate = os.GetObjectsQuery<ReturClient>()
                 .Where(d => d.Stare == StareDocument.Operat).Select(d => d.ID).ToList();
             // F27-D7: RDC a INTRAT în uniune (a șasea ramură). Totalul lui nu se mai
-            // agregă la citire — e `TotalStingere`, scris de motor prin `LiniiCreanta` —,
+            // agregă din toate liniile — e totalul partidelor din cub, prin `LiniiCreanta` —,
             // deci proiecția nu mai poate diverge de serviciu, iar amânarea e închisă.
             s.Check($"F3-D4/F27-D7: uniunea acoperă EXACT cele șase tipuri concrete, RDC inclus (totalul lui e cel scris "
                 + $"prin `LiniiCreanta`, nu Σ tuturor liniilor) — {idsRdcOperate.Count} retururi operate în bază",

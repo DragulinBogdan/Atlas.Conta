@@ -68,14 +68,6 @@ static class VerificaReviewAcceptare {
             var docIds = os.GetObjectsQuery<Document>()
                 .Where(d => d.Data >= new DateOnly(An - 1, 12, 1) && d.Data <= new DateOnly(An, 12, 31))
                 .Select(d => d.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
             foreach (var imp in os.GetObjectsQuery<Imperechere>()
                     .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId))
                     .OrderByDescending(i => i.InverseazaId != null))

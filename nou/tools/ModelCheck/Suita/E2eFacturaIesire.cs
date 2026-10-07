@@ -63,7 +63,6 @@ static class E2eFacturaIesire {
             var pj = new Purja(os);
             foreach (var doc in os.GetObjectsQuery<FacturaIesire>()
                 .Where(d => d.Primitor.Cod.StartsWith(MarcajFcl) || d.Predator.Cod.StartsWith(MarcajFcl)).ToList()) {
-                pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList());
                 pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == doc.ID).ToList());
                 pj.Adauga(doc);
             }

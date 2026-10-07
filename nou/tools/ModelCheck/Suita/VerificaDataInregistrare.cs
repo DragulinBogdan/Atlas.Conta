@@ -71,14 +71,6 @@ static class VerificaDataInregistrare {
                 .Where(l => produsIds.Contains(l.ProdusId)).Select(l => l.ID).ToList();
             var fiseIds = os.GetObjectsQuery<Imobilizare>()
                 .Where(f => f.NumarInventar.StartsWith(Marcaj)).Select(f => f.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruImobilizari>()
-                .Where(r => fiseIds.Contains(r.ImobilizareId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in os.GetObjectsQuery<Document>()
@@ -275,7 +267,7 @@ static class VerificaDataInregistrare {
                 + $"{conex?.GetType().Name ?? "<niciunul>"} cu {s.Ziua(conex?.Data ?? default)} / "
                 + $"{s.Ziua(conex?.DataInregistrare ?? default)}.");
             s.Check($"DIR-V5 ({eticheta}) pe factura întârziată tot ce scrie motorul în registrele cu SOLD cade la "
-                + $"data înregistrării, dar `RegistruTva.Data` RĂMÂNE data faptului fiscal "
+                + $"data înregistrării, dar data faptului fiscal RĂMÂNE data facturii "
                 + $"({Zi(1, 22):dd.MM.yyyy}) — jurnalele sunt pe data facturii (F27-D5; perioada de declarare vine "
                 + "la pasul 4). Conexul moștenește AMBELE date ale sursei",
                 noteCub.All(p => p.Data == Zi(2, 6)) && stocCub.All(p => p.Data == Zi(2, 6))

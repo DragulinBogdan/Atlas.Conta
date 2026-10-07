@@ -72,8 +72,6 @@ static class E2eApiDecPrivat {
                 var docs = o.GetObjectsQuery<Document>()
                     .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
                 var docIds = docs.Select(d => d.ID).ToList();
-                pj.Adauga(o.GetObjectsQuery<RegistruContabil>()
-                    .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
                 pj.Adauga(o.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
                 pj.Adauga(docs);
                 pj.Adauga(o.GetObjectsQuery<Repartitor>().Where(x => x.Cod.StartsWith(MarcajApiDecPrv)).ToList());

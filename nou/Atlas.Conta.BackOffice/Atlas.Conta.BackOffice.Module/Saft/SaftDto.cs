@@ -414,7 +414,7 @@ public sealed class SaftMiscareStoc {
     public List<SaftLinieMiscareStoc> Linii { get; set; } = [];
 }
 
-// `StockMovementLine` — un rând de `RegistruStoc`, unu la unu.
+// `StockMovementLine` — o postare de stoc, unu la unu.
 public sealed class SaftLinieMiscareStoc {
     public Guid RandRegistruId { get; set; }
     public Guid? DetaliuId { get; set; }
@@ -546,14 +546,14 @@ public sealed class SaftRezumat {
     public int LiniiGl { get; set; }
     public int RanduriRegistru { get; set; }
 
-    // (1) Partida dublă: `TotalDebit == TotalCredit == Σ RegistruContabil.Valoare`
+    // (1) Partida dublă: `TotalDebit == TotalCredit == Σ` valorii postărilor contabile
     //     pe perioadă (semnat, doar rândurile cu document — cele de deschidere nu
     //     intră în GL).
     public decimal TotalDebit { get; set; }
     public decimal TotalCredit { get; set; }
     public decimal ValoareRegistruContabil { get; set; }
 
-    // (2) TVA: Σ `TaxAmount` de pe rândurile GL cu taxă == Σ `RegistruTva.Tva`
+    // (2) TVA: Σ `TaxAmount` de pe rândurile GL cu taxă == Σ taxei postărilor fiscale
     //     MINUS regimurile care nu postează (Capitalizat — TVA-ul e în cost, deci
     //     n-are rând contabil de TVA). Cifra se raportează, nu se ascunde.
     public decimal TvaGl { get; set; }
@@ -566,7 +566,7 @@ public sealed class SaftRezumat {
     public decimal TvaFaraCodSaft { get; set; }
 
     // (3) Facturi: pentru fiecare sens, Σ bazei rândurilor fiscale AȘEZATE pe
-    //     linii de factură + Σ bazei celor NEINCLUSE == Σ `RegistruTva.Baza` al
+    //     linii de factură + Σ bazei celor NEINCLUSE == Σ bazei fiscale a
     //     documentelor de tip factură.
     public decimal BazaFacturiAchizitie { get; set; }
     public decimal BazaFacturiLivrare { get; set; }
@@ -659,8 +659,8 @@ public sealed class SaftRezumat {
     // fișierul spune același lucru.
     public bool StocFizicBate { get; set; }
 
-    // (S2) Nimic nu se pierde: `Σ mișcări + Σ Excluse + Σ Neincluse == Σ
-    //      RegistruStoc` pe documentele lunii, pe TOATE `TipStoc`-urile
+    // (S2) Nimic nu se pierde: `Σ mișcări + Σ Excluse + Σ Neincluse == Σ`
+    //      postărilor de stoc pe documentele lunii, pe TOATE `TipStoc`-urile
     //      (inclusiv cele neraportate — altfel egalitatea s-ar măsura pe sine).
     public decimal MiscariCantitate { get; set; }
     public decimal MiscariValoare { get; set; }

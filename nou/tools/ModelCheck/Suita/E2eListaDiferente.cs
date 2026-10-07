@@ -63,10 +63,8 @@ static class E2eListaDiferente {
             var pj = new Purja(os);
             var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod == MarcajLdi).Select(l => l.ID).ToList();
             DeschidereScena.Curata(os, pj, loturi);
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)).ToList());
             foreach (var doc in os.GetObjectsQuery<ListaDiferenteInventar>()
                 .Where(d => d.Primitor.Cod == MarcajComisie).ToList()) {
-                pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId == doc.ID).ToList());
                 pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == doc.ID).ToList());
                 pj.Adauga(doc);
             }

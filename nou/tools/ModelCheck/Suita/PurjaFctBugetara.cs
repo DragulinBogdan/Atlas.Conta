@@ -52,9 +52,6 @@ static class PurjaFctBugetara {
         var ids = os.GetObjectsQuery<Document>()
             .Where(d => d.Numar == marcaj + "-FCT").Select(d => d.ID).ToList();
         new Purja(os)
-            .Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)))
-            .Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)))
-            .Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)))
             .Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)))
             .Adauga(os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)))
             .Adauga(os.GetObjectsQuery<Repartitor>().Where(r => r.Cod == marcaj + "-FURN"))

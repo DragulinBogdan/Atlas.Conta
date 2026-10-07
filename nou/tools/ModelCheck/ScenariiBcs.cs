@@ -301,7 +301,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
     }
 
     // Ușa entității refuză azi cu textul validării vechi (`ValideazaOperare`,
-    // `StocService`, starea documentului), înaintea declarantului; codul stabil
+    // starea documentului), înaintea declarantului; codul stabil
     // se probează pe ușa declarației (`RefuzDeclaratie`) până la TR-D8.
     void Refuza(string id, Action actiune, string fragment) {
         try { actiune(); Verifica(id, "comanda trebuia refuzată", false); }
@@ -396,9 +396,6 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         pj.Adauga(os.GetObjectsQuery<SoldPerioadaContabil>().Where(s => s.An == An));
         pj.Adauga(os.GetObjectsQuery<PartidaDeschisa>().Where(s => s.An == An));
         pj.Adauga(os.GetObjectsQuery<Imperechere>().Where(i => docs.Contains(i.DocumentId) || docs.Contains(i.DocumentStingatorId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => docs.Contains(r.DocumentId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => loturi.Contains(r.LotId)));
-        pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docs.Contains(r.DocumentId.Value)));
         pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docs.Contains(d.DocumentId)));
         pj.Adauga(os.GetObjectsQuery<Document>().Where(d => docs.Contains(d.ID)));
         pj.Adauga(os.GetObjectsQuery<Lot>().Where(l => loturi.Contains(l.ID)));

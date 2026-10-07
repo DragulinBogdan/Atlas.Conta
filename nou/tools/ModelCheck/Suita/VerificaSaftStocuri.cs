@@ -165,13 +165,7 @@ static class VerificaSaftStocuri {
             DeschidereScena.Curata(os, pj, loturi);
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => ids.Contains(i.DocumentId) || ids.Contains(i.DocumentStingatorId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
             // Rândurile de DESCHIDERE n-au document: se prind pe lot.
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => loturi.Contains(r.LotId)
-                    || (r.DocumentId != null && ids.Contains(r.DocumentId.Value))).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)).ToList());
             foreach (var doc in os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList()
                          .OrderByDescending(d => d.DocumentSursaId != null))
@@ -485,6 +479,34 @@ static class VerificaSaftStocuri {
             Console.WriteLine($"         AVERTISMENT {a.Cod} ×{a.Numar}{(a.Suma is decimal s ? $" Σ {s:N2}" : "")}: "
                 + $"{string.Join(" | ", a.Exemple)}");
 
+        // ---------------- D17-V1: politica acoperă mișcările pe care cubul le produce (D9-D8) ----------------
+        {
+            var primaZi = new DateOnly(an, luna, 1);
+            var ultimaZi = primaZi.AddMonths(1).AddDays(-1);
+            var postariStoc = os.GetObjectsQuery<Atlas.Conta.BackOffice.Module.Cub.Postare>()
+                .Where(p => p.Spatiu == N.Spatiu.Stoc && p.DocumentId != null && p.Data >= primaZi && p.Data <= ultimaZi)
+                .Select(p => new { DocumentId = p.DocumentId.Value, p.Cont }).ToList();
+            var coduri = CititorTipDocument.Coduri(os, postariStoc.Select(p => p.DocumentId).Distinct().ToList());
+            var categorii = new CategoriiStoc(os);
+            var produse = postariStoc
+                .Select(p => (Tip: coduri.GetValueOrDefault(p.DocumentId), Categorie: categorii.Rezolva(p.Cont)))
+                .Where(p => p.Categorie is TipStoc c && CategoriiStoc.Rol(c) != RolCategorieStoc.Neacoperita)
+                .Select(p => (p.Tip, TipStoc: p.Categorie.Value)).Distinct().ToList();
+            var politici = os.GetObjectsQuery<PoliticaMiscareSaft>().Select(p => new { Tip = p.TipDocument.Cod, p.TipStoc })
+                .ToList().Select(p => (p.Tip, p.TipStoc)).Distinct().ToList();
+            var neacoperite = produse.Except(politici).ToList();
+            var tipuriStoc = new[] { "FCT", "BTR", "BCS", "LDI", "DSC", "ASM", "RLF", "RDC" };
+            var tipuriScena = produse.Select(p => p.Tip).Distinct().ToList();
+            string Lista(IEnumerable<(string Tip, TipStoc TipStoc)> x) =>
+                string.Join(", ", x.OrderBy(p => p.Tip, StringComparer.Ordinal).ThenBy(p => p.TipStoc).Select(p => $"{p.Tip}/{p.TipStoc}"));
+            Console.WriteLine($"     MĂSURAT (D17-V1/acoperire pe cub): {produse.Count} perechi (tip × categorie) produse de "
+                + $"postările de stoc ale lunii [{Lista(produse)}]; fără politică [{Lista(neacoperite)}]; politici fără "
+                + $"mișcare în scenă [{Lista(politici.Except(produse))}].");
+            suita.Check("D17-V1 (privat) politica acoperă FIECARE pereche (tip × categorie de stoc) pe care cubul o produce "
+                + "pe cele opt tipuri ale scenei (FCT, BTR, BCS, LDI, DSC, ASM, RLF, RDC; NIR-ul conex egal nu mișcă, SAF-B5)",
+                neacoperite.Count == 0 && tipuriStoc.All(tipuriScena.Contains));
+        }
+
         // ---------------- Serializarea JSON + sumarul ----------------
         VerificaSaftJson.Ruleaza(suita, saft, $"stocuri privat, {luna:00}.{an}");
         var sumar = SaftProiectii.Sumar(saft);
@@ -734,7 +756,7 @@ static class VerificaSaftStocuri {
             && rez.StocOpeningCantitate + rez.StocMiscariCantitate == rez.StocClosingCantitate
             && rez.StocOpeningValoare + rez.StocMiscariValoare == rez.StocClosingValoare
             && rez.StocIntrari == saft.StocFizic.Count);
-        suita.Check("D17-V2 cusătura S2 (nimic nu se pierde; pe cub `Neincluse` = 0, golurile refuză): `Σ mișcări + Σ Excluse + Σ Neincluse == Σ RegistruStoc` "
+        suita.Check("D17-V2 cusătura S2 (nimic nu se pierde; pe cub `Neincluse` = 0, golurile refuză): `Σ mișcări + Σ Excluse + Σ Neincluse == Σ postărilor de stoc` "
             + "pe documentele lunii, pe TOATE `TipStoc`-urile — inclusiv `Consum`, care nu e raportat. Fără "
             + "termenul ăsta egalitatea s-ar fi măsurat pe sine (registrul restrâns la ce intră în fișier)",
             rez.RegistruStocBate

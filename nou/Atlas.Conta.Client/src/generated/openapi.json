@@ -332737,12 +332737,6 @@
           "TipTvaImplicit": {
             "$ref": "#/components/schemas/TipTva"
           },
-          "PosteazaInCub": {
-            "type": "boolean"
-          },
-          "LaturaContPropriu": {
-            "$ref": "#/components/schemas/LaturaDocument"
-          },
           "Cautare": {
             "type": "string",
             "nullable": true
@@ -332776,12 +332770,6 @@
             "type": "string",
             "format": "uuid",
             "nullable": true
-          },
-          "PosteazaInCub": {
-            "type": "boolean"
-          },
-          "LaturaContPropriu": {
-            "$ref": "#/components/schemas/LaturaDocument"
           },
           "Cautare": {
             "type": "string",

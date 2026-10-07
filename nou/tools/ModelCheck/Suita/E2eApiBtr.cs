@@ -206,7 +206,7 @@ static class E2eApiBtr {
                 NotaTransferApply.Lista(os).Where(x => x.Stare == "Draft")
                     .OrderByDescending(x => x.Data).Take(1).ToList().Count == 1);
 
-            // --- D9: proiecția de sold == StocService, per cheie ---
+            // --- D9: proiecția de sold, per cheie ---
             var proiectie = StocProiectii.SoldStoc(os).Where(r => r.LotId == lot.ID).ToList();
             s.Check("Proiecția SoldStoc → exact cheile mișcate de scenariu (MAG1 6, MAG2 4), cu valoarea agregată",
                 proiectie.Count == 2

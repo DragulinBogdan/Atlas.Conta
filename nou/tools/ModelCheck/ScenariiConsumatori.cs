@@ -183,12 +183,11 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
                 && os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == serviciu.Id)));
     }
 
-    // Pin 5: drepturile rolurilor bazei pe registre și pe cub, citite din strategia de securitate.
+    // Pin 5: drepturile rolurilor bazei pe cub, citite din strategia de securitate.
     void Roluri() {
         Comanda(os => { Updater.SeedRolConfigurator(os); os.CommitChanges(); });
         using var admin = new Sesiune(conexiune, Admin);
         using var os = admin.Sistem();
-        Type[] registre = [typeof(RegistruStoc), typeof(RegistruContabil), typeof(RegistruTva), typeof(RegistruImobilizari)];
         Type[] cub = [typeof(C.Postare), typeof(C.Tranzactie)];
         var roluri = os.GetObjectsQuery<PermissionPolicyRole>().ToList().Where(r => r.Name != Admin).OrderBy(r => r.Name).ToList();
         var s = admin.Strategie;
@@ -199,9 +198,9 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
             + (s.CanWriteByRole(rol, tip, os) ? "W" : "-") + (s.CanDeleteByRole(rol, tip, os) ? "D" : "-");
         foreach (var rol in roluri)
             Console.WriteLine($"     MĂSURAT (D9-P4-ROL): {rol.Name} (administrativ {rol.IsAdministrative}, politica {rol.PermissionPolicy}): "
-                + string.Join(", ", registre.Concat(cub).Select(t => $"{t.Name} {Drepturi(rol, t)}")));
-        var cititori = roluri.Where(r => registre.Any(t => Citeste(r, t))).ToList();
-        Verifica("D9-P4-ROL-1", $"fiecare rol care citește cel puțin un registru ({string.Join(", ", cititori.Select(r => r.Name))}) "
+                + string.Join(", ", cub.Prepend(typeof(Document)).Select(t => $"{t.Name} {Drepturi(rol, t)}")));
+        var cititori = roluri.Where(r => Citeste(r, typeof(Document))).ToList();
+        Verifica("D9-P4-ROL-1", $"fiecare rol care citește documentele ({string.Join(", ", cititori.Select(r => r.Name))}) "
             + "citește `Postare` și `Tranzactie`", cititori.Count > 0 && cititori.All(r => cub.All(t => Citeste(r, t))));
         var scriitori = roluri.Where(r => !r.IsAdministrative && cub.Any(t => Scrie(r, t))).Select(r => r.Name).ToList();
         Verifica("D9-P4-ROL-2", "niciun rol neadministrativ nu creează, modifică sau șterge `Postare` și `Tranzactie`"

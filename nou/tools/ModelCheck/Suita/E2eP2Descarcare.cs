@@ -69,8 +69,6 @@ static class E2eP2Descarcare {
             var docIds = docs.Select(d => d.ID).ToList();
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
             // Copiii autogenerați (DSC conex, fără Numar) întâi — DocumentSursa spre FCL.
             foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))

@@ -68,11 +68,6 @@ static class VerificaD394 {
             var ids = idsSursa.Concat(os.GetObjectsQuery<Document>()
                 .Where(d => d.DocumentSursaId != null && idsSursa.Contains(d.DocumentSursaId.Value))
                 .Select(d => d.ID).ToList()).Distinct().ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)).ToList());
             foreach (var doc in os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList()
                     .OrderByDescending(d => d.DocumentSursaId != null))
@@ -147,7 +142,7 @@ static class VerificaD394 {
             Console.WriteLine($"     MĂSURAT (D4-V2 bugetar): documentul scenei {premisa.Numar} {premisa.Stare} pe {premisa.Data}, "
                 + $"{premisa.Detalii.Count(l => l.TipTvaId != null)} linii cu TipTva; {CubScena.Fapte(os, premisa.ID).Count} fapte fiscale ale lui, "
                 + $"{Atlas.Conta.BackOffice.Module.Cub.Citiri.Fiscale.Fapte(os).Count()} în total.");
-            s.Check("D4-V2 (bugetar): profilul neplătitor n-are `PoliticaTva` ⇒ `RegistruTva` gol ⇒ proiecția întoarce "
+            s.Check("D4-V2 (bugetar): profilul neplătitor n-are `PoliticaTva` ⇒ fără fapte fiscale ⇒ proiecția întoarce "
                 + "liste GOALE (operațiuni, rezumate, neincluse), zero avertismente și nrCui 0, pe un an în care scena a "
                 + "OPERAT prin motor o FCT cu linie purtând TipTva (CAP21) — un neplătitor nu depune 394, iar proiecția nu "
                 + "inventează nimic",
@@ -458,7 +453,7 @@ static class VerificaD394 {
         Console.WriteLine($"     MĂSURAT (D4-V4): cub {brutCub.Count} fapte; achiziție Σ {RegBazaCub(SensTva.Achizitie):N2}/{RegTvaCub(SensTva.Achizitie):N2} "
             + $"= op1 {OpBaza(SensTva.Achizitie):N2}/{OpTva(SensTva.Achizitie):N2} + neincluse {NeBaza(SensTva.Achizitie):N2}/{NeTva(SensTva.Achizitie):N2}; "
             + $"livrare Σ {RegBazaCub(SensTva.Livrare):N2}/{RegTvaCub(SensTva.Livrare):N2} = {OpBaza(SensTva.Livrare):N2}/{OpTva(SensTva.Livrare):N2} + {NeBaza(SensTva.Livrare):N2}/{NeTva(SensTva.Livrare):N2}.");
-        s.Check("D4-V4 (D4-D4) — NIMIC nu se pierde: Σ `Operatiuni` + Σ `Neincluse` == Σ `RegistruTva` pe perioadă, PER SENS "
+        s.Check("D4-V4 (D4-D4) — NIMIC nu se pierde: Σ `Operatiuni` + Σ `Neincluse` == Σ faptelor fiscale din cub pe perioadă, PER SENS "
             + "(`Sens` din DTO), pe AMBELE coloane; și fiecare rând are tipul coerent cu sensul (L/V pe livrare, A/AI/C pe achiziție)",
             new[] { SensTva.Achizitie, SensTva.Livrare }.All(s =>
                 OpBaza(s) + NeBaza(s) == RegBazaCub(s) && OpTva(s) + NeTva(s) == RegTvaCub(s))

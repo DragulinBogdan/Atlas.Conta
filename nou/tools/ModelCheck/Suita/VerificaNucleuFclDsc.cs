@@ -77,13 +77,6 @@ static class VerificaNucleuFclDsc {
             ProbeCub.Purjeaza(pj, os, docIds);                                             // S-D8
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => idsLot.Contains(r.LotId)
-                    || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => docIds.Contains(d.DocumentId)).ToList());
             // Descărcările autogenerate înaintea facturilor care le-au născut.
@@ -394,7 +387,7 @@ static class VerificaNucleuFclDsc {
             var costul = postariDsc.SingleOrDefault(p => p.Cont == cont607.ID);
             s.Check($"STR-DSC-COST-CLIENT ({eticheta}): descărcarea scrie EXACT o `Operare` cu 2 postări — "
                 + "lotul iese pe contul de stoc al gestiunii predatoare, costul intră pe 607 —, la valoarea "
-                + "raportului curent (60), identică cu `RegistruStoc`",
+                + "raportului curent (60)",
                 ProbeCub.Tranzactii(os, dsc.ID) is [{ Fel: N.FelTranzactie.Operare }]
                 && postariDsc.Count == 2
                 && iesirea is { Latura: N.Latura.Credit, Valoare: 60m, Cantitate: -4m }
@@ -438,7 +431,7 @@ static class VerificaNucleuFclDsc {
             var postariGolire = ProbeCub.Postari(os, dscGolire.ID);
             s.Check($"STR-DSC-GOLIRE ({eticheta}): descărcarea MANUALĂ (fără `DocumentSursa`) are aceeași formă "
                 + "ca cea autogenerată, iar linia care golește lotul duce tot restul valoric (300, pe când "
-                + $"cantitatea x prețul înghețat {lotB.PretUnitar} ar fi dat 200), identic cu `RegistruStoc`",
+                + $"cantitatea x prețul înghețat {lotB.PretUnitar} ar fi dat 200)",
                 !dscGolire.Autogenerat && dscGolire.DocumentSursaId == null
                 && postariGolire.Count == 2 && postariGolire.All(p => p.Valoare == 300m)
                 && postariGolire.Single(p => p.Spatiu == N.Spatiu.Stoc).Gestiune == mag1.ID

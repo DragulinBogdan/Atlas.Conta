@@ -250,41 +250,7 @@ static class VerificaD85 {
             && perechi.Any(p => p.Sql.EndsWith("12.3457"))
             && cautate == 1);
 
-        // ---- D85-R1 (RegistruStoc_ListView real): proiecția păstrează tot ce cere grila ----
-        var lvRs = Lv(nameof(RegistruStoc) + "_ListView");
-        string eroareRs = null;
-        var ceruteRs = lvRs == null ? [] : Coloane(lvRs);
-        string[] proiectateRs = [];
-        int randuriRs = 0, comenziRs = 0;
-        if (lvRs != null)
-            using (var os = providerHost.CreateObjectSpace()) {
-                try {
-                    var cs = new CollectionSource(os, typeof(RegistruStoc), lvRs.DataAccessMode);
-                    cs.DisplayableProperties = string.Join(";", ceruteRs);
-                    sql.Reseteaza();
-                    var lista = ((System.ComponentModel.IListSource)cs.Collection).GetList();
-                    proiectateRs = cs.DisplayableProperties.Split(';');
-                    for (var i = 0; i < Math.Min(lista.Count, 20); i++) {
-                        var rand = (XafDataViewRecord)lista[i];
-                        foreach (var nume in ceruteRs)
-                            _ = rand[nume];
-                        randuriRs++;
-                    }
-                    comenziRs = sql.Numar;
-                }
-                catch (Exception ex) {
-                    eroareRs = $"{ex.GetType().Name}: {ex.Message}";
-                }
-            }
-        var lipsaRs = ceruteRs.Where(c => !proiectateRs.Contains(c)).ToList();
-        Console.WriteLine($"     MĂSURAT (D85-R1/{eticheta}, RegistruStoc_ListView={lvRs?.DataAccessMode}): cerute "
-            + $"[{string.Join(";", ceruteRs)}], proiectate [{string.Join(";", proiectateRs)}], {randuriRs} rânduri citite, "
-            + $"{comenziRs} comenzi SQL" + (eroareRs != null ? $"; EROARE {eroareRs}" : ""));
-        s.Check($"D85-R1 ({eticheta}) pe `RegistruStoc_ListView` real, fiecare coloană cerută de grilă rămâne în proiecție "
-            + "și o pagină se citește pe toate coloanele fără excepție",
-            lvRs != null && eroareRs == null && lipsaRs.Count == 0);
-
-        // ---- D9-P4-LISTA-1 (Postare_ListView real): geamănul probei de pe `RegistruStoc_ListView` ----
+        // ---- D9-P4-LISTA-1 (Postare_ListView real): proiecția păstrează tot ce cere grila ----
         var lvPostari = Lv(nameof(Atlas.Conta.BackOffice.Module.Cub.Postare) + "_ListView");
         string eroarePostari = null;
         var cerutePostari = lvPostari == null ? [] : Coloane(lvPostari);

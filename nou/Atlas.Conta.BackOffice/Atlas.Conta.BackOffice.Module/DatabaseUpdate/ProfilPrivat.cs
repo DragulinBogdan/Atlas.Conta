@@ -957,14 +957,8 @@ internal static class ProfilPrivat {
         }
     }
 
-    // Registrele private, ca rânduri de politică: generic → Magazie, mărfurile pe
-    // registrul propriu. INCREMENTAL per (latură × clasă), nu „există un rând ⇒
-    // gata": tipurile seed-uite înaintea P2 (BTR/BCS — feliile 3b/3c) au primit
-    // doar rândul generic, iar un lot de MARFĂ trăiește în registrul Marfuri (așa
-    // îl scriu NIR/LDI/DSC/ASM/retururile și deschiderea importului 1C). Fără
-    // rândul MF, orice transfer sau consum de marfă ar căuta soldul în Magazie și
-    // ar cădea pe gardianul de sold — gaură de profil scoasă la iveală de import
-    // (decizia 21/45f), nu schimbare de semantică.
+    // Regulile de stoc ale LDI și DSC (D9-D8): generic → Magazie, mărfurile pe Marfuri,
+    // incremental per (latură × clasă), pe cheia indexului unic (81c).
     static void SeedReguliStoc(IObjectSpace os, TipDocument tipDoc, LaturaDocument latura, int semn,
             params (string Clasa, TipStoc TipStoc)[] reguli) {
         foreach (var r in reguli) {
@@ -975,16 +969,12 @@ internal static class ProfilPrivat {
         }
     }
 
-    // Registrele „generic + mărfuri" folosite de aproape toate tipurile private.
     static readonly (string Clasa, TipStoc TipStoc)[] MagazieSiMarfuri =
         [(null, TipStoc.Magazie), ("MF", TipStoc.Marfuri)];
 
-    // Transferul (23c): ± pe același registru, fără contare la plan sintetic.
+    // Transferul (23c): fără contare la plan sintetic.
     static void SeedPoliticiNotaTransfer(IObjectSpace os) {
-        var btr = os.FirstOrDefault<TipDocument>(x => x.Cod == "BTR");
         ContaSeeder.SeedNumerotare(os, "BTR", "BTR-");
-        SeedReguliStoc(os, btr, LaturaDocument.Predator, -1, MagazieSiMarfuri);
-        SeedReguliStoc(os, btr, LaturaDocument.Primitor, +1, MagazieSiMarfuri);
     }
 
     // Lanțul de cumpărare (26a, sub TVA structural — design §6): recepția
@@ -1005,10 +995,6 @@ internal static class ProfilPrivat {
             conex.InverseazaLaturi = false;
             conex.NaturaFiltru = NaturaClasa.Stoc;
         });
-
-        // Stoc NIR: +1 pe primitor; generic → Magazie, mărfurile pe registrul
-        // propriu (restul claselor speciale bugetare nu există la privat).
-        SeedReguliStoc(os, nir, LaturaDocument.Primitor, +1, MagazieSiMarfuri);
 
         // Contare NIR: 3xx (contul Tipului) = furnizor, la NET.
         ContaSeeder.AliniazaContare(os, nir, "NIR/Stoc", null, NaturaClasa.Stoc, null, receptie => {
@@ -1036,11 +1022,6 @@ internal static class ProfilPrivat {
     static void SeedPoliticiBonConsum(IObjectSpace os) {
         var bcs = os.FirstOrDefault<TipDocument>(x => x.Cod == "BCS");
         ContaSeeder.SeedNumerotare(os, "BCS", "BCS-");
-        // Ieșirea din registrul în care STĂ lotul (generic Magazie, marfă
-        // Marfuri — vezi nota de la SeedReguliStoc); intrarea în Consum e
-        // aceeași pentru orice clasă, deci un singur rând generic.
-        SeedReguliStoc(os, bcs, LaturaDocument.Predator, -1, MagazieSiMarfuri);
-        SeedReguliStoc(os, bcs, LaturaDocument.Primitor, +1, (null, TipStoc.Consum));
         ContaSeeder.SeedContare6xxDin3xx(os, bcs, null, Derivari6xxExceptii);
     }
 
@@ -1242,40 +1223,24 @@ internal static class ProfilPrivat {
     }
 
     // Asamblarea (FAZA 1C §7): kitting n→m pe stoc, într-o gestiune. Stoc: UN
-    // SINGUR set de reguli, +1 pe predator — SEMNUL LINIEI dă direcția (consum
-    // −, produs +, materializat în PregatesteOperare, mecanismul LDI 28a);
-    // regula spune doar latura și registrul. Aceeași mapare de registre ca
-    // NIR/LDI/DSC privat (generic → Magazie, MF → Marfuri).
     // FĂRĂ RegulaContare: la plan sintetic marfă→marfă (371=371) e zgomot
     // (raționamentul 23c, ca la NotaTransfer) — valoarea se mută între loturi,
     // nu între conturi. Producția reală (345=711) primește reguli la cerință.
     static void SeedPoliticiAsamblare(IObjectSpace os) {
-        var asm = os.FirstOrDefault<TipDocument>(x => x.Cod == "ASM");
         ContaSeeder.SeedNumerotare(os, "ASM", "ASM-");
-        SeedReguliStoc(os, asm, LaturaDocument.Predator, +1, MagazieSiMarfuri);
     }
 
     // Retururile (FAZA 1C §7, rezoluția spike-ului storno): corespondența
     // ORIGINALĂ cu valori NEGATIVE. Liniile se culeg pozitive și se semnează la
-    // operare (PregatesteOperare), deci regulile spun doar LATURA și registrul —
-    // semnul liniei face direcția. `PastreazaSemn` scoate normalizarea de semn
+    // operare (PregatesteOperare); `PastreazaSemn` scoate normalizarea de semn
     // din motor pe rândurile astea (singura extensie de motor a feliei).
-    //   RLF: stoc +1 pe PREDATOR (gestiunea) × linia −q ⇒ −q (marfa iese);
-    //        contare 3xx = 401 cu −V; TVA 4426 = 401 cu −TVA (PoliticaTva).
-    //   RDC: stoc −1 pe PRIMITOR (gestiunea) × linia −q ⇒ +q (marfa revine pe
-    //        lotul original); venit 4111 = 70x cu −V, cost 607 = 371 cu −cost,
-    //        TVA 4111 = 4427 cu −TVA. Liniile de venit (Natura=Serviciu) nu
-    //        sunt atinse de regulile generice de stoc (Natura=Stoc).
-    // Mapările de registre oglindesc NIR/LDI/DSC privat (generic → Magazie,
-    // MF → Marfuri).
+    //   RLF: contare 3xx = 401 cu −V; TVA 4426 = 401 cu −TVA (PoliticaTva).
+    //   RDC: venit 4111 = 70x cu −V, cost 607 = 371 cu −cost, TVA 4111 = 4427 cu −TVA.
     static void SeedPoliticiRetururi(IObjectSpace os) {
         var rlf = os.FirstOrDefault<TipDocument>(x => x.Cod == "RLF");
         var rdc = os.FirstOrDefault<TipDocument>(x => x.Cod == "RDC");
         ContaSeeder.SeedNumerotare(os, "RLF", "RLF-");
         ContaSeeder.SeedNumerotare(os, "RDC", "RDC-");
-
-        SeedReguliStoc(os, rlf, LaturaDocument.Predator, +1, MagazieSiMarfuri);
-        SeedReguliStoc(os, rdc, LaturaDocument.Primitor, -1, MagazieSiMarfuri);
 
         // RLF: stornarea achiziției — contul de stoc al Tipului = furnizorul.
         ContaSeeder.AliniazaContare(os, rlf, "RLF/Stoc", null, NaturaClasa.Stoc, null, retur => {

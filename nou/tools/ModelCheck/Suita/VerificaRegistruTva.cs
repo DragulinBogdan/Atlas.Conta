@@ -72,13 +72,7 @@ static class VerificaRegistruTva {
             var ids = idsSursa.Concat(os.GetObjectsQuery<Document>()
                 .Where(d => d.DocumentSursaId != null && idsSursa.Contains(d.DocumentSursaId.Value))
                 .Select(d => d.ID).ToList()).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
             var loturi = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajJt)).ToList();
-            var idsLot = loturi.Select(l => l.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => (r.DocumentId != null && ids.Contains(r.DocumentId.Value)) || idsLot.Contains(r.LotId)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)).ToList());
             pj.Adauga(os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList());
             pj.Adauga(loturi);
@@ -121,7 +115,7 @@ static class VerificaRegistruTva {
             var furnizor = os.CreateObject<Partener>();
             furnizor.Cod = MarcajJt + "-FURN";
             furnizor.Denumire = "Furnizor probă jurnal TVA";
-            // Codul fiscal e SETAT deliberat: pe `RegistruTva` partenerul e tipat
+            // Codul fiscal e SETAT deliberat: pe postarea fiscală partenerul e tipat
             // `Repartitor` (baza ierarhiei — pe Decont e chiar angajatul), deci jurnalul îl
             // scoate prin as-cast pe frunza `Partener`. Cu câmpul gol, proba ar fi
             // trecut comparând null cu null.
@@ -180,7 +174,7 @@ static class VerificaRegistruTva {
                     && f.DataDocument == fctA.Data && !f.Storno && f.DocumentId == fctA.ID));
 
             var noteTvaACub = CubScena.Note(os, fctA.ID).Where(p => !p.Storno && conturiTvaScena.Contains(p.Cont)).ToList();
-            s.Check("MOTIVUL DE EXISTENȚĂ al registrului (design, „de ce nu o proiecție peste RegistruContabil”): liniile "
+            s.Check("MOTIVUL DE EXISTENȚĂ al registrului (design, „de ce nu o proiecție peste registrul contabil”): liniile "
                 + "Scutit și Capitalizat nu produc NICIUN rând contabil de TVA, dar AU rând fiscal — o proiecție peste "
                 + "4426/4427 le-ar fi pierdut tăcut, adică raport incomplet cu aparență de raport complet",
                 RandCub(lScutit) != null && RandCub(lCapitalizat) != null

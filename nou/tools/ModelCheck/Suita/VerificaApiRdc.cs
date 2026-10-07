@@ -81,8 +81,6 @@ static class VerificaApiRdc {
         var cont707 = os.FirstOrDefault<Cont>(c => c.Simbol == "707");
 
         var reguliRdc = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipRdc.ID).ToList();
-        var tipStoc = (reguliRdc.FirstOrDefault(r => r.ClasaId == tip371.ClasaId)
-            ?? reguliRdc.First(r => r.ClasaId == null)).TipStoc;
 
         void Curata() {
             // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
@@ -96,12 +94,6 @@ static class VerificaApiRdc {
                 .Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => loturi.Contains(r.LotId) || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in os.GetObjectsQuery<Document>().Where(d => docIds.Contains(d.ID)).ToList()
@@ -114,11 +106,11 @@ static class VerificaApiRdc {
         }
         Curata();
 
-        s.Check("Api RDC — precondiții de profil: ancora RDC cu seria „RDC-”, reguli de stoc −1 pe PRIMITOR (marfa "
-            + "REVINE pe lotul original) și `PoliticaTva` COLECTAT cu `TipTvaImplicit = N21`",
+        s.Check("Api RDC — precondiții de profil: ancora RDC cu seria „RDC-”, NICIO regulă de stoc (D9-D8) "
+            + "și `PoliticaTva` COLECTAT cu `TipTvaImplicit = N21`",
             tipRdc != null && tipRdc.ClrType == nameof(ReturClient)
             && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipRdc.ID)?.Serie == "RDC-"
-            && reguliRdc.Count > 0 && reguliRdc.All(r => r.Latura == LaturaDocument.Primitor && r.Semn == -1)
+            && reguliRdc.Count == 0
             && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipRdc.ID)?.Directie == DirectieTva.Colectat
             && tipRdc.TipTvaImplicitId == n21.ID
             && tip371 != null && tip301 != null && tip707 != null && ned21 != null);
@@ -195,7 +187,7 @@ static class VerificaApiRdc {
             + $"Valoare={costInBaza.Valoare:N2}.");
         s.Check("ANCORA F19-D7 (probat ÎN BAZĂ, pe ObjectSpace proaspăt — nu doar în ReadDto): linia de COST își pierde "
             + "IDENTITATEA fiscală la culegere, nu doar valoarea — `TipTvaId = null` PERSISTAT, oglinda exactă a lui "
-            + "`PregatesteOperare`. „Inert devine adevărat, nu doar afirmat”: `RegistruTva` scrie un rând pentru "
+            + "`PregatesteOperare`. „Inert devine adevărat, nu doar afirmat”: motorul postează un fapt fiscal pentru "
             + "ORICE linie cu `TipTvaId`, deci un implicit rămas aici ar intra în jurnal (și în D394) ca bază "
             + "impozabilă — inclusiv la BACKFILL, care recitește din model",
             costInBaza.TipTvaId == null && costInBaza.ValoareTva == 0m && costInBaza.Valoare == 30m

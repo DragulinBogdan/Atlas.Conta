@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Atlas.Conta.BackOffice.WebApi.API.Conta;
 
-// Declarația informativă 394 (felia 14, D4-D6): proiecția `RegistruTva` →
+// Declarația informativă 394 (felia 14, D4-D6): proiecția faptelor fiscale din cub →
 // listele și rezumatele formularului, PER PARTENER. READ-ONLY prin construcție,
 // ca toate proiecțiile de registru.
 //

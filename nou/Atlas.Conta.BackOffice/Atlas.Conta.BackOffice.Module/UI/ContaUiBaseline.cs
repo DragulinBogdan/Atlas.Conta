@@ -174,51 +174,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         registry.For<AsamblareDetaliu>().HideForeignKeys();          // ProdusId (F19-D3)
 
         // Tipuri în afara ierarhiei de documente:
-        registry.For<RegistruStoc>().HideForeignKeys();             // LotId/RepartitorId/DocumentId/DetaliuId
-        // Coloana `Lot` iese din ListView-ul registrului de stoc (review advers
-        // D6): de când `Lot` are DefaultProperty, afișarea ei evaluează
-        // `Eticheta`, care citește `Produs` LAZY — pe 282k rânduri asta e N+1 per
-        // pagină randată, exact tiparul pentru care s-a introdus
-        // `ConfigureDimensiuniEager` la 41c. Registrul rămâne complet (produs,
-        // gestiune, cantitate, valoare); identitatea lotului se citește pe
-        // documentul sursă sau, la pasul 5, în proiecții (42c). Nomenclatorul de
-        // Loturi și lookup-urile păstrează eticheta — acolo e chiar rostul ei, iar
-        // seturile sunt mărginite de căutare.
-        registry.For<RegistruStoc>()
-            .ListView(nameof(RegistruStoc) + ListView, _ => { })
-            .Column(r => r.Lot, c => c.Index = -1)
-            // 85b — `Document`/`DocumentDetaliu` n-au DefaultProperty: ar apărea ca GUID.
-            .Column(r => r.Document, c => c.Index = -1)
-            .Column(r => r.Detaliu, c => c.Index = -1);
-        // DIM-3: dimensiunile registrului și ale regulii de contare sunt FK-uri
-        // PLATE cu navigație pereche — convenția HideForeignKeys le acoperă pe
-        // toate (fostul bloc de path-uri nested ale owned-ului a murit).
-        registry.For<RegistruContabil>().HideForeignKeys();         // ContDebitId/ContCreditId/DocumentId/DetaliuId + Debit*/Credit*
-        registry.For<RegistruContabil>()
-            .ListView(nameof(RegistruContabil) + ListView, _ => { })
-            // 85b — `Document`/`DocumentDetaliu` n-au DefaultProperty: ar apărea ca GUID.
-            .Column(r => r.Document, c => c.Index = -1)
-            .Column(r => r.Detaliu, c => c.Index = -1);
         registry.For<RegulaContare>().HideForeignKeys();            // TipDocumentId/TipMaterialId/Cont* + Comun*/Override*
-        registry.For<RegistruTva>().HideForeignKeys();              // DocumentId/DetaliuId/PartenerId/TipTvaId
-        // Navigațiile registrului de TVA ies din ListView, din același motiv ca
-        // `RegistruStoc.Lot` de mai sus: sunt LAZY (registrul nu are AutoInclude
-        // — vezi DbContext) iar el e de ordinul sutelor de mii de rânduri, deci
-        // afișarea lor ar fi N+1 per pagină randată. Rândul rămâne complet
-        // (data, sens, regim, cotă, bază, TVA); identitatea documentului și a
-        // partenerului se citește în jurnale, unde join-ul e explicit (JT-D7).
-        registry.For<RegistruTva>()
-            .ListView(nameof(RegistruTva) + ListView, _ => { })
-            .Column(r => r.Document, c => c.Index = -1)
-            .Column(r => r.Detaliu, c => c.Index = -1)
-            .Column(r => r.Partener, c => c.Index = -1)
-            .Column(r => r.TipTva, c => c.Index = -1)
-            // Perioada de declarare stă lângă data faptului: diferența dintre
-            // ele e chiar ce arată F27-D5. `ScrisLa` e timestamp tehnic (reperul
-            // rectificativei) — se citește în raport, nu în listă.
-            .Column(r => r.PerioadaAn, c => c.Index = 1)
-            .Column(r => r.PerioadaLuna, c => c.Index = 2)
-            .Column(r => r.ScrisLa, c => c.Index = -1);
         registry.For<Lot>().HideForeignKeys();                      // ProdusId/GestiuneId (LinieIntrareId orfan → rămâne)
         registry.For<Imperechere>().HideForeignKeys();              // DocumentStingatorId/DocumentId/InverseazaId
         // F27-D8: imperecherea e fapt datat, iar rândul invers se vede ca atare —
@@ -616,7 +572,7 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
                     .Item(x => x.Taxa)));
     }
 
-    // Imobilizările (F26-D12); registrul rămâne `Server` implicit, ca celelalte trei (85).
+    // Imobilizările (F26-D12).
     static void Imobilizari(UiBaselineRegistry registry) {
         registry.For<Imobilizare>().HideForeignKeys();
         registry.For<Imobilizare>()
@@ -689,23 +645,5 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.RepartitorCredit, c => c.Index = -1);
 
         registry.For<PoliticaAmortizare>().HideForeignKeys();        // TipMaterialId/Cont*Id
-
-        registry.For<RegistruImobilizari>().HideForeignKeys();
-        registry.For<RegistruImobilizari>()
-            .ListView(nameof(RegistruImobilizari) + ListView)
-            .Column(r => r.Data, c => c.Index = 0)
-            .Column(r => r.Imobilizare, c => c.Index = 1)
-            .Column(r => r.Fel, c => c.Index = 2)
-            .Column(r => r.Valoare, c => c.Index = 3)
-            .Column(r => r.ValoareFiscala, c => c.Index = 4)
-            .Column(r => r.Amortizare, c => c.Index = 5)
-            .Column(r => r.AmortizareFiscala, c => c.Index = 6)
-            .Column(r => r.AmortizareDeductibila, c => c.Index = 7)
-            .Column(r => r.Luni, c => c.Index = 8)
-            .Column(r => r.Repartitor, c => c.Index = 9)
-            .Column(r => r.Storno, c => c.Index = 10)
-            // 85b — `Document`/`DocumentDetaliu` n-au DefaultProperty: ar apărea ca GUID.
-            .Column(r => r.Document, c => c.Index = -1)
-            .Column(r => r.Detaliu, c => c.Index = -1);
     }
 }

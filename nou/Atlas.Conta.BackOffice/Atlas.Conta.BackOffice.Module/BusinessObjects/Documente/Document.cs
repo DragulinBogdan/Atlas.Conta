@@ -157,11 +157,6 @@ public abstract class Document : Editabila {
     [XafDisplayName("Motivul corecției")]
     public virtual MotivCorectie? MotivCorectie { get; set; }
 
-    /// <summary>Totalul de stins din partidele cubului, în sensul de stins; scris de motor la operare, null în Draft (F27-D7, 102).</summary>
-    [ModelDefault("AllowEdit", "False")]
-    [XafDisplayName("Total de stins")]
-    public virtual decimal? TotalStingere { get; set; }
-
     [DevExpress.ExpressApp.DC.Aggregated]
     public virtual ObservableCollection<DocumentDetaliu> Detalii { get; set; } = new();
 

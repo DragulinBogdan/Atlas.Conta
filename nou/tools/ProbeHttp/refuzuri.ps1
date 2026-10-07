@@ -75,12 +75,11 @@ DREPTUL UNIC PE CIFRELE DIN CUB (D9-D9)
   Rutele care întorc cifre însumate din cub pe ușa de sistem (`itv/{id}`,
   `itv/previzualizare`, `amo/previzualizare`, `imobilizari/{id}/fisa`,
   `imobilizari/registru`, `perioade/{an}/{luna}/verificare`) cer citirea
-  COMPLETĂ pe `Postare`: niciun tip de registru, niciun criteriu de rând sau de
-  membru. Cei patru utilizatori de mai sus nu pot izola dreptul (`User` cade pe
-  primul drept al rutei, ceilalți citesc tot), deci rândurile lui cer patru
-  roluri temporare, scrise în bază de `postare-restrictii.py` și șterse în
-  `finally`: `FaraRegistre` (200), `FaraPostare`, `RandPostare`, `MembruPostare`
-  (403 înaintea citirii). Se rulează numai cu `-Baza <baza hostului>`; fără ea
+  COMPLETĂ pe `Postare`: niciun criteriu de rând sau de membru. Cei patru
+  utilizatori de mai sus nu pot izola dreptul (`User` cade pe primul drept al
+  rutei, ceilalți citesc tot), deci rândurile lui cer trei roluri temporare,
+  scrise în bază de `postare-restrictii.py` și șterse în `finally`:
+  `FaraPostare`, `RandPostare`, `MembruPostare` (403 înaintea citirii). Se rulează numai cu `-Baza <baza hostului>`; fără ea
   scriptul o spune și sare rândurile.
 
 UTILIZARE
@@ -253,12 +252,11 @@ function Proba {
     $rand
 }
 
-# D9-D9: cele patru rânduri ale dreptului unic pe o rută cu cifre din cub.
+# D9-D9: cele trei rânduri ale dreptului unic pe o rută cu cifre din cub.
 $script:Restrictii = $null
 function Proba-AccesPostari {
-    param([string]$Cerere, [string]$Cale, [string[]]$Contine200 = @())
+    param([string]$Cerere, [string]$Cale)
     if (-not $script:Restrictii) { return }
-    Proba -Cerere $Cerere -User $script:Restrictii.FaraRegistre -Asteptat 200 -Metoda GET -Cale $Cale -Contine $Contine200 -Nota 'D9-D9: fără niciun registru, cu Postare' | Out-Null
     Proba -Cerere $Cerere -User $script:Restrictii.FaraPostare -Asteptat 403 -Metoda GET -Cale $Cale -Contine 'citi', 'Postare' -Nota 'D9-D9: dreptul unic' | Out-Null
     Proba -Cerere $Cerere -User $script:Restrictii.RandPostare -Asteptat 403 -Metoda GET -Cale $Cale -Contine 'citi', 'Postare' -Nota 'D9-D9: criteriu de rând, 403 înaintea citirii' | Out-Null
     Proba -Cerere $Cerere -User $script:Restrictii.MembruPostare -Asteptat 403 -Metoda GET -Cale $Cale -Contine 'citi', 'Postare' -Nota 'D9-D9: restricție de membru, 403 înaintea citirii' | Out-Null
@@ -1194,7 +1192,7 @@ try {
     Proba -Cerere 'verificarea închiderii' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA', '"Severitate":"Blocant"' | Out-Null
     Proba -Cerere 'verificarea închiderii' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'PRECEDENTA-DESCHISA' -Nota 'citește tot ce însumează verdictul' | Out-Null
     Proba -Cerere 'verificarea închiderii' -User 'User' -Asteptat 404 -Metoda GET -Cale "$calePerioada/verificare" -Contine 'nu există sau nu e vizibil' | Out-Null
-    Proba-AccesPostari -Cerere 'verificarea închiderii' -Cale "$calePerioada/verificare" -Contine200 'PRECEDENTA-DESCHISA'
+    Proba-AccesPostari -Cerere 'verificarea închiderii' -Cale "$calePerioada/verificare"
     Proba -Cerere 'verificarea unei luni nedefinite' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/perioade/2099/12/verificare' -Contine 'nu există sau nu e vizibil' | Out-Null
     # Istoricul (F27-D2): citire, cu același subiect — luna. Pe o lună niciodată
     # închisă e o listă GOALĂ, adică un răspuns adevărat, nu un refuz.

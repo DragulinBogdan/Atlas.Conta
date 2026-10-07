@@ -168,16 +168,24 @@ TVA, iar `Plati` pornește din `Contabil`. SC-CIT-106 numără zero pe toate
 șapte, SC-CIT-15 și SC-SAFT-10 pe rapoarte, iar SC-ASM-16 probează că
 diagnosticul `Comparabil` le exclude cu numărul raportat.
 
-Accesul la registre (X-D2): `RegistruContabil`, `RegistruStoc`, `RegistruTva`,
-`RegistruImobilizari` și `Imperechere` se ating în producție numai prin lista
-nominală din `tools/ModelCheck/ProbeCititoriRegistre.Lista.cs`. O intrare
-numește fișierul, membrul, registrul și rolul. Un membru nou într-un fișier
-deja permis rămâne încălcare. Proba `X-D2` (`ProbeCititoriRegistre.cs`) citește
-arborele sintactic al sursei (`SursaProductie.cs`) și numără trei feluri de
-utilizare: mențiunea tipului, inclusiv prin alias `using`; numele tabelei
-într-un literal; apelul unui purtător. Purtător este orice membru al cărui tip
-declarat conține o colecție de rânduri de registru, plus lista declarată
+Accesul la legătură (X-D2, redusă la pasul 7 al TR-D9a): `Imperechere` se
+atinge în producție numai prin lista nominală din
+`tools/ModelCheck/ProbeCititoriRegistre.Lista.cs`. O intrare numește
+fișierul, membrul și rolul. Un membru nou într-un fișier deja permis rămâne
+încălcare. Proba `X-D2` (`ProbeCititoriRegistre.cs`) citește arborele
+sintactic al sursei (`SursaProductie.cs`) și numără trei feluri de utilizare:
+mențiunea tipului, inclusiv prin alias `using`; numele tabelei într-un
+literal; apelul unui purtător. Purtător este orice membru al cărui tip
+declarat conține o colecție de rânduri de legătură, plus lista declarată
 `Purtatori` pentru rezultatele netipizate (`Partide.NominalizataLibera`).
+Proba numelor interzise (D9-D7 b, `ProbeCititoriRegistre.NumeInterzise.cs`,
+în `--probe-sursa`): în sursa C# și TypeScript din `nou/` nicio referință
+de cod, pe identificator întreg, la cele patru entități de registru, la
+membrii `PosteazaInCub` și `TotalStingere`, la `IDocumentCuRegistruPropriu`,
+`StocService` și `CubDinRegistre`; excepțiile sunt fișierul probei și
+`src/generated/`. Comentariile, literalii de cale (specificatorii de modul
+TypeScript) și numele de raport păstrate de D9-D12 nu sunt referințe de cod;
+zece mutanți fixează fiecare caz. (2026-10-07)
 `nameof` și definiția tipului nu contează. Proba pică și pe o intrare rămasă
 fără utilizare, iar mutanții îi probează detecția. În `Motor/`, `Cub/`,
 `Declaratii/`, `Proiectii/`, `Api/`, `Culegere/`, `Saft/` și WebApi cele patru
@@ -194,8 +202,8 @@ Lista nominală (40 de intrări; TR-D9a pasul 6, 2026-10-07):
 | legătură (30) | `ImperechereService`, `GardianEditare`, `MotorOperare.MotivImperecheri`, `Partide.NominalizataLibera`, `Materializare.Imperecheaza`, `ImperechereApply`, `ImperechereController`, `ImperecheriController` | `Imperechere` este legătura explicită, nu registru; rămâne |
 
 Nu mai există scriitor dual și nici martor: clasele au ieșit din enum odată
-cu codul lor (D9-D15, pasul 6). Maparea, gardianul și evidența XAF dispar
-la pasul 7, când se activează proba numelor interzise (D9-D7 b).
+cu codul lor (D9-D15, pasul 6); maparea, gardianul și evidența XAF au ieșit
+la pasul 7, odată cu activarea probei numelor interzise (D9-D7 b).
 Prima rulare a găsit un singur defect: supraîncărcarea
 `TvaProiectii.IntreLuni(IQueryable<RegistruTva>)`, fără apelant de producție, a
 ieșit din `Proiectii/`; oracolul pe registrul fiscal stă acum în ModelCheck.
@@ -322,23 +330,23 @@ EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
 automată a schemei prin XAF este dezactivată. Module este comun celor două
 hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
 
-Lanțul de migrații a fost comprimat la 2026-09-25 (C102, 102e): baza inițială
-este `20260925110419_InitialCreate`, generată din model, plus SQL-ul
-brut pe care modelul nu-l declară (`Postare` partiționată pe `Spatiu` cu
-cheia `(Spatiu, ID)`, FK-urile și indecșii pe partiții, constrângerile
-`CK_Postare_*`, funcția `cub_partida_id`). Migrațiile nu transformă date.
-Proba A/B: `pg_dump --schema-only` pe baza din lanțul vechi complet și pe
-baza din migrația comprimată are aceleași 593 de instrucțiuni. După
-normalizarea ordinii coloanelor și a tokenurilor `pg_dump`, diferă numai 10
-valori `DEFAULT` lăsate de `AddColumn` pe 5 tabele (`UrmarestePartide`,
-`Pozitie`, cele șase câmpuri din `PartideDeschise`, `TolerantaTaxa`,
-`PosteazaInCub`), pe care modelul nu le declară. Migrațiile de dinainte
-sunt istorie în git; bazele create pe lanțul vechi nu se actualizează, se
-recreează (102b). Lanțul crește prin migrații, ca înainte.
-`20260925151359_SnapshotStocCub` înlocuiește cheia snapshot-ului de stoc
-cu lot/cont/produs/gestiune și păstrează data deschiderii. Nu convertește
-snapshot-uri vechi. Pe o tabelă goală migrația se aplică direct; datele
-incompatibile cer recrearea bazei conform 102(b).
+Lanțul de migrații a fost comprimat a doua oară la 2026-10-07 (TR-D9a,
+pasul 7, D9-D6; prima dată la 2026-09-25, C102, 102e): baza inițială este
+`20261007072615_InitialCreate`, generată din model, plus SQL-ul brut pe care
+modelul nu-l declară (`Postare` partiționată pe `Spatiu` cu cheia
+`(Spatiu, ID)`, cele două partiții, FK-urile și cei 13 indecși pe partiții și
+pe părinte, inclusiv cei ai cititorilor cubului, constrângerile
+`CK_Postare_*`, funcția `cub_partida_id`; `Down` cu `DROP` explicit).
+Snapshot-ul EF rămâne cu cheia `ID` (divergență declarată, probată de
+`STR-SCHEMA`). Migrațiile nu transformă date. Proba structurală a
+recomprimării: față de baza din lanțul vechi diferă, în afara obiectelor
+scoase, numai valoarea implicită `false` pe 17 coloane booleene adăugate
+prin `AddColumn` (`Activ` pe nomenclatoare, `TvaCules`,
+`RegularizareAvans`), pe care EF le scrie mereu. Migrațiile de dinainte sunt
+istorie în git; bazele create pe lanțul vechi nu se actualizează, se
+recreează (102b); clonele de import și de perf de dinaintea recomprimării
+rămân pe schema veche și Import1C cere `--recreeaza`. Lanțul crește prin
+migrații, ca înainte.
 Citirile cumulate au o probă pe două conexiuni și un contor de instrucțiuni
 SQL (SC-CIT-77). Scrierea globală prin ObjectSpace secured este refuzată
 înaintea accesului la date (SC-CIT-78). Accesul real pe rând și membru este

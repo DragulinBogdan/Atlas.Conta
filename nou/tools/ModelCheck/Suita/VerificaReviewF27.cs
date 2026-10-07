@@ -82,12 +82,6 @@ static class VerificaReviewF27 {
                 .Where(p => p.Cod.StartsWith(Marcaj)).Select(p => p.ID).ToList();
             var lotIds = os.GetObjectsQuery<Lot>()
                 .Where(l => produsIds.Contains(l.ProdusId)).Select(l => l.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
             foreach (var imp in os.GetObjectsQuery<Imperechere>()
                     .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId))
                     .OrderByDescending(i => i.InverseazaId != null))
@@ -499,7 +493,7 @@ static class VerificaReviewF27 {
             var scrise = osCitire.GetObjectsQuery<Imperechere>()
                 .Count(x => x.DocumentId == idFclX && x.DocumentStingatorId == idIncZ);
             var partideIan = Partide27(osCitire, 1);
-            var totalX = osCitire.GetObjectByKey<Document>(idFclX).TotalStingere;
+            var totalX = ImperechereService.Total(osCitire, idFclX);
             var raport = SolduriService.Reconstruieste(osCitire).Referinte.FirstOrDefault(r => r.Luna == 1);
             Console.WriteLine($"     MĂSURAT (F27-R1d/{eticheta}): gardianul → „{verdictGardian ?? "<a trecut>"}”, "
                 + $"comanda după închidere → „{refuzComanda ?? "<A TRECUT>"}”, rânduri scrise {scrise}, "
@@ -570,7 +564,7 @@ static class VerificaReviewF27 {
             var refuz = Refuz27(() => MotorOperare.AnuleazaOperarea(os, fclX));
             s.Check($"F27-R7a ({eticheta}) redeschiderea permite anularea numai fără depunere fiscală confirmată",
                 privat ? refuz?.Contains("TVA_DEJA_DECLARATA") == true && fclX.Stare == StareDocument.Operat
-                    : refuz == null && fclX.Stare == StareDocument.Draft && fclX.TotalStingere == null);
+                    : refuz == null && fclX.Stare == StareDocument.Draft);
         }
         using (var os = s.Provider.CreateObjectSpace())
             s.InchideAcceptTot(os, An, 1, Marcaj);
@@ -605,13 +599,12 @@ static class VerificaReviewF27 {
             var lotVechi = os.GetObjectsQuery<Lot>().First(l => l.LinieIntrareId == idLinieVeche);
             var (_, corectie) = CorectieService.Corecteaza(os, idFctS, Zi(2, 11), MotivCorectie.FaptNou);
             var draftSters = os.GetObjectsQuery<NIR>().Any(n => n.ID == draftVechi.ID);
-            var totalPeDraft = corectie.TotalStingere;
             MotorOperare.Opereaza(os, corectie);
             var conexNou = os.GetObjectsQuery<NIR>().FirstOrDefault(n => n.DocumentSursaId == corectie.ID);
             var linieNoua = os.GetObjectsQuery<DocumentDetaliu>().First(d => d.DocumentId == corectie.ID);
             var lotNou = os.GetObjectsQuery<Lot>().FirstOrDefault(l => l.LinieIntrareId == linieNoua.ID);
             Console.WriteLine($"     MĂSURAT (F27-R3d/{eticheta}): conexul draft vechi {(draftSters ? "MAI EXISTĂ" : "șters")}, "
-                + $"`TotalStingere` pe draftul corecției = {(totalPeDraft?.ToString() ?? "null")}, conex nou "
+                + $"conex nou "
                 + $"{(conexNou == null ? "NU" : $"da, {conexNou.Stare}, LotId {(conexNou.Detalii.FirstOrDefault()?.LotId == lotNou?.ID ? "= lotul nou" : "≠ lotul nou")}")}, "
                 + $"lot nou {(lotNou == null ? "-" : $"{lotNou.Data:dd.MM.yyyy} @ {lotNou.PretUnitar}")}.");
             s.Check($"F27-R3d ({eticheta}) FCT cu conex DRAFT: corecția șterge draftul autogenerat, iar operarea corecției "
@@ -620,10 +613,6 @@ static class VerificaReviewF27 {
                 !draftSters && conexNou != null && conexNou.Stare == StareDocument.Draft && lotNou != null
                 && lotNou.ID != lotVechi.ID && conexNou.Detalii.First().LotId == lotNou.ID
                 && lotNou.Data == Zi(2, 11) && lotNou.PretUnitar == 50m);
-            s.Check($"F27-R3e ({eticheta}) `TotalStingere` (câmp AL MOTORULUI, scris doar la operare) NU se copiază pe "
-                + "draftul corecției — e în lista de excluderi a copierii generice, deci draftul pornește fără total, "
-                + "iar `ImperechereService.Total` nu citește ca fapt totalul originalului",
-                totalPeDraft == null);
         }
 
         // ═════════════ R5 — eroarea materială cu partener schimbat (D394, privat) ═════════════
@@ -729,7 +718,7 @@ static class VerificaReviewF27 {
             var restProiectie = Rest27(os, idClientB).Where(r => r.Numar == Marcaj + "-FCL-Y").Select(r => r.Ramas).FirstOrDefault();
             Console.WriteLine($"     MĂSURAT (F27-RL2/{eticheta}): ștergerea originalului desfăcut — gardian "
                 + $"„{refuzGardian ?? "<a trecut>"}”, commit „{refuzCommit ?? "<a trecut>"}”; rest FCL-Y {ramasFcl} "
-                + $"(total {fcl.TotalStingere}), rest INC {ramasInc}, proiecția {restProiectie}; rândul invers după: "
+                + $"(total {ImperechereService.Total(os, fcl.ID)}), rest INC {ramasInc}, proiecția {restProiectie}; rândul invers după: "
                 + $"{(inversDupa == null ? "ȘTERS" : $"Suma {inversDupa.Suma}, InverseazaId {(inversDupa.InverseazaId == null ? "NULL" : "păstrat")}")}.");
             s.Check($"F27-RL2 ({eticheta}) ștergerea originalului unei imperecheri DESFĂCUTE e refuzată PE FOND, cu textul "
                 + "ei („are un rând invers”), nu pe fixup-ul EF al rândului invers: altfel rândul invers ar fi rămas orfan "

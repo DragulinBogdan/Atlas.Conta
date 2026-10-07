@@ -69,8 +69,6 @@ static class E2eAsamblare {
                     .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
                 var docIds = docs.Select(d => d.ID).ToList();
                 ProbeCub.Purjeaza(pj, os, docIds);
-                pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-                pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
                 pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
                 foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
                     pj.Adauga(doc);
@@ -88,13 +86,10 @@ static class E2eAsamblare {
 
                 // --- Seed ASM privat ---
                 var reguliStocAsm = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipAsm.ID).ToList();
-                s.Check("Seed ASM: ancoră TipDocument + numerotare ASM-; UN SINGUR set de reguli de stoc (+1 pe predator; generic→Magazie, MF→Marfuri)",
+                s.Check("Seed ASM: ancoră TipDocument + numerotare ASM-; nicio regulă de stoc (D9-D8)",
                     tipAsm != null && tipAsm.ClrType == nameof(Asamblare)
                     && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipAsm.ID)?.Serie == "ASM-"
-                    && reguliStocAsm.Count == 2
-                    && reguliStocAsm.All(r => r.Latura == LaturaDocument.Predator && r.Semn == +1)
-                    && reguliStocAsm.Any(r => r.ClasaId == null && r.TipStoc == TipStoc.Magazie)
-                    && reguliStocAsm.Any(r => r.TipStoc == TipStoc.Marfuri));
+                    && reguliStocAsm.Count == 0);
                 s.Check("Seed ASM: FĂRĂ reguli de contare (marfă→marfă la sintetic = zgomot — 23c) și fără politici de TVA/scadență/validare",
                     !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipAsm.ID)
                     && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipAsm.ID) == null

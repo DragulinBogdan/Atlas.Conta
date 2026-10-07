@@ -48,8 +48,7 @@ sealed class Purja(IObjectSpace os) {
     }
 
     // Regulă de folosire (review F13, defect 6): purja detașează DOAR tipurile
-    // purjate explicit; dependenții luați de cascadă (`RegistruTva`,
-    // `Imperecheri`) rămân în tracker dacă scena i-a încărcat
+    // purjate explicit; dependenții luați de cascadă (`Imperecheri`) rămân în tracker dacă scena i-a încărcat
     // înainte — un commit ulterior pe același OS ar da
     // `DbUpdateConcurrencyException`. Deci: purja la ÎNCEPUTUL scenei, pe OS
     // proaspăt, sau la sfârșit, pe un OS care nu se mai folosește.

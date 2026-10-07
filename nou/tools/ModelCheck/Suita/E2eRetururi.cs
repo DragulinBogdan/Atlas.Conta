@@ -68,8 +68,6 @@ static class E2eRetururi {
                 var docs = os.GetObjectsQuery<Document>()
                     .Where(d => repIds.Contains(d.PredatorId) || repIds.Contains(d.PrimitorId)).ToList();
                 var docIds = docs.Select(d => d.ID).ToList();
-                pj.Adauga(os.GetObjectsQuery<RegistruStoc>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-                pj.Adauga(os.GetObjectsQuery<RegistruContabil>().Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
                 pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
                 foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
                     pj.Adauga(doc);
@@ -102,20 +100,14 @@ static class E2eRetururi {
                 // --- Seed RLF/RDC privat ---
                 var stocRlf = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipRlf.ID).ToList();
                 var stocRdc = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipRdc.ID).ToList();
-                s.Check("Seed RLF: ancoră + numerotare RLF-; stoc +1 pe PREDATOR (generic→Magazie, MF→Marfuri) — semnul liniei dă ieșirea",
+                s.Check("Seed RLF: ancoră + numerotare RLF-; nicio regulă de stoc (D9-D8)",
                     tipRlf != null && tipRlf.ClrType == nameof(ReturFurnizor)
                     && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipRlf.ID)?.Serie == "RLF-"
-                    && stocRlf.Count == 2
-                    && stocRlf.All(r => r.Latura == LaturaDocument.Predator && r.Semn == +1)
-                    && stocRlf.Any(r => r.ClasaId == null && r.TipStoc == TipStoc.Magazie)
-                    && stocRlf.Any(r => r.TipStoc == TipStoc.Marfuri));
-                s.Check("Seed RDC: ancoră + numerotare RDC-; stoc −1 pe PRIMITOR (marfa REVINE pe lotul original)",
+                    && stocRlf.Count == 0);
+                s.Check("Seed RDC: ancoră + numerotare RDC-; nicio regulă de stoc (D9-D8)",
                     tipRdc != null && tipRdc.ClrType == nameof(ReturClient)
                     && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipRdc.ID)?.Serie == "RDC-"
-                    && stocRdc.Count == 2
-                    && stocRdc.All(r => r.Latura == LaturaDocument.Primitor && r.Semn == -1)
-                    && stocRdc.Any(r => r.ClasaId == null && r.TipStoc == TipStoc.Magazie)
-                    && stocRdc.Any(r => r.TipStoc == TipStoc.Marfuri));
+                    && stocRdc.Count == 0);
                 var contareRlf = os.GetObjectsQuery<RegulaContare>().Where(r => r.TipDocumentId == tipRlf.ID).ToList();
                 s.Check("Seed RLF: UN rând generic Natura=Stoc cu PastreazaSemn — 3xx (Tipul) = furnizor (fallback 401)",
                     contareRlf.Count == 1
@@ -271,7 +263,7 @@ static class E2eRetururi {
                 // Linia de cost NU e o operațiune taxabilă — e mișcare internă
                 // venit↔stoc — dar culegerea îi pusese `TipTva` (implicitul tipului).
                 // `PregatesteOperare` îi șterge acum IDENTITATEA fiscală, nu doar
-                // valoarea, deci `RegistruTva` nu mai primește rând pentru ea.
+                // valoarea, deci nu mai primește postare fiscală.
                 // Fără fix: jurnalul arăta pentru acest retur baza −130 (venitul −100
                 // PLUS costul −30) cu TVA −21 — o bază umflată cu 30%, într-o cifră
                 // care ajunge în D394. Iar cusătura JT-D6 NU putea s-o vadă:

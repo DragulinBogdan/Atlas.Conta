@@ -361,12 +361,12 @@ detaliul din listă, acțiunile și editarea inline funcționează neschimbate.
 `Client` nu este implicit pe niciun ListView root. (85a)
 
 `ServerView` este opt-in per view, doar pe registre append-only citite:
-`RegistruStoc`, `RegistruContabil`, `RegistruTva` și `Postare`. Lista
-`Postare` de sub „Registre” e evidența brută a cubului: fără editare și fără
-totaluri, cu tranzacția, felul, documentul, contul, latura, partenerul,
-gestiunea, unitatea și cele trei măsuri; din rând se deschide detaliul
-postării, iar detaliul tranzacției își arată postările, tot fără editare.
-Listele vechi de registre rămân până la tăiere. (D9-D9) Pagina proiectează doar
+azi numai `Postare`. Lista `Postare` de sub „Registre” e evidența brută a
+cubului: fără editare și fără totaluri, cu tranzacția, felul, documentul,
+contul, latura, partenerul, gestiunea, unitatea și cele trei măsuri; din rând
+se deschide detaliul postării, iar detaliul tranzacției își arată postările,
+tot fără editare. Listele vechi de registre au dispărut odată cu entitățile
+lor (2026-10-07, D9-D6). (D9-D9) Pagina proiectează doar
 coloanele vizibile; detaliul rândului se deschide normal. Precondițiile sunt
 verificate de ModelCheck: toate coloanele vizibile sunt mapate sau
 `[Calculated]`, orice coloană de referință are `DefaultProperty` pe clasa

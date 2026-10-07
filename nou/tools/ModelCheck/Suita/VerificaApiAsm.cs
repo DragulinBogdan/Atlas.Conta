@@ -84,11 +84,7 @@ static class VerificaApiAsm {
             .Where(t => t.Clasa.Natura == NaturaClasa.Stoc && t.ID != tip371.ID)
             .OrderBy(t => t.Cod).FirstOrDefault();
 
-        // Registrul pe care iese ASM-ul din predator, citit din POLITICĂ (regula
-        // specifică pe clasa liniei bate genericul — 26c).
         var reguliAsm = os.GetObjectsQuery<RegulaStoc>().Where(r => r.TipDocumentId == tipAsm.ID).ToList();
-        var tipStoc = (reguliAsm.FirstOrDefault(r => r.ClasaId == tip371.ClasaId)
-            ?? reguliAsm.First(r => r.ClasaId == null)).TipStoc;
 
         void Curata() {
             // F13-D2: curățenia de scenă = purjă FIZICĂ (`Purja.cs`), nu `os.Delete`.
@@ -102,12 +98,6 @@ static class VerificaApiAsm {
                 .Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentId) || docIds.Contains(i.DocumentStingatorId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => loturi.Contains(r.LotId) || (r.DocumentId != null && docIds.Contains(r.DocumentId.Value))).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in os.GetObjectsQuery<Document>().Where(d => docIds.Contains(d.ID)).ToList()
@@ -120,11 +110,11 @@ static class VerificaApiAsm {
         }
         Curata();
 
-        s.Check("Api ASM — precondiții de profil: ancora ASM cu seria „ASM-”, UN SINGUR set de reguli de stoc (+1 pe "
-            + "PREDATOR) și NICIO politică de TVA (F19-D7: `TipTvaId`/`ValoareTva` ar fi cifră moartă în DTO)",
+        s.Check("Api ASM — precondiții de profil: ancora ASM cu seria „ASM-”, NICIO regulă de stoc (D9-D8) "
+            + "și NICIO politică de TVA (F19-D7: `TipTvaId`/`ValoareTva` ar fi cifră moartă în DTO)",
             tipAsm != null && tipAsm.ClrType == nameof(Asamblare)
             && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipAsm.ID)?.Serie == "ASM-"
-            && reguliAsm.Count > 0 && reguliAsm.All(r => r.Latura == LaturaDocument.Predator && r.Semn == +1)
+            && reguliAsm.Count == 0
             && os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipAsm.ID) == null
             && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocumentId == tipAsm.ID)
             && tip371 != null);

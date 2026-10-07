@@ -9,8 +9,7 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 /// <summary>
-/// Probele strangler-ului (S-D8): ce a rămas PERSISTAT după comanda motorului
-/// vechi, pe tipul comutat local pe <c>PosteazaInCub</c>.
+/// Probele cubului (S-D8): ce a rămas PERSISTAT după comanda motorului.
 /// </summary>
 static class ProbeCub {
     /// <summary>

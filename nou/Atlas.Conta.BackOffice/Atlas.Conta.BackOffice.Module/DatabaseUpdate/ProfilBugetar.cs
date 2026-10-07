@@ -289,23 +289,14 @@ internal static class ProfilBugetar {
     }
 
     static void SeedPoliticiNotaTransfer(IObjectSpace os) {
-        var btr = os.FirstOrDefault<TipDocument>(x => x.Cod == "BTR");
         ContaSeeder.SeedNumerotare(os, "BTR", "BTR-");
-        SeedReguliStoc(os, btr, LaturaDocument.Predator, -1,
-            (null, TipStoc.Magazie), ("OF", TipStoc.Folosinta));
-        SeedReguliStoc(os, btr, LaturaDocument.Primitor, +1,
-            (null, TipStoc.Magazie), ("OF", TipStoc.Folosinta));
     }
 
     static void SeedPoliticiAsamblare(IObjectSpace os) {
-        var asm = os.FirstOrDefault<TipDocument>(x => x.Cod == "ASM");
         ContaSeeder.SeedNumerotare(os, "ASM", "ASM-");
-        SeedReguliStoc(os, asm, LaturaDocument.Predator, +1,
-            (null, TipStoc.Magazie), ("MF", TipStoc.Marfuri));
     }
 
-    // Registrele profilului, ca rânduri de politică: incremental per (latură ×
-    // clasă), pe cheia indexului unic (81c).
+    // Regulile de stoc ale LDI, incremental per (latură × clasă), pe cheia indexului unic (81c, D9-D8).
     static void SeedReguliStoc(IObjectSpace os, TipDocument tipDoc, LaturaDocument latura, int semn,
             params (string Clasa, TipStoc TipStoc)[] reguli) {
         foreach (var r in reguli) {
@@ -343,13 +334,6 @@ internal static class ProfilBugetar {
             conex.NaturaFiltru = NaturaClasa.Stoc;
         });
 
-        // Reguli stoc NIR (inventar 02): +1 pe primitor; generic → Magazie,
-        // clasele cu registru propriu (gratuități/folosință/mărfuri/custodie)
-        // au rând specific — regula specifică bate genericul în motor.
-        SeedReguliStoc(os, nir, LaturaDocument.Primitor, +1,
-            (null, TipStoc.Magazie), ("G", TipStoc.Gratuit), ("OF", TipStoc.Folosinta),
-            ("MF", TipStoc.Marfuri), ("MC", TipStoc.Custodie));
-
         // Contare NIR: 3xx (contul Tipului) = furnizor (ContImplicit al
         // partenerului predator, fallback 401), valoarea cu TVA capitalizat.
         ContaSeeder.AliniazaContare(os, nir, "NIR/Stoc", null, NaturaClasa.Stoc, null, receptie => {
@@ -373,16 +357,10 @@ internal static class ProfilBugetar {
             });
     }
 
-    // Politicile consumului (inventar 03, defa 65). Stoc: consumul nu „dispare" —
-    // alimentează DOUĂ registre simultan: −1 Magazie pe predator (gestiunea),
-    // +1 Consum pe primitor (locul de consum, util la obiecte date în folosință
-    // / responsabilități).
+    // Politicile consumului (inventar 03, defa 65).
     static void SeedPoliticiBonConsum(IObjectSpace os) {
         var bcs = os.FirstOrDefault<TipDocument>(x => x.Cod == "BCS");
         ContaSeeder.SeedNumerotare(os, "BCS", "BCS-");
-        SeedReguliStoc(os, bcs, LaturaDocument.Predator, -1,
-            (null, TipStoc.Magazie), ("OF", TipStoc.Folosinta));
-        SeedReguliStoc(os, bcs, LaturaDocument.Primitor, +1, (null, TipStoc.Consum));
 
         // Contarea consumului: 6xx = 3xx per Clasă/Tip, derivată din simbol
         // (helper comun cu minusul de inventar); fără filtru de semn — liniile

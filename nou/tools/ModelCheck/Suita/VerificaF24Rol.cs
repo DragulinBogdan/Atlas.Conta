@@ -115,8 +115,7 @@ static class VerificaF24Rol {
                 && p.WriteState == SecurityPermissionState.Allow
                 && p.DeleteState == SecurityPermissionState.Allow);
             var faraDrept = Politici.TipuriConfigurabile.Where(t => !Scrie(t)).Select(t => t.Name).ToList();
-            Type[] interzise = [typeof(Document), typeof(RegistruContabil), typeof(RegistruStoc),
-                typeof(RegistruTva), typeof(RegistruImobilizari), typeof(Atlas.Conta.BackOffice.Module.Cub.Postare),
+            Type[] interzise = [typeof(Document), typeof(Atlas.Conta.BackOffice.Module.Cub.Postare),
                 typeof(Atlas.Conta.BackOffice.Module.Cub.Tranzactie), typeof(Societate), typeof(SetareProfil),
                 typeof(ApplicationUser), typeof(PermissionPolicyRole)];
             var scrieriInterzise = interzise.Where(t => permisiuni.Any(p =>
@@ -134,7 +133,7 @@ static class VerificaF24Rol {
             s.Check($"F24-R3 ({eticheta}) `Updater.SeedRolConfigurator` e idempotent (un singur rând după două "
                 + "apeluri) și scrie exact separarea din 83h: `ReadOnlyAllByDefault` (deci Read și Navigate pe "
                 + "tot, fără enumerare) + Create/Write/Delete pe fiecare tip din listă, și pe niciun document, "
-                + "registru, `Postare`, `Tranzactie`, `Societate`, `SetareProfil`, user sau rol",
+                + "`Postare`, `Tranzactie`, `Societate`, `SetareProfil`, user sau rol",
                 randuri == 1 && politicaOk && faraDrept.Count == 0 && scrieriInterzise.Count == 0);
         }
     }

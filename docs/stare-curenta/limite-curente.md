@@ -390,6 +390,14 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 - `SDD`/`SFD` nu au cod SAF-T de achiziție; `N9` poartă codul de livrare al
   rândului 10.1 în timp ce maparea D300 îl pune pe rândul 11. (84-r1, 84-r2)
+- Acoperirea politicii de mișcări SAF-T (D17-V1) se probează într-o singură
+  direcție: fiecare pereche tip × categorie pe care cubul o produce în scena
+  SAF-T are politică, iar scena atinge cele opt tipuri care mișcă stocul
+  (FCT în locul NIR: pe cub recepția mișcă pe factură, NIR-ul conex egal nu
+  mișcă). Direcția inversă, „politica n-are perechi fără mișcare”, nu se mai
+  măsoară de la tăierea regulilor de stoc fără consumator: perechile pe
+  Magazie și NIR/Marfuri rămân în politică fără scenă care să le producă.
+  Limită consemnată pentru decizia 110. (TR-D9a pasul 7, D9-D8, 2026-10-07)
 
 - R6 verifică intervale configurate, nu toate condițiile legale ale unei cote.
   Proveniența fiscală a ajustărilor RDC/RLF/reduceri rămâne neacoperită:

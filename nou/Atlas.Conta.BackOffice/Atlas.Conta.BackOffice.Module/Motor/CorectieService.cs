@@ -16,7 +16,7 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // prin metadata EF — nu o listă scrisă de mână pe 15 tipuri, care ar fi tăcut
 // incompletă la primul câmp nou al unei frunze. Ce NU copiază e o listă mică și
 // justificabilă: identitatea (`ID`, discriminatorul `ClrType`), ce stăpânește motorul (`Stare`,
-// `DataOperare`, `Autogenerat`, `DocumentSursaId`, `TotalStingere`), datele proprii corecției
+// `DataOperare`, `Autogenerat`, `DocumentSursaId`), datele proprii corecției
 // (`DataInregistrare`, `CorecteazaId`, `MotivCorectie`) și câmpurile de
 // blocare optimistă.
 //
@@ -29,7 +29,7 @@ public static class CorectieService {
         nameof(Document.ID), nameof(Document.Stare), nameof(Document.DataOperare),
         nameof(Document.DataInregistrare), nameof(Document.DocumentSursaId),
         nameof(Document.Autogenerat), nameof(Document.CorecteazaId), nameof(Document.MotivCorectie),
-        nameof(Document.TotalStingere), nameof(Document.ClrType),
+        nameof(Document.ClrType),
         nameof(Editabila.OptimisticLockField),
     };
 

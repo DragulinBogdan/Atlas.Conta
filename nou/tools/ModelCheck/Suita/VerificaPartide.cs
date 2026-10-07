@@ -66,12 +66,6 @@ static class VerificaPartide {
             var docIds = os.GetObjectsQuery<Document>()
                 .Where(d => d.Data >= new DateOnly(An, 1, 1) && d.Data <= new DateOnly(An, 12, 31))
                 .Select(d => d.ID).ToList();
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>()
-                .Where(r => docIds.Contains(r.DocumentId)).ToList());
             // Rândurile INVERSE înaintea celor pe care le desfac (`InverseazaId` e
             // FK `Restrict`, ca legătura de corecție).
             foreach (var imp in os.GetObjectsQuery<Imperechere>()
@@ -230,9 +224,9 @@ static class VerificaPartide {
             idClient = client.ID; idCasa = casa.ID;
             idFclA = fclA.ID; idFclB = fclB.ID; idInc1 = inc1.ID;
 
-            Console.WriteLine($"     MĂSURAT (PAR-V1/{eticheta}): TotalStingere — FCL A {fclA.TotalStingere}, "
-                + $"FCL B {fclB.TotalStingere}, INC 1 {inc1.TotalStingere}.");
-            s.Check($"PAR-V1 ({eticheta}) `TotalStingere` e scris de motor la operare din partidele cubului, "
+            Console.WriteLine($"     MĂSURAT (PAR-V1/{eticheta}): totalul de stins — FCL A {ImperechereService.Total(os, idFclA)}, "
+                + $"FCL B {ImperechereService.Total(os, idFclB)}, INC 1 {ImperechereService.Total(os, idInc1)}.");
+            s.Check($"PAR-V1 ({eticheta}) totalul de stins se citește din partidele cubului, "
                 + "în sensul de stins al fiecărui document",
                 ImperechereService.Total(os, idFclA) == 100m
                 && ImperechereService.Total(os, idFclB) == 250m
@@ -433,9 +427,8 @@ static class VerificaPartide {
             ImperechereService.Sterge(os, impC.ID);
             MotorOperare.AnuleazaOperarea(os, fclC);
             s.Check($"PAR-V16 ({eticheta}) ștergerea stingerii din fereastra deschisă trece, anularea merge, iar "
-                + "`TotalStingere` revine la null: totalul e al documentului OPERAT, nu al draftului",
-                fclC.Stare == StareDocument.Draft && fclC.TotalStingere == null
-                && ImperechereService.Total(os, idFclC) == 0m);
+                + "totalul de stins revine la 0: totalul e al documentului OPERAT, nu al draftului",
+                fclC.Stare == StareDocument.Draft && ImperechereService.Total(os, idFclC) == 0m);
         }
 
         // ═════════════════════ redeschiderea și reconstrucția ═════════════════
@@ -574,7 +567,7 @@ static class VerificaPartide {
                 var creantaRdc = SumaCreanta(os, rdc.ID);
                 var apare = ImperecheriProiectii.DocumenteCuRest(os).Any(r => r.DocumentId == rdc.ID);
                 Console.WriteLine($"     MĂSURAT (PAR-V22/{eticheta}): RDC {rdc.Numar} — total scris "
-                    + $"{Bani(rdc.TotalStingere ?? 0m)}, Σ linii de creanță {Bani(creantaRdc)}, Σ TOATE liniile "
+                    + $"{Bani(ImperechereService.Total(os, rdc.ID))}, Σ linii de creanță {Bani(creantaRdc)}, Σ TOATE liniile "
                     + $"{Bani(brut)}; în `DocumenteCuRest`: {apare}.");
                 s.Check($"PAR-V22/SC-CIT-64 ({eticheta}): RDC are totalul de stins 121 din cub, fără costul 30; liniile de creanță rămân −121",
                     creantaRdc == -121m && brut == -151m

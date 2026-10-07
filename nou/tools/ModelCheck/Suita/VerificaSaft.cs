@@ -224,11 +224,6 @@ static class VerificaSaft {
                 .Select(d => d.ID).ToList()).Distinct().ToList();
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => ids.Contains(i.DocumentId) || ids.Contains(i.DocumentStingatorId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruTva>().Where(r => ids.Contains(r.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && ids.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.DocumentId)).ToList());
             foreach (var doc in os.GetObjectsQuery<Document>().Where(d => ids.Contains(d.ID)).ToList()
                          .OrderByDescending(d => d.DocumentSursaId != null))
@@ -733,7 +728,7 @@ static class VerificaSaft {
             + $"{linieNed?.TaxInformation?.TaxAmount:N2}; net {fNed?.NetTotal:N2} / brut {fNed?.GrossTotal:N2}; "
             + $"`DocumentDetaliu.Valoare` = {linFctNed.Valoare:N2}, `ValoareTva` = {linFctNed.ValoareTva:N2}.");
         suita.Check("D16-V2 (fixul L2) linia CAPITALIZATĂ (NED21) iese NETĂ: `TvaService` pune TVA-ul în cost "
-            + "(`Valoare` = 121 brut, `ValoareTva` = 0), iar `RegistruTva` desface baza înapoi — deci "
+            + "(`Valoare` = 121 brut, `ValoareTva` = 0), iar faptul fiscal desface baza înapoi — deci "
             + "`InvoiceLineAmount` = 100, `TaxBase` = 100, `TaxAmount` = 21, `NetTotal` = 100 și `GrossTotal` = 121; "
             + "brutul declarat ca net ar fi umflat factura cu TVA-ul nedeductibil",
             linFctNed.Valoare == 121m && linFctNed.ValoareTva == 0m
@@ -889,7 +884,7 @@ static class VerificaSaft {
             + $"{rez.ClosingClienti:N2} + neincluse {rez.NeincluseClienti:N2} vs GLA {rez.ClosingGlaClienti:N2}; "
             + $"furnizori {rez.ClosingFurnizori:N2} + {rez.NeincluseFurnizori:N2} vs {rez.ClosingGlaFurnizori:N2}; "
             + $"bază registru A {rez.BazaRegistruAchizitie:N2} / L {rez.BazaRegistruLivrare:N2} (TOATE tipurile).");
-        suita.Check("D16-V2 cusătura 1 (partidă dublă): Σ `DebitAmount` == Σ `CreditAmount` == Σ `RegistruContabil.Valoare` "
+        suita.Check("D16-V2 cusătura 1 (partidă dublă): Σ `DebitAmount` == Σ `CreditAmount` == Σ valorii postărilor contabile "
             + "pe perioadă, semnat — rândurile de deschidere (fără document) nu intră în GL. Fixul F3: cele două "
             + "totaluri se numără din LINIILE EMISE, fiecare pe latura ei (`D` ⇒ `DebitAmount`, `C` ⇒ "
             + "`CreditAmount`), nu dintr-un acumulator comun care le făcea egale prin construcție",
@@ -898,7 +893,7 @@ static class VerificaSaft {
             && rez.TotalDebit == toateLiniile.Where(l => l.DebitCreditIndicator == "D").Sum(l => l.Amount)
             && rez.TotalCredit == toateLiniile.Where(l => l.DebitCreditIndicator == "C").Sum(l => l.Amount));
         suita.Check("D16-V2 cusătura 2 (TVA): Σ `TaxAmount` de pe rândurile de GL + TVA-ul capitalizat (care n-are rând "
-            + "de taxă emis în GL) + taxa tipurilor fără cod SAF-T == Σ `RegistruTva.Tva` — nicio cifră fiscală nu se "
+            + "de taxă emis în GL) + taxa tipurilor fără cod SAF-T == Σ taxei faptelor fiscale — nicio cifră fiscală nu se "
             + "pierde între cele două registre",
             rez.TvaGl + rez.TvaCapitalizat + rez.TvaFaraCodSaft == rez.TvaRegistru && rez.TvaRegistru != 0m);
         // Tipurile de factură se citesc pe CLASELE CLR (FCL/FCT/RDC/RLF), nu prin
@@ -912,7 +907,7 @@ static class VerificaSaft {
                 Atlas.Conta.BackOffice.Module.Cub.Citiri.Fiscale.Fapte(os), pStart, pEnd).ToList()
             .Where(f => !idsFacturiScena.Contains(f.DocumentId)).Sum(f => f.Baza);
         suita.Check("D16-V2 cusătura 3 (facturi): pe FIECARE sens, Σ bazei rândurilor fiscale AȘEZATE pe linii de factură + "
-            + "Σ bazei celor NEINCLUSE == Σ `RegistruTva.Baza` pe TOATE tipurile de document. Fixul F5: numitorul nu "
+            + "Σ bazei celor NEINCLUSE == Σ bazei faptelor fiscale pe TOATE tipurile de document. Fixul F5: numitorul nu "
             + "mai e restrâns la tipurile de factură — asta măsura mulțimea care intra în fișier cu mulțimea care "
             + "intra în fișier; pe cub, baza fără factură (DEC) e termenul „fără factură” al cusăturii (S2-R4), egal cu "
             + "registrul fiscal al tipurilor fără secțiune citit independent",

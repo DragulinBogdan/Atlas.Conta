@@ -216,30 +216,14 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (!EsteSters(os, obj))
                 VerificaScara(os, obj, erori);
             switch (obj) {
-                // (b) Registrele sunt append-only și EXCLUSIV ale motorului
-                // (decizia 14): nimeni nu le scrie prin UI/API, nici măcar
-                // administratorul. Un singur mesaj, oricâte rânduri ar fi.
-                case RegistruStoc:
-                case RegistruContabil:
-                // Al treilea registru (felia 11) intră pe aceeași regulă: e scris
-                // de motor în aceeași tranzacție cu celelalte două, iar jurnalele
-                // de TVA sunt declarații — o editare directă ar fi exact genul de
-                // „corecție" pe care append-only-ul o interzice.
-                case RegistruTva:
-                // Al patrulea registru, scris prin `IDocumentCuRegistruPropriu` (F26-D2/D3).
-                case RegistruImobilizari:
-                // Snapshot-urile perioadelor de referință (F27-D3): nu sunt
-                // registre, dar se scriu pe aceeași ușă — doar motorul, în
-                // tranzacția închiderii.
+                // (b) 14, F27-D3, F27-D7: snapshot-urile perioadelor de referință le scrie doar motorul, la închidere.
                 case SoldPerioadaContabil:
                 case SoldPerioadaStoc:
-                // Partidele deschise ale perioadelor de referință (F27-D7): tot
-                // proiecție a motorului, scrisă în tranzacția închiderii.
                 case PartidaDeschisa:
                     if (!registruRaportat) {
                         registruRaportat = true;
-                        erori.Add("Registrele (stoc/contabil/TVA/imobilizări/solduri și partide de perioadă) se scriu "
-                            + "doar de motor, la operare — nu se creează, modifică sau șterg direct.");
+                        erori.Add("Soldurile și partidele de perioadă se scriu doar de motor, la închidere "
+                            + "— nu se creează, modifică sau șterg direct.");
                     }
                     break;
                 case Cub.Tranzactie:
@@ -405,10 +389,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             if (doc.Stare != StareDocument.Draft)
                 erori.Add($"Un document nou se creează în starea Draft, nu „{doc.Stare}” "
                     + "— operarea îi schimbă starea.");
-            if (doc.Autogenerat || doc.DocumentSursaId != null || doc.DataOperare != null
-                    || doc.TotalStingere != null)
-                erori.Add("Legătura de grup conex (Autogenerat/DocumentSursa), DataOperare "
-                    + "și totalul de stins le scrie doar motorul.");
+            if (doc.Autogenerat || doc.DocumentSursaId != null || doc.DataOperare != null)
+                erori.Add("Legătura de grup conex (Autogenerat/DocumentSursa) și DataOperare "
+                    + "le scrie doar motorul.");
             if (!string.IsNullOrEmpty(doc.Numar) && AreNumerotare(os, doc))
                 erori.Add($"Numărul documentului vine din seria tipului (PoliticaNumerotare) "
                     + "— nu se culege.");
@@ -435,10 +418,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "(Operează / Anulează operarea / Stornează).");
         if (!Equals(originale[nameof(Document.DataOperare)], doc.DataOperare)
                 || !Equals(originale[nameof(Document.Autogenerat)], doc.Autogenerat)
-                || !Equals(originale[nameof(Document.DocumentSursaId)], doc.DocumentSursaId)
-                || !Equals(originale[nameof(Document.TotalStingere)], doc.TotalStingere))
+                || !Equals(originale[nameof(Document.DocumentSursaId)], doc.DocumentSursaId))
             erori.Add($"Câmpurile de operare și de grup conex ale documentului {Eticheta(doc)} "
-                + "(DataOperare, Autogenerat, DocumentSursa, Total de stins) le scrie doar motorul.");
+                + "(DataOperare, Autogenerat, DocumentSursa) le scrie doar motorul.");
         var numarOriginal = originale[nameof(Document.Numar)] as string;
         if (!string.Equals(numarOriginal ?? "", doc.Numar ?? "", StringComparison.Ordinal)
                 && AreNumerotare(os, doc))

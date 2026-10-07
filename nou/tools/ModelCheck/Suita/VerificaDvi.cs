@@ -51,7 +51,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // Felia 25 (DVI-D8) — declarația vamală de import
 // ---------------------------------------------------------------------------
 // Cusătura probată: tipul `Dvi` (cu `Motor/*` NEATINS) → politica de TVA a
-// profilului → `RegistruContabil` + `RegistruTva` → D300 (rd. 24 direct, rd. 7
+// profilului → postările contabile și fiscale ale cubului → D300 (rd. 24 direct, rd. 7
 // cu oglinda 22), jurnalul de cumpărări, D394 (nedeclarat deliberat) și codul
 // SAF-T al importului (DVI-r7).
 //
@@ -101,10 +101,6 @@ static class VerificaDvi {
                 .Where(f => docIds.Contains(f.DviId) || docIds.Contains(f.FacturaId)).ToList());
             pj.Adauga(os.GetObjectsQuery<Imperechere>()
                 .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruStoc>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-            pj.Adauga(os.GetObjectsQuery<RegistruContabil>()
-                .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
             pj.Adauga(os.GetObjectsQuery<DocumentDetaliu>()
                 .Where(d => docIds.Contains(d.DocumentId)).ToList());
             foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
@@ -349,7 +345,7 @@ static class VerificaDvi {
                 Console.WriteLine($"     MĂSURAT (DVI-r7/privat): {liniiDvi.Count} linii de GL ale declarației, "
                     + $"coduri de taxă {string.Join(", ", coduri)}; tabela de taxe conține "
                     + $"{string.Join(", ", saft.Taxe.Select(t => t.TaxCode).Where(c => c.StartsWith("3012") || c.StartsWith("3006")))}.");
-                s.Check("DVI-r7 (privat) proiecția D406 iterează `RegistruTva` fără filtru de tip de document, deci "
+                s.Check("DVI-r7 (privat) proiecția D406 iterează faptele fiscale fără filtru de tip de document, deci "
                     + "rândul declarației iese cu codul ei de taxă (301204 pe linia plătită în vamă, 300604 pe cea "
                     + "cu amânarea plății) și amândouă intră în `TaxTable` — restanța se închide în felie, nu se "
                     + "amână",

@@ -1,6 +1,6 @@
 namespace Atlas.Conta.BackOffice.Module.Api.Imo;
 
-// Cele două proiecții peste `RegistruImobilizari`: fișa și registrul (F26-D10).
+// Cele două proiecții ale imobilizărilor, citite din cub: fișa și registrul (F26-D10, 097).
 // Nomenclatorul `Imobilizare` e pe OData (F2-D4), nu aici.
 
 /// <summary>Oglinda plată a lui `AmortizareService.SituatieImobilizare`; enum-urile ca string (57a).</summary>

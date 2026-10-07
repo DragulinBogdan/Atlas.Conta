@@ -79,10 +79,6 @@ static class E2eApiFcl {
                 var docIds = docs.Select(d => d.ID).ToList();
                 pj.Adauga(o.GetObjectsQuery<Imperechere>()
                     .Where(i => docIds.Contains(i.DocumentStingatorId) || docIds.Contains(i.DocumentId)).ToList());
-                pj.Adauga(o.GetObjectsQuery<RegistruStoc>()
-                    .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
-                pj.Adauga(o.GetObjectsQuery<RegistruContabil>()
-                    .Where(r => r.DocumentId != null && docIds.Contains(r.DocumentId.Value)).ToList());
                 pj.Adauga(o.GetObjectsQuery<DocumentDetaliu>().Where(d => docIds.Contains(d.DocumentId)).ToList());
                 // Copiii autogenerați (DSC) întâi — DocumentSursa spre FCL.
                 foreach (var doc in docs.OrderByDescending(d => d.DocumentSursaId != null))
@@ -91,7 +87,6 @@ static class E2eApiFcl {
                 var lotIds = o.GetObjectsQuery<Lot>()
                     .Where(l => l.Produs.Cod.StartsWith(MarcajApiFcl)).Select(l => l.ID).ToList();
                 DeschidereScena.Curata(o, pj, lotIds);
-                pj.Adauga(o.GetObjectsQuery<RegistruStoc>().Where(r => lotIds.Contains(r.LotId)).ToList());
                 pj.Adauga(o.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(MarcajApiFcl)).ToList());
                 pj.Adauga(o.GetObjectsQuery<Produs>().Where(p => p.Cod.StartsWith(MarcajApiFcl)).ToList());
                 pj.Adauga(o.GetObjectsQuery<CodEconomic>().Where(c => c.Cod.StartsWith(MarcajApiFcl)).ToList());
