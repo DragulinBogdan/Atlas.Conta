@@ -584,6 +584,13 @@ se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 
 ### Scara transversală de perf (`scripts/perf-cub-container.ps1`)
 
+Integrala nu rulează scala: după o schimbare de regulă, scena ei se verifică
+separat (la TR-D9a pasul 8 a căzut pe un ASM cu P ≠ C rămas din regimul dual).
+Ultima rulare completă, după tăiere: `run-verificari/perf-cub-20261007-145947/`,
+1.540 privat / 1.010 bugetar OK, zero FAIL. Față de regimul dual, comenzile de
+document fac cu 6 până la 16 comenzi SQL mai puțin
+(`docs/nucleu/tr-d9-pas8-inchiderea.md` §3).
+
 `ModelCheck --perf-cub [privat]` construiește scena de volum (k unități în
 luna măsurată, m luni închise de istoric, faptele „o dată per bază”) și
 măsoară fiecare cititor comun într-un proces nou, rece și cald, pe ușa

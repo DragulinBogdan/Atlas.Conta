@@ -1054,3 +1054,55 @@ detaliat în jurnal):
   nouă `SC-CIT-110` verifică SQL-ul generat. D9-D10 (b) e re-amânat explicit,
   cu cifra. ModelCheck integral **3.554 / 4.862 OK**.
   `docs/nucleu/tr-d9-pas5c-imbinare-partide.md`.
+
+- **2026-10-07 — TR-D9a, pasul 6: tăierea.** Motorul nu mai scrie, nu mai
+  citește și nu mai ramifică pe registre și pe regim. Valoarea liniei vine din
+  decizia contractului; ASM cere P = C; tipul inert și regula de contare fără
+  consumator sunt refuzate; inversa fiscală se naște finală. Oracolul și
+  martorii au ieșit din ModelCheck, cu verdict nominal pe fiecare aserție.
+  ModelCheck integral **3.481 / 4.763 OK** (linia duală 3.554 / 4.862).
+  `docs/nucleu/tr-d9-pas6-taierea.md`.
+
+- **2026-10-07 — TR-D9a, pasul 6b: repartitorul pe capătul de terț.**
+  Partenerul stă pe piciorul de terț al conturilor care cer repartitor, și
+  fără partide; gardul analizei judecă numai postarea (D9-A10). Review-ul
+  Codex al lotului 6 + 6b: D9-6B-R1 corectată (piciorul de terț al
+  trezoreriei ales structural), închis la `ea5d0bc`. **3.505 / 4.784 OK**.
+  `docs/nucleu/tr-d9-pas6b-repartitor.md`.
+
+- **2026-10-07 — TR-D9a, pasul 6c: spargerea `Program.cs` din ModelCheck.**
+  32.499 de linii în `Suita` + `Suita/*.cs`, cu secvența OK/FAIL identică pe
+  ambele profiluri, după repararea a două probe nedeterministe.
+  `docs/nucleu/tr-d9-pas6c-spargere-modelcheck.md`.
+
+- **2026-10-07 — TR-D9a, pasul 7: declarațiile dispar atomic.** Entitățile
+  de registru, cele trei coloane, maparea, listele XAF vechi și cazurile
+  gardianului au ieșit; lanțul de migrații e `InitialCreate`; proba numelor
+  interzise e activă. Lista „Registre → Postări" stă pe view-ul
+  `PostareVizual` (D9-A12). **3.512 / 4.791 OK**.
+  `docs/nucleu/tr-d9-pas7-declaratii.md`.
+
+- **2026-10-07 — TR-D9a, pasul 7b: cheia de pereche pe postare.**
+  `Postare.Pereche` e ordinalul mișcării sau mutării, dat de nucleu;
+  invariantul e în `Conservare` și în `INV-CUB`, cu doi mutanți. Stornoul
+  peste mai multe tranzacții sursă decalează ordinalele. Coloana e în
+  `InitialCreate`, bazele sunt recreate. Nucleu 190/190, **3.516 / 4.795 OK**.
+  `docs/nucleu/tr-d9-pas7b-pereche.md`.
+
+- **2026-10-07 — TR-D9a, pasul 7c: regula care a decis, în explicație.**
+  Explicația reține rândurile de politică consumate, cu contorul lor, în
+  locul textului fix; formatul 2; API-ul arată dacă rândul s-a schimbat de la
+  operare. Lista nominală a faptelor de politică e scrisă înaintea codului.
+  SC-CIT-111 în ModelCheck și pe HTTP. **3.524 / 4.803 OK**.
+  `docs/nucleu/tr-d9-pas7c-versiunea-politicii.md`.
+
+- **2026-10-07 — TR-D9a, pasul 8: închiderea; decizia 110 scrisă.** Pe baze
+  din `InitialCreate`: integrala **3.524 / 4.803 OK**, nucleu 190/190,
+  `refuzuri.ps1` 318/318 de două ori, TPH și drift zero. `PerfCub` după
+  tăiere: 1.010 / 1.540 OK; comenzile de document fac cu 6 până la 16 comenzi
+  SQL mai puțin și durează cu 11–24 % mai puțin, iar niciuna nu face mai multe. Operarea și lista
+  postărilor probate în browser. Import1C pe ianuarie rulează pe cub, cu
+  reconcilierea neverde: contractul 1 arată dublarea reclasificării de către
+  nota-punte. Verdictul restanțelor e scris. Decizia 110 așteaptă aprobarea
+  owner-ului, iar review-ul advers Codex al închiderii e cerut: felia nu e
+  închisă până atunci. `docs/nucleu/tr-d9-pas8-inchiderea.md`.

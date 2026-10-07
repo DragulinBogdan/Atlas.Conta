@@ -290,10 +290,14 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   pe sensul opus (D9-r4). Stornoul cu mai multe surse decalează ordinalele
   surselor după prima, deci ordinalul stornoului nu e literal al
   originalului. (D9-A2; 2026-10-07)
-- Portarea Import1C pe cititorii cubului e probată numai prin compilare.
-  Prima rulare e diagnosticul de la închiderea feliei. Sensibilitatea
-  contractelor 1 și 3 nu mai are probă proprie (`--sabotaj` a ieșit), iar
-  unealta n-are un mod de reconciliere fără scriere. (D9-D11; 2026-10-06)
+- Import1C rulează pe cititorii cubului, dar reconcilierea lui nu e verde.
+  Pe ianuarie 2025 (2026-10-07): 15.232 de documente, zero eșecuri de import,
+  `INV-CUB` verde; contractul 1 are trei conturi fără explicație (371, 3028,
+  303: nota-punte a reclasificării dublează ASM-ul care postează acum,
+  110-r2), iar contractul 5 are 5 partide inițiale neexplicate, neatribuite.
+  Sensibilitatea contractelor 1 și 3 nu mai are probă proprie (`--sabotaj` a
+  ieșit), iar unealta n-are un mod de reconciliere fără scriere.
+  (D9-D11; `docs/nucleu/tr-d9-pas8-inchiderea.md` §6)
 - Refuzul de acces pe cifrele din cub e fraza generică de citire pe `Postare`:
   nu spune dacă lipsește dreptul pe tip sau dacă rolul are un criteriu de rând
   ori de membru. (D9-D9)

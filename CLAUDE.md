@@ -124,26 +124,27 @@ zero pachete, teste de proprietate). Declarația fluxului stă în
 `Module/Declaratii/` (`IDeclarant` numit prin `Document.Declarant()`, driverul
 `Contractare`, laturile ca structură prin `Document.Laturi()`). Cubul e
 persistat în `Module/Cub/` (`Tranzactie` / `Postare`, POCO, tabelă
-partiționată pe `Spatiu`, migrații scrise în SQL) și se scrie în aceeași
-tranzacție de comandă cu registrele pentru tipurile cu `PosteazaInCub` (regim
-dual, dată de profil). Pe cub azi: BCS, FCT, PLT, INC, BTR, FCL, NTC,
-DSC, ITV, RDC, RLF și DVI (ultimele cinci numai privat), plus ASM, LDI, NIR, DEC și PIF/AMO/CAS pe ambele profiluri;
+partiționată pe `Spatiu`, migrații scrise în SQL) și e singurul efect contabil
+al operării (110): registrele, regimul dual și oracolul lor au ieșit la TR-D9a.
+Declară: BCS, FCT, PLT, INC, BTR, FCL, NTC, ASM, LDI, NIR, DEC și PIF/AMO/CAS pe
+ambele profiluri, plus DSC, ITV, RDC, RLF și DVI numai pe privat; un tip fără
+declarant sau fără politica cerută pe profil e refuzat (`TIP_FARA_DECLARATIE`);
 LDI acoperă Magazie/Marfuri și lanțul Folosință în gestiune reală (093),
 cu Custodie explicit neacoperită. NIR conex postează diferența față de
 recepția istorică a facturii, cu proveniență păstrată la corecție (098, 099). Deschiderea generică detaliază soldul inițial
 prin loturi și partide, fără dublare, cu refuz atomic al diferențelor (094).
 Fișa imobilizării este citită din cub de AMO/CAS și API Imo (097).
 Citirile contabile/stoc/partide, fiscale și SAF-T și snapshot-urile lor
-sunt pe cub (103, 105). Registrele se ating în producție numai prin lista
-nominală, scrierea în cub e serială per bază, iar explicația deciziei e
-persistată pe tranzacție (108). Scrierea registrelor se taie la TR-D9.
+sunt pe cub (103, 105). Scrierea în cub e serială per bază (108), postarea
+poartă ordinalul perechii ei, iar explicația persistată pe tranzacție reține
+regulile de politică consumate, cu contorul lor (110). Corectitudinea o poartă
+catalogul și invarianții interni ai cubului (`INV-CUB`).
 
 **Proba supremă (91, 2026-09-22)** e catalogul de scenarii
 `docs/nucleu/scenarii/`: așteptări scrise de mână din regula contabilă, ciclul
 complet per tip, lanțuri transversale, pe ambele profiluri. Import1C e unealtă
 de migrare, înghețată, la sfârșit (091-r4); clona Flax e sursă de întrebări
-prin recensământ, nu gate; `--declaratie-pe-baza` și `--reconciliere-cub` sunt
-diagnostic. „Rotund" (regula de oprire a PoC-ului) e 091 (g). Restanțele au
+prin recensământ, nu gate. „Rotund" (regula de oprire a PoC-ului) e 091 (g). Restanțele au
 patru stări (091 (k)); lista `activă` din `restante.md` e singurul backlog al
 PoC-ului.
 
@@ -168,76 +169,18 @@ review-ul advers închis (M1-R1…R4, M1-R3a). 107-r3 e tratată prin decizia 10
 marchează taxa sursei; reîncărcarea nu e culegere), aprobată de owner
 2026-10-04, mersă în main prin PR #21 (2026-10-05), cu review-ul advers
 Codex închis (109-R1 corectată și reverificată,
-`docs/nucleu/109-review-codex.md`). Urmează TR-D9: tăierea scriitorilor
-vechi și a regimului dual. TR-D9 e împărțit în TR-D9a (tăierea) și TR-D9b
-(unitățile). Contractul TR-D9a e aprobat de owner (2026-10-05), cu review-ul
-advers Codex al contractului închis, pe `tr-d9-taierea`
-(`docs/nucleu/tr-d9-taierea-contract.md`). Pasul 1, inventarul, e făcut
-(`docs/nucleu/tr-d9-inventar.md`, anexa `tr-d9-inventar-modelcheck.md`);
-constatările I1…I8 și rezultatul consultării cub vs registre sunt tranșate de
-owner (2026-10-05) prin amendamentul 1, transcris în contract
-(`docs/nucleu/tr-d9-taierea-amendament-1.md`, D9-A1…D9-A9: probele dinaintea
-tăierii, cheia de pereche pe postare, I2, I5 ca refuz la editare, inversa
-fiscală născută finală, regula care a decis în explicație). Pasul 2 e făcut
-(gardul analizei pe mișcările contractului, probele dinaintea tăierii,
-constatările G1 și G2: `docs/nucleu/tr-d9-pas2-probe.md`). G1 și G2 sunt
-tranșate de owner (2026-10-06) prin amendamentul 2, transcris în contract
-(`docs/nucleu/tr-d9-taierea-amendament-2.md`, D9-A10 și D9-A11: partenerul pe
-piciorul de terț al conturilor care cer repartitor, gardul strict pe postare,
-pas nou 6b, după tăiere, în forma minimală din decizia 111 (h); materialul
-din regulă rămâne limită consemnată). Decizia 111 e propusă, nu aprobată:
-direcția repartitorului unic și a registrelor tipate, cu poarta la contractul
-TR-D9b. Pasul 3 e făcut (aserțiile de regulă din ModelCheck re-țintite pe
-cititorii cubului, cu aceleași cifre: `docs/nucleu/tr-d9-pas3-retintire.md`).
-Pasul 4 e făcut (consumatorii din produs pe cub; dreptul unic e citirea
-completă pe `Postare`; lista XAF `Postare`; gardul scrierii cubului). Pasul 5
-e făcut (Import1C pe cititorii cubului, probat numai prin compilare; Migrare
-și BackfillTva șterse). Review-ul advers Codex al lotului 3–5 e închis
-(D9-L35-R1 și R2 corectate și reverificate). Pasul 5b e făcut (probele
-dinaintea tăierii: reconcilierea arhivată pe `.Flax.R3f`, termenul A al
-`PerfCub`, scara de volum la 5 milioane de postări:
-`docs/nucleu/tr-d9-pas5b-probe.md`). Pasul 5c e făcut (îmbinarea
-partidelor pe chei nulabile corectată, D9-D10 (b) re-amânat cu cifra:
-`docs/nucleu/tr-d9-pas5c-imbinare-partide.md`). Pasul 6 e făcut (tăierea:
-motorul nu mai scrie, nu mai citește și nu mai ramifică pe registre și pe
-regim; valoarea liniei din decizia contractului; ASM pe P = C; refuzul tipului
-inert și al regulii fără consumator; inversa fiscală născută finală; oracolul
-și martorii scoși din ModelCheck; `docs/nucleu/tr-d9-pas6-taierea.md`, 2026-10-07).
-Pasul 6b e făcut și corectat după review-ul Codex (D9-6B-R1; repartitorul pe
-capătul de terț prin `Terti.Capat`, gardul pe capăt prin funcția unică
-`Contabil.Repartitor`, SC-PLT-08, cele 17 aserții rescrise pe cititori:
-`docs/nucleu/tr-d9-pas6b-repartitor.md`, 2026-10-07). Review-ul Codex al lotului
-6 + 6b e închis (D9-6B-R1 corectată la `ea5d0bc`, reverificată, 2026-10-07).
-Pasul 6c e făcut (`Program.cs` din ModelCheck spart în `Suita` + `Suita/*.cs`,
-integrala identică pe secvență; `docs/nucleu/tr-d9-pas6c-spargere-modelcheck.md`,
-2026-10-07). Identificatorii din lista XAF `Postare` sunt decise de owner
-(2026-10-07): proiecție de citire `PostareVizual` ca view SQL, amendamentul 3
-(`docs/nucleu/tr-d9-taierea-amendament-3.md`, D9-A12), intră în pasul 7.
-Codex rămâne pentru deciziile importante, la cererea owner-ului; decizia pe
-view n-a cerut review. Pasul 7 e făcut (2026-10-07, agent Opus `d9-pas7`,
-`docs/nucleu/tr-d9-pas7-declaratii.md`): jalonul 7.1 (`bb2f05f`) a scos atomic
-entitățile de registru, cele trei coloane, maparea, listele vechi, cazurile
-gardianului, `HCategory` și rândurile `RegulaStoc` fără consumator, a
-recomprimat lanțul în `20261007072615_InitialCreate`, a redus X-D2 la
-`Imperechere` și a activat proba numelor interzise; jalonul 7.2 (`6855658`) a
-pus lista „Registre → Postări" pe `PostareVizual` (view în migrație proprie,
-`ServerView`, gard la activare, gardian, neexpunere, `STR-VIZUAL-*`), cu
-probele HTTP și din browser făcute de main. Integrala: 4.791 privat / 3.512
-bugetar, zero FAIL. Pasul 7b e făcut (2026-10-07, main direct,
-`docs/nucleu/tr-d9-pas7b-pereche.md`): `Postare.Pereche` dat de `Motor`,
-invariantul în `Conservare` și în `INV-CUB` cu doi mutanți, stornoul pe surse
-(ordinalele decalate după prima sursă, precizare pentru 110), coloana în
-`InitialCreate`; nucleu 190/190, integrala 4.795 privat / 3.516 bugetar, zero
-FAIL, numai adaos față de 7. Bazele de dezvoltare se recreează din
-`InitialCreate`; clonele de import și de perf rămân pe schema veche (Import1C
-cere `--recreeaza`). Pasul 7c e făcut (2026-10-07, main direct,
-`docs/nucleu/tr-d9-pas7c-versiunea-politicii.md`): explicația reține rândurile
-de politică consumate cu contorul lor (`VersiunePolitica(Fel, Rand,
-Versiune)`, `ContRezolvat.Regula`), formatul 2, DTO-ul cu `Politici` și
-`Schimbata`, SC-CIT-111 în ModelCheck și pe HTTP; integrala 4.803 privat /
-3.524 bugetar, zero FAIL. Urmează pasul 8 (închiderea: D9-D15 rândul 8,
-decizia 110, review advers Codex), pornirea în
-`run-nucleu/tr-d9a/coordonare.md`.
+`docs/nucleu/109-review-codex.md`).
+TR-D9 e împărțit în TR-D9a (tăierea) și TR-D9b (unitățile). TR-D9a e executată
+până la pasul 8 inclusiv (contractul `docs/nucleu/tr-d9-taierea-contract.md` cu
+amendamentele 1–3; pașii în `docs/nucleu/tr-d9-pas*.md`, închiderea în
+`tr-d9-pas8-inchiderea.md`). Decizia 110 e scrisă și așteaptă aprobarea
+owner-ului; review-ul advers Codex al închiderii e cerut, nu închis, deci felia
+nu e încă închisă (regula de oprire 8). Branch-ul e `tr-d9-taierea-pas7b`,
+peste `tr-d9-taierea`, fără PR. Bazele de dezvoltare sunt recreate din
+`InitialCreate`; clonele vechi de import și de perf (`.Flax.R3f`, `.D9P5b`,
+`.D9Vol`) sunt pe schema dinaintea tăierii. Urmează: aprobarea 110 și
+închiderea review-ului, PR-ul feliei, apoi contractul TR-D9b, cu poarta de
+decizie 111 (propusă, neaprobată). Pornirea: `run-nucleu/tr-d9a/coordonare.md`.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
