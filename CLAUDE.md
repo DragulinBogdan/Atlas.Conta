@@ -210,8 +210,11 @@ capătul de terț prin `Terti.Capat`, gardul pe capăt prin funcția unică
 6 + 6b e închis (D9-6B-R1 corectată la `ea5d0bc`, reverificată, 2026-10-07).
 Pasul 6c e făcut (`Program.cs` din ModelCheck spart în `Suita` + `Suita/*.cs`,
 integrala identică pe secvență; `docs/nucleu/tr-d9-pas6c-spargere-modelcheck.md`,
-2026-10-07). Urmează pasul 7, după decizia owner-ului pe identificatorii din
-lista XAF `Postare` (trei alternative, consemnate în coordonare).
+2026-10-07). Identificatorii din lista XAF `Postare` sunt decise de owner
+(2026-10-07): proiecție de citire `PostareVizual` ca view SQL, amendamentul 3
+(`docs/nucleu/tr-d9-taierea-amendament-3.md`, D9-A12), intră în pasul 7.
+Codex a ieșit din buclă (2026-10-07): review-urile adverse rămase le face
+main, pe diff. Urmează pasul 7.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
