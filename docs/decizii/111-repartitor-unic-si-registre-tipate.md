@@ -115,6 +115,14 @@ Owner-ul a hotărât să nu decidă acum și să nu lărgească TR-D9a.
    pe scena multiplicată din D9-A1.
 5. Lista conturilor bugetare cu flag `Repartitor` și felul propus, confirmată
    de owner.
+6. 110-r3, restrânsă de owner (2026-10-08) la cele 11 coordonate de sold
+   (`Partener`, `Gestiune`, `Produs`, `Unitate`, `Valuta` și cele șase coduri
+   bugetare): îmbinarea pe tuplul de coordonate, cu nul față de identificator
+   gol, pe o copie a scenei multiplicate din D9-A1. Cele 7 coloane de
+   referință și de bloc fiscal (`DocumentId`, `LinieId`, `SuportId`,
+   `InversaDinId`, `TipTvaId`, `DocumentFiscalId`, `Atribuit`) rămân nulabile.
+   Se hotărăște odată cu (a) și (c): scrierea felului „niciunul" pe postare și
+   FK-ul repartitorului unic pe `Repartitori` sunt aceeași întrebare.
 
 ## Constatări strânse
 

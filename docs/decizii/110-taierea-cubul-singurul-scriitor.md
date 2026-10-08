@@ -1,7 +1,7 @@
 # 110 — Tăierea: cubul e singurul scriitor și singura sursă; registrele, regimul dual și oracolul lor au ieșit (TR-D9a)
 
 - Data: 2026-10-07
-- Stare: **aprobată de owner, 2026-10-07**. Review-ul advers Codex al închiderii e închis (D9-F-R1…R4 corectate și reverificate; IZ-R1 și IZ-R2 închise). Proba `PerfCub` pe clone diferite e acceptată de owner ca abatere de la „aceeași bază” din regula de oprire 6. Amendează 108 (a), (g), (h), (j) și 090 (a), (l); precizează D9-A2 (ordinalul perechii la storno); închide S-r6, T-r7, T-r13, TR-r9, X-r2, 109-r1, T-r9, 63f, 64h, 86-r13, F27-r11, 098-r3; nu decide 111
+- Stare: **aprobată de owner, 2026-10-07**. Review-ul advers Codex al închiderii e închis (D9-F-R1…R4 corectate și reverificate; IZ-R1 și IZ-R2 închise). Proba `PerfCub` pe clone diferite e acceptată de owner ca abatere de la „aceeași bază” din regula de oprire 6. Amendează 108 (a), (g), (h), (j) și 090 (a), (l); precizează D9-A2 (ordinalul perechii la storno); închide S-r6, T-r7, T-r13, TR-r9, X-r2, 109-r1, T-r9, 63f, 64h, 86-r13, F27-r11, 098-r3; nu decide 111. (i) precizată de 113 (lanțul de migrații are și `RegulaContareFaraPastreazaSemn`); B-r3 închisă prin 112, 110-r1 prin 113
 - Docs: contractul `docs/nucleu/tr-d9-taierea-contract.md` cu amendamentele 1–3; pașii `docs/nucleu/tr-d9-inventar.md`, `tr-d9-pas2-probe.md`, `tr-d9-pas3-retintire.md`, `tr-d9-pas5b-probe.md`, `tr-d9-pas5c-imbinare-partide.md`, `tr-d9-pas6-taierea.md`, `tr-d9-pas6b-repartitor.md`, `tr-d9-pas6c-spargere-modelcheck.md`, `tr-d9-pas7-declaratii.md`, `tr-d9-pas7b-pereche.md`, `tr-d9-pas7c-versiunea-politicii.md`, `tr-d9-pas8-inchiderea.md`; `docs/stare-curenta/` (toate paginile); dovezile în `run-nucleu/tr-d9a/` și `run-verificari/d9-pas8-*`
 
 ## Regula durabilă
@@ -171,16 +171,16 @@ Scris în `docs/decizii/restante.md`. Pe scurt:
 - **rămân active, până la 111**: F27-r16 (criteriul de formă, re-amânat cu cifra) și F28-r1;
 - **după PoC**: 104-r2, 097-r3, F27-r12, F26-r5;
 - **limită declarată**: T-r3;
-- **noi**: D9-r1, D9-r3, D9-r4 (după PoC); 110-r1…110-r5. D9-r2 nu se deschide: regula de contare fără consumator e refuzată la editare.
+- **noi**: D9-r1, D9-r3, D9-r4 (după PoC); 110-r1…110-r5. D9-r2 nu se deschide: regula de contare fără consumator e refuzată la editare. Adăugată 2026-10-08, după PoC: 110-r6, izolarea probelor de politica reală. `ScenariiTvaIntervale` și `ScenariiFiscale` își șterg politica de TVA pe FCT cu un filtru care nu o leagă de tipul de TVA al scenei, deci șterg orice politică de TVA pe FCT care nu e din seed; `PoliticaTva` are cheia tip de document × direcție, fără nimic propriu scenei, așa că rețeta `CurataPolitica` de la D9-F-R2/R3 nu se transferă și corectura cere ștergere pe identitate. `explicatii.py` editează pe HTTP regula de contare reală din seed, pe o bază de unică folosință.
 
 Rândurile de catalog „amânat la TR-D9" care privesc registrele (limita duală din SC-X-01, garda din NIR, SC-ASM-19) s-au închis la pasul 6; reevaluările și compensările (SC-X-05/06/07, SC-X-09, SC-X-13) trec la TR-D9b.
 
 ## Ce rămâne de hotărât de owner
 
 1. Hotărât (2026-10-07): decizia e aprobată, proba PerfCub pe clone diferite e acceptată ca abatere de la regula de oprire 6, felia e închisă.
-2. **B-r3**: recepția facturii n-are regulă de contare proprie. Motivul amânării a dispărut, dar NIR-ul conex rămâne documentul diferențelor, iar o regulă `FCT/Stoc` e schimbare de politică. Rămâne activă; destinația e a owner-ului. Hotărât 2026-10-08: regulă proprie, decizia 112.
-3. **110-r1**: `RegulaContare.PastreazaSemn` nu mai e citit de niciun declarant. Se scoate sau se leagă. Hotărât 2026-10-08: se scoate, decizia 113.
-4. **110-r3**: coordonatele ne-nule cu `Guid.Empty`. Dimensionată; recomandată ca subiect al contractului TR-D9b / deciziei 111, nu al tăierii.
+2. **B-r3**: recepția facturii n-are regulă de contare proprie. Motivul amânării a dispărut, dar NIR-ul conex rămâne documentul diferențelor, iar o regulă `FCT/Stoc` e schimbare de politică. La tăiere a rămas activă, cu destinația la owner. **Închisă 2026-10-08**: regulă proprie `FCT/Stoc`, decizia 112, mersă în main prin PR #23.
+3. **110-r1**: `RegulaContare.PastreazaSemn` nu mai e citit de niciun declarant. Se scoate sau se leagă. **Închisă 2026-10-08**: câmpul e scos, decizia 113, mersă în main prin PR #24.
+4. **110-r3**: coordonatele ne-nule cu `Guid.Empty`. Dimensionată; recomandată ca subiect al contractului TR-D9b / deciziei 111, nu al tăierii. Hotărât 2026-10-08: perimetrul se restrânge la cele 11 coordonate de sold, referințele și blocul fiscal rămân nulabile; restul se hotărăște la poarta 111 (pct. 6 din „Înaintea deciziei").
 5. **Bazele de probă** care se pot șterge: cele `.P7b` și `.D9P8` ale acestui pas, plus cele vechi de pe schema dinaintea tăierii (`.D9P5b`, `.D9Vol`, `.D9VolProba`, `.D9P7`, `.Privat.D9P4`, `.Flax.R3f`, `.Flax.M1s`, `.Flax.R3`). Lista și rostul fiecăreia: `tr-d9-pas8-inchiderea.md` §8.
 6. **111** rămâne propusă; poarta ei e contractul TR-D9b.
 
