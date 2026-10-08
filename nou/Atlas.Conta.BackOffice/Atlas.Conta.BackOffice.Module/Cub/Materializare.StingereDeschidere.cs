@@ -75,9 +75,9 @@ public static partial class Materializare {
 
     static IQueryable<Postare> StingeriDeschidere(IObjectSpace os, Guid document) {
         var initiale = os.GetObjectsQuery<Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere
-            && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida).Select(p => p.Unitate);
+            && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida && p.Unitate != null).Select(p => p.Unitate);
         return os.GetObjectsQuery<Postare>().Where(p => p.DocumentId == document
-            && p.Tranzactie.Fel == N.FelTranzactie.Transfer && initiale.Contains(p.Unitate));
+            && p.Tranzactie.Fel == N.FelTranzactie.Transfer && p.Unitate != null && initiale.Contains(p.Unitate));
     }
 
     static bool Disponibil(IEnumerable<Postare> postari, N.Latura latura, DateOnly data, decimal suma) =>

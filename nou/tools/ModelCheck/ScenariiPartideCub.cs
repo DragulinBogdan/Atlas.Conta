@@ -321,9 +321,6 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         Furnizor = furnizor;
     }
 
-    static readonly System.Text.RegularExpressions.Regex RamuraDeNul =
-        new(@" ON [^\n]*\bOR \([^()\n]* IS NULL AND [^()\n]* IS NULL\)");
-
     void FormaImbinarilor(Guid document) {
         var sql = CuSpatiu(os => CapturaSql.Comenzi(() => {
             foreach (var citire in new[] { CitireCumul.Vizibila, CitireCumul.Integrala }) {
@@ -335,9 +332,9 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             _ = P.Perechi(os, document, true).ToList();
             _ = P.MiscariPePartidele(os, document, Guid.Empty).ToList();
         }));
-        foreach (var c in sql.Where(c => RamuraDeNul.IsMatch(c))) Console.WriteLine("     SC-CIT-110 ramură de nul: " + RamuraDeNul.Match(c).Value);
+        foreach (var r in sql.SelectMany(ProbeRamuraDeNul.Gaseste)) Console.WriteLine("     SC-CIT-110 ramură de nul: " + r);
         Verifica("SC-CIT-110", "cititorii de partide îmbină fără ramură de nul pe cheile nulabile",
-            sql.Count(c => c.Contains("cub_partida_id")) >= 9 && !sql.Any(RamuraDeNul.IsMatch));
+            sql.Count(c => c.Contains("cub_partida_id")) >= 9 && !sql.SelectMany(ProbeRamuraDeNul.Gaseste).Any());
     }
 
     void Rest(Guid doc, decimal net) {
@@ -382,7 +379,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         RandReconstructie raport = null;
         var sql = CapturaSql.Comenzi(() => raport = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1));
         Verifica("SC-CIT-110", "snapshot-ul de partide: verificarea și scrierea îmbină fără ramură de nul",
-            sql.Count(c => c.Contains("cub_partida_id")) >= 2 && !sql.Any(RamuraDeNul.IsMatch));
+            sql.Count(c => c.Contains("cub_partida_id")) >= 2 && !sql.SelectMany(ProbeRamuraDeNul.Gaseste).Any());
         Verifica("SC-CIT-52", "raportează diferența 7 înainte de reparare", raport.PartideDiferite == 1 && raport.DiferentaRest == 7);
         raport = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1);
         Verifica("SC-CIT-52", "a doua reconstrucție fără diferențe", raport.PartideDiferite == 0 && raport.DiferentaRest == 0);
