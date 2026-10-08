@@ -158,7 +158,7 @@ public class MotorTeste {
             var declaratie = Gen.Declaratie(aleator, cuCantitate: true);
             var miscare = declaratie.Miscari[0];
             var fara = declaratie with {
-                Miscari = [miscare with { La = miscare.La with { Gestiune = null, Unitate = null } }],
+                Miscari = [miscare with { La = miscare.La with { Repartitor = null, Unitate = null } }],
             };
             var contract = Motor.Opereaza(fara, Rotunjire());
             Assert.False(contract.EsteAcceptat);

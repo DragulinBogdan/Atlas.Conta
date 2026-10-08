@@ -12,6 +12,7 @@ public static class Coduri {
     public const string GestiuneLipsa = "GESTIUNE_LIPSA";
     public const string ProdusLipsa = "PRODUS_LIPSA";
     public const string PartenerLipsa = "PARTENER_LIPSA";
+    public const string PartenerFiscalFaraFapt = "PARTENER_FISCAL_FARA_FAPT";
     public const string DocumentLipsa = "DOCUMENT_LIPSA";
     public const string DocumentNeasteptat = "DOCUMENT_NEASTEPTAT";
     public const string CauzaStraina = "CAUZA_STRAINA";
