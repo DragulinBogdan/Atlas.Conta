@@ -156,3 +156,8 @@ din sursă se agregă semnat, iar netul zero nu e sens necunoscut. RV2 a
   deschidere nu ajunge pe partida inițială.
 - 107-r5 — partenerul generic la go-live: procedura de rezolvare (NTC de
   reclasificare) și excluderea din D394/SAF-T ca decizie de produs.
+- 107-r11 — reconcilierea nu e reproductibilă între rulări: același binar,
+  pe aceeași sursă, dă alt număr de tranzacții, de postări și de partide
+  inițiale fără explicație (2026-10-08, `docs/nucleu/tr-d9b-pas0-masuratori.md`
+  §7). Până la o ordine de aplicare independentă de identificatorii generați
+  la import, contractul 5 nu poate atribui o diferență unei schimbări de cod.
