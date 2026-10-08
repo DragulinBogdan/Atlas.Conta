@@ -1233,8 +1233,7 @@ internal static class ProfilPrivat {
 
     // Retururile (FAZA 1C §7, rezoluția spike-ului storno): corespondența
     // ORIGINALĂ cu valori NEGATIVE. Liniile se culeg pozitive și se semnează la
-    // operare (PregatesteOperare); `PastreazaSemn` scoate normalizarea de semn
-    // din motor pe rândurile astea (singura extensie de motor a feliei).
+    // operare (PregatesteOperare); declarantul postează valoarea cu semnul ei.
     //   RLF: contare 3xx = 401 cu −V; TVA 4426 = 401 cu −TVA (PoliticaTva).
     //   RDC: venit 4111 = 70x cu −V, cost 607 = 371 cu −cost, TVA 4111 = 4427 cu −TVA.
     static void SeedPoliticiRetururi(IObjectSpace os) {
@@ -1245,7 +1244,6 @@ internal static class ProfilPrivat {
 
         // RLF: stornarea achiziției — contul de stoc al Tipului = furnizorul.
         ContaSeeder.AliniazaContare(os, rlf, "RLF/Stoc", null, NaturaClasa.Stoc, null, retur => {
-            retur.PastreazaSemn = true;
             retur.SursaContDebit = SursaCont.TipMaterial;
             retur.SursaContCredit = SursaCont.RepartitorPrimitor;
             retur.ContCreditId = os.FirstOrDefault<Cont>(c => c.Simbol == "401")?.ID;
@@ -1255,7 +1253,6 @@ internal static class ProfilPrivat {
         // contul de venit al Tipului, FĂRĂ fallback (Tip fără cont = eroare
         // clară la operare, filozofia 30b).
         ContaSeeder.AliniazaContare(os, rdc, "RDC/Serviciu", null, NaturaClasa.Serviciu, null, venit => {
-            venit.PastreazaSemn = true;
             venit.SursaContDebit = SursaCont.RepartitorPredator;
             venit.ContDebitId = os.FirstOrDefault<Cont>(c => c.Simbol == "4111")?.ID;
             venit.SursaContCredit = SursaCont.TipMaterial;
@@ -1263,7 +1260,7 @@ internal static class ProfilPrivat {
 
         // RDC, liniile de cost: costul REVINE — 6xx = 3xx per Tip cu excepțiile
         // profilului (607=371, 711=345, 608=381), valoarea negativă a liniei.
-        ContaSeeder.SeedContare6xxDin3xx(os, rdc, semnFiltru: null, Derivari6xxExceptii, pastreazaSemn: true);
+        ContaSeeder.SeedContare6xxDin3xx(os, rdc, semnFiltru: null, Derivari6xxExceptii);
     }
 
     // Decontul (32): debit din contul Tipului (fără fallback), credit = avansul

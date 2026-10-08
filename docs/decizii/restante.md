@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-10-08 (B-r3 închisă, decizia 112).** [Index](README.md)
+**Actualizat: 2026-10-08 (B-r3 închisă, decizia 112; 110-r1 închisă, decizia 113).** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -383,7 +383,7 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | D9-r1 | Gardul analizei obligatorii pe mutări și transformări (BTR, ASM): nepăzite și înainte, și după tăiere (TR-D9a, D9-D13) | după PoC |
 | D9-r3 | Explicația de audit dincolo de nivelul 1: conținutul regulii la momentul operării (jurnal de audit sau politici cu istoric propriu) și nomenclatoarele care decid contarea (D9-A8) | după PoC |
 | D9-r4 | Cititorii care folosesc cheia de pereche `Postare.Pereche`: contrapartida din fișa contului și conturile corespondente din registrul jurnal (D9-A2) | după PoC |
-| 110-r1 | `RegulaContare.PastreazaSemn` nu mai e citit de niciun declarant: se editează și apare în „Explică”, fără efect pe postări; se scoate sau se leagă (constatat la TR-D9a pasul 7c) | activă: întrebare pentru owner |
+| 110-r1 | `RegulaContare.PastreazaSemn` nu mai e citit de niciun declarant: se editează și apare în „Explică”, fără efect pe postări; se scoate sau se leagă (constatat la TR-D9a pasul 7c) | închisă 2026-10-08 (113): câmpul e scos din model, schemă, „Explică” și client, fără schimbare de postări |
 | 110-r2 | Nota-punte a reclasificării 371 → 3028 / 303 (`SED#-P`) dublează pe cont ce postează acum ASM-ul `SED#-R` pe loturi; puntea cade pentru ASM-urile care postează (`tr-d9-pas5b-probe.md`, A-1) | migrare |
 | 110-r3 | Propunerea owner-ului din 2026-10-06: coordonatele cubului ne-nule, cu `Guid.Empty` în loc de NULL (18 coloane `Guid?` pe `Postare`, circa 190 de comparații cu nul în modul, 37 în nucleu, FK-uri pe documente, repartitori, produse și loturi) | de hotărât în contractul TR-D9b / decizia 111 |
 | 110-r4 | Scenele vechi ale ModelCheck fără filtru `--scenarii` (lista și codurile propuse: `tr-d9-pas6c-spargere-modelcheck.md`); mutarea lor schimbă poziția în log, deci cere linie de bază nouă | după PoC |

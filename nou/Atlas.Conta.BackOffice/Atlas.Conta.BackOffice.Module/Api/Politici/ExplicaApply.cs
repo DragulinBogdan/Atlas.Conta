@@ -325,7 +325,6 @@ public static class ExplicaApply {
             TipMaterial = r.TipMaterialId is Guid id ? tipuriMaterial.GetValueOrDefault(id) : null,
             NaturaFiltru = r.NaturaFiltru?.ToString(),
             SemnFiltru = r.SemnFiltru,
-            PastreazaSemn = r.PastreazaSemn,
             SursaContDebit = r.SursaContDebit.ToString(),
             ContDebit = Simbol(conturi, r.ContDebitId),
             SursaContCredit = r.SursaContCredit.ToString(),

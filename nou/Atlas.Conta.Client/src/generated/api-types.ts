@@ -12591,7 +12591,6 @@ export interface components {
             NaturaFiltru?: components["schemas"]["NaturaClasa"];
             /** Format: int32 */
             SemnFiltru?: number | null;
-            PastreazaSemn?: boolean;
             SursaContDebit?: components["schemas"]["SursaCont"];
             SursaContCredit?: components["schemas"]["SursaCont"];
             /** Format: uuid */
@@ -12680,7 +12679,6 @@ export interface components {
             NaturaFiltru?: string | null;
             /** Format: int32 */
             SemnFiltru?: number | null;
-            PastreazaSemn?: boolean;
             SursaContDebit?: string | null;
             ContDebit?: string | null;
             SursaContCredit?: string | null;
@@ -12698,7 +12696,6 @@ export interface components {
             NaturaFiltru?: components["schemas"]["NaturaClasa"];
             /** Format: int32 */
             SemnFiltru?: number | null;
-            PastreazaSemn?: boolean;
             SursaContDebit?: components["schemas"]["SursaCont"];
             SursaContCredit?: components["schemas"]["SursaCont"];
             /** Format: uuid */

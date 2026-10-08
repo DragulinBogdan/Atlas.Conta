@@ -1100,7 +1100,7 @@ try {
     # 403 pentru dreptul de citire, 422 pentru o referință invizibilă (80f).
     $tip302 = Get-PrimaEntitate 'TipMaterial' "Cod eq '302'"
     $caleExplica = "/api/politici/explica?tip=FCT&tipMaterial=$($tip302.ID)&semn=1"
-    Proba -Cerere 'explică FCT × tip de stoc' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare', 'Conex', '"Castigator":null,"Nivel":"Niciuna"' -Nota 'recepția contează pe NIR' | Out-Null
+    Proba -Cerere 'explică FCT × tip de stoc' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare', 'Conex', '"Nivel":"Natura"', 'Se postează 302 = 401' -Nota 'recepția pe regula FCT/Stoc (112)' | Out-Null
     Proba -Cerere 'explică FCT × tip de stoc' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare' -Nota 'cine configurează vede și efectul' | Out-Null
     Proba -Cerere 'explică FCT × tip de stoc' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale $caleExplica -Contine 'Contare' | Out-Null
     Proba -Cerere 'explică FCT × tip de stoc' -User 'User' -Asteptat 403 -Metoda GET -Cale $caleExplica -Contine 'citi' -Nota 'F24-D6: verdict, nu listă' | Out-Null

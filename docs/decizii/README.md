@@ -62,7 +62,7 @@
 | 43 | [Design pasul 5 — clientul React](043-design-p5-clientul-react.md) | 2026-07-24 | activă; aria amendată de 104d |
 | 44 | [Reordonarea roadmap-ului](044-reordonare-roadmap-1c-inainte-de-p5.md) | 2026-07-25 | executată (reordonarea s-a consumat: 1C, GATE XAF, DIM, apoi pasul 5) |
 | 45 | [Design FAZA 1C — conector de import + reconciliere pe an fiscal complet](045-design-faza-1c-import-reconciliere.md) | 2026-07-25 | activă |
-| 46 | [Felia 1C-a — tipurile noi de model](046-felia-1c-a-tipurile-noi.md) | 2026-07-25 | activă |
+| 46 | [Felia 1C-a — tipurile noi de model](046-felia-1c-a-tipurile-noi.md) | 2026-07-25 | activă, (a) amendată de 113 |
 | 47 | [Felia 1C-b — scheletul Import1C + nomenclatoare + deschiderea](047-felia-1c-b-import1c-deschiderea.md) | 2026-07-25 | activă |
 | 48 | [Analiza pre-1C-c — patru probleme tranșate ÎNAINTE de execuție](048-analiza-pre-1c-c.md) | 2026-07-25 | activă |
 | 49 | [Felia 1C-c — documentele 2025 prin motor](049-felia-1c-c-documentele-prin-motor.md) | 2026-07-25 | activă |
@@ -130,3 +130,4 @@
 | 110 | [Tăierea: cubul e singurul scriitor și singura sursă; registrele, regimul dual și oracolul lor au ieșit (TR-D9a)](110-taierea-cubul-singurul-scriitor.md) | 2026-10-07 | **activă**, aprobată de owner 2026-10-07; review-ul advers Codex al închiderii închis; amendează 108 (a)(g)(h)(j) și 090 (a)(l); precizează D9-A2 |
 | 111 | [Un singur repartitor de sold pe postare, partenerul fiscal în blocul fiscal, registre tipate pentru ce nu se balansează](111-repartitor-unic-si-registre-tipate.md) | 2026-10-06 | **propusă**, neaprobată; poarta de decizie = contractul TR-D9b (pas 0 măsurători); fără efect asupra TR-D9a; 110 scrisă la închiderea TR-D9a (2026-10-07); fostă „110 rezervată închiderii TR-D9a |
 | 112 | [Recepția facturii se contează pe regula ei de contare (`FCT/Stoc`)](112-receptia-facturii-pe-regula-ei.md) | 2026-10-08 | **activă**, destinația hotărâtă de owner 2026-10-08; amendează 026 (a), precizează 026 (c); închide B-r3 |
+| 113 | [Semnul valorii e al liniei; `RegulaContare.PastreazaSemn` a ieșit](113-semnul-e-al-liniei-pastreazasemn-scos.md) | 2026-10-08 | **activă**, destinația hotărâtă de owner 2026-10-08; amendează 046 (a), precizează 110 (i); închide 110-r1 |

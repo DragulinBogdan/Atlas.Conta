@@ -50,8 +50,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // ========== Scenariul e2e 1C-a: retururile la BUGETAR (tipuri inerte) ==========
 // Ancorele RLF/RDC trăiesc în nucleu (ambele profiluri), politicile sunt DATE de
 // profil: la bugetar nu există reguli/numerotare/TVA implicit, deci tipurile sunt
-// inerte — ca DSC/ITV/BPR (decizia 29). Extensia de motor `PastreazaSemn` e
-// aditivă și inertă la default false: nicio regulă existentă nu o poartă.
+// inerte — ca DSC/ITV/BPR (decizia 29).
 static class E2eRetururiBugetar {
     public static void Ruleaza(Suita s) {
         using (var os = s.Provider.CreateObjectSpace()) {
@@ -70,8 +69,6 @@ static class E2eRetururiBugetar {
                 && tip.TipTvaImplicitId == null;
             s.Check("Bugetar: RLF și RDC sunt tipuri INERTE — fără reguli de stoc/contare, numerotare, politici sau TVA implicit",
                 Inert(tipRlf) && Inert(tipRdc));
-            s.Check("Extensia PastreazaSemn e inertă la bugetar: nicio regulă de contare existentă nu o poartă",
-                !os.GetObjectsQuery<RegulaContare>().Any(r => r.PastreazaSemn));
         }
     }
 }

@@ -876,10 +876,10 @@ public static class ContaSeeder {
     // rând primesc regulă la fiecare updater; cele cu simbol non-3xx (bonuri
     // valorice 532/409) nu primesc — rând manual la nevoie (decizia 21).
     // Folosită de BCS (consum, fără filtru de semn), LDI (minus, SemnFiltru=-1),
-    // DSC (costul descărcării) și RDC (costul care REVINE — `pastreazaSemn`:
-    // corespondența de storno postează 607 = 371 cu valoarea negativă a liniei).
+    // DSC (costul descărcării) și RDC (costul care REVINE: 607 = 371 cu
+    // valoarea negativă a liniei).
     internal static void SeedContare6xxDin3xx(IObjectSpace os, TipDocument tipDoc, int? semnFiltru,
-        IReadOnlyDictionary<string, string> exceptii = null, bool pastreazaSemn = false) {
+        IReadOnlyDictionary<string, string> exceptii = null) {
         var conturi = os.GetObjectsQuery<Cont>().ToDictionary(c => c.Simbol, c => c.ID);
         foreach (var tip in TipuriDeStoc(os)) {
             if (!tip.Cod.StartsWith('3'))
@@ -889,7 +889,6 @@ public static class ContaSeeder {
             if (contDebit == null || !DerivataDeAliniat(os, tipDoc, tip.ID, tip.Cod, null, semnFiltru))
                 continue;
             AliniazaContare(os, tipDoc, $"{tipDoc.Cod}/{tip.Cod}", tip.ID, null, semnFiltru, regula => {
-                regula.PastreazaSemn = pastreazaSemn;
                 regula.SursaContDebit = SursaCont.Explicit;
                 regula.ContDebitId = contDebit;
                 regula.SursaContCredit = SursaCont.TipMaterial;

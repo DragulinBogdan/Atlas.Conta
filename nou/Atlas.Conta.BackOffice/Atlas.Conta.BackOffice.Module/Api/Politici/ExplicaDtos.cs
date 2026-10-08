@@ -25,7 +25,6 @@ public sealed class RegulaContareRandDto {
     public string TipMaterial { get; set; }
     public string NaturaFiltru { get; set; }
     public int? SemnFiltru { get; set; }
-    public bool PastreazaSemn { get; set; }
     public string SursaContDebit { get; set; }
     public string ContDebit { get; set; }
     public string SursaContCredit { get; set; }

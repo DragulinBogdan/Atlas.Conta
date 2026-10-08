@@ -13,6 +13,10 @@ sealed partial class ScenariiExplicatii {
     protected override void CurataNomenclatoare(IObjectSpace os, Purja purja) =>
         CurataPolitica(os, purja, CodPoliticii);
 
+    // Contul explicit e rezervă: nu decide cât timp sursa TipMaterial rezolvă.
+    static void EditeazaNeutru(RegulaContare r) =>
+        r.ContCreditId = r.ContCreditId == null ? r.ContDebitId : null;
+
     Guid CreeazaPolitica(string cod) => CuSpatiu(os => {
         var tipStoc = Tip(os, Stoc);
         var tip = TipPropriu(os, cod);
@@ -55,7 +59,7 @@ sealed partial class ScenariiExplicatii {
                 var regula = CreeazaPolitica(CodPoliticii);
                 Comanda(os => {
                     var r = os.GetObjectByKey<RegulaContare>(regula);
-                    if (sterge) os.Delete(r); else r.PastreazaSemn = !r.PastreazaSemn;
+                    if (sterge) os.Delete(r); else EditeazaNeutru(r);
                     GardianEditare.Verifica(os); os.CommitChanges();
                 });
                 Verifica("SC-CIT-111-IZOLARE", sterge ? "ștergerea lasă refuzul de seed al fixture-ului"

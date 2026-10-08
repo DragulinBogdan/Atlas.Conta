@@ -179,7 +179,7 @@ Rândurile de catalog „amânat la TR-D9" care privesc registrele (limita dual�
 
 1. Hotărât (2026-10-07): decizia e aprobată, proba PerfCub pe clone diferite e acceptată ca abatere de la regula de oprire 6, felia e închisă.
 2. **B-r3**: recepția facturii n-are regulă de contare proprie. Motivul amânării a dispărut, dar NIR-ul conex rămâne documentul diferențelor, iar o regulă `FCT/Stoc` e schimbare de politică. Rămâne activă; destinația e a owner-ului. Hotărât 2026-10-08: regulă proprie, decizia 112.
-3. **110-r1**: `RegulaContare.PastreazaSemn` nu mai e citit de niciun declarant. Se scoate sau se leagă.
+3. **110-r1**: `RegulaContare.PastreazaSemn` nu mai e citit de niciun declarant. Se scoate sau se leagă. Hotărât 2026-10-08: se scoate, decizia 113.
 4. **110-r3**: coordonatele ne-nule cu `Guid.Empty`. Dimensionată; recomandată ca subiect al contractului TR-D9b / deciziei 111, nu al tăierii.
 5. **Bazele de probă** care se pot șterge: cele `.P7b` și `.D9P8` ale acestui pas, plus cele vechi de pe schema dinaintea tăierii (`.D9P5b`, `.D9Vol`, `.D9VolProba`, `.D9P7`, `.Privat.D9P4`, `.Flax.R3f`, `.Flax.M1s`, `.Flax.R3`). Lista și rostul fiecăreia: `tr-d9-pas8-inchiderea.md` §8.
 6. **111** rămâne propusă; poarta ei e contractul TR-D9b.

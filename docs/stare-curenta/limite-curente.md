@@ -341,9 +341,6 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   dispărut. Politica de amortizare se reține pe orice fișă atinsă care are
   rând, fără să spună care cont a venit din ea și care din cub. (D9-A8;
   2026-10-07)
-- `RegulaContare.PastreazaSemn` nu mai e citit de niciun declarant: se
-  editează, apare în „Explică", dar nu schimbă postările. Nedecis: se scoate
-  sau se leagă. (constatat la TR-D9a pasul 7c; 2026-10-07)
 - Explicația repetă câte două `ContRezolvat` și unitatea întreagă pe fiecare
   linie. Măsurat în X-D5: 907 octeți pe linie, 58.066 pentru un consum de 64
   de linii.

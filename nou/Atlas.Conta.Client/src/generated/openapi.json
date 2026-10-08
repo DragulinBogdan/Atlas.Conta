@@ -330184,9 +330184,6 @@
             "format": "int32",
             "nullable": true
           },
-          "PastreazaSemn": {
-            "type": "boolean"
-          },
           "SursaContDebit": {
             "$ref": "#/components/schemas/SursaCont"
           },
@@ -330424,9 +330421,6 @@
             "format": "int32",
             "nullable": true
           },
-          "PastreazaSemn": {
-            "type": "boolean"
-          },
           "SursaContDebit": {
             "type": "string",
             "nullable": true
@@ -330475,9 +330469,6 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
-          },
-          "PastreazaSemn": {
-            "type": "boolean"
           },
           "SursaContDebit": {
             "$ref": "#/components/schemas/SursaCont"

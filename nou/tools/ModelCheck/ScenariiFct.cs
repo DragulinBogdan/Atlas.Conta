@@ -29,7 +29,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         var predator = new RepartitorFapt(Guid.NewGuid(), FelRepartitor.Partener, datorie, default);
         var primitor = new RepartitorFapt(Guid.NewGuid(), FelRepartitor.Gestiune, null, default);
         RegulaContareFapt Regula(NaturaClasa natura, SursaCont sursaCredit, Guid credit) => new(Guid.NewGuid(), null, natura,
-            null, false, SursaCont.TipMaterial, null, sursaCredit, credit, true, null, null, null);
+            null, SursaCont.TipMaterial, null, sursaCredit, credit, true, null, null, null);
         var receptie = Regula(NaturaClasa.Stoc, SursaCont.RepartitorPredator, datorie);
         var servicii = Regula(NaturaClasa.Serviciu, SursaCont.Explicit, alServiciilor);
         var operand = new Operand(

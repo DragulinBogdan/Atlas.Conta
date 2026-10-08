@@ -13,7 +13,7 @@ namespace Atlas.Conta.BackOffice.Module.Motor;
 // rescrie.
 
 public readonly record struct RegulaContareFapt(Guid Id, Guid? TipMaterialId, NaturaClasa? NaturaFiltru,
-    int? SemnFiltru, bool PastreazaSemn, SursaCont SursaContDebit, Guid? ContDebitId,
+    int? SemnFiltru, SursaCont SursaContDebit, Guid? ContDebitId,
     SursaCont SursaContCredit, Guid? ContCreditId, bool DinSeed,
     Dimensiuni Comun, Dimensiuni OverrideDebit, Dimensiuni OverrideCredit) {
     /// <summary>Contorul rândului (`OptimisticLockField`) la citirea operandului (D9-A8).</summary>

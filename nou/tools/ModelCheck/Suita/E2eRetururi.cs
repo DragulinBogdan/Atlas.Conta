@@ -52,8 +52,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // POZITIVE, PregatesteOperare le semnează negativ, iar rândurile se postează
 // pe corespondența ORIGINALĂ cu valori negative — FĂRĂ flag-ul `Storno`
 // (ăla rămâne al meta-operației Storneaza: stornarea unui retur dă rânduri
-// POZITIVE cu Storno=true). Singura extensie de motor e
-// `RegulaContare.PastreazaSemn`. RDC = UN document cu linii pe două roluri
+// POZITIVE cu Storno=true). RDC = UN document cu linii pe două roluri
 // (venit fără lot / cost cu lotul original), cu `Total` = doar venitul.
 // Luna decembrie 2026 e nefolosită de celelalte blocuri.
 static class E2eRetururi {
@@ -109,23 +108,23 @@ static class E2eRetururi {
                     && os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipRdc.ID)?.Serie == "RDC-"
                     && stocRdc.Count == 0);
                 var contareRlf = os.GetObjectsQuery<RegulaContare>().Where(r => r.TipDocumentId == tipRlf.ID).ToList();
-                s.Check("Seed RLF: UN rând generic Natura=Stoc cu PastreazaSemn — 3xx (Tipul) = furnizor (fallback 401)",
+                s.Check("Seed RLF: UN rând generic Natura=Stoc — 3xx (Tipul) = furnizor (fallback 401)",
                     contareRlf.Count == 1
-                    && contareRlf[0] is { NaturaFiltru: NaturaClasa.Stoc, PastreazaSemn: true, SemnFiltru: null,
+                    && contareRlf[0] is { NaturaFiltru: NaturaClasa.Stoc, SemnFiltru: null,
                         SursaContDebit: SursaCont.TipMaterial, SursaContCredit: SursaCont.RepartitorPrimitor }
                     && contareRlf[0].ContCreditId == cont401.ID && contareRlf[0].ContDebitId == null);
                 var venitRdc = os.GetObjectsQuery<RegulaContare>()
                     .Where(r => r.TipDocumentId == tipRdc.ID && r.TipMaterialId == null).ToList();
                 var costRdc = os.GetObjectsQuery<RegulaContare>()
                     .Where(r => r.TipDocumentId == tipRdc.ID && r.TipMaterialId == tip371.ID).ToList();
-                s.Check("Seed RDC: rând generic de VENIT (Natura=Serviciu, PastreazaSemn) — client (fallback 4111) = contul Tipului, fără fallback",
+                s.Check("Seed RDC: rând generic de VENIT (Natura=Serviciu) — client (fallback 4111) = contul Tipului, fără fallback",
                     venitRdc.Count == 1
-                    && venitRdc[0] is { NaturaFiltru: NaturaClasa.Serviciu, PastreazaSemn: true, SemnFiltru: null,
+                    && venitRdc[0] is { NaturaFiltru: NaturaClasa.Serviciu, SemnFiltru: null,
                         SursaContDebit: SursaCont.RepartitorPredator, SursaContCredit: SursaCont.TipMaterial }
                     && venitRdc[0].ContDebitId == cont4111.ID && venitRdc[0].ContCreditId == null);
-                s.Check("Seed RDC: costul REVINE — 6xx = 3xx per TipMaterial cu excepțiile profilului (607=371), PastreazaSemn",
+                s.Check("Seed RDC: costul REVINE — 6xx = 3xx per TipMaterial cu excepțiile profilului (607=371)",
                     costRdc.Count == 1
-                    && costRdc[0] is { PastreazaSemn: true, SemnFiltru: null,
+                    && costRdc[0] is { SemnFiltru: null,
                         SursaContDebit: SursaCont.Explicit, SursaContCredit: SursaCont.TipMaterial }
                     && costRdc[0].ContDebitId == cont607.ID);
                 var tvaRlf = os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipRlf.ID);
@@ -402,7 +401,6 @@ static class E2eRetururi {
                 regulaSemnRet.TipDocument = os.FirstOrDefault<TipDocument>(t => t.Cod == "RDC");
                 regulaSemnRet.TipMaterial = tipSemnRet;
                 regulaSemnRet.SemnFiltru = +1;
-                regulaSemnRet.PastreazaSemn = true;
                 regulaSemnRet.SursaContDebit = SursaCont.RepartitorPredator;
                 regulaSemnRet.SursaContCredit = SursaCont.TipMaterial;
                 os.CommitChanges();

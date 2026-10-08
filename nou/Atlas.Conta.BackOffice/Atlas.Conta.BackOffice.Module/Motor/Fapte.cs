@@ -13,7 +13,7 @@ internal static class Fapte {
             .Where(r => r.TipDocumentId == tipDocumentId)
             .ToList()
             .Select(r => new RegulaContareFapt(r.ID, r.TipMaterialId, r.NaturaFiltru, r.SemnFiltru,
-                r.PastreazaSemn, r.SursaContDebit, r.ContDebitId, r.SursaContCredit, r.ContCreditId,
+                r.SursaContDebit, r.ContDebitId, r.SursaContCredit, r.ContCreditId,
                 r.DinSeed, r.DimensiuniComun(), r.DimensiuniOverrideDebit(), r.DimensiuniOverrideCredit())
                 { Versiune = r.OptimisticLockField })
             .ToList();
