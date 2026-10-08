@@ -214,9 +214,11 @@ necesară. Ștergerea lor e a owner-ului.
 Hotărâte la 2026-10-07: review-ul advers Codex e închis (regula de oprire 8), owner-ul a acceptat abaterea
 PerfCub de la „aceeași bază” (regula de oprire 6) și a aprobat decizia 110; merge în main prin PR #22.
 
-- Întrebările owner-ului din decizie: B-r3, 110-r1 (`PastreazaSemn`), 110-r3 (`Guid.Empty`).
+- Întrebările owner-ului din decizie: B-r3 închisă 2026-10-08 (decizia 112), 110-r1 (`PastreazaSemn`) închisă
+  2026-10-08 (decizia 113); 110-r3 (`Guid.Empty`) restrânsă la cele 11 coordonate de sold și trimisă la poarta
+  111.
 - Purja politicilor FCT după `DinSeed` în `ScenariiTvaIntervale` și `ScenariiFiscale`; `explicatii.py`, care
-  editează pe HTTP regula reală din seed (§11).
+  editează pe HTTP regula reală din seed (§11). Restanța 110-r6, după PoC.
 
 
 ## 10. Corecturile review-ului D9-F-R1…R4 (2026-10-07)
