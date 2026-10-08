@@ -330,11 +330,29 @@ bugetar codurile nu sunt nule și creșterea ar fi mai mică.
 
 ## 7. Observații în afara celor șase puncte
 
-- **Reconcilierea Import1C.** Importul de azi are 15 rânduri FAIL, față de
-  10 la pasul 8 al TR-D9a. Diferența e pe contractul 5: 10 partide inițiale
-  fără explicație (401 × 3, 4111 × 7), față de 5. Între cele două rulări au
-  intrat deciziile 112 și 113. Cauza nu e căutată aici; ține de felia de
-  migrare (091-r4, 107-r9).
+- **Reconcilierea Import1C nu e reproductibilă între rulări.** Importul de
+  azi are 15 rânduri FAIL, față de 10 la pasul 8 al TR-D9a; diferența e pe
+  contractul 5 (partidele inițiale). Atribuirea pe commit-uri s-a oprit la a
+  doua rulare, fiindcă același binar, pe aceeași sursă, dă rezultate
+  diferite:
+
+  | Rulare | Tranzacții | Postări | Împerecheri | Stinse integral | Fără explicație |
+  |---|---|---|---|---|---|
+  | pasul 8 (`46916d9`) | 18.713 | 82.142 | — | 1.472 | 5 |
+  | cu 112, fără 113 (`9f15c3d`) | 18.724 | 82.144 | 2.133 | 1.468 | 8 |
+  | azi (`78554c4`), prima | 18.702 | 82.154 | 2.129 | 1.473 | 11 |
+  | azi (`78554c4`), a doua | 18.707 | 82.150 | 2.132 | 1.476 | 10 |
+
+  Între cele două rulări ale aceluiași binar, numai 6 partide FAIL sunt
+  comune (3 apar numai în prima, 4 numai în a doua), iar diferența pe
+  partenerul cel mai afectat de pe 401 e −41.098,17 într-una și −190.471,37
+  în cealaltă. Numărul documentelor importate e același (15.232). Variația
+  între rulări e de mărimea diferenței dintre commit-uri, deci creșterea de
+  la 5 la 10 nu se poate atribui deciziilor 112 sau 113 prin numărare.
+  Cauza nu e dovedită. Candidat, citit din cod: stingerile se aplică în
+  ordinea identificatorului de document (`Imperecheri.cs`, `OrderBy(d =>
+  d.ID)`), iar identificatorii se generează din nou la fiecare import.
+  Restanța: 107-r11. Dovezile: `run-verificari/tr-d9b-pas0/atribuire/`.
 - **(e) și (f)** nu au măsurătoare proprie în pasul 0. Recensământul din §1
   e compatibil cu respingerea formei „ambele coloane".
 
@@ -350,6 +368,7 @@ acestui pas, recreate imediat):
 | `Atlas.Conta.P0.FlaxN`, `.FlaxG` | 105 / 114 MB | copiile mici ale punctului 6 |
 | `Atlas.Conta.ModelCheck.Privat.D9bVol` | 3.695 MB | scena D9-A1 pe schema de azi |
 | `Atlas.Conta.P0.VolN`, `.VolG` | 3.522 / 4.151 MB | copiile punctului 6 |
+| `Atlas.Conta.Import1C.Flax.P0la112`, `.P0azi2` | câte ~107 MB | rulările de atribuire din §7 |
 
 Branch-uri locale de prototip, nepublicate: `proto/tr-d9b-pas0-nucleu`
 (worktree `.claude/worktrees/agent-adc54ba29b0d4336f`) și
