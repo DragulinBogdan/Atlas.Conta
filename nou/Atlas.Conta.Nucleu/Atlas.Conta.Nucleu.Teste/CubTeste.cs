@@ -94,8 +94,10 @@ public class CubTeste {
         var (receptia, _, _) = Receptie();
         var furnizor = Gen.Terti[0];
         var peRepartitor = Cub.Sold([receptia], p => p.Coordonate.Repartitor!.Value);
-        Assert.Contains(receptia.Postari, p => p.Coordonate.PartenerFiscal == furnizor.Id
-            && p.Coordonate.Repartitor != furnizor);
+        var peLot = receptia.Postari.Single(p => p.Coordonate.PartenerFiscal == furnizor.Id);
+        Assert.Equal(Gen.Locuri[0], peLot.Coordonate.Repartitor);
+        var contrapartida = receptia.Postari.Single(p => p.Pereche == peLot.Pereche && !ReferenceEquals(p, peLot));
+        Assert.Equal(furnizor, contrapartida.Coordonate.Repartitor);
         Assert.Equal(new Sold(0m, 100m, 0m, 0m), peRepartitor[furnizor]);
         Assert.Equal(new Sold(100m, 0m, 5m, 0m), peRepartitor[Gen.Locuri[0]]);
         Assert.Equal(2, peRepartitor.Count);
