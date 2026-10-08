@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-07.** [Index](README.md)
+**Actualizat: 2026-10-08.** [Index](README.md)
 
 TR-D9a, pasul 6 (tăierea, 2026-10-07): motorul nu mai scrie, nu mai citește și
 nu mai ramifică pe registre și pe regim; oracolul registre → cub a ieșit din
@@ -661,9 +661,40 @@ Așa s-a măsurat corectura îmbinării partidelor
 Unitatea, partenerul și documentul sunt nulabile pe `Postare`. O îmbinare
 LINQ cu ambele părți nulabile iese din EF cu
 `a = b OR (a IS NULL AND b IS NULL)`, pe care Postgres o execută pătratic.
-Cu o parte ne-nulă iese egalitate simplă. Soldurile de partide se îmbină cu
-documentul deschizător numai prin `Partide.CuOrigine`; `SC-CIT-110` probează
-SQL-ul generat al cititorilor de partide și al snapshot-ului. (D9-D10 (b))
+Cu o parte ne-nulă iese egalitate simplă. Aceeași formă iese dintr-un
+`Contains` peste o subinterogare, ca `EXISTS` corelat. Soldurile de partide
+se îmbină cu documentul deschizător numai prin `Partide.CuOrigine`;
+`SC-CIT-110` probează că cititorii de partide și snapshot-ul chiar sunt
+executați și nu au forma. (D9-D10 (b))
+
+`RAMURA-NUL` (`ProbeRamuraDeNul`) caută forma în fiecare comandă SQL pe care
+EF o emite în proces, pe orice context, în rularea integrală și în
+`--scenarii`. O potrivire contează numai când cele două părți vin din surse
+diferite; compararea a două coloane ale aceluiași rând nu e îmbinare. Trei
+aserții pe profil:
+
+- detectorul prinde o îmbinare martor a lui `Postare` cu ea însăși pe unitate
+  și partener, executată la fiecare rulare;
+- nicio formă în afara celor admise nominal;
+- fiecare formă admisă apare în rulare (numai în integrală).
+
+O formă se identifică prin apelantul care execută interogarea și coloanele
+comparate. Se admite nominal numai împreună cu egalitatea simplă pe cheia
+selectivă care corelează aceleași două surse, iar admiterea cade dacă acea
+egalitate dispare din comandă. Admise:
+
+| Apelant | Coloanele cu ramură de nul | Cheia selectivă |
+|---|---|---|
+| `Explicatii.VerificaAcoperire` | `DocumentId` | cheia primară a tranzacției-sursă (`ID = ExplicatieDinId`) |
+| `Explicatii.VerificaAcoperire` | `Unitate` | cheia primară a postării inversate (`ID = InversaDinId`) |
+| `Invarianti.VerificaFiscal` | blocul fiscal (6 coloane) | cheia primară a postării inversate |
+| `Invarianti.VerificaPerechi` | documentul, linia, produsul, codurile bugetare, cantitatea | aceeași tranzacție (`TranzactieId`) |
+| `AcoperireInvarianti.PerecheLangaTransformare` (unealtă) | `DocumentId`, `LinieId` | aceeași tranzacție |
+
+La un eșec, proba scrie SQL-ul fiecărei forme în `%TEMP%/ramura-nul/`. O
+formă nouă se corectează ținând o parte ne-nulă (`?? Guid.Empty` pe partea
+agregată sau `!= null` pe ambele părți ale unui `Contains`); se admite numai
+când ramura de nul e filtru lângă o cheie selectivă.
 
 ## Verificări proporționale cu modificarea
 

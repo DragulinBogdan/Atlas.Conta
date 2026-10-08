@@ -129,3 +129,47 @@ fost găsit `DocumenteCuRest`.
   acestui pas.
 - Proba acoperă cititorii de partide numiți. O îmbinare nouă pe două chei
   nulabile ale lui `Postare`, în alt cititor, nu e prinsă de ea.
+
+## 7. Proba generică (2026-10-08)
+
+Limita a treia din §6 e ridicată: `RAMURA-NUL` caută forma în fiecare comandă
+SQL emisă de EF în rularea ModelCheck, nu pe o listă de cititori. Regula și
+lista admisă: `docs/stare-curenta/dezvoltare-si-validare.md`, „Îmbinările pe
+chei nulabile ale cubului".
+
+**Prima rulare** a găsit opt forme, aceleași pe ambele profiluri.
+
+Corectate, fiindcă ramura de nul era singura corelare între surse:
+
+- `Materializare.StingeriDeschidere`, citită la stornare și la anulare:
+  `initiale.Contains(p.Unitate)` ieșea `EXISTS` corelat numai pe unitate, cu
+  ramură de nul. Ambele părți cer acum unitate ne-nulă. Rezultatul diferă
+  numai dacă există o postare de deschidere de partidă fără unitate, pe care
+  `Partide.VerificaAcoperire` o refuză.
+- `AvansuriCulegere.Candidati`: `!compensate.Contains(f.DetaliuId)` ieșea
+  `NOT EXISTS` corelat numai pe linie. Partea faptului e acum ne-nulă.
+  Rezultatul e același: un fapt fără linie nu poate fi candidat, fiindcă
+  sursele se potrivesc apoi pe identificatorul liniei.
+
+Admise nominal, cinci, toate cu ramura de nul ca filtru lângă o cheie
+selectivă: cheia primară a postării inversate sau a tranzacției-sursă,
+respectiv aceeași tranzacție. Patru sunt verificări de invarianți ale
+produsului, una e a uneltei.
+
+**Mutantul.** Cu `Partide.CuOrigine` readus la forma dinaintea pasului
+(`on new { s.UnitateId, s.ContId, s.PartenerId }`), `--scenarii CITIRI` pe
+privat pică pe `RAMURA-NUL` cu 11 apelanți, între care `Partide.Disponibil`,
+`Partide.Ramas` și `SolduriService.Executa`, pe care `SC-CIT-110` nu îi
+numește; `SC-CIT-110` pică și el. Martorul rulează la fiecare execuție și
+ține detectorul viu fără mutant.
+
+**Verificarea.** ModelCheck integral pe clonele `.Claude110r1`, aceleași ca
+linia de bază a deciziei 113 (`run-verificari/20261008-005737-235`):
+**3.556 bugetar / 4.837 privat OK**, zero FAIL
+(`run-verificari/20261008-142439-532`). Diferența, pe liniile de verificare
+cu identificatorii și numerele mascate: cele trei aserții `RAMURA-NUL` pe
+fiecare profil și nimic altceva. Proba a citit 102.599 de comenzi SQL pe
+bugetar și 144.209 pe privat. Dovezile primei rulări și ale mutantului,
+neversionate: `run-verificari/ramura-nul-descoperire/`.
+
+Cele două corecturi nu au cifră la volum; forma lor e probată.

@@ -206,6 +206,8 @@ generat pentru `PartideCuRest` și `DocumenteCuRest` pe ambele feluri de
 citire, pentru `Proprii`, `Perechi` și `MiscariPePartidele` și pentru
 verificarea și scrierea snapshot-ului de partide nu conține nicio îmbinare cu
 `a = b OR (a IS NULL AND b IS NULL)`. Verificat pe ambele profiluri.
+Forma e căutată din 2026-10-08 în tot SQL-ul rulării (`RAMURA-NUL`);
+SC-CIT-110 rămâne dovada că acești cititori sunt executați.
 Traducerea SQL a identității este identică funcției nucleului pentru UUID-uri
 distincte; deschiderea inițială nu se confundă cu identitatea unui document.
 Cheia veche document + cont a ieșit (102c).

@@ -98,12 +98,16 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   (2026-10-06): parcurgerea e liniară, 2,7 s de SQL pentru 488.733 de
   partide cu rest la 5 milioane de postări. Rămâne până la decizia 111.
   (F27-r16, X-D5, D9-D10 (b))
-- O îmbinare pe două chei nulabile ale lui `Postare` (unitatea, partenerul,
-  documentul) iese din EF cu ramură de nul și crește pătratic. Cititorii de
-  partide o ocolesc ținând o parte ne-nulă, iar `SC-CIT-110` o probează
-  numai pe ei; un cititor nou cu aceeași formă nu e prins. `DocumenteCuRest`
-  are forma corectată, dar nu are cifră la volum.
-  (`docs/nucleu/tr-d9-pas5c-imbinare-partide.md`)
+- O egalitate între două surse pe coloane nulabile iese din EF cu ramură de
+  nul, iar Postgres nu o poate folosi drept cheie de hash sau merge.
+  `RAMURA-NUL` o prinde în tot SQL-ul pe care EF îl emite într-o rulare
+  ModelCheck, deci numai pe citirile pe care o scenă le execută: un cititor
+  neatins de nicio scenă nu e văzut. Proba citește forma SQL-ului, nu planul:
+  cele cinci forme admise nominal sunt admise pe cheia selectivă de lângă ele,
+  nu pe o cifră la volum. Un SQL scris de mână cu `IS NOT DISTINCT FROM` nu e
+  căutat. `DocumenteCuRest` are forma corectată, dar nu are cifră la volum.
+  (`docs/stare-curenta/dezvoltare-si-validare.md`, „Îmbinările pe chei
+  nulabile ale cubului")
 - Scara transversală este sintetică și mică: 7.951 de postări la 12 luni. Nu
   are prag absolut. Proba din plan se evaluează cu scanarea secvențială
   interzisă, fiindcă la acest volum planificatorul o alege legitim; planul

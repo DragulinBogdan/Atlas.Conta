@@ -165,6 +165,7 @@ if (filtruScenarii == null) {
 // s-a adus din `AddEFCore`: `UseXafCalculatedProperties`,
 // `UseXafServiceProviderContainer`, `UseMultipleActiveResultSetEmulation`,
 // `EFCoreOptimisticLockInterceptor` — pe restul, un provider standalone.
+ProbeRamuraDeNul.Porneste();
 var optsBuilder = new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
     .UseNpgsql(connectionString)
     .UseChangeTrackingProxies();
@@ -330,6 +331,7 @@ if (filtruScenarii != null) {
         return;
     }
     VerificaInvariantiCub.Ruleaza(s);
+    ProbeRamuraDeNul.Verifica(s);
     s.Rezumat();
     return;
 }
@@ -433,6 +435,7 @@ if (profil == ProfilContabil.Privat) {
     // Felia 32, pasul 2b — laturile ca structură (STR-LATURI-*), după toate scenele.
     VerificaLaturi.Ruleaza(s, privat: true);
     VerificaInvariantiCub.Ruleaza(s);
+    ProbeRamuraDeNul.Verifica(s);
 
     s.Rezumat();
     return;
@@ -525,5 +528,6 @@ RuleazaScenele.Ruleaza(s, privat: false);
 // Felia 32, pasul 2b — laturile ca structură (STR-LATURI-*), după toate scenele.
 VerificaLaturi.Ruleaza(s, privat: false);
 VerificaInvariantiCub.Ruleaza(s);
+ProbeRamuraDeNul.Verifica(s);
 
 s.Rezumat();

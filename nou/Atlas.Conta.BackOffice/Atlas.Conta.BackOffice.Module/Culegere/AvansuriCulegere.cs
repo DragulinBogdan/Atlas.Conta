@@ -21,7 +21,7 @@ public static class AvansuriCulegere {
                              equals new { Id = i.InversaDinId, Spatiu = i.InversaDinSpatiu }
                          select p.LinieId;
         var surse = Fiscale.Fapte(os).Where(f => !f.Storno && f.Baza > 0m && f.Sens == sens
-            && f.PartenerId == partener && f.DocumentId != doc.ID && !compensate.Contains(f.DetaliuId))
+            && f.PartenerId == partener && f.DocumentId != doc.ID && !compensate.Contains((Guid?)f.DetaliuId ?? Guid.Empty))
             .Select(f => f.DetaliuId);
         return os.GetObjectsQuery<DocumentDetaliu>()
             .Where(l => (l is FacturaIntrareDetaliu || l is FacturaIesireDetaliu)
