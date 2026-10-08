@@ -22,6 +22,7 @@ public class Postare {
     public virtual Guid Cont { get; set; }
     public virtual N.Latura Latura { get; set; }
     public virtual Guid? Partener { get; set; }
+    public virtual Guid? PartenerFiscal { get; set; }
     public virtual Guid? Gestiune { get; set; }
     public virtual Guid? Produs { get; set; }
     public virtual Guid? Unitate { get; set; }

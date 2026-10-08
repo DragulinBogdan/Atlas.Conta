@@ -106,6 +106,26 @@ var connectionString = Conexiunea(
 
 var s = new Suita(args, profil, connectionString, filtruScenarii);
 
+// PROTOTIP TR-D9b pas 0, punctul 2: `ModelCheck --d394-amprenta <an> <lună> <fișier.json> privat`.
+if (args.Contains("--d394-amprenta")) {
+    var i = Array.IndexOf(args, "--d394-amprenta");
+    var start = new DateOnly(int.Parse(args[i + 1]), int.Parse(args[i + 2]), 1);
+    var end = start.AddMonths(1).AddDays(-1);
+    using var p = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>((b, _) => b.UseNpgsql(connectionString)
+        .UseChangeTrackingProxies().UseObjectSpaceLinkProxies().UseLazyLoadingProxies());
+    using var os = p.CreateObjectSpace();
+    var d394 = D394Proiectii.D394(os, start, end);
+    var json = JsonSerializer.Serialize(d394, new JsonSerializerOptions { WriteIndented = true });
+    File.WriteAllText(args[i + 3], json);
+    string Sha(string t) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(t)));
+    Console.WriteLine($"baza {connectionString.Split("Database=")[^1].Split(';')[0]}");
+    Console.WriteLine($"D394 {start:yyyy-MM}: operatiuni {d394.Operatiuni.Count}, rezumat {d394.Rezumat.Count}, neincluse {d394.Neincluse.Count}, avertismente {d394.Avertismente.Count}");
+    Console.WriteLine($"D394 json sha256 {Sha(json)}");
+    Console.WriteLine($"Fiscale.Versiune D394 {d394.VersiuneExportata}");
+    Console.WriteLine($"Fiscale.Versiune D300 {Atlas.Conta.BackOffice.Module.Cub.Citiri.Fiscale.Versiune(os, FormularFiscal.D300, start, end)}");
+    return;
+}
+
 // X-D2 — `ModelCheck --probe-sursa [--lista]`: numai probele pe sursă, fără bază.
 if (args.Contains("--probe-sursa")) {
     ProbeCulegere.VerificaSursa(s.Check);
