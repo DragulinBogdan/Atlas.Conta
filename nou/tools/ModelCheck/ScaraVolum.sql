@@ -38,7 +38,7 @@ select scara.h(r."ID", k.c), r."ClrType", r."Cod" || '#' || k.c, r."Denumire", r
 from scara.partener r cross join generate_series(@de_la, @pana_la - 1) k(c);
 
 insert into "Documente" ("ID", "ClrType", "Numar", "Data", "DataInregistrare", "PredatorId", "PrimitorId", "Stare", "DataOperare",
-        "DocumentSursaId", "Autogenerat", "CorecteazaId", "MotivCorectie", "TotalStingere", "NumarPV", "DataPV", "TipInstrument",
+        "DocumentSursaId", "Autogenerat", "CorecteazaId", "MotivCorectie", "NumarPV", "DataPV", "TipInstrument",
         "NumarExtras", "DataExtras", "LaturaPerecheId", "DataScadenta", "GestiuneDescarcareId", "CodCpv", "TethysId", "Valuta", "Curs",
         "GenereazaPlata", "PlataContPropriuId", "PlataNumar", "PlataData", "PlataTipInstrument", "GenereazaChitanta", "ChitantaNumar",
         "ChitantaData", "Cauza", "SursaReceptieiId", "TranzactieReceptieSursaId", "OptimisticLockField", "DataExigibilitate", "DataPrimire")
@@ -46,7 +46,7 @@ select scara.h(d."ID", k.c), d."ClrType", d."Numar", d."Data", d."DataInregistra
        case when pp."ID" is not null then scara.h(d."PredatorId", k.c) else d."PredatorId" end,
        case when pm."ID" is not null then scara.h(d."PrimitorId", k.c) else d."PrimitorId" end,
        d."Stare", d."DataOperare", scara.h(d."DocumentSursaId", k.c), d."Autogenerat", scara.h(d."CorecteazaId", k.c), d."MotivCorectie",
-       d."TotalStingere", d."NumarPV", d."DataPV", d."TipInstrument", d."NumarExtras", d."DataExtras", scara.h(d."LaturaPerecheId", k.c),
+       d."NumarPV", d."DataPV", d."TipInstrument", d."NumarExtras", d."DataExtras", scara.h(d."LaturaPerecheId", k.c),
        d."DataScadenta", d."GestiuneDescarcareId", d."CodCpv", d."TethysId", d."Valuta", d."Curs", d."GenereazaPlata", d."PlataContPropriuId",
        d."PlataNumar", d."PlataData", d."PlataTipInstrument", d."GenereazaChitanta", d."ChitantaNumar", d."ChitantaData", d."Cauza",
        scara.h(d."SursaReceptieiId", k.c), scara.h(d."TranzactieReceptieSursaId", k.c), d."OptimisticLockField", d."DataExigibilitate",
@@ -77,7 +77,7 @@ insert into "Postare" ("ID", "Spatiu", "TranzactieId", "DocumentId", "LinieId", 
         "Unitate", "UnitateDeschisa", "FelUnitate", "SuportId", "SuportSpatiu", "InversaDinId", "InversaDinSpatiu", "TipTvaId", "SensTva",
         "RolTva", "PerioadaDeclarare", "Valuta", "Carte", "CodFunctional", "CodEconomic", "SursaFinantare", "UnitateOrganizatorica", "Proiect",
         "CentruCost", "Atribuit", "Cantitate", "ValoareValuta", "Valoare", "CotaTva", "DataDocument", "DataExigibilitate", "DataInregistrare",
-        "DataPrimire", "DeImport", "DocumentFiscalId", "InversaTehnica", "PerioadaD394", "RegimTva", "RegularizareD300")
+        "DataPrimire", "DeImport", "DocumentFiscalId", "InversaTehnica", "PerioadaD394", "RegimTva", "RegularizareD300", "Pereche")
 select scara.h(p."ID", k.c), p."Spatiu",
        case when t."Fel" = 4 then p."TranzactieId" else scara.h(p."TranzactieId", k.c) end,
        scara.h(p."DocumentId", k.c), p."LinieId", p."Data", p."Cont", p."Latura",
@@ -90,7 +90,7 @@ select scara.h(p."ID", k.c), p."Spatiu",
        p."TipTvaId", p."SensTva", p."RolTva", p."PerioadaDeclarare", p."Valuta", p."Carte", p."CodFunctional", p."CodEconomic",
        p."SursaFinantare", p."UnitateOrganizatorica", p."Proiect", p."CentruCost", p."Atribuit", p."Cantitate", p."ValoareValuta", p."Valoare",
        p."CotaTva", p."DataDocument", p."DataExigibilitate", p."DataInregistrare", p."DataPrimire", p."DeImport",
-       scara.h(p."DocumentFiscalId", k.c), p."InversaTehnica", p."PerioadaD394", p."RegimTva", p."RegularizareD300"
+       scara.h(p."DocumentFiscalId", k.c), p."InversaTehnica", p."PerioadaD394", p."RegimTva", p."RegularizareD300", p."Pereche"
 from scara.postare p
 cross join copii k
 join scara.tranzactie t on t."ID" = p."TranzactieId"

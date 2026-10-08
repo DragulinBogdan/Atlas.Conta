@@ -140,6 +140,33 @@ Din consultare, de verificat la poartă:
 - Custodia (stoc al mai multor proprietari în aceeași gestiune) rămâne
   neacoperită; candidat: proprietarul în identitatea lotului.
 
+Din pasul 0 (2026-10-08), cu cifrele și metoda în
+`docs/nucleu/tr-d9b-pas0-masuratori.md`:
+
+- Pe Flax, 152 de postări pe 419, 408 și 4091 poartă și partenerul partidei,
+  și repartitorul intern al faptului fiscal: baza fiscală stă pe contul de
+  terț. Cu un singur repartitor, locul intern al faptului fiscal al unui
+  avans nu mai are unde sta.
+- 33 din 59 de conturi sintetice cu repartitor poartă două sau mai multe
+  feluri. Coloana `Gestiune` ține gestiuni, unități interne și conturi
+  proprii.
+- Partenerul fiscal se deduce azi din document: `Fiscal.CuFapt` îl ia din
+  latura numită de `PoliticaTva.SursaContrapartida`, singurul scriitor.
+- Niciun invariant al nucleului nu cere felul pe postare; felul se poate
+  citi din `Repartitori.ClrType`.
+- Marcajul capătului din afara evidenței e independent de repartitor:
+  diferența de la NIR pune Inventar împreună cu terț și partidă; la ASM
+  contraponderea stă pe contul de stoc fără repartitor.
+- „Lot ⇒ gestiune" nu ține: BCS pune lotul la o unitate internă. Regula
+  prototipată e „lot ⇒ repartitor intern".
+- Deschiderea și transformările n-au pereche. Fișa contului prin pereche dă
+  cont unic de contrapartidă pe toate rândurile cu pereche, față de 20 % azi.
+- Trei coordonate au chei străine pe partiții (`Partener`, `Produs`,
+  `Unitate` pe stoc). Identificatorul gol le scoate; repartitorul unic
+  nulabil le poate păstra.
+- 552.00.00 poartă în legacy deponentul, același repartitor ca 462.01.09, nu
+  contul propriu. 462.01.09 are terți persoane fizice neclasificate.
+
 Re-amânat aici de owner (2026-10-06), din TR-D9a: criteriul de formă al
 partidelor (F27-r16, D9-D10 (b)). Documentul deschizător al partidei se
 recunoaște azi la citire, parcurgând postările de partidă; cu originea
