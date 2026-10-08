@@ -1106,3 +1106,10 @@ detaliat în jurnal):
   nota-punte. Verdictul restanțelor e scris. Decizia 110 așteaptă aprobarea
   owner-ului, iar review-ul advers Codex al închiderii e cerut: felia nu e
   închisă până atunci. `docs/nucleu/tr-d9-pas8-inchiderea.md`.
+
+- **2026-10-08 — TR-D9b, pasul 0: măsurătorile dinaintea deciziei 111.**
+  Cele șase puncte din §„Înaintea deciziei", fără decizie și fără cod de
+  produs. Importul Flax pe ianuarie și scena de volum refăcute pe schema de
+  azi; `ScaraVolum.sql` adus la zi. Prototipul nucleului cu repartitor unic:
+  195 / 195. D394 identic cu partenerul în blocul fiscal. Constatările noi
+  sunt linii în 111. `docs/nucleu/tr-d9b-pas0-masuratori.md`.

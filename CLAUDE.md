@@ -177,9 +177,10 @@ amendamentele 1–3, pașii în `docs/nucleu/tr-d9-pas*.md`, închiderea în
 Codex al închiderii e închis (D9-F-R1…R4, IZ-R1, IZ-R2), iar proba PerfCub pe
 clone diferite e acceptată de owner ca abatere de la „aceeași bază”.
 Mersă în main prin PR #22 (2026-10-07). Bazele de dezvoltare sunt recreate din
-`InitialCreate`; clonele vechi de import și de perf (`.Flax.R3f`, `.D9P5b`,
-`.D9Vol`) sunt pe schema dinaintea tăierii. Urmează contractul TR-D9b, cu
-poarta de decizie 111 (propusă, neaprobată).
+`InitialCreate`. Pasul 0 al TR-D9b e măsurat (2026-10-08,
+`docs/nucleu/tr-d9b-pas0-masuratori.md`); baza de import la zi e
+`.Flax.D9bP0`, scena de volum e `.D9bVol`. Urmează hotărârea owner-ului pe
+decizia 111 (propusă, neaprobată), apoi contractul TR-D9b.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

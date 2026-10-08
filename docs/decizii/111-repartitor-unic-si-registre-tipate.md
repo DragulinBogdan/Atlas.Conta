@@ -5,6 +5,10 @@
   TR-D9a sau în stare-curenta. Poarta de decizie e contractul TR-D9b, cu
   măsurătorile din §„Înaintea deciziei" ca pas 0 al lui. Aprobă numai
   owner-ul. Numărul 110 e rezervat închiderii TR-D9a.
+- Pasul 0 e măsurat (2026-10-08, `docs/nucleu/tr-d9b-pas0-masuratori.md`).
+  Textul direcției e precizat după măsurători, tot ca propunere; ce s-a
+  schimbat față de forma din 2026-10-06 e listat în §„Precizările de după
+  pasul 0".
 - Docs: `docs/consultations/2026-10-06-repartitor-pe-postare/` (consultare
   Fable + Codex, două runde, README cu verdictele); `docs/nucleu/tr-d9-taierea-amendament-2.md`
   (D9-A10, forma îngustă aprobată; pasul 6b, mutat de owner după tăiere); 090 (c), B-D8 pct. 4 și 9.
@@ -22,22 +26,32 @@ gestiune, unitate internă, cont propriu, niciunul), nu un fel unic; 461 și
 462 cer mulțimea. Declarantul pune pe fiecare capăt repartitorul al cărui
 sold îl mișcă postarea. `UrmarestePartide` și `RolTert` rămân axe separate:
 prima e a unității, a doua e clasificarea SAF-T.
+Felul nu e coloană pe postare: se citește din rândul repartitorului, pe care
+postarea îl referă prin cheie străină. „Niciunul" e repartitor nul. Lotul
+cere repartitor intern (gestiune sau unitate internă), nu gestiune. Pe
+piciorul de terț cu partidă, repartitorul e titularul partidei.
 
 (b) **Partenerul fiscal e atribut al faptului fiscal**, persistat pe postarea
 de bază și pe cea de taxă, în blocul fiscal, scris de politica de TVA la
-declarare. Nu e coordonată de sold și nu se deduce din document, din pereche
-sau din capete: la taxare inversă perechea n-are terț, la decont contrapartida
-e angajatul, la DVI predătorul e vama.
+declarare, din latura documentului pe care o numește. Nu e coordonată de sold
+și nu se deduce din pereche sau din capete: la taxare inversă perechea n-are
+terț, la decont contrapartida e angajatul, la DVI predătorul e vama. Apare
+numai pe postarea cu fapt fiscal. Locul intern al faptului fiscal nu se
+persistă separat: e latura internă a documentului.
 
 (c) **Gestiunile virtuale dispar.** Capătul din afara evidenței și
-contraponderea transformării primesc un marcaj explicit pe postare, ca nucleul
-să deosebească un declarant care a uitat lotul de o contracantitate legitimă.
-Furnizor și Client devin terțul real; Consum, Inventar, Transformare devin
-feluri de capăt, nu identificatori fără rând.
+contraponderea transformării primesc un marcaj explicit pe postare (terț,
+consum, inventar, transformare), ca nucleul să deosebească un declarant care
+a uitat lotul de o contracantitate legitimă. Furnizor și Client se contopesc
+în „terț"; Consum, Inventar, Transformare devin feluri de capăt, nu
+identificatori fără rând. Marcajul e axă independentă de repartitor: nu cere
+și nu interzice un terț pe același picior. Gardul felurilor per cont scutește
+postările marcate.
 
 (d) **Capătul celălalt al mișcării se citește prin cheia de pereche**
 (D9-A2), nu prin coloane de flux pe postare. Materializarea capetelor se
 admite numai ca proiecție de citire, dacă un raport o cere la volum măsurat.
+Postarea fără pereche (deschidere, transformare) nu are contrapartidă.
 
 (e) **Respinse**: ambele coloane completate pe toate postările documentului
 cu terț (soldurile pe cheie nu se închid: factura pe gestiune, plata fără);
@@ -79,6 +93,38 @@ O coloană `PartenerFiscal` adăugată la pasul 7, cât `InitialCreate` se
 regenerează, ar fi anticipare de schemă: cere un amendament de o linie și
 hotărârea owner-ului.
 
+(i) **Coordonatele de sold rămân nulabile** (110-r3). Lipsa unei coordonate
+e nul, nu identificator gol; cheile străine ale coordonatelor rămân.
+Îmbinările pe coordonate nulabile țin o parte ne-nulă, iar `RAMURA-NUL` le
+probează în ModelCheck.
+
+## Precizările de după pasul 0
+
+Propuse de Claude pe cifrele pasului 0, neaprobate. Fiecare are măsurătoarea
+în `docs/nucleu/tr-d9b-pas0-masuratori.md`.
+
+| Unde | Ce s-a precizat | Pe ce cifră |
+|---|---|---|
+| (a) | felul nu e coloană pe postare | niciun invariant al nucleului nu îl cere (§3) |
+| (a) | „niciunul" e nul, cu cheie străină pe repartitor | prototipul nu are nevoie de identificator gol (§3, §6) |
+| (a) | lot ⇒ repartitor intern | BCS pune lotul la o unitate internă (§3) |
+| (a), (b) | pe piciorul de terț cu partidă rămâne titularul; locul intern al faptului fiscal nu se persistă | 152 de postări pe Flax, pe 419, 408 și 4091 (§1) |
+| (b) | partenerul fiscal vine din latura documentului numită de politica de TVA | 15.206 din 15.206 postări fiscale (§2) |
+| (c) | marcajul e independent de repartitor; Furnizor și Client devin „terț" | diferența de la NIR, DSC cu primitor intern, ASM (§3) |
+| (d) | fără pereche nu există contrapartidă | deschiderea și transformările (§3, §4) |
+| (i) | coordonatele rămân nulabile | 3,2 s față de 5,5 s la îmbinare, +70 % la tabel, 5 chei străine (§6) |
+
+**Alternativa de cântărit la aprobare.** Pentru cele 152 de postări, locul
+intern al faptului fiscal ar putea deveni și el atribut în blocul fiscal,
+lângă partener. Nu e propus: azi nu îl citește niciun cititor pe acele
+picioare și e latura internă din antetul documentului pe toate cele 152 (și
+pe toate cele 14.484 de postări fiscale cu repartitor intern de pe Flax).
+Devine necesar numai dacă apare un raport de TVA pe loc intern, la volum.
+
+**În afara aprobării.** Felul celor 20 de conturi bugetare cu flag
+(552.00.00, 462.01.09, 437, 803) e întrebare de seed bugetar
+(pasul 0, §5) și nu ține direcția în loc.
+
 ## Context
 
 Cubul poartă azi `Partener` și `Gestiune` completate selectiv: gestiunea pe
@@ -104,6 +150,8 @@ contului și pe cost (4–5 zile față de 7–10). Amândoi cer hotărârea for
 Owner-ul a hotărât să nu decidă acum și să nu lărgească TR-D9a.
 
 ## Înaintea deciziei (pas 0 al contractului TR-D9b, numai citire, ≤ 2 zile)
+
+Măsurate toate la 2026-10-08: `docs/nucleu/tr-d9b-pas0-masuratori.md`.
 
 1. Recensământul perechilor de feluri pe cont, pe Flax: niciun cont nu
    poartă două repartitoare reale pe același picior.
@@ -139,6 +187,33 @@ Din consultare, de verificat la poartă:
 - Invariantul inversei fiscale nu verifică partenerul.
 - Custodia (stoc al mai multor proprietari în aceeași gestiune) rămâne
   neacoperită; candidat: proprietarul în identitatea lotului.
+
+Din pasul 0 (2026-10-08), cu cifrele și metoda în
+`docs/nucleu/tr-d9b-pas0-masuratori.md`:
+
+- Pe Flax, 152 de postări pe 419, 408 și 4091 poartă și partenerul partidei,
+  și repartitorul intern al faptului fiscal: baza fiscală stă pe contul de
+  terț. Cu un singur repartitor, locul intern al faptului fiscal al unui
+  avans nu mai are unde sta.
+- 33 din 59 de conturi sintetice cu repartitor poartă două sau mai multe
+  feluri. Coloana `Gestiune` ține gestiuni, unități interne și conturi
+  proprii.
+- Partenerul fiscal se deduce azi din document: `Fiscal.CuFapt` îl ia din
+  latura numită de `PoliticaTva.SursaContrapartida`, singurul scriitor.
+- Niciun invariant al nucleului nu cere felul pe postare; felul se poate
+  citi din `Repartitori.ClrType`.
+- Marcajul capătului din afara evidenței e independent de repartitor:
+  diferența de la NIR pune Inventar împreună cu terț și partidă; la ASM
+  contraponderea stă pe contul de stoc fără repartitor.
+- „Lot ⇒ gestiune" nu ține: BCS pune lotul la o unitate internă. Regula
+  prototipată e „lot ⇒ repartitor intern".
+- Deschiderea și transformările n-au pereche. Fișa contului prin pereche dă
+  cont unic de contrapartidă pe toate rândurile cu pereche, față de 20 % azi.
+- Trei coordonate au chei străine pe partiții (`Partener`, `Produs`,
+  `Unitate` pe stoc). Identificatorul gol le scoate; repartitorul unic
+  nulabil le poate păstra.
+- 552.00.00 poartă în legacy deponentul, același repartitor ca 462.01.09, nu
+  contul propriu. 462.01.09 are terți persoane fizice neclasificate.
 
 Re-amânat aici de owner (2026-10-06), din TR-D9a: criteriul de formă al
 partidelor (F27-r16, D9-D10 (b)). Documentul deschizător al partidei se

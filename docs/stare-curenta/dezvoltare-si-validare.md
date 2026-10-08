@@ -647,7 +647,7 @@ cu planurile. O măsurare se oprește la 10 minute, reconstrucția la 30. E
 raport, fără prag. Rețeta rulează pe o clonă cu sufix (`.D9Vol` implicit),
 care rămâne bază de citire: liniile de document, registrele și împerecherile
 nu se multiplică. Rularea completă durează circa 95 de minute și e rulare
-grea. Rezultatul din 2026-10-06 și limitele lui:
+grea; numai treapta finală (`-Factori F`) durează circa 14 minute. Rezultatul din 2026-10-06 și limitele lui:
 `docs/nucleu/tr-d9-pas5b-probe.md` §3. (D9-A1)
 
 Un singur cititor se re-măsoară pe baza scării fără a o reface: procesul-copil
