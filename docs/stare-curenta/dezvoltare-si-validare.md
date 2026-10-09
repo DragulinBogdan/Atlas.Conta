@@ -365,8 +365,11 @@ pe părinte, inclusiv cei ai cititorilor cubului, constrângerile
 `CK_Postare_*`, funcția `cub_partida_id`; `Down` cu `DROP` explicit), apoi
 `20261007080233_PostareVizual` (view-ul listei de evidență a cubului,
 `CREATE VIEW` în `Up`, `DROP VIEW` în `Down`; `ToView` e exclus din
-snapshot, deci `has-pending-model-changes` rămâne curat) și
-`20261007215604_RegulaContareFaraPastreazaSemn` (coloana scoasă, 113).
+snapshot, deci `has-pending-model-changes` rămâne curat),
+`20261007215604_RegulaContareFaraPastreazaSemn` (coloana scoasă, 113) și
+`20261009053645_IndecsiCitiriOperare` (indexul pe `Loturi.LinieIntrareId`,
+din model, și indexul parțial `IX_Postare_Fisa_Cont` pe `Postare(Cont)`
+pentru postările pe fișă, în SQL, probat de `STR-SCHEMA-4`).
 Snapshot-ul EF
 rămâne cu cheia `ID` (divergență declarată, probată de `STR-SCHEMA`).
 Migrațiile nu transformă date. Proba structurală a

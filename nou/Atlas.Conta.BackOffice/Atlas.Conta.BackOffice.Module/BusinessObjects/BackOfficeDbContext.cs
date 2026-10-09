@@ -233,6 +233,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // comentariul din Lot (ciclu de inserție altfel).
             modelBuilder.Entity<DocumentDetaliu>()
                 .HasOne(d => d.Lot).WithMany().HasForeignKey(d => d.LotId);
+            modelBuilder.Entity<Lot>().HasIndex(l => l.LinieIntrareId);
 
             // DVI-D3: o factură o dată pe aceeași declarație.
             modelBuilder.Entity<DviFactura>()
