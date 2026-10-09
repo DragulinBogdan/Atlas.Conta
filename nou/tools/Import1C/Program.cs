@@ -203,7 +203,7 @@ var flaxCs = pozitionale.Count > 0
     : "Server=(local);Database=EServicesFlx;Integrated Security=True;TrustServerCertificate=True";
 var conexiunePg = new Npgsql.NpgsqlConnectionStringBuilder(pozitionale.Count > 1
     ? pozitionale[1]
-    : "Host=localhost;Port=5446;Username=postgres;Password=postgres;Database=Atlas.Conta.Import1C.Flax");
+    : "Host=127.0.0.1;Port=5446;Username=postgres;Password=postgres;Database=Atlas.Conta.Import1C.Flax");
 if (conexiunePg.MaxAutoPrepare == 0) {
     conexiunePg.MaxAutoPrepare = 300;
     conexiunePg.AutoPrepareMinUsages = 2;

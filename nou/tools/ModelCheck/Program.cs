@@ -47,7 +47,7 @@ using N = Atlas.Conta.Nucleu;
 
 // Șablonul de conexiune al uneltei: o singură definiție pentru toate comenzile.
 static string Conexiunea(string baza) => new Npgsql.NpgsqlConnectionStringBuilder(
-    "Host=localhost;Port=5446;Username=postgres;Password=postgres;Database=" + baza
+    "Host=127.0.0.1;Port=5446;Username=postgres;Password=postgres;Database=" + baza
     + (Environment.GetEnvironmentVariable("MODELCHECK_CONEXIUNE_EXTRA") is { Length: > 0 } extra ? ";" + extra : ""))
     .ConnectionString;
 
@@ -83,7 +83,7 @@ static string Conexiunea(string baza) => new Npgsql.NpgsqlConnectionStringBuilde
         }
         var caleTph = Path.GetFullPath(args[indexTph + 1]);
         using var ctxTph = new BackOfficeEFCoreDbContext(new DbContextOptionsBuilder<BackOfficeEFCoreDbContext>()
-            .UseNpgsql("Host=localhost").UseChangeTrackingProxies().Options);
+            .UseNpgsql("Host=127.0.0.1").UseChangeTrackingProxies().Options);
         var probeTph = IntegritateTph.Probe(ctxTph);
         File.WriteAllText(caleTph, IntegritateTph.Script(probeTph), new UTF8Encoding(false));
         Console.WriteLine($"Integritate TPH scrisă: {caleTph} ({probeTph.Count} interogări)");
