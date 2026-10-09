@@ -46,9 +46,10 @@ using SecurityPermissionState = DevExpress.Persistent.Base.SecurityPermissionSta
 using N = Atlas.Conta.Nucleu;
 
 // Șablonul de conexiune al uneltei: o singură definiție pentru toate comenzile.
-static string Conexiunea(string baza) =>
-    "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=" + baza
-    + (Environment.GetEnvironmentVariable("MODELCHECK_CONEXIUNE_EXTRA") is { Length: > 0 } extra ? ";" + extra : "");
+static string Conexiunea(string baza) => new Npgsql.NpgsqlConnectionStringBuilder(
+    "Host=localhost;Port=5446;Username=postgres;Password=postgres;Database=" + baza
+    + (Environment.GetEnvironmentVariable("MODELCHECK_CONEXIUNE_EXTRA") is { Length: > 0 } extra ? ";" + extra : ""))
+    .ConnectionString;
 
 // Validare model EF + (dacă baza există) verificare migrații/seed + scenariile
 // end-to-end ale motorului de operare pe un IObjectSpace real — aceeași

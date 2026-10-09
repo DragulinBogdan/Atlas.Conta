@@ -231,6 +231,9 @@ rulări concurente. Interogările pe catalogul
 Postgres cer cast explicit (`partattrs` e `int2vector` de la 0, `conkey` e
 `int2[]` de la 1, `partstrat` e `"char"` ⇒ `::text`), altfel pică și opresc
 rularea. O bază care nu corespunde codului se recreează, nu se repară (102b).
+ModelCheck și Import1C rulează pe Postgres-ul nativ de pe gazdă (5446), care nu
+e serviciu și se pornește de mână după repornirea mașinii; hosturile rămân pe
+container (5444): `docs/stare-curenta/dezvoltare-si-validare.md`.
 
 ## Reguli de lucru comune (Claude Code și Codex)
 
