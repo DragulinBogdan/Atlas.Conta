@@ -162,4 +162,5 @@ din sursă se agregă semnat, iar netul zero nu e sens necunoscut. RV2 a
   §7). Până la o ordine de aplicare independentă de identificatorii generați
   la import, contractul 5 nu poate atribui o diferență unei schimbări de cod.
   Cauza pe partidele deschise de documente e tratată prin 114 (2026-10-09),
-  iar pe partidele inițiale prin 115; ce a rămas e 114-r1.
+  iar pe partidele inițiale prin 115 și 116. Închisă 2026-10-09: două
+  importuri pe ianuarie 2025 sunt identice pe chei naturale.

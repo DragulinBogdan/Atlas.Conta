@@ -293,13 +293,13 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   `(Unitate, Data)` și filtrează lotul după citire. Coborârea filtrului de
   loturi pe rând nu schimbă planul. Import1C câștigă totuși cu ea pornită;
   hosturile nu o au. (2026-10-09)
-- Două importuri Import1C ale aceluiași binar nu sunt încă identice. Două
-  partide inițiale ale aceluiași partener, pe același cont, născute în
-  aceeași zi se departajează în FIFO pe identificatorul partidei, care se
-  schimbă la fiecare import. Pe ianuarie 2025 a rămas un singur caz: 60 lei
-  care cad pe una sau pe alta dintre două facturi ale aceluiași furnizor (4
-  linii diferite în raportul de reconciliere; legăturile, numărul de
-  tranzacții și de postări sunt aceleași). (114-r1; 2026-10-09)
+- Ordinea FIFO a partidelor inițiale născute în aceeași zi e ordinea din
+  deschidere, purtată de ID-ul postării, nu de o coloană a ei. (116-r1)
+- Loturile inițiale cu același produs, gestiune, cont și dată se departajează
+  în FIFO pe identificatorul lotului, dat de cel care le creează. (116-r2)
+- Reproductibilitatea Import1C e măsurată numai pe ianuarie 2025 (două
+  rulări identice pe chei naturale); lunile următoare nu sunt măsurate.
+  (116; 2026-10-09)
 - Nominalizarea partidei pe linia de notă nu e în culegere: câmpurile sunt
   ascunse în XAF și lipsesc din API. (115-r1)
 - Cheia de pereche (`Postare.Pereche`) nu acoperă transformările (consumul și

@@ -357,6 +357,8 @@ bugetar codurile nu sunt nule și creșterea ar fi mai mică.
   e în `Materializare.StingereDeschidere.cs` și ordonează numai blocarea
   rândurilor. Cauza găsită e departajarea FIFO a partidelor din aceeași zi pe
   identificatorul partidei; contextul și măsurătorile sunt în decizia 114.
+  După 114, 115 și 116, două importuri ale aceluiași binar pe ianuarie 2025
+  dau același raport de reconciliere (107-r11 închisă).
 - **(e) și (f)** nu au măsurătoare proprie în pasul 0. Recensământul din §1
   e compatibil cu respingerea formei „ambele coloane".
 

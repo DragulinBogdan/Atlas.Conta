@@ -163,11 +163,19 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
   apoi identificatorul unității. Unitatea fără document deschizător (partida
   inițială, lotul fără linie de intrare) vine prima la data ei. La loturi,
   între document și identificator stă poziția liniei de intrare. ID-ul
-  documentului e Guid v7 și ține ordinea creării între tranzacții; rândurile
-  scrise în aceeași tranzacție n-au ordine în ID, deci identificatorul
-  unității rămâne numai ultimul criteriu. Ordonarea loturilor e una singură,
-  `Cub.Citiri.Loturi.InOrdineFifo`; a partidelor o face nucleul, care
-  primește documentul pe candidat (`Disponibil.Origine`). (114)
+  documentului e Guid v7 și ține ordinea creării între tranzacții; liniile
+  și loturile scrise în aceeași tranzacție n-au ordine în ID, deci
+  identificatorul unității rămâne numai ultimul criteriu. Ordonarea loturilor
+  e una singură, `Cub.Citiri.Loturi.InOrdineFifo`; a partidelor o face
+  nucleul, care primește documentul pe candidat (`Disponibil.Origine`). (114)
+- Postările unei tranzacții primesc ID-uri crescătoare în ordinea tranzacției.
+  Între partidele fără document deschizător, înaintea identificatorului
+  departajează ID-ul postării de deschidere (`Disponibil.Deschidere`): două
+  partide inițiale născute în aceeași zi se consumă în ordinea în care le-a
+  primit deschiderea. Cine deschide trebuie deci să le dea în aceeași ordine
+  la fiecare rulare. Ordinea e purtată de ID, nu de o coloană a postării.
+  Loturile inițiale nu sunt acoperite: la aceeași dată se departajează pe
+  identificatorul lotului. (116)
 - Partida inițială își poartă data la care s-a născut la sursă
   (`PartidaInitiala.Deschisa`); fără ea, data deschiderii. Data nu poate urma
   deschiderii și nu intră în identificatorul partidei. FIFO consumă deci
