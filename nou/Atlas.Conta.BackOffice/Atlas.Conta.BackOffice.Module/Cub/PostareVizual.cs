@@ -17,6 +17,7 @@ public class PostareVizual {
     public virtual Guid TranzactieId { get; set; }
     [XafDisplayName("Tranzacție")]
     public virtual N.FelTranzactie TranzactieFel { get; set; }
+    public virtual int Ordinal { get; set; }
 
     public virtual Guid? DocumentId { get; set; }
     [XafDisplayName("Document")]

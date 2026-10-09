@@ -45,7 +45,7 @@ public static class Randuri {
             };
     }
 
-    public static void Scrie(N.Postare postare, Tranzactie tranzactie, Postare rand) {
+    public static void Scrie(N.Postare postare, Tranzactie tranzactie, int ordinal, Postare rand) {
         ArgumentNullException.ThrowIfNull(postare);
         ArgumentNullException.ThrowIfNull(tranzactie);
         ArgumentNullException.ThrowIfNull(rand);
@@ -54,6 +54,7 @@ public static class Randuri {
         VerificaUnitatea(postare, spatiu);
         rand.Spatiu = spatiu;
         rand.Tranzactie = tranzactie;
+        rand.Ordinal = ordinal;
         rand.DocumentId = tranzactie.Fel == N.FelTranzactie.Deschidere ? null : postare.Cauza.Document;
         rand.LinieId = postare.Cauza.Linie;
         rand.Data = coordonate.Data;

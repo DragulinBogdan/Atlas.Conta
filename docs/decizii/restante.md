@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-10-09 (107-r11 și 114-r1 închise prin 114, 115 și 116; 107-r9 restrânsă; 115-r1, 116-r1 și 116-r2 deschise).** [Index](README.md)
+**Actualizat: 2026-10-09 (107-r11 și 114-r1 închise prin 114, 115 și 116; 116-r1 închisă prin 117; 107-r9 restrânsă; 115-r1 și 116-r2 deschise).** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -334,8 +334,8 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 107-r11 | reconcilierea Import1C nu e reproductibilă între rulări; cauza pe partidele deschise de documente e tratată prin 114, iar pe partidele inițiale prin 115 (nominalizarea sursei și data de naștere), cu ordinea din deschidere prin 116 (`tr-d9b-pas0-masuratori.md` §7) | închisă 2026-10-09 prin 114, 115 și 116: două importuri pe ianuarie 2025 sunt identice pe chei naturale; lunile următoare nemăsurate |
 | 114-r1 | două partide inițiale ale aceluiași partener, pe același cont, născute în aceeași zi și nenumite de sursă se departajează în FIFO pe un identificator care se schimbă la fiecare import; deschisă de 114 pentru toate unitățile fără document deschizător, restrânsă de 115 (a) și (d); pe ianuarie 2025 a rămas un caz (114, 115) | închisă 2026-10-09 prin 116: la aceeași dată departajează postarea de deschidere |
 | 115-r1 | nominalizarea partidei pe linia de notă nu e în culegere (XAF, API) (115) | după PoC (091) |
-| 116-r1 | ordinea postării în tranzacție persistată pe `Postare`, în locul ordinii purtate de ID; forma pe termen lung după owner (116) | de hotărât odată cu decizia 111 |
-| 116-r2 | loturile inițiale cu același produs, gestiune, cont și dată se departajează în FIFO pe identificatorul lotului, dat de cel care le creează (116) | migrare (091) |
+| 116-r1 | ordinea postării în tranzacție persistată pe `Postare`, în locul ordinii purtate de ID; forma pe termen lung după owner (116) | închisă 2026-10-09 prin 117: `Postare.Ordinal`, verificat în `INV-CUB` |
+| 116-r2 | loturile inițiale cu același produs, gestiune, cont și dată se departajează în FIFO pe identificatorul lotului, dat de cel care le creează; se poate închide prin ordinalul postării de deschidere (116, 117) | migrare (091) |
 | 091-r5 | un caz apărut la migrare care contrazice catalogul devine scenariu nou plus decizie; oracolul normalizat (`CubDinRegistre`, `Normalizari`) nu se mai extinde (091) | migrare (091) |
 | 109-r1 | contractele 1 și 2 ale reconcilierii 1C citesc `RegistruContabil` (`ReconciliereLuna`); trec pe cititorii cubului (109) | închisă la TR-D9a (110): Import1C citește cubul (pasul 5); rularea-diagnostic pe ianuarie e în `tr-d9-pas8-inchiderea.md` |
 | 109-r2 | în ecranul XAF, recalculul unei linii mută taxa și pe celelalte linii nemarcate ale documentului; reafișarea lor de probat în browser (109) | închisă 2026-10-04: probată în browser; proba a găsit conflictul de versiune la operarea după salvarea liniei, corectat prin 109 (f) |

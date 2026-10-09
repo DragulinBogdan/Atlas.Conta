@@ -1,8 +1,8 @@
 namespace Atlas.Conta.Nucleu;
 
 /// <summary><paramref name="Origine"/> = documentul care a deschis unitatea; gol la unitatea fără document,
-/// pe care o ordonează <paramref name="Deschidere"/>, postarea care a deschis-o.</summary>
-public sealed record Disponibil(Unitate Unitate, decimal Masura, Guid Origine = default, Guid Deschidere = default);
+/// pe care o ordonează <paramref name="Deschidere"/>, ordinalul postării care a deschis-o.</summary>
+public sealed record Disponibil(Unitate Unitate, decimal Masura, Guid Origine = default, int Deschidere = 0);
 
 public sealed record Pin(Guid Unitate, decimal Masura);
 

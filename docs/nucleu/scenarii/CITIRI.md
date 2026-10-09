@@ -194,7 +194,7 @@ pe 15.12 și cea de 40 pe 10.12 ale anului dinainte, iar cea de 60 are
 identificatorul mai mic. NTC 75 stinge întâi partida de 40, mai veche, apoi 35
 din cea de 60: FIFO urmează data nașterii partidei, nu identificatorul.
 
-SC-CIT-113 (116): aceeași deschidere dă altui furnizor două partide, de 30 și
+SC-CIT-113 (116, 117): aceeași deschidere dă altui furnizor două partide, de 30 și
 de 20, născute în aceeași zi; cea de 30 e dată prima și are identificatorul mai
 mare. NTC 25 stinge 25 din cea de 30 și lasă neatinsă pe cea de 20: la aceeași
 dată și fără document, FIFO urmează ordinea din deschidere.

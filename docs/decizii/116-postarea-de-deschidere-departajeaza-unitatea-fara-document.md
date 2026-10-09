@@ -1,7 +1,7 @@
 # 116 — Unitatea fără document se departajează pe postarea ei de deschidere; ID-urile postărilor urmează ordinea tranzacției
 
 - Data: 2026-10-09
-- Stare: **activă**; hotărâtă de owner 2026-10-09 ca formă corectă cât 111 e propusă. Forma pe termen lung, după owner, e ordinea postării persistată pe `Postare` (116-r1). Amendează 114 (a) și (d); închide 114-r1 și 107-r11.
+- Stare: **activă, amendată de 117** ((a): ID-urile postărilor nu mai poartă ordine; (b), (c): departajează ordinalul postării de deschidere, nu ID-ul ei); hotărâtă de owner 2026-10-09. 116-r1 e închisă prin 117. Amendează 114 (a) și (d); închide 114-r1 și 107-r11.
 - Docs: `docs/stare-curenta/domeniu-si-operare.md`, `limite-curente.md`; catalogul `docs/nucleu/scenarii/CITIRI.md` (SC-CIT-113).
 
 ## Regula durabilă

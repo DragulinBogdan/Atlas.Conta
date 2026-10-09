@@ -349,10 +349,8 @@ public static partial class Materializare {
             rand.ScrisLa = DateTime.UtcNow;
             rand.Explicatie = explicatie;
             rand.ExplicatieDinId = explicatieDin;
-            // 116: ID-urile postărilor cresc în ordinea tranzacției.
-            var randuri = tranzactie.Postari.Select(_ => os.CreateObject<Postare>()).OrderBy(r => r.ID).ToList();
-            for (var i = 0; i < randuri.Count; i++)
-                Randuri.Scrie(tranzactie.Postari[i], rand, randuri[i]);
+            for (var i = 0; i < tranzactie.Postari.Count; i++)
+                Randuri.Scrie(tranzactie.Postari[i], rand, i + 1, os.CreateObject<Postare>());
             return rand.ID;
         }
         finally { if (tracker != null) tracker.LazyLoadingEnabled = incarcare.Value; }

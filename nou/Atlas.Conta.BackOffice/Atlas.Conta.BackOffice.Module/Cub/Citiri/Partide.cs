@@ -235,11 +235,11 @@ public static class Partide {
             && p.FelUnitate == N.FelUnitate.Partida && p.Unitate != null
             && p.Partener != null && p.UnitateDeschisa != null);
 
-    /// <summary>Postarea care a deschis fiecare unitate fără document.</summary>
-    public static IReadOnlyDictionary<Guid, Guid> Deschideri(IObjectSpace os, IReadOnlyCollection<Guid> unitati) =>
+    /// <summary>Ordinalul postării care a deschis fiecare unitate fără document.</summary>
+    public static IReadOnlyDictionary<Guid, int> Deschideri(IObjectSpace os, IReadOnlyCollection<Guid> unitati) =>
         Postari(os).Where(p => p.DocumentId == null && unitati.Contains(p.Unitate.Value))
-            .Select(p => new { Unitate = p.Unitate.Value, p.ID }).ToList()
-            .GroupBy(p => p.Unitate).ToDictionary(g => g.Key, g => g.Min(p => p.ID));
+            .GroupBy(p => p.Unitate.Value).Select(g => new { Unitate = g.Key, Ordinal = g.Min(p => p.Ordinal) })
+            .ToDictionary(p => p.Unitate, p => p.Ordinal);
 
     public static IQueryable<SoldPartida> Solduri(IObjectSpace os, DateOnly panaLa, Guid? faraDocument = null) =>
         Postari(os).Where(p => p.Data <= panaLa && (faraDocument == null || p.DocumentId != faraDocument))
