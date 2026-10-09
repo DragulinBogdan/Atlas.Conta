@@ -278,6 +278,8 @@ internal static class Fapte {
                 Transformare = d is ILinieCuTransformare transformare ? transformare.TransformareCuleasa() : null,
                 DiferentaInventar = d is ILinieCuDiferentaInventar inventar ? inventar.DiferentaCuleasa() : null,
                 Imobilizare = d is ILinieCuImobilizare imobilizare ? imobilizare.ImobilizareCuleasa() : null,
+                PartidaDebit = (d as ILinieCuPartidaNumita)?.PartidaDebitId,
+                PartidaCredit = (d as ILinieCuPartidaNumita)?.PartidaCreditId,
             };
     }
 

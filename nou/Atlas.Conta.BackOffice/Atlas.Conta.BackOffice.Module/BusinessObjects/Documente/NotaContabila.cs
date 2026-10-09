@@ -115,7 +115,7 @@ public class NotaContabila : Document, IDocumentCuPostareExplicita {
 // Decontului — 32a): pe NTC conturile sunt OBLIGATORII (validare), repartitorii
 // per latură rămân opționali (fără ei cade default-ul polimorf al header-ului).
 // Restul semanticii bazei (lot, cantitate, TVA) nu se folosește pe notă.
-public class NotaContabilaDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
+public class NotaContabilaDetaliu : DocumentDetaliu, ILinieCuPostareExplicita, ILinieCuPartidaNumita {
     public virtual string Descriere { get; set; }
 
     // Alegere din planul mare, ca DecontDetaliu (nomenclator mare — lookup
@@ -130,6 +130,12 @@ public class NotaContabilaDetaliu : DocumentDetaliu, ILinieCuPostareExplicita {
     public virtual Repartitor RepartitorDebit { get; set; }
     public virtual Guid? RepartitorCreditId { get; set; }
     public virtual Repartitor RepartitorCredit { get; set; }
+
+    // 115: fără FK, partida e identitate calculată, nu rând (092).
+    [System.ComponentModel.Browsable(false), XafDisplayName("Partida stinsă pe debit")]
+    public virtual Guid? PartidaDebitId { get; set; }
+    [System.ComponentModel.Browsable(false), XafDisplayName("Partida stinsă pe credit")]
+    public virtual Guid? PartidaCreditId { get; set; }
 
     // DIM-2 (decizia 54c, inventar §2): defalcarea E pe conturile care o cer
     // (trezorerie/venituri) — nota de import/manuală o poartă pe linie.

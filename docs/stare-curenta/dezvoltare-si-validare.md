@@ -366,10 +366,12 @@ pe părinte, inclusiv cei ai cititorilor cubului, constrângerile
 `20261007080233_PostareVizual` (view-ul listei de evidență a cubului,
 `CREATE VIEW` în `Up`, `DROP VIEW` în `Down`; `ToView` e exclus din
 snapshot, deci `has-pending-model-changes` rămâne curat),
-`20261007215604_RegulaContareFaraPastreazaSemn` (coloana scoasă, 113) și
+`20261007215604_RegulaContareFaraPastreazaSemn` (coloana scoasă, 113),
 `20261009053645_IndecsiCitiriOperare` (indexul pe `Loturi.LinieIntrareId`,
 din model, și indexul parțial `IX_Postare_Fisa_Cont` pe `Postare(Cont)`
-pentru postările pe fișă, în SQL, probat de `STR-SCHEMA-4`).
+pentru postările pe fișă, în SQL, probat de `STR-SCHEMA-4`) și
+`20261009075629_NotaNumestePartida` (cele două coloane de partidă numită pe
+`DocumentDetalii`, 115).
 Snapshot-ul EF
 rămâne cu cheia `ID` (divergență declarată, probată de `STR-SCHEMA`).
 Migrațiile nu transformă date. Proba structurală a
@@ -903,6 +905,16 @@ după un commit fără legătură și reluarea drafturilor folosesc identitatea
 stabilă de import. Configurația legacy nu este importată ca limbaj de
 politici, iar instrumentele de migrare nu impun o bibliotecă de domeniu
 comună cu aplicația veche. (45f, 47b, 50a)
+
+Conectorul păstrează nominalizarea sursei. La loturi, linia poartă lotul
+numit de 1C. La partide, rândul de compensare sau de operație care are un
+document în subconto-ul „Documente” numește pe linia de notă partida acelui
+document, fie ea deschisă de un document importat sau inițială; trecerea 2 nu
+mai mută o partidă inițială pe care stingătorul a numit-o la operare. Unde
+sursa nu numește, conectorul dă cheia de ordonare: partida inițială primește
+data documentului 1C ca dată de naștere. Pe ianuarie 2025: 546 de laturi cu
+partida numită, niciuna absentă la data notei; 677 de date distincte pe cele
+3.967 de partide inițiale. (115)
 
 Nomenclatoarele sunt create la nevoie. Identitatea materialului importat
 ține cont de catalog și cont; lotul, de document × produs × cont. Mapările

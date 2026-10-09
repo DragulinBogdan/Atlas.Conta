@@ -24,6 +24,12 @@ public sealed class DeclarantNotaContabila : IDeclarant {
             foreach (var id in new[] { l.RepartitorDebitId, l.RepartitorCreditId }.OfType<Guid>())
                 if (!operand.Repartitori.TryGetValue(id, out var r) || r.Parte is null)
                     refuzuri.Add(new(CoduriRefuz.RepartitorExplicitLipsa, "Repartitorul explicit nu poate fi rezolvat.", l.Id));
+            foreach (var (partida, cont, repartitor) in new[] {
+                         (l.PartidaDebit, l.ContDebitId, l.RepartitorDebitId), (l.PartidaCredit, l.ContCreditId, l.RepartitorCreditId) })
+                if (partida is Guid numita && !operand.PartideDisponibile.Any(p => p.Unitate.Id == numita
+                        && p.Unitate.Cont == cont && p.Unitate.Partener == repartitor))
+                    refuzuri.Add(new(CoduriRefuz.PartidaNumitaInvalida,
+                        "Partida numită pe linie nu există la data notei pe contul și partenerul laturii.", l.Id));
         }
         if (refuzuri.Count > 0) return null;
 
@@ -35,9 +41,9 @@ public sealed class DeclarantNotaContabila : IDeclarant {
         var deschise = new HashSet<Guid>();
         foreach (var l in operand.Linii) {
             var debit = Nominalizeaza(l, l.ContDebitId!.Value, l.RepartitorDebitId,
-                operand.Document.Predator, N.Latura.Debit);
+                operand.Document.Predator, N.Latura.Debit, l.PartidaDebit);
             var credit = Nominalizeaza(l, l.ContCreditId!.Value, l.RepartitorCreditId,
-                operand.Document.Primitor, N.Latura.Credit);
+                operand.Document.Primitor, N.Latura.Credit, l.PartidaCredit);
             var i = 0; var j = 0;
             var rd = debit[0].Suma; var rc = credit[0].Suma;
             while (i < debit.Count && j < credit.Count) {
@@ -51,8 +57,9 @@ public sealed class DeclarantNotaContabila : IDeclarant {
         }
         return new(operand.Document.Id, operand.Document.DataInregistrare, miscari, decizii, ipoteze);
 
+        // 115: partida numită e singurul candidat; ce nu acoperă ea merge pe partida proprie, nu pe FIFO.
         List<(N.Capat Capat, decimal Suma)> Nominalizeaza(LinieOperand linie, Guid cont,
-                Guid? repartitorId, RepartitorFapt implicitul, N.Latura latura) {
+                Guid? repartitorId, RepartitorFapt implicitul, N.Latura latura, Guid? numita) {
             var repartitor = repartitorId is Guid id ? operand.Repartitori[id] : implicitul;
             var externul = repartitorId != null && repartitor.Parte == Parte.Extern;
             var capat = new N.Capat {
@@ -66,7 +73,8 @@ public sealed class DeclarantNotaContabila : IDeclarant {
             var sens = (latura == N.Latura.Debit ? 1 : -1) * Math.Sign(linie.Valoare);
             var candidati = new List<N.Disponibil>();
             foreach (var p in operand.PartideDisponibile.Where(p =>
-                         p.Unitate.Cont == cont && p.Unitate.Partener == repartitor.Id)) {
+                         p.Unitate.Cont == cont && p.Unitate.Partener == repartitor.Id
+                         && (numita == null || p.Unitate.Id == numita))) {
                 if (citite.Add(p.Unitate.Id)) ipoteze.Add(new N.SoldUnitateCitit(p.Unitate, p.Sold));
                 var rest = -sens * solduri[p.Unitate.Id];
                 if (rest > 0m) candidati.Add(new(p.Unitate, rest, p.Origine));

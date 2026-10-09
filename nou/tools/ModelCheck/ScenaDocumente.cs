@@ -20,7 +20,8 @@ record LinieFctScena(decimal Cantitate, decimal Pret, string Tva = null, bool St
     decimal TaxaCuleasa = 0, string Tip = null);
 record LinieScena(Guid Id, Guid? Lot, Guid? Produs);
 record FacturaScena(Guid Id, LinieScena[] Linii);
-record LinieNtcScena(string Debit, string Credit, decimal Valoare, Guid? RepartitorDebit = null, Guid? RepartitorCredit = null);
+record LinieNtcScena(string Debit, string Credit, decimal Valoare, Guid? RepartitorDebit = null, Guid? RepartitorCredit = null,
+    Guid? PartidaDebit = null, Guid? PartidaCredit = null);
 
 abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> check,
     bool privat, Action<IObjectSpace, int, int> inchide, string cod, int an) {
@@ -70,6 +71,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             d.ContDebitId = Cont(spec.Debit); d.ContCreditId = Cont(spec.Credit);
             d.Valoare = spec.Valoare; d.CodEconomicId = Economic;
             d.RepartitorDebitId = spec.RepartitorDebit; d.RepartitorCreditId = spec.RepartitorCredit;
+            d.PartidaDebitId = spec.PartidaDebit; d.PartidaCreditId = spec.PartidaCredit;
             rezultat.Add(new(d.ID, null, null));
         }
         os.CommitChanges(); return new(doc.ID, rezultat.ToArray());

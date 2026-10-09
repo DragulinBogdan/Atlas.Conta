@@ -189,6 +189,11 @@ SC-CIT-50: deschidere creditor 60 + 40 pentru același furnizor, fără document
 două partide distincte, total 100; NTC 75 lasă numai a doua cu rest 25.
 Snapshot-ul și raportul păstrează identitatea, inclusiv după reconstrucție.
 
+SC-CIT-112 (115 (d)): pe faptele SC-CIT-50, partida de 60 e născută la sursă
+pe 15.12 și cea de 40 pe 10.12 ale anului dinainte, iar cea de 60 are
+identificatorul mai mic. NTC 75 stinge întâi partida de 40, mai veche, apoi 35
+din cea de 60: FIFO urmează data nașterii partidei, nu identificatorul.
+
 SC-CIT-51: factura 100 stinsă integral în ianuarie, plata stornată în februarie:
 raportul ianuarie rămâne fără rest, februarie arată factura cu rest 100.
 Citirea directă, snapshot + fereastră și reconstrucția dau aceleași valori.

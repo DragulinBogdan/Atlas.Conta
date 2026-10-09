@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-10-08 (B-r3 închisă, decizia 112; 110-r1 închisă, decizia 113; 110-r3 restrânsă; 110-r6 deschisă).** [Index](README.md)
+**Actualizat: 2026-10-09 (107-r11 tratată parțial prin 114 și 115; 114-r1 deschisă și restrânsă de 115; 107-r9 restrânsă; 115-r1 deschisă).** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -329,10 +329,11 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 107-r6 | performanța Import1C: 25 → 50 min/lună pe Flax față de 8–10 la baseline 2026-09-21 (~5×); după gate-ul TR-D8 ianuarie durează 21:27 (2026-10-04, ~2,5× baseline), creșterea pe luni neremăsurată; scara X-D5 nu acoperă calea importului, de profilat înaintea oricărei rulări integrale (107) | activă (091) |
 | 107-r7 | ordinea stingerilor din aceeași compensare e nedeterministă între rulări (ianuarie: 42 apoi 41 partide neexplicate); de ordonat cronologic în trecerea 2 (107) | migrare (091) |
 | 107-r8 | nota-punte a vânzării cu valoare pe 3 zecimale (iunie 2025, 122,408) refuzată de gardianul de scară; rotunjirea la bani în handler, divergența declarată (107) | migrare (091) |
-| 107-r9 | documentele care mișcă direct partida inițială la operare (Compensare, Operatia cu partida nominalizată) nu trec prin trecerea 2; diferența față de sursă rămâne FAIL etichetat în contractul 5 (107) | migrare (091) |
+| 107-r9 | documentele care mișcă direct partida inițială la operare nu trec prin trecerea 2; pe compensările și operațiile cu document în subconto, tratată prin 115 (linia numește partida); rămân rândurile fără document numit (107) | migrare (091) |
 | 107-r10 | încasările inline ale retailului (`RaportDeVanzariCuAmanunt`, copiii `#inc`) nu sunt enumerate de trecerea 2; stingerea lor pe o poziție de deschidere nu ajunge pe partida inițială (107) | migrare (091) |
-| 107-r11 | reconcilierea Import1C nu e reproductibilă între rulări; cauza pe partidele deschise de documente e tratată prin 114, pe partidele inițiale rămâne (114-r1) (`tr-d9b-pas0-masuratori.md` §7) | migrare (091) |
-| 114-r1 | unitățile fără document deschizător (partidele inițiale) se departajează în FIFO pe un identificator care se schimbă la fiecare import (114) | migrare (091) |
+| 107-r11 | reconcilierea Import1C nu e reproductibilă între rulări; cauza pe partidele deschise de documente e tratată prin 114, iar pe partidele inițiale prin 115 (nominalizarea sursei și data de naștere); rămâne deschisă cât rămâne 114-r1 (`tr-d9b-pas0-masuratori.md` §7) | migrare (091) |
+| 114-r1 | două partide inițiale ale aceluiași partener, pe același cont, născute în aceeași zi și nenumite de sursă se departajează în FIFO pe un identificator care se schimbă la fiecare import; deschisă de 114 pentru toate unitățile fără document deschizător, restrânsă de 115 (a) și (d); pe ianuarie 2025 a rămas un caz (114, 115) | migrare (091) |
+| 115-r1 | nominalizarea partidei pe linia de notă nu e în culegere (XAF, API) (115) | după PoC (091) |
 | 091-r5 | un caz apărut la migrare care contrazice catalogul devine scenariu nou plus decizie; oracolul normalizat (`CubDinRegistre`, `Normalizari`) nu se mai extinde (091) | migrare (091) |
 | 109-r1 | contractele 1 și 2 ale reconcilierii 1C citesc `RegistruContabil` (`ReconciliereLuna`); trec pe cititorii cubului (109) | închisă la TR-D9a (110): Import1C citește cubul (pasul 5); rularea-diagnostic pe ianuarie e în `tr-d9-pas8-inchiderea.md` |
 | 109-r2 | în ecranul XAF, recalculul unei linii mută taxa și pe celelalte linii nemarcate ale documentului; reafișarea lor de probat în browser (109) | închisă 2026-10-04: probată în browser; proba a găsit conflictul de versiune la operarea după salvarea liniei, corectat prin 109 (f) |
