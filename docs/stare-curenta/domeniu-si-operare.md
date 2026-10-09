@@ -168,14 +168,17 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
   identificatorul unității rămâne numai ultimul criteriu. Ordonarea loturilor
   e una singură, `Cub.Citiri.Loturi.InOrdineFifo`; a partidelor o face
   nucleul, care primește documentul pe candidat (`Disponibil.Origine`). (114)
-- Postările unei tranzacții primesc ID-uri crescătoare în ordinea tranzacției.
-  Între partidele fără document deschizător, înaintea identificatorului
-  departajează ID-ul postării de deschidere (`Disponibil.Deschidere`): două
-  partide inițiale născute în aceeași zi se consumă în ordinea în care le-a
-  primit deschiderea. Cine deschide trebuie deci să le dea în aceeași ordine
-  la fiecare rulare. Ordinea e purtată de ID, nu de o coloană a postării.
-  Loturile inițiale nu sunt acoperite: la aceeași dată se departajează pe
-  identificatorul lotului. (116)
+- Postarea își poartă ordinalul: poziția ei în tranzacția care a scris-o, de
+  la 1, fără goluri (`Postare.Ordinal`, dat de `Randuri.Scrie`). Nu e
+  coordonată: nu intră în sold, în grupări sau în identitatea unității. Baza
+  nu-i dă valoare implicită, iar lista de evidență îl arată. ID-urile
+  postărilor nu poartă ordine. (117)
+- Între partidele fără document deschizător, înaintea identificatorului
+  departajează ordinalul postării de deschidere (`Disponibil.Deschidere`):
+  două partide inițiale născute în aceeași zi se consumă în ordinea în care
+  le-a primit deschiderea. Cine deschide trebuie deci să le dea în aceeași
+  ordine la fiecare rulare. Loturile inițiale nu sunt acoperite: la aceeași
+  dată se departajează pe identificatorul lotului. (116, 117)
 - Partida inițială își poartă data la care s-a născut la sursă
   (`PartidaInitiala.Deschisa`); fără ea, data deschiderii. Data nu poate urma
   deschiderii și nu intră în identificatorul partidei. FIFO consumă deci
@@ -1428,6 +1431,9 @@ ieșirea atât, din ce sold, ce partide a stins.
   exact două postări cu același document, aceeași linie, cantități opuse și
   valorile potrivite laturilor felului; `CITIRE_PERECHE_LIPSA` — postare fără
   ordinal în afara deschiderii și a liniilor transformării. (D9-A2)
+- **Ordinalul numără postările tranzacției** (`Invarianti.VerificaOrdinale`,
+  în `INV-CUB`): `CITIRE_ORDINAL_INVALID` — postările unei tranzacții nu sunt
+  numărate de la 1, fără goluri și fără dubluri. (117)
 
 Dry-run-ul nu persistă nimic. O declarație pe care nucleul nu o poate
 construi (`ArgumentException`) sau un declarant care nu întoarce nici

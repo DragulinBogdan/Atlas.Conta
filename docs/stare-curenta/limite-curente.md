@@ -293,8 +293,6 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   `(Unitate, Data)` și filtrează lotul după citire. Coborârea filtrului de
   loturi pe rând nu schimbă planul. Import1C câștigă totuși cu ea pornită;
   hosturile nu o au. (2026-10-09)
-- Ordinea FIFO a partidelor inițiale născute în aceeași zi e ordinea din
-  deschidere, purtată de ID-ul postării, nu de o coloană a ei. (116-r1)
 - Loturile inițiale cu același produs, gestiune, cont și dată se departajează
   în FIFO pe identificatorul lotului, dat de cel care le creează. (116-r2)
 - Reproductibilitatea Import1C e măsurată numai pe ianuarie 2025 (două

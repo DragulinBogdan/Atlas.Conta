@@ -53,6 +53,9 @@ static partial class AcoperireInvarianti {
         new("LINIE-SEMN-ASM", C.Citiri.Explicatii.Linie, (os, db) => LinieDiferita<Asamblare>(os, db, N.FelTranzactie.Transfer, v => -v)),
         new("IESIRE-SEMN-BTR", C.Citiri.Explicatii.Iesire, (os, db) => Rescrie(os, db, IesireCuSemnOpus, Purtatori<NotaTransfer>(os, N.FelTranzactie.Transfer))),
         new("IESIRE-SEMN-ASM", C.Citiri.Explicatii.Iesire, (os, db) => Rescrie(os, db, IesireCuSemnOpus, Purtatori<Asamblare>(os, N.FelTranzactie.Transfer))),
+        new("ORDINAL-BAZA", C.Citiri.Invarianti.OrdinalInvalid, (os, db) => MutaOrdinal(os, db, _ => (1, 0))),
+        new("ORDINAL-GOL", C.Citiri.Invarianti.OrdinalInvalid, (os, db) => MutaOrdinal(os, db, cate => (cate, cate + 1))),
+        new("ORDINAL-DUBLU", C.Citiri.Invarianti.OrdinalInvalid, (os, db) => MutaOrdinal(os, db, _ => (2, 3))),
     ];
 
     static readonly HashSet<string> ucise = [];
@@ -219,6 +222,17 @@ static partial class AcoperireInvarianti {
         var altCont = os.GetObjectsQuery<Cont>().Where(c => c.ID != tinta.Cont).OrderBy(c => c.Simbol).Select(c => c.ID).First();
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
             .ExecuteUpdate(s => s.SetProperty(p => p.Cont, altCont));
+        return true;
+    }
+
+    // Fiecare mutare aprinde o singură disjuncție: 1 → 0 baza, ultimul + 1 golul, 2 → 3 dublura.
+    static bool MutaOrdinal(IObjectSpace os, DbContext db, Func<int, (int Din, int Spre)> mutare) {
+        var tinta = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.Postari.Count() >= 3)
+            .OrderBy(t => t.ID).Select(t => new { t.ID, Cate = t.Postari.Count() }).FirstOrDefault();
+        if (tinta == null) return false;
+        var (din, spre) = mutare(tinta.Cate);
+        db.Set<C.Postare>().Where(p => p.TranzactieId == tinta.ID && p.Ordinal == din)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Ordinal, spre));
         return true;
     }
 

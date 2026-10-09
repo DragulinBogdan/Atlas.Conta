@@ -14,6 +14,8 @@ public class Postare {
 
     public virtual Guid TranzactieId { get; set; }
     public virtual Tranzactie Tranzactie { get; set; }
+    /// <summary>Poziția postării în tranzacția ei, de la 1 (117).</summary>
+    public virtual int Ordinal { get; set; }
 
     public virtual Guid? DocumentId { get; set; }
     public virtual Guid? LinieId { get; set; }

@@ -23,6 +23,20 @@ public static class Invarianti {
         Imobilizari.VerificaProvenienta(os);
         Explicatii.VerificaAcoperire(os);
         VerificaPerechi(os);
+        VerificaOrdinale(os);
+    }
+
+    public const string OrdinalInvalid = "CITIRE_ORDINAL_INVALID";
+
+    /// <summary>Ordinalul numără postările tranzacției de la 1, fără goluri și fără dubluri (117).</summary>
+    public static void VerificaOrdinale(IObjectSpace os) {
+        var invalide = os.GetObjectsQuery<Postare>().GroupBy(p => p.TranzactieId)
+            .Where(g => g.Min(p => p.Ordinal) != 1 || g.Max(p => p.Ordinal) != g.Count()
+                || g.Select(p => p.Ordinal).Distinct().Count() != g.Count())
+            .Select(g => g.Key).Take(10).ToList();
+        if (invalide.Count != 0)
+            throw new OperareException($"{OrdinalInvalid}: tranzacții ale căror postări nu sunt numărate de la 1 fără goluri; exemple: "
+                + string.Join(", ", invalide));
     }
 
     public const string PerecheInvalida = "CITIRE_PERECHE_INVALIDA";
