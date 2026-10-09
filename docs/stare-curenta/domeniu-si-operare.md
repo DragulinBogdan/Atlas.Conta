@@ -168,6 +168,10 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
   unității rămâne numai ultimul criteriu. Ordonarea loturilor e una singură,
   `Cub.Citiri.Loturi.InOrdineFifo`; a partidelor o face nucleul, care
   primește documentul pe candidat (`Disponibil.Origine`). (114)
+- Partida inițială își poartă data la care s-a născut la sursă
+  (`PartidaInitiala.Deschisa`); fără ea, data deschiderii. Data nu poate urma
+  deschiderii și nu intră în identificatorul partidei. FIFO consumă deci
+  partidele inițiale în ordinea vechimii, ca loturile inițiale. (115)
 - Data stornării nu poate preceda data înregistrării. Pentru documentele de
   imobilizări stornoul se cere în luna înregistrării. (25d, 87g, F27-D4)
 - Data înregistrării nu poate preceda data documentului. Regula este scrisă în
@@ -1028,7 +1032,13 @@ NTC și ITV folosesc același `DeclarantNotaContabila` (T-D3, pasul 3).
 Nota păstrează conturile explicite și valoarea semnată; cantitatea este 0.
 Pe un cont cu `UrmarestePartide`, partenerul explicit al liniei nominalizează FIFO
 partidele aceluiași cont și partener, în sensul stingerii și până la rest;
-excedentul deschide partida proprie. Soldurile pentru această nominalizare
+excedentul deschide partida proprie. Linia poate numi, pe fiecare latură,
+partida pe care o stinge (`PartidaDebitId`, `PartidaCreditId`): latura
+stinge atunci numai acea partidă, până la restul ei, iar ce nu acoperă merge
+pe partida proprie, nu pe FIFO. O partidă numită care nu există la data notei
+pe contul și partenerul laturii e refuzată (`PARTIDA_NUMITA_INVALIDA`).
+Câmpurile sunt ascunse în XAF și lipsesc din `WriteDto`; le scrie conectorul
+de import (115). Soldurile pentru această nominalizare
 se citesc din cub la data înregistrării, ca fapte în operand. Fără partener,
 nu se inventează partidă; pe 3xx fără lot postarea rămâne doar contabilă.
 Împerecherea ulterioară fără partidă proprie nu mai transferă încă o dată

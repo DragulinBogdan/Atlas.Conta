@@ -25,6 +25,8 @@ public sealed record LotInitial(Guid Cont, Guid Lot, Guid Gestiune, decimal Cant
 }
 public sealed record PartidaInitiala(Guid Cont, Guid Partener, Guid Referinta, N.Latura Latura, decimal Valoare,
     N.Carte Carte = N.Carte.Contabil) {
+    /// <summary>Data la care s-a născut partida la sursă; fără ea, data deschiderii (115).</summary>
+    public DateOnly? Deschisa { get; init; }
     public N.Analiza Analiza { get; init; } = N.Analiza.Fara;
     public Guid? Valuta { get; init; }
     public decimal ValoareValuta { get; init; }
@@ -98,7 +100,9 @@ public static partial class Materializare {
             if (p.Carte != N.Carte.Contabil || !conturi[p.Cont].UrmarestePartide || !parteneri.Contains(p.Partener)
                 || p.Referinta == Guid.Empty || !Enum.IsDefined(p.Latura))
                 RefuzaDeschidere("Partida cere Carte=Contabil, cont urmărit pe partide, partener și referință valide.");
-            var u = N.Unitate.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, data);
+            if (p.Deschisa is { } nascuta && (nascuta > data || nascuta == default))
+                RefuzaDeschidere("Data partidei nu poate urma deschiderii.");
+            var u = N.Unitate.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, p.Deschisa ?? data);
             if (!unitati.Add((p.Carte, u.Id, null))) RefuzaDeschidere("Partidă duplicată.");
             postari.Add(new(new N.Coordonate { Cont = p.Cont, Latura = p.Latura, Data = data,
                 Carte = p.Carte, Partener = p.Partener, Unitate = u, Analiza = p.Analiza, Valuta = p.Valuta }, 0, p.ValoareValuta, p.Valoare, new(Guid.Empty, null)));

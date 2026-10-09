@@ -1521,6 +1521,8 @@
         "ID": "ID",
         "Lot": "Lot",
         "LotId": "Lot",
+        "PartidaCreditId": "Partida stinsă pe credit",
+        "PartidaDebitId": "Partida stinsă pe debit",
         "Pozitie": "Poziție",
         "RepartitorCredit": "RepartitorCredit",
         "RepartitorCreditId": "RepartitorCredit",

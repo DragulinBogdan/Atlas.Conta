@@ -38,6 +38,7 @@ public static class CoduriRefuz {
     public const string ContExplicitLipsa = "CONT_EXPLICIT_LIPSA";
     public const string ValoareZero = "VALOARE_ZERO";
     public const string RepartitorExplicitLipsa = "REPARTITOR_EXPLICIT_LIPSA";
+    public const string PartidaNumitaInvalida = "PARTIDA_NUMITA_INVALIDA";
     public const string PartidaCuDependenti = "PARTIDA_CU_DEPENDENTI";
     public const string NaturaNepotrivita = "NATURA_NEPOTRIVITA";
     public const string CantitateZero = "CANTITATE_ZERO";

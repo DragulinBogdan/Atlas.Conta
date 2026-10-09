@@ -46,7 +46,7 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         var stoc = Nota(Ianuarie, new LinieNtcScena(Serviciu, Stoc, 50)); Opereaza(stoc.Id);
         Postari("SC-NTC-14", stoc.Id, N.FelTranzactie.Operare, Ianuarie, R(stoc, 0, Serviciu, Stoc, 50));
         Refuzuri();
-        Fifo(); Parteneri(); TransferFaraPartidaProprie(); DependentaInTimp();
+        Fifo(); Numite(); Parteneri(); TransferFaraPartidaProprie(); DependentaInTimp();
         if (Privat) Avans();
         PestePerioada();
     }
@@ -63,6 +63,25 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
             RefuzDeclaratie("SC-NTC-18", doc.Id, cod);
             Refuza("SC-NTC-18", () => Opereaza(doc.Id), mesaj); FaraEfecte("SC-NTC-18", doc.Id);
         }
+    }
+
+    void Numite() {
+        Furnizor = PartenerNou();
+        var f1 = Fct(60, 3); var f2 = Fct(40, 4);
+        var p1 = P(f1.Id, ContFurnizor, Furnizor); var p2 = P(f2.Id, ContFurnizor, Furnizor);
+        var n1 = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 30, Furnizor, PartidaDebit: p2)); Opereaza(n1.Id);
+        Postari("SC-NTC-23", n1.Id, N.FelTranzactie.Operare, Ianuarie, R(n1, 0, ContFurnizor, Serviciu, 30, ud: p2, pd: Furnizor));
+        SoldPartida("SC-NTC-23", p1, Ianuarie, -60); SoldPartida("SC-NTC-23", p2, Ianuarie, -10);
+        var n2 = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 25, Furnizor, PartidaDebit: p2)); Opereaza(n2.Id);
+        Postari("SC-NTC-24", n2.Id, N.FelTranzactie.Operare, Ianuarie,
+            [.. R(n2, 0, ContFurnizor, Serviciu, 10, ud: p2, pd: Furnizor),
+             .. R(n2, 0, ContFurnizor, Serviciu, 15, ud: P(n2.Id, ContFurnizor, Furnizor), pd: Furnizor)]);
+        SoldPartida("SC-NTC-24", p1, Ianuarie, -60); SoldPartida("SC-NTC-24", p2, Ianuarie, 0);
+        var strain = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 10, PartenerNou(), PartidaDebit: p2));
+        RefuzDeclaratie("SC-NTC-25", strain.Id, "PARTIDA_NUMITA_INVALIDA");
+        Refuza("SC-NTC-25", () => Opereaza(strain.Id), "Partida numită"); FaraEfecte("SC-NTC-25", strain.Id);
+        Storneaza(n1.Id, Ianuarie);
+        SoldPartida("SC-NTC-26", p1, Ianuarie, -60); SoldPartida("SC-NTC-26", p2, Ianuarie, -30);
     }
 
     void Fifo() {

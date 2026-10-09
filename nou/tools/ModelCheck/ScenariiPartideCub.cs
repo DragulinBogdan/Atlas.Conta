@@ -436,8 +436,8 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             using var tx = TranzactieComanda.Incepe(os);
             C.Materializare.Deschide(os, Ianuarie,
                 [new(cont, N.Latura.Credit, 100, true), new(ancora, N.Latura.Debit, 100)], [],
-                [new(cont, Furnizor, ref1, N.Latura.Credit, 60) { Analiza = new(null, Economic, null, null, null, null) },
-                 new(cont, Furnizor, ref2, N.Latura.Credit, 40) { Analiza = new(null, Economic, null, null, null, null) }]);
+                [new(cont, Furnizor, ref1, N.Latura.Credit, 60) { Analiza = new(null, Economic, null, null, null, null), Deschisa = new(An - 1, 12, 15) },
+                 new(cont, Furnizor, ref2, N.Latura.Credit, 40) { Analiza = new(null, Economic, null, null, null, null), Deschisa = new(An - 1, 12, 10) }]);
             os.CommitChanges(); tx.Commit();
         });
         Verifica("SC-CIT-50", "raport: două deschideri fără document, 60 + 40", CuSpatiu(os => {
@@ -448,6 +448,10 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         Verifica("SC-CIT-50", "NTC 75: raport păstrează a doua deschidere cu rest 25", CuSpatiu(os => {
             var r = ImperecheriProiectii.PartideCuRest(os, Furnizor, laData: Ianuarie).Single();
             return r.DocumentId == null && r.Rest == 25;
+        }));
+        Verifica("SC-CIT-112", "partida inițială născută mai devreme se stinge întâi, deși are identificatorul mai mare", CuSpatiu(os => {
+            var veche = N.Unitate.DeschidePartidaInitiala(cont, Furnizor, ref2, Ianuarie).Id;
+            return P.Solduri(os, Ianuarie).Single(s => s.UnitateId == veche) is var s && s.Debit == s.Credit;
         }));
         Verifica("SC-CIT-44", "deschidere 100, NTC 75: rest total −25", CuSpatiu(os => {
             var s = P.Solduri(os, Ianuarie).Where(s => s.ContId == cont && s.PartenerId == Furnizor).ToArray();

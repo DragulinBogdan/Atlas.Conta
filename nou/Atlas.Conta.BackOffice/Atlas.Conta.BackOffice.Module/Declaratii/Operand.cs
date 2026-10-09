@@ -90,6 +90,8 @@ public sealed record LinieOperand(
     public TransformareFapt? Transformare { get; init; }
     public DiferentaInventarFapt? DiferentaInventar { get; init; }
     public ImobilizareCuleasa? Imobilizare { get; init; }
+    public Guid? PartidaDebit { get; init; }
+    public Guid? PartidaCredit { get; init; }
 
     /// <summary>Forma pe care o consumă `Potrivire` — aceeași ortografie ca `Fapte.Linie`.</summary>
     public LinieFapt Fapt => new(TipMaterialId, ClasaId, Natura, Math.Sign(Cantitate), LotId, ContImplicitTipId);

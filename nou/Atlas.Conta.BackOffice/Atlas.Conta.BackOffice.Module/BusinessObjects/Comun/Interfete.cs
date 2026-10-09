@@ -83,6 +83,12 @@ public interface ILinieCuPostareExplicita {
     Guid? RepartitorCreditId { get; }
 }
 
+/// <summary>Linia numește, pe latură, partida pe care o stinge; fără ea alege FIFO (115).</summary>
+public interface ILinieCuPartidaNumita {
+    Guid? PartidaDebitId { get; }
+    Guid? PartidaCreditId { get; }
+}
+
 // Opt-in-ul DOCUMENTULUI pentru postarea fără regulă (review advers 1C-a):
 // mecanismul 32a extins — o linie cu postare explicită COMPLETĂ postează și în
 // absența oricărei RegulaContare — e valid DOAR pe tipurile care îl declară
