@@ -181,9 +181,9 @@ sealed class AlocareIesire {
                     $"Lotul {g.Key} are sold pe mai multe conturi din categoria {tipStoc}, în gestiunea {gestiuneId}: "
                     + "motorul evaluează pe cont, deci predicția nu se poate face pe suma lor."));
         var ids = solduri.Keys.ToList();
-        var loturi = os.GetObjectsQuery<Lot>()
-            .Where(l => ids.Contains(l.ID))
-            .Select(l => new { LotId = l.ID, DataLot = l.Data, PretLot = l.PretUnitar })
+        var loturi = Loturi.Origini(os)
+            .Where(l => ids.Contains(l.LotId))
+            .Select(l => new { l.LotId, DataLot = l.Data, PretLot = l.PretUnitar, l.DocumentId, l.Pozitie })
             .ToList()
             .ToDictionary(l => l.LotId);
         var rotunjire = new N.Rotunjire(Scara.ConventieBani);
@@ -214,9 +214,10 @@ sealed class AlocareIesire {
                 PinuriGoale++;
         }
 
-        // 2. Deficitul, FIFO în produs × gestiune (vechimea lotului, apoi ID-ul).
+        // 2. Deficitul, FIFO în produs × gestiune, în ordinea motorului (114).
         var inainteDeFifo = ramas;
-        foreach (var lot in loturi.Values.OrderBy(l => l.DataLot).ThenBy(l => l.LotId)) {
+        foreach (var lot in loturi.Values.OrderBy(l => l.DataLot).ThenBy(l => l.DocumentId)
+                .ThenBy(l => l.Pozitie).ThenBy(l => l.LotId)) {
             if (ramas <= 0)
                 break;
             if (lotDoritId == lot.LotId)

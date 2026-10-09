@@ -174,8 +174,8 @@ internal static class Fapte {
         var zi = doc.DataInregistrare;
         return Cub.Citiri.Partide.Postari(os)
             .Where(p => p.DocumentId != doc.ID && idsCont.Contains(p.Cont) && idsTert.Contains(p.Partener.Value))
-            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, p.Data })
-            .Select(g => new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data,
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, p.Data, p.DocumentId })
+            .Select(g => new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data, g.Key.DocumentId,
                 Deschisa = g.Min(p => p.UnitateDeschisa.Value),
                 Debit = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : 0m),
                 Credit = g.Sum(p => p.Latura == N.Latura.Credit ? p.Valoare : 0m) })
@@ -187,12 +187,13 @@ internal static class Fapte {
                 var sold = new N.Sold(pana.Sum(p => p.Debit), pana.Sum(p => p.Credit), 0m, 0m);
                 var disponibil = Cub.Citiri.Partide.DisponibilTemporal(
                     g.Select(p => (p.Data, p.Debit - p.Credit)), zi, Math.Sign(sold.Net));
-                return new Declaratii.SoldPartidaFapt(
-                    new N.Unitate(g.Key.Unitate.Value, N.FelUnitate.Partida, g.Key.Cont,
-                        g.Key.Partener.Value, null, g.Min(p => p.Deschisa)),
-                    sold, disponibil);
+                var unitate = new N.Unitate(g.Key.Unitate.Value, N.FelUnitate.Partida, g.Key.Cont,
+                    g.Key.Partener.Value, null, g.Min(p => p.Deschisa));
+                var origine = g.Select(p => p.DocumentId).OfType<Guid>().Distinct()
+                    .FirstOrDefault(d => Cub.IdentitatiPartide.EsteProprie(unitate, d));
+                return new Declaratii.SoldPartidaFapt(unitate, sold, disponibil, origine);
             })
-            .OrderBy(p => p.Unitate.Deschisa).ThenBy(p => p.Unitate.Id).ToList();
+            .OrderBy(p => p.Unitate.Deschisa).ThenBy(p => p.Origine).ThenBy(p => p.Unitate.Id).ToList();
     }
 
     // Restul documentului-sursă FĂRĂ stingerile documentului curent: ca soldurile de

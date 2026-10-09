@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-10-08.** [Index](README.md)
+**Actualizat: 2026-10-09.** [Index](README.md)
 
 ## Modelul comun
 
@@ -158,6 +158,16 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
 - Ordinea FIFO este ordinea intrării în evidență, fiindcă lotul se naște la
   data înregistrării. Este singura ordine compatibilă cu „sold ≥ 0 la orice
   dată”. (13, F27-D4)
+- La aceeași dată de deschidere, FIFO consumă întâi unitatea deschisă de
+  documentul creat mai devreme: data, apoi ID-ul documentului deschizător,
+  apoi identificatorul unității. Unitatea fără document deschizător (partida
+  inițială, lotul fără linie de intrare) vine prima la data ei. La loturi,
+  între document și identificator stă poziția liniei de intrare. ID-ul
+  documentului e Guid v7 și ține ordinea creării între tranzacții; rândurile
+  scrise în aceeași tranzacție n-au ordine în ID, deci identificatorul
+  unității rămâne numai ultimul criteriu. Ordonarea loturilor e una singură,
+  `Cub.Citiri.Loturi.InOrdineFifo`; a partidelor o face nucleul, care
+  primește documentul pe candidat (`Disponibil.Origine`). (114)
 - Data stornării nu poate preceda data înregistrării. Pentru documentele de
   imobilizări stornoul se cere în luna înregistrării. (25d, 87g, F27-D4)
 - Data înregistrării nu poate preceda data documentului. Regula este scrisă în
@@ -879,7 +889,8 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   (document, cont, partener), conform 092; identitățile istorice sunt păstrate
   la citire și stingere, fără rescrierea postărilor. **FIFO**: unitatea numită
   pe linie se consumă întâi,
-  fără cădere pe FIFO, apoi (data deschiderii, id), tolerant cu rest
+  fără cădere pe FIFO, apoi (data deschiderii, documentul deschizător, id;
+  114), tolerant cu rest
   întors. **Evaluarea ieșirii** pe raportul CURENT al unității, ultima
   ieșire ia restul ⇒ cantitate zero ⇒ valoare zero; față de motorul de azi
   (preț înghețat pe lot, substituit doar la golire) diferența e declarată

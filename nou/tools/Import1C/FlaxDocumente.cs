@@ -291,8 +291,14 @@ partial class FlaxDb {
     const string OrdineAntete = "order by h.DateTime, h.Number, h.KeyField";
     const string OrdineLinii = "order by s.ParentRef, s.[LineNo]";
 
-    static (string, object)[] Fereastra(int an, int luna) =>
-        [("@de", new DateTime(an, luna, 1)), ("@pana", new DateTime(an, luna, 1).AddMonths(1))];
+    /// <summary>Ultima zi importată din luna ei; null = toate lunile întregi.</summary>
+    public DateOnly? Taietura { get; set; }
+
+    public bool EsteTaiata(int an, int luna) => Taietura is { } t && t.Year == an && t.Month == luna;
+
+    (string, object)[] Fereastra(int an, int luna) =>
+        [("@de", new DateTime(an, luna, 1)), ("@pana", EsteTaiata(an, luna)
+            ? Taietura.Value.AddDays(1).ToDateTime(TimeOnly.MinValue) : new DateTime(an, luna, 1).AddMonths(1))];
 
     // Data „goală" a lui 1C (0001-01-01) iese din view cu corecția de an aplicată
     // — adică exact `2001-01-01` (verificat: 43 de scadențe pe 2025 au fix
