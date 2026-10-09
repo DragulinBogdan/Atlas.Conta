@@ -113,9 +113,9 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
              .. R(n, 0, ContFurnizor, Serviciu, 15, ud: P(n.Id, ContFurnizor, Furnizor), pd: Furnizor)]);
         SoldPartida("SC-NTC-09", P(f2.Id, ContFurnizor, Furnizor), new(An, 1, 10), -40);
         Furnizor = PartenerNou(); f1 = Fct(60, 3); f2 = Fct(40, 3);
-        var prima = new[] { (P(f1.Id, ContFurnizor, Furnizor), 60m), (P(f2.Id, ContFurnizor, Furnizor), 40m) }.OrderBy(p => p.Item1).First();
+        var prima = P((f1.Id.CompareTo(f2.Id) < 0 ? f1 : f2).Id, ContFurnizor, Furnizor);
         n = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 30, Furnizor)); Opereaza(n.Id);
-        Postari("SC-NTC-09", n.Id, N.FelTranzactie.Operare, Ianuarie, R(n, 0, ContFurnizor, Serviciu, 30, ud: prima.Item1, pd: Furnizor));
+        Postari("SC-NTC-09", n.Id, N.FelTranzactie.Operare, Ianuarie, R(n, 0, ContFurnizor, Serviciu, 30, ud: prima, pd: Furnizor));
 
         Furnizor = PartenerNou(); f1 = Fct(100, 3); p1 = P(f1.Id, ContFurnizor, Furnizor);
         n = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, -30, RepartitorCredit: Furnizor)); Opereaza(n.Id);

@@ -1,6 +1,7 @@
 namespace Atlas.Conta.Nucleu;
 
-public sealed record Disponibil(Unitate Unitate, decimal Masura);
+/// <summary><paramref name="Origine"/> = documentul care a deschis unitatea; gol la unitatea fără document.</summary>
+public sealed record Disponibil(Unitate Unitate, decimal Masura, Guid Origine = default);
 
 public sealed record Pin(Guid Unitate, decimal Masura);
 
@@ -18,7 +19,7 @@ public static class Fifo {
             throw new ArgumentException($"cererea {cerere} se cere > 0.", nameof(cerere));
         var unitati = new Dictionary<Guid, Unitate>();
         var disponibil = new Dictionary<Guid, decimal>();
-        var ordine = new List<Unitate>();
+        var ordine = new List<Disponibil>();
         foreach (var candidat in candidati) {
             ArgumentNullException.ThrowIfNull(candidat);
             if (!unitati.TryAdd(candidat.Unitate.Id, candidat.Unitate))
@@ -28,7 +29,7 @@ public static class Fifo {
             if (candidat.Masura <= 0m)
                 continue;
             disponibil.Add(candidat.Unitate.Id, candidat.Masura);
-            ordine.Add(candidat.Unitate);
+            ordine.Add(candidat);
         }
         var numite = pinuri ?? [];
         foreach (var pin in numite) {
@@ -49,16 +50,19 @@ public static class Fifo {
         foreach (var pin in numite)
             Aloca(unitati[pin.Unitate], pin.Masura, disponibil, alocat, alocari, ref ramas);
         ordine.Sort(Intai);
-        foreach (var unitate in ordine)
-            Aloca(unitate, decimal.MaxValue, disponibil, alocat, alocari, ref ramas);
+        foreach (var candidat in ordine)
+            Aloca(candidat.Unitate, decimal.MaxValue, disponibil, alocat, alocari, ref ramas);
         return new Nominalizare(alocari, ramas);
     }
 
-    public static int Intai(Unitate unul, Unitate altul) {
+    /// <summary>Data deschiderii, apoi documentul deschizător, apoi identificatorul unității.</summary>
+    public static int Intai(Disponibil unul, Disponibil altul) {
         ArgumentNullException.ThrowIfNull(unul);
         ArgumentNullException.ThrowIfNull(altul);
-        var peData = unul.Deschisa.CompareTo(altul.Deschisa);
-        return peData != 0 ? peData : unul.Id.CompareTo(altul.Id);
+        var peData = unul.Unitate.Deschisa.CompareTo(altul.Unitate.Deschisa);
+        if (peData != 0) return peData;
+        var peOrigine = unul.Origine.CompareTo(altul.Origine);
+        return peOrigine != 0 ? peOrigine : unul.Unitate.Id.CompareTo(altul.Unitate.Id);
     }
 
     static void Aloca(

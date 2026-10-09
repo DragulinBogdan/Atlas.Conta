@@ -353,6 +353,10 @@ bugetar codurile nu sunt nule și creșterea ar fi mai mică.
   ordinea identificatorului de document (`Imperecheri.cs`, `OrderBy(d =>
   d.ID)`), iar identificatorii se generează din nou la fiecare import.
   Restanța: 107-r11. Dovezile: `run-verificari/tr-d9b-pas0/atribuire/`.
+  **Adăugat 2026-10-09:** candidatul de mai sus nu e cauza. `OrderBy(d => d.ID)`
+  e în `Materializare.StingereDeschidere.cs` și ordonează numai blocarea
+  rândurilor. Cauza găsită e departajarea FIFO a partidelor din aceeași zi pe
+  identificatorul partidei; contextul și măsurătorile sunt în decizia 114.
 - **(e) și (f)** nu au măsurătoare proprie în pasul 0. Recensământul din §1
   e compatibil cu respingerea formei „ambele coloane".
 
