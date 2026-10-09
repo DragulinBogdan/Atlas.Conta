@@ -905,6 +905,19 @@ pentru documente nerecunoscute. Transformările și transferurile sunt
 clasificate în ASM, BTR sau NTC după faptul economic. FCL importată postează
 venitul; DSC folosește loturile identificate de sursă. (49a, 49d, 75b)
 
+Fără connection string dat, Import1C scrie în `Atlas.Conta.Import1C.Flax`
+pe instanța nativă (5446). Pe orice conexiune care nu spune altfel pornește
+pregătirea automată a comenzilor (`Max Auto Prepare=300`,
+`Auto Prepare Min Usages=2`): pe ianuarie, 11:29 → 9:55 pe același binar.
+
+`--pana-la-ziua Z` taie ultima lună a ferestrei (`--pana-la`) la ziua Z,
+pentru rulări scurte de măsurare: sursa se citește numai până la acea zi,
+stingerile lunii se aplică, iar închiderea de TVA și contractul lunar nu
+rulează, fiindcă se compară cu sfârșitul de lună al sursei. Raportul spune că
+luna e tăiată, iar verdictul e „contract lunar nerulat”, nu „îndeplinit”. Nu
+se combină cu `--inchide-lunile`. Ianuarie până la ziua 5: 822 de documente,
+72 s cu tot cu deschidere.
+
 `--inchide-lunile` închide fiecare lună imediat după importul ei, prin
 `PerioadaService.Inchide` cu toate constatările curente acceptate (politica de
 închidere a bazei de import coboară `ItvLipsa` la avertisment — politică, nu

@@ -424,7 +424,8 @@ sealed class BuclaImport {
         MidpointLuna = 0;
         cronometruLuna = Stopwatch.StartNew();
         var prima = new DateOnly(an, luna, 1);
-        var ctx = new ContextLuna(an, luna, prima, prima.AddMonths(1).AddDays(-1), this);
+        var taiata = Flax.EsteTaiata(an, luna);
+        var ctx = new ContextLuna(an, luna, prima, taiata ? Flax.Taietura.Value : prima.AddMonths(1).AddDays(-1), this);
 
         Console.WriteLine($"\n--- Luna {luna:00}/{an} ---");
         RanduriLuna = Flax.RanduriNotaPeLuna(an, luna);
@@ -489,10 +490,18 @@ sealed class BuclaImport {
         }
 
         Imperecheri(ctx);
-        InchidereTva(ctx);
-        // `MidpointLuna` e deja acumulat de `Opereaza` (documente + copii + ITV).
         var cronometruContract = Stopwatch.StartNew();
-        var contract = ReconciliereLunara(ctx);
+        ReconciliereLuna.Rezultat contract;
+        if (taiata) {
+            Console.WriteLine($"  Luna {luna:00}/{an} e tăiată la {ctx.Ultima:dd.MM}: fără închidere de TVA și fără contract lunar.");
+            contract = new(0, 0, 0, 0m, 0m, 0m);
+        }
+        else {
+            InchidereTva(ctx);
+            // `MidpointLuna` e deja acumulat de `Opereaza` (documente + copii + ITV).
+            cronometruContract.Restart();
+            contract = ReconciliereLunara(ctx);
+        }
         var durataContract = cronometruContract.Elapsed;
 
         var (realocari, cantitate) = Alocare.DeltaLunii();

@@ -39,6 +39,9 @@ var pozitionale = new List<string>();
 // la ianuarie singur); `--continua` = o lună picată nu oprește rularea, se
 // raportează și diferențele se poartă înainte.
 var panaLa = 12;
+// `--pana-la-ziua Z` = ultima lună a ferestrei se importă numai până la ziua Z; luna tăiată nu are
+// închidere de TVA și nici contract lunar, fiindcă sursa lor e sfârșitul de lună.
+int? panaLaZiua = null;
 var continua = false;
 // `--cititori` = auto-testul contractului de coloane (SmokeCititori.cs): cheamă
 // o dată fiecare cititor de document pe prima lună a ferestrei. Opt-in fiindcă e
@@ -178,9 +181,17 @@ for (var i = 0; i < args.Length; i++) {
                 return 2;
             }
             break;
+        case "--pana-la-ziua":
+            valoare ??= i + 1 < args.Length ? args[++i] : null;
+            if (!int.TryParse(valoare, out var zi) || zi < 1) {
+                Console.Error.WriteLine($"--pana-la-ziua cere o zi a lunii (primit „{valoare}”).");
+                return 2;
+            }
+            panaLaZiua = zi;
+            break;
         default:
             Console.Error.WriteLine($"Argument necunoscut: {arg}. Uzaj: Import1C [flaxCs] [pgCs] "
-                + "[--pana-la <lună>] [--continua] [--cititori] [--probe-stingeri] [--recreeaza] "
+                + "[--pana-la <lună>] [--pana-la-ziua <zi>] [--continua] [--cititori] [--probe-stingeri] [--recreeaza] "
                 + "[--reclasifica] [--anaf] [--anaf-url <url>] [--deblocheaza <view>:<cheie>] "
                 + "[--societate] [--um-nc] [--inchide-lunile] [--saft <an> <lună>] [--saft-s <an> <lună>]");
             return 2;
@@ -190,12 +201,27 @@ for (var i = 0; i < args.Length; i++) {
 var flaxCs = pozitionale.Count > 0
     ? pozitionale[0]
     : "Server=(local);Database=EServicesFlx;Integrated Security=True;TrustServerCertificate=True";
-var pgCs = pozitionale.Count > 1
+var conexiunePg = new Npgsql.NpgsqlConnectionStringBuilder(pozitionale.Count > 1
     ? pozitionale[1]
-    : "Host=localhost;Port=5444;Username=postgres;Password=postgres;Database=Atlas.Conta.Import1C.Flax";
+    : "Host=localhost;Port=5446;Username=postgres;Password=postgres;Database=Atlas.Conta.Import1C.Flax");
+if (conexiunePg.MaxAutoPrepare == 0) {
+    conexiunePg.MaxAutoPrepare = 300;
+    conexiunePg.AutoPrepareMinUsages = 2;
+}
+var pgCs = conexiunePg.ConnectionString;
 
 // Anul fiscal importat: deschiderea = soldurile la 01.01 (design §3).
 var dataDeschidere = new DateTime(2025, 1, 1);
+if (panaLaZiua is int ziTaiata) {
+    if (ziTaiata >= DateTime.DaysInMonth(dataDeschidere.Year, panaLa)) {
+        Console.Error.WriteLine($"--pana-la-ziua {ziTaiata} nu taie luna {panaLa:00}; pentru luna întreagă ajunge --pana-la.");
+        return 2;
+    }
+    if (args.Contains("--inchide-lunile")) {
+        Console.Error.WriteLine("--pana-la-ziua nu se combină cu --inchide-lunile: luna tăiată nu se închide.");
+        return 2;
+    }
+}
 
 var esecuri = 0;
 void Check(string nume, bool ok) {
@@ -237,7 +263,7 @@ using (var os = provider.CreateObjectSpace()) {
     ContaSeeder.Seed(os, ProfilContabil.Privat);
     os.CommitChanges();
 }
-Console.WriteLine($"Seed profil Privat aplicat pe „{pgCs.Split("Database=")[^1]}”.");
+Console.WriteLine($"Seed profil Privat aplicat pe „{conexiunePg.Database}”.");
 
 // Convenția de rotunjire a banilor e dată a bazei (decizia 51c) — seed-ul de mai
 // sus a fixat-o deja în `Scara`; re-citirea explicită ține bootstrap-ul uneltei
@@ -320,6 +346,8 @@ if (saftAn is int anSaft) {
 // în mers. Vezi PreFlight.cs.
 
 using var flax = new FlaxDb(flaxCs);
+if (panaLaZiua is int ziSursa)
+    flax.Taietura = new DateOnly(dataDeschidere.Year, panaLa, ziSursa);
 
 // `--reclasifica`: reclasificarea fiscală a partenerilor (fix 4 al review-ului
 // D394), pe baza deja importată — după seed, înaintea fazelor scumpe; oprește
@@ -1117,7 +1145,7 @@ Console.WriteLine($"""
     ║   3. stoc produs×gestiune  {rezRec.CheiStoc,10} chei comparate, {rezRec.Nejustificate} nejustificate
     ║      justificate           {rezRec.JustificateGasite,10} chei (Σ {rezRec.JustificatV:N2} lei / {rezRec.JustificatQ:N3} buc)
     ║      fără cantitate        {rezRec.CheiFaraCantitate,10} chei (Σ {rezRec.ValoareFaraCantitate:N2} lei, neintrate în cub)
-    ║ DOCUMENTELE {anImport} (lunile 1..{panaLa}{(lunaPicata > 0 && !continua ? $", oprit la {lunaPicata:00}" : "")})
+    ║ DOCUMENTELE {anImport} (lunile 1..{panaLa}{(flax.Taietura is { } taietura ? $", luna {panaLa:00} TĂIATĂ la {taietura:dd.MM}: fără închidere de TVA și fără contract lunar" : "")}{(lunaPicata > 0 && !continua ? $", oprit la {lunaPicata:00}" : "")})
     ║   importate / sărite      {luni.Sum(l => l.Documente),10} / {luni.Sum(l => l.Sarite)} ({luni.Sum(l => l.Copii)} copii autogenerați operați)
     ║   eșecuri de operare      {luni.Sum(l => l.Esecuri),10} pe {luni.Count(l => l.Esecuri > 0)} luni
     ║   realocări de lot (48a)  {luni.Sum(l => l.Realocari),10} (Σ {luni.Sum(l => l.CantitateRealocata):N3} buc mutate de pe pin pe FIFO)
@@ -1127,7 +1155,7 @@ Console.WriteLine($"""
     ║   efectul netării         {bucla.StareContract.PlafonStoc,10:N2} lei (valoarea de stoc justificată, cumulată — raport, nu plafon)
     ║   divergențe înregistrate {bucla.Divergente.Inregistrari,10} (registrul măsurat, persistat; {bucla.Divergente.Abandonate} marcaje abandonate)
     ║   durata contractelor     {TimeSpan.FromTicks(luni.Sum(l => l.DurataContract.Ticks)),10:hh\:mm\:ss}
-    ║ REZULTAT: {(esecuri == 0 ? "CONTRACT ÎNDEPLINIT" : $"{esecuri} VERIFICĂRI PICATE")}, {avertismente.Count} avertismente, deschidere {durataDeschidere:hh\:mm\:ss} / documente {durataDocumente:hh\:mm\:ss} / total {cronometru.Elapsed:hh\:mm\:ss}
+    ║ REZULTAT: {(esecuri > 0 ? $"{esecuri} VERIFICĂRI PICATE" : flax.Taietura != null ? "FĂRĂ EȘECURI, CONTRACT LUNAR NERULAT (lună tăiată)" : "CONTRACT ÎNDEPLINIT")}, {avertismente.Count} avertismente, deschidere {durataDeschidere:hh\:mm\:ss} / documente {durataDocumente:hh\:mm\:ss} / total {cronometru.Elapsed:hh\:mm\:ss}
     ╚═══════════════════════════════════════════════════════════════════════════════
     """);
 
