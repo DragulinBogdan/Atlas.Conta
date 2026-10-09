@@ -1,5 +1,7 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub;
 using DevExpress.ExpressApp;
+using N = Atlas.Conta.Nucleu;
 
 namespace Import1C;
 
@@ -24,7 +26,54 @@ namespace Import1C;
 static class NoteComune {
     // Linia unei note, deja mapată pe planul OMFP.
     public sealed record Linie(string Debit, string Credit, decimal Valoare,
-        Guid? RepartitorDebitId, Guid? RepartitorCreditId, string Descriere);
+        Guid? RepartitorDebitId, Guid? RepartitorCreditId, string Descriere) {
+        public int RandSursa { get; init; }
+        public Guid? PartidaDebitId { get; init; }
+        public Guid? PartidaCreditId { get; init; }
+    }
+
+    public static int PartideNumite { get; private set; }
+    public static int PartideNumiteAbsente { get; private set; }
+
+    // 115: documentul din subconto-ul „Documente" al laturii numește partida pe care rândul o stinge.
+    // Partida absentă la data notei pe contul și partenerul laturii nu se numește: rândul rămâne pe FIFO.
+    public static List<Linie> NumestePartide(BuclaImport bucla, string docId, DateOnly data, List<Linie> linii) {
+        var subconto = Subconto.IndexeazaTot(bucla.SubcontoLuna.GetValueOrDefault(docId) ?? []);
+        Guid? Partida(int linie, int latura, string simbol, Guid? partener) {
+            if (partener is not Guid tert || subconto.Latura(linie, latura).DeFel(Subconto.FelDocumente) is not { } tinta)
+                return null;
+            var cont = bucla.Catalog.Plan[simbol];
+            if (bucla.Tinta(tinta.Tip, tinta.Id) is Guid document)
+                return N.Unitate.DeschidePartida(cont, tert, document, default).Id;
+            var initiala = Imperecheri1C.PartideDeschidere(bucla, tinta.TipRef, tinta.Id)
+                .FirstOrDefault(p => p.Cont == cont && p.Partener == tert);
+            return initiala == default ? null : initiala.Partida;
+        }
+        var numite = linii.Select(l => l with {
+            PartidaDebitId = Partida(l.RandSursa, Subconto.Debit, l.Debit, l.RepartitorDebitId),
+            PartidaCreditId = Partida(l.RandSursa, Subconto.Credit, l.Credit, l.RepartitorCreditId),
+        }).ToList();
+        var ids = numite.SelectMany(l => new[] { l.PartidaDebitId, l.PartidaCreditId }).OfType<Guid>().Distinct().ToList();
+        if (ids.Count == 0)
+            return linii;
+        using var os = bucla.CreeazaObjectSpace();
+        var existente = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Unitate != null && ids.Contains(p.Unitate.Value) && p.Carte == N.Carte.Contabil && p.Data <= data)
+            .Select(p => p.Unitate.Value).Distinct().ToHashSet();
+        Guid? Pastreaza(Guid? partida) {
+            if (partida is not Guid id)
+                return null;
+            if (existente.Contains(id)) {
+                PartideNumite++;
+                return id;
+            }
+            PartideNumiteAbsente++;
+            return null;
+        }
+        return numite.Select(l => l with {
+            PartidaDebitId = Pastreaza(l.PartidaDebitId), PartidaCreditId = Pastreaza(l.PartidaCreditId),
+        }).ToList();
+    }
 
     public static int RanduriZero { get; private set; }
     public static int RanduriTvaSarite { get; private set; }
@@ -62,7 +111,7 @@ static class NoteComune {
                 continue;
             }
             var (repDebit, repCredit) = repartitori?.Invoke(r.Linie) ?? (null, null);
-            linii.Add(new Linie(debit, credit, r.Suma, repDebit, repCredit, r.Explicatie));
+            linii.Add(new Linie(debit, credit, r.Suma, repDebit, repCredit, r.Explicatie) { RandSursa = r.Linie });
         }
         return linii;
     }
@@ -87,6 +136,8 @@ static class NoteComune {
             d.ContCreditId = cat.Plan[l.Credit];
             d.RepartitorDebitId = l.RepartitorDebitId;
             d.RepartitorCreditId = l.RepartitorCreditId;
+            d.PartidaDebitId = l.PartidaDebitId;
+            d.PartidaCreditId = l.PartidaCreditId;
             d.Valoare = l.Valoare;
             d.Descriere = l.Descriere;
         }
@@ -148,7 +199,7 @@ static class HandlerCompensare {
                 List<NoteComune.Linie> linii = null;
                 if (!bucla.EsteCunoscut(View, h.Id)) {
                     try {
-                        linii = Planifica(ctx, h, randuri);
+                        linii = NoteComune.NumestePartide(bucla, h.Id, DateOnly.FromDateTime(h.Data), Planifica(ctx, h, randuri));
                     }
                     catch (Exception ex) {
                         bucla.EsecPlanificare(View, h.Id, ex);
@@ -243,6 +294,8 @@ static class HandlerCompensare {
             + $"fără rânduri contabile (sărite), {LiniiFaraRepartitor} linii fără contrapartidă "
             + $"(nu pot sting nimic), {LiniiCuRepartitorDinAntet} linii cu contrapartida luată "
             + "din antet (subconto-ul rândului n-avea niciuna).");
+        Console.WriteLine($"  Note: {NoteComune.PartideNumite} laturi cu partida numită de sursă (115), "
+            + $"{NoteComune.PartideNumiteAbsente} cu partida absentă la data notei (rămase pe FIFO).");
     }
 }
 
@@ -305,8 +358,9 @@ static class HandlereNoteSimple {
                 List<NoteComune.Linie> linii = null;
                 if (!bucla.EsteCunoscut(sursa.View, h.Id)) {
                     try {
-                        linii = NoteComune.Transcrie(bucla.Catalog, sursa.View, h.Id, randuri, sursa.SareTva,
-                            dimensiuni == null ? null : linie => Repartitori(bucla, dimensiuni, h.Id, linie));
+                        linii = NoteComune.NumestePartide(bucla, h.Id, DateOnly.FromDateTime(h.Data),
+                            NoteComune.Transcrie(bucla.Catalog, sursa.View, h.Id, randuri, sursa.SareTva,
+                                dimensiuni == null ? null : linie => Repartitori(bucla, dimensiuni, h.Id, linie)));
                         StocDinNota.Masoara(bucla, sursa.View, h.Id, randuri);
                     }
                     catch (Exception ex) {

@@ -93,7 +93,10 @@ static partial class Deschidere {
             var referinta = ReferintaDin(a.RefCheie != null ? $"1C:{a.RefCheie}" : $"1C:{a.Simbol}|{a.PartenerHex ?? CheiePartenerGeneric}|fara-document");
             partide.Add(new PartidaSursa(cheie, a.Simbol, a.PartenerHex, a.RefCheie, a.Sold, a.Descriere, a.Partener, referinta));
             intrare.Add(new PartidaInitiala(plan[a.Simbol], a.Partener, referinta,
-                a.Sold > 0 ? N.Latura.Debit : N.Latura.Credit, Math.Abs(a.Sold)));
+                a.Sold > 0 ? N.Latura.Debit : N.Latura.Credit, Math.Abs(a.Sold)) {
+                // 115: cheia stabilă de ordonare a partidelor pe care sursa nu le numește.
+                Deschisa = Deschidere.ParseData(a.Descriere),
+            });
         }
         var duplicate = intrare.GroupBy(i => (i.Cont, i.Partener, i.Referinta)).Count(g => g.Count() > 1);
         check($"Partidele inițiale au identitate (cont, partener, referință) distinctă ({duplicate} coliziuni)",
@@ -203,6 +206,7 @@ static partial class Deschidere {
             IReadOnlyList<PartidaInitiala> partide, IReadOnlyList<PartidaSursa> partideSursa,
             IReadOnlyDictionary<string, Guid> plan, Action<string> avert, Action<string, bool> check) {
         var solduri = controale.Select(c => new SoldInitial(plan[c.Simbol], c.Latura, c.Valoare)).ToList();
+        partide = [.. partide.Select(p => p.Deschisa > data ? p with { Deschisa = null } : p)];
         Guid tranzactie;
         var scrisa = false;
         using (var os = provider.CreateObjectSpace()) {

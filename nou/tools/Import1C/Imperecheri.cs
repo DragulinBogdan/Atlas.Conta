@@ -53,6 +53,7 @@ static class Imperecheri1C {
     static int detaliiRefuz;
 
     public static int StinsePeDeschidere { get; private set; }
+    public static int NumiteLaOperare { get; private set; }
     public static int ExistenteDeschidere { get; private set; }
     public static decimal SumaStinsaPeDeschidere { get; private set; }
     // 107h: mișcarea cerută de sursă și neaplicată pe partidă, semnată debit − credit.
@@ -65,7 +66,7 @@ static class Imperecheri1C {
     static Dictionary<(Guid Document, Guid Partida), (decimal Total, decimal Ramas)> aplicate;
     static Dictionary<string, List<(Guid Partida, Guid Cont, Guid Partener)>> indexDeschidere;
 
-    static IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> PartideDeschidere(BuclaImport bucla,
+    internal static IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> PartideDeschidere(BuclaImport bucla,
             string tipRef, string id) {
         if (indexDeschidere == null) {
             indexDeschidere = new Dictionary<string, List<(Guid, Guid, Guid)>>(StringComparer.Ordinal);
@@ -296,6 +297,11 @@ static class Imperecheri1C {
             Sare("partida de deschidere există, dar stingătorul nu postează pe (cont, partener) al ei", suma);
             return false;
         }
+        // 115: stingătorul a numit partida la operare; trecerea 2 n-are ce mai muta.
+        if (proprii.Any(p => p.Unitate == partida.Partida)) {
+            NumiteLaOperare++;
+            return false;
+        }
         var restPartida = os.GetObjectsQuery<Postare>()
             .Where(p => p.Unitate == partida.Partida && p.Carte == N.Carte.Contabil)
             .Select(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare).ToList().Sum();
@@ -483,6 +489,7 @@ static class Imperecheri1C {
         Console.WriteLine($"  Imperecheri (total rulare): {Create} create, {Recuperate} recuperate, "
             + $"{Existente} deja legate; pe partide inițiale: {StinsePeDeschidere} stinse "
             + $"(Σ {SumaStinsaPeDeschidere:N2} lei), {ExistenteDeschidere} deja legate, "
+            + $"{NumiteLaOperare} numite la operare (115), "
             + $"{RefuzatPePartida.Count} partide cu refuzuri (Σ {RefuzatPePartida.Values.Sum(v => Math.Abs(v)):N2}), "
             + $"{Plafonate} plafonate la restul partidei (excedent Σ {valoarePlafonata:N2}), "
             + $"{EsecuriTehnice} erori tehnice.");
