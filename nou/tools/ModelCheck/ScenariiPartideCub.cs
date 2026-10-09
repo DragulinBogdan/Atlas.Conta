@@ -331,10 +331,11 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             _ = P.Proprii(os, Ianuarie).ToList();
             _ = P.Perechi(os, document, true).ToList();
             _ = P.MiscariPePartidele(os, document, Guid.Empty).ToList();
+            _ = P.PropriiAle(os, document).ToList();
         }));
         foreach (var r in sql.SelectMany(ProbeRamuraDeNul.Gaseste)) Console.WriteLine("     SC-CIT-110 ramură de nul: " + r);
         Verifica("SC-CIT-110", "cititorii de partide îmbină fără ramură de nul pe cheile nulabile",
-            sql.Count(c => c.Contains("cub_partida_id")) >= 9 && !sql.SelectMany(ProbeRamuraDeNul.Gaseste).Any());
+            sql.Count(c => c.Contains("cub_partida_id")) >= 10 && !sql.SelectMany(ProbeRamuraDeNul.Gaseste).Any());
     }
 
     void Rest(Guid doc, decimal net) {

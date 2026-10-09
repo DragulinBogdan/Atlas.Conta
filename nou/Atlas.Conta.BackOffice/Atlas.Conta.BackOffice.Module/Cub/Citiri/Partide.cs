@@ -77,6 +77,17 @@ public static class Partide {
             .Select(s => new PartidaProprie { DocumentId = s.DocumentId.Value, UnitateId = s.UnitateId,
                 ContId = s.ContId, PartenerId = s.PartenerId, Net = s.Debit - s.Credit });
 
+    /// <summary>Soldurile partidelor deschise de document.</summary>
+    public static IQueryable<PartidaProprie> PropriiAle(IObjectSpace os, Guid document) =>
+        from p in Postari(os)
+        join o in OriginiDocument(os).Where(o => o.DocumentId == document)
+            on new { UnitateId = p.Unitate.Value, ContId = p.Cont, PartenerId = p.Partener.Value }
+            equals new { UnitateId = (Guid?)o.UnitateId ?? Guid.Empty, o.ContId, PartenerId = (Guid?)o.PartenerId ?? Guid.Empty }
+        group p by new { p.Unitate, p.Cont, p.Partener } into g
+        select new PartidaProprie { DocumentId = document, UnitateId = g.Key.Unitate.Value, ContId = g.Key.Cont,
+            PartenerId = g.Key.Partener.Value,
+            Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) };
+
     // D9-D10: cheia ne-nulă pe o parte; cu ambele nulabile EF adaugă ramura de nul și Postgres îmbină numai pe cont (SC-CIT-110).
     /// <summary>Soldurile cu documentul deschizător al partidei; nul la partida fără document.</summary>
     public static IQueryable<PartidaCuOrigine> CuOrigine(IObjectSpace os, IQueryable<SoldPartida> solduri) =>
@@ -92,8 +103,8 @@ public static class Partide {
     public static IQueryable<MiscarePartida> MiscariPePartidele(IObjectSpace os, Guid document, Guid faraDocument) =>
         from p in Postari(os)
         join o in OriginiDocument(os).Where(o => o.DocumentId == document)
-            on new { UnitateId = p.Unitate ?? Guid.Empty, ContId = p.Cont, PartenerId = p.Partener ?? Guid.Empty }
-            equals new { o.UnitateId, o.ContId, o.PartenerId }
+            on new { UnitateId = p.Unitate.Value, ContId = p.Cont, PartenerId = p.Partener.Value }
+            equals new { UnitateId = (Guid?)o.UnitateId ?? Guid.Empty, o.ContId, PartenerId = (Guid?)o.PartenerId ?? Guid.Empty }
         where p.DocumentId != faraDocument
         group p by new { p.Unitate, p.Cont, p.Partener, p.Data } into g
         select new MiscarePartida { UnitateId = g.Key.Unitate.Value, ContId = g.Key.Cont,
@@ -102,7 +113,7 @@ public static class Partide {
 
     /// <summary>Restul documentului pe partidele proprii, cu aceeași selecție pe sens ca <see cref="Total"/>.</summary>
     public static decimal Ramas(IObjectSpace os, Guid document, SensStingere? sens) {
-        var proprii = Proprii(os, DateOnly.MaxValue).Where(p => p.DocumentId == document);
+        var proprii = PropriiAle(os, document);
         return sens switch {
             SensStingere.Datorie => proprii.Where(p => p.Net < 0m).Select(p => (decimal?)-p.Net).Sum(),
             SensStingere.Creanta => proprii.Where(p => p.Net > 0m).Select(p => (decimal?)p.Net).Sum(),
@@ -111,8 +122,7 @@ public static class Partide {
     }
 
     public static decimal Disponibil(IObjectSpace os, Guid document, Guid partener, SensStingere sens) {
-        var proprii = Proprii(os, DateOnly.MaxValue)
-            .Where(p => p.DocumentId == document && p.PartenerId == partener);
+        var proprii = PropriiAle(os, document).Where(p => p.PartenerId == partener);
         return (sens == SensStingere.Datorie ? proprii.Where(p => p.Net > 0m) : proprii.Where(p => p.Net < 0m))
             .Select(p => (decimal?)Math.Abs(p.Net)).Sum() ?? 0m;
     }

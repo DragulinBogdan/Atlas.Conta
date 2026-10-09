@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-08.** [Index](README.md)
+**Actualizat: 2026-10-09.** [Index](README.md)
 
 TR-D9a, pasul 6 (tăierea, 2026-10-07): motorul nu mai scrie, nu mai citește și
 nu mai ramifică pe registre și pe regim; oracolul registre → cub a ieșit din
@@ -663,9 +663,12 @@ LINQ cu ambele părți nulabile iese din EF cu
 `a = b OR (a IS NULL AND b IS NULL)`, pe care Postgres o execută pătratic.
 Cu o parte ne-nulă iese egalitate simplă. Aceeași formă iese dintr-un
 `Contains` peste o subinterogare, ca `EXISTS` corelat. Soldurile de partide
-se îmbină cu documentul deschizător numai prin `Partide.CuOrigine`;
-`SC-CIT-110` probează că cititorii de partide și snapshot-ul chiar sunt
-executați și nu au forma. (D9-D10 (b))
+se îmbină cu documentul deschizător numai prin `Partide.CuOrigine`. Citirile
+unui singur document (`Partide.PropriiAle`, din care vin restul și
+disponibilul, și `Partide.MiscariPePartidele`) pornesc de la partidele
+deschise de el și țin partea ne-nulă pe origini, ca postările să fie căutate
+prin index, nu parcurse. `SC-CIT-110` probează că cititorii de partide și
+snapshot-ul chiar sunt executați și nu au forma. (D9-D10 (b))
 
 `RAMURA-NUL` (`ProbeRamuraDeNul`) caută forma în fiecare comandă SQL pe care
 EF o emite în proces, pe orice context, în rularea integrală și în
@@ -693,7 +696,9 @@ egalitate dispare din comandă. Admise:
 
 La un eșec, proba scrie SQL-ul fiecărei forme în `%TEMP%/ramura-nul/`. O
 formă nouă se corectează ținând o parte ne-nulă (`?? Guid.Empty` pe partea
-agregată sau `!= null` pe ambele părți ale unui `Contains`); se admite numai
+agregată sau, când cealaltă parte e `Postare` neagregată, pe partea mică, ca
+indexul postărilor să rămână folosibil; ori `!= null` pe ambele părți ale
+unui `Contains`); se admite numai
 când ramura de nul e filtru lângă o cheie selectivă.
 
 ## Verificări proporționale cu modificarea
