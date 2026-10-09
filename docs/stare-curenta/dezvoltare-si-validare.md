@@ -392,13 +392,38 @@ Dovezile rulărilor și inventarul bazelor sunt în review și în
 Comanda `dotnet ef` primește mereu `--context BackOfficeEFCoreDbContext` și
 se rulează fără `--no-build`. (23a, 89g)
 
+Dezvoltarea folosește două servere Postgres 18, ambele cu
+`postgres`/`postgres`:
+
+| Server | Port | Cine îl folosește |
+|---|---|---|
+| containerul `contapal-postgres-1` | 5444 | hosturile (Blazor, WebApi), probele HTTP din `nou/tools/ProbeHttp`, implicitul `dotnet ef`, rețetele de perf care rulează în rețeaua containerului |
+| instanța nativă de pe gazdă | 5446 | rulările grele: ModelCheck și Import1C |
+
+Rulările grele stau pe instanța nativă fiindcă un dus-întors din gazdă spre
+container trece prin proxy-ul Docker Desktop (0,27–0,5 ms față de 0,06–0,2
+ms), iar ele fac sute de mii de dus-întorsuri. Măsurat la 2026-10-09, câte o
+rulare, același binar: importul pe ianuarie 21:00 pe container și 11:29 pe
+nativ; ModelCheck integral 133 s bugetar / 231 s privat pe container și
+100 s / 180 s pe nativ, cu aceleași verificări. Instanța nativă nu e serviciu
+Windows: după o repornire a mașinii se pornește de mână (pe mașina de
+dezvoltare, `D:\PostgreSQL\18\porneste.ps1`). Ordonarea textelor e cea a
+Windows (`en-US`), nu glibc (`en_US.utf8`) ca în container; integrala a dat
+același rezultat pe amândouă.
+
+`Conexiunea` din `tools/ModelCheck/Program.cs` țintește 5446.
+`MODELCHECK_CONEXIUNE_EXTRA` înlocuiește cheile șablonului, nu le repetă
+(`Port=5432` din rețetele de container, de exemplu): o cheie repetată oprea
+construcția modelului XAF din proba D85.
+
 Bazele de dezvoltare se recreează, nu se repară: o bază care nu corespunde
 codului se șterge (`DROP DATABASE`) și se reface prin comenzi (102b). Rețeta,
-cu `CS = Host=localhost;Port=5444;Username=postgres;Password=postgres`:
+cu `CS = Host=localhost;Port=5444;Username=postgres;Password=postgres` pentru
+bazele hosturilor și același șir cu `Port=5446` pentru cele ale ModelCheck:
 
 | Bază | Recrearea |
 |---|---|
-| `Atlas.Conta.BackOffice` (bugetar; și baza ModelCheck bugetar) | din `Module`: `dotnet ef database update --context BackOfficeEFCoreDbContext --connection "$CS;Database=Atlas.Conta.BackOffice"`; apoi din `Blazor.Server`: `dotnet run --no-launch-profile -- --updateDatabase --forceUpdate --silent` cu `ProfilContabil=Bugetar` și `ConnectionStrings__ConnectionString=EFCoreProvider=Postgres;$CS;Database=Atlas.Conta.BackOffice` în mediu |
+| `Atlas.Conta.BackOffice` (bugetar, pe 5444; baza ModelCheck bugetar e cea cu același nume de pe 5446, cu aceeași rețetă) | din `Module`: `dotnet ef database update --context BackOfficeEFCoreDbContext --connection "$CS;Database=Atlas.Conta.BackOffice"`; apoi din `Blazor.Server`: `dotnet run --no-launch-profile -- --updateDatabase --forceUpdate --silent` cu `ProfilContabil=Bugetar` și `ConnectionStrings__ConnectionString=EFCoreProvider=Postgres;$CS;Database=Atlas.Conta.BackOffice` în mediu |
 | `Atlas.Conta.ModelCheck.Privat` | o recreează ModelCheck (`MigrateAsync` + seed) |
 | `Atlas.Conta.BackOffice.Privat` (baza hosturilor) | `dotnet ef database update … --connection "$CS;Database=Atlas.Conta.BackOffice.Privat"`, apoi updater-ul Blazor cu `appsettings.json` (Privat): seed plus utilizatorii `Admin`/`User`/`Cititor`/`Configurator`, fără documente |
 | `Atlas.Conta.Import1C.Flax` și clonele ei | nu se recreează implicit; Import1C `--recreeaza` la nevoie (091-r4) |
@@ -546,7 +571,7 @@ pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Infrastru
 
 `-PregatesteBaze` (Python cu `psycopg`) clonează bazele locale de profil
 `Atlas.Conta.BackOffice` și `Atlas.Conta.ModelCheck.Privat` cu sufixul dat
-(`CREATE DATABASE … TEMPLATE`, localhost:5444, postgres/postgres): sursele
+(`CREATE DATABASE … TEMPLATE`, localhost:5446, postgres/postgres): sursele
 nu se modifică și trebuie să nu aibă conexiuni active; o clonă existentă se
 păstrează, nu se reface. Clona poartă schema și seed-ul sursei: bugetarul
 cere migrațiile aplicate, privatul migrează și aliniază seed-ul prin
@@ -887,6 +912,19 @@ NTC este punte numai pentru cazurile permise explicit, nu fallback universal
 pentru documente nerecunoscute. Transformările și transferurile sunt
 clasificate în ASM, BTR sau NTC după faptul economic. FCL importată postează
 venitul; DSC folosește loturile identificate de sursă. (49a, 49d, 75b)
+
+Fără connection string dat, Import1C scrie în `Atlas.Conta.Import1C.Flax`
+pe instanța nativă (5446). Pe orice conexiune care nu spune altfel pornește
+pregătirea automată a comenzilor (`Max Auto Prepare=300`,
+`Auto Prepare Min Usages=2`): pe ianuarie, 11:29 → 9:55 pe același binar.
+
+`--pana-la-ziua Z` taie ultima lună a ferestrei (`--pana-la`) la ziua Z,
+pentru rulări scurte de măsurare: sursa se citește numai până la acea zi,
+stingerile lunii se aplică, iar închiderea de TVA și contractul lunar nu
+rulează, fiindcă se compară cu sfârșitul de lună al sursei. Raportul spune că
+luna e tăiată, iar verdictul e „contract lunar nerulat”, nu „îndeplinit”. Nu
+se combină cu `--inchide-lunile`. Ianuarie până la ziua 5: 822 de documente,
+72 s cu tot cu deschidere.
 
 `--inchide-lunile` închide fiecare lună imediat după importul ei, prin
 `PerioadaService.Inchide` cu toate constatările curente acceptate (politica de

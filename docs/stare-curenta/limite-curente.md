@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-10-08.** [Index](README.md)
+**Actualizat: 2026-10-09.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -286,6 +286,13 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   sortarea paralelă pică (`could not resize shared memory segment`); costul
   e raportat fără prag în `docs/nucleu/tr-d9-pas7-declaratii.md`. (D9-A12;
   2026-10-07)
+- Cu pregătirea automată a comenzilor, citirile de sold pe o listă de loturi
+  (`Fapte.SolduriLoturi`, `Loturi.VerificaSoldIntermediar`) primesc un plan
+  generic de cinci ori mai lent (0,45 → 2,2 ms pe apel): cu limitele de dată
+  necunoscute, planificatorul alege indexul pe dată în locul celui pe
+  `(Unitate, Data)` și filtrează lotul după citire. Coborârea filtrului de
+  loturi pe rând nu schimbă planul. Import1C câștigă totuși cu ea pornită;
+  hosturile nu o au. (2026-10-09)
 - Cheia de pereche (`Postare.Pereche`) nu acoperă transformările (consumul și
   produsul sunt corespondență de grup) și nu e citită de nimeni: fișa
   contului întoarce contrapartida nulă când tranzacția are mai multe conturi
