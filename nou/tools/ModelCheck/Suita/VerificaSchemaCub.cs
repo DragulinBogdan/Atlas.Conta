@@ -132,6 +132,7 @@ static class VerificaSchemaCub {
             "Postare.PK_Postare",
             "Postare.IX_Postare_TranzactieId",
             "Postare.IX_Postare_DocumentId",
+            "Postare.IX_Postare_Fisa_Cont",
             "Postare_Stoc.IX_Postare_Stoc_Produs_Data",
             "Postare_Contabil.IX_Postare_Contabil_Partener_Cont_Data",
             "Postare_Contabil.IX_Postare_Contabil_Data",
@@ -144,7 +145,7 @@ static class VerificaSchemaCub {
         var definitii = Valori($@"
         SELECT indexdef::text AS ""Value"" FROM pg_indexes
         WHERE indexname IN ('IX_Postare_Stoc_Produs_Data', 'IX_Postare_Contabil_Partener_Cont_Data',
-                            'IX_Postare_Contabil_PerioadaDeclarare_TipTvaId')
+                            'IX_Postare_Contabil_PerioadaDeclarare_TipTvaId', 'IX_Postare_Fisa_Cont')
         ORDER BY 1");
         var formeGresite = new List<string>();
         foreach (var d in definitii) {
@@ -154,13 +155,15 @@ static class VerificaSchemaCub {
                 formeGresite.Add(d);
             if (d.Contains("IX_Postare_Contabil_PerioadaDeclarare_TipTvaId") && !d.Contains("WHERE (\"PerioadaDeclarare\" IS NOT NULL)"))
                 formeGresite.Add(d);
+            if (d.Contains("IX_Postare_Fisa_Cont") && !d.Contains($"WHERE (\"FelUnitate\" = {(short)N.FelUnitate.Fisa})"))
+                formeGresite.Add(d);
         }
         Console.WriteLine($"     MĂSURAT (STR-SCHEMA-4/{eticheta}): {indexi.Count} indexi pe cele patru tabele; "
             + $"lipsă [{string.Join(", ", indexiLipsa)}]; formă greșită [{string.Join("; ", formeGresite)}].");
         s.Check($"STR-SCHEMA-4 ({eticheta}) indexii minimi din S-D2 există: PK + `(TranzactieId)`/`(DocumentId)` pe "
             + "părinte, S2 `(Produs, Data) INCLUDE (…)` pe Stoc, C2 `(Partener, Cont, Data) WHERE …`, C3 `(Data)` și "
-            + "F1 `(PerioadaDeclarare, TipTvaId) WHERE …` pe Contabil, `Tranzactie(DocumentId)`",
-            indexiLipsa.Count == 0 && definitii.Count == 3 && formeGresite.Count == 0);
+            + "F1 `(PerioadaDeclarare, TipTvaId) WHERE …` pe Contabil, `Tranzactie(DocumentId)`, `(Cont) WHERE FelUnitate = Fisa` pe părinte",
+            indexiLipsa.Count == 0 && definitii.Count == 4 && formeGresite.Count == 0);
 
         // ---- STR-SCHEMA-5: coloanele modelului EF = coloanele bazei, pe ambele entități ----
         var modelCub = Microsoft.EntityFrameworkCore.Infrastructure.AccessorExtensions
