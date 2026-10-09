@@ -66,6 +66,22 @@ public class FifoTeste {
     }
 
     [Fact]
+    public void LaAceeasiDataOrigineaBateId() {
+        var zi = new DateOnly(2026, 3, 1);
+        var micLaId = Unitatea(1, zi);
+        var mareLaId = Unitatea(9, zi);
+        var faraOrigine = Unitatea(5, zi);
+        var nominalizare = Fifo.Nominalizeaza(
+            30.000m,
+            [new Disponibil(micLaId, 10.000m, new Guid(7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+                new Disponibil(mareLaId, 10.000m, new Guid(3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+                new Disponibil(faraOrigine, 10.000m)]);
+        Assert.Equal(
+            new[] { faraOrigine.Id, mareLaId.Id, micLaId.Id },
+            nominalizare.Alocari.Select(a => a.Unitate.Id).ToList());
+    }
+
+    [Fact]
     public void CandidatulGolNuPrimesteNimic() {
         var unul = Unitatea(1, new DateOnly(2026, 1, 1));
         var altul = Unitatea(2, new DateOnly(2026, 1, 2));
@@ -145,9 +161,10 @@ public class FifoTeste {
             foreach (var (id, masura) in peNume)
                 ramasDupaPinuri[id] -= masura;
             var peFifo = alocari.Skip(peNume.Count).ToList();
+            var dupaId = candidati.ToDictionary(c => c.Unitate.Id);
             for (var i = 1; i < peFifo.Count; i++)
                 Assert.True(
-                    Fifo.Intai(peFifo[i - 1].Unitate, peFifo[i].Unitate) < 0,
+                    Fifo.Intai(dupaId[peFifo[i - 1].Unitate.Id], dupaId[peFifo[i].Unitate.Id]) < 0,
                     $"{peFifo[i - 1].Unitate.Id} ar trebui înaintea lui {peFifo[i].Unitate.Id}");
             for (var i = 0; i < peFifo.Count - 1; i++)
                 Assert.Equal(ramasDupaPinuri[peFifo[i].Unitate.Id], peFifo[i].Masura);
@@ -184,7 +201,8 @@ public class FifoTeste {
         return ids
             .Select(id => new Disponibil(
                 Unitatea(id, fel, aleator),
-                aleator.Next(6) == 0 ? 0m : Gen.Zecimal(aleator, Gen.Pas(scara), 999m, scara)))
+                aleator.Next(6) == 0 ? 0m : Gen.Zecimal(aleator, Gen.Pas(scara), 999m, scara),
+                aleator.Next(3) == 0 ? default : Gen.Unul(aleator, Gen.Unitati)))
             .ToList();
     }
 

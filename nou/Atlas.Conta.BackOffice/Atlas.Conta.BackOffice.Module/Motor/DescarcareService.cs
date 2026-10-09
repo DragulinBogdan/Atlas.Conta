@@ -99,9 +99,9 @@ public static class DescarcareService {
         var claseTip = Fapte.ClaseTip(os, resturi.Select(x => liniiSursa[x.LinieId].TipMaterialId));
         var conturi = ConturiStoc(os, fcl);
         var produse = resturi.Select(r => r.ProdusId).OfType<Guid>().Distinct().ToArray();
-        var solduri = Cub.Citiri.Loturi.Cumulate(os, Cub.Citiri.CitireCumul.Integrala, dataInregistrare ?? data)
-            .Where(s => s.GestiuneId == gestiuneId && produse.Contains(s.ProdusId) && s.Cantitate > 0m)
-            .OrderBy(s => s.Deschisa).ThenBy(s => s.LotId).ToList();
+        var solduri = Cub.Citiri.Loturi.InOrdineFifo(os,
+            Cub.Citiri.Loturi.Cumulate(os, Cub.Citiri.CitireCumul.Integrala, dataInregistrare ?? data)
+                .Where(s => s.GestiuneId == gestiuneId && produse.Contains(s.ProdusId) && s.Cantitate > 0m)).ToList();
 
         // Alocarea: mapa `dejaAlocat` (per lot, necomisă) se scade din solduri pe
         // parcurs. Contenția intra-draft (pin 2): PIN-urile întâi (identificarea

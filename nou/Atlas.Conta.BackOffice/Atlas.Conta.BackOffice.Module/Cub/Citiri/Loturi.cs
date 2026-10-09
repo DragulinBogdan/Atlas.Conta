@@ -17,6 +17,14 @@ public struct SoldLot {
     public decimal Valoare { get; set; }
 }
 
+public struct OrigineLot {
+    public Guid LotId { get; set; }
+    public DateOnly Data { get; set; }
+    public decimal PretUnitar { get; set; }
+    public Guid DocumentId { get; set; }
+    public int Pozitie { get; set; }
+}
+
 public static class Loturi {
     public static IQueryable<Postare> Postari(IObjectSpace os) => os.GetObjectsQuery<Postare>()
         .Where(p => p.Spatiu == N.Spatiu.Stoc && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Lot
@@ -52,11 +60,26 @@ public static class Loturi {
 
     public static IQueryable<SoldLot> Disponibile(IObjectSpace os, CitireCumul citire, DateOnly laData,
             Guid produsId, Guid gestiuneId, Guid contId) =>
-        from sold in Cumulate(os, citire, laData)
-        join gestiune in os.GetObjectsQuery<BusinessObjects.Gestiune>() on sold.GestiuneId equals gestiune.ID
-        where sold.ProdusId == produsId && sold.GestiuneId == gestiuneId
-            && sold.ContId == contId && sold.Cantitate > 0m
-        orderby sold.Deschisa, sold.LotId
+        InOrdineFifo(os,
+            from sold in Cumulate(os, citire, laData)
+            join gestiune in os.GetObjectsQuery<BusinessObjects.Gestiune>() on sold.GestiuneId equals gestiune.ID
+            where sold.ProdusId == produsId && sold.GestiuneId == gestiuneId
+                && sold.ContId == contId && sold.Cantitate > 0m
+            select sold);
+
+    /// <summary>Lotul cu documentul și poziția liniei care l-a născut; gol la lotul fără linie de intrare.</summary>
+    public static IQueryable<OrigineLot> Origini(IObjectSpace os) =>
+        from lot in os.GetObjectsQuery<Lot>()
+        join linie in os.GetObjectsQuery<DocumentDetaliu>() on lot.LinieIntrareId equals (Guid?)linie.ID into linii
+        from linie in linii.DefaultIfEmpty()
+        select new OrigineLot { LotId = lot.ID, Data = lot.Data, PretUnitar = lot.PretUnitar,
+            DocumentId = (Guid?)linie.DocumentId ?? Guid.Empty, Pozitie = (int?)linie.Pozitie ?? 0 };
+
+    /// <summary>Ordinea FIFO a loturilor: data deschiderii, documentul deschizător, poziția liniei, identificatorul.</summary>
+    public static IQueryable<SoldLot> InOrdineFifo(IObjectSpace os, IQueryable<SoldLot> solduri) =>
+        from sold in solduri
+        join origine in Origini(os) on sold.LotId equals origine.LotId
+        orderby sold.Deschisa, origine.DocumentId, origine.Pozitie, sold.LotId
         select sold;
 
     /// <summary>Excluderea poate folosi snapshot-ul numai cu o graniță anterioară tuturor postărilor documentului exclus.</summary>
