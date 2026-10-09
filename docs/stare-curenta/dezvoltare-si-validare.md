@@ -418,7 +418,9 @@ rămas în negocierea GSS până la expirarea conexiunii (15 s), deși serverul
 răspundea, iar psql se conecta; cu `127.0.0.1` sau cu
 `GSS Encryption Mode=Disable` conexiunea se deschidea în 50 ms. ModelCheck
 bugetar raportează atunci „Baza nu există încă — doar validare de model” și
-iese cu cod 2, deși baza există. (2026-10-09)
+iese cu cod 2, deși baza există. Șirurile hosturilor (`appsettings*.json`,
+șirul de design din `BackOfficeDbContext`) numesc aceeași gazdă, pe 5444.
+(2026-10-09)
 
 `Conexiunea` din `tools/ModelCheck/Program.cs` țintește 5446.
 `MODELCHECK_CONEXIUNE_EXTRA` înlocuiește cheile șablonului, nu le repetă
@@ -427,7 +429,7 @@ construcția modelului XAF din proba D85.
 
 Bazele de dezvoltare se recreează, nu se repară: o bază care nu corespunde
 codului se șterge (`DROP DATABASE`) și se reface prin comenzi (102b). Rețeta,
-cu `CS = Host=localhost;Port=5444;Username=postgres;Password=postgres` pentru
+cu `CS = Host=127.0.0.1;Port=5444;Username=postgres;Password=postgres` pentru
 bazele hosturilor și același șir cu `Port=5446` pentru cele ale ModelCheck:
 
 | Bază | Recrearea |
