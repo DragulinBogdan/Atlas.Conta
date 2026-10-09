@@ -15,7 +15,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
     // în Startup). Connection string-ul oglindește appsettings.json.
     public class BackOfficeDesignTimeDbContextFactory : DesignTimeDbContextFactory<BackOfficeEFCoreDbContext> {
         protected override string ConnectionString =>
-            "EFCoreProvider=Postgres;Host=localhost;Port=5444;Username=postgres;Password=postgres;Persist Security Info=True;Database=Atlas.Conta.BackOffice";
+            "EFCoreProvider=Postgres;Host=127.0.0.1;Port=5444;Username=postgres;Password=postgres;Persist Security Info=True;Database=Atlas.Conta.BackOffice";
     }
 
     [TypesInfoInitializer(typeof(DbContextTypesInfoInitializer<BackOfficeEFCoreDbContext>))]

@@ -18,7 +18,7 @@ def main():
         "Privat": "Atlas.Conta.ModelCheck.Privat",
     }
     with psycopg.connect(
-        host="localhost", port=5446, user="postgres", password="postgres",
+        host="127.0.0.1", port=5446, user="postgres", password="postgres",
         dbname="postgres", autocommit=True, connect_timeout=10,
     ) as conn:
         for profile, source in sources.items():

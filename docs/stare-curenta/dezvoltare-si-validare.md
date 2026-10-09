@@ -407,11 +407,20 @@ container trece prin proxy-ul Docker Desktop (0,27–0,5 ms față de 0,06–0,2
 ms), iar ele fac sute de mii de dus-întorsuri. Măsurat la 2026-10-09, câte o
 rulare, același binar: importul pe ianuarie 21:00 pe container și 11:29 pe
 nativ; ModelCheck integral 133 s bugetar / 231 s privat pe container și
-100 s / 180 s pe nativ, cu aceleași verificări. Instanța nativă nu e serviciu
-Windows: după o repornire a mașinii se pornește de mână (pe mașina de
-dezvoltare, `D:\PostgreSQL\18\porneste.ps1`). Ordonarea textelor e cea a
-Windows (`en-US`), nu glibc (`en_US.utf8`) ca în container; integrala a dat
-același rezultat pe amândouă.
+100 s / 180 s pe nativ, cu aceleași verificări. Pe mașina de dezvoltare
+instanța nativă e serviciul Windows `PostgreSQL`, cu pornire automată
+(2026-10-09). Ordonarea textelor e cea a Windows (`en-US`), nu glibc
+(`en_US.utf8`) ca în container; integrala a dat același rezultat pe amândouă.
+
+Șabloanele de conexiune ale uneltelor numesc gazda `127.0.0.1`, nu
+`localhost`. După o trezire din hibernare, Npgsql 10 pe `Host=localhost` a
+rămas în negocierea GSS până la expirarea conexiunii (15 s), deși serverul
+răspundea, iar psql se conecta; cu `127.0.0.1` sau cu
+`GSS Encryption Mode=Disable` conexiunea se deschidea în 50 ms. ModelCheck
+bugetar raportează atunci „Baza nu există încă — doar validare de model” și
+iese cu cod 2, deși baza există. Șirurile hosturilor (`appsettings*.json`,
+șirul de design din `BackOfficeDbContext`) numesc aceeași gazdă, pe 5444.
+(2026-10-09)
 
 `Conexiunea` din `tools/ModelCheck/Program.cs` țintește 5446.
 `MODELCHECK_CONEXIUNE_EXTRA` înlocuiește cheile șablonului, nu le repetă
@@ -420,7 +429,7 @@ construcția modelului XAF din proba D85.
 
 Bazele de dezvoltare se recreează, nu se repară: o bază care nu corespunde
 codului se șterge (`DROP DATABASE`) și se reface prin comenzi (102b). Rețeta,
-cu `CS = Host=localhost;Port=5444;Username=postgres;Password=postgres` pentru
+cu `CS = Host=127.0.0.1;Port=5444;Username=postgres;Password=postgres` pentru
 bazele hosturilor și același șir cu `Port=5446` pentru cele ale ModelCheck:
 
 | Bază | Recrearea |
@@ -573,7 +582,7 @@ pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Infrastru
 
 `-PregatesteBaze` (Python cu `psycopg`) clonează bazele locale de profil
 `Atlas.Conta.BackOffice` și `Atlas.Conta.ModelCheck.Privat` cu sufixul dat
-(`CREATE DATABASE … TEMPLATE`, localhost:5446, postgres/postgres): sursele
+(`CREATE DATABASE … TEMPLATE`, 127.0.0.1:5446, postgres/postgres): sursele
 nu se modifică și trebuie să nu aibă conexiuni active; o clonă existentă se
 păstrează, nu se reface. Clona poartă schema și seed-ul sursei: bugetarul
 cere migrațiile aplicate, privatul migrează și aliniază seed-ul prin
