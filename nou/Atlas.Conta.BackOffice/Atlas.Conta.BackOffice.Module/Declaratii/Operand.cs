@@ -23,7 +23,8 @@ public sealed record RepartitorFapt(Guid Id, FelRepartitor? Fel, Guid? ContImpli
 public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide, bool CereRepartitor);
 
 /// <summary><paramref name="Origine"/> = documentul deschizător al partidei; gol la partida fără document.</summary>
-public sealed record SoldPartidaFapt(N.Unitate Unitate, N.Sold Sold, decimal Disponibil, Guid Origine);
+public sealed record SoldPartidaFapt(N.Unitate Unitate, N.Sold Sold, decimal Disponibil, Guid Origine,
+    Guid Deschidere = default);
 
 public readonly record struct CheieLotFapt(Guid Lot, Guid Cont, Guid Produs, Guid Gestiune);
 

@@ -82,6 +82,20 @@ public class FifoTeste {
     }
 
     [Fact]
+    public void FaraDocumentPostareaDeDeschidereBateId() {
+        var zi = new DateOnly(2026, 3, 1);
+        var micLaId = Unitatea(1, zi);
+        var mareLaId = Unitatea(9, zi);
+        var nominalizare = Fifo.Nominalizeaza(
+            20.000m,
+            [new Disponibil(micLaId, 10.000m, Deschidere: new Guid(7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+                new Disponibil(mareLaId, 10.000m, Deschidere: new Guid(3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))]);
+        Assert.Equal(
+            new[] { mareLaId.Id, micLaId.Id },
+            nominalizare.Alocari.Select(a => a.Unitate.Id).ToList());
+    }
+
+    [Fact]
     public void CandidatulGolNuPrimesteNimic() {
         var unul = Unitatea(1, new DateOnly(2026, 1, 1));
         var altul = Unitatea(2, new DateOnly(2026, 1, 2));

@@ -1,7 +1,7 @@
 # 114 — Departajarea FIFO: data, documentul deschizător, apoi identificatorul
 
 - Data: 2026-10-09
-- Stare: **activă**; regula din motor hotărâtă de owner 2026-10-09. Precizează 013 și N-D7 (090 (e)); tratează parțial 107-r11. Rămâne deschisă 114-r1.
+- Stare: **activă, amendată de 116** ((a): între unitățile fără document departajează postarea de deschidere; (d): postările unei tranzacții au ID-urile în ordinea ei); regula din motor hotărâtă de owner 2026-10-09. Precizează 013 și N-D7 (090 (e)); tratează parțial 107-r11. 114-r1 e închisă prin 116.
 - Docs: `docs/stare-curenta/domeniu-si-operare.md`; catalogul `docs/nucleu/scenarii/NTC.md` (SC-NTC-09); `docs/nucleu/tr-d9b-pas0-masuratori.md` §7.
 
 ## Regula durabilă
@@ -49,4 +49,4 @@ Măsurat pe ianuarie 2025:
 
 ## Ce rămâne deschis
 
-- **114-r1** — unitățile fără document deschizător se departajează tot pe identificator. La import, identificatorul partidei inițiale se schimbă la fiecare rulare, fiindcă include ID-urile de cont și de partener. Între cele două importuri de probă au rămas 45 de stingeri pe partide inițiale diferite și 24 de linii diferite în raportul de reconciliere, toate în contractul 5. Căi: păstrarea nominalizării din 1C pe compensări și operații (1C numește factura în subconto; vezi 107-r9) sau o cheie stabilă a partidei inițiale dată de conector. 107-r11 rămâne deschisă până atunci. Ambele căi sunt luate prin 115 (2026-10-09), care restrânge restanța la două partide inițiale ale aceluiași partener, pe același cont, născute în aceeași zi și nenumite de sursă.
+- **114-r1** — unitățile fără document deschizător se departajează tot pe identificator. La import, identificatorul partidei inițiale se schimbă la fiecare rulare, fiindcă include ID-urile de cont și de partener. Între cele două importuri de probă au rămas 45 de stingeri pe partide inițiale diferite și 24 de linii diferite în raportul de reconciliere, toate în contractul 5. Căi: păstrarea nominalizării din 1C pe compensări și operații (1C numește factura în subconto; vezi 107-r9) sau o cheie stabilă a partidei inițiale dată de conector. 107-r11 rămâne deschisă până atunci. Ambele căi sunt luate prin 115 (2026-10-09), care restrânge restanța la două partide inițiale ale aceluiași partener, pe același cont, născute în aceeași zi și nenumite de sursă. Restul e închis prin 116 (2026-10-09).

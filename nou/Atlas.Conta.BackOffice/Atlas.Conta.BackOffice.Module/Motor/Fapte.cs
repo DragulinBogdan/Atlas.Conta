@@ -172,7 +172,7 @@ internal static class Fapte {
         var idsCont = perechi.Select(p => p.Cont.Value).Distinct().ToList();
         var idsTert = perechi.Select(p => p.Repartitor.Value).Distinct().ToList();
         var zi = doc.DataInregistrare;
-        return Cub.Citiri.Partide.Postari(os)
+        var partide = Cub.Citiri.Partide.Postari(os)
             .Where(p => p.DocumentId != doc.ID && idsCont.Contains(p.Cont) && idsTert.Contains(p.Partener.Value))
             .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, p.Data, p.DocumentId })
             .Select(g => new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data, g.Key.DocumentId,
@@ -192,8 +192,14 @@ internal static class Fapte {
                 var origine = g.Select(p => p.DocumentId).OfType<Guid>().Distinct()
                     .FirstOrDefault(d => Cub.IdentitatiPartide.EsteProprie(unitate, d));
                 return new Declaratii.SoldPartidaFapt(unitate, sold, disponibil, origine);
-            })
-            .OrderBy(p => p.Unitate.Deschisa).ThenBy(p => p.Origine).ThenBy(p => p.Unitate.Id).ToList();
+            }).ToList();
+        var faraDocument = partide.Where(p => p.Origine == default).Select(p => p.Unitate.Id).ToList();
+        if (faraDocument.Count > 1) {
+            var deschideri = Cub.Citiri.Partide.Deschideri(os, faraDocument);
+            partide = [.. partide.Select(p => p with { Deschidere = deschideri.GetValueOrDefault(p.Unitate.Id) })];
+        }
+        return partide.OrderBy(p => p.Unitate.Deschisa).ThenBy(p => p.Origine).ThenBy(p => p.Deschidere)
+            .ThenBy(p => p.Unitate.Id).ToList();
     }
 
     // Restul documentului-sursă FĂRĂ stingerile documentului curent: ca soldurile de

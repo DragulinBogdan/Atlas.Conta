@@ -51,6 +51,6 @@ Numai cu (a)–(c), fără (d), rămâneau 11 linii diferite în raport.
 
 ## Ce rămâne deschis
 
-- **114-r1** rămâne, restrânsă: două partide inițiale ale aceluiași partener, pe același cont, născute în aceeași zi se departajează tot pe identificator. Pe ianuarie 2025 a rămas un caz: 60 lei care cad pe una sau pe alta dintre două facturi ale aceluiași furnizor. Închiderea lui cere o cheie de ordonare persistată (tranșarea 3).
+- **114-r1** rămâne, restrânsă: două partide inițiale ale aceluiași partener, pe același cont, născute în aceeași zi se departajează tot pe identificator. Pe ianuarie 2025 a rămas un caz: 60 lei care cad pe una sau pe alta dintre două facturi ale aceluiași furnizor. Închiderea lui cere o cheie de ordonare persistată (tranșarea 3). Închisă 2026-10-09 prin 116, fără coloană: ordinea e purtată de ID-ul postării de deschidere.
 - **107-r9** rămâne pe rândurile fără document numit în subconto.
 - **115-r1** — nominalizarea partidei nu e în culegere (XAF, API).

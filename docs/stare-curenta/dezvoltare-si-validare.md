@@ -916,6 +916,13 @@ data documentului 1C ca dată de naștere. Pe ianuarie 2025: 546 de laturi cu
 partida numită, niciuna absentă la data notei; 677 de date distincte pe cele
 3.967 de partide inițiale. (115)
 
+Partidele inițiale intră în deschidere ordonate pe cheia sursei (simbol,
+partener, document 1C), iar la aceeași dată de naștere FIFO le consumă în
+această ordine. Două importuri ale aceluiași binar pe ianuarie 2025 dau
+același raport de reconciliere, aceleași legături și aceleași partide pe chei
+naturale (18.770 de tranzacții, 81.774 de postări, 10 verificări picate în
+ambele). (116; 2026-10-09)
+
 Nomenclatoarele sunt create la nevoie. Identitatea materialului importat
 ține cont de catalog și cont; lotul, de document × produs × cont. Mapările
 de cont sunt explicite și se verifică înainte de import. (47d, 48c, 50a)

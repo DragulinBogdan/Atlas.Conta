@@ -431,15 +431,27 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             .CompareTo(N.Unitate.DeschidePartidaInitiala(Cont(ContFurnizor), Furnizor, ref2, Ianuarie).Id) > 0)
             (ref1, ref2) = (ref2, ref1);
         var cont = Cont(ContFurnizor);
+        var geaman = PartenerNou("-GEM");
+        Guid Geamana(Guid referinta) => N.Unitate.DeschidePartidaInitiala(cont, geaman, referinta, Ianuarie).Id;
+        var ref3 = Guid.NewGuid(); var ref4 = Guid.NewGuid();
+        if (Geamana(ref3).CompareTo(Geamana(ref4)) < 0)
+            (ref3, ref4) = (ref4, ref3);
         Comanda(os => {
             var ancora = os.GetObjectsQuery<Cont>().First(c => c.Simbol.StartsWith("891") && !c.Sumator).ID;
             using var tx = TranzactieComanda.Incepe(os);
             C.Materializare.Deschide(os, Ianuarie,
-                [new(cont, N.Latura.Credit, 100, true), new(ancora, N.Latura.Debit, 100)], [],
+                [new(cont, N.Latura.Credit, 150, true), new(ancora, N.Latura.Debit, 150)], [],
                 [new(cont, Furnizor, ref1, N.Latura.Credit, 60) { Analiza = new(null, Economic, null, null, null, null), Deschisa = new(An - 1, 12, 15) },
-                 new(cont, Furnizor, ref2, N.Latura.Credit, 40) { Analiza = new(null, Economic, null, null, null, null), Deschisa = new(An - 1, 12, 10) }]);
+                 new(cont, Furnizor, ref2, N.Latura.Credit, 40) { Analiza = new(null, Economic, null, null, null, null), Deschisa = new(An - 1, 12, 10) },
+                 new(cont, geaman, ref3, N.Latura.Credit, 30) { Analiza = new(null, Economic, null, null, null, null) },
+                 new(cont, geaman, ref4, N.Latura.Credit, 20) { Analiza = new(null, Economic, null, null, null, null) }]);
             os.CommitChanges(); tx.Commit();
         });
+        var notaGemene = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 25, geaman)); Opereaza(notaGemene.Id);
+        Verifica("SC-CIT-113", "două partide inițiale născute în aceeași zi se sting în ordinea din deschidere, deși prima are identificatorul mai mare", CuSpatiu(os => {
+            var stins = P.Solduri(os, Ianuarie).Where(s => s.PartenerId == geaman).ToDictionary(s => s.UnitateId, s => s.Debit);
+            return stins[Geamana(ref3)] == 25 && stins[Geamana(ref4)] == 0;
+        }));
         Verifica("SC-CIT-50", "raport: două deschideri fără document, 60 + 40", CuSpatiu(os => {
             var r = ImperecheriProiectii.PartideCuRest(os, Furnizor, laData: Ianuarie).ToArray();
             return r.Length == 2 && r.All(r => r.DocumentId == null) && r.Select(r => r.Rest).Order().SequenceEqual(new[] { 40m, 60m });

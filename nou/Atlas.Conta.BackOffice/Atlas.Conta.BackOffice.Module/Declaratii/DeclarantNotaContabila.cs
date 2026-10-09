@@ -77,7 +77,7 @@ public sealed class DeclarantNotaContabila : IDeclarant {
                          && (numita == null || p.Unitate.Id == numita))) {
                 if (citite.Add(p.Unitate.Id)) ipoteze.Add(new N.SoldUnitateCitit(p.Unitate, p.Sold));
                 var rest = -sens * solduri[p.Unitate.Id];
-                if (rest > 0m) candidati.Add(new(p.Unitate, rest, p.Origine));
+                if (rest > 0m) candidati.Add(new(p.Unitate, rest, p.Origine, p.Deschidere));
             }
             var alocare = N.Fifo.Nominalizeaza(cerere, candidati);
             var rezultat = new List<(N.Capat Capat, decimal Suma)>();

@@ -1,7 +1,8 @@
 namespace Atlas.Conta.Nucleu;
 
-/// <summary><paramref name="Origine"/> = documentul care a deschis unitatea; gol la unitatea fără document.</summary>
-public sealed record Disponibil(Unitate Unitate, decimal Masura, Guid Origine = default);
+/// <summary><paramref name="Origine"/> = documentul care a deschis unitatea; gol la unitatea fără document,
+/// pe care o ordonează <paramref name="Deschidere"/>, postarea care a deschis-o.</summary>
+public sealed record Disponibil(Unitate Unitate, decimal Masura, Guid Origine = default, Guid Deschidere = default);
 
 public sealed record Pin(Guid Unitate, decimal Masura);
 
@@ -55,14 +56,16 @@ public static class Fifo {
         return new Nominalizare(alocari, ramas);
     }
 
-    /// <summary>Data deschiderii, apoi documentul deschizător, apoi identificatorul unității.</summary>
+    /// <summary>Data deschiderii, documentul deschizător, postarea de deschidere, apoi identificatorul unității.</summary>
     public static int Intai(Disponibil unul, Disponibil altul) {
         ArgumentNullException.ThrowIfNull(unul);
         ArgumentNullException.ThrowIfNull(altul);
         var peData = unul.Unitate.Deschisa.CompareTo(altul.Unitate.Deschisa);
         if (peData != 0) return peData;
         var peOrigine = unul.Origine.CompareTo(altul.Origine);
-        return peOrigine != 0 ? peOrigine : unul.Unitate.Id.CompareTo(altul.Unitate.Id);
+        if (peOrigine != 0) return peOrigine;
+        var peDeschidere = unul.Deschidere.CompareTo(altul.Deschidere);
+        return peDeschidere != 0 ? peDeschidere : unul.Unitate.Id.CompareTo(altul.Unitate.Id);
     }
 
     static void Aloca(
