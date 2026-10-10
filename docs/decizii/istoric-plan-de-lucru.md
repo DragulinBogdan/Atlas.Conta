@@ -1162,3 +1162,7 @@ detaliat în jurnal):
   efectul e numit S13, cu scena SC-C111-28. Domeniul lui S11 e precizat pe
   recensământul bazei de referință: 559 de postări fără partidă pe conturi cu
   rol comercial, toate din note pe unitate internă. Niciun cod schimbat.
+
+- **2026-10-10 — C111: review-ul de contract închis de Codex.** R16 închisă,
+  nicio constatare de contract deschisă. Închiderea nu certifică
+  implementarea. Pasul 2 pornește.

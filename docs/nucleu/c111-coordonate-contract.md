@@ -3,7 +3,8 @@
 **Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q11
 (2026-10-10). Pasul 0 e făcut. Review-ul advers Codex al contractului
 (C111-R1…R16) e reconciliat mai jos, în trei runde; amendamentul 1 e retras. Pașii 1 și 1b
-sunt făcuți; pasul 2 așteaptă ca Codex să închidă review-ul pe textul reconciliat.
+sunt făcuți. Codex a închis review-ul de contract (2026-10-10,
+`comunicari/2026-10-10-1732-…-c111-contract-review-inchis.md`); pasul 2 e în lucru.
 **Bază:** main `1cc9d93`. **Decizia:**
 [111](../decizii/111-repartitor-unic-si-registre-tipate.md), aprobată
 2026-10-10. **Măsurătorile:** [pasul 0](tr-d9b-pas0-masuratori.md).
