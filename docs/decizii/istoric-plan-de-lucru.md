@@ -1113,3 +1113,10 @@ detaliat în jurnal):
   azi; `ScaraVolum.sql` adus la zi. Prototipul nucleului cu repartitor unic:
   195 / 195. D394 identic cu partenerul în blocul fiscal. Constatările noi
   sunt linii în 111. `docs/nucleu/tr-d9b-pas0-masuratori.md`.
+
+- **2026-10-10 — Decizia 111 aprobată; contractul C111 propus.** Owner-ul a
+  aprobat (a)–(f) și (i) în forma precizată după pasul 0. Coordonatele se
+  implementează în felia C111, înaintea TR-D9b; locul intern al faptului
+  fiscal nu se persistă (111-r1); 552.00.00 declară cont propriu; 110-r3 e
+  închisă. Contractul e pin-uit pe Q1, Q2 și Q4; pașii 0–1 sunt aprobați,
+  pasul 2 așteaptă review-ul Codex. `docs/nucleu/c111-coordonate-contract.md`.
