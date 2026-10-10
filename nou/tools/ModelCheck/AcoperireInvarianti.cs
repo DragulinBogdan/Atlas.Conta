@@ -50,6 +50,7 @@ static partial class AcoperireInvarianti {
         new("PERECHE-CANTITATE", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "cantitate"), true),
         new("PERECHE-LATURA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "latura"), true),
         new("PERECHE-DOCUMENT", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "document"), true),
+        new("PERECHE-DATA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "data"), true),
         new("PERECHE-TRANSFER-LATURA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "latura", N.FelTranzactie.Transfer), true),
         new("PERECHE-TRANSFER-VALOARE", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "valoare", N.FelTranzactie.Transfer), true),
         new("PERECHE-TRANSFER-VALUTA", C.Citiri.Invarianti.PerecheInvalida, (os, db) => StricaPereche(os, db, "valuta", N.FelTranzactie.Transfer), true),

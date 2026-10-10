@@ -242,6 +242,7 @@ s.Provider = provider;
 
 using (var osPlan = provider.CreateObjectSpace())
     PerfCub.ProbaPlanRespins(osPlan, profil == ProfilContabil.Privat, s.Check);
+ScaraVolum.ProbaColoane(connectionString, s.Check);
 
 // 091: scenele folosesc politicile curente ale profilului pe ambele baze.
 {

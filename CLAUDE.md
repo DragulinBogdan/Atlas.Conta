@@ -188,9 +188,11 @@ implementat și verificat pe catalog și în browser,
 corectat, C111-P2-R1 și R2; pasul 3, felurile de repartitor pe cont,
 implementat și verificat, `docs/nucleu/c111-pas3-feluri.md`; pasul 4, S7 și
 S8, și pasul 5, contrapartida prin pereche, făcuți,
-`docs/nucleu/c111-pas4-s7-s8.md` și `c111-pas5-pereche.md`; la pasul 6
-importul pe forma nouă e făcut, cu amprentele liniei de bază identice,
-`docs/nucleu/c111-pas6-import.md`, și rămân `ScaraVolum.sql` și PerfCub),
+`docs/nucleu/c111-pas4-s7-s8.md` și `c111-pas5-pereche.md`; pasul 6 făcut:
+importul pe forma nouă, cu amprentele liniei de bază identice,
+`docs/nucleu/c111-pas6-import.md`, apoi uneltele de volum, costul scrierii și
+scara de 5 milioane, `docs/nucleu/c111-pas6-scriere-si-volum.md`; rămâne
+pasul 7, clientul și închiderea),
 înaintea TR-D9b; TR-D9b rămâne felia unităților, pe forma nouă
 a postării.
 Felia fiscală

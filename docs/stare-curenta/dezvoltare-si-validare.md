@@ -67,7 +67,9 @@ hosturile (`AddSecuredEFCore`): contorul rândului de politică crește la
 salvare și în harness, altfel SC-CIT-111 n-ar măsura ce face hostul
 (D9-A8). Pasul 7b
 (D9-A2) a adăugat `PERECHE-RUPTA` (o postare a perechii fără ordinal) și
-`PERECHE-LIPSA` (ambele postări fără ordinal). Corecția D9-F-R1 adaugă
+`PERECHE-LIPSA` (ambele postări fără ordinal). `PERECHE-DATA` (o postare a
+perechii la altă dată) ține marginea de interval a citirii contrapartidei
+(C111 pasul 6). Corecția D9-F-R1 adaugă
 mutanți separați pentru ordinal, cauză, valoare, valută, cantitate și latură,
 apoi pierderea ambelor ordinale ale unei mutări valorice/cantitative lângă
 o transformare. Aceștia apelează direct invariantul perechii, în tranzacții
@@ -420,8 +422,8 @@ Dezvoltarea folosește două servere Postgres 18, ambele cu
 
 | Server | Port | Cine îl folosește |
 |---|---|---|
-| containerul `contapal-postgres-1` | 5444 | hosturile (Blazor, WebApi), probele HTTP din `nou/tools/ProbeHttp`, implicitul `dotnet ef`, rețetele de perf care rulează în rețeaua containerului |
-| instanța nativă de pe gazdă | 5446 | rulările grele: ModelCheck și Import1C |
+| containerul `contapal-postgres-1` | 5444 | hosturile (Blazor, WebApi), probele HTTP din `nou/tools/ProbeHttp`, implicitul `dotnet ef`, rețeta `perf-saft-container.ps1` |
+| instanța nativă de pe gazdă | 5446 | rulările grele: ModelCheck, Import1C, scara transversală și scara de volum |
 
 Rulările grele stau pe instanța nativă fiindcă un dus-întors din gazdă spre
 container trece prin proxy-ul Docker Desktop (0,27–0,5 ms față de 0,06–0,2
@@ -432,6 +434,11 @@ nativ; ModelCheck integral 133 s bugetar / 231 s privat pe container și
 instanța nativă e serviciul Windows `PostgreSQL`, cu pornire automată
 (2026-10-09). Ordonarea textelor e cea a Windows (`en-US`), nu glibc
 (`en_US.utf8`) ca în container; integrala a dat același rezultat pe amândouă.
+Citirile mari merg invers: pe baza de volum, balanța, stocul și partidele cu
+rest au aceleași planuri și aceleași rânduri atinse ca în container și durează
+de 1,4–2,1 ori mai mult pe nativ (2026-10-11,
+`docs/nucleu/c111-pas6-scriere-si-volum.md`). O cifră a scării de volum se
+compară numai cu una de pe aceeași instanță.
 
 Șabloanele de conexiune ale uneltelor numesc gazda `127.0.0.1`, nu
 `localhost`. După o trezire din hibernare, Npgsql 10 pe `Host=localhost` a
@@ -671,12 +678,16 @@ Verificarea de drift regenerează contractele și refuză diferențele față de
 fișierele versionate. O schimbare intenționată de contract se regenerează și
 se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 
-### Scara transversală de perf (`scripts/perf-cub-container.ps1`)
+### Scara transversală de perf (`scripts/perf-cub.ps1`)
 
 Integrala nu rulează scala: după o schimbare de regulă, scena ei se verifică
 separat (la TR-D9a pasul 8 a căzut pe un ASM cu P ≠ C rămas din regimul dual).
-Ultima rulare completă, după tăiere: `run-verificari/perf-cub-20261007-145947/`,
-1.540 privat / 1.010 bugetar OK, zero FAIL. Față de regimul dual, comenzile de
+Ultima rulare completă, pe forma postării din C111 și pe instanța nativă
+(2026-10-11): `run-verificari/c111-pas6/perf-head2/`, 1.580 privat / 1.046
+bugetar OK, zero FAIL, 33 de minute. Prima rulare de după C111 a picat pe
+registrul jurnal, care citea toate postările ca să găsească perechea
+(`docs/nucleu/c111-pas6-scriere-si-volum.md`). Rularea de după tăiere:
+`run-verificari/perf-cub-20261007-145947/`, 1.540 / 1.010 OK. Față de regimul dual, comenzile de
 document fac cu 6 până la 16 comenzi SQL mai puțin
 (`docs/nucleu/tr-d9-pas8-inchiderea.md` §3).
 
@@ -690,37 +701,47 @@ eroarea măsurării, iar o operație fără plan pentru fiecare citire pică
 criteriul; proba `X-D5-PLAN`, care rulează în orice ModelCheck, ține regula
 (X-RI3). Înaintea purjei rulează
 reconcilierea integrală, `INV-CUB` și diagnosticul ASM-B7 pe toată baza.
-Rețeta rulează ambele profiluri în containerul din rețeaua Postgres și
+Rețeta rulează ambele profiluri pe instanța nativă (5446), pe bazele cu
+sufixul dat (`-PregatesteBaze` le clonează din cele de dezvoltare), și
 validează XML-urile SAF-T cu DUK; parametrii `-Profil`, `-Istoric`, `-Trepte`
-și `-Operatii` restrâng rularea. Scara completă durează circa 35 de minute și
+și `-Operatii` restrâng rularea. Comenzile de scriere se cronometrează la
+construcția scenei, deci apar și într-o rulare restrânsă la un singur cititor. Scara completă durează circa 35 de minute și
 este o rulare grea: nu se suprapune cu alta pe aceleași baze. O rulare
 întreruptă lasă scena în bază; următoarea o purjează la pornire, dar datele
 societății de pe profilul privat rămân cele ale scenei și se refac de mână.
 Un cititor nou care citește cumulat sau pe interval intră în `PerfCub.Operatii`
 cu ruta și cifrele lui de control. (X-D5, X-D3)
 
-### Scara de volum (`scripts/scara-volum-container.ps1`)
+### Scara de volum (`scripts/scara-volum.ps1`)
 
 `ModelCheck --scara-volum privat` păstrează scena scării transversale la
 m = 12, k = 64 și o multiplică în lățime, direct în SQL, pe treptele ×1, ×10,
 ×100 și cea care trece de 5 milioane de postări. Fiecare copie are
 identități proprii pentru tranzacții, postări, documente, loturi și
-partenerii scenei; partidele își primesc identitatea prin `cub_partida_id`.
+partenerii scenei (cei purtați de `Repartitor` sau de `PartenerFiscal`);
+partidele își primesc identitatea prin `cub_partida_id`. Postările de
+deschidere clonate rămân pe tranzacția unică de deschidere și își continuă
+ordinalele.
 La fiecare treaptă rulează probele de corectitudine (numărători și sume
 egale cu factorul × scena, originile partidelor recunoscute de cititorul
 produsului), reconstrucția snapshot-urilor pe calea produsului și măsurarea
 cititorilor comuni, rece și cald, pe ruta securizată și pe cea de sistem,
 cu planurile. O măsurare se oprește la 10 minute, reconstrucția la 30. E
-raport, fără prag. Rețeta rulează pe o clonă cu sufix (`.D9Vol` implicit),
+raport, fără prag. Rețeta rulează pe instanța nativă (5446), pe o clonă cu
+sufix (`-PregatesteBaze` o face din baza privată de dezvoltare),
 care rămâne bază de citire: liniile de document, registrele și împerecherile
 nu se multiplică. Rularea completă durează circa 95 de minute și e rulare
-grea; numai treapta finală (`-Factori F`) durează circa 14 minute. Rezultatul din 2026-10-06 și limitele lui:
-`docs/nucleu/tr-d9-pas5b-probe.md` §3. (D9-A1) Rețeta nu rulează pe schema
-curentă: vezi [limite](limite-curente.md), „Uneltele de volum”.
+grea; numai treapta finală (`-Factori F`) durează circa 14 minute. Pe forma
+din C111, nativ, treptele ×1, ×10 și ×629 au durat 24 de minute (2026-10-11,
+`docs/nucleu/c111-pas6-scriere-si-volum.md`). Rezultatul din 2026-10-06 și limitele lui:
+`docs/nucleu/tr-d9-pas5b-probe.md` §3. (D9-A1) Scriptul numește
+explicit coloanele fiecărei tabele clonate; proba `SCARA-COLOANE`, care
+rulează în orice ModelCheck, le compară cu coloanele scrise ale bazei, ca o
+coloană nouă să pice acolo, nu la următoarea rulare a scării (C111 pasul 6).
 
 Un singur cititor se re-măsoară pe baza scării fără a o reface: procesul-copil
 `--perf-cub-masura` sau `--scara-volum-reconstructie`, cu
-`MODELCHECK_BAZA_SUFIX` pe sufixul bazei, în același container ca rețeta.
+`MODELCHECK_BAZA_SUFIX` pe sufixul bazei, pe aceeași instanță ca rețeta.
 Așa s-a măsurat corectura îmbinării partidelor
 (`docs/nucleu/tr-d9-pas5c-imbinare-partide.md` §2).
 

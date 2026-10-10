@@ -304,7 +304,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 3 | `Cont.FeluriRepartitor`, gardul, seed-ul bugetar | făcut 2026-10-10: [`c111-pas3-feluri.md`](c111-pas3-feluri.md) |
 | 4 | S7 și S8 | făcut 2026-10-10: [`c111-pas4-s7-s8.md`](c111-pas4-s7-s8.md) |
 | 5 | S9: contrapartida prin pereche | făcut 2026-10-10, cu fișa și registrul pe HTTP: [`c111-pas5-pereche.md`](c111-pas5-pereche.md). Cifra de timp cere o bază de import pe forma nouă și se ia la pasul 6 |
-| 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | importul făcut 2026-10-10, cu regulile de oprire 1 și 2 și `INV-CUB` verzi și cu cifra de timp a fișei: [`c111-pas6-import.md`](c111-pas6-import.md); rămân `ScaraVolum.sql` și PerfCub |
+| 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | făcut. Importul, 2026-10-10, cu regulile de oprire 1 și 2 și `INV-CUB` verzi și cu cifra de timp a fișei: [`c111-pas6-import.md`](c111-pas6-import.md). Uneltele de volum, costul scrierii și scara de 5 milioane, 2026-10-11: [`c111-pas6-scriere-si-volum.md`](c111-pas6-scriere-si-volum.md); scara transversală a prins citirea perechii fără margine în registrul jurnal, corectată acolo |
 | 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | drift zero; `refuzuri.ps1`; review advers |
 
 **Scrierile brute și mutanții** (pasul 2). Probele care scriu sau strică
@@ -357,9 +357,10 @@ pasul 6.
 7. O singură rulare grea o dată; importul și integrala nu rulează concurent.
 8. Felia se închide cu review advers pe diff-ul întreg.
 
-Costul scrierii cu două chei străine noi pe partiții se măsoară la pasul 6,
-cu PerfCub pe baze recreate din același seed. Compararea e între baze
-diferite, ca la TR-D9a, și se numește ca abatere.
+Costul scrierii cu două chei străine noi pe partiții se măsoară la pasul 6
+pe aceeași bază, cu și fără cele două chei, la nivel de rând și de comandă
+(C111-Q17). Compararea cu forma de pe `main`, între baze diferite, rămâne
+orientativă.
 
 ## C111-D10 — Identitățile cititorilor (poarta)
 
@@ -441,6 +442,7 @@ A doua serie (2026-10-10, seara):
 |---|---|---|
 | C111-Q15 | 111-r2: felurile pe conturile bugetare fără dovadă în legacy? | 462.01.09 = **partener și angajat**; 437.01.00 și 437.02.00 = **partener sau niciunul**; 803.00.01 = **partener sau niciunul** |
 | C111-Q16 | Când se recreează bazele de dezvoltare? | **după pasul 3**, o singură dată, pe schema cu `FeluriRepartitor` |
+| C111-Q17 | Cum se măsoară costul celor două chei străine noi și unde rulează uneltele de volum? (2026-10-11) | **A/B pe aceeași bază**, cu și fără chei, plus cifra pe rând; rulare **nativă** (5446); treapta de 5 milioane **acum** |
 
 ## Review-ul advers Codex al contractului (2026-10-10)
 

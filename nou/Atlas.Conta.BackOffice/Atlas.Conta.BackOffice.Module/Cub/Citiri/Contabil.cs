@@ -61,6 +61,14 @@ public static class Contabil {
     static IQueryable<Postare> Domeniu(IObjectSpace os) => os.GetObjectsQuery<Postare>()
         .Where(p => p.Carte == N.Carte.Contabil).Where(Transformare.FaraContrapondere);
 
+    /// <summary>Sursa celeilalte postări a unei perechi, pe intervalul cititorului: se caută pe (tranzacție, ordinal), iar vizibilitatea și data sunt ale perechii.</summary>
+    public static IQueryable<Postare> Perechi(IObjectSpace os, DateOnly? deLa, DateOnly? panaLa) {
+        var postari = Domeniu(os);
+        if (deLa is { } inceput) postari = postari.Where(p => p.Data >= inceput);
+        if (panaLa is { } sfarsit) postari = postari.Where(p => p.Data <= sfarsit);
+        return postari;
+    }
+
     public static IQueryable<Postare> Postari(IObjectSpace os) {
         var toate = os.GetObjectsQuery<Postare>();
         return from p in Domeniu(os)

@@ -71,7 +71,7 @@ public static class Invarianti {
     public const string PerecheInvalida = "CITIRE_PERECHE_INVALIDA";
     public const string PerecheLipsa = "CITIRE_PERECHE_LIPSA";
 
-    /// <summary>Perechea persistată e cea de la contractare (D9-A2): exact două postări pe (tranzacție, ordinal), mișcarea și contrapartida ei; fără ordinal rămân numai transformările și deschiderea.</summary>
+    /// <summary>Perechea persistată e cea de la contractare (D9-A2): exact două postări pe (tranzacție, ordinal), mișcarea și contrapartida ei, la aceeași dată; fără ordinal rămân numai transformările și deschiderea.</summary>
     public static void VerificaPerechi(IObjectSpace os) {
         var postari = os.GetObjectsQuery<Postare>();
         var invalide = postari.Where(p => p.Pereche != null)
@@ -82,11 +82,12 @@ public static class Invarianti {
                 Documente = g.Select(p => p.DocumentId ?? Guid.Empty).Distinct().Count(),
                 Linii = g.Select(p => p.LinieId ?? Guid.Empty).Distinct().Count(),
                 Laturi = g.Select(p => p.Latura).Distinct().Count(),
+                Date = g.Select(p => p.Data).Distinct().Count(),
                 Cantitate = g.Sum(p => p.Cantitate),
                 Valoare = g.Sum(p => p.Valoare), ValoareMin = g.Min(p => p.Valoare), ValoareMax = g.Max(p => p.Valoare),
                 Valuta = g.Sum(p => p.ValoareValuta), ValutaMin = g.Min(p => p.ValoareValuta), ValutaMax = g.Max(p => p.ValoareValuta),
             })
-            .Where(x => x.Pereche < 1 || x.Cate != 2 || x.Documente != 1 || x.Linii != 1 || x.Cantitate != 0m
+            .Where(x => x.Pereche < 1 || x.Cate != 2 || x.Documente != 1 || x.Linii != 1 || x.Date != 1 || x.Cantitate != 0m
                 || x.Fel == N.FelTranzactie.Deschidere
                 || (x.Fel == N.FelTranzactie.Operare && x.Laturi != 2)
                 || (x.Fel == N.FelTranzactie.Transfer && x.Laturi != 1)

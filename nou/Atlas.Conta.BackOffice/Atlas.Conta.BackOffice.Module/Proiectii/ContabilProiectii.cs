@@ -156,6 +156,14 @@ public sealed class JurnalRand : IRandCuDocument {
     public bool Storno { get; set; }
 }
 
+struct SursaPereche {
+    public Guid Id { get; set; }
+    public Guid TranzactieId { get; set; }
+    public int? Pereche { get; set; }
+    public Guid ContId { get; set; }
+    public string ContSimbol { get; set; }
+}
+
 struct SursaFisa {
     public Guid Id { get; set; }
     public Guid TranzactieId { get; set; }
@@ -480,10 +488,14 @@ public static class ContabilProiectii {
         string Filtre(string alias) => string.Concat(dimensiuni.Where(d => d.Value.HasValue)
             .Select(d => $" AND {alias}.\"{d.Key}\" = {P(d.Value.Value)}"))
             + (repartitorNul ? $" AND {alias}.\"RepartitorId\" IS NULL" : "");
+        var perechi = from x in Cub.Citiri.Contabil.Perechi(os, dataStart, dataEnd)
+            join c in os.GetObjectsQuery<Cont>() on x.Cont equals c.ID
+            select new SursaPereche { Id = x.ID, TranzactieId = x.TranzactieId, Pereche = x.Pereche, ContId = x.Cont, ContSimbol = c.Simbol };
         var sursa = SqlInterogare.Compune(etichetate, P);
         var sold = SqlInterogare.Compune(initial, P);
         var sql = $"""
             WITH postari AS NOT MATERIALIZED ({sursa}),
+            perechi AS NOT MATERIALIZED ({SqlInterogare.Compune(perechi, P)}),
             initial AS (SELECT COALESCE(SUM(i."Debit" - i."Credit"), 0) AS sold FROM ({sold}) i WHERE true{Filtre("i")})
             SELECT p."Id", p."Spatiu", p."TranzactieId", p."Data", p."NumarNota", p."Sens", p."Debit", p."Credit",
                 (SELECT sold FROM initial) + SUM(p."Debit" - p."Credit") OVER (
@@ -491,7 +503,7 @@ public static class ContabilProiectii {
                 c."ContId" AS "ContrapartidaId", c."ContSimbol" AS "ContrapartidaSimbol",
                 p."RepartitorDenumire", p."DocumentId", NULL::text AS "DocumentTip", p."NumarNota" AS "DocumentNumar", p."Storno"
             FROM postari p
-            LEFT JOIN postari c ON c."TranzactieId" = p."TranzactieId" AND c."Pereche" = p."Pereche" AND c."Id" <> p."Id"
+            LEFT JOIN perechi c ON c."TranzactieId" = p."TranzactieId" AND c."Pereche" = p."Pereche" AND c."Id" <> p."Id"
             WHERE p."ContId" = {P(contId)} AND p."Data" >= {P(dataStart)}{Filtre("p")}
             """;
         return ((EFCoreObjectSpace)os).DbContext.Database
@@ -513,8 +525,7 @@ public static class ContabilProiectii {
 
     public static IQueryable<JurnalRand> RegistruJurnal(
         IObjectSpace os, DateOnly? dataStart = null, DateOnly? dataEnd = null) {
-        var toate = Cub.Citiri.Contabil.Postari(os);
-        var postari = toate;
+        var postari = Cub.Citiri.Contabil.Postari(os);
         if (dataStart is { } ds) postari = postari.Where(p => p.Data >= ds);
         if (dataEnd is { } de) postari = postari.Where(p => p.Data <= de);
         // 111 (d): contrapartida e cealaltă postare a perechii; fără pereche nu există.
@@ -524,7 +535,7 @@ public static class ContabilProiectii {
             from c in conturi.DefaultIfEmpty()
             join d in os.GetObjectsQuery<Document>() on p.DocumentId equals d.ID into documente
             from d in documente.DefaultIfEmpty()
-            from pereche in toate.Where(x => x.TranzactieId == p.TranzactieId
+            from pereche in Cub.Citiri.Contabil.Perechi(os, dataStart, dataEnd).Where(x => x.TranzactieId == p.TranzactieId
                 && (x.Pereche ?? -1) == (p.Pereche ?? -2) && x.ID != p.ID).DefaultIfEmpty()
             join cc in os.GetObjectsQuery<Cont>() on pereche.Cont equals cc.ID into corespondente
             from cc in corespondente.DefaultIfEmpty()

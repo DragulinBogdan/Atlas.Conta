@@ -134,11 +134,6 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   pe Postgres neconfigurat. Nu măsoară scrierea, închiderea de lună,
   cititorii fiscali și SAF-T, nici filtrele de rând ale unui rol restrâns.
   (D9-A1)
-- Uneltele de volum nu rulează pe schema curentă: `ScaraVolum.sql` scrie
-  postări cu listă explicită de coloane, pe `Partener` și `Gestiune`, care nu
-  mai există. PerfCub n-a fost rulat pe forma din C111, deci costul scrierii
-  cu cele două chei străine noi (`PartenerFiscal`, `Loc`) nu e măsurat.
-  (C111-D9, pasul 6)
 - Rândurile integral nule dispar din rapoarte după prima închidere. O cheie cu
   debitul și creditul cumulate zero la referință nu are rând de snapshot, deci
   un cont sau un cont cu repartitor fără nicio mișcare în perioada cerută nu
@@ -328,12 +323,17 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   contrapartidă în fișa contului și în registrul jurnal. Stornoul cu mai multe surse decalează ordinalele
   surselor după prima, deci ordinalul stornoului nu e literal al
   originalului. (D9-A2; 2026-10-07)
+- Contrapartida costă în registrul jurnal circa 4 µs pe rând la volum: luna
+  de 888 de mii de rânduri pe baza de 5 milioane de postări se citește în
+  4,8 s, față de 1,3 s fără contrapartidă. Planul caută perechea fiecărui
+  rând prin indexul pe tranzacție; o îmbinare prin hash pe postările
+  intervalului n-a fost încercată.
+  (`docs/nucleu/c111-pas6-scriere-si-volum.md`, 2026-10-11)
 - Import1C a rulat pe forma postării din C111 pe ianuarie 2025, cu amprentele
   liniei de bază identice (`docs/nucleu/c111-pas6-import.md`). Bazele de
   import și clonele de măsurare de pe 5444 sunt pe schema veche și cer
-  `--recreeaza`. `ScaraVolum.sql` scrie coloanele vechi și nu rulează; PerfCub
-  nu e măsurat pe forma nouă. Cifrele de mai jos sunt de dinaintea ei.
-  (C111-D9, pasul 6)
+  `--recreeaza`; baza de volum la zi e `Atlas.Conta.ModelCheck.Privat.C111Vol`
+  (5446). Cifrele de mai jos sunt de dinaintea ei. (C111-D9, pasul 6)
 - Import1C rulează pe cititorii cubului, dar reconcilierea lui nu e verde.
   Pe ianuarie 2025 (2026-10-07): 15.232 de documente, zero eșecuri de import,
   `INV-CUB` verde; contractul 1 are trei conturi fără explicație (371, 3028,

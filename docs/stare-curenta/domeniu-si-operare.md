@@ -948,7 +948,11 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   acceptă ambele forme. Nu e coordonată: nu intră în chei de sold și
   snapshot-uri. O citesc fișa contului și registrul jurnal: contrapartida
   unui rând e contul celeilalte postări a perechii, iar rândul fără pereche
-  (deschiderea) n-are contrapartidă (111 (d), C111 S9).
+  (deschiderea) n-are contrapartidă (111 (d), C111 S9). Cealaltă postare se
+  caută pe (tranzacție, ordinal) prin `Contabil.Perechi`, mărginită de
+  intervalul cititorului: vizibilitatea și data sunt ale perechii, deci
+  filtrul pe felul tranzacției nu se repetă. Fără margine, registrul jurnal
+  al unei luni citea toate postările bazei (C111 pasul 6).
 - **Unitatea** (lot = partidă = fișă): raportul = cost / curs / valoare
   rămasă ca citire; partida deschisă de un document are id determinist din
   (document, cont, partener), conform 092; identitățile istorice sunt păstrate
@@ -1550,8 +1554,8 @@ ieșirea atât, din ce sold, ce partide a stins.
   stocului, nici reconcilierea (a) nu îl văd.
 - **Perechea persistată e cea de la contractare** (`Invarianti.VerificaPerechi`,
   în `INV-CUB`): `CITIRE_PERECHE_INVALIDA` — pe (tranzacție, ordinal) nu stau
-  exact două postări cu același document, aceeași linie, cantități opuse și
-  valorile potrivite laturilor felului; `CITIRE_PERECHE_LIPSA` — postare fără
+  exact două postări cu același document, aceeași linie, aceeași dată,
+  cantități opuse și valorile potrivite laturilor felului; `CITIRE_PERECHE_LIPSA` — postare fără
   ordinal în afara deschiderii și a liniilor transformării. (D9-A2)
 - **Ordinalul numără postările tranzacției** (`Invarianti.VerificaOrdinale`,
   în `INV-CUB`): `CITIRE_ORDINAL_INVALID` — postările unei tranzacții nu sunt

@@ -1,7 +1,8 @@
 # C111, pasul 6 — importul pe forma nouă
 
 **Data:** 2026-10-10. **Stare:** importul și comparațiile lui sunt făcute;
-`ScaraVolum.sql` și PerfCub rămân. Contractul:
+`ScaraVolum.sql` și PerfCub sunt în
+[`c111-pas6-scriere-si-volum.md`](c111-pas6-scriere-si-volum.md). Contractul:
 [C111](c111-coordonate-contract.md), D9 și regulile de oprire 1, 2 și 7.
 
 Urmele, neversionate: `run-verificari/c111-pas6/` (`import.C111P6/`,
@@ -73,11 +74,9 @@ Pasul 0 măsurase SQL scris de mână pe baza de atunci: 21.152 și 2.342 ms,
 respectiv 1.291 și 156 ms. Rândurile fără contrapartidă sunt cele fără
 pereche, în principal deschiderea.
 
-## Ce rămâne din pasul 6
+## Restul pasului 6
 
-- **`ScaraVolum.sql`** scrie postări cu coloanele vechi (`Partener`,
-  `Gestiune`) și nu rulează pe forma nouă. E de adus la `Repartitor`,
-  `PartenerFiscal`, `Loc` și `Contrapondere`.
-- **PerfCub**: costul scrierii cu două chei străine noi pe partiții, pe baze
-  recreate din același seed. Nemăsurat.
-- Bazele de import și clonele de măsurare de pe 5444 sunt pe schema veche.
+`ScaraVolum.sql`, PerfCub și costul scrierii cu cele două chei străine noi:
+[`c111-pas6-scriere-si-volum.md`](c111-pas6-scriere-si-volum.md)
+(2026-10-11). Sursa perechii din fișa contului s-a schimbat acolo; cifrele de
+timp de mai sus sunt de dinaintea schimbării.
