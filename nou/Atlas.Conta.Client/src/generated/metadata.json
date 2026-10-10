@@ -71,7 +71,6 @@
     },
     "DimensiuneFlags": {
       "Niciuna": "Niciuna",
-      "Repartitor": "Repartitor",
       "Material": "Material",
       "CodFunctional": "CodFunctional",
       "CodEconomic": "CodEconomic",
@@ -134,6 +133,15 @@
       "Total": "Total",
       "Oglinda": "Oglindă",
       "Extern": "Extern"
+    },
+    "FeluriRepartitor": {
+      "Nedeclarat": "Nedeclarat",
+      "Niciunul": "Niciunul",
+      "Partener": "Partener",
+      "Angajat": "Angajat",
+      "Gestiune": "Gestiune",
+      "ContPropriu": "ContPropriu",
+      "UnitateInterna": "UnitateInterna"
     },
     "FormularFiscal": {
       "D300": "D300",
@@ -665,6 +673,7 @@
         "Denumire": "Denumire",
         "DimensiuniObligatorii": "DimensiuniObligatorii",
         "DinSeed": "Din seed",
+        "FeluriRepartitor": "Feluri de repartitor",
         "Functie": "Functie",
         "ID": "ID",
         "Parinte": "Parinte",

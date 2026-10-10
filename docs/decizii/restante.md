@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-10-10 (111 aprobată: 110-r3 închisă, F27-r16 și F28-r1 trec în contractul TR-D9b, 111-r1, 111-r2, C111-r1 și C111-r2 deschise; D9-r4 intră în C111).** [Index](README.md)
+**Actualizat: 2026-10-10 (111 aprobată: 110-r3 închisă, F27-r16 și F28-r1 trec în contractul TR-D9b, 111-r1, 111-r2, C111-r1 și C111-r2 deschise; D9-r4 intră în C111; 111-r2 închisă la pasul 3 al C111).** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -395,6 +395,6 @@ cu una din stări; lista `activă` trebuie să încapă pe un ecran.
 | 110-r5 | Nota contabilă operată fără nicio postare nu mai e văzută de niciun invariant (SC-CIT-34 proba acoperirea registru → cub); acoperirea politicii de mișcare SAF-T se probează într-o singură direcție (D17-V1: fiecare pereche produsă are politică; „politica nu are perechi în plus” nu mai are probă) | după PoC |
 | 110-r6 | Izolarea probelor de politica reală: `ScenariiTvaIntervale` și `ScenariiFiscale` purjează toate politicile de TVA pe FCT care nu sunt din seed, cu un filtru necorelat cu tipul de TVA al scenei; `explicatii.py` editează pe HTTP regula de contare reală din seed, deci cere bază de unică folosință (`tr-d9-pas8-inchiderea.md` §9, §11) | după PoC |
 | 111-r1 | Locul intern al faptului fiscal pe piciorul de terț cu partidă (baza fiscală pe 419, 408, 4091) nu e persistat pe postare: rămâne latura internă a documentului. Devine atribut în blocul fiscal dacă apare un raport de TVA pe loc intern (111, „Aprobarea”) | închisă 2026-10-10: owner-ul a reconfirmat, locul se persistă ca `LocFiscal` pe orice postare cu fapt fiscal (111 (b) amendată, C111-Q8); se implementează la pasul 2 al C111 |
-| 111-r2 | Felul repartitorului pe conturile bugetare fără dovadă în legacy: 462.01.09 (persoanele fizice: angajat sau partener), 437, 803 (`tr-d9b-pas0-masuratori.md` §5); 552.00.00 e hotărât, cont propriu | activă: pasul de seed al C111 |
+| 111-r2 | Felul repartitorului pe conturile bugetare fără dovadă în legacy: 462.01.09 (persoanele fizice: angajat sau partener), 437, 803 (`tr-d9b-pas0-masuratori.md` §5); 552.00.00 e hotărât, cont propriu | închisă 2026-10-10 (C111-Q15): 462.01.09 = partener și angajat; 437.01.00, 437.02.00 și 803.00.01 = partener sau niciunul |
 | C111-r1 | Furnizorul bonului la decont nu există în model; partenerul fiscal al decontului e angajatul. Ar cere un atribut pe linie (`c111-coordonate-contract.md`) | după PoC |
 | C111-r2 | Lumea închisă a felurilor de repartitor: contul nedeclarat admite numai „niciunul”; cere seed pe tot planul, pe ambele profiluri (C111-Q1) | după PoC |

@@ -9,7 +9,8 @@ Fixture: anul 2006 liber, repartitori cu marcaj `E2E-SC-NTC`,
 ObjectSpace nou pentru fiecare comandă, curățenie în `finally`.
 Documentele au laturi interne; partenerii se culeg pe liniile explicite.
 Privat: 628, 401, 4111, 419, 302. Bugetar: 628.00.00, 401.01.00,
-411.01.01, 302.01.00. Conturile bugetare nu au `RolTert`: probele de
+411.01.01, 302.01.00; notele fără partener stau pe 542.01.00, cont cu partide
+care nu declară feluri de repartitor (pe 401.01.00 gardul le refuză, C111-D4). Conturile bugetare nu au `RolTert`: probele de
 partidă sunt private; postarea explicită și ciclul fără partidă sunt comune.
 Toate valorile sunt RON; `Cantitate = ValoareValuta = 0`. Postările NTC
 sunt contabile, fără coordonate de TVA, inclusiv când contul este 4426/4427.

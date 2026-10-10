@@ -133,6 +133,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Functie = table.Column<string>(type: "text", nullable: true),
                     Sumator = table.Column<bool>(type: "boolean", nullable: false),
                     DimensiuniObligatorii = table.Column<int>(type: "integer", nullable: false),
+                    FeluriRepartitor = table.Column<int>(type: "integer", nullable: false),
                     RolTert = table.Column<int>(type: "integer", nullable: false),
                     UrmarestePartide = table.Column<bool>(type: "boolean", nullable: false),
                     CategorieStoc = table.Column<int>(type: "integer", nullable: true),

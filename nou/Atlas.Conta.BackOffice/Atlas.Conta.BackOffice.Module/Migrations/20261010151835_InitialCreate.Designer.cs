@@ -298,6 +298,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<bool>("DinSeed")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("FeluriRepartitor")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Functie")
                         .HasColumnType("text");
 

@@ -411,7 +411,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
     }
 
     void Acoperire(Guid factura) {
-        var nota = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 10)); Opereaza(nota.Id);
+        var nota = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 10)); Opereaza(nota.Id);
         Comanda(os => {
             P.VerificaAcoperire(os);
             Verifica("SC-CIT-43", "nota fără partener explicit nu cere partidă", true);

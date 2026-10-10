@@ -9,13 +9,18 @@ static class ProbeGardAnaliza {
     public static void Ruleaza(Action<string, bool> check) {
         var document = Guid.NewGuid(); var linie = Guid.NewGuid();
         var cheltuiala = Guid.NewGuid(); var furnizor = Guid.NewGuid(); var liber = Guid.NewGuid();
+        var optional = Guid.NewGuid(); var mandat = Guid.NewGuid();
         var economic = Guid.NewGuid();
         var gestiune = new N.Repartitor(Guid.NewGuid(), N.FelRepartitor.Gestiune);
         var partener = new N.Repartitor(Guid.NewGuid(), N.FelRepartitor.Partener);
+        var angajat = new N.Repartitor(Guid.NewGuid(), N.FelRepartitor.Angajat);
+        var propriu = new N.Repartitor(Guid.NewGuid(), N.FelRepartitor.ContPropriu);
         var conturi = new Dictionary<Guid, C.GardAnaliza.ContFapt> {
             [cheltuiala] = new("628", DimensiuneFlags.CodEconomic),
-            [furnizor] = new("401", DimensiuneFlags.Repartitor | DimensiuneFlags.CodEconomic),
+            [furnizor] = new("401", DimensiuneFlags.CodEconomic, FeluriRepartitor.Partener),
             [liber] = new("5311", DimensiuneFlags.Niciuna),
+            [optional] = new("803", DimensiuneFlags.Niciuna, FeluriRepartitor.Partener | FeluriRepartitor.Niciunul),
+            [mandat] = new("552", DimensiuneFlags.Niciuna, FeluriRepartitor.ContPropriu),
         };
         N.Miscare Miscare(Guid debit, Guid credit, N.Analiza analiza, N.Carte carte = N.Carte.Contabil,
                 N.Repartitor? peDebit = null, N.Repartitor? peCredit = null, Guid? produs = null,
@@ -46,11 +51,34 @@ static class ProbeGardAnaliza {
             Lipsuri(Miscare(liber, liber, N.Analiza.Fara), null).Count == 0);
 
         var faraRepartitor = Lipsuri(Miscare(cheltuiala, furnizor, cuCod), null);
-        Verifica("D9-A10: repartitorul e al capătului, de orice fel; fără el gardul refuză — "
+        Verifica("D9-A10: repartitorul e al capătului; fără el gardul refuză — "
             + string.Join(" | ", faraRepartitor),
             faraRepartitor.SequenceEqual(["Contul 401 (credit, linia cu Servicii) cere: Repartitor."])
-            && Lipsuri(Miscare(cheltuiala, furnizor, cuCod, peCredit: partener), null).Count == 0
-            && Lipsuri(Miscare(furnizor, cheltuiala, cuCod, peDebit: gestiune), null).Count == 0);
+            && Lipsuri(Miscare(cheltuiala, furnizor, cuCod, peCredit: partener), null).Count == 0);
+
+        var altFel = Lipsuri(Miscare(furnizor, cheltuiala, cuCod, peDebit: gestiune), null);
+        Verifica("C111-D4 (S6): repartitorul de alt fel decât cele declarate e refuzat — " + string.Join(" | ", altFel),
+            altFel.SequenceEqual(["Contul 401 (debit, linia cu Servicii) cere: Repartitor de felul Partener (primit: Gestiune)."]));
+        var peOptional = Lipsuri(Miscare(optional, liber, N.Analiza.Fara, peDebit: gestiune), null);
+        Verifica("C111-D4: mulțimea cu „niciunul” admite lipsa și felul declarat, nu alt fel — " + string.Join(" | ", peOptional),
+            Lipsuri(Miscare(optional, liber, N.Analiza.Fara), null).Count == 0
+            && Lipsuri(Miscare(optional, liber, N.Analiza.Fara, peDebit: partener), null).Count == 0
+            && peOptional.SequenceEqual(["Contul 803 (debit, linia cu Servicii) cere: Repartitor de felul Partener (primit: Gestiune)."]));
+        var peMandat = Lipsuri(Miscare(mandat, liber, N.Analiza.Fara, peDebit: partener), null);
+        Verifica("C111-D4: contul care declară numai feluri e păzit; contul propriu trece, terțul și lipsa nu — "
+            + string.Join(" | ", peMandat),
+            Lipsuri(Miscare(mandat, liber, N.Analiza.Fara, peDebit: propriu), null).Count == 0
+            && peMandat.SequenceEqual(["Contul 552 (debit, linia cu Servicii) cere: Repartitor de felul ContPropriu (primit: Partener)."])
+            && Lipsuri(Miscare(mandat, liber, N.Analiza.Fara), null)
+                .SequenceEqual(["Contul 552 (debit, linia cu Servicii) cere: Repartitor."]));
+        var dublu = new Dictionary<Guid, C.GardAnaliza.ContFapt> {
+            [furnizor] = new("462", DimensiuneFlags.Niciuna, FeluriRepartitor.Partener | FeluriRepartitor.Angajat),
+        };
+        var peDublu = Lipsuri(Miscare(furnizor, liber, N.Analiza.Fara, peDebit: gestiune), null, pe: dublu);
+        Verifica("C111-D4: două feluri declarate le admit pe amândouă — " + string.Join(" | ", peDublu),
+            Lipsuri(Miscare(furnizor, liber, N.Analiza.Fara, peDebit: partener), null, pe: dublu).Count == 0
+            && Lipsuri(Miscare(furnizor, liber, N.Analiza.Fara, peDebit: angajat), null, pe: dublu).Count == 0
+            && peDublu.SequenceEqual(["Contul 462 (debit, linia cu Servicii) cere: Repartitor de felul Partener sau Angajat (primit: Gestiune)."]));
 
         var marcataFaraCod = Lipsuri(Miscare(cheltuiala, furnizor, N.Analiza.Fara, contrapondereCredit: N.Contrapondere.Tert), Guid.NewGuid());
         var marcata = Lipsuri(Miscare(liber, furnizor, N.Analiza.Fara, contrapondereCredit: N.Contrapondere.Tert), null);
@@ -59,6 +87,10 @@ static class ProbeGardAnaliza {
             marcataFaraCod.Count == 0
             && marcata.SequenceEqual(["Contul 401 (credit, linia cu Servicii) cere: Cod economic."])
             && Lipsuri(Miscare(liber, furnizor, cuCod, contrapondereCredit: N.Contrapondere.Tert), null).Count == 0);
+        var marcataAltFel = Lipsuri(Miscare(liber, furnizor, cuCod, peCredit: gestiune, contrapondereCredit: N.Contrapondere.Tert), null);
+        Verifica("C111-D4: pe contrapondere, felul unui repartitor prezent se judecă — " + string.Join(" | ", marcataAltFel),
+            marcataAltFel.SequenceEqual(["Contul 401 (credit, linia cu Servicii) cere: Repartitor de felul Partener (primit: Gestiune)."])
+            && Lipsuri(Miscare(liber, furnizor, cuCod, peCredit: partener, contrapondereCredit: N.Contrapondere.Tert), null).Count == 0);
 
         var axe = new (DimensiuneFlags Flag, string Nume, N.Analiza Cu)[] {
             (DimensiuneFlags.CodFunctional, "Cod funcțional", N.Analiza.Fara with { CodFunctional = Guid.NewGuid() }),

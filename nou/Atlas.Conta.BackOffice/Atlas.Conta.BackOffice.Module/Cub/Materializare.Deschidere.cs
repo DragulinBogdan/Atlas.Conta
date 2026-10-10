@@ -58,7 +58,7 @@ public static partial class Materializare {
         var idConturi = solduri.Select(s => s.Cont).Concat(loturi.Select(l => l.Cont))
             .Concat(partide.Select(p => p.Cont)).Distinct().ToArray();
         var conturi = os.GetObjectsQuery<Cont>().Where(c => idConturi.Contains(c.ID))
-            .Select(c => new { c.ID, c.UrmarestePartide, c.Simbol, c.DimensiuniObligatorii }).ToDictionary(c => c.ID);
+            .Select(c => new { c.ID, c.UrmarestePartide, c.Simbol, c.DimensiuniObligatorii, c.FeluriRepartitor }).ToDictionary(c => c.ID);
         var conturiStoc = os.GetObjectsQuery<TipMaterial>().Where(t => t.Clasa.Natura == NaturaClasa.Stoc && t.ContImplicitId != null)
             .Select(t => t.ContImplicitId!.Value).Distinct().ToHashSet();
         if (conturi.Count != idConturi.Length) RefuzaDeschidere("Cont inexistent.");
@@ -133,8 +133,9 @@ public static partial class Materializare {
             VerificaMasura(p.ValoareValuta, N.Scara.Bani);
             if (c.Valuta == Guid.Empty || (c.Valuta == null && p.ValoareValuta != 0))
                 RefuzaDeschidere("Valuta și suma în valută sunt incompatibile.");
-            GardAnaliza.VerificaLatura(conturi[c.Cont].Simbol, conturi[c.Cont].DimensiuniObligatorii,
-                GardAnaliza.Dimensiuni(c.Repartitor?.Id, c.Produs, c.Analiza),
+            var cont = conturi[c.Cont];
+            GardAnaliza.VerificaLatura(new(cont.Simbol, cont.DimensiuniObligatorii, cont.FeluriRepartitor),
+                c.Repartitor, false, GardAnaliza.Dimensiuni(c.Produs, c.Analiza),
                 null, c.Latura.ToString(), "deschidere", lipsuri);
         }
         if (lipsuri.Count > 0) RefuzaDeschidere(string.Join("\n", lipsuri));

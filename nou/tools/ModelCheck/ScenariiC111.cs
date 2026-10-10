@@ -12,7 +12,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 
 /// <summary>Catalogul `docs/nucleu/scenarii/C111.md`: formele coordonatelor din C111-D5 și schimbările S1–S14.</summary>
 static class ScenariiC111 {
-    static readonly string[] Comune = ["citiri", "stoc", "suport", "deschidere", "nir"];
+    static readonly string[] Comune = ["citiri", "stoc", "suport", "deschidere", "nir", "feluri"];
     // Faptul fiscal și SAF-T sunt ale profilului privat.
     static readonly string[] NumaiPrivat = ["decont", "avans", "tva-explicit", "tva-partener", "saft", "pozitie"];
 
@@ -60,6 +60,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             case "pozitie": CazPozitie(); break;
             case "deschidere": CazDeschidere(); break;
             case "nir": CazNir(); break;
+            case "feluri": CazFeluri(); break;
             default: throw new ArgumentOutOfRangeException(nameof(caz), caz, null);
         }
     }
@@ -784,13 +785,66 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         }
 
         var cont = Cont(clarificare);
-        var flaguri = CuSpatiu(os => os.GetObjectByKey<Cont>(cont).DimensiuniObligatorii);
-        Comanda(os => { os.GetObjectByKey<Cont>(cont).DimensiuniObligatorii = flaguri | DimensiuneFlags.Repartitor; os.CommitChanges(); });
+        var feluri = CuSpatiu(os => os.GetObjectByKey<Cont>(cont).FeluriRepartitor);
+        Comanda(os => { os.GetObjectByKey<Cont>(cont).FeluriRepartitor = FeluriRepartitor.Partener; os.CommitChanges(); });
         try {
             var (_, faraTert, _) = Constatat(null, null);
             Refuza("SC-C111-14", () => Opereaza(faraTert), "Repartitor");
             FaraEfecte("SC-C111-14", faraTert);
         }
-        finally { Comanda(os => { os.GetObjectByKey<Cont>(cont).DimensiuniObligatorii = flaguri; os.CommitChanges(); }); }
+        finally { Comanda(os => { os.GetObjectByKey<Cont>(cont).FeluriRepartitor = feluri; os.CommitChanges(); }); }
+    }
+
+    // ───────────────────────── SC-C111-30: felurile de repartitor declarate de cont (S6) ─────────────────────────
+
+    void CazFeluri() {
+        var declarate = CuSpatiu(os => os.GetObjectsQuery<Cont>().Where(c => c.FeluriRepartitor != FeluriRepartitor.Nedeclarat)
+            .Select(c => new { c.Simbol, c.FeluriRepartitor }).ToList().ToDictionary(c => c.Simbol, c => c.FeluriRepartitor));
+        const FeluriRepartitor Optional = FeluriRepartitor.Partener | FeluriRepartitor.Niciunul;
+        Verifica("SC-C111-30", $"seed-ul declară felurile numai pe bugetar: {declarate.Count} conturi",
+            Privat ? declarate.Count == 0
+                : declarate.Count == 20
+                    && declarate["552.00.00"] == FeluriRepartitor.ContPropriu
+                    && declarate["462.01.09"] == (FeluriRepartitor.Partener | FeluriRepartitor.Angajat)
+                    && declarate["437.01.00"] == Optional && declarate["437.02.00"] == Optional
+                    && declarate["803.00.01"] == Optional && declarate["401.01.00"] == FeluriRepartitor.Partener);
+
+        var terti = ContScena("-FT", c => c.FeluriRepartitor = FeluriRepartitor.Partener);
+        var optional = ContScena("-FO", c => c.FeluriRepartitor = Optional);
+        var mandat = ContScena("-FM", c => c.FeluriRepartitor = FeluriRepartitor.ContPropriu);
+        var liber = ContScena("-FL");
+        var casa = CuSpatiu(os => os.GetObjectsQuery<ContPropriu>().Single(c => c.Cod == "CASA").ID);
+
+        void Deschide(Guid? peMandat) => Comanda(os => {
+            using var tx = TranzactieComanda.Incepe(os);
+            C.Materializare.Deschide(os, Ianuarie,
+                [new(mandat, Debit, 10) { Repartitor = peMandat }, new(optional, Debit, 5), new(liber, Credit, 15)], [], []);
+            os.CommitChanges(); tx.Commit();
+        });
+        int Deschideri() => CuSpatiu(os => os.GetObjectsQuery<C.Tranzactie>().Count(t => t.Fel == N.FelTranzactie.Deschidere && t.Data == Ianuarie));
+        Refuza("SC-C111-30", () => Deschide(null), "cere: Repartitor.");
+        Refuza("SC-C111-30", () => Deschide(Furnizor), "Repartitor de felul ContPropriu (primit: Partener)");
+        Verifica("SC-C111-30", "deschiderile refuzate nu lasă nimic în cub", Deschideri() == 0);
+        if (Trece("SC-C111-30", "deschiderea cu contul propriu pe contul de mandat și fără repartitor pe contul care admite lipsa",
+                () => Deschide(casa)))
+            Randuri("SC-C111-30", "deschiderea: contul propriu pe mandat, nimic pe contul care admite lipsa",
+                CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere
+                    && p.Data == Ianuarie).ToList()),
+                new(mandat, Debit, 10, Repartitor: casa), new(optional, Debit, 5), new(liber, Credit, 15));
+
+        var peTert = NotaPe(Ianuarie, terti, liber, 10, repartitorDebit: Furnizor);
+        if (Trece("SC-C111-30", "nota cu terț pe contul care declară partener", () => Opereaza(peTert.Id)))
+            Postari("SC-C111-30", peTert.Id, Operare, Ianuarie,
+                new(terti, Debit, 10, Repartitor: Furnizor, Linie: peTert.Linii[0].Id, Economic: Economic),
+                new(liber, Credit, 10, Repartitor: Loc, Linie: peTert.Linii[0].Id, Economic: Economic));
+        foreach (var (cont, nume) in new[] { (terti, "partener"), (optional, "partener sau niciunul") }) {
+            var peLoc = NotaPe(Ianuarie, cont, liber, 10);
+            Refuza("SC-C111-30", () => Opereaza(peLoc.Id), "Repartitor de felul Partener (primit:");
+            FaraEfecte("SC-C111-30", peLoc.Id);
+        }
+        var optionalCuTert = NotaPe(Ianuarie, optional, liber, 10, repartitorDebit: Furnizor);
+        Trece("SC-C111-30", "nota cu terț pe contul care admite și lipsa", () => Opereaza(optionalCuTert.Id));
+        var peLiber = NotaPe(Ianuarie, liber, liber, 10);
+        Trece("SC-C111-30", "contul care nu declară feluri nu judecă repartitorul", () => Opereaza(peLiber.Id));
     }
 }

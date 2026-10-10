@@ -1,6 +1,6 @@
 # C111 — coordonatele postării: contract
 
-**Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q14
+**Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q16
 (2026-10-10). Pasul 0 e făcut. Review-ul advers Codex al contractului
 (C111-R1…R16) e reconciliat mai jos, în trei runde; amendamentul 1 e retras. Pașii 1 și 1b
 sunt făcuți. Codex a închis review-ul de contract (2026-10-10,
@@ -143,9 +143,10 @@ Gardul rămâne `GardAnaliza`. Regulile lui:
 - mutările și transformările rămân în afara gardului (D9-r1).
 
 `ContFapt.CereRepartitor` se derivă din mulțime. Seed-ul bugetar declară cele
-20 de conturi: 552.00.00 = cont propriu (hotărât); 462.01.09, 437 și 803 se
-hotărăsc la pasul 3 (111-r2); restul după tabelul din pasul 0 §5. Seed-ul
-privat nu declară nimic, ca azi.
+20 de conturi: 552.00.00 = cont propriu (hotărât); 462.01.09 = partener și
+angajat, 437.01.00, 437.02.00 și 803.00.01 = partener sau niciunul
+(C111-Q15, 111-r2); restul după tabelul din pasul 0 §5. Seed-ul privat nu
+declară nimic, ca azi.
 
 Probe la pasul 3: 552 la deschidere cu repartitor absent, extern și cont
 propriu; un cont cu mulțime vidă; SC-PLT-09 și SC-INC-09 pe gardul nou.
@@ -227,6 +228,13 @@ Orice schimbare în afara listei oprește pasul (D9).
 | S13 | partenerul fiscal e cel numit de politica de TVA și pe capătul cu partidă ori pe contul care cere repartitor; azi `Terti.Capat` scrie acolo terțul documentului (C111-R16) | citirea fiscală și D394, numai când politica nu numește latura terțului: cu sursă `Explicit` sau `TipMaterial` baza trece la „fără partener”, cu latura internă la „contrapartida nu e partener”. Pe cele șase politici din seed latura numită e chiar terțul documentului, deci nu se schimbă nimic |
 | S14 | poziția fără fișă a imobilizărilor nu mai are partenerul în cheie: e cont, repartitor, produs, valută, analiză (C111-Q12); detaliile sub tabel | gardul `POZITIE_FARA_FISA_NEGATIVA`, suportul și disponibilul de nominalizare ale PIF; postările PIF nu mai poartă furnizorul suportului |
 
+**S6, în detaliu** (pasul 3). Înainte, contul cu flag era mulțumit de orice
+repartitor, deci și de locul notei, care e intern. Pe bugetar, nota contabilă
+pe un cont de terți (401.01.00, 411.01.01 și celelalte care declară numai
+feluri externe) fără partener pe linie e acum refuzată. Scenele care foloseau
+un asemenea cont drept contrapartidă generică trec, pe bugetar, pe 542.01.00,
+cont cu partide care nu declară feluri; pe privat rămân neschimbate.
+
 **S14, în detaliu** (C111-Q12; găsită la implementarea pasului 2). Azi cheia
 poziției include partenerul postării. Pe piciorul intern el există numai
 când achiziția are fapt fiscal, iar PIF îl copiază de pe suport pe postările
@@ -282,7 +290,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | invariantul inversei fiscale nu verifică partenerul | intră: invariantul 5 |
 | custodia | nu intră; TR-D9b, identitatea lotului |
 | cele 152 de postări pe 419, 408, 4091 | S2; locul rămâne în `Loc` (C111-Q8) |
-| 552.00.00 și 462.01.09 pe bugetar | 552 hotărât; 462.01.09 la pasul 3 (111-r2) |
+| 552.00.00 și 462.01.09 pe bugetar | 552 hotărât; 462.01.09, 437 și 803 hotărâte la pasul 3 (C111-Q15) |
 | criteriul de formă al partidelor (F27-r16, F28-r1) | TR-D9b |
 
 ## C111-D9 — Pașii, verificarea, regula de oprire
@@ -293,7 +301,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 1 | poarta, pe forma de azi: în afara `Cub/Citiri`, a scriitorului (`Cub/Randuri.cs`) și a entității, nimeni nu numește `Postare.Partener` sau `Postare.Gestiune`; cititorii expun identitățile din D10; o probă pe sursă păzește regula | făcut 2026-10-10: [`c111-pas1-poarta.md`](c111-pas1-poarta.md) |
 | 1b | așteptările înaintea implementării: fișierul de catalog cu formele din D5 și secțiunea analitică a amprentelor | făcut 2026-10-10: [`c111-pas1b-asteptari.md`](c111-pas1b-asteptari.md) |
 | 2 | forma nouă, atomic: nucleul, schema, scrierea, declaranții, cititorii din poartă, atomii și snapshot-ul, `PostareVizual`, mutanții și scrierile brute din ModelCheck; bazele recreate | implementat și verificat pe catalog 2026-10-10: [`c111-pas2-forma-noua.md`](c111-pas2-forma-noua.md); lista probată în browser; rămân bazele de dezvoltare |
-| 3 | `Cont.FeluriRepartitor`, gardul, seed-ul bugetar | ModelCheck pe ambele profiluri; `--dump-metadata`; S6 și probele din D4 |
+| 3 | `Cont.FeluriRepartitor`, gardul, seed-ul bugetar | făcut 2026-10-10: [`c111-pas3-feluri.md`](c111-pas3-feluri.md) |
 | 4 | S7 și S8 | scenariu propriu pe fiecare |
 | 5 | S9: contrapartida prin pereche | fișa contului pe HTTP; cifra de timp față de pasul 0, pe aceeași bază |
 | 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | import pe ianuarie: regulile de oprire 1 și 2; `INV-CUB` verde |
@@ -426,6 +434,13 @@ pasul 2, după regula de oprire 3.
 | C111-Q12 | Poziția fără fișă păstrează partenerul în cheie, citit prin suport, sau îl pierde? | **îl pierde** (S14); furnizorul rămâne recuperabil prin suport și prin documentul de achiziție |
 | C111-Q13 | „Sold parteneri” numai cu terți lasă pe dinafară sumele fără terț; raportul se mai închide cu balanța? | **un rând „fără terț” pe cont**, cu tot ce nu e pe un repartitor extern; precizează C111-Q6 |
 | C111-Q14 | Piciorul intern cu partidă și fără fapt fiscal își pierde locul (găsit la pasul 2, pe regularizarea de avans fără TVA)? | **nu**: `LocFiscal` devine `Loc` și se scrie oriunde titularul unei partide scoate locul din repartitor, cu sau fără fapt fiscal; semnalul se păstrează cât timp nu atinge cardinalitatea soldului. Amendează 111 (b) |
+
+A doua serie (2026-10-10, seara):
+
+| Id | Întrebarea | Tranșarea |
+|---|---|---|
+| C111-Q15 | 111-r2: felurile pe conturile bugetare fără dovadă în legacy? | 462.01.09 = **partener și angajat**; 437.01.00 și 437.02.00 = **partener sau niciunul**; 803.00.01 = **partener sau niciunul** |
+| C111-Q16 | Când se recreează bazele de dezvoltare? | **după pasul 3**, o singură dată, pe schema cu `FeluriRepartitor` |
 
 ## Review-ul advers Codex al contractului (2026-10-10)
 

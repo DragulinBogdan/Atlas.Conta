@@ -35,6 +35,8 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected string Serviciu => Privat ? "628" : "628.00.00";
     protected string ContFurnizor => Privat ? "401" : "401.01.00";
     protected string ContClient => Privat ? "4111" : "411.01.01";
+    // Cont cu partide care nu declară feluri de repartitor: nota fără partener trece pe el (C111-D4).
+    protected string ContPartideLiber => Privat ? "401" : "542.01.00";
     protected DateOnly Ianuarie => new(An, 1, 5);
     protected DateOnly Februarie => new(An, 2, 5);
     int numar;

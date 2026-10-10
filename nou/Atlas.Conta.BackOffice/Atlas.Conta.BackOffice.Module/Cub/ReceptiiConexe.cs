@@ -218,14 +218,14 @@ public static class ReceptiiConexe {
         var postari = propuse.Where(p => p.Coordonate.Contrapondere == N.Contrapondere.Inventar).ToList();
         var ids = postari.Select(p => p.Coordonate.Cont).Distinct().ToList();
         var conturi = os.GetObjectsQuery<Cont>().Where(c => ids.Contains(c.ID))
-            .Select(c => new { c.ID, c.Simbol, c.DimensiuniObligatorii }).ToDictionary(c => c.ID);
+            .Select(c => new { c.ID, c.Simbol, c.DimensiuniObligatorii, c.FeluriRepartitor }).ToDictionary(c => c.ID);
         var angajamente = doc.Detalii.ToDictionary(d => d.ID, d => d.AngajamentId);
         var erori = new List<string>();
         foreach (var p in postari) {
             var c = p.Coordonate;
             var cont = conturi[c.Cont];
-            GardAnaliza.VerificaLatura(cont.Simbol, cont.DimensiuniObligatorii,
-                GardAnaliza.Dimensiuni(c.Repartitor?.Id, c.Produs, c.Analiza),
+            GardAnaliza.VerificaLatura(new(cont.Simbol, cont.DimensiuniObligatorii, cont.FeluriRepartitor),
+                c.Repartitor, false, GardAnaliza.Dimensiuni(c.Produs, c.Analiza),
                 p.Cauza.Linie is Guid id ? angajamente.GetValueOrDefault(id) : null,
                 c.Latura.ToString(), p.Cauza.Linie?.ToString(), erori);
         }

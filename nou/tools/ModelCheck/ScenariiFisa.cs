@@ -15,15 +15,15 @@ sealed class ScenariiFisa(Func<IObjectSpace> deschide, Action<string, bool> chec
             var n = Nota(new(An, luna, zi), new LinieNtcScena(debit, credit, valoare));
             Opereaza(n.Id); return n;
         }
-        var initial = N(1, 2, Serviciu, ContFurnizor, 100);
+        var initial = N(1, 2, Serviciu, ContPartideLiber, 100);
         Comanda(os => {
             Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os);
             Verifica("SC-CIT-23", "cubul acoperă registrul: invarianții trec", true);
         });
-        var debit = N(2, 3, Serviciu, ContFurnizor, 60);
-        var credit = N(2, 5, ContFurnizor, Serviciu, 25);
+        var debit = N(2, 3, Serviciu, ContPartideLiber, 60);
+        var credit = N(2, 5, ContPartideLiber, Serviciu, 25);
         var acelasi = N(2, 7, Serviciu, Serviciu, 40);
-        var invers = N(2, 9, ContFurnizor, Serviciu, 10);
+        var invers = N(2, 9, ContPartideLiber, Serviciu, 10);
         Storneaza(invers.Id, new(An, 2, 11));
         var start = new DateOnly(An, 2, 1); var end = new DateOnly(An, 2, 12);
         Comanda(os => {
@@ -71,7 +71,7 @@ sealed class ScenariiFisa(Func<IObjectSpace> deschide, Action<string, bool> chec
                 jurnal.All(r => r.DocumentTip == "NTC" && !string.IsNullOrEmpty(r.DocumentNumar)));
         });
         var multi = Nota(new(An, 2, 13), new LinieNtcScena(Serviciu, Stoc, 20),
-            new LinieNtcScena(ContFurnizor, Stoc, 30));
+            new LinieNtcScena(ContPartideLiber, Stoc, 30));
         Opereaza(multi.Id);
         Comanda(os => {
             var db = ((EFCoreObjectSpace)os).DbContext;
@@ -83,10 +83,10 @@ sealed class ScenariiFisa(Func<IObjectSpace> deschide, Action<string, bool> chec
         Verifica("SC-CIT-21", "două contrapartide, fără ID unic inventat", CuSpatiu(os => {
             var r = ContabilProiectii.FisaCont(os, Cont(Stoc), new(An, 2, 13), new(An, 2, 13)).ToList();
             return r.Count == 2 && r.All(p => p.ContrapartidaId == null
-                && p.ContrapartidaSimbol == string.Join(", ", new[] { Serviciu, ContFurnizor }.Order()))
+                && p.ContrapartidaSimbol == string.Join(", ", new[] { Serviciu, ContPartideLiber }.Order()))
                 && r[^1].SoldCurent == -50;
         }));
-        var anulata = N(2, 15, Serviciu, ContFurnizor, 15);
+        var anulata = N(2, 15, Serviciu, ContPartideLiber, 15);
         Verifica("SC-CIT-22", "nota operată are două postări", CuSpatiu(os =>
             ContabilProiectii.RegistruJurnal(os).Count(r => r.DocumentId == anulata.Id) == 2));
         Anuleaza(anulata.Id);

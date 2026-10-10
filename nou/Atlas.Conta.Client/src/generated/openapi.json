@@ -320984,6 +320984,9 @@
           "DimensiuniObligatorii": {
             "$ref": "#/components/schemas/DimensiuneFlags"
           },
+          "FeluriRepartitor": {
+            "$ref": "#/components/schemas/FeluriRepartitor"
+          },
           "RolTert": {
             "$ref": "#/components/schemas/RolTertCont"
           },
@@ -322285,7 +322288,6 @@
       "DimensiuneFlags": {
         "enum": [
           "Niciuna",
-          "Repartitor",
           "Material",
           "CodFunctional",
           "CodEconomic",
@@ -324575,6 +324577,18 @@
           "Total",
           "Oglinda",
           "Extern"
+        ],
+        "type": "string"
+      },
+      "FeluriRepartitor": {
+        "enum": [
+          "Nedeclarat",
+          "Niciunul",
+          "Partener",
+          "Angajat",
+          "Gestiune",
+          "ContPropriu",
+          "UnitateInterna"
         ],
         "type": "string"
       },

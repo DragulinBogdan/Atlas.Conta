@@ -540,12 +540,29 @@ antetului → materialul din lot. Postarea explicită a liniei are prioritate.
 În validarea clasificației bugetare, angajamentul poate satisface cerința de
 cod economic. (25f, 32c, 33a)
 
-`Cont.DimensiuniObligatorii` se verifică pe mișcările contabile ale
-contractului (`Cub/GardAnaliza`): gardul judecă numai capătul. Repartitorul
-cerut e repartitorul de sold al capătului (`Capat.Repartitor`), de orice
-fel; latura documentului nu se citește. Capătul marcat cu contrapondere e
-scutit numai de prezența repartitorului; celelalte dimensiuni i se judecă
-integral (C111-D4). Aceeași judecată se aplică postărilor de deschidere.
+`Cont.DimensiuniObligatorii` și `Cont.FeluriRepartitor` se verifică pe
+mișcările contabile ale contractului (`Cub/GardAnaliza`): gardul judecă numai
+capătul, iar cele două familii sunt independente. Repartitorul judecat e
+repartitorul de sold al capătului (`Capat.Repartitor`); latura documentului
+nu se citește. Contul declară felurile admise (C111-D4):
+
+| `FeluriRepartitor` | Gardul |
+|---|---|
+| mulțime vidă (`Nedeclarat`) | nu judecă repartitorul |
+| feluri, fără `Niciunul` | cere repartitor, de unul din feluri |
+| feluri, cu `Niciunul` | admite lipsa; un repartitor prezent e de unul din feluri |
+
+Un repartitor de alt fel e refuzat cu „Repartitor de felul … (primit: …)”
+(S6). Capătul marcat cu contrapondere e scutit numai de prezența
+repartitorului: felul unuia prezent și celelalte dimensiuni i se judecă
+integral. Aceeași judecată se aplică postărilor de deschidere. Seed-ul
+bugetar declară 20 de conturi, cele cu defalcarea R din CPLAN: partener pe
+furnizori, clienți, debitori și conturile de finanțare; partener și angajat
+pe 462.01.01 și 462.01.09; cont propriu pe 552.00.00; partener sau niciunul
+pe 437.01.00, 437.02.00 și 803.00.01 (111-r2). Seed-ul privat nu declară
+nimic. Urmarea pe bugetar: nota contabilă pe un cont de terți fără partener
+pe linie e refuzată, fiindcă latura fără repartitor explicit ia locul notei,
+care e intern.
 Materialul e produsul; restul e analiza postării; angajamentul liniei ține
 loc de cod economic. Mutările (BTR, PIF), transformările (ASM) și cartea
 fiscală nu intră. Recepția liniei de stoc a facturii e păzită la operarea
@@ -999,7 +1016,8 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   - **Piciorul de terț** îl pune un singur helper, `Declaratii/Terti.Capat`,
     pe capătul pe care i-l dă apelantul: titularul și partida pe un cont cu
     `UrmarestePartide`; terțul singur pe capătul fără repartitor al unui cont
-    care cere `Repartitor` (`ContFapt.CereRepartitor`). Capătul din cartea
+    care cere repartitor (`ContFapt.CereRepartitor`: contul declară feluri și
+    nu admite lipsa). Capătul din cartea
     fiscală nu primește terț. Terțul e latura externă a documentului; la DEC
     și NTC e repartitorul liniei, iar DEC, NTC, DSC și diferența NIR îl pun
     pe capătul extern necondiționat (T-D13 g).

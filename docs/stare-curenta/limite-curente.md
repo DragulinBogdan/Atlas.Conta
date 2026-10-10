@@ -7,12 +7,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Domeniu și operare
 
-- Analiza obligatorie per cont: gardul cere prezența repartitorului de sold,
-  nu și felul lui. `Cont.FeluriRepartitor` și gardul pe feluri nu există
-  (C111-D4): contul care cere repartitor e mulțumit de orice fel, deci un
-  repartitor de alt fel decât cel firesc contului nu e refuzat (S6). Seed-ul
-  bugetar nu declară feluri, iar 462.01.09, 437 și 803 nu sunt hotărâte
-  (111-r2). Terțul stă pe piciorul de terț numai când contul cere repartitor
+- Felurile de repartitor (C111-D4): numai seed-ul bugetar declară, pe cele
+  20 de conturi cu defalcarea R; 14 dintre ele n-au mișcare în legacy 2026,
+  deci felul lor e din natura contului, nu din date. Pe 461.01.09 angajatul
+  nu e admis (rămas de confirmat). Planul privat nu declară nimic, iar contul
+  nedeclarat nu judecă repartitorul (lumea deschisă, C111-r2). Terțul stă pe
+  piciorul de terț numai când contul cere repartitor
   sau urmărește partide — pe un cont fără flag și fără partide (446 privat)
   rămâne absent. Pe conturile de cheltuieli și venituri terțul nu e axă de
   sold: apare numai ca `PartenerFiscal`, pe postarea cu fapt fiscal. Pe

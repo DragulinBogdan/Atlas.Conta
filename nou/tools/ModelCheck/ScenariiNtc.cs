@@ -28,21 +28,21 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
     }
 
     protected override void Executa() {
-        var d = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100));
+        var d = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 100));
         Verifica("SC-NTC-01", "validare fără refuz", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(d.Id)).Count == 0);
         FaraEfecte("SC-NTC-01", d.Id); Opereaza(d.Id);
-        Postari("SC-NTC-01", d.Id, N.FelTranzactie.Operare, Ianuarie, R(d, 0, Serviciu, ContFurnizor, 100));
+        Postari("SC-NTC-01", d.Id, N.FelTranzactie.Operare, Ianuarie, R(d, 0, Serviciu, ContPartideLiber, 100));
         Storneaza(d.Id, new(An, 1, 20));
-        Postari("SC-NTC-03", d.Id, N.FelTranzactie.Storno, new(An, 1, 20), R(d, 0, Serviciu, ContFurnizor, -100));
+        Postari("SC-NTC-03", d.Id, N.FelTranzactie.Storno, new(An, 1, 20), R(d, 0, Serviciu, ContPartideLiber, -100));
         var amprenta = Amprenta(d.Id);
         Refuza("SC-NTC-03", () => Storneaza(d.Id, new(An, 1, 20)), "Operat");
         Verifica("SC-NTC-03", "storno repetat fără efecte", Amprenta(d.Id) == amprenta);
-        var a = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100)); Opereaza(a.Id); Anuleaza(a.Id);
+        var a = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 100)); Opereaza(a.Id); Anuleaza(a.Id);
         FaraEfecte("SC-NTC-05", a.Id);
-        var m = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100), new LinieNtcScena(Serviciu, ContFurnizor, -25), new LinieNtcScena(ContFurnizor, ContFurnizor, 40));
+        var m = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 100), new LinieNtcScena(Serviciu, ContPartideLiber, -25), new LinieNtcScena(ContPartideLiber, ContPartideLiber, 40));
         Opereaza(m.Id);
         Postari("SC-NTC-02", m.Id, N.FelTranzactie.Operare, Ianuarie,
-            [.. R(m, 0, Serviciu, ContFurnizor, 100), .. R(m, 1, Serviciu, ContFurnizor, -25), .. R(m, 2, ContFurnizor, ContFurnizor, 40)]);
+            [.. R(m, 0, Serviciu, ContPartideLiber, 100), .. R(m, 1, Serviciu, ContPartideLiber, -25), .. R(m, 2, ContPartideLiber, ContPartideLiber, 40)]);
         var stoc = Nota(Ianuarie, new LinieNtcScena(Serviciu, Stoc, 50)); Opereaza(stoc.Id);
         Postari("SC-NTC-14", stoc.Id, N.FelTranzactie.Operare, Ianuarie, R(stoc, 0, Serviciu, Stoc, 50));
         Refuzuri();
@@ -53,10 +53,10 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void Refuzuri() {
         var fara = Nota(Ianuarie);
-        var zero = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 0));
-        var cont = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 10));
+        var zero = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 0));
+        var cont = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 10));
         Comanda(os => { os.GetObjectsQuery<NotaContabilaDetaliu>().Single(l => l.DocumentId == cont.Id).ContDebitId = null; os.CommitChanges(); });
-        var externul = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 10));
+        var externul = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 10));
         Comanda(os => { os.GetObjectByKey<Document>(externul.Id).PredatorId = Furnizor; os.CommitChanges(); });
         foreach (var (doc, cod, mesaj) in new[] { (fara, "LINII_LIPSA", "linie"), (zero, "VALOARE_ZERO", "nenulă"),
                      (cont, "CONT_EXPLICIT_LIPSA", "cont"), (externul, "PREDATOR_NEPOTRIVIT", "PREDATOR_NEPOTRIVIT") }) {
@@ -144,8 +144,8 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         n = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 20, RepartitorCredit: Furnizor)); Opereaza(n.Id);
         SoldPartida("SC-NTC-11", p1, Ianuarie, -100); SoldPartida("SC-NTC-11", P(n.Id, ContFurnizor, Furnizor), Ianuarie, -20);
         Postari("SC-NTC-11", n.Id, N.FelTranzactie.Operare, Ianuarie, R(n, 0, Serviciu, ContFurnizor, 20, uc: P(n.Id, ContFurnizor, Furnizor), pc: Furnizor));
-        var fara = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 100)); Opereaza(fara.Id);
-        Postari("SC-NTC-15", fara.Id, N.FelTranzactie.Operare, Ianuarie, R(fara, 0, ContFurnizor, Serviciu, 100));
+        var fara = Nota(Ianuarie, new LinieNtcScena(ContPartideLiber, Serviciu, 100)); Opereaza(fara.Id);
+        Postari("SC-NTC-15", fara.Id, N.FelTranzactie.Operare, Ianuarie, R(fara, 0, ContPartideLiber, Serviciu, 100));
         SoldPartida("SC-NTC-15", p1, Ianuarie, -100);
     }
 
@@ -199,13 +199,13 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
     }
 
     void PestePerioada() {
-        var p = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100)); Opereaza(p.Id);
-        var c = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100)); Opereaza(c.Id);
-        var tarziu = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100));
+        var p = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 100)); Opereaza(p.Id);
+        var c = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 100)); Opereaza(c.Id);
+        var tarziu = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 100));
         Comanda(os => { os.GetObjectByKey<Document>(tarziu.Id).DataInregistrare = Februarie; os.CommitChanges(); });
         InchideIanuarie(); Refuza("SC-NTC-04", () => Anuleaza(p.Id), "închis");
         Storneaza(p.Id, Februarie);
-        Postari("SC-NTC-04", p.Id, N.FelTranzactie.Storno, Februarie, R(p, 0, Serviciu, ContFurnizor, -100));
+        Postari("SC-NTC-04", p.Id, N.FelTranzactie.Storno, Februarie, R(p, 0, Serviciu, ContPartideLiber, -100));
         NetDocument("SC-NTC-04", p.Id, new(An, 1, 31), 100); NetDocument("SC-NTC-04", p.Id, Februarie, 0);
         var nou = Corecteaza(c.Id); FaraEfecte("SC-NTC-06", nou);
         var corectie = CuSpatiu(os => {
@@ -216,12 +216,12 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
             os.CommitChanges(); return new FacturaScena(nou, [new(l.ID, null, null)]);
         });
         Opereaza(nou);
-        Postari("SC-NTC-06", c.Id, N.FelTranzactie.Storno, Februarie, R(c, 0, Serviciu, ContFurnizor, -100));
-        Postari("SC-NTC-06", nou, N.FelTranzactie.Operare, Februarie, R(corectie, 0, Serviciu, ContFurnizor, 80));
+        Postari("SC-NTC-06", c.Id, N.FelTranzactie.Storno, Februarie, R(c, 0, Serviciu, ContPartideLiber, -100));
+        Postari("SC-NTC-06", nou, N.FelTranzactie.Operare, Februarie, R(corectie, 0, Serviciu, ContPartideLiber, 80));
         NetDocument("SC-NTC-06", c.Id, new(An, 1, 31), 100); NetDocument("SC-NTC-06", c.Id, Februarie, 0);
         NetDocument("SC-NTC-06", nou, Februarie, 80);
         Opereaza(tarziu.Id);
-        Postari("SC-NTC-19", tarziu.Id, N.FelTranzactie.Operare, Februarie, R(tarziu, 0, Serviciu, ContFurnizor, 100));
+        Postari("SC-NTC-19", tarziu.Id, N.FelTranzactie.Operare, Februarie, R(tarziu, 0, Serviciu, ContPartideLiber, 100));
         NetDocument("SC-NTC-19", tarziu.Id, new(An, 1, 31), 0); NetDocument("SC-NTC-19", tarziu.Id, Februarie, 100);
     }
 

@@ -9356,6 +9356,7 @@ export interface components {
             Functie?: string | null;
             Sumator?: boolean;
             DimensiuniObligatorii?: components["schemas"]["DimensiuneFlags"];
+            FeluriRepartitor?: components["schemas"]["FeluriRepartitor"];
             RolTert?: components["schemas"]["RolTertCont"];
             UrmarestePartide?: boolean;
             CategorieStoc?: components["schemas"]["TipStoc"];
@@ -9799,7 +9800,7 @@ export interface components {
             Anaf?: string | null;
         };
         /** @enum {string} */
-        DimensiuneFlags: "Niciuna" | "Repartitor" | "Material" | "CodFunctional" | "CodEconomic" | "SursaFinantare" | "Unitate" | "Proiect" | "CentruCost";
+        DimensiuneFlags: "Niciuna" | "Material" | "CodFunctional" | "CodEconomic" | "SursaFinantare" | "Unitate" | "Proiect" | "CentruCost";
         /** @enum {string} */
         DirectieTva: "Deductibil" | "Colectat";
         DocumentCopilDto: {
@@ -10578,6 +10579,8 @@ export interface components {
         FelDeductibilitate: "PlafonLunar" | "Procent";
         /** @enum {string} */
         FelRandD300: "Operatiuni" | "Total" | "Oglinda" | "Extern";
+        /** @enum {string} */
+        FeluriRepartitor: "Nedeclarat" | "Niciunul" | "Partener" | "Angajat" | "Gestiune" | "ContPropriu" | "UnitateInterna";
         FisaContRand: {
             /** Format: uuid */
             Id?: string;
