@@ -186,7 +186,8 @@ făcuți; review-ul Codex al contractului, C111-R1…R16, închis; pasul 2
 implementat și verificat pe catalog și în browser,
 `docs/nucleu/c111-pas2-forma-noua.md`, cu review-ul Codex al implementării
 corectat, C111-P2-R1 și R2; pasul 3, felurile de repartitor pe cont,
-implementat și verificat, `docs/nucleu/c111-pas3-feluri.md`),
+implementat și verificat, `docs/nucleu/c111-pas3-feluri.md`; pasul 4, S7 și
+S8, făcut, `docs/nucleu/c111-pas4-s7-s8.md`; urmează pasul 5),
 înaintea TR-D9b; TR-D9b rămâne felia unităților, pe forma nouă
 a postării.
 Felia fiscală

@@ -22,13 +22,9 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   Cerința de material citește numai produsul lotului, nu și materialul fix al
   unei reguli de contare. BTR, ASM și PIF nu sunt păzite (D9-r1).
   (`docs/nucleu/c111-coordonate-contract.md`, D4; `tr-d9-pas2-probe.md`, G2)
-- Coordonatele postării (C111) sunt pe forma nouă, dar trei schimbări numite
-  în contract nu sunt făcute:
-  - piciorul contului de tranzit al viramentului (581) poartă contul propriu
-    pe ambele picioare (S7);
-  - descărcarea de gestiune cu primitor intern marchează contracantitatea
-    „terț”, nu „consum” (S8);
-  - contrapartida nu se citește prin pereche (S9; vezi mai jos, D9-r4).
+- Coordonatele postării (C111) sunt pe forma nouă, dar o schimbare numită în
+  contract nu e făcută: contrapartida nu se citește prin pereche (S9; vezi
+  mai jos, D9-r4).
 - La decont, partenerul fiscal e latura numită de politica de TVA, adică
   titularul; furnizorul de pe bon nu există pe postare. (C111-r1)
 - Partenerul fiscal lipsește când politica de TVA nu numește o latură (sursă

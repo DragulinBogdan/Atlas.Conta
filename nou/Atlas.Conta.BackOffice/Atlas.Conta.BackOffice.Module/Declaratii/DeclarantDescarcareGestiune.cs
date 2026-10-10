@@ -82,8 +82,8 @@ public sealed class DeclarantDescarcareGestiune : IDeclarant {
                 },
                 new N.Capat {
                     Cont = contare.ContDebit,
-                    // N-D4: marfa părăsește patrimoniul — capătul de cost e al clientului.
-                    Contrapondere = N.Contrapondere.Tert,
+                    // N-D4: marfa părăsește patrimoniul spre client; spre un primitor intern e consum (C111 S8).
+                    Contrapondere = doc.Primitor.Parte == Parte.Extern ? N.Contrapondere.Tert : N.Contrapondere.Consum,
                     // T-D13 (g): terțul nominalizat pe capătul extern.
                     Repartitor = doc.Primitor.Parte == Parte.Extern ? doc.Primitor.Coordonata : null,
                     Produs = lot.ProdusId,

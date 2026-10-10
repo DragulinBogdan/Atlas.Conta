@@ -1062,8 +1062,9 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   defalcare; plata născută din factură numește partida sursei prin
   `Fifo.Nominalizeaza` cât ține restul ei, excedentul pe partida proprie
   ca a doua mișcare (linia se sparge, inclusiv piciorul de bani); fără sursă,
-  partida proprie (avans); viramentul cu ambele capete pe contul propriu al
-  documentului. Laturile sunt ale contractului clasei (T-D13: PLT
+  partida proprie (avans); la virament contul propriu stă numai pe capătul
+  al cărui cont vine de la latură, iar capătul de tranzit n-are repartitor
+  (C111 S7). Laturile sunt ale contractului clasei (T-D13: PLT
   `Propriu → Extern | Propriu`, INC `Extern | Propriu → Propriu`), verificat
   înaintea declarantului; declarantul refuză doar laturile identice.
 - **FCT** (`DeclarantFacturaIntrare`): fiecare linie postează netul pe
@@ -1337,10 +1338,11 @@ ajustarea istorică exact; corecția calculează din nou. Contractul detaliat:
 - **DSC** (`DeclarantDescarcareGestiune`): o mișcare per linie — lotul iese
   din gestiunea predatoare pe contul de stoc al regulii (`6xx = 3xx` per
   Tip), evaluat cu `Evaluare.Iesire` pe raportul curent în secvența liniilor
-  (ca BCS), iar costul intră cu `+q` pe postarea marcată `Contrapondere` =
-  terț, fără unitate (090 (g)) și cu `Repartitor` = primitorul când acesta e
-  de parte externă (T-D13 (g); fără partidă — 607 n-are rol de terț). Marcajul
-  e „terț” și când primitorul e intern; atunci postarea n-are repartitor. Aceeași formă cu sau fără factura-sursă. Lotul e ales de
+  (ca BCS), iar costul intră cu `+q` pe postarea marcată cu contrapondere,
+  fără unitate (090 (g)). Cu primitor extern marcajul e „terț”, iar
+  `Repartitor` e primitorul (T-D13 (g); fără partidă — 607 n-are rol de terț).
+  Cu primitor intern marcajul e „consum”, iar postarea n-are repartitor
+  (C111 S8). Aceeași formă cu sau fără factura-sursă. Lotul e ales de
   `DescarcareService` (pin-uri, apoi FIFO), declarantul nu realocă.
 - **Transferul INC → FCL** e activ prin `Materializare.Imperecheaza` fără
   nicio schimbare: referința e a stingătorului (4111), plafonul e restul FCL
@@ -1609,8 +1611,9 @@ operare, în aceeași formă ca orice refuz al declarației (S-r11).
   fiecare pe contul lui. (S-D16)
 - Tipul de document nu mai declară latura contului propriu: declarantul de
   trezorerie o alege structural, piciorul propriu e cel al cărui cont vine de
-  la repartitorul intern, iar la virament ambele picioare sunt ale contului
-  propriu numit de latura care nu e tranzit. (S-D7, D9-A10, D9-D6)
+  la repartitorul intern, iar la virament piciorul de tranzit (581) rămâne fără
+  repartitor, deci soldul lui se închide pe o singură cheie.
+  (S-D7, D9-A10, D9-D6; C111 S7)
 - Linia fără regulă de contare e refuzată (`REGULA_CONTARE_LIPSA`) acolo unde
   motorul vechi o sare tăcut: valoarea ei ar dispărea din contare.
 

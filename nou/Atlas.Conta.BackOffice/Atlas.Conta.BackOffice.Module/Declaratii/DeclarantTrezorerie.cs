@@ -156,17 +156,16 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                 + "liniile de natură Virament.", null));
     }
 
-    // B-D8 pct. 9: gestiunea stă pe piciorul PROPRIU — cel al cărui cont îl ia
-    // regula de la repartitorul intern; piciorul de terț rămâne fără ea. La
-    // virament ambele picioare sunt ale aceluiași cont propriu, iar regula îl
-    // numește prin latura care nu e contul de tranzit (`GetContPropriuId` de azi).
+    // B-D8 pct. 9: contul propriu stă pe piciorul PROPRIU — cel al cărui cont îl ia
+    // regula de la repartitorul intern; piciorul de terț rămâne fără el. La
+    // virament piciorul de tranzit rămâne și el fără (C111 S7).
     static (N.Repartitor? Debit, N.Repartitor? Credit) Proprii(DocumentFapt doc, RegulaContareFapt regula, bool esteVirament) {
         var peDebit = Numit(doc, regula.SursaContDebit);
         var peCredit = Numit(doc, regula.SursaContCredit);
-        if (esteVirament) {
-            var propriu = (peDebit is null ? peCredit : peCredit is null ? peDebit : null)?.Coordonata;
-            return (propriu, propriu);
-        }
+        if (esteVirament)
+            return peDebit is null ? (null, peCredit?.Coordonata)
+                : peCredit is null ? (peDebit.Coordonata, null)
+                : (null, null);
         var intern = doc.Predator.Parte == Parte.Propriu ? doc.Predator
             : doc.Primitor.Parte == Parte.Propriu ? doc.Primitor
             : null;

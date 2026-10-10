@@ -12,7 +12,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 
 /// <summary>Catalogul `docs/nucleu/scenarii/C111.md`: formele coordonatelor din C111-D5 și schimbările S1–S14.</summary>
 static class ScenariiC111 {
-    static readonly string[] Comune = ["citiri", "stoc", "suport", "deschidere", "nir", "feluri"];
+    static readonly string[] Comune = ["citiri", "stoc", "suport", "deschidere", "nir", "feluri", "virament"];
     // Faptul fiscal și SAF-T sunt ale profilului privat.
     static readonly string[] NumaiPrivat = ["decont", "avans", "tva-explicit", "tva-partener", "saft", "pozitie"];
 
@@ -61,6 +61,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             case "deschidere": CazDeschidere(); break;
             case "nir": CazNir(); break;
             case "feluri": CazFeluri(); break;
+            case "virament": CazVirament(); break;
             default: throw new ArgumentOutOfRangeException(nameof(caz), caz, null);
         }
     }
@@ -381,7 +382,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         Comanda(os => { os.GetObjectByKey<Document>(dsc.Id).PrimitorId = Loc; os.CommitChanges(); });
         if (Trece("SC-C111-16", "DSC cu primitor intern", () => Opereaza(dsc.Id)))
             Postari("SC-C111-16", dsc.Id, Operare, Ianuarie,
-                new(Cont("607"), Debit, 10, 1, Produs: marfa.Produs, Linie: dsc.Linii[0].Id, Contrapondere: N.Contrapondere.Tert),
+                new(Cont("607"), Debit, 10, 1, Produs: marfa.Produs, Linie: dsc.Linii[0].Id, Contrapondere: N.Contrapondere.Consum),
                 new(Cont("371"), Credit, 10, -1, Magazie, marfa.Lot, marfa.Produs, Linie: dsc.Linii[0].Id, Spatiu: N.Spatiu.Stoc));
     }
 
@@ -793,6 +794,48 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             FaraEfecte("SC-C111-14", faraTert);
         }
         finally { Comanda(os => { os.GetObjectByKey<Cont>(cont).FeluriRepartitor = feluri; os.CommitChanges(); }); }
+    }
+
+    // ───────────────────────── SC-C111-21: viramentul intern, tranzitul fără repartitor (S7) ─────────────────────────
+
+    void CazVirament() {
+        // Conturile proprii ale scenei, pe conturile celor din seed: purja le găsește după laturi.
+        var (casa, contCasa, banca, contBanca, vir, tranzit) = CuSpatiu(os => {
+            var tip = os.GetObjectsQuery<TipMaterial>().Where(t => t.Cod == "VIR").Select(t => new { t.ID, t.ContImplicitId }).Single();
+            var destinatie = Privat ? "BANCA" : "TREZ";
+            var conturi = os.GetObjectsQuery<ContPropriu>().Where(c => c.Cod == "CASA" || c.Cod == destinatie)
+                .Select(c => new { c.Cod, c.ContImplicitId }).ToList().ToDictionary(c => c.Cod, c => c.ContImplicitId.Value);
+            ContPropriu Propriu(string sufix, Guid cont) {
+                var c = os.CreateObject<ContPropriu>(); c.Cod = Marcaj + sufix; c.Denumire = c.Cod; c.ContImplicitId = cont;
+                return c;
+            }
+            var sursa = Propriu("-VIR-A", conturi["CASA"]); var tinta = Propriu("-VIR-B", conturi[destinatie]);
+            os.CommitChanges();
+            return (sursa.ID, conturi["CASA"], tinta.ID, conturi[destinatie], tip.ID, tip.ContImplicitId.Value);
+        });
+        var plecare = CuSpatiu(os => {
+            var doc = os.CreateObject<Plata>(); doc.Data = Ianuarie; doc.PredatorId = casa; doc.PrimitorId = banca;
+            var l = os.CreateObject<DocumentTrezorerieDetaliu>(); l.Document = doc; l.Pozitie = 1;
+            l.TipMaterialId = vir; l.Valoare = 50; l.CodEconomicId = Economic;
+            os.CommitChanges(); return new FacturaScena(doc.ID, [new(l.ID, null, null)]);
+        });
+        if (!Trece("SC-C111-21", "plecarea viramentului", () => Opereaza(plecare.Id))) return;
+        Postari("SC-C111-21", plecare.Id, Operare, Ianuarie,
+            new(tranzit, Debit, 50, Linie: plecare.Linii[0].Id, Economic: Economic),
+            new(contCasa, Credit, 50, Repartitor: casa, Linie: plecare.Linii[0].Id, Economic: Economic));
+        var (sosire, linieSosire) = CuSpatiu(os => {
+            var id = os.GetObjectsQuery<Document>().Single(d => d.DocumentSursaId == plecare.Id).ID;
+            return (id, os.GetObjectsQuery<DocumentDetaliu>().Single(d => d.DocumentId == id).ID);
+        });
+        if (!Trece("SC-C111-21", "sosirea viramentului", () => Opereaza(sosire))) return;
+        Postari("SC-C111-21", sosire, Operare, Ianuarie,
+            new(contBanca, Debit, 50, Repartitor: banca, Linie: linieSosire, Economic: Economic),
+            new(tranzit, Credit, 50, Linie: linieSosire, Economic: Economic));
+        var peTranzit = CuSpatiu(os => ContabilProiectii.Balanta(os, new(An, 1, 1), Sfarsit, analitic: true)
+            .Where(b => b.ContId == tranzit).ToList());
+        Verifica("SC-C111-21", "tranzitul are un singur rând analitic, fără repartitor, închis: rulaj 50 pe debit și pe credit, sold zero",
+            peTranzit.Count == 1 && peTranzit[0].RepartitorId == null && peTranzit[0].RulajDebit == 50 && peTranzit[0].RulajCredit == 50
+            && peTranzit[0].SoldFinalDebit == 0 && peTranzit[0].SoldFinalCredit == 0);
     }
 
     // ───────────────────────── SC-C111-30: felurile de repartitor declarate de cont (S6) ─────────────────────────
