@@ -275,8 +275,12 @@ def genereaza_index(decizii, readme):
     bloc.append("<!-- /gen:index -->")
     bloc_text = "\n".join(bloc)
     if "<!-- gen:index -->" in text:
-        return re.sub(r"<!-- gen:index -->.*?<!-- /gen:index -->", lambda _: bloc_text, text, flags=re.S)
-    return re.sub(r"\| # \| Decizia \| Data \| Stare \|\n\|---\|---\|---\|---\|\n(?:\|.*\|\n?)+", lambda _: bloc_text + "\n", text)
+        text = re.sub(r"<!-- gen:index -->.*?<!-- /gen:index -->", lambda _: bloc_text, text, flags=re.S)
+    else:
+        text = re.sub(r"\| # \| Decizia \| Data \| Stare \|\n\|---\|---\|---\|---\|\n(?:\|.*\|\n?)+", lambda _: bloc_text + "\n", text)
+    cap, _, coada = text.partition("<!-- /gen:index -->")
+    coada = re.sub(r"^\| \d+ \| \[[^\n]*(?:\n(?!\||\n)[^\n]*)*\n?", "", coada, flags=re.M)
+    return cap + "<!-- /gen:index -->" + coada
 
 
 def main():
