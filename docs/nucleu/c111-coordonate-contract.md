@@ -168,19 +168,21 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 
 | Pas | Ce | Verde când |
 |---|---|---|
-| 0 | linia de bază pe main: import Flax ianuarie, amprentele D300, D394 și SAF-T, balanța pe cont × lună, integrala ModelCheck pe ambele profiluri | cifrele sunt scrise în documentul pasului |
-| 1 | poarta unică, pe forma de azi: tot ce citește `Partener` sau `Gestiune` din cub trece prin cititori numiți, iar scenele ModelCheck prin ei | integrala identică cu pasul 0, nicio schimbare de schemă |
+| 0 | linia de bază pe main: import Flax ianuarie, amprentele (`--amprente`), raportul SAF-T S, integrala ModelCheck pe ambele profiluri | făcut 2026-10-10: [`c111-pas0-linia-de-baza.md`](c111-pas0-linia-de-baza.md) |
+| 1 | poarta unică, pe forma de azi: tot ce citește `Partener` sau `Gestiune` din cub trece prin cititori numiți, iar scenele ModelCheck prin ei | integrala cu aceleași numărători ca pasul 0 (3.578 / 4.859 OK), nicio schimbare de schemă |
 | 2 | forma nouă, atomic: nucleul, schema, scrierea, declaranții, cititorii din poartă, snapshot-ul, `PostareVizual`; bazele recreate | suita nucleului; catalogul verde pe ambele profiluri, cu așteptările schimbate numai pe S1–S5; `INV-CUB` |
 | 3 | `Cont.FeluriRepartitor`, gardul, seed-ul bugetar | ModelCheck pe ambele profiluri; `--dump-metadata`; S6 probat cu scenariu |
 | 4 | S7 și S8 | scenariu propriu pe fiecare |
 | 5 | S9: contrapartida prin pereche | fișa contului pe HTTP; cifra de timp față de pasul 0, pe aceeași bază |
-| 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | import pe ianuarie: amprentele și balanța identice cu pasul 0; `INV-CUB` verde |
+| 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | import pe ianuarie: regula de oprire 1; `INV-CUB` verde |
 | 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | drift zero; `refuzuri.ps1`; review advers |
 
 **Regula de oprire.**
 
-1. Balanța pe cont × lună și amprentele D300, D394 și SAF-T sunt identice cu
-   pasul 0, în catalog și pe import. O diferență oprește pasul.
+1. Pe import, amprentele (balanța, stocul, partidele, D300, D394), raportul
+   de reconciliere și raportul SAF-T S sunt identice cu pasul 0. În catalog,
+   nicio așteptare de sumă nu se schimbă. O diferență oprește pasul. SAF-T L
+   nu se generează pe ianuarie 2025, deci îl țin numai scenele din catalog.
 2. O schimbare de comportament care nu e în D6 oprește pasul și cere
    amendament aprobat.
 3. Un declarant care nu se poate scrie pe regula din D5 fără o coordonată în

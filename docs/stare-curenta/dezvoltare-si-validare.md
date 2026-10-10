@@ -695,6 +695,17 @@ Un singur cititor se re-măsoară pe baza scării fără a o reface: procesul-co
 Așa s-a măsurat corectura îmbinării partidelor
 (`docs/nucleu/tr-d9-pas5c-imbinare-partide.md` §2).
 
+### Amprentele unei baze (`--amprente`)
+
+`ModelCheck --amprente <bază> <an> <lună> <director>` scrie sumele unei baze
+pe chei naturale, ca două baze cu identificatori diferiți să se poată compara
+la `diff`: balanța pe cont × lună, stocul pe cont × produs × gestiune × lună,
+partidele pe cont × partener × data deschiderii, D300 și D394 pe luna cerută.
+`amprente.txt` ține numărul de rânduri și SHA-256 pe fiecare secțiune. Numai
+citire; rulează pe orice bază de pe instanța uneltelor, inclusiv pe una de
+import. Două importuri ale aceluiași binar dau amprente identice
+(`docs/nucleu/c111-pas0-linia-de-baza.md`). (C111-D9)
+
 ### Îmbinările pe chei nulabile ale cubului
 
 Unitatea, partenerul și documentul sunt nulabile pe `Postare`. O îmbinare

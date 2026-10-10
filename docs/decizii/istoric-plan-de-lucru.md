@@ -1120,3 +1120,10 @@ detaliat în jurnal):
   fiscal nu se persistă (111-r1); 552.00.00 declară cont propriu; 110-r3 e
   închisă. Contractul e pin-uit pe Q1, Q2 și Q4; pașii 0–1 sunt aprobați,
   pasul 2 așteaptă review-ul Codex. `docs/nucleu/c111-coordonate-contract.md`.
+
+- **2026-10-10 — C111, pasul 0: linia de bază.** Integrala **3.578 / 4.859
+  OK**. Import Flax pe ianuarie în 7 min 53 s, 81.774 de postări, 10
+  verificări picate. Comanda `ModelCheck --amprente` scrie sumele pe chei
+  naturale; două importuri dau amprente identice, iar trei postări modificate
+  de mână sunt prinse pe toate secțiunile. SAF-T L nu se generează pe
+  ianuarie 2025. `docs/nucleu/c111-pas0-linia-de-baza.md`.

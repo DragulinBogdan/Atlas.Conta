@@ -107,6 +107,17 @@ var connectionString = Conexiunea(
 
 var s = new Suita(args, profil, connectionString, filtruScenarii);
 
+if (args.Contains("--amprente")) {
+    var i = Array.IndexOf(args, "--amprente");
+    if (args.Length <= i + 4 || !int.TryParse(args[i + 2], out var anAmprente) || !int.TryParse(args[i + 3], out var lunaAmprente)) {
+        Console.WriteLine("Folosire: ModelCheck --amprente <bază> <an> <lună> <director>");
+        Environment.ExitCode = 2;
+        return;
+    }
+    Amprente.Scrie(Conexiunea(args[i + 1]), anAmprente, lunaAmprente, Path.GetFullPath(args[i + 4]));
+    return;
+}
+
 // X-D2 — `ModelCheck --probe-sursa [--lista]`: numai probele pe sursă, fără bază.
 if (args.Contains("--probe-sursa")) {
     ProbeCulegere.VerificaSursa(s.Check);
