@@ -1148,3 +1148,10 @@ detaliat în jurnal):
   Martorul A → B: cele cinci secțiuni vechi nu văd un repartitor intern
   schimbat, secțiunea analitică îl vede. Catalogul `scenarii/C111.md` are 22
   de rânduri specificate. `docs/nucleu/c111-pas1b-asteptari.md`.
+
+- **2026-10-10 — C111: runda a doua a review-ului Codex, reconciliată.**
+  Codex a închis R1–R8 și R11, a ținut R9 deschisă și a adăugat R13–R15.
+  Owner-ul a hotărât C111-Q9…Q11: terțul comercial SAF-T e numai repartitorul
+  extern (S11), locul fiscal vine din laturile tipate ale documentului (S12),
+  decontul cu terț pe linie și partidă trece după S10. Contractul, 111 (b) și
+  (c) și catalogul (27 de rânduri) sunt aduse la zi. Niciun cod schimbat.

@@ -123,7 +123,7 @@ scena ține blocajul scrierii, cele două comenzi intră pe rând în coada lui
 | LDI | listă de inventar | pas 5 | [LDI.md](LDI.md) | Magazie/Marfuri pe ambele profiluri; Folosinta în gestiune reală pe lanțul FCT/NIR/BTR/BCS/LDI, inversări, corecție și istoric (093); Custodie explicit neacoperită |
 | NIR | recepție manuală și conex | pas 5 | [NIR.md](NIR.md) | verificat pe ambele profiluri: ciclul complet, stingeri, dependenți, Folosinta/Marfuri; conexul sursei migrate nu dublează cubul |
 | — | `Deschidere` | pas 6 | [DESCHIDERE.md](DESCHIDERE.md) | detaliere fără dublare (094), refuz atomic, unicitate, stingere/anulare/storno sub blocare comună; analiza/valuta păstrate la intrare, stingerea în valută neacoperită; cititorii de producție rămân TR-D8 |
-| — | coordonatele postării (transversal) | C111 | [C111.md](C111.md) | 22 de rânduri pe formele din C111-D5; specificate înaintea codului, neimplementate; martorul amprentei verificat |
+| — | coordonatele postării (transversal) | C111 | [C111.md](C111.md) | 27 de rânduri pe formele din C111-D5 și pe S10–S12; specificate înaintea codului, neimplementate; martorul amprentei verificat |
 | DEC | decont | înainte de TR-D8 (095) | [DEC.md](DEC.md) | declarație contabilă/fiscală și partide pe angajat (096), verificări independente |
 | PIF/CAS/AMO | imobilizări | pe cub (095, 097) | [IMO.md](IMO.md) | SC-IMO-01…25 verzi pe ambele profiluri; fișa citită din cub; review advers restant |
 

@@ -1,8 +1,8 @@
 # C111 — coordonatele postării: contract
 
-**Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q8
+**Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q11
 (2026-10-10). Pasul 0 e făcut. Review-ul advers Codex al contractului
-(C111-R1…R12) e reconciliat mai jos; amendamentul 1 e retras. Pașii 1 și 1b
+(C111-R1…R15) e reconciliat mai jos, în două runde; amendamentul 1 e retras. Pașii 1 și 1b
 sunt făcuți; pasul 2 așteaptă ca Codex să închidă review-ul pe textul reconciliat.
 **Bază:** main `1cc9d93`. **Decizia:**
 [111](../decizii/111-repartitor-unic-si-registre-tipate.md), aprobată
@@ -52,7 +52,7 @@ intră".
 | `Repartitor` | `Repartitor?` = `(Guid Id, FelRepartitor Fel)` | coordonata de sold; nul = niciunul |
 | `Contrapondere` | `Contrapondere?` = terț, consum, inventar, transformare | nul = postare în evidență |
 | `PartenerFiscal` | `Guid?` | numai pe postarea cu fapt fiscal |
-| `LocFiscal` | `Guid?` | locul intern al faptului fiscal; numai pe postarea cu fapt fiscal (C111-Q8) |
+| `LocFiscal` | `Guid?` | latura internă a documentului cu fapt fiscal; pe orice postare cu fapt fiscal și numai pe ea (C111-Q8, Q10) |
 
 `GestiuniVirtuale` dispare. Forma e cea a prototipului `8c36600`, adusă peste
 main. `FelRepartitor` e unul singur, în nucleu; cel din
@@ -74,13 +74,18 @@ ordinalele.
 1. cantitatea nemarcată cere lot și repartitor intern;
 2. lotul cere repartitor intern; partida cere repartitor extern, egal cu
    titularul ei;
-3. `PartenerFiscal` și `LocFiscal` apar numai cu fapt fiscal;
+3. `PartenerFiscal` și `LocFiscal` apar numai cu fapt fiscal; faptul fiscal
+   cere `LocFiscal`, iar `PartenerFiscal` poate lipsi, ca azi;
 4. contraponderea transformării n-are repartitor, unitate, valoare sau fapt
    fiscal;
 5. inversa fiscală poartă același `PartenerFiscal` și același `LocFiscal` ca
    originalul.
 
-Nicio formă refuzată azi nu devine acceptată.
+Nicio formă refuzată azi nu devine acceptată, cu o excepție numită
+(C111-Q11): decontul cu fapt fiscal și cu terț pe linie, altul decât
+titularul, pe un cont care urmărește partide. Azi îl refuză nucleul
+(`UNITATE_NEPOTRIVITA`), fiindcă partenerul fiscal e scris peste titularul
+partidei; după S10 cele două stau separat și forma trece.
 
 ## C111-D3 — Felul repartitorului
 
@@ -92,7 +97,7 @@ propriu).
 Postările recitite din cub pentru nucleu își iau felul din același cititor.
 Căile care recitesc:
 
-- împerecherea și desfacerea transferului (`Cub/Materializare.cs`);
+- stornoul, împerecherea și desfacerea transferului (`Cub/Materializare.cs`);
 - stingerea deschiderii (`Materializare.StingereDeschidere.cs`);
 - poziția fără fișă (`Materializare.PozitieFaraFisa.cs`);
 - verificarea retragerii de lot (`Citiri/Loturi.cs`);
@@ -166,12 +171,26 @@ schimbă față de azi; se schimbă numai unde stă.
 Pe piciorul marcat, terțul rămâne `Repartitor` unde e azi `Partener`
 (diferența de la NIR, DSC cu primitor extern, returul de la client).
 
-`PartenerFiscal` și `LocFiscal` au un singur scriitor, `Fiscal.CuFapt`:
-partenerul e latura numită de `PoliticaTva.SursaContrapartida`, locul e
-latura opusă (`Fiscal.GestiuneaInterna`). `LocFiscal` se scrie pe orice
-postare cu fapt fiscal, și când e egal cu `Repartitor`, ca niciun cititor să
-nu aleagă între două coloane. Capătul de taxă pe care decontul îl
-reconstruiește își păstrează amândouă atributele.
+`PartenerFiscal` și `LocFiscal` au un singur scriitor, `Fiscal.CuFapt`.
+
+- **Partenerul fiscal** e latura numită de `PoliticaTva.SursaContrapartida`.
+  O sursă care nu numește o latură (`Explicit`, `TipMaterial`) lasă
+  partenerul nul, ca azi; D394 îl raportează la „fără partener”.
+- **Locul fiscal** e latura internă a documentului, citită din faptele
+  tipate ale laturilor (`RepartitorFapt.Parte`), nu din politică (C111-Q10).
+  Cele șase tipuri cu fapt fiscal au, prin `Document.Laturi()`, exact o
+  latură internă: FCT, DEC, RDC și DVI pe primitor, FCL și RLF pe predator.
+  `Fiscal.GestiuneaInterna` iese. Un document cu fapt fiscal fără exact o
+  latură internă rămâne fără loc și e refuzat de invariantul 3.
+- Locul e al documentului, nu al piciorului: baza și taxa aceluiași document
+  poartă același loc, și când repartitorul de sold al bazei e altul
+  (decontul cu repartitor intern pe linie, SC-C111-23).
+- `LocFiscal` se scrie pe orice postare cu fapt fiscal, și când e egal cu
+  `Repartitor`, ca niciun cititor să nu aleagă între două coloane.
+- Piciorul de taxă al direcției are ca repartitor de sold locul fiscal.
+  Capătul de taxă pe care decontul îl reconstruiește își păstrează amândouă
+  atributele.
+- `INV-CUB` verifică felul locului: `LocFiscal` e repartitor intern.
 
 ## C111-D6 — Schimbările de comportament, nominal
 
@@ -182,13 +201,15 @@ Orice schimbare în afara listei oprește pasul (D9).
 | S1 | o singură axă analitică, repartitorul de sold, în locul celor două de azi (`Partener` și `Gestiune`); detaliile sub tabel | balanța, fișa, soldul pe parteneri, snapshot-ul, filtrele HTTP |
 | S2 | piciorul de terț cu partidă și fapt fiscal nu mai apare la filtrul pe locul intern; locul rămâne pe postare, ca `LocFiscal` | balanța și fișa filtrate pe repartitor, pentru 419, 408, 4091 |
 | S3 | `Furnizor` și `Client` devin „terț” | lista postărilor, cititorii de contrapondere, scenele ModelCheck |
-| S4 | refuzuri noi ale nucleului: partener fiscal fără fapt; cantitate nemarcată fără lot | numai pe un declarant greșit |
+| S4 | refuzuri noi ale nucleului: partener sau loc fiscal fără fapt; fapt fiscal fără loc; cantitate nemarcată fără lot | numai pe un declarant greșit sau pe un tip cu fapt fiscal fără exact o latură internă |
 | S5 | lista postărilor arată `Repartitor`, `Partener fiscal`, `Loc fiscal`, `Contrapondere` în locul celor două coloane | `PostareVizual` |
 | S6 | gardul refuză un repartitor de alt fel decât cele admise de cont | conturile care declară (bugetar) |
 | S7 | piciorul contului de tranzit al viramentului nu mai poartă contul propriu | analitica lui 581 |
 | S8 | DSC cu primitor intern marchează „consum”, nu „terț” | lista postărilor |
 | S9 | fișa contului și registrul jurnal citesc contrapartida prin pereche | cont unic pe rândurile cu pereche; închide D9-r4 |
-| S10 | la decont, repartitorul liniei nu mai e suprascris de partenerul fiscal pe piciorul cu fapt fiscal | analitica piciorului de cheltuială al decontului; citit din cod, de probat |
+| S10 | la decont, repartitorul liniei nu mai e suprascris de partenerul fiscal pe piciorul cu fapt fiscal; forma cu terț pe linie, altul decât titularul, pe cont cu partide nu mai e refuzată (C111-Q11) | analitica piciorului de cheltuială al decontului; acceptarea formei. Atingerea prin culegere e citită în `Api/Dec/DecontApply.cs:143`; de operat la pasul 2 |
+| S11 | în SAF-T, terțul comercial al postării pe un cont cu rol e repartitorul ei extern, fără rezervă pe partenerul fiscal (C111-Q9); detaliile sub D10 | registrul, facturile, Customers și Suppliers, numai pe un cont cu rol comercial care nu urmărește partide |
+| S12 | locul fiscal și repartitorul piciorului de taxă se iau din latura internă tipată a documentului, nu din politica de TVA (C111-Q10) | la decont, baza cu repartitor intern pe linie are alt loc decât repartitorul ei; în afara seed-ului, taxa pe FCL sau RLF cu sursă `Explicit` nu mai poartă terțul ca loc |
 
 **S1, în detaliu** (C111-Q6):
 
@@ -238,7 +259,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 0 | linia de bază pe main: import Flax ianuarie, amprentele (`--amprente`), raportul SAF-T S, integrala ModelCheck pe ambele profiluri | făcut 2026-10-10: [`c111-pas0-linia-de-baza.md`](c111-pas0-linia-de-baza.md) |
 | 1 | poarta, pe forma de azi: în afara `Cub/Citiri`, a scriitorului (`Cub/Randuri.cs`) și a entității, nimeni nu numește `Postare.Partener` sau `Postare.Gestiune`; cititorii expun identitățile din D10; o probă pe sursă păzește regula | făcut 2026-10-10: [`c111-pas1-poarta.md`](c111-pas1-poarta.md) |
 | 1b | așteptările înaintea implementării: fișierul de catalog cu formele din D5 și secțiunea analitică a amprentelor | făcut 2026-10-10: [`c111-pas1b-asteptari.md`](c111-pas1b-asteptari.md) |
-| 2 | forma nouă, atomic: nucleul, schema, scrierea, declaranții, cititorii din poartă, atomii și snapshot-ul, `PostareVizual`, mutanții și scrierile brute din ModelCheck; bazele recreate | suita nucleului; catalogul verde pe ambele profiluri, cu așteptările schimbate numai pe S1–S5 și S10; `INV-CUB` |
+| 2 | forma nouă, atomic: nucleul, schema, scrierea, declaranții, cititorii din poartă, atomii și snapshot-ul, `PostareVizual`, mutanții și scrierile brute din ModelCheck; bazele recreate | suita nucleului; catalogul verde pe ambele profiluri, cu așteptările schimbate numai pe S1–S5 și S10–S12; `INV-CUB` |
 | 3 | `Cont.FeluriRepartitor`, gardul, seed-ul bugetar | ModelCheck pe ambele profiluri; `--dump-metadata`; S6 și probele din D4 |
 | 4 | S7 și S8 | scenariu propriu pe fiecare |
 | 5 | S9: contrapartida prin pereche | fișa contului pe HTTP; cifra de timp față de pasul 0, pe aceeași bază |
@@ -249,7 +270,8 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 postări fără scriitorul produsului se mută semantic, nu mecanic:
 `ScenariiConsumatori.cs:97`, `AcoperireInvarianti.Perechi.cs:58` și `:83`,
 `AcoperireInvarianti.cs:108`, `ScenariiStocCub.cs:82`,
-`ScenariiPartideCub.cs:421`, `ScenariiBtr.cs:34`. Fiecare mutant rămâne
+`ScenariiPartideCub.cs:421`, `ScenariiBtr.cs:34`, plus capătul fiscal
+construit direct în `ScenariiDvi.cs:236`, care primește loc fiscal. Fiecare mutant rămâne
 probă de domeniu, cu codul lui de refuz (`CITIRE_PARTIDE_INCOMPLETE` și
 celelalte); așteptarea nu se lărgește la „orice refuz”. `ScaraVolum.sql`
 scrie postări cu listă explicită de coloane și e indisponibil între pasul 2 și
@@ -265,12 +287,18 @@ pasul 6.
 2. Amprenta analitică (cont × repartitor × lună, cont × partener fiscal ×
    lună, cont × loc fiscal × lună, cont × contrapondere × lună) se calculează pe baza de referință prin
    derivarea din D5 și pe forma nouă direct. Diferențele admise sunt numai
-   S7, S8 și S10, numite rând cu rând, și locul fiscal al postărilor care
-   azi n-au gestiune (`c111-pas1b-asteptari.md`).
+   S7, S8, S10 și S12, numite rând cu rând, și locul fiscal al postărilor
+   care azi n-au gestiune (`c111-pas1b-asteptari.md`). Derivarea e valabilă
+   numai pe o bază fără decont cu fapt fiscal: pe forma de azi repartitorul
+   liniei de decont nu se poate reconstitui din postare. Baza de referință
+   n-are niciun decont; decontul îl țin scenele numerice din catalog.
 3. Fiecare formă din D5 are în catalog o așteptare cu repartitorul concret,
    partenerul și locul fiscal, contraponderea, unitatea și perechea, plus soldurile
    filtrate pe identități distincte, dinamic și din snapshot. Formele cerute:
-   DEC simplu, DEC cu TVA, DEC cu taxare inversă, NTC cu terț fără partidă,
+   DEC simplu, DEC cu TVA, DEC cu taxare inversă, DEC cu repartitor intern pe
+   linie diferit de locul documentului, DEC cu terț pe linie cu și fără
+   partidă, FCL și RLF cu politica de TVA pe sursă `Explicit`, contul cu rol
+   comercial fără partide în SAF-T, NTC cu terț fără partidă,
    trezoreria cu conturi explicite, diferențele NIR, IMO cu suport istoric pe
    alt loc decât laturile documentului, deschiderea, stornoul peste mai multe
    tranzacții cu parteneri fiscali diferiți și perechi locale suprapuse.
@@ -294,10 +322,11 @@ Clasificarea e pe expresie și pe domeniul ei, nu pe fișier.
 | Identitatea | Domeniul | Azi | După |
 |---|---|---|---|
 | titularul partidei | postarea cu `FelUnitate.Partida` | `Partener` | `Repartitor` |
-| terțul piciorului | postarea contabilă a unui document, cu sau fără partidă (`Citiri/Plati`) | `Partener` | `Repartitor`, când e extern |
+| terțul piciorului | postarea contabilă a unui document, cu sau fără partidă (`Citiri/Plati`; SAF-T: Payments, numai evenimente fără fapt fiscal) | `Partener` | `Repartitor`, când e extern |
 | partenerul fiscal | postarea cu fapt fiscal | `Partener` | `PartenerFiscal` |
 | locul fiscal | postarea cu fapt fiscal | `Gestiune` | `LocFiscal` |
-| terțul comercial | postarea pe un cont cu `RolTert` (SAF-T: registrul, facturile, plățile, Customers și Suppliers) | `Partener` | `Repartitor` extern, altfel `PartenerFiscal` |
+| terțul comercial | postarea pe un cont cu `RolTert` (SAF-T: registrul și facturile) | `Partener` | `Repartitor`, când e extern; fără rezervă pe `PartenerFiscal` (S11) |
+| cheia soldului de terț | atomul contabil pe un cont cu `RolTert` (SAF-T: Customers și Suppliers) | `Partener`, ca repartitor al atomului | `Repartitor` (S1): aceeași axă ca terțul comercial |
 | locul lotului | postarea cu lot | `Gestiune` | `Repartitor` |
 | repartitorul intern fără lot | locul fișei, poziția fără fișă | `Gestiune` | `Repartitor` |
 | contraponderea | postarea cu gestiune virtuală | `Gestiune` | `Contrapondere` |
@@ -309,6 +338,21 @@ analitică; e o reuniune, scrisă ca atare. SAF-T citește și atomii
 (`SaftProiectii.PeCub.cs:186`), deci se reverifică la pasul 2, nu numai la
 pasul 1. Probele pasului 1: terț fără partidă, picior intern cu fapt fiscal,
 cont cu rol comercial.
+
+**S11, în detaliu** (C111-Q9, C111-R9). Registrul, facturile și soldurile
+Customers și Suppliers citesc aceeași axă, repartitorul de sold. Pe seed nu
+se schimbă nimic: orice cont cu rol comercial urmărește partide
+(`ProfilPrivat.cs:364`), deci postarea lui are ca repartitor titularul. Pe un
+cont cu rol comercial care nu urmărește partide, configurat în bază:
+
+- piciorul de decont cu terț T pe linie, altul decât titularul E, iese pe T
+  în registru și în sold; azi poartă E, scris peste;
+- piciorul intern cu fapt fiscal nu mai are terț comercial: în registru iese
+  cu avertismentul `TertFaraPartener`, iar soldul lui cade în `Neincluse`, cu
+  `RepartitorNePartener`; azi amândouă ies pe partenerul fiscal.
+
+Payments rămân pe `Citiri/Plati`, pe terțul piciorului extern, și refuză ca
+azi evenimentele cu fapt fiscal. Probele pasului 2: SC-C111-26 și SC-C111-27.
 
 Scenele ModelCheck care compară rânduri întregi (`ScenaDocumente.cs:373`,
 `:414`) rămân pe rândul complet la pasul 1 și își rescriu așteptările la
@@ -326,6 +370,9 @@ pasul 2, după regula de oprire 3.
 | C111-Q6 | Filtrele HTTP după S1? | **un singur filtru**: `repartitorId` pe repartitorul de sold; `gestiuneId` iese; „Sold parteneri” numai terți |
 | C111-Q7 | La decont, când linia numește alt terț decât partenerul fiscal? | **amândoi, separat** (S10) |
 | C111-Q8 | Locul intern al faptului fiscal se scrie pe postare? (reconfirmare: premisa „nu-l citește nimeni” era falsă, filtrul `gestiuneId` îl citește) | **da**, `LocFiscal` pe orice postare cu fapt fiscal; nu intră în filtrul balanței; amendează 111 (b), închide 111-r1 |
+| C111-Q9 | În SAF-T, cine e terțul comercial când postarea n-are repartitor extern? | **numai repartitorul extern**, fără rezervă pe partenerul fiscal; registrul, facturile și soldurile citesc aceeași axă (S11) |
+| C111-Q10 | De unde se ia locul fiscal: din politica de TVA sau din laturile documentului? | **din laturile tipate ale documentului** (S12); `Fiscal.GestiuneaInterna` iese |
+| C111-Q11 | Decontul cu TVA și cu terț pe linie, pe cont cu partide, refuzat azi, trece după S10? | **trece**; excepția e numită în D2 |
 
 ## Review-ul advers Codex al contractului (2026-10-10)
 
@@ -350,6 +397,23 @@ a fost verificată în cod înaintea dispoziției.
 
 Invariantul 5 se verifică pe `InversaDin`, cum cere răspunsul la întrebarea
 despre storno (D2).
+
+### Runda a doua (2026-10-10)
+
+Mesajul: `comunicari/2026-10-10-1459-…-c111-reconciliere-si-loc-fiscal-review.md`.
+Codex închide R1–R8 și R11, lasă R10 și R12 fără obiect, ține R9 deschisă și
+adaugă R13–R15. Fiecare contraexemplu a fost recitit în cod; niciunul n-a
+fost operat.
+
+| Id | Constatarea | Dispoziția |
+|---|---|---|
+| R9 | terțul comercial nu e neutru după S10; soldurile Customers și Suppliers au altă sursă decât registrul | acceptată: C111-Q9, S11; D10 separă terțul comercial, cheia soldului și Payments |
+| R13 | la decont, locul din antet poate diferi de gestiunea nenulă a postării, când linia numește alt repartitor intern | acceptată: locul e al documentului (111 (b)); diferența e S12, cu scena SC-C111-23 |
+| R14 | `GestiuneaInterna` nu garantează un loc intern pe orice politică admisă | acceptată: C111-Q10, locul din laturile tipate; SC-C111-25 |
+| R15 | S10 face acceptată o formă refuzată azi | acceptată: C111-Q11, excepția din D2; SC-C111-04 și SC-C111-24 |
+| R6, completare | stornoul lipsea din lista recitirilor | adăugat în D3 |
+| R5, completare | 111 (c) spune „scutește postările marcate”, mai larg decât D4 | 111 (c) precizată: scutirea e numai de prezență |
+| R7, completare | derivarea amprentei analitice nu acoperă decontul fiscal | domeniul e restrâns în regula de oprire 2; baza de referință n-are decont, numărat |
 
 ## Amendamentul 1 (propus 2026-10-10; retras 2026-10-10, C111-Q5)
 

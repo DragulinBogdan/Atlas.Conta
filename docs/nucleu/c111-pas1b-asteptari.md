@@ -35,11 +35,26 @@ Pe import, față de fișierele de mai sus:
   deci rândurile lor din `analitic-fiscal` trec de pe locul „-” pe un loc
   numit. Comparația se face și cu locul scos din cheie, unde trebuie să iasă
   identică.
-- **S7, S8, S10.** Flax n-are decont în ianuarie, deci S10 nu apare.
+- **S7, S8, S10, S12.** Baza n-are niciun decont, iar politicile ei de TVA
+  sunt cele șase din seed, deci S10 și S12 nu apar.
   Viramentele și descărcările cu primitor intern n-au fost numărate pe baza
   de referință; diferențele lor, dacă apar, se numesc rând cu rând la pasul 6.
 
 Orice altă diferență oprește pasul.
+
+## Domeniul derivării (C111-R7, completare)
+
+Derivarea repartitorului de sold pune „fără repartitor” pe orice postare cu
+fapt fiscal, fără partidă și fără gestiune reală. E corect pentru
+autocolectarea facturii și greșit pentru decont, unde D5 cere repartitorul
+liniei. Pe forma de azi repartitorul liniei de decont nu se poate
+reconstitui din postare, fiindcă partenerul fiscal e scris peste el.
+
+Baza de referință n-are niciun decont. Cele 15.206 postări cu fapt fiscal
+sunt pe FCL (8.224), FCT (6.444), RDC (488) și RLF (50); cele 722 fără
+gestiune sunt pe FCT (716) și RLF (6). Amprenta derivată e oracol numai
+pentru această bază. Decontul îl țin scenele numerice SC-C111-01…04, 23 și
+24.
 
 ## Martorul A → B (C111-R7)
 
@@ -64,3 +79,7 @@ specificate și neimplementate; SC-C111-22 e martorul de mai sus. Trei rânduri
 numesc un fapt de stabilit la implementare: latura internă a decontului,
 atingerea lui S10 prin culegere și scena care produce stornoul peste mai
 multe tranzacții.
+
+După runda a doua a review-ului Codex catalogul are 27 de rânduri: primele
+două fapte sunt citite în cod, iar SC-C111-23…27 acoperă S11, S12 și
+excepția din D2.

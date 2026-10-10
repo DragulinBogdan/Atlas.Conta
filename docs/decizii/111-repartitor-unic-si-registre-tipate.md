@@ -44,6 +44,9 @@ persistă separat: e latura internă a documentului.
 pe orice postare cu fapt fiscal, scris de aceeași politică de TVA din latura
 internă a documentului. Nu e coordonată de sold și nu intră în filtrele
 balanței. Propoziția de dinainte rămâne ca istoric.
+*Precizat 2026-10-10 (C111-Q10):* latura internă e cea din contractul
+laturilor tipului de document, nu latura opusă contrapartidei din politică;
+politica numește numai partenerul.
 
 (c) **Gestiunile virtuale dispar.** Capătul din afara evidenței și
 contraponderea transformării primesc un marcaj explicit pe postare (terț,
@@ -53,6 +56,8 @@ a uitat lotul de o contracantitate legitimă. Furnizor și Client se contopesc
 identificatori fără rând. Marcajul e axă independentă de repartitor: nu cere
 și nu interzice un terț pe același picior. Gardul felurilor per cont scutește
 postările marcate.
+*Precizat 2026-10-10 (C111-D4):* scutirea e numai de prezență; felul unui
+repartitor prezent se judecă, iar gardul NIR rămâne.
 
 (d) **Capătul celălalt al mișcării se citește prin cheia de pereche**
 (D9-A2), nu prin coloane de flux pe postare. Materializarea capetelor se
@@ -157,6 +162,13 @@ hotărât din nou: locul se persistă în blocul fiscal, pe orice postare cu fap
 fiscal ((b), amendată). 111-r1 se închide. Balanța rămâne pe o singură axă,
 deci avansurile de pe 419, 408 și 4091 nu apar la filtrul pe repartitorul
 intern.
+
+**După runda a doua a review-ului Codex, tot 2026-10-10** (C111-Q9…Q11).
+Locul fiscal se ia din laturile tipate ale documentului, nu din politica de
+TVA. În SAF-T, terțul comercial al unui cont cu rol e repartitorul extern al
+postării, fără rezervă pe partenerul fiscal, ca registrul și soldurile de
+nomenclator să citească aceeași axă. Decontul cu TVA și cu terț pe linie,
+pe cont cu partide, refuzat azi de suprascrierea partenerului, trece.
 
 ## Context
 
