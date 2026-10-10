@@ -4,8 +4,10 @@
 bazele de dezvoltare de recreat și lista de postări de probat în browser.
 Contractul: [C111](c111-coordonate-contract.md), D2–D7 și D10.
 
-Urmele, neversionate: `run-verificari/20261010-201708-710/` (integrala
-finală), `run-verificari/20261010-191728-066/` (`--scenarii C111`).
+Urmele, neversionate: `run-verificari/20261010-210057-804/` (integrala
+finală, după review-ul Codex), `run-verificari/20261010-201708-710/`
+(integrala dinaintea lui), `run-verificari/20261010-191728-066/`
+(`--scenarii C111`).
 
 ## Ce s-a schimbat
 
@@ -39,16 +41,17 @@ finală), `run-verificari/20261010-191728-066/` (`--scenarii C111`).
 | Probă | Rezultat |
 |---|---|
 | Suita nucleului | 199 din 199 |
-| Integrala ModelCheck, bugetar | 3.625 OK, 0 FAIL |
-| Integrala ModelCheck, privat | 5.029 OK, 0 FAIL |
+| Integrala ModelCheck, bugetar | 3.631 OK, 0 FAIL |
+| Integrala ModelCheck, privat | 5.035 OK, 0 FAIL |
 | `--scenarii C111`, ambele profiluri | verde |
 | Drift OpenAPI | zero |
 | Metadata clientului | la zi |
 
 Integrala a rulat pe baze create din migrația nouă
 (`Atlas.Conta.BackOffice.C111P2`, `Atlas.Conta.ModelCheck.Privat.C111P2`).
-Față de pasul 1 (3.579 / 4.860) sunt 46, respectiv 169 de verificări în plus:
-scenele C111 și mutanții coordonatelor.
+Față de pasul 1 (3.579 / 4.860) sunt 52, respectiv 175 de verificări în plus:
+scenele C111 și mutanții coordonatelor. Ultimele șase pe fiecare profil vin
+din review-ul Codex; bazele au fost recreate din migrația corectată.
 
 Nicio așteptare de sumă pe cont nu s-a schimbat: literalii numerici scoși și
 adăugați de diff-ul scenelor existente sunt aceiași, fișier cu fișier.
@@ -81,8 +84,11 @@ Trei hotărâri ale owner-ului, toate în contract:
 Două forme din catalog nu se pot atinge întocmai:
 
 - **SC-C111-20.** Un storno cu doi originali cu parteneri fiscali diferiți nu
-  se poate produce: partenerul fiscal e al documentului. Scena probează
-  stornoul peste operare și transfer, cu perechi suprapuse.
+  e produs de declaranții de azi: stornoul inversează și postările atribuite
+  altui document, dar împerecherea, singurul scriitor al atribuirii, produce
+  transferuri de partide fără fapt fiscal. Scena probează stornoul peste
+  operare și transfer, cu perechi suprapuse; forma cu parteneri diferiți
+  rămâne neprobată.
 - **SC-C111-18.** Felul necunoscut e probat numai la recitire; orice
   repartitor al unui document are fel.
 
@@ -99,8 +105,23 @@ Două forme din catalog nu se pot atinge întocmai:
   nu rulate pe codul vechi.
 - Primele trei ramuri ale lui `VerificaCoordonate` nu se pot aprinde cât
   există `CK_Postare_BlocFiscal`; le ține constrângerea.
-- Rândul fără terț e probat cu sume pe repartitor intern și pe cont propriu,
-  nu și cu sume fără niciun repartitor.
+
+## Review-ul Codex al implementării
+
+Mesajul: `comunicari/2026-10-10-2038-codex-claude-c111-pas2-review.md`.
+Dispozițiile sunt în contract, sub „Review-ul Codex al pasului 2”.
+
+- **C111-P2-R1.** Constrângerea admitea `Loc` pe o postare fără fapt fiscal
+  și fără unitate, fiindcă `"FelUnitate" = 2` dă nul. Comparația e acum
+  totală; mutantul `COORD-LOC-FARA-UNITATE` o ține.
+- **C111-P2-R2.** `INV-CUB` nu cerea forma contraponderii transformării pe
+  postările cu pereche: o notă cu ambele postări marcate ieșea din balanță.
+  `VerificaCoordonate` o cere pe orice postare marcată; mutantul
+  `COORD-TRANSFORMARE-PE-PERECHE` o ține.
+- **D10.** Nomenclatorul SAF-T nu reunește partenerul fiscal; textul
+  contractului e adus la cod.
+- **SC-C111-10.** Rândul fără terț e probat și cu o sumă fără niciun
+  repartitor, dinamic și după închidere.
 
 ## Cum s-a lucrat
 

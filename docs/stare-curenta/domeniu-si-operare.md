@@ -1664,7 +1664,9 @@ fișelor și explicația, inclusiv valoarea liniei = decizia ieșirii, cu semn
 (`VerificaCoordonate`, `CITIRE_COORDONATE_INVALIDE`, C111-D2): partenerul
 fiscal numai cu fapt fiscal; locul numai cu fapt fiscal sau pe partidă; faptul
 fiscal cu loc; cantitatea nemarcată numai pe lot; lotul pe repartitor intern;
-partida pe repartitor extern; locul, repartitor intern. Inversa fiscală se
+partida pe repartitor extern; locul, repartitor intern; contraponderea
+transformării fără repartitor, unitate, valoare, valută sau fapt fiscal, pe
+orice postare marcată, cu sau fără pereche. Inversa fiscală se
 compară cu originalul și pe `PartenerFiscal` și `Loc`
 (`CITIRE_FISCAL_INVERSA`). Hosturile nu
 scanează istoria la pornire; o bază care nu corespunde codului se recreează

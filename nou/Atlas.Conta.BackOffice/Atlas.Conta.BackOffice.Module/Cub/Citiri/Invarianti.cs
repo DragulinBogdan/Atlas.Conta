@@ -29,7 +29,7 @@ public static class Invarianti {
 
     public const string CoordonateInvalide = "CITIRE_COORDONATE_INVALIDE";
 
-    /// <summary>Forma coordonatelor (C111-D2): lotul pe repartitor intern, partida pe repartitor extern, partenerul fiscal numai cu fapt, locul intern, pe fapt sau pe partidă.</summary>
+    /// <summary>Forma coordonatelor (C111-D2): lotul pe repartitor intern, partida pe repartitor extern, partenerul fiscal numai cu fapt, locul intern, pe fapt sau pe partidă, contraponderea transformării fără repartitor, unitate, valoare sau fapt fiscal.</summary>
     public static void VerificaCoordonate(IObjectSpace os) {
         var repartitori = os.GetObjectsQuery<Repartitor>();
         string[] interne = [nameof(N.FelRepartitor.Gestiune), nameof(N.FelRepartitor.UnitateInterna)];
@@ -39,6 +39,10 @@ public static class Invarianti {
                     || p.Loc != null && p.FelUnitate != N.FelUnitate.Partida))
                 || (p.TipTvaId != null && p.Loc == null)
                 || (p.Cantitate != 0m && p.Contrapondere == null && p.FelUnitate != N.FelUnitate.Lot)
+                || (p.Contrapondere == N.Contrapondere.Transformare
+                    && (p.Unitate != null || p.Repartitor != null || p.Valoare != 0m || p.ValoareValuta != 0m
+                        || p.Valuta != null || p.Carte != N.Carte.Contabil || p.TipTvaId != null
+                        || p.PerioadaDeclarare != null))
                 || (p.FelUnitate == N.FelUnitate.Lot
                     && !repartitori.Any(r => r.ID == p.Repartitor && interne.Contains(r.ClrType)))
                 || (p.FelUnitate == N.FelUnitate.Partida

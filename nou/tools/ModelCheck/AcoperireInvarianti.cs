@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
@@ -66,13 +67,15 @@ static partial class AcoperireInvarianti {
         new("ORDINAL-GOL", C.Citiri.Invarianti.OrdinalInvalid, (os, db) => MutaOrdinal(os, db, cate => (cate, cate + 1))),
         new("ORDINAL-DUBLU", C.Citiri.Invarianti.OrdinalInvalid, (os, db) => MutaOrdinal(os, db, _ => (2, 3))),
         new("COORD-PARTENER-FARA-FAPT", null, PartenerFiscalFaraFapt) { Constrangere = BlocFiscal },
-        new("COORD-LOC-FARA-FAPT", null, LocFaraTemei) { Constrangere = BlocFiscal },
-        new("COORD-LOC-PE-PARTIDA", null, LocPePartida),
+        new("COORD-LOC-FARA-FAPT", null, (os, db) => PuneLoc(os, db, p => p.FelUnitate == N.FelUnitate.Lot)) { Constrangere = BlocFiscal },
+        new("COORD-LOC-FARA-UNITATE", null, (os, db) => PuneLoc(os, db, p => p.FelUnitate == null)) { Constrangere = BlocFiscal },
+        new("COORD-LOC-PE-PARTIDA", null, (os, db) => PuneLoc(os, db, p => p.FelUnitate == N.FelUnitate.Partida)),
         new("COORD-FAPT-FARA-LOC", null, FaptFaraLoc) { Constrangere = BlocFiscal },
         new("COORD-CANTITATE-NEMARCATA", C.Citiri.Invarianti.CoordonateInvalide, CantitateNemarcata) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
         new("COORD-LOT-NEINTERN", C.Citiri.Invarianti.CoordonateInvalide, LotPeExtern) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
         new("COORD-PARTIDA-NEEXTERN", C.Citiri.Invarianti.CoordonateInvalide, PartidaPeIntern) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
         new("COORD-LOC-NEINTERN", C.Citiri.Invarianti.CoordonateInvalide, LocExtern) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
+        new("COORD-TRANSFORMARE-PE-PERECHE", C.Citiri.Invarianti.CoordonateInvalide, PerecheMarcataTransformare) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
         new("FISCAL-INVERSA-PARTENER", InversaFiscala, InversaCuAltPartener),
         new("FISCAL-INVERSA-LOC", InversaFiscala, InversaCuAltLoc),
     ];
@@ -138,10 +141,9 @@ static partial class AcoperireInvarianti {
         return true;
     }
 
-    // C111-Q14: fără fapt fiscal, locul e admis numai pe o postare cu partidă.
-    static bool LocPePartida(IObjectSpace os, DbContext db) {
-        var tinta = os.GetObjectsQuery<C.Postare>()
-            .Where(p => p.TipTvaId == null && p.FelUnitate == N.FelUnitate.Partida && p.Loc == null)
+    // C111-Q14: fără fapt fiscal, locul e admis numai pe o postare cu partidă; lotul și postarea fără unitate îl refuză.
+    static bool PuneLoc(IObjectSpace os, DbContext db, Expression<Func<C.Postare, bool>> pe) {
+        var tinta = os.GetObjectsQuery<C.Postare>().Where(p => p.TipTvaId == null && p.Loc == null).Where(pe)
             .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
         var gestiune = os.GetObjectsQuery<Gestiune>().OrderBy(g => g.ID).Select(g => (Guid?)g.ID).FirstOrDefault();
         if (tinta == null || gestiune == null) return false;
@@ -150,12 +152,17 @@ static partial class AcoperireInvarianti {
         return true;
     }
 
-    static bool LocFaraTemei(IObjectSpace os, DbContext db) {
-        var tinta = os.GetObjectsQuery<C.Postare>().Where(p => p.TipTvaId == null && p.FelUnitate == N.FelUnitate.Lot)
-            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu, p.Repartitor }).FirstOrDefault();
+    // C111-D2, invariantul 4: perechea unei postări obișnuite, marcată transformare, ar ieși întreagă din evidență.
+    static bool PerecheMarcataTransformare(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.Pereche != null && p.Tranzactie.Fel == N.FelTranzactie.Operare && p.Carte == N.Carte.Contabil)
+            .GroupBy(p => new { p.TranzactieId, p.Pereche })
+            .Where(g => !g.Any(p => p.Contrapondere != null || p.Unitate != null || p.TipTvaId != null
+                || p.Cantitate != 0m || p.Valoare == 0m))
+            .OrderBy(g => g.Key.TranzactieId).Select(g => g.Key).FirstOrDefault();
         if (tinta == null) return false;
-        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
-            .ExecuteUpdate(s => s.SetProperty(p => p.Loc, tinta.Repartitor));
+        db.Set<C.Postare>().Where(p => p.TranzactieId == tinta.TranzactieId && p.Pereche == tinta.Pereche)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Contrapondere, (N.Contrapondere?)N.Contrapondere.Transformare));
         return true;
     }
 

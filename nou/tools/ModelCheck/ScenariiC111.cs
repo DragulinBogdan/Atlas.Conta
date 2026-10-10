@@ -267,6 +267,30 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             new(Cont(ContFurnizor), Debit, 40, Repartitor: Furnizor, Unitate: Partida(plata.Id, ContFurnizor),
                 Linie: plata.Linii[0].Id, Economic: Economic),
             new(banca, Credit, 40, Repartitor: casa, Linie: plata.Linii[0].Id, Economic: Economic));
+
+        // Regula cu ambele conturi explicite lasă piciorul propriu fără niciun repartitor.
+        var tipExplicit = TipPe("-EXP", "TRZ", contra);
+        var regula = CuSpatiu(os => {
+            var r = os.CreateObject<RegulaContare>();
+            r.TipDocumentId = os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == "PLT").ID;
+            r.TipMaterialId = tipExplicit;
+            r.SursaContDebit = SursaCont.Explicit; r.SursaContCredit = SursaCont.Explicit;
+            r.ContDebitId = ContScena("-T"); r.ContCreditId = banca;
+            os.CommitChanges(); return r.ID;
+        });
+        try {
+            var explicita = CuSpatiu(os => {
+                var doc = os.CreateObject<Plata>(); doc.Data = Ianuarie; doc.PredatorId = casa; doc.PrimitorId = Furnizor;
+                var l = os.CreateObject<DocumentTrezorerieDetaliu>(); l.Document = doc; l.Pozitie = 1;
+                l.TipMaterialId = tipExplicit; l.Valoare = 7; l.CodEconomicId = Economic;
+                os.CommitChanges(); return doc.ID;
+            });
+            Opereaza(explicita);
+            Verifica("SC-C111-10", "plata cu ambele conturi explicite creditează contul propriu cu 7, fără niciun repartitor",
+                Cub(explicita, Operare).Count(p => p.Cont == banca && p.Latura == Credit && p.Valoare == 7 && p.Repartitor == null) == 1);
+        }
+        finally { Comanda(os => { os.Delete(os.GetObjectByKey<RegulaContare>(regula)); os.CommitChanges(); }); }
+
         var (peNul, peContra, peBanca, balanta) = CuSpatiu(os => {
             var b = ContabilProiectii.Balanta(os, new(An, 1, 1), Sfarsit).ToList();
             decimal Sold(Guid cont) => b.Where(r => r.ContId == cont).Sum(r => r.SoldFinalDebit - r.SoldFinalCredit);
@@ -281,14 +305,14 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         Verifica("SC-C111-10", $"contul cu Loc și furnizor: furnizorul 11 pe rând propriu, 230 în rândul fără terț, Loc fără rând ({Descrie(peNul)})",
             peNul.Count == 2 && peNul.Count(r => r.RepartitorId == Furnizor && r.SoldDebitor == 11) == 1
             && peNul.Count(r => r.RepartitorId == null && r.SoldDebitor == 230) == 1);
-        Verifica("SC-C111-10", $"contul propriu al plății n-are rând: cei 40 stau în rândul fără terț ({Descrie(peBanca)})",
-            peBanca.Count == 1 && peBanca[0].RepartitorId == null && peBanca[0].SoldCreditor == 40);
+        Verifica("SC-C111-10", $"contul propriu al plății n-are rând: cei 40 de pe el și cei 7 fără repartitor stau în rândul fără terț ({Descrie(peBanca)})",
+            peBanca.Count == 1 && peBanca[0].RepartitorId == null && peBanca[0].SoldCreditor == 47);
         Verifica("SC-C111-10", $"contul numai cu terț n-are rând fără terț ({Descrie(peContra)})",
             peContra.Count == 1 && peContra[0].RepartitorId == Furnizor && peContra[0].SoldCreditor == 241);
         Verifica("SC-C111-10", $"suma rândurilor fiecărui cont e soldul lui din balanță ({Net(peNul)}/{balanta.Nul}, "
             + $"{Net(peContra)}/{balanta.Contra}, {Net(peBanca)}/{balanta.Banca})",
             Net(peNul) == 241 && Net(peNul) == balanta.Nul && Net(peContra) == balanta.Contra
-            && Net(peBanca) == -40 && Net(peBanca) == balanta.Banca);
+            && Net(peBanca) == -47 && Net(peBanca) == balanta.Banca);
 
         InchideIanuarie();
         var snapshot = CuSpatiu(os => os.GetObjectsQuery<SoldPerioadaContabil>()
@@ -297,6 +321,15 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             .GroupBy(s => s.RepartitorId).Select(g => (Repartitor: g.Key, Net: g.Sum(s => s.Debit - s.Credit))).ToList());
         Verifica("SC-C111-09", "snapshot-ul lunii închise ține aceeași axă: Loc 230, furnizor 11, nimic fără repartitor",
             snapshot.Count == 2 && snapshot.Contains((Loc, 230m)) && snapshot.Contains((Furnizor, 11m)));
+        var (atomiBanca, randuriBanca) = CuSpatiu(os => (
+            os.GetObjectsQuery<SoldPerioadaContabil>().Where(s => s.An == An && s.Luna == 1 && s.ContId == banca)
+                .Select(s => new { s.RepartitorId, s.Debit, s.Credit }).ToList()
+                .GroupBy(s => s.RepartitorId).Select(g => (Repartitor: g.Key, Net: g.Sum(s => s.Debit - s.Credit))).ToList(),
+            ContabilProiectii.SoldParteneri(os, Sfarsit, banca).ToList()));
+        Verifica("SC-C111-10", "după închidere snapshot-ul ține separat contul propriu (40) și postarea fără repartitor (7), "
+            + $"iar rândul fără terț rămâne 47 ({Descrie(randuriBanca)})",
+            atomiBanca.Count == 2 && atomiBanca.Contains((casa, -40m)) && atomiBanca.Contains((null, -7m))
+            && randuriBanca.Count == 1 && randuriBanca[0].RepartitorId == null && randuriBanca[0].SoldCreditor == 47);
         Opereaza(NotaPe(Februarie, nul, contra, 1, repartitorCredit: Furnizor).Id);
         Opereaza(NotaPe(Februarie, nul, contra, 2, Furnizor, Furnizor).Id);
         foreach (var citire in new[] { CitireCumul.Vizibila, CitireCumul.Integrala }) {

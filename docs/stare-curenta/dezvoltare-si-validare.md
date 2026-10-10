@@ -85,13 +85,16 @@ celor cinci din urmă e probată și invers: cu disjuncția scoasă din predicat
 supraviețuiește numai mutantul ei
 (`nou/tools/ModelCheck/scripts/izolare-mutanti.ps1`, pasul 8 §11). Rețeta
 ține blocajul verificărilor cât timp sursa invariantului e modificată.
-Forma coordonatelor (C111-D2) are zece mutanți. Patru apelează direct
+Forma coordonatelor (C111-D2) are doisprezece mutanți. Cinci apelează direct
 `VerificaCoordonate` și cer `CITIRE_COORDONATE_INVALIDE`:
 `COORD-CANTITATE-NEMARCATA` (cantitate fără lot și fără contrapondere),
 `COORD-LOT-NEINTERN` (lot pe repartitor extern), `COORD-PARTIDA-NEEXTERN`
-(partidă pe repartitor intern) și `COORD-LOC-NEINTERN` (loc pe repartitor
-extern). Trei sunt opriți de schemă înaintea invariantului și cer
-`CK_Postare_BlocFiscal`: `COORD-PARTENER-FARA-FAPT`, `COORD-LOC-FARA-FAPT` și
+(partidă pe repartitor intern), `COORD-LOC-NEINTERN` (loc pe repartitor
+extern) și `COORD-TRANSFORMARE-PE-PERECHE` (perechea unei postări obișnuite,
+marcată transformare, care altfel ar ieși întreagă din evidență). Patru sunt
+opriți de schemă înaintea invariantului și cer `CK_Postare_BlocFiscal`:
+`COORD-PARTENER-FARA-FAPT`, `COORD-LOC-FARA-FAPT` (loc pe lot),
+`COORD-LOC-FARA-UNITATE` (loc pe o postare fără unitate) și
 `COORD-FAPT-FARA-LOC`; ramurile corespunzătoare ale invariantului nu se pot
 aprinde cât există constrângerea. `COORD-LOC-PE-PARTIDA` e martorul: locul pe
 o postare cu partidă și fără fapt fiscal trece (C111-Q14).

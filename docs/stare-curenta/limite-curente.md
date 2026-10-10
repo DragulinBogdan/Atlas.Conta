@@ -37,9 +37,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Invariantul coordonatelor: ramurile „partener fiscal fără fapt”, „loc fără
   temei” și „fapt fără loc” ale lui `VerificaCoordonate` nu se pot aprinde
   cât există `CK_Postare_BlocFiscal`; le ține constrângerea, nu invariantul.
-  Stornoul cu doi originali cu parteneri fiscali diferiți nu se poate produce
-  pe calea produsului (partenerul fiscal e al documentului), iar felul
-  necunoscut al unui repartitor e probat numai la recitire.
+  Stornoul cu doi originali cu parteneri fiscali diferiți nu e produs de
+  declaranții de azi: stornoul inversează și postările atribuite altui
+  document, dar singurul scriitor al atribuirii (împerecherea) produce
+  transferuri de partide fără fapt fiscal. Forma nu e probată; invariantul 5
+  îl țin mutanții `FISCAL-INVERSA-*`. Felul necunoscut al unui repartitor e
+  probat numai la recitire.
 - PIF/AMO/CAS scriu cubul, iar situația fișei se citește din el (095, 097).
   Storno
   rămâne limitat la luna documentului (087g), inclusiv în corecție.

@@ -81,7 +81,8 @@ ordinalele.
    sau pe o postare cu partidă; faptul fiscal cere `Loc`, iar
    `PartenerFiscal` poate lipsi, ca azi;
 4. contraponderea transformării n-are repartitor, unitate, valoare sau fapt
-   fiscal;
+   fiscal; în `INV-CUB` forma se cere pe orice postare marcată, cu sau fără
+   pereche (C111-P2-R2);
 5. inversa fiscală poartă același `PartenerFiscal` și același `Loc` ca
    originalul.
 
@@ -334,7 +335,11 @@ pasul 6.
    fără partidă pe cont cu rol comercial în SAF-T, NTC cu terț fără partidă,
    trezoreria cu conturi explicite, diferențele NIR, IMO cu suport istoric pe
    alt loc decât laturile documentului, deschiderea, stornoul peste mai multe
-   tranzacții cu parteneri fiscali diferiți și perechi locale suprapuse.
+   tranzacții cu perechi locale suprapuse. Stornoul cu doi originali cu
+   parteneri fiscali diferiți, cerut aici la început, nu e produs de
+   declaranții de azi și nu e probat ca formă (SC-C111-20, C111-P2);
+   invariantul 5 îl țin mutanții `FISCAL-INVERSA-PARTENER` și
+   `FISCAL-INVERSA-LOC`.
 4. Martorul: un repartitor intern A schimbat în B pe o notă fără unitate și
    fără fapt fiscal e prins de amprenta analitică și de catalog.
 5. O schimbare de comportament care nu e în D6 oprește pasul și cere
@@ -366,8 +371,12 @@ Clasificarea e pe expresie și pe domeniul ei, nu pe fișier.
 | axele analitice | atomul contabil | `Partener` și `Gestiune`, separat | `Repartitor` (S1) |
 
 `Contabil.Jurnal` expune identitățile separat, nu un singur `Partener`.
-Nomenclatorul SAF-T reunește terțul comercial, partenerul fiscal și axa
-analitică; e o reuniune, scrisă ca atare. SAF-T citește și atomii
+Nomenclatorul SAF-T reunește identitățile pe care le caută consumatorii lui:
+terțul comercial al registrului și al facturilor, repartitorul atomilor de pe
+conturile cu rol, centrul de cost și terțul plăților; e o reuniune, scrisă ca
+atare. Partenerul fiscal nu intră: după S11 nicio secțiune nu-l caută în
+nomenclator, iar maparea fiscală se cheiază pe calificarea de TVA (C111-P2).
+SAF-T citește și atomii
 (`SaftProiectii.PeCub.cs:186`), deci se reverifică la pasul 2, nu numai la
 pasul 1. Probele pasului 1: terț fără partidă, picior intern cu fapt fiscal,
 cont cu rol comercial.
@@ -469,6 +478,25 @@ cod (`Partide.cs:56`–`:58`, `DeclarantFacturaIesire.cs:55`); neoperat.
 |---|---|---|
 | R16 | partenerul fiscal scris de `CuFapt` e rescris azi de `Terti.Capat` pe capătul cu partidă; „ca azi” nu ține acolo | acceptată: ținta rămâne 111 (b), efectul e numit S13, cu scena SC-C111-28 |
 | R9, completare | neutralitatea lui S11 pe seed nu decurge din flag-ul contului | acceptată: domeniul lui S11 e postarea fără partidă; recensământul bazei de referință e în D10 |
+
+## Review-ul Codex al pasului 2 (2026-10-10)
+
+Mesajul: `comunicari/2026-10-10-2038-…-c111-pas2-review.md`. Codex găsește
+C111-Q12, Q13 și Q14 coerente cu ținta amendată și deschide două probleme de
+validare. Fiecare constatare a fost recitită în cod; corecturile sunt
+verificate pe integrală (`run-verificari/20261010-210057-804/`).
+
+| Id | Constatarea | Dispoziția |
+|---|---|---|
+| C111-P2-R1 | `CK_Postare_BlocFiscal` admite `Loc` pe o postare fără fapt fiscal și fără unitate: comparația `"FelUnitate" = 2` dă nul, iar un `CHECK` respinge numai fals | acceptată: comparația e totală (`IS NOT DISTINCT FROM 2`); mutantul `COORD-LOC-FARA-UNITATE`, lângă cel pe lot; forma veche, reprodusă pe o tabelă temporară, primește rândul, cea nouă îl refuză |
+| C111-P2-R2 | invariantul 4 nu se verifică în `INV-CUB` pe postările cu pereche: o notă obișnuită cu ambele postări marcate „transformare” trece și iese întreagă din balanță și din fișă | acceptată: `VerificaCoordonate` cere forma contraponderii pe orice postare marcată; mutantul `COORD-TRANSFORMARE-PE-PERECHE`; filtrul din `Citiri/Transformare` rămâne pe marcaj |
+| D10 | nomenclatorul SAF-T nu reunește partenerul fiscal, cum spunea textul | textul D10 adus la cod: niciun consumator al nomenclatorului nu caută partenerul fiscal (S11) |
+| Q13, completare | rândul fără terț nu era probat cu sume fără niciun repartitor | SC-C111-10 primește o plată cu ambele conturi explicite: 40 pe cont propriu și 7 fără repartitor dau un rând de 47, dinamic și după închidere |
+| SC-C111-20 | forma cu parteneri fiscali diferiți e o limită a producătorilor de azi, nu a stornoului | regula de oprire 3 și starea scenei spun ce e probat; forma rămâne neprobată |
+
+Întrebările 1–3 și 5 din predare au rămas fără constatare. La 7 (o inversă
+care iese cu alt partener sau alt loc fără să treacă prin copiere) Codex nu
+numește nicio cale.
 
 ## Amendamentul 1 (propus 2026-10-10; retras 2026-10-10, C111-Q5)
 

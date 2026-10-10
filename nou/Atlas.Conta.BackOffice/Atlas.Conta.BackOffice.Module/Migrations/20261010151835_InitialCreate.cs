@@ -3258,7 +3258,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                             OR ("SuportId" IS NOT NULL AND "SuportSpatiu" IS NOT NULL AND "SuportSpatiu" IN (1, 2)))),
                     CONSTRAINT "CK_Postare_Contrapondere" CHECK ("Contrapondere" IS NULL OR "Contrapondere" BETWEEN 1 AND 4),
                     CONSTRAINT "CK_Postare_BlocFiscal" CHECK (
-                        ("TipTvaId" IS NULL AND "PartenerFiscal" IS NULL AND ("Loc" IS NULL OR "FelUnitate" = 2))
+                        ("TipTvaId" IS NULL AND "PartenerFiscal" IS NULL AND ("Loc" IS NULL OR "FelUnitate" IS NOT DISTINCT FROM 2))
                         OR ("TipTvaId" IS NOT NULL AND "Loc" IS NOT NULL)),
                     CONSTRAINT "CK_Postare_FiscalComplet" CHECK (
                         "TipTvaId" IS NULL OR (
