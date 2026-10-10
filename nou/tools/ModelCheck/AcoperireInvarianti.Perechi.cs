@@ -86,7 +86,7 @@ static partial class AcoperireInvarianti {
                 FROM "Postare" p WHERE "ID" = {tinta.ID} AND "Spatiu" = {(int)tinta.Spatiu}
                 """);
         }
-        if (Refuz(os, numaiPerechi: true) is { } refuz)
+        if (Refuz(os, C.Citiri.Invarianti.VerificaPerechi) is { } refuz)
             throw new InvalidOperationException("Martorul cu transformare și pereche validă: " + refuz);
         db.Set<C.Postare>().Where(p => p.TranzactieId == tinta.TranzactieId && p.Pereche == ordinal)
             .ExecuteUpdate(s => s.SetProperty(p => p.Pereche, (int?)null));

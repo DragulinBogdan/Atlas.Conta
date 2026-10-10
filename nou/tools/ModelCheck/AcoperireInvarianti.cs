@@ -4,6 +4,7 @@ using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using C = Atlas.Conta.BackOffice.Module.Cub;
 using N = Atlas.Conta.Nucleu;
 
@@ -11,7 +12,15 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 
 /// <summary>INV-CUB pe faptele fiecărei scene, înaintea purjei; fiecare ramură fără probă proprie își ucide mutantul o dată per profil (102d).</summary>
 static partial class AcoperireInvarianti {
-    sealed record Mutant(string Ramura, string Fragment, Func<IObjectSpace, DbContext, bool> Aplica, bool NumaiPerechi = false);
+    sealed record Mutant(string Ramura, string Fragment, Func<IObjectSpace, DbContext, bool> Aplica, bool NumaiPerechi = false) {
+        /// <summary>Verificarea restrânsă la un invariant; nul = toată suita `INV-CUB`.</summary>
+        public Action<IObjectSpace> Numai { get; init; } = NumaiPerechi ? C.Citiri.Invarianti.VerificaPerechi : null;
+        /// <summary>Constrângerea din schemă care oprește forma înaintea invariantului.</summary>
+        public string Constrangere { get; init; }
+    }
+
+    const string BlocFiscal = "CK_Postare_BlocFiscal";
+    const string InversaFiscala = "CITIRE_FISCAL_INVERSA";
 
     static readonly Mutant[] mutanti = [
         new("PARTIDE", "CITIRE_PARTIDE_INCOMPLETE", PartidaFaraPartener),
@@ -56,6 +65,15 @@ static partial class AcoperireInvarianti {
         new("ORDINAL-BAZA", C.Citiri.Invarianti.OrdinalInvalid, (os, db) => MutaOrdinal(os, db, _ => (1, 0))),
         new("ORDINAL-GOL", C.Citiri.Invarianti.OrdinalInvalid, (os, db) => MutaOrdinal(os, db, cate => (cate, cate + 1))),
         new("ORDINAL-DUBLU", C.Citiri.Invarianti.OrdinalInvalid, (os, db) => MutaOrdinal(os, db, _ => (2, 3))),
+        new("COORD-PARTENER-FARA-FAPT", null, PartenerFiscalFaraFapt) { Constrangere = BlocFiscal },
+        new("COORD-LOC-FARA-FAPT", null, LocFiscalFaraFapt) { Constrangere = BlocFiscal },
+        new("COORD-FAPT-FARA-LOC", null, FaptFaraLoc) { Constrangere = BlocFiscal },
+        new("COORD-CANTITATE-NEMARCATA", C.Citiri.Invarianti.CoordonateInvalide, CantitateNemarcata) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
+        new("COORD-LOT-NEINTERN", C.Citiri.Invarianti.CoordonateInvalide, LotPeExtern) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
+        new("COORD-PARTIDA-NEEXTERN", C.Citiri.Invarianti.CoordonateInvalide, PartidaPeIntern) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
+        new("COORD-LOC-NEINTERN", C.Citiri.Invarianti.CoordonateInvalide, LocFiscalExtern) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
+        new("FISCAL-INVERSA-PARTENER", InversaFiscala, InversaCuAltPartener),
+        new("FISCAL-INVERSA-LOC", InversaFiscala, InversaCuAltLoc),
     ];
 
     static readonly HashSet<string> ucise = [];
@@ -73,13 +91,24 @@ static partial class AcoperireInvarianti {
         foreach (var m in mutanti.Where(m => !ucise.Contains(m.Ramura))) {
             using var tx = db.Database.BeginTransaction();
             bool aplicat;
+            string oprit = null;
             try { aplicat = m.Aplica(os, db); }
+            catch (Exception e) when (m.Constrangere != null && (e as PostgresException ?? e.InnerException as PostgresException) is { } pg) {
+                aplicat = true;
+                oprit = pg.SqlState == PostgresErrorCodes.CheckViolation ? pg.ConstraintName : pg.MessageText;
+            }
             catch (Exception e) {
                 verifica("INV-CUB-" + m.Ramura, "mutantul nu se aplică — " + e.Message.Split('\n')[0], false);
                 aplicat = false;
             }
-            if (aplicat) {
-                refuz = Refuz(os, m.NumaiPerechi);
+            if (aplicat && m.Constrangere != null) {
+                var ok = oprit == m.Constrangere;
+                verifica("INV-CUB-" + m.Ramura, $"schema oprește forma prin {m.Constrangere}"
+                    + (ok ? "" : $" — {oprit ?? "acceptată de bază"}"), ok);
+                if (ok) ucise.Add(m.Ramura);
+            }
+            else if (aplicat) {
+                refuz = Refuz(os, m.Numai);
                 var ok = m.Fragment == null ? refuz == null : refuz?.Contains(m.Fragment, StringComparison.OrdinalIgnoreCase) == true;
                 verifica("INV-CUB-" + m.Ramura, (m.Fragment == null ? "martorul trece" : $"mutantul refuză cu {m.Fragment}")
                     + (ok ? "" : $" — {refuz ?? "trecut"}"), ok);
@@ -90,14 +119,111 @@ static partial class AcoperireInvarianti {
         }
     }
 
-    static string Refuz(IObjectSpace os, bool numaiPerechi = false) {
+    static string Refuz(IObjectSpace os, Action<IObjectSpace> numai = null) {
         try {
-            if (numaiPerechi) C.Citiri.Invarianti.VerificaPerechi(os);
-            else C.Citiri.Invarianti.Verifica(os);
+            (numai ?? C.Citiri.Invarianti.Verifica)(os);
             return null;
         }
         catch (OperareException e) { return e.Message; }
     }
+
+    // C111-D2: fiecare mutant aprinde o singură ramură a formei coordonatelor.
+    static bool PartenerFiscalFaraFapt(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>().Where(p => p.TipTvaId == null && p.Repartitor != null)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu, p.Repartitor }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.PartenerFiscal, tinta.Repartitor));
+        return true;
+    }
+
+    static bool LocFiscalFaraFapt(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>().Where(p => p.TipTvaId == null && p.FelUnitate == N.FelUnitate.Lot)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu, p.Repartitor }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.LocFiscal, tinta.Repartitor));
+        return true;
+    }
+
+    static bool FaptFaraLoc(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>().Where(p => p.TipTvaId != null)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.LocFiscal, (Guid?)null));
+        return true;
+    }
+
+    static bool CantitateNemarcata(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>().Where(C.Citiri.Transformare.FaraContrapondere)
+            .Where(p => p.Contrapondere != null && p.Cantitate != 0m && p.Unitate == null)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        if (tinta == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Contrapondere, (N.Contrapondere?)null));
+        return true;
+    }
+
+    static bool LotPeExtern(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>().Where(p => p.FelUnitate == N.FelUnitate.Lot)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        var partener = os.GetObjectsQuery<Partener>().OrderBy(p => p.ID).Select(p => (Guid?)p.ID).FirstOrDefault();
+        if (tinta == null || partener == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Repartitor, partener));
+        return true;
+    }
+
+    static bool PartidaPeIntern(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>().Where(p => p.FelUnitate == N.FelUnitate.Partida)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        var gestiune = os.GetObjectsQuery<Gestiune>().OrderBy(g => g.ID).Select(g => (Guid?)g.ID).FirstOrDefault();
+        if (tinta == null || gestiune == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Repartitor, gestiune));
+        return true;
+    }
+
+    static bool LocFiscalExtern(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>().Where(p => p.TipTvaId != null)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        var partener = os.GetObjectsQuery<Partener>().OrderBy(p => p.ID).Select(p => (Guid?)p.ID).FirstOrDefault();
+        if (tinta == null || partener == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.LocFiscal, partener));
+        return true;
+    }
+
+    // C111-D2, invariantul 5: inversa fiscală cu alt partener sau alt loc decât originalul ei.
+    static bool InversaCuAltPartener(IObjectSpace os, DbContext db) {
+        var tinta = InversaFiscalaTinta(os);
+        if (tinta == null) return false;
+        var altul = os.GetObjectsQuery<Partener>().Where(p => p.ID != tinta.PartenerFiscal).OrderBy(p => p.ID)
+            .Select(p => (Guid?)p.ID).FirstOrDefault();
+        if (altul == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.PartenerFiscal, altul));
+        return true;
+    }
+
+    static bool InversaCuAltLoc(IObjectSpace os, DbContext db) {
+        var tinta = InversaFiscalaTinta(os);
+        if (tinta == null) return false;
+        var altul = os.GetObjectsQuery<Gestiune>().Where(g => g.ID != tinta.LocFiscal).OrderBy(g => g.ID)
+            .Select(g => (Guid?)g.ID).FirstOrDefault();
+        if (altul == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.LocFiscal, altul));
+        return true;
+    }
+
+    sealed record TintaFiscala(Guid ID, N.Spatiu Spatiu, Guid? PartenerFiscal, Guid? LocFiscal);
+
+    static TintaFiscala InversaFiscalaTinta(IObjectSpace os) => os.GetObjectsQuery<C.Postare>()
+        .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Storno && p.TipTvaId != null && p.InversaDinId != null)
+        .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu, p.PartenerFiscal, p.LocFiscal }).ToList()
+        .Select(p => new TintaFiscala(p.ID, p.Spatiu, p.PartenerFiscal, p.LocFiscal)).FirstOrDefault();
 
     static bool PartidaFaraPartener(IObjectSpace os, DbContext db) {
         var tinta = os.GetObjectsQuery<C.Postare>().Where(C.Citiri.Transformare.FaraContrapondere)
