@@ -36,7 +36,7 @@ Pe import, față de fișierele de mai sus:
   numit. Comparația se face și cu locul scos din cheie, unde trebuie să iasă
   identică.
 - **S7, S8, S10, S12.** Baza n-are niciun decont, iar politicile ei de TVA
-  sunt cele șase din seed, deci S10 și S12 nu apar.
+  sunt cele șase din seed, deci S10, S12 și S13 nu apar.
   Viramentele și descărcările cu primitor intern n-au fost numărate pe baza
   de referință; diferențele lor, dacă apar, se numesc rând cu rând la pasul 6.
 
@@ -80,6 +80,6 @@ numesc un fapt de stabilit la implementare: latura internă a decontului,
 atingerea lui S10 prin culegere și scena care produce stornoul peste mai
 multe tranzacții.
 
-După runda a doua a review-ului Codex catalogul are 27 de rânduri: primele
-două fapte sunt citite în cod, iar SC-C111-23…27 acoperă S11, S12 și
-excepția din D2.
+După rundele a doua și a treia ale review-ului Codex catalogul are 28 de
+rânduri: primele două fapte sunt citite în cod, iar SC-C111-23…28 acoperă
+S11, S12, S13 și excepția din D2.

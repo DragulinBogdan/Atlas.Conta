@@ -1155,3 +1155,10 @@ detaliat în jurnal):
   extern (S11), locul fiscal vine din laturile tipate ale documentului (S12),
   decontul cu terț pe linie și partidă trece după S10. Contractul, 111 (b) și
   (c) și catalogul (27 de rânduri) sunt aduse la zi. Niciun cod schimbat.
+
+- **2026-10-10 — C111: runda a treia a review-ului Codex, reconciliată.**
+  Codex a închis R9 și R13–R15 ca direcție și a adăugat R16: azi `Terti.Capat`
+  rescrie partenerul fiscal pe capătul cu partidă. Ținta rămâne 111 (b);
+  efectul e numit S13, cu scena SC-C111-28. Domeniul lui S11 e precizat pe
+  recensământul bazei de referință: 559 de postări fără partidă pe conturi cu
+  rol comercial, toate din note pe unitate internă. Niciun cod schimbat.

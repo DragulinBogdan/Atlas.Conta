@@ -169,6 +169,8 @@ TVA. În SAF-T, terțul comercial al unui cont cu rol e repartitorul extern al
 postării, fără rezervă pe partenerul fiscal, ca registrul și soldurile de
 nomenclator să citească aceeași axă. Decontul cu TVA și cu terț pe linie,
 pe cont cu partide, refuzat azi de suprascrierea partenerului, trece.
+Partenerul fiscal e cel numit de politică și pe capătul cu partidă: scrierea
+terțului documentului peste el, de azi, nu trece în câmpul nou (C111-R16).
 
 ## Context
 
