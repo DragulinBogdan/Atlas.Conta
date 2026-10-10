@@ -1,7 +1,8 @@
-# Decizia 28 — Felia 3c-3 — ListaDiferenteInventar
+# 28 — Felia 3c-3 — ListaDiferenteInventar
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii:
 
 ## Regula durabilă
 

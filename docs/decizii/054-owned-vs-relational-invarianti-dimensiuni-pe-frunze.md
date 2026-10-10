@@ -1,8 +1,9 @@
-# Decizia 54 — Sesiunea de arhitectură 2026-08-02
+# 54 — Sesiunea de arhitectură 2026-08-02
 
-- **Data**: 2026-08-06 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/invarianti.md, docs/dim/dim-2-inventar.md
+- Data: 2026-08-06
+- Stare: activă
+- Arii: domeniu-si-operare
+- Docs: docs/invarianti.md, docs/dim/dim-2-inventar.md
 
 ## Regula durabilă
 

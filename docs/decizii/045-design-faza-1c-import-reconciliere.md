@@ -1,8 +1,9 @@
-# Decizia 45 — Design FAZA 1C — conector de import + reconciliere pe an fiscal complet
+# 45 — Design FAZA 1C — conector de import + reconciliere pe an fiscal complet
 
-- **Data**: 2026-07-25 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/import/faza-1c-design.md
+- Data: 2026-07-25
+- Stare: amendată de 75
+- Arii: dezvoltare-si-validare
+- Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă
 
@@ -60,7 +61,7 @@ surogate FCL+DSC / DSC+NTC; Operatia/Salarii/MF/închiderea 121 → NTC;
 rândurile de TVA ale închiderii 1C se SAR — le generează ITV, reconcilierea
 le compară (forcing function-ul TVA-ului structural P1). Regula: stocul nu
 se mișcă fără registru de stoc.
-(e) **Contractul de reconciliere trăiește în conector** (34f; ModelCheck
+(e) [amendat de 75] **Contractul de reconciliere trăiește în conector** (34f; ModelCheck
 neatins): (1) SOLD per cont sintetic OMFP per lună = Balanta 1C normalizată
 (rulajele doar informativ — reprezentarea storno 1C cu minus pe aceeași
 latură le face nereconciliabile structural); (2) 4423/4424 per lună

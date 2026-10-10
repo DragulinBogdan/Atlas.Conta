@@ -1,8 +1,10 @@
 # 108 — Gate-ul transversal TR-D8: registrele nu se mai citesc, scrierea e serială per bază, explicația deciziei e persistată
 
-Data: 2026-10-04
-Stare: activă; concretizează 090 (i)(j) și 091 (g)(4)(5); extinde 101 pe ramura negativă a desfacerii (102-r4)
-Docs: `docs/nucleu/tr-d8-transversal-contract.md` (X-D1…X-D8, X-Q1…X-Q4, X-RV1…X-RV7, „Execuție” pașii 1–6); `docs/nucleu/scenarii/CITIRI.md`; `docs/api/p5-perf-masuratori.md` („TR-D8 gate-ul transversal”)
+- Data: 2026-10-04
+- Stare: amendată de 110
+- Execuție: concretizează 090 (i)(j) și 091 (g)(4)(5); extinde 101 pe ramura negativă a desfacerii (102-r4)
+- Arii: api-si-client, dezvoltare-si-validare, limite-curente
+- Docs: `docs/nucleu/tr-d8-transversal-contract.md` (X-D1…X-D8, X-Q1…X-Q4, X-RV1…X-RV7, „Execuție” pașii 1–6); `docs/nucleu/scenarii/CITIRI.md`; `docs/api/p5-perf-masuratori.md` („TR-D8 gate-ul transversal”)
 
 **Starea verificării, 2026-10-04:** pașii 1–6 din X-D8 sunt implementați și
 verificați pe `tr-d8-transversal`. Review-ul advers al contractului este
@@ -16,7 +18,7 @@ X-RI1…X-RI4. Review-ul feliei este închis; felia e mersă în main prin PR #1
 
 ## Regula durabilă
 
-**(a) Registrele se ating în producție numai prin lista nominală (X-D2).**
+**(a) [amendat de 110] Registrele se ating în producție numai prin lista nominală (X-D2).**
 `RegistruContabil`, `RegistruStoc`, `RegistruTva`, `RegistruImobilizari` și
 `Imperechere` nu sunt sursă de sold, rulaj sau rest pentru niciun cititor de
 producție. O intrare permisă numește utilizarea: fișierul, membrul,
@@ -65,7 +67,7 @@ detalii fără poziție îl ia. Cheia stă într-un singur loc
 `SCRIERE_OCUPATA` iese 422 pe ușa HTTP, fără nimic scris, și cererea se poate
 retrimite.
 
-**(g) Acoperirea cubului se probează pe fapte, în ModelCheck, înaintea
+**(g) [amendat de 110] Acoperirea cubului se probează pe fapte, în ModelCheck, înaintea
 purjei (X-D7 a, 102d).** Contabilul, stocul cantitativ, deschiderea,
 partidele, fișele și explicațiile au fiecare o verificare în
 `Invarianti.Verifica`. Stocul se compară pe grup și proveniență, nu pe rând:
@@ -75,7 +77,7 @@ recepția conexă aparține în registre NIR-ului și în cub facturii. Lipsa es
 altfel `CITIRE_TRANSFER_NECONSERVAT`. Nicio verificare nu rulează la pornirea
 hosturilor.
 
-**(h) `PosteazaInCub` nu se stinge (X-Q4 = A).** După prima tranzacție în cub
+**(h) [amendat de 110] `PosteazaInCub` nu se stinge (X-Q4 = A).** După prima tranzacție în cub
 a unui tip, gardianul refuză trecerea pe `false`
 (`POSTEAZA_IN_CUB_IREVERSIBIL`), iar seed-ul nu o aliniază.
 
@@ -83,7 +85,7 @@ a unui tip, gardianul refuză trecerea pe `false`
 A).** `IMPERECHERE_FARA_EFECT` se aruncă și pe suma negativă a desfacerii
 automate (101, 102-r4).
 
-**(j) Reconcilierea (a)–(g) are toleranță zero pe o bază întreagă (X-D3).**
+**(j) [amendat de 110] Reconcilierea (a)–(g) are toleranță zero pe o bază întreagă (X-D3).**
 Cubul și registrele sunt scrise de aceleași comenzi, deci un rând Δ este
 defect, nu declarație. Litera (h) și diagnosticul ASM-B7 se raportează cu
 proveniență; nimic nu se declară N-r3 automat. Întrebarea „cine are

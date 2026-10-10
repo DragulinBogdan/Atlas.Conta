@@ -1,17 +1,10 @@
 # 111 — Un singur repartitor de sold pe postare, partenerul fiscal în blocul fiscal, registre tipate pentru ce nu se balansează
 
 - Data: 2026-10-06
-- Stare: **propusă**, neaprobată. Nu schimbă nimic în cod, în contractul
-  TR-D9a sau în stare-curenta. Poarta de decizie e contractul TR-D9b, cu
-  măsurătorile din §„Înaintea deciziei" ca pas 0 al lui. Aprobă numai
-  owner-ul. Numărul 110 e rezervat închiderii TR-D9a.
-- Pasul 0 e măsurat (2026-10-08, `docs/nucleu/tr-d9b-pas0-masuratori.md`).
-  Textul direcției e precizat după măsurători, tot ca propunere; ce s-a
-  schimbat față de forma din 2026-10-06 e listat în §„Precizările de după
-  pasul 0".
-- Docs: `docs/consultations/2026-10-06-repartitor-pe-postare/` (consultare
-  Fable + Codex, două runde, README cu verdictele); `docs/nucleu/tr-d9-taierea-amendament-2.md`
-  (D9-A10, forma îngustă aprobată; pasul 6b, mutat de owner după tăiere); 090 (c), B-D8 pct. 4 și 9.
+- Stare: propusă
+- Execuție: propusă, neaprobată. Nu schimbă nimic în cod, în contractul TR-D9a sau în stare-curenta. Poarta de decizie e contractul TR-D9b, cu măsurătorile din §„Înaintea deciziei" ca pas 0 al lui. Aprobă numai owner-ul. Numărul 110 e rezervat închiderii TR-D9a.; Pasul 0 e măsurat (2026-10-08, `docs/nucleu/tr-d9b-pas0-masuratori.md`). Textul direcției e precizat după măsurători, tot ca propunere; ce s-a schimbat față de forma din 2026-10-06 e listat în §„Precizările de după pasul 0"
+- Arii:
+- Docs: `docs/consultations/2026-10-06-repartitor-pe-postare/` (consultare Fable + Codex, două runde, README cu verdictele); `docs/nucleu/tr-d9-taierea-amendament-2.md` (D9-A10, forma îngustă aprobată; pasul 6b, mutat de owner după tăiere); 090 (c), B-D8 pct. 4 și 9.
 
 ## Direcția propusă
 

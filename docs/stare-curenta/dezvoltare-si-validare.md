@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-09.** [Index](README.md)
+**Actualizat: 2026-10-10.** [Index](README.md)
 
 TR-D9a, pasul 6 (tăierea, 2026-10-07): motorul nu mai scrie, nu mai citește și
 nu mai ramifică pe registre și pe regim; oracolul registre → cub a ieșit din
@@ -901,6 +901,44 @@ ea alege nomenclatorul. Fiecare rulare scrie `manifest-d406.json` lângă
 fișierele validate, cu proveniența liniilor GL și a facturilor pentru
 fișierele certificate. (S0-R1…R4, S0-R8) Jurnalele publicate nu includ
 parole, tokenuri sau adrese de feed cu credențiale. (50d, 73f)
+
+## Documentația
+
+Forma documentației urmează kitul de guvernanță
+(`~/.claude/PROJECT_GOVERNANCE.md`), aplicat prin decizia 118 pe structura
+existentă: invarianți, stare curentă pe responsabilități, decizii numerotate
+cu „Regula durabilă", restanțe cu nume. Textele vechi se aduc la formă la
+atingere sau prin script, nu prin rescriere în masă. (118a)
+
+Antetul unei decizii are câmpurile `Data`, `Stare`, `Execuție`, `Arii`,
+`Amendează`, `Închide`, `Docs`, câte o linie; `Stare` e `propusă`, `activă`,
+`amendată de N` sau `depășită de N`, iar aprobarea, PR-ul și review-ul stau
+în `Execuție`; titlul e `# N — afirmația`. (118b) Un sub-punct amendat sau
+depășit poartă la început marcajul `[amendat de N]` sau `[depășit de N]`, cu
+textul păstrat; `Amendează: N (x)` în antetul lui M și marcajul din N (x)
+sunt cele două capete ale aceleiași legături. (118c) Decizia depășită
+integral primește banner și stă în `decizii/arhiva/`. (118d)
+
+Indexul din `decizii/README.md` se generează între markerii `gen:index`, în
+trei grupe, cu `python -X utf8 nou/tools/docs/normalizeaza-antete.py --scrie`
+din rădăcina repo-ului; rularea e idempotentă, normalizează antetele vechi
+și raportează ce nu a putut clasifica. (118e) `Arii` numește paginile de
+aici pe care decizia le atinge; prima populare a venit din citările `(Nx)`
+ale paginilor. (118f)
+
+Termenii stau în [termeni.md](termeni.md), pe trei secțiuni: domeniu,
+tehnic, identificatori; un termen intră acolo la prima lui folosire într-o
+pagină de stare curentă, în același commit. (118g)
+
+Fișierele din afara `decizii/` și `stare-curenta/` declară
+`Tip: contract | analiza | review | catalog | note`; fără `Tip` sunt jurnal,
+cu linkurile verificate și fără alte cerințe. (118h) Restanțele au și
+categoria `docs`; `închisă prin N` e singura stare de închidere. (118i)
+
+Limite: `docs/stare.md` generat, blocul `gen:decizii` din pagini, §Stare din
+`CLAUDE.md` ca paragraf și gardienii mecanici (`gen`, `check`, `build`,
+`metrics`) vin odată cu unealta (118-r2); până atunci indexul îl ține
+scriptul, iar curățenia antetelor normalizate e 118-r1. (118j, 118k)
 
 ## Import operațional 1C
 

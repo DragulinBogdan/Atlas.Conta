@@ -1,25 +1,19 @@
 # Atlas.Conta — starea curentă și regulile aplicabile
 
-**Actualizat: 2026-09-27.** Referința este implementarea din workspace,
+**Actualizat: 2026-10-10.** Referința este implementarea din workspace,
 inclusiv modificările locale. Documentele descriu regulile în forma lor
 actuală, organizate pe responsabilități.
 
 ## Tranziția în curs
 
-**Implementat:** cubul se scrie lângă registre pentru BCS, FCT, PLT, INC,
-BTR, FCL și DSC (privat). Citirile produsului și snapshot-urile sunt încă pe
-registre; regulile de mai jos despre registre și prețul lotului descriu
-această implementare, nu ținta. Declarantul BCS evaluează ieșirea pe
-raportul curent al lotului (90, TR-D7a).
+**Implementat:** cubul e singurul scriitor și singura sursă contabilă;
+registrele, regimul dual și oracolul lor au ieșit (110). Citirile contabile,
+de stoc, de partide, fiscale și SAF-T sunt pe cub (103, 105, 108). Catalogul
+de scenarii e proba supremă a motorului (091).
 
-**Ținta decisă:** cub canonic, cititori comuni (TR-D8), registrele scoase
-(TR-D9a: nu mai sunt scrise de la pasul 6, declarațiile dispar la pasul 7);
-catalogul de scenarii independente ca gate (091).
-
-**În lucru:** primul lot [BCS](../nucleu/scenarii/BCS.md) are scenarii
-independente verificate pe ambele profiluri; cititorii pe cub și
-compensările după reevaluare rămân deschise. Pasul curent e în `CLAUDE.md`
-§Stare; domeniul și oprirea feliei, în contractul ei; acoperirea, în catalog.
+**În lucru:** felia C111 schimbă coordonatele postării (111), înaintea
+TR-D9b, felia unităților. Pasul curent e în `CLAUDE.md` §Stare; domeniul și
+oprirea feliei, în contractul ei; acoperirea, în catalog.
 
 ## Harta documentației
 
@@ -30,6 +24,7 @@ compensările după reevaluare rămân deschise. Pasul curent e în `CLAUDE.md`
 | [API și client](api-si-client.md) | Contracte REST/OData, securitate, audit, formulare, cache, căutare și ecranele disponibile |
 | [Dezvoltare și validare](dezvoltare-si-validare.md) | Organizarea codului, persistență, seed, codegen, verificări și import |
 | [Limite curente](limite-curente.md) | Funcționalități neacoperite și limite ale mecanismelor implementate |
+| [Termeni](termeni.md) | Glosarul: termeni de domeniu, termeni tehnici, cum se citesc identificatorii |
 
 ## Produsul
 

@@ -1,8 +1,9 @@
-# Decizia 66 — Pasul 5, felia 9 — raportarea pe registre
+# 66 — Pasul 5, felia 9 — raportarea pe registre
 
-- **Data**: 2026-08-17 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-felia-raportare-contract.md
+- Data: 2026-08-17
+- Stare: activă
+- Arii: api-si-client, dezvoltare-si-validare, politici-si-fiscalitate
+- Docs: docs/api/p5-felia-raportare-contract.md
 
 ## Regula durabilă
 

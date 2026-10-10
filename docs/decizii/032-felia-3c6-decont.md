@@ -1,7 +1,8 @@
-# Decizia 32 — Felia 3c-6 — Decont
+# 32 — Felia 3c-6 — Decont
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii: domeniu-si-operare
 
 ## Regula durabilă
 

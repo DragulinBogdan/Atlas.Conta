@@ -1,7 +1,9 @@
-# 101. Împerecherea cere efect verificabil pe partidă
+# 101 — Împerecherea cere efect verificabil pe partidă
 
 - Data: 2026-09-25
-- Stare: aprobată de owner, activă; restrânge delimitarea duală S-D13; (d) depășit de 102; 101-r1 redeschisă
+- Stare: amendată de 102
+- Execuție: aprobată de owner, activă; restrânge delimitarea duală S-D13; (d) depășit de 102; 101-r1 redeschisă
+- Arii: domeniu-si-operare
 - Docs: `docs/nucleu/tr-d8-citiri-contract.md` D8-B7; 090(d/e), 092, 100.
 
 ## Regula durabilă
@@ -19,7 +21,7 @@ nu printr-un Transfer care ar modifica soldul contabil.
 Nominalizarea făcută la operare nu se consumă din nou printr-o legătură
 manuală ulterioară. Asocierea documentară nu devine o a doua scădere a soldului.
 
-(d) Legăturile istorice fără efect sunt diagnosticate, nu convertite
+(d) [depășit de 102] Legăturile istorice fără efect sunt diagnosticate, nu convertite
 implicit în postări. Raportul și snapshot-ul nu le scad din partide.
 Registrele continuă să fie scrise până la TR-D9.
 

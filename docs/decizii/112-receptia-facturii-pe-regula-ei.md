@@ -1,7 +1,11 @@
 # 112 — Recepția facturii se contează pe regula ei de contare (`FCT/Stoc`)
 
 - Data: 2026-10-08
-- Stare: **activă**; destinația restanței B-r3 (regulă proprie pe FCT) hotărâtă de owner 2026-10-08. Amendează 026 (a) și precizează 026 (c); închide B-r3.
+- Stare: activă
+- Execuție: destinația restanței B-r3 (regulă proprie pe FCT) hotărâtă de owner 2026-10-08. Amendează 026 (a) și precizează 026 (c); închide B-r3
+- Arii: domeniu-si-operare
+- Amendează: 26 (a, c)
+- Închide: B-r3
 - Docs: catalogul `docs/nucleu/scenarii/FCT.md` (SC-FCT-15, SC-FCT-16); `docs/stare-curenta/domeniu-si-operare.md`, `politici-si-fiscalitate.md`, `limite-curente.md`.
 
 ## Regula durabilă

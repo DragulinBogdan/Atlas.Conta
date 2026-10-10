@@ -1,8 +1,12 @@
-# 84. Pasul 5, felia 24 — politicile: seed-ul aliniază, rolul `Configurator`, cele șapte ecrane, potrivirea ca funcții pure și „Explică"
+# 84 — Pasul 5, felia 24 — politicile: seed-ul aliniază, rolul `Configurator`, cele șapte ecrane, potrivirea ca funcții pure și „Explică"
 
-- **Data**: 2026-09-11
-- **Stare**: activă (execută decizia 83 a–j; închide 81-r8, 81k pe ecranele de politică și „Explică"; amendează 38c/64 — gardurile de nivel minim al contării devin contract declarat pe clasa documentului; amendează 83j — ștergerea unui `TipTva` referit se refuză ca dezactivarea; avans declarat pe IM-D2/IM-D4)
-- **Docs**: `docs/api/p5-felia24-politici-explica-contract.md` (F24-D1…D7 + §Închidere), `docs/decizii/083-seed-provenienta-goluri-configurator.md`, `nou/.../Module/DatabaseUpdate/ContaSeeder.cs` (`Aliniaza`, `RaportSeed.cs`), `nou/.../Module/BusinessObjects/Politici/TipuriConfigurabile.cs`, `nou/.../Module/DatabaseUpdate/Updater.cs` (`SeedRolConfigurator`), `nou/.../Module/Motor/Potrivire.cs`, `Fapte.cs`, `nou/.../Module/Api/Politici/ExplicaApply.cs`, `ExplicaDtos.cs`, `nou/.../WebApi/API/Conta/PoliticiController.cs` (`explica`), `nou/Atlas.Conta.Client/src/felii/politici/` (șapte ecrane noi, `Explica.tsx`, `GrilaPolitica.tsx`), `nou/tools/ProbeHttp/refuzuri.ps1`, `nou/tools/ModelCheck/Program.cs` (F24-V/R/P/E)
+- Data: 2026-09-11
+- Stare: activă
+- Execuție: (execută decizia 83 a–j; închide 81-r8, 81k pe ecranele de politică și „Explică"; amendează 38c/64 — gardurile de nivel minim al contării devin contract declarat pe clasa documentului; amendează 83j — ștergerea unui `TipTva` referit se refuză ca dezactivarea; avans declarat pe IM-D2/IM-D4)
+- Arii: api-si-client, dezvoltare-si-validare, limite-curente, politici-si-fiscalitate
+- Amendează: 38 (c), 64, 83 (j)
+- Închide: 81-r8
+- Docs: `docs/api/p5-felia24-politici-explica-contract.md` (F24-D1…D7 + §Închidere), `docs/decizii/083-seed-provenienta-goluri-configurator.md`, `nou/.../Module/DatabaseUpdate/ContaSeeder.cs` (`Aliniaza`, `RaportSeed.cs`), `nou/.../Module/BusinessObjects/Politici/TipuriConfigurabile.cs`, `nou/.../Module/DatabaseUpdate/Updater.cs` (`SeedRolConfigurator`), `nou/.../Module/Motor/Potrivire.cs`, `Fapte.cs`, `nou/.../Module/Api/Politici/ExplicaApply.cs`, `ExplicaDtos.cs`, `nou/.../WebApi/API/Conta/PoliticiController.cs` (`explica`), `nou/Atlas.Conta.Client/src/felii/politici/` (șapte ecrane noi, `Explica.tsx`, `GrilaPolitica.tsx`), `nou/tools/ProbeHttp/refuzuri.ps1`, `nou/tools/ModelCheck/Program.cs` (F24-V/R/P/E)
 
 ## Regula durabilă
 

@@ -1,8 +1,10 @@
-# Decizia 53 — GATE XAF
+# 53 — GATE XAF
 
-- **Data**: 2026-07-31 (primul commit în jurnal)
-- **Stare**: activă; (d) CORECTATĂ 2026-08-24 — layout-ul e `.Layout(...)` în ContaUiBaseline (vezi corecția din text); (e) AuditTrail reactivat la DIM-3
-- **Docs**: docs/gate-xaf-contract.md, docs/api/lista-react.md
+- Data: 2026-07-31
+- Stare: activă
+- Execuție: (d) CORECTATĂ 2026-08-24 — layout-ul e `.Layout(...)` în ContaUiBaseline (vezi corecția din text); (e) AuditTrail reactivat la DIM-3
+- Arii: api-si-client, limite-curente
+- Docs: docs/gate-xaf-contract.md, docs/api/lista-react.md
 
 ## Regula durabilă
 

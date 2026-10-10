@@ -1,7 +1,9 @@
-# Decizia 40 — Felia polish XAF
+# 40 — Felia polish XAF
 
-- **Data**: 2026-07-23 (primul commit în jurnal)
-- **Stare**: activă; (d) SmartLookup REVERTAT la lookup standard (53h); (e) închise de 41
+- Data: 2026-07-23
+- Stare: activă
+- Execuție: (d) SmartLookup REVERTAT la lookup standard (53h); (e) închise de 41
+- Arii:
 
 ## Regula durabilă
 

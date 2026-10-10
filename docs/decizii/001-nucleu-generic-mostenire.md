@@ -1,7 +1,8 @@
-# Decizia 1 — Nucleu generic + moștenire, nu tabele complet separate
+# 1 — Nucleu generic + moștenire, nu tabele complet separate
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii:
 
 ## Regula durabilă
 

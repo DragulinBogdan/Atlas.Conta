@@ -1,8 +1,9 @@
-# Decizia 47 — Felia 1C-b — scheletul Import1C + nomenclatoare + deschiderea
+# 47 — Felia 1C-b — scheletul Import1C + nomenclatoare + deschiderea
 
-- **Data**: 2026-07-25 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/import/faza-1c-design.md
+- Data: 2026-07-25
+- Stare: amendată de 107
+- Arii: dezvoltare-si-validare
+- Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă
 

@@ -1,8 +1,11 @@
-# 91. Proba supremă devine catalogul de scenarii — Import1C se îngheață ca unealtă de migrare, nu ca gate; clona Flax rămâne sursă de întrebări; „rotund" primește definiție ca regulă de oprire a PoC-ului; stornoul după reevaluare = inversarea originalului + compensarea efectelor rămase active; proiecțiile persistate doar reconstruibile din postări; triajul restanțelor în patru stări
+# 91 — Proba supremă devine catalogul de scenarii — Import1C se îngheață ca unealtă de migrare, nu ca gate; clona Flax rămâne sursă de întrebări; „rotund" primește definiție ca regulă de oprire a PoC-ului; stornoul după reevaluare = inversarea originalului + compensarea efectelor rămase active; proiecțiile persistate doar reconstruibile din postări; triajul restanțelor în patru stări
 
-- **Data**: 2026-09-22
-- **Stare**: activă (amendează 090 la TR-D10, la „Import1C ca probă supremă" și la pașii TR-D7b 3–7; depășește N-r1; închide ca gate `--declaratie-pe-baza` și `--reconciliere-cub`, care rămân unelte de diagnostic; dă stare fiecărei restanțe deschise)
-- **Docs**: `docs/consultari/codex-2026-09-22-cub.md` (consultarea care a declanșat decizia), `docs/nucleu/scenarii/README.md` (catalogul: forma, cazurile obligatorii, lanțurile transversale), `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (amendamentul 091 pe pași și pe regula de oprire), `docs/decizii/restante.md` (triajul)
+- Data: 2026-09-22
+- Stare: amendată de 107
+- Execuție: (amendează 090 la TR-D10, la „Import1C ca probă supremă" și la pașii TR-D7b 3–7; depășește N-r1; închide ca gate `--declaratie-pe-baza` și `--reconciliere-cub`, care rămân unelte de diagnostic; dă stare fiecărei restanțe deschise)
+- Arii: README, dezvoltare-si-validare, limite-curente
+- Amendează: 90
+- Docs: `docs/consultari/codex-2026-09-22-cub.md` (consultarea care a declanșat decizia), `docs/nucleu/scenarii/README.md` (catalogul: forma, cazurile obligatorii, lanțurile transversale), `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (amendamentul 091 pe pași și pe regula de oprire), `docs/decizii/restante.md` (triajul)
 
 ## Regula durabilă
 
@@ -51,7 +54,7 @@ integrală pe ambele profiluri rămâne gate-ul de commit. Testele de
 proprietate din nucleu rămân probele mecanismelor (conservare, FIFO,
 Hamilton, TVA); scenariile sunt probele fluxului, prin ușa de comandă.
 
-(f) **Migrarea la sfârșit.** Conectorul (`Import1C`, `Deschidere.cs` din
+(f) [amendat de 107] **Migrarea la sfârșit.** Conectorul (`Import1C`, `Deschidere.cs` din
 `BalantaNivel3`, `Imperecheri1C`, `MigrareLegatura`, reconcilierea 1C) e o
 felie proprie, cu decizie proprie, DUPĂ „rotund". Codul rămâne în repo și
 compilează, nu se extinde. Un caz apărut la migrare care contrazice

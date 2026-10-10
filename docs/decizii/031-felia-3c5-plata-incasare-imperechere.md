@@ -1,10 +1,9 @@
-# Decizia 31 — Felia 3c-5 — Plata/Incasare + Imperechere
+# 31 — Felia 3c-5 — Plata/Incasare + Imperechere
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă; **31d amendat de 76f** (plafonul de stingere capătă latură
-  și se netează) și de **88j** (împerecherea e fapt DATAT: ștergerea liberă
-  rămâne doar în perioadă deschisă, o împerechere dintr-o perioadă închisă se
-  desface prin rând invers, iar stornoul le inversează în loc să le refuze)
+- Data: 2026-07-22
+- Stare: amendată de 76, 88
+- Execuție: 31d amendat de 76f (plafonul de stingere capătă latură și se netează) și de 88j (împerecherea e fapt DATAT: ștergerea liberă rămâne doar în perioadă deschisă, o împerechere dintr-o perioadă închisă se desface prin rând invers, iar stornoul le inversează în loc să le refuze)
+- Arii: domeniu-si-operare
 
 ## Regula durabilă
 
@@ -39,7 +38,7 @@ PLT: debit=RepartitorPrimitor (fallback 401.01.00), credit=
 RepartitorPredator FĂRĂ fallback (cont propriu fără cont = eroare clară);
 INC: oglindit (fallback 411.01.01 pe credit). Conturi proprii seed
 (legacy `casierie`): CASA→531.01.01, TREZ→770.00.00 (bancă).
-(d) **Imperecherea NU e document** — link între două documente OPERATE;
+(d) [amendat de 76] **Imperecherea NU e document** — link între două documente OPERATE;
 invarianții trăiesc în `ImperechereService` (motor, aceeași cale pentru
 UI/Web API): ambele Operat, suma>0, Σ imperecheri ≤ totalul fiecărei
 părți, contrapartida trezoreriei (latura non-ContPropriu) apare pe

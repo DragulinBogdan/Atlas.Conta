@@ -1,7 +1,8 @@
-# Decizia 61 — Restanțele §Închidere F3/F4 golite
+# 61 — Restanțele §Închidere F3/F4 golite
 
-- **Data**: 2026-08-09 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-08-09
+- Stare: activă
+- Arii:
 
 ## Regula durabilă
 

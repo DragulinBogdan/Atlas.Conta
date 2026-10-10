@@ -1,8 +1,9 @@
-# Decizia 67 — Pasul 5, felia 10 — balanța pliată pe planul de conturi
+# 67 — Pasul 5, felia 10 — balanța pliată pe planul de conturi
 
-- **Data**: 2026-08-17 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-felia-balanta-plan-contract.md
+- Data: 2026-08-17
+- Stare: activă
+- Arii:
+- Docs: docs/api/p5-felia-balanta-plan-contract.md
 
 ## Regula durabilă
 

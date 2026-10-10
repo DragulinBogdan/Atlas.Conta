@@ -1,8 +1,10 @@
-# 85. Modul de acces al ListView-urilor XAF Blazor (EF Core, PostgreSQL): `Server` implicit cu paginare, `ServerView` opt-in pe registre, `Client` explicit pe grilele de culegere, IF/IFV doar cu prag măsurat
+# 85 — Modul de acces al ListView-urilor XAF Blazor (EF Core, PostgreSQL): `Server` implicit cu paginare, `ServerView` opt-in pe registre, `Client` explicit pe grilele de culegere, IF/IFV doar cu prag măsurat
 
-- **Data**: 2026-09-11
-- **Stare**: activă, ÎNCHISĂ 2026-09-12 (tranșează riscul D4 din `docs/gate-xaf-contract.md` prin (g); modul `ServerView` pe `RegistruStoc` și `Server` pe `RegulaStoc`, puse ad-hoc la GATE XAF, capătă regulă; 85-r1 închisă la închidere — cele trei registre pe `ServerView`)
-- **Docs**: `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Blazor.Server/Model.xafml` (`Options`, registrele), `nou/.../Module/UI/ContaUiBaseline.cs` (grilele de culegere), `nou/.../Module/BusinessObjects/Nomenclatoare/ProdusLot.cs` (`Lot.Eticheta`, `Lot.ExpresieEticheta`), `nou/.../Blazor.Server/Controllers/PartenerSincronizareAnafController.cs`, `nou/tools/ModelCheck/Program.cs` (D85-M0/M1/M2/R1/R2/R3), `nou/tools/ModelCheck/ModelAplicatie.cs`, `NumaratorSql.cs`, `docs/api/p5-perf-masuratori.md` (§Decizia 85 — cifrele de pagină)
+- Data: 2026-09-11
+- Stare: activă
+- Execuție: ÎNCHISĂ 2026-09-12 (tranșează riscul D4 din `docs/gate-xaf-contract.md` prin (g); modul `ServerView` pe `RegistruStoc` și `Server` pe `RegulaStoc`, puse ad-hoc la GATE XAF, capătă regulă; 85-r1 închisă la închidere — cele trei registre pe `ServerView`)
+- Arii: api-si-client, dezvoltare-si-validare, limite-curente
+- Docs: `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Blazor.Server/Model.xafml` (`Options`, registrele), `nou/.../Module/UI/ContaUiBaseline.cs` (grilele de culegere), `nou/.../Module/BusinessObjects/Nomenclatoare/ProdusLot.cs` (`Lot.Eticheta`, `Lot.ExpresieEticheta`), `nou/.../Blazor.Server/Controllers/PartenerSincronizareAnafController.cs`, `nou/tools/ModelCheck/Program.cs` (D85-M0/M1/M2/R1/R2/R3), `nou/tools/ModelCheck/ModelAplicatie.cs`, `NumaratorSql.cs`, `docs/api/p5-perf-masuratori.md` (§Decizia 85 — cifrele de pagină)
 
 ## Regula durabilă
 

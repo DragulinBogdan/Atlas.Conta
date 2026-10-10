@@ -45,7 +45,7 @@ identificatorul între paranteze (`(42b)`, `(76-r1)`).
 | Întrebarea | Unde |
 |---|---|
 | Ce trebuie să rămână adevărat | `docs/invarianti.md` (6 invarianți, 2026-08-02) |
-| Regulile și acoperirea curentă, pe responsabilități | [docs/stare-curenta/README.md](docs/stare-curenta/README.md) → domeniu-si-operare, politici-si-fiscalitate, api-si-client, dezvoltare-si-validare, limite-curente |
+| Regulile și acoperirea curentă, pe responsabilități | [docs/stare-curenta/README.md](docs/stare-curenta/README.md) → domeniu-si-operare, politici-si-fiscalitate, api-si-client, dezvoltare-si-validare, limite-curente, termeni (glosarul) |
 | Regula durabilă a deciziei N („decizia 42c") | `docs/decizii/042-*.md`, secțiunea „Regula durabilă", sub-punctul (c); antetul spune dacă e activă/amendată/depășită; indexul cu stări în `docs/decizii/README.md` |
 | De ce e așa (context, tranșări, review) | același fișier, sub „Regula durabilă" |
 | Restanțele și amânările cu nume (backlog) | `docs/decizii/restante.md` (id → decizie; starea deschisă/închisă) |
@@ -237,16 +237,23 @@ pe container (5444): `docs/stare-curenta/dezvoltare-si-validare.md`.
 
 ## Reguli de lucru comune (Claude Code și Codex)
 
-- **Decizie nouă** = fișier nou `docs/decizii/NNN-slug.md` (numărul următor;
-  antetul cu Data/Stare/Docs, apoi secțiunea „Regula durabilă" — regula, nu
-  povestea, cu sub-punctele (a)–(k) — apoi textul integral: context, tranșări,
-  review, ce rămâne deschis) + o linie în `docs/decizii/README.md` + un rând
-  per restanță în `docs/decizii/restante.md` (numele acolo, textul doar în
-  fișierul deciziei). Numerele și literele nu se renumerotează niciodată; o
-  decizie depășită/amendată își schimbă `Stare:` în antet și în README
-  („depășită de N"), textul nu se șterge; o restanță închisă își schimbă
-  starea în `restante.md`, nu dispare. Când ai nevoie de „decizia N":
-  deschizi UN fișier, nu directorul.
+- **Forma documentației** e kitul de guvernanță
+  (`~/.claude/PROJECT_GOVERNANCE.md`), aplicat prin decizia 118; regulile
+  de aici sunt rezumatul lui. **Decizie nouă** = fișier nou
+  `docs/decizii/NNN-slug.md` (numărul următor; antetul cu câmpurile `Data`,
+  `Stare` din vocabularul `propusă | activă | amendată de N | depășită de N`,
+  `Execuție`, `Arii`, `Amendează`, `Închide`, `Docs`; secțiunea „Regula
+  durabilă" — regula, nu povestea, cu sub-punctele (a)… — apoi context,
+  tranșări, review, ce rămâne deschis, istoric) + un rând per restanță în
+  `docs/decizii/restante.md` (numele acolo, textul doar în fișierul
+  deciziei). Indexul din `docs/decizii/README.md` e generat
+  (`python -X utf8 nou/tools/docs/normalizeaza-antete.py --scrie`), nu se
+  scrie de mână. Numerele și literele nu se renumerotează niciodată; un
+  sub-punct amendat sau depășit primește marcajul `[amendat de N]` /
+  `[depășit de N]` la început, cu textul păstrat; decizia depășită integral
+  primește banner și trece în `docs/decizii/arhiva/`; o restanță închisă își
+  schimbă starea în `restante.md`, nu dispare. Când ai nevoie de „decizia
+  N": deschizi UN fișier, nu directorul.
 - **Orice propunere arhitecturală se testează întâi contra `docs/invarianti.md`**;
   o felie mare are contract scris în `docs/` (D-uri pin-uite, regulă de oprire,
   review advers la închidere) — precedentele: `docs/api/p5-*-contract.md`.

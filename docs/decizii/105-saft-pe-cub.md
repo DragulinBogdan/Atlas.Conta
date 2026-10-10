@@ -1,8 +1,11 @@
 # 105 — SAF-T D406 pe cub: sursă unică, acces complet, certificare cu manifest
 
-Data: 2026-09-30
-Stare: activă; amendează 073 (delimitarea exportului L) și 074 (cheia și categoria politicii de mișcare S)
-Docs: `docs/nucleu/tr-d8-saft-contract.md` (SAF-B1…B8, S0–S3, B8-R1…R4); `docs/nucleu/scenarii/SAFT.md`; `docs/nucleu/tr-d8-saft-ab.md`
+- Data: 2026-09-30
+- Stare: activă
+- Execuție: amendează 073 (delimitarea exportului L) și 074 (cheia și categoria politicii de mișcare S)
+- Arii:
+- Amendează: 73, 74
+- Docs: `docs/nucleu/tr-d8-saft-contract.md` (SAF-B1…B8, S0–S3, B8-R1…R4); `docs/nucleu/scenarii/SAFT.md`; `docs/nucleu/tr-d8-saft-ab.md`
 
 **Starea verificării B8, 2026-09-30:** toate constatările sunt rezolvate.
 Codex a aplicat corecția RV1.2 pe clasificatorul istoric `3a4372d`:

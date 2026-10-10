@@ -1,7 +1,9 @@
 # 115 — Linia de notă poate numi partida pe care o stinge; partida inițială își poartă data de naștere
 
 - Data: 2026-10-09
-- Stare: **activă**; hotărâtă de owner 2026-10-09 (nominalizarea din sursă se păstrează; fără ea, conectorul dă o cheie stabilă de ordonare). Precizează 090 (e) și 107; tratează 107-r9 pe compensări și operații; restrânge 114-r1.
+- Stare: activă
+- Execuție: hotărâtă de owner 2026-10-09 (nominalizarea din sursă se păstrează; fără ea, conectorul dă o cheie stabilă de ordonare). Precizează 090 (e) și 107; tratează 107-r9 pe compensări și operații; restrânge 114-r1
+- Arii: dezvoltare-si-validare, domeniu-si-operare, limite-curente
 - Docs: `docs/stare-curenta/domeniu-si-operare.md`, `dezvoltare-si-validare.md`; catalogul `docs/nucleu/scenarii/NTC.md` (SC-NTC-23…26) și `CITIRI.md` (SC-CIT-112).
 
 ## Regula durabilă

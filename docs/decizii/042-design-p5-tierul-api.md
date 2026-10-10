@@ -1,14 +1,16 @@
-# Decizia 42 — Design pasul 5 — tierul API + React
+# 42 — Design pasul 5 — tierul API + React
 
-- **Data**: 2026-07-24 (primul commit în jurnal)
-- **Stare**: activă; (b) amendat de 104b (coaja comenzii își face singură contextul), (e) amendat de 104d (culegerea documentelor în XAF, React pe citiri)
-- **Docs**: docs/api/p5-api-design.md
+- Data: 2026-07-24
+- Stare: amendată de 104, 106
+- Execuție: (b) amendat de 104b (coaja comenzii își face singură contextul), (e) amendat de 104d (culegerea documentelor în XAF, React pe citiri)
+- Arii: README, api-si-client, dezvoltare-si-validare, domeniu-si-operare, limite-curente, politici-si-fiscalitate
+- Docs: docs/api/p5-api-design.md
 
 ## Regula durabilă
 
 **Design API.** (a) **O singură sursă de reguli**: gardian de Committing
 activ DOAR pe ObjectSpace-uri SECURED; non-secured = ușa de sistem; nimeni
-n-are Write pe registre. (b) **Motorul în OS non-secured PROPRIU, secvență
+n-are Write pe registre. (b) [amendat de 104] **Motorul în OS non-secured PROPRIU, secvență
 nu cuib**: culegerea comisă secured, apoi comanda prin ID; retur/erori ca
 date (`{documentId, stareNoua, conexId?, mesaje[]}` / 422). (c) **Citirea
 = registre + proiecții** (`Module/Proiectii`, IQueryable + DataSourceLoader,
@@ -17,7 +19,7 @@ check de consistență în ModelCheck); **TS nu calculează niciodată
 sold/rest/total**. (d)
 **Scrierea = agregat per document** (PUT header + linii, reconciliere
 server-side, WriteDto ≠ ReadDto), felii verticale per tip în Module;
-importul = alt apelant al aceluiași Apply, un document per tranzacție. (e)
+importul = alt apelant al aceluiași Apply, un document per tranzacție. (e) [amendat de 104] 
 Metadata: build-time
 OpenAPI→TS + captions, runtime doar politici, affordances în ReadDto,
 layout = React. (f) Host separat `Atlas.Conta.WebApi`, același Module,

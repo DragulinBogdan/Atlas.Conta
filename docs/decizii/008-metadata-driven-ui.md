@@ -1,7 +1,8 @@
-# Decizia 8 — Metadata-driven UI
+# 8 — Metadata-driven UI
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii:
 
 ## Regula durabilă
 

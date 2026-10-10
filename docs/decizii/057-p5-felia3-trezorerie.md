@@ -1,8 +1,9 @@
-# Decizia 57 — Pasul 5, felia 3 — trezoreria prin API
+# 57 — Pasul 5, felia 3 — trezoreria prin API
 
-- **Data**: 2026-08-09 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-felia-trz-contract.md
+- Data: 2026-08-09
+- Stare: activă
+- Arii: api-si-client
+- Docs: docs/api/p5-felia-trz-contract.md
 
 ## Regula durabilă
 

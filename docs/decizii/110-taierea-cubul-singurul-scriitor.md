@@ -1,7 +1,11 @@
 # 110 — Tăierea: cubul e singurul scriitor și singura sursă; registrele, regimul dual și oracolul lor au ieșit (TR-D9a)
 
 - Data: 2026-10-07
-- Stare: **aprobată de owner, 2026-10-07**. Review-ul advers Codex al închiderii e închis (D9-F-R1…R4 corectate și reverificate; IZ-R1 și IZ-R2 închise). Proba `PerfCub` pe clone diferite e acceptată de owner ca abatere de la „aceeași bază” din regula de oprire 6. Amendează 108 (a), (g), (h), (j) și 090 (a), (l); precizează D9-A2 (ordinalul perechii la storno); închide S-r6, T-r7, T-r13, TR-r9, X-r2, 109-r1, T-r9, 63f, 64h, 86-r13, F27-r11, 098-r3; nu decide 111. (i) precizată de 113 (lanțul de migrații are și `RegulaContareFaraPastreazaSemn`); B-r3 închisă prin 112, 110-r1 prin 113
+- Stare: amendată de 113
+- Execuție: aprobată de owner, 2026-10-07. Review-ul advers Codex al închiderii e închis (D9-F-R1…R4 corectate și reverificate; IZ-R1 și IZ-R2 închise). Proba `PerfCub` pe clone diferite e acceptată de owner ca abatere de la „aceeași bază” din regula de oprire 6. Amendează 108 (a), (g), (h), (j) și 090 (a), (l); precizează D9-A2 (ordinalul perechii la storno); închide S-r6, T-r7, T-r13, TR-r9, X-r2, 109-r1, T-r9, 63f, 64h, 86-r13, F27-r11, 098-r3; nu decide 111. (i) precizată de 113 (lanțul de migrații are și `RegulaContareFaraPastreazaSemn`); B-r3 închisă prin 112, 110-r1 prin 113
+- Arii:
+- Amendează: 90 (a), 108 (a, g, h, j)
+- Închide: S-r6, T-r13, TR-r9, X-r2, 109-r1, T-r9, 63f, 64h, 86-r13, F27-r11, 098-r3
 - Docs: contractul `docs/nucleu/tr-d9-taierea-contract.md` cu amendamentele 1–3; pașii `docs/nucleu/tr-d9-inventar.md`, `tr-d9-pas2-probe.md`, `tr-d9-pas3-retintire.md`, `tr-d9-pas5b-probe.md`, `tr-d9-pas5c-imbinare-partide.md`, `tr-d9-pas6-taierea.md`, `tr-d9-pas6b-repartitor.md`, `tr-d9-pas6c-spargere-modelcheck.md`, `tr-d9-pas7-declaratii.md`, `tr-d9-pas7b-pereche.md`, `tr-d9-pas7c-versiunea-politicii.md`, `tr-d9-pas8-inchiderea.md`; `docs/stare-curenta/` (toate paginile); dovezile în `run-nucleu/tr-d9a/` și `run-verificari/d9-pas8-*`
 
 ## Regula durabilă
@@ -24,7 +28,7 @@
 
 (h) **Explicația reține regula care a decis.** Fiecare rând de politică din care declarantul a luat un fapt folosit la o postare intră ca `VersiunePolitica(Fel, Rand, Versiune)`, cu contorul rândului la operare; `ContRezolvat` numește regula de contare. Cititorul arată dacă rândul s-a schimbat de atunci. Contorul crește pe toate ușile de scriere ale produsului. Explicația e în formatul 2, fără cititor pentru formatul 1.
 
-(i) **Schema e greenfield.** Lanțul de migrații e `InitialCreate` plus view-ul `PostareVizual`; partițiile, cheile compuse, indecșii cititorilor și funcția `cub_partida_id` sunt SQL scris de mână în el. O bază care nu corespunde codului se recreează (102 b).
+(i) [amendat de 113] **Schema e greenfield.** Lanțul de migrații e `InitialCreate` plus view-ul `PostareVizual`; partițiile, cheile compuse, indecșii cititorilor și funcția `cub_partida_id` sunt SQL scris de mână în el. O bază care nu corespunde codului se recreează (102 b).
 
 (j) **Limitele consemnate** (secțiunea „Limite" de mai jos) nu sunt promisiuni ale tăierii și nu se închid prin tăcere.
 

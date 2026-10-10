@@ -1,8 +1,9 @@
-# Decizia 22 — Testul bazei
+# 22 — Testul bazei
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: db/inventar/11-testul-bazei.md
+- Data: 2026-07-22
+- Stare: activă
+- Arii: domeniu-si-operare
+- Docs: db/inventar/11-testul-bazei.md
 
 ## Regula durabilă
 

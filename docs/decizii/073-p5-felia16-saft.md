@@ -1,14 +1,10 @@
-# Decizia 73 — Pasul 5, felia 16 — SAF-T (D406 L) ca proiecție peste registre
+# 73 — Pasul 5, felia 16 — SAF-T (D406 L) ca proiecție peste registre
 
-- **Data**: 2026-08-26
-- **Stare**: activă, amendată de 105 (2026-09-30) (închide D4-r5 parțial — cod NC pe produs, D4-r10 — antetul
-  societății, D4-r14; deschide prima infrastructură de fișier XML din repo —
-  69-r6/D4-r13 rămân, dar au acum un precedent; **73-r1 închisă de decizia 74**,
-  care amendează 73f/g cu faptele profilului `C`)
-- **Docs**: docs/api/p5-felia-saft-contract.md (D16-D1…D6 + amendamentele
-  pașilor 2 și 4, riscurile 1–12, V1–V5), docs/api/d406-structura-2026.md
-  (structura oficială, ancora 16.02.2026, regulile reale ale validatorului),
-  docs/import/faza-1c-design.md §14 (cifrele V5)
+- Data: 2026-08-26
+- Stare: amendată de 74, 105
+- Execuție: amendată de 105 (2026-09-30) (închide D4-r5 parțial — cod NC pe produs, D4-r10 — antetul societății, D4-r14; deschide prima infrastructură de fișier XML din repo — 69-r6/D4-r13 rămân, dar au acum un precedent; 73-r1 închisă de decizia 74, care amendează 73f/g cu faptele profilului `C`)
+- Arii: politici-si-fiscalitate
+- Docs: docs/api/p5-felia-saft-contract.md (D16-D1…D6 + amendamentele pașilor 2 și 4, riscurile 1–12, V1–V5), docs/api/d406-structura-2026.md (structura oficială, ancora 16.02.2026, regulile reale ale validatorului), docs/import/faza-1c-design.md §14 (cifrele V5)
 
 ## Regula durabilă
 
@@ -28,7 +24,7 @@ linii, partenerul de pe RÂND, rolul al CONTULUI (64h); `TaxInformation` din
 `RegistruTva` pe `Detaliu × Storno`; storno = factură proprie `381` negativă;
 liniile de stoc FCT își iau contrapartida din NIR-ul conex MATERIALIZAT,
 niciodată un cont inventat; nimic nu se pierde: `Neincluse` + avertismente
-agregate + cusăturile în DTO. (f) `SaftXml` streaming pe XSD-ul oficial; DUK =
+agregate + cusăturile în DTO. (f) [amendat de 74] `SaftXml` streaming pe XSD-ul oficial; DUK =
 oracolul, din ModelCheck. (g) JSON = SUMAR (fișierul întreg e prea mare ca
 răspuns JSON); XML streaming (`AllowSynchronousIO`); `User` ⇒ 403 pe fișier
 (un fișier gol semnat e o declarație falsă), 200 gol pe sumar. (h) Client:

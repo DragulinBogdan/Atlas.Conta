@@ -1,8 +1,9 @@
-# Decizia 56 — Pasul 5, felia 2 — FacturaIntrare + conex-NIR prin API
+# 56 — Pasul 5, felia 2 — FacturaIntrare + conex-NIR prin API
 
-- **Data**: 2026-08-08 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-felia-fct-contract.md
+- Data: 2026-08-08
+- Stare: amendată de 77, 81
+- Arii: api-si-client, dezvoltare-si-validare, politici-si-fiscalitate
+- Docs: docs/api/p5-felia-fct-contract.md
 
 ## Regula durabilă
 

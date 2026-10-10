@@ -1,16 +1,20 @@
 # 116 — Unitatea fără document se departajează pe postarea ei de deschidere; ID-urile postărilor urmează ordinea tranzacției
 
 - Data: 2026-10-09
-- Stare: **activă, amendată de 117** ((a): ID-urile postărilor nu mai poartă ordine; (b), (c): departajează ordinalul postării de deschidere, nu ID-ul ei); hotărâtă de owner 2026-10-09. 116-r1 e închisă prin 117. Amendează 114 (a) și (d); închide 114-r1 și 107-r11.
+- Stare: amendată de 117
+- Execuție: amendată de 117 ((a): ID-urile postărilor nu mai poartă ordine; (b), (c): departajează ordinalul postării de deschidere, nu ID-ul ei); hotărâtă de owner 2026-10-09. 116-r1 e închisă prin 117. Amendează 114 (a) și (d); închide 114-r1 și 107-r11
+- Arii: domeniu-si-operare, limite-curente
+- Amendează: 114 (a)
+- Închide: 114-r1, 107-r11
 - Docs: `docs/stare-curenta/domeniu-si-operare.md`, `limite-curente.md`; catalogul `docs/nucleu/scenarii/CITIRI.md` (SC-CIT-113).
 
 ## Regula durabilă
 
 **Ordinea în care deschiderea își primește unitățile e ordinea în care FIFO le consumă la aceeași dată.**
 
-(a) **Scrierea.** Postările unei tranzacții primesc ID-uri crescătoare în ordinea tranzacției (`Materializare.Scrie`). ID-ul rămâne Guid v7 generat la scriere; nu se adaugă coloană și nu se schimbă nicio coordonată a postării.
+(a) [amendat de 117] **Scrierea.** Postările unei tranzacții primesc ID-uri crescătoare în ordinea tranzacției (`Materializare.Scrie`). ID-ul rămâne Guid v7 generat la scriere; nu se adaugă coloană și nu se schimbă nicio coordonată a postării.
 
-(b) **Ordinea FIFO** a unităților este: data deschiderii, ID-ul documentului deschizător, ID-ul postării de deschidere, apoi identificatorul unității. Postarea de deschidere contează numai între unitățile fără document deschizător, care rămân primele la data lor (114 (a)).
+(b) [amendat de 117] **Ordinea FIFO** a unităților este: data deschiderii, ID-ul documentului deschizător, ID-ul postării de deschidere, apoi identificatorul unității. Postarea de deschidere contează numai între unitățile fără document deschizător, care rămân primele la data lor (114 (a)).
 
 (c) **Nucleul primește postarea pe candidat** (`Disponibil.Deschidere`), ca originea (114 (b)): identitatea unității nu se schimbă. Motorul o citește din cub prin `Cub.Citiri.Partide.Deschideri`, numai când la FIFO vin cel puțin două partide fără document.
 

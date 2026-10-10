@@ -1,0 +1,66 @@
+# 118 — Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rând
+
+- Data: 2026-10-10
+- Stare: propusă
+- Execuție: forma kitului și cele 12 tranșări din §12 confirmate de owner 2026-10-10; textul deciziei așteaptă aprobarea
+- Arii: dezvoltare-si-validare
+- Amendează: 91 (l)
+- Docs: kitul `~/.claude/PROJECT_GOVERNANCE.md` (§1–§12, versiunea din 2026-10-10); `nou/tools/docs/normalizeaza-antete.py`; `docs/stare-curenta/termeni.md`; `docs/decizii/README.md` (indexul generat)
+
+## Regula durabilă
+
+**Forma documentației e dată de kitul de guvernanță. Atlas.Conta îl aplică pe structura pe care o are deja, fără mutări în masă; ce se poate deriva se generează, iar fiecare regulă de formă primește gardian mecanic în momentul în care intră.**
+
+(a) **Kitul e canonul formei.** Regulile de formă ale documentației, ale deciziilor, ale restanțelor, ale contractelor și ale codului sunt cele din kit; această decizie fixează doar aplicarea lor aici. Fondul nu se schimbă: invarianții, principiile transversale și regulile de domeniu rămân unde sunt. Un text vechi se aduce la formă la atingere sau printr-o trecere unică asistată de script, niciodată prin rescriere de mână în masă.
+
+(b) **Antetul deciziei are câmpuri fixe**: `Data`, `Stare`, `Execuție`, `Arii`, `Amendează`, `Închide`, `Docs`, câte o linie. `Stare` ia o singură valoare din vocabularul închis `propusă` | `activă` | `amendată de N, M` | `depășită de N`; aprobarea, PR-ul și review-ul stau în `Execuție`. Titlul e `# N — afirmația`. Pentru deciziile 1–75 data e cea a primului commit în jurnal.
+
+(c) **Sub-punctul amendat sau depășit poartă marcajul în loc**, la început: `(c) [amendat de 104] …`, `(d) [depășit de 102] …`. Textul lui rămâne; formularea curentă stă în pagina de stare curentă. `Amendează: N (x)` în antetul lui M și marcajul `[amendat de M]` în N (x) sunt cele două capete ale aceleiași legături și se verifică împreună.
+
+(d) **Decizia depășită integral** primește banner sub titlu și se mută în `decizii/arhiva/`, cu același nume de fișier; linkurile se repară în același PR. Astăzi nicio decizie nu e depășită integral.
+
+(e) **Indexul deciziilor e generat** între `<!-- gen:index -->` și `<!-- /gen:index -->` în `decizii/README.md`, în trei grupe: active, amendate, depășite. Linia scrisă de mână la fiecare decizie nouă dispare. Până la unealtă, generatorul e `normalizeaza-antete.py`, idempotent, rulat din rădăcina repo-ului cu `--scrie`.
+
+(f) **`Arii` numește paginile stării curente** pe care decizia le atinge. Prima populare vine din citările `(Nx)` ale paginilor; o decizie necitată de nicio pagină are `Arii` gol și apare în raport, nu se completează din imaginație. Blocul generat `gen:decizii` din pagini vine odată cu unealta.
+
+(g) **Termenii** stau în `stare-curenta/termeni.md`, pe forma din kit §3.4: domeniu, tehnic, identificatori; definiție de o propoziție, trimitere la regulă și la decizie. Un termen intră la prima lui folosire într-o pagină de stare curentă, în același commit.
+
+(h) **Tipul documentului îl dă antetul**: `Tip: contract | analiza | review | catalog | note` pe orice fișier din afara `decizii/` și `stare-curenta/`. Folderele pe arie (`nucleu/`, `api/`, `privat/`, `import/`, `dim/`) rămân; `felii/` și `analize/` nu se creează acum. Un fișier fără `Tip` e jurnal: nu i se cer câmpuri, linkurile i se verifică.
+
+(i) **Restanțele** păstrează triajul din 091 (k) ca vocabular de stări și primesc categoria `docs` pentru restanțele formei; `închisă prin N` e singura stare de închidere. `Închide: X` în antetul lui N și starea rândului X în registru sunt cele două capete ale aceleiași legături.
+
+(j) **Unde suntem se generează**: `docs/stare.md` cu secțiunile din kit §4; `CLAUDE.md` §Stare devine un paragraf cu felia curentă și linkul spre `stare.md`; cronologia rămâne în `istoric-plan-de-lucru.md`, care își păstrează numele. Amendează 91 (l): nu „un paragraf pe arie", ci unul singur. Intră în vigoare când unealta produce `stare.md`.
+
+(k) **Gardienii intră pe rând, la prag zero.** Unealta (nume de lucru `docskit`, repo propriu, dotnet global tool din feed-ul local, Markdig) are `gen`, `check`, `build`, `metrics`, pe specificația din kit §8. Proiectul nu are CI: `check` verde e condiție a PR-ului, rulat local, cu ieșirea atașată. Curățenia e comanda `/docs-curatenie`, la închiderea fiecărei felii și la orice decizie care amendează sau depășește o alta; nu există hook de sesiune.
+
+## Context
+
+Owner-ul a parcurs documentația pe structura din 2026-09-09 (invarianți, stare curentă pe responsabilități, decizii cu „Regula durabilă", restanțe cu nume) și a cerut trei lucruri: un glosar al termenilor, separarea explicită a deciziilor depășite cu o curățenie periodică, și o randare HTML navigabilă fără referințe externe. În paralel, din `product-fead` (Flax) a extras un kit de gestiune cu principii, tipuri de document cu criteriu de închidere, vedere generată, gardieni mecanici și șabloane.
+
+Măsurătorile pe jurnal la 2026-10-10: 117 decizii, două formate de antet (100 vechi, 17 noi), 16 decizii la care clasa stării din antet diferă de cea din index, linia `Stare` ajunsă la 859 de caractere în decizia 110, `stare-curenta/README.md` cu „Actualizat" la 2026-09-27 și ultimul commit la 2026-10-07. „Picior" apare de 11 ori în stare curentă fără nicio definiție.
+
+## Tranșări
+
+Cele 12 tranșări între structura Atlas și kitul Flax sunt în kit §12, cu motivul fiecăreia. Cele care schimbă practica de aici: `Stare` vocabular închis cu ciclul de viață în `Execuție`; marcajul în sub-punct, nu îndoirea textului; indexul generat; depășitele în `arhiva/`; `Tip` în antet; restanțele rămân tabel cu rândul păstrat la închidere; o unealtă instalată o dată, în locul scripturilor copiate per proiect; `stare.md` generat în locul §Stare scris de mână.
+
+Respins: hook de sesiune pentru curățenie (agresiv, nu e momentul); mutarea deciziilor în foldere pe componentă; renumerotarea sau redenumirea deciziilor; copierea kitului în repo înainte de a avea repo-ul unealtei (118-r4).
+
+## Review
+
+Fără review advers la scriere: decizie de formă, fără efect pe motor sau schemă. Owner-ul decide dacă cere unul la aprobare.
+
+## Ce rămâne deschis
+
+**118-r1 — Curățenia antetelor normalizate.** Scriptul a păstrat verbatim în `Execuție` tot ce nu a putut clasifica: 20 de decizii cu `Execuție` peste 200 de caractere, 34 cu `Arii` gol, 11 închideri declarate în text pe restanțe pe care registrul le ține `după PoC` sau `activă` (73, 76, 77, 81, 90), 7 identificatori de restanță absenți din registru (D4-r14, 73-r1, 74-r4, 74-r6, 74-r9, 77k, 81k, T-r7). Se strâng la prima `/docs-curatenie`, nu de mână acum. Triggerul: prima rulare a lui `check`.
+
+**118-r2 — Unealta.** Repo propriu, `gen` și `check` întâi, `build` și `metrics` după; proba de compatibilitate pe cele 24 de linkuri cu ancoră existente. Până atunci scriptul de normalizare ține indexul. Triggerul: aprobarea acestei decizii.
+
+**118-r3 — `Tip` pe fișierele vechi și `consultari/`.** Fișierele din `nucleu/`, `api/`, `privat/`, `import/`, `dim/` primesc `Tip` la atingere sau într-o trecere unică; `consultations/` se absoarbe în `consultari/` cu `decizie.md` per consultare. Triggerul: `check` cu gardianul de antete activat.
+
+**118-r4 — `docs-init`, `/docs-curatenie` și casa kitului.** Comenzile globale se extrag din kit după ce unealta se așază; kitul se mută în repo-ul unealtei, iar proiectul păstrează un pointer, nu o copie. Triggerul: 118-r2 închisă.
+
+**118-r5 — Memoria agentului.** Predările din memorie trec în contracte și în istoric; indexul rămâne un rând per fir (kit §6.19, §11.6). Triggerul: prima felie închisă după 118-r2.
+
+## Istoric
+
+- 2026-10-10: scrisă ca `propusă`, cu normalizarea celor 117 antete făcută de script în același PR.

@@ -1,7 +1,8 @@
-# Decizia 20 — Un singur nomenclator de tipuri, și e codul
+# 20 — Un singur nomenclator de tipuri, și e codul
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii: domeniu-si-operare, politici-si-fiscalitate
 
 ## Regula durabilă
 

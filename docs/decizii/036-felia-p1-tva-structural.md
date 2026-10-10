@@ -1,8 +1,10 @@
-# Decizia 36 — Felia P1 — profil privat + TVA structural
+# 36 — Felia P1 — profil privat + TVA structural
 
-- **Data**: 2026-07-23 (primul commit în jurnal)
-- **Stare**: activă; amendată de 71 la (d) — `CategorieD394` a murit (coloana scoasă din `TipTva` de migrația `AddD394`; categoria D394 e politica `MapareD394 (TipTva × Sens) → Tip`, 71c)
-- **Docs**: docs/privat/p1-tva-design.md
+- Data: 2026-07-23
+- Stare: amendată de 71
+- Execuție: amendată de 71 la (d) — `CategorieD394` a murit (coloana scoasă din `TipTva` de migrația `AddD394`; categoria D394 e politica `MapareD394 (TipTva × Sens) → Tip`, 71c)
+- Arii: dezvoltare-si-validare, domeniu-si-operare, politici-si-fiscalitate
+- Docs: docs/privat/p1-tva-design.md
 
 ## Regula durabilă
 
@@ -59,7 +61,7 @@ pornesc GOALE), Clasă/Tip pe simboluri OMFP (301/302/303/345/371/381 stoc,
 conturi proprii CASA→5311 / BANCA→5121, fallback-uri 401/404/4111/542,
 PoliticaValidare doar FCL⊘Stoc (fără clasificație bugetară). `Updater`
 citește `ProfilContabil` din appsettings (default Bugetar, per bază — 35d).
-(d) **Seed TipTva privat cu codurile SAF-T reale** (extrase din
+(d) [amendat de 71] **Seed TipTva privat cu codurile SAF-T reale** (extrase din
 RO_SAFT_SchemaDefCod 16.02.2026, direcționale livrare/achiziție):
 N21 310344/301104, N11 310351/301105, N9 310310/301102 (tranzitoriu, expiră
 31.07.2026 — marcat în denumire), TI21 310312/300906, NED21=Capitalizat

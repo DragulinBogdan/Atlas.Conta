@@ -1,8 +1,9 @@
-# Decizia 62 — Pasul 5, felia 5 — NIR scriere
+# 62 — Pasul 5, felia 5 — NIR scriere
 
-- **Data**: 2026-08-12 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-felia-nir-contract.md
+- Data: 2026-08-12
+- Stare: activă
+- Arii: domeniu-si-operare
+- Docs: docs/api/p5-felia-nir-contract.md
 
 ## Regula durabilă
 

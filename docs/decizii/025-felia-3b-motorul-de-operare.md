@@ -1,7 +1,8 @@
-# Decizia 25 — Felia 3b
+# 25 — Felia 3b
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii: domeniu-si-operare
 
 ## Regula durabilă
 
