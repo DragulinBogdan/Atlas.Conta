@@ -1,7 +1,7 @@
 # 90 — Nucleul ca ledger n-dimensional — un singur cub de postări în locul celor patru registre; motor pur pe operand închis (`Contract = Postari + Decizii + Ipoteze`); unitatea nominalizată (lot = partidă = fișă) numită pe linie; împerecherea ca nominalizare la operare + document `Împerechere` cu tranzacție de fel `Transfer`; linia FCT postează recepția; o singură postare de stoc, `TipStoc` dispare structural; stornoul ca tranzacție distinctă = inversul cauzat ∪ atribuit; fiscala postată în `Carte=Fiscal`; ordinea TR-D6a…D10 cu Import1C ca probă supremă; XAF și React înghețate pe funcții
 
 - Data: 2026-09-20
-- Stare: amendată de 91, 92, 93, 110
+- Stare: amendată de 91, 92, 93, 95, 96, 110
 - Execuție: amendată de 095 (producători compleți înainte de TR-D8), 096 (UrmarestePartide separat de RolTert), de 093 pentru Folosință (gestiune reală, nu virtuală) și de 091 (TR-D10 și „Import1C ca probă supremă" nu mai sunt regulă de oprire; proba supremă e catalogul `docs/nucleu/scenarii/`; amendează invarianții I, III și VI, întărește II; DEPĂȘEȘTE contractul IM `docs/api/p5-felia-izolare-motor-contract.md`; concretizează 51e ca parametru al unității; închide 76-r3, IM-r1, IM-r3, IM-r4 la TR-D9)
 - Arii: domeniu-si-operare
 - Închide: IM-r1, IM-r3, IM-r4

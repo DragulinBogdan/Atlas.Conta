@@ -3,7 +3,7 @@
 - Data: 2026-09-25
 - Stare: activă
 - Execuție: amendează 088(g/h) și DVI-B3
-- Arii: api-si-client, limite-curente, politici-si-fiscalitate
+- Arii: README, api-si-client, limite-curente, politici-si-fiscalitate
 - Amendează: 88 (g, h)
 - Docs: `docs/nucleu/tr-d8-citiri-contract.md`, §D8-B8; `docs/nucleu/scenarii/CITIRI.md`, SC-CIT-79…87
 

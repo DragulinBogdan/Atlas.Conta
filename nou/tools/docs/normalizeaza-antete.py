@@ -16,8 +16,10 @@ VOCAB_RE = re.compile(r"^(propusă|activă|amendată de [\d, și]+|depășită d
 SUBPUNCT_RE = re.compile(r"^(\s*-?\s*\**)\((?P<lit>[a-k])\)(\**)(?P<rest>.*)$")
 MARCAJ_RE = re.compile(r"^\[(amendat|depășit) de \d+")
 DATA_NOTA_RE = re.compile(r"\s*\(primul commit în jurnal\)")
-ZGOMOT_RE = re.compile(r"\d{4}-\d{2}-\d{2}|PR #\d+|[A-Z][A-Za-z0-9]*-[A-Z]+\d+\w*|§\s*\d+|\b[A-Z]\d+\b|\d+\s*[–-]\s*\d+|pașii[^,;]*|pasul \d+|pas \d+")
+ZGOMOT_RE = re.compile(r"\d{4}-\d{2}-\d{2}|PR #\d+|[A-Z][A-Za-z0-9]*-[A-Z]+\d+\w*|§\s*\d+|\b[A-Z]\d+\b|\d+\s*[–-]\s*\d+|pașii[^,;]*|pasul \d+|pas \d+|\d+\s+luni")
 DEBUG = set()
+NUMERE = set()
+VERBE_MOI_RE = re.compile(r"\b(precizeaz[ăa]|precizat[ăe]?|concretizeaz[ăa]|concretizat[ăe]?|extinde|întărește|executat[ăe]?|închis[ăe]?|rafineaz[ăa]|urmeaz[ăa]|nu decide|regula de oprire|invarianții|axa|trecerea|versiunea|pe baza|relativ la|față de|precedent[ăe]?|Numărul)\b", re.I)
 CITARE_RE = re.compile(r"\((\d{2,3})([a-k])?(?:\s*\(([a-k])\))?(?:[,/ ]+(?:\d{2,3})?[a-k]?(?:-r\d+)?)*\)|\((\d{2,3})-r\d+\)|\(decizia (\d{1,3})")
 
 
@@ -134,12 +136,23 @@ def interpreteaza_stare(d):
         rest = s[m.end():]
     else:
         rest = re.sub(r"^(activă|aprobată[^;.]*)[;,.]?\s*", "", s) if re.match(r"^(activă|aprobată)", s) else s
-    for mm in re.finditer(r"\(?\b([a-k])\)?(?:/([a-k]))?\)?\s+(?:e\s+)?(amendată?|depășită?)\s+(?:de|prin)\s+(\d{1,3})([a-k])?\b", s):
-        verb = "amendat" if mm.group(3).startswith("amend") else "depășit"
-        for lit in (mm.group(1), mm.group(2)):
-            if lit:
-                marcaje.append((lit, verb, int(mm.group(4))))
-                de.add(int(mm.group(4)))
+    for mm in re.finditer(r"((?:\(?\b[a-k]\)?(?:/[a-k]\)?)?(?:\s*(?:,|și)\s*)?)+?)\s*(?:istoric\s+)?(?:e\s+)?(amendat[ăe]?|depășit[ăe]?)\s+(?:de|prin)\s+(\d{1,3})([a-k])?\b", s):
+        verb = "amendat" if mm.group(2).startswith("amend") else "depășit"
+        litere = re.findall(r"\b([a-k])\b", mm.group(1))
+        if litere and litere[-1] == "e" and not mm.group(1).rstrip().endswith(")"):
+            litere.pop()
+        for lit in litere:
+            marcaje.append((lit, verb, int(mm.group(3))))
+        de.add(int(mm.group(3)))
+    for mm in re.finditer(r"(amendat[ăe]?|depășit[ăe]?)\s+de\s+(\d{1,3})[a-k]?\s+la\s+\(([a-k])\)", s):
+        verb = "amendat" if mm.group(1).startswith("amend") else "depășit"
+        marcaje.append((mm.group(3), verb, int(mm.group(2))))
+        de.add(int(mm.group(2)))
+    for mm in re.finditer(r"\bamendat[ăe]\s+de\s+([^;]*)", s):
+        seg = re.sub(r"\([^()]*[a-zăîâșț]{3,}[^()]*\)", " ", ZGOMOT_RE.sub(" ", mm.group(1)))
+        for n in re.findall(r"(?<![\w(/.-])0*(\d{1,3})(?![\w/.-])", seg):
+            if int(n) in NUMERE and int(n) > d.numar:
+                de.add(int(n))
     vocab = f"amendată de {', '.join(str(x) for x in sorted(de))}" if de else "activă"
     if re.match(r"^propusă", s):
         vocab = "propusă"
@@ -200,6 +213,30 @@ def extrage_inchide(d, restante):
         if partial:
             d.probleme.append(f"închide parțial: „{seg.strip()[:70]}”")
     return ids, neinchise, lipsa
+
+
+def numere_neclasificate(d, consumate):
+    """Numerele de decizie din Stare care nu au ajuns în niciun câmp ies în raport, nu se pierd în tăcere."""
+    s = ZGOMOT_RE.sub(" ", curata(d.camp.get("Stare", "")))
+    s = re.sub(r"\b[A-Z0-9]+-r\d+\b|\b\d{2,3}[a-k]\b", " ", s)
+    moi = set()
+    for m in VERBE_MOI_RE.finditer(s):
+        seg = s[m.end():].split(";", 1)[0].split(". ", 1)[0]
+        moi |= {int(x) for x in re.findall(r"(?<![\w(/.-])0*(\d{1,3})(?![\w/.-])", seg)}
+    gasite, lifecycle = [], []
+    for m in re.finditer(r"(?<![\w(/.-])0*(\d{1,3})(?![\w/.-])", s):
+        n = int(m.group(1))
+        if n not in NUMERE or n == d.numar or n in consumate or n in gasite or n in lifecycle:
+            continue
+        if n in moi:
+            lifecycle.append(n)
+            continue
+        context = s[max(0, m.start() - 25):m.end() + 15].replace("\n", " ")
+        gasite.append(n)
+        d.probleme.append(f"neclasificat {n} în Stare: „…{context.strip()}…”")
+    if lifecycle:
+        d.probleme.append(f"ciclu de viață / precizare, rămân în Execuție: {', '.join(map(str, lifecycle))}")
+    return gasite
 
 
 def citeste_restante(cale):
@@ -298,6 +335,7 @@ def main():
         d = Decizie(p)
         decizii[d.numar] = d
     numere = set(decizii)
+    NUMERE.update(numere)
     restante = citeste_restante(dir_dec / "restante.md")
     arii = arii_din_pagini(rad / "docs" / "stare-curenta")
 
@@ -306,9 +344,8 @@ def main():
     amendata_de = defaultdict(set)
     nr_normalizate = 0
     for d in sorted(decizii.values(), key=lambda x: x.numar):
-        if d.probleme:
-            raport += [f"  {d.numar:>3}: {pb}" for pb in d.probleme]
         if d.e_normalizata:
+            raport += [f"  {d.numar:>3}: {pb}" for pb in d.probleme]
             continue
         nr_normalizate += 1
         vocab, executie, marcaje_proprii, de = interpreteaza_stare(d)
@@ -341,6 +378,9 @@ def main():
             raport.append(f"  {d.numar:>3}: Arii goale (nicio pagină de stare curentă nu o citează)")
         if len(executie) > 200:
             raport.append(f"  {d.numar:>3}: Execuție de {len(executie)} caractere → de strâns la curățenie")
+        consumate = set(amendeaza) | de | {int(m.group(1)) for t in inchide for m in [re.match(r"(\d+)-r", t)] if m}
+        numere_neclasificate(d, consumate)
+        raport += [f"  {d.numar:>3}: {pb}" for pb in d.probleme]
         d._nou = (vocab, executie, ar, amendeaza, inchide, de)
 
     nr_marcaje = 0
