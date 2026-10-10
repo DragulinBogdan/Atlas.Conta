@@ -1,7 +1,7 @@
 # 91 — Proba supremă devine catalogul de scenarii — Import1C se îngheață ca unealtă de migrare, nu ca gate; clona Flax rămâne sursă de întrebări; „rotund" primește definiție ca regulă de oprire a PoC-ului; stornoul după reevaluare = inversarea originalului + compensarea efectelor rămase active; proiecțiile persistate doar reconstruibile din postări; triajul restanțelor în patru stări
 
 - Data: 2026-09-22
-- Stare: amendată de 107
+- Stare: amendată de 107, 118
 - Execuție: (amendează 090 la TR-D10, la „Import1C ca probă supremă" și la pașii TR-D7b 3–7; depășește N-r1; închide ca gate `--declaratie-pe-baza` și `--reconciliere-cub`, care rămân unelte de diagnostic; dă stare fiecărei restanțe deschise)
 - Arii: README, dezvoltare-si-validare, limite-curente
 - Amendează: 90
@@ -109,7 +109,7 @@ a gate-ului). O restanță nouă intră direct cu una din stări. Lista `activă
 trebuie să încapă pe un ecran; când nu mai încape, se face triaj, nu se
 lungește.
 
-(l) **Documentația stării.** CLAUDE.md §Stare spune ce e adevărat AZI, în
+(l) [amendat de 118] **Documentația stării.** CLAUDE.md §Stare spune ce e adevărat AZI, în
 cel mult un paragraf pe arie; cronologia și cifrele feliilor stau doar în
 `istoric-plan-de-lucru.md` și în fișierele deciziilor. Un rezumat de felie nu
 se mai adaugă în CLAUDE.md.
