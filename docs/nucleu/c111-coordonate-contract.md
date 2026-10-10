@@ -292,7 +292,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 0 | linia de bază pe main: import Flax ianuarie, amprentele (`--amprente`), raportul SAF-T S, integrala ModelCheck pe ambele profiluri | făcut 2026-10-10: [`c111-pas0-linia-de-baza.md`](c111-pas0-linia-de-baza.md) |
 | 1 | poarta, pe forma de azi: în afara `Cub/Citiri`, a scriitorului (`Cub/Randuri.cs`) și a entității, nimeni nu numește `Postare.Partener` sau `Postare.Gestiune`; cititorii expun identitățile din D10; o probă pe sursă păzește regula | făcut 2026-10-10: [`c111-pas1-poarta.md`](c111-pas1-poarta.md) |
 | 1b | așteptările înaintea implementării: fișierul de catalog cu formele din D5 și secțiunea analitică a amprentelor | făcut 2026-10-10: [`c111-pas1b-asteptari.md`](c111-pas1b-asteptari.md) |
-| 2 | forma nouă, atomic: nucleul, schema, scrierea, declaranții, cititorii din poartă, atomii și snapshot-ul, `PostareVizual`, mutanții și scrierile brute din ModelCheck; bazele recreate | implementat și verificat pe catalog 2026-10-10: [`c111-pas2-forma-noua.md`](c111-pas2-forma-noua.md); rămân bazele de dezvoltare și lista în browser |
+| 2 | forma nouă, atomic: nucleul, schema, scrierea, declaranții, cititorii din poartă, atomii și snapshot-ul, `PostareVizual`, mutanții și scrierile brute din ModelCheck; bazele recreate | implementat și verificat pe catalog 2026-10-10: [`c111-pas2-forma-noua.md`](c111-pas2-forma-noua.md); lista probată în browser; rămân bazele de dezvoltare |
 | 3 | `Cont.FeluriRepartitor`, gardul, seed-ul bugetar | ModelCheck pe ambele profiluri; `--dump-metadata`; S6 și probele din D4 |
 | 4 | S7 și S8 | scenariu propriu pe fiecare |
 | 5 | S9: contrapartida prin pereche | fișa contului pe HTTP; cifra de timp față de pasul 0, pe aceeași bază |

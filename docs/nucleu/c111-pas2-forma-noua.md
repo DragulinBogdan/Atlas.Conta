@@ -1,7 +1,7 @@
 # C111, pasul 2 — forma nouă a postării
 
-**Data:** 2026-10-10. **Stare:** implementat și verificat pe catalog; rămân
-bazele de dezvoltare de recreat și lista de postări de probat în browser.
+**Data:** 2026-10-10. **Stare:** implementat, verificat pe catalog și în
+browser; rămân bazele de dezvoltare de recreat.
 Contractul: [C111](c111-coordonate-contract.md), D2–D7 și D10.
 
 Urmele, neversionate: `run-verificari/20261010-210057-804/` (integrala
@@ -44,6 +44,7 @@ finală, după review-ul Codex), `run-verificari/20261010-201708-710/`
 | Integrala ModelCheck, bugetar | 3.631 OK, 0 FAIL |
 | Integrala ModelCheck, privat | 5.035 OK, 0 FAIL |
 | `--scenarii C111`, ambele profiluri | verde |
+| Lista de postări în browser | coloanele noi, cu date |
 | Drift OpenAPI | zero |
 | Metadata clientului | la zi |
 
@@ -55,6 +56,15 @@ din review-ul Codex; bazele au fost recreate din migrația corectată.
 
 Nicio așteptare de sumă pe cont nu s-a schimbat: literalii numerici scoși și
 adăugați de diff-ul scenelor existente sunt aceiași, fișier cu fișier.
+
+Lista de postări (S5) e probată în browser pe hostul Blazor, pe o bază
+privată din seed (`Atlas.Conta.BackOffice.Privat.C111P2`, pe 5446), cu o
+factură de intrare cu recepție și TVA și două note operate prin API. Sub
+„Registre → Postări” lista arată `Repartitor`, `Partener fiscal`, `Loc` și
+`Contrapondere`: 371 pe gestiune, cu partenerul fiscal și locul; 401 pe
+furnizor, cu contraponderea „Terț” pe contracantitate; 4426 pe gestiune, cu
+partenerul fiscal și locul; notele numai cu repartitorul. Rețeta,
+neversionată: `run-verificari/c111-ui.ps1` și `c111-ui-date.py`.
 
 ## Așteptările schimbate
 
@@ -94,7 +104,6 @@ Două forme din catalog nu se pot atinge întocmai:
 
 ## Ce nu e probat
 
-- Lista de postări în browser, cu coloanele noi.
 - Bazele de dezvoltare, pe 5444 și pe 5446 fără sufix, nu sunt recreate; sunt
   pe lanțul vechi și nu corespund codului.
 - Import1C compilează, dar n-a rulat pe forma nouă (pasul 6).
