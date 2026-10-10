@@ -45,6 +45,23 @@ Cele 12 tranșări între structura Atlas și kitul Flax sunt în kit §12, cu m
 
 Respins: hook de sesiune pentru curățenie (agresiv, nu e momentul); mutarea deciziilor în foldere pe componentă; renumerotarea sau redenumirea deciziilor; copierea kitului în repo înainte de a avea repo-ul unealtei (118-r4).
 
+**Termenii (owner, 2026-10-10, pe review-ul ciornei glosarului).** Cuvântul din docs se alege pentru expresivitate; în cod intră doar în felia care atinge oricum conceptul. Tranșările, de aplicat în glosar prin 118-r6:
+
+1. **latură** = a documentului, `Predator`/`Primitor`. Debit/credit pe postare = **sens**, în familia `SensTva`, `SensStingere`; nu „contare", care e regula de atribuire a conturilor. Nucleul are `enum Latura { Debit, Credit }` în 88 de fișiere: se redenumește `Sens` în C111 (118-r7). „Latura pereche" a viramentului = documentul pereche (65).
+2. **partener fiscal** = partenerul din blocul fiscal al postării pe capătul intern cu fapt fiscal; nu poartă partidă (111). Respins: „contrapartidă fiscală".
+3. **capăt** = una din cele două postări ale unei mișcări (`Capat`, 129 de apariții; T-D13); „picior" rămâne sinonim de vorbire. Respins: „proiecție", termenul citirilor (42c).
+4. **unitate de sold** = obiectul nominalizat pe care se ține soldul (lot, partidă, fișă; N-D6); se desparte de `UnitateInterna`, de dimensiunea bugetară și de unitatea de măsură. `Unitate` din cod devine `UnitateSold` în TR-D9b (118-r8).
+5. **deschidere** = tranzacția de deschidere a bazei; „sold inițial" rămâne coloana balanței; derivate cu rânduri proprii: documentul deschizător (114), partida deschisă (101). Respins: „SoldInitial" pentru tranzacție.
+6. **corecție** = comanda peste graniță (F27-D6); **retragere** = Operat înapoi în Draft fără dependenți, numită azi „corecția directă" (104f, invarianți III), de redenumit la atingere, în vocabularul lui 106 (k).
+7. **profil** rămâne; „profilul de validare" devine „politica de validare" (`PoliticaValidare`). Respins: „șablon", fiindcă profilul e realiniat continuu prin `DinSeed`.
+8. **golire valorică** = eliminarea reziduului valoric al lotului golit (75, D9-D3, `Atribuit`); **reevaluare** rămâne a imobilizărilor (87). Respins: „închidere" (a treia după perioadă și TVA) și „regularizare" (D300, avans).
+9. **explicație** = cea persistată pe tranzacție (X-D4); endpoint-ul `explica` se numește „explicarea configurației".
+10. **registru** doar pentru rapoartele cu nume legal (registrul-jurnal, registrul imobilizărilor); cubul e „cubul"; README-ul stării curente și invarianții se corectează la atingere.
+11. **nucleu** = `Atlas.Conta.Nucleu`; **motorul de operare** = `MotorOperare`; două clase `Motor` cu același nume e defect de cod, de rezolvat la atingere.
+12. **contract** niciodată singur: contractul feliei, contractul laturilor, rezultatul motorului.
+13. **gate** = doar suita integrală ModelCheck; pentru drepturi e „refuz", pentru felie e „regula de oprire".
+14. Restul intrărilor `[de confirmat]` se rezolvă prin calificare, nu prin cuvinte noi: regim pe stare / regim de TVA; rolul de terț (`RolTert`), rolul liniei, rolul coloanei, rolul de securitate; dimensiune = analiticele laturii, coordonată = axa postării; materializare = scrierea contractului în cub la operare, snapshot = soldurile materializate la închiderea perioadei de referință (88). În tabelul identificatorilor: TR = trecerea pe cub, C = feliile de consolidare de după 091, sufixele „-B" și „-D" sunt același lucru, un pin aprobat de owner, numerotat diferit de la TR-D8; schema etichetelor din review-ul F27 nu e descrisă nicăieri și se spune ca atare.
+
 ## Review
 
 Fără review advers la scriere: decizie de formă, fără efect pe motor sau schemă. Owner-ul decide dacă cere unul la aprobare.
@@ -60,6 +77,12 @@ Fără review advers la scriere: decizie de formă, fără efect pe motor sau sc
 **118-r4 — `docs-init`, `/docs-curatenie` și casa kitului.** Comenzile globale se extrag din kit după ce unealta se așază; kitul se mută în repo-ul unealtei, iar proiectul păstrează un pointer, nu o copie. Triggerul: 118-r2 închisă.
 
 **118-r5 — Memoria agentului.** Predările din memorie trec în contracte și în istoric; indexul rămâne un rând per fir (kit §6.19, §11.6). Triggerul: prima felie închisă după 118-r2.
+
+**118-r6 — Tranșările de termeni aplicate în glosar.** Cele 14 puncte din „Tranșări · Termenii" intră în `termeni.md`: intrările „capăt", „unitate de sold", „sens", „retragere", „golire valorică", „partener fiscal" cu rândurile lor, cele 22 de marcaje `[de confirmat]` scoase, paginile stării curente aliniate la atingere („picior" → „capăt", „corecția directă" → „retragere", „profilul de validare" → „politica de validare"). Triggerul: sesiunea următoare, pe context nou.
+
+**118-r7 — `Latura` din nucleu devine `Sens`.** `enum Latura { Debit, Credit }` din `Atlas.Conta.Nucleu/Cub/Latura.cs`, folosit din 88 de fișiere, se redenumește mecanic în felia C111, care schimbă oricum forma postării; `Latura` rămâne doar a documentului. Triggerul: C111 pasul care atinge `Postare`.
+
+**118-r8 — `Unitate` devine `UnitateSold`.** 896 de apariții; redenumirea intră în TR-D9b, felia unităților, nu înainte. Triggerul: contractul TR-D9b.
 
 ## Istoric
 

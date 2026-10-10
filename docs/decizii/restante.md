@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-10-10 (118 propusă: categoria `docs`, 118-r1…r5 deschise; 107-r11 și 114-r1 închise prin 114, 115 și 116; 116-r1 închisă prin 117; 107-r9 restrânsă; 115-r1 și 116-r2 deschise).** [Index](README.md)
+**Actualizat: 2026-10-10 (118 propusă: categoria `docs`, 118-r1…r8 deschise; 107-r11 și 114-r1 închise prin 114, 115 și 116; 116-r1 închisă prin 117; 107-r9 restrânsă; 115-r1 și 116-r2 deschise).** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -401,3 +401,6 @@ se închide în felia de guvernanță (118); `închisă prin N` = singura stare 
 | 118-r3 | `Tip:` pe fișierele vechi din `nucleu/`, `api/`, `privat/`, `import/`, `dim/`; `consultations/` absorbit în `consultari/` cu `decizie.md` per consultare | docs |
 | 118-r4 | Comenzile globale `docs-init` și `/docs-curatenie`; kitul mutat în repo-ul unealtei, proiectul păstrează pointer | docs |
 | 118-r5 | Memoria agentului subțiată: predările trec în contracte și istoric, indexul rămâne un rând per fir | docs |
+| 118-r6 | Tranșările de termeni (118, „Tranșări · Termenii", 14 puncte) aplicate în `termeni.md`: intrările noi (capăt, unitate de sold, sens, retragere, golire valorică, partener fiscal), cele 22 de marcaje `[de confirmat]` scoase, paginile aliniate la atingere | docs |
+| 118-r7 | `enum Latura { Debit, Credit }` din nucleu devine `Sens` (88 de fișiere), în felia C111, la pasul care atinge `Postare`; `Latura` rămâne a documentului | docs |
+| 118-r8 | `Unitate` devine `UnitateSold` (896 de apariții) în TR-D9b, felia unităților | docs |
