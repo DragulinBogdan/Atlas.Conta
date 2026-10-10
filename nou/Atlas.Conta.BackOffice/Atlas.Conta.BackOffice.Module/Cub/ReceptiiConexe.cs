@@ -90,10 +90,11 @@ public static class ReceptiiConexe {
             throw new OperareException($"{Provenienta}: Recepția sursei nu are o tranzacție univocă.");
         var linii = new List<LinieReceptieSursa>();
         var tipuri = doc.Detalii.ToDictionary(d => d.ID, d => d.TipMaterialId);
+        var repartitori = Randuri.Repartitori(os, randuri);
         foreach (var grup in randuri.GroupBy(p => p.LinieId)) {
             var capete = grup.Select(p => {
-                var c = Randuri.Citeste(p).Coordonate;
-                return new N.Capat { Cont = c.Cont, Gestiune = c.Gestiune, Produs = c.Produs,
+                var c = Randuri.Citeste(p, repartitori).Coordonate;
+                return new N.Capat { Cont = c.Cont, Repartitor = c.Repartitor, Produs = c.Produs,
                     Unitate = c.Unitate, Analiza = c.Analiza };
             }).Distinct().ToList();
             if (grup.Key is not Guid linie || !tipuri.TryGetValue(linie, out var tip)
@@ -214,7 +215,7 @@ public static class ReceptiiConexe {
 
     public static void VerificaAnaliza(IObjectSpace os, Document doc, IEnumerable<N.Postare> propuse) {
         if (doc is not NIR || !EsteAcoperita(os, doc)) return;
-        var postari = propuse.Where(p => p.Coordonate.Gestiune == N.GestiuniVirtuale.Inventar).ToList();
+        var postari = propuse.Where(p => p.Coordonate.Contrapondere == N.Contrapondere.Inventar).ToList();
         var ids = postari.Select(p => p.Coordonate.Cont).Distinct().ToList();
         var conturi = os.GetObjectsQuery<Cont>().Where(c => ids.Contains(c.ID))
             .Select(c => new { c.ID, c.Simbol, c.DimensiuniObligatorii }).ToDictionary(c => c.ID);
@@ -224,7 +225,7 @@ public static class ReceptiiConexe {
             var c = p.Coordonate;
             var cont = conturi[c.Cont];
             GardAnaliza.VerificaLatura(cont.Simbol, cont.DimensiuniObligatorii,
-                GardAnaliza.Dimensiuni(c.Partener, c.Produs, c.Analiza),
+                GardAnaliza.Dimensiuni(c.Repartitor?.Id, c.Produs, c.Analiza),
                 p.Cauza.Linie is Guid id ? angajamente.GetValueOrDefault(id) : null,
                 c.Latura.ToString(), p.Cauza.Linie?.ToString(), erori);
         }

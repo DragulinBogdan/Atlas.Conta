@@ -22,6 +22,7 @@ internal static class ImobilizariFapte {
             .Where(r => r.DocumentId != operand.Document.Id).GroupBy(r => r.Rand.ImobilizareId)
             .ToDictionary(g => g.Key, g => AmortizareService.Situatie(g.Select(r => r.Rand), operand.Document.DataInregistrare));
         var conturiFise = C.Citiri.Imobilizari.Conturi(os, ids, operand.Document.DataInregistrare, operand.Document.Id);
+        var locuri = Fapte.Repartitori(os, [.. fise.Select(f => f.LocId).Distinct()]);
         var rezultat = fise.ToDictionary(f => f.ID, f => {
             var p = politici.GetValueOrDefault(f.TipMaterialId);
             var s = situatii.GetValueOrDefault(f.ID);
@@ -29,7 +30,7 @@ internal static class ImobilizariFapte {
             return new FisaFapt(f.ID, conturi?.Activ ?? f.ContImplicitId ?? Guid.Empty,
                 conturi?.Amortizare ?? p?.ContAmortizareId ?? Guid.Empty,
                 p?.ContCheltuialaAmortizareId ?? Guid.Empty, p?.ContCheltuialaCedareId ?? Guid.Empty,
-                f.LocId, f.DataPunereInFunctiune ?? operand.Document.Data,
+                Fapte.Coordonata(locuri, f.LocId), f.DataPunereInFunctiune ?? operand.Document.Data,
                 s?.ValoareFiscala ?? 0m, s?.AmortizareFiscala ?? 0m) {
                     Politica = p == null ? null : new N.VersiunePolitica(nameof(PoliticaAmortizare), p.ID, p.OptimisticLockField),
                 };
@@ -55,8 +56,10 @@ internal static class ImobilizariFapte {
             }
             return minim == decimal.MaxValue ? 0m : minim;
         }
+        var repartitori = Fapte.Repartitori(os, [.. randuri.Select(r => r.Repartitor).OfType<Guid>().Distinct()]);
         var postari = randuri.Select(r => new { Rand = r, Capat = new N.Capat {
-            Cont = r.Cont, Partener = r.Tert, Gestiune = r.Loc, Produs = r.Produs, Valuta = r.Valuta,
+            Cont = r.Cont, Repartitor = r.Repartitor is Guid id ? Fapte.Coordonata(repartitori, id) : null,
+            Produs = r.Produs, Valuta = r.Valuta,
             Analiza = new(r.CodFunctional, r.CodEconomic, r.SursaFinantare, r.UnitateOrganizatorica, r.Proiect, r.CentruCost),
         }}).ToList();
         var disponibile = postari.GroupBy(p => p.Capat).Select(g => new DisponibilFapt(g.Key,

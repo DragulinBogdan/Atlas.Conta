@@ -1320,7 +1320,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     Luna = table.Column<int>(type: "integer", nullable: false),
                     ContId = table.Column<Guid>(type: "uuid", nullable: false),
                     RepartitorId = table.Column<Guid>(type: "uuid", nullable: true),
-                    GestiuneId = table.Column<Guid>(type: "uuid", nullable: true),
                     MaterialId = table.Column<Guid>(type: "uuid", nullable: true),
                     CodFunctionalId = table.Column<Guid>(type: "uuid", nullable: true),
                     CodEconomicId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -1641,7 +1640,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     TipMaterialId = table.Column<Guid>(type: "uuid", nullable: true),
                     NaturaFiltru = table.Column<int>(type: "integer", nullable: true),
                     SemnFiltru = table.Column<int>(type: "integer", nullable: true),
-                    PastreazaSemn = table.Column<bool>(type: "boolean", nullable: false),
                     SursaContDebit = table.Column<int>(type: "integer", nullable: false),
                     SursaContCredit = table.Column<int>(type: "integer", nullable: false),
                     ContDebitId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -2002,6 +2000,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     LinieSursaReceptieId = table.Column<Guid>(type: "uuid", nullable: true),
                     CauzaDiferentei = table.Column<int>(type: "integer", nullable: true),
                     PartenerDiferentaId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PartidaDebitId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PartidaCreditId = table.Column<Guid>(type: "uuid", nullable: true),
                     AmortizareInitiala = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     AmortizareFiscalaInitiala = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     LuniAmortizateInitial = table.Column<int>(type: "integer", nullable: true),
@@ -2526,6 +2526,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 column: "GestiuneId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Loturi_LinieIntrareId",
+                table: "Loturi",
+                column: "LinieIntrareId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Loturi_ProdusId",
                 table: "Loturi",
                 column: "ProdusId");
@@ -3004,9 +3009,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 columns: new[] { "An", "Luna" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_SolduriPerioadaContabil_An_Luna_ContId_RepartitorId_Gestiun~",
+                name: "IX_SolduriPerioadaContabil_An_Luna_ContId_RepartitorId_Materia~",
                 table: "SolduriPerioadaContabil",
-                columns: new[] { "An", "Luna", "ContId", "RepartitorId", "GestiuneId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId" },
+                columns: new[] { "An", "Luna", "ContId", "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId" },
                 unique: true)
                 .Annotation("Npgsql:NullsDistinct", false);
 
@@ -3194,13 +3199,14 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     "ID" uuid NOT NULL,
                     "Spatiu" smallint NOT NULL,
                     "TranzactieId" uuid NOT NULL,
+                    "Ordinal" integer NOT NULL,
                     "DocumentId" uuid NULL,
                     "LinieId" uuid NULL,
                     "Data" date NOT NULL,
                     "Cont" uuid NOT NULL,
                     "Latura" smallint NOT NULL,
-                    "Partener" uuid NULL,
-                    "Gestiune" uuid NULL,
+                    "Repartitor" uuid NULL,
+                    "Contrapondere" smallint NULL,
                     "Produs" uuid NULL,
                     "Unitate" uuid NULL,
                     "UnitateDeschisa" date NULL,
@@ -3212,6 +3218,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     "TipTvaId" uuid NULL,
                     "SensTva" smallint NULL,
                     "RolTva" smallint NULL,
+                    "PartenerFiscal" uuid NULL,
+                    "LocFiscal" uuid NULL,
                     "PerioadaDeclarare" integer NULL,
                     "Valuta" uuid NULL,
                     "Carte" smallint NOT NULL,
@@ -3248,6 +3256,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                             OR ("InversaDinId" IS NOT NULL AND "InversaDinSpatiu" IS NOT NULL AND "InversaDinSpatiu" IN (1, 2)))
                         AND (("SuportId" IS NULL AND "SuportSpatiu" IS NULL)
                             OR ("SuportId" IS NOT NULL AND "SuportSpatiu" IS NOT NULL AND "SuportSpatiu" IN (1, 2)))),
+                    CONSTRAINT "CK_Postare_Contrapondere" CHECK ("Contrapondere" IS NULL OR "Contrapondere" BETWEEN 1 AND 4),
+                    CONSTRAINT "CK_Postare_BlocFiscal" CHECK (
+                        ("TipTvaId" IS NULL AND "PartenerFiscal" IS NULL AND "LocFiscal" IS NULL)
+                        OR ("TipTvaId" IS NOT NULL AND "LocFiscal" IS NOT NULL)),
                     CONSTRAINT "CK_Postare_FiscalComplet" CHECK (
                         "TipTvaId" IS NULL OR (
                             "DocumentId" IS NOT NULL AND "LinieId" IS NOT NULL AND
@@ -3267,8 +3279,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         FOREIGN KEY ("DocumentId") REFERENCES "Documente" ("ID"),
                     ADD CONSTRAINT "FK_Postare_Contabil_Conturi_Cont"
                         FOREIGN KEY ("Cont") REFERENCES "Conturi" ("ID"),
-                    ADD CONSTRAINT "FK_Postare_Contabil_Repartitori_Partener"
-                        FOREIGN KEY ("Partener") REFERENCES "Repartitori" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Contabil_Repartitori_Repartitor"
+                        FOREIGN KEY ("Repartitor") REFERENCES "Repartitori" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Contabil_Repartitori_PartenerFiscal"
+                        FOREIGN KEY ("PartenerFiscal") REFERENCES "Repartitori" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Contabil_Repartitori_LocFiscal"
+                        FOREIGN KEY ("LocFiscal") REFERENCES "Repartitori" ("ID"),
                     ADD CONSTRAINT "FK_Postare_Contabil_Produse_Produs"
                         FOREIGN KEY ("Produs") REFERENCES "Produse" ("ID");
                 ALTER TABLE "Postare_Stoc"
@@ -3278,19 +3294,23 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         FOREIGN KEY ("DocumentId") REFERENCES "Documente" ("ID"),
                     ADD CONSTRAINT "FK_Postare_Stoc_Conturi_Cont"
                         FOREIGN KEY ("Cont") REFERENCES "Conturi" ("ID"),
-                    ADD CONSTRAINT "FK_Postare_Stoc_Repartitori_Partener"
-                        FOREIGN KEY ("Partener") REFERENCES "Repartitori" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Stoc_Repartitori_Repartitor"
+                        FOREIGN KEY ("Repartitor") REFERENCES "Repartitori" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Stoc_Repartitori_PartenerFiscal"
+                        FOREIGN KEY ("PartenerFiscal") REFERENCES "Repartitori" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Stoc_Repartitori_LocFiscal"
+                        FOREIGN KEY ("LocFiscal") REFERENCES "Repartitori" ("ID"),
                     ADD CONSTRAINT "FK_Postare_Stoc_Produse_Produs"
                         FOREIGN KEY ("Produs") REFERENCES "Produse" ("ID"),
                     ADD CONSTRAINT "FK_Postare_Stoc_Loturi_Unitate"
                         FOREIGN KEY ("Unitate") REFERENCES "Loturi" ("ID");
                 CREATE INDEX "IX_Postare_Stoc_Produs_Data" ON "Postare_Stoc" ("Produs", "Data")
-                    INCLUDE ("Cantitate", "Valoare", "Gestiune", "Unitate");
+                    INCLUDE ("Cantitate", "Valoare", "Repartitor", "Unitate");
                 CREATE INDEX "IX_Postare_Stoc_Data" ON "Postare_Stoc" ("Data");
                 CREATE INDEX "IX_Postare_Stoc_PerioadaDeclarare_TipTvaId" ON "Postare_Stoc"
                     ("PerioadaDeclarare", "TipTvaId") WHERE "PerioadaDeclarare" IS NOT NULL;
-                CREATE INDEX "IX_Postare_Contabil_Partener_Cont_Data" ON "Postare_Contabil"
-                    ("Partener", "Cont", "Data") WHERE "Partener" IS NOT NULL;
+                CREATE INDEX "IX_Postare_Contabil_Repartitor_Cont_Data" ON "Postare_Contabil"
+                    ("Repartitor", "Cont", "Data") WHERE "Repartitor" IS NOT NULL;
                 CREATE INDEX "IX_Postare_Contabil_Data" ON "Postare_Contabil" ("Data");
                 CREATE INDEX "IX_Postare_Contabil_PerioadaDeclarare_TipTvaId" ON "Postare_Contabil"
                     ("PerioadaDeclarare", "TipTvaId") WHERE "PerioadaDeclarare" IS NOT NULL;
@@ -3301,6 +3321,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 CREATE INDEX "IX_Postare_PerioadaD394" ON "Postare" ("PerioadaD394") WHERE "PerioadaD394" IS NOT NULL;
                 CREATE INDEX "IX_Postare_DataExigibilitate" ON "Postare" ("DataExigibilitate") WHERE "DataExigibilitate" IS NOT NULL;
                 CREATE INDEX "IX_Postare_Unitate_Data" ON "Postare" ("Unitate", "Data") WHERE "Unitate" IS NOT NULL;
+                CREATE INDEX "IX_Postare_Fisa_Cont" ON "Postare" ("Cont") WHERE "FelUnitate" = 3;
                 """);
 
             // 092a: identitatea partidei, aceeași cu N.Unitate.DeschidePartida (SC-CIT-53).
@@ -3319,12 +3340,55 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 END
                 $body$;
                 """);
+
+            // D9-A12: proiecția de citire a listei XAF.
+            migrationBuilder.Sql("""
+                CREATE VIEW "PostareVizual" AS
+                SELECT p.*,
+                    t."Fel" AS "TranzactieFel",
+                    d."Numar" AS "DocumentNumar",
+                    c."Simbol" AS "ContSimbol",
+                    r."Cod" AS "RepartitorCod",
+                    pf."Cod" AS "PartenerFiscalCod",
+                    lf."Cod" AS "LocFiscalCod",
+                    pr."Cod" AS "ProdusCod",
+                    CASE p."FelUnitate"
+                        WHEN 1 THEN pr."Cod" || '/' || to_char(l."Data", 'YYYY-MM-DD')
+                        WHEN 2 THEN r."Cod" || '/' || to_char(p."UnitateDeschisa", 'YYYY-MM-DD')
+                        WHEN 3 THEN f."NumarInventar"
+                    END AS "UnitateCod",
+                    tt."Cod" AS "TipTvaCod",
+                    cf."Cod" AS "CodFunctionalCod",
+                    ce."Cod" AS "CodEconomicCod",
+                    sf."Cod" AS "SursaFinantareCod",
+                    u."Cod" AS "UnitateOrganizatoricaCod",
+                    pj."Cod" AS "ProiectCod",
+                    cc."Cod" AS "CentruCostCod"
+                FROM "Postare" p
+                LEFT JOIN "Tranzactie" t ON t."ID" = p."TranzactieId"
+                LEFT JOIN "Documente" d ON d."ID" = p."DocumentId"
+                LEFT JOIN "Conturi" c ON c."ID" = p."Cont"
+                LEFT JOIN "Repartitori" r ON r."ID" = p."Repartitor"
+                LEFT JOIN "Repartitori" pf ON pf."ID" = p."PartenerFiscal"
+                LEFT JOIN "Repartitori" lf ON lf."ID" = p."LocFiscal"
+                LEFT JOIN "Produse" pr ON pr."ID" = p."Produs"
+                LEFT JOIN "Loturi" l ON p."FelUnitate" = 1 AND l."ID" = p."Unitate"
+                LEFT JOIN "Imobilizari" f ON p."FelUnitate" = 3 AND f."ID" = p."Unitate"
+                LEFT JOIN "TipuriTva" tt ON tt."ID" = p."TipTvaId"
+                LEFT JOIN "CoduriFunctionale" cf ON cf."ID" = p."CodFunctional"
+                LEFT JOIN "CoduriEconomice" ce ON ce."ID" = p."CodEconomic"
+                LEFT JOIN "SurseFinantare" sf ON sf."ID" = p."SursaFinantare"
+                LEFT JOIN "Unitati" u ON u."ID" = p."UnitateOrganizatorica"
+                LEFT JOIN "Proiecte" pj ON pj."ID" = p."Proiect"
+                LEFT JOIN "Repartitori" cc ON cc."ID" = p."CentruCost";
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql("""
+                DROP VIEW "PostareVizual";
                 DROP FUNCTION cub_partida_id(uuid, uuid, uuid);
                 DROP TABLE "Postare";
                 """);

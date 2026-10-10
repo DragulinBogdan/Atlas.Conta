@@ -75,7 +75,7 @@ public sealed class DeclarantDescarcareGestiune : IDeclarant {
             miscari.Add(new N.Miscare(
                 new N.Capat {
                     Cont = contare.ContCredit,
-                    Gestiune = doc.Predator.Id,
+                    Repartitor = doc.Predator.Coordonata,
                     Produs = lot.ProdusId,
                     Unitate = iesit,
                     Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
@@ -83,9 +83,9 @@ public sealed class DeclarantDescarcareGestiune : IDeclarant {
                 new N.Capat {
                     Cont = contare.ContDebit,
                     // N-D4: marfa părăsește patrimoniul — capătul de cost e al clientului.
-                    Gestiune = N.GestiuniVirtuale.Client,
+                    Contrapondere = N.Contrapondere.Tert,
                     // T-D13 (g): terțul nominalizat pe capătul extern.
-                    Partener = doc.Primitor.Parte == Parte.Extern ? doc.Primitor.Id : null,
+                    Repartitor = doc.Primitor.Parte == Parte.Extern ? doc.Primitor.Coordonata : null,
                     Produs = lot.ProdusId,
                     Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideDebit, contare.Regula.Comun),
                 },

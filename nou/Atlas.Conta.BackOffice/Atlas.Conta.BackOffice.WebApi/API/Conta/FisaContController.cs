@@ -24,7 +24,7 @@ public class FisaContController : ContaApiController {
         [FromQuery] Guid? codFunctionalId = null, [FromQuery] Guid? codEconomicId = null,
         [FromQuery] Guid? sursaFinantareId = null, [FromQuery] Guid? unitateId = null,
         [FromQuery] Guid? proiectId = null, [FromQuery] Guid? centruCostId = null,
-        [FromQuery] bool repartitorNul = false, [FromQuery] Guid? gestiuneId = null) {
+        [FromQuery] bool repartitorNul = false) {
 
         var erori = new List<string>();
         if (contId == null || contId == Guid.Empty)
@@ -52,7 +52,7 @@ public class FisaContController : ContaApiController {
         var rezultat = Incarca(ContabilProiectii.FisaCont(os, contId.Value,
             dataStart.Value, dataEnd.Value,
             repartitorId, materialId, codFunctionalId, codEconomicId,
-            sursaFinantareId, unitateId, proiectId, centruCostId, repartitorNul, gestiuneId),
+            sursaFinantareId, unitateId, proiectId, centruCostId, repartitorNul),
             loadOptions, ContabilProiectii.OrdineFisa());
         ContabilProiectii.CompleteazaTipDocument(os, Randuri<FisaContRand>(rezultat));
         return Ok(rezultat);

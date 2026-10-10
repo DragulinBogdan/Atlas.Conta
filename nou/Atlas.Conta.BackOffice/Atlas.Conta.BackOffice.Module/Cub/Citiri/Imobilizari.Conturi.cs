@@ -1,4 +1,3 @@
-#pragma warning disable C111 // C111-D10
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
@@ -30,8 +29,7 @@ public static partial class Imobilizari {
         public N.Latura Latura { get; set; }
         public decimal Valoare { get; set; }
         public Guid Cont { get; set; }
-        public Guid? Tert { get; set; }
-        public Guid? Loc { get; set; }
+        public Guid? Repartitor { get; set; }
         public Guid? Produs { get; set; }
         public Guid? Valuta { get; set; }
         public Guid? CodFunctional { get; set; }
@@ -54,7 +52,7 @@ public static partial class Imobilizari {
             .Where(p => conturi.Contains(p.Cont) && p.DocumentId != faraDocument)
             .Select(p => new PozitieCitita {
                 ID = p.ID, Spatiu = p.Spatiu, Fel = p.Tranzactie.Fel, LinieId = p.LinieId, Data = p.Data,
-                Latura = p.Latura, Valoare = p.Valoare, Cont = p.Cont, Tert = p.Partener, Loc = p.Gestiune,
+                Latura = p.Latura, Valoare = p.Valoare, Cont = p.Cont, Repartitor = p.Repartitor,
                 Produs = p.Produs, Valuta = p.Valuta, CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic,
                 SursaFinantare = p.SursaFinantare, UnitateOrganizatorica = p.UnitateOrganizatorica,
                 Proiect = p.Proiect, CentruCost = p.CentruCost, SuportId = p.SuportId, InversaDinId = p.InversaDinId,

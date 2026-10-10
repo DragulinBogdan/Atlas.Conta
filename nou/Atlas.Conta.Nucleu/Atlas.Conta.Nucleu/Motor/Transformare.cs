@@ -14,9 +14,9 @@ public sealed record Transformare(
         ArgumentNullException.ThrowIfNull(linie);
         var real = linie.Real;
         if (real is null || real.Unitate is not { Fel: FelUnitate.Lot } lot
-                || real.Gestiune is null || GestiuniVirtuale.Este(real.Gestiune)
+                || real.Repartitor is not { EsteIntern: true } || real.Contrapondere is not null
                 || real.Produs is null || real.Produs != lot.Produs || real.Cont != lot.Cont
-                || real.Carte != Carte.Contabil || real.Partener != null || lot.Partener != null
+                || real.Carte != Carte.Contabil || real.PartenerFiscal != null || real.LocFiscal != null || lot.Partener != null
                 || real.CodTva != null || real.PerioadaDeclarare != null || real.Valuta != null)
             throw new ArgumentException("Transformarea cere un lot pe gestiune reală, în cartea contabilă, fără terț, TVA sau valută.", nameof(linie));
         if (linie.Rol is not (RolTransformare.Consum or RolTransformare.Produs)
@@ -27,8 +27,10 @@ public sealed record Transformare(
         var latura = consum && linie.Fel == FelTranzactie.Operare ? Latura.Credit : Latura.Debit;
         var cantitate = consum ? -linie.Cantitate : linie.Cantitate;
         var valoare = consum && linie.Fel == FelTranzactie.Transfer ? -linie.Valoare : linie.Valoare;
-        var virtuala = linie.Real with { Gestiune = GestiuniVirtuale.Transformare, Unitate = null };
+        var contrapondere = linie.Real with {
+            Repartitor = null, Unitate = null, Contrapondere = Contrapondere.Transformare,
+        };
         return (new Postare(linie.Real.Pe(latura, data), cantitate, 0m, valoare, linie.Cauza),
-            new Postare(virtuala.Pe(latura, data), -cantitate, 0m, 0m, linie.Cauza));
+            new Postare(contrapondere.Pe(latura, data), -cantitate, 0m, 0m, linie.Cauza));
     }
 }

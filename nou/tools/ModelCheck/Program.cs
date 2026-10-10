@@ -122,7 +122,6 @@ if (args.Contains("--amprente")) {
 if (args.Contains("--probe-sursa")) {
     ProbeCulegere.VerificaSursa(s.Check);
     ProbeCititoriCub.VerificaSursa(s.Check);
-    ProbePoartaCoordonate.VerificaSursa(s.Check);
     ProbeCititoriRegistre.VerificaSursa(s.Check, args.Contains("--lista"));
     ProbeTransferCititori.VerificaSursa(s.Check);
     ProbeBlocajScriere.VerificaSursa(s.Check);
@@ -191,7 +190,6 @@ using (var ctx = new BackOfficeEFCoreDbContext(opts)) {
     ProbeStraturi.VerificaCoaja(s.Check);
     ProbeCulegere.VerificaSursa(s.Check);
     ProbeCititoriCub.VerificaSursa(s.Check);
-    ProbePoartaCoordonate.VerificaSursa(s.Check);
     ProbeCititoriRegistre.VerificaSursa(s.Check);
     ProbeTransferCititori.VerificaSursa(s.Check);
     ProbeBlocajScriere.VerificaSursa(s.Check);

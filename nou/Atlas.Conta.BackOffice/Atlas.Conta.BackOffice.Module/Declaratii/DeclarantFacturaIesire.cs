@@ -53,8 +53,8 @@ public sealed class DeclarantFacturaIesire : IDeclarant {
             doc.Id,
             doc.DataInregistrare,
             [.. miscari.Select(m => m with {
-                DeLa = Terti.Capat(operand, m.DeLa, doc.Primitor.Id, partide),
-                La = Terti.Capat(operand, m.La, doc.Primitor.Id, partide),
+                DeLa = Terti.Capat(operand, m.DeLa, doc.Primitor, partide),
+                La = Terti.Capat(operand, m.La, doc.Primitor, partide),
             })],
             decizii,
             PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, tipuri)));
@@ -94,7 +94,7 @@ public sealed class DeclarantFacturaIesire : IDeclarant {
         Contari.Decide(contare, linie.Id, decizii);
         var intern = new N.Capat {
             Cont = contare.ContCredit,
-            Gestiune = doc.Predator.Id,
+            Repartitor = doc.Predator.Coordonata,
             Produs = linie.Lot?.ProdusId,
             Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
         };

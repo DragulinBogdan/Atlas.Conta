@@ -1,4 +1,3 @@
-#pragma warning disable C111 // C111-D10
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
@@ -25,6 +24,30 @@ public static class Invarianti {
         Explicatii.VerificaAcoperire(os);
         VerificaPerechi(os);
         VerificaOrdinale(os);
+        VerificaCoordonate(os);
+    }
+
+    public const string CoordonateInvalide = "CITIRE_COORDONATE_INVALIDE";
+
+    /// <summary>Forma coordonatelor (C111-D2): lotul pe repartitor intern, partida pe repartitor extern, blocul fiscal numai cu fapt și cu loc intern.</summary>
+    public static void VerificaCoordonate(IObjectSpace os) {
+        var repartitori = os.GetObjectsQuery<Repartitor>();
+        string[] interne = [nameof(N.FelRepartitor.Gestiune), nameof(N.FelRepartitor.UnitateInterna)];
+        string[] externe = [nameof(N.FelRepartitor.Partener), nameof(N.FelRepartitor.Angajat)];
+        var invalide = os.GetObjectsQuery<Postare>().Where(p =>
+                (p.TipTvaId == null && (p.PartenerFiscal != null || p.LocFiscal != null))
+                || (p.TipTvaId != null && p.LocFiscal == null)
+                || (p.Cantitate != 0m && p.Contrapondere == null && p.FelUnitate != N.FelUnitate.Lot)
+                || (p.FelUnitate == N.FelUnitate.Lot
+                    && !repartitori.Any(r => r.ID == p.Repartitor && interne.Contains(r.ClrType)))
+                || (p.FelUnitate == N.FelUnitate.Partida
+                    && !repartitori.Any(r => r.ID == p.Repartitor && externe.Contains(r.ClrType)))
+                || (p.LocFiscal != null
+                    && !repartitori.Any(r => r.ID == p.LocFiscal && interne.Contains(r.ClrType))))
+            .Select(p => p.ID).Take(10).ToList();
+        if (invalide.Count != 0)
+            throw new OperareException($"{CoordonateInvalide}: postări cu repartitor, contrapondere sau bloc fiscal "
+                + "în afara formei; exemple: " + string.Join(", ", invalide));
     }
 
     public const string OrdinalInvalid = "CITIRE_ORDINAL_INVALID";
@@ -69,20 +92,19 @@ public static class Invarianti {
         if (invalide.Count != 0)
             throw new OperareException($"{PerecheInvalida}: perechi care nu sunt o mișcare cu contrapartida ei; exemple: "
                 + string.Join(", ", invalide.Select(x => $"{x.TranzactieId}/{x.Pereche}")));
-        var virtuale = N.GestiuniVirtuale.Toate.ToArray();
         var lipsa = postari.Where(p => p.Pereche == null && p.Tranzactie.Fel != N.FelTranzactie.Deschidere)
             .Select(p => new {
                 p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Produs, p.Latura,
                 p.CodFunctional, p.CodEconomic, p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost,
-                Cantitate = p.Gestiune == N.GestiuniVirtuale.Transformare ? -p.Cantitate : p.Cantitate,
-                Contrapondere = p.Gestiune == N.GestiuniVirtuale.Transformare,
+                Cantitate = p.Contrapondere == N.Contrapondere.Transformare ? -p.Cantitate : p.Cantitate,
+                Contrapondere = p.Contrapondere == N.Contrapondere.Transformare,
                 Forma = p.Cantitate != 0m && p.Produs != null && p.Carte == N.Carte.Contabil
-                    && p.Partener == null && p.TipTvaId == null && p.PerioadaDeclarare == null
+                    && p.TipTvaId == null && p.PerioadaDeclarare == null
                     && p.Valuta == null && p.ValoareValuta == 0m
-                    && (p.Gestiune == N.GestiuniVirtuale.Transformare
-                        ? p.Unitate == null && p.Valoare == 0m
-                        : p.Unitate != null && p.FelUnitate == N.FelUnitate.Lot
-                            && p.Gestiune != null && !virtuale.Contains(p.Gestiune.Value)),
+                    && (p.Contrapondere == N.Contrapondere.Transformare
+                        ? p.Unitate == null && p.Valoare == 0m && p.Repartitor == null
+                        : p.Contrapondere == null && p.Unitate != null && p.FelUnitate == N.FelUnitate.Lot
+                            && p.Repartitor != null),
             })
             .GroupBy(p => new { p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Produs, p.Latura,
                 p.CodFunctional, p.CodEconomic, p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost,
@@ -150,20 +172,21 @@ public static class Invarianti {
         if (fapte.Any(p => p.RolTva == N.RolTva.Autocolectare
                 && (p.RegimTva != N.RegimTva.TaxareInversa || p.SensTva != N.SensTva.Achizitie)))
             throw new OperareException("CITIRE_FISCAL_AUTOLICHIDARE: autocolectare în afara unei achiziții cu taxare inversă.");
-        if (fapte.GroupBy(p => new { p.TranzactieId, p.LinieId, p.TipTvaId, p.SensTva, p.Partener, p.RolTva })
+        if (fapte.GroupBy(p => new { p.TranzactieId, p.LinieId, p.TipTvaId, p.SensTva, p.PartenerFiscal, p.RolTva })
                 .Any(g => g.Count() != 1))
             throw new OperareException("CITIRE_FISCAL_DUPLICAT: mai multe postări pentru același rol fiscal.");
-        if (fapte.Select(p => new { p.TranzactieId, p.LinieId, p.TipTvaId, p.SensTva, p.Partener,
+        if (fapte.Select(p => new { p.TranzactieId, p.LinieId, p.TipTvaId, p.SensTva, p.PartenerFiscal,
                 p.RegimTva, p.CotaTva, p.DeImport, p.DocumentFiscalId, p.DataDocument, p.DataExigibilitate,
                 p.DataPrimire, p.DataInregistrare, p.PerioadaDeclarare, p.PerioadaD394,
                 p.InversaTehnica, p.RegularizareD300 }).Distinct()
-                .GroupBy(p => new { p.TranzactieId, p.LinieId, p.TipTvaId, p.SensTva, p.Partener })
+                .GroupBy(p => new { p.TranzactieId, p.LinieId, p.TipTvaId, p.SensTva, p.PartenerFiscal })
                 .Any(g => g.Count() != 1))
             throw new OperareException("CITIRE_FISCAL_CALIFICARE: calificări incompatibile în același fapt.");
         if (fapte.Any(p => p.InversaDinId != null && !postari.Any(o => o.ID == p.InversaDinId
                 && o.Spatiu == p.InversaDinSpatiu && o.TipTvaId == p.TipTvaId && o.RolTva == p.RolTva
                 && o.SensTva == p.SensTva && o.RegimTva == p.RegimTva && o.CotaTva == p.CotaTva
                 && o.DeImport == p.DeImport && o.DocumentFiscalId == p.DocumentFiscalId
+                && o.PartenerFiscal == p.PartenerFiscal && o.LocFiscal == p.LocFiscal
                 && o.Valoare == -p.Valoare)))
             throw new OperareException("CITIRE_FISCAL_INVERSA: inversa nu păstrează calificarea și suma originalului.");
     }

@@ -1,4 +1,3 @@
-#pragma warning disable C111 // C111-D10
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -49,14 +48,14 @@ public static class Loturi {
     public static IQueryable<PostareLotCitita> PostariCitite(IObjectSpace os) => Postari(os).Select(p => new PostareLotCitita {
         Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, DocumentId = p.Tranzactie.DocumentId, LinieId = p.LinieId,
         Fel = p.Tranzactie.Fel, Data = p.Data, ScrisLa = p.Tranzactie.ScrisLa,
-        Lot = p.Unitate.Value, Cont = p.Cont, Produs = p.Produs.Value, Loc = p.Gestiune.Value,
+        Lot = p.Unitate.Value, Cont = p.Cont, Produs = p.Produs.Value, Loc = p.Repartitor.Value,
         Deschisa = p.UnitateDeschisa ?? p.Data, Cantitate = p.Cantitate,
         Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare,
     });
 
     public static IQueryable<Postare> Postari(IObjectSpace os) => os.GetObjectsQuery<Postare>()
         .Where(p => p.Spatiu == N.Spatiu.Stoc && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Lot
-            && p.Unitate != null && p.Produs != null && p.Gestiune != null);
+            && p.Unitate != null && p.Produs != null && p.Repartitor != null);
 
     /// <summary>Lotul e unitatea a cel puțin unei postări, pe orice fel de tranzacție.</summary>
     public static bool AreMiscari(IObjectSpace os, Guid lot) =>
@@ -68,7 +67,7 @@ public static class Loturi {
         return postari.Select(p => new RandDatat<SoldLot> {
             Data = p.Data,
             Rand = new SoldLot {
-                LotId = p.Unitate.Value, ContId = p.Cont, ProdusId = p.Produs.Value, GestiuneId = p.Gestiune.Value,
+                LotId = p.Unitate.Value, ContId = p.Cont, ProdusId = p.Produs.Value, GestiuneId = p.Repartitor.Value,
                 Deschisa = p.UnitateDeschisa ?? p.Data, Cantitate = p.Cantitate,
                 Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare
             }
@@ -131,9 +130,9 @@ public static class Loturi {
             string cod = "STOC_INSUFICIENT") {
         var delta = propuse.Where(p => p.Coordonate.Carte == N.Carte.Contabil
                 && p.Coordonate.Unitate?.Fel == N.FelUnitate.Lot
-                && p.Coordonate.Gestiune != null && p.Coordonate.Produs != null)
+                && p.Coordonate.Repartitor != null && p.Coordonate.Produs != null)
             .Select(p => (Cheie: new CheieLotFapt(p.Coordonate.Unitate.Id, p.Coordonate.Cont,
-                p.Coordonate.Produs.Value, p.Coordonate.Gestiune.Value), p.Coordonate.Data, p.Cantitate))
+                p.Coordonate.Produs.Value, p.Coordonate.Repartitor.Value.Id), p.Coordonate.Data, p.Cantitate))
             .ToArray();
         if (delta.Length == 0) return;
         var chei = delta.Select(p => p.Cheie).ToHashSet();
@@ -142,10 +141,10 @@ public static class Loturi {
         var initial = Cumulate(os, CitireCumul.Integrala, primaData.AddDays(-1)).Where(s => loturi.Contains(s.LotId)).ToList()
             .Select(s => (Cheie: new CheieLotFapt(s.LotId, s.ContId, s.ProdusId, s.GestiuneId), Data: DateOnly.MinValue, s.Cantitate));
         var istoric = initial.Concat(Postari(os).Where(p => loturi.Contains(p.Unitate.Value) && p.Data >= primaData)
-            .GroupBy(p => new { p.Unitate, p.Cont, p.Produs, p.Gestiune, p.Data })
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Produs, p.Repartitor, p.Data })
             .Select(g => new { g.Key, Cantitate = g.Sum(p => p.Cantitate) }).ToList()
             .Select(p => (Cheie: new CheieLotFapt(p.Key.Unitate.Value, p.Key.Cont,
-                p.Key.Produs.Value, p.Key.Gestiune.Value), p.Key.Data, p.Cantitate)))
+                p.Key.Produs.Value, p.Key.Repartitor.Value), p.Key.Data, p.Cantitate)))
             .Where(p => chei.Contains(p.Cheie));
         foreach (var grup in istoric.Concat(delta).GroupBy(p => p.Cheie)) {
             decimal sold = 0m;
@@ -163,8 +162,9 @@ public static class Loturi {
             DateOnly? laData = null) {
         var proprii = Postari(os).Where(p => p.DocumentId == doc.ID
             && (p.Tranzactie.Fel == N.FelTranzactie.Operare || p.Tranzactie.Fel == N.FelTranzactie.Transfer)).ToList();
+        var repartitori = Randuri.Repartitori(os, proprii);
         VerificaSoldIntermediar(os, proprii.Select(p => {
-            var citit = Randuri.Citeste(p);
+            var citit = Randuri.Citeste(p, repartitori);
             return citit with { Cantitate = -p.Cantitate,
                 Coordonate = citit.Coordonate with { Data = laData ?? p.Data } };
         }), ReceptiiConexe.CodRefuzStoc(doc));

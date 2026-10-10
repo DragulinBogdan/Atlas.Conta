@@ -1,6 +1,6 @@
 # C111 — coordonatele postării: contract
 
-**Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q11
+**Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q12
 (2026-10-10). Pasul 0 e făcut. Review-ul advers Codex al contractului
 (C111-R1…R16) e reconciliat mai jos, în trei runde; amendamentul 1 e retras. Pașii 1 și 1b
 sunt făcuți. Codex a închis review-ul de contract (2026-10-10,
@@ -86,7 +86,8 @@ Nicio formă refuzată azi nu devine acceptată, cu o excepție numită
 (C111-Q11): decontul cu fapt fiscal și cu terț pe linie, altul decât
 titularul, pe un cont care urmărește partide. Azi îl refuză nucleul
 (`UNITATE_NEPOTRIVITA`), fiindcă partenerul fiscal e scris peste titularul
-partidei; după S10 cele două stau separat și forma trece.
+partidei; după S10 cele două stau separat și forma trece. A doua excepție e
+la S14.
 
 ## C111-D3 — Felul repartitorului
 
@@ -215,6 +216,21 @@ Orice schimbare în afara listei oprește pasul (D9).
 | S11 | în SAF-T, terțul comercial al postării pe un cont cu rol e repartitorul ei extern, fără rezervă pe partenerul fiscal (C111-Q9); detaliile sub D10 | registrul, facturile, Customers și Suppliers, pe postarea fără partidă de pe un cont cu rol comercial, fie că acel cont urmărește partide, fie că nu |
 | S12 | locul fiscal și repartitorul piciorului de taxă se iau din latura internă tipată a documentului, nu din politica de TVA (C111-Q10) | la decont, baza cu repartitor intern pe linie are alt loc decât repartitorul ei; în afara seed-ului, taxa pe FCL sau RLF cu sursă `Explicit` nu mai poartă terțul ca loc |
 | S13 | partenerul fiscal e cel numit de politica de TVA și pe capătul cu partidă ori pe contul care cere repartitor; azi `Terti.Capat` scrie acolo terțul documentului (C111-R16) | citirea fiscală și D394, numai când politica nu numește latura terțului: cu sursă `Explicit` sau `TipMaterial` baza trece la „fără partener”, cu latura internă la „contrapartida nu e partener”. Pe cele șase politici din seed latura numită e chiar terțul documentului, deci nu se schimbă nimic |
+| S14 | poziția fără fișă a imobilizărilor nu mai are partenerul în cheie: e cont, repartitor, produs, valută, analiză (C111-Q12); detaliile sub tabel | gardul `POZITIE_FARA_FISA_NEGATIVA`, suportul și disponibilul de nominalizare ale PIF; postările PIF nu mai poartă furnizorul suportului |
+
+**S14, în detaliu** (C111-Q12; găsită la implementarea pasului 2). Azi cheia
+poziției include partenerul postării. Pe piciorul intern el există numai
+când achiziția are fapt fiscal, iar PIF îl copiază de pe suport pe postările
+lui. Pe forma nouă PIF nu-l poate purta: n-are fapt fiscal (invariantul 3).
+Urmările:
+
+- achizițiile de la furnizori diferiți, pe același loc, intră în aceeași
+  poziție;
+- o notă fără partener, refuzată azi fiindcă grupul ei fără partener iese
+  negativ, trece cât timp totalul locului rămâne pozitiv. E a doua formă
+  refuzată azi care devine acceptată, pe lângă cea din D2;
+- furnizorul se regăsește prin referința la suport (`SuportId`), care duce
+  la postarea și la documentul de achiziție, cu sau fără TVA.
 
 **S1, în detaliu** (C111-Q6):
 
@@ -264,7 +280,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 0 | linia de bază pe main: import Flax ianuarie, amprentele (`--amprente`), raportul SAF-T S, integrala ModelCheck pe ambele profiluri | făcut 2026-10-10: [`c111-pas0-linia-de-baza.md`](c111-pas0-linia-de-baza.md) |
 | 1 | poarta, pe forma de azi: în afara `Cub/Citiri`, a scriitorului (`Cub/Randuri.cs`) și a entității, nimeni nu numește `Postare.Partener` sau `Postare.Gestiune`; cititorii expun identitățile din D10; o probă pe sursă păzește regula | făcut 2026-10-10: [`c111-pas1-poarta.md`](c111-pas1-poarta.md) |
 | 1b | așteptările înaintea implementării: fișierul de catalog cu formele din D5 și secțiunea analitică a amprentelor | făcut 2026-10-10: [`c111-pas1b-asteptari.md`](c111-pas1b-asteptari.md) |
-| 2 | forma nouă, atomic: nucleul, schema, scrierea, declaranții, cititorii din poartă, atomii și snapshot-ul, `PostareVizual`, mutanții și scrierile brute din ModelCheck; bazele recreate | suita nucleului; catalogul verde pe ambele profiluri, cu așteptările schimbate numai pe S1–S5 și S10–S13; `INV-CUB` |
+| 2 | forma nouă, atomic: nucleul, schema, scrierea, declaranții, cititorii din poartă, atomii și snapshot-ul, `PostareVizual`, mutanții și scrierile brute din ModelCheck; bazele recreate | suita nucleului; catalogul verde pe ambele profiluri, cu așteptările schimbate numai pe S1–S5 și S10–S14; `INV-CUB` |
 | 3 | `Cont.FeluriRepartitor`, gardul, seed-ul bugetar | ModelCheck pe ambele profiluri; `--dump-metadata`; S6 și probele din D4 |
 | 4 | S7 și S8 | scenariu propriu pe fiecare |
 | 5 | S9: contrapartida prin pereche | fișa contului pe HTTP; cifra de timp față de pasul 0, pe aceeași bază |
@@ -387,6 +403,7 @@ pasul 2, după regula de oprire 3.
 | C111-Q9 | În SAF-T, cine e terțul comercial când postarea n-are repartitor extern? | **numai repartitorul extern**, fără rezervă pe partenerul fiscal; registrul, facturile și soldurile citesc aceeași axă (S11) |
 | C111-Q10 | De unde se ia locul fiscal: din politica de TVA sau din laturile documentului? | **din laturile tipate ale documentului** (S12); `Fiscal.GestiuneaInterna` iese |
 | C111-Q11 | Decontul cu TVA și cu terț pe linie, pe cont cu partide, refuzat azi, trece după S10? | **trece**; excepția e numită în D2 |
+| C111-Q12 | Poziția fără fișă păstrează partenerul în cheie, citit prin suport, sau îl pierde? | **îl pierde** (S14); furnizorul rămâne recuperabil prin suport și prin documentul de achiziție |
 
 ## Review-ul advers Codex al contractului (2026-10-10)
 

@@ -1,4 +1,3 @@
-#pragma warning disable C111 // C111-D10
 using DevExpress.ExpressApp;
 using Atlas.Conta.BackOffice.Module.Motor;
 using N = Atlas.Conta.Nucleu;
@@ -31,7 +30,7 @@ public sealed class PostareJurnal {
     public Guid? CentruCost { get; set; }
 }
 
-/// <summary>Postarea contabilă cu cele două axe analitice (C111-D10).</summary>
+/// <summary>Postarea contabilă cu axa ei analitică, repartitorul de sold (C111-D10).</summary>
 public sealed class PostareAnalitica {
     public Guid Id { get; set; }
     public N.Spatiu Spatiu { get; set; }
@@ -42,8 +41,7 @@ public sealed class PostareAnalitica {
     public Guid Cont { get; set; }
     public N.Latura Latura { get; set; }
     public decimal Valoare { get; set; }
-    public Guid? AxaPartener { get; set; }
-    public Guid? AxaGestiune { get; set; }
+    public Guid? Repartitor { get; set; }
     public Guid? Produs { get; set; }
     public Guid? CodFunctional { get; set; }
     public Guid? CodEconomic { get; set; }
@@ -54,8 +52,10 @@ public sealed class PostareAnalitica {
 }
 
 public static class Contabil {
-    /// <summary>Repartitorul unei postări contabile: partenerul piciorului de terț sau gestiunea piciorului intern (D9-A10).</summary>
-    public static Guid? Repartitor(Guid? partener, Guid? gestiune) => partener ?? gestiune;
+    /// <summary>Repartitorii externi: terțul unei postări e repartitorul ei, când e unul dintre ei (C111-D10).</summary>
+    public static IQueryable<Guid> Externi(IObjectSpace os) => os.GetObjectsQuery<BusinessObjects.Repartitor>()
+        .Where(r => r.ClrType == nameof(N.FelRepartitor.Partener) || r.ClrType == nameof(N.FelRepartitor.Angajat))
+        .Select(r => r.ID);
 
     static IQueryable<Postare> Domeniu(IObjectSpace os) => os.GetObjectsQuery<Postare>()
         .Where(p => p.Carte == N.Carte.Contabil).Where(Transformare.FaraContrapondere);
@@ -76,19 +76,22 @@ public static class Contabil {
         Postari(os).Select(p => new PostareAnalitica {
             Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel,
             DocumentId = p.DocumentId, Data = p.Data, Cont = p.Cont, Latura = p.Latura, Valoare = p.Valoare,
-            AxaPartener = p.Partener, AxaGestiune = p.Gestiune, Produs = p.Produs,
+            Repartitor = p.Repartitor, Produs = p.Produs,
             CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,
             UnitateOrganizatorica = p.UnitateOrganizatorica, Proiect = p.Proiect, CentruCost = p.CentruCost,
         });
 
-    public static IQueryable<PostareJurnal> Jurnal(IObjectSpace os, DateOnly deLa, DateOnly panaLa) =>
-        Postari(os).Where(p => p.Data >= deLa && p.Data <= panaLa).Select(p => new PostareJurnal {
+    public static IQueryable<PostareJurnal> Jurnal(IObjectSpace os, DateOnly deLa, DateOnly panaLa) {
+        var externi = Externi(os);
+        return Postari(os).Where(p => p.Data >= deLa && p.Data <= panaLa).Select(p => new PostareJurnal {
             Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel,
             DataTranzactie = p.Tranzactie.Data, ScrisLa = p.Tranzactie.ScrisLa,
             DocumentId = p.DocumentId, LinieId = p.LinieId, Data = p.Data, Cont = p.Cont,
-            Latura = p.Latura, Valoare = p.Valoare, TertComercial = p.Partener,
+            Latura = p.Latura, Valoare = p.Valoare,
+            TertComercial = p.Repartitor != null && externi.Contains(p.Repartitor.Value) ? p.Repartitor : null,
             TipTvaId = p.TipTvaId, RolTva = p.RolTva, SensTva = p.SensTva,
             CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,
             UnitateOrganizatorica = p.UnitateOrganizatorica, Proiect = p.Proiect, CentruCost = p.CentruCost,
         });
+    }
 }

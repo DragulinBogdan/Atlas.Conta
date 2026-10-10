@@ -1,13 +1,24 @@
-#pragma warning disable C111 // C111-D10
 #nullable enable
+using Atlas.Conta.BackOffice.Module.Declaratii;
+using DevExpress.ExpressApp;
 using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
-/// <summary>Rândul persistat ↔ postarea nucleului (S-D5), fără nicio citire în plus.</summary>
+/// <summary>Rândul persistat ↔ postarea nucleului (S-D5); felul repartitorului vine din afară (C111-D3).</summary>
 public static class Randuri {
-    public static N.Postare Citeste(Postare rand) {
+    /// <summary>Repartitorii rândurilor, citiți o singură dată.</summary>
+    public static IReadOnlyDictionary<Guid, RepartitorFapt> Repartitori(IObjectSpace os, IEnumerable<Postare> randuri) =>
+        Motor.Fapte.Repartitori(os, [.. randuri.Select(r => r.Repartitor).OfType<Guid>().Distinct()]);
+
+    public static List<N.Postare> Citeste(IObjectSpace os, IReadOnlyCollection<Postare> randuri) {
+        var repartitori = Repartitori(os, randuri);
+        return [.. randuri.Select(r => Citeste(r, repartitori))];
+    }
+
+    public static N.Postare Citeste(Postare rand, IReadOnlyDictionary<Guid, RepartitorFapt> repartitori) {
         ArgumentNullException.ThrowIfNull(rand);
+        ArgumentNullException.ThrowIfNull(repartitori);
         if (rand.DocumentId is null && rand.Tranzactie?.Fel != N.FelTranzactie.Deschidere)
             throw new InvalidOperationException(
                 $"Postarea {rand.ID} fără document nu aparține deschiderii.");
@@ -16,8 +27,8 @@ public static class Randuri {
                 Cont = rand.Cont,
                 Latura = rand.Latura,
                 Data = rand.Data,
-                Partener = rand.Partener,
-                Gestiune = rand.Gestiune,
+                Repartitor = rand.Repartitor is Guid repartitor ? Motor.Fapte.Coordonata(repartitori, repartitor) : null,
+                Contrapondere = rand.Contrapondere,
                 Produs = rand.Produs,
                 Unitate = Unitatea(rand),
                 CodTva = rand.TipTvaId is Guid tipTva && rand.SensTva is N.SensTva sens && rand.RolTva is N.RolTva rol
@@ -26,6 +37,8 @@ public static class Randuri {
                     }
                     : null,
                 PerioadaDeclarare = rand.PerioadaDeclarare,
+                PartenerFiscal = rand.PartenerFiscal,
+                LocFiscal = rand.LocFiscal,
                 ReperFiscal = rand.TipTvaId == null ? null : new N.ReperFiscal(
                     rand.DocumentFiscalId!.Value, rand.DataDocument!.Value, rand.DataExigibilitate!.Value,
                     rand.DataPrimire, rand.DataInregistrare!.Value, rand.PerioadaD394!.Value,
@@ -61,8 +74,8 @@ public static class Randuri {
         rand.Data = coordonate.Data;
         rand.Cont = coordonate.Cont;
         rand.Latura = coordonate.Latura;
-        rand.Partener = coordonate.Partener;
-        rand.Gestiune = coordonate.Gestiune;
+        rand.Repartitor = coordonate.Repartitor?.Id;
+        rand.Contrapondere = coordonate.Contrapondere;
         rand.Produs = coordonate.Produs;
         rand.Unitate = coordonate.Unitate?.Id;
         rand.UnitateDeschisa = coordonate.Unitate?.Deschisa;
@@ -74,6 +87,8 @@ public static class Randuri {
         rand.TipTvaId = coordonate.CodTva?.TipTva;
         rand.SensTva = coordonate.CodTva?.Sens;
         rand.RolTva = coordonate.CodTva?.Rol;
+        rand.PartenerFiscal = coordonate.PartenerFiscal;
+        rand.LocFiscal = coordonate.LocFiscal;
         rand.PerioadaDeclarare = coordonate.PerioadaDeclarare;
         rand.RegimTva = coordonate.CodTva?.Regim;
         rand.CotaTva = coordonate.CodTva?.Cota;
@@ -101,7 +116,8 @@ public static class Randuri {
         rand.Valoare = postare.Valoare;
     }
 
-    static N.Unitate? Unitatea(Postare rand) {
+    public static N.Unitate? Unitatea(Postare rand) {
+        ArgumentNullException.ThrowIfNull(rand);
         if (rand.Unitate is not Guid id)
             return null;
         var fel = rand.FelUnitate
@@ -110,7 +126,7 @@ public static class Randuri {
             id,
             fel,
             rand.Cont,
-            fel == N.FelUnitate.Partida ? rand.Partener : null,
+            fel == N.FelUnitate.Partida ? rand.Repartitor : null,
             fel == N.FelUnitate.Lot ? rand.Produs : null,
             rand.UnitateDeschisa
                 ?? throw new InvalidOperationException($"Postarea {rand.ID} are unitate fără dată de deschidere."));
@@ -123,7 +139,7 @@ public static class Randuri {
             _ => throw new InvalidOperationException("Referință de postare incompletă."),
         };
 
-    // Cont/Partener/Produs ale unității nu au coloane proprii: se citesc înapoi din
+    // Contul, titularul și produsul unității nu au coloane proprii: se citesc înapoi din
     // ale postării, deci o unitate care se abate de la ele s-ar pierde tăcut.
     static void VerificaUnitatea(N.Postare postare, N.Spatiu spatiu) {
         if (postare.Coordonate.Unitate is not { } unitate)
@@ -135,7 +151,7 @@ public static class Randuri {
             unitate.Id,
             fel,
             postare.Coordonate.Cont,
-            fel == N.FelUnitate.Partida ? postare.Coordonate.Partener : null,
+            fel == N.FelUnitate.Partida ? postare.Coordonate.Repartitor?.Id : null,
             fel == N.FelUnitate.Lot ? postare.Coordonate.Produs : null,
             unitate.Deschisa);
         if (unitate != asteptat)

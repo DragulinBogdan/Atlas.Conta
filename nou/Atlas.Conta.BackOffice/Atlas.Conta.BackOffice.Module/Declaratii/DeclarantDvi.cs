@@ -49,13 +49,13 @@ public sealed class DeclarantDvi : IDeclarant {
                 Partide.Numeste(operand, impozit.DeLa.Cont, doc.Predator.Id, l.Id, partide, decizii);
                 Partide.Numeste(operand, impozit.La.Cont, doc.Predator.Id, l.Id, partide, decizii);
                 miscari.Add(impozit with {
-                    DeLa = Terti.Capat(operand, impozit.DeLa, doc.Predator.Id, partide),
-                    La = Terti.Capat(operand, impozit.La, doc.Predator.Id, partide),
+                    DeLa = Terti.Capat(operand, impozit.DeLa, doc.Predator, partide),
+                    La = Terti.Capat(operand, impozit.La, doc.Predator, partide),
                 });
             }
             var ancora = new N.Capat {
                 Cont = tip.ContTvaDeductibilId!.Value, Carte = N.Carte.Fiscal,
-                Gestiune = Fiscal.GestiuneaInterna(operand), Analiza = Contari.Analiza(l.Analiza, null, null),
+                Repartitor = Fiscal.Locul(operand)?.Coordonata, Analiza = Contari.Analiza(l.Analiza, null, null),
             };
             miscari.Add(new(ancora, Fiscal.CuFapt(operand, ancora, tip, N.RolTva.Baza),
                 0m, 0m, l.Valoare, new(doc.Id, l.Id)));

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Atlas.Conta.BackOffice.Module.Migrations
 {
     [DbContext(typeof(BackOfficeEFCoreDbContext))]
-    [Migration("20261009075629_NotaNumestePartida")]
-    partial class NotaNumestePartida
+    [Migration("20261010151835_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -2113,9 +2113,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<Guid?>("GestiuneId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("Luna")
                         .HasColumnType("integer");
 
@@ -2156,10 +2153,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("An", "Luna");
 
-                    b.HasIndex("An", "Luna", "ContId", "RepartitorId", "GestiuneId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId")
+                    b.HasIndex("An", "Luna", "ContId", "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId")
                         .IsUnique();
 
-                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("An", "Luna", "ContId", "RepartitorId", "GestiuneId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId"), false);
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("An", "Luna", "ContId", "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId", "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId"), false);
 
                     b.ToTable("SolduriPerioadaContabil");
                 });
@@ -2538,6 +2535,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid>("Cont")
                         .HasColumnType("uuid");
 
+                    b.Property<short?>("Contrapondere")
+                        .HasColumnType("smallint");
+
                     b.Property<decimal?>("CotaTva")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
@@ -2569,9 +2569,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<short?>("FelUnitate")
                         .HasColumnType("smallint");
 
-                    b.Property<Guid?>("Gestiune")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("InversaDinId")
                         .HasColumnType("uuid");
 
@@ -2587,7 +2584,13 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("LinieId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("Partener")
+                    b.Property<Guid?>("LocFiscal")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("PartenerFiscal")
                         .HasColumnType("uuid");
 
                     b.Property<int?>("Pereche")
@@ -2610,6 +2613,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<bool>("RegularizareD300")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid?>("Repartitor")
+                        .HasColumnType("uuid");
 
                     b.Property<short?>("RolTva")
                         .HasColumnType("smallint");
@@ -2706,6 +2712,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<string>("ContSimbol")
                         .HasColumnType("text");
 
+                    b.Property<short?>("Contrapondere")
+                        .HasColumnType("smallint");
+
                     b.Property<decimal?>("CotaTva")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
@@ -2740,12 +2749,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<short?>("FelUnitate")
                         .HasColumnType("smallint");
 
-                    b.Property<Guid?>("Gestiune")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("GestiuneCod")
-                        .HasColumnType("text");
-
                     b.Property<Guid?>("InversaDinId")
                         .HasColumnType("uuid");
 
@@ -2761,10 +2764,19 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("LinieId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("Partener")
+                    b.Property<Guid?>("LocFiscal")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("PartenerCod")
+                    b.Property<string>("LocFiscalCod")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("PartenerFiscal")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PartenerFiscalCod")
                         .HasColumnType("text");
 
                     b.Property<int?>("Pereche")
@@ -2793,6 +2805,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<bool>("RegularizareD300")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid?>("Repartitor")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RepartitorCod")
+                        .HasColumnType("text");
 
                     b.Property<short?>("RolTva")
                         .HasColumnType("smallint");

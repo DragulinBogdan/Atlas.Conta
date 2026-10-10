@@ -80,11 +80,11 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
                 solduri[cheie] = sold with { Credit = sold.Credit + v, Cantitate = sold.Cantitate - q };
                 decizii.Add(new N.ValoareIesire(linie.Id, unitate, q, v));
             }
-            var real = new N.Capat { Cont = contStoc, Gestiune = doc.Predator.Id, Produs = lot.ProdusId,
+            var real = new N.Capat { Cont = contStoc, Repartitor = doc.Predator.Coordonata, Produs = lot.ProdusId,
                 Unitate = unitate, Analiza = Contari.Analiza(linie.Analiza,
                     plus ? cont.Regula.OverrideDebit : cont.Regula.OverrideCredit, cont.Regula.Comun) };
             var virtuala = new N.Capat { Cont = plus ? cont.ContCredit : cont.ContDebit,
-                Gestiune = plus ? N.GestiuniVirtuale.Inventar : N.GestiuniVirtuale.Consum,
+                Contrapondere = plus ? N.Contrapondere.Inventar : N.Contrapondere.Consum,
                 Produs = lot.ProdusId, Analiza = Contari.Analiza(linie.Analiza,
                     plus ? cont.Regula.OverrideCredit : cont.Regula.OverrideDebit, cont.Regula.Comun) };
             miscari.Add(new(plus ? virtuala : real, plus ? real : virtuala, q, 0m, v, new(doc.Id, linie.Id)));

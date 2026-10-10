@@ -342,6 +342,10 @@ internal static class Fapte {
                 .ToList()
                 .ToDictionary(p => p.ID, p => p.TipMaterialId);
 
+    /// <summary>Coordonata de sold a unui repartitor citit; lipsa lui sau a felului e refuz (C111-D3).</summary>
+    internal static N.Repartitor Coordonata(IReadOnlyDictionary<Guid, Declaratii.RepartitorFapt> repartitori, Guid id) =>
+        Repartitor(repartitori, id).Coordonata;
+
     internal static Dictionary<Guid, Declaratii.RepartitorFapt> Repartitori(IObjectSpace os, IReadOnlyList<Guid> ids) {
         var cerute = ids.Where(id => id != Guid.Empty).Distinct().ToList();
         return cerute.Count == 0
@@ -351,9 +355,9 @@ internal static class Fapte {
                 .Select(r => new { r.ID, r.ClrType, r.ContImplicitId, r.Calitati })
                 .ToList()
                 .Select(r => new Declaratii.RepartitorFapt(r.ID,
-                    Enum.TryParse<Declaratii.FelRepartitor>(r.ClrType, out var fel)
+                    Enum.TryParse<N.FelRepartitor>(r.ClrType, out var fel)
                         ? fel
-                        : (Declaratii.FelRepartitor?)null,
+                        : (N.FelRepartitor?)null,
                     r.ContImplicitId, r.Calitati))
                 .ToDictionary(r => r.Id);
     }

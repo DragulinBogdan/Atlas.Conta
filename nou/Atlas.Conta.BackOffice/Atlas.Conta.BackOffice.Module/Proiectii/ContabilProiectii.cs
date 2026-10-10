@@ -19,7 +19,6 @@ public struct AtomContabil {
     public decimal Credit { get; set; }
 
     public Guid? RepartitorId { get; set; }
-    public Guid? GestiuneId { get; set; }
     public Guid? MaterialId { get; set; }
     public Guid? CodFunctionalId { get; set; }
     public Guid? CodEconomicId { get; set; }
@@ -165,7 +164,6 @@ struct SursaFisa {
     public decimal Credit { get; set; }
     public bool Storno { get; set; }
     public Guid? RepartitorId { get; set; }
-    public Guid? GestiuneId { get; set; }
     public Guid? MaterialId { get; set; }
     public Guid? CodFunctionalId { get; set; }
     public Guid? CodEconomicId { get; set; }
@@ -187,7 +185,7 @@ public static class ContabilProiectii {
             Data = p.Data, ContId = p.Cont,
             Debit = p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : 0m,
             Credit = p.Latura == Atlas.Conta.Nucleu.Latura.Credit ? p.Valoare : 0m,
-            RepartitorId = p.AxaPartener, GestiuneId = p.AxaGestiune, MaterialId = p.Produs,
+            RepartitorId = p.Repartitor, MaterialId = p.Produs,
             CodFunctionalId = p.CodFunctional, CodEconomicId = p.CodEconomic,
             SursaFinantareId = p.SursaFinantare, UnitateId = p.UnitateOrganizatorica,
             ProiectId = p.Proiect, CentruCostId = p.CentruCost
@@ -197,13 +195,12 @@ public static class ContabilProiectii {
         IObjectSpace os, DateOnly dataStart, DateOnly dataEnd, bool analitic = false,
         Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
         Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
-        Guid? proiectId = null, Guid? centruCostId = null, Guid? gestiuneId = null,
+        Guid? proiectId = null, Guid? centruCostId = null,
         CitireCumul citire = CitireCumul.Vizibila) {
 
         var atomi = dataStart == DateOnly.MinValue ? Atomi(os).Where(a => a.Data <= dataEnd)
             : SolduriService.AtomiCumulati(os, citire, dataEnd, dataStart.AddDays(-1));
 
-        if (gestiuneId is Guid vGest) atomi = atomi.Where(a => a.GestiuneId == vGest);
         if (repartitorId is Guid vRep) atomi = atomi.Where(a => a.RepartitorId == vRep);
         if (materialId is Guid vMat) atomi = atomi.Where(a => a.MaterialId == vMat);
         if (codFunctionalId is Guid vCf) atomi = atomi.Where(a => a.CodFunctionalId == vCf);
@@ -303,12 +300,11 @@ public static class ContabilProiectii {
         IObjectSpace os, DateOnly laData, Guid? contId = null,
         Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
         Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
-        Guid? proiectId = null, Guid? centruCostId = null, Guid? gestiuneId = null,
+        Guid? proiectId = null, Guid? centruCostId = null,
         CitireCumul citire = CitireCumul.Vizibila) {
 
         var atomi = SolduriService.AtomiCumulati(os, citire, laData);
         if (contId is Guid vCont) atomi = atomi.Where(a => a.ContId == vCont);
-        if (gestiuneId is Guid vGest) atomi = atomi.Where(a => a.GestiuneId == vGest);
         if (repartitorId is Guid vRep) atomi = atomi.Where(a => a.RepartitorId == vRep);
         if (materialId is Guid vMat) atomi = atomi.Where(a => a.MaterialId == vMat);
         if (codFunctionalId is Guid vCf) atomi = atomi.Where(a => a.CodFunctionalId == vCf);
@@ -318,7 +314,10 @@ public static class ContabilProiectii {
         if (proiectId is Guid vPr) atomi = atomi.Where(a => a.ProiectId == vPr);
         if (centruCostId is Guid vCc) atomi = atomi.Where(a => a.CentruCostId == vCc);
 
+        // C111-Q6: numai terții.
+        var externi = Cub.Citiri.Contabil.Externi(os);
         var agregate = atomi
+            .Where(a => a.RepartitorId != null && externi.Contains(a.RepartitorId.Value))
             .GroupBy(a => new { a.ContId, a.RepartitorId })
             .Select(g => new {
                 g.Key.ContId,
@@ -359,12 +358,12 @@ public static class ContabilProiectii {
         IObjectSpace os, DateOnly dataStart, DateOnly dataEnd, int? nivelMaxim = null,
         Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
         Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
-        Guid? proiectId = null, Guid? centruCostId = null, Guid? gestiuneId = null,
+        Guid? proiectId = null, Guid? centruCostId = null,
         CitireCumul citire = CitireCumul.Vizibila) {
 
         var frunze = Balanta(os, dataStart, dataEnd, analitic: false,
             repartitorId, materialId, codFunctionalId, codEconomicId,
-            sursaFinantareId, unitateId, proiectId, centruCostId, gestiuneId, citire).ToList();
+            sursaFinantareId, unitateId, proiectId, centruCostId, citire).ToList();
 
         var plan = os.GetObjectsQuery<Cont>()
             .Select(c => new { c.ID, c.Simbol, c.Denumire, c.ParinteId })
@@ -441,7 +440,7 @@ public static class ContabilProiectii {
         Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
         Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
         Guid? proiectId = null, Guid? centruCostId = null, bool repartitorNul = false,
-        Guid? gestiuneId = null, CitireCumul citire = CitireCumul.Vizibila) {
+        CitireCumul citire = CitireCumul.Vizibila) {
         var argumente = new List<object>();
         string P(object valoare) { argumente.Add(valoare); return "{" + (argumente.Count - 1) + "}"; }
         var postari = Cub.Citiri.Contabil.Analitice(os).Where(p => p.Data <= dataEnd);
@@ -450,14 +449,14 @@ public static class ContabilProiectii {
             from c in conturi.DefaultIfEmpty()
             join d in os.GetObjectsQuery<Document>() on p.DocumentId equals d.ID into documente
             from d in documente.DefaultIfEmpty()
-            join r in os.GetObjectsQuery<Repartitor>() on p.AxaPartener equals r.ID into parteneri
+            join r in os.GetObjectsQuery<Repartitor>() on p.Repartitor equals r.ID into parteneri
             from r in parteneri.DefaultIfEmpty()
             select new SursaFisa {
                 Id = p.Id, Spatiu = (int)p.Spatiu, TranzactieId = p.TranzactieId, Data = p.Data, ContId = p.Cont,
                 ContSimbol = c.Simbol, NumarNota = d.Numar, Sens = p.Latura == N.Latura.Debit ? "D" : "C",
                 Debit = p.Latura == N.Latura.Debit ? p.Valoare : 0m,
                 Credit = p.Latura == N.Latura.Credit ? p.Valoare : 0m,
-                RepartitorId = p.AxaPartener, GestiuneId = p.AxaGestiune, MaterialId = p.Produs,
+                RepartitorId = p.Repartitor, MaterialId = p.Produs,
                 CodFunctionalId = p.CodFunctional, CodEconomicId = p.CodEconomic,
                 SursaFinantareId = p.SursaFinantare, UnitateId = p.UnitateOrganizatorica,
                 ProiectId = p.Proiect, CentruCostId = p.CentruCost,
@@ -467,7 +466,7 @@ public static class ContabilProiectii {
         var initial = (dataStart == DateOnly.MinValue ? Atomi(os).Where(a => false)
             : SolduriService.AtomiCumulati(os, citire, dataStart.AddDays(-1))).Where(a => a.ContId == contId);
         var dimensiuni = new Dictionary<string, Guid?> {
-            ["RepartitorId"] = repartitorId, ["GestiuneId"] = gestiuneId, ["MaterialId"] = materialId,
+            ["RepartitorId"] = repartitorId, ["MaterialId"] = materialId,
             ["CodFunctionalId"] = codFunctionalId, ["CodEconomicId"] = codEconomicId,
             ["SursaFinantareId"] = sursaFinantareId, ["UnitateId"] = unitateId,
             ["ProiectId"] = proiectId, ["CentruCostId"] = centruCostId

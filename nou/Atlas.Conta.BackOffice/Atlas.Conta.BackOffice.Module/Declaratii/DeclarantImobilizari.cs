@@ -38,7 +38,7 @@ public sealed class DeclarantImobilizari : IDeclarant {
             if (fisa.Politica is { } politicaFisei) consumate.Add(politicaFisei);
             var cauza = new N.Cauza(operand.Document.Id, linie.Id);
             N.Capat Capat(Guid cont, N.Carte carte, bool nominalizat) => new() {
-                Cont = cont, Carte = carte, Gestiune = fisa.Loc, Analiza = linie.Analiza,
+                Cont = cont, Carte = carte, Repartitor = fisa.Loc, Analiza = linie.Analiza,
                 Unitate = nominalizat ? new(fisa.Id, N.FelUnitate.Fisa, cont, null, null, fisa.Deschisa) : null,
             };
             void Nota(Guid debit, bool fisaDebit, Guid credit, bool fisaCredit, decimal suma, N.Carte carte) {

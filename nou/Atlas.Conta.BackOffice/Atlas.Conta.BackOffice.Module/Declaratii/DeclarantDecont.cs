@@ -64,6 +64,7 @@ public sealed class DeclarantDecont : IDeclarant {
                     impozit.DeLa.Analiza, l.Id, null) with {
                         CodTva = impozit.DeLa.CodTva, ReperFiscal = impozit.DeLa.ReperFiscal,
                         PerioadaDeclarare = impozit.DeLa.PerioadaDeclarare,
+                        PartenerFiscal = impozit.DeLa.PartenerFiscal, LocFiscal = impozit.DeLa.LocFiscal,
                     } });
         }
         return refuzuri.Count > 0 ? null : new(operand.Document.Id, operand.Document.DataInregistrare,
@@ -83,9 +84,7 @@ public sealed class DeclarantDecont : IDeclarant {
                     decizii.Add(new N.PartidaDeschisa(linie, unitate));
                 }
             }
-            return new() { Cont = cont, Analiza = analiza, Unitate = unitate,
-                Partener = r.Parte == Parte.Extern ? r.Id : null,
-                Gestiune = r.Parte is Parte.Intern or Parte.Propriu ? r.Id : null };
+            return new() { Cont = cont, Analiza = analiza, Unitate = unitate, Repartitor = r.Coordonata };
         }
     }
 }

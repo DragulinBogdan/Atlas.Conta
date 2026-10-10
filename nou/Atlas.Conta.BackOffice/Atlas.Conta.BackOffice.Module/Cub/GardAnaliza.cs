@@ -14,7 +14,7 @@ public static class GardAnaliza {
     public readonly record struct ContFapt(string Simbol, DimensiuneFlags Flags);
     public readonly record struct LinieFapt(string? Denumire, Guid? Angajament);
 
-    /// <summary>Forma pe care o judecă gardul: repartitorul e partenerul sau gestiunea, materialul e produsul.</summary>
+    /// <summary>Forma pe care o judecă gardul: materialul e produsul.</summary>
     public static Dimensiuni Dimensiuni(Guid? repartitor, Guid? produs, N.Analiza analiza) => new() {
         RepartitorId = repartitor,
         MaterialId = produs,
@@ -25,12 +25,6 @@ public static class GardAnaliza {
         ProiectId = analiza.Proiect,
         CentruCostId = analiza.CentruCost,
     };
-
-    /// <summary>Repartitorul capătului: partenerul piciorului de terț sau gestiunea piciorului intern (D9-A10).</summary>
-    public static Guid? Repartitor(N.Capat capat) {
-        ArgumentNullException.ThrowIfNull(capat);
-        return Citiri.Contabil.Repartitor(capat.Partener, capat.Gestiune);
-    }
 
     /// <summary>Lipsurile pe capetele mișcărilor din <c>Carte = Contabil</c>; gardul judecă numai capătul.</summary>
     public static IReadOnlyList<string> Lipsuri(
@@ -49,8 +43,10 @@ public static class GardAnaliza {
             void Latura(N.Capat capat, string latura) {
                 if (capat.Carte != N.Carte.Contabil || !conturi.TryGetValue(capat.Cont, out var cont))
                     return;
-                VerificaLatura(cont.Simbol, cont.Flags,
-                    Dimensiuni(Repartitor(capat), capat.Produs, capat.Analiza),
+                // C111-D4: contraponderea e scutită de prezența repartitorului.
+                var flags = capat.Contrapondere is null ? cont.Flags : cont.Flags & ~DimensiuneFlags.Repartitor;
+                VerificaLatura(cont.Simbol, flags,
+                    Dimensiuni(capat.Repartitor?.Id, capat.Produs, capat.Analiza),
                     linie.Angajament, latura, linie.Denumire, lipsuri);
             }
         }

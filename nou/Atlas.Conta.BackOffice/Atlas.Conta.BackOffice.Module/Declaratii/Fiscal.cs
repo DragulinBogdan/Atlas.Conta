@@ -65,22 +65,24 @@ static class Fiscal {
             },
             ReperFiscal = operand.ReperFiscal,
             PerioadaDeclarare = operand.PerioadaDeclarare,
-            Partener = operand.PoliticaTva!.SursaContrapartida switch {
+            PartenerFiscal = operand.PoliticaTva!.SursaContrapartida switch {
                 SursaCont.RepartitorPredator => operand.Document.Predator.Id,
                 SursaCont.RepartitorPrimitor => operand.Document.Primitor.Id,
                 _ => null,
             },
+            LocFiscal = Locul(operand)?.Id,
         };
     }
 
-    /// <summary>
-    /// Gestiunea internă a documentului: latura OPUSĂ contrapartidei politicii de TVA.
-    /// </summary>
-    public static Guid GestiuneaInterna(Operand operand) {
+    /// <summary>Locul fiscal: singura latură internă a documentului, sau null (C111-Q10).</summary>
+    public static RepartitorFapt? Locul(Operand operand) {
         ArgumentNullException.ThrowIfNull(operand);
-        return operand.PoliticaTva?.SursaContrapartida == SursaCont.RepartitorPrimitor
-            ? operand.Document.Predator.Id
-            : operand.Document.Primitor.Id;
+        var (predator, primitor) = (operand.Document.Predator, operand.Document.Primitor);
+        return (predator.Parte == Parte.Intern, primitor.Parte == Parte.Intern) switch {
+            (true, false) => predator,
+            (false, true) => primitor,
+            _ => null,
+        };
     }
 
     /// <summary>
@@ -119,7 +121,7 @@ static class Fiscal {
         var analiza = Contari.Analiza(linie.Analiza, null, null);
         var intern = CuFapt(operand, new N.Capat {
             Cont = contTva,
-            Gestiune = GestiuneaInterna(operand),
+            Repartitor = Locul(operand)?.Coordonata,
             Produs = linie.Lot?.ProdusId,
             Analiza = analiza,
         }, fiscal, N.RolTva.Taxa);

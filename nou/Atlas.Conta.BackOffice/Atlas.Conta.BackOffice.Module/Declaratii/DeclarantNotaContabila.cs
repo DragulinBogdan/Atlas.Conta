@@ -63,9 +63,7 @@ public sealed class DeclarantNotaContabila : IDeclarant {
             var repartitor = repartitorId is Guid id ? operand.Repartitori[id] : implicitul;
             var externul = repartitorId != null && repartitor.Parte == Parte.Extern;
             var capat = new N.Capat {
-                Cont = cont, Analiza = linie.Analiza,
-                Gestiune = repartitor.Parte is Parte.Intern or Parte.Propriu ? repartitor.Id : null,
-                Partener = externul ? repartitor.Id : null,
+                Cont = cont, Analiza = linie.Analiza, Repartitor = repartitor.Coordonata,
             };
             var cerere = Math.Abs(linie.Valoare);
             decizii.Add(new N.ContRezolvat(linie.Id, cont, "explicit"));
@@ -82,7 +80,7 @@ public sealed class DeclarantNotaContabila : IDeclarant {
             var alocare = N.Fifo.Nominalizeaza(cerere, candidati);
             var rezultat = new List<(N.Capat Capat, decimal Suma)>();
             foreach (var a in alocare.Alocari) {
-                rezultat.Add((capat with { Unitate = a.Unitate, Partener = a.Unitate.Partener }, a.Masura));
+                rezultat.Add((capat with { Unitate = a.Unitate }, a.Masura));
                 solduri[a.Unitate.Id] += sens * a.Masura;
                 decizii.Add(new N.AlocareFifo(linie.Id, a.Unitate, a.Masura));
             }
