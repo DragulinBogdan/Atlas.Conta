@@ -739,6 +739,12 @@ citire; rulează pe orice bază de pe instanța uneltelor, inclusiv pe una de
 import. Două importuri ale aceluiași binar dau amprente identice
 (`docs/nucleu/c111-pas0-linia-de-baza.md`). (C111-D9)
 
+`ModelCheck --perf-fisa <bază> <simbol cont> <an> <lună> <director>` măsoară
+fișa contului pe o bază numită: contul întreg și contul pe repartitorul lui
+cel mai încărcat, cinci rulări la cald, mediana, cu numărul de rânduri și
+câte au contrapartidă. Scrie în director SQL-ul produsului, cu parametrii în
+antet. Numai citire. (C111 S9, `docs/nucleu/c111-pas6-import.md`)
+
 ### Îmbinările pe chei nulabile ale cubului
 
 Unitatea, repartitorul și documentul sunt nulabile pe `Postare`. O îmbinare

@@ -118,6 +118,17 @@ if (args.Contains("--amprente")) {
     return;
 }
 
+if (args.Contains("--perf-fisa")) {
+    var i = Array.IndexOf(args, "--perf-fisa");
+    if (args.Length <= i + 5 || !int.TryParse(args[i + 3], out var anFisa) || !int.TryParse(args[i + 4], out var lunaFisa)) {
+        Console.WriteLine("Folosire: ModelCheck --perf-fisa <bază> <simbol cont> <an> <lună> <director>");
+        Environment.ExitCode = 2;
+        return;
+    }
+    PerfFisa.Masoara(Conexiunea(args[i + 1]), args[i + 2], anFisa, lunaFisa, Path.GetFullPath(args[i + 5]));
+    return;
+}
+
 // X-D2 — `ModelCheck --probe-sursa [--lista]`: numai probele pe sursă, fără bază.
 if (args.Contains("--probe-sursa")) {
     ProbeCulegere.VerificaSursa(s.Check);

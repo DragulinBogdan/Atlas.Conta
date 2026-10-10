@@ -325,16 +325,15 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   ascunse în XAF și lipsesc din API. (115-r1)
 - Cheia de pereche (`Postare.Pereche`) nu acoperă transformările (consumul și
   produsul sunt corespondență de grup): rândul fără pereche n-are
-  contrapartidă în fișa contului și în registrul jurnal. Cifra de timp a
-  fișei prin pereche pe baza de import se ia la pasul 6 al C111, după
-  importul pe forma nouă. Stornoul cu mai multe surse decalează ordinalele
+  contrapartidă în fișa contului și în registrul jurnal. Stornoul cu mai multe surse decalează ordinalele
   surselor după prima, deci ordinalul stornoului nu e literal al
   originalului. (D9-A2; 2026-10-07)
-- Import1C compilează pe forma postării din C111, dar n-a rulat pe ea:
-  amprentele importului față de linia de bază
-  (`docs/nucleu/c111-pas0-linia-de-baza.md`) nu sunt măsurate, iar bazele de
-  import existente sunt pe schema veche și cer `--recreeaza`. Cifrele de mai
-  jos sunt de dinaintea ei. (C111-D9, pasul 6)
+- Import1C a rulat pe forma postării din C111 pe ianuarie 2025, cu amprentele
+  liniei de bază identice (`docs/nucleu/c111-pas6-import.md`). Bazele de
+  import și clonele de măsurare de pe 5444 sunt pe schema veche și cer
+  `--recreeaza`. `ScaraVolum.sql` scrie coloanele vechi și nu rulează; PerfCub
+  nu e măsurat pe forma nouă. Cifrele de mai jos sunt de dinaintea ei.
+  (C111-D9, pasul 6)
 - Import1C rulează pe cititorii cubului, dar reconcilierea lui nu e verde.
   Pe ianuarie 2025 (2026-10-07): 15.232 de documente, zero eșecuri de import,
   `INV-CUB` verde; contractul 1 are trei conturi fără explicație (371, 3028,

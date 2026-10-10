@@ -1,7 +1,7 @@
 # C111, pasul 5 — contrapartida prin pereche (S9)
 
 **Data:** 2026-10-10. **Stare:** implementat și verificat pe catalog și pe
-HTTP; cifra de timp pe baza de import rămâne pentru pasul 6. Contractul:
+HTTP; cifra de timp e luată la pasul 6 ([`c111-pas6-import.md`](c111-pas6-import.md)). Contractul:
 [C111](c111-coordonate-contract.md), S9 și C111-Q2; decizia 111 (d). Închide
 D9-r4.
 

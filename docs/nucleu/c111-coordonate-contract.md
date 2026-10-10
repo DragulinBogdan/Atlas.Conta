@@ -304,7 +304,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 3 | `Cont.FeluriRepartitor`, gardul, seed-ul bugetar | făcut 2026-10-10: [`c111-pas3-feluri.md`](c111-pas3-feluri.md) |
 | 4 | S7 și S8 | făcut 2026-10-10: [`c111-pas4-s7-s8.md`](c111-pas4-s7-s8.md) |
 | 5 | S9: contrapartida prin pereche | făcut 2026-10-10, cu fișa și registrul pe HTTP: [`c111-pas5-pereche.md`](c111-pas5-pereche.md). Cifra de timp cere o bază de import pe forma nouă și se ia la pasul 6 |
-| 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | import pe ianuarie: regulile de oprire 1 și 2; `INV-CUB` verde |
+| 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | importul făcut 2026-10-10, cu regulile de oprire 1 și 2 și `INV-CUB` verzi și cu cifra de timp a fișei: [`c111-pas6-import.md`](c111-pas6-import.md); rămân `ScaraVolum.sql` și PerfCub |
 | 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | drift zero; `refuzuri.ps1`; review advers |
 
 **Scrierile brute și mutanții** (pasul 2). Probele care scriu sau strică
