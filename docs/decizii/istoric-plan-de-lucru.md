@@ -1127,3 +1127,10 @@ detaliat în jurnal):
   naturale; două importuri dau amprente identice, iar trei postări modificate
   de mână sunt prinse pe toate secțiunile. SAF-T L nu se generează pe
   ianuarie 2025. `docs/nucleu/c111-pas0-linia-de-baza.md`.
+
+- **2026-10-10 — C111: review-ul advers Codex al contractului, reconciliat.**
+  C111-R1…R12 verificate în cod și acceptate. Amendamentul 1 (coloane
+  paralele) e retras: premisa lui era greșită. S1 e rescrisă ca o singură axă
+  analitică, cu filtrele HTTP fixate; D5 are patru forme noi; S10 e nouă;
+  regula de oprire cere amprenta analitică și așteptări pe fiecare formă.
+  `docs/nucleu/c111-coordonate-contract.md`.

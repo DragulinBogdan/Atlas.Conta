@@ -182,7 +182,8 @@ Mersă în main prin PR #22 (2026-10-07). Bazele de dezvoltare sunt recreate din
 `.Flax.D9bP0`, scena de volum e `.D9bVol`. Decizia 111 e aprobată de owner
 (2026-10-10) și neimplementată: coordonatele se schimbă în felia C111, cu
 contractul `docs/nucleu/c111-coordonate-contract.md` (pasul 0 făcut;
-amendamentul 1 propus; codul așteaptă review-ul Codex), înaintea TR-D9b; TR-D9b rămâne felia unităților, pe forma nouă
+review-ul Codex C111-R1…R12 reconciliat; pasul 2 așteaptă închiderea lui),
+înaintea TR-D9b; TR-D9b rămâne felia unităților, pe forma nouă
 a postării.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
