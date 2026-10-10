@@ -1,8 +1,10 @@
 # C111 — coordonatele postării: contract
 
 **Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1, Q2 și Q4
-(2026-10-10); pașii 0 și 1 sunt aprobați. Pasul 2 așteaptă review-ul advers
-Codex pe contract și confirmarea lui C111-Q3.
+(2026-10-10). Pasul 0 e făcut. Pasul 1 nu se poate face cum e scris
+(amendamentul 1, propus). Owner-ul a hotărât (2026-10-10) că niciun cod nu se
+scrie până review-ul advers Codex pe contract și pe amendament nu e închis.
+C111-Q3 e neconfirmată.
 **Bază:** main `1cc9d93`. **Decizia:**
 [111](../decizii/111-repartitor-unic-si-registre-tipate.md), aprobată
 2026-10-10. **Măsurătorile:** [pasul 0](tr-d9b-pas0-masuratori.md).
@@ -206,7 +208,7 @@ diferite, ca la TR-D9a, și se numește ca abatere.
 Pornirea: pașii 0 și 1 acum; review-ul advers Codex pe contract se închide
 înaintea pasului 2.
 
-## Amendamentul 1 (propus 2026-10-10, neaprobat)
+## Amendamentul 1 (propus 2026-10-10; se judecă după review-ul Codex)
 
 **Constatarea.** Pasul 1, „poarta unică pe forma de azi”, nu se poate face
 cum e scris. Modulul are, în afara declaranților, circa 130 de rânduri care
