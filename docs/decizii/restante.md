@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-10-10 (118 propusă: categoria `docs`, 118-r6 închisă prin 118, 118-r1…r5 și r7/r8 deschise; 107-r11 și 114-r1 închise prin 114, 115 și 116; 116-r1 închisă prin 117; 107-r9 restrânsă; 115-r1 și 116-r2 deschise).** [Index](README.md)
+**Actualizat: 2026-10-10 (118 activă: categoria `docs`, 118-r6 închisă prin 118, 118-r1…r5 și r7/r8 deschise; 107-r11 și 114-r1 închise prin 114, 115 și 116; 116-r1 închisă prin 117; 107-r9 restrânsă; 115-r1 și 116-r2 deschise).** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al

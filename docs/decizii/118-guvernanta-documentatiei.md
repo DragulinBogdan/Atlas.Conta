@@ -1,8 +1,8 @@
 # 118 — Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rând
 
 - Data: 2026-10-10
-- Stare: propusă
-- Execuție: forma kitului și cele 12 tranșări din §12 confirmate de owner 2026-10-10; textul deciziei așteaptă aprobarea
+- Stare: activă
+- Execuție: forma kitului și cele 12 tranșări din §12 confirmate de owner 2026-10-10; aprobată de owner 2026-10-10; unealta `docskit` (118-r2) în repo-ul `DocsKit`
 - Arii: dezvoltare-si-validare
 - Amendează: 91 (l)
 - Docs: kitul `~/.claude/PROJECT_GOVERNANCE.md` (§1–§12, versiunea din 2026-10-10); `nou/tools/docs/normalizeaza-antete.py`; `docs/stare-curenta/termeni.md`; `docs/decizii/README.md` (indexul generat)
@@ -88,3 +88,4 @@ Fără review advers la scriere: decizie de formă, fără efect pe motor sau sc
 
 - 2026-10-10: scrisă ca `propusă`, cu normalizarea celor 117 antete făcută de script în același PR.
 - 2026-10-10: 118-r6 închisă, tranșările de termeni aplicate în `termeni.md`.
+- 2026-10-10: aprobată de owner; `Stare: activă`.

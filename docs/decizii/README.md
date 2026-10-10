@@ -110,7 +110,7 @@
 | 113 | [Semnul valorii e al liniei; `RegulaContare.PastreazaSemn` a ieșit](113-semnul-e-al-liniei-pastreazasemn-scos.md) | 2026-10-08 | activă |
 | 115 | [Linia de notă poate numi partida pe care o stinge; partida inițială își poartă data de naștere](115-nota-numeste-partida.md) | 2026-10-09 | activă |
 | 117 | [Postarea își poartă ordinalul în tranzacție; unitatea fără document se departajează pe el](117-ordinalul-postarii-in-tranzactie.md) | 2026-10-09 | activă |
-| 118 | [Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rând](118-guvernanta-documentatiei.md) | 2026-10-10 | propusă |
+| 118 | [Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rând](118-guvernanta-documentatiei.md) | 2026-10-10 | activă |
 
 ### Amendate parțial (33)
 
