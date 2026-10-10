@@ -951,7 +951,8 @@ depășirii), `restante` (`Închide` ⇔ `închisă prin`, corp la sursă, stăr
 vocabular, lista `activă` sub 45), `cod` (`// 42b` are decizia și
 sub-punctul), `cai` (căile în backtick cu rădăcină `nou/`, `docs/`, `db/`,
 `legacy/` există, doar în stratul curent), `actualizat` (`Actualizat` ≥
-ultimul commit al paginii), `orfane` (stratul curent e legat), `termeni`
+ultima schimbare a textului scris de mână al paginii; blocul generat nu
+contează, deci regenerarea nu cere dată nouă), `orfane` (stratul curent e legat), `termeni`
 (ancore unice în glosar). Un gardian intră la `eroare` când are zero
 constatări; la 2026-10-10 sunt la `eroare` `linkuri`, `generat`, `actualizat`,
 `orfane`, `termeni`, restul la `avertisment` cu cifrele în 118-r1. `check`
