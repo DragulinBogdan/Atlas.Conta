@@ -22,9 +22,6 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   Cerința de material citește numai produsul lotului, nu și materialul fix al
   unei reguli de contare. BTR, ASM și PIF nu sunt păzite (D9-r1).
   (`docs/nucleu/c111-coordonate-contract.md`, D4; `tr-d9-pas2-probe.md`, G2)
-- Coordonatele postării (C111) sunt pe forma nouă, dar o schimbare numită în
-  contract nu e făcută: contrapartida nu se citește prin pereche (S9; vezi
-  mai jos, D9-r4).
 - La decont, partenerul fiscal e latura numită de politica de TVA, adică
   titularul; furnizorul de pe bon nu există pe postare. (C111-r1)
 - Partenerul fiscal lipsește când politica de TVA nu numește o latură (sursă
@@ -327,9 +324,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Nominalizarea partidei pe linia de notă nu e în culegere: câmpurile sunt
   ascunse în XAF și lipsesc din API. (115-r1)
 - Cheia de pereche (`Postare.Pereche`) nu acoperă transformările (consumul și
-  produsul sunt corespondență de grup) și nu e citită de nimeni: fișa
-  contului întoarce contrapartida nulă când tranzacția are mai multe conturi
-  pe sensul opus (D9-r4; S9 din contractul C111). Stornoul cu mai multe surse decalează ordinalele
+  produsul sunt corespondență de grup): rândul fără pereche n-are
+  contrapartidă în fișa contului și în registrul jurnal. Cifra de timp a
+  fișei prin pereche pe baza de import se ia la pasul 6 al C111, după
+  importul pe forma nouă. Stornoul cu mai multe surse decalează ordinalele
   surselor după prima, deci ordinalul stornoului nu e literal al
   originalului. (D9-A2; 2026-10-07)
 - Import1C compilează pe forma postării din C111, dar n-a rulat pe ea:

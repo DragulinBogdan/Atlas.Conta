@@ -36,6 +36,7 @@ public sealed class PostareAnalitica {
     public N.Spatiu Spatiu { get; set; }
     public Guid TranzactieId { get; set; }
     public N.FelTranzactie Fel { get; set; }
+    public int? Pereche { get; set; }
     public Guid? DocumentId { get; set; }
     public DateOnly Data { get; set; }
     public Guid Cont { get; set; }
@@ -74,7 +75,7 @@ public static class Contabil {
 
     public static IQueryable<PostareAnalitica> Analitice(IObjectSpace os) =>
         Postari(os).Select(p => new PostareAnalitica {
-            Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel,
+            Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel, Pereche = p.Pereche,
             DocumentId = p.DocumentId, Data = p.Data, Cont = p.Cont, Latura = p.Latura, Valoare = p.Valoare,
             Repartitor = p.Repartitor, Produs = p.Produs,
             CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,

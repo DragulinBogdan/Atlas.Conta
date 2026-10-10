@@ -10941,6 +10941,9 @@ export interface components {
             /** Format: double */
             Credit?: number;
             /** Format: uuid */
+            ContrapartidaId?: string | null;
+            ContrapartidaSimbol?: string | null;
+            /** Format: uuid */
             DocumentId?: string | null;
             DocumentTip?: string | null;
             DocumentNumar?: string | null;

@@ -80,11 +80,19 @@ sealed class ScenariiFisa(Func<IObjectSpace> deschide, Action<string, bool> chec
             Refuza("SC-CIT-34", () => Atlas.Conta.BackOffice.Module.Cub.Citiri.Invarianti.Verifica(os), "CITIRE_CUB_DEZECHILIBRAT");
             tx.Rollback();
         });
-        Verifica("SC-CIT-21", "două contrapartide, fără ID unic inventat", CuSpatiu(os => {
+        Verifica("SC-CIT-21", "fiecare rând al fișei își arată contrapartida din perechea lui (S9)", CuSpatiu(os => {
             var r = ContabilProiectii.FisaCont(os, Cont(Stoc), new(An, 2, 13), new(An, 2, 13)).ToList();
-            return r.Count == 2 && r.All(p => p.ContrapartidaId == null
-                && p.ContrapartidaSimbol == string.Join(", ", new[] { Serviciu, ContPartideLiber }.Order()))
-                && r[^1].SoldCurent == -50;
+            bool Pereche(decimal credit, string simbol) => r.Count(p => p.Credit == credit
+                && p.ContrapartidaId == Cont(simbol) && p.ContrapartidaSimbol == simbol) == 1;
+            return r.Count == 2 && Pereche(20, Serviciu) && Pereche(30, ContPartideLiber) && r[^1].SoldCurent == -50;
+        }));
+        Verifica("SC-CIT-21", "registrul jurnal dă pe fiecare rând contul corespondent din pereche (S9)", CuSpatiu(os => {
+            var r = ContabilProiectii.RegistruJurnal(os).Where(p => p.DocumentId == multi.Id).ToList();
+            bool Pereche(string cont, decimal valoare, string corespondent) => r.Count(p => p.ContSimbol == cont
+                && p.Debit + p.Credit == valoare && p.ContrapartidaId == Cont(corespondent)
+                && p.ContrapartidaSimbol == corespondent) == 1;
+            return r.Count == 4 && Pereche(Serviciu, 20, Stoc) && Pereche(Stoc, 20, Serviciu)
+                && Pereche(ContPartideLiber, 30, Stoc) && Pereche(Stoc, 30, ContPartideLiber);
         }));
         var anulata = N(2, 15, Serviciu, ContPartideLiber, 15);
         Verifica("SC-CIT-22", "nota operată are două postări", CuSpatiu(os =>

@@ -946,7 +946,9 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   aceeași cauză și cantități opuse: pe laturi opuse cu aceeași valoare
   (`Operare`), pe aceeași latură cu valori opuse (`Transfer`); stornoul
   acceptă ambele forme. Nu e coordonată: nu intră în chei de sold și
-  snapshot-uri; cititorii n-o folosesc încă (D9-r4).
+  snapshot-uri. O citesc fișa contului și registrul jurnal: contrapartida
+  unui rând e contul celeilalte postări a perechii, iar rândul fără pereche
+  (deschiderea) n-are contrapartidă (111 (d), C111 S9).
 - **Unitatea** (lot = partidă = fișă): raportul = cost / curs / valoare
   rămasă ca citire; partida deschisă de un document are id determinist din
   (document, cont, partener), conform 092; identitățile istorice sunt păstrate

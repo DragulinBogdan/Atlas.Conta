@@ -148,6 +148,8 @@ public sealed class JurnalRand : IRandCuDocument {
     public string Sens { get; set; }
     public decimal Debit { get; set; }
     public decimal Credit { get; set; }
+    public Guid? ContrapartidaId { get; set; }
+    public string ContrapartidaSimbol { get; set; }
     public Guid? DocumentId { get; set; }
     public string DocumentTip { get; set; }
     public string DocumentNumar { get; set; }
@@ -157,6 +159,7 @@ public sealed class JurnalRand : IRandCuDocument {
 struct SursaFisa {
     public Guid Id { get; set; }
     public Guid TranzactieId { get; set; }
+    public int? Pereche { get; set; }
     public Guid ContId { get; set; }
     public int Spatiu { get; set; }
     public DateOnly Data { get; set; }
@@ -455,8 +458,8 @@ public static class ContabilProiectii {
             join r in os.GetObjectsQuery<Repartitor>() on p.Repartitor equals r.ID into parteneri
             from r in parteneri.DefaultIfEmpty()
             select new SursaFisa {
-                Id = p.Id, Spatiu = (int)p.Spatiu, TranzactieId = p.TranzactieId, Data = p.Data, ContId = p.Cont,
-                ContSimbol = c.Simbol, NumarNota = d.Numar, Sens = p.Latura == N.Latura.Debit ? "D" : "C",
+                Id = p.Id, Spatiu = (int)p.Spatiu, TranzactieId = p.TranzactieId, Pereche = p.Pereche, Data = p.Data,
+                ContId = p.Cont, ContSimbol = c.Simbol, NumarNota = d.Numar, Sens = p.Latura == N.Latura.Debit ? "D" : "C",
                 Debit = p.Latura == N.Latura.Debit ? p.Valoare : 0m,
                 Credit = p.Latura == N.Latura.Credit ? p.Valoare : 0m,
                 RepartitorId = p.Repartitor, MaterialId = p.Produs,
@@ -485,12 +488,11 @@ public static class ContabilProiectii {
             SELECT p."Id", p."Spatiu", p."TranzactieId", p."Data", p."NumarNota", p."Sens", p."Debit", p."Credit",
                 (SELECT sold FROM initial) + SUM(p."Debit" - p."Credit") OVER (
                     ORDER BY p."Data", p."Id", p."Spatiu" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "SoldCurent",
-                (SELECT CASE WHEN COUNT(DISTINCT c."ContId") = 1 THEN MIN(c."ContId"::text)::uuid END
-                    FROM postari c WHERE c."TranzactieId" = p."TranzactieId" AND c."Sens" <> p."Sens") AS "ContrapartidaId",
-                (SELECT string_agg(DISTINCT c."ContSimbol", ', ' ORDER BY c."ContSimbol")
-                    FROM postari c WHERE c."TranzactieId" = p."TranzactieId" AND c."Sens" <> p."Sens") AS "ContrapartidaSimbol",
+                c."ContId" AS "ContrapartidaId", c."ContSimbol" AS "ContrapartidaSimbol",
                 p."RepartitorDenumire", p."DocumentId", NULL::text AS "DocumentTip", p."NumarNota" AS "DocumentNumar", p."Storno"
-            FROM postari p WHERE p."ContId" = {P(contId)} AND p."Data" >= {P(dataStart)}{Filtre("p")}
+            FROM postari p
+            LEFT JOIN postari c ON c."TranzactieId" = p."TranzactieId" AND c."Pereche" = p."Pereche" AND c."Id" <> p."Id"
+            WHERE p."ContId" = {P(contId)} AND p."Data" >= {P(dataStart)}{Filtre("p")}
             """;
         return ((EFCoreObjectSpace)os).DbContext.Database
             .SqlQuery<FisaContSql>(FormattableStringFactory.Create(sql, argumente.ToArray()))
@@ -511,20 +513,28 @@ public static class ContabilProiectii {
 
     public static IQueryable<JurnalRand> RegistruJurnal(
         IObjectSpace os, DateOnly? dataStart = null, DateOnly? dataEnd = null) {
-        var postari = Cub.Citiri.Contabil.Postari(os);
+        var toate = Cub.Citiri.Contabil.Postari(os);
+        var postari = toate;
         if (dataStart is { } ds) postari = postari.Where(p => p.Data >= ds);
         if (dataEnd is { } de) postari = postari.Where(p => p.Data <= de);
+        // 111 (d): contrapartida e cealaltă postare a perechii; fără pereche nu există.
+        // Ordinalele nule nu se întâlnesc: îmbinarea rămâne fără ramură de nul.
         return (from p in postari
             join c in os.GetObjectsQuery<Cont>() on p.Cont equals c.ID into conturi
             from c in conturi.DefaultIfEmpty()
             join d in os.GetObjectsQuery<Document>() on p.DocumentId equals d.ID into documente
             from d in documente.DefaultIfEmpty()
+            from pereche in toate.Where(x => x.TranzactieId == p.TranzactieId
+                && (x.Pereche ?? -1) == (p.Pereche ?? -2) && x.ID != p.ID).DefaultIfEmpty()
+            join cc in os.GetObjectsQuery<Cont>() on pereche.Cont equals cc.ID into corespondente
+            from cc in corespondente.DefaultIfEmpty()
             select new JurnalRand {
                 Id = p.ID, Spatiu = (int)p.Spatiu, TranzactieId = p.TranzactieId, Data = p.Data,
                 NumarNota = d.Numar, ContId = p.Cont, ContSimbol = c.Simbol,
                 Sens = p.Latura == N.Latura.Debit ? "D" : "C",
                 Debit = p.Latura == N.Latura.Debit ? p.Valoare : 0m,
                 Credit = p.Latura == N.Latura.Credit ? p.Valoare : 0m,
+                ContrapartidaId = (Guid?)pereche.Cont, ContrapartidaSimbol = cc.Simbol,
                 DocumentId = p.DocumentId, DocumentNumar = d.Numar, DocumentTip = null,
                 Storno = p.Tranzactie.Fel == N.FelTranzactie.Storno
             }).OrderBy(r => r.Data).ThenBy(r => r.TranzactieId).ThenBy(r => r.Id).ThenBy(r => r.Spatiu);

@@ -325603,6 +325603,15 @@
             "type": "number",
             "format": "double"
           },
+          "ContrapartidaId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "ContrapartidaSimbol": {
+            "type": "string",
+            "nullable": true
+          },
           "DocumentId": {
             "type": "string",
             "format": "uuid",
