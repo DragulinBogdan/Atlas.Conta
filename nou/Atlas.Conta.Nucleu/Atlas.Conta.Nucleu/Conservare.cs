@@ -75,7 +75,7 @@ public static class Conservare {
                         || p.Coordonate.Repartitor is not { EsteIntern: true } || p.Coordonate.Contrapondere is not null)
                     || contraponderi.Any(p => p.Coordonate.Unitate != null || p.Valoare != 0m || p.ValoareValuta != 0m
                         || p.Coordonate.Carte != Carte.Contabil || p.Coordonate.Repartitor != null
-                        || p.Coordonate.PartenerFiscal != null || p.Coordonate.LocFiscal != null
+                        || p.Coordonate.PartenerFiscal != null || p.Coordonate.Loc != null
                         || p.Coordonate.CodTva != null || p.Coordonate.PerioadaDeclarare != null || p.Coordonate.Valuta != null))
                 refuzuri.Add(new Refuz(Coduri.ContrapondereTransformareInvalida,
                     "Transformarea cere contrapondere cantitativă fără valoare pe același cont, produs și cauză.", grup.Key.Cauza.Linie));
@@ -202,14 +202,15 @@ public static class Conservare {
                     Coduri.PartenerFiscalFaraFapt,
                     "partenerul fiscal se cere pe un fapt fiscal",
                     linie));
-            if (coordonate.LocFiscal is not null && coordonate.CodTva is null)
+            if (coordonate.Loc is not null && coordonate.CodTva is null
+                    && coordonate.Unitate is not { Fel: FelUnitate.Partida })
                 refuzuri.Add(new Refuz(
-                    Coduri.LocFiscalFaraFapt,
-                    "locul fiscal se cere pe un fapt fiscal",
+                    Coduri.LocFaraTemei,
+                    "locul se cere pe un fapt fiscal sau pe o partidă",
                     linie));
-            if (coordonate.LocFiscal is null && coordonate.CodTva is not null)
+            if (coordonate.Loc is null && coordonate.CodTva is not null)
                 refuzuri.Add(new Refuz(
-                    Coduri.LocFiscalLipsa,
+                    Coduri.LocLipsa,
                     "faptul fiscal nu are loc",
                     linie));
             if (coordonate.Unitate is not { } unitate)

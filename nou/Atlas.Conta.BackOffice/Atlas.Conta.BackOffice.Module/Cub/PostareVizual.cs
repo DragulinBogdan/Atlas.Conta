@@ -57,9 +57,9 @@ public class PostareVizual {
     public virtual Guid? PartenerFiscal { get; set; }
     [XafDisplayName("Partener fiscal")]
     public virtual string PartenerFiscalCod { get; set; }
-    public virtual Guid? LocFiscal { get; set; }
-    [XafDisplayName("Loc fiscal")]
-    public virtual string LocFiscalCod { get; set; }
+    public virtual Guid? Loc { get; set; }
+    [XafDisplayName("Loc")]
+    public virtual string LocCod { get; set; }
     public virtual int? PerioadaDeclarare { get; set; }
     public virtual N.RegimTva? RegimTva { get; set; }
     public virtual decimal? CotaTva { get; set; }

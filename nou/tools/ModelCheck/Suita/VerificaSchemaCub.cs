@@ -107,14 +107,14 @@ static class VerificaSchemaCub {
         string[] cheiAsteptate = [
             "Postare_Contabil.Cont→Conturi [FK_Postare_Contabil_Conturi_Cont]",
             "Postare_Contabil.DocumentId→Documente [FK_Postare_Contabil_Documente_DocumentId]",
-            "Postare_Contabil.LocFiscal→Repartitori [FK_Postare_Contabil_Repartitori_LocFiscal]",
+            "Postare_Contabil.Loc→Repartitori [FK_Postare_Contabil_Repartitori_Loc]",
             "Postare_Contabil.PartenerFiscal→Repartitori [FK_Postare_Contabil_Repartitori_PartenerFiscal]",
             "Postare_Contabil.Produs→Produse [FK_Postare_Contabil_Produse_Produs]",
             "Postare_Contabil.Repartitor→Repartitori [FK_Postare_Contabil_Repartitori_Repartitor]",
             "Postare_Contabil.TranzactieId→Tranzactie [FK_Postare_Contabil_Tranzactie_TranzactieId]",
             "Postare_Stoc.Cont→Conturi [FK_Postare_Stoc_Conturi_Cont]",
             "Postare_Stoc.DocumentId→Documente [FK_Postare_Stoc_Documente_DocumentId]",
-            "Postare_Stoc.LocFiscal→Repartitori [FK_Postare_Stoc_Repartitori_LocFiscal]",
+            "Postare_Stoc.Loc→Repartitori [FK_Postare_Stoc_Repartitori_Loc]",
             "Postare_Stoc.PartenerFiscal→Repartitori [FK_Postare_Stoc_Repartitori_PartenerFiscal]",
             "Postare_Stoc.Produs→Produse [FK_Postare_Stoc_Produse_Produs]",
             "Postare_Stoc.Repartitor→Repartitori [FK_Postare_Stoc_Repartitori_Repartitor]",
@@ -130,7 +130,7 @@ static class VerificaSchemaCub {
         Console.WriteLine($"     MĂSURAT (STR-SCHEMA-3/{eticheta}): {chei.Count} FK-uri [{string.Join("; ", chei)}]; "
             + $"constrângeri de formă [{string.Join(", ", forme)}].");
         s.Check($"STR-SCHEMA-3 ({eticheta}) fiecare FK din S-D2 există pe PARTIȚIA lui (părintele partiționat n-are "
-            + "niciunul), iar setul e ÎNCHIS: repartitorul, partenerul fiscal și locul fiscal pe `Repartitori` (C111-D2), "
+            + "niciunul), iar setul e ÎNCHIS: repartitorul, partenerul fiscal și locul pe `Repartitori` (C111-D2), "
             + "fără FK pe `Unitate` pe Contabil (partida e hash determinist, nu rând) și fără FK pe `Valuta` (B-r6); "
             + "părintele poartă `CK_Postare_Contrapondere` și `CK_Postare_BlocFiscal`",
             chei.OrderBy(x => x, StringComparer.Ordinal).SequenceEqual(cheiAsteptate.OrderBy(x => x, StringComparer.Ordinal))

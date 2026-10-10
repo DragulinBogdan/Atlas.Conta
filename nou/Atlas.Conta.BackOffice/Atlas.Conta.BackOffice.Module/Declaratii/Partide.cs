@@ -54,8 +54,12 @@ static class Terti {
     public static N.Capat Capat(Operand operand, N.Capat capat, RepartitorFapt tert, N.Unitate? partida) {
         ArgumentNullException.ThrowIfNull(capat);
         ArgumentNullException.ThrowIfNull(tert);
+        // C111-Q14: locul intern pe care titularul îl scoate din repartitor rămâne pe postare.
         if (partida is not null)
-            return capat with { Repartitor = tert.Coordonata, Unitate = partida };
+            return capat with {
+                Repartitor = tert.Coordonata, Unitate = partida,
+                Loc = capat.Loc ?? (capat.Repartitor is { EsteIntern: true } loc ? loc.Id : null),
+            };
         return capat.Repartitor is null && CereRepartitor(operand, capat)
             ? capat with { Repartitor = tert.Coordonata }
             : capat;

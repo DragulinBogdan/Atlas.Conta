@@ -191,7 +191,7 @@ static class VerificaNucleuFclDsc {
                 creanta.Count == (privat ? 2 : 1)
                 && creanta.All(p => p.Latura == N.Latura.Debit && p.Repartitor == client.ID
                     && p.Unitate == partidaVenit
-                    && p.PartenerFiscal == null && p.LocFiscal == null)
+                    && p.PartenerFiscal == null && p.Loc == null)
                 && creanta.Sum(p => p.Valoare) == (privat ? 242m : 200m));
             s.Check($"STR-FCL-VENIT-TVA ({eticheta}): venitul e CREDIT 200 pe gestiunea emitentului"
                 + (privat ? ", cu codul de TVA `Baza`/`Livrare`, perioada declarării, partenerul și locul fiscal" : ", fără cod de TVA"),
@@ -200,16 +200,16 @@ static class VerificaNucleuFclDsc {
                 && (privat
                     ? venitul.TipTvaId == n21.ID && venitul.SensTva == N.SensTva.Livrare
                         && venitul.RolTva == N.RolTva.Baza && venitul.PerioadaDeclarare != null
-                        && venitul.PartenerFiscal == client.ID && venitul.LocFiscal == emitent.ID
+                        && venitul.PartenerFiscal == client.ID && venitul.Loc == emitent.ID
                     : venitul.TipTvaId == null && venitul.PerioadaDeclarare == null
-                        && venitul.PartenerFiscal == null && venitul.LocFiscal == null));
+                        && venitul.PartenerFiscal == null && venitul.Loc == null));
             if (privat) {
                 var taxa = postariVenit.Single(p => p.Cont == cont4427.ID);
                 s.Check($"STR-FCL-VENIT-TVA ({eticheta}): taxa COLECTATĂ e CREDIT 42 pe 4427, pe gestiunea "
                     + "emitentului, cu rolul `Taxa`, partenerul și locul fiscal; soldul partidei de creanță = 242",
                     taxa is { Latura: N.Latura.Credit, Valoare: 42m } && taxa.Repartitor == emitent.ID
                     && taxa.RolTva == N.RolTva.Taxa && taxa.SensTva == N.SensTva.Livrare
-                    && taxa.PartenerFiscal == client.ID && taxa.LocFiscal == emitent.ID
+                    && taxa.PartenerFiscal == client.ID && taxa.Loc == emitent.ID
                     && ProbeCub.SoldPartida(os, partidaVenit) == 242m);
             }
             ProbeCub.ProbaOperare(os, s.Check, $"NUC-FCL-{eticheta}", fclVenit);
@@ -267,11 +267,11 @@ static class VerificaNucleuFclDsc {
             var avansul = postariAvans.SingleOrDefault(p => p.Cont == cont419.ID);
             s.Check($"STR-FCL-AVANS-DOUA-PARTIDE ({eticheta}): documentul deschide DOUĂ partide (090d) — pe "
                 + "creanță și pe 419 —, iar regularizarea e `C 419 -100` pe partida clientului, fără fapt "
-                + "fiscal și deci fără loc (C111-D5)",
+                + "fiscal, cu emitentul păstrat ca loc (C111-Q14)",
                 postariAvans.Select(p => p.Unitate).OfType<Guid>().Distinct().Count() == 2
                 && avansul is { Latura: N.Latura.Credit, Valoare: -100m }
                 && avansul.Unitate == partidaAvans419 && avansul.Repartitor == client.ID
-                && avansul.TipTvaId == null && avansul.PartenerFiscal == null && avansul.LocFiscal == null);
+                && avansul.TipTvaId == null && avansul.PartenerFiscal == null && avansul.Loc == emitent.ID);
             s.Check($"STR-FCL-AVANS-DOUA-PARTIDE ({eticheta}): partida de creanță ține netul, taxa ȘI debitul "
                 + "regularizării (200 + 42 − 100 = 142), iar partida 419 ține doar creditul ei",
                 ProbeCub.SoldPartida(os, partidaAvansCreanta) == 142m

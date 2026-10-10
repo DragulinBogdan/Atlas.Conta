@@ -2581,7 +2581,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("LinieId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("LocFiscal")
+                    b.Property<Guid?>("Loc")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Ordinal")
@@ -2761,10 +2761,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid?>("LinieId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("LocFiscal")
+                    b.Property<Guid?>("Loc")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("LocFiscalCod")
+                    b.Property<string>("LocCod")
                         .HasColumnType("text");
 
                     b.Property<int>("Ordinal")

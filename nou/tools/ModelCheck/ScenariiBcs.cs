@@ -155,7 +155,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
             var linie = linii.Single(l => l.LotId == lot && l.Cantitate == Math.Abs(cantitate));
             bool Comun(C.Postare p) => p.Spatiu == N.Spatiu.Stoc && p.Carte == N.Carte.Contabil
                 && p.Data == data && p.Unitate == lot && p.Produs == produs && p.LinieId == linie.ID
-                && p.Contrapondere == null && p.PartenerFiscal == null && p.LocFiscal == null
+                && p.Contrapondere == null && p.PartenerFiscal == null && p.Loc == null
                 && p.TipTvaId == null && p.PerioadaDeclarare == null
                 && p.Valuta == null && p.ValoareValuta == 0m && p.Valoare == valoare;
             corecte &= randuri.Count(p => Comun(p) && p.Cont == debit && p.Latura == N.Latura.Debit

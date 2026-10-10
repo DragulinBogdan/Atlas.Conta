@@ -66,12 +66,13 @@ static partial class AcoperireInvarianti {
         new("ORDINAL-GOL", C.Citiri.Invarianti.OrdinalInvalid, (os, db) => MutaOrdinal(os, db, cate => (cate, cate + 1))),
         new("ORDINAL-DUBLU", C.Citiri.Invarianti.OrdinalInvalid, (os, db) => MutaOrdinal(os, db, _ => (2, 3))),
         new("COORD-PARTENER-FARA-FAPT", null, PartenerFiscalFaraFapt) { Constrangere = BlocFiscal },
-        new("COORD-LOC-FARA-FAPT", null, LocFiscalFaraFapt) { Constrangere = BlocFiscal },
+        new("COORD-LOC-FARA-FAPT", null, LocFaraTemei) { Constrangere = BlocFiscal },
+        new("COORD-LOC-PE-PARTIDA", null, LocPePartida),
         new("COORD-FAPT-FARA-LOC", null, FaptFaraLoc) { Constrangere = BlocFiscal },
         new("COORD-CANTITATE-NEMARCATA", C.Citiri.Invarianti.CoordonateInvalide, CantitateNemarcata) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
         new("COORD-LOT-NEINTERN", C.Citiri.Invarianti.CoordonateInvalide, LotPeExtern) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
         new("COORD-PARTIDA-NEEXTERN", C.Citiri.Invarianti.CoordonateInvalide, PartidaPeIntern) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
-        new("COORD-LOC-NEINTERN", C.Citiri.Invarianti.CoordonateInvalide, LocFiscalExtern) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
+        new("COORD-LOC-NEINTERN", C.Citiri.Invarianti.CoordonateInvalide, LocExtern) { Numai = C.Citiri.Invarianti.VerificaCoordonate },
         new("FISCAL-INVERSA-PARTENER", InversaFiscala, InversaCuAltPartener),
         new("FISCAL-INVERSA-LOC", InversaFiscala, InversaCuAltLoc),
     ];
@@ -137,12 +138,24 @@ static partial class AcoperireInvarianti {
         return true;
     }
 
-    static bool LocFiscalFaraFapt(IObjectSpace os, DbContext db) {
+    // C111-Q14: fără fapt fiscal, locul e admis numai pe o postare cu partidă.
+    static bool LocPePartida(IObjectSpace os, DbContext db) {
+        var tinta = os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.TipTvaId == null && p.FelUnitate == N.FelUnitate.Partida && p.Loc == null)
+            .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
+        var gestiune = os.GetObjectsQuery<Gestiune>().OrderBy(g => g.ID).Select(g => (Guid?)g.ID).FirstOrDefault();
+        if (tinta == null || gestiune == null) return false;
+        db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
+            .ExecuteUpdate(s => s.SetProperty(p => p.Loc, gestiune));
+        return true;
+    }
+
+    static bool LocFaraTemei(IObjectSpace os, DbContext db) {
         var tinta = os.GetObjectsQuery<C.Postare>().Where(p => p.TipTvaId == null && p.FelUnitate == N.FelUnitate.Lot)
             .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu, p.Repartitor }).FirstOrDefault();
         if (tinta == null) return false;
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
-            .ExecuteUpdate(s => s.SetProperty(p => p.LocFiscal, tinta.Repartitor));
+            .ExecuteUpdate(s => s.SetProperty(p => p.Loc, tinta.Repartitor));
         return true;
     }
 
@@ -151,7 +164,7 @@ static partial class AcoperireInvarianti {
             .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
         if (tinta == null) return false;
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
-            .ExecuteUpdate(s => s.SetProperty(p => p.LocFiscal, (Guid?)null));
+            .ExecuteUpdate(s => s.SetProperty(p => p.Loc, (Guid?)null));
         return true;
     }
 
@@ -185,13 +198,13 @@ static partial class AcoperireInvarianti {
         return true;
     }
 
-    static bool LocFiscalExtern(IObjectSpace os, DbContext db) {
+    static bool LocExtern(IObjectSpace os, DbContext db) {
         var tinta = os.GetObjectsQuery<C.Postare>().Where(p => p.TipTvaId != null)
             .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
         var partener = os.GetObjectsQuery<Partener>().OrderBy(p => p.ID).Select(p => (Guid?)p.ID).FirstOrDefault();
         if (tinta == null || partener == null) return false;
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
-            .ExecuteUpdate(s => s.SetProperty(p => p.LocFiscal, partener));
+            .ExecuteUpdate(s => s.SetProperty(p => p.Loc, partener));
         return true;
     }
 
@@ -210,20 +223,20 @@ static partial class AcoperireInvarianti {
     static bool InversaCuAltLoc(IObjectSpace os, DbContext db) {
         var tinta = InversaFiscalaTinta(os);
         if (tinta == null) return false;
-        var altul = os.GetObjectsQuery<Gestiune>().Where(g => g.ID != tinta.LocFiscal).OrderBy(g => g.ID)
+        var altul = os.GetObjectsQuery<Gestiune>().Where(g => g.ID != tinta.Loc).OrderBy(g => g.ID)
             .Select(g => (Guid?)g.ID).FirstOrDefault();
         if (altul == null) return false;
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
-            .ExecuteUpdate(s => s.SetProperty(p => p.LocFiscal, altul));
+            .ExecuteUpdate(s => s.SetProperty(p => p.Loc, altul));
         return true;
     }
 
-    sealed record TintaFiscala(Guid ID, N.Spatiu Spatiu, Guid? PartenerFiscal, Guid? LocFiscal);
+    sealed record TintaFiscala(Guid ID, N.Spatiu Spatiu, Guid? PartenerFiscal, Guid? Loc);
 
     static TintaFiscala InversaFiscalaTinta(IObjectSpace os) => os.GetObjectsQuery<C.Postare>()
         .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Storno && p.TipTvaId != null && p.InversaDinId != null)
-        .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu, p.PartenerFiscal, p.LocFiscal }).ToList()
-        .Select(p => new TintaFiscala(p.ID, p.Spatiu, p.PartenerFiscal, p.LocFiscal)).FirstOrDefault();
+        .OrderBy(p => p.ID).Select(p => new { p.ID, p.Spatiu, p.PartenerFiscal, p.Loc }).ToList()
+        .Select(p => new TintaFiscala(p.ID, p.Spatiu, p.PartenerFiscal, p.Loc)).FirstOrDefault();
 
     static bool PartidaFaraPartener(IObjectSpace os, DbContext db) {
         var tinta = os.GetObjectsQuery<C.Postare>().Where(C.Citiri.Transformare.FaraContrapondere)

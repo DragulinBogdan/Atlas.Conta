@@ -161,7 +161,7 @@ public class CubTeste {
                     Unitate = lot,
                     CodTva = Gen.CodTva(aleator),
                     PartenerFiscal = furnizor.Id,
-                    LocFiscal = Gen.Locuri[0].Id,
+                    Loc = Gen.Locuri[0].Id,
                 },
                 5m,
                 0m,

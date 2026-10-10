@@ -3219,7 +3219,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     "SensTva" smallint NULL,
                     "RolTva" smallint NULL,
                     "PartenerFiscal" uuid NULL,
-                    "LocFiscal" uuid NULL,
+                    "Loc" uuid NULL,
                     "PerioadaDeclarare" integer NULL,
                     "Valuta" uuid NULL,
                     "Carte" smallint NOT NULL,
@@ -3258,8 +3258,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                             OR ("SuportId" IS NOT NULL AND "SuportSpatiu" IS NOT NULL AND "SuportSpatiu" IN (1, 2)))),
                     CONSTRAINT "CK_Postare_Contrapondere" CHECK ("Contrapondere" IS NULL OR "Contrapondere" BETWEEN 1 AND 4),
                     CONSTRAINT "CK_Postare_BlocFiscal" CHECK (
-                        ("TipTvaId" IS NULL AND "PartenerFiscal" IS NULL AND "LocFiscal" IS NULL)
-                        OR ("TipTvaId" IS NOT NULL AND "LocFiscal" IS NOT NULL)),
+                        ("TipTvaId" IS NULL AND "PartenerFiscal" IS NULL AND ("Loc" IS NULL OR "FelUnitate" = 2))
+                        OR ("TipTvaId" IS NOT NULL AND "Loc" IS NOT NULL)),
                     CONSTRAINT "CK_Postare_FiscalComplet" CHECK (
                         "TipTvaId" IS NULL OR (
                             "DocumentId" IS NOT NULL AND "LinieId" IS NOT NULL AND
@@ -3283,8 +3283,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         FOREIGN KEY ("Repartitor") REFERENCES "Repartitori" ("ID"),
                     ADD CONSTRAINT "FK_Postare_Contabil_Repartitori_PartenerFiscal"
                         FOREIGN KEY ("PartenerFiscal") REFERENCES "Repartitori" ("ID"),
-                    ADD CONSTRAINT "FK_Postare_Contabil_Repartitori_LocFiscal"
-                        FOREIGN KEY ("LocFiscal") REFERENCES "Repartitori" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Contabil_Repartitori_Loc"
+                        FOREIGN KEY ("Loc") REFERENCES "Repartitori" ("ID"),
                     ADD CONSTRAINT "FK_Postare_Contabil_Produse_Produs"
                         FOREIGN KEY ("Produs") REFERENCES "Produse" ("ID");
                 ALTER TABLE "Postare_Stoc"
@@ -3298,8 +3298,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         FOREIGN KEY ("Repartitor") REFERENCES "Repartitori" ("ID"),
                     ADD CONSTRAINT "FK_Postare_Stoc_Repartitori_PartenerFiscal"
                         FOREIGN KEY ("PartenerFiscal") REFERENCES "Repartitori" ("ID"),
-                    ADD CONSTRAINT "FK_Postare_Stoc_Repartitori_LocFiscal"
-                        FOREIGN KEY ("LocFiscal") REFERENCES "Repartitori" ("ID"),
+                    ADD CONSTRAINT "FK_Postare_Stoc_Repartitori_Loc"
+                        FOREIGN KEY ("Loc") REFERENCES "Repartitori" ("ID"),
                     ADD CONSTRAINT "FK_Postare_Stoc_Produse_Produs"
                         FOREIGN KEY ("Produs") REFERENCES "Produse" ("ID"),
                     ADD CONSTRAINT "FK_Postare_Stoc_Loturi_Unitate"
@@ -3350,7 +3350,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     c."Simbol" AS "ContSimbol",
                     r."Cod" AS "RepartitorCod",
                     pf."Cod" AS "PartenerFiscalCod",
-                    lf."Cod" AS "LocFiscalCod",
+                    lf."Cod" AS "LocCod",
                     pr."Cod" AS "ProdusCod",
                     CASE p."FelUnitate"
                         WHEN 1 THEN pr."Cod" || '/' || to_char(l."Data", 'YYYY-MM-DD')
@@ -3370,7 +3370,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 LEFT JOIN "Conturi" c ON c."ID" = p."Cont"
                 LEFT JOIN "Repartitori" r ON r."ID" = p."Repartitor"
                 LEFT JOIN "Repartitori" pf ON pf."ID" = p."PartenerFiscal"
-                LEFT JOIN "Repartitori" lf ON lf."ID" = p."LocFiscal"
+                LEFT JOIN "Repartitori" lf ON lf."ID" = p."Loc"
                 LEFT JOIN "Produse" pr ON pr."ID" = p."Produs"
                 LEFT JOIN "Loturi" l ON p."FelUnitate" = 1 AND l."ID" = p."Unitate"
                 LEFT JOIN "Imobilizari" f ON p."FelUnitate" = 3 AND f."ID" = p."Unitate"

@@ -39,7 +39,7 @@ public class Postare {
     public virtual N.SensTva? SensTva { get; set; }
     public virtual N.RolTva? RolTva { get; set; }
     public virtual Guid? PartenerFiscal { get; set; }
-    public virtual Guid? LocFiscal { get; set; }
+    public virtual Guid? Loc { get; set; }
     public virtual int? PerioadaDeclarare { get; set; }
     public virtual N.RegimTva? RegimTva { get; set; }
     public virtual decimal? CotaTva { get; set; }

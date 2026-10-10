@@ -16,7 +16,7 @@ public sealed record Transformare(
         if (real is null || real.Unitate is not { Fel: FelUnitate.Lot } lot
                 || real.Repartitor is not { EsteIntern: true } || real.Contrapondere is not null
                 || real.Produs is null || real.Produs != lot.Produs || real.Cont != lot.Cont
-                || real.Carte != Carte.Contabil || real.PartenerFiscal != null || real.LocFiscal != null || lot.Partener != null
+                || real.Carte != Carte.Contabil || real.PartenerFiscal != null || real.Loc != null || lot.Partener != null
                 || real.CodTva != null || real.PerioadaDeclarare != null || real.Valuta != null)
             throw new ArgumentException("Transformarea cere un lot pe gestiune reală, în cartea contabilă, fără terț, TVA sau valută.", nameof(linie));
         if (linie.Rol is not (RolTransformare.Consum or RolTransformare.Produs)

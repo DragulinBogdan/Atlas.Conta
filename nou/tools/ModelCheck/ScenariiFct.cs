@@ -142,7 +142,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             PartenerFiscal: tv != null ? Furnizor : null, Linie: l.Id, Tva: tv, Rol: tv != null ? N.RolTva.Baza : null,
             Perioada: tv != null ? perioada ?? An * 100 + 1 : null, Sens: tv != null ? N.SensTva.Achizitie : null,
             Spatiu: l.Lot != null ? N.Spatiu.Stoc : N.Spatiu.Contabil, Economic: Economic,
-            LocFiscal: tv != null ? Magazie : null);
+            Loc: tv != null ? Magazie : null);
         var credit = new RandScena(Cont(ContFurnizor), N.Latura.Credit, net, -q,
             Furnizor, Partida(f.Id, ContFurnizor), l.Produs, Linie: l.Id, Economic: Economic,
             Contrapondere: l.Lot != null ? N.Contrapondere.Tert : null);
@@ -211,7 +211,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             var r = Randuri(special, 0, 0, 100, 21, cod);
             if (cod == "NED21") r[2] = r[2] with { Cont = Cont(Serviciu) };
             else r[3] = r[3] with { Cont = Cont("4427"), Repartitor = null, Unitate = null,
-                PartenerFiscal = Furnizor, LocFiscal = Magazie, Tva = Tva(cod), Rol = N.RolTva.Autocolectare, Sens = N.SensTva.Achizitie, Perioada = An * 100 + 1 };
+                PartenerFiscal = Furnizor, Loc = Magazie, Tva = Tva(cod), Rol = N.RolTva.Autocolectare, Sens = N.SensTva.Achizitie, Perioada = An * 100 + 1 };
             Postari("SC-X-14", special.Id, N.FelTranzactie.Operare, Ianuarie, r);
             if (cod == "TI21") TaxareInversa(special.Id);
             Storneaza(special.Id, Ianuarie);

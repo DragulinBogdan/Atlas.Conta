@@ -38,7 +38,7 @@ public static class Randuri {
                     : null,
                 PerioadaDeclarare = rand.PerioadaDeclarare,
                 PartenerFiscal = rand.PartenerFiscal,
-                LocFiscal = rand.LocFiscal,
+                Loc = rand.Loc,
                 ReperFiscal = rand.TipTvaId == null ? null : new N.ReperFiscal(
                     rand.DocumentFiscalId!.Value, rand.DataDocument!.Value, rand.DataExigibilitate!.Value,
                     rand.DataPrimire, rand.DataInregistrare!.Value, rand.PerioadaD394!.Value,
@@ -88,7 +88,7 @@ public static class Randuri {
         rand.SensTva = coordonate.CodTva?.Sens;
         rand.RolTva = coordonate.CodTva?.Rol;
         rand.PartenerFiscal = coordonate.PartenerFiscal;
-        rand.LocFiscal = coordonate.LocFiscal;
+        rand.Loc = coordonate.Loc;
         rand.PerioadaDeclarare = coordonate.PerioadaDeclarare;
         rand.RegimTva = coordonate.CodTva?.Regim;
         rand.CotaTva = coordonate.CodTva?.Cota;

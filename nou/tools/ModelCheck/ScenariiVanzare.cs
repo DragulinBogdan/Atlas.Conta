@@ -44,7 +44,7 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
             Repartitor: Magazie, Produs: l.Produs, PartenerFiscal: tv != null ? Client : null,
             Linie: l.Id, Tva: tv, Rol: tv != null ? N.RolTva.Baza : null,
             Perioada: tv != null ? perioada ?? An * 100 + 1 : null,
-            Sens: tv != null ? N.SensTva.Livrare : null, Economic: Economic, LocFiscal: tv != null ? Magazie : null);
+            Sens: tv != null ? N.SensTva.Livrare : null, Economic: Economic, Loc: tv != null ? Magazie : null);
         return taxa == 0 ? [debit, credit] : [debit, credit,
             debit with { Valoare = taxa }, credit with { Cont = Cont("4427"), Valoare = taxa, Rol = N.RolTva.Taxa }];
     }

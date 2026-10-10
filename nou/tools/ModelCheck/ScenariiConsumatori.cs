@@ -393,7 +393,7 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
             p.DocumentId = martor.Id; p.LinieId = martor.Linii[0].Id; p.TipTvaId = tip;
             p.SensTva = N.SensTva.Achizitie; p.RolTva = N.RolTva.Baza; p.RegimTva = N.RegimTva.Normal; p.CotaTva = 21m; p.DeImport = false;
             p.DocumentFiscalId = martor.Id; p.DataDocument = Ianuarie; p.DataExigibilitate = Ianuarie; p.DataPrimire = Ianuarie;
-            p.DataInregistrare = Ianuarie; p.PerioadaDeclarare = perioada; p.PerioadaD394 = perioada; p.LocFiscal = Loc;
+            p.DataInregistrare = Ianuarie; p.PerioadaDeclarare = perioada; p.PerioadaD394 = perioada; p.Loc = Loc;
         }));
         var refuz = RefuzStergere<TipTva>(tip);
         Console.WriteLine($"     MĂSURAT (D9-P4-I4-TVA-2): „{refuz?.Split('\n')[0] ?? "ACCEPTATĂ"}”.");

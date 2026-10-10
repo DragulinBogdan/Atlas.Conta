@@ -212,13 +212,13 @@ public class ConservareTeste {
         });
 
     [Fact]
-    public void LoculFiscalFaraFaptFiscalPica() =>
+    public void LoculFaraFaptSiFaraPartidaPica() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactie = Gen.Operare(aleator);
             var perturbata = Perturba(tranzactie, aleator, p => p with {
-                Coordonate = p.Coordonate with { CodTva = null, LocFiscal = Gen.Unul(aleator, Gen.Gestiuni) },
+                Coordonate = p.Coordonate with { CodTva = null, Unitate = null, Loc = Gen.Unul(aleator, Gen.Gestiuni) },
             });
-            AreCodul(Conservare.Verifica(perturbata), Coduri.LocFiscalFaraFapt);
+            AreCodul(Conservare.Verifica(perturbata), Coduri.LocFaraTemei);
         });
 
     [Fact]
@@ -226,9 +226,9 @@ public class ConservareTeste {
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactie = Gen.Operare(aleator);
             var perturbata = Perturba(tranzactie, aleator, p => p with {
-                Coordonate = p.Coordonate with { CodTva = Gen.CodTva(aleator), LocFiscal = null },
+                Coordonate = p.Coordonate with { CodTva = Gen.CodTva(aleator), Loc = null },
             });
-            AreCodul(Conservare.Verifica(perturbata), Coduri.LocFiscalLipsa);
+            AreCodul(Conservare.Verifica(perturbata), Coduri.LocLipsa);
         });
 
     [Fact]

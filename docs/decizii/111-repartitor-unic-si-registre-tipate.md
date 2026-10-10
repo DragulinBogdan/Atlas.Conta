@@ -47,6 +47,11 @@ balanței. Propoziția de dinainte rămâne ca istoric.
 *Precizat 2026-10-10 (C111-Q10):* latura internă e cea din contractul
 laturilor tipului de document, nu latura opusă contrapartidei din politică;
 politica numește numai partenerul.
+*Amendat 2026-10-10 (C111-Q14):* locul nu e legat de faptul fiscal. Atributul
+se numește `Loc` și se scrie pe orice postare cu fapt fiscal și pe piciorul
+intern căruia titularul unei partide i-a luat locul de repartitor, cu sau
+fără fapt fiscal. Un semnal care nu atinge cardinalitatea soldului nu se
+aruncă.
 
 (c) **Gestiunile virtuale dispar.** Capătul din afara evidenței și
 contraponderea transformării primesc un marcaj explicit pe postare (terț,

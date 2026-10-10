@@ -33,18 +33,18 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         var t = Tva(cod); var l = d.Linii[0].Id;
         var baza = new RandScena(Cont(Serviciu), N.Latura.Debit, net, Repartitor: titular, PartenerFiscal: titular,
             Linie: l, Tva: t, Rol: N.RolTva.Baza, Sens: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic,
-            LocFiscal: Loc);
+            Loc: Loc);
         var credit = new RandScena(Cont(Avans), N.Latura.Credit, net, Repartitor: titular,
             Unitate: N.Unitate.DeschidePartida(Cont(Avans), titular, d.Id, Ianuarie).Id, Linie: l, Economic: Economic);
         if (cod == "NED21") return [baza, credit, baza with { Valoare = taxa, Rol = N.RolTva.Taxa }, credit with { Valoare = taxa }];
         var tax = new RandScena(Cont("4426"), N.Latura.Debit, taxa, Repartitor: Loc, PartenerFiscal: titular,
             Linie: l, Tva: t, Rol: N.RolTva.Taxa, Sens: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic,
-            LocFiscal: Loc);
+            Loc: Loc);
         return [baza, credit, tax, credit with { Cont = cod == "TI21" ? Cont("4427") : Cont(Avans),
             Unitate = cod == "TI21" ? null : credit.Unitate, Valoare = taxa,
             Tva = cod == "TI21" ? t : null, Rol = cod == "TI21" ? N.RolTva.Autocolectare : null,
             Sens = cod == "TI21" ? N.SensTva.Achizitie : null, Perioada = cod == "TI21" ? An * 100 + 1 : null,
-            PartenerFiscal = cod == "TI21" ? titular : null, LocFiscal = cod == "TI21" ? Loc : null }];
+            PartenerFiscal = cod == "TI21" ? titular : null, Loc = cod == "TI21" ? Loc : null }];
     }
     static RandScena[] Inverse(RandScena[] r, int? perioada = null) => [.. r.Select(p => p with {
         Valoare = -p.Valoare, Perioada = p.Perioada != null && perioada != null ? perioada : p.Perioada })];

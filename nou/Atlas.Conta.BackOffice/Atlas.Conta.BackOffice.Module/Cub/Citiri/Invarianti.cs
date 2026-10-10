@@ -29,21 +29,22 @@ public static class Invarianti {
 
     public const string CoordonateInvalide = "CITIRE_COORDONATE_INVALIDE";
 
-    /// <summary>Forma coordonatelor (C111-D2): lotul pe repartitor intern, partida pe repartitor extern, blocul fiscal numai cu fapt și cu loc intern.</summary>
+    /// <summary>Forma coordonatelor (C111-D2): lotul pe repartitor intern, partida pe repartitor extern, partenerul fiscal numai cu fapt, locul intern, pe fapt sau pe partidă.</summary>
     public static void VerificaCoordonate(IObjectSpace os) {
         var repartitori = os.GetObjectsQuery<Repartitor>();
         string[] interne = [nameof(N.FelRepartitor.Gestiune), nameof(N.FelRepartitor.UnitateInterna)];
         string[] externe = [nameof(N.FelRepartitor.Partener), nameof(N.FelRepartitor.Angajat)];
         var invalide = os.GetObjectsQuery<Postare>().Where(p =>
-                (p.TipTvaId == null && (p.PartenerFiscal != null || p.LocFiscal != null))
-                || (p.TipTvaId != null && p.LocFiscal == null)
+                (p.TipTvaId == null && (p.PartenerFiscal != null
+                    || p.Loc != null && p.FelUnitate != N.FelUnitate.Partida))
+                || (p.TipTvaId != null && p.Loc == null)
                 || (p.Cantitate != 0m && p.Contrapondere == null && p.FelUnitate != N.FelUnitate.Lot)
                 || (p.FelUnitate == N.FelUnitate.Lot
                     && !repartitori.Any(r => r.ID == p.Repartitor && interne.Contains(r.ClrType)))
                 || (p.FelUnitate == N.FelUnitate.Partida
                     && !repartitori.Any(r => r.ID == p.Repartitor && externe.Contains(r.ClrType)))
-                || (p.LocFiscal != null
-                    && !repartitori.Any(r => r.ID == p.LocFiscal && interne.Contains(r.ClrType))))
+                || (p.Loc != null
+                    && !repartitori.Any(r => r.ID == p.Loc && interne.Contains(r.ClrType))))
             .Select(p => p.ID).Take(10).ToList();
         if (invalide.Count != 0)
             throw new OperareException($"{CoordonateInvalide}: postări cu repartitor, contrapondere sau bloc fiscal "
@@ -186,7 +187,7 @@ public static class Invarianti {
                 && o.Spatiu == p.InversaDinSpatiu && o.TipTvaId == p.TipTvaId && o.RolTva == p.RolTva
                 && o.SensTva == p.SensTva && o.RegimTva == p.RegimTva && o.CotaTva == p.CotaTva
                 && o.DeImport == p.DeImport && o.DocumentFiscalId == p.DocumentFiscalId
-                && o.PartenerFiscal == p.PartenerFiscal && o.LocFiscal == p.LocFiscal
+                && o.PartenerFiscal == p.PartenerFiscal && o.Loc == p.Loc
                 && o.Valoare == -p.Valoare)))
             throw new OperareException("CITIRE_FISCAL_INVERSA: inversa nu păstrează calificarea și suma originalului.");
     }

@@ -12,7 +12,7 @@ public sealed record Coordonate {
     public int? PerioadaDeclarare { get; init; }
     public ReperFiscal? ReperFiscal { get; init; }
     public Guid? PartenerFiscal { get; init; }
-    public Guid? LocFiscal { get; init; }
+    public Guid? Loc { get; init; }
     public Guid? Valuta { get; init; }
     public Carte Carte { get; init; } = Carte.Contabil;
     public Analiza Analiza { get; init; } = Analiza.Fara;

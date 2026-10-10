@@ -70,7 +70,7 @@ static class Fiscal {
                 SursaCont.RepartitorPrimitor => operand.Document.Primitor.Id,
                 _ => null,
             },
-            LocFiscal = Locul(operand)?.Id,
+            Loc = Locul(operand)?.Id,
         };
     }
 

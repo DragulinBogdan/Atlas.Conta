@@ -82,7 +82,7 @@ public static class Gen {
             Unitate = unitate,
             CodTva = fiscal ? CodTva(aleator) : null,
             PartenerFiscal = fiscal ? Unul(aleator, Parteneri) : null,
-            LocFiscal = fiscal ? Unul(aleator, Gestiuni) : null,
+            Loc = fiscal ? Unul(aleator, Gestiuni) : null,
             PerioadaDeclarare = aleator.Next(2) == 0 ? 202601 + aleator.Next(12) : null,
         };
     }
@@ -98,7 +98,7 @@ public static class Gen {
                 Unitate = Lot(aleator, cont, produs),
                 CodTva = fiscal ? CodTva(aleator) : null,
                 PartenerFiscal = fiscal ? Unul(aleator, Parteneri) : null,
-                LocFiscal = fiscal ? Unul(aleator, Gestiuni) : null,
+                Loc = fiscal ? Unul(aleator, Gestiuni) : null,
             };
         }
         var tert = Unul(aleator, Terti);

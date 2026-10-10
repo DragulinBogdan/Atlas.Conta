@@ -21,7 +21,7 @@ sealed class ProbeRamuraDeNul : IObserver<DiagnosticListener>, IObserver<KeyValu
     static readonly Dictionary<string, string> Admise = new(StringComparer.Ordinal) {
         ["Explicatii.VerificaAcoperire: DocumentId"] = "\"ID\" = \"ExplicatieDinId\"",
         ["Explicatii.VerificaAcoperire: Unitate"] = "\"ID\" = \"InversaDinId\"",
-        ["Invarianti.VerificaFiscal: CotaTva, DeImport, DocumentFiscalId, LocFiscal, PartenerFiscal, RegimTva, RolTva, SensTva"] = "\"ID\" = \"InversaDinId\"",
+        ["Invarianti.VerificaFiscal: CotaTva, DeImport, DocumentFiscalId, Loc, PartenerFiscal, RegimTva, RolTva, SensTva"] = "\"ID\" = \"InversaDinId\"",
         ["Invarianti.VerificaPerechi: Cantitate0, CentruCost, CodEconomic, CodFunctional, DocumentId, LinieId, Produs, Proiect, SursaFinantare, UnitateOrganizatorica"]
             = "\"TranzactieId\" = \"TranzactieId\"",
         ["AcoperireInvarianti.PerecheLangaTransformare: DocumentId, LinieId"] = "\"TranzactieId\" = \"TranzactieId\"",

@@ -419,7 +419,7 @@ static class VerificaNucleuFct {
                 s.Check($"STR-FCT-DOUA-PARTIDE ({eticheta}): AMBELE conturi cu `RolTert` ale liniei poartă "
                     + "partida partenerului pe contul LOR (S-D16), nu doar piciorul de terț",
                     aleDouaPartide.Any(p => p.Cont == cont408.ID && p.Unitate == partida408
-                        && p.Repartitor == furnizor.ID)
+                        && p.Repartitor == furnizor.ID && p.Loc == mag1.ID)
                     && aleDouaPartide.Any(p => p.Cont == cont401.ID && p.Unitate == partida401
                         && p.Repartitor == furnizor.ID));
             }

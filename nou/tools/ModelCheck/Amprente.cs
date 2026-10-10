@@ -121,14 +121,14 @@ static class Amprente {
         var repartitori = os.GetObjectsQuery<Repartitor>().Select(r => new { r.ID, r.Cod }).ToDictionary(r => r.ID, r => r.Cod);
         return os.GetObjectsQuery<C.Postare>()
             .Where(p => p.TipTvaId != null)
-            .Select(p => new { p.Cont, p.Data.Year, p.Data.Month, p.RolTva, p.Latura, p.Valoare, p.PartenerFiscal, p.LocFiscal })
-            .GroupBy(p => new { p.Cont, p.PartenerFiscal, p.LocFiscal, p.RolTva, p.Year, p.Month })
+            .Select(p => new { p.Cont, p.Data.Year, p.Data.Month, p.RolTva, p.Latura, p.Valoare, p.PartenerFiscal, p.Loc })
+            .GroupBy(p => new { p.Cont, p.PartenerFiscal, p.Loc, p.RolTva, p.Year, p.Month })
             .Select(g => new {
-                g.Key.Cont, g.Key.PartenerFiscal, g.Key.LocFiscal, g.Key.RolTva, g.Key.Year, g.Key.Month,
+                g.Key.Cont, g.Key.PartenerFiscal, g.Key.Loc, g.Key.RolTva, g.Key.Year, g.Key.Month,
                 Valoare = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare), Numar = g.Count(),
             })
             .ToList()
-            .Select(r => string.Join('|', conturi[r.Cont], Cod(repartitori, r.PartenerFiscal), Cod(repartitori, r.LocFiscal),
+            .Select(r => string.Join('|', conturi[r.Cont], Cod(repartitori, r.PartenerFiscal), Cod(repartitori, r.Loc),
                 r.RolTva, $"{r.Year}-{r.Month:00}", Bani(r.Valoare), r.Numar))
             .OrderBy(r => r, StringComparer.Ordinal)
             .ToList();

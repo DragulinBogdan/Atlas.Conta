@@ -10,7 +10,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 record PostareScena(Guid TranzactieId, Guid? DocumentId, Guid? LinieId, N.FelTranzactie Fel, DateOnly Data, Guid Cont, N.Latura Latura,
     decimal Valoare, decimal Cantitate, Guid? Repartitor, N.Contrapondere? Contrapondere, Guid? Unitate, Guid? Produs,
     Guid? CodEconomic, Guid? CodFunctional, Guid? SursaFinantare, Guid? Proiect, Guid? CentruCost, Guid? TipTvaId,
-    Guid? PartenerFiscal, Guid? LocFiscal) {
+    Guid? PartenerFiscal, Guid? Loc) {
     public bool Storno => Fel == N.FelTranzactie.Storno;
     public bool Debit => Latura == N.Latura.Debit;
     public bool Credit => Latura == N.Latura.Credit;
@@ -23,7 +23,7 @@ static class CubScena {
         .Select(p => new PostareScena(p.TranzactieId, p.DocumentId, p.LinieId, p.Tranzactie.Fel, p.Data, p.Cont, p.Latura,
             p.Valoare, p.Cantitate, p.Repartitor, p.Contrapondere, p.Unitate, p.Produs,
             p.CodEconomic, p.CodFunctional, p.SursaFinantare, p.Proiect, p.CentruCost, p.TipTvaId,
-            p.PartenerFiscal, p.LocFiscal)).ToList();
+            p.PartenerFiscal, p.Loc)).ToList();
 
     public static List<PostareScena> Note(IObjectSpace os, params Guid[] documente) =>
         Citeste(Contabil.Postari(os).Where(p => p.DocumentId != null && documente.Contains(p.DocumentId.Value)));
