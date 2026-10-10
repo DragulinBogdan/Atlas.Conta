@@ -631,3 +631,11 @@ politici versionate; exportul cere citire necondiționată. Regula:
 | `EXPLICATIE-LIPSA`, `PERECHE-RUPTA` | mutantul unei ramuri INV-CUB | `IMO-SUPORT` | dezvoltare, antetul paginii |
 | `TIP_FARA_DECLARATIE`, `CITIRE_*`, `SCRIERE_OCUPATA` | cod stabil de refuz (`COD: mesaj`): al declarației, al invarianților, al blocajului | `REGULA_CONTARE_LIPSA` | `CoduriRefuz`; pagina mecanismului |
 | `PR #22` | pull request-ul prin care felia a mers în main | `PR #35` | `docs/decizii/istoric-plan-de-lucru.md` |
+
+<!-- gen:decizii -->
+## Decizii
+
+Deciziile care numesc pagina în `Arii:`; generat de `docskit gen`, nu se editează.
+
+Nicio decizie nu numește pagina în `Arii:`.
+<!-- /gen:decizii -->

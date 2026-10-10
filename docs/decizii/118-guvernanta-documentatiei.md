@@ -5,7 +5,8 @@
 - Execuție: forma kitului și cele 12 tranșări din §12 confirmate de owner 2026-10-10; aprobată de owner 2026-10-10; unealta `docskit` (118-r2) în repo-ul `DocsKit`
 - Arii: dezvoltare-si-validare
 - Amendează: 91 (l)
-- Docs: kitul `~/.claude/PROJECT_GOVERNANCE.md` (§1–§12, versiunea din 2026-10-10); `nou/tools/docs/normalizeaza-antete.py`; `docs/stare-curenta/termeni.md`; `docs/decizii/README.md` (indexul generat)
+- Închide: 118-r6
+- Docs: kitul `~/.claude/PROJECT_GOVERNANCE.md` (§1–§12, versiunea din 2026-10-10); unealta `docskit` (repo `DocsKit`, 0.1.0) cu `docs/docskit.json`; `nou/tools/docs/normalizeaza-antete.py` (doar normalizarea antetelor); `docs/stare-curenta/termeni.md`; `docs/decizii/README.md` (indexul generat)
 
 ## Regula durabilă
 
@@ -68,9 +69,9 @@ Fără review advers la scriere: decizie de formă, fără efect pe motor sau sc
 
 ## Ce rămâne deschis
 
-**118-r1 — Curățenia antetelor normalizate.** Scriptul a păstrat verbatim în `Execuție` tot ce nu a putut clasifica: 20 de decizii cu `Execuție` peste 200 de caractere, 34 cu `Arii` gol, 11 închideri declarate în text pe restanțe pe care registrul le ține `după PoC` sau `activă` (73, 76, 77, 81, 90), 7 identificatori de restanță absenți din registru (D4-r14, 73-r1, 74-r4, 74-r6, 74-r9, 77k, 81k, T-r7). Se strâng la prima `/docs-curatenie`, nu de mână acum. Triggerul: prima rulare a lui `check`.
+**118-r1 — Curățenia antetelor normalizate.** Scriptul a păstrat verbatim în `Execuție` tot ce nu a putut clasifica: 20 de decizii cu `Execuție` peste 200 de caractere, 34 cu `Arii` gol, 11 închideri declarate în text pe restanțe pe care registrul le ține `după PoC` sau `activă` (73, 76, 77, 81, 90), 7 identificatori de restanță absenți din registru (D4-r14, 73-r1, 74-r4, 74-r6, 74-r9, 77k, 81k, T-r7). Se strâng la prima `/docs-curatenie`, nu de mână acum. Triggerul: prima rulare a lui `check`. Prima rulare (2026-10-10, docskit 0.1.0) a numărat, pe gardienii rămași la `avertisment`: `trimiteri` 27 (10 `Amendează: N` fără sub-punct care cer `depășită de`, 11 marcaje nepuse pe sub-puncte găsite inline, 3 `amendată de M` fără `Amendează` în M, 3 sub-puncte amendate care nu există), `restante` 219 (stări `închisă de`, `închisă la`, `închisă AAAA-LL-ZZ` în loc de `închisă prin N`; 6 id-uri fără corp la sursă: 52h, 62g/66j, 68j, N-r6, 110-r4, FZ-r5), `cod` 3 (`// 53b`, `// 3d` ×2 spre sub-puncte inexistente), `cai` 9 (căi vechi din 034, 068, 076, 089, din paginile de dezvoltare; `c111-coordonate-contract.md` vine cu C111), `antete` 1 (111 fără „Regula durabilă”, propusă). Fiecare gardian trece la `eroare` când ajunge la zero.
 
-**118-r2 — Unealta.** Repo propriu, `gen` și `check` întâi, `build` și `metrics` după; proba de compatibilitate pe cele 24 de linkuri cu ancoră existente. Până atunci scriptul de normalizare ține indexul. Triggerul: aprobarea acestei decizii.
+**118-r2 — Unealta.** Repo propriu, `gen` și `check` întâi, `build` și `metrics` după; proba de compatibilitate pe linkurile cu ancoră existente. Triggerul: aprobarea acestei decizii. Livrat 2026-10-10: repo `D:\Dev\Personale\DocsKit` (C#, net10, Markdig, System.CommandLine; 16 teste pe o fixtură), instalat ca dotnet global tool `docskit` 0.1.0 din `nupkg/`; `gen` scrie indexul (byte-identic cu al scriptului la prima rulare), blocul `gen:decizii` pe cele 6 pagini, `docs/README.md` cu lista celor 283 de fișiere și `docs/stare.md`, idempotent (a doua rulare scrie zero); `check` rulează cei zece gardieni din kit §8 în 0,8 s; cele 80 de linkuri cu ancoră se rezolvă pe slug GitHub cu diacritice (două erau rupte și s-au reparat). La `eroare` din prima zi: `linkuri`, `generat`, `actualizat`, `orfane`, `termeni`; restul la `avertisment` cu cifrele în 118-r1. `build` și `metrics` rămân (ies cu cod 2). Scriptul de normalizare nu mai scrie indexul.
 
 **118-r3 — `Tip` pe fișierele vechi și `consultari/`.** Fișierele din `nucleu/`, `api/`, `privat/`, `import/`, `dim/` primesc `Tip` la atingere sau într-o trecere unică; `consultations/` se absoarbe în `consultari/` cu `decizie.md` per consultare. Triggerul: `check` cu gardianul de antete activat.
 
@@ -89,3 +90,4 @@ Fără review advers la scriere: decizie de formă, fără efect pe motor sau sc
 - 2026-10-10: scrisă ca `propusă`, cu normalizarea celor 117 antete făcută de script în același PR.
 - 2026-10-10: 118-r6 închisă, tranșările de termeni aplicate în `termeni.md`.
 - 2026-10-10: aprobată de owner; `Stare: activă`.
+- 2026-10-10: 118-r2 livrată parțial (`gen`, `check`); (j) intră în vigoare: `docs/stare.md` e generat, §Stare din `CLAUDE.md` e un paragraf, textul vechi e în istoric.

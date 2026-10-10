@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-10-09.** [Index](README.md)
+**Actualizat: 2026-10-10.** [Index](README.md)
 
 ## Modelul comun
 
@@ -1651,3 +1651,62 @@ vânzării/returului nu cere partidă; o politică manuală care pierde partida
 comercială este refuzată. RDC cu partidă proprie creditoare apare ca datorie,
 chiar dacă totalul documentului este negativ. Soldul citit pentru explicația
 nominalizării este separat de limita disponibilă pe cont peste datele viitoare.
+
+<!-- gen:decizii -->
+## Decizii
+
+Deciziile care numesc pagina în `Arii:`; generat de `docskit gen`, nu se editează.
+
+| # | Decizia | Stare |
+|---|---|---|
+| 10 | [Plan de conturi doar sintetic](../decizii/010-plan-de-conturi-sintetic.md) | activă |
+| 13 | [Evaluare stoc](../decizii/013-evaluare-stoc-identificare-pe-lot.md) | activă |
+| 14 | [Registre persistate, append-only](../decizii/014-registre-append-only.md) | activă |
+| 15 | [Dimensiuni](../decizii/015-dimensiuni-owned-type.md) | activă |
+| 16 | [Repartitori](../decizii/016-repartitori-tpt-si-calitati.md) | amendată de 89 |
+| 17 | [Plăți/încasări = tipuri de document](../decizii/017-plati-incasari-imperechere-conex.md) | activă |
+| 20 | [Un singur nomenclator de tipuri, și e codul](../decizii/020-un-singur-nomenclator-de-tipuri.md) | activă |
+| 22 | [Testul bazei](../decizii/022-testul-bazei-inchis.md) | activă |
+| 23 | [Felia 3a](../decizii/023-felia-3a-persistenta-seed.md) | activă |
+| 25 | [Felia 3b](../decizii/025-felia-3b-motorul-de-operare.md) | activă |
+| 26 | [Felia 3c-1 — NIR + FacturaIntrare + mecanismul conex](../decizii/026-felia-3c1-nir-fct-conex.md) | amendată de 112 |
+| 27 | [Felia 3c-2 — BonConsum](../decizii/027-felia-3c2-bon-consum.md) | activă |
+| 30 | [Felia 3c-4 — FacturaIesire](../decizii/030-felia-3c4-factura-iesire.md) | activă |
+| 31 | [Felia 3c-5 — Plata/Incasare + Imperechere](../decizii/031-felia-3c5-plata-incasare-imperechere.md) | amendată de 76, 88 |
+| 32 | [Felia 3c-6 — Decont](../decizii/032-felia-3c6-decont.md) | activă |
+| 33 | [Felia 3d — validarea transversală](../decizii/033-felia-3d-validare-transversala.md) | activă |
+| 36 | [Felia P1 — profil privat + TVA structural](../decizii/036-felia-p1-tva-structural.md) | amendată de 71 |
+| 37 | [Design P2 — descărcarea de gestiune la FacturaIesire](../decizii/037-design-p2-descarcare-gestiune.md) | activă |
+| 41 | [Felia „restanțele 40e](../decizii/041-restantele-40e-atlas-dxf-26-1-3-6.md) | activă |
+| 42 | [Design pasul 5 — tierul API + React](../decizii/042-design-p5-tierul-api.md) | amendată de 104, 106 |
+| 46 | [Felia 1C-a — tipurile noi de model](../decizii/046-felia-1c-a-tipurile-noi.md) | amendată de 113 |
+| 48 | [Analiza pre-1C-c — patru probleme tranșate ÎNAINTE de execuție](../decizii/048-analiza-pre-1c-c.md) | amendată de 76 |
+| 49 | [Felia 1C-c — documentele 2025 prin motor](../decizii/049-felia-1c-c-documentele-prin-motor.md) | activă |
+| 54 | [Sesiunea de arhitectură 2026-08-02](../decizii/054-owned-vs-relational-invarianti-dimensiuni-pe-frunze.md) | activă |
+| 55 | [Pasul 5, spike 1 — fir complet subțire API+React pe NotaTransfer](../decizii/055-p5-spike1-btr.md) | activă |
+| 62 | [Pasul 5, felia 5 — NIR scriere](../decizii/062-p5-felia5-nir-scriere.md) | activă |
+| 64 | [Pasul 5, felia 7 — viramentul intern](../decizii/064-p5-felia7-virament-581.md) | amendată de 84 |
+| 65 | [Pasul 5, felia 8 — Decont](../decizii/065-p5-felia8-decont-pereche.md) | activă |
+| 75 | [Pasul 5, felia 18 — restanțele grele ale lui S: golirea valorică (motor), reclasificarea ca mișcare, perf proiecție](../decizii/075-p5-felia18-restante-s.md) | activă |
+| 76 | [Pasul 5, felia 19 — NTC + ASM + retururi (RLF/RDC) prin API și client](../decizii/076-p5-felia19-ntc-asm-retururi.md) | activă |
+| 82 | [Stingerea automată prin contract de document](../decizii/082-stingere-automata-prin-contract.md) | activă |
+| 86 | [Pasul 5, felia 25 — DVI (declarația vamală de import) ca tip de document: TVA-ul în vamă intră în evidență, D300 rd. 24/25 și 7/22, codurile SAF-T de import](../decizii/086-p5-felia25-dvi.md) | activă |
+| 87 | [Pasul 5, felia 26 — Imobilizări și amortizare, contabil și fiscal: fișa ca nomenclator subțire, un singur registru append-only de evenimente și luni, PIF/CAS ca documente operate, AMO generată lunar cu trei cifre din `AmortizareService`, conturile și regulile de deductibilitate exclusiv din politică, versionate în timp](../decizii/087-p5-felia26-imobilizari.md) | amendată de 97 |
+| 89 | [Pasul 5, felia 28 — TPH cu discriminatorul mapat `ClrType` pe `Document`, `DocumentDetaliu` și `Repartitor`; coloanele partajate fără prefix de tip; coloana de frunză se citește doar pe o mulțime restrânsă pe tip; tipul țintei unui FK spre frunză ținut de gardian și probat în bază; tipul documentului ca dată, printr-un singur cititor; căutarea după cheie a unui tip ne-rădăcină pe rădăcina ierarhiei, cu tipul verificat; lanțul de migrații resetat](../decizii/089-tph-discriminator-tipul-ca-data.md) | activă |
+| 90 | [Nucleul ca ledger n-dimensional — un singur cub de postări în locul celor patru registre; motor pur pe operand închis (`Contract = Postari + Decizii + Ipoteze`); unitatea nominalizată (lot = partidă = fișă) numită pe linie; împerecherea ca nominalizare la operare + document `Împerechere` cu tranzacție de fel `Transfer`; linia FCT postează recepția; o singură postare de stoc, `TipStoc` dispare structural; stornoul ca tranzacție distinctă = inversul cauzat ∪ atribuit; fiscala postată în `Carte=Fiscal`; ordinea TR-D6a…D10 cu Import1C ca probă supremă; XAF și React înghețate pe funcții](../decizii/090-nucleu-cub-de-postari.md) | amendată de 91, 92, 93, 95, 96, 110 |
+| 93 | [Folosința păstrează gestiunea reală și lotul](../decizii/093-folosinta-gestiune-reala.md) | activă |
+| 95 | [DEC și imobilizările complete pe cub înaintea TR-D8](../decizii/095-producatori-completi-inaintea-citirilor.md) | activă |
+| 97 | [PIF nominalizează valoarea contabilă cu suport obligatoriu](../decizii/097-pif-nominalizare-cu-suport-obligatoriu.md) | amendată de 98 |
+| 98 | [Conexul editat postează delta; poziția fără fișă nu devine negativă; contul fișei vine din cub](../decizii/098-corecturi-review-sincronizare.md) | activă |
+| 100 | [Partide comerciale în politica bugetară](../decizii/100-partide-comerciale-bugetare.md) | amendată de 102 |
+| 101 | [Împerecherea cere efect verificabil pe partidă](../decizii/101-imperechere-cu-efect-pe-partida.md) | amendată de 102 |
+| 102 | [Fără compatibilitate cu bazele de dezvoltare până la prima producție](../decizii/102-fara-compatibilitate-cu-bazele-de-dezvoltare.md) | activă |
+| 104 | [Straturi izolate, culegerea în XAF, entități proprii fără ștergere amânată](../decizii/104-straturi-izolate-entitati-proprii.md) | amendată de 106 |
+| 106 | [Regimul pe stare: o singură sursă a editabilității și a comenzilor disponibile](../decizii/106-regim-pe-stare.md) | activă |
+| 109 | [Taxa nemarcată se decide pe document × cotă și se scrie pe linie; declarația postează taxa liniei; taxa unui document real adusă de o cale fără culegere e marcată](../decizii/109-taxa-nemarcata-pe-document-scrisa-pe-linie.md) | activă |
+| 112 | [Recepția facturii se contează pe regula ei de contare (`FCT/Stoc`)](../decizii/112-receptia-facturii-pe-regula-ei.md) | activă |
+| 114 | [Departajarea FIFO: data, documentul deschizător, apoi identificatorul](../decizii/114-departajarea-fifo-pe-documentul-deschizator.md) | amendată de 116 |
+| 115 | [Linia de notă poate numi partida pe care o stinge; partida inițială își poartă data de naștere](../decizii/115-nota-numeste-partida.md) | activă |
+| 116 | [Unitatea fără document se departajează pe postarea ei de deschidere; ID-urile postărilor urmează ordinea tranzacției](../decizii/116-postarea-de-deschidere-departajeaza-unitatea-fara-document.md) | amendată de 117 |
+| 117 | [Postarea își poartă ordinalul în tranzacție; unitatea fără document se departajează pe el](../decizii/117-ordinalul-postarii-in-tranzactie.md) | activă |
+<!-- /gen:decizii -->

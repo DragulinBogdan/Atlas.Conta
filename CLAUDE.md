@@ -45,6 +45,7 @@ identificatorul între paranteze (`(42b)`, `(76-r1)`).
 | Întrebarea | Unde |
 |---|---|
 | Ce trebuie să rămână adevărat | `docs/invarianti.md` (6 invarianți, 2026-08-02) |
+| Unde suntem acum, cu cifre (generat) | [docs/stare.md](docs/stare.md); lista fișierelor în [docs/README.md](docs/README.md) |
 | Regulile și acoperirea curentă, pe responsabilități | [docs/stare-curenta/README.md](docs/stare-curenta/README.md) → domeniu-si-operare, politici-si-fiscalitate, api-si-client, dezvoltare-si-validare, limite-curente, termeni (glosarul) |
 | Regula durabilă a deciziei N („decizia 42c") | `docs/decizii/042-*.md`, secțiunea „Regula durabilă", sub-punctul (c); antetul spune dacă e activă/amendată/depășită; indexul cu stări în `docs/decizii/README.md` |
 | De ce e așa (context, tranșări, review) | același fișier, sub „Regula durabilă" |
@@ -110,104 +111,17 @@ contrazise din neatenție.
 
 ## Stare
 
-**Produs (înghețat pe funcții, 90m).** Toate tipurile de document au felie
-prin API și client; singurul rămas e BPR (rezervat, 19). Refuzurile de acces
-sunt uniforme pe REST și OData și măsurate (80). Listele XAF Blazor pe
-`Server` / `ServerView` / `Client` după 85. Imobilizările au modul propriu cu
-registru append-only (87). Perioada e lanț, închiderea e comandă, soldurile se
-materializează doar pe perioadele de referință și se citesc prin
-`Motor/SolduriService` (88). Cele trei ierarhii sunt TPH cu discriminatorul
-mapat `ClrType` (89).
+Felia curentă: adoptarea kitului de guvernanță (decizia 118, activă din
+2026-10-10). Unealta `docskit` (118-r2) are `gen` și `check` livrate, cu
+`build` și `metrics` încă deschise; 118-r1 (curățenia antetelor normalizate)
+așteaptă `/docs-curatenie` (118-r4). Pe motor urmează hotărârea owner-ului pe
+decizia 111 (propusă), apoi contractul TR-D9b. Unde suntem, cu cifre, e
+generat în [docs/stare.md](docs/stare.md); cronologia feliilor e în
+`docs/decizii/istoric-plan-de-lucru.md`.
 
-**Nucleul (90, amendat de 91).** `nou/Atlas.Conta.Nucleu` e motorul pur (BCL,
-zero pachete, teste de proprietate). Declarația fluxului stă în
-`Module/Declaratii/` (`IDeclarant` numit prin `Document.Declarant()`, driverul
-`Contractare`, laturile ca structură prin `Document.Laturi()`). Cubul e
-persistat în `Module/Cub/` (`Tranzactie` / `Postare`, POCO, tabelă
-partiționată pe `Spatiu`, migrații scrise în SQL) și e singurul efect contabil
-al operării (110): registrele, regimul dual și oracolul lor au ieșit la TR-D9a.
-Declară: BCS, FCT, PLT, INC, BTR, FCL, NTC, ASM, LDI, NIR, DEC și PIF/AMO/CAS pe
-ambele profiluri, plus DSC, ITV, RDC, RLF și DVI numai pe privat; un tip fără
-declarant sau fără politica cerută pe profil e refuzat (`TIP_FARA_DECLARATIE`);
-LDI acoperă Magazie/Marfuri și lanțul Folosință în gestiune reală (093),
-cu Custodie explicit neacoperită. NIR conex postează diferența față de
-recepția istorică a facturii, cu proveniență păstrată la corecție (098, 099). Deschiderea generică detaliază soldul inițial
-prin loturi și partide, fără dublare, cu refuz atomic al diferențelor (094).
-Fișa imobilizării este citită din cub de AMO/CAS și API Imo (097).
-Citirile contabile/stoc/partide, fiscale și SAF-T și snapshot-urile lor
-sunt pe cub (103, 105). Scrierea în cub e serială per bază (108), postarea
-poartă ordinalul perechii ei, iar explicația persistată pe tranzacție reține
-regulile de politică consumate, cu contorul lor (110). Corectitudinea o poartă
-catalogul și invarianții interni ai cubului (`INV-CUB`).
+## Capcane de probare
 
-**Proba supremă (91, 2026-09-22)** e catalogul de scenarii
-`docs/nucleu/scenarii/`: așteptări scrise de mână din regula contabilă, ciclul
-complet per tip, lanțuri transversale, pe ambele profiluri. Import1C e unealtă
-de migrare, înghețată, la sfârșit (091-r4); clona Flax e sursă de întrebări
-prin recensământ, nu gate. „Rotund" (regula de oprire a PoC-ului) e 091 (g). Restanțele au
-patru stări (091 (k)); lista `activă` din `restante.md` e singurul backlog al
-PoC-ului.
-
-Cronologia, cifrele și contractele feliilor: `docs/decizii/istoric-plan-de-lucru.md`,
-`docs/nucleu/*-contract.md`. Un rezumat de felie nu se mai adaugă aici (91l).
-
-**Următorul pas**: felia C104 e închisă (104-r1) și mersă în main (PR #8).
-R6 este implementat și verificat (103h/i, 2026-09-28), cu review advers închis:
-`docs/nucleu/tr-d8-tva-intervale-contract.md`. Proveniența fiscală a ajustărilor
-rămâne delimitată în 103-r2. SAF-T L și S sunt pe cub, cu ruta pe registre
-scoasă; review-ul B8 e închis (RV1.2 corectat și reverificat, decizia 105).
-TR-D8 este închis: gate-ul transversal (decizia 108, contractul
-`docs/nucleu/tr-d8-transversal-contract.md`, pașii 1–6) e mers în main prin
-PR #15 (2026-10-04), cu review-ul implementării închis (X-RI1…X-RI4).
-Felia C106 (decizia 106: regimul pe stare, liniile pe roluri, ștergerea pe
-stare) e mersă în main prin PR #17 (2026-10-04), cu 106-r1 închisă; review-ul
-advers al feliei e închis (C106-R1…R5, corectat prin 106 (k)). Felia M1 (decizia 107: Import1C
-deschide terții per partidă din `BalantaNivel3`, stingerile anului pe partide
-inițiale) e mersă în main prin PR #20 (2026-10-04), cu M1-D10 amendat și
-review-ul advers închis (M1-R1…R4, M1-R3a). 107-r3 e tratată prin decizia 109
-(taxa nemarcată decisă pe document × cotă și scrisă pe linie; conectorul
-marchează taxa sursei; reîncărcarea nu e culegere), aprobată de owner
-2026-10-04, mersă în main prin PR #21 (2026-10-05), cu review-ul advers
-Codex închis (109-R1 corectată și reverificată,
-`docs/nucleu/109-review-codex.md`).
-TR-D9 e împărțit în TR-D9a (tăierea) și TR-D9b (unitățile). TR-D9a e închisă
-(2026-10-07): contractul `docs/nucleu/tr-d9-taierea-contract.md` cu
-amendamentele 1–3, pașii în `docs/nucleu/tr-d9-pas*.md`, închiderea în
-`tr-d9-pas8-inchiderea.md`. Decizia 110 e aprobată de owner; review-ul advers
-Codex al închiderii e închis (D9-F-R1…R4, IZ-R1, IZ-R2), iar proba PerfCub pe
-clone diferite e acceptată de owner ca abatere de la „aceeași bază”.
-Mersă în main prin PR #22 (2026-10-07). Bazele de dezvoltare sunt recreate din
-`InitialCreate`. Pasul 0 al TR-D9b e măsurat (2026-10-08,
-`docs/nucleu/tr-d9b-pas0-masuratori.md`); baza de import la zi e
-`.Flax.D9bP0`, scena de volum e `.D9bVol`. Urmează hotărârea owner-ului pe
-decizia 111 (propusă, neaprobată), apoi contractul TR-D9b.
-Felia fiscală
-103 este implementată și verificată; snapshot-ul de stoc este pe cub;
-contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și
-`docs/nucleu/scenarii/CITIRI.md`.
-Felia de curățenie C102 este închisă (2026-09-25, mersă în main prin PR #8):
-compatibilitatea cu bazele de dezvoltare a ieșit, invarianții cubului rulează
-în ModelCheck (`INV-CUB`), migrațiile s-au comprimat în `InitialCreate`, bazele
-s-au recreat, 101-r1 e închisă; rămân 102-r4/r5. TR-D8 — portarea consumatorilor pe intrările comune ale
-cubului, după DEC și PIF/AMO/CAS (095, 097), cu scenarii numerice înaintea
-implementării. Review-urile adverse LDI, NIR, Deschidere, DEC și IMO sunt făcute
-(2026-09-24); corecturile se aplică pe felii peste `94ddfa8` (098).
-Urmărirea partidelor este separată de rolul comercial SAF-T (096). Transformarea ASM și absorbția
-temporară Δ în regimul dual sunt aprobate și implementate:
-`docs/nucleu/tr-d7b-asm-transformare-contract.md` (ASM-B2…B7).
-Review-ul ASM este aplicat; delimitarea contabilă (a)/(h) este aprobată
-de owner numai pentru regimul dual (T-r15, D8-B4).
-RDC, RLF și DVI au cataloage independente
-în `docs/nucleu/scenarii/`; DVI păstrează baza distinctă în Carte=Fiscal
-conform `docs/nucleu/tr-d7b-dvi-baza-fiscala-contract.md`.
-Identitatea partidei include partenerul (092);
-probele și limitele pasului 3 sunt în `docs/nucleu/scenarii/NTC.md` și `ITV.md`.
-Primele loturi
-independente pentru tipurile deja pe cub sunt verificate; ciclurile complete
-rămân deschise conform fișierelor tipurilor. Contractul feliei:
-`docs/nucleu/tr-d7b-tipuri-ramase-contract.md`, amendamentul 091 sub „Pașii”.
-
-**Capcane de probare**: o cifră de perf se compară DOAR cu ea însăși pe
+O cifră de perf se compară DOAR cu ea însăși pe
 ACEEAȘI bază (A/B prin schimbarea stării, nu între baze — altfel diferența de
 date trece drept efect), iar o grilă paginată ascunde costul căii care consumă
 TOT (`LIMIT` oprește execuția devreme, `ToList` nu); `genereaza` SCRIE ori de
@@ -246,9 +160,10 @@ pe container (5444): `docs/stare-curenta/dezvoltare-si-validare.md`.
   durabilă" — regula, nu povestea, cu sub-punctele (a)… — apoi context,
   tranșări, review, ce rămâne deschis, istoric) + un rând per restanță în
   `docs/decizii/restante.md` (numele acolo, textul doar în fișierul
-  deciziei). Indexul din `docs/decizii/README.md` e generat
-  (`python -X utf8 nou/tools/docs/normalizeaza-antete.py --scrie`), nu se
-  scrie de mână. Numerele și literele nu se renumerotează niciodată; un
+  deciziei). Generatul (indexul deciziilor, blocul `gen:decizii` din pagini,
+  `docs/README.md`, `docs/stare.md`) îl scrie `docskit gen`, nu mâna;
+  `docskit check` verde, din rădăcina repo-ului, e condiție a PR-ului, cu
+  ieșirea atașată (118k; `docs/docskit.json`). Numerele și literele nu se renumerotează niciodată; un
   sub-punct amendat sau depășit primește marcajul `[amendat de N]` /
   `[depășit de N]` la început, cu textul păstrat; decizia depășită integral
   primește banner și trece în `docs/decizii/arhiva/`; o restanță închisă își

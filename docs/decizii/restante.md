@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-10-10 (118 activă: categoria `docs`, 118-r6 închisă prin 118, 118-r1…r5 și r7/r8 deschise; 107-r11 și 114-r1 închise prin 114, 115 și 116; 116-r1 închisă prin 117; 107-r9 restrânsă; 115-r1 și 116-r2 deschise).** [Index](README.md)
+**Actualizat: 2026-10-10 (118 activă; 118-r2 cu `gen` și `check` livrate; categoria `docs`, 118-r6 închisă prin 118, 118-r1…r5 și r7/r8 deschise; 107-r11 și 114-r1 închise prin 114, 115 și 116; 116-r1 închisă prin 117; 107-r9 restrânsă; 115-r1 și 116-r2 deschise).** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al
@@ -397,7 +397,7 @@ se închide în felia de guvernanță (118); `închisă prin N` = singura stare 
 | 110-r5 | Nota contabilă operată fără nicio postare nu mai e văzută de niciun invariant (SC-CIT-34 proba acoperirea registru → cub); acoperirea politicii de mișcare SAF-T se probează într-o singură direcție (D17-V1: fiecare pereche produsă are politică; „politica nu are perechi în plus” nu mai are probă) | după PoC |
 | 110-r6 | Izolarea probelor de politica reală: `ScenariiTvaIntervale` și `ScenariiFiscale` purjează toate politicile de TVA pe FCT care nu sunt din seed, cu un filtru necorelat cu tipul de TVA al scenei; `explicatii.py` editează pe HTTP regula de contare reală din seed, deci cere bază de unică folosință (`tr-d9-pas8-inchiderea.md` §9, §11) | după PoC |
 | 118-r1 | Curățenia antetelor normalizate: `Execuție` peste 200 de caractere (20), `Arii` gol (34), închideri declarate în text pe restanțe ținute `după PoC`/`activă` în registru, identificatori absenți din registru (D4-r14, 73-r1, 74-r4/r6/r9, 77k, 81k, T-r7); la prima `/docs-curatenie` | docs |
-| 118-r2 | Unealta `docskit` (repo propriu, dotnet global tool): `gen`, `check` întâi, `build`, `metrics` după; proba pe cele 24 de linkuri cu ancoră; până atunci indexul îl ține `normalizeaza-antete.py` | docs |
+| 118-r2 | Unealta `docskit` (repo propriu, dotnet global tool): `gen`, `check` întâi, `build`, `metrics` după; proba pe linkurile cu ancoră | activă: `gen` și `check` livrate 2026-10-10 (docskit 0.1.0, `D:\Dev\Personale\DocsKit`); rămân `build` și `metrics` |
 | 118-r3 | `Tip:` pe fișierele vechi din `nucleu/`, `api/`, `privat/`, `import/`, `dim/`; `consultations/` absorbit în `consultari/` cu `decizie.md` per consultare | docs |
 | 118-r4 | Comenzile globale `docs-init` și `/docs-curatenie`; kitul mutat în repo-ul unealtei, proiectul păstrează pointer | docs |
 | 118-r5 | Memoria agentului subțiată: predările trec în contracte și istoric, indexul rămâne un rând per fir | docs |

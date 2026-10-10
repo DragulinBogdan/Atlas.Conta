@@ -1,4 +1,4 @@
-"""Adoptarea kitului de guvernanță (118): antetele deciziilor, marcajele, indexul.
+"""Adoptarea kitului de guvernanță (118): antetele deciziilor și marcajele; indexul îl scrie `docskit gen`.
 
 Rulare din rădăcina repo-ului: python -X utf8 nou/tools/docs/normalizeaza-antete.py [--scrie]
 Fără --scrie afișează raportul și nu modifică nimic. Rularea e idempotentă.
@@ -322,28 +322,6 @@ def marcheaza(d, lit, verb, de, raport):
     return True
 
 
-def genereaza_index(decizii, readme):
-    text = citeste(readme)
-    grupe = {"active": [], "amendate": [], "depășite": []}
-    for d in sorted(decizii.values(), key=lambda x: x.numar):
-        st = d.camp["Stare"]
-        g = "depășite" if st.startswith("depășită") else "amendate" if st.startswith("amendată") else "active"
-        rel = f"arhiva/{d.cale.name}" if d.cale.parent.name == "arhiva" else d.cale.name
-        grupe[g].append(f"| {d.numar} | [{d.titlu}]({rel}) | {d.camp['Data']} | {st} |")
-    bloc = ["<!-- gen:index -->"]
-    for g, titlu in (("active", "Active"), ("amendate", "Amendate parțial"), ("depășite", "Depășite integral")):
-        bloc += [f"### {titlu} ({len(grupe[g])})", "", "| # | Decizia | Data | Stare |", "|---|---|---|---|"] + grupe[g] + [""]
-    bloc.append("<!-- /gen:index -->")
-    bloc_text = "\n".join(bloc)
-    if "<!-- gen:index -->" in text:
-        text = re.sub(r"<!-- gen:index -->.*?<!-- /gen:index -->", lambda _: bloc_text, text, flags=re.S)
-    else:
-        text = re.sub(r"\| # \| Decizia \| Data \| Stare \|\n\|---\|---\|---\|---\|\n(?:\|.*\|\n?)+", lambda _: bloc_text + "\n", text)
-    cap, _, coada = text.partition("<!-- /gen:index -->")
-    coada = re.sub(r"^\| \d+ \| \[[^\n]*(?:\n(?!\||\n)[^\n]*)*\n?", "", coada, flags=re.M)
-    return cap + "<!-- /gen:index -->" + coada
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scrie", action="store_true")
@@ -455,7 +433,6 @@ def main():
     if args.scrie:
         for d in decizii.values():
             scrie(d.cale, "\n".join(d.linii))
-        scrie(dir_dec / "README.md", genereaza_index(decizii, dir_dec / "README.md"))
         print("scris.")
     else:
         print("(raport; rulează cu --scrie ca să aplici)")

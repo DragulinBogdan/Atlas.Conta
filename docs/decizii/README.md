@@ -12,9 +12,8 @@
 > câmpurile `Data`, `Stare`, `Execuție`, `Arii`, `Amendează`, `Închide`,
 > `Docs`; „Regula durabilă" cu sub-punctele (a)…; apoi context, tranșări,
 > review, ce rămâne deschis, istoric) + un rând per restanță în
-> `restante.md`. Indexul de mai jos e GENERAT din antete
-> (`python -X utf8 nou/tools/docs/normalizeaza-antete.py --scrie`, din
-> rădăcina repo-ului); nu se editează de mână (118e).
+> `restante.md`. Indexul de mai jos e GENERAT din antete cu `docskit gen`,
+> din rădăcina repo-ului; nu se editează de mână (118e).
 > **Decizie amendată** = `Stare: amendată de N` în antetul ei, `Amendează:`
 > în antetul lui N și marcajul `[amendat de N]` în sub-punctul atins, cu
 > textul păstrat (118c). **Decizie depășită integral** = banner și mutare în

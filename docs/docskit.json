@@ -1,0 +1,38 @@
+{
+  "docs": "docs",
+  "markdownSuplimentar": ["CLAUDE.md"],
+  "decizii": "docs/decizii",
+  "stareCurenta": "docs/stare-curenta",
+  "restante": "docs/decizii/restante.md",
+  "indexDecizii": "docs/decizii/README.md",
+  "stare": "docs/stare.md",
+  "readmeDocs": "docs/README.md",
+  "termeni": "docs/stare-curenta/termeni.md",
+  "invarianti": "docs/invarianti.md",
+  "paginiFaraBloc": ["README.md"],
+  "restanteStari": ["activă", "după PoC", "migrare", "cade la TR-D9", "depășită de 091", "docs", "închisă prin"],
+  "restantePragActive": 45,
+  "termeniDeDefinit": [],
+  "caiRadacini": ["nou/", "docs/", "db/", "legacy/"],
+  "cod": {
+    "radacini": ["nou"],
+    "excluse": ["bin", "obj", "node_modules", ".vs", "Migrations"],
+    "limbaje": {
+      "cs": { "extensii": [".cs"], "tinta": 400, "plafon": 600 },
+      "ts": { "extensii": [".ts", ".tsx"], "tinta": 300, "plafon": 500 }
+    },
+    "narativ": "review advers|înainte era|inainte era|amendament|\\bPR #\\d+|20\\d\\d-\\d\\d-\\d\\d"
+  },
+  "gardieni": {
+    "linkuri": "eroare",
+    "antete": "avertisment",
+    "generat": "eroare",
+    "trimiteri": "avertisment",
+    "restante": "avertisment",
+    "cod": "avertisment",
+    "cai": "avertisment",
+    "actualizat": "eroare",
+    "orfane": "eroare",
+    "termeni": "eroare"
+  }
+}
