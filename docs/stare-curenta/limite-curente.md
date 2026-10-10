@@ -1,25 +1,45 @@
 # Limite curente
 
-**Actualizat: 2026-10-09.** [Index](README.md)
+**Actualizat: 2026-10-10.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Domeniu și operare
 
-- Analiza obligatorie per cont: repartitorul e al capătului (D9-A10);
-  partenerul stă pe piciorul de terț numai când contul cere repartitor sau
-  urmărește partide — pe un cont fără flag și fără partide (446 privat)
-  partenerul rămâne absent, iar partenerul pe conturile de cheltuieli și
-  venituri e al deciziei 111. Pe piciorul intern cu fapt fiscal `Partener` e
-  partenerul fiscal (B-D8 pct. 5), deci `Contabil.Repartitor` îl întoarce pe
-  el înaintea gestiunii; separarea e a deciziei 111. Pe trezorerie, când
-  regula de contare numește ambele conturi explicit, piciorul propriu n-are
-  gestiune (B-D8 pct. 9 o ia din `SursaCont`); dacă contul lui cere
-  repartitor documentul e refuzat (SC-PLT-09), nu reparat cu terțul.
+- Analiza obligatorie per cont: gardul cere prezența repartitorului de sold,
+  nu și felul lui. `Cont.FeluriRepartitor` și gardul pe feluri nu există
+  (C111-D4): contul care cere repartitor e mulțumit de orice fel, deci un
+  repartitor de alt fel decât cel firesc contului nu e refuzat (S6). Seed-ul
+  bugetar nu declară feluri, iar 462.01.09, 437 și 803 nu sunt hotărâte
+  (111-r2). Terțul stă pe piciorul de terț numai când contul cere repartitor
+  sau urmărește partide — pe un cont fără flag și fără partide (446 privat)
+  rămâne absent. Pe conturile de cheltuieli și venituri terțul nu e axă de
+  sold: apare numai ca `PartenerFiscal`, pe postarea cu fapt fiscal. Pe
+  trezorerie, când regula de contare numește ambele conturi explicit,
+  piciorul propriu n-are repartitor; dacă contul lui cere repartitor
+  documentul e refuzat (SC-PLT-09), nu reparat cu terțul.
   Cerința de material citește numai produsul lotului, nu și materialul fix al
   unei reguli de contare. BTR, ASM și PIF nu sunt păzite (D9-r1).
-  (`docs/nucleu/tr-d9-pas6b-repartitor.md`; `tr-d9-pas2-probe.md`, G2)
+  (`docs/nucleu/c111-coordonate-contract.md`, D4; `tr-d9-pas2-probe.md`, G2)
+- Coordonatele postării (C111) sunt pe forma nouă, dar trei schimbări numite
+  în contract nu sunt făcute:
+  - piciorul contului de tranzit al viramentului (581) poartă contul propriu
+    pe ambele picioare (S7);
+  - descărcarea de gestiune cu primitor intern marchează contracantitatea
+    „terț”, nu „consum” (S8);
+  - contrapartida nu se citește prin pereche (S9; vezi mai jos, D9-r4).
+- La decont, partenerul fiscal e latura numită de politica de TVA, adică
+  titularul; furnizorul de pe bon nu există pe postare. (C111-r1)
+- Partenerul fiscal lipsește când politica de TVA nu numește o latură (sursă
+  `Explicit` sau `TipMaterial`): baza intră în D394 la „fără partener”. Pe
+  cele șase politici din seed latura numită e terțul documentului. (S13)
+- Invariantul coordonatelor: ramurile „partener fiscal fără fapt”, „loc fără
+  temei” și „fapt fără loc” ale lui `VerificaCoordonate` nu se pot aprinde
+  cât există `CK_Postare_BlocFiscal`; le ține constrângerea, nu invariantul.
+  Stornoul cu doi originali cu parteneri fiscali diferiți nu se poate produce
+  pe calea produsului (partenerul fiscal e al documentului), iar felul
+  necunoscut al unui repartitor e probat numai la recitire.
 - PIF/AMO/CAS scriu cubul, iar situația fișei se citește din el (095, 097).
   Storno
   rămâne limitat la luna documentului (087g), inclusiv în corecție.
@@ -96,7 +116,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   rândurile atinse cresc cu istoricul. Amânat prin amendamentul owner-ului
   (2026-10-04), odată cu F27-r16, și re-amânat cu cifră la TR-D9a
   (2026-10-06): parcurgerea e liniară, 2,7 s de SQL pentru 488.733 de
-  partide cu rest la 5 milioane de postări. Rămâne până la decizia 111.
+  partide cu rest la 5 milioane de postări. Rămâne până la TR-D9b.
   (F27-r16, X-D5, D9-D10 (b))
 - O egalitate între două surse pe coloane nulabile iese din EF cu ramură de
   nul, iar Postgres nu o poate folosi drept cheie de hash sau merge.
@@ -118,6 +138,11 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   pe Postgres neconfigurat. Nu măsoară scrierea, închiderea de lună,
   cititorii fiscali și SAF-T, nici filtrele de rând ale unui rol restrâns.
   (D9-A1)
+- Uneltele de volum nu rulează pe schema curentă: `ScaraVolum.sql` scrie
+  postări cu listă explicită de coloane, pe `Partener` și `Gestiune`, care nu
+  mai există. PerfCub n-a fost rulat pe forma din C111, deci costul scrierii
+  cu cele două chei străine noi (`PartenerFiscal`, `Loc`) nu e măsurat.
+  (C111-D9, pasul 6)
 - Rândurile integral nule dispar din rapoarte după prima închidere. O cheie cu
   debitul și creditul cumulate zero la referință nu are rând de snapshot, deci
   un cont sau un cont cu repartitor fără nicio mișcare în perioada cerută nu
@@ -259,12 +284,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   raportare proprie. (F27-D7, F27-r2)
 - Soldul partenerului nu apare în lookup-urile de partener din culegere:
   există ca ecran și ca rută, nu ca o coloană `Sold` pe `Partener`. (F27-r7)
-- `sold-parteneri` și balanța analitică grupează pe `AtomContabil.RepartitorId`
-  = `Postare.Partener`: pe contul de terț e partenerul capătului (partida sau
-  flag-ul `Repartitor`, D9-A10), pe piciorul intern cu fapt fiscal e
-  partenerul fiscal, pe restul e nul; gestiunea e axă separată (`GestiuneId`).
-  Creanța per partener se citește din partidele deschise
-  (`documente-cu-rest`); unificarea repartitorului e a deciziei 111. (F27-D7, D9-A10)
+- `sold-parteneri` nu desface rândul „fără terț”: sumele pe repartitor
+  intern, pe cont propriu și fără repartitor ale unui cont vin împreună;
+  defalcarea lor e în balanța analitică. Rândul e probat cu sume pe
+  repartitor intern și pe cont propriu, nu și cu sume fără niciun repartitor.
+  Locul (`Postare.Loc`) și partenerul fiscal nu sunt axe de sold și nu au
+  filtru pe nicio proiecție. (C111-Q13, C111-Q8)
 - `ReturClient` intră în proiecția de rest, dar rândurile lui nu apar:
   creanța unui retur e negativă după operare (venit stornat), iar filtrul
   `Rest > 0` o taie. Împerecherea unui retur rămâne pe calea directă
@@ -284,8 +309,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   coloană de cod scanează tot cubul (9,1 s la 5 milioane de postări, fără
   index), iar pe containerul Postgres de dezvoltare, cu `/dev/shm` de 64 MB,
   sortarea paralelă pică (`could not resize shared memory segment`); costul
-  e raportat fără prag în `docs/nucleu/tr-d9-pas7-declaratii.md`. (D9-A12;
-  2026-10-07)
+  e raportat fără prag în `docs/nucleu/tr-d9-pas7-declaratii.md`. Coloanele
+  repartitor, partener fiscal, loc și contrapondere sunt probate în
+  ModelCheck (`STR-VIZUAL-*`), nu și în browser; contraponderea se afișează
+  cu numele enumului, fără diacritice (`Tert`). (D9-A12, S5; 2026-10-10)
 - Cu pregătirea automată a comenzilor, citirile de sold pe o listă de loturi
   (`Fapte.SolduriLoturi`, `Loturi.VerificaSoldIntermediar`) primesc un plan
   generic de cinci ori mai lent (0,45 → 2,2 ms pe apel): cu limitele de dată
@@ -303,9 +330,14 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Cheia de pereche (`Postare.Pereche`) nu acoperă transformările (consumul și
   produsul sunt corespondență de grup) și nu e citită de nimeni: fișa
   contului întoarce contrapartida nulă când tranzacția are mai multe conturi
-  pe sensul opus (D9-r4). Stornoul cu mai multe surse decalează ordinalele
+  pe sensul opus (D9-r4; S9 din contractul C111). Stornoul cu mai multe surse decalează ordinalele
   surselor după prima, deci ordinalul stornoului nu e literal al
   originalului. (D9-A2; 2026-10-07)
+- Import1C compilează pe forma postării din C111, dar n-a rulat pe ea:
+  amprentele importului față de linia de bază
+  (`docs/nucleu/c111-pas0-linia-de-baza.md`) nu sunt măsurate, iar bazele de
+  import existente sunt pe schema veche și cer `--recreeaza`. Cifrele de mai
+  jos sunt de dinaintea ei. (C111-D9, pasul 6)
 - Import1C rulează pe cititorii cubului, dar reconcilierea lui nu e verde.
   Pe ianuarie 2025 (2026-10-07): 15.232 de documente, zero eșecuri de import,
   `INV-CUB` verde; contractul 1 are trei conturi fără explicație (371, 3028,
@@ -515,6 +547,21 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Client, API și livrare
 
+- Clientul React nu e adus la forma postării din C111 (pasul 7 al
+  contractului). Rapoartele duc încă `gestiuneId` din URL spre server
+  (`nucleu/urlStare.ts`), unde parametrul nu mai există și e ignorat fără
+  refuz: un deep-link cu `gestiuneId` arată raportul nefiltrat. Dublu-click-ul
+  pe rândul „fără terț” din `/sold-parteneri` deschide fișa cu
+  `repartitorNul`, care arată numai postările fără niciun repartitor, nu tot
+  ce adună rândul. Fișa numește `repartitorNul` „fără partener”, iar
+  explicația ecranului de sold descrie axa dinaintea C111. Contractul generat
+  (OpenAPI, tipurile) e la zi.
+- Bazele de dezvoltare fără sufix, de pe 5444 și de pe 5446, sunt pe lanțul
+  de migrații dinaintea `20261010151835_InitialCreate` și nu corespund
+  codului: hosturile și probele HTTP cer recrearea lor
+  ([rețeta](dezvoltare-si-validare.md), „Model și persistență”). Integrala
+  ModelCheck a rulat pe baze cu sufix, create din migrația curentă.
+  (102b, C111-D7)
 - Paginile React de detaliu ale documentelor sunt înghețate: câmpurile
   adăugate modelului după 2026-09-27 nu apar acolo, iar convențiile de
   selector rămase neadoptate (BTR, `TipMaterial`) nu se mai aplică. Culegerea

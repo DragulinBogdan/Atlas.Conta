@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-10-04.** [Index](README.md)
+**Actualizat: 2026-10-10.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -148,13 +148,24 @@ citește la ziua cerută, pornind de la partidele deschise ale ultimei perioade
 de referință. Absent = la zi. Proiecția include acum și `ReturClient`.
 (F27-D7)
 
+Proiecțiile contabile (`api/proiectii/balanta`, `balanta-plan`, `fisa-cont`,
+`sold-parteneri`) au o singură axă de repartitor, repartitorul de sold al
+postării (S1, C111-Q6). `repartitorId` îl filtrează, de orice fel: partener,
+angajat, gestiune, unitate internă sau cont propriu. Pe `fisa-cont`,
+`repartitorNul=true` înseamnă postările fără niciun repartitor și nu se
+combină cu `repartitorId`. Serverul nu are parametrul `gestiuneId`; locul
+(`Postare.Loc`) și partenerul fiscal nu sunt filtre.
+
 `GET api/proiectii/sold-parteneri?laData=&contId=&repartitorId=` întoarce
-soldurile pe (cont × repartitor) la o dată, cu aceleași filtre de dimensiune
-ca balanța și cu rândurile de sold net zero omise. `laData` absent = azi; o
-dată nevalidă cade pe 400. Citirea cere dreptul pe registrul contabil, ca
-balanța. Ecranul `/sold-parteneri` din client ține data în URL și duce prin
-dublu-click în fișa contului. Repartitorul e dimensiunea laturii, nu partenerul
-contului de terț — ecranul o spune explicit. (F27-D7)
+soldurile pe cont la o dată, cu aceleași filtre de dimensiune ca balanța și
+cu rândurile de sold net zero omise. Rând propriu au numai repartitorii
+externi (partener, angajat); restul contului — sume fără repartitor, pe
+repartitor intern sau pe cont propriu — vine într-un singur rând „fără terț”
+pe cont, cu `RepartitorId` nul, deci suma rândurilor unui cont e soldul lui
+din balanță (C111-Q13). `laData` absent = azi; o dată nevalidă cade pe 400.
+Citirea cere dreptul pe registrul contabil, ca balanța. Ecranul
+`/sold-parteneri` din client ține data în URL și duce prin dublu-click în
+fișa contului. (F27-D7)
 
 ## Securitate și răspunsuri
 
@@ -364,16 +375,18 @@ detaliul din listă, acțiunile și editarea inline funcționează neschimbate.
 azi numai lista de evidență a cubului, `PostareVizual_ListView` de sub
 „Registre” (D9-A12). `Cub.PostareVizual` e o entitate de citire mapată
 `ToView("PostareVizual")`, fără `BaseObject`, cu cheia `ID`, toate coloanele
-postării și codurile nomenclatoarelor alături (`ContSimbol`, `PartenerCod`,
-`GestiuneCod`, `ProdusCod`, `UnitateCod`, `DocumentNumar`, `TipTvaCod`,
-dimensiunile bugetare, `TranzactieFel`); view-ul SQL stă în migrația proprie
-`20261007080233_PostareVizual`, cu `LEFT JOIN` pe nomenclatoare și expresii
-pentru coordonatele fără rând (gestiunea virtuală = numele constantei
-nucleului, `CASE` generat din `GestiuniVirtuale`; partida = codul
-partenerului + data deschiderii; lotul = codul produsului + data lotului;
-fișa = numărul de inventar). Coloanele vizibile, în ordine: tranzacție,
-document, data, cont, latură, partener, gestiune, produs, unitate, cantitate,
-valoare, valoare în valută; fără identificatori bruți, fără editare, fără
+postării și codurile nomenclatoarelor alături (`ContSimbol`, `RepartitorCod`,
+`PartenerFiscalCod`, `LocCod`, `ProdusCod`, `UnitateCod`, `DocumentNumar`,
+`TipTvaCod`, dimensiunile bugetare, `TranzactieFel`); view-ul SQL e creat în
+`InitialCreate`, odată cu tabela, cu `LEFT JOIN` pe nomenclatoare —
+`Repartitori` de trei ori, pentru repartitor, partener fiscal și loc — și o
+expresie pentru unitate (partida = codul repartitorului + data deschiderii;
+lotul = codul produsului + data lotului; fișa = numărul de inventar).
+Contraponderea e coloana postării, afișată cu numele enumului (`Tert`,
+`Consum`, `Inventar`, `Transformare`). Coloanele vizibile, în ordine: tranzacție, document,
+data, cont, latură, repartitor, partener fiscal, loc, contrapondere, produs,
+unitate, cantitate, valoare, valoare în valută (S5, C111-Q14); fără
+identificatori bruți, fără editare, fără
 totaluri; detaliul rândului se deschide în citire. La activarea listei,
 `PostareVizualController` cere `Cub.Citiri.Vizibilitate.AccesLista` (lipsurile
 de citire completă pe `Postare`, prin `AccesComplet.Lipsuri`): cu lipsuri,
@@ -382,7 +395,9 @@ propriu pe `PostareVizual`. Gardianul refuză crearea, modificarea și ștergere
 unei `PostareVizual` pe orice ușă securizată, ca pe `Postare`; tipul nu e expus
 pe OData, în OpenAPI și în metadata clientului (`neexpunere-cub.py`).
 `Postare` nu mai are intrare de navigare; lista imbricată a tranzacției
-(`Tranzactie_Postari`) rămâne pe `Postare`, `Client`, fără editare. Listele
+(`Tranzactie_Postari`) rămâne pe `Postare`, `Client`, fără editare, cu
+aceleași patru coordonate (repartitor, partener fiscal, loc, contrapondere),
+ca identificatori. Listele
 vechi de registre au dispărut odată cu entitățile lor (2026-10-07, D9-D6).
 (D9-D9, D9-A12) Pagina proiectează doar
 coloanele vizibile; detaliul rândului se deschide normal. Precondițiile sunt

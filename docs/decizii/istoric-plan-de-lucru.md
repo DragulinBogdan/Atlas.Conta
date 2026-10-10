@@ -1166,3 +1166,11 @@ detaliat în jurnal):
 - **2026-10-10 — C111: review-ul de contract închis de Codex.** R16 închisă,
   nicio constatare de contract deschisă. Închiderea nu certifică
   implementarea. Pasul 2 pornește.
+
+- **2026-10-10 — C111, pasul 2: forma nouă a postării.** Nucleul, cubul,
+  declaranții, cititorii, snapshot-ul, lista de postări și HTTP-ul sunt pe
+  `Repartitor`, `Contrapondere`, `PartenerFiscal` și `Loc`. Lanțul de migrații
+  e din nou o singură migrație. Integrala: 3.625 / 5.029 OK, zero FAIL, pe
+  baze create din ea; nucleul 199. La implementare au apărut C111-Q12 (S14,
+  poziția fără fișă), Q13 (rândul fără terț) și Q14 (`Loc` și fără fapt
+  fiscal; 111 (b) amendată). `docs/nucleu/c111-pas2-forma-noua.md`.

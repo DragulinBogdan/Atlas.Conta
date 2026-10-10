@@ -4,7 +4,8 @@
 (2026-10-10). Pasul 0 e făcut. Review-ul advers Codex al contractului
 (C111-R1…R16) e reconciliat mai jos, în trei runde; amendamentul 1 e retras. Pașii 1 și 1b
 sunt făcuți. Codex a închis review-ul de contract (2026-10-10,
-`comunicari/2026-10-10-1732-…-c111-contract-review-inchis.md`); pasul 2 e în lucru.
+`comunicari/2026-10-10-1732-…-c111-contract-review-inchis.md`). Pasul 2 e
+implementat și verificat pe catalog; C111-Q12…Q14 au apărut la implementare.
 **Bază:** main `1cc9d93`. **Decizia:**
 [111](../decizii/111-repartitor-unic-si-registre-tipate.md), aprobată
 2026-10-10. **Măsurătorile:** [pasul 0](tr-d9b-pas0-masuratori.md).
@@ -66,9 +67,10 @@ main. `FelRepartitor` e unul singur, în nucleu; cel din
 (111 (a)). Indecșii
 parțiali de pe `Partener` trec pe `Repartitor`.
 
-**Invarianții.** 1–4 stau în `Conservare` și în `INV-CUB`. 5 se verifică pe
-identitatea originalului (`InversaDin`, id și spațiu), la materializare și în
-`INV-CUB` (`Citiri/Invarianti.cs`), nu pe ordinalul perechii: `Conservare`
+**Invarianții.** 1–4 stau în `Conservare` și în `INV-CUB`. 5 ține prin
+construcție la storno, care copiază coordonatele originalului, și se verifică
+în `INV-CUB` (`Citiri/Invarianti.cs`) pe identitatea originalului
+(`InversaDin`, id și spațiu), nu pe ordinalul perechii: `Conservare`
 vede numai tranzacția curentă, iar stornoul peste mai multe tranzacții mută
 ordinalele.
 
@@ -213,7 +215,7 @@ Orice schimbare în afara listei oprește pasul (D9).
 | S2 | piciorul intern cu partidă nu mai apare la filtrul pe locul intern, cu sau fără fapt fiscal; locul rămâne pe postare, ca `Loc` (C111-Q14) | balanța și fișa filtrate pe repartitor, pentru 419, 408, 4091 |
 | S3 | `Furnizor` și `Client` devin „terț” | lista postărilor, cititorii de contrapondere, scenele ModelCheck |
 | S4 | refuzuri noi ale nucleului: partener fiscal fără fapt; loc fără fapt fiscal și fără partidă; fapt fiscal fără loc; cantitate nemarcată fără lot | numai pe un declarant greșit sau pe un tip cu fapt fiscal fără exact o latură internă |
-| S5 | lista postărilor arată `Repartitor`, `Partener fiscal`, `Loc fiscal`, `Contrapondere` în locul celor două coloane | `PostareVizual` |
+| S5 | lista postărilor arată `Repartitor`, `Partener fiscal`, `Loc`, `Contrapondere` în locul celor două coloane | `PostareVizual` |
 | S6 | gardul refuză un repartitor de alt fel decât cele admise de cont | conturile care declară (bugetar) |
 | S7 | piciorul contului de tranzit al viramentului nu mai poartă contul propriu | analitica lui 581 |
 | S8 | DSC cu primitor intern marchează „consum”, nu „terț” | lista postărilor |
@@ -289,7 +291,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 0 | linia de bază pe main: import Flax ianuarie, amprentele (`--amprente`), raportul SAF-T S, integrala ModelCheck pe ambele profiluri | făcut 2026-10-10: [`c111-pas0-linia-de-baza.md`](c111-pas0-linia-de-baza.md) |
 | 1 | poarta, pe forma de azi: în afara `Cub/Citiri`, a scriitorului (`Cub/Randuri.cs`) și a entității, nimeni nu numește `Postare.Partener` sau `Postare.Gestiune`; cititorii expun identitățile din D10; o probă pe sursă păzește regula | făcut 2026-10-10: [`c111-pas1-poarta.md`](c111-pas1-poarta.md) |
 | 1b | așteptările înaintea implementării: fișierul de catalog cu formele din D5 și secțiunea analitică a amprentelor | făcut 2026-10-10: [`c111-pas1b-asteptari.md`](c111-pas1b-asteptari.md) |
-| 2 | forma nouă, atomic: nucleul, schema, scrierea, declaranții, cititorii din poartă, atomii și snapshot-ul, `PostareVizual`, mutanții și scrierile brute din ModelCheck; bazele recreate | suita nucleului; catalogul verde pe ambele profiluri, cu așteptările schimbate numai pe S1–S5 și S10–S14; `INV-CUB` |
+| 2 | forma nouă, atomic: nucleul, schema, scrierea, declaranții, cititorii din poartă, atomii și snapshot-ul, `PostareVizual`, mutanții și scrierile brute din ModelCheck; bazele recreate | implementat și verificat pe catalog 2026-10-10: [`c111-pas2-forma-noua.md`](c111-pas2-forma-noua.md); rămân bazele de dezvoltare și lista în browser |
 | 3 | `Cont.FeluriRepartitor`, gardul, seed-ul bugetar | ModelCheck pe ambele profiluri; `--dump-metadata`; S6 și probele din D4 |
 | 4 | S7 și S8 | scenariu propriu pe fiecare |
 | 5 | S9: contrapartida prin pereche | fișa contului pe HTTP; cifra de timp față de pasul 0, pe aceeași bază |
@@ -414,7 +416,7 @@ pasul 2, după regula de oprire 3.
 | C111-Q11 | Decontul cu TVA și cu terț pe linie, pe cont cu partide, refuzat azi, trece după S10? | **trece**; excepția e numită în D2 |
 | C111-Q12 | Poziția fără fișă păstrează partenerul în cheie, citit prin suport, sau îl pierde? | **îl pierde** (S14); furnizorul rămâne recuperabil prin suport și prin documentul de achiziție |
 | C111-Q13 | „Sold parteneri” numai cu terți lasă pe dinafară sumele fără terț; raportul se mai închide cu balanța? | **un rând „fără terț” pe cont**, cu tot ce nu e pe un repartitor extern; precizează C111-Q6 |
-| C111-Q14 | Piciorul intern cu partidă și fără fapt fiscal își pierde locul (găsit la pasul 2, pe regularizarea de avans fără TVA)? | **nu**: `Loc` devine `Loc` și se scrie oriunde titularul unei partide scoate locul din repartitor, cu sau fără fapt fiscal; semnalul se păstrează cât timp nu atinge cardinalitatea soldului. Amendează 111 (b) |
+| C111-Q14 | Piciorul intern cu partidă și fără fapt fiscal își pierde locul (găsit la pasul 2, pe regularizarea de avans fără TVA)? | **nu**: `LocFiscal` devine `Loc` și se scrie oriunde titularul unei partide scoate locul din repartitor, cu sau fără fapt fiscal; semnalul se păstrează cât timp nu atinge cardinalitatea soldului. Amendează 111 (b) |
 
 ## Review-ul advers Codex al contractului (2026-10-10)
 

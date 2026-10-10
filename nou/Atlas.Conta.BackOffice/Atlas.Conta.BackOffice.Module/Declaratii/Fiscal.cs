@@ -54,7 +54,7 @@ static class Fiscal {
 
     /// <summary>
     /// B-D8 pct. 5: faptul fiscal e atribut al postării interne — codul, perioada
-    /// declarării și partenerul pe care D394 îl cere pe faptă.
+    /// declarării, partenerul pe care D394 îl cere pe faptă și locul intern al documentului.
     /// </summary>
     public static N.Capat CuFapt(Operand operand, N.Capat capat, TipTvaFapt tip, N.RolTva rol) {
         ArgumentNullException.ThrowIfNull(operand);
