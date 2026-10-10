@@ -1,6 +1,6 @@
 # C111 — coordonatele postării: contract
 
-**Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q7
+**Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q8
 (2026-10-10). Pasul 0 e făcut. Review-ul advers Codex al contractului
 (C111-R1…R12) e reconciliat mai jos; amendamentul 1 e retras. Pasul 1 poate
 porni; pasul 2 așteaptă ca Codex să închidă review-ul pe textul reconciliat.
@@ -9,8 +9,8 @@ porni; pasul 2 așteaptă ca Codex să închidă review-ul pe textul reconciliat
 2026-10-10. **Măsurătorile:** [pasul 0](tr-d9b-pas0-masuratori.md).
 
 Felia implementează 111 (a)–(e) și (i): un singur repartitor de sold pe
-postare, partenerul fiscal în blocul fiscal, marcajul contraponderii în locul
-gestiunilor virtuale. E o reformare: nicio sumă nu se schimbă. TR-D9b
+postare, partenerul și locul fiscal în blocul fiscal, marcajul contraponderii
+în locul gestiunilor virtuale. E o reformare: nicio sumă nu se schimbă. TR-D9b
 (unitățile) vine după, pe forma nouă.
 
 ## Fapte măsurate (main `1cc9d93`)
@@ -40,8 +40,8 @@ declarația felurilor pe cont cu gardul ei, ModelCheck, Import1C,
 `ScaraVolum.sql`, contractul HTTP al citirilor atinse.
 
 Nu intră: (f), originea partidei, valuta, reevaluarea, hook-urile de
-stingere, custodia, furnizorul bonului la decont, locul intern al faptului
-fiscal (111-r1). Lista completă e în §„Ce NU intră".
+stingere, custodia, furnizorul bonului la decont. Lista completă e în §„Ce NU
+intră".
 
 ## C111-D2 — Forma postării
 
@@ -52,6 +52,7 @@ fiscal (111-r1). Lista completă e în §„Ce NU intră".
 | `Repartitor` | `Repartitor?` = `(Guid Id, FelRepartitor Fel)` | coordonata de sold; nul = niciunul |
 | `Contrapondere` | `Contrapondere?` = terț, consum, inventar, transformare | nul = postare în evidență |
 | `PartenerFiscal` | `Guid?` | numai pe postarea cu fapt fiscal |
+| `LocFiscal` | `Guid?` | locul intern al faptului fiscal; numai pe postarea cu fapt fiscal (C111-Q8) |
 
 `GestiuniVirtuale` dispare. Forma e cea a prototipului `8c36600`, adusă peste
 main. `FelRepartitor` e unul singur, în nucleu; cel din
@@ -59,8 +60,9 @@ main. `FelRepartitor` e unul singur, în nucleu; cel din
 
 **Cub.** `Postare` pierde `Partener` și `Gestiune` și primește `Repartitor`
 (`uuid`, nulabil, cheie străină pe `Repartitori`, pe ambele partiții),
-`Contrapondere` (`smallint`, nulabil) și `PartenerFiscal` (`uuid`, nulabil,
-cheie străină pe `Repartitori`). Felul nu e coloană (111 (a)). Indecșii
+`Contrapondere` (`smallint`, nulabil), `PartenerFiscal` și `LocFiscal`
+(`uuid`, nulabile, chei străine pe `Repartitori`). Felul nu e coloană
+(111 (a)). Indecșii
 parțiali de pe `Partener` trec pe `Repartitor`.
 
 **Invarianții.** 1–4 stau în `Conservare` și în `INV-CUB`. 5 se verifică pe
@@ -72,10 +74,11 @@ ordinalele.
 1. cantitatea nemarcată cere lot și repartitor intern;
 2. lotul cere repartitor intern; partida cere repartitor extern, egal cu
    titularul ei;
-3. `PartenerFiscal` apare numai cu fapt fiscal;
+3. `PartenerFiscal` și `LocFiscal` apar numai cu fapt fiscal;
 4. contraponderea transformării n-are repartitor, unitate, valoare sau fapt
    fiscal;
-5. inversa fiscală poartă același `PartenerFiscal` ca originalul.
+5. inversa fiscală poartă același `PartenerFiscal` și același `LocFiscal` ca
+   originalul.
 
 Nicio formă refuzată azi nu devine acceptată.
 
@@ -147,12 +150,12 @@ schimbă față de azi; se schimbă numai unde stă.
 | Piciorul | Azi | După |
 |---|---|---|
 | intern, fără fapt fiscal (stoc, cheltuială, venit, fișă) | `Gestiune` | `Repartitor` = același |
-| intern, cu fapt fiscal (3xx, 6xx, 7xx, 4426, 4427) | `Gestiune` + `Partener` | `Repartitor` = repartitorul intern; `PartenerFiscal` = partenerul |
-| cu fapt fiscal, fără repartitor intern (autocolectarea la taxare inversă) | `Partener` | `Repartitor` nul; `PartenerFiscal` = partenerul |
+| intern, cu fapt fiscal (3xx, 6xx, 7xx, 4426, 4427) | `Gestiune` + `Partener` | `Repartitor` = repartitorul intern; `PartenerFiscal` = partenerul; `LocFiscal` = locul |
+| cu fapt fiscal, fără repartitor intern (autocolectarea la taxare inversă) | `Partener` | `Repartitor` nul; `PartenerFiscal` = partenerul; `LocFiscal` = locul |
 | de terț, cu partidă sau cu cont care cere repartitor | `Partener` | `Repartitor` = terțul capătului |
 | de terț, nominalizat pe linie (DEC, NTC), cu sau fără partidă ori obligație pe cont | `Partener` | `Repartitor` = terțul liniei |
-| de terț, cu partidă și fapt fiscal (419, 408, 4091) | `Partener` + `Gestiune` | `Repartitor` = titularul; `PartenerFiscal` = partenerul; locul intern nu se scrie |
-| cu fapt fiscal, al decontului | `Partener` = partenerul fiscal, scris peste repartitorul liniei | `Repartitor` = repartitorul liniei; `PartenerFiscal` = partenerul (S10) |
+| de terț, cu partidă și fapt fiscal (419, 408, 4091) | `Partener` + `Gestiune` | `Repartitor` = titularul; `PartenerFiscal` = partenerul; `LocFiscal` = locul |
+| cu fapt fiscal, al decontului | `Partener` = partenerul fiscal, scris peste repartitorul liniei | `Repartitor` = repartitorul liniei; `PartenerFiscal` = partenerul (S10); `LocFiscal` = locul |
 | de trezorerie, propriu, numit de regulă prin latură | `Gestiune` = contul propriu | `Repartitor` = contul propriu |
 | de trezorerie, propriu, cu ambele conturi numite explicit | niciuna | `Repartitor` nul, ca azi (SC-PLT-09, SC-INC-09) |
 | contracantitatea recepției și a returului la furnizor | virtuala `Furnizor` | `Contrapondere` = terț |
@@ -163,9 +166,12 @@ schimbă față de azi; se schimbă numai unde stă.
 Pe piciorul marcat, terțul rămâne `Repartitor` unde e azi `Partener`
 (diferența de la NIR, DSC cu primitor extern, returul de la client).
 
-`PartenerFiscal` are un singur scriitor, `Fiscal.CuFapt`, din latura numită
-de `PoliticaTva.SursaContrapartida`. Capătul de taxă pe care decontul îl
-reconstruiește își păstrează `PartenerFiscal`.
+`PartenerFiscal` și `LocFiscal` au un singur scriitor, `Fiscal.CuFapt`:
+partenerul e latura numită de `PoliticaTva.SursaContrapartida`, locul e
+latura opusă (`Fiscal.GestiuneaInterna`). `LocFiscal` se scrie pe orice
+postare cu fapt fiscal, și când e egal cu `Repartitor`, ca niciun cititor să
+nu aleagă între două coloane. Capătul de taxă pe care decontul îl
+reconstruiește își păstrează amândouă atributele.
 
 ## C111-D6 — Schimbările de comportament, nominal
 
@@ -174,10 +180,10 @@ Orice schimbare în afara listei oprește pasul (D9).
 | Id | Schimbarea | Unde se vede |
 |---|---|---|
 | S1 | o singură axă analitică, repartitorul de sold, în locul celor două de azi (`Partener` și `Gestiune`); detaliile sub tabel | balanța, fișa, soldul pe parteneri, snapshot-ul, filtrele HTTP |
-| S2 | piciorul de terț cu partidă și fapt fiscal nu mai poartă locul intern; filtrarea după acel loc nu mai găsește rândurile | postările pe 419, 408, 4091 (111-r1) |
+| S2 | piciorul de terț cu partidă și fapt fiscal nu mai apare la filtrul pe locul intern; locul rămâne pe postare, ca `LocFiscal` | balanța și fișa filtrate pe repartitor, pentru 419, 408, 4091 |
 | S3 | `Furnizor` și `Client` devin „terț” | lista postărilor, cititorii de contrapondere, scenele ModelCheck |
 | S4 | refuzuri noi ale nucleului: partener fiscal fără fapt; cantitate nemarcată fără lot | numai pe un declarant greșit |
-| S5 | lista postărilor arată `Repartitor`, `Partener fiscal`, `Contrapondere` în locul celor două coloane | `PostareVizual` |
+| S5 | lista postărilor arată `Repartitor`, `Partener fiscal`, `Loc fiscal`, `Contrapondere` în locul celor două coloane | `PostareVizual` |
 | S6 | gardul refuză un repartitor de alt fel decât cele admise de cont | conturile care declară (bugetar) |
 | S7 | piciorul contului de tranzit al viramentului nu mai poartă contul propriu | analitica lui 581 |
 | S8 | DSC cu primitor intern marchează „consum”, nu „terț” | lista postărilor |
@@ -221,7 +227,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | la decont partenerul fiscal e angajatul; furnizorul bonului nu există | nu intră (C111-r1) |
 | invariantul inversei fiscale nu verifică partenerul | intră: invariantul 5 |
 | custodia | nu intră; TR-D9b, identitatea lotului |
-| cele 152 de postări pe 419, 408, 4091 | S2; 111-r1 |
+| cele 152 de postări pe 419, 408, 4091 | S2; locul rămâne în `LocFiscal` (C111-Q8) |
 | 552.00.00 și 462.01.09 pe bugetar | 552 hotărât; 462.01.09 la pasul 3 (111-r2) |
 | criteriul de formă al partidelor (F27-r16, F28-r1) | TR-D9b |
 
@@ -257,11 +263,11 @@ pasul 6.
    SAF-T L nu se generează pe ianuarie 2025, deci îl țin numai scenele din
    catalog.
 2. Amprenta analitică (cont × repartitor × lună, cont × partener fiscal ×
-   lună, cont × contrapondere × lună) se calculează pe baza de referință prin
+   lună, cont × loc fiscal × lună, cont × contrapondere × lună) se calculează pe baza de referință prin
    derivarea din D5 și pe forma nouă direct. Diferențele admise sunt numai
    S7, S8 și S10, numite rând cu rând.
 3. Fiecare formă din D5 are în catalog o așteptare cu repartitorul concret,
-   partenerul fiscal, contraponderea, unitatea și perechea, plus soldurile
+   partenerul și locul fiscal, contraponderea, unitatea și perechea, plus soldurile
    filtrate pe identități distincte, dinamic și din snapshot. Formele cerute:
    DEC simplu, DEC cu TVA, DEC cu taxare inversă, NTC cu terț fără partidă,
    trezoreria cu conturi explicite, diferențele NIR, IMO cu suport istoric pe
@@ -289,6 +295,7 @@ Clasificarea e pe expresie și pe domeniul ei, nu pe fișier.
 | titularul partidei | postarea cu `FelUnitate.Partida` | `Partener` | `Repartitor` |
 | terțul piciorului | postarea contabilă a unui document, cu sau fără partidă (`Citiri/Plati`) | `Partener` | `Repartitor`, când e extern |
 | partenerul fiscal | postarea cu fapt fiscal | `Partener` | `PartenerFiscal` |
+| locul fiscal | postarea cu fapt fiscal | `Gestiune` | `LocFiscal` |
 | terțul comercial | postarea pe un cont cu `RolTert` (SAF-T: registrul, facturile, plățile, Customers și Suppliers) | `Partener` | `Repartitor` extern, altfel `PartenerFiscal` |
 | locul lotului | postarea cu lot | `Gestiune` | `Repartitor` |
 | repartitorul intern fără lot | locul fișei, poziția fără fișă | `Gestiune` | `Repartitor` |
@@ -317,6 +324,7 @@ pasul 2, după regula de oprire 3.
 | C111-Q5 | Amendamentul 1 după review-ul Codex? | **retras**; pasul 1 e poarta prin cititori compozabili, pasul 2 rămâne atomic |
 | C111-Q6 | Filtrele HTTP după S1? | **un singur filtru**: `repartitorId` pe repartitorul de sold; `gestiuneId` iese; „Sold parteneri” numai terți |
 | C111-Q7 | La decont, când linia numește alt terț decât partenerul fiscal? | **amândoi, separat** (S10) |
+| C111-Q8 | Locul intern al faptului fiscal se scrie pe postare? (reconfirmare: premisa „nu-l citește nimeni” era falsă, filtrul `gestiuneId` îl citește) | **da**, `LocFiscal` pe orice postare cu fapt fiscal; nu intră în filtrul balanței; amendează 111 (b), închide 111-r1 |
 
 ## Review-ul advers Codex al contractului (2026-10-10)
 
@@ -394,7 +402,6 @@ schemă”; rămâne fără schimbare de comportament.
 
 - C111-r1: furnizorul bonului la decont, ca atribut pe linie; după PoC.
 - C111-r2: lumea închisă a felurilor pe planul privat (C111-Q1); după PoC.
-- 111-r1: locul intern al faptului fiscal pe piciorul de terț cu partidă.
 - 111 (f): registrele tipate; decizie proprie, cu ALOP.
 - TR-D9b: originea scrisă a partidei (F27-r16, F28-r1), valuta, reevaluarea,
   `PoliticaEvaluare`, hook-urile de stingere, custodia.

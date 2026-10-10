@@ -2,7 +2,8 @@
 
 - Data: 2026-10-06
 - Stare: **activă**, aprobată de owner 2026-10-10 în forma precizată după
-  pasul 0; hotărârile aprobării sunt în §„Aprobarea". Neimplementată: (a)–(e)
+  pasul 0, cu (b) amendată în aceeași zi (locul fiscal se persistă);
+  hotărârile aprobării sunt în §„Aprobarea". Neimplementată: (a)–(e)
   și (i) se implementează în felia C111 (coordonatele), înaintea TR-D9b
   (unitățile). (g) și (h) sunt consumate, TR-D9a fiind închisă. Închide
   110-r3 prin (i).
@@ -39,6 +40,10 @@ declarare, din latura documentului pe care o numește. Nu e coordonată de sold
 terț, la decont contrapartida e angajatul, la DVI predătorul e vama. Apare
 numai pe postarea cu fapt fiscal. Locul intern al faptului fiscal nu se
 persistă separat: e latura internă a documentului.
+*Amendat 2026-10-10:* locul intern se persistă, ca atribut în blocul fiscal,
+pe orice postare cu fapt fiscal, scris de aceeași politică de TVA din latura
+internă a documentului. Nu e coordonată de sold și nu intră în filtrele
+balanței. Propoziția de dinainte rămâne ca istoric.
 
 (c) **Gestiunile virtuale dispar.** Capătul din afara evidenței și
 contraponderea transformării primesc un marcaj explicit pe postare (terț,
@@ -144,6 +149,14 @@ Owner-ul a aprobat (a)–(f) și (i) integral, în forma de mai sus, și a hotă
   analitic pe 462.01.09. Felul pentru 462.01.09, 437 și 803 se hotărăște la
   pasul de seed al C111 (111-r2).
 - **110-r3 se închide** prin (i): coordonatele de sold rămân nulabile.
+
+**Reconfirmare, tot 2026-10-10.** Hotărârea despre locul intern al faptului
+fiscal s-a luat pe o premisă falsă: „nu îl citește niciun cititor”. Îl
+citește filtrul pe gestiune al balanței și al fișei (C111-R1). Owner-ul a
+hotărât din nou: locul se persistă în blocul fiscal, pe orice postare cu fapt
+fiscal ((b), amendată). 111-r1 se închide. Balanța rămâne pe o singură axă,
+deci avansurile de pe 419, 408 și 4091 nu apar la filtrul pe repartitorul
+intern.
 
 ## Context
 
