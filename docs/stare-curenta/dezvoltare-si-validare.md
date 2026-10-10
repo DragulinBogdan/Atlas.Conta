@@ -923,11 +923,14 @@ Vederea generată o scrie `docskit gen`, din rădăcina repo-ului, în același
 commit cu sursa: indexul din `decizii/README.md` între markerii `gen:index`,
 în trei grupe (118e); blocul `gen:decizii` de la sfârșitul fiecărei pagini de
 aici, cu deciziile care o numesc în `Arii` (118f); lista fișierelor din
-`docs/README.md` între `gen:fisiere`; și `docs/stare.md` integral (rezumat cu
-cifre, decizii în vigoare pe arie, depășite, restanțe deschise pe stare,
-felii deschise, decizii invocate din cod, paginile cu `Actualizat`). `stare.md`
-nu poartă data generării și nici date din git, ca a doua rulare să scrie
-zero. `python -X utf8 nou/tools/docs/normalizeaza-antete.py --scrie` rămâne
+`docs/README.md` între `gen:fisiere`, doar cu titluri; și `docs/stare.md`
+integral (rezumat cu cifre, deciziile în vigoare pe arie ca numere cu starea,
+depășite, restanțe deschise pe stare, felii deschise, decizii invocate din
+cod, paginile cu `Actualizat`). Generatul e ținut mic pentru contextul
+agentului: `stare.md` sub 10 KB, blocul paginii o linie de numere, titlurile
+din index tăiate la 120 de caractere; titlul întreg stă doar în fișierul
+deciziei. `stare.md` nu poartă data generării și nici date din git, ca a doua
+rulare să scrie zero. `python -X utf8 nou/tools/docs/normalizeaza-antete.py --scrie` rămâne
 doar pentru normalizarea antetelor vechi; nu mai scrie indexul. (118j)
 
 Termenii stau în [termeni.md](termeni.md), pe trei secțiuni: domeniu,
@@ -1102,41 +1105,5 @@ cu sumă. O eroare tehnică a unei stingeri pică luna și nu explică nimic.
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:`; generat de `docskit gen`, nu se editează.
-
-| # | Decizia | Stare |
-|---|---|---|
-| 14 | [Registre persistate, append-only](../decizii/014-registre-append-only.md) | activă |
-| 15 | [Dimensiuni](../decizii/015-dimensiuni-owned-type.md) | activă |
-| 21 | [Seed-ul politicilor se face PE FUNCȚIONALITATE, nu prin transcrierea config-ului legacy](../decizii/021-seed-pe-functionalitate-nu-transcriere.md) | activă |
-| 23 | [Felia 3a](../decizii/023-felia-3a-persistenta-seed.md) | activă |
-| 26 | [Felia 3c-1 — NIR + FacturaIntrare + mecanismul conex](../decizii/026-felia-3c1-nir-fct-conex.md) | amendată de 112 |
-| 30 | [Felia 3c-4 — FacturaIesire](../decizii/030-felia-3c4-factura-iesire.md) | activă |
-| 34 | [Pasul 4 — migrarea datelor](../decizii/034-pasul-4-migrarea-datelor.md) | activă |
-| 36 | [Felia P1 — profil privat + TVA structural](../decizii/036-felia-p1-tva-structural.md) | amendată de 71 |
-| 39 | [Pre-polish](../decizii/039-atlas-dxf-constraint-translator.md) | activă |
-| 42 | [Design pasul 5 — tierul API + React](../decizii/042-design-p5-tierul-api.md) | amendată de 104, 106 |
-| 43 | [Design pasul 5 — clientul React](../decizii/043-design-p5-clientul-react.md) | amendată de 104 |
-| 45 | [Design FAZA 1C — conector de import + reconciliere pe an fiscal complet](../decizii/045-design-faza-1c-import-reconciliere.md) | amendată de 75 |
-| 47 | [Felia 1C-b — scheletul Import1C + nomenclatoare + deschiderea](../decizii/047-felia-1c-b-import1c-deschiderea.md) | amendată de 107 |
-| 49 | [Felia 1C-c — documentele 2025 prin motor](../decizii/049-felia-1c-c-documentele-prin-motor.md) | activă |
-| 50 | [Felia 1C-d — gate-ul fazei](../decizii/050-felia-1c-d-gate.md) | activă |
-| 56 | [Pasul 5, felia 2 — FacturaIntrare + conex-NIR prin API](../decizii/056-p5-felia2-fct-nir.md) | amendată de 77, 81 |
-| 66 | [Pasul 5, felia 9 — raportarea pe registre](../decizii/066-p5-felia9-raportare.md) | activă |
-| 70 | [Pasul 5, felia 13 — motor/structură post-D300 (69-r4/r7/r5 + 67e)](../decizii/070-p5-felia13-motor-structura.md) | activă |
-| 80 | [Refuzurile de acces pe toate ușile: 404 / 403 / 422 — o singură ordine, un singur corp](../decizii/080-refuzuri-acces-toate-usile.md) | activă |
-| 81 | [Pasul 5, felia 23 — implicitele de culegere și întreținerea politicilor: regimul e al partenerului, cota e a produsului; politicile se deschid pe OData cu invarianții în gardian, unicitatea în schemă și proveniența ca timbru](../decizii/081-p5-felia23-implicite-politici.md) | activă |
-| 84 | [Pasul 5, felia 24 — politicile: seed-ul aliniază, rolul `Configurator`, cele șapte ecrane, potrivirea ca funcții pure și „Explică"](../decizii/084-p5-felia24-politici-explica.md) | activă |
-| 85 | [Modul de acces al ListView-urilor XAF Blazor (EF Core, PostgreSQL): `Server` implicit cu paginare, `ServerView` opt-in pe registre, `Client` explicit pe grilele de culegere, IF/IFV doar cu prag măsurat](../decizii/085-mod-acces-listview-xaf.md) | activă |
-| 87 | [Pasul 5, felia 26 — Imobilizări și amortizare, contabil și fiscal: fișa ca nomenclator subțire, un singur registru append-only de evenimente și luni, PIF/CAS ca documente operate, AMO generată lunar cu trei cifre din `AmortizareService`, conturile și regulile de deductibilitate exclusiv din politică, versionate în timp](../decizii/087-p5-felia26-imobilizari.md) | amendată de 97 |
-| 89 | [Pasul 5, felia 28 — TPH cu discriminatorul mapat `ClrType` pe `Document`, `DocumentDetaliu` și `Repartitor`; coloanele partajate fără prefix de tip; coloana de frunză se citește doar pe o mulțime restrânsă pe tip; tipul țintei unui FK spre frunză ținut de gardian și probat în bază; tipul documentului ca dată, printr-un singur cititor; căutarea după cheie a unui tip ne-rădăcină pe rădăcina ierarhiei, cu tipul verificat; lanțul de migrații resetat](../decizii/089-tph-discriminator-tipul-ca-data.md) | activă |
-| 90 | [Nucleul ca ledger n-dimensional — un singur cub de postări în locul celor patru registre; motor pur pe operand închis (`Contract = Postari + Decizii + Ipoteze`); unitatea nominalizată (lot = partidă = fișă) numită pe linie; împerecherea ca nominalizare la operare + document `Împerechere` cu tranzacție de fel `Transfer`; linia FCT postează recepția; o singură postare de stoc, `TipStoc` dispare structural; stornoul ca tranzacție distinctă = inversul cauzat ∪ atribuit; fiscala postată în `Carte=Fiscal`; ordinea TR-D6a…D10 cu Import1C ca probă supremă; XAF și React înghețate pe funcții](../decizii/090-nucleu-cub-de-postari.md) | amendată de 91, 92, 93, 95, 96, 110 |
-| 91 | [Proba supremă devine catalogul de scenarii — Import1C se îngheață ca unealtă de migrare, nu ca gate; clona Flax rămâne sursă de întrebări; „rotund" primește definiție ca regulă de oprire a PoC-ului; stornoul după reevaluare = inversarea originalului + compensarea efectelor rămase active; proiecțiile persistate doar reconstruibile din postări; triajul restanțelor în patru stări](../decizii/091-scenarii-in-loc-de-import.md) | amendată de 107, 118 |
-| 102 | [Fără compatibilitate cu bazele de dezvoltare până la prima producție](../decizii/102-fara-compatibilitate-cu-bazele-de-dezvoltare.md) | activă |
-| 104 | [Straturi izolate, culegerea în XAF, entități proprii fără ștergere amânată](../decizii/104-straturi-izolate-entitati-proprii.md) | amendată de 106 |
-| 106 | [Regimul pe stare: o singură sursă a editabilității și a comenzilor disponibile](../decizii/106-regim-pe-stare.md) | activă |
-| 107 | [Migrarea deschide terții per partidă din `BalantaNivel3`, prin `Materializare.Deschide`; stingerile anului pe partide inițiale; partener generic de migrare](../decizii/107-deschiderea-de-terti-din-balanta-nivel3.md) | activă |
-| 108 | [Gate-ul transversal TR-D8: registrele nu se mai citesc, scrierea e serială per bază, explicația deciziei e persistată](../decizii/108-gate-transversal-tr-d8.md) | amendată de 110 |
-| 115 | [Linia de notă poate numi partida pe care o stinge; partida inițială își poartă data de naștere](../decizii/115-nota-numeste-partida.md) | activă |
-| 118 | [Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rând](../decizii/118-guvernanta-documentatiei.md) | activă |
+Deciziile care numesc pagina în `Arii:` (33; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 14, 15, 21, 23, 26 (amendată de 112), 30, 34, 36 (amendată de 71), 39, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 47 (amendată de 107), 49, 50, 56 (amendată de 77, 81), 66, 70, 80, 81, 84, 85, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110), 91 (amendată de 107, 118), 102, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 115, 118.
 <!-- /gen:decizii -->

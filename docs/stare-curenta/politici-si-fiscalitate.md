@@ -555,29 +555,5 @@ secțiunea prezentă. (74e, S0-R5)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:`; generat de `docskit gen`, nu se editează.
-
-| # | Decizia | Stare |
-|---|---|---|
-| 20 | [Un singur nomenclator de tipuri, și e codul](../decizii/020-un-singur-nomenclator-de-tipuri.md) | activă |
-| 36 | [Felia P1 — profil privat + TVA structural](../decizii/036-felia-p1-tva-structural.md) | amendată de 71 |
-| 42 | [Design pasul 5 — tierul API + React](../decizii/042-design-p5-tierul-api.md) | amendată de 104, 106 |
-| 46 | [Felia 1C-a — tipurile noi de model](../decizii/046-felia-1c-a-tipurile-noi.md) | amendată de 113 |
-| 56 | [Pasul 5, felia 2 — FacturaIntrare + conex-NIR prin API](../decizii/056-p5-felia2-fct-nir.md) | amendată de 77, 81 |
-| 66 | [Pasul 5, felia 9 — raportarea pe registre](../decizii/066-p5-felia9-raportare.md) | activă |
-| 69 | [Pasul 5, felia 12 — D300, decontul de TVA ca proiecție peste `RegistruTva`](../decizii/069-p5-felia12-d300.md) | activă |
-| 70 | [Pasul 5, felia 13 — motor/structură post-D300 (69-r4/r7/r5 + 67e)](../decizii/070-p5-felia13-motor-structura.md) | activă |
-| 71 | [Pasul 5, felia 14 — D394, declarația informativă ca proiecție peste `RegistruTva`](../decizii/071-p5-felia14-d394.md) | amendată de 72 |
-| 72 | [Pasul 5, felia 15 — identitatea extinsă a partenerului + sincronizarea ANAF](../decizii/072-p5-felia15-partener-anaf.md) | activă |
-| 73 | [Pasul 5, felia 16 — SAF-T (D406 L) ca proiecție peste registre](../decizii/073-p5-felia16-saft.md) | amendată de 74, 105 |
-| 74 | [Pasul 5, felia 17 — SAF-T D406 **S (stocuri)** peste `RegistruStoc`](../decizii/074-p5-felia17-saft-s.md) | amendată de 105 |
-| 79 | [Pasul 5, felia 21 — ITV (închiderea de TVA) prin API și client: comandă cu cauză + ecran de rezultat](../decizii/079-p5-felia21-itv.md) | amendată de 80 |
-| 80 | [Refuzurile de acces pe toate ușile: 404 / 403 / 422 — o singură ordine, un singur corp](../decizii/080-refuzuri-acces-toate-usile.md) | activă |
-| 81 | [Pasul 5, felia 23 — implicitele de culegere și întreținerea politicilor: regimul e al partenerului, cota e a produsului; politicile se deschid pe OData cu invarianții în gardian, unicitatea în schemă și proveniența ca timbru](../decizii/081-p5-felia23-implicite-politici.md) | activă |
-| 83 | [Seed-ul și proveniența: re-seed-ul corectează doar `DinSeed`, golurile privat (NIM / IMP cu poarta spre DVI), rolul `Configurator`](../decizii/083-seed-provenienta-goluri-configurator.md) | amendată de 84, 86, 104 |
-| 84 | [Pasul 5, felia 24 — politicile: seed-ul aliniază, rolul `Configurator`, cele șapte ecrane, potrivirea ca funcții pure și „Explică"](../decizii/084-p5-felia24-politici-explica.md) | activă |
-| 86 | [Pasul 5, felia 25 — DVI (declarația vamală de import) ca tip de document: TVA-ul în vamă intră în evidență, D300 rd. 24/25 și 7/22, codurile SAF-T de import](../decizii/086-p5-felia25-dvi.md) | activă |
-| 87 | [Pasul 5, felia 26 — Imobilizări și amortizare, contabil și fiscal: fișa ca nomenclator subțire, un singur registru append-only de evenimente și luni, PIF/CAS ca documente operate, AMO generată lunar cu trei cifre din `AmortizareService`, conturile și regulile de deductibilitate exclusiv din politică, versionate în timp](../decizii/087-p5-felia26-imobilizari.md) | amendată de 97 |
-| 103 | [Fapte fiscale istorice și perioade distincte de declarare](../decizii/103-fapte-fiscale-istorice-si-perioade-distincte.md) | activă |
-| 113 | [Semnul valorii e al liniei; `RegulaContare.PastreazaSemn` a ieșit](../decizii/113-semnul-e-al-liniei-pastreazasemn-scos.md) | activă |
+Deciziile care numesc pagina în `Arii:` (21; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 20, 36 (amendată de 71), 42 (amendată de 104, 106), 46 (amendată de 113), 56 (amendată de 77, 81), 66, 69, 70, 71 (amendată de 72), 72, 73 (amendată de 74, 105), 74 (amendată de 105), 79 (amendată de 80), 80, 81, 83 (amendată de 84, 86, 104), 84, 86, 87 (amendată de 97), 103, 113.
 <!-- /gen:decizii -->

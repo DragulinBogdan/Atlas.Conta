@@ -84,15 +84,15 @@
 | 72 | [Pasul 5, felia 15 — identitatea extinsă a partenerului + sincronizarea ANAF](072-p5-felia15-partener-anaf.md) | 2026-08-26 | activă |
 | 75 | [Pasul 5, felia 18 — restanțele grele ale lui S: golirea valorică (motor), reclasificarea ca mișcare, perf proiecție](075-p5-felia18-restante-s.md) | 2026-08-29 | activă |
 | 76 | [Pasul 5, felia 19 — NTC + ASM + retururi (RLF/RDC) prin API și client](076-p5-felia19-ntc-asm-retururi.md) | 2026-08-29 | activă |
-| 77 | [Pasul 5, felia 20 — finisajul clientului: căutarea fără diacritice, cache-ul de nomenclator, confirmările, `Neincluse` agregat, primele ecrane de nomenclator](077-p5-felia20-finisaj-client.md) | 2026-08-29 | activă |
+| 77 | [Pasul 5, felia 20 — finisajul clientului: căutarea fără diacritice, cache-ul de nomenclator, confirmările, Neincluse a…](077-p5-felia20-finisaj-client.md) | 2026-08-29 | activă |
 | 78 | [Căutarea fără diacritice pe proiecții — rescrierea predicatelor `DataSourceLoader` prin normalizatorul comun](078-cautare-fara-diacritice-proiectii.md) | 2026-09-01 | activă |
 | 80 | [Refuzurile de acces pe toate ușile: 404 / 403 / 422 — o singură ordine, un singur corp](080-refuzuri-acces-toate-usile.md) | 2026-09-02 | activă |
-| 81 | [Pasul 5, felia 23 — implicitele de culegere și întreținerea politicilor: regimul e al partenerului, cota e a produsului; politicile se deschid pe OData cu invarianții în gardian, unicitatea în schemă și proveniența ca timbru](081-p5-felia23-implicite-politici.md) | 2026-09-02 | activă |
+| 81 | [Pasul 5, felia 23 — implicitele de culegere și întreținerea politicilor: regimul e al partenerului, cota e a produsului…](081-p5-felia23-implicite-politici.md) | 2026-09-02 | activă |
 | 82 | [Stingerea automată prin contract de document](082-stingere-automata-prin-contract.md) | 2026-09-08 | activă |
-| 84 | [Pasul 5, felia 24 — politicile: seed-ul aliniază, rolul `Configurator`, cele șapte ecrane, potrivirea ca funcții pure și „Explică"](084-p5-felia24-politici-explica.md) | 2026-09-11 | activă |
-| 85 | [Modul de acces al ListView-urilor XAF Blazor (EF Core, PostgreSQL): `Server` implicit cu paginare, `ServerView` opt-in pe registre, `Client` explicit pe grilele de culegere, IF/IFV doar cu prag măsurat](085-mod-acces-listview-xaf.md) | 2026-09-11 | activă |
-| 86 | [Pasul 5, felia 25 — DVI (declarația vamală de import) ca tip de document: TVA-ul în vamă intră în evidență, D300 rd. 24/25 și 7/22, codurile SAF-T de import](086-p5-felia25-dvi.md) | 2026-09-13 | activă |
-| 89 | [Pasul 5, felia 28 — TPH cu discriminatorul mapat `ClrType` pe `Document`, `DocumentDetaliu` și `Repartitor`; coloanele partajate fără prefix de tip; coloana de frunză se citește doar pe o mulțime restrânsă pe tip; tipul țintei unui FK spre frunză ținut de gardian și probat în bază; tipul documentului ca dată, printr-un singur cititor; căutarea după cheie a unui tip ne-rădăcină pe rădăcina ierarhiei, cu tipul verificat; lanțul de migrații resetat](089-tph-discriminator-tipul-ca-data.md) | 2026-09-18 | activă |
+| 84 | [Pasul 5, felia 24 — politicile: seed-ul aliniază, rolul Configurator, cele șapte ecrane, potrivirea ca funcții pure și…](084-p5-felia24-politici-explica.md) | 2026-09-11 | activă |
+| 85 | [Modul de acces al ListView-urilor XAF Blazor (EF Core, PostgreSQL): Server implicit cu paginare, ServerView opt-in p…](085-mod-acces-listview-xaf.md) | 2026-09-11 | activă |
+| 86 | [Pasul 5, felia 25 — DVI (declarația vamală de import) ca tip de document: TVA-ul în vamă intră în evidență, D300 rd. 24/…](086-p5-felia25-dvi.md) | 2026-09-13 | activă |
+| 89 | [Pasul 5, felia 28 — TPH cu discriminatorul mapat ClrType pe Document, DocumentDetaliu și Repartitor…](089-tph-discriminator-tipul-ca-data.md) | 2026-09-18 | activă |
 | 93 | [Folosința păstrează gestiunea reală și lotul](093-folosinta-gestiune-reala.md) | 2026-09-24 | activă |
 | 94 | [Deschiderea detaliază soldul contabil, fără dublare](094-deschidere-prin-detalierea-soldului.md) | 2026-09-24 | activă |
 | 95 | [DEC și imobilizările complete pe cub înaintea TR-D8](095-producatori-completi-inaintea-citirilor.md) | 2026-09-24 | activă |
@@ -102,14 +102,14 @@
 | 103 | [Fapte fiscale istorice și perioade distincte de declarare](103-fapte-fiscale-istorice-si-perioade-distincte.md) | 2026-09-25 | activă |
 | 105 | [SAF-T D406 pe cub: sursă unică, acces complet, certificare cu manifest](105-saft-pe-cub.md) | 2026-09-30 | activă |
 | 106 | [Regimul pe stare: o singură sursă a editabilității și a comenzilor disponibile](106-regim-pe-stare.md) | 2026-09-30 | activă |
-| 107 | [Migrarea deschide terții per partidă din `BalantaNivel3`, prin `Materializare.Deschide`; stingerile anului pe partide inițiale; partener generic de migrare](107-deschiderea-de-terti-din-balanta-nivel3.md) | 2026-10-01 | activă |
-| 109 | [Taxa nemarcată se decide pe document × cotă și se scrie pe linie; declarația postează taxa liniei; taxa unui document real adusă de o cale fără culegere e marcată](109-taxa-nemarcata-pe-document-scrisa-pe-linie.md) | 2026-10-04 | activă |
+| 107 | [Migrarea deschide terții per partidă din BalantaNivel3, prin Materializare.Deschide…](107-deschiderea-de-terti-din-balanta-nivel3.md) | 2026-10-01 | activă |
+| 109 | [Taxa nemarcată se decide pe document × cotă și se scrie pe linie; declarația postează taxa liniei…](109-taxa-nemarcata-pe-document-scrisa-pe-linie.md) | 2026-10-04 | activă |
 | 111 | [Un singur repartitor de sold pe postare, partenerul fiscal în blocul fiscal, registre tipate pentru ce nu se balansează](111-repartitor-unic-si-registre-tipate.md) | 2026-10-06 | propusă |
 | 112 | [Recepția facturii se contează pe regula ei de contare (`FCT/Stoc`)](112-receptia-facturii-pe-regula-ei.md) | 2026-10-08 | activă |
 | 113 | [Semnul valorii e al liniei; `RegulaContare.PastreazaSemn` a ieșit](113-semnul-e-al-liniei-pastreazasemn-scos.md) | 2026-10-08 | activă |
 | 115 | [Linia de notă poate numi partida pe care o stinge; partida inițială își poartă data de naștere](115-nota-numeste-partida.md) | 2026-10-09 | activă |
 | 117 | [Postarea își poartă ordinalul în tranzacție; unitatea fără document se departajează pe el](117-ordinalul-postarii-in-tranzactie.md) | 2026-10-09 | activă |
-| 118 | [Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rând](118-guvernanta-documentatiei.md) | 2026-10-10 | activă |
+| 118 | [Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rân…](118-guvernanta-documentatiei.md) | 2026-10-10 | activă |
 
 ### Amendate parțial (33)
 
@@ -133,11 +133,11 @@
 | 73 | [Pasul 5, felia 16 — SAF-T (D406 L) ca proiecție peste registre](073-p5-felia16-saft.md) | 2026-08-26 | amendată de 74, 105 |
 | 74 | [Pasul 5, felia 17 — SAF-T D406 **S (stocuri)** peste `RegistruStoc`](074-p5-felia17-saft-s.md) | 2026-08-27 | amendată de 105 |
 | 79 | [Pasul 5, felia 21 — ITV (închiderea de TVA) prin API și client: comandă cu cauză + ecran de rezultat](079-p5-felia21-itv.md) | 2026-09-01 | amendată de 80 |
-| 83 | [Seed-ul și proveniența: re-seed-ul corectează doar `DinSeed`, golurile privat (NIM / IMP cu poarta spre DVI), rolul `Configurator`](083-seed-provenienta-goluri-configurator.md) | 2026-09-10 | amendată de 84, 86, 104 |
-| 87 | [Pasul 5, felia 26 — Imobilizări și amortizare, contabil și fiscal: fișa ca nomenclator subțire, un singur registru append-only de evenimente și luni, PIF/CAS ca documente operate, AMO generată lunar cu trei cifre din `AmortizareService`, conturile și regulile de deductibilitate exclusiv din politică, versionate în timp](087-p5-felia26-imobilizari.md) | 2026-09-15 | amendată de 97 |
-| 88 | [Pasul 5, felia 27 — Perioada fiscală ca lanț, închiderea ca comandă cu acceptare conștientă, soldurile și partidele deschise materializate la închidere, data înregistrării ca reper al registrelor, perioada de declarare ca reper fiscal, corecția legată cu motiv](088-p5-felia27-perioade-solduri.md) | 2026-09-17 | amendată de 103 |
-| 90 | [Nucleul ca ledger n-dimensional — un singur cub de postări în locul celor patru registre; motor pur pe operand închis (`Contract = Postari + Decizii + Ipoteze`); unitatea nominalizată (lot = partidă = fișă) numită pe linie; împerecherea ca nominalizare la operare + document `Împerechere` cu tranzacție de fel `Transfer`; linia FCT postează recepția; o singură postare de stoc, `TipStoc` dispare structural; stornoul ca tranzacție distinctă = inversul cauzat ∪ atribuit; fiscala postată în `Carte=Fiscal`; ordinea TR-D6a…D10 cu Import1C ca probă supremă; XAF și React înghețate pe funcții](090-nucleu-cub-de-postari.md) | 2026-09-20 | amendată de 91, 92, 93, 95, 96, 110 |
-| 91 | [Proba supremă devine catalogul de scenarii — Import1C se îngheață ca unealtă de migrare, nu ca gate; clona Flax rămâne sursă de întrebări; „rotund" primește definiție ca regulă de oprire a PoC-ului; stornoul după reevaluare = inversarea originalului + compensarea efectelor rămase active; proiecțiile persistate doar reconstruibile din postări; triajul restanțelor în patru stări](091-scenarii-in-loc-de-import.md) | 2026-09-22 | amendată de 107, 118 |
+| 83 | [Seed-ul și proveniența: re-seed-ul corectează doar DinSeed, golurile privat (NIM / IMP cu poarta spre DVI), rolul Con…](083-seed-provenienta-goluri-configurator.md) | 2026-09-10 | amendată de 84, 86, 104 |
+| 87 | [Pasul 5, felia 26 — Imobilizări și amortizare, contabil și fiscal: fișa ca nomenclator subțire, un singur registru appen…](087-p5-felia26-imobilizari.md) | 2026-09-15 | amendată de 97 |
+| 88 | [Pasul 5, felia 27 — Perioada fiscală ca lanț, închiderea ca comandă cu acceptare conștientă, soldurile și partidele desc…](088-p5-felia27-perioade-solduri.md) | 2026-09-17 | amendată de 103 |
+| 90 | [Nucleul ca ledger n-dimensional — un singur cub de postări în locul celor patru registre…](090-nucleu-cub-de-postari.md) | 2026-09-20 | amendată de 91, 92, 93, 95, 96, 110 |
+| 91 | [Proba supremă devine catalogul de scenarii — Import1C se îngheață ca unealtă de migrare, nu ca gate…](091-scenarii-in-loc-de-import.md) | 2026-09-22 | amendată de 107, 118 |
 | 92 | [Identitatea partidei include partenerul](092-identitatea-partidei-include-partenerul.md) | 2026-09-23 | amendată de 102 |
 | 96 | [Urmărirea partidelor este separată de rolul comercial](096-urmarirea-partidelor-separata-de-rolul-comercial.md) | 2026-09-24 | amendată de 100, 102 |
 | 97 | [PIF nominalizează valoarea contabilă cu suport obligatoriu](097-pif-nominalizare-cu-suport-obligatoriu.md) | 2026-09-24 | amendată de 98 |

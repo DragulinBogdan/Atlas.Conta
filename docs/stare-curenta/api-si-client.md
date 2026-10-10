@@ -594,33 +594,5 @@ proiecție parțială. Mecanismul e `Api.AccesComplet`, comun cu D406
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:`; generat de `docskit gen`, nu se editează.
-
-| # | Decizia | Stare |
-|---|---|---|
-| 39 | [Pre-polish](../decizii/039-atlas-dxf-constraint-translator.md) | activă |
-| 42 | [Design pasul 5 — tierul API + React](../decizii/042-design-p5-tierul-api.md) | amendată de 104, 106 |
-| 43 | [Design pasul 5 — clientul React](../decizii/043-design-p5-clientul-react.md) | amendată de 104 |
-| 53 | [GATE XAF](../decizii/053-gate-xaf.md) | activă |
-| 55 | [Pasul 5, spike 1 — fir complet subțire API+React pe NotaTransfer](../decizii/055-p5-spike1-btr.md) | activă |
-| 56 | [Pasul 5, felia 2 — FacturaIntrare + conex-NIR prin API](../decizii/056-p5-felia2-fct-nir.md) | amendată de 77, 81 |
-| 57 | [Pasul 5, felia 3 — trezoreria prin API](../decizii/057-p5-felia3-trezorerie.md) | activă |
-| 58 | [Pasul 5, felia 4 — FCL + descărcarea de gestiune prin API](../decizii/058-p5-felia4-fcl-dsc.md) | activă |
-| 60 | [Mărunțișurile F3/F4 golite](../decizii/060-p5-maruntisuri-f3-f4.md) | activă |
-| 66 | [Pasul 5, felia 9 — raportarea pe registre](../decizii/066-p5-felia9-raportare.md) | activă |
-| 68 | [Pasul 5, felia 11 — jurnalele de TVA](../decizii/068-p5-felia11-jurnale-tva.md) | activă |
-| 70 | [Pasul 5, felia 13 — motor/structură post-D300 (69-r4/r7/r5 + 67e)](../decizii/070-p5-felia13-motor-structura.md) | activă |
-| 77 | [Pasul 5, felia 20 — finisajul clientului: căutarea fără diacritice, cache-ul de nomenclator, confirmările, `Neincluse` agregat, primele ecrane de nomenclator](../decizii/077-p5-felia20-finisaj-client.md) | activă |
-| 79 | [Pasul 5, felia 21 — ITV (închiderea de TVA) prin API și client: comandă cu cauză + ecran de rezultat](../decizii/079-p5-felia21-itv.md) | amendată de 80 |
-| 80 | [Refuzurile de acces pe toate ușile: 404 / 403 / 422 — o singură ordine, un singur corp](../decizii/080-refuzuri-acces-toate-usile.md) | activă |
-| 81 | [Pasul 5, felia 23 — implicitele de culegere și întreținerea politicilor: regimul e al partenerului, cota e a produsului; politicile se deschid pe OData cu invarianții în gardian, unicitatea în schemă și proveniența ca timbru](../decizii/081-p5-felia23-implicite-politici.md) | activă |
-| 84 | [Pasul 5, felia 24 — politicile: seed-ul aliniază, rolul `Configurator`, cele șapte ecrane, potrivirea ca funcții pure și „Explică"](../decizii/084-p5-felia24-politici-explica.md) | activă |
-| 85 | [Modul de acces al ListView-urilor XAF Blazor (EF Core, PostgreSQL): `Server` implicit cu paginare, `ServerView` opt-in pe registre, `Client` explicit pe grilele de culegere, IF/IFV doar cu prag măsurat](../decizii/085-mod-acces-listview-xaf.md) | activă |
-| 86 | [Pasul 5, felia 25 — DVI (declarația vamală de import) ca tip de document: TVA-ul în vamă intră în evidență, D300 rd. 24/25 și 7/22, codurile SAF-T de import](../decizii/086-p5-felia25-dvi.md) | activă |
-| 87 | [Pasul 5, felia 26 — Imobilizări și amortizare, contabil și fiscal: fișa ca nomenclator subțire, un singur registru append-only de evenimente și luni, PIF/CAS ca documente operate, AMO generată lunar cu trei cifre din `AmortizareService`, conturile și regulile de deductibilitate exclusiv din politică, versionate în timp](../decizii/087-p5-felia26-imobilizari.md) | amendată de 97 |
-| 89 | [Pasul 5, felia 28 — TPH cu discriminatorul mapat `ClrType` pe `Document`, `DocumentDetaliu` și `Repartitor`; coloanele partajate fără prefix de tip; coloana de frunză se citește doar pe o mulțime restrânsă pe tip; tipul țintei unui FK spre frunză ținut de gardian și probat în bază; tipul documentului ca dată, printr-un singur cititor; căutarea după cheie a unui tip ne-rădăcină pe rădăcina ierarhiei, cu tipul verificat; lanțul de migrații resetat](../decizii/089-tph-discriminator-tipul-ca-data.md) | activă |
-| 103 | [Fapte fiscale istorice și perioade distincte de declarare](../decizii/103-fapte-fiscale-istorice-si-perioade-distincte.md) | activă |
-| 104 | [Straturi izolate, culegerea în XAF, entități proprii fără ștergere amânată](../decizii/104-straturi-izolate-entitati-proprii.md) | amendată de 106 |
-| 106 | [Regimul pe stare: o singură sursă a editabilității și a comenzilor disponibile](../decizii/106-regim-pe-stare.md) | activă |
-| 108 | [Gate-ul transversal TR-D8: registrele nu se mai citesc, scrierea e serială per bază, explicația deciziei e persistată](../decizii/108-gate-transversal-tr-d8.md) | amendată de 110 |
+Deciziile care numesc pagina în `Arii:` (25; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 58, 60, 66, 68, 70, 77, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 103, 104 (amendată de 106), 106, 108 (amendată de 110).
 <!-- /gen:decizii -->

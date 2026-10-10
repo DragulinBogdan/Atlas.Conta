@@ -635,7 +635,5 @@ politici versionate; exportul cere citire necondiționată. Regula:
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:`; generat de `docskit gen`, nu se editează.
-
-Nicio decizie nu numește pagina în `Arii:`.
+Deciziile care numesc pagina în `Arii:` (0; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): niciuna.
 <!-- /gen:decizii -->

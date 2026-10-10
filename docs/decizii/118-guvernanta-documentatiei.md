@@ -85,9 +85,12 @@ Fără review advers la scriere: decizie de formă, fără efect pe motor sau sc
 
 **118-r8 — `Unitate` devine `UnitateSold`.** 896 de apariții; redenumirea intră în TR-D9b, felia unităților, nu înainte. Triggerul: contractul TR-D9b.
 
+**118-r9 — Deciziile și restanțele pe zone.** O sesiune pe motor nu are nevoie de deciziile și restanțele de UI (React/XAF), și invers; generatul (`stare.md`, blocurile paginilor) și registrul restanțelor trebuie să poată fi citite pe zona feliei curente. De tranșat: zona vine din `Arii` (paginile stării curente) sau dintr-o etichetă nouă pe decizie și pe restanță; registrul se sparge în fișiere pe zonă sau rămâne unul singur cu vederi generate pe zonă; `stare.md` primește secțiuni pe zonă sau fișiere `stare-<zona>.md`. Criteriul: ce citește o sesiune la început trebuie să rămână sub 10 KB. Triggerul: sesiunea următoare, pe context nou, cu owner-ul.
+
 ## Istoric
 
 - 2026-10-10: scrisă ca `propusă`, cu normalizarea celor 117 antete făcută de script în același PR.
 - 2026-10-10: 118-r6 închisă, tranșările de termeni aplicate în `termeni.md`.
 - 2026-10-10: aprobată de owner; `Stare: activă`.
+- 2026-10-10: generatul subțiat pentru context (docskit 0.1.1): `stare.md` 41 → 9 KB, lista fișierelor 57 → 30 KB, blocurile paginilor 29 → 3 KB, titlurile din index tăiate la 120 de caractere; 118-r9 deschisă.
 - 2026-10-10: 118-r2 livrată parțial (`gen`, `check`); (j) intră în vigoare: `docs/stare.md` e generat, §Stare din `CLAUDE.md` e un paragraf, textul vechi e în istoric.
