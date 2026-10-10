@@ -96,7 +96,7 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
             return s.Cantitate == 0 && s.Valoare == -.01m && r.Cantitate == 0 && r.Valoare == -.01m
                 && r.LotPretUnitar == 0
                 && !C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, s.ProdusId, Magazie, Cont("371")).Any()
-                && !C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, s.ProdusId, N.GestiuniVirtuale.Client, Cont("607"))
+                && !C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, s.ProdusId, Client, Cont("607"))
                     .Any();
         }));
         var cheltuiala = Cont(Privat ? "602" : "602.01.00");

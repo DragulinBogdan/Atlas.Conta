@@ -21,7 +21,7 @@ sealed class ProbeRamuraDeNul : IObserver<DiagnosticListener>, IObserver<KeyValu
     static readonly Dictionary<string, string> Admise = new(StringComparer.Ordinal) {
         ["Explicatii.VerificaAcoperire: DocumentId"] = "\"ID\" = \"ExplicatieDinId\"",
         ["Explicatii.VerificaAcoperire: Unitate"] = "\"ID\" = \"InversaDinId\"",
-        ["Invarianti.VerificaFiscal: CotaTva, DeImport, DocumentFiscalId, RegimTva, RolTva, SensTva"] = "\"ID\" = \"InversaDinId\"",
+        ["Invarianti.VerificaFiscal: CotaTva, DeImport, DocumentFiscalId, LocFiscal, PartenerFiscal, RegimTva, RolTva, SensTva"] = "\"ID\" = \"InversaDinId\"",
         ["Invarianti.VerificaPerechi: Cantitate0, CentruCost, CodEconomic, CodFunctional, DocumentId, LinieId, Produs, Proiect, SursaFinantare, UnitateOrganizatorica"]
             = "\"TranzactieId\" = \"TranzactieId\"",
         ["AcoperireInvarianti.PerecheLangaTransformare: DocumentId, LinieId"] = "\"TranzactieId\" = \"TranzactieId\"",
@@ -62,7 +62,7 @@ sealed class ProbeRamuraDeNul : IObserver<DiagnosticListener>, IObserver<KeyValu
         using (var os = s.Deschide()) {
             var postari = os.GetObjectsQuery<Postare>();
             _ = (from a in postari.Where(p => p.ID == Guid.Empty)
-                 join b in postari on new { a.Unitate, a.Partener } equals new { b.Unitate, b.Partener }
+                 join b in postari on new { a.Unitate, a.Repartitor } equals new { b.Unitate, b.Repartitor }
                  select b.ID).TagWith(Martor).ToList();
         }
         Gasire[] gasite; int vazute, martori;

@@ -234,7 +234,7 @@ static class E2eP1Privat {
             s.Check("Rândul 4426 al serviciului: 21; dimensiunile din default-ul polimorf al header-ului [cub]",
                 noteFctCub.Any(p => p.LinieId == linieServiciu.ID && p.Debit && p.Cont == cont4426.ID && p.Valoare == 21m));
             s.Check("D9-A10 FCT: piciorul intern (628, 4426) poartă gestiunea primitoare, piciorul de terț (401) furnizorul",
-                noteFctCub.Where(p => p.Debit).All(p => p.Gestiune == mag1.ID)
+                noteFctCub.Where(p => p.Debit).All(p => p.Repartitor == mag1.ID)
                 && noteFctCub.Where(p => p.Cont == cont401.ID).All(p => p.Repartitor == furnizor.ID));
 
             // --- NIR conex: netul, fără TVA ---

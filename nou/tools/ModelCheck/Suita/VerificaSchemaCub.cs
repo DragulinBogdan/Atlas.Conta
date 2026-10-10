@@ -107,21 +107,34 @@ static class VerificaSchemaCub {
         string[] cheiAsteptate = [
             "Postare_Contabil.Cont→Conturi [FK_Postare_Contabil_Conturi_Cont]",
             "Postare_Contabil.DocumentId→Documente [FK_Postare_Contabil_Documente_DocumentId]",
-            "Postare_Contabil.Partener→Repartitori [FK_Postare_Contabil_Repartitori_Partener]",
+            "Postare_Contabil.LocFiscal→Repartitori [FK_Postare_Contabil_Repartitori_LocFiscal]",
+            "Postare_Contabil.PartenerFiscal→Repartitori [FK_Postare_Contabil_Repartitori_PartenerFiscal]",
             "Postare_Contabil.Produs→Produse [FK_Postare_Contabil_Produse_Produs]",
+            "Postare_Contabil.Repartitor→Repartitori [FK_Postare_Contabil_Repartitori_Repartitor]",
             "Postare_Contabil.TranzactieId→Tranzactie [FK_Postare_Contabil_Tranzactie_TranzactieId]",
             "Postare_Stoc.Cont→Conturi [FK_Postare_Stoc_Conturi_Cont]",
             "Postare_Stoc.DocumentId→Documente [FK_Postare_Stoc_Documente_DocumentId]",
-            "Postare_Stoc.Partener→Repartitori [FK_Postare_Stoc_Repartitori_Partener]",
+            "Postare_Stoc.LocFiscal→Repartitori [FK_Postare_Stoc_Repartitori_LocFiscal]",
+            "Postare_Stoc.PartenerFiscal→Repartitori [FK_Postare_Stoc_Repartitori_PartenerFiscal]",
             "Postare_Stoc.Produs→Produse [FK_Postare_Stoc_Produse_Produs]",
+            "Postare_Stoc.Repartitor→Repartitori [FK_Postare_Stoc_Repartitori_Repartitor]",
             "Postare_Stoc.TranzactieId→Tranzactie [FK_Postare_Stoc_Tranzactie_TranzactieId]",
             "Postare_Stoc.Unitate→Loturi [FK_Postare_Stoc_Loturi_Unitate]",
         ];
-        Console.WriteLine($"     MĂSURAT (STR-SCHEMA-3/{eticheta}): {chei.Count} FK-uri [{string.Join("; ", chei)}].");
+        var forme = Valori($@"
+        SELECT con.conname::text AS ""Value""
+        FROM pg_constraint con
+        JOIN pg_class c ON c.oid = con.conrelid
+        WHERE con.contype = 'c' AND c.relname = 'Postare'
+        ORDER BY 1");
+        Console.WriteLine($"     MĂSURAT (STR-SCHEMA-3/{eticheta}): {chei.Count} FK-uri [{string.Join("; ", chei)}]; "
+            + $"constrângeri de formă [{string.Join(", ", forme)}].");
         s.Check($"STR-SCHEMA-3 ({eticheta}) fiecare FK din S-D2 există pe PARTIȚIA lui (părintele partiționat n-are "
-            + "niciunul), iar setul e ÎNCHIS: fără FK pe `Gestiune` (gestiunile virtuale sunt id-uri fără rând — S-r3), "
-            + "fără FK pe `Unitate` pe Contabil (partida e hash determinist, nu rând) și fără FK pe `Valuta` (B-r6)",
-            chei.OrderBy(x => x, StringComparer.Ordinal).SequenceEqual(cheiAsteptate.OrderBy(x => x, StringComparer.Ordinal)));
+            + "niciunul), iar setul e ÎNCHIS: repartitorul, partenerul fiscal și locul fiscal pe `Repartitori` (C111-D2), "
+            + "fără FK pe `Unitate` pe Contabil (partida e hash determinist, nu rând) și fără FK pe `Valuta` (B-r6); "
+            + "părintele poartă `CK_Postare_Contrapondere` și `CK_Postare_BlocFiscal`",
+            chei.OrderBy(x => x, StringComparer.Ordinal).SequenceEqual(cheiAsteptate.OrderBy(x => x, StringComparer.Ordinal))
+            && forme.Contains("CK_Postare_Contrapondere") && forme.Contains("CK_Postare_BlocFiscal"));
 
         // ---- STR-SCHEMA-4: setul minim de indexi (TR-r3 îl re-măsoară la TR-D8) ----
         var indexi = Valori($@"
@@ -134,7 +147,7 @@ static class VerificaSchemaCub {
             "Postare.IX_Postare_DocumentId",
             "Postare.IX_Postare_Fisa_Cont",
             "Postare_Stoc.IX_Postare_Stoc_Produs_Data",
-            "Postare_Contabil.IX_Postare_Contabil_Partener_Cont_Data",
+            "Postare_Contabil.IX_Postare_Contabil_Repartitor_Cont_Data",
             "Postare_Contabil.IX_Postare_Contabil_Data",
             "Postare_Contabil.IX_Postare_Contabil_PerioadaDeclarare_TipTvaId",
             "Tranzactie.IX_Tranzactie_DocumentId",
@@ -144,14 +157,14 @@ static class VerificaSchemaCub {
         // (Postgres îi refuză pe părinte), deci stau pe partițiile lor — exact S-D2.
         var definitii = Valori($@"
         SELECT indexdef::text AS ""Value"" FROM pg_indexes
-        WHERE indexname IN ('IX_Postare_Stoc_Produs_Data', 'IX_Postare_Contabil_Partener_Cont_Data',
+        WHERE indexname IN ('IX_Postare_Stoc_Produs_Data', 'IX_Postare_Contabil_Repartitor_Cont_Data',
                             'IX_Postare_Contabil_PerioadaDeclarare_TipTvaId', 'IX_Postare_Fisa_Cont')
         ORDER BY 1");
         var formeGresite = new List<string>();
         foreach (var d in definitii) {
-            if (d.Contains("IX_Postare_Stoc_Produs_Data") && !d.Contains("INCLUDE (\"Cantitate\", \"Valoare\", \"Gestiune\", \"Unitate\")"))
+            if (d.Contains("IX_Postare_Stoc_Produs_Data") && !d.Contains("INCLUDE (\"Cantitate\", \"Valoare\", \"Repartitor\", \"Unitate\")"))
                 formeGresite.Add(d);
-            if (d.Contains("IX_Postare_Contabil_Partener_Cont_Data") && !d.Contains("WHERE (\"Partener\" IS NOT NULL)"))
+            if (d.Contains("IX_Postare_Contabil_Repartitor_Cont_Data") && !d.Contains("WHERE (\"Repartitor\" IS NOT NULL)"))
                 formeGresite.Add(d);
             if (d.Contains("IX_Postare_Contabil_PerioadaDeclarare_TipTvaId") && !d.Contains("WHERE (\"PerioadaDeclarare\" IS NOT NULL)"))
                 formeGresite.Add(d);
@@ -161,7 +174,7 @@ static class VerificaSchemaCub {
         Console.WriteLine($"     MĂSURAT (STR-SCHEMA-4/{eticheta}): {indexi.Count} indexi pe cele patru tabele; "
             + $"lipsă [{string.Join(", ", indexiLipsa)}]; formă greșită [{string.Join("; ", formeGresite)}].");
         s.Check($"STR-SCHEMA-4 ({eticheta}) indexii minimi din S-D2 există: PK + `(TranzactieId)`/`(DocumentId)` pe "
-            + "părinte, S2 `(Produs, Data) INCLUDE (…)` pe Stoc, C2 `(Partener, Cont, Data) WHERE …`, C3 `(Data)` și "
+            + "părinte, S2 `(Produs, Data) INCLUDE (…)` pe Stoc, C2 `(Repartitor, Cont, Data) WHERE …`, C3 `(Data)` și "
             + "F1 `(PerioadaDeclarare, TipTvaId) WHERE …` pe Contabil, `Tranzactie(DocumentId)`, `(Cont) WHERE FelUnitate = Fisa` pe părinte",
             indexiLipsa.Count == 0 && definitii.Count == 4 && formeGresite.Count == 0);
 

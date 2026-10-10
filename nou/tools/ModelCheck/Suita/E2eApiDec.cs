@@ -370,7 +370,7 @@ static class E2eApiDec {
                 noteDecCub.Any(p => p.Debit && p.LinieId == linieDeplasare.Id)
                 && noteDecCub.Where(p => p.Debit && p.LinieId == linieDeplasare.Id).All(p => p.CodEconomic == codEcDec.ID));
             s.Check("D9-A10 Api DEC: debitul protocolului poartă gestiunea culeasă MAG1, al deplasării titularul; creditul 542 titularul pe ambele",
-                debitProtocolCub.All(p => p.Gestiune == mag1.ID)
+                debitProtocolCub.All(p => p.Repartitor == mag1.ID)
                 && noteDecCub.Where(p => p.Debit && p.LinieId == linieDeplasare.Id).All(p => p.Repartitor == titular.ID)
                 && noteDecCub.Where(p => p.Credit).All(p => p.Repartitor == titular.ID));
 

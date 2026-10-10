@@ -19,10 +19,10 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
     Guid P(Guid doc, string cont, Guid tert) => N.Unitate.DeschidePartida(Cont(cont), tert, doc, Ianuarie).Id;
     RandScena[] R(FacturaScena d, int i, string debit, string credit, decimal v,
             Guid? ud = null, Guid? uc = null, Guid? pd = null, Guid? pc = null) => [
-        new(Cont(debit), N.Latura.Debit, v, Gestiune: pd == null ? Loc : null,
-            Unitate: ud, Partener: pd, Linie: d.Linii[i].Id, Economic: Economic),
-        new(Cont(credit), N.Latura.Credit, v, Gestiune: pc == null ? Loc : null,
-            Unitate: uc, Partener: pc, Linie: d.Linii[i].Id, Economic: Economic)];
+        new(Cont(debit), N.Latura.Debit, v, Repartitor: pd ?? Loc,
+            Unitate: ud, Linie: d.Linii[i].Id, Economic: Economic),
+        new(Cont(credit), N.Latura.Credit, v, Repartitor: pc ?? Loc,
+            Unitate: uc, Linie: d.Linii[i].Id, Economic: Economic)];
     FacturaScena Fct(decimal v, int zi) {
         var f = Factura(new(An, 1, zi), new LinieFctScena(1, v, Stoc: false)); Opereaza(f.Id); return f;
     }
@@ -236,7 +236,7 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         var facturii = N.Unitate.DeschidePartida(cont, tert, doc, Ianuarie);
         var plata = Guid.NewGuid();
         N.Postare Post(N.Unitate u, Guid cauza, N.Latura l, decimal v) => new(
-            new N.Coordonate { Cont = cont, Latura = l, Partener = tert, Unitate = u, Data = Ianuarie }, 0, 0, v, new(cauza, null));
+            new N.Coordonate { Cont = cont, Latura = l, Repartitor = new N.Repartitor(tert, N.FelRepartitor.Partener), Unitate = u, Data = Ianuarie }, 0, 0, v, new(cauza, null));
         var nominalizata = C.Transferuri.Muta(new(plata, Ianuarie, [Post(facturii, plata, N.Latura.Debit, 40)], [],
             doc, Ianuarie, [Post(facturii, doc, N.Latura.Credit, 100)], [], 40, Ianuarie));
         Verifica("SC-NTC-17", "transfer suplimentar refuzat când nominalizarea nu lasă partidă proprie (101)",

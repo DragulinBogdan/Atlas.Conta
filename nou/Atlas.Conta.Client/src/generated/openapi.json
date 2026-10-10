@@ -26374,14 +26374,6 @@
               "type": "string",
               "format": "uuid"
             }
-          },
-          {
-            "name": "gestiuneId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
           }
         ],
         "responses": {
@@ -26887,14 +26879,6 @@
           },
           {
             "name": "centruCostId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "gestiuneId",
             "in": "query",
             "schema": {
               "type": "string",
@@ -101374,14 +101358,6 @@
             "schema": {
               "type": "boolean",
               "default": false
-            }
-          },
-          {
-            "name": "gestiuneId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
             }
           }
         ],
@@ -303474,14 +303450,6 @@
           },
           {
             "name": "centruCostId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "gestiuneId",
             "in": "query",
             "schema": {
               "type": "string",

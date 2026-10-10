@@ -10,8 +10,8 @@ static class ProbeNirOperand {
         var data = new DateOnly(2016, 1, 5);
         var gest = Guid.NewGuid(); var tip = Guid.NewGuid(); var stoc = Guid.NewGuid(); var furnizor = Guid.NewGuid();
         var doc = new DocumentFapt(Guid.NewGuid(), "NIR", Guid.NewGuid(), data, data, null, false, null,
-            new(Guid.NewGuid(), FelRepartitor.Partener, null, default),
-            new(gest, FelRepartitor.Gestiune, null, default), null, null, null);
+            new(Guid.NewGuid(), N.FelRepartitor.Partener, null, default),
+            new(gest, N.FelRepartitor.Gestiune, null, default), null, null, null);
         var id = Guid.NewGuid(); var produs = Guid.NewGuid();
         var lot = new LotFapt(Guid.NewGuid(), produs, tip, stoc, data, 0m) { GestiuneId = gest, LinieIntrareId = id };
         var linie = new LinieOperand(id, tip, Guid.NewGuid(), NaturaClasa.Stoc, stoc, lot.Id, lot, 6m, 999m, 0m,

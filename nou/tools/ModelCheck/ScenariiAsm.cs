@@ -52,8 +52,8 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         var valoare = q < 0m && fel == N.FelTranzactie.Transfer ? -v : v;
         return [new(Cont(tip ?? Stoc), latura, valoare, q, Magazie, l.Lot, l.Produs,
                 Linie: l.Id, Spatiu: N.Spatiu.Stoc),
-            new(Cont(tip ?? Stoc), latura, 0m, -q, N.GestiuniVirtuale.Transformare,
-                Produs: l.Produs, Linie: l.Id)];
+            new(Cont(tip ?? Stoc), latura, 0m, -q, Produs: l.Produs, Linie: l.Id,
+                Contrapondere: N.Contrapondere.Transformare)];
     }
     static RandScena[] Inverse(params RandScena[] randuri) =>
         [.. randuri.Select(r => r with { Cantitate = -r.Cantitate, Valoare = -r.Valoare })];
@@ -98,7 +98,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         Rapoarte(mixt.Doc, false);
         Verifica("SC-CIT-04", "ASM mixt: două postări economice de 40, fără Transfer/contrapondere", CuSpatiu(os => {
             var randuri = C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == mixt.Doc.Id).ToList();
-            return randuri.Count == 2 && randuri.All(p => p.Valoare == 40 && p.Gestiune == Magazie)
+            return randuri.Count == 2 && randuri.All(p => p.Valoare == 40 && p.Repartitor == Magazie)
                 && randuri.Single(p => p.Latura == N.Latura.Debit).Cont == Cont(Fabricat)
                 && randuri.Single(p => p.Latura == N.Latura.Credit).Cont == Cont(Materie);
         }));
@@ -135,7 +135,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica("SC-CIT-04", "storno mixt: două inverse economice −40; transferul rămâne exclus", CuSpatiu(os => {
             var randuri = C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == mixt.Doc.Id).ToList();
             return randuri.Count == 4 && randuri.Count(p => p.Valoare == -40) == 2
-                && randuri.All(p => p.Gestiune == Magazie);
+                && randuri.All(p => p.Repartitor == Magazie);
         }));
         TransferPeCititori("SC-CIT-102", "Loturi.Postari", mixt.Transfer.Length, mixt.Transfer.Length,
             2 * mixt.Transfer.Count(r => r.Unitate != null), mixt.Doc.Id);
@@ -370,8 +370,8 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
             .. Rand(asm, 2, 4, 160, N.FelTranzactie.Operare, "371")];
         Postari("SC-X-09", asm.Id, N.FelTranzactie.Operare, Ianuarie, a);
         var lot = asm.Linii[2]; var dsc = Iesire(false, (lot, 1)); Opereaza(dsc.Id);
-        RandScena[] d = [new(Cont("607"), N.Latura.Debit, 40, 1, N.GestiuniVirtuale.Client,
-                Produs: lot.Produs, Partener: Client, Linie: dsc.Linii[0].Id),
+        RandScena[] d = [new(Cont("607"), N.Latura.Debit, 40, 1, Client,
+                Produs: lot.Produs, Linie: dsc.Linii[0].Id, Contrapondere: N.Contrapondere.Tert),
             new(Cont("371"), N.Latura.Credit, 40, -1, Magazie, lot.Lot, lot.Produs,
                 Linie: dsc.Linii[0].Id, Spatiu: N.Spatiu.Stoc)];
         Postari("SC-X-09", dsc.Id, N.FelTranzactie.Operare, Ianuarie, d);
@@ -386,8 +386,8 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         Opereaza(rlf.Id); var partida = Partida(rlf.Id, "401")!.Value;
         RandScena[] r = [new(Cont(Stoc), N.Latura.Debit, -50, -1, Magazie, sursa.Lot, sursa.Produs,
                 Linie: rlf.Linii[0].Id, Spatiu: N.Spatiu.Stoc),
-            new(Cont("401"), N.Latura.Credit, -50, 1, N.GestiuniVirtuale.Furnizor, partida,
-                sursa.Produs, Furnizor, Linie: rlf.Linii[0].Id)];
+            new(Cont("401"), N.Latura.Credit, -50, 1, Furnizor, partida,
+                sursa.Produs, Linie: rlf.Linii[0].Id, Contrapondere: N.Contrapondere.Tert)];
         Postari("SC-X-09", rlf.Id, N.FelTranzactie.Operare, Ianuarie, r);
         Sold("SC-X-09", sursa, 1, 50); Sold("SC-X-09", lot, 3, 120); SoldPartida("SC-X-09", partida, Ianuarie, 50);
         Verifica("SC-X-09", "returul componentei păstrează ASM și DSC", inainteAsm == Amprenta(asm.Id) && inainteDsc == Amprenta(dsc.Id));

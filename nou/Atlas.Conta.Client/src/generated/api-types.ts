@@ -20353,7 +20353,6 @@ export interface operations {
                 unitateId?: string;
                 proiectId?: string;
                 centruCostId?: string;
-                gestiuneId?: string;
             };
             header?: never;
             path?: never;
@@ -20473,7 +20472,6 @@ export interface operations {
                 unitateId?: string;
                 proiectId?: string;
                 centruCostId?: string;
-                gestiuneId?: string;
             };
             header?: never;
             path?: never;
@@ -38522,7 +38520,6 @@ export interface operations {
                 proiectId?: string;
                 centruCostId?: string;
                 repartitorNul?: boolean;
-                gestiuneId?: string;
             };
             header?: never;
             path?: never;
@@ -90562,7 +90559,6 @@ export interface operations {
                 unitateId?: string;
                 proiectId?: string;
                 centruCostId?: string;
-                gestiuneId?: string;
             };
             header?: never;
             path?: never;

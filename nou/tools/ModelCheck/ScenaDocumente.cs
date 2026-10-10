@@ -11,10 +11,10 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 record RandScena(Guid Cont, N.Latura Latura, decimal Valoare, decimal Cantitate = 0,
-    Guid? Gestiune = null, Guid? Unitate = null, Guid? Produs = null, Guid? Partener = null,
+    Guid? Repartitor = null, Guid? Unitate = null, Guid? Produs = null, Guid? PartenerFiscal = null,
     Guid? Linie = null, Guid? Tva = null, N.RolTva? Rol = null, int? Perioada = null,
     N.SensTva? Sens = null, N.Spatiu Spatiu = N.Spatiu.Contabil, Guid? Economic = null,
-    N.Carte Carte = N.Carte.Contabil);
+    N.Carte Carte = N.Carte.Contabil, N.Contrapondere? Contrapondere = null, Guid? LocFiscal = null);
 
 record LinieFctScena(decimal Cantitate, decimal Pret, string Tva = null, bool Stoc = true,
     decimal TaxaCuleasa = 0, string Tip = null);
@@ -312,8 +312,8 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected void TransferPartida(string id, Guid stingator, Guid stins, string cont,
             Guid partener, N.Latura latura, decimal suma, DateOnly data) {
         Postari(id, stingator, N.FelTranzactie.Transfer, data,
-            new(Cont(cont), latura, -suma, Unitate: Partida(stingator, cont, partener), Partener: partener),
-            new(Cont(cont), latura, suma, Unitate: Partida(stins, cont, partener), Partener: partener));
+            new(Cont(cont), latura, -suma, Repartitor: partener, Unitate: Partida(stingator, cont, partener)),
+            new(Cont(cont), latura, suma, Repartitor: partener, Unitate: Partida(stins, cont, partener)));
     }
 
     protected void TransferPeCititori(string id, string intrare, int transferuri, int inverse, int peIntrare, params Guid[] documente) {
@@ -377,8 +377,8 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         var tranzactii = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.DocumentId == doc && t.Fel == fel
             && (fel != N.FelTranzactie.Transfer || t.Data == data)).ToList();
         var actual = randuri.Select(p => new RandScena(p.Cont, p.Latura, p.Valoare, p.Cantitate,
-            p.Gestiune, p.Unitate, p.Produs, p.Partener, p.LinieId, p.TipTvaId, p.RolTva,
-            p.PerioadaDeclarare, p.SensTva, p.Spatiu, p.CodEconomic, p.Carte)).ToList();
+            p.Repartitor, p.Unitate, p.Produs, p.PartenerFiscal, p.LinieId, p.TipTvaId, p.RolTva,
+            p.PerioadaDeclarare, p.SensTva, p.Spatiu, p.CodEconomic, p.Carte, p.Contrapondere, p.LocFiscal)).ToList();
         var egale = actual.Count == asteptate.Length && asteptate.All(a =>
             actual.Count(r => r == a) == asteptate.Count(r => r == a));
         var ok = egale && tranzactii.Count == 1 && tranzactii[0].Data == data
@@ -411,15 +411,15 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected string Amprenta(Guid doc) => CuSpatiu(os => string.Join("\n", os.GetObjectsQuery<C.Postare>()
         .Where(p => p.DocumentId == doc).OrderBy(p => p.ID).AsEnumerable().Select(p =>
             System.Text.Json.JsonSerializer.Serialize(new { p.ID, p.TranzactieId, p.LinieId, p.Data,
-                p.Cont, p.Latura, p.Gestiune, p.Unitate, p.Produs, p.Partener, p.TipTvaId,
-                p.SensTva, p.RolTva, p.PerioadaDeclarare, p.Cantitate, p.Valoare, p.ValoareValuta,
+                p.Cont, p.Latura, p.Repartitor, p.Contrapondere, p.Unitate, p.Produs, p.TipTvaId,
+                p.SensTva, p.RolTva, p.PartenerFiscal, p.LocFiscal, p.PerioadaDeclarare, p.Cantitate, p.Valoare, p.ValoareValuta,
                 p.Spatiu, p.Carte, p.Valuta, p.UnitateDeschisa, p.Atribuit, p.CodEconomic,
                 p.FelUnitate, p.SuportId, p.SuportSpatiu, p.InversaDinId, p.InversaDinSpatiu,
                 p.CodFunctional, p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost }))));
 
     protected void SoldLot(string id, Guid lot, Guid gestiune, DateOnly data, decimal q, decimal v) {
         var sold = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == lot
-            && p.Gestiune == gestiune && p.Data <= data && p.Carte == N.Carte.Contabil).ToList());
+            && p.Repartitor == gestiune && p.Data <= data && p.Carte == N.Carte.Contabil).ToList());
         Verifica(id, $"lot/gestiune la {data}: {q}/{v}", sold.Sum(p => p.Cantitate) == q
             && sold.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) == v);
     }

@@ -1,6 +1,6 @@
 # C111 — coordonatele postării: contract
 
-**Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q12
+**Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q13
 (2026-10-10). Pasul 0 e făcut. Review-ul advers Codex al contractului
 (C111-R1…R16) e reconciliat mai jos, în trei runde; amendamentul 1 e retras. Pașii 1 și 1b
 sunt făcuți. Codex a închis review-ul de contract (2026-10-10,
@@ -241,7 +241,10 @@ Urmările:
 - `repartitorId` filtrează repartitorul de sold, de orice fel; `gestiuneId`
   iese din balanță, fișă și soldul pe parteneri; `repartitorNul` înseamnă fără
   niciun repartitor;
-- „Sold parteneri” arată numai repartitori externi (partener, angajat);
+- „Sold parteneri” arată pe rând propriu numai repartitorii externi (partener,
+  angajat). Restul contului, adică sumele fără repartitor, pe repartitor
+  intern sau pe cont propriu, intră într-un singur rând „fără terț”, ca
+  raportul să se închidă cu balanța contului (C111-Q13);
 - snapshot-ul are aceeași axă, iar citirea dinamică și cea din snapshot dau
   aceleași cifre.
 
@@ -404,6 +407,7 @@ pasul 2, după regula de oprire 3.
 | C111-Q10 | De unde se ia locul fiscal: din politica de TVA sau din laturile documentului? | **din laturile tipate ale documentului** (S12); `Fiscal.GestiuneaInterna` iese |
 | C111-Q11 | Decontul cu TVA și cu terț pe linie, pe cont cu partide, refuzat azi, trece după S10? | **trece**; excepția e numită în D2 |
 | C111-Q12 | Poziția fără fișă păstrează partenerul în cheie, citit prin suport, sau îl pierde? | **îl pierde** (S14); furnizorul rămâne recuperabil prin suport și prin documentul de achiziție |
+| C111-Q13 | „Sold parteneri” numai cu terți lasă pe dinafară sumele fără terț; raportul se mai închide cu balanța? | **un rând „fără terț” pe cont**, cu tot ce nu e pe un repartitor extern; precizează C111-Q6 |
 
 ## Review-ul advers Codex al contractului (2026-10-10)
 

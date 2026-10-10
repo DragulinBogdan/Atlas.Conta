@@ -172,7 +172,7 @@ static class E2eDecont {
                 && noteCub.Where(p => p.LinieId == linieDeplasare.ID && p.Debit).All(p => p.CodEconomic == codEc.ID));
             s.Check("D9-A10 DEC: debitul deplasării poartă titularul (implicit), al protocolului gestiunea culeasă MAG1; creditul 542 titularul pe ambele",
                 noteCub.Where(p => p.LinieId == linieDeplasare.ID && p.Debit).All(p => p.Repartitor == angajat.ID)
-                && protocolCub.Where(p => p.Debit).All(p => p.Gestiune == mag1.ID)
+                && protocolCub.Where(p => p.Debit).All(p => p.Repartitor == mag1.ID)
                 && noteCub.Where(p => p.Credit).All(p => p.Repartitor == angajat.ID));
 
             // --- Tip fără cont și fără postare explicită = refuz clar; fallback 542 ---

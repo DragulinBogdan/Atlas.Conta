@@ -25,22 +25,26 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         os.CommitChanges(); return new FacturaScena(d.ID, linii.ToArray());
     });
     RandScena[] Simple(FacturaScena d, decimal suma, Guid? linie = null) => [
-        new(Cont(Serviciu), N.Latura.Debit, suma, Partener: titular, Linie: linie ?? d.Linii[0].Id, Economic: Economic),
-        new(Cont(Avans), N.Latura.Credit, suma, Unitate: N.Unitate.DeschidePartida(Cont(Avans), titular, d.Id, Ianuarie).Id,
-            Partener: titular, Linie: linie ?? d.Linii[0].Id, Economic: Economic)];
+        new(Cont(Serviciu), N.Latura.Debit, suma, Repartitor: titular, Linie: linie ?? d.Linii[0].Id, Economic: Economic),
+        new(Cont(Avans), N.Latura.Credit, suma, Repartitor: titular,
+            Unitate: N.Unitate.DeschidePartida(Cont(Avans), titular, d.Id, Ianuarie).Id,
+            Linie: linie ?? d.Linii[0].Id, Economic: Economic)];
     RandScena[] Fiscale(FacturaScena d, string cod, decimal net, decimal taxa) {
         var t = Tva(cod); var l = d.Linii[0].Id;
-        var baza = new RandScena(Cont(Serviciu), N.Latura.Debit, net, Partener: titular,
-            Linie: l, Tva: t, Rol: N.RolTva.Baza, Sens: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic);
-        var credit = new RandScena(Cont(Avans), N.Latura.Credit, net,
-            Unitate: N.Unitate.DeschidePartida(Cont(Avans), titular, d.Id, Ianuarie).Id, Partener: titular, Linie: l, Economic: Economic);
+        var baza = new RandScena(Cont(Serviciu), N.Latura.Debit, net, Repartitor: titular, PartenerFiscal: titular,
+            Linie: l, Tva: t, Rol: N.RolTva.Baza, Sens: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic,
+            LocFiscal: Loc);
+        var credit = new RandScena(Cont(Avans), N.Latura.Credit, net, Repartitor: titular,
+            Unitate: N.Unitate.DeschidePartida(Cont(Avans), titular, d.Id, Ianuarie).Id, Linie: l, Economic: Economic);
         if (cod == "NED21") return [baza, credit, baza with { Valoare = taxa, Rol = N.RolTva.Taxa }, credit with { Valoare = taxa }];
-        var tax = new RandScena(Cont("4426"), N.Latura.Debit, taxa, Gestiune: Loc, Partener: titular,
-            Linie: l, Tva: t, Rol: N.RolTva.Taxa, Sens: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic);
+        var tax = new RandScena(Cont("4426"), N.Latura.Debit, taxa, Repartitor: Loc, PartenerFiscal: titular,
+            Linie: l, Tva: t, Rol: N.RolTva.Taxa, Sens: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic,
+            LocFiscal: Loc);
         return [baza, credit, tax, credit with { Cont = cod == "TI21" ? Cont("4427") : Cont(Avans),
             Unitate = cod == "TI21" ? null : credit.Unitate, Valoare = taxa,
             Tva = cod == "TI21" ? t : null, Rol = cod == "TI21" ? N.RolTva.Autocolectare : null,
-            Sens = cod == "TI21" ? N.SensTva.Achizitie : null, Perioada = cod == "TI21" ? An * 100 + 1 : null }];
+            Sens = cod == "TI21" ? N.SensTva.Achizitie : null, Perioada = cod == "TI21" ? An * 100 + 1 : null,
+            PartenerFiscal = cod == "TI21" ? titular : null, LocFiscal = cod == "TI21" ? Loc : null }];
     }
     static RandScena[] Inverse(RandScena[] r, int? perioada = null) => [.. r.Select(p => p with {
         Valoare = -p.Valoare, Perioada = p.Perioada != null && perioada != null ? perioada : p.Perioada })];
@@ -145,8 +149,8 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void Configurare() {
         var tip = Guid.NewGuid(); var linie = Guid.NewGuid();
-        var titularFapt = new RepartitorFapt(titular, FelRepartitor.Angajat, Cont(Avans), default);
-        var locFapt = new RepartitorFapt(Loc, FelRepartitor.UnitateInterna, null, CalitateRepartitor.LocConsum);
+        var titularFapt = new RepartitorFapt(titular, N.FelRepartitor.Angajat, Cont(Avans), default);
+        var locFapt = new RepartitorFapt(Loc, N.FelRepartitor.UnitateInterna, null, CalitateRepartitor.LocConsum);
         var operand = new Operand(
             new(Guid.NewGuid(), "DEC", Guid.NewGuid(), Ianuarie, Ianuarie, null, false, null,
                 titularFapt, locFapt, null, null, null),
@@ -182,8 +186,8 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         Comanda(os => { os.GetObjectByKey<Document>(p.Id).PrimitorId = titular; os.CommitChanges(); });
         Opereaza(p.Id); var imp = Imperecheaza(p.Id, d.Id, 40, Ianuarie);
         Postari("SC-DEC-07", p.Id, N.FelTranzactie.Transfer, Ianuarie,
-            new(Cont(Avans), N.Latura.Debit, -40, Unitate: P(p.Id), Partener: titular),
-            new(Cont(Avans), N.Latura.Debit, 40, Unitate: P(d.Id), Partener: titular));
+            new(Cont(Avans), N.Latura.Debit, -40, Repartitor: titular, Unitate: P(p.Id)),
+            new(Cont(Avans), N.Latura.Debit, 40, Repartitor: titular, Unitate: P(d.Id)));
         SoldPartida("SC-DEC-07", P(d.Id), Ianuarie, -60);
         var inainte = Amprenta(d.Id);
         Refuza("SC-DEC-07", () => Storneaza(d.Id, Ianuarie), "stinger");
@@ -201,8 +205,8 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         Comanda(os => { os.GetObjectByKey<Document>(restituire.Id).PredatorId = titular; os.CommitChanges(); });
         Opereaza(restituire.Id); Imperecheaza(restituire.Id, avans.Id, 50, Ianuarie);
         Postari("SC-DEC-17", restituire.Id, N.FelTranzactie.Transfer, Ianuarie,
-            new(Cont(Avans), N.Latura.Credit, -50, Unitate: P(restituire.Id), Partener: titular),
-            new(Cont(Avans), N.Latura.Credit, 50, Unitate: P(avans.Id), Partener: titular));
+            new(Cont(Avans), N.Latura.Credit, -50, Repartitor: titular, Unitate: P(restituire.Id)),
+            new(Cont(Avans), N.Latura.Credit, 50, Repartitor: titular, Unitate: P(avans.Id)));
         SoldPartida("SC-DEC-17", P(avans.Id), Ianuarie, 0);
         SoldPartida("SC-DEC-17", P(restituire.Id), Ianuarie, 0);
     }
@@ -212,7 +216,7 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         Comanda(os => { os.GetObjectByKey<DecontDetaliu>(d.Linii[1].Id).RepartitorCreditId = Furnizor; os.CommitChanges(); });
         Opereaza(d.Id);
         var a = Simple(d, 100, d.Linii[1].Id);
-        a[1] = a[1] with { Partener = Furnizor, Unitate = P(d.Id, Furnizor) };
+        a[1] = a[1] with { Repartitor = Furnizor, Unitate = P(d.Id, Furnizor) };
         Postari("SC-DEC-02", d.Id, N.FelTranzactie.Operare, Ianuarie, [.. Simple(d, 100), .. a]);
         SoldPartida("SC-DEC-02", P(d.Id), Ianuarie, -100);
         SoldPartida("SC-DEC-02", P(d.Id, Furnizor), Ianuarie, -100);

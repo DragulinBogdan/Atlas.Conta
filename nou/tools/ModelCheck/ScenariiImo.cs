@@ -307,7 +307,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         var b = Amo(3); Opereaza(b);
         Verifica("SC-IMO-20", "locul vechi rămâne înghețat, luna nouă folosește locul nou", Amprenta(a) == amprenta
             && CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == b)
-                .All(p => p.Gestiune == Destinatie)));
+                .All(p => p.Repartitor == Destinatie)));
         Sold("SC-IMO-20", f, 1200, 200, 1200, 200);
     }
     void Perf() {

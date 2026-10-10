@@ -314,10 +314,13 @@ public static class ContabilProiectii {
         if (proiectId is Guid vPr) atomi = atomi.Where(a => a.ProiectId == vPr);
         if (centruCostId is Guid vCc) atomi = atomi.Where(a => a.CentruCostId == vCc);
 
-        // C111-Q6: numai terții.
+        // C111-Q13: terții pe rând propriu; restul contului într-un singur rând fără terț.
         var externi = Cub.Citiri.Contabil.Externi(os);
         var agregate = atomi
-            .Where(a => a.RepartitorId != null && externi.Contains(a.RepartitorId.Value))
+            .Select(a => new {
+                a.ContId, a.Debit, a.Credit,
+                RepartitorId = a.RepartitorId != null && externi.Contains(a.RepartitorId.Value) ? a.RepartitorId : null,
+            })
             .GroupBy(a => new { a.ContId, a.RepartitorId })
             .Select(g => new {
                 g.Key.ContId,

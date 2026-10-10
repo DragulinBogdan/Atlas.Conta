@@ -8,21 +8,22 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 record PostareScena(Guid TranzactieId, Guid? DocumentId, Guid? LinieId, N.FelTranzactie Fel, DateOnly Data, Guid Cont, N.Latura Latura,
-    decimal Valoare, decimal Cantitate, Guid? Partener, Guid? Gestiune, Guid? Unitate, Guid? Produs,
-    Guid? CodEconomic, Guid? CodFunctional, Guid? SursaFinantare, Guid? Proiect, Guid? CentruCost, Guid? TipTvaId) {
+    decimal Valoare, decimal Cantitate, Guid? Repartitor, N.Contrapondere? Contrapondere, Guid? Unitate, Guid? Produs,
+    Guid? CodEconomic, Guid? CodFunctional, Guid? SursaFinantare, Guid? Proiect, Guid? CentruCost, Guid? TipTvaId,
+    Guid? PartenerFiscal, Guid? LocFiscal) {
     public bool Storno => Fel == N.FelTranzactie.Storno;
     public bool Debit => Latura == N.Latura.Debit;
     public bool Credit => Latura == N.Latura.Credit;
     public decimal Semnata => Latura == N.Latura.Debit ? Valoare : -Valoare;
-    public Guid? Repartitor => Contabil.Repartitor(Partener, Gestiune);
 }
 
 /// <summary>Intrările comune ale cubului, restrânse la documentele unei scene.</summary>
 static class CubScena {
     static List<PostareScena> Citeste(IQueryable<C.Postare> postari) => postari
         .Select(p => new PostareScena(p.TranzactieId, p.DocumentId, p.LinieId, p.Tranzactie.Fel, p.Data, p.Cont, p.Latura,
-            p.Valoare, p.Cantitate, p.Partener, p.Gestiune, p.Unitate, p.Produs,
-            p.CodEconomic, p.CodFunctional, p.SursaFinantare, p.Proiect, p.CentruCost, p.TipTvaId)).ToList();
+            p.Valoare, p.Cantitate, p.Repartitor, p.Contrapondere, p.Unitate, p.Produs,
+            p.CodEconomic, p.CodFunctional, p.SursaFinantare, p.Proiect, p.CentruCost, p.TipTvaId,
+            p.PartenerFiscal, p.LocFiscal)).ToList();
 
     public static List<PostareScena> Note(IObjectSpace os, params Guid[] documente) =>
         Citeste(Contabil.Postari(os).Where(p => p.DocumentId != null && documente.Contains(p.DocumentId.Value)));
@@ -80,7 +81,7 @@ static class CubScena {
     /// <summary>Toate cheile (lot, gestiune, cont) ale loturilor date, inclusiv cele golite.</summary>
     public static List<SoldLot> Chei(IObjectSpace os, IReadOnlyCollection<Guid> loturi) =>
         Loturi.Postari(os).Where(p => loturi.Contains(p.Unitate.Value))
-            .Select(p => new { Lot = p.Unitate.Value, Gestiune = p.Gestiune.Value, p.Cont, p.Latura, p.Valoare, p.Cantitate }).ToList()
+            .Select(p => new { Lot = p.Unitate.Value, Gestiune = p.Repartitor.Value, p.Cont, p.Latura, p.Valoare, p.Cantitate }).ToList()
             .GroupBy(p => new { p.Lot, p.Gestiune, p.Cont })
             .Select(g => new SoldLot { LotId = g.Key.Lot, GestiuneId = g.Key.Gestiune, ContId = g.Key.Cont,
                 Cantitate = g.Sum(p => p.Cantitate),
@@ -89,11 +90,11 @@ static class CubScena {
     /// <summary>Refuzul gardului de sold al cubului pentru o mișcare propusă pe lot, sau null dacă trece.</summary>
     public static string RefuzSold(IObjectSpace os, Guid lot, Guid gestiune, Guid produs, Guid cont, DateOnly data, decimal cantitate) {
         try {
-            Loturi.VerificaSoldIntermediar(os, [C.Randuri.Citeste(new C.Postare {
+            Loturi.VerificaSoldIntermediar(os, C.Randuri.Citeste(os, [new C.Postare {
                 DocumentId = Guid.NewGuid(), Cont = cont, Latura = cantitate < 0m ? N.Latura.Credit : N.Latura.Debit, Data = data,
-                Gestiune = gestiune, Produs = produs, Unitate = lot, FelUnitate = N.FelUnitate.Lot, UnitateDeschisa = data,
+                Repartitor = gestiune, Produs = produs, Unitate = lot, FelUnitate = N.FelUnitate.Lot, UnitateDeschisa = data,
                 Carte = N.Carte.Contabil, Cantitate = cantitate,
-            })]);
+            }]));
             return null;
         }
         catch (OperareException e) { return e.Message; }
@@ -105,10 +106,10 @@ static class CubScena {
         return Imobilizari.Randuri(os, ids, DateOnly.MaxValue).Where(r => document == null || r.DocumentId == document).ToList();
     }
 
-    /// <summary>Locul fișei pe postările unui document: gestiunile distincte ale postărilor ei.</summary>
+    /// <summary>Locul fișei pe postările unui document: repartitorii distincți ai postărilor ei.</summary>
     public static List<Guid> LocFisa(IObjectSpace os, Guid fisa, Guid document) =>
         os.GetObjectsQuery<C.Postare>().Where(p => p.FelUnitate == N.FelUnitate.Fisa && p.Unitate == fisa
-            && p.DocumentId == document && p.Gestiune != null).Select(p => p.Gestiune.Value).Distinct().ToList();
+            && p.DocumentId == document && p.Repartitor != null).Select(p => p.Repartitor.Value).Distinct().ToList();
 
     /// <summary>Soldul debitor al contului (debit − credit) până la dată, pe toată baza sau pe documentele date.</summary>
     public static decimal SoldCont(IObjectSpace os, Guid cont, DateOnly? panaLa = null, IReadOnlyCollection<Guid> documente = null) {

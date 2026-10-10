@@ -501,7 +501,7 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
     // Sursele poziției: postările pe lot ale cheii ei, până la capătul lunii (S3-RV2).
     (int Numar, string Sha) Surse(LegaturaPozitie z, DateOnly capat) {
         var ids = CuSpatiu(os => Loturi.Postari(os).Where(x => x.Unitate == z.Lot && x.Cont == z.Cont && x.Produs == z.Produs
-            && x.Gestiune == z.Gestiune && x.Data <= capat).Select(x => new { x.Spatiu, x.ID }).ToList());
+            && x.Repartitor == z.Gestiune && x.Data <= capat).Select(x => new { x.Spatiu, x.ID }).ToList());
         var text = string.Join('\n', ids.OrderBy(x => x.Spatiu).ThenBy(x => x.ID).Select(x => $"{x.Spatiu}/{x.ID:N}"));
         return (ids.Count, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text))));
     }
@@ -526,7 +526,7 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
         var miscari = p.Miscari ?? [];
         var ids = miscari.SelectMany(m => m.Postari).Select(x => x.Id).ToList();
         var cub = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(x => ids.Contains(x.ID)).Select(x => new {
-            x.ID, x.Spatiu, x.TranzactieId, x.Tranzactie.Fel, x.Tranzactie.DocumentId, x.Cont, x.Unitate, x.Gestiune, x.Produs, x.Cantitate,
+            x.ID, x.Spatiu, x.TranzactieId, x.Tranzactie.Fel, x.Tranzactie.DocumentId, x.Cont, x.Unitate, Gestiune = x.Repartitor, x.Produs, x.Cantitate,
             Valoare = x.Latura == N.Latura.Debit ? x.Valoare : -x.Valoare }).ToList());
         var simboluri = CuSpatiu(os => os.GetObjectsQuery<Cont>().ToDictionary(k => k.ID, k => SaftReguli.SimbolSaft(k.Simbol)));
         var gestiuni = CuSpatiu(os => os.GetObjectsQuery<Repartitor>().ToDictionary(r => r.ID, r => r.Cod));
@@ -570,7 +570,7 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
             var gasite = pozitiiXml.Where(e => e.Cheie == (z.WarehouseID, z.ProductCode, z.StockAccountNo, z.ProductType)).ToList();
             if (gasite.Count != 1 || Surse(z, capat) != (z.Surse, z.ShaSurse)) return false;
             var sursa = CuSpatiu(os => Loturi.Postari(os).Where(x => x.Unitate == z.Lot && x.Cont == z.Cont && x.Produs == z.Produs
-                && x.Gestiune == z.Gestiune && x.Data <= capat).Select(x => new { x.Data, x.Tranzactie.Fel, x.Cantitate,
+                && x.Repartitor == z.Gestiune && x.Data <= capat).Select(x => new { x.Data, x.Tranzactie.Fel, x.Cantitate,
                     Valoare = x.Latura == N.Latura.Debit ? x.Valoare : -x.Valoare }).ToList());
             var initiale = sursa.Where(x => x.Data < start || x.Fel == N.FelTranzactie.Deschidere).ToList();
             return z.StockAccountNo == z.Lot.ToString("N") && gestiuni[z.Gestiune] == z.WarehouseID

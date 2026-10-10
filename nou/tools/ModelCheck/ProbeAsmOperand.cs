@@ -22,7 +22,7 @@ static class ProbeAsmOperand {
                 };
             }
             var data = new DateOnly(2014, 1, 5);
-            var repartitor = new RepartitorFapt(gest, FelRepartitor.Gestiune, null, default);
+            var repartitor = new RepartitorFapt(gest, N.FelRepartitor.Gestiune, null, default);
             var doc = new DocumentFapt(Guid.NewGuid(), "ASM", Guid.NewGuid(), data, data, null,
                 false, null, repartitor, repartitor, null, null, null);
             Operand Operand(params LinieOperand[] linii) => new(doc, linii, [], [], null,

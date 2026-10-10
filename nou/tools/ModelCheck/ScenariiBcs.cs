@@ -155,22 +155,23 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
             var linie = linii.Single(l => l.LotId == lot && l.Cantitate == Math.Abs(cantitate));
             bool Comun(C.Postare p) => p.Spatiu == N.Spatiu.Stoc && p.Carte == N.Carte.Contabil
                 && p.Data == data && p.Unitate == lot && p.Produs == produs && p.LinieId == linie.ID
-                && p.Partener == null && p.TipTvaId == null && p.PerioadaDeclarare == null
+                && p.Contrapondere == null && p.PartenerFiscal == null && p.LocFiscal == null
+                && p.TipTvaId == null && p.PerioadaDeclarare == null
                 && p.Valuta == null && p.ValoareValuta == 0m && p.Valoare == valoare;
             corecte &= randuri.Count(p => Comun(p) && p.Cont == debit && p.Latura == N.Latura.Debit
-                && p.Gestiune == loc && p.Cantitate == cantitate) == 1;
+                && p.Repartitor == loc && p.Cantitate == cantitate) == 1;
             corecte &= randuri.Count(p => Comun(p) && p.Cont == credit && p.Latura == N.Latura.Credit
-                && p.Gestiune == magazie && p.Cantitate == -cantitate) == 1;
+                && p.Repartitor == magazie && p.Cantitate == -cantitate) == 1;
         }
         Verifica(id, $"{fel}: exact {asteptate.Length * 2} postări, conturi/laturi/unități/date/măsuri așteptate", corecte);
         if (!corecte) foreach (var p in randuri)
-            Console.WriteLine($"     ACTUAL {p.Spatiu}/{p.Carte} {p.Cont}/{p.Latura} unitate={p.Unitate} gestiune={p.Gestiune} q={p.Cantitate} v={p.Valoare} vv={p.ValoareValuta}");
+            Console.WriteLine($"     ACTUAL {p.Spatiu}/{p.Carte} {p.Cont}/{p.Latura} unitate={p.Unitate} repartitor={p.Repartitor} q={p.Cantitate} v={p.Valoare} vv={p.ValoareValuta}");
     }
 
     void Sold(string id, Guid lot, DateOnly data, decimal cantitate, decimal valoare) {
         using var os = deschide();
         var randuri = os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == lot && p.Cont == credit
-            && p.Gestiune == magazie && p.Carte == N.Carte.Contabil && p.Data <= data).ToList();
+            && p.Repartitor == magazie && p.Carte == N.Carte.Contabil && p.Data <= data).ToList();
         var q = randuri.Sum(p => p.Cantitate);
         var v = randuri.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare);
         Verifica(id, $"sold cub la {data}: {cantitate}/{valoare} (obținut {q}/{v})", q == cantitate && v == valoare);

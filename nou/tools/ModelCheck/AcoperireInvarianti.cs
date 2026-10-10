@@ -101,11 +101,11 @@ static partial class AcoperireInvarianti {
 
     static bool PartidaFaraPartener(IObjectSpace os, DbContext db) {
         var tinta = os.GetObjectsQuery<C.Postare>().Where(C.Citiri.Transformare.FaraContrapondere)
-            .Where(p => p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida && p.Partener != null)
+            .Where(p => p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida && p.Repartitor != null)
             .Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
         if (tinta == null) return false;
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
-            .ExecuteUpdate(s => s.SetProperty(p => p.Partener, (Guid?)null));
+            .ExecuteUpdate(s => s.SetProperty(p => p.Repartitor, (Guid?)null));
         return true;
     }
 
@@ -281,7 +281,7 @@ static partial class AcoperireInvarianti {
     static bool InversaPeLotDiferita(IObjectSpace os, DbContext db) {
         var tinta = os.GetObjectsQuery<C.Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Storno && p.FelUnitate == N.FelUnitate.Lot)
-            .Select(p => new { p.ID, p.Spatiu, p.DocumentId, p.Unitate, p.Gestiune }).FirstOrDefault();
+            .Select(p => new { p.ID, p.Spatiu }).FirstOrDefault();
         if (tinta == null) return false;
         db.Set<C.Postare>().Where(p => p.ID == tinta.ID && p.Spatiu == tinta.Spatiu)
             .ExecuteUpdate(s => s.SetProperty(p => p.Cantitate, p => p.Cantitate + 1m));

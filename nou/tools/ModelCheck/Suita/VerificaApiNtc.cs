@@ -403,8 +403,8 @@ static class VerificaApiNtc {
         s.Check("D9-A10 Api NTC: repartitorul cules al liniei pe capătul lui (X / X; Y / implicitul primitor); linia fără el ia implicitul antetului",
             noteCub.Where(p => p.LinieId == lCompensare.Id).All(p => p.Repartitor == partenerX.ID)
             && noteCub.Single(p => p.Debit && p.LinieId == lPreluare.Id).Repartitor == partenerY.ID
-            && noteCub.Single(p => p.Credit && p.LinieId == lPreluare.Id).Gestiune == unitate.ID
-            && noteCub.Single(p => p.Debit && p.LinieId == lMinus.Id).Gestiune == unitate.ID);
+            && noteCub.Single(p => p.Credit && p.LinieId == lPreluare.Id).Repartitor == unitate.ID
+            && noteCub.Single(p => p.Debit && p.LinieId == lMinus.Id).Repartitor == unitate.ID);
         s.CheckRefuza("Api NTC: Apply peste o notă OPERATĂ → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
             () => NotaContabilaApply.Aplica(os, idNtc, rescriere));
         s.CheckRefuza("Api NTC: Sterge peste o notă OPERATĂ → același refuz de domeniu",

@@ -283,7 +283,7 @@ static class E2eVirament {
                 notePicior1Cub.Count == 2 && notePicior1Cub.Nota(cont581.ID, cont531.ID, 500m)
                 && CubScena.FaraStoc(os, idVirPlt));
             s.Check("F7-D9 ancora 3 (F7-D5b): dimensiunea Repartitor = contul propriu AL PICIORULUI pe AMBELE laturi ale rândului — default-ul „debit←Predator/credit←Primitor” ar fi atribuit ieșirea contului DESTINAȚIE",
-                notePicior1Cub.Count == 2 && notePicior1Cub.All(p => p.Gestiune == casaVir.ID));
+                notePicior1Cub.Count == 2 && notePicior1Cub.All(p => p.Repartitor == casaVir.ID));
 
             // --- NUC-PLT-VIR (B-D5, pas 4): ambele capete pe contul propriu AL PICIORULUI ---
             ProbeNucleu.Proba(os, s.Check, "NUC-PLT-VIR", [os.GetObjectByKey<Plata>(idVirPlt)]);
@@ -338,7 +338,7 @@ static class E2eVirament {
                 rezVirInc.StareNoua == StareDocument.Operat
                 && notePicior2Cub.Count == 2 && notePicior2Cub.Nota(cont770.ID, cont581.ID, 500m)
                 && notePicior2Cub.All(p => p.Data == new DateOnly(2026, 4, 12))
-                && notePicior2Cub.All(p => p.Gestiune == bancaVir.ID)
+                && notePicior2Cub.All(p => p.Repartitor == bancaVir.ID)
                 && CubScena.FaraStoc(os, idVirInc));
             s.Check("F7-D9 ancora 8: latura pereche OPERATĂ nu generează un al treilea document — gardul `Autogenerat` din `GenereazaSecundar` taie ping-pong-ul",
                 rezVirInc.ConexId == null

@@ -67,15 +67,15 @@ static class Amprente {
         var gestiuni = os.GetObjectsQuery<Repartitor>().Select(r => new { r.ID, r.Cod }).ToDictionary(r => r.ID, r => r.Cod);
         return os.GetObjectsQuery<C.Postare>()
             .Where(p => p.Spatiu == N.Spatiu.Stoc)
-            .GroupBy(p => new { p.Cont, p.Produs, p.Gestiune, p.Data.Year, p.Data.Month })
+            .GroupBy(p => new { p.Cont, p.Produs, p.Repartitor, p.Data.Year, p.Data.Month })
             .Select(g => new {
-                g.Key.Cont, g.Key.Produs, g.Key.Gestiune, g.Key.Year, g.Key.Month,
+                g.Key.Cont, g.Key.Produs, g.Key.Repartitor, g.Key.Year, g.Key.Month,
                 Cantitate = g.Sum(p => p.Cantitate),
                 Valoare = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare),
                 Numar = g.Count(),
             })
             .ToList()
-            .Select(r => string.Join('|', conturi[r.Cont], Cod(produse, r.Produs), Cod(gestiuni, r.Gestiune),
+            .Select(r => string.Join('|', conturi[r.Cont], Cod(produse, r.Produs), Cod(gestiuni, r.Repartitor),
                 $"{r.Year}-{r.Month:00}", r.Cantitate.ToString("0.000", CultureInfo.InvariantCulture), Bani(r.Valoare), r.Numar))
             .OrderBy(r => r, StringComparer.Ordinal)
             .ToList();
@@ -86,32 +86,24 @@ static class Amprente {
         var parteneri = os.GetObjectsQuery<Repartitor>().Select(r => new { r.ID, r.Cod }).ToDictionary(r => r.ID, r => r.Cod);
         return os.GetObjectsQuery<C.Postare>()
             .Where(p => p.FelUnitate == N.FelUnitate.Partida)
-            .GroupBy(p => new { p.Cont, p.Partener, p.Unitate, p.UnitateDeschisa })
+            .GroupBy(p => new { p.Cont, p.Repartitor, p.Unitate, p.UnitateDeschisa })
             .Select(g => new {
-                g.Key.Cont, g.Key.Partener, g.Key.UnitateDeschisa,
+                g.Key.Cont, g.Key.Repartitor, g.Key.UnitateDeschisa,
                 Sold = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare),
                 Numar = g.Count(),
             })
             .ToList()
-            .Select(r => string.Join('|', conturi[r.Cont], Cod(parteneri, r.Partener),
+            .Select(r => string.Join('|', conturi[r.Cont], Cod(parteneri, r.Repartitor),
                 r.UnitateDeschisa?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "-", Bani(r.Sold), r.Numar))
             .OrderBy(r => r, StringComparer.Ordinal)
             .ToList();
     }
 
-    // C111-D9, regula de oprire 2: pe forma de azi repartitorul de sold se derivă după C111-D5.
     static List<string> AnaliticRepartitor(IObjectSpace os) {
         var conturi = os.GetObjectsQuery<Cont>().Select(c => new { c.ID, c.Simbol }).ToDictionary(c => c.ID, c => c.Simbol);
         var repartitori = os.GetObjectsQuery<Repartitor>().Select(r => new { r.ID, r.Cod }).ToDictionary(r => r.ID, r => r.Cod);
-        var virtuale = N.GestiuniVirtuale.Toate.ToArray();
         return C.Citiri.Contabil.Postari(os)
-            .Select(p => new {
-                p.Cont, p.Data.Year, p.Data.Month, p.Latura, p.Valoare,
-                Repartitor = p.FelUnitate == N.FelUnitate.Partida ? p.Partener
-                    : p.Gestiune != null && !virtuale.Contains(p.Gestiune.Value) ? p.Gestiune
-                    : p.TipTvaId != null ? (Guid?)null
-                    : p.Partener,
-            })
+            .Select(p => new { p.Cont, p.Data.Year, p.Data.Month, p.Latura, p.Valoare, p.Repartitor })
             .GroupBy(p => new { p.Cont, p.Repartitor, p.Year, p.Month, p.Latura })
             .Select(g => new { g.Key.Cont, g.Key.Repartitor, g.Key.Year, g.Key.Month, g.Key.Latura, Valoare = g.Sum(p => p.Valoare), Numar = g.Count() })
             .ToList()
@@ -127,13 +119,9 @@ static class Amprente {
     static List<string> AnaliticFiscal(IObjectSpace os) {
         var conturi = os.GetObjectsQuery<Cont>().Select(c => new { c.ID, c.Simbol }).ToDictionary(c => c.ID, c => c.Simbol);
         var repartitori = os.GetObjectsQuery<Repartitor>().Select(r => new { r.ID, r.Cod }).ToDictionary(r => r.ID, r => r.Cod);
-        var virtuale = N.GestiuniVirtuale.Toate.ToArray();
         return os.GetObjectsQuery<C.Postare>()
             .Where(p => p.TipTvaId != null)
-            .Select(p => new {
-                p.Cont, p.Data.Year, p.Data.Month, p.RolTva, p.Latura, p.Valoare, PartenerFiscal = p.Partener,
-                LocFiscal = p.Gestiune != null && !virtuale.Contains(p.Gestiune.Value) ? p.Gestiune : null,
-            })
+            .Select(p => new { p.Cont, p.Data.Year, p.Data.Month, p.RolTva, p.Latura, p.Valoare, p.PartenerFiscal, p.LocFiscal })
             .GroupBy(p => new { p.Cont, p.PartenerFiscal, p.LocFiscal, p.RolTva, p.Year, p.Month })
             .Select(g => new {
                 g.Key.Cont, g.Key.PartenerFiscal, g.Key.LocFiscal, g.Key.RolTva, g.Key.Year, g.Key.Month,
@@ -148,23 +136,16 @@ static class Amprente {
 
     static List<string> AnaliticContrapondere(IObjectSpace os) {
         var conturi = os.GetObjectsQuery<Cont>().Select(c => new { c.ID, c.Simbol }).ToDictionary(c => c.ID, c => c.Simbol);
-        var virtuale = N.GestiuniVirtuale.Toate.ToArray();
-        string Marcaj(Guid gestiune) =>
-            gestiune == N.GestiuniVirtuale.Furnizor || gestiune == N.GestiuniVirtuale.Client ? "Tert"
-            : gestiune == N.GestiuniVirtuale.Consum ? "Consum"
-            : gestiune == N.GestiuniVirtuale.Inventar ? "Inventar"
-            : "Transformare";
         return os.GetObjectsQuery<C.Postare>()
-            .Where(p => p.Gestiune != null && virtuale.Contains(p.Gestiune.Value))
-            .GroupBy(p => new { p.Cont, p.Gestiune, p.Data.Year, p.Data.Month })
+            .Where(p => p.Contrapondere != null)
+            .GroupBy(p => new { p.Cont, p.Contrapondere, p.Data.Year, p.Data.Month })
             .Select(g => new {
-                g.Key.Cont, g.Key.Gestiune, g.Key.Year, g.Key.Month, Cantitate = g.Sum(p => p.Cantitate),
+                g.Key.Cont, g.Key.Contrapondere, g.Key.Year, g.Key.Month, Cantitate = g.Sum(p => p.Cantitate),
                 Valoare = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare), Numar = g.Count(),
             })
             .ToList()
-            .GroupBy(r => (Simbol: conturi[r.Cont], Marcaj: Marcaj(r.Gestiune.Value), r.Year, r.Month))
-            .Select(g => string.Join('|', g.Key.Simbol, g.Key.Marcaj, $"{g.Key.Year}-{g.Key.Month:00}",
-                g.Sum(r => r.Cantitate).ToString("0.000", CultureInfo.InvariantCulture), Bani(g.Sum(r => r.Valoare)), g.Sum(r => r.Numar)))
+            .Select(r => string.Join('|', conturi[r.Cont], r.Contrapondere, $"{r.Year}-{r.Month:00}",
+                r.Cantitate.ToString("0.000", CultureInfo.InvariantCulture), Bani(r.Valoare), r.Numar))
             .OrderBy(r => r, StringComparer.Ordinal)
             .ToList();
     }

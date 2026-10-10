@@ -260,7 +260,7 @@ static class E2eApiNir {
             var stocNirManualCub = CubScena.Stoc(os, idNir);
             s.Check("NIR manual → +6/+75 Magazie pe gestiunea primitoare, pe lotul propriu",
                 stocNirManualCub.Count == 1 && stocNirManualCub[0].Cont == tipMateriale.ContImplicitId
-                && stocNirManualCub[0].Gestiune == mag1.ID && stocNirManualCub[0].Unitate == lotFinalizat.ID
+                && stocNirManualCub[0].Repartitor == mag1.ID && stocNirManualCub[0].Unitate == lotFinalizat.ID
                 && stocNirManualCub[0].Cantitate == 6m && stocNirManualCub[0].Semnata == 75m);
             s.Check("NIR manual contează recepția ca oricare alta: 302.01.00 = 401, 75 (regula de oprire a feliei — registrele nu disting proveniența)",
                 CubScena.Note(os, idNir).Nota(tipMateriale.ContImplicitId, cont401.ID, 75m));

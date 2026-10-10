@@ -106,9 +106,10 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
                 && r.Where(p => p.Latura == N.Latura.Debit).Sum(p => p.Valoare) == 250
                 && r.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare) == 250
                 && r.Where(p => p.Cont == Cont(Stoc)).Sum(p => p.Valoare) == 100
-                && r.Where(p => p.Cont == contTert).All(p => p.Unitate != null && p.Partener != null));
-            Verifica("SC-DES-08", "round-trip fără document fictiv", r.All(p => p.DocumentId == null && p.LinieId == null
-                && C.Randuri.Citeste(p).Cauza.Document == Guid.Empty && C.Randuri.Citeste(p).Valoare == p.Valoare));
+                && r.Where(p => p.Cont == contTert).All(p => p.Unitate != null && p.Repartitor != null));
+            Verifica("SC-DES-08", "round-trip fără document fictiv", r.Zip(C.Randuri.Citeste(os, r)).All(x =>
+                x.First.DocumentId == null && x.First.LinieId == null
+                && x.Second.Cauza.Document == Guid.Empty && x.Second.Valoare == x.First.Valoare));
         }
         foreach (var l in loturi) {
             SoldLot("SC-DES-01/07", l.Lot, Magazie, Ianuarie, l.Cantitate, l.Valoare);
@@ -141,7 +142,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         string Original() => CuSpatiu(os => System.Text.Json.JsonSerializer.Serialize(os.GetObjectsQuery<C.Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere).OrderBy(p => p.ID)
             .Select(p => new { p.ID, p.Data, p.Cont, p.Carte, p.Latura, p.Valoare, p.Cantitate,
-                p.Unitate, p.Partener, p.Gestiune, p.DocumentId, p.LinieId }).ToArray()));
+                p.Unitate, p.Repartitor, p.Contrapondere, p.DocumentId, p.LinieId }).ToArray()));
         var initial = Original();
         Refuza("SC-DES-09", () => Stinge(Partida(ref1, Furnizor), 20, Ianuarie.AddDays(1)), C.Materializare.StingereDeschidereInvalida);
         Verifica("SC-DES-09", "data dintre deschidere și plată nu scrie transfer", !CuSpatiu(os => os.GetObjectsQuery<C.Postare>()
@@ -150,7 +151,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         using (var os = Deschide()) {
             var r = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == plata.Id && p.Tranzactie.Fel == N.FelTranzactie.Transfer).ToList();
             Verifica("SC-DES-03", "transfer exact pe debit: partidă inițială +20, partidă plată -20", r.Count == 2
-                && r.All(p => p.Cont == contTert && p.Partener == Furnizor && p.Carte == N.Carte.Contabil && p.Latura == N.Latura.Debit)
+                && r.All(p => p.Cont == contTert && p.Repartitor == Furnizor && p.Carte == N.Carte.Contabil && p.Latura == N.Latura.Debit)
                 && r.Single(p => p.Valoare == 20).Unitate == Partida(ref1, Furnizor)
                 && r.Single(p => p.Valoare == -20).Unitate != Partida(ref1, Furnizor));
         }
@@ -373,13 +374,13 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
             var p = os.ModifiedObjects.OfType<C.Postare>().Single(p => p.Cont == contTert);
             Verifica("SC-DES-15", "partida păstrează analiza și 100 lei / 20 în valută, curs 5", p.CodEconomic == Economic
                 && p.Valuta == valuta && p.ValoareValuta == 20 && p.Valoare == 100
-                && C.Randuri.Citeste(p).Coordonate.Unitate.Raport(new N.Sold(0, 100, 0, -20)) == 5);
+                && C.Randuri.Citeste(os, [p])[0].Coordonate.Unitate.Raport(new N.Sold(0, 100, 0, -20)) == 5);
             os.CommitChanges();
             Refuza("SC-DES-15", () => C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(plata.Id),
                 Partida(ref1, Furnizor), 20, Ianuarie), "în valută");
             Verifica("SC-DES-15", "stingerea neacoperită nu adaugă transfer", !os.ModifiedObjects.OfType<C.Postare>().Any());
             var faraNavigatie = new C.Postare { ID = Guid.NewGuid() };
-            try { C.Randuri.Citeste(faraNavigatie); Verifica("SC-DES-16", "lipsa navigației refuzată explicit", false); }
+            try { C.Randuri.Citeste(os, [faraNavigatie]); Verifica("SC-DES-16", "lipsa navigației refuzată explicit", false); }
             catch (InvalidOperationException e) { Verifica("SC-DES-16", "lipsa navigației refuzată explicit", e.Message.Contains("fără document")); }
         }
         Storneaza(plata.Id, Ianuarie);
