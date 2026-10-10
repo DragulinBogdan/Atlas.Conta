@@ -206,6 +206,51 @@ diferite, ca la TR-D9a, și se numește ca abatere.
 Pornirea: pașii 0 și 1 acum; review-ul advers Codex pe contract se închide
 înaintea pasului 2.
 
+## Amendamentul 1 (propus 2026-10-10, neaprobat)
+
+**Constatarea.** Pasul 1, „poarta unică pe forma de azi”, nu se poate face
+cum e scris. Modulul are, în afara declaranților, circa 130 de rânduri care
+citesc `Partener` sau `Gestiune` de pe postare, iar o mare parte sunt
+interogări EF, cu grupări, filtre și îmbinări pe coloană
+(`Citiri/Partide.cs`, `Motor/Fapte.cs`, `Citiri/Loturi.cs`,
+`ImperecheriProiectii.cs`, `ContabilProiectii.cs`). Un cititor numit în C#
+nu se traduce în SQL, iar două proprietăți nu se pot mapa pe aceeași coloană.
+Poarta ar acoperi numai citirile din memorie.
+
+Referințele se împart în cinci clase, fiecare cu altă țintă:
+
+| Clasa | Azi | După | Unde |
+|---|---|---|---|
+| A, titularul partidei | `Partener` pe postarea cu partidă | `Repartitor` | `Citiri/Partide`, `Plati`, `Transferuri`, `Fapte`, `ImperechereService`, `ImperecheriProiectii`, `Explicatii` |
+| B, partenerul fiscal | `Partener` pe postarea cu fapt fiscal | `PartenerFiscal` | `Citiri/Fiscale`, `Invarianti`, `D394Proiectii`, `DiagnosticTvaService` |
+| C, gestiunea lotului | `Gestiune` pe postarea cu lot | `Repartitor` | `Citiri/Loturi`, `SaftProiectii.PeCub.Stocuri`, `ImobilizariFapte` |
+| D, capătul din afara evidenței | `Gestiune` = virtuală | `Contrapondere` | `Invarianti`, `Citiri/Transformare`, `ReceptiiConexe` |
+| E, atomul de sold | `Partener` ca repartitor, `Gestiune` separat | `Repartitor` | `ContabilProiectii.Atomi`, `SolduriService` (S1) |
+
+`Contabil.Jurnal` proiectează `Partener` pentru A și B deodată; consumatorii
+lui din SAF-T se clasifică pe rând.
+
+**Propunerea.** Pașii 1 și 2 se înlocuiesc cu o secvență în care coloanele noi
+stau întâi lângă cele vechi:
+
+| Pas | Ce | Verde când |
+|---|---|---|
+| 1 | coloanele noi, scrise lângă cele vechi: `Repartitor`, `Contrapondere`, `PartenerFiscal` pe `Postare`, completate la scriere dintr-o singură funcție de derivare; migrație obișnuită; `INV-CUB` verifică potrivirea vechi ↔ nou | integrala cu numărătorile pasului 0 plus proba nouă; niciun cititor mutat |
+| 2a | cititorii claselor A, B, C și D trec pe coloanele noi, câte o clasă pe commit | integrala neschimbată după fiecare clasă |
+| 2b | clasa E: atomul de sold pe `Repartitor`; `SolduriPerioada` fără `GestiuneId` | S1, singura schimbare de așteptări din pas |
+| 2c | nucleul și declaranții scriu forma nouă direct (D2, D5); invarianții 1–5; funcția de derivare iese | suita nucleului; integrala; S2–S4 |
+| 2d | `Partener`, `Gestiune` și `GestiuniVirtuale` ies; `PostareVizual` (S5); lanțul recomprimat în `InitialCreate`, bazele recreate | integrala pe baze recreate; proba numelor interzise |
+
+Pașii 3–7 rămân. Regula de oprire nu se schimbă.
+
+**De ce.** Clasificarea fiecărei referințe se verifică pe rând, sub un oracol
+verde, în loc să se verifice toate deodată la sfârșitul unui pas atomic. S1
+ajunge singură într-un commit. Costă o migrație temporară și un pas de
+scriere dublă, care dispar la 2d.
+
+**Ce se pierde.** Pasul 1 schimbă schema, deci nu mai e „fără schimbare de
+schemă”; rămâne fără schimbare de comportament.
+
 ## Ce NU intră (amânări cu nume)
 
 - C111-r1: furnizorul bonului la decont, ca atribut pe linie; după PoC.
