@@ -21,8 +21,10 @@ Urmele, neversionate: `run-verificari/c111-pas6/` (`import.C111P6/`,
 | Fișa contului 401 pe ianuarie, înainte și prin pereche | 21.875 ms și 1.520 ms |
 
 Binarul e Release, de la `b0e5343`, pe `Atlas.Conta.Import1C.Flax.C111P6`
-(5446). Pasul 0 a durat 7 min 53 s pe forma veche; diferența de 24 s e
-între două rulări unice și nu e o măsurătoare a costului de scriere.
+(5446). Importul își raportează singur durata: 8 min 17 s acum, 7 min 27 s
+la pasul 0, cu aceleași 469 de avertismente. Diferența de 50 s e între două
+rulări unice, pe baze diferite, și nu e o măsurătoare a costului de scriere;
+acela se ia cu PerfCub.
 
 ## Regula de oprire 1
 
