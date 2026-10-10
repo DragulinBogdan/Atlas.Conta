@@ -40,9 +40,9 @@ public static partial class Materializare {
             && p.Carte == N.Carte.Contabil && p.Spatiu == N.Spatiu.Contabil)).DistinctBy(p => p.ID)];
         primite = [.. primite.Concat(inMemorie.Where(p => p.Unitate == partida && p.Carte == N.Carte.Contabil)).DistinctBy(p => p.ID)];
         var operare = aleStingatorului.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare
-            && p.Cont == initiala.Cont && p.Partener == initiala.Partener).ToList();
+            && p.Cont == initiala.Cont && Citiri.Partide.Titular(p) == Citiri.Partide.Titular(initiala)).ToList();
         var proprie = IdentitatiPartide.Gaseste(operare.Select(p => Randuri.Citeste(p).Coordonate.Unitate)
-            .OfType<N.Unitate>(), stingator.ID, initiala.Cont, initiala.Partener!.Value);
+            .OfType<N.Unitate>(), stingator.ID, initiala.Cont, Citiri.Partide.Titular(initiala)!.Value);
         var latura = initiala.Latura == N.Latura.Debit ? N.Latura.Credit : N.Latura.Debit;
         var peProprie = proprie == null ? [] : os.GetObjectsQuery<Postare>()
             .Where(p => p.Unitate == proprie.Id && p.Carte == N.Carte.Contabil).ToList();

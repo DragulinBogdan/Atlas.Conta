@@ -1,3 +1,4 @@
+#pragma warning disable C111 // C111-D10
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
@@ -54,7 +55,57 @@ public struct PerecheDisponibila {
     public decimal Disponibil { get; set; }
 }
 
+public sealed class NetPartida {
+    public Guid? DocumentId { get; set; }
+    public Guid? Titular { get; set; }
+    public decimal Net { get; set; }
+}
+
+public sealed class MiscareTitular {
+    public Guid? Unitate { get; set; }
+    public Guid Cont { get; set; }
+    public Guid? Titular { get; set; }
+    public DateOnly Data { get; set; }
+    public Guid? DocumentId { get; set; }
+    public DateOnly Deschisa { get; set; }
+    public decimal Debit { get; set; }
+    public decimal Credit { get; set; }
+}
+
 public static class Partide {
+    public static readonly System.Linq.Expressions.Expression<Func<Postare, bool>> CuTitular = p => p.Partener != null;
+
+    /// <summary>Titularul partidei de pe o postare deja citită.</summary>
+    public static Guid? Titular(Postare postare) => postare.Partener;
+
+    public static IQueryable<NetPartida> Nete(IQueryable<Postare> postari) =>
+        postari.Where(p => p.FelUnitate == N.FelUnitate.Partida)
+            .GroupBy(p => new { p.DocumentId, p.Partener, p.Cont, p.Unitate })
+            .Select(g => new NetPartida { DocumentId = g.Key.DocumentId, Titular = g.Key.Partener,
+                Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) });
+
+    /// <summary>Partidele atinse de postările contabile ale documentului.</summary>
+    public static IReadOnlyList<N.Unitate> UnitatiAle(IObjectSpace os, Guid document) =>
+        Postari(os)
+            .Where(p => p.DocumentId == document && p.Spatiu == N.Spatiu.Contabil)
+            .Select(p => new { p.Unitate, p.Cont, p.Partener, p.UnitateDeschisa }).Distinct().ToList()
+            .Select(p => new N.Unitate(p.Unitate.Value, N.FelUnitate.Partida, p.Cont,
+                p.Partener, null, p.UnitateDeschisa.Value)).ToList();
+
+    /// <summary>Mișcările altor documente pe partidele titularilor dați, pe zi și document.</summary>
+    public static List<MiscareTitular> MiscariPeTitulari(IObjectSpace os, Guid faraDocument,
+            List<Guid> conturi, List<Guid> titulari) =>
+        Postari(os)
+            .Where(p => p.DocumentId != faraDocument && conturi.Contains(p.Cont) && titulari.Contains(p.Partener.Value))
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, p.Data, p.DocumentId })
+            .Select(g => new MiscareTitular {
+                Unitate = g.Key.Unitate, Cont = g.Key.Cont, Titular = g.Key.Partener, Data = g.Key.Data,
+                DocumentId = g.Key.DocumentId,
+                Deschisa = g.Min(p => p.UnitateDeschisa.Value),
+                Debit = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : 0m),
+                Credit = g.Sum(p => p.Latura == N.Latura.Credit ? p.Valoare : 0m) })
+            .ToList();
+
     public static IQueryable<PerecheDisponibila> Perechi(IObjectSpace os, Guid document, bool stinge,
             Guid? partener = null) {
         var proprii = Proprii(os, DateOnly.MaxValue);

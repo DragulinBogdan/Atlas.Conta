@@ -183,11 +183,11 @@ struct SursaFisa {
 public static class ContabilProiectii {
 
     public static IQueryable<AtomContabil> Atomi(IObjectSpace os) =>
-        Cub.Citiri.Contabil.Postari(os).Select(p => new AtomContabil {
+        Cub.Citiri.Contabil.Analitice(os).Select(p => new AtomContabil {
             Data = p.Data, ContId = p.Cont,
             Debit = p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : 0m,
             Credit = p.Latura == Atlas.Conta.Nucleu.Latura.Credit ? p.Valoare : 0m,
-            RepartitorId = p.Partener, GestiuneId = p.Gestiune, MaterialId = p.Produs,
+            RepartitorId = p.AxaPartener, GestiuneId = p.AxaGestiune, MaterialId = p.Produs,
             CodFunctionalId = p.CodFunctional, CodEconomicId = p.CodEconomic,
             SursaFinantareId = p.SursaFinantare, UnitateId = p.UnitateOrganizatorica,
             ProiectId = p.Proiect, CentruCostId = p.CentruCost
@@ -444,25 +444,25 @@ public static class ContabilProiectii {
         Guid? gestiuneId = null, CitireCumul citire = CitireCumul.Vizibila) {
         var argumente = new List<object>();
         string P(object valoare) { argumente.Add(valoare); return "{" + (argumente.Count - 1) + "}"; }
-        var postari = Cub.Citiri.Contabil.Postari(os).Where(p => p.Data <= dataEnd);
+        var postari = Cub.Citiri.Contabil.Analitice(os).Where(p => p.Data <= dataEnd);
         var etichetate = from p in postari
             join c in os.GetObjectsQuery<Cont>() on p.Cont equals c.ID into conturi
             from c in conturi.DefaultIfEmpty()
             join d in os.GetObjectsQuery<Document>() on p.DocumentId equals d.ID into documente
             from d in documente.DefaultIfEmpty()
-            join r in os.GetObjectsQuery<Repartitor>() on p.Partener equals r.ID into parteneri
+            join r in os.GetObjectsQuery<Repartitor>() on p.AxaPartener equals r.ID into parteneri
             from r in parteneri.DefaultIfEmpty()
             select new SursaFisa {
-                Id = p.ID, Spatiu = (int)p.Spatiu, TranzactieId = p.TranzactieId, Data = p.Data, ContId = p.Cont,
+                Id = p.Id, Spatiu = (int)p.Spatiu, TranzactieId = p.TranzactieId, Data = p.Data, ContId = p.Cont,
                 ContSimbol = c.Simbol, NumarNota = d.Numar, Sens = p.Latura == N.Latura.Debit ? "D" : "C",
                 Debit = p.Latura == N.Latura.Debit ? p.Valoare : 0m,
                 Credit = p.Latura == N.Latura.Credit ? p.Valoare : 0m,
-                RepartitorId = p.Partener, GestiuneId = p.Gestiune, MaterialId = p.Produs,
+                RepartitorId = p.AxaPartener, GestiuneId = p.AxaGestiune, MaterialId = p.Produs,
                 CodFunctionalId = p.CodFunctional, CodEconomicId = p.CodEconomic,
                 SursaFinantareId = p.SursaFinantare, UnitateId = p.UnitateOrganizatorica,
                 ProiectId = p.Proiect, CentruCostId = p.CentruCost,
                 RepartitorDenumire = r.Denumire, DocumentId = p.DocumentId,
-                Storno = p.Tranzactie.Fel == N.FelTranzactie.Storno
+                Storno = p.Fel == N.FelTranzactie.Storno
             };
         var initial = (dataStart == DateOnly.MinValue ? Atomi(os).Where(a => false)
             : SolduriService.AtomiCumulati(os, citire, dataStart.AddDays(-1))).Where(a => a.ContId == contId);

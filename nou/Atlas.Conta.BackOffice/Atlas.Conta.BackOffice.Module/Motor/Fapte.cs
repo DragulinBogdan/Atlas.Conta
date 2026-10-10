@@ -152,11 +152,7 @@ internal static class Fapte {
 
     static IReadOnlyList<N.Unitate> UnitatiSursa(IObjectSpace os, Document doc) =>
         !doc.Autogenerat || doc.DocumentSursaId is not Guid sursa ? [] :
-        Cub.Citiri.Partide.Postari(os)
-            .Where(p => p.DocumentId == sursa && p.Spatiu == N.Spatiu.Contabil)
-            .Select(p => new { p.Unitate, p.Cont, p.Partener, p.UnitateDeschisa }).Distinct().ToList()
-            .Select(p => new N.Unitate(p.Unitate.Value, N.FelUnitate.Partida, p.Cont,
-                p.Partener, null, p.UnitateDeschisa.Value)).ToList();
+        Cub.Citiri.Partide.UnitatiAle(os, sursa);
 
     static IReadOnlyList<Declaratii.SoldPartidaFapt> PartideDisponibile(IObjectSpace os, Document doc,
             IReadOnlyList<ILinieCuPostareExplicita> linii,
@@ -172,15 +168,8 @@ internal static class Fapte {
         var idsCont = perechi.Select(p => p.Cont.Value).Distinct().ToList();
         var idsTert = perechi.Select(p => p.Repartitor.Value).Distinct().ToList();
         var zi = doc.DataInregistrare;
-        var partide = Cub.Citiri.Partide.Postari(os)
-            .Where(p => p.DocumentId != doc.ID && idsCont.Contains(p.Cont) && idsTert.Contains(p.Partener.Value))
-            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener, p.Data, p.DocumentId })
-            .Select(g => new { g.Key.Unitate, g.Key.Cont, g.Key.Partener, g.Key.Data, g.Key.DocumentId,
-                Deschisa = g.Min(p => p.UnitateDeschisa.Value),
-                Debit = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : 0m),
-                Credit = g.Sum(p => p.Latura == N.Latura.Credit ? p.Valoare : 0m) })
-            .ToList()
-            .GroupBy(p => new { p.Unitate, p.Cont, p.Partener })
+        var partide = Cub.Citiri.Partide.MiscariPeTitulari(os, doc.ID, idsCont, idsTert)
+            .GroupBy(p => new { p.Unitate, p.Cont, p.Titular })
             .Where(g => g.Any(p => p.Data <= zi))
             .Select(g => {
                 var pana = g.Where(p => p.Data <= zi).ToArray();
@@ -188,7 +177,7 @@ internal static class Fapte {
                 var disponibil = Cub.Citiri.Partide.DisponibilTemporal(
                     g.Select(p => (p.Data, p.Debit - p.Credit)), zi, Math.Sign(sold.Net));
                 var unitate = new N.Unitate(g.Key.Unitate.Value, N.FelUnitate.Partida, g.Key.Cont,
-                    g.Key.Partener.Value, null, g.Min(p => p.Deschisa));
+                    g.Key.Titular.Value, null, g.Min(p => p.Deschisa));
                 var origine = g.Select(p => p.DocumentId).OfType<Guid>().Distinct()
                     .FirstOrDefault(d => Cub.IdentitatiPartide.EsteProprie(unitate, d));
                 return new Declaratii.SoldPartidaFapt(unitate, sold, disponibil, origine);

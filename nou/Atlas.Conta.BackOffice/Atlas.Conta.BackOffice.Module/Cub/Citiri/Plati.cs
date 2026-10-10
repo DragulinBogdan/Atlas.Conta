@@ -1,3 +1,4 @@
+#pragma warning disable C111 // C111-D10
 using DevExpress.ExpressApp;
 using N = Atlas.Conta.Nucleu;
 

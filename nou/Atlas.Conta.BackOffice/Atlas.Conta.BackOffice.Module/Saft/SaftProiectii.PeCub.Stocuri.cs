@@ -108,13 +108,13 @@ public static partial class SaftProiectii {
             var (conturiSaft, balanta) = ConturiSiSolduri(os, start, end, conturi, (cod, exemplu) => Avert(cod, exemplu));
             dto.Conturi = conturiSaft;
 
-            var luna = Loturi.Postari(os).Where(p => p.Data >= start && p.Data <= end)
+            var luna = Loturi.PostariCitite(os).Where(p => p.Data >= start && p.Data <= end)
                 .Select(p => new PostareLot {
-                    Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, DocumentId = p.Tranzactie.DocumentId, LinieId = p.LinieId,
-                    Fel = p.Tranzactie.Fel, Data = p.Data, ScrisLa = p.Tranzactie.ScrisLa,
-                    Lot = p.Unitate.Value, Cont = p.Cont, Produs = p.Produs.Value, Gestiune = p.Gestiune.Value,
-                    Deschisa = p.UnitateDeschisa ?? p.Data, Cantitate = p.Cantitate,
-                    Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare,
+                    Id = p.Id, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, DocumentId = p.DocumentId, LinieId = p.LinieId,
+                    Fel = p.Fel, Data = p.Data, ScrisLa = p.ScrisLa,
+                    Lot = p.Lot, Cont = p.Cont, Produs = p.Produs, Gestiune = p.Loc,
+                    Deschisa = p.Deschisa, Cantitate = p.Cantitate,
+                    Valoare = p.Valoare,
                 }).ToList();
             // S2-D5: accesul complet se verifică înaintea proiecției, deci cumulul poate porni din snapshot.
             var initiale = Loturi.Cumulate(os, CitireCumul.Integrala, start.AddDays(-1)).ToList();

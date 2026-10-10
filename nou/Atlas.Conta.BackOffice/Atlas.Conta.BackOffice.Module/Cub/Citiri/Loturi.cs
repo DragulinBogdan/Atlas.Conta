@@ -1,3 +1,4 @@
+#pragma warning disable C111 // C111-D10
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
@@ -25,7 +26,34 @@ public struct OrigineLot {
     public int Pozitie { get; set; }
 }
 
+/// <summary>Postarea pe lot, cu locul ei și cu valoarea semnată (C111-D10).</summary>
+public sealed class PostareLotCitita {
+    public Guid Id { get; set; }
+    public N.Spatiu Spatiu { get; set; }
+    public Guid TranzactieId { get; set; }
+    public Guid? DocumentId { get; set; }
+    public Guid? LinieId { get; set; }
+    public N.FelTranzactie Fel { get; set; }
+    public DateOnly Data { get; set; }
+    public DateTime ScrisLa { get; set; }
+    public Guid Lot { get; set; }
+    public Guid Cont { get; set; }
+    public Guid Produs { get; set; }
+    public Guid Loc { get; set; }
+    public DateOnly Deschisa { get; set; }
+    public decimal Cantitate { get; set; }
+    public decimal Valoare { get; set; }
+}
+
 public static class Loturi {
+    public static IQueryable<PostareLotCitita> PostariCitite(IObjectSpace os) => Postari(os).Select(p => new PostareLotCitita {
+        Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, DocumentId = p.Tranzactie.DocumentId, LinieId = p.LinieId,
+        Fel = p.Tranzactie.Fel, Data = p.Data, ScrisLa = p.Tranzactie.ScrisLa,
+        Lot = p.Unitate.Value, Cont = p.Cont, Produs = p.Produs.Value, Loc = p.Gestiune.Value,
+        Deschisa = p.UnitateDeschisa ?? p.Data, Cantitate = p.Cantitate,
+        Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare,
+    });
+
     public static IQueryable<Postare> Postari(IObjectSpace os) => os.GetObjectsQuery<Postare>()
         .Where(p => p.Spatiu == N.Spatiu.Stoc && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Lot
             && p.Unitate != null && p.Produs != null && p.Gestiune != null);

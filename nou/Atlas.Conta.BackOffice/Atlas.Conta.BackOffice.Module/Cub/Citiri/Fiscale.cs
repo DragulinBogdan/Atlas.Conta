@@ -1,3 +1,4 @@
+#pragma warning disable C111 // C111-D10
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
@@ -40,6 +41,9 @@ public sealed class FaptFiscal {
 }
 
 public static class Fiscale {
+    /// <summary>Membrul postării care poartă partenerul fiscal, pentru verificarea de drepturi.</summary>
+    public const string MembruPartener = nameof(Postare.Partener);
+
     public const string IzolareInsuficienta = "CITIRE_IZOLARE_INSUFICIENTA";
 
     /// <summary>Tranzacția de citire a unei declarații; cu <paramref name="cereIzolare"/>, o ambiantă sub RepeatableRead se refuză.</summary>

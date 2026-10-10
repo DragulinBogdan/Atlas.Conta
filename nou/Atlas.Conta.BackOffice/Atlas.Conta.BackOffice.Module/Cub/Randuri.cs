@@ -1,3 +1,4 @@
+#pragma warning disable C111 // C111-D10
 #nullable enable
 using N = Atlas.Conta.Nucleu;
 

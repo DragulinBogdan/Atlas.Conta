@@ -23,7 +23,9 @@ public class Postare {
     public virtual DateOnly Data { get; set; }
     public virtual Guid Cont { get; set; }
     public virtual N.Latura Latura { get; set; }
+    [Obsolete(Poarta.Mesaj, DiagnosticId = Poarta.Diagnostic)]
     public virtual Guid? Partener { get; set; }
+    [Obsolete(Poarta.Mesaj, DiagnosticId = Poarta.Diagnostic)]
     public virtual Guid? Gestiune { get; set; }
     public virtual Guid? Produs { get; set; }
     public virtual Guid? Unitate { get; set; }
@@ -67,4 +69,10 @@ public class Postare {
     public virtual decimal Cantitate { get; set; }
     public virtual decimal ValoareValuta { get; set; }
     public virtual decimal Valoare { get; set; }
+}
+
+/// <summary>C111-D10: cele două coordonate se citesc numai prin <c>Cub.Citiri</c>.</summary>
+public static class Poarta {
+    public const string Diagnostic = "C111";
+    public const string Mesaj = "Se citește prin Cub.Citiri (C111-D10).";
 }

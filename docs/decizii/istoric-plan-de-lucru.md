@@ -1134,3 +1134,10 @@ detaliat în jurnal):
   analitică, cu filtrele HTTP fixate; D5 are patru forme noi; S10 e nouă;
   regula de oprire cere amprenta analitică și așteptări pe fiecare formă.
   `docs/nucleu/c111-coordonate-contract.md`.
+
+- **2026-10-10 — C111, pasul 1: poarta coordonatelor.** `Postare.Partener` și
+  `Postare.Gestiune` poartă diagnosticul `C111`, eroare de compilare în modul
+  în afara `Cub/Citiri`, a scriitorului și a listei de coloane; 14 rânduri din
+  9 fișiere au trecut pe cititori numiți. Integrala **3.579 / 4.860 OK** (+1
+  proba nouă), amprentele bazei de import identice cu pasul 0, drift zero.
+  `docs/nucleu/c111-pas1-poarta.md`.

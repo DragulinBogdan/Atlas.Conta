@@ -1,3 +1,4 @@
+#pragma warning disable C111 // C111-D10
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;

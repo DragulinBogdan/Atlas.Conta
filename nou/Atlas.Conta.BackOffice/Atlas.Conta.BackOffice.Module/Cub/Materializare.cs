@@ -301,7 +301,8 @@ public static partial class Materializare {
     static List<NominalizarePartida> DependentiPartide(IObjectSpace os, Document doc) {
         var unitati = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == doc.ID && (p.Tranzactie.Fel == N.FelTranzactie.Operare || p.Tranzactie.Fel == N.FelTranzactie.Transfer)
-                && p.Spatiu == N.Spatiu.Contabil && p.Unitate != null && p.Partener != null)
+                && p.Spatiu == N.Spatiu.Contabil && p.Unitate != null)
+            .Where(Citiri.Partide.CuTitular)
             .ToList().Select(p => Randuri.Citeste(p).Coordonate.Unitate)
             .Where(u => IdentitatiPartide.EsteProprie(u, doc.ID)).Select(u => u.Id).Distinct().ToList();
         if (unitati.Count == 0) return [];

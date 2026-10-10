@@ -45,17 +45,7 @@ internal static class ImobilizariFapte {
                 conturiOperand[id] = cont;
             operand = operand with { Conturi = conturiOperand };
         }
-        var note = os.GetObjectsQuery<NotaContabila>().Where(d => d.Stare == StareDocument.Operat).Select(d => d.ID);
-        var stornate = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Stornat).Select(d => d.ID);
-        var randuri = C.Citiri.Imobilizari.PozitiiFaraFisa(os)
-            .Where(p => conturi.Contains(p.Cont) && p.DocumentId != operand.Document.Id)
-            .Select(p => new { p.ID, p.Spatiu, p.Tranzactie.Fel, p.LinieId, p.Data, p.Latura, p.Valoare,
-                p.Cont, p.Partener, p.Gestiune, p.Produs, p.Valuta, p.CodFunctional, p.CodEconomic,
-                p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost, p.SuportId, p.InversaDinId,
-                Stornata = p.DocumentId != null && stornate.Contains(p.DocumentId.Value),
-                FaraLinieSursa = p.Tranzactie.Fel == N.FelTranzactie.Deschidere
-                    || (p.DocumentId != null && note.Contains(p.DocumentId.Value)) })
-            .ToList();
+        var randuri = C.Citiri.Imobilizari.PozitiiCitite(os, conturi, operand.Document.Id);
         var data = operand.Document.DataInregistrare;
         decimal Minim(IEnumerable<(DateOnly Data, decimal Delta)> delte) {
             decimal sold = 0m, minim = decimal.MaxValue;
@@ -66,7 +56,7 @@ internal static class ImobilizariFapte {
             return minim == decimal.MaxValue ? 0m : minim;
         }
         var postari = randuri.Select(r => new { Rand = r, Capat = new N.Capat {
-            Cont = r.Cont, Partener = r.Partener, Gestiune = r.Gestiune, Produs = r.Produs, Valuta = r.Valuta,
+            Cont = r.Cont, Partener = r.Tert, Gestiune = r.Loc, Produs = r.Produs, Valuta = r.Valuta,
             Analiza = new(r.CodFunctional, r.CodEconomic, r.SursaFinantare, r.UnitateOrganizatorica, r.Proiect, r.CentruCost),
         }}).ToList();
         var disponibile = postari.GroupBy(p => p.Capat).Select(g => new DisponibilFapt(g.Key,

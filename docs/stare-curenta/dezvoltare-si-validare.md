@@ -129,7 +129,24 @@ faptul sursei recepției conexe (`Cub/ReceptiiConexe.cs`) și maparea EF
 (`BackOfficeDbContext`). Consumatorii compun peste intrările comune
 (filtre, proiecții, eticheta `Storno`), fără să refacă domeniul. Proba
 `091-r3` (`tools/ModelCheck/ProbeCititoriCub.cs`) scanează sursa înaintea
-bazei, deci rulează și fără bază. La fel probele regimului pe stare
+bazei, deci rulează și fără bază.
+
+Poarta coordonatelor (C111-D10, până la pasul 2 al C111): `Postare.Partener`
+și `Postare.Gestiune` se numesc numai în `Cub/Citiri`, în scriitor
+(`Cub/Randuri.cs`) și în lista de coloane (`UI/ContaUiBaseline.cs`). Cele
+două proprietăți poartă diagnosticul `C111`, care în `Module` e eroare de
+compilare; fișierele permise îl dezactivează prin `#pragma`. Consumatorii
+citesc identități numite: titularul partidei (`Partide.Titular`,
+`Partide.Nete`, `Partide.MiscariPeTitulari`, `Partide.UnitatiAle`), terțul
+comercial (`PostareJurnal.TertComercial`), locul lotului
+(`Loturi.PostariCitite`), terțul și locul poziției fără fișă
+(`Imobilizari.PozitiiCitite`) și cele două axe analitice de azi
+(`Contabil.Analitice`). Proba `C111-D10`
+(`tools/ModelCheck/ProbePoartaCoordonate.cs`) verifică lista fișierelor cu
+excepție și faptul că niciun proiect de producție nu tace diagnosticul.
+`ModelCheck` și `Import1C` îl tac, fiindcă scenele compară rânduri întregi.
+
+La fel de devreme rulează probele regimului pe stare
 (`tools/ModelCheck/ProbeRegim.cs`, 106e): prin reflecție, fiecare comandă
 `RecordEdit` a unui controller pe `DetailView` de `Document` numește prin
 sufixul ID-ului o comandă din `RegimDocument.ComenziCunoscute`; prin scanare

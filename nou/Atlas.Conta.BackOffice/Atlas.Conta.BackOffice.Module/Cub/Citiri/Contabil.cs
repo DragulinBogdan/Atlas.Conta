@@ -1,3 +1,4 @@
+#pragma warning disable C111 // C111-D10
 using DevExpress.ExpressApp;
 using Atlas.Conta.BackOffice.Module.Motor;
 using N = Atlas.Conta.Nucleu;
@@ -17,10 +18,33 @@ public sealed class PostareJurnal {
     public Guid Cont { get; set; }
     public N.Latura Latura { get; set; }
     public decimal Valoare { get; set; }
-    public Guid? Partener { get; set; }
+    /// <summary>Terțul postării pe un cont cu rol comercial (C111-D10).</summary>
+    public Guid? TertComercial { get; set; }
     public Guid? TipTvaId { get; set; }
     public N.RolTva? RolTva { get; set; }
     public N.SensTva? SensTva { get; set; }
+    public Guid? CodFunctional { get; set; }
+    public Guid? CodEconomic { get; set; }
+    public Guid? SursaFinantare { get; set; }
+    public Guid? UnitateOrganizatorica { get; set; }
+    public Guid? Proiect { get; set; }
+    public Guid? CentruCost { get; set; }
+}
+
+/// <summary>Postarea contabilă cu cele două axe analitice (C111-D10).</summary>
+public sealed class PostareAnalitica {
+    public Guid Id { get; set; }
+    public N.Spatiu Spatiu { get; set; }
+    public Guid TranzactieId { get; set; }
+    public N.FelTranzactie Fel { get; set; }
+    public Guid? DocumentId { get; set; }
+    public DateOnly Data { get; set; }
+    public Guid Cont { get; set; }
+    public N.Latura Latura { get; set; }
+    public decimal Valoare { get; set; }
+    public Guid? AxaPartener { get; set; }
+    public Guid? AxaGestiune { get; set; }
+    public Guid? Produs { get; set; }
     public Guid? CodFunctional { get; set; }
     public Guid? CodEconomic { get; set; }
     public Guid? SursaFinantare { get; set; }
@@ -48,12 +72,21 @@ public static class Contabil {
                select p;
     }
 
+    public static IQueryable<PostareAnalitica> Analitice(IObjectSpace os) =>
+        Postari(os).Select(p => new PostareAnalitica {
+            Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel,
+            DocumentId = p.DocumentId, Data = p.Data, Cont = p.Cont, Latura = p.Latura, Valoare = p.Valoare,
+            AxaPartener = p.Partener, AxaGestiune = p.Gestiune, Produs = p.Produs,
+            CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,
+            UnitateOrganizatorica = p.UnitateOrganizatorica, Proiect = p.Proiect, CentruCost = p.CentruCost,
+        });
+
     public static IQueryable<PostareJurnal> Jurnal(IObjectSpace os, DateOnly deLa, DateOnly panaLa) =>
         Postari(os).Where(p => p.Data >= deLa && p.Data <= panaLa).Select(p => new PostareJurnal {
             Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel,
             DataTranzactie = p.Tranzactie.Data, ScrisLa = p.Tranzactie.ScrisLa,
             DocumentId = p.DocumentId, LinieId = p.LinieId, Data = p.Data, Cont = p.Cont,
-            Latura = p.Latura, Valoare = p.Valoare, Partener = p.Partener,
+            Latura = p.Latura, Valoare = p.Valoare, TertComercial = p.Partener,
             TipTvaId = p.TipTvaId, RolTva = p.RolTva, SensTva = p.SensTva,
             CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,
             UnitateOrganizatorica = p.UnitateOrganizatorica, Proiect = p.Proiect, CentruCost = p.CentruCost,

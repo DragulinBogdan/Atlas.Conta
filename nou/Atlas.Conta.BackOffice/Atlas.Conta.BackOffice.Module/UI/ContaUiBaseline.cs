@@ -101,8 +101,10 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
         (nameof(Cub.Postare.DocumentId), "Document"),
         (nameof(Cub.Postare.Cont), "Cont"),
         (nameof(Cub.Postare.Latura), "Latură"),
+#pragma warning disable C111 // C111-D10
         (nameof(Cub.Postare.Partener), "Partener"),
         (nameof(Cub.Postare.Gestiune), "Gestiune"),
+#pragma warning restore C111
         (nameof(Cub.Postare.Unitate), "Unitate"),
         (nameof(Cub.Postare.Cantitate), "Cantitate"),
         (nameof(Cub.Postare.Valoare), "Valoare"),
