@@ -78,7 +78,7 @@ Fără review advers la scriere: decizie de formă, fără efect pe motor sau sc
 
 **118-r5 — Memoria agentului.** Predările din memorie trec în contracte și în istoric; indexul rămâne un rând per fir (kit §6.19, §11.6). Triggerul: prima felie închisă după 118-r2.
 
-**118-r6 — Tranșările de termeni aplicate în glosar.** Cele 14 puncte din „Tranșări · Termenii" intră în `termeni.md`: intrările „capăt", „unitate de sold", „sens", „retragere", „golire valorică", „partener fiscal" cu rândurile lor, cele 22 de marcaje `[de confirmat]` scoase, paginile stării curente aliniate la atingere („picior" → „capăt", „corecția directă" → „retragere", „profilul de validare" → „politica de validare"). Triggerul: sesiunea următoare, pe context nou.
+**118-r6 — Tranșările de termeni aplicate în glosar.** Cele 14 puncte din „Tranșări · Termenii" intră în `termeni.md`: intrările „capăt", „unitate de sold", „sens", „retragere", „golire valorică", „partener fiscal" cu rândurile lor, cele 22 de marcaje `[de confirmat]` scoase, paginile stării curente aliniate la atingere („picior" → „capăt", „corecția directă" → „retragere", „profilul de validare" → „politica de validare"). Triggerul: sesiunea următoare, pe context nou. Închisă 2026-10-10: glosarul are 65 de intrări (7 noi: sens, partener fiscal, document deschizător, partidă deschisă, retragere, golire valorică, nucleu; 3 redenumite: picior → capăt, unitate → unitate de sold, motor → motor de operare), zero marcaje; paginile rămân la atingere, cu aparițiile de aliniat: „picior" 11, „corecția directă" 1, „profilul de validare" 1, „registre" pentru cub în README și invarianți III.
 
 **118-r7 — `Latura` din nucleu devine `Sens`.** `enum Latura { Debit, Credit }` din `Atlas.Conta.Nucleu/Cub/Latura.cs`, folosit din 88 de fișiere, se redenumește mecanic în felia C111, care schimbă oricum forma postării; `Latura` rămâne doar a documentului. Triggerul: C111 pasul care atinge `Postare`.
 
@@ -87,3 +87,4 @@ Fără review advers la scriere: decizie de formă, fără efect pe motor sau sc
 ## Istoric
 
 - 2026-10-10: scrisă ca `propusă`, cu normalizarea celor 117 antete făcută de script în același PR.
+- 2026-10-10: 118-r6 închisă, tranșările de termeni aplicate în `termeni.md`.
