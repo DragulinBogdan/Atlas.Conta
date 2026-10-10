@@ -1,7 +1,7 @@
 # C111, pasul 2 — forma nouă a postării
 
-**Data:** 2026-10-10. **Stare:** implementat, verificat pe catalog și în
-browser; rămân bazele de dezvoltare de recreat.
+**Data:** 2026-10-10. **Stare:** închis: implementat, verificat pe catalog
+și în browser; bazele de dezvoltare sunt recreate după pasul 3 (C111-Q16).
 Contractul: [C111](c111-coordonate-contract.md), D2–D7 și D10.
 
 Urmele, neversionate: `run-verificari/20261010-210057-804/` (integrala
@@ -104,8 +104,6 @@ Două forme din catalog nu se pot atinge întocmai:
 
 ## Ce nu e probat
 
-- Bazele de dezvoltare, pe 5444 și pe 5446 fără sufix, nu sunt recreate; sunt
-  pe lanțul vechi și nu corespund codului.
 - Import1C compilează, dar n-a rulat pe forma nouă (pasul 6).
   `ScaraVolum.sql` și PerfCub sunt neatinse.
 - Clientul React are încă `gestiuneId` printre filtrele din URL

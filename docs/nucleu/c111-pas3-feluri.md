@@ -40,6 +40,13 @@ Urmele, neversionate: `run-verificari/20261010-213045-004/` (integrala).
 Integrala a rulat pe baze recreate din migrația cu coloana nouă. Suita
 nucleului n-a fost rerulată: nucleul nu e atins.
 
+Bazele de dezvoltare sunt recreate din `InitialCreate` (C111-Q16):
+`Atlas.Conta.BackOffice` și `Atlas.Conta.BackOffice.Privat` pe 5444,
+`Atlas.Conta.BackOffice` și `Atlas.Conta.ModelCheck.Privat` pe 5446. Integrala
+fără sufix, pe ele, dă aceleași cifre: 3.651 și 5.053, zero FAIL. Clonele de
+măsurare și bazele de import de pe 5444 sunt neatinse, pe lanțul vechi; cele
+de import se refac la pasul 6.
+
 Probele din D4:
 
 - `GARD-ANALIZA`, direct pe gard: felul nepotrivit e refuzat (S6); mulțimea cu
