@@ -48,4 +48,4 @@ listei comune; se adaugă aceeași probă pe registrul jurnal.
   întreg pe o lună, 21.152 ms pe forma veche și 2.342 ms prin pereche.
 - Clientul React nu arată încă coloana nouă a registrului jurnal (pasul 7).
 - Pe storno cu mai multe surse ordinalele sunt decalate; contrapartida
-  inversei e probată numai prin scenele existente ale fișei.
+  inversei nu are o probă anume.
