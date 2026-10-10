@@ -717,7 +717,9 @@ Așa s-a măsurat corectura îmbinării partidelor
 `ModelCheck --amprente <bază> <an> <lună> <director>` scrie sumele unei baze
 pe chei naturale, ca două baze cu identificatori diferiți să se poată compara
 la `diff`: balanța pe cont × lună, stocul pe cont × produs × gestiune × lună,
-partidele pe cont × partener × data deschiderii, D300 și D394 pe luna cerută.
+partidele pe cont × partener × data deschiderii, D300 și D394 pe luna cerută,
+plus trei secțiuni analitice: cont × repartitor de sold, cont × partener și
+loc fiscal, cont × contrapondere.
 `amprente.txt` ține numărul de rânduri și SHA-256 pe fiecare secțiune. Numai
 citire; rulează pe orice bază de pe instanța uneltelor, inclusiv pe una de
 import. Două importuri ale aceluiași binar dau amprente identice

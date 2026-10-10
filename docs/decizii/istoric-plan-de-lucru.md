@@ -1141,3 +1141,10 @@ detaliat în jurnal):
   9 fișiere au trecut pe cititori numiți. Integrala **3.579 / 4.860 OK** (+1
   proba nouă), amprentele bazei de import identice cu pasul 0, drift zero.
   `docs/nucleu/c111-pas1-poarta.md`.
+
+- **2026-10-10 — C111, pasul 1b: așteptările dinaintea formei noi.**
+  `--amprente` are trei secțiuni analitice (repartitor de sold, partener și
+  loc fiscal, contrapondere), calculate pe forma de azi prin derivarea din D5.
+  Martorul A → B: cele cinci secțiuni vechi nu văd un repartitor intern
+  schimbat, secțiunea analitică îl vede. Catalogul `scenarii/C111.md` are 22
+  de rânduri specificate. `docs/nucleu/c111-pas1b-asteptari.md`.
