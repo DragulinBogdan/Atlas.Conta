@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-10.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
 
 TR-D9a, pasul 6 (tăierea, 2026-10-07): motorul nu mai scrie, nu mai citește și
 nu mai ramifică pe registre și pe regim; oracolul registre → cub a ieșit din
@@ -948,18 +948,25 @@ tool din repo-ul `DocsKit`, configurată în `docs/docskit.json`): `linkuri`
 `antete` (câmpurile per tip, vocabularul `Stare` și `Tip`), `generat`
 (vederea generată la zi), `trimiteri` (cele două capete ale amendării și ale
 depășirii), `restante` (`Închide` ⇔ `închisă prin`, corp la sursă, stări din
-vocabular, lista `activă` sub 45), `cod` (`// 42b` are decizia și
+vocabular, lista `activă` sub 45), `arii` (fiecare rând al registrului
+numește o arie declarată, 118l), `cod` (`// 42b` are decizia și
 sub-punctul), `cai` (căile în backtick cu rădăcină `nou/`, `docs/`, `db/`,
 `legacy/` există, doar în stratul curent), `actualizat` (`Actualizat` ≥
 ultima schimbare a textului scris de mână al paginii; blocul generat nu
 contează, deci regenerarea nu cere dată nouă), `orfane` (stratul curent e legat), `termeni`
-(ancore unice în glosar). Un gardian intră la `eroare` când are zero
-constatări; la 2026-10-10 sunt la `eroare` `linkuri`, `generat`, `actualizat`,
-`orfane`, `termeni`, restul la `avertisment` cu cifrele în 118-r1. `check`
+(ancore unice în glosar), `tabele` (fiecare rând `| … |` stă sub antet și
+separator, fără linie goală între rânduri; rândul rămas în afară se randează
+ca text). Un gardian intră la `eroare` când are zero
+constatări; la 2026-10-11 sunt la `eroare` `linkuri`, `generat`, `arii`,
+`actualizat`, `orfane`, `termeni`, `tabele`, restul la `avertisment` cu
+cifrele în 118-r1. `check`
 verde e condiție a PR-ului, rulat local, cu ieșirea atașată; nu există CI și
-nici hook de sesiune. Limite: `build` (HTML static) și `metrics` (plafoanele
-de cod) nu sunt implementate (118-r2); `/docs-curatenie` și `docs-init` vin
-cu 118-r4. (118k)
+nici hook de sesiune. Citările din cod și metricile sar folderele `bin`,
+`obj`, `node_modules`, `.vs`, `Migrations` și `generated` (ieșirea
+codegen-ului OpenAPI). Limite: `build` (HTML static) și `metrics` (plafoanele
+de cod) există în unealtă din docskit 0.5.0, dar nu sunt adoptate aici: linia
+zero a metricilor nu e înregistrată (118-r2); `/docs-curatenie` și
+`docs-init` vin cu 118-r4. (118k)
 
 ## Import operațional 1C
 

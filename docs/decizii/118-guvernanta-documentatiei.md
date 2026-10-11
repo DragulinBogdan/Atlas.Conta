@@ -97,3 +97,4 @@ Fără review advers la scriere: decizie de formă, fără efect pe motor sau sc
 - 2026-10-10: generatul subțiat pentru context (docskit 0.1.1): `stare.md` 41 → 9 KB, lista fișierelor 57 → 30 KB, blocurile paginilor 29 → 3 KB, titlurile din index tăiate la 120 de caractere; 118-r9 deschisă.
 - 2026-10-10: 118-r2 livrată parțial (`gen`, `check`); (j) intră în vigoare: `docs/stare.md` e generat, §Stare din `CLAUDE.md` e un paragraf, textul vechi e în istoric.
 - 2026-10-11: 118-r9 tranșată și închisă prin (l): aria restanței ca o coloană a registrului, `stare.md` pe arie; kitul §3.2, §4, §8 și docskit 0.2.1 (gardianul `arii` la `eroare`; `\|` în celulele registrului).
+- 2026-10-11: docskit 0.5.0 aduce gardianul `tabele`; cele patru linii goale care rupeau registrul de la `100-r1` în jos (47 de rânduri randate ca text) sunt scoase, iar gardianul intră la `eroare` pe zero constatări (k). Folderul `generated` iese din citările de cod și din metrici înaintea liniei zero.

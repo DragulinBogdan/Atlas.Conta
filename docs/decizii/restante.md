@@ -356,20 +356,16 @@ se închide în felia de guvernanță (118); `închisă prin N` = singura stare 
 | 099-r1 | LDI adoptă cauza diferenței: minus imputabil pe partener, perisabilitate, neimputabilă; plus (099) | domeniu-si-operare | activă (091) |
 | 099-r2 | efectele fiscale per cauză a diferenței: ajustarea TVA, deductibilitatea (099) | politici-si-fiscalitate | după PoC (091) |
 | 099-r3 | BTR cu lipsă la primire, pe clasificarea cauzei diferenței (099) | domeniu-si-operare | după PoC (091) |
-
 | 100-r1 | Acoperirea bugetară a partidelor pe cele trei conturi DinSeed, ciclurile FCT/PLT, FCL/INC, NTC și deschidere; refuz istoric conform 096-r1 | politici-si-fiscalitate | închisă 2026-09-25: SC-CIT-41…48 și cataloagele tipurilor, integral 3.036/4.026 OK; raportul/snapshot-ul rămân la TR-D8 |
-
 | 101-r1 | Efect obligatoriu al împerecherii, refuz atomic, candidați/disponibil pe cub și diagnostic al legăturilor istorice fără efect (101) | domeniu-si-operare | închisă 2026-09-25 în C102: D-2 și D-3 corectate (SC-CIT-66/67), diagnosticul istoric depășit de 102; anterior activă, redeschisă 2026-09-25 de owner după review-ul advers (`comunicari/2026-09-25-1237`): NTC consumă retroactiv partida stinsă la o dată ulterioară (D-2); ținta deschisă prin Transfer e oferită în panou, dar refuzată de comandă (D-3). Închiderea anterioară: SC-CIT-49…65, integrale 3.107/4.103 OK |
 | 102-r1 | Scoaterea codului de compatibilitate (102c), invarianții devin probe ModelCheck (102d), comprimarea migrațiilor tranșată (102e); felia de curățenie înaintea snapshot-ului de stoc | dezvoltare-si-validare | închisă 2026-09-25 (C102, contractul §Închiderea) |
 | 102-r2 | Alinierea deciziilor, stare-curenta și restanțelor cu 102(c) | dezvoltare-si-validare | închisă 2026-09-25 (C102) |
 | 102-r3 | Rețeta de recreare a bazelor de dezvoltare și recrearea lor (102b) | dezvoltare-si-validare | închisă 2026-09-25 (C102; rețeta în `stare-curenta/dezvoltare-si-validare.md`) |
 | 102-r4 | Desfacerea automată fără efect în cub: refuz sau invariant `INV-CUB` (102) | domeniu-si-operare | închisă 2026-10-03 (X-D7 f, X-Q3 = A): refuz `IMPERECHERE_FARA_EFECT` pe ramura negativă, SC-CIT-108 |
 | 102-r5 | Perf `Fapte.PartideDisponibile` pe volum: agregarea temporală în SQL (102) | dezvoltare-si-validare | după PoC; măsurat în X-D5 (2026-10-04): dry-run-ul notei stingătoare citește toate partidele deschise ale partenerului, 1.770 / 4.390 / 7.006 rânduri la m = 0 / 6 / 12, 24–26 ms |
-
 | 103-r1 | Felia fiscală D8-B8: fapte istorice, perioade distincte, corecții/depunere, cititori comuni și probe SC-CIT-79…87 (103) | politici-si-fiscalitate | închisă 2026-09-26: 3.182/4.214 OK, 180/180 Nucleu, HTTP/browser și A/B; restul SAF-T și gate-ul transversal de performanță rămân TR-D8 |
 | 103-r2 | Intervale TVA și avertismente/raport de impact, cu referință la linia avansului (103h); contract `tr-d8-tva-intervale-contract.md`, SC-CIT-90…94; delimitare rămasă: Proveniența fiscală a ajustărilor RDC/RLF/reduceri (R6-B4) | politici-si-fiscalitate | activă numai pentru proveniența fiscală a ajustărilor RDC/RLF/reduceri; R6 implementat și verificat 2026-09-28, review advers închis; consumul/restul avansului rămâne în afara R6 |
 | 103-r3 | Validarea L3 a semnului taxei culese față de baza FCT/FCL și înlocuirea proxy-ului `ILinieCuAvans` pentru linia de factură; detalii în 103 | politici-si-fiscalitate | activă, la următoarea atingere a validării L3; nu blochează închiderea R6 |
-
 | 104-r1 | Felia C104: entități proprii și ștergere fizică, coaja comenzii fără OS dat de apelant, culegerea unică L3, aria React, review advers (104, pașii 1–5) | dezvoltare-si-validare | închisă 2026-09-27: pașii 1–5 pe `c104-straturi`, review Codex R1–R3 plus R4/R5 corectate, integral verde pe ambele profiluri |
 | 104-r2 | Coaja comenzii fără `IObjectSpace` și hook-urile cu `os` de pe entitate mutate în declarant/coajă (104b) | dezvoltare-si-validare | după PoC (110, D9-Q4 = A) |
 | 104-r3 | Filtrarea pe `Activ` în lookup-urile documentelor noi (104, L3/L4) | api-si-client | după PoC |

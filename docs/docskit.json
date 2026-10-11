@@ -17,7 +17,7 @@
   "caiRadacini": ["nou/", "docs/", "db/", "legacy/"],
   "cod": {
     "radacini": ["nou"],
-    "excluse": ["bin", "obj", "node_modules", ".vs", "Migrations"],
+    "excluse": ["bin", "obj", "node_modules", ".vs", "Migrations", "generated"],
     "limbaje": {
       "cs": { "extensii": [".cs"], "tinta": 400, "plafon": 600 },
       "ts": { "extensii": [".ts", ".tsx"], "tinta": 300, "plafon": 500 }
@@ -35,6 +35,7 @@
     "cai": "avertisment",
     "actualizat": "eroare",
     "orfane": "eroare",
-    "termeni": "eroare"
+    "termeni": "eroare",
+    "tabele": "eroare"
   }
 }
