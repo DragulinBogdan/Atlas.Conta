@@ -1,5 +1,9 @@
 # C111, pasul 3 — felurile de repartitor pe cont
 
+- Tip: analiza
+- Data: 2026-10-10
+- Alimentează: 111 (raport de pas al contractului C111)
+
 **Data:** 2026-10-10. **Stare:** implementat și verificat pe catalog, pe
 ambele profiluri. Contractul: [C111](c111-coordonate-contract.md), D4 și S6.
 

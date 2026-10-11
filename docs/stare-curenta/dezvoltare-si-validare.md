@@ -1049,8 +1049,8 @@ ca text). Un gardian intră la `eroare` când are zero
 constatări; la 2026-10-11 sunt la `eroare` `linkuri`, `generat`, `arii`,
 `actualizat`, `orfane`, `termeni`, `tabele`, restul la `avertisment` cu
 cifrele în 118-r1. `check`
-verde e condiție a PR-ului, rulat local, cu ieșirea atașată; nu există CI și
-nici hook de sesiune. Citările din cod și metricile sar folderele `bin`,
+și `metrics --check` verzi sunt condiție a PR-ului, rulate local, cu ieșirile
+atașate; nu există CI și nici hook de sesiune. Citările din cod și metricile sar folderele `bin`,
 `obj`, `node_modules`, `.vs`, `Migrations` și `generated` (ieșirea
 codegen-ului OpenAPI). (118k)
 
@@ -1059,11 +1059,12 @@ plafonul 600 de linii, TypeScript cu 300 și 500, plus comentariile cu marcaje
 narative. Doar din metrici ies `nou/tools` (ModelCheck, Import1C) și fișierul
 generat `UnitatiMasuraUnEce.cs` (`cod.excluseDinMetrici`, docskit 0.6.0);
 citările `// N` din ele rămân verificate de gardianul `cod`. Linia zero e
-`docs/docskit.baseline.json`, înregistrată la 2026-10-11: 11 fișiere C# și 6
-TypeScript peste plafon, 44 și 5 comentarii narative. `docskit metrics
+`docs/docskit.baseline.json`, rescrisă la 2026-10-11 pe arborele de după
+C111: 12 fișiere C# și 6 TypeScript peste plafon, 44 și 5 comentarii
+narative. `docskit metrics
 --check` pică la un fișier nou peste plafon, la mai multe comentarii narative
 și la o îmbunătățire neînregistrată; linia se rescrie cu `docskit metrics
---scrie`. Limite: `build` (HTML static) există în unealtă, dar nu e adoptat
+--scrie`, iar PR-ul numește ce a intrat în ea. Limite: `build` (HTML static) există în unealtă, dar nu e adoptat
 aici (118-r2); `/docs-curatenie` și `docs-init` vin cu 118-r4. (118k)
 
 ## Import operațional 1C

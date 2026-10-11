@@ -8,6 +8,7 @@
       "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/DatabaseUpdate/ContaSeeder.cs",
       "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/DatabaseUpdate/ProfilPrivat.cs",
       "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/GardianEditare.cs",
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Proiectii/ContabilProiectii.cs",
       "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftDto.cs",
       "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftProiectii.PeCub.cs",
       "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftXml.cs",

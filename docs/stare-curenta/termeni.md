@@ -1,6 +1,6 @@
 # Termeni
 
-**Actualizat: 2026-10-10.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
 
 Glosarul numește termenii paginilor de stare curentă și trimite la regula
 fiecăruia, fără s-o dubleze. Un termen intră aici la prima lui folosire
@@ -62,35 +62,62 @@ laturilor declară părțile permise pe fiecare latură a tipului. Regula:
 
 Ierarhia celor care dau sau primesc: partener, gestiune (internul care
 ține stoc), angajat, unitate internă, cont propriu; calitățile (loc de
-consum, comisie, centru de cost) sunt atribute, nu clase. Regula:
-[domeniu § Modelul comun](domeniu-si-operare.md#modelul-comun) (16).
-Înrudit: parte, partener. În cod: `Repartitor`, `Calitati`.
+consum, comisie, centru de cost) sunt atribute, nu clase. Postarea poartă
+un singur repartitor de sold, cu felul lui. Regula:
+[domeniu § Modelul comun](domeniu-si-operare.md#modelul-comun) (16, 111).
+Înrudit: parte, partener, fel de repartitor, loc. În cod: `Repartitor`,
+`Calitati`; pe postare, `Repartitor` = `(Id, Fel)`.
+
+### fel de repartitor
+
+Clasa repartitorului de sold al postării: partener, angajat, gestiune,
+cont propriu, unitate internă; contul declară felurile admise, cu sau
+fără „niciunul”, iar gardul analizei refuză repartitorul de alt fel.
+Regula: [domeniu § Contare și dimensiuni](domeniu-si-operare.md#contare-și-dimensiuni) (111, C111-D4).
+Înrudit: repartitor, parte, cont. În cod: `FelRepartitor`,
+`Cont.FeluriRepartitor`.
 
 ### partener
 
 Terțul extern, furnizor și client ca roluri ale aceluiași rând; pe
-postare, `Partener` e coordonata capătului de terț și poartă partida.
-Regula: [domeniu § Declarația fluxului per tip](domeniu-si-operare.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (16, B-D8).
-Înrudit: repartitor, partidă, partener fiscal. În cod: `Postare.Partener`.
+postare, e repartitorul de sold al capătului de terț și titularul
+partidei.
+Regula: [domeniu § Declarația fluxului per tip](domeniu-si-operare.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (16, B-D8, 111).
+Înrudit: repartitor, partidă, partener fiscal. În cod: `Partener`; pe
+postare, `Repartitor` cu felul `Partener`.
 
 ### partener fiscal
 
-Partenerul din blocul fiscal al postării, pe capătul intern cu fapt
-fiscal: nu poartă partidă și nu e repartitorul capătului; separarea lui de
-repartitor e a deciziei 111. Regula:
-[limite § Domeniu și operare](limite-curente.md#domeniu-și-operare) (B-D8 pct. 5, D9-A10, 111).
-Înrudit: partener, fapt fiscal, capăt. În cod: `Postare.Partener` pe
-capătul cu `CodTva`.
+Partenerul din blocul fiscal al postării cu fapt fiscal: nu poartă
+partidă, nu e repartitorul de sold al postării și poate lipsi. Regula:
+[domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (B-D8 pct. 5, 111, C111-D2).
+Înrudit: partener, fapt fiscal, loc. În cod: `PartenerFiscal`.
+
+### loc
+
+Locul intern al postării când nu e repartitorul ei de sold: pe orice
+postare cu fapt fiscal („loc fiscal”) și pe capătul intern căruia
+titularul unei partide i-a luat locul; nu intră în nicio cheie de sold.
+Regula: [domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (111, C111-D2, C111-Q14).
+Înrudit: repartitor, partener fiscal, fapt fiscal. În cod: `Loc`.
+
+### contrapondere
+
+Marcajul postării care ține contracantitatea în afara evidenței: terț,
+consum, inventar sau transformare; postarea nemarcată e în evidență.
+Regula: [domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D4, 111, C111-D2).
+Înrudit: capăt, repartitor, lot. În cod: `Contrapondere`.
 
 ### capăt
 
 Una din cele două postări ale unei mișcări, numită după ce poartă (de
-terț, propriu, intern) și după unde stă (real sau virtual); „picior” e
+terț, propriu, intern) și după unde stă (în evidență sau marcat cu
+contrapondere); „picior” e
 sinonimul de vorbire al paginilor, iar „proiecție” rămâne al citirilor
 (42c). Viramentul intern e perechea PLT/INC cu capetele pe conturi
 proprii. Regula:
 [domeniu § Declarația fluxului per tip](domeniu-si-operare.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (B-D8, S-D7, T-D13, 64, 118).
-Înrudit: latură, postare, partener fiscal. În cod: `Capat`.
+Înrudit: latură, postare, contrapondere. În cod: `Capat`.
 
 ### unitate de sold
 
@@ -250,8 +277,8 @@ dintr-o perioadă închisă se desface prin rând invers. Regula:
 Documentul generat de operarea sursei, creat în tranzacția ei cu
 `DocumentSursaId` și `Autogenerat` și operat separat: NIR din FCT (postează
 doar diferența față de recepția facturii), plata din factură, descărcarea
-de gestiune DSC din FCL (lotul iese la cost, fără TVA, pe gestiunea
-virtuală `Client`, cu pinurile înaintea FIFO). Regula:
+de gestiune DSC din FCL (lotul iese la cost, fără TVA, cu contraponderea
+de terț, cu pinurile înaintea FIFO). Regula:
 [domeniu § Documente generate și viramente](domeniu-si-operare.md#documente-generate-și-viramente) (17, 26d, 37b, 098, T-D4).
 Înrudit: document, evaluare FIFO. În cod: `PoliticaConex`, `DescarcareService`.
 
@@ -374,13 +401,12 @@ mișcării; nu se rescrie, iar valoarea negativă e admisă doar ca linie
 ### coordonată
 
 Axa postării, cheia pe care se grupează și se identifică: cont, sens
-(obligatoriu), dată, partener, gestiune, produs, unitate, cod de TVA,
-perioadă de declarare, valută, carte (`Contabil` / `Fiscal`) și șase
-analize; gestiunile virtuale (`Furnizor`, `Client`, `Consum`,
-`Transformare`) sunt constante ale nucleului, fără rând, pe care stă
-capătul virtual al cantității. Regula:
-[domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D2, N-D3, B-D8, D9-A10).
-Înrudit: postare, dimensiune, sens. În cod: `Coordonate`, `GestiuniVirtuale`.
+(obligatoriu), dată, repartitor, contrapondere, produs, unitate, cod de
+TVA, perioadă de declarare, partener fiscal, loc, valută, carte
+(`Contabil` / `Fiscal`) și șase analize. Regula:
+[domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D2, N-D3, B-D8, 111, C111-D2).
+Înrudit: postare, dimensiune, sens, repartitor, contrapondere. În cod:
+`Coordonate`.
 
 ### explicație
 
@@ -623,7 +649,7 @@ politici versionate; exportul cere citire necondiționată. Regula:
 | `D8-B1`, `R6-B1`, `LDI-B1`, `DES-B1`, `ASM-B2`, `NIR-D1`, `SAF-D1`, `S2-D1`, `M1-D1`, `C111-D1` | pin-ul contractului feliei sau al tipului numit (citiri TR-D8, intervale TVA, LDI, deschidere, ASM, NIR delta, SAF-T și pașii lui, migrarea M1, coordonatele C111) | `D8-B4` | `docs/nucleu/*-contract.md`, `docs/import/m1-*-contract.md`; „-B” și „-D” sunt același lucru, un pin aprobat de owner, numerotat diferit de la TR-D8 |
 | `S0` … `S3` | pașii feliei SAF-T din TR-D8 (validator, L, Payments, stocuri) | `S1-R8` | `docs/nucleu/tr-d8-saft-contract.md` |
 | `X-RI1`, `D9-F-R1`, `C106-R1`, `C111-R1`, `M1-R1`, `109-R1`, `S1-R1` | observația 1 a review-ului Codex: RI = al implementării (TR-D8), F-R = al închiderii TR-D9a, R = al feliei, deciziei sau pasului numit; `RV1`, `RV2` = rundele de reverificare | `X-RI4`, `M1-R3a` | `docs/nucleu/*-review-codex.md`, `docs/import/m1-review-codex.md` |
-| `C111-Q1` | tranșarea 1 a owner-ului pe contractul C111 | `C111-Q8` | `docs/nucleu/c111-coordonate-contract.md`, §C111-Q (ramura `c111-coordonate`) |
+| `C111-Q1` | tranșarea 1 a owner-ului pe contractul C111 | `C111-Q8` | `docs/nucleu/c111-coordonate-contract.md`, §C111-Q |
 | `IZ-R1` | defectul 1 al rețetei de izolare a mutanților (110) | `IZ-R2` | `docs/decizii/110-*.md` |
 | `C102`, `C104`, `C106`, `C111`, `M1` | felii numite după decizia lor (curățenie, straturi, regim pe stare, coordonate) și prima felie de migrare (107) | `C104-R2` | `docs/nucleu/c1NN-*.md`, `docs/import/m1-*.md`; C = feliile de consolidare de după 091 |
 | `SC-BCS-01`, `SC-X-24`, `SC-CIT-73` | scenariul 01 al tipului BCS; transversal; al citirilor | `SC-NIR-37` | `docs/nucleu/scenarii/<COD>.md`, `CITIRI.md` |

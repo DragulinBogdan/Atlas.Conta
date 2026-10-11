@@ -1,5 +1,9 @@
 # C111, pasul 0 — linia de bază
 
+- Tip: analiza
+- Data: 2026-10-10
+- Alimentează: 111 (raport de pas al contractului C111)
+
 **Data:** 2026-10-10. **Stare:** măsurat. **Cod:** `bff2317` (main `1cc9d93`
 plus documentele feliei și comanda `--amprente`; niciun cod de produs
 schimbat). Contractul: [C111](c111-coordonate-contract.md), D9.

@@ -1,5 +1,9 @@
 # C111, pasul 6 — importul pe forma nouă
 
+- Tip: analiza
+- Data: 2026-10-10
+- Alimentează: 111 (raport de pas al contractului C111)
+
 **Data:** 2026-10-10. **Stare:** importul și comparațiile lui sunt făcute;
 `ScaraVolum.sql` și PerfCub sunt în
 [`c111-pas6-scriere-si-volum.md`](c111-pas6-scriere-si-volum.md). Contractul:

@@ -9,8 +9,8 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Decizii | 118: 85 active, 33 amendate parțial, 0 depășite, 0 propuse |
 | Restanțe | 380: 283 deschise, 97 închise |
 | Pagini de stare curentă | 7 |
-| Contracte de felie (`Tip: contract`) | 0, deschise 0 |
-| Cataloage vii (`Tip: catalog`) | 0 |
+| Contracte de felie (`Tip: contract`) | 1, deschise 0 |
+| Cataloage vii (`Tip: catalog`) | 1 |
 | Fișiere Markdown în `docs/` | 295 |
 | Citări de decizii din cod (`// N`) | 126 |
 
@@ -111,7 +111,13 @@ Decizia (numărul de citări `// N` din cod): 1 (3), 3 (2), 4 (1), 5 (1), 9 (1),
 | [domeniu-si-operare](stare-curenta/domeniu-si-operare.md) | 2026-10-11 |
 | [limite-curente](stare-curenta/limite-curente.md) | 2026-10-11 |
 | [politici-si-fiscalitate](stare-curenta/politici-si-fiscalitate.md) | 2026-10-11 |
-| [termeni](stare-curenta/termeni.md) | 2026-10-10 |
+| [termeni](stare-curenta/termeni.md) | 2026-10-11 |
+
+## Cataloagele vii
+
+| Catalog | Actualizat |
+|---|---|
+| [C111 — coordonatele postării (transversal)](nucleu/scenarii/C111.md) | 2026-10-11 |
 
 ## Ce nu poate ști
 

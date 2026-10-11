@@ -165,8 +165,9 @@ pe container (5444): `docs/stare-curenta/dezvoltare-si-validare.md`.
   `docs/decizii/restante.md` (numele acolo, textul doar în fișierul
   deciziei). Generatul (indexul deciziilor, blocul `gen:decizii` din pagini,
   `docs/README.md`, `docs/stare.md`) îl scrie `docskit gen`, nu mâna;
-  `docskit check` verde, din rădăcina repo-ului, e condiție a PR-ului, cu
-  ieșirea atașată (118k; `docs/docskit.json`). Numerele și literele nu se renumerotează niciodată; un
+  `docskit check` și `docskit metrics --check` verzi, din rădăcina
+  repo-ului, sunt condiție a PR-ului, cu ieșirile atașate (118k;
+  `docs/docskit.json`, linia zero în `docs/docskit.baseline.json`). Numerele și literele nu se renumerotează niciodată; un
   sub-punct amendat sau depășit primește marcajul `[amendat de N]` /
   `[depășit de N]` la început, cu textul păstrat; decizia depășită integral
   primește banner și trece în `docs/decizii/arhiva/`; o restanță închisă își

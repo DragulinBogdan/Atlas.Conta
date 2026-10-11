@@ -1,5 +1,9 @@
 # C111, pasul 6 — uneltele de volum, costul scrierii și scara pe forma nouă
 
+- Tip: analiza
+- Data: 2026-10-11
+- Alimentează: 111 (raport de pas al contractului C111)
+
 **Data:** 2026-10-11. **Stare:** făcut; pasul 6 e închis împreună cu
 [importul](c111-pas6-import.md). Contractul:
 [C111](c111-coordonate-contract.md), D9 și C111-Q17.

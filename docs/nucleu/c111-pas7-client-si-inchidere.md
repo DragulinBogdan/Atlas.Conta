@@ -1,5 +1,9 @@
 # C111, pasul 7 — clientul, contractul HTTP și închiderea
 
+- Tip: analiza
+- Data: 2026-10-11
+- Alimentează: 111 (raport de pas al contractului C111)
+
 **Data:** 2026-10-11. **Stare:** implementat și verificat pe catalog, pe HTTP
 și în browser; review-ul advers pe diff-ul întreg al feliei e închis:
 C111-F-R1 e corectată, C111-F-R2 e tranșată (C111-Q22), amândouă reverificate. Contractul: [C111](c111-coordonate-contract.md), D6, D9 și

@@ -1,5 +1,9 @@
 # C111, pasul 2 — forma nouă a postării
 
+- Tip: analiza
+- Data: 2026-10-10
+- Alimentează: 111 (raport de pas al contractului C111)
+
 **Data:** 2026-10-10. **Stare:** închis: implementat, verificat pe catalog
 și în browser; bazele de dezvoltare sunt recreate după pasul 3 (C111-Q16).
 Contractul: [C111](c111-coordonate-contract.md), D2–D7 și D10.

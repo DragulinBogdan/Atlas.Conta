@@ -196,7 +196,7 @@ nimic nu-l completează după aceea, nici pe capătul cu partidă, nici pe contu
 care cere repartitor (S13, C111-R16). Pe cele șase politici de TVA din seed
 latura numită e terțul documentului. `Loc` nu vine din politică: e singura
 latură internă a documentului, citită din laturile lui tipate (C111-Q10).
-Baza și taxa aceluiași document poartă același loc, iar piciorul de taxă are
+Baza și taxa aceluiași document poartă același loc, iar capătul de taxă are
 locul ca repartitor de sold. Cine scrie fiecare coordonată:
 [domeniu-si-operare](domeniu-si-operare.md), „Regula coordonatelor”.
 
@@ -478,9 +478,9 @@ rezervă pe partenerul fiscal (S11, C111-Q9). Registrul, facturile și
 soldurile Customers și Suppliers citesc aceeași axă:
 
 - postarea cu partidă are ca repartitor titularul, deci iese pe el;
-- piciorul de decont cu terț pe linie iese pe terțul liniei, în registru și
+- capătul de decont cu terț pe linie iese pe terțul liniei, în registru și
   în sold;
-- postarea fără repartitor extern de pe un cont cu rol comercial — piciorul
+- postarea fără repartitor extern de pe un cont cu rol comercial — capătul
   intern cu fapt fiscal, nota pe repartitor intern — iese în registru cu
   codul societății și avertismentul `TertFaraPartener`, iar soldul ei intră
   în `Neincluse`: cu `RepartitorNePartener` și repartitorul numit când are
