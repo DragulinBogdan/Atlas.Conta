@@ -1174,3 +1174,34 @@ detaliat în jurnal):
   baze create din ea; nucleul 199. La implementare au apărut C111-Q12 (S14,
   poziția fără fișă), Q13 (rândul fără terț) și Q14 (`Loc` și fără fapt
   fiscal; 111 (b) amendată). `docs/nucleu/c111-pas2-forma-noua.md`.
+
+- **2026-10-10 — C111, pașii 3–5: felurile pe cont, S7 și S8, perechea.**
+  `Cont.FeluriRepartitor` înlocuiește flag-ul R; gardul judecă prezența și
+  felul; seed-ul bugetar declară cele 20 de conturi (C111-Q15). Tranzitul
+  viramentului rămâne fără repartitor, iar consumul intern la DSC nu mai scrie
+  contrapondere de client. Fișa contului și registrul jurnal citesc
+  contrapartida din pereche (D9-r4 închisă). Integrala după pasul 5: 3.660 /
+  5.062 OK. `docs/nucleu/c111-pas3-feluri.md`, `c111-pas4-s7-s8.md`,
+  `c111-pas5-pereche.md`.
+
+- **2026-10-11 — C111, pasul 6: uneltele.** Import1C pe forma nouă, cu
+  amprentele liniei de bază identice pe ianuarie 2025; `ScaraVolum.sql` și
+  PerfCub pe forma nouă; costul scrierii măsurat pe aceeași bază, cu și fără
+  cele două chei străine (C111-Q17); scara de 5 milioane de postări. Scara
+  transversală a prins citirea perechii fără margine în registrul jurnal.
+  `docs/nucleu/c111-pas6-import.md`, `c111-pas6-scriere-si-volum.md`.
+
+- **2026-10-11 — C111, pasul 7: clientul și închiderea.** Clientul e pe o
+  singură axă de repartitor; fișa are filtrul `faraTert` (C111-Q18) și banda
+  de sinteză (C111-Q19); indexul `(TranzactieId, Pereche)` înlocuiește indexul
+  pe tranzacție, iar registrul jurnal îmbină perechea în SQL (C111-Q20). Pe
+  import registrul jurnal scade de la 21 s la 0,25 s; la 5 milioane rămâne la
+  6,6–8,0 s. `docs/nucleu/c111-pas7-client-si-inchidere.md`.
+
+- **2026-10-11 — C111 închisă: review-ul advers Codex al închiderii.**
+  C111-F-R1: de la pasul 3, terțul documentului nu mai ajungea pe piciorul
+  conturilor „partener sau niciunul”; corectat (`ContFapt.DeclaraRepartitor`,
+  scena SC-C111-33). C111-F-R2: sinteza fișei însumează pe ușa securizată ce
+  vede rolul; owner-ul a precizat 110 (e) (C111-Q22), fără schimbare de cod.
+  Codex a reverificat și a închis amândouă. Integrala finală: 3.678 / 5.080
+  OK, zero FAIL. Decizia 111 (a)–(e) și (i) e implementată; urmează TR-D9b.

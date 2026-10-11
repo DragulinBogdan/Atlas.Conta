@@ -1,6 +1,6 @@
 # Restanțele și amânările cu nume
 
-**Actualizat: 2026-10-10 (111 aprobată: 110-r3 închisă, F27-r16 și F28-r1 trec în contractul TR-D9b, 111-r1, 111-r2, C111-r1 și C111-r2 deschise; D9-r4 intră în C111; 111-r2 închisă la pasul 3 al C111).** [Index](README.md)
+**Actualizat: 2026-10-11 (C111 închisă: 111 (a)–(e) și (i) implementate; D9-r4, 111-r1 și 111-r2 închise în felie; C111-r1 și C111-r2 rămân după PoC; F27-r16 și F28-r1 rămân în contractul TR-D9b; felia nu deschide restanțe noi, limitele ei sunt în `docs/stare-curenta/limite-curente.md`).** [Index](README.md)
 
 Backlog-ul dezvoltatorului: fiecare rând e o amânare declarată într-o decizie.
 Identificatorul spune unde e textul integral — `36f` = sub-punctul (f) al

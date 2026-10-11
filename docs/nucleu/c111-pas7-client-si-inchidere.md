@@ -1,8 +1,8 @@
 # C111, pasul 7 — clientul, contractul HTTP și închiderea
 
 **Data:** 2026-10-11. **Stare:** implementat și verificat pe catalog, pe HTTP
-și în browser; review-ul advers pe diff-ul întreg al feliei a sosit:
-C111-F-R1 e corectată, C111-F-R2 e tranșată (C111-Q22); rămâne reverificarea. Contractul: [C111](c111-coordonate-contract.md), D6, D9 și
+și în browser; review-ul advers pe diff-ul întreg al feliei e închis:
+C111-F-R1 e corectată, C111-F-R2 e tranșată (C111-Q22), amândouă reverificate. Contractul: [C111](c111-coordonate-contract.md), D6, D9 și
 C111-Q18…Q21; decizia 111.
 
 Urmele, neversionate: `run-verificari/c111-pas7-http/` (rețeta
@@ -160,8 +160,14 @@ advers Codex al închiderii”.
   citirea completă și pe proiecții; owner-ul a precizat regula: citirea
   completă e a rutelor de pe ușa de sistem. Codul nu se schimbă.
 
+Codex a reverificat cele două commit-uri (2026-10-11, 14:52): amândouă
+constatările sunt închise, fără alta nouă. A repetat pe HTTP cazul 437.01.00
+din seed, cu plată și încasare, verde. Decizia 111 (a)–(e) și (i) e
+implementată.
+
 ## Ce rămâne
 
-- Reverificarea Codex a corecției C111-F-R1; decizia 111 trece la
-  „implementată” după ea.
+- Mersul în main: push și PR, cu acordul owner-ului.
+- Neprobate separat: 437.02.00 și 803.00.01 și ceilalți declaranți care pun
+  terțul prin același helper pe un cont care admite lipsa.
 - La volum, contrapartida din registrul jurnal costă tot circa 4 µs pe rând.

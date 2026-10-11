@@ -3,10 +3,13 @@
 - Data: 2026-10-06
 - Stare: **activă**, aprobată de owner 2026-10-10 în forma precizată după
   pasul 0, cu (b) amendată în aceeași zi (locul fiscal se persistă);
-  hotărârile aprobării sunt în §„Aprobarea". Neimplementată: (a)–(e)
-  și (i) se implementează în felia C111 (coordonatele), înaintea TR-D9b
-  (unitățile). (g) și (h) sunt consumate, TR-D9a fiind închisă. Închide
-  110-r3 prin (i).
+  hotărârile aprobării sunt în §„Aprobarea". (a)–(e) și (i) sunt
+  **implementate** în felia C111 (2026-10-11), înaintea TR-D9b (unitățile):
+  contractul `docs/nucleu/c111-coordonate-contract.md`, cu tranșările
+  C111-Q1…Q22 și cu review-ul advers Codex al închiderii închis (C111-F-R1
+  corectată, C111-F-R2 tranșată; reverificat 2026-10-11). (f), registrele
+  tipate, rămâne fără implementare, cu decizie proprie. (g) și (h) sunt
+  consumate, TR-D9a fiind închisă. Închide 110-r3 prin (i).
 - Pasul 0 e măsurat (2026-10-08, `docs/nucleu/tr-d9b-pas0-masuratori.md`).
   Ce s-a schimbat față de forma din 2026-10-06 e listat în §„Precizările de
   după pasul 0".

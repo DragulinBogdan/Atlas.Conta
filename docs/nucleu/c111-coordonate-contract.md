@@ -7,8 +7,8 @@ sunt făcuți. Codex a închis review-ul de contract (2026-10-10,
 `comunicari/2026-10-10-1732-…-c111-contract-review-inchis.md`). Pasul 2 e
 implementat și verificat pe catalog; C111-Q12…Q14 au apărut la implementare.
 Pașii 3–7 sunt făcuți (2026-10-11), cu C111-Q15…Q21. Review-ul advers al
-închiderii a sosit (2026-10-11): C111-F-R1 e corectată, C111-F-R2 e tranșată
-(C111-Q22); rămâne reverificarea lui Codex.
+închiderii e închis (2026-10-11): C111-F-R1 e corectată, C111-F-R2 e tranșată
+(C111-Q22), amândouă reverificate de Codex. **Felia e închisă.**
 **Bază:** main `1cc9d93`. **Decizia:**
 [111](../decizii/111-repartitor-unic-si-registre-tipate.md), aprobată
 2026-10-10. **Măsurătorile:** [pasul 0](tr-d9b-pas0-masuratori.md).
@@ -312,7 +312,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 4 | S7 și S8 | făcut 2026-10-10: [`c111-pas4-s7-s8.md`](c111-pas4-s7-s8.md) |
 | 5 | S9: contrapartida prin pereche | făcut 2026-10-10, cu fișa și registrul pe HTTP: [`c111-pas5-pereche.md`](c111-pas5-pereche.md). Cifra de timp cere o bază de import pe forma nouă și se ia la pasul 6 |
 | 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | făcut. Importul, 2026-10-10, cu regulile de oprire 1 și 2 și `INV-CUB` verzi și cu cifra de timp a fișei: [`c111-pas6-import.md`](c111-pas6-import.md). Uneltele de volum, costul scrierii și scara de 5 milioane, 2026-10-11: [`c111-pas6-scriere-si-volum.md`](c111-pas6-scriere-si-volum.md); scara transversală a prins citirea perechii fără margine în registrul jurnal, corectată acolo |
-| 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | implementat și verificat 2026-10-11: [`c111-pas7-client-si-inchidere.md`](c111-pas7-client-si-inchidere.md), cu C111-Q18…Q21; drift zero, `refuzuri.ps1` 327/327; review-ul advers pe diff-ul întreg: C111-F-R1 corectată, C111-F-R2 tranșată prin C111-Q22 (secțiunea „Review-ul advers Codex al închiderii”); rămâne reverificarea |
+| 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | implementat și verificat 2026-10-11: [`c111-pas7-client-si-inchidere.md`](c111-pas7-client-si-inchidere.md), cu C111-Q18…Q21; drift zero, `refuzuri.ps1` 327/327; review-ul advers pe diff-ul întreg: C111-F-R1 corectată, C111-F-R2 tranșată prin C111-Q22, reverificate de Codex (secțiunea „Review-ul advers Codex al închiderii”) |
 
 **Scrierile brute și mutanții** (pasul 2). Probele care scriu sau strică
 postări fără scriitorul produsului se mută semantic, nu mecanic:
@@ -555,8 +555,8 @@ nu acoperă pașii 3–7.
 Mesajul: `comunicari/2026-10-11-1342-codex-claude-c111-inchidere-review.md`,
 pe `main...c840765`, cu integrala rulată de Codex pe baze proprii (3.673 /
 5.075, zero FAIL) și cu două probe HTTP ale lui. Verdictul: închiderea nu se
-recomandă până la R1 și R2. Corecția și tranșarea de mai jos nu sunt încă
-reverificate de Codex. Fiecare constatare a fost recitită în cod.
+recomandă până la R1 și R2. Corecția și tranșarea de mai jos sunt
+reverificate de Codex (paragraful de sub tabel). Fiecare constatare a fost recitită în cod.
 
 | Id | Constatarea | Dispoziția |
 |---|---|---|
@@ -571,6 +571,22 @@ Proba lui pe HTTP închide un punct lăsat neprobat la pasul 7: un rol căruia i
 se ascunde postarea pereche vede rândul fără cont corespondent, în fișă și în
 registrul jurnal. Rămân nemăsurate de el, ca și la predare: costul scrierii
 cu indexul nou, importul după ianuarie 2025, scara de 5 milioane.
+
+**Reverificarea** (2026-10-11,
+`comunicari/2026-10-11-1452-codex-claude-c111-inchidere-reverificata.md`), pe
+`c840765..6c5c2f6`: C111-F-R1 și C111-F-R2 sunt închise, fără altă
+constatare. Codex a rulat scenele C111 pe commit-ul curat (144 OK pe bugetar,
+276 pe privat, zero FAIL) și a repetat pe HTTP cazul 437.01.00 din seed:
+plata de 10 și încasarea de 4 păstrează partenerul, fișa pe partener are două
+rânduri cu sold debitor 6, fișa fără terț e goală. Alegerea „declară feluri”
+nu e schimbare nenumită: terțul de alt fel ajunge la gard și e refuzat (S6).
+Nu a rerulat integrala, mutantul, matricea HTTP, browserul, nucleul, importul
+și scara de volum. Rămân neprobate separat 437.02.00 și 803.00.01 și fiecare
+declarant care trece prin `Terti.Capat` pe un cont care admite lipsa, alături
+de limitele dinainte (SC-C111-20, costul scrierii cu indexul nou, importul
+după ianuarie 2025).
+
+Regula de oprire 8 e îndeplinită: felia e închisă.
 
 ## Amendamentul 1 (propus 2026-10-10; retras 2026-10-10, C111-Q5)
 
