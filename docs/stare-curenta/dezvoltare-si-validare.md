@@ -962,14 +962,20 @@ constatări; la 2026-10-11 sunt la `eroare` `linkuri`, `generat`, `arii`,
 cifrele în 118-r1. `check`
 verde e condiție a PR-ului, rulat local, cu ieșirea atașată; nu există CI și
 nici hook de sesiune. Citările din cod și metricile sar folderele `bin`,
-`obj`, `node_modules`, `.vs`, `Migrations`, `generated` (ieșirea
-codegen-ului OpenAPI) și `tools` (ModelCheck, Import1C), plus fișierul generat
-`UnitatiMasuraUnEce.cs`. Excluderea e comună în unealtă: cele 50 de citări
-`// N` din fișierele excluse nu mai sunt verificate de gardianul `cod` și nu
-mai intră în numărătoarea din `stare.md` (76 din 126). Limite: `build` (HTML static) și `metrics` (plafoanele
-de cod) există în unealtă din docskit 0.5.0, dar nu sunt adoptate aici: linia
-zero a metricilor nu e înregistrată (118-r2); `/docs-curatenie` și
-`docs-init` vin cu 118-r4. (118k)
+`obj`, `node_modules`, `.vs`, `Migrations` și `generated` (ieșirea
+codegen-ului OpenAPI). (118k)
+
+Forma codului o măsoară `docskit metrics`, pe `nou/`: C# cu ținta 400 și
+plafonul 600 de linii, TypeScript cu 300 și 500, plus comentariile cu marcaje
+narative. Doar din metrici ies `nou/tools` (ModelCheck, Import1C) și fișierul
+generat `UnitatiMasuraUnEce.cs` (`cod.excluseDinMetrici`, docskit 0.6.0);
+citările `// N` din ele rămân verificate de gardianul `cod`. Linia zero e
+`docs/docskit.baseline.json`, înregistrată la 2026-10-11: 11 fișiere C# și 6
+TypeScript peste plafon, 44 și 5 comentarii narative. `docskit metrics
+--check` pică la un fișier nou peste plafon, la mai multe comentarii narative
+și la o îmbunătățire neînregistrată; linia se rescrie cu `docskit metrics
+--scrie`. Limite: `build` (HTML static) există în unealtă, dar nu e adoptat
+aici (118-r2); `/docs-curatenie` și `docs-init` vin cu 118-r4. (118k)
 
 ## Import operațional 1C
 

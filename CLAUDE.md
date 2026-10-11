@@ -112,8 +112,9 @@ contrazise din neatenție.
 ## Stare
 
 Felia curentă: adoptarea kitului de guvernanță (decizia 118, activă din
-2026-10-10). Unealta `docskit` (118-r2) are `gen` și `check` livrate, cu
-`build` și `metrics` încă deschise; 118-r1 (curățenia antetelor normalizate)
+2026-10-10). Unealta `docskit` (118-r2) are `gen`, `check` și `metrics`
+adoptate, cu linia zero a codului în `docs/docskit.baseline.json`; `build`
+e încă deschis; 118-r1 (curățenia antetelor normalizate)
 așteaptă `/docs-curatenie` (118-r4). Pe motor urmează hotărârea owner-ului pe
 decizia 111 (propusă), apoi contractul TR-D9b. Unde suntem, cu cifre, e
 generat în [docs/stare.md](docs/stare.md); cronologia feliilor e în
