@@ -21,7 +21,7 @@ public class BalantaController : ContaApiController {
         [FromQuery] Guid? repartitorId = null, [FromQuery] Guid? materialId = null,
         [FromQuery] Guid? codFunctionalId = null, [FromQuery] Guid? codEconomicId = null,
         [FromQuery] Guid? sursaFinantareId = null, [FromQuery] Guid? unitateId = null,
-        [FromQuery] Guid? proiectId = null, [FromQuery] Guid? centruCostId = null, [FromQuery] Guid? gestiuneId = null) {
+        [FromQuery] Guid? proiectId = null, [FromQuery] Guid? centruCostId = null) {
 
         var erori = new List<string>();
         if (dataStart == null)
@@ -37,7 +37,7 @@ public class BalantaController : ContaApiController {
         if (FaraPostariCitibile(os)) return Ok(Incarca(Array.Empty<BalantaRand>().AsQueryable(), loadOptions));
         return Ok(Incarca(ContabilProiectii.Balanta(os, dataStart.Value, dataEnd.Value, analitic,
             repartitorId, materialId, codFunctionalId, codEconomicId,
-            sursaFinantareId, unitateId, proiectId, centruCostId, gestiuneId),
+            sursaFinantareId, unitateId, proiectId, centruCostId),
             loadOptions, ContabilProiectii.OrdineBalanta(analitic)));
     }
 }
@@ -57,7 +57,7 @@ public class BalantaPlanController : ContaApiController {
         [FromQuery] Guid? repartitorId = null, [FromQuery] Guid? materialId = null,
         [FromQuery] Guid? codFunctionalId = null, [FromQuery] Guid? codEconomicId = null,
         [FromQuery] Guid? sursaFinantareId = null, [FromQuery] Guid? unitateId = null,
-        [FromQuery] Guid? proiectId = null, [FromQuery] Guid? centruCostId = null, [FromQuery] Guid? gestiuneId = null) {
+        [FromQuery] Guid? proiectId = null, [FromQuery] Guid? centruCostId = null) {
 
         var erori = new List<string>();
         if (dataStart == null)
@@ -75,6 +75,6 @@ public class BalantaPlanController : ContaApiController {
         if (FaraPostariCitibile(os)) return Ok(Array.Empty<BalantaPlanRand>());
         return Ok(ContabilProiectii.BalantaPlan(os, dataStart.Value, dataEnd.Value, nivelMaxim,
             repartitorId, materialId, codFunctionalId, codEconomicId,
-            sursaFinantareId, unitateId, proiectId, centruCostId, gestiuneId));
+            sursaFinantareId, unitateId, proiectId, centruCostId));
     }
 }

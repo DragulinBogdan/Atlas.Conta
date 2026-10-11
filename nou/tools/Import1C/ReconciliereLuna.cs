@@ -219,7 +219,7 @@ static class ReconciliereLuna {
         }
         var initiale = os.GetObjectsQuery<Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
-            .Select(p => new { p.Unitate, p.Partener }).ToList();
+            .Select(p => new { p.Unitate, Partener = p.Repartitor }).ToList();
         var generice = initiale.Where(p => p.Partener == stare.PartenerGeneric).Select(p => p.Unitate.Value).ToHashSet();
         var unitatiInitiale = os.GetObjectsQuery<Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)

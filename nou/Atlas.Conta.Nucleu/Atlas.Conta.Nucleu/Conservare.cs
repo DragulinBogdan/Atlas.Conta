@@ -64,17 +64,18 @@ public static class Conservare {
     }
 
     static void VerificaTransformarile(Tranzactie tranzactie, List<Refuz> refuzuri) {
-        var cauze = tranzactie.Postari.Where(p => p.Coordonate.Gestiune == GestiuniVirtuale.Transformare)
+        var cauze = tranzactie.Postari.Where(p => p.Coordonate.Contrapondere == Contrapondere.Transformare)
             .Select(p => p.Cauza).ToHashSet();
         foreach (var grup in tranzactie.Postari.Where(p => cauze.Contains(p.Cauza))
                      .GroupBy(p => (p.Coordonate.Cont, p.Coordonate.Produs, p.Cauza))) {
-            var reale = grup.Where(p => p.Coordonate.Gestiune != GestiuniVirtuale.Transformare).ToArray();
-            var virtuale = grup.Where(p => p.Coordonate.Gestiune == GestiuniVirtuale.Transformare).ToArray();
-            if (reale.Length == 0 || virtuale.Length == 0 || grup.Sum(p => p.Cantitate) != 0m
+            var reale = grup.Where(p => p.Coordonate.Contrapondere != Contrapondere.Transformare).ToArray();
+            var contraponderi = grup.Where(p => p.Coordonate.Contrapondere == Contrapondere.Transformare).ToArray();
+            if (reale.Length == 0 || contraponderi.Length == 0 || grup.Sum(p => p.Cantitate) != 0m
                     || reale.Any(p => p.Coordonate.Unitate is not { Fel: FelUnitate.Lot }
-                        || p.Coordonate.Gestiune is null || GestiuniVirtuale.Este(p.Coordonate.Gestiune))
-                    || virtuale.Any(p => p.Coordonate.Unitate != null || p.Valoare != 0m || p.ValoareValuta != 0m
-                        || p.Coordonate.Carte != Carte.Contabil || p.Coordonate.Partener != null
+                        || p.Coordonate.Repartitor is not { EsteIntern: true } || p.Coordonate.Contrapondere is not null)
+                    || contraponderi.Any(p => p.Coordonate.Unitate != null || p.Valoare != 0m || p.ValoareValuta != 0m
+                        || p.Coordonate.Carte != Carte.Contabil || p.Coordonate.Repartitor != null
+                        || p.Coordonate.PartenerFiscal != null || p.Coordonate.Loc != null
                         || p.Coordonate.CodTva != null || p.Coordonate.PerioadaDeclarare != null || p.Coordonate.Valuta != null))
                 refuzuri.Add(new Refuz(Coduri.ContrapondereTransformareInvalida,
                     "Transformarea cere contrapondere cantitativă fără valoare pe același cont, produs și cauză.", grup.Key.Cauza.Linie));
@@ -177,24 +178,41 @@ public static class Conservare {
                     $"postarea e datată {coordonate.Data}, tranzacția {tranzactie.Data}",
                     linie));
             if (postare.Cantitate != 0m) {
-                if (coordonate.Gestiune is null)
-                    refuzuri.Add(new Refuz(
-                        Coduri.GestiuneLipsa,
-                        $"cantitatea {postare.Cantitate} nu are gestiune",
-                        linie));
                 if (coordonate.Produs is null)
                     refuzuri.Add(new Refuz(
                         Coduri.ProdusLipsa,
                         $"cantitatea {postare.Cantitate} nu are produs",
                         linie));
-                // N-D4: capătul virtual poartă cantitatea în afara evidenței, unde
-                // nu există unitate de nominalizat.
-                if (coordonate.Unitate is null && !GestiuniVirtuale.Este(coordonate.Gestiune))
-                    refuzuri.Add(new Refuz(
-                        Coduri.UnitateLipsa,
-                        $"cantitatea {postare.Cantitate} nu are unitate",
-                        linie));
+                // N-D4: cantitatea e ori în evidență, pe lot, ori contrapondere marcată.
+                if (coordonate.Contrapondere is null) {
+                    if (coordonate.Repartitor is not { EsteIntern: true })
+                        refuzuri.Add(new Refuz(
+                            Coduri.GestiuneLipsa,
+                            $"cantitatea {postare.Cantitate} nu are gestiune",
+                            linie));
+                    if (coordonate.Unitate is not { Fel: FelUnitate.Lot })
+                        refuzuri.Add(new Refuz(
+                            Coduri.UnitateLipsa,
+                            $"cantitatea {postare.Cantitate} nu e pe lot și nu e marcată contrapondere",
+                            linie));
+                }
             }
+            if (coordonate.PartenerFiscal is not null && coordonate.CodTva is null)
+                refuzuri.Add(new Refuz(
+                    Coduri.PartenerFiscalFaraFapt,
+                    "partenerul fiscal se cere pe un fapt fiscal",
+                    linie));
+            if (coordonate.Loc is not null && coordonate.CodTva is null
+                    && coordonate.Unitate is not { Fel: FelUnitate.Partida })
+                refuzuri.Add(new Refuz(
+                    Coduri.LocFaraTemei,
+                    "locul se cere pe un fapt fiscal sau pe o partidă",
+                    linie));
+            if (coordonate.Loc is null && coordonate.CodTva is not null)
+                refuzuri.Add(new Refuz(
+                    Coduri.LocLipsa,
+                    "faptul fiscal nu are loc",
+                    linie));
             if (coordonate.Unitate is not { } unitate)
                 continue;
             if (unitate.Cont != coordonate.Cont)
@@ -206,7 +224,7 @@ public static class Conservare {
                 case FelUnitate.Lot:
                     if (coordonate.Produs is null)
                         refuzuri.Add(new Refuz(Coduri.ProdusLipsa, "lotul nu are produs", linie));
-                    if (coordonate.Gestiune is null)
+                    if (coordonate.Repartitor is not { EsteIntern: true })
                         refuzuri.Add(new Refuz(Coduri.GestiuneLipsa, "lotul nu are gestiune", linie));
                     if (coordonate.Produs != unitate.Produs)
                         refuzuri.Add(new Refuz(
@@ -215,12 +233,12 @@ public static class Conservare {
                             linie));
                     break;
                 case FelUnitate.Partida:
-                    if (coordonate.Partener is null)
+                    if (coordonate.Repartitor is not { EsteExtern: true })
                         refuzuri.Add(new Refuz(Coduri.PartenerLipsa, "partida nu are partener", linie));
-                    if (coordonate.Partener != unitate.Partener)
+                    if (coordonate.Repartitor?.Id != unitate.Partener)
                         refuzuri.Add(new Refuz(
                             Coduri.UnitateNepotrivita,
-                            $"partida {unitate.Id} e pe partenerul {Nume(unitate.Partener)}, postarea pe {Nume(coordonate.Partener)}",
+                            $"partida {unitate.Id} e pe partenerul {Nume(unitate.Partener)}, postarea pe {Nume(coordonate.Repartitor?.Id)}",
                             linie));
                     break;
             }

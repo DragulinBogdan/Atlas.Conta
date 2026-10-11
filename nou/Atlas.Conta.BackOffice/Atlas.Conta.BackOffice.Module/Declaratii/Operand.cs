@@ -5,22 +5,19 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
-/// <summary>Felul repartitorului ca DATĂ: numele CLR al clasei lui (89).</summary>
-public enum FelRepartitor {
-    Partener = 1,
-    Angajat = 2,
-    Gestiune = 3,
-    ContPropriu = 4,
-    UnitateInterna = 5,
-}
-
 /// <summary>`Fel` null = repartitorul lipsește de pe document sau are o clasă necunoscută.</summary>
-public sealed record RepartitorFapt(Guid Id, FelRepartitor? Fel, Guid? ContImplicitId, CalitateRepartitor Calitati) {
+public sealed record RepartitorFapt(Guid Id, N.FelRepartitor? Fel, Guid? ContImplicitId, CalitateRepartitor Calitati) {
     /// <summary>Partea față de patrimoniu (T-D13): derivată o singură dată din `Fel`, prin <see cref="Laturi.ParteA"/>.</summary>
     public Parte? Parte => Laturi.ParteA(Fel);
+
+    /// <summary>Coordonata de sold; felul lipsă e refuz (C111-D3).</summary>
+    public N.Repartitor Coordonata => Fel is { } fel
+        ? new(Id, fel)
+        : throw new N.RefuzException(new N.Refuz(CoduriRefuz.RepartitorFaraFel,
+            $"Repartitorul {Id} n-are un fel cunoscut.", null));
 }
 
-public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide, bool CereRepartitor);
+public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide, bool DeclaraRepartitor);
 
 /// <summary><paramref name="Origine"/> = documentul deschizător al partidei; gol la partida fără document,
 /// pe care o ordonează <paramref name="Deschidere"/>, ordinalul postării care a deschis-o.</summary>
@@ -129,6 +126,10 @@ public sealed record Operand(
     public IReadOnlyDictionary<Guid, FisaFapt> Fise { get; init; } = new Dictionary<Guid, FisaFapt>();
     public IReadOnlyList<SuportFapt> Suporturi { get; init; } = [];
     public IReadOnlyList<DisponibilFapt> DisponibilNominalizare { get; init; } = [];
+
+    /// <summary>Coordonata de sold a unui repartitor al operandului; lipsa lui e refuz (C111-D3).</summary>
+    public N.Repartitor Repartitor(Guid id) =>
+        (Repartitori.GetValueOrDefault(id) ?? new RepartitorFapt(id, null, null, default)).Coordonata;
 
     /// <summary>Forma pe care o consumă `Potrivire.Cont`.</summary>
     public LaturiFapt Laturi => new(Document.Predator.ContImplicitId, Document.Primitor.ContImplicitId);

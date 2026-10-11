@@ -72,9 +72,7 @@ static class ProbeCub {
     /// <summary>Σ al unei unități peste tot ce a scris documentul în cub (090g).</summary>
     public static N.Sold SoldUnitate(IObjectSpace os, Guid document, Guid unitate) {
         ArgumentNullException.ThrowIfNull(os);
-        return Postari(os, document)
-            .Where(p => p.Unitate == unitate)
-            .Select(C.Randuri.Citeste)
+        return C.Randuri.Citeste(os, [.. Postari(os, document).Where(p => p.Unitate == unitate)])
             .Aggregate(N.Sold.Zero, (acumulat, postare) => acumulat + N.Sold.Din(postare));
     }
 
@@ -110,7 +108,7 @@ static class ProbeCub {
 
         var aleLor = ale.Select(t => t.ID).ToHashSet();
         var randuri = Postari(os, doc.ID).Where(r => aleLor.Contains(r.TranzactieId)).ToList();
-        var citite = randuri.Select(C.Randuri.Citeste).ToList();
+        var citite = C.Randuri.Citeste(os, randuri);
         check($"STR-OPERARE {prefix}: fiecare postare persistată e pe partiția spațiului ei "
             + "(`Spatiu` = `postare.Spatiu()`)",
             randuri.Count > 0
@@ -141,14 +139,14 @@ static class ProbeCub {
             && stornari[0].Data == dataStorno);
 
         var aleLor = propriile.Select(t => t.ID).ToHashSet();
-        var dinSurse = Postari(os, doc.ID)
-            .Where(r => aleLor.Contains(r.TranzactieId))
-            .Select(r => (r.TranzactieId, C.Randuri.Citeste(r) with {
-                InversaDin = new N.ReferintaPostare(r.ID, r.Spatiu),
+        var surse = Postari(os, doc.ID).Where(r => aleLor.Contains(r.TranzactieId)).ToList();
+        var dinSurse = surse.Zip(C.Randuri.Citeste(os, surse))
+            .Select(x => (x.First.TranzactieId, x.Second with {
+                InversaDin = new N.ReferintaPostare(x.First.ID, x.First.Spatiu),
             }))
             .ToList();
         var operare = dinSurse.Select(x => x.Item2).ToList();
-        var storno = Postari(os, doc.ID, N.FelTranzactie.Storno).Select(C.Randuri.Citeste).ToList();
+        var storno = C.Randuri.Citeste(os, Postari(os, doc.ID, N.FelTranzactie.Storno));
         var perioada = (dataStorno.Year * 100) + dataStorno.Month;
         var asteptate = N.Storno.Inverseaza(dinSurse, doc.ID, dataStorno, perioada).Postari;
         if (!MultisetEgal(storno, asteptate))
@@ -163,8 +161,9 @@ static class ProbeCub {
             && operare.Count(p => p.Coordonate.PerioadaDeclarare != null) == fiscale.Count);
 
         var solduri = operare.Concat(storno)
-            .GroupBy(p => (p.Coordonate.Cont, p.Coordonate.Latura, p.Coordonate.Gestiune, p.Coordonate.Produs,
-                p.Coordonate.Unitate, p.Coordonate.Partener, p.Coordonate.CodTva, p.Coordonate.Analiza, p.Cauza.Linie))
+            .GroupBy(p => (p.Coordonate.Cont, p.Coordonate.Latura, p.Coordonate.Repartitor, p.Coordonate.Contrapondere,
+                p.Coordonate.Produs, p.Coordonate.Unitate, p.Coordonate.PartenerFiscal, p.Coordonate.Loc,
+                p.Coordonate.CodTva, p.Coordonate.Analiza, p.Cauza.Linie))
             .Select(g => (Valoare: g.Sum(p => p.Valoare), Cantitate: g.Sum(p => p.Cantitate)))
             .ToList();
         check($"STR-STORNO {prefix}: Σ cub a documentului = 0 pe FIECARE coordonată "

@@ -341,7 +341,7 @@ static class E2eApiFct {
                 && NirApply.Citeste(os, idNir).Numar?.StartsWith("NIR-") == true);
             var stocFctCub = CubScena.Stoc(os, idFct);
             s.Check("NIR → +5/+59,5 Magazie pe gestiunea primitoare, pe lotul născut la culegerea facturii",
-                stocFctCub.Count == 1 && stocFctCub[0].Cont == tipMateriale.ContImplicitId && stocFctCub[0].Gestiune == mag1.ID
+                stocFctCub.Count == 1 && stocFctCub[0].Cont == tipMateriale.ContImplicitId && stocFctCub[0].Repartitor == mag1.ID
                 && stocFctCub[0].Cantitate == 5m && stocFctCub[0].Semnata == 59.5m && stocFctCub[0].Unitate == lotFinal.ID);
             s.Check("NIR contează recepția: 302.01.00 = 401, 59,5",
                 CubScena.Note(os, idFct).Nota(tipMateriale.ContImplicitId, cont401.ID, 59.5m));

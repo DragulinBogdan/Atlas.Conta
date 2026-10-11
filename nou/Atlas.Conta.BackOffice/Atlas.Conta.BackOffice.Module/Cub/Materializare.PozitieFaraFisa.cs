@@ -43,10 +43,10 @@ public static partial class Materializare {
             .Include(p => p.Tranzactie).ToList();
         var inMemorie = os.ModifiedObjects.OfType<Postare>().Where(p => os.IsNewObject(p)
             && p.Carte == N.Carte.Contabil && p.Unitate == null && conturi.Contains(p.Cont));
-        var toate = citite.Concat(inMemorie).DistinctBy(p => p.ID).Select(Randuri.Citeste).Concat(delte).ToList();
+        var toate = Randuri.Citeste(os, [.. citite.Concat(inMemorie).DistinctBy(p => p.ID)]).Concat(delte).ToList();
         static N.Capat Capat(N.Postare p) => new() {
-            Cont = p.Coordonate.Cont, Carte = p.Coordonate.Carte, Partener = p.Coordonate.Partener,
-            Gestiune = p.Coordonate.Gestiune, Produs = p.Coordonate.Produs,
+            Cont = p.Coordonate.Cont, Carte = p.Coordonate.Carte, Repartitor = p.Coordonate.Repartitor,
+            Produs = p.Coordonate.Produs,
             Valuta = p.Coordonate.Valuta, Analiza = p.Coordonate.Analiza,
         };
         var atinse = delte.Select(Capat).ToHashSet();

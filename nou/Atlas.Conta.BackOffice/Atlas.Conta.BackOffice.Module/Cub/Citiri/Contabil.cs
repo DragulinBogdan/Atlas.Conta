@@ -17,7 +17,8 @@ public sealed class PostareJurnal {
     public Guid Cont { get; set; }
     public N.Latura Latura { get; set; }
     public decimal Valoare { get; set; }
-    public Guid? Partener { get; set; }
+    /// <summary>Terțul postării pe un cont cu rol comercial (C111-D10).</summary>
+    public Guid? TertComercial { get; set; }
     public Guid? TipTvaId { get; set; }
     public N.RolTva? RolTva { get; set; }
     public N.SensTva? SensTva { get; set; }
@@ -29,12 +30,44 @@ public sealed class PostareJurnal {
     public Guid? CentruCost { get; set; }
 }
 
+/// <summary>Postarea contabilă cu axa ei analitică, repartitorul de sold (C111-D10).</summary>
+public sealed class PostareAnalitica {
+    public Guid Id { get; set; }
+    public N.Spatiu Spatiu { get; set; }
+    public Guid TranzactieId { get; set; }
+    public N.FelTranzactie Fel { get; set; }
+    public int? Pereche { get; set; }
+    public Guid? DocumentId { get; set; }
+    public DateOnly Data { get; set; }
+    public Guid Cont { get; set; }
+    public N.Latura Latura { get; set; }
+    public decimal Valoare { get; set; }
+    public Guid? Repartitor { get; set; }
+    public Guid? Produs { get; set; }
+    public Guid? CodFunctional { get; set; }
+    public Guid? CodEconomic { get; set; }
+    public Guid? SursaFinantare { get; set; }
+    public Guid? UnitateOrganizatorica { get; set; }
+    public Guid? Proiect { get; set; }
+    public Guid? CentruCost { get; set; }
+}
+
 public static class Contabil {
-    /// <summary>Repartitorul unei postări contabile: partenerul piciorului de terț sau gestiunea piciorului intern (D9-A10).</summary>
-    public static Guid? Repartitor(Guid? partener, Guid? gestiune) => partener ?? gestiune;
+    /// <summary>Repartitorii externi: terțul unei postări e repartitorul ei, când e unul dintre ei (C111-D10).</summary>
+    public static IQueryable<Guid> Externi(IObjectSpace os) => os.GetObjectsQuery<BusinessObjects.Repartitor>()
+        .Where(r => r.ClrType == nameof(N.FelRepartitor.Partener) || r.ClrType == nameof(N.FelRepartitor.Angajat))
+        .Select(r => r.ID);
 
     static IQueryable<Postare> Domeniu(IObjectSpace os) => os.GetObjectsQuery<Postare>()
         .Where(p => p.Carte == N.Carte.Contabil).Where(Transformare.FaraContrapondere);
+
+    /// <summary>Sursa celeilalte postări a unei perechi, pe intervalul cititorului: se caută pe (tranzacție, ordinal), iar vizibilitatea și data sunt ale perechii.</summary>
+    public static IQueryable<Postare> Perechi(IObjectSpace os, DateOnly? deLa, DateOnly? panaLa) {
+        var postari = Domeniu(os);
+        if (deLa is { } inceput) postari = postari.Where(p => p.Data >= inceput);
+        if (panaLa is { } sfarsit) postari = postari.Where(p => p.Data <= sfarsit);
+        return postari;
+    }
 
     public static IQueryable<Postare> Postari(IObjectSpace os) {
         var toate = os.GetObjectsQuery<Postare>();
@@ -48,14 +81,26 @@ public static class Contabil {
                select p;
     }
 
-    public static IQueryable<PostareJurnal> Jurnal(IObjectSpace os, DateOnly deLa, DateOnly panaLa) =>
-        Postari(os).Where(p => p.Data >= deLa && p.Data <= panaLa).Select(p => new PostareJurnal {
+    public static IQueryable<PostareAnalitica> Analitice(IObjectSpace os) =>
+        Postari(os).Select(p => new PostareAnalitica {
+            Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel, Pereche = p.Pereche,
+            DocumentId = p.DocumentId, Data = p.Data, Cont = p.Cont, Latura = p.Latura, Valoare = p.Valoare,
+            Repartitor = p.Repartitor, Produs = p.Produs,
+            CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,
+            UnitateOrganizatorica = p.UnitateOrganizatorica, Proiect = p.Proiect, CentruCost = p.CentruCost,
+        });
+
+    public static IQueryable<PostareJurnal> Jurnal(IObjectSpace os, DateOnly deLa, DateOnly panaLa) {
+        var externi = Externi(os);
+        return Postari(os).Where(p => p.Data >= deLa && p.Data <= panaLa).Select(p => new PostareJurnal {
             Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel,
             DataTranzactie = p.Tranzactie.Data, ScrisLa = p.Tranzactie.ScrisLa,
             DocumentId = p.DocumentId, LinieId = p.LinieId, Data = p.Data, Cont = p.Cont,
-            Latura = p.Latura, Valoare = p.Valoare, Partener = p.Partener,
+            Latura = p.Latura, Valoare = p.Valoare,
+            TertComercial = p.Repartitor != null && externi.Contains(p.Repartitor.Value) ? p.Repartitor : null,
             TipTvaId = p.TipTvaId, RolTva = p.RolTva, SensTva = p.SensTva,
             CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,
             UnitateOrganizatorica = p.UnitateOrganizatorica, Proiect = p.Proiect, CentruCost = p.CentruCost,
         });
+    }
 }

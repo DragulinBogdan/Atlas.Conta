@@ -72,13 +72,13 @@ public sealed class DeclarantNotaTransfer : IDeclarant {
 
             var capat = new N.Capat {
                 Cont = cont,
-                Gestiune = doc.Predator.Id,
+                Repartitor = doc.Predator.Coordonata,
                 Produs = lot.ProdusId,
                 Unitate = unitate,
             };
             mutari.Add(new N.Mutare(
                 capat,
-                capat with { Gestiune = doc.Primitor.Id },
+                capat with { Repartitor = doc.Primitor.Coordonata },
                 N.Latura.Debit,
                 linie.Cantitate,
                 0m,

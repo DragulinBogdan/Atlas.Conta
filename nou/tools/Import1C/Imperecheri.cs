@@ -73,7 +73,7 @@ static class Imperecheri1C {
             using var os = bucla.CreeazaObjectSpace();
             var fapte = os.GetObjectsQuery<Postare>()
                 .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
-                .Select(p => new { p.Unitate, p.Cont, p.Partener }).ToList()
+                .Select(p => new { p.Unitate, p.Cont, Partener = p.Repartitor }).ToList()
                 .ToDictionary(x => x.Unitate.Value);
             foreach (var (cheie, partida) in Legaturi.Incarca(os, Deschidere.ViewPartide)) {
                 var referinta = cheie.Split('|')[2];
@@ -288,9 +288,9 @@ static class Imperecheri1C {
             string cheieLegatura) {
         var proprii = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == stingatorId && p.Carte == N.Carte.Contabil
-                && p.FelUnitate == N.FelUnitate.Partida && p.Partener != null
+                && p.FelUnitate == N.FelUnitate.Partida && p.Repartitor != null
                 && p.Tranzactie.Fel == N.FelTranzactie.Operare)
-            .Select(p => new { p.Cont, p.Partener, p.Unitate, Semnat = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare })
+            .Select(p => new { p.Cont, Partener = p.Repartitor, p.Unitate, Semnat = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare })
             .ToList();
         var partida = candidate.FirstOrDefault(c => proprii.Any(p => p.Cont == c.Cont && p.Partener == c.Partener));
         if (partida == default) {

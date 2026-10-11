@@ -11,8 +11,8 @@ static class ProbeLdiOperand {
         var gest = Guid.NewGuid(); var tip = Guid.NewGuid(); var clasa = Guid.NewGuid();
         var stoc = Guid.NewGuid(); var cost = Guid.NewGuid(); var venit = Guid.NewGuid();
         var doc = new DocumentFapt(Guid.NewGuid(), "LDI", Guid.NewGuid(), data, data, null, false, null,
-            new(gest, FelRepartitor.Gestiune, null, default),
-            new(Guid.NewGuid(), FelRepartitor.UnitateInterna, null, CalitateRepartitor.Comisie), null, null, null);
+            new(gest, N.FelRepartitor.Gestiune, null, default),
+            new(Guid.NewGuid(), N.FelRepartitor.UnitateInterna, null, CalitateRepartitor.Comisie), null, null, null);
         LinieOperand Linie(bool plus) {
             var id = Guid.NewGuid(); var produs = Guid.NewGuid();
             var lot = new LotFapt(Guid.NewGuid(), produs, tip, stoc, data, plus ? 0m : 10m) {

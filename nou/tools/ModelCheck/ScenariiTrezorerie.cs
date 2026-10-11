@@ -18,10 +18,10 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
 
     RandScena[] Randuri(FacturaScena f, bool inc, params decimal[] sume) => sume.SelectMany((v, i) => new[] {
         new RandScena(Cont(ContTert(inc)), inc ? N.Latura.Credit : N.Latura.Debit, v,
-            Unitate: Partida(f.Id, ContTert(inc), inc ? Client : Furnizor), Partener: inc ? Client : Furnizor,
+            Repartitor: inc ? Client : Furnizor, Unitate: Partida(f.Id, ContTert(inc), inc ? Client : Furnizor),
             Linie: f.Linii[i].Id, Economic: Economic),
         new RandScena(Cont(Numerar), inc ? N.Latura.Debit : N.Latura.Credit, v,
-            Gestiune: casa, Linie: f.Linii[i].Id, Economic: Economic)
+            Repartitor: casa, Linie: f.Linii[i].Id, Economic: Economic)
     }).ToArray();
 
     protected override void Executa() {
@@ -74,10 +74,10 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
     void ConturiExplicite() {
         var contPropriu = Cont(Privat ? "5121" : "552.00.00");
         var contTert = Cont(Privat ? "462" : "462.01.09");
-        var flaguri = CuSpatiu(os => (os.GetObjectByKey<Cont>(contPropriu).DimensiuniObligatorii,
-            os.GetObjectByKey<Cont>(contTert).DimensiuniObligatorii));
-        void Flag(Guid cont, DimensiuneFlags valoare) =>
-            Comanda(os => { os.GetObjectByKey<Cont>(cont).DimensiuniObligatorii = valoare; os.CommitChanges(); });
+        var flaguri = CuSpatiu(os => (os.GetObjectByKey<Cont>(contPropriu).FeluriRepartitor,
+            os.GetObjectByKey<Cont>(contTert).FeluriRepartitor));
+        void Flag(Guid cont, FeluriRepartitor valoare) =>
+            Comanda(os => { os.GetObjectByKey<Cont>(cont).FeluriRepartitor = valoare; os.CommitChanges(); });
         var (mandat, creditor) = CuSpatiu(os => {
             var m = os.CreateObject<ContPropriu>();
             m.Cod = Marcaj + "-MANDAT"; m.Denumire = m.Cod; m.EsteBanca = true; m.ContImplicitId = contPropriu;
@@ -87,7 +87,7 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         });
         var reguli = new List<Guid>();
         try {
-            Flag(contPropriu, DimensiuneFlags.Repartitor); Flag(contTert, DimensiuneFlags.Repartitor);
+            Flag(contPropriu, FeluriRepartitor.ContPropriu); Flag(contTert, FeluriRepartitor.Partener);
             foreach (var inc in new[] { false, true }) {
                 var id = Id(inc, "09");
                 reguli.Add(CuSpatiu(os => {
@@ -108,18 +108,18 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
                 var refuzat = Document();
                 Refuza(id, () => Opereaza(refuzat.Id), CuSpatiu(os => os.GetObjectByKey<Cont>(contPropriu).Simbol));
                 FaraEfecte(id, refuzat.Id);
-                Flag(contPropriu, DimensiuneFlags.Niciuna);
+                Flag(contPropriu, FeluriRepartitor.Nedeclarat);
                 var acceptat = Document(); Opereaza(acceptat.Id);
                 var linie = acceptat.Linii[0].Id;
                 Postari(id, acceptat.Id, N.FelTranzactie.Operare, Februarie,
-                    new RandScena(contTert, inc ? N.Latura.Credit : N.Latura.Debit, 100, Partener: creditor, Linie: linie, Economic: Economic),
+                    new RandScena(contTert, inc ? N.Latura.Credit : N.Latura.Debit, 100, Repartitor: creditor, Linie: linie, Economic: Economic),
                     new RandScena(contPropriu, inc ? N.Latura.Debit : N.Latura.Credit, 100, Linie: linie, Economic: Economic));
                 Verifica(id, "analiticul creditorului poartă numai contul de terț; contul propriu n-are repartitor", CuSpatiu(os => {
                     var peCreditor = ContabilProiectii.Balanta(os, Februarie, Februarie, analitic: true, repartitorId: creditor).ToList();
                     var propriu = CubScena.Note(os, acceptat.Id).Single(p => p.Cont == contPropriu);
                     return peCreditor.All(r => r.ContId == contTert) && propriu.Repartitor == null;
                 }));
-                Flag(contPropriu, DimensiuneFlags.Repartitor);
+                Flag(contPropriu, FeluriRepartitor.ContPropriu);
             }
         }
         finally {
@@ -133,7 +133,7 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
     void RepartitorPeTert() {
         var faraFlag = Cont(Privat ? "462" : "462.01.03");
         var cuFlag = Cont(Privat ? "462" : "462.01.09");
-        var flags = CuSpatiu(os => os.GetObjectByKey<Cont>(cuFlag).DimensiuniObligatorii);
+        var feluri = CuSpatiu(os => os.GetObjectByKey<Cont>(cuFlag).FeluriRepartitor);
         Guid Creditor(Guid cont) => CuSpatiu(os => {
             var p = os.CreateObject<Partener>();
             p.Cod = Marcaj + "-CRED-" + os.GetObjectByKey<Cont>(cont).Simbol; p.Denumire = p.Cod; p.ContImplicitId = cont;
@@ -150,14 +150,14 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         var p1 = Plata(liber); Opereaza(p1.Id);
         Postari("SC-PLT-08", p1.Id, N.FelTranzactie.Operare, Februarie,
             new RandScena(faraFlag, N.Latura.Debit, 100, Linie: p1.Linii[0].Id, Economic: Economic),
-            new RandScena(Cont(Numerar), N.Latura.Credit, 100, Gestiune: casa, Linie: p1.Linii[0].Id, Economic: Economic));
+            new RandScena(Cont(Numerar), N.Latura.Credit, 100, Repartitor: casa, Linie: p1.Linii[0].Id, Economic: Economic));
         try {
-            if (Privat) Comanda(os => { os.GetObjectByKey<Cont>(cuFlag).DimensiuniObligatorii = flags | DimensiuneFlags.Repartitor; os.CommitChanges(); });
+            if (Privat) Comanda(os => { os.GetObjectByKey<Cont>(cuFlag).FeluriRepartitor = FeluriRepartitor.Partener; os.CommitChanges(); });
             var creditor = Creditor(cuFlag);
             var p2 = Plata(creditor); Opereaza(p2.Id);
             Postari("SC-PLT-08", p2.Id, N.FelTranzactie.Operare, Februarie,
-                new RandScena(cuFlag, N.Latura.Debit, 100, Partener: creditor, Linie: p2.Linii[0].Id, Economic: Economic),
-                new RandScena(Cont(Numerar), N.Latura.Credit, 100, Gestiune: casa, Linie: p2.Linii[0].Id, Economic: Economic));
+                new RandScena(cuFlag, N.Latura.Debit, 100, Repartitor: creditor, Linie: p2.Linii[0].Id, Economic: Economic),
+                new RandScena(Cont(Numerar), N.Latura.Credit, 100, Repartitor: casa, Linie: p2.Linii[0].Id, Economic: Economic));
             Verifica("SC-PLT-08", "pe cititori: repartitorul piciorului de terț e creditorul, fără partidă deschisă; "
                 + "pe contul fără flag repartitorul lipsește", CuSpatiu(os => {
                     var tert = CubScena.Note(os, p2.Id).Single(p => p.Cont == cuFlag);
@@ -168,7 +168,7 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
                         && balanta.Count == 1 && balanta[0].ContId == cuFlag && balanta[0].RulajDebit == 100;
                 }));
         }
-        finally { if (Privat) Comanda(os => { os.GetObjectByKey<Cont>(cuFlag).DimensiuniObligatorii = flags; os.CommitChanges(); }); }
+        finally { if (Privat) Comanda(os => { os.GetObjectByKey<Cont>(cuFlag).FeluriRepartitor = feluri; os.CommitChanges(); }); }
     }
 
     void CicluDeschis(bool inc) {

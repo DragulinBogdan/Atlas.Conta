@@ -122,7 +122,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         Opereaza(f.Id);
         var sursa = Guid.NewGuid(); var tinta = Guid.NewGuid();
         N.Postare Rand(Guid doc, string simbol, N.Latura latura, decimal valoare) => new(
-            new N.Capat { Cont = Cont(simbol), Partener = Furnizor,
+            new N.Capat { Cont = Cont(simbol), Repartitor = new N.Repartitor(Furnizor, N.FelRepartitor.Partener),
                 Unitate = N.Unitate.DeschidePartida(Cont(simbol), Furnizor, doc, Ianuarie) }.Pe(latura, Ianuarie),
             0, 0, valoare, new(doc, null));
         var ambigua = C.Transferuri.Muta(new(sursa, Ianuarie,
@@ -411,14 +411,14 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
     }
 
     void Acoperire(Guid factura) {
-        var nota = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 10)); Opereaza(nota.Id);
+        var nota = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 10)); Opereaza(nota.Id);
         Comanda(os => {
             P.VerificaAcoperire(os);
             Verifica("SC-CIT-43", "nota fără partener explicit nu cere partidă", true);
             var ctx = ((EFCoreObjectSpace)os).DbContext;
             using var tx = ctx.Database.BeginTransaction();
             var cont = Cont(ContFurnizor);
-            ctx.Database.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"Unitate\" = null, \"FelUnitate\" = null, \"UnitateDeschisa\" = null, \"Partener\" = null WHERE \"DocumentId\" = {factura} AND \"Cont\" = {cont}");
+            ctx.Database.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"Unitate\" = null, \"FelUnitate\" = null, \"UnitateDeschisa\" = null, \"Repartitor\" = null WHERE \"DocumentId\" = {factura} AND \"Cont\" = {cont}");
             Refuza("SC-CIT-43", () => C.Citiri.Invarianti.Verifica(os), "CITIRE_PARTIDE_INCOMPLETE");
             tx.Rollback();
         });
@@ -481,7 +481,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
     protected override void CurataCubSuplimentar(IObjectSpace os, Purja purja) {
         var terti = os.GetObjectsQuery<Partener>()
             .Where(p => p.Cod.StartsWith(Marcaj)).Select(p => p.ID);
-        var ids = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == null && terti.Contains(p.Partener.Value))
+        var ids = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == null && terti.Contains(p.Repartitor.Value))
             .Select(p => p.TranzactieId).Distinct().ToList();
         purja.AdaugaCheie<C.Postare>(os.GetObjectsQuery<C.Postare>().Where(p => ids.Contains(p.TranzactieId)).Select(p => p.ID).ToList());
         purja.AdaugaCheie<C.Tranzactie>(ids);

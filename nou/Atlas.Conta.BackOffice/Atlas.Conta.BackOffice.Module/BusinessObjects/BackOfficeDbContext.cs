@@ -261,7 +261,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // FK-uri `Restrict` și fără `AutoInclude`: consumatorii agregă, nu afișează.
             modelBuilder.Entity<SoldPerioadaContabil>(b => {
                 b.HasIndex(s => new {
-                    s.An, s.Luna, s.ContId, s.RepartitorId, s.GestiuneId, s.MaterialId, s.CodFunctionalId,
+                    s.An, s.Luna, s.ContId, s.RepartitorId, s.MaterialId, s.CodFunctionalId,
                     s.CodEconomicId, s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId
                 }).IsUnique().AreNullsDistinct(false);
                 b.HasIndex(s => new { s.An, s.Luna });
@@ -774,6 +774,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 b.Property(p => p.RolTva).HasConversion<short>();
                 b.Property(p => p.RegimTva).HasConversion<short>();
                 b.Property(p => p.FelUnitate).HasConversion<short>();
+                b.Property(p => p.Contrapondere).HasConversion<short>();
                 b.Property(p => p.SuportSpatiu).HasConversion<short>();
                 b.Property(p => p.InversaDinSpatiu).HasConversion<short>();
                 b.HasOne(p => p.Tranzactie).WithMany(t => t.Postari).HasForeignKey(p => p.TranzactieId)
@@ -791,6 +792,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 b.Property(p => p.RolTva).HasConversion<short>();
                 b.Property(p => p.RegimTva).HasConversion<short>();
                 b.Property(p => p.FelUnitate).HasConversion<short>();
+                b.Property(p => p.Contrapondere).HasConversion<short>();
                 b.Property(p => p.SuportSpatiu).HasConversion<short>();
                 b.Property(p => p.InversaDinSpatiu).HasConversion<short>();
             });

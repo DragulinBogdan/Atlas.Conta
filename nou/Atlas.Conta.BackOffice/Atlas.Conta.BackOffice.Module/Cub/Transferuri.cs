@@ -43,7 +43,8 @@ public static class Transferuri {
         var proprie = IdentitatiPartide.Gaseste(cerere.OperareStingator.Concat(cerere.TransferuriStingator)
             .Select(p => p.Coordonate.Unitate).OfType<N.Unitate>(), cerere.StingatorId, tinta.Cont, tert);
         proprie ??= N.Unitate.DeschidePartida(tinta.Cont, tert, cerere.StingatorId, cerere.DataStingator);
-        return new(new N.Mutare(Capatul(tinta.Cont, tert, tinta), Capatul(tinta.Cont, tert, proprie),
+        var titular = Titular(cerere, tert);
+        return new(new N.Mutare(Capatul(titular, tinta), Capatul(titular, proprie),
             efect.Net > 0m ? N.Latura.Debit : N.Latura.Credit, 0m, 0m,
             Math.Min(Math.Abs(cerere.Suma), Math.Abs(efect.Net)), new(cerere.StingatorId, null)), cerere.Data, null, null);
     }
@@ -76,13 +77,17 @@ public static class Transferuri {
         if (c.Suma > Math.Abs(p.disponibil) || c.Suma > Math.Abs(p.rest))
             return Refuza(PartidaProprieInsuficienta,
                 $"stingerea cere {c.Suma}; disponibil {Math.Abs(p.disponibil)}, rest {Math.Abs(p.rest)} pe contul {p.deLa.Cont}");
-        return new(new N.Mutare(Capatul(p.deLa.Cont, p.deLa.Partener!.Value, p.deLa),
-            Capatul(p.la.Cont, p.la.Partener!.Value, p.la), p.disponibil > 0m ? N.Latura.Debit : N.Latura.Credit,
+        return new(new N.Mutare(Capatul(Titular(c, p.deLa.Partener!.Value), p.deLa),
+            Capatul(Titular(c, p.la.Partener!.Value), p.la), p.disponibil > 0m ? N.Latura.Debit : N.Latura.Credit,
             0m, 0m, c.Suma, new N.Cauza(c.StingatorId, null)), c.Data, null, null);
     }
 
-    static N.Capat Capatul(Guid cont, Guid tert, N.Unitate partida) =>
-        new() { Cont = cont, Partener = tert, Unitate = partida };
+    static N.Capat Capatul(N.Repartitor titular, N.Unitate partida) =>
+        new() { Cont = partida.Cont, Repartitor = titular, Unitate = partida };
+
+    static N.Repartitor Titular(Cerere c, Guid tert) =>
+        c.OperareStingator.Concat(c.TransferuriStingator).Concat(c.OperareStins).Concat(c.TransferuriStins)
+            .Select(p => p.Coordonate.Repartitor).OfType<N.Repartitor>().First(r => r.Id == tert);
 
     static Rezultat Sare(string motiv) => new(null, default, null, motiv);
 

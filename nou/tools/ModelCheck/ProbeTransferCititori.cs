@@ -16,6 +16,7 @@ static class ProbeTransferCititori {
 
     public static readonly Intrare[] Intrari = [
         new("Contabil.Postari", Regim.Exclude, os => Contabil.Postari(os).Select(p => p.ID)),
+        new("Contabil.Perechi", Regim.Indiferent, os => Contabil.Perechi(os, null, null).Select(p => p.ID)),
         new("Contabil.Jurnal", Regim.Exclude, os => Contabil.Jurnal(os, DateOnly.MinValue, DateOnly.MaxValue).Select(p => p.Id)),
         new("Plati.Postari", Regim.Exclude, os => Plati.Postari(os).Select(p => p.Id)),
         new("Loturi.Postari", Regim.Include, os => Loturi.Postari(os).Select(p => p.ID)),

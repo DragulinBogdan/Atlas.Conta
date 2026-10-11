@@ -33,8 +33,9 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
         var l = d.Linii[i];
         return [new(Cont(stoc ?? Stoc), N.Latura.Debit, v, q, Magazie, l.Lot, l.Produs,
                 Linie: l.Id, Spatiu: N.Spatiu.Stoc, Economic: Economic),
-            new(Cont(ContFurnizor), N.Latura.Credit, v, -q, N.GestiuniVirtuale.Furnizor,
-                partida ?? Partida(d.Id, ContFurnizor), l.Produs, Furnizor, l.Id, Economic: Economic)];
+            new(Cont(ContFurnizor), N.Latura.Credit, v, -q, Furnizor,
+                partida ?? Partida(d.Id, ContFurnizor), l.Produs, Linie: l.Id, Economic: Economic,
+                Contrapondere: N.Contrapondere.Tert)];
     }
     static RandScena[] Inverse(params RandScena[] r) => [.. r.Select(p => p with { Cantitate = -p.Cantitate, Valoare = -p.Valoare })];
     void Sold(string id, LinieScena l, decimal q, decimal v, DateOnly? data = null, Guid? gest = null) =>

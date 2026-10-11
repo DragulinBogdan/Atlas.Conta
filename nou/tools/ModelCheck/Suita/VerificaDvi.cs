@@ -281,7 +281,7 @@ static class VerificaDvi {
                 && linieTi.ValoareTva == 105m);
             s.Check("D9-A10 DVI: creditul 446 al declarației rămâne fără repartitor — 446 nu urmărește partide și nu cere repartitor (forma îngustă)",
                 noteCub.Where(p => p.Credit && p.Cont == cont446.ID).ToList() is { Count: 1 } credit446
-                && credit446[0].Repartitor == null && credit446[0].Partener == null);
+                && credit446[0].Repartitor == null && credit446[0].PartenerFiscal == null);
             var randuriTvaCub = CubScena.Fapte(os, idDvi);
             s.Check("DVI-V5 (privat) jurnalul fiscal: două rânduri de ACHIZIȚIE (direcția vine din `PoliticaTva`), "
                 + "amândouă pe contrapartida declarată de politică — biroul vamal, nu furnizorul extern —, cu "

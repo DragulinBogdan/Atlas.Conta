@@ -186,29 +186,30 @@ static class VerificaNucleuFclDsc {
                 ProbeCub.Tranzactii(os, fclVenit.ID) is [{ Fel: N.FelTranzactie.Operare }]
                 && postariVenit.Count == (privat ? 4 : 2)
                 && postariVenit.All(p => p.Spatiu != N.Spatiu.Stoc && p.Cantitate == 0m));
-            s.Check($"STR-FCL-VENIT-TVA ({eticheta}): creanța e DEBIT pe {contCreanta.Simbol}, fără gestiune, "
-                + "pe partida documentului, cu partenerul = clientul",
+            s.Check($"STR-FCL-VENIT-TVA ({eticheta}): creanța e DEBIT pe {contCreanta.Simbol}, "
+                + "pe partida documentului, cu repartitorul = clientul, fără bloc fiscal",
                 creanta.Count == (privat ? 2 : 1)
-                && creanta.All(p => p.Latura == N.Latura.Debit && p.Gestiune == null
+                && creanta.All(p => p.Latura == N.Latura.Debit && p.Repartitor == client.ID
                     && p.Unitate == partidaVenit
-                    && p.Partener == client.ID)
+                    && p.PartenerFiscal == null && p.Loc == null)
                 && creanta.Sum(p => p.Valoare) == (privat ? 242m : 200m));
             s.Check($"STR-FCL-VENIT-TVA ({eticheta}): venitul e CREDIT 200 pe gestiunea emitentului"
-                + (privat ? ", cu codul de TVA `Baza`/`Livrare`, perioada declarării și partenerul" : ", fără cod de TVA"),
-                venitul is { Latura: N.Latura.Credit, Valoare: 200m } && venitul.Gestiune == emitent.ID
+                + (privat ? ", cu codul de TVA `Baza`/`Livrare`, perioada declarării, partenerul și locul fiscal" : ", fără cod de TVA"),
+                venitul is { Latura: N.Latura.Credit, Valoare: 200m } && venitul.Repartitor == emitent.ID
                 && venitul.Unitate == null
                 && (privat
                     ? venitul.TipTvaId == n21.ID && venitul.SensTva == N.SensTva.Livrare
                         && venitul.RolTva == N.RolTva.Baza && venitul.PerioadaDeclarare != null
-                        && venitul.Partener == client.ID
-                    : venitul.TipTvaId == null && venitul.PerioadaDeclarare == null));
+                        && venitul.PartenerFiscal == client.ID && venitul.Loc == emitent.ID
+                    : venitul.TipTvaId == null && venitul.PerioadaDeclarare == null
+                        && venitul.PartenerFiscal == null && venitul.Loc == null));
             if (privat) {
                 var taxa = postariVenit.Single(p => p.Cont == cont4427.ID);
                 s.Check($"STR-FCL-VENIT-TVA ({eticheta}): taxa COLECTATĂ e CREDIT 42 pe 4427, pe gestiunea "
-                    + "emitentului, cu rolul `Taxa` și partenerul; soldul partidei de creanță = 242",
-                    taxa is { Latura: N.Latura.Credit, Valoare: 42m } && taxa.Gestiune == emitent.ID
+                    + "emitentului, cu rolul `Taxa`, partenerul și locul fiscal; soldul partidei de creanță = 242",
+                    taxa is { Latura: N.Latura.Credit, Valoare: 42m } && taxa.Repartitor == emitent.ID
                     && taxa.RolTva == N.RolTva.Taxa && taxa.SensTva == N.SensTva.Livrare
-                    && taxa.Partener == client.ID
+                    && taxa.PartenerFiscal == client.ID && taxa.Loc == emitent.ID
                     && ProbeCub.SoldPartida(os, partidaVenit) == 242m);
             }
             ProbeCub.ProbaOperare(os, s.Check, $"NUC-FCL-{eticheta}", fclVenit);
@@ -265,12 +266,12 @@ static class VerificaNucleuFclDsc {
             var partidaAvans419 = Partida(fclAvans, cont419);
             var avansul = postariAvans.SingleOrDefault(p => p.Cont == cont419.ID);
             s.Check($"STR-FCL-AVANS-DOUA-PARTIDE ({eticheta}): documentul deschide DOUĂ partide (090d) — pe "
-                + "creanță și pe 419 —, iar regularizarea e `C 419 -100` cu partidă, partener și gestiunea "
-                + "emitentului",
+                + "creanță și pe 419 —, iar regularizarea e `C 419 -100` pe partida clientului, fără fapt "
+                + "fiscal, cu emitentul păstrat ca loc (C111-Q14)",
                 postariAvans.Select(p => p.Unitate).OfType<Guid>().Distinct().Count() == 2
                 && avansul is { Latura: N.Latura.Credit, Valoare: -100m }
-                && avansul.Unitate == partidaAvans419 && avansul.Partener == client.ID
-                && avansul.Gestiune == emitent.ID);
+                && avansul.Unitate == partidaAvans419 && avansul.Repartitor == client.ID
+                && avansul.TipTvaId == null && avansul.PartenerFiscal == null && avansul.Loc == emitent.ID);
             s.Check($"STR-FCL-AVANS-DOUA-PARTIDE ({eticheta}): partida de creanță ține netul, taxa ȘI debitul "
                 + "regularizării (200 + 42 − 100 = 142), iar partida 419 ține doar creditul ei",
                 ProbeCub.SoldPartida(os, partidaAvansCreanta) == 142m
@@ -326,7 +327,7 @@ static class VerificaNucleuFclDsc {
                 + "—, datată cu `Imperechere.Data`; soldul partidei facturii devine 0",
                 transferInc.Count == 1 && transferInc[0].Data == imp.Data
                 && postariTransfer.Count == 2
-                && postariTransfer.All(p => p.Cont == contCreanta.ID && p.Partener == client.ID)
+                && postariTransfer.All(p => p.Cont == contCreanta.ID && p.Repartitor == client.ID)
                 && postariTransfer.Select(p => p.Latura).Distinct().Count() == 1
                 && postariTransfer.Any(p => p.Unitate == partidaVenit)
                 && postariTransfer.Any(p => p.Unitate == Partida(inc, contCreanta))
@@ -376,7 +377,7 @@ static class VerificaNucleuFclDsc {
                 os.CommitChanges(); tx.Commit();
             }
 
-            // --- STR-DSC-COST-CLIENT: costul pe gestiunea virtuală `Client` ---
+            // --- STR-DSC-COST-CLIENT: costul marcat contrapondere de terț ---
             var fclStoc = Factura(new DateOnly(2026, 4, 10), mag1);
             Linie(fclStoc, tipMarfa, 4m, 30m, n21, lotA.Produs);
             os.CommitChanges();
@@ -391,16 +392,16 @@ static class VerificaNucleuFclDsc {
                 ProbeCub.Tranzactii(os, dsc.ID) is [{ Fel: N.FelTranzactie.Operare }]
                 && postariDsc.Count == 2
                 && iesirea is { Latura: N.Latura.Credit, Valoare: 60m, Cantitate: -4m }
-                && iesirea.Unitate == lotA.ID && iesirea.Gestiune == mag1.ID);
-            s.Check($"STR-DSC-COST-CLIENT ({eticheta}): capătul de cost poartă `+4` pe gestiunea VIRTUALĂ a "
-                + "clientului (090g), fără unitate — marfa a părăsit patrimoniul —, cu produsul lotului și cu "
-                + "terțul de pe primitor (T-D13 g); descărcarea n-are partidă (607/371 n-au rol de terț), iar "
-                + "ieșirea de stoc n-are partener",
+                && iesirea.Unitate == lotA.ID && iesirea.Repartitor == mag1.ID);
+            s.Check($"STR-DSC-COST-CLIENT ({eticheta}): capătul de cost poartă `+4` marcat contrapondere de terț "
+                + "(090g), fără unitate — marfa a părăsit patrimoniul —, cu produsul lotului și cu terțul de pe "
+                + "primitor ca repartitor (T-D13 g); descărcarea n-are partidă (607/371 n-au rol de terț), iar "
+                + "ieșirea de stoc nu e marcată",
                 costul is { Latura: N.Latura.Debit, Valoare: 60m, Cantitate: 4m }
-                && costul.Gestiune == N.GestiuniVirtuale.Client && costul.Unitate == null
+                && costul.Contrapondere == N.Contrapondere.Tert && costul.Unitate == null
                 && costul.Produs == lotA.Produs.ID
-                && costul.Partener == client.ID
-                && iesirea.Partener == null);
+                && costul.Repartitor == client.ID
+                && iesirea.Contrapondere == null && iesirea.PartenerFiscal == null);
             s.Check($"STR-DSC-COST-CLIENT ({eticheta}): factura are în cub DOAR venitul — `4111 = 707` (120) și "
                 + "taxa (25,2) —, zero postări de stoc; `Sold` pe lot din postările descărcării = "
                 + $"{ProbeCub.SoldUnitate(os, dsc.ID, lotA.ID)}",
@@ -434,8 +435,8 @@ static class VerificaNucleuFclDsc {
                 + $"cantitatea x prețul înghețat {lotB.PretUnitar} ar fi dat 200)",
                 !dscGolire.Autogenerat && dscGolire.DocumentSursaId == null
                 && postariGolire.Count == 2 && postariGolire.All(p => p.Valoare == 300m)
-                && postariGolire.Single(p => p.Spatiu == N.Spatiu.Stoc).Gestiune == mag1.ID
-                && postariGolire.Single(p => p.Cont == cont607.ID).Gestiune == N.GestiuniVirtuale.Client);
+                && postariGolire.Single(p => p.Spatiu == N.Spatiu.Stoc).Repartitor == mag1.ID
+                && postariGolire.Single(p => p.Cont == cont607.ID).Contrapondere == N.Contrapondere.Tert);
             ProbeCub.ProbaOperare(os, s.Check, $"NUC-DSC-GOLIRE-{eticheta}", dscGolire);
 
             // --- STR-DSC-STORNO / STR-DSC-ANULARE ---

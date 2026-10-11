@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
 import { SelectBox } from 'devextreme-react';
 import {
   Column, ColumnFixing, DataGrid, FilterRow, Pager, Paging, Sorting,
 } from 'devextreme-react/data-grid';
 import type { components } from '../../generated/api-types';
 import { storeRemote } from '../../nucleu/dxStore';
+import { bani } from '../../nucleu/format';
+import { ia } from '../../nucleu/http';
 import { rutaTip } from '../../nucleu/stingeri';
 import { urlCu, useDimensiuniUrl, useUrlStare } from '../../nucleu/urlStare';
 import { CasetaPerioada, etichetaCont, lunaCurenta, useSursaConturi, type ElementCont } from './comune';
@@ -14,6 +17,7 @@ import { CasetaPerioada, etichetaCont, lunaCurenta, useSursaConturi, type Elemen
 // până la fiecare rând inclusiv — calculat de o funcție de fereastră pe server.
 // Nimic nu se cumulează aici: un cumul în TS ar minți la prima paginare (42c).
 type FisaContRand = components['schemas']['FisaContRand'];
+type FisaContSold = components['schemas']['FisaContSold'];
 const camp = (n: keyof FisaContRand & string) => n;
 
 export function FisaCont() {
@@ -31,6 +35,8 @@ export function FisaCont() {
     // poate exprima absența, iar drill-down-ul pe acel rând deschidea fișa
     // întregului cont, cu ultimul sold curent egal cu soldul SINTETIC.
     repartitorNul: false,
+    // Rândul „fără terț" al soldurilor pe terți (C111-Q18).
+    faraTert: false,
     // Ecranul care a deschis fișa (drill-down din SAF-T); numai rută internă.
     inapoi: '',
   });
@@ -56,6 +62,14 @@ export function FisaCont() {
       : null
   ), [filtre, dimensiuni]);
 
+  // Sinteza e a serverului (42c) și nu depinde de pagina grilei: fișa fără mișcări își arată soldul (C111-Q19).
+  const caleSold = stare.contId ? urlCu('/api/proiectii/fisa-cont/sold', { ...filtre, ...dimensiuni }) : null;
+  const sold = useQuery({
+    queryKey: ['fisa-sold', caleSold],
+    queryFn: () => ia<FisaContSold>(caleSold as string),
+    enabled: caleSold !== null,
+  });
+
   return (
     <div className="ecran">
       <div className="ecran__bara">
@@ -64,8 +78,9 @@ export function FisaCont() {
             niciun indiciu vizibil de ce. */}
         <h2>
           Fișă de cont{cont?.Simbol ? ` — ${etichetaCont(cont)}` : ''}
-          {stare.repartitorNul ? ' (fără partener)' : ''}
-          {stare.repartitorId ? ' (filtrată pe partener)' : ''}
+          {stare.repartitorNul ? ' (fără repartitor)' : ''}
+          {stare.faraTert ? ' (fără terț)' : ''}
+          {stare.repartitorId ? ' (filtrată pe repartitor)' : ''}
         </h2>
         <Link className="buton buton--mic"
           to={inapoi ?? urlCu('/balanta', { dataStart: stare.dataStart, dataEnd: stare.dataEnd })}>
@@ -118,17 +133,23 @@ export function FisaCont() {
         <p className="indiciu">Alegeți un cont — sau intrați din balanță, cu dublu-click pe rândul lui.</p>
       ) : (
         <>
+          <div className="bara-raport">
+            <Cifra eticheta="Sold inițial" text={soldCuSens(sold.data?.SoldInitialDebit, sold.data?.SoldInitialCredit)} />
+            <Cifra eticheta="Rulaj debit" text={sold.data ? bani(sold.data.RulajDebit) : '…'} />
+            <Cifra eticheta="Rulaj credit" text={sold.data ? bani(sold.data.RulajCredit) : '…'} />
+            <Cifra eticheta="Sold final" text={soldCuSens(sold.data?.SoldFinalDebit, sold.data?.SoldFinalCredit)} />
+          </div>
           <DataGrid
             // Perioada și contul sunt PARAMETRI ai proiecției, nu filtre de
             // grilă: la schimbarea lor se schimbă sursa, iar grila se remontează
             // (starea ei de filtrare/paginare n-are ce transporta între două
             // rapoarte diferite).
-            key={`${stare.contId}|${stare.dataStart}|${stare.dataEnd}|${stare.repartitorId}|${stare.repartitorNul}`}
+            key={`${stare.contId}|${stare.dataStart}|${stare.dataEnd}|${stare.repartitorId}|${stare.repartitorNul}|${stare.faraTert}`}
             dataSource={sursa}
             remoteOperations={{ filtering: true, paging: true }}
             showBorders
             columnAutoWidth
-            height="calc(100vh - 230px)"
+            height="calc(100vh - 300px)"
           >
             {/* ═══ Ordinea e FIXĂ cronologic (R-D6) ═══
                 Soldul curent are înțeles doar în ordinea în care a fost cumulat.
@@ -152,12 +173,12 @@ export function FisaCont() {
             <Column dataField={camp('Data')} caption="Data" dataType="date" format="dd.MM.yyyy" width={100} fixed />
             <Column dataField={camp('NumarNota')} caption="Nr. notă" width={110} />
             <Column dataField={camp('Sens')} caption="Sens" width={70} alignment="center" />
-            <Column dataField={camp('ContrapartidaSimbol')} caption="Conturi corespondente" width={120} />
+            <Column dataField={camp('ContrapartidaSimbol')} caption="Cont corespondent" width={140} />
             <Column dataField={camp('Debit')} caption="Debit" {...BANI} />
             <Column dataField={camp('Credit')} caption="Credit" {...BANI} />
             {/* Vine cumulat de la server (fereastră SQL), niciodată din TS. */}
             <Column dataField={camp('SoldCurent')} caption="Sold curent" {...BANI} />
-            <Column dataField={camp('RepartitorDenumire')} caption="Partener" />
+            <Column dataField={camp('RepartitorDenumire')} caption="Repartitor" />
             <Column
               dataField={camp('DocumentNumar')}
               caption="Document"
@@ -181,6 +202,22 @@ export function FisaCont() {
       )}
     </div>
   );
+}
+
+function Cifra({ eticheta, text }: { eticheta: string; text: string }) {
+  return (
+    <div className="bara-raport__camp">
+      <span className="camp__eticheta">{eticheta}</span>
+      <strong>{text}</strong>
+    </div>
+  );
+}
+
+// Serverul dă soldul deja netat, pe o singură parte; aici se alege doar eticheta sensului.
+function soldCuSens(debitor: number | undefined, creditor: number | undefined): string {
+  if (debitor === undefined || creditor === undefined) return '…';
+  if (creditor) return `${bani(creditor)} C`;
+  return debitor ? `${bani(debitor)} D` : bani(0);
 }
 
 function celulaDocument({ data }: { data: FisaContRand }) {

@@ -445,7 +445,7 @@ static class E2eApiLdi {
             decimal SoldLdiCub(Lot l) => CubScena.Sold(os, l.ID, mag1.ID).Cantitate;
             var stocLdiApiCub = CubScena.Stoc(os, idLdi);
             s.Check("LDI operat → 2 rânduri, ambele Magazie pe gestiunea INVENTARIATĂ: −2/−20 pe lotul vechi, +3/+21 pe lotul nou",
-                stocLdiApiCub.Count == 2 && stocLdiApiCub.All(p => p.Cont == tipMateriale.ContImplicitId && p.Gestiune == mag1.ID)
+                stocLdiApiCub.Count == 2 && stocLdiApiCub.All(p => p.Cont == tipMateriale.ContImplicitId && p.Repartitor == mag1.ID)
                 && stocLdiApiCub.Any(p => p.Unitate == lotVechi.ID && p.Cantitate == -2m && p.Semnata == -20m)
                 && stocLdiApiCub.Any(p => p.Unitate == lotPlus.ID && p.Cantitate == 3m && p.Semnata == 21m));
             s.Check("Solduri după operare: lot vechi 8, lot nou 3",

@@ -12,14 +12,15 @@ create table scara.lot as select * from "Loturi";
 create table scara.partener as
     select r.* from "Repartitori" r
     where r."ClrType" = 'Partener'
-      and r."ID" in (select p."Partener" from "Postare" p where p."Partener" is not null);
+      and r."ID" in (select p."Repartitor" from "Postare" p where p."Repartitor" is not null
+                     union select p."PartenerFiscal" from "Postare" p where p."PartenerFiscal" is not null);
 alter table scara.partener add primary key ("ID");
 -- Regula din `Partide.Origini`: postarea al cărei document dă identitatea unității.
 create table scara.partida as
-    select distinct p."Unitate" as unitate, p."DocumentId" as document, p."Cont" as cont, p."Partener" as partener
+    select distinct p."Unitate" as unitate, p."DocumentId" as document, p."Cont" as cont, p."Repartitor" as partener
     from "Postare" p
-    where p."FelUnitate" = 2 and p."DocumentId" is not null and p."Partener" is not null
-      and p."Unitate" = cub_partida_id(p."DocumentId", p."Cont", p."Partener");
+    where p."FelUnitate" = 2 and p."DocumentId" is not null and p."Repartitor" is not null
+      and p."Unitate" = cub_partida_id(p."DocumentId", p."Cont", p."Repartitor");
 alter table scara.partida add primary key (unitate);
 create table scara.partida_deschidere as
     select distinct p."Unitate" as unitate
@@ -61,28 +62,35 @@ select scara.h(l."ID", k.c), l."ProdusId", l."PretUnitar", l."GestiuneId", l."Da
        l."OptimisticLockField"
 from scara.lot l cross join generate_series(@de_la, @pana_la - 1) k(c);
 
--- `IX_Tranzactie_Fel` admite o singură tranzacție `Deschidere` (Fel = 4): nu se clonează, postările ei clonate rămân pe ea.
+-- `IX_Tranzactie_Fel` admite o singură tranzacție `Deschidere` (Fel = 4): nu se clonează, postările ei clonate rămân pe ea,
+-- numărate în continuarea celor ale scenei (117).
 insert into "Tranzactie" ("ID", "DocumentId", "Fel", "Data", "ScrisLa", "Explicatie", "ExplicatieDinId")
 select scara.h(t."ID", k.c), scara.h(t."DocumentId", k.c), t."Fel", t."Data", t."ScrisLa", null, null
 from scara.tranzactie t cross join generate_series(@de_la, @pana_la - 1) k(c)
 where t."Fel" <> 4;
 
 with copii as materialized (select c from generate_series(@de_la, @pana_la - 1) k(c)),
+deschidere as materialized (
+    select p."TranzactieId" as tranzactie, count(*)::integer as n
+    from scara.postare p join scara.tranzactie t on t."ID" = p."TranzactieId" where t."Fel" = 4 group by 1),
 partide as materialized (
     select o.unitate, k.c,
            cub_partida_id(scara.h(o.document, k.c), o.cont,
                case when pa."ID" is not null then scara.h(o.partener, k.c) else o.partener end) as unitate_noua
     from scara.partida o left join scara.partener pa on pa."ID" = o.partener cross join copii k)
-insert into "Postare" ("ID", "Spatiu", "TranzactieId", "DocumentId", "LinieId", "Data", "Cont", "Latura", "Partener", "Gestiune", "Produs",
+insert into "Postare" ("ID", "Spatiu", "TranzactieId", "Ordinal", "DocumentId", "LinieId", "Data", "Cont", "Latura", "Repartitor",
+        "Contrapondere", "PartenerFiscal", "Loc", "Produs",
         "Unitate", "UnitateDeschisa", "FelUnitate", "SuportId", "SuportSpatiu", "InversaDinId", "InversaDinSpatiu", "TipTvaId", "SensTva",
         "RolTva", "PerioadaDeclarare", "Valuta", "Carte", "CodFunctional", "CodEconomic", "SursaFinantare", "UnitateOrganizatorica", "Proiect",
         "CentruCost", "Atribuit", "Cantitate", "ValoareValuta", "Valoare", "CotaTva", "DataDocument", "DataExigibilitate", "DataInregistrare",
         "DataPrimire", "DeImport", "DocumentFiscalId", "InversaTehnica", "PerioadaD394", "RegimTva", "RegularizareD300", "Pereche")
 select scara.h(p."ID", k.c), p."Spatiu",
        case when t."Fel" = 4 then p."TranzactieId" else scara.h(p."TranzactieId", k.c) end,
-       scara.h(p."DocumentId", k.c), p."LinieId", p."Data", p."Cont", p."Latura",
-       case when pa."ID" is not null then scara.h(p."Partener", k.c) else p."Partener" end,
-       p."Gestiune", p."Produs",
+       p."Ordinal" + coalesce(d.n, 0) * k.c, scara.h(p."DocumentId", k.c), p."LinieId", p."Data", p."Cont", p."Latura",
+       case when pa."ID" is not null then scara.h(p."Repartitor", k.c) else p."Repartitor" end,
+       p."Contrapondere",
+       case when pf."ID" is not null then scara.h(p."PartenerFiscal", k.c) else p."PartenerFiscal" end,
+       p."Loc", p."Produs",
        case when p."FelUnitate" = 1 then scara.h(p."Unitate", k.c)
             when p."FelUnitate" = 2 then coalesce(o.unitate_noua, scara.h(p."Unitate", k.c))
             else p."Unitate" end,
@@ -94,7 +102,9 @@ select scara.h(p."ID", k.c), p."Spatiu",
 from scara.postare p
 cross join copii k
 join scara.tranzactie t on t."ID" = p."TranzactieId"
-left join scara.partener pa on pa."ID" = p."Partener"
+left join scara.partener pa on pa."ID" = p."Repartitor"
+left join scara.partener pf on pf."ID" = p."PartenerFiscal"
+left join deschidere d on d.tranzactie = p."TranzactieId"
 left join partide o on o.unitate = p."Unitate" and o.c = k.c and p."FelUnitate" = 2;
 
 -- @@ probe
@@ -132,6 +142,10 @@ select 'postări cu inversa sau suportul fără postare', '', 0,
         where p."InversaDinId" is not null and not exists (select 1 from "Postare" x where x."Spatiu" = p."InversaDinSpatiu" and x."ID" = p."InversaDinId")
            or p."SuportId" is not null and not exists (select 1 from "Postare" x where x."Spatiu" = p."SuportSpatiu" and x."ID" = p."SuportId")), '1'
 union all
+select 'tranzacții cu ordinalele nenumărate de la 1 fără goluri', '', 0,
+       (select count(*) from (select 1 from "Postare" group by "TranzactieId"
+            having min("Ordinal") <> 1 or max("Ordinal") <> count(*) or count(distinct "Ordinal") <> count(*)) x), '1'
+union all
 select 'postări fiscale cu documentul fiscal lipsă', '', 0,
        (select count(*) from "Postare" p where p."DocumentFiscalId" is not null
           and not exists (select 1 from "Documente" d where d."ID" = p."DocumentFiscalId")), '1'
@@ -140,8 +154,9 @@ order by 1, 2;
 -- @@ probe_copie
 -- Copia @c, rând cu rând: tot ce nu e rescris e identic cu originalul.
 select 'copia: Postare identică în afara coloanelor rescrise', '', count(*)::numeric,
-       count(*) filter (where to_jsonb(n.*) - array['ID', 'TranzactieId', 'DocumentId', 'DocumentFiscalId', 'InversaDinId', 'SuportId', 'Partener', 'Unitate']
-           = to_jsonb(p.*) - array['ID', 'TranzactieId', 'DocumentId', 'DocumentFiscalId', 'InversaDinId', 'SuportId', 'Partener', 'Unitate'])::numeric, '1'
+       count(*) filter (where to_jsonb(n.*) - array['ID', 'TranzactieId', 'Ordinal', 'DocumentId', 'DocumentFiscalId', 'InversaDinId', 'SuportId', 'Repartitor', 'PartenerFiscal', 'Unitate']
+           = to_jsonb(p.*) - array['ID', 'TranzactieId', 'Ordinal', 'DocumentId', 'DocumentFiscalId', 'InversaDinId', 'SuportId', 'Repartitor', 'PartenerFiscal', 'Unitate']
+           and (n."Ordinal" = p."Ordinal" or n."TranzactieId" = p."TranzactieId"))::numeric, '1'
 from scara.postare p left join "Postare" n on n."Spatiu" = p."Spatiu" and n."ID" = scara.h(p."ID", @c)
 union all
 select 'copia: Tranzactie identică în afara coloanelor rescrise', '', count(*),
@@ -163,9 +178,14 @@ select 'copia: parteneri identici în afara cheii și a codului', '', count(*),
            and n."Cod" = r."Cod" || '#' || @c), '1'
 from scara.partener r left join "Repartitori" n on n."ID" = scara.h(r."ID", @c)
 union all
-select 'copia: postările de partidă poartă partenerul clonat', '', count(*),
-       count(*) filter (where n."Partener" = scara.h(p."Partener", @c)), '1'
-from scara.postare p join scara.partener pa on pa."ID" = p."Partener"
+select 'copia: postările pe partener poartă partenerul clonat', '', count(*),
+       count(*) filter (where n."Repartitor" = scara.h(p."Repartitor", @c)), '1'
+from scara.postare p join scara.partener pa on pa."ID" = p."Repartitor"
+left join "Postare" n on n."Spatiu" = p."Spatiu" and n."ID" = scara.h(p."ID", @c)
+union all
+select 'copia: postările fiscale poartă partenerul fiscal clonat', '', count(*),
+       count(*) filter (where n."PartenerFiscal" = scara.h(p."PartenerFiscal", @c)), '1'
+from scara.postare p join scara.partener pa on pa."ID" = p."PartenerFiscal"
 left join "Postare" n on n."Spatiu" = p."Spatiu" and n."ID" = scara.h(p."ID", @c)
 union all
 select 'copia: unitatea de lot e lotul clonat', '', count(*),

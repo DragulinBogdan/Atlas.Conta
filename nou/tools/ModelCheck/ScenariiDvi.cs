@@ -36,15 +36,16 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
     RandScena[] Randuri(FacturaScena d, int i, decimal baza, decimal taxa, string tva = "IMP21",
             int? perioada = null, string contra = "446", Guid? partener = null) {
         var tert = partener ?? vama; var linie = d.Linii[i].Id;
-        var debit = new RandScena(Cont("4426"), N.Latura.Debit, baza, Gestiune: Loc, Partener: tert,
+        var debit = new RandScena(Cont("4426"), N.Latura.Debit, baza, Repartitor: Loc, PartenerFiscal: tert,
             Linie: linie, Tva: Tva(tva), Rol: N.RolTva.Baza, Perioada: perioada ?? An * 100 + 1,
-            Sens: N.SensTva.Achizitie, Carte: N.Carte.Fiscal);
-        var credit = debit with { Latura = N.Latura.Credit, Partener = null, Tva = null, Rol = null,
+            Sens: N.SensTva.Achizitie, Carte: N.Carte.Fiscal, Loc: Loc);
+        var credit = debit with { Latura = N.Latura.Credit, PartenerFiscal = null, Loc = null, Tva = null, Rol = null,
             Sens = null, Perioada = null };
         return taxa == 0 ? [debit, credit] : [
             debit with { Valoare = taxa, Rol = N.RolTva.Taxa, Carte = N.Carte.Contabil },
             new(Cont(contra), N.Latura.Credit, taxa, Linie: linie,
-                Partener: contra is "401" or "4427" ? tert : null,
+                Repartitor: contra == "401" ? tert : null,
+                PartenerFiscal: contra == "4427" ? tert : null, Loc: contra == "4427" ? Loc : null,
                 Tva: contra == "4427" ? Tva(tva) : null, Rol: contra == "4427" ? N.RolTva.Autocolectare : null,
                 Sens: contra == "4427" ? N.SensTva.Achizitie : null, Perioada: contra == "4427" ? perioada ?? An * 100 + 1 : null,
                 Unitate: contra == "401" ? Partida(d.Id, contra, tert) : null), debit, credit];
@@ -126,12 +127,15 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
         var jurnalContabil = ContabilProiectii.RegistruJurnal(os).Where(r => r.DocumentId == d.Id).ToList();
         var fisaContabila = ContabilProiectii.FisaCont(os, Cont("4426"), Ianuarie, Ianuarie)
             .Where(r => r.DocumentId == d.Id).ToList();
-        var balanta = ContabilProiectii.Balanta(os, Ianuarie, Ianuarie, repartitorId: vama)
+        var balanta = ContabilProiectii.Balanta(os, Ianuarie, Ianuarie, repartitorId: Loc)
             .Single(r => r.ContId == Cont("4426"));
-        Verifica("SC-CIT-15", "DVI: jurnal 21/21, fișă și balanță 21, fără baza fiscală 100",
+        var peVama = ContabilProiectii.Balanta(os, Ianuarie, Ianuarie, repartitorId: vama).ToList();
+        Verifica("SC-CIT-15", "DVI: jurnal 21/21, fișă și balanță 21 pe locul declarației, fără baza fiscală 100; "
+            + "partenerul fiscal nu e pe axă",
             jurnalContabil.Count == 2 && jurnalContabil.Sum(r => r.Debit) == 21
             && jurnalContabil.Sum(r => r.Credit) == 21 && fisaContabila.Count == 1
-            && fisaContabila[0].Debit == 21 && balanta.RulajDebit == 21 && balanta.RulajCredit == 0);
+            && fisaContabila[0].Debit == 21 && balanta.RulajDebit == 21 && balanta.RulajCredit == 0
+            && peVama.All(r => r.ContId != Cont("4426")));
         var p = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == d.Id).ToList();
         decimal Sold(IEnumerable<C.Postare> r) => r.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare);
         var contabil = p.Where(p => p.Carte == N.Carte.Contabil).ToList();
@@ -140,14 +144,14 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
             && contabil.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare) == 21
             && p.Where(p => p.Carte == N.Carte.Fiscal).All(p => p.Unitate == null && p.Valoare == 100)
             && p.GroupBy(p => p.Carte).All(g => Sold(g) == 0));
-        Verifica("SC-DVI-16", "sold 4426 contabil, inclusiv pe partener: 21; fiscal pe cont: 0",
+        Verifica("SC-DVI-16", "sold 4426 contabil, inclusiv pe partenerul fiscal: 21; fiscal pe cont: 0",
             Sold(contabil.Where(p => p.Cont == Cont("4426"))) == 21
-            && Sold(contabil.Where(p => p.Cont == Cont("4426") && p.Partener == vama)) == 21
+            && Sold(contabil.Where(p => p.Cont == Cont("4426") && p.PartenerFiscal == vama)) == 21
             && Sold(p.Where(p => p.Carte == N.Carte.Fiscal && p.Cont == Cont("4426"))) == 0);
-        Verifica("SC-DVI-16", "martor fără Carte: rulaje 121/121 și sold cont × partener 121",
+        Verifica("SC-DVI-16", "martor fără Carte: rulaje 121/121 și sold cont × partener fiscal 121",
             p.Where(p => p.Latura == N.Latura.Debit).Sum(p => p.Valoare) == 121
             && p.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare) == 121
-            && Sold(p.Where(p => p.Cont == Cont("4426") && p.Partener == vama)) == 121);
+            && Sold(p.Where(p => p.Cont == Cont("4426") && p.PartenerFiscal == vama)) == 121);
         Jurnal("SC-DVI-16", [d.Id], An * 100 + 1, 100, 21);
     }
 
@@ -225,14 +229,16 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
     void TransferPur() {
         var stins = Guid.NewGuid(); var stingator = Guid.NewGuid();
         N.Postare P(Guid doc, N.Latura latura, decimal v) => new(new N.Coordonate {
-            Cont = Cont("401"), Latura = latura, Data = Ianuarie, Partener = Furnizor,
+            Cont = Cont("401"), Latura = latura, Data = Ianuarie,
+            Repartitor = new N.Repartitor(Furnizor, N.FelRepartitor.Partener),
             Unitate = N.Unitate.DeschidePartida(Cont("401"), Furnizor, doc, Ianuarie),
         }, 0, 0, v, new(doc, null));
         var cerere = new C.Transferuri.Cerere(stingator, Ianuarie, [P(stingator, N.Latura.Debit, 10)], [],
             stins, Ianuarie, [P(stins, N.Latura.Credit, 21)], [], 10, Ianuarie);
         N.Postare[] Baza(Guid doc) => [.. new[] { N.Latura.Debit, N.Latura.Credit }.Select(l =>
             new N.Postare(new N.Coordonate { Cont = Cont("4426"), Latura = l, Data = Ianuarie,
-                Carte = N.Carte.Fiscal, Gestiune = Loc, Partener = l == N.Latura.Debit ? Furnizor : null,
+                Carte = N.Carte.Fiscal, Repartitor = new N.Repartitor(Loc, N.FelRepartitor.UnitateInterna),
+                PartenerFiscal = l == N.Latura.Debit ? Furnizor : null, Loc = l == N.Latura.Debit ? Loc : null,
                 CodTva = l == N.Latura.Debit ? new(Tva("IMP21"), N.SensTva.Achizitie, N.RolTva.Baza) : null,
                 PerioadaDeclarare = l == N.Latura.Debit ? An * 100 + 1 : null }, 0, 0, 100, new(doc, null)))];
         var original = C.Transferuri.Muta(cerere);

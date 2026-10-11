@@ -151,9 +151,9 @@ static class E2eNotaContabila {
                 && noteNtcCub.Where(p => p.LinieId == linieStorno.ID).All(p => p.Valoare == -40m && p.Fel == N.FelTranzactie.Operare)
                 && noteNtcCub.Count(p => p.LinieId == linieViramente.ID) == 2 && noteNtcCub.Count(p => p.LinieId == linieStorno.ID) == 2);
             s.Check("D9-A10 NTC: debitul cules MAG1 pe prima linie, implicitul predator SEDIU pe a doua; creditul implicit primitor pe ambele",
-                noteNtcCub.Single(p => p.Debit && p.LinieId == linieViramente.ID).Gestiune == mag1.ID
-                && noteNtcCub.Single(p => p.Debit && p.LinieId == linieStorno.ID).Gestiune == sediu.ID
-                && noteNtcCub.Where(p => p.Credit).All(p => p.Gestiune == unitate.ID));
+                noteNtcCub.Single(p => p.Debit && p.LinieId == linieViramente.ID).Repartitor == mag1.ID
+                && noteNtcCub.Single(p => p.Debit && p.LinieId == linieStorno.ID).Repartitor == sediu.ID
+                && noteNtcCub.Where(p => p.Credit).All(p => p.Repartitor == unitate.ID));
 
             // --- Refuzurile: invarianții tipului + gardianul generic de dimensiuni ---
             void RefuzNtc(string nume, Repartitor predator, Repartitor primitor, Action<NotaContabilaDetaliu> configurare) {

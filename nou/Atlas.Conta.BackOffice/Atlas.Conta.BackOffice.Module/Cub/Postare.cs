@@ -23,8 +23,8 @@ public class Postare {
     public virtual DateOnly Data { get; set; }
     public virtual Guid Cont { get; set; }
     public virtual N.Latura Latura { get; set; }
-    public virtual Guid? Partener { get; set; }
-    public virtual Guid? Gestiune { get; set; }
+    public virtual Guid? Repartitor { get; set; }
+    public virtual N.Contrapondere? Contrapondere { get; set; }
     public virtual Guid? Produs { get; set; }
     public virtual Guid? Unitate { get; set; }
     public virtual DateOnly? UnitateDeschisa { get; set; }
@@ -38,6 +38,8 @@ public class Postare {
     public virtual Guid? TipTvaId { get; set; }
     public virtual N.SensTva? SensTva { get; set; }
     public virtual N.RolTva? RolTva { get; set; }
+    public virtual Guid? PartenerFiscal { get; set; }
+    public virtual Guid? Loc { get; set; }
     public virtual int? PerioadaDeclarare { get; set; }
     public virtual N.RegimTva? RegimTva { get; set; }
     public virtual decimal? CotaTva { get; set; }

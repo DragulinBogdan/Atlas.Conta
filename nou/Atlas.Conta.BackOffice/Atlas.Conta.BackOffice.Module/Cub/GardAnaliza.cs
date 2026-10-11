@@ -11,12 +11,33 @@ namespace Atlas.Conta.BackOffice.Module.Cub;
 /// Mutările și transformările nu intră (D9-D4, D9-r1).
 /// </summary>
 public static class GardAnaliza {
-    public readonly record struct ContFapt(string Simbol, DimensiuneFlags Flags);
+    public readonly record struct ContFapt(string Simbol, DimensiuneFlags Flags,
+        FeluriRepartitor Feluri = FeluriRepartitor.Nedeclarat);
     public readonly record struct LinieFapt(string? Denumire, Guid? Angajament);
 
-    /// <summary>Forma pe care o judecă gardul: repartitorul e partenerul sau gestiunea, materialul e produsul.</summary>
-    public static Dimensiuni Dimensiuni(Guid? repartitor, Guid? produs, N.Analiza analiza) => new() {
-        RepartitorId = repartitor,
+    static FeluriRepartitor Fel(N.FelRepartitor fel) => fel switch {
+        N.FelRepartitor.Partener => FeluriRepartitor.Partener,
+        N.FelRepartitor.Angajat => FeluriRepartitor.Angajat,
+        N.FelRepartitor.Gestiune => FeluriRepartitor.Gestiune,
+        N.FelRepartitor.ContPropriu => FeluriRepartitor.ContPropriu,
+        N.FelRepartitor.UnitateInterna => FeluriRepartitor.UnitateInterna,
+        _ => throw new ArgumentOutOfRangeException(nameof(fel), fel, null),
+    };
+
+    // C111-D4: contraponderea e scutită numai de prezență; felul unui repartitor prezent se judecă.
+    static string? LipsaRepartitor(FeluriRepartitor feluri, N.Repartitor? repartitor, bool contrapondere) {
+        if (feluri == FeluriRepartitor.Nedeclarat)
+            return null;
+        if (repartitor is not { } r)
+            return contrapondere || feluri.HasFlag(FeluriRepartitor.Niciunul) ? null : "Repartitor";
+        if (feluri.HasFlag(Fel(r.Fel)))
+            return null;
+        var admise = Enum.GetValues<N.FelRepartitor>().Where(f => feluri.HasFlag(Fel(f)));
+        return $"Repartitor de felul {string.Join(" sau ", admise)} (primit: {r.Fel})";
+    }
+
+    /// <summary>Forma pe care o judecă gardul: materialul e produsul.</summary>
+    public static Dimensiuni Dimensiuni(Guid? produs, N.Analiza analiza) => new() {
         MaterialId = produs,
         CodFunctionalId = analiza.CodFunctional,
         CodEconomicId = analiza.CodEconomic,
@@ -25,12 +46,6 @@ public static class GardAnaliza {
         ProiectId = analiza.Proiect,
         CentruCostId = analiza.CentruCost,
     };
-
-    /// <summary>Repartitorul capătului: partenerul piciorului de terț sau gestiunea piciorului intern (D9-A10).</summary>
-    public static Guid? Repartitor(N.Capat capat) {
-        ArgumentNullException.ThrowIfNull(capat);
-        return Citiri.Contabil.Repartitor(capat.Partener, capat.Gestiune);
-    }
 
     /// <summary>Lipsurile pe capetele mișcărilor din <c>Carte = Contabil</c>; gardul judecă numai capătul.</summary>
     public static IReadOnlyList<string> Lipsuri(
@@ -49,8 +64,8 @@ public static class GardAnaliza {
             void Latura(N.Capat capat, string latura) {
                 if (capat.Carte != N.Carte.Contabil || !conturi.TryGetValue(capat.Cont, out var cont))
                     return;
-                VerificaLatura(cont.Simbol, cont.Flags,
-                    Dimensiuni(Repartitor(capat), capat.Produs, capat.Analiza),
+                VerificaLatura(cont, capat.Repartitor, capat.Contrapondere is not null,
+                    Dimensiuni(capat.Produs, capat.Analiza),
                     linie.Angajament, latura, linie.Denumire, lipsuri);
             }
         }
@@ -58,13 +73,14 @@ public static class GardAnaliza {
     }
 
     // 15: angajamentul liniei ține loc de cod economic.
-    internal static void VerificaLatura(string simbol, DimensiuneFlags flags, Dimensiuni dims,
-        Guid? angajamentId, string latura, string denumireLinie, ICollection<string> lipsuri) {
-        if (flags == DimensiuneFlags.Niciuna)
+    internal static void VerificaLatura(ContFapt cont, N.Repartitor? repartitor, bool contrapondere, Dimensiuni dims,
+        Guid? angajamentId, string latura, string? denumireLinie, ICollection<string> lipsuri) {
+        var (simbol, flags, feluri) = cont;
+        if (flags == DimensiuneFlags.Niciuna && feluri == FeluriRepartitor.Nedeclarat)
             return;
         var lipsa = new List<string>();
-        if (flags.HasFlag(DimensiuneFlags.Repartitor) && dims.RepartitorId == null)
-            lipsa.Add("Repartitor");
+        if (LipsaRepartitor(feluri, repartitor, contrapondere) is { } lipsaRepartitor)
+            lipsa.Add(lipsaRepartitor);
         if (flags.HasFlag(DimensiuneFlags.Material) && dims.MaterialId == null)
             lipsa.Add("Material");
         if (flags.HasFlag(DimensiuneFlags.CodFunctional) && dims.CodFunctionalId == null)
@@ -92,9 +108,10 @@ public static class GardAnaliza {
             return;
         var ids = miscari.SelectMany(m => new[] { m.DeLa.Cont, m.La.Cont }).Distinct().ToList();
         var conturi = os.GetObjectsQuery<Cont>()
-            .Where(c => ids.Contains(c.ID) && c.DimensiuniObligatorii != DimensiuneFlags.Niciuna)
-            .Select(c => new { c.ID, c.Simbol, c.DimensiuniObligatorii })
-            .ToDictionary(c => c.ID, c => new ContFapt(c.Simbol, c.DimensiuniObligatorii));
+            .Where(c => ids.Contains(c.ID) && (c.DimensiuniObligatorii != DimensiuneFlags.Niciuna
+                || c.FeluriRepartitor != FeluriRepartitor.Nedeclarat))
+            .Select(c => new { c.ID, c.Simbol, c.DimensiuniObligatorii, c.FeluriRepartitor })
+            .ToDictionary(c => c.ID, c => new ContFapt(c.Simbol, c.DimensiuniObligatorii, c.FeluriRepartitor));
         if (conturi.Count == 0)
             return;
         var denumiri = Fapte.ClaseTip(os, doc.Detalii.Select(d => d.TipMaterialId));

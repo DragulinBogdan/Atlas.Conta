@@ -48,11 +48,11 @@ public sealed partial class DeclarantNir : IDeclarant {
             }
             Partide.Numeste(operand, cont.ContCredit, doc.Predator.Id, linie.Id, partide, decizii);
             var externCapat = Terti.Capat(operand, new N.Capat {
-                Cont = cont.ContCredit, Gestiune = N.GestiuniVirtuale.Furnizor, Produs = lot.ProdusId,
+                Cont = cont.ContCredit, Contrapondere = N.Contrapondere.Tert, Produs = lot.ProdusId,
                 Analiza = Contari.Analiza(linie.Analiza, cont.Regula.OverrideCredit, cont.Regula.Comun),
-            }, doc.Predator.Id, partide);
+            }, doc.Predator, partide);
             var internCapat = new N.Capat {
-                Cont = cont.ContDebit, Gestiune = doc.Primitor.Id, Produs = lot.ProdusId,
+                Cont = cont.ContDebit, Repartitor = doc.Primitor.Coordonata, Produs = lot.ProdusId,
                 Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, cont.ContDebit, null, lot.ProdusId, lot.Data),
                 Analiza = Contari.Analiza(linie.Analiza, cont.Regula.OverrideDebit, cont.Regula.Comun),
             };

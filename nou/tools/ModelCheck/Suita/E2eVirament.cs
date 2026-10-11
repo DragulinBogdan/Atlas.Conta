@@ -282,8 +282,9 @@ static class E2eVirament {
             s.Check("F7-D9 ancora 3: piciorul de ieșire postează 581 (tranzit) = 531.01.01 (contul propriu SURSĂ), 500 — un singur rând, ZERO stoc",
                 notePicior1Cub.Count == 2 && notePicior1Cub.Nota(cont581.ID, cont531.ID, 500m)
                 && CubScena.FaraStoc(os, idVirPlt));
-            s.Check("F7-D9 ancora 3 (F7-D5b): dimensiunea Repartitor = contul propriu AL PICIORULUI pe AMBELE laturi ale rândului — default-ul „debit←Predator/credit←Primitor” ar fi atribuit ieșirea contului DESTINAȚIE",
-                notePicior1Cub.Count == 2 && notePicior1Cub.All(p => p.Gestiune == casaVir.ID));
+            s.Check("F7-D9 ancora 3 (F7-D5b, C111 S7): contul propriu SURSĂ stă pe piciorul lui, iar piciorul de tranzit n-are repartitor — default-ul „debit←Predator/credit←Primitor” ar fi atribuit ieșirea contului DESTINAȚIE",
+                notePicior1Cub.Count == 2 && notePicior1Cub.Single(p => p.Cont == cont531.ID).Repartitor == casaVir.ID
+                && notePicior1Cub.Single(p => p.Cont == cont581.ID).Repartitor == null);
 
             // --- NUC-PLT-VIR (B-D5, pas 4): ambele capete pe contul propriu AL PICIORULUI ---
             ProbeNucleu.Proba(os, s.Check, "NUC-PLT-VIR", [os.GetObjectByKey<Plata>(idVirPlt)]);
@@ -334,11 +335,12 @@ static class E2eVirament {
             });
             var rezVirInc = ComenziDocument.Sistem(os).Opereaza(idVirInc);
             var notePicior2Cub = CubScena.Note(os, idVirInc);
-            s.Check("F7-D9 ancora 5: piciorul de INTRARE postează 770.00.00 (contul propriu DESTINAȚIE) = 581, la data lui; Repartitor = contul propriu al ACESTUI picior pe ambele laturi",
+            s.Check("F7-D9 ancora 5: piciorul de INTRARE postează 770.00.00 (contul propriu DESTINAȚIE) = 581, la data lui; contul propriu al ACESTUI picior pe piciorul lui, tranzitul fără repartitor (C111 S7)",
                 rezVirInc.StareNoua == StareDocument.Operat
                 && notePicior2Cub.Count == 2 && notePicior2Cub.Nota(cont770.ID, cont581.ID, 500m)
                 && notePicior2Cub.All(p => p.Data == new DateOnly(2026, 4, 12))
-                && notePicior2Cub.All(p => p.Gestiune == bancaVir.ID)
+                && notePicior2Cub.Single(p => p.Cont == cont770.ID).Repartitor == bancaVir.ID
+                && notePicior2Cub.Single(p => p.Cont == cont581.ID).Repartitor == null
                 && CubScena.FaraStoc(os, idVirInc));
             s.Check("F7-D9 ancora 8: latura pereche OPERATĂ nu generează un al treilea document — gardul `Autogenerat` din `GenereazaSecundar` taie ping-pong-ul",
                 rezVirInc.ConexId == null

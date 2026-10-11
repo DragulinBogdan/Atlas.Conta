@@ -177,10 +177,16 @@ amendamentele 1–3, pașii în `docs/nucleu/tr-d9-pas*.md`, închiderea în
 Codex al închiderii e închis (D9-F-R1…R4, IZ-R1, IZ-R2), iar proba PerfCub pe
 clone diferite e acceptată de owner ca abatere de la „aceeași bază”.
 Mersă în main prin PR #22 (2026-10-07). Bazele de dezvoltare sunt recreate din
-`InitialCreate`. Pasul 0 al TR-D9b e măsurat (2026-10-08,
-`docs/nucleu/tr-d9b-pas0-masuratori.md`); baza de import la zi e
-`.Flax.D9bP0`, scena de volum e `.D9bVol`. Urmează hotărârea owner-ului pe
-decizia 111 (propusă, neaprobată), apoi contractul TR-D9b.
+`InitialCreate` (ultima dată la pasul 7 al C111, 2026-10-11). Pasul 0 al TR-D9b e măsurat (2026-10-08,
+`docs/nucleu/tr-d9b-pas0-masuratori.md`). Decizia 111 (a)–(e) și (i) e
+implementată în felia C111 (2026-10-11): postarea are un singur repartitor
+de sold, partenerul și locul fiscal în blocul fiscal și marcajul
+contraponderii. Contractul e `docs/nucleu/c111-coordonate-contract.md`,
+pașii în `docs/nucleu/c111-pas*.md`; review-ul advers Codex al închiderii e
+închis (C111-F-R1 corectată, C111-F-R2 tranșată prin precizarea lui 110 (e)).
+Felia e pe branch-ul local `c111-coordonate`, nemersă în main. Baza de import
+pe forma nouă e `.Flax.C111P6` (ianuarie 2025), scena de volum e `.C111Vol`.
+TR-D9b rămâne felia unităților, pe forma nouă a postării.
 Felia fiscală
 103 este implementată și verificată; snapshot-ul de stoc este pe cub;
 contractul și probele sunt în `docs/nucleu/tr-d8-citiri-contract.md` și

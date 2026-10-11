@@ -15,7 +15,7 @@ sealed partial class ScenariiLdi {
         var amprenta = Amprenta(fct.Id);
         Sold("SC-LDI-18", lot, 4, 100);
         Verifica("SC-LDI-18", "FCT/NIR: o singură recepție în cub, gestiune reală", CuSpatiu(os =>
-            os.GetObjectsQuery<C.Postare>().Count(p => p.Unitate == lot.Lot && p.Gestiune == Magazie) == 1));
+            os.GetObjectsQuery<C.Postare>().Count(p => p.Unitate == lot.Lot && p.Repartitor == Magazie) == 1));
         var btr = Iesire(true, (lot, 2)); Opereaza(btr.Id);
         RandScena[] transfer = [
             new(Cont(TipFolosinta), N.Latura.Debit, -50, -2, Magazie, lot.Lot, lot.Produs,

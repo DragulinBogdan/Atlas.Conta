@@ -178,7 +178,7 @@ static class E2eAsamblare {
                     && stocAsmCub.Single(p => p.Unitate == lotA.ID) is { Cantitate: -6m, Semnata: -30m }
                     && stocAsmCub.Single(p => p.Unitate == lotB.ID) is { Cantitate: -2m, Semnata: -20m }
                     && stocAsmCub.Single(p => p.Unitate == lotKit.ID) is { Cantitate: 2m, Semnata: 50m }
-                    && stocAsmCub.All(p => p.Cont == tip371.ContImplicitId && p.Gestiune == gestiune.ID));
+                    && stocAsmCub.All(p => p.Cont == tip371.ContImplicitId && p.Repartitor == gestiune.ID));
 
                 s.Check("Lotul kitului finalizat de motor: PretUnitar = valoarea alocată / cantitate (25), data documentului",
                     lotKit.PretUnitar == 25m && lotKit.Data == dAsm

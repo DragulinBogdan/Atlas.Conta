@@ -88,9 +88,9 @@ public static class Explicatii {
             throw new OperareException($"{Lipsa}: {iesiri[null].Count()} ieșiri pe lot în tranzacții fără explicație.");
 
         var pePartide = postari.Where(p => p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida
-                && p.Partener != null && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+                && p.Repartitor != null && p.Tranzactie.Fel == N.FelTranzactie.Operare)
             .Select(p => new { p.TranzactieId, p.LinieId, Unitate = p.Unitate!.Value, p.Cont,
-                Partener = p.Partener!.Value, Deschisa = p.UnitateDeschisa!.Value, p.Valoare })
+                Partener = p.Repartitor!.Value, Deschisa = p.UnitateDeschisa!.Value, p.Valoare })
             .ToList().ToLookup(p => Purtator(p.TranzactieId));
 
         var documente = purtatori.Select(p => p.Document).Distinct().ToList();

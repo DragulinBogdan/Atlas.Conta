@@ -21,7 +21,7 @@ public class SoldPartenerController : ContaApiController {
         [FromQuery] Guid? materialId = null, [FromQuery] Guid? codFunctionalId = null,
         [FromQuery] Guid? codEconomicId = null, [FromQuery] Guid? sursaFinantareId = null,
         [FromQuery] Guid? unitateId = null, [FromQuery] Guid? proiectId = null,
-        [FromQuery] Guid? centruCostId = null, [FromQuery] Guid? gestiuneId = null) {
+        [FromQuery] Guid? centruCostId = null) {
 
         if (laData is DateOnly d && d == default)
             return BadRequest(EroriDto.DinMesaj(
@@ -32,7 +32,7 @@ public class SoldPartenerController : ContaApiController {
         return Ok(Incarca(ContabilProiectii.SoldParteneri(os,
             laData ?? DateOnly.FromDateTime(DateTime.Today), contId, repartitorId,
             materialId, codFunctionalId, codEconomicId, sursaFinantareId,
-            unitateId, proiectId, centruCostId, gestiuneId),
+            unitateId, proiectId, centruCostId),
             loadOptions, ContabilProiectii.OrdineSoldParteneri()));
     }
 }

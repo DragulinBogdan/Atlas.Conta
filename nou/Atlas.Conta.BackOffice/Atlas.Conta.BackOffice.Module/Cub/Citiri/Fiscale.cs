@@ -40,6 +40,9 @@ public sealed class FaptFiscal {
 }
 
 public static class Fiscale {
+    /// <summary>Membrul postării care poartă partenerul fiscal, pentru verificarea de drepturi.</summary>
+    public const string MembruPartener = nameof(Postare.PartenerFiscal);
+
     public const string IzolareInsuficienta = "CITIRE_IZOLARE_INSUFICIENTA";
 
     /// <summary>Tranzacția de citire a unei declarații; cu <paramref name="cereIzolare"/>, o ambiantă sub RepeatableRead se refuză.</summary>
@@ -74,7 +77,7 @@ public static class Fiscale {
     public static IQueryable<FaptFiscal> Fapte(IObjectSpace os) => Postari(os)
         .GroupBy(p => new {
             p.TranzactieId, p.DocumentId, p.DocumentFiscalId, p.LinieId, p.TipTvaId,
-            p.Partener, p.SensTva, p.RegimTva, p.CotaTva, p.DeImport, p.PerioadaDeclarare,
+            p.PartenerFiscal, p.SensTva, p.RegimTva, p.CotaTva, p.DeImport, p.PerioadaDeclarare,
             p.PerioadaD394, p.Data, p.DataDocument, p.DataExigibilitate, p.DataPrimire,
             p.DataInregistrare, p.Tranzactie.ScrisLa, p.Tranzactie.Fel,
             p.InversaTehnica, p.RegularizareD300,
@@ -82,7 +85,7 @@ public static class Fiscale {
         .Select(g => new FaptFiscal {
             TranzactieId = g.Key.TranzactieId, DocumentId = g.Key.DocumentId.Value,
             DocumentFiscalId = g.Key.DocumentFiscalId.Value, DetaliuId = g.Key.LinieId.Value,
-            TipTvaId = g.Key.TipTvaId.Value, PartenerId = g.Key.Partener,
+            TipTvaId = g.Key.TipTvaId.Value, PartenerId = g.Key.PartenerFiscal,
             Sens = (SensTva)g.Key.SensTva.Value, Regim = (RegimTva)g.Key.RegimTva.Value,
             Cota = g.Key.CotaTva.Value, DeImport = g.Key.DeImport.Value,
             PerioadaD300 = g.Key.PerioadaDeclarare.Value, PerioadaD394 = g.Key.PerioadaD394.Value,

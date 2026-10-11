@@ -7,7 +7,7 @@ public class TransformareTeste {
 
     static Transformare Linie(Guid document, Guid cont, Guid produs, RolTransformare rol,
             FelTranzactie fel, decimal q, decimal v) => new(new Capat {
-        Cont = cont, Produs = produs, Gestiune = Gen.Gestiuni[0],
+        Cont = cont, Produs = produs, Repartitor = Gen.Locuri[0],
         Unitate = new Unitate(produs, FelUnitate.Lot, cont, null, produs, Data),
     }, rol, fel, q, v, new Cauza(document, produs));
 
@@ -46,8 +46,9 @@ public class TransformareTeste {
             }
             Assert.All(c.Tranzactii.SelectMany(t => t.Postari), p => Assert.Null(p.Pereche));
             foreach (var p in c.Tranzactii.SelectMany(t => t.Postari)
-                         .Where(p => p.Coordonate.Gestiune == GestiuniVirtuale.Transformare)) {
+                         .Where(p => p.Coordonate.Contrapondere == Contrapondere.Transformare)) {
                 Assert.Null(p.Coordonate.Unitate);
+                Assert.Null(p.Coordonate.Repartitor);
                 Assert.Equal(0m, p.Valoare);
                 Assert.Equal(0m, p.ValoareValuta);
             }
@@ -85,18 +86,19 @@ public class TransformareTeste {
         var real = linie.Real;
         Capat[] invalide = [real with { Unitate = null },
             real with { Unitate = real.Unitate! with { Fel = FelUnitate.Partida } },
-            real with { Gestiune = null }, real with { Produs = null },
+            real with { Repartitor = null }, real with { Produs = null },
             real with { Cont = Gen.Conturi[1] }, real with { Produs = Gen.Produse[1] },
-            real with { Carte = Carte.Fiscal }, real with { Partener = Gen.Documente[1] },
+            real with { Carte = Carte.Fiscal }, real with { Repartitor = Gen.Terti[0] },
+            real with { Repartitor = new(Gen.ConturiProprii[0], FelRepartitor.ContPropriu) },
+            real with { PartenerFiscal = Gen.Parteneri[1] },
             real with { Unitate = real.Unitate! with { Partener = Gen.Documente[1] } },
             real with { CodTva = new(Guid.NewGuid(), SensTva.Achizitie, RolTva.Baza) },
             real with { PerioadaDeclarare = 202601 }, real with { Valuta = Guid.NewGuid() },
-            .. new[] { GestiuniVirtuale.Furnizor, GestiuniVirtuale.Client, GestiuniVirtuale.Consum,
-                GestiuniVirtuale.Transformare }.Select(g => real with { Gestiune = g })];
+            .. Enum.GetValues<Contrapondere>().Select(fel => real with { Contrapondere = fel })];
         foreach (var invalid in invalide)
             Assert.Throws<ArgumentException>(() => Transformare.Postari(linie with { Real = invalid }, Data));
         Assert.Throws<ArgumentException>(() => Transformare.Postari(linie with {
-            Real = real with { Gestiune = GestiuniVirtuale.Transformare, Unitate = null } }, Data));
+            Real = real with { Contrapondere = Contrapondere.Transformare, Repartitor = null, Unitate = null } }, Data));
     }
 
     [Fact]

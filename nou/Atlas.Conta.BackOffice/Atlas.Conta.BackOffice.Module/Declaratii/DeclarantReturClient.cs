@@ -52,7 +52,7 @@ public sealed class DeclarantReturClient : IDeclarant {
             var l = operand.Linii[i]; var contare = contari[i]!.Value;
             Contari.Decide(contare, l.Id, decizii);
             var credit = new N.Capat {
-                Cont = contare.ContCredit, Gestiune = doc.Primitor.Id,
+                Cont = contare.ContCredit, Repartitor = doc.Primitor.Coordonata,
                 Produs = l.Lot?.ProdusId,
                 Analiza = Contari.Analiza(l.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
             };
@@ -63,7 +63,7 @@ public sealed class DeclarantReturClient : IDeclarant {
             if (l.Lot is { } lot) {
                 credit = credit with { Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot,
                     contare.ContCredit, null, lot.ProdusId, lot.Data) };
-                debit = debit with { Gestiune = N.GestiuniVirtuale.Client, Partener = doc.Predator.Id };
+                debit = debit with { Contrapondere = N.Contrapondere.Tert, Repartitor = doc.Predator.Coordonata };
                 miscari.Add(new(credit, debit, l.Cantitate, 0m, l.Valoare, new(doc.Id, l.Id)));
                 if (l.Cantitate > 0m)
                     decizii.Add(new N.ValoareDeclarata(l.Id, credit.Unitate!, l.Cantitate, l.Valoare, SurseValoare.Linie));
@@ -81,8 +81,8 @@ public sealed class DeclarantReturClient : IDeclarant {
         }
         if (refuzuri.Count > 0) return null;
         return new(doc.Id, doc.DataInregistrare, [.. miscari.Select(m => m with {
-            DeLa = Terti.Capat(operand, m.DeLa, doc.Predator.Id, partide),
-            La = Terti.Capat(operand, m.La, doc.Predator.Id, partide),
+            DeLa = Terti.Capat(operand, m.DeLa, doc.Predator, partide),
+            La = Terti.Capat(operand, m.La, doc.Predator, partide),
         })], decizii, PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, fiscale)));
     }
 }

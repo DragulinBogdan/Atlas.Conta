@@ -110,28 +110,47 @@ public class ConservareTeste {
     public void GestiuneaLipsaPeOCantitatePica() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactie = Gen.Operare(aleator, cuCantitate: true);
-            var perturbata = Perturba(tranzactie, aleator, p => p with {
-                Coordonate = p.Coordonate with { Gestiune = null },
-            });
+            var perturbata = Perturba(
+                tranzactie,
+                aleator,
+                p => p with { Coordonate = p.Coordonate with { Repartitor = null } },
+                p => p.Coordonate.Contrapondere is null);
             AreCodul(Conservare.Verifica(perturbata), Coduri.GestiuneLipsa);
+        });
+
+    [Fact]
+    public void ContraponderaNemarcataPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator, cuCantitate: true);
+            var perturbata = Perturba(
+                tranzactie,
+                aleator,
+                p => p with { Coordonate = p.Coordonate with { Contrapondere = null } },
+                p => p.Coordonate.Contrapondere is not null);
+            var refuzuri = Conservare.Verifica(perturbata);
+            AreCodul(refuzuri, Coduri.GestiuneLipsa);
+            AreCodul(refuzuri, Coduri.UnitateLipsa);
         });
 
     [Fact]
     public void UnitateaLipsaPeOCantitatePica() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactie = Gen.Operare(aleator, cuCantitate: true);
-            var perturbata = Perturba(tranzactie, aleator, p => p with {
-                Coordonate = p.Coordonate with { Unitate = null },
-            });
+            var perturbata = Perturba(
+                tranzactie,
+                aleator,
+                p => p with { Coordonate = p.Coordonate with { Unitate = null } },
+                p => p.Coordonate.Contrapondere is null);
             AreCodul(Conservare.Verifica(perturbata), Coduri.UnitateLipsa);
         });
 
     [Fact]
-    public void CantitateaFaraUnitatePeGestiuneVirtualaTrece() =>
+    public void CantitateaFaraUnitatePeContrapondereTrece() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactie = Gen.Operare(aleator, cuCantitate: true);
+            var fel = Gen.Unul(aleator, [Contrapondere.Tert, Contrapondere.Consum, Contrapondere.Inventar]);
             var perturbata = Perturba(tranzactie, aleator, p => p with {
-                Coordonate = p.Coordonate with { Gestiune = GestiuniVirtuale.Furnizor, Unitate = null },
+                Coordonate = p.Coordonate with { Contrapondere = fel, Unitate = null },
             });
             FaraRefuz(Conservare.Verifica(perturbata));
         });
@@ -141,9 +160,75 @@ public class ConservareTeste {
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactie = Gen.Operare(aleator, cuCantitate: true);
             var perturbata = Perturba(tranzactie, aleator, p => p with {
-                Coordonate = p.Coordonate with { Gestiune = Gen.Unul(aleator, Gen.Gestiuni), Unitate = null },
+                Coordonate = p.Coordonate with {
+                    Repartitor = Gen.Unul(aleator, Gen.Locuri), Contrapondere = null, Unitate = null,
+                },
             });
             AreCodul(Conservare.Verifica(perturbata), Coduri.UnitateLipsa);
+        });
+
+    [Fact]
+    public void ContraponderaTransformariiInAfaraFormeiEiPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator, cuCantitate: true);
+            var perturbata = Perturba(
+                tranzactie,
+                aleator,
+                p => p with { Coordonate = p.Coordonate with { Contrapondere = Contrapondere.Transformare } },
+                p => p.Coordonate.Contrapondere is not null);
+            AreCodul(Conservare.Verifica(perturbata), Coduri.ContrapondereTransformareInvalida);
+        });
+
+    [Fact]
+    public void FelulRepartitoruluiNepotrivitUnitatiiPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator, cuCantitate: true);
+            var lotLaTert = Perturba(
+                tranzactie,
+                aleator,
+                p => p with { Coordonate = p.Coordonate with { Repartitor = Gen.Unul(aleator, Gen.Terti) } },
+                p => p.Coordonate.Unitate?.Fel == FelUnitate.Lot);
+            AreCodul(Conservare.Verifica(lotLaTert), Coduri.GestiuneLipsa);
+            var partidaPeGestiune = Perturba(
+                tranzactie,
+                aleator,
+                p => p with {
+                    Coordonate = p.Coordonate with {
+                        Repartitor = p.Coordonate.Repartitor!.Value with { Fel = FelRepartitor.Gestiune },
+                    },
+                },
+                p => p.Coordonate.Unitate?.Fel == FelUnitate.Partida);
+            AreCodul(Conservare.Verifica(partidaPeGestiune), Coduri.PartenerLipsa);
+        });
+
+    [Fact]
+    public void PartenerulFiscalFaraFaptFiscalPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator);
+            var perturbata = Perturba(tranzactie, aleator, p => p with {
+                Coordonate = p.Coordonate with { CodTva = null, PartenerFiscal = Gen.Unul(aleator, Gen.Parteneri) },
+            });
+            AreCodul(Conservare.Verifica(perturbata), Coduri.PartenerFiscalFaraFapt);
+        });
+
+    [Fact]
+    public void LoculFaraFaptSiFaraPartidaPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator);
+            var perturbata = Perturba(tranzactie, aleator, p => p with {
+                Coordonate = p.Coordonate with { CodTva = null, Unitate = null, Loc = Gen.Unul(aleator, Gen.Gestiuni) },
+            });
+            AreCodul(Conservare.Verifica(perturbata), Coduri.LocFaraTemei);
+        });
+
+    [Fact]
+    public void FaptulFiscalFaraLocPica() =>
+        Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
+            var tranzactie = Gen.Operare(aleator);
+            var perturbata = Perturba(tranzactie, aleator, p => p with {
+                Coordonate = p.Coordonate with { CodTva = Gen.CodTva(aleator), Loc = null },
+            });
+            AreCodul(Conservare.Verifica(perturbata), Coduri.LocLipsa);
         });
 
     [Fact]
@@ -165,7 +250,7 @@ public class ConservareTeste {
             var perturbata = Perturba(
                 tranzactie,
                 aleator,
-                p => p with { Coordonate = p.Coordonate with { Partener = null } },
+                p => p with { Coordonate = p.Coordonate with { Repartitor = null } },
                 p => p.Coordonate.Unitate?.Fel == FelUnitate.Partida);
             AreCodul(Conservare.Verifica(perturbata), Coduri.PartenerLipsa);
         });
@@ -195,7 +280,7 @@ public class ConservareTeste {
                 aleator,
                 p => p with {
                     Coordonate = p.Coordonate with {
-                        Partener = Gen.AltulDecat(aleator, Gen.Parteneri, p.Coordonate.Partener!.Value),
+                        Repartitor = Gen.AltTert(aleator, p.Coordonate.Repartitor!.Value),
                     },
                 },
                 p => p.Coordonate.Unitate?.Fel == FelUnitate.Partida);

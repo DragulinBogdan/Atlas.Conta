@@ -51,8 +51,8 @@ sealed partial class ScenariiLdi(Func<IObjectSpace> deschide, Action<string, boo
         return [new(Cont(stoc ?? Stoc), plus ? N.Latura.Debit : N.Latura.Credit,
                 v, q, gest ?? Magazie, l.Lot, l.Produs, Linie: l.Id, Spatiu: N.Spatiu.Stoc, Economic: Economic),
             new(Cont(plus ? Venit : cost ?? Cost), plus ? N.Latura.Credit : N.Latura.Debit,
-                v, -q, plus ? N.GestiuniVirtuale.Inventar : N.GestiuniVirtuale.Consum,
-                Produs: l.Produs, Linie: l.Id, Economic: Economic)];
+                v, -q, Produs: l.Produs, Linie: l.Id, Economic: Economic,
+                Contrapondere: plus ? N.Contrapondere.Inventar : N.Contrapondere.Consum)];
     }
     static RandScena[] Inverse(params RandScena[] r) =>
         [.. r.Select(p => p with { Cantitate = -p.Cantitate, Valoare = -p.Valoare })];

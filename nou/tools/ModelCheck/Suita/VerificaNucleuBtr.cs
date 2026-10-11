@@ -149,12 +149,12 @@ static class VerificaNucleuBtr {
             s.Check($"STR-BTR-ACELASI-CONT ({eticheta}): suma valorilor per (cont, latură) = 0 — transferul iese "
                 + "din rapoartele pe cont (090f); cantitatea e -4 pe MAG1 și +4 pe MAG2",
                 postari.GroupBy(p => (p.Cont, p.Latura)).All(g => g.Sum(p => p.Valoare) == 0m)
-                && postari.Single(p => p.Gestiune == mag1.ID) is { Cantitate: -4m, Valoare: -40m }
-                && postari.Single(p => p.Gestiune == mag2.ID) is { Cantitate: 4m, Valoare: 40m });
+                && postari.Single(p => p.Repartitor == mag1.ID) is { Cantitate: -4m, Valoare: -40m }
+                && postari.Single(p => p.Repartitor == mag2.ID) is { Cantitate: 4m, Valoare: 40m });
             s.Check($"STR-BTR-ACELASI-CONT ({eticheta}): semnalul de gestiune NU se pierde — fiecare capăt "
-                + "poartă `Gestiune` și `Unitate` (lotul), pe ACELAȘI lot (T-D2.1)",
-                postari.All(p => p.Gestiune != null && p.Unitate == lotA.ID && p.Produs == lotA.ProdusId)
-                && postari.Select(p => p.Gestiune).Distinct().Count() == 2);
+                + "poartă `Repartitor` (gestiunea) și `Unitate` (lotul), pe ACELAȘI lot (T-D2.1)",
+                postari.All(p => p.Repartitor != null && p.Unitate == lotA.ID && p.Produs == lotA.ProdusId)
+                && postari.Select(p => p.Repartitor).Distinct().Count() == 2);
             s.Check($"STR-BTR-ACELASI-CONT ({eticheta}): `Sold` din cub pe lot rămâne NESCHIMBAT — transferul "
                 + "mută unitatea între gestiuni, nu-i schimbă soldul",
                 ProbeCub.SoldUnitate(os, btr.ID, lotA.ID) == N.Sold.Zero);
@@ -166,7 +166,7 @@ static class VerificaNucleuBtr {
             s.Check($"STR-BTR-GOLIRE ({eticheta}): linia care golește lotul mută tot restul valoric (300, pe când "
                 + $"cantitatea x prețul înghețat {lotB.PretUnitar} ar fi dat 200)",
                 postariGolire.Count == 2
-                && postariGolire.Single(p => p.Gestiune == mag2.ID).Valoare == 300m);
+                && postariGolire.Single(p => p.Repartitor == mag2.ID).Valoare == 300m);
             ProbeCub.ProbaOperare(os, s.Check, $"NUC-BTR-GOLIRE-{eticheta}", btrGolire);
 
             // --- STR-BTR-STORNO: o tranzacție `Storno` peste postările transferului ---

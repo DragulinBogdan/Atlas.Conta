@@ -1,25 +1,46 @@
 # Limite curente
 
-**Actualizat: 2026-10-09.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Domeniu și operare
 
-- Analiza obligatorie per cont: repartitorul e al capătului (D9-A10);
-  partenerul stă pe piciorul de terț numai când contul cere repartitor sau
-  urmărește partide — pe un cont fără flag și fără partide (446 privat)
-  partenerul rămâne absent, iar partenerul pe conturile de cheltuieli și
-  venituri e al deciziei 111. Pe piciorul intern cu fapt fiscal `Partener` e
-  partenerul fiscal (B-D8 pct. 5), deci `Contabil.Repartitor` îl întoarce pe
-  el înaintea gestiunii; separarea e a deciziei 111. Pe trezorerie, când
-  regula de contare numește ambele conturi explicit, piciorul propriu n-are
-  gestiune (B-D8 pct. 9 o ia din `SursaCont`); dacă contul lui cere
-  repartitor documentul e refuzat (SC-PLT-09), nu reparat cu terțul.
+- Felurile de repartitor (C111-D4): numai seed-ul bugetar declară, pe cele
+  20 de conturi cu defalcarea R; 14 dintre ele n-au mișcare în legacy 2026,
+  deci felul lor e din natura contului, nu din date. Pe 461.01.09 angajatul
+  nu e admis (confirmat, C111-Q21). Planul privat nu declară nimic, iar contul
+  nedeclarat nu judecă repartitorul (lumea deschisă, C111-r2). Terțul stă pe
+  piciorul de terț numai când contul declară feluri de repartitor
+  sau urmărește partide — pe un cont nedeclarat și fără partide (446 privat)
+  rămâne absent. Pe contul care admite lipsa (437.01.00, 437.02.00,
+  803.00.01) terțul cunoscut de document stă pe picior; lipsa e admisă numai
+  când documentul n-are terț pentru el (C111-F-R1). Pe conturile de cheltuieli și venituri terțul nu e axă de
+  sold: apare numai ca `PartenerFiscal`, pe postarea cu fapt fiscal. Pe
+  trezorerie, când regula de contare numește ambele conturi explicit,
+  piciorul propriu n-are repartitor; dacă contul lui cere repartitor
+  documentul e refuzat (SC-PLT-09), nu reparat cu terțul.
   Cerința de material citește numai produsul lotului, nu și materialul fix al
   unei reguli de contare. BTR, ASM și PIF nu sunt păzite (D9-r1).
-  (`docs/nucleu/tr-d9-pas6b-repartitor.md`; `tr-d9-pas2-probe.md`, G2)
+  (`docs/nucleu/c111-coordonate-contract.md`, D4; `tr-d9-pas2-probe.md`, G2)
+- La decont, partenerul fiscal e latura numită de politica de TVA, adică
+  titularul; furnizorul de pe bon nu există pe postare. (C111-r1)
+- Partenerul fiscal lipsește când politica de TVA nu numește o latură (sursă
+  `Explicit` sau `TipMaterial`): baza intră în D394 la „fără partener”. Pe
+  cele șase politici din seed latura numită e terțul documentului. (S13)
+- Invariantul coordonatelor: ramurile „partener fiscal fără fapt”, „loc fără
+  temei” și „fapt fără loc” ale lui `VerificaCoordonate` nu se pot aprinde
+  cât există `CK_Postare_BlocFiscal`; le ține constrângerea, nu invariantul.
+  Stornoul cu doi originali cu parteneri fiscali diferiți nu e produs de
+  declaranții de azi: stornoul inversează și postările atribuite altui
+  document, dar singurul scriitor al atribuirii (împerecherea) produce
+  transferuri de partide fără fapt fiscal. Forma nu e probată; invariantul 5
+  îl țin mutanții `FISCAL-INVERSA-*`. Invariantul 5 compară partenerul fiscal
+  și locul inversei numai pe postările cu fapt fiscal: locul unei inverse pe
+  partidă fără fapt fiscal (C111-Q14) e păstrat de copierea stornoului, nu
+  verificat de `INV-CUB` (reverificarea Codex a pasului 2, 2026-10-11). Felul
+  necunoscut al unui repartitor e probat numai la recitire.
 - PIF/AMO/CAS scriu cubul, iar situația fișei se citește din el (095, 097).
   Storno
   rămâne limitat la luna documentului (087g), inclusiv în corecție.
@@ -96,7 +117,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   rândurile atinse cresc cu istoricul. Amânat prin amendamentul owner-ului
   (2026-10-04), odată cu F27-r16, și re-amânat cu cifră la TR-D9a
   (2026-10-06): parcurgerea e liniară, 2,7 s de SQL pentru 488.733 de
-  partide cu rest la 5 milioane de postări. Rămâne până la decizia 111.
+  partide cu rest la 5 milioane de postări. Rămâne până la TR-D9b.
   (F27-r16, X-D5, D9-D10 (b))
 - O egalitate între două surse pe coloane nulabile iese din EF cu ramură de
   nul, iar Postgres nu o poate folosi drept cheie de hash sau merge.
@@ -259,12 +280,13 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   raportare proprie. (F27-D7, F27-r2)
 - Soldul partenerului nu apare în lookup-urile de partener din culegere:
   există ca ecran și ca rută, nu ca o coloană `Sold` pe `Partener`. (F27-r7)
-- `sold-parteneri` și balanța analitică grupează pe `AtomContabil.RepartitorId`
-  = `Postare.Partener`: pe contul de terț e partenerul capătului (partida sau
-  flag-ul `Repartitor`, D9-A10), pe piciorul intern cu fapt fiscal e
-  partenerul fiscal, pe restul e nul; gestiunea e axă separată (`GestiuneId`).
-  Creanța per partener se citește din partidele deschise
-  (`documente-cu-rest`); unificarea repartitorului e a deciziei 111. (F27-D7, D9-A10)
+- `sold-parteneri` nu desface rândul „fără terț”: sumele pe repartitor
+  intern, pe cont propriu și fără repartitor ale unui cont vin împreună;
+  defalcarea lor e în balanța analitică, iar postările lor în fișa cu
+  `faraTert`. Rândul e probat cu sume pe
+  repartitor intern și pe cont propriu, nu și cu sume fără niciun repartitor.
+  Locul (`Postare.Loc`) și partenerul fiscal nu sunt axe de sold și nu au
+  filtru pe nicio proiecție. (C111-Q13, C111-Q8)
 - `ReturClient` intră în proiecția de rest, dar rândurile lui nu apar:
   creanța unui retur e negativă după operare (venit stornat), iar filtrul
   `Rest > 0` o taie. Împerecherea unui retur rămâne pe calea directă
@@ -284,8 +306,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   coloană de cod scanează tot cubul (9,1 s la 5 milioane de postări, fără
   index), iar pe containerul Postgres de dezvoltare, cu `/dev/shm` de 64 MB,
   sortarea paralelă pică (`could not resize shared memory segment`); costul
-  e raportat fără prag în `docs/nucleu/tr-d9-pas7-declaratii.md`. (D9-A12;
-  2026-10-07)
+  e raportat fără prag în `docs/nucleu/tr-d9-pas7-declaratii.md`. Coloanele
+  repartitor, partener fiscal, loc și contrapondere sunt probate în
+  ModelCheck (`STR-VIZUAL-*`), nu și în browser; contraponderea se afișează
+  cu numele enumului, fără diacritice (`Tert`). (D9-A12, S5; 2026-10-10)
 - Cu pregătirea automată a comenzilor, citirile de sold pe o listă de loturi
   (`Fapte.SolduriLoturi`, `Loturi.VerificaSoldIntermediar`) primesc un plan
   generic de cinci ori mai lent (0,45 → 2,2 ms pe apel): cu limitele de dată
@@ -301,11 +325,39 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Nominalizarea partidei pe linia de notă nu e în culegere: câmpurile sunt
   ascunse în XAF și lipsesc din API. (115-r1)
 - Cheia de pereche (`Postare.Pereche`) nu acoperă transformările (consumul și
-  produsul sunt corespondență de grup) și nu e citită de nimeni: fișa
-  contului întoarce contrapartida nulă când tranzacția are mai multe conturi
-  pe sensul opus (D9-r4). Stornoul cu mai multe surse decalează ordinalele
+  produsul sunt corespondență de grup): rândul fără pereche n-are
+  contrapartidă în fișa contului și în registrul jurnal. Stornoul cu mai multe surse decalează ordinalele
   surselor după prima, deci ordinalul stornoului nu e literal al
   originalului. (D9-A2; 2026-10-07)
+- Contrapartida costă în registrul jurnal circa 4 µs pe rând la volum: luna
+  de 888 de mii de rânduri pe baza de 5 milioane de postări se citește în
+  4,8 s, față de 1,3 s fără contrapartidă. Planul caută perechea fiecărui
+  rând prin indexul pe `(TranzactieId, Pereche)`; indexul a scos costul
+  tranzacțiilor mari (deschiderea importului), nu și căutarea pe rând. O
+  îmbinare prin hash pe postările intervalului n-a fost încercată.
+  (`docs/nucleu/c111-pas6-scriere-si-volum.md`,
+  `docs/nucleu/c111-pas7-client-si-inchidere.md`, 2026-10-11)
+- Fișa contului și registrul jurnal compun SQL-ul de mână în jurul surselor
+  din LINQ, fiindcă egalitatea pe `Pereche`, nulabilă, nu iese din LINQ fără
+  ramură de nul. `Pereche` nulă înseamnă „fără pereche”; valoarea 0 nu e
+  folosită. (C111-Q20)
+- Proiecțiile contabile trec prin ușa securizată: un rol cu citire restrânsă
+  pe `Postare` (criteriu de rând) primește balanța, fișa cu sinteza ei,
+  registrul jurnal și soldurile pe terți calculate numai din rândurile pe
+  care le vede, fără refuz și fără semn că cifra e parțială. Dreptul unic cu
+  403 e numai pe rutele ușii de sistem. Niciun rol din seed nu are criteriu
+  de rând pe `Postare`. (110 (e) precizată, C111-Q22)
+- La volum, fișa unui cont întreg cu 160–200 de mii de rânduri în lună se
+  citește integral în circa 3 s.
+  (`docs/nucleu/c111-pas7-client-si-inchidere.md`)
+- Import1C a rulat pe forma postării din C111 pe ianuarie 2025, cu amprentele
+  liniei de bază identice (`docs/nucleu/c111-pas6-import.md`). Bazele de
+  import și clonele de măsurare de pe 5444 sunt pe schema veche și cer
+  `--recreeaza`; baza de volum la zi e `Atlas.Conta.ModelCheck.Privat.C111Vol`
+  (5446). Pe ea și pe baza de import `Atlas.Conta.Import1C.Flax.C111P6`
+  indexul perechii a fost schimbat prin SQL, fără recreare (abatere numită de
+  la 102b, C111-Q20). Cifrele de mai jos sunt de dinaintea ei. (C111-D9,
+  pașii 6 și 7)
 - Import1C rulează pe cititorii cubului, dar reconcilierea lui nu e verde.
   Pe ianuarie 2025 (2026-10-07): 15.232 de documente, zero eșecuri de import,
   `INV-CUB` verde; contractul 1 are trei conturi fără explicație (371, 3028,
@@ -515,6 +567,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Client, API și livrare
 
+- Un deep-link vechi cu `gestiuneId` deschide raportul nefiltrat, fără
+  refuz: nici clientul, nici serverul nu mai cunosc parametrul. Legătura
+  „Înapoi la balanță” din fișă apare și când fișa e deschisă din soldurile pe
+  terți. (C111 pasul 7)
 - Paginile React de detaliu ale documentelor sunt înghețate: câmpurile
   adăugate modelului după 2026-09-27 nu apar acolo, iar convențiile de
   selector rămase neadoptate (BTR, `TipMaterial`) nu se mai aplică. Culegerea

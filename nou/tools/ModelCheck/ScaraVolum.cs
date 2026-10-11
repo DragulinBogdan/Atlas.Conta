@@ -56,6 +56,27 @@ static partial class ScaraVolum {
         return sectiuni.ToDictionary(s => s.Key, s => s.Value.ToString());
     });
 
+    [GeneratedRegex("""insert into "(\w+)" \(([^)]*)\)""")]
+    private static partial Regex ListaColoane();
+
+    /// <summary>Fiecare `insert` al copierii numește toate coloanele scrise ale tabelei lui, câte sunt în bază.</summary>
+    public static void ProbaColoane(string conexiune, Action<string, bool> check) {
+        using var sql = new NpgsqlConnection(conexiune);
+        sql.Open();
+        foreach (Match m in ListaColoane().Matches(Sectiuni.Value["copiaza"])) {
+            var tabela = m.Groups[1].Value;
+            var scrise = m.Groups[2].Value.Split(',').Select(c => c.Trim().Trim('"')).ToList();
+            using var cmd = Comanda(sql, "select column_name::text from information_schema.columns "
+                + "where table_schema = 'public' and table_name = @tabela and is_generated = 'NEVER'", ("tabela", tabela));
+            using var r = cmd.ExecuteReader();
+            var baza = new List<string>();
+            while (r.Read()) baza.Add(r.GetString(0));
+            var diferente = baza.Except(scrise).Select(c => "lipsă " + c).Concat(scrise.Except(baza).Select(c => "în plus " + c)).ToList();
+            if (diferente.Count > 0) Console.WriteLine($"     SCARA-COLOANE {tabela}: {string.Join(", ", diferente)}");
+            check($"SCARA-COLOANE: `ScaraVolum.sql` scrie toate coloanele tabelei {tabela}", diferente.Count == 0);
+        }
+    }
+
     static string Env(string nume) => Environment.GetEnvironmentVariable(nume) is { Length: > 0 } v ? v : null;
 
     static NpgsqlCommand Comanda(NpgsqlConnection c, string text, params (string Nume, object Valoare)[] parametri) {

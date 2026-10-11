@@ -55,8 +55,8 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
             doc.Id,
             doc.DataInregistrare,
             [.. miscari.Select(m => m with {
-                DeLa = Terti.Capat(operand, m.DeLa, doc.Predator.Id, partide),
-                La = Terti.Capat(operand, m.La, doc.Predator.Id, partide),
+                DeLa = Terti.Capat(operand, m.DeLa, doc.Predator, partide),
+                La = Terti.Capat(operand, m.La, doc.Predator, partide),
             })],
             decizii,
             PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, tipuri)));
@@ -107,7 +107,7 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
         return (
             new N.Capat {
                 Cont = contare.ContDebit,
-                Gestiune = operand.Document.Primitor.Id,
+                Repartitor = operand.Document.Primitor.Coordonata,
                 Produs = linie.Lot?.ProdusId,
                 Unitate = receptionat is null ? null : new N.Unitate(
                     receptionat.Id, N.FelUnitate.Lot, contare.ContDebit, null, receptionat.ProdusId, receptionat.Data),
@@ -115,8 +115,8 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
             },
             new N.Capat {
                 Cont = contare.ContCredit,
-                // N-D4: cantitatea vine din afara evidenței, pe gestiunea structurală.
-                Gestiune = receptionat is null ? null : N.GestiuniVirtuale.Furnizor,
+                // N-D4: cantitatea vine din afara evidenței.
+                Contrapondere = receptionat is null ? null : N.Contrapondere.Tert,
                 Produs = linie.Lot?.ProdusId,
                 Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
             },

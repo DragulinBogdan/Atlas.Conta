@@ -1,6 +1,18 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-09.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
+
+Validarea curentă (C111, corecția C111-F-R1 a review-ului de închidere,
+2026-10-11): integrala **3.678 bugetar / 5.080 privat OK**, zero FAIL, pe
+baze create din `20261010151835_InitialCreate`; `--scenarii C111` verde pe
+ambele profiluri. Urma: `run-verificari/20261011-135559-972/`. De la pasul 7,
+pe arborele dinaintea corecției (3.673 / 5.075,
+`run-verificari/20261011-122558-351/`): `refuzuri.ps1` 327/327 de două ori pe
+bază privată nouă, drift OpenAPI zero, clientul compilează. Matricea n-a fost
+rerulată după corecție: corecția schimbă numai conturile care declară feluri,
+iar baza privată a matricei nu declară niciunul. Nucleul n-a fost atins de la
+pasul 6 (199/199 acolo). Raportul pasului:
+`docs/nucleu/c111-pas7-client-si-inchidere.md`.
 
 TR-D9a, pasul 6 (tăierea, 2026-10-07): motorul nu mai scrie, nu mai citește și
 nu mai ramifică pe registre și pe regim; oracolul registre → cub a ieșit din
@@ -41,7 +53,7 @@ invarianții cubului rulează în ModelCheck (`INV-CUB`, `Cub.Citiri.Invarianti`
 produse, inclusiv stornourile. Fiecare ramură fără probă proprie are un
 mutant într-o tranzacție anulată, rulat o dată per profil pe prima scenă cu
 faptele potrivite: `DESCHIDERE-EGALA` (registrul istoric egal cu deschiderea
-cubului trece), `DESCHIDERE`, `PARTIDE` (partidă fără partener), `POLITICA`
+cubului trece), `DESCHIDERE`, `PARTIDE` (partidă fără repartitor), `POLITICA`
 (totalul de decontare), `IMO-FISA`, `IMO-CAUZA`, `IMO-ORIGINE` (inversa unei
 fișe fără `InversaDin`), `IMO-SUPORT` (transfer valoric pe fișă fără suport),
 `IMO-REGISTRU` și cei șapte ai explicației (X-D4): `EXPLICATIE-LIPSA` (explicația ștearsă),
@@ -60,7 +72,9 @@ hosturile (`AddSecuredEFCore`): contorul rândului de politică crește la
 salvare și în harness, altfel SC-CIT-111 n-ar măsura ce face hostul
 (D9-A8). Pasul 7b
 (D9-A2) a adăugat `PERECHE-RUPTA` (o postare a perechii fără ordinal) și
-`PERECHE-LIPSA` (ambele postări fără ordinal). Corecția D9-F-R1 adaugă
+`PERECHE-LIPSA` (ambele postări fără ordinal). `PERECHE-DATA` (o postare a
+perechii la altă dată) ține marginea de interval a citirii contrapartidei
+(C111 pasul 6). Corecția D9-F-R1 adaugă
 mutanți separați pentru ordinal, cauză, valoare, valută, cantitate și latură,
 apoi pierderea ambelor ordinale ale unei mutări valorice/cantitative lângă
 o transformare. Aceștia apelează direct invariantul perechii, în tranzacții
@@ -77,9 +91,23 @@ ordinal, latura și sumele transferului, pe lângă cele de mai sus). Izolarea
 celor cinci din urmă e probată și invers: cu disjuncția scoasă din predicat
 supraviețuiește numai mutantul ei
 (`nou/tools/ModelCheck/scripts/izolare-mutanti.ps1`, pasul 8 §11). Rețeta
-ține blocajul verificărilor cât timp sursa invariantului e modificată. Invariantul
-ia gestiunile virtuale din `GestiuniVirtuale.Toate` (nucleu), sursa unică și
-pentru `GestiuniVirtuale.Este`.
+ține blocajul verificărilor cât timp sursa invariantului e modificată.
+Forma coordonatelor (C111-D2) are doisprezece mutanți. Cinci apelează direct
+`VerificaCoordonate` și cer `CITIRE_COORDONATE_INVALIDE`:
+`COORD-CANTITATE-NEMARCATA` (cantitate fără lot și fără contrapondere),
+`COORD-LOT-NEINTERN` (lot pe repartitor extern), `COORD-PARTIDA-NEEXTERN`
+(partidă pe repartitor intern), `COORD-LOC-NEINTERN` (loc pe repartitor
+extern) și `COORD-TRANSFORMARE-PE-PERECHE` (perechea unei postări obișnuite,
+marcată transformare, care altfel ar ieși întreagă din evidență). Patru sunt
+opriți de schemă înaintea invariantului și cer `CK_Postare_BlocFiscal`:
+`COORD-PARTENER-FARA-FAPT`, `COORD-LOC-FARA-FAPT` (loc pe lot),
+`COORD-LOC-FARA-UNITATE` (loc pe o postare fără unitate) și
+`COORD-FAPT-FARA-LOC`; ramurile corespunzătoare ale invariantului nu se pot
+aprinde cât există constrângerea. `COORD-LOC-PE-PARTIDA` e martorul: locul pe
+o postare cu partidă și fără fapt fiscal trece (C111-Q14).
+`FISCAL-INVERSA-PARTENER` și `FISCAL-INVERSA-LOC` schimbă partenerul fiscal,
+respectiv locul inversei și cer `CITIRE_FISCAL_INVERSA`. Mutanții sunt uciși
+pe ambele profiluri.
 Ramurile
 acoperirii registru ↔ cub, echilibrului și provenienței au probele SC-CIT-23,
 SC-CIT-34 și SC-CIT-10. Acoperirea cantitativă a stocului
@@ -129,7 +157,17 @@ faptul sursei recepției conexe (`Cub/ReceptiiConexe.cs`) și maparea EF
 (`BackOfficeDbContext`). Consumatorii compun peste intrările comune
 (filtre, proiecții, eticheta `Storno`), fără să refacă domeniul. Proba
 `091-r3` (`tools/ModelCheck/ProbeCititoriCub.cs`) scanează sursa înaintea
-bazei, deci rulează și fără bază. La fel probele regimului pe stare
+bazei, deci rulează și fără bază.
+
+Consumatorii citesc din `Cub/Citiri` identități numite (C111-D10): titularul
+partidei (`Partide.Titular`, `Partide.Nete`, `Partide.MiscariPeTitulari`,
+`Partide.UnitatiAle`), terțul comercial (`PostareJurnal.TertComercial`),
+locul lotului (`Loturi.PostariCitite`), repartitorul și suportul poziției
+fără fișă (`Imobilizari.PozitiiCitite`) și axa analitică
+(`Contabil.Analitice`). Regula identităților e în
+[domeniu-si-operare](domeniu-si-operare.md), §„Identitățile cititorilor”.
+
+La fel de devreme rulează probele regimului pe stare
 (`tools/ModelCheck/ProbeRegim.cs`, 106e): prin reflecție, fiecare comandă
 `RecordEdit` a unui controller pe `DetailView` de `Document` numește prin
 sufixul ID-ului o comandă din `RegimDocument.ComenziCunoscute`; prin scanare
@@ -332,7 +370,7 @@ Comenzile, încercările intermediare și limitele sunt în
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.WebApi` | Contracte HTTP, securizarea comenzilor, OData și integrarea hostului (42f) |
 | `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Blazor.Server` | Host XAF, administrare și actualizarea explicită a bazei (23a) |
 | `nou/Atlas.Conta.Client` | React: citiri, proiecții, consolele comenzilor, editorii de politici și nomenclatoare și contractele generate; paginile de document sunt înghețate (43e, 104d) |
-| `nou/Atlas.Conta.Nucleu` | Nucleul pur al cubului de postări: tipuri, conservare, unitate, FIFO, evaluare, repartizare, TVA, storno, motor, gestiunile virtuale — fără niciun pachet; consumat DOAR de `Module` (`Declaratii/`), referit direct și de ModelCheck ca unealtă (90b, 90l) |
+| `nou/Atlas.Conta.Nucleu` | Nucleul pur al cubului de postări: tipuri, conservare, unitate, FIFO, evaluare, repartizare, TVA, storno, motor, coordonatele de repartitor și contraponderea — fără niciun pachet; consumat DOAR de `Module` (`Declaratii/`), referit direct și de ModelCheck ca unealtă (90b, 90l) |
 | `nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.Teste` | Invarianții nucleului ca proprietăți pe generatoare proprii și testul de arhitectură (90l) |
 | `nou/tools/ModelCheck` | Verificarea modelului și scenarii de domeniu pe PostgreSQL (23) |
 | `nou/tools/ProbeHttp` | Probe ale contractului HTTP și ale permisiunilor reale (80i, 81j) |
@@ -356,33 +394,24 @@ EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
 automată a schemei prin XAF este dezactivată. Module este comun celor două
 hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
 
-Lanțul de migrații a fost comprimat a doua oară la 2026-10-07 (TR-D9a,
-pasul 7, D9-D6; prima dată la 2026-09-25, C102, 102e): baza inițială este
-`20261007072615_InitialCreate`, generată din model, plus SQL-ul brut pe care
-modelul nu-l declară (`Postare` partiționată pe `Spatiu` cu cheia
-`(Spatiu, ID)`, cele două partiții, FK-urile și cei 13 indecși pe partiții și
-pe părinte, inclusiv cei ai cititorilor cubului, constrângerile
-`CK_Postare_*`, funcția `cub_partida_id`; `Down` cu `DROP` explicit), apoi
-`20261007080233_PostareVizual` (view-ul listei de evidență a cubului,
-`CREATE VIEW` în `Up`, `DROP VIEW` în `Down`; `ToView` e exclus din
-snapshot, deci `has-pending-model-changes` rămâne curat),
-`20261007215604_RegulaContareFaraPastreazaSemn` (coloana scoasă, 113),
-`20261009053645_IndecsiCitiriOperare` (indexul pe `Loturi.LinieIntrareId`,
-din model, și indexul parțial `IX_Postare_Fisa_Cont` pe `Postare(Cont)`
-pentru postările pe fișă, în SQL, probat de `STR-SCHEMA-4`) și
-`20261009075629_NotaNumestePartida` (cele două coloane de partidă numită pe
-`DocumentDetalii`, 115).
+Lanțul de migrații e o singură migrație, `20261010151835_InitialCreate`
+(C111-D7; 102e, D9-D6). E generată din model, plus SQL-ul brut pe care
+modelul nu-l declară: `Postare` partiționată pe `Spatiu` cu cheia
+`(Spatiu, ID)`, cele două partiții, FK-urile pe partiții — inclusiv cele trei
+spre `Repartitori`, prin `Repartitor`, `PartenerFiscal` și `Loc` —, cei 14
+indecși pe partiții și pe părinte (cu `IX_Postare_Fisa_Cont` și cu
+`IX_Postare_Tranzactie_Pereche`, pe `(TranzactieId, Pereche)`, care ține și
+loc de index pe tranzacție; probați de `STR-SCHEMA-4`), constrângerile `CK_Postare_*` (cu `CK_Postare_Contrapondere`
+și `CK_Postare_BlocFiscal`), funcția `cub_partida_id` și view-ul listei de
+evidență, `PostareVizual`. `Down` le șterge cu `DROP` explicit. `ToView` e
+exclus din snapshot, deci `has-pending-model-changes` rămâne curat.
 Snapshot-ul EF
 rămâne cu cheia `ID` (divergență declarată, probată de `STR-SCHEMA`).
-Migrațiile nu transformă date. Proba structurală a
-recomprimării: față de baza din lanțul vechi diferă, în afara obiectelor
-scoase, numai valoarea implicită `false` pe 17 coloane booleene adăugate
-prin `AddColumn` (`Activ` pe nomenclatoare, `TvaCules`,
-`RegularizareAvans`), pe care EF le scrie mereu. Migrațiile de dinainte sunt
-istorie în git; bazele create pe lanțul vechi nu se actualizează, se
-recreează (102b); clonele de import și de perf de dinaintea recomprimării
+Migrațiile nu transformă date. Migrațiile de dinainte sunt
+istorie în git; bazele create pe un lanț vechi nu se actualizează, se
+recreează (102b); clonele de import și de perf de dinaintea migrației curente
 rămân pe schema veche și Import1C cere `--recreeaza`. Lanțul crește prin
-migrații, ca înainte.
+migrații.
 Citirile cumulate au o probă pe două conexiuni și un contor de instrucțiuni
 SQL (SC-CIT-77). Scrierea globală prin ObjectSpace secured este refuzată
 înaintea accesului la date (SC-CIT-78). Accesul real pe rând și membru este
@@ -399,8 +428,8 @@ Dezvoltarea folosește două servere Postgres 18, ambele cu
 
 | Server | Port | Cine îl folosește |
 |---|---|---|
-| containerul `contapal-postgres-1` | 5444 | hosturile (Blazor, WebApi), probele HTTP din `nou/tools/ProbeHttp`, implicitul `dotnet ef`, rețetele de perf care rulează în rețeaua containerului |
-| instanța nativă de pe gazdă | 5446 | rulările grele: ModelCheck și Import1C |
+| containerul `contapal-postgres-1` | 5444 | hosturile (Blazor, WebApi), probele HTTP din `nou/tools/ProbeHttp`, implicitul `dotnet ef`, rețeta `perf-saft-container.ps1` |
+| instanța nativă de pe gazdă | 5446 | rulările grele: ModelCheck, Import1C, scara transversală și scara de volum |
 
 Rulările grele stau pe instanța nativă fiindcă un dus-întors din gazdă spre
 container trece prin proxy-ul Docker Desktop (0,27–0,5 ms față de 0,06–0,2
@@ -411,6 +440,11 @@ nativ; ModelCheck integral 133 s bugetar / 231 s privat pe container și
 instanța nativă e serviciul Windows `PostgreSQL`, cu pornire automată
 (2026-10-09). Ordonarea textelor e cea a Windows (`en-US`), nu glibc
 (`en_US.utf8`) ca în container; integrala a dat același rezultat pe amândouă.
+Citirile mari merg invers: pe baza de volum, balanța, stocul și partidele cu
+rest au aceleași planuri și aceleași rânduri atinse ca în container și durează
+de 1,4–2,1 ori mai mult pe nativ (2026-10-11,
+`docs/nucleu/c111-pas6-scriere-si-volum.md`). O cifră a scării de volum se
+compară numai cu una de pe aceeași instanță.
 
 Șabloanele de conexiune ale uneltelor numesc gazda `127.0.0.1`, nu
 `localhost`. După o trezire din hibernare, Npgsql 10 pe `Host=localhost` a
@@ -454,6 +488,10 @@ lună și un angajat, desfăcute în ordine inversă în `finally`. Rămân audi
 a doua rulare nu adaugă nimic). Plafonul de 500 al candidaților DVI e probat
 în ModelCheck, nu pe HTTP. Măsurat 2026-09-27 pe `c104-straturi`: 294/294
 PASS de două ori consecutiv, baza identică înainte și după. (104-r5)
+La 2026-10-11, cu rândurile fișei fără terț și ale sintezei ei: 327/327 de
+două ori. Matricea cere bază nouă: pe una pe care a rulat `explicatii.py`
+pică pe starea lăsată de acesta (documente din 2012, politici de probă), nu
+pe produs. (C111 pasul 7)
 Matricea conține și ușa explicației (X-D4): tranzacția facturii fixture-ului
 se află din jurnal, `Admin`, `Cititor` și `Configurator` primesc 200, iar
 `User` 404, la fel ca pe un id inexistent. 403
@@ -556,11 +594,18 @@ catalogului care probează tipurile cerute, pe baza profilului (migrare +
 seed pe privat, migrațiile aplicate pe bugetar), fără metadata, fără
 probele de model și fără celelalte scene: toate tipurile de pe cub în
 rulate selectiv pe privat; durata depinde de grupul ales. Codurile sunt ale catalogului (`docs/nucleu/scenarii/`,
-inclusiv `DESCHIDERE`, `IMO`, `X`); un cod necunoscut sau un tip fără nicio
+inclusiv `DESCHIDERE`, `IMO`, `X`, `C111`); un cod necunoscut sau un tip fără nicio
 scenă pe profilul cerut iese cu exit 2, nu verde. Scenele și tipurile lor
 stau în `ScenelePeTip` (`Suita/ScenelePeTip.cs`), aceeași listă pe care suita
 integrală o rulează în ordine; un scenariu nou intră acolo cu tipul lui, altfel
 filtrul nu-l vede. Suita integrală pe ambele profiluri rămâne gate-ul de commit.
+`--scenarii C111` rulează catalogul formelor coordonatelor
+(`docs/nucleu/scenarii/C111.md`, `ScenariiC111.cs`, anul 2033): cazurile
+`citiri`, `stoc`, `suport`, `deschidere` și `nir` pe ambele profiluri,
+`decont`, `avans`, `tva-explicit`, `tva-partener`, `saft` și `pozitie` numai
+pe privat. Fiecare caz își asertează repartitorul, partenerul fiscal, locul,
+contraponderea și unitatea pe postare, plus soldurile filtrate, dinamic și
+din snapshot. Un caz căzut se raportează ca FAIL și nu oprește celelalte.
 `Program.cs` e numai dispecerul (argumente, conexiune, migrații, secvența
 apelurilor); fiecare scenă veche e o clasă în `Suita/` cu `Ruleaza(Suita s)`,
 iar contextul comun (`Check`, provider, profil, ajutoarele de perioadă) e
@@ -643,12 +688,16 @@ Verificarea de drift regenerează contractele și refuză diferențele față de
 fișierele versionate. O schimbare intenționată de contract se regenerează și
 se examinează înainte de includerea artefactelor în modificare. (43d, 56)
 
-### Scara transversală de perf (`scripts/perf-cub-container.ps1`)
+### Scara transversală de perf (`scripts/perf-cub.ps1`)
 
 Integrala nu rulează scala: după o schimbare de regulă, scena ei se verifică
 separat (la TR-D9a pasul 8 a căzut pe un ASM cu P ≠ C rămas din regimul dual).
-Ultima rulare completă, după tăiere: `run-verificari/perf-cub-20261007-145947/`,
-1.540 privat / 1.010 bugetar OK, zero FAIL. Față de regimul dual, comenzile de
+Ultima rulare completă, pe forma postării din C111 și pe instanța nativă
+(2026-10-11): `run-verificari/c111-pas6/perf-head2/`, 1.580 privat / 1.046
+bugetar OK, zero FAIL, 33 de minute. Prima rulare de după C111 a picat pe
+registrul jurnal, care citea toate postările ca să găsească perechea
+(`docs/nucleu/c111-pas6-scriere-si-volum.md`). Rularea de după tăiere:
+`run-verificari/perf-cub-20261007-145947/`, 1.540 / 1.010 OK. Față de regimul dual, comenzile de
 document fac cu 6 până la 16 comenzi SQL mai puțin
 (`docs/nucleu/tr-d9-pas8-inchiderea.md` §3).
 
@@ -662,42 +711,76 @@ eroarea măsurării, iar o operație fără plan pentru fiecare citire pică
 criteriul; proba `X-D5-PLAN`, care rulează în orice ModelCheck, ține regula
 (X-RI3). Înaintea purjei rulează
 reconcilierea integrală, `INV-CUB` și diagnosticul ASM-B7 pe toată baza.
-Rețeta rulează ambele profiluri în containerul din rețeaua Postgres și
+Rețeta rulează ambele profiluri pe instanța nativă (5446), pe bazele cu
+sufixul dat (`-PregatesteBaze` le clonează din cele de dezvoltare), și
 validează XML-urile SAF-T cu DUK; parametrii `-Profil`, `-Istoric`, `-Trepte`
-și `-Operatii` restrâng rularea. Scara completă durează circa 35 de minute și
+și `-Operatii` restrâng rularea. Comenzile de scriere se cronometrează la
+construcția scenei, deci apar și într-o rulare restrânsă la un singur cititor. Scara completă durează circa 35 de minute și
 este o rulare grea: nu se suprapune cu alta pe aceleași baze. O rulare
 întreruptă lasă scena în bază; următoarea o purjează la pornire, dar datele
 societății de pe profilul privat rămân cele ale scenei și se refac de mână.
 Un cititor nou care citește cumulat sau pe interval intră în `PerfCub.Operatii`
 cu ruta și cifrele lui de control. (X-D5, X-D3)
 
-### Scara de volum (`scripts/scara-volum-container.ps1`)
+### Scara de volum (`scripts/scara-volum.ps1`)
 
 `ModelCheck --scara-volum privat` păstrează scena scării transversale la
 m = 12, k = 64 și o multiplică în lățime, direct în SQL, pe treptele ×1, ×10,
 ×100 și cea care trece de 5 milioane de postări. Fiecare copie are
 identități proprii pentru tranzacții, postări, documente, loturi și
-partenerii scenei; partidele își primesc identitatea prin `cub_partida_id`.
+partenerii scenei (cei purtați de `Repartitor` sau de `PartenerFiscal`);
+partidele își primesc identitatea prin `cub_partida_id`. Postările de
+deschidere clonate rămân pe tranzacția unică de deschidere și își continuă
+ordinalele.
 La fiecare treaptă rulează probele de corectitudine (numărători și sume
 egale cu factorul × scena, originile partidelor recunoscute de cititorul
 produsului), reconstrucția snapshot-urilor pe calea produsului și măsurarea
 cititorilor comuni, rece și cald, pe ruta securizată și pe cea de sistem,
 cu planurile. O măsurare se oprește la 10 minute, reconstrucția la 30. E
-raport, fără prag. Rețeta rulează pe o clonă cu sufix (`.D9Vol` implicit),
+raport, fără prag. Rețeta rulează pe instanța nativă (5446), pe o clonă cu
+sufix (`-PregatesteBaze` o face din baza privată de dezvoltare),
 care rămâne bază de citire: liniile de document, registrele și împerecherile
 nu se multiplică. Rularea completă durează circa 95 de minute și e rulare
-grea; numai treapta finală (`-Factori F`) durează circa 14 minute. Rezultatul din 2026-10-06 și limitele lui:
-`docs/nucleu/tr-d9-pas5b-probe.md` §3. (D9-A1)
+grea; numai treapta finală (`-Factori F`) durează circa 14 minute. Pe forma
+din C111, nativ, treptele ×1, ×10 și ×629 au durat 24 de minute (2026-10-11,
+`docs/nucleu/c111-pas6-scriere-si-volum.md`). Rezultatul din 2026-10-06 și limitele lui:
+`docs/nucleu/tr-d9-pas5b-probe.md` §3. (D9-A1) Scriptul numește
+explicit coloanele fiecărei tabele clonate; proba `SCARA-COLOANE`, care
+rulează în orice ModelCheck, le compară cu coloanele scrise ale bazei, ca o
+coloană nouă să pice acolo, nu la următoarea rulare a scării (C111 pasul 6).
 
 Un singur cititor se re-măsoară pe baza scării fără a o reface: procesul-copil
 `--perf-cub-masura` sau `--scara-volum-reconstructie`, cu
-`MODELCHECK_BAZA_SUFIX` pe sufixul bazei, în același container ca rețeta.
+`MODELCHECK_BAZA_SUFIX` pe sufixul bazei, pe aceeași instanță ca rețeta.
 Așa s-a măsurat corectura îmbinării partidelor
 (`docs/nucleu/tr-d9-pas5c-imbinare-partide.md` §2).
 
+### Amprentele unei baze (`--amprente`)
+
+`ModelCheck --amprente <bază> <an> <lună> <director>` scrie sumele unei baze
+pe chei naturale, ca două baze cu identificatori diferiți să se poată compara
+la `diff`: balanța pe cont × lună, stocul pe cont × produs × gestiune × lună,
+partidele pe cont × titular × data deschiderii, D300 și D394 pe luna cerută,
+plus trei secțiuni analitice, citite direct din coloanele postării: cont ×
+repartitor de sold (`Repartitor`), cont × partener fiscal × loc
+(`PartenerFiscal`, `Loc`), cont × contrapondere (`Contrapondere`). Gestiunea
+stocului și titularul partidei sunt tot `Repartitor`.
+`amprente.txt` ține numărul de rânduri și SHA-256 pe fiecare secțiune. Numai
+citire; rulează pe orice bază de pe instanța uneltelor, inclusiv pe una de
+import. Două importuri ale aceluiași binar dau amprente identice
+(`docs/nucleu/c111-pas0-linia-de-baza.md`). (C111-D9)
+
+`ModelCheck --perf-fisa <bază> <simbol cont> <an> <lună> <director>` măsoară
+fișa contului pe o bază numită — contul întreg, contul pe repartitorul lui
+cel mai încărcat și contul fără terț — și registrul jurnal al lunii, citite
+integral: cinci rulări la cald, mediana, cu numărul de rânduri și câte au
+contrapartidă. Scrie în director SQL-ul produsului, cu parametrii în antet.
+Numai citire. (C111 S9, `docs/nucleu/c111-pas6-import.md`,
+`docs/nucleu/c111-pas7-client-si-inchidere.md`)
+
 ### Îmbinările pe chei nulabile ale cubului
 
-Unitatea, partenerul și documentul sunt nulabile pe `Postare`. O îmbinare
+Unitatea, repartitorul și documentul sunt nulabile pe `Postare`. O îmbinare
 LINQ cu ambele părți nulabile iese din EF cu
 `a = b OR (a IS NULL AND b IS NULL)`, pe care Postgres o execută pătratic.
 Cu o parte ne-nulă iese egalitate simplă. Aceeași formă iese dintr-un
@@ -708,6 +791,10 @@ disponibilul, și `Partide.MiscariPePartidele`) pornesc de la partidele
 deschise de el și țin partea ne-nulă pe origini, ca postările să fie căutate
 prin index, nu parcurse. `SC-CIT-110` probează că cititorii de partide și
 snapshot-ul chiar sunt executați și nu au forma. (D9-D10 (b))
+Perechea (`Postare.Pereche`, nulabilă) se îmbină în SQL scris de mână, în
+fișa contului și în registrul jurnal: egalitate simplă, care folosește
+indexul pe `(TranzactieId, Pereche)`. Ocolirea din LINQ cu `??` dă o
+expresie pe care indexul n-o poate folosi. (C111-Q20)
 
 `RAMURA-NUL` (`ProbeRamuraDeNul`) caută forma în fiecare comandă SQL pe care
 EF o emite în proces, pe orice context, în rularea integrală și în
@@ -716,7 +803,7 @@ diferite; compararea a două coloane ale aceluiași rând nu e îmbinare. Trei
 aserții pe profil:
 
 - detectorul prinde o îmbinare martor a lui `Postare` cu ea însăși pe unitate
-  și partener, executată la fiecare rulare;
+  și repartitor, executată la fiecare rulare;
 - nicio formă în afara celor admise nominal;
 - fiecare formă admisă apare în rulare (numai în integrală).
 
@@ -729,7 +816,7 @@ egalitate dispare din comandă. Admise:
 |---|---|---|
 | `Explicatii.VerificaAcoperire` | `DocumentId` | cheia primară a tranzacției-sursă (`ID = ExplicatieDinId`) |
 | `Explicatii.VerificaAcoperire` | `Unitate` | cheia primară a postării inversate (`ID = InversaDinId`) |
-| `Invarianti.VerificaFiscal` | blocul fiscal (6 coloane) | cheia primară a postării inversate |
+| `Invarianti.VerificaFiscal` | blocul fiscal (8 coloane, cu `PartenerFiscal` și `Loc`) | cheia primară a postării inversate |
 | `Invarianti.VerificaPerechi` | documentul, linia, produsul, codurile bugetare, cantitatea | aceeași tranzacție (`TranzactieId`) |
 | `AcoperireInvarianti.PerecheLangaTransformare` (unealtă) | `DocumentId`, `LinieId` | aceeași tranzacție |
 
@@ -755,7 +842,7 @@ când ramura de nul e filtru lângă o cheie selectivă.
 | Nucleul pur (`Atlas.Conta.Nucleu`) | `dotnet test` pe soluția nucleului: testul de arhitectură și invarianții 1–6 ca proprietăți (≥ 500 de cazuri fiecare); ModelCheck doar dacă e atins `Module` (90l) |
 | Declarant, operand, `Fapte.Operand`, oracolul pilotului | Scenariile independente ale tipului, apoi ModelCheck pe AMBELE profiluri; `NUC-*` păstrează comparația normalizată ca regresie, conservarea, determinismul și `≤ 16` interogări per operand. `Metadata clientului e la zi` verifică proprietățile noi pe `Document` (TR-D6b, amendat de 091) |
 | Citire nouă din cub, în orice proiect de producție | Intrare în `Cub/Citiri`, apoi ModelCheck: `091-r3` refuză accesul la `Postare`/`Tranzactie` în afara ei și a excepțiilor numite (scanare pe sursă, fără bază) |
-| Lista de evidență a cubului (`PostareVizual`, view-ul, controllerul, gardul) | ModelCheck pe ambele profiluri: `STR-VIZUAL-1…5` (paritatea coloanelor cu `Postare`, un rând per postare, etichetele gestiunii virtuale și ale partidei, gardul la activare pe rol cu criteriu de rând, cele trei refuzuri ale gardianului) și `D9-P4-LISTA-1` pe modelul real al hostului; `neexpunere-cub.py` pe host viu; lista în browser (D9-A12) |
+| Lista de evidență a cubului (`PostareVizual`, view-ul, controllerul, gardul) | ModelCheck pe ambele profiluri: `STR-VIZUAL-1…5` (paritatea coloanelor cu `Postare`, un rând per postare, marcajul contraponderii și eticheta partidei, gardul la activare pe rol cu criteriu de rând, cele trei refuzuri ale gardianului) și `D9-P4-LISTA-1` pe modelul real al hostului; `neexpunere-cub.py` pe host viu; lista în browser (D9-A12) |
 | Entitățile sau migrațiile cubului (`Postare`, `Tranzactie`) | ModelCheck pe ambele profiluri: probele `STR-SCHEMA-*` (partiționarea LIST, cheia `(Spatiu, ID)`, setul ÎNCHIS de FK-uri per partiție, indexii, absența timbrelor XAF); migrația se scrie în SQL, nu se lasă generată (S-D2, S-r4) |
 | Contractul laturilor (`Document.Laturi()`, T-D13) | ModelCheck pe ambele profiluri, ultima scenă (`VerificaLaturi`): `STR-LATURI-CONTRACT` (fiecare `TipDocument` din seed → clasa → contract cu părți nevide; metoda e abstractă, deci și compilatorul o cere), `STR-LATURI-REFUZ` (latura de partea greșită refuzată pe ușa declarației și pe ușa entității cu ACEEAȘI linie `COD: mesaj`; calitatea lipsă numită; un tip fără declarant refuzat pe ușa entității), `STR-LATURA` (PLT inversată = doar `PREDATOR_NEPOTRIVIT`, înaintea declarantului). Probele de laturi ale tipurilor asertează CODUL, nu textul vechi. Pe date reale: recensământul laturilor pe clona Flax (contract T-D13); după 091 clona e sursă de recensământ, nu gate |
 | Materializare, declarant al unui tip migrat, împerecherea ca `Transfer` | ModelCheck pe ambele profiluri: probele `STR-*` pe scenele BCS, Trezorerie și FCT — operare, roundtrip, storno, anulare, refuz, configurație, poziție, transfer, latură, corecție, reconciliere — cu comutarea locală a regimului (`ProbeCub.Migrat`/`Nemigrat`/`CuToleranta`, cu restaurare) și purja rândurilor de cub ale documentelor scenei (S-D8) |
@@ -815,7 +902,9 @@ registrele; ultima lor rulare e arhivată în `docs/nucleu/tr-d9-pas5b-probe.md`
 Corectitudinea o poartă catalogul de scenarii (091) și invarianții interni ai
 cubului din `INV-CUB`: proveniența inverselor, calificarea fiscală, taxa
 postată = taxa liniei, echilibrul pe tranzacție și carte, conservarea
-transferului, unitățile de partidă, proveniența fișelor și explicația
+transferului, unitățile de partidă, proveniența fișelor, forma coordonatelor
+(`CITIRE_COORDONATE_INVALIDE`, C111-D2), inversa fiscală cu partenerul și
+locul originalului (`CITIRE_FISCAL_INVERSA`) și explicația
 (ieșirile = deciziile, soldul citit, FIFO, declarantul), inclusiv valoarea
 liniei = decizia ieșirii, cu semnul cantității (`CITIRE_EXPLICATIE_LINIE`,
 D9-D3). Mutanții `INV-CUB` îi probează pe BCS, BTR și ASM cu `Transfer`

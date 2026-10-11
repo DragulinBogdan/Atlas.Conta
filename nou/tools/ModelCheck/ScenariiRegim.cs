@@ -24,7 +24,7 @@ sealed class ScenariiRegim(Func<IObjectSpace> deschide, Action<string, bool> che
     });
 
     protected override void Executa() {
-        var nota = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContFurnizor, 100));
+        var nota = Nota(Ianuarie, new LinieNtcScena(Serviciu, ContPartideLiber, 100));
         var r = Regim(nota.Id);
         var stergere = StergereaPeStare(nota.Id) && r.Poate(RegimDocument.Sterge);
         Verifica("SC-REGIM-01", "draft: editabil; Operează, Validează, Șterge disponibile; Anulează, Stornează, Corectează, Stinge refuzate cu motiv",

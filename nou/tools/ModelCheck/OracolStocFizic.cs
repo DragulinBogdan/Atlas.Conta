@@ -27,8 +27,8 @@ static class OracolStocFizic {
             return false;
         }
         var postari = os.GetObjectsQuery<C.Postare>()
-            .Where(p => p.Unitate != null && p.Gestiune != null && p.Carte == N.Carte.Contabil && p.Data <= pEnd)
-            .Select(p => new { Lot = p.Unitate.Value, Gestiune = p.Gestiune.Value, p.Cont, p.Data, p.Cantitate,
+            .Where(p => p.FelUnitate == N.FelUnitate.Lot && p.Repartitor != null && p.Carte == N.Carte.Contabil && p.Data <= pEnd)
+            .Select(p => new { Lot = p.Unitate.Value, Gestiune = p.Repartitor.Value, p.Cont, p.Data, p.Cantitate,
                 Deschidere = p.Tranzactie.Fel == N.FelTranzactie.Deschidere,
                 Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare })
             .ToList()

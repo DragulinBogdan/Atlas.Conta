@@ -38,21 +38,21 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
     RandScena[] Venituri(FacturaScena f, int i, decimal net, decimal taxa = 0, string tva = null, int? perioada = null) {
         var l = f.Linii[i]; var tv = tva == null ? (Guid?)null : Tva(tva);
         var debit = new RandScena(Cont(ContClient), N.Latura.Debit, net,
-            Unitate: Partida(f.Id, ContClient, Client), Produs: l.Produs, Partener: Client,
+            Repartitor: Client, Unitate: Partida(f.Id, ContClient, Client), Produs: l.Produs,
             Linie: l.Id, Economic: Economic);
         var credit = new RandScena(Cont(l.Lot != null ? "707" : Venit), N.Latura.Credit, net,
-            Gestiune: Magazie, Produs: l.Produs, Partener: tv != null ? Client : null,
+            Repartitor: Magazie, Produs: l.Produs, PartenerFiscal: tv != null ? Client : null,
             Linie: l.Id, Tva: tv, Rol: tv != null ? N.RolTva.Baza : null,
             Perioada: tv != null ? perioada ?? An * 100 + 1 : null,
-            Sens: tv != null ? N.SensTva.Livrare : null, Economic: Economic);
+            Sens: tv != null ? N.SensTva.Livrare : null, Economic: Economic, Loc: tv != null ? Magazie : null);
         return taxa == 0 ? [debit, credit] : [debit, credit,
             debit with { Valoare = taxa }, credit with { Cont = Cont("4427"), Valoare = taxa, Rol = N.RolTva.Taxa }];
     }
 
     RandScena[] Costuri(FacturaScena d, int i, decimal q, decimal v) {
         var l = d.Linii[i];
-        return [new(Cont("607"), N.Latura.Debit, v, q, N.GestiuniVirtuale.Client,
-                    Produs: l.Produs, Partener: Client, Linie: l.Id),
+        return [new(Cont("607"), N.Latura.Debit, v, q, Client,
+                    Produs: l.Produs, Linie: l.Id, Contrapondere: N.Contrapondere.Tert),
             new(Cont("371"), N.Latura.Credit, v, -q, Magazie, l.Lot, l.Produs,
                     Linie: l.Id, Spatiu: N.Spatiu.Stoc)];
     }

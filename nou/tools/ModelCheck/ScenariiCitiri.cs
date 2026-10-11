@@ -30,9 +30,9 @@ sealed class ScenariiCitiri(Func<IObjectSpace> deschide, Action<string, bool> ch
                 && solduri[0].Cantitate == 10 && solduri[0].Valoare == 100;
         }));
         VerificaBalanta("SC-CIT-11", l.Produs!.Value, Ianuarie, new(An, 1, 31), 0, 100, 0, 100);
-        Verifica("SC-CIT-11", "gestiunea se filtrează separat de partener", CuSpatiu(os => {
+        Verifica("SC-CIT-11", "gestiunea se filtrează ca repartitor de sold", CuSpatiu(os => {
             var a = ContabilProiectii.Balanta(os, Ianuarie, new(An, 1, 31),
-                materialId: l.Produs, gestiuneId: Magazie, citire: CitireCumul.Integrala).Single();
+                repartitorId: Magazie, materialId: l.Produs, citire: CitireCumul.Integrala).Single();
             return a.ContId == Cont(Stoc) && a.RulajDebit == 100 && a.RulajCredit == 0;
         }));
         if (Privat)
@@ -60,7 +60,7 @@ sealed class ScenariiCitiri(Func<IObjectSpace> deschide, Action<string, bool> ch
         }));
         Verifica("SC-CIT-16", "fișa: credit 20, sold 80 și contrapartidă", CuSpatiu(os => {
             var r = ContabilProiectii.FisaCont(os, Cont(Stoc), Februarie, new(An, 2, 28),
-                materialId: l.Produs, gestiuneId: Magazie, citire: CitireCumul.Integrala).Single();
+                repartitorId: Magazie, materialId: l.Produs, citire: CitireCumul.Integrala).Single();
             return r.Debit == 0 && r.Credit == 20 && r.SoldCurent == 80
                 && r.ContrapartidaId != null && r.ContrapartidaSimbol != null;
         }));

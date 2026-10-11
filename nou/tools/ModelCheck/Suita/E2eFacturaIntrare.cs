@@ -180,7 +180,7 @@ static class E2eFacturaIntrare {
             s.Check("Nota FCT: dimensiuni rezolvate (cod economic + repartitori laturi) [cub]",
                 noteFctCub.Any(p => p.LinieId == linieServiciu.ID && p.Debit && p.CodEconomic == codEc.ID));
             s.Check("D9-A10 FCT: debitul 628 poartă gestiunea primitoare MAG1, creditul 401 furnizorul (nu convenția pozițională)",
-                noteFctCub.Where(p => p.LinieId == linieServiciu.ID && p.Debit).All(p => p.Gestiune == mag1.ID)
+                noteFctCub.Where(p => p.LinieId == linieServiciu.ID && p.Debit).All(p => p.Repartitor == mag1.ID)
                 && noteFctCub.Where(p => p.LinieId == linieServiciu.ID && p.Credit).All(p => p.Repartitor == furnizor.ID));
 
             s.Check("Conex generat: NIR draft autogenerat, aceleași laturi",
@@ -198,7 +198,7 @@ static class E2eFacturaIntrare {
             s.Check("NIR operat cu număr din politică", nir.Stare == StareDocument.Operat && nir.Numar?.StartsWith("NIR-") == true);
             var stocFctCub = CubScena.Stoc(os, fct.ID);
             s.Check("NIR → +5/+59,5 Magazie pe gestiunea primitoare",
-                stocFctCub.Count == 1 && stocFctCub[0].Cont == tipMateriale.ContImplicitId && stocFctCub[0].Gestiune == mag1.ID
+                stocFctCub.Count == 1 && stocFctCub[0].Cont == tipMateriale.ContImplicitId && stocFctCub[0].Repartitor == mag1.ID
                 && stocFctCub[0].Cantitate == 5m && stocFctCub[0].Semnata == 59.5m && stocFctCub[0].Unitate == lot.ID);
             var receptieFctCub = CubScena.Note(os, fct.ID).Where(p => p.LinieId == linieStoc.ID).ToList();
             s.Check("NIR contează recepția: 302.01.00 = 401, 59,5",

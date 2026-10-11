@@ -57,15 +57,18 @@ public sealed class AlocariPlata {
 /// proprie datate până la capătul lunii operării; restul rămâne pe partida proprie.
 /// </summary>
 public static class Plati {
-    public static IQueryable<PostarePlata> Postari(IObjectSpace os) =>
-        Contabil.Postari(os).Where(p => p.DocumentId != null).Select(p => new PostarePlata {
+    public static IQueryable<PostarePlata> Postari(IObjectSpace os) {
+        var externi = Contabil.Externi(os);
+        return Contabil.Postari(os).Where(p => p.DocumentId != null).Select(p => new PostarePlata {
             Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel,
             DataTranzactie = p.Tranzactie.Data, DocumentId = p.DocumentId.Value, LinieId = p.LinieId,
-            Cont = p.Cont, Latura = p.Latura, Valoare = p.Valoare, Partener = p.Partener,
+            Cont = p.Cont, Latura = p.Latura, Valoare = p.Valoare,
+            Partener = p.Repartitor != null && externi.Contains(p.Repartitor.Value) ? p.Repartitor : null,
             Unitate = p.FelUnitate == N.FelUnitate.Partida ? p.Unitate : null, Valuta = p.Valuta, InversaDinId = p.InversaDinId,
             CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,
             UnitateOrganizatorica = p.UnitateOrganizatorica, Proiect = p.Proiect, CentruCost = p.CentruCost,
         });
+    }
 
     /// <summary>Alocarea fiecărui document, pe postările latura contrapartidei primite pentru el.</summary>
     public static Dictionary<Guid, AlocariPlata> Alocari(IObjectSpace os, IReadOnlyDictionary<Guid, N.Latura> laturaContrapartidei) {
@@ -98,7 +101,7 @@ public static class Plati {
             .Select(p => p.TranzactieId).Distinct().ToList();
         var transferuri = tranzactiiTransfer.Count == 0 ? [] : Partide.Postari(os)
             .Where(p => tranzactiiTransfer.Contains(p.TranzactieId))
-            .Select(p => new { p.ID, p.Spatiu, p.TranzactieId, p.Data, p.Cont, p.Partener, p.Latura, p.Valoare, Unitate = p.Unitate.Value })
+            .Select(p => new { p.ID, p.Spatiu, p.TranzactieId, p.Data, p.Cont, Partener = p.Repartitor, p.Latura, p.Valoare, Unitate = p.Unitate.Value })
             .ToList().GroupBy(p => p.TranzactieId).ToDictionary(g => g.Key, g => g.ToList());
 
         var unitati = rezultat.Values.SelectMany(a => a.Operare).Where(p => p.Unitate != null).Select(p => p.Unitate.Value)

@@ -22,8 +22,10 @@ public class Cont : Nomenclator, ICuCautare, ICuProvenienta {
     public virtual string Functie { get; set; }
     // SUMATOR legacy: însumare vs soldare pe părinți.
     public virtual bool Sumator { get; set; }
-    // Decizia 15: dimensiuni obligatorii per cont (fostele flag-uri R/M/E/B/F/P).
+    // Decizia 15: dimensiuni obligatorii per cont (fostele flag-uri M/E/B/F/P).
     public virtual DimensiuneFlags DimensiuniObligatorii { get; set; }
+    [XafDisplayName("Feluri de repartitor")]
+    public virtual FeluriRepartitor FeluriRepartitor { get; set; }
 
     // Felia 16 (D16-D3): pe ce conturi stă un client și pe ce conturi un
     // furnizor — sursa listelor `Customers`/`Suppliers` din SAF-T și a perechii
