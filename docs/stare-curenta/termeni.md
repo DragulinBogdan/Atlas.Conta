@@ -339,11 +339,12 @@ Regula: [politici § TVA la operare](politici-si-fiscalitate.md#tva-la-operare) 
 
 ### fapt fiscal
 
-Postarea internă care poartă codul de TVA (tip × sens × rol: Bază, Taxă,
-Autocolectare), perioada declarării și partenerul fiscal; faptele stau
-numai pe postări, în ambele cărți. Regula:
-[politici § TVA la operare](politici-si-fiscalitate.md#tva-la-operare) (103, D9-D2).
-Înrudit: tip de TVA, coordonată. În cod: `Cub.Citiri.Fiscale`.
+Postarea care poartă codul de TVA (tip × sens × rol: Bază, Taxă,
+Autocolectare), perioada declarării, locul și, când există, partenerul
+fiscal; faptele stau numai pe postări, în ambele cărți. Regula:
+[politici § TVA la operare](politici-si-fiscalitate.md#tva-la-operare) (103, D9-D2, 111).
+Înrudit: tip de TVA, coordonată, loc, partener fiscal. În cod:
+`Cub.Citiri.Fiscale`.
 
 ### imobilizare
 
