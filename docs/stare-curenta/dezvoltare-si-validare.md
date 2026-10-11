@@ -1056,15 +1056,25 @@ codegen-ului OpenAPI). (118k)
 
 Forma codului o măsoară `docskit metrics`, pe `nou/`: C# cu ținta 400 și
 plafonul 600 de linii, TypeScript cu 300 și 500, plus comentariile cu marcaje
-narative. Doar din metrici ies `nou/tools` (ModelCheck, Import1C) și fișierul
-generat `UnitatiMasuraUnEce.cs` (`cod.excluseDinMetrici`, docskit 0.6.0);
-citările `// N` din ele rămân verificate de gardianul `cod`. Linia zero e
-`docs/docskit.baseline.json`, rescrisă la 2026-10-11 pe arborele de după
-C111: 12 fișiere C# și 6 TypeScript peste plafon, 44 și 5 comentarii
-narative. `docskit metrics
---check` pică la un fișier nou peste plafon, la mai multe comentarii narative
-și la o îmbunătățire neînregistrată; linia se rescrie cu `docskit metrics
---scrie`, iar PR-ul numește ce a intrat în ea. Limite: `build` (HTML static) există în unealtă, dar nu e adoptat
+narative. Doar din metrici ies `nou/tools` (ModelCheck, Import1C), fișierul
+generat `UnitatiMasuraUnEce.cs` și maparea EF `BackOfficeDbContext.cs`
+(`cod.excluseDinMetrici`); citările `// N` din ele rămân verificate de
+gardianul `cod`. Linia zero e `docs/docskit.baseline.json` și ține, de la
+docskit 0.7.0, numărul de linii al fiecărui fișier peste plafon; rescrisă la
+2026-10-11: 11 fișiere C# și 6 TypeScript peste plafon, 44 și 5 comentarii
+narative.
+
+`docskit metrics --check` pică la regres și la linie învechită. Regres: un
+fișier nou peste plafon, un fișier deja peste plafon care a crescut cu mai
+mult de toleranța limbajului față de liniile înregistrate, mai multe
+comentarii narative. Linie învechită (îmbunătățire neînregistrată): un fișier
+coborât sub plafon, unul rămas peste dar scăzut cu mai mult de toleranță, mai
+puține comentarii narative. Toleranța e de 30 de linii pe ambele limbaje
+(`cod.limbaje.*.toleranta`) și se măsoară de la linia zero, nu de la ultima
+rulare, deci creșterile mici se adună până o depășesc; plafonul rămâne fix,
+iar sub plafon un fișier crește liber. Linia se rescrie cu `docskit metrics
+--scrie`, care mută și centrul benzii; un regres se repară în cod, nu se
+înregistrează, iar PR-ul numește ce a intrat în linie. Limite: `build` (HTML static) există în unealtă, dar nu e adoptat
 aici (118-r2); `/docs-curatenie` și `docs-init` vin cu 118-r4. (118k)
 
 ## Import operațional 1C
