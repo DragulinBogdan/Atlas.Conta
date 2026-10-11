@@ -15,10 +15,6 @@ public static class GardAnaliza {
         FeluriRepartitor Feluri = FeluriRepartitor.Nedeclarat);
     public readonly record struct LinieFapt(string? Denumire, Guid? Angajament);
 
-    /// <summary>Contul cere prezența repartitorului: declară feluri și nu admite lipsa (C111-D4).</summary>
-    public static bool CereRepartitor(FeluriRepartitor feluri) =>
-        feluri != FeluriRepartitor.Nedeclarat && !feluri.HasFlag(FeluriRepartitor.Niciunul);
-
     static FeluriRepartitor Fel(N.FelRepartitor fel) => fel switch {
         N.FelRepartitor.Partener => FeluriRepartitor.Partener,
         N.FelRepartitor.Angajat => FeluriRepartitor.Angajat,

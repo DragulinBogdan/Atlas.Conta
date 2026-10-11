@@ -48,7 +48,8 @@ static class Partide {
 
 /// <summary>
 /// Capătul de terț (D9-A10): partida când contul o urmărește, terțul când contul
-/// cere repartitor. Capătul care are deja repartitor rămâne neatins.
+/// declară feluri de repartitor; prezența și felul le judecă gardul. Capătul care
+/// are deja repartitor rămâne neatins.
 /// </summary>
 static class Terti {
     public static N.Capat Capat(Operand operand, N.Capat capat, RepartitorFapt tert, N.Unitate? partida) {
@@ -60,7 +61,7 @@ static class Terti {
                 Repartitor = tert.Coordonata, Unitate = partida,
                 Loc = capat.Loc ?? (capat.Repartitor is { EsteIntern: true } loc ? loc.Id : null),
             };
-        return capat.Repartitor is null && CereRepartitor(operand, capat)
+        return capat.Repartitor is null && DeclaraRepartitor(operand, capat)
             ? capat with { Repartitor = tert.Coordonata }
             : capat;
     }
@@ -72,7 +73,7 @@ static class Terti {
         return Capat(operand, capat, tert, capat.Unitate is null ? partide.GetValueOrDefault(capat.Cont) : null);
     }
 
-    static bool CereRepartitor(Operand operand, N.Capat capat) =>
+    static bool DeclaraRepartitor(Operand operand, N.Capat capat) =>
         capat.Carte == N.Carte.Contabil
-        && operand.Conturi.GetValueOrDefault(capat.Cont)?.CereRepartitor == true;
+        && operand.Conturi.GetValueOrDefault(capat.Cont)?.DeclaraRepartitor == true;
 }

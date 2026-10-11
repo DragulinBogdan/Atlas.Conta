@@ -370,7 +370,7 @@ internal static class Fapte {
                 .Select(c => new { c.ID, c.Simbol, c.UrmarestePartide, c.FeluriRepartitor })
                 .ToList()
                 .Select(c => new Declaratii.ContFapt(c.ID, c.Simbol, c.UrmarestePartide,
-                    Cub.GardAnaliza.CereRepartitor(c.FeluriRepartitor)))
+                    c.FeluriRepartitor != FeluriRepartitor.Nedeclarat))
                 .ToDictionary(c => c.Id);
 
     static Declaratii.PoliticaTvaFapt Tva(PoliticaTva politica) =>

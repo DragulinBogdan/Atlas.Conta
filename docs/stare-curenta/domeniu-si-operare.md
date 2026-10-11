@@ -1022,8 +1022,9 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   - **Piciorul de terț** îl pune un singur helper, `Declaratii/Terti.Capat`,
     pe capătul pe care i-l dă apelantul: titularul și partida pe un cont cu
     `UrmarestePartide`; terțul singur pe capătul fără repartitor al unui cont
-    care cere repartitor (`ContFapt.CereRepartitor`: contul declară feluri și
-    nu admite lipsa). Capătul din cartea
+    care declară feluri de repartitor (`ContFapt.DeclaraRepartitor`), și când
+    contul admite lipsa; prezența și felul le judecă gardul, deci terțul de
+    alt fel decât cele declarate e refuzat, nu omis (C111-F-R1). Capătul din cartea
     fiscală nu primește terț. Terțul e latura externă a documentului; la DEC
     și NTC e repartitorul liniei, iar DEC, NTC, DSC și diferența NIR îl pun
     pe capătul extern necondiționat (T-D13 g).

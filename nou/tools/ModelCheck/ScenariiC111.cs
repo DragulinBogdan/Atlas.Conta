@@ -894,13 +894,16 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         var declarate = CuSpatiu(os => os.GetObjectsQuery<Cont>().Where(c => c.FeluriRepartitor != FeluriRepartitor.Nedeclarat)
             .Select(c => new { c.Simbol, c.FeluriRepartitor }).ToList().ToDictionary(c => c.Simbol, c => c.FeluriRepartitor));
         const FeluriRepartitor Optional = FeluriRepartitor.Partener | FeluriRepartitor.Niciunul;
-        Verifica("SC-C111-30", $"seed-ul declară felurile numai pe bugetar: {declarate.Count} conturi",
+        bool Declara(FeluriRepartitor feluri, params string[] simboluri) =>
+            simboluri.All(s => declarate.GetValueOrDefault(s) == feluri);
+        Verifica("SC-C111-30", $"seed-ul declară felurile numai pe bugetar, fiecare cont cu felurile lui: {declarate.Count} conturi",
             Privat ? declarate.Count == 0
                 : declarate.Count == 20
-                    && declarate["552.00.00"] == FeluriRepartitor.ContPropriu
-                    && declarate["462.01.09"] == (FeluriRepartitor.Partener | FeluriRepartitor.Angajat)
-                    && declarate["437.01.00"] == Optional && declarate["437.02.00"] == Optional
-                    && declarate["803.00.01"] == Optional && declarate["401.01.00"] == FeluriRepartitor.Partener);
+                    && Declara(FeluriRepartitor.Partener, "401.01.00", "401.02.00", "404.01.00", "411.01.01", "411.02.08",
+                        "442.08", "442.08.01", "458.01.00", "458.05.01", "458.05.02", "461.01.09", "774", "804.90.00", "805.00.00")
+                    && Declara(FeluriRepartitor.Partener | FeluriRepartitor.Angajat, "462.01.01", "462.01.09")
+                    && Declara(Optional, "437.01.00", "437.02.00", "803.00.01")
+                    && Declara(FeluriRepartitor.ContPropriu, "552.00.00"));
 
         var terti = ContScena("-FT", c => c.FeluriRepartitor = FeluriRepartitor.Partener);
         var optional = ContScena("-FO", c => c.FeluriRepartitor = Optional);
@@ -939,5 +942,43 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         Trece("SC-C111-30", "nota cu terț pe contul care admite și lipsa", () => Opereaza(optionalCuTert.Id));
         var peLiber = NotaPe(Ianuarie, liber, liber, 10);
         Trece("SC-C111-30", "contul care nu declară feluri nu judecă repartitorul", () => Opereaza(peLiber.Id));
+        TertPeContOptional(casa, Optional);
+    }
+
+    // ───────────────────────── SC-C111-33: terțul documentului pe contul care admite lipsa (D5) ─────────────────────────
+
+    void TertPeContOptional(Guid casa, FeluriRepartitor optional) {
+        var cont = ContScena("-FP", c => c.FeluriRepartitor = optional);
+        var (numerar, tert) = CuSpatiu(os => {
+            var p = os.CreateObject<Partener>(); p.Cod = Marcaj + "-TERT-FP"; p.Denumire = p.Cod; p.ContImplicitId = cont;
+            os.CommitChanges();
+            return (os.GetObjectsQuery<ContPropriu>().Where(c => c.ID == casa).Select(c => c.ContImplicitId).Single().Value, p.ID);
+        });
+        FacturaScena Document(bool inc, decimal valoare) => CuSpatiu(os => {
+            DocumentTrezorerie doc = inc ? os.CreateObject<Incasare>() : os.CreateObject<Plata>();
+            doc.Data = Ianuarie; doc.PredatorId = inc ? tert : casa; doc.PrimitorId = inc ? casa : tert;
+            var l = os.CreateObject<DocumentTrezorerieDetaliu>(); l.Document = doc; l.Pozitie = 1;
+            l.TipMaterialId = Tip(os, "TRZ"); l.Valoare = valoare; l.CodEconomicId = Economic;
+            os.CommitChanges(); return new FacturaScena(doc.ID, [new(l.ID, null, null)]);
+        });
+        var plata = Document(false, 10); var incasare = Document(true, 4);
+        if (!Trece("SC-C111-33", "plata către terțul cu cont care admite lipsa", () => Opereaza(plata.Id))
+            || !Trece("SC-C111-33", "încasarea de la același terț", () => Opereaza(incasare.Id)))
+            return;
+        Postari("SC-C111-33", plata.Id, Operare, Ianuarie,
+            new(cont, Debit, 10, Repartitor: tert, Linie: plata.Linii[0].Id, Economic: Economic),
+            new(numerar, Credit, 10, Repartitor: casa, Linie: plata.Linii[0].Id, Economic: Economic));
+        Postari("SC-C111-33", incasare.Id, Operare, Ianuarie,
+            new(numerar, Debit, 4, Repartitor: casa, Linie: incasare.Linii[0].Id, Economic: Economic),
+            new(cont, Credit, 4, Repartitor: tert, Linie: incasare.Linii[0].Id, Economic: Economic));
+        var (peTert, faraTert, solduri) = CuSpatiu(os => (
+            ContabilProiectii.FisaCont(os, cont, new(An, 1, 1), Sfarsit, repartitorId: tert).ToList(),
+            ContabilProiectii.FisaCont(os, cont, new(An, 1, 1), Sfarsit, faraTert: true).ToList(),
+            ContabilProiectii.SoldParteneri(os, Sfarsit, cont).ToList()));
+        Verifica("SC-C111-33", "fișa pe terț are plata și încasarea, sold final debitor 6; fișa fără terț e goală; soldurile pe terți "
+            + $"au un singur rând, al terțului (obținut {peTert.Count} rânduri, {(peTert.Count == 0 ? null : peTert[^1].SoldCurent)}, "
+            + $"{faraTert.Count} fără terț, {solduri.Count} rânduri de sold)",
+            peTert.Count == 2 && peTert[^1].SoldCurent == 6 && faraTert.Count == 0
+            && solduri.Count == 1 && solduri[0].RepartitorId == tert && solduri[0].SoldDebitor == 6);
     }
 }

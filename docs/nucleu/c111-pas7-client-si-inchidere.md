@@ -1,8 +1,8 @@
 # C111, pasul 7 — clientul, contractul HTTP și închiderea
 
 **Data:** 2026-10-11. **Stare:** implementat și verificat pe catalog, pe HTTP
-și în browser; review-ul advers pe diff-ul întreg al feliei e cerut lui Codex
-și nu e închis. Contractul: [C111](c111-coordonate-contract.md), D6, D9 și
+și în browser; review-ul advers pe diff-ul întreg al feliei a sosit:
+C111-F-R1 e corectată, C111-F-R2 e la owner. Contractul: [C111](c111-coordonate-contract.md), D6, D9 și
 C111-Q18…Q21; decizia 111.
 
 Urmele, neversionate: `run-verificari/c111-pas7-http/` (rețeta
@@ -140,10 +140,26 @@ container, la încărcarea rolurilor. Rețeta folosea `localhost`; pe
   schimbat prin SQL, fără recreare (abatere numită de la 102 (b), C111-Q20).
 - Bazele de referință `…C111P0` rămân pe schema veche.
 
+## Review-ul advers al închiderii
+
+Codex a citit diff-ul întreg (`main...c840765`) și a rulat integrala pe baze
+proprii, cu aceleași cifre. Dispozițiile sunt în contract, sub „Review-ul
+advers Codex al închiderii”.
+
+- **C111-F-R1, corectată.** De la pasul 3, terțul documentului nu mai ajungea
+  pe piciorul unui cont care admite lipsa repartitorului (437.01.00,
+  437.02.00, 803.00.01): condiția „pune terțul” fusese strânsă la „contul nu
+  admite lipsa”. Acum terțul se pune pe orice cont care declară feluri, ca
+  pe `main` pe conturile cu flag-ul R. Proba e SC-C111-33; condiția veche,
+  repusă, o aprinde. Integrala după corecție: 3.678 OK pe bugetar, 5.080 pe
+  privat, zero FAIL (`run-verificari/20261011-135559-972/`). Matricea HTTP și
+  proba din browser sunt cele de mai sus, de pe arborele dinaintea corecției.
+- **C111-F-R2, la owner.** Sinteza fișei trece prin ușa securizată, ca fișa
+  și balanța: un rol cu citire restrânsă pe `Postare` primește suma
+  rândurilor lui, fără refuz. 110 (e) cere, la literă, citirea completă.
+
 ## Ce rămâne
 
-- Review-ul advers Codex pe diff-ul întreg (regula de oprire 8); decizia 111
-  trece la „implementată” după el.
-- Sinteza fișei și fișa trec prin ușa securizată: un rol cu citire restrânsă
-  pe `Postare` vede sinteza rândurilor lui, ca în balanță, fără refuz.
+- Tranșarea C111-F-R2 și reverificarea Codex a corecției; decizia 111 trece
+  la „implementată” după ele.
 - La volum, contrapartida din registrul jurnal costă tot circa 4 µs pe rând.

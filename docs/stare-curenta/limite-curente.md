@@ -12,9 +12,11 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   deci felul lor e din natura contului, nu din date. Pe 461.01.09 angajatul
   nu e admis (confirmat, C111-Q21). Planul privat nu declară nimic, iar contul
   nedeclarat nu judecă repartitorul (lumea deschisă, C111-r2). Terțul stă pe
-  piciorul de terț numai când contul cere repartitor
-  sau urmărește partide — pe un cont fără flag și fără partide (446 privat)
-  rămâne absent. Pe conturile de cheltuieli și venituri terțul nu e axă de
+  piciorul de terț numai când contul declară feluri de repartitor
+  sau urmărește partide — pe un cont nedeclarat și fără partide (446 privat)
+  rămâne absent. Pe contul care admite lipsa (437.01.00, 437.02.00,
+  803.00.01) terțul cunoscut de document stă pe picior; lipsa e admisă numai
+  când documentul n-are terț pentru el (C111-F-R1). Pe conturile de cheltuieli și venituri terțul nu e axă de
   sold: apare numai ca `PartenerFiscal`, pe postarea cu fapt fiscal. Pe
   trezorerie, când regula de contare numește ambele conturi explicit,
   piciorul propriu n-are repartitor; dacă contul lui cere repartitor

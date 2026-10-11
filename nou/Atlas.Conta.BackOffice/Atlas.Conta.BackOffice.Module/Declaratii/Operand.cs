@@ -17,7 +17,7 @@ public sealed record RepartitorFapt(Guid Id, N.FelRepartitor? Fel, Guid? ContImp
             $"Repartitorul {Id} n-are un fel cunoscut.", null));
 }
 
-public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide, bool CereRepartitor);
+public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide, bool DeclaraRepartitor);
 
 /// <summary><paramref name="Origine"/> = documentul deschizător al partidei; gol la partida fără document,
 /// pe care o ordonează <paramref name="Deschidere"/>, ordinalul postării care a deschis-o.</summary>

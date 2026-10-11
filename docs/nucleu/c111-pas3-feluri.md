@@ -15,8 +15,11 @@ Urmele, neversionate: `run-verificari/20261010-213045-004/` (integrala).
   contraponderea de inventar a NIR-ului. Contraponderea e scutită numai de
   prezență. Conturile păzite sunt cele care declară feluri sau alte
   dimensiuni, fiecare familie independent.
-- **Faptul contului.** `ContFapt.CereRepartitor` înseamnă „declară feluri și
-  nu admite lipsa”.
+- **Faptul contului.** `ContFapt.CereRepartitor` însemna la acest pas
+  „declară feluri și nu admite lipsa”. Era greșit: pe conturile cu „partener
+  sau niciunul” terțul documentului nu mai ajungea pe picior. Corectat la
+  review-ul închiderii (C111-F-R1, 2026-10-11): faptul e `DeclaraRepartitor`,
+  adevărat pe orice cont care declară feluri.
 - **Seed-ul bugetar.** Cele 20 de conturi cu defalcarea R din CPLAN își
   declară felurile dintr-un tabel pe simbol; seed-ul cade dacă defalcarea și
   tabelul nu se potrivesc. Seed-ul privat nu declară nimic.

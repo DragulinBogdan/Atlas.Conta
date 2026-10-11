@@ -6,8 +6,8 @@
 sunt făcuți. Codex a închis review-ul de contract (2026-10-10,
 `comunicari/2026-10-10-1732-…-c111-contract-review-inchis.md`). Pasul 2 e
 implementat și verificat pe catalog; C111-Q12…Q14 au apărut la implementare.
-Pașii 3–7 sunt făcuți (2026-10-11), cu C111-Q15…Q21; rămâne review-ul advers
-al închiderii.
+Pașii 3–7 sunt făcuți (2026-10-11), cu C111-Q15…Q21. Review-ul advers al
+închiderii a sosit (2026-10-11): C111-F-R1 e corectată, C111-F-R2 e la owner.
 **Bază:** main `1cc9d93`. **Decizia:**
 [111](../decizii/111-repartitor-unic-si-registre-tipate.md), aprobată
 2026-10-10. **Măsurătorile:** [pasul 0](tr-d9b-pas0-masuratori.md).
@@ -144,7 +144,11 @@ Gardul rămâne `GardAnaliza`. Regulile lui:
   contraponderea de inventar cere terțul real când contul cere repartitor;
 - mutările și transformările rămân în afara gardului (D9-r1).
 
-`ContFapt.CereRepartitor` se derivă din mulțime. Seed-ul bugetar declară cele
+`ContFapt.DeclaraRepartitor` e adevărat când mulțimea nu e vidă: terțul
+documentului se pune pe piciorul de terț al contului care declară feluri, și
+când contul admite lipsa; prezența și felul le judecă gardul (C111-F-R1; la
+pasul 3 faptul se numea `CereRepartitor` și excludea greșit conturile cu
+`Niciunul`). Seed-ul bugetar declară cele
 20 de conturi: 552.00.00 = cont propriu (hotărât); 462.01.09 = partener și
 angajat, 437.01.00, 437.02.00 și 803.00.01 = partener sau niciunul
 (C111-Q15, 111-r2); restul după tabelul din pasul 0 §5. Seed-ul privat nu
@@ -158,7 +162,7 @@ propriu; un cont cu mulțime vidă; SC-PLT-09 și SC-INC-09 pe gardul nou.
 Regula e una: piciorul poartă repartitorul al cărui sold îl mișcă. Proveniența
 repartitorului de sold e a declarantului (latura, linia, regula de contare);
 proveniența partenerului fiscal e a politicii de TVA. Niciuna nu se deduce din
-clasa contului sau din `CereRepartitor`. Când apare terțul pe picior nu se
+clasa contului sau din `DeclaraRepartitor`. Când apare terțul pe picior nu se
 schimbă față de azi; se schimbă numai unde stă.
 
 | Piciorul | Azi | După |
@@ -166,7 +170,7 @@ schimbă față de azi; se schimbă numai unde stă.
 | intern, fără fapt fiscal (stoc, cheltuială, venit, fișă) | `Gestiune` | `Repartitor` = același |
 | intern, cu fapt fiscal (3xx, 6xx, 7xx, 4426, 4427) | `Gestiune` + `Partener` | `Repartitor` = repartitorul intern; `PartenerFiscal` = partenerul; `Loc` = locul |
 | cu fapt fiscal, fără repartitor intern (autocolectarea la taxare inversă) | `Partener` | `Repartitor` nul; `PartenerFiscal` = partenerul; `Loc` = locul |
-| de terț, cu partidă sau cu cont care cere repartitor | `Partener` | `Repartitor` = terțul capătului |
+| de terț, cu partidă sau cu cont care declară feluri de repartitor (flag-ul R de azi) | `Partener` | `Repartitor` = terțul capătului |
 | de terț, nominalizat pe linie (DEC, NTC), cu sau fără partidă ori obligație pe cont | `Partener` | `Repartitor` = terțul liniei |
 | intern, cu partidă și fapt fiscal (419, 408, 4091) | `Partener` + `Gestiune` | `Repartitor` = titularul; `PartenerFiscal` = partenerul; `Loc` = locul |
 | intern, cu partidă, fără fapt fiscal (aceleași conturi, pe o linie fără tip de TVA) | `Partener` + `Gestiune` | `Repartitor` = titularul; `Loc` = locul (C111-Q14) |
@@ -307,7 +311,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 4 | S7 și S8 | făcut 2026-10-10: [`c111-pas4-s7-s8.md`](c111-pas4-s7-s8.md) |
 | 5 | S9: contrapartida prin pereche | făcut 2026-10-10, cu fișa și registrul pe HTTP: [`c111-pas5-pereche.md`](c111-pas5-pereche.md). Cifra de timp cere o bază de import pe forma nouă și se ia la pasul 6 |
 | 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | făcut. Importul, 2026-10-10, cu regulile de oprire 1 și 2 și `INV-CUB` verzi și cu cifra de timp a fișei: [`c111-pas6-import.md`](c111-pas6-import.md). Uneltele de volum, costul scrierii și scara de 5 milioane, 2026-10-11: [`c111-pas6-scriere-si-volum.md`](c111-pas6-scriere-si-volum.md); scara transversală a prins citirea perechii fără margine în registrul jurnal, corectată acolo |
-| 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | implementat și verificat 2026-10-11: [`c111-pas7-client-si-inchidere.md`](c111-pas7-client-si-inchidere.md), cu C111-Q18…Q21; drift zero, `refuzuri.ps1` 327/327; review-ul advers pe diff-ul întreg e cerut lui Codex și nu e închis |
+| 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | implementat și verificat 2026-10-11: [`c111-pas7-client-si-inchidere.md`](c111-pas7-client-si-inchidere.md), cu C111-Q18…Q21; drift zero, `refuzuri.ps1` 327/327; review-ul advers pe diff-ul întreg: C111-F-R1 corectată, C111-F-R2 la owner (secțiunea „Review-ul advers Codex al închiderii”) |
 
 **Scrierile brute și mutanții** (pasul 2). Probele care scriu sau strică
 postări fără scriitorul produsului se mută semantic, nu mecanic:
@@ -538,6 +542,27 @@ numite: forma cu doi parteneri fiscali diferiți în același storno nu e
 probată (SC-C111-20, regula de oprire 3, confirmată prin C111-Q21), iar
 invariantul inversei compară locul numai pe postările fiscale. Reverificarea
 nu acoperă pașii 3–7.
+
+## Review-ul advers Codex al închiderii (2026-10-11)
+
+Mesajul: `comunicari/2026-10-11-1342-codex-claude-c111-inchidere-review.md`,
+pe `main...c840765`, cu integrala rulată de Codex pe baze proprii (3.673 /
+5.075, zero FAIL) și cu două probe HTTP ale lui. Verdictul: închiderea nu se
+recomandă până la R1 și R2. Fiecare constatare a fost recitită în cod.
+
+| Id | Constatarea | Dispoziția |
+|---|---|---|
+| C111-F-R1 | pe contul care admite lipsa (`Partener \| Niciunul`: 437.01.00, 437.02.00, 803.00.01) terțul documentului nu mai ajunge pe piciorul de terț: `ContFapt.CereRepartitor` însemna „nu admite lipsa”, iar `Terti.Capat` îl folosea ca să decidă dacă pune terțul. Plata de 10 către un partener cu contul 437.01.00 postează debitul fără repartitor. Încalcă D5 („când apare terțul pe picior nu se schimbă”) și regula de oprire 5 | acceptată și corectată: faptul e `DeclaraRepartitor`, adevărat pe orice cont care declară feluri, adică echivalentul flag-ului R de pe `main`; prezența și felul rămân ale gardului. Scena SC-C111-33 (PLT și INC pe cont care admite lipsa, postările, fișa pe terț, fișa fără terț, soldurile pe terți); condiția veche, repusă ca mutant, o aprinde. Integrala: 3.678 / 5.080, zero FAIL (`run-verificari/20261011-135559-972/`) |
+| C111-F-R2 | ruta `fisa-cont/sold` (C111-Q19) însumează pe ușa securizată numai postările vizibile: un rol cu o postare ascunsă primește 200 cu sold parțial. 110 (e) cere, la literă, citirea completă pe `Postare` pentru cifrele citite din cub, inclusiv pe proiecții. Nu e expunere de date și nu e regresie: balanța, fișa și soldurile pe terți fac la fel pe `main` | deschisă, la owner: e contradicție între litera 110 (e) și regimul proiecțiilor securizate, nu defect al rutei |
+| SC-C111-30, completare | proba seed-ului număra 20 de conturi și numea numai șase | acceptată: scena compară fiecare din cele 20 de conturi cu felurile lui |
+
+La celelalte întrebări Codex n-a găsit contraexemplu: S7 și S8, perechea
+(nicio dublare, nicio pereche străină), cele trei scrieri ale mulțimii „fără
+terț”, egalitatea sintezei cu fișa, indexul perechii, uneltele pasului 6.
+Proba lui pe HTTP închide un punct lăsat neprobat la pasul 7: un rol căruia i
+se ascunde postarea pereche vede rândul fără cont corespondent, în fișă și în
+registrul jurnal. Rămân nemăsurate de el, ca și la predare: costul scrierii
+cu indexul nou, importul după ianuarie 2025, scara de 5 milioane.
 
 ## Amendamentul 1 (propus 2026-10-10; retras 2026-10-10, C111-Q5)
 

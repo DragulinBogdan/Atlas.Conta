@@ -2,12 +2,16 @@
 
 **Actualizat: 2026-10-11.** [Index](README.md)
 
-Validarea curentă (C111 pasul 7, 2026-10-11): integrala **3.673 bugetar /
-5.075 privat OK**, zero FAIL, pe baze create din
-`20261010151835_InitialCreate`; `--scenarii C111` verde pe ambele profiluri;
-`refuzuri.ps1` 327/327 de două ori pe bază privată nouă; drift OpenAPI zero;
-clientul compilează. Nucleul n-a fost atins de la pasul 6 (199/199 acolo).
-Urma: `run-verificari/20261011-122558-351/`. Raportul pasului:
+Validarea curentă (C111, corecția C111-F-R1 a review-ului de închidere,
+2026-10-11): integrala **3.678 bugetar / 5.080 privat OK**, zero FAIL, pe
+baze create din `20261010151835_InitialCreate`; `--scenarii C111` verde pe
+ambele profiluri. Urma: `run-verificari/20261011-135559-972/`. De la pasul 7,
+pe arborele dinaintea corecției (3.673 / 5.075,
+`run-verificari/20261011-122558-351/`): `refuzuri.ps1` 327/327 de două ori pe
+bază privată nouă, drift OpenAPI zero, clientul compilează. Matricea n-a fost
+rerulată după corecție: corecția schimbă numai conturile care declară feluri,
+iar baza privată a matricei nu declară niciunul. Nucleul n-a fost atins de la
+pasul 6 (199/199 acolo). Raportul pasului:
 `docs/nucleu/c111-pas7-client-si-inchidere.md`.
 
 TR-D9a, pasul 6 (tăierea, 2026-10-07): motorul nu mai scrie, nu mai citește și
