@@ -185,7 +185,7 @@ contractul `docs/nucleu/c111-coordonate-contract.md` (pașii 0, 1 și 1b
 făcuți; review-ul Codex al contractului, C111-R1…R16, închis; pasul 2
 implementat și verificat pe catalog și în browser,
 `docs/nucleu/c111-pas2-forma-noua.md`, cu review-ul Codex al implementării
-corectat, C111-P2-R1 și R2; pasul 3, felurile de repartitor pe cont,
+corectat și reverificat, C111-P2-R1 și R2 închise; pasul 3, felurile de repartitor pe cont,
 implementat și verificat, `docs/nucleu/c111-pas3-feluri.md`; pasul 4, S7 și
 S8, și pasul 5, contrapartida prin pereche, făcuți,
 `docs/nucleu/c111-pas4-s7-s8.md` și `c111-pas5-pereche.md`; pasul 6 făcut:

@@ -525,9 +525,19 @@ verificate pe integrală (`run-verificari/20261010-210057-804/`).
 | Q13, completare | rândul fără terț nu era probat cu sume fără niciun repartitor | SC-C111-10 primește o plată cu ambele conturi explicite: 40 pe cont propriu și 7 fără repartitor dau un rând de 47, dinamic și după închidere |
 | SC-C111-20 | forma cu parteneri fiscali diferiți e o limită a producătorilor de azi, nu a stornoului | regula de oprire 3 și starea scenei spun ce e probat; forma rămâne neprobată |
 
-Întrebările 1–3 și 5 din predare au rămas fără constatare. La 7 (o inversă
-care iese cu alt partener sau alt loc fără să treacă prin copiere) Codex nu
-numește nicio cale.
+Întrebările 1–3 și 5 din predare au rămas fără constatare.
+
+**Reverificarea** (2026-10-11, `comunicari/2026-10-11-0714-…-c111-pas2-review-completare.md`),
+pe diff-ul pasului 2 corectat (`5a7ed6b..f9ca936`), prin inspecție, fără
+rulare proprie a ModelCheck: C111-P2-R1 și R2 sunt închise. La 6, Codex nu
+găsește nicio schimbare de comportament în afara S1–S14 și a tranșărilor
+Q9–Q14. La 7, nu găsește nicio cale de producție prin care stornoul să
+primească alt partener fiscal sau alt loc decât originalul fiecărei postări:
+valorile se copiază rând cu rând și nu se recalculează. Limitele rămân cele
+numite: forma cu doi parteneri fiscali diferiți în același storno nu e
+probată (SC-C111-20, regula de oprire 3, confirmată prin C111-Q21), iar
+invariantul inversei compară locul numai pe postările fiscale. Reverificarea
+nu acoperă pașii 3–7.
 
 ## Amendamentul 1 (propus 2026-10-10; retras 2026-10-10, C111-Q5)
 

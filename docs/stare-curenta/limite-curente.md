@@ -34,8 +34,11 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   declaranții de azi: stornoul inversează și postările atribuite altui
   document, dar singurul scriitor al atribuirii (împerecherea) produce
   transferuri de partide fără fapt fiscal. Forma nu e probată; invariantul 5
-  îl țin mutanții `FISCAL-INVERSA-*`. Felul necunoscut al unui repartitor e
-  probat numai la recitire.
+  îl țin mutanții `FISCAL-INVERSA-*`. Invariantul 5 compară partenerul fiscal
+  și locul inversei numai pe postările cu fapt fiscal: locul unei inverse pe
+  partidă fără fapt fiscal (C111-Q14) e păstrat de copierea stornoului, nu
+  verificat de `INV-CUB` (reverificarea Codex a pasului 2, 2026-10-11). Felul
+  necunoscut al unui repartitor e probat numai la recitire.
 - PIF/AMO/CAS scriu cubul, iar situația fișei se citește din el (095, 097).
   Storno
   rămâne limitat la luna documentului (087g), inclusiv în corecție.
