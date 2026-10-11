@@ -20,8 +20,6 @@ public class SoldPerioadaContabil : RandRegistru {
     public virtual Guid? RepartitorId { get; set; }
     [XafDisplayName("Repartitor")]
     public virtual Repartitor Repartitor { get; set; }
-    [XafDisplayName("Gestiune")]
-    public virtual Guid? GestiuneId { get; set; }
     public virtual Guid? MaterialId { get; set; }
     [XafDisplayName("Material")]
     public virtual Produs Material { get; set; }

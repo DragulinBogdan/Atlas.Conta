@@ -104,7 +104,7 @@
 | 106 | [Regimul pe stare: o singură sursă a editabilității și a comenzilor disponibile](106-regim-pe-stare.md) | 2026-09-30 | activă |
 | 107 | [Migrarea deschide terții per partidă din BalantaNivel3, prin Materializare.Deschide…](107-deschiderea-de-terti-din-balanta-nivel3.md) | 2026-10-01 | activă |
 | 109 | [Taxa nemarcată se decide pe document × cotă și se scrie pe linie; declarația postează taxa liniei…](109-taxa-nemarcata-pe-document-scrisa-pe-linie.md) | 2026-10-04 | activă |
-| 111 | [Un singur repartitor de sold pe postare, partenerul fiscal în blocul fiscal, registre tipate pentru ce nu se balansează](111-repartitor-unic-si-registre-tipate.md) | 2026-10-06 | propusă |
+| 111 | [Un singur repartitor de sold pe postare, partenerul fiscal în blocul fiscal, registre tipate pentru ce nu se balansează](111-repartitor-unic-si-registre-tipate.md) | 2026-10-06 | activă |
 | 112 | [Recepția facturii se contează pe regula ei de contare (`FCT/Stoc`)](112-receptia-facturii-pe-regula-ei.md) | 2026-10-08 | activă |
 | 113 | [Semnul valorii e al liniei; `RegulaContare.PastreazaSemn` a ieșit](113-semnul-e-al-liniei-pastreazasemn-scos.md) | 2026-10-08 | activă |
 | 115 | [Linia de notă poate numi partida pe care o stinge; partida inițială își poartă data de naștere](115-nota-numeste-partida.md) | 2026-10-09 | activă |

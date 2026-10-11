@@ -168,11 +168,11 @@ static class VerificaNucleuFct {
         var contractP4 = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fct);
         var partidaP4 = N.Unitate.DeschidePartida(cont401.ID, furnizor.ID, fct.ID, fct.DataInregistrare).Id;
         s.Check($"NUC-FCT-P4-3 ({eticheta}): O SINGURĂ partidă pe 401 (090h) poartă netul, taxa și recepția; "
-            + "capătul virtual al recepției e singura postare cu gestiune structurală",
+            + "contracantitatea recepției e singura postare marcată contrapondere",
             contractP4.EsteAcceptat
             && contractP4.Decizii.OfType<N.PartidaDeschisa>().Single().Unitate.Id == partidaP4
             && contractP4.Tranzactii.SelectMany(t => t.Postari).Count(p => p.Coordonate.Unitate?.Id == partidaP4) == 7
-            && contractP4.Tranzactii.SelectMany(t => t.Postari).Count(p => N.GestiuniVirtuale.Este(p.Coordonate.Gestiune)) == 1);
+            && contractP4.Tranzactii.SelectMany(t => t.Postari).Count(p => p.Coordonate.Contrapondere != null) == 1);
 
         // --- (2) Imobilizarea: net pe 404, taxă pe 401 — două partide pe același document ---
         var fctImo = Factura("-F2", new DateOnly(2026, 3, 4));
@@ -317,13 +317,13 @@ static class VerificaNucleuFct {
             ProbeCub.ProbaOperare(os, s.Check, $"NUC-FCT-CUB-{eticheta}", fctCub);
             var peStoc = ProbeCub.Postari(os, fctCub.ID, N.FelTranzactie.Operare)
                 .Where(p => p.Spatiu == N.Spatiu.Stoc).ToList();
-            var virtuale = ProbeCub.Postari(os, fctCub.ID, N.FelTranzactie.Operare)
-                .Where(p => N.GestiuniVirtuale.Este(p.Gestiune)).ToList();
+            var marcate = ProbeCub.Postari(os, fctCub.ID, N.FelTranzactie.Operare)
+                .Where(p => p.Contrapondere != null).ToList();
             s.Check($"STR-OPERARE {eticheta} (FCT/recepție): recepția scrie pe partiția Stoc (o postare, pe lotul "
-                + "născut de linie), iar capătul virtual N-D4 stă pe partiția Contabil, cu gestiunea structurală",
+                + "născut de linie), iar contracantitatea N-D4 stă pe partiția Contabil, marcată contrapondere de terț",
                 peStoc.Count == 1 && peStoc[0].Cantitate == 4m && peStoc[0].Unitate != null
-                && virtuale.Count == 1 && virtuale[0].Spatiu == N.Spatiu.Contabil
-                && virtuale[0].Gestiune == N.GestiuniVirtuale.Furnizor && virtuale[0].Cantitate == -4m);
+                && marcate.Count == 1 && marcate[0].Spatiu == N.Spatiu.Contabil
+                && marcate[0].Contrapondere == N.Contrapondere.Tert && marcate[0].Cantitate == -4m);
         }
 
         // (b) STR-STORNO pe o factură de SERVICII (fără conex operat), unde postările poartă reper fiscal.
@@ -419,9 +419,9 @@ static class VerificaNucleuFct {
                 s.Check($"STR-FCT-DOUA-PARTIDE ({eticheta}): AMBELE conturi cu `RolTert` ale liniei poartă "
                     + "partida partenerului pe contul LOR (S-D16), nu doar piciorul de terț",
                     aleDouaPartide.Any(p => p.Cont == cont408.ID && p.Unitate == partida408
-                        && p.Partener == furnizor.ID)
+                        && p.Repartitor == furnizor.ID && p.Loc == mag1.ID)
                     && aleDouaPartide.Any(p => p.Cont == cont401.ID && p.Unitate == partida401
-                        && p.Partener == furnizor.ID));
+                        && p.Repartitor == furnizor.ID));
             }
         }
 

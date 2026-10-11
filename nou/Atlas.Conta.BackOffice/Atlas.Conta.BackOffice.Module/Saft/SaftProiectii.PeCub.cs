@@ -196,7 +196,7 @@ public static partial class SaftProiectii {
                 .Select(a => new AgregatTert(a.ContId, a.RepartitorId, a.InitialDebit, a.InitialCredit, a.RulajDebit, a.RulajCredit))
                 .ToList();
 
-            var ids = jurnal.Where(p => p.Partener != null).Select(p => p.Partener.Value)
+            var ids = jurnal.Where(p => p.TertComercial != null).Select(p => p.TertComercial.Value)
                 .Concat(agregate.Where(a => a.RepartitorId != null).Select(a => a.RepartitorId.Value))
                 .Concat(jurnal.Where(p => p.CentruCost != null).Select(p => p.CentruCost.Value))
                 .Concat(suplimentari)
@@ -289,7 +289,7 @@ public static partial class SaftProiectii {
             var rol = Rol(p.Cont);
             if (rol == RolTertCont.Niciunul)
                 return (idSocietate, idSocietate);
-            if (p.Partener is not Guid pid || !parteneri.TryGetValue(pid, out var partener)) {
+            if (p.TertComercial is not Guid pid || !parteneri.TryGetValue(pid, out var partener)) {
                 if (tertFaraPartener.Add(p.Id))
                     Avert(CodAvertismentSaft.TertFaraPartener,
                         $"{Eticheta(p.DocumentId)}: postarea pe contul {Simbol(p.Cont)} n-are partener — "
@@ -356,7 +356,7 @@ public static partial class SaftProiectii {
         }
 
         string PartenerulTranzactiei(IEnumerable<PostareJurnal> tx, RolTertCont rol) {
-            var ids = tx.Where(p => Rol(p.Cont) == rol && p.Partener != null).Select(p => p.Partener.Value)
+            var ids = tx.Where(p => Rol(p.Cont) == rol && p.TertComercial != null).Select(p => p.TertComercial.Value)
                 .Where(parteneri.ContainsKey).Distinct().ToList();
             return ids.Count == 1 ? parteneri[ids[0]].Id406 : null;
         }
@@ -434,7 +434,7 @@ public static partial class SaftProiectii {
                 return null;
             }
             var conturiTert = terti.Select(p => p.Cont).Distinct().ToList();
-            var parteneriTert = terti.Select(p => p.Partener).Distinct().ToList();
+            var parteneriTert = terti.Select(p => p.TertComercial).Distinct().ToList();
             if (conturiTert.Count != 1 || parteneriTert.Count != 1) {
                 Refuza(RefuzProvenienta, $"{eticheta}: {conturiTert.Count} conturi și {parteneriTert.Count} parteneri de terț "
                     + "pe eveniment; factura cere câte unul.", docId, tranzactieId);

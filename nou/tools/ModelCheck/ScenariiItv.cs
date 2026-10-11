@@ -26,8 +26,8 @@ sealed class ScenariiItv(Func<IObjectSpace> deschide, Action<string, bool> check
         var detalii = os.GetObjectsQuery<NotaContabilaDetaliu>().Where(l => l.DocumentId == doc).ToList();
         var randuri = linii.SelectMany(l => {
             var linie = detalii.Single(d => d.ContDebitId == Cont(l.Debit) && d.ContCreditId == Cont(l.Credit));
-            return new RandScena[] { new(Cont(l.Debit), N.Latura.Debit, l.V, Gestiune: Loc, Linie: linie.ID),
-                new(Cont(l.Credit), N.Latura.Credit, l.V, Gestiune: Loc, Linie: linie.ID) };
+            return new RandScena[] { new(Cont(l.Debit), N.Latura.Debit, l.V, Repartitor: Loc, Linie: linie.ID),
+                new(Cont(l.Credit), N.Latura.Credit, l.V, Repartitor: Loc, Linie: linie.ID) };
         }).ToArray();
         Postari(id, doc, fel, data, randuri);
         Verifica(id, "numărul de linii și absența faptelor fiscale",

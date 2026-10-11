@@ -239,9 +239,9 @@ static class E2eApiBcs {
             var stocBcsCub = CubScena.Stoc(os, idBcs);
             s.Check("BCS operat → DOUĂ registre simultan: −6/−60 Magazie pe gestiune, +6/+60 Consum pe locul de consum (27a)",
                 stocBcsCub.Count == 2
-                && stocBcsCub.Any(p => p.Cont == tipMateriale.ContImplicitId && p.Gestiune == mag1.ID
+                && stocBcsCub.Any(p => p.Cont == tipMateriale.ContImplicitId && p.Repartitor == mag1.ID
                     && p.Cantitate == -6m && p.Semnata == -60m)
-                && stocBcsCub.Any(p => p.Cont != tipMateriale.ContImplicitId && p.Gestiune == loc.ID
+                && stocBcsCub.Any(p => p.Cont != tipMateriale.ContImplicitId && p.Repartitor == loc.ID
                     && p.Cantitate == 6m && p.Semnata == 60m));
             s.Check("Solduri după operare: Magazie 14, Consum 6",
                 SoldBcsCub(mag1, tipMateriale.ContImplicitId) == 14m && SoldBcsCub(loc) == 6m);

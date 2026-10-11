@@ -119,7 +119,7 @@ public sealed class DeclarantAsamblare : IDeclarant {
                 ? N.FelTranzactie.Transfer : N.FelTranzactie.Operare);
         var transformari = valori.Select(l => new N.Transformare(new N.Capat {
                 Cont = l.Unitate.Cont, Unitate = l.Unitate, Produs = l.Unitate.Produs,
-                Gestiune = doc.Predator.Id, Analiza = l.Linie.Analiza,
+                Repartitor = doc.Predator.Coordonata, Analiza = l.Linie.Analiza,
             }, l.Produs ? N.RolTransformare.Produs : N.RolTransformare.Consum,
             feluri[l.Unitate.Cont], l.Cantitate, l.Valoare, new N.Cauza(doc.Id, l.Linie.Id))).ToList();
         return new N.Declaratie(doc.Id, doc.DataInregistrare, [], [], transformari, decizii, ipoteze);

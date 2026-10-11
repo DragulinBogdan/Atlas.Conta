@@ -181,7 +181,7 @@ static class Reconciliere {
             .ToDictionary(g => g.ID, g => g.Denumire);
         var randuri = Citiri.Loturi.Postari(os)
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere)
-            .Select(p => new { p.Produs, p.Gestiune, p.Cantitate, p.Latura, p.Valoare })
+            .Select(p => new { p.Produs, Gestiune = p.Repartitor, p.Cantitate, p.Latura, p.Valoare })
             .ToList()
             .Select(p => new {
                 ProdusId = p.Produs.Value,

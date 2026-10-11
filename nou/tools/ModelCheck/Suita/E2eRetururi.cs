@@ -191,7 +191,7 @@ static class E2eRetururi {
                 s.Check("RLF stoc: UN rând −4 / −40 pe Marfuri, în gestiunea predatoare (regula +1 × linia negativă)",
                     stocRlfCub.Count == 1
                     && stocRlfCub[0] is { Cantitate: -4m, Semnata: -40m }
-                    && stocRlfCub[0].Cont == tip371.ContImplicitId && stocRlfCub[0].Gestiune == gestiune.ID
+                    && stocRlfCub[0].Cont == tip371.ContImplicitId && stocRlfCub[0].Repartitor == gestiune.ID
                     && SoldStocCub(lot) == 6m);
                 var noteRlfCub = NoteCub(rlf);
                 s.Check("RLF note: 371 = 401 cu −40 și 4426 = 401 cu −8.4, pe corespondența ORIGINALĂ și FĂRĂ flag Storno",
@@ -247,7 +247,7 @@ static class E2eRetururi {
                     stocRdcCub.Count == 1
                     && stocRdcCub[0] is { Cantitate: 3m, Semnata: 30m }
                     && stocRdcCub[0].Cont == tip371.ContImplicitId
-                    && stocRdcCub[0].Unitate == lot.ID && stocRdcCub[0].Gestiune == gestiune.ID
+                    && stocRdcCub[0].Unitate == lot.ID && stocRdcCub[0].Repartitor == gestiune.ID
                     && SoldStocCub(lot) == 9m);
                 var noteRdcCub = NoteCub(rdc);
                 s.Check("RDC note: 4111 = 707 cu −100, 4111 = 4427 cu −21, 607 = 371 cu −30 — toate fără flag Storno",

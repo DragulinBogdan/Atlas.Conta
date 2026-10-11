@@ -52,7 +52,7 @@ static class Diagnostic {
             .ToDictionary(g => g.ID, g => g.Denumire);
         var postari = Loturi.Postari(os)
             .Where(p => ids.Contains(p.Unitate))
-            .Select(p => new { p.Data, p.Cont, p.Gestiune, p.Cantitate, p.Latura, p.Valoare, p.Tranzactie.Fel, p.DocumentId })
+            .Select(p => new { p.Data, p.Cont, Gestiune = p.Repartitor, p.Cantitate, p.Latura, p.Valoare, p.Tranzactie.Fel, p.DocumentId })
             .ToList();
         var idsDocumente = postari.Select(p => p.DocumentId).Distinct().ToList();
         var documente = os.GetObjectsQuery<Document>()

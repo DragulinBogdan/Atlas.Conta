@@ -1,12 +1,13 @@
 # 111 — Un singur repartitor de sold pe postare, partenerul fiscal în blocul fiscal, registre tipate pentru ce nu se balansează
 
 - Data: 2026-10-06
-- Stare: propusă
-- Execuție: propusă, neaprobată. Nu schimbă nimic în cod, în contractul TR-D9a sau în stare-curenta. Poarta de decizie e contractul TR-D9b, cu măsurătorile din §„Înaintea deciziei" ca pas 0 al lui. Aprobă numai owner-ul. Numărul 110 e rezervat închiderii TR-D9a.; Pasul 0 e măsurat (2026-10-08, `docs/nucleu/tr-d9b-pas0-masuratori.md`). Textul direcției e precizat după măsurători, tot ca propunere; ce s-a schimbat față de forma din 2026-10-06 e listat în §„Precizările de după pasul 0"
-- Arii: README
-- Docs: `docs/consultations/2026-10-06-repartitor-pe-postare/` (consultare Fable + Codex, două runde, README cu verdictele); `docs/nucleu/tr-d9-taierea-amendament-2.md` (D9-A10, forma îngustă aprobată; pasul 6b, mutat de owner după tăiere); 090 (c), B-D8 pct. 4 și 9.
+- Stare: activă
+- Execuție: aprobată de owner 2026-10-10 în forma precizată după pasul 0, cu (b) amendată în aceeași zi (locul fiscal se persistă); hotărârile aprobării sunt în §„Aprobarea". (a)–(e) și (i) sunt implementate în felia C111 (2026-10-11), înaintea TR-D9b (unitățile): contractul `docs/nucleu/c111-coordonate-contract.md`, cu tranșările C111-Q1…Q22 și cu review-ul advers Codex al închiderii închis (C111-F-R1 corectată, C111-F-R2 tranșată; reverificat 2026-10-11). (f), registrele tipate, rămâne fără implementare, cu decizie proprie. (g) și (h) sunt consumate, TR-D9a fiind închisă. Pasul 0 e măsurat (2026-10-08, `docs/nucleu/tr-d9b-pas0-masuratori.md`); ce s-a schimbat față de forma din 2026-10-06 e listat în §„Precizările de după pasul 0"
+- Arii: domeniu-si-operare, politici-si-fiscalitate, api-si-client
+- Închide: 110-r3, D9-r4, 111-r1, 111-r2
+- Docs: `docs/nucleu/c111-coordonate-contract.md` (contractul feliei); `docs/consultations/2026-10-06-repartitor-pe-postare/` (consultare Fable + Codex, două runde, README cu verdictele); `docs/nucleu/tr-d9-taierea-amendament-2.md` (D9-A10, forma îngustă aprobată; pasul 6b, mutat de owner după tăiere); 090 (c), B-D8 pct. 4 și 9.
 
-## Direcția propusă
+## Regula durabilă
 
 **Postarea poartă o singură coordonată de sold pentru „cine sau unde", cu
 felul ei declarat de cont. Ce nu e coordonată de sold stă în altă parte:
@@ -31,6 +32,18 @@ declarare, din latura documentului pe care o numește. Nu e coordonată de sold
 terț, la decont contrapartida e angajatul, la DVI predătorul e vama. Apare
 numai pe postarea cu fapt fiscal. Locul intern al faptului fiscal nu se
 persistă separat: e latura internă a documentului.
+*Amendat 2026-10-10:* locul intern se persistă, ca atribut în blocul fiscal,
+pe orice postare cu fapt fiscal, scris de aceeași politică de TVA din latura
+internă a documentului. Nu e coordonată de sold și nu intră în filtrele
+balanței. Propoziția de dinainte rămâne ca istoric.
+*Precizat 2026-10-10 (C111-Q10):* latura internă e cea din contractul
+laturilor tipului de document, nu latura opusă contrapartidei din politică;
+politica numește numai partenerul.
+*Amendat 2026-10-10 (C111-Q14):* locul nu e legat de faptul fiscal. Atributul
+se numește `Loc` și se scrie pe orice postare cu fapt fiscal și pe piciorul
+intern căruia titularul unei partide i-a luat locul de repartitor, cu sau
+fără fapt fiscal. Un semnal care nu atinge cardinalitatea soldului nu se
+aruncă.
 
 (c) **Gestiunile virtuale dispar.** Capătul din afara evidenței și
 contraponderea transformării primesc un marcaj explicit pe postare (terț,
@@ -40,6 +53,8 @@ a uitat lotul de o contracantitate legitimă. Furnizor și Client se contopesc
 identificatori fără rând. Marcajul e axă independentă de repartitor: nu cere
 și nu interzice un terț pe același picior. Gardul felurilor per cont scutește
 postările marcate.
+*Precizat 2026-10-10 (C111-D4):* scutirea e numai de prezență; felul unui
+repartitor prezent se judecă, iar gardul NIR rămâne.
 
 (d) **Capătul celălalt al mișcării se citește prin cheia de pereche**
 (D9-A2), nu prin coloane de flux pe postare. Materializarea capetelor se
@@ -63,11 +78,13 @@ re-agrega din cub e proiecție, nu registru. Fiecare registru e clasă în cod,
 cu hook de declarare pe document, ca `IDeclarant`; nu se configurează
 generic prin tabele.
 
-(g) **Limitele până la decizie.** În TR-D9a nu se schimbă nicio coordonată a
+(g) **Limitele până la decizie** (consumată la aprobare, 2026-10-10). În
+TR-D9a nu se schimbă nicio coordonată a
 postării și nu se adaugă niciun registru. Orice constatare nouă pe tema asta
 devine o linie în §„Constatări strânse", nu cod și nu amendament.
 
-(h) **Anticipări cu cost mic, permise în TR-D9a** fiindcă nu schimbă
+(h) **Anticipări cu cost mic, permise în TR-D9a** (consumată la închiderea
+TR-D9a, 2026-10-07) fiindcă nu schimbă
 comportament și nu schimbă schema:
 - pasul 6b (D9-A10, inițial 2c) se face printr-un singur helper al capătului de terț, cu regula
   „terțul capătului" (la decont și la nota contabilă terțul e al liniei, nu
@@ -93,8 +110,9 @@ probează în ModelCheck.
 
 ## Precizările de după pasul 0
 
-Propuse de Claude pe cifrele pasului 0, neaprobate. Fiecare are măsurătoarea
-în `docs/nucleu/tr-d9b-pas0-masuratori.md`.
+Propuse de Claude pe cifrele pasului 0, aprobate de owner odată cu decizia
+(2026-10-10). Fiecare are măsurătoarea în
+`docs/nucleu/tr-d9b-pas0-masuratori.md`.
 
 | Unde | Ce s-a precizat | Pe ce cifră |
 |---|---|---|
@@ -117,6 +135,39 @@ Devine necesar numai dacă apare un raport de TVA pe loc intern, la volum.
 **În afara aprobării.** Felul celor 20 de conturi bugetare cu flag
 (552.00.00, 462.01.09, 437, 803) e întrebare de seed bugetar
 (pasul 0, §5) și nu ține direcția în loc.
+
+## Aprobarea (2026-10-10)
+
+Owner-ul a aprobat (a)–(f) și (i) integral, în forma de mai sus, și a hotărât:
+
+- **Felierea.** Coordonatele ((a)–(e), (i)) se implementează în felia C111,
+  cu contract propriu, înaintea TR-D9b. TR-D9b rămâne felia unităților și se
+  scrie pe forma nouă a postării. (f) e criteriu: nu produce cod în C111.
+- **Criteriul de formă al partidelor** (F27-r16, F28-r1), re-amânat aici în
+  2026-10-06, trece în contractul TR-D9b, cu originea scrisă a partidei.
+- **Locul intern al faptului fiscal** pe piciorul de terț cu partidă nu se
+  persistă; alternativa de mai sus e respinsă și rămâne cu nume (111-r1).
+- **552.00.00 declară cont propriu**, ca 512 și 531; deponentul rămâne
+  analitic pe 462.01.09. Felul pentru 462.01.09, 437 și 803 se hotărăște la
+  pasul de seed al C111 (111-r2).
+- **110-r3 se închide** prin (i): coordonatele de sold rămân nulabile.
+
+**Reconfirmare, tot 2026-10-10.** Hotărârea despre locul intern al faptului
+fiscal s-a luat pe o premisă falsă: „nu îl citește niciun cititor”. Îl
+citește filtrul pe gestiune al balanței și al fișei (C111-R1). Owner-ul a
+hotărât din nou: locul se persistă în blocul fiscal, pe orice postare cu fapt
+fiscal ((b), amendată). 111-r1 se închide. Balanța rămâne pe o singură axă,
+deci avansurile de pe 419, 408 și 4091 nu apar la filtrul pe repartitorul
+intern.
+
+**După runda a doua a review-ului Codex, tot 2026-10-10** (C111-Q9…Q11).
+Locul fiscal se ia din laturile tipate ale documentului, nu din politica de
+TVA. În SAF-T, terțul comercial al unui cont cu rol e repartitorul extern al
+postării, fără rezervă pe partenerul fiscal, ca registrul și soldurile de
+nomenclator să citească aceeași axă. Decontul cu TVA și cu terț pe linie,
+pe cont cu partide, refuzat azi de suprascrierea partenerului, trece.
+Partenerul fiscal e cel numit de politică și pe capătul cu partidă: scrierea
+terțului documentului peste el, de azi, nu trece în câmpul nou (C111-R16).
 
 ## Context
 

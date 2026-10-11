@@ -58,7 +58,7 @@ public static class DiagnosticTvaService {
         var postari = Fiscale.Postari(os);
         if (poateCiti != null) {
             foreach (var p in postari.Where(p => toateId.Contains(p.DocumentId.Value)).Include(p => p.Tranzactie).ToArray())
-                if (!Permis(p, nameof(p.ID), nameof(p.Spatiu), nameof(p.Partener), nameof(p.TranzactieId), nameof(p.DocumentId), nameof(p.LinieId),
+                if (!Permis(p, nameof(p.ID), nameof(p.Spatiu), Fiscale.MembruPartener, nameof(p.TranzactieId), nameof(p.DocumentId), nameof(p.LinieId),
                         nameof(p.TipTvaId), nameof(p.SensTva), nameof(p.RegimTva), nameof(p.CotaTva),
                         nameof(p.DeImport), nameof(p.DataExigibilitate), nameof(p.Valoare), nameof(p.RolTva),
                         nameof(p.Latura), nameof(p.InversaDinId), nameof(p.InversaDinSpatiu),

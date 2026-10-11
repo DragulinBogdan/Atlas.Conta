@@ -10,6 +10,14 @@ public static class Gen {
     public static readonly Guid[] Documente = Pool(3, 5);
     public static readonly Guid[] Linii = Pool(6, 6);
     public static readonly Guid[] Unitati = Pool(8, 7);
+    public static readonly Guid[] ConturiProprii = Pool(2, 8);
+
+    public static readonly Repartitor[] Terti = [.. Parteneri.Select((id, i) =>
+        new Repartitor(id, i == Parteneri.Length - 1 ? FelRepartitor.Angajat : FelRepartitor.Partener))];
+    public static readonly Repartitor[] Locuri = [.. Gestiuni.Select((id, i) =>
+        new Repartitor(id, i == Gestiuni.Length - 1 ? FelRepartitor.UnitateInterna : FelRepartitor.Gestiune))];
+    public static readonly Repartitor[] Repartitori = [
+        .. Terti, .. Locuri, .. ConturiProprii.Select(id => new Repartitor(id, FelRepartitor.ContPropriu))];
 
     static Guid[] Pool(int cate, int marca) {
         var pool = new Guid[cate];
@@ -18,7 +26,18 @@ public static class Gen {
         return pool;
     }
 
-    public static Guid Unul(Random aleator, Guid[] pool) => pool[aleator.Next(pool.Length)];
+    public static T Unul<T>(Random aleator, T[] pool) => pool[aleator.Next(pool.Length)];
+
+    public static Repartitor AltTert(Random aleator, Repartitor exclus) {
+        Repartitor ales;
+        do {
+            ales = Unul(aleator, Terti);
+        } while (ales.Id == exclus.Id);
+        return ales;
+    }
+
+    public static CodTva CodTva(Random aleator) =>
+        new(Unul(aleator, Linii), aleator.Next(2) == 0 ? SensTva.Achizitie : SensTva.Livrare, RolTva.Baza);
 
     public static Guid AltulDecat(Random aleator, Guid[] pool, Guid exclus) {
         Guid ales;
@@ -50,29 +69,45 @@ public static class Gen {
 
     public static Capat CapatContabil(Random aleator, Guid? peCont = null) {
         var cont = peCont ?? Unul(aleator, Conturi);
-        var partener = aleator.Next(2) == 0 ? Unul(aleator, Parteneri) : (Guid?)null;
+        Repartitor? repartitor = aleator.Next(2) == 0 ? Unul(aleator, Repartitori) : null;
         Unitate? unitate = aleator.Next(3) switch {
             0 => Fisa(aleator, cont),
-            1 when partener is { } p => Partida(aleator, cont, p),
+            1 when repartitor is { EsteExtern: true } tert => Partida(aleator, cont, tert.Id),
             _ => null,
         };
+        var fiscal = aleator.Next(4) == 0;
         return new Capat {
             Cont = cont,
-            Partener = partener,
+            Repartitor = repartitor,
             Unitate = unitate,
+            CodTva = fiscal ? CodTva(aleator) : null,
+            PartenerFiscal = fiscal ? Unul(aleator, Parteneri) : null,
+            Loc = fiscal ? Unul(aleator, Gestiuni) : null,
             PerioadaDeclarare = aleator.Next(2) == 0 ? 202601 + aleator.Next(12) : null,
         };
     }
 
     public static Capat CapatCuCantitate(Random aleator, Guid produs, FelUnitate fel, Guid? peCont = null) {
         var cont = peCont ?? Unul(aleator, Conturi);
-        var partener = Unul(aleator, Parteneri);
+        if (fel == FelUnitate.Lot) {
+            var fiscal = aleator.Next(2) == 0;
+            return new Capat {
+                Cont = cont,
+                Repartitor = Unul(aleator, Locuri),
+                Produs = produs,
+                Unitate = Lot(aleator, cont, produs),
+                CodTva = fiscal ? CodTva(aleator) : null,
+                PartenerFiscal = fiscal ? Unul(aleator, Parteneri) : null,
+                Loc = fiscal ? Unul(aleator, Gestiuni) : null,
+            };
+        }
+        var tert = Unul(aleator, Terti);
         return new Capat {
             Cont = cont,
-            Partener = partener,
-            Gestiune = Unul(aleator, Gestiuni),
+            Repartitor = tert,
+            Contrapondere = Contrapondere.Tert,
             Produs = produs,
-            Unitate = fel == FelUnitate.Lot ? Lot(aleator, cont, produs) : Partida(aleator, cont, partener),
+            Unitate = Partida(aleator, cont, tert.Id),
         };
     }
 
@@ -83,7 +118,7 @@ public static class Gen {
         if (!cuCantitate)
             return new Miscare(CapatContabil(aleator), CapatContabil(aleator), 0m, valoareValuta, valoare, cauza);
         var produs = Unul(aleator, Produse);
-        // N-D4: intrarea stă pe lot (gestiune reală), ieșirea pe partida terțului (gestiune virtuală).
+        // N-D4: intrarea stă pe lot (în gestiune), ieșirea pe partida terțului (contrapondere).
         return new Miscare(
             CapatCuCantitate(aleator, produs, FelUnitate.Partida),
             CapatCuCantitate(aleator, produs, FelUnitate.Lot),

@@ -59,7 +59,7 @@ public class PerioadaSnapshotSql {
 // loop (spike B.1).
 public static class SolduriService {
     static readonly string[] Dimensiuni = [
-        "RepartitorId", "GestiuneId", "MaterialId", "CodFunctionalId", "CodEconomicId",
+        "RepartitorId", "MaterialId", "CodFunctionalId", "CodEconomicId",
         "SursaFinantareId", "UnitateId", "ProiectId", "CentruCostId"
     ];
 
@@ -207,7 +207,7 @@ public static class SolduriService {
                 Rand = new AtomContabil {
                     Data = new DateOnly(s.An, s.Luna, 1).AddMonths(1).AddDays(-1),
                     ContId = s.ContId, Debit = s.Debit, Credit = s.Credit,
-                    RepartitorId = s.RepartitorId, GestiuneId = s.GestiuneId,
+                    RepartitorId = s.RepartitorId,
                     MaterialId = s.MaterialId, CodFunctionalId = s.CodFunctionalId,
                     CodEconomicId = s.CodEconomicId, SursaFinantareId = s.SursaFinantareId,
                     UnitateId = s.UnitateId, ProiectId = s.ProiectId, CentruCostId = s.CentruCostId
@@ -262,7 +262,7 @@ public static class SolduriService {
             atomi = atomi.Where(a => a.Data >= inceput);
         }
         var sursa = SqlInterogare.Compune(atomi.Select(a => new AtomContabil {
-            ContId = a.ContId, RepartitorId = a.RepartitorId, GestiuneId = a.GestiuneId,
+            ContId = a.ContId, RepartitorId = a.RepartitorId,
             MaterialId = a.MaterialId, CodFunctionalId = a.CodFunctionalId, CodEconomicId = a.CodEconomicId,
             SursaFinantareId = a.SursaFinantareId, UnitateId = a.UnitateId, ProiectId = a.ProiectId,
             CentruCostId = a.CentruCostId, Debit = a.Debit, Credit = a.Credit

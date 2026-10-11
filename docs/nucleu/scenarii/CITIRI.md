@@ -324,7 +324,7 @@ jurnalului. Soft-delete-ul unei note de registru devine anularea comenzii.
 | SC-CIT-18 | Sold anterior 100, D 60, C 25, D/C pe același cont 40, C 10 și storno real −10 | fișă: 160 → 135 → 175 sau 95 → 135 → 125 → 135; la egalitate de dată ordinea totală a identităților decide numai soldul intermediar; 6 postări distincte |
 | SC-CIT-19 | Aceeași fișă prin DataSourceLoader, pagini de câte 2 și filtru de grilă | paginile reproduc secvența integrală; filtrul nu recalculează soldul curent; ziua D/C 40 are net final 135 |
 | SC-CIT-20 | Jurnalul din februarie pentru documentele de mai sus | 10 postări, debit 125 și credit 125; fiecare postare are tranzacție și identitate; fără filtru de dată intră și soldul anterior (încă 2 postări) |
-| SC-CIT-21 | Tranzacție cu D serviciu 20 + D furnizor 30 = C stoc 50 | fișa stocului arată ambele conturi corespondente; nu inventează o contrapartidă unică |
+| SC-CIT-21 | Tranzacție cu D serviciu 20 + D furnizor 30 = C stoc 50 | fișa stocului arată pe fiecare rând contul din perechea lui: serviciul la 20, furnizorul la 30; registrul jurnal dă același cont corespondent pe cele patru rânduri (C111 S9) |
 | SC-CIT-22 | NTC D/C 15 operată și apoi anulată | cele 2 postări dispar împreună din fișă și jurnal; celelalte documente rămân; numărul și tipul NTC sunt atributele documentului real |
 
 | ID | Scenariu | Așteptare |

@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-10-10.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -148,13 +148,45 @@ citește la ziua cerută, pornind de la partidele deschise ale ultimei perioade
 de referință. Absent = la zi. Proiecția include acum și `ReturClient`.
 (F27-D7)
 
+Proiecțiile contabile (`api/proiectii/balanta`, `balanta-plan`, `fisa-cont`,
+`sold-parteneri`) au o singură axă de repartitor, repartitorul de sold al
+postării (S1, C111-Q6). `repartitorId` îl filtrează, de orice fel: partener,
+angajat, gestiune, unitate internă sau cont propriu. Pe `fisa-cont`,
+`repartitorNul=true` înseamnă postările fără niciun repartitor și nu se
+combină cu `repartitorId`. Serverul nu are parametrul `gestiuneId`; locul
+(`Postare.Loc`) și partenerul fiscal nu sunt filtre. Clientul nu-l mai
+trimite, iar ecranele numesc axa „Repartitor”. (C111 pasul 7)
+
+Pe `fisa-cont`, `faraTert=true` cere postările care nu stau pe un partener
+sau pe un angajat: fără repartitor, pe repartitor intern ori pe cont propriu.
+E mulțimea rândului „fără terț” din `sold-parteneri` și nu se combină cu
+`repartitorNul` sau cu `repartitorId` (400). (C111-Q18)
+
+`GET api/proiectii/fisa-cont/sold`, cu parametrii fișei, fără cei de grilă,
+întoarce sinteza perioadei: `SoldInitialDebit`/`Credit`, `RulajDebit`/`Credit`
+și `SoldFinalDebit`/`Credit`, soldurile netate pe o singură parte, calculate
+din atomii balanței pe filtrele fișei. Refuzurile sunt ale fișei: 400 pe
+forma cererii, 404 pe contul inexistent sau invizibil; cine nu vede nicio
+postare primește sinteza goală. Clientul o arată într-o bandă deasupra
+grilei, deci fișa fără mișcări în perioadă își arată soldul. (C111-Q19)
+
+`registru-jurnal` și `fisa-cont` poartă pe rând contul corespondent
+(`ContrapartidaId`, `ContrapartidaSimbol`): contul celeilalte postări a
+perechii; rândul fără pereche nu are. Ecranele îl arată în coloana „Cont
+corespondent”. (S9, 111 (d))
+
 `GET api/proiectii/sold-parteneri?laData=&contId=&repartitorId=` întoarce
-soldurile pe (cont × repartitor) la o dată, cu aceleași filtre de dimensiune
-ca balanța și cu rândurile de sold net zero omise. `laData` absent = azi; o
-dată nevalidă cade pe 400. Citirea cere dreptul pe registrul contabil, ca
-balanța. Ecranul `/sold-parteneri` din client ține data în URL și duce prin
-dublu-click în fișa contului. Repartitorul e dimensiunea laturii, nu partenerul
-contului de terț — ecranul o spune explicit. (F27-D7)
+soldurile pe cont la o dată, cu aceleași filtre de dimensiune ca balanța și
+cu rândurile de sold net zero omise. Rând propriu au numai repartitorii
+externi (partener, angajat); restul contului — sume fără repartitor, pe
+repartitor intern sau pe cont propriu — vine într-un singur rând „fără terț”
+pe cont, cu `RepartitorId` nul, deci suma rândurilor unui cont e soldul lui
+din balanță (C111-Q13). `laData` absent = azi; o dată nevalidă cade pe 400.
+Citirea cere dreptul pe registrul contabil, ca balanța. Ecranul
+`/sold-parteneri` din client („Solduri pe terți”) ține data în URL și duce
+prin dublu-click în fișa contului pe anul datei cerute, filtrată pe rând:
+pe repartitorul lui, sau cu `faraTert` pe rândul „fără terț”. (F27-D7,
+C111-Q18)
 
 ## Securitate și răspunsuri
 
@@ -185,6 +217,14 @@ pe subiectul ei, iar verificarea închiderii pe toate tipurile pe care le
 însumează. `Postare` și `Tranzactie` n-au rută OData sau REST și nu intră în
 contractul clientului; `$metadata` le descrie ca `EntityType` fără
 `EntitySet`, ca pe orice tip neexpus. (F22-D5, 80e, 108 d, D9-D9; 2026-10-06)
+
+Proiecțiile contabile de pe ușa securizată nu cer citirea completă:
+`balanta`, `balanta-plan`, `fisa-cont`, `fisa-cont/sold`, `registru-jurnal`,
+`sold-parteneri`, partidele, documentele cu rest și soldul de stoc filtrează
+pe rând. Un rol cu criteriu de rând pe `Postare` primește 200 cu cifrele
+rândurilor pe care le vede; cine n-are dreptul pe tip și nu vede nicio
+postare primește rezultatul gol. Contul corespondent al unei postări ascunse
+rămâne nul. (110 (e) precizată, C111-Q22; 2026-10-11)
 
 Crearea cere drepturile de creare și scriere; modificarea cere scriere, iar
 ștergerea dreptul aferent. Verificările nu se amână până după execuția
@@ -364,16 +404,18 @@ detaliul din listă, acțiunile și editarea inline funcționează neschimbate.
 azi numai lista de evidență a cubului, `PostareVizual_ListView` de sub
 „Registre” (D9-A12). `Cub.PostareVizual` e o entitate de citire mapată
 `ToView("PostareVizual")`, fără `BaseObject`, cu cheia `ID`, toate coloanele
-postării și codurile nomenclatoarelor alături (`ContSimbol`, `PartenerCod`,
-`GestiuneCod`, `ProdusCod`, `UnitateCod`, `DocumentNumar`, `TipTvaCod`,
-dimensiunile bugetare, `TranzactieFel`); view-ul SQL stă în migrația proprie
-`20261007080233_PostareVizual`, cu `LEFT JOIN` pe nomenclatoare și expresii
-pentru coordonatele fără rând (gestiunea virtuală = numele constantei
-nucleului, `CASE` generat din `GestiuniVirtuale`; partida = codul
-partenerului + data deschiderii; lotul = codul produsului + data lotului;
-fișa = numărul de inventar). Coloanele vizibile, în ordine: tranzacție,
-document, data, cont, latură, partener, gestiune, produs, unitate, cantitate,
-valoare, valoare în valută; fără identificatori bruți, fără editare, fără
+postării și codurile nomenclatoarelor alături (`ContSimbol`, `RepartitorCod`,
+`PartenerFiscalCod`, `LocCod`, `ProdusCod`, `UnitateCod`, `DocumentNumar`,
+`TipTvaCod`, dimensiunile bugetare, `TranzactieFel`); view-ul SQL e creat în
+`InitialCreate`, odată cu tabela, cu `LEFT JOIN` pe nomenclatoare —
+`Repartitori` de trei ori, pentru repartitor, partener fiscal și loc — și o
+expresie pentru unitate (partida = codul repartitorului + data deschiderii;
+lotul = codul produsului + data lotului; fișa = numărul de inventar).
+Contraponderea e coloana postării, afișată cu numele enumului (`Tert`,
+`Consum`, `Inventar`, `Transformare`). Coloanele vizibile, în ordine: tranzacție, document,
+data, cont, latură, repartitor, partener fiscal, loc, contrapondere, produs,
+unitate, cantitate, valoare, valoare în valută (S5, C111-Q14); fără
+identificatori bruți, fără editare, fără
 totaluri; detaliul rândului se deschide în citire. La activarea listei,
 `PostareVizualController` cere `Cub.Citiri.Vizibilitate.AccesLista` (lipsurile
 de citire completă pe `Postare`, prin `AccesComplet.Lipsuri`): cu lipsuri,
@@ -382,7 +424,9 @@ propriu pe `PostareVizual`. Gardianul refuză crearea, modificarea și ștergere
 unei `PostareVizual` pe orice ușă securizată, ca pe `Postare`; tipul nu e expus
 pe OData, în OpenAPI și în metadata clientului (`neexpunere-cub.py`).
 `Postare` nu mai are intrare de navigare; lista imbricată a tranzacției
-(`Tranzactie_Postari`) rămâne pe `Postare`, `Client`, fără editare. Listele
+(`Tranzactie_Postari`) rămâne pe `Postare`, `Client`, fără editare, cu
+aceleași patru coordonate (repartitor, partener fiscal, loc, contrapondere),
+ca identificatori. Listele
 vechi de registre au dispărut odată cu entitățile lor (2026-10-07, D9-D6).
 (D9-D9, D9-A12) Pagina proiectează doar
 coloanele vizibile; detaliul rândului se deschide normal. Precondițiile sunt
@@ -594,5 +638,5 @@ proiecție parțială. Mecanismul e `Api.AccesComplet`, comun cu D406
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (25; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 58, 60, 66, 68, 70, 77, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 103, 104 (amendată de 106), 106, 108 (amendată de 110).
+Deciziile care numesc pagina în `Arii:` (26; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 58, 60, 66, 68, 70, 77, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 103, 104 (amendată de 106), 106, 108 (amendată de 110), 111.
 <!-- /gen:decizii -->

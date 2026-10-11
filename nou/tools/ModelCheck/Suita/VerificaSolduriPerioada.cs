@@ -99,26 +99,26 @@ static class VerificaSolduriPerioada {
         }
 
         // ─────────── citirea snapshot-ului și recalculul de control ───────────
-        (Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?) CheieAtom(AtomContabil a) =>
+        (Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?) CheieAtom(AtomContabil a) =>
             (a.ContId, a.RepartitorId, a.MaterialId, a.CodFunctionalId, a.CodEconomicId,
-             a.SursaFinantareId, a.UnitateId, a.ProiectId, a.CentruCostId, a.GestiuneId);
+             a.SursaFinantareId, a.UnitateId, a.ProiectId, a.CentruCostId);
 
-        Dictionary<(Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?), (decimal D, decimal C)>
+        Dictionary<(Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?), (decimal D, decimal C)>
                 SnapshotContabil(IObjectSpace os, int an, int luna) =>
             os.GetObjectsQuery<SoldPerioadaContabil>().Where(s => s.An == an && s.Luna == luna)
                 .Select(s => new {
                     s.ContId, s.RepartitorId, s.MaterialId, s.CodFunctionalId, s.CodEconomicId,
-                    s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId, s.GestiuneId, s.Debit, s.Credit
+                    s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId, s.Debit, s.Credit
                 })
                 .ToList()
                 .ToDictionary(
                     s => (s.ContId, s.RepartitorId, s.MaterialId, s.CodFunctionalId, s.CodEconomicId,
-                          s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId, s.GestiuneId),
+                          s.SursaFinantareId, s.UnitateId, s.ProiectId, s.CentruCostId),
                     s => (s.Debit, s.Credit));
 
         // Recalculul de control e LINQ pe `ContabilProiectii.Atomi`, nu SQL: dacă
         // ambele căi ar fi scrise la fel, proba n-ar mai proba nimic.
-        Dictionary<(Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?), (decimal D, decimal C)>
+        Dictionary<(Guid, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?, Guid?), (decimal D, decimal C)>
                 AsteptatContabil(IObjectSpace os, DateOnly panaLa) =>
             ContabilProiectii.Atomi(os).Where(a => a.Data <= panaLa).ToList()
                 .GroupBy(CheieAtom)
@@ -135,8 +135,8 @@ static class VerificaSolduriPerioada {
             os.GetObjectsQuery<Atlas.Conta.BackOffice.Module.Cub.Postare>()
                 .Where(p => p.Carte == Atlas.Conta.Nucleu.Carte.Contabil
                     && p.FelUnitate == Atlas.Conta.Nucleu.FelUnitate.Lot && p.Unitate != null
-                    && p.Produs != null && p.Gestiune != null && p.Data <= panaLa)
-                .ToList().GroupBy(p => (p.Unitate.Value, p.Cont, p.Produs.Value, p.Gestiune.Value))
+                    && p.Produs != null && p.Repartitor != null && p.Data <= panaLa)
+                .ToList().GroupBy(p => (p.Unitate.Value, p.Cont, p.Produs.Value, p.Repartitor.Value))
                 .Select(g => new { g.Key, Deschisa = g.Min(p => p.UnitateDeschisa ?? p.Data),
                     Cantitate = g.Sum(p => p.Cantitate),
                     Valoare = g.Sum(p => p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : -p.Valoare) })

@@ -270,6 +270,13 @@ sealed partial class ScenariiNir {
                 && !os.GetObjectsQuery<DocumentDetaliu>().Any(l => l.DocumentId == f.Id && l.LotId != null)));
         Verifica("SC-NIR-30/avans", "totalul de stins este datoria 100, nu și creanța avansului", CuSpatiu(os =>
             ImperechereService.Total(os, f.Id) == 100m));
+        var contAvans = Cont(cod);
+        Verifica("SC-NIR-30/avans", Privat ? "piciorul avansului stă pe partida furnizorului și păstrează gestiunea ca loc"
+            : "piciorul avansului stă pe gestiune, fără partidă și fără loc", CuSpatiu(os => {
+                var p = os.GetObjectsQuery<C.Postare>().Single(p => p.DocumentId == f.Id && p.Cont == contAvans);
+                return Privat ? p.Repartitor == Furnizor && p.FelUnitate == N.FelUnitate.Partida && p.Loc == Magazie
+                    : p.Repartitor == Magazie && p.Unitate == null && p.Loc == null;
+            }));
         void Stadiu(string pas, decimal ramas) => Verifica("SC-NIR-37", $"{pas}: panou, listă și serviciu 100/{ramas}/{100 - ramas}; creanța avansului rămâne 100",
             CuSpatiu(os => {
                 var panou = Atlas.Conta.BackOffice.Module.Api.Trz.ImperechereApply.Stingeri(os, f.Id);

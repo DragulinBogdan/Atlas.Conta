@@ -39,7 +39,7 @@ public sealed partial class DeclarantNir {
             if (original != null) {
                 stoc = original.Stoc;
                 if (stoc.Unitate?.Id != lot.Id || stoc.Produs != lot.ProdusId
-                        || original.TipMaterial != linie.TipMaterialId || stoc.Gestiune != doc.Primitor.Id)
+                        || original.TipMaterial != linie.TipMaterialId || stoc.Repartitor?.Id != doc.Primitor.Id)
                     Refuza(Structura, "Lotul recepționat se corectează pe factură, nu prin reidentificarea conexului.");
                 q = linie.Cantitate - original.Cantitate;
                 v = (q == 0 ? original.Valoare : rotunjire.Bani(original.Valoare * linie.Cantitate / original.Cantitate))
@@ -53,7 +53,7 @@ public sealed partial class DeclarantNir {
                     Refuza(Structura, "Plusul cere contul lotului."); continue;
                 }
                 consumate.Add(PoliticiConsumate.Versiunea(cont.Regula));
-                stoc = new N.Capat { Cont = cont.ContDebit, Gestiune = doc.Primitor.Id, Produs = lot.ProdusId,
+                stoc = new N.Capat { Cont = cont.ContDebit, Repartitor = doc.Primitor.Coordonata, Produs = lot.ProdusId,
                     Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, cont.ContDebit, null, lot.ProdusId, lot.Data),
                     Analiza = Contari.Analiza(linie.Analiza, cont.Regula.OverrideDebit, cont.Regula.Comun) };
                 q = linie.Cantitate;
@@ -69,12 +69,12 @@ public sealed partial class DeclarantNir {
             Guid? partener = cauza == CauzaDiferentei.Imputabila ? constatare.Imputat
                 : cauza == CauzaDiferentei.Plus ? doc.Predator.Id : null;
             var tert = partener is Guid id ? operand.Repartitori.GetValueOrDefault(id) : null;
-            if (cauza == CauzaDiferentei.Imputabila && tert?.Fel is not (FelRepartitor.Partener or FelRepartitor.Angajat)) {
+            if (cauza == CauzaDiferentei.Imputabila && tert?.Fel is not (N.FelRepartitor.Partener or N.FelRepartitor.Angajat)) {
                 Refuza(CauzaInvalida, "Lipsa imputabilă cere furnizorul, transportatorul sau angajatul pe linie."); continue;
             }
             var politica = politici[0];
             consumate.Add(PoliticiConsumate.Versiunea(politica));
-            var contDiferenta = tert?.Fel == FelRepartitor.Angajat ? politica.ContPersonal ?? politica.Cont : politica.Cont;
+            var contDiferenta = tert?.Fel == N.FelRepartitor.Angajat ? politica.ContPersonal ?? politica.Cont : politica.Cont;
             if (!operand.Conturi.ContainsKey(contDiferenta)
                     || cauza == CauzaDiferentei.Imputabila && !Partide.Urmareste(operand, contDiferenta)) {
                 Refuza(PoliticaLipsa, "Contul diferenței trebuie să existe; imputarea cere urmărire pe partide."); continue;
@@ -86,8 +86,9 @@ public sealed partial class DeclarantNir {
             var analiza = Contari.Analiza(linie.Analiza, new Dimensiuni {
                 CodFunctionalId = a.CodFunctional, CodEconomicId = a.CodEconomic, SursaFinantareId = a.SursaFinantare,
                 UnitateId = a.UnitateOrganizatorica, ProiectId = a.Proiect, CentruCostId = a.CentruCost }, null);
-            var diferenta = new N.Capat { Cont = contDiferenta, Gestiune = N.GestiuniVirtuale.Inventar,
-                Produs = lot.ProdusId, Partener = partener, Unitate = partida, Analiza = analiza };
+            var diferenta = new N.Capat { Cont = contDiferenta, Contrapondere = N.Contrapondere.Inventar,
+                Produs = lot.ProdusId, Repartitor = partener is Guid cine ? operand.Repartitor(cine) : null,
+                Unitate = partida, Analiza = analiza };
             miscari.Add(q < 0 ? new(stoc, diferenta, -q, 0, -v, new(doc.Id, linie.Id))
                 : new(diferenta, stoc, q, 0, v, new(doc.Id, linie.Id)));
             decizii.Add(new N.ContRezolvat(linie.Id, contDiferenta, $"Diferență: {cauza}"));

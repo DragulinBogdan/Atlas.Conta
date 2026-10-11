@@ -82,6 +82,8 @@ static class VerificaApiNtc {
         var contFurnizor = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "401" : "401.01.00"));
         var contClient = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "4111" : "411.01.01"));
         var contTranzit = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "581" : "581.01.01"));
+        // Linia fără repartitor stă pe un cont care nu declară feluri (C111-D4).
+        var contFaraTert = os.FirstOrDefault<Cont>(c => c.Simbol == (privat ? "4111" : "542.01.00"));
         var casa = os.FirstOrDefault<ContPropriu>(c => c.Cod == "CASA");
         var tipTrz = os.FirstOrDefault<TipMaterial>(t => t.Cod == "TRZ");
         var tipNtc = os.FirstOrDefault<TipDocument>(t => t.Cod == "NTC");
@@ -177,7 +179,7 @@ static class VerificaApiNtc {
                 // polimorf al header-ului (32c).
                 new NtcLinieWriteDto {
                     TipMaterialId = tipTrz.ID, Descriere = "Corecție cu minus",
-                    ContDebitId = contTranzit.ID, ContCreditId = contClient.ID,
+                    ContDebitId = contTranzit.ID, ContCreditId = contFaraTert.ID,
                     CodEconomicId = codEc.ID, Valoare = -10m
                 }
             }
@@ -242,7 +244,7 @@ static class VerificaApiNtc {
         };
         NtcLinieWriteDto LinieValida() => new() {
             TipMaterialId = tipTrz.ID, Descriere = "probă",
-            ContDebitId = contTranzit.ID, ContCreditId = contClient.ID,
+            ContDebitId = contTranzit.ID, ContCreditId = contFaraTert.ID,
             CodEconomicId = codEc.ID, Valoare = 5m
         };
 
@@ -351,10 +353,10 @@ static class VerificaApiNtc {
         RefuzOperare("Api NTC: linie cu valoare 0 → refuz al TIPULUI (felia NU duplică regula — negativul rămâne permis)",
             unitate.ID, unitate.ID, valoareZero);
         var faraDefalcare = LinieValida();
-        faraDefalcare.ContDebitId = contClient.ID;
+        faraDefalcare.ContDebitId = contFaraTert.ID;
         faraDefalcare.ContCreditId = contTranzit.ID;
         faraDefalcare.CodEconomicId = null;
-        if (contClient.DimensiuniObligatorii.HasFlag(DimensiuneFlags.CodEconomic))
+        if (contFaraTert.DimensiuniObligatorii.HasFlag(DimensiuneFlags.CodEconomic))
             RefuzOperare("Api NTC: cont cu defalcare obligatorie fără cod economic pe linie → refuzul gardianului "
                 + "generic (33a: postarea explicită NU scutește linia de `DimensiuniObligatorii`)",
                 unitate.ID, unitate.ID, faraDefalcare);
@@ -389,7 +391,7 @@ static class VerificaApiNtc {
             + "cu conturile CULESE, în absența oricărei `RegulaContare` pe tip",
             noteCub.Nota(contClient.ID, contFurnizor.ID, null, lCompensare.Id)
             && noteCub.Nota(contClient.ID, contTranzit.ID, null, lPreluare.Id)
-            && noteCub.Nota(contTranzit.ID, contClient.ID, null, lMinus.Id));
+            && noteCub.Nota(contTranzit.ID, contFaraTert.ID, null, lMinus.Id));
         s.Check("Api NTC: valorile se postează CA ATARE, inclusiv negativa (60 / 25 / −10), fără flag de storno (46a)",
             noteCub.Count(p => p.LinieId == lCompensare.Id && p.Valoare == 60m) == 2
             && noteCub.Count(p => p.LinieId == lPreluare.Id && p.Valoare == 25m) == 2
@@ -403,8 +405,8 @@ static class VerificaApiNtc {
         s.Check("D9-A10 Api NTC: repartitorul cules al liniei pe capătul lui (X / X; Y / implicitul primitor); linia fără el ia implicitul antetului",
             noteCub.Where(p => p.LinieId == lCompensare.Id).All(p => p.Repartitor == partenerX.ID)
             && noteCub.Single(p => p.Debit && p.LinieId == lPreluare.Id).Repartitor == partenerY.ID
-            && noteCub.Single(p => p.Credit && p.LinieId == lPreluare.Id).Gestiune == unitate.ID
-            && noteCub.Single(p => p.Debit && p.LinieId == lMinus.Id).Gestiune == unitate.ID);
+            && noteCub.Single(p => p.Credit && p.LinieId == lPreluare.Id).Repartitor == unitate.ID
+            && noteCub.Single(p => p.Debit && p.LinieId == lMinus.Id).Repartitor == unitate.ID);
         s.CheckRefuza("Api NTC: Apply peste o notă OPERATĂ → refuz de DOMENIU (pre-check, înaintea gardianului generic)",
             () => NotaContabilaApply.Aplica(os, idNtc, rescriere));
         s.CheckRefuza("Api NTC: Sterge peste o notă OPERATĂ → același refuz de domeniu",
@@ -509,7 +511,7 @@ static class VerificaApiNtc {
             Data = dataNtc, PredatorId = unitate.ID, PrimitorId = unitate.ID,
             Linii = {
                 new NtcLinieWriteDto {
-                    TipMaterialId = tipTrz.ID, ContDebitId = contClient.ID, ContCreditId = contTranzit.ID,
+                    TipMaterialId = tipTrz.ID, ContDebitId = contFaraTert.ID, ContCreditId = contTranzit.ID,
                     RepartitorDebitId = casa.ID, CodEconomicId = codEc.ID, Valoare = 60m },
                 new NtcLinieWriteDto {
                     TipMaterialId = tipTrz.ID, ContDebitId = contClient.ID, ContCreditId = contTranzit.ID,
@@ -660,7 +662,7 @@ static class VerificaApiNtc {
         var idStingeNota = NotaContabilaApply.Aplica(os, null, new NtcWriteDto {
             Data = dataNtc, PredatorId = unitate.ID, PrimitorId = unitate.ID,
             Linii = { new NtcLinieWriteDto {
-                TipMaterialId = tipTrz.ID, ContDebitId = contClient.ID, ContCreditId = contTranzit.ID,
+                TipMaterialId = tipTrz.ID, ContDebitId = contFaraTert.ID, ContCreditId = contTranzit.ID,
                 RepartitorDebitId = unitate.ID, CodEconomicId = codEc.ID, Valoare = 30m } }
         });
         ComenziDocument.Sistem(os).Opereaza(idStingeNota);
@@ -809,7 +811,7 @@ static class VerificaApiNtc {
         var idFaraContrapartida = NotaContabilaApply.Aplica(os, null, new NtcWriteDto {
             Data = dataNtc, PredatorId = unitate.ID, PrimitorId = unitate.ID,
             Linii = { new NtcLinieWriteDto {
-                TipMaterialId = tipTrz.ID, ContDebitId = contTranzit.ID, ContCreditId = contClient.ID,
+                TipMaterialId = tipTrz.ID, ContDebitId = contTranzit.ID, ContCreditId = contFaraTert.ID,
                 CodEconomicId = codEc.ID, Valoare = 9m } }
         });
         ComenziDocument.Sistem(os).Opereaza(idFaraContrapartida);

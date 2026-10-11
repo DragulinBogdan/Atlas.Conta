@@ -9,8 +9,10 @@ public static class Proiectii {
         ("cont", p => new Cheie(p.Coordonate.Cont)),
         ("cont+latura", p => new Cheie(p.Coordonate.Cont, null, p.Coordonate.Latura)),
         ("unitate", p => new Cheie(p.Coordonate.Unitate?.Id)),
-        ("gestiune+produs", p => new Cheie(p.Coordonate.Gestiune, p.Coordonate.Produs)),
-        ("partener", p => new Cheie(p.Coordonate.Partener)),
+        ("gestiune+produs", p => new Cheie(
+            p.Coordonate.Repartitor is { EsteIntern: true } loc ? loc.Id : null, p.Coordonate.Produs)),
+        ("partener", p => new Cheie(p.Coordonate.Repartitor is { EsteExtern: true } tert ? tert.Id : null)),
+        ("repartitor", p => new Cheie(p.Coordonate.Repartitor?.Id)),
     ];
 
     public static void Egale(

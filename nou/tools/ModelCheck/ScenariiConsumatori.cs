@@ -226,20 +226,16 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
         Console.WriteLine($"     MĂSURAT (STR-VIZUAL-2): {postari} postări, {vizuale} rânduri în view.");
         Verifica("STR-VIZUAL-2", "view-ul are exact câte un rând pentru fiecare postare din bază", postari > 0 && vizuale == postari);
 
-        var virtuale = typeof(N.GestiuniVirtuale).GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
-            .Where(p => p.PropertyType == typeof(Guid)).ToDictionary(p => (Guid)p.GetValue(null), p => p.Name);
-        var (peVirtuala, partide) = CuSpatiu(os => (
-            os.GetObjectsQuery<C.PostareVizual>().Where(p => p.DocumentId == operata.Id && p.Gestiune != null).ToList()
-                .Where(p => virtuale.ContainsKey(p.Gestiune.Value)).ToList(),
+        var (marcate, partide) = CuSpatiu(os => (
+            os.GetObjectsQuery<C.PostareVizual>().Where(p => p.DocumentId == operata.Id && p.Contrapondere != null).ToList(),
             os.GetObjectsQuery<C.PostareVizual>().Where(p => p.DocumentId == operata.Id && p.FelUnitate == N.FelUnitate.Partida).ToList()));
-        Console.WriteLine($"     MĂSURAT (STR-VIZUAL-3): FCT pe gestiune virtuală [{string.Join("; ", peVirtuala.Select(p => $"{p.ContSimbol} {p.GestiuneCod}"))}]; "
+        Console.WriteLine($"     MĂSURAT (STR-VIZUAL-3): FCT pe contrapondere [{string.Join("; ", marcate.Select(p => $"{p.ContSimbol} {p.Contrapondere}"))}]; "
             + $"FCT pe partidă [{string.Join("; ", partide.Select(p => $"{p.ContSimbol} {p.UnitateCod}"))}].");
-        Verifica("STR-VIZUAL-3", "eticheta gestiunii virtuale e numele constantei nucleului (FCT: Furnizor), iar unitatea de "
-            + "partidă e codul partenerului și data deschiderii, ISO (FCT pe furnizor)",
-            peVirtuala.Count > 0 && peVirtuala.All(p => p.GestiuneCod == virtuale[p.Gestiune.Value])
-            && peVirtuala.Any(p => p.GestiuneCod == nameof(N.GestiuniVirtuale.Furnizor))
-            && partide.Count > 0 && partide.All(p => p.PartenerCod != null
-                && p.UnitateCod == $"{p.PartenerCod}/{p.UnitateDeschisa:yyyy-MM-dd}" && p.ContSimbol.StartsWith("401")));
+        Verifica("STR-VIZUAL-3", "contraponderea e marcajul nucleului (FCT: Tert), iar unitatea de "
+            + "partidă e codul repartitorului și data deschiderii, ISO (FCT pe furnizor)",
+            marcate.Count > 0 && marcate.All(p => p.Contrapondere == N.Contrapondere.Tert)
+            && partide.Count > 0 && partide.All(p => p.RepartitorCod != null
+                && p.UnitateCod == $"{p.RepartitorCod}/{p.UnitateDeschisa:yyyy-MM-dd}" && p.ContSimbol.StartsWith("401")));
 
         var restrictionat = Marcaj + "-RAND";
         Comanda(os => {
@@ -366,7 +362,7 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
         var lot = purtat.Linii[0];
         var brut = CuSpatiu(os => ScrieBrut(os, p => {
             p.Spatiu = N.Spatiu.Stoc; p.Cont = Cont(Stoc); p.FelUnitate = N.FelUnitate.Lot; p.Unitate = lot.Lot;
-            p.UnitateDeschisa = Ianuarie; p.Produs = lot.Produs; p.Gestiune = Magazie; p.Cantitate = 1m; p.Valoare = 10m;
+            p.UnitateDeschisa = Ianuarie; p.Produs = lot.Produs; p.Repartitor = Magazie; p.Cantitate = 1m; p.Valoare = 10m;
         }));
         premisa = Finalizat(lot.Lot) && CuSpatiu(os => C.Citiri.Loturi.AreMiscari(os, lot.Lot!.Value));
         Comanda(os => FacturaIntrareApply.Sterge(os, purtat.Id));
@@ -397,7 +393,7 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
             p.DocumentId = martor.Id; p.LinieId = martor.Linii[0].Id; p.TipTvaId = tip;
             p.SensTva = N.SensTva.Achizitie; p.RolTva = N.RolTva.Baza; p.RegimTva = N.RegimTva.Normal; p.CotaTva = 21m; p.DeImport = false;
             p.DocumentFiscalId = martor.Id; p.DataDocument = Ianuarie; p.DataExigibilitate = Ianuarie; p.DataPrimire = Ianuarie;
-            p.DataInregistrare = Ianuarie; p.PerioadaDeclarare = perioada; p.PerioadaD394 = perioada;
+            p.DataInregistrare = Ianuarie; p.PerioadaDeclarare = perioada; p.PerioadaD394 = perioada; p.Loc = Loc;
         }));
         var refuz = RefuzStergere<TipTva>(tip);
         Console.WriteLine($"     MĂSURAT (D9-P4-I4-TVA-2): „{refuz?.Split('\n')[0] ?? "ACCEPTATĂ"}”.");

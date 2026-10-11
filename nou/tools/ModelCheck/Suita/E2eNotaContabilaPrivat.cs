@@ -123,8 +123,8 @@ static class E2eNotaContabilaPrivat {
                 s.Check("Privat: valorile CA ATARE (300 / −50)",
                     notePrvCub.Any(p => p.Valoare == 300m) && notePrvCub.Any(p => p.Valoare == -50m));
                 s.Check("D9-A10 NTC privat: linia fără repartitor ia implicitul laturii antetului (debit←predator SEDIU, credit←primitor)",
-                    notePrvCub.Where(p => p.Debit).All(p => p.Gestiune == sediu.ID)
-                    && notePrvCub.Where(p => p.Credit).All(p => p.Gestiune == unitate.ID));
+                    notePrvCub.Where(p => p.Debit).All(p => p.Repartitor == sediu.ID)
+                    && notePrvCub.Where(p => p.Credit).All(p => p.Repartitor == unitate.ID));
 
                 s.Check("Privat: nota nu postează TVA (fără TipTva pe linii) și nu mișcă stoc",
                     notePrvCub.All(p => p.LinieId != null)

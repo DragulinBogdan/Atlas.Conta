@@ -27,6 +27,7 @@ static partial class AcoperireInvarianti {
                     .OrderBy(p => p.ID).Select(p => p.DocumentId).FirstOrDefault();
                 if (altul == null) return false;
                 rand.ExecuteUpdate(s => s.SetProperty(p => p.DocumentId, altul)); break;
+            case "data": rand.ExecuteUpdate(s => s.SetProperty(p => p.Data, p => p.Data.AddDays(1))); break;
             case "valoare": rand.ExecuteUpdate(s => s.SetProperty(p => p.Valoare, p => p.Valoare + 1m)); break;
             case "valuta": rand.ExecuteUpdate(s => s.SetProperty(p => p.ValoareValuta, p => p.ValoareValuta + 1m)); break;
             case "cantitate": rand.ExecuteUpdate(s => s.SetProperty(p => p.Cantitate, p => p.Cantitate + 1m)); break;
@@ -86,7 +87,7 @@ static partial class AcoperireInvarianti {
                 FROM "Postare" p WHERE "ID" = {tinta.ID} AND "Spatiu" = {(int)tinta.Spatiu}
                 """);
         }
-        if (Refuz(os, numaiPerechi: true) is { } refuz)
+        if (Refuz(os, C.Citiri.Invarianti.VerificaPerechi) is { } refuz)
             throw new InvalidOperationException("Martorul cu transformare și pereche validă: " + refuz);
         db.Set<C.Postare>().Where(p => p.TranzactieId == tinta.TranzactieId && p.Pereche == ordinal)
             .ExecuteUpdate(s => s.SetProperty(p => p.Pereche, (int?)null));

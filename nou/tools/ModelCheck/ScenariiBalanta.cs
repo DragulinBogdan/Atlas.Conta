@@ -82,11 +82,12 @@ sealed class ScenariiBalanta(Func<IObjectSpace> deschide, Action<string, bool> c
             sintetica.Single(r => r.ContId == i.ContId) is var f
             && i.SoldFinalDebit - i.SoldFinalCredit == f.SoldInitialDebit - f.SoldInitialCredit));
         var fn = ContabilProiectii.FisaCont(os, nul.ID, start, end, repartitorNul: true).ToList();
+        var fl = ContabilProiectii.FisaCont(os, nul.ID, start, end, repartitorId: Loc).ToList();
         var fa = ContabilProiectii.FisaCont(os, nul.ID, start, end, repartitorId: Furnizor).ToList();
         var ft = ContabilProiectii.FisaCont(os, nul.ID, start, end).ToList();
-        Verifica("SC-CIT-27", "fără partener 230, cu partener 11, sintetic 241",
-            fn.Count == 1 && fn[0].SoldCurent == 230 && fa.Count == 1 && fa[0].SoldCurent == 11
-            && ft.Count == 2 && ft[^1].SoldCurent == 241 && fn[0].Id != fa[0].Id);
+        Verifica("SC-CIT-27", "pe locul notei 230, pe furnizor 11, sintetic 241, nimic fără repartitor",
+            fl.Count == 1 && fl[0].SoldCurent == 230 && fa.Count == 1 && fa[0].SoldCurent == 11
+            && ft.Count == 2 && ft[^1].SoldCurent == 241 && fl[0].Id != fa[0].Id && fn.Count == 0);
         var filtru = ContabilProiectii.Balanta(os, start, end, codEconomicId: economic.ID).ToList();
         Verifica("SC-CIT-27", "filtru de analiză înaintea agregării: D/C 50", filtru.Count == 2
             && filtru.Single(r => r.ContId == a.ID) is { RulajDebit: 50, RulajCredit: 0, InitialDebit: 0 });

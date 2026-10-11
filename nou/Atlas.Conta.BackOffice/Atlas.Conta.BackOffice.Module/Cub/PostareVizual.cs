@@ -30,12 +30,11 @@ public class PostareVizual {
     public virtual string ContSimbol { get; set; }
     [XafDisplayName("Latură")]
     public virtual N.Latura Latura { get; set; }
-    public virtual Guid? Partener { get; set; }
-    [XafDisplayName("Partener")]
-    public virtual string PartenerCod { get; set; }
-    public virtual Guid? Gestiune { get; set; }
-    [XafDisplayName("Gestiune")]
-    public virtual string GestiuneCod { get; set; }
+    public virtual Guid? Repartitor { get; set; }
+    [XafDisplayName("Repartitor")]
+    public virtual string RepartitorCod { get; set; }
+    [XafDisplayName("Contrapondere")]
+    public virtual N.Contrapondere? Contrapondere { get; set; }
     public virtual Guid? Produs { get; set; }
     [XafDisplayName("Produs")]
     public virtual string ProdusCod { get; set; }
@@ -55,6 +54,12 @@ public class PostareVizual {
     public virtual string TipTvaCod { get; set; }
     public virtual N.SensTva? SensTva { get; set; }
     public virtual N.RolTva? RolTva { get; set; }
+    public virtual Guid? PartenerFiscal { get; set; }
+    [XafDisplayName("Partener fiscal")]
+    public virtual string PartenerFiscalCod { get; set; }
+    public virtual Guid? Loc { get; set; }
+    [XafDisplayName("Loc")]
+    public virtual string LocCod { get; set; }
     public virtual int? PerioadaDeclarare { get; set; }
     public virtual N.RegimTva? RegimTva { get; set; }
     public virtual decimal? CotaTva { get; set; }

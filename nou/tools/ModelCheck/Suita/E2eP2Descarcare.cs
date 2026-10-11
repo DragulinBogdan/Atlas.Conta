@@ -308,7 +308,7 @@ static class E2eP2Descarcare {
                 noteDscCub.Count(p => p.Debit && p.Cont == cont711.ID) == 1
                 && noteDscCub.Nota(cont711.ID, tip345.ContImplicitId, 24m));
             s.Check("D9-A10 DSC: creditul de stoc poartă gestiunea predatoare, debitul de cost clientul primitor (T-D13 g); materialul din lot",
-                noteDscCub.Where(p => p.Credit).All(p => p.Gestiune == mag1.ID)
+                noteDscCub.Where(p => p.Credit).All(p => p.Repartitor == mag1.ID)
                 && noteDscCub.Where(p => p.Debit).All(p => p.Repartitor == client.ID)
                 && noteDscCub.Where(p => p.Debit && p.Cont == cont607.ID).All(p => p.Produs == produsA.ID)
                 && noteDscCub.Single(p => p.Debit && p.Cont == cont711.ID).Produs == produsC.ID);
@@ -319,7 +319,7 @@ static class E2eP2Descarcare {
                 && stocDscCub.Where(p => p.Unitate == lotC1.ID).Sum(p => p.Cantitate) == -3m
                 && stocDscCub.Where(p => p.Unitate == lotA1.ID || p.Unitate == lotA2.ID).All(p => p.Cont == tip371.ContImplicitId)
                 && stocDscCub.Single(p => p.Unitate == lotC1.ID).Cont == tip345.ContImplicitId
-                && stocDscCub.All(p => p.Gestiune == mag1.ID));
+                && stocDscCub.All(p => p.Repartitor == mag1.ID));
 
             // --- Backorder (§5): recepția produsului B, apoi Genereaza direct (acțiunea manuală) ---
             var d4 = new DateOnly(2026, 4, 15);

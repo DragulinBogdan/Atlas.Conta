@@ -45,6 +45,7 @@ export function RegistruJurnal() {
         <Column dataField={camp('NumarNota')} caption="Nr. notă" width={110} />
         <Column dataField={camp('TranzactieId')} caption="Tranzacție" visible={false} />
         <Column dataField={camp('ContSimbol')} caption="Cont" width={120} />
+        <Column dataField={camp('ContrapartidaSimbol')} caption="Cont corespondent" width={140} />
         <Column dataField={camp('Sens')} caption="Sens" width={70} />
         <Column dataField={camp('Debit')} caption="Debit" dataType="number" format="#,##0.00" alignment="right" width={140} />
         <Column dataField={camp('Credit')} caption="Credit" dataType="number" format="#,##0.00" alignment="right" width={140} />

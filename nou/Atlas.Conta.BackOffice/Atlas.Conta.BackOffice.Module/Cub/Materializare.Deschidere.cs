@@ -14,7 +14,7 @@ public sealed record SoldInitial(Guid Cont, N.Latura Latura, decimal Valoare,
     public N.Analiza Analiza { get; init; } = N.Analiza.Fara;
     public Guid? Valuta { get; init; }
     public decimal ValoareValuta { get; init; }
-    public Guid? Gestiune { get; init; }
+    public Guid? Repartitor { get; init; }
     public Guid? Produs { get; init; }
 }
 public sealed record LotInitial(Guid Cont, Guid Lot, Guid Gestiune, decimal Cantitate, decimal Valoare,
@@ -58,7 +58,7 @@ public static partial class Materializare {
         var idConturi = solduri.Select(s => s.Cont).Concat(loturi.Select(l => l.Cont))
             .Concat(partide.Select(p => p.Cont)).Distinct().ToArray();
         var conturi = os.GetObjectsQuery<Cont>().Where(c => idConturi.Contains(c.ID))
-            .Select(c => new { c.ID, c.UrmarestePartide, c.Simbol, c.DimensiuniObligatorii }).ToDictionary(c => c.ID);
+            .Select(c => new { c.ID, c.UrmarestePartide, c.Simbol, c.DimensiuniObligatorii, c.FeluriRepartitor }).ToDictionary(c => c.ID);
         var conturiStoc = os.GetObjectsQuery<TipMaterial>().Where(t => t.Clasa.Natura == NaturaClasa.Stoc && t.ContImplicitId != null)
             .Select(t => t.ContImplicitId!.Value).Distinct().ToHashSet();
         if (conturi.Count != idConturi.Length) RefuzaDeschidere("Cont inexistent.");
@@ -78,8 +78,9 @@ public static partial class Materializare {
         var idGestiuni = loturi.Select(l => l.Gestiune).Distinct().ToArray();
         var gestiuni = os.GetObjectsQuery<Gestiune>().Where(g => idGestiuni.Contains(g.ID)).Select(g => g.ID).ToHashSet();
         var idParteneri = partide.Select(p => p.Partener).Distinct().ToArray();
-        var parteneri = Fapte.Repartitori(os, idParteneri).Values
-            .Where(p => p.Parte == Parte.Extern).Select(p => p.Id).ToHashSet();
+        var repartitori = Fapte.Repartitori(os,
+            [.. idParteneri, .. solduri.Select(s => s.Repartitor).OfType<Guid>().Distinct()]);
+        var parteneri = idParteneri.Where(id => repartitori.GetValueOrDefault(id)?.Parte == Parte.Extern).ToHashSet();
         var postari = new List<N.Postare>();
         var unitati = new HashSet<(N.Carte, Guid, Guid?)>();
         foreach (var l in loturi) {
@@ -91,7 +92,7 @@ public static partial class Materializare {
             if (!unitati.Add((l.Carte, l.Lot, l.Gestiune))) RefuzaDeschidere("Poziție de lot duplicată.");
             var u = new N.Unitate(l.Lot, N.FelUnitate.Lot, l.Cont, null, lot!.ProdusId, lot.Data);
             postari.Add(new(new N.Coordonate { Cont = l.Cont, Latura = N.Latura.Debit, Data = data,
-                Carte = l.Carte, Gestiune = l.Gestiune, Produs = lot.ProdusId, Unitate = u,
+                Carte = l.Carte, Repartitor = new(l.Gestiune, N.FelRepartitor.Gestiune), Produs = lot.ProdusId, Unitate = u,
                 Analiza = l.Analiza, Valuta = l.Valuta },
                 l.Cantitate, l.ValoareValuta, l.Valoare, new(Guid.Empty, null)));
         }
@@ -105,7 +106,7 @@ public static partial class Materializare {
             var u = N.Unitate.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, p.Deschisa ?? data);
             if (!unitati.Add((p.Carte, u.Id, null))) RefuzaDeschidere("Partidă duplicată.");
             postari.Add(new(new N.Coordonate { Cont = p.Cont, Latura = p.Latura, Data = data,
-                Carte = p.Carte, Partener = p.Partener, Unitate = u, Analiza = p.Analiza, Valuta = p.Valuta }, 0, p.ValoareValuta, p.Valoare, new(Guid.Empty, null)));
+                Carte = p.Carte, Repartitor = repartitori[p.Partener].Coordonata, Unitate = u, Analiza = p.Analiza, Valuta = p.Valuta }, 0, p.ValoareValuta, p.Valoare, new(Guid.Empty, null)));
         }
         var detalii = postari.GroupBy(p => (p.Coordonate.Carte, p.Coordonate.Cont, p.Coordonate.Latura))
             .ToDictionary(g => g.Key, g => g.Sum(p => p.Valoare));
@@ -113,13 +114,18 @@ public static partial class Materializare {
         foreach (var s in solduri) {
             var cheie = (s.Carte, s.Cont, s.Latura);
             if (detalii.TryGetValue(cheie, out var suma) || s.Detaliat || conturi[s.Cont].UrmarestePartide || conturiStoc.Contains(s.Cont)) {
-                if (s.Analiza != N.Analiza.Fara || s.Valuta != null || s.ValoareValuta != 0 || s.Gestiune != null || s.Produs != null)
+                if (s.Analiza != N.Analiza.Fara || s.Valuta != null || s.ValoareValuta != 0 || s.Repartitor != null || s.Produs != null)
                     RefuzaDeschidere("Coordonatele soldului detaliat se furnizează pe loturi sau partide, nu pe totalul de control.");
                 if (!detalii.ContainsKey(cheie) || suma != s.Valoare)
                     throw new OperareException($"{DeschidereDiferenta}: {cheie}: control {s.Valoare}, detalii {suma}, diferență {s.Valoare - suma}.");
             }
-            else postari.Add(new(new N.Coordonate { Cont = s.Cont, Latura = s.Latura, Data = data,
-                Carte = s.Carte, Analiza = s.Analiza, Valuta = s.Valuta, Gestiune = s.Gestiune, Produs = s.Produs }, 0, s.ValoareValuta, s.Valoare, new(Guid.Empty, null)));
+            else {
+                if (s.Repartitor is Guid cine && repartitori.GetValueOrDefault(cine)?.Fel == null)
+                    RefuzaDeschidere("Repartitorul soldului nu există sau n-are un fel cunoscut.");
+                postari.Add(new(new N.Coordonate { Cont = s.Cont, Latura = s.Latura, Data = data,
+                    Carte = s.Carte, Analiza = s.Analiza, Valuta = s.Valuta, Produs = s.Produs,
+                    Repartitor = s.Repartitor is Guid id ? repartitori[id].Coordonata : null }, 0, s.ValoareValuta, s.Valoare, new(Guid.Empty, null)));
+            }
         }
         var lipsuri = new List<string>();
         foreach (var p in postari) {
@@ -127,8 +133,9 @@ public static partial class Materializare {
             VerificaMasura(p.ValoareValuta, N.Scara.Bani);
             if (c.Valuta == Guid.Empty || (c.Valuta == null && p.ValoareValuta != 0))
                 RefuzaDeschidere("Valuta și suma în valută sunt incompatibile.");
-            GardAnaliza.VerificaLatura(conturi[c.Cont].Simbol, conturi[c.Cont].DimensiuniObligatorii,
-                GardAnaliza.Dimensiuni(c.Partener ?? c.Gestiune, c.Produs, c.Analiza),
+            var cont = conturi[c.Cont];
+            GardAnaliza.VerificaLatura(new(cont.Simbol, cont.DimensiuniObligatorii, cont.FeluriRepartitor),
+                c.Repartitor, false, GardAnaliza.Dimensiuni(c.Produs, c.Analiza),
                 null, c.Latura.ToString(), "deschidere", lipsuri);
         }
         if (lipsuri.Count > 0) RefuzaDeschidere(string.Join("\n", lipsuri));

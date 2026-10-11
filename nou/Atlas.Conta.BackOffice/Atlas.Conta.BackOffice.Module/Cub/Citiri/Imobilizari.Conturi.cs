@@ -20,6 +20,48 @@ public static partial class Imobilizari {
         .Where(Transformare.FaraContrapondere)
         .Where(p => p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil && p.Unitate == null);
 
+    public sealed class PozitieCitita {
+        public Guid ID { get; set; }
+        public N.Spatiu Spatiu { get; set; }
+        public N.FelTranzactie Fel { get; set; }
+        public Guid? LinieId { get; set; }
+        public DateOnly Data { get; set; }
+        public N.Latura Latura { get; set; }
+        public decimal Valoare { get; set; }
+        public Guid Cont { get; set; }
+        public Guid? Repartitor { get; set; }
+        public Guid? Produs { get; set; }
+        public Guid? Valuta { get; set; }
+        public Guid? CodFunctional { get; set; }
+        public Guid? CodEconomic { get; set; }
+        public Guid? SursaFinantare { get; set; }
+        public Guid? UnitateOrganizatorica { get; set; }
+        public Guid? Proiect { get; set; }
+        public Guid? CentruCost { get; set; }
+        public Guid? SuportId { get; set; }
+        public Guid? InversaDinId { get; set; }
+        public bool Stornata { get; set; }
+        public bool FaraLinieSursa { get; set; }
+    }
+
+    /// <summary>Pozițiile fără fișă ale altor documente pe conturile date.</summary>
+    public static List<PozitieCitita> PozitiiCitite(IObjectSpace os, List<Guid> conturi, Guid faraDocument) {
+        var note = os.GetObjectsQuery<NotaContabila>().Where(d => d.Stare == StareDocument.Operat).Select(d => d.ID);
+        var stornate = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Stornat).Select(d => d.ID);
+        return PozitiiFaraFisa(os)
+            .Where(p => conturi.Contains(p.Cont) && p.DocumentId != faraDocument)
+            .Select(p => new PozitieCitita {
+                ID = p.ID, Spatiu = p.Spatiu, Fel = p.Tranzactie.Fel, LinieId = p.LinieId, Data = p.Data,
+                Latura = p.Latura, Valoare = p.Valoare, Cont = p.Cont, Repartitor = p.Repartitor,
+                Produs = p.Produs, Valuta = p.Valuta, CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic,
+                SursaFinantare = p.SursaFinantare, UnitateOrganizatorica = p.UnitateOrganizatorica,
+                Proiect = p.Proiect, CentruCost = p.CentruCost, SuportId = p.SuportId, InversaDinId = p.InversaDinId,
+                Stornata = p.DocumentId != null && stornate.Contains(p.DocumentId.Value),
+                FaraLinieSursa = p.Tranzactie.Fel == N.FelTranzactie.Deschidere
+                    || (p.DocumentId != null && note.Contains(p.DocumentId.Value)) })
+            .ToList();
+    }
+
     public static IReadOnlyDictionary<Guid, ConturiFisa> Conturi(IObjectSpace os, List<Guid> fise,
             DateOnly laData, Guid? exceptie = null) {
         var inverse = os.GetObjectsQuery<Postare>().Where(p => p.InversaDinId != null && p.Data <= laData)

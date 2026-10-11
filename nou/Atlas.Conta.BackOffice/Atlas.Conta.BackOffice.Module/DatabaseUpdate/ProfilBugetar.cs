@@ -229,8 +229,41 @@ internal static class ProfilBugetar {
         ContaSeeder.AliniazaTipuri(os, claseMap, tipuri);
     }
 
+    // C111-D4, 111-r2: felurile admise pe conturile cu defalcarea R din CPLAN.
+    static readonly Dictionary<string, FeluriRepartitor> FeluriPeCont = new(StringComparer.Ordinal) {
+        ["401.01.00"] = FeluriRepartitor.Partener,
+        ["401.02.00"] = FeluriRepartitor.Partener,
+        ["404.01.00"] = FeluriRepartitor.Partener,
+        ["411.01.01"] = FeluriRepartitor.Partener,
+        ["411.02.08"] = FeluriRepartitor.Partener,
+        ["437.01.00"] = FeluriRepartitor.Partener | FeluriRepartitor.Niciunul,
+        ["437.02.00"] = FeluriRepartitor.Partener | FeluriRepartitor.Niciunul,
+        ["442.08"] = FeluriRepartitor.Partener,
+        ["442.08.01"] = FeluriRepartitor.Partener,
+        ["458.01.00"] = FeluriRepartitor.Partener,
+        ["458.05.01"] = FeluriRepartitor.Partener,
+        ["458.05.02"] = FeluriRepartitor.Partener,
+        ["461.01.09"] = FeluriRepartitor.Partener,
+        ["462.01.01"] = FeluriRepartitor.Partener | FeluriRepartitor.Angajat,
+        ["462.01.09"] = FeluriRepartitor.Partener | FeluriRepartitor.Angajat,
+        ["552.00.00"] = FeluriRepartitor.ContPropriu,
+        ["774"] = FeluriRepartitor.Partener,
+        ["803.00.01"] = FeluriRepartitor.Partener | FeluriRepartitor.Niciunul,
+        ["804.90.00"] = FeluriRepartitor.Partener,
+        ["805.00.00"] = FeluriRepartitor.Partener,
+    };
+
+    static FeluriRepartitor Feluri(string simbol, string defalcare) {
+        var declarat = FeluriPeCont.TryGetValue(simbol, out var feluri);
+        if (declarat != defalcare.Contains('R'))
+            throw new InvalidOperationException(
+                $"Contul {simbol}: defalcarea „{defalcare}” și felurile de repartitor declarate nu se potrivesc.");
+        return feluri;
+    }
+
     // Planul sintetic complet din CPLAN (decizia 10; nomenclator, nu politică —
-    // decizia 18). Defalcarea legacy (CPLAN_DEFALCARE) devine DimensiuniObligatorii.
+    // decizia 18). Defalcarea legacy (CPLAN_DEFALCARE) devine DimensiuniObligatorii,
+    // iar R, felurile de repartitor ale contului.
     static void SeedPlanConturi(IObjectSpace os) {
         using var stream = Assembly.GetExecutingAssembly()
             .GetManifestResourceStream("Atlas.Conta.BackOffice.Module.DatabaseUpdate.SeedData.plan-conturi.csv")
@@ -259,6 +292,7 @@ internal static class ProfilBugetar {
                         or "408.00.00" or "461.01.09" or "428.01.02"
                         or "401.01.00" or "404.01.00" or "411.01.01";
                     c.DimensiuniObligatorii = ParseDefalcare(f[5]);
+                    c.FeluriRepartitor = Feluri(simbol, f[5]);
                     c.ParinteId = parinte?.ID;
                 });
             if (cont != null)
@@ -266,8 +300,8 @@ internal static class ProfilBugetar {
         }
     }
 
-    // Legenda CPLAN_DEFALCARE: R=Repartitor, M=Material, F=Funcțional, E=Economic,
-    // B=Sursă de finanțare, P=Proiect; T (Titlu) = nivel al clasificației
+    // Legenda CPLAN_DEFALCARE: R=Repartitor (prin `Feluri`), M=Material, F=Funcțional,
+    // E=Economic, B=Sursă de finanțare, P=Proiect; T (Titlu) = nivel al clasificației
     // economice → CodEconomic; S=Standard (fără defalcare).
     static DimensiuneFlags ParseDefalcare(string cod) {
         if (cod is "S" or "")
@@ -275,7 +309,7 @@ internal static class ProfilBugetar {
         var flags = DimensiuneFlags.Niciuna;
         foreach (var c in cod) {
             flags |= c switch {
-                'R' => DimensiuneFlags.Repartitor,
+                'R' => DimensiuneFlags.Niciuna,
                 'M' => DimensiuneFlags.Material,
                 'F' => DimensiuneFlags.CodFunctional,
                 'E' => DimensiuneFlags.CodEconomic,

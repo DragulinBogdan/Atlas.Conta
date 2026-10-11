@@ -110,9 +110,10 @@ public static partial class Materializare {
         var atribuite = os.GetObjectsQuery<Postare>()
             .Where(p => p.Atribuit != null && tinte.Contains(p.Atribuit.Value))
             .ToList();
-        var citite = aleDocumentului.Concat(atribuite)
-            .DistinctBy(p => p.ID)
-            .Select(p => (p.ID, p.TranzactieId, Randuri.Citeste(p) with {
+        var deInversat = aleDocumentului.Concat(atribuite).DistinctBy(p => p.ID).ToList();
+        var repartitoriInversati = Randuri.Repartitori(os, deInversat);
+        var citite = deInversat
+            .Select(p => (p.ID, p.TranzactieId, Randuri.Citeste(p, repartitoriInversati) with {
                 InversaDin = new N.ReferintaPostare(p.ID, p.Spatiu),
             }))
             .ToList();
@@ -168,15 +169,18 @@ public static partial class Materializare {
                     && p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida
                     && (p.DocumentId != stins.ID || p.Tranzactie.Fel != N.FelTranzactie.Operare))
                 .ToList();
+        var repartitori = Randuri.Repartitori(os,
+            [.. aleStingatorului, .. primiteDeStingator, .. aleStinsului, .. primiteDeStins]);
+        N.Postare Citita(Postare p) => Randuri.Citeste(p, repartitori);
         var rezultat = Transferuri.Muta(new Transferuri.Cerere(
             stingator.ID,
             stingator.DataInregistrare,
-            [.. Citeste(aleStingatorului, N.FelTranzactie.Operare)],
-            [.. primiteDeStingator.Select(Randuri.Citeste)],
+            [.. aleStingatorului.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare).Select(Citita)],
+            [.. primiteDeStingator.Select(Citita)],
             stins.ID,
             stins.DataInregistrare,
-            [.. aleStinsului.Select(Randuri.Citeste)],
-            [.. primiteDeStins.Select(Randuri.Citeste)],
+            [.. aleStinsului.Select(Citita)],
+            [.. primiteDeStins.Select(Citita)],
             suma,
             data, PartenerCerut: contrapartidaId));
         if (rezultat.Refuz is { } refuz)
@@ -216,8 +220,9 @@ public static partial class Materializare {
         if (postari.Count == 0)
             throw new OperareException("IMPERECHERE_FARA_EFECT: transferul legăturii nu există.");
         var invers = new N.Tranzactie(N.FelTranzactie.Transfer, data, document,
-            postari.Select(p => { var original = Randuri.Citeste(p); return original with {
-                Coordonate = original.Coordonate with { Data = data }, Valoare = -p.Valoare, Cantitate = -p.Cantitate }; }).ToArray());
+            Randuri.Citeste(os, postari).Select(original => original with {
+                Coordonate = original.Coordonate with { Data = data },
+                Valoare = -original.Valoare, Cantitate = -original.Cantitate }).ToArray());
         var refuzuri = N.Conservare.Verifica(invers);
         if (refuzuri.Count != 0) throw new OperareException(string.Join("\n", Mesaje(refuzuri)));
         return Scrie(os, document, invers);
@@ -238,9 +243,6 @@ public static partial class Materializare {
                 } })],
         };
 
-    static IEnumerable<N.Postare> Citeste(IEnumerable<Postare> randuri, N.FelTranzactie fel) =>
-        randuri.Where(p => p.Tranzactie.Fel == fel).Select(Randuri.Citeste);
-
     public static void Anuleaza(IObjectSpace os, Document doc) {
         ArgumentNullException.ThrowIfNull(doc);
         ReceptiiConexe.VerificaFaraDependenti(os, doc);
@@ -255,8 +257,9 @@ public static partial class Materializare {
             return;
         var ids = tranzactii.Select(t => t.ID).ToList();
         var postari = os.GetObjectsQuery<Postare>().Where(p => ids.Contains(p.TranzactieId)).ToList();
-        Citiri.Loturi.VerificaSoldIntermediar(os, postari.Select(p => Randuri.Citeste(p) with { Cantitate = -p.Cantitate }), ReceptiiConexe.CodRefuzStoc(doc));
-        VerificaPozitiaFaraFisa(os, postari.Select(p => Randuri.Citeste(p) with { Valoare = -p.Valoare }), blocheaza: true);
+        var citite = Randuri.Citeste(os, postari);
+        Citiri.Loturi.VerificaSoldIntermediar(os, citite.Select(p => p with { Cantitate = -p.Cantitate }), ReceptiiConexe.CodRefuzStoc(doc));
+        VerificaPozitiaFaraFisa(os, citite.Select(p => p with { Valoare = -p.Valoare }), blocheaza: true);
         os.Delete(postari);
         os.Delete(tranzactii);
     }
@@ -301,8 +304,9 @@ public static partial class Materializare {
     static List<NominalizarePartida> DependentiPartide(IObjectSpace os, Document doc) {
         var unitati = os.GetObjectsQuery<Postare>()
             .Where(p => p.DocumentId == doc.ID && (p.Tranzactie.Fel == N.FelTranzactie.Operare || p.Tranzactie.Fel == N.FelTranzactie.Transfer)
-                && p.Spatiu == N.Spatiu.Contabil && p.Unitate != null && p.Partener != null)
-            .ToList().Select(p => Randuri.Citeste(p).Coordonate.Unitate)
+                && p.Spatiu == N.Spatiu.Contabil && p.Unitate != null)
+            .Where(Citiri.Partide.CuTitular)
+            .ToList().Select(Randuri.Unitatea)
             .Where(u => IdentitatiPartide.EsteProprie(u, doc.ID)).Select(u => u.Id).Distinct().ToList();
         if (unitati.Count == 0) return [];
         var dependenti = os.GetObjectsQuery<Postare>()

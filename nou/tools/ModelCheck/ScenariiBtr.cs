@@ -24,14 +24,14 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void Capete(Guid doc, Guid lot) => Comanda(os => {
         decimal Cub(Guid gestiune) => os.GetObjectsQuery<C.Postare>()
-            .Where(p => p.DocumentId == doc && p.Unitate == lot && p.Gestiune == gestiune).Sum(p => (decimal?)p.Cantitate) ?? 0m;
+            .Where(p => p.DocumentId == doc && p.Unitate == lot && p.Repartitor == gestiune).Sum(p => (decimal?)p.Cantitate) ?? 0m;
         Verifica("SC-CIT-105", "transferul are ambele capete în cub: −4 pe sursă și +4 pe destinație",
             Cub(Magazie) == -4 && Cub(Destinatie) == 4);
         var db = ((EFCoreObjectSpace)os).DbContext;
         foreach (var (caz, gestiune) in new[] { ("destinației", Destinatie), ("sursei", Magazie) }) {
             using var tx = db.Database.BeginTransaction();
             db.Database.ExecuteSqlInterpolated(
-                $"UPDATE \"Postare\" SET \"Cantitate\" = 0 WHERE \"DocumentId\" = {doc} AND \"Gestiune\" = {gestiune}");
+                $"UPDATE \"Postare\" SET \"Cantitate\" = 0 WHERE \"DocumentId\" = {doc} AND \"Repartitor\" = {gestiune}");
             Refuza("SC-CIT-105/fără capătul " + caz, () => C.Citiri.Invarianti.Verifica(os), C.Citiri.Invarianti.TransferNeconservat);
             tx.Rollback();
         }

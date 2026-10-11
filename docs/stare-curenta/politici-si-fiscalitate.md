@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-10-10.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -187,6 +187,18 @@ proveniența, fără să despartă baza fiscală DVI de taxa contabilă. Un fapt
 are cel mult o Bază și o Taxă; achiziția cu taxare inversă adaugă o
 Autocolectare pe contrapartea colectată, cu același sens Achiziție.
 Nomenclatorul curent oferă etichete, fără să recalculeze cota istorică. (103)
+
+Faptul fiscal poartă pe postare partenerul fiscal și locul, separat de
+repartitorul de sold. `PartenerFiscal` e latura numită de
+`PoliticaTva.SursaContrapartida`: predatorul sau primitorul documentului. O
+sursă care nu numește o latură (`Explicit`, `TipMaterial`) îl lasă nul, și
+nimic nu-l completează după aceea, nici pe capătul cu partidă, nici pe contul
+care cere repartitor (S13, C111-R16). Pe cele șase politici de TVA din seed
+latura numită e terțul documentului. `Loc` nu vine din politică: e singura
+latură internă a documentului, citită din laturile lui tipate (C111-Q10).
+Baza și taxa aceluiași document poartă același loc, iar piciorul de taxă are
+locul ca repartitor de sold. Cine scrie fiecare coordonată:
+[domeniu-si-operare](domeniu-si-operare.md), „Regula coordonatelor”.
 
 Faptele fiscale stau numai pe postări. Nu există snapshot fiscal cumulativ și
 nici compatibilizare a istoricului de dezvoltare. (102, 103, D9-D2)
@@ -398,6 +410,11 @@ amânarea plății; SAF-T D406 emite codurile de import din aceleași fapte,
 fără filtru de tip. (86c, 86k)
 
 D394 grupează document fiscal × storno comercial × partener × sens × tip TVA × calificare istorică.
+Partenerul e partenerul fiscal al faptului (`Postare.PartenerFiscal`, prin
+`Cub.Citiri.Fiscale`); repartitorul de sold al postării nu intră în grupare.
+Faptul fără partener fiscal intră în `Neincluse` cu `FaraPartener`; cel al
+cărui partener fiscal nu e de fel partener (angajatul decontului, o latură
+internă), cu `RepartitorNePartener`. (S13)
 Clasificarea partenerului folosește aceeași funcție fiscală ca implicitele.
 CUI-ul este normalizat pentru agregare; partenerii multipli cu același CUI
 pot forma aceeași poziție. Înregistrarea TVA are prioritate în grup. (71b, 71d, 81b)
@@ -455,8 +472,23 @@ Restul `SourceDocuments` și sursele contabile/stoc ale exportului complet
 rămân inventariate separat în TR-D8; această felie nu certifică migrarea sau
 securitatea întregului SAF-T. (103, D8-B8)
 
-În L, partenerul unei note rezultă din rolul contului și dimensiunile
-materializate. TVA este asociată pe linie și storno. Retururile/stornările
+În L, terțul comercial al unei postări pe un cont cu `RolTert` e
+repartitorul ei de sold, când e extern (`PostareJurnal.TertComercial`), fără
+rezervă pe partenerul fiscal (S11, C111-Q9). Registrul, facturile și
+soldurile Customers și Suppliers citesc aceeași axă:
+
+- postarea cu partidă are ca repartitor titularul, deci iese pe el;
+- piciorul de decont cu terț pe linie iese pe terțul liniei, în registru și
+  în sold;
+- postarea fără repartitor extern de pe un cont cu rol comercial — piciorul
+  intern cu fapt fiscal, nota pe repartitor intern — iese în registru cu
+  codul societății și avertismentul `TertFaraPartener`, iar soldul ei intră
+  în `Neincluse`: cu `RepartitorNePartener` și repartitorul numit când are
+  unul, cu `FaraPartener` când n-are;
+- angajatul e repartitor extern, dar nu partener: postarea lui are aceeași
+  soartă, avertisment în registru și `RepartitorNePartener` la sold.
+
+Probe: SC-C111-26, SC-C111-27. TVA este asociată pe linie și storno. Retururile/stornările
 folosesc tipul și semnul fiscal corespunzător. Pentru facturile de stoc,
 legătura contabilă poate proveni din NIR-ul materializat. Societatea apare
 în rolurile de client/furnizor cerute de reprezentarea celeilalte laturi. (73e)
@@ -484,7 +516,8 @@ Plata este evenimentul cubului (`Operare`/`Storno`) al unui document de
 trezorerie, cu `TransactionID`-ul tranzacției GL. Liniile ei sunt postările
 de pe latura contrapartidei (opusă laturii pe care `Document.Laturi()` admite
 numai contul propriu), grupate
-pe cont, partener și țintă. Ținta se află la capătul lunii operării: partida
+pe cont, terț și țintă; terțul e repartitorul extern al postării
+(`Citiri/Plati`). Ținta se află la capătul lunii operării: partida
 străină nominalizată la operare, perechile `Transfer` de pe partida proprie
 datate până atunci (legătură, desfacere, notă care stinge avansul) și restul.
 `SourceDocumentID` este numărul documentului-origine al țintei. Restul și
@@ -505,7 +538,8 @@ redenumirile din nomenclator (descrieri) rămân etichete curente.
 Factura în valută se declară în RON, cu avertismentul `FacturaInValuta`
 (cubul nu poartă valuta, B-r6). `ConturiDiferite` numără conturile al căror
 Closing − Opening din GeneralLedgerAccounts diferă de rulajul net al liniilor
-GL emise; `Neincluse` pe terți poartă numele repartitorului.
+GL emise; `Neincluse` pe terți poartă cauza și numele repartitorului, după
+regula terțului comercial de mai sus.
 
 **Ruta pe registre este scoasă (SAF-B8, 2026-09-30).** `SaftProiectii.Saft`
 și `SaftStocuri` nu mai există. Diferențele lor față de cub sunt clasificate
@@ -555,5 +589,5 @@ secțiunea prezentă. (74e, S0-R5)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (21; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 20, 36 (amendată de 71), 42 (amendată de 104, 106), 46 (amendată de 113), 56 (amendată de 77, 81), 66, 69, 70, 71 (amendată de 72), 72, 73 (amendată de 74, 105), 74 (amendată de 105), 79 (amendată de 80), 80, 81, 83 (amendată de 84, 86, 104), 84, 86, 87 (amendată de 97), 103, 113.
+Deciziile care numesc pagina în `Arii:` (22; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 20, 36 (amendată de 71), 42 (amendată de 104, 106), 46 (amendată de 113), 56 (amendată de 77, 81), 66, 69, 70, 71 (amendată de 72), 72, 73 (amendată de 74, 105), 74 (amendată de 105), 79 (amendată de 80), 80, 81, 83 (amendată de 84, 86, 104), 84, 86, 87 (amendată de 97), 103, 111, 113.
 <!-- /gen:decizii -->

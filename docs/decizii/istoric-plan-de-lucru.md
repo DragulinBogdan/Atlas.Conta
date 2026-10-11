@@ -1114,6 +1114,106 @@ detaliat în jurnal):
   195 / 195. D394 identic cu partenerul în blocul fiscal. Constatările noi
   sunt linii în 111. `docs/nucleu/tr-d9b-pas0-masuratori.md`.
 
+- **2026-10-10 — Decizia 111 aprobată; contractul C111 propus.** Owner-ul a
+  aprobat (a)–(f) și (i) în forma precizată după pasul 0. Coordonatele se
+  implementează în felia C111, înaintea TR-D9b; locul intern al faptului
+  fiscal nu se persistă (111-r1); 552.00.00 declară cont propriu; 110-r3 e
+  închisă. Contractul e pin-uit pe Q1, Q2 și Q4; pașii 0–1 sunt aprobați,
+  pasul 2 așteaptă review-ul Codex. `docs/nucleu/c111-coordonate-contract.md`.
+
+- **2026-10-10 — C111, pasul 0: linia de bază.** Integrala **3.578 / 4.859
+  OK**. Import Flax pe ianuarie în 7 min 53 s, 81.774 de postări, 10
+  verificări picate. Comanda `ModelCheck --amprente` scrie sumele pe chei
+  naturale; două importuri dau amprente identice, iar trei postări modificate
+  de mână sunt prinse pe toate secțiunile. SAF-T L nu se generează pe
+  ianuarie 2025. `docs/nucleu/c111-pas0-linia-de-baza.md`.
+
+- **2026-10-10 — C111: review-ul advers Codex al contractului, reconciliat.**
+  C111-R1…R12 verificate în cod și acceptate. Amendamentul 1 (coloane
+  paralele) e retras: premisa lui era greșită. S1 e rescrisă ca o singură axă
+  analitică, cu filtrele HTTP fixate; D5 are patru forme noi; S10 e nouă;
+  regula de oprire cere amprenta analitică și așteptări pe fiecare formă.
+  `docs/nucleu/c111-coordonate-contract.md`.
+
+- **2026-10-10 — C111, pasul 1: poarta coordonatelor.** `Postare.Partener` și
+  `Postare.Gestiune` poartă diagnosticul `C111`, eroare de compilare în modul
+  în afara `Cub/Citiri`, a scriitorului și a listei de coloane; 14 rânduri din
+  9 fișiere au trecut pe cititori numiți. Integrala **3.579 / 4.860 OK** (+1
+  proba nouă), amprentele bazei de import identice cu pasul 0, drift zero.
+  `docs/nucleu/c111-pas1-poarta.md`.
+
+- **2026-10-10 — C111, pasul 1b: așteptările dinaintea formei noi.**
+  `--amprente` are trei secțiuni analitice (repartitor de sold, partener și
+  loc fiscal, contrapondere), calculate pe forma de azi prin derivarea din D5.
+  Martorul A → B: cele cinci secțiuni vechi nu văd un repartitor intern
+  schimbat, secțiunea analitică îl vede. Catalogul `scenarii/C111.md` are 22
+  de rânduri specificate. `docs/nucleu/c111-pas1b-asteptari.md`.
+
+- **2026-10-10 — C111: runda a doua a review-ului Codex, reconciliată.**
+  Codex a închis R1–R8 și R11, a ținut R9 deschisă și a adăugat R13–R15.
+  Owner-ul a hotărât C111-Q9…Q11: terțul comercial SAF-T e numai repartitorul
+  extern (S11), locul fiscal vine din laturile tipate ale documentului (S12),
+  decontul cu terț pe linie și partidă trece după S10. Contractul, 111 (b) și
+  (c) și catalogul (27 de rânduri) sunt aduse la zi. Niciun cod schimbat.
+
+- **2026-10-10 — C111: runda a treia a review-ului Codex, reconciliată.**
+  Codex a închis R9 și R13–R15 ca direcție și a adăugat R16: azi `Terti.Capat`
+  rescrie partenerul fiscal pe capătul cu partidă. Ținta rămâne 111 (b);
+  efectul e numit S13, cu scena SC-C111-28. Domeniul lui S11 e precizat pe
+  recensământul bazei de referință: 559 de postări fără partidă pe conturi cu
+  rol comercial, toate din note pe unitate internă. Niciun cod schimbat.
+
+- **2026-10-10 — C111: review-ul de contract închis de Codex.** R16 închisă,
+  nicio constatare de contract deschisă. Închiderea nu certifică
+  implementarea. Pasul 2 pornește.
+
+- **2026-10-10 — C111, pasul 2: forma nouă a postării.** Nucleul, cubul,
+  declaranții, cititorii, snapshot-ul, lista de postări și HTTP-ul sunt pe
+  `Repartitor`, `Contrapondere`, `PartenerFiscal` și `Loc`. Lanțul de migrații
+  e din nou o singură migrație. Integrala: 3.625 / 5.029 OK, zero FAIL, pe
+  baze create din ea; nucleul 199. La implementare au apărut C111-Q12 (S14,
+  poziția fără fișă), Q13 (rândul fără terț) și Q14 (`Loc` și fără fapt
+  fiscal; 111 (b) amendată). `docs/nucleu/c111-pas2-forma-noua.md`.
+
+- **2026-10-10 — C111, pașii 3–5: felurile pe cont, S7 și S8, perechea.**
+  `Cont.FeluriRepartitor` înlocuiește flag-ul R; gardul judecă prezența și
+  felul; seed-ul bugetar declară cele 20 de conturi (C111-Q15). Tranzitul
+  viramentului rămâne fără repartitor, iar consumul intern la DSC nu mai scrie
+  contrapondere de client. Fișa contului și registrul jurnal citesc
+  contrapartida din pereche (D9-r4 închisă). Integrala după pasul 5: 3.660 /
+  5.062 OK. `docs/nucleu/c111-pas3-feluri.md`, `c111-pas4-s7-s8.md`,
+  `c111-pas5-pereche.md`.
+
+- **2026-10-11 — C111, pasul 6: uneltele.** Import1C pe forma nouă, cu
+  amprentele liniei de bază identice pe ianuarie 2025; `ScaraVolum.sql` și
+  PerfCub pe forma nouă; costul scrierii măsurat pe aceeași bază, cu și fără
+  cele două chei străine (C111-Q17); scara de 5 milioane de postări. Scara
+  transversală a prins citirea perechii fără margine în registrul jurnal.
+  `docs/nucleu/c111-pas6-import.md`, `c111-pas6-scriere-si-volum.md`.
+
+- **2026-10-11 — C111, pasul 7: clientul și închiderea.** Clientul e pe o
+  singură axă de repartitor; fișa are filtrul `faraTert` (C111-Q18) și banda
+  de sinteză (C111-Q19); indexul `(TranzactieId, Pereche)` înlocuiește indexul
+  pe tranzacție, iar registrul jurnal îmbină perechea în SQL (C111-Q20). Pe
+  import registrul jurnal scade de la 21 s la 0,25 s; la 5 milioane rămâne la
+  6,6–8,0 s. `docs/nucleu/c111-pas7-client-si-inchidere.md`.
+
+- **2026-10-11 — C111 închisă: review-ul advers Codex al închiderii.**
+  C111-F-R1: de la pasul 3, terțul documentului nu mai ajungea pe piciorul
+  conturilor „partener sau niciunul”; corectat (`ContFapt.DeclaraRepartitor`,
+  scena SC-C111-33). C111-F-R2: sinteza fișei însumează pe ușa securizată ce
+  vede rolul; owner-ul a precizat 110 (e) (C111-Q22), fără schimbare de cod.
+  Codex a reverificat și a închis amândouă. Integrala finală: 3.678 / 5.080
+  OK, zero FAIL. Decizia 111 (a)–(e) și (i) e implementată; urmează TR-D9b.
+
+- **2026-10-11 — C111 mersă în main; guvernanța documentației unită cu ea.**
+  Felia C111 a intrat în main prin PR #36. Branch-ul `docs-guvernanta`
+  (decizia 118) a unit main-ul: decizia 111 are antetul kitului, cu
+  `Închide: 110-r3, D9-r4, 111-r1, 111-r2`; rândurile aduse de felie în
+  registru au arie; fișierele feliei din `docs/nucleu` au `Tip`. Baza de
+  import pe forma nouă e `.Flax.C111P6` (ianuarie 2025), scena de volum e
+  `.C111Vol`. 118-r7 (`Latura` → `Sens`) trece la TR-D9b.
+
 ## Starea din `CLAUDE.md` la 2026-10-10 (mutată prin 118 j)
 
 > Textul secțiunii §Stare așa cum era înainte ca `docs/stare.md` să fie generat; din acest moment §Stare e un paragraf, iar rezumatele stau aici și în `stare.md`.

@@ -161,7 +161,7 @@ static class E2eListaDiferente {
                 lotNou.PretUnitar == 7m && lotNou.Data == ldi.Data && lotNou.LotFabricatie == "LOT-P");
             var stocLdiCub = CubScena.Stoc(os, ldi.ID);
             s.Check("Operare → 2 rânduri de stoc, ambele Magazie pe gestiunea inventariată",
-                stocLdiCub.Count == 2 && stocLdiCub.All(p => p.Cont == tipMaterial.ContImplicitId && p.Gestiune == mag1.ID));
+                stocLdiCub.Count == 2 && stocLdiCub.All(p => p.Cont == tipMaterial.ContImplicitId && p.Repartitor == mag1.ID));
             s.Check("Minus → −2/−20 pe lotul vechi", stocLdiCub.Any(p =>
                 p.Unitate == lotVechi.ID && p.Cantitate == -2m && p.Semnata == -20m));
             s.Check("Plus → +3/+21 pe lotul nou", stocLdiCub.Any(p =>

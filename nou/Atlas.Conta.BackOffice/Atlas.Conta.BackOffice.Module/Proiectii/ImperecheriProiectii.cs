@@ -40,18 +40,6 @@ public static class ImperecheriProiectii {
 
 
 
-    sealed class NetUnitate {
-        public Guid? DocumentId { get; set; }
-        public Guid? Partener { get; set; }
-        public decimal Net { get; set; }
-    }
-
-    static IQueryable<NetUnitate> Nete(IQueryable<Cub.Postare> postari) =>
-        postari.Where(p => p.FelUnitate == N.FelUnitate.Partida)
-            .GroupBy(p => new { p.DocumentId, p.Partener, p.Cont, p.Unitate })
-            .Select(g => new NetUnitate { DocumentId = g.Key.DocumentId, Partener = g.Key.Partener,
-                Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) });
-
     static IQueryable<AntetCuRest> Antete(IObjectSpace os, bool istoric = false) {
         return
             os.GetObjectsQuery<FacturaIntrare>().Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat))
@@ -119,9 +107,9 @@ public static class ImperecheriProiectii {
             .Select(g => new { g.Key.DocumentId, g.Key.ContrapartidaId, g.Key.Sens,
                 Rest = g.Sum(p => p.Rest) });
         var ziTotal = laData ?? DateOnly.MaxValue;
-        var totale = Nete(Cub.Citiri.Contabil.Postari(os).Where(p => p.Data <= ziTotal))
-            .GroupBy(n => new { n.DocumentId, n.Partener })
-            .Select(g => new { g.Key.DocumentId, ContrapartidaId = g.Key.Partener,
+        var totale = Cub.Citiri.Partide.Nete(Cub.Citiri.Contabil.Postari(os).Where(p => p.Data <= ziTotal))
+            .GroupBy(n => new { n.DocumentId, n.Titular })
+            .Select(g => new { g.Key.DocumentId, ContrapartidaId = g.Key.Titular,
                 Datorie = g.Sum(n => n.Net < 0m ? -n.Net : 0m), Creanta = g.Sum(n => n.Net > 0m ? n.Net : 0m) });
         var raport = from a in antete
                join s in solduri on new { DocumentId = (Guid?)a.DocumentId, a.ContrapartidaId, a.Sens }

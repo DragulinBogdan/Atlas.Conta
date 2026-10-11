@@ -115,8 +115,10 @@ Felia curentă: adoptarea kitului de guvernanță (decizia 118, activă din
 2026-10-10). Unealta `docskit` (118-r2) are `gen`, `check` și `metrics`
 adoptate, cu linia zero a codului în `docs/docskit.baseline.json`; `build`
 e încă deschis; 118-r1 (curățenia antetelor normalizate)
-așteaptă `/docs-curatenie` (118-r4). Pe motor urmează hotărârea owner-ului pe
-decizia 111 (propusă), apoi contractul TR-D9b. Unde suntem, cu cifre, e
+așteaptă `/docs-curatenie` (118-r4). Pe motor, felia C111 e închisă și
+mersă în main (PR #36, 2026-10-11): decizia 111 (a)–(e) și (i) e
+implementată, postarea are un singur repartitor de sold. Urmează contractul
+TR-D9b, felia unităților, pe forma nouă a postării. Unde suntem, cu cifre, e
 generat în [docs/stare.md](docs/stare.md); cronologia feliilor e în
 `docs/decizii/istoric-plan-de-lucru.md`.
 

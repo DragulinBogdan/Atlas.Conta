@@ -251,12 +251,13 @@ static class VerificaNucleuTrezorerie {
         MotorOperare.Opereaza(os, virInc);
         ProbeNucleu.Proba(os, s.Check, $"NUC-INC-VIR-{eticheta}", [virInc]);
         var contractVir = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, virPlt);
-        s.Check($"NUC-PLT-VIR-{eticheta}: la virament ambele capete poartă contul propriu AL PICIORULUI ca "
-            + "gestiune și NICIUNUL o partidă (581/5311 n-au `RolTert`) — `GetContPropriuId` reprodus din "
-            + "sursa declarată a regulii, fără `is` pe tipul documentului",
-            contractVir.EsteAcceptat
-            && contractVir.Tranzactii.SelectMany(t => t.Postari).All(p => p.Coordonate.Gestiune == casaVir.ID
-                && p.Coordonate.Unitate == null && p.Coordonate.Partener == null));
+        var postariVir = contractVir.Tranzactii.SelectMany(t => t.Postari).ToList();
+        s.Check($"NUC-PLT-VIR-{eticheta}: la virament capătul numit de latură poartă contul propriu AL PICIORULUI, "
+            + "capătul de tranzit n-are repartitor (C111 S7) și NICIUNUL n-are partidă (581/5311 n-au `RolTert`)",
+            contractVir.EsteAcceptat && postariVir.Count == 2
+            && postariVir.Single(p => p.Coordonate.Latura == N.Latura.Credit).Coordonate.Repartitor?.Id == casaVir.ID
+            && postariVir.Single(p => p.Coordonate.Latura == N.Latura.Debit).Coordonate.Repartitor == null
+            && postariVir.All(p => p.Coordonate.Unitate == null && p.Coordonate.PartenerFiscal == null));
 
         // --- Felia 31 (TR-D7a), S-D8: cubul PERSISTAT pe PLT/INC ---
         var pltCub = Trezorerie<Plata>(casa, furnizor, tipTrz, 40m, new DateOnly(2026, 3, 13));
@@ -318,7 +319,7 @@ static class VerificaNucleuTrezorerie {
             && transferT[0].Data == impT.Data
             && postariT.All(p => p.Data == impT.Data)
             && postariT.Count == 2
-            && postariT.All(p => p.Cont == cont401.ID && p.Latura == N.Latura.Debit && p.Partener == furnizor.ID)
+            && postariT.All(p => p.Cont == cont401.ID && p.Latura == N.Latura.Debit && p.Repartitor == furnizor.ID)
             && postariT.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) == 0m
             && postariT.Single(p => p.Valoare < 0m).Unitate == partidaProprieT
             && postariT.Single(p => p.Valoare > 0m).Unitate == partidaFctT);

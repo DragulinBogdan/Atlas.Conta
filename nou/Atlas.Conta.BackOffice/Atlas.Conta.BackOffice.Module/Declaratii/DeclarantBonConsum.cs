@@ -75,14 +75,14 @@ public sealed class DeclarantBonConsum : IDeclarant {
             miscari.Add(new N.Miscare(
                 new N.Capat {
                     Cont = contare.ContCredit,
-                    Gestiune = doc.Predator.Id,
+                    Repartitor = doc.Predator.Coordonata,
                     Produs = lot.ProdusId,
                     Unitate = iesit,
                     Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
                 },
                 new N.Capat {
                     Cont = contare.ContDebit,
-                    Gestiune = doc.Primitor.Id,
+                    Repartitor = doc.Primitor.Coordonata,
                     Produs = lot.ProdusId,
                     // C5 cere unitatea pe contul postării.
                     Unitate = iesit with { Cont = contare.ContDebit },

@@ -79,7 +79,7 @@ sealed class ScenariiStocCub(Func<IObjectSpace> deschide, Action<string, bool> c
             if (altCont)
                 db.Database.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"Cont\" = {Cont(Stoc)} WHERE \"Unitate\" = {primul}");
             else
-                db.Database.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"Gestiune\" = {Destinatie} WHERE \"Unitate\" = {primul}");
+                db.Database.ExecuteSqlInterpolated($"UPDATE \"Postare\" SET \"Repartitor\" = {Destinatie} WHERE \"Unitate\" = {primul}");
             var draft = DescarcareService.Genereaza(os, os.GetObjectByKey<FacturaIesire>(factura), Ianuarie);
             Verifica("SC-CIT-39", altCont ? "FIFO exclude alt cont" : "FIFO exclude altă gestiune",
                 draft != null && draft.Detalii.Count == 1

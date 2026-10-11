@@ -72,7 +72,7 @@ sealed partial class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<stri
             && peBtr.Explicatie.Declarant == nameof(DeclarantNotaTransfer)
             && mutat is { Cantitate: 2, Valoare: 25 } && Sold(mutat.SoldInainte, 75, 0, 6)
             && CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Count(p => p.TranzactieId == transfer.Id
-                && p.Gestiune == Magazie && p.Cantitate == -2 && p.Valoare == -25 && p.Latura == N.Latura.Debit) == 1));
+                && p.Repartitor == Magazie && p.Cantitate == -2 && p.Valoare == -25 && p.Latura == N.Latura.Debit) == 1));
 
         var data = new DateOnly(An, 1, 20);
         Storneaza(btr.Id, data); Storneaza(bon.Id, data);

@@ -40,9 +40,9 @@ public static partial class Materializare {
             && p.Carte == N.Carte.Contabil && p.Spatiu == N.Spatiu.Contabil)).DistinctBy(p => p.ID)];
         primite = [.. primite.Concat(inMemorie.Where(p => p.Unitate == partida && p.Carte == N.Carte.Contabil)).DistinctBy(p => p.ID)];
         var operare = aleStingatorului.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare
-            && p.Cont == initiala.Cont && p.Partener == initiala.Partener).ToList();
-        var proprie = IdentitatiPartide.Gaseste(operare.Select(p => Randuri.Citeste(p).Coordonate.Unitate)
-            .OfType<N.Unitate>(), stingator.ID, initiala.Cont, initiala.Partener!.Value);
+            && p.Cont == initiala.Cont && Citiri.Partide.Titular(p) == Citiri.Partide.Titular(initiala)).ToList();
+        var proprie = IdentitatiPartide.Gaseste(operare.Select(Randuri.Unitatea)
+            .OfType<N.Unitate>(), stingator.ID, initiala.Cont, Citiri.Partide.Titular(initiala)!.Value);
         var latura = initiala.Latura == N.Latura.Debit ? N.Latura.Credit : N.Latura.Debit;
         var peProprie = proprie == null ? [] : os.GetObjectsQuery<Postare>()
             .Where(p => p.Unitate == proprie.Id && p.Carte == N.Carte.Contabil).ToList();
@@ -51,11 +51,13 @@ public static partial class Materializare {
         if (proprie == null || !Disponibil(primite, initiala.Latura, data, suma)
             || !Disponibil(peProprie, latura, data, suma))
             throw new OperareException($"{StingereDeschidereInvalida}: Cont/partener incompatibil sau suma depășește restul disponibil.");
+        var repartitori = Randuri.Repartitori(os, [.. operare, .. peProprie, .. primite, initiala]);
+        N.Postare Citita(Postare p) => Randuri.Citeste(p, repartitori);
         var rezultat = Transferuri.Muta(new(stingator.ID, stingator.DataInregistrare,
-            [.. operare.Select(Randuri.Citeste)],
-            [.. peProprie.Where(p => !operare.Any(o => o.ID == p.ID) && p.Data <= data).Select(Randuri.Citeste)],
-            Guid.Empty, initiala.Data, [Randuri.Citeste(initiala)],
-            [.. primite.Where(p => p.Tranzactie.Fel != N.FelTranzactie.Deschidere && p.Data <= data).Select(Randuri.Citeste)],
+            [.. operare.Select(Citita)],
+            [.. peProprie.Where(p => !operare.Any(o => o.ID == p.ID) && p.Data <= data).Select(Citita)],
+            Guid.Empty, initiala.Data, [Citita(initiala)],
+            [.. primite.Where(p => p.Tranzactie.Fel != N.FelTranzactie.Deschidere && p.Data <= data).Select(Citita)],
             suma, data, partida));
         if (rezultat.Refuz != null || rezultat.Mutare is null)
             throw new OperareException($"{StingereDeschidereInvalida}: {rezultat.Refuz?.Mesaj ?? rezultat.Sarit}");

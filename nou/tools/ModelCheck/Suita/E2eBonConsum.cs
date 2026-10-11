@@ -134,9 +134,9 @@ static class E2eBonConsum {
             s.Check("Operare → valoarea liniei = preț lot × cantitate", bcs1.Detalii.Single().Valoare == 40m);
             var stocBcs1Cub = CubScena.Stoc(os, bcs1.ID);
             s.Check("Operare → −4/−40 Magazie pe MAG1", stocBcs1Cub.Any(p =>
-                p.Cont == tipMaterial.ContImplicitId && p.Gestiune == mag1.ID && p.Cantitate == -4m && p.Semnata == -40m));
+                p.Cont == tipMaterial.ContImplicitId && p.Repartitor == mag1.ID && p.Cantitate == -4m && p.Semnata == -40m));
             s.Check("Operare → +4/+40 Consum pe locul de consum", stocBcs1Cub.Any(p =>
-                p.Cont == regulaMat.ContDebitId && p.Gestiune == loc.ID && p.Cantitate == 4m && p.Semnata == 40m));
+                p.Cont == regulaMat.ContDebitId && p.Repartitor == loc.ID && p.Cantitate == 4m && p.Semnata == 40m));
             decimal SoldCub(Repartitor r, Guid? cont) => CubScena.Sold(os, lot.ID, r.ID, cont).Cantitate;
             s.Check("Solduri: Magazie MAG1=6, Consum loc=4",
                 SoldCub(mag1, tipMaterial.ContImplicitId) == 6m && SoldCub(loc, regulaMat.ContDebitId) == 4m);
@@ -145,7 +145,7 @@ static class E2eBonConsum {
                 noteBcsCub.Count == 2
                 && noteBcsCub.Nota(regulaMat.ContDebitId, tipMaterial.ContImplicitId, 40m));
             s.Check("D9-A10 BCS: creditul de stoc poartă gestiunea predatoare MAG1, debitul de consum locul primitor",
-                noteBcsCub.Single(p => p.Credit).Gestiune == mag1.ID && noteBcsCub.Single(p => p.Debit).Gestiune == loc.ID);
+                noteBcsCub.Single(p => p.Credit).Repartitor == mag1.ID && noteBcsCub.Single(p => p.Debit).Repartitor == loc.ID);
 
             // --- NUC-BCS (B-D4, pas 3): declarantul frunzei ---
             ProbeNucleu.Proba(os, s.Check, "NUC-BCS", [bcs1]);

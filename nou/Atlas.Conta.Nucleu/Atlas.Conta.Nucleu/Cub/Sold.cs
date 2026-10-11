@@ -38,8 +38,8 @@ public sealed record Sold(decimal Debit, decimal Credit, decimal Cantitate, deci
         return new Sold(
             peDebit ? postare.Valoare : 0m,
             peDebit ? 0m : postare.Valoare,
-            // N-D4: cantitatea e a stocului; în afara lui stă capătul virtual, care nu
-            // intră în niciun sold citit — conservarea îl vede pe `Postare.Cantitate`.
+            // N-D4: cantitatea e a stocului; în afara lui stă contraponderea, care nu
+            // intră în niciun sold citit — conservarea o vede pe `Postare.Cantitate`.
             postare.Spatiu() == Spatiu.Stoc ? postare.Cantitate : 0m,
             postare.ValoareValuta);
     }

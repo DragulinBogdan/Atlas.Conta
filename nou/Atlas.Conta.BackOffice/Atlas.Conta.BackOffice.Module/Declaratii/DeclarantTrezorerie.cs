@@ -38,9 +38,9 @@ public sealed class DeclarantTrezorerie : IDeclarant {
 
         // Banii trec de pe contul predatorului (credit) pe al primitorului (debit):
         // piciorul de terț e al laturii externe, nu al contului fără gestiune (D9-A10 a).
-        var (tert, peDebit) = doc.Predator.Parte == Parte.Extern ? (doc.Predator.Id, false)
-            : doc.Primitor.Parte == Parte.Extern ? (doc.Primitor.Id, true)
-            : ((Guid?)null, false);
+        var (tert, peDebit) = doc.Predator.Parte == Parte.Extern ? (doc.Predator, false)
+            : doc.Primitor.Parte == Parte.Extern ? (doc.Primitor, true)
+            : ((RepartitorFapt?)null, false);
         var miscari = new List<N.Miscare>(operand.Linii.Count);
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza>();
@@ -54,19 +54,19 @@ public sealed class DeclarantTrezorerie : IDeclarant {
             var contare = contari[i]!.Value;
             Contari.Decide(contare, linie.Id, decizii);
 
-            var (gestiuneDebit, gestiuneCredit) = Gestiuni(doc, contare.Regula, esteVirament);
+            var (propriuDebit, propriuCredit) = Proprii(doc, contare.Regula, esteVirament);
             var debit = new N.Capat {
                 Cont = contare.ContDebit,
-                Gestiune = gestiuneDebit,
+                Repartitor = propriuDebit,
                 Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideDebit, contare.Regula.Comun),
             };
             var credit = new N.Capat {
                 Cont = contare.ContCredit,
-                Gestiune = gestiuneCredit,
+                Repartitor = propriuCredit,
                 Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
             };
 
-            if (tert is not Guid partener) {
+            if (tert is not { } partener) {
                 miscari.Add(new N.Miscare(credit, debit, 0m, 0m, linie.Valoare, new N.Cauza(doc.Id, linie.Id)));
                 continue;
             }
@@ -79,12 +79,12 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                 continue;
             }
 
-            var proprie = Partide.Proprie(operand, cont, partener);
+            var proprie = Partide.Proprie(operand, cont, partener.Id);
             var bucati = new List<(N.Unitate Partida, decimal Suma)>(2);
             // TR-D2a: stingerea E postarea care numește partida stinsă; restul liniei
             // rămâne avans pe partida proprie, ca azi excedentul. Plafonul e ce ține
             // partida sursei pe ACEST cont, nu restul documentului-sursă (MAJOR-1).
-            if (Partide.Sursa(operand, cont, partener) is { } sursa) {
+            if (Partide.Sursa(operand, cont, partener.Id) is { } sursa) {
                 if (!citite.Contains(cont)) {
                     ipoteze.Add(new N.SoldUnitateCitit(sursa.Unitate, sursa.Sold));
                     citite.Add(cont);
@@ -156,29 +156,28 @@ public sealed class DeclarantTrezorerie : IDeclarant {
                 + "liniile de natură Virament.", null));
     }
 
-    // B-D8 pct. 9: gestiunea stă pe piciorul PROPRIU — cel al cărui cont îl ia
-    // regula de la repartitorul intern; piciorul de terț rămâne fără ea. La
-    // virament ambele picioare sunt ale aceluiași cont propriu, iar regula îl
-    // numește prin latura care nu e contul de tranzit (`GetContPropriuId` de azi).
-    static (Guid? Debit, Guid? Credit) Gestiuni(DocumentFapt doc, RegulaContareFapt regula, bool esteVirament) {
+    // B-D8 pct. 9: contul propriu stă pe piciorul PROPRIU — cel al cărui cont îl ia
+    // regula de la repartitorul intern; piciorul de terț rămâne fără el. La
+    // virament piciorul de tranzit rămâne și el fără (C111 S7).
+    static (N.Repartitor? Debit, N.Repartitor? Credit) Proprii(DocumentFapt doc, RegulaContareFapt regula, bool esteVirament) {
         var peDebit = Numit(doc, regula.SursaContDebit);
         var peCredit = Numit(doc, regula.SursaContCredit);
-        if (esteVirament) {
-            var propriu = peDebit is null ? peCredit : peCredit is null ? peDebit : null;
-            return (propriu, propriu);
-        }
-        var intern = doc.Predator.Parte == Parte.Propriu ? doc.Predator.Id
-            : doc.Primitor.Parte == Parte.Propriu ? doc.Primitor.Id
-            : (Guid?)null;
+        if (esteVirament)
+            return peDebit is null ? (null, peCredit?.Coordonata)
+                : peCredit is null ? (peDebit.Coordonata, null)
+                : (null, null);
+        var intern = doc.Predator.Parte == Parte.Propriu ? doc.Predator
+            : doc.Primitor.Parte == Parte.Propriu ? doc.Primitor
+            : null;
         return intern is null ? (null, null)
-            : peDebit == intern ? (intern, null)
-            : peCredit == intern ? (null, intern)
+            : peDebit?.Id == intern.Id ? (intern.Coordonata, null)
+            : peCredit?.Id == intern.Id ? (null, intern.Coordonata)
             : (null, null);
     }
 
-    static Guid? Numit(DocumentFapt doc, SursaCont sursa) => sursa switch {
-        SursaCont.RepartitorPredator => doc.Predator.Id,
-        SursaCont.RepartitorPrimitor => doc.Primitor.Id,
+    static RepartitorFapt? Numit(DocumentFapt doc, SursaCont sursa) => sursa switch {
+        SursaCont.RepartitorPredator => doc.Predator,
+        SursaCont.RepartitorPrimitor => doc.Primitor,
         _ => null,
     };
 }

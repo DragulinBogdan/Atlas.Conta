@@ -47,26 +47,33 @@ static class Partide {
 }
 
 /// <summary>
-/// Capătul de terț (D9-A10): partida când contul o urmărește, partenerul când contul
-/// cere repartitor. Capătul cu gestiune reală e intern și rămâne neatins.
+/// Capătul de terț (D9-A10): partida când contul o urmărește, terțul când contul
+/// declară feluri de repartitor; prezența și felul le judecă gardul. Capătul care
+/// are deja repartitor rămâne neatins.
 /// </summary>
 static class Terti {
-    public static N.Capat Capat(Operand operand, N.Capat capat, Guid tert, N.Unitate? partida) {
+    public static N.Capat Capat(Operand operand, N.Capat capat, RepartitorFapt tert, N.Unitate? partida) {
         ArgumentNullException.ThrowIfNull(capat);
+        ArgumentNullException.ThrowIfNull(tert);
+        // C111-Q14: locul intern pe care titularul îl scoate din repartitor rămâne pe postare.
         if (partida is not null)
-            return capat with { Partener = tert, Unitate = partida };
-        return capat.Partener is null && CereRepartitor(operand, capat) ? capat with { Partener = tert } : capat;
+            return capat with {
+                Repartitor = tert.Coordonata, Unitate = partida,
+                Loc = capat.Loc ?? (capat.Repartitor is { EsteIntern: true } loc ? loc.Id : null),
+            };
+        return capat.Repartitor is null && DeclaraRepartitor(operand, capat)
+            ? capat with { Repartitor = tert.Coordonata }
+            : capat;
     }
 
     /// <summary>Partida se pune pe capătul care n-are deja unitate: lotul recepției nu e partidă.</summary>
     public static N.Capat Capat(
-            Operand operand, N.Capat capat, Guid tert, IReadOnlyDictionary<Guid, N.Unitate> partide) {
+            Operand operand, N.Capat capat, RepartitorFapt tert, IReadOnlyDictionary<Guid, N.Unitate> partide) {
         ArgumentNullException.ThrowIfNull(capat);
         return Capat(operand, capat, tert, capat.Unitate is null ? partide.GetValueOrDefault(capat.Cont) : null);
     }
 
-    static bool CereRepartitor(Operand operand, N.Capat capat) =>
+    static bool DeclaraRepartitor(Operand operand, N.Capat capat) =>
         capat.Carte == N.Carte.Contabil
-        && operand.Conturi.GetValueOrDefault(capat.Cont)?.CereRepartitor == true
-        && (capat.Gestiune is null || N.GestiuniVirtuale.Este(capat.Gestiune));
+        && operand.Conturi.GetValueOrDefault(capat.Cont)?.DeclaraRepartitor == true;
 }

@@ -55,7 +55,7 @@ sealed partial class ScenariiNir {
             Opereaza(nir); Delta("SC-NIR-34", nir, Clarificare, 25);
             Verifica("SC-NIR-34", "diferența are analiza nouă, stocul o păstrează pe cea istorică", CuSpatiu(os =>
                 os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == nir && p.Cont == id && p.CodFunctional == null)
-                && os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == nir && p.Gestiune == N.GestiuniVirtuale.Inventar
+                && os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == nir && p.Contrapondere == N.Contrapondere.Inventar
                     && p.CodFunctional == functionalNir)));
         }
         finally { Comanda(os => { os.GetObjectByKey<Cont>(id).DimensiuniObligatorii = flags; os.CommitChanges(); }); }

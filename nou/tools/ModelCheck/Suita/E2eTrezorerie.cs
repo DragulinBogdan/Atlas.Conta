@@ -291,7 +291,7 @@ static class E2eTrezorerie {
             s.Check("D9-A10 avans: debitul 542 poartă angajatul, creditul casei contul propriu",
                 NoteCub(avans) is { Count: 2 } noteAvansCub
                 && noteAvansCub.Single(p => p.Debit).Repartitor == angajat.ID
-                && noteAvansCub.Single(p => p.Credit).Gestiune == casa.ID);
+                && noteAvansCub.Single(p => p.Credit).Repartitor == casa.ID);
 
             var contractAvans = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, avans);
             var postariAvans = contractAvans.Tranzactii.SelectMany(t => t.Postari).ToArray();
@@ -299,7 +299,7 @@ static class E2eTrezorerie {
             s.Check("SC-DEC-16 (096): PLT 50 pe angajat deschide partidă fără rol comercial",
                 contractAvans.EsteAcceptat && postariAvans.Length == 2
                 && postariAvans.Any(p => p.Coordonate.Cont == cont542.ID && p.Coordonate.Latura == N.Latura.Debit
-                    && p.Coordonate.Unitate == partidaAvans && p.Coordonate.Partener == angajat.ID && p.Valoare == 50)
+                    && p.Coordonate.Unitate == partidaAvans && p.Coordonate.Repartitor?.Id == angajat.ID && p.Valoare == 50)
                 && postariAvans.Any(p => p.Coordonate.Cont == cont531.ID && p.Coordonate.Latura == N.Latura.Credit
                     && p.Coordonate.Unitate == null && p.Valoare == 50)
                 && cont542.RolTert == RolTertCont.Niciunul);

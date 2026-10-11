@@ -192,8 +192,8 @@ static class VerificaValoareIesire {
         s.Check("D18-V2 (a) a treia ieșire GOLEȘTE lotul: valoarea liniei = 10,00 (soldul valoric rămas, nu 10,01), lotul "
             + "ajunge exact la 0 / 0,00, iar rândul de consum poartă aceiași 10,00 (restul se MUTĂ, nu se pierde)",
             bcs3.Detalii.Single().Valoare == 10.00m && soldDupa3 == (0m, 0m)
-            && randuri3.Any(r => r.Gestiune == g1.ID && r.Cantitate == -1m && r.Semnata == -10.00m)
-            && randuri3.Any(r => r.Gestiune == loc.ID && r.Cantitate == 1m && r.Semnata == 10.00m));
+            && randuri3.Any(r => r.Repartitor == g1.ID && r.Cantitate == -1m && r.Semnata == -10.00m)
+            && randuri3.Any(r => r.Repartitor == loc.ID && r.Cantitate == 1m && r.Semnata == 10.00m));
         s.Check("D18-V2 (a) dry-run == operare: `Valideaza` trece prin ACELAȘI calcul (33d) și lasă pe linie 10,00, "
             + "exact ce materializează `Opereaza`",
             dryRun.Count == 0 && valoareDryRun == 10.01m && bcs3.Detalii.Single().Valoare == 10.00m);
@@ -226,7 +226,7 @@ static class VerificaValoareIesire {
         s.Check("D18-V2 (a) stornoul liniei absorbante = rânduri inverse identice (−(−10,00) pe magazie, −10,00 pe consum), "
             + "lotul revine la 1 / 10,00",
             originaleCub.Count == 2 && inverseCub.Count == 2
-            && originaleCub.All(o => inverseCub.Any(i => i.Unitate == o.Unitate && i.Gestiune == o.Gestiune
+            && originaleCub.All(o => inverseCub.Any(i => i.Unitate == o.Unitate && i.Repartitor == o.Repartitor
                 && i.Cont == o.Cont && i.Cantitate == -o.Cantitate && i.Semnata == -o.Semnata))
             && SoldCheieCub(lotA, g1) == (1m, 10.00m));
 

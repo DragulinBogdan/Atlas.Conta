@@ -19,9 +19,15 @@ public static class Contractare {
         var declarant = doc.Declarant()
             ?? throw new InvalidOperationException(
                 $"Documentul {doc.ID} e de un tip care nu declară încă — driverul nu se cheamă pe el.");
-        var operand = Motor.Fapte.Operand(os, doc);
         var rotunjire = new N.Rotunjire(Scara.ConventieBani);
         var refuzuri = new List<N.Refuz>();
+        Operand operand;
+        try {
+            operand = Motor.Fapte.Operand(os, doc);
+        }
+        catch (N.RefuzException e) {
+            return N.Contract.Refuza([e.Refuz], [], [], rotunjire.JumatatiDeBan);
+        }
         Laturi.Verifica(doc.Laturi(), operand.Document.Predator, operand.Document.Primitor, refuzuri);
         N.Declaratie? declaratie = null;
         if (refuzuri.Count == 0)

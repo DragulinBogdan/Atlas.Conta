@@ -26,8 +26,8 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
     void RegulaReceptiei() {
         Guid stoc = Guid.NewGuid(), datorie = Guid.NewGuid(), alTaxei = Guid.NewGuid(), alServiciilor = Guid.NewGuid();
         Guid tip = Guid.NewGuid(), produs = Guid.NewGuid(), linie = Guid.NewGuid(), lot = Guid.NewGuid();
-        var predator = new RepartitorFapt(Guid.NewGuid(), FelRepartitor.Partener, datorie, default);
-        var primitor = new RepartitorFapt(Guid.NewGuid(), FelRepartitor.Gestiune, null, default);
+        var predator = new RepartitorFapt(Guid.NewGuid(), N.FelRepartitor.Partener, datorie, default);
+        var primitor = new RepartitorFapt(Guid.NewGuid(), N.FelRepartitor.Gestiune, null, default);
         RegulaContareFapt Regula(NaturaClasa natura, SursaCont sursaCredit, Guid credit) => new(Guid.NewGuid(), null, natura,
             null, SursaCont.TipMaterial, null, sursaCredit, credit, true, null, null, null);
         var receptie = Regula(NaturaClasa.Stoc, SursaCont.RepartitorPredator, datorie);
@@ -53,10 +53,12 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         }
 
         var (pe, refuzate) = Declara(receptie, servicii);
-        Verifica("SC-FCT-15", "D stoc 100/+10 pe lot în gestiunea primitoare, C furnizorul regulii 100 pe gestiunea Furnizor, cu partidă",
+        Verifica("SC-FCT-15", "D stoc 100/+10 pe lot în gestiunea primitoare, C furnizorul regulii 100 pe furnizor, contrapondere de terț, cu partidă",
             refuzate.Count == 0 && pe.Miscari is [var m] && m.Cantitate == 10 && m.Valoare == 100
-            && m.La.Cont == stoc && m.La.Unitate?.Id == lot && m.La.Gestiune == primitor.Id
-            && m.DeLa.Cont == datorie && m.DeLa.Gestiune == N.GestiuniVirtuale.Furnizor
+            && m.La.Cont == stoc && m.La.Unitate?.Id == lot && m.La.Repartitor == primitor.Coordonata
+            && m.La.Contrapondere == null
+            && m.DeLa.Cont == datorie && m.DeLa.Contrapondere == N.Contrapondere.Tert
+            && m.DeLa.Repartitor == predator.Coordonata
             && m.DeLa.Unitate is { Fel: N.FelUnitate.Partida });
         Verifica("SC-FCT-15", "ambele conturi sunt decise de regula naturii Stoc, singura politică consumată",
             refuzate.Count == 0
@@ -137,17 +139,18 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         if (!Privat) { net += taxa; taxa = 0; tva = null; }
         var tv = tva == null ? (Guid?)null : Tva(tva);
         var debit = new RandScena(cont, N.Latura.Debit, net, q, Magazie, l.Lot, l.Produs,
-            tv != null ? Furnizor : null, l.Id, tv, tv != null ? N.RolTva.Baza : null,
-            tv != null ? perioada ?? An * 100 + 1 : null, tv != null ? N.SensTva.Achizitie : null,
-            l.Lot != null ? N.Spatiu.Stoc : N.Spatiu.Contabil, Economic);
+            PartenerFiscal: tv != null ? Furnizor : null, Linie: l.Id, Tva: tv, Rol: tv != null ? N.RolTva.Baza : null,
+            Perioada: tv != null ? perioada ?? An * 100 + 1 : null, Sens: tv != null ? N.SensTva.Achizitie : null,
+            Spatiu: l.Lot != null ? N.Spatiu.Stoc : N.Spatiu.Contabil, Economic: Economic,
+            Loc: tv != null ? Magazie : null);
         var credit = new RandScena(Cont(ContFurnizor), N.Latura.Credit, net, -q,
-            l.Lot != null ? N.GestiuniVirtuale.Furnizor : null, Partida(f.Id, ContFurnizor),
-            l.Produs, Furnizor, l.Id, Economic: Economic);
+            Furnizor, Partida(f.Id, ContFurnizor), l.Produs, Linie: l.Id, Economic: Economic,
+            Contrapondere: l.Lot != null ? N.Contrapondere.Tert : null);
         var randuri = new List<RandScena> { debit, credit };
         if (taxa != 0) {
             randuri.Add(debit with { Cont = Privat ? Cont("4426") : cont, Cantitate = 0, Valoare = taxa,
                 Unitate = Privat ? null : l.Lot, Spatiu = Privat ? N.Spatiu.Contabil : debit.Spatiu, Rol = N.RolTva.Taxa });
-            randuri.Add(credit with { Cantitate = 0, Valoare = taxa, Gestiune = Privat ? null : credit.Gestiune });
+            randuri.Add(credit with { Cantitate = 0, Valoare = taxa, Contrapondere = Privat ? null : credit.Contrapondere });
         }
         return randuri.ToArray();
     }
@@ -207,8 +210,8 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             var special = Factura(Ianuarie, new LinieFctScena(1, 100, cod, false)); Opereaza(special.Id);
             var r = Randuri(special, 0, 0, 100, 21, cod);
             if (cod == "NED21") r[2] = r[2] with { Cont = Cont(Serviciu) };
-            else r[3] = r[3] with { Cont = Cont("4427"), Partener = Furnizor, Unitate = null,
-                Tva = Tva(cod), Rol = N.RolTva.Autocolectare, Sens = N.SensTva.Achizitie, Perioada = An * 100 + 1 };
+            else r[3] = r[3] with { Cont = Cont("4427"), Repartitor = null, Unitate = null,
+                PartenerFiscal = Furnizor, Loc = Magazie, Tva = Tva(cod), Rol = N.RolTva.Autocolectare, Sens = N.SensTva.Achizitie, Perioada = An * 100 + 1 };
             Postari("SC-X-14", special.Id, N.FelTranzactie.Operare, Ianuarie, r);
             if (cod == "TI21") TaxareInversa(special.Id);
             Storneaza(special.Id, Ianuarie);

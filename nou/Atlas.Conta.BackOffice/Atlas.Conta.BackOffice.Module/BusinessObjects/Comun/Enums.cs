@@ -119,12 +119,11 @@ public enum CalitateRepartitor {
     Cursant = 64,
 }
 
-// Flag-urile de defalcare din plan (R/M/E/B/F/P + sursa) devin date de validare:
-// dimensiuni obligatorii per cont (decizia 15).
+// Flag-urile de defalcare din plan (M/E/B/F/P + sursa) devin date de validare:
+// dimensiuni obligatorii per cont (decizia 15). Repartitorul e în `FeluriRepartitor`.
 [Flags]
 public enum DimensiuneFlags {
     Niciuna = 0,
-    Repartitor = 1,
     Material = 2,
     CodFunctional = 4,
     CodEconomic = 8,
@@ -132,6 +131,18 @@ public enum DimensiuneFlags {
     Unitate = 32,
     Proiect = 64,
     CentruCost = 128,
+}
+
+// C111-D4: felurile de repartitor admise pe cont; mulțimea vidă nu judecă.
+[Flags]
+public enum FeluriRepartitor {
+    Nedeclarat = 0,
+    Niciunul = 1,
+    Partener = 2,
+    Angajat = 4,
+    Gestiune = 8,
+    ContPropriu = 16,
+    UnitateInterna = 32,
 }
 
 // Secțiunea formularului 300 (OPANAF 174/2026) în care stă un rând. Ordinea

@@ -237,7 +237,7 @@ static partial class Deschidere {
         Dictionary<(string Simbol, N.Latura Latura), decimal> cub;
         using (var os = provider.CreateObjectSpace()) {
             var ale = os.GetObjectsQuery<Postare>().Where(p => p.TranzactieId == tranzactie)
-                .Select(p => new { p.Cont, p.Latura, p.Valoare, p.Cantitate, p.FelUnitate, p.Unitate, p.Gestiune, p.Partener })
+                .Select(p => new { p.Cont, p.Latura, p.Valoare, p.Cantitate, p.FelUnitate, p.Unitate, p.Repartitor })
                 .ToList();
             postari = ale.Count;
             var simbolPeId = plan.ToDictionary(x => x.Value, x => x.Key);
@@ -245,8 +245,8 @@ static partial class Deschidere {
                 .ToDictionary(g => g.Key, g => g.Sum(p => p.Valoare));
             scris = ale.Where(p => p.Unitate != null && p.FelUnitate is N.FelUnitate.Partida or N.FelUnitate.Lot)
                 .Select(p => new Detaliu(p.FelUnitate.Value, p.Unitate.Value,
-                    p.FelUnitate == N.FelUnitate.Lot ? p.Gestiune : null, p.Cont, p.Latura, p.Valoare, p.Cantitate,
-                    p.FelUnitate == N.FelUnitate.Partida ? p.Partener : null))
+                    p.FelUnitate == N.FelUnitate.Lot ? p.Repartitor : null, p.Cont, p.Latura, p.Valoare, p.Cantitate,
+                    p.FelUnitate == N.FelUnitate.Partida ? p.Repartitor : null))
                 .ToList();
         }
         var partideScrise = scris.Count(d => d.Fel == N.FelUnitate.Partida);

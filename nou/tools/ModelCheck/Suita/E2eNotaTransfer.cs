@@ -99,9 +99,9 @@ static class E2eNotaTransfer {
 
             var stocBtr1Cub = CubScena.Stoc(os, btr1.ID);
             s.Check("Operare → −4/−40 pe MAG1", stocBtr1Cub.Any(p =>
-                p.Gestiune == mag1.ID && p.Cantitate == -4m && p.Semnata == -40m && p.Data == btr1.Data && !p.Storno));
+                p.Repartitor == mag1.ID && p.Cantitate == -4m && p.Semnata == -40m && p.Data == btr1.Data && !p.Storno));
             s.Check("Operare → +4/+40 pe MAG2", stocBtr1Cub.Any(p =>
-                p.Gestiune == mag2.ID && p.Cantitate == 4m && p.Semnata == 40m && p.Data == btr1.Data && !p.Storno));
+                p.Repartitor == mag2.ID && p.Cantitate == 4m && p.Semnata == 40m && p.Data == btr1.Data && !p.Storno));
             s.Check("Operare → valoarea liniei = preț lot × cantitate", btr1.Detalii.Single().Valoare == 40m);
 
             s.Check("Solduri după transfer: MAG1=6, MAG2=4",

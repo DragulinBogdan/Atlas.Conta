@@ -5,7 +5,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
-/// <summary>Partea repartitorului față de patrimoniu, derivată din <see cref="FelRepartitor"/> (T-D13).</summary>
+/// <summary>Partea repartitorului față de patrimoniu, derivată din <see cref="N.FelRepartitor"/> (T-D13).</summary>
 [Flags]
 public enum Parte {
     Niciuna = 0,
@@ -21,11 +21,11 @@ public enum Parte {
 public readonly record struct Latura(
         Parte Permisa,
         CalitateRepartitor Calitate = CalitateRepartitor.Niciuna,
-        FelRepartitor? Fel = null) {
+        N.FelRepartitor? Fel = null) {
     public static readonly Latura Externa = new(Parte.Extern);
     public static readonly Latura Interna = new(Parte.Intern);
     public static readonly Latura Proprie = new(Parte.Propriu);
-    public static readonly Latura Gestiune = new(Parte.Intern, Fel: FelRepartitor.Gestiune);
+    public static readonly Latura Gestiune = new(Parte.Intern, Fel: N.FelRepartitor.Gestiune);
     public static readonly Latura InternaSauProprie = new(Parte.Intern | Parte.Propriu);
     public static readonly Latura ExternaSauProprie = new(Parte.Extern | Parte.Propriu);
     public static readonly Latura ExternaSauInterna = new(Parte.Extern | Parte.Intern);
@@ -43,10 +43,10 @@ public readonly record struct Latura(
 public sealed record ContractLaturi(Latura Predator, Latura Primitor);
 
 public static class Laturi {
-    public static Parte? ParteA(FelRepartitor? fel) => fel switch {
-        FelRepartitor.Partener or FelRepartitor.Angajat => Parte.Extern,
-        FelRepartitor.Gestiune or FelRepartitor.UnitateInterna => Parte.Intern,
-        FelRepartitor.ContPropriu => Parte.Propriu,
+    public static Parte? ParteA(N.FelRepartitor? fel) => fel switch {
+        N.FelRepartitor.Partener or N.FelRepartitor.Angajat => Parte.Extern,
+        N.FelRepartitor.Gestiune or N.FelRepartitor.UnitateInterna => Parte.Intern,
+        N.FelRepartitor.ContPropriu => Parte.Propriu,
         _ => null,
     };
 
@@ -78,9 +78,9 @@ public static class Laturi {
         $"{latura} trebuie să fie {Descrie(ceruta)}; e {Descrie(real, ceruta.Calitate)}.";
 
     static string Descrie(Latura latura) {
-        if (latura.Fel == FelRepartitor.Gestiune)
+        if (latura.Fel == N.FelRepartitor.Gestiune)
             return "o gestiune";
-        if (latura.Fel is FelRepartitor fel)
+        if (latura.Fel is N.FelRepartitor fel)
             return $"un repartitor de felul {fel}";
         var parti = new List<string>(3);
         if (latura.Permisa.HasFlag(Parte.Propriu))
@@ -94,7 +94,7 @@ public static class Laturi {
     }
 
     static string Descrie(RepartitorFapt real, CalitateRepartitor calitate) =>
-        real.Fel is not FelRepartitor fel ? "lipsă"
+        real.Fel is not N.FelRepartitor fel ? "lipsă"
         : calitate != CalitateRepartitor.Niciuna && !real.Calitati.HasFlag(calitate) ? $"{fel} fără calitatea {calitate}"
         : fel.ToString();
 }

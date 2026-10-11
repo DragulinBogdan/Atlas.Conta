@@ -430,7 +430,7 @@ static class E2eApiFcl {
                 stocDscApiCub.Count == 2
                 && stocDscApiCub.Single(p => p.Unitate == lotNouFcl.ID).Cantitate == -3m
                 && stocDscApiCub.Single(p => p.Unitate == lotVechiFcl.ID).Cantitate == -4m
-                && stocDscApiCub.All(p => p.Cont == tipMarfa.ContImplicitId && p.Gestiune == gestiuneFcl.ID));
+                && stocDscApiCub.All(p => p.Cont == tipMarfa.ContImplicitId && p.Repartitor == gestiuneFcl.ID));
 
             citFcl = FacturaIesireApply.Citeste(os, idFcl);
             s.Check("Affordance ONESTĂ pe grupul conex: cu descărcarea OPERATĂ, factura nu mai poate fi anulată/stornată",

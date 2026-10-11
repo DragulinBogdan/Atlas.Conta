@@ -157,7 +157,7 @@ static class E2eFacturaIesire {
                 noteCub.Nota(cont411.ID, tipChirii.ContImplicitId, 50m));
             s.Check("D9-A10 FCL: debitul 411 poartă clientul (partida lui), creditul de venit gestiunea emitentă SEDIU",
                 noteCub.Where(p => p.Cont == cont411.ID).All(p => p.Repartitor == client.ID)
-                && noteCub.Where(p => p.Credit).All(p => p.Gestiune == sediu.ID));
+                && noteCub.Where(p => p.Credit).All(p => p.Repartitor == sediu.ID));
 
             // --- Debit particularizat (461) + scadență culeasă + TVA în valoare ---
             var clientDebitor = os.CreateObject<Partener>();
