@@ -962,8 +962,11 @@ constatări; la 2026-10-11 sunt la `eroare` `linkuri`, `generat`, `arii`,
 cifrele în 118-r1. `check`
 verde e condiție a PR-ului, rulat local, cu ieșirea atașată; nu există CI și
 nici hook de sesiune. Citările din cod și metricile sar folderele `bin`,
-`obj`, `node_modules`, `.vs`, `Migrations` și `generated` (ieșirea
-codegen-ului OpenAPI). Limite: `build` (HTML static) și `metrics` (plafoanele
+`obj`, `node_modules`, `.vs`, `Migrations`, `generated` (ieșirea
+codegen-ului OpenAPI) și `tools` (ModelCheck, Import1C), plus fișierul generat
+`UnitatiMasuraUnEce.cs`. Excluderea e comună în unealtă: cele 50 de citări
+`// N` din fișierele excluse nu mai sunt verificate de gardianul `cod` și nu
+mai intră în numărătoarea din `stare.md` (76 din 126). Limite: `build` (HTML static) și `metrics` (plafoanele
 de cod) există în unealtă din docskit 0.5.0, dar nu sunt adoptate aici: linia
 zero a metricilor nu e înregistrată (118-r2); `/docs-curatenie` și
 `docs-init` vin cu 118-r4. (118k)

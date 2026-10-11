@@ -12,7 +12,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Contracte de felie (`Tip: contract`) | 0, deschise 0 |
 | Cataloage vii (`Tip: catalog`) | 0 |
 | Fișiere Markdown în `docs/` | 283 |
-| Citări de decizii din cod (`// N`) | 126 |
+| Citări de decizii din cod (`// N`) | 76 |
 
 ## Decizii în vigoare pe arie
 
@@ -99,7 +99,7 @@ Niciun contract deschis declarat cu `Tip: contract`.
 
 ## Decizii invocate din cod
 
-Decizia (numărul de citări `// N` din cod): 1 (3), 3 (2), 4 (1), 5 (1), 9 (1), 10 (2), 13 (1), 14 (2), 15 (2), 17 (1), 22 (1), 23 (2), 24 (1), 25 (1), 26 (4), 28 (1), 31 (1), 33 (1), 34 (1), 35 (1), 36 (1), 38 (3), 41 (2), 42 (3), 43 (1), 46 (2), 48 (2), 49 (1), 51 (1), 53 (1), 55 (1), 57 (6), 58 (1), 63 (1), 64 (1), 72 (1), 73 (1), 74 (1), 77 (4), 79 (4), 82 (3), 83 (4), 85 (4), 86 (1), 87 (2), 89 (4), 90 (4), 91 (3), 92 (1), 97 (1), 98 (2), 99 (2), 101 (1), 102 (1), 103 (2), 104 (7), 106 (1), 107 (7), 109 (1), 112 (1), 115 (5), 117 (1).
+Decizia (numărul de citări `// N` din cod): 1 (1), 3 (2), 13 (1), 14 (1), 15 (2), 17 (1), 23 (1), 24 (1), 26 (3), 28 (1), 31 (1), 33 (1), 34 (1), 36 (1), 38 (2), 41 (1), 42 (2), 43 (1), 48 (2), 49 (1), 51 (1), 53 (1), 57 (5), 58 (1), 63 (1), 64 (1), 72 (1), 77 (4), 79 (4), 83 (3), 85 (4), 86 (1), 87 (1), 89 (4), 90 (4), 92 (1), 97 (1), 98 (1), 99 (2), 103 (1), 104 (4), 109 (1), 115 (2).
 
 ## Paginile stării curente
 
