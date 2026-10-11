@@ -1,8 +1,9 @@
-# Decizia 48 — Analiza pre-1C-c — patru probleme tranșate ÎNAINTE de execuție
+# 48 — Analiza pre-1C-c — patru probleme tranșate ÎNAINTE de execuție
 
-- **Data**: 2026-07-25 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/import/faza-1c-design.md
+- Data: 2026-07-25
+- Stare: amendată de 76
+- Arii: domeniu-si-operare
+- Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă
 
@@ -22,7 +23,7 @@ ASM/RLF/DSC) — pinul întâi, deficitul FIFO în produs×gestiune (grupa în
 care netarea a conservat sumele), raportat. Contractul §8.3 amendat:
 cantitate strictă peste tot; valoarea pe grupele netate = diferență
 justificată („netare deschidere"), purtată înainte lună de lună.
-(b) **Cele cinci mecanici §4 fixate**: extras per rând; imperecherile =
+(b) [amendat de 76] **Cele cinci mecanici §4 fixate**: extras per rând; imperecherile =
 trecerea 2 per lună (skip+raport pe sold de deschidere/tipuri neimportate;
 invariant picat pe date reale = raport, nu stop); Compensare = NTC +
 **extensie de invariant ca decizie de produs** (NotaContabila operată

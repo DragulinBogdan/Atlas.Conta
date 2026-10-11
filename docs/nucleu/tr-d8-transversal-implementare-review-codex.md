@@ -45,7 +45,7 @@ soldului istoric folosit de comandă.
 Locuri: `Module/Cub/Citiri/Loturi.cs:114–138`
 ([sursa](../../nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Cub/Citiri/Loturi.cs));
 `ModelCheck/Nucleu/ReconciliereCub.cs:302–305`
-([sursa](../../nou/tools/ModelCheck/Nucleu/ReconciliereCub.cs)).
+(fișierul a ieșit la TR-D9a, 110).
 
 Amendamentul X-D7 elimină explicit contul din cheia cantitativă și spune că
 valoarea pe cont rămâne la reconcilierea (a). Însă (a) selectează `Fel = 1`

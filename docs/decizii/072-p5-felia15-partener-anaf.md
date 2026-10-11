@@ -1,8 +1,11 @@
-# Decizia 72 — Pasul 5, felia 15 — identitatea extinsă a partenerului + sincronizarea ANAF
+# 72 — Pasul 5, felia 15 — identitatea extinsă a partenerului + sincronizarea ANAF
 
-- **Data**: 2026-08-26
-- **Stare**: activă (amendează 71b — adresa e câmp plat pe `Partener`, nu satelit; 34g rămâne deschis doar pentru IBAN/delegați/contact/valute)
-- **Docs**: docs/api/p5-felia-partener-anaf-contract.md (D15-D1…D6, riscurile pin-uite, §Închidere — V4 măsurat), docs/import/faza-1c-design.md §13 (cifrele V5)
+- Data: 2026-08-26
+- Stare: activă
+- Execuție: (amendează 71b — adresa e câmp plat pe `Partener`, nu satelit; 34g rămâne deschis doar pentru IBAN/delegați/contact/valute)
+- Arii: limite-curente, politici-si-fiscalitate
+- Amendează: 71 (b)
+- Docs: docs/api/p5-felia-partener-anaf-contract.md (D15-D1…D6, riscurile pin-uite, §Închidere — V4 măsurat), docs/import/faza-1c-design.md §13 (cifrele V5)
 
 ## Regula durabilă
 

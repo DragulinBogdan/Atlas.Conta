@@ -1,7 +1,8 @@
-# Decizia 12 — Migrare green-field la graniță de ciclu
+# 12 — Migrare green-field la graniță de ciclu
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii:
 
 ## Regula durabilă
 

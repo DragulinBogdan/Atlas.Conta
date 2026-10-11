@@ -1,7 +1,10 @@
-# 100. Partide comerciale în politica bugetară
+# 100 — Partide comerciale în politica bugetară
 
 - Data: 2026-09-25
-- Stare: aprobată de owner, activă; amendează 096(b); refuzul istoricului din (b) depășit de 102
+- Stare: amendată de 102
+- Execuție: aprobată de owner, activă; amendează 096(b); refuzul istoricului din (b) depășit de 102
+- Arii: domeniu-si-operare
+- Amendează: 96 (b)
 - Docs: `docs/nucleu/tr-d8-citiri-contract.md` D8-B6; 090(d), 092, 096.
 
 ## Regula durabilă
@@ -10,7 +13,7 @@
 `401.01.00`, `404.01.00` și `411.01.01` cu `DinSeed=true`.
 `RolTert` rămâne neschimbat. Conturile manuale nu se aliniază implicit.
 
-(b) Activarea citirilor refuză istoricul contabil fără unități de partidă
+(b) [depășit de 102] Activarea citirilor refuză istoricul contabil fără unități de partidă
 pe conturile urmărite. Seed-ul nu reconstruiește postări sau stingeri;
 soldul unui cont nu este suficient pentru deducerea partidelor istorice.
 Diagnosticul identifică pozițiile care cer remediere înaintea comutării.

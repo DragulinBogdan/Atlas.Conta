@@ -1,7 +1,8 @@
-# Decizia 33 — Felia 3d — validarea transversală
+# 33 — Felia 3d — validarea transversală
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii: domeniu-si-operare
 
 ## Regula durabilă
 

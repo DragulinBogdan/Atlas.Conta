@@ -1,8 +1,9 @@
-# Decizia 63 — Pasul 5, felia 6 — LDI + BCS prin API și client
+# 63 — Pasul 5, felia 6 — LDI + BCS prin API și client
 
-- **Data**: 2026-08-13 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-felia-ldi-bcs-contract.md
+- Data: 2026-08-13
+- Stare: activă
+- Arii:
+- Docs: docs/api/p5-felia-ldi-bcs-contract.md
 
 ## Regula durabilă
 

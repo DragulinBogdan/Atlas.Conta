@@ -1,8 +1,9 @@
-﻿# Decizia 70 — Pasul 5, felia 13 — motor/structură post-D300 (69-r4/r7/r5 + 67e)
+# 70 — Pasul 5, felia 13 — motor/structură post-D300 (69-r4/r7/r5 + 67e)
 
-- **Data**: 2026-08-25
-- **Stare**: activă
-- **Docs**: docs/api/p5-felia-motor-structura-contract.md (F13-D1…D6 + §Închidere)
+- Data: 2026-08-25
+- Stare: activă
+- Arii: api-si-client, dezvoltare-si-validare, politici-si-fiscalitate
+- Docs: docs/api/p5-felia-motor-structura-contract.md (F13-D1…D6 + §Închidere)
 
 ## Regula durabilă
 

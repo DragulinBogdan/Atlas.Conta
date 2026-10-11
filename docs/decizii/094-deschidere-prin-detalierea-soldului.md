@@ -1,9 +1,10 @@
-# 94. Deschiderea detaliază soldul contabil, fără dublare
+# 94 — Deschiderea detaliază soldul contabil, fără dublare
 
 - Data: 2026-09-24
-- Stare: aprobată de owner, activă
-- Docs: `docs/nucleu/tr-d7b-deschidere-contract.md` DES-B1…B4;
-  TR-D7b T-D7; 090(d/g), 091(f/i), 092.
+- Stare: activă
+- Execuție: aprobată de owner, activă
+- Arii: limite-curente
+- Docs: `docs/nucleu/tr-d7b-deschidere-contract.md` DES-B1…B4; TR-D7b T-D7; 090(d/g), 091(f/i), 092.
 
 ## Regula durabilă
 

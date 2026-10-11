@@ -1,14 +1,16 @@
 # 114 — Departajarea FIFO: data, documentul deschizător, apoi identificatorul
 
 - Data: 2026-10-09
-- Stare: **activă, amendată de 116** ((a): între unitățile fără document departajează postarea de deschidere; (d): postările unei tranzacții au ID-urile în ordinea ei); regula din motor hotărâtă de owner 2026-10-09. Precizează 013 și N-D7 (090 (e)); tratează parțial 107-r11. 114-r1 e închisă prin 116.
+- Stare: amendată de 116
+- Execuție: amendată de 116 ((a): între unitățile fără document departajează postarea de deschidere; (d): postările unei tranzacții au ID-urile în ordinea ei); regula din motor hotărâtă de owner 2026-10-09. Precizează 013 și N-D7 (090 (e)); tratează parțial 107-r11. 114-r1 e închisă prin 116
+- Arii: domeniu-si-operare
 - Docs: `docs/stare-curenta/domeniu-si-operare.md`; catalogul `docs/nucleu/scenarii/NTC.md` (SC-NTC-09); `docs/nucleu/tr-d9b-pas0-masuratori.md` §7.
 
 ## Regula durabilă
 
 **La aceeași dată de deschidere, FIFO consumă întâi unitatea deschisă de documentul creat mai devreme.**
 
-(a) **Ordinea FIFO** a unităților este: data deschiderii, apoi ID-ul documentului deschizător, apoi identificatorul unității. Unitatea fără document deschizător (partida inițială, lotul fără linie de intrare) vine prima la data ei.
+(a) [amendat de 116] **Ordinea FIFO** a unităților este: data deschiderii, apoi ID-ul documentului deschizător, apoi identificatorul unității. Unitatea fără document deschizător (partida inițială, lotul fără linie de intrare) vine prima la data ei.
 
 (b) **Partide.** Documentul deschizător e cel a cărui identitate (092) dă identificatorul partidei. Nucleul îl primește pe candidat (`Disponibil.Origine`), nu pe unitate: identitatea unității nu se schimbă.
 

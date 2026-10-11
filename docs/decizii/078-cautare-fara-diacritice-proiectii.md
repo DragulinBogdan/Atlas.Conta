@@ -1,8 +1,10 @@
-# 78. Căutarea fără diacritice pe proiecții — rescrierea predicatelor `DataSourceLoader` prin normalizatorul comun
+# 78 — Căutarea fără diacritice pe proiecții — rescrierea predicatelor `DataSourceLoader` prin normalizatorul comun
 
-- **Data**: 2026-09-01
-- **Stare**: activă (perechea lui 77a: coloana generată rămâne a nomenclatoarelor pe OData; aici e ușa `DataSourceLoader` a proiecțiilor)
-- **Docs**: `nou/.../Module/Api/CautareFiltru.cs`, `nou/.../Module/BusinessObjects/Comun/Cautare.cs`, `BackOfficeDbContext.AplicaFunctiaFaraDiacritice`; probele în `nou/tools/ModelCheck/Program.cs` (blocul „78")
+- Data: 2026-09-01
+- Stare: activă
+- Execuție: (perechea lui 77a: coloana generată rămâne a nomenclatoarelor pe OData; aici e ușa `DataSourceLoader` a proiecțiilor)
+- Arii:
+- Docs: `nou/.../Module/Api/CautareFiltru.cs`, `nou/.../Module/BusinessObjects/Comun/Cautare.cs`, `BackOfficeDbContext.AplicaFunctiaFaraDiacritice`; probele în `nou/tools/ModelCheck/Program.cs` (blocul „78")
 
 ## Regula durabilă
 

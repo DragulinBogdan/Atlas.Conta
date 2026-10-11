@@ -1,8 +1,9 @@
-# Decizia 59 — Măsurarea de perf a proiecțiilor pe baza de import
+# 59 — Măsurarea de perf a proiecțiilor pe baza de import
 
-- **Data**: 2026-08-09 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-perf-masuratori.md
+- Data: 2026-08-09
+- Stare: activă
+- Arii:
+- Docs: docs/api/p5-perf-masuratori.md
 
 ## Regula durabilă
 

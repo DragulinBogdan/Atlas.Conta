@@ -1,5 +1,9 @@
 # C111, pasul 1b — așteptările dinaintea formei noi
 
+- Tip: analiza
+- Data: 2026-10-10
+- Alimentează: 111 (raport de pas al contractului C111)
+
 **Data:** 2026-10-10. **Stare:** făcut. Contractul:
 [C111](c111-coordonate-contract.md), regulile de oprire 2–4. Niciun cod de
 produs schimbat; unealta `--amprente` are trei secțiuni noi.

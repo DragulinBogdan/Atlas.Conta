@@ -1,8 +1,9 @@
-# Decizia 65 — Pasul 5, felia 8 — Decont
+# 65 — Pasul 5, felia 8 — Decont
 
-- **Data**: 2026-08-16 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-felia-dec-pereche-contract.md
+- Data: 2026-08-16
+- Stare: activă
+- Arii: domeniu-si-operare
+- Docs: docs/api/p5-felia-dec-pereche-contract.md
 
 ## Regula durabilă
 

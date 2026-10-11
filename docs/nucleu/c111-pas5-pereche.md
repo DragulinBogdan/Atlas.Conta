@@ -1,5 +1,9 @@
 # C111, pasul 5 — contrapartida prin pereche (S9)
 
+- Tip: analiza
+- Data: 2026-10-10
+- Alimentează: 111 (raport de pas al contractului C111)
+
 **Data:** 2026-10-10. **Stare:** implementat și verificat pe catalog și pe
 HTTP; cifra de timp e luată la pasul 6 ([`c111-pas6-import.md`](c111-pas6-import.md)).
 Sursa perechii s-a schimbat la pasul 6: `Contabil.Perechi`, mărginită de

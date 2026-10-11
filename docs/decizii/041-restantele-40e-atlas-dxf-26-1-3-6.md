@@ -1,7 +1,9 @@
-# Decizia 41 — Felia „restanțele 40e
+# 41 — Felia „restanțele 40e
 
-- **Data**: 2026-07-24 (primul commit în jurnal)
-- **Stare**: activă; (e) Atlas.DXF e PINNAT, nu flotant (53h)
+- Data: 2026-07-24
+- Stare: activă
+- Execuție: (e) Atlas.DXF e PINNAT, nu flotant (53h)
+- Arii: domeniu-si-operare, limite-curente
 
 ## Regula durabilă
 

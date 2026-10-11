@@ -1,8 +1,9 @@
-# Decizia 49 — Felia 1C-c — documentele 2025 prin motor
+# 49 — Felia 1C-c — documentele 2025 prin motor
 
-- **Data**: 2026-07-25 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/import/faza-1c-design.md
+- Data: 2026-07-25
+- Stare: activă
+- Arii: dezvoltare-si-validare, domeniu-si-operare
+- Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă
 

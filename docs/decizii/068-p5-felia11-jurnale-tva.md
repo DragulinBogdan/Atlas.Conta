@@ -1,8 +1,9 @@
-# Decizia 68 — Pasul 5, felia 11 — jurnalele de TVA
+# 68 — Pasul 5, felia 11 — jurnalele de TVA
 
-- **Data**: 2026-08-19 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-felia-jurnale-tva-design.md
+- Data: 2026-08-19
+- Stare: activă
+- Arii: api-si-client
+- Docs: docs/api/p5-felia-jurnale-tva-design.md
 
 ## Regula durabilă
 

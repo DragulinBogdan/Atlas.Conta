@@ -1,7 +1,8 @@
-# Decizia 14 — Registre persistate, append-only
+# 14 — Registre persistate, append-only
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii: dezvoltare-si-validare, domeniu-si-operare
 
 ## Regula durabilă
 

@@ -1,8 +1,9 @@
-# Decizia 37 — Design P2 — descărcarea de gestiune la FacturaIesire
+# 37 — Design P2 — descărcarea de gestiune la FacturaIesire
 
-- **Data**: 2026-07-23 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/privat/p2-descarcare-design.md
+- Data: 2026-07-23
+- Stare: activă
+- Arii: domeniu-si-operare, limite-curente
+- Docs: docs/privat/p2-descarcare-design.md
 
 ## Regula durabilă
 

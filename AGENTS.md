@@ -17,7 +17,9 @@
 - Așteptările scenariilor sunt numerice și independente de registrele vechi.
   Un refuz așteptat este rezultat al scenariului, nu stare de implementare.
 - La predare precizează schimbarea, scenariile acoperite, comenzile executate
-  și limitele rămase. Actualizează documentația afectată în aceeași schimbare.
+  și limitele rămase. Actualizează documentația afectată în aceeași schimbare;
+  forma ei și cele două verificări `docskit` cerute de PR sunt în `CLAUDE.md`,
+  la regulile de lucru comune.
 - Nu lucra simultan cu alt agent în același checkout sau pe aceleași baze.
   Pentru execuție paralelă: worktree și sufix de bază distincte, cu rulările
   grele coordonate conform regulii comune. Nu lansa subagenți implicit.

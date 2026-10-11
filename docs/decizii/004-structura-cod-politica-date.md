@@ -1,7 +1,8 @@
-# Decizia 4 — Structura devine cod, politica rămâne date
+# 4 — Structura devine cod, politica rămâne date
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii:
 
 ## Regula durabilă
 

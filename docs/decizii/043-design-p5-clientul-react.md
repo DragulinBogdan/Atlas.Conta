@@ -1,8 +1,10 @@
-# Decizia 43 — Design pasul 5 — clientul React
+# 43 — Design pasul 5 — clientul React
 
-- **Data**: 2026-07-24 (primul commit în jurnal)
-- **Stare**: activă; aria amendată de 104d (React = citiri și proiecții; paginile de detaliu ale documentelor înghețate)
-- **Docs**: docs/api/p5-react-design.md
+- Data: 2026-07-24
+- Stare: amendată de 104
+- Execuție: aria amendată de 104d (React = citiri și proiecții; paginile de detaliu ale documentelor înghețate)
+- Arii: api-si-client, dezvoltare-si-validare, limite-curente
+- Docs: docs/api/p5-react-design.md
 
 ## Regula durabilă
 

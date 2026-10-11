@@ -1,8 +1,10 @@
-# 79. Pasul 5, felia 21 — ITV (închiderea de TVA) prin API și client: comandă cu cauză + ecran de rezultat
+# 79 — Pasul 5, felia 21 — ITV (închiderea de TVA) prin API și client: comandă cu cauză + ecran de rezultat
 
-- **Data**: 2026-09-01
-- **Stare**: activă (b amendată de 80e: cifrele motorului cer și dreptul de citire pe `RegistruContabil`; c amendată de 80b: comenzile NTC pe un id ITV nu mai sunt permise — 404 pe toată ușa NTC; 79-r6 închisă de 80; 79-r1 închisă la 2026-09-02 — acțiunea XAF „Generează închiderea", vezi restanța)
-- **Docs**: `docs/api/p5-felia-itv-contract.md` (F21-D1…D12 + §Închidere cu cifrele HTTP), `nou/.../Module/Motor/InchidereTvaService.cs`, `nou/.../Module/Api/Itv/`, `nou/.../WebApi/API/Conta/ItvController.cs`, `nou/Atlas.Conta.Client/src/felii/itv/`; probele în `nou/tools/ModelCheck/Program.cs` (blocul `E2E-API-ITV`)
+- Data: 2026-09-01
+- Stare: amendată de 80
+- Execuție: (b amendată de 80e: cifrele motorului cer și dreptul de citire pe `RegistruContabil`; c amendată de 80b: comenzile NTC pe un id ITV nu mai sunt permise — 404 pe toată ușa NTC; 79-r6 închisă de 80; 79-r1 închisă la 2026-09-02 — acțiunea XAF „Generează închiderea", vezi restanța)
+- Arii: api-si-client, politici-si-fiscalitate
+- Docs: `docs/api/p5-felia-itv-contract.md` (F21-D1…D12 + §Închidere cu cifrele HTTP), `nou/.../Module/Motor/InchidereTvaService.cs`, `nou/.../Module/Api/Itv/`, `nou/.../WebApi/API/Conta/ItvController.cs`, `nou/Atlas.Conta.Client/src/felii/itv/`; probele în `nou/tools/ModelCheck/Program.cs` (blocul `E2E-API-ITV`)
 
 ## Regula durabilă
 
@@ -18,11 +20,11 @@ blochează OPERAREA (gard în `ValideazaOperare`); perioada fiscală închisă =
 `PerioadaInchisa` la raport / refuz la comandă; solduri `null` (nu 0) pe
 profil inert; unitatea ne-internă = refuz la generare;
 `LiniiPotrivescSoldurile` = SINGURUL criteriu anti-stale (gardian ȘI `Stale`
-din DTO); `Genereaza` = wrapper, Import1C neatins. (b) Gate-ul comenzii fără
+din DTO); `Genereaza` = wrapper, Import1C neatins. (b) [amendat de 80] Gate-ul comenzii fără
 subiect e pe TIP (`PoateCrea`, `PoateCiti`; `AutorizeazaCitire<T>` pe
 instanță), luat pe ușa securizată ÎNAINTE; cifrele motorului se calculează pe
 ușa NON-SECURED (pe cea filtrată ar fi false, nu goale — 73g); listele rămân
-securizate. (c) ITV iese din felia NTC: listele filtrează `!(d is
+securizate. (c) [amendat de 80] ITV iese din felia NTC: listele filtrează `!(d is
 InchidereTva)`, PUT/DELETE refuză; `is` la graniță, în Apply, nu în motor;
 comenzile NTC pe id ITV = 404 pe toată ușa NTC (amendat de 80b, `peUsaAsta`).
 (d) `genereaza` răspunde 200 și când nu generează (`Motiv` +

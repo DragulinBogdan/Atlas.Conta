@@ -1,8 +1,9 @@
-# Decizia 58 — Pasul 5, felia 4 — FCL + descărcarea de gestiune prin API
+# 58 — Pasul 5, felia 4 — FCL + descărcarea de gestiune prin API
 
-- **Data**: 2026-08-09 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-felia-fcl-contract.md
+- Data: 2026-08-09
+- Stare: activă
+- Arii: api-si-client
+- Docs: docs/api/p5-felia-fcl-contract.md
 
 ## Regula durabilă
 

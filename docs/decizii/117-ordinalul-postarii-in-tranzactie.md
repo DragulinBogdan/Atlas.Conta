@@ -1,7 +1,11 @@
 # 117 — Postarea își poartă ordinalul în tranzacție; unitatea fără document se departajează pe el
 
 - Data: 2026-10-09
-- Stare: **activă**; hotărâtă de owner 2026-10-09. Amendează 116 (a), (b) și (c); închide 116-r1.
+- Stare: activă
+- Execuție: hotărâtă de owner 2026-10-09. Amendează 116 (a), (b) și (c); închide 116-r1
+- Arii: domeniu-si-operare
+- Amendează: 116 (a, b)
+- Închide: 116-r1
 - Docs: `docs/stare-curenta/domeniu-si-operare.md`, `limite-curente.md`; catalogul `docs/nucleu/scenarii/CITIRI.md` (SC-CIT-113).
 
 ## Regula durabilă

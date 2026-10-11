@@ -1,7 +1,9 @@
-# Decizia 16 — Repartitori
+# 16 — Repartitori
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: amendată de 89 (maparea TPT → TPH, 2026-09-18; regula moștenirii doar unde identitatea e exclusivă și calitățile ca flags rămân)
+- Data: 2026-07-22
+- Stare: amendată de 89
+- Execuție: (maparea TPT → TPH, 2026-09-18; regula moștenirii doar unde identitatea e exclusivă și calitățile ca flags rămân)
+- Arii: domeniu-si-operare
 
 ## Regula durabilă
 

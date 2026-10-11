@@ -1,7 +1,8 @@
-# Decizia 60 — Mărunțișurile F3/F4 golite
+# 60 — Mărunțișurile F3/F4 golite
 
-- **Data**: 2026-08-09 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-08-09
+- Stare: activă
+- Arii: api-si-client
 
 ## Regula durabilă
 

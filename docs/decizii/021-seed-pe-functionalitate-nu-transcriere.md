@@ -1,7 +1,8 @@
-# Decizia 21 — Seed-ul politicilor se face PE FUNCȚIONALITATE, nu prin transcrierea config-ului legacy
+# 21 — Seed-ul politicilor se face PE FUNCȚIONALITATE, nu prin transcrierea config-ului legacy
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii: dezvoltare-si-validare
 
 ## Regula durabilă
 

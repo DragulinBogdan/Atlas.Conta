@@ -1,8 +1,10 @@
-# Decizia 38 — Felia P2 — DescarcareGestiune
+# 38 — Felia P2 — DescarcareGestiune
 
-- **Data**: 2026-07-23 (primul commit în jurnal)
-- **Stare**: activă; (e) backlog-ul UI închis de 39–40
-- **Docs**: docs/privat/p2-descarcare-design.md
+- Data: 2026-07-23
+- Stare: amendată de 81, 84
+- Execuție: (e) backlog-ul UI închis de 39–40
+- Arii:
+- Docs: docs/privat/p2-descarcare-design.md
 
 ## Regula durabilă
 
@@ -32,7 +34,7 @@ scăzută din solduri. Generatorul NU aruncă niciodată la lipsă de stoc
 (restul = backorder); refuzul „lot explicit fără sold în gestiune — întâi
 BTR" trăiește în `FacturaIesire.ValideazaOperare`, înainte de
 materializare (33d — hook-ul `GenereazaSecundar` rulează după ea).
-(c) **Review-ul advers a întărit integritatea (validări, nu design):**
+(c) [amendat de 84] **Review-ul advers a întărit integritatea (validări, nu design):**
 linie de stoc FCL / linie DSC fără regulă de contare per-Tip = refuz
 explicit (30b — un Tip creat între updater-e nu mai postează
 greșit/silențios prin genericul FCL, nici nu mai mișcă stoc fără notă pe
@@ -44,7 +46,7 @@ trebuie să fie de tipul derivat (linia de bază ar ocoli General!+
 Specific?); gardian NOU generic de editare (`DocumentEditareController`):
 documentele ne-Draft sunt read-only la nivel de DetailView — câmpurile
 FCL sunt load-bearing și după operare.
-(d) **UI**: acțiunea „Generează descărcarea" = ParametrizedAction cu dată
+(d) [amendat de 81] **UI**: acțiunea „Generează descărcarea" = ParametrizedAction cu dată
 (default azi), doar pe FCL Operat, deleagă la serviciu în ObjectSpace
 propriu și deschide draftul în editare; restul nedescărcat se raportează
 în mesaj pe AMBELE căi (operare + acțiune). `DefaultTipTvaController`

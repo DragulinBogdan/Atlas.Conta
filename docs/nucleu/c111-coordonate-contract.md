@@ -1,5 +1,11 @@
 # C111 — coordonatele postării: contract
 
+- Tip: contract
+- Data: 2026-10-10
+- Trigger: owner, la aprobarea deciziei 111 (2026-10-10): coordonatele postării se implementează înaintea TR-D9b
+- Decizii: 111
+- Stare: închis 2026-10-11
+
 **Data:** 2026-10-10. **Stare:** pin-uit cu owner-ul pe C111-Q1…Q16
 (2026-10-10). Pasul 0 e făcut. Review-ul advers Codex al contractului
 (C111-R1…R16) e reconciliat mai jos, în trei runde; amendamentul 1 e retras. Pașii 1 și 1b

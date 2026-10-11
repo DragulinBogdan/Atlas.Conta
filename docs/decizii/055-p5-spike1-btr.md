@@ -1,8 +1,9 @@
-# Decizia 55 — Pasul 5, spike 1 — fir complet subțire API+React pe NotaTransfer
+# 55 — Pasul 5, spike 1 — fir complet subțire API+React pe NotaTransfer
 
-- **Data**: 2026-08-08 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/api/p5-spike1-contract.md
+- Data: 2026-08-08
+- Stare: activă
+- Arii: api-si-client, domeniu-si-operare, limite-curente
+- Docs: docs/api/p5-spike1-contract.md
 
 ## Regula durabilă
 

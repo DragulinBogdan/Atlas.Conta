@@ -1,7 +1,8 @@
-# Decizia 23 — Felia 3a
+# 23 — Felia 3a
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii: dezvoltare-si-validare, domeniu-si-operare
 
 ## Regula durabilă
 

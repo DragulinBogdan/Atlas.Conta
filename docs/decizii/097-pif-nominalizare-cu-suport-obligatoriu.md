@@ -1,7 +1,9 @@
-# 97. PIF nominalizează valoarea contabilă cu suport obligatoriu
+# 97 — PIF nominalizează valoarea contabilă cu suport obligatoriu
 
 - Data: 2026-09-24
-- Stare: aprobată de owner, activă; (b) precizată de 098 ca invariant de poziție
+- Stare: amendată de 98
+- Execuție: aprobată de owner, activă; (b) precizată de 098 ca invariant de poziție
+- Arii: domeniu-si-operare, limite-curente
 - Docs: `docs/nucleu/tr-d7c-imobilizari-contract.md` IMO-B2; 087(e), 090, 094, 095.
 
 ## Regula durabilă
@@ -11,7 +13,7 @@ modernizarea nu creează valoare contabilă nouă. Suportul este o FCT operată,
 o notă contabilă operată sau deschiderea; lipsa ori insuficiența suportului
 refuză atomic operația. Se verifică separat brutul și amortizarea inițială.
 
-(b) Nominalizarea este Transfer pe același cont și aceeași latură, din
+(b) [amendat de 98] Nominalizarea este Transfer pe același cont și aceeași latură, din
 poziția fără fișă pe fișa aleasă, cu dimensiunile suportului. Nu schimbă
 soldul sau rulajele generale. Alocarea reține proveniența, împiedică
 supraconsumul inclusiv concurent și păstrează plafonul pe linia FCT.

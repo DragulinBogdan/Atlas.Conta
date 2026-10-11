@@ -49,7 +49,7 @@ nu certifică aplicabilitatea calendaristică a regimurilor din iulie/august
 Browser: date fiscale și implicitul primirii; jurnal cu cele două perioade;
 39 mapări SAF-T cu rolurile afișate; D394 10 facturi, 100.000/21.000 și
 confirmare explicită. Performanța și limitele se citesc în
-[review-ul propriu](../tr-d8-review-codex.md#felia-fiscală-103--review-propriu-2026-09-26).
+[review-ul propriu](../tr-d8-review-codex.md#felia-fiscală-103--review-propriu-inițial-2026-09-26).
 
 ### Corecturi snapshot — specificație înaintea codului, 2026-09-25
 

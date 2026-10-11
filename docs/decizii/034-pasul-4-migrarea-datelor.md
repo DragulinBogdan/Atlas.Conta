@@ -1,7 +1,8 @@
-# Decizia 34 — Pasul 4 — migrarea datelor
+# 34 — Pasul 4 — migrarea datelor
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii: dezvoltare-si-validare
 
 ## Regula durabilă
 

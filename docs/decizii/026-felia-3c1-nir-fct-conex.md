@@ -1,7 +1,9 @@
-# Decizia 26 — Felia 3c-1 — NIR + FacturaIntrare + mecanismul conex
+# 26 — Felia 3c-1 — NIR + FacturaIntrare + mecanismul conex
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă; (a) amendată de 112 (recepția se contează pe factură, pe regula `FCT/Stoc`), (c) precizată de 112 (pe tipurile care contează prin reguli, linia fără regulă e refuzată)
+- Data: 2026-07-22
+- Stare: amendată de 112
+- Execuție: (a) amendată de 112 (recepția se contează pe factură, pe regula `FCT/Stoc`), (c) precizată de 112 (pe tipurile care contează prin reguli, linia fără regulă e refuzată)
+- Arii: dezvoltare-si-validare, domeniu-si-operare
 
 ## Regula durabilă
 
@@ -25,7 +27,7 @@ timpul enumerării.
 **Felia 3c-1 — NIR + FacturaIntrare + mecanismul conex — executată;
 validată e2e în ModelCheck (FCT cu linie stoc + linie serviciu → NIR conex
 → operare → gardieni grup → storno lanț). Tranșările:**
-(a) **Întrebarea 00 §13.1 închisă:** recepția CONTEAZĂ pe NIR (3xx =
+(a) [amendat de 112] **Întrebarea 00 §13.1 închisă:** recepția CONTEAZĂ pe NIR (3xx =
 furnizor, valoarea cu TVA capitalizat); FacturaIntrare postează DOAR
 liniile care nu trec pe NIR (servicii/cheltuieli/imobilizări). Granița e
 Natura clasei — aceeași care filtrează conexul; fără dublă postare.
@@ -37,7 +39,7 @@ Clasă/Tip → cont ca DATE (decizia 4), seed-uită din simbol (Cod-ul Tipului
 E simbol de cont — potrivire exactă, apoi tăierea segmentelor terminale:
 302.02.00.2 → 302.02.00). `Partener.ContImplicit` particularizează
 creditorul (404 la furnizorii de imobilizări), fallback 401.01.00.
-(c) **Prioritate la potrivirea regulilor**: RegulaContare — TipMaterial
+(c) [amendat de 112] **Prioritate la potrivirea regulilor**: RegulaContare — TipMaterial
 exact → `NaturaFiltru` (câmp nou) → generică; fără regulă = linia nu
 contează pe acel tip de document. RegulaStoc — regula specifică pe Clasă
 bate genericul (Clasa=null = orice Natura=Stoc) per latură. Seed NIR:

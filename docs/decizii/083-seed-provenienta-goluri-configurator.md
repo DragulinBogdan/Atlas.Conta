@@ -1,12 +1,14 @@
 # 83 — Seed-ul și proveniența: re-seed-ul corectează doar `DinSeed`, golurile privat (NIM / IMP cu poarta spre DVI), rolul `Configurator`
 
-- **Data**: 2026-09-10
-- **Stare**: activă, executată de 84; 83-r4 închisă de 86 — DVI ca tip de document (`docs/api/p5-felia24-politici-explica-contract.md`; 83j amendată de 84j — ștergerea unui `TipTva` referit se refuză; 83-r3 tranșată: `IMP` fără cod SAF-T, `NIM` cu 308302; mecanismul lui (a)/(j) amendat de 104i — rândul șters rămâne șters prin `RefuzSeed`, nu prin ștergerea amânată)
-- **Docs**: `docs/decizii/081-p5-felia23-implicite-politici.md` (81-r1, 81-r2, 81-r3, 81k), `docs/invarianti.md` (IV, V), `Module/BusinessObjects/Comun/ICuProvenienta.cs`, `Module/DatabaseUpdate/ContaSeeder.cs`, `Module/DatabaseUpdate/ProfilPrivat.cs`, `Module/DatabaseUpdate/Updater.cs`, `Module/Motor/GardianEditare.cs`, `Module/Motor/VerificareProfilService.cs`, `Module/Motor/ImpliciteService.cs`
+- Data: 2026-09-10
+- Stare: amendată de 84, 86, 104
+- Execuție: executată de 84; 83-r4 închisă de 86 — DVI ca tip de document (`docs/api/p5-felia24-politici-explica-contract.md`; 83j amendată de 84j — ștergerea unui `TipTva` referit se refuză; 83-r3 tranșată: `IMP` fără cod SAF-T, `NIM` cu 308302; mecanismul lui (a)/(j) amendat de 104i — rândul șters rămâne șters prin `RefuzSeed`, nu prin ștergerea amânată)
+- Arii: politici-si-fiscalitate
+- Docs: `docs/decizii/081-p5-felia23-implicite-politici.md` (81-r1, 81-r2, 81-r3, 81k), `docs/invarianti.md` (IV, V), `Module/BusinessObjects/Comun/ICuProvenienta.cs`, `Module/DatabaseUpdate/ContaSeeder.cs`, `Module/DatabaseUpdate/ProfilPrivat.cs`, `Module/DatabaseUpdate/Updater.cs`, `Module/Motor/GardianEditare.cs`, `Module/Motor/VerificareProfilService.cs`, `Module/Motor/ImpliciteService.cs`
 
 ## Regula durabilă
 
-**Seed-ul și proveniența** (execuția în felia 24). (a) **Re-seed-ul
+**Seed-ul și proveniența** (execuția în felia 24). (a) [amendat de 104] **Re-seed-ul
 CORECTEAZĂ rândurile `DinSeed = true`, și numai pe ele**: timbrul e
 proprietate — rândul editat (stins de gardian) nu se atinge, rândul șters
 rămâne șters (4). (b) Cheia (indexul unic, 81c) nu se schimbă prin seed:
@@ -16,7 +18,7 @@ Seed-urile derivate recalculează cheile `DinSeed`, sar cheile manuale.
 contor). (e) 81-r3 asumată, expunere zero la 2026-09-10. (f) **SFD e
 natura operațiunii** (override pe Partener/Produs, 81b), **NIM decurge
 din clasă**: `FCT/RLF × NeinregistratRo → NIM` (D394 `N` rămâne
-negenerat, 83-r2). (g) **Import = `TipTva` propriu `IMP`** (0%, regim
+negenerat, 83-r2). (g) [amendat de 86] **Import = `TipTva` propriu `IMP`** (0%, regim
 `Neimpozabil`, cod SAF-T din nomenclator), `FCT/RLF × ExtraUe → IMP`,
 nemapat deliberat pe D300 („din DVI") și D394; **poarta**: DVI = tip de
 document propriu (36f) cu `IMP21`, legătură n→m cu facturile (83-r4).
@@ -24,7 +26,7 @@ document propriu (36f) cu `IMP21`, legătură n→m cu facturile (83-r4).
 DOAR pe tipurile `ICuProvenienta`; al patrulea oracol în
 `refuzuri.ps1`. (i) **O singură listă** `Politici.TipuriConfigurabile`
 (rol, gardian, raport, seed), cu probă că acoperă orice `ICuProvenienta`.
-(j) Rândul de seed șters nu se recreează nici la runtime (83-r1).
+(j) [amendat de 84] Rândul de seed șters nu se recreează nici la runtime (83-r1).
 
 ## Context
 

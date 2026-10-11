@@ -1,7 +1,9 @@
-# Decizia 44 — Reordonarea roadmap-ului
+# 44 — Reordonarea roadmap-ului
 
-- **Data**: 2026-07-25 (primul commit în jurnal)
-- **Stare**: executată (reordonarea s-a consumat: 1C, GATE XAF, DIM, apoi pasul 5); rămâne regula „XAF Blazor = vehicul de iterație, luptele structurale → lista React"
+- Data: 2026-07-25
+- Stare: activă
+- Execuție: executată (reordonarea s-a consumat: 1C, GATE XAF, DIM, apoi pasul 5); rămâne regula „XAF Blazor = vehicul de iterație, luptele structurale → lista React"
+- Arii:
 
 ## Regula durabilă
 

@@ -1,7 +1,9 @@
-# Decizia 15 — Dimensiuni
+# 15 — Dimensiuni
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă; forma de stocare amendată de 54c (owned → plat pe frunze/registru)
+- Data: 2026-07-22
+- Stare: activă
+- Execuție: forma de stocare amendată de 54c (owned → plat pe frunze/registru)
+- Arii: dezvoltare-si-validare, domeniu-si-operare
 
 ## Regula durabilă
 

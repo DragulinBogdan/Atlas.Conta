@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-10-10.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
 
 ## Modelul comun
 
@@ -915,7 +915,7 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
     care ține contracantitatea în afara evidenței; nul = postare în evidență.
   - `PartenerFiscal` stă numai pe postarea cu fapt fiscal.
   - `Loc` e locul intern al postării când nu e repartitorul ei de sold: pe
-    orice postare cu fapt fiscal și pe piciorul intern căruia titularul unei
+    orice postare cu fapt fiscal și pe capătul intern căruia titularul unei
     partide i-a luat locul (C111-Q14). Nu intră în nicio cheie de sold.
 - **Conservarea**, structurală: valoarea per `Carte`, cantitatea per produs
   peste TOATE postările, transferul cu Σ = 0 per (cont, latură), valoarea
@@ -1013,13 +1013,13 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   Rezolvările comune (`Contari`): contul fiecărei laturi prin
   `Potrivire.Contare/Cont` și coalesce-ul dimensiunilor prin
   `DimensiuniResolver` — aceleași funcții pure ca motorul vechi.
-- **Regula coordonatelor** (C111-D5; B-D8 pct. 9, 10): piciorul poartă
+- **Regula coordonatelor** (C111-D5; B-D8 pct. 9, 10): capătul poartă
   repartitorul al cărui sold îl mișcă. Repartitorul de sold îl dă
   declarantul (latura, linia, regula de contare); partenerul fiscal îl dă
   politica de TVA. Niciunul nu se deduce din clasa contului.
-  - **Piciorul intern** (stoc, cheltuială, venit, fișă) poartă repartitorul
+  - **Capătul intern** (stoc, cheltuială, venit, fișă) poartă repartitorul
     intern al documentului, cu sau fără fapt fiscal.
-  - **Piciorul de terț** îl pune un singur helper, `Declaratii/Terti.Capat`,
+  - **Capătul de terț** îl pune un singur helper, `Declaratii/Terti.Capat`,
     pe capătul pe care i-l dă apelantul: titularul și partida pe un cont cu
     `UrmarestePartide`; terțul singur pe capătul fără repartitor al unui cont
     care declară feluri de repartitor (`ContFapt.DeclaraRepartitor`), și când
@@ -1028,7 +1028,7 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
     fiscală nu primește terț. Terțul e latura externă a documentului; la DEC
     și NTC e repartitorul liniei, iar DEC, NTC, DSC și diferența NIR îl pun
     pe capătul extern necondiționat (T-D13 g).
-  - **Piciorul intern cu partidă** (419, 408, 4091): titularul partidei ia
+  - **Capătul intern cu partidă** (419, 408, 4091): titularul partidei ia
     locul repartitorului intern, iar acesta rămâne pe postare ca `Loc`, cu
     sau fără fapt fiscal. Îl scrie `Terti.Capat`, din repartitorul intern pe
     care capătul îl avea (C111-Q14).
@@ -1041,7 +1041,7 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
     refuzat (`LOC_FISCAL_LIPSA`). Locul e al documentului: baza și taxa
     poartă același loc, și când repartitorul de sold al bazei e altul. `Loc`
     se scrie și când e egal cu `Repartitor`.
-  - **Piciorul de taxă** al direcției are ca repartitor locul. Autocolectarea
+  - **Capătul de taxă** al direcției are ca repartitor locul. Autocolectarea
     de la taxarea inversă n-are repartitor: poartă numai partenerul fiscal și
     locul.
   - **Contracantitatea** stă pe postarea marcată cu `Contrapondere`: terț la
@@ -1050,8 +1050,8 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
     transformare la ASM, fără repartitor. Pe postarea marcată terțul stă în
     `Repartitor` când declarantul îl numește: diferența NIR, DSC cu primitor
     extern, returul de la client.
-  - **Trezoreria** alege piciorul de terț structural (predatorul dă pe
-    credit, primitorul primește pe debit). Piciorul propriu numit de regulă
+  - **Trezoreria** alege capătul de terț structural (predatorul dă pe
+    credit, primitorul primește pe debit). Capătul propriu numit de regulă
     prin latură poartă contul propriu ca repartitor; cu ambele conturi numite
     explicit rămâne fără repartitor, vizibil gardului (SC-PLT-09, SC-INC-09).
 
@@ -1112,7 +1112,7 @@ la soldul cubului. Eliminarea reziduului prin reevaluare rămâne T-r2/TR-D9b.
 DVI folosește `DeclarantDvi`, activat numai pe privat. Taxa este contabilă;
 baza vamală este o pereche debit/credit pe contul deductibil în
 `Carte=Fiscal`, fără unități, cu locul documentului ca repartitor pe ambele
-picioare. Numai debitul fiscal poartă cod, rol Bază, `PartenerFiscal`, `Loc`
+capete. Numai debitul fiscal poartă cod, rol Bază, `PartenerFiscal`, `Loc`
 și perioadă; creditul echilibrează fără fapt fiscal. Baza 0,01
 rămâne în cub și când taxa este zero. Anularea, stornoul și corecția folosesc
 mecanismele comune, inclusiv refuzul inversării cu o partidă consumată prin
@@ -1420,9 +1420,9 @@ contrapartida TVA rămâne cea a politicii. Normal, capitalizat și taxare
 inversă sunt probate independent; bugetarul păstrează costul brut fără
 fapte fiscale când nu are PoliticaTva.
 
-Fiecare picior al liniei poartă repartitorul liniei: cel explicit, apoi cel
+Fiecare capăt al liniei poartă repartitorul liniei: cel explicit, apoi cel
 al regulii, apoi titularul. Partida se deschide numai pentru repartitor
-extern pe un cont care urmărește partide. Pe piciorul cu fapt fiscal
+extern pe un cont care urmărește partide. Pe capătul cu fapt fiscal
 repartitorul liniei rămâne repartitor de sold, iar partenerul fiscal și locul
 stau separat, în `PartenerFiscal` și `Loc` (S10, C111-Q7). Decontul cu fapt
 fiscal și cu terț pe linie, altul decât titularul, pe un cont cu partide e
@@ -1618,7 +1618,7 @@ operare, în aceeași formă ca orice refuz al declarației (S-r11).
   fiecare pe contul lui. (S-D16)
 - Tipul de document nu mai declară latura contului propriu: declarantul de
   trezorerie o alege structural, piciorul propriu e cel al cărui cont vine de
-  la repartitorul intern, iar la virament piciorul de tranzit (581) rămâne fără
+  la repartitorul intern, iar la virament capătul de tranzit (581) rămâne fără
   repartitor, deci soldul lui se închide pe o singură cheie.
   (S-D7, D9-A10, D9-D6; C111 S7)
 - Linia fără regulă de contare e refuzată (`REGULA_CONTARE_LIPSA`) acolo unde
@@ -1703,10 +1703,10 @@ scanează istoria la pornire; o bază care nu corespunde codului se recreează
 inversele Operare/Deschidere se clasifică prin ID și spațiul originii.
 Balanța, fișa, jurnalul și soldul pe partener citesc cubul, împreună cu
 snapshot-ul contabil. Axa analitică e una: repartitorul de sold al postării
-(S1, C111-Q6). Piciorul intern apare pe repartitorul lui intern, cu sau fără
+(S1, C111-Q6). Capătul intern apare pe repartitorul lui intern, cu sau fără
 fapt fiscal; contul propriu apare ca repartitor; partenerul numai fiscal și
 locul nu sunt pe axă. `repartitorId` filtrează repartitorul de sold, de orice
-fel; `repartitorNul`, pe fișă, înseamnă fără niciun repartitor. Piciorul
+fel; `repartitorNul`, pe fișă, înseamnă fără niciun repartitor. Capătul
 intern cu partidă (419, 408, 4091) apare pe titular, nu pe locul intern (S2).
 Snapshot-ul contabil (`SoldPerioadaContabil`) are aceeași axă, `RepartitorId`,
 fără coloană de gestiune; citirea dinamică și cea din snapshot dau aceleași
@@ -1806,9 +1806,9 @@ alege între două coloane.
 | Identitatea | Domeniul | Coloana |
 |---|---|---|
 | titularul partidei | postarea cu `FelUnitate.Partida` (`Citiri/Partide`) | `Repartitor` |
-| terțul piciorului | postarea contabilă a unui document (`Citiri/Plati`) | `Repartitor`, când e extern |
+| terțul capătului | postarea contabilă a unui document (`Citiri/Plati`) | `Repartitor`, când e extern |
 | partenerul fiscal | postarea cu fapt fiscal (`Citiri/Fiscale`) | `PartenerFiscal` |
-| locul | postarea cu fapt fiscal sau piciorul intern cu partidă; îl citesc lista postărilor și `INV-CUB`, nicio citire de sold | `Loc` |
+| locul | postarea cu fapt fiscal sau capătul intern cu partidă; îl citesc lista postărilor și `INV-CUB`, nicio citire de sold | `Loc` |
 | terțul comercial | postarea pe un cont cu `RolTert` (`Contabil.Jurnal`, `PostareJurnal.TertComercial`) | `Repartitor`, când e extern |
 | locul lotului | postarea cu lot (`Citiri/Loturi`) | `Repartitor` |
 | repartitorul intern fără lot | locul fișei, poziția fără fișă (`Citiri/Imobilizari`) | `Repartitor` |
@@ -1821,3 +1821,9 @@ fel partener sau angajat.
 Regula terțului comercial în SAF-T (S11) și cea a partenerului fiscal în
 D394 (S13) sunt în [politici-si-fiscalitate](politici-si-fiscalitate.md),
 §„SAF-T” și §„D300 și D394”.
+
+<!-- gen:decizii -->
+## Decizii
+
+Deciziile care numesc pagina în `Arii:` (51; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 10, 13, 14, 15, 16 (amendată de 89), 17, 20, 22, 23, 25, 26 (amendată de 112), 27, 30, 31 (amendată de 76, 88), 32, 33, 36 (amendată de 71), 37, 41, 42 (amendată de 104, 106), 46 (amendată de 113), 48 (amendată de 76), 49, 54, 55, 62, 64 (amendată de 84), 65, 75, 76, 82, 86, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110), 93, 95, 97 (amendată de 98), 98, 100 (amendată de 102), 101 (amendată de 102), 102, 104 (amendată de 106), 106, 109, 111, 112, 114 (amendată de 116), 115, 116 (amendată de 117), 117.
+<!-- /gen:decizii -->

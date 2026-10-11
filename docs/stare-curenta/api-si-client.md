@@ -634,3 +634,9 @@ rând sau de membru dă 403 `EXPLICATIE_ACCES_INCOMPLET` înaintea citirii, cu
 tipurile și membrii restricționați în corp și fără nicio valoare; nu există
 proiecție parțială. Mecanismul e `Api.AccesComplet`, comun cu D406
 (`SaftAcces` îl apelează cu listele lui).
+
+<!-- gen:decizii -->
+## Decizii
+
+Deciziile care numesc pagina în `Arii:` (26; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 58, 60, 66, 68, 70, 77, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 103, 104 (amendată de 106), 106, 108 (amendată de 110), 111.
+<!-- /gen:decizii -->

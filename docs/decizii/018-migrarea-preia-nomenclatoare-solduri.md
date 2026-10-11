@@ -1,7 +1,8 @@
-# Decizia 18 — Migrarea preia nomenclatoare + solduri de deschidere
+# 18 — Migrarea preia nomenclatoare + solduri de deschidere
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii:
 
 ## Regula durabilă
 

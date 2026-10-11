@@ -12,14 +12,14 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   deci felul lor e din natura contului, nu din date. Pe 461.01.09 angajatul
   nu e admis (confirmat, C111-Q21). Planul privat nu declară nimic, iar contul
   nedeclarat nu judecă repartitorul (lumea deschisă, C111-r2). Terțul stă pe
-  piciorul de terț numai când contul declară feluri de repartitor
+  capătul de terț numai când contul declară feluri de repartitor
   sau urmărește partide — pe un cont nedeclarat și fără partide (446 privat)
   rămâne absent. Pe contul care admite lipsa (437.01.00, 437.02.00,
-  803.00.01) terțul cunoscut de document stă pe picior; lipsa e admisă numai
+  803.00.01) terțul cunoscut de document stă pe capăt; lipsa e admisă numai
   când documentul n-are terț pentru el (C111-F-R1). Pe conturile de cheltuieli și venituri terțul nu e axă de
   sold: apare numai ca `PartenerFiscal`, pe postarea cu fapt fiscal. Pe
   trezorerie, când regula de contare numește ambele conturi explicit,
-  piciorul propriu n-are repartitor; dacă contul lui cere repartitor
+  capătul propriu n-are repartitor; dacă contul lui cere repartitor
   documentul e refuzat (SC-PLT-09), nu reparat cu terțul.
   Cerința de material citește numai produsul lotului, nu și materialul fix al
   unei reguli de contare. BTR, ASM și PIF nu sunt păzite (D9-r1).
@@ -616,3 +616,9 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Reluarea parțială a importului cu `--continua` poate afecta interpretarea
   reconcilierii. Validarea completă cere o bază și un set de referință
   controlate, cu starea reluării cunoscută. (75-r3)
+
+<!-- gen:decizii -->
+## Decizii
+
+Deciziile care numesc pagina în `Arii:` (29; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 37, 41, 42 (amendată de 104, 106), 43 (amendată de 104), 46 (amendată de 113), 53, 55, 72, 75, 77, 80, 81, 84, 85, 87 (amendată de 97), 89, 91 (amendată de 107, 118), 94, 95, 97 (amendată de 98), 102, 103, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 109, 115, 116 (amendată de 117).
+<!-- /gen:decizii -->

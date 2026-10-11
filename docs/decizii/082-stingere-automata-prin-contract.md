@@ -1,8 +1,9 @@
 # 82 — Stingerea automată prin contract de document
 
-- **Data**: 2026-09-08
-- **Stare**: activă
-- **Docs**: `docs/invarianti.md` (II), `Module/BusinessObjects/Documente/Document.cs`, `Module/BusinessObjects/Documente/Trezorerie.cs`, `Module/Motor/ImperechereService.cs`, `Module/Motor/MotorOperare.cs`, `nou/tools/ModelCheck/Program.cs`
+- Data: 2026-09-08
+- Stare: activă
+- Arii: domeniu-si-operare
+- Docs: `docs/invarianti.md` (II), `Module/BusinessObjects/Documente/Document.cs`, `Module/BusinessObjects/Documente/Trezorerie.cs`, `Module/Motor/ImperechereService.cs`, `Module/Motor/MotorOperare.cs`, `nou/tools/ModelCheck/Program.cs`
 
 ## Regula durabilă
 

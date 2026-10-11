@@ -1,7 +1,8 @@
-# Decizia 13 — Evaluare stoc
+# 13 — Evaluare stoc
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii: domeniu-si-operare
 
 ## Regula durabilă
 

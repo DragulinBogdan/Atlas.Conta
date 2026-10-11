@@ -1,7 +1,9 @@
-# Decizia 24 — Owned `Dimensiuni` sub XAF/EF Core — limitarea e gestionabilă, rămânem pe EF Core
+# 24 — Owned `Dimensiuni` sub XAF/EF Core — limitarea e gestionabilă, rămânem pe EF Core
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: DEPĂȘITĂ de 54c (owned-ul a murit din Conta); rămân valabile: EF Core nu XPO, maparea NuGet Atlas.DXF, versiunile flotante EF
+- Data: 2026-07-22
+- Stare: activă
+- Execuție: DEPĂȘITĂ de 54c (owned-ul a murit din Conta); rămân valabile: EF Core nu XPO, maparea NuGet Atlas.DXF, versiunile flotante EF
+- Arii:
 
 ## Regula durabilă
 

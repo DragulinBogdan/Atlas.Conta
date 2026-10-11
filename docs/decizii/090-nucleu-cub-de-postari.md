@@ -1,8 +1,11 @@
-# 90. Nucleul ca ledger n-dimensional — un singur cub de postări în locul celor patru registre; motor pur pe operand închis (`Contract = Postari + Decizii + Ipoteze`); unitatea nominalizată (lot = partidă = fișă) numită pe linie; împerecherea ca nominalizare la operare + document `Împerechere` cu tranzacție de fel `Transfer`; linia FCT postează recepția; o singură postare de stoc, `TipStoc` dispare structural; stornoul ca tranzacție distinctă = inversul cauzat ∪ atribuit; fiscala postată în `Carte=Fiscal`; ordinea TR-D6a…D10 cu Import1C ca probă supremă; XAF și React înghețate pe funcții
+# 90 — Nucleul ca ledger n-dimensional — un singur cub de postări în locul celor patru registre; motor pur pe operand închis (`Contract = Postari + Decizii + Ipoteze`); unitatea nominalizată (lot = partidă = fișă) numită pe linie; împerecherea ca nominalizare la operare + document `Împerechere` cu tranzacție de fel `Transfer`; linia FCT postează recepția; o singură postare de stoc, `TipStoc` dispare structural; stornoul ca tranzacție distinctă = inversul cauzat ∪ atribuit; fiscala postată în `Carte=Fiscal`; ordinea TR-D6a…D10 cu Import1C ca probă supremă; XAF și React înghețate pe funcții
 
-- **Data**: 2026-09-20
-- **Stare**: activă, amendată de 095 (producători compleți înainte de TR-D8), 096 (UrmarestePartide separat de RolTert), de 093 pentru Folosință (gestiune reală, nu virtuală) și de 091 (TR-D10 și „Import1C ca probă supremă" nu mai sunt regulă de oprire; proba supremă e catalogul `docs/nucleu/scenarii/`; amendează invarianții I, III și VI, întărește II; DEPĂȘEȘTE contractul IM `docs/api/p5-felia-izolare-motor-contract.md`; concretizează 51e ca parametru al unității; închide 76-r3, IM-r1, IM-r3, IM-r4 la TR-D9)
-- **Docs**: `docs/nucleu/nucleu-cub-design.md` (designul, §1–§11), `docs/nucleu/nucleu-coordonate-rapoarte.md` (pasul 1: coordonatele contra rapoartelor reale, patru amendamente structurale), `docs/nucleu/nucleu-fizica.md` (pasul 2: forma fizică măsurată, FZ-D1…D9, FZ-r), `docs/nucleu/nucleu-transfer.md` (pasul 3: TR-D1…D10, §3 ce se transferă / se rescrie / dispare, §4.1 propunerea de execuție, TR-r), `docs/nucleu/nucleu-bilant.md` (sinteza câștig / pierdere pentru decizie); probele în `run-nucleu/{coordonate,fizica,transfer}/` (inventare cu `fișier:linie`, SQL, EXPLAIN-uri, review-urile adverse). Fără cod: decizia e pasul 0 (TR-D5), oprirea lui e textul de aici.
+- Data: 2026-09-20
+- Stare: amendată de 91, 92, 93, 95, 96, 110
+- Execuție: amendată de 095 (producători compleți înainte de TR-D8), 096 (UrmarestePartide separat de RolTert), de 093 pentru Folosință (gestiune reală, nu virtuală) și de 091 (TR-D10 și „Import1C ca probă supremă" nu mai sunt regulă de oprire; proba supremă e catalogul `docs/nucleu/scenarii/`; amendează invarianții I, III și VI, întărește II; DEPĂȘEȘTE contractul IM `docs/api/p5-felia-izolare-motor-contract.md`; concretizează 51e ca parametru al unității; închide 76-r3, IM-r1, IM-r3, IM-r4 la TR-D9)
+- Arii: dezvoltare-si-validare, domeniu-si-operare
+- Închide: IM-r1, IM-r3, IM-r4
+- Docs: `docs/nucleu/nucleu-cub-design.md` (designul, §1–§11), `docs/nucleu/nucleu-coordonate-rapoarte.md` (pasul 1: coordonatele contra rapoartelor reale, patru amendamente structurale), `docs/nucleu/nucleu-fizica.md` (pasul 2: forma fizică măsurată, FZ-D1…D9, FZ-r), `docs/nucleu/nucleu-transfer.md` (pasul 3: TR-D1…D10, §3 ce se transferă / se rescrie / dispare, §4.1 propunerea de execuție, TR-r), `docs/nucleu/nucleu-bilant.md` (sinteza câștig / pierdere pentru decizie); probele în `run-nucleu/{coordonate,fizica,transfer}/` (inventare cu `fișier:linie`, SQL, EXPLAIN-uri, review-urile adverse). Fără cod: decizia e pasul 0 (TR-D5), oprirea lui e textul de aici.
 
 ## Regula durabilă
 
@@ -12,7 +15,7 @@ sold, rest, cost, curs sau valoare rămasă e o sumă pe cub. Motorul e o
 funcție pură pe un operand închis; regula se aplică la scriere, citirea
 doar adună.**
 
-(a) **Cubul.** `Postare = { Coordonate[], Cantitate, ValoareValuta, Valoare,
+(a) [amendat de 110] **Cubul.** `Postare = { Coordonate[], Cantitate, ValoareValuta, Valoare,
 Cauza, Atribuit?, Unitate? }` — trei măsuri aditive, restul e proveniență.
 `Tranzactie = Postare[]` balansată per spațiu de conservare, cu fel
 `Operare | Storno | Transfer | Deschidere`, cu data înregistrării și `ScrisLa`
@@ -64,7 +67,7 @@ partidă; stoc → lot; imobilizare → fișă) POARTĂ unitatea ca dată de cul
 postarea care DESCHIDE. Nota contabilă nu postează cantitate și nu atinge o
 coordonată cu unitate fără s-o numească (gard de operare).
 
-(d) **Partida.** Se deschide când o postare pe un cont cu `RolTert` (atribut
+(d) [amendat de 92] **Partida.** Se deschide când o postare pe un cont cu `RolTert` (atribut
 de nomenclator al contului) nu numește o partidă existentă; are identitate
 proprie și atributele `(Cont, Partener, document deschizător | deschidere)`;
 restul e `Σ Valoare` pe unitate, sensul = semnul restului × rolul contului.
@@ -106,7 +109,7 @@ cu 38 % și jurnalul cu 21,7 %. Rulajul brut per partidă nu e sumă (TR-r8).
 `Valoare` negativă pe o latură apare DOAR în tranzacții de fel `Storno` sau
 `Transfer`; D406 trece DUK cu ea.
 
-(g) **Stocul: o linie de stoc = o postare.** Amendat de 093 pentru Folosință: gestiune reală, lot și contul politicii; formularea inițială de mai jos rămâne istoric. Postarea pe un cont de stoc
+(g) [amendat de 93] **Stocul: o linie de stoc = o postare.** Amendat de 093 pentru Folosință: gestiune reală, lot și contul politicii; formularea inițială de mai jos rămâne istoric. Postarea pe un cont de stoc
 poartă `Cantitate` și `Unitate` = lotul (1:1 cu valoare egală pe 100 % din
 perechile de azi). Semn: cantitatea iese din gestiunea-sursă (−) și intră în
 gestiunea-țintă (+), inclusiv virtuală. Transferul pe același cont = fel
@@ -180,7 +183,7 @@ poartă valoare rămasă între perioade e UNITATE în `Carte=Fiscal`. Fișa de
 imobilizare = cubul filtrat pe unități de tip fișă; `IDocumentCuRegistruPropriu`
 dispare.
 
-(l) **Execuția: ordinea, regimul dual, regula de oprire.** Pașii sunt
+(l) [amendat de 110] **Execuția: ordinea, regimul dual, regula de oprire.** Pașii sunt
 TR-D6a nucleul pur → TR-D6b declarația fluxului per tip (pilot BCS, PLT,
 FCT; singurul pas care poate întoarce decizia) → TR-D7 strangler per tip →
 TR-D8 citirile pe cub → TR-D9 unitățile și tăierea; TR-D10 e proba supremă

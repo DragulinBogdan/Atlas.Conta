@@ -1,8 +1,11 @@
 # 104 — Straturi izolate, culegerea în XAF, entități proprii fără ștergere amânată
 
-Data: 2026-09-26
-Stare: activă; amendează 042(b)(e), 043 (aria React) și 083(a)(j) (mecanismul, prin (i)); depășește constatarea 60a și F13-D2 (070) privind ștergerea amânată
-Docs: acest fișier (regula + pașii feliei C104); `docs/stare-curenta/` se actualizează la fiecare pas, odată cu codul
+- Data: 2026-09-26
+- Stare: amendată de 106
+- Execuție: amendează 042(b)(e), 043 (aria React) și 083(a)(j) (mecanismul, prin (i)); depășește constatarea 60a și F13-D2 (070) privind ștergerea amânată
+- Arii: README, api-si-client, dezvoltare-si-validare, domeniu-si-operare, limite-curente
+- Amendează: 42 (b, e), 43, 83 (a, j)
+- Docs: acest fișier (regula + pașii feliei C104); `docs/stare-curenta/` se actualizează la fiecare pas, odată cu codul
 
 ## Regula durabilă
 
@@ -22,7 +25,7 @@ tranzacția motorului. Ținta completă (coaja fără `IObjectSpace`, hook-urile
 cu `os` de pe entitate mutate în declarant sau în coajă) se execută la TR-D9,
 când drumul registrelor dispare.
 
-**(c) L3 e singura sursă de precompletare, recalcul și validare de domeniu.**
+**(c) [amendat de 106] L3 e singura sursă de precompletare, recalcul și validare de domeniu.**
 Controllerele XAF și `Api/*Apply` sunt adaptori peste aceleași servicii.
 ModelCheck, importul și React sunt alți apelanți ai lui `Apply` (42d).
 Un comportament de culegere scris într-un singur adaptor e defect.

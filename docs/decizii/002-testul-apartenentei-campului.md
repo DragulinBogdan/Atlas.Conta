@@ -1,7 +1,8 @@
-# Decizia 2 — Testul de apartenență a unui câmp
+# 2 — Testul de apartenență a unui câmp
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii:
 
 ## Regula durabilă
 

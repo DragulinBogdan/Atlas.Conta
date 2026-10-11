@@ -1,7 +1,9 @@
-# Decizia 3 — Mapare EF Core
+# 3 — Mapare EF Core
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: amendată de 89 (TPT → TPH cu discriminatorul mapat `ClrType`, 2026-09-18; frunzele și `[TipDetaliu]` rămân)
+- Data: 2026-07-22
+- Stare: amendată de 89
+- Execuție: (TPT → TPH cu discriminatorul mapat `ClrType`, 2026-09-18; frunzele și `[TipDetaliu]` rămân)
+- Arii:
 
 ## Regula durabilă
 

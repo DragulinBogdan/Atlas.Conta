@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-10-10.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -196,7 +196,7 @@ nimic nu-l completează după aceea, nici pe capătul cu partidă, nici pe contu
 care cere repartitor (S13, C111-R16). Pe cele șase politici de TVA din seed
 latura numită e terțul documentului. `Loc` nu vine din politică: e singura
 latură internă a documentului, citită din laturile lui tipate (C111-Q10).
-Baza și taxa aceluiași document poartă același loc, iar piciorul de taxă are
+Baza și taxa aceluiași document poartă același loc, iar capătul de taxă are
 locul ca repartitor de sold. Cine scrie fiecare coordonată:
 [domeniu-si-operare](domeniu-si-operare.md), „Regula coordonatelor”.
 
@@ -478,9 +478,9 @@ rezervă pe partenerul fiscal (S11, C111-Q9). Registrul, facturile și
 soldurile Customers și Suppliers citesc aceeași axă:
 
 - postarea cu partidă are ca repartitor titularul, deci iese pe el;
-- piciorul de decont cu terț pe linie iese pe terțul liniei, în registru și
+- capătul de decont cu terț pe linie iese pe terțul liniei, în registru și
   în sold;
-- postarea fără repartitor extern de pe un cont cu rol comercial — piciorul
+- postarea fără repartitor extern de pe un cont cu rol comercial — capătul
   intern cu fapt fiscal, nota pe repartitor intern — iese în registru cu
   codul societății și avertismentul `TertFaraPartener`, iar soldul ei intră
   în `Neincluse`: cu `RepartitorNePartener` și repartitorul numit când are
@@ -585,3 +585,9 @@ O secțiune `GeneralLedgerEntries`, `SalesInvoices`, `PurchaseInvoices` sau
 `Payments` fără intrări se scrie goală, fără `NumberOfEntries` și totaluri,
 pe ambele module: validatorul respinge totalurile zero, iar schema cere
 secțiunea prezentă. (74e, S0-R5)
+
+<!-- gen:decizii -->
+## Decizii
+
+Deciziile care numesc pagina în `Arii:` (22; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 20, 36 (amendată de 71), 42 (amendată de 104, 106), 46 (amendată de 113), 56 (amendată de 77, 81), 66, 69, 70, 71 (amendată de 72), 72, 73 (amendată de 74, 105), 74 (amendată de 105), 79 (amendată de 80), 80, 81, 83 (amendată de 84, 86, 104), 84, 86, 87 (amendată de 97), 103, 111, 113.
+<!-- /gen:decizii -->

@@ -1,8 +1,10 @@
-# Decizia 64 — Pasul 5, felia 7 — viramentul intern
+# 64 — Pasul 5, felia 7 — viramentul intern
 
-- **Data**: 2026-08-15 (primul commit în jurnal)
-- **Stare**: activă; (k) gaura „al doilea picior cules manual" închisă de 65b
-- **Docs**: docs/api/p5-felia-vir-contract.md
+- Data: 2026-08-15
+- Stare: amendată de 84
+- Execuție: (k) gaura „al doilea picior cules manual" închisă de 65b
+- Arii: domeniu-si-operare
+- Docs: docs/api/p5-felia-vir-contract.md
 
 ## Regula durabilă
 

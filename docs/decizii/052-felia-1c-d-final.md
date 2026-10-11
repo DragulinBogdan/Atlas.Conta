@@ -1,8 +1,9 @@
-# Decizia 52 — Felia 1C-d-final
+# 52 — Felia 1C-d-final
 
-- **Data**: 2026-07-28 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/import/faza-1c-design.md
+- Data: 2026-07-28
+- Stare: activă
+- Arii:
+- Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă
 

@@ -1,8 +1,11 @@
-# 92. Identitatea partidei include partenerul
+# 92 — Identitatea partidei include partenerul
 
-- **Data**: 2026-09-23
-- **Stare**: activă; amendează N-D6 din contractul TR-D6a și precizează 090(d); (b)(c) compatibilitatea cu cheia veche depășită de 102
-- **Docs**: `docs/nucleu/scenarii/NTC.md` (SC-NTC-13), `docs/nucleu/tr-d6a-nucleu-pur-contract.md`, `docs/nucleu/tr-d7b-tipuri-ramase-contract.md`
+- Data: 2026-09-23
+- Stare: amendată de 102
+- Execuție: amendează N-D6 din contractul TR-D6a și precizează 090(d); (b)(c) compatibilitatea cu cheia veche depășită de 102
+- Arii:
+- Amendează: 90 (d)
+- Docs: `docs/nucleu/scenarii/NTC.md` (SC-NTC-13), `docs/nucleu/tr-d6a-nucleu-pur-contract.md`, `docs/nucleu/tr-d7b-tipuri-ramase-contract.md`
 
 ## Regula durabilă
 
@@ -12,13 +15,13 @@ diferite. Data nu intră în identitate. Codificarea este SHA-256 peste cele
 trei `Guid.ToByteArray()` concatenate în această ordine; primii 16 octeți
 devin Guid, cu nibble-ul de versiune din octetul 7 pus pe 8.
 
-(b) Postările deja persistate rămân nemodificate. La nominalizarea unei
+(b) [amendat de 102] Postările deja persistate rămân nemodificate. La nominalizarea unei
 surse sau la transfer se folosește identitatea persistată, inclusiv cheia
 veche `(document, cont)`, recunoscută în adaptorul cubului. Compatibilitatea
 nu permite cumularea a două identități sau a doi parteneri sub aceeași
 partidă. Nu se reoperează documente prin politici pentru a le schimba cheia.
 
-(c) Scenariul obligatoriu este nota cu două datorii de 100 pe 401, pentru
+(c) [amendat de 102] Scenariul obligatoriu este nota cu două datorii de 100 pe 401, pentru
 furnizori diferiți: două partide de −100; stingerea uneia nu o atinge pe
 cealaltă. Testele nucleului verifică determinismul, independența față de
 dată și separarea după fiecare componentă a cheii. Compatibilitatea cu

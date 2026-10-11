@@ -1,7 +1,8 @@
-# Decizia 30 — Felia 3c-4 — FacturaIesire
+# 30 — Felia 3c-4 — FacturaIesire
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii: dezvoltare-si-validare, domeniu-si-operare
 
 ## Regula durabilă
 

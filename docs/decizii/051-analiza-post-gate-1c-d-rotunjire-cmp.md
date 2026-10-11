@@ -1,8 +1,9 @@
-# Decizia 51 — Analiza post-gate 1C-d
+# 51 — Analiza post-gate 1C-d
 
-- **Data**: 2026-07-27 (primul commit în jurnal)
-- **Stare**: activă
-- **Docs**: docs/architecture-notes-2026-07-28.md
+- Data: 2026-07-27
+- Stare: activă
+- Arii:
+- Docs: docs/architecture-notes-2026-07-28.md
 
 ## Regula durabilă
 

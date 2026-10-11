@@ -1,7 +1,9 @@
-# 95. DEC și imobilizările complete pe cub înaintea TR-D8
+# 95 — DEC și imobilizările complete pe cub înaintea TR-D8
 
 - Data: 2026-09-24
-- Stare: aprobată de owner, activă
+- Stare: activă
+- Execuție: aprobată de owner, activă
+- Arii: domeniu-si-operare, limite-curente
 - Docs: `docs/nucleu/tr-d8-citiri-contract.md`, D8-B2; 090(c/k/l), 091.
 
 ## Regula durabilă

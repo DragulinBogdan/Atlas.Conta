@@ -1,7 +1,8 @@
-# Decizia 19 — Lista țintă de tipuri de documente
+# 19 — Lista țintă de tipuri de documente
 
-- **Data**: 2026-07-22 (primul commit în jurnal)
-- **Stare**: activă
+- Data: 2026-07-22
+- Stare: activă
+- Arii:
 
 ## Regula durabilă
 

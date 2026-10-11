@@ -1,8 +1,12 @@
-# 88. Pasul 5, felia 27 — Perioada fiscală ca lanț, închiderea ca comandă cu acceptare conștientă, soldurile și partidele deschise materializate la închidere, data înregistrării ca reper al registrelor, perioada de declarare ca reper fiscal, corecția legată cu motiv
+# 88 — Pasul 5, felia 27 — Perioada fiscală ca lanț, închiderea ca comandă cu acceptare conștientă, soldurile și partidele deschise materializate la închidere, data înregistrării ca reper al registrelor, perioada de declarare ca reper fiscal, corecția legată cu motiv
 
-- **Data**: 2026-09-17
-- **Stare**: (g/h) și echivalarea închiderii cu depunerea amendate de 103; activă (amendează 31d — împerecherea nu mai e link care se șterge liber; închide 79-r3; întărește 14 și 42c; F27-r3 n-a fost nevoie să se activeze)
-- **Docs**: `docs/api/p5-felia27-perioade-solduri-contract.md` (F27-D1…D10, §Amendamente, §Pașii cu notele *Executat 0…8b*, §„Ce NU intră"), `docs/api/p5-felia27-pas0-spike.md`, `nou/.../Module/BusinessObjects/Nomenclatoare/PerioadaFiscala.cs` (`PerioadaFiscala`, `InchiderePerioada`), `nou/.../Module/BusinessObjects/Registre/SolduriPerioada.cs` (`SoldPerioadaContabil`, `SoldPerioadaStoc`, `PartidaDeschisa`), `nou/.../Module/Motor/{PerioadaService,SolduriService,CorectieService,TranzactieComanda,GardianPerioada,GardianEditare,RegistruTvaService,ImperechereService,AmortizareService}.cs`, `nou/.../Module/Proiectii/{ContabilProiectii,StocProiectii,TvaProiectii,ImperecheriProiectii}.cs`, `nou/.../Module/BusinessObjects/Politici/Politici.cs` (`PoliticaInchidere`, `PoliticaTva.DeclarareIntarziata`), `nou/.../Module/Api/Perioade/`, `nou/.../WebApi/API/Conta/{Perioade,Corectie,Imperecheri,SoldPartener,DocumenteCuRest}Controller.cs`, `nou/Atlas.Conta.Client/src/felii/perioade/`, `nou/Atlas.Conta.Client/src/felii/raportare/SoldParteneri.tsx`, `nou/Atlas.Conta.Client/src/felii/politici/PoliticiInchidere.tsx`, `nou/Atlas.Conta.Client/src/nucleu/CorectieDocument.tsx`, `nou/tools/ModelCheck/Program.cs` (`PER-V*`, `SOL-C*`, `DIR-V*`, `COR-V*`, `PAR-V*`, `ACC-V*`, `AMO-V*`, `F27-R*`, `F27-RA*`), `nou/tools/Import1C/Program.cs` (`--inchide-lunile`), `nou/tools/ProbeHttp/refuzuri.ps1`; migrațiile `20260916123442_F27Pas1PerioadaLant`, `20260916131506_F27Pas2SolduriPerioada`, `20260916184148_F27Pas3DataInregistrare`, `20260916193817_F27Pas4PerioadaDeclarare`, `20260916201658_F27Pas4bLuniAmortizate`, `20260916210018_F27Pas5Corectie`, `20260916220304_F27Pas6PartideImperecheri`, `20260916231038_F27Pas7PoliticaInchidere`
+- Data: 2026-09-17
+- Stare: amendată de 103
+- Execuție: (g/h) și echivalarea închiderii cu depunerea amendate de 103; activă (amendează 31d — împerecherea nu mai e link care se șterge liber; închide 79-r3; întărește 14 și 42c; F27-r3 n-a fost nevoie să se activeze)
+- Arii:
+- Amendează: 31 (d)
+- Închide: 79-r3
+- Docs: `docs/api/p5-felia27-perioade-solduri-contract.md` (F27-D1…D10, §Amendamente, §Pașii cu notele *Executat 0…8b*, §„Ce NU intră"), `docs/api/p5-felia27-pas0-spike.md`, `nou/.../Module/BusinessObjects/Nomenclatoare/PerioadaFiscala.cs` (`PerioadaFiscala`, `InchiderePerioada`), `nou/.../Module/BusinessObjects/Registre/SolduriPerioada.cs` (`SoldPerioadaContabil`, `SoldPerioadaStoc`, `PartidaDeschisa`), `nou/.../Module/Motor/{PerioadaService,SolduriService,CorectieService,TranzactieComanda,GardianPerioada,GardianEditare,RegistruTvaService,ImperechereService,AmortizareService}.cs`, `nou/.../Module/Proiectii/{ContabilProiectii,StocProiectii,TvaProiectii,ImperecheriProiectii}.cs`, `nou/.../Module/BusinessObjects/Politici/Politici.cs` (`PoliticaInchidere`, `PoliticaTva.DeclarareIntarziata`), `nou/.../Module/Api/Perioade/`, `nou/.../WebApi/API/Conta/{Perioade,Corectie,Imperecheri,SoldPartener,DocumenteCuRest}Controller.cs`, `nou/Atlas.Conta.Client/src/felii/perioade/`, `nou/Atlas.Conta.Client/src/felii/raportare/SoldParteneri.tsx`, `nou/Atlas.Conta.Client/src/felii/politici/PoliticiInchidere.tsx`, `nou/Atlas.Conta.Client/src/nucleu/CorectieDocument.tsx`, `nou/tools/ModelCheck/Program.cs` (`PER-V*`, `SOL-C*`, `DIR-V*`, `COR-V*`, `PAR-V*`, `ACC-V*`, `AMO-V*`, `F27-R*`, `F27-RA*`), `nou/tools/Import1C/Program.cs` (`--inchide-lunile`), `nou/tools/ProbeHttp/refuzuri.ps1`; migrațiile `20260916123442_F27Pas1PerioadaLant`, `20260916131506_F27Pas2SolduriPerioada`, `20260916184148_F27Pas3DataInregistrare`, `20260916193817_F27Pas4PerioadaDeclarare`, `20260916201658_F27Pas4bLuniAmortizate`, `20260916210018_F27Pas5Corectie`, `20260916220304_F27Pas6PartideImperecheri`, `20260916231038_F27Pas7PoliticaInchidere`
 
 ## Regula durabilă
 
@@ -86,7 +90,7 @@ EVIDENȚĂ — singura compatibilă cu „sold ≥ 0 la orice dată" (13, VI). D
 fișei de imobilizare (punerea în funcțiune, ieșirea) rămân pe data fizică:
 sunt ale fișei, nu ale registrului.
 
-(g) **`PerioadaDeclarare` pe registrul fiscal; rectificativa e o consecință,
+(g) [amendat de 103] **`PerioadaDeclarare` pe registrul fiscal; rectificativa e o consecință,
 nu un flag.** `RegistruTva` poartă perioada de DECLARARE (an + lună) distinctă
 de `Data` (data faptului fiscal) și `ScrisLa` (momentul scrierii RÂNDULUI).
 Jurnalele, D300, D394 și SAF-T filtrează pe perioada de declarare, printr-un
@@ -102,7 +106,7 @@ al perioadei stornării (JT-D5); excepția e corecția cu motiv (h).
 Consecință acceptată: perioada fiscală E luna, deci un raport fiscal nu mai
 poate fi tăiat pe o fereastră de zile.
 
-(h) **Corecția în perioadă închisă = storno legat + document nou, cu motiv.**
+(h) [amendat de 103] **Corecția în perioadă închisă = storno legat + document nou, cu motiv.**
 Nu există editare în loc a unui document operat, nicăieri (55a). În perioadă
 deschisă: anulare sau corecție directă fără dependenți, altfel storno (14).
 În perioadă închisă: comanda `corecteaza` = stornarea originalului la o dată

@@ -991,6 +991,82 @@ fișierele validate, cu proveniența liniilor GL și a facturilor pentru
 fișierele certificate. (S0-R1…R4, S0-R8) Jurnalele publicate nu includ
 parole, tokenuri sau adrese de feed cu credențiale. (50d, 73f)
 
+## Documentația
+
+Forma documentației urmează kitul de guvernanță
+(`~/.claude/PROJECT_GOVERNANCE.md`), aplicat prin decizia 118 pe structura
+existentă: invarianți, stare curentă pe responsabilități, decizii numerotate
+cu „Regula durabilă", restanțe cu nume. Textele vechi se aduc la formă la
+atingere sau prin script, nu prin rescriere în masă. (118a)
+
+Antetul unei decizii are câmpurile `Data`, `Stare`, `Execuție`, `Arii`,
+`Amendează`, `Închide`, `Docs`, câte o linie; `Stare` e `propusă`, `activă`,
+`amendată de N` sau `depășită de N`, iar aprobarea, PR-ul și review-ul stau
+în `Execuție`; titlul e `# N — afirmația`. (118b) Un sub-punct amendat sau
+depășit poartă la început marcajul `[amendat de N]` sau `[depășit de N]`, cu
+textul păstrat; `Amendează: N (x)` în antetul lui M și marcajul din N (x)
+sunt cele două capete ale aceleiași legături. (118c) Decizia depășită
+integral primește banner și stă în `decizii/arhiva/`. (118d)
+
+Vederea generată o scrie `docskit gen`, din rădăcina repo-ului, în același
+commit cu sursa: indexul din `decizii/README.md` între markerii `gen:index`,
+în trei grupe (118e); blocul `gen:decizii` de la sfârșitul fiecărei pagini de
+aici, cu deciziile care o numesc în `Arii` (118f); lista fișierelor din
+`docs/README.md` între `gen:fisiere`, doar cu titluri; și `docs/stare.md`
+integral (rezumat cu cifre, deciziile în vigoare pe arie ca numere cu starea,
+depășite, restanțe deschise pe stare, felii deschise, decizii invocate din
+cod, paginile cu `Actualizat`). Generatul e ținut mic pentru contextul
+agentului: `stare.md` sub 10 KB, blocul paginii o linie de numere, titlurile
+din index tăiate la 120 de caractere; titlul întreg stă doar în fișierul
+deciziei. `stare.md` nu poartă data generării și nici date din git, ca a doua
+rulare să scrie zero. `python -X utf8 nou/tools/docs/normalizeaza-antete.py --scrie` rămâne
+doar pentru normalizarea antetelor vechi; nu mai scrie indexul. (118j)
+
+Termenii stau în [termeni.md](termeni.md), pe trei secțiuni: domeniu,
+tehnic, identificatori; un termen intră acolo la prima lui folosire într-o
+pagină de stare curentă, în același commit. (118g)
+
+Fișierele din afara `decizii/` și `stare-curenta/` declară
+`Tip: contract | analiza | review | catalog | note`; fără `Tip` sunt jurnal,
+cu linkurile verificate și fără alte cerințe. (118h) Restanțele au și
+categoria `docs`; `închisă prin N` e singura stare de închidere. (118i)
+
+Gardienii mecanici îi rulează `docskit check` (unealta kitului, dotnet global
+tool din repo-ul `DocsKit`, configurată în `docs/docskit.json`): `linkuri`
+(fiecare link relativ și fiecare ancoră, pe slug GitHub cu diacritice),
+`antete` (câmpurile per tip, vocabularul `Stare` și `Tip`), `generat`
+(vederea generată la zi), `trimiteri` (cele două capete ale amendării și ale
+depășirii), `restante` (`Închide` ⇔ `închisă prin`, corp la sursă, stări din
+vocabular, lista `activă` sub 45), `arii` (fiecare rând al registrului
+numește o arie declarată, 118l), `cod` (`// 42b` are decizia și
+sub-punctul), `cai` (căile în backtick cu rădăcină `nou/`, `docs/`, `db/`,
+`legacy/` există, doar în stratul curent), `actualizat` (`Actualizat` ≥
+ultima schimbare a textului scris de mână al paginii; blocul generat nu
+contează, deci regenerarea nu cere dată nouă), `orfane` (stratul curent e legat), `termeni`
+(ancore unice în glosar), `tabele` (fiecare rând `| … |` stă sub antet și
+separator, fără linie goală între rânduri; rândul rămas în afară se randează
+ca text). Un gardian intră la `eroare` când are zero
+constatări; la 2026-10-11 sunt la `eroare` `linkuri`, `generat`, `arii`,
+`actualizat`, `orfane`, `termeni`, `tabele`, restul la `avertisment` cu
+cifrele în 118-r1. `check`
+și `metrics --check` verzi sunt condiție a PR-ului, rulate local, cu ieșirile
+atașate; nu există CI și nici hook de sesiune. Citările din cod și metricile sar folderele `bin`,
+`obj`, `node_modules`, `.vs`, `Migrations` și `generated` (ieșirea
+codegen-ului OpenAPI). (118k)
+
+Forma codului o măsoară `docskit metrics`, pe `nou/`: C# cu ținta 400 și
+plafonul 600 de linii, TypeScript cu 300 și 500, plus comentariile cu marcaje
+narative. Doar din metrici ies `nou/tools` (ModelCheck, Import1C) și fișierul
+generat `UnitatiMasuraUnEce.cs` (`cod.excluseDinMetrici`, docskit 0.6.0);
+citările `// N` din ele rămân verificate de gardianul `cod`. Linia zero e
+`docs/docskit.baseline.json`, rescrisă la 2026-10-11 pe arborele de după
+C111: 12 fișiere C# și 6 TypeScript peste plafon, 44 și 5 comentarii
+narative. `docskit metrics
+--check` pică la un fișier nou peste plafon, la mai multe comentarii narative
+și la o îmbunătățire neînregistrată; linia se rescrie cu `docskit metrics
+--scrie`, iar PR-ul numește ce a intrat în ea. Limite: `build` (HTML static) există în unealtă, dar nu e adoptat
+aici (118-r2); `/docs-curatenie` și `docs-init` vin cu 118-r4. (118k)
+
 ## Import operațional 1C
 
 Importul lucrează într-o bază dedicată, cu mapări explicite și verificare
@@ -1132,3 +1208,9 @@ cu sumă. O eroare tehnică a unei stingeri pică luna și nu explică nimic.
 `--probe-stingeri` injectează două erori pe prima stingere reală. Contractul
 și cifrele:
 `docs/import/m1-deschidere-terti-contract.md`. (107)
+
+<!-- gen:decizii -->
+## Decizii
+
+Deciziile care numesc pagina în `Arii:` (33; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 14, 15, 21, 23, 26 (amendată de 112), 30, 34, 36 (amendată de 71), 39, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 47 (amendată de 107), 49, 50, 56 (amendată de 77, 81), 66, 70, 80, 81, 84, 85, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110), 91 (amendată de 107, 118), 102, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 115, 118.
+<!-- /gen:decizii -->

@@ -1,8 +1,10 @@
-# Decizia 46 — Felia 1C-a — tipurile noi de model
+# 46 — Felia 1C-a — tipurile noi de model
 
-- **Data**: 2026-07-25 (primul commit în jurnal)
-- **Stare**: activă; (a) amendată de 113: `RegulaContare.PastreazaSemn` a ieșit, semnul valorii e al liniei
-- **Docs**: docs/import/faza-1c-design.md
+- Data: 2026-07-25
+- Stare: amendată de 113
+- Execuție: (a) amendată de 113: `RegulaContare.PastreazaSemn` a ieșit, semnul valorii e al liniei
+- Arii: domeniu-si-operare, limite-curente, politici-si-fiscalitate
+- Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă
 
@@ -22,7 +24,7 @@ VIRTUAL = doar liniile de venit; Capitalizat REFUZAT. (f) → jurnal.
 **Felia 1C-a — tipurile noi de model — executată; validată e2e în
 ModelCheck (privat 167 verificări, bugetar 212, idempotente) + review
 advers dedicat cu cele 6 fix-uri de fond aplicate. Tranșările:**
-(a) **Spike-ul storno REZOLVAT** (fixat în design §7): reprezentarea =
+(a) [amendat de 113] **Spike-ul storno REZOLVAT** (fixat în design §7): reprezentarea =
 valori NEGATIVE pe corespondența ORIGINALĂ (minus pe aceeași latură) —
 e deja convenția `Storneaza` (25d) și reprezentarea 1C; liniile se culeg
 pozitive, `PregatesteOperare` semnează (mecanismul LDI 28a); stocul și
