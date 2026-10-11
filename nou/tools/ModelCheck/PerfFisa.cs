@@ -11,7 +11,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 
 /// <summary>
 /// `ModelCheck --perf-fisa &lt;bază&gt; &lt;simbol&gt; &lt;an&gt; &lt;lună&gt; &lt;director&gt;`: timpul fișei contului pe o bază
-/// numită, pe contul întreg și pe repartitorul lui cel mai încărcat, cu SQL-ul produsului scris în director (C111 S9).
+/// numită, pe contul întreg, pe repartitorul lui cel mai încărcat și fără terț, și al registrului jurnal al lunii, cu SQL-ul produsului scris în director (C111 S9).
 /// </summary>
 static class PerfFisa {
     const int Rulari = 5;
@@ -28,11 +28,15 @@ static class PerfFisa {
             .Where(p => p.Cont == cont && p.Data >= deLa && p.Data <= panaLa && p.Repartitor != null)
             .GroupBy(p => p.Repartitor).OrderByDescending(g => g.Count()).Select(g => g.Key).First();
 
-        Forma(os, "cont-intreg", director, () => ContabilProiectii.FisaCont(os, cont, deLa, panaLa));
-        Forma(os, "cont-repartitor", director, () => ContabilProiectii.FisaCont(os, cont, deLa, panaLa, repartitorId: repartitor));
+        Forma(os, "cont-intreg", director, () => ContabilProiectii.FisaCont(os, cont, deLa, panaLa), CuPereche);
+        Forma(os, "cont-repartitor", director, () => ContabilProiectii.FisaCont(os, cont, deLa, panaLa, repartitorId: repartitor), CuPereche);
+        Forma(os, "cont-fara-tert", director, () => ContabilProiectii.FisaCont(os, cont, deLa, panaLa, faraTert: true), CuPereche);
+        Forma(os, "jurnal", director, () => ContabilProiectii.RegistruJurnal(os, deLa, panaLa), r => r.ContrapartidaId != null);
     }
 
-    static void Forma(IObjectSpace os, string nume, string director, Func<IQueryable<FisaContRand>> interogare) {
+    static bool CuPereche(FisaContRand rand) => rand.ContrapartidaId != null;
+
+    static void Forma<T>(IObjectSpace os, string nume, string director, Func<IQueryable<T>> interogare, Func<T, bool> cuPereche) {
         File.WriteAllText(Path.Combine(director, nume + ".sql"), interogare().ToQueryString(), new UTF8Encoding(false));
         var randuri = interogare().ToList();
         var timpi = new List<double>(Rulari);
@@ -43,7 +47,7 @@ static class PerfFisa {
             timpi.Add(ceas.Elapsed.TotalMilliseconds);
         }
         timpi.Sort();
-        Console.WriteLine($"{nume}|randuri={randuri.Count}|cu contrapartida={randuri.Count(r => r.ContrapartidaId != null)}"
+        Console.WriteLine($"{nume}|randuri={randuri.Count}|cu contrapartida={randuri.Count(cuPereche)}"
             + $"|mediana_ms={timpi[Rulari / 2]:0}|min_ms={timpi[0]:0}|max_ms={timpi[^1]:0}");
     }
 }

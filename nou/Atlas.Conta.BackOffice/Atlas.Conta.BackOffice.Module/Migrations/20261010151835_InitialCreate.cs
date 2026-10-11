@@ -3316,7 +3316,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 CREATE INDEX "IX_Postare_Contabil_PerioadaDeclarare_TipTvaId" ON "Postare_Contabil"
                     ("PerioadaDeclarare", "TipTvaId") WHERE "PerioadaDeclarare" IS NOT NULL;
                 CREATE INDEX "IX_Postare_DocumentId" ON "Postare" ("DocumentId");
-                CREATE INDEX "IX_Postare_TranzactieId" ON "Postare" ("TranzactieId");
+                CREATE INDEX "IX_Postare_Tranzactie_Pereche" ON "Postare" ("TranzactieId", "Pereche");
                 CREATE INDEX "IX_Postare_Suport" ON "Postare" ("SuportSpatiu", "SuportId") WHERE "SuportId" IS NOT NULL;
                 CREATE INDEX "IX_Postare_InversaDin" ON "Postare" ("InversaDinSpatiu", "InversaDinId") WHERE "InversaDinId" IS NOT NULL;
                 CREATE INDEX "IX_Postare_PerioadaD394" ON "Postare" ("PerioadaD394") WHERE "PerioadaD394" IS NOT NULL;

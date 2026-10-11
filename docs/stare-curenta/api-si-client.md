@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-10-10.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -154,7 +154,26 @@ postării (S1, C111-Q6). `repartitorId` îl filtrează, de orice fel: partener,
 angajat, gestiune, unitate internă sau cont propriu. Pe `fisa-cont`,
 `repartitorNul=true` înseamnă postările fără niciun repartitor și nu se
 combină cu `repartitorId`. Serverul nu are parametrul `gestiuneId`; locul
-(`Postare.Loc`) și partenerul fiscal nu sunt filtre.
+(`Postare.Loc`) și partenerul fiscal nu sunt filtre. Clientul nu-l mai
+trimite, iar ecranele numesc axa „Repartitor”. (C111 pasul 7)
+
+Pe `fisa-cont`, `faraTert=true` cere postările care nu stau pe un partener
+sau pe un angajat: fără repartitor, pe repartitor intern ori pe cont propriu.
+E mulțimea rândului „fără terț” din `sold-parteneri` și nu se combină cu
+`repartitorNul` sau cu `repartitorId` (400). (C111-Q18)
+
+`GET api/proiectii/fisa-cont/sold`, cu parametrii fișei, fără cei de grilă,
+întoarce sinteza perioadei: `SoldInitialDebit`/`Credit`, `RulajDebit`/`Credit`
+și `SoldFinalDebit`/`Credit`, soldurile netate pe o singură parte, calculate
+din atomii balanței pe filtrele fișei. Refuzurile sunt ale fișei: 400 pe
+forma cererii, 404 pe contul inexistent sau invizibil; cine nu vede nicio
+postare primește sinteza goală. Clientul o arată într-o bandă deasupra
+grilei, deci fișa fără mișcări în perioadă își arată soldul. (C111-Q19)
+
+`registru-jurnal` și `fisa-cont` poartă pe rând contul corespondent
+(`ContrapartidaId`, `ContrapartidaSimbol`): contul celeilalte postări a
+perechii; rândul fără pereche nu are. Ecranele îl arată în coloana „Cont
+corespondent”. (S9, 111 (d))
 
 `GET api/proiectii/sold-parteneri?laData=&contId=&repartitorId=` întoarce
 soldurile pe cont la o dată, cu aceleași filtre de dimensiune ca balanța și
@@ -164,8 +183,10 @@ repartitor intern sau pe cont propriu — vine într-un singur rând „fără t
 pe cont, cu `RepartitorId` nul, deci suma rândurilor unui cont e soldul lui
 din balanță (C111-Q13). `laData` absent = azi; o dată nevalidă cade pe 400.
 Citirea cere dreptul pe registrul contabil, ca balanța. Ecranul
-`/sold-parteneri` din client ține data în URL și duce prin dublu-click în
-fișa contului. (F27-D7)
+`/sold-parteneri` din client („Solduri pe terți”) ține data în URL și duce
+prin dublu-click în fișa contului pe anul datei cerute, filtrată pe rând:
+pe repartitorul lui, sau cu `faraTert` pe rândul „fără terț”. (F27-D7,
+C111-Q18)
 
 ## Securitate și răspunsuri
 

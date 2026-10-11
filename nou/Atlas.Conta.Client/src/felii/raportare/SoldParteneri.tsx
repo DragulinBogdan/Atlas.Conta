@@ -9,20 +9,8 @@ import { storeRemote } from '../../nucleu/dxStore';
 import { urlCu, useDimensiuniUrl, useUrlStare } from '../../nucleu/urlStare';
 import { azi, izolataZi } from '../../nucleu/zi';
 
-// Soldurile pe (cont × repartitor) la o zi (F27-D7): partea de SOLD a balanței
-// analitice, fără noțiunea de perioadă.
-//
-// ATENȚIE la ce înseamnă „repartitor" aici: dimensiunea urmează LATURILE
-// documentului (debit←predator, credit←primitor — 00 §5), nu contul de terț.
-// Pe o factură de client, atomul de DEBIT al lui 4111 poartă emitentul, iar
-// clientul apare pe atomul de CREDIT al venitului (măsurat pe baza reală:
-// 103.301 din 108.912 rânduri de 4111 au „Sediul central" pe debit). Creanța
-// PER PARTENER se citește deci din partidele deschise (`documente-cu-rest`),
-// nu de aici; ecranul acesta e soldul pe cheia contabilă, așa cum e ea.
-//
-// Cifrele sunt ale serverului (42c): aceiași atomi cumulați ca balanța, deci
-// rândurile coincid la cent cu modul analitic al ei. TS-ul nu netează nimic —
-// netarea nu e aditivă (66d) și se face la nivelul cheii, pe server.
+// Soldurile pe cont și terț la o zi (F27-D7, C111-Q13). Cifrele sunt ale
+// serverului (42c); netarea nu e aditivă (66d) și se face pe cheie, pe server.
 type SoldPartenerRand = components['schemas']['SoldPartenerRand'];
 const camp = (n: keyof SoldPartenerRand & string) => n;
 
@@ -41,7 +29,7 @@ export function SoldParteneri() {
   return (
     <div className="ecran">
       <div className="ecran__bara">
-        <h2>Solduri pe cont și repartitor</h2>
+        <h2>Solduri pe cont și terț</h2>
       </div>
 
       <div className="bara-raport">
@@ -76,9 +64,7 @@ export function SoldParteneri() {
             dataStart: `${an}-01-01`,
             dataEnd: stare.laData,
             repartitorId: rand.RepartitorId ?? undefined,
-            // „Fără repartitor" e un rând legitim (LEFT JOIN): santinelă
-            // explicită, altfel fișa s-ar deschide pe TOT contul.
-            repartitorNul: rand.RepartitorId ? undefined : true,
+            faraTert: rand.RepartitorId ? undefined : true,
           }));
         }}
       >
@@ -93,7 +79,7 @@ export function SoldParteneri() {
         <Column dataField={camp('ContDenumire')} caption="Denumire cont" />
         <Column
           dataField={camp('RepartitorDenumire')}
-          caption="Partener / repartitor"
+          caption="Partener / angajat"
           cellRender={celulaRepartitor}
         />
         <Column dataField={camp('SoldDebitor')} caption="Sold debitor" {...BANI} />
@@ -103,9 +89,10 @@ export function SoldParteneri() {
       </DataGrid>
 
       <p className="indiciu">
-        Rândurile cu sold zero nu apar. Dublu-click deschide fișa contului pe anul datei cerute.
-        Soldurile nu se însumează pe grup — netarea nu e aditivă. Repartitorul e dimensiunea laturii
-        documentului, nu partenerul contului de terț: restul pe partener se citește din documentele cu rest.
+        Rând propriu au partenerii și angajații. Restul contului (fără repartitor, pe gestiune, pe unitate
+        internă sau pe cont propriu) stă în rândul „fără terț”, deci suma rândurilor unui cont e soldul lui
+        din balanță. Rândurile cu sold zero nu apar. Dublu-click deschide fișa contului pe anul datei cerute,
+        filtrată pe rând. Soldurile nu se însumează pe grup: netarea nu e aditivă.
       </p>
     </div>
   );
@@ -119,7 +106,7 @@ function celulaCont({ data }: { data: SoldPartenerRand }) {
 function celulaRepartitor({ data }: { data: SoldPartenerRand }) {
   return data.RepartitorDenumire
     ? <span>{data.RepartitorDenumire}</span>
-    : <span className="indiciu">(fără repartitor)</span>;
+    : <span className="indiciu">(fără terț)</span>;
 }
 
 const BANI = { dataType: 'number', format: '#,##0.00', alignment: 'right', width: 140 } as const;

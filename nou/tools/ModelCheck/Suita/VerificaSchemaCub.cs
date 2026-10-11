@@ -143,7 +143,7 @@ static class VerificaSchemaCub {
         ORDER BY 1").ToHashSet(StringComparer.Ordinal);
         string[] indexiAsteptati = [
             "Postare.PK_Postare",
-            "Postare.IX_Postare_TranzactieId",
+            "Postare.IX_Postare_Tranzactie_Pereche",
             "Postare.IX_Postare_DocumentId",
             "Postare.IX_Postare_Fisa_Cont",
             "Postare_Stoc.IX_Postare_Stoc_Produs_Data",
@@ -173,7 +173,7 @@ static class VerificaSchemaCub {
         }
         Console.WriteLine($"     MĂSURAT (STR-SCHEMA-4/{eticheta}): {indexi.Count} indexi pe cele patru tabele; "
             + $"lipsă [{string.Join(", ", indexiLipsa)}]; formă greșită [{string.Join("; ", formeGresite)}].");
-        s.Check($"STR-SCHEMA-4 ({eticheta}) indexii minimi din S-D2 există: PK + `(TranzactieId)`/`(DocumentId)` pe "
+        s.Check($"STR-SCHEMA-4 ({eticheta}) indexii minimi din S-D2 există: PK + `(TranzactieId, Pereche)`/`(DocumentId)` pe "
             + "părinte, S2 `(Produs, Data) INCLUDE (…)` pe Stoc, C2 `(Repartitor, Cont, Data) WHERE …`, C3 `(Data)` și "
             + "F1 `(PerioadaDeclarare, TipTvaId) WHERE …` pe Contabil, `Tranzactie(DocumentId)`, `(Cont) WHERE FelUnitate = Fisa` pe părinte",
             indexiLipsa.Count == 0 && definitii.Count == 4 && formeGresite.Count == 0);

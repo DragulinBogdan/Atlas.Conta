@@ -860,6 +860,23 @@ try {
     Proba -Cerere 'explicația unui id inexistent' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/proiectii/explicatii/$idInexistent" -Contine 'nu există sau nu e vizibil' | Out-Null
     Proba -Cerere 'explicația unui id inexistent' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/proiectii/explicatii/$idInexistent" -Contine 'nu există sau nu e vizibil' -Nota 'același răspuns ca pe tranzacția existentă' | Out-Null
 
+    # ── C111-Q18, C111-Q19: fișa fără terț și sinteza fișei ────────────────
+    $contFixture = @($jurnalFixture.data | Where-Object { $_.DocumentId -eq $idFctFixture })[0].ContId
+    $perioadaFisa = "dataStart=$dataFixture&dataEnd=$dataFixture"
+    $caleFisa = "/api/proiectii/fisa-cont?contId=$contFixture&$perioadaFisa"
+    $caleSold = "/api/proiectii/fisa-cont/sold?contId=$contFixture&$perioadaFisa"
+    Proba -Cerere 'fișa contului fără terț' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$caleFisa&faraTert=true" -Contine '"totalCount"' | Out-Null
+    Proba -Cerere 'fișa contului, fără terț cu repartitor' -User 'Admin' -Asteptat 400 -Metoda GET -Cale "$caleFisa&faraTert=true&repartitorId=$idInexistent" -Contine 'faraTert' | Out-Null
+    Proba -Cerere 'sinteza fișei' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleSold -Contine '"SoldFinalDebit"' | Out-Null
+    Proba -Cerere 'sinteza fișei' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale $caleSold -Contine '"SoldFinalDebit"' | Out-Null
+    Proba -Cerere 'sinteza fișei' -User 'User' -Asteptat 404 -Metoda GET -Cale $caleSold -Contine 'nu există sau nu e vizibil' -Nota 'contul invizibil răspunde înaintea postărilor' | Out-Null
+    if ($script:Restrictii) {
+        Proba -Cerere 'sinteza fișei' -User $script:Restrictii.FaraPostare -Asteptat 200 -Metoda GET -Cale $caleSold -Contine '"RulajDebit":0', '"RulajCredit":0' -Nota 'ușa securizată filtrează: postările invizibile ⇒ sinteză goală, ca fișa' | Out-Null
+    }
+    Proba -Cerere 'sinteza fișei fără cont' -User 'Admin' -Asteptat 400 -Metoda GET -Cale "/api/proiectii/fisa-cont/sold?$perioadaFisa" -Contine 'contId' | Out-Null
+    Proba -Cerere 'sinteza fișei, fără terț cu fără repartitor' -User 'Admin' -Asteptat 400 -Metoda GET -Cale "$caleSold&faraTert=true&repartitorNul=true" -Contine 'faraTert' | Out-Null
+    Proba -Cerere 'sinteza fișei pe cont inexistent' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/proiectii/fisa-cont/sold?contId=$idInexistent&$perioadaFisa" -Contine 'nu există sau nu e vizibil' | Out-Null
+
     # ── F23: politicile, implicitele și auditul (F23-D10 + F23-D9) ─────────
     # Ce a schimbat măsurătoarea pasului 2 față de tabelul din contract, și de
     # ce probele de mai jos arată altfel decât acolo:

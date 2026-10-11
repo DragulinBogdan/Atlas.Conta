@@ -6,6 +6,8 @@
 sunt făcuți. Codex a închis review-ul de contract (2026-10-10,
 `comunicari/2026-10-10-1732-…-c111-contract-review-inchis.md`). Pasul 2 e
 implementat și verificat pe catalog; C111-Q12…Q14 au apărut la implementare.
+Pașii 3–7 sunt făcuți (2026-10-11), cu C111-Q15…Q21; rămâne review-ul advers
+al închiderii.
 **Bază:** main `1cc9d93`. **Decizia:**
 [111](../decizii/111-repartitor-unic-si-registre-tipate.md), aprobată
 2026-10-10. **Măsurătorile:** [pasul 0](tr-d9b-pas0-masuratori.md).
@@ -305,7 +307,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 4 | S7 și S8 | făcut 2026-10-10: [`c111-pas4-s7-s8.md`](c111-pas4-s7-s8.md) |
 | 5 | S9: contrapartida prin pereche | făcut 2026-10-10, cu fișa și registrul pe HTTP: [`c111-pas5-pereche.md`](c111-pas5-pereche.md). Cifra de timp cere o bază de import pe forma nouă și se ia la pasul 6 |
 | 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | făcut. Importul, 2026-10-10, cu regulile de oprire 1 și 2 și `INV-CUB` verzi și cu cifra de timp a fișei: [`c111-pas6-import.md`](c111-pas6-import.md). Uneltele de volum, costul scrierii și scara de 5 milioane, 2026-10-11: [`c111-pas6-scriere-si-volum.md`](c111-pas6-scriere-si-volum.md); scara transversală a prins citirea perechii fără margine în registrul jurnal, corectată acolo |
-| 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | drift zero; `refuzuri.ps1`; review advers |
+| 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | implementat și verificat 2026-10-11: [`c111-pas7-client-si-inchidere.md`](c111-pas7-client-si-inchidere.md), cu C111-Q18…Q21; drift zero, `refuzuri.ps1` 327/327; review-ul advers pe diff-ul întreg e cerut lui Codex și nu e închis |
 
 **Scrierile brute și mutanții** (pasul 2). Probele care scriu sau strică
 postări fără scriitorul produsului se mută semantic, nu mecanic:
@@ -443,6 +445,18 @@ A doua serie (2026-10-10, seara):
 | C111-Q15 | 111-r2: felurile pe conturile bugetare fără dovadă în legacy? | 462.01.09 = **partener și angajat**; 437.01.00 și 437.02.00 = **partener sau niciunul**; 803.00.01 = **partener sau niciunul** |
 | C111-Q16 | Când se recreează bazele de dezvoltare? | **după pasul 3**, o singură dată, pe schema cu `FeluriRepartitor` |
 | C111-Q17 | Cum se măsoară costul celor două chei străine noi și unde rulează uneltele de volum? (2026-10-11) | **A/B pe aceeași bază**, cu și fără chei, plus cifra pe rând; rulare **nativă** (5446); treapta de 5 milioane **acum** |
+
+A treia serie (2026-10-11, pasul 7):
+
+| Id | Întrebarea | Tranșarea |
+|---|---|---|
+| C111-Q18 | Ce deschide dublu-click-ul pe rândul „fără terț” din soldurile pe terți? `repartitorNul` arată numai postările fără niciun repartitor, nu tot ce adună rândul | **un filtru nou pe fișă, `faraTert`**: exact mulțimea rândului (fără repartitor, pe repartitor intern, pe cont propriu); nu se combină cu `repartitorNul` sau cu `repartitorId`. Amendează C111-Q6 („un singur filtru”) |
+| C111-Q19 | Fișa deschisă pe un rând de sold fără mișcări în perioada cerută iese goală. Ce arată? | **banda de sinteză** deasupra grilei: sold inițial, rulaje, sold final, calculate de server din atomii balanței, pe filtrele fișei (`GET api/proiectii/fisa-cont/sold`) |
+| C111-Q20 | Căutarea perechii prin indexul pe tranzacție citește toată tranzacția; pe deschiderea importului (10.828 de postări) fișa durează secunde. Index nou acum? `Pereche` nenulă, cu 0 pentru „fără pereche”? | **indexul `(TranzactieId, Pereche)` acum**, în locul celui pe `TranzactieId`, cu bazele de dezvoltare recreate și cu indexul aplicat prin SQL pe baza de import și pe cea de volum (abatere numită de la 102 (b): schema lor rămâne altfel cea a codului). **`Pereche` rămâne nulabilă**; îmbinarea perechii din registrul jurnal se scrie în SQL, ca în fișă |
+| C111-Q21 | Cele trei puncte rămase neconfirmate de la pașii 2 și 3 | **confirmate**: pe bugetar, nota pe un cont de terți fără partener pe linie e refuzată (urmarea lui S6); regula de oprire 3 spune că stornoul cu parteneri fiscali diferiți nu e probat ca formă; 461.01.09 admite numai partener |
+
+Review-ul advers al închiderii (regula de oprire 8) îl face Codex, pe diff-ul
+întreg al feliei (owner, 2026-10-11).
 
 ## Review-ul advers Codex al contractului (2026-10-10)
 

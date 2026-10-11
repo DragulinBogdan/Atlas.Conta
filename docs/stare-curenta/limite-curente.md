@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-10-10.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -10,7 +10,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Felurile de repartitor (C111-D4): numai seed-ul bugetar declară, pe cele
   20 de conturi cu defalcarea R; 14 dintre ele n-au mișcare în legacy 2026,
   deci felul lor e din natura contului, nu din date. Pe 461.01.09 angajatul
-  nu e admis (rămas de confirmat). Planul privat nu declară nimic, iar contul
+  nu e admis (confirmat, C111-Q21). Planul privat nu declară nimic, iar contul
   nedeclarat nu judecă repartitorul (lumea deschisă, C111-r2). Terțul stă pe
   piciorul de terț numai când contul cere repartitor
   sau urmărește partide — pe un cont fără flag și fără partide (446 privat)
@@ -277,7 +277,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   există ca ecran și ca rută, nu ca o coloană `Sold` pe `Partener`. (F27-r7)
 - `sold-parteneri` nu desface rândul „fără terț”: sumele pe repartitor
   intern, pe cont propriu și fără repartitor ale unui cont vin împreună;
-  defalcarea lor e în balanța analitică. Rândul e probat cu sume pe
+  defalcarea lor e în balanța analitică, iar postările lor în fișa cu
+  `faraTert`. Rândul e probat cu sume pe
   repartitor intern și pe cont propriu, nu și cu sume fără niciun repartitor.
   Locul (`Postare.Loc`) și partenerul fiscal nu sunt axe de sold și nu au
   filtru pe nicio proiecție. (C111-Q13, C111-Q8)
@@ -326,14 +327,30 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Contrapartida costă în registrul jurnal circa 4 µs pe rând la volum: luna
   de 888 de mii de rânduri pe baza de 5 milioane de postări se citește în
   4,8 s, față de 1,3 s fără contrapartidă. Planul caută perechea fiecărui
-  rând prin indexul pe tranzacție; o îmbinare prin hash pe postările
-  intervalului n-a fost încercată.
-  (`docs/nucleu/c111-pas6-scriere-si-volum.md`, 2026-10-11)
+  rând prin indexul pe `(TranzactieId, Pereche)`; indexul a scos costul
+  tranzacțiilor mari (deschiderea importului), nu și căutarea pe rând. O
+  îmbinare prin hash pe postările intervalului n-a fost încercată.
+  (`docs/nucleu/c111-pas6-scriere-si-volum.md`,
+  `docs/nucleu/c111-pas7-client-si-inchidere.md`, 2026-10-11)
+- Fișa contului și registrul jurnal compun SQL-ul de mână în jurul surselor
+  din LINQ, fiindcă egalitatea pe `Pereche`, nulabilă, nu iese din LINQ fără
+  ramură de nul. `Pereche` nulă înseamnă „fără pereche”; valoarea 0 nu e
+  folosită. (C111-Q20)
+- Sinteza fișei (`fisa-cont/sold`) și fișa trec prin ușa securizată: un rol
+  cu citire restrânsă pe `Postare` primește sinteza rândurilor pe care le
+  vede, ca în balanță, fără refuz. Dreptul unic cu 403 (D9-D9) e numai pe
+  rutele ușii de sistem. (C111-Q19)
+- La volum, fișa unui cont întreg cu 160–200 de mii de rânduri în lună se
+  citește integral în circa 3 s.
+  (`docs/nucleu/c111-pas7-client-si-inchidere.md`)
 - Import1C a rulat pe forma postării din C111 pe ianuarie 2025, cu amprentele
   liniei de bază identice (`docs/nucleu/c111-pas6-import.md`). Bazele de
   import și clonele de măsurare de pe 5444 sunt pe schema veche și cer
   `--recreeaza`; baza de volum la zi e `Atlas.Conta.ModelCheck.Privat.C111Vol`
-  (5446). Cifrele de mai jos sunt de dinaintea ei. (C111-D9, pasul 6)
+  (5446). Pe ea și pe baza de import `Atlas.Conta.Import1C.Flax.C111P6`
+  indexul perechii a fost schimbat prin SQL, fără recreare (abatere numită de
+  la 102b, C111-Q20). Cifrele de mai jos sunt de dinaintea ei. (C111-D9,
+  pașii 6 și 7)
 - Import1C rulează pe cititorii cubului, dar reconcilierea lui nu e verde.
   Pe ianuarie 2025 (2026-10-07): 15.232 de documente, zero eșecuri de import,
   `INV-CUB` verde; contractul 1 are trei conturi fără explicație (371, 3028,
@@ -543,21 +560,10 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Client, API și livrare
 
-- Clientul React nu e adus la forma postării din C111 (pasul 7 al
-  contractului). Rapoartele duc încă `gestiuneId` din URL spre server
-  (`nucleu/urlStare.ts`), unde parametrul nu mai există și e ignorat fără
-  refuz: un deep-link cu `gestiuneId` arată raportul nefiltrat. Dublu-click-ul
-  pe rândul „fără terț” din `/sold-parteneri` deschide fișa cu
-  `repartitorNul`, care arată numai postările fără niciun repartitor, nu tot
-  ce adună rândul. Fișa numește `repartitorNul` „fără partener”, iar
-  explicația ecranului de sold descrie axa dinaintea C111. Contractul generat
-  (OpenAPI, tipurile) e la zi.
-- Bazele de dezvoltare fără sufix, de pe 5444 și de pe 5446, sunt pe lanțul
-  de migrații dinaintea `20261010151835_InitialCreate` și nu corespund
-  codului: hosturile și probele HTTP cer recrearea lor
-  ([rețeta](dezvoltare-si-validare.md), „Model și persistență”). Integrala
-  ModelCheck a rulat pe baze cu sufix, create din migrația curentă.
-  (102b, C111-D7)
+- Un deep-link vechi cu `gestiuneId` deschide raportul nefiltrat, fără
+  refuz: nici clientul, nici serverul nu mai cunosc parametrul. Legătura
+  „Înapoi la balanță” din fișă apare și când fișa e deschisă din soldurile pe
+  terți. (C111 pasul 7)
 - Paginile React de detaliu ale documentelor sunt înghețate: câmpurile
   adăugate modelului după 2026-09-27 nu apar acolo, iar convențiile de
   selector rămase neadoptate (BTR, `TipMaterial`) nu se mai aplică. Culegerea

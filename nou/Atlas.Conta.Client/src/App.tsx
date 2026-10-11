@@ -288,7 +288,7 @@ function Meniu() {
       <NavLink to="/stoc">Sold stoc</NavLink>
       <NavLink to="/balanta">Balanță</NavLink>
       <NavLink to="/balanta-plan">Balanță pe plan</NavLink>
-      <NavLink to="/sold-parteneri">Solduri pe repartitor</NavLink>
+      <NavLink to="/sold-parteneri">Solduri pe terți</NavLink>
           <NavLink to="/partide">Partide deschise</NavLink>
       <NavLink to="/jurnal">Registru-jurnal</NavLink>
       <NavLink to="/perioade">Perioade fiscale</NavLink>

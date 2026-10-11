@@ -177,7 +177,7 @@ amendamentele 1–3, pașii în `docs/nucleu/tr-d9-pas*.md`, închiderea în
 Codex al închiderii e închis (D9-F-R1…R4, IZ-R1, IZ-R2), iar proba PerfCub pe
 clone diferite e acceptată de owner ca abatere de la „aceeași bază”.
 Mersă în main prin PR #22 (2026-10-07). Bazele de dezvoltare sunt recreate din
-`InitialCreate`. Pasul 0 al TR-D9b e măsurat (2026-10-08,
+`InitialCreate` (ultima dată la pasul 7 al C111, 2026-10-11). Pasul 0 al TR-D9b e măsurat (2026-10-08,
 `docs/nucleu/tr-d9b-pas0-masuratori.md`); baza de import la zi e
 `.Flax.D9bP0`, scena de volum e `.D9bVol`. Decizia 111 e aprobată de owner
 (2026-10-10) și neimplementată: coordonatele se schimbă în felia C111, cu
@@ -191,8 +191,10 @@ S8, și pasul 5, contrapartida prin pereche, făcuți,
 `docs/nucleu/c111-pas4-s7-s8.md` și `c111-pas5-pereche.md`; pasul 6 făcut:
 importul pe forma nouă, cu amprentele liniei de bază identice,
 `docs/nucleu/c111-pas6-import.md`, apoi uneltele de volum, costul scrierii și
-scara de 5 milioane, `docs/nucleu/c111-pas6-scriere-si-volum.md`; rămâne
-pasul 7, clientul și închiderea),
+scara de 5 milioane, `docs/nucleu/c111-pas6-scriere-si-volum.md`; pasul 7
+făcut: clientul, fișa fără terț cu sinteza ei, indexul perechii,
+`docs/nucleu/c111-pas7-client-si-inchidere.md`; rămâne review-ul advers al
+închiderii, cerut lui Codex),
 înaintea TR-D9b; TR-D9b rămâne felia unităților, pe forma nouă
 a postării.
 Felia fiscală

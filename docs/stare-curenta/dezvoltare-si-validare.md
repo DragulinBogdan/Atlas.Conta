@@ -1,13 +1,14 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-10.** [Index](README.md)
+**Actualizat: 2026-10-11.** [Index](README.md)
 
-Validarea curentă (forma postării din C111, 2026-10-10): integrala **3.625
-bugetar / 5.029 privat OK**, zero FAIL, pe baze create din
-`20261010151835_InitialCreate`; nucleu 199/199; `--scenarii C111` verde pe
-ambele profiluri; drift OpenAPI zero; metadata clientului la zi. Urma:
-`run-verificari/20261010-201708-710/`. Raportul pasului:
-`docs/nucleu/c111-pas2-forma-noua.md`.
+Validarea curentă (C111 pasul 7, 2026-10-11): integrala **3.673 bugetar /
+5.075 privat OK**, zero FAIL, pe baze create din
+`20261010151835_InitialCreate`; `--scenarii C111` verde pe ambele profiluri;
+`refuzuri.ps1` 327/327 de două ori pe bază privată nouă; drift OpenAPI zero;
+clientul compilează. Nucleul n-a fost atins de la pasul 6 (199/199 acolo).
+Urma: `run-verificari/20261011-122558-351/`. Raportul pasului:
+`docs/nucleu/c111-pas7-client-si-inchidere.md`.
 
 TR-D9a, pasul 6 (tăierea, 2026-10-07): motorul nu mai scrie, nu mai citește și
 nu mai ramifică pe registre și pe regim; oracolul registre → cub a ieșit din
@@ -394,8 +395,9 @@ Lanțul de migrații e o singură migrație, `20261010151835_InitialCreate`
 modelul nu-l declară: `Postare` partiționată pe `Spatiu` cu cheia
 `(Spatiu, ID)`, cele două partiții, FK-urile pe partiții — inclusiv cele trei
 spre `Repartitori`, prin `Repartitor`, `PartenerFiscal` și `Loc` —, cei 14
-indecși pe partiții și pe părinte (cu `IX_Postare_Fisa_Cont`, probat de
-`STR-SCHEMA-4`), constrângerile `CK_Postare_*` (cu `CK_Postare_Contrapondere`
+indecși pe partiții și pe părinte (cu `IX_Postare_Fisa_Cont` și cu
+`IX_Postare_Tranzactie_Pereche`, pe `(TranzactieId, Pereche)`, care ține și
+loc de index pe tranzacție; probați de `STR-SCHEMA-4`), constrângerile `CK_Postare_*` (cu `CK_Postare_Contrapondere`
 și `CK_Postare_BlocFiscal`), funcția `cub_partida_id` și view-ul listei de
 evidență, `PostareVizual`. `Down` le șterge cu `DROP` explicit. `ToView` e
 exclus din snapshot, deci `has-pending-model-changes` rămâne curat.
@@ -482,6 +484,10 @@ lună și un angajat, desfăcute în ordine inversă în `finally`. Rămân audi
 a doua rulare nu adaugă nimic). Plafonul de 500 al candidaților DVI e probat
 în ModelCheck, nu pe HTTP. Măsurat 2026-09-27 pe `c104-straturi`: 294/294
 PASS de două ori consecutiv, baza identică înainte și după. (104-r5)
+La 2026-10-11, cu rândurile fișei fără terț și ale sintezei ei: 327/327 de
+două ori. Matricea cere bază nouă: pe una pe care a rulat `explicatii.py`
+pică pe starea lăsată de acesta (documente din 2012, politici de probă), nu
+pe produs. (C111 pasul 7)
 Matricea conține și ușa explicației (X-D4): tranzacția facturii fixture-ului
 se află din jurnal, `Admin`, `Cititor` și `Configurator` primesc 200, iar
 `User` 404, la fel ca pe un id inexistent. 403
@@ -761,10 +767,12 @@ import. Două importuri ale aceluiași binar dau amprente identice
 (`docs/nucleu/c111-pas0-linia-de-baza.md`). (C111-D9)
 
 `ModelCheck --perf-fisa <bază> <simbol cont> <an> <lună> <director>` măsoară
-fișa contului pe o bază numită: contul întreg și contul pe repartitorul lui
-cel mai încărcat, cinci rulări la cald, mediana, cu numărul de rânduri și
-câte au contrapartidă. Scrie în director SQL-ul produsului, cu parametrii în
-antet. Numai citire. (C111 S9, `docs/nucleu/c111-pas6-import.md`)
+fișa contului pe o bază numită — contul întreg, contul pe repartitorul lui
+cel mai încărcat și contul fără terț — și registrul jurnal al lunii, citite
+integral: cinci rulări la cald, mediana, cu numărul de rânduri și câte au
+contrapartidă. Scrie în director SQL-ul produsului, cu parametrii în antet.
+Numai citire. (C111 S9, `docs/nucleu/c111-pas6-import.md`,
+`docs/nucleu/c111-pas7-client-si-inchidere.md`)
 
 ### Îmbinările pe chei nulabile ale cubului
 
@@ -779,6 +787,10 @@ disponibilul, și `Partide.MiscariPePartidele`) pornesc de la partidele
 deschise de el și țin partea ne-nulă pe origini, ca postările să fie căutate
 prin index, nu parcurse. `SC-CIT-110` probează că cititorii de partide și
 snapshot-ul chiar sunt executați și nu au forma. (D9-D10 (b))
+Perechea (`Postare.Pereche`, nulabilă) se îmbină în SQL scris de mână, în
+fișa contului și în registrul jurnal: egalitate simplă, care folosește
+indexul pe `(TranzactieId, Pereche)`. Ocolirea din LINQ cu `??` dă o
+expresie pe care indexul n-o poate folosi. (C111-Q20)
 
 `RAMURA-NUL` (`ProbeRamuraDeNul`) caută forma în fiecare comandă SQL pe care
 EF o emite în proces, pe orice context, în rularea integrală și în

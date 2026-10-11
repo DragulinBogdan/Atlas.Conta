@@ -4,7 +4,9 @@
 HTTP; cifra de timp e luată la pasul 6 ([`c111-pas6-import.md`](c111-pas6-import.md)).
 Sursa perechii s-a schimbat la pasul 6: `Contabil.Perechi`, mărginită de
 interval, în locul lui `Contabil.Postari`
-([`c111-pas6-scriere-si-volum.md`](c111-pas6-scriere-si-volum.md)). Contractul:
+([`c111-pas6-scriere-si-volum.md`](c111-pas6-scriere-si-volum.md)), iar
+îmbinarea perechii din registrul jurnal e scrisă în SQL de la pasul 7
+([`c111-pas7-client-si-inchidere.md`](c111-pas7-client-si-inchidere.md)). Contractul:
 [C111](c111-coordonate-contract.md), S9 și C111-Q2; decizia 111 (d). Închide
 D9-r4.
 

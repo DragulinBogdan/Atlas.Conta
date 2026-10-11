@@ -309,6 +309,27 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             && peNul.Count(r => r.RepartitorId == null && r.SoldDebitor == 230) == 1);
         Verifica("SC-C111-10", $"contul propriu al plății n-are rând: cei 40 de pe el și cei 7 fără repartitor stau în rândul fără terț ({Descrie(peBanca)})",
             peBanca.Count == 1 && peBanca[0].RepartitorId == null && peBanca[0].SoldCreditor == 47);
+        var (fisaNul, fisaBanca, fisaContra, fisaFaraRepartitor) = CuSpatiu(os => {
+            List<FisaContRand> Fisa(Guid cont, bool faraTert, bool repartitorNul = false) => ContabilProiectii
+                .FisaCont(os, cont, new(An, 1, 1), Sfarsit, repartitorNul: repartitorNul, faraTert: faraTert).ToList();
+            return (Fisa(nul, true), Fisa(banca, true), Fisa(contra, true), Fisa(banca, false, repartitorNul: true));
+        });
+        static decimal? Ultim(List<FisaContRand> fisa) => fisa.Count == 0 ? null : fisa[^1].SoldCurent;
+        Verifica("SC-C111-31", "fișa fără terț arată ce adună rândul fără terț: 230 pe contul cu Loc și furnizor, "
+            + $"47 pe contul plății, din care 7 fără repartitor, nimic pe contul numai cu terț (obținut {Ultim(fisaNul)}, "
+            + $"{Ultim(fisaBanca)} în {fisaBanca.Count} rânduri, {Ultim(fisaFaraRepartitor)}, {fisaContra.Count} rânduri)",
+            Ultim(fisaNul) == 230 && fisaNul.Count == 2 && Ultim(fisaBanca) == -47 && fisaBanca.Count == 2
+            && Ultim(fisaFaraRepartitor) == -7 && fisaContra.Count == 0);
+        var (soldBanca, soldFaraRepartitor, soldContra) = CuSpatiu(os => (
+            ContabilProiectii.FisaSold(os, banca, new(An, 1, 1), Sfarsit, faraTert: true),
+            ContabilProiectii.FisaSold(os, banca, new(An, 1, 1), Sfarsit, repartitorNul: true),
+            ContabilProiectii.FisaSold(os, contra, new(An, 1, 1), Sfarsit, faraTert: true)));
+        Verifica("SC-C111-32", "sinteza fișei fără terț pe contul plății: fără sold inițial, rulaj creditor 47, sold final creditor 47; "
+            + $"fără repartitor 7; nimic pe contul numai cu terț (obținut {soldBanca.RulajCredit}/{soldBanca.SoldFinalCredit}, "
+            + $"{soldFaraRepartitor.SoldFinalCredit}, {soldContra.SoldFinalDebit}/{soldContra.SoldFinalCredit})",
+            soldBanca is { SoldInitialDebit: 0, SoldInitialCredit: 0, RulajDebit: 0, RulajCredit: 47, SoldFinalDebit: 0, SoldFinalCredit: 47 }
+            && soldFaraRepartitor is { RulajCredit: 7, SoldFinalCredit: 7 }
+            && soldContra is { RulajDebit: 0, RulajCredit: 0, SoldFinalDebit: 0, SoldFinalCredit: 0 });
         Verifica("SC-C111-10", $"contul numai cu terț n-are rând fără terț ({Descrie(peContra)})",
             peContra.Count == 1 && peContra[0].RepartitorId == Furnizor && peContra[0].SoldCreditor == 241);
         Verifica("SC-C111-10", $"suma rândurilor fiecărui cont e soldul lui din balanță ({Net(peNul)}/{balanta.Nul}, "
@@ -342,6 +363,35 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             Verifica("SC-C111-09", $"citirea {citire} după închidere: fișa pe Loc 231, pe furnizor 13, fără filtru 244, "
                 + $"nimic fără repartitor (obținut {fise}); soldurile inițiale 11 pe furnizor și 230 pe Loc",
                 fise == (231, 13, 244, 0) && initiale.SequenceEqual([(Furnizor, 11m), (Loc, 230m)]));
+            var sinteze = CuSpatiu(os => {
+                (decimal Initial, decimal Final, int Randuri, bool Inchisa) Sinteza(DateOnly deLa, DateOnly panaLa,
+                        Guid? repartitor = null, bool repartitorNul = false, bool faraTert = false) {
+                    var s = ContabilProiectii.FisaSold(os, nul, deLa, panaLa, repartitorId: repartitor,
+                        repartitorNul: repartitorNul, citire: citire, faraTert: faraTert);
+                    var randuri = ContabilProiectii.FisaCont(os, nul, deLa, panaLa, repartitorId: repartitor,
+                        repartitorNul: repartitorNul, citire: citire, faraTert: faraTert).ToList();
+                    var initial = s.SoldInitialDebit - s.SoldInitialCredit;
+                    var final = s.SoldFinalDebit - s.SoldFinalCredit;
+                    return (initial, final, randuri.Count, s.RulajDebit == randuri.Sum(r => r.Debit)
+                        && s.RulajCredit == randuri.Sum(r => r.Credit) && final == initial + s.RulajDebit - s.RulajCredit
+                        && (randuri.Count == 0 || randuri[^1].SoldCurent == final));
+                }
+                DateOnly f1 = new(An, 2, 1), f2 = new(An, 2, 28), m1 = new(An, 3, 1), m2 = new(An, 3, 31);
+                return (Tot: Sinteza(f1, f2), PeLoc: Sinteza(f1, f2, Loc), PeTert: Sinteza(f1, f2, Furnizor),
+                    FaraTert: Sinteza(f1, f2, faraTert: true), FaraRepartitor: Sinteza(f1, f2, repartitorNul: true),
+                    FaraMiscari: Sinteza(m1, m2, faraTert: true));
+            });
+            Verifica("SC-C111-32", $"citirea {citire} după închidere: sinteza fișei e rândul balanței și se închide cu rândurile ei: "
+                + "241 → 244 pe cont, 230 → 231 pe Loc și fără terț, 11 → 13 pe furnizor, nimic fără repartitor; luna fără mișcări "
+                + $"arată soldul 231 fără niciun rând (obținut {sinteze})",
+                sinteze.Tot == (241, 244, 2, true) && sinteze.PeLoc == (230, 231, 1, true) && sinteze.PeTert == (11, 13, 1, true)
+                && sinteze.FaraTert == (230, 231, 1, true) && sinteze.FaraRepartitor == (0, 0, 0, true)
+                && sinteze.FaraMiscari == (231, 231, 0, true));
+            var faraTert = CuSpatiu(os => ContabilProiectii
+                .FisaCont(os, nul, new(An, 2, 1), new(An, 2, 28), citire: citire, faraTert: true).ToList());
+            Verifica("SC-C111-31", $"citirea {citire} după închidere: fișa fără terț pornește de la 230 și ajunge la 231 "
+                + $"(obținut {faraTert.Count} rânduri, {faraTert.LastOrDefault()?.SoldCurent})",
+                faraTert.Count == 1 && faraTert[0].SoldCurent == 231);
         }
     }
 

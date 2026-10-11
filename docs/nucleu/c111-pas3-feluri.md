@@ -86,6 +86,6 @@ temporar să înregistreze în loc să refuze; instrumentarea nu e în cod.
 
 - Felurile celor 14 conturi fără mișcare în legacy 2026 sunt din natura
   contului.
-- Pe 461.01.09 angajatul nu e admis; rămâne de confirmat.
+- Pe 461.01.09 angajatul nu e admis; confirmat de owner (C111-Q21, 2026-10-11).
 - Gardul pe feluri n-a rulat pe import: baza de import e privată și nu
   declară nimic.
