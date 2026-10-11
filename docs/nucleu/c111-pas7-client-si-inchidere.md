@@ -2,7 +2,7 @@
 
 **Data:** 2026-10-11. **Stare:** implementat și verificat pe catalog, pe HTTP
 și în browser; review-ul advers pe diff-ul întreg al feliei a sosit:
-C111-F-R1 e corectată, C111-F-R2 e la owner. Contractul: [C111](c111-coordonate-contract.md), D6, D9 și
+C111-F-R1 e corectată, C111-F-R2 e tranșată (C111-Q22); rămâne reverificarea. Contractul: [C111](c111-coordonate-contract.md), D6, D9 și
 C111-Q18…Q21; decizia 111.
 
 Urmele, neversionate: `run-verificari/c111-pas7-http/` (rețeta
@@ -154,12 +154,14 @@ advers Codex al închiderii”.
   repusă, o aprinde. Integrala după corecție: 3.678 OK pe bugetar, 5.080 pe
   privat, zero FAIL (`run-verificari/20261011-135559-972/`). Matricea HTTP și
   proba din browser sunt cele de mai sus, de pe arborele dinaintea corecției.
-- **C111-F-R2, la owner.** Sinteza fișei trece prin ușa securizată, ca fișa
-  și balanța: un rol cu citire restrânsă pe `Postare` primește suma
-  rândurilor lui, fără refuz. 110 (e) cere, la literă, citirea completă.
+- **C111-F-R2, tranșată (C111-Q22).** Sinteza fișei trece prin ușa
+  securizată, ca fișa și balanța: un rol cu citire restrânsă pe `Postare`
+  primește suma rândurilor lui, fără refuz. 110 (e) cerea, la literă,
+  citirea completă și pe proiecții; owner-ul a precizat regula: citirea
+  completă e a rutelor de pe ușa de sistem. Codul nu se schimbă.
 
 ## Ce rămâne
 
-- Tranșarea C111-F-R2 și reverificarea Codex a corecției; decizia 111 trece
-  la „implementată” după ele.
+- Reverificarea Codex a corecției C111-F-R1; decizia 111 trece la
+  „implementată” după ea.
 - La volum, contrapartida din registrul jurnal costă tot circa 4 µs pe rând.

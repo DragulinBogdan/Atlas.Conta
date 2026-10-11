@@ -7,7 +7,8 @@ sunt făcuți. Codex a închis review-ul de contract (2026-10-10,
 `comunicari/2026-10-10-1732-…-c111-contract-review-inchis.md`). Pasul 2 e
 implementat și verificat pe catalog; C111-Q12…Q14 au apărut la implementare.
 Pașii 3–7 sunt făcuți (2026-10-11), cu C111-Q15…Q21. Review-ul advers al
-închiderii a sosit (2026-10-11): C111-F-R1 e corectată, C111-F-R2 e la owner.
+închiderii a sosit (2026-10-11): C111-F-R1 e corectată, C111-F-R2 e tranșată
+(C111-Q22); rămâne reverificarea lui Codex.
 **Bază:** main `1cc9d93`. **Decizia:**
 [111](../decizii/111-repartitor-unic-si-registre-tipate.md), aprobată
 2026-10-10. **Măsurătorile:** [pasul 0](tr-d9b-pas0-masuratori.md).
@@ -311,7 +312,7 @@ rescrie pe coloanele noi (amendamentul 3 (g) al TR-D9a).
 | 4 | S7 și S8 | făcut 2026-10-10: [`c111-pas4-s7-s8.md`](c111-pas4-s7-s8.md) |
 | 5 | S9: contrapartida prin pereche | făcut 2026-10-10, cu fișa și registrul pe HTTP: [`c111-pas5-pereche.md`](c111-pas5-pereche.md). Cifra de timp cere o bază de import pe forma nouă și se ia la pasul 6 |
 | 6 | uneltele: Import1C, `ScaraVolum.sql`, PerfCub | făcut. Importul, 2026-10-10, cu regulile de oprire 1 și 2 și `INV-CUB` verzi și cu cifra de timp a fișei: [`c111-pas6-import.md`](c111-pas6-import.md). Uneltele de volum, costul scrierii și scara de 5 milioane, 2026-10-11: [`c111-pas6-scriere-si-volum.md`](c111-pas6-scriere-si-volum.md); scara transversală a prins citirea perechii fără margine în registrul jurnal, corectată acolo |
-| 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | implementat și verificat 2026-10-11: [`c111-pas7-client-si-inchidere.md`](c111-pas7-client-si-inchidere.md), cu C111-Q18…Q21; drift zero, `refuzuri.ps1` 327/327; review-ul advers pe diff-ul întreg: C111-F-R1 corectată, C111-F-R2 la owner (secțiunea „Review-ul advers Codex al închiderii”) |
+| 7 | contractul HTTP, clientul, `stare-curenta`, închiderea | implementat și verificat 2026-10-11: [`c111-pas7-client-si-inchidere.md`](c111-pas7-client-si-inchidere.md), cu C111-Q18…Q21; drift zero, `refuzuri.ps1` 327/327; review-ul advers pe diff-ul întreg: C111-F-R1 corectată, C111-F-R2 tranșată prin C111-Q22 (secțiunea „Review-ul advers Codex al închiderii”); rămâne reverificarea |
 
 **Scrierile brute și mutanții** (pasul 2). Probele care scriu sau strică
 postări fără scriitorul produsului se mută semantic, nu mecanic:
@@ -462,6 +463,12 @@ A treia serie (2026-10-11, pasul 7):
 Review-ul advers al închiderii (regula de oprire 8) îl face Codex, pe diff-ul
 întreg al feliei (owner, 2026-10-11).
 
+A patra serie (2026-10-11, review-ul închiderii):
+
+| Id | Întrebarea | Tranșarea |
+|---|---|---|
+| C111-Q22 | C111-F-R2: sinteza fișei, ca balanța și fișa, însumează pe ușa securizată numai postările vizibile rolului, iar 110 (e) cere la literă citirea completă și pe proiecții. Se aliniază rutele sau se precizează regula? | **se precizează 110 (e)**: citirea completă, cu 403, rămâne numai pe rutele ușii de sistem; proiecțiile securizate filtrează pe rând și însumează ce vede rolul. Fără schimbare de cod |
+
 ## Review-ul advers Codex al contractului (2026-10-10)
 
 Mesajele: `comunicari/2026-10-10-1034-…-c111-contract-review.md` (R1–R7) și
@@ -548,12 +555,13 @@ nu acoperă pașii 3–7.
 Mesajul: `comunicari/2026-10-11-1342-codex-claude-c111-inchidere-review.md`,
 pe `main...c840765`, cu integrala rulată de Codex pe baze proprii (3.673 /
 5.075, zero FAIL) și cu două probe HTTP ale lui. Verdictul: închiderea nu se
-recomandă până la R1 și R2. Fiecare constatare a fost recitită în cod.
+recomandă până la R1 și R2. Corecția și tranșarea de mai jos nu sunt încă
+reverificate de Codex. Fiecare constatare a fost recitită în cod.
 
 | Id | Constatarea | Dispoziția |
 |---|---|---|
 | C111-F-R1 | pe contul care admite lipsa (`Partener \| Niciunul`: 437.01.00, 437.02.00, 803.00.01) terțul documentului nu mai ajunge pe piciorul de terț: `ContFapt.CereRepartitor` însemna „nu admite lipsa”, iar `Terti.Capat` îl folosea ca să decidă dacă pune terțul. Plata de 10 către un partener cu contul 437.01.00 postează debitul fără repartitor. Încalcă D5 („când apare terțul pe picior nu se schimbă”) și regula de oprire 5 | acceptată și corectată: faptul e `DeclaraRepartitor`, adevărat pe orice cont care declară feluri, adică echivalentul flag-ului R de pe `main`; prezența și felul rămân ale gardului. Scena SC-C111-33 (PLT și INC pe cont care admite lipsa, postările, fișa pe terț, fișa fără terț, soldurile pe terți); condiția veche, repusă ca mutant, o aprinde. Integrala: 3.678 / 5.080, zero FAIL (`run-verificari/20261011-135559-972/`) |
-| C111-F-R2 | ruta `fisa-cont/sold` (C111-Q19) însumează pe ușa securizată numai postările vizibile: un rol cu o postare ascunsă primește 200 cu sold parțial. 110 (e) cere, la literă, citirea completă pe `Postare` pentru cifrele citite din cub, inclusiv pe proiecții. Nu e expunere de date și nu e regresie: balanța, fișa și soldurile pe terți fac la fel pe `main` | deschisă, la owner: e contradicție între litera 110 (e) și regimul proiecțiilor securizate, nu defect al rutei |
+| C111-F-R2 | ruta `fisa-cont/sold` (C111-Q19) însumează pe ușa securizată numai postările vizibile: un rol cu o postare ascunsă primește 200 cu sold parțial. 110 (e) cere, la literă, citirea completă pe `Postare` pentru cifrele citite din cub, inclusiv pe proiecții. Nu e expunere de date și nu e regresie: balanța, fișa și soldurile pe terți fac la fel pe `main` | tranșată de owner (C111-Q22): 110 (e) e precizată, fără schimbare de cod. Citirea completă e a rutelor de pe ușa de sistem; proiecțiile securizate filtrează pe rând. Regimul e scris în `api-si-client.md` și în `limite-curente.md` |
 | SC-C111-30, completare | proba seed-ului număra 20 de conturi și numea numai șase | acceptată: scena compară fiecare din cele 20 de conturi cu felurile lui |
 
 La celelalte întrebări Codex n-a găsit contraexemplu: S7 și S8, perechea

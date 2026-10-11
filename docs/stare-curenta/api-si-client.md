@@ -218,6 +218,14 @@ pe subiectul ei, iar verificarea închiderii pe toate tipurile pe care le
 contractul clientului; `$metadata` le descrie ca `EntityType` fără
 `EntitySet`, ca pe orice tip neexpus. (F22-D5, 80e, 108 d, D9-D9; 2026-10-06)
 
+Proiecțiile contabile de pe ușa securizată nu cer citirea completă:
+`balanta`, `balanta-plan`, `fisa-cont`, `fisa-cont/sold`, `registru-jurnal`,
+`sold-parteneri`, partidele, documentele cu rest și soldul de stoc filtrează
+pe rând. Un rol cu criteriu de rând pe `Postare` primește 200 cu cifrele
+rândurilor pe care le vede; cine n-are dreptul pe tip și nu vede nicio
+postare primește rezultatul gol. Contul corespondent al unei postări ascunse
+rămâne nul. (110 (e) precizată, C111-Q22; 2026-10-11)
+
 Crearea cere drepturile de creare și scriere; modificarea cere scriere, iar
 ștergerea dreptul aferent. Verificările nu se amână până după execuția
 regulilor de domeniu. Un context nesecurizat nu are strategie de securitate

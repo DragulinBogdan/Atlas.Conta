@@ -194,7 +194,8 @@ importul pe forma nouă, cu amprentele liniei de bază identice,
 scara de 5 milioane, `docs/nucleu/c111-pas6-scriere-si-volum.md`; pasul 7
 făcut: clientul, fișa fără terț cu sinteza ei, indexul perechii,
 `docs/nucleu/c111-pas7-client-si-inchidere.md`; review-ul advers Codex al
-închiderii: C111-F-R1 corectată, C111-F-R2 la owner),
+închiderii: C111-F-R1 corectată, C111-F-R2 tranșată prin precizarea lui
+110 (e); rămâne reverificarea),
 înaintea TR-D9b; TR-D9b rămâne felia unităților, pe forma nouă
 a postării.
 Felia fiscală

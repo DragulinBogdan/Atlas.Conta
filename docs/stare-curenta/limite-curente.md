@@ -341,10 +341,12 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   din LINQ, fiindcă egalitatea pe `Pereche`, nulabilă, nu iese din LINQ fără
   ramură de nul. `Pereche` nulă înseamnă „fără pereche”; valoarea 0 nu e
   folosită. (C111-Q20)
-- Sinteza fișei (`fisa-cont/sold`) și fișa trec prin ușa securizată: un rol
-  cu citire restrânsă pe `Postare` primește sinteza rândurilor pe care le
-  vede, ca în balanță, fără refuz. Dreptul unic cu 403 (D9-D9) e numai pe
-  rutele ușii de sistem. (C111-Q19)
+- Proiecțiile contabile trec prin ușa securizată: un rol cu citire restrânsă
+  pe `Postare` (criteriu de rând) primește balanța, fișa cu sinteza ei,
+  registrul jurnal și soldurile pe terți calculate numai din rândurile pe
+  care le vede, fără refuz și fără semn că cifra e parțială. Dreptul unic cu
+  403 e numai pe rutele ușii de sistem. Niciun rol din seed nu are criteriu
+  de rând pe `Postare`. (110 (e) precizată, C111-Q22)
 - La volum, fișa unui cont întreg cu 160–200 de mii de rânduri în lună se
   citește integral în circa 3 s.
   (`docs/nucleu/c111-pas7-client-si-inchidere.md`)
