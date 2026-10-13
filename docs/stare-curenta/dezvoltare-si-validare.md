@@ -458,7 +458,9 @@ Migrațiile nu transformă date. Migrațiile de dinainte sunt
 istorie în git; bazele create pe un lanț vechi nu se actualizează, se
 recreează (102b); clonele de import și de perf de dinaintea migrației curente
 rămân pe schema veche și Import1C cere `--recreeaza`. Lanțul crește prin
-migrații.
+migrații până la „rotund”, unde se recomprimă într-o singură migrație de
+bază, cu proba că schema rezultată e identică; de la prima bază care trebuie
+păstrată nu se mai recomprimă. (120)
 Citirile cumulate au o probă pe două conexiuni și un contor de instrucțiuni
 SQL (SC-CIT-77). Scrierea globală prin ObjectSpace secured este refuzată
 înaintea accesului la date (SC-CIT-78). Accesul real pe rând și membru este
@@ -1269,5 +1271,5 @@ cu sumă. O eroare tehnică a unei stingeri pică luna și nu explică nimic.
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (33; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 14, 15, 21, 23, 26 (amendată de 112), 30, 34, 36 (amendată de 71), 39, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 47 (amendată de 107), 49, 50, 56 (amendată de 77, 81), 66, 70, 80, 81, 84, 85, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118), 102, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 115, 118.
+Deciziile care numesc pagina în `Arii:` (34; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 14, 15, 21, 23, 26 (amendată de 112), 30, 34, 36 (amendată de 71), 39, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 47 (amendată de 107), 49, 50, 56 (amendată de 77, 81), 66, 70, 80, 81, 84, 85, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 115, 118, 120.
 <!-- /gen:decizii -->

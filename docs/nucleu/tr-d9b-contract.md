@@ -249,6 +249,7 @@ noi; catalogul existent verifică regresia celorlalte forme.
 | 3 | Catalog SC-D9B, fixture-uri și termen A | scenariile existente; așteptările noi distincte de baseline | probă vacuă, volum nereprezentativ | realizat 2026-10-12 pentru A: scenarii pe ambele profiluri, 48 combinații de citire până la 5.001.179 postări, scriere2/51; limita montajului sintetic și probele P rămase în [raport](tr-d9b-pas3-referinta.md); fără review advers |
 | 4 | Persistență, scriitor, retragere și cititori | SC-D9B, invarianți/mutanți, integrala ambelor profiluri | origine lipsă la o cale rară; acces prea larg | implementat, verificarea în [raport](tr-d9b-pas4-origini.md); review în pasul 5, fără commit |
 | 5 | Termen B și închiderea pachetului | pragurile D7, securitate, docskit, review advers | închiderea pe cifre din baze diferite | 48/48 perechi și scriere2/51 verzi; integrală 3.758/5.160 după corecțiile review-ului Codex; [raport](tr-d9b-pas5-comparatie.md); reverificarea owner/Claude înainte de commit rămâne |
+| 6 | Membrii `Latura` ai sensului devin `Sens`, cu coloana de pe `Postare` | nucleu, integrala ambelor profiluri, metadata, drift OpenAPI, referința A | redenumirea laturii documentului; referința A comparată pe text | de făcut; delimitarea în [precizarea pasului 6](#precizarea-pasului-6--2026-10-13) |
 
 Comenzile de produs, după pregătirea bazelor compatibile cu schema pasului:
 
@@ -294,3 +295,35 @@ Proprietățile `Unitate`/`Latura`, coloanele, câmpurile DTO și forma JSON a
 explicației păstrează numele. `FelUnitate` și laturile documentului nu se
 schimbă. O eventuală redenumire a membrilor persistabili/API este un pas
 distinct, cu inventarul consecințelor; nu este ascunsă în această schimbare.
+
+## Precizarea pasului 6 — 2026-10-13
+
+Cerut de owner după închiderea 118-r7 și 118-r8, înaintea codului
+corecțiilor valorice: acele fișiere se rescriu oricum, iar documentele CV
+citează linii din ele.
+
+Se redenumesc membrii care poartă debitul sau creditul: `Coordonate.Latura`,
+`Mutare.Latura`, `Postare.Latura`, `PostareVizual.Latura`, împreună cu
+parametrii de același tip (de pildă cel din `Capat.Pe`). La 2026-10-13 sunt 33 de declarații de tip `Sens`
+numite `Latura` în 23 de fișiere, în afara migrațiilor. Înlocuirea se face
+pe simboluri, ca la pasul 2: latura documentului (`LaturaDocument`,
+`Declaratii.Latura`, `RegulaStoc.Latura`, `LaturaPerecheId`) poartă același
+nume în aceleași fișiere și nu se atinge.
+
+Coloana `Latura` de pe `Postare` devine `Sens` printr-o migrație
+incrementală (120): redenumire pe tabela părinte și view-ul `PostareVizual`
+recreat, fiindcă își îngheață lista de coloane. Niciun index și nicio funcție
+scrisă de mână nu numește coloana. SQL-ul brut care o numește:
+`nou/tools/ModelCheck/ScaraVolum.sql`, `nou/tools/ProbeHttp/partide-cub.py`
+și o probă din `ScenariiNir.Review.cs`.
+
+De verificat înaintea înlocuirii: opt fișiere din
+`nou/tools/ModelCheck/Referinte/D9bA/` conțin SQL cu numele coloanei; dacă
+harness-ul le compară pe text, se regenerează, altfel comparația A/B pică.
+Expunerea sensului postării prin OData și captionul din `PostareVizual` nu
+sunt inventariate. JSON-ul explicației nu are câmpul.
+
+Membrii numiți `Unitate` nu intră: `UnitateSold Unitate` este numele scurt
+admis de glosar, iar redenumirea ar schimba coloana, indecșii ei și cheia
+`unitate` din JSON-ul persistat al explicației. Confirmat de owner la
+2026-10-13: după acest pas nu rămâne nimic de redenumit.

@@ -30,6 +30,7 @@ bld/
 # fisier neurmarit in `git status`.
 /anaf/
 /1C/
+/docs-html/
 
 /run*/
 /tmp/

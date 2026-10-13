@@ -112,7 +112,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-astra.md)
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-fable.md)
 
-### `docs/decizii/` (122)
+### `docs/decizii/` (123)
 
 - [1 — Nucleu generic + moștenire, nu tabele complet separate](decizii/001-nucleu-generic-mostenire.md)
 - [2 — Testul de apartenență a unui câmp](decizii/002-testul-apartenentei-campului.md)
@@ -233,6 +233,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [117 — Postarea își poartă ordinalul în tranzacție; unitatea fără document se departajează pe el](decizii/117-ordinalul-postarii-in-tranzactie.md)
 - [118 — Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră…](decizii/118-guvernanta-documentatiei.md)
 - [119 — Compensarea valorică aparține corecției: a doua Operare pe un document operat…](decizii/119-compensarea-valorica-apartine-corectiei.md)
+- [120 — Lanțul de migrații e de unică folosință până la „rotund”; recomprimarea lui este a șaptea condiție](decizii/120-lantul-de-migratii-se-recomprima-la-rotund.md)
 - [Jurnalul de decizii — index (un fișier per decizie)](decizii/README.md)
 - [Istoricul de execuție al planului de lucru (snapshot 2026-08-24)](decizii/istoric-plan-de-lucru.md)
 - [Restanțele și amânările cu nume](decizii/restante.md)

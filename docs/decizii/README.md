@@ -21,7 +21,7 @@
 > din cod.
 
 <!-- gen:index -->
-### Active (86)
+### Active (87)
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -111,6 +111,7 @@
 | 117 | [Postarea își poartă ordinalul în tranzacție; unitatea fără document se departajează pe el](117-ordinalul-postarii-in-tranzactie.md) | 2026-10-09 | activă |
 | 118 | [Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rân…](118-guvernanta-documentatiei.md) | 2026-10-10 | activă |
 | 119 | [Compensarea valorică aparține corecției: a doua Operare pe un document operat…](119-compensarea-valorica-apartine-corectiei.md) | 2026-10-13 | activă |
+| 120 | [Lanțul de migrații e de unică folosință până la „rotund”; recomprimarea lui este a șaptea condiție](120-lantul-de-migratii-se-recomprima-la-rotund.md) | 2026-10-13 | activă |
 
 ### Amendate parțial (33)
 
@@ -138,7 +139,7 @@
 | 87 | [Pasul 5, felia 26 — Imobilizări și amortizare, contabil și fiscal: fișa ca nomenclator subțire, un singur registru appen…](087-p5-felia26-imobilizari.md) | 2026-09-15 | amendată de 97 |
 | 88 | [Pasul 5, felia 27 — Perioada fiscală ca lanț, închiderea ca comandă cu acceptare conștientă, soldurile și partidele desc…](088-p5-felia27-perioade-solduri.md) | 2026-09-17 | amendată de 103 |
 | 90 | [Nucleul ca ledger n-dimensional — un singur cub de postări în locul celor patru registre…](090-nucleu-cub-de-postari.md) | 2026-09-20 | amendată de 91, 92, 93, 95, 96, 110, 119 |
-| 91 | [Proba supremă devine catalogul de scenarii — Import1C se îngheață ca unealtă de migrare, nu ca gate…](091-scenarii-in-loc-de-import.md) | 2026-09-22 | amendată de 107, 118 |
+| 91 | [Proba supremă devine catalogul de scenarii — Import1C se îngheață ca unealtă de migrare, nu ca gate…](091-scenarii-in-loc-de-import.md) | 2026-09-22 | amendată de 107, 118, 120 |
 | 92 | [Identitatea partidei include partenerul](092-identitatea-partidei-include-partenerul.md) | 2026-09-23 | amendată de 102 |
 | 96 | [Urmărirea partidelor este separată de rolul comercial](096-urmarirea-partidelor-separata-de-rolul-comercial.md) | 2026-09-24 | amendată de 100, 102 |
 | 97 | [PIF nominalizează valoarea contabilă cu suport obligatoriu](097-pif-nominalizare-cu-suport-obligatoriu.md) | 2026-09-24 | amendată de 98 |
