@@ -350,7 +350,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             var rand = ImperecheriProiectii.PartideCuRest(os, Furnizor, laData: Ianuarie)
                 .SingleOrDefault(s => s.UnitateId == id);
             return net == 0 ? rand == null : rand != null && rand.DocumentId == doc
-                && rand.Rest == Math.Abs(net) && rand.Sens == (net > 0 ? "Creanta" : "Datorie");
+                && rand.Rest == Math.Abs(net) && rand.SensStingere == (net > 0 ? "Creanta" : "Datorie");
         }));
     }
 

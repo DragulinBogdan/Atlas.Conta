@@ -22,7 +22,7 @@ function JurnalTva({ sens, titlu }: { sens: SensTva; titlu: string }) {
   const [stare, seteaza] = useUrlStare({ dataStart: luna.start, dataEnd: luna.sfarsit });
 
   const sursa = useMemo(() => storeRemote(
-    urlCu('/api/proiectii/jurnal-tva', { sens, ...stare }),
+    urlCu('/api/proiectii/jurnal-tva', { sensTva: sens, ...stare }),
 
     ['DocumentId', 'TipTvaId', 'Storno', 'Regim', 'Cota', 'PerioadaAn', 'PerioadaLuna'],
   ), [sens, stare]);

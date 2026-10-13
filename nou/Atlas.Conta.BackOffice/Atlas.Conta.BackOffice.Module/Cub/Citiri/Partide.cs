@@ -163,23 +163,23 @@ public static class Partide {
             Net = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) };
 
     /// <summary>Restul documentului pe partidele proprii, cu aceeași selecție pe sens ca <see cref="Total"/>.</summary>
-    public static decimal Ramas(IObjectSpace os, Guid document, SensStingere? sens) {
+    public static decimal Ramas(IObjectSpace os, Guid document, SensStingere? sensStingere) {
         var proprii = PropriiAle(os, document);
-        return sens switch {
+        return sensStingere switch {
             SensStingere.Datorie => proprii.Where(p => p.Net < 0m).Select(p => (decimal?)-p.Net).Sum(),
             SensStingere.Creanta => proprii.Where(p => p.Net > 0m).Select(p => (decimal?)p.Net).Sum(),
             _ => proprii.Select(p => (decimal?)Math.Abs(p.Net)).Sum(),
         } ?? 0m;
     }
 
-    public static decimal Disponibil(IObjectSpace os, Guid document, Guid partener, SensStingere sens) {
+    public static decimal Disponibil(IObjectSpace os, Guid document, Guid partener, SensStingere sensStingere) {
         var proprii = PropriiAle(os, document).Where(p => p.PartenerId == partener);
-        return (sens == SensStingere.Datorie ? proprii.Where(p => p.Net > 0m) : proprii.Where(p => p.Net < 0m))
+        return (sensStingere == SensStingere.Datorie ? proprii.Where(p => p.Net > 0m) : proprii.Where(p => p.Net < 0m))
             .Select(p => (decimal?)Math.Abs(p.Net)).Sum() ?? 0m;
     }
 
     /// <summary>Totalul documentului pe partidele proprii, în sensul de stins; fără sens declarat, Σ |net| pe unitate.</summary>
-    public static decimal Total(IObjectSpace os, Guid document, SensStingere? sens) {
+    public static decimal Total(IObjectSpace os, Guid document, SensStingere? sensStingere) {
         var noi = Noi(os, document)
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare && p.FelUnitate == N.FelUnitate.Partida).ToArray();
         var nete = noi.Length != 0
@@ -189,7 +189,7 @@ public static class Partide {
                 .Where(p => p.DocumentId == document && p.FelUnitate == N.FelUnitate.Partida)
                 .GroupBy(p => new { p.Cont, p.Repartitor, p.Unitate })
                 .Select(g => g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)).ToList();
-        return sens switch {
+        return sensStingere switch {
             SensStingere.Datorie => nete.Where(n => n < 0m).Sum(n => -n),
             SensStingere.Creanta => nete.Where(n => n > 0m).Sum(),
             _ => nete.Sum(Math.Abs),
@@ -201,12 +201,12 @@ public static class Partide {
         os.ModifiedObjects.OfType<Postare>().Where(p => os.IsNewObject(p)
             && p.DocumentId == document && p.Carte == N.Carte.Contabil);
 
-    public static decimal Capacitate(IObjectSpace os, Guid document, Guid partener, SensStingere sens) {
+    public static decimal Capacitate(IObjectSpace os, Guid document, Guid partener, SensStingere sensStingere) {
         var nete = Contabil.Postari(os).Where(p => p.DocumentId == document && p.Repartitor == partener
                 && p.FelUnitate == N.FelUnitate.Partida)
             .GroupBy(p => new { p.Cont, p.Unitate })
             .Select(g => new { Net = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) });
-        return (sens == SensStingere.Datorie ? nete.Where(p => p.Net > 0m) : nete.Where(p => p.Net < 0m))
+        return (sensStingere == SensStingere.Datorie ? nete.Where(p => p.Net > 0m) : nete.Where(p => p.Net < 0m))
             .Select(p => (decimal?)Math.Abs(p.Net)).Sum() ?? 0m;
     }
 

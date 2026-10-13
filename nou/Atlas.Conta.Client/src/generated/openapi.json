@@ -66113,7 +66113,7 @@
             }
           },
           {
-            "name": "sens",
+            "name": "sensStingere",
             "in": "query",
             "schema": {
               "type": "string"
@@ -135906,7 +135906,7 @@
             }
           },
           {
-            "name": "sens",
+            "name": "sensTva",
             "in": "query",
             "schema": {
               "type": "string"
@@ -189764,7 +189764,7 @@
             }
           },
           {
-            "name": "sens",
+            "name": "sensStingere",
             "in": "query",
             "schema": {
               "type": "string"
@@ -323301,7 +323301,7 @@
             "type": "string",
             "nullable": true
           },
-          "Sens": {
+          "SensStingere": {
             "type": "string",
             "nullable": true
           },
@@ -328264,7 +328264,7 @@
             "type": "string",
             "nullable": true
           },
-          "Sens": {
+          "SensStingere": {
             "type": "string",
             "nullable": true
           },
@@ -328878,7 +328878,7 @@
             "type": "string",
             "format": "date"
           },
-          "Sens": {
+          "SensStingere": {
             "type": "string",
             "nullable": true
           },

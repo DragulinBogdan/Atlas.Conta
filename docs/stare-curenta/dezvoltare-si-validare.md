@@ -72,6 +72,16 @@ host izolat (`run-verificari/20261013-113445-406/`); `pnpm build` verde.
 Detaliile și limitele sunt în
 [raportul pasului 7](../nucleu/tr-d9b-pas7-senstva.md).
 
+TR-D9b, pasul 8 (2026-10-13): membrii de tip `SensStingere` numiți `Sens`
+sau `Latura` se numesc `SensStingere`, cu trei câmpuri de API; parametrii
+de interogare sunt `sensStingere` pe partide și documente cu rest și
+`sensTva` pe jurnalul de TVA. Fără migrație. Integrala **3.759 bugetar /
+5.161 privat OK**, zero FAIL (`run-verificari/20261013-115203-880/`); HTTP
+**327/327** plus SC-D9B-10 (`run-verificari/20261013-115710-093/`); nouă
+probe de legare a parametrilor pe host viu, toate verzi; `pnpm build`
+verde. Detaliile sunt în
+[raportul pasului 8](../nucleu/tr-d9b-pas8-sensstingere.md).
+
 Validarea curentă (C111, corecția C111-F-R1 a review-ului de închidere,
 2026-10-11): integrala **3.678 bugetar / 5.080 privat OK**, zero FAIL, pe
 baze create din `20261010151835_InitialCreate`; `--scenarii C111` verde pe

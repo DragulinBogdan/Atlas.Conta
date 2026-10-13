@@ -251,6 +251,7 @@ noi; catalogul existent verifică regresia celorlalte forme.
 | 5 | Termen B și închiderea pachetului | pragurile D7, securitate, docskit, review advers | închiderea pe cifre din baze diferite | 48/48 perechi și scriere2/51 verzi; integrală 3.758/5.160 după corecțiile review-ului Codex; [raport](tr-d9b-pas5-comparatie.md); reverificarea owner/Claude înainte de commit rămâne |
 | 6 | Membrii `Latura` ai sensului devin `Sens`, cu coloana de pe `Postare` | nucleu, integrala ambelor profiluri, metadata, drift OpenAPI, referința A | redenumirea laturii documentului; referința A comparată pe text | făcut 2026-10-13: 383 de înlocuiri pe simboluri, migrația `SensPePostare`, nucleu 199/199, integrală 3.759/5.161, drift zero, 48/48 perechi A = B; două praguri de timp picate pe SOLDURI, unde A și B sunt același cititor; [raport](tr-d9b-pas6-sens.md); fără review advers |
 | 7 | Membrii de tip `SensTva` numiți `Sens` devin `SensTva`, cu coloanele mapărilor și câmpurile de API | nucleu, integrala ambelor profiluri, metadata, OpenAPI regenerat, build-ul clientului, HTTP | redenumirea sensului postării sau al stingerii; câmp de API schimbat fără client | făcut 2026-10-13: 275 de înlocuiri pe simboluri, migrația `SensTvaPeMapari`, nucleu 199/199, integrală 3.759/5.161, HTTP 327/327; [raport](tr-d9b-pas7-senstva.md); fără review advers |
+| 8 | Membrii de tip `SensStingere` numiți `Sens` sau `Latura` devin `SensStingere`; parametrii de interogare `sens` își iau numele întreg | integrala ambelor profiluri, OpenAPI regenerat, build-ul clientului, HTTP cu legarea parametrilor | parametru redenumit fără apelant; sensul postării atins | făcut 2026-10-13: 79 de înlocuiri pe simboluri, fără migrație, integrală 3.759/5.161, HTTP 327/327 și 9/9 probe de legare; [raport](tr-d9b-pas8-sensstingere.md); fără review advers |
 
 Comenzile de produs, după pregătirea bazelor compatibile cu schema pasului:
 
@@ -357,3 +358,20 @@ parametrul de interogare `sens` al jurnalului de TVA și notația
 `(TipTva × Sens)` din comentarii, care numește axa, nu membrul. Realizarea
 și consecința pe refuzurile de seed sunt în
 [raport](tr-d9b-pas7-senstva.md).
+
+## Precizarea pasului 8 — 2026-10-13
+
+Cerut de owner după pasul 7, cu parametrii de interogare incluși.
+
+Intră membrii, parametrii și variabilele de tip `SensStingere` numite
+`Sens`, `sens`, `Latura` sau `latura`, și câmpurile text numite `Sens` care
+duc numele membrului din `SensStingere`: `NtcContrapartidaDto`,
+`DocumentCuRestRand`, `PartidaCuRestRand` și `AntetCuRest`. Parametrul de
+interogare `sens` devine `sensStingere` pe `/api/proiectii/partide` și
+`/api/proiectii/documente-cu-rest` și `sensTva` pe
+`/api/proiectii/jurnal-tva`. Sensul stingerii nu este persistat, deci pasul
+nu are migrație.
+
+Nu intră: sensul postării și câmpurile text `Sens` ale fișei de cont și
+registrului jurnal, care duc „D” sau „C”. Realizarea este în
+[raport](tr-d9b-pas8-sensstingere.md).

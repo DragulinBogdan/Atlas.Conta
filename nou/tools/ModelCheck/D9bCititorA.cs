@@ -45,7 +45,7 @@ static class D9bCititorA {
                    UnitateId = s.UnitateId, ContId = s.ContId, ContSimbol = c.Simbol,
                    ContrapartidaId = s.PartenerId, ContrapartidaDenumire = p.Denumire,
                    DocumentId = (Guid?)d.ID, DocumentTip = null, Numar = d.Numar, Data = s.Deschisa,
-                   Sens = s.Debit > s.Credit ? SensCreanta : SensDatorie, Rest = rest
+                   SensStingere = s.Debit > s.Credit ? SensCreanta : SensDatorie, Rest = rest
                };
     }
 }

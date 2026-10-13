@@ -574,7 +574,7 @@ static class VerificaPartide {
                     && ImperechereService.Total(os, rdc.ID) == 121m);
                 var candidatRdc = ImperecheriProiectii.DocumenteCuRest(os).SingleOrDefault(r => r.DocumentId == rdc.ID);
                 s.Check($"PAR-V23/SC-CIT-64 ({eticheta}): returul cu partidă proprie este datorie 121 în raport",
-                    apare && candidatRdc?.Rest == 121m && candidatRdc.Sens == "Datorie");
+                    apare && candidatRdc?.Rest == 121m && candidatRdc.SensStingere == "Datorie");
 
             }
 

@@ -456,26 +456,26 @@ static class VerificaApiNtc {
             + "jumătățile, Y doar pe cea de datorie",
             cand != null && cand.Stare == "Operat" && cand.PoateStinge
             && cand.Contrapartide.Count == 3
-            && cand.Contrapartide.Any(c => c.RepartitorId == partenerX.ID && c.Sens == "Datorie"
+            && cand.Contrapartide.Any(c => c.RepartitorId == partenerX.ID && c.SensStingere == "Datorie"
                 && c.RepartitorCod == partenerX.Cod)
-            && cand.Contrapartide.Any(c => c.RepartitorId == partenerX.ID && c.Sens == "Creanta")
-            && cand.Contrapartide.Any(c => c.RepartitorId == partenerY.ID && c.Sens == "Datorie"));
-        var candXd = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Datorie");
-        var candXc = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Creanta");
+            && cand.Contrapartide.Any(c => c.RepartitorId == partenerX.ID && c.SensStingere == "Creanta")
+            && cand.Contrapartide.Any(c => c.RepartitorId == partenerY.ID && c.SensStingere == "Datorie"));
+        var candXd = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.SensStingere == "Datorie");
+        var candXc = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.SensStingere == "Creanta");
         var candY = cand.Contrapartide.Single(c => c.RepartitorId == partenerY.ID);
         s.Check("ANCORA F19-D10 (cusătură MĂSURATĂ, nu afirmată): plafonul per (contrapartidă × sens) din `candidati` e "
             + "IDENTIC cu `NotaContabila.CapacitateStingere` — X 60 datorie / 60 creanță, Y 25 datorie",
-            cand.Contrapartide.All(c => capacitati[c.RepartitorId][Enum.Parse<SensStingere>(c.Sens)] == c.Capacitate)
+            cand.Contrapartide.All(c => capacitati[c.RepartitorId][Enum.Parse<SensStingere>(c.SensStingere)] == c.Capacitate)
             && candXd.Capacitate == 60m && candXc.Capacitate == 60m && candY.Capacitate == 25m
             && candXd.Asignat == 0m && candXd.Disponibil == 60m);
 
-        List<DocumentCuRestRand> RestPentru(Guid contrapartidaId, SensStingere sens) =>
-            ImperecheriProiectii.DocumenteCuRest(os, contrapartidaId, sens)
+        List<DocumentCuRestRand> RestPentru(Guid contrapartidaId, SensStingere sensStingere) =>
+            ImperecheriProiectii.DocumenteCuRest(os, contrapartidaId, sensStingere)
                 .OrderBy(r => r.Data).ThenBy(r => r.Numar).ToList();
         bool Aceleasi(List<DocumentCuRestRand> a, List<DocumentCuRestRand> b) =>
             a.Count == b.Count && a.Zip(b).All(p =>
                 p.First.DocumentId == p.Second.DocumentId && p.First.Tip == p.Second.Tip
-                && p.First.ContrapartidaId == p.Second.ContrapartidaId && p.First.Sens == p.Second.Sens
+                && p.First.ContrapartidaId == p.Second.ContrapartidaId && p.First.SensStingere == p.Second.SensStingere
                 && p.First.Total == p.Second.Total && p.First.Asignat == p.Second.Asignat
                 && p.First.Rest == p.Second.Rest);
         s.Check("ANCORA F19-D10 + D16: rândurile unei jumătăți sunt EXACT `DocumenteCuRest` filtrat pe (contrapartidă × "
@@ -494,7 +494,7 @@ static class VerificaApiNtc {
         s.Check("F19-D16 (42c): literalul `Sens` al proiecției == `Document.SensDeStins` pe FIECARE rând — proiecția "
             + "dublează un calcul al motorului (funcție de TIP, netraductibilă în SQL), deci se MĂSOARĂ contra lui",
             totRest.Count > 0
-            && totRest.All(r => r.Sens == os.GetObjectByKey<Document>(r.DocumentId).SensDeStins(os).ToString()));
+            && totRest.All(r => r.SensStingere == os.GetObjectByKey<Document>(r.DocumentId).SensDeStins(os).ToString()));
         s.Check("F19-D10: NTC NU se adaugă în `DocumenteCuRest` (nota n-are semantică de „rest”: Σ liniilor ei nu e nici "
             + "creanță, nici datorie) — deci nu se poate propune pe ea însăși",
             !totRest.Any(r => r.DocumentId == idNtc));
@@ -587,8 +587,8 @@ static class VerificaApiNtc {
         ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idNtc),
             os.GetObjectByKey<Document>(incX1.ID), 60m);
         cand = NotaContabilaApply.Candidati(os, idNtc);
-        candXd = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Datorie");
-        candXc = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Creanta");
+        candXd = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.SensStingere == "Datorie");
+        candXc = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.SensStingere == "Creanta");
         s.Check("ANCORA F19-D14 (NTC): stingerea prin serviciu scade `Rest`-ul documentului stins (100 → 40) ȘI se vede "
             + "în panou ca `Asignat` PE JUMĂTATEA EI — cifra vine din `ImperechereService.AsignatFataDe(cp, sens)`, "
             + "funcția pe care o cheamă și `ValideazaCreare` (o singură formulă a plafonului); jumătatea de creanță "
@@ -611,8 +611,8 @@ static class VerificaApiNtc {
         ImperechereService.Imperecheaza(os, os.GetObjectByKey<NotaContabila>(idNtc),
             os.GetObjectByKey<Document>(pltX.ID), 60m);
         cand = NotaContabilaApply.Candidati(os, idNtc);
-        candXd = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Datorie");
-        candXc = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.Sens == "Creanta");
+        candXd = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.SensStingere == "Datorie");
+        candXc = cand.Contrapartide.Single(c => c.RepartitorId == partenerX.ID && c.SensStingere == "Creanta");
         s.Check("PROBA F19-D16 (cazul LEGITIM rămâne): ACEEAȘI notă de 60,00 stinge 60,00 de DATORIE (încasarea) + 60,00 "
             + "de CREANȚĂ (plata) — 120,00 în total, exact tavanul, dar fiecare jumătate pe latura ei; ambele "
             + "`Disponibil` ajung la 0",
@@ -777,7 +777,7 @@ static class VerificaApiNtc {
                 == new PlafonStingere(0m, 80m));
         s.Check("ANCORA F19-D16 (F1): …iar panoul urmează plafonul — un singur grup pe Y, pe `Creanta`",
             NotaContabilaApply.Candidati(os, idNtcNetNegativ).Contrapartide
-                .Single(c => c.RepartitorId == partenerY.ID) is { Sens: "Creanta", Capacitate: 80m });
+                .Single(c => c.RepartitorId == partenerY.ID) is { SensStingere: "Creanta", Capacitate: 80m });
 
         // Panoul pe un DRAFT: nota nu stinge încă, deci nu întoarce NIMIC de stins
         // (review M3). Capacitățile EXISTĂ (sunt ale liniilor, care sunt culese pe

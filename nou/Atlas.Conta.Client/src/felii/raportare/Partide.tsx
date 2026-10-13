@@ -13,7 +13,7 @@ const camp = (n: keyof Rand & string) => n;
 const BANI = { dataType: 'number', format: '#,##0.00', alignment: 'right', width: 135 } as const;
 
 export function Partide() {
-  const [stare, seteaza] = useUrlStare({ laData: azi(), contrapartidaId: '', sens: '' });
+  const [stare, seteaza] = useUrlStare({ laData: azi(), contrapartidaId: '', sensStingere: '' });
   const sursa = useMemo(() => storeRemote(urlCu('/api/proiectii/partide', stare),
     ['UnitateId', 'ContId', 'ContrapartidaId']), [stare]);
   return (
@@ -34,7 +34,7 @@ export function Partide() {
         <Column dataField={camp('ContrapartidaDenumire')} caption="Partener / angajat" />
         <Column dataField={camp('Numar')} caption="Document" cellRender={document} />
         <Column dataField={camp('Data')} caption="Deschisă la" dataType="date" format="dd.MM.yyyy" />
-        <Column dataField={camp('Sens')} caption="Sens" />
+        <Column dataField={camp('SensStingere')} caption="Sens" />
         <Column dataField={camp('Rest')} caption="Rest" {...BANI} />
         <Column dataField={camp('UnitateId')} caption="Identitate partidă" visible={false} />
       </DataGrid>

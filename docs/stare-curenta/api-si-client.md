@@ -1,6 +1,6 @@
 # API și client
 
-**Actualizat: 2026-10-11.** [Index](README.md)
+**Actualizat: 2026-10-13.** [Index](README.md)
 
 ## Împărțirea responsabilităților
 
@@ -551,7 +551,7 @@ API-ul ignoră imputatul din payload pentru celelalte cauze și îl golește
 
 `GET /api/proiectii/partide` și pagina `/partide` expun o partidă pe rând,
 cu cont, partener/angajat, document opțional, data nașterii, sens și rest.
-Filtrele sunt `laData`, `contrapartidaId`, `sens`; cheia paginării este
+Filtrele sunt `laData`, `contrapartidaId`, `sensStingere`; cheia paginării este
 unitate × cont × partener. Eticheta documentului nu elimină soldul când
 lipsește sau nu este vizibilă. Postările sunt citite prin ObjectSpace secured.
 

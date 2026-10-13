@@ -9837,7 +9837,7 @@ export interface components {
             /** Format: uuid */
             ContrapartidaId?: string;
             ContrapartidaDenumire?: string | null;
-            Sens?: string | null;
+            SensStingere?: string | null;
             /** Format: double */
             Total?: number;
             /** Format: double */
@@ -11576,7 +11576,7 @@ export interface components {
             RepartitorId?: string;
             RepartitorCod?: string | null;
             RepartitorDenumire?: string | null;
-            Sens?: string | null;
+            SensStingere?: string | null;
             /** Format: double */
             Capacitate?: number;
             /** Format: double */
@@ -11780,7 +11780,7 @@ export interface components {
             Numar?: string | null;
             /** Format: date */
             Data?: string;
-            Sens?: string | null;
+            SensStingere?: string | null;
             /** Format: double */
             Rest?: number;
         };
@@ -30066,7 +30066,7 @@ export interface operations {
             query?: {
                 loadOptions?: components["schemas"]["DataSourceLoadOptions"];
                 contrapartidaId?: string;
-                sens?: string;
+                sensStingere?: string;
                 laData?: string;
                 documentCurentId?: string;
                 stinge?: boolean;
@@ -47188,7 +47188,7 @@ export interface operations {
         parameters: {
             query?: {
                 loadOptions?: components["schemas"]["DataSourceLoadOptions"];
-                sens?: string;
+                sensTva?: string;
                 dataStart?: string;
                 dataEnd?: string;
             };
@@ -60914,7 +60914,7 @@ export interface operations {
             query?: {
                 loadOptions?: components["schemas"]["DataSourceLoadOptions"];
                 contrapartidaId?: string;
-                sens?: string;
+                sensStingere?: string;
                 laData?: string;
             };
             header?: never;

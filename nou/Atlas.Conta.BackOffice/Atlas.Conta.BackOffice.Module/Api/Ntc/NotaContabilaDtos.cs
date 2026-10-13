@@ -178,7 +178,7 @@ public sealed class NtcContrapartidaDto {
     // sunt ai jumătății — un singur rând pe 401 = 4111 ar promite o capacitate
     // dublă și ar propune facturi de client sub jumătatea de datorie.
     // Enum pe sârmă ca STRING (57a), parse pe NUME.
-    public string Sens { get; set; }
+    public string SensStingere { get; set; }
     // Plafonul TIPULUI pe jumătatea asta: Σ |Valoare| a liniilor pe care
     // contrapartida apare pe latura corespunzătoare sensului. Vine din
     // `NotaContabila.CapacitateStingere`, nu dintr-o a doua formulă.

@@ -88,7 +88,7 @@ public sealed class StingeriDto {
     //     e opusul lui. Un FCT (`Datorie`) cere `Creanta` ⇒ plăți, nu încasări.
     // `null` = tipul nu declară sens (nota contabilă, gestiunea) ⇒ panoul nu
     // filtrează, exact ca înainte de F19-D16. Nota de compensare are propriul
-    // panou, GRUPAT, unde sensul vine per grup din `NtcContrapartidaDto.Sens`.
+    // panou, GRUPAT, unde sensul vine per grup din `NtcContrapartidaDto.SensStingere`.
     public string SensCandidati { get; set; }
     public List<StingereRandDto> Imperecheri { get; set; } = new();
 }

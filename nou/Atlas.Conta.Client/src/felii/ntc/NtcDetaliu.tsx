@@ -104,7 +104,7 @@ export function NtcDetaliu() {
       contrapartidaId: String(c.RepartitorId),
       contrapartidaEticheta: [c.RepartitorCod, c.RepartitorDenumire].filter(Boolean).join(' — ')
         || '(repartitor fără nume)',
-      sensEticheta: labelEnum('SensStingere', c.Sens) || (c.Sens ?? ''),
+      sensEticheta: labelEnum('SensStingere', c.SensStingere) || (c.SensStingere ?? ''),
       capacitate: c.Capacitate ?? 0,
       asignat: c.Asignat ?? 0,
       disponibil: c.Disponibil ?? 0,
