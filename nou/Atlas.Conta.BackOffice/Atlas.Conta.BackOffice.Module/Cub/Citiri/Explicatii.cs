@@ -80,10 +80,10 @@ public static class Explicatii {
 
         var iesiri = postari.Where(p => p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Lot && p.Cantitate < 0m
                 && (p.Tranzactie.Fel == N.FelTranzactie.Operare || p.Tranzactie.Fel == N.FelTranzactie.Transfer))
-            .Select(p => new { p.TranzactieId, p.LinieId, Unitate = p.Unitate!.Value, p.Cont, p.Latura, p.Cantitate, p.Valoare })
+            .Select(p => new { p.TranzactieId, p.LinieId, Unitate = p.Unitate!.Value, p.Cont, p.Sens, p.Cantitate, p.Valoare })
             .ToList()
             .ToLookup(p => Purtator(p.TranzactieId), p => new IesirePeLot(p.LinieId, p.Unitate, p.Cont,
-                -p.Cantitate, p.Latura == N.Latura.Credit ? p.Valoare : -p.Valoare));
+                -p.Cantitate, p.Sens == N.Sens.Credit ? p.Valoare : -p.Valoare));
         if (iesiri[null].Any())
             throw new OperareException($"{Lipsa}: {iesiri[null].Count()} ieșiri pe lot în tranzacții fără explicație.");
 
@@ -156,7 +156,7 @@ public static class Explicatii {
             foreach (var grup in stinse.Where(g => !alocate.ContainsKey(g.Key))) {
                 var p = grup.First();
                 if (!IdentitatiPartide.EsteProprie(
-                        new N.Unitate(p.Unitate, N.FelUnitate.Partida, p.Cont, p.Partener, null, p.Deschisa), purtator.Document))
+                        new N.UnitateSold(p.Unitate, N.FelUnitate.Partida, p.Cont, p.Partener, null, p.Deschisa), purtator.Document))
                     throw new OperareException($"{Stingere}: tranzacția {purtator.ID}: stingerea partidei {p.Unitate} "
                         + "nu are `AlocareFifo`.");
             }

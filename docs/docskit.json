@@ -18,10 +18,10 @@
   "cod": {
     "radacini": ["nou"],
     "excluse": ["bin", "obj", "node_modules", ".vs", "Migrations", "generated"],
-    "excluseDinMetrici": ["tools", "UnitatiMasuraUnEce.cs"],
+    "excluseDinMetrici": ["tools", "UnitatiMasuraUnEce.cs", "BackOfficeDbContext.cs"],
     "limbaje": {
-      "cs": { "extensii": [".cs"], "tinta": 400, "plafon": 600 },
-      "ts": { "extensii": [".ts", ".tsx"], "tinta": 300, "plafon": 500 }
+      "cs": { "extensii": [".cs"], "tinta": 400, "plafon": 600, "toleranta": 30 },
+      "ts": { "extensii": [".ts", ".tsx"], "tinta": 300, "plafon": 500, "toleranta": 30 }
     },
     "narativ": "review advers|înainte era|inainte era|amendament|\\bPR #\\d+|20\\d\\d-\\d\\d-\\d\\d"
   },

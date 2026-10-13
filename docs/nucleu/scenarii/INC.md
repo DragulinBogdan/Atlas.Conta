@@ -1,5 +1,10 @@
 # INC — încasare
 
+TR-D9b, 2026-10-12: filtrul comun al perechii autogenerate din
+`DocumentTrezorerie` folosește cheile conturilor proprii citibile.
+Proba HTTP a restricției de rând este pe [PLT](PLT.md), SC-D9B-10;
+regresia încasărilor rămâne în suita integrală.
+
 **2026-09-23: primul lot independent verificat pe ambele profiluri.** Reguli și fixture comune:
 [PLT.md](PLT.md). Probe: `ScenariiTrezorerie`; client propriu,
 4111 / 411.01.01, CASA 5311 / 531.01.01. Tip TRZ, anul 2003.

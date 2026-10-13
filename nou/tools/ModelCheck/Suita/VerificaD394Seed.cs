@@ -73,7 +73,7 @@ static class VerificaD394Seed {
             var mapare = model.FindEntityType(typeof(MapareD394));
             s.Check("D4-V1 `MapareD394`: o singură mapare per pereche — index UNIC nefiltrat pe (TipTvaId, Sens)",
                 mapare != null && mapare.GetIndexes().Any(i => i.IsUnique
-                    && i.Properties.Select(p => p.Name).SequenceEqual([nameof(MapareD394.TipTvaId), nameof(MapareD394.Sens)])
+                    && i.Properties.Select(p => p.Name).SequenceEqual([nameof(MapareD394.TipTvaId), nameof(MapareD394.SensTva)])
                     && i.GetFilter() == null));
         }
 
@@ -119,13 +119,13 @@ static class VerificaD394Seed {
             return;
         }
 
-        TipOperatiuneD394? Tip(string codTip, SensTva sens) => mapari
-            .Where(m => m.TipTva.Cod == codTip && m.Sens == sens)
+        TipOperatiuneD394? Tip(string codTip, SensTva sensTva) => mapari
+            .Where(m => m.TipTva.Cod == codTip && m.SensTva == sensTva)
             .Select(m => (TipOperatiuneD394?)m.Tip).SingleOrDefault();
 
         s.Check("D4-V1 (privat) tabelul D4-D2 e seed-uit integral: 13 mapări, toate cu ținte permise (niciun AÎ/N), o singură mapare per pereche",
-            mapari.Count == 13 && mapari.All(m => MapareD394.TintaPermisa(m.Tip, m.Sens))
-            && mapari.Select(m => (m.TipTvaId, m.Sens)).Distinct().Count() == 13);
+            mapari.Count == 13 && mapari.All(m => MapareD394.TintaPermisa(m.Tip, m.SensTva))
+            && mapari.Select(m => (m.TipTvaId, m.SensTva)).Distinct().Count() == 13);
         s.Check("D4-V1 (privat) cotele normale N21/N11/N9/N19: livrare → L, achiziție → A",
             new[] { "N21", "N11", "N9", "N19" }.All(c =>
                 Tip(c, SensTva.Livrare) == TipOperatiuneD394.L && Tip(c, SensTva.Achizitie) == TipOperatiuneD394.A));
@@ -138,10 +138,10 @@ static class VerificaD394Seed {
                 Tip(c, SensTva.Livrare) == null && Tip(c, SensTva.Achizitie) == null));
         s.Check("D4-V1 (privat) perechile (TipTva × Sens) nemapate sunt EXACT cele din `ContaSeeder.NemapateD394Privat`, toate cu motiv",
             os.GetObjectsQuery<TipTva>().ToList()
-                .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, Sens: s)))
-                .Where(p => Tip(p.Cod, p.Sens) == null)
-                .OrderBy(p => p.Cod).ThenBy(p => p.Sens)
-                .SequenceEqual(ContaSeeder.NemapateD394Privat.Select(n => (n.TipTva, n.Sens))
+                .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, SensTva: s)))
+                .Where(p => Tip(p.Cod, p.SensTva) == null)
+                .OrderBy(p => p.Cod).ThenBy(p => p.SensTva)
+                .SequenceEqual(ContaSeeder.NemapateD394Privat.Select(n => (n.TipTva, n.SensTva))
                     .OrderBy(p => p.Item1).ThenBy(p => p.Item2))
             && ContaSeeder.NemapateD394Privat.All(n => !string.IsNullOrWhiteSpace(n.Motiv)));
 
@@ -173,7 +173,7 @@ static class VerificaD394Seed {
             using (var osScrie = s.Provider.CreateObjectSpace()) {
                 var proba = osScrie.CreateObject<MapareD394>();
                 proba.TipTva = osScrie.FirstOrDefault<TipTva>(t => t.Cod == "SDD");
-                proba.Sens = SensTva.Livrare;
+                proba.SensTva = SensTva.Livrare;
                 proba.Tip = TipOperatiuneD394.AI;
                 osScrie.CommitChanges();
                 idProba = proba.ID;
@@ -198,7 +198,7 @@ static class VerificaD394Seed {
             using (var osScrie = s.Provider.CreateObjectSpace()) {
                 var proba = osScrie.CreateObject<MapareD394>();
                 proba.TipTva = osScrie.FirstOrDefault<TipTva>(t => t.Cod == "SDD");
-                proba.Sens = SensTva.Achizitie;
+                proba.SensTva = SensTva.Achizitie;
                 proba.Tip = TipOperatiuneD394.L;
                 osScrie.CommitChanges();
                 idProbaSens = proba.ID;
@@ -233,7 +233,7 @@ static class VerificaD394Seed {
         {
             using (var osTinta = s.Provider.CreateObjectSpace()) {
                 var ned = osTinta.FirstOrDefault<TipTva>(t => t.Cod == "NED21");
-                var tinta = osTinta.FirstOrDefault<MapareD394>(m => m.TipTvaId == ned.ID && m.Sens == SensTva.Achizitie);
+                var tinta = osTinta.FirstOrDefault<MapareD394>(m => m.TipTvaId == ned.ID && m.SensTva == SensTva.Achizitie);
                 new GardianEditare().OnObjectSpaceCreated(osTinta);
                 osTinta.Delete(tinta);
                 osTinta.CommitChanges();

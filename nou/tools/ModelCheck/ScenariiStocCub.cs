@@ -34,7 +34,7 @@ sealed class ScenariiStocCub(Func<IObjectSpace> deschide, Action<string, bool> c
             using var tx = TranzactieComanda.Incepe(os);
             var ancora = os.GetObjectsQuery<Cont>().First(c => c.Simbol.StartsWith("891")).ID;
             C.Materializare.Deschide(os, Ianuarie,
-                [new(Cont("371"), N.Latura.Debit, 80, true), new(ancora, N.Latura.Credit, 80)],
+                [new(Cont("371"), N.Sens.Debit, 80, true), new(ancora, N.Sens.Credit, 80)],
                 [new(Cont("371"), a.ID, Magazie, 2, 20), new(Cont("371"), b.ID, Magazie, 3, 60)], []);
             os.CommitChanges(); tx.Commit(); return (p.ID, a.ID, b.ID);
         });

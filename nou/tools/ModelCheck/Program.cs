@@ -338,6 +338,28 @@ if (args.Contains("--perf-cub")) {
 }
 
 // D9-A1: `ModelCheck --scara-volum privat` — cititorii comuni pe scena PerfCub multiplicată; raport, fără prag.
+if (args.Contains("--d9b-scriere")) {
+    if (profil != ProfilContabil.Privat || new Npgsql.NpgsqlConnectionStringBuilder(connectionString).Database
+        is not ("Atlas.Conta.ModelCheck.Privat.CodexD9bA" or "Atlas.Conta.ModelCheck.Privat.CodexD9bB"))
+        throw new ArgumentException("Scrierea D9b cere baza dedicată .CodexD9bA sau .CodexD9bB.");
+    new ScenaD9bScriere(() => provider.CreateObjectSpace(), s.Check, args[Array.IndexOf(args, "--d9b-scriere") + 1]).Ruleaza();
+    s.Rezumat();
+    return;
+}
+if (args.Contains("--d9b-referinta")) {
+    if (profil != ProfilContabil.Privat) throw new ArgumentException("D9bReferinta cere profil privat.");
+    ScaraVolum.ReferintaD9b(connectionString, () => provider.CreateObjectSpace(), s.Check,
+        (os, an, luna) => s.InchideAcceptTot(os, an, luna), opts, args[Array.IndexOf(args, "--d9b-referinta") + 1]);
+    s.Rezumat();
+    return;
+}
+if (args.Contains("--d9b-comparatie")) {
+    if (profil != ProfilContabil.Privat) throw new ArgumentException("D9bComparatie cere profil privat.");
+    ScaraVolum.ComparatieD9b(connectionString, () => provider.CreateObjectSpace(), s.Check,
+        (os, an, luna) => s.InchideAcceptTot(os, an, luna), opts, args[Array.IndexOf(args, "--d9b-comparatie") + 1]);
+    s.Rezumat();
+    return;
+}
 if (args.Contains("--scara-volum")) {
     if (profil != ProfilContabil.Privat) {
         Console.WriteLine("Folosire: ModelCheck --scara-volum privat");

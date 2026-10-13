@@ -65,7 +65,7 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
                 continue;
             }
             var cheie = new CheieLotFapt(lot.Id, contStoc, lot.ProdusId, doc.Predator.Id);
-            var unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, contStoc, null, lot.ProdusId, lot.Data);
+            var unitate = new N.UnitateSold(lot.Id, N.FelUnitate.Lot, contStoc, null, lot.ProdusId, lot.Data);
             decimal v;
             if (plus) {
                 v = rotunjire.Bani(q * linie.DiferentaInventar!.PretEvaluare!.Value);

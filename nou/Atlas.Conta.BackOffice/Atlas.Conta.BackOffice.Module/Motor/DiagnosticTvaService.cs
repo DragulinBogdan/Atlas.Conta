@@ -61,7 +61,7 @@ public static class DiagnosticTvaService {
                 if (!Permis(p, nameof(p.ID), nameof(p.Spatiu), Fiscale.MembruPartener, nameof(p.TranzactieId), nameof(p.DocumentId), nameof(p.LinieId),
                         nameof(p.TipTvaId), nameof(p.SensTva), nameof(p.RegimTva), nameof(p.CotaTva),
                         nameof(p.DeImport), nameof(p.DataExigibilitate), nameof(p.Valoare), nameof(p.RolTva),
-                        nameof(p.Latura), nameof(p.InversaDinId), nameof(p.InversaDinSpatiu),
+                        nameof(p.Sens), nameof(p.InversaDinId), nameof(p.InversaDinSpatiu),
                         nameof(p.DocumentFiscalId), nameof(p.DataDocument), nameof(p.DataInregistrare),
                         nameof(p.PerioadaDeclarare), nameof(p.PerioadaD394))
                         || !Permis(p.Tranzactie, nameof(p.Tranzactie.Fel), nameof(p.Tranzactie.ScrisLa)))
@@ -81,7 +81,7 @@ public static class DiagnosticTvaService {
             if (id is not Guid linie || !liniiCitibile.TryGetValue(linie, out var l)
                     || !fapteSurse.TryGetValue(linie, out var f) || !docsSursa.TryGetValue(l.DocumentId, out var d)
                     || d.Stare == StareDocument.Draft || inaccesibile.Contains(d.ID)) return null;
-            return new(f.DocumentId, f.PartenerId, f.Sens, Calificare(f), f.DataExigibilitate,
+            return new(f.DocumentId, f.PartenerId, f.SensTva, Calificare(f), f.DataExigibilitate,
                 l is ILinieCuAvans && tipuriMaterial.Contains(l.TipMaterialId) && f.Baza > 0m,
                 compensate.Contains((f.TranzactieId, f.DetaliuId)));
         }
@@ -96,7 +96,7 @@ public static class DiagnosticTvaService {
                 var td = MotorOperare.GasesteTipDocument(os, doc);
                 var politica = os.GetObjectsQuery<PoliticaTva>().FirstOrDefault(p => p.TipDocumentId == td.ID);
                 if (politica == null) continue;
-                var sens = politica.Directie == DirectieTva.Deductibil ? SensTva.Achizitie : SensTva.Livrare;
+                var sensTva = politica.Directie == DirectieTva.Deductibil ? SensTva.Achizitie : SensTva.Livrare;
                 Guid? partener = politica.SursaContrapartida switch {
                     SursaCont.RepartitorPredator => doc.PredatorId,
                     SursaCont.RepartitorPrimitor => doc.PrimitorId, _ => null };
@@ -105,7 +105,7 @@ public static class DiagnosticTvaService {
                     var baza = Scara.RotunjesteBani(doc.BazaLinie(os, l) ?? l.Valoare);
                     if (doc.SemnulEAlOperarii()) baza = -Math.Abs(baza);
                     var referinta = (l as ILinieCuAvans)?.LinieAvansId;
-                    date.Add((new(l.ID, doc.ID, partener, sens, actual.Calificare,
+                    date.Add((new(l.ID, doc.ID, partener, sensTva, actual.Calificare,
                         (doc as IDocumentFiscal)?.DataExigibilitate ?? doc.Data, baza,
                         doc.SemnulEAlOperarii() ? -Math.Abs(l.ValoareTva) : l.ValoareTva,
                         !l.TvaCules, l is ILinieCuAvans && tipuriMaterial.Contains(l.TipMaterialId),
@@ -116,7 +116,7 @@ public static class DiagnosticTvaService {
                 foreach (var f in fapte.Where(f => f.DocumentId == doc.ID).OrderBy(f => f.DetaliuId)) {
                     if (!liniiCitibile.TryGetValue(f.DetaliuId, out var l)) continue;
                     var referinta = (l as ILinieCuAvans)?.LinieAvansId;
-                    date.Add((new(l.ID, f.DocumentId, f.PartenerId, f.Sens, Calificare(f), f.DataExigibilitate,
+                    date.Add((new(l.ID, f.DocumentId, f.PartenerId, f.SensTva, Calificare(f), f.DataExigibilitate,
                         f.Baza, f.Tva, false, l is ILinieCuAvans && tipuriMaterial.Contains(l.TipMaterialId),
                         doc.SemnulEAlOperarii() || l is ILinieCuAvans && f.Baza < 0m,
                         referinta, Sursa(referinta), Actual(f.TipTvaId)), f.TipTvaId,
@@ -124,10 +124,10 @@ public static class DiagnosticTvaService {
                 }
             }
             if (doc.Stare == StareDocument.Draft && date.Count > 0) {
-                var sens = date[0].Linie.Sens;
+                var sensTva = date[0].Linie.SensTva;
                 var calcul = N.Tva.PeDocument(date.Select(d => new N.LinieTva(d.Linie.Id, d.Linie.Baza,
                     (N.RegimTva)d.Linie.Calificare.Regim, d.Linie.Calificare.Cota)).ToArray(),
-                    sens == SensTva.Achizitie ? N.DirectieTva.Deductibil : N.DirectieTva.Colectat,
+                    sensTva == SensTva.Achizitie ? N.DirectieTva.Deductibil : N.DirectieTva.Colectat,
                     new N.Rotunjire(Scara.ConventieBani));
                 date = date.Select(d => (d.Linie.Automata ? d.Linie with { Taxa = calcul.PerLinie[d.Linie.Id] } : d.Linie,
                     d.Tip, d.Compensata)).ToList();
@@ -137,13 +137,13 @@ public static class DiagnosticTvaService {
                 if (mapari == null) break;
                 var l = d.Linie;
                 var fapt = new FaptFiscal { TipTvaId = d.Tip, Regim = l.Calificare.Regim, Cota = l.Calificare.Cota,
-                    DeImport = l.Calificare.DeImport, Sens = l.Sens };
+                    DeImport = l.Calificare.DeImport, SensTva = l.SensTva };
                 var lipsuri = new List<string>();
                 if (mapari.Pentru(fapt, SectiuneTvaSaft.Facturi) == null) lipsuri.Add("Facturi");
                 if (l.Taxa != 0m && mapari.Pentru(fapt, SectiuneTvaSaft.GeneralLedger) == null)
                     lipsuri.Add("GeneralLedger/Taxa");
                 if (l.Taxa != 0m && l.Calificare.Regim == RegimTva.TaxareInversa
-                        && l.Sens == SensTva.Achizitie
+                        && l.SensTva == SensTva.Achizitie
                         && mapari.Pentru(fapt, SectiuneTvaSaft.GeneralLedger, N.RolTva.Autocolectare) == null)
                     lipsuri.Add("GeneralLedger/Autocolectare");
                 if (lipsuri.Count > 0)
@@ -157,7 +157,7 @@ public static class DiagnosticTvaService {
                 var avertismenteLinie = avertismente.Where(a => a.LinieId == l.Id).ToArray();
                 foreach (var a in avertismenteLinie)
                     rezultat.Add(new(doc.ID, doc.Numar, l.Id, d.Tip, tipuri.GetValueOrDefault(d.Tip)?.Cod,
-                        l.Exigibilitate, l.Sens == SensTva.Livrare ? "Emise" : "Primite-Vamă",
+                        l.Exigibilitate, l.SensTva == SensTva.Livrare ? "Emise" : "Primite-Vamă",
                         d.Compensata ? "Compensat" : doc.Stare.ToString(), a.Cod, a.Motiv,
                         l.Calificare, l.TipActual?.Calificare, l.Baza, l.Taxa));
             }

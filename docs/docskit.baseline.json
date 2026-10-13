@@ -1,30 +1,29 @@
 {
   "cs": {
-    "pestePlafon": [
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/BackOfficeDbContext.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Imobilizari.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Trezorerie.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Politici/Politici.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/DatabaseUpdate/ContaSeeder.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/DatabaseUpdate/ProfilPrivat.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/GardianEditare.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Proiectii/ContabilProiectii.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftDto.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftProiectii.PeCub.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftXml.cs",
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/UI/ContaUiBaseline.cs"
-    ],
+    "pestePlafon": {
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Imobilizari.cs": 654,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Trezorerie.cs": 663,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Politici/Politici.cs": 774,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/DatabaseUpdate/ContaSeeder.cs": 1031,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/DatabaseUpdate/ProfilPrivat.cs": 1278,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/GardianEditare.cs": 1374,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Proiectii/ContabilProiectii.cs": 670,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftDto.cs": 823,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftProiectii.PeCub.cs": 703,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftXml.cs": 702,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/UI/ContaUiBaseline.cs": 670
+    },
     "narativ": 44
   },
   "ts": {
-    "pestePlafon": [
-      "nou/Atlas.Conta.Client/src/felii/asm/AsmDetaliu.tsx",
-      "nou/Atlas.Conta.Client/src/felii/fcl/FclDetaliu.tsx",
-      "nou/Atlas.Conta.Client/src/felii/politici/Explica.tsx",
-      "nou/Atlas.Conta.Client/src/felii/trz/TrezorerieDetaliu.tsx",
-      "nou/Atlas.Conta.Client/src/felii/tva/Saft.tsx",
-      "nou/Atlas.Conta.Client/src/nucleu/PanouStingeri.tsx"
-    ],
+    "pestePlafon": {
+      "nou/Atlas.Conta.Client/src/felii/asm/AsmDetaliu.tsx": 549,
+      "nou/Atlas.Conta.Client/src/felii/fcl/FclDetaliu.tsx": 600,
+      "nou/Atlas.Conta.Client/src/felii/politici/Explica.tsx": 563,
+      "nou/Atlas.Conta.Client/src/felii/trz/TrezorerieDetaliu.tsx": 649,
+      "nou/Atlas.Conta.Client/src/felii/tva/Saft.tsx": 964,
+      "nou/Atlas.Conta.Client/src/nucleu/PanouStingeri.tsx": 531
+    },
     "narativ": 5
   }
 }

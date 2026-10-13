@@ -103,26 +103,20 @@ public abstract class DocumentTrezorerie : Document {
             .Select(x => (Guid?)x.ID).FirstOrDefault();
         if (aratat != null)
             return aratat;
-        // (3a) Copilul AUTOGENERAT al meu (linkul lui a fost golit) — aceeași
-        // ordonare, din același motiv (re-operarea lasă în urmă copilul stornat).
+        var conturiProprii = os.GetObjectsQuery<ContPropriu>().Select(c => c.ID);
         var copil = os.GetObjectsQuery<DocumentTrezorerie>()
             .Where(x => x.DocumentSursaId == id && x.Autogenerat
-                && x.Predator is ContPropriu && x.Primitor is ContPropriu
+                && conturiProprii.AsEnumerable().Contains(x.PredatorId) && conturiProprii.AsEnumerable().Contains(x.PrimitorId)
                 && (!doarActiva || x.Stare != StareDocument.Stornat))
             .OrderBy(x => x.Stare == StareDocument.Stornat ? 1 : 0)
             .Select(x => (Guid?)x.ID).FirstOrDefault();
         if (copil != null)
             return copil;
-        // (3b) Oglinda lui (3a): EU sunt copilul autogenerat, iar linkul meu a
-        // fost golit — atunci perechea mea e SURSA. Fără ea minciuna de la (3)
-        // rămâne întreagă, doar citită de pe celălalt ecran: piciorul generat,
-        // operat, cu linkul golit, ar spune „latura pereche lipsește… anulați și
-        // re-operați" — iar re-operarea LUI nu regenerează nimic (e `Autogenerat`).
         if (!Autogenerat || DocumentSursaId is not Guid sursaId)
             return null;
         return os.GetObjectsQuery<DocumentTrezorerie>()
             .Where(x => x.ID == sursaId
-                && x.Predator is ContPropriu && x.Primitor is ContPropriu
+                && conturiProprii.AsEnumerable().Contains(x.PredatorId) && conturiProprii.AsEnumerable().Contains(x.PrimitorId)
                 && (!doarActiva || x.Stare != StareDocument.Stornat))
             .Select(x => (Guid?)x.ID).FirstOrDefault();
     }

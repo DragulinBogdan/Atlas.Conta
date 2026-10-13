@@ -15,15 +15,15 @@ public class DocumenteCuRestController : ContaApiController {
     [HttpGet]
     [ProducesResponseType(typeof(PaginaDto<DocumentCuRestRand>), StatusCodes.Status200OK)]
     public object Get(DataSourceLoadOptions loadOptions, [FromQuery] Guid? contrapartidaId = null,
-        [FromQuery] string sens = null, [FromQuery] DateOnly? laData = null,
+        [FromQuery] string sensStingere = null, [FromQuery] DateOnly? laData = null,
         [FromQuery] Guid? documentCurentId = null, [FromQuery] bool stinge = true) {
         SensStingere? sensCerut = null;
-        if (!string.IsNullOrWhiteSpace(sens)) {
-            if (sens != nameof(SensStingere.Datorie) && sens != nameof(SensStingere.Creanta))
+        if (!string.IsNullOrWhiteSpace(sensStingere)) {
+            if (sensStingere != nameof(SensStingere.Datorie) && sensStingere != nameof(SensStingere.Creanta))
                 return BadRequest(EroriDto.DinMesaj(
-                    $"Sensul stingerii („{sens}”) nu e cunoscut: "
+                    $"Sensul stingerii („{sensStingere}”) nu e cunoscut: "
                     + $"{nameof(SensStingere.Datorie)} sau {nameof(SensStingere.Creanta)}."));
-            sensCerut = Enum.Parse<SensStingere>(sens);
+            sensCerut = Enum.Parse<SensStingere>(sensStingere);
         }
         using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
         if (FaraPostariCitibile(os)) return Incarca(Array.Empty<DocumentCuRestRand>().AsQueryable(), loadOptions);

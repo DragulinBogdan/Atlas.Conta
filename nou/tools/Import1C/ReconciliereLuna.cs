@@ -228,7 +228,7 @@ static class ReconciliereLuna {
             .Where(p => p.FelUnitate == N.FelUnitate.Partida && p.Carte == N.Carte.Contabil
                 && p.Data <= ctx.Ultima && unitatiInitiale.Contains(p.Unitate))
             .GroupBy(p => p.Unitate)
-            .Select(g => new { Unitate = g.Key, Sold = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+            .Select(g => new { Unitate = g.Key, Sold = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) })
             .ToList()
             .ToDictionary(x => x.Unitate.Value, x => x.Sold);
 
@@ -243,14 +243,14 @@ static class ReconciliereLuna {
 
         var deschidere = os.GetObjectsQuery<Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
-            .Select(p => new { p.Unitate, Sold = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare }).ToList()
+            .Select(p => new { p.Unitate, Sold = p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare }).ToList()
             .ToDictionary(x => x.Unitate.Value, x => x.Sold);
 
         var directe = os.GetObjectsQuery<Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare && p.Carte == N.Carte.Contabil
                 && p.Data <= ctx.Ultima && unitatiInitiale.Contains(p.Unitate))
             .GroupBy(p => p.Unitate)
-            .Select(g => new { Unitate = g.Key, Sold = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+            .Select(g => new { Unitate = g.Key, Sold = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) })
             .ToList()
             .ToDictionary(x => x.Unitate.Value, x => x.Sold);
 
@@ -342,7 +342,7 @@ static class ReconciliereLuna {
         foreach (var g in Citiri.Contabil.Postari(os)
                      .Where(p => p.Data <= ctx.Ultima)
                      .GroupBy(p => p.Cont)
-                     .Select(g => new { Cont = g.Key, Sold = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+                     .Select(g => new { Cont = g.Key, Sold = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) })
                      .ToList())
             if (simbolPeId.TryGetValue(g.Cont, out var simbol))
                 db[simbol] = db.GetValueOrDefault(simbol) + g.Sold;
@@ -523,11 +523,11 @@ static class ReconciliereLuna {
         if (itv.Count > 0)
             foreach (var linie in Citiri.Contabil.Postari(os)
                          .Where(p => p.DocumentId != null && itv.Contains(p.DocumentId.Value))
-                         .Select(p => new { p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Latura, p.Valoare })
+                         .Select(p => new { p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Sens, p.Valoare })
                          .ToList()
                          .GroupBy(p => (p.TranzactieId, p.LinieId))) {
-                var debit = linie.Where(p => p.Latura == N.Latura.Debit).ToList();
-                var credit = linie.Where(p => p.Latura == N.Latura.Credit).ToList();
+                var debit = linie.Where(p => p.Sens == N.Sens.Debit).ToList();
+                var credit = linie.Where(p => p.Sens == N.Sens.Credit).ToList();
                 if (linie.Key.LinieId == null || debit.Count != 1 || credit.Count != 1
                         || debit[0].Valoare != credit[0].Valoare) {
                     faraPereche.Add($"document {linie.First().DocumentId}, linia "

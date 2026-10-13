@@ -186,7 +186,7 @@ export function D394() {
             <Sorting mode="none" />
             <Paging enabled={false} />
             <Column dataField={campNeinclus('Cauza')} caption="Cauză" cellRender={({ data }: { data: Neinclus }) => <span>{labelEnum('CauzaNeincludere', data.Cauza)}</span>} />
-            <Column dataField={campNeinclus('Sens')} caption="Sens" width={110} cellRender={({ data }: { data: Neinclus }) => <span>{labelEnum('SensTva', data.Sens)}</span>} />
+            <Column dataField={campNeinclus('SensTva')} caption="Sens" width={110} cellRender={({ data }: { data: Neinclus }) => <span>{labelEnum('SensTva', data.SensTva)}</span>} />
             <Column dataField={campNeinclus('TipTvaCod')} caption="Tip TVA" width={90} cellRender={celulaTipTva} />
             <Column dataField={campNeinclus('TipTvaDenumire')} caption="Denumire" />
             <Column dataField={campNeinclus('Cota')} caption="Cotă %" dataType="number" format="#0.##" alignment="right" width={80} />

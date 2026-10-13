@@ -124,7 +124,7 @@ static class VerificaNucleuBtr {
             var contStoc = tipMaterial.ContImplicitId.Value;
             var contrapartida = os.GetObjectsQuery<Cont>().First(c => c.Simbol.StartsWith("891")).ID;
             Atlas.Conta.BackOffice.Module.Cub.Materializare.Deschide(os, new(2026, 1, 20),
-                [new(contStoc, N.Latura.Debit, 450, true), new(contrapartida, N.Latura.Credit, 450)],
+                [new(contStoc, N.Sens.Debit, 450, true), new(contrapartida, N.Sens.Credit, 450)],
                 [new(contStoc, lotA.ID, mag1.ID, 10, 100), new(contStoc, lotB.ID, mag1.ID, 20, 300),
                  new(contStoc, lotC.ID, mag1.ID, 5, 50)], []);
             os.CommitChanges(); tx.Commit();
@@ -145,10 +145,10 @@ static class VerificaNucleuBtr {
                 + "tranzacție a documentului, de fel `Transfer`, cu 2 postări per linie, ambele pe `Debit`",
                 tranzactii.Count == 1 && tranzactii[0].Fel == N.FelTranzactie.Transfer
                 && postari.Count == 2 * btr.Detalii.Count
-                && postari.All(p => p.Latura == N.Latura.Debit && p.Cont == contStoc));
+                && postari.All(p => p.Sens == N.Sens.Debit && p.Cont == contStoc));
             s.Check($"STR-BTR-ACELASI-CONT ({eticheta}): suma valorilor per (cont, latură) = 0 — transferul iese "
                 + "din rapoartele pe cont (090f); cantitatea e -4 pe MAG1 și +4 pe MAG2",
-                postari.GroupBy(p => (p.Cont, p.Latura)).All(g => g.Sum(p => p.Valoare) == 0m)
+                postari.GroupBy(p => (p.Cont, p.Sens)).All(g => g.Sum(p => p.Valoare) == 0m)
                 && postari.Single(p => p.Repartitor == mag1.ID) is { Cantitate: -4m, Valoare: -40m }
                 && postari.Single(p => p.Repartitor == mag2.ID) is { Cantitate: 4m, Valoare: 40m });
             s.Check($"STR-BTR-ACELASI-CONT ({eticheta}): semnalul de gestiune NU se pierde — fiecare capăt "

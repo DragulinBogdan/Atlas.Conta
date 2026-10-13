@@ -57,5 +57,7 @@ static class VerificaInvariantiCub {
         using var os = s.Provider.CreateObjectSpace();
         var rest = os.GetObjectsQuery<Atlas.Conta.BackOffice.Module.Cub.Postare>().LongCount();
         s.Check($"INV-CUB: purja scenelor nu lasă postări ({rest})", rest == 0);
+        var origini = os.GetObjectsQuery<Atlas.Conta.BackOffice.Module.Cub.OriginePartidaPersistata>().LongCount();
+        s.Check($"INV-CUB: purja scenelor nu lasă origini de partidă ({origini})", origini == 0);
     }
 }

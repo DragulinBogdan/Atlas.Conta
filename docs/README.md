@@ -14,6 +14,14 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [Invarianții Atlas.Conta](invarianti.md)
 - [Unde suntem](stare.md)
 
+### `docs/analize/` (5)
+
+- [111(f) — contractele conceptuale ale operațiilor procedurale](analize/2026-10-11-111f-contracte-operatii.md)
+- [111(f) — reluarea discuției despre fapte tipizate și proiecții persistate](analize/2026-10-11-111f-registre-tipate-reluare.md)
+- [111(f) — scenariu numeric pentru atribuiri, limite și istoric procedural](analize/2026-10-11-111f-scenariu-numeric.md)
+- [111(f) — Q3: proveniența sumelor; Q4: limitele primei felii](analize/2026-10-12-111f-q3-q4-provenienta-si-limite.md)
+- [TR-D9b — reluarea pe privat și primul pas: originea partidei](analize/2026-10-12-tr-d9b-reluare-privat.md)
+
 ### `docs/api/` (38)
 
 - [D300 — Decont de TVA, structura oficială 2026 (OPANAF 174/2026)](api/d300-structura-2026.md)
@@ -104,7 +112,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-astra.md)
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-fable.md)
 
-### `docs/decizii/` (121)
+### `docs/decizii/` (123)
 
 - [1 — Nucleu generic + moștenire, nu tabele complet separate](decizii/001-nucleu-generic-mostenire.md)
 - [2 — Testul de apartenență a unui câmp](decizii/002-testul-apartenentei-campului.md)
@@ -224,6 +232,8 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [116 — Unitatea fără document se departajează pe postarea ei de deschidere…](decizii/116-postarea-de-deschidere-departajeaza-unitatea-fara-document.md)
 - [117 — Postarea își poartă ordinalul în tranzacție; unitatea fără document se departajează pe el](decizii/117-ordinalul-postarii-in-tranzactie.md)
 - [118 — Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră…](decizii/118-guvernanta-documentatiei.md)
+- [119 — Compensarea valorică aparține corecției: a doua Operare pe un document operat…](decizii/119-compensarea-valorica-apartine-corectiei.md)
+- [120 — Lanțul de migrații e de unică folosință până la „rotund”; recomprimarea lui este a șaptea condiție](decizii/120-lantul-de-migratii-se-recomprima-la-rotund.md)
 - [Jurnalul de decizii — index (un fișier per decizie)](decizii/README.md)
 - [Istoricul de execuție al planului de lucru (snapshot 2026-08-24)](decizii/istoric-plan-de-lucru.md)
 - [Restanțele și amânările cu nume](decizii/restante.md)
@@ -240,7 +250,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [M1 — reverificarea corecturilor R1–R4](import/m1-rv1-review-codex.md)
 - [M1 — reverificare finală M1-R3a](import/m1-rv2-review-codex.md)
 
-### `docs/nucleu/` (65)
+### `docs/nucleu/` (78)
 
 - [Decizia 109 — review advers Codex](nucleu/109-review-codex.md)
 - [C102 — Felia de curățenie: fără compatibilitate cu bazele de dezvoltare](nucleu/c102-curatenie-contract.md)
@@ -306,15 +316,30 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [TR-D9a — amendamentul 2 la contract](nucleu/tr-d9-taierea-amendament-2.md)
 - [TR-D9a — amendamentul 3 la contract](nucleu/tr-d9-taierea-amendament-3.md)
 - [TR-D9a — tăierea registrelor și a regimului dual: contract pentru aprobare](nucleu/tr-d9-taierea-contract.md)
+- [TR-D9b — unitățile de sold: contract și primul pachet de execuție](nucleu/tr-d9b-contract.md)
+- [TR-D9b-CV — corecții valorice pe lot, fără schimbarea cantității](nucleu/tr-d9b-corectii-valorice-contract.md)
+- [TR-D9b-CV — inventarul corecțiilor valorice pe lot](nucleu/tr-d9b-corectii-valorice-inventar.md)
+- [TR-D9b-CV — producătorul și matricea compensării](nucleu/tr-d9b-corectii-valorice-producator-si-compensare.md)
+- [TR-D9b-CV — revizia după review-ul Claude](nucleu/tr-d9b-corectii-valorice-review-r1.md)
 - [TR-D9b, pasul 0 — măsurătorile dinaintea deciziei 111](nucleu/tr-d9b-pas0-masuratori.md)
+- [TR-D9b, pasul 1 — inventarul originii partidei](nucleu/tr-d9b-pas1-inventar.md)
+- [TR-D9b, pasul 2 — redenumirea tipurilor unității de sold și sensului](nucleu/tr-d9b-pas2-redenumiri.md)
+- [TR-D9b — catalog și măsurătoare de referință](nucleu/tr-d9b-pas3-referinta.md)
+- [TR-D9b, pasul 4 — originea persistată a partidei](nucleu/tr-d9b-pas4-origini.md)
+- [TR-D9b, pasul 5 — comparația A/B și review-ul advers](nucleu/tr-d9b-pas5-comparatie.md)
+- [TR-D9b, pasul 6 — membrii Latura ai sensului devin Sens](nucleu/tr-d9b-pas6-sens.md)
+- [TR-D9b, pasul 7 — membrii de tip SensTva își iau numele întreg](nucleu/tr-d9b-pas7-senstva.md)
+- [TR-D9b, pasul 8 — sensul stingerii și parametrii de interogare își iau numele întreg](nucleu/tr-d9b-pas8-sensstingere.md)
 
-### `docs/nucleu/scenarii/` (23)
+### `docs/nucleu/scenarii/` (25)
 
 - [ASM — asamblare](nucleu/scenarii/ASM.md)
 - [BCS — bon de consum](nucleu/scenarii/BCS.md)
 - [BTR — transfer între gestiuni](nucleu/scenarii/BTR.md)
 - [C111 — coordonatele postării (transversal)](nucleu/scenarii/C111.md)
 - [CITIRI — TR-D8](nucleu/scenarii/CITIRI.md)
+- [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md)
+- [D9B — originea partidei](nucleu/scenarii/D9B.md)
 - [DEC — decontul titularului](nucleu/scenarii/DEC.md)
 - [DESCHIDERE — solduri inițiale detaliate](nucleu/scenarii/DESCHIDERE.md)
 - [DSC — descărcare de gestiune](nucleu/scenarii/DSC.md)

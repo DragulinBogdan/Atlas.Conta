@@ -14,13 +14,13 @@ public sealed record Miscare(
             throw new ArgumentOutOfRangeException(nameof(pereche), pereche, "ordinalul perechii începe de la 1.");
         return (
             new Postare(
-                miscare.La.Pe(Latura.Debit, data),
+                miscare.La.Pe(Sens.Debit, data),
                 miscare.Cantitate,
                 miscare.ValoareValuta,
                 miscare.Valoare,
                 miscare.Cauza) { Pereche = pereche },
             new Postare(
-                miscare.DeLa.Pe(Latura.Credit, data),
+                miscare.DeLa.Pe(Sens.Credit, data),
                 -miscare.Cantitate,
                 miscare.ValoareValuta,
                 miscare.Valoare,

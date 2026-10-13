@@ -2,12 +2,12 @@ using Xunit;
 
 namespace Atlas.Conta.Nucleu.Teste;
 
-public sealed record Cheie(Guid? Unu = null, Guid? Doi = null, Latura? Latura = null);
+public sealed record Cheie(Guid? Unu = null, Guid? Doi = null, Sens? Sens = null);
 
 public static class Proiectii {
     public static readonly (string Nume, Func<Postare, Cheie> Cheie)[] Toate = [
         ("cont", p => new Cheie(p.Coordonate.Cont)),
-        ("cont+latura", p => new Cheie(p.Coordonate.Cont, null, p.Coordonate.Latura)),
+        ("cont+latura", p => new Cheie(p.Coordonate.Cont, null, p.Coordonate.Sens)),
         ("unitate", p => new Cheie(p.Coordonate.Unitate?.Id)),
         ("gestiune+produs", p => new Cheie(
             p.Coordonate.Repartitor is { EsteIntern: true } loc ? loc.Id : null, p.Coordonate.Produs)),

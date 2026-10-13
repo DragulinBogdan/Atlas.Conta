@@ -8,10 +8,10 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
 /// <summary>Ieșirea unei linii pe o unitate: evaluată din <paramref name="SoldInainte"/> sau declarată de <paramref name="Sursa"/>.</summary>
-public sealed record IesireExplicata(N.Unitate Unitate, decimal Cantitate, decimal Valoare, N.Sold? SoldInainte, string? Sursa);
+public sealed record IesireExplicata(N.UnitateSold Unitate, decimal Cantitate, decimal Valoare, N.Sold? SoldInainte, string? Sursa);
 
 /// <summary>Stingerea FIFO a unei linii pe o partidă, cu soldul citit al partidei.</summary>
-public sealed record StingereExplicata(N.Unitate Unitate, decimal Masura, N.Sold? SoldCitit);
+public sealed record StingereExplicata(N.UnitateSold Unitate, decimal Masura, N.Sold? SoldCitit);
 
 public sealed record LinieExplicata(
     Guid Linie,
@@ -52,7 +52,7 @@ public sealed record Explicatie(
         }
     }
 
-    public N.Sold? SoldCitit(N.Unitate unitate) =>
+    public N.Sold? SoldCitit(N.UnitateSold unitate) =>
         Ipoteze.OfType<N.SoldUnitateCitit>()
             .FirstOrDefault(i => i.Unitate.Id == unitate.Id && i.Unitate.Cont == unitate.Cont)?.Sold;
 
@@ -212,7 +212,7 @@ public sealed record Explicatie(
         }
     }
 
-    static void Scrie(Utf8JsonWriter w, N.Unitate unitate) {
+    static void Scrie(Utf8JsonWriter w, N.UnitateSold unitate) {
         w.WriteStartObject("unitate");
         w.WriteString("id", unitate.Id);
         w.WriteString("fel", unitate.Fel.ToString());
@@ -223,7 +223,7 @@ public sealed record Explicatie(
         w.WriteEndObject();
     }
 
-    static N.Unitate Unitatea(JsonElement parinte) {
+    static N.UnitateSold Unitatea(JsonElement parinte) {
         var e = parinte.GetProperty("unitate");
         return new(e.GetProperty("id").GetGuid(), Enum.Parse<N.FelUnitate>(e.GetProperty("fel").GetString()!),
             e.GetProperty("cont").GetGuid(),

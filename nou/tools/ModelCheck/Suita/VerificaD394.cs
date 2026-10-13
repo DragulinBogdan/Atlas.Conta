@@ -304,7 +304,7 @@ static class VerificaD394 {
         tvaC55.Cod = MarcajD4 + "-C55"; tvaC55.Denumire = "Probă cotă 5,5%"; tvaC55.Cota = 5.5m; tvaC55.Regim = RegimTva.Normal;
         tvaC55.ContTvaDeductibilId = n21.ContTvaDeductibilId; tvaC55.ContTvaColectatId = n21.ContTvaColectatId;
         var mapC55 = os.CreateObject<MapareD394>();
-        mapC55.TipTva = tvaC55; mapC55.Sens = SensTva.Livrare; mapC55.Tip = TipOperatiuneD394.L;
+        mapC55.TipTva = tvaC55; mapC55.SensTva = SensTva.Livrare; mapC55.Tip = TipOperatiuneD394.L;
         var fclC55 = Vanzare("-C55", c1, d5);
         LinieV(fclC55, tvaC55, 100m); // L/5 (trunchiat) 100 / 5,5
         os.CommitChanges();
@@ -341,7 +341,7 @@ static class VerificaD394 {
                 + $"nrFact {o.NrFact}  bază {o.Baza,10:N2}  TVA {(o.Tva is decimal t ? t.ToString("N2") : "—"),10}  "
                 + $"n={o.Randuri} doc={o.Documente}  {o.Denumire}");
         foreach (var n in d4.Neincluse)
-            Console.WriteLine($"         NEINCLUS {n.Cauza} {n.TipTvaCod}/{n.Sens} {n.Cota}% bază {n.Baza:N2} TVA {n.Tva:N2} "
+            Console.WriteLine($"         NEINCLUS {n.Cauza} {n.TipTvaCod}/{n.SensTva} {n.Cota}% bază {n.Baza:N2} TVA {n.Tva:N2} "
                 + $"n={n.Randuri} {n.RepartitorDenumire}");
         foreach (var a in d4.Avertismente)
             Console.WriteLine($"         AVERTISMENT {a.Cod} ×{a.Numar}{(a.Suma is decimal sa ? $" Σ {sa:N2}" : "")}: {string.Join(" | ", a.Exemple)}");
@@ -381,7 +381,7 @@ static class VerificaD394 {
         s.Check("D4-V2 forma: enum-urile pleacă STRING (`Tip` ȘI `Sens`), rândurile ordonate pe tipul de partener, fără "
             + "dubluri pe cheia XSD (cuiP, tip, cota) pe TOT `Operatiuni` — tipul de partener NU mai e o axă a cheii",
             d4.Operatiuni.All(o => o.Tip is "L" or "A" or "AI" or "V" or "C")
-            && d4.Operatiuni.All(o => o.Sens is "Livrare" or "Achizitie")
+            && d4.Operatiuni.All(o => o.SensTva is "Livrare" or "Achizitie")
             && d4.Operatiuni.Select(o => o.TipPartener).SequenceEqual(d4.Operatiuni.Select(o => o.TipPartener).OrderBy(t => t))
             && d4.Operatiuni.Where(o => o.CuiP != null).Select(o => (o.CuiP, o.Tip, o.Cota)).Distinct().Count()
                 == d4.Operatiuni.Count(o => o.CuiP != null));
@@ -421,7 +421,7 @@ static class VerificaD394 {
         var s2 = jum2.Operatiuni.SingleOrDefault(o => o.CuiP == "33333333" && o.Tip == "L" && o.Cota == 21);
         var stornoCub = Atlas.Conta.BackOffice.Module.Cub.Citiri.Fiscale.Fapte(os).ToList()
             .Where(f => f.Storno && f.Data > mijloc && f.Data <= pEnd && f.PartenerId == c1.ID
-                && f.Sens == SensTva.Livrare && f.Cota == 21m).ToList();
+                && f.SensTva == SensTva.Livrare && f.Cota == 21m).ToList();
         Console.WriteLine($"     MĂSURAT (D4-V3 storno): 1–20.08 L/21 C1 {s1.Baza:N2}/{s1.Tva:N2} nrFact {s1.NrFact}; "
             + $"21–31.08 {s2?.Baza:N2}/{s2?.Tva:N2} nrFact {s2?.NrFact}; luna întreagă {Op(1, "33333333", "L", 21).Baza:N2} nrFact {Op(1, "33333333", "L", 21).NrFact}; "
             + $"cub 21–31.08: {stornoCub.Count} fapte, Σ {stornoCub.Sum(f => f.Baza):N2}/{stornoCub.Sum(f => f.Tva):N2}.");
@@ -443,13 +443,13 @@ static class VerificaD394 {
         // ══════════ D4-V4: nimic nu se pierde — cusătura cu registrul ══════════
         // Sensul rândului `op1` e DATA din DTO (fix 5), nu deducerea din tip; coerența tip↔sens o garantează
         // gardul `TintaPermisa(tip, sens)` și se MĂSOARĂ aici pe fiecare rând.
-        decimal OpBaza(SensTva s) => d4.Operatiuni.Where(o => o.Sens == s.ToString()).Sum(o => o.Baza);
-        decimal OpTva(SensTva s) => d4.Operatiuni.Where(o => o.Sens == s.ToString()).Sum(o => (o.Tva ?? 0m) + o.TvaNedeclarat);
-        decimal NeBaza(SensTva s) => d4.Neincluse.Where(n => n.Sens == s.ToString()).Sum(n => n.Baza);
-        decimal NeTva(SensTva s) => d4.Neincluse.Where(n => n.Sens == s.ToString()).Sum(n => n.Tva);
+        decimal OpBaza(SensTva s) => d4.Operatiuni.Where(o => o.SensTva == s.ToString()).Sum(o => o.Baza);
+        decimal OpTva(SensTva s) => d4.Operatiuni.Where(o => o.SensTva == s.ToString()).Sum(o => (o.Tva ?? 0m) + o.TvaNedeclarat);
+        decimal NeBaza(SensTva s) => d4.Neincluse.Where(n => n.SensTva == s.ToString()).Sum(n => n.Baza);
+        decimal NeTva(SensTva s) => d4.Neincluse.Where(n => n.SensTva == s.ToString()).Sum(n => n.Tva);
         var brutCub = CubScena.FapteIntre(os, pStart, pEnd);
-        decimal RegBazaCub(SensTva s) => brutCub.Where(f => f.Sens == s).Sum(f => f.Baza);
-        decimal RegTvaCub(SensTva s) => brutCub.Where(f => f.Sens == s).Sum(f => f.Tva);
+        decimal RegBazaCub(SensTva s) => brutCub.Where(f => f.SensTva == s).Sum(f => f.Baza);
+        decimal RegTvaCub(SensTva s) => brutCub.Where(f => f.SensTva == s).Sum(f => f.Tva);
         Console.WriteLine($"     MĂSURAT (D4-V4): cub {brutCub.Count} fapte; achiziție Σ {RegBazaCub(SensTva.Achizitie):N2}/{RegTvaCub(SensTva.Achizitie):N2} "
             + $"= op1 {OpBaza(SensTva.Achizitie):N2}/{OpTva(SensTva.Achizitie):N2} + neincluse {NeBaza(SensTva.Achizitie):N2}/{NeTva(SensTva.Achizitie):N2}; "
             + $"livrare Σ {RegBazaCub(SensTva.Livrare):N2}/{RegTvaCub(SensTva.Livrare):N2} = {OpBaza(SensTva.Livrare):N2}/{OpTva(SensTva.Livrare):N2} + {NeBaza(SensTva.Livrare):N2}/{NeTva(SensTva.Livrare):N2}.");
@@ -457,16 +457,16 @@ static class VerificaD394 {
             + "(`Sens` din DTO), pe AMBELE coloane; și fiecare rând are tipul coerent cu sensul (L/V pe livrare, A/AI/C pe achiziție)",
             new[] { SensTva.Achizitie, SensTva.Livrare }.All(s =>
                 OpBaza(s) + NeBaza(s) == RegBazaCub(s) && OpTva(s) + NeTva(s) == RegTvaCub(s))
-            && d4.Operatiuni.All(o => (o.Sens == "Livrare") == (o.Tip is "L" or "V" or "LS"))
+            && d4.Operatiuni.All(o => (o.SensTva == "Livrare") == (o.Tip is "L" or "V" or "LS"))
             && brutCub.Count > 0);
         s.Check("D4-V4 `Neincluse` cu cauza: DEC ⇒ `RepartitorNePartener` (angajatul, numit — 50 / 10,5 pe achiziție); SDD ⇒ "
             + "`TipTvaNemapat` (70 / 0); niciun `FaraPartener` pe scenă; partiția e completă (fiecare grup e ori "
             + "așezat, ori raportat)",
             d4.Neincluse.Count == 2
             && d4.Neincluse.Single(n => n.Cauza == "RepartitorNePartener") is
-                { Sens: "Achizitie", TipTvaCod: "N21", Baza: 50m, Tva: 10.5m, Randuri: 1, RepartitorDenumire: "Titular decont probă D394" }
+                { SensTva: "Achizitie", TipTvaCod: "N21", Baza: 50m, Tva: 10.5m, Randuri: 1, RepartitorDenumire: "Titular decont probă D394" }
             && d4.Neincluse.Single(n => n.Cauza == "TipTvaNemapat") is
-                { Sens: "Achizitie", TipTvaCod: "SDD", Baza: 70m, Tva: 0m, Cota: 0m, Randuri: 1, RepartitorId: null });
+                { SensTva: "Achizitie", TipTvaCod: "SDD", Baza: 70m, Tva: 0m, Cota: 0m, Randuri: 1, RepartitorId: null });
 
         // ══════════ D4-V5: cusătura cu D300 — două proiecții, același registru ══════════
         var d3 = D300Proiectii.D300(os, pStart, pEnd, null);
@@ -579,11 +579,11 @@ static class VerificaD394 {
             + $"neincluse {d4s.Neincluse.Count}; avertismente [{string.Join(", ", d4s.Avertismente.Select(a => $"{a.Cod}×{a.Numar}"))}]; "
             + $"partener activ: {fSters.Activ}.");
         var brutS = CubScena.FapteIntre(os, pStart, pEnd);
-        bool CusaturaS(SensTva sens) =>
-            d4s.Operatiuni.Where(o => o.Sens == sens.ToString()).Sum(o => o.Baza) + d4s.Neincluse.Where(n => n.Sens == sens.ToString()).Sum(n => n.Baza)
-                == brutS.Where(f => f.Sens == sens).Sum(f => f.Baza)
-            && d4s.Operatiuni.Where(o => o.Sens == sens.ToString()).Sum(o => (o.Tva ?? 0m) + o.TvaNedeclarat) + d4s.Neincluse.Where(n => n.Sens == sens.ToString()).Sum(n => n.Tva)
-                == brutS.Where(f => f.Sens == sens).Sum(f => f.Tva);
+        bool CusaturaS(SensTva sensTva) =>
+            d4s.Operatiuni.Where(o => o.SensTva == sensTva.ToString()).Sum(o => o.Baza) + d4s.Neincluse.Where(n => n.SensTva == sensTva.ToString()).Sum(n => n.Baza)
+                == brutS.Where(f => f.SensTva == sensTva).Sum(f => f.Baza)
+            && d4s.Operatiuni.Where(o => o.SensTva == sensTva.ToString()).Sum(o => (o.Tva ?? 0m) + o.TvaNedeclarat) + d4s.Neincluse.Where(n => n.SensTva == sensTva.ToString()).Sum(n => n.Tva)
+                == brutS.Where(f => f.SensTva == sensTva).Sum(f => f.Tva);
         s.Check("Fix 6 (review advers, 104f): partenerul INACTIV rămâne în op1 pe tip 1 "
             + "cu numele și CUI-ul lui (A/21 30 / 6,3), NU cade în `Neincluse/RepartitorNePartener` (cauza rămâne doar "
             + "decontul angajatului — tot 2 neincluse); avertisment `PartenerInactiv` ×1 cu numele; cusătura cu registrul "

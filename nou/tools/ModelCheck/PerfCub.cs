@@ -207,10 +207,10 @@ sealed partial class PerfCub(Func<IObjectSpace> deschide, Action<string, bool> c
             using var tx = TranzactieComanda.Incepe(os);
             var analiza = new N.Analiza(null, Economic, null, null, null, null);
             C.Materializare.Deschide(os, data,
-                [new(Cont(Stoc), N.Latura.Debit, 100, true), new(ancora, N.Latura.Credit, 100),
-                    new(Cont(ContFurnizor), N.Latura.Credit, 150, true), new(ancora, N.Latura.Debit, 150)],
+                [new(Cont(Stoc), N.Sens.Debit, 100, true), new(ancora, N.Sens.Credit, 100),
+                    new(Cont(ContFurnizor), N.Sens.Credit, 150, true), new(ancora, N.Sens.Debit, 150)],
                 [new(Cont(Stoc), a.ID, Magazie, 4, 40), new(Cont(Stoc), b.ID, Magazie, 3, 60)],
-                [new(Cont(ContFurnizor), furnizorOdata, referinta, N.Latura.Credit, 150) { Analiza = analiza }]);
+                [new(Cont(ContFurnizor), furnizorOdata, referinta, N.Sens.Credit, 150) { Analiza = analiza }]);
             os.CommitChanges(); tx.Commit();
         });
         var consum = Consum(loturiDeschise[0], 1); Dateaza(consum, data.AddDays(4)); Opereaza(consum);
@@ -218,7 +218,7 @@ sealed partial class PerfCub(Func<IObjectSpace> deschide, Action<string, bool> c
         var plata = Trezorerie(false, 20).Id;
         Furnizor = unitati;
         Dateaza(plata, data.AddDays(4)); Opereaza(plata);
-        var partida = N.Unitate.DeschidePartidaInitiala(Cont(ContFurnizor), furnizorOdata, referinta, data).Id;
+        var partida = N.UnitateSold.DeschidePartidaInitiala(Cont(ContFurnizor), furnizorOdata, referinta, data).Id;
         Comanda(os => {
             using var tx = TranzactieComanda.Incepe(os);
             C.Materializare.Imperecheaza(os, os.GetObjectByKey<Document>(plata), partida, 20, data.AddDays(4));

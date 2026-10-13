@@ -35,7 +35,7 @@ public sealed class DeclarantFacturaIesire : IDeclarant {
 
         var miscari = new List<N.Miscare>(operand.Linii.Count);
         var decizii = new List<N.Decizie>();
-        var partide = new Dictionary<Guid, N.Unitate>();
+        var partide = new Dictionary<Guid, N.UnitateSold>();
         for (var i = 0; i < operand.Linii.Count; i++) {
             var linie = operand.Linii[i];
             var aleLiniei = new List<N.Miscare> { Venitul(operand, linie, contari[i]!.Value, tipuri[i], decizii) };

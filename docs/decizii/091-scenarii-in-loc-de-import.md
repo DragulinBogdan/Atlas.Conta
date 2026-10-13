@@ -1,10 +1,10 @@
 # 91 — Proba supremă devine catalogul de scenarii — Import1C se îngheață ca unealtă de migrare, nu ca gate; clona Flax rămâne sursă de întrebări; „rotund" primește definiție ca regulă de oprire a PoC-ului; stornoul după reevaluare = inversarea originalului + compensarea efectelor rămase active; proiecțiile persistate doar reconstruibile din postări; triajul restanțelor în patru stări
 
 - Data: 2026-09-22
-- Stare: amendată de 107, 118
+- Stare: amendată de 107, 118, 120
 - Execuție: (amendează 090 la TR-D10, la „Import1C ca probă supremă" și la pașii TR-D7b 3–7; depășește N-r1; închide ca gate `--declaratie-pe-baza` și `--reconciliere-cub`, care rămân unelte de diagnostic; dă stare fiecărei restanțe deschise)
 - Arii: README, dezvoltare-si-validare, limite-curente
-- Amendează: 90
+- Amendează: 90 (i)
 - Docs: `docs/consultari/codex-2026-09-22-cub.md` (consultarea care a declanșat decizia), `docs/nucleu/scenarii/README.md` (catalogul: forma, cazurile obligatorii, lanțurile transversale), `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (amendamentul 091 pe pași și pe regula de oprire), `docs/decizii/restante.md` (triajul)
 
 ## Regula durabilă
@@ -63,7 +63,7 @@ catalogul devine scenariu nou plus decizie, nu normalizare (091-r5).
 (orice client are solduri de deschidere) și intră în catalog acum, generic,
 fără partea 1C.
 
-(g) **„Rotund" = regula de oprire a PoC-ului**, în șase condiții:
+(g) [amendat de 120] **„Rotund" = regula de oprire a PoC-ului**, în șase condiții:
 (1) toate cele 15 tipuri cu `PosteazaInCub` pe profilul unde există;
 (2) catalogul verde pe ambele profiluri, ciclul complet per tip plus
 lanțurile transversale; (3) stornoul după reevaluare definit și probat

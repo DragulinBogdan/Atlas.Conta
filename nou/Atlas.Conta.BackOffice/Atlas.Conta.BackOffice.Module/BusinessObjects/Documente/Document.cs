@@ -30,8 +30,8 @@ public static class SensStingereExtensii {
     // opusul celui pe care îl STINGE (plata debitează 401 ⇒ stinge datorii, dar
     // rămâne ea însăși un avans = creanță). Un singur loc unde se scrie relația,
     // ca cele două jumătăți ale trezoreriei să nu poată devia una de alta.
-    public static SensStingere Opus(this SensStingere sens) =>
-        sens == SensStingere.Datorie ? SensStingere.Creanta : SensStingere.Datorie;
+    public static SensStingere Opus(this SensStingere sensStingere) =>
+        sensStingere == SensStingere.Datorie ? SensStingere.Creanta : SensStingere.Datorie;
 }
 
 // Plafonul unei contrapartide, DEFALCAT PE SENS (F19-D16). Înainte era un
@@ -40,11 +40,11 @@ public static class SensStingereExtensii {
 // corect (60 datorie + 60 creanță = exact cele două stingeri legitime) — lipsea
 // regula că fiecare jumătate se consumă pe latura ei.
 public readonly record struct PlafonStingere(decimal Datorie, decimal Creanta) {
-    public decimal this[SensStingere sens] =>
-        sens == SensStingere.Datorie ? Datorie : Creanta;
+    public decimal this[SensStingere sensStingere] =>
+        sensStingere == SensStingere.Datorie ? Datorie : Creanta;
 
-    public PlafonStingere Adauga(SensStingere sens, decimal valoare) =>
-        sens == SensStingere.Datorie
+    public PlafonStingere Adauga(SensStingere sensStingere, decimal valoare) =>
+        sensStingere == SensStingere.Datorie
             ? this with { Datorie = Datorie + valoare }
             : this with { Creanta = Creanta + valoare };
 

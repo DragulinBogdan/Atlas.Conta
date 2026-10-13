@@ -35,7 +35,7 @@ export function DecontTva() {
     // proiecția le ține SEPARATE (exact ce cere D300, ale cărui linii sunt per
     // cotă). Cu o cheie mai îngustă, grila ar considera „același rând" două
     // rânduri pe care serverul le-a despărțit deliberat.
-    ['Sens', 'TipTvaId', 'Regim', 'Cota'],
+    ['SensTva', 'TipTvaId', 'Regim', 'Cota'],
   ), [stare]);
 
   return (
@@ -63,9 +63,9 @@ export function DecontTva() {
         <Paging defaultPageSize={50} />
         <Pager showInfo showPageSizeSelector allowedPageSizes={[50, 100, 200]} />
 
-        {/* `Sens` vine pe sârmă ca STRING (numele membrului), ca peste tot în
+        {/* `SensTva` vine pe sârmă ca STRING (numele membrului), ca peste tot în
             proiecții — eticheta trece prin `labelEnum`, aceeași sursă ca XAF. */}
-        <Column dataField={camp('Sens')} caption="Sens" width={110} fixed cellRender={celulaSens} />
+        <Column dataField={camp('SensTva')} caption="Sens" width={110} fixed cellRender={celulaSens} />
         {/* Cheia de raportare e `TipTva` — el poartă mapările ANAF. `SDD` (scutit
             CU drept de deducere) și `SFD` (FĂRĂ drept) au același regim și aceeași
             cotă 0, dar coduri SAF-T diferite și rânduri diferite în D300: o
@@ -106,7 +106,7 @@ export function DecontTva() {
 }
 
 function celulaSens({ data }: { data: DecontTvaRand }) {
-  return <span>{labelEnum('SensTva', data.Sens)}</span>;
+  return <span>{labelEnum('SensTva', data.SensTva)}</span>;
 }
 
 function celulaRegim({ data }: { data: DecontTvaRand }) {

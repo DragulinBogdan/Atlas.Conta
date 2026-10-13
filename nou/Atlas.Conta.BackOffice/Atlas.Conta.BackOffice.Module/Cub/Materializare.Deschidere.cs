@@ -9,7 +9,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
-public sealed record SoldInitial(Guid Cont, N.Latura Latura, decimal Valoare,
+public sealed record SoldInitial(Guid Cont, N.Sens Sens, decimal Valoare,
     bool Detaliat = false, N.Carte Carte = N.Carte.Contabil) {
     public N.Analiza Analiza { get; init; } = N.Analiza.Fara;
     public Guid? Valuta { get; init; }
@@ -23,7 +23,7 @@ public sealed record LotInitial(Guid Cont, Guid Lot, Guid Gestiune, decimal Cant
     public Guid? Valuta { get; init; }
     public decimal ValoareValuta { get; init; }
 }
-public sealed record PartidaInitiala(Guid Cont, Guid Partener, Guid Referinta, N.Latura Latura, decimal Valoare,
+public sealed record PartidaInitiala(Guid Cont, Guid Partener, Guid Referinta, N.Sens Sens, decimal Valoare,
     N.Carte Carte = N.Carte.Contabil) {
     /// <summary>Data la care s-a născut partida la sursă; fără ea, data deschiderii (115).</summary>
     public DateOnly? Deschisa { get; init; }
@@ -53,7 +53,7 @@ public static partial class Materializare {
             || os.GetObjectsQuery<Document>().Any(d => d.Stare != StareDocument.Draft && d.DataInregistrare < data))
             RefuzaDeschidere("Data deschiderii este ulterioară istoriei existente.");
         if (solduri.Count == 0) RefuzaDeschidere("Lipsesc soldurile de control.");
-        var chei = solduri.Select(s => (s.Carte, s.Cont, s.Latura)).ToArray();
+        var chei = solduri.Select(s => (s.Carte, s.Cont, s.Sens)).ToArray();
         if (chei.Distinct().Count() != chei.Length) RefuzaDeschidere("Sold de control duplicat.");
         var idConturi = solduri.Select(s => s.Cont).Concat(loturi.Select(l => l.Cont))
             .Concat(partide.Select(p => p.Cont)).Distinct().ToArray();
@@ -64,10 +64,10 @@ public static partial class Materializare {
         if (conturi.Count != idConturi.Length) RefuzaDeschidere("Cont inexistent.");
         foreach (var s in solduri) {
             VerificaMasura(s.Valoare, N.Scara.Bani);
-            if (!Enum.IsDefined(s.Carte) || !Enum.IsDefined(s.Latura)) RefuzaDeschidere("Carte sau latură invalidă.");
+            if (!Enum.IsDefined(s.Carte) || !Enum.IsDefined(s.Sens)) RefuzaDeschidere("Carte sau latură invalidă.");
         }
         foreach (var grup in solduri.GroupBy(s => s.Carte))
-            if (grup.Sum(s => s.Latura == N.Latura.Debit ? s.Valoare : -s.Valoare) != 0)
+            if (grup.Sum(s => s.Sens == N.Sens.Debit ? s.Valoare : -s.Valoare) != 0)
                 RefuzaDeschidere($"Soldurile cărții {grup.Key} nu sunt echilibrate.");
         var idLoturi = loturi.Select(l => l.Lot).Distinct().ToArray();
         var fapteLot = os.GetObjectsQuery<Lot>().Where(l => idLoturi.Contains(l.ID))
@@ -90,8 +90,8 @@ public static partial class Materializare {
                 || conturi[l.Cont].UrmarestePartide || lot.LinieIntrareId != null)
                 RefuzaDeschidere("Lot, cont, cantitate, dată sau gestiune invalidă.");
             if (!unitati.Add((l.Carte, l.Lot, l.Gestiune))) RefuzaDeschidere("Poziție de lot duplicată.");
-            var u = new N.Unitate(l.Lot, N.FelUnitate.Lot, l.Cont, null, lot!.ProdusId, lot.Data);
-            postari.Add(new(new N.Coordonate { Cont = l.Cont, Latura = N.Latura.Debit, Data = data,
+            var u = new N.UnitateSold(l.Lot, N.FelUnitate.Lot, l.Cont, null, lot!.ProdusId, lot.Data);
+            postari.Add(new(new N.Coordonate { Cont = l.Cont, Sens = N.Sens.Debit, Data = data,
                 Carte = l.Carte, Repartitor = new(l.Gestiune, N.FelRepartitor.Gestiune), Produs = lot.ProdusId, Unitate = u,
                 Analiza = l.Analiza, Valuta = l.Valuta },
                 l.Cantitate, l.ValoareValuta, l.Valoare, new(Guid.Empty, null)));
@@ -99,20 +99,20 @@ public static partial class Materializare {
         foreach (var p in partide) {
             VerificaMasura(p.Valoare, N.Scara.Bani);
             if (p.Carte != N.Carte.Contabil || !conturi[p.Cont].UrmarestePartide || !parteneri.Contains(p.Partener)
-                || p.Referinta == Guid.Empty || !Enum.IsDefined(p.Latura))
+                || p.Referinta == Guid.Empty || !Enum.IsDefined(p.Sens))
                 RefuzaDeschidere("Partida cere Carte=Contabil, cont urmărit pe partide, partener și referință valide.");
             if (p.Deschisa is { } nascuta && (nascuta > data || nascuta == default))
                 RefuzaDeschidere("Data partidei nu poate urma deschiderii.");
-            var u = N.Unitate.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, p.Deschisa ?? data);
+            var u = N.UnitateSold.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, p.Deschisa ?? data);
             if (!unitati.Add((p.Carte, u.Id, null))) RefuzaDeschidere("Partidă duplicată.");
-            postari.Add(new(new N.Coordonate { Cont = p.Cont, Latura = p.Latura, Data = data,
+            postari.Add(new(new N.Coordonate { Cont = p.Cont, Sens = p.Sens, Data = data,
                 Carte = p.Carte, Repartitor = repartitori[p.Partener].Coordonata, Unitate = u, Analiza = p.Analiza, Valuta = p.Valuta }, 0, p.ValoareValuta, p.Valoare, new(Guid.Empty, null)));
         }
-        var detalii = postari.GroupBy(p => (p.Coordonate.Carte, p.Coordonate.Cont, p.Coordonate.Latura))
+        var detalii = postari.GroupBy(p => (p.Coordonate.Carte, p.Coordonate.Cont, p.Coordonate.Sens))
             .ToDictionary(g => g.Key, g => g.Sum(p => p.Valoare));
         if (detalii.Keys.Except(chei).Any()) RefuzaDeschidere("Detaliere fără sold de control.");
         foreach (var s in solduri) {
-            var cheie = (s.Carte, s.Cont, s.Latura);
+            var cheie = (s.Carte, s.Cont, s.Sens);
             if (detalii.TryGetValue(cheie, out var suma) || s.Detaliat || conturi[s.Cont].UrmarestePartide || conturiStoc.Contains(s.Cont)) {
                 if (s.Analiza != N.Analiza.Fara || s.Valuta != null || s.ValoareValuta != 0 || s.Repartitor != null || s.Produs != null)
                     RefuzaDeschidere("Coordonatele soldului detaliat se furnizează pe loturi sau partide, nu pe totalul de control.");
@@ -122,7 +122,7 @@ public static partial class Materializare {
             else {
                 if (s.Repartitor is Guid cine && repartitori.GetValueOrDefault(cine)?.Fel == null)
                     RefuzaDeschidere("Repartitorul soldului nu există sau n-are un fel cunoscut.");
-                postari.Add(new(new N.Coordonate { Cont = s.Cont, Latura = s.Latura, Data = data,
+                postari.Add(new(new N.Coordonate { Cont = s.Cont, Sens = s.Sens, Data = data,
                     Carte = s.Carte, Analiza = s.Analiza, Valuta = s.Valuta, Produs = s.Produs,
                     Repartitor = s.Repartitor is Guid id ? repartitori[id].Coordonata : null }, 0, s.ValoareValuta, s.Valoare, new(Guid.Empty, null)));
             }
@@ -136,14 +136,17 @@ public static partial class Materializare {
             var cont = conturi[c.Cont];
             GardAnaliza.VerificaLatura(new(cont.Simbol, cont.DimensiuniObligatorii, cont.FeluriRepartitor),
                 c.Repartitor, false, GardAnaliza.Dimensiuni(c.Produs, c.Analiza),
-                null, c.Latura.ToString(), "deschidere", lipsuri);
+                null, c.Sens.ToString(), "deschidere", lipsuri);
         }
         if (lipsuri.Count > 0) RefuzaDeschidere(string.Join("\n", lipsuri));
         var tranzactie = new N.Tranzactie(N.FelTranzactie.Deschidere, data, null, postari);
         var refuzuri = N.Conservare.Verifica(tranzactie);
         if (refuzuri.Count > 0) RefuzaDeschidere(string.Join("\n", Mesaje(refuzuri)));
         VerificaPozitiaFaraFisa(os, tranzactie.Postari, blocheaza: true);
-        return Scrie(os, null, tranzactie);
+        var referinte = partide.ToDictionary(p =>
+            N.UnitateSold.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, p.Deschisa ?? data).Id,
+            p => p.Referinta);
+        return Scrie(os, null, tranzactie, referinteInitiale: referinte);
     }
 
     static void CereTranzactie(IObjectSpace os) {

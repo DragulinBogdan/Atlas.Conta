@@ -13,12 +13,12 @@ public class PartideController(IObjectSpaceFactory secured, INonSecuredObjectSpa
     [HttpGet]
     [ProducesResponseType(typeof(PaginaDto<PartidaCuRestRand>), StatusCodes.Status200OK)]
     public IActionResult Get(DataSourceLoadOptions loadOptions, [FromQuery] Guid? contrapartidaId = null,
-            [FromQuery] string sens = null, [FromQuery] DateOnly? laData = null) {
+            [FromQuery] string sensStingere = null, [FromQuery] DateOnly? laData = null) {
         SensStingere? ales = null;
-        if (!string.IsNullOrEmpty(sens)) {
-            if (sens != nameof(SensStingere.Datorie) && sens != nameof(SensStingere.Creanta))
+        if (!string.IsNullOrEmpty(sensStingere)) {
+            if (sensStingere != nameof(SensStingere.Datorie) && sensStingere != nameof(SensStingere.Creanta))
                 return BadRequest(EroriDto.DinMesaj("Sensul trebuie să fie Datorie sau Creanta."));
-            ales = Enum.Parse<SensStingere>(sens);
+            ales = Enum.Parse<SensStingere>(sensStingere);
         }
         using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
         if (FaraPostariCitibile(os)) return Ok(Incarca(Array.Empty<PartidaCuRestRand>().AsQueryable(), loadOptions));

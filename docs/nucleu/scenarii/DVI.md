@@ -30,6 +30,11 @@ citește baza 100 și taxa 21 o singură dată. Alegerea contului drept ancoră
 
 ## Așteptări independente de reprezentarea aleasă
 
+Costul vamal pe lot va consuma mecanismul din
+[TR-D9b-CV](../tr-d9b-corectii-valorice-contract.md), după verificarea lui.
+Contractul CV separă valoarea ajustată de TVA-ul în vamă; nu implementează
+DVI pe loturi și nu închide SC-X-13 sau 86-r1.
+
 Privat: taxe 4426 / 4427, contrapartidă 446 sau 401 din partener. Fără stoc.
 Bugetar: profil inert, fără politică și fără activare cub. Coloana Bază
 se referă la proiecția fiscală, nu la o sumă adăugată balanței contabile.

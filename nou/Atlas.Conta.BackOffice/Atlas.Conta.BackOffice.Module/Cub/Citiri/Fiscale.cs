@@ -17,7 +17,7 @@ public sealed class FaptFiscal {
     public Guid DetaliuId { get; set; }
     public Guid TipTvaId { get; set; }
     public Guid? PartenerId { get; set; }
-    public SensTva Sens { get; set; }
+    public SensTva SensTva { get; set; }
     public RegimTva Regim { get; set; }
     public decimal Cota { get; set; }
     public bool DeImport { get; set; }
@@ -62,7 +62,7 @@ public static class Fiscale {
         if (deLa.Day != 1 || panaLa != deLa.AddMonths(1).AddDays(-1)) return null;
         var fapte = IntreLuni(Fapte(os), deLa, panaLa, formular)
             .OrderBy(f => f.TranzactieId).ThenBy(f => f.DocumentId).ThenBy(f => f.DetaliuId)
-            .ThenBy(f => f.TipTvaId).ThenBy(f => f.PartenerId).ThenBy(f => f.Sens).ToArray();
+            .ThenBy(f => f.TipTvaId).ThenBy(f => f.PartenerId).ThenBy(f => f.SensTva).ToArray();
         return Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new {
             Formular = formular, Perioada = deLa.Year * 100 + deLa.Month, Fapte = fapte,
         })));
@@ -86,7 +86,7 @@ public static class Fiscale {
             TranzactieId = g.Key.TranzactieId, DocumentId = g.Key.DocumentId.Value,
             DocumentFiscalId = g.Key.DocumentFiscalId.Value, DetaliuId = g.Key.LinieId.Value,
             TipTvaId = g.Key.TipTvaId.Value, PartenerId = g.Key.PartenerFiscal,
-            Sens = (SensTva)g.Key.SensTva.Value, Regim = (RegimTva)g.Key.RegimTva.Value,
+            SensTva = (SensTva)g.Key.SensTva.Value, Regim = (RegimTva)g.Key.RegimTva.Value,
             Cota = g.Key.CotaTva.Value, DeImport = g.Key.DeImport.Value,
             PerioadaD300 = g.Key.PerioadaDeclarare.Value, PerioadaD394 = g.Key.PerioadaD394.Value,
             PerioadaAn = g.Key.PerioadaDeclarare.Value / 100, PerioadaLuna = g.Key.PerioadaDeclarare.Value % 100,

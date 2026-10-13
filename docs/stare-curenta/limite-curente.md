@@ -620,5 +620,5 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (29; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 37, 41, 42 (amendată de 104, 106), 43 (amendată de 104), 46 (amendată de 113), 53, 55, 72, 75, 77, 80, 81, 84, 85, 87 (amendată de 97), 89, 91 (amendată de 107, 118), 94, 95, 97 (amendată de 98), 102, 103, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 109, 115, 116 (amendată de 117).
+Deciziile care numesc pagina în `Arii:` (29; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 37, 41, 42 (amendată de 104, 106), 43 (amendată de 104), 46 (amendată de 113), 53, 55, 72, 75, 77, 80, 81, 84, 85, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 94, 95, 97 (amendată de 98), 102, 103, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 109, 115, 116 (amendată de 117).
 <!-- /gen:decizii -->

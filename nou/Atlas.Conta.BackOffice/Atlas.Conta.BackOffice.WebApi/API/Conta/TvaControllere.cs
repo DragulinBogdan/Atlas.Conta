@@ -28,22 +28,22 @@ public class JurnalTvaController : ContaApiController {
     [ProducesResponseType(typeof(PaginaDto<JurnalTvaRand>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
     public IActionResult Get(DataSourceLoadOptions loadOptions,
-        [FromQuery] string sens = null,
+        [FromQuery] string sensTva = null,
         [FromQuery] DateOnly? dataStart = null, [FromQuery] DateOnly? dataEnd = null) {
 
         var erori = new List<string>();
-        // `sens` e OBLIGATORIU și se parsează pe NUME, nu pe număr (tiparul
+        // `sensTva` e OBLIGATORIU și se parsează pe NUME, nu pe număr (tiparul
         // `TipInstrument`, F3-D1): contractul de sârmă nu depinde de ordinea
         // membrilor unui enum, iar clientul trimite exact ce citește înapoi în
-        // `DecontTvaRand.Sens`. Lipsă sau nume necunoscut ⇒ 400, niciodată un
+        // `DecontTvaRand.SensTva`. Lipsă sau nume necunoscut ⇒ 400, niciodată un
         // default tăcut: un jurnal fără sens ar amesteca cumpărările cu vânzările
         // și ar arăta perfect plauzibil făcând-o.
         // 400, nu 422: cererea e malformată, n-o refuză domeniul.
         SensTva sens1 = default;
-        if (string.IsNullOrWhiteSpace(sens))
-            erori.Add("Parametrul „sens” este obligatoriu („Achizitie” sau „Livrare”).");
-        else if (!Enum.TryParse(sens, ignoreCase: true, out sens1) || !Enum.IsDefined(sens1))
-            erori.Add($"Sensul „{sens}” nu există. Valori acceptate: „Achizitie”, „Livrare”.");
+        if (string.IsNullOrWhiteSpace(sensTva))
+            erori.Add("Parametrul „sensTva” este obligatoriu („Achizitie” sau „Livrare”).");
+        else if (!Enum.TryParse(sensTva, ignoreCase: true, out sens1) || !Enum.IsDefined(sens1))
+            erori.Add($"Sensul „{sensTva}” nu există. Valori acceptate: „Achizitie”, „Livrare”.");
         if (dataStart is DateOnly ds && dataEnd is DateOnly de && ds > de)
             erori.Add("„dataStart” nu poate fi după „dataEnd”.");
         if (erori.Count > 0)

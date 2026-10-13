@@ -12,7 +12,7 @@ public sealed class PostarePlata {
     public Guid DocumentId { get; set; }
     public Guid? LinieId { get; set; }
     public Guid Cont { get; set; }
-    public N.Latura Latura { get; set; }
+    public N.Sens Sens { get; set; }
     public decimal Valoare { get; set; }
     public Guid? Partener { get; set; }
     public Guid? Unitate { get; set; }
@@ -34,7 +34,7 @@ public enum TintaPlata { Document, PartidaInitiala, Rest, FaraPartida }
 public sealed class AlocarePlata {
     public Guid Cont { get; init; }
     public Guid? Partener { get; init; }
-    public N.Latura Latura { get; init; }
+    public N.Sens Sens { get; init; }
     public TintaPlata Tinta { get; init; }
     public Guid? Unitate { get; init; }
     public Guid? DocumentTinta { get; init; }
@@ -62,7 +62,7 @@ public static class Plati {
         return Contabil.Postari(os).Where(p => p.DocumentId != null).Select(p => new PostarePlata {
             Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel,
             DataTranzactie = p.Tranzactie.Data, DocumentId = p.DocumentId.Value, LinieId = p.LinieId,
-            Cont = p.Cont, Latura = p.Latura, Valoare = p.Valoare,
+            Cont = p.Cont, Sens = p.Sens, Valoare = p.Valoare,
             Partener = p.Repartitor != null && externi.Contains(p.Repartitor.Value) ? p.Repartitor : null,
             Unitate = p.FelUnitate == N.FelUnitate.Partida ? p.Unitate : null, Valuta = p.Valuta, InversaDinId = p.InversaDinId,
             CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,
@@ -71,13 +71,13 @@ public static class Plati {
     }
 
     /// <summary>Alocarea fiecărui document, pe postările latura contrapartidei primite pentru el.</summary>
-    public static Dictionary<Guid, AlocariPlata> Alocari(IObjectSpace os, IReadOnlyDictionary<Guid, N.Latura> laturaContrapartidei) {
+    public static Dictionary<Guid, AlocariPlata> Alocari(IObjectSpace os, IReadOnlyDictionary<Guid, N.Sens> laturaContrapartidei) {
         var rezultat = laturaContrapartidei.Keys.ToDictionary(d => d, d => new AlocariPlata { DocumentId = d });
         if (rezultat.Count == 0)
             return rezultat;
         var documente = rezultat.Keys.ToList();
         foreach (var p in Postari(os).Where(p => documente.Contains(p.DocumentId) && p.Fel == N.FelTranzactie.Operare)
-                     .ToList().Where(p => p.Latura == laturaContrapartidei[p.DocumentId]))
+                     .ToList().Where(p => p.Sens == laturaContrapartidei[p.DocumentId]))
             rezultat[p.DocumentId].Operare.Add(p);
 
         var proprii = new Dictionary<Guid, (Guid Document, Guid Cont, Guid Partener)>();
@@ -101,7 +101,7 @@ public static class Plati {
             .Select(p => p.TranzactieId).Distinct().ToList();
         var transferuri = tranzactiiTransfer.Count == 0 ? [] : Partide.Postari(os)
             .Where(p => tranzactiiTransfer.Contains(p.TranzactieId))
-            .Select(p => new { p.ID, p.Spatiu, p.TranzactieId, p.Data, p.Cont, Partener = p.Repartitor, p.Latura, p.Valoare, Unitate = p.Unitate.Value })
+            .Select(p => new { p.ID, p.Spatiu, p.TranzactieId, p.Data, p.Cont, Partener = p.Repartitor, p.Sens, p.Valoare, Unitate = p.Unitate.Value })
             .ToList().GroupBy(p => p.TranzactieId).ToDictionary(g => g.Key, g => g.ToList());
 
         var unitati = rezultat.Values.SelectMany(a => a.Operare).Where(p => p.Unitate != null).Select(p => p.Unitate.Value)
@@ -110,43 +110,43 @@ public static class Plati {
             .Select(o => new { o.UnitateId, o.DocumentId }).ToList()
             .GroupBy(o => o.UnitateId).ToDictionary(g => g.Key, g => g.Select(o => o.DocumentId).Distinct().ToList());
 
-        AlocarePlata Linie(AlocariPlata a, Guid cont, Guid? partener, N.Latura latura, TintaPlata tinta, Guid? unitate, Guid? document) {
+        AlocarePlata Linie(AlocariPlata a, Guid cont, Guid? partener, N.Sens sens, TintaPlata tinta, Guid? unitate, Guid? document) {
             var linie = a.Linii.FirstOrDefault(l => l.Cont == cont && l.Partener == partener && l.Tinta == tinta && l.Unitate == unitate);
             if (linie == null)
                 a.Linii.Add(linie = new AlocarePlata {
-                    Cont = cont, Partener = partener, Latura = latura, Tinta = tinta, Unitate = unitate, DocumentTinta = document,
+                    Cont = cont, Partener = partener, Sens = sens, Tinta = tinta, Unitate = unitate, DocumentTinta = document,
                 });
             return linie;
         }
 
-        AlocarePlata Tinta(AlocariPlata a, Guid cont, Guid partener, N.Latura latura, Guid unitate) {
+        AlocarePlata Tinta(AlocariPlata a, Guid cont, Guid partener, N.Sens sens, Guid unitate) {
             if (!origini.TryGetValue(unitate, out var o) || o.Count != 1) {
                 a.Erori.Add($"partida {unitate} nu are o origine unică");
                 return null;
             }
             return o[0] is Guid document
-                ? Linie(a, cont, partener, latura, TintaPlata.Document, unitate, document)
-                : Linie(a, cont, partener, latura, TintaPlata.PartidaInitiala, unitate, null);
+                ? Linie(a, cont, partener, sens, TintaPlata.Document, unitate, document)
+                : Linie(a, cont, partener, sens, TintaPlata.PartidaInitiala, unitate, null);
         }
 
         foreach (var a in rezultat.Values.Where(a => a.Erori.Count == 0)) {
             foreach (var p in a.Operare) {
                 if (p.Unitate is not Guid u || p.Partener is not Guid partener) {
-                    var fara = Linie(a, p.Cont, p.Partener, p.Latura, TintaPlata.FaraPartida, null, null);
+                    var fara = Linie(a, p.Cont, p.Partener, p.Sens, TintaPlata.FaraPartida, null, null);
                     fara.Suma += p.Valoare;
                     fara.Contributii.Add(p);
                     continue;
                 }
                 var proprie = Partide.Identitate(a.DocumentId, p.Cont, partener);
                 var linie = u == proprie
-                    ? Linie(a, p.Cont, partener, p.Latura, TintaPlata.Rest, u, null)
-                    : Tinta(a, p.Cont, partener, p.Latura, u);
+                    ? Linie(a, p.Cont, partener, p.Sens, TintaPlata.Rest, u, null)
+                    : Tinta(a, p.Cont, partener, p.Sens, u);
                 if (linie == null) continue;
                 linie.Suma += p.Valoare;
                 linie.Contributii.Add(p);
             }
             foreach (var p in a.Operare.Where(p => p.Unitate != null && p.Partener != null).ToList())
-                Linie(a, p.Cont, p.Partener, p.Latura, TintaPlata.Rest, Partide.Identitate(a.DocumentId, p.Cont, p.Partener.Value), null);
+                Linie(a, p.Cont, p.Partener, p.Sens, TintaPlata.Rest, Partide.Identitate(a.DocumentId, p.Cont, p.Partener.Value), null);
             foreach (var rest in a.Linii.Where(l => l.Tinta == TintaPlata.Rest).ToList()) {
                 var legate = new List<AlocarePlata> { rest };
                 foreach (var (id, perechi) in transferuri) {
@@ -154,13 +154,13 @@ public static class Plati {
                     if (pe.Count == 0 || pe[0].Data > a.Capat) continue;
                     var alta = perechi.Where(p => p.Unitate != rest.Unitate).ToList();
                     if (perechi.Count != 2 || pe.Count != 1 || alta.Count != 1 || alta[0].Cont != pe[0].Cont
-                            || alta[0].Partener != pe[0].Partener || alta[0].Latura != pe[0].Latura
+                            || alta[0].Partener != pe[0].Partener || alta[0].Sens != pe[0].Sens
                             || alta[0].Valoare != -pe[0].Valoare) {
                         a.Erori.Add($"transferul {id} nu este o pereche pe partida proprie");
                         continue;
                     }
-                    var efect = pe[0].Latura == rest.Latura ? pe[0].Valoare : -pe[0].Valoare;
-                    var tinta = Tinta(a, rest.Cont, rest.Partener.Value, rest.Latura, alta[0].Unitate);
+                    var efect = pe[0].Sens == rest.Sens ? pe[0].Valoare : -pe[0].Valoare;
+                    var tinta = Tinta(a, rest.Cont, rest.Partener.Value, rest.Sens, alta[0].Unitate);
                     if (tinta == null) continue;
                     tinta.Suma -= efect;
                     rest.Suma += efect;

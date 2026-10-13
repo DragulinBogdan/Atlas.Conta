@@ -18,7 +18,7 @@ public static class SaftAcces {
         typeof(Repartitor), typeof(TipDocument), typeof(TipTva), typeof(Societate), typeof(Produs), typeof(Lot),
         typeof(UnitateMasura), typeof(TipMaterial), typeof(CodFunctional), typeof(CodEconomic), typeof(SursaFinantare),
         typeof(Unitate), typeof(Proiect), typeof(Judet), typeof(ClasaProdus), typeof(MapareTvaSaft), typeof(SetareProfil),
-        typeof(PerioadaFiscala), typeof(SoldPerioadaContabil),
+        typeof(PerioadaFiscala), typeof(SoldPerioadaContabil), typeof(Cub.OriginePartidaPersistata),
     ];
 
     /// <summary>Tipurile citite de exportul S pe cub (S3-D6); proba SC-SAFT-48 le compară cu SQL-ul emis.</summary>

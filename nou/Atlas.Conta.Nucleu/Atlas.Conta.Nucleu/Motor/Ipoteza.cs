@@ -5,7 +5,7 @@ public abstract record Ipoteza {
     private protected Ipoteza() { }
 }
 
-public sealed record SoldUnitateCitit(Unitate Unitate, Sold Sold) : Ipoteza;
+public sealed record SoldUnitateCitit(UnitateSold Unitate, Sold Sold) : Ipoteza;
 
 public sealed record PerioadaDeschisa(int An, int Luna) : Ipoteza;
 

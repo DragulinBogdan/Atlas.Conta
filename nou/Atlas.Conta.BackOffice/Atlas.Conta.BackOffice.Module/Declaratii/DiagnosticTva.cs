@@ -5,9 +5,9 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 public sealed record CalificareTva(RegimTva Regim, decimal Cota, bool DeImport);
 public sealed record TipDiagnosticTva(CalificareTva Calificare, DateOnly? DeLa, DateOnly? PanaLa);
-public sealed record SursaDiagnosticTva(Guid DocumentId, Guid? PartenerId, SensTva Sens,
+public sealed record SursaDiagnosticTva(Guid DocumentId, Guid? PartenerId, SensTva SensTva,
     CalificareTva Calificare, DateOnly Exigibilitate, bool AvansPozitiv, bool Compensata);
-public sealed record LinieDiagnosticTva(Guid Id, Guid DocumentId, Guid? PartenerId, SensTva Sens,
+public sealed record LinieDiagnosticTva(Guid Id, Guid DocumentId, Guid? PartenerId, SensTva SensTva,
     CalificareTva Calificare, DateOnly Exigibilitate, decimal Baza, decimal Taxa,
     bool Automata, bool Avans, bool Ajustare, Guid? LinieAvansId, SursaDiagnosticTva Sursa,
     TipDiagnosticTva TipActual);
@@ -17,16 +17,16 @@ public static class DiagnosticTva {
     public static IReadOnlyList<AvertismentTva> Verifica(IReadOnlyList<LinieDiagnosticTva> linii,
             MidpointRounding conventie) {
         var rezultat = new List<AvertismentTva>();
-        foreach (var grup in linii.GroupBy(l => (l.DocumentId, l.Sens))) {
+        foreach (var grup in linii.GroupBy(l => (l.DocumentId, l.SensTva))) {
             var taxa = N.Tva.PeDocument(grup.Select(l => new N.LinieTva(l.Id, l.Baza,
                 (N.RegimTva)l.Calificare.Regim, l.Calificare.Cota)).ToArray(),
-                grup.Key.Sens == SensTva.Achizitie ? N.DirectieTva.Deductibil : N.DirectieTva.Colectat,
+                grup.Key.SensTva == SensTva.Achizitie ? N.DirectieTva.Deductibil : N.DirectieTva.Colectat,
                 new N.Rotunjire(conventie));
             foreach (var l in grup) {
                 void Adauga(string cod, string motiv) => rezultat.Add(new(l.Id, cod, motiv));
                 var calificare = l.Calificare;
                 var produceTaxa = calificare.Regim == RegimTva.Normal
-                    || calificare.Regim == RegimTva.TaxareInversa && l.Sens == SensTva.Achizitie;
+                    || calificare.Regim == RegimTva.TaxareInversa && l.SensTva == SensTva.Achizitie;
                 if (produceTaxa && !l.Automata && Math.Abs(l.Taxa - taxa.PerLinie[l.Id]) > 0.01m)
                     Adauga("TVA_TAXA_DIFERITA_DE_COTA", "Taxa liniei diferă de taxa repartizată la cotă cu mai mult de 0,01 lei.");
                 if (l.TipActual != null && calificare != l.TipActual.Calificare)
@@ -39,7 +39,7 @@ public static class DiagnosticTva {
                     }
                     var sursa = l.Sursa;
                     if (sursa == null || sursa.DocumentId == l.DocumentId || !sursa.AvansPozitiv
-                            || sursa.PartenerId != l.PartenerId || sursa.Sens != l.Sens) {
+                            || sursa.PartenerId != l.PartenerId || sursa.SensTva != l.SensTva) {
                         Adauga("TVA_AVANS_REFERINTA_INVALIDA", "Sursa avansului nu poate fi validată pentru această linie.");
                         continue;
                     }

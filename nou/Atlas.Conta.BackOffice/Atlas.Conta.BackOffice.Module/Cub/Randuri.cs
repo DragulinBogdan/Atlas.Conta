@@ -25,14 +25,14 @@ public static class Randuri {
         return new N.Postare(
             new N.Coordonate {
                 Cont = rand.Cont,
-                Latura = rand.Latura,
+                Sens = rand.Sens,
                 Data = rand.Data,
                 Repartitor = rand.Repartitor is Guid repartitor ? Motor.Fapte.Coordonata(repartitori, repartitor) : null,
                 Contrapondere = rand.Contrapondere,
                 Produs = rand.Produs,
                 Unitate = Unitatea(rand),
-                CodTva = rand.TipTvaId is Guid tipTva && rand.SensTva is N.SensTva sens && rand.RolTva is N.RolTva rol
-                    ? new N.CodTva(tipTva, sens, rol) {
+                CodTva = rand.TipTvaId is Guid tipTva && rand.SensTva is N.SensTva sensTva && rand.RolTva is N.RolTva rol
+                    ? new N.CodTva(tipTva, sensTva, rol) {
                         Regim = rand.RegimTva!.Value, Cota = rand.CotaTva!.Value, DeImport = rand.DeImport!.Value,
                     }
                     : null,
@@ -73,7 +73,7 @@ public static class Randuri {
         rand.LinieId = postare.Cauza.Linie;
         rand.Data = coordonate.Data;
         rand.Cont = coordonate.Cont;
-        rand.Latura = coordonate.Latura;
+        rand.Sens = coordonate.Sens;
         rand.Repartitor = coordonate.Repartitor?.Id;
         rand.Contrapondere = coordonate.Contrapondere;
         rand.Produs = coordonate.Produs;
@@ -85,7 +85,7 @@ public static class Randuri {
         rand.InversaDinId = postare.InversaDin?.Id;
         rand.InversaDinSpatiu = postare.InversaDin?.Spatiu;
         rand.TipTvaId = coordonate.CodTva?.TipTva;
-        rand.SensTva = coordonate.CodTva?.Sens;
+        rand.SensTva = coordonate.CodTva?.SensTva;
         rand.RolTva = coordonate.CodTva?.Rol;
         rand.PartenerFiscal = coordonate.PartenerFiscal;
         rand.Loc = coordonate.Loc;
@@ -116,13 +116,13 @@ public static class Randuri {
         rand.Valoare = postare.Valoare;
     }
 
-    public static N.Unitate? Unitatea(Postare rand) {
+    public static N.UnitateSold? Unitatea(Postare rand) {
         ArgumentNullException.ThrowIfNull(rand);
         if (rand.Unitate is not Guid id)
             return null;
         var fel = rand.FelUnitate
             ?? throw new InvalidOperationException($"Postarea {rand.ID} are unitate fără fel.");
-        return new N.Unitate(
+        return new N.UnitateSold(
             id,
             fel,
             rand.Cont,
@@ -147,7 +147,7 @@ public static class Randuri {
         var fel = unitate.Fel;
         if ((spatiu == N.Spatiu.Stoc) != (fel == N.FelUnitate.Lot))
             throw new InvalidOperationException($"Unitatea {unitate.Id} ({fel}) nu aparține spațiului {spatiu}.");
-        var asteptat = new N.Unitate(
+        var asteptat = new N.UnitateSold(
             unitate.Id,
             fel,
             postare.Coordonate.Cont,

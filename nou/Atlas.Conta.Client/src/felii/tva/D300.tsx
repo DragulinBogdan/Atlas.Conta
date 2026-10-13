@@ -210,7 +210,7 @@ export function D300() {
           >
             <Sorting mode="none" />
             <Paging enabled={false} />
-            <Column dataField={campNemapat('Sens')} caption="Sens" width={110} cellRender={celulaSens} />
+            <Column dataField={campNemapat('SensTva')} caption="Sens" width={110} cellRender={celulaSens} />
             <Column dataField={campNemapat('TipTvaCod')} caption="Tip TVA" width={90} cellRender={celulaTipTva} />
             <Column dataField={campNemapat('TipTvaDenumire')} caption="Denumire" />
             <Column dataField={campNemapat('Regim')} caption="Regim" width={130} cellRender={celulaRegim} />
@@ -296,7 +296,7 @@ function celulaDenumire({ data }: { data: Rand }) {
 }
 
 function celulaSens({ data }: { data: Nemapat }) {
-  return <span>{labelEnum('SensTva', data.Sens)}</span>;
+  return <span>{labelEnum('SensTva', data.SensTva)}</span>;
 }
 
 function celulaRegim({ data }: { data: Nemapat }) {

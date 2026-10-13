@@ -14,15 +14,15 @@ import { CasetaPerioada, lunaCurenta } from '../raportare/comune';
 type JurnalTvaRand = components['schemas']['JurnalTvaRand'];
 const camp = (n: keyof JurnalTvaRand & string) => n;
 
-type Sens = 'Achizitie' | 'Livrare';
+type SensTva = 'Achizitie' | 'Livrare';
 
-function JurnalTva({ sens, titlu }: { sens: Sens; titlu: string }) {
+function JurnalTva({ sens, titlu }: { sens: SensTva; titlu: string }) {
   const luna = lunaCurenta();
 
   const [stare, seteaza] = useUrlStare({ dataStart: luna.start, dataEnd: luna.sfarsit });
 
   const sursa = useMemo(() => storeRemote(
-    urlCu('/api/proiectii/jurnal-tva', { sens, ...stare }),
+    urlCu('/api/proiectii/jurnal-tva', { sensTva: sens, ...stare }),
 
     ['DocumentId', 'TipTvaId', 'Storno', 'Regim', 'Cota', 'PerioadaAn', 'PerioadaLuna'],
   ), [sens, stare]);

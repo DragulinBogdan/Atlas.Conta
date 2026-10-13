@@ -815,7 +815,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid>("RandId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Sens")
+                    b.Property<int>("SensTva")
                         .HasColumnType("integer");
 
                     b.Property<Guid>("TipTvaId")
@@ -825,7 +825,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("RandId");
 
-                    b.HasIndex("TipTvaId", "Sens", "RandId")
+                    b.HasIndex("TipTvaId", "SensTva", "RandId")
                         .IsUnique();
 
                     b.ToTable("MapariD300");
@@ -846,7 +846,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
-                    b.Property<int>("Sens")
+                    b.Property<int>("SensTva")
                         .HasColumnType("integer");
 
                     b.Property<int>("Tip")
@@ -857,7 +857,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("TipTvaId", "Sens")
+                    b.HasIndex("TipTvaId", "SensTva")
                         .IsUnique();
 
                     b.ToTable("MapariD394");
@@ -894,7 +894,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("Sectiune")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Sens")
+                    b.Property<int>("SensTva")
                         .HasColumnType("integer");
 
                     b.Property<string>("TaxCode")
@@ -913,7 +913,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("TipTvaId");
 
-                    b.HasIndex("Versiune", "Sectiune", "TipTvaId", "Regim", "Cota", "DeImport", "Sens", "Rol")
+                    b.HasIndex("Versiune", "Sectiune", "TipTvaId", "Regim", "Cota", "DeImport", "SensTva", "Rol")
                         .IsUnique();
 
                     b.ToTable("MapariTvaSaft");
@@ -2507,6 +2507,46 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.Cub.OriginePartidaPersistata", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ContId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("OrdinalInitial")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("PartenerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ReferintaInitiala")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("ContId");
+
+                    b.HasIndex("PartenerId");
+
+                    b.HasIndex("DocumentId", "ContId", "PartenerId")
+                        .IsUnique()
+                        .HasFilter("\"DocumentId\" IS NOT NULL");
+
+                    b.HasIndex("ReferintaInitiala", "ContId", "PartenerId")
+                        .IsUnique()
+                        .HasFilter("\"ReferintaInitiala\" IS NOT NULL");
+
+                    b.ToTable("OriginiPartide", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_OriginiPartide_Origine", "(\"DocumentId\" IS NOT NULL AND \"ReferintaInitiala\" IS NULL AND \"OrdinalInitial\" IS NULL)\nOR (\"DocumentId\" IS NULL AND \"ReferintaInitiala\" IS NOT NULL\n    AND \"ReferintaInitiala\" <> '00000000-0000-0000-0000-000000000000'::uuid\n    AND \"OrdinalInitial\" IS NOT NULL AND \"OrdinalInitial\" > 0)");
+                        });
+                });
+
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.Cub.Postare", b =>
                 {
                     b.Property<Guid>("ID")
@@ -2578,9 +2618,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<bool>("InversaTehnica")
                         .HasColumnType("boolean");
 
-                    b.Property<short>("Latura")
-                        .HasColumnType("smallint");
-
                     b.Property<Guid?>("LinieId")
                         .HasColumnType("uuid");
 
@@ -2618,6 +2655,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<short?>("RolTva")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Sens")
                         .HasColumnType("smallint");
 
                     b.Property<short?>("SensTva")
@@ -2758,9 +2798,6 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<bool>("InversaTehnica")
                         .HasColumnType("boolean");
 
-                    b.Property<short>("Latura")
-                        .HasColumnType("smallint");
-
                     b.Property<Guid?>("LinieId")
                         .HasColumnType("uuid");
 
@@ -2813,6 +2850,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("text");
 
                     b.Property<short?>("RolTva")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Sens")
                         .HasColumnType("smallint");
 
                     b.Property<short?>("SensTva")
@@ -5696,6 +5736,26 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Navigation("ContTvaDeductibil");
 
                     b.Navigation("ContTvaNeexigibil");
+                });
+
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.Cub.OriginePartidaPersistata", b =>
+                {
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Cont", null)
+                        .WithMany()
+                        .HasForeignKey("ContId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Document", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", null)
+                        .WithMany()
+                        .HasForeignKey("PartenerId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.Cub.Postare", b =>

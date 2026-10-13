@@ -77,7 +77,7 @@ def main():
             unit = conn.execute('SELECT "Unitate" FROM "Postare" WHERE "DocumentId"=%s AND "FelUnitate"=2 LIMIT 1', (uuid.UUID(f),)).fetchone()[0]
 
             def net(unit_id):
-                return conn.execute('SELECT coalesce(sum(CASE WHEN "Latura"=1 THEN "Valoare" ELSE -"Valoare" END),0) FROM "Postare" WHERE "Unitate"=%s AND "Carte"=1', (unit_id,)).fetchone()[0]
+                return conn.execute('SELECT coalesce(sum(CASE WHEN "Sens"=1 THEN "Valoare" ELSE -"Valoare" END),0) FROM "Postare" WHERE "Unitate"=%s AND "Carte"=1', (unit_id,)).fetchone()[0]
 
             assert net(unit) == 0
             call('User', f'/api/imperecheri/{link}', 'DELETE', expected=404)
@@ -107,7 +107,7 @@ def main():
             call('Admin', '/api/imperecheri', 'POST', {**request, 'Suma': 61}, expected=422)
             assert net(unit) == -60 and net(own) == 60
             assert call('Admin', f'/api/imperecheri/{payment}/stingeri')['Ramas'] == 60
-            query = urllib.parse.urlencode({'documentCurentId': payment, 'contrapartidaId': supplier, 'sens': 'Datorie'})
+            query = urllib.parse.urlencode({'documentCurentId': payment, 'contrapartidaId': supplier, 'sensStingere': 'Datorie'})
             candidates = call('Admin', '/api/proiectii/documente-cu-rest?' + query)['data']
             assert len(candidates) == 1 and candidates[0]['Disponibil'] == 60
             print('PASS 101 HTTP: creare autorizată, refuz atomic 61 > 60, CRUD refuzat, candidat 60', flush=True)

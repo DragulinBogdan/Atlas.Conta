@@ -26,7 +26,7 @@ public static partial class Imobilizari {
         public N.FelTranzactie Fel { get; set; }
         public Guid? LinieId { get; set; }
         public DateOnly Data { get; set; }
-        public N.Latura Latura { get; set; }
+        public N.Sens Sens { get; set; }
         public decimal Valoare { get; set; }
         public Guid Cont { get; set; }
         public Guid? Repartitor { get; set; }
@@ -52,7 +52,7 @@ public static partial class Imobilizari {
             .Where(p => conturi.Contains(p.Cont) && p.DocumentId != faraDocument)
             .Select(p => new PozitieCitita {
                 ID = p.ID, Spatiu = p.Spatiu, Fel = p.Tranzactie.Fel, LinieId = p.LinieId, Data = p.Data,
-                Latura = p.Latura, Valoare = p.Valoare, Cont = p.Cont, Repartitor = p.Repartitor,
+                Sens = p.Sens, Valoare = p.Valoare, Cont = p.Cont, Repartitor = p.Repartitor,
                 Produs = p.Produs, Valuta = p.Valuta, CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic,
                 SursaFinantare = p.SursaFinantare, UnitateOrganizatorica = p.UnitateOrganizatorica,
                 Proiect = p.Proiect, CentruCost = p.CentruCost, SuportId = p.SuportId, InversaDinId = p.InversaDinId,
@@ -68,15 +68,15 @@ public static partial class Imobilizari {
             .Select(p => p.InversaDinId);
         var pozitii = Nominalizari(os).Where(p => fise.Contains(p.Unitate.Value) && p.Data <= laData
                 && p.DocumentId != exceptie && !inverse.Contains(p.ID))
-            .Select(p => new { Fisa = p.Unitate.Value, p.Cont, p.Latura }).Distinct().ToList();
+            .Select(p => new { Fisa = p.Unitate.Value, p.Cont, p.Sens }).Distinct().ToList();
         return pozitii.GroupBy(p => p.Fisa).ToDictionary(g => g.Key, g => {
-            Guid? Cont(N.Latura latura) {
-                var conturi = g.Where(p => p.Latura == latura).Select(p => p.Cont).Distinct().ToArray();
+            Guid? Cont(N.Sens sens) {
+                var conturi = g.Where(p => p.Sens == sens).Select(p => p.Cont).Distinct().ToArray();
                 if (conturi.Length > 1) throw new OperareException(
-                    $"Fișa {g.Key} are conturi istorice multiple pe {latura}; este necesară reconcilierea istoricului.");
+                    $"Fișa {g.Key} are conturi istorice multiple pe {sens}; este necesară reconcilierea istoricului.");
                 return conturi.Length == 0 ? null : conturi[0];
             }
-            return new ConturiFisa(Cont(N.Latura.Debit), Cont(N.Latura.Credit));
+            return new ConturiFisa(Cont(N.Sens.Debit), Cont(N.Sens.Credit));
         });
     }
 }

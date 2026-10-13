@@ -5,14 +5,14 @@ public abstract record Decizie {
     private protected Decizie() { }
 }
 
-public sealed record AlocareFifo(Guid Linie, Unitate Unitate, decimal Masura) : Decizie;
+public sealed record AlocareFifo(Guid Linie, UnitateSold Unitate, decimal Masura) : Decizie;
 
-public sealed record ValoareIesire(Guid Linie, Unitate Unitate, decimal Cantitate, decimal Valoare) : Decizie;
+public sealed record ValoareIesire(Guid Linie, UnitateSold Unitate, decimal Cantitate, decimal Valoare) : Decizie;
 
 /// <summary>Ieșirea a cărei valoare nu vine din soldul unității: o dă sursa numită.</summary>
-public sealed record ValoareDeclarata(Guid Linie, Unitate Unitate, decimal Cantitate, decimal Valoare, string Sursa) : Decizie;
+public sealed record ValoareDeclarata(Guid Linie, UnitateSold Unitate, decimal Cantitate, decimal Valoare, string Sursa) : Decizie;
 
-public sealed record PartidaDeschisa(Guid Linie, Unitate Unitate) : Decizie;
+public sealed record PartidaDeschisa(Guid Linie, UnitateSold Unitate) : Decizie;
 
 /// <summary><paramref name="Regula"/>: regula de contare care a dat contul, când vine dintr-una (D9-A8).</summary>
 public sealed record ContRezolvat(Guid Linie, Guid Cont, string Sursa, Guid? Regula = null) : Decizie;

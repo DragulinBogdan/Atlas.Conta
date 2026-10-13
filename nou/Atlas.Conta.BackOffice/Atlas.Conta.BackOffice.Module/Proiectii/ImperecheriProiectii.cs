@@ -15,7 +15,7 @@ public sealed class DocumentCuRestRand {
     public DateOnly Data { get; set; }
     public Guid ContrapartidaId { get; set; }
     public string ContrapartidaDenumire { get; set; }
-    public string Sens { get; set; }
+    public string SensStingere { get; set; }
 
     public decimal Total { get; set; }
     public decimal Asignat { get; set; }
@@ -31,7 +31,7 @@ sealed class AntetCuRest {
     public DateOnly DataInregistrare { get; set; }
     public Guid ContrapartidaId { get; set; }
     public string ContrapartidaDenumire { get; set; }
-    public string Sens { get; set; }
+    public string SensStingere { get; set; }
 }
 
 public static class ImperecheriProiectii {
@@ -47,13 +47,13 @@ public static class ImperecheriProiectii {
                     DocumentId = d.ID, Tip = "FCT", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
-                    Sens = SensDatorie })
+                    SensStingere = SensDatorie })
             .Concat(os.GetObjectsQuery<FacturaIesire>().Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "FCL", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PrimitorId, ContrapartidaDenumire = d.Primitor.Denumire,
-                    Sens = SensCreanta }))
+                    SensStingere = SensCreanta }))
             .Concat(os.GetObjectsQuery<Plata>()
                 .Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat)
                     && !(d.Predator is ContPropriu && d.Primitor is ContPropriu))
@@ -61,7 +61,7 @@ public static class ImperecheriProiectii {
                     DocumentId = d.ID, Tip = "PLT", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PrimitorId, ContrapartidaDenumire = d.Primitor.Denumire,
-                    Sens = SensCreanta }))
+                    SensStingere = SensCreanta }))
             .Concat(os.GetObjectsQuery<Incasare>()
                 .Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat)
                     && !(d.Predator is ContPropriu && d.Primitor is ContPropriu))
@@ -69,24 +69,24 @@ public static class ImperecheriProiectii {
                     DocumentId = d.ID, Tip = "INC", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
-                    Sens = SensDatorie }))
+                    SensStingere = SensDatorie }))
             .Concat(os.GetObjectsQuery<Decont>().Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "DEC", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
-                    Sens = SensDatorie }))
+                    SensStingere = SensDatorie }))
             .Concat(os.GetObjectsQuery<ReturClient>().Where(d => (d.Stare == StareDocument.Operat || istoric && d.Stare == StareDocument.Stornat))
                 .Select(d => new AntetCuRest {
                     DocumentId = d.ID, Tip = "RDC", Numar = d.Numar, Data = d.Data,
                     DataInregistrare = d.DataInregistrare,
                     ContrapartidaId = d.PredatorId, ContrapartidaDenumire = d.Predator.Denumire,
-                    Sens = SensDatorie }));
+                    SensStingere = SensDatorie }));
 
     }
 
     public static IQueryable<DocumentCuRestRand> DocumenteCuRest(
-        IObjectSpace os, Guid? contrapartidaId = null, SensStingere? sens = null,
+        IObjectSpace os, Guid? contrapartidaId = null, SensStingere? sensStingere = null,
         DateOnly? laData = null, Guid? documentCurentId = null, bool stinge = true,
         CitireCumul citire = CitireCumul.Vizibila) {
 
@@ -96,15 +96,15 @@ public static class ImperecheriProiectii {
             antete = antete.Where(a => a.DataInregistrare <= zi);
         if (contrapartidaId is Guid cp)
             antete = antete.Where(a => a.ContrapartidaId == cp);
-        if (sens is SensStingere sensCerut) {
+        if (sensStingere is SensStingere sensCerut) {
             var literal = sensCerut.ToString();
-            antete = antete.Where(a => a.Sens == literal);
+            antete = antete.Where(a => a.SensStingere == literal);
         }
 
-        var solduri = PartideCuRest(os, contrapartidaId, sens, laData, citire)
+        var solduri = PartideCuRest(os, contrapartidaId, sensStingere, laData, citire)
             .Where(p => p.DocumentId != null)
-            .GroupBy(p => new { p.DocumentId, p.ContrapartidaId, p.Sens })
-            .Select(g => new { g.Key.DocumentId, g.Key.ContrapartidaId, g.Key.Sens,
+            .GroupBy(p => new { p.DocumentId, p.ContrapartidaId, p.SensStingere })
+            .Select(g => new { g.Key.DocumentId, g.Key.ContrapartidaId, g.Key.SensStingere,
                 Rest = g.Sum(p => p.Rest) });
         var ziTotal = laData ?? DateOnly.MaxValue;
         var totale = Cub.Citiri.Partide.Nete(Cub.Citiri.Contabil.Postari(os).Where(p => p.Data <= ziTotal))
@@ -112,15 +112,15 @@ public static class ImperecheriProiectii {
             .Select(g => new { g.Key.DocumentId, ContrapartidaId = g.Key.Titular,
                 Datorie = g.Sum(n => n.Net < 0m ? -n.Net : 0m), Creanta = g.Sum(n => n.Net > 0m ? n.Net : 0m) });
         var raport = from a in antete
-               join s in solduri on new { DocumentId = (Guid?)a.DocumentId, a.ContrapartidaId, a.Sens }
-                   equals new { s.DocumentId, s.ContrapartidaId, s.Sens }
+               join s in solduri on new { DocumentId = (Guid?)a.DocumentId, a.ContrapartidaId, a.SensStingere }
+                   equals new { s.DocumentId, s.ContrapartidaId, s.SensStingere }
                join t in totale on new { DocumentId = (Guid?)a.DocumentId, ContrapartidaId = (Guid?)a.ContrapartidaId }
                    equals new { t.DocumentId, t.ContrapartidaId }
-               let total = a.Sens == SensDatorie ? t.Datorie : t.Creanta
+               let total = a.SensStingere == SensDatorie ? t.Datorie : t.Creanta
                select new DocumentCuRestRand {
                    DocumentId = a.DocumentId, Tip = a.Tip, Numar = a.Numar, Data = a.Data,
                    ContrapartidaId = a.ContrapartidaId, ContrapartidaDenumire = a.ContrapartidaDenumire,
-                   Sens = a.Sens, Total = total, Asignat = total - s.Rest,
+                   SensStingere = a.SensStingere, Total = total, Asignat = total - s.Rest,
                    Rest = s.Rest, Disponibil = s.Rest
                };
         if (documentCurentId is not { } curent) return raport;
@@ -130,16 +130,16 @@ public static class ImperecheriProiectii {
                join p in perechi on r.DocumentId equals p.DocumentId
                select new DocumentCuRestRand { DocumentId = r.DocumentId, Tip = r.Tip, Numar = r.Numar,
                    Data = r.Data, ContrapartidaId = r.ContrapartidaId, ContrapartidaDenumire = r.ContrapartidaDenumire,
-                   Sens = r.Sens, Total = r.Total, Asignat = r.Asignat, Rest = r.Rest, Disponibil = p.Disponibil };
+                   SensStingere = r.SensStingere, Total = r.Total, Asignat = r.Asignat, Rest = r.Rest, Disponibil = p.Disponibil };
     }
 
     public static IQueryable<PartidaCuRestRand> PartideCuRest(IObjectSpace os, Guid? contrapartidaId = null,
-            SensStingere? sens = null, DateOnly? laData = null, CitireCumul citire = CitireCumul.Vizibila) {
+            SensStingere? sensStingere = null, DateOnly? laData = null, CitireCumul citire = CitireCumul.Vizibila) {
         var zi = laData ?? DateOnly.MaxValue;
         var solduri = P.Cumulate(os, citire, zi).Where(s => s.Debit != s.Credit);
         if (contrapartidaId is { } cp) solduri = solduri.Where(s => s.PartenerId == cp);
-        if (sens == SensStingere.Datorie) solduri = solduri.Where(s => s.Credit > s.Debit);
-        if (sens == SensStingere.Creanta) solduri = solduri.Where(s => s.Debit > s.Credit);
+        if (sensStingere == SensStingere.Datorie) solduri = solduri.Where(s => s.Credit > s.Debit);
+        if (sensStingere == SensStingere.Creanta) solduri = solduri.Where(s => s.Debit > s.Credit);
         return from s in P.CuOrigine(os, solduri)
                join d in os.GetObjectsQuery<Document>() on s.DocumentId equals (Guid?)d.ID into document
                from d in document.DefaultIfEmpty()
@@ -152,7 +152,7 @@ public static class ImperecheriProiectii {
                    UnitateId = s.UnitateId, ContId = s.ContId, ContSimbol = c.Simbol,
                    ContrapartidaId = s.PartenerId, ContrapartidaDenumire = p.Denumire,
                    DocumentId = (Guid?)d.ID, DocumentTip = null, Numar = d.Numar, Data = s.Deschisa,
-                   Sens = s.Debit > s.Credit ? SensCreanta : SensDatorie,
+                   SensStingere = s.Debit > s.Credit ? SensCreanta : SensDatorie,
                    Rest = rest
                };
     }
@@ -168,6 +168,6 @@ public sealed class PartidaCuRestRand : IRandCuDocument {
     public string DocumentTip { get; set; }
     public string Numar { get; set; }
     public DateOnly Data { get; set; }
-    public string Sens { get; set; }
+    public string SensStingere { get; set; }
     public decimal Rest { get; set; }
 }

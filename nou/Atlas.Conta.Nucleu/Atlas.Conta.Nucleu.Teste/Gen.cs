@@ -58,19 +58,19 @@ public static class Gen {
 
     public static DateOnly Data(Random aleator) => new DateOnly(2026, 1, 1).AddDays(aleator.Next(365));
 
-    public static Unitate Lot(Random aleator, Guid cont, Guid produs) =>
+    public static UnitateSold Lot(Random aleator, Guid cont, Guid produs) =>
         new(Unul(aleator, Unitati), FelUnitate.Lot, cont, null, produs, Data(aleator));
 
-    public static Unitate Partida(Random aleator, Guid cont, Guid partener) =>
+    public static UnitateSold Partida(Random aleator, Guid cont, Guid partener) =>
         new(Unul(aleator, Unitati), FelUnitate.Partida, cont, partener, null, Data(aleator));
 
-    public static Unitate Fisa(Random aleator, Guid cont) =>
+    public static UnitateSold Fisa(Random aleator, Guid cont) =>
         new(Unul(aleator, Unitati), FelUnitate.Fisa, cont, null, null, Data(aleator));
 
     public static Capat CapatContabil(Random aleator, Guid? peCont = null) {
         var cont = peCont ?? Unul(aleator, Conturi);
         Repartitor? repartitor = aleator.Next(2) == 0 ? Unul(aleator, Repartitori) : null;
-        Unitate? unitate = aleator.Next(3) switch {
+        UnitateSold? unitate = aleator.Next(3) switch {
             0 => Fisa(aleator, cont),
             1 when repartitor is { EsteExtern: true } tert => Partida(aleator, cont, tert.Id),
             _ => null,
@@ -153,13 +153,13 @@ public static class Gen {
         var perechi = 1 + aleator.Next(3);
         for (var i = 0; i < perechi; i++) {
             var cont = Unul(aleator, Conturi);
-            var latura = aleator.Next(2) == 0 ? Latura.Debit : Latura.Credit;
+            var sens = aleator.Next(2) == 0 ? Sens.Debit : Sens.Credit;
             var produs = Unul(aleator, Produse);
             var cauza = new Cauza(document, Unul(aleator, Linii));
             var valoare = Zecimal(aleator, 0.01m, 9999.99m, Scara.Bani);
             var cantitate = aleator.Next(2) == 0 ? Zecimal(aleator, 0.001m, 999.999m, Scara.Cantitate) : 0m;
-            postari.Add(DeTransfer(aleator, cont, latura, data, produs, cantitate, valoare, cauza) with { Pereche = i + 1 });
-            postari.Add(DeTransfer(aleator, cont, latura, data, produs, -cantitate, -valoare, cauza) with { Pereche = i + 1 });
+            postari.Add(DeTransfer(aleator, cont, sens, data, produs, cantitate, valoare, cauza) with { Pereche = i + 1 });
+            postari.Add(DeTransfer(aleator, cont, sens, data, produs, -cantitate, -valoare, cauza) with { Pereche = i + 1 });
         }
         return new Tranzactie(FelTranzactie.Transfer, data, document, postari);
     }
@@ -170,9 +170,9 @@ public static class Gen {
         var postari = new List<Postare>();
         var cate = 1 + aleator.Next(4);
         for (var i = 0; i < cate; i++) {
-            var latura = aleator.Next(2) == 0 ? Latura.Debit : Latura.Credit;
+            var sens = aleator.Next(2) == 0 ? Sens.Debit : Sens.Credit;
             postari.Add(new Postare(
-                CapatContabil(aleator).Pe(latura, data),
+                CapatContabil(aleator).Pe(sens, data),
                 0m,
                 0m,
                 Zecimal(aleator, 0.01m, 9999.99m, Scara.Bani),
@@ -261,7 +261,7 @@ public static class Gen {
             mutari.Add(new Mutare(
                 CapatDeMutare(aleator, cont, produs, cuMasura),
                 CapatDeMutare(aleator, cont, produs, cuMasura),
-                aleator.Next(2) == 0 ? Latura.Debit : Latura.Credit,
+                aleator.Next(2) == 0 ? Sens.Debit : Sens.Credit,
                 cuMasura ? Zecimal(aleator, 0.001m, 999.999m, Scara.Cantitate) : 0m,
                 0m,
                 Zecimal(aleator, 0.01m, 9999.99m, Scara.Bani),
@@ -278,7 +278,7 @@ public static class Gen {
     static Postare DeTransfer(
         Random aleator,
         Guid cont,
-        Latura latura,
+        Sens sens,
         DateOnly data,
         Guid produs,
         decimal cantitate,
@@ -287,6 +287,6 @@ public static class Gen {
         var capat = cantitate != 0m
             ? CapatCuCantitate(aleator, produs, FelUnitate.Lot, cont)
             : CapatContabil(aleator, cont);
-        return new Postare(capat.Pe(latura, data), cantitate, 0m, valoare, cauza);
+        return new Postare(capat.Pe(sens, data), cantitate, 0m, valoare, cauza);
     }
 }

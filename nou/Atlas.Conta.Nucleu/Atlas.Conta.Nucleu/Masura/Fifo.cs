@@ -2,11 +2,11 @@ namespace Atlas.Conta.Nucleu;
 
 /// <summary><paramref name="Origine"/> = documentul care a deschis unitatea; gol la unitatea fără document,
 /// pe care o ordonează <paramref name="Deschidere"/>, ordinalul postării care a deschis-o.</summary>
-public sealed record Disponibil(Unitate Unitate, decimal Masura, Guid Origine = default, int Deschidere = 0);
+public sealed record Disponibil(UnitateSold Unitate, decimal Masura, Guid Origine = default, int Deschidere = 0);
 
 public sealed record Pin(Guid Unitate, decimal Masura);
 
-public sealed record Alocare(Unitate Unitate, decimal Masura);
+public sealed record Alocare(UnitateSold Unitate, decimal Masura);
 
 public sealed record Nominalizare(IReadOnlyList<Alocare> Alocari, decimal Ramas);
 
@@ -18,7 +18,7 @@ public static class Fifo {
         ArgumentNullException.ThrowIfNull(candidati);
         if (cerere <= 0m)
             throw new ArgumentException($"cererea {cerere} se cere > 0.", nameof(cerere));
-        var unitati = new Dictionary<Guid, Unitate>();
+        var unitati = new Dictionary<Guid, UnitateSold>();
         var disponibil = new Dictionary<Guid, decimal>();
         var ordine = new List<Disponibil>();
         foreach (var candidat in candidati) {
@@ -69,7 +69,7 @@ public static class Fifo {
     }
 
     static void Aloca(
-        Unitate unitate,
+        UnitateSold unitate,
         decimal plafon,
         Dictionary<Guid, decimal> disponibil,
         Dictionary<Guid, decimal> alocat,

@@ -34,13 +34,13 @@ static partial class AcoperireInvarianti {
             case "latura":
                 var pereche = os.GetObjectsQuery<C.Postare>()
                     .Where(p => p.TranzactieId == tinta.TranzactieId && p.Pereche == tinta.Pereche && p.ID != tinta.ID)
-                    .Select(p => new { p.Latura, p.Valoare, p.ValoareValuta }).Single();
+                    .Select(p => new { p.Sens, p.Valoare, p.ValoareValuta }).Single();
                 // Operarea ajunge pe aceeași latură cu valori opuse; transferul, pe laturi opuse cu valori egale.
                 var operare = fel == N.FelTranzactie.Operare;
-                var latura = operare ? pereche.Latura
-                    : pereche.Latura == N.Latura.Debit ? N.Latura.Credit : N.Latura.Debit;
+                var sens = operare ? pereche.Sens
+                    : pereche.Sens == N.Sens.Debit ? N.Sens.Credit : N.Sens.Debit;
                 var semn = operare ? -1m : 1m;
-                rand.ExecuteUpdate(s => s.SetProperty(p => p.Latura, latura)
+                rand.ExecuteUpdate(s => s.SetProperty(p => p.Sens, sens)
                     .SetProperty(p => p.Valoare, semn * pereche.Valoare)
                     .SetProperty(p => p.ValoareValuta, semn * pereche.ValoareValuta)); break;
             default: throw new ArgumentOutOfRangeException(nameof(abatere));

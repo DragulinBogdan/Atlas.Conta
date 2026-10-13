@@ -88,6 +88,11 @@ cubului.
 
 ## Acoperirea rămasă
 
+Contractul [TR-D9b-CV](../tr-d9b-corectii-valorice-contract.md) și
+[catalogul CVL](CVL.md) precizează numeric SC-X-05/06/07, inclusiv
+compensarea valorică la storno BCS și refuzul retragerii cu alocări active.
+Sunt specificații înainte de implementare, fără schimbarea stării probelor BCS.
+
 | ID / cerință | Așteptare / pas | Stare |
 |---|---|---|
 | SC-BCS-12: fișă, balanță, `Sold` | Pentru SC-BCS-06: ianuarie consum 40 și stoc 60; februarie rulaj net consum −10 și stoc +10; sold final 70. Reconstrucția trebuie să păstreze aceleași valori fără rerularea politicilor. | specificat; cititori comuni și snapshot cub la TR-D8 |

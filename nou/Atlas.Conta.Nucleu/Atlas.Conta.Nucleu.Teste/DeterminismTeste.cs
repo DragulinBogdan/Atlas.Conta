@@ -7,7 +7,7 @@ namespace Atlas.Conta.Nucleu.Teste;
 public class DeterminismTeste {
     static readonly string[] RecordurileAsteptate = [
         nameof(Postare), nameof(Tranzactie), nameof(Coordonate), nameof(Contract), nameof(Declaratie),
-        nameof(Miscare), nameof(Mutare), nameof(Capat), nameof(Unitate), nameof(Sold), nameof(Cauza),
+        nameof(Miscare), nameof(Mutare), nameof(Capat), nameof(UnitateSold), nameof(Sold), nameof(Cauza),
         nameof(CodTva), nameof(Analiza), nameof(Refuz),
         nameof(Decizie), nameof(AlocareFifo), nameof(ValoareIesire), nameof(PartidaDeschisa),
         nameof(ContRezolvat), nameof(Transformare), nameof(ValoareDeclarata),

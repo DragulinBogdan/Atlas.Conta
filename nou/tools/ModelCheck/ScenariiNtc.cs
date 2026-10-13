@@ -16,12 +16,12 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         var p = os.CreateObject<Partener>(); p.Cod = Marcaj + "-TERT-" + ++numarPartener;
         p.Denumire = p.Cod; os.CommitChanges(); return p.ID;
     });
-    Guid P(Guid doc, string cont, Guid tert) => N.Unitate.DeschidePartida(Cont(cont), tert, doc, Ianuarie).Id;
+    Guid P(Guid doc, string cont, Guid tert) => N.UnitateSold.DeschidePartida(Cont(cont), tert, doc, Ianuarie).Id;
     RandScena[] R(FacturaScena d, int i, string debit, string credit, decimal v,
             Guid? ud = null, Guid? uc = null, Guid? pd = null, Guid? pc = null) => [
-        new(Cont(debit), N.Latura.Debit, v, Repartitor: pd ?? Loc,
+        new(Cont(debit), N.Sens.Debit, v, Repartitor: pd ?? Loc,
             Unitate: ud, Linie: d.Linii[i].Id, Economic: Economic),
-        new(Cont(credit), N.Latura.Credit, v, Repartitor: pc ?? Loc,
+        new(Cont(credit), N.Sens.Credit, v, Repartitor: pc ?? Loc,
             Unitate: uc, Linie: d.Linii[i].Id, Economic: Economic)];
     FacturaScena Fct(decimal v, int zi) {
         var f = Factura(new(An, 1, zi), new LinieFctScena(1, v, Stoc: false)); Opereaza(f.Id); return f;
@@ -227,18 +227,18 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void NetDocument(string id, Guid doc, DateOnly data, decimal net) => Verifica(id, $"sold document pe cheltuială la {data}: {net}",
         CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == doc && p.Cont == Cont(Serviciu) && p.Data <= data)
-            .Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)) == net);
+            .Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)) == net);
 
     void TransferFaraPartidaProprie() {
         var doc = Guid.Parse("00000005-0000-0000-0000-000000000000");
         var cont = Guid.Parse("00000001-0000-0000-0000-000000000000");
         var tert = Guid.Parse("00000002-0000-0000-0000-000000000000");
-        var facturii = N.Unitate.DeschidePartida(cont, tert, doc, Ianuarie);
+        var facturii = N.UnitateSold.DeschidePartida(cont, tert, doc, Ianuarie);
         var plata = Guid.NewGuid();
-        N.Postare Post(N.Unitate u, Guid cauza, N.Latura l, decimal v) => new(
-            new N.Coordonate { Cont = cont, Latura = l, Repartitor = new N.Repartitor(tert, N.FelRepartitor.Partener), Unitate = u, Data = Ianuarie }, 0, 0, v, new(cauza, null));
-        var nominalizata = C.Transferuri.Muta(new(plata, Ianuarie, [Post(facturii, plata, N.Latura.Debit, 40)], [],
-            doc, Ianuarie, [Post(facturii, doc, N.Latura.Credit, 100)], [], 40, Ianuarie));
+        N.Postare Post(N.UnitateSold u, Guid cauza, N.Sens l, decimal v) => new(
+            new N.Coordonate { Cont = cont, Sens = l, Repartitor = new N.Repartitor(tert, N.FelRepartitor.Partener), Unitate = u, Data = Ianuarie }, 0, 0, v, new(cauza, null));
+        var nominalizata = C.Transferuri.Muta(new(plata, Ianuarie, [Post(facturii, plata, N.Sens.Debit, 40)], [],
+            doc, Ianuarie, [Post(facturii, doc, N.Sens.Credit, 100)], [], 40, Ianuarie));
         Verifica("SC-NTC-17", "transfer suplimentar refuzat când nominalizarea nu lasă partidă proprie (101)",
             nominalizata.Mutare == null && nominalizata.Refuz?.Cod == "IMPERECHERE_FARA_EFECT"
             && nominalizata.Sarit == null);

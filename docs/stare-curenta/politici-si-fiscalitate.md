@@ -1,6 +1,6 @@
 # Politici și fiscalitate
 
-**Actualizat: 2026-10-11.** [Index](README.md)
+**Actualizat: 2026-10-13.** [Index](README.md)
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -112,7 +112,10 @@ Rândul `ICuProvenienta` șters pe ușa securizată se șterge fizic și lasă u
 `RefuzSeed` (tip + cheia din indexurile unice, serializată; zecimalele fără
 scară, deci `21.0000` citit din bază și `21` din seed dau aceeași cheie). Seed-ul nu
 recreează un rând refuzat și îl numără la „șterse”; golurile de mapare
-D300/D394 citesc tot refuzurile. Refuzul se șterge de rolul `Configurator`,
+D300/D394 citesc tot refuzurile. Cheia poartă numele coloanelor: un refuz
+scris înaintea redenumirii unei coloane din cheie nu mai potrivește rândul,
+iar baza care îl ține se recreează (102b). Așa e pe mapările de TVA de la
+TR-D9b pasul 7, unde `Sens` a devenit `SensTva`. Refuzul se șterge de rolul `Configurator`,
 iar rândul revine la următorul re-seed. Raportul de profil nu mai are
 categoria „referință spre un rând șters”: FK-ul refuză ștergerea rândului
 referit (valoarea 2 a lui `FelConstatare` e retrasă). Avertismentul D394

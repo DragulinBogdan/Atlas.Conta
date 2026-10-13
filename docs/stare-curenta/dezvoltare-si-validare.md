@@ -1,6 +1,89 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-11.** [Index](README.md)
+**Actualizat: 2026-10-13.** [Index](README.md)
+
+TR-D9b, pasul 2: tipurile CLR sunt `UnitateSold` și `Sens`; proprietățile,
+coloanele și forma JSON a explicației își păstrează numele. Nucleul a
+trecut 199/199 la 2026-10-12; integrala are **3.678 bugetar / 5.080 privat
+OK**, zero FAIL, `run-verificari/20261012-115040-608/`. Condițiile rulării
+offline sunt în [raportul pasului](../nucleu/tr-d9b-pas2-redenumiri.md).
+
+TR-D9b, pasul 3: [catalogul D9B](../nucleu/scenarii/D9B.md) verifică
+comportamentul anterior separat de proiecția persistată introdusă în pasul 4.
+Regresia `D9B,CITIRI,DESCHIDERE,PLT,NTC` are **800 bugetar / 927 privat OK**,
+zero FAIL, cu `INV-CUB` pe 13 scene/profil și zero reziduu,
+`run-verificari/20261012-125206-497/`. Referința A acoperă 48 combinații de
+citire până la 5.001.179 postări și scrierea cu 2/51 partide pe baza dedicată
+privată `.CodexD9bA`. Reproducere prin `verifica.ps1 -Suita D9bReferinta
+-Profil Privat -Sufix .CodexD9bA`; numai comenzile, pe drafturile păstrate,
+prin `-Suita D9bScriere`. Cifrele, artefactele SQL și limita copiilor
+sintetice sunt în [raport](../nucleu/tr-d9b-pas3-referinta.md).
+
+TR-D9b, pasul 4: originea partidei este persistată în `OriginiPartide`,
+cu cititor direct, vizibilitate pe suportul propriu și refuz CRUD pe ușa
+securizată. Migrația este `20261012114235_OriginiPartide`; bazele de probă
+au sufix `.CodexD9bOrigine`. Proba HTTP, prin `verifica.ps1 -Suita D9bHttp
+-Profil Privat -Sufix .CodexD9bOrigine`, pornește hostul izolat pe5093,
+baza `Atlas.Conta.Http.Privat.CodexD9bOrigine` pe5446, seed privat și
+utilizatorii reali. Rulează matricea `refuzuri.ps1 -Baza` completă și
+`origini-partide.py`. Integrala are **3.756 bugetar / 5.158 privat OK**,
+zero FAIL (`run-verificari/20261012-150800-674/`); HTTP **327/327** plus
+SC-D9B-10 verde (`run-verificari/20261012-150627-604/`), nucleu **199/199**.
+Origini reziduale zero, mutanți și `RAMURA-NUL` verzi. Condițiile sunt în
+[raportul pasului 4](../nucleu/tr-d9b-pas4-origini.md).
+
+TR-D9b, pasul 5: **48/48 perechi A/B egale**, toate pragurile verzi pe
+aceeași bază `.CodexD9bB`, până la 5.001.179 postări. Seria de sistem
+rulează pe ușa nesecurizată a hosturilor; restul integral scade acolo de la
+11.952,96 la 3.664,04 ms. Scrierea cu 51 partide este 63,5928 ms față de
+limita 78,2313 ms, fără rezervă dovedită: măsurarea nu desparte variantele.
+Reproducere prin `verifica.ps1` cu suitele `D9bComparatie`, `D9bScriere`,
+`D9bRaport`, secvențial, pe o bază B nouă. După corecția ușii de sistem din
+reverificare, integrala are **3.759 bugetar / 5.161 privat OK**, zero FAIL
+(`run-verificari/20261012-201158-086/`): origine fără suport, egalitate A/B
+sub rol restrictiv cu martor vizibil, originea directă pe ușa de sistem a
+hostului, `RAMURA-NUL` și curățenie verzi; HTTP **327/327** plus SC-D9B-10
+(`run-verificari/20261012-205322-837/`).
+Protocolul, artefactele și limitele sunt în
+[raportul pasului 5](../nucleu/tr-d9b-pas5-comparatie.md).
+
+TR-D9b, pasul 6 (2026-10-13): membrii care poartă debitul sau creditul și
+coloana de pe `Postare` se numesc `Sens`; migrația este
+`20261013073914_SensPePostare`, incrementală (120). Bazele de dinaintea ei
+o primesc prin `database update` sau se recreează; cele opt capturi SQL ale
+cititorului A poartă numele nou al coloanei. Nucleu **199/199**; integrala
+**3.759 bugetar / 5.161 privat OK**, zero FAIL
+(`run-verificari/20261013-104100-831/`); metadata și OpenAPI fără drift.
+Comparația D9b, pe o bază `.CodexD9bB` nouă: **48/48 perechi A = B**, 46/48
+praguri (`run-verificari/20261013-104824-959/`). Cele două picate sunt
+SOLDURI integral la factorul 100, unde A și B rulează același SQL; pragul
+compara acolo un cititor cu el însuși. De la aceeași dată SOLDURI nu mai
+are prag (D9B-D7, owner): harness-ul măsoară perechea și compară
+rezultatele, iar pragurile rămân pe cele 32 de perechi ORIGINI și REST, pe
+care rularea de mai sus e verde. Comparația nu a fost rerulată după
+schimbarea harness-ului. Detaliile sunt în
+[raportul pasului 6](../nucleu/tr-d9b-pas6-sens.md).
+
+TR-D9b, pasul 7 (2026-10-13): membrii de tip `SensTva` numiți `Sens` se
+numesc `SensTva`, cu coloanele de pe `MapariD300`, `MapariD394` și
+`MapariTvaSaft` (migrația `20261013082803_SensTvaPeMapari`) și cu șase
+câmpuri de API ale proiecțiilor de TVA; clientul generat și paginile React
+care le citesc sunt aduse la zi. Nucleu **199/199**; integrala **3.759
+bugetar / 5.161 privat OK**, zero FAIL
+(`run-verificari/20261013-112954-429/`); HTTP **327/327** plus SC-D9B-10 pe
+host izolat (`run-verificari/20261013-113445-406/`); `pnpm build` verde.
+Detaliile și limitele sunt în
+[raportul pasului 7](../nucleu/tr-d9b-pas7-senstva.md).
+
+TR-D9b, pasul 8 (2026-10-13): membrii de tip `SensStingere` numiți `Sens`
+sau `Latura` se numesc `SensStingere`, cu trei câmpuri de API; parametrii
+de interogare sunt `sensStingere` pe partide și documente cu rest și
+`sensTva` pe jurnalul de TVA. Fără migrație. Integrala **3.759 bugetar /
+5.161 privat OK**, zero FAIL (`run-verificari/20261013-115203-880/`); HTTP
+**327/327** plus SC-D9B-10 (`run-verificari/20261013-115710-093/`); nouă
+probe de legare a parametrilor pe host viu, toate verzi; `pnpm build`
+verde. Detaliile sunt în
+[raportul pasului 8](../nucleu/tr-d9b-pas8-sensstingere.md).
 
 Validarea curentă (C111, corecția C111-F-R1 a review-ului de închidere,
 2026-10-11): integrala **3.678 bugetar / 5.080 privat OK**, zero FAIL, pe
@@ -394,8 +477,10 @@ EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
 automată a schemei prin XAF este dezactivată. Module este comun celor două
 hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
 
-Lanțul de migrații e o singură migrație, `20261010151835_InitialCreate`
-(C111-D7; 102e, D9-D6). E generată din model, plus SQL-ul brut pe care
+Lanțul are migrația de bază `20261010151835_InitialCreate`
+(C111-D7; 102e, D9-D6) și `20261012114235_OriginiPartide` (TR-D9b pasul4),
+care adaugă proiecția provenienței fără backfill. Migrația de bază este
+generată din model, plus SQL-ul brut pe care
 modelul nu-l declară: `Postare` partiționată pe `Spatiu` cu cheia
 `(Spatiu, ID)`, cele două partiții, FK-urile pe partiții — inclusiv cele trei
 spre `Repartitori`, prin `Repartitor`, `PartenerFiscal` și `Loc` —, cei 14
@@ -411,7 +496,9 @@ Migrațiile nu transformă date. Migrațiile de dinainte sunt
 istorie în git; bazele create pe un lanț vechi nu se actualizează, se
 recreează (102b); clonele de import și de perf de dinaintea migrației curente
 rămân pe schema veche și Import1C cere `--recreeaza`. Lanțul crește prin
-migrații.
+migrații până la „rotund”, unde se recomprimă într-o singură migrație de
+bază, cu proba că schema rezultată e identică; de la prima bază care trebuie
+păstrată nu se mai recomprimă. (120)
 Citirile cumulate au o probă pe două conexiuni și un contor de instrucțiuni
 SQL (SC-CIT-77). Scrierea globală prin ObjectSpace secured este refuzată
 înaintea accesului la date (SC-CIT-78). Accesul real pe rând și membru este
@@ -573,8 +660,12 @@ Clientul folosește pnpm și versiunile declarate în `package.json` și lockfil
 
 ## Contracte generate și build
 
-OpenAPI poate fi extras offline din configurația hostului, fără pornirea
-serviciilor găzduite și fără baza de date. Metadata este derivată din model
+OpenAPI se extrage din configurația hostului, fără pornirea serviciilor
+găzduite, dar cu serverul bazei din șirul de conexiune al WebApi pornit: cu
+el oprit, `swagger tofile` pică pe verificarea de compatibilitate XAF.
+Schema bazei nu contează (a trecut pe o bază rămasă la `InitialCreate`).
+Fără serverul hosturilor, `ConnectionStrings__ConnectionString` din mediu
+îndreaptă procesul spre altă bază (observat 2026-10-13). Metadata este derivată din model
 prin instrumentul dedicat; nu se extrage dintr-un model de ecran XAF.
 Artefactele generate sunt versionate împreună cu sursa care le definește. (43d, 56)
 
@@ -1056,15 +1147,25 @@ codegen-ului OpenAPI). (118k)
 
 Forma codului o măsoară `docskit metrics`, pe `nou/`: C# cu ținta 400 și
 plafonul 600 de linii, TypeScript cu 300 și 500, plus comentariile cu marcaje
-narative. Doar din metrici ies `nou/tools` (ModelCheck, Import1C) și fișierul
-generat `UnitatiMasuraUnEce.cs` (`cod.excluseDinMetrici`, docskit 0.6.0);
-citările `// N` din ele rămân verificate de gardianul `cod`. Linia zero e
-`docs/docskit.baseline.json`, rescrisă la 2026-10-11 pe arborele de după
-C111: 12 fișiere C# și 6 TypeScript peste plafon, 44 și 5 comentarii
-narative. `docskit metrics
---check` pică la un fișier nou peste plafon, la mai multe comentarii narative
-și la o îmbunătățire neînregistrată; linia se rescrie cu `docskit metrics
---scrie`, iar PR-ul numește ce a intrat în ea. Limite: `build` (HTML static) există în unealtă, dar nu e adoptat
+narative. Doar din metrici ies `nou/tools` (ModelCheck, Import1C), fișierul
+generat `UnitatiMasuraUnEce.cs` și maparea EF `BackOfficeDbContext.cs`
+(`cod.excluseDinMetrici`); citările `// N` din ele rămân verificate de
+gardianul `cod`. Linia zero e `docs/docskit.baseline.json` și ține, de la
+docskit 0.7.0, numărul de linii al fiecărui fișier peste plafon; rescrisă la
+2026-10-11: 11 fișiere C# și 6 TypeScript peste plafon, 44 și 5 comentarii
+narative.
+
+`docskit metrics --check` pică la regres și la linie învechită. Regres: un
+fișier nou peste plafon, un fișier deja peste plafon care a crescut cu mai
+mult de toleranța limbajului față de liniile înregistrate, mai multe
+comentarii narative. Linie învechită (îmbunătățire neînregistrată): un fișier
+coborât sub plafon, unul rămas peste dar scăzut cu mai mult de toleranță, mai
+puține comentarii narative. Toleranța e de 30 de linii pe ambele limbaje
+(`cod.limbaje.*.toleranta`) și se măsoară de la linia zero, nu de la ultima
+rulare, deci creșterile mici se adună până o depășesc; plafonul rămâne fix,
+iar sub plafon un fișier crește liber. Linia se rescrie cu `docskit metrics
+--scrie`, care mută și centrul benzii; un regres se repară în cod, nu se
+înregistrează, iar PR-ul numește ce a intrat în linie. Limite: `build` (HTML static) există în unealtă, dar nu e adoptat
 aici (118-r2); `/docs-curatenie` și `docs-init` vin cu 118-r4. (118k)
 
 ## Import operațional 1C
@@ -1212,5 +1313,5 @@ cu sumă. O eroare tehnică a unei stingeri pică luna și nu explică nimic.
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (33; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 14, 15, 21, 23, 26 (amendată de 112), 30, 34, 36 (amendată de 71), 39, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 47 (amendată de 107), 49, 50, 56 (amendată de 77, 81), 66, 70, 80, 81, 84, 85, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110), 91 (amendată de 107, 118), 102, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 115, 118.
+Deciziile care numesc pagina în `Arii:` (34; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 14, 15, 21, 23, 26 (amendată de 112), 30, 34, 36 (amendată de 71), 39, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 47 (amendată de 107), 49, 50, 56 (amendată de 77, 81), 66, 70, 80, 81, 84, 85, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 115, 118, 120.
 <!-- /gen:decizii -->

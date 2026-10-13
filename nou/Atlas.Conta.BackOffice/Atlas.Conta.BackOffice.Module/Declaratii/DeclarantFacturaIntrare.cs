@@ -36,7 +36,7 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
 
         var miscari = new List<N.Miscare>(operand.Linii.Count);
         var decizii = new List<N.Decizie>();
-        var partide = new Dictionary<Guid, N.Unitate>();
+        var partide = new Dictionary<Guid, N.UnitateSold>();
         for (var i = 0; i < operand.Linii.Count; i++) {
             var linie = operand.Linii[i];
             var (intern, tert, cantitate) = Netul(operand, linie, contari[i]!.Value, decizii);
@@ -109,7 +109,7 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
                 Cont = contare.ContDebit,
                 Repartitor = operand.Document.Primitor.Coordonata,
                 Produs = linie.Lot?.ProdusId,
-                Unitate = receptionat is null ? null : new N.Unitate(
+                Unitate = receptionat is null ? null : new N.UnitateSold(
                     receptionat.Id, N.FelUnitate.Lot, contare.ContDebit, null, receptionat.ProdusId, receptionat.Data),
                 Analiza = Contari.Analiza(linie.Analiza, contare.Regula.OverrideDebit, contare.Regula.Comun),
             },

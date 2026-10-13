@@ -15,7 +15,7 @@ public sealed class PostareJurnal {
     public Guid? LinieId { get; set; }
     public DateOnly Data { get; set; }
     public Guid Cont { get; set; }
-    public N.Latura Latura { get; set; }
+    public N.Sens Sens { get; set; }
     public decimal Valoare { get; set; }
     /// <summary>Terțul postării pe un cont cu rol comercial (C111-D10).</summary>
     public Guid? TertComercial { get; set; }
@@ -40,7 +40,7 @@ public sealed class PostareAnalitica {
     public Guid? DocumentId { get; set; }
     public DateOnly Data { get; set; }
     public Guid Cont { get; set; }
-    public N.Latura Latura { get; set; }
+    public N.Sens Sens { get; set; }
     public decimal Valoare { get; set; }
     public Guid? Repartitor { get; set; }
     public Guid? Produs { get; set; }
@@ -84,7 +84,7 @@ public static class Contabil {
     public static IQueryable<PostareAnalitica> Analitice(IObjectSpace os) =>
         Postari(os).Select(p => new PostareAnalitica {
             Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel, Pereche = p.Pereche,
-            DocumentId = p.DocumentId, Data = p.Data, Cont = p.Cont, Latura = p.Latura, Valoare = p.Valoare,
+            DocumentId = p.DocumentId, Data = p.Data, Cont = p.Cont, Sens = p.Sens, Valoare = p.Valoare,
             Repartitor = p.Repartitor, Produs = p.Produs,
             CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,
             UnitateOrganizatorica = p.UnitateOrganizatorica, Proiect = p.Proiect, CentruCost = p.CentruCost,
@@ -96,7 +96,7 @@ public static class Contabil {
             Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel,
             DataTranzactie = p.Tranzactie.Data, ScrisLa = p.Tranzactie.ScrisLa,
             DocumentId = p.DocumentId, LinieId = p.LinieId, Data = p.Data, Cont = p.Cont,
-            Latura = p.Latura, Valoare = p.Valoare,
+            Sens = p.Sens, Valoare = p.Valoare,
             TertComercial = p.Repartitor != null && externi.Contains(p.Repartitor.Value) ? p.Repartitor : null,
             TipTvaId = p.TipTvaId, RolTva = p.RolTva, SensTva = p.SensTva,
             CodFunctional = p.CodFunctional, CodEconomic = p.CodEconomic, SursaFinantare = p.SursaFinantare,

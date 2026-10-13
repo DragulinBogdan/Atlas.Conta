@@ -105,7 +105,7 @@ def main():
             def verify(stage):
                 for name, base, tax in users:
                     if name == 'User':
-                        for path in ('/api/proiectii/jurnal-tva?sens=Achizitie&' + interval,
+                        for path in ('/api/proiectii/jurnal-tva?sensTva=Achizitie&' + interval,
                                      '/api/proiectii/decont-tva?' + interval,
                                      '/api/proiectii/d300?' + interval,
                                      '/api/proiectii/d394?' + interval,
@@ -113,7 +113,7 @@ def main():
                             call(name, path, expected=403)
                         print('PASS SC-CIT-87', stage, 'User refuz 403', flush=True)
                         continue
-                    journal = call(name, '/api/proiectii/jurnal-tva?sens=Achizitie&' + interval)['data']
+                    journal = call(name, '/api/proiectii/jurnal-tva?sensTva=Achizitie&' + interval)['data']
                     assert sum(r['Baza'] for r in journal) == base and sum(r['Tva'] for r in journal) == tax, (stage, name, journal)
                     totals = call(name, '/api/proiectii/decont-tva?' + interval)['data']
                     assert sum(r['Baza'] for r in totals) == base and sum(r['Tva'] for r in totals) == tax, (stage, name, totals)

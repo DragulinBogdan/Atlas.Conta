@@ -23,7 +23,7 @@ export function MapariD300() {
       titlu="Mapări D300"
       entitate={TIP}
       expand={['TipTva', 'Rand']}
-      laRandNou={(rand) => { rand.Sens = 'Achizitie'; }}
+      laRandNou={(rand) => { rand.SensTva = 'Achizitie'; }}
       indiciu={(
         <>
           Perechea e DIRECȚIONALĂ: același tip de TVA cade pe alt rând la achiziție decât la livrare.
@@ -42,7 +42,7 @@ export function MapariD300() {
       >
         <Lookup dataSource={tipuriTva} valueExpr="ID" displayExpr={etichetaTipTva} />
       </Column>
-      <Column dataField="Sens" caption={cap('Sens')} width={140}>
+      <Column dataField="SensTva" caption={cap('SensTva')} width={140}>
         <Lookup dataSource={sensuri} valueExpr="valoare" displayExpr="label" />
       </Column>
       <Column

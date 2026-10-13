@@ -52,7 +52,7 @@ static class Diagnostic {
             .ToDictionary(g => g.ID, g => g.Denumire);
         var postari = Loturi.Postari(os)
             .Where(p => ids.Contains(p.Unitate))
-            .Select(p => new { p.Data, p.Cont, Gestiune = p.Repartitor, p.Cantitate, p.Latura, p.Valoare, p.Tranzactie.Fel, p.DocumentId })
+            .Select(p => new { p.Data, p.Cont, Gestiune = p.Repartitor, p.Cantitate, p.Sens, p.Valoare, p.Tranzactie.Fel, p.DocumentId })
             .ToList();
         var idsDocumente = postari.Select(p => p.DocumentId).Distinct().ToList();
         var documente = os.GetObjectsQuery<Document>()
@@ -64,7 +64,7 @@ static class Diagnostic {
             .Select(p => new {
                 p.Data, Cont = simbolPeCont.GetValueOrDefault(p.Cont),
                 Gestiune = gestiuni.GetValueOrDefault(p.Gestiune.Value), p.Cantitate,
-                Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare,
+                Valoare = p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare,
                 Storno = p.Fel == N.FelTranzactie.Storno,
                 Document = p.DocumentId is { } id && documente.TryGetValue(id, out var d) ? $"{d.Tip} {d.Numar}" : "deschidere",
             })

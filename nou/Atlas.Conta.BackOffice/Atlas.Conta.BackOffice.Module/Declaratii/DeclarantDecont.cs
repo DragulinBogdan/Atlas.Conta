@@ -13,7 +13,7 @@ public sealed class DeclarantDecont : IDeclarant {
     public N.Declaratie? Declara(Operand operand, N.Rotunjire rotunjire, ICollection<N.Refuz> refuzuri) {
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
-        var partide = new Dictionary<(Guid, Guid), N.Unitate>();
+        var partide = new Dictionary<(Guid, Guid), N.UnitateSold>();
         var tipuri = new TipTvaFapt?[operand.Linii.Count];
         if (operand.Linii.Count == 0)
             refuzuri.Add(new(CoduriRefuz.LiniiLipsa, "Decontul cere cel puțin o linie.", null));
@@ -76,7 +76,7 @@ public sealed class DeclarantDecont : IDeclarant {
                 refuzuri.Add(new(CoduriRefuz.RepartitorExplicitLipsa, "Repartitorul liniei nu poate fi rezolvat.", linie));
                 return new() { Cont = cont, Analiza = analiza };
             }
-            N.Unitate? unitate = null;
+            N.UnitateSold? unitate = null;
             if (r.Parte == Parte.Extern && Partide.Urmareste(operand, cont)) {
                 if (!partide.TryGetValue((cont, repartitor), out unitate)) {
                     unitate = Partide.Proprie(operand, cont, repartitor);

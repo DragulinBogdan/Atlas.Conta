@@ -165,6 +165,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Cubul de postări (S-D1): tabele proprii, în afara `EntitateConta`.
         public DbSet<Cub.Tranzactie> Tranzactii { get; set; }
         public DbSet<Cub.Postare> Postari { get; set; }
+        public DbSet<Cub.OriginePartidaPersistata> OriginiPartide { get; set; }
         public DbSet<Cub.PostareVizual> PostariVizuale { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) {
@@ -420,13 +421,13 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // mai multe rânduri (TI19 pe achiziție: 16 ȘI 33), dar de două ori pe
             // ACELAȘI rând ar dubla cifra la proiecție.
             modelBuilder.Entity<MapareD300>()
-                .HasIndex(m => new { m.TipTvaId, m.Sens, m.RandId }).IsUnique();
+                .HasIndex(m => new { m.TipTvaId, m.SensTva, m.RandId }).IsUnique();
             // D4-D2: spre deosebire de D300, aici PERECHEA e identitatea — un grup
             // de registru are un singur tip de operațiune în 394.
             modelBuilder.Entity<MapareD394>()
-                .HasIndex(m => new { m.TipTvaId, m.Sens }).IsUnique();
+                .HasIndex(m => new { m.TipTvaId, m.SensTva }).IsUnique();
             modelBuilder.Entity<MapareTvaSaft>()
-                .HasIndex(m => new { m.Versiune, m.Sectiune, m.TipTvaId, m.Regim, m.Cota, m.DeImport, m.Sens, m.Rol })
+                .HasIndex(m => new { m.Versiune, m.Sectiune, m.TipTvaId, m.Regim, m.Cota, m.DeImport, m.SensTva, m.Rol })
                 .IsUnique();
 
             // D17-D1: tripleta `(TipDocument, TipStoc, Semn)` e identitatea
@@ -738,6 +739,21 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
 
         // Indexii și restul FK-urilor lui `Postare` stau pe PARTIȚII, în SQL. // S-D2, S-r4
         private static void AplicaCub(ModelBuilder modelBuilder) {
+            modelBuilder.Entity<Cub.OriginePartidaPersistata>(b => {
+                b.ToTable("OriginiPartide", t => t.HasCheckConstraint("CK_OriginiPartide_Origine", """
+                    ("DocumentId" IS NOT NULL AND "ReferintaInitiala" IS NULL AND "OrdinalInitial" IS NULL)
+                    OR ("DocumentId" IS NULL AND "ReferintaInitiala" IS NOT NULL
+                        AND "ReferintaInitiala" <> '00000000-0000-0000-0000-000000000000'::uuid
+                        AND "OrdinalInitial" IS NOT NULL AND "OrdinalInitial" > 0)
+                    """));
+                b.HasKey(o => o.ID);
+                b.Property(o => o.ID).ValueGeneratedNever();
+                b.HasOne<Cont>().WithMany().HasForeignKey(o => o.ContId).OnDelete(DeleteBehavior.NoAction);
+                b.HasOne<Repartitor>().WithMany().HasForeignKey(o => o.PartenerId).OnDelete(DeleteBehavior.NoAction);
+                b.HasOne<Document>().WithMany().HasForeignKey(o => o.DocumentId).OnDelete(DeleteBehavior.NoAction);
+                b.HasIndex(o => new { o.DocumentId, o.ContId, o.PartenerId }).IsUnique().HasFilter("\"DocumentId\" IS NOT NULL");
+                b.HasIndex(o => new { o.ReferintaInitiala, o.ContId, o.PartenerId }).IsUnique().HasFilter("\"ReferintaInitiala\" IS NOT NULL");
+            });
             modelBuilder.Entity<Cub.Tranzactie>(b => {
                 b.ToTable("Tranzactie", t => {
                     t.HasCheckConstraint("CK_Tranzactie_Explicatie",
@@ -768,7 +784,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     """));
                 b.HasKey(p => p.ID);
                 b.Property(p => p.Spatiu).HasConversion<short>();
-                b.Property(p => p.Latura).HasConversion<short>();
+                b.Property(p => p.Sens).HasConversion<short>();
                 b.Property(p => p.Carte).HasConversion<short>();
                 b.Property(p => p.SensTva).HasConversion<short>();
                 b.Property(p => p.RolTva).HasConversion<short>();
@@ -786,7 +802,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 b.HasKey(p => p.ID);
                 b.Property(p => p.Spatiu).HasConversion<short>();
                 b.Property(p => p.TranzactieFel).HasConversion<short>();
-                b.Property(p => p.Latura).HasConversion<short>();
+                b.Property(p => p.Sens).HasConversion<short>();
                 b.Property(p => p.Carte).HasConversion<short>();
                 b.Property(p => p.SensTva).HasConversion<short>();
                 b.Property(p => p.RolTva).HasConversion<short>();

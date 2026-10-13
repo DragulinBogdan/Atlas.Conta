@@ -111,7 +111,7 @@ sealed class ScenariiFiscale(Func<IObjectSpace> deschide, Action<string, bool> c
             var f = Fiscale.Fapte(os).Single(f => f.DocumentId == vama);
             var d394 = D394Proiectii.D394(os, new(An, 1, 1), new(An, 1, 31));
             return f.Baza == 100 && f.Tva == 21 && f.DeImport
-                && C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == vama && p.Latura == N.Latura.Credit).Sum(p => p.Valoare) == 21
+                && C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == vama && p.Sens == N.Sens.Credit).Sum(p => p.Valoare) == 21
                 && d394.Neincluse.Any(r => r.Baza == 100 && r.Tva == 21 && r.TipTvaCod == "IMP21");
         }));
         Comanda(os => {
@@ -202,7 +202,7 @@ sealed class ScenariiFiscale(Func<IObjectSpace> deschide, Action<string, bool> c
         Opereaza(id);
         Verifica(proba, $"livrare {tva}: {baza}/{taxa}, fără autocolectare a beneficiarului", CuSpatiu(os => {
             var f = Fiscale.Fapte(os).Single(f => f.DocumentId == id);
-            return f.Sens == SensTva.Livrare && f.Baza == baza && f.Tva == taxa && f.Autocolectare == 0;
+            return f.SensTva == SensTva.Livrare && f.Baza == baza && f.Tva == taxa && f.Autocolectare == 0;
         }));
     }
 

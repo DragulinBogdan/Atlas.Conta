@@ -203,11 +203,11 @@ public static partial class Materializare {
     }
 
     static void VerificaDisponibilTemporal(IObjectSpace os, N.Mutare mutare, DateOnly data) {
-        var semn = mutare.Latura == N.Latura.Debit ? 1m : -1m;
+        var semn = mutare.Sens == N.Sens.Debit ? 1m : -1m;
         foreach (var (unitate, sens) in new[] { (mutare.DeLa.Unitate.Id, semn), (mutare.La.Unitate.Id, -semn) }) {
             var miscari = Citiri.Partide.Postari(os).Where(p => p.Unitate == unitate)
                 .GroupBy(p => p.Data)
-                .Select(g => new { Data = g.Key, Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+                .Select(g => new { Data = g.Key, Net = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) })
                 .ToArray().Select(p => (p.Data, p.Net));
             if (Citiri.Partide.DisponibilTemporal(miscari, data, sens) < mutare.Valoare)
                 throw new OperareException("PARTIDA_PROPRIE_INSUFICIENTA: stingerea depășește disponibilul la data cerută sau într-o zi ulterioară.");
@@ -262,6 +262,7 @@ public static partial class Materializare {
         VerificaPozitiaFaraFisa(os, citite.Select(p => p with { Valoare = -p.Valoare }), blocheaza: true);
         os.Delete(postari);
         os.Delete(tranzactii);
+        RetrageOrigini(os, doc.ID, ids);
     }
 
     sealed record NominalizarePartida(Guid? Document, Guid? Unitate, DateOnly Data, decimal Net);
@@ -314,7 +315,7 @@ public static partial class Materializare {
                 && p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil)
             .GroupBy(p => new { p.DocumentId, p.Unitate, p.Data })
             .Select(g => new { g.Key.DocumentId, g.Key.Unitate, g.Key.Data,
-                Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+                Net = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) })
             .Where(p => p.Net != 0m).ToList()
             .Select(p => new NominalizarePartida(p.DocumentId, p.Unitate, p.Data, p.Net));
         // Desfacerea din aceeași comandă nu e încă în SQL: se adaugă numai rândurile noi.
@@ -323,7 +324,7 @@ public static partial class Materializare {
                 && p.Unitate != null && unitati.Contains(p.Unitate.Value)
                 && p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil)
             .Select(p => new NominalizarePartida(p.DocumentId, p.Unitate, p.Data,
-                p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare));
+                p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare));
         return [.. dependenti, .. inCurs];
     }
 
@@ -341,7 +342,8 @@ public static partial class Materializare {
     }
 
     static Guid Scrie(IObjectSpace os, Guid? documentId, N.Tranzactie tranzactie,
-            string explicatie = null, Guid? explicatieDin = null) {
+            string explicatie = null, Guid? explicatieDin = null,
+            IReadOnlyDictionary<Guid, Guid> referinteInitiale = null) {
         var tracker = (os as EFCoreObjectSpace)?.DbContext.ChangeTracker;
         var incarcare = tracker?.LazyLoadingEnabled;
         try {
@@ -353,8 +355,13 @@ public static partial class Materializare {
             rand.ScrisLa = DateTime.UtcNow;
             rand.Explicatie = explicatie;
             rand.ExplicatieDinId = explicatieDin;
-            for (var i = 0; i < tranzactie.Postari.Count; i++)
-                Randuri.Scrie(tranzactie.Postari[i], rand, i + 1, os.CreateObject<Postare>());
+            var postari = new List<Postare>();
+            for (var i = 0; i < tranzactie.Postari.Count; i++) {
+                var postare = os.CreateObject<Postare>();
+                Randuri.Scrie(tranzactie.Postari[i], rand, i + 1, postare);
+                postari.Add(postare);
+            }
+            ScrieOrigini(os, postari, referinteInitiale);
             return rand.ID;
         }
         finally { if (tracker != null) tracker.LazyLoadingEnabled = incarcare.Value; }

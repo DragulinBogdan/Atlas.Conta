@@ -229,6 +229,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 case Cub.Tranzactie:
                 case Cub.Postare:
                 case Cub.PostareVizual:
+                case Cub.OriginePartidaPersistata:
                     if (!cubRaportat) {
                         cubRaportat = true;
                         erori.Add("Tranzacțiile și postările cubului se scriu doar de motor, la operare — "
@@ -1284,8 +1285,8 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
     }
 
     static void VerificaMapareD394(MapareD394 mapare, ICollection<string> erori) {
-        if (!MapareD394.TintaPermisa(mapare.Tip, mapare.Sens))
-            erori.Add($"Maparea D394 țintește {mapare.Tip} pe {mapare.Sens} — pe livrare se mapează doar "
+        if (!MapareD394.TintaPermisa(mapare.Tip, mapare.SensTva))
+            erori.Add($"Maparea D394 țintește {mapare.Tip} pe {mapare.SensTva} — pe livrare se mapează doar "
                 + "L, V, LS, pe achiziție doar A, C, AS. AÎ se derivă din partener (TVA la încasare), "
                 + "iar N n-are sursă în registrul de TVA.");
     }

@@ -345,12 +345,12 @@ public static class NotaContabilaApply {
                      .OrderBy(k => etichete.TryGetValue(k, out var e) ? e.Denumire : null)) {
             var plafon = capacitati[cheie];
             etichete.TryGetValue(cheie, out var eticheta);
-            foreach (var sens in new[] { SensStingere.Datorie, SensStingere.Creanta }) {
-                var capacitate = Cub.Citiri.Partide.Capacitate(os, id, cheie, sens);
+            foreach (var sensStingere in new[] { SensStingere.Datorie, SensStingere.Creanta }) {
+                var capacitate = Cub.Citiri.Partide.Capacitate(os, id, cheie, sensStingere);
                 if (capacitate == 0m)
                     continue;
-                var asignat = ImperechereService.AsignatFataDe(os, id, cheie, sens);
-                var randuri = ImperecheriProiectii.DocumenteCuRest(os, cheie, sens, documentCurentId: id)
+                var asignat = ImperechereService.AsignatFataDe(os, id, cheie, sensStingere);
+                var randuri = ImperecheriProiectii.DocumenteCuRest(os, cheie, sensStingere, documentCurentId: id)
                     .OrderBy(r => r.Data).ThenBy(r => r.Numar)
                     .Take(Plafon + 1)
                     .ToList();
@@ -361,7 +361,7 @@ public static class NotaContabilaApply {
                     RepartitorId = cheie,
                     RepartitorCod = eticheta?.Cod,
                     RepartitorDenumire = eticheta?.Denumire,
-                    Sens = sens.ToString(),
+                    SensStingere = sensStingere.ToString(),
                     Capacitate = capacitate,
                     Asignat = asignat,
                     Disponibil = capacitate - asignat,

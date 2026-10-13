@@ -406,7 +406,7 @@ static class VerificaF23Gardian {
             void Mapare(IObjectSpace os, string codRand) {
                 var m = os.CreateObject<MapareD300>();
                 m.TipTva = os.GetObjectByKey<TipTva>(idTvaMapare);
-                m.Sens = SensTva.Livrare;
+                m.SensTva = SensTva.Livrare;
                 m.Rand = os.GetObjectsQuery<RandD300>().ToList().First(r => r.Cod == codRand);
             }
             d300Total = RefuzF23(os => Mapare(os, "19"));
@@ -417,13 +417,13 @@ static class VerificaF23Gardian {
         var d394Gresit = RefuzF23(os => {
             var m = os.CreateObject<MapareD394>();
             m.TipTva = os.GetObjectsQuery<TipTva>().ToList().First();
-            m.Sens = SensTva.Achizitie;
+            m.SensTva = SensTva.Achizitie;
             m.Tip = TipOperatiuneD394.L;
         });
         var d394Bun = RefuzF23(os => {
             var m = os.CreateObject<MapareD394>();
             m.TipTva = os.GetObjectsQuery<TipTva>().ToList().First();
-            m.Sens = SensTva.Livrare;
+            m.SensTva = SensTva.Livrare;
             m.Tip = TipOperatiuneD394.L;
         });
         Console.WriteLine($"     MĂSURAT (F23-V4/{eticheta}/mapări): D300 spre rd. 19 (TOTAL) → "

@@ -1,5 +1,10 @@
 # PLT — plată
 
+TR-D9b, 2026-10-12: [SC-D9B-10](D9B.md) verifică și detaliul plății
+pe HTTP sub restricții de rând pe documente și postări. Căutarea perechii
+autogenerate folosește cheile conturilor proprii citibile; proba cere
+plata vizibilă200, factura ascunsă404 și rest40 fără eticheta facturii.
+
 **2026-09-23: primul lot independent verificat pe ambele profiluri.** Reguli: 031 (a,c–e),
 076 (f), 088 (j), 090 (c,f,i), 091 (a–e). Probe: `ScenariiTrezorerie`.
 Fixture în anul 2003, CASA (privat 5311, bugetar 531.01.01), furnizor

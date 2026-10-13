@@ -19,7 +19,7 @@ public sealed partial class DeclarantNir : IDeclarant {
         var doc = operand.Document;
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
-        var partide = new Dictionary<Guid, N.Unitate>();
+        var partide = new Dictionary<Guid, N.UnitateSold>();
         if (operand.Linii.Count == 0)
             refuzuri.Add(new(CoduriRefuz.LiniiLipsa, "Recepția cere cel puțin o linie.", null));
         foreach (var linie in operand.Linii) {
@@ -53,7 +53,7 @@ public sealed partial class DeclarantNir : IDeclarant {
             }, doc.Predator, partide);
             var internCapat = new N.Capat {
                 Cont = cont.ContDebit, Repartitor = doc.Primitor.Coordonata, Produs = lot.ProdusId,
-                Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, cont.ContDebit, null, lot.ProdusId, lot.Data),
+                Unitate = new N.UnitateSold(lot.Id, N.FelUnitate.Lot, cont.ContDebit, null, lot.ProdusId, lot.Data),
                 Analiza = Contari.Analiza(linie.Analiza, cont.Regula.OverrideDebit, cont.Regula.Comun),
             };
             miscari.Add(new(externCapat, internCapat, linie.Cantitate, 0, valoare, new(doc.Id, linie.Id)));

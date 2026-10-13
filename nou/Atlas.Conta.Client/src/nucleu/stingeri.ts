@@ -54,7 +54,7 @@ export const stingeri = {
   storeCandidati: (contrapartidaId: string, sens?: string | null, laData?: string | null, documentCurentId?: string, stinge = true) =>
     storeRemote(
       `/api/proiectii/documente-cu-rest?contrapartidaId=${encodeURIComponent(contrapartidaId)}`
-      + (sens ? `&sens=${encodeURIComponent(sens)}` : '')
+      + (sens ? `&sensStingere=${encodeURIComponent(sens)}` : '')
       + (laData ? `&laData=${encodeURIComponent(laData)}` : '')
       + (documentCurentId ? `&documentCurentId=${encodeURIComponent(documentCurentId)}&stinge=${stinge}` : ''),
       'DocumentId'),

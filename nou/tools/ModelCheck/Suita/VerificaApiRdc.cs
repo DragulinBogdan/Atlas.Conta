@@ -376,7 +376,7 @@ static class VerificaApiRdc {
             + "de VENIT, cu baza −100,00 și taxa −21,00 — nu −130,00, cum ar fi ieșit dacă linia de cost și-ar fi "
             + "păstrat tipul de TVA de la culegere",
             fiscalRdcCub.Count == 1 && fiscalRdcCub[0].DetaliuId == venitOperat.Id
-            && fiscalRdcCub[0] is { Baza: -100m, Tva: -21m, Sens: SensTva.Livrare });
+            && fiscalRdcCub[0] is { Baza: -100m, Tva: -21m, SensTva: SensTva.Livrare });
 
         // ═══════════ (F) Riscul 6: idempotența semnării prin calea API ═══════════
         var numarRdc = citOperat.Numar;

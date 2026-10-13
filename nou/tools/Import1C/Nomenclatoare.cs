@@ -720,7 +720,7 @@ class ImportLaCerere {
         }
         using (var os = provider.CreateObjectSpace()) {
             var ids = Fiscale.Fapte(os)
-                .Where(f => f.Sens == SensTva.Achizitie && f.Tva + f.Autocolectare != 0m && f.PartenerId != null)
+                .Where(f => f.SensTva == SensTva.Achizitie && f.Tva + f.Autocolectare != 0m && f.PartenerId != null)
                 .Select(f => f.PartenerId.Value)
                 .Distinct()
                 .ToList();

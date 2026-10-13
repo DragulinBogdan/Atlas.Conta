@@ -17,10 +17,10 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
     string Id(bool inc, string nr) => $"SC-{(inc ? "INC" : "PLT")}-{nr}";
 
     RandScena[] Randuri(FacturaScena f, bool inc, params decimal[] sume) => sume.SelectMany((v, i) => new[] {
-        new RandScena(Cont(ContTert(inc)), inc ? N.Latura.Credit : N.Latura.Debit, v,
+        new RandScena(Cont(ContTert(inc)), inc ? N.Sens.Credit : N.Sens.Debit, v,
             Repartitor: inc ? Client : Furnizor, Unitate: Partida(f.Id, ContTert(inc), inc ? Client : Furnizor),
             Linie: f.Linii[i].Id, Economic: Economic),
-        new RandScena(Cont(Numerar), inc ? N.Latura.Debit : N.Latura.Credit, v,
+        new RandScena(Cont(Numerar), inc ? N.Sens.Debit : N.Sens.Credit, v,
             Repartitor: casa, Linie: f.Linii[i].Id, Economic: Economic)
     }).ToArray();
 
@@ -35,10 +35,10 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         Verifica("SC-X-04", "depășirea nu creează împerechere", CuSpatiu(os =>
             !os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentId == f.Id)) && Amprenta(f.Id) == amprenta);
         Imperecheaza(p1.Id, f.Id, 40, Ianuarie);
-        TransferPartida("SC-X-04", p1.Id, f.Id, ContFurnizor, Furnizor, N.Latura.Debit, 40, Ianuarie);
+        TransferPartida("SC-X-04", p1.Id, f.Id, ContFurnizor, Furnizor, N.Sens.Debit, 40, Ianuarie);
         SoldPartida("SC-X-04", Partida(f.Id, ContFurnizor)!.Value, Ianuarie, -60);
         Imperecheaza(p2.Id, f.Id, 60, Ianuarie);
-        TransferPartida("SC-X-04", p2.Id, f.Id, ContFurnizor, Furnizor, N.Latura.Debit, 60, Ianuarie);
+        TransferPartida("SC-X-04", p2.Id, f.Id, ContFurnizor, Furnizor, N.Sens.Debit, 60, Ianuarie);
         SoldPartida("SC-X-04", Partida(f.Id, ContFurnizor)!.Value, Ianuarie, 0);
         var nemodificat = Amprenta(p2.Id);
         Refuza("SC-X-04", () => Storneaza(p2.Id, Ianuarie), "imperecheri");
@@ -48,7 +48,7 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         foreach (var d in peste.Concat(corectate)) Opereaza(d.Id);
         InchideIanuarie();
         Storneaza(p2.Id, Februarie);
-        TransferPartida("SC-X-04", p2.Id, f.Id, ContFurnizor, Furnizor, N.Latura.Debit, -60, Februarie);
+        TransferPartida("SC-X-04", p2.Id, f.Id, ContFurnizor, Furnizor, N.Sens.Debit, -60, Februarie);
         Postari("SC-X-04", p2.Id, N.FelTranzactie.Storno, Februarie, Randuri(p2, false, -60));
         TransferPeCititori("SC-CIT-101", "Partide.Postari", 6, 0, 6, p1.Id, p2.Id);
         ListareTransfer("SC-CIT-107", "Partide.Postari", p1.Id, p2.Id);
@@ -112,8 +112,8 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
                 var acceptat = Document(); Opereaza(acceptat.Id);
                 var linie = acceptat.Linii[0].Id;
                 Postari(id, acceptat.Id, N.FelTranzactie.Operare, Februarie,
-                    new RandScena(contTert, inc ? N.Latura.Credit : N.Latura.Debit, 100, Repartitor: creditor, Linie: linie, Economic: Economic),
-                    new RandScena(contPropriu, inc ? N.Latura.Debit : N.Latura.Credit, 100, Linie: linie, Economic: Economic));
+                    new RandScena(contTert, inc ? N.Sens.Credit : N.Sens.Debit, 100, Repartitor: creditor, Linie: linie, Economic: Economic),
+                    new RandScena(contPropriu, inc ? N.Sens.Debit : N.Sens.Credit, 100, Linie: linie, Economic: Economic));
                 Verifica(id, "analiticul creditorului poartă numai contul de terț; contul propriu n-are repartitor", CuSpatiu(os => {
                     var peCreditor = ContabilProiectii.Balanta(os, Februarie, Februarie, analitic: true, repartitorId: creditor).ToList();
                     var propriu = CubScena.Note(os, acceptat.Id).Single(p => p.Cont == contPropriu);
@@ -149,15 +149,15 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         var liber = Creditor(faraFlag);
         var p1 = Plata(liber); Opereaza(p1.Id);
         Postari("SC-PLT-08", p1.Id, N.FelTranzactie.Operare, Februarie,
-            new RandScena(faraFlag, N.Latura.Debit, 100, Linie: p1.Linii[0].Id, Economic: Economic),
-            new RandScena(Cont(Numerar), N.Latura.Credit, 100, Repartitor: casa, Linie: p1.Linii[0].Id, Economic: Economic));
+            new RandScena(faraFlag, N.Sens.Debit, 100, Linie: p1.Linii[0].Id, Economic: Economic),
+            new RandScena(Cont(Numerar), N.Sens.Credit, 100, Repartitor: casa, Linie: p1.Linii[0].Id, Economic: Economic));
         try {
             if (Privat) Comanda(os => { os.GetObjectByKey<Cont>(cuFlag).FeluriRepartitor = FeluriRepartitor.Partener; os.CommitChanges(); });
             var creditor = Creditor(cuFlag);
             var p2 = Plata(creditor); Opereaza(p2.Id);
             Postari("SC-PLT-08", p2.Id, N.FelTranzactie.Operare, Februarie,
-                new RandScena(cuFlag, N.Latura.Debit, 100, Repartitor: creditor, Linie: p2.Linii[0].Id, Economic: Economic),
-                new RandScena(Cont(Numerar), N.Latura.Credit, 100, Repartitor: casa, Linie: p2.Linii[0].Id, Economic: Economic));
+                new RandScena(cuFlag, N.Sens.Debit, 100, Repartitor: creditor, Linie: p2.Linii[0].Id, Economic: Economic),
+                new RandScena(Cont(Numerar), N.Sens.Credit, 100, Repartitor: casa, Linie: p2.Linii[0].Id, Economic: Economic));
             Verifica("SC-PLT-08", "pe cititori: repartitorul piciorului de terț e creditorul, fără partidă deschisă; "
                 + "pe contul fără flag repartitorul lipsește", CuSpatiu(os => {
                     var tert = CubScena.Note(os, p2.Id).Single(p => p.Cont == cuFlag);

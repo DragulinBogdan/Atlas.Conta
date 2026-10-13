@@ -45,20 +45,20 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
     RandScena[] Venit(FacturaScena d, int i, decimal v, decimal taxa = 0,
             string tva = null, int? perioada = null, string cont = "704") {
         var tv = tva == null ? (Guid?)null : Tva(tva);
-        var debit = new RandScena(Cont("4111"), N.Latura.Debit, v,
+        var debit = new RandScena(Cont("4111"), N.Sens.Debit, v,
             Repartitor: Client, Unitate: P(d.Id), Linie: d.Linii[i].Id);
-        var credit = new RandScena(Cont(cont), N.Latura.Credit, v, Repartitor: Magazie,
+        var credit = new RandScena(Cont(cont), N.Sens.Credit, v, Repartitor: Magazie,
             PartenerFiscal: tv != null ? Client : null, Linie: d.Linii[i].Id, Tva: tv,
             Rol: tv != null ? N.RolTva.Baza : null, Perioada: tv != null ? perioada ?? An * 100 + 1 : null,
-            Sens: tv != null ? N.SensTva.Livrare : null, Loc: tv != null ? Magazie : null);
+            SensTva: tv != null ? N.SensTva.Livrare : null, Loc: tv != null ? Magazie : null);
         return taxa == 0 ? [debit, credit] : [debit, credit,
             debit with { Valoare = taxa }, credit with { Cont = Cont("4427"), Valoare = taxa, Rol = N.RolTva.Taxa }];
     }
     RandScena[] Cost(FacturaScena d, int i, decimal q, decimal v) {
         var l = d.Linii[i];
-        return [new(Cont("607"), N.Latura.Debit, -v, -q, Client,
+        return [new(Cont("607"), N.Sens.Debit, -v, -q, Client,
                 Produs: l.Produs, Linie: l.Id, Contrapondere: N.Contrapondere.Tert),
-            new(Cont("371"), N.Latura.Credit, -v, q, Magazie, l.Lot, l.Produs,
+            new(Cont("371"), N.Sens.Credit, -v, q, Magazie, l.Lot, l.Produs,
                 Linie: l.Id, Spatiu: N.Spatiu.Stoc)];
     }
 
@@ -119,7 +119,7 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
         foreach (var cont in new[] { "707", "607", "4427" })
             Verifica("SC-RDC-06", "net zero pe " + cont, CuSpatiu(os => os.GetObjectsQuery<C.Postare>()
                 .Where(p => p.DocumentId != null && ids.Contains(p.DocumentId.Value) && p.Cont == Cont(cont))
-                .Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)) == 0);
+                .Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)) == 0);
         var gol = Receptioneaza(new LinieFctScena(10, 10, Tip: "371")).Linii[0];
         Opereaza(Iesire(false, (gol, 10)).Id);
         var inapoi = Retur(new LinieRdcScena(0, Lot: gol, Cantitate: 2)); Opereaza(inapoi.Id);

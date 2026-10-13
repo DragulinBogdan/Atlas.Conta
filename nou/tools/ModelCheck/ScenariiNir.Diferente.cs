@@ -36,7 +36,7 @@ sealed partial class ScenariiNir {
         var id = Cont(cont);
         return os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == doc && p.Cont == id
             && p.Carte == N.Carte.Contabil && (fel == null || p.Tranzactie.Fel == fel))
-            .Sum(p => (decimal?)(p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)) ?? 0;
+            .Sum(p => (decimal?)(p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)) ?? 0;
     });
     void Delta(string scena, Guid nir, string cont, decimal suma) {
         Verifica(scena, "delta pe contul cauzei și invers pe stoc", Net(nir, cont) == suma && Net(nir, Stoc) == -suma);
@@ -69,7 +69,7 @@ sealed partial class ScenariiNir {
         var lotNou = AdaugaPlus(nplus, 1, 10); Opereaza(nplus);
         Sold("SC-NIR-19", plus.Linii[0], 4, 100); Sold("SC-NIR-19", lotNou, 1, 10);
         Verifica("SC-NIR-19", "plus 10 pe 408, factura 100 pe furnizor", Net(nplus, Nesosite) == -10 && Net(plus.Id, ContFurnizor) == -100);
-        var partidaPlus = N.Unitate.DeschidePartida(Cont(Nesosite), Furnizor, nplus, Ianuarie);
+        var partidaPlus = N.UnitateSold.DeschidePartida(Cont(Nesosite), Furnizor, nplus, Ianuarie);
         SoldPartida("SC-NIR-19", partidaPlus.Id, Ianuarie, -10);
         var (mix, nmix) = Constatat(3); var lotMix = AdaugaPlus(nmix, 1, 10); Opereaza(nmix);
         Sold("SC-NIR-09b", mix.Linii[0], 3, 75); Sold("SC-NIR-09b", lotMix, 1, 10);
@@ -86,7 +86,7 @@ sealed partial class ScenariiNir {
         }
         var (fi, ni) = Constatat(3, CauzaDiferentei.Imputabila, Client); Opereaza(ni);
         Delta("SC-NIR-22", ni, Imputat, 25);
-        SoldPartida("SC-NIR-22", N.Unitate.DeschidePartida(Cont(Imputat), Client, ni, Ianuarie).Id, Ianuarie, 25);
+        SoldPartida("SC-NIR-22", N.UnitateSold.DeschidePartida(Cont(Imputat), Client, ni, Ianuarie).Id, Ianuarie, 25);
         Identitate(); PoliticaIstorica(); PeDrumCumulativ(); RefuzStoc(); DouaActive();
         Capitalizat(); Avans();
         ImputariDistincte(); Concurenta();  ZeroIstoric();
@@ -199,8 +199,8 @@ sealed partial class ScenariiNir {
             os.CommitChanges();
         });
         Opereaza(nir);
-        SoldPartida("SC-NIR-22/doi", N.Unitate.DeschidePartida(Cont(Imputat), Furnizor, nir, Ianuarie).Id, Ianuarie, 10);
-        SoldPartida("SC-NIR-22/doi", N.Unitate.DeschidePartida(Cont(Imputat), Client, nir, Ianuarie).Id, Ianuarie, 15);
+        SoldPartida("SC-NIR-22/doi", N.UnitateSold.DeschidePartida(Cont(Imputat), Furnizor, nir, Ianuarie).Id, Ianuarie, 10);
+        SoldPartida("SC-NIR-22/doi", N.UnitateSold.DeschidePartida(Cont(Imputat), Client, nir, Ianuarie).Id, Ianuarie, 15);
         var angajat = CuSpatiu(os => {
             var a = os.CreateObject<Angajat>(); a.Cod = Marcaj + "-ANG"; a.Denumire = "Imputat NIR";
             os.CommitChanges(); return a.ID;
@@ -215,7 +215,7 @@ sealed partial class ScenariiNir {
         }
         Opereaza(n);
         var cont = Privat ? "461" : "428.01.02";
-        SoldPartida("SC-NIR-22/angajat", N.Unitate.DeschidePartida(Cont(cont), angajat, n, Ianuarie).Id, Ianuarie, 25);
+        SoldPartida("SC-NIR-22/angajat", N.UnitateSold.DeschidePartida(Cont(cont), angajat, n, Ianuarie).Id, Ianuarie, 25);
     }
 
     void Capitalizat() {

@@ -70,11 +70,11 @@ public class NotaContabila : Document, IDocumentCuPostareExplicita {
         // Latura e purtată tot de `SensStingere`, ca sensul „natural" al ei:
         // debit ⇒ Datorie, credit ⇒ Creanta. Un enum propriu ar fi al doilea
         // vocabular pentru aceeași axă.
-        var neturi = new Dictionary<(Guid Repartitor, SensStingere Latura), decimal>();
-        void Aduna(Guid? repartitorId, SensStingere latura, decimal valoare) {
+        var neturi = new Dictionary<(Guid Repartitor, SensStingere SensStingere), decimal>();
+        void Aduna(Guid? repartitorId, SensStingere sensStingere, decimal valoare) {
             if (repartitorId == null)
                 return;
-            var cheie = (repartitorId.Value, latura);
+            var cheie = (repartitorId.Value, sensStingere);
             neturi[cheie] = neturi.GetValueOrDefault(cheie) + valoare;
         }
         foreach (var l in linii) {
@@ -85,9 +85,9 @@ public class NotaContabila : Document, IDocumentCuPostareExplicita {
         foreach (var (cheie, net) in neturi) {
             if (net == 0m)
                 continue;
-            var sens = net > 0m ? cheie.Latura : cheie.Latura.Opus();
+            var sensStingere = net > 0m ? cheie.SensStingere : cheie.SensStingere.Opus();
             capacitati[cheie.Repartitor] =
-                capacitati.GetValueOrDefault(cheie.Repartitor).Adauga(sens, Math.Abs(net));
+                capacitati.GetValueOrDefault(cheie.Repartitor).Adauga(sensStingere, Math.Abs(net));
         }
         return capacitati;
     }

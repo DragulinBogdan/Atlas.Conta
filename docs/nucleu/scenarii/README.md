@@ -1,9 +1,12 @@
 # Catalogul de scenarii — proba supremă a motorului (decizia 091)
 
-**Actualizat: 2026-09-24.** Regula: `docs/decizii/091-scenarii-in-loc-de-import.md`,
+**Actualizat: 2026-10-13.** Regula: `docs/decizii/091-scenarii-in-loc-de-import.md`,
 literele (a)–(e). Un fișier per tip de document (`<COD>.md`), cu rândurile
 de mai jos. Așteptarea se scrie de mână, din OMFP 1802 și din politica
 profilului, cu cifre; nu se derivă din registre, din oracol sau din Flax.
+
+[D9B — originea partidei](D9B.md) separă comportamentul actual verificat
+numeric de persistența încă specificată; se execută prin `-Tip D9B`.
 
 ## Forma unui rând
 
@@ -124,6 +127,7 @@ scena ține blocajul scrierii, cele două comenzi intră pe rând în coada lui
 | NIR | recepție manuală și conex | pas 5 | [NIR.md](NIR.md) | verificat pe ambele profiluri: ciclul complet, stingeri, dependenți, Folosinta/Marfuri; conexul sursei migrate nu dublează cubul |
 | — | `Deschidere` | pas 6 | [DESCHIDERE.md](DESCHIDERE.md) | detaliere fără dublare (094), refuz atomic, unicitate, stingere/anulare/storno sub blocare comună; analiza/valuta păstrate la intrare, stingerea în valută neacoperită; cititorii de producție rămân TR-D8 |
 | — | coordonatele postării (transversal) | C111 | [C111.md](C111.md) | 29 de rânduri pe formele din C111-D5 și pe S10–S14; verificate la pasul 2 pe ambele profiluri (`--scenarii C111`), în afară de SC-C111-21, care e a pasului 4 |
+| CVL (mecanism propus pe FCT) | corecție valorică pe lot | TR-D9b-CV | [CVL.md](CVL.md) | 32 de scenarii documentate, neimplementate; apartenența compensării fixată prin decizia 119, predicatele și explicația neacceptate încă; exportul SAF-T rămâne pe refuz (CV-r1); selecția CVL nu există încă |
 | DEC | decont | înainte de TR-D8 (095) | [DEC.md](DEC.md) | declarație contabilă/fiscală și partide pe angajat (096), verificări independente |
 | PIF/CAS/AMO | imobilizări | pe cub (095, 097) | [IMO.md](IMO.md) | SC-IMO-01…25 verzi pe ambele profiluri; fișa citită din cub; review advers restant |
 

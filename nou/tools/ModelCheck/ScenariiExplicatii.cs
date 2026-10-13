@@ -72,7 +72,7 @@ sealed partial class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<stri
             && peBtr.Explicatie.Declarant == nameof(DeclarantNotaTransfer)
             && mutat is { Cantitate: 2, Valoare: 25 } && Sold(mutat.SoldInainte, 75, 0, 6)
             && CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Count(p => p.TranzactieId == transfer.Id
-                && p.Repartitor == Magazie && p.Cantitate == -2 && p.Valoare == -25 && p.Latura == N.Latura.Debit) == 1));
+                && p.Repartitor == Magazie && p.Cantitate == -2 && p.Valoare == -25 && p.Sens == N.Sens.Debit) == 1));
 
         var data = new DateOnly(An, 1, 20);
         Storneaza(btr.Id, data); Storneaza(bon.Id, data);
@@ -190,8 +190,8 @@ sealed partial class ScenariiExplicatii(Func<IObjectSpace> deschide, Action<stri
     }
 
     void Codec() {
-        var lot = new N.Unitate(Guid.NewGuid(), N.FelUnitate.Lot, Guid.NewGuid(), null, Guid.NewGuid(), new(An, 1, 5));
-        var partida = N.Unitate.DeschidePartida(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), new(An, 1, 6));
+        var lot = new N.UnitateSold(Guid.NewGuid(), N.FelUnitate.Lot, Guid.NewGuid(), null, Guid.NewGuid(), new(An, 1, 5));
+        var partida = N.UnitateSold.DeschidePartida(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), new(An, 1, 6));
         var linie = Guid.NewGuid();
         var explicatie = new C.Explicatie("DeclarantDeProba", 3, [
             new N.ContRezolvat(linie, lot.Cont, "Diferență: Plus"),

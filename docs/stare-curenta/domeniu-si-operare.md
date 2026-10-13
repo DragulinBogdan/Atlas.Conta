@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-10-11.** [Index](README.md)
+**Actualizat: 2026-10-13.** [Index](README.md)
 
 ## Modelul comun
 
@@ -981,7 +981,9 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   parametru al citirii; snapshot-ul e lema `Sold(≤t) = Sold(≤t0) +
   Sold(t0<d≤t)`. **Stornoul** = inversul cauzat ∪ atribuit, fără schimb de
   latură, tranzacție distinctă; contrapartida unei postări atribuite
-  inversate rămâne nedefinită până la TR-D9b (N-r5). (N-D9, N-D10)
+  inversate rămâne nedefinită în cod până la TR-D9b (N-r5). Regula e 119,
+  neimplementată: stornoul beneficiarului conține numai inversa lui, iar
+  corecția își scrie compensarea într-o `Operare` proprie. (N-D9, N-D10)
 - **Motorul**: `Declaratie` (mișcări pe coordonate rezolvate + decizii +
   ipoteze) → exact o tranzacție `Operare` (sau `Transfer` din mutări pe
   același cont) → `Contract` acceptat/refuzat, determinist, cu contorul de
@@ -1171,7 +1173,7 @@ postare nu se șterge, fișa care e unitatea unei postări nu se șterge.
 | Entitate | Coloane |
 |---|---|
 | `Tranzactie` | `ID`, `DocumentId`, `Fel` (`Operare`, `Storno`, `Transfer`, `Deschidere`), `Data`, `ScrisLa` (UTC) |
-| `Postare` | `Spatiu`, `TranzactieId`, `DocumentId`, `LinieId`, `Data`, `Cont`, `Latura`, `Repartitor`, `Contrapondere`, `Produs`, `Unitate`, `UnitateDeschisa`, `FelUnitate`, codul de TVA în trei coloane (`TipTvaId`, `SensTva`, `RolTva`), `PartenerFiscal`, `Loc`, `PerioadaDeclarare`, `Valuta`, `Carte`, cele șase dimensiuni, `Atribuit`, `Pereche`, `Cantitate`, `ValoareValuta`, `Valoare` |
+| `Postare` | `Spatiu`, `TranzactieId`, `DocumentId`, `LinieId`, `Data`, `Cont`, `Sens`, `Repartitor`, `Contrapondere`, `Produs`, `Unitate`, `UnitateDeschisa`, `FelUnitate`, codul de TVA în trei coloane (`TipTvaId`, `SensTva`, `RolTva`), `PartenerFiscal`, `Loc`, `PerioadaDeclarare`, `Valuta`, `Carte`, cele șase dimensiuni, `Atribuit`, `Pereche`, `Cantitate`, `ValoareValuta`, `Valoare` |
 
 Enumurile nucleului se mapează pe `smallint` cu valorile lor numerice; scara
 măsurilor rămâne a gardianului `Scara` (bani 18,2, cantități 18,3).
@@ -1629,7 +1631,7 @@ operare, în aceeași formă ca orice refuz al declarației (S-r11).
 Deschiderea generică este disponibilă prin `Cub.Materializare.Deschide`
 în tranzacția explicită a apelantului, fără commit propriu. Soldurile de
 control includ ancora aleasă de apelant; loturile și partidele înlocuiesc
-rândul bloc pe Carte/Cont/Latura. Totalurile diferite sunt refuzate înaintea
+rândul bloc pe Carte/Cont/Sens. Totalurile diferite sunt refuzate înaintea
 creării entităților de cub. Partidele cer cont cu UrmarestePartide, partener și
 referință stabilă; nu există document fictiv. Indexul unic filtrat permite
 o singură Deschidere în bază. Stingerea unei partide inițiale verifică
@@ -1751,8 +1753,22 @@ analiza istorică. Imputatul fără cauză Imputabila sau fără deltă se gole�
 ### Partide: raport, snapshot și împerechere (101, 2026-09-25)
 
 `Cub.Citiri.Partide` este intrarea comună pentru rest, disponibil și raport.
-Cheia este unitate × cont × partener; originea este identitatea 092(a).
-Deschiderile au document nul.
+Cheia este unitate × cont × partener, cu identitatea 092(a). Originea se
+citește din `OriginiPartide`, scrisă atomic din postările finale eligibile
+de materializare (TR-D9b, pasul 4, 2026-10-12). Rândul poartă contul,
+titularul și documentul; la deschidere, documentul este nul și sunt păstrate
+referința și ordinalul inițial. Nu poartă sold sau dată. Retragerea elimină
+originea fără suport propriu, inclusiv când rămân postări străine net zero;
+stornoul o păstrează. Reoperarea reface aceeași identitate.
+
+Pe ușa securizată, originea cere suport propriu vizibil prin `EXISTS` pe
+chei; soldul rămâne cel al postărilor vizibile. Pe ușa de sistem originea
+se citește direct, fără `Postare`. Ușa se recunoaște după starea securității
+pe context (`Vizibilitate.Securizat`), nu după tipul ObjectSpace-ului:
+ObjectSpace-ul nesecurizat al hosturilor are tipul celui securizat. Proiecția nu are endpoint
+OData ori navigație; gardianul refuză CRUD inclusiv administratorului
+securizat. `ORIGINE_PARTIDA_INCONSISTENTA` este refuz de materializare,
+nu de declarant. [Catalogul D9B](../nucleu/scenarii/D9B.md) fixează probele.
 Raportul general expune restul absolut și sensul; nu deduce un „total al
 partidei” din rulajele documentului. Candidații păstrează etichetele tipurilor
 eligibile, dar sumele și limita perechii se citesc din cub.
@@ -1825,5 +1841,5 @@ D394 (S13) sunt în [politici-si-fiscalitate](politici-si-fiscalitate.md),
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (51; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 10, 13, 14, 15, 16 (amendată de 89), 17, 20, 22, 23, 25, 26 (amendată de 112), 27, 30, 31 (amendată de 76, 88), 32, 33, 36 (amendată de 71), 37, 41, 42 (amendată de 104, 106), 46 (amendată de 113), 48 (amendată de 76), 49, 54, 55, 62, 64 (amendată de 84), 65, 75, 76, 82, 86, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110), 93, 95, 97 (amendată de 98), 98, 100 (amendată de 102), 101 (amendată de 102), 102, 104 (amendată de 106), 106, 109, 111, 112, 114 (amendată de 116), 115, 116 (amendată de 117), 117.
+Deciziile care numesc pagina în `Arii:` (52; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 10, 13, 14, 15, 16 (amendată de 89), 17, 20, 22, 23, 25, 26 (amendată de 112), 27, 30, 31 (amendată de 76, 88), 32, 33, 36 (amendată de 71), 37, 41, 42 (amendată de 104, 106), 46 (amendată de 113), 48 (amendată de 76), 49, 54, 55, 62, 64 (amendată de 84), 65, 75, 76, 82, 86, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 93, 95, 97 (amendată de 98), 98, 100 (amendată de 102), 101 (amendată de 102), 102, 104 (amendată de 106), 106, 109, 111, 112, 114 (amendată de 116), 115, 116 (amendată de 117), 117, 119.
 <!-- /gen:decizii -->

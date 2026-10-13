@@ -115,14 +115,14 @@ static class VerificaF24Gardian {
         s.Check($"F24-G1 ({eticheta}) enum-ul fără membru 0 nu se mai scrie TĂCUT: gardianul refuză generic, prin "
             + "reflecție pe orice `ICuProvenienta`, orice proprietate de enum a cărei valoare nu e definită — "
             + "`RegulaStoc.Latura` = 0 ar fi fost o a treia latură în potrivirea de stoc, `PoliticaTva.Directie` "
-            + "= 0 ar fi colectat TVA pe o achiziție, `MapareD300.Sens` = 0 n-ar fi potrivit niciodată. Regula e "
+            + "= 0 ar fi colectat TVA pe o achiziție, `MapareD300.SensTva` = 0 n-ar fi potrivit niciodată. Regula e "
             + "a FORMEI, nu a unui tip; `[Flags]` rămâne în afara, iar rândul complet trece",
             stocFaraLatura != null && stocFaraLatura.Contains("valoare validă")
             && stocFaraLatura.Contains(nameof(RegulaStoc.Latura))
             && tvaFaraDirectie != null && tvaFaraDirectie.Contains("valoare validă")
             && tvaFaraDirectie.Contains(nameof(PoliticaTva.Directie))
             && d300FaraSens != null && d300FaraSens.Contains("valoare validă")
-            && d300FaraSens.Contains(nameof(MapareD300.Sens))
+            && d300FaraSens.Contains(nameof(MapareD300.SensTva))
             && randValid == null);
 
         // ---- F24-G2: ștergerea unui `TipTva` REFERIT ----

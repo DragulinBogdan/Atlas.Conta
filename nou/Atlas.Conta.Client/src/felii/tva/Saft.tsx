@@ -878,7 +878,7 @@ function ExempleNeincluse({ lista, stoc }: { lista: Neinclus[]; stoc: boolean })
               </>
             ) : (
               <>
-                <td>{labelEnum('SensTva', n.Sens)}</td>
+                <td>{labelEnum('SensTva', n.SensTva)}</td>
                 <td>{[n.DocumentTip, n.DocumentNumar].filter(Boolean).join(' ')}</td>
                 <td>{n.ContSimbol}</td>
                 <td>{n.RepartitorDenumire}</td>

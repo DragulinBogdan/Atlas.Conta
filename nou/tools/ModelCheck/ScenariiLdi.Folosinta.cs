@@ -18,9 +18,9 @@ sealed partial class ScenariiLdi {
             os.GetObjectsQuery<C.Postare>().Count(p => p.Unitate == lot.Lot && p.Repartitor == Magazie) == 1));
         var btr = Iesire(true, (lot, 2)); Opereaza(btr.Id);
         RandScena[] transfer = [
-            new(Cont(TipFolosinta), N.Latura.Debit, -50, -2, Magazie, lot.Lot, lot.Produs,
+            new(Cont(TipFolosinta), N.Sens.Debit, -50, -2, Magazie, lot.Lot, lot.Produs,
                 Linie: btr.Linii[0].Id, Spatiu: N.Spatiu.Stoc),
-            new(Cont(TipFolosinta), N.Latura.Debit, 50, 2, Destinatie, lot.Lot, lot.Produs,
+            new(Cont(TipFolosinta), N.Sens.Debit, 50, 2, Destinatie, lot.Lot, lot.Produs,
                 Linie: btr.Linii[0].Id, Spatiu: N.Spatiu.Stoc)];
         Postari("SC-LDI-18", btr.Id, N.FelTranzactie.Transfer, Ianuarie, transfer);
         Sold("SC-LDI-18", lot, 2, 50); Sold("SC-LDI-18", lot, 2, 50, gest: Destinatie);
@@ -36,9 +36,9 @@ sealed partial class ScenariiLdi {
         });
         Opereaza(bcs);
         RandScena[] consum = [
-            new(Cont(TipFolosinta), N.Latura.Credit, 25, -1, Destinatie, lot.Lot, lot.Produs,
+            new(Cont(TipFolosinta), N.Sens.Credit, 25, -1, Destinatie, lot.Lot, lot.Produs,
                 Linie: linieBcs, Spatiu: N.Spatiu.Stoc),
-            new(Cont(CostFolosinta), N.Latura.Debit, 25, 1, Loc, lot.Lot, lot.Produs,
+            new(Cont(CostFolosinta), N.Sens.Debit, 25, 1, Loc, lot.Lot, lot.Produs,
                 Linie: linieBcs, Spatiu: N.Spatiu.Stoc)];
         Postari("SC-LDI-18", bcs, N.FelTranzactie.Operare, new(An, 1, 10), consum);
         Sold("SC-LDI-18", lot, 2, 50); Sold("SC-LDI-18", lot, 0, 0, gest: Destinatie);

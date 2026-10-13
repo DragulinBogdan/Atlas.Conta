@@ -139,7 +139,7 @@ public static class ImperechereService {
         var efect = Cub.Citiri.Partide.Noi(os, document.ID)
             .Where(p => p.Unitate != null && tinte.Contains(p.Unitate.Value))
             .GroupBy(p => new { p.Unitate, p.Cont, Titular = Cub.Citiri.Partide.Titular(p) })
-            .Sum(g => Math.Abs(g.Sum(p => p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : -p.Valoare)));
+            .Sum(g => Math.Abs(g.Sum(p => p.Sens == Atlas.Conta.Nucleu.Sens.Debit ? p.Valoare : -p.Valoare)));
         if (efect <= 0m || efect > suma)
             throw new OperareException($"IMPERECHERE_FARA_EFECT: nominalizarea automată cere {suma}, cubul dovedește {efect}.");
         Creeaza(os, document, sursa, efect, autogenerat: true, data: document.DataInregistrare);
@@ -209,15 +209,15 @@ public static class ImperechereService {
         }
 
         var sensCerut = document.SensDeStins(os);
-        var perechi = new List<(Guid Contrapartida, SensStingere Sens)>();
+        var perechi = new List<(Guid Contrapartida, SensStingere SensStingere)>();
         foreach (var cp in peLaturi) {
             var plafon = capacitati[cp];
             if (sensCerut is SensStingere cerut) {
                 if (plafon[cerut] != 0m)
                     perechi.Add((cp, cerut));
             } else {
-                foreach (var sens in plafon.Sensuri)
-                    perechi.Add((cp, sens));
+                foreach (var sensStingere in plafon.Sensuri)
+                    perechi.Add((cp, sensStingere));
             }
         }
         if (perechi.Count == 0)
@@ -254,10 +254,10 @@ public static class ImperechereService {
     }
 
     public static decimal AsignatFataDe(IObjectSpace os, Guid stingatorId, Guid contrapartidaId,
-        SensStingere sens) => Cub.Citiri.Partide.Capacitate(os, stingatorId, contrapartidaId, sens)
-            - Cub.Citiri.Partide.Disponibil(os, stingatorId, contrapartidaId, sens);
+        SensStingere sensStingere) => Cub.Citiri.Partide.Capacitate(os, stingatorId, contrapartidaId, sensStingere)
+            - Cub.Citiri.Partide.Disponibil(os, stingatorId, contrapartidaId, sensStingere);
 
-    static string Eticheta(SensStingere? sens) => sens switch {
+    static string Eticheta(SensStingere? sensStingere) => sensStingere switch {
         SensStingere.Datorie => "datorie",
         SensStingere.Creanta => "creanță",
         _ => "nedeclarat"

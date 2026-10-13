@@ -217,7 +217,9 @@ citire, pentru `Proprii`, `Perechi` și `MiscariPePartidele` și pentru
 verificarea și scrierea snapshot-ului de partide nu conține nicio îmbinare cu
 `a = b OR (a IS NULL AND b IS NULL)`. Verificat pe ambele profiluri.
 Forma e căutată din 2026-10-08 în tot SQL-ul rulării (`RAMURA-NUL`);
-SC-CIT-110 rămâne dovada că acești cititori sunt executați.
+SC-CIT-110 rămâne dovada că acești cititori sunt executați. Din TR-D9b
+pasul 4 cere tabela `OriginiPartide` și absența `cub_partida_id` în aceste
+citiri; verificarea interdicției ramurii de nul este păstrată.
 Traducerea SQL a identității este identică funcției nucleului pentru UUID-uri
 distincte; deschiderea inițială nu se confundă cu identitatea unui document.
 Cheia veche document + cont a ieșit (102c).

@@ -42,13 +42,13 @@ public sealed class DeclarantReturFurnizor : IDeclarant {
         var doc = operand.Document;
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
-        var partide = new Dictionary<Guid, N.Unitate>();
+        var partide = new Dictionary<Guid, N.UnitateSold>();
         for (var i = 0; i < operand.Linii.Count; i++) {
             var l = operand.Linii[i]; var lot = l.Lot!; var contare = contari[i]!.Value;
             Contari.Decide(contare, l.Id, decizii);
             var intern = new N.Capat {
                 Cont = contare.ContDebit, Repartitor = doc.Predator.Coordonata, Produs = lot.ProdusId,
-                Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, contare.ContDebit, null, lot.ProdusId, lot.Data),
+                Unitate = new N.UnitateSold(lot.Id, N.FelUnitate.Lot, contare.ContDebit, null, lot.ProdusId, lot.Data),
                 Analiza = Contari.Analiza(l.Analiza, contare.Regula.OverrideDebit, contare.Regula.Comun),
             };
             var tert = new N.Capat {

@@ -63,7 +63,7 @@ def main():
             assert status == 422 and erori and ramas == 1, (entity, status, body[:800])
 
         ned = lookup('TipTva', 'Cod', 'NED21')
-        cursor = conn.execute('SELECT * FROM "MapariD394" WHERE "TipTvaId"=%s AND "Sens"=1', (ned,))
+        cursor = conn.execute('SELECT * FROM "MapariD394" WHERE "TipTvaId"=%s AND "SensTva"=1', (ned,))
         coloane = [c.name for c in cursor.description]
         rand = cursor.fetchone()
         assert rand is not None, 'Maparea de seed NED21/Achiziție lipsește.'

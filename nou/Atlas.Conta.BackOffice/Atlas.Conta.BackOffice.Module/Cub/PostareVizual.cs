@@ -28,8 +28,8 @@ public class PostareVizual {
     public virtual Guid Cont { get; set; }
     [XafDisplayName("Cont")]
     public virtual string ContSimbol { get; set; }
-    [XafDisplayName("Latură")]
-    public virtual N.Latura Latura { get; set; }
+    [XafDisplayName("Sens")]
+    public virtual N.Sens Sens { get; set; }
     public virtual Guid? Repartitor { get; set; }
     [XafDisplayName("Repartitor")]
     public virtual string RepartitorCod { get; set; }

@@ -13,7 +13,7 @@ public static class Invarianti {
         VerificaTaxaLiniilor(os);
         var postari = os.GetObjectsQuery<Postare>();
         var dezechilibrate = postari.GroupBy(p => new { p.TranzactieId, p.Carte })
-            .Where(g => g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) != 0m).LongCount();
+            .Where(g => g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) != 0m).LongCount();
         if (dezechilibrate != 0)
             throw new OperareException($"CITIRE_CUB_DEZECHILIBRAT: {dezechilibrate} tranzacții/cărți cu debit diferit de credit.");
 
@@ -25,6 +25,7 @@ public static class Invarianti {
         VerificaPerechi(os);
         VerificaOrdinale(os);
         VerificaCoordonate(os);
+        OriginiPartide.Verifica(os);
     }
 
     public const string CoordonateInvalide = "CITIRE_COORDONATE_INVALIDE";
@@ -81,7 +82,7 @@ public static class Invarianti {
                 Cate = g.Count(),
                 Documente = g.Select(p => p.DocumentId ?? Guid.Empty).Distinct().Count(),
                 Linii = g.Select(p => p.LinieId ?? Guid.Empty).Distinct().Count(),
-                Laturi = g.Select(p => p.Latura).Distinct().Count(),
+                Laturi = g.Select(p => p.Sens).Distinct().Count(),
                 Date = g.Select(p => p.Data).Distinct().Count(),
                 Cantitate = g.Sum(p => p.Cantitate),
                 Valoare = g.Sum(p => p.Valoare), ValoareMin = g.Min(p => p.Valoare), ValoareMax = g.Max(p => p.Valoare),
@@ -100,7 +101,7 @@ public static class Invarianti {
                 + string.Join(", ", invalide.Select(x => $"{x.TranzactieId}/{x.Pereche}")));
         var lipsa = postari.Where(p => p.Pereche == null && p.Tranzactie.Fel != N.FelTranzactie.Deschidere)
             .Select(p => new {
-                p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Produs, p.Latura,
+                p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Produs, p.Sens,
                 p.CodFunctional, p.CodEconomic, p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost,
                 Cantitate = p.Contrapondere == N.Contrapondere.Transformare ? -p.Cantitate : p.Cantitate,
                 Contrapondere = p.Contrapondere == N.Contrapondere.Transformare,
@@ -112,7 +113,7 @@ public static class Invarianti {
                         : p.Contrapondere == null && p.Unitate != null && p.FelUnitate == N.FelUnitate.Lot
                             && p.Repartitor != null),
             })
-            .GroupBy(p => new { p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Produs, p.Latura,
+            .GroupBy(p => new { p.TranzactieId, p.DocumentId, p.LinieId, p.Cont, p.Produs, p.Sens,
                 p.CodFunctional, p.CodEconomic, p.SursaFinantare, p.UnitateOrganizatorica, p.Proiect, p.CentruCost,
                 p.Cantitate })
             .Where(g => g.Any(p => !p.Forma) || g.Count(p => p.Contrapondere) * 2 != g.Count())
@@ -127,7 +128,7 @@ public static class Invarianti {
     /// <summary>Un transfer persistat conservă valoarea pe (cont, latură) și cantitatea pe (cont, produs), ca la contractare (090f).</summary>
     public static void VerificaTransferuri(IObjectSpace os) {
         var transferuri = os.GetObjectsQuery<Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Transfer);
-        var valoric = transferuri.GroupBy(p => new { p.TranzactieId, p.Cont, p.Latura })
+        var valoric = transferuri.GroupBy(p => new { p.TranzactieId, p.Cont, p.Sens })
             .Where(g => g.Sum(p => p.Valoare) != 0m).Select(g => g.Key.TranzactieId).Take(10).ToList();
         var cantitativ = transferuri.Where(p => p.Cantitate != 0m).GroupBy(p => new { p.TranzactieId, p.Cont, p.Produs })
             .Where(g => g.Sum(p => p.Cantitate) != 0m).Select(g => g.Key.TranzactieId).Take(10).ToList();

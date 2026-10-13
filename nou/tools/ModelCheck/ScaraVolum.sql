@@ -78,7 +78,7 @@ partide as materialized (
            cub_partida_id(scara.h(o.document, k.c), o.cont,
                case when pa."ID" is not null then scara.h(o.partener, k.c) else o.partener end) as unitate_noua
     from scara.partida o left join scara.partener pa on pa."ID" = o.partener cross join copii k)
-insert into "Postare" ("ID", "Spatiu", "TranzactieId", "Ordinal", "DocumentId", "LinieId", "Data", "Cont", "Latura", "Repartitor",
+insert into "Postare" ("ID", "Spatiu", "TranzactieId", "Ordinal", "DocumentId", "LinieId", "Data", "Cont", "Sens", "Repartitor",
         "Contrapondere", "PartenerFiscal", "Loc", "Produs",
         "Unitate", "UnitateDeschisa", "FelUnitate", "SuportId", "SuportSpatiu", "InversaDinId", "InversaDinSpatiu", "TipTvaId", "SensTva",
         "RolTva", "PerioadaDeclarare", "Valuta", "Carte", "CodFunctional", "CodEconomic", "SursaFinantare", "UnitateOrganizatorica", "Proiect",
@@ -86,7 +86,7 @@ insert into "Postare" ("ID", "Spatiu", "TranzactieId", "Ordinal", "DocumentId", 
         "DataPrimire", "DeImport", "DocumentFiscalId", "InversaTehnica", "PerioadaD394", "RegimTva", "RegularizareD300", "Pereche")
 select scara.h(p."ID", k.c), p."Spatiu",
        case when t."Fel" = 4 then p."TranzactieId" else scara.h(p."TranzactieId", k.c) end,
-       p."Ordinal" + coalesce(d.n, 0) * k.c, scara.h(p."DocumentId", k.c), p."LinieId", p."Data", p."Cont", p."Latura",
+       p."Ordinal" + coalesce(d.n, 0) * k.c, scara.h(p."DocumentId", k.c), p."LinieId", p."Data", p."Cont", p."Sens",
        case when pa."ID" is not null then scara.h(p."Repartitor", k.c) else p."Repartitor" end,
        p."Contrapondere",
        case when pf."ID" is not null then scara.h(p."PartenerFiscal", k.c) else p."PartenerFiscal" end,
@@ -117,9 +117,9 @@ select 'tranzacții pe Fel', s."Fel"::text, s.n, coalesce(b.n, 0), case when s."
 from (select "Fel", count(*) n from scara.tranzactie group by 1) s
 left join (select "Fel", count(*) n from "Tranzactie" group by 1) b using ("Fel")
 union all
-select 'Σ Valoare pe latură', s."Latura"::text, s.v, coalesce(b.v, 0), 'f'
-from (select "Latura", sum("Valoare") v from scara.postare group by 1) s
-left join (select "Latura", sum("Valoare") v from "Postare" group by 1) b using ("Latura")
+select 'Σ Valoare pe sens', s."Sens"::text, s.v, coalesce(b.v, 0), 'f'
+from (select "Sens", sum("Valoare") v from scara.postare group by 1) s
+left join (select "Sens", sum("Valoare") v from "Postare" group by 1) b using ("Sens")
 union all
 select 'Σ Cantitate pe spațiu', s."Spatiu"::text, s.q, coalesce(b.q, 0), 'f'
 from (select "Spatiu", sum("Cantitate") q from scara.postare group by 1) s

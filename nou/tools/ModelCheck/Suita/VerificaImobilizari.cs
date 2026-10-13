@@ -658,7 +658,7 @@ static class VerificaImobilizari {
                 noteCasCub.Any(p => p.Debit && p.Cont == politica.ContAmortizareId && p.Valoare == 900m)
                 && noteCasCub.Any(p => p.Debit && p.Cont == politica.ContCheltuialaCedareId && p.Valoare == 1500m)
                 && noteCasCub.Where(p => p.Credit).All(p => p.Cont == tipF.ContImplicitId)
-                && noteCasCub.Rulaj(tipF.ContImplicitId, N.Latura.Credit) == 2400m
+                && noteCasCub.Rulaj(tipF.ContImplicitId, N.Sens.Credit) == 2400m
                 && CubScena.Fisa(os, [idFisa4], cas.ID) is [var randIesireCub]
                 && randIesireCub.Rand.Fel == FelMiscareImobilizare.Iesire && randIesireCub.Rand.Valoare == -2400m
                 && randIesireCub.Rand.ValoareFiscala == -2400m && randIesireCub.Rand.Amortizare == -900m

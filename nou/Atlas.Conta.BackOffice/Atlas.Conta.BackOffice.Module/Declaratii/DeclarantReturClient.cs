@@ -47,7 +47,7 @@ public sealed class DeclarantReturClient : IDeclarant {
         var doc = operand.Document;
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
-        var partide = new Dictionary<Guid, N.Unitate>();
+        var partide = new Dictionary<Guid, N.UnitateSold>();
         for (var i = 0; i < operand.Linii.Count; i++) {
             var l = operand.Linii[i]; var contare = contari[i]!.Value;
             Contari.Decide(contare, l.Id, decizii);
@@ -61,7 +61,7 @@ public sealed class DeclarantReturClient : IDeclarant {
                 Analiza = Contari.Analiza(l.Analiza, contare.Regula.OverrideDebit, contare.Regula.Comun),
             };
             if (l.Lot is { } lot) {
-                credit = credit with { Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot,
+                credit = credit with { Unitate = new N.UnitateSold(lot.Id, N.FelUnitate.Lot,
                     contare.ContCredit, null, lot.ProdusId, lot.Data) };
                 debit = debit with { Contrapondere = N.Contrapondere.Tert, Repartitor = doc.Predator.Coordonata };
                 miscari.Add(new(credit, debit, l.Cantitate, 0m, l.Valoare, new(doc.Id, l.Id)));

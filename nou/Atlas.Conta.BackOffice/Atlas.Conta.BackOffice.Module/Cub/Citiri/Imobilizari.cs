@@ -33,7 +33,7 @@ public static partial class Imobilizari {
             .Where(p => p.FelUnitate == N.FelUnitate.Fisa && p.Unitate != null && fise.Contains(p.Unitate.Value)
                 && p.Data <= panaLa && p.DocumentId != null && p.LinieId != null)
             .GroupBy(p => new { Fisa = p.Unitate.Value, Document = p.DocumentId.Value, Linie = p.LinieId.Value,
-                p.Data, Storno = p.Tranzactie.Fel == N.FelTranzactie.Storno, p.Carte, p.Latura })
+                p.Data, Storno = p.Tranzactie.Fel == N.FelTranzactie.Storno, p.Carte, p.Sens })
             .Select(g => new { g.Key, Id = g.Min(p => p.ID.ToString()), Valoare = g.Sum(p => p.Valoare) }).ToList();
         if (sume.Count == 0) return [];
         var ids = sume.Select(r => r.Key.Linie).Distinct().ToList();
@@ -64,14 +64,14 @@ public static partial class Imobilizari {
             if (!atribute.TryGetValue(linie, out var a))
                 throw new OperareException($"Fișa {g.Key.Fisa} are postări fără eveniment identificabil ({linie}).");
             var semn = g.Key.Storno ? -1 : 1;
-            decimal Suma(N.Carte carte, N.Latura latura) =>
-                g.Where(p => p.Key.Carte == carte && p.Key.Latura == latura).Sum(p => p.Valoare);
+            decimal Suma(N.Carte carte, N.Sens sens) =>
+                g.Where(p => p.Key.Carte == carte && p.Key.Sens == sens).Sum(p => p.Valoare);
             var iesire = a.Fel == FelMiscareImobilizare.Iesire;
             var amortizare = a.Fel == FelMiscareImobilizare.Amortizare;
-            var brut = amortizare ? 0m : (iesire ? -Suma(N.Carte.Contabil, N.Latura.Credit) : Suma(N.Carte.Contabil, N.Latura.Debit));
-            var brutFiscal = amortizare ? 0m : (iesire ? -Suma(N.Carte.Fiscal, N.Latura.Credit) : Suma(N.Carte.Fiscal, N.Latura.Debit));
-            var cumulat = iesire ? -Suma(N.Carte.Contabil, N.Latura.Debit) : Suma(N.Carte.Contabil, N.Latura.Credit);
-            var cumulatFiscal = iesire ? -Suma(N.Carte.Fiscal, N.Latura.Debit) : Suma(N.Carte.Fiscal, N.Latura.Credit);
+            var brut = amortizare ? 0m : (iesire ? -Suma(N.Carte.Contabil, N.Sens.Credit) : Suma(N.Carte.Contabil, N.Sens.Debit));
+            var brutFiscal = amortizare ? 0m : (iesire ? -Suma(N.Carte.Fiscal, N.Sens.Credit) : Suma(N.Carte.Fiscal, N.Sens.Debit));
+            var cumulat = iesire ? -Suma(N.Carte.Contabil, N.Sens.Debit) : Suma(N.Carte.Contabil, N.Sens.Credit);
+            var cumulatFiscal = iesire ? -Suma(N.Carte.Fiscal, N.Sens.Debit) : Suma(N.Carte.Fiscal, N.Sens.Credit);
             var deductibil = semn * a.Deductibil;
             if (iesire) {
                 var cheie = (g.Key.Fisa, g.Key.Document);

@@ -504,7 +504,7 @@ public static partial class SaftProiectii {
             var gl = Contabil.Postari(os).Where(p => p.Data >= start && p.Data <= end && ids.Contains(p.Cont))
                 .GroupBy(p => new { p.Cont, p.DocumentId })
                 .Select(g => new { g.Key.Cont, g.Key.DocumentId,
-                    Valoare = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToList();
+                    Valoare = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) }).ToList();
             var coduri = ApiProiectii.CoduriTip(os, stoc.Select(x => x.DocumentId).Concat(gl.Select(x => x.DocumentId))
                 .OfType<Guid>().Distinct().ToList());
             string Tip(Guid? d) => d is Guid id ? coduri.GetValueOrDefault(id) ?? "(tip necunoscut)" : ComponentaDeschidere;

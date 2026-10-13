@@ -7,20 +7,20 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-record PostareScena(Guid TranzactieId, Guid? DocumentId, Guid? LinieId, N.FelTranzactie Fel, DateOnly Data, Guid Cont, N.Latura Latura,
+record PostareScena(Guid TranzactieId, Guid? DocumentId, Guid? LinieId, N.FelTranzactie Fel, DateOnly Data, Guid Cont, N.Sens Sens,
     decimal Valoare, decimal Cantitate, Guid? Repartitor, N.Contrapondere? Contrapondere, Guid? Unitate, Guid? Produs,
     Guid? CodEconomic, Guid? CodFunctional, Guid? SursaFinantare, Guid? Proiect, Guid? CentruCost, Guid? TipTvaId,
     Guid? PartenerFiscal, Guid? Loc) {
     public bool Storno => Fel == N.FelTranzactie.Storno;
-    public bool Debit => Latura == N.Latura.Debit;
-    public bool Credit => Latura == N.Latura.Credit;
-    public decimal Semnata => Latura == N.Latura.Debit ? Valoare : -Valoare;
+    public bool Debit => Sens == N.Sens.Debit;
+    public bool Credit => Sens == N.Sens.Credit;
+    public decimal Semnata => Sens == N.Sens.Debit ? Valoare : -Valoare;
 }
 
 /// <summary>Intrările comune ale cubului, restrânse la documentele unei scene.</summary>
 static class CubScena {
     static List<PostareScena> Citeste(IQueryable<C.Postare> postari) => postari
-        .Select(p => new PostareScena(p.TranzactieId, p.DocumentId, p.LinieId, p.Tranzactie.Fel, p.Data, p.Cont, p.Latura,
+        .Select(p => new PostareScena(p.TranzactieId, p.DocumentId, p.LinieId, p.Tranzactie.Fel, p.Data, p.Cont, p.Sens,
             p.Valoare, p.Cantitate, p.Repartitor, p.Contrapondere, p.Unitate, p.Produs,
             p.CodEconomic, p.CodFunctional, p.SursaFinantare, p.Proiect, p.CentruCost, p.TipTvaId,
             p.PartenerFiscal, p.Loc)).ToList();
@@ -68,8 +68,8 @@ static class CubScena {
                 .Any(d => g.Count(p => p.Debit && p.Valoare == d.Valoare) == 1
                     && g.Where(p => p.Credit && p.Valoare == d.Valoare).ToList() is [var c] && c.Cont == credit));
 
-    public static decimal Rulaj(this IEnumerable<PostareScena> postari, Guid? cont, N.Latura latura) =>
-        postari.Where(p => p.Cont == cont && p.Latura == latura).Sum(p => p.Valoare);
+    public static decimal Rulaj(this IEnumerable<PostareScena> postari, Guid? cont, N.Sens sens) =>
+        postari.Where(p => p.Cont == cont && p.Sens == sens).Sum(p => p.Valoare);
 
     public static SoldLot Sold(IObjectSpace os, Guid lot, Guid gestiune, Guid? cont = null, DateOnly? laData = null) {
         var solduri = Loturi.Solduri(os, laData).Where(s => s.LotId == lot && s.GestiuneId == gestiune
@@ -81,17 +81,17 @@ static class CubScena {
     /// <summary>Toate cheile (lot, gestiune, cont) ale loturilor date, inclusiv cele golite.</summary>
     public static List<SoldLot> Chei(IObjectSpace os, IReadOnlyCollection<Guid> loturi) =>
         Loturi.Postari(os).Where(p => loturi.Contains(p.Unitate.Value))
-            .Select(p => new { Lot = p.Unitate.Value, Gestiune = p.Repartitor.Value, p.Cont, p.Latura, p.Valoare, p.Cantitate }).ToList()
+            .Select(p => new { Lot = p.Unitate.Value, Gestiune = p.Repartitor.Value, p.Cont, p.Sens, p.Valoare, p.Cantitate }).ToList()
             .GroupBy(p => new { p.Lot, p.Gestiune, p.Cont })
             .Select(g => new SoldLot { LotId = g.Key.Lot, GestiuneId = g.Key.Gestiune, ContId = g.Key.Cont,
                 Cantitate = g.Sum(p => p.Cantitate),
-                Valoare = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToList();
+                Valoare = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) }).ToList();
 
     /// <summary>Refuzul gardului de sold al cubului pentru o mișcare propusă pe lot, sau null dacă trece.</summary>
     public static string RefuzSold(IObjectSpace os, Guid lot, Guid gestiune, Guid produs, Guid cont, DateOnly data, decimal cantitate) {
         try {
             Loturi.VerificaSoldIntermediar(os, C.Randuri.Citeste(os, [new C.Postare {
-                DocumentId = Guid.NewGuid(), Cont = cont, Latura = cantitate < 0m ? N.Latura.Credit : N.Latura.Debit, Data = data,
+                DocumentId = Guid.NewGuid(), Cont = cont, Sens = cantitate < 0m ? N.Sens.Credit : N.Sens.Debit, Data = data,
                 Repartitor = gestiune, Produs = produs, Unitate = lot, FelUnitate = N.FelUnitate.Lot, UnitateDeschisa = data,
                 Carte = N.Carte.Contabil, Cantitate = cantitate,
             }]));
@@ -115,8 +115,8 @@ static class CubScena {
     public static decimal SoldCont(IObjectSpace os, Guid cont, DateOnly? panaLa = null, IReadOnlyCollection<Guid> documente = null) {
         var postari = Contabil.Postari(os).Where(p => p.Cont == cont && p.Data <= (panaLa ?? DateOnly.MaxValue));
         if (documente != null) postari = postari.Where(p => p.DocumentId != null && documente.Contains(p.DocumentId.Value));
-        return postari.Select(p => new { p.Latura, p.Valoare }).ToList()
-            .Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare);
+        return postari.Select(p => new { p.Sens, p.Valoare }).ToList()
+            .Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare);
     }
 
     /// <summary>Data faptului în jurnalul fiscal: a documentului la operare, a stornării la storno.</summary>

@@ -261,7 +261,7 @@ public static partial class SaftProiectii {
         FaptFiscal FaptulPostarii(PostareJurnal p) {
             if (p.LinieId is not Guid linie || !fapte.TryGetValue((p.TranzactieId, linie), out var candidati))
                 return null;
-            var potrivite = candidati.Where(f => f.TipTvaId == p.TipTvaId && (int)f.Sens == (int?)p.SensTva).ToList();
+            var potrivite = candidati.Where(f => f.TipTvaId == p.TipTvaId && (int)f.SensTva == (int?)p.SensTva).ToList();
             return potrivite.Count == 1 ? potrivite[0] : null;
         }
 
@@ -274,7 +274,7 @@ public static partial class SaftProiectii {
             if (mapare == null) {
                 var tip = tipuriTva.GetValueOrDefault(fapt.TipTvaId);
                 Refuza(RefuzMapare, $"{Eticheta(document)}: mapare {MapariFiscale.Versiune}/{sectiune} absentă pentru "
-                    + $"{tip.Cod}, {fapt.Cota}%, {fapt.Sens}, {rol}.", document, tranzactie);
+                    + $"{tip.Cod}, {fapt.Cota}%, {fapt.SensTva}, {rol}.", document, tranzactie);
                 return Nefiscal();
             }
             if (mapare.TaxType == SaftReguli.TaxTypeTva)
@@ -314,8 +314,8 @@ public static partial class SaftProiectii {
                         JournalID = cod, Type = cod,
                         Description = tipuriDocument.GetValueOrDefault(cod) ?? (cod == JurnalDeschidere ? "Deschidere" : cod),
                     };
-                var debit = tx.Where(p => p.Latura == N.Latura.Debit).Sum(p => p.Valoare);
-                var credit = tx.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare);
+                var debit = tx.Where(p => p.Sens == N.Sens.Debit).Sum(p => p.Valoare);
+                var credit = tx.Where(p => p.Sens == N.Sens.Credit).Sum(p => p.Valoare);
                 if (debit != credit)
                     Refuza(RefuzProvenienta, $"{Eticheta(prima.DocumentId)}: tranzacția {tx.Key} nu e echilibrată "
                         + $"(D {debit}, C {credit}).", prima.DocumentId, tx.Key);
@@ -344,7 +344,7 @@ public static partial class SaftProiectii {
                         AccountID = Simbol(p.Cont),
                         CustomerID = customer, SupplierID = supplier,
                         Description = (p.LinieId is Guid l ? descrieri.GetValueOrDefault(l) : null) ?? descriere,
-                        DebitCreditIndicator = p.Latura == N.Latura.Debit ? "D" : "C",
+                        DebitCreditIndicator = p.Sens == N.Sens.Debit ? "D" : "C",
                         Amount = p.Valoare, CurrencyCode = DefaultCurrencyCode, CurrencyAmount = p.Valoare,
                         Analiza = Analiza(p),
                         TaxInformation = TaxaGl(p, cod),
@@ -422,8 +422,8 @@ public static partial class SaftProiectii {
             var doc = documente[docId];
             var eticheta = Eticheta(docId);
             var rol = vanzare ? RolTertCont.Client : RolTertCont.Furnizor;
-            var laturaTert = vanzare ? N.Latura.Debit : N.Latura.Credit;
-            decimal Comercial(PostareJurnal p) => p.Latura == laturaTert ? p.Valoare : -p.Valoare;
+            var sensTert = vanzare ? N.Sens.Debit : N.Sens.Credit;
+            decimal Comercial(PostareJurnal p) => p.Sens == sensTert ? p.Valoare : -p.Valoare;
             decimal Contrapartida(PostareJurnal p) => -Comercial(p);
             bool EsteTert(PostareJurnal p) => Rol(p.Cont) == rol;
 
@@ -655,7 +655,7 @@ public static partial class SaftProiectii {
             static decimal Net(decimal? debit, decimal? credit) => (debit ?? 0m) - (credit ?? 0m);
             var rulajGl = liniiGl.GroupBy(l => l.AccountID)
                 .ToDictionary(g => g.Key, g => g.Sum(l => l.DebitCreditIndicator == "D" ? l.Amount : -l.Amount));
-            decimal Baza(SensTva sens, bool doarNeincluse) => fapteLuna.Where(f => f.Sens == sens
+            decimal Baza(SensTva sensTva, bool doarNeincluse) => fapteLuna.Where(f => f.SensTva == sensTva
                 && (!doarNeincluse || !evenimenteFactura.Contains(f.TranzactieId.ToString()))).Sum(f => f.Baza);
             dto.Rezumat = new SaftRezumat {
                 Tranzactii = dto.Jurnale.Sum(j => j.Tranzactii.Count),

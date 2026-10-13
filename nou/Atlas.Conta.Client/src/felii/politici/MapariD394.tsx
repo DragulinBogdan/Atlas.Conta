@@ -23,7 +23,7 @@ export function MapariD394() {
       titlu="Mapări D394"
       entitate={TIP}
       expand={['TipTva']}
-      laRandNou={(rand) => { rand.Sens = 'Achizitie'; rand.Tip = 'A'; }}
+      laRandNou={(rand) => { rand.SensTva = 'Achizitie'; rand.Tip = 'A'; }}
       indiciu={(
         <>
           O singură mapare per pereche (tip de TVA × sens). Ținta trebuie să se potrivească cu sensul —
@@ -42,7 +42,7 @@ export function MapariD394() {
       >
         <Lookup dataSource={tipuriTva} valueExpr="ID" displayExpr={etichetaTipTva} />
       </Column>
-      <Column dataField="Sens" caption={cap('Sens')} width={140}>
+      <Column dataField="SensTva" caption={cap('SensTva')} width={140}>
         <Lookup dataSource={sensuri} valueExpr="valoare" displayExpr="label" />
       </Column>
       <Column dataField="Tip" caption={cap('Tip')}>

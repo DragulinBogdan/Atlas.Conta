@@ -8,19 +8,19 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
 public static partial class Materializare {
-    sealed record ContNominalizat(Guid Cont, N.Latura Latura);
+    sealed record ContNominalizat(Guid Cont, N.Sens Sens);
 
     static List<ContNominalizat> ConturiNominalizare(IObjectSpace os, List<Guid> conturi) {
         var active = os.GetObjectsQuery<TipMaterial>().Where(t => t.Clasa.Natura == NaturaClasa.Imobilizare
                 && t.ContImplicitId != null && conturi.Contains(t.ContImplicitId.Value))
-            .Select(t => new { Cont = t.ContImplicitId.Value, Latura = N.Latura.Debit });
+            .Select(t => new { Cont = t.ContImplicitId.Value, Sens = N.Sens.Debit });
         var amortizari = os.GetObjectsQuery<PoliticaAmortizare>().Where(p => p.ContAmortizareId != null
                 && conturi.Contains(p.ContAmortizareId.Value))
-            .Select(p => new { Cont = p.ContAmortizareId.Value, Latura = N.Latura.Credit });
+            .Select(p => new { Cont = p.ContAmortizareId.Value, Sens = N.Sens.Credit });
         var istorice = Citiri.Imobilizari.Nominalizari(os).Where(p => conturi.Contains(p.Cont))
-            .Select(p => new { p.Cont, p.Latura });
+            .Select(p => new { p.Cont, p.Sens });
         return active.Concat(amortizari).Concat(istorice).Distinct().ToList()
-            .Select(c => new ContNominalizat(c.Cont, c.Latura)).ToList();
+            .Select(c => new ContNominalizat(c.Cont, c.Sens)).ToList();
     }
 
     internal static void BlocheazaFise(IObjectSpace os, Document document) {
@@ -54,7 +54,7 @@ public static partial class Materializare {
             foreach (var grup in toate.Where(p => p.Coordonate.Cont == cont.Cont).GroupBy(Capat).Where(g => atinse.Contains(g.Key))) {
                 decimal sold = 0;
                 foreach (var zi in grup.GroupBy(p => p.Coordonate.Data).OrderBy(g => g.Key)) {
-                    sold += zi.Sum(p => p.Coordonate.Latura == cont.Latura ? p.Valoare : -p.Valoare);
+                    sold += zi.Sum(p => p.Coordonate.Sens == cont.Sens ? p.Valoare : -p.Valoare);
                     if (sold >= 0) continue;
                     var simbol = os.GetObjectsQuery<Cont>().Where(c => c.ID == cont.Cont).Select(c => c.Simbol).Single();
                     throw new OperareException($"{CoduriRefuz.PozitieFaraFisaNegativa}: Poziția fără fișă pe contul {simbol} devine {sold} la {zi.Key:dd.MM.yyyy}.");

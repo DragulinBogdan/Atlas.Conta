@@ -11,12 +11,12 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 
 sealed partial class ScenaImo {
     void ReviewDeschidere() {
-        foreach (var (cont, latura, contra) in new[] {
-                (contActiv, N.Latura.Credit, N.Latura.Debit),
-                (contAmortizare, N.Latura.Debit, N.Latura.Credit) }) {
+        foreach (var (cont, sens, contra) in new[] {
+                (contActiv, N.Sens.Credit, N.Sens.Debit),
+                (contAmortizare, N.Sens.Debit, N.Sens.Credit) }) {
             using var os = Deschide(); using var tx = TranzactieComanda.Incepe(os);
             Refuza("SC-IMO-33", () => C.Materializare.Deschide(os, Ianuarie,
-                [new(cont, latura, 1), new(Cont(Capital), contra, 1)], [], []), CoduriRefuz.PozitieFaraFisaNegativa);
+                [new(cont, sens, 1), new(Cont(Capital), contra, 1)], [], []), CoduriRefuz.PozitieFaraFisaNegativa);
             Verifica("SC-IMO-33", "deschiderea refuzată nu creează entități de cub", !os.ModifiedObjects.OfType<C.Postare>().Any()
                 && !os.ModifiedObjects.OfType<C.Tranzactie>().Any());
         }
@@ -53,7 +53,7 @@ sealed partial class ScenaImo {
         FaraEfecte("SC-IMO-31", nota.Id);
         Verifica("SC-IMO-31", "poziția anonimă rămâne 400", CuSpatiu(os => os.GetObjectsQuery<C.Postare>()
             .Where(p => p.Cont == contActiv && p.Carte == N.Carte.Contabil && p.Unitate == null)
-            .Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)) == 400);
+            .Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)) == 400);
     }
 
     void ReviewBlocare() {

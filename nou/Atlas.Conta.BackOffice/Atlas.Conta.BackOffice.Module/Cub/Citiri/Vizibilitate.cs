@@ -1,12 +1,19 @@
 using Atlas.Conta.BackOffice.Module.Api;
+using DevExpress.EntityFrameworkCore.Security.Infrastructure;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
 using DevExpress.ExpressApp.Security;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Atlas.Conta.BackOffice.Module.Cub.Citiri;
 
 public static class Vizibilitate {
     /// <summary>Contextul (securizat sau nu) vede cel puțin o postare, pe orice domeniu.</summary>
     public static bool ArePostari(IObjectSpace os) => os.GetObjectsQuery<Postare>().Any();
+
+    /// <summary>Securitatea filtrează citirile contextului; ușa de sistem a hostului are același tip, cu securitatea oprită.</summary>
+    public static bool Securizat(IObjectSpace os) => os is ISecuredObjectSpace
+        && (os is not EFCoreObjectSpace ef || ef.DbContext.GetService<ISecurityEnabledOption>().EnableSecurity);
 
     /// <summary>Lipsurile de citire completă pe `Postare` care golesc lista de evidență a cubului; lista goală = acces (D9-A12 c).</summary>
     public static List<string> AccesLista(IObjectSpace os, ISelectDataSecurityProvider securitate) =>

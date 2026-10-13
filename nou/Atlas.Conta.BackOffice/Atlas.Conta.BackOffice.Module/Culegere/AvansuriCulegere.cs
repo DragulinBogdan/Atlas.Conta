@@ -11,7 +11,7 @@ public static class AvansuriCulegere {
         var tip = MotorOperare.GasesteTipDocument(os, doc);
         var politica = os.GetObjectsQuery<PoliticaTva>().SingleOrDefault(p => p.TipDocumentId == tip.ID);
         if (politica == null) return [];
-        var sens = politica.Directie == DirectieTva.Deductibil ? SensTva.Achizitie : SensTva.Livrare;
+        var sensTva = politica.Directie == DirectieTva.Deductibil ? SensTva.Achizitie : SensTva.Livrare;
         Guid? partener = politica.SursaContrapartida switch {
             SursaCont.RepartitorPredator => doc.PredatorId,
             SursaCont.RepartitorPrimitor => doc.PrimitorId, _ => null };
@@ -20,7 +20,7 @@ public static class AvansuriCulegere {
                          join i in postari on new { Id = (Guid?)p.ID, Spatiu = (Atlas.Conta.Nucleu.Spatiu?)p.Spatiu }
                              equals new { Id = i.InversaDinId, Spatiu = i.InversaDinSpatiu }
                          select p.LinieId;
-        var surse = Fiscale.Fapte(os).Where(f => !f.Storno && f.Baza > 0m && f.Sens == sens
+        var surse = Fiscale.Fapte(os).Where(f => !f.Storno && f.Baza > 0m && f.SensTva == sensTva
             && f.PartenerId == partener && f.DocumentId != doc.ID && !compensate.Contains((Guid?)f.DetaliuId ?? Guid.Empty))
             .Select(f => f.DetaliuId);
         return os.GetObjectsQuery<DocumentDetaliu>()

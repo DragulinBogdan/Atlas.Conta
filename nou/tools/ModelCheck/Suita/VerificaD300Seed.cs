@@ -236,8 +236,8 @@ static class VerificaD300Seed {
             return;
         }
 
-        string[] Randuri(string codTip, SensTva sens) => mapari
-            .Where(m => m.TipTva.Cod == codTip && m.Sens == sens)
+        string[] Randuri(string codTip, SensTva sensTva) => mapari
+            .Where(m => m.TipTva.Cod == codTip && m.SensTva == sensTva)
             .Select(m => m.Rand.Cod).OrderBy(c => c, StringComparer.Ordinal).ToArray();
 
         s.Check("D3-V1 (privat) tabelul D3-D2 e seed-uit integral: 22 mapări, toate către rânduri de operațiuni",
@@ -281,8 +281,8 @@ static class VerificaD300Seed {
             + "și taxa importului se declară din DVI — și tipurile de import pe livrare). Mulțimea se citește din "
             + "LISTA seed-ului, nu se scrie în probă",
             os.GetObjectsQuery<TipTva>().ToList()
-                .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, Sens: s)))
-                .Count(p => Randuri(p.Cod, p.Sens).Length == 0)
+                .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, SensTva: s)))
+                .Count(p => Randuri(p.Cod, p.SensTva).Length == 0)
                 == ContaSeeder.NemapateD300Privat.Count);
 
         // ══════ F4: gardul de ASCENDENT — dubla numărare pe verticala „din care" ══════
@@ -336,7 +336,7 @@ static class VerificaD300Seed {
                 // Premisa: TI21/achiziție e deja mapat pe rd. 12.1, copilul lui rd. 12.
                 var proba = osScrie.CreateObject<MapareD300>();
                 proba.TipTva = ti21Seed;
-                proba.Sens = SensTva.Achizitie;
+                proba.SensTva = SensTva.Achizitie;
                 proba.Rand = rand12;
                 osScrie.CommitChanges();
                 idProba = proba.ID;
@@ -370,7 +370,7 @@ static class VerificaD300Seed {
                 var sfd = osTinta.FirstOrDefault<TipTva>(t => t.Cod == "SFD");
                 var rand29 = osTinta.FirstOrDefault<RandD300>(r => r.Cod == "29");
                 var tinta = osTinta.FirstOrDefault<MapareD300>(m =>
-                    m.TipTvaId == sfd.ID && m.Sens == SensTva.Achizitie && m.RandId == rand29.ID);
+                    m.TipTvaId == sfd.ID && m.SensTva == SensTva.Achizitie && m.RandId == rand29.ID);
                 idSters = tinta.ID;
                 new GardianEditare().OnObjectSpaceCreated(osTinta);
                 osTinta.Delete(tinta);

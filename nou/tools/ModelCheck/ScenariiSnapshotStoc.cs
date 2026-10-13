@@ -42,7 +42,7 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
             using var tx = TranzactieComanda.Incepe(os);
             var ancora = os.GetObjectsQuery<Cont>().First(c => c.Simbol.StartsWith("891")).ID;
             C.Materializare.Deschide(os, l.Data,
-                [new(Cont(Stoc), N.Latura.Debit, 40, true), new(ancora, N.Latura.Credit, 40)],
+                [new(Cont(Stoc), N.Sens.Debit, 40, true), new(ancora, N.Sens.Credit, 40)],
                 [new(Cont(Stoc), l.ID, Magazie, 4, 40)], []);
             os.CommitChanges();
             tx.Commit();

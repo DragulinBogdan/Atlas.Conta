@@ -125,7 +125,7 @@ static class VerificaD300 {
             if (randProba != null && tipProba != null)
                 pj.Adauga(os.GetObjectsQuery<MapareD300>()
                     .Where(m => m.RandId == randProba.ID && m.TipTvaId == tipProba.ID
-                        && m.Sens == SensTva.Livrare).ToList());
+                        && m.SensTva == SensTva.Livrare).ToList());
             pj.Executa();
         }
         CurataD3();
@@ -331,7 +331,7 @@ static class VerificaD300 {
             Console.WriteLine($"         rd. {r.Cod,-5} {r.Fel,-11} bază {r.Baza,12:N2}  TVA {r.Tva,12:N2}  "
                 + $"n={r.Randuri}  [{r.Surse}]");
         foreach (var n in d3.Nemapate)
-            Console.WriteLine($"         NEMAPAT {n.TipTvaCod ?? "(fără cod)"}/{n.Sens} {n.Regim} {n.Cota}% "
+            Console.WriteLine($"         NEMAPAT {n.TipTvaCod ?? "(fără cod)"}/{n.SensTva} {n.Regim} {n.Cota}% "
                 + $"bază {n.Baza:N2} TVA {n.Tva:N2} n={n.Randuri}");
         foreach (var a in d3.Avertismente)
             Console.WriteLine($"         AVERTISMENT: {a}");
@@ -386,9 +386,9 @@ static class VerificaD300 {
             + "etichetele join-uite la citire și numărul de rânduri de registru din spate",
             d3.Nemapate.Count == 2
             && d3.Nemapate.Single(n => n.TipTvaCod == "N9") is
-                { Sens: "Achizitie", Regim: "Normal", Cota: 9m, Baza: 90m, Tva: 8.1m, Randuri: 1 }
+                { SensTva: "Achizitie", Regim: "Normal", Cota: 9m, Baza: 90m, Tva: 8.1m, Randuri: 1 }
             && d3.Nemapate.Single(n => n.TipTvaCod == "NIM") is
-                { Sens: "Livrare", Regim: "Neimpozabil", Cota: 0m, Baza: 110m, Tva: 0m, Randuri: 1 }
+                { SensTva: "Livrare", Regim: "Neimpozabil", Cota: 0m, Baza: 110m, Tva: 0m, Randuri: 1 }
             && d3.Nemapate.All(n => n.TipTvaDenumire != null));
 
         // ══════════ D3-V3 (D3-D4): nimic nu se pierde ══════════
@@ -404,7 +404,7 @@ static class VerificaD300 {
         // din tabelul de mapare citit din bază — independent de proiecție, altfel
         // proba ar fi doar proiecția comparată cu ea însăși.
         var mapariD3 = os.GetObjectsQuery<MapareD300>().ToList()
-            .Select(m => new { m.TipTvaId, m.Sens, m.Rand.Cod, m.Rand.AreBaza, m.Rand.AreTva }).ToList();
+            .Select(m => new { m.TipTvaId, m.SensTva, m.Rand.Cod, m.Rand.AreBaza, m.Rand.AreTva }).ToList();
         var coduriDirecte = mapariD3.Select(m => m.Cod).Distinct().ToHashSet();
         var sumaRanduriBaza = d3.Randuri.Where(r => coduriDirecte.Contains(r.Cod)).Sum(r => r.Baza ?? 0m);
         var sumaRanduriTva = d3.Randuri.Where(r => coduriDirecte.Contains(r.Cod)).Sum(r => r.Tva ?? 0m);
@@ -412,13 +412,13 @@ static class VerificaD300 {
         var sumaNemapateTva = d3.Nemapate.Sum(n => n.Tva);
         var brutCub = CubScena.FapteIntre(os, pStart, pEnd);
         var grupuriCub = brutCub
-            .GroupBy(f => new { f.Sens, f.TipTvaId, f.Regim, f.Cota })
-            .Select(g => new { g.Key.Sens, g.Key.TipTvaId, Baza = g.Sum(x => x.Baza), Tva = g.Sum(x => x.Tva) })
+            .GroupBy(f => new { f.SensTva, f.TipTvaId, f.Regim, f.Cota })
+            .Select(g => new { g.Key.SensTva, g.Key.TipTvaId, Baza = g.Sum(x => x.Baza), Tva = g.Sum(x => x.Tva) })
             .ToList();
         decimal multiplicitateBazaCub = 0m, multiplicitateTvaCub = 0m, pierdutBazaCub = 0m, pierdutTvaCub = 0m;
         var grupuriNemapateCub = 0;
         foreach (var g in grupuriCub) {
-            var tinte = mapariD3.Where(m => m.TipTvaId == g.TipTvaId && m.Sens == g.Sens).ToList();
+            var tinte = mapariD3.Where(m => m.TipTvaId == g.TipTvaId && m.SensTva == g.SensTva).ToList();
             if (tinte.Count == 0) {
                 grupuriNemapateCub++;
                 continue;
@@ -464,7 +464,7 @@ static class VerificaD300 {
         // încăpea pe o coloană absentă redevine ce trebuie să fie: defect de mapare,
         // raportat — vezi proba de mai jos, pe rd. 14.
         var randTi = d3.Randuri.Single(r => r.Cod == "13");
-        var registruTiCub = brutCub.Where(f => f.Regim == RegimTva.TaxareInversa && f.Sens == SensTva.Livrare).ToList();
+        var registruTiCub = brutCub.Where(f => f.Regim == RegimTva.TaxareInversa && f.SensTva == SensTva.Livrare).ToList();
         s.Check("D3-V2/V3 (F13-D1) taxarea inversă pe LIVRARE: rândul de registru poartă bază 300,00 și TVA 0,00 "
             + "(motorul nu mai inventează taxa furnizorului), rd. 13 primește baza cu `Tva` NULL — coloana nu "
             + "există pe rând — și NU se pierde nicio cifră pe drum, deci niciun avertisment; excepția din "
@@ -482,7 +482,7 @@ static class VerificaD300 {
         var rand14 = os.FirstOrDefault<RandD300>(r => r.Cod == "14");
         var mapareProba = os.CreateObject<MapareD300>();
         mapareProba.TipTva = n21;
-        mapareProba.Sens = SensTva.Livrare;
+        mapareProba.SensTva = SensTva.Livrare;
         mapareProba.Rand = rand14;
         os.CommitChanges();
         var cuProba = D300Proiectii.D300(os, pStart, pEnd, null);
@@ -565,7 +565,7 @@ static class VerificaD300 {
         MapareD300 ProbaNed(string codRand) {
             var m = os.CreateObject<MapareD300>();
             m.TipTva = ned21;
-            m.Sens = SensTva.Achizitie;
+            m.SensTva = SensTva.Achizitie;
             m.Rand = os.FirstOrDefault<RandD300>(r => r.Cod == codRand);
             os.CommitChanges();
             return m;

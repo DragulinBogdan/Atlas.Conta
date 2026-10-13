@@ -109,7 +109,7 @@ def main():
                         rows = call(name, f'/api/proiectii/partide?laData={year}-01-31')['data']
                         assert sum(r['Rest'] for r in rows) == expected, (name, rows)
                         assert all(r['DocumentId'] == document
-                            and r['Sens'] == 'Datorie' and r['DocumentTip'] == 'NTC' for r in rows), (name, rows)
+                            and r['SensStingere'] == 'Datorie' and r['DocumentTip'] == 'NTC' for r in rows), (name, rows)
                         if expected == 125:
                             assert len(rows) == 2 and len({r['UnitateId'] for r in rows}) == 2
                             assert {r['ContrapartidaId'] for r in rows} == set(suppliers)

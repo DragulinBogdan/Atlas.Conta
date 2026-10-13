@@ -653,7 +653,7 @@ public static class ContaSeeder {
         foreach (var m in mapari)
             if (m.Rand.Fel != FelRandD300.Operatiuni)
                 throw new InvalidOperationException(
-                    $"Maparea D300 {m.TipTva.Cod}/{m.Sens} țintește rd. {m.Rand.Cod}, de fel {m.Rand.Fel} — "
+                    $"Maparea D300 {m.TipTva.Cod}/{m.SensTva} țintește rd. {m.Rand.Cod}, de fel {m.Rand.Fel} — "
                     + "doar rândurile de operațiuni se alimentează din mapări (D3-D2).");
         VerificaMapariFaraAscendent(mapari, randuri);
         ProfilPrivat.VerificaMapariD300(os, mapari);
@@ -683,9 +683,9 @@ public static class ContaSeeder {
             return;
         }
         foreach (var m in mapari)
-            if (!MapareD394.TintaPermisa(m.Tip, m.Sens))
+            if (!MapareD394.TintaPermisa(m.Tip, m.SensTva))
                 throw new InvalidOperationException(
-                    $"Maparea D394 {m.TipTva.Cod}/{m.Sens} țintește {m.Tip} — pe livrare se mapează doar L/V/LS, "
+                    $"Maparea D394 {m.TipTva.Cod}/{m.SensTva} țintește {m.Tip} — pe livrare se mapează doar L/V/LS, "
                     + "pe achiziție doar A/C/AS; AÎ se derivă din partener, iar N n-are sursă în registru (D4-D2).");
         ProfilPrivat.VerificaMapariD394(os, mapari);
     }
@@ -727,10 +727,10 @@ public static class ContaSeeder {
 
     // Lista nemapatelor deliberate e parte din contract (D4-D2): proiecția și
     // ModelCheck o citesc prin nucleu (pachetul de profil rămâne internal).
-    public static IReadOnlyCollection<(string TipTva, SensTva Sens, string Motiv)> NemapateD394Privat =>
+    public static IReadOnlyCollection<(string TipTva, SensTva SensTva, string Motiv)> NemapateD394Privat =>
         ProfilPrivat.NemapateD394;
 
-    public static IReadOnlyCollection<(string TipTva, SensTva Sens, string Motiv)> NemapateD300Privat =>
+    public static IReadOnlyCollection<(string TipTva, SensTva SensTva, string Motiv)> NemapateD300Privat =>
         ProfilPrivat.NemapateD300;
 
     // DUBLA NUMĂRARE pe verticala „din care" (fix F4 al review-ului advers) —
@@ -763,7 +763,7 @@ public static class ContaSeeder {
                 curent = parinti.GetValueOrDefault(pid);
             return sus;
         }
-        foreach (var pereche in mapari.GroupBy(m => new { m.TipTvaId, m.Sens })) {
+        foreach (var pereche in mapari.GroupBy(m => new { m.TipTvaId, m.SensTva })) {
             var tinte = pereche.Select(m => m.RandId).Distinct().ToList();
             if (tinte.Count < 2)
                 continue;
@@ -777,7 +777,7 @@ public static class ContaSeeder {
                 var copil = pereche.First(m => m.RandId == tinta);
                 var parinte = pereche.First(m => m.RandId == conflict);
                 throw new InvalidOperationException(
-                    $"Maparea D300 {copil.TipTva.Cod}/{copil.Sens} țintește și rd. {copil.Rand.Cod}, și "
+                    $"Maparea D300 {copil.TipTva.Cod}/{copil.SensTva} țintește și rd. {copil.Rand.Cod}, și "
                     + $"rd. {parinte.Rand.Cod}, care îi e ascendent („din care”) — cifra ar intra de două ori "
                     + "în rândul-părinte și în totalul lui. Păstrați o singură mapare pe verticală.");
             }

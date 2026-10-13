@@ -15,6 +15,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <EmbeddedResource Include="ScaraVolum.sql" LogicalName="ScaraVolum.sql" />
+    <Content Include="Referinte\D9bA\*-sql.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Atlas.Conta.BackOffice\Atlas.Conta.BackOffice.Module\Atlas.Conta.BackOffice.Module.csproj" />

@@ -1380,7 +1380,7 @@
         "RandEsteDeOperatiuni": "RandEsteDeOperatiuni",
         "RandFaraAscendentMapat": "RandFaraAscendentMapat",
         "RandId": "Rând D300",
-        "Sens": "Sens",
+        "SensTva": "Sens TVA",
         "TipTva": "Tip TVA",
         "TipTvaId": "Tip TVA"
       }
@@ -1390,7 +1390,7 @@
       "Membri": {
         "DinSeed": "Din seed",
         "ID": "ID",
-        "Sens": "Sens",
+        "SensTva": "Sens TVA",
         "TintaEstePermisa": "TintaEstePermisa",
         "Tip": "Tip operațiune D394",
         "TipTva": "Tip TVA",
@@ -1407,7 +1407,7 @@
         "Regim": "Regim",
         "Rol": "Rol fiscal",
         "Sectiune": "Secțiune",
-        "Sens": "Sens",
+        "SensTva": "Sens TVA",
         "TaxCode": "Cod taxă",
         "TaxType": "Tip taxă",
         "TipTva": "Tip TVA",

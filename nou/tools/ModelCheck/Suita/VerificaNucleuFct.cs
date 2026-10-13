@@ -166,7 +166,7 @@ static class VerificaNucleuFct {
             && fiscaleP4.Any(f => f.DetaliuId == linieStoc.ID && f.Baza == 50m && f.Tva == 10.5m));
         ProbeNucleu.Proba(os, s.Check, "NUC-FCT-P4", [fct]);
         var contractP4 = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, fct);
-        var partidaP4 = N.Unitate.DeschidePartida(cont401.ID, furnizor.ID, fct.ID, fct.DataInregistrare).Id;
+        var partidaP4 = N.UnitateSold.DeschidePartida(cont401.ID, furnizor.ID, fct.ID, fct.DataInregistrare).Id;
         s.Check($"NUC-FCT-P4-3 ({eticheta}): O SINGURĂ partidă pe 401 (090h) poartă netul, taxa și recepția; "
             + "contracantitatea recepției e singura postare marcată contrapondere",
             contractP4.EsteAcceptat
@@ -213,9 +213,9 @@ static class VerificaNucleuFct {
             && ImperechereService.Ramas(os, fctPlata.ID) == 500m && ImperechereService.Ramas(os, plataImo.ID) == 500m);
 
         var contractPlataImo = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, plataImo);
-        var partidaFctImo = N.Unitate.DeschidePartida(
+        var partidaFctImo = N.UnitateSold.DeschidePartida(
             cont401.ID, furnizor.ID, fctPlata.ID, fctPlata.DataInregistrare).Id;
-        var partidaProprieImo = N.Unitate.DeschidePartida(
+        var partidaProprieImo = N.UnitateSold.DeschidePartida(
             cont401.ID, furnizor.ID, plataImo.ID, plataImo.DataInregistrare).Id;
         s.Check($"NUC-PLT-IMO-2 ({eticheta}): declarantul nominalizează DOAR 105 pe partida facturii "
             + "(cât ține ea pe 401) și lasă 500 pe partida proprie a plății; ipoteza consemnează soldul "
@@ -392,8 +392,8 @@ static class VerificaNucleuFct {
                 + "−8,40, câte două capete) și tranzacția rămâne balansată: Σ D = Σ C",
                 aleRosii.Count(p => p.Valoare == -40m) == 2
                 && aleRosii.Count(p => p.Valoare == -8.4m) == 2
-                && aleRosii.Where(p => p.Latura == N.Latura.Debit).Sum(p => p.Valoare)
-                    == aleRosii.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare));
+                && aleRosii.Where(p => p.Sens == N.Sens.Debit).Sum(p => p.Valoare)
+                    == aleRosii.Where(p => p.Sens == N.Sens.Credit).Sum(p => p.Valoare));
         }
 
         // (e) STR-FCT-DOUA-PARTIDE (S-D16): linia ne-stoc pe TipMaterial-ul contului 408,
@@ -411,9 +411,9 @@ static class VerificaNucleuFct {
                     + "`RolTert` pe ACELAȘI rând (B-r7)",
                     CubScena.Note(os, fctDoua.ID).Nota(cont408.ID, cont401.ID, 100m));
                 ProbeCub.ProbaOperare(os, s.Check, $"NUC-FCT-DOUA-PARTIDE-{eticheta}", fctDoua);
-                var partida408 = N.Unitate.DeschidePartida(
+                var partida408 = N.UnitateSold.DeschidePartida(
                     cont408.ID, furnizor.ID, fctDoua.ID, fctDoua.DataInregistrare).Id;
-                var partida401 = N.Unitate.DeschidePartida(
+                var partida401 = N.UnitateSold.DeschidePartida(
                     cont401.ID, furnizor.ID, fctDoua.ID, fctDoua.DataInregistrare).Id;
                 var aleDouaPartide = ProbeCub.Postari(os, fctDoua.ID, N.FelTranzactie.Operare);
                 s.Check($"STR-FCT-DOUA-PARTIDE ({eticheta}): AMBELE conturi cu `RolTert` ale liniei poartă "

@@ -145,7 +145,7 @@ static class VerificaNucleuTrezorerie {
             return doc;
         }
         Guid PartidaDin(Document doc, Cont cont, Repartitor partener) =>
-            N.Unitate.DeschidePartida(cont.ID, partener.ID, doc.ID, doc.DataInregistrare).Id;
+            N.UnitateSold.DeschidePartida(cont.ID, partener.ID, doc.ID, doc.DataInregistrare).Id;
         List<Guid?> UnitatiPe(N.Contract contract, Cont cont) =>
             [.. contract.Tranzactii.SelectMany(t => t.Postari)
                 .Where(p => p.Coordonate.Cont == cont.ID).Select(p => p.Coordonate.Unitate?.Id)];
@@ -176,7 +176,7 @@ static class VerificaNucleuTrezorerie {
             + "declarantul să știe că e încasare (latura o dă `RolTert`-ul contului rezolvat)",
             contractInc.EsteAcceptat
             && UnitatiPe(contractInc, cont4111) is [var unitateInc] && unitateInc == PartidaDin(inc, cont4111, client)
-            && contractInc.Tranzactii.SelectMany(t => t.Postari).Single(p => p.Coordonate.Unitate != null).Coordonate.Latura == N.Latura.Credit);
+            && contractInc.Tranzactii.SelectMany(t => t.Postari).Single(p => p.Coordonate.Unitate != null).Coordonate.Sens == N.Sens.Credit);
 
         // --- (3) SPLIT: plata autogenerată e mai mare decât restul facturii ---
         var fct = os.CreateObject<FacturaIntrare>();
@@ -255,8 +255,8 @@ static class VerificaNucleuTrezorerie {
         s.Check($"NUC-PLT-VIR-{eticheta}: la virament capătul numit de latură poartă contul propriu AL PICIORULUI, "
             + "capătul de tranzit n-are repartitor (C111 S7) și NICIUNUL n-are partidă (581/5311 n-au `RolTert`)",
             contractVir.EsteAcceptat && postariVir.Count == 2
-            && postariVir.Single(p => p.Coordonate.Latura == N.Latura.Credit).Coordonate.Repartitor?.Id == casaVir.ID
-            && postariVir.Single(p => p.Coordonate.Latura == N.Latura.Debit).Coordonate.Repartitor == null
+            && postariVir.Single(p => p.Coordonate.Sens == N.Sens.Credit).Coordonate.Repartitor?.Id == casaVir.ID
+            && postariVir.Single(p => p.Coordonate.Sens == N.Sens.Debit).Coordonate.Repartitor == null
             && postariVir.All(p => p.Coordonate.Unitate == null && p.Coordonate.PartenerFiscal == null));
 
         // --- Felia 31 (TR-D7a), S-D8: cubul PERSISTAT pe PLT/INC ---
@@ -319,8 +319,8 @@ static class VerificaNucleuTrezorerie {
             && transferT[0].Data == impT.Data
             && postariT.All(p => p.Data == impT.Data)
             && postariT.Count == 2
-            && postariT.All(p => p.Cont == cont401.ID && p.Latura == N.Latura.Debit && p.Repartitor == furnizor.ID)
-            && postariT.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) == 0m
+            && postariT.All(p => p.Cont == cont401.ID && p.Sens == N.Sens.Debit && p.Repartitor == furnizor.ID)
+            && postariT.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) == 0m
             && postariT.Single(p => p.Valoare < 0m).Unitate == partidaProprieT
             && postariT.Single(p => p.Valoare > 0m).Unitate == partidaFctT);
         s.Check($"STR-TRANSFER-2 ({eticheta}): `Sold` per partidă din cub — partida facturii e stinsă cu 100 "

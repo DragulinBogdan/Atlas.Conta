@@ -164,8 +164,8 @@ static class E2eDecont {
             var protocolCub = noteCub.Where(p => p.LinieId == linieProtocol.ID).ToList();
             s.Check("Contare protocol: debitul EXPLICIT al liniei (623 bate Tipul 628) = 542, 23,8",
                 protocolCub.All(p => p.Debit ? p.Cont == cont623.ID : p.Cont == cont542.ID)
-                && protocolCub.Rulaj(cont623.ID, N.Latura.Debit) == 23.8m
-                && protocolCub.Rulaj(cont542.ID, N.Latura.Credit) == 23.8m);
+                && protocolCub.Rulaj(cont623.ID, N.Sens.Debit) == 23.8m
+                && protocolCub.Rulaj(cont542.ID, N.Sens.Credit) == 23.8m);
 
             s.Check("Dimensiuni debit: default←titular la deplasare, repartitorul EXPLICIT (MAG1) la protocol [cub]",
                 noteCub.Any(p => p.LinieId == linieDeplasare.ID && p.Debit)

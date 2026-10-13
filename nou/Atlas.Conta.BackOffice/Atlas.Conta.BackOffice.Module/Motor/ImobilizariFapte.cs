@@ -63,12 +63,12 @@ internal static class ImobilizariFapte {
             Analiza = new(r.CodFunctional, r.CodEconomic, r.SursaFinantare, r.UnitateOrganizatorica, r.Proiect, r.CentruCost),
         }}).ToList();
         var disponibile = postari.GroupBy(p => p.Capat).Select(g => new DisponibilFapt(g.Key,
-            Minim(g.Select(p => (p.Rand.Data, p.Rand.Latura == N.Latura.Debit ? p.Rand.Valoare : -p.Rand.Valoare))),
-            Minim(g.Select(p => (p.Rand.Data, p.Rand.Latura == N.Latura.Credit ? p.Rand.Valoare : -p.Rand.Valoare)))))
+            Minim(g.Select(p => (p.Rand.Data, p.Rand.Sens == N.Sens.Debit ? p.Rand.Valoare : -p.Rand.Valoare))),
+            Minim(g.Select(p => (p.Rand.Data, p.Rand.Sens == N.Sens.Credit ? p.Rand.Valoare : -p.Rand.Valoare)))))
             .ToList();
         var suporturi = postari.Where(p => !p.Rand.Stornata && p.Rand.Data <= data && p.Rand.Valoare > 0m
                 && p.Rand.Fel is N.FelTranzactie.Operare or N.FelTranzactie.Deschidere)
-            .Select(p => new SuportFapt(new(p.Rand.ID, p.Rand.Spatiu), p.Rand.LinieId, p.Capat, p.Rand.Latura,
+            .Select(p => new SuportFapt(new(p.Rand.ID, p.Rand.Spatiu), p.Rand.LinieId, p.Capat, p.Rand.Sens,
                 Minim(randuri.Where(r => r.ID == p.Rand.ID || r.SuportId == p.Rand.ID || r.InversaDinId == p.Rand.ID)
                     .Select(r => (r.Data, r.Valoare))), p.Rand.Data, p.Rand.FaraLinieSursa)).ToList();
         return operand with { Fise = rezultat, Suporturi = suporturi, DisponibilNominalizare = disponibile };

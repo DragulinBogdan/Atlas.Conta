@@ -269,7 +269,7 @@ static class VerificaPerioadaDeclarare {
                 + "diferența dintre `ScrisLa` și `InchisaPrimaOara`",
                 rect.EsteRectificativa && rect.ConfirmataLa != null
                 && rect.Randuri.Count == 1 && rect.Randuri[0].DocumentId == idFclTarziu
-                && rect.Randuri[0].Sens == "Livrare" && rect.Randuri[0].Baza == 500m
+                && rect.Randuri[0].SensTva == "Livrare" && rect.Randuri[0].Baza == 500m
                 && rect.Randuri[0].Tva == 105m && !rect.Randuri[0].Storno
                 && rect.Agregat.Count == 1 && rect.Agregat[0].Baza == 500m && rect.Agregat[0].Tva == 105m
                 && rect.Agregat[0].Randuri == 1);
@@ -301,8 +301,8 @@ static class VerificaPerioadaDeclarare {
 
         // ── PDT-V8…V11: consumatorii filtrează pe PERIOADA DE DECLARARE ──
         using (var os = s.Provider.CreateObjectSpace()) {
-            List<Guid> Jurnal(SensTva sens, int luna) =>
-                TvaProiectii.JurnalTva(os, sens, Zi(luna, 1), Zi(luna, DateTime.DaysInMonth(An, luna)))
+            List<Guid> Jurnal(SensTva sensTva, int luna) =>
+                TvaProiectii.JurnalTva(os, sensTva, Zi(luna, 1), Zi(luna, DateTime.DaysInMonth(An, luna)))
                     .ToList().Select(r => r.DocumentId).ToList();
 
             var vanzariIanuarie = Jurnal(SensTva.Livrare, 1);

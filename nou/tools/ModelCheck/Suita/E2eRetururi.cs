@@ -275,7 +275,7 @@ static class E2eRetururi {
                     linCost.TipTvaId == null
                     && fiscalRdcCub.Count == 1
                     && fiscalRdcCub[0].DetaliuId == linVenit.ID
-                    && fiscalRdcCub[0] is { Baza: -100m, Tva: -21m, Sens: SensTva.Livrare });
+                    && fiscalRdcCub[0] is { Baza: -100m, Tva: -21m, SensTva: SensTva.Livrare });
                 // 4427 e cont de PASIV: rândul −21 stă pe CREDIT, deci soldul creditor
                 // (−SoldCont, unde SoldCont = debit − credit) scade cu 21.
                 s.Check("TVA colectată (sold CREDITOR) scade cu 21 după retur",

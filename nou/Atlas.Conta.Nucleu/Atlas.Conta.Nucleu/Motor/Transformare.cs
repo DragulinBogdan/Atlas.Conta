@@ -24,13 +24,13 @@ public sealed record Transformare(
                 || linie.Cantitate <= 0m || linie.Valoare < 0m)
             throw new ArgumentException("Linia transformării cere rol, fel, cantitate pozitivă și valoare nenegativă.", nameof(linie));
         var consum = linie.Rol == RolTransformare.Consum;
-        var latura = consum && linie.Fel == FelTranzactie.Operare ? Latura.Credit : Latura.Debit;
+        var sens = consum && linie.Fel == FelTranzactie.Operare ? Sens.Credit : Sens.Debit;
         var cantitate = consum ? -linie.Cantitate : linie.Cantitate;
         var valoare = consum && linie.Fel == FelTranzactie.Transfer ? -linie.Valoare : linie.Valoare;
         var contrapondere = linie.Real with {
             Repartitor = null, Unitate = null, Contrapondere = Contrapondere.Transformare,
         };
-        return (new Postare(linie.Real.Pe(latura, data), cantitate, 0m, valoare, linie.Cauza),
-            new Postare(contrapondere.Pe(latura, data), -cantitate, 0m, 0m, linie.Cauza));
+        return (new Postare(linie.Real.Pe(sens, data), cantitate, 0m, valoare, linie.Cauza),
+            new Postare(contrapondere.Pe(sens, data), -cantitate, 0m, 0m, linie.Cauza));
     }
 }

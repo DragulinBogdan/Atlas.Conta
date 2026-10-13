@@ -16,9 +16,9 @@ static class DeschidereScena {
         var loturi = pozitii.Select(p => new C.LotInitial(p.Lot.Produs.TipMaterial.ContImplicitId!.Value,
             p.Lot.ID, p.Gestiune, p.Cantitate, p.Valoare)).ToArray();
         var solduri = loturi.GroupBy(l => l.Cont)
-            .Select(g => new C.SoldInitial(g.Key, N.Latura.Debit, g.Sum(l => l.Valoare), true)).ToList();
+            .Select(g => new C.SoldInitial(g.Key, N.Sens.Debit, g.Sum(l => l.Valoare), true)).ToList();
         var ancora = os.GetObjectsQuery<Cont>().First(c => c.Simbol.StartsWith("891")).ID;
-        solduri.Add(new(ancora, N.Latura.Credit, loturi.Sum(l => l.Valoare)));
+        solduri.Add(new(ancora, N.Sens.Credit, loturi.Sum(l => l.Valoare)));
         using var tx = TranzactieComanda.Incepe(os);
         C.Materializare.Deschide(os, data, solduri, loturi, []);
         os.CommitChanges(); tx.Commit();

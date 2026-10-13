@@ -28,10 +28,10 @@ public class MotorTeste {
                 var miscare = declaratie.Miscari[i];
                 var debit = tranzactie.Postari[2 * i];
                 var credit = tranzactie.Postari[2 * i + 1];
-                Assert.Equal(Latura.Debit, debit.Coordonate.Latura);
+                Assert.Equal(Sens.Debit, debit.Coordonate.Sens);
                 Assert.Equal(miscare.La.Cont, debit.Coordonate.Cont);
                 Assert.Equal(miscare.Cantitate, debit.Cantitate);
-                Assert.Equal(Latura.Credit, credit.Coordonate.Latura);
+                Assert.Equal(Sens.Credit, credit.Coordonate.Sens);
                 Assert.Equal(miscare.DeLa.Cont, credit.Coordonate.Cont);
                 Assert.Equal(-miscare.Cantitate, credit.Cantitate);
                 Assert.Equal(miscare.Valoare, debit.Valoare);
@@ -91,7 +91,7 @@ public class MotorTeste {
             aleator => Gen.Declaratie(aleator),
             p => p with {
                 Coordonate = p.Coordonate with {
-                    Latura = p.Coordonate.Latura == Latura.Debit ? Latura.Credit : Latura.Debit,
+                    Sens = p.Coordonate.Sens == Sens.Debit ? Sens.Credit : Sens.Debit,
                 },
             },
             Coduri.ConservareValoare);
@@ -184,8 +184,8 @@ public class MotorTeste {
                 var mutare = mutari[i];
                 var iesire = tranzactie.Postari[2 * i];
                 var intrare = tranzactie.Postari[2 * i + 1];
-                Assert.Equal(mutare.Latura, iesire.Coordonate.Latura);
-                Assert.Equal(mutare.Latura, intrare.Coordonate.Latura);
+                Assert.Equal(mutare.Sens, iesire.Coordonate.Sens);
+                Assert.Equal(mutare.Sens, intrare.Coordonate.Sens);
                 Assert.Equal(-mutare.Valoare, iesire.Valoare);
                 Assert.Equal(mutare.Valoare, intrare.Valoare);
                 Assert.Equal(-mutare.Cantitate, iesire.Cantitate);
@@ -216,7 +216,7 @@ public class MotorTeste {
         var mutare = new Mutare(
             new Capat { Cont = Gen.Conturi[0] },
             new Capat { Cont = Gen.Conturi[1] },
-            Latura.Debit,
+            Sens.Debit,
             0m,
             0m,
             10m,
@@ -230,7 +230,7 @@ public class MotorTeste {
         var mutare = new Mutare(
             new Capat { Cont = Gen.Conturi[0] },
             new Capat { Cont = Gen.Conturi[0] },
-            Latura.Debit,
+            Sens.Debit,
             0m,
             0m,
             10m,
@@ -287,7 +287,7 @@ public class MotorTeste {
             Assert.Empty(Conservare.Verifica(tranzactie));
             foreach (var (_, suma) in Aduna(
                          tranzactie.Postari,
-                         p => (p.Coordonate.Cont, p.Coordonate.Latura),
+                         p => (p.Coordonate.Cont, p.Coordonate.Sens),
                          p => p.Valoare))
                 Assert.Equal(0m, suma);
             foreach (var (_, suma) in Aduna(

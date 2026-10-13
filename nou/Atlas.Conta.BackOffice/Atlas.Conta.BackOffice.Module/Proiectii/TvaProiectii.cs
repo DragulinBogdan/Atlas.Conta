@@ -42,7 +42,7 @@ public sealed class JurnalTvaRand : IRandCuDocument {
 }
 
 public sealed class DecontTvaRand {
-    public string Sens { get; set; }
+    public string SensTva { get; set; }
     public Guid TipTvaId { get; set; }
     public string TipTvaCod { get; set; }
     public string TipTvaDenumire { get; set; }
@@ -59,7 +59,7 @@ public sealed class RectificativaTvaRand {
     public string DocumentNumar { get; set; }
     public DateOnly DocumentData { get; set; }
     public DateOnly Data { get; set; }
-    public string Sens { get; set; }
+    public string SensTva { get; set; }
     public Guid TipTvaId { get; set; }
     public string TipTvaCod { get; set; }
     public string TipTvaDenumire { get; set; }
@@ -88,10 +88,10 @@ public static class TvaProiectii {
         Fiscale.IntreLuni(randuri, dataStart, dataEnd);
 
     public static IQueryable<JurnalTvaRand> JurnalTva(
-        IObjectSpace os, SensTva sens, DateOnly? dataStart = null, DateOnly? dataEnd = null) {
+        IObjectSpace os, SensTva sensTva, DateOnly? dataStart = null, DateOnly? dataEnd = null) {
 
         var randuri = IntreLuni(
-            Fiscale.Fapte(os).Where(r => r.Sens == sens), dataStart, dataEnd);
+            Fiscale.Fapte(os).Where(r => r.SensTva == sensTva), dataStart, dataEnd);
 
         var agregate = randuri
             .GroupBy(r => new {
@@ -152,7 +152,7 @@ public static class TvaProiectii {
                    CodSafT = os.GetObjectsQuery<MapareTvaSaft>().Where(m => m.Versiune == MapariFiscale.Versiune
                        && m.Sectiune == SectiuneTvaSaft.Facturi && m.TipTvaId == a.TipTvaId
                        && m.Regim == a.Regim && m.Cota == a.Cota && m.DeImport == a.DeImport
-                       && m.Sens == sens && m.Rol == N.RolTva.Taxa).Select(m => m.TaxCode).FirstOrDefault(),
+                       && m.SensTva == sensTva && m.Rol == N.RolTva.Taxa).Select(m => m.TaxCode).FirstOrDefault(),
                    Baza = a.Baza,
                    Tva = a.Tva,
                    Storno = a.Storno
@@ -172,9 +172,9 @@ public static class TvaProiectii {
         var randuri = IntreLuni(Fiscale.Fapte(os), dataStart, dataEnd);
 
         var agregate = randuri
-            .GroupBy(r => new { r.Sens, r.TipTvaId, r.Regim, r.Cota, r.DeImport })
+            .GroupBy(r => new { r.SensTva, r.TipTvaId, r.Regim, r.Cota, r.DeImport })
             .Select(g => new {
-                g.Key.Sens,
+                g.Key.SensTva,
                 g.Key.TipTvaId,
                 g.Key.Regim,
                 g.Key.Cota, g.Key.DeImport,
@@ -187,7 +187,7 @@ public static class TvaProiectii {
                join t in os.GetObjectsQuery<TipTva>() on a.TipTvaId equals t.ID into grupTip
                from t in grupTip.DefaultIfEmpty()
                select new DecontTvaRand {
-                   Sens = a.Sens == SensTva.Achizitie ? "Achizitie" : "Livrare",
+                   SensTva = a.SensTva == SensTva.Achizitie ? "Achizitie" : "Livrare",
                    TipTvaId = a.TipTvaId,
                    TipTvaCod = t == null ? null : t.Cod,
                    TipTvaDenumire = t == null ? null : t.Denumire,
@@ -200,7 +200,7 @@ public static class TvaProiectii {
                    CodSafT = os.GetObjectsQuery<MapareTvaSaft>().Where(m => m.Versiune == MapariFiscale.Versiune
                        && m.Sectiune == SectiuneTvaSaft.Facturi && m.TipTvaId == a.TipTvaId
                        && m.Regim == a.Regim && m.Cota == a.Cota && m.DeImport == a.DeImport
-                       && m.Sens == a.Sens && m.Rol == N.RolTva.Taxa).Select(m => m.TaxCode).FirstOrDefault(),
+                       && m.SensTva == a.SensTva && m.Rol == N.RolTva.Taxa).Select(m => m.TaxCode).FirstOrDefault(),
                    Randuri = a.Randuri,
                    Baza = a.Baza,
                    Tva = a.Tva
@@ -208,7 +208,7 @@ public static class TvaProiectii {
     }
 
     public static SortingInfo[] OrdineDecontTva() => new[] {
-        OrdineLista.Crescator(nameof(DecontTvaRand.Sens)),
+        OrdineLista.Crescator(nameof(DecontTvaRand.SensTva)),
         OrdineLista.Crescator(nameof(DecontTvaRand.TipTvaId)),
         OrdineLista.Crescator(nameof(DecontTvaRand.Cota)),
         OrdineLista.Crescator(nameof(DecontTvaRand.Regim))
@@ -236,7 +236,7 @@ public static class TvaProiectii {
                                 DocumentNumar = d == null ? null : d.Numar,
                                 DocumentData = d == null ? default : d.Data,
                                 Data = r.Data,
-                                Sens = r.Sens == SensTva.Achizitie ? "Achizitie" : "Livrare",
+                                SensTva = r.SensTva == SensTva.Achizitie ? "Achizitie" : "Livrare",
                                 TipTvaId = r.TipTvaId,
                                 TipTvaCod = t == null ? null : t.Cod,
                                 TipTvaDenumire = t == null ? null : t.Denumire,
@@ -256,15 +256,15 @@ public static class TvaProiectii {
         rezultat.EsteRectificativa = rezultat.Randuri.Count > 0;
 
         rezultat.Agregat = (from a in randuri
-                                .GroupBy(r => new { r.Sens, r.TipTvaId, r.Regim, r.Cota, r.DeImport })
+                                .GroupBy(r => new { r.SensTva, r.TipTvaId, r.Regim, r.Cota, r.DeImport })
                                 .Select(g => new {
-                                    g.Key.Sens, g.Key.TipTvaId, g.Key.Regim, g.Key.Cota, g.Key.DeImport,
+                                    g.Key.SensTva, g.Key.TipTvaId, g.Key.Regim, g.Key.Cota, g.Key.DeImport,
                                     Randuri = g.Count(), Baza = g.Sum(r => r.Baza), Tva = g.Sum(r => r.Tva)
                                 })
                             join t in os.GetObjectsQuery<TipTva>() on a.TipTvaId equals t.ID into grupTip
                             from t in grupTip.DefaultIfEmpty()
                             select new DecontTvaRand {
-                                Sens = a.Sens == SensTva.Achizitie ? "Achizitie" : "Livrare",
+                                SensTva = a.SensTva == SensTva.Achizitie ? "Achizitie" : "Livrare",
                                 TipTvaId = a.TipTvaId,
                                 TipTvaCod = t == null ? null : t.Cod,
                                 TipTvaDenumire = t == null ? null : t.Denumire,
@@ -277,12 +277,12 @@ public static class TvaProiectii {
                                 CodSafT = os.GetObjectsQuery<MapareTvaSaft>().Where(m => m.Versiune == MapariFiscale.Versiune
                        && m.Sectiune == SectiuneTvaSaft.Facturi && m.TipTvaId == a.TipTvaId
                        && m.Regim == a.Regim && m.Cota == a.Cota && m.DeImport == a.DeImport
-                       && m.Sens == a.Sens && m.Rol == N.RolTva.Taxa).Select(m => m.TaxCode).FirstOrDefault(),
+                       && m.SensTva == a.SensTva && m.Rol == N.RolTva.Taxa).Select(m => m.TaxCode).FirstOrDefault(),
                                 Randuri = a.Randuri,
                                 Baza = a.Baza,
                                 Tva = a.Tva
                             })
-            .OrderBy(x => x.Sens).ThenBy(x => x.TipTvaId).ThenBy(x => x.Cota).ThenBy(x => x.Regim)
+            .OrderBy(x => x.SensTva).ThenBy(x => x.TipTvaId).ThenBy(x => x.Cota).ThenBy(x => x.Regim)
             .ToList();
         return rezultat;
     }

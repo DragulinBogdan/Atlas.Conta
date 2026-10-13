@@ -16,5 +16,5 @@ public sealed record FisaFapt(Guid Id, Guid Cont, Guid ContAmortizare, Guid Cont
     public N.VersiunePolitica? Politica { get; init; }
 }
 public sealed record SuportFapt(N.ReferintaPostare Referinta, Guid? Linie, N.Capat Capat,
-    N.Latura Latura, decimal Disponibil, DateOnly Data, bool FaraLinieSursa);
+    N.Sens Sens, decimal Disponibil, DateOnly Data, bool FaraLinieSursa);
 public sealed record DisponibilFapt(N.Capat Capat, decimal DebitNetMinim, decimal CreditNetMinim);
