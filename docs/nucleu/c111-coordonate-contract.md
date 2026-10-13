@@ -31,7 +31,7 @@ postare, partenerul și locul fiscal în blocul fiscal, marcajul contraponderii
 | Postări cu ambele coloane, pe Flax ianuarie | 22.389 din 82.154, niciuna neexplicată | pasul 0 §1 |
 | Postări fiscale al căror partener e latura numită de politica de TVA | 15.206 din 15.206 | pasul 0 §2 |
 | D394 și D300 cu partenerul mutat în blocul fiscal | identice octet cu octet | pasul 0 §2 |
-| Prototipul nucleului (`proto/tr-d9b-pas0-nucleu`, `8c36600`) | 195 / 195, +229 / −106 linii, 15 fișiere | pasul 0 §3 |
+| Prototipul nucleului (tag-ul `arhiva/proto-tr-d9b-pas0-nucleu`, `8c36600`) | 195 / 195, +229 / −106 linii, 15 fișiere | pasul 0 §3 |
 | Referințe la `Partener` / `Gestiune` ca nume de coordonată | modul 43 de fișiere, ModelCheck 59, Import1C 9 | `grep`, 2026-10-10 |
 | Gestiuni virtuale citite ca valoare distinctă în produs | numai `Transformare` și `Inventar` (4 locuri) | `grep`, 2026-10-10 |
 | Felul repartitorului ca fapt al operandului | există: `Motor/Fapte.cs:356`, din `ClrType`, citit ca dată | cod |
