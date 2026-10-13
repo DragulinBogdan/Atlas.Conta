@@ -136,7 +136,8 @@ al contractului TR-D9b este făcut: membrii care poartă debitul sau creditul
 (120). [Pasul 7](docs/nucleu/tr-d9b-pas7-senstva.md) aduce membrii de tip
 `SensTva` la numele întreg, cu trei coloane de mapări și șase câmpuri de
 API, iar [pasul 8](docs/nucleu/tr-d9b-pas8-sensstingere.md) face la fel
-pentru `SensStingere`, cu parametrii de interogare. Unde suntem, cu cifre, e
+pentru `SensStingere`, cu parametrii de interogare. Pachetul originii și
+pașii 6–8 sunt merse în main prin PR #38 (2026-10-13). Unde suntem, cu cifre, e
 generat în [docs/stare.md](docs/stare.md); cronologia feliilor e în
 `docs/decizii/istoric-plan-de-lucru.md`.
 
