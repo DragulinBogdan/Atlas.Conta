@@ -101,8 +101,8 @@ bugetar. Angajatul ca terț nu apare în date; e citit numai din cod (§3).
 (15.054). D394 pe ianuarie 2025 se generează din produs
 (`D394Proiectii.D394`), o dată cu binarul de azi pe copia neschimbată și o
 dată cu `Fiscale.Fapte` citind `PartenerFiscal` pe copia modificată.
-Prototipul e pe branch-ul local `proto/tr-d9b-pas0-d394` (`b335670`), nu se
-merge.
+Prototipul e păstrat sub tag-ul `arhiva/proto-tr-d9b-pas0-d394` (`b335670`),
+nu se merge.
 
 **Cifra.**
 
@@ -137,8 +137,8 @@ DVI (predătorul e vama) nu sunt în date.
 
 **Metoda.** Prototip de aruncat, numai în `nou/Atlas.Conta.Nucleu/`, făcut de
 un agent în worktree propriu și verificat separat: suita rulată din nou,
-diff-ul limitat la nucleu, niciun atribut de test scos. Branch local
-`proto/tr-d9b-pas0-nucleu` (`8c36600`), nu se merge.
+diff-ul limitat la nucleu, niciun atribut de test scos. Păstrat sub tag-ul
+`arhiva/proto-tr-d9b-pas0-nucleu` (`8c36600`), nu se merge.
 
 **Cifra.** 190 de teste înainte, 195 după, toate verzi; 9 corpuri de test
 rescrise pe forma nouă, 5 adăugate, niciunul șters. 15 fișiere, 229 de linii
@@ -376,6 +376,6 @@ acestui pas, recreate imediat):
 | `Atlas.Conta.P0.VolN`, `.VolG` | 3.522 / 4.151 MB | copiile punctului 6 |
 | `Atlas.Conta.Import1C.Flax.P0la112`, `.P0azi2` | câte ~107 MB | rulările de atribuire din §7 |
 
-Branch-uri locale de prototip, nepublicate: `proto/tr-d9b-pas0-nucleu`
-(worktree `.claude/worktrees/agent-adc54ba29b0d4336f`) și
-`proto/tr-d9b-pas0-d394` (worktree `.claude/worktrees/d9b-p2`).
+Prototipurile au fost branch-uri locale, fiecare cu worktree propriu. Din
+2026-10-13 sunt tag-uri publicate, `arhiva/proto-tr-d9b-pas0-nucleu` și
+`arhiva/proto-tr-d9b-pas0-d394`; branch-urile și worktree-urile sunt scoase.
