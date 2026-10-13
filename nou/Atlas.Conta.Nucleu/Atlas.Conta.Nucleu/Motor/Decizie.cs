@@ -14,5 +14,12 @@ public sealed record ValoareDeclarata(Guid Linie, UnitateSold Unitate, decimal C
 
 public sealed record PartidaDeschisa(Guid Linie, UnitateSold Unitate) : Decizie;
 
+/// <summary>Cota unui beneficiar din valoarea liniei de corecție; fără postare când <paramref name="Valoare"/> e zero (CV-D8).</summary>
+public sealed record AlocareValorica(Guid Linie, UnitateSold Unitate, ReferintaPostare Beneficiar, decimal Pondere, decimal Valoare) : Decizie;
+
+/// <summary>Mutarea alocării active a rădăcinii de pe consumul inversat pe stoc (CV-D8).</summary>
+public sealed record CompensareValorica(
+    Guid Linie, ReferintaPostare Radacina, ReferintaPostare Beneficiar, UnitateSold Sursa, UnitateSold Destinatie, decimal Valoare) : Decizie;
+
 /// <summary><paramref name="Regula"/>: regula de contare care a dat contul, când vine dintr-una (D9-A8).</summary>
 public sealed record ContRezolvat(Guid Linie, Guid Cont, string Sursa, Guid? Regula = null) : Decizie;

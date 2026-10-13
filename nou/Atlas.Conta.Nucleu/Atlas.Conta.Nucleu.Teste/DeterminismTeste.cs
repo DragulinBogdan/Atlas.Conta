@@ -99,7 +99,7 @@ public class DeterminismTeste {
             .Where(t => t != typeof(Decizie) && t != typeof(Ipoteza)
                 && (typeof(Decizie).IsAssignableFrom(t) || typeof(Ipoteza).IsAssignableFrom(t)))
             .ToList();
-        Assert.Equal(8, cazuri.Count);
+        Assert.Equal(10, cazuri.Count);
         Assert.All(cazuri, t => Assert.True(t.IsSealed, $"{t.Name} nu e sigilat"));
     }
 
