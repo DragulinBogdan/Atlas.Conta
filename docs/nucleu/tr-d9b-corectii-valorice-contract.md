@@ -13,8 +13,8 @@ implementarea.
 [catalogul CVL](scenarii/CVL.md) fixează cifrele. [Producătorul și matricea
 compensării](tr-d9b-corectii-valorice-producator-si-compensare.md) detaliază
 propunerea revizuită: FCT cu linie explicită de corecție. CVL denumește
-mecanismul și catalogul, nu un tip nou de document. Nu există încă o cale
-executabilă pentru aceste corecții și nici rezultate de validare ale scenariilor.
+mecanismul și catalogul, nu un tip nou de document. Calea executabilă există
+din pasul 3; rezultatele scenariilor sunt în secțiunea de verificare a pasului.
 Review-ul Claude a confirmat aritmetica și alegerea FCT, dar a respins
 forma inițială a compensării. [Revizia R1](tr-d9b-corectii-valorice-review-r1.md)
 introduce Operare separată și gard temporal; **punctul 2 nu este acceptat**.
@@ -494,7 +494,7 @@ Valuta și unitatea de evaluare nu sunt condiții de intrare în acel pachet.
 |---|---|---|---|---|
 | 1 | inventar, contract, catalog numeric | surse, decizii, invarianți, docskit | confundarea primitivei cu mecanismul complet | redactat, fără implementare |
 | 2 | producător FCT și proveniența compensării | matrice, cititori, explicație și cronologie; SC-CVL-25…32 | fapte omise de cititori, storno antedatat, export incompatibil | închis 2026-10-14: apartenența compensării (R6, decizia 119); explicația și storno recepției (CV-D8, CV-D5); SAF-T restanță cu refuz (CV-D9); predicatele verificate contra codului și fixate (R8, CV-D10) |
-| 3 | mecanism pur, extensie FCT, operand, materializare și garduri | nucleu + SC-CVL prin comenzile reale, după fixarea perimetrului | dependenți valorici ignorați de gardul cantitativ | în lucru |
+| 3 | mecanism pur, extensie FCT, operand, materializare și garduri | nucleu + SC-CVL prin comenzile reale, după fixarea perimetrului | dependenți valorici ignorați de gardul cantitativ | implementat 2026-10-14; regresia integrală nerulată încă |
 | 4 | cititori, snapshot, explicație, XAF și securitate afectată | scenarii, metadata, HTTP/UI unde sunt atinse | afișarea unui cost recalculat ca fapt istoric | de făcut |
 | 5 | regresie și review de închidere | integrală pe ambele profiluri, docskit, review advers | extindere tacită la lanțuri neacoperite | de făcut |
 
@@ -549,6 +549,42 @@ owner-ului, la 2026-10-13.
 ## Închidere
 
 Deschis. Redactarea și verificarea documentației nu certifică mecanismul.
+
+### Verificarea pasului 3 — 2026-10-14
+
+Implementat: atribuirea pe mișcare și mecanismul pur în nucleu
+(`CorectieValorica`), felul liniei pe FCT cu migrația
+`CorectieValoareLot`, faptele lotului în operand, declarația corecției,
+compensarea la stornare, gardurile retragerii și ale cronologiei, explicația
+persistată a celor două feluri de decizie, oglinda gardurilor în regimul pe
+stare. Codurile emise de mecanism stau în `Nucleu.Coduri`, lângă
+`STOC_INSUFICIENT`; `CV_STRUCTURA` stă în `CoduriRefuz`.
+
+Comenzi executate din rădăcină:
+
+- `dotnet test nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.Teste`: 235 de
+  teste verzi, dintre care 36 în `CorectieValoricaTeste`.
+- `verifica.ps1 -Suita Scenarii -Tip CVL -Profil Privat -Sufix .ClaudeCVL`:
+  verde; `run-verificari/20261014-004610-087/rezultat.json`. Baza privată e
+  creată și seed-uită de unealtă.
+- aceeași comandă cu `-Profil Bugetar`, pe clona
+  `Atlas.Conta.BackOffice.ClaudeCVL` adusă la migrația nouă: verde;
+  `run-verificari/20261014-004657-481/rezultat.json`.
+- Invarianții cubului (`INV-CUB`) trec pe faptele scenei, pe ambele
+  profiluri, fără nicio relaxare.
+
+Ce nu e făcut și nu e certificat de aceste rulări:
+
+- regresia integrală pe ambele profiluri;
+- invariantul de audit din CV-D8 pe deciziile valorice, cu mutanții din
+  SC-CVL-26 și SC-CVL-31; `CV_PROVENIENTA` e emis numai la o atribuire spre
+  o postare absentă;
+- SC-CVL-20…24, 29 și 32; părțile lipsă din SC-CVL-18, 19, 28 și 31 sunt
+  enumerate în catalog;
+- culegerea XAF, `WriteDto`, linia explicată și DTO-ul ei, driftul openapi:
+  pasul 4;
+- măsurarea pe scara de volum a interogării noi de pe calea operării
+  (`CorectiiValorice.VerificaCronologia`).
 
 ### Verificarea pasului documentar — 2026-10-12
 

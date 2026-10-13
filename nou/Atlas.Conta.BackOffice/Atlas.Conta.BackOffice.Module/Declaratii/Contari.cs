@@ -18,8 +18,9 @@ readonly record struct ContareLinie(
 /// motorului: contul fiecărei laturi și coalesce-ul dimensiunilor.
 /// </summary>
 static class Contari {
-    public static ContareLinie? Rezolva(Operand operand, LinieOperand linie, ICollection<N.Refuz> refuzuri) {
-        if (Potrivire.Contare(operand.ReguliContare, linie.Fapt).Castigator is not { } regula) {
+    /// <summary><paramref name="semn"/> înlocuiește semnul cantității la potrivirea regulii.</summary>
+    public static ContareLinie? Rezolva(Operand operand, LinieOperand linie, ICollection<N.Refuz> refuzuri, int? semn = null) {
+        if (Potrivire.Contare(operand.ReguliContare, linie.Fapt with { Semn = semn ?? linie.Fapt.Semn }).Castigator is not { } regula) {
             refuzuri.Add(new N.Refuz(CoduriRefuz.RegulaContareLipsa,
                 "Linia nu are regulă de contare pe acest tip de document.", linie.Id));
             return null;

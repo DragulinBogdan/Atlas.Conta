@@ -152,7 +152,8 @@ public static class MotorOperare {
     static Document GenereazaConex(IObjectSpace os, Document sursa, PoliticaConexFapt politica,
         Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip) {
         var linii = Liniile(sursa)                                                   // S-D6
-            .Where(d => Potrivire.Conex(politica, Fapte.Linie(d, claseTip)))
+            .Where(d => d is not ILinieCuCorectieValorica { CorectieValoareLot: true }
+                && Potrivire.Conex(politica, Fapte.Linie(d, claseTip)))
             .ToList();
         if (linii.Count == 0)
             return null;

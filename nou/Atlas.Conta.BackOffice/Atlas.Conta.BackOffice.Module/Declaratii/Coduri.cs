@@ -53,6 +53,7 @@ public static class CoduriRefuz {
     public const string SuportInsuficient = "SUPORT_INSUFICIENT";
     public const string SuportCuDependenti = "SUPORT_CU_DEPENDENTI";
     public const string DeclaratieInvalida = "DECLARATIE_INVALIDA";
+    public const string CvStructura = "CV_STRUCTURA";
 }
 
 /// <summary>Sursele unei <c>ValoareDeclarata</c>: de unde vine valoarea ieșirii care nu se evaluează din sold.</summary>

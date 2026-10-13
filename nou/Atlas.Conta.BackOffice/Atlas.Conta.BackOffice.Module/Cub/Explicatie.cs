@@ -82,6 +82,8 @@ public sealed record Explicatie(
         N.ValoareDeclarata d => d.Linie,
         N.PartidaDeschisa d => d.Linie,
         N.ContRezolvat d => d.Linie,
+        N.AlocareValorica d => d.Linie,
+        N.CompensareValorica d => d.Linie,
         _ => null,
     };
 
@@ -149,6 +151,21 @@ public sealed record Explicatie(
                 w.WriteString("sursa", d.Sursa);
                 if (d.Regula is Guid regula) w.WriteString("regula", regula);
                 break;
+            case N.AlocareValorica d:
+                w.WriteString("linie", d.Linie);
+                Scrie(w, d.Unitate);
+                Scrie(w, "beneficiar", d.Beneficiar);
+                w.WriteNumber("pondere", d.Pondere);
+                w.WriteNumber("valoare", d.Valoare);
+                break;
+            case N.CompensareValorica d:
+                w.WriteString("linie", d.Linie);
+                Scrie(w, "radacina", d.Radacina);
+                Scrie(w, "beneficiar", d.Beneficiar);
+                Scrie(w, d.Sursa, "sursa");
+                Scrie(w, d.Destinatie, "destinatie");
+                w.WriteNumber("valoare", d.Valoare);
+                break;
             default:
                 throw new InvalidOperationException($"Decizia {decizie.GetType().Name} nu are formă persistată.");
         }
@@ -164,6 +181,10 @@ public sealed record Explicatie(
         nameof(N.PartidaDeschisa) => new N.PartidaDeschisa(e.GetProperty("linie").GetGuid(), Unitatea(e)),
         nameof(N.ContRezolvat) => new N.ContRezolvat(e.GetProperty("linie").GetGuid(), e.GetProperty("cont").GetGuid(),
             e.GetProperty("sursa").GetString()!, e.TryGetProperty("regula", out var regula) ? regula.GetGuid() : null),
+        nameof(N.AlocareValorica) => new N.AlocareValorica(e.GetProperty("linie").GetGuid(), Unitatea(e), Referinta(e, "beneficiar"),
+            e.GetProperty("pondere").GetDecimal(), e.GetProperty("valoare").GetDecimal()),
+        nameof(N.CompensareValorica) => new N.CompensareValorica(e.GetProperty("linie").GetGuid(), Referinta(e, "radacina"),
+            Referinta(e, "beneficiar"), Unitatea(e, "sursa"), Unitatea(e, "destinatie"), e.GetProperty("valoare").GetDecimal()),
         var fel => throw new InvalidOperationException($"Decizie necunoscută în explicație: {fel}."),
     };
 
@@ -212,8 +233,20 @@ public sealed record Explicatie(
         }
     }
 
-    static void Scrie(Utf8JsonWriter w, N.UnitateSold unitate) {
-        w.WriteStartObject("unitate");
+    static void Scrie(Utf8JsonWriter w, string nume, N.ReferintaPostare referinta) {
+        w.WriteStartObject(nume);
+        w.WriteString("id", referinta.Id);
+        w.WriteString("spatiu", referinta.Spatiu.ToString());
+        w.WriteEndObject();
+    }
+
+    static N.ReferintaPostare Referinta(JsonElement parinte, string nume) {
+        var e = parinte.GetProperty(nume);
+        return new(e.GetProperty("id").GetGuid(), Enum.Parse<N.Spatiu>(e.GetProperty("spatiu").GetString()!));
+    }
+
+    static void Scrie(Utf8JsonWriter w, N.UnitateSold unitate, string nume = "unitate") {
+        w.WriteStartObject(nume);
         w.WriteString("id", unitate.Id);
         w.WriteString("fel", unitate.Fel.ToString());
         w.WriteString("cont", unitate.Cont);
@@ -223,8 +256,8 @@ public sealed record Explicatie(
         w.WriteEndObject();
     }
 
-    static N.UnitateSold Unitatea(JsonElement parinte) {
-        var e = parinte.GetProperty("unitate");
+    static N.UnitateSold Unitatea(JsonElement parinte, string nume = "unitate") {
+        var e = parinte.GetProperty(nume);
         return new(e.GetProperty("id").GetGuid(), Enum.Parse<N.FelUnitate>(e.GetProperty("fel").GetString()!),
             e.GetProperty("cont").GetGuid(),
             e.TryGetProperty("partener", out var partener) ? partener.GetGuid() : null,

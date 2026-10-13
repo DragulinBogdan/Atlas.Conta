@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-10-13.** [Index](README.md)
+**Actualizat: 2026-10-14.** [Index](README.md)
 
 ## Modelul comun
 
@@ -1625,6 +1625,45 @@ operare, în aceeași formă ca orice refuz al declarației (S-r11).
   (S-D7, D9-A10, D9-D6; C111 S7)
 - Linia fără regulă de contare e refuzată (`REGULA_CONTARE_LIPSA`) acolo unde
   motorul vechi o sare tăcut: valoarea ei ar dispărea din contare.
+
+### Corecția valorii lotului (TR-D9b-CV, 119)
+
+Factura de intrare poate purta linii de corecție a valorii unui lot existent
+(`FacturaIntrareDetaliu.CorectieValoareLot`): cantitate zero, valoare
+semnată culeasă, lotul corectat pe linie. Linia corectată este linia de
+intrare a lotului. Un document cu o linie de corecție are numai linii de
+corecție, fără TVA; nu naște lot și nu generează NIR. (CV-D1)
+
+- Valoarea liniei se împarte pe stocul rămas și pe consumurile active ale
+  lotului, după cantitate: Hamilton pe poziții, apoi pe postările fiecărei
+  poziții. Fiecare cotă nenulă e o pereche `Operare` cu debitul pe poziția
+  beneficiarului, cantitate zero, atribuită postării beneficiare, și creditul
+  pe partida proprie a corecției la furnizor. Bonul operat și prețul de
+  intrare al lotului rămân neschimbate; ieșirile următoare se evaluează din
+  soldul ajustat. (CV-D2, CV-D3)
+- Lotul corectabil se judecă pe forma faptelor din cub: o recepție activă de
+  la furnizorul corecției, consumuri din poziția de stoc și inversele lor.
+  Orice altă mișcare pe lot refuză corecția. (CV-D10)
+- Stornarea bonului scrie, în aceeași comandă, inversa lui și câte o
+  tranzacție `Operare` pe fiecare corecție cu alocare activă pe el: perechea
+  de compensare mută alocarea de pe consum pe stoc. Bonul stornat se închide
+  la zero pe fiecare cont; corecția rămâne operată și poartă integral valoarea
+  ei. Stornarea corecției inversează toate postările ei `Operare`, alocări și
+  compensări. (119)
+- La stornare, saltul pe `Atribuit` nu mai urmează postările pe lot; pe
+  partide rămâne cel din 090 (i). (119 c)
+- Fiecare `Operare` a corecției are explicație proprie: `AlocareValorica` pe
+  fiecare beneficiar cu pondere, inclusiv cel cu cota zero, respectiv
+  `CompensareValorica` pe fiecare pereche de compensare. (CV-D8)
+- Refuzuri: `CV_STRUCTURA`, `CV_LOT_NEELIGIBIL`, `CV_VALOARE_INSUFICIENTA`,
+  `CV_CRONOLOGIE`, `CV_DEPENDENTI`, `CV_AN_INCHIS`. Regimul pe stare citește
+  aceleași garduri fără a executa comanda. (CV-D7, CV-D10)
+
+Regula stă în `Nucleu/Motor/CorectieValorica.cs`; declarația în
+`DeclarantFacturaIntrare.Corectie.cs`; faptele lotului în
+`Cub/Citiri/CorectiiValorice.cs`; compensarea în
+`Cub/Materializare.CorectiiValorice.cs`. Proba: `--scenarii CVL` și
+`CorectieValoricaTeste`.
 
 ### Ce rămâne al feliilor următoare
 

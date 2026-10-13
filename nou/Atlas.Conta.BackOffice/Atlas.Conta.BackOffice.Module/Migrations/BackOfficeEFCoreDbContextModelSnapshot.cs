@@ -4279,6 +4279,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("CodFunctionalId");
 
+                    b.Property<bool>("CorectieValoareLot")
+                        .HasColumnType("boolean")
+                        .HasColumnName("CorectieValoareLot");
+
                     b.Property<DateOnly?>("DataExpirare")
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("date")

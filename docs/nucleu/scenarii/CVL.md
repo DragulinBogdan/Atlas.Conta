@@ -5,10 +5,10 @@
 
 Catalogul fixează așteptările înainte de implementare, conform
 [contractului TR-D9b-CV](../tr-d9b-corectii-valorice-contract.md).
-**Toate rândurile sunt specificate, neimplementate și nerulate.** `CVL`
+Starea execuției este în secțiunea de validare. `CVL`
 este abrevierea mecanismului, cu producător propus **FCT cu linie explicită
-de corecție**, nu tip nou de document. Proba planificată este `ScenariiCvl`
-prin `OperareApi`. [Matricea pe postări](../tr-d9b-corectii-valorice-producator-si-compensare.md)
+de corecție**, nu tip nou de document. Proba este `ScenariiCvl`, prin
+comenzile documentului. [Matricea pe postări](../tr-d9b-corectii-valorice-producator-si-compensare.md)
 fixează cauzele, atribuirile și inversele așteptate.
 Un refuz așteptat este rezultat al scenariului, nu stare de implementare.
 
@@ -101,9 +101,18 @@ prin agregare înainte de stabilirea provenienței.
 
 ## Validare și review
 
-Nicio comandă `-Tip CVL` nu a fost executată: selecția nu există încă.
-Comenzile viitoare, regula de oprire și pasul care fixează proveniența
-sunt în contract. [Review-ul R1](../tr-d9b-corectii-valorice-review-r1.md)
+`-Suita Scenarii -Tip CVL` rulează pe ambele profiluri din 2026-10-14
+(pasul 3 al contractului). Comenzile, regula de oprire și rezultatele sunt
+în contract.
+
+| Stare | Scenarii |
+|---|---|
+| rulate | SC-CVL-01…17, 25, 27, 30 |
+| rulate parțial | SC-CVL-18 (structura liniei; fără furnizor sau gestiune greșită, politică lipsă, precizie); SC-CVL-19 (transfer și cronologie; anul anterior e probat în nucleu); SC-CVL-26 (forma rădăcinilor și a compensării; mutanții invariantului lipsesc); SC-CVL-28 (tranzacțiile, stările și explicația; fără fișă, jurnal și snapshot); SC-CVL-31 (deciziile persistate; fără invariantul de audit și fără DTO) |
+| neimplementate | SC-CVL-20…24, 29, 32 |
+
+Proba pură `CorectieValoricaTeste` acoperă matricea, cele 16 ordini de
+stornare, cazurile temporale, storno recepției și refuzurile, fără bază. [Review-ul R1](../tr-d9b-corectii-valorice-review-r1.md)
 confirmă cifrele și FCT; review-ul originii
 partidei nu certifică acest catalog. SC-CVL-29…32 vin din a doua rundă
 (2026-10-13): apartenența compensării (decizia 119), storno recepției, explicația și

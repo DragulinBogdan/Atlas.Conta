@@ -16,6 +16,7 @@ public sealed record GardieniRetragere(string Anulare, string Stornare) {
         var dependentiProprii = propriu?.MotivDependenti(os);
         var receptii = Cub.ReceptiiConexe.MotivDependenti(os, doc);
         var nominalizari = new Lazy<Cub.Materializare.Nominalizari>(() => Cub.Materializare.CitesteNominalizari(os, doc));
+        var valorice = new Lazy<(string Anulare, string Stornare)>(() => Cub.Materializare.MotiveCorectiiValorice(os, doc));
 
         var anulare = FiscalitateService.MotivAnulare(os, doc)
             ?? GardianPerioada.MotivInchisa(os, doc.DataInregistrare)
@@ -24,7 +25,8 @@ public sealed record GardieniRetragere(string Anulare, string Stornare) {
             ?? dependentiProprii
             ?? receptii
             ?? nominalizari.Value.Motiv(doc.DataInregistrare)
-            ?? Cub.Materializare.MotivStingereDeschidere(os, doc);
+            ?? Cub.Materializare.MotivStingereDeschidere(os, doc)
+            ?? valorice.Value.Anulare;
 
         // Data stornării o alege comanda: aici intră numai ce refuză la orice dată.
         // Stornoul desface singur legăturile vii din perioadele închise, deci partenerii lor nu se numără la nominalizări.
@@ -32,7 +34,8 @@ public sealed record GardieniRetragere(string Anulare, string Stornare) {
             ?? dependentiProprii
             ?? propriu?.MotivPerioadaStornarii(os)
             ?? receptii
-            ?? nominalizari.Value.Motiv(DateOnly.MaxValue, imperecheri.Parteneri);
+            ?? nominalizari.Value.Motiv(DateOnly.MaxValue, imperecheri.Parteneri)
+            ?? valorice.Value.Stornare;
 
         return new(anulare, stornare);
     }

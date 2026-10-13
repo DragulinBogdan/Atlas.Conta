@@ -11,7 +11,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// virtual al furnizorului. Taxa se decide per document × cotă și se postează
 /// per linie, iar terțul are o singură partidă pe fiecare cont al lui.
 /// </summary>
-public sealed class DeclarantFacturaIntrare : IDeclarant {
+public sealed partial class DeclarantFacturaIntrare : IDeclarant {
     public static readonly DeclarantFacturaIntrare Instanta = new();
 
     DeclarantFacturaIntrare() { }
@@ -24,6 +24,8 @@ public sealed class DeclarantFacturaIntrare : IDeclarant {
 
         var doc = operand.Document;
         Antetul(doc, operand, refuzuri);
+        if (operand.Linii.Any(l => l.CorectieValorica is not null))
+            return DeclaraCorectia(operand, refuzuri);
 
         var contari = new ContareLinie?[operand.Linii.Count];
         var tipuri = new TipTvaFapt?[operand.Linii.Count];
