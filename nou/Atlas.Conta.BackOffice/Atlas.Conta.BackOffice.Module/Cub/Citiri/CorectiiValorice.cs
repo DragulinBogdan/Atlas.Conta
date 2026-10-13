@@ -15,6 +15,16 @@ public static class CorectiiValorice {
     public static bool Exista(IObjectSpace os, IReadOnlyCollection<Guid> loturi) =>
         loturi.Count != 0 && Valorice(os, loturi).Any();
 
+    /// <summary>Loturile pe care documentul are postări și care poartă corecții de valoare, într-o singură citire.</summary>
+    public static List<Guid> LoturiCorectate(IObjectSpace os, Guid document) {
+        var proprii = os.GetObjectsQuery<Postare>()
+            .Where(p => p.DocumentId == document && p.FelUnitate == N.FelUnitate.Lot && p.Unitate != null)
+            .Select(p => p.Unitate!.Value);
+        return [.. os.GetObjectsQuery<Postare>().Where(p => p.Spatiu == N.Spatiu.Stoc && p.FelUnitate == N.FelUnitate.Lot
+                && p.Unitate != null && p.Cantitate == 0m && p.Atribuit != null && proprii.Contains(p.Unitate.Value))
+            .Select(p => p.Unitate!.Value).Distinct()];
+    }
+
     /// <summary>Toate postările loturilor, cu contrapicioarele perechilor lor din afara lotului.</summary>
     public static List<N.FaptPostat> Fapte(IObjectSpace os, IReadOnlyCollection<Guid> loturi, Guid? faraDocument = null) {
         if (loturi.Count == 0) return [];

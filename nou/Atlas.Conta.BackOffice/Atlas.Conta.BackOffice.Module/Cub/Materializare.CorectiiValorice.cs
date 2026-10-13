@@ -9,9 +9,10 @@ namespace Atlas.Conta.BackOffice.Module.Cub;
 public static partial class Materializare {
     /// <summary>Refuzurile retragerii și ale stornării la orice dată, pe corecțiile de valoare ale loturilor documentului; null = liber.</summary>
     public static (string Anulare, string Stornare) MotiveCorectiiValorice(IObjectSpace os, Document doc) {
-        var proprii = os.GetObjectsQuery<Postare>().Where(p => p.DocumentId == doc.ID && p.FelUnitate == N.FelUnitate.Lot).ToList();
-        if (FapteValorice(os, proprii) is not { } fapte)
+        var loturi = Citiri.CorectiiValorice.LoturiCorectate(os, doc.ID);
+        if (loturi.Count == 0)
             return (null, null);
+        var fapte = Citiri.CorectiiValorice.Fapte(os, loturi);
         return (Motiv(() => N.CorectieValorica.LaRetragere(fapte, doc.ID)),
             Motiv(() => N.CorectieValorica.LaStornare(fapte, doc.ID, DateOnly.MaxValue)));
 

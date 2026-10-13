@@ -494,7 +494,7 @@ Valuta și unitatea de evaluare nu sunt condiții de intrare în acel pachet.
 |---|---|---|---|---|
 | 1 | inventar, contract, catalog numeric | surse, decizii, invarianți, docskit | confundarea primitivei cu mecanismul complet | redactat, fără implementare |
 | 2 | producător FCT și proveniența compensării | matrice, cititori, explicație și cronologie; SC-CVL-25…32 | fapte omise de cititori, storno antedatat, export incompatibil | închis 2026-10-14: apartenența compensării (R6, decizia 119); explicația și storno recepției (CV-D8, CV-D5); SAF-T restanță cu refuz (CV-D9); predicatele verificate contra codului și fixate (R8, CV-D10) |
-| 3 | mecanism pur, extensie FCT, operand, materializare și garduri | nucleu + SC-CVL prin comenzile reale, după fixarea perimetrului | dependenți valorici ignorați de gardul cantitativ | implementat 2026-10-14; regresia integrală nerulată încă |
+| 3 | mecanism pur, extensie FCT, operand, materializare și garduri | nucleu + SC-CVL prin comenzile reale, după fixarea perimetrului | dependenți valorici ignorați de gardul cantitativ | implementat 2026-10-14; scenariile CVL și integrala verzi pe ambele profiluri; resturile sunt în secțiunea de verificare |
 | 4 | cititori, snapshot, explicație, XAF și securitate afectată | scenarii, metadata, HTTP/UI unde sunt atinse | afișarea unui cost recalculat ca fapt istoric | de făcut |
 | 5 | regresie și review de închidere | integrală pe ambele profiluri, docskit, review advers | extindere tacită la lanțuri neacoperite | de făcut |
 
@@ -572,10 +572,14 @@ Comenzi executate din rădăcină:
   `run-verificari/20261014-004657-481/rezultat.json`.
 - Invarianții cubului (`INV-CUB`) trec pe faptele scenei, pe ambele
   profiluri, fără nicio relaxare.
+- `verifica.ps1 -Suita Integral -Profil Ambele -Sufix .ClaudeCVL`: verde pe
+  ambele profiluri; `run-verificari/20261014-005221-824/rezultat.json`.
+  Prima rulare a picat pe SC-REGIM-13: oglinda gardurilor în regimul pe
+  stare adaugă o citire. Plafoanele au crescut de la 10 și 12 la 11 și 13
+  instrucțiuni SQL, cost de confirmat de owner (106f).
 
 Ce nu e făcut și nu e certificat de aceste rulări:
 
-- regresia integrală pe ambele profiluri;
 - invariantul de audit din CV-D8 pe deciziile valorice, cu mutanții din
   SC-CVL-26 și SC-CVL-31; `CV_PROVENIENTA` e emis numai la o atribuire spre
   o postare absentă;
