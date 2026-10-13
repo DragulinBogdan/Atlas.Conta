@@ -1,8 +1,8 @@
 # 90 — Nucleul ca ledger n-dimensional — un singur cub de postări în locul celor patru registre; motor pur pe operand închis (`Contract = Postari + Decizii + Ipoteze`); unitatea nominalizată (lot = partidă = fișă) numită pe linie; împerecherea ca nominalizare la operare + document `Împerechere` cu tranzacție de fel `Transfer`; linia FCT postează recepția; o singură postare de stoc, `TipStoc` dispare structural; stornoul ca tranzacție distinctă = inversul cauzat ∪ atribuit; fiscala postată în `Carte=Fiscal`; ordinea TR-D6a…D10 cu Import1C ca probă supremă; XAF și React înghețate pe funcții
 
 - Data: 2026-09-20
-- Stare: amendată de 91, 92, 93, 95, 96, 110
-- Execuție: amendată de 095 (producători compleți înainte de TR-D8), 096 (UrmarestePartide separat de RolTert), de 093 pentru Folosință (gestiune reală, nu virtuală) și de 091 (TR-D10 și „Import1C ca probă supremă" nu mai sunt regulă de oprire; proba supremă e catalogul `docs/nucleu/scenarii/`; amendează invarianții I, III și VI, întărește II; DEPĂȘEȘTE contractul IM `docs/api/p5-felia-izolare-motor-contract.md`; concretizează 51e ca parametru al unității; închide 76-r3, IM-r1, IM-r3, IM-r4 la TR-D9)
+- Stare: amendată de 91, 92, 93, 95, 96, 110, 119
+- Execuție: amendată de 119 ((a) și (i): a doua `Operare` a corecției valorice; stornoul beneficiarului conține numai inversa lui), de 095 (producători compleți înainte de TR-D8), 096 (UrmarestePartide separat de RolTert), de 093 pentru Folosință (gestiune reală, nu virtuală) și de 091 (TR-D10 și „Import1C ca probă supremă" nu mai sunt regulă de oprire; proba supremă e catalogul `docs/nucleu/scenarii/`; amendează invarianții I, III și VI, întărește II; DEPĂȘEȘTE contractul IM `docs/api/p5-felia-izolare-motor-contract.md`; concretizează 51e ca parametru al unității; închide 76-r3, IM-r1, IM-r3, IM-r4 la TR-D9)
 - Arii: dezvoltare-si-validare, domeniu-si-operare
 - Închide: IM-r1, IM-r3, IM-r4
 - Docs: `docs/nucleu/nucleu-cub-design.md` (designul, §1–§11), `docs/nucleu/nucleu-coordonate-rapoarte.md` (pasul 1: coordonatele contra rapoartelor reale, patru amendamente structurale), `docs/nucleu/nucleu-fizica.md` (pasul 2: forma fizică măsurată, FZ-D1…D9, FZ-r), `docs/nucleu/nucleu-transfer.md` (pasul 3: TR-D1…D10, §3 ce se transferă / se rescrie / dispare, §4.1 propunerea de execuție, TR-r), `docs/nucleu/nucleu-bilant.md` (sinteza câștig / pierdere pentru decizie); probele în `run-nucleu/{coordonate,fizica,transfer}/` (inventare cu `fișier:linie`, SQL, EXPLAIN-uri, review-urile adverse). Fără cod: decizia e pasul 0 (TR-D5), oprirea lui e textul de aici.
@@ -15,7 +15,7 @@ sold, rest, cost, curs sau valoare rămasă e o sumă pe cub. Motorul e o
 funcție pură pe un operand închis; regula se aplică la scriere, citirea
 doar adună.**
 
-(a) [amendat de 110] **Cubul.** `Postare = { Coordonate[], Cantitate, ValoareValuta, Valoare,
+(a) [amendat de 110] [amendat de 119] **Cubul.** `Postare = { Coordonate[], Cantitate, ValoareValuta, Valoare,
 Cauza, Atribuit?, Unitate? }` — trei măsuri aditive, restul e proveniență.
 `Tranzactie = Postare[]` balansată per spațiu de conservare, cu fel
 `Operare | Storno | Transfer | Deschidere`, cu data înregistrării și `ScrisLa`
@@ -142,7 +142,7 @@ instrument, cont propriu); trec DSC din FCL, plata din FCT, latura pereche.
 SAF-T: `MovementOfGoods`/`MovementReference` se mută de pe NIR pe FCT,
 declarat.
 
-(i) **Storno, perioadă, sold.** Stornoul = inversul EXACT al postărilor
+(i) [amendat de 91] [amendat de 119] **Storno, perioadă, sold.** Stornoul = inversul EXACT al postărilor
 cauzate ∪ atribuite documentului, scris ca tranzacție distinctă (`Atribuit`
 e ce face definiția completă după o reevaluare). Perioada e gard; corecția
 în perioadă închisă = storno legat + document nou datat în perioada deschisă

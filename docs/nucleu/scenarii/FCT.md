@@ -83,3 +83,18 @@ operație ulterioară pe lot nu e refuzată. Garda de sold a registrului ruleaz�
 numai pe tipurile din afara cubului, iar acestea nu au reguli de stoc.
 Formularea „poate refuza alte operații pe lot" din rândul SC-X-01 nu se
 confirmă pe starea de azi.
+
+## Corecție valorică pe lot — propunere TR-D9b-CV, 2026-10-12
+
+[Contractul CV](../tr-d9b-corectii-valorice-contract.md) propune FCT nouă cu
+linie explicită de corecție și cantitate zero. Nu înlocuiește FCT inițială,
+nu naște lot/NIR și deschide propria partidă. [Catalogul CVL](CVL.md) are
+32 de scenarii documentate, neimplementate și nerulate; CVL este numele
+mecanismului, nu un tip nou de document. [Matricea producătorului și a
+compensării](../tr-d9b-corectii-valorice-producator-si-compensare.md) cere
+review înainte de cod, inclusiv delimitarea fiscalului și a FCT mixte.
+Catalogul FCT executabil de mai sus nu certifică această extensie.
+[Review-ul R1](../tr-d9b-corectii-valorice-review-r1.md) confirmă alegerea
+FCT. Apartenența compensării este fixată prin
+[decizia 119](../../decizii/119-compensarea-valorica-apartine-corectiei.md). Exportul q0/multicont rămâne restanță cu
+refuz (CV-r1); predicatele și explicația se confirmă înainte de cod.

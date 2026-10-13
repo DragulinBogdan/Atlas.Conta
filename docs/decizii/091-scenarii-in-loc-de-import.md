@@ -4,7 +4,7 @@
 - Stare: amendată de 107, 118
 - Execuție: (amendează 090 la TR-D10, la „Import1C ca probă supremă" și la pașii TR-D7b 3–7; depășește N-r1; închide ca gate `--declaratie-pe-baza` și `--reconciliere-cub`, care rămân unelte de diagnostic; dă stare fiecărei restanțe deschise)
 - Arii: README, dezvoltare-si-validare, limite-curente
-- Amendează: 90
+- Amendează: 90 (i)
 - Docs: `docs/consultari/codex-2026-09-22-cub.md` (consultarea care a declanșat decizia), `docs/nucleu/scenarii/README.md` (catalogul: forma, cazurile obligatorii, lanțurile transversale), `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (amendamentul 091 pe pași și pe regula de oprire), `docs/decizii/restante.md` (triajul)
 
 ## Regula durabilă

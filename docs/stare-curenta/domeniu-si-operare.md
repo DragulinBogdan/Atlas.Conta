@@ -981,7 +981,9 @@ Ce ține nucleul (contractul `docs/nucleu/tr-d6a-nucleu-pur-contract.md`):
   parametru al citirii; snapshot-ul e lema `Sold(≤t) = Sold(≤t0) +
   Sold(t0<d≤t)`. **Stornoul** = inversul cauzat ∪ atribuit, fără schimb de
   latură, tranzacție distinctă; contrapartida unei postări atribuite
-  inversate rămâne nedefinită până la TR-D9b (N-r5). (N-D9, N-D10)
+  inversate rămâne nedefinită în cod până la TR-D9b (N-r5). Regula e 119,
+  neimplementată: stornoul beneficiarului conține numai inversa lui, iar
+  corecția își scrie compensarea într-o `Operare` proprie. (N-D9, N-D10)
 - **Motorul**: `Declaratie` (mișcări pe coordonate rezolvate + decizii +
   ipoteze) → exact o tranzacție `Operare` (sau `Transfer` din mutări pe
   același cont) → `Contract` acceptat/refuzat, determinist, cu contorul de
@@ -1839,5 +1841,5 @@ D394 (S13) sunt în [politici-si-fiscalitate](politici-si-fiscalitate.md),
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (51; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 10, 13, 14, 15, 16 (amendată de 89), 17, 20, 22, 23, 25, 26 (amendată de 112), 27, 30, 31 (amendată de 76, 88), 32, 33, 36 (amendată de 71), 37, 41, 42 (amendată de 104, 106), 46 (amendată de 113), 48 (amendată de 76), 49, 54, 55, 62, 64 (amendată de 84), 65, 75, 76, 82, 86, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110), 93, 95, 97 (amendată de 98), 98, 100 (amendată de 102), 101 (amendată de 102), 102, 104 (amendată de 106), 106, 109, 111, 112, 114 (amendată de 116), 115, 116 (amendată de 117), 117.
+Deciziile care numesc pagina în `Arii:` (52; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 10, 13, 14, 15, 16 (amendată de 89), 17, 20, 22, 23, 25, 26 (amendată de 112), 27, 30, 31 (amendată de 76, 88), 32, 33, 36 (amendată de 71), 37, 41, 42 (amendată de 104, 106), 46 (amendată de 113), 48 (amendată de 76), 49, 54, 55, 62, 64 (amendată de 84), 65, 75, 76, 82, 86, 87 (amendată de 97), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 93, 95, 97 (amendată de 98), 98, 100 (amendată de 102), 101 (amendată de 102), 102, 104 (amendată de 106), 106, 109, 111, 112, 114 (amendată de 116), 115, 116 (amendată de 117), 117, 119.
 <!-- /gen:decizii -->

@@ -128,7 +128,9 @@ are catalogul A verificat pe ambele profiluri și referința privată măsurată
 până la 5.001.179 postări. [Pasul 5](docs/nucleu/tr-d9b-pas5-comparatie.md)
 are comparația A/B verde, review-ul independent Codex și reverificarea
 Claude, care a corectat recunoașterea ușii de sistem; pachetul e comis la
-cererea owner-ului (2026-10-13). Unde suntem, cu cifre, e
+cererea owner-ului (2026-10-13). Pachetul următor, corecțiile valorice pe
+lot, are [contractul TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md)
+și decizia 119; nu e implementat. Unde suntem, cu cifre, e
 generat în [docs/stare.md](docs/stare.md); cronologia feliilor e în
 `docs/decizii/istoric-plan-de-lucru.md`.
 

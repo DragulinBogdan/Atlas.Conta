@@ -35,6 +35,15 @@ valuta și costul vamal — primesc pachete cu contract și probe numerice
 proprii. Închiderea primului pachet nu închide întreaga TR-D9b și nici
 restanțele celorlalte pachete.
 
+Pachetul următor are [contractul corecțiilor valorice](tr-d9b-corectii-valorice-contract.md),
+[inventarul CodeGraph](tr-d9b-corectii-valorice-inventar.md) și
+[catalogul CVL](scenarii/CVL.md), redactate înainte de implementare.
+Propunerea de [producător FCT și compensare pe postări](tr-d9b-corectii-valorice-producator-si-compensare.md)
+detaliază documentul real și ordinea inversărilor. Apartenența compensării
+este fixată prin [decizia 119](../decizii/119-compensarea-valorica-apartine-corectiei.md); restul rămâne la review înainte de cod.
+Costul vamal urmează mecanismului verificat; valuta și unitatea de evaluare
+rămân pachete distincte. Aceste documente nu închid review-ul originii.
+
 Nu intră: registrele procedurale 111(f), alocările pe poziții bugetare,
 schimbarea identității partidei, reorganizarea loturilor/fișelor, un nou
 algoritm de stingere, culegerea partidei în UI, funcționalitate valutară
