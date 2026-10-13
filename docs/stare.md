@@ -7,7 +7,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Ce | Cât |
 |---|---|
 | Decizii | 119: 86 active, 33 amendate parțial, 0 depășite, 0 propuse |
-| Restanțe | 381: 284 deschise, 97 închise |
+| Restanțe | 381: 282 deschise, 99 închise |
 | Pagini de stare curentă | 7 |
 | Contracte de felie (`Tip: contract`) | 3, deschise 2 |
 | Cataloage vii (`Tip: catalog`) | 3 |
@@ -38,7 +38,7 @@ Niciuna.
 | după PoC | 206 |
 | migrare | 24 |
 | depășită de 091 | 2 |
-| docs | 6 |
+| docs | 4 |
 | (în afara vocabularului) | 4 |
 
 ### Lista `activă` (42, prag 45)
