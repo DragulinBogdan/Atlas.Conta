@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 
 namespace Atlas.Conta.Nucleu;
 
-public sealed record Unitate(
+public sealed record UnitateSold(
     Guid Id,
     FelUnitate Fel,
     Guid Cont,
@@ -24,10 +24,10 @@ public sealed record Unitate(
         init => produs = Ceruta(Fel, FelUnitate.Lot, value, nameof(Produs));
     }
 
-    public static Unitate DeschidePartida(Guid cont, Guid partener, Guid documentDeschizator, DateOnly data) =>
+    public static UnitateSold DeschidePartida(Guid cont, Guid partener, Guid documentDeschizator, DateOnly data) =>
         new(Identitate(documentDeschizator, cont, partener), FelUnitate.Partida, cont, partener, null, data);
 
-    public static Unitate DeschidePartidaInitiala(Guid cont, Guid partener, Guid referinta, DateOnly data) =>
+    public static UnitateSold DeschidePartidaInitiala(Guid cont, Guid partener, Guid referinta, DateOnly data) =>
         new(Identitate(referinta, cont, partener, initiala: true), FelUnitate.Partida, cont, partener, null, data);
 
     public decimal? Raport(Sold sold) {

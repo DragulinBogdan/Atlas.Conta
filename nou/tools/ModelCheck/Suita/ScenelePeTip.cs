@@ -54,6 +54,9 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 static class ScenelePeTip {
     public static List<Scena> Ruleaza(Suita s, bool privat) {
         var scene = new List<Scena> {
+            new(nameof(ScenariiD9b), ["D9B"], () => new ScenariiD9b(
+                s.Deschide, s.Check, privat,
+                (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()),
             new(nameof(ScenariiImo), ["IMO"], () => ScenariiImo.Ruleaza(
                 s.Deschide, s.Check, privat,
                 (os, an, luna) => s.InchideAcceptTot(os, an, luna))),

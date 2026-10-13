@@ -12,7 +12,7 @@ static class ProbeM1 {
         var partener = Guid.NewGuid();
         Guid a = Guid.NewGuid(), b = Guid.NewGuid(), c = Guid.NewGuid();
         Deschidere.Detaliu P(Guid unitate, decimal valoare) =>
-            new(N.FelUnitate.Partida, unitate, null, cont, N.Latura.Credit, valoare, 0m, partener);
+            new(N.FelUnitate.Partida, unitate, null, cont, N.Sens.Credit, valoare, 0m, partener);
         Deschidere.Detaliu[] cub = [P(a, 60m), P(b, 40m)];
         check("probă M1-R1: reluarea identică n-are diferențe de detaliu",
             Deschidere.DiferenteDetaliu([P(a, 60.00m), P(b, 40.00m)], cub).Count == 0);
@@ -21,7 +21,7 @@ static class ProbeM1 {
         check("probă M1-R1: referința înlocuită, cu total și număr constante, e detectată în ambele sensuri",
             Deschidere.DiferenteDetaliu([P(a, 60m), P(c, 40m)], cub).Count == 2);
         check("probă M1-R1: partida mutată pe altă latură, cu aceeași valoare, e detectată",
-            Deschidere.DiferenteDetaliu([P(a, 60m), P(b, 40m) with { Latura = N.Latura.Debit }], cub).Count == 1);
+            Deschidere.DiferenteDetaliu([P(a, 60m), P(b, 40m) with { Latura = N.Sens.Debit }], cub).Count == 1);
 
         var Refuz = ReconciliereLuna.ExplicatiePartida.Refuz;
         var Fara = ReconciliereLuna.ExplicatiePartida.Fara;

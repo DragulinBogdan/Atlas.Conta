@@ -1,6 +1,6 @@
 # Termeni
 
-**Actualizat: 2026-10-11.** [Index](README.md)
+**Actualizat: 2026-10-13.** [Index](README.md)
 
 Glosarul numește termenii paginilor de stare curentă și trimite la regula
 fiecăruia, fără s-o dubleze. Un termen intră aici la prima lui folosire
@@ -36,8 +36,8 @@ repartitorul ei și cu partea permisă de contractul laturilor; debitul și
 creditul postării nu sunt laturi, ci sensul ei, iar „latura pereche” a
 viramentului e documentul pereche (65). Regula:
 [domeniu § Laturile ca structură](domeniu-si-operare.md#laturile-documentului-ca-structură-t-d13-felia-32-pasul-2b) (T-D13, 118).
-Înrudit: parte, capăt, sens. În cod: `Document.Laturi()`; `enum Latura`
-din nucleu e sensul postării și devine `Sens` (118-r7).
+Înrudit: parte, capăt, sens. În cod: `Document.Laturi()`; enumul din nucleu
+pentru debit/credit se numește `Sens` (118-r7).
 În sistemul vechi: predator → primitor configurat per tip × predator × primitor.
 
 ### sens
@@ -46,8 +46,9 @@ Debitul sau creditul postării, coordonată obligatorie a cubului; aceeași
 familie numește sensul taxei (`SensTva`) și al stingerii (`SensStingere`)
 și nu se confundă cu contarea, care e regula de atribuire a conturilor.
 Regula: [domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D2, 118).
-Înrudit: latură, postare, coordonată. În cod: `Latura` (nucleu, devine
-`Sens` prin 118-r7), `SensTva`, `SensStingere`.
+Înrudit: latură, postare, coordonată. În cod: `Sens` (nucleu, 118-r7),
+`SensTva`, `SensStingere`. Proprietățile existente `Latura` păstrează numele
+în acest pas; tipul lor debit/credit este `Sens`.
 
 ### parte
 
@@ -127,7 +128,8 @@ imobilizare sub același concept, scurt „unitate” în pagini; FIFO consumă
 dimensiunea bugetară `Unitate`, nici unitatea de măsură. Regula:
 [domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D6, N-D7, 118).
 Înrudit: lot, partidă, imobilizare, document deschizător. În cod:
-`Unitate` (devine `UnitateSold` în TR-D9b, 118-r8).
+`UnitateSold` (TR-D9b, 118-r8). Membrii existenți numiți `Unitate`, inclusiv
+identificatorul persistat pe postare, păstrează numele.
 
 ### lot
 

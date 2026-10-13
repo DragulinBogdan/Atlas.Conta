@@ -1,6 +1,51 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-11.** [Index](README.md)
+**Actualizat: 2026-10-13.** [Index](README.md)
+
+TR-D9b, pasul 2: tipurile CLR sunt `UnitateSold` și `Sens`; proprietățile,
+coloanele și forma JSON a explicației își păstrează numele. Nucleul a
+trecut 199/199 la 2026-10-12; integrala are **3.678 bugetar / 5.080 privat
+OK**, zero FAIL, `run-verificari/20261012-115040-608/`. Condițiile rulării
+offline sunt în [raportul pasului](../nucleu/tr-d9b-pas2-redenumiri.md).
+
+TR-D9b, pasul 3: [catalogul D9B](../nucleu/scenarii/D9B.md) verifică
+comportamentul anterior separat de proiecția persistată introdusă în pasul 4.
+Regresia `D9B,CITIRI,DESCHIDERE,PLT,NTC` are **800 bugetar / 927 privat OK**,
+zero FAIL, cu `INV-CUB` pe 13 scene/profil și zero reziduu,
+`run-verificari/20261012-125206-497/`. Referința A acoperă 48 combinații de
+citire până la 5.001.179 postări și scrierea cu 2/51 partide pe baza dedicată
+privată `.CodexD9bA`. Reproducere prin `verifica.ps1 -Suita D9bReferinta
+-Profil Privat -Sufix .CodexD9bA`; numai comenzile, pe drafturile păstrate,
+prin `-Suita D9bScriere`. Cifrele, artefactele SQL și limita copiilor
+sintetice sunt în [raport](../nucleu/tr-d9b-pas3-referinta.md).
+
+TR-D9b, pasul 4: originea partidei este persistată în `OriginiPartide`,
+cu cititor direct, vizibilitate pe suportul propriu și refuz CRUD pe ușa
+securizată. Migrația este `20261012114235_OriginiPartide`; bazele de probă
+au sufix `.CodexD9bOrigine`. Proba HTTP, prin `verifica.ps1 -Suita D9bHttp
+-Profil Privat -Sufix .CodexD9bOrigine`, pornește hostul izolat pe5093,
+baza `Atlas.Conta.Http.Privat.CodexD9bOrigine` pe5446, seed privat și
+utilizatorii reali. Rulează matricea `refuzuri.ps1 -Baza` completă și
+`origini-partide.py`. Integrala are **3.756 bugetar / 5.158 privat OK**,
+zero FAIL (`run-verificari/20261012-150800-674/`); HTTP **327/327** plus
+SC-D9B-10 verde (`run-verificari/20261012-150627-604/`), nucleu **199/199**.
+Origini reziduale zero, mutanți și `RAMURA-NUL` verzi. Condițiile sunt în
+[raportul pasului 4](../nucleu/tr-d9b-pas4-origini.md).
+
+TR-D9b, pasul 5: **48/48 perechi A/B egale**, toate pragurile verzi pe
+aceeași bază `.CodexD9bB`, până la 5.001.179 postări. Seria de sistem
+rulează pe ușa nesecurizată a hosturilor; restul integral scade acolo de la
+11.952,96 la 3.664,04 ms. Scrierea cu 51 partide este 63,5928 ms față de
+limita 78,2313 ms, fără rezervă dovedită: măsurarea nu desparte variantele.
+Reproducere prin `verifica.ps1` cu suitele `D9bComparatie`, `D9bScriere`,
+`D9bRaport`, secvențial, pe o bază B nouă. După corecția ușii de sistem din
+reverificare, integrala are **3.759 bugetar / 5.161 privat OK**, zero FAIL
+(`run-verificari/20261012-201158-086/`): origine fără suport, egalitate A/B
+sub rol restrictiv cu martor vizibil, originea directă pe ușa de sistem a
+hostului, `RAMURA-NUL` și curățenie verzi; HTTP **327/327** plus SC-D9B-10
+(`run-verificari/20261012-205322-837/`).
+Protocolul, artefactele și limitele sunt în
+[raportul pasului 5](../nucleu/tr-d9b-pas5-comparatie.md).
 
 Validarea curentă (C111, corecția C111-F-R1 a review-ului de închidere,
 2026-10-11): integrala **3.678 bugetar / 5.080 privat OK**, zero FAIL, pe
@@ -394,8 +439,10 @@ EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
 automată a schemei prin XAF este dezactivată. Module este comun celor două
 hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
 
-Lanțul de migrații e o singură migrație, `20261010151835_InitialCreate`
-(C111-D7; 102e, D9-D6). E generată din model, plus SQL-ul brut pe care
+Lanțul are migrația de bază `20261010151835_InitialCreate`
+(C111-D7; 102e, D9-D6) și `20261012114235_OriginiPartide` (TR-D9b pasul4),
+care adaugă proiecția provenienței fără backfill. Migrația de bază este
+generată din model, plus SQL-ul brut pe care
 modelul nu-l declară: `Postare` partiționată pe `Spatiu` cu cheia
 `(Spatiu, ID)`, cele două partiții, FK-urile pe partiții — inclusiv cele trei
 spre `Repartitori`, prin `Repartitor`, `PartenerFiscal` și `Loc` —, cei 14

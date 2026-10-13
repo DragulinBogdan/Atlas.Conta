@@ -48,7 +48,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
     RandScena[] Rand(FacturaScena d, int index, decimal q, decimal v,
             N.FelTranzactie fel = N.FelTranzactie.Transfer, string tip = null) {
         var l = d.Linii[index];
-        var latura = q < 0m && fel == N.FelTranzactie.Operare ? N.Latura.Credit : N.Latura.Debit;
+        var latura = q < 0m && fel == N.FelTranzactie.Operare ? N.Sens.Credit : N.Sens.Debit;
         var valoare = q < 0m && fel == N.FelTranzactie.Transfer ? -v : v;
         return [new(Cont(tip ?? Stoc), latura, valoare, q, Magazie, l.Lot, l.Produs,
                 Linie: l.Id, Spatiu: N.Spatiu.Stoc),
@@ -99,8 +99,8 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica("SC-CIT-04", "ASM mixt: două postări economice de 40, fără Transfer/contrapondere", CuSpatiu(os => {
             var randuri = C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == mixt.Doc.Id).ToList();
             return randuri.Count == 2 && randuri.All(p => p.Valoare == 40 && p.Repartitor == Magazie)
-                && randuri.Single(p => p.Latura == N.Latura.Debit).Cont == Cont(Fabricat)
-                && randuri.Single(p => p.Latura == N.Latura.Credit).Cont == Cont(Materie);
+                && randuri.Single(p => p.Latura == N.Sens.Debit).Cont == Cont(Fabricat)
+                && randuri.Single(p => p.Latura == N.Sens.Credit).Cont == Cont(Materie);
         }));
         if (Privat) Verifica("SC-SAFT-10", "ASM mixt pe cub: GL numai D 345 40 / C materie 40, fără transfer sau contraponderi",
             CuSpatiu(os => {
@@ -370,9 +370,9 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
             .. Rand(asm, 2, 4, 160, N.FelTranzactie.Operare, "371")];
         Postari("SC-X-09", asm.Id, N.FelTranzactie.Operare, Ianuarie, a);
         var lot = asm.Linii[2]; var dsc = Iesire(false, (lot, 1)); Opereaza(dsc.Id);
-        RandScena[] d = [new(Cont("607"), N.Latura.Debit, 40, 1, Client,
+        RandScena[] d = [new(Cont("607"), N.Sens.Debit, 40, 1, Client,
                 Produs: lot.Produs, Linie: dsc.Linii[0].Id, Contrapondere: N.Contrapondere.Tert),
-            new(Cont("371"), N.Latura.Credit, 40, -1, Magazie, lot.Lot, lot.Produs,
+            new(Cont("371"), N.Sens.Credit, 40, -1, Magazie, lot.Lot, lot.Produs,
                 Linie: dsc.Linii[0].Id, Spatiu: N.Spatiu.Stoc)];
         Postari("SC-X-09", dsc.Id, N.FelTranzactie.Operare, Ianuarie, d);
         var inainteAsm = Amprenta(asm.Id); var inainteDsc = Amprenta(dsc.Id);
@@ -384,9 +384,9 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
             os.CommitChanges(); return new FacturaScena(doc.ID, [new(l.ID, sursa.Lot, sursa.Produs)]);
         });
         Opereaza(rlf.Id); var partida = Partida(rlf.Id, "401")!.Value;
-        RandScena[] r = [new(Cont(Stoc), N.Latura.Debit, -50, -1, Magazie, sursa.Lot, sursa.Produs,
+        RandScena[] r = [new(Cont(Stoc), N.Sens.Debit, -50, -1, Magazie, sursa.Lot, sursa.Produs,
                 Linie: rlf.Linii[0].Id, Spatiu: N.Spatiu.Stoc),
-            new(Cont("401"), N.Latura.Credit, -50, 1, Furnizor, partida,
+            new(Cont("401"), N.Sens.Credit, -50, 1, Furnizor, partida,
                 sursa.Produs, Linie: rlf.Linii[0].Id, Contrapondere: N.Contrapondere.Tert)];
         Postari("SC-X-09", rlf.Id, N.FelTranzactie.Operare, Ianuarie, r);
         Sold("SC-X-09", sursa, 1, 50); Sold("SC-X-09", lot, 3, 120); SoldPartida("SC-X-09", partida, Ianuarie, 50);

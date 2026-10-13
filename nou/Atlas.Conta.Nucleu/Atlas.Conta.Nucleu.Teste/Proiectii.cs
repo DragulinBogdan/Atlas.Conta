@@ -2,7 +2,7 @@ using Xunit;
 
 namespace Atlas.Conta.Nucleu.Teste;
 
-public sealed record Cheie(Guid? Unu = null, Guid? Doi = null, Latura? Latura = null);
+public sealed record Cheie(Guid? Unu = null, Guid? Doi = null, Sens? Latura = null);
 
 public static class Proiectii {
     public static readonly (string Nume, Func<Postare, Cheie> Cheie)[] Toate = [

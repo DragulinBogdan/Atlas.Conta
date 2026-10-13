@@ -54,7 +54,7 @@ public sealed partial class DeclarantNir {
                 }
                 consumate.Add(PoliticiConsumate.Versiunea(cont.Regula));
                 stoc = new N.Capat { Cont = cont.ContDebit, Repartitor = doc.Primitor.Coordonata, Produs = lot.ProdusId,
-                    Unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, cont.ContDebit, null, lot.ProdusId, lot.Data),
+                    Unitate = new N.UnitateSold(lot.Id, N.FelUnitate.Lot, cont.ContDebit, null, lot.ProdusId, lot.Data),
                     Analiza = Contari.Analiza(linie.Analiza, cont.Regula.OverrideDebit, cont.Regula.Comun) };
                 q = linie.Cantitate;
                 v = rotunjire.Bani(linie.PretUnitar.GetValueOrDefault() * q);
@@ -79,7 +79,7 @@ public sealed partial class DeclarantNir {
                     || cauza == CauzaDiferentei.Imputabila && !Partide.Urmareste(operand, contDiferenta)) {
                 Refuza(PoliticaLipsa, "Contul diferenței trebuie să existe; imputarea cere urmărire pe partide."); continue;
             }
-            N.Unitate? partida = partener is Guid titular && Partide.Urmareste(operand, contDiferenta)
+            N.UnitateSold? partida = partener is Guid titular && Partide.Urmareste(operand, contDiferenta)
                 ? Partide.Proprie(operand, contDiferenta, titular) : null;
             if (partida != null && partide.Add(partida.Id)) decizii.Add(new N.PartidaDeschisa(linie.Id, partida));
             var a = stoc.Analiza;

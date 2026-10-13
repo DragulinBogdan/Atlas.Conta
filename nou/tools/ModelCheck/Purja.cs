@@ -69,12 +69,17 @@ sealed class Purja(IObjectSpace os) {
             var (tabela, coloanaId) = TabelaRadacina(ctx, tip);
             // Cubul atârnă de `Documente` prin FK: purja documentului îl ia cu ea. // S-D8
             if (tabela == "Documente")
-                foreach (var alCubului in new[] { "Postare", "Tranzactie" }) {
+                foreach (var alCubului in new[] { "OriginiPartide", "Postare", "Tranzactie" }) {
                     var alCubuluiSql = $"DELETE FROM \"{alCubului}\" WHERE \"DocumentId\" = ANY(@p0)";
                     ctx.Database.ExecuteSqlRaw(alCubuluiSql, [ids.ToArray()]);
                 }
             // Numele de tabelă/coloană vin din modelul EF (nu din date), Id-urile
             // rămân PARAMETRU (`uuid[]`) — SQL brut, dar nu concatenare de valori.
+            if (tabela == "Postare")
+                ctx.Database.ExecuteSqlRaw("""
+                    DELETE FROM "OriginiPartide" WHERE "DocumentId" IS NULL AND "ID" IN
+                    (SELECT "Unitate" FROM "Postare" WHERE "ID" = ANY(@p0) AND "DocumentId" IS NULL)
+                    """, [ids.ToArray()]);
             var sql = $"DELETE FROM \"{tabela}\" WHERE \"{coloanaId}\" = ANY(@p0)";
             try {
                 ctx.Database.ExecuteSqlRaw(sql, [ids.ToArray()]);
@@ -127,7 +132,7 @@ sealed class Purja(IObjectSpace os) {
                 continue;
             StergeDependentii(ctx, fk.DeclaringEntityType.GetRootType(), copii, adancime + 1);
             if (tabela == "Documente")
-                foreach (var alCubului in new[] { "Postare", "Tranzactie" })
+                foreach (var alCubului in new[] { "OriginiPartide", "Postare", "Tranzactie" })
                     ctx.Database.ExecuteSqlRaw(
                         $"DELETE FROM \"{alCubului}\" WHERE \"DocumentId\" = ANY(@p0)", [copii.ToArray()]);
             ctx.Database.ExecuteSqlRaw($"DELETE FROM \"{tabela}\" WHERE \"{coloanaId}\" = ANY(@p0)", [copii.ToArray()]);

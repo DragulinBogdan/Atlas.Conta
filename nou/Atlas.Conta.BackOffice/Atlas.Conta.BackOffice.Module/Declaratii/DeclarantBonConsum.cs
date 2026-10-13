@@ -48,7 +48,7 @@ public sealed class DeclarantBonConsum : IDeclarant {
             var contare = contari[i]!.Value;
             var lot = linie.Lot!;
             var cheie = new CheieLotFapt(lot.Id, contare.ContCredit, lot.ProdusId, doc.Predator.Id);
-            var iesit = new N.Unitate(
+            var iesit = new N.UnitateSold(
                 lot.Id, N.FelUnitate.Lot, contare.ContCredit, null, lot.ProdusId, lot.Data);
             if (!solduri.TryGetValue(cheie, out var sold)) {
                 sold = operand.SolduriLoturi.GetValueOrDefault(cheie) ?? N.Sold.Zero;

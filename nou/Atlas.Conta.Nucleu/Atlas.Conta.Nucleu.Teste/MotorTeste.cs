@@ -28,10 +28,10 @@ public class MotorTeste {
                 var miscare = declaratie.Miscari[i];
                 var debit = tranzactie.Postari[2 * i];
                 var credit = tranzactie.Postari[2 * i + 1];
-                Assert.Equal(Latura.Debit, debit.Coordonate.Latura);
+                Assert.Equal(Sens.Debit, debit.Coordonate.Latura);
                 Assert.Equal(miscare.La.Cont, debit.Coordonate.Cont);
                 Assert.Equal(miscare.Cantitate, debit.Cantitate);
-                Assert.Equal(Latura.Credit, credit.Coordonate.Latura);
+                Assert.Equal(Sens.Credit, credit.Coordonate.Latura);
                 Assert.Equal(miscare.DeLa.Cont, credit.Coordonate.Cont);
                 Assert.Equal(-miscare.Cantitate, credit.Cantitate);
                 Assert.Equal(miscare.Valoare, debit.Valoare);
@@ -91,7 +91,7 @@ public class MotorTeste {
             aleator => Gen.Declaratie(aleator),
             p => p with {
                 Coordonate = p.Coordonate with {
-                    Latura = p.Coordonate.Latura == Latura.Debit ? Latura.Credit : Latura.Debit,
+                    Latura = p.Coordonate.Latura == Sens.Debit ? Sens.Credit : Sens.Debit,
                 },
             },
             Coduri.ConservareValoare);
@@ -216,7 +216,7 @@ public class MotorTeste {
         var mutare = new Mutare(
             new Capat { Cont = Gen.Conturi[0] },
             new Capat { Cont = Gen.Conturi[1] },
-            Latura.Debit,
+            Sens.Debit,
             0m,
             0m,
             10m,
@@ -230,7 +230,7 @@ public class MotorTeste {
         var mutare = new Mutare(
             new Capat { Cont = Gen.Conturi[0] },
             new Capat { Cont = Gen.Conturi[0] },
-            Latura.Debit,
+            Sens.Debit,
             0m,
             0m,
             10m,

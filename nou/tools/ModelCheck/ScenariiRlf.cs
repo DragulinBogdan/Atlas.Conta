@@ -30,11 +30,11 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
     RandScena[] Randuri(FacturaScena d, int i, decimal q, decimal v, decimal taxa = 0,
             string tva = null, int? perioada = null, bool inversa = false) {
         var l = d.Linii[i]; var tv = tva == null ? (Guid?)null : Tva(tva);
-        var debit = new RandScena(Cont("371"), N.Latura.Debit, v, q, Magazie,
+        var debit = new RandScena(Cont("371"), N.Sens.Debit, v, q, Magazie,
             l.Lot, l.Produs, PartenerFiscal: tv != null ? Furnizor : null, Linie: l.Id, Tva: tv,
             Rol: tv != null ? N.RolTva.Baza : null, Perioada: tv != null ? perioada ?? An * 100 + 1 : null,
             Sens: tv != null ? N.SensTva.Achizitie : null, Spatiu: N.Spatiu.Stoc, Loc: tv != null ? Magazie : null);
-        var credit = new RandScena(Cont("401"), N.Latura.Credit, v, -q, Furnizor,
+        var credit = new RandScena(Cont("401"), N.Sens.Credit, v, -q, Furnizor,
             P(d.Id), l.Produs, Linie: l.Id, Contrapondere: N.Contrapondere.Tert);
         return taxa == 0 ? [debit, credit] : [debit, credit,
             debit with { Cont = Cont("4426"), Valoare = taxa, Cantitate = 0, Unitate = null,

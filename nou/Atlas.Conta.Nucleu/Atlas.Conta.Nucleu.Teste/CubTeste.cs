@@ -54,7 +54,7 @@ public class CubTeste {
     public void FiltrulTaieExactPostarile() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactii = Istorie(aleator);
-            var debit = Cub.Sold(tranzactii, p => p.Coordonate.Cont, p => p.Coordonate.Latura == Latura.Debit);
+            var debit = Cub.Sold(tranzactii, p => p.Coordonate.Cont, p => p.Coordonate.Latura == Sens.Debit);
             foreach (var sold in debit.Values)
                 Assert.Equal(0m, sold.Credit);
         });
@@ -73,10 +73,10 @@ public class CubTeste {
         var cauza = new Cauza(Gen.Documente[0], null);
         Assert.Equal(
             new Sold(7.50m, 0m, 0m, 1.20m),
-            Sold.Din(new Postare(pe.Pe(Latura.Debit, data), 0m, 1.20m, 7.50m, cauza)));
+            Sold.Din(new Postare(pe.Pe(Sens.Debit, data), 0m, 1.20m, 7.50m, cauza)));
         Assert.Equal(
             new Sold(0m, -7.50m, 0m, 0m),
-            Sold.Din(new Postare(pe.Pe(Latura.Credit, data), 0m, 0m, -7.50m, cauza)));
+            Sold.Din(new Postare(pe.Pe(Sens.Credit, data), 0m, 0m, -7.50m, cauza)));
     }
 
     [Fact]
@@ -108,19 +108,19 @@ public class CubTeste {
         var (receptia, _, partida) = Receptie();
         // Stingerea sub TR-D2 e postarea care numește partida: laturile se adună
         // separat, deci proba e pe net.
-        var nominalizata = Stingere(Latura.Debit, 100m);
+        var nominalizata = Stingere(Sens.Debit, 100m);
         var dupaPlata = Cub.Sold(
             [receptia, nominalizata], p => p.Coordonate.Unitate?.Id ?? Guid.Empty)[partida.Id];
         Assert.Equal(0m, dupaPlata.Net);
         Assert.Equal(0m, dupaPlata.Cantitate);
         // Mutarea cu valoare SEMNATĂ (tranzacția de împerechere) golește chiar soldul:
         // cu cantitatea contraponderii încă adunată, `Sold.Zero` era de neatins.
-        var mutata = Stingere(Latura.Credit, -100m);
+        var mutata = Stingere(Sens.Credit, -100m);
         var dupaTransfer = Cub.Sold(
             [receptia, mutata], p => p.Coordonate.Unitate?.Id ?? Guid.Empty)[partida.Id];
         Assert.Equal(Sold.Zero, dupaTransfer);
 
-        Tranzactie Stingere(Latura latura, decimal valoare) {
+        Tranzactie Stingere(Sens latura, decimal valoare) {
             var data = new DateOnly(2026, 1, 8);
             return new Tranzactie(FelTranzactie.Transfer, data, Gen.Documente[1], [
                 new Postare(
@@ -135,7 +135,7 @@ public class CubTeste {
     }
 
     // N-D4: recepția are contraponderea (−q) pe partida furnizorului și +q pe lot.
-    static (Tranzactie Tranzactie, Unitate Lot, Unitate Partida) Receptie() {
+    static (Tranzactie Tranzactie, UnitateSold Lot, UnitateSold Partida) Receptie() {
         var aleator = new Random(Gen.Samanta);
         var produs = Gen.Produse[0];
         var contStoc = Gen.Conturi[0];
@@ -144,7 +144,7 @@ public class CubTeste {
         var document = Gen.Documente[0];
         var data = new DateOnly(2026, 1, 5);
         var lot = Gen.Lot(aleator, contStoc, produs);
-        var partida = Unitate.DeschidePartida(contTert, furnizor.Id, document, data);
+        var partida = UnitateSold.DeschidePartida(contTert, furnizor.Id, document, data);
         var (debit, credit) = Miscare.Postari(
             new Miscare(
                 new Capat {
@@ -194,7 +194,7 @@ public class CubTeste {
 
     static readonly (string Nume, Func<Postare, bool>? Filtru)[] Filtre = [
         ("fără filtru", null),
-        ("doar debit", p => p.Coordonate.Latura == Latura.Debit),
+        ("doar debit", p => p.Coordonate.Latura == Sens.Debit),
         ("doar cu cantitate", p => p.Cantitate != 0m),
     ];
 
@@ -211,7 +211,7 @@ public class CubTeste {
     static Tranzactie Una(Guid cont, Guid document, DateOnly data) =>
         new(FelTranzactie.Operare, data, document, [
             new Postare(
-                new Coordonate { Cont = cont, Latura = Latura.Debit, Data = data },
+                new Coordonate { Cont = cont, Latura = Sens.Debit, Data = data },
                 0m,
                 0m,
                 1m,

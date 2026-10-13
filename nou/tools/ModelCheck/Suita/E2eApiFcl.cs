@@ -331,9 +331,9 @@ static class E2eApiFcl {
             var noteApiFclCub = CubScena.Note(os, idFcl);
             s.Check("Aceeași cale de postare ca în UI: 4111 = 707 pe marfă (140), 4111 = 704 pe serviciu (100), "
                 + "4427 colectat per linie (50,4) — costul rămâne pe DSC",
-                noteApiFclCub.Rulaj(cont707Fcl.ID, N.Latura.Credit) == 140m
-                && noteApiFclCub.Rulaj(tipServiciuFcl.ContImplicitId, N.Latura.Credit) == 100m
-                && noteApiFclCub.Rulaj(cont4427Fcl.ID, N.Latura.Credit) == 50.4m
+                noteApiFclCub.Rulaj(cont707Fcl.ID, N.Sens.Credit) == 140m
+                && noteApiFclCub.Rulaj(tipServiciuFcl.ContImplicitId, N.Sens.Credit) == 100m
+                && noteApiFclCub.Rulaj(cont4427Fcl.ID, N.Sens.Credit) == 50.4m
                 && noteApiFclCub.Where(p => p.Debit).All(p => p.Cont == cont4111Fcl.ID));
 
             // --- Gardienii de scriere, prin contract ---
@@ -422,8 +422,8 @@ static class E2eApiFcl {
 
             var noteDscApiCub = CubScena.Note(os, idDsc);
             s.Check("Costul se postează pe DSC, decuplat de vânzare: 607 = 371 la 38 (18+20), în timp ce factura a postat 140 pe 707",
-                noteDscApiCub.Rulaj(cont607Fcl.ID, N.Latura.Debit) == 38m
-                && noteDscApiCub.Rulaj(tipMarfa.ContImplicitId, N.Latura.Credit) == 38m
+                noteDscApiCub.Rulaj(cont607Fcl.ID, N.Sens.Debit) == 38m
+                && noteDscApiCub.Rulaj(tipMarfa.ContImplicitId, N.Sens.Credit) == 38m
                 && noteDscApiCub.All(p => p.Debit ? p.Cont == cont607Fcl.ID : p.Cont == tipMarfa.ContImplicitId));
             var stocDscApiCub = CubScena.Stoc(os, idDsc);
             s.Check("Operarea DSC scoate marfa din gestiune: −3 pe lotul pin, −4 pe lotul vechi, Marfuri, pe gestiunea de descărcare",

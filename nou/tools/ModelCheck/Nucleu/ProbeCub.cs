@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
 using Atlas.Conta.BackOffice.Module.Motor;
@@ -81,7 +81,7 @@ static class ProbeCub {
         os.GetObjectsQuery<C.Postare>()
             .Where(p => p.Unitate == unitate)
             .ToList()
-            .Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare);
+            .Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare);
 
     public static void FaraRanduri(IObjectSpace os, Action<string, bool> check, string nume, Guid document) {
         ArgumentNullException.ThrowIfNull(check);

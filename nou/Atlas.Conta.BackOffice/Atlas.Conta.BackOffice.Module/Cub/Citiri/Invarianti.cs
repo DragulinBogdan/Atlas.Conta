@@ -13,7 +13,7 @@ public static class Invarianti {
         VerificaTaxaLiniilor(os);
         var postari = os.GetObjectsQuery<Postare>();
         var dezechilibrate = postari.GroupBy(p => new { p.TranzactieId, p.Carte })
-            .Where(g => g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) != 0m).LongCount();
+            .Where(g => g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) != 0m).LongCount();
         if (dezechilibrate != 0)
             throw new OperareException($"CITIRE_CUB_DEZECHILIBRAT: {dezechilibrate} tranzacții/cărți cu debit diferit de credit.");
 
@@ -25,6 +25,7 @@ public static class Invarianti {
         VerificaPerechi(os);
         VerificaOrdinale(os);
         VerificaCoordonate(os);
+        OriginiPartide.Verifica(os);
     }
 
     public const string CoordonateInvalide = "CITIRE_COORDONATE_INVALIDE";

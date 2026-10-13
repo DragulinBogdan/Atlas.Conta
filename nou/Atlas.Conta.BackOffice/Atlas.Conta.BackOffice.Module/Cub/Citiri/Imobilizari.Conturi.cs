@@ -26,7 +26,7 @@ public static partial class Imobilizari {
         public N.FelTranzactie Fel { get; set; }
         public Guid? LinieId { get; set; }
         public DateOnly Data { get; set; }
-        public N.Latura Latura { get; set; }
+        public N.Sens Latura { get; set; }
         public decimal Valoare { get; set; }
         public Guid Cont { get; set; }
         public Guid? Repartitor { get; set; }
@@ -70,13 +70,13 @@ public static partial class Imobilizari {
                 && p.DocumentId != exceptie && !inverse.Contains(p.ID))
             .Select(p => new { Fisa = p.Unitate.Value, p.Cont, p.Latura }).Distinct().ToList();
         return pozitii.GroupBy(p => p.Fisa).ToDictionary(g => g.Key, g => {
-            Guid? Cont(N.Latura latura) {
+            Guid? Cont(N.Sens latura) {
                 var conturi = g.Where(p => p.Latura == latura).Select(p => p.Cont).Distinct().ToArray();
                 if (conturi.Length > 1) throw new OperareException(
                     $"Fișa {g.Key} are conturi istorice multiple pe {latura}; este necesară reconcilierea istoricului.");
                 return conturi.Length == 0 ? null : conturi[0];
             }
-            return new ConturiFisa(Cont(N.Latura.Debit), Cont(N.Latura.Credit));
+            return new ConturiFisa(Cont(N.Sens.Debit), Cont(N.Sens.Credit));
         });
     }
 }

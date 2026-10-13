@@ -5,15 +5,15 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 /// <summary>Partida documentului-sursă pe un cont, cu soldul ei citit.</summary>
-readonly record struct PartidaSursa(N.Unitate Unitate, N.Sold Sold);
+readonly record struct PartidaSursa(N.UnitateSold Unitate, N.Sold Sold);
 
 /// <summary>Deschiderea și nominalizarea partidelor pe conturile cu urmărire activă.</summary>
 static class Partide {
     public static bool Urmareste(Operand operand, Guid cont) =>
         operand.Conturi.GetValueOrDefault(cont)?.UrmarestePartide == true;
 
-    public static N.Unitate Proprie(Operand operand, Guid cont, Guid partener) =>
-        N.Unitate.DeschidePartida(
+    public static N.UnitateSold Proprie(Operand operand, Guid cont, Guid partener) =>
+        N.UnitateSold.DeschidePartida(
             cont, partener, operand.Document.Id, operand.Document.DataInregistrare);
 
     /// <summary>
@@ -30,13 +30,13 @@ static class Partide {
                 net = sold;
         return new PartidaSursa(
             Cub.IdentitatiPartide.Gaseste(operand.UnitatiSursa, sursaId, cont, partener)
-            ?? N.Unitate.DeschidePartida(cont, partener, sursaId,
+            ?? N.UnitateSold.DeschidePartida(cont, partener, sursaId,
                 operand.DataInregistrareSursa ?? operand.Document.DataInregistrare),
             net >= 0m ? new N.Sold(net, 0m, 0m, 0m) : new N.Sold(0m, -net, 0m, 0m));
     }
 
     public static void Numeste(Operand operand, Guid cont, Guid partener, Guid linie,
-            Dictionary<Guid, N.Unitate> partide, List<N.Decizie> decizii) {
+            Dictionary<Guid, N.UnitateSold> partide, List<N.Decizie> decizii) {
         if (partide.ContainsKey(cont) || !Urmareste(operand, cont))
             return;
         var partida = Proprie(operand, cont, partener);
@@ -52,7 +52,7 @@ static class Partide {
 /// are deja repartitor rămâne neatins.
 /// </summary>
 static class Terti {
-    public static N.Capat Capat(Operand operand, N.Capat capat, RepartitorFapt tert, N.Unitate? partida) {
+    public static N.Capat Capat(Operand operand, N.Capat capat, RepartitorFapt tert, N.UnitateSold? partida) {
         ArgumentNullException.ThrowIfNull(capat);
         ArgumentNullException.ThrowIfNull(tert);
         // C111-Q14: locul intern pe care titularul îl scoate din repartitor rămâne pe postare.
@@ -68,7 +68,7 @@ static class Terti {
 
     /// <summary>Partida se pune pe capătul care n-are deja unitate: lotul recepției nu e partidă.</summary>
     public static N.Capat Capat(
-            Operand operand, N.Capat capat, RepartitorFapt tert, IReadOnlyDictionary<Guid, N.Unitate> partide) {
+            Operand operand, N.Capat capat, RepartitorFapt tert, IReadOnlyDictionary<Guid, N.UnitateSold> partide) {
         ArgumentNullException.ThrowIfNull(capat);
         return Capat(operand, capat, tert, capat.Unitate is null ? partide.GetValueOrDefault(capat.Cont) : null);
     }

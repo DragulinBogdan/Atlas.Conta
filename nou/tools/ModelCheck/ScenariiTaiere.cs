@@ -132,7 +132,7 @@ sealed class ScenariiTaiere(Func<IObjectSpace> deschide, Action<string, bool> ch
     RandScena[] Iesirea(Guid doc, Guid lot, Guid? produs, decimal q, decimal v) {
         var linie = CuSpatiu(os => os.GetObjectsQuery<DocumentDetaliu>().Single(l => l.DocumentId == doc).ID);
         var cheltuiala = Cont(Privat ? "602" : "602.01.00");
-        return [new(cheltuiala, N.Latura.Debit, v, q, Loc, lot, produs, Linie: linie, Spatiu: N.Spatiu.Stoc),
-            new(Cont(Stoc), N.Latura.Credit, v, -q, Magazie, lot, produs, Linie: linie, Spatiu: N.Spatiu.Stoc)];
+        return [new(cheltuiala, N.Sens.Debit, v, q, Loc, lot, produs, Linie: linie, Spatiu: N.Spatiu.Stoc),
+            new(Cont(Stoc), N.Sens.Credit, v, -q, Magazie, lot, produs, Linie: linie, Spatiu: N.Spatiu.Stoc)];
     }
 }

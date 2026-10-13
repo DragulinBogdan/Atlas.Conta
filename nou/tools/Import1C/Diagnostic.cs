@@ -64,7 +64,7 @@ static class Diagnostic {
             .Select(p => new {
                 p.Data, Cont = simbolPeCont.GetValueOrDefault(p.Cont),
                 Gestiune = gestiuni.GetValueOrDefault(p.Gestiune.Value), p.Cantitate,
-                Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare,
+                Valoare = p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare,
                 Storno = p.Fel == N.FelTranzactie.Storno,
                 Document = p.DocumentId is { } id && documente.TryGetValue(id, out var d) ? $"{d.Tip} {d.Numar}" : "deschidere",
             })

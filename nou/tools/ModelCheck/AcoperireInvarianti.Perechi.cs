@@ -38,7 +38,7 @@ static partial class AcoperireInvarianti {
                 // Operarea ajunge pe aceeași latură cu valori opuse; transferul, pe laturi opuse cu valori egale.
                 var operare = fel == N.FelTranzactie.Operare;
                 var latura = operare ? pereche.Latura
-                    : pereche.Latura == N.Latura.Debit ? N.Latura.Credit : N.Latura.Debit;
+                    : pereche.Latura == N.Sens.Debit ? N.Sens.Credit : N.Sens.Debit;
                 var semn = operare ? -1m : 1m;
                 rand.ExecuteUpdate(s => s.SetProperty(p => p.Latura, latura)
                     .SetProperty(p => p.Valoare, semn * pereche.Valoare)

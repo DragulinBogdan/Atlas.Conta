@@ -79,7 +79,7 @@ public static class ReceptiiConexe {
         }
         var randuri = os.GetObjectsQuery<Postare>().Where(p => p.DocumentId == id
             && p.Tranzactie.Fel == N.FelTranzactie.Operare && p.Carte == N.Carte.Contabil
-            && p.FelUnitate == N.FelUnitate.Lot && p.Unitate != null && p.Latura == N.Latura.Debit).ToList();
+            && p.FelUnitate == N.FelUnitate.Lot && p.Unitate != null && p.Latura == N.Sens.Debit).ToList();
         if (randuri.Count == 0) {
             if (nir.TranzactieReceptieSursaId != null)
                 throw new OperareException($"{Provenienta}: Recepția istorică a sursei lipsește.");

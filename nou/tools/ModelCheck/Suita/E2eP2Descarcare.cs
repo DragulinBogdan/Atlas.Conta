@@ -300,10 +300,10 @@ static class E2eP2Descarcare {
             s.Check("DSC operat cu număr din politică", dsc.Stare == StareDocument.Operat && dsc.Numar?.StartsWith("DSC-") == true);
             var noteDscCub = NoteCub(dsc);
             s.Check("Cost marfă: 607 = 371 la COST 92 (30+50+12) — decuplat de vânzarea 707 (233)",
-                noteDscCub.Rulaj(cont607.ID, N.Latura.Debit) == 92m
+                noteDscCub.Rulaj(cont607.ID, N.Sens.Debit) == 92m
                 && noteDscCub.Where(p => p.Debit && p.Cont == cont607.ID).All(d => noteDscCub.Any(c => c.Credit
                     && c.Cont == tip371.ContImplicitId && c.LinieId == d.LinieId && c.Valoare == d.Valoare))
-                && noteFclCub.Rulaj(cont707.ID, N.Latura.Credit) == 233m);
+                && noteFclCub.Rulaj(cont707.ID, N.Sens.Credit) == 233m);
             s.Check("Cost produs finit: 711 = 345, 24; exact 4 note pe DSC",
                 noteDscCub.Count(p => p.Debit && p.Cont == cont711.ID) == 1
                 && noteDscCub.Nota(cont711.ID, tip345.ContImplicitId, 24m));

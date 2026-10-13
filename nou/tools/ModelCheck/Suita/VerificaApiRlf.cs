@@ -440,7 +440,7 @@ static class VerificaApiRlf {
         var soldFiscal = SoldCheieCub(lotFiscal.ID);
         var soldGeaman = SoldCheieCub(lotGeaman.ID);
         var noteFiscal = NoteCub(idFiscal);
-        var catreFurnizor = noteFiscal.Rulaj(cont401.ID, N.Latura.Credit);
+        var catreFurnizor = noteFiscal.Rulaj(cont401.ID, N.Sens.Credit);
         Console.WriteLine($"     MĂSURAT (Api RLF, F18/F5): pe DOUĂ loturi identice (1 buc / 10,01) — returul "
             + $"(ieșire FISCALĂ) a scos {citFiscal.Linii[0].Valoare:N2} și a lăsat lotul la "
             + $"{soldFiscal.Cantitate:0.###} / {soldFiscal.Valoare:N2}; consumul obișnuit a ABSORBIT restul și a "

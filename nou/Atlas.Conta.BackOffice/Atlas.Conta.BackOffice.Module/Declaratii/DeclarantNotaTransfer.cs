@@ -49,7 +49,7 @@ public sealed class DeclarantNotaTransfer : IDeclarant {
             var lot = linie.Lot!;
             var cont = lot.ContImplicitId!.Value;
             var cheie = new CheieLotFapt(lot.Id, cont, lot.ProdusId, doc.Predator.Id);
-            var unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, cont, null, lot.ProdusId, lot.Data);
+            var unitate = new N.UnitateSold(lot.Id, N.FelUnitate.Lot, cont, null, lot.ProdusId, lot.Data);
             if (!solduri.TryGetValue(cheie, out var sold)) {
                 sold = operand.SolduriLoturi.GetValueOrDefault(cheie) ?? N.Sold.Zero;
                 solduri[cheie] = sold;
@@ -79,7 +79,7 @@ public sealed class DeclarantNotaTransfer : IDeclarant {
             mutari.Add(new N.Mutare(
                 capat,
                 capat with { Repartitor = doc.Primitor.Coordonata },
-                N.Latura.Debit,
+                N.Sens.Debit,
                 linie.Cantitate,
                 0m,
                 valoare,

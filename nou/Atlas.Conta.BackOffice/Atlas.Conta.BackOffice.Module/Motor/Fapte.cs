@@ -150,7 +150,7 @@ internal static class Fapte {
             }));
     }
 
-    static IReadOnlyList<N.Unitate> UnitatiSursa(IObjectSpace os, Document doc) =>
+    static IReadOnlyList<N.UnitateSold> UnitatiSursa(IObjectSpace os, Document doc) =>
         !doc.Autogenerat || doc.DocumentSursaId is not Guid sursa ? [] :
         Cub.Citiri.Partide.UnitatiAle(os, sursa);
 
@@ -176,7 +176,7 @@ internal static class Fapte {
                 var sold = new N.Sold(pana.Sum(p => p.Debit), pana.Sum(p => p.Credit), 0m, 0m);
                 var disponibil = Cub.Citiri.Partide.DisponibilTemporal(
                     g.Select(p => (p.Data, p.Debit - p.Credit)), zi, Math.Sign(sold.Net));
-                var unitate = new N.Unitate(g.Key.Unitate.Value, N.FelUnitate.Partida, g.Key.Cont,
+                var unitate = new N.UnitateSold(g.Key.Unitate.Value, N.FelUnitate.Partida, g.Key.Cont,
                     g.Key.Titular.Value, null, g.Min(p => p.Deschisa));
                 var origine = g.Select(p => p.DocumentId).OfType<Guid>().Distinct()
                     .FirstOrDefault(d => Cub.IdentitatiPartide.EsteProprie(unitate, d));

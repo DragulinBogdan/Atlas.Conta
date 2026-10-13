@@ -121,13 +121,13 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         });
         Opereaza(f.Id);
         var sursa = Guid.NewGuid(); var tinta = Guid.NewGuid();
-        N.Postare Rand(Guid doc, string simbol, N.Latura latura, decimal valoare) => new(
+        N.Postare Rand(Guid doc, string simbol, N.Sens latura, decimal valoare) => new(
             new N.Capat { Cont = Cont(simbol), Repartitor = new N.Repartitor(Furnizor, N.FelRepartitor.Partener),
-                Unitate = N.Unitate.DeschidePartida(Cont(simbol), Furnizor, doc, Ianuarie) }.Pe(latura, Ianuarie),
+                Unitate = N.UnitateSold.DeschidePartida(Cont(simbol), Furnizor, doc, Ianuarie) }.Pe(latura, Ianuarie),
             0, 0, valoare, new(doc, null));
         var ambigua = C.Transferuri.Muta(new(sursa, Ianuarie,
-            [Rand(sursa, ContFurnizor, N.Latura.Debit, 40), Rand(sursa, contImo, N.Latura.Debit, 60)], [],
-            tinta, Ianuarie, [Rand(tinta, ContFurnizor, N.Latura.Credit, 40), Rand(tinta, contImo, N.Latura.Credit, 60)], [], 40, Ianuarie));
+            [Rand(sursa, ContFurnizor, N.Sens.Debit, 40), Rand(sursa, contImo, N.Sens.Debit, 60)], [],
+            tinta, Ianuarie, [Rand(tinta, ContFurnizor, N.Sens.Credit, 40), Rand(tinta, contImo, N.Sens.Credit, 60)], [], 40, Ianuarie));
         Verifica("SC-CIT-58", "funcția pură refuză două perechi compatibile fără alegere implicită",
             ambigua.Mutare == null && ambigua.Refuz?.Cod == "IMPERECHERE_AMBIGUA");
         var p = Trezorerie(false, 100); Opereaza(p.Id);
@@ -335,7 +335,8 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         }));
         foreach (var r in sql.SelectMany(ProbeRamuraDeNul.Gaseste)) Console.WriteLine("     SC-CIT-110 ramură de nul: " + r);
         Verifica("SC-CIT-110", "cititorii de partide îmbină fără ramură de nul pe cheile nulabile",
-            sql.Count(c => c.Contains("cub_partida_id")) >= 10 && !sql.SelectMany(ProbeRamuraDeNul.Gaseste).Any());
+            sql.Count(c => c.Contains("\"OriginiPartide\"")) >= 10 && !sql.Any(c => c.Contains("cub_partida_id"))
+            && !sql.SelectMany(ProbeRamuraDeNul.Gaseste).Any());
     }
 
     void Rest(Guid doc, decimal net) {
@@ -360,7 +361,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             var doc = Guid.NewGuid(); var cont = Guid.NewGuid(); var partener = Guid.NewGuid();
             var sql = ctx.Database.SqlQuery<Guid>($"SELECT cub_partida_id({doc}, {cont}, {partener}) AS \"Value\"").Single();
             Verifica("SC-CIT-53", "SQL = nucleu; identitatea inițială distinctă", sql == P.Identitate(doc, cont, partener)
-                && sql != N.Unitate.DeschidePartidaInitiala(cont, partener, doc, Ianuarie).Id);
+                && sql != N.UnitateSold.DeschidePartidaInitiala(cont, partener, doc, Ianuarie).Id);
         }
     }
 
@@ -380,7 +381,8 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         RandReconstructie raport = null;
         var sql = CapturaSql.Comenzi(() => raport = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1));
         Verifica("SC-CIT-110", "snapshot-ul de partide: verificarea și scrierea îmbină fără ramură de nul",
-            sql.Count(c => c.Contains("cub_partida_id")) >= 2 && !sql.SelectMany(ProbeRamuraDeNul.Gaseste).Any());
+            sql.Count(c => c.Contains("\"OriginiPartide\"")) >= 2 && !sql.Any(c => c.Contains("cub_partida_id"))
+            && !sql.SelectMany(ProbeRamuraDeNul.Gaseste).Any());
         Verifica("SC-CIT-52", "raportează diferența 7 înainte de reparare", raport.PartideDiferite == 1 && raport.DiferentaRest == 7);
         raport = SolduriService.Reconstruieste(os).Referinte.Single(r => r.An == An && r.Luna == 1);
         Verifica("SC-CIT-52", "a doua reconstrucție fără diferențe", raport.PartideDiferite == 0 && raport.DiferentaRest == 0);
@@ -427,12 +429,12 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
 
     void Deschidere() {
         var ref1 = Guid.NewGuid(); var ref2 = Guid.NewGuid();
-        if (N.Unitate.DeschidePartidaInitiala(Cont(ContFurnizor), Furnizor, ref1, Ianuarie).Id
-            .CompareTo(N.Unitate.DeschidePartidaInitiala(Cont(ContFurnizor), Furnizor, ref2, Ianuarie).Id) > 0)
+        if (N.UnitateSold.DeschidePartidaInitiala(Cont(ContFurnizor), Furnizor, ref1, Ianuarie).Id
+            .CompareTo(N.UnitateSold.DeschidePartidaInitiala(Cont(ContFurnizor), Furnizor, ref2, Ianuarie).Id) > 0)
             (ref1, ref2) = (ref2, ref1);
         var cont = Cont(ContFurnizor);
         var geaman = PartenerNou("-GEM");
-        Guid Geamana(Guid referinta) => N.Unitate.DeschidePartidaInitiala(cont, geaman, referinta, Ianuarie).Id;
+        Guid Geamana(Guid referinta) => N.UnitateSold.DeschidePartidaInitiala(cont, geaman, referinta, Ianuarie).Id;
         var ref3 = Guid.NewGuid(); var ref4 = Guid.NewGuid();
         if (Geamana(ref3).CompareTo(Geamana(ref4)) < 0)
             (ref3, ref4) = (ref4, ref3);
@@ -440,11 +442,11 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             var ancora = os.GetObjectsQuery<Cont>().First(c => c.Simbol.StartsWith("891") && !c.Sumator).ID;
             using var tx = TranzactieComanda.Incepe(os);
             C.Materializare.Deschide(os, Ianuarie,
-                [new(cont, N.Latura.Credit, 150, true), new(ancora, N.Latura.Debit, 150)], [],
-                [new(cont, Furnizor, ref1, N.Latura.Credit, 60) { Analiza = new(null, Economic, null, null, null, null), Deschisa = new(An - 1, 12, 15) },
-                 new(cont, Furnizor, ref2, N.Latura.Credit, 40) { Analiza = new(null, Economic, null, null, null, null), Deschisa = new(An - 1, 12, 10) },
-                 new(cont, geaman, ref3, N.Latura.Credit, 30) { Analiza = new(null, Economic, null, null, null, null) },
-                 new(cont, geaman, ref4, N.Latura.Credit, 20) { Analiza = new(null, Economic, null, null, null, null) }]);
+                [new(cont, N.Sens.Credit, 150, true), new(ancora, N.Sens.Debit, 150)], [],
+                [new(cont, Furnizor, ref1, N.Sens.Credit, 60) { Analiza = new(null, Economic, null, null, null, null), Deschisa = new(An - 1, 12, 15) },
+                 new(cont, Furnizor, ref2, N.Sens.Credit, 40) { Analiza = new(null, Economic, null, null, null, null), Deschisa = new(An - 1, 12, 10) },
+                 new(cont, geaman, ref3, N.Sens.Credit, 30) { Analiza = new(null, Economic, null, null, null, null) },
+                 new(cont, geaman, ref4, N.Sens.Credit, 20) { Analiza = new(null, Economic, null, null, null, null) }]);
             os.CommitChanges(); tx.Commit();
         });
         var notaGemene = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 25, geaman)); Opereaza(notaGemene.Id);
@@ -462,7 +464,7 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
             return r.DocumentId == null && r.Rest == 25;
         }));
         Verifica("SC-CIT-112", "partida inițială născută mai devreme se stinge întâi, deși are identificatorul mai mare", CuSpatiu(os => {
-            var veche = N.Unitate.DeschidePartidaInitiala(cont, Furnizor, ref2, Ianuarie).Id;
+            var veche = N.UnitateSold.DeschidePartidaInitiala(cont, Furnizor, ref2, Ianuarie).Id;
             return P.Solduri(os, Ianuarie).Single(s => s.UnitateId == veche) is var s && s.Debit == s.Credit;
         }));
         Verifica("SC-CIT-44", "deschidere 100, NTC 75: rest total −25", CuSpatiu(os => {

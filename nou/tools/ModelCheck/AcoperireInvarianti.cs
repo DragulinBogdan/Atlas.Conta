@@ -24,6 +24,11 @@ static partial class AcoperireInvarianti {
     const string InversaFiscala = "CITIRE_FISCAL_INVERSA";
 
     static readonly Mutant[] mutanti = [
+        new("ORIGINE-LIPSA", CoduriRefuz.OriginePartidaInconsistenta, (os, db) => MutaOrigine(os, db, "lipsa")) { Numai = C.Citiri.OriginiPartide.Verifica },
+        new("ORIGINE-FARA-SUPORT", CoduriRefuz.OriginePartidaInconsistenta, OrigineFaraSuport) { Numai = C.Citiri.OriginiPartide.Verifica },
+        new("ORIGINE-STRAINA", CoduriRefuz.OriginePartidaInconsistenta, (os, db) => MutaOrigine(os, db, "straina")) { Numai = C.Citiri.OriginiPartide.Verifica },
+        new("ORIGINE-ORDINAL", CoduriRefuz.OriginePartidaInconsistenta, (os, db) => MutaOrigine(os, db, "ordinal")) { Numai = C.Citiri.OriginiPartide.Verifica },
+        new("ORIGINE-REFERINTA", CoduriRefuz.OriginePartidaInconsistenta, (os, db) => MutaOrigine(os, db, "referinta")) { Numai = C.Citiri.OriginiPartide.Verifica },
         new("PARTIDE", "CITIRE_PARTIDE_INCOMPLETE", PartidaFaraPartener),
         new("IMO-CAUZA", "fără cauză", FisaFaraLinie),
         new("IMO-ORIGINE", "fără cauză", FisaFaraOrigine),

@@ -257,8 +257,8 @@ static class E2eP1Privat {
             var notePlataCub = NoteCub(plataAuto);
             s.Check("Plata contează 401 = 5121 (banca) pe brut",
                 notePlataCub.All(p => p.Debit ? p.Cont == cont401.ID : p.Cont == cont5121.ID)
-                && notePlataCub.Rulaj(cont401.ID, N.Latura.Debit) == 181.5m
-                && notePlataCub.Rulaj(cont5121.ID, N.Latura.Credit) == 181.5m);
+                && notePlataCub.Rulaj(cont401.ID, N.Sens.Debit) == 181.5m
+                && notePlataCub.Rulaj(cont5121.ID, N.Sens.Credit) == 181.5m);
             s.Check("Imperecherea automată stinge BRUTUL facturii (181,5; rest 0)",
                 os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == plataAuto.ID).Suma == 181.5m
                 && ImperechereService.Ramas(os, fct.ID) == 0m);
@@ -445,8 +445,8 @@ static class E2eP1Privat {
             MotorOperare.Opereaza(os, fctNed);
             s.Check("Capitalizat (NED21): Valoare = brut 121, ValoareTva 0, o singură notă 628 = 401 — fără rând 4426",
                 linieNed.Valoare == 121m && linieNed.ValoareTva == 0m
-                && NoteCub(fctNed).Rulaj(tip628.ContImplicitId, N.Latura.Debit) == 121m
-                && NoteCub(fctNed).Rulaj(cont401.ID, N.Latura.Credit) == 121m
+                && NoteCub(fctNed).Rulaj(tip628.ContImplicitId, N.Sens.Debit) == 121m
+                && NoteCub(fctNed).Rulaj(cont401.ID, N.Sens.Credit) == 121m
                 && !NoteCub(fctNed).Any(p => p.Cont == cont4426.ID));
 
             // --- NUC-FCT-CAP (B-D6, pas 5): brutul se declară ca bază (100) + taxă (21) pe
@@ -483,7 +483,7 @@ static class E2eP1Privat {
             MotorOperare.Opereaza(os, fctManual);
             s.Check("ValoareTva culeasă manual (20,9) nu se suprascrie la operare; rândul 4426 o postează",
                 linieManual.ValoareTva == 20.9m
-                && NoteCub(fctManual).Rulaj(cont4426.ID, N.Latura.Debit) == 20.9m);
+                && NoteCub(fctManual).Rulaj(cont4426.ID, N.Sens.Debit) == 20.9m);
 
             // --- NUC-FCT-OVERRIDE (B-D6, pas 5): COMPORTAMENT NOU (090j) — taxa culeasă
             //     rămâne autoritară, dar se validează contra celei decise pe document ×

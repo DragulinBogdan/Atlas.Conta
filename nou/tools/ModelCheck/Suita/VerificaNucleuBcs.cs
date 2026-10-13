@@ -137,7 +137,7 @@ static class VerificaNucleuBcs {
             var contStoc = tipMaterial.ContImplicitId.Value;
             var contrapartida = os.GetObjectsQuery<Cont>().First(c => c.Simbol.StartsWith("891")).ID;
             Atlas.Conta.BackOffice.Module.Cub.Materializare.Deschide(os, new(2026, 1, 20),
-                [new(contStoc, N.Latura.Debit, 500, true), new(contrapartida, N.Latura.Credit, 500)],
+                [new(contStoc, N.Sens.Debit, 500, true), new(contrapartida, N.Sens.Credit, 500)],
                 [new(contStoc, lotCurat.ID, mag1.ID, 10, 100), new(contStoc, lotCorectat.ID, mag1.ID, 20, 300),
                  new(contStoc, lotCub.ID, mag1.ID, 10, 100)], []);
             os.CommitChanges(); tx.Commit();

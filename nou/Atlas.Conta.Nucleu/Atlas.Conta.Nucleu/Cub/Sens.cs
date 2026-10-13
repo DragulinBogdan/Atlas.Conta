@@ -1,6 +1,6 @@
 namespace Atlas.Conta.Nucleu;
 
-public enum Latura {
+public enum Sens {
     Debit = 1,
     Credit = 2,
 }

@@ -10,7 +10,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-record RandScena(Guid Cont, N.Latura Latura, decimal Valoare, decimal Cantitate = 0,
+record RandScena(Guid Cont, N.Sens Latura, decimal Valoare, decimal Cantitate = 0,
     Guid? Repartitor = null, Guid? Unitate = null, Guid? Produs = null, Guid? PartenerFiscal = null,
     Guid? Linie = null, Guid? Tva = null, N.RolTva? Rol = null, int? Perioada = null,
     N.SensTva? Sens = null, N.Spatiu Spatiu = N.Spatiu.Contabil, Guid? Economic = null,
@@ -112,7 +112,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     });
     protected Guid Tva(string codTva) => CuSpatiu(os => os.GetObjectsQuery<TipTva>().Single(t => t.Cod == codTva).ID);
     protected Guid? Partida(Guid doc, string simbol, Guid? partener = null) =>
-        N.Unitate.DeschidePartida(Cont(simbol), partener ?? Furnizor, doc, Ianuarie).Id;
+        N.UnitateSold.DeschidePartida(Cont(simbol), partener ?? Furnizor, doc, Ianuarie).Id;
     protected OperareRezultat Opereaza(Guid doc) => CuSpatiu(os => ComenziDocument.Sistem(os).Opereaza(doc));
     protected void Storneaza(Guid doc, DateOnly data) {
         var inainte = Amprenta(doc);
@@ -312,7 +312,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     }
 
     protected void TransferPartida(string id, Guid stingator, Guid stins, string cont,
-            Guid partener, N.Latura latura, decimal suma, DateOnly data) {
+            Guid partener, N.Sens latura, decimal suma, DateOnly data) {
         Postari(id, stingator, N.FelTranzactie.Transfer, data,
             new(Cont(cont), latura, -suma, Repartitor: partener, Unitate: Partida(stingator, cont, partener)),
             new(Cont(cont), latura, suma, Repartitor: partener, Unitate: Partida(stins, cont, partener)));
@@ -423,7 +423,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         var sold = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == lot
             && p.Repartitor == gestiune && p.Data <= data && p.Carte == N.Carte.Contabil).ToList());
         Verifica(id, $"lot/gestiune la {data}: {q}/{v}", sold.Sum(p => p.Cantitate) == q
-            && sold.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) == v);
+            && sold.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) == v);
     }
 
     protected decimal[] ValoriLinii(Guid doc) => CuSpatiu(os => os.GetObjectsQuery<DocumentDetaliu>()
@@ -439,7 +439,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         var sold = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == unitate
             && p.Data <= data && p.Carte == N.Carte.Contabil).ToList());
         Verifica(id, $"sold partidă {net} la {data}",
-            sold.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) == net);
+            sold.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) == net);
     }
 
     protected void FaraEfecte(string id, Guid doc) {

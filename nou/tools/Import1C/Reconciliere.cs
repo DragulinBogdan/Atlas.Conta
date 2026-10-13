@@ -85,7 +85,7 @@ static class Reconciliere {
         var db = new Dictionary<string, decimal>(StringComparer.Ordinal);
         foreach (var p in postari) {
             var simbol = simbolPeId[p.Cont];
-            db[simbol] = db.GetValueOrDefault(simbol) + (p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare);
+            db[simbol] = db.GetValueOrDefault(simbol) + (p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare);
         }
 
         // ---- Partea SURSĂ: soldurile 1C, mapate și agregate ----
@@ -189,7 +189,7 @@ static class Reconciliere {
                 RepartitorId = p.Gestiune.Value,
                 RepartitorDesc = denumireGestiune.GetValueOrDefault(p.Gestiune.Value),
                 p.Cantitate,
-                Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare,
+                Valoare = p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare,
             })
             .ToList();
 

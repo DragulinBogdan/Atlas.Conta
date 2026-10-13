@@ -42,8 +42,8 @@ public static partial class Materializare {
         var operare = aleStingatorului.Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare
             && p.Cont == initiala.Cont && Citiri.Partide.Titular(p) == Citiri.Partide.Titular(initiala)).ToList();
         var proprie = IdentitatiPartide.Gaseste(operare.Select(Randuri.Unitatea)
-            .OfType<N.Unitate>(), stingator.ID, initiala.Cont, Citiri.Partide.Titular(initiala)!.Value);
-        var latura = initiala.Latura == N.Latura.Debit ? N.Latura.Credit : N.Latura.Debit;
+            .OfType<N.UnitateSold>(), stingator.ID, initiala.Cont, Citiri.Partide.Titular(initiala)!.Value);
+        var latura = initiala.Latura == N.Sens.Debit ? N.Sens.Credit : N.Sens.Debit;
         var peProprie = proprie == null ? [] : os.GetObjectsQuery<Postare>()
             .Where(p => p.Unitate == proprie.Id && p.Carte == N.Carte.Contabil).ToList();
         peProprie = [.. peProprie.Concat(inMemorie.Where(p => p.Unitate == proprie?.Id
@@ -82,6 +82,6 @@ public static partial class Materializare {
             && p.Tranzactie.Fel == N.FelTranzactie.Transfer && p.Unitate != null && initiale.Contains(p.Unitate));
     }
 
-    static bool Disponibil(IEnumerable<Postare> postari, N.Latura latura, DateOnly data, decimal suma) =>
+    static bool Disponibil(IEnumerable<Postare> postari, N.Sens latura, DateOnly data, decimal suma) =>
         Citiri.Partide.DisponibilTemporal(postari.Select(p => (p.Data, p.Latura == latura ? p.Valoare : -p.Valoare)), data, 1m) >= suma;
 }

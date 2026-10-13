@@ -113,7 +113,7 @@ public static class Conservare {
         foreach (var (carte, suma) in Aduna(
                      tranzactie.Postari,
                      p => p.Coordonate.Carte,
-                     p => p.Coordonate.Latura == Latura.Debit ? p.Valoare : -p.Valoare))
+                     p => p.Coordonate.Latura == Sens.Debit ? p.Valoare : -p.Valoare))
             if (suma != 0m)
                 refuzuri.Add(new Refuz(
                     Coduri.ConservareValoare,

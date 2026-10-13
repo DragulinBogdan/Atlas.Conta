@@ -34,7 +34,7 @@ public sealed record Sold(decimal Debit, decimal Credit, decimal Cantitate, deci
     public static Sold Din(Postare postare) {
         ArgumentNullException.ThrowIfNull(postare);
         // Valoarea e semnată în Storno și Transfer: semnul se păstrează pe latura postării (N-D9).
-        var peDebit = postare.Coordonate.Latura == Latura.Debit;
+        var peDebit = postare.Coordonate.Latura == Sens.Debit;
         return new Sold(
             peDebit ? postare.Valoare : 0m,
             peDebit ? 0m : postare.Valoare,

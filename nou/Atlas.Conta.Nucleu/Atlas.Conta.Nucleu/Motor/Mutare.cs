@@ -3,7 +3,7 @@ namespace Atlas.Conta.Nucleu;
 public sealed record Mutare(
     Capat DeLa,
     Capat La,
-    Latura Latura,
+    Sens Latura,
     decimal Cantitate,
     decimal ValoareValuta,
     decimal Valoare,

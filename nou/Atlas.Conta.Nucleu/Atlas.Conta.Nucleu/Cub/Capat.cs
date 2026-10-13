@@ -5,7 +5,7 @@ public sealed record Capat {
     public Repartitor? Repartitor { get; init; }
     public Contrapondere? Contrapondere { get; init; }
     public Guid? Produs { get; init; }
-    public Unitate? Unitate { get; init; }
+    public UnitateSold? Unitate { get; init; }
     public CodTva? CodTva { get; init; }
     public int? PerioadaDeclarare { get; init; }
     public ReperFiscal? ReperFiscal { get; init; }
@@ -15,7 +15,7 @@ public sealed record Capat {
     public Carte Carte { get; init; } = Carte.Contabil;
     public Analiza Analiza { get; init; } = Analiza.Fara;
 
-    public Coordonate Pe(Latura latura, DateOnly data) => new() {
+    public Coordonate Pe(Sens latura, DateOnly data) => new() {
         Cont = Cont,
         Latura = latura,
         Data = data,

@@ -4,7 +4,7 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 /// <summary>Consumul unei linii, evaluat pe soldul cubului; <paramref name="SoldCitit"/> e nenul la prima atingere a unității.</summary>
-public sealed record ConsumEvaluat(LinieOperand Linie, N.Unitate Unitate, decimal Cantitate, decimal Valoare, N.Sold? SoldCitit);
+public sealed record ConsumEvaluat(LinieOperand Linie, N.UnitateSold Unitate, decimal Cantitate, decimal Valoare, N.Sold? SoldCitit);
 
 public sealed class DeclarantAsamblare : IDeclarant {
     public static readonly DeclarantAsamblare Instanta = new();
@@ -30,7 +30,7 @@ public sealed class DeclarantAsamblare : IDeclarant {
                 continue;
             }
             var cheie = new CheieLotFapt(lot.Id, cont, lot.ProdusId, operand.Document.Predator.Id);
-            var unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, cont, null, lot.ProdusId, lot.Data);
+            var unitate = new N.UnitateSold(lot.Id, N.FelUnitate.Lot, cont, null, lot.ProdusId, lot.Data);
             N.Sold? citit = null;
             if (!solduri.TryGetValue(cheie, out var sold))
                 citit = sold = operand.SolduriLoturi.GetValueOrDefault(cheie) ?? N.Sold.Zero;
@@ -94,7 +94,7 @@ public sealed class DeclarantAsamblare : IDeclarant {
             }
             else {
                 var lot = l.Lot!;
-                var unitate = new N.Unitate(lot.Id, N.FelUnitate.Lot, lot.ContImplicitId!.Value,
+                var unitate = new N.UnitateSold(lot.Id, N.FelUnitate.Lot, lot.ContImplicitId!.Value,
                     null, lot.ProdusId, lot.Data);
                 var q = Math.Abs(l.Cantitate);
                 var p = rotunjire.Bani(q * l.Transformare!.PretProdus!.Value);
@@ -125,5 +125,5 @@ public sealed class DeclarantAsamblare : IDeclarant {
         return new N.Declaratie(doc.Id, doc.DataInregistrare, [], [], transformari, decizii, ipoteze);
     }
 
-    sealed record ValoriLinie(LinieOperand Linie, N.Unitate Unitate, decimal Cantitate, decimal Valoare, bool Produs);
+    sealed record ValoriLinie(LinieOperand Linie, N.UnitateSold Unitate, decimal Cantitate, decimal Valoare, bool Produs);
 }

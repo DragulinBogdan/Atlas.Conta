@@ -139,7 +139,7 @@ public static class ImperechereService {
         var efect = Cub.Citiri.Partide.Noi(os, document.ID)
             .Where(p => p.Unitate != null && tinte.Contains(p.Unitate.Value))
             .GroupBy(p => new { p.Unitate, p.Cont, Titular = Cub.Citiri.Partide.Titular(p) })
-            .Sum(g => Math.Abs(g.Sum(p => p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : -p.Valoare)));
+            .Sum(g => Math.Abs(g.Sum(p => p.Latura == Atlas.Conta.Nucleu.Sens.Debit ? p.Valoare : -p.Valoare)));
         if (efect <= 0m || efect > suma)
             throw new OperareException($"IMPERECHERE_FARA_EFECT: nominalizarea automată cere {suma}, cubul dovedește {efect}.");
         Creeaza(os, document, sursa, efect, autogenerat: true, data: document.DataInregistrare);

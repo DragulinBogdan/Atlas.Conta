@@ -9,9 +9,9 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Decizii | 118: 85 active, 33 amendate parțial, 0 depășite, 0 propuse |
 | Restanțe | 380: 283 deschise, 97 închise |
 | Pagini de stare curentă | 7 |
-| Contracte de felie (`Tip: contract`) | 1, deschise 0 |
-| Cataloage vii (`Tip: catalog`) | 1 |
-| Fișiere Markdown în `docs/` | 295 |
+| Contracte de felie (`Tip: contract`) | 2, deschise 1 |
+| Cataloage vii (`Tip: catalog`) | 2 |
+| Fișiere Markdown în `docs/` | 307 |
 | Citări de decizii din cod (`// N`) | 126 |
 
 ## Decizii în vigoare pe arie
@@ -95,7 +95,7 @@ Niciuna.
 
 ## Felii deschise
 
-Niciun contract deschis declarat cu `Tip: contract`.
+- [TR-D9b — unitățile de sold: contract și primul pachet de execuție](nucleu/tr-d9b-contract.md) — pași livrați 0 din 0; decizii: 090, 092, 102, 110, 111, 114, 115, 116, 117, 118
 
 ## Decizii invocate din cod
 
@@ -107,17 +107,18 @@ Decizia (numărul de citări `// N` din cod): 1 (3), 3 (2), 4 (1), 5 (1), 9 (1),
 |---|---|
 | [README](stare-curenta/README.md) | 2026-10-10 |
 | [api-si-client](stare-curenta/api-si-client.md) | 2026-10-11 |
-| [dezvoltare-si-validare](stare-curenta/dezvoltare-si-validare.md) | 2026-10-11 |
-| [domeniu-si-operare](stare-curenta/domeniu-si-operare.md) | 2026-10-11 |
+| [dezvoltare-si-validare](stare-curenta/dezvoltare-si-validare.md) | 2026-10-13 |
+| [domeniu-si-operare](stare-curenta/domeniu-si-operare.md) | 2026-10-13 |
 | [limite-curente](stare-curenta/limite-curente.md) | 2026-10-11 |
 | [politici-si-fiscalitate](stare-curenta/politici-si-fiscalitate.md) | 2026-10-11 |
-| [termeni](stare-curenta/termeni.md) | 2026-10-11 |
+| [termeni](stare-curenta/termeni.md) | 2026-10-13 |
 
 ## Cataloagele vii
 
 | Catalog | Actualizat |
 |---|---|
 | [C111 — coordonatele postării (transversal)](nucleu/scenarii/C111.md) | 2026-10-11 |
+| [D9B — originea partidei](nucleu/scenarii/D9B.md) | 2026-10-13 |
 
 ## Ce nu poate ști
 

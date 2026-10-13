@@ -8,6 +8,7 @@ tipărește numele lor ca JSON; `sterge` le șterge după marcaj. Necesită psyc
 """
 import argparse
 import json
+import os
 import uuid
 
 import psycopg
@@ -62,7 +63,7 @@ def main():
     parser.add_argument('--baza', required=True, help='Baza hostului pe care rulează matricea.')
     parser.add_argument('--marcaj', required=True, help='Prefixul numelor de rol și de utilizator.')
     args = parser.parse_args()
-    dsn = f'host=localhost port=5444 dbname={args.baza} user=postgres password=postgres'
+    dsn = f'host=127.0.0.1 port={os.environ.get("PGPORT", "5444")} dbname={args.baza} user=postgres password=postgres'
     with psycopg.connect(dsn, autocommit=True) as conn:
         assert conn.execute('SELECT current_database()').fetchone()[0] == args.baza
         sterge(conn, args.marcaj)

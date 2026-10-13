@@ -31,9 +31,9 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
 
     RandScena[] Randuri(FacturaScena d, int i, decimal q, decimal v, string stoc = null, Guid? partida = null) {
         var l = d.Linii[i];
-        return [new(Cont(stoc ?? Stoc), N.Latura.Debit, v, q, Magazie, l.Lot, l.Produs,
+        return [new(Cont(stoc ?? Stoc), N.Sens.Debit, v, q, Magazie, l.Lot, l.Produs,
                 Linie: l.Id, Spatiu: N.Spatiu.Stoc, Economic: Economic),
-            new(Cont(ContFurnizor), N.Latura.Credit, v, -q, Furnizor,
+            new(Cont(ContFurnizor), N.Sens.Credit, v, -q, Furnizor,
                 partida ?? Partida(d.Id, ContFurnizor), l.Produs, Linie: l.Id, Economic: Economic,
                 Contrapondere: N.Contrapondere.Tert)];
     }
@@ -80,7 +80,7 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
         Refuza("SC-NIR-11", () => Opereaza(tarziu.Id), "închis"); FaraEfecte("SC-NIR-11", tarziu.Id);
         Comanda(os => { os.GetObjectByKey<Document>(tarziu.Id).DataInregistrare = Februarie; os.CommitChanges(); });
         Opereaza(tarziu.Id);
-        var partida = N.Unitate.DeschidePartida(Cont(ContFurnizor), Furnizor, tarziu.Id, Februarie).Id;
+        var partida = N.UnitateSold.DeschidePartida(Cont(ContFurnizor), Furnizor, tarziu.Id, Februarie).Id;
         Postari("SC-NIR-11", tarziu.Id, N.FelTranzactie.Operare, Februarie, Randuri(tarziu, 0, 1, 10, partida: partida));
         Sold("SC-NIR-11", tarziu.Linii[0], 0, 0); Sold("SC-NIR-11", tarziu.Linii[0], 1, 10, Februarie);
     }
@@ -115,7 +115,7 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
         });
         Opereaza(id);
         Postari("SC-NIR-06", original.Id, N.FelTranzactie.Storno, Februarie, Inverse(Randuri(original, 0, 2, 30)));
-        var partida = N.Unitate.DeschidePartida(Cont(ContFurnizor), Furnizor, id, Februarie).Id;
+        var partida = N.UnitateSold.DeschidePartida(Cont(ContFurnizor), Furnizor, id, Februarie).Id;
         Postari("SC-NIR-06", id, N.FelTranzactie.Operare, Februarie, Randuri(nou, 0, 3, 60, partida: partida));
         Sold("SC-NIR-06", original.Linii[0], 2, 30); Sold("SC-NIR-06", original.Linii[0], 0, 0, Februarie);
         Sold("SC-NIR-06", nou.Linii[0], 3, 60, Februarie);

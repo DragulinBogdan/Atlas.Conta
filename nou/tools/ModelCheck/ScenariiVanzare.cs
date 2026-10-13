@@ -37,10 +37,10 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
 
     RandScena[] Venituri(FacturaScena f, int i, decimal net, decimal taxa = 0, string tva = null, int? perioada = null) {
         var l = f.Linii[i]; var tv = tva == null ? (Guid?)null : Tva(tva);
-        var debit = new RandScena(Cont(ContClient), N.Latura.Debit, net,
+        var debit = new RandScena(Cont(ContClient), N.Sens.Debit, net,
             Repartitor: Client, Unitate: Partida(f.Id, ContClient, Client), Produs: l.Produs,
             Linie: l.Id, Economic: Economic);
-        var credit = new RandScena(Cont(l.Lot != null ? "707" : Venit), N.Latura.Credit, net,
+        var credit = new RandScena(Cont(l.Lot != null ? "707" : Venit), N.Sens.Credit, net,
             Repartitor: Magazie, Produs: l.Produs, PartenerFiscal: tv != null ? Client : null,
             Linie: l.Id, Tva: tv, Rol: tv != null ? N.RolTva.Baza : null,
             Perioada: tv != null ? perioada ?? An * 100 + 1 : null,
@@ -51,9 +51,9 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
 
     RandScena[] Costuri(FacturaScena d, int i, decimal q, decimal v) {
         var l = d.Linii[i];
-        return [new(Cont("607"), N.Latura.Debit, v, q, Client,
+        return [new(Cont("607"), N.Sens.Debit, v, q, Client,
                     Produs: l.Produs, Linie: l.Id, Contrapondere: N.Contrapondere.Tert),
-            new(Cont("371"), N.Latura.Credit, v, -q, Magazie, l.Lot, l.Produs,
+            new(Cont("371"), N.Sens.Credit, v, -q, Magazie, l.Lot, l.Produs,
                     Linie: l.Id, Spatiu: N.Spatiu.Stoc)];
     }
 
@@ -63,7 +63,7 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         var inc = Trezorerie(true, 40); Opereaza(inc.Id);
         var original = Amprenta(f.Id);
         var imp = Imperecheaza(inc.Id, f.Id, 40, Ianuarie);
-        TransferPartida("SC-FCL-09", inc.Id, f.Id, ContClient, Client, N.Latura.Credit, 40, Ianuarie);
+        TransferPartida("SC-FCL-09", inc.Id, f.Id, ContClient, Client, N.Sens.Credit, 40, Ianuarie);
         SoldPartida("SC-FCL-09", Partida(f.Id, ContClient, Client)!.Value, Ianuarie, 60);
         var tva = Privat ? "N21" : null;
         var p = Vinde(new LinieFclScena(1, 100, tva)); Opereaza(p.Id);
@@ -71,7 +71,7 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         (FacturaScena Peste, FacturaScena Corectie)? dsc = Privat ? DescarcariDeschise() : null;
         InchideIanuarie();
         Comanda(os => ImperechereService.Desfa(os, imp, Februarie));
-        TransferPartida("SC-FCL-09", inc.Id, f.Id, ContClient, Client, N.Latura.Credit, -40, Februarie);
+        TransferPartida("SC-FCL-09", inc.Id, f.Id, ContClient, Client, N.Sens.Credit, -40, Februarie);
         Verifica("SC-FCL-09", "factura intactă și împerechere inversată", Amprenta(f.Id) == original
             && CuSpatiu(os => os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentId == f.Id).Sum(i => i.Suma)) == 0);
         if (Privat) {

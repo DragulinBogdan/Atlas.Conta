@@ -13,8 +13,8 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
     : ScenaDocumente(deschide, check, privat, inchide, "BTR", 2004) {
     RandScena[] Randuri(FacturaScena d, int i, decimal q, decimal v) {
         var l = d.Linii[i];
-        return [new(Cont(Stoc), N.Latura.Debit, -v, -q, Magazie, l.Lot, l.Produs, Linie: l.Id, Spatiu: N.Spatiu.Stoc),
-            new(Cont(Stoc), N.Latura.Debit, v, q, Destinatie, l.Lot, l.Produs, Linie: l.Id, Spatiu: N.Spatiu.Stoc)];
+        return [new(Cont(Stoc), N.Sens.Debit, -v, -q, Magazie, l.Lot, l.Produs, Linie: l.Id, Spatiu: N.Spatiu.Stoc),
+            new(Cont(Stoc), N.Sens.Debit, v, q, Destinatie, l.Lot, l.Produs, Linie: l.Id, Spatiu: N.Spatiu.Stoc)];
     }
 
     void Solduri(string id, LinieScena l, DateOnly data, decimal qs, decimal vs, decimal qt, decimal vt) {

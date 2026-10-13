@@ -44,7 +44,7 @@ static class NoteComune {
                 return null;
             var cont = bucla.Catalog.Plan[simbol];
             if (bucla.Tinta(tinta.Tip, tinta.Id) is Guid document)
-                return N.Unitate.DeschidePartida(cont, tert, document, default).Id;
+                return N.UnitateSold.DeschidePartida(cont, tert, document, default).Id;
             var initiala = Imperecheri1C.PartideDeschidere(bucla, tinta.TipRef, tinta.Id)
                 .FirstOrDefault(p => p.Cont == cont && p.Partener == tert);
             return initiala == default ? null : initiala.Partida;

@@ -3,7 +3,6 @@ using System.Text;
 using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Proiectii;
-using DevExpress.EntityFrameworkCore.Security.Infrastructure;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
@@ -410,8 +409,7 @@ public static class SolduriService {
 
     // 104-r2: scrierile globale refuză securitatea activă până când coaja perioadei își alege singură contextul.
     static void CereNesecurizat(IObjectSpace os) {
-        if (os is ISecuredObjectSpace && (os is not EFCoreObjectSpace ef
-                || ef.DbContext.GetService<ISecurityEnabledOption>().EnableSecurity))
+        if (Vizibilitate.Securizat(os))
             throw new InvalidOperationException("SNAPSHOT_OS_SECURIZAT: scrierea globală cere un ObjectSpace nesecurizat.");
     }
 

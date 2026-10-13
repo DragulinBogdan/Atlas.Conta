@@ -388,7 +388,7 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         bool Sursa(LegaturaGl l) => dupaCheie.TryGetValue((l.TransactionID, l.RecordID), out var x)
             && cub.SingleOrDefault(c => c.Spatiu == l.Spatiu && c.ID == l.PostareId) is { } c
             && c.TranzactieId.ToString() == l.TransactionID && (c.DocumentId ?? Guid.Empty) == l.DocumentId && c.LinieId == l.LinieId
-            && simboluri.GetValueOrDefault(c.Cont) == x.Cont && (c.Latura == Atlas.Conta.Nucleu.Latura.Debit ? "D" : "C") == x.Latura
+            && simboluri.GetValueOrDefault(c.Cont) == x.Cont && (c.Latura == Atlas.Conta.Nucleu.Sens.Debit ? "D" : "C") == x.Latura
             && c.Valoare == x.Suma;
         bool Ordonata(IEnumerable<LegaturaGl> tranzactie) {
             var surse = tranzactie.OrderBy(l => int.Parse(l.RecordID, Inv)).Select(l => (l.Spatiu, l.PostareId)).ToList();

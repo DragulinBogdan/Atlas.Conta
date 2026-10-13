@@ -5,6 +5,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// Codurile de refuz ale declaranților: stabile, fără localizare (B-D3).
 /// </summary>
 public static class CoduriRefuz {
+    public const string OriginePartidaInconsistenta = "ORIGINE_PARTIDA_INCONSISTENTA";
     public const string TipFaraDeclaratie = "TIP_FARA_DECLARATIE";
     public const string RegulaContareFaraConsumator = "REGULA_CONTARE_FARA_CONSUMATOR";
     public const string NirDeltaStructura = "NIR_DELTA_STRUCTURA";

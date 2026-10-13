@@ -162,7 +162,7 @@ static class VerificaNucleuFclDsc {
             return d;
         }
         Guid Partida(Document doc, Cont cont) =>
-            N.Unitate.DeschidePartida(cont.ID, client.ID, doc.ID, doc.DataInregistrare).Id;
+            N.UnitateSold.DeschidePartida(cont.ID, client.ID, doc.ID, doc.DataInregistrare).Id;
 
         var fclVenit = Factura(new DateOnly(2026, 3, 5));
         Linie(fclVenit, tipVenit, 1m, 200m, privat ? n21 : null);
@@ -189,13 +189,13 @@ static class VerificaNucleuFclDsc {
             s.Check($"STR-FCL-VENIT-TVA ({eticheta}): creanța e DEBIT pe {contCreanta.Simbol}, "
                 + "pe partida documentului, cu repartitorul = clientul, fără bloc fiscal",
                 creanta.Count == (privat ? 2 : 1)
-                && creanta.All(p => p.Latura == N.Latura.Debit && p.Repartitor == client.ID
+                && creanta.All(p => p.Latura == N.Sens.Debit && p.Repartitor == client.ID
                     && p.Unitate == partidaVenit
                     && p.PartenerFiscal == null && p.Loc == null)
                 && creanta.Sum(p => p.Valoare) == (privat ? 242m : 200m));
             s.Check($"STR-FCL-VENIT-TVA ({eticheta}): venitul e CREDIT 200 pe gestiunea emitentului"
                 + (privat ? ", cu codul de TVA `Baza`/`Livrare`, perioada declarării, partenerul și locul fiscal" : ", fără cod de TVA"),
-                venitul is { Latura: N.Latura.Credit, Valoare: 200m } && venitul.Repartitor == emitent.ID
+                venitul is { Latura: N.Sens.Credit, Valoare: 200m } && venitul.Repartitor == emitent.ID
                 && venitul.Unitate == null
                 && (privat
                     ? venitul.TipTvaId == n21.ID && venitul.SensTva == N.SensTva.Livrare
@@ -207,7 +207,7 @@ static class VerificaNucleuFclDsc {
                 var taxa = postariVenit.Single(p => p.Cont == cont4427.ID);
                 s.Check($"STR-FCL-VENIT-TVA ({eticheta}): taxa COLECTATĂ e CREDIT 42 pe 4427, pe gestiunea "
                     + "emitentului, cu rolul `Taxa`, partenerul și locul fiscal; soldul partidei de creanță = 242",
-                    taxa is { Latura: N.Latura.Credit, Valoare: 42m } && taxa.Repartitor == emitent.ID
+                    taxa is { Latura: N.Sens.Credit, Valoare: 42m } && taxa.Repartitor == emitent.ID
                     && taxa.RolTva == N.RolTva.Taxa && taxa.SensTva == N.SensTva.Livrare
                     && taxa.PartenerFiscal == client.ID && taxa.Loc == emitent.ID
                     && ProbeCub.SoldPartida(os, partidaVenit) == 242m);
@@ -269,7 +269,7 @@ static class VerificaNucleuFclDsc {
                 + "creanță și pe 419 —, iar regularizarea e `C 419 -100` pe partida clientului, fără fapt "
                 + "fiscal, cu emitentul păstrat ca loc (C111-Q14)",
                 postariAvans.Select(p => p.Unitate).OfType<Guid>().Distinct().Count() == 2
-                && avansul is { Latura: N.Latura.Credit, Valoare: -100m }
+                && avansul is { Latura: N.Sens.Credit, Valoare: -100m }
                 && avansul.Unitate == partidaAvans419 && avansul.Repartitor == client.ID
                 && avansul.TipTvaId == null && avansul.PartenerFiscal == null && avansul.Loc == emitent.ID);
             s.Check($"STR-FCL-AVANS-DOUA-PARTIDE ({eticheta}): partida de creanță ține netul, taxa ȘI debitul "
@@ -288,11 +288,11 @@ static class VerificaNucleuFclDsc {
                 + "`C 704 -50`, `D 4111 -10,5`, `C 4427 -10,5` —, iar soldul partidei e −60,5",
                 postariNegativ.Count == 4
                 && postariNegativ.Where(p => p.Cont == contCreanta.ID)
-                    .All(p => p.Latura == N.Latura.Debit && p.Valoare < 0m)
+                    .All(p => p.Latura == N.Sens.Debit && p.Valoare < 0m)
                 && postariNegativ.Single(p => p.Cont == tipVenit.ContImplicitId) is
-                    { Latura: N.Latura.Credit, Valoare: -50m }
+                    { Latura: N.Sens.Credit, Valoare: -50m }
                 && postariNegativ.Single(p => p.Cont == cont4427.ID) is
-                    { Latura: N.Latura.Credit, Valoare: -10.5m }
+                    { Latura: N.Sens.Credit, Valoare: -10.5m }
                 && ProbeCub.SoldPartida(os, Partida(fclNegativ, contCreanta)) == -60.5m);
             ProbeCub.ProbaOperare(os, s.Check, $"NUC-FCL-NEGATIV-{eticheta}", fclNegativ);
 
@@ -371,7 +371,7 @@ static class VerificaNucleuFclDsc {
                 var contStoc = tipMarfa.ContImplicitId.Value;
                 var contrapartida = os.GetObjectsQuery<Cont>().First(c => c.Simbol.StartsWith("891")).ID;
                 Atlas.Conta.BackOffice.Module.Cub.Materializare.Deschide(os, new(2026, 1, 20),
-                    [new(contStoc, N.Latura.Debit, 900, true), new(contrapartida, N.Latura.Credit, 900)],
+                    [new(contStoc, N.Sens.Debit, 900, true), new(contrapartida, N.Sens.Credit, 900)],
                     [new(contStoc, lotA.ID, mag1.ID, 20, 300), new(contStoc, lotB.ID, mag1.ID, 20, 300),
                      new(contStoc, lotC.ID, mag1.ID, 10, 150), new(contStoc, lotD.ID, mag1.ID, 10, 150)], []);
                 os.CommitChanges(); tx.Commit();
@@ -391,13 +391,13 @@ static class VerificaNucleuFclDsc {
                 + "raportului curent (60)",
                 ProbeCub.Tranzactii(os, dsc.ID) is [{ Fel: N.FelTranzactie.Operare }]
                 && postariDsc.Count == 2
-                && iesirea is { Latura: N.Latura.Credit, Valoare: 60m, Cantitate: -4m }
+                && iesirea is { Latura: N.Sens.Credit, Valoare: 60m, Cantitate: -4m }
                 && iesirea.Unitate == lotA.ID && iesirea.Repartitor == mag1.ID);
             s.Check($"STR-DSC-COST-CLIENT ({eticheta}): capătul de cost poartă `+4` marcat contrapondere de terț "
                 + "(090g), fără unitate — marfa a părăsit patrimoniul —, cu produsul lotului și cu terțul de pe "
                 + "primitor ca repartitor (T-D13 g); descărcarea n-are partidă (607/371 n-au rol de terț), iar "
                 + "ieșirea de stoc nu e marcată",
-                costul is { Latura: N.Latura.Debit, Valoare: 60m, Cantitate: 4m }
+                costul is { Latura: N.Sens.Debit, Valoare: 60m, Cantitate: 4m }
                 && costul.Contrapondere == N.Contrapondere.Tert && costul.Unitate == null
                 && costul.Produs == lotA.Produs.ID
                 && costul.Repartitor == client.ID

@@ -116,13 +116,13 @@ public static class Randuri {
         rand.Valoare = postare.Valoare;
     }
 
-    public static N.Unitate? Unitatea(Postare rand) {
+    public static N.UnitateSold? Unitatea(Postare rand) {
         ArgumentNullException.ThrowIfNull(rand);
         if (rand.Unitate is not Guid id)
             return null;
         var fel = rand.FelUnitate
             ?? throw new InvalidOperationException($"Postarea {rand.ID} are unitate fără fel.");
-        return new N.Unitate(
+        return new N.UnitateSold(
             id,
             fel,
             rand.Cont,
@@ -147,7 +147,7 @@ public static class Randuri {
         var fel = unitate.Fel;
         if ((spatiu == N.Spatiu.Stoc) != (fel == N.FelUnitate.Lot))
             throw new InvalidOperationException($"Unitatea {unitate.Id} ({fel}) nu aparține spațiului {spatiu}.");
-        var asteptat = new N.Unitate(
+        var asteptat = new N.UnitateSold(
             unitate.Id,
             fel,
             postare.Coordonate.Cont,

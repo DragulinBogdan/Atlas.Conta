@@ -44,7 +44,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
 
     Guid Scrie(IObjectSpace os, C.SoldInitial[] s = null, C.LotInitial[] l = null, C.PartidaInitiala[] p = null) =>
         C.Materializare.Deschide(os, Ianuarie, s ?? solduri, l ?? loturi, p ?? partide);
-    Guid Partida(Guid referinta, Guid partener) => N.Unitate.DeschidePartidaInitiala(contTert, partener, referinta, Ianuarie).Id;
+    Guid Partida(Guid referinta, Guid partener) => N.UnitateSold.DeschidePartidaInitiala(contTert, partener, referinta, Ianuarie).Id;
     void Rest(string id, Guid referinta, Guid partener, decimal valoare, DateOnly? la = null) =>
         SoldPartida(id, Partida(referinta, partener), la ?? new DateOnly(An, 1, 31), -valoare);
 
@@ -58,17 +58,17 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
             os.CommitChanges();
         });
         loturi = [Lot(4, 40), Lot(3, 60), Lot(2, 0)];
-        solduri = [new(Cont(Stoc), N.Latura.Debit, 100, true), new(ancora, N.Latura.Credit, 100),
-            new(contTert, N.Latura.Credit, 150, true), new(ancora, N.Latura.Debit, 150)];
-        partide = [new(contTert, Furnizor, ref1, N.Latura.Credit, 60),
-            new(contTert, Furnizor, ref2, N.Latura.Credit, 40), new(contTert, Client, ref1, N.Latura.Credit, 50)];
+        solduri = [new(Cont(Stoc), N.Sens.Debit, 100, true), new(ancora, N.Sens.Credit, 100),
+            new(contTert, N.Sens.Credit, 150, true), new(ancora, N.Sens.Debit, 150)];
+        partide = [new(contTert, Furnizor, ref1, N.Sens.Credit, 60),
+            new(contTert, Furnizor, ref2, N.Sens.Credit, 40), new(contTert, Client, ref1, N.Sens.Credit, 50)];
         Refuzuri(); ReviewIntrare(); Performanta();
         using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
             Scrie(os, solduri.Take(2).ToArray(), loturi.Take(2).ToArray(), []);
             var r = os.ModifiedObjects.OfType<C.Postare>().ToArray();
             Verifica("SC-DES-01", "exemplul izolat: exact trei postări, D=C=100", r.Length == 3
-                && r.Where(p => p.Latura == N.Latura.Debit).Sum(p => p.Valoare) == 100
-                && r.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare) == 100);
+                && r.Where(p => p.Latura == N.Sens.Debit).Sum(p => p.Valoare) == 100
+                && r.Where(p => p.Latura == N.Sens.Credit).Sum(p => p.Valoare) == 100);
         }
         using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
             Scrie(os); var cate = os.ModifiedObjects.OfType<C.Postare>().Count();
@@ -103,8 +103,8 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         using (var os = Deschide()) {
             var r = os.GetObjectsQuery<C.Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere).ToList();
             Verifica("SC-DES-01/02", "8 postări detaliate, D=C=250, stoc 100; fără sold bloc dublat", r.Count == 8
-                && r.Where(p => p.Latura == N.Latura.Debit).Sum(p => p.Valoare) == 250
-                && r.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare) == 250
+                && r.Where(p => p.Latura == N.Sens.Debit).Sum(p => p.Valoare) == 250
+                && r.Where(p => p.Latura == N.Sens.Credit).Sum(p => p.Valoare) == 250
                 && r.Where(p => p.Cont == Cont(Stoc)).Sum(p => p.Valoare) == 100
                 && r.Where(p => p.Cont == contTert).All(p => p.Unitate != null && p.Repartitor != null));
             Verifica("SC-DES-08", "round-trip fără document fictiv", r.Zip(C.Randuri.Citeste(os, r)).All(x =>
@@ -151,7 +151,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         using (var os = Deschide()) {
             var r = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == plata.Id && p.Tranzactie.Fel == N.FelTranzactie.Transfer).ToList();
             Verifica("SC-DES-03", "transfer exact pe debit: partidă inițială +20, partidă plată -20", r.Count == 2
-                && r.All(p => p.Cont == contTert && p.Repartitor == Furnizor && p.Carte == N.Carte.Contabil && p.Latura == N.Latura.Debit)
+                && r.All(p => p.Cont == contTert && p.Repartitor == Furnizor && p.Carte == N.Carte.Contabil && p.Latura == N.Sens.Debit)
                 && r.Single(p => p.Valoare == 20).Unitate == Partida(ref1, Furnizor)
                 && r.Single(p => p.Valoare == -20).Unitate != Partida(ref1, Furnizor));
         }
@@ -369,8 +369,8 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
             var analiza = new N.Analiza(null, Economic, null, null, null, null);
             var valuta = Guid.NewGuid();
-            Scrie(os, [new(contTert, N.Latura.Credit, 100), new(ancora, N.Latura.Debit, 100)], [],
-                [new(contTert, Furnizor, ref1, N.Latura.Credit, 100) { Analiza = analiza, Valuta = valuta, ValoareValuta = 20 }]);
+            Scrie(os, [new(contTert, N.Sens.Credit, 100), new(ancora, N.Sens.Debit, 100)], [],
+                [new(contTert, Furnizor, ref1, N.Sens.Credit, 100) { Analiza = analiza, Valuta = valuta, ValoareValuta = 20 }]);
             var p = os.ModifiedObjects.OfType<C.Postare>().Single(p => p.Cont == contTert);
             Verifica("SC-DES-15", "partida păstrează analiza și 100 lei / 20 în valută, curs 5", p.CodEconomic == Economic
                 && p.Valuta == valuta && p.ValoareValuta == 20 && p.Valoare == 100
@@ -386,8 +386,8 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Storneaza(plata.Id, Ianuarie);
         using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
             Refuza("SC-DES-17", () => Scrie(os,
-                [new(contTert, N.Latura.Credit, 100, Carte: N.Carte.Fiscal), new(ancora, N.Latura.Debit, 100, Carte: N.Carte.Fiscal)], [],
-                [new(contTert, Furnizor, ref1, N.Latura.Credit, 100, N.Carte.Fiscal)]), C.Materializare.DeschidereInvalida);
+                [new(contTert, N.Sens.Credit, 100, Carte: N.Carte.Fiscal), new(ancora, N.Sens.Debit, 100, Carte: N.Carte.Fiscal)], [],
+                [new(contTert, Furnizor, ref1, N.Sens.Credit, 100, N.Carte.Fiscal)]), C.Materializare.DeschidereInvalida);
         }
         var flags = CuSpatiu(os => os.GetObjectByKey<Cont>(contTert).DimensiuniObligatorii);
         try {
@@ -400,13 +400,13 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
             Refuza("SC-DES-19", () => C.Materializare.Deschide(os, Ianuarie.AddDays(1), solduri, loturi, partide), "istoriei existente");
             var l = receptie.Linii[0];
-            Refuza("SC-DES-20", () => Scrie(os, [new(Cont(Stoc), N.Latura.Debit, 50), new(ancora, N.Latura.Credit, 50)],
+            Refuza("SC-DES-20", () => Scrie(os, [new(Cont(Stoc), N.Sens.Debit, 50), new(ancora, N.Sens.Credit, 50)],
                 [new(Cont(Stoc), l.Lot.Value, Magazie, 5, 50)], []), "deja mișcări");
         }
         var lotNou = Lot(5, 50);
         Comanda(os => { os.GetObjectByKey<Lot>(lotNou.Lot).LinieIntrareId = receptie.Linii[0].Id; os.CommitChanges(); });
         using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
-            Refuza("SC-DES-20", () => Scrie(os, [new(Cont(Stoc), N.Latura.Debit, 50), new(ancora, N.Latura.Credit, 50)], [lotNou], []), "Lot, cont");
+            Refuza("SC-DES-20", () => Scrie(os, [new(Cont(Stoc), N.Sens.Debit, 50), new(ancora, N.Sens.Credit, 50)], [lotNou], []), "Lot, cont");
         }
     }
 
@@ -415,7 +415,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
             var l = Enumerable.Range(0, cate).Select(_ => Lot(1, 1)).ToArray();
             using var os = Deschide(); using var tx = TranzactieComanda.Incepe(os);
             NumaratorSql.Instanta.Reseteaza();
-            Scrie(os, [new(Cont(Stoc), N.Latura.Debit, cate, true), new(ancora, N.Latura.Credit, cate)], l, []);
+            Scrie(os, [new(Cont(Stoc), N.Sens.Debit, cate, true), new(ancora, N.Sens.Credit, cate)], l, []);
             return NumaratorSql.Instanta.Numar;
         }
         var mic = Citiri(2); var mare = Citiri(51);

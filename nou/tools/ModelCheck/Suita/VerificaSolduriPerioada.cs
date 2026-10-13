@@ -139,7 +139,7 @@ static class VerificaSolduriPerioada {
                 .ToList().GroupBy(p => (p.Unitate.Value, p.Cont, p.Produs.Value, p.Repartitor.Value))
                 .Select(g => new { g.Key, Deschisa = g.Min(p => p.UnitateDeschisa ?? p.Data),
                     Cantitate = g.Sum(p => p.Cantitate),
-                    Valoare = g.Sum(p => p.Latura == Atlas.Conta.Nucleu.Latura.Debit ? p.Valoare : -p.Valoare) })
+                    Valoare = g.Sum(p => p.Latura == Atlas.Conta.Nucleu.Sens.Debit ? p.Valoare : -p.Valoare) })
                 .Where(s => s.Cantitate != 0m || s.Valoare != 0m)
                 .ToDictionary(s => (s.Key.Item1, s.Key.Item2, s.Key.Item3, s.Key.Item4, s.Deschisa),
                     s => (s.Cantitate, s.Valoare));

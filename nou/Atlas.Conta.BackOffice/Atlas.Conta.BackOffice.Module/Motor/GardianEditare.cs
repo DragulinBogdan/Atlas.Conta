@@ -229,6 +229,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 case Cub.Tranzactie:
                 case Cub.Postare:
                 case Cub.PostareVizual:
+                case Cub.OriginePartidaPersistata:
                     if (!cubRaportat) {
                         cubRaportat = true;
                         erori.Add("Tranzacțiile și postările cubului se scriu doar de motor, la operare — "

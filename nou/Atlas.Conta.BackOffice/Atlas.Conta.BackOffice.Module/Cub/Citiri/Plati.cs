@@ -12,7 +12,7 @@ public sealed class PostarePlata {
     public Guid DocumentId { get; set; }
     public Guid? LinieId { get; set; }
     public Guid Cont { get; set; }
-    public N.Latura Latura { get; set; }
+    public N.Sens Latura { get; set; }
     public decimal Valoare { get; set; }
     public Guid? Partener { get; set; }
     public Guid? Unitate { get; set; }
@@ -34,7 +34,7 @@ public enum TintaPlata { Document, PartidaInitiala, Rest, FaraPartida }
 public sealed class AlocarePlata {
     public Guid Cont { get; init; }
     public Guid? Partener { get; init; }
-    public N.Latura Latura { get; init; }
+    public N.Sens Latura { get; init; }
     public TintaPlata Tinta { get; init; }
     public Guid? Unitate { get; init; }
     public Guid? DocumentTinta { get; init; }
@@ -71,7 +71,7 @@ public static class Plati {
     }
 
     /// <summary>Alocarea fiecărui document, pe postările latura contrapartidei primite pentru el.</summary>
-    public static Dictionary<Guid, AlocariPlata> Alocari(IObjectSpace os, IReadOnlyDictionary<Guid, N.Latura> laturaContrapartidei) {
+    public static Dictionary<Guid, AlocariPlata> Alocari(IObjectSpace os, IReadOnlyDictionary<Guid, N.Sens> laturaContrapartidei) {
         var rezultat = laturaContrapartidei.Keys.ToDictionary(d => d, d => new AlocariPlata { DocumentId = d });
         if (rezultat.Count == 0)
             return rezultat;
@@ -110,7 +110,7 @@ public static class Plati {
             .Select(o => new { o.UnitateId, o.DocumentId }).ToList()
             .GroupBy(o => o.UnitateId).ToDictionary(g => g.Key, g => g.Select(o => o.DocumentId).Distinct().ToList());
 
-        AlocarePlata Linie(AlocariPlata a, Guid cont, Guid? partener, N.Latura latura, TintaPlata tinta, Guid? unitate, Guid? document) {
+        AlocarePlata Linie(AlocariPlata a, Guid cont, Guid? partener, N.Sens latura, TintaPlata tinta, Guid? unitate, Guid? document) {
             var linie = a.Linii.FirstOrDefault(l => l.Cont == cont && l.Partener == partener && l.Tinta == tinta && l.Unitate == unitate);
             if (linie == null)
                 a.Linii.Add(linie = new AlocarePlata {
@@ -119,7 +119,7 @@ public static class Plati {
             return linie;
         }
 
-        AlocarePlata Tinta(AlocariPlata a, Guid cont, Guid partener, N.Latura latura, Guid unitate) {
+        AlocarePlata Tinta(AlocariPlata a, Guid cont, Guid partener, N.Sens latura, Guid unitate) {
             if (!origini.TryGetValue(unitate, out var o) || o.Count != 1) {
                 a.Erori.Add($"partida {unitate} nu are o origine unică");
                 return null;

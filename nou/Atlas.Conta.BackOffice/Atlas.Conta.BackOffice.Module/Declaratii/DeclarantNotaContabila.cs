@@ -41,9 +41,9 @@ public sealed class DeclarantNotaContabila : IDeclarant {
         var deschise = new HashSet<Guid>();
         foreach (var l in operand.Linii) {
             var debit = Nominalizeaza(l, l.ContDebitId!.Value, l.RepartitorDebitId,
-                operand.Document.Predator, N.Latura.Debit, l.PartidaDebit);
+                operand.Document.Predator, N.Sens.Debit, l.PartidaDebit);
             var credit = Nominalizeaza(l, l.ContCreditId!.Value, l.RepartitorCreditId,
-                operand.Document.Primitor, N.Latura.Credit, l.PartidaCredit);
+                operand.Document.Primitor, N.Sens.Credit, l.PartidaCredit);
             var i = 0; var j = 0;
             var rd = debit[0].Suma; var rc = credit[0].Suma;
             while (i < debit.Count && j < credit.Count) {
@@ -59,7 +59,7 @@ public sealed class DeclarantNotaContabila : IDeclarant {
 
         // 115: partida numită e singurul candidat; ce nu acoperă ea merge pe partida proprie, nu pe FIFO.
         List<(N.Capat Capat, decimal Suma)> Nominalizeaza(LinieOperand linie, Guid cont,
-                Guid? repartitorId, RepartitorFapt implicitul, N.Latura latura, Guid? numita) {
+                Guid? repartitorId, RepartitorFapt implicitul, N.Sens latura, Guid? numita) {
             var repartitor = repartitorId is Guid id ? operand.Repartitori[id] : implicitul;
             var externul = repartitorId != null && repartitor.Parte == Parte.Extern;
             var capat = new N.Capat {
@@ -68,7 +68,7 @@ public sealed class DeclarantNotaContabila : IDeclarant {
             var cerere = Math.Abs(linie.Valoare);
             decizii.Add(new N.ContRezolvat(linie.Id, cont, "explicit"));
             if (!externul || !Partide.Urmareste(operand, cont)) return [(capat, cerere)];
-            var sens = (latura == N.Latura.Debit ? 1 : -1) * Math.Sign(linie.Valoare);
+            var sens = (latura == N.Sens.Debit ? 1 : -1) * Math.Sign(linie.Valoare);
             var candidati = new List<N.Disponibil>();
             foreach (var p in operand.PartideDisponibile.Where(p =>
                          p.Unitate.Cont == cont && p.Unitate.Partener == repartitor.Id

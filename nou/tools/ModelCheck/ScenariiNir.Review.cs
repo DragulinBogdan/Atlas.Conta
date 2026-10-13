@@ -83,7 +83,7 @@ sealed partial class ScenariiNir {
             });
             Opereaza(f.Id);
             Verifica("SC-NIR-36/FCT", "FCT bugetar pe 408: debit 100, credit furnizor 100", Net(f.Id, Serviciu) == 100 && Net(f.Id, Nesosite) == -100);
-            SoldPartida("SC-NIR-36/FCT", N.Unitate.DeschidePartida(Cont(Nesosite), Furnizor, f.Id, Ianuarie).Id, Ianuarie, -100);
+            SoldPartida("SC-NIR-36/FCT", N.UnitateSold.DeschidePartida(Cont(Nesosite), Furnizor, f.Id, Ianuarie).Id, Ianuarie, -100);
         }
         finally { Comanda(os => { os.GetObjectByKey<Partener>(Furnizor).ContImplicitId = anterior; os.CommitChanges(); }); }
     }

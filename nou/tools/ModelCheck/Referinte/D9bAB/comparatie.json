@@ -1,0 +1,4434 @@
+{
+  "Citiri": [
+    {
+      "Factor": 1,
+      "Cod": "D9B-ORIGINI-TOT-N",
+      "A": 23.474,
+      "B": 1.1066,
+      "Prag": 33.474000000000004,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-ORIGINI-P50-N",
+      "A": 23.3768,
+      "B": 0.625,
+      "Prag": 33.3768,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-SOLDURI-TOT-N",
+      "A": 4.1984,
+      "B": 3.2733,
+      "Prag": 14.1984,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-SOLDURI-P50-N",
+      "A": 1.1432,
+      "B": 1.6791,
+      "Prag": 11.1432,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-REST-TOT-N",
+      "A": 34.7835,
+      "B": 4.5917,
+      "Prag": 44.7835,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-REST-P50-N",
+      "A": 17.3611,
+      "B": 4.5162,
+      "Prag": 27.3611,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-ORIGINI-TOT-S",
+      "A": 34.493,
+      "B": 6.6686,
+      "Prag": 44.493,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-ORIGINI-P50-S",
+      "A": 24.4103,
+      "B": 4.6688,
+      "Prag": 34.4103,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-SOLDURI-TOT-S",
+      "A": 5.1613,
+      "B": 5.3723,
+      "Prag": 15.1613,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-SOLDURI-P50-S",
+      "A": 3.4864,
+      "B": 3.0967,
+      "Prag": 13.4864,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-REST-TOT-S",
+      "A": 19.0367,
+      "B": 9.6831,
+      "Prag": 29.0367,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 1,
+      "Cod": "D9B-REST-P50-S",
+      "A": 19.347,
+      "B": 6.2678,
+      "Prag": 29.347,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-ORIGINI-TOT-N",
+      "A": 161.1725,
+      "B": 4.9036,
+      "Prag": 177.28975000000003,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-ORIGINI-P50-N",
+      "A": 156.7075,
+      "B": 0.5797,
+      "Prag": 172.37825000000004,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-SOLDURI-TOT-N",
+      "A": 22.5193,
+      "B": 23.0898,
+      "Prag": 32.5193,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-SOLDURI-P50-N",
+      "A": 1.1274,
+      "B": 1.1681,
+      "Prag": 11.1274,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-REST-TOT-N",
+      "A": 138.6959,
+      "B": 39.2647,
+      "Prag": 152.56549,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-REST-P50-N",
+      "A": 133.0273,
+      "B": 14.9374,
+      "Prag": 146.33003000000002,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-ORIGINI-TOT-S",
+      "A": 157.5978,
+      "B": 22.8337,
+      "Prag": 173.35758,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-ORIGINI-P50-S",
+      "A": 176.8009,
+      "B": 3.2538,
+      "Prag": 194.48099000000002,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-SOLDURI-TOT-S",
+      "A": 25.1021,
+      "B": 25.4652,
+      "Prag": 35.1021,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-SOLDURI-P50-S",
+      "A": 4.7865,
+      "B": 5.1103,
+      "Prag": 14.7865,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-REST-TOT-S",
+      "A": 136.5677,
+      "B": 68.7845,
+      "Prag": 150.22447000000003,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 10,
+      "Cod": "D9B-REST-P50-S",
+      "A": 143.8857,
+      "B": 18.6064,
+      "Prag": 158.27427000000003,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-ORIGINI-TOT-N",
+      "A": 1046.6533,
+      "B": 54.5971,
+      "Prag": 1151.31863,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-ORIGINI-P50-N",
+      "A": 934.3915,
+      "B": 0.5168,
+      "Prag": 1027.83065,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-SOLDURI-TOT-N",
+      "A": 245.6715,
+      "B": 269.1446,
+      "Prag": 270.23865,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-SOLDURI-P50-N",
+      "A": 1.6021,
+      "B": 1.5195,
+      "Prag": 11.6021,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-REST-TOT-N",
+      "A": 1217.2609,
+      "B": 513.1028,
+      "Prag": 1338.98699,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-REST-P50-N",
+      "A": 1274.3761,
+      "B": 92.316,
+      "Prag": 1401.8137100000001,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-ORIGINI-TOT-S",
+      "A": 1051.3957,
+      "B": 284.9262,
+      "Prag": 1156.53527,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-ORIGINI-P50-S",
+      "A": 957.5312,
+      "B": 5.3319,
+      "Prag": 1053.2843200000002,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-SOLDURI-TOT-S",
+      "A": 292.0537,
+      "B": 291.4477,
+      "Prag": 321.25907,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-SOLDURI-P50-S",
+      "A": 3.4932,
+      "B": 3.2009,
+      "Prag": 13.4932,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-REST-TOT-S",
+      "A": 1019.8327,
+      "B": 677.2372,
+      "Prag": 1121.81597,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 100,
+      "Cod": "D9B-REST-P50-S",
+      "A": 1157.4205,
+      "B": 111.9572,
+      "Prag": 1273.16255,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-ORIGINI-TOT-N",
+      "A": 6828.8485,
+      "B": 512.1669,
+      "Prag": 7511.73335,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-ORIGINI-P50-N",
+      "A": 6249.3384,
+      "B": 0.4782,
+      "Prag": 6874.27224,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-SOLDURI-TOT-N",
+      "A": 1433.6862,
+      "B": 1355.546,
+      "Prag": 1577.0548200000003,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-SOLDURI-P50-N",
+      "A": 1.9079,
+      "B": 1.3127,
+      "Prag": 11.9079,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-REST-TOT-N",
+      "A": 11952.962,
+      "B": 3664.0355,
+      "Prag": 9562.3696,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-REST-P50-N",
+      "A": 11962.3849,
+      "B": 3.9778,
+      "Prag": 13158.62339,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-ORIGINI-TOT-S",
+      "A": 6798.7694,
+      "B": 2185.1383,
+      "Prag": 7478.646340000001,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-ORIGINI-P50-S",
+      "A": 6216.3155,
+      "B": 3.4914,
+      "Prag": 6837.947050000001,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-SOLDURI-TOT-S",
+      "A": 1431.3346,
+      "B": 1201.4026,
+      "Prag": 1574.46806,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-SOLDURI-P50-S",
+      "A": 4.7717,
+      "B": 3.3267,
+      "Prag": 14.7717,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-REST-TOT-S",
+      "A": 11824.2594,
+      "B": 10737.7926,
+      "Prag": 13006.685340000002,
+      "Egal": true,
+      "Acceptat": true
+    },
+    {
+      "Factor": 629,
+      "Cod": "D9B-REST-P50-S",
+      "A": 11818.3694,
+      "B": 5.1064,
+      "Prag": 13000.20634,
+      "Egal": true,
+      "Acceptat": true
+    }
+  ],
+  "Trepte": [
+    {
+      "Manifest": {
+        "Baza": "Atlas.Conta.ModelCheck.Privat.CodexD9bB",
+        "Factor": 1,
+        "Postari": 7951,
+        "Probe": [
+          {
+            "Nume": "documente",
+            "Cheie": "",
+            "Scena": 2358,
+            "Asteptat": 2358,
+            "Baza": 2358,
+            "Ok": true
+          },
+          {
+            "Nume": "loturi",
+            "Cheie": "",
+            "Scena": 524,
+            "Asteptat": 524,
+            "Baza": 524,
+            "Ok": true
+          },
+          {
+            "Nume": "parteneri purtați de postări",
+            "Cheie": "",
+            "Scena": 5,
+            "Asteptat": 5,
+            "Baza": 5,
+            "Ok": true
+          },
+          {
+            "Nume": "partide ale scenei fără origine și fără deschidere",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări cu inversa sau suportul fără postare",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări fiscale cu documentul fiscal lipsă",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "1/1",
+            "Scena": 5701,
+            "Asteptat": 5701,
+            "Baza": 5701,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "1/2",
+            "Scena": 28,
+            "Asteptat": 28,
+            "Baza": 28,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "2/1",
+            "Scena": 2222,
+            "Asteptat": 2222,
+            "Baza": 2222,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții cu ordinalele nenumărate de la 1 fără goluri",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "1",
+            "Scena": 1579,
+            "Asteptat": 1579,
+            "Baza": 1579,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "2",
+            "Scena": 1,
+            "Asteptat": 1,
+            "Baza": 1,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "3",
+            "Scena": 1030,
+            "Asteptat": 1030,
+            "Baza": 1030,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "4",
+            "Scena": 1,
+            "Asteptat": 1,
+            "Baza": 1,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Cantitate pe spațiu",
+            "Cheie": "1",
+            "Scena": -3325.0,
+            "Asteptat": -3325.0,
+            "Baza": -3325.0,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Cantitate pe spațiu",
+            "Cheie": "2",
+            "Scena": 3332.0,
+            "Asteptat": 3332.0,
+            "Baza": 3332.0,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Valoare pe latură",
+            "Cheie": "1",
+            "Scena": 124105.6,
+            "Asteptat": 124105.6,
+            "Baza": 124105.6,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Valoare pe latură",
+            "Cheie": "2",
+            "Scena": 124105.6,
+            "Asteptat": 124105.6,
+            "Baza": 124105.6,
+            "Ok": true
+          }
+        ],
+        "FapteMd5": "762b70e36f5c2a213ed3be2a1312c0b8",
+        "Configuratie": {
+          "version()": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit",
+          "shared_buffers": "128MB",
+          "work_mem": "4MB",
+          "effective_cache_size": "4GB",
+          "max_parallel_workers_per_gather": "2",
+          "maintenance_work_mem": "64MB",
+          "random_page_cost": "4",
+          "jit": "on"
+        },
+        "Schema": "20261010151835_InitialCreate,20261012114235_OriginiPartide",
+        "Origini": 1036,
+        "OriginiOcteti": 131072,
+        "IndecsiOriginiOcteti": 196608,
+        "BazaOcteti": 37626383,
+        "DllSha256": "C88BFC3FCEBE82DC4C10EE6B56C70CCDE9A7E2AB7ADFBE85CD43A635B1F4C3E9",
+        "ModuleSha256": "0B07C5CF1370F0BDBE3DEFAFCFBCCCE6A623455F0C7EFF420C5447BBAF8AA3AE"
+      },
+      "Serii": [
+        {
+          "Operatie": "A-D9B-ORIGINI-P50-N",
+          "Ms": [
+            23.3768,
+            23.1721,
+            23.2684,
+            46.4453,
+            30.9192
+          ],
+          "MedianaMs": 23.3768,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 10530300161823955584,
+            "sha256-1": 7064046831290146396,
+            "sha256-2": 3546311235735493512,
+            "sha256-3": 16651428282742819838
+          },
+          "MedianaAlocati": 48936,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3118,
+            "BuffersPostare": 157,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-P50-S",
+          "Ms": [
+            56.8203,
+            23.9729,
+            24.4103,
+            25.4678,
+            24.2386
+          ],
+          "MedianaMs": 24.4103,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 10530300161823955584,
+            "sha256-1": 7064046831290146396,
+            "sha256-2": 3546311235735493512,
+            "sha256-3": 16651428282742819838
+          },
+          "MedianaAlocati": 236960,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3118,
+            "BuffersPostare": 157,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-TOT-N",
+          "Ms": [
+            23.474,
+            24.8442,
+            23.4516,
+            60.3723,
+            23.3015
+          ],
+          "MedianaMs": 23.474,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 1036,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 11664505628964243518,
+            "sha256-1": 11798579809788896435,
+            "sha256-2": 3731127119108229547,
+            "sha256-3": 1361257697009514785
+          },
+          "MedianaAlocati": 332800,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3118,
+            "BuffersPostare": 157,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-TOT-S",
+          "Ms": [
+            30.6227,
+            34.493,
+            35.0215,
+            50.3249,
+            24.4664
+          ],
+          "MedianaMs": 34.493,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 1036,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 11664505628964243518,
+            "sha256-1": 11798579809788896435,
+            "sha256-2": 3731127119108229547,
+            "sha256-3": 1361257697009514785
+          },
+          "MedianaAlocati": 524952,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3118,
+            "BuffersPostare": 157,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-P50-N",
+          "Ms": [
+            17.0763,
+            16.2603,
+            35.3256,
+            17.3611,
+            20.5067
+          ],
+          "MedianaMs": 17.3611,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6550622283855415240,
+            "sha256-1": 12576619836493086384,
+            "sha256-2": 1189966317402303551,
+            "sha256-3": 16559155117123110154
+          },
+          "MedianaAlocati": 179776,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 8847,
+            "BuffersPostare": 304,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-P50-S",
+          "Ms": [
+            28.3924,
+            18.8707,
+            19.347,
+            19.8156,
+            18.8457
+          ],
+          "MedianaMs": 19.347,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6550622283855415240,
+            "sha256-1": 12576619836493086384,
+            "sha256-2": 1189966317402303551,
+            "sha256-3": 16559155117123110154
+          },
+          "MedianaAlocati": 387832,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 8847,
+            "BuffersPostare": 304,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-TOT-N",
+          "Ms": [
+            16.8774,
+            34.7835,
+            52.6143,
+            42.45,
+            16.8204
+          ],
+          "MedianaMs": 34.7835,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 777,
+          "Control": {
+            "randuri": 777,
+            "sha256-0": 4810921328268948416,
+            "sha256-1": 9097569791454640197,
+            "sha256-2": 16232305630150606753,
+            "sha256-3": 10732054609854993710
+          },
+          "MedianaAlocati": 579064,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 8847,
+            "BuffersPostare": 304,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-TOT-S",
+          "Ms": [
+            18.7919,
+            19.0367,
+            17.8716,
+            19.7443,
+            19.1796
+          ],
+          "MedianaMs": 19.0367,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 777,
+          "Control": {
+            "randuri": 777,
+            "sha256-0": 4810921328268948416,
+            "sha256-1": 9097569791454640197,
+            "sha256-2": 16232305630150606753,
+            "sha256-3": 10732054609854993710
+          },
+          "MedianaAlocati": 785192,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 8847,
+            "BuffersPostare": 304,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-P50-N",
+          "Ms": [
+            1.3001,
+            1.1432,
+            0.9937,
+            1.0241,
+            1.3631
+          ],
+          "MedianaMs": 1.1432,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6479173135180428892,
+            "sha256-1": 2558063910463123904,
+            "sha256-2": 17809455389333487118,
+            "sha256-3": 4648154640011919928
+          },
+          "MedianaAlocati": 69576,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 192,
+            "BuffersPostare": 80,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-P50-S",
+          "Ms": [
+            3.8359,
+            3.2265,
+            3.1003,
+            3.5595,
+            3.4864
+          ],
+          "MedianaMs": 3.4864,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6479173135180428892,
+            "sha256-1": 2558063910463123904,
+            "sha256-2": 17809455389333487118,
+            "sha256-3": 4648154640011919928
+          },
+          "MedianaAlocati": 263728,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 192,
+            "BuffersPostare": 80,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-TOT-N",
+          "Ms": [
+            3.4261,
+            2.8444,
+            4.1984,
+            4.9347,
+            8.1227
+          ],
+          "MedianaMs": 4.1984,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 1036,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 16683807196421854195,
+            "sha256-1": 7571451196249356137,
+            "sha256-2": 12411298955574777791,
+            "sha256-3": 11727052728667018345
+          },
+          "MedianaAlocati": 375272,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 5729,
+            "BuffersPostare": 147,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-TOT-S",
+          "Ms": [
+            5.3932,
+            5.1613,
+            5.2037,
+            5.0945,
+            4.9419
+          ],
+          "MedianaMs": 5.1613,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 1036,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 16683807196421854195,
+            "sha256-1": 7571451196249356137,
+            "sha256-2": 12411298955574777791,
+            "sha256-3": 11727052728667018345
+          },
+          "MedianaAlocati": 567496,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 5729,
+            "BuffersPostare": 147,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-P50-N",
+          "Ms": [
+            0.6661,
+            0.6315,
+            0.625,
+            0.5697,
+            0.5176
+          ],
+          "MedianaMs": 0.625,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 10530300161823955584,
+            "sha256-1": 7064046831290146396,
+            "sha256-2": 3546311235735493512,
+            "sha256-3": 16651428282742819838
+          },
+          "MedianaAlocati": 30880,
+          "Plan": {
+            "ScanariPostare": 0,
+            "RanduriPostare": 0,
+            "BuffersPostare": 0,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-P50-S",
+          "Ms": [
+            4.6417,
+            4.3451,
+            5.648,
+            7.9068,
+            4.6688
+          ],
+          "MedianaMs": 4.6688,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 10530300161823955584,
+            "sha256-1": 7064046831290146396,
+            "sha256-2": 3546311235735493512,
+            "sha256-3": 16651428282742819838
+          },
+          "MedianaAlocati": 232464,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 5729,
+            "BuffersPostare": 147,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-TOT-N",
+          "Ms": [
+            1.0071,
+            1.0496,
+            2.8119,
+            1.1066,
+            1.146
+          ],
+          "MedianaMs": 1.1066,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 1036,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 11664505628964243518,
+            "sha256-1": 11798579809788896435,
+            "sha256-2": 3731127119108229547,
+            "sha256-3": 1361257697009514785
+          },
+          "MedianaAlocati": 315880,
+          "Plan": {
+            "ScanariPostare": 0,
+            "RanduriPostare": 0,
+            "BuffersPostare": 0,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-TOT-S",
+          "Ms": [
+            4.9379,
+            7,
+            6.8125,
+            6.3604,
+            6.6686
+          ],
+          "MedianaMs": 6.6686,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 1036,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 11664505628964243518,
+            "sha256-1": 11798579809788896435,
+            "sha256-2": 3731127119108229547,
+            "sha256-3": 1361257697009514785
+          },
+          "MedianaAlocati": 514320,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 5729,
+            "BuffersPostare": 147,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-P50-N",
+          "Ms": [
+            3.1399,
+            3.5017,
+            4.5162,
+            5.1188,
+            7.1383
+          ],
+          "MedianaMs": 4.5162,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6550622283855415240,
+            "sha256-1": 12576619836493086384,
+            "sha256-2": 1189966317402303551,
+            "sha256-3": 16559155117123110154
+          },
+          "MedianaAlocati": 168176,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 5729,
+            "BuffersPostare": 147,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-P50-S",
+          "Ms": [
+            6.2678,
+            5.8928,
+            6.292,
+            6.7056,
+            6.1562
+          ],
+          "MedianaMs": 6.2678,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6550622283855415240,
+            "sha256-1": 12576619836493086384,
+            "sha256-2": 1189966317402303551,
+            "sha256-3": 16559155117123110154
+          },
+          "MedianaAlocati": 392488,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 5779,
+            "BuffersPostare": 297,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-TOT-N",
+          "Ms": [
+            4.5917,
+            4.7588,
+            7.7515,
+            4.5338,
+            4.4006
+          ],
+          "MedianaMs": 4.5917,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 777,
+          "Control": {
+            "randuri": 777,
+            "sha256-0": 4810921328268948416,
+            "sha256-1": 9097569791454640197,
+            "sha256-2": 16232305630150606753,
+            "sha256-3": 10732054609854993710
+          },
+          "MedianaAlocati": 567752,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 5729,
+            "BuffersPostare": 147,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-TOT-S",
+          "Ms": [
+            9.641,
+            9.1624,
+            17.3652,
+            9.6831,
+            9.8084
+          ],
+          "MedianaMs": 9.6831,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 777,
+          "Control": {
+            "randuri": 777,
+            "sha256-0": 4810921328268948416,
+            "sha256-1": 9097569791454640197,
+            "sha256-2": 16232305630150606753,
+            "sha256-3": 10732054609854993710
+          },
+          "MedianaAlocati": 790544,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 11458,
+            "BuffersPostare": 294,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-P50-N",
+          "Ms": [
+            1.4723,
+            1.4039,
+            1.6791,
+            2.0301,
+            2.1181
+          ],
+          "MedianaMs": 1.6791,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6479173135180428892,
+            "sha256-1": 2558063910463123904,
+            "sha256-2": 17809455389333487118,
+            "sha256-3": 4648154640011919928
+          },
+          "MedianaAlocati": 69576,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 192,
+            "BuffersPostare": 80,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-P50-S",
+          "Ms": [
+            3.6907,
+            3.0967,
+            2.9421,
+            3.3221,
+            3.075
+          ],
+          "MedianaMs": 3.0967,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6479173135180428892,
+            "sha256-1": 2558063910463123904,
+            "sha256-2": 17809455389333487118,
+            "sha256-3": 4648154640011919928
+          },
+          "MedianaAlocati": 263728,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 192,
+            "BuffersPostare": 80,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-TOT-N",
+          "Ms": [
+            3.2651,
+            3.5242,
+            6.3886,
+            3.2273,
+            3.2733
+          ],
+          "MedianaMs": 3.2733,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 1036,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 16683807196421854195,
+            "sha256-1": 7571451196249356137,
+            "sha256-2": 12411298955574777791,
+            "sha256-3": 11727052728667018345
+          },
+          "MedianaAlocati": 375272,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 5729,
+            "BuffersPostare": 147,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-TOT-S",
+          "Ms": [
+            5.3723,
+            8.0043,
+            4.4828,
+            5.2939,
+            5.5751
+          ],
+          "MedianaMs": 5.3723,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 1036,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 16683807196421854195,
+            "sha256-1": 7571451196249356137,
+            "sha256-2": 12411298955574777791,
+            "sha256-3": 11727052728667018345
+          },
+          "MedianaAlocati": 567496,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 5729,
+            "BuffersPostare": 147,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        }
+      ]
+    },
+    {
+      "Manifest": {
+        "Baza": "Atlas.Conta.ModelCheck.Privat.CodexD9bB",
+        "Factor": 10,
+        "Postari": 79510,
+        "Probe": [
+          {
+            "Nume": "documente",
+            "Cheie": "",
+            "Scena": 2358,
+            "Asteptat": 23580,
+            "Baza": 23580,
+            "Ok": true
+          },
+          {
+            "Nume": "loturi",
+            "Cheie": "",
+            "Scena": 524,
+            "Asteptat": 5240,
+            "Baza": 5240,
+            "Ok": true
+          },
+          {
+            "Nume": "parteneri purtați de postări",
+            "Cheie": "",
+            "Scena": 5,
+            "Asteptat": 50,
+            "Baza": 50,
+            "Ok": true
+          },
+          {
+            "Nume": "partide ale scenei fără origine și fără deschidere",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări cu inversa sau suportul fără postare",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări fiscale cu documentul fiscal lipsă",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "1/1",
+            "Scena": 5701,
+            "Asteptat": 57010,
+            "Baza": 57010,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "1/2",
+            "Scena": 28,
+            "Asteptat": 280,
+            "Baza": 280,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "2/1",
+            "Scena": 2222,
+            "Asteptat": 22220,
+            "Baza": 22220,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții cu ordinalele nenumărate de la 1 fără goluri",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "1",
+            "Scena": 1579,
+            "Asteptat": 15790,
+            "Baza": 15790,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "2",
+            "Scena": 1,
+            "Asteptat": 10,
+            "Baza": 10,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "3",
+            "Scena": 1030,
+            "Asteptat": 10300,
+            "Baza": 10300,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "4",
+            "Scena": 1,
+            "Asteptat": 1,
+            "Baza": 1,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Cantitate pe spațiu",
+            "Cheie": "1",
+            "Scena": -3325.0,
+            "Asteptat": -33250.0,
+            "Baza": -33250.0,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Cantitate pe spațiu",
+            "Cheie": "2",
+            "Scena": 3332.0,
+            "Asteptat": 33320.0,
+            "Baza": 33320.0,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Valoare pe latură",
+            "Cheie": "1",
+            "Scena": 124105.6,
+            "Asteptat": 1241056.0,
+            "Baza": 1241056.0,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Valoare pe latură",
+            "Cheie": "2",
+            "Scena": 124105.6,
+            "Asteptat": 1241056.0,
+            "Baza": 1241056.0,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Documente identice în afara coloanelor rescrise",
+            "Cheie": "",
+            "Scena": 2358,
+            "Asteptat": 2358,
+            "Baza": 2358,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Loturi identice în afara cheii",
+            "Cheie": "",
+            "Scena": 524,
+            "Asteptat": 524,
+            "Baza": 524,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: parteneri identici în afara cheii și a codului",
+            "Cheie": "",
+            "Scena": 5,
+            "Asteptat": 5,
+            "Baza": 5,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Postare identică în afara coloanelor rescrise",
+            "Cheie": "",
+            "Scena": 7951,
+            "Asteptat": 7951,
+            "Baza": 7951,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: postările fiscale poartă partenerul fiscal clonat",
+            "Cheie": "",
+            "Scena": 1545,
+            "Asteptat": 1545,
+            "Baza": 1545,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: postările pe partener poartă partenerul clonat",
+            "Cheie": "",
+            "Scena": 3348,
+            "Asteptat": 3348,
+            "Baza": 3348,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Tranzactie identică în afara coloanelor rescrise",
+            "Cheie": "",
+            "Scena": 2610,
+            "Asteptat": 2610,
+            "Baza": 2610,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: unitatea de lot e lotul clonat",
+            "Cheie": "",
+            "Scena": 2222,
+            "Asteptat": 2222,
+            "Baza": 2222,
+            "Ok": true
+          }
+        ],
+        "FapteMd5": "64e621b039b98db6943e7b184e3388d6",
+        "Configuratie": {
+          "version()": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit",
+          "shared_buffers": "128MB",
+          "work_mem": "4MB",
+          "effective_cache_size": "4GB",
+          "max_parallel_workers_per_gather": "2",
+          "maintenance_work_mem": "64MB",
+          "random_page_cost": "4",
+          "jit": "on"
+        },
+        "Schema": "20261010151835_InitialCreate,20261012114235_OriginiPartide",
+        "Origini": 10360,
+        "OriginiOcteti": 999424,
+        "IndecsiOriginiOcteti": 1597440,
+        "BazaOcteti": 79607487,
+        "DllSha256": "C88BFC3FCEBE82DC4C10EE6B56C70CCDE9A7E2AB7ADFBE85CD43A635B1F4C3E9",
+        "ModuleSha256": "0B07C5CF1370F0BDBE3DEFAFCFBCCCE6A623455F0C7EFF420C5447BBAF8AA3AE"
+      },
+      "Serii": [
+        {
+          "Operatie": "A-D9B-ORIGINI-P50-N",
+          "Ms": [
+            207.7903,
+            155.3796,
+            159.6166,
+            156.7075,
+            153.8769
+          ],
+          "MedianaMs": 156.7075,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 12319078928574829580,
+            "sha256-1": 13998772711713647345,
+            "sha256-2": 10974746317587391159,
+            "sha256-3": 3232976595902190686
+          },
+          "MedianaAlocati": 48936,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 31180,
+            "BuffersPostare": 1756,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-P50-S",
+          "Ms": [
+            160.5816,
+            180.5451,
+            176.8009,
+            240.8557,
+            171.0946
+          ],
+          "MedianaMs": 176.8009,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 12319078928574829580,
+            "sha256-1": 13998772711713647345,
+            "sha256-2": 10974746317587391159,
+            "sha256-3": 3232976595902190686
+          },
+          "MedianaAlocati": 236832,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 31180,
+            "BuffersPostare": 1756,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-TOT-N",
+          "Ms": [
+            166.1011,
+            158.4002,
+            163.161,
+            161.1725,
+            159.7504
+          ],
+          "MedianaMs": 161.1725,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 10360,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 14918990169951306289,
+            "sha256-1": 10803345903705884661,
+            "sha256-2": 2592842067479068623,
+            "sha256-3": 13767118218519988610
+          },
+          "MedianaAlocati": 3055408,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 31180,
+            "BuffersPostare": 1756,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-TOT-S",
+          "Ms": [
+            152.764,
+            151.9019,
+            157.5978,
+            193.9557,
+            193.4864
+          ],
+          "MedianaMs": 157.5978,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 10360,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 14918990169951306289,
+            "sha256-1": 10803345903705884661,
+            "sha256-2": 2592842067479068623,
+            "sha256-3": 13767118218519988610
+          },
+          "MedianaAlocati": 3241440,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 31180,
+            "BuffersPostare": 1756,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-P50-N",
+          "Ms": [
+            133.0273,
+            131.7598,
+            127.844,
+            137.5376,
+            193.0226
+          ],
+          "MedianaMs": 133.0273,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 8901124400275581042,
+            "sha256-1": 5645854049735634418,
+            "sha256-2": 16515536835135991018,
+            "sha256-3": 15704477173522678486
+          },
+          "MedianaAlocati": 179720,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 88470,
+            "BuffersPostare": 3241,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-P50-S",
+          "Ms": [
+            143.8857,
+            134.3549,
+            187.5134,
+            147.3997,
+            138.243
+          ],
+          "MedianaMs": 143.8857,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 8901124400275581042,
+            "sha256-1": 5645854049735634418,
+            "sha256-2": 16515536835135991018,
+            "sha256-3": 15704477173522678486
+          },
+          "MedianaAlocati": 387264,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 88470,
+            "BuffersPostare": 3241,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-TOT-N",
+          "Ms": [
+            136.5955,
+            138.6959,
+            144.4635,
+            130.315,
+            143.7429
+          ],
+          "MedianaMs": 138.6959,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 7770,
+          "Control": {
+            "randuri": 7770,
+            "sha256-0": 3586215694570839265,
+            "sha256-1": 8716928434639413811,
+            "sha256-2": 12572589948710511307,
+            "sha256-3": 15491160241616757399
+          },
+          "MedianaAlocati": 4438120,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 88470,
+            "BuffersPostare": 3241,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-TOT-S",
+          "Ms": [
+            154.3961,
+            136.5677,
+            143.0369,
+            131.0578,
+            125.5834
+          ],
+          "MedianaMs": 136.5677,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 7770,
+          "Control": {
+            "randuri": 7770,
+            "sha256-0": 3586215694570839265,
+            "sha256-1": 8716928434639413811,
+            "sha256-2": 12572589948710511307,
+            "sha256-3": 15491160241616757399
+          },
+          "MedianaAlocati": 4643672,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 88470,
+            "BuffersPostare": 3241,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-P50-N",
+          "Ms": [
+            0.9104,
+            1.3927,
+            1.6017,
+            1.0636,
+            1.1274
+          ],
+          "MedianaMs": 1.1274,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 8360790432535745978,
+            "sha256-1": 8989236623498807174,
+            "sha256-2": 445637684153495435,
+            "sha256-3": 11440113100257451054
+          },
+          "MedianaAlocati": 69576,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 169,
+            "BuffersPostare": 94,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-P50-S",
+          "Ms": [
+            4.0698,
+            4.7865,
+            4.6348,
+            4.7882,
+            5.574
+          ],
+          "MedianaMs": 4.7865,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 8360790432535745978,
+            "sha256-1": 8989236623498807174,
+            "sha256-2": 445637684153495435,
+            "sha256-3": 11440113100257451054
+          },
+          "MedianaAlocati": 263216,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 169,
+            "BuffersPostare": 94,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-TOT-N",
+          "Ms": [
+            21.9577,
+            20.8164,
+            22.5193,
+            46.7003,
+            30.1746
+          ],
+          "MedianaMs": 22.5193,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 10360,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 14454061153951922774,
+            "sha256-1": 7646640762642212575,
+            "sha256-2": 10744520282850324587,
+            "sha256-3": 12169913714724419879
+          },
+          "MedianaAlocati": 3284360,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 57290,
+            "BuffersPostare": 1465,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-TOT-S",
+          "Ms": [
+            24.343,
+            25.1427,
+            25.8852,
+            24.4998,
+            25.1021
+          ],
+          "MedianaMs": 25.1021,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 10360,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 14454061153951922774,
+            "sha256-1": 7646640762642212575,
+            "sha256-2": 10744520282850324587,
+            "sha256-3": 12169913714724419879
+          },
+          "MedianaAlocati": 3476072,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 57290,
+            "BuffersPostare": 1465,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-P50-N",
+          "Ms": [
+            0.5445,
+            0.5797,
+            0.6226,
+            0.6358,
+            0.5128
+          ],
+          "MedianaMs": 0.5797,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 12319078928574829580,
+            "sha256-1": 13998772711713647345,
+            "sha256-2": 10974746317587391159,
+            "sha256-3": 3232976595902190686
+          },
+          "MedianaAlocati": 30880,
+          "Plan": {
+            "ScanariPostare": 0,
+            "RanduriPostare": 0,
+            "BuffersPostare": 0,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-P50-S",
+          "Ms": [
+            4.3928,
+            3.154,
+            3.6772,
+            3.2538,
+            2.897
+          ],
+          "MedianaMs": 3.2538,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 12319078928574829580,
+            "sha256-1": 13998772711713647345,
+            "sha256-2": 10974746317587391159,
+            "sha256-3": 3232976595902190686
+          },
+          "MedianaAlocati": 232336,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 50,
+            "BuffersPostare": 150,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-TOT-N",
+          "Ms": [
+            4.9905,
+            5.0129,
+            4.7916,
+            4.9036,
+            4.7063
+          ],
+          "MedianaMs": 4.9036,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 10360,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 14918990169951306289,
+            "sha256-1": 10803345903705884661,
+            "sha256-2": 2592842067479068623,
+            "sha256-3": 13767118218519988610
+          },
+          "MedianaAlocati": 3038488,
+          "Plan": {
+            "ScanariPostare": 0,
+            "RanduriPostare": 0,
+            "BuffersPostare": 0,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-TOT-S",
+          "Ms": [
+            22.3421,
+            43.8071,
+            23.6279,
+            22.8337,
+            22.7976
+          ],
+          "MedianaMs": 22.8337,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 10360,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 14918990169951306289,
+            "sha256-1": 10803345903705884661,
+            "sha256-2": 2592842067479068623,
+            "sha256-3": 13767118218519988610
+          },
+          "MedianaAlocati": 3236960,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 57290,
+            "BuffersPostare": 1465,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-P50-N",
+          "Ms": [
+            14.9374,
+            14.4424,
+            19.2811,
+            15.5287,
+            13.0585
+          ],
+          "MedianaMs": 14.9374,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 8901124400275581042,
+            "sha256-1": 5645854049735634418,
+            "sha256-2": 16515536835135991018,
+            "sha256-3": 15704477173522678486
+          },
+          "MedianaAlocati": 168120,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 57290,
+            "BuffersPostare": 1465,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-P50-S",
+          "Ms": [
+            16.0975,
+            15.5325,
+            18.6064,
+            31.3598,
+            19.1873
+          ],
+          "MedianaMs": 18.6064,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 8901124400275581042,
+            "sha256-1": 5645854049735634418,
+            "sha256-2": 16515536835135991018,
+            "sha256-3": 15704477173522678486
+          },
+          "MedianaAlocati": 391920,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 57340,
+            "BuffersPostare": 1615,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-TOT-N",
+          "Ms": [
+            38.3894,
+            39.2647,
+            32.0029,
+            43.7366,
+            54.3128
+          ],
+          "MedianaMs": 39.2647,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 7770,
+          "Control": {
+            "randuri": 7770,
+            "sha256-0": 3586215694570839265,
+            "sha256-1": 8716928434639413811,
+            "sha256-2": 12572589948710511307,
+            "sha256-3": 15491160241616757399
+          },
+          "MedianaAlocati": 4426520,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 57290,
+            "BuffersPostare": 1465,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-TOT-S",
+          "Ms": [
+            74.1168,
+            78.069,
+            51.5699,
+            68.7845,
+            48.5968
+          ],
+          "MedianaMs": 68.7845,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 7770,
+          "Control": {
+            "randuri": 7770,
+            "sha256-0": 3586215694570839265,
+            "sha256-1": 8716928434639413811,
+            "sha256-2": 12572589948710511307,
+            "sha256-3": 15491160241616757399
+          },
+          "MedianaAlocati": 4648328,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 114580,
+            "BuffersPostare": 2930,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-P50-N",
+          "Ms": [
+            1.2178,
+            1.2222,
+            1.147,
+            1.1681,
+            1.1111
+          ],
+          "MedianaMs": 1.1681,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 8360790432535745978,
+            "sha256-1": 8989236623498807174,
+            "sha256-2": 445637684153495435,
+            "sha256-3": 11440113100257451054
+          },
+          "MedianaAlocati": 69576,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 169,
+            "BuffersPostare": 94,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-P50-S",
+          "Ms": [
+            3.9345,
+            5.1103,
+            5.845,
+            4.8647,
+            5.1658
+          ],
+          "MedianaMs": 5.1103,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 8360790432535745978,
+            "sha256-1": 8989236623498807174,
+            "sha256-2": 445637684153495435,
+            "sha256-3": 11440113100257451054
+          },
+          "MedianaAlocati": 263216,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 169,
+            "BuffersPostare": 94,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-TOT-N",
+          "Ms": [
+            21.5368,
+            23.0898,
+            21.657,
+            33.816,
+            23.557
+          ],
+          "MedianaMs": 23.0898,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 10360,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 14454061153951922774,
+            "sha256-1": 7646640762642212575,
+            "sha256-2": 10744520282850324587,
+            "sha256-3": 12169913714724419879
+          },
+          "MedianaAlocati": 3284360,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 57290,
+            "BuffersPostare": 1465,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-TOT-S",
+          "Ms": [
+            25.4652,
+            25.7649,
+            24.1033,
+            24.2583,
+            26.1066
+          ],
+          "MedianaMs": 25.4652,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 10360,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 14454061153951922774,
+            "sha256-1": 7646640762642212575,
+            "sha256-2": 10744520282850324587,
+            "sha256-3": 12169913714724419879
+          },
+          "MedianaAlocati": 3481264,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 57290,
+            "BuffersPostare": 1465,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        }
+      ]
+    },
+    {
+      "Manifest": {
+        "Baza": "Atlas.Conta.ModelCheck.Privat.CodexD9bB",
+        "Factor": 100,
+        "Postari": 795100,
+        "Probe": [
+          {
+            "Nume": "documente",
+            "Cheie": "",
+            "Scena": 2358,
+            "Asteptat": 235800,
+            "Baza": 235800,
+            "Ok": true
+          },
+          {
+            "Nume": "loturi",
+            "Cheie": "",
+            "Scena": 524,
+            "Asteptat": 52400,
+            "Baza": 52400,
+            "Ok": true
+          },
+          {
+            "Nume": "parteneri purtați de postări",
+            "Cheie": "",
+            "Scena": 5,
+            "Asteptat": 500,
+            "Baza": 500,
+            "Ok": true
+          },
+          {
+            "Nume": "partide ale scenei fără origine și fără deschidere",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări cu inversa sau suportul fără postare",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări fiscale cu documentul fiscal lipsă",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "1/1",
+            "Scena": 5701,
+            "Asteptat": 570100,
+            "Baza": 570100,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "1/2",
+            "Scena": 28,
+            "Asteptat": 2800,
+            "Baza": 2800,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "2/1",
+            "Scena": 2222,
+            "Asteptat": 222200,
+            "Baza": 222200,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții cu ordinalele nenumărate de la 1 fără goluri",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "1",
+            "Scena": 1579,
+            "Asteptat": 157900,
+            "Baza": 157900,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "2",
+            "Scena": 1,
+            "Asteptat": 100,
+            "Baza": 100,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "3",
+            "Scena": 1030,
+            "Asteptat": 103000,
+            "Baza": 103000,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "4",
+            "Scena": 1,
+            "Asteptat": 1,
+            "Baza": 1,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Cantitate pe spațiu",
+            "Cheie": "1",
+            "Scena": -3325.0,
+            "Asteptat": -332500.0,
+            "Baza": -332500.0,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Cantitate pe spațiu",
+            "Cheie": "2",
+            "Scena": 3332.0,
+            "Asteptat": 333200.0,
+            "Baza": 333200.0,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Valoare pe latură",
+            "Cheie": "1",
+            "Scena": 124105.6,
+            "Asteptat": 12410560.0,
+            "Baza": 12410560.0,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Valoare pe latură",
+            "Cheie": "2",
+            "Scena": 124105.6,
+            "Asteptat": 12410560.0,
+            "Baza": 12410560.0,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Documente identice în afara coloanelor rescrise",
+            "Cheie": "",
+            "Scena": 2358,
+            "Asteptat": 2358,
+            "Baza": 2358,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Loturi identice în afara cheii",
+            "Cheie": "",
+            "Scena": 524,
+            "Asteptat": 524,
+            "Baza": 524,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: parteneri identici în afara cheii și a codului",
+            "Cheie": "",
+            "Scena": 5,
+            "Asteptat": 5,
+            "Baza": 5,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Postare identică în afara coloanelor rescrise",
+            "Cheie": "",
+            "Scena": 7951,
+            "Asteptat": 7951,
+            "Baza": 7951,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: postările fiscale poartă partenerul fiscal clonat",
+            "Cheie": "",
+            "Scena": 1545,
+            "Asteptat": 1545,
+            "Baza": 1545,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: postările pe partener poartă partenerul clonat",
+            "Cheie": "",
+            "Scena": 3348,
+            "Asteptat": 3348,
+            "Baza": 3348,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Tranzactie identică în afara coloanelor rescrise",
+            "Cheie": "",
+            "Scena": 2610,
+            "Asteptat": 2610,
+            "Baza": 2610,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: unitatea de lot e lotul clonat",
+            "Cheie": "",
+            "Scena": 2222,
+            "Asteptat": 2222,
+            "Baza": 2222,
+            "Ok": true
+          }
+        ],
+        "FapteMd5": "5e7c16d7b65c030d74d73a6ed3b56d2b",
+        "Configuratie": {
+          "version()": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit",
+          "shared_buffers": "128MB",
+          "work_mem": "4MB",
+          "effective_cache_size": "4GB",
+          "max_parallel_workers_per_gather": "2",
+          "maintenance_work_mem": "64MB",
+          "random_page_cost": "4",
+          "jit": "on"
+        },
+        "Schema": "20261010151835_InitialCreate,20261012114235_OriginiPartide",
+        "Origini": 103600,
+        "OriginiOcteti": 9682944,
+        "IndecsiOriginiOcteti": 15474688,
+        "BazaOcteti": 486250175,
+        "DllSha256": "C88BFC3FCEBE82DC4C10EE6B56C70CCDE9A7E2AB7ADFBE85CD43A635B1F4C3E9",
+        "ModuleSha256": "0B07C5CF1370F0BDBE3DEFAFCFBCCCE6A623455F0C7EFF420C5447BBAF8AA3AE"
+      },
+      "Serii": [
+        {
+          "Operatie": "A-D9B-ORIGINI-P50-N",
+          "Ms": [
+            1023.049,
+            920.817,
+            922.1759,
+            934.3915,
+            967.3304
+          ],
+          "MedianaMs": 934.3915,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16706600865462351352,
+            "sha256-1": 1343055570759829969,
+            "sha256-2": 8141913656862487700,
+            "sha256-3": 969145808440673287
+          },
+          "MedianaAlocati": 48936,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 311799.99,
+            "BuffersPostare": 12867,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-P50-S",
+          "Ms": [
+            957.5312,
+            907.7217,
+            975.9708,
+            951.2718,
+            1020.1534
+          ],
+          "MedianaMs": 957.5312,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16706600865462351352,
+            "sha256-1": 1343055570759829969,
+            "sha256-2": 8141913656862487700,
+            "sha256-3": 969145808440673287
+          },
+          "MedianaAlocati": 236448,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 311799.99,
+            "BuffersPostare": 12867,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-TOT-N",
+          "Ms": [
+            994.7009,
+            1050.5795,
+            992.6911,
+            1046.6533,
+            1067.5766
+          ],
+          "MedianaMs": 1046.6533,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 103600,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 4145217764990220258,
+            "sha256-1": 15572048232020165590,
+            "sha256-2": 10820360763925304367,
+            "sha256-3": 13908766531602658265
+          },
+          "MedianaAlocati": 30281656,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 311799.99,
+            "BuffersPostare": 12867,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-TOT-S",
+          "Ms": [
+            1059.9392,
+            1097.3503,
+            1051.3957,
+            1014.1945,
+            1029.2124
+          ],
+          "MedianaMs": 1051.3957,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 103600,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 4145217764990220258,
+            "sha256-1": 15572048232020165590,
+            "sha256-2": 10820360763925304367,
+            "sha256-3": 13908766531602658265
+          },
+          "MedianaAlocati": 30490608,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 311799.99,
+            "BuffersPostare": 12867,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-P50-N",
+          "Ms": [
+            1473.5723,
+            1347.9379,
+            1274.3761,
+            1123.2669,
+            1247.2193
+          ],
+          "MedianaMs": 1274.3761,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 15724384197304901780,
+            "sha256-1": 3986148774847161827,
+            "sha256-2": 15433378973653952309,
+            "sha256-3": 6523364282309233196
+          },
+          "MedianaAlocati": 179704,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 884699.01,
+            "BuffersPostare": 27540,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-P50-S",
+          "Ms": [
+            1157.4205,
+            1124.9241,
+            1107.9041,
+            1278.4004,
+            1258.0841
+          ],
+          "MedianaMs": 1157.4205,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 15724384197304901780,
+            "sha256-1": 3986148774847161827,
+            "sha256-2": 15433378973653952309,
+            "sha256-3": 6523364282309233196
+          },
+          "MedianaAlocati": 387248,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 884699.01,
+            "BuffersPostare": 27540,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-TOT-N",
+          "Ms": [
+            1291.3959,
+            1091.9119,
+            1353.7837,
+            1159.2266,
+            1217.2609
+          ],
+          "MedianaMs": 1217.2609,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 77700,
+          "Control": {
+            "randuri": 77700,
+            "sha256-0": 2307319558050588735,
+            "sha256-1": 2923474692030786824,
+            "sha256-2": 15495238419394379564,
+            "sha256-3": 15583183447675132622
+          },
+          "MedianaAlocati": 43035376,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 884699.01,
+            "BuffersPostare": 27540,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-TOT-S",
+          "Ms": [
+            971.7083,
+            1213.9979,
+            1019.8327,
+            1013.9913,
+            1103.9122
+          ],
+          "MedianaMs": 1019.8327,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 77700,
+          "Control": {
+            "randuri": 77700,
+            "sha256-0": 2307319558050588735,
+            "sha256-1": 2923474692030786824,
+            "sha256-2": 15495238419394379564,
+            "sha256-3": 15583183447675132622
+          },
+          "MedianaAlocati": 43278056,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 884699.01,
+            "BuffersPostare": 27540,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-P50-N",
+          "Ms": [
+            1.5892,
+            0.978,
+            1.6021,
+            1.9546,
+            1.6936
+          ],
+          "MedianaMs": 1.6021,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16382017947036879625,
+            "sha256-1": 3364557932822262178,
+            "sha256-2": 5671627654381247976,
+            "sha256-3": 12672184308216238250
+          },
+          "MedianaAlocati": 69576,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 171,
+            "BuffersPostare": 97,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-P50-S",
+          "Ms": [
+            3.9897,
+            3.9914,
+            3.4932,
+            2.3943,
+            3.0903
+          ],
+          "MedianaMs": 3.4932,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16382017947036879625,
+            "sha256-1": 3364557932822262178,
+            "sha256-2": 5671627654381247976,
+            "sha256-3": 12672184308216238250
+          },
+          "MedianaAlocati": 263216,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 171,
+            "BuffersPostare": 97,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-TOT-N",
+          "Ms": [
+            231.2003,
+            231.0669,
+            245.6715,
+            258.5761,
+            251.3824
+          ],
+          "MedianaMs": 245.6715,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 103600,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 11601370108175436218,
+            "sha256-1": 1788210652124145677,
+            "sha256-2": 14638029125206526801,
+            "sha256-3": 17728225060074956027
+          },
+          "MedianaAlocati": 32378296,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 572900.01,
+            "BuffersPostare": 14633,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-TOT-S",
+          "Ms": [
+            332.4822,
+            320.6695,
+            266.1505,
+            259.0689,
+            292.0537
+          ],
+          "MedianaMs": 292.0537,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 103600,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 11601370108175436218,
+            "sha256-1": 1788210652124145677,
+            "sha256-2": 14638029125206526801,
+            "sha256-3": 17728225060074956027
+          },
+          "MedianaAlocati": 32602432,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 572900.01,
+            "BuffersPostare": 14633,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-P50-N",
+          "Ms": [
+            0.5153,
+            0.5168,
+            0.6411,
+            0.4641,
+            0.5698
+          ],
+          "MedianaMs": 0.5168,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16706600865462351352,
+            "sha256-1": 1343055570759829969,
+            "sha256-2": 8141913656862487700,
+            "sha256-3": 969145808440673287
+          },
+          "MedianaAlocati": 30880,
+          "Plan": {
+            "ScanariPostare": 0,
+            "RanduriPostare": 0,
+            "BuffersPostare": 0,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-P50-S",
+          "Ms": [
+            4.1019,
+            4.3375,
+            5.3319,
+            6.0653,
+            5.6407
+          ],
+          "MedianaMs": 5.3319,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16706600865462351352,
+            "sha256-1": 1343055570759829969,
+            "sha256-2": 8141913656862487700,
+            "sha256-3": 969145808440673287
+          },
+          "MedianaAlocati": 231952,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 50,
+            "BuffersPostare": 200,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-TOT-N",
+          "Ms": [
+            132.007,
+            68.7545,
+            52.5535,
+            54.5971,
+            48.4571
+          ],
+          "MedianaMs": 54.5971,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 103600,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 4145217764990220258,
+            "sha256-1": 15572048232020165590,
+            "sha256-2": 10820360763925304367,
+            "sha256-3": 13908766531602658265
+          },
+          "MedianaAlocati": 30264568,
+          "Plan": {
+            "ScanariPostare": 0,
+            "RanduriPostare": 0,
+            "BuffersPostare": 0,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-TOT-S",
+          "Ms": [
+            337.6477,
+            284.9262,
+            358.1129,
+            266.3497,
+            284.861
+          ],
+          "MedianaMs": 284.9262,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 103600,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 4145217764990220258,
+            "sha256-1": 15572048232020165590,
+            "sha256-2": 10820360763925304367,
+            "sha256-3": 13908766531602658265
+          },
+          "MedianaAlocati": 30485528,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 572900.01,
+            "BuffersPostare": 14633,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-P50-N",
+          "Ms": [
+            92.9156,
+            85.5877,
+            92.316,
+            96.2837,
+            91.9045
+          ],
+          "MedianaMs": 92.316,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 15724384197304901780,
+            "sha256-1": 3986148774847161827,
+            "sha256-2": 15433378973653952309,
+            "sha256-3": 6523364282309233196
+          },
+          "MedianaAlocati": 168104,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 572900.01,
+            "BuffersPostare": 14633,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-P50-S",
+          "Ms": [
+            166.0519,
+            100.4527,
+            111.9572,
+            117.0612,
+            102.0477
+          ],
+          "MedianaMs": 111.9572,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 15724384197304901780,
+            "sha256-1": 3986148774847161827,
+            "sha256-2": 15433378973653952309,
+            "sha256-3": 6523364282309233196
+          },
+          "MedianaAlocati": 391904,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 572950.01,
+            "BuffersPostare": 14833,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-TOT-N",
+          "Ms": [
+            813.7497,
+            513.1028,
+            718.4465,
+            511.438,
+            479.0838
+          ],
+          "MedianaMs": 513.1028,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 77700,
+          "Control": {
+            "randuri": 77700,
+            "sha256-0": 2307319558050588735,
+            "sha256-1": 2923474692030786824,
+            "sha256-2": 15495238419394379564,
+            "sha256-3": 15583183447675132622
+          },
+          "MedianaAlocati": 43023672,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 572900.01,
+            "BuffersPostare": 14633,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-TOT-S",
+          "Ms": [
+            677.2372,
+            655.5482,
+            758.9947,
+            632.8384,
+            776.5058
+          ],
+          "MedianaMs": 677.2372,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 77700,
+          "Control": {
+            "randuri": 77700,
+            "sha256-0": 2307319558050588735,
+            "sha256-1": 2923474692030786824,
+            "sha256-2": 15495238419394379564,
+            "sha256-3": 15583183447675132622
+          },
+          "MedianaAlocati": 43283152,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 1145800.02,
+            "BuffersPostare": 29266,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-P50-N",
+          "Ms": [
+            1.8728,
+            1.0183,
+            1.5195,
+            1.5016,
+            2.0008
+          ],
+          "MedianaMs": 1.5195,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16382017947036879625,
+            "sha256-1": 3364557932822262178,
+            "sha256-2": 5671627654381247976,
+            "sha256-3": 12672184308216238250
+          },
+          "MedianaAlocati": 69576,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 171,
+            "BuffersPostare": 97,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-P50-S",
+          "Ms": [
+            3.1282,
+            3.1116,
+            3.3273,
+            3.2009,
+            3.9263
+          ],
+          "MedianaMs": 3.2009,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16382017947036879625,
+            "sha256-1": 3364557932822262178,
+            "sha256-2": 5671627654381247976,
+            "sha256-3": 12672184308216238250
+          },
+          "MedianaAlocati": 263216,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 171,
+            "BuffersPostare": 97,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-TOT-N",
+          "Ms": [
+            269.1446,
+            267.0249,
+            280.1493,
+            245.632,
+            277.807
+          ],
+          "MedianaMs": 269.1446,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 103600,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 11601370108175436218,
+            "sha256-1": 1788210652124145677,
+            "sha256-2": 14638029125206526801,
+            "sha256-3": 17728225060074956027
+          },
+          "MedianaAlocati": 32378296,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 572900.01,
+            "BuffersPostare": 14633,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-TOT-S",
+          "Ms": [
+            291.4477,
+            255.8241,
+            301.0262,
+            249.9681,
+            302.1396
+          ],
+          "MedianaMs": 291.4477,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 103600,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 11601370108175436218,
+            "sha256-1": 1788210652124145677,
+            "sha256-2": 14638029125206526801,
+            "sha256-3": 17728225060074956027
+          },
+          "MedianaAlocati": 32603680,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 572900.01,
+            "BuffersPostare": 14633,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        }
+      ]
+    },
+    {
+      "Manifest": {
+        "Baza": "Atlas.Conta.ModelCheck.Privat.CodexD9bB",
+        "Factor": 629,
+        "Postari": 5001179,
+        "Probe": [
+          {
+            "Nume": "documente",
+            "Cheie": "",
+            "Scena": 2358,
+            "Asteptat": 1483182,
+            "Baza": 1483182,
+            "Ok": true
+          },
+          {
+            "Nume": "loturi",
+            "Cheie": "",
+            "Scena": 524,
+            "Asteptat": 329596,
+            "Baza": 329596,
+            "Ok": true
+          },
+          {
+            "Nume": "parteneri purtați de postări",
+            "Cheie": "",
+            "Scena": 5,
+            "Asteptat": 3145,
+            "Baza": 3145,
+            "Ok": true
+          },
+          {
+            "Nume": "partide ale scenei fără origine și fără deschidere",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări cu inversa sau suportul fără postare",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări fiscale cu documentul fiscal lipsă",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "1/1",
+            "Scena": 5701,
+            "Asteptat": 3585929,
+            "Baza": 3585929,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "1/2",
+            "Scena": 28,
+            "Asteptat": 17612,
+            "Baza": 17612,
+            "Ok": true
+          },
+          {
+            "Nume": "postări pe Spatiu × Carte",
+            "Cheie": "2/1",
+            "Scena": 2222,
+            "Asteptat": 1397638,
+            "Baza": 1397638,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții cu ordinalele nenumărate de la 1 fără goluri",
+            "Cheie": "",
+            "Scena": 0,
+            "Asteptat": 0,
+            "Baza": 0,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "1",
+            "Scena": 1579,
+            "Asteptat": 993191,
+            "Baza": 993191,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "2",
+            "Scena": 1,
+            "Asteptat": 629,
+            "Baza": 629,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "3",
+            "Scena": 1030,
+            "Asteptat": 647870,
+            "Baza": 647870,
+            "Ok": true
+          },
+          {
+            "Nume": "tranzacții pe Fel",
+            "Cheie": "4",
+            "Scena": 1,
+            "Asteptat": 1,
+            "Baza": 1,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Cantitate pe spațiu",
+            "Cheie": "1",
+            "Scena": -3325.0,
+            "Asteptat": -2091425.0,
+            "Baza": -2091425.0,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Cantitate pe spațiu",
+            "Cheie": "2",
+            "Scena": 3332.0,
+            "Asteptat": 2095828.0,
+            "Baza": 2095828.0,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Valoare pe latură",
+            "Cheie": "1",
+            "Scena": 124105.6,
+            "Asteptat": 78062422.4,
+            "Baza": 78062422.4,
+            "Ok": true
+          },
+          {
+            "Nume": "Σ Valoare pe latură",
+            "Cheie": "2",
+            "Scena": 124105.6,
+            "Asteptat": 78062422.4,
+            "Baza": 78062422.4,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Documente identice în afara coloanelor rescrise",
+            "Cheie": "",
+            "Scena": 2358,
+            "Asteptat": 2358,
+            "Baza": 2358,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Loturi identice în afara cheii",
+            "Cheie": "",
+            "Scena": 524,
+            "Asteptat": 524,
+            "Baza": 524,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: parteneri identici în afara cheii și a codului",
+            "Cheie": "",
+            "Scena": 5,
+            "Asteptat": 5,
+            "Baza": 5,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Postare identică în afara coloanelor rescrise",
+            "Cheie": "",
+            "Scena": 7951,
+            "Asteptat": 7951,
+            "Baza": 7951,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: postările fiscale poartă partenerul fiscal clonat",
+            "Cheie": "",
+            "Scena": 1545,
+            "Asteptat": 1545,
+            "Baza": 1545,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: postările pe partener poartă partenerul clonat",
+            "Cheie": "",
+            "Scena": 3348,
+            "Asteptat": 3348,
+            "Baza": 3348,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: Tranzactie identică în afara coloanelor rescrise",
+            "Cheie": "",
+            "Scena": 2610,
+            "Asteptat": 2610,
+            "Baza": 2610,
+            "Ok": true
+          },
+          {
+            "Nume": "copia: unitatea de lot e lotul clonat",
+            "Cheie": "",
+            "Scena": 2222,
+            "Asteptat": 2222,
+            "Baza": 2222,
+            "Ok": true
+          }
+        ],
+        "FapteMd5": "9dd92bbeefb84b8855c26ac704356e2c",
+        "Configuratie": {
+          "version()": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit",
+          "shared_buffers": "128MB",
+          "work_mem": "4MB",
+          "effective_cache_size": "4GB",
+          "max_parallel_workers_per_gather": "2",
+          "maintenance_work_mem": "64MB",
+          "random_page_cost": "4",
+          "jit": "on"
+        },
+        "Schema": "20261010151835_InitialCreate,20261012114235_OriginiPartide",
+        "Origini": 651644,
+        "OriginiOcteti": 60710912,
+        "IndecsiOriginiOcteti": 95305728,
+        "BazaOcteti": 2885473983,
+        "DllSha256": "C88BFC3FCEBE82DC4C10EE6B56C70CCDE9A7E2AB7ADFBE85CD43A635B1F4C3E9",
+        "ModuleSha256": "0B07C5CF1370F0BDBE3DEFAFCFBCCCE6A623455F0C7EFF420C5447BBAF8AA3AE"
+      },
+      "Serii": [
+        {
+          "Operatie": "A-D9B-ORIGINI-P50-N",
+          "Ms": [
+            6395.2388,
+            6100.7369,
+            6249.3384,
+            6213.9962,
+            7517.8292
+          ],
+          "MedianaMs": 6249.3384,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 723851960432283934,
+            "sha256-1": 14420406951433487187,
+            "sha256-2": 3188070217496504329,
+            "sha256-3": 1976832826691619782
+          },
+          "MedianaAlocati": 48936,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 2522738.0100000002,
+            "BuffersPostare": 96099,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-P50-S",
+          "Ms": [
+            6006.3553,
+            6205.0136,
+            6216.3155,
+            6288.1863,
+            6287.242
+          ],
+          "MedianaMs": 6216.3155,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 723851960432283934,
+            "sha256-1": 14420406951433487187,
+            "sha256-2": 3188070217496504329,
+            "sha256-3": 1976832826691619782
+          },
+          "MedianaAlocati": 236448,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 2522738.0100000002,
+            "BuffersPostare": 96099,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-TOT-N",
+          "Ms": [
+            6828.8485,
+            6734.1154,
+            6858.2372,
+            6780.0532,
+            6928.5589
+          ],
+          "MedianaMs": 6828.8485,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 651644,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 17231030510483304717,
+            "sha256-1": 7634315775805993908,
+            "sha256-2": 4156877766245788761,
+            "sha256-3": 892259840762373711
+          },
+          "MedianaAlocati": 190310504,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 2522738.0100000002,
+            "BuffersPostare": 96099,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-ORIGINI-TOT-S",
+          "Ms": [
+            6798.7694,
+            6861.8586,
+            6720.2232,
+            6635.9004,
+            6807.8301
+          ],
+          "MedianaMs": 6798.7694,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 651644,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 17231030510483304717,
+            "sha256-1": 7634315775805993908,
+            "sha256-2": 4156877766245788761,
+            "sha256-3": 892259840762373711
+          },
+          "MedianaAlocati": 190519456,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 2522738.0100000002,
+            "BuffersPostare": 96099,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-P50-N",
+          "Ms": [
+            12203.9499,
+            11962.3849,
+            12273.6235,
+            11741.7771,
+            11880.3593
+          ],
+          "MedianaMs": 11962.3849,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 12747954535562557938,
+            "sha256-1": 11952818921117575298,
+            "sha256-2": 16112524463219454047,
+            "sha256-3": 13040249600973559541
+          },
+          "MedianaAlocati": 179680,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 2522946,
+            "BuffersPostare": 96196,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-P50-S",
+          "Ms": [
+            11818.3694,
+            11379.1481,
+            11848.1893,
+            11572.2381,
+            11828.1198
+          ],
+          "MedianaMs": 11818.3694,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 12747954535562557938,
+            "sha256-1": 11952818921117575298,
+            "sha256-2": 16112524463219454047,
+            "sha256-3": 13040249600973559541
+          },
+          "MedianaAlocati": 387224,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 2522946,
+            "BuffersPostare": 96196,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-TOT-N",
+          "Ms": [
+            11841.8976,
+            12633.1683,
+            11952.962,
+            12402.6916,
+            11689.0943
+          ],
+          "MedianaMs": 11952.962,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 488733,
+          "Control": {
+            "randuri": 488733,
+            "sha256-0": 17484882848685105495,
+            "sha256-1": 16361928954466527356,
+            "sha256-2": 13508162466229948246,
+            "sha256-3": 9574693950551144996
+          },
+          "MedianaAlocati": 269876864,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 6126279.99,
+            "BuffersPostare": 188227,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-REST-TOT-S",
+          "Ms": [
+            11824.2594,
+            11799.7849,
+            11882.2516,
+            11885.064,
+            11816.0587
+          ],
+          "MedianaMs": 11824.2594,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 488733,
+          "Control": {
+            "randuri": 488733,
+            "sha256-0": 17484882848685105495,
+            "sha256-1": 16361928954466527356,
+            "sha256-2": 13508162466229948246,
+            "sha256-3": 9574693950551144996
+          },
+          "MedianaAlocati": 270119616,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 6126279.99,
+            "BuffersPostare": 188227,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-P50-N",
+          "Ms": [
+            1.434,
+            1.805,
+            1.936,
+            1.9298,
+            1.9079
+          ],
+          "MedianaMs": 1.9079,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16250773360817955431,
+            "sha256-1": 3477627131897547172,
+            "sha256-2": 14758861946099980921,
+            "sha256-3": 11362421218619633743
+          },
+          "MedianaAlocati": 69576,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 139,
+            "BuffersPostare": 73,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-P50-S",
+          "Ms": [
+            3.141,
+            5.7812,
+            4.7717,
+            4.5956,
+            5.003
+          ],
+          "MedianaMs": 4.7717,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16250773360817955431,
+            "sha256-1": 3477627131897547172,
+            "sha256-2": 14758861946099980921,
+            "sha256-3": 11362421218619633743
+          },
+          "MedianaAlocati": 263216,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 139,
+            "BuffersPostare": 73,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-TOT-N",
+          "Ms": [
+            1386.7079,
+            1454.4146,
+            1428.5604,
+            1433.6862,
+            1476.9486
+          ],
+          "MedianaMs": 1433.6862,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 651644,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 8983829003544860199,
+            "sha256-1": 8714303448675521198,
+            "sha256-2": 14814483812596165965,
+            "sha256-3": 17963108018820758941
+          },
+          "MedianaAlocati": 203382776,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3603540.99,
+            "BuffersPostare": 92128,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "A-D9B-SOLDURI-TOT-S",
+          "Ms": [
+            1431.3346,
+            1323.9386,
+            1497.8627,
+            1599.6036,
+            1236.1054
+          ],
+          "MedianaMs": 1431.3346,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 651644,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 8983829003544860199,
+            "sha256-1": 8714303448675521198,
+            "sha256-2": 14814483812596165965,
+            "sha256-3": 17963108018820758941
+          },
+          "MedianaAlocati": 203593408,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3603540.99,
+            "BuffersPostare": 92128,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-P50-N",
+          "Ms": [
+            0.4149,
+            0.5435,
+            0.4782,
+            0.5278,
+            0.4661
+          ],
+          "MedianaMs": 0.4782,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 723851960432283934,
+            "sha256-1": 14420406951433487187,
+            "sha256-2": 3188070217496504329,
+            "sha256-3": 1976832826691619782
+          },
+          "MedianaAlocati": 30880,
+          "Plan": {
+            "ScanariPostare": 0,
+            "RanduriPostare": 0,
+            "BuffersPostare": 0,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-P50-S",
+          "Ms": [
+            3.1776,
+            3.911,
+            3.9483,
+            3.4914,
+            2.454
+          ],
+          "MedianaMs": 3.4914,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 723851960432283934,
+            "sha256-1": 14420406951433487187,
+            "sha256-2": 3188070217496504329,
+            "sha256-3": 1976832826691619782
+          },
+          "MedianaAlocati": 231952,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 50,
+            "BuffersPostare": 200,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-TOT-N",
+          "Ms": [
+            512.1669,
+            424.4736,
+            586.4031,
+            688.6703,
+            477.3049
+          ],
+          "MedianaMs": 512.1669,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 651644,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 17231030510483304717,
+            "sha256-1": 7634315775805993908,
+            "sha256-2": 4156877766245788761,
+            "sha256-3": 892259840762373711
+          },
+          "MedianaAlocati": 190293416,
+          "Plan": {
+            "ScanariPostare": 0,
+            "RanduriPostare": 0,
+            "BuffersPostare": 0,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-ORIGINI-TOT-S",
+          "Ms": [
+            2185.1383,
+            2216.8491,
+            2328.6198,
+            2067.9187,
+            2167.4202
+          ],
+          "MedianaMs": 2185.1383,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 651644,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 17231030510483304717,
+            "sha256-1": 7634315775805993908,
+            "sha256-2": 4156877766245788761,
+            "sha256-3": 892259840762373711
+          },
+          "MedianaAlocati": 190514376,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3603540.99,
+            "BuffersPostare": 92128,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-P50-N",
+          "Ms": [
+            2.3986,
+            2.2612,
+            3.9778,
+            4.2356,
+            3.9841
+          ],
+          "MedianaMs": 3.9778,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 12747954535562557938,
+            "sha256-1": 11952818921117575298,
+            "sha256-2": 16112524463219454047,
+            "sha256-3": 13040249600973559541
+          },
+          "MedianaAlocati": 168080,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 207,
+            "BuffersPostare": 97,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-P50-S",
+          "Ms": [
+            4.9666,
+            6.0488,
+            5.1064,
+            4.7733,
+            5.4241
+          ],
+          "MedianaMs": 5.1064,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 12747954535562557938,
+            "sha256-1": 11952818921117575298,
+            "sha256-2": 16112524463219454047,
+            "sha256-3": 13040249600973559541
+          },
+          "MedianaAlocati": 392280,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 257,
+            "BuffersPostare": 297,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-TOT-N",
+          "Ms": [
+            3548.4404,
+            3551.1898,
+            3664.0355,
+            3796.0569,
+            3999.5825
+          ],
+          "MedianaMs": 3664.0355,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 488733,
+          "Control": {
+            "randuri": 488733,
+            "sha256-0": 17484882848685105495,
+            "sha256-1": 16361928954466527356,
+            "sha256-2": 13508162466229948246,
+            "sha256-3": 9574693950551144996
+          },
+          "MedianaAlocati": 269865256,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3603540.99,
+            "BuffersPostare": 92128,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-REST-TOT-S",
+          "Ms": [
+            10968.7124,
+            10737.7926,
+            10975.3493,
+            10353.9214,
+            10698.4385
+          ],
+          "MedianaMs": 10737.7926,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 488733,
+          "Control": {
+            "randuri": 488733,
+            "sha256-0": 17484882848685105495,
+            "sha256-1": 16361928954466527356,
+            "sha256-2": 13508162466229948246,
+            "sha256-3": 9574693950551144996
+          },
+          "MedianaAlocati": 270137048,
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 7207081.98,
+            "BuffersPostare": 184256,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-P50-N",
+          "Ms": [
+            0.9999,
+            0.8557,
+            1.3127,
+            1.9462,
+            2.2282
+          ],
+          "MedianaMs": 1.3127,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16250773360817955431,
+            "sha256-1": 3477627131897547172,
+            "sha256-2": 14758861946099980921,
+            "sha256-3": 11362421218619633743
+          },
+          "MedianaAlocati": 69576,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 139,
+            "BuffersPostare": 73,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-P50-S",
+          "Ms": [
+            2.9794,
+            2.7852,
+            3.3449,
+            4.2933,
+            3.3267
+          ],
+          "MedianaMs": 3.3267,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 50,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16250773360817955431,
+            "sha256-1": 3477627131897547172,
+            "sha256-2": 14758861946099980921,
+            "sha256-3": 11362421218619633743
+          },
+          "MedianaAlocati": 263216,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 139,
+            "BuffersPostare": 73,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-TOT-N",
+          "Ms": [
+            1379.1049,
+            1292.7934,
+            1355.546,
+            1226.2963,
+            1360.1556
+          ],
+          "MedianaMs": 1355.546,
+          "Comenzi": [
+            1
+          ],
+          "Cardinal": 651644,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 8983829003544860199,
+            "sha256-1": 8714303448675521198,
+            "sha256-2": 14814483812596165965,
+            "sha256-3": 17963108018820758941
+          },
+          "MedianaAlocati": 203382776,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3603540.99,
+            "BuffersPostare": 92128,
+            "PlanuriCerute": 2,
+            "PlanuriRespinse": 0
+          }
+        },
+        {
+          "Operatie": "B-D9B-SOLDURI-TOT-S",
+          "Ms": [
+            1179.0284,
+            1179.2441,
+            1201.4026,
+            1217.2419,
+            1347.9818
+          ],
+          "MedianaMs": 1201.4026,
+          "Comenzi": [
+            6
+          ],
+          "Cardinal": 651644,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 8983829003544860199,
+            "sha256-1": 8714303448675521198,
+            "sha256-2": 14814483812596165965,
+            "sha256-3": 17963108018820758941
+          },
+          "MedianaAlocati": 203593960,
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3603540.99,
+            "BuffersPostare": 92128,
+            "PlanuriCerute": 12,
+            "PlanuriRespinse": 0
+          }
+        }
+      ]
+    }
+  ],
+  "Scrieri": [
+    {
+      "Partide": 2,
+      "Document": "01a13139-a061-7f8f-af71-7b4041a49b5a",
+      "A": 18.3989,
+      "B": 21.5931,
+      "Prag": 28.3989,
+      "Acceptat": true,
+      "InterogariOriginiB": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "MasuriA": [
+        {
+          "Runda": 0,
+          "Ms": 1249.3094,
+          "Comenzi": 32,
+          "Alocati": 29405568
+        },
+        {
+          "Runda": 1,
+          "Ms": 20.0383,
+          "Comenzi": 32,
+          "Alocati": 1615368
+        },
+        {
+          "Runda": 2,
+          "Ms": 18.3989,
+          "Comenzi": 32,
+          "Alocati": 1600624
+        },
+        {
+          "Runda": 3,
+          "Ms": 16.3742,
+          "Comenzi": 32,
+          "Alocati": 1599016
+        },
+        {
+          "Runda": 4,
+          "Ms": 22.6281,
+          "Comenzi": 32,
+          "Alocati": 1599688
+        },
+        {
+          "Runda": 5,
+          "Ms": 16.0436,
+          "Comenzi": 32,
+          "Alocati": 1599016
+        }
+      ],
+      "MasuriB": [
+        {
+          "Runda": 0,
+          "Ms": 1279.1125,
+          "Comenzi": 33,
+          "Alocati": 30277008
+        },
+        {
+          "Runda": 1,
+          "Ms": 19.7238,
+          "Comenzi": 33,
+          "Alocati": 1695432
+        },
+        {
+          "Runda": 2,
+          "Ms": 28.1748,
+          "Comenzi": 33,
+          "Alocati": 1705728
+        },
+        {
+          "Runda": 3,
+          "Ms": 25.2149,
+          "Comenzi": 33,
+          "Alocati": 1685112
+        },
+        {
+          "Runda": 4,
+          "Ms": 18.9469,
+          "Comenzi": 33,
+          "Alocati": 1684272
+        },
+        {
+          "Runda": 5,
+          "Ms": 21.5931,
+          "Comenzi": 33,
+          "Alocati": 1684608
+        }
+      ]
+    },
+    {
+      "Partide": 51,
+      "Document": "01a13139-a53d-7df4-9b1e-57ddc3f221f4",
+      "A": 68.0272,
+      "B": 63.5928,
+      "Prag": 78.23127999999998,
+      "Acceptat": true,
+      "InterogariOriginiB": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "MasuriA": [
+        {
+          "Runda": 0,
+          "Ms": 67.818,
+          "Comenzi": 32,
+          "Alocati": 19041464
+        },
+        {
+          "Runda": 1,
+          "Ms": 68.2647,
+          "Comenzi": 32,
+          "Alocati": 18972544
+        },
+        {
+          "Runda": 2,
+          "Ms": 68.4707,
+          "Comenzi": 32,
+          "Alocati": 18990232
+        },
+        {
+          "Runda": 3,
+          "Ms": 57.9723,
+          "Comenzi": 32,
+          "Alocati": 18938008
+        },
+        {
+          "Runda": 4,
+          "Ms": 55.0956,
+          "Comenzi": 32,
+          "Alocati": 18725728
+        },
+        {
+          "Runda": 5,
+          "Ms": 68.0272,
+          "Comenzi": 32,
+          "Alocati": 18683080
+        }
+      ],
+      "MasuriB": [
+        {
+          "Runda": 0,
+          "Ms": 75.1687,
+          "Comenzi": 33,
+          "Alocati": 21285064
+        },
+        {
+          "Runda": 1,
+          "Ms": 80.8592,
+          "Comenzi": 33,
+          "Alocati": 21227768
+        },
+        {
+          "Runda": 2,
+          "Ms": 63.5928,
+          "Comenzi": 33,
+          "Alocati": 21212352
+        },
+        {
+          "Runda": 3,
+          "Ms": 60.4326,
+          "Comenzi": 33,
+          "Alocati": 21204784
+        },
+        {
+          "Runda": 4,
+          "Ms": 74.8267,
+          "Comenzi": 33,
+          "Alocati": 21189080
+        },
+        {
+          "Runda": 5,
+          "Ms": 58.2948,
+          "Comenzi": 33,
+          "Alocati": 20931160
+        }
+      ]
+    }
+  ],
+  "MediiScriere": [
+    {
+      "FapteInainte": "{\"baza\" : \"Atlas.Conta.ModelCheck.Privat.CodexD9bB\", \"schema\" : \"20261010151835_InitialCreate,20261012114235_OriginiPartide\", \"postari\" : \"9dd92bbeefb84b8855c26ac704356e2c\", \"origini\" : \"84587ed1ce77ee26974edbcfdb71512e\"}",
+      "FapteDupa": "{\"baza\" : \"Atlas.Conta.ModelCheck.Privat.CodexD9bB\", \"schema\" : \"20261010151835_InitialCreate,20261012114235_OriginiPartide\", \"postari\" : \"9dd92bbeefb84b8855c26ac704356e2c\", \"origini\" : \"84587ed1ce77ee26974edbcfdb71512e\"}",
+      "ModelCheckSha256": "DA35215E0CC8EC1E5DF56EF10E88AB46AD9560BE4709B4BB07C6661E5FFD189B",
+      "ModuleSha256": "20E1700E7EBA2CCE3FCD3D62F02096FE9D84C82633B669DE21648D2D15175872"
+    },
+    {
+      "FapteInainte": "{\"baza\" : \"Atlas.Conta.ModelCheck.Privat.CodexD9bB\", \"schema\" : \"20261010151835_InitialCreate,20261012114235_OriginiPartide\", \"postari\" : \"9dd92bbeefb84b8855c26ac704356e2c\", \"origini\" : \"84587ed1ce77ee26974edbcfdb71512e\"}",
+      "FapteDupa": "{\"baza\" : \"Atlas.Conta.ModelCheck.Privat.CodexD9bB\", \"schema\" : \"20261010151835_InitialCreate,20261012114235_OriginiPartide\", \"postari\" : \"9dd92bbeefb84b8855c26ac704356e2c\", \"origini\" : \"84587ed1ce77ee26974edbcfdb71512e\"}",
+      "ModelCheckSha256": "C88BFC3FCEBE82DC4C10EE6B56C70CCDE9A7E2AB7ADFBE85CD43A635B1F4C3E9",
+      "ModuleSha256": "0B07C5CF1370F0BDBE3DEFAFCFBCCCE6A623455F0C7EFF420C5447BBAF8AA3AE"
+    }
+  ],
+  "Artefacte": [
+    {
+      "Director": "run-verificari/20261012-201658-993",
+      "RezultatSha256": "1dfb08c81f3a60c22bbce73e12a697a7f77f442e9e1df2273bd7f1d7bebc8f98"
+    },
+    {
+      "Director": "run-verificari/d9b-writer-a/run-verificari/20261012-204810-751",
+      "RezultatSha256": "b9cd664c1d22f51bac6e20d95dab6891dd215a9c44eb3718d4c1fea61f804b57"
+    },
+    {
+      "Director": "run-verificari/20261012-205013-264",
+      "RezultatSha256": "86021cb745c871aca5b5962406276e796999261ccce8a940b67a54c1c0ee90f1"
+    }
+  ],
+  "Erori": [],
+  "ProvenientaScriitorA": {
+    "Base": "96ccc5acbb4048d7ba41f60924863d631e83daca",
+    "Restored": [
+      {
+        "Path": "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Cub/Materializare.cs",
+        "SHA256": "f25db0c5e81778b38c13ab82070588376beacce75d9598e53350ec03254874c1"
+      },
+      {
+        "Path": "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Cub/Materializare.Deschidere.cs",
+        "SHA256": "7ed334cea7d3df2d5559a785bf00c17ae4fbee8a16aefbfeeae5b1e69947ed44"
+      },
+      {
+        "Path": "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Cub/Citiri/Partide.cs",
+        "SHA256": "03fdadb09660b2600082d1f154a561c1ee541a57fc550bbd0ef4b34b7ebbc977"
+      }
+    ]
+  }
+}

@@ -48,9 +48,9 @@ sealed partial class ScenariiLdi(Func<IObjectSpace> deschide, Action<string, boo
     RandScena[] Randuri(FacturaScena doc, int i, decimal q, decimal v,
             string stoc = null, string cost = null, Guid? gest = null) {
         var l = doc.Linii[i]; var plus = q > 0;
-        return [new(Cont(stoc ?? Stoc), plus ? N.Latura.Debit : N.Latura.Credit,
+        return [new(Cont(stoc ?? Stoc), plus ? N.Sens.Debit : N.Sens.Credit,
                 v, q, gest ?? Magazie, l.Lot, l.Produs, Linie: l.Id, Spatiu: N.Spatiu.Stoc, Economic: Economic),
-            new(Cont(plus ? Venit : cost ?? Cost), plus ? N.Latura.Credit : N.Latura.Debit,
+            new(Cont(plus ? Venit : cost ?? Cost), plus ? N.Sens.Credit : N.Sens.Debit,
                 v, -q, Produs: l.Produs, Linie: l.Id, Economic: Economic,
                 Contrapondere: plus ? N.Contrapondere.Inventar : N.Contrapondere.Consum)];
     }

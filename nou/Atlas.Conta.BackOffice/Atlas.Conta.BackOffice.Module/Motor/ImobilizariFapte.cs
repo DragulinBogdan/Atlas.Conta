@@ -63,8 +63,8 @@ internal static class ImobilizariFapte {
             Analiza = new(r.CodFunctional, r.CodEconomic, r.SursaFinantare, r.UnitateOrganizatorica, r.Proiect, r.CentruCost),
         }}).ToList();
         var disponibile = postari.GroupBy(p => p.Capat).Select(g => new DisponibilFapt(g.Key,
-            Minim(g.Select(p => (p.Rand.Data, p.Rand.Latura == N.Latura.Debit ? p.Rand.Valoare : -p.Rand.Valoare))),
-            Minim(g.Select(p => (p.Rand.Data, p.Rand.Latura == N.Latura.Credit ? p.Rand.Valoare : -p.Rand.Valoare)))))
+            Minim(g.Select(p => (p.Rand.Data, p.Rand.Latura == N.Sens.Debit ? p.Rand.Valoare : -p.Rand.Valoare))),
+            Minim(g.Select(p => (p.Rand.Data, p.Rand.Latura == N.Sens.Credit ? p.Rand.Valoare : -p.Rand.Valoare)))))
             .ToList();
         var suporturi = postari.Where(p => !p.Rand.Stornata && p.Rand.Data <= data && p.Rand.Valoare > 0m
                 && p.Rand.Fel is N.FelTranzactie.Operare or N.FelTranzactie.Deschidere)

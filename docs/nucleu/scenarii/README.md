@@ -1,9 +1,12 @@
 # Catalogul de scenarii — proba supremă a motorului (decizia 091)
 
-**Actualizat: 2026-09-24.** Regula: `docs/decizii/091-scenarii-in-loc-de-import.md`,
+**Actualizat: 2026-10-12.** Regula: `docs/decizii/091-scenarii-in-loc-de-import.md`,
 literele (a)–(e). Un fișier per tip de document (`<COD>.md`), cu rândurile
 de mai jos. Așteptarea se scrie de mână, din OMFP 1802 și din politica
 profilului, cu cifre; nu se derivă din registre, din oracol sau din Flax.
+
+[D9B — originea partidei](D9B.md) separă comportamentul actual verificat
+numeric de persistența încă specificată; se execută prin `-Tip D9B`.
 
 ## Forma unui rând
 

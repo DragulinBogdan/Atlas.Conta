@@ -21,7 +21,7 @@ public sealed record ContFapt(Guid Id, string? Simbol, bool UrmarestePartide, bo
 
 /// <summary><paramref name="Origine"/> = documentul deschizător al partidei; gol la partida fără document,
 /// pe care o ordonează <paramref name="Deschidere"/>, ordinalul postării care a deschis-o.</summary>
-public sealed record SoldPartidaFapt(N.Unitate Unitate, N.Sold Sold, decimal Disponibil, Guid Origine,
+public sealed record SoldPartidaFapt(N.UnitateSold Unitate, N.Sold Sold, decimal Disponibil, Guid Origine,
     int Deschidere = 0);
 
 public readonly record struct CheieLotFapt(Guid Lot, Guid Cont, Guid Produs, Guid Gestiune);
@@ -120,7 +120,7 @@ public sealed record Operand(
     public N.ReperFiscal? ReperFiscal { get; init; }
     public IReadOnlyDictionary<Guid, RepartitorFapt> Repartitori { get; init; } = new Dictionary<Guid, RepartitorFapt>();
     public IReadOnlyList<SoldPartidaFapt> PartideDisponibile { get; init; } = [];
-    public IReadOnlyList<N.Unitate> UnitatiSursa { get; init; } = [];
+    public IReadOnlyList<N.UnitateSold> UnitatiSursa { get; init; } = [];
     /// <summary>Minimul disponibil pe cont peste datele deja scrise, separat de soldul citit.</summary>
     public IReadOnlyDictionary<Guid, decimal> DisponibilPartideSursa { get; init; } = new Dictionary<Guid, decimal>();
     public IReadOnlyDictionary<Guid, FisaFapt> Fise { get; init; } = new Dictionary<Guid, FisaFapt>();

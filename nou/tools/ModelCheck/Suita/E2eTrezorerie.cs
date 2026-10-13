@@ -185,8 +185,8 @@ static class E2eTrezorerie {
             var notePlataCub = NoteCub(plataAuto);
             s.Check("Plata contează per linie de defalcare: 401 = 770 (59,5 + 100)",
                 notePlataCub.All(p => p.Debit ? p.Cont == cont401.ID : p.Cont == cont770.ID)
-                && notePlataCub.Rulaj(cont401.ID, N.Latura.Debit) == 159.5m
-                && notePlataCub.Rulaj(cont770.ID, N.Latura.Credit) == 159.5m);
+                && notePlataCub.Rulaj(cont401.ID, N.Sens.Debit) == 159.5m
+                && notePlataCub.Rulaj(cont770.ID, N.Sens.Credit) == 159.5m);
             s.Check("Plata nu mișcă stoc",
                 CubScena.FaraStoc(os, plataAuto.ID));
             var impAuto = os.GetObjectsQuery<Imperechere>().Single(i => i.DocumentStingatorId == plataAuto.ID);
@@ -295,12 +295,12 @@ static class E2eTrezorerie {
 
             var contractAvans = Atlas.Conta.BackOffice.Module.Declaratii.Contractare.Contracteaza(os, avans);
             var postariAvans = contractAvans.Tranzactii.SelectMany(t => t.Postari).ToArray();
-            var partidaAvans = N.Unitate.DeschidePartida(cont542.ID, angajat.ID, avans.ID, avans.DataInregistrare);
+            var partidaAvans = N.UnitateSold.DeschidePartida(cont542.ID, angajat.ID, avans.ID, avans.DataInregistrare);
             s.Check("SC-DEC-16 (096): PLT 50 pe angajat deschide partidă fără rol comercial",
                 contractAvans.EsteAcceptat && postariAvans.Length == 2
-                && postariAvans.Any(p => p.Coordonate.Cont == cont542.ID && p.Coordonate.Latura == N.Latura.Debit
+                && postariAvans.Any(p => p.Coordonate.Cont == cont542.ID && p.Coordonate.Latura == N.Sens.Debit
                     && p.Coordonate.Unitate == partidaAvans && p.Coordonate.Repartitor?.Id == angajat.ID && p.Valoare == 50)
-                && postariAvans.Any(p => p.Coordonate.Cont == cont531.ID && p.Coordonate.Latura == N.Latura.Credit
+                && postariAvans.Any(p => p.Coordonate.Cont == cont531.ID && p.Coordonate.Latura == N.Sens.Credit
                     && p.Coordonate.Unitate == null && p.Valoare == 50)
                 && cont542.RolTert == RolTertCont.Niciunul);
             s.Check("SC-DEC-16: conservare și determinism pentru avans",

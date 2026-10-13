@@ -1,0 +1,1784 @@
+{
+  "Rulare": "run-verificari\\20261012-121930-504",
+  "Protocol": "1 incalzire + 5 masurari; mediana",
+  "Trepte": [
+    {
+      "Manifest": {
+        "Baza": "Atlas.Conta.ModelCheck.Privat.CodexD9bA",
+        "Factor": 1,
+        "Postari": 7951,
+        "Configuratie": {
+          "version()": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit",
+          "shared_buffers": "128MB",
+          "work_mem": "4MB",
+          "effective_cache_size": "4GB",
+          "max_parallel_workers_per_gather": "2",
+          "maintenance_work_mem": "64MB",
+          "random_page_cost": "4",
+          "jit": "on"
+        },
+        "Schema": "20261010151835_InitialCreate",
+        "FapteMd5": "de56e3357a59b3d9b3f3b724015babd9",
+        "BazaOcteti": 36233743,
+        "DllSha256": "C7C8A42D8C4491FAD76EF96660B0DF0156753E103E4EAD6ACD981AD5DAF1B59A"
+      },
+      "Operatii": [
+        {
+          "Cod": "D9B-ORIGINI-TOT-N",
+          "MedianaMs": 24.0054,
+          "Ms": [
+            23.771,
+            30.5212,
+            24.0054,
+            23.805,
+            24.1397
+          ],
+          "Randuri": 1036,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 337560,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 11484673461475585591,
+            "sha256-1": 9784274456928531339,
+            "sha256-2": 17990871927188829381,
+            "sha256-3": 866444817034684771
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3118,
+            "BuffersPostare": 157,
+            "MsServerMax": 29.582
+          },
+          "LimitaBMs": 34.0054
+        },
+        {
+          "Cod": "D9B-ORIGINI-P50-N",
+          "MedianaMs": 23.7052,
+          "Ms": [
+            24.1815,
+            24.2432,
+            22.7546,
+            23.7052,
+            23.3728
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 53696,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 3127797440353505229,
+            "sha256-1": 5209944769076561482,
+            "sha256-2": 3689443911705650198,
+            "sha256-3": 14897457642468092869
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3118,
+            "BuffersPostare": 157,
+            "MsServerMax": 59.004
+          },
+          "LimitaBMs": 33.705200000000005
+        },
+        {
+          "Cod": "D9B-SOLDURI-TOT-N",
+          "MedianaMs": 3.4769,
+          "Ms": [
+            3.9635,
+            3.8734,
+            3.2485,
+            3.4769,
+            3.2961
+          ],
+          "Randuri": 1036,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 380240,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 11044719194310753119,
+            "sha256-1": 2089647574120412293,
+            "sha256-2": 7783032903648597715,
+            "sha256-3": 13660215119047746518
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 5729,
+            "BuffersPostare": 147,
+            "MsServerMax": 2.199
+          },
+          "LimitaBMs": 13.4769
+        },
+        {
+          "Cod": "D9B-SOLDURI-P50-N",
+          "MedianaMs": 1.471,
+          "Ms": [
+            1.471,
+            1.6709,
+            1.4556,
+            1.3392,
+            1.5491
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 74544,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 12614953544123424850,
+            "sha256-1": 9908728341870635510,
+            "sha256-2": 2739479854890863458,
+            "sha256-3": 8169612397530594991
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 193,
+            "BuffersPostare": 82,
+            "MsServerMax": 0.196
+          },
+          "LimitaBMs": 11.471
+        },
+        {
+          "Cod": "D9B-REST-TOT-N",
+          "MedianaMs": 18.7364,
+          "Ms": [
+            17.2319,
+            25.6842,
+            17.1435,
+            23.1436,
+            18.7364
+          ],
+          "Randuri": 777,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 592752,
+          "Control": {
+            "randuri": 777,
+            "sha256-0": 13804370498308129841,
+            "sha256-1": 17178412414017188165,
+            "sha256-2": 9302218332223999483,
+            "sha256-3": 14055661182261864761
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 8847,
+            "BuffersPostare": 304,
+            "MsServerMax": 16.607
+          },
+          "LimitaBMs": 28.7364
+        },
+        {
+          "Cod": "D9B-REST-P50-N",
+          "MedianaMs": 16.7211,
+          "Ms": [
+            17.1902,
+            16.8185,
+            16.5936,
+            16.7211,
+            16.5972
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 192968,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6795362829521739053,
+            "sha256-1": 7555041370870748853,
+            "sha256-2": 18046232703100130701,
+            "sha256-3": 11039173083360451286
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 8847,
+            "BuffersPostare": 304,
+            "MsServerMax": 16.496
+          },
+          "LimitaBMs": 26.7211
+        },
+        {
+          "Cod": "D9B-ORIGINI-TOT-S",
+          "MedianaMs": 25.9872,
+          "Ms": [
+            26.9485,
+            25.9825,
+            28.1233,
+            25.9872,
+            25.8464
+          ],
+          "Randuri": 1036,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 523968,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 11484673461475585591,
+            "sha256-1": 9784274456928531339,
+            "sha256-2": 17990871927188829381,
+            "sha256-3": 866444817034684771
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3118,
+            "BuffersPostare": 157,
+            "MsServerMax": 39.209
+          },
+          "LimitaBMs": 35.9872
+        },
+        {
+          "Cod": "D9B-ORIGINI-P50-S",
+          "MedianaMs": 26.211,
+          "Ms": [
+            36.5093,
+            26.211,
+            25.6503,
+            47.8279,
+            25.8765
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 242032,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 3127797440353505229,
+            "sha256-1": 5209944769076561482,
+            "sha256-2": 3689443911705650198,
+            "sha256-3": 14897457642468092869
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3118,
+            "BuffersPostare": 157,
+            "MsServerMax": 31.058
+          },
+          "LimitaBMs": 36.211
+        },
+        {
+          "Cod": "D9B-SOLDURI-TOT-S",
+          "MedianaMs": 5.6831,
+          "Ms": [
+            5.459,
+            5.6831,
+            8.0414,
+            5.7125,
+            5.5363
+          ],
+          "Randuri": 1036,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 572376,
+          "Control": {
+            "randuri": 1036,
+            "sha256-0": 11044719194310753119,
+            "sha256-1": 2089647574120412293,
+            "sha256-2": 7783032903648597715,
+            "sha256-3": 13660215119047746518
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 5729,
+            "BuffersPostare": 147,
+            "MsServerMax": 1.982
+          },
+          "LimitaBMs": 15.6831
+        },
+        {
+          "Cod": "D9B-SOLDURI-P50-S",
+          "MedianaMs": 4.2402,
+          "Ms": [
+            5.4776,
+            4.4335,
+            4.2402,
+            3.9074,
+            4.0725
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 268608,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 12614953544123424850,
+            "sha256-1": 9908728341870635510,
+            "sha256-2": 2739479854890863458,
+            "sha256-3": 8169612397530594991
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 193,
+            "BuffersPostare": 82,
+            "MsServerMax": 0.175
+          },
+          "LimitaBMs": 14.2402
+        },
+        {
+          "Cod": "D9B-REST-TOT-S",
+          "MedianaMs": 24.8581,
+          "Ms": [
+            24.8581,
+            42.8601,
+            32.0455,
+            20.4854,
+            21.268
+          ],
+          "Randuri": 777,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 798808,
+          "Control": {
+            "randuri": 777,
+            "sha256-0": 13804370498308129841,
+            "sha256-1": 17178412414017188165,
+            "sha256-2": 9302218332223999483,
+            "sha256-3": 14055661182261864761
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 8847,
+            "BuffersPostare": 304,
+            "MsServerMax": 20.726
+          },
+          "LimitaBMs": 34.8581
+        },
+        {
+          "Cod": "D9B-REST-P50-S",
+          "MedianaMs": 19.5666,
+          "Ms": [
+            19.1038,
+            19.9752,
+            19.6438,
+            19.1627,
+            19.5666
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 401480,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6795362829521739053,
+            "sha256-1": 7555041370870748853,
+            "sha256-2": 18046232703100130701,
+            "sha256-3": 11039173083360451286
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 8847,
+            "BuffersPostare": 304,
+            "MsServerMax": 17.555
+          },
+          "LimitaBMs": 29.5666
+        }
+      ]
+    },
+    {
+      "Manifest": {
+        "Baza": "Atlas.Conta.ModelCheck.Privat.CodexD9bA",
+        "Factor": 10,
+        "Postari": 79510,
+        "Configuratie": {
+          "version()": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit",
+          "shared_buffers": "128MB",
+          "work_mem": "4MB",
+          "effective_cache_size": "4GB",
+          "max_parallel_workers_per_gather": "2",
+          "maintenance_work_mem": "64MB",
+          "random_page_cost": "4",
+          "jit": "on"
+        },
+        "Schema": "20261010151835_InitialCreate",
+        "FapteMd5": "076229dd98b253fbcb398837138b3b7a",
+        "BazaOcteti": 76019391,
+        "DllSha256": "C7C8A42D8C4491FAD76EF96660B0DF0156753E103E4EAD6ACD981AD5DAF1B59A"
+      },
+      "Operatii": [
+        {
+          "Cod": "D9B-ORIGINI-TOT-N",
+          "MedianaMs": 160.3744,
+          "Ms": [
+            171.5433,
+            159.2325,
+            160.2979,
+            168.089,
+            160.3744
+          ],
+          "Randuri": 10360,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 3060240,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 16421606150623821917,
+            "sha256-1": 11195288893313079039,
+            "sha256-2": 10964217813795909879,
+            "sha256-3": 6328265655702123244
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 31180,
+            "BuffersPostare": 1789,
+            "MsServerMax": 228.351
+          },
+          "LimitaBMs": 176.41184
+        },
+        {
+          "Cod": "D9B-ORIGINI-P50-N",
+          "MedianaMs": 157.3866,
+          "Ms": [
+            156.2475,
+            157.6498,
+            157.3866,
+            152.9819,
+            162.4534
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 53768,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16399715124421806775,
+            "sha256-1": 7352364542066881410,
+            "sha256-2": 6197471801872934603,
+            "sha256-3": 6633404451014321681
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 31180,
+            "BuffersPostare": 1789,
+            "MsServerMax": 158.529
+          },
+          "LimitaBMs": 173.12526
+        },
+        {
+          "Cod": "D9B-SOLDURI-TOT-N",
+          "MedianaMs": 26.8461,
+          "Ms": [
+            24.9466,
+            29.7883,
+            47.5724,
+            25.4846,
+            26.8461
+          ],
+          "Randuri": 10360,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 3289400,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 6940891556465795641,
+            "sha256-1": 14516410694103809172,
+            "sha256-2": 6790468914198720751,
+            "sha256-3": 15205594810513975214
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 57290,
+            "BuffersPostare": 1465,
+            "MsServerMax": 29.631
+          },
+          "LimitaBMs": 36.8461
+        },
+        {
+          "Cod": "D9B-SOLDURI-P50-N",
+          "MedianaMs": 1.3402,
+          "Ms": [
+            1.3402,
+            1.6546,
+            1.6995,
+            1.2971,
+            1.3389
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 74616,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6488034676392662607,
+            "sha256-1": 3770509877891646068,
+            "sha256-2": 15274875177069272013,
+            "sha256-3": 1755528611265134430
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 428,
+            "BuffersPostare": 127,
+            "MsServerMax": 0.275
+          },
+          "LimitaBMs": 11.3402
+        },
+        {
+          "Cod": "D9B-REST-TOT-N",
+          "MedianaMs": 135.8589,
+          "Ms": [
+            134.8633,
+            139.1243,
+            124.5551,
+            149.9989,
+            135.8589
+          ],
+          "Randuri": 7770,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 4451352,
+          "Control": {
+            "randuri": 7770,
+            "sha256-0": 10907248996700627391,
+            "sha256-1": 9606510690482826268,
+            "sha256-2": 7449701323961569077,
+            "sha256-3": 4685297553205702455
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 88470,
+            "BuffersPostare": 3254,
+            "MsServerMax": 136.121
+          },
+          "LimitaBMs": 149.44479
+        },
+        {
+          "Cod": "D9B-REST-P50-N",
+          "MedianaMs": 127.5691,
+          "Ms": [
+            138.2294,
+            125.4537,
+            134.7548,
+            127.11,
+            127.5691
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 193096,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 10512932894167674709,
+            "sha256-1": 16819302204783544396,
+            "sha256-2": 1681463669923881672,
+            "sha256-3": 7226782239694305158
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 88470,
+            "BuffersPostare": 3254,
+            "MsServerMax": 141.801
+          },
+          "LimitaBMs": 140.32601000000003
+        },
+        {
+          "Cod": "D9B-ORIGINI-TOT-S",
+          "MedianaMs": 167.9907,
+          "Ms": [
+            164.2029,
+            226.691,
+            167.9907,
+            164.3296,
+            227.5993
+          ],
+          "Randuri": 10360,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 3247096,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 16421606150623821917,
+            "sha256-1": 11195288893313079039,
+            "sha256-2": 10964217813795909879,
+            "sha256-3": 6328265655702123244
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 31180,
+            "BuffersPostare": 1789,
+            "MsServerMax": 229.02
+          },
+          "LimitaBMs": 184.78977000000003
+        },
+        {
+          "Cod": "D9B-ORIGINI-P50-S",
+          "MedianaMs": 176.0418,
+          "Ms": [
+            165.48,
+            239.4019,
+            176.0418,
+            162.5318,
+            197.6961
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 241968,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 16399715124421806775,
+            "sha256-1": 7352364542066881410,
+            "sha256-2": 6197471801872934603,
+            "sha256-3": 6633404451014321681
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 31180,
+            "BuffersPostare": 1789,
+            "MsServerMax": 161.309
+          },
+          "LimitaBMs": 193.64598
+        },
+        {
+          "Cod": "D9B-SOLDURI-TOT-S",
+          "MedianaMs": 27.7714,
+          "Ms": [
+            26.1411,
+            30.596,
+            27.8564,
+            27.7714,
+            26.0321
+          ],
+          "Randuri": 10360,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 3481512,
+          "Control": {
+            "randuri": 10360,
+            "sha256-0": 6940891556465795641,
+            "sha256-1": 14516410694103809172,
+            "sha256-2": 6790468914198720751,
+            "sha256-3": 15205594810513975214
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 57290,
+            "BuffersPostare": 1465,
+            "MsServerMax": 24.726
+          },
+          "LimitaBMs": 37.7714
+        },
+        {
+          "Cod": "D9B-SOLDURI-P50-S",
+          "MedianaMs": 4.049,
+          "Ms": [
+            3.5271,
+            3.4898,
+            4.049,
+            4.1424,
+            4.4403
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 268584,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 6488034676392662607,
+            "sha256-1": 3770509877891646068,
+            "sha256-2": 15274875177069272013,
+            "sha256-3": 1755528611265134430
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 428,
+            "BuffersPostare": 127,
+            "MsServerMax": 0.251
+          },
+          "LimitaBMs": 14.049
+        },
+        {
+          "Cod": "D9B-REST-TOT-S",
+          "MedianaMs": 147.3549,
+          "Ms": [
+            147.3549,
+            140.0641,
+            213.3262,
+            214.5621,
+            134.007
+          ],
+          "Randuri": 7770,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 4657776,
+          "Control": {
+            "randuri": 7770,
+            "sha256-0": 10907248996700627391,
+            "sha256-1": 9606510690482826268,
+            "sha256-2": 7449701323961569077,
+            "sha256-3": 4685297553205702455
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 88470,
+            "BuffersPostare": 3254,
+            "MsServerMax": 166.547
+          },
+          "LimitaBMs": 162.09038999999999
+        },
+        {
+          "Cod": "D9B-REST-P50-S",
+          "MedianaMs": 136.4591,
+          "Ms": [
+            128.5392,
+            144.8716,
+            131.91,
+            146.428,
+            136.4591
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 401064,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 10512932894167674709,
+            "sha256-1": 16819302204783544396,
+            "sha256-2": 1681463669923881672,
+            "sha256-3": 7226782239694305158
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 88470,
+            "BuffersPostare": 3254,
+            "MsServerMax": 233.738
+          },
+          "LimitaBMs": 150.10501000000002
+        }
+      ]
+    },
+    {
+      "Manifest": {
+        "Baza": "Atlas.Conta.ModelCheck.Privat.CodexD9bA",
+        "Factor": 100,
+        "Postari": 795100,
+        "Configuratie": {
+          "version()": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit",
+          "shared_buffers": "128MB",
+          "work_mem": "4MB",
+          "effective_cache_size": "4GB",
+          "max_parallel_workers_per_gather": "2",
+          "maintenance_work_mem": "64MB",
+          "random_page_cost": "4",
+          "jit": "on"
+        },
+        "Schema": "20261010151835_InitialCreate",
+        "FapteMd5": "6dde6c9fe1913e721202ebe617d2f170",
+        "BazaOcteti": 458307263,
+        "DllSha256": "C7C8A42D8C4491FAD76EF96660B0DF0156753E103E4EAD6ACD981AD5DAF1B59A"
+      },
+      "Operatii": [
+        {
+          "Cod": "D9B-ORIGINI-TOT-N",
+          "MedianaMs": 1084.6285,
+          "Ms": [
+            1084.6285,
+            1057.7306,
+            1146.8014,
+            1067.8732,
+            1183.3287
+          ],
+          "Randuri": 103600,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 30301264,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 13362352736206285156,
+            "sha256-1": 10059381977960074187,
+            "sha256-2": 8719820598163811607,
+            "sha256-3": 6851067208642838362
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 311799.99,
+            "BuffersPostare": 16150,
+            "MsServerMax": 1124.276
+          },
+          "LimitaBMs": 1193.0913500000001
+        },
+        {
+          "Cod": "D9B-ORIGINI-P50-N",
+          "MedianaMs": 1050.5385,
+          "Ms": [
+            1050.5385,
+            1047.7509,
+            1080.2003,
+            1154.2154,
+            1026.2592
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 53768,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 13990661774680555171,
+            "sha256-1": 8222204053739821974,
+            "sha256-2": 9545134914169682855,
+            "sha256-3": 17413201993858748104
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 311799.99,
+            "BuffersPostare": 16150,
+            "MsServerMax": 1014.179
+          },
+          "LimitaBMs": 1155.5923500000001
+        },
+        {
+          "Cod": "D9B-SOLDURI-TOT-N",
+          "MedianaMs": 313.9647,
+          "Ms": [
+            300.39,
+            263.2212,
+            324.8176,
+            326.358,
+            313.9647
+          ],
+          "Randuri": 103600,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 32398120,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 4496096203134153341,
+            "sha256-1": 16265517122473306475,
+            "sha256-2": 14152456344675814608,
+            "sha256-3": 351977547373927769
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 572900.01,
+            "BuffersPostare": 14650,
+            "MsServerMax": 231.04
+          },
+          "LimitaBMs": 345.36117
+        },
+        {
+          "Cod": "D9B-SOLDURI-P50-N",
+          "MedianaMs": 1.4081,
+          "Ms": [
+            1.3338,
+            1.9159,
+            1.4918,
+            1.3588,
+            1.4081
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 74616,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 15936640865718833306,
+            "sha256-1": 14467111343708810389,
+            "sha256-2": 2902272510957338099,
+            "sha256-3": 6779151005134603038
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 165,
+            "BuffersPostare": 65,
+            "MsServerMax": 0.215
+          },
+          "LimitaBMs": 11.4081
+        },
+        {
+          "Cod": "D9B-REST-TOT-N",
+          "MedianaMs": 1337.1751,
+          "Ms": [
+            1326.87,
+            1337.1751,
+            1415.0822,
+            1313.1914,
+            1415.5433
+          ],
+          "Randuri": 77700,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 43589336,
+          "Control": {
+            "randuri": 77700,
+            "sha256-0": 10895407865152037154,
+            "sha256-1": 4334106410445418503,
+            "sha256-2": 9330703224998937158,
+            "sha256-3": 8100640443941406965
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 884699.01,
+            "BuffersPostare": 30760,
+            "MsServerMax": 1209.93
+          },
+          "LimitaBMs": 1470.89261
+        },
+        {
+          "Cod": "D9B-REST-P50-N",
+          "MedianaMs": 1348.9077,
+          "Ms": [
+            1384.5358,
+            1371.1656,
+            1348.9077,
+            1298.7459,
+            1321.1121
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 193184,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 2900545367394783839,
+            "sha256-1": 15376298918330642908,
+            "sha256-2": 5497657234223427008,
+            "sha256-3": 18086181130365227327
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 884699.01,
+            "BuffersPostare": 30760,
+            "MsServerMax": 1582.096
+          },
+          "LimitaBMs": 1483.7984700000002
+        },
+        {
+          "Cod": "D9B-ORIGINI-TOT-S",
+          "MedianaMs": 1121.4578,
+          "Ms": [
+            1177.6368,
+            1117.0672,
+            1104.2184,
+            1127.5974,
+            1121.4578
+          ],
+          "Randuri": 103600,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 30500352,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 13362352736206285156,
+            "sha256-1": 10059381977960074187,
+            "sha256-2": 8719820598163811607,
+            "sha256-3": 6851067208642838362
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 311799.99,
+            "BuffersPostare": 16150,
+            "MsServerMax": 1115.296
+          },
+          "LimitaBMs": 1233.60358
+        },
+        {
+          "Cod": "D9B-ORIGINI-P50-S",
+          "MedianaMs": 1039.2148,
+          "Ms": [
+            1074.0892,
+            1015.8596,
+            1039.2148,
+            1030.9654,
+            1067.3291
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 241560,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 13990661774680555171,
+            "sha256-1": 8222204053739821974,
+            "sha256-2": 9545134914169682855,
+            "sha256-3": 17413201993858748104
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 311799.99,
+            "BuffersPostare": 16150,
+            "MsServerMax": 1091.076
+          },
+          "LimitaBMs": 1143.1362800000002
+        },
+        {
+          "Cod": "D9B-SOLDURI-TOT-S",
+          "MedianaMs": 295.2927,
+          "Ms": [
+            306.6392,
+            312.0785,
+            249.1041,
+            295.2927,
+            267.6284
+          ],
+          "Randuri": 103600,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 32609152,
+          "Control": {
+            "randuri": 103600,
+            "sha256-0": 4496096203134153341,
+            "sha256-1": 16265517122473306475,
+            "sha256-2": 14152456344675814608,
+            "sha256-3": 351977547373927769
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 572900.01,
+            "BuffersPostare": 14650,
+            "MsServerMax": 220.208
+          },
+          "LimitaBMs": 324.8219700000001
+        },
+        {
+          "Cod": "D9B-SOLDURI-P50-S",
+          "MedianaMs": 3.9979,
+          "Ms": [
+            4.4256,
+            3.9979,
+            3.9528,
+            3.7218,
+            4.0938
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 268136,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 15936640865718833306,
+            "sha256-1": 14467111343708810389,
+            "sha256-2": 2902272510957338099,
+            "sha256-3": 6779151005134603038
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 165,
+            "BuffersPostare": 65,
+            "MsServerMax": 0.175
+          },
+          "LimitaBMs": 13.9979
+        },
+        {
+          "Cod": "D9B-REST-TOT-S",
+          "MedianaMs": 1299.1567,
+          "Ms": [
+            1341.262,
+            1171.3847,
+            1349.9894,
+            1285.2666,
+            1299.1567
+          ],
+          "Randuri": 77700,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 43308680,
+          "Control": {
+            "randuri": 77700,
+            "sha256-0": 10895407865152037154,
+            "sha256-1": 4334106410445418503,
+            "sha256-2": 9330703224998937158,
+            "sha256-3": 8100640443941406965
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 884699.01,
+            "BuffersPostare": 30760,
+            "MsServerMax": 1235.319
+          },
+          "LimitaBMs": 1429.07237
+        },
+        {
+          "Cod": "D9B-REST-P50-S",
+          "MedianaMs": 1405.6051,
+          "Ms": [
+            1381.5076,
+            1405.6051,
+            1396.4575,
+            1479.6082,
+            1436.9725
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 404304,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 2900545367394783839,
+            "sha256-1": 15376298918330642908,
+            "sha256-2": 5497657234223427008,
+            "sha256-3": 18086181130365227327
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 884699.01,
+            "BuffersPostare": 30760,
+            "MsServerMax": 1670.918
+          },
+          "LimitaBMs": 1546.16561
+        }
+      ]
+    },
+    {
+      "Manifest": {
+        "Baza": "Atlas.Conta.ModelCheck.Privat.CodexD9bA",
+        "Factor": 629,
+        "Postari": 5001179,
+        "Configuratie": {
+          "version()": "PostgreSQL 18.4 on x86_64-windows, compiled by msvc-19.44.35226, 64-bit",
+          "shared_buffers": "128MB",
+          "work_mem": "4MB",
+          "effective_cache_size": "4GB",
+          "max_parallel_workers_per_gather": "2",
+          "maintenance_work_mem": "64MB",
+          "random_page_cost": "4",
+          "jit": "on"
+        },
+        "Schema": "20261010151835_InitialCreate",
+        "FapteMd5": "74cb9cffa424ad531f5ea7e843fd117a",
+        "BazaOcteti": 2726401727,
+        "DllSha256": "C7C8A42D8C4491FAD76EF96660B0DF0156753E103E4EAD6ACD981AD5DAF1B59A"
+      },
+      "Operatii": [
+        {
+          "Cod": "D9B-ORIGINI-TOT-N",
+          "MedianaMs": 8004.8117,
+          "Ms": [
+            7888.5692,
+            8004.8117,
+            7645.6942,
+            8119.7861,
+            8833.5402
+          ],
+          "Randuri": 651644,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 261618824,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 4440571149751226252,
+            "sha256-1": 7435532342816119769,
+            "sha256-2": 14765682568435297023,
+            "sha256-3": 1346942650672579547
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 2552783.0100000002,
+            "BuffersPostare": 99365,
+            "MsServerMax": 8311.7
+          },
+          "LimitaBMs": 8805.292870000001
+        },
+        {
+          "Cod": "D9B-ORIGINI-P50-N",
+          "MedianaMs": 7670.9657,
+          "Ms": [
+            7315.2548,
+            7493.9246,
+            7713.7763,
+            7670.9657,
+            8254.1253
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 53768,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 17600843349160410823,
+            "sha256-1": 9977856914315188960,
+            "sha256-2": 342809120106155945,
+            "sha256-3": 12366883242804239378
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 2552783.0100000002,
+            "BuffersPostare": 99365,
+            "MsServerMax": 8452.561
+          },
+          "LimitaBMs": 8438.06227
+        },
+        {
+          "Cod": "D9B-SOLDURI-TOT-N",
+          "MedianaMs": 1496.2335,
+          "Ms": [
+            1496.2335,
+            1481.0314,
+            1453.8765,
+            1562.3647,
+            1569.5668
+          ],
+          "Randuri": 651644,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 295648248,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 4390612245048485080,
+            "sha256-1": 9592600495588225294,
+            "sha256-2": 9730163322044641584,
+            "sha256-3": 7478322552675583083
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3603540.99,
+            "BuffersPostare": 92146,
+            "MsServerMax": 1213.792
+          },
+          "LimitaBMs": 1645.8568500000001
+        },
+        {
+          "Cod": "D9B-SOLDURI-P50-N",
+          "MedianaMs": 1.5205,
+          "Ms": [
+            1.5205,
+            1.5059,
+            1.5603,
+            1.5189,
+            1.6173
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 74616,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 11557990873645253232,
+            "sha256-1": 309771667062953998,
+            "sha256-2": 12734720536822073351,
+            "sha256-3": 11820853371166339685
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 165,
+            "BuffersPostare": 62,
+            "MsServerMax": 0.234
+          },
+          "LimitaBMs": 11.5205
+        },
+        {
+          "Cod": "D9B-REST-TOT-N",
+          "MedianaMs": 14778.1763,
+          "Ms": [
+            15573.2559,
+            16594.4331,
+            14778.1763,
+            14727.9433,
+            14583.0935
+          ],
+          "Randuri": 488733,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 274135856,
+          "Control": {
+            "randuri": 488733,
+            "sha256-0": 6219200390265831730,
+            "sha256-1": 7414410334376450403,
+            "sha256-2": 8338174459258349559,
+            "sha256-3": 11025199695546366212
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 6156324.99,
+            "BuffersPostare": 191511,
+            "MsServerMax": 13990.028
+          },
+          "LimitaBMs": 11822.54104
+        },
+        {
+          "Cod": "D9B-REST-P50-N",
+          "MedianaMs": 13277.7252,
+          "Ms": [
+            13171.2477,
+            13730.53,
+            13510.1906,
+            13277.7252,
+            12732.1893
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "AlocatiMediana": 193144,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 4859486581017592001,
+            "sha256-1": 14453225444717423439,
+            "sha256-2": 15802445629008951455,
+            "sha256-3": 15224391532803733185
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 2552982,
+            "BuffersPostare": 99441,
+            "MsServerMax": 14685.314
+          },
+          "LimitaBMs": 14605.497720000001
+        },
+        {
+          "Cod": "D9B-ORIGINI-TOT-S",
+          "MedianaMs": 7452.5478,
+          "Ms": [
+            7452.5478,
+            7409.2203,
+            7491.3783,
+            7392.4195,
+            7590.4577
+          ],
+          "Randuri": 651644,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 190524568,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 4440571149751226252,
+            "sha256-1": 7435532342816119769,
+            "sha256-2": 14765682568435297023,
+            "sha256-3": 1346942650672579547
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 2552783.0100000002,
+            "BuffersPostare": 99365,
+            "MsServerMax": 7235.438
+          },
+          "LimitaBMs": 8197.802580000001
+        },
+        {
+          "Cod": "D9B-ORIGINI-P50-S",
+          "MedianaMs": 6790.3096,
+          "Ms": [
+            7085.4015,
+            6699.2497,
+            6884.9995,
+            6790.3096,
+            6772.572
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 241560,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 17600843349160410823,
+            "sha256-1": 9977856914315188960,
+            "sha256-2": 342809120106155945,
+            "sha256-3": 12366883242804239378
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 2552783.0100000002,
+            "BuffersPostare": 99365,
+            "MsServerMax": 7179.213
+          },
+          "LimitaBMs": 7469.340560000001
+        },
+        {
+          "Cod": "D9B-SOLDURI-TOT-S",
+          "MedianaMs": 1431.3628,
+          "Ms": [
+            1449.6776,
+            1414.4645,
+            1510.7532,
+            1407.931,
+            1431.3628
+          ],
+          "Randuri": 651644,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 203598328,
+          "Control": {
+            "randuri": 651644,
+            "sha256-0": 4390612245048485080,
+            "sha256-1": 9592600495588225294,
+            "sha256-2": 9730163322044641584,
+            "sha256-3": 7478322552675583083
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 3603540.99,
+            "BuffersPostare": 92146,
+            "MsServerMax": 1230.73
+          },
+          "LimitaBMs": 1574.4990800000003
+        },
+        {
+          "Cod": "D9B-SOLDURI-P50-S",
+          "MedianaMs": 4.0715,
+          "Ms": [
+            3.7054,
+            4.0715,
+            4.7163,
+            4.4389,
+            3.6145
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 268136,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 11557990873645253232,
+            "sha256-1": 309771667062953998,
+            "sha256-2": 12734720536822073351,
+            "sha256-3": 11820853371166339685
+          },
+          "Plan": {
+            "ScanariPostare": 1,
+            "RanduriPostare": 165,
+            "BuffersPostare": 62,
+            "MsServerMax": 0.299
+          },
+          "LimitaBMs": 14.0715
+        },
+        {
+          "Cod": "D9B-REST-TOT-S",
+          "MedianaMs": 14190.2481,
+          "Ms": [
+            14051.084,
+            14355.9283,
+            13819.5443,
+            14324.2915,
+            14190.2481
+          ],
+          "Randuri": 488733,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 270133672,
+          "Control": {
+            "randuri": 488733,
+            "sha256-0": 6219200390265831730,
+            "sha256-1": 7414410334376450403,
+            "sha256-2": 8338174459258349559,
+            "sha256-3": 11025199695546366212
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 6156324.99,
+            "BuffersPostare": 191511,
+            "MsServerMax": 13302.595
+          },
+          "LimitaBMs": 15609.272910000002
+        },
+        {
+          "Cod": "D9B-REST-P50-S",
+          "MedianaMs": 13563.3675,
+          "Ms": [
+            13563.3675,
+            13089.6967,
+            12920.3571,
+            13853.4886,
+            13687.5961
+          ],
+          "Randuri": 50,
+          "Comenzi": [
+            6,
+            6,
+            6,
+            6,
+            6
+          ],
+          "AlocatiMediana": 401048,
+          "Control": {
+            "randuri": 50,
+            "sha256-0": 4859486581017592001,
+            "sha256-1": 14453225444717423439,
+            "sha256-2": 15802445629008951455,
+            "sha256-3": 15224391532803733185
+          },
+          "Plan": {
+            "ScanariPostare": 2,
+            "RanduriPostare": 2552982,
+            "BuffersPostare": 99441,
+            "MsServerMax": 14891.265
+          },
+          "LimitaBMs": 14919.70425
+        }
+      ]
+    }
+  ],
+  "Scriere": {
+    "Rulare": "run-verificari\\20261012-125032-229",
+    "DllSha256": "DF9B33734688AA8692CC8EB7E6B4891602701948A34D258166BAD7B2A57A693B",
+    "Masuri": [
+      {
+        "Partide": 2,
+        "Document": "01a12f82-fbc6-71dd-8324-cd21984b668d",
+        "MedianaMs": 24.5306,
+        "Ms": [
+          24.5306,
+          24.5713,
+          50.7937,
+          23.8118,
+          21.7917
+        ],
+        "Comenzi": [
+          32,
+          32,
+          32,
+          32,
+          32
+        ],
+        "AlocatiMediana": 1601864,
+        "LimitaBMs": 34.5306
+      },
+      {
+        "Partide": 51,
+        "Document": "01a12f83-0301-79ef-9f31-2d847ac20a9c",
+        "MedianaMs": 90.5556,
+        "Ms": [
+          90.5556,
+          97.584,
+          107.8183,
+          76.579,
+          76.5304
+        ],
+        "Comenzi": [
+          32,
+          32,
+          32,
+          32,
+          32
+        ],
+        "AlocatiMediana": 18968936,
+        "LimitaBMs": 104.13893999999999
+      }
+    ]
+  },
+  "DupaScriere": {
+    "Postari": 5001179,
+    "FapteMd5": "74cb9cffa424ad531f5ea7e843fd117a",
+    "TabelePostareOcteti": 1072324608,
+    "IndecsiPostareOcteti": 924024832
+  }
+}

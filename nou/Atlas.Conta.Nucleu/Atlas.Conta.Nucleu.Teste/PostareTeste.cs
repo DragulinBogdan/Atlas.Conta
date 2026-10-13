@@ -58,7 +58,7 @@ public class PostareTeste {
 
     static Coordonate Coordonata() => new() {
         Cont = Guid.NewGuid(),
-        Latura = Latura.Debit,
+        Latura = Sens.Debit,
         Data = new DateOnly(2026, 1, 1),
     };
 }

@@ -9,7 +9,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
-public sealed record SoldInitial(Guid Cont, N.Latura Latura, decimal Valoare,
+public sealed record SoldInitial(Guid Cont, N.Sens Latura, decimal Valoare,
     bool Detaliat = false, N.Carte Carte = N.Carte.Contabil) {
     public N.Analiza Analiza { get; init; } = N.Analiza.Fara;
     public Guid? Valuta { get; init; }
@@ -23,7 +23,7 @@ public sealed record LotInitial(Guid Cont, Guid Lot, Guid Gestiune, decimal Cant
     public Guid? Valuta { get; init; }
     public decimal ValoareValuta { get; init; }
 }
-public sealed record PartidaInitiala(Guid Cont, Guid Partener, Guid Referinta, N.Latura Latura, decimal Valoare,
+public sealed record PartidaInitiala(Guid Cont, Guid Partener, Guid Referinta, N.Sens Latura, decimal Valoare,
     N.Carte Carte = N.Carte.Contabil) {
     /// <summary>Data la care s-a născut partida la sursă; fără ea, data deschiderii (115).</summary>
     public DateOnly? Deschisa { get; init; }
@@ -67,7 +67,7 @@ public static partial class Materializare {
             if (!Enum.IsDefined(s.Carte) || !Enum.IsDefined(s.Latura)) RefuzaDeschidere("Carte sau latură invalidă.");
         }
         foreach (var grup in solduri.GroupBy(s => s.Carte))
-            if (grup.Sum(s => s.Latura == N.Latura.Debit ? s.Valoare : -s.Valoare) != 0)
+            if (grup.Sum(s => s.Latura == N.Sens.Debit ? s.Valoare : -s.Valoare) != 0)
                 RefuzaDeschidere($"Soldurile cărții {grup.Key} nu sunt echilibrate.");
         var idLoturi = loturi.Select(l => l.Lot).Distinct().ToArray();
         var fapteLot = os.GetObjectsQuery<Lot>().Where(l => idLoturi.Contains(l.ID))
@@ -90,8 +90,8 @@ public static partial class Materializare {
                 || conturi[l.Cont].UrmarestePartide || lot.LinieIntrareId != null)
                 RefuzaDeschidere("Lot, cont, cantitate, dată sau gestiune invalidă.");
             if (!unitati.Add((l.Carte, l.Lot, l.Gestiune))) RefuzaDeschidere("Poziție de lot duplicată.");
-            var u = new N.Unitate(l.Lot, N.FelUnitate.Lot, l.Cont, null, lot!.ProdusId, lot.Data);
-            postari.Add(new(new N.Coordonate { Cont = l.Cont, Latura = N.Latura.Debit, Data = data,
+            var u = new N.UnitateSold(l.Lot, N.FelUnitate.Lot, l.Cont, null, lot!.ProdusId, lot.Data);
+            postari.Add(new(new N.Coordonate { Cont = l.Cont, Latura = N.Sens.Debit, Data = data,
                 Carte = l.Carte, Repartitor = new(l.Gestiune, N.FelRepartitor.Gestiune), Produs = lot.ProdusId, Unitate = u,
                 Analiza = l.Analiza, Valuta = l.Valuta },
                 l.Cantitate, l.ValoareValuta, l.Valoare, new(Guid.Empty, null)));
@@ -103,7 +103,7 @@ public static partial class Materializare {
                 RefuzaDeschidere("Partida cere Carte=Contabil, cont urmărit pe partide, partener și referință valide.");
             if (p.Deschisa is { } nascuta && (nascuta > data || nascuta == default))
                 RefuzaDeschidere("Data partidei nu poate urma deschiderii.");
-            var u = N.Unitate.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, p.Deschisa ?? data);
+            var u = N.UnitateSold.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, p.Deschisa ?? data);
             if (!unitati.Add((p.Carte, u.Id, null))) RefuzaDeschidere("Partidă duplicată.");
             postari.Add(new(new N.Coordonate { Cont = p.Cont, Latura = p.Latura, Data = data,
                 Carte = p.Carte, Repartitor = repartitori[p.Partener].Coordonata, Unitate = u, Analiza = p.Analiza, Valuta = p.Valuta }, 0, p.ValoareValuta, p.Valoare, new(Guid.Empty, null)));
@@ -143,7 +143,10 @@ public static partial class Materializare {
         var refuzuri = N.Conservare.Verifica(tranzactie);
         if (refuzuri.Count > 0) RefuzaDeschidere(string.Join("\n", Mesaje(refuzuri)));
         VerificaPozitiaFaraFisa(os, tranzactie.Postari, blocheaza: true);
-        return Scrie(os, null, tranzactie);
+        var referinte = partide.ToDictionary(p =>
+            N.UnitateSold.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, p.Deschisa ?? data).Id,
+            p => p.Referinta);
+        return Scrie(os, null, tranzactie, referinteInitiale: referinte);
     }
 
     static void CereTranzactie(IObjectSpace os) {

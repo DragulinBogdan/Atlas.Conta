@@ -187,34 +187,43 @@ sealed partial class PerfCub {
     }
 
     // Procesul-copil: aceeași operație de două ori — prima e rece (proces nou), a doua caldă; pe ușa securizată, logonul precede măsurarea.
-    public static List<Masura> MasoaraInProces(string conexiune, Punct punct, string director) {
-        var op = Operatii.Single(o => o.Cod == punct.Operatie);
+    // `sistemHost`: ușa nesecurizată este cea a hosturilor (`CreateNonsecuredObjectSpace`), nu furnizorul simplu.
+    public static List<Masura> MasoaraInProces(string conexiune, Punct punct, string director,
+            Operatie operatie = null, int repetari = 1, Action<List<CapturaSql.Comanda>> salveaza = null, bool sistemHost = false) {
+        var op = operatie ?? Operatii.Single(o => o.Cod == punct.Operatie);
         Action<DbContextOptionsBuilder> configureaza = b => b.UseNpgsql(conexiune).UseChangeTrackingProxies()
             .UseObjectSpaceLinkProxies().UseLazyLoadingProxies().ConfigureLoggingCacheTime(TimeSpan.Zero);
         ISecurityStrategyBase securitate = null;
         IDisposable furnizor;
         Func<IObjectSpace> deschide;
         IObjectSpace logon = null;
-        if (op.Securizat) {
+        if (op.Securizat || sistemHost) {
             var autentificare = new AuthenticationStandard(typeof(ApplicationUser), typeof(AuthenticationStandardLogonParameters));
             var strategie = new SecurityStrategyComplex(typeof(ApplicationUser), typeof(PermissionPolicyRole), autentificare);
             var p = new SecuredEFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>(strategie, (b, _) => configureaza(b));
             autentificare.SetLogonParameters(new AuthenticationStandardLogonParameters(Utilizator, ""));
             logon = p.CreateNonsecuredObjectSpace();
             strategie.Logon(logon);
-            securitate = strategie; furnizor = p; deschide = p.CreateObjectSpace;
+            furnizor = p;
+            if (op.Securizat) { securitate = strategie; deschide = p.CreateObjectSpace; }
+            else deschide = p.CreateNonsecuredObjectSpace;
         }
         else {
             var p = new EFCoreObjectSpaceProvider<BackOfficeEFCoreDbContext>((b, _) => configureaza(b));
             furnizor = p; deschide = p.CreateObjectSpace;
         }
         try {
-            return [Masoara(op, deschide, securitate, punct, "rece", false, director), Masoara(op, deschide, securitate, punct, "cald", punct.Planuri, director)];
+            var masuri = new List<Masura> { Masoara(op, deschide, securitate, punct, "rece", false, director) };
+            for (var i = 1; i <= repetari; i++)
+                masuri.Add(Masoara(op, deschide, securitate, punct, repetari == 1 ? "cald" : $"cald{i}",
+                    i == repetari && punct.Planuri, director, i == repetari ? salveaza : null));
+            return masuri;
         }
         finally { logon?.Dispose(); furnizor.Dispose(); }
     }
 
-    static Masura Masoara(Operatie op, Func<IObjectSpace> deschide, ISecurityStrategyBase securitate, Punct punct, string faza, bool cuPlanuri, string director) {
+    static Masura Masoara(Operatie op, Func<IObjectSpace> deschide, ISecurityStrategyBase securitate, Punct punct, string faza, bool cuPlanuri, string director,
+            Action<List<CapturaSql.Comanda>> salveaza = null) {
         using var os = deschide();
         var mediu = new Mediu(os, punct, securitate, director, faza);
         var alocatInainte = GC.GetTotalAllocatedBytes(true);
@@ -236,6 +245,7 @@ sealed partial class PerfCub {
         var ms = ceas.Elapsed.TotalMilliseconds;
         opreste.Cancel(); esantionare.Wait();
         var alocati = GC.GetTotalAllocatedBytes(true) - alocatInainte;
+        salveaza?.Invoke(comenzi);
         if (citit != null) mediu.Dupa?.Invoke(citit.Control);
         using var proces = Process.GetCurrentProcess();
         if (op.Cod == "INCH-N" && eroare == null) {

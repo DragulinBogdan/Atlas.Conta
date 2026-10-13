@@ -1,5 +1,6 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
+using System.Linq.Expressions;
 using DevExpress.ExpressApp;
 using Microsoft.EntityFrameworkCore;
 using N = Atlas.Conta.Nucleu;
@@ -72,7 +73,7 @@ public sealed class MiscareTitular {
 }
 
 public static class Partide {
-    public static readonly System.Linq.Expressions.Expression<Func<Postare, bool>> CuTitular = p => p.FelUnitate == N.FelUnitate.Partida;
+    public static readonly Expression<Func<Postare, bool>> CuTitular = p => p.FelUnitate == N.FelUnitate.Partida;
 
     /// <summary>Titularul partidei de pe o postare deja citită.</summary>
     public static Guid? Titular(Postare postare) => postare.Repartitor;
@@ -81,14 +82,14 @@ public static class Partide {
         postari.Where(p => p.FelUnitate == N.FelUnitate.Partida)
             .GroupBy(p => new { p.DocumentId, p.Repartitor, p.Cont, p.Unitate })
             .Select(g => new NetPartida { DocumentId = g.Key.DocumentId, Titular = g.Key.Repartitor,
-                Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) });
+                Net = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) });
 
     /// <summary>Partidele atinse de postările contabile ale documentului.</summary>
-    public static IReadOnlyList<N.Unitate> UnitatiAle(IObjectSpace os, Guid document) =>
+    public static IReadOnlyList<N.UnitateSold> UnitatiAle(IObjectSpace os, Guid document) =>
         Postari(os)
             .Where(p => p.DocumentId == document && p.Spatiu == N.Spatiu.Contabil)
             .Select(p => new { p.Unitate, p.Cont, p.Repartitor, p.UnitateDeschisa }).Distinct().ToList()
-            .Select(p => new N.Unitate(p.Unitate.Value, N.FelUnitate.Partida, p.Cont,
+            .Select(p => new N.UnitateSold(p.Unitate.Value, N.FelUnitate.Partida, p.Cont,
                 p.Repartitor, null, p.UnitateDeschisa.Value)).ToList();
 
     /// <summary>Mișcările altor documente pe partidele titularilor dați, pe zi și document.</summary>
@@ -101,8 +102,8 @@ public static class Partide {
                 Unitate = g.Key.Unitate, Cont = g.Key.Cont, Titular = g.Key.Repartitor, Data = g.Key.Data,
                 DocumentId = g.Key.DocumentId,
                 Deschisa = g.Min(p => p.UnitateDeschisa.Value),
-                Debit = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : 0m),
-                Credit = g.Sum(p => p.Latura == N.Latura.Credit ? p.Valoare : 0m) })
+                Debit = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : 0m),
+                Credit = g.Sum(p => p.Latura == N.Sens.Credit ? p.Valoare : 0m) })
             .ToList();
 
     public static IQueryable<PerecheDisponibila> Perechi(IObjectSpace os, Guid document, bool stinge,
@@ -136,7 +137,7 @@ public static class Partide {
         group p by new { p.Unitate, p.Cont, p.Repartitor } into g
         select new PartidaProprie { DocumentId = document, UnitateId = g.Key.Unitate.Value, ContId = g.Key.Cont,
             PartenerId = g.Key.Repartitor.Value,
-            Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) };
+            Net = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) };
 
     // D9-D10: cheia ne-nulă pe o parte; cu ambele nulabile EF adaugă ramura de nul și Postgres îmbină numai pe cont (SC-CIT-110).
     /// <summary>Soldurile cu documentul deschizător al partidei; nul la partida fără document.</summary>
@@ -159,7 +160,7 @@ public static class Partide {
         group p by new { p.Unitate, p.Cont, p.Repartitor, p.Data } into g
         select new MiscarePartida { UnitateId = g.Key.Unitate.Value, ContId = g.Key.Cont,
             PartenerId = g.Key.Repartitor.Value, Data = g.Key.Data,
-            Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) };
+            Net = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) };
 
     /// <summary>Restul documentului pe partidele proprii, cu aceeași selecție pe sens ca <see cref="Total"/>.</summary>
     public static decimal Ramas(IObjectSpace os, Guid document, SensStingere? sens) {
@@ -183,11 +184,11 @@ public static class Partide {
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare && p.FelUnitate == N.FelUnitate.Partida).ToArray();
         var nete = noi.Length != 0
             ? noi.GroupBy(p => new { p.Cont, p.Repartitor, p.Unitate })
-                .Select(g => g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)).ToList()
+                .Select(g => g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare)).ToList()
             : Contabil.Postari(os)
                 .Where(p => p.DocumentId == document && p.FelUnitate == N.FelUnitate.Partida)
                 .GroupBy(p => new { p.Cont, p.Repartitor, p.Unitate })
-                .Select(g => g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)).ToList();
+                .Select(g => g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare)).ToList();
         return sens switch {
             SensStingere.Datorie => nete.Where(n => n < 0m).Sum(n => -n),
             SensStingere.Creanta => nete.Where(n => n > 0m).Sum(),
@@ -204,7 +205,7 @@ public static class Partide {
         var nete = Contabil.Postari(os).Where(p => p.DocumentId == document && p.Repartitor == partener
                 && p.FelUnitate == N.FelUnitate.Partida)
             .GroupBy(p => new { p.Cont, p.Unitate })
-            .Select(g => new { Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) });
+            .Select(g => new { Net = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) });
         return (sens == SensStingere.Datorie ? nete.Where(p => p.Net > 0m) : nete.Where(p => p.Net < 0m))
             .Select(p => (decimal?)Math.Abs(p.Net)).Sum() ?? 0m;
     }
@@ -216,7 +217,7 @@ public static class Partide {
                 && (partener == null || p.Repartitor == partener))
             .GroupBy(p => new { p.Unitate, p.Cont, p.Repartitor, p.Data })
             .Select(g => new { g.Key.Unitate, g.Key.Cont, g.Key.Repartitor, g.Key.Data,
-                Net = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) }).ToArray();
+                Net = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) }).ToArray();
         var legaturi = os.GetObjectsQuery<Imperechere>()
             .Where(i => i.DocumentStingatorId == stingator && i.DocumentId == stins)
             .Select(i => new { i.Data, i.Suma }).ToArray();
@@ -247,19 +248,23 @@ public static class Partide {
         Math.Max(0m, Evolutie(miscari, data).Min(p => semn * p.Sold));
 
     public static Guid Identitate(Guid document, Guid cont, Guid partener) =>
-        N.Unitate.DeschidePartida(cont, partener, document, DateOnly.MinValue).Id;
+        N.UnitateSold.DeschidePartida(cont, partener, document, DateOnly.MinValue).Id;
 
-    public static IQueryable<OriginePartida> Origini(IObjectSpace os) => Postari(os)
-        .Where(p => p.DocumentId == null && p.Tranzactie.Fel == N.FelTranzactie.Deschidere
-            || p.DocumentId != null && p.Unitate == Identitate(p.DocumentId.Value, p.Cont, p.Repartitor.Value))
-        .Select(p => new OriginePartida { UnitateId = p.Unitate.Value, ContId = p.Cont,
-            PartenerId = p.Repartitor.Value, DocumentId = p.DocumentId }).Distinct();
+    static IQueryable<OriginePartidaPersistata> OriginiVizibile(IObjectSpace os) {
+        var origini = os.GetObjectsQuery<OriginePartidaPersistata>();
+        if (!Vizibilitate.Securizat(os)) return origini;
+        var postari = Postari(os);
+        return origini.Where(o => postari.AsEnumerable().Any(p => p.Unitate == o.ID && p.Cont == o.ContId
+            && p.Repartitor == o.PartenerId && (p.DocumentId ?? Guid.Empty) == (o.DocumentId ?? Guid.Empty)
+            && (o.DocumentId != null || p.Tranzactie.Fel == N.FelTranzactie.Deschidere)));
+    }
 
-    /// <summary>Partidele deschise de un document, recunoscute după identitate.</summary>
-    public static IQueryable<OriginePartida> OriginiDocument(IObjectSpace os) => Postari(os)
-        .Where(p => p.DocumentId != null && p.Unitate == Identitate(p.DocumentId.Value, p.Cont, p.Repartitor.Value))
-        .Select(p => new OriginePartida { UnitateId = p.Unitate.Value, ContId = p.Cont,
-            PartenerId = p.Repartitor.Value, DocumentId = p.DocumentId }).Distinct();
+    public static IQueryable<OriginePartida> Origini(IObjectSpace os) => OriginiVizibile(os)
+        .Select(o => new OriginePartida { UnitateId = o.ID, ContId = o.ContId,
+            PartenerId = o.PartenerId, DocumentId = o.DocumentId });
+
+    /// <summary>Partidele cu origine pe document.</summary>
+    public static IQueryable<OriginePartida> OriginiDocument(IObjectSpace os) => Origini(os).Where(o => o.DocumentId != null);
 
     public static IQueryable<SoldPartida> Cumulate(IObjectSpace os, CitireCumul citire, DateOnly panaLa) {
         var snapshot = os.GetObjectsQuery<PartidaDeschisa>().Select(s => new SoldLunar<SoldPartida> {
@@ -271,8 +276,8 @@ public static class Partide {
             Data = p.Data,
             Rand = new SoldPartida { UnitateId = p.Unitate.Value, ContId = p.Cont,
                 PartenerId = p.Repartitor.Value, Deschisa = p.UnitateDeschisa.Value,
-                Debit = p.Latura == N.Latura.Debit ? p.Valoare : 0m,
-                Credit = p.Latura == N.Latura.Credit ? p.Valoare : 0m }
+                Debit = p.Latura == N.Sens.Debit ? p.Valoare : 0m,
+                Credit = p.Latura == N.Sens.Credit ? p.Valoare : 0m }
         });
         return CumulPerioade.Citeste(os, citire, miscari, snapshot, panaLa)
             .GroupBy(p => new { p.UnitateId, p.ContId, p.PartenerId })
@@ -280,16 +285,22 @@ public static class Partide {
                 PartenerId = g.Key.PartenerId, Deschisa = g.Min(p => p.Deschisa),
                 Debit = g.Sum(p => p.Debit), Credit = g.Sum(p => p.Credit) });
     }
-    public static IQueryable<Postare> Postari(IObjectSpace os) => os.GetObjectsQuery<Postare>().Where(Transformare.FaraContrapondere)
-        .Where(p => p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil
+    static readonly Expression<Func<Postare, bool>> DePartida = p =>
+        p.Spatiu == N.Spatiu.Contabil && p.Carte == N.Carte.Contabil
             && p.FelUnitate == N.FelUnitate.Partida && p.Unitate != null
-            && p.Repartitor != null && p.UnitateDeschisa != null);
+            && p.Repartitor != null && p.UnitateDeschisa != null;
+    static readonly Func<Postare, bool> faraContrapondere = Transformare.FaraContrapondere.Compile(), dePartida = DePartida.Compile();
+
+    public static IQueryable<Postare> Postari(IObjectSpace os) =>
+        os.GetObjectsQuery<Postare>().Where(Transformare.FaraContrapondere).Where(DePartida);
+
+    /// <summary>Filtrul lui <see cref="Postari"/>, pe postări din memorie.</summary>
+    public static bool EstePartida(Postare p) => faraContrapondere(p) && dePartida(p);
 
     /// <summary>Ordinalul postării care a deschis fiecare unitate fără document.</summary>
     public static IReadOnlyDictionary<Guid, int> Deschideri(IObjectSpace os, IReadOnlyCollection<Guid> unitati) =>
-        Postari(os).Where(p => p.DocumentId == null && unitati.Contains(p.Unitate.Value))
-            .GroupBy(p => p.Unitate.Value).Select(g => new { Unitate = g.Key, Ordinal = g.Min(p => p.Ordinal) })
-            .ToDictionary(p => p.Unitate, p => p.Ordinal);
+        OriginiVizibile(os).Where(o => o.DocumentId == null && unitati.Contains(o.ID))
+            .ToDictionary(o => o.ID, o => o.OrdinalInitial.Value);
 
     public static IQueryable<SoldPartida> Solduri(IObjectSpace os, DateOnly panaLa, Guid? faraDocument = null) =>
         Postari(os).Where(p => p.Data <= panaLa && (faraDocument == null || p.DocumentId != faraDocument))
@@ -297,8 +308,8 @@ public static class Partide {
             .Select(g => new SoldPartida {
                 UnitateId = g.Key.Unitate.Value, ContId = g.Key.Cont, PartenerId = g.Key.Repartitor.Value,
                 Deschisa = g.Min(p => p.UnitateDeschisa.Value),
-                Debit = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : 0m),
-                Credit = g.Sum(p => p.Latura == N.Latura.Credit ? p.Valoare : 0m)
+                Debit = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : 0m),
+                Credit = g.Sum(p => p.Latura == N.Sens.Credit ? p.Valoare : 0m)
             });
 
     public static void VerificaAcoperire(IObjectSpace os) {

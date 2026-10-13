@@ -231,7 +231,7 @@ public class FifoTeste {
         return pinuri;
     }
 
-    static Unitate Unitatea(Guid id, FelUnitate fel, Random aleator) => new(
+    static UnitateSold Unitatea(Guid id, FelUnitate fel, Random aleator) => new(
         id,
         fel,
         Gen.Unul(aleator, Gen.Conturi),
@@ -239,7 +239,7 @@ public class FifoTeste {
         fel == FelUnitate.Lot ? Gen.Unul(aleator, Gen.Produse) : null,
         Gen.Data(aleator));
 
-    static Unitate Unitatea(int marca, DateOnly deschisa) => new(
+    static UnitateSold Unitatea(int marca, DateOnly deschisa) => new(
         new Guid(marca, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
         FelUnitate.Lot,
         Gen.Conturi[0],

@@ -41,7 +41,7 @@ public sealed class DeclarantDvi : IDeclarant {
         var doc = operand.Document;
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
-        var partide = new Dictionary<Guid, N.Unitate>();
+        var partide = new Dictionary<Guid, N.UnitateSold>();
         for (var i = 0; i < operand.Linii.Count; i++) {
             var l = operand.Linii[i]; var tip = tipuri[i]!.Value;
             var impozit = Fiscal.Impozitul(operand, l, tip, taxa, DirectieTva.Deductibil, refuzuri);

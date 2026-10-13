@@ -9,7 +9,7 @@ public static partial class SaftProiectii {
     sealed partial class ExportPeCub {
         enum FelExtern { Virament, Partener, Angajat, Altul }
 
-        sealed record DocPlata(Guid Id, TipInstrumentPlata Instrument, N.Latura? Contrapartida, Guid? Extern, FelExtern Fel);
+        sealed record DocPlata(Guid Id, TipInstrumentPlata Instrument, N.Sens? Contrapartida, Guid? Extern, FelExtern Fel);
 
         Dictionary<Guid, DocPlata> PregatestePlati(List<PostareJurnal> jurnal) {
             var ids = jurnal.Where(p => p.DocumentId != null && p.Fel is N.FelTranzactie.Operare or N.FelTranzactie.Storno)
@@ -35,9 +35,9 @@ public static partial class SaftProiectii {
                     : extern_ is Guid e && externi.Contains(e) ? FelExtern.Partener
                     : extern_ is Guid a && angajati.Contains(a) ? FelExtern.Angajat
                     : FelExtern.Altul;
-                N.Latura? contrapartida = propriu switch {
-                    LaturaDocument.Predator => N.Latura.Debit,
-                    LaturaDocument.Primitor => N.Latura.Credit,
+                N.Sens? contrapartida = propriu switch {
+                    LaturaDocument.Predator => N.Sens.Debit,
+                    LaturaDocument.Primitor => N.Sens.Credit,
                     _ => null,
                 };
                 return new DocPlata(d.ID, d.TipInstrument, contrapartida, extern_, fel);
@@ -167,7 +167,7 @@ public static partial class SaftProiectii {
                         AccountID = Simbol(l.Cont),
                         CustomerID = customer, SupplierID = supplier,
                         Description = (linii.Count == 1 && linii[0] is Guid d ? descrieri.GetValueOrDefault(d) : null) ?? descriere,
-                        DebitCreditIndicator = l.Latura == N.Latura.Debit ? "D" : "C",
+                        DebitCreditIndicator = l.Latura == N.Sens.Debit ? "D" : "C",
                         PaymentLineAmount = suma,
                         Analiza = chei.Count == 1
                             ? Analiza(chei[0].CentruCost, chei[0].Proiect, chei[0].UnitateOrganizatorica,
@@ -201,8 +201,8 @@ public static partial class SaftProiectii {
                 Cauza = cauza.ToString(), Sectiune = "Payments",
                 DocumentId = document, DocumentNumar = documente[document].Numar, DocumentTip = CodTip(document),
                 RepartitorId = repartitor,
-                Debit = postari.Where(p => p.Latura == N.Latura.Debit).Sum(p => p.Valoare),
-                Credit = postari.Where(p => p.Latura == N.Latura.Credit).Sum(p => p.Valoare),
+                Debit = postari.Where(p => p.Latura == N.Sens.Debit).Sum(p => p.Valoare),
+                Credit = postari.Where(p => p.Latura == N.Sens.Credit).Sum(p => p.Valoare),
                 Randuri = postari.Count,
             });
     }

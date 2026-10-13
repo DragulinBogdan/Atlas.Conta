@@ -8,15 +8,15 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.Module.Cub;
 
 public static partial class Materializare {
-    sealed record ContNominalizat(Guid Cont, N.Latura Latura);
+    sealed record ContNominalizat(Guid Cont, N.Sens Latura);
 
     static List<ContNominalizat> ConturiNominalizare(IObjectSpace os, List<Guid> conturi) {
         var active = os.GetObjectsQuery<TipMaterial>().Where(t => t.Clasa.Natura == NaturaClasa.Imobilizare
                 && t.ContImplicitId != null && conturi.Contains(t.ContImplicitId.Value))
-            .Select(t => new { Cont = t.ContImplicitId.Value, Latura = N.Latura.Debit });
+            .Select(t => new { Cont = t.ContImplicitId.Value, Latura = N.Sens.Debit });
         var amortizari = os.GetObjectsQuery<PoliticaAmortizare>().Where(p => p.ContAmortizareId != null
                 && conturi.Contains(p.ContAmortizareId.Value))
-            .Select(p => new { Cont = p.ContAmortizareId.Value, Latura = N.Latura.Credit });
+            .Select(p => new { Cont = p.ContAmortizareId.Value, Latura = N.Sens.Credit });
         var istorice = Citiri.Imobilizari.Nominalizari(os).Where(p => conturi.Contains(p.Cont))
             .Select(p => new { p.Cont, p.Latura });
         return active.Concat(amortizari).Concat(istorice).Distinct().ToList()

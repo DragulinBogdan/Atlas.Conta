@@ -22,7 +22,7 @@ public class Postare {
 
     public virtual DateOnly Data { get; set; }
     public virtual Guid Cont { get; set; }
-    public virtual N.Latura Latura { get; set; }
+    public virtual N.Sens Latura { get; set; }
     public virtual Guid? Repartitor { get; set; }
     public virtual N.Contrapondere? Contrapondere { get; set; }
     public virtual Guid? Produs { get; set; }

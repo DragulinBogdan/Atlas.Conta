@@ -34,36 +34,36 @@ public static class Transferuri {
                 && p.Coordonate.Unitate is { Fel: N.FelUnitate.Partida }
                 && (cerere.PartidaTinta == null || p.Coordonate.Unitate.Id == cerere.PartidaTinta))
             .GroupBy(p => p.Coordonate.Unitate!)
-            .Select(g => new { Unitate = g.Key, Net = g.Sum(p => p.Coordonate.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare) })
+            .Select(g => new { Unitate = g.Key, Net = g.Sum(p => p.Coordonate.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) })
             .Where(p => p.Net != 0m).ToArray();
         if (primite.Length == 0) return Sare("nu există efect de desfăcut pe partida stinsului");
         if (primite.Length != 1) return Refuza("IMPERECHERE_AMBIGUA", "nominalizarea nu identifică un singur efect de desfăcut");
         var efect = primite[0]; var tinta = efect.Unitate;
         if (tinta.Partener is not Guid tert) return Sare("partida nu poartă partener");
         var proprie = IdentitatiPartide.Gaseste(cerere.OperareStingator.Concat(cerere.TransferuriStingator)
-            .Select(p => p.Coordonate.Unitate).OfType<N.Unitate>(), cerere.StingatorId, tinta.Cont, tert);
-        proprie ??= N.Unitate.DeschidePartida(tinta.Cont, tert, cerere.StingatorId, cerere.DataStingator);
+            .Select(p => p.Coordonate.Unitate).OfType<N.UnitateSold>(), cerere.StingatorId, tinta.Cont, tert);
+        proprie ??= N.UnitateSold.DeschidePartida(tinta.Cont, tert, cerere.StingatorId, cerere.DataStingator);
         var titular = Titular(cerere, tert);
         return new(new N.Mutare(Capatul(titular, tinta), Capatul(titular, proprie),
-            efect.Net > 0m ? N.Latura.Debit : N.Latura.Credit, 0m, 0m,
+            efect.Net > 0m ? N.Sens.Debit : N.Sens.Credit, 0m, 0m,
             Math.Min(Math.Abs(cerere.Suma), Math.Abs(efect.Net)), new(cerere.StingatorId, null)), cerere.Data, null, null);
     }
 
     static Rezultat MutaPozitiv(Cerere c) {
         var aleStingatorului = c.OperareStingator.Concat(c.TransferuriStingator).ToArray();
         var aleStinsului = c.OperareStins.Concat(c.TransferuriStins).ToArray();
-        var proprii = aleStingatorului.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>()
+        var proprii = aleStingatorului.Select(p => p.Coordonate.Unitate).OfType<N.UnitateSold>()
             .Where(u => IdentitatiPartide.EsteProprie(u, c.StingatorId)
                 && (c.PartenerCerut == null || u.Partener == c.PartenerCerut)).Distinct().ToArray();
-        var tinte = aleStinsului.Select(p => p.Coordonate.Unitate).OfType<N.Unitate>()
+        var tinte = aleStinsului.Select(p => p.Coordonate.Unitate).OfType<N.UnitateSold>()
             .Where(u => c.PartidaTinta is Guid tinta ? u.Id == tinta : IdentitatiPartide.EsteProprie(u, c.StinsId)).Distinct().ToArray();
         var perechi = (from deLa in proprii
                        from la in tinte
                        where deLa.Cont == la.Cont && deLa.Partener == la.Partener
                        let disponibil = aleStingatorului.Where(p => p.Coordonate.Unitate?.Id == deLa.Id)
-                           .Sum(p => p.Coordonate.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)
+                           .Sum(p => p.Coordonate.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare)
                        let rest = aleStinsului.Where(p => p.Coordonate.Unitate?.Id == la.Id)
-                           .Sum(p => p.Coordonate.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare)
+                           .Sum(p => p.Coordonate.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare)
                        where disponibil * rest < 0m
                        select new { deLa, la, disponibil, rest }).ToArray();
         if (perechi.Length == 0) {
@@ -78,11 +78,11 @@ public static class Transferuri {
             return Refuza(PartidaProprieInsuficienta,
                 $"stingerea cere {c.Suma}; disponibil {Math.Abs(p.disponibil)}, rest {Math.Abs(p.rest)} pe contul {p.deLa.Cont}");
         return new(new N.Mutare(Capatul(Titular(c, p.deLa.Partener!.Value), p.deLa),
-            Capatul(Titular(c, p.la.Partener!.Value), p.la), p.disponibil > 0m ? N.Latura.Debit : N.Latura.Credit,
+            Capatul(Titular(c, p.la.Partener!.Value), p.la), p.disponibil > 0m ? N.Sens.Debit : N.Sens.Credit,
             0m, 0m, c.Suma, new N.Cauza(c.StingatorId, null)), c.Data, null, null);
     }
 
-    static N.Capat Capatul(N.Repartitor titular, N.Unitate partida) =>
+    static N.Capat Capatul(N.Repartitor titular, N.UnitateSold partida) =>
         new() { Cont = partida.Cont, Repartitor = titular, Unitate = partida };
 
     static N.Repartitor Titular(Cerere c, Guid tert) =>

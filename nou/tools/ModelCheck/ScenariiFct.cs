@@ -138,12 +138,12 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         var cont = Cont(intern);
         if (!Privat) { net += taxa; taxa = 0; tva = null; }
         var tv = tva == null ? (Guid?)null : Tva(tva);
-        var debit = new RandScena(cont, N.Latura.Debit, net, q, Magazie, l.Lot, l.Produs,
+        var debit = new RandScena(cont, N.Sens.Debit, net, q, Magazie, l.Lot, l.Produs,
             PartenerFiscal: tv != null ? Furnizor : null, Linie: l.Id, Tva: tv, Rol: tv != null ? N.RolTva.Baza : null,
             Perioada: tv != null ? perioada ?? An * 100 + 1 : null, Sens: tv != null ? N.SensTva.Achizitie : null,
             Spatiu: l.Lot != null ? N.Spatiu.Stoc : N.Spatiu.Contabil, Economic: Economic,
             Loc: tv != null ? Magazie : null);
-        var credit = new RandScena(Cont(ContFurnizor), N.Latura.Credit, net, -q,
+        var credit = new RandScena(Cont(ContFurnizor), N.Sens.Credit, net, -q,
             Furnizor, Partida(f.Id, ContFurnizor), l.Produs, Linie: l.Id, Economic: Economic,
             Contrapondere: l.Lot != null ? N.Contrapondere.Tert : null);
         var randuri = new List<RandScena> { debit, credit };

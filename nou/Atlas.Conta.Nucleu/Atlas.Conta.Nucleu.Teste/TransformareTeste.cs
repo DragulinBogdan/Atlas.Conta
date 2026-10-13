@@ -8,7 +8,7 @@ public class TransformareTeste {
     static Transformare Linie(Guid document, Guid cont, Guid produs, RolTransformare rol,
             FelTranzactie fel, decimal q, decimal v) => new(new Capat {
         Cont = cont, Produs = produs, Repartitor = Gen.Locuri[0],
-        Unitate = new Unitate(produs, FelUnitate.Lot, cont, null, produs, Data),
+        Unitate = new UnitateSold(produs, FelUnitate.Lot, cont, null, produs, Data),
     }, rol, fel, q, v, new Cauza(document, produs));
 
     static Declaratie Scena(Random rng) {

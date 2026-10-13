@@ -26,8 +26,8 @@ sealed class ScenariiItv(Func<IObjectSpace> deschide, Action<string, bool> check
         var detalii = os.GetObjectsQuery<NotaContabilaDetaliu>().Where(l => l.DocumentId == doc).ToList();
         var randuri = linii.SelectMany(l => {
             var linie = detalii.Single(d => d.ContDebitId == Cont(l.Debit) && d.ContCreditId == Cont(l.Credit));
-            return new RandScena[] { new(Cont(l.Debit), N.Latura.Debit, l.V, Repartitor: Loc, Linie: linie.ID),
-                new(Cont(l.Credit), N.Latura.Credit, l.V, Repartitor: Loc, Linie: linie.ID) };
+            return new RandScena[] { new(Cont(l.Debit), N.Sens.Debit, l.V, Repartitor: Loc, Linie: linie.ID),
+                new(Cont(l.Credit), N.Sens.Credit, l.V, Repartitor: Loc, Linie: linie.ID) };
         }).ToArray();
         Postari(id, doc, fel, data, randuri);
         Verifica(id, "numărul de linii și absența faptelor fiscale",
@@ -37,7 +37,7 @@ sealed class ScenariiItv(Func<IObjectSpace> deschide, Action<string, bool> check
         foreach (var (cont, asteptat) in new[] { ("4426", deductibila), ("4427", -colectata), ("4423", -plata), ("4424", recuperat) }) {
             var contId = Cont(cont);
             var net = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Cont == contId && p.Data <= data && p.Carte == N.Carte.Contabil)
-                .Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare));
+                .Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare));
             Verifica(id, $"sold {cont} la {data}: {asteptat}", net == asteptat);
         }
     }

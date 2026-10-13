@@ -31,7 +31,7 @@ static class ScenariiC111 {
 sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, bool privat,
     Action<IObjectSpace, int, int> inchide, string caz)
     : ScenaDocumente(deschide, check, privat, inchide, "C111", 2033) {
-    const N.Latura Debit = N.Latura.Debit, Credit = N.Latura.Credit;
+    const N.Sens Debit = N.Sens.Debit, Credit = N.Sens.Credit;
     const N.FelTranzactie Operare = N.FelTranzactie.Operare, Transfer = N.FelTranzactie.Transfer, Storno = N.FelTranzactie.Storno;
     string Avans => Privat ? "542" : "542.01.00";
     string Activ => Privat ? "214" : "214.00.00";
@@ -184,7 +184,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         var n21 = Tva("N21");
         RandScena[] Asteptate(FacturaScena d, Guid contBaza, Guid repartitorBaza, Guid? unitateBaza = null) {
             var l = d.Linii[0].Id;
-            var avans = N.Unitate.DeschidePartida(Cont(Avans), titular, d.Id, Ianuarie).Id;
+            var avans = N.UnitateSold.DeschidePartida(Cont(Avans), titular, d.Id, Ianuarie).Id;
             return [
                 new(contBaza, Debit, 100, Repartitor: repartitorBaza, Unitate: unitateBaza, PartenerFiscal: titular, Linie: l,
                     Tva: n21, Rol: N.RolTva.Baza, Perioada: Perioada, Sens: N.SensTva.Achizitie, Loc: Loc),
@@ -223,7 +223,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         Verifica("SC-C111-24", "martor: cu partenerul fiscal scris peste terțul liniei nucleul refuză cu UNITATE_NEPOTRIVITA — "
             + string.Join(", ", refuzuriVechi), acceptat && refuzuriVechi.Contains(N.Coduri.UnitateNepotrivita));
         if (Trece("SC-C111-24", "DEC cu TVA și terț pe linie, pe cont cu partide", () => Opereaza(cuPartida.Id))) {
-            var partida = N.Unitate.DeschidePartida(Cont("401"), Furnizor, cuPartida.Id, Ianuarie).Id;
+            var partida = N.UnitateSold.DeschidePartida(Cont("401"), Furnizor, cuPartida.Id, Ianuarie).Id;
             Postari("SC-C111-24", cuPartida.Id, Operare, Ianuarie, Asteptate(cuPartida, Cont("401"), Furnizor, partida));
             SoldPartida("SC-C111-24", partida, Ianuarie, 100);
         }
@@ -731,7 +731,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         var casa = CuSpatiu(os => os.GetObjectsQuery<ContPropriu>().Single(c => c.Cod == "CASA").ID);
         var ancora = CuSpatiu(os => os.GetObjectsQuery<Cont>().First(c => c.Simbol.StartsWith("891") && !c.Sumator).ID);
         var datorie = Cont(ContFurnizor);
-        var initiala = N.Unitate.DeschidePartidaInitiala(datorie, Furnizor, referinta, Ianuarie).Id;
+        var initiala = N.UnitateSold.DeschidePartidaInitiala(datorie, Furnizor, referinta, Ianuarie).Id;
         Comanda(os => {
             using var tx = TranzactieComanda.Incepe(os);
             C.Materializare.Deschide(os, Ianuarie,
@@ -826,7 +826,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         var (factura, nir, linie) = Constatat(CauzaDiferentei.Imputabila, Client);
         if (Trece("SC-C111-14", "NIR cu lipsă imputabilă unui terț", () => Opereaza(nir))) {
             var lot = factura.Linii[0];
-            var partida = N.Unitate.DeschidePartida(Cont(imputat), Client, nir, Ianuarie).Id;
+            var partida = N.UnitateSold.DeschidePartida(Cont(imputat), Client, nir, Ianuarie).Id;
             var postari = Cub(nir, Operare);
             Randuri("SC-C111-14", "diferența imputabilă: inventar ca marcaj, terțul imputat ca repartitor, pe partida lui", postari,
                 new(Cont(Stoc), Credit, 25, -1, Magazie, lot.Lot, lot.Produs, Linie: linie, Spatiu: N.Spatiu.Stoc, Economic: Economic),

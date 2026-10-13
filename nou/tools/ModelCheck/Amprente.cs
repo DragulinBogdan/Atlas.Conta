@@ -55,8 +55,8 @@ static class Amprente {
             .GroupBy(r => (Simbol: conturi[r.Cont], r.Year, r.Month))
             .OrderBy(g => g.Key.Simbol, StringComparer.Ordinal).ThenBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
             .Select(g => string.Join('|', g.Key.Simbol, $"{g.Key.Year}-{g.Key.Month:00}",
-                Bani(g.Where(r => r.Latura == N.Latura.Debit).Sum(r => r.Valoare)),
-                Bani(g.Where(r => r.Latura == N.Latura.Credit).Sum(r => r.Valoare)),
+                Bani(g.Where(r => r.Latura == N.Sens.Debit).Sum(r => r.Valoare)),
+                Bani(g.Where(r => r.Latura == N.Sens.Credit).Sum(r => r.Valoare)),
                 g.Sum(r => r.Numar)))
             .ToList();
     }
@@ -71,7 +71,7 @@ static class Amprente {
             .Select(g => new {
                 g.Key.Cont, g.Key.Produs, g.Key.Repartitor, g.Key.Year, g.Key.Month,
                 Cantitate = g.Sum(p => p.Cantitate),
-                Valoare = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare),
+                Valoare = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare),
                 Numar = g.Count(),
             })
             .ToList()
@@ -89,7 +89,7 @@ static class Amprente {
             .GroupBy(p => new { p.Cont, p.Repartitor, p.Unitate, p.UnitateDeschisa })
             .Select(g => new {
                 g.Key.Cont, g.Key.Repartitor, g.Key.UnitateDeschisa,
-                Sold = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare),
+                Sold = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare),
                 Numar = g.Count(),
             })
             .ToList()
@@ -109,8 +109,8 @@ static class Amprente {
             .ToList()
             .GroupBy(r => (Simbol: conturi[r.Cont], Repartitor: Cod(repartitori, r.Repartitor), r.Year, r.Month))
             .Select(g => string.Join('|', g.Key.Simbol, g.Key.Repartitor, $"{g.Key.Year}-{g.Key.Month:00}",
-                Bani(g.Where(r => r.Latura == N.Latura.Debit).Sum(r => r.Valoare)),
-                Bani(g.Where(r => r.Latura == N.Latura.Credit).Sum(r => r.Valoare)),
+                Bani(g.Where(r => r.Latura == N.Sens.Debit).Sum(r => r.Valoare)),
+                Bani(g.Where(r => r.Latura == N.Sens.Credit).Sum(r => r.Valoare)),
                 g.Sum(r => r.Numar)))
             .OrderBy(r => r, StringComparer.Ordinal)
             .ToList();
@@ -125,7 +125,7 @@ static class Amprente {
             .GroupBy(p => new { p.Cont, p.PartenerFiscal, p.Loc, p.RolTva, p.Year, p.Month })
             .Select(g => new {
                 g.Key.Cont, g.Key.PartenerFiscal, g.Key.Loc, g.Key.RolTva, g.Key.Year, g.Key.Month,
-                Valoare = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare), Numar = g.Count(),
+                Valoare = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare), Numar = g.Count(),
             })
             .ToList()
             .Select(r => string.Join('|', conturi[r.Cont], Cod(repartitori, r.PartenerFiscal), Cod(repartitori, r.Loc),
@@ -141,7 +141,7 @@ static class Amprente {
             .GroupBy(p => new { p.Cont, p.Contrapondere, p.Data.Year, p.Data.Month })
             .Select(g => new {
                 g.Key.Cont, g.Key.Contrapondere, g.Key.Year, g.Key.Month, Cantitate = g.Sum(p => p.Cantitate),
-                Valoare = g.Sum(p => p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare), Numar = g.Count(),
+                Valoare = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare), Numar = g.Count(),
             })
             .ToList()
             .Select(r => string.Join('|', conturi[r.Cont], r.Contrapondere, $"{r.Year}-{r.Month:00}",

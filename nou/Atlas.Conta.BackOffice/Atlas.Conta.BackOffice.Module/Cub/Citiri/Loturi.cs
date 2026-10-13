@@ -50,7 +50,7 @@ public static class Loturi {
         Fel = p.Tranzactie.Fel, Data = p.Data, ScrisLa = p.Tranzactie.ScrisLa,
         Lot = p.Unitate.Value, Cont = p.Cont, Produs = p.Produs.Value, Loc = p.Repartitor.Value,
         Deschisa = p.UnitateDeschisa ?? p.Data, Cantitate = p.Cantitate,
-        Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare,
+        Valoare = p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare,
     });
 
     public static IQueryable<Postare> Postari(IObjectSpace os) => os.GetObjectsQuery<Postare>()
@@ -69,7 +69,7 @@ public static class Loturi {
             Rand = new SoldLot {
                 LotId = p.Unitate.Value, ContId = p.Cont, ProdusId = p.Produs.Value, GestiuneId = p.Repartitor.Value,
                 Deschisa = p.UnitateDeschisa ?? p.Data, Cantitate = p.Cantitate,
-                Valoare = p.Latura == N.Latura.Debit ? p.Valoare : -p.Valoare
+                Valoare = p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare
             }
         });
     }

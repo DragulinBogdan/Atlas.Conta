@@ -85,7 +85,7 @@ public sealed class ExplicatieUnitateDto {
     public Guid? ProdusId { get; set; }
     public DateOnly Deschisa { get; set; }
 
-    public static ExplicatieUnitateDto Din(N.Unitate u) => new() {
+    public static ExplicatieUnitateDto Din(N.UnitateSold u) => new() {
         Id = u.Id, Fel = u.Fel.ToString(), ContId = u.Cont, PartenerId = u.Partener, ProdusId = u.Produs,
         Deschisa = u.Deschisa,
     };

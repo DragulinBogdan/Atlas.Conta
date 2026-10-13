@@ -15,7 +15,7 @@ public sealed class PostareJurnal {
     public Guid? LinieId { get; set; }
     public DateOnly Data { get; set; }
     public Guid Cont { get; set; }
-    public N.Latura Latura { get; set; }
+    public N.Sens Latura { get; set; }
     public decimal Valoare { get; set; }
     /// <summary>Terțul postării pe un cont cu rol comercial (C111-D10).</summary>
     public Guid? TertComercial { get; set; }
@@ -40,7 +40,7 @@ public sealed class PostareAnalitica {
     public Guid? DocumentId { get; set; }
     public DateOnly Data { get; set; }
     public Guid Cont { get; set; }
-    public N.Latura Latura { get; set; }
+    public N.Sens Latura { get; set; }
     public decimal Valoare { get; set; }
     public Guid? Repartitor { get; set; }
     public Guid? Produs { get; set; }

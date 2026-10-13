@@ -1,6 +1,6 @@
 # Domeniu și operare
 
-**Actualizat: 2026-10-11.** [Index](README.md)
+**Actualizat: 2026-10-13.** [Index](README.md)
 
 ## Modelul comun
 
@@ -1751,8 +1751,22 @@ analiza istorică. Imputatul fără cauză Imputabila sau fără deltă se gole�
 ### Partide: raport, snapshot și împerechere (101, 2026-09-25)
 
 `Cub.Citiri.Partide` este intrarea comună pentru rest, disponibil și raport.
-Cheia este unitate × cont × partener; originea este identitatea 092(a).
-Deschiderile au document nul.
+Cheia este unitate × cont × partener, cu identitatea 092(a). Originea se
+citește din `OriginiPartide`, scrisă atomic din postările finale eligibile
+de materializare (TR-D9b, pasul 4, 2026-10-12). Rândul poartă contul,
+titularul și documentul; la deschidere, documentul este nul și sunt păstrate
+referința și ordinalul inițial. Nu poartă sold sau dată. Retragerea elimină
+originea fără suport propriu, inclusiv când rămân postări străine net zero;
+stornoul o păstrează. Reoperarea reface aceeași identitate.
+
+Pe ușa securizată, originea cere suport propriu vizibil prin `EXISTS` pe
+chei; soldul rămâne cel al postărilor vizibile. Pe ușa de sistem originea
+se citește direct, fără `Postare`. Ușa se recunoaște după starea securității
+pe context (`Vizibilitate.Securizat`), nu după tipul ObjectSpace-ului:
+ObjectSpace-ul nesecurizat al hosturilor are tipul celui securizat. Proiecția nu are endpoint
+OData ori navigație; gardianul refuză CRUD inclusiv administratorului
+securizat. `ORIGINE_PARTIDA_INCONSISTENTA` este refuz de materializare,
+nu de declarant. [Catalogul D9B](../nucleu/scenarii/D9B.md) fixează probele.
 Raportul general expune restul absolut și sensul; nu deduce un „total al
 partidei” din rulajele documentului. Candidații păstrează etichetele tipurilor
 eligibile, dar sumele și limita perechii se citesc din cub.

@@ -9,9 +9,9 @@ public class StornoTeste {
             var document = Gen.Documente[0];
             var data = Gen.Data(aleator);
             var sursa = Gen.CapatContabil(aleator) with { Unitate = null };
-            var fisa = new Unitate(Gen.Unul(aleator, Gen.Unitati), FelUnitate.Fisa, sursa.Cont, null, null, data);
+            var fisa = new UnitateSold(Gen.Unul(aleator, Gen.Unitati), FelUnitate.Fisa, sursa.Cont, null, null, data);
             var suport = new ReferintaPostare(Gen.Unul(aleator, Gen.Linii), Spatiu.Contabil);
-            var mutare = new Mutare(sursa, sursa with { Unitate = fisa }, Latura.Debit,
+            var mutare = new Mutare(sursa, sursa with { Unitate = fisa }, Sens.Debit,
                 0m, 0m, 1200m, new(document, null)) { Suport = suport };
             var contract = Motor.Transfera(document, data, [mutare], new Rotunjire(MidpointRounding.AwayFromZero));
             Assert.True(contract.EsteAcceptat);
@@ -274,14 +274,14 @@ public class StornoTeste {
                 var valoare = Gen.Zecimal(aleator, 0.01m, 999.99m, Scara.Bani);
                 var tinta = tinte[aleator.Next(tinte.Count)];
                 postari.Add(new Postare(
-                    Gen.CapatContabil(aleator).Pe(Latura.Debit, data),
+                    Gen.CapatContabil(aleator).Pe(Sens.Debit, data),
                     0m,
                     0m,
                     valoare,
                     cauza,
                     tinta));
                 postari.Add(new Postare(
-                    Gen.CapatContabil(aleator).Pe(Latura.Credit, data),
+                    Gen.CapatContabil(aleator).Pe(Sens.Credit, data),
                     0m,
                     0m,
                     valoare,

@@ -52,6 +52,6 @@ static class UnicitateFiscala {
         Verifica(os, check, privat, doc, fel,
             p.Select(p => new RandScena(p.Cont, p.Latura, p.Valoare, Linie: p.LinieId, Tva: p.TipTvaId,
                 Rol: p.RolTva, Sens: p.SensTva, Carte: p.Carte)).ToList(),
-            linii.Select(l => new RandScena(Guid.Empty, N.Latura.Debit, 0, Linie: l)).ToList());
+            linii.Select(l => new RandScena(Guid.Empty, N.Sens.Debit, 0, Linie: l)).ToList());
     }
 }

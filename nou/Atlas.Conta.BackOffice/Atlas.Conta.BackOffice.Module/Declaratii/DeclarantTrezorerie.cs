@@ -73,14 +73,14 @@ public sealed class DeclarantTrezorerie : IDeclarant {
             var cont = peDebit ? contare.ContDebit : contare.ContCredit;
             if (!Partide.Urmareste(operand, cont)) {
                 miscari.Add(new N.Miscare(
-                    peDebit ? credit : Terti.Capat(operand, credit, partener, (N.Unitate?)null),
-                    peDebit ? Terti.Capat(operand, debit, partener, (N.Unitate?)null) : debit,
+                    peDebit ? credit : Terti.Capat(operand, credit, partener, (N.UnitateSold?)null),
+                    peDebit ? Terti.Capat(operand, debit, partener, (N.UnitateSold?)null) : debit,
                     0m, 0m, linie.Valoare, new N.Cauza(doc.Id, linie.Id)));
                 continue;
             }
 
             var proprie = Partide.Proprie(operand, cont, partener.Id);
-            var bucati = new List<(N.Unitate Partida, decimal Suma)>(2);
+            var bucati = new List<(N.UnitateSold Partida, decimal Suma)>(2);
             // TR-D2a: stingerea E postarea care numește partida stinsă; restul liniei
             // rămâne avans pe partida proprie, ca azi excedentul. Plafonul e ce ține
             // partida sursei pe ACEST cont, nu restul documentului-sursă (MAJOR-1).

@@ -1,11 +1,14 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-    [ValidateSet('Nucleu', 'Scenarii', 'Integral', 'Infrastructura')][string]$Suita = 'Scenarii',
+    [ValidateSet('Nucleu', 'Scenarii', 'Integral', 'Infrastructura', 'D9bReferinta', 'D9bScriere', 'D9bComparatie', 'D9bRaport', 'D9bHttp')][string]$Suita = 'Scenarii',
     [string]$Tip = 'BCS',
     [ValidateSet('Privat', 'Bugetar', 'Ambele')][string]$Profil = 'Ambele',
     [ValidatePattern('^[._][A-Za-z0-9_-]{1,24}$')][string]$Sufix = '.Codex',
-    [switch]$PregatesteBaze
+    [switch]$PregatesteBaze,
+    [string]$Citiri,
+    [string]$ScriereA,
+    [string]$ScriereB
 )
 
 $ErrorActionPreference = 'Stop'
@@ -56,12 +59,32 @@ try {
     Push-Location $repo
     $locatieSchimbata = $true
     $env:MODELCHECK_BAZA_SUFIX = $Sufix
+    if ($Suita -eq 'D9bReferinta' -and ($Profil -ne 'Privat' -or $Sufix -ne '.CodexD9bA')) {
+        throw 'Referința D9b cere -Profil Privat -Sufix .CodexD9bA.'
+    }
+    if ($Suita -eq 'D9bComparatie' -and ($Profil -ne 'Privat' -or $Sufix -ne '.CodexD9bB')) {
+        throw 'Comparația D9b cere -Profil Privat -Sufix .CodexD9bB.'
+    }
+    if ($Suita -eq 'D9bScriere' -and ($Profil -ne 'Privat' -or $Sufix -notin @('.CodexD9bA', '.CodexD9bB'))) {
+        throw 'Scrierea D9b cere -Profil Privat și o bază D9b dedicată.'
+    }
     $commit = (& git rev-parse HEAD).Trim()
     $modificari = @(& git status --short)
     Write-Host "Suita=$Suita; profil=$Profil; sufix=$Sufix; commit=$commit; loguri=$director"
     if ($Suita -eq 'Infrastructura') {
         Executa 'infrastructura' 'pwsh' @('-NoProfile', '-File',
             (Join-Path $PSScriptRoot 'probe-exceptii.ps1'), '-Director', $director)
+    }
+    elseif ($Suita -eq 'D9bRaport') {
+        if (!$Citiri -or !$ScriereA -or !$ScriereB) { throw 'Raportul cere -Citiri, -ScriereA și -ScriereB.' }
+        Executa 'raport-d9b' 'python' @('-X', 'utf8', (Join-Path $PSScriptRoot 'd9b-raport.py'),
+            '--citiri', $Citiri, '--scriere-a', $ScriereA, '--scriere-b', $ScriereB,
+            '--destinatie', (Join-Path $director 'comparatie-completa.json'))
+    }
+    elseif ($Suita -eq 'D9bHttp') {
+        if ($Profil -ne 'Privat') { throw 'D9bHttp cere -Profil Privat.' }
+        Executa 'http-d9b' 'pwsh' @('-NoProfile', '-File',
+            (Join-Path $PSScriptRoot 'd9b-http.ps1'), '-Director', $director, '-Sufix', $Sufix)
     }
     elseif ($Suita -eq 'Nucleu') {
         Executa 'nucleu' 'dotnet' @('test', 'nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.slnx', '--nologo')
@@ -77,6 +100,9 @@ try {
             if ($Profil -notin @($profilCurent, 'Ambele')) { continue }
             $argumente = @($dll)
             if ($Suita -eq 'Scenarii') { $argumente += @('--scenarii', $Tip) }
+            if ($Suita -eq 'D9bReferinta') { $argumente += @('--d9b-referinta', $director) }
+            if ($Suita -eq 'D9bScriere') { $argumente += @('--d9b-scriere', $director) }
+            if ($Suita -eq 'D9bComparatie') { $argumente += @('--d9b-comparatie', $director) }
             if ($profilCurent -eq 'Privat') { $argumente += 'privat' }
             Executa ($Suita.ToLowerInvariant() + '-' + $profilCurent.ToLowerInvariant()) 'dotnet' $argumente
         }
@@ -92,10 +118,10 @@ finally {
         [ordered]@{
             inceput = $inceput.ToUniversalTime().ToString('o'); sfarsit = (Get-Date).ToUniversalTime().ToString('o')
             commit = $commit; modificari = $modificari; suita = $Suita; profil = $Profil; tip = $Tip
-            baze = @(if ($Suita -in @('Scenarii', 'Integral')) {
+            baze = @(if ($Suita -in @('Scenarii', 'Integral', 'D9bReferinta', 'D9bScriere', 'D9bComparatie')) {
                 if ($Profil -in @('Bugetar', 'Ambele')) { "Atlas.Conta.BackOffice$Sufix" }
                 if ($Profil -in @('Privat', 'Ambele')) { "Atlas.Conta.ModelCheck.Privat$Sufix" }
-            })
+            } elseif ($Suita -eq 'D9bHttp') { "Atlas.Conta.Http.Privat$Sufix" })
             dllSha256 = $hash; exit = $codIesire; etape = $rezultate.ToArray()
         } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $director 'rezultat.json') -Encoding utf8
     }

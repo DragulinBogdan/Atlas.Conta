@@ -14,7 +14,7 @@ static partial class Deschidere {
     public const string CheiePartenerGeneric = "-";
     public const string CheieFaraDocument = "-";
 
-    public sealed record Control(string Simbol, N.Latura Latura, decimal Valoare);
+    public sealed record Control(string Simbol, N.Sens Latura, decimal Valoare);
 
     public sealed record PartidaSursa(string Cheie, string Simbol, string PartenerHex,
         string RefCheie, decimal Sold, string Descriere, Guid Partener, Guid Referinta);
@@ -93,7 +93,7 @@ static partial class Deschidere {
             var referinta = ReferintaDin(a.RefCheie != null ? $"1C:{a.RefCheie}" : $"1C:{a.Simbol}|{a.PartenerHex ?? CheiePartenerGeneric}|fara-document");
             partide.Add(new PartidaSursa(cheie, a.Simbol, a.PartenerHex, a.RefCheie, a.Sold, a.Descriere, a.Partener, referinta));
             intrare.Add(new PartidaInitiala(plan[a.Simbol], a.Partener, referinta,
-                a.Sold > 0 ? N.Latura.Debit : N.Latura.Credit, Math.Abs(a.Sold)) {
+                a.Sold > 0 ? N.Sens.Debit : N.Sens.Credit, Math.Abs(a.Sold)) {
                 // 115: cheia stabilă de ordonare a partidelor pe care sursa nu le numește.
                 Deschisa = Deschidere.ParseData(a.Descriere),
             });
@@ -131,9 +131,9 @@ static partial class Deschidere {
             IReadOnlySet<string> conturiStoc, Action<string> avert, Action<string, bool> check) {
         var controale = new List<Control>();
         var declarate = new Dictionary<string, decimal>(StringComparer.Ordinal);
-        var debitTert = partide.Where(p => p.Latura == N.Latura.Debit)
+        var debitTert = partide.Where(p => p.Latura == N.Sens.Debit)
             .GroupBy(p => simbolPeId[p.Cont]).ToDictionary(g => g.Key, g => g.Sum(p => p.Valoare), StringComparer.Ordinal);
-        var creditTert = partide.Where(p => p.Latura == N.Latura.Credit)
+        var creditTert = partide.Where(p => p.Latura == N.Sens.Credit)
             .GroupBy(p => simbolPeId[p.Cont]).ToDictionary(g => g.Key, g => g.Sum(p => p.Valoare), StringComparer.Ordinal);
         var stoc = loturi.GroupBy(l => simbolPeId[l.Cont])
             .ToDictionary(g => g.Key, g => g.Sum(l => l.Valoare), StringComparer.Ordinal);
@@ -146,13 +146,13 @@ static partial class Deschidere {
                 var c = creditTert.GetValueOrDefault(simbol);
                 check($"Cont {simbol}: partidele inițiale D {d:N2} − C {c:N2} = soldul Balanței {sold:N2}",
                     Math.Abs(d - c - sold) < EpsV);
-                if (d != 0m) controale.Add(new Control(simbol, N.Latura.Debit, d));
-                if (c != 0m) controale.Add(new Control(simbol, N.Latura.Credit, c));
+                if (d != 0m) controale.Add(new Control(simbol, N.Sens.Debit, d));
+                if (c != 0m) controale.Add(new Control(simbol, N.Sens.Credit, c));
                 continue;
             }
             if (conturiStoc.Contains(simbol) || stoc.ContainsKey(simbol)) {
                 var scris = stoc.GetValueOrDefault(simbol);
-                if (scris != 0m) controale.Add(new Control(simbol, N.Latura.Debit, scris));
+                if (scris != 0m) controale.Add(new Control(simbol, N.Sens.Debit, scris));
                 else if (sold != 0m) stocFaraLot++;
                 var delta = scris - sold;
                 if (delta != 0m) {
@@ -163,19 +163,19 @@ static partial class Deschidere {
                 continue;
             }
             if (sold != 0m)
-                controale.Add(new Control(simbol, sold > 0 ? N.Latura.Debit : N.Latura.Credit, Math.Abs(sold)));
+                controale.Add(new Control(simbol, sold > 0 ? N.Sens.Debit : N.Sens.Credit, Math.Abs(sold)));
         }
-        var sumaDebit = controale.Where(c => c.Latura == N.Latura.Debit).Sum(c => c.Valoare);
-        var sumaCredit = controale.Where(c => c.Latura == N.Latura.Credit).Sum(c => c.Valoare);
-        if (sumaCredit != 0m) controale.Add(new Control(Ancora, N.Latura.Debit, sumaCredit));
-        if (sumaDebit != 0m) controale.Add(new Control(Ancora, N.Latura.Credit, sumaDebit));
+        var sumaDebit = controale.Where(c => c.Latura == N.Sens.Debit).Sum(c => c.Valoare);
+        var sumaCredit = controale.Where(c => c.Latura == N.Sens.Credit).Sum(c => c.Valoare);
+        if (sumaCredit != 0m) controale.Add(new Control(Ancora, N.Sens.Debit, sumaCredit));
+        if (sumaDebit != 0m) controale.Add(new Control(Ancora, N.Sens.Credit, sumaDebit));
         return new RezultatControale(controale, declarate, stocFaraLot);
     }
 
     public sealed record RezultatCub(bool Scrisa, Guid Tranzactie, int Postari, int PartideScrise,
         int LoturiScrise, int LegaturiNoi);
 
-    public sealed record Detaliu(N.FelUnitate Fel, Guid Unitate, Guid? Gestiune, Guid Cont, N.Latura Latura,
+    public sealed record Detaliu(N.FelUnitate Fel, Guid Unitate, Guid? Gestiune, Guid Cont, N.Sens Latura,
         decimal Valoare, decimal Cantitate, Guid? Partener);
 
     internal static IReadOnlyList<string> DiferenteDetaliu(IEnumerable<Detaliu> sursa, IEnumerable<Detaliu> cub) {
@@ -227,14 +227,14 @@ static partial class Deschidere {
         }
 
         var asteptat = partide.Select(p => new Detaliu(N.FelUnitate.Partida,
-                N.Unitate.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, data).Id, null, p.Cont, p.Latura,
+                N.UnitateSold.DeschidePartidaInitiala(p.Cont, p.Partener, p.Referinta, data).Id, null, p.Cont, p.Latura,
                 p.Valoare, 0m, p.Partener))
-            .Concat(loturi.Select(l => new Detaliu(N.FelUnitate.Lot, l.Lot, l.Gestiune, l.Cont, N.Latura.Debit,
+            .Concat(loturi.Select(l => new Detaliu(N.FelUnitate.Lot, l.Lot, l.Gestiune, l.Cont, N.Sens.Debit,
                 l.Valoare, l.Cantitate, null)))
             .ToList();
         List<Detaliu> scris;
         int postari;
-        Dictionary<(string Simbol, N.Latura Latura), decimal> cub;
+        Dictionary<(string Simbol, N.Sens Latura), decimal> cub;
         using (var os = provider.CreateObjectSpace()) {
             var ale = os.GetObjectsQuery<Postare>().Where(p => p.TranzactieId == tranzactie)
                 .Select(p => new { p.Cont, p.Latura, p.Valoare, p.Cantitate, p.FelUnitate, p.Unitate, p.Repartitor })
@@ -263,7 +263,7 @@ static partial class Deschidere {
             var legaturi = Legaturi.Incarca(os, ViewPartide);
             var nematerializate = 0;
             foreach (var p in partideSursa) {
-                var id = N.Unitate.DeschidePartidaInitiala(plan[p.Simbol], p.Partener, p.Referinta, data).Id;
+                var id = N.UnitateSold.DeschidePartidaInitiala(plan[p.Simbol], p.Partener, p.Referinta, data).Id;
                 if (legaturi.TryGetValue(p.Cheie, out var existent)) {
                     if (existent != id)
                         check($"Legătura 1C:{ViewPartide}/{p.Cheie} indică partida {existent}, sursa dă {id}", false);
