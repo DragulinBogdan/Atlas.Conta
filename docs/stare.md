@@ -120,7 +120,7 @@ Decizia (numărul de citări `// N` din cod): 1 (3), 3 (2), 4 (1), 5 (1), 9 (1),
 | Catalog | Actualizat |
 |---|---|
 | [C111 — coordonatele postării (transversal)](nucleu/scenarii/C111.md) | 2026-10-11 |
-| [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-13 |
+| [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-14 |
 | [D9B — originea partidei](nucleu/scenarii/D9B.md) | 2026-10-13 |
 
 ## Ce nu poate ști
