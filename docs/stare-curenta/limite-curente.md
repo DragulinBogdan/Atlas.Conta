@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-10-11.** [Index](README.md)
+**Actualizat: 2026-10-14.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -353,11 +353,13 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 - Import1C a rulat pe forma postării din C111 pe ianuarie 2025, cu amprentele
   liniei de bază identice (`docs/nucleu/c111-pas6-import.md`). Bazele de
   import și clonele de măsurare de pe 5444 sunt pe schema veche și cer
-  `--recreeaza`; baza de volum la zi e `Atlas.Conta.ModelCheck.Privat.C111Vol`
-  (5446). Pe ea și pe baza de import `Atlas.Conta.Import1C.Flax.C111P6`
-  indexul perechii a fost schimbat prin SQL, fără recreare (abatere numită de
-  la 102b, C111-Q20). Cifrele de mai jos sunt de dinaintea ei. (C111-D9,
-  pașii 6 și 7)
+  `--recreeaza`. Pe 5446 nu mai există bază de import sau de volum: cele ale
+  C111 (`Atlas.Conta.Import1C.Flax.C111P6`,
+  `Atlas.Conta.ModelCheck.Privat.C111Vol`) erau pe schema de dinaintea
+  TR-D9b și au fost șterse la 2026-10-14, cu bazele de referință `.C111P0`;
+  o măsurare nouă le reface. Pe ele indexul perechii fusese schimbat prin
+  SQL, fără recreare (abatere numită de la 102b, C111-Q20). Cifrele de mai
+  jos sunt de dinaintea ei. (C111-D9, pașii 6 și 7)
 - Import1C rulează pe cititorii cubului, dar reconcilierea lui nu e verde.
   Pe ianuarie 2025 (2026-10-07): 15.232 de documente, zero eșecuri de import,
   `INV-CUB` verde; contractul 1 are trei conturi fără explicație (371, 3028,
