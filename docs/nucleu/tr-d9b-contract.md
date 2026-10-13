@@ -215,6 +215,12 @@ Praguri propuse, fixate înaintea termenului B:
 Un prag ratat se raportează. Nu se relaxează după rezultat și nu se declară
 F27-r16/F28-r1 închise doar din răspunsul unei pagini mici.
 
+Precizare 2026-10-13 (owner): lectura SOLDURI nu are prag de timp. Acolo
+cititorul A și cititorul B sunt același `Partide.Cumulate`, deci pragul
+compara un cititor cu el însuși și cădea în zgomotul măsurării. Perechea se
+măsoară în continuare, iar rezultatele A și B se compară. Pragurile rămân pe
+ORIGINI și REST, 32 din cele 48 de perechi.
+
 ## Scenarii de acceptare ale pachetului
 
 Persistența și scenariile ei sunt **implementate și verificate la pasul 4**.

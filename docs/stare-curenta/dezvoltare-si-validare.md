@@ -57,8 +57,11 @@ cititorului A poartă numele nou al coloanei. Nucleu **199/199**; integrala
 Comparația D9b, pe o bază `.CodexD9bB` nouă: **48/48 perechi A = B**, 46/48
 praguri (`run-verificari/20261013-104824-959/`). Cele două picate sunt
 SOLDURI integral la factorul 100, unde A și B rulează același SQL; pragul
-compară acolo un cititor cu el însuși. Baza pasului 5 este păstrată ca
-`.CodexD9bB.v2`. Detaliile sunt în
+compara acolo un cititor cu el însuși. De la aceeași dată SOLDURI nu mai
+are prag (D9B-D7, owner): harness-ul măsoară perechea și compară
+rezultatele, iar pragurile rămân pe cele 32 de perechi ORIGINI și REST, pe
+care rularea de mai sus e verde. Comparația nu a fost rerulată după
+schimbarea harness-ului. Detaliile sunt în
 [raportul pasului 6](../nucleu/tr-d9b-pas6-sens.md).
 
 TR-D9b, pasul 7 (2026-10-13): membrii de tip `SensTva` numiți `Sens` se

@@ -99,15 +99,18 @@ Pe lectura SOLDURI variantele A și B cheamă același cititor
 comandă. Diferența nu poate veni din cod. În ambele perechi B a fost măsurat
 primul. La rularea pasului 5 aceeași pereche N trecuse cu 1,1 ms
 (269,14 față de 270,24). Pragul pe SOLDURI compară deci un cititor cu el
-însuși și cade în zgomotul măsurării. Harness-ul nu a fost schimbat și
-rularea nu a fost repetată.
+însuși și cade în zgomotul măsurării. Rularea nu a fost repetată. După
+pasul 8 owner-ul a scos SOLDURI din praguri (D9B-D7, precizarea din
+2026-10-13); pe cele 32 de perechi rămase cu prag, rularea de aici e verde.
 
 ## Mediul și bazele
 
 - Baza de comparație cere numele `.CodexD9bB` și zero postări. Baza
   pasului 5 a fost redenumită `Atlas.Conta.ModelCheck.Privat.CodexD9bB.v2`
   (schema dinaintea pasului, 5.001.179 postări), după precedentul `.v1`.
-  `.CodexD9bB` este acum baza acestei rulări, pe schema nouă.
+  `.CodexD9bB` este acum baza acestei rulări, pe schema nouă. La cererea
+  owner-ului, `.v1` și `.v2` au fost șterse în aceeași zi, cu bazele
+  `.CodexD9bRename` și `.CodexD9bAIntrerupt`.
 - Bazele `.Pas6` (bugetar și privat) sunt ale integralei acestui pas.
 - `Atlas.Conta.BackOffice` de pe 5446 și bazele hosturilor de pe 5444 nu au
   fost migrate.

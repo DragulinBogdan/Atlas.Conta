@@ -77,11 +77,14 @@ static partial class ScaraVolum {
                 check($"D9B-AB f{f} {cod}: rezultate A = B", egale);
                 var a = pereche["A"].Skip(1).Select(m => m.Ms).Order().ElementAt(2);
                 var b = pereche["B"].Skip(1).Select(m => m.Ms).Order().ElementAt(2);
-                var prag = f == maxim && lectura == "REST" && !pagina && !securizat ? .8 * a : Math.Max(1.1 * a, a + 10);
-                check($"D9B-AB f{f} {cod}: B {b:0.00} ms <= prag {prag:0.00} ms (A {a:0.00})", b <= prag);
+                // D9B-D7: pe SOLDURI A și B sunt același cititor, deci fără prag.
+                double? prag = lectura == "SOLDURI" ? null
+                    : f == maxim && lectura == "REST" && !pagina && !securizat ? .8 * a : Math.Max(1.1 * a, a + 10);
+                if (prag is double limita) check($"D9B-AB f{f} {cod}: B {b:0.00} ms <= prag {limita:0.00} ms (A {a:0.00})", b <= limita);
+                else Console.WriteLine($"     MĂSURAT D9B-AB f{f} {cod}: B {b:0.00} ms, A {a:0.00} ms (același cititor, fără prag)");
                 if (lectura == "ORIGINI" && !securizat)
                     check($"D9B-AB f{f} {cod}: B fără scanare Postare", pereche["B"][^1].ScanariPostare == 0);
-                comparatii.Add(new { Factor = f, Cod = cod, A = a, B = b, Prag = prag, Egal = egale, Acceptat = b <= prag });
+                comparatii.Add(new { Factor = f, Cod = cod, A = a, B = b, Prag = prag, Egal = egale, Acceptat = prag == null || b <= prag });
                 File.WriteAllText(Path.Combine(director, "comparatie.json"), JsonSerializer.Serialize(comparatii));
             }
             check($"D9B-AB f{f}: fapte neschimbate după citiri", amprenta == AmprentaD9b(sql));
