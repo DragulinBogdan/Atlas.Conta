@@ -815,7 +815,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<Guid>("RandId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Sens")
+                    b.Property<int>("SensTva")
                         .HasColumnType("integer");
 
                     b.Property<Guid>("TipTvaId")
@@ -825,7 +825,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("RandId");
 
-                    b.HasIndex("TipTvaId", "Sens", "RandId")
+                    b.HasIndex("TipTvaId", "SensTva", "RandId")
                         .IsUnique();
 
                     b.ToTable("MapariD300");
@@ -846,7 +846,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
-                    b.Property<int>("Sens")
+                    b.Property<int>("SensTva")
                         .HasColumnType("integer");
 
                     b.Property<int>("Tip")
@@ -857,7 +857,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("TipTvaId", "Sens")
+                    b.HasIndex("TipTvaId", "SensTva")
                         .IsUnique();
 
                     b.ToTable("MapariD394");
@@ -894,7 +894,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("Sectiune")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Sens")
+                    b.Property<int>("SensTva")
                         .HasColumnType("integer");
 
                     b.Property<string>("TaxCode")
@@ -913,7 +913,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("TipTvaId");
 
-                    b.HasIndex("Versiune", "Sectiune", "TipTvaId", "Regim", "Cota", "DeImport", "Sens", "Rol")
+                    b.HasIndex("Versiune", "Sectiune", "TipTvaId", "Regim", "Cota", "DeImport", "SensTva", "Rol")
                         .IsUnique();
 
                     b.ToTable("MapariTvaSaft");

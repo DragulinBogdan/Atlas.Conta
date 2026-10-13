@@ -299,7 +299,7 @@ public sealed class SaftNeinclus {
     public string Cauza { get; set; }
     // Secțiunea din care lipsește: „Customers", „Suppliers", „SalesInvoices"…
     public string Sectiune { get; set; }
-    public string Sens { get; set; }
+    public string SensTva { get; set; }
     public Guid? DocumentId { get; set; }
     public string DocumentNumar { get; set; }
     public string DocumentTip { get; set; }

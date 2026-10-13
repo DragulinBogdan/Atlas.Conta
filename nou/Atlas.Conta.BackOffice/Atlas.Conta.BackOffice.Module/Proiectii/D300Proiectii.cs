@@ -26,7 +26,7 @@ public sealed class D300Rand {
 }
 
 public sealed class D300Nemapat {
-    public string Sens { get; set; }
+    public string SensTva { get; set; }
     public Guid TipTvaId { get; set; }
     public string TipTvaCod { get; set; }
     public string TipTvaDenumire { get; set; }
@@ -79,9 +79,9 @@ public static class D300Proiectii {
         var rezultat = new D300Dto { VersiuneExportata = Fiscale.Versiune(os, FormularFiscal.D300, dataStart, dataEnd) };
 
         var agregate = Fiscale.IntreLuni(Fiscale.Fapte(os), dataStart, dataEnd)
-            .GroupBy(r => new { r.Sens, r.TipTvaId, r.Regim, r.Cota, r.DeImport, r.RegularizareD300 })
+            .GroupBy(r => new { r.SensTva, r.TipTvaId, r.Regim, r.Cota, r.DeImport, r.RegularizareD300 })
             .Select(g => new {
-                g.Key.Sens,
+                g.Key.SensTva,
                 g.Key.TipTvaId,
                 g.Key.Regim,
                 g.Key.Cota, g.Key.DeImport, g.Key.RegularizareD300,
@@ -125,7 +125,7 @@ public static class D300Proiectii {
             .ToDictionary(t => t.ID, t => (t.Cod, t.Denumire));
 
         var mapari = os.GetObjectsQuery<MapareD300>()
-            .Select(m => new { m.TipTvaId, m.Sens, m.RandId, m.TipTva.Regim, m.TipTva.Cota, m.TipTva.DeImport })
+            .Select(m => new { m.TipTvaId, m.SensTva, m.RandId, m.TipTva.Regim, m.TipTva.Cota, m.TipTva.DeImport })
             .ToList();
 
         var pierdutTva = new Dictionary<Guid, decimal>();
@@ -135,19 +135,19 @@ public static class D300Proiectii {
         foreach (var a in agregate) {
             var eticheta = etichete.TryGetValue(a.TipTvaId, out var e) ? e : (Cod: null, Denumire: null);
             var tinte = mapari
-                .Where(m => m.TipTvaId == a.TipTvaId && m.Sens == a.Sens
+                .Where(m => m.TipTvaId == a.TipTvaId && m.SensTva == a.SensTva
                     && m.Regim == a.Regim && m.Cota == a.Cota && m.DeImport == a.DeImport)
                 .Select(m => m.RandId).Distinct()
                 .Select(id => dupaId.GetValueOrDefault(id))
                 .Where(n => n != null)
                 .ToList();
             if (a.RegularizareD300) {
-                var cod = a.Sens == SensTva.Livrare ? "16" : "33";
+                var cod = a.SensTva == SensTva.Livrare ? "16" : "33";
                 tinte = dupaCod.TryGetValue(cod, out var regularizare) ? [regularizare] : [];
-                if (a.Regim == RegimTva.TaxareInversa && a.Sens == SensTva.Achizitie
+                if (a.Regim == RegimTva.TaxareInversa && a.SensTva == SensTva.Achizitie
                         && dupaCod.TryGetValue("16", out var colectata)) tinte.Add(colectata);
             }
-            else if (a.Regim == RegimTva.TaxareInversa && a.Sens == SensTva.Achizitie) {
+            else if (a.Regim == RegimTva.TaxareInversa && a.SensTva == SensTva.Achizitie) {
                 var iduri = tinte.Select(t => t.Id).ToHashSet();
                 tinte.AddRange(noduri.Where(n => n.OglindaAId is Guid id && iduri.Contains(id)));
                 tinte = tinte.DistinctBy(n => n.Id).ToList();
@@ -156,7 +156,7 @@ public static class D300Proiectii {
 
             if (tinte.Count == 0) {
                 rezultat.Nemapate.Add(new D300Nemapat {
-                    Sens = a.Sens.ToString(),
+                    SensTva = a.SensTva.ToString(),
                     TipTvaId = a.TipTvaId,
                     TipTvaCod = eticheta.Cod,
                     TipTvaDenumire = eticheta.Denumire,
@@ -178,7 +178,7 @@ public static class D300Proiectii {
                     tinta.Baza += a.Baza;
                 else if (a.Baza != 0m)
                     pierdutBaza[tinta.Id] = pierdutBaza.GetValueOrDefault(tinta.Id) + a.Baza;
-                var taxa = a.Regim == RegimTva.TaxareInversa && a.Sens == SensTva.Achizitie
+                var taxa = a.Regim == RegimTva.TaxareInversa && a.SensTva == SensTva.Achizitie
                     && tinta.Sectiune == SectiuneD300.Colectata ? a.Autocolectare : a.Tva;
                 if (a.RegularizareD300 && a.Regim == RegimTva.Capitalizat) taxa = 0m;
                 if (tinta.AreTva)

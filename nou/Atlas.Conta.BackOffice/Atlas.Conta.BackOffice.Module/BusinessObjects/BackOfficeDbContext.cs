@@ -421,13 +421,13 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // mai multe rânduri (TI19 pe achiziție: 16 ȘI 33), dar de două ori pe
             // ACELAȘI rând ar dubla cifra la proiecție.
             modelBuilder.Entity<MapareD300>()
-                .HasIndex(m => new { m.TipTvaId, m.Sens, m.RandId }).IsUnique();
+                .HasIndex(m => new { m.TipTvaId, m.SensTva, m.RandId }).IsUnique();
             // D4-D2: spre deosebire de D300, aici PERECHEA e identitatea — un grup
             // de registru are un singur tip de operațiune în 394.
             modelBuilder.Entity<MapareD394>()
-                .HasIndex(m => new { m.TipTvaId, m.Sens }).IsUnique();
+                .HasIndex(m => new { m.TipTvaId, m.SensTva }).IsUnique();
             modelBuilder.Entity<MapareTvaSaft>()
-                .HasIndex(m => new { m.Versiune, m.Sectiune, m.TipTvaId, m.Regim, m.Cota, m.DeImport, m.Sens, m.Rol })
+                .HasIndex(m => new { m.Versiune, m.Sectiune, m.TipTvaId, m.Regim, m.Cota, m.DeImport, m.SensTva, m.Rol })
                 .IsUnique();
 
             // D17-D1: tripleta `(TipDocument, TipStoc, Semn)` e identitatea

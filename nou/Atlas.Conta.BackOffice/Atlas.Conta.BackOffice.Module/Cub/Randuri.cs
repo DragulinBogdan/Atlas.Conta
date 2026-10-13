@@ -31,8 +31,8 @@ public static class Randuri {
                 Contrapondere = rand.Contrapondere,
                 Produs = rand.Produs,
                 Unitate = Unitatea(rand),
-                CodTva = rand.TipTvaId is Guid tipTva && rand.SensTva is N.SensTva sens && rand.RolTva is N.RolTva rol
-                    ? new N.CodTva(tipTva, sens, rol) {
+                CodTva = rand.TipTvaId is Guid tipTva && rand.SensTva is N.SensTva sensTva && rand.RolTva is N.RolTva rol
+                    ? new N.CodTva(tipTva, sensTva, rol) {
                         Regim = rand.RegimTva!.Value, Cota = rand.CotaTva!.Value, DeImport = rand.DeImport!.Value,
                     }
                     : null,
@@ -85,7 +85,7 @@ public static class Randuri {
         rand.InversaDinId = postare.InversaDin?.Id;
         rand.InversaDinSpatiu = postare.InversaDin?.Spatiu;
         rand.TipTvaId = coordonate.CodTva?.TipTva;
-        rand.SensTva = coordonate.CodTva?.Sens;
+        rand.SensTva = coordonate.CodTva?.SensTva;
         rand.RolTva = coordonate.CodTva?.Rol;
         rand.PartenerFiscal = coordonate.PartenerFiscal;
         rand.Loc = coordonate.Loc;

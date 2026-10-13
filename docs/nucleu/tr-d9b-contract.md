@@ -250,6 +250,7 @@ noi; catalogul existent verifică regresia celorlalte forme.
 | 4 | Persistență, scriitor, retragere și cititori | SC-D9B, invarianți/mutanți, integrala ambelor profiluri | origine lipsă la o cale rară; acces prea larg | implementat, verificarea în [raport](tr-d9b-pas4-origini.md); review în pasul 5, fără commit |
 | 5 | Termen B și închiderea pachetului | pragurile D7, securitate, docskit, review advers | închiderea pe cifre din baze diferite | 48/48 perechi și scriere2/51 verzi; integrală 3.758/5.160 după corecțiile review-ului Codex; [raport](tr-d9b-pas5-comparatie.md); reverificarea owner/Claude înainte de commit rămâne |
 | 6 | Membrii `Latura` ai sensului devin `Sens`, cu coloana de pe `Postare` | nucleu, integrala ambelor profiluri, metadata, drift OpenAPI, referința A | redenumirea laturii documentului; referința A comparată pe text | făcut 2026-10-13: 383 de înlocuiri pe simboluri, migrația `SensPePostare`, nucleu 199/199, integrală 3.759/5.161, drift zero, 48/48 perechi A = B; două praguri de timp picate pe SOLDURI, unde A și B sunt același cititor; [raport](tr-d9b-pas6-sens.md); fără review advers |
+| 7 | Membrii de tip `SensTva` numiți `Sens` devin `SensTva`, cu coloanele mapărilor și câmpurile de API | nucleu, integrala ambelor profiluri, metadata, OpenAPI regenerat, build-ul clientului, HTTP | redenumirea sensului postării sau al stingerii; câmp de API schimbat fără client | făcut 2026-10-13: 275 de înlocuiri pe simboluri, migrația `SensTvaPeMapari`, nucleu 199/199, integrală 3.759/5.161, HTTP 327/327; [raport](tr-d9b-pas7-senstva.md); fără review advers |
 
 Comenzile de produs, după pregătirea bazelor compatibile cu schema pasului:
 
@@ -335,3 +336,24 @@ aceeași definiție rezultată; capturile A au primit numele nou al coloanei
 prin înlocuire, nu prin regenerare. În timpul pasului owner-ul a hotărât că
 membrii de tip `SensTva` numiți `Sens` își iau numele întreg, într-un pas
 următor; „nu rămâne nimic de redenumit” nu mai e adevărat până atunci.
+
+## Precizarea pasului 7 — 2026-10-13
+
+Cerut de owner în timpul pasului 6: `Sens` rămâne numele debitului și al
+creditului, iar membrul care poartă sensul taxei se numește `SensTva`, fără
+restanță.
+
+Intră membrii, parametrii și variabilele de tip `SensTva` numite `Sens` sau
+`sens`, cu coloanele `Sens` de pe `MapariD300`, `MapariD394` și
+`MapariTvaSaft` și indecșii care le numesc, printr-o migrație incrementală
+(120). Intră și câmpurile text numite `Sens` ale proiecțiilor de TVA, care
+duc pe API numele membrului din `SensTva`: `D300Nemapat`, `D394Operatiune`,
+`D394Neinclus`, `DecontTvaRand`, `RectificativaTvaRand`, `SaftNeinclus`.
+OpenAPI și metadata se regenerează, iar paginile React care citesc
+câmpurile se aduc la zi în același pas.
+
+Nu intră: sensul postării (`Sens`), membrii de tip `SensStingere`,
+parametrul de interogare `sens` al jurnalului de TVA și notația
+`(TipTva × Sens)` din comentarii, care numește axa, nu membrul. Realizarea
+și consecința pe refuzurile de seed sunt în
+[raport](tr-d9b-pas7-senstva.md).

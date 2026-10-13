@@ -261,7 +261,7 @@ public static partial class SaftProiectii {
         FaptFiscal FaptulPostarii(PostareJurnal p) {
             if (p.LinieId is not Guid linie || !fapte.TryGetValue((p.TranzactieId, linie), out var candidati))
                 return null;
-            var potrivite = candidati.Where(f => f.TipTvaId == p.TipTvaId && (int)f.Sens == (int?)p.SensTva).ToList();
+            var potrivite = candidati.Where(f => f.TipTvaId == p.TipTvaId && (int)f.SensTva == (int?)p.SensTva).ToList();
             return potrivite.Count == 1 ? potrivite[0] : null;
         }
 
@@ -274,7 +274,7 @@ public static partial class SaftProiectii {
             if (mapare == null) {
                 var tip = tipuriTva.GetValueOrDefault(fapt.TipTvaId);
                 Refuza(RefuzMapare, $"{Eticheta(document)}: mapare {MapariFiscale.Versiune}/{sectiune} absentă pentru "
-                    + $"{tip.Cod}, {fapt.Cota}%, {fapt.Sens}, {rol}.", document, tranzactie);
+                    + $"{tip.Cod}, {fapt.Cota}%, {fapt.SensTva}, {rol}.", document, tranzactie);
                 return Nefiscal();
             }
             if (mapare.TaxType == SaftReguli.TaxTypeTva)
@@ -655,7 +655,7 @@ public static partial class SaftProiectii {
             static decimal Net(decimal? debit, decimal? credit) => (debit ?? 0m) - (credit ?? 0m);
             var rulajGl = liniiGl.GroupBy(l => l.AccountID)
                 .ToDictionary(g => g.Key, g => g.Sum(l => l.DebitCreditIndicator == "D" ? l.Amount : -l.Amount));
-            decimal Baza(SensTva sens, bool doarNeincluse) => fapteLuna.Where(f => f.Sens == sens
+            decimal Baza(SensTva sensTva, bool doarNeincluse) => fapteLuna.Where(f => f.SensTva == sensTva
                 && (!doarNeincluse || !evenimenteFactura.Contains(f.TranzactieId.ToString()))).Sum(f => f.Baza);
             dto.Rezumat = new SaftRezumat {
                 Tranzactii = dto.Jurnale.Sum(j => j.Tranzactii.Count),

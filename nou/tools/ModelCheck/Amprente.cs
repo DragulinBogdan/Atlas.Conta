@@ -154,7 +154,7 @@ static class Amprente {
         var d300 = D300Proiectii.D300(os, deLa, panaLa, null);
         return [
             .. Linii("rand", d300.Randuri),
-            .. Linii("nemapat", d300.Nemapate.Select(n => new { n.Sens, n.TipTvaCod, n.Regim, n.Cota, n.Baza, n.Tva, n.Randuri })),
+            .. Linii("nemapat", d300.Nemapate.Select(n => new { n.SensTva, n.TipTvaCod, n.Regim, n.Cota, n.Baza, n.Tva, n.Randuri })),
             .. Linii("avertisment", d300.Avertismente),
         ];
     }
@@ -166,7 +166,7 @@ static class Amprente {
             .. Linii("rezumat", d394.Rezumat),
             .. Linii("cota", d394.RezumatCote),
             .. Linii("neinclus", d394.Neincluse.Select(n =>
-                new { n.Cauza, n.Sens, n.TipTvaCod, n.Cota, n.RepartitorDenumire, n.Baza, n.Tva, n.Randuri })),
+                new { n.Cauza, n.SensTva, n.TipTvaCod, n.Cota, n.RepartitorDenumire, n.Baza, n.Tva, n.Randuri })),
             .. Linii("avertisment", d394.Avertismente.Select(a => new { a.Cod, a.Numar, a.Suma })),
             .. Linii("cui", new[] { d394.NrCui1, d394.NrCui2, d394.NrCui3, d394.NrCui4 }),
         ];

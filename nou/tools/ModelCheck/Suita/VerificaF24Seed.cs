@@ -171,13 +171,13 @@ static class VerificaF24Seed {
         // ---- F24-V3 (privat): cheia zecimală citită din bază (numeric(18,4)) = cheia seed-ului ----
         if (privat) {
             (string Versiune, SectiuneTvaSaft Sectiune, Guid TipTvaId, RegimTva Regim, decimal Cota, bool DeImport,
-                SensTva Sens, Atlas.Conta.Nucleu.RolTva Rol) cheieSaft;
+                SensTva SensTva, Atlas.Conta.Nucleu.RolTva Rol) cheieSaft;
             string cotaCitita, refuzCota;
             using (var os = s.Provider.CreateObjectSpace()) {
                 var rand = os.GetObjectsQuery<MapareTvaSaft>().Where(m => m.Cota == 21m && m.DinSeed)
                     .OrderBy(m => m.ID).First();
                 cheieSaft = (rand.Versiune, rand.Sectiune, rand.TipTvaId, rand.Regim, rand.Cota, rand.DeImport,
-                    rand.Sens, rand.Rol);
+                    rand.SensTva, rand.Rol);
                 cotaCitita = rand.Cota.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 new GardianEditare().OnObjectSpaceCreated(os);
                 os.Delete(rand);
@@ -187,7 +187,7 @@ static class VerificaF24Seed {
                 using var os = s.Provider.CreateObjectSpace();
                 return os.GetObjectsQuery<MapareTvaSaft>().Count(m => m.Versiune == cheieSaft.Versiune
                     && m.Sectiune == cheieSaft.Sectiune && m.TipTvaId == cheieSaft.TipTvaId && m.Regim == cheieSaft.Regim
-                    && m.Cota == cheieSaft.Cota && m.DeImport == cheieSaft.DeImport && m.Sens == cheieSaft.Sens
+                    && m.Cota == cheieSaft.Cota && m.DeImport == cheieSaft.DeImport && m.SensTva == cheieSaft.SensTva
                     && m.Rol == cheieSaft.Rol);
             }
             using (var os = s.Provider.CreateObjectSpace())

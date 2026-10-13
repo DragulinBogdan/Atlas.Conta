@@ -170,7 +170,7 @@ static class VerificaRegistruTva {
             s.Check("JT-D1/JT-D3: sensul vine din direcția politicii (FCT deduce → Achiziție), partenerul din latura "
                 + "declarată (RepartitorPredator → furnizorul), data e a documentului, rândurile nu sunt storno",
                 fiscalACub.Count > 0
-                && fiscalACub.All(f => f.Sens == SensTva.Achizitie && f.PartenerId == furnizor.ID
+                && fiscalACub.All(f => f.SensTva == SensTva.Achizitie && f.PartenerId == furnizor.ID
                     && f.DataDocument == fctA.Data && !f.Storno && f.DocumentId == fctA.ID));
 
             var noteTvaACub = CubScena.Note(os, fctA.ID).Where(p => !p.Storno && conturiTvaScena.Contains(p.Cont)).ToList();
@@ -246,7 +246,7 @@ static class VerificaRegistruTva {
             s.Check("Cealaltă latură: o LIVRARE cu același TipTva (N21) produce un rând fiscal cu Sens = Livrare și "
                 + "partenerul din latura declarată de politică (RepartitorPrimitor → clientul)",
                 FiscalCub(fclD).Count == 1
-                && FiscalCub(fclD)[0] is { Sens: SensTva.Livrare, Baza: 200m, Tva: 42m } r0Cub
+                && FiscalCub(fclD)[0] is { SensTva: SensTva.Livrare, Baza: 200m, Tva: 42m } r0Cub
                 && r0Cub.PartenerId == clientJt.ID && r0Cub.TipTvaId == n21.ID);
         }
         else {
@@ -354,7 +354,7 @@ static class VerificaRegistruTva {
                 && dupaStornoCub.Where(f => f.Storno).All(f => f.Data == dataStorno)
                 && dupaStornoCub.Sum(f => f.Baza) == 0m && dupaStornoCub.Sum(f => f.Tva) == 0m
                 && dupaStornoCub.Where(f => f.Storno).All(s => dupaStornoCub.Any(o => !o.Storno
-                    && o.DetaliuId == s.DetaliuId && o.TipTvaId == s.TipTvaId && o.Sens == s.Sens
+                    && o.DetaliuId == s.DetaliuId && o.TipTvaId == s.TipTvaId && o.SensTva == s.SensTva
                     && o.Regim == s.Regim && o.Cota == s.Cota && o.PartenerId == s.PartenerId
                     && o.Baza == -s.Baza && o.Tva == -s.Tva)));
 
@@ -408,18 +408,18 @@ static class VerificaRegistruTva {
             var sfdP = os.FirstOrDefault<TipTva>(t => t.Cod == "SFD");
 
             var jurnale = new Dictionary<SensTva, List<JurnalTvaRand>>();
-            foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare })
-                jurnale[sens] = TvaProiectii.JurnalTva(os, sens, pStart, pEnd).ToList();
+            foreach (var sensTva in new[] { SensTva.Achizitie, SensTva.Livrare })
+                jurnale[sensTva] = TvaProiectii.JurnalTva(os, sensTva, pStart, pEnd).ToList();
             var fapteMartieCub = CubScena.FapteIntre(os, pStart, pEnd);
             var cusaturaOkCub = true;
             var chiarAgregaCub = false;
-            foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
-                var brutCub = fapteMartieCub.Where(f => f.Sens == sens).ToList();
-                cusaturaOkCub &= jurnale[sens].Sum(r => r.Baza) == brutCub.Sum(f => f.Baza)
-                    && jurnale[sens].Sum(r => r.Tva) == brutCub.Sum(f => f.Tva)
-                    && jurnale[sens].Count == brutCub.Select(f => (f.DocumentId, f.TipTvaId)).Distinct().Count()
-                    && jurnale[sens].All(r => r.Data >= pStart && r.Data <= pEnd);
-                chiarAgregaCub |= brutCub.Count > jurnale[sens].Count && jurnale[sens].Count > 0;
+            foreach (var sensTva in new[] { SensTva.Achizitie, SensTva.Livrare }) {
+                var brutCub = fapteMartieCub.Where(f => f.SensTva == sensTva).ToList();
+                cusaturaOkCub &= jurnale[sensTva].Sum(r => r.Baza) == brutCub.Sum(f => f.Baza)
+                    && jurnale[sensTva].Sum(r => r.Tva) == brutCub.Sum(f => f.Tva)
+                    && jurnale[sensTva].Count == brutCub.Select(f => (f.DocumentId, f.TipTvaId)).Distinct().Count()
+                    && jurnale[sensTva].All(r => r.Data >= pStart && r.Data <= pEnd);
+                chiarAgregaCub |= brutCub.Count > jurnale[sensTva].Count && jurnale[sensTva].Count > 0;
             }
             s.Check("VERIFICAREA 4 (JT-D7): pe fiecare sens, jurnalul == registrul — Σ bază și Σ TVA identice, iar "
                 + "numărul de rânduri de jurnal == numărul de perechi (Document × TipTva) DISTINCTE ale perioadei; "
@@ -451,15 +451,15 @@ static class VerificaRegistruTva {
             // ═══ Decontul: aceeași cifră, cealaltă față ═══
             var decont = TvaProiectii.DecontTva(os, pStart, pEnd).ToList();
             var decontOk = true;
-            foreach (var (sens, eticheta) in new[] {
+            foreach (var (sensTva, eticheta) in new[] {
                 (SensTva.Achizitie, "Achizitie"), (SensTva.Livrare, "Livrare")
             }) {
-                var dinJurnal = jurnale[sens]
+                var dinJurnal = jurnale[sensTva]
                     .GroupBy(r => new { r.TipTvaId, r.Regim, r.Cota })
                     .Select(g => (g.Key.TipTvaId, g.Key.Regim, g.Key.Cota,
                         Baza: g.Sum(x => x.Baza), Tva: g.Sum(x => x.Tva)))
                     .OrderBy(x => x.TipTvaId).ThenBy(x => x.Cota).ToList();
-                var dinDecont = decont.Where(r => r.Sens == eticheta)
+                var dinDecont = decont.Where(r => r.SensTva == eticheta)
                     .Select(r => (r.TipTvaId, r.Regim, r.Cota, r.Baza, r.Tva))
                     .OrderBy(x => x.TipTvaId).ThenBy(x => x.Cota).ToList();
                 decontOk &= dinJurnal.SequenceEqual(dinDecont);
@@ -471,7 +471,7 @@ static class VerificaRegistruTva {
                 && decont.Sum(r => r.Randuri) == fapteMartieCub.Count);
 
             // ═══ MOTIVUL pentru care cheia decontului e `TipTva` ═══
-            var scutite = decont.Where(r => r.Sens == "Achizitie"
+            var scutite = decont.Where(r => r.SensTva == "Achizitie"
                 && (r.TipTvaId == sddP.ID || r.TipTvaId == sfdP.ID)).ToList();
             s.Check("VERIFICAREA 7 (JT-D7, corectura designului): SDD (scutit CU drept de deducere) și SFD (FĂRĂ drept) "
                 + "au ACELAȘI regim și aceeași cotă 0, dar coduri SAF-T diferite și rânduri diferite în D300 — și dau "
@@ -497,7 +497,7 @@ static class VerificaRegistruTva {
                 n21Ach.CodSafT == n21P.CodSafTAchizitie && n21Liv.CodSafT == n21P.CodSafTLivrare
                 && !string.IsNullOrEmpty(n21Ach.CodSafT) && n21Ach.CodSafT != n21Liv.CodSafT
                 && decont.Where(r => r.TipTvaId == n21P.ID)
-                    .All(r => r.CodSafT == (r.Sens == "Achizitie" ? n21P.CodSafTAchizitie : n21P.CodSafTLivrare)));
+                    .All(r => r.CodSafT == (r.SensTva == "Achizitie" ? n21P.CodSafTAchizitie : n21P.CodSafTLivrare)));
 
             // ═══ Prin `DataSourceLoader`, PAGINAT (lecția care a produs două defecte
             //     în felia 9) ═══

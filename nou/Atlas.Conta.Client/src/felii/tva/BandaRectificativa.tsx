@@ -29,7 +29,7 @@ export function BandaRectificativa(
       >
         <Sorting mode="none" />
         <Paging enabled={false} />
-        <Column dataField={camp('Sens')} caption="Sens" width={110} cellRender={celulaSens} />
+        <Column dataField={camp('SensTva')} caption="Sens" width={110} cellRender={celulaSens} />
         <Column dataField={camp('TipTvaCod')} caption="Tip TVA" width={90} />
         <Column dataField={camp('TipTvaDenumire')} caption="Denumire" />
         <Column dataField={camp('Regim')} caption="Regim" width={130} cellRender={celulaRegim} />
@@ -43,7 +43,7 @@ export function BandaRectificativa(
 }
 
 function celulaSens({ data }: { data: DecontTvaRand }) {
-  return <span>{labelEnum('SensTva', data.Sens)}</span>;
+  return <span>{labelEnum('SensTva', data.SensTva)}</span>;
 }
 
 function celulaRegim({ data }: { data: DecontTvaRand }) {

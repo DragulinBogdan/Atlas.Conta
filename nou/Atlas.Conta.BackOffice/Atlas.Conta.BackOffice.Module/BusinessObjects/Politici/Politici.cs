@@ -396,7 +396,8 @@ public class MapareD300 : Politica, ICuProvenienta {
     // Latura pe care se aplică maparea — aceeași axă ca `Postare.SensTva`
     // (achiziție/livrare), fiindcă rândul de decont diferă per sens: N21 e rd. 9
     // pe livrare și rd. 24 pe achiziție.
-    public virtual SensTva Sens { get; set; }
+    [XafDisplayName("Sens TVA")]
+    public virtual SensTva SensTva { get; set; }
 
     public virtual Guid RandId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
@@ -472,11 +473,11 @@ public class MapareD300 : Politica, ICuProvenienta {
             ?? (mapare.RandId != Guid.Empty ? os?.GetObjectByKey<RandD300>(mapare.RandId) : null);
         if (os == null || rand == null || tipId == Guid.Empty)
             return true;
-        var sens = mapare.Sens;
+        var sensTva = mapare.SensTva;
         // Doar mapările VII ale aceleiași perechi: una ștearsă logic nu mai
         // alimentează nimic, deci nu poate dubla nimic (F5).
         var altele = os.GetObjectsQuery<MapareD300>()
-            .Where(m => m.TipTvaId == tipId && m.Sens == sens).ToList();
+            .Where(m => m.TipTvaId == tipId && m.SensTva == sensTva).ToList();
         foreach (var alta in altele) {
             if (ReferenceEquals(alta, mapare) || alta.Rand == null || alta.RandId == rand.ID)
                 continue;
@@ -526,8 +527,9 @@ public class MapareD394 : Politica, ICuProvenienta {
         CustomMessageTemplate = "Tipul de TVA este obligatoriu.")]
     public virtual TipTva TipTva { get; set; }
 
-    // Aceeași axă ca `Postare.SensTva` și `MapareD300.Sens`.
-    public virtual SensTva Sens { get; set; }
+    // Aceeași axă ca `Postare.SensTva` și `MapareD300.SensTva`.
+    [XafDisplayName("Sens TVA")]
+    public virtual SensTva SensTva { get; set; }
 
     [XafDisplayName("Tip operațiune D394")]
     public virtual TipOperatiuneD394 Tip { get; set; }
@@ -549,9 +551,9 @@ public class MapareD394 : Politica, ICuProvenienta {
         CustomMessageTemplate = "Tipul de operațiune nu se potrivește cu sensul: pe livrare se mapează doar L, V, LS, "
             + "pe achiziție doar A, C, AS. AÎ se derivă din partener (TVA la încasare), iar N n-are sursă în "
             + "registrul de TVA.")]
-    public bool TintaEstePermisa => TintaPermisa(Tip, Sens);
+    public bool TintaEstePermisa => TintaPermisa(Tip, SensTva);
 
-    public static bool TintaPermisa(TipOperatiuneD394 tip, SensTva sens) => sens switch {
+    public static bool TintaPermisa(TipOperatiuneD394 tip, SensTva sensTva) => sensTva switch {
         SensTva.Livrare => tip is TipOperatiuneD394.L or TipOperatiuneD394.V or TipOperatiuneD394.LS,
         SensTva.Achizitie => tip is TipOperatiuneD394.A or TipOperatiuneD394.C or TipOperatiuneD394.AS,
         _ => false,

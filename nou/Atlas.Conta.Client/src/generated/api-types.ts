@@ -9426,7 +9426,7 @@ export interface components {
             DiferenteDeclarat?: components["schemas"]["DecontTvaRand"][] | null;
         };
         D300Nemapat: {
-            Sens?: string | null;
+            SensTva?: string | null;
             /** Format: uuid */
             TipTvaId?: string;
             TipTvaCod?: string | null;
@@ -9488,7 +9488,7 @@ export interface components {
         };
         D394Neinclus: {
             Cauza?: string | null;
-            Sens?: string | null;
+            SensTva?: string | null;
             /** Format: uuid */
             TipTvaId?: string;
             TipTvaCod?: string | null;
@@ -9511,7 +9511,7 @@ export interface components {
             CuiP?: string | null;
             Denumire?: string | null;
             Tip?: string | null;
-            Sens?: string | null;
+            SensTva?: string | null;
             /** Format: int32 */
             Cota?: number;
             /** Format: int32 */
@@ -9744,7 +9744,7 @@ export interface components {
             PoateStorna?: boolean;
         };
         DecontTvaRand: {
-            Sens?: string | null;
+            SensTva?: string | null;
             /** Format: uuid */
             TipTvaId?: string;
             TipTvaCod?: string | null;
@@ -11242,7 +11242,7 @@ export interface components {
             /** Format: uuid */
             TipTvaId?: string;
             TipTva?: components["schemas"]["TipTva"];
-            Sens?: components["schemas"]["SensTva"];
+            SensTva?: components["schemas"]["SensTva"];
             /** Format: uuid */
             RandId?: string;
             Rand?: components["schemas"]["RandD300"];
@@ -11253,7 +11253,7 @@ export interface components {
             DinSeed?: boolean;
             /** Format: uuid */
             TipTvaId?: string;
-            Sens?: components["schemas"]["SensTva"];
+            SensTva?: components["schemas"]["SensTva"];
             /** Format: uuid */
             RandId?: string;
         };
@@ -11264,7 +11264,7 @@ export interface components {
             /** Format: uuid */
             TipTvaId?: string;
             TipTva?: components["schemas"]["TipTva"];
-            Sens?: components["schemas"]["SensTva"];
+            SensTva?: components["schemas"]["SensTva"];
             Tip?: components["schemas"]["TipOperatiuneD394"];
         };
         MapareD394ResourceDelta: {
@@ -11273,7 +11273,7 @@ export interface components {
             DinSeed?: boolean;
             /** Format: uuid */
             TipTvaId?: string;
-            Sens?: components["schemas"]["SensTva"];
+            SensTva?: components["schemas"]["SensTva"];
             Tip?: components["schemas"]["TipOperatiuneD394"];
         };
         MapareTvaSaft: {
@@ -11289,7 +11289,7 @@ export interface components {
             /** Format: double */
             Cota?: number;
             DeImport?: boolean;
-            Sens?: components["schemas"]["SensTva"];
+            SensTva?: components["schemas"]["SensTva"];
             Rol?: components["schemas"]["RolTva"];
             TaxType?: string | null;
             TaxCode?: string | null;
@@ -11306,7 +11306,7 @@ export interface components {
             /** Format: double */
             Cota?: number;
             DeImport?: boolean;
-            Sens?: components["schemas"]["SensTva"];
+            SensTva?: components["schemas"]["SensTva"];
             Rol?: components["schemas"]["RolTva"];
             TaxType?: string | null;
             TaxCode?: string | null;
@@ -12574,7 +12574,7 @@ export interface components {
             DocumentData?: string;
             /** Format: date */
             Data?: string;
-            Sens?: string | null;
+            SensTva?: string | null;
             /** Format: uuid */
             TipTvaId?: string;
             TipTvaCod?: string | null;
@@ -13087,7 +13087,7 @@ export interface components {
         SaftNeinclus: {
             Cauza?: string | null;
             Sectiune?: string | null;
-            Sens?: string | null;
+            SensTva?: string | null;
             /** Format: uuid */
             DocumentId?: string | null;
             DocumentNumar?: string | null;

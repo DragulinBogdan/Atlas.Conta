@@ -51,9 +51,10 @@ Regula: [domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declaraț
 `SensTva`, `SensStingere`. Membrul care poartă debitul sau creditul se
 numește `Sens`, cu coloana `Sens` de pe `Postare` (TR-D9b pasul 6). Numele
 necalificat e al debitului/creditului; membrul care poartă un sens calificat
-îi ia numele întreg (`SensTva` pe `Postare`), regulă a owner-ului din
-2026-10-13. Membrii mai vechi de tip `SensTva` numiți `Sens` (`CodTva`,
-mapările D300/D394/SAF-T, proiecțiile fiscale) nu sunt încă aduși la ea.
+îi ia numele întreg, regulă a owner-ului din 2026-10-13: `SensTva` pe
+`Postare`, pe `CodTva`, pe mapările D300, D394 și SAF-T și pe câmpurile de
+API ale proiecțiilor de TVA (TR-D9b pasul 7). Rămân `sens` parametrul de
+interogare al jurnalului de TVA și membrii de tip `SensStingere`.
 
 ### parte
 

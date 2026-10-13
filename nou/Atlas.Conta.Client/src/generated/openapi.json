@@ -322113,7 +322113,7 @@
       "D300Nemapat": {
         "type": "object",
         "properties": {
-          "Sens": {
+          "SensTva": {
             "type": "string",
             "nullable": true
           },
@@ -322311,7 +322311,7 @@
             "type": "string",
             "nullable": true
           },
-          "Sens": {
+          "SensTva": {
             "type": "string",
             "nullable": true
           },
@@ -322374,7 +322374,7 @@
             "type": "string",
             "nullable": true
           },
-          "Sens": {
+          "SensTva": {
             "type": "string",
             "nullable": true
           },
@@ -323021,7 +323021,7 @@
       "DecontTvaRand": {
         "type": "object",
         "properties": {
-          "Sens": {
+          "SensTva": {
             "type": "string",
             "nullable": true
           },
@@ -327326,7 +327326,7 @@
           "TipTva": {
             "$ref": "#/components/schemas/TipTva"
           },
-          "Sens": {
+          "SensTva": {
             "$ref": "#/components/schemas/SensTva"
           },
           "RandId": {
@@ -327353,7 +327353,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "Sens": {
+          "SensTva": {
             "$ref": "#/components/schemas/SensTva"
           },
           "RandId": {
@@ -327380,7 +327380,7 @@
           "TipTva": {
             "$ref": "#/components/schemas/TipTva"
           },
-          "Sens": {
+          "SensTva": {
             "$ref": "#/components/schemas/SensTva"
           },
           "Tip": {
@@ -327403,7 +327403,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "Sens": {
+          "SensTva": {
             "$ref": "#/components/schemas/SensTva"
           },
           "Tip": {
@@ -327446,7 +327446,7 @@
           "DeImport": {
             "type": "boolean"
           },
-          "Sens": {
+          "SensTva": {
             "$ref": "#/components/schemas/SensTva"
           },
           "Rol": {
@@ -327494,7 +327494,7 @@
           "DeImport": {
             "type": "boolean"
           },
-          "Sens": {
+          "SensTva": {
             "$ref": "#/components/schemas/SensTva"
           },
           "Rol": {
@@ -331009,7 +331009,7 @@
             "type": "string",
             "format": "date"
           },
-          "Sens": {
+          "SensTva": {
             "type": "string",
             "nullable": true
           },
@@ -332430,7 +332430,7 @@
             "type": "string",
             "nullable": true
           },
-          "Sens": {
+          "SensTva": {
             "type": "string",
             "nullable": true
           },

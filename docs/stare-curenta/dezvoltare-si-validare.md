@@ -61,6 +61,17 @@ compară acolo un cititor cu el însuși. Baza pasului 5 este păstrată ca
 `.CodexD9bB.v2`. Detaliile sunt în
 [raportul pasului 6](../nucleu/tr-d9b-pas6-sens.md).
 
+TR-D9b, pasul 7 (2026-10-13): membrii de tip `SensTva` numiți `Sens` se
+numesc `SensTva`, cu coloanele de pe `MapariD300`, `MapariD394` și
+`MapariTvaSaft` (migrația `20261013082803_SensTvaPeMapari`) și cu șase
+câmpuri de API ale proiecțiilor de TVA; clientul generat și paginile React
+care le citesc sunt aduse la zi. Nucleu **199/199**; integrala **3.759
+bugetar / 5.161 privat OK**, zero FAIL
+(`run-verificari/20261013-112954-429/`); HTTP **327/327** plus SC-D9B-10 pe
+host izolat (`run-verificari/20261013-113445-406/`); `pnpm build` verde.
+Detaliile și limitele sunt în
+[raportul pasului 7](../nucleu/tr-d9b-pas7-senstva.md).
+
 Validarea curentă (C111, corecția C111-F-R1 a review-ului de închidere,
 2026-10-11): integrala **3.678 bugetar / 5.080 privat OK**, zero FAIL, pe
 baze create din `20261010151835_InitialCreate`; `--scenarii C111` verde pe

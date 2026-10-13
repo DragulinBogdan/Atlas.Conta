@@ -12,11 +12,11 @@ public enum SectiuneTvaSaft { GeneralLedger = 1, Facturi = 2 }
 public class MapareTvaSaft : Politica, ICuProvenienta, IVerificabilLaCommit {
     public void Verifica(DevExpress.ExpressApp.IObjectSpace os, ICollection<string> erori) {
         if (string.IsNullOrWhiteSpace(Versiune) || TipTvaId == Guid.Empty
-                || !Enum.IsDefined(Sectiune) || !Enum.IsDefined(Regim) || !Enum.IsDefined(Sens)
+                || !Enum.IsDefined(Sectiune) || !Enum.IsDefined(Regim) || !Enum.IsDefined(SensTva)
                 || Cota < 0 || Cota > 100 || Rol is not (N.RolTva.Taxa or N.RolTva.Autocolectare))
             erori.Add("Maparea TVA SAF-T cere versiune, tip, secțiune și calificare fiscală valide.");
         if (Rol == N.RolTva.Autocolectare && (Sectiune != SectiuneTvaSaft.GeneralLedger
-                || Sens != SensTva.Achizitie || Regim != RegimTva.TaxareInversa))
+                || SensTva != SensTva.Achizitie || Regim != RegimTva.TaxareInversa))
             erori.Add("Autocolectarea se mapează numai în GeneralLedger, la achiziții cu taxare inversă.");
         if (TaxType?.Length != 3 || !TaxType.All(char.IsAsciiDigit)
                 || TaxCode?.Length != 6 || !TaxCode.All(char.IsAsciiDigit))
@@ -37,7 +37,8 @@ public class MapareTvaSaft : Politica, ICuProvenienta, IVerificabilLaCommit {
     public virtual decimal Cota { get; set; }
     [XafDisplayName("Import")]
     public virtual bool DeImport { get; set; }
-    public virtual SensTva Sens { get; set; }
+    [XafDisplayName("Sens TVA")]
+    public virtual SensTva SensTva { get; set; }
     [XafDisplayName("Rol fiscal")]
     public virtual N.RolTva Rol { get; set; }
     [XafDisplayName("Tip taxă")]

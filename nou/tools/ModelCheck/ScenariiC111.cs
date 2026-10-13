@@ -548,7 +548,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         Console.WriteLine($"     MĂSURAT (SC-C111-28): operațiuni [{string.Join("; ", d394.Operatiuni.Select(o => $"{o.Denumire} {o.Tip} {o.Baza}"))}]; "
             + $"neincluse [{string.Join("; ", d394.Neincluse.Select(n => $"{n.Cauza} {n.TipTvaCod} {n.RepartitorDenumire} {n.Baza}"))}].");
         Verifica("SC-C111-28", "D394: 100 pe client din politica RepartitorPrimitor, o singură operațiune",
-            d394.Operatiuni.Count == 1 && d394.Operatiuni[0] is { Baza: 100, Sens: nameof(N.SensTva.Livrare) }
+            d394.Operatiuni.Count == 1 && d394.Operatiuni[0] is { Baza: 100, SensTva: nameof(N.SensTva.Livrare) }
             && d394.Operatiuni[0].Denumire == Marcaj + "-CLIENT");
         Verifica("SC-C111-28", "D394: 100 fără partener din politica Explicit; 100 pe emitent, care nu e partener, din RepartitorPredator",
             d394.Neincluse.Count == 2

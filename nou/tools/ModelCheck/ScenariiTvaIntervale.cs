@@ -114,11 +114,11 @@ sealed class ScenariiTvaIntervale(Func<IObjectSpace> deschide, Action<string, bo
     void Mapeaza(IObjectSpace os, Guid tip, decimal cota) {
         if (!Privat) return;
         foreach (var sectiune in new[] { SectiuneTvaSaft.Facturi, SectiuneTvaSaft.GeneralLedger })
-            foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
+            foreach (var sensTva in new[] { SensTva.Achizitie, SensTva.Livrare }) {
                 var m = os.CreateObject<MapareTvaSaft>();
                 m.Versiune = Atlas.Conta.BackOffice.Module.Saft.MapariFiscale.Versiune;
                 m.TipTvaId = tip; m.Regim = RegimTva.Normal; m.Cota = cota;
-                m.Sectiune = sectiune; m.Sens = sens; m.Rol = Atlas.Conta.Nucleu.RolTva.Taxa;
+                m.Sectiune = sectiune; m.SensTva = sensTva; m.Rol = Atlas.Conta.Nucleu.RolTva.Taxa;
                 m.TaxType = "300"; m.TaxCode = "301101";
             }
     }
@@ -196,7 +196,7 @@ sealed class ScenariiTvaIntervale(Func<IObjectSpace> deschide, Action<string, bo
                 !DiagnosticTva.Verifica([inert], Scara.ConventieBani).Any());
         }
         Verifica("SC-CIT-91", "TI colectată nu compară o taxă separată",
-            !DiagnosticTva.Verifica([ti with { Sens = SensTva.Livrare, Taxa = 0 }], Scara.ConventieBani).Any());
+            !DiagnosticTva.Verifica([ti with { SensTva = SensTva.Livrare, Taxa = 0 }], Scara.ConventieBani).Any());
     }
     void Implicite() {
         var a = new TipTvaFapt(vechi, "19", RegimTva.Normal, true, 19, null, null, false, null, new(An, 7, 31));

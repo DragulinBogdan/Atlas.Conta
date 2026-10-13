@@ -35,7 +35,7 @@ public class JurnalTvaController : ContaApiController {
         // `sens` e OBLIGATORIU și se parsează pe NUME, nu pe număr (tiparul
         // `TipInstrument`, F3-D1): contractul de sârmă nu depinde de ordinea
         // membrilor unui enum, iar clientul trimite exact ce citește înapoi în
-        // `DecontTvaRand.Sens`. Lipsă sau nume necunoscut ⇒ 400, niciodată un
+        // `DecontTvaRand.SensTva`. Lipsă sau nume necunoscut ⇒ 400, niciodată un
         // default tăcut: un jurnal fără sens ar amesteca cumpărările cu vânzările
         // și ar arăta perfect plauzibil făcând-o.
         // 400, nu 422: cererea e malformată, n-o refuză domeniul.

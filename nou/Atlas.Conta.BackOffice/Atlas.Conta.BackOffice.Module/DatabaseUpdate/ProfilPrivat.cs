@@ -428,25 +428,25 @@ internal static class ProfilPrivat {
         var ids = os.GetObjectsQuery<TipTva>().ToDictionary(t => t.Cod, t => t.ID);
         foreach (var t in TipuriTva) {
             var id = ids[t.Cod];
-            foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
-                var cod = sens == SensTva.Achizitie ? t.SafTAchizitie : t.SafTLivrare;
+            foreach (var sensTva in new[] { SensTva.Achizitie, SensTva.Livrare }) {
+                var cod = sensTva == SensTva.Achizitie ? t.SafTAchizitie : t.SafTLivrare;
                 foreach (var sectiune in Enum.GetValues<SectiuneTvaSaft>()) {
                     if (cod != null)
                         Adauga(sectiune, Atlas.Conta.Nucleu.RolTva.Taxa, "300", cod);
-                    else if (t.Cod == "IMP" && sens == SensTva.Achizitie)
+                    else if (t.Cod == "IMP" && sensTva == SensTva.Achizitie)
                         Adauga(sectiune, Atlas.Conta.Nucleu.RolTva.Taxa, "000", "000000");
                 }
-                if (t.Regim == RegimTva.TaxareInversa && sens == SensTva.Achizitie) {
+                if (t.Regim == RegimTva.TaxareInversa && sensTva == SensTva.Achizitie) {
                     var auto = t.Cota switch { 21m => "380006", 11m => "380007", _ => null };
                     if (auto != null)
                         Adauga(SectiuneTvaSaft.GeneralLedger, Atlas.Conta.Nucleu.RolTva.Autocolectare, "300", auto);
                 }
 
                 void Adauga(SectiuneTvaSaft sectiune, Atlas.Conta.Nucleu.RolTva rol, string taxType, string taxCode) {
-                    ContaSeeder.Aliniaza<MapareTvaSaft>(os, $"{MapariFiscale.Versiune}/{sectiune}/{t.Cod}/{sens}/{rol}",
+                    ContaSeeder.Aliniaza<MapareTvaSaft>(os, $"{MapariFiscale.Versiune}/{sectiune}/{t.Cod}/{sensTva}/{rol}",
                         m => m.Versiune == MapariFiscale.Versiune && m.Sectiune == sectiune
                             && m.TipTvaId == id && m.Regim == t.Regim && m.Cota == t.Cota
-                            && m.DeImport == t.DeImport && m.Sens == sens && m.Rol == rol,
+                            && m.DeImport == t.DeImport && m.SensTva == sensTva && m.Rol == rol,
                         m => {
                             m.Versiune = MapariFiscale.Versiune;
                             m.Sectiune = sectiune;
@@ -454,7 +454,7 @@ internal static class ProfilPrivat {
                             m.Regim = t.Regim;
                             m.Cota = t.Cota;
                             m.DeImport = t.DeImport;
-                            m.Sens = sens;
+                            m.SensTva = sensTva;
                             m.Rol = rol;
                             m.TaxType = taxType;
                             m.TaxCode = taxCode;
@@ -637,7 +637,7 @@ internal static class ProfilPrivat {
     //   NED21/achiziție → 24: nedeductibilul intră în rd. 30 (taxă
     //     DEDUCTIBILĂ), dar nu în rd. 31 (taxă DEDUSĂ) — scăderea o face
     //     proiecția pe `Regim = Capitalizat`, nu o mapare lipsă.
-    static readonly (string TipTva, SensTva Sens, string Rand)[] MapariD300 = [
+    static readonly (string TipTva, SensTva SensTva, string Rand)[] MapariD300 = [
         ("N21", SensTva.Livrare, "9"),
         ("N21", SensTva.Achizitie, "24"),
         ("N11", SensTva.Livrare, "10"),
@@ -670,7 +670,7 @@ internal static class ProfilPrivat {
     // Perechile lăsate DELIBERAT nemapate (D3-D2), cu motivul lângă ele — o
     // gaură fără nume e o gaură pe care nimeni n-o mai găsește (decizia 21:
     // fiecare gaură de profil = decizie explicită, nu omisiune).
-    static readonly (string TipTva, SensTva Sens, string Motiv)[] NemapateDeliberat = [
+    static readonly (string TipTva, SensTva SensTva, string Motiv)[] NemapateDeliberat = [
         // Formularul 2026 n-are rând de achiziție cu cota 9% (cea tranzitorie
         // e doar pentru livrări de locuințe, art. III din Legea 141/2025).
         ("N9", SensTva.Achizitie, "formularul n-are rând de achiziție cu cota 9%"),
@@ -691,7 +691,7 @@ internal static class ProfilPrivat {
 
     // Lista e parte din CONTRACT, ca geamăna ei de la D394: probele o citesc
     // prin nucleu (`ContaSeeder.NemapateD300Privat`).
-    public static IReadOnlyCollection<(string TipTva, SensTva Sens, string Motiv)> NemapateD300 =>
+    public static IReadOnlyCollection<(string TipTva, SensTva SensTva, string Motiv)> NemapateD300 =>
         NemapateDeliberat;
 
     // Politica de așezare pe decont (D3-D2), idempotentă pe tripletă. Rulează
@@ -708,13 +708,13 @@ internal static class ProfilPrivat {
             var rand = os.FirstOrDefault<RandD300>(r => r.Cod == m.Rand);
             if (tip == null || rand == null)
                 throw new InvalidOperationException(
-                    $"Maparea D300 {m.TipTva}/{m.Sens} → rd. {m.Rand} nu se poate seed-ui: lipsește din bază "
+                    $"Maparea D300 {m.TipTva}/{m.SensTva} → rd. {m.Rand} nu se poate seed-ui: lipsește din bază "
                     + (tip == null ? $"tipul de TVA {m.TipTva}" : $"rândul de decont {m.Rand}") + ".");
-            var sens = m.Sens;
-            ContaSeeder.Aliniaza<MapareD300>(os, $"{m.TipTva}/{m.Sens} → rd. {m.Rand}",
-                x => x.TipTvaId == tip.ID && x.Sens == sens && x.RandId == rand.ID, mapare => {
+            var sensTva = m.SensTva;
+            ContaSeeder.Aliniaza<MapareD300>(os, $"{m.TipTva}/{m.SensTva} → rd. {m.Rand}",
+                x => x.TipTvaId == tip.ID && x.SensTva == sensTva && x.RandId == rand.ID, mapare => {
                     mapare.TipTvaId = tip.ID;
-                    mapare.Sens = sens;
+                    mapare.SensTva = sensTva;
                     mapare.RandId = rand.ID;
                 });
         }
@@ -753,16 +753,16 @@ internal static class ProfilPrivat {
                 goluri.Add($"Tabelul de mapare D300 referă tipul de TVA {cod}, care nu există în bază.");
                 continue;
             }
-            foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
-                if (mapari.Any(m => m.TipTvaId == tip.ID && m.Sens == sens))
+            foreach (var sensTva in new[] { SensTva.Achizitie, SensTva.Livrare }) {
+                if (mapari.Any(m => m.TipTvaId == tip.ID && m.SensTva == sensTva))
                     continue;
-                if (stersDeUtilizator.Contains((tip.ID, sens)))
+                if (stersDeUtilizator.Contains((tip.ID, sensTva)))
                     continue;
                 var deliberat = NemapateDeliberat
-                    .Where(n => n.TipTva == cod && n.Sens == sens).Select(n => n.Motiv).FirstOrDefault();
+                    .Where(n => n.TipTva == cod && n.SensTva == sensTva).Select(n => n.Motiv).FirstOrDefault();
                 if (deliberat == null)
                     goluri.Add(
-                        $"Tipul de TVA {cod} nu are nicio mapare D300 pe sensul {sens} și nici nu e "
+                        $"Tipul de TVA {cod} nu are nicio mapare D300 pe sensul {sensTva} și nici nu e "
                         + "declarat nemapat deliberat — operațiunile lui ar cădea tăcut în afara decontului.");
             }
         }
@@ -776,7 +776,7 @@ internal static class ProfilPrivat {
     // NED21 doar pe achiziție = A (achiziție taxabilă, se declară cu TVA-ul
     // facturat de furnizor, chiar dacă noi nu-l deducem). `AI` NU se mapează:
     // se derivă din `Partener.TvaLaIncasare` la proiecție.
-    static readonly (string TipTva, SensTva Sens, TipOperatiuneD394 Tip)[] MapariD394 = [
+    static readonly (string TipTva, SensTva SensTva, TipOperatiuneD394 Tip)[] MapariD394 = [
         ("N21", SensTva.Livrare, TipOperatiuneD394.L),
         ("N21", SensTva.Achizitie, TipOperatiuneD394.A),
         ("N11", SensTva.Livrare, TipOperatiuneD394.L),
@@ -795,7 +795,7 @@ internal static class ProfilPrivat {
     // Perechile lăsate DELIBERAT în afara declarației 394, cu motivul lângă ele
     // (decizia 21: fiecare gaură de profil = decizie explicită). Cifrele lor
     // apar în panoul `Neincluse` al proiecției (D4-D4), nu dispar.
-    static readonly (string TipTva, SensTva Sens, string Motiv)[] NemapateDeliberatD394 = [
+    static readonly (string TipTva, SensTva SensTva, string Motiv)[] NemapateDeliberatD394 = [
         ("NED21", SensTva.Livrare, "nedeductibilul e exclusiv de achiziție — nu se livrează"),
         // Scutitele și neimpozabilele nu se declară în 394 (formularul cuprinde
         // doar operațiunile taxabile/cu taxare inversă/regim special).
@@ -821,7 +821,7 @@ internal static class ProfilPrivat {
 
     // Lista nemapatelor e parte din CONTRACT (69e/D4-D2): proiecția o citește ca
     // să deosebească „nemapat deliberat" de „nemapat din greșeală" în `Neincluse`.
-    public static IReadOnlyCollection<(string TipTva, SensTva Sens, string Motiv)> NemapateD394 =>
+    public static IReadOnlyCollection<(string TipTva, SensTva SensTva, string Motiv)> NemapateD394 =>
         NemapateDeliberatD394;
 
     // Idempotent pe PERECHE și cu respectarea ștergerii logice a utilizatorului
@@ -830,18 +830,18 @@ internal static class ProfilPrivat {
     // probează re-seed-ul pe funcția reală.
     public static void SeedMapareD394(IObjectSpace os) {
         foreach (var m in MapariD394) {
-            if (!MapareD394.TintaPermisa(m.Tip, m.Sens))
+            if (!MapareD394.TintaPermisa(m.Tip, m.SensTva))
                 throw new InvalidOperationException(
-                    $"Tabelul de seed D394 țintește {m.Tip} pentru {m.TipTva}/{m.Sens} — AI/N nu se mapează, "
+                    $"Tabelul de seed D394 țintește {m.Tip} pentru {m.TipTva}/{m.SensTva} — AI/N nu se mapează, "
                     + "iar tipul trebuie să fie coerent cu sensul (D4-D2).");
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == m.TipTva)
                 ?? throw new InvalidOperationException(
-                    $"Maparea D394 {m.TipTva}/{m.Sens} → {m.Tip} nu se poate seed-ui: lipsește din bază tipul de TVA {m.TipTva}.");
-            var sens = m.Sens;
-            ContaSeeder.Aliniaza<MapareD394>(os, $"{m.TipTva}/{m.Sens}",
-                x => x.TipTvaId == tip.ID && x.Sens == sens, mapare => {
+                    $"Maparea D394 {m.TipTva}/{m.SensTva} → {m.Tip} nu se poate seed-ui: lipsește din bază tipul de TVA {m.TipTva}.");
+            var sensTva = m.SensTva;
+            ContaSeeder.Aliniaza<MapareD394>(os, $"{m.TipTva}/{m.SensTva}",
+                x => x.TipTvaId == tip.ID && x.SensTva == sensTva, mapare => {
                     mapare.TipTvaId = tip.ID;
-                    mapare.Sens = sens;
+                    mapare.SensTva = sensTva;
                     mapare.Tip = m.Tip;
                 });
         }
@@ -859,7 +859,7 @@ internal static class ProfilPrivat {
 
     static HashSet<(Guid, SensTva)> PerechiRefuzate<T>(IObjectSpace os) where T : ICuProvenienta =>
         RefuzSeed.Chei<T>(os)
-            .Select(c => (Guid.Parse(c["TipTvaId"]), Enum.Parse<SensTva>(c["Sens"])))
+            .Select(c => (Guid.Parse(c["TipTvaId"]), Enum.Parse<SensTva>(c[nameof(MapareD300.SensTva)])))
             .ToHashSet();
 
     // Geamăna lui `GoluriMapariD300` (F23-D8).
@@ -875,14 +875,14 @@ internal static class ProfilPrivat {
                 goluri.Add($"Tabelul de mapare D394 referă tipul de TVA {cod}, care nu există în bază.");
                 continue;
             }
-            foreach (var sens in new[] { SensTva.Achizitie, SensTva.Livrare }) {
-                if (mapari.Any(m => m.TipTvaId == tip.ID && m.Sens == sens))
+            foreach (var sensTva in new[] { SensTva.Achizitie, SensTva.Livrare }) {
+                if (mapari.Any(m => m.TipTvaId == tip.ID && m.SensTva == sensTva))
                     continue;
-                if (stersDeUtilizator.Contains((tip.ID, sens)))
+                if (stersDeUtilizator.Contains((tip.ID, sensTva)))
                     continue;
-                if (!NemapateDeliberatD394.Any(n => n.TipTva == cod && n.Sens == sens))
+                if (!NemapateDeliberatD394.Any(n => n.TipTva == cod && n.SensTva == sensTva))
                     goluri.Add(
-                        $"Tipul de TVA {cod} nu are mapare D394 pe sensul {sens} și nici nu e declarat nemapat "
+                        $"Tipul de TVA {cod} nu are mapare D394 pe sensul {sensTva} și nici nu e declarat nemapat "
                         + "deliberat — operațiunile lui ar cădea tăcut în afara declarației.");
             }
         }

@@ -374,7 +374,7 @@ static class E2eP1Privat {
                 && noteFclTiCub.Nota(cont4111.ID, tip704.ContImplicitId, 300m)
                 && !noteFclTiCub.Any(p => p.Cont == cont4426.ID || p.Cont == cont4427.ID)
                 && fiscalFclTiCub.Count == 1
-                && fiscalFclTiCub[0] is { Sens: SensTva.Livrare, Regim: RegimTva.TaxareInversa, Cota: 21m,
+                && fiscalFclTiCub[0] is { SensTva: SensTva.Livrare, Regim: RegimTva.TaxareInversa, Cota: 21m,
                     Baza: 300m, Tva: 0m, Storno: false });
             // Taxarea inversa pe livrare in cub: 4111 = 704 cu `CodTva` Baza si FARA
             // postare de taxa — randul fiscal are `Tva = 0`, eliminat de `FiscalCaAtribute`.

@@ -287,7 +287,7 @@ static class VerificaDvi {
                 + "amândouă pe contrapartida declarată de politică — biroul vamal, nu furnizorul extern —, cu "
                 + "bazele și taxele declarației (1000/210 și 500/105) și cu regimul ca SNAPSHOT pe rând",
                 randuriTvaCub.Count == 2
-                && randuriTvaCub.All(f => f.Sens == SensTva.Achizitie && f.PartenerId == idVama && !f.Storno)
+                && randuriTvaCub.All(f => f.SensTva == SensTva.Achizitie && f.PartenerId == idVama && !f.Storno)
                 && randuriTvaCub.Any(f => f.Regim == RegimTva.Normal && f.Baza == 1000m && f.Tva == 210m)
                 && randuriTvaCub.Any(f => f.Regim == RegimTva.TaxareInversa && f.Baza == 500m && f.Tva == 105m));
 

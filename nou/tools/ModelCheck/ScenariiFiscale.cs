@@ -202,7 +202,7 @@ sealed class ScenariiFiscale(Func<IObjectSpace> deschide, Action<string, bool> c
         Opereaza(id);
         Verifica(proba, $"livrare {tva}: {baza}/{taxa}, fără autocolectare a beneficiarului", CuSpatiu(os => {
             var f = Fiscale.Fapte(os).Single(f => f.DocumentId == id);
-            return f.Sens == SensTva.Livrare && f.Baza == baza && f.Tva == taxa && f.Autocolectare == 0;
+            return f.SensTva == SensTva.Livrare && f.Baza == baza && f.Tva == taxa && f.Autocolectare == 0;
         }));
     }
 

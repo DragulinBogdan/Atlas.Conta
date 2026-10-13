@@ -10,11 +10,11 @@ const cap = (m: string) => captionPolitica(TIP, m);
 export function MapariTvaSaft() {
   const tipuri = useMemo(() => ({ store: storeOData('TipTva'), sort: 'Cod' }), []);
   const enumuri = useMemo(() => ({ Sectiune: optiuniEnum('SectiuneTvaSaft'),
-    Regim: optiuniEnum('RegimTva'), Sens: optiuniEnum('SensTva'),
+    Regim: optiuniEnum('RegimTva'), SensTva: optiuniEnum('SensTva'),
     Rol: optiuniEnum('RolTva').filter(o => o.valoare !== 'Baza') }), []);
   return (
     <GrilaPolitica titlu="Mapări TVA SAF-T" entitate={TIP} expand={['TipTva']}
-      laRandNou={r => { r.Sectiune = 'Facturi'; r.Sens = 'Achizitie'; r.Regim = 'Normal'; r.Rol = 'Taxa'; }}
+      laRandNou={r => { r.Sectiune = 'Facturi'; r.SensTva = 'Achizitie'; r.Regim = 'Normal'; r.Rol = 'Taxa'; }}
       indiciu="Codificarea folosește versiunea exportului și calificarea istorică. Autocolectarea se declară numai în GeneralLedger.">
       <Column dataField="Versiune" caption={cap('Versiune')} width={160} />
       <Column dataField="TipTvaId" caption="Tip TVA" width={240}

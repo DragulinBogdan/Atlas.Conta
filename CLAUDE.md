@@ -133,7 +133,9 @@ lot, are [contractul TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md
 și decizia 119; nu e implementat. [Pasul 6](docs/nucleu/tr-d9b-pas6-sens.md)
 al contractului TR-D9b este făcut: membrii care poartă debitul sau creditul
 și coloana de pe `Postare` se numesc `Sens`, printr-o migrație incrementală
-(120). Unde suntem, cu cifre, e
+(120). [Pasul 7](docs/nucleu/tr-d9b-pas7-senstva.md) aduce membrii de tip
+`SensTva` la numele întreg, cu trei coloane de mapări și șase câmpuri de
+API. Unde suntem, cu cifre, e
 generat în [docs/stare.md](docs/stare.md); cronologia feliilor e în
 `docs/decizii/istoric-plan-de-lucru.md`.
 
