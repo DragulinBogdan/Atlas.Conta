@@ -111,7 +111,7 @@ Decizia (numărul de citări `// N` din cod): 1 (3), 3 (2), 4 (1), 5 (1), 9 (1),
 | [api-si-client](stare-curenta/api-si-client.md) | 2026-10-13 |
 | [dezvoltare-si-validare](stare-curenta/dezvoltare-si-validare.md) | 2026-10-13 |
 | [domeniu-si-operare](stare-curenta/domeniu-si-operare.md) | 2026-10-13 |
-| [limite-curente](stare-curenta/limite-curente.md) | 2026-10-11 |
+| [limite-curente](stare-curenta/limite-curente.md) | 2026-10-14 |
 | [politici-si-fiscalitate](stare-curenta/politici-si-fiscalitate.md) | 2026-10-13 |
 | [termeni](stare-curenta/termeni.md) | 2026-10-13 |
 
