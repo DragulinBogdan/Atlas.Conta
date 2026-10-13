@@ -1173,7 +1173,7 @@ postare nu se șterge, fișa care e unitatea unei postări nu se șterge.
 | Entitate | Coloane |
 |---|---|
 | `Tranzactie` | `ID`, `DocumentId`, `Fel` (`Operare`, `Storno`, `Transfer`, `Deschidere`), `Data`, `ScrisLa` (UTC) |
-| `Postare` | `Spatiu`, `TranzactieId`, `DocumentId`, `LinieId`, `Data`, `Cont`, `Latura`, `Repartitor`, `Contrapondere`, `Produs`, `Unitate`, `UnitateDeschisa`, `FelUnitate`, codul de TVA în trei coloane (`TipTvaId`, `SensTva`, `RolTva`), `PartenerFiscal`, `Loc`, `PerioadaDeclarare`, `Valuta`, `Carte`, cele șase dimensiuni, `Atribuit`, `Pereche`, `Cantitate`, `ValoareValuta`, `Valoare` |
+| `Postare` | `Spatiu`, `TranzactieId`, `DocumentId`, `LinieId`, `Data`, `Cont`, `Sens`, `Repartitor`, `Contrapondere`, `Produs`, `Unitate`, `UnitateDeschisa`, `FelUnitate`, codul de TVA în trei coloane (`TipTvaId`, `SensTva`, `RolTva`), `PartenerFiscal`, `Loc`, `PerioadaDeclarare`, `Valuta`, `Carte`, cele șase dimensiuni, `Atribuit`, `Pereche`, `Cantitate`, `ValoareValuta`, `Valoare` |
 
 Enumurile nucleului se mapează pe `smallint` cu valorile lor numerice; scara
 măsurilor rămâne a gardianului `Scara` (bani 18,2, cantități 18,3).
@@ -1631,7 +1631,7 @@ operare, în aceeași formă ca orice refuz al declarației (S-r11).
 Deschiderea generică este disponibilă prin `Cub.Materializare.Deschide`
 în tranzacția explicită a apelantului, fără commit propriu. Soldurile de
 control includ ancora aleasă de apelant; loturile și partidele înlocuiesc
-rândul bloc pe Carte/Cont/Latura. Totalurile diferite sunt refuzate înaintea
+rândul bloc pe Carte/Cont/Sens. Totalurile diferite sunt refuzate înaintea
 creării entităților de cub. Partidele cer cont cu UrmarestePartide, partener și
 referință stabilă; nu există document fictiv. Indexul unic filtrat permite
 o singură Deschidere în bază. Stingerea unei partide inițiale verifică

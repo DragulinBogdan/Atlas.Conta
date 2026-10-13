@@ -240,8 +240,8 @@ public static class ContabilProiectii {
     public static IQueryable<AtomContabil> Atomi(IObjectSpace os) =>
         Cub.Citiri.Contabil.Analitice(os).Select(p => new AtomContabil {
             Data = p.Data, ContId = p.Cont,
-            Debit = p.Latura == Atlas.Conta.Nucleu.Sens.Debit ? p.Valoare : 0m,
-            Credit = p.Latura == Atlas.Conta.Nucleu.Sens.Credit ? p.Valoare : 0m,
+            Debit = p.Sens == Atlas.Conta.Nucleu.Sens.Debit ? p.Valoare : 0m,
+            Credit = p.Sens == Atlas.Conta.Nucleu.Sens.Credit ? p.Valoare : 0m,
             RepartitorId = p.Repartitor, MaterialId = p.Produs,
             CodFunctionalId = p.CodFunctional, CodEconomicId = p.CodEconomic,
             SursaFinantareId = p.SursaFinantare, UnitateId = p.UnitateOrganizatorica,
@@ -517,9 +517,9 @@ public static class ContabilProiectii {
             from r in parteneri.DefaultIfEmpty()
             select new SursaFisa {
                 Id = p.Id, Spatiu = (int)p.Spatiu, TranzactieId = p.TranzactieId, Pereche = p.Pereche, Data = p.Data,
-                ContId = p.Cont, ContSimbol = c.Simbol, NumarNota = d.Numar, Sens = p.Latura == N.Sens.Debit ? "D" : "C",
-                Debit = p.Latura == N.Sens.Debit ? p.Valoare : 0m,
-                Credit = p.Latura == N.Sens.Credit ? p.Valoare : 0m,
+                ContId = p.Cont, ContSimbol = c.Simbol, NumarNota = d.Numar, Sens = p.Sens == N.Sens.Debit ? "D" : "C",
+                Debit = p.Sens == N.Sens.Debit ? p.Valoare : 0m,
+                Credit = p.Sens == N.Sens.Credit ? p.Valoare : 0m,
                 RepartitorId = p.Repartitor, MaterialId = p.Produs,
                 CodFunctionalId = p.CodFunctional, CodEconomicId = p.CodEconomic,
                 SursaFinantareId = p.SursaFinantare, UnitateId = p.UnitateOrganizatorica,
@@ -620,9 +620,9 @@ public static class ContabilProiectii {
             select new SursaJurnal {
                 Id = p.ID, Spatiu = (int)p.Spatiu, TranzactieId = p.TranzactieId, Pereche = p.Pereche, Data = p.Data,
                 NumarNota = d.Numar, ContId = p.Cont, ContSimbol = c.Simbol,
-                Sens = p.Latura == N.Sens.Debit ? "D" : "C",
-                Debit = p.Latura == N.Sens.Debit ? p.Valoare : 0m,
-                Credit = p.Latura == N.Sens.Credit ? p.Valoare : 0m,
+                Sens = p.Sens == N.Sens.Debit ? "D" : "C",
+                Debit = p.Sens == N.Sens.Debit ? p.Valoare : 0m,
+                Credit = p.Sens == N.Sens.Credit ? p.Valoare : 0m,
                 DocumentId = p.DocumentId, Storno = p.Tranzactie.Fel == N.FelTranzactie.Storno
             };
         // C111-Q20: egalitatea pe pereche se scrie în SQL; din LINQ, pe coloană nulabilă, iese cu ramură de nul.

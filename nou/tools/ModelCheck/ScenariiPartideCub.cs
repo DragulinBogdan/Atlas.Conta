@@ -121,9 +121,9 @@ sealed class ScenariiPartideCub(Func<IObjectSpace> deschide, Action<string, bool
         });
         Opereaza(f.Id);
         var sursa = Guid.NewGuid(); var tinta = Guid.NewGuid();
-        N.Postare Rand(Guid doc, string simbol, N.Sens latura, decimal valoare) => new(
+        N.Postare Rand(Guid doc, string simbol, N.Sens sens, decimal valoare) => new(
             new N.Capat { Cont = Cont(simbol), Repartitor = new N.Repartitor(Furnizor, N.FelRepartitor.Partener),
-                Unitate = N.UnitateSold.DeschidePartida(Cont(simbol), Furnizor, doc, Ianuarie) }.Pe(latura, Ianuarie),
+                Unitate = N.UnitateSold.DeschidePartida(Cont(simbol), Furnizor, doc, Ianuarie) }.Pe(sens, Ianuarie),
             0, 0, valoare, new(doc, null));
         var ambigua = C.Transferuri.Muta(new(sursa, Ianuarie,
             [Rand(sursa, ContFurnizor, N.Sens.Debit, 40), Rand(sursa, contImo, N.Sens.Debit, 60)], [],

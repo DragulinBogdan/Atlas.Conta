@@ -158,14 +158,14 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
                 && p.Contrapondere == null && p.PartenerFiscal == null && p.Loc == null
                 && p.TipTvaId == null && p.PerioadaDeclarare == null
                 && p.Valuta == null && p.ValoareValuta == 0m && p.Valoare == valoare;
-            corecte &= randuri.Count(p => Comun(p) && p.Cont == debit && p.Latura == N.Sens.Debit
+            corecte &= randuri.Count(p => Comun(p) && p.Cont == debit && p.Sens == N.Sens.Debit
                 && p.Repartitor == loc && p.Cantitate == cantitate) == 1;
-            corecte &= randuri.Count(p => Comun(p) && p.Cont == credit && p.Latura == N.Sens.Credit
+            corecte &= randuri.Count(p => Comun(p) && p.Cont == credit && p.Sens == N.Sens.Credit
                 && p.Repartitor == magazie && p.Cantitate == -cantitate) == 1;
         }
         Verifica(id, $"{fel}: exact {asteptate.Length * 2} postări, conturi/laturi/unități/date/măsuri așteptate", corecte);
         if (!corecte) foreach (var p in randuri)
-            Console.WriteLine($"     ACTUAL {p.Spatiu}/{p.Carte} {p.Cont}/{p.Latura} unitate={p.Unitate} repartitor={p.Repartitor} q={p.Cantitate} v={p.Valoare} vv={p.ValoareValuta}");
+            Console.WriteLine($"     ACTUAL {p.Spatiu}/{p.Carte} {p.Cont}/{p.Sens} unitate={p.Unitate} repartitor={p.Repartitor} q={p.Cantitate} v={p.Valoare} vv={p.ValoareValuta}");
     }
 
     void Sold(string id, Guid lot, DateOnly data, decimal cantitate, decimal valoare) {
@@ -173,7 +173,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         var randuri = os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == lot && p.Cont == credit
             && p.Repartitor == magazie && p.Carte == N.Carte.Contabil && p.Data <= data).ToList();
         var q = randuri.Sum(p => p.Cantitate);
-        var v = randuri.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare);
+        var v = randuri.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare);
         Verifica(id, $"sold cub la {data}: {cantitate}/{valoare} (obținut {q}/{v})", q == cantitate && v == valoare);
     }
 
@@ -228,7 +228,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         var linii = os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == docId)
             .OrderBy(d => d.Pozitie).Select(d => new { d.ID, d.Valoare }).ToList();
         var iesiri = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == docId && p.Cont == credit
-            && p.Latura == N.Sens.Credit && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            && p.Sens == N.Sens.Credit && p.Tranzactie.Fel == N.FelTranzactie.Operare)
             .Select(p => new { p.LinieId, p.Valoare }).ToList();
         var alePostarilor = linii.Select(l => iesiri.Where(p => p.LinieId == l.ID).Sum(p => p.Valoare)).ToArray();
         Verifica(id, $"{mesaj}: linii {string.Join("; ", peLinie)} (obținut {string.Join("; ", linii.Select(l => l.Valoare))}), "

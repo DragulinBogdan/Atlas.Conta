@@ -527,7 +527,7 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
         var ids = miscari.SelectMany(m => m.Postari).Select(x => x.Id).ToList();
         var cub = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(x => ids.Contains(x.ID)).Select(x => new {
             x.ID, x.Spatiu, x.TranzactieId, x.Tranzactie.Fel, x.Tranzactie.DocumentId, x.Cont, x.Unitate, Gestiune = x.Repartitor, x.Produs, x.Cantitate,
-            Valoare = x.Latura == N.Sens.Debit ? x.Valoare : -x.Valoare }).ToList());
+            Valoare = x.Sens == N.Sens.Debit ? x.Valoare : -x.Valoare }).ToList());
         var simboluri = CuSpatiu(os => os.GetObjectsQuery<Cont>().ToDictionary(k => k.ID, k => SaftReguli.SimbolSaft(k.Simbol)));
         var gestiuni = CuSpatiu(os => os.GetObjectsQuery<Repartitor>().ToDictionary(r => r.ID, r => r.Cod));
         var produse = CuSpatiu(os => os.GetObjectsQuery<Produs>().ToDictionary(x => x.ID, x => x.Cod));
@@ -571,7 +571,7 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
             if (gasite.Count != 1 || Surse(z, capat) != (z.Surse, z.ShaSurse)) return false;
             var sursa = CuSpatiu(os => Loturi.Postari(os).Where(x => x.Unitate == z.Lot && x.Cont == z.Cont && x.Produs == z.Produs
                 && x.Repartitor == z.Gestiune && x.Data <= capat).Select(x => new { x.Data, x.Tranzactie.Fel, x.Cantitate,
-                    Valoare = x.Latura == N.Sens.Debit ? x.Valoare : -x.Valoare }).ToList());
+                    Valoare = x.Sens == N.Sens.Debit ? x.Valoare : -x.Valoare }).ToList());
             var initiale = sursa.Where(x => x.Data < start || x.Fel == N.FelTranzactie.Deschidere).ToList();
             return z.StockAccountNo == z.Lot.ToString("N") && gestiuni[z.Gestiune] == z.WarehouseID
                 && simboluri[z.Cont] == z.ProductType && produse[z.Produs] == z.ProductCode

@@ -33,7 +33,7 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
         var debit = new RandScena(Cont("371"), N.Sens.Debit, v, q, Magazie,
             l.Lot, l.Produs, PartenerFiscal: tv != null ? Furnizor : null, Linie: l.Id, Tva: tv,
             Rol: tv != null ? N.RolTva.Baza : null, Perioada: tv != null ? perioada ?? An * 100 + 1 : null,
-            Sens: tv != null ? N.SensTva.Achizitie : null, Spatiu: N.Spatiu.Stoc, Loc: tv != null ? Magazie : null);
+            SensTva: tv != null ? N.SensTva.Achizitie : null, Spatiu: N.Spatiu.Stoc, Loc: tv != null ? Magazie : null);
         var credit = new RandScena(Cont("401"), N.Sens.Credit, v, -q, Furnizor,
             P(d.Id), l.Produs, Linie: l.Id, Contrapondere: N.Contrapondere.Tert);
         return taxa == 0 ? [debit, credit] : [debit, credit,
@@ -42,7 +42,7 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
             credit with { Cont = Cont(inversa ? "4427" : "401"), Valoare = taxa,
                 Cantitate = 0, Contrapondere = null, Repartitor = inversa ? null : Furnizor, Unitate = inversa ? null : P(d.Id),
                 PartenerFiscal = inversa ? Furnizor : null, Loc = inversa ? Magazie : null, Tva = inversa ? tv : null,
-                Rol = inversa ? N.RolTva.Autocolectare : null, Sens = inversa ? N.SensTva.Achizitie : null,
+                Rol = inversa ? N.RolTva.Autocolectare : null, SensTva = inversa ? N.SensTva.Achizitie : null,
                 Perioada = inversa ? perioada ?? An * 100 + 1 : null }];
     }
 

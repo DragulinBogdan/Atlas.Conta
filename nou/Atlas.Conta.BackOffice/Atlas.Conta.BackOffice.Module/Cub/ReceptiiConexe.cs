@@ -79,7 +79,7 @@ public static class ReceptiiConexe {
         }
         var randuri = os.GetObjectsQuery<Postare>().Where(p => p.DocumentId == id
             && p.Tranzactie.Fel == N.FelTranzactie.Operare && p.Carte == N.Carte.Contabil
-            && p.FelUnitate == N.FelUnitate.Lot && p.Unitate != null && p.Latura == N.Sens.Debit).ToList();
+            && p.FelUnitate == N.FelUnitate.Lot && p.Unitate != null && p.Sens == N.Sens.Debit).ToList();
         if (randuri.Count == 0) {
             if (nir.TranzactieReceptieSursaId != null)
                 throw new OperareException($"{Provenienta}: Recepția istorică a sursei lipsește.");
@@ -227,7 +227,7 @@ public static class ReceptiiConexe {
             GardAnaliza.VerificaLatura(new(cont.Simbol, cont.DimensiuniObligatorii, cont.FeluriRepartitor),
                 c.Repartitor, false, GardAnaliza.Dimensiuni(c.Produs, c.Analiza),
                 p.Cauza.Linie is Guid id ? angajamente.GetValueOrDefault(id) : null,
-                c.Latura.ToString(), p.Cauza.Linie?.ToString(), erori);
+                c.Sens.ToString(), p.Cauza.Linie?.ToString(), erori);
         }
         if (erori.Count > 0) throw new OperareException(string.Join("\n", erori));
     }

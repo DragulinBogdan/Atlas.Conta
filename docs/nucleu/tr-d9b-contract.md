@@ -249,7 +249,7 @@ noi; catalogul existent verifică regresia celorlalte forme.
 | 3 | Catalog SC-D9B, fixture-uri și termen A | scenariile existente; așteptările noi distincte de baseline | probă vacuă, volum nereprezentativ | realizat 2026-10-12 pentru A: scenarii pe ambele profiluri, 48 combinații de citire până la 5.001.179 postări, scriere2/51; limita montajului sintetic și probele P rămase în [raport](tr-d9b-pas3-referinta.md); fără review advers |
 | 4 | Persistență, scriitor, retragere și cititori | SC-D9B, invarianți/mutanți, integrala ambelor profiluri | origine lipsă la o cale rară; acces prea larg | implementat, verificarea în [raport](tr-d9b-pas4-origini.md); review în pasul 5, fără commit |
 | 5 | Termen B și închiderea pachetului | pragurile D7, securitate, docskit, review advers | închiderea pe cifre din baze diferite | 48/48 perechi și scriere2/51 verzi; integrală 3.758/5.160 după corecțiile review-ului Codex; [raport](tr-d9b-pas5-comparatie.md); reverificarea owner/Claude înainte de commit rămâne |
-| 6 | Membrii `Latura` ai sensului devin `Sens`, cu coloana de pe `Postare` | nucleu, integrala ambelor profiluri, metadata, drift OpenAPI, referința A | redenumirea laturii documentului; referința A comparată pe text | de făcut; delimitarea în [precizarea pasului 6](#precizarea-pasului-6--2026-10-13) |
+| 6 | Membrii `Latura` ai sensului devin `Sens`, cu coloana de pe `Postare` | nucleu, integrala ambelor profiluri, metadata, drift OpenAPI, referința A | redenumirea laturii documentului; referința A comparată pe text | făcut 2026-10-13: 383 de înlocuiri pe simboluri, migrația `SensPePostare`, nucleu 199/199, integrală 3.759/5.161, drift zero, 48/48 perechi A = B; două praguri de timp picate pe SOLDURI, unde A și B sunt același cititor; [raport](tr-d9b-pas6-sens.md); fără review advers |
 
 Comenzile de produs, după pregătirea bazelor compatibile cu schema pasului:
 
@@ -327,3 +327,11 @@ Membrii numiți `Unitate` nu intră: `UnitateSold Unitate` este numele scurt
 admis de glosar, iar redenumirea ar schimba coloana, indecșii ei și cheia
 `unitate` din JSON-ul persistat al explicației. Confirmat de owner la
 2026-10-13: după acest pas nu rămâne nimic de redenumit.
+
+Realizat la 2026-10-13, cu trei abateri de la textul de mai sus, toate în
+[raport](tr-d9b-pas6-sens.md): cifrele sunt ale simbolurilor (42 de
+declarații, nu 33); view-ul a fost redenumit pe coloană, nu recreat, cu
+aceeași definiție rezultată; capturile A au primit numele nou al coloanei
+prin înlocuire, nu prin regenerare. În timpul pasului owner-ul a hotărât că
+membrii de tip `SensTva` numiți `Sens` își iau numele întreg, într-un pas
+următor; „nu rămâne nimic de redenumit” nu mai e adevărat până atunci.

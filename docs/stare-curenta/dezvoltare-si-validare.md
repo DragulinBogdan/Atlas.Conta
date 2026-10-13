@@ -47,6 +47,20 @@ hostului, `RAMURA-NUL` și curățenie verzi; HTTP **327/327** plus SC-D9B-10
 Protocolul, artefactele și limitele sunt în
 [raportul pasului 5](../nucleu/tr-d9b-pas5-comparatie.md).
 
+TR-D9b, pasul 6 (2026-10-13): membrii care poartă debitul sau creditul și
+coloana de pe `Postare` se numesc `Sens`; migrația este
+`20261013073914_SensPePostare`, incrementală (120). Bazele de dinaintea ei
+o primesc prin `database update` sau se recreează; cele opt capturi SQL ale
+cititorului A poartă numele nou al coloanei. Nucleu **199/199**; integrala
+**3.759 bugetar / 5.161 privat OK**, zero FAIL
+(`run-verificari/20261013-104100-831/`); metadata și OpenAPI fără drift.
+Comparația D9b, pe o bază `.CodexD9bB` nouă: **48/48 perechi A = B**, 46/48
+praguri (`run-verificari/20261013-104824-959/`). Cele două picate sunt
+SOLDURI integral la factorul 100, unde A și B rulează același SQL; pragul
+compară acolo un cititor cu el însuși. Baza pasului 5 este păstrată ca
+`.CodexD9bB.v2`. Detaliile sunt în
+[raportul pasului 6](../nucleu/tr-d9b-pas6-sens.md).
+
 Validarea curentă (C111, corecția C111-F-R1 a review-ului de închidere,
 2026-10-11): integrala **3.678 bugetar / 5.080 privat OK**, zero FAIL, pe
 baze create din `20261010151835_InitialCreate`; `--scenarii C111` verde pe
@@ -622,8 +636,12 @@ Clientul folosește pnpm și versiunile declarate în `package.json` și lockfil
 
 ## Contracte generate și build
 
-OpenAPI poate fi extras offline din configurația hostului, fără pornirea
-serviciilor găzduite și fără baza de date. Metadata este derivată din model
+OpenAPI se extrage din configurația hostului, fără pornirea serviciilor
+găzduite, dar cu serverul bazei din șirul de conexiune al WebApi pornit: cu
+el oprit, `swagger tofile` pică pe verificarea de compatibilitate XAF.
+Schema bazei nu contează (a trecut pe o bază rămasă la `InitialCreate`).
+Fără serverul hosturilor, `ConnectionStrings__ConnectionString` din mediu
+îndreaptă procesul spre altă bază (observat 2026-10-13). Metadata este derivată din model
 prin instrumentul dedicat; nu se extrage dintr-un model de ecran XAF.
 Artefactele generate sunt versionate împreună cu sursa care le definește. (43d, 56)
 

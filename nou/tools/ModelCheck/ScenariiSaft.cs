@@ -380,7 +380,7 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         var tranzactii = p.Facturi.Select(f => Guid.Parse(f.TransactionID)).ToList();
         var (cub, simboluri, evenimente) = CuSpatiu(os => (
             os.GetObjectsQuery<C.Postare>().Where(x => ids.Contains(x.ID))
-                .Select(x => new { x.Spatiu, x.ID, x.TranzactieId, x.DocumentId, x.LinieId, x.Cont, x.Latura, x.Valoare }).ToList(),
+                .Select(x => new { x.Spatiu, x.ID, x.TranzactieId, x.DocumentId, x.LinieId, x.Cont, x.Sens, x.Valoare }).ToList(),
             os.GetObjectsQuery<Cont>().ToDictionary(c => c.ID, c => c.Simbol),
             os.GetObjectsQuery<C.Tranzactie>().Where(t => tranzactii.Contains(t.ID))
                 .Select(t => new { t.ID, t.DocumentId, t.Fel }).ToList().ToDictionary(t => t.ID.ToString())));
@@ -388,7 +388,7 @@ sealed class ScenariiSaft(Func<IObjectSpace> deschide, Action<string, bool> chec
         bool Sursa(LegaturaGl l) => dupaCheie.TryGetValue((l.TransactionID, l.RecordID), out var x)
             && cub.SingleOrDefault(c => c.Spatiu == l.Spatiu && c.ID == l.PostareId) is { } c
             && c.TranzactieId.ToString() == l.TransactionID && (c.DocumentId ?? Guid.Empty) == l.DocumentId && c.LinieId == l.LinieId
-            && simboluri.GetValueOrDefault(c.Cont) == x.Cont && (c.Latura == Atlas.Conta.Nucleu.Sens.Debit ? "D" : "C") == x.Latura
+            && simboluri.GetValueOrDefault(c.Cont) == x.Cont && (c.Sens == Atlas.Conta.Nucleu.Sens.Debit ? "D" : "C") == x.Latura
             && c.Valoare == x.Suma;
         bool Ordonata(IEnumerable<LegaturaGl> tranzactie) {
             var surse = tranzactie.OrderBy(l => int.Parse(l.RecordID, Inv)).Select(l => (l.Spatiu, l.PostareId)).ToList();

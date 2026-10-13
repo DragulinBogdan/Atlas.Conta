@@ -2,7 +2,7 @@ namespace Atlas.Conta.Nucleu;
 
 public sealed record Coordonate {
     public required Guid Cont { get; init; }
-    public required Sens Latura { get; init; }
+    public required Sens Sens { get; init; }
     public required DateOnly Data { get; init; }
     public Repartitor? Repartitor { get; init; }
     public Contrapondere? Contrapondere { get; init; }

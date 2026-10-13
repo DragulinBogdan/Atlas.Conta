@@ -79,20 +79,20 @@ public sealed class DeclarantImobilizari : IDeclarant {
                     break;
             }
 
-            void Aloca(Guid cont, N.Sens latura, decimal suma, Guid? sursa) {
+            void Aloca(Guid cont, N.Sens sens, decimal suma, Guid? sursa) {
                 var ramas = suma;
-                foreach (var suport in operand.Suporturi.Where(s => s.Capat.Cont == cont && s.Latura == latura
+                foreach (var suport in operand.Suporturi.Where(s => s.Capat.Cont == cont && s.Sens == sens
                         && (sursa == null ? s.FaraLinieSursa : s.Linie == sursa)).OrderBy(s => s.Data).ThenBy(s => s.Referinta.Id)) {
                     var plafon = operand.DisponibilNominalizare.FirstOrDefault(d => d.Capat == suport.Capat);
-                    var disponibil = latura == N.Sens.Debit ? plafon?.DebitNetMinim : plafon?.CreditNetMinim;
-                    var cheie = (suport.Capat, latura);
+                    var disponibil = sens == N.Sens.Debit ? plafon?.DebitNetMinim : plafon?.CreditNetMinim;
+                    var cheie = (suport.Capat, sens);
                     var ia = Math.Min(ramas, Math.Min(suport.Disponibil - folosit.GetValueOrDefault(suport.Referinta),
                         (disponibil ?? 0m) - peDimensiuni.GetValueOrDefault(cheie)));
                     if (ia <= 0m) continue;
                     var nominalizat = suport.Capat with {
                         Unitate = new(fisa.Id, N.FelUnitate.Fisa, cont, null, null, fisa.Deschisa),
                     };
-                    mutari.Add(new(suport.Capat, nominalizat, latura, 0m, 0m, ia, cauza) { Suport = suport.Referinta });
+                    mutari.Add(new(suport.Capat, nominalizat, sens, 0m, 0m, ia, cauza) { Suport = suport.Referinta });
                     folosit[suport.Referinta] = folosit.GetValueOrDefault(suport.Referinta) + ia;
                     peDimensiuni[cheie] = peDimensiuni.GetValueOrDefault(cheie) + ia;
                     ramas -= ia;

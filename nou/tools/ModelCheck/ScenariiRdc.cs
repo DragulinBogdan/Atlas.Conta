@@ -50,7 +50,7 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
         var credit = new RandScena(Cont(cont), N.Sens.Credit, v, Repartitor: Magazie,
             PartenerFiscal: tv != null ? Client : null, Linie: d.Linii[i].Id, Tva: tv,
             Rol: tv != null ? N.RolTva.Baza : null, Perioada: tv != null ? perioada ?? An * 100 + 1 : null,
-            Sens: tv != null ? N.SensTva.Livrare : null, Loc: tv != null ? Magazie : null);
+            SensTva: tv != null ? N.SensTva.Livrare : null, Loc: tv != null ? Magazie : null);
         return taxa == 0 ? [debit, credit] : [debit, credit,
             debit with { Valoare = taxa }, credit with { Cont = Cont("4427"), Valoare = taxa, Rol = N.RolTva.Taxa }];
     }
@@ -119,7 +119,7 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
         foreach (var cont in new[] { "707", "607", "4427" })
             Verifica("SC-RDC-06", "net zero pe " + cont, CuSpatiu(os => os.GetObjectsQuery<C.Postare>()
                 .Where(p => p.DocumentId != null && ids.Contains(p.DocumentId.Value) && p.Cont == Cont(cont))
-                .Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare)) == 0);
+                .Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)) == 0);
         var gol = Receptioneaza(new LinieFctScena(10, 10, Tip: "371")).Linii[0];
         Opereaza(Iesire(false, (gol, 10)).Id);
         var inapoi = Retur(new LinieRdcScena(0, Lot: gol, Cantitate: 2)); Opereaza(inapoi.Id);

@@ -59,7 +59,7 @@ public sealed class DeclarantNotaContabila : IDeclarant {
 
         // 115: partida numită e singurul candidat; ce nu acoperă ea merge pe partida proprie, nu pe FIFO.
         List<(N.Capat Capat, decimal Suma)> Nominalizeaza(LinieOperand linie, Guid cont,
-                Guid? repartitorId, RepartitorFapt implicitul, N.Sens latura, Guid? numita) {
+                Guid? repartitorId, RepartitorFapt implicitul, N.Sens sens, Guid? numita) {
             var repartitor = repartitorId is Guid id ? operand.Repartitori[id] : implicitul;
             var externul = repartitorId != null && repartitor.Parte == Parte.Extern;
             var capat = new N.Capat {
@@ -68,20 +68,20 @@ public sealed class DeclarantNotaContabila : IDeclarant {
             var cerere = Math.Abs(linie.Valoare);
             decizii.Add(new N.ContRezolvat(linie.Id, cont, "explicit"));
             if (!externul || !Partide.Urmareste(operand, cont)) return [(capat, cerere)];
-            var sens = (latura == N.Sens.Debit ? 1 : -1) * Math.Sign(linie.Valoare);
+            var semn = (sens == N.Sens.Debit ? 1 : -1) * Math.Sign(linie.Valoare);
             var candidati = new List<N.Disponibil>();
             foreach (var p in operand.PartideDisponibile.Where(p =>
                          p.Unitate.Cont == cont && p.Unitate.Partener == repartitor.Id
                          && (numita == null || p.Unitate.Id == numita))) {
                 if (citite.Add(p.Unitate.Id)) ipoteze.Add(new N.SoldUnitateCitit(p.Unitate, p.Sold));
-                var rest = -sens * solduri[p.Unitate.Id];
+                var rest = -semn * solduri[p.Unitate.Id];
                 if (rest > 0m) candidati.Add(new(p.Unitate, rest, p.Origine, p.Deschidere));
             }
             var alocare = N.Fifo.Nominalizeaza(cerere, candidati);
             var rezultat = new List<(N.Capat Capat, decimal Suma)>();
             foreach (var a in alocare.Alocari) {
                 rezultat.Add((capat with { Unitate = a.Unitate }, a.Masura));
-                solduri[a.Unitate.Id] += sens * a.Masura;
+                solduri[a.Unitate.Id] += semn * a.Masura;
                 decizii.Add(new N.AlocareFifo(linie.Id, a.Unitate, a.Masura));
             }
             if (alocare.Ramas > 0m) {

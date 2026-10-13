@@ -30,7 +30,7 @@ public class ConservareTeste {
             var tranzactie = Gen.Operare(aleator);
             var perturbata = Perturba(tranzactie, aleator, p => p with {
                 Coordonate = p.Coordonate with {
-                    Latura = p.Coordonate.Latura == Sens.Debit ? Sens.Credit : Sens.Debit,
+                    Sens = p.Coordonate.Sens == Sens.Debit ? Sens.Credit : Sens.Debit,
                 },
             });
             AreCodul(Conservare.Verifica(perturbata), Coduri.ConservareValoare);
@@ -340,7 +340,7 @@ public class ConservareTeste {
             new Postare(
                 new Coordonate {
                     Cont = Gen.Conturi[0],
-                    Latura = Sens.Debit,
+                    Sens = Sens.Debit,
                     Data = data,
                     Carte = Carte.Contabil,
                 },
@@ -351,7 +351,7 @@ public class ConservareTeste {
             new Postare(
                 new Coordonate {
                     Cont = Gen.Conturi[1],
-                    Latura = Sens.Credit,
+                    Sens = Sens.Credit,
                     Data = data,
                     Carte = Carte.Fiscal,
                 },
@@ -434,7 +434,7 @@ public class ConservareTeste {
         });
 
     static decimal SumaPeLaturi(Tranzactie tranzactie) =>
-        tranzactie.Postari.Sum(p => p.Coordonate.Latura == Sens.Debit ? p.Valoare : -p.Valoare);
+        tranzactie.Postari.Sum(p => p.Coordonate.Sens == Sens.Debit ? p.Valoare : -p.Valoare);
 
     static Tranzactie Perturba(
         Tranzactie tranzactie,

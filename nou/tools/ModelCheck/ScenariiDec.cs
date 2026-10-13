@@ -32,18 +32,18 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
     RandScena[] Fiscale(FacturaScena d, string cod, decimal net, decimal taxa) {
         var t = Tva(cod); var l = d.Linii[0].Id;
         var baza = new RandScena(Cont(Serviciu), N.Sens.Debit, net, Repartitor: titular, PartenerFiscal: titular,
-            Linie: l, Tva: t, Rol: N.RolTva.Baza, Sens: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic,
+            Linie: l, Tva: t, Rol: N.RolTva.Baza, SensTva: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic,
             Loc: Loc);
         var credit = new RandScena(Cont(Avans), N.Sens.Credit, net, Repartitor: titular,
             Unitate: N.UnitateSold.DeschidePartida(Cont(Avans), titular, d.Id, Ianuarie).Id, Linie: l, Economic: Economic);
         if (cod == "NED21") return [baza, credit, baza with { Valoare = taxa, Rol = N.RolTva.Taxa }, credit with { Valoare = taxa }];
         var tax = new RandScena(Cont("4426"), N.Sens.Debit, taxa, Repartitor: Loc, PartenerFiscal: titular,
-            Linie: l, Tva: t, Rol: N.RolTva.Taxa, Sens: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic,
+            Linie: l, Tva: t, Rol: N.RolTva.Taxa, SensTva: N.SensTva.Achizitie, Perioada: An * 100 + 1, Economic: Economic,
             Loc: Loc);
         return [baza, credit, tax, credit with { Cont = cod == "TI21" ? Cont("4427") : Cont(Avans),
             Unitate = cod == "TI21" ? null : credit.Unitate, Valoare = taxa,
             Tva = cod == "TI21" ? t : null, Rol = cod == "TI21" ? N.RolTva.Autocolectare : null,
-            Sens = cod == "TI21" ? N.SensTva.Achizitie : null, Perioada = cod == "TI21" ? An * 100 + 1 : null,
+            SensTva = cod == "TI21" ? N.SensTva.Achizitie : null, Perioada = cod == "TI21" ? An * 100 + 1 : null,
             PartenerFiscal = cod == "TI21" ? titular : null, Loc = cod == "TI21" ? Loc : null }];
     }
     static RandScena[] Inverse(RandScena[] r, int? perioada = null) => [.. r.Select(p => p with {

@@ -3,7 +3,7 @@ namespace Atlas.Conta.Nucleu;
 public sealed record Mutare(
     Capat DeLa,
     Capat La,
-    Sens Latura,
+    Sens Sens,
     decimal Cantitate,
     decimal ValoareValuta,
     decimal Valoare,
@@ -11,7 +11,7 @@ public sealed record Mutare(
 
     public ReferintaPostare? Suport { get; init; }
 
-    // 090f: transferul conservă pe (Cont, Latura), deci cele două postări stau pe ACEEAȘI latură.
+    // 090f: transferul conservă pe (Cont, Sens), deci cele două postări au ACELAȘI sens.
     public static (Postare Iesire, Postare Intrare) Postari(Mutare mutare, DateOnly data, int pereche) {
         ArgumentNullException.ThrowIfNull(mutare);
         if (pereche < 1)
@@ -22,13 +22,13 @@ public sealed record Mutare(
                 nameof(mutare));
         return (
             new Postare(
-                mutare.DeLa.Pe(mutare.Latura, data),
+                mutare.DeLa.Pe(mutare.Sens, data),
                 -mutare.Cantitate,
                 -mutare.ValoareValuta,
                 -mutare.Valoare,
                 mutare.Cauza) { Suport = mutare.Suport, Pereche = pereche },
             new Postare(
-                mutare.La.Pe(mutare.Latura, data),
+                mutare.La.Pe(mutare.Sens, data),
                 mutare.Cantitate,
                 mutare.ValoareValuta,
                 mutare.Valoare,

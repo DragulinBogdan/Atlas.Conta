@@ -82,7 +82,7 @@ public static class Partide {
         postari.Where(p => p.FelUnitate == N.FelUnitate.Partida)
             .GroupBy(p => new { p.DocumentId, p.Repartitor, p.Cont, p.Unitate })
             .Select(g => new NetPartida { DocumentId = g.Key.DocumentId, Titular = g.Key.Repartitor,
-                Net = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) });
+                Net = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) });
 
     /// <summary>Partidele atinse de postările contabile ale documentului.</summary>
     public static IReadOnlyList<N.UnitateSold> UnitatiAle(IObjectSpace os, Guid document) =>
@@ -102,8 +102,8 @@ public static class Partide {
                 Unitate = g.Key.Unitate, Cont = g.Key.Cont, Titular = g.Key.Repartitor, Data = g.Key.Data,
                 DocumentId = g.Key.DocumentId,
                 Deschisa = g.Min(p => p.UnitateDeschisa.Value),
-                Debit = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : 0m),
-                Credit = g.Sum(p => p.Latura == N.Sens.Credit ? p.Valoare : 0m) })
+                Debit = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : 0m),
+                Credit = g.Sum(p => p.Sens == N.Sens.Credit ? p.Valoare : 0m) })
             .ToList();
 
     public static IQueryable<PerecheDisponibila> Perechi(IObjectSpace os, Guid document, bool stinge,
@@ -137,7 +137,7 @@ public static class Partide {
         group p by new { p.Unitate, p.Cont, p.Repartitor } into g
         select new PartidaProprie { DocumentId = document, UnitateId = g.Key.Unitate.Value, ContId = g.Key.Cont,
             PartenerId = g.Key.Repartitor.Value,
-            Net = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) };
+            Net = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) };
 
     // D9-D10: cheia ne-nulă pe o parte; cu ambele nulabile EF adaugă ramura de nul și Postgres îmbină numai pe cont (SC-CIT-110).
     /// <summary>Soldurile cu documentul deschizător al partidei; nul la partida fără document.</summary>
@@ -160,7 +160,7 @@ public static class Partide {
         group p by new { p.Unitate, p.Cont, p.Repartitor, p.Data } into g
         select new MiscarePartida { UnitateId = g.Key.Unitate.Value, ContId = g.Key.Cont,
             PartenerId = g.Key.Repartitor.Value, Data = g.Key.Data,
-            Net = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) };
+            Net = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) };
 
     /// <summary>Restul documentului pe partidele proprii, cu aceeași selecție pe sens ca <see cref="Total"/>.</summary>
     public static decimal Ramas(IObjectSpace os, Guid document, SensStingere? sens) {
@@ -184,11 +184,11 @@ public static class Partide {
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare && p.FelUnitate == N.FelUnitate.Partida).ToArray();
         var nete = noi.Length != 0
             ? noi.GroupBy(p => new { p.Cont, p.Repartitor, p.Unitate })
-                .Select(g => g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare)).ToList()
+                .Select(g => g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)).ToList()
             : Contabil.Postari(os)
                 .Where(p => p.DocumentId == document && p.FelUnitate == N.FelUnitate.Partida)
                 .GroupBy(p => new { p.Cont, p.Repartitor, p.Unitate })
-                .Select(g => g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare)).ToList();
+                .Select(g => g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)).ToList();
         return sens switch {
             SensStingere.Datorie => nete.Where(n => n < 0m).Sum(n => -n),
             SensStingere.Creanta => nete.Where(n => n > 0m).Sum(),
@@ -205,7 +205,7 @@ public static class Partide {
         var nete = Contabil.Postari(os).Where(p => p.DocumentId == document && p.Repartitor == partener
                 && p.FelUnitate == N.FelUnitate.Partida)
             .GroupBy(p => new { p.Cont, p.Unitate })
-            .Select(g => new { Net = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) });
+            .Select(g => new { Net = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) });
         return (sens == SensStingere.Datorie ? nete.Where(p => p.Net > 0m) : nete.Where(p => p.Net < 0m))
             .Select(p => (decimal?)Math.Abs(p.Net)).Sum() ?? 0m;
     }
@@ -217,7 +217,7 @@ public static class Partide {
                 && (partener == null || p.Repartitor == partener))
             .GroupBy(p => new { p.Unitate, p.Cont, p.Repartitor, p.Data })
             .Select(g => new { g.Key.Unitate, g.Key.Cont, g.Key.Repartitor, g.Key.Data,
-                Net = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) }).ToArray();
+                Net = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) }).ToArray();
         var legaturi = os.GetObjectsQuery<Imperechere>()
             .Where(i => i.DocumentStingatorId == stingator && i.DocumentId == stins)
             .Select(i => new { i.Data, i.Suma }).ToArray();
@@ -276,8 +276,8 @@ public static class Partide {
             Data = p.Data,
             Rand = new SoldPartida { UnitateId = p.Unitate.Value, ContId = p.Cont,
                 PartenerId = p.Repartitor.Value, Deschisa = p.UnitateDeschisa.Value,
-                Debit = p.Latura == N.Sens.Debit ? p.Valoare : 0m,
-                Credit = p.Latura == N.Sens.Credit ? p.Valoare : 0m }
+                Debit = p.Sens == N.Sens.Debit ? p.Valoare : 0m,
+                Credit = p.Sens == N.Sens.Credit ? p.Valoare : 0m }
         });
         return CumulPerioade.Citeste(os, citire, miscari, snapshot, panaLa)
             .GroupBy(p => new { p.UnitateId, p.ContId, p.PartenerId })
@@ -308,8 +308,8 @@ public static class Partide {
             .Select(g => new SoldPartida {
                 UnitateId = g.Key.Unitate.Value, ContId = g.Key.Cont, PartenerId = g.Key.Repartitor.Value,
                 Deschisa = g.Min(p => p.UnitateDeschisa.Value),
-                Debit = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : 0m),
-                Credit = g.Sum(p => p.Latura == N.Sens.Credit ? p.Valoare : 0m)
+                Debit = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : 0m),
+                Credit = g.Sum(p => p.Sens == N.Sens.Credit ? p.Valoare : 0m)
             });
 
     public static void VerificaAcoperire(IObjectSpace os) {

@@ -77,7 +77,7 @@ public class StornoTeste {
             for (var i = 0; i < tranzactie.Postari.Count; i++) {
                 var inainte = tranzactie.Postari[i];
                 var dupa = stornata.Postari[i];
-                Assert.Equal(inainte.Coordonate.Latura, dupa.Coordonate.Latura);
+                Assert.Equal(inainte.Coordonate.Sens, dupa.Coordonate.Sens);
                 Assert.Equal(inainte.Cauza, dupa.Cauza);
                 Assert.Equal(inainte.Atribuit, dupa.Atribuit);
                 Assert.Equal(-inainte.Valoare, dupa.Valoare);

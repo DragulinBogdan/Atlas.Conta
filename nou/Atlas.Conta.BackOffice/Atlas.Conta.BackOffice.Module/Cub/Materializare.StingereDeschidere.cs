@@ -43,13 +43,13 @@ public static partial class Materializare {
             && p.Cont == initiala.Cont && Citiri.Partide.Titular(p) == Citiri.Partide.Titular(initiala)).ToList();
         var proprie = IdentitatiPartide.Gaseste(operare.Select(Randuri.Unitatea)
             .OfType<N.UnitateSold>(), stingator.ID, initiala.Cont, Citiri.Partide.Titular(initiala)!.Value);
-        var latura = initiala.Latura == N.Sens.Debit ? N.Sens.Credit : N.Sens.Debit;
+        var sens = initiala.Sens == N.Sens.Debit ? N.Sens.Credit : N.Sens.Debit;
         var peProprie = proprie == null ? [] : os.GetObjectsQuery<Postare>()
             .Where(p => p.Unitate == proprie.Id && p.Carte == N.Carte.Contabil).ToList();
         peProprie = [.. peProprie.Concat(inMemorie.Where(p => p.Unitate == proprie?.Id
             && p.Carte == N.Carte.Contabil)).DistinctBy(p => p.ID)];
-        if (proprie == null || !Disponibil(primite, initiala.Latura, data, suma)
-            || !Disponibil(peProprie, latura, data, suma))
+        if (proprie == null || !Disponibil(primite, initiala.Sens, data, suma)
+            || !Disponibil(peProprie, sens, data, suma))
             throw new OperareException($"{StingereDeschidereInvalida}: Cont/partener incompatibil sau suma depășește restul disponibil.");
         var repartitori = Randuri.Repartitori(os, [.. operare, .. peProprie, .. primite, initiala]);
         N.Postare Citita(Postare p) => Randuri.Citeste(p, repartitori);
@@ -82,6 +82,6 @@ public static partial class Materializare {
             && p.Tranzactie.Fel == N.FelTranzactie.Transfer && p.Unitate != null && initiale.Contains(p.Unitate));
     }
 
-    static bool Disponibil(IEnumerable<Postare> postari, N.Sens latura, DateOnly data, decimal suma) =>
-        Citiri.Partide.DisponibilTemporal(postari.Select(p => (p.Data, p.Latura == latura ? p.Valoare : -p.Valoare)), data, 1m) >= suma;
+    static bool Disponibil(IEnumerable<Postare> postari, N.Sens sens, DateOnly data, decimal suma) =>
+        Citiri.Partide.DisponibilTemporal(postari.Select(p => (p.Data, p.Sens == sens ? p.Valoare : -p.Valoare)), data, 1m) >= suma;
 }

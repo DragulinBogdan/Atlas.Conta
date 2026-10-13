@@ -36,8 +36,9 @@ repartitorul ei și cu partea permisă de contractul laturilor; debitul și
 creditul postării nu sunt laturi, ci sensul ei, iar „latura pereche” a
 viramentului e documentul pereche (65). Regula:
 [domeniu § Laturile ca structură](domeniu-si-operare.md#laturile-documentului-ca-structură-t-d13-felia-32-pasul-2b) (T-D13, 118).
-Înrudit: parte, capăt, sens. În cod: `Document.Laturi()`; enumul din nucleu
-pentru debit/credit se numește `Sens` (118-r7).
+Înrudit: parte, capăt, sens. În cod: `Document.Laturi()`, `LaturaDocument`,
+`Declaratii.Latura`; debitul și creditul postării nu poartă numele ăsta
+nici ca tip, nici ca membru sau coloană (118-r7, TR-D9b pasul 6).
 În sistemul vechi: predator → primitor configurat per tip × predator × primitor.
 
 ### sens
@@ -47,8 +48,12 @@ familie numește sensul taxei (`SensTva`) și al stingerii (`SensStingere`)
 și nu se confundă cu contarea, care e regula de atribuire a conturilor.
 Regula: [domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D2, 118).
 Înrudit: latură, postare, coordonată. În cod: `Sens` (nucleu, 118-r7),
-`SensTva`, `SensStingere`. Proprietățile existente `Latura` păstrează numele
-în acest pas; tipul lor debit/credit este `Sens`.
+`SensTva`, `SensStingere`. Membrul care poartă debitul sau creditul se
+numește `Sens`, cu coloana `Sens` de pe `Postare` (TR-D9b pasul 6). Numele
+necalificat e al debitului/creditului; membrul care poartă un sens calificat
+îi ia numele întreg (`SensTva` pe `Postare`), regulă a owner-ului din
+2026-10-13. Membrii mai vechi de tip `SensTva` numiți `Sens` (`CodTva`,
+mapările D300/D394/SAF-T, proiecțiile fiscale) nu sunt încă aduși la ea.
 
 ### parte
 

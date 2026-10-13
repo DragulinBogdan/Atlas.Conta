@@ -67,8 +67,8 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
             Scrie(os, solduri.Take(2).ToArray(), loturi.Take(2).ToArray(), []);
             var r = os.ModifiedObjects.OfType<C.Postare>().ToArray();
             Verifica("SC-DES-01", "exemplul izolat: exact trei postări, D=C=100", r.Length == 3
-                && r.Where(p => p.Latura == N.Sens.Debit).Sum(p => p.Valoare) == 100
-                && r.Where(p => p.Latura == N.Sens.Credit).Sum(p => p.Valoare) == 100);
+                && r.Where(p => p.Sens == N.Sens.Debit).Sum(p => p.Valoare) == 100
+                && r.Where(p => p.Sens == N.Sens.Credit).Sum(p => p.Valoare) == 100);
         }
         using (var os = Deschide()) using (var tx = TranzactieComanda.Incepe(os)) {
             Scrie(os); var cate = os.ModifiedObjects.OfType<C.Postare>().Count();
@@ -103,8 +103,8 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         using (var os = Deschide()) {
             var r = os.GetObjectsQuery<C.Postare>().Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere).ToList();
             Verifica("SC-DES-01/02", "8 postări detaliate, D=C=250, stoc 100; fără sold bloc dublat", r.Count == 8
-                && r.Where(p => p.Latura == N.Sens.Debit).Sum(p => p.Valoare) == 250
-                && r.Where(p => p.Latura == N.Sens.Credit).Sum(p => p.Valoare) == 250
+                && r.Where(p => p.Sens == N.Sens.Debit).Sum(p => p.Valoare) == 250
+                && r.Where(p => p.Sens == N.Sens.Credit).Sum(p => p.Valoare) == 250
                 && r.Where(p => p.Cont == Cont(Stoc)).Sum(p => p.Valoare) == 100
                 && r.Where(p => p.Cont == contTert).All(p => p.Unitate != null && p.Repartitor != null));
             Verifica("SC-DES-08", "round-trip fără document fictiv", r.Zip(C.Randuri.Citeste(os, r)).All(x =>
@@ -141,7 +141,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         Refuza("SC-DES-09", () => Stinge(Partida(ref1, Furnizor), 20, Ianuarie.AddDays(-1)), "precedă deschiderea");
         string Original() => CuSpatiu(os => System.Text.Json.JsonSerializer.Serialize(os.GetObjectsQuery<C.Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere).OrderBy(p => p.ID)
-            .Select(p => new { p.ID, p.Data, p.Cont, p.Carte, p.Latura, p.Valoare, p.Cantitate,
+            .Select(p => new { p.ID, p.Data, p.Cont, p.Carte, p.Sens, p.Valoare, p.Cantitate,
                 p.Unitate, p.Repartitor, p.Contrapondere, p.DocumentId, p.LinieId }).ToArray()));
         var initial = Original();
         Refuza("SC-DES-09", () => Stinge(Partida(ref1, Furnizor), 20, Ianuarie.AddDays(1)), C.Materializare.StingereDeschidereInvalida);
@@ -151,7 +151,7 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
         using (var os = Deschide()) {
             var r = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == plata.Id && p.Tranzactie.Fel == N.FelTranzactie.Transfer).ToList();
             Verifica("SC-DES-03", "transfer exact pe debit: partidă inițială +20, partidă plată -20", r.Count == 2
-                && r.All(p => p.Cont == contTert && p.Repartitor == Furnizor && p.Carte == N.Carte.Contabil && p.Latura == N.Sens.Debit)
+                && r.All(p => p.Cont == contTert && p.Repartitor == Furnizor && p.Carte == N.Carte.Contabil && p.Sens == N.Sens.Debit)
                 && r.Single(p => p.Valoare == 20).Unitate == Partida(ref1, Furnizor)
                 && r.Single(p => p.Valoare == -20).Unitate != Partida(ref1, Furnizor));
         }

@@ -4,8 +4,9 @@
 # `nou/dotnet-tools.json`) încarcă assembly-ul WebApi, construiește host-ul EXACT
 # ca la pornire (`Startup.ConfigureServices` rulează integral) și cere documentul
 # de la `ISwaggerProvider` — fără să pornească pipeline-ul HTTP. Consecință
-# verificată: `IHostedService`-urile NU rulează, deci warmup-ul XAF nu pornește
-# și baza de date nu e atinsă; comanda merge pe o mașină fără Postgres pornit.
+# verificată: `IHostedService`-urile NU rulează, deci warmup-ul XAF nu pornește.
+# Serverul bazei din șirul de conexiune trebuie totuși să răspundă: cu el oprit,
+# comanda pică pe verificarea de compatibilitate XAF.
 #
 # Ieșirea brută a CLI-ului se normalizează prin `dump-openapi.mjs` (aceeași
 # serializare ca dump-ul din host viu) — vezi comentariul de acolo.

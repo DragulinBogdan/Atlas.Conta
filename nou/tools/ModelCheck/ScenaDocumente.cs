@@ -10,10 +10,10 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-record RandScena(Guid Cont, N.Sens Latura, decimal Valoare, decimal Cantitate = 0,
+record RandScena(Guid Cont, N.Sens Sens, decimal Valoare, decimal Cantitate = 0,
     Guid? Repartitor = null, Guid? Unitate = null, Guid? Produs = null, Guid? PartenerFiscal = null,
     Guid? Linie = null, Guid? Tva = null, N.RolTva? Rol = null, int? Perioada = null,
-    N.SensTva? Sens = null, N.Spatiu Spatiu = N.Spatiu.Contabil, Guid? Economic = null,
+    N.SensTva? SensTva = null, N.Spatiu Spatiu = N.Spatiu.Contabil, Guid? Economic = null,
     N.Carte Carte = N.Carte.Contabil, N.Contrapondere? Contrapondere = null, Guid? Loc = null);
 
 record LinieFctScena(decimal Cantitate, decimal Pret, string Tva = null, bool Stoc = true,
@@ -312,10 +312,10 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     }
 
     protected void TransferPartida(string id, Guid stingator, Guid stins, string cont,
-            Guid partener, N.Sens latura, decimal suma, DateOnly data) {
+            Guid partener, N.Sens sens, decimal suma, DateOnly data) {
         Postari(id, stingator, N.FelTranzactie.Transfer, data,
-            new(Cont(cont), latura, -suma, Repartitor: partener, Unitate: Partida(stingator, cont, partener)),
-            new(Cont(cont), latura, suma, Repartitor: partener, Unitate: Partida(stins, cont, partener)));
+            new(Cont(cont), sens, -suma, Repartitor: partener, Unitate: Partida(stingator, cont, partener)),
+            new(Cont(cont), sens, suma, Repartitor: partener, Unitate: Partida(stins, cont, partener)));
     }
 
     protected void TransferPeCititori(string id, string intrare, int transferuri, int inverse, int peIntrare, params Guid[] documente) {
@@ -378,7 +378,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             && (fel != N.FelTranzactie.Transfer || p.Data == data)).ToList();
         var tranzactii = os.GetObjectsQuery<C.Tranzactie>().Where(t => t.DocumentId == doc && t.Fel == fel
             && (fel != N.FelTranzactie.Transfer || t.Data == data)).ToList();
-        var actual = randuri.Select(p => new RandScena(p.Cont, p.Latura, p.Valoare, p.Cantitate,
+        var actual = randuri.Select(p => new RandScena(p.Cont, p.Sens, p.Valoare, p.Cantitate,
             p.Repartitor, p.Unitate, p.Produs, p.PartenerFiscal, p.LinieId, p.TipTvaId, p.RolTva,
             p.PerioadaDeclarare, p.SensTva, p.Spatiu, p.CodEconomic, p.Carte, p.Contrapondere, p.Loc)).ToList();
         var egale = actual.Count == asteptate.Length && asteptate.All(a =>
@@ -400,12 +400,12 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         using var os = Deschide();
         var ids = matriceFiscale.Keys.Select(k => k.Doc).Distinct().ToList();
         var postari = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId != null && ids.Contains(p.DocumentId.Value))
-            .Select(p => new { p.DocumentId, p.Tranzactie.Fel, p.Data, p.Cont, p.Latura, p.Valoare,
+            .Select(p => new { p.DocumentId, p.Tranzactie.Fel, p.Data, p.Cont, p.Sens, p.Valoare,
                 p.LinieId, p.TipTvaId, p.RolTva, p.SensTva, p.Carte }).ToList();
         var corecte = matriceFiscale.All(m => UnicitateFiscala.Corecte(postari
             .Where(p => p.DocumentId == m.Key.Doc && p.Fel == m.Key.Fel && p.Data == m.Key.Data)
-            .Select(p => new RandScena(p.Cont, p.Latura, p.Valoare, Linie: p.LinieId, Tva: p.TipTvaId,
-                Rol: p.RolTva, Sens: p.SensTva, Carte: p.Carte)).ToList(), m.Value));
+            .Select(p => new RandScena(p.Cont, p.Sens, p.Valoare, Linie: p.LinieId, Tva: p.TipTvaId,
+                Rol: p.RolTva, SensTva: p.SensTva, Carte: p.Carte)).ToList(), m.Value));
         if (matriceFiscale.Count > 0)
             Verifica("SC-X-14", $"{cod}: {matriceFiscale.Count} matrice reverificate înainte de curățenie", corecte);
     }
@@ -413,7 +413,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
     protected string Amprenta(Guid doc) => CuSpatiu(os => string.Join("\n", os.GetObjectsQuery<C.Postare>()
         .Where(p => p.DocumentId == doc).OrderBy(p => p.ID).AsEnumerable().Select(p =>
             System.Text.Json.JsonSerializer.Serialize(new { p.ID, p.TranzactieId, p.LinieId, p.Data,
-                p.Cont, p.Latura, p.Repartitor, p.Contrapondere, p.Unitate, p.Produs, p.TipTvaId,
+                p.Cont, p.Sens, p.Repartitor, p.Contrapondere, p.Unitate, p.Produs, p.TipTvaId,
                 p.SensTva, p.RolTva, p.PartenerFiscal, p.Loc, p.PerioadaDeclarare, p.Cantitate, p.Valoare, p.ValoareValuta,
                 p.Spatiu, p.Carte, p.Valuta, p.UnitateDeschisa, p.Atribuit, p.CodEconomic,
                 p.FelUnitate, p.SuportId, p.SuportSpatiu, p.InversaDinId, p.InversaDinSpatiu,
@@ -423,7 +423,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         var sold = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == lot
             && p.Repartitor == gestiune && p.Data <= data && p.Carte == N.Carte.Contabil).ToList());
         Verifica(id, $"lot/gestiune la {data}: {q}/{v}", sold.Sum(p => p.Cantitate) == q
-            && sold.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) == v);
+            && sold.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) == v);
     }
 
     protected decimal[] ValoriLinii(Guid doc) => CuSpatiu(os => os.GetObjectsQuery<DocumentDetaliu>()
@@ -439,7 +439,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         var sold = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == unitate
             && p.Data <= data && p.Carte == N.Carte.Contabil).ToList());
         Verifica(id, $"sold partidă {net} la {data}",
-            sold.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) == net);
+            sold.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) == net);
     }
 
     protected void FaraEfecte(string id, Guid doc) {

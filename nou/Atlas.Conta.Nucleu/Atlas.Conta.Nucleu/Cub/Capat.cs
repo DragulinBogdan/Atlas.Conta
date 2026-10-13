@@ -15,9 +15,9 @@ public sealed record Capat {
     public Carte Carte { get; init; } = Carte.Contabil;
     public Analiza Analiza { get; init; } = Analiza.Fara;
 
-    public Coordonate Pe(Sens latura, DateOnly data) => new() {
+    public Coordonate Pe(Sens sens, DateOnly data) => new() {
         Cont = Cont,
-        Latura = latura,
+        Sens = sens,
         Data = data,
         Repartitor = Repartitor,
         Contrapondere = Contrapondere,

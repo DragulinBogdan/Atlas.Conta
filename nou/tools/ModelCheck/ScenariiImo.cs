@@ -125,7 +125,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         var randuri = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Unitate == fisa
             && p.Data <= (data ?? new DateOnly(An, 12, 31))).ToList());
         decimal Net(Guid cont, N.Carte carte) => randuri.Where(p => p.Cont == cont && p.Carte == carte)
-            .Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare);
+            .Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare);
         Verifica(id, $"fișă: brut/cumulat {brut}/{cumul}, fiscal {fiscal}/{cumulFiscal}",
             Net(contActiv, N.Carte.Contabil) == brut && Net(contAmortizare, N.Carte.Contabil) == -cumul
             && Net(contActiv, N.Carte.Fiscal) == fiscal && Net(contAmortizare, N.Carte.Fiscal) == -cumulFiscal);
@@ -165,7 +165,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         Verifica("SC-IMO-01", "Transfer D anonim −1200 / D fișă +1200, cu suport explicit", transfer.Count == 2
             && transfer.Single(r => r.Unitate == null).Valoare == -1200
             && transfer.Single(r => r.Unitate == f).Valoare == 1200
-            && transfer.All(r => r.Latura == N.Sens.Debit && r.SuportId != null));
+            && transfer.All(r => r.Sens == N.Sens.Debit && r.SuportId != null));
         Verifica("SC-CIT-01", "PIF nu introduce rânduri în citirea contabilă generală", CuSpatiu(os =>
             !C.Citiri.Contabil.Postari(os).Any(r => r.DocumentId == p.Id)));
         Refuza("SC-IMO-06", () => Storneaza(factura.Id, Ianuarie), CoduriRefuz.SuportCuDependenti);
@@ -189,7 +189,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         Verifica("SC-IMO-05", "două sesiuni: 800 acceptat și 800 refuzat din suportul 1200", rezultate.Count(r => r == "OK") == 1
             && rezultate.Count(r => r.Contains(CoduriRefuz.SuportInsuficient)) == 1);
         var rest = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Cont == contActiv
-            && p.Carte == N.Carte.Contabil && p.Unitate == null).Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare));
+            && p.Carte == N.Carte.Contabil && p.Unitate == null).Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare));
         Verifica("SC-IMO-05", "disponibilul rămas este 400", rest == 400);
     }
     void Ciclu() {
@@ -239,7 +239,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         foreach (var (luna, suma) in new[] { (2, 33.33m), (3, 33.33m), (4, 33.33m), (5, 0.01m) }) {
             var a = Amo(luna); Opereaza(a);
             Verifica("SC-IMO-09", $"luna {luna}: {suma}", CuSpatiu(os => os.GetObjectsQuery<C.Postare>()
-                .Where(p => p.DocumentId == a && p.Carte == N.Carte.Contabil && p.Latura == N.Sens.Credit)
+                .Where(p => p.DocumentId == a && p.Carte == N.Carte.Contabil && p.Sens == N.Sens.Credit)
                 .Sum(p => p.Valoare)) == suma);
         }
         Sold("SC-IMO-09", f, 100, 100, 100, 100);
@@ -393,8 +393,8 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         Verifica("SC-IMO-04", "deschiderea nominalizată păstrează soldurile generale 1200/200", CuSpatiu(os => {
             var randuri = os.GetObjectsQuery<C.Postare>().Where(p => p.Carte == N.Carte.Contabil
                 && (p.Cont == contActiv || p.Cont == contAmortizare)).ToList();
-            return randuri.Where(p => p.Cont == contActiv).Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) == 1200
-                && randuri.Where(p => p.Cont == contAmortizare).Sum(p => p.Latura == N.Sens.Credit ? p.Valoare : -p.Valoare) == 200;
+            return randuri.Where(p => p.Cont == contActiv).Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) == 1200
+                && randuri.Where(p => p.Cont == contAmortizare).Sum(p => p.Sens == N.Sens.Credit ? p.Valoare : -p.Valoare) == 200;
         }));
         Storneaza(p.Id, Ianuarie); Origini("SC-IMO-15", p.Id);
     }

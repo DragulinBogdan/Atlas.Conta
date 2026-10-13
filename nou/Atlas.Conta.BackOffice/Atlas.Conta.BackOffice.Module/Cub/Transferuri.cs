@@ -34,7 +34,7 @@ public static class Transferuri {
                 && p.Coordonate.Unitate is { Fel: N.FelUnitate.Partida }
                 && (cerere.PartidaTinta == null || p.Coordonate.Unitate.Id == cerere.PartidaTinta))
             .GroupBy(p => p.Coordonate.Unitate!)
-            .Select(g => new { Unitate = g.Key, Net = g.Sum(p => p.Coordonate.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) })
+            .Select(g => new { Unitate = g.Key, Net = g.Sum(p => p.Coordonate.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) })
             .Where(p => p.Net != 0m).ToArray();
         if (primite.Length == 0) return Sare("nu există efect de desfăcut pe partida stinsului");
         if (primite.Length != 1) return Refuza("IMPERECHERE_AMBIGUA", "nominalizarea nu identifică un singur efect de desfăcut");
@@ -61,9 +61,9 @@ public static class Transferuri {
                        from la in tinte
                        where deLa.Cont == la.Cont && deLa.Partener == la.Partener
                        let disponibil = aleStingatorului.Where(p => p.Coordonate.Unitate?.Id == deLa.Id)
-                           .Sum(p => p.Coordonate.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare)
+                           .Sum(p => p.Coordonate.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)
                        let rest = aleStinsului.Where(p => p.Coordonate.Unitate?.Id == la.Id)
-                           .Sum(p => p.Coordonate.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare)
+                           .Sum(p => p.Coordonate.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)
                        where disponibil * rest < 0m
                        select new { deLa, la, disponibil, rest }).ToArray();
         if (perechi.Length == 0) {

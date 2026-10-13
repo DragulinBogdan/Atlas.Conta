@@ -392,8 +392,8 @@ static class VerificaNucleuFct {
                 + "−8,40, câte două capete) și tranzacția rămâne balansată: Σ D = Σ C",
                 aleRosii.Count(p => p.Valoare == -40m) == 2
                 && aleRosii.Count(p => p.Valoare == -8.4m) == 2
-                && aleRosii.Where(p => p.Latura == N.Sens.Debit).Sum(p => p.Valoare)
-                    == aleRosii.Where(p => p.Latura == N.Sens.Credit).Sum(p => p.Valoare));
+                && aleRosii.Where(p => p.Sens == N.Sens.Debit).Sum(p => p.Valoare)
+                    == aleRosii.Where(p => p.Sens == N.Sens.Credit).Sum(p => p.Valoare));
         }
 
         // (e) STR-FCT-DOUA-PARTIDE (S-D16): linia ne-stoc pe TipMaterial-ul contului 408,

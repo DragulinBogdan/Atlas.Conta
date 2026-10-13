@@ -37,7 +37,7 @@ sealed class ScenariiItv(Func<IObjectSpace> deschide, Action<string, bool> check
         foreach (var (cont, asteptat) in new[] { ("4426", deductibila), ("4427", -colectata), ("4423", -plata), ("4424", recuperat) }) {
             var contId = Cont(cont);
             var net = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Cont == contId && p.Data <= data && p.Carte == N.Carte.Contabil)
-                .Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare));
+                .Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare));
             Verifica(id, $"sold {cont} la {data}: {asteptat}", net == asteptat);
         }
     }

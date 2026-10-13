@@ -86,7 +86,7 @@ public static partial class SaftProiectii {
                 var storno = e.Fel == N.FelTranzactie.Storno;
                 var semn = storno ? -1m : 1m;
                 var eticheta = Eticheta(e.Document);
-                var proprii = postari.GetValueOrDefault(e.TranzactieId, []).Where(p => p.Latura == info.Contrapartida).ToList();
+                var proprii = postari.GetValueOrDefault(e.TranzactieId, []).Where(p => p.Sens == info.Contrapartida).ToList();
                 if (info.Fel == FelExtern.Altul) {
                     NeinclusPlata(CauzaNeincludere.DocumentFaraPartener, e.Document, info.Extern, proprii);
                     continue;
@@ -112,9 +112,9 @@ public static partial class SaftProiectii {
                     NeinclusPlata(CauzaNeincludere.ContFaraRol, e.Document, info.Extern, proprii);
                     continue;
                 }
-                var conservata = proprii.GroupBy(p => (p.Cont, p.Latura))
+                var conservata = proprii.GroupBy(p => (p.Cont, p.Sens))
                     .Select(g => (g.Key, Suma: g.Sum(p => p.Valoare)))
-                    .Concat(a.Linii.GroupBy(l => (l.Cont, l.Latura)).Select(g => (g.Key, Suma: -semn * g.Sum(l => l.Suma))))
+                    .Concat(a.Linii.GroupBy(l => (l.Cont, l.Sens)).Select(g => (g.Key, Suma: -semn * g.Sum(l => l.Suma))))
                     .GroupBy(x => x.Key).All(g => g.Sum(x => x.Suma) == 0m);
                 if (!conservata) {
                     Refuza(RefuzProvenienta, $"{eticheta}: suma evenimentului nu este suma liniilor de plată pe cont și latură.",
@@ -167,7 +167,7 @@ public static partial class SaftProiectii {
                         AccountID = Simbol(l.Cont),
                         CustomerID = customer, SupplierID = supplier,
                         Description = (linii.Count == 1 && linii[0] is Guid d ? descrieri.GetValueOrDefault(d) : null) ?? descriere,
-                        DebitCreditIndicator = l.Latura == N.Sens.Debit ? "D" : "C",
+                        DebitCreditIndicator = l.Sens == N.Sens.Debit ? "D" : "C",
                         PaymentLineAmount = suma,
                         Analiza = chei.Count == 1
                             ? Analiza(chei[0].CentruCost, chei[0].Proiect, chei[0].UnitateOrganizatorica,
@@ -201,8 +201,8 @@ public static partial class SaftProiectii {
                 Cauza = cauza.ToString(), Sectiune = "Payments",
                 DocumentId = document, DocumentNumar = documente[document].Numar, DocumentTip = CodTip(document),
                 RepartitorId = repartitor,
-                Debit = postari.Where(p => p.Latura == N.Sens.Debit).Sum(p => p.Valoare),
-                Credit = postari.Where(p => p.Latura == N.Sens.Credit).Sum(p => p.Valoare),
+                Debit = postari.Where(p => p.Sens == N.Sens.Debit).Sum(p => p.Valoare),
+                Credit = postari.Where(p => p.Sens == N.Sens.Credit).Sum(p => p.Valoare),
                 Randuri = postari.Count,
             });
     }

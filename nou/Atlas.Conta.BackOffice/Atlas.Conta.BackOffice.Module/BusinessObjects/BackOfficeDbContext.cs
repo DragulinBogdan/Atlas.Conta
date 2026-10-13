@@ -784,7 +784,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                     """));
                 b.HasKey(p => p.ID);
                 b.Property(p => p.Spatiu).HasConversion<short>();
-                b.Property(p => p.Latura).HasConversion<short>();
+                b.Property(p => p.Sens).HasConversion<short>();
                 b.Property(p => p.Carte).HasConversion<short>();
                 b.Property(p => p.SensTva).HasConversion<short>();
                 b.Property(p => p.RolTva).HasConversion<short>();
@@ -802,7 +802,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 b.HasKey(p => p.ID);
                 b.Property(p => p.Spatiu).HasConversion<short>();
                 b.Property(p => p.TranzactieFel).HasConversion<short>();
-                b.Property(p => p.Latura).HasConversion<short>();
+                b.Property(p => p.Sens).HasConversion<short>();
                 b.Property(p => p.Carte).HasConversion<short>();
                 b.Property(p => p.SensTva).HasConversion<short>();
                 b.Property(p => p.RolTva).HasConversion<short>();

@@ -130,8 +130,10 @@ are comparația A/B verde, review-ul independent Codex și reverificarea
 Claude, care a corectat recunoașterea ușii de sistem; pachetul e comis la
 cererea owner-ului (2026-10-13). Pachetul următor, corecțiile valorice pe
 lot, are [contractul TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md)
-și decizia 119; nu e implementat. Înaintea lui vine pasul 6 al contractului
-TR-D9b: membrii `Latura` ai sensului devin `Sens`. Unde suntem, cu cifre, e
+și decizia 119; nu e implementat. [Pasul 6](docs/nucleu/tr-d9b-pas6-sens.md)
+al contractului TR-D9b este făcut: membrii care poartă debitul sau creditul
+și coloana de pe `Postare` se numesc `Sens`, printr-o migrație incrementală
+(120). Unde suntem, cu cifre, e
 generat în [docs/stare.md](docs/stare.md); cronologia feliilor e în
 `docs/decizii/istoric-plan-de-lucru.md`.
 

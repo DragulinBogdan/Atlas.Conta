@@ -30,7 +30,7 @@ static class OracolStocFizic {
             .Where(p => p.FelUnitate == N.FelUnitate.Lot && p.Repartitor != null && p.Carte == N.Carte.Contabil && p.Data <= pEnd)
             .Select(p => new { Lot = p.Unitate.Value, Gestiune = p.Repartitor.Value, p.Cont, p.Data, p.Cantitate,
                 Deschidere = p.Tranzactie.Fel == N.FelTranzactie.Deschidere,
-                Valoare = p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare })
+                Valoare = p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare })
             .ToList()
             .Where(p => Raportabil(p.Cont)).ToList();
         var deschidere = postari.Where(p => p.Data < pStart || p.Deschidere)

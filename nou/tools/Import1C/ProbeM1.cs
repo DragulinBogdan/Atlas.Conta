@@ -21,7 +21,7 @@ static class ProbeM1 {
         check("probă M1-R1: referința înlocuită, cu total și număr constante, e detectată în ambele sensuri",
             Deschidere.DiferenteDetaliu([P(a, 60m), P(c, 40m)], cub).Count == 2);
         check("probă M1-R1: partida mutată pe altă latură, cu aceeași valoare, e detectată",
-            Deschidere.DiferenteDetaliu([P(a, 60m), P(b, 40m) with { Latura = N.Sens.Debit }], cub).Count == 1);
+            Deschidere.DiferenteDetaliu([P(a, 60m), P(b, 40m) with { Sens = N.Sens.Debit }], cub).Count == 1);
 
         var Refuz = ReconciliereLuna.ExplicatiePartida.Refuz;
         var Fara = ReconciliereLuna.ExplicatiePartida.Fara;

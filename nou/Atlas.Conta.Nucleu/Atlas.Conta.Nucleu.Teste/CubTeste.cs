@@ -54,7 +54,7 @@ public class CubTeste {
     public void FiltrulTaieExactPostarile() =>
         Proprietate.Verifica(Proprietate.Cazuri, (aleator, _) => {
             var tranzactii = Istorie(aleator);
-            var debit = Cub.Sold(tranzactii, p => p.Coordonate.Cont, p => p.Coordonate.Latura == Sens.Debit);
+            var debit = Cub.Sold(tranzactii, p => p.Coordonate.Cont, p => p.Coordonate.Sens == Sens.Debit);
             foreach (var sold in debit.Values)
                 Assert.Equal(0m, sold.Credit);
         });
@@ -120,12 +120,12 @@ public class CubTeste {
             [receptia, mutata], p => p.Coordonate.Unitate?.Id ?? Guid.Empty)[partida.Id];
         Assert.Equal(Sold.Zero, dupaTransfer);
 
-        Tranzactie Stingere(Sens latura, decimal valoare) {
+        Tranzactie Stingere(Sens sens, decimal valoare) {
             var data = new DateOnly(2026, 1, 8);
             return new Tranzactie(FelTranzactie.Transfer, data, Gen.Documente[1], [
                 new Postare(
                     new Capat { Cont = partida.Cont, Repartitor = Gen.Terti[0], Unitate = partida }
-                        .Pe(latura, data),
+                        .Pe(sens, data),
                     0m,
                     0m,
                     valoare,
@@ -194,7 +194,7 @@ public class CubTeste {
 
     static readonly (string Nume, Func<Postare, bool>? Filtru)[] Filtre = [
         ("fără filtru", null),
-        ("doar debit", p => p.Coordonate.Latura == Sens.Debit),
+        ("doar debit", p => p.Coordonate.Sens == Sens.Debit),
         ("doar cu cantitate", p => p.Cantitate != 0m),
     ];
 
@@ -211,7 +211,7 @@ public class CubTeste {
     static Tranzactie Una(Guid cont, Guid document, DateOnly data) =>
         new(FelTranzactie.Operare, data, document, [
             new Postare(
-                new Coordonate { Cont = cont, Latura = Sens.Debit, Data = data },
+                new Coordonate { Cont = cont, Sens = Sens.Debit, Data = data },
                 0m,
                 0m,
                 1m,

@@ -25,7 +25,7 @@ public static class Randuri {
         return new N.Postare(
             new N.Coordonate {
                 Cont = rand.Cont,
-                Latura = rand.Latura,
+                Sens = rand.Sens,
                 Data = rand.Data,
                 Repartitor = rand.Repartitor is Guid repartitor ? Motor.Fapte.Coordonata(repartitori, repartitor) : null,
                 Contrapondere = rand.Contrapondere,
@@ -73,7 +73,7 @@ public static class Randuri {
         rand.LinieId = postare.Cauza.Linie;
         rand.Data = coordonate.Data;
         rand.Cont = coordonate.Cont;
-        rand.Latura = coordonate.Latura;
+        rand.Sens = coordonate.Sens;
         rand.Repartitor = coordonate.Repartitor?.Id;
         rand.Contrapondere = coordonate.Contrapondere;
         rand.Produs = coordonate.Produs;

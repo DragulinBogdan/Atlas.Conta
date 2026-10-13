@@ -290,7 +290,7 @@ static class Imperecheri1C {
             .Where(p => p.DocumentId == stingatorId && p.Carte == N.Carte.Contabil
                 && p.FelUnitate == N.FelUnitate.Partida && p.Repartitor != null
                 && p.Tranzactie.Fel == N.FelTranzactie.Operare)
-            .Select(p => new { p.Cont, Partener = p.Repartitor, p.Unitate, Semnat = p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare })
+            .Select(p => new { p.Cont, Partener = p.Repartitor, p.Unitate, Semnat = p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare })
             .ToList();
         var partida = candidate.FirstOrDefault(c => proprii.Any(p => p.Cont == c.Cont && p.Partener == c.Partener));
         if (partida == default) {
@@ -304,7 +304,7 @@ static class Imperecheri1C {
         }
         var restPartida = os.GetObjectsQuery<Postare>()
             .Where(p => p.Unitate == partida.Partida && p.Carte == N.Carte.Contabil)
-            .Select(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare).ToList().Sum();
+            .Select(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare).ToList().Sum();
         var sensPartida = Math.Sign(restPartida);
         var sensMiscare = sensSursa
             ?? Math.Sign(proprii.Where(p => p.Cont == partida.Cont && p.Partener == partida.Partener).Sum(p => p.Semnat));
@@ -343,7 +343,7 @@ static class Imperecheri1C {
                 .Select(p => p.Unitate).Distinct().ToList();
             var restPropriu = os.GetObjectsQuery<Postare>()
                 .Where(p => p.Unitate != null && unitati.Contains(p.Unitate) && p.Carte == N.Carte.Contabil)
-                .Select(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare).ToList().Sum();
+                .Select(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare).ToList().Sum();
             bucla.Avert($"Stingerea pe partida inițială {cheieLegatura} ({suma:N2}, de stins {deStins:N2}) "
                 + $"{(rezultat == RezultatStingere.Esec ? "A CĂZUT TEHNIC" : "refuzată")}: "
                 + $"rest partidă {restPartida:N2}, rest propriu {restPropriu:N2} pe {unitati.Count} unități — "
@@ -429,7 +429,7 @@ static class Imperecheri1C {
                 && p.DocumentId != null && initiale.Contains(p.Unitate))
             .GroupBy(p => new { p.DocumentId, p.Unitate })
             .Select(g => new { g.Key.DocumentId, g.Key.Unitate,
-                Semnat = g.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare) })
+                Semnat = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) })
             .ToList()
             .ToDictionary(x => (x.DocumentId.Value, x.Unitate.Value), x => (x.Semnat, x.Semnat));
     }

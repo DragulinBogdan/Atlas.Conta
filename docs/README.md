@@ -250,7 +250,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [M1 — reverificarea corecturilor R1–R4](import/m1-rv1-review-codex.md)
 - [M1 — reverificare finală M1-R3a](import/m1-rv2-review-codex.md)
 
-### `docs/nucleu/` (75)
+### `docs/nucleu/` (76)
 
 - [Decizia 109 — review advers Codex](nucleu/109-review-codex.md)
 - [C102 — Felia de curățenie: fără compatibilitate cu bazele de dezvoltare](nucleu/c102-curatenie-contract.md)
@@ -327,6 +327,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [TR-D9b — catalog și măsurătoare de referință](nucleu/tr-d9b-pas3-referinta.md)
 - [TR-D9b, pasul 4 — originea persistată a partidei](nucleu/tr-d9b-pas4-origini.md)
 - [TR-D9b, pasul 5 — comparația A/B și review-ul advers](nucleu/tr-d9b-pas5-comparatie.md)
+- [TR-D9b, pasul 6 — membrii Latura ai sensului devin Sens](nucleu/tr-d9b-pas6-sens.md)
 
 ### `docs/nucleu/scenarii/` (25)
 

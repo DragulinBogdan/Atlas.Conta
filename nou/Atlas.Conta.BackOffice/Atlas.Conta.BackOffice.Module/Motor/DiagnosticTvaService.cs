@@ -61,7 +61,7 @@ public static class DiagnosticTvaService {
                 if (!Permis(p, nameof(p.ID), nameof(p.Spatiu), Fiscale.MembruPartener, nameof(p.TranzactieId), nameof(p.DocumentId), nameof(p.LinieId),
                         nameof(p.TipTvaId), nameof(p.SensTva), nameof(p.RegimTva), nameof(p.CotaTva),
                         nameof(p.DeImport), nameof(p.DataExigibilitate), nameof(p.Valoare), nameof(p.RolTva),
-                        nameof(p.Latura), nameof(p.InversaDinId), nameof(p.InversaDinSpatiu),
+                        nameof(p.Sens), nameof(p.InversaDinId), nameof(p.InversaDinSpatiu),
                         nameof(p.DocumentFiscalId), nameof(p.DataDocument), nameof(p.DataInregistrare),
                         nameof(p.PerioadaDeclarare), nameof(p.PerioadaD394))
                         || !Permis(p.Tranzactie, nameof(p.Tranzactie.Fel), nameof(p.Tranzactie.ScrisLa)))

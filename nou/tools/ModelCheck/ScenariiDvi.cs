@@ -38,16 +38,16 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
         var tert = partener ?? vama; var linie = d.Linii[i].Id;
         var debit = new RandScena(Cont("4426"), N.Sens.Debit, baza, Repartitor: Loc, PartenerFiscal: tert,
             Linie: linie, Tva: Tva(tva), Rol: N.RolTva.Baza, Perioada: perioada ?? An * 100 + 1,
-            Sens: N.SensTva.Achizitie, Carte: N.Carte.Fiscal, Loc: Loc);
-        var credit = debit with { Latura = N.Sens.Credit, PartenerFiscal = null, Loc = null, Tva = null, Rol = null,
-            Sens = null, Perioada = null };
+            SensTva: N.SensTva.Achizitie, Carte: N.Carte.Fiscal, Loc: Loc);
+        var credit = debit with { Sens = N.Sens.Credit, PartenerFiscal = null, Loc = null, Tva = null, Rol = null,
+            SensTva = null, Perioada = null };
         return taxa == 0 ? [debit, credit] : [
             debit with { Valoare = taxa, Rol = N.RolTva.Taxa, Carte = N.Carte.Contabil },
             new(Cont(contra), N.Sens.Credit, taxa, Linie: linie,
                 Repartitor: contra == "401" ? tert : null,
                 PartenerFiscal: contra == "4427" ? tert : null, Loc: contra == "4427" ? Loc : null,
                 Tva: contra == "4427" ? Tva(tva) : null, Rol: contra == "4427" ? N.RolTva.Autocolectare : null,
-                Sens: contra == "4427" ? N.SensTva.Achizitie : null, Perioada: contra == "4427" ? perioada ?? An * 100 + 1 : null,
+                SensTva: contra == "4427" ? N.SensTva.Achizitie : null, Perioada: contra == "4427" ? perioada ?? An * 100 + 1 : null,
                 Unitate: contra == "401" ? Partida(d.Id, contra, tert) : null), debit, credit];
     }
 
@@ -75,7 +75,7 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica("SC-CIT-03", "intrarea contabilă include numai perechea TVA 21", CuSpatiu(os => {
             var randuri = C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == d.Id).ToList();
             return randuri.Count == 2 && randuri.All(p => p.Valoare == 21 && p.Carte == N.Carte.Contabil)
-                && randuri.Single(p => p.Cont == Cont("4426")).Latura == N.Sens.Debit;
+                && randuri.Single(p => p.Cont == Cont("4426")).Sens == N.Sens.Debit;
         }));
         Jurnal("SC-DVI-01", [d.Id], An * 100 + 1, 100, 21);
         Citiri(d);
@@ -137,11 +137,11 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
             && fisaContabila[0].Debit == 21 && balanta.RulajDebit == 21 && balanta.RulajCredit == 0
             && peVama.All(r => r.ContId != Cont("4426")));
         var p = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == d.Id).ToList();
-        decimal Sold(IEnumerable<C.Postare> r) => r.Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare);
+        decimal Sold(IEnumerable<C.Postare> r) => r.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare);
         var contabil = p.Where(p => p.Carte == N.Carte.Contabil).ToList();
         Verifica("SC-DVI-16", "rulaje contabile 21/21; fiscale 100/100, fără unități",
-            contabil.Where(p => p.Latura == N.Sens.Debit).Sum(p => p.Valoare) == 21
-            && contabil.Where(p => p.Latura == N.Sens.Credit).Sum(p => p.Valoare) == 21
+            contabil.Where(p => p.Sens == N.Sens.Debit).Sum(p => p.Valoare) == 21
+            && contabil.Where(p => p.Sens == N.Sens.Credit).Sum(p => p.Valoare) == 21
             && p.Where(p => p.Carte == N.Carte.Fiscal).All(p => p.Unitate == null && p.Valoare == 100)
             && p.GroupBy(p => p.Carte).All(g => Sold(g) == 0));
         Verifica("SC-DVI-16", "sold 4426 contabil, inclusiv pe partenerul fiscal: 21; fiscal pe cont: 0",
@@ -149,8 +149,8 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
             && Sold(contabil.Where(p => p.Cont == Cont("4426") && p.PartenerFiscal == vama)) == 21
             && Sold(p.Where(p => p.Carte == N.Carte.Fiscal && p.Cont == Cont("4426"))) == 0);
         Verifica("SC-DVI-16", "martor fără Carte: rulaje 121/121 și sold cont × partener fiscal 121",
-            p.Where(p => p.Latura == N.Sens.Debit).Sum(p => p.Valoare) == 121
-            && p.Where(p => p.Latura == N.Sens.Credit).Sum(p => p.Valoare) == 121
+            p.Where(p => p.Sens == N.Sens.Debit).Sum(p => p.Valoare) == 121
+            && p.Where(p => p.Sens == N.Sens.Credit).Sum(p => p.Valoare) == 121
             && Sold(p.Where(p => p.Cont == Cont("4426") && p.PartenerFiscal == vama)) == 121);
         Jurnal("SC-DVI-16", [d.Id], An * 100 + 1, 100, 21);
     }
@@ -228,15 +228,15 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
 
     void TransferPur() {
         var stins = Guid.NewGuid(); var stingator = Guid.NewGuid();
-        N.Postare P(Guid doc, N.Sens latura, decimal v) => new(new N.Coordonate {
-            Cont = Cont("401"), Latura = latura, Data = Ianuarie,
+        N.Postare P(Guid doc, N.Sens sens, decimal v) => new(new N.Coordonate {
+            Cont = Cont("401"), Sens = sens, Data = Ianuarie,
             Repartitor = new N.Repartitor(Furnizor, N.FelRepartitor.Partener),
             Unitate = N.UnitateSold.DeschidePartida(Cont("401"), Furnizor, doc, Ianuarie),
         }, 0, 0, v, new(doc, null));
         var cerere = new C.Transferuri.Cerere(stingator, Ianuarie, [P(stingator, N.Sens.Debit, 10)], [],
             stins, Ianuarie, [P(stins, N.Sens.Credit, 21)], [], 10, Ianuarie);
         N.Postare[] Baza(Guid doc) => [.. new[] { N.Sens.Debit, N.Sens.Credit }.Select(l =>
-            new N.Postare(new N.Coordonate { Cont = Cont("4426"), Latura = l, Data = Ianuarie,
+            new N.Postare(new N.Coordonate { Cont = Cont("4426"), Sens = l, Data = Ianuarie,
                 Carte = N.Carte.Fiscal, Repartitor = new N.Repartitor(Loc, N.FelRepartitor.UnitateInterna),
                 PartenerFiscal = l == N.Sens.Debit ? Furnizor : null, Loc = l == N.Sens.Debit ? Loc : null,
                 CodTva = l == N.Sens.Debit ? new(Tva("IMP21"), N.SensTva.Achizitie, N.RolTva.Baza) : null,
@@ -285,7 +285,7 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
         Jurnal("SC-DVI-07", [tarziu.Id], An * 100 + 1, 0, 0); Jurnal("SC-DVI-07", [tarziu.Id], An * 100 + 2, 100, 21);
         foreach (var (id, d) in new[] { ("SC-DVI-07", tarziu), ("SC-DVI-18", deschis) }) {
             var pcont = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == d.Id
-                && p.Carte == N.Carte.Contabil && p.Latura == N.Sens.Debit).ToList());
+                && p.Carte == N.Carte.Contabil && p.Sens == N.Sens.Debit).ToList());
             Verifica(id, "contabil: 0 în ianuarie, 21 în februarie", pcont.Where(p => p.Data <= new DateOnly(An, 1, 31)).Sum(p => p.Valoare) == 0
                 && pcont.Where(p => p.Data == Februarie).Sum(p => p.Valoare) == 21);
         }

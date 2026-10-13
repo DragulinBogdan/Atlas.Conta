@@ -12,17 +12,17 @@ static class UnicitateFiscala {
         var linii = asteptate.Select(p => p.Linie).ToHashSet();
         if (!linii.SetEquals(actual.Select(p => p.Linie))) return false;
         if (actual.Any(p => !linii.Contains(p.Linie)
-            || (p.Tva == null && (p.Rol != null || p.Sens != null)))) return false;
+            || (p.Tva == null && (p.Rol != null || p.SensTva != null)))) return false;
         if (fiscale.Count != matrice.Count) return false;
-        foreach (var grup in matrice.GroupBy(p => (p.Linie, p.Tva, p.Sens))) {
-            var ale = fiscale.Where(p => (p.Linie, p.Tva, p.Sens) == grup.Key).ToList();
+        foreach (var grup in matrice.GroupBy(p => (p.Linie, p.Tva, p.SensTva))) {
+            var ale = fiscale.Where(p => (p.Linie, p.Tva, p.SensTva) == grup.Key).ToList();
             if (grup.Count(p => p.Rol == N.RolTva.Baza) != 1 || grup.Count(p => p.Rol == N.RolTva.Taxa) > 1 || grup.Count(p => p.Rol == N.RolTva.Autocolectare) > 1) return false;
             foreach (var rol in new[] { N.RolTva.Baza, N.RolTva.Taxa, N.RolTva.Autocolectare }) {
                 var a = grup.Where(p => p.Rol == rol).ToList(); var r = ale.Where(p => p.Rol == rol).ToList();
                 if (a.Count != r.Count || a.Sum(p => p.Valoare) != r.Sum(p => p.Valoare)) return false;
             }
         }
-        return fiscale.All(p => matrice.Any(a => (p.Linie, p.Tva, p.Sens, p.Rol) == (a.Linie, a.Tva, a.Sens, a.Rol)));
+        return fiscale.All(p => matrice.Any(a => (p.Linie, p.Tva, p.SensTva, p.Rol) == (a.Linie, a.Tva, a.SensTva, a.Rol)));
     }
 
     public static void Verifica(IObjectSpace os, Action<string, bool> check, bool privat,
@@ -50,8 +50,8 @@ static class UnicitateFiscala {
             N.FelTranzactie fel, Guid[] linii) {
         var p = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == doc && p.Tranzactie.Fel == fel).ToList();
         Verifica(os, check, privat, doc, fel,
-            p.Select(p => new RandScena(p.Cont, p.Latura, p.Valoare, Linie: p.LinieId, Tva: p.TipTvaId,
-                Rol: p.RolTva, Sens: p.SensTva, Carte: p.Carte)).ToList(),
+            p.Select(p => new RandScena(p.Cont, p.Sens, p.Valoare, Linie: p.LinieId, Tva: p.TipTvaId,
+                Rol: p.RolTva, SensTva: p.SensTva, Carte: p.Carte)).ToList(),
             linii.Select(l => new RandScena(Guid.Empty, N.Sens.Debit, 0, Linie: l)).ToList());
     }
 }

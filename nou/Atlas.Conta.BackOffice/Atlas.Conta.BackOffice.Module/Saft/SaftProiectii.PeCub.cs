@@ -314,8 +314,8 @@ public static partial class SaftProiectii {
                         JournalID = cod, Type = cod,
                         Description = tipuriDocument.GetValueOrDefault(cod) ?? (cod == JurnalDeschidere ? "Deschidere" : cod),
                     };
-                var debit = tx.Where(p => p.Latura == N.Sens.Debit).Sum(p => p.Valoare);
-                var credit = tx.Where(p => p.Latura == N.Sens.Credit).Sum(p => p.Valoare);
+                var debit = tx.Where(p => p.Sens == N.Sens.Debit).Sum(p => p.Valoare);
+                var credit = tx.Where(p => p.Sens == N.Sens.Credit).Sum(p => p.Valoare);
                 if (debit != credit)
                     Refuza(RefuzProvenienta, $"{Eticheta(prima.DocumentId)}: tranzacția {tx.Key} nu e echilibrată "
                         + $"(D {debit}, C {credit}).", prima.DocumentId, tx.Key);
@@ -344,7 +344,7 @@ public static partial class SaftProiectii {
                         AccountID = Simbol(p.Cont),
                         CustomerID = customer, SupplierID = supplier,
                         Description = (p.LinieId is Guid l ? descrieri.GetValueOrDefault(l) : null) ?? descriere,
-                        DebitCreditIndicator = p.Latura == N.Sens.Debit ? "D" : "C",
+                        DebitCreditIndicator = p.Sens == N.Sens.Debit ? "D" : "C",
                         Amount = p.Valoare, CurrencyCode = DefaultCurrencyCode, CurrencyAmount = p.Valoare,
                         Analiza = Analiza(p),
                         TaxInformation = TaxaGl(p, cod),
@@ -422,8 +422,8 @@ public static partial class SaftProiectii {
             var doc = documente[docId];
             var eticheta = Eticheta(docId);
             var rol = vanzare ? RolTertCont.Client : RolTertCont.Furnizor;
-            var laturaTert = vanzare ? N.Sens.Debit : N.Sens.Credit;
-            decimal Comercial(PostareJurnal p) => p.Latura == laturaTert ? p.Valoare : -p.Valoare;
+            var sensTert = vanzare ? N.Sens.Debit : N.Sens.Credit;
+            decimal Comercial(PostareJurnal p) => p.Sens == sensTert ? p.Valoare : -p.Valoare;
             decimal Contrapartida(PostareJurnal p) => -Comercial(p);
             bool EsteTert(PostareJurnal p) => Rol(p.Cont) == rol;
 

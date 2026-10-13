@@ -36,7 +36,7 @@ sealed partial class ScenariiNir {
             NumaratorSql.Instanta.Reseteaza();
             MotorOperare.Opereaza(os, doc);
             var citiri = NumaratorSql.Instanta.Comenzi.Count(sql => sql.Contains("FROM \"Postare\"")
-                && sql.Contains("JOIN \"Tranzactie\"") && sql.Contains("p.\"Latura\" = 1")
+                && sql.Contains("JOIN \"Tranzactie\"") && sql.Contains("p.\"Sens\" = 1")
                 && sql.Contains("p.\"FelUnitate\" = 1"));
             Verifica("SC-NIR-33", $"{numar} linii: recepția sursei citită o singură dată ({citiri})", citiri == 1);
         }

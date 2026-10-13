@@ -36,7 +36,7 @@ sealed partial class ScenariiNir {
         var id = Cont(cont);
         return os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == doc && p.Cont == id
             && p.Carte == N.Carte.Contabil && (fel == null || p.Tranzactie.Fel == fel))
-            .Sum(p => (decimal?)(p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare)) ?? 0;
+            .Sum(p => (decimal?)(p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare)) ?? 0;
     });
     void Delta(string scena, Guid nir, string cont, decimal suma) {
         Verifica(scena, "delta pe contul cauzei și invers pe stoc", Net(nir, cont) == suma && Net(nir, Stoc) == -suma);

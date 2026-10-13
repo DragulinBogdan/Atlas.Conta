@@ -94,7 +94,7 @@ sealed partial class ScenariiD9b(Func<IObjectSpace> deschide, Action<string, boo
         Rest("SC-D9B-04", f, -100); Rest("SC-D9B-04", p.Id, 40);
         Verifica("SC-D9B-04", "A: transferurile au zero rulaj pe cont și sens", CuSpatiu(os =>
             P.Postari(os).Where(x => x.Repartitor == Furnizor && x.Tranzactie.Fel == N.FelTranzactie.Transfer)
-                .GroupBy(x => new { x.Cont, x.Latura }).Select(g => g.Sum(x => x.Valoare)).ToArray().All(x => x == 0)));
+                .GroupBy(x => new { x.Cont, x.Sens }).Select(g => g.Sum(x => x.Valoare)).ToArray().All(x => x == 0)));
     }
 
     void DouaConturi() {

@@ -80,12 +80,12 @@ static class Reconciliere {
             .ToDictionary(c => c.ID, c => c.Simbol);
         var postari = Citiri.Contabil.Postari(os)
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere)
-            .Select(p => new { p.Cont, p.Latura, p.Valoare })
+            .Select(p => new { p.Cont, p.Sens, p.Valoare })
             .ToList();
         var db = new Dictionary<string, decimal>(StringComparer.Ordinal);
         foreach (var p in postari) {
             var simbol = simbolPeId[p.Cont];
-            db[simbol] = db.GetValueOrDefault(simbol) + (p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare);
+            db[simbol] = db.GetValueOrDefault(simbol) + (p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare);
         }
 
         // ---- Partea SURSĂ: soldurile 1C, mapate și agregate ----
@@ -181,7 +181,7 @@ static class Reconciliere {
             .ToDictionary(g => g.ID, g => g.Denumire);
         var randuri = Citiri.Loturi.Postari(os)
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere)
-            .Select(p => new { p.Produs, Gestiune = p.Repartitor, p.Cantitate, p.Latura, p.Valoare })
+            .Select(p => new { p.Produs, Gestiune = p.Repartitor, p.Cantitate, p.Sens, p.Valoare })
             .ToList()
             .Select(p => new {
                 ProdusId = p.Produs.Value,
@@ -189,7 +189,7 @@ static class Reconciliere {
                 RepartitorId = p.Gestiune.Value,
                 RepartitorDesc = denumireGestiune.GetValueOrDefault(p.Gestiune.Value),
                 p.Cantitate,
-                Valoare = p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare,
+                Valoare = p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare,
             })
             .ToList();
 

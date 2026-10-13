@@ -48,11 +48,11 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
     RandScena[] Rand(FacturaScena d, int index, decimal q, decimal v,
             N.FelTranzactie fel = N.FelTranzactie.Transfer, string tip = null) {
         var l = d.Linii[index];
-        var latura = q < 0m && fel == N.FelTranzactie.Operare ? N.Sens.Credit : N.Sens.Debit;
+        var sens = q < 0m && fel == N.FelTranzactie.Operare ? N.Sens.Credit : N.Sens.Debit;
         var valoare = q < 0m && fel == N.FelTranzactie.Transfer ? -v : v;
-        return [new(Cont(tip ?? Stoc), latura, valoare, q, Magazie, l.Lot, l.Produs,
+        return [new(Cont(tip ?? Stoc), sens, valoare, q, Magazie, l.Lot, l.Produs,
                 Linie: l.Id, Spatiu: N.Spatiu.Stoc),
-            new(Cont(tip ?? Stoc), latura, 0m, -q, Produs: l.Produs, Linie: l.Id,
+            new(Cont(tip ?? Stoc), sens, 0m, -q, Produs: l.Produs, Linie: l.Id,
                 Contrapondere: N.Contrapondere.Transformare)];
     }
     static RandScena[] Inverse(params RandScena[] randuri) =>
@@ -99,8 +99,8 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         Verifica("SC-CIT-04", "ASM mixt: două postări economice de 40, fără Transfer/contrapondere", CuSpatiu(os => {
             var randuri = C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == mixt.Doc.Id).ToList();
             return randuri.Count == 2 && randuri.All(p => p.Valoare == 40 && p.Repartitor == Magazie)
-                && randuri.Single(p => p.Latura == N.Sens.Debit).Cont == Cont(Fabricat)
-                && randuri.Single(p => p.Latura == N.Sens.Credit).Cont == Cont(Materie);
+                && randuri.Single(p => p.Sens == N.Sens.Debit).Cont == Cont(Fabricat)
+                && randuri.Single(p => p.Sens == N.Sens.Credit).Cont == Cont(Materie);
         }));
         if (Privat) Verifica("SC-SAFT-10", "ASM mixt pe cub: GL numai D 345 40 / C materie 40, fără transfer sau contraponderi",
             CuSpatiu(os => {

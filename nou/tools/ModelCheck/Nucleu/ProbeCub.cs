@@ -81,7 +81,7 @@ static class ProbeCub {
         os.GetObjectsQuery<C.Postare>()
             .Where(p => p.Unitate == unitate)
             .ToList()
-            .Sum(p => p.Latura == N.Sens.Debit ? p.Valoare : -p.Valoare);
+            .Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare);
 
     public static void FaraRanduri(IObjectSpace os, Action<string, bool> check, string nume, Guid document) {
         ArgumentNullException.ThrowIfNull(check);
@@ -161,7 +161,7 @@ static class ProbeCub {
             && operare.Count(p => p.Coordonate.PerioadaDeclarare != null) == fiscale.Count);
 
         var solduri = operare.Concat(storno)
-            .GroupBy(p => (p.Coordonate.Cont, p.Coordonate.Latura, p.Coordonate.Repartitor, p.Coordonate.Contrapondere,
+            .GroupBy(p => (p.Coordonate.Cont, p.Coordonate.Sens, p.Coordonate.Repartitor, p.Coordonate.Contrapondere,
                 p.Coordonate.Produs, p.Coordonate.Unitate, p.Coordonate.PartenerFiscal, p.Coordonate.Loc,
                 p.Coordonate.CodTva, p.Coordonate.Analiza, p.Cauza.Linie))
             .Select(g => (Valoare: g.Sum(p => p.Valoare), Cantitate: g.Sum(p => p.Cantitate)))

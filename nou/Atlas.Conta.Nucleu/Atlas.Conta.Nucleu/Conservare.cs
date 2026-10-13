@@ -46,7 +46,7 @@ public static class Conservare {
                 continue;
             }
             var (a, b) = (perechea[0], perechea[1]);
-            var laturiOpuse = a.Coordonate.Latura != b.Coordonate.Latura;
+            var laturiOpuse = a.Coordonate.Sens != b.Coordonate.Sens;
             var contrapartida = a.Cauza == b.Cauza && a.Cantitate + b.Cantitate == 0m
                 && (laturiOpuse
                     ? a.Valoare == b.Valoare && a.ValoareValuta == b.ValoareValuta
@@ -113,7 +113,7 @@ public static class Conservare {
         foreach (var (carte, suma) in Aduna(
                      tranzactie.Postari,
                      p => p.Coordonate.Carte,
-                     p => p.Coordonate.Latura == Sens.Debit ? p.Valoare : -p.Valoare))
+                     p => p.Coordonate.Sens == Sens.Debit ? p.Valoare : -p.Valoare))
             if (suma != 0m)
                 refuzuri.Add(new Refuz(
                     Coduri.ConservareValoare,
@@ -137,12 +137,12 @@ public static class Conservare {
     static void VerificaTransferul(Tranzactie tranzactie, List<Refuz> refuzuri) {
         foreach (var (cheie, suma) in Aduna(
                      tranzactie.Postari,
-                     p => (Cont: p.Coordonate.Cont, Latura: p.Coordonate.Latura),
+                     p => (Cont: p.Coordonate.Cont, Sens: p.Coordonate.Sens),
                      p => p.Valoare))
             if (suma != 0m)
                 refuzuri.Add(new Refuz(
                     Coduri.ConservareTransfer,
-                    $"Σ valoare pe (contul {cheie.Cont}, {cheie.Latura}) = {suma}, nu 0",
+                    $"Σ valoare pe (contul {cheie.Cont}, {cheie.Sens}) = {suma}, nu 0",
                     null));
         foreach (var (cheie, suma) in Aduna(
                      tranzactie.Postari.Where(p => p.Cantitate != 0m),

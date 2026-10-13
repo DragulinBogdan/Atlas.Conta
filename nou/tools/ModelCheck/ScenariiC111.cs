@@ -83,7 +83,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
 
     // ───────────────────────── infrastructura cazurilor ─────────────────────────
 
-    static RandScena Rand(C.Postare p) => new(p.Cont, p.Latura, p.Valoare, p.Cantitate,
+    static RandScena Rand(C.Postare p) => new(p.Cont, p.Sens, p.Valoare, p.Cantitate,
         p.Repartitor, p.Unitate, p.Produs, p.PartenerFiscal, p.LinieId, p.TipTvaId, p.RolTva,
         p.PerioadaDeclarare, p.SensTva, p.Spatiu, p.CodEconomic, p.Carte, p.Contrapondere, p.Loc);
 
@@ -187,10 +187,10 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             var avans = N.UnitateSold.DeschidePartida(Cont(Avans), titular, d.Id, Ianuarie).Id;
             return [
                 new(contBaza, Debit, 100, Repartitor: repartitorBaza, Unitate: unitateBaza, PartenerFiscal: titular, Linie: l,
-                    Tva: n21, Rol: N.RolTva.Baza, Perioada: Perioada, Sens: N.SensTva.Achizitie, Loc: Loc),
+                    Tva: n21, Rol: N.RolTva.Baza, Perioada: Perioada, SensTva: N.SensTva.Achizitie, Loc: Loc),
                 new(Cont(Avans), Credit, 100, Repartitor: titular, Unitate: avans, Linie: l),
                 new(Cont("4426"), Debit, 21, Repartitor: Loc, PartenerFiscal: titular, Linie: l,
-                    Tva: n21, Rol: N.RolTva.Taxa, Perioada: Perioada, Sens: N.SensTva.Achizitie, Loc: Loc),
+                    Tva: n21, Rol: N.RolTva.Taxa, Perioada: Perioada, SensTva: N.SensTva.Achizitie, Loc: Loc),
                 new(Cont(Avans), Credit, 21, Repartitor: titular, Unitate: avans, Linie: l)];
         }
 
@@ -289,7 +289,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             });
             Opereaza(explicita);
             Verifica("SC-C111-10", "plata cu ambele conturi explicite creditează contul propriu cu 7, fără niciun repartitor",
-                Cub(explicita, Operare).Count(p => p.Cont == banca && p.Latura == Credit && p.Valoare == 7 && p.Repartitor == null) == 1);
+                Cub(explicita, Operare).Count(p => p.Cont == banca && p.Sens == Credit && p.Valoare == 7 && p.Repartitor == null) == 1);
         }
         finally { Comanda(os => { os.Delete(os.GetObjectByKey<RegulaContare>(regula)); os.CommitChanges(); }); }
 
@@ -404,12 +404,12 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         var l = f.Linii[0]; var datorie = Partida(f.Id, ContFurnizor);
         RandScena[] receptie = Privat
             ? [new(Cont(Stoc), Debit, 100, 10, Magazie, l.Lot, l.Produs, PartenerFiscal: Furnizor, Linie: l.Id,
-                    Tva: Tva("N21"), Rol: N.RolTva.Baza, Perioada: Perioada, Sens: N.SensTva.Achizitie, Spatiu: N.Spatiu.Stoc,
+                    Tva: Tva("N21"), Rol: N.RolTva.Baza, Perioada: Perioada, SensTva: N.SensTva.Achizitie, Spatiu: N.Spatiu.Stoc,
                     Loc: Magazie),
                 new(Cont(ContFurnizor), Credit, 100, -10, Furnizor, datorie, l.Produs, Linie: l.Id,
                     Contrapondere: N.Contrapondere.Tert),
                 new(Cont("4426"), Debit, 21, Repartitor: Magazie, Produs: l.Produs, PartenerFiscal: Furnizor, Linie: l.Id,
-                    Tva: Tva("N21"), Rol: N.RolTva.Taxa, Perioada: Perioada, Sens: N.SensTva.Achizitie, Loc: Magazie),
+                    Tva: Tva("N21"), Rol: N.RolTva.Taxa, Perioada: Perioada, SensTva: N.SensTva.Achizitie, Loc: Magazie),
                 new(Cont(ContFurnizor), Credit, 21, Repartitor: Furnizor, Unitate: datorie, Produs: l.Produs, Linie: l.Id)]
             : [new(Cont(Stoc), Debit, 100, 10, Magazie, l.Lot, l.Produs, Linie: l.Id, Spatiu: N.Spatiu.Stoc, Economic: Economic),
                 new(Cont(ContFurnizor), Credit, 100, -10, Furnizor, datorie, l.Produs, Linie: l.Id, Economic: Economic,
@@ -451,10 +451,10 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
                 var l = f.Linii[i].Id;
                 var debit = new RandScena(Cont("4111"), Debit, net, Repartitor: Client, Unitate: creanta, Linie: l);
                 var baza = new RandScena(cont, Credit, net, Repartitor: repartitor, Unitate: unitate, PartenerFiscal: Client, Linie: l,
-                    Tva: n21, Rol: N.RolTva.Baza, Perioada: Perioada, Sens: N.SensTva.Livrare, Loc: Magazie);
+                    Tva: n21, Rol: N.RolTva.Baza, Perioada: Perioada, SensTva: N.SensTva.Livrare, Loc: Magazie);
                 return [debit, baza, debit with { Valoare = taxa },
                     new(Cont("4427"), Credit, taxa, Repartitor: Magazie, PartenerFiscal: Client, Linie: l,
-                        Tva: n21, Rol: N.RolTva.Taxa, Perioada: Perioada, Sens: N.SensTva.Livrare, Loc: Magazie)];
+                        Tva: n21, Rol: N.RolTva.Taxa, Perioada: Perioada, SensTva: N.SensTva.Livrare, Loc: Magazie)];
             }
             // C111-Q14: fără fapt fiscal, locul scos din repartitor de titularul partidei rămâne pe postare.
             RandScena[] regularizare = cuTva
@@ -495,10 +495,10 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             Postari("SC-C111-25", f.Id, Operare, Ianuarie,
                 new(Cont("4111"), Debit, 100, Repartitor: Client, Unitate: Partida(f.Id, "4111", Client), Linie: l),
                 new(Cont("704"), Credit, 100, Repartitor: Magazie, Linie: l, Tva: n21, Rol: N.RolTva.Baza,
-                    Perioada: Perioada, Sens: N.SensTva.Livrare, Loc: Magazie),
+                    Perioada: Perioada, SensTva: N.SensTva.Livrare, Loc: Magazie),
                 new(contExplicit, Debit, 21, Linie: l),
                 new(Cont("4427"), Credit, 21, Repartitor: Magazie, Linie: l, Tva: n21, Rol: N.RolTva.Taxa,
-                    Perioada: Perioada, Sens: N.SensTva.Livrare, Loc: Magazie));
+                    Perioada: Perioada, SensTva: N.SensTva.Livrare, Loc: Magazie));
         });
         CuPoliticaTva("RLF", SursaCont.Explicit, contExplicit, () => {
             var d = CuSpatiu(os => {
@@ -511,11 +511,11 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             var linie = d.Linii[0].Id;
             Postari("SC-C111-25", d.Id, Operare, Ianuarie,
                 new(Cont("371"), Debit, -20, -2, Magazie, lot.Lot, lot.Produs, Linie: linie, Tva: n21, Rol: N.RolTva.Baza,
-                    Perioada: Perioada, Sens: N.SensTva.Achizitie, Spatiu: N.Spatiu.Stoc, Loc: Magazie),
+                    Perioada: Perioada, SensTva: N.SensTva.Achizitie, Spatiu: N.Spatiu.Stoc, Loc: Magazie),
                 new(Cont("401"), Credit, -20, 2, Furnizor, Partida(d.Id, "401"), lot.Produs, Linie: linie,
                     Contrapondere: N.Contrapondere.Tert),
                 new(Cont("4426"), Debit, -4.2m, Repartitor: Magazie, Produs: lot.Produs, Linie: linie, Tva: n21,
-                    Rol: N.RolTva.Taxa, Perioada: Perioada, Sens: N.SensTva.Achizitie, Loc: Magazie),
+                    Rol: N.RolTva.Taxa, Perioada: Perioada, SensTva: N.SensTva.Achizitie, Loc: Magazie),
                 new(contExplicit, Credit, -4.2m, Produs: lot.Produs, Linie: linie));
         });
         Verifica("SC-C111-25", "politicile de TVA sunt readuse la seed", CuSpatiu(os =>
@@ -539,7 +539,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
                     new(Cont("4111"), Debit, 100, Repartitor: Client, Unitate: Partida(f.Id, "4111", Client), Linie: l),
                     new(Cont("419"), Credit, 100, Repartitor: Client, Unitate: Partida(f.Id, "419", Client),
                         PartenerFiscal: partener, Linie: l, Tva: ti21, Rol: N.RolTva.Baza, Perioada: Perioada,
-                        Sens: N.SensTva.Livrare, Loc: Magazie)];
+                        SensTva: N.SensTva.Livrare, Loc: Magazie)];
                 Postari("SC-C111-28", f.Id, Operare, Ianuarie, randuri);
                 documente.Add((sursa, partener, f, randuri));
             });
@@ -586,9 +586,9 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
             new(comercial, Debit, 100, Repartitor: Client, Linie: cuTert.Linii[0].Id),
             new(comercial, Debit, 30, Repartitor: Loc, Linie: faraTert.Linii[0].Id),
             new(comercial, Debit, 50, Repartitor: Magazie, PartenerFiscal: Furnizor, Linie: factura.Linii[0].Id, Tva: Tva("N21"),
-                Rol: N.RolTva.Baza, Perioada: Perioada, Sens: N.SensTva.Achizitie, Loc: Magazie),
+                Rol: N.RolTva.Baza, Perioada: Perioada, SensTva: N.SensTva.Achizitie, Loc: Magazie),
             new(comercial, Debit, 100, Repartitor: altTert, PartenerFiscal: titular, Linie: decont.Linii[0].Id, Tva: Tva("N21"),
-                Rol: N.RolTva.Baza, Perioada: Perioada, Sens: N.SensTva.Achizitie, Loc: Loc));
+                Rol: N.RolTva.Baza, Perioada: Perioada, SensTva: N.SensTva.Achizitie, Loc: Loc));
 
         var saft = CuSpatiu(os => SaftProiectii.SaftPeCub(os, An, 1));
         var simbol = SaftReguli.SimbolSaft(Marcaj + "-R");
@@ -674,7 +674,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         Verifica("SC-C111-18", "repartitorul fără fel cunoscut e refuz explicit la recitire, nu nul", CuSpatiu(os => {
             try {
                 C.Randuri.Citeste(os, [new C.Postare { ID = Guid.NewGuid(), DocumentId = nota.Id, Cont = activ,
-                    Latura = Debit, Data = Ianuarie, Repartitor = Guid.NewGuid(), Carte = N.Carte.Contabil, Valoare = 1 }]);
+                    Sens = Debit, Data = Ianuarie, Repartitor = Guid.NewGuid(), Carte = N.Carte.Contabil, Valoare = 1 }]);
                 return false;
             }
             catch (N.RefuzException e) { return e.Refuz.Cod == CoduriRefuz.RepartitorFaraFel; }
@@ -690,7 +690,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         Opereaza(prima.Id); Opereaza(aDoua.Id);
         RandScena Achizitie(FacturaScena f, Guid furnizor, decimal valoare) => new(activ, Debit, valoare, Repartitor: Magazie,
             PartenerFiscal: furnizor, Linie: f.Linii[0].Id, Tva: Tva("N21"), Rol: N.RolTva.Baza, Perioada: Perioada,
-            Sens: N.SensTva.Achizitie, Loc: Magazie);
+            SensTva: N.SensTva.Achizitie, Loc: Magazie);
         Randuri("SC-C111-29", "cele două achiziții stau pe același loc, fiecare cu furnizorul ei ca partener fiscal",
             CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => (p.DocumentId == prima.Id || p.DocumentId == aDoua.Id)
                 && p.Cont == activ).ToList()),
@@ -701,7 +701,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         var peParteneri = CuSpatiu(os => os.GetObjectsQuery<C.Postare>().Where(p => p.Cont == activ && p.Unitate == null
                 && p.Carte == N.Carte.Contabil && p.Repartitor == Magazie
                 && (p.DocumentId == prima.Id || p.DocumentId == aDoua.Id || p.DocumentId == iesire.Id)).ToList())
-            .GroupBy(p => p.PartenerFiscal).Select(g => g.Sum(p => p.Latura == Debit ? p.Valoare : -p.Valoare)).Order().ToList();
+            .GroupBy(p => p.PartenerFiscal).Select(g => g.Sum(p => p.Sens == Debit ? p.Valoare : -p.Valoare)).Order().ToList();
         Verifica("SC-C111-29", "poziția locului rămâne 500; pe cheia veche, cu partenerul, grupul notei ar fi fost −1500",
             peParteneri.Sum() == 500 && peParteneri.SequenceEqual([-1500m, 800m, 1200m]));
         var fisaNoua = Fisa(); var punere = Pif(fisaNoua, 500, aDoua.Linii[0].Id);
@@ -758,12 +758,12 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         RandScena[] Linie(int i, string cod, bool inversa) {
             var l = f.Linii[i].Id; var t = Tva(cod);
             var baza = new RandScena(Cont(Serviciu), Debit, 100, Repartitor: Magazie, PartenerFiscal: Furnizor, Linie: l, Tva: t,
-                Rol: N.RolTva.Baza, Perioada: Perioada, Sens: N.SensTva.Achizitie, Loc: Magazie);
+                Rol: N.RolTva.Baza, Perioada: Perioada, SensTva: N.SensTva.Achizitie, Loc: Magazie);
             var credit = new RandScena(datorie, Credit, 100, Repartitor: Furnizor, Unitate: proprie, Linie: l);
             return [baza, credit, baza with { Cont = Cont("4426"), Valoare = 21, Rol = N.RolTva.Taxa },
                 inversa
                     ? new(Cont("4427"), Credit, 21, PartenerFiscal: Furnizor, Linie: l, Tva: t, Rol: N.RolTva.Autocolectare,
-                        Perioada: Perioada, Sens: N.SensTva.Achizitie, Loc: Magazie)
+                        Perioada: Perioada, SensTva: N.SensTva.Achizitie, Loc: Magazie)
                     : credit with { Valoare = 21 }];
         }
         RandScena[] operare = [.. Linie(0, "N21", false), .. Linie(1, "TI21", true)];

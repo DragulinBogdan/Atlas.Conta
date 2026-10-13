@@ -96,7 +96,7 @@ sealed class ScenariiConsumatori(Func<IObjectSpace> deschide, Action<string, boo
     C.Postare PostareBruta(IObjectSpace os, Guid tranzactie, Action<C.Postare> completeaza = null) {
         var p = os.CreateObject<C.Postare>();
         p.TranzactieId = tranzactie; p.Spatiu = N.Spatiu.Contabil; p.Data = Ianuarie; p.Cont = Cont(Serviciu);
-        p.Latura = N.Sens.Debit; p.Carte = N.Carte.Contabil; p.Valoare = 1m;
+        p.Sens = N.Sens.Debit; p.Carte = N.Carte.Contabil; p.Valoare = 1m;
         completeaza?.Invoke(p);
         return p;
     }

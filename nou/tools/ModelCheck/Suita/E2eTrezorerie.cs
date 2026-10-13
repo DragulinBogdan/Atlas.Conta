@@ -298,9 +298,9 @@ static class E2eTrezorerie {
             var partidaAvans = N.UnitateSold.DeschidePartida(cont542.ID, angajat.ID, avans.ID, avans.DataInregistrare);
             s.Check("SC-DEC-16 (096): PLT 50 pe angajat deschide partidă fără rol comercial",
                 contractAvans.EsteAcceptat && postariAvans.Length == 2
-                && postariAvans.Any(p => p.Coordonate.Cont == cont542.ID && p.Coordonate.Latura == N.Sens.Debit
+                && postariAvans.Any(p => p.Coordonate.Cont == cont542.ID && p.Coordonate.Sens == N.Sens.Debit
                     && p.Coordonate.Unitate == partidaAvans && p.Coordonate.Repartitor?.Id == angajat.ID && p.Valoare == 50)
-                && postariAvans.Any(p => p.Coordonate.Cont == cont531.ID && p.Coordonate.Latura == N.Sens.Credit
+                && postariAvans.Any(p => p.Coordonate.Cont == cont531.ID && p.Coordonate.Sens == N.Sens.Credit
                     && p.Coordonate.Unitate == null && p.Valoare == 50)
                 && cont542.RolTert == RolTertCont.Niciunul);
             s.Check("SC-DEC-16: conservare și determinism pentru avans",
