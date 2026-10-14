@@ -536,5 +536,6 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         Este("SC-CVL-17", "ianuarie neschimbat", corectat, 40m, 480m, 720m, 1200m, Zi(31));
         InchidereaInainteaCorectiei(pierde);
         Saft(saft);
+        CititoriCompensare(saft);
     }
 }

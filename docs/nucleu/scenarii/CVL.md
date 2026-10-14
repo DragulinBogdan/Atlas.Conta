@@ -107,8 +107,8 @@ prin agregare înainte de stabilirea provenienței.
 
 | Stare | Scenarii |
 |---|---|
-| rulate | SC-CVL-01…18, 20…27, 29…32 |
-| rulate parțial | SC-CVL-19 (transfer, descărcare de gestiune și cronologie; vânzarea către terț, recepția stornată și anul anterior sunt probate în nucleu; returul, ASM, LDI și reziduul preexistent cad pe același predicat, „orice altă postare pe lot”, fără scenariu propriu); SC-CVL-28 (tranzacțiile, stările și explicația; fără fișă, jurnal și snapshot) |
+| rulate | SC-CVL-01…18, 20…32 |
+| rulate parțial | SC-CVL-19 (transfer, descărcare de gestiune și cronologie; vânzarea către terț, recepția stornată și anul anterior sunt probate în nucleu; returul, ASM, LDI și reziduul preexistent cad pe același predicat, „orice altă postare pe lot”, fără scenariu propriu) |
 
 SC-CVL-18 și 25 rulează și pe ușile culegerii (pasul 4): linia culeasă prin
 `FacturaIntrareApply` și prin evenimentele ecranului XAF (`CulegereDocument`),
@@ -127,6 +127,13 @@ cu suma faptelor. Datoria se citește pe un partener propriu cazului. Pe fișa
 furnizorului corecția are câte un credit pe alocare (80 și 120), nu un
 singur rând de 200. Reconstrucția snapshot-ului găsește zero diferențe și
 nu scrie tranzacții.
+
+SC-CVL-28 citește pe fixture-ul SAF-T (corecția în ianuarie, storno bon la
+05.02, storno corecție la 05.03, februarie închisă): jurnalul pune K și J sub
+numărul corecției, nu al bonului; fișa stocului pe februarie are inversa
+bonului sub numărul lui și K sub numărul corecției, cu sold 1.200; stocul
+lotului la 28.02 e 100/1.200 din mișcări, din snapshot și în rândul persistat
+al lunii. Bonul stornat își păstrează valoarea 600 pe linie.
 
 SC-CVL-32 exportă ianuarie, februarie și martie pe privat; pe bugetar SAF-T
 nu se aplică, iar proba asertă că nu există proiecție. Factura corecției

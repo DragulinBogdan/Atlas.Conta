@@ -96,6 +96,46 @@ sealed partial class ScenariiCvl {
         }
     }
 
+    // SC-CVL-28 pe cititorii de produs: K (compensarea, 05.02) și J (stornoul corecției, 05.03), februarie închisă.
+    void CititoriCompensare(CazSaft saft) {
+        const string id = "SC-CVL-28";
+        var (caz, a) = (saft.Partial, saft.CorectiePartiala);
+        var (numar, produs, consum) = CuSpatiu(os => (os.GetObjectByKey<Document>(a).Numar, os.GetObjectByKey<Lot>(caz.Lot).ProdusId,
+            os.GetObjectsQuery<C.Postare>().First(p => p.Unitate == caz.Lot && p.Repartitor == Loc).Cont));
+        var stoc = Cont(Stoc);
+        var jurnal = CuSpatiu(os => ContabilProiectii.RegistruJurnal(os, Zi(1, 2), Zi(31, 3)).Where(r => r.DocumentId == a).ToList());
+        var (k, j) = (jurnal.Where(r => r.Data == Zi(5, 2)).ToList(), jurnal.Where(r => r.Data == Zi(5, 3)).ToList());
+        decimal Net(IEnumerable<JurnalRand> r, Guid cont) => r.Where(x => x.ContId == cont).Sum(x => x.Debit - x.Credit);
+        Console.WriteLine($"     MĂSURAT ({id}): jurnalul corecției {numar}: " + string.Join("; ", jurnal.Select(r =>
+            $"{r.Data:dd.MM} {r.ContSimbol}/{r.ContrapartidaSimbol} D{r.Debit} C{r.Credit}{(r.Storno ? " storno" : "")}")));
+        Verifica(id, "jurnalul arată K (consum −120 / stoc −120, ne-storno) și J (stornoul: stoc net −200, consum net 0, inversa lui K) "
+            + "sub numărul corecției",
+            jurnal.Count > 0 && jurnal.All(r => r.NumarNota == numar)
+            && k.Count == 2 && k.All(r => !r.Storno)
+            && k.Single(r => r.ContId == consum) is { Debit: -120m, ContrapartidaId: var kc } && kc == stoc
+            && k.Single(r => r.ContId == stoc) is { Credit: -120m }
+            && j.Count > 0 && j.All(r => r.Storno) && Net(j, stoc) == -200m && Net(j, consum) == 0m
+            && j.Any(r => r.ContId == consum && r.Debit == 120m));
+
+        var fisa = CuSpatiu(os => ContabilProiectii.FisaCont(os, stoc, Zi(1, 2), Zi(28, 2), materialId: produs).ToList());
+        Verifica(id, "fișa stocului pe februarie: inversa bonului sub numărul bonului, K sub numărul corecției, sold 1.200",
+            fisa.Count(r => r.DocumentId == a) == 1 && fisa.Single(r => r.DocumentId == a) is { NumarNota: var nk, Credit: -120m } && nk == numar
+            && fisa.Any(r => r.DocumentId != a) && fisa[^1].SoldCurent == 1200m);
+
+        var (vizibil, integral, snapshot) = CuSpatiu(os => (
+            StocProiectii.SoldStoc(os, Zi(28, 2), C.Citiri.CitireCumul.Vizibila).Where(r => r.LotId == caz.Lot && r.ContId == stoc)
+                .Select(r => new { r.Cantitate, r.Valoare }).Single(),
+            StocProiectii.SoldStoc(os, Zi(28, 2), C.Citiri.CitireCumul.Integrala).Where(r => r.LotId == caz.Lot && r.ContId == stoc)
+                .Select(r => new { r.Cantitate, r.Valoare }).Single(),
+            os.GetObjectsQuery<SoldPerioadaStoc>().Where(s => s.An == An && s.Luna == 2 && s.LotId == caz.Lot && s.ContId == stoc)
+                .Select(s => new { s.Cantitate, s.Valoare }).SingleOrDefault()));
+        Verifica(id, $"stocul lotului la 28.02 după storno bon: 100/1.200 din mișcări ({vizibil}), din snapshot ({integral}) "
+            + $"și în snapshot-ul lunii ({snapshot})",
+            vizibil.Cantitate == 100m && vizibil.Valoare == 1200m && integral.Equals(vizibil)
+            && snapshot is { Cantitate: 100m, Valoare: 1200m });
+        Este(id, "după storno corecție la 05.03", caz, 100m, 1000m, 0m, 1000m);
+    }
+
     string Snapshoturi() => CuSpatiu(os => string.Join("\n",
         os.GetObjectsQuery<SoldPerioadaStoc>().Where(s => s.An == An).ToList()
             .Select(s => $"S {s.Luna} {s.LotId} {s.ContId} {s.GestiuneId} {s.Cantitate} {s.Valoare}")
