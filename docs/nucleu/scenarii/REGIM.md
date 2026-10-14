@@ -36,7 +36,7 @@ cu gestiune de descărcare și rest nedescărcat.
 [IMO](IMO.md) (SC-IMO-16, SC-IMO-17).
 
 Conformitatea regim ↔ comandă pe tot catalogul e
-[SC-X-24](README.md#lanțurile-transversale-sc-x-): helperii comuni ai
+[SC-X-24](X.md#concurență-și-transversale-de-comandă): helperii comuni ai
 scenelor citesc regimul înaintea fiecărei comenzi Anulează, Stornează și
 Corectează și compară. Regimul care refuză o comandă reușită e abatere fără
 excepții. Comanda refuzată deși regimul o oferea e abatere, dacă

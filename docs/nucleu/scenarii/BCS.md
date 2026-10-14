@@ -1,6 +1,6 @@
 # BCS — bon de consum
 
-**Actualizat: 2026-09-22. Stare: primul lot verificat pe privat și bugetar.**
+**Actualizat: 2026-10-14. Stare: primul lot verificat pe privat și bugetar.**
 BCS scrie deja în regim dual. Catalogul nu certifică încă ciclul complet
 cerut de 091: cititorii comuni, explicația persistată și compensările după
 reevaluare depind de TR-D8/TR-D9; concurența rămâne de probat.
@@ -73,7 +73,7 @@ jos este **verificat pe ambele profiluri** (rularea din secțiunea Validare).
 | SC-BCS-09 | L:10/100; două linii 6 + 5 din același lot. Dry-run și operarea refuză întregul document, fără consumul primei linii; sold 10/100. | refuzat: `STOC_INSUFICIENT`, evaluare și gardian pe cub la TR-D8 | review; lot repetat din recensământ |
 | SC-BCS-10 | După SC-BCS-03, repetă storno la 21.01. Rămân exact două tranzacții și sold 10/100. | refuzat: stare neeligibilă | 090 (i) |
 | SC-BCS-11 | După închiderea lui ianuarie, anularea BCS operat și operarea altui BCS în ianuarie sunt refuzate; originalul și soldul 6/60 rămân, draftul nou are zero efecte. | refuzat: perioadă închisă | invariantul III, 088 |
-| SC-X-02 (pregătire) | FCT cu recepție 10/100 → NIR conex operat. Soldul cubului este 10/100, apoi BCS 4 îl duce la 6/60; recepția nu se dublează. | acceptat | 090 (h), T-D9 |
+| SC-X-02 | Pregătire: FCT cu recepție 10/100 → NIR conex operat. Soldul cubului este 10/100, apoi BCS 4 îl duce la 6/60; recepția nu se dublează. | acceptat | 090 (h), T-D9 |
 
 Refuzurile au două uși. Declarantul (`Declaratii/DeclarantBonConsum.cs`)
 refuză cu coduri stabile din `CoduriRefuz`, probate direct prin
@@ -97,8 +97,7 @@ Sunt specificații înainte de implementare, fără schimbarea stării probelor 
 |---|---|---|
 | SC-BCS-12: fișă, balanță, `Sold` | Pentru SC-BCS-06: ianuarie consum 40 și stoc 60; februarie rulaj net consum −10 și stoc +10; sold final 70. Reconstrucția trebuie să păstreze aceleași valori fără rerularea politicilor. | specificat; cititori comuni și snapshot cub la TR-D8 |
 | Explicația evaluării | SC-BCS-07 explică baza 3/1, alocarea 1/0,33 și restul 2/0,67 prin date persistate pe tranzacție. | amânat la TR-D8, 091 (j) |
-| SC-X-05/06/07 | Inversare + compensarea exclusiv a reevaluărilor active; cifrele din README. | amânat la TR-D9, 091 (h) |
-| SC-X-01 și SC-X-08 | Refuzul stornării sursei cu consum ulterior, distinct de blocarea prin NIR conex. | specificat, de probat independent |
+| Refuz din consum ulterior | SC-X-01, SC-X-08: refuzul stornării sursei cu consum ulterior, distinct de blocarea prin NIR conex. | specificat, de probat independent |
 | SC-BCS-13: două sesiuni reale | L:10/100; două comenzi concurente de câte 6. Exact una reușește, cealaltă refuză; sold 4/40, fără dublă cheltuială. | verificat pe ambele profiluri ca SC-X-15 (X-D6, 2026-10-03) |
 | SC-BCS-14: consum vs. închidere | Serializare: fie consumul de 4 intră în luna închisă și snapshot = 6/60, fie închiderea câștigă și consumul refuză. | verificat pe ambele profiluri ca SC-X-21, în ambele ordini (X-D6, 2026-10-03) |
 | Re-intrare / lot cu sold negativ | De completat numeric împreună cu tipul care recepționează/corectează; BCS negativ rămâne refuzat. | specificare restantă |

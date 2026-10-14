@@ -62,7 +62,7 @@ se referă la proiecția fiscală, nu la o sumă adăugată balanței contabile.
 | SC-DVI-19 | Fără obiect după tăiere: proba era a adaptorului de oracol (`CubDinRegistre` + `Normalizari.Fiscal`). Cele 4 postări ale contractului rămân probate de SC-DVI-01 / 09 / 13 / 15. | scos | TR-D9a, pasul 6 |
 | SC-DVI-20 | Proba pură Transferuri.Muta: stins cu partidă 401 de −21, stingător cu partidă 401 de +10, cerere 10 → mutare 10. Adăugarea perechii fiscale 100 / 100 fără unități la oricare dintre cele două intrări lasă rezultatul identic. Nu operează o împerechere DVI interzisă de PoateFiStins. | acceptat la nivelul funcției pure | verificat privat |
 
-Unicitatea faptelor se probează și transversal prin SC-X-14 din README,
+Unicitatea faptelor se probează și transversal prin SC-X-14 din [X](X.md),
 detaliat în DVI-B7: FCT, FCL, RDC, RLF și DVI, plus absența explicită
 pe liniile fără TVA din celelalte tipuri. Proba comună `UnicitateFiscala` rulează din comparațiile exacte ale scenelor,
 pe matricile numerice așteptate, și înaintea curățeniei. Include martori

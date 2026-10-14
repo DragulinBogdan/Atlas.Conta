@@ -331,7 +331,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [TR-D9b, pasul 7 — membrii de tip SensTva își iau numele întreg](nucleu/tr-d9b-pas7-senstva.md)
 - [TR-D9b, pasul 8 — sensul stingerii și parametrii de interogare își iau numele întreg](nucleu/tr-d9b-pas8-sensstingere.md)
 
-### `docs/nucleu/scenarii/` (25)
+### `docs/nucleu/scenarii/` (26)
 
 - [ASM — asamblare](nucleu/scenarii/ASM.md)
 - [BCS — bon de consum](nucleu/scenarii/BCS.md)
@@ -358,6 +358,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [REGIM — regimul pe stare (decizia 106)](nucleu/scenarii/REGIM.md)
 - [RLF — retur la furnizor](nucleu/scenarii/RLF.md)
 - [SAF-T — scenarii S1 și matricea de delimitare S2/S3](nucleu/scenarii/SAFT.md)
+- [X — scenarii transversale](nucleu/scenarii/X.md)
 
 ### `docs/privat/` (2)
 
