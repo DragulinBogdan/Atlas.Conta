@@ -54,7 +54,7 @@ static class ProbeRegim {
                 || os.GetObjectByKey<Document>(documentId) is not { } doc)
             return RefuzNepromis.Abatere;
         // CV-D5: gardul temporal e al datei cerute când gardurile fără dată ale corecțiilor trec.
-        if (mesaj.Contains(Atlas.Conta.Nucleu.Coduri.CvCronologie, StringComparison.Ordinal))
+        if (mesaj.Contains(CoduriRefuz.CvCronologie, StringComparison.Ordinal))
             return Materializare.MotiveCorectiiValorice(os, doc).Stornare == null ? RefuzNepromis.PeDataCeruta : RefuzNepromis.Abatere;
         // 087g: cu luna documentului deschisă exista o dată admisă; cu ea închisă, regimul trebuia să refuze.
         if (mesaj.Contains("cu o dată din luna lui", StringComparison.Ordinal))

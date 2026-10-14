@@ -1656,8 +1656,10 @@ corecție, fără TVA; nu naște lot și nu generează NIR. (CV-D1)
   fiecare beneficiar cu pondere, inclusiv cel cu cota zero, respectiv
   `CompensareValorica` pe fiecare pereche de compensare. (CV-D8)
 - Refuzuri: `CV_STRUCTURA`, `CV_LOT_NEELIGIBIL`, `CV_VALOARE_INSUFICIENTA`,
-  `CV_CRONOLOGIE`, `CV_DEPENDENTI`, `CV_AN_INCHIS`. Regimul pe stare citește
-  aceleași garduri fără a executa comanda. (CV-D7, CV-D10)
+  `CV_CRONOLOGIE`, `CV_DEPENDENTI`, `CV_AN_INCHIS`, `CV_PROVENIENTA`, toate în
+  `CoduriRefuz`. Nucleul emite motivul (`MotivCorectieValorica`), iar
+  declarantul și materializarea îl traduc prin `CoduriRefuz.Refuz`. Regimul
+  pe stare citește aceleași garduri fără a executa comanda. (CV-D7, CV-D10)
 
 Regula stă în `Nucleu/Motor/CorectieValorica.cs`; declarația în
 `DeclarantFacturaIntrare.Corectie.cs`; faptele lotului în

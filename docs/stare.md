@@ -34,16 +34,16 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 42 |
-| după PoC | 207 |
+| activă | 43 |
+| după PoC | 206 |
 | migrare | 24 |
 | depășită de 091 | 2 |
 | docs | 4 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (42, prag 45)
+### Lista `activă` (43, prag 45)
 
-**domeniu-si-operare** (32)
+**domeniu-si-operare** (33)
 
 - `51e` PoliticaEvaluare (CMP) — sub 90c devine parametrul „unitatea de evaluare” al unității nominalizate
 - `75-r4` PretEvaluare 6 zecimale pe cantități mari vs invariantul 46d
@@ -77,6 +77,7 @@ Niciuna.
 - `X-r3` Raportul de stoc listează capătul de consum al BCS (postarea de debit poartă lotul ca unitate, pe co…
 - `NG-r1` Balanța și fișa contului filtrate pe gestiune sau pe material nu văd transferurile (BTR, ASM): valoa…
 - `NG-r2` Contul lotului vine din tipul curent de material al produsului…
+- `CV-r2` Închiderea exercițiului ca operație explicită (obligatorie pe bugetar, utilă pe privat)…
 
 **politici-si-fiscalitate** (5)
 

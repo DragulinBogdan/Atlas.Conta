@@ -22,10 +22,4 @@ public static class Coduri {
     public const string UnitateNepotrivita = "UNITATE_NEPOTRIVITA";
     public const string StocInsuficient = "STOC_INSUFICIENT";
     public const string TvaInAfaraTolerantei = "TVA_IN_AFARA_TOLERANTEI";
-    public const string CvLotNeeligibil = "CV_LOT_NEELIGIBIL";
-    public const string CvValoareInsuficienta = "CV_VALOARE_INSUFICIENTA";
-    public const string CvCronologie = "CV_CRONOLOGIE";
-    public const string CvDependenti = "CV_DEPENDENTI";
-    public const string CvAnInchis = "CV_AN_INCHIS";
-    public const string CvProvenienta = "CV_PROVENIENTA";
 }

@@ -305,9 +305,12 @@ Fără TVA în aceste probe: nu se inventează regularizări fiscale.
 
 ### CV-D7 — refuzuri și verificare atomică
 
-Coduri propuse, încă inexistente, de introdus în `CoduriRefuz`:
+Codurile stau în `CoduriRefuz`:
 `CV_STRUCTURA`, `CV_LOT_NEELIGIBIL`, `CV_VALOARE_INSUFICIENTA`,
 `CV_CRONOLOGIE`, `CV_DEPENDENTI`, `CV_AN_INCHIS`, `CV_PROVENIENTA`.
+Mecanismul pur din nucleu nu vede `CoduriRefuz`: emite motivul tipizat
+`MotivCorectieValorica`, iar `CoduriRefuz.Refuz` îl traduce la granița
+declarantului și a materializării (owner, 2026-10-14).
 Se refolosesc codurile existente pentru lot lipsă, delta zero și politică
 lipsă când semantica coincide. Refuzurile declarantului se asertă prin
 `Materializare.Refuzuri`; gardurile comenzii au propria probă de ușă,
@@ -558,8 +561,8 @@ Implementat: atribuirea pe mișcare și mecanismul pur în nucleu
 `CorectieValoareLot`, faptele lotului în operand, declarația corecției,
 compensarea la stornare, gardurile retragerii și ale cronologiei, explicația
 persistată a celor două feluri de decizie, oglinda gardurilor în regimul pe
-stare. Codurile emise de mecanism stau în `Nucleu.Coduri`, lângă
-`STOC_INSUFICIENT`; `CV_STRUCTURA` stă în `CoduriRefuz`.
+stare. Toate codurile `CV_*` stau în `CoduriRefuz`; nucleul emite
+`MotivCorectieValorica` (CV-D7).
 
 Comenzi executate din rădăcină:
 
@@ -583,6 +586,9 @@ Comenzi executate din rădăcină:
   bugetar (`run-verificari/20261014-084012-398`); `-Tip X` verde pe ambele
   profiluri (`run-verificari/20261014-084106-627`), fiindcă serializarea
   probei s-a mutat din `ScenariiConcurenta` în `ScenaDocumente`.
+- Mutarea codurilor `CV_*` în `CoduriRefuz`: nucleul 235 de teste verzi;
+  `-Tip CVL` verde pe privat (`run-verificari/20261014-085429-523`) și pe
+  bugetar (`run-verificari/20261014-085458-555`).
 
 Ce nu e făcut și nu e certificat de aceste rulări:
 

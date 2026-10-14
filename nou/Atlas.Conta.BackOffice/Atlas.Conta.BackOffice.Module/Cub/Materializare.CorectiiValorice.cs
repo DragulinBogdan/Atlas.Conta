@@ -18,7 +18,7 @@ public static partial class Materializare {
 
         static string Motiv(Action gard) {
             try { gard(); return null; }
-            catch (N.RefuzException e) { return Contractare.Mesaj(e.Refuz); }
+            catch (N.CorectieValoricaRefuzata e) { return Contractare.Mesaj(CoduriRefuz.Refuz(e)); }
         }
     }
 
@@ -27,7 +27,7 @@ public static partial class Materializare {
         if (FapteValorice(os, aleDocumentului) is not { } fapte)
             return [];
         try { return N.CorectieValorica.LaStornare(fapte, doc.ID, data); }
-        catch (N.RefuzException e) { throw new OperareException(Contractare.Mesaj(e.Refuz)); }
+        catch (N.CorectieValoricaRefuzata e) { throw new OperareException(Contractare.Mesaj(CoduriRefuz.Refuz(e))); }
     }
 
     static List<N.FaptPostat> FapteValorice(IObjectSpace os, IEnumerable<Postare> aleDocumentului) {
@@ -46,7 +46,7 @@ public static partial class Materializare {
         var rotunjire = new N.Rotunjire(Scara.ConventieBani);
         foreach (var corectie in corectii.OrderBy(d => d.ID)) {
             if (corectie.Stare != StareDocument.Operat)
-                throw new OperareException($"{N.Coduri.CvProvenienta}: Corecția {corectie.Numar} are alocări active fără să fie operată.");
+                throw new OperareException($"{CoduriRefuz.CvProvenienta}: Corecția {corectie.Numar} are alocări active fără să fie operată.");
             var ale = compensari.Where(c => c.Radacina.Postare.Cauza.Document == corectie.ID)
                 .OrderBy(c => c.Radacina.ScrisLa).ThenBy(c => c.Radacina.Ordinal).ToList();
             var contract = N.Motor.Opereaza(new N.Declaratie(corectie.ID, data,

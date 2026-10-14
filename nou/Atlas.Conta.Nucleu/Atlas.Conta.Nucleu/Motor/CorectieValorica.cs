@@ -20,7 +20,7 @@ public static class CorectieValorica {
         var citite = new Fapte(fapte);
         var peLot = citite.Toate.Where(f => Lot(f) == reper.Lot).ToList();
         if (peLot.Any(f => f.Postare.Coordonate.Data > data))
-            throw Refuza(Coduri.CvCronologie, "Corecția precedă o mișcare deja operată a lotului.");
+            throw Refuza(MotivCorectieValorica.Cronologie, "Corecția precedă o mișcare deja operată a lotului.");
 
         bool PeStoc(FaptPostat f) => Lot(f) == reper.Lot && f.Postare.Coordonate.Cont == reper.ContStoc
             && f.Postare.Coordonate.Repartitor?.Id == reper.Gestiune;
@@ -59,8 +59,8 @@ public static class CorectieValorica {
         if (ramas < 0m || ramas + consumuri.Sum(f => f.Postare.Cantitate) != receptie.Postare.Cantitate)
             throw Neeligibil("stocul rămas și consumurile active nu dau cantitatea recepționată");
         if (consumuri.FirstOrDefault(f => f.Postare.Coordonate.Data.Year < data.Year) is { } vechi)
-            throw Refuza(Coduri.CvAnInchis,
-                $"Consumul din {vechi.Postare.Coordonate.Data:yyyy-MM-dd} este într-un an anterior corecției.", vechi.Postare.Cauza.Linie);
+            throw Refuza(MotivCorectieValorica.AnInchis,
+                $"Consumul din {vechi.Postare.Coordonate.Data:yyyy-MM-dd} este într-un an anterior corecției.");
 
         var beneficiari = consumuri
             .Select(f => new BeneficiarValoric(f, false, f.Postare.Cantitate,
@@ -84,9 +84,9 @@ public static class CorectieValorica {
         var cote = Repartizare.Hamilton(delta,
             grupuri.Select(g => (IReadOnlyList<decimal>)[.. g.Select(b => b.Pondere)]).ToList(), Scara.Bani);
         var alocari = grupuri.SelectMany((g, i) => g.Select((b, j) => new AlocareLot(b, cote[i][j]))).ToList();
-        if (alocari.FirstOrDefault(a => a.Beneficiar.ValoareActiva + a.Valoare < 0m) is { } negativ)
-            throw Refuza(Coduri.CvValoareInsuficienta,
-                $"Corecția de {delta} ar lăsa valoare negativă pe un beneficiar al lotului.", negativ.Beneficiar.Fapt.Postare.Cauza.Linie);
+        if (alocari.Any(a => a.Beneficiar.ValoareActiva + a.Valoare < 0m))
+            throw Refuza(MotivCorectieValorica.ValoareInsuficienta,
+                $"Corecția de {delta} ar lăsa valoare negativă pe un beneficiar al lotului.");
         return alocari;
     }
 
@@ -97,7 +97,7 @@ public static class CorectieValorica {
         var familie = proprii.Concat(proprii.SelectMany(citite.Atribuite).SelectMany(r =>
             citite.Inverse(r).Append(r).Concat(citite.Atribuite(r).SelectMany(k => citite.Inverse(k).Append(k)))));
         if (familie.Any(f => f.Postare.Coordonate.Data > data))
-            throw Refuza(Coduri.CvCronologie, "Data stornării precedă un fapt al corecțiilor de valoare ale lotului.");
+            throw Refuza(MotivCorectieValorica.Cronologie, "Data stornării precedă un fapt al corecțiilor de valoare ale lotului.");
 
         var compensari = new List<CompensareLot>();
         foreach (var fapt in proprii.Where(f => !EsteValoric(f) && f.Postare.Cantitate > 0m)) {
@@ -105,7 +105,7 @@ public static class CorectieValorica {
                 continue;
             if (Lot(partener) != Lot(fapt)) {
                 if (citite.Radacini.Any(r => Lot(r) == Lot(fapt) && !citite.EsteInversat(r)))
-                    throw Refuza(Coduri.CvDependenti, "Lotul are o corecție de valoare activă; stornați întâi corecția.");
+                    throw Refuza(MotivCorectieValorica.Dependenti, "Lotul are o corecție de valoare activă; stornați întâi corecția.");
                 continue;
             }
             compensari.AddRange(citite.RadaciniActive(fapt).Select(r => new CompensareLot(r, fapt, partener)));
@@ -119,7 +119,7 @@ public static class CorectieValorica {
         var citite = new Fapte(fapte);
         var proprii = citite.Proprii(document, FelTranzactie.Operare, FelTranzactie.Transfer);
         if (proprii.Any(f => citite.Atribuite(f).Any()))
-            throw Refuza(Coduri.CvDependenti, "Documentul poartă corecții de valoare sau compensările lor; folosiți storno.");
+            throw Refuza(MotivCorectieValorica.Dependenti, "Documentul poartă corecții de valoare sau compensările lor; folosiți storno.");
         VerificaInversareaCorectiei(citite, document);
     }
 
@@ -181,7 +181,7 @@ public static class CorectieValorica {
         if (citite.Toate.Any(f => loturi.Contains(Lot(f)) && f.Postare.Cantitate < 0m
                 && f.Fel is FelTranzactie.Operare or FelTranzactie.Transfer && !citite.EsteInversat(f)
                 && f.Postare.Cauza.Document != document && f.ScrisLa >= prima))
-            throw Refuza(Coduri.CvDependenti,
+            throw Refuza(MotivCorectieValorica.Dependenti,
                 "Lotul are o ieșire activă făcută după corecție; neutralizați întâi ieșirea.");
 
         var valorice = citite.Toate.Where(f => f.Fel == FelTranzactie.Operare && EsteValoric(f)
@@ -197,7 +197,7 @@ public static class CorectieValorica {
                     .Where(r => r.Postare.Cauza.Document != document).Sum(Masura) < 0m)
                 throw Negativ();
 
-        static RefuzException Negativ() => Refuza(Coduri.CvValoareInsuficienta,
+        static CorectieValoricaRefuzata Negativ() => Refuza(MotivCorectieValorica.ValoareInsuficienta,
             "Fără această corecție, un beneficiar al lotului ar rămâne cu valoare negativă.");
     }
 
@@ -215,10 +215,10 @@ public static class CorectieValorica {
         return ordine != 0 ? ordine : a.Id.CompareTo(b.Id);
     });
 
-    static RefuzException Refuza(string cod, string mesaj, Guid? linie = null) => new(new Refuz(cod, mesaj, linie));
+    static CorectieValoricaRefuzata Refuza(MotivCorectieValorica motiv, string mesaj) => new(motiv, mesaj);
 
-    static RefuzException Neeligibil(string motiv) =>
-        Refuza(Coduri.CvLotNeeligibil, $"Lotul nu se corectează valoric în acest pachet: are {motiv}.");
+    static CorectieValoricaRefuzata Neeligibil(string motiv) =>
+        Refuza(MotivCorectieValorica.LotNeeligibil, $"Lotul nu se corectează valoric în acest pachet: are {motiv}.");
 
     sealed class Fapte {
         readonly Dictionary<Guid, FaptPostat> dupaId;
@@ -244,7 +244,7 @@ public static class CorectieValorica {
 
         public FaptPostat? Tinta(FaptPostat fapt) =>
             fapt.Postare.Atribuit is Guid id
-                ? dupaId.GetValueOrDefault(id) ?? throw Refuza(Coduri.CvProvenienta, $"Postarea {fapt.Id} e atribuită unei postări absente.")
+                ? dupaId.GetValueOrDefault(id) ?? throw Refuza(MotivCorectieValorica.Provenienta, $"Postarea {fapt.Id} e atribuită unei postări absente.")
                 : null;
 
         public FaptPostat? Sursa(FaptPostat fapt) =>

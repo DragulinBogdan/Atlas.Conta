@@ -28,7 +28,7 @@ public sealed partial class DeclarantFacturaIntrare {
             if (Contari.Rezolva(operand, linie, refuzuri, semn: 1) is not { } contare)
                 continue;
             if (linie.CorectieValorica!.Reper is not { } reper) {
-                refuzuri.Add(new N.Refuz(N.Coduri.CvLotNeeligibil,
+                refuzuri.Add(new N.Refuz(CoduriRefuz.CvLotNeeligibil,
                     "Lotul nu are linie de intrare sau cont de stoc.", linie.Id));
                 continue;
             }
@@ -37,8 +37,8 @@ public sealed partial class DeclarantFacturaIntrare {
                 alocari = N.CorectieValorica.Aloca(
                     N.CorectieValorica.Beneficiari(reper, linie.CorectieValorica.Fapte, doc.DataInregistrare), linie.Valoare);
             }
-            catch (N.RefuzException e) {
-                refuzuri.Add(new N.Refuz(e.Refuz.Cod, e.Refuz.Mesaj, linie.Id));
+            catch (N.CorectieValoricaRefuzata e) {
+                refuzuri.Add(CoduriRefuz.Refuz(e, linie.Id));
                 continue;
             }
             decizii.Add(new N.ContRezolvat(linie.Id, contare.ContCredit, contare.SursaCredit.ToString(), contare.Regula.Id));

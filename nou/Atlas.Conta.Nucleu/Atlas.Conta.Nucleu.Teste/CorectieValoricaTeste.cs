@@ -155,7 +155,7 @@ public class CorectieValoricaTeste {
     [Fact]
     public void DiminuareaMergePanaLaZeroNuSubZero() {
         var cub = Partial();
-        Assert.Equal(Coduri.CvValoareInsuficienta, Refuz(() => cub.Corecteaza(-1000.01m, Z15)));
+        Assert.Equal(MotivCorectieValorica.ValoareInsuficienta, Refuz(() => cub.Corecteaza(-1000.01m, Z15)));
         Assert.Equal((40m, 400m, 600m, 1000m), cub.Stare());
         cub.Corecteaza(-1000m, Z15);
         Assert.Equal((40m, 0m, 0m, 0m), cub.Stare());
@@ -167,17 +167,17 @@ public class CorectieValoricaTeste {
         cub.Receptioneaza(100m, 1000m, Z05);
         var a = cub.Corecteaza(200m, Z15);
         cub.Corecteaza(-1100m, Z15);
-        Assert.Equal(Coduri.CvValoareInsuficienta, Refuz(() => cub.Storneaza(a, Z20)));
-        Assert.Equal(Coduri.CvValoareInsuficienta, Refuz(() => cub.Retrage(a)));
+        Assert.Equal(MotivCorectieValorica.ValoareInsuficienta, Refuz(() => cub.Storneaza(a, Z20)));
+        Assert.Equal(MotivCorectieValorica.ValoareInsuficienta, Refuz(() => cub.Retrage(a)));
     }
 
     [Fact]
     public void GardulTemporalPrecedeSuma() {
         var cub = Partial();
         var a = cub.Corecteaza(200m, Z15);
-        Assert.Equal(Coduri.CvCronologie, Refuz(() => cub.Storneaza(cub.Bon, Z14)));
+        Assert.Equal(MotivCorectieValorica.Cronologie, Refuz(() => cub.Storneaza(cub.Bon, Z14)));
         cub.Storneaza(a, Z25);
-        Assert.Equal(Coduri.CvCronologie, Refuz(() => cub.Storneaza(cub.Bon, Z20)));
+        Assert.Equal(MotivCorectieValorica.Cronologie, Refuz(() => cub.Storneaza(cub.Bon, Z20)));
         Assert.Equal((40m, 400m, 600m, 1000m), cub.Stare());
         cub.Storneaza(cub.Bon, Z25);
         Assert.Equal((100m, 1000m, 0m, 1000m), cub.Stare());
@@ -185,15 +185,15 @@ public class CorectieValoricaTeste {
         var oglinda = Partial();
         var b = oglinda.Corecteaza(200m, Z15);
         oglinda.Storneaza(oglinda.Bon, Z25);
-        Assert.Equal(Coduri.CvCronologie, Refuz(() => oglinda.Storneaza(b, Z20)));
+        Assert.Equal(MotivCorectieValorica.Cronologie, Refuz(() => oglinda.Storneaza(b, Z20)));
         Assert.Equal((100m, 1200m, 0m, 1200m), oglinda.Stare());
     }
 
     [Fact]
     public void CorectiaNuSeAntedateazaFataDeMiscarileLotului() {
         var cub = Partial();
-        Assert.Equal(Coduri.CvCronologie, Refuz(() => cub.Corecteaza(200m, Z05.AddDays(1))));
-        Assert.Equal(Coduri.CvCronologie, Refuz(() => cub.Corecteaza(200m, Z05.AddDays(-1))));
+        Assert.Equal(MotivCorectieValorica.Cronologie, Refuz(() => cub.Corecteaza(200m, Z05.AddDays(1))));
+        Assert.Equal(MotivCorectieValorica.Cronologie, Refuz(() => cub.Corecteaza(200m, Z05.AddDays(-1))));
     }
 
     [Fact]
@@ -201,9 +201,9 @@ public class CorectieValoricaTeste {
         var cub = new CubMic();
         cub.Receptioneaza(100m, 1000m, Z05);
         var a = cub.Corecteaza(200m, Z15);
-        Assert.Equal(Coduri.CvDependenti, Refuz(() => cub.Storneaza(cub.Receptie, Z20)));
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => cub.Storneaza(cub.Receptie, Z20)));
         cub.Storneaza(a, Z20);
-        Assert.Equal(Coduri.CvCronologie, Refuz(() => cub.Storneaza(cub.Receptie, Z18)));
+        Assert.Equal(MotivCorectieValorica.Cronologie, Refuz(() => cub.Storneaza(cub.Receptie, Z18)));
         var inainte = cub.Fapte.Count;
         cub.Storneaza(cub.Receptie, Z25);
         Assert.Equal(inainte + 2, cub.Fapte.Count);
@@ -212,17 +212,17 @@ public class CorectieValoricaTeste {
         var relocat = Partial();
         relocat.Corecteaza(200m, Z15);
         relocat.Storneaza(relocat.Bon, Z20);
-        Assert.Equal(Coduri.CvDependenti, Refuz(() => relocat.Storneaza(relocat.Receptie, Z25)));
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => relocat.Storneaza(relocat.Receptie, Z25)));
     }
 
     [Fact]
     public void BeneficiariiUneiCorectiiNuSeMaiRetragNiciDupaStornareaEi() {
         var cub = Partial();
         var a = cub.Corecteaza(200m, Z15);
-        Assert.Equal(Coduri.CvDependenti, Refuz(() => cub.Retrage(cub.Bon)));
-        Assert.Equal(Coduri.CvDependenti, Refuz(() => cub.Retrage(cub.Receptie)));
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => cub.Retrage(cub.Bon)));
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => cub.Retrage(cub.Receptie)));
         cub.Storneaza(a, Z20);
-        Assert.Equal(Coduri.CvDependenti, Refuz(() => cub.Retrage(cub.Bon)));
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => cub.Retrage(cub.Bon)));
         cub.Storneaza(cub.Bon, Z20);
         Assert.Equal((100m, 1000m, 0m, 1000m), cub.Stare());
     }
@@ -238,7 +238,7 @@ public class CorectieValoricaTeste {
 
         a = cub.Corecteaza(200m, Z15);
         cub.Storneaza(cub.Bon, Z20);
-        Assert.Equal(Coduri.CvDependenti, Refuz(() => cub.Retrage(a)));
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => cub.Retrage(a)));
     }
 
     [Fact]
@@ -247,8 +247,8 @@ public class CorectieValoricaTeste {
         var a = cub.Corecteaza(200m, Z15);
         var nou = cub.Consuma(20m, Z18);
         Assert.Equal((20m, 240m, 960m, 1200m), cub.Stare());
-        Assert.Equal(Coduri.CvDependenti, Refuz(() => cub.Storneaza(a, Z20)));
-        Assert.Equal(Coduri.CvDependenti, Refuz(() => cub.Retrage(a)));
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => cub.Storneaza(a, Z20)));
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => cub.Retrage(a)));
         cub.Storneaza(nou, Z20);
         Assert.Equal((40m, 480m, 720m, 1200m), cub.Stare());
         Assert.Equal(1, cub.Tranzactii(a, FelTranzactie.Operare));
@@ -267,26 +267,26 @@ public class CorectieValoricaTeste {
         var consumat = new CubMic();
         consumat.Receptioneaza(100m, 1000m, decembrie);
         consumat.Consuma(60m, decembrie);
-        Assert.Equal(Coduri.CvAnInchis, Refuz(() => consumat.Corecteaza(200m, Z15)));
+        Assert.Equal(MotivCorectieValorica.AnInchis, Refuz(() => consumat.Corecteaza(200m, Z15)));
     }
 
     [Fact]
     public void LotulCuAltaFormaDeMiscareNuEsteCorectabil() {
         var transferat = Partial();
         transferat.Transfera(10m, Z11);
-        Assert.Equal(Coduri.CvLotNeeligibil, Refuz(() => transferat.Corecteaza(200m, Z15)));
+        Assert.Equal(MotivCorectieValorica.LotNeeligibil, Refuz(() => transferat.Corecteaza(200m, Z15)));
 
         var vandut = Partial();
         vandut.Vinde(10m, Z11);
-        Assert.Equal(Coduri.CvLotNeeligibil, Refuz(() => vandut.Corecteaza(200m, Z15)));
+        Assert.Equal(MotivCorectieValorica.LotNeeligibil, Refuz(() => vandut.Corecteaza(200m, Z15)));
 
         var altFurnizor = Partial();
-        Assert.Equal(Coduri.CvLotNeeligibil, Refuz(() => altFurnizor.Corecteaza(200m, Z15, altFurnizor.Reper with { Furnizor = Gen.Terti[1].Id })));
+        Assert.Equal(MotivCorectieValorica.LotNeeligibil, Refuz(() => altFurnizor.Corecteaza(200m, Z15, altFurnizor.Reper with { Furnizor = Gen.Terti[1].Id })));
 
         var stornata = new CubMic();
         stornata.Receptioneaza(100m, 1000m, Z05);
         stornata.Storneaza(stornata.Receptie, Z10);
-        Assert.Equal(Coduri.CvLotNeeligibil, Refuz(() => stornata.Corecteaza(200m, Z15)));
+        Assert.Equal(MotivCorectieValorica.LotNeeligibil, Refuz(() => stornata.Corecteaza(200m, Z15)));
     }
 
     [Fact]
@@ -304,7 +304,7 @@ public class CorectieValoricaTeste {
         return cub;
     }
 
-    static string Refuz(Action comanda) => Assert.Throws<RefuzException>(comanda).Refuz.Cod;
+    static MotivCorectieValorica Refuz(Action comanda) => Assert.Throws<CorectieValoricaRefuzata>(comanda).Motiv;
 
     /// <summary>Cubul unui singur lot, scris numai prin motor, storno și mecanismul corecției.</summary>
     sealed class CubMic {

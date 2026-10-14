@@ -187,7 +187,7 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
 
         var zero = Partial();
         var peste = Draft(Zi(15), (zero, -1000.01m));
-        Refuza("SC-CVL-05", () => Opereaza(peste), N.Coduri.CvValoareInsuficienta);
+        Refuza("SC-CVL-05", () => Opereaza(peste), CoduriRefuz.CvValoareInsuficienta);
         Este("SC-CVL-05", "refuzul nu lasă efecte", zero, 40m, 400m, 600m, 1000m);
         Corectie(zero, -1000m);
         Este("SC-CVL-05", "diminuare până la zero", zero, 40m, 0m, 0m, 0m);
@@ -237,7 +237,7 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         var bun = Lot();
         var epuizabil = Lot(10m, 15m);
         var mixt = Draft(Zi(15), (bun, 200m), (epuizabil, -150.01m));
-        Refuza("SC-CVL-07", () => Opereaza(mixt), N.Coduri.CvValoareInsuficienta);
+        Refuza("SC-CVL-07", () => Opereaza(mixt), CoduriRefuz.CvValoareInsuficienta);
         FaraEfecte("SC-CVL-07", mixt);
         Este("SC-CVL-07", "o linie invalidă anulează toată comanda", bun, 100m, 1000m, 0m, 1000m);
     }
@@ -295,7 +295,7 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
             explicata.Decizii.Count == 1 && explicata.Decizii[0] is N.CompensareValorica { Valoare: 120m } decizie
             && decizie.Radacina.Id == radacina.ID && decizie.Beneficiar.Id == radacina.Atribuit
             && explicata.Declarant == nameof(DeclarantFacturaIntrare));
-        Refuza("SC-CVL-28", () => Anuleaza(a), N.Coduri.CvDependenti);
+        Refuza("SC-CVL-28", () => Anuleaza(a), CoduriRefuz.CvDependenti);
 
         Storneaza(a, Zi(25));
         Este("SC-CVL-10", "storno corecție după compensare: net −200 pe stoc", caz, 100m, 1000m, 0m, 1000m);
@@ -341,8 +341,8 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         var a = Corectie(caz, 200m);
         var nou = Bon(caz, 20m, 18);
         Este("SC-CVL-13", "ieșire nouă 20/240", caz, 20m, 240m, 960m, 1200m);
-        Refuza("SC-CVL-13", () => Storneaza(a, Zi(20)), N.Coduri.CvDependenti);
-        Refuza("SC-CVL-13", () => Anuleaza(a), N.Coduri.CvDependenti);
+        Refuza("SC-CVL-13", () => Storneaza(a, Zi(20)), CoduriRefuz.CvDependenti);
+        Refuza("SC-CVL-13", () => Anuleaza(a), CoduriRefuz.CvDependenti);
         Este("SC-CVL-13", "refuzurile nu schimbă nimic", caz, 20m, 240m, 960m, 1200m);
         Storneaza(nou, Zi(20));
         Este("SC-CVL-13", "storno ieșire nouă: exact 20/240, fără compensare", caz, 40m, 480m, 720m, 1200m);
@@ -355,10 +355,10 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         var caz = Lot();
         var bon = Bon(caz, 60m);
         var a = Corectie(caz, 200m);
-        Refuza("SC-CVL-14", () => Anuleaza(bon), N.Coduri.CvDependenti);
+        Refuza("SC-CVL-14", () => Anuleaza(bon), CoduriRefuz.CvDependenti);
         Este("SC-CVL-14", "retragerea bonului cu alocare refuzată, fără efecte", caz, 40m, 480m, 720m, 1200m);
         Storneaza(a, Zi(20));
-        Refuza("SC-CVL-30", () => Anuleaza(bon), N.Coduri.CvDependenti);
+        Refuza("SC-CVL-30", () => Anuleaza(bon), CoduriRefuz.CvDependenti);
         Storneaza(bon, Zi(20));
         Este("SC-CVL-30", "după corecția stornată, storno bon cu compensare zero", caz, 100m, 1000m, 0m, 1000m);
     }
@@ -368,10 +368,10 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         Anuleaza(intact.Nir);
         var a = Corectie(intact, 200m);
         Refuza("SC-CVL-14", () => Anuleaza(intact.Factura), "folosit de alte documente");
-        Refuza("SC-CVL-30", () => Storneaza(intact.Factura, Zi(20)), N.Coduri.CvDependenti);
+        Refuza("SC-CVL-30", () => Storneaza(intact.Factura, Zi(20)), CoduriRefuz.CvDependenti);
         Este("SC-CVL-30", "recepția cu corecție activă nu se stornează", intact, 100m, 1200m, 0m, 1200m);
         Storneaza(a, Zi(20));
-        Refuza("SC-CVL-30", () => Storneaza(intact.Factura, Zi(18)), N.Coduri.CvCronologie);
+        Refuza("SC-CVL-30", () => Storneaza(intact.Factura, Zi(18)), CoduriRefuz.CvCronologie);
         Refuza("SC-CVL-30", () => Anuleaza(intact.Factura), "folosit de alte documente");
         Storneaza(intact.Factura, Zi(21));
         Este("SC-CVL-30", "storno recepție după corecția neutralizată", intact, 0m, 0m, 0m, 0m);
@@ -384,7 +384,7 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         var bon = Bon(relocat, 60m);
         Corectie(relocat, 200m);
         Storneaza(bon, Zi(20));
-        Refuza("SC-CVL-30", () => Storneaza(relocat.Factura, Zi(25)), N.Coduri.CvDependenti);
+        Refuza("SC-CVL-30", () => Storneaza(relocat.Factura, Zi(25)), CoduriRefuz.CvDependenti);
         Este("SC-CVL-30", "cei 200 relocați pe stoc opresc stornarea recepției", relocat, 100m, 1200m, 0m, 1200m);
     }
 
@@ -392,9 +392,9 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         var caz = Lot();
         var bon = Bon(caz, 60m);
         var a = Corectie(caz, 200m);
-        Refuza("SC-CVL-27", () => Storneaza(bon, Zi(14)), N.Coduri.CvCronologie);
+        Refuza("SC-CVL-27", () => Storneaza(bon, Zi(14)), CoduriRefuz.CvCronologie);
         Storneaza(a, Zi(25));
-        Refuza("SC-CVL-27", () => Storneaza(bon, Zi(20)), N.Coduri.CvCronologie);
+        Refuza("SC-CVL-27", () => Storneaza(bon, Zi(20)), CoduriRefuz.CvCronologie);
         Este("SC-CVL-27", "la 22.01 corecția e încă activă", caz, 40m, 480m, 720m, 1200m, Zi(22));
         Este("SC-CVL-27", "după 25.01", caz, 40m, 400m, 600m, 1000m);
         Storneaza(bon, Zi(25));
@@ -404,15 +404,15 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         var bon2 = Bon(oglinda, 60m);
         var b = Corectie(oglinda, 200m);
         Storneaza(bon2, Zi(25));
-        Refuza("SC-CVL-27", () => Storneaza(b, Zi(20)), N.Coduri.CvCronologie);
+        Refuza("SC-CVL-27", () => Storneaza(b, Zi(20)), CoduriRefuz.CvCronologie);
         Este("SC-CVL-27", "oglinda: la 22.01", oglinda, 40m, 480m, 720m, 1200m, Zi(22));
         Este("SC-CVL-27", "oglinda: după 25.01", oglinda, 100m, 1200m, 0m, 1200m);
 
         var antedatat = Partial();
-        Refuza("SC-CVL-19", () => Opereaza(Draft(Zi(8), (antedatat, 200m))), N.Coduri.CvCronologie);
+        Refuza("SC-CVL-19", () => Opereaza(Draft(Zi(8), (antedatat, 200m))), CoduriRefuz.CvCronologie);
         var corectat = Lot();
         Corectie(corectat, 200m);
-        Refuza("SC-CVL-19", () => Opereaza(Bon(corectat, 10m, 12, opereaza: false)), N.Coduri.CvCronologie);
+        Refuza("SC-CVL-19", () => Opereaza(Bon(corectat, 10m, 12, opereaza: false)), CoduriRefuz.CvCronologie);
         Este("SC-CVL-19", "refuzurile de cronologie nu lasă efecte", corectat, 100m, 1200m, 0m, 1200m);
     }
 
@@ -437,7 +437,7 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
     void Perimetru() {
         var transferat = Lot();
         Opereaza(Iesire(true, (new LinieScena(transferat.Linie, transferat.Lot, null), 10m)).Id);
-        Refuza("SC-CVL-19", () => Opereaza(Draft(Zi(15), (transferat, 200m))), N.Coduri.CvLotNeeligibil);
+        Refuza("SC-CVL-19", () => Opereaza(Draft(Zi(15), (transferat, 200m))), CoduriRefuz.CvLotNeeligibil);
     }
 
     void Partide() {

@@ -59,7 +59,7 @@ public static class CorectiiValorice {
                 && !postari.Any(i => i.InversaDinId == p.ID && i.InversaDinSpatiu == p.Spatiu))
             .Select(p => new { Lot = p.Unitate!.Value, p.Data }).ToList();
         if (miscari.Any(m => active.Any(a => a.Lot == m.Lot && a.Data > m.Data)))
-            throw new OperareException($"{N.Coduri.CvCronologie}: Lotul are o corecție de valoare activă, "
+            throw new OperareException($"{Declaratii.CoduriRefuz.CvCronologie}: Lotul are o corecție de valoare activă, "
                 + "datată după această mișcare.");
     }
 
