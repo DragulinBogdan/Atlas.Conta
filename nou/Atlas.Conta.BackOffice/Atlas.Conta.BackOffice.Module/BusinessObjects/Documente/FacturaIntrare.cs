@@ -167,6 +167,12 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV, IDoc
     }
 }
 
+[DevExpress.ExpressApp.ConditionalAppearance.Appearance("FCT_Linie_Obisnuita", DevExpress.ExpressApp.ConditionalAppearance.AppearanceItemType.ViewItem,
+    "CorectieValoareLot = False", TargetItems = nameof(Lot) + ";" + nameof(Valoare), Enabled = false)]
+[DevExpress.ExpressApp.ConditionalAppearance.Appearance("FCT_Linie_Corectie", DevExpress.ExpressApp.ConditionalAppearance.AppearanceItemType.ViewItem,
+    "CorectieValoareLot = True", TargetItems = nameof(Produs) + ";" + nameof(Cantitate) + ";" + nameof(PretUnitar) + ";"
+        + nameof(TipTva) + ";" + nameof(ValoareTva) + ";" + nameof(DataExpirare) + ";" + nameof(LotFabricatie) + ";" + nameof(LinieAvans),
+    Enabled = false)]
 public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCuPretUnitar, ILinieCareNasteLot, ILinieCuAvans,
         ILinieCuCorectieValorica {
     [XafDisplayName("Corecție de valoare a lotului")]
@@ -174,6 +180,9 @@ public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILini
 
     [NotMapped, System.ComponentModel.Browsable(false)]
     public bool NasteLot => !CorectieValoareLot;
+
+    [NotMapped, System.ComponentModel.Browsable(false)]
+    public IEnumerable<Lot> LoturiCorectabile => Culegere.LoturiCorectabile.Candidati(ObjectSpace, Document);
 
     public virtual Guid? LinieAvansId { get; set; }
     [XafDisplayName("Linia avansului"), DataSourceProperty(nameof(AvansuriDisponibile))]

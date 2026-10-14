@@ -42,6 +42,15 @@ public static class CulegereDocument {
             BazaSchimbata(os, doc, linie);
         else if (proprietate == nameof(DocumentDetaliu.ValoareTva) && doc.CuTva())
             linie.TvaCules = linie.ValoareTva != 0m;
+        else if (proprietate == nameof(FacturaIntrareDetaliu.CorectieValoareLot) && linie is FacturaIntrareDetaliu fct)
+            CorectieComutata(os, doc, fct);
+    }
+
+    /// <summary>Felul liniei FCT s-a schimbat (CV-D1): golirea sau recalculul se văd înaintea salvării.</summary>
+    public static void CorectieComutata(IObjectSpace os, Document doc, FacturaIntrareDetaliu linie) {
+        NormalizariTip.CorectieComutata(os, linie);
+        if (!linie.CorectieValoareLot)
+            BazaSchimbata(os, doc, linie);
     }
 
     public static void ProdusAles(IObjectSpace os, Document doc, DocumentDetaliu linie) {
@@ -194,7 +203,7 @@ public static class CulegereDocument {
 
     // 103h: implicitul folosește exigibilitatea, fără schimbarea alegerii existente.
     static bool AplicaTipTvaImplicit(IObjectSpace os, Document doc, DocumentDetaliu linie) {
-        if (!doc.CuTva())
+        if (!doc.CuTva() || !doc.LinieFiscala(linie))
             return false;
         var tipDoc = MotorOperare.GasesteTipDocument(os, doc);
         var rezultat = ImpliciteService.TipTva(os, tipDoc.ID,

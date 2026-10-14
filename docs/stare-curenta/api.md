@@ -64,6 +64,14 @@ refuzurile culegerii vin de la gardianul de commit, ca 422. (104c)
 
 - Pe liniile cu produs (FCT, FCL, NIR, LDI, ASM), `TipMaterialId` e opțional:
   lipsa lui înseamnă tipul produsului, iar lipsa ambelor e refuzată. (104c)
+- Linia FCT cu `CorectieValoareLot` poartă `LotId` și `Valoare` (delta
+  semnată); produsul, cantitatea, prețul, TVA-ul, avansul și atributele de lot
+  lipsesc. Pe linia obișnuită, `LotId` și `Valoare` lipsesc. Amestecul e
+  refuzat de adaptor ca formă a cererii, înaintea oricărei scrieri, ca
+  parse-ul enum-urilor (F3-D5); regulile de structură ale corecției rămân ale
+  declarantului (`CV_STRUCTURA`). Schimbarea felului unei linii existente trece
+  prin `CulegereDocument.CorectieComutata`. `ReadDto` expune
+  `CorectieValoareLot`. (CV-D1)
 - `DataPrimire` absentă rămâne goală și înseamnă data înregistrării; DTO-ul
   de citire o arată astfel. (104c)
 - `ValoareTva` prezentă pe linie e TVA-ul cules explicit; un 0 explicit e

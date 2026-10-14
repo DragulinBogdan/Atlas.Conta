@@ -439,17 +439,26 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .Column(d => d.PlataData, c => c.Index = -1)
             .Column(d => d.PlataTipInstrument, c => c.Index = -1);
 
+        // Lotul și valoarea se culeg numai pe linia de corecție (CV-D1, `[Appearance]` pe frunză); pe linia
+        // obișnuită lotul se naște din produs + gestiune (D2), iar `Valoare` e rezultatul regimului de TVA (D5).
         registry.For<FacturaIntrareDetaliu>()
             .Columns(c => c
+                .Slot(Rol.Directie, d => d.CorectieValoareLot)
                 .Slot(Rol.Identitate, d => d.Produs, d => d.TipMaterial)
                 .Slot(Rol.Pret, d => d.PretUnitar)
                 .Slot(Rol.AtributeLot, d => d.DataExpirare, d => d.LotFabricatie)
                 .Slot(Rol.Parametri, d => d.CodCpv))
-            // Lotul se naște din produs + gestiune (D2); `Valoare` e rezultatul regimului
-            // de TVA (D5); `ValoareTva` rămâne culeasă (36a).
-            .ReadOnly(d => d.Lot, d => d.Valoare)
-            .ListView(nameof(FacturaIntrareDetaliu) + ListView, Culegere)
+            .DetailView(nameof(FacturaIntrareDetaliu) + "_DetailView", dv => LoturiCorectabile(dv.Items[nameof(DocumentDetaliu.Lot)]))
+            .ListView(nameof(FacturaIntrareDetaliu) + ListView, lv => {
+                Culegere(lv);
+                LoturiCorectabile(lv.Columns[nameof(DocumentDetaliu.Lot)]);
+            })
             .Column(d => d.ValoareReceptie, c => c.Index = -1);
+    }
+
+    static void LoturiCorectabile(IModelNode item) {
+        if (item is IModelMemberViewItem membru)
+            membru.DataSourceProperty = nameof(FacturaIntrareDetaliu.LoturiCorectabile);
     }
 
     static void Nir(UiBaselineRegistry registry) {

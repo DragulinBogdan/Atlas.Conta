@@ -10419,6 +10419,7 @@ export interface components {
         FacturaIntrareLinieReadDto: {
             /** Format: uuid */
             Id?: string;
+            CorectieValoareLot?: boolean;
             /** Format: uuid */
             TipMaterialId?: string;
             TipMaterialCod?: string | null;
@@ -10470,6 +10471,11 @@ export interface components {
         FacturaIntrareLinieWriteDto: {
             /** Format: uuid */
             Id?: string | null;
+            CorectieValoareLot?: boolean;
+            /** Format: uuid */
+            LotId?: string | null;
+            /** Format: double */
+            Valoare?: number | null;
             /** Format: uuid */
             TipMaterialId?: string | null;
             /** Format: uuid */

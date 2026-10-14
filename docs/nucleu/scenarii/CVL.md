@@ -107,8 +107,18 @@ prin agregare înainte de stabilirea provenienței.
 
 | Stare | Scenarii |
 |---|---|
-| rulate | SC-CVL-01…17, 20…27, 29…32 |
-| rulate parțial | SC-CVL-18 (structura liniei; fără furnizor sau gestiune greșită, politică lipsă, precizie); SC-CVL-19 (transfer și cronologie; anul anterior e probat în nucleu); SC-CVL-28 (tranzacțiile, stările și explicația; fără fișă, jurnal și snapshot) |
+| rulate | SC-CVL-01…18, 20…27, 29…32 |
+| rulate parțial | SC-CVL-19 (transfer, descărcare de gestiune și cronologie; vânzarea către terț, recepția stornată și anul anterior sunt probate în nucleu; returul, ASM, LDI și reziduul preexistent cad pe același predicat, „orice altă postare pe lot”, fără scenariu propriu); SC-CVL-28 (tranzacțiile, stările și explicația; fără fișă, jurnal și snapshot) |
+
+SC-CVL-18 și 25 rulează și pe ușile culegerii (pasul 4): linia culeasă prin
+`FacturaIntrareApply` și prin evenimentele ecranului XAF (`CulegereDocument`),
+operată, dă aceleași cifre ca linia scrisă direct; comutarea felului golește
+sau reface linia; lotul propriu nefinalizat al liniei comutate dispare; API-ul
+refuză amestecul de câmpuri ale celor două feluri, iar gardianul de scară,
+valoarea cu trei zecimale. Furnizorul sau gestiunea alt decât ale recepției dau
+`CV_LOT_NEELIGIBIL`. Politica lipsă trece prin același `Contari.Rezolva` ca
+recepția, probat de SC-FCT-16 pe operand; pe bază nu se scoate o regulă din
+seed. Descărcarea de gestiune există numai pe privat.
 
 SC-CVL-20 citește cazul parțial cu ianuarie închis și corecția în februarie:
 balanța și fișa pe stoc, consum și datorie, cu citirea din mișcări

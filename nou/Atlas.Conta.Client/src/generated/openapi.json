@@ -325016,6 +325016,9 @@
             "type": "string",
             "format": "uuid"
           },
+          "CorectieValoareLot": {
+            "type": "boolean"
+          },
           "TipMaterialId": {
             "type": "string",
             "format": "uuid"
@@ -325159,6 +325162,19 @@
           "Id": {
             "type": "string",
             "format": "uuid",
+            "nullable": true
+          },
+          "CorectieValoareLot": {
+            "type": "boolean"
+          },
+          "LotId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "Valoare": {
+            "type": "number",
+            "format": "double",
             "nullable": true
           },
           "TipMaterialId": {

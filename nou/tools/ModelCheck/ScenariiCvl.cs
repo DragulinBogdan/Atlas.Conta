@@ -33,6 +33,9 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         Cronologie();
         Structura();
         Perimetru();
+        CulegereApi();
+        CulegereXaf();
+        StructuraPeUsiNoi();
         Partide();
         CorectieContraConsum();
         CorectieContraStorno();
