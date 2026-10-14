@@ -9,6 +9,7 @@
   "stare": "docs/stare.md",
   "readmeDocs": "docs/README.md",
   "termeni": "docs/stare-curenta/termeni.md",
+  "scenarii": { "cataloage": "docs/nucleu/scenarii" },
   "invarianti": "docs/invarianti.md",
   "paginiFaraBloc": ["README.md"],
   "restanteStari": ["activă", "după PoC", "migrare", "cade la TR-D9", "depășită de 091", "docs", "închisă prin"],
@@ -21,7 +22,8 @@
     "excluseDinMetrici": ["tools", "UnitatiMasuraUnEce.cs", "BackOfficeDbContext.cs"],
     "limbaje": {
       "cs": { "extensii": [".cs"], "tinta": 400, "plafon": 600, "toleranta": 30 },
-      "ts": { "extensii": [".ts", ".tsx"], "tinta": 300, "plafon": 500, "toleranta": 30 }
+      "ts": { "extensii": [".ts", ".tsx"], "tinta": 300, "plafon": 500, "toleranta": 30 },
+      "py": { "extensii": [".py"], "tinta": 300, "plafon": 500, "toleranta": 30, "comentariu": "#", "doc": "" }
     },
     "narativ": "review advers|înainte era|inainte era|amendament|\\bPR #\\d+|20\\d\\d-\\d\\d-\\d\\d"
   },
@@ -37,6 +39,7 @@
     "actualizat": "eroare",
     "orfane": "eroare",
     "termeni": "eroare",
-    "tabele": "eroare"
+    "tabele": "eroare",
+    "scenarii": "eroare"
   }
 }

@@ -57,7 +57,7 @@ Constatarea (e) a apărut la verificare: toți declaranții care contează prin 
 ## Verificare
 
 - Catalog: SC-FCT-15 și SC-FCT-16, pe operand scris de mână în care politica de TVA și regula de servicii duc spre alte conturi decât recepția. Pe codul dinainte, creditul recepției ar fi ieșit pe contul politicii de TVA.
-- SC-FCT-01…14 și lanțurile SC-X rămân verzi cu așteptările neatinse.
+- SC-FCT-01…08, SC-FCT-09a/b/c, SC-FCT-10…14 și lanțurile SC-X rămân verzi cu așteptările neatinse.
 - F24-E1 re-țintită: FCT × 302 câștigă regula pe natură, „Se postează 302 = 401". F24-E1b nouă: BCS × serviciu anunță refuzul, BTR × stoc nu.
 - ModelCheck integral pe ambele profiluri, pe clonele `.ClaudeBr3`: bugetar 3.554 / 0, privat 4.834 / 0 (`run-verificari/20261008-002932-023/rezultat.json`).
 - `pnpm verifica:drift` fără diferențe; `tsc --noEmit` fără erori. Fără migrație, fără caption nou.

@@ -20,7 +20,7 @@ găsită și riscurile care justifică probele.
 |---|---|---|
 | `Nucleu/Cub/Unitate.cs:27–31,43–52` | ID determinist document/cont/partener; referința inițială are discriminator propriu; data nu intră în hash | se păstrează identitatea; nu se generează alt ID în tabela originii |
 | `Module/Declaratii/Partide.cs:15,24,38` | helper-ele disting partida proprie, sursa și nominalizarea | originea stingătorului nu se atribuie partidei sursei |
-| `Module/Declaratii/DeclarantTrezorerie.cs:82–122` | propria se construiește per cont/titular; `proprieDeclarata` este un singur boolean pentru declarație | lista deciziilor nu este inventarul sigur al tuturor partidelor finale; SC-D9B-03 |
+| `Module/Declaratii/DeclarantTrezorerie.cs:82–122` | propria se construiește per cont/titular; `proprieDeclarata` este un singur boolean pentru declarație | lista deciziilor nu este inventarul sigur al tuturor partidelor finale; SC-D9B-03b |
 | `Module/Declaratii/DeclarantNotaContabila.cs:61–91` | FIFO/pin pe latură; ce rămâne deschide partida proprie; deduplicare pe ID | păstrarea regulilor 115, inclusiv excedentul |
 | `Module/Cub/Transferuri.cs:45` | transferul poate construi partida proprie lipsă din setul primit | materializarea originilor trebuie să acopere și transferul |
 | `Module/Cub/Materializare.Deschidere.cs:106–109,142–146` | fiecare intrare inițială produce unitate și postare; apoi trece prin `Scrie` | referința inițială trebuie transmisă explicit; nu se poate recupera din hash |

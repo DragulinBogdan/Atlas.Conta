@@ -1,7 +1,7 @@
 # D9B — originea partidei
 
 - Tip: catalog
-- Actualizat: 2026-10-13
+- Actualizat: 2026-10-14
 - Contract: [TR-D9b](../tr-d9b-contract.md), D9B-D1…D7
 
 Catalogul separă **A, comportamentul existent**, de **P, proiecția
@@ -34,7 +34,7 @@ partidei, cât și `PartideCuRest`, cu așteptări numerice constante.
 |---|---|---|---|---|
 | SC-D9B-01 | FCT100, PLT nominalizată40 → rest60; exact o origine FCT, zero origine proprie PLT. | acceptat | verificat ambele | verificat ambele |
 | SC-D9B-02 | A100/B70, plata40 pe A → 60/70, două origini. | acceptat | verificat ambele | verificat ambele |
-| SC-D9B-03a | O NTC, două datorii100 pe același cont, titulari diferiți → două origini; stingere100 a primei → 0/100. | acceptat | verificat ambele, check SC-D9B-03 | verificat ambele |
+| SC-D9B-03a | O NTC, două datorii100 pe același cont, titulari diferiți → două origini; stingere100 a primei → 0/100. | acceptat | verificat ambele, check SC-D9B-03a | verificat ambele |
 | SC-D9B-03b | O plată40/60, două conturi cu partide (401/4111, respectiv401.01.00/411.01.01), politici proprii pe tipurile liniilor → două origini și resturi40/60 chiar dacă explicația declară una. | acceptat | verificat ambele | verificat ambele |
 | SC-D9B-04 | FCT100, PLT liberă40, împerechere40 → 60/0 și două origini; desfacere → 100/40; transferurile au sumă zero per cont și sens. | acceptat | verificat ambele | verificat ambele |
 | SC-D9B-05 | FCT100, PLT40:60; desfacerea legăturii și retragerea plății:100; reoperare:60. Separat, retragerea FCT fără dependenți elimină originea; reoperare la 07.01 cu DataInregistrare aliniată → același ID, exact o origine, noua dată. | acceptat | verificat ambele | verificat ambele |
