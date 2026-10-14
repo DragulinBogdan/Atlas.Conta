@@ -2,7 +2,7 @@
 
 - Data: 2026-07-23
 - Stare: activă
-- Arii: domeniu-si-operare, limite-curente
+- Arii: documente, stoc, limite-curente
 - Docs: docs/privat/p2-descarcare-design.md
 
 ## Regula durabilă

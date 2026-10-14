@@ -3,7 +3,7 @@
 - Data: 2026-07-24
 - Stare: amendată de 104
 - Execuție: aria amendată de 104d (React = citiri și proiecții; paginile de detaliu ale documentelor înghețate)
-- Arii: api-si-client, dezvoltare-si-validare, limite-curente
+- Arii: ecrane, api, dezvoltare, verificare, limite-curente
 - Docs: docs/api/p5-react-design.md
 
 ## Regula durabilă

@@ -3,7 +3,7 @@
 - Data: 2026-09-02
 - Stare: activă
 - Execuție: (închide 79-r2, 74-r12 și 77-r3 pe `PoliticaMiscareSaft`; amendează 56 pe politici — ReadOnly-ul pe OData a murit; amendează 38d/P1 §8 — implicitul de TVA nu mai e doar al tipului de document; 81d amendată de 83a — re-seed-ul corectează rândurile `DinSeed`; 81-r1 și 81-r2 închise de 83; 81-r8 și ecranele din 81k închise de 84)
-- Arii: api-si-client, dezvoltare-si-validare, limite-curente, politici-si-fiscalitate
+- Arii: politici, tva, api, ecrane, verificare, documente, dezvoltare, limite-curente
 - Amendează: 38 (d), 56
 - Închide: 79-r2, 74-r12
 - Docs: `docs/api/p5-felia23-implicite-politici-contract.md` (F23-D1…D12 + §Închidere), `nou/.../Module/Motor/ImpliciteService.cs`, `nou/.../Module/Motor/VerificareProfilService.cs`, `nou/.../Module/BusinessObjects/Comun/ClasaFiscala.cs`, `nou/.../Module/BusinessObjects/Comun/ICuProvenienta.cs`, `nou/.../Module/Motor/GardianEditare.cs` (ramurile D5), `nou/.../Module/Migrations/20260902184753_F23ImpliciteSiPolitici.cs`, `nou/.../WebApi/API/Conta/ImpliciteController.cs`, `nou/.../WebApi/API/Conta/PoliticiController.cs`, `nou/Atlas.Conta.Client/src/felii/politici/`, `nou/tools/ProbeHttp/refuzuri.ps1` (blocul „politici")

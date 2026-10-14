@@ -2,7 +2,7 @@
 
 - Data: 2026-08-08
 - Stare: amendată de 77, 81
-- Arii: api-si-client, dezvoltare-si-validare, politici-si-fiscalitate
+- Arii: api, documente, tva, verificare, stoc, ecrane, dezvoltare
 - Docs: docs/api/p5-felia-fct-contract.md
 
 ## Regula durabilă

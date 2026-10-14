@@ -118,7 +118,7 @@ pasul 8 owner-ul a scos SOLDURI din praguri (D9B-D7, precizarea din
   șirul de conexiune îndreptat, prin mediu, spre baza privată `.Pas6`.
   Repetată cu containerul pornit, fără nicio suprascriere, a trecut pe baza
   hosturilor rămasă la `InitialCreate`. Regula e în
-  [dezvoltare-si-validare](../stare-curenta/dezvoltare-si-validare.md#contracte-generate-și-build).
+  [dezvoltare-si-validare](../stare-curenta/dezvoltare.md#contracte-generate-și-build).
 
 Unealta de redenumire și ieșirile ei sunt în `run-verificari/d9b-pas6/`
 (`Program.cs`, `preview.json`, `applied.json`), neversionate.

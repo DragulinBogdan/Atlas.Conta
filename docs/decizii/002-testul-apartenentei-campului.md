@@ -2,7 +2,7 @@
 
 - Data: 2026-07-22
 - Stare: activă
-- Arii:
+- Arii: motor, verificare, documente, stoc
 
 ## Regula durabilă
 

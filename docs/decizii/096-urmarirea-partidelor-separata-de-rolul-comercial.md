@@ -3,7 +3,7 @@
 - Data: 2026-09-24
 - Stare: amendată de 100, 102
 - Execuție: aprobată de owner, activă; (b) amendat de 100 pentru cele trei conturi comerciale bugetare; (d) și 096-r1 depășite de 102
-- Arii:
+- Arii: partide
 - Docs: `docs/nucleu/tr-d7c-dec-contract.md` DEC-B2; 090(d), 092, 095.
 
 ## Regula durabilă

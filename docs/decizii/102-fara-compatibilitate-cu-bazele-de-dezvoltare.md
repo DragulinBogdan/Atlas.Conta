@@ -3,7 +3,7 @@
 - Data: 2026-09-25
 - Stare: activă
 - Execuție: aprobată de owner, activă; amendează 092(b)(c), 096(d) și 096-r1, 100(b), 101(d) și contractul TR-D8 D8-B3 (completarea provenienței și refuzul la activare)
-- Arii: dezvoltare-si-validare, domeniu-si-operare, limite-curente
+- Arii: dezvoltare, partide, stoc, verificare, imobilizari, politici, tva, limite-curente
 - Amendează: 92 (b, c), 96 (d), 100 (b), 101 (d)
 - Docs: contractul feliei `docs/nucleu/c102-curatenie-contract.md`; `comunicari/2026-09-25-1237-claude-codex-tr-d8-partide-review.md` (D-1, D-4); `docs/nucleu/tr-d8-citiri-contract.md`.
 

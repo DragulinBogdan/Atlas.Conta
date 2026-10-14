@@ -2,7 +2,7 @@
 
 - Data: 2026-07-27
 - Stare: activă
-- Arii:
+- Arii: motor, politici, import
 - Docs: docs/architecture-notes-2026-07-28.md
 
 ## Regula durabilă

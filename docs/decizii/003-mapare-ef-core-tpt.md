@@ -3,7 +3,7 @@
 - Data: 2026-07-22
 - Stare: amendată de 89
 - Execuție: (TPT → TPH cu discriminatorul mapat `ClrType`, 2026-09-18; frunzele și `[TipDetaliu]` rămân)
-- Arii:
+- Arii: documente, motor, verificare
 
 ## Regula durabilă
 

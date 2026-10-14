@@ -187,7 +187,7 @@ Import1C rămâne unealtă de migrare, nu gate (091).
 ## 7. Documentația (D9-D14) și restanțele (D9-D13)
 
 - `stare-curenta/`: ultimele două mențiuni ale scrierii duale (rândurile PIF și AMO din
-  `domeniu-si-operare.md`) au ieșit. Invarianții I, III și VI sunt în literă curentă de la pasul 6.
+  `imobilizari.md`) au ieșit. Invarianții I, III și VI sunt în literă curentă de la pasul 6.
 - `CLAUDE.md`, §Stare: rescrisă ca stare. Paragraful nucleului nu mai descrie regimul dual, iar povestea pe
   pași a feliei a ieșit; rămâne în `istoric-plan-de-lucru.md` și aici.
 - `restante.md`: verdictul din D9-D13 pe fiecare rând; nicio restanță nu mai are starea „cade la TR-D9".

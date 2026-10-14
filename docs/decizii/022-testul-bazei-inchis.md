@@ -2,7 +2,7 @@
 
 - Data: 2026-07-22
 - Stare: activă
-- Arii: domeniu-si-operare
+- Arii: documente
 - Docs: db/inventar/11-testul-bazei.md
 
 ## Regula durabilă

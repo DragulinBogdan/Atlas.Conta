@@ -3,7 +3,7 @@
 - Data: 2026-09-24
 - Stare: amendată de 98
 - Execuție: aprobată de owner, activă; (b) precizată de 098 ca invariant de poziție
-- Arii: domeniu-si-operare, limite-curente
+- Arii: documente, imobilizari, limite-curente
 - Docs: `docs/nucleu/tr-d7c-imobilizari-contract.md` IMO-B2; 087(e), 090, 094, 095.
 
 ## Regula durabilă

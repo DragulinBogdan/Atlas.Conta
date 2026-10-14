@@ -3,7 +3,7 @@
 - Data: 2026-08-26
 - Stare: amendată de 74, 105
 - Execuție: amendată de 105 (2026-09-30) (închide D4-r5 parțial — cod NC pe produs, D4-r10 — antetul societății, D4-r14; deschide prima infrastructură de fișier XML din repo — 69-r6/D4-r13 rămân, dar au acum un precedent; 73-r1 închisă de decizia 74, care amendează 73f/g cu faptele profilului `C`)
-- Arii: politici-si-fiscalitate
+- Arii: saft, nomenclatoare, dezvoltare, verificare
 - Docs: docs/api/p5-felia-saft-contract.md (D16-D1…D6 + amendamentele pașilor 2 și 4, riscurile 1–12, V1–V5), docs/api/d406-structura-2026.md (structura oficială, ancora 16.02.2026, regulile reale ale validatorului), docs/import/faza-1c-design.md §14 (cifrele V5)
 
 ## Regula durabilă

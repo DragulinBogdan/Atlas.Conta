@@ -1,6 +1,6 @@
 # Termeni
 
-**Actualizat: 2026-10-13.** [Index](README.md)
+**Actualizat: 2026-10-15.** [Index](README.md)
 
 Glosarul numește termenii paginilor de stare curentă și trimite la regula
 fiecăruia, fără s-o dubleze. Un termen intră aici la prima lui folosire
@@ -17,7 +17,7 @@ la tranșarea owner-ului; un cuvânt cu mai multe sensuri se califică
 Operația economică intră ca document cu două laturi (`Predator`,
 `Primitor`), un antet și linii; tipul concret, ancorat unu-la-unu în
 `TipDocument`, dă sensul laturilor și declarantul, și nu se inventează
-prin configurare. Regula: [domeniu § Modelul comun](domeniu-si-operare.md#modelul-comun) (3, 20, 22, 81e).
+prin configurare. Regula: [documente § Modelul comun](documente.md#modelul-comun) (3, 20, 22, 81e).
 Înrudit: linie, latură. În cod: `Document`, `TipDocument`.
 În sistemul vechi: tabelă unică de documente + tabelă unică de detalii cu
 `TipDocument`, document generic predator → primitor.
@@ -26,7 +26,7 @@ prin configurare. Regula: [domeniu § Modelul comun](domeniu-si-operare.md#model
 
 Rândul documentului: tip material, lot, cantitate semnată, valoare de
 postare, TVA, cu derivata declarată prin `[TipDetaliu]` și ordinea de
-culegere în `Pozitie`. Regula: [domeniu § Modelul comun](domeniu-si-operare.md#modelul-comun) (22, 36a, S-D6).
+culegere în `Pozitie`. Regula: [documente § Modelul comun](documente.md#modelul-comun) (22, 36a, S-D6).
 Înrudit: document, lot. În cod: `DocumentDetaliu`.
 
 ### latură
@@ -35,7 +35,7 @@ Una din cele două părți ale documentului, `Predator` sau `Primitor`, cu
 repartitorul ei și cu partea permisă de contractul laturilor; debitul și
 creditul postării nu sunt laturi, ci sensul ei, iar „latura pereche” a
 viramentului e documentul pereche (65). Regula:
-[domeniu § Laturile ca structură](domeniu-si-operare.md#laturile-documentului-ca-structură-t-d13-felia-32-pasul-2b) (T-D13, 118).
+[motor § Laturile ca structură](motor.md#laturile-documentului-ca-structură-t-d13-felia-32-pasul-2b) (T-D13, 118).
 Înrudit: parte, capăt, sens. În cod: `Document.Laturi()`, `LaturaDocument`,
 `Declaratii.Latura`; debitul și creditul postării nu poartă numele ăsta
 nici ca tip, nici ca membru sau coloană (118-r7, TR-D9b pasul 6).
@@ -46,7 +46,7 @@ nici ca tip, nici ca membru sau coloană (118-r7, TR-D9b pasul 6).
 Debitul sau creditul postării, coordonată obligatorie a cubului; aceeași
 familie numește sensul taxei (`SensTva`) și al stingerii (`SensStingere`)
 și nu se confundă cu contarea, care e regula de atribuire a conturilor.
-Regula: [domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D2, 118).
+Regula: [motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D2, 118).
 Înrudit: latură, postare, coordonată. În cod: `Sens` (nucleu, 118-r7),
 `SensTva`, `SensStingere`. Membrul care poartă debitul sau creditul se
 numește `Sens`, cu coloana `Sens` de pe `Postare` (TR-D9b pasul 6). Numele
@@ -63,7 +63,7 @@ de API ale partidelor, documentelor cu rest și contrapartidelor notei
 Poziția repartitorului față de patrimoniu: `Extern` (partener, angajat),
 `Intern` (gestiune, unitate internă), `Propriu` (cont propriu); contractul
 laturilor declară părțile permise pe fiecare latură a tipului. Regula:
-[domeniu § Laturile ca structură](domeniu-si-operare.md#laturile-documentului-ca-structură-t-d13-felia-32-pasul-2b) (T-D13).
+[motor § Laturile ca structură](motor.md#laturile-documentului-ca-structură-t-d13-felia-32-pasul-2b) (T-D13).
 Înrudit: latură, repartitor. În cod: `Parte`.
 În sistemul vechi: intern/extern per tip în `GEST_DEFA_DOCUM`.
 
@@ -73,7 +73,7 @@ Ierarhia celor care dau sau primesc: partener, gestiune (internul care
 ține stoc), angajat, unitate internă, cont propriu; calitățile (loc de
 consum, comisie, centru de cost) sunt atribute, nu clase. Postarea poartă
 un singur repartitor de sold, cu felul lui. Regula:
-[domeniu § Modelul comun](domeniu-si-operare.md#modelul-comun) (16, 111).
+[documente § Modelul comun](documente.md#modelul-comun) (16, 111).
 Înrudit: parte, partener, fel de repartitor, loc. În cod: `Repartitor`,
 `Calitati`; pe postare, `Repartitor` = `(Id, Fel)`.
 
@@ -82,7 +82,7 @@ un singur repartitor de sold, cu felul lui. Regula:
 Clasa repartitorului de sold al postării: partener, angajat, gestiune,
 cont propriu, unitate internă; contul declară felurile admise, cu sau
 fără „niciunul”, iar gardul analizei refuză repartitorul de alt fel.
-Regula: [domeniu § Contare și dimensiuni](domeniu-si-operare.md#contare-și-dimensiuni) (111, C111-D4).
+Regula: [motor § Contare și dimensiuni](motor.md#contare-și-dimensiuni) (111, C111-D4).
 Înrudit: repartitor, parte, cont. În cod: `FelRepartitor`,
 `Cont.FeluriRepartitor`.
 
@@ -91,7 +91,7 @@ Regula: [domeniu § Contare și dimensiuni](domeniu-si-operare.md#contare-și-di
 Terțul extern, furnizor și client ca roluri ale aceluiași rând; pe
 postare, e repartitorul de sold al capătului de terț și titularul
 partidei.
-Regula: [domeniu § Declarația fluxului per tip](domeniu-si-operare.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (16, B-D8, 111).
+Regula: [motor § Declarația fluxului per tip](motor.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (16, B-D8, 111).
 Înrudit: repartitor, partidă, partener fiscal. În cod: `Partener`; pe
 postare, `Repartitor` cu felul `Partener`.
 
@@ -99,7 +99,7 @@ postare, `Repartitor` cu felul `Partener`.
 
 Partenerul din blocul fiscal al postării cu fapt fiscal: nu poartă
 partidă, nu e repartitorul de sold al postării și poate lipsi. Regula:
-[domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (B-D8 pct. 5, 111, C111-D2).
+[motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (B-D8 pct. 5, 111, C111-D2).
 Înrudit: partener, fapt fiscal, loc. În cod: `PartenerFiscal`.
 
 ### loc
@@ -107,14 +107,14 @@ partidă, nu e repartitorul de sold al postării și poate lipsi. Regula:
 Locul intern al postării când nu e repartitorul ei de sold: pe orice
 postare cu fapt fiscal („loc fiscal”) și pe capătul intern căruia
 titularul unei partide i-a luat locul; nu intră în nicio cheie de sold.
-Regula: [domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (111, C111-D2, C111-Q14).
+Regula: [motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (111, C111-D2, C111-Q14).
 Înrudit: repartitor, partener fiscal, fapt fiscal. În cod: `Loc`.
 
 ### contrapondere
 
 Marcajul postării care ține contracantitatea în afara evidenței: terț,
 consum, inventar sau transformare; postarea nemarcată e în evidență.
-Regula: [domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D4, 111, C111-D2).
+Regula: [motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D4, 111, C111-D2).
 Înrudit: capăt, repartitor, lot. În cod: `Contrapondere`.
 
 ### capăt
@@ -125,7 +125,7 @@ contrapondere); „picior” e
 sinonimul de vorbire al paginilor, iar „proiecție” rămâne al citirilor
 (42c). Viramentul intern e perechea PLT/INC cu capetele pe conturi
 proprii. Regula:
-[domeniu § Declarația fluxului per tip](domeniu-si-operare.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (B-D8, S-D7, T-D13, 64, 118).
+[motor § Declarația fluxului per tip](motor.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (B-D8, S-D7, T-D13, 64, 118).
 Înrudit: latură, postare, contrapondere. În cod: `Capat`.
 
 ### unitate de sold
@@ -134,7 +134,7 @@ Obiectul nominalizat pe care se ține soldul: lotul, partida și fișa de
 imobilizare sub același concept, scurt „unitate” în pagini; FIFO consumă
 întâi unitatea numită pe linie. Nu e repartitorul `UnitateInterna`, nici
 dimensiunea bugetară `Unitate`, nici unitatea de măsură. Regula:
-[domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D6, N-D7, 118).
+[motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D6, N-D7, 118).
 Înrudit: lot, partidă, imobilizare, document deschizător. În cod:
 `UnitateSold` (TR-D9b, 118-r8). Membrii existenți numiți `Unitate`, inclusiv
 identificatorul persistat pe postare, păstrează numele.
@@ -143,7 +143,7 @@ identificatorul persistat pe postare, păstrează numele.
 
 Identitatea unei intrări în stoc (produs, proveniență, gestiune, dată,
 preț de intrare fixat la operare); se naște pe linia de intrare și nu-și
-schimbă prețul. Regula: [domeniu § Stoc și evaluare](domeniu-si-operare.md#stoc-și-evaluare) (13, 25c, 26e).
+schimbă prețul. Regula: [stoc § Stoc și evaluare](stoc.md#stoc-și-evaluare) (13, 25c, 26e).
 Înrudit: unitate de sold, evaluare FIFO. În cod: `Lot`.
 
 ### partidă
@@ -151,7 +151,7 @@ schimbă prețul. Regula: [domeniu § Stoc și evaluare](domeniu-si-operare.md#s
 Unitatea de terț: cont cu `UrmarestePartide` × partener × document
 deschizător, cu identificator determinist; partida inițială vine din
 deschidere, iar restul ei e suma netă a postărilor. Regula:
-[domeniu § Partide: raport, snapshot și împerechere](domeniu-si-operare.md#partide-raport-snapshot-și-împerechere-101-2026-09-25) (092, 100, 101).
+[partide § Partide: raport, snapshot și împerechere](partide.md#partide-raport-snapshot-și-împerechere-101-2026-09-25) (092, 100, 101).
 Înrudit: unitate de sold, stingere, partidă deschisă. În cod: `Cub.Citiri.Partide`.
 
 ### evaluare FIFO
@@ -159,7 +159,7 @@ deschidere, iar restul ei e suma netă a postărilor. Regula:
 Ieșirea e identificare specifică pe lot: pinul manual are prioritate,
 apoi FIFO în ordinea intrării în evidență; valoarea vine din soldul
 cubului în secvența liniilor, ultima bucată ia restul. Regula:
-[domeniu § Stoc și evaluare](domeniu-si-operare.md#stoc-și-evaluare) (13, 38b, 090 j, D9-D3, 114).
+[stoc § Stoc și evaluare](stoc.md#stoc-și-evaluare) (13, 38b, 090 j, D9-D3, 114).
 Înrudit: lot, sold. În cod: `Evaluare.Iesire`.
 
 ### sold
@@ -168,7 +168,7 @@ Suma postărilor pe orice cheie, citită ca snapshot-ul ultimei perioade de
 referință plus rulajele de după ea; proiecțiile (balanță, fișă, stoc,
 partide, jurnale) sunt citiri agregate peste cub, iar clientul nu
 calculează niciodată sold, rest sau total. Regula:
-[domeniu § Soldul citit](domeniu-si-operare.md#soldul-citit-referință-plus-rulaje) (F27-D3, 42c, 66).
+[perioade § Soldul citit](perioade.md#soldul-citit-referință-plus-rulaje) (F27-D3, 42c, 66).
 Înrudit: snapshot, cub. În cod: `SolduriService`, `Proiectii/`.
 
 ### deschidere
@@ -176,7 +176,7 @@ calculează niciodată sold, rest sau total. Regula:
 Soldul inițial scris ca tranzacție `Deschidere` fără document, detaliat
 prin loturi și partide inițiale, o dată per bază; singura scriere directă
 a migrării; „soldul inițial” rămâne coloana balanței. Regula:
-[domeniu § Ce rămâne al feliilor următoare](domeniu-si-operare.md#ce-rămâne-al-feliilor-următoare) (094, DES-B1…B4, 107, 118).
+[motor § Ce rămâne al feliilor următoare](motor.md#ce-rămâne-al-feliilor-următoare) (094, DES-B1…B4, 107, 118).
 Înrudit: partidă, tranzacție, document deschizător, partidă deschisă.
 În cod: `Materializare.Deschide`.
 
@@ -185,7 +185,7 @@ a migrării; „soldul inițial” rămâne coloana balanței. Regula:
 Documentul operat care naște o unitate de sold și intră în identitatea și
 în ordinea ei FIFO (data deschiderii, documentul deschizător, id);
 unitățile din deschidere nu au document deschizător. Regula:
-[domeniu § Partide: raport, snapshot și împerechere](domeniu-si-operare.md#partide-raport-snapshot-și-împerechere-101-2026-09-25) (092, 114).
+[partide § Partide: raport, snapshot și împerechere](partide.md#partide-raport-snapshot-și-împerechere-101-2026-09-25) (092, 114).
 Înrudit: unitate de sold, partidă, lot, deschidere.
 
 ### partidă deschisă
@@ -193,7 +193,7 @@ unitățile din deschidere nu au document deschizător. Regula:
 Snapshot-ul partidelor cu rest la închiderea perioadei de referință, pe
 unitate × cont × partener, scris din cub în tranzacția închiderii; nu e
 partida inițială din deschidere. Regula:
-[domeniu § Partide deschise](domeniu-si-operare.md#partide-deschise) (101, F27-D7).
+[partide § Partide deschise](partide.md#partide-deschise) (101, F27-D7).
 Înrudit: partidă, snapshot, deschidere. În cod: `PartidaDeschisa`.
 
 ### data înregistrării
@@ -201,7 +201,7 @@ partida inițială din deschidere. Regula:
 Data la care documentul intră în evidență, pe care se scriu postările și
 se naște lotul; distinctă de `Data` documentului fizic, nu o poate
 preceda și e reperul gardianului de perioadă. Regula:
-[domeniu § Data documentului și data înregistrării](domeniu-si-operare.md#data-documentului-și-data-înregistrării) (F27-D4).
+[documente § Data documentului și data înregistrării](documente.md#data-documentului-și-data-înregistrării) (F27-D4).
 Înrudit: perioadă fiscală, perioadă de declarare. În cod: `DataInregistrare`.
 
 ### operare
@@ -209,7 +209,7 @@ preceda și e reperul gardianului de perioadă. Regula:
 Comanda care calculează, validează și materializează: dreptul, starea și
 perioada, contractul declarației, numărul și scadența, loturile, apoi
 tranzacțiile în cub, totul într-o singură tranzacție. Regula:
-[domeniu § Operarea](domeniu-si-operare.md#operarea) (33d, 42b, D9-D2…D4).
+[documente § Operarea](documente.md#operarea) (33d, 42b, D9-D2…D4).
 Înrudit: stare, declarant. În cod: `MotorOperare`.
 
 ### stare
@@ -218,7 +218,7 @@ tranzacțiile în cub, totul într-o singură tranzacție. Regula:
 `Stornat`; anularea readuce în Draft și șterge tranzacțiile (perioadă
 deschisă, fără dependenți), stornarea adaugă tranzacția `Storno` la data
 stornării, cu postările la valori negative, fără schimb de latură. Regula:
-[domeniu § Anulare și storno](domeniu-si-operare.md#anulare-și-storno) (14, 25d, 46a, S-D5).
+[documente § Anulare și storno](documente.md#anulare-și-storno) (14, 25d, 46a, S-D5).
 Înrudit: operare, corecție. În cod: `Stare`.
 
 ### corecție
@@ -226,7 +226,7 @@ stornării, cu postările la valori negative, fără schimb de latură. Regula:
 Comanda `Corectează`, singura cale peste graniță: stornează originalul la
 data cerută și creează în aceeași tranzacție un Draft nou de același tip,
 legat 1:1, cu motivul care decide efectul fiscal. Regula:
-[domeniu § Corecția unui document operat](domeniu-si-operare.md#corecția-unui-document-operat) (F27-D6, 103c).
+[documente § Corecția unui document operat](documente.md#corecția-unui-document-operat) (F27-D6, 103c).
 Înrudit: stare, retragere, perioadă de declarare. În cod: `CorectieService`.
 
 ### retragere
@@ -235,7 +235,7 @@ legat 1:1, cu motivul care decide efectul fiscal. Regula:
 dependenți, cu tranzacțiile lui șterse; numită „corecția directă” în 104f
 și în invarianții III. Gardienii retragerii dau, în ordinea motorului,
 motivele citibile ale anulării, stornării și corecției. Regula:
-[domeniu § Anulare și storno](domeniu-si-operare.md#anulare-și-storno) (104f, 106k, 118).
+[documente § Anulare și storno](documente.md#anulare-și-storno) (104f, 106k, 118).
 Înrudit: stare, corecție, gardian. În cod: `Motor/GardieniRetragere`.
 
 ### regim pe stare
@@ -243,7 +243,7 @@ motivele citibile ale anulării, stornării și corecției. Regula:
 Singura sursă a editabilității și a comenzilor disponibile: pentru fiecare
 comandă din vocabularul închis întoarce motivul indisponibilității sau
 nimic, cu predicatele gardienilor motorului. Regula:
-[domeniu § Regimul pe stare](domeniu-si-operare.md#regimul-pe-stare-106) (106b…k).
+[documente § Regimul pe stare](documente.md#regimul-pe-stare-106) (106b…k).
 „Regim” se califică întotdeauna: regimul pe stare e al documentului,
 regimul de TVA (Normal, TaxareInversa, Capitalizat, Scutit, Neimpozabil)
 e al taxei.
@@ -255,7 +255,7 @@ Veriga (an, lună) a lanțului: închiderea e comandă cu constatări
 structurale (în cod, blocante) și de conținut (severitate din politică),
 perioada închisă e graniță absolută, cea absentă e închisă, iar cea de
 referință (ultima închisă sau un decembrie închis) poartă snapshot.
-Regula: [domeniu § Perioada fiscală ca lanț](domeniu-si-operare.md#perioada-fiscală-ca-lanț) (F27-D1…D3).
+Regula: [perioade § Perioada fiscală ca lanț](perioade.md#perioada-fiscală-ca-lanț) (F27-D1…D3).
 Înrudit: snapshot, data înregistrării. În cod: `PerioadaFiscala`.
 
 ### perioadă de declarare
@@ -263,7 +263,7 @@ Regula: [domeniu § Perioada fiscală ca lanț](domeniu-si-operare.md#perioada-f
 Coordonata fiscală (lună) în care faptul se declară, distinctă de data
 faptului și decisă de politică când perioada faptului e închisă;
 depunerea se confirmă pe formular, lună și versiunea exportată. Regula:
-[politici § Perioada de declarare și corecțiile](politici-si-fiscalitate.md#perioada-de-declarare-și-corecțiile) (103, 103d, F27-D5).
+[tva § Perioada de declarare și corecțiile](tva.md#perioada-de-declarare-și-corecțiile) (103, 103d, F27-D5).
 Înrudit: fapt fiscal, perioadă fiscală. În cod: `PerioadaDeclarare`.
 
 ### stingere
@@ -271,7 +271,7 @@ depunerea se confirmă pe formular, lună și versiunea exportată. Regula:
 Reducerea restului unei partide: automată la operare, prin nominalizarea
 partidei sursei pe postarea de terț a stingătorului; manuală prin notă
 contabilă (partidă numită sau FIFO); a partidei inițiale prin deschidere.
-Regula: [domeniu § Împerechere și stingere automată](domeniu-si-operare.md#împerechere-și-stingere-automată) (82a, 102, 115).
+Regula: [partide § Împerechere și stingere automată](partide.md#împerechere-și-stingere-automată) (82a, 102, 115).
 Înrudit: partidă, împerechere. În cod: `Fifo.Nominalizeaza`.
 
 ### împerechere
@@ -279,7 +279,7 @@ Regula: [domeniu § Împerechere și stingere automată](domeniu-si-operare.md#�
 Legătura datată, cu sumă, dintre două documente operate; creată după
 operare mută suma între partide printr-o tranzacție `Transfer`, iar
 dintr-o perioadă închisă se desface prin rând invers. Regula:
-[domeniu § Împerecherea ulterioară operării](domeniu-si-operare.md#împerecherea-ulterioară-operării--tranzacție-transfer) (31d, F27-D8, S-D13).
+[partide § Împerecherea ulterioară operării](partide.md#împerecherea-ulterioară-operării--tranzacție-transfer) (31d, F27-D8, S-D13).
 Înrudit: stingere, tranzacție. În cod: `Imperechere`.
 
 ### conex
@@ -289,7 +289,7 @@ Documentul generat de operarea sursei, creat în tranzacția ei cu
 doar diferența față de recepția facturii), plata din factură, descărcarea
 de gestiune DSC din FCL (lotul iese la cost, fără TVA, cu contraponderea
 de terț, cu pinurile înaintea FIFO). Regula:
-[domeniu § Documente generate și viramente](domeniu-si-operare.md#documente-generate-și-viramente) (17, 26d, 37b, 098, T-D4).
+[documente § Documente generate și viramente](documente.md#documente-generate-și-viramente) (17, 26d, 37b, 098, T-D4).
 Înrudit: document, evaluare FIFO. În cod: `PoliticaConex`, `DescarcareService`.
 
 ### profil
@@ -298,7 +298,7 @@ Pachetul de seed al bazei, privat (OMFP 1802, sursa cerințelor) sau
 bugetar, fixat per bază împreună cu rotunjirea (scara bani 18,2 / prețuri
 18,6 / cantități 18,3, prețul `AwayFromZero`, sumele după convenția
 profilului); profilurile diferă prin date și validări, nu prin clase.
-Regula: [politici § Configurarea profilului](politici-si-fiscalitate.md#configurarea-profilului) (4, 49e, 51c, 52a).
+Regula: [politici § Configurarea profilului](politici.md#configurarea-profilului) (4, 49e, 51c, 52a).
 „Politica de validare” (`PoliticaValidare`, 84e–h) e o politică, nu un
 profil; profilul nu e „șablon”, fiindcă e realiniat continuu prin `DinSeed`.
 Înrudit: seed, politică. În cod: `SetareProfil`, `Scara`.
@@ -307,7 +307,7 @@ profil; profilul nu e „șablon”, fiindcă e realiniat continuu prin `DinSeed
 
 Clasificarea operațională a produsului, cu cont implicit și clasă (natura
 `Stoc` intră în regulile de stoc, clasa F e a imobilizărilor); distinctă
-de identitatea produsului. Regula: [domeniu § Stoc și evaluare](domeniu-si-operare.md#stoc-și-evaluare) (23b, 26c).
+de identitatea produsului. Regula: [stoc § Stoc și evaluare](stoc.md#stoc-și-evaluare) (23b, 26c).
 Înrudit: cont, lot. În cod: `TipMaterial`, `ClasaProdus.Natura`.
 În sistemul vechi: Clasă/Tip pe produse ≈ plan de conturi operațional.
 
@@ -316,7 +316,7 @@ de identitatea produsului. Regula: [domeniu § Stoc și evaluare](domeniu-si-ope
 Poziția din planul sintetic, cu analiticele din dimensiuni și cu
 atributele care conduc motorul (urmărirea partidelor, rolul comercial
 SAF-T, dimensiunile obligatorii, categoria de stoc); niciun simbol de cont
-nu stă în cod. Regula: [domeniu § Contare și dimensiuni](domeniu-si-operare.md#contare-și-dimensiuni) (10, 29, 096).
+nu stă în cod. Regula: [motor § Contare și dimensiuni](motor.md#contare-și-dimensiuni) (10, 29, 096).
 „Rol” se califică: rolul de terț al contului (`RolTert`), rolul liniei,
 rolul coloanei, rolul de securitate.
 Înrudit: dimensiune, partidă. În cod: `Cont`, `UrmarestePartide`.
@@ -326,7 +326,7 @@ rolul coloanei, rolul de securitate.
 Analiticele laturii, culese pe frunzele liniilor și păstrate plat pe
 postare (repartitor, material, cod funcțional, cod economic, sursă de
 finanțare, unitate, proiect, centru de cost); rezolvarea urmează linia,
-regula, antetul, lotul. Regula: [domeniu § Contare și dimensiuni](domeniu-si-operare.md#contare-și-dimensiuni) (15, 25f, 54c).
+regula, antetul, lotul. Regula: [motor § Contare și dimensiuni](motor.md#contare-și-dimensiuni) (15, 25f, 54c).
 Dimensiunea e analitica laturii, culeasă; coordonata e axa postării, pe
 care dimensiunile se păstrează plat.
 Înrudit: cont, coordonată. În cod: `DimensiuniCulese()`.
@@ -336,7 +336,7 @@ care dimensiunile se păstrează plat.
 Cota și regimul unei taxe; implicitul pe linie se rezolvă partener →
 politică → ancora tipului de document, împăcat cu produsul și cu clasa
 fiscală a partenerului, în intervalul de valabilitate. Regula:
-[politici § Implicitele TVA](politici-si-fiscalitate.md#implicitele-tva) (81a, 81b, 103h/i).
+[tva § Implicitele TVA](tva.md#implicitele-tva) (81a, 81b, 103h/i).
 Înrudit: taxă nemarcată, fapt fiscal. În cod: `TipTva`.
 
 ### taxă nemarcată
@@ -344,7 +344,7 @@ fiscală a partenerului, în intervalul de valabilitate. Regula:
 Taxa neintrodusă explicit de operator: se decide pe document × cotă din
 valorile rotunjite ale liniilor și se repartizează pe linii prin
 Hamilton; linia poartă taxa postată, taxa marcată rămâne a operatorului.
-Regula: [politici § TVA la operare](politici-si-fiscalitate.md#tva-la-operare) (090j, 109 a/b/g).
+Regula: [tva § TVA la operare](tva.md#tva-la-operare) (090j, 109 a/b/g).
 Înrudit: linie, tip de TVA. În cod: `TvaCules`.
 
 ### fapt fiscal
@@ -352,7 +352,7 @@ Regula: [politici § TVA la operare](politici-si-fiscalitate.md#tva-la-operare) 
 Postarea care poartă codul de TVA (tip × sens × rol: Bază, Taxă,
 Autocolectare), perioada declarării, locul și, când există, partenerul
 fiscal; faptele stau numai pe postări, în ambele cărți. Regula:
-[politici § TVA la operare](politici-si-fiscalitate.md#tva-la-operare) (103, D9-D2, 111).
+[tva § TVA la operare](tva.md#tva-la-operare) (103, D9-D2, 111).
 Înrudit: tip de TVA, coordonată, loc, partener fiscal. În cod:
 `Cub.Citiri.Fiscale`.
 
@@ -363,7 +363,7 @@ cod economic) a cărei stare o materializează motorul și ale cărei valori
 se citesc din cub; PIF o pune în funcțiune, CAS o scoate, iar AMO, generat
 lunar pe unitate internă, îi postează amortizarea (contabilă, fiscală,
 deductibilă) din politică și regulile de deductibilitate. Regula:
-[domeniu § Imobilizări](domeniu-si-operare.md#imobilizări) (87a, 87d, 87g, 095, 097).
+[imobilizari § Imobilizări](imobilizari.md#imobilizări) (87a, 87d, 87g, 095, 097).
 Înrudit: unitate de sold, politică, reevaluare. În cod: `Imobilizare`, `AmortizareService`.
 
 ### golire valorică
@@ -389,7 +389,7 @@ Singurul registru al faptelor operate: tranzacții și postări append-only,
 complet rezolvate, scrise doar de motorul de operare în tranzacția comenzii,
 partiționate pe spațiu (`Contabil`, `Stoc`; funcție de unitate, nu câmp);
 migrațiile lui se scriu în SQL, peste `InitialCreate`, și nu transformă
-date. Regula: [domeniu § Cubul persistat](domeniu-si-operare.md#cubul-persistat) (S-D1, S-D2, S-r4, D9-D2, 102b).
+date. Regula: [motor § Cubul persistat](motor.md#cubul-persistat) (S-D1, S-D2, S-r4, D9-D2, 102b).
 Înrudit: tranzacție, postare. În cod: `Module/Cub/`, `Spatiu`.
 
 ### tranzacție
@@ -397,7 +397,7 @@ date. Regula: [domeniu § Cubul persistat](domeniu-si-operare.md#cubul-persistat
 Gruparea postărilor scrise împreună, de fel `Operare`, `Storno`,
 `Transfer` sau `Deschidere`; un document operat are cel mult o `Operare`
 și cel mult un `Transfer`, iar prima poartă explicația. Regula:
-[domeniu § Felul mixt](domeniu-si-operare.md#felul-mixt-transfer-pe-linia-care-nu-schimbă-contul-t-d2-felia-32) (S-D1, T-D2).
+[motor § Felul mixt](motor.md#felul-mixt-transfer-pe-linia-care-nu-schimbă-contul-t-d2-felia-32) (S-D1, T-D2).
 Înrudit: cub, postare. În cod: `Tranzactie`.
 
 ### postare
@@ -406,7 +406,7 @@ Rândul cubului: coordonate, trei măsuri la scară apărată (`Cantitate`,
 `ValoareValuta`, `Valoare`), ordinalul în tranzacție și perechea
 mișcării; nu se rescrie, iar valoarea negativă e admisă doar ca linie
 „în roșu”, storno sau transfer. Regula:
-[domeniu § Entitățile și forma lor fizică](domeniu-si-operare.md#entitățile-și-forma-lor-fizică) (S-D1, S-D14, D9-A2, 117).
+[motor § Entitățile și forma lor fizică](motor.md#entitățile-și-forma-lor-fizică) (S-D1, S-D14, D9-A2, 117).
 Înrudit: cub, coordonată. În cod: `Postare`.
 
 ### coordonată
@@ -415,7 +415,7 @@ Axa postării, cheia pe care se grupează și se identifică: cont, sens
 (obligatoriu), dată, repartitor, contrapondere, produs, unitate, cod de
 TVA, perioadă de declarare, partener fiscal, loc, valută, carte
 (`Contabil` / `Fiscal`) și șase analize. Regula:
-[domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D2, N-D3, B-D8, 111, C111-D2).
+[motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D2, N-D3, B-D8, 111, C111-D2).
 Înrudit: postare, dimensiune, sens, repartitor, contrapondere. În cod:
 `Coordonate`.
 
@@ -424,7 +424,7 @@ TVA, perioadă de declarare, partener fiscal, loc, valută, carte
 Deciziile și ipotezele contractului acceptat, persistate pe prima
 tranzacție scrisă: de ce a costat ieșirea atât, din ce sold citit, ce
 partide a stins, ce rând de politică a decis; nu se rescrie. Regula:
-[domeniu § Explicația deciziei](domeniu-si-operare.md#explicația-deciziei-x-d4-2026-10-03) (X-D4, D9-A8).
+[raportare § Explicația deciziei](raportare.md#explicația-deciziei-x-d4-2026-10-03) (X-D4, D9-A8).
 Endpoint-ul `api/politici/explica` (84e–h) e „explicarea configurației”:
 configurația pe o linie ipotetică, fără persistare.
 Înrudit: tranzacție, INV-CUB. În cod: `Tranzactie.Explicatie`.
@@ -435,7 +435,7 @@ Funcția pură a tipului care transformă operandul (DTO-ul închis cu
 documentul, liniile, politica și starea citită) în declarație: mișcări
 debit ≠ credit, mutări pe același cont, transformări n→m, decizii,
 ipoteze; frunza îl numește prin `Document.Declarant()`. Regula:
-[domeniu § Declarația fluxului per tip](domeniu-si-operare.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (B-D1…B-D10, D9-D5).
+[motor § Declarația fluxului per tip](motor.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (B-D1…B-D10, D9-D5).
 Înrudit: document, contract. În cod: `IDeclarant`, `Operand`.
 
 ### contract
@@ -447,7 +447,7 @@ determinist al nucleului la o declarație: acceptat (cu tranzacțiile și
 deciziile) sau refuzat, verificat de conservarea structurală (valoare per
 carte, cantitate per produs, Σ = 0 la transfer) și materializat în cub la
 operare. Regula:
-[domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D3, N-D4, N-D11, 118).
+[motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D3, N-D4, N-D11, 118).
 Înrudit: declarant, felie, latură. În cod: `Contract` e rezultatul
 motorului; `Conservare`.
 
@@ -457,7 +457,7 @@ Tipul concret al unei ierarhii TPH (`Document`, `DocumentDetaliu`,
 `Repartitor`) față de rădăcina comună: o coloană de frunză se citește
 doar pe o mulțime restrânsă la tipul ei sau prin `is ? :`, niciodată prin
 `as`/cast; discriminatorul `ClrType` e etichetă, nu comutator. Regula:
-[domeniu § Modelul comun](domeniu-si-operare.md#modelul-comun) (54c, 89a…h).
+[documente § Modelul comun](documente.md#modelul-comun) (54c, 89a…h).
 Înrudit: document, repartitor. În cod: `ClrType`, `RandDupaCheie`.
 
 ### politică
@@ -466,7 +466,7 @@ Tabela de date care parametrizează un mecanism din cod (contare, stoc,
 TVA, conex, scadență, numerotare, validare, închidere, amortizare,
 diferențe, mapări fiscale), editabilă fără release; nu inventează
 comportament și nu descrie câmpuri sau ecrane. Regula:
-[politici § Configurarea profilului](politici-si-fiscalitate.md#configurarea-profilului) (4, 81e, 84e–f).
+[politici § Configurarea profilului](politici.md#configurarea-profilului) (4, 81e, 84e–f).
 Înrudit: seed, profil. În cod: `Politica`, `Motor/Potrivire.cs`.
 În sistemul vechi: stocurile = semn aplicat pe cantitate per tip × filtru.
 
@@ -476,7 +476,7 @@ Inițializarea idempotentă, per profil, a politicilor și nomenclatoarelor
 (cataloagele cu `Activ`, care se inactivează, nu se șterg): creează rândul
 cu timbrul `DinSeed`, îl aliniază cât poartă timbrul, îl lasă neatins când
 e manual și nu îl recreează după un `RefuzSeed`. Regula:
-[politici § Proveniență și verificarea configurației](politici-si-fiscalitate.md#proveniență-și-verificarea-configurației) (81d, 83a, 84a, 104f).
+[politici § Proveniență și verificarea configurației](politici.md#proveniență-și-verificarea-configurației) (81d, 83a, 84a, 104f).
 Înrudit: profil, politică. În cod: `DinSeed`, `Nomenclator`.
 
 ### gardian
@@ -485,7 +485,7 @@ Verificarea care refuză înaintea scrierii: gardianul de editare la commit
 pe orice ușă securizată, gardianul de perioadă sub blocaj, gardienii de
 retragere la anulare și stornare; „gardul” e verificarea pe postările
 contractului (analiza obligatorie, nivelul de contare, soldul
-intermediar). Regula: [domeniu § Culegerea draftului](domeniu-si-operare.md#culegerea-draftului-104c) (42a, 104c, D9-D4).
+intermediar). Regula: [documente § Culegerea draftului](documente.md#culegerea-draftului-104c) (42a, 104c, D9-D4).
 Înrudit: ușă, refuz. În cod: `GardianEditare`, `Cub/GardAnaliza`.
 
 ### ușă
@@ -494,7 +494,7 @@ Calea unei scrieri: ușa securizată (ObjectSpace secured, cu gardian, a
 culegerii și a CRUD-ului), ușa de sistem (ObjectSpace non-secured al
 motorului și al uneltelor, fără drepturi) și ușa declarației (refuzurile
 rezultatului motorului); „pe orice ușă” = XAF, WebApi, Import1C, ModelCheck.
-Regula: [domeniu § Operarea](domeniu-si-operare.md#operarea) (42b, 55b, 104b).
+Regula: [documente § Operarea](documente.md#operarea) (42b, 55b, 104b).
 Înrudit: gardian, refuz. În cod: `ComenziDocument.Sistem(os)`.
 
 ### nucleu
@@ -502,7 +502,7 @@ Regula: [domeniu § Operarea](domeniu-si-operare.md#operarea) (42b, 55b, 104b).
 Motorul pur `Atlas.Conta.Nucleu` (BCL, zero pachete, teste de
 proprietate): transformă declarația în rezultatul motorului, fără bază,
 fără XAF și fără plan de conturi. Regula:
-[domeniu § Nucleul pur](domeniu-si-operare.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (090, N-D1…N-D12).
+[motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (090, N-D1…N-D12).
 Înrudit: declarant, contract, motor de operare. În cod:
 `Atlas.Conta.Nucleu`, `Motor.Opereaza`.
 
@@ -516,7 +516,7 @@ tranzacție explicită care începe cu blocajul scrierii
 per bază. Numele `Motor` e purtat și de clasa statică a nucleului, și de
 spațiul `Module.Motor` al scriitorului; defectul se rezolvă la atingere
 (118). Regula:
-[domeniu § Scrierea serială per bază](domeniu-si-operare.md#scrierea-serială-per-bază-x-d6-2026-10-03) (33d, S-D4, X-D6).
+[motor § Scrierea serială per bază](motor.md#scrierea-serială-per-bază-x-d6-2026-10-03) (33d, S-D4, X-D6).
 Înrudit: cub, nucleu, declarant. În cod: `MotorOperare`, `TranzactieComanda`.
 
 ### straturi
@@ -526,7 +526,7 @@ declarațiile, L2 coaja comenzii (primește ID-ul și dreptul operatorului,
 refuză 404/403 înaintea domeniului, își deschide propriul context), L3
 culegerea, L4 randarea (XAF Blazor culege, React citește; paginile React
 de document sunt înghețate). Regula:
-[api § Împărțirea responsabilităților](api-si-client.md#împărțirea-responsabilităților) (104a, 104b, 104d).
+[api § Împărțirea responsabilităților](api.md#împărțirea-responsabilităților) (104a, 104b, 104d).
 Înrudit: motor de operare, culegere. În cod: `Api/ComenziDocument`.
 
 ### culegere
@@ -535,7 +535,7 @@ Stratul L3, singura sursă a impliciților, recalculului și validării pe
 Draft; controllerul XAF și `Api/*Apply` sunt adaptori care traduc
 ecranul, respectiv PUT-ul agregatului (`WriteDto`), în aceleași apeluri,
 iar `InainteDeSalvare` rulează înaintea gardianului. Regula:
-[domeniu § Culegerea draftului](domeniu-si-operare.md#culegerea-draftului-104c) (104c, 104d, 109 f).
+[documente § Culegerea draftului](documente.md#culegerea-draftului-104c) (104c, 104d, 109 f).
 Înrudit: straturi, gardian. În cod: `CulegereDocument`, `WriteDto`.
 
 ### registru
@@ -543,7 +543,7 @@ iar `InainteDeSalvare` rulează înaintea gardianului. Regula:
 Raportul cu nume legal proiectat din cub: registrul-jurnal, registrul
 imobilizărilor; cubul e „cubul”, nu registru, iar tabelele de registru de
 dinaintea tăierii nu mai există și numele lor sunt interzise (D9-D7 b).
-Regula: [domeniu § Registre și ciclu de viață](domeniu-si-operare.md#registre-și-ciclu-de-viață) (D9-D2, D9-D6, 118).
+Regula: [documente § Registre și ciclu de viață](documente.md#registre-și-ciclu-de-viață) (D9-D2, D9-D6, 118).
 Înrudit: cub, snapshot, sold.
 
 ### snapshot
@@ -551,7 +551,7 @@ Regula: [domeniu § Registre și ciclu de viață](domeniu-si-operare.md#registr
 Soldurile unei perioade de referință, scrise la închidere ca sumă între
 snapshot-ul precedentei și rulajele lunii, pe cheia completă; nu e
 registru și nu e urmă, se reconstruiește integral din cub, cheile zero se
-omit. Regula: [domeniu § Soldurile materializate la închidere](domeniu-si-operare.md#soldurile-materializate-la-închidere) (F27-D3, 101).
+omit. Regula: [perioade § Soldurile materializate la închidere](perioade.md#soldurile-materializate-la-închidere) (F27-D3, 101).
 Materializarea e scrierea rezultatului motorului în cub la operare
 (`Cub/Materializare.cs`); snapshot-ul e soldul materializat la închiderea
 perioadei de referință (88).
@@ -563,7 +563,7 @@ Răspunsul negativ al unei uși, în ordinea 401 → 400 → 404 (inexistent
 sau invizibil) → 403 (vizibil fără drept) → 422 (domeniu), cu un singur
 corp `EroriDto`; refuzul declarației poartă un cod stabil (`COD: mesaj`),
 iar dry-run-ul (`Valideaza`) întoarce aceleași refuzuri fără commit.
-Regula: [api § Securitate și răspunsuri](api-si-client.md#securitate-și-răspunsuri) (80a…e, S-D4).
+Regula: [api § Securitate și răspunsuri](api.md#securitate-și-răspunsuri) (80a…e, S-D4).
 Înrudit: ușă, gardian. În cod: `EroriDto`, `CoduriRefuz`.
 
 ### probă
@@ -572,7 +572,7 @@ Verificarea reproductibilă pe calea reală: ModelCheck pe bază pentru
 model și motor, probe pe sursă fără bază (`--probe-sursa`), HTTP pe host
 viu pentru securitate, browser pentru UI; „oracolul” (`NUC-*`) compara
 postările cu o a doua sursă, care nu mai există. Regula:
-[dezvoltare § Verificări proporționale cu modificarea](dezvoltare-si-validare.md#verificări-proporționale-cu-modificarea) (23, 66, 80i, D9-D7 a).
+[verificare § Verificări proporționale cu modificarea](verificare.md#verificări-proporționale-cu-modificarea) (23, 66, 80i, D9-D7 a).
 Înrudit: ModelCheck, scenariu. În cod: `nou/tools/ProbeHttp/`.
 
 ### ModelCheck
@@ -581,7 +581,7 @@ Unealta care verifică modelul XAF/EF și rulează scenele de domeniu
 (fixture-uri create prin comenzi, asertate, purjate) pe PostgreSQL,
 scriind în bazele ei; o singură rulare o dată, pe instanța nativă, iar
 suita integrală pe ambele profiluri e gate-ul de commit. Regula:
-[dezvoltare § Rulare reproductibilă](dezvoltare-si-validare.md#rulare-reproductibilă-scriptsverificaps1) (23, 84, 091 (e)).
+[verificare § Rulare reproductibilă](verificare.md#rulare-reproductibilă-scriptsverificaps1) (23, 84, 091 (e)).
 Înrudit: probă, INV-CUB. În cod: `nou/tools/ModelCheck`, `MODELCHECK_BAZA_SUFIX`.
 
 ### INV-CUB
@@ -591,8 +591,8 @@ purjei ei (proveniența inverselor, echilibrul pe tranzacție și carte,
 conservarea transferului, taxa postată = taxa liniei, unitățile de
 partidă, perechea, ordinalul, explicația), fiecare ramură cu un mutant
 într-o tranzacție anulată. Regula:
-[domeniu § NIR delta și citirile comune](domeniu-si-operare.md#nir-delta-și-citirile-comune-098099-2026-09-24) (102b, 102d, X-D4);
-[dezvoltare](dezvoltare-si-validare.md), antetul paginii.
+[stoc § NIR delta și citirile comune](stoc.md#nir-delta-și-citirile-comune-098099-2026-09-24) (102b, 102d, X-D4);
+[verificare § Validarea feliilor](verificare.md#validarea-feliilor).
 Înrudit: cub, explicație. În cod: `Cub/Citiri/Invarianti`, `CITIRE_*`.
 
 ### scenariu
@@ -601,7 +601,7 @@ Rândul catalogului (`SC-<COD>-<NN>`, transversal `SC-X-<NN>`): așteptare
 scrisă de mână din regula contabilă, cu cifre, probă ModelCheck și stare;
 un tip e „pe cub” numai cu ciclul 1–8 verde pe ambele profiluri, iar
 catalogul e proba supremă a motorului. Regula:
-[dezvoltare § Verificări proporționale cu modificarea](dezvoltare-si-validare.md#verificări-proporționale-cu-modificarea) (091);
+[verificare § Verificări proporționale cu modificarea](verificare.md#verificări-proporționale-cu-modificarea) (091);
 [catalogul](../nucleu/scenarii/README.md).
 Înrudit: probă, ModelCheck. În cod: `docs/nucleu/scenarii/<COD>.md`.
 
@@ -622,7 +622,7 @@ Suita integrală ModelCheck pe ambele profiluri, gate-ul de commit, și
 numai ea: verificarea dreptului înaintea comenzii e refuz, condiția de
 închidere a feliei e regula ei de oprire, iar Import1C nu mai e gate din
 091. Regula:
-[dezvoltare § Contracte generate și build](dezvoltare-si-validare.md#contracte-generate-și-build) (091 (e), 118).
+[dezvoltare § Contracte generate și build](dezvoltare.md#contracte-generate-și-build) (091 (e), 118).
 Înrudit: ModelCheck, felie, refuz.
 
 ### bază de import
@@ -631,7 +631,7 @@ Baza în care Import1C operează prin motor documentele sursei 1C
 (`Atlas.Conta.Import1C.Flax`, pe instanța nativă) și clonele ei cu sufix,
 sursă de recensământ și de măsurare, nu gate; bazele de dezvoltare se
 recreează, nu se repară. Regula:
-[dezvoltare § Import operațional 1C](dezvoltare-si-validare.md#import-operațional-1c) (45a, 102b, 107, 116).
+[import § Import operațional 1C](import.md#import-operațional-1c) (45a, 102b, 107, 116).
 Înrudit: ModelCheck, deschidere. În cod: `nou/tools/Import1C`.
 
 ### SAF-T
@@ -640,7 +640,7 @@ Fișierul D406 (L lunar, S de stoc) proiectat din cub pentru profilul
 privat: GL-ul, facturile și plățile din postări și fapte fiscale,
 mișcările și pozițiile din postările pe lot, cu mapările de coduri ca
 politici versionate; exportul cere citire necondiționată. Regula:
-[politici § SAF-T](politici-si-fiscalitate.md#saf-t) (73c, 103, D8-B8, SAF-D4).
+[saft § SAF-T](saft.md#saf-t) (73c, 103, D8-B8, SAF-D4).
 Înrudit: sold, fapt fiscal. În cod: `SaftProiectii.SaftPeCub`.
 
 ## Cum se citesc identificatorii

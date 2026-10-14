@@ -3,7 +3,7 @@
 - Data: 2026-08-29
 - Stare: activă
 - Execuție: (închide 70-r1, 72-r9, 73-r6, 73-r10, 74-r7, 74-r12 ca citire, 76-r6 integral, restanța F6 „placeholder pe linia existentă", datoria F12 „smoke vizual al jurnalelor"; amendează 56 doar prin excepția deja existentă a lui `Societate`; (k) adăugat 2026-08-30 — închide propria restanță 77-r2)
-- Arii: api-si-client, limite-curente
+- Arii: ecrane, api, perioade, limite-curente
 - Amendează: 56
 - Închide: 70-r1, 74-r12, 76-r6, 77-r2
 - Docs: `docs/api/p5-felia-finisaj-client-contract.md` (F20-D1…D10 + §Închidere), `docs/api/lista-react.md` (curățată de itemii închiși)

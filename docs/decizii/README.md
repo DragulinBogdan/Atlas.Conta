@@ -109,11 +109,11 @@
 | 113 | [Semnul valorii e al liniei; `RegulaContare.PastreazaSemn` a ieșit](113-semnul-e-al-liniei-pastreazasemn-scos.md) | 2026-10-08 | activă |
 | 115 | [Linia de notă poate numi partida pe care o stinge; partida inițială își poartă data de naștere](115-nota-numeste-partida.md) | 2026-10-09 | activă |
 | 117 | [Postarea își poartă ordinalul în tranzacție; unitatea fără document se departajează pe el](117-ordinalul-postarii-in-tranzactie.md) | 2026-10-09 | activă |
-| 118 | [Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rân…](118-guvernanta-documentatiei.md) | 2026-10-10 | activă |
 | 119 | [Compensarea valorică aparține corecției: a doua Operare pe un document operat…](119-compensarea-valorica-apartine-corectiei.md) | 2026-10-13 | activă |
 | 120 | [Lanțul de migrații e de unică folosință până la „rotund”; recomprimarea lui este a șaptea condiție](120-lantul-de-migratii-se-recomprima-la-rotund.md) | 2026-10-13 | activă |
+| 121 | [Ariile stării curente sunt 16, pe responsabilitățile catalogului de funcționalități](121-ariile-pe-familiile-catalogului.md) | 2026-10-15 | activă |
 
-### Amendate parțial (33)
+### Amendate parțial (34)
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -150,6 +150,7 @@
 | 110 | [Tăierea: cubul e singurul scriitor și singura sursă; registrele, regimul dual și oracolul lor au ieșit (TR-D9a)](110-taierea-cubul-singurul-scriitor.md) | 2026-10-07 | amendată de 113 |
 | 114 | [Departajarea FIFO: data, documentul deschizător, apoi identificatorul](114-departajarea-fifo-pe-documentul-deschizator.md) | 2026-10-09 | amendată de 116 |
 | 116 | [Unitatea fără document se departajează pe postarea ei de deschidere; ID-urile postărilor urmează ordinea tranzacției](116-postarea-de-deschidere-departajeaza-unitatea-fara-document.md) | 2026-10-09 | amendată de 117 |
+| 118 | [Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rân…](118-guvernanta-documentatiei.md) | 2026-10-10 | amendată de 121 |
 
 ### Depășite integral (0)
 

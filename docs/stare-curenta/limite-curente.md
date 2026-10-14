@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-10-14.** [Index](README.md)
+**Actualizat: 2026-10-15.** [Index](README.md)
 
 Această pagină delimitează implementarea disponibilă. Elementele de aici nu
 sunt angajamente de livrare și nu descriu o ordine de implementare.
@@ -138,7 +138,7 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   cele cinci forme admise nominal sunt admise pe cheia selectivă de lângă ele,
   nu pe o cifră la volum. Un SQL scris de mână cu `IS NOT DISTINCT FROM` nu e
   căutat. `DocumenteCuRest` are forma corectată, dar nu are cifră la volum.
-  (`docs/stare-curenta/dezvoltare-si-validare.md`, „Îmbinările pe chei
+  (`docs/stare-curenta/dezvoltare.md`, „Îmbinările pe chei
   nulabile ale cubului")
 - Scara transversală este sintetică și mică: 7.951 de postări la 12 luni. Nu
   are prag absolut. Proba din plan se evaluează cu scanarea secvențială

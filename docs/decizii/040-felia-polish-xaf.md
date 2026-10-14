@@ -3,7 +3,7 @@
 - Data: 2026-07-23
 - Stare: activă
 - Execuție: (d) SmartLookup REVERTAT la lookup standard (53h); (e) închise de 41
-- Arii:
+- Arii: documente, dezvoltare
 
 ## Regula durabilă
 

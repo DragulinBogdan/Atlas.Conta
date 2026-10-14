@@ -3,7 +3,7 @@
 - Data: 2026-07-24
 - Stare: activă
 - Execuție: (e) Atlas.DXF e PINNAT, nu flotant (53h)
-- Arii: domeniu-si-operare, limite-curente
+- Arii: partide, dezvoltare, limite-curente
 
 ## Regula durabilă
 

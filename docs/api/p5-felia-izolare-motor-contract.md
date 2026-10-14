@@ -167,7 +167,7 @@ commit-urile din motor s-au dublat, suprafața de hook-uri a crescut cu trei.
 ### IM-D10, corectat
 
 - Import1C: IDENTIC pe CONȚINUT SORTAT (standardul feliilor 27–28, 89h;
-  `dezvoltare-si-validare.md`), nu „byte-cu-byte”. Textul lui D10 și al
+  `verificare.md`), nu „byte-cu-byte”. Textul lui D10 și al
   pasului 4 e corectat mai jos.
 - Gate nou: după orice atingere a frunzelor sau a FK-urilor spre frunze, SQL-ul
   din `--dump-integritate-tph` pe baza de import întoarce zero rânduri (89e/h).

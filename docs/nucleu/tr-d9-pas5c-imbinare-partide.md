@@ -134,7 +134,7 @@ fost găsit `DocumenteCuRest`.
 
 Limita a treia din §6 e ridicată: `RAMURA-NUL` caută forma în fiecare comandă
 SQL emisă de EF în rularea ModelCheck, nu pe o listă de cititori. Regula și
-lista admisă: `docs/stare-curenta/dezvoltare-si-validare.md`, „Îmbinările pe
+lista admisă: `docs/stare-curenta/dezvoltare.md`, „Îmbinările pe
 chei nulabile ale cubului".
 
 **Prima rulare** a găsit opt forme, aceleași pe ambele profiluri.

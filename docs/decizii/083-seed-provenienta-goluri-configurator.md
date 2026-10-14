@@ -3,7 +3,7 @@
 - Data: 2026-09-10
 - Stare: amendată de 84, 86, 104
 - Execuție: executată de 84; 83-r4 închisă de 86 — DVI ca tip de document (`docs/api/p5-felia24-politici-explica-contract.md`; 83j amendată de 84j — ștergerea unui `TipTva` referit se refuză; 83-r3 tranșată: `IMP` fără cod SAF-T, `NIM` cu 308302; mecanismul lui (a)/(j) amendat de 104i — rândul șters rămâne șters prin `RefuzSeed`, nu prin ștergerea amânată)
-- Arii: politici-si-fiscalitate
+- Arii: politici
 - Docs: `docs/decizii/081-p5-felia23-implicite-politici.md` (81-r1, 81-r2, 81-r3, 81k), `docs/invarianti.md` (IV, V), `Module/BusinessObjects/Comun/ICuProvenienta.cs`, `Module/DatabaseUpdate/ContaSeeder.cs`, `Module/DatabaseUpdate/ProfilPrivat.cs`, `Module/DatabaseUpdate/Updater.cs`, `Module/Motor/GardianEditare.cs`, `Module/Motor/VerificareProfilService.cs`, `Module/Motor/ImpliciteService.cs`
 
 ## Regula durabilă

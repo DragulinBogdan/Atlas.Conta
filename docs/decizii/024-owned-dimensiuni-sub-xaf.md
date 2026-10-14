@@ -3,7 +3,7 @@
 - Data: 2026-07-22
 - Stare: activă
 - Execuție: DEPĂȘITĂ de 54c (owned-ul a murit din Conta); rămân valabile: EF Core nu XPO, maparea NuGet Atlas.DXF, versiunile flotante EF
-- Arii:
+- Arii: verificare
 
 ## Regula durabilă
 

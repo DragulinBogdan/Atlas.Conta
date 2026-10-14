@@ -3,9 +3,9 @@
 - Data: 2026-10-04
 - Stare: activă
 - Execuție: aprobată de owner 2026-10-04; mersă în main prin PR #21 (2026-10-05); review advers Codex închis: 109-R1 corectată de Codex și reverificată independent 2026-10-05 (`docs/nucleu/109-review-codex.md`); precizează 090 (j) și 103 (i); închide 107-r3; face din N-r4 o egalitate (registrele și cubul poartă aceeași taxă)
-- Arii: domeniu-si-operare, limite-curente
+- Arii: motor, documente, limite-curente
 - Închide: 107-r3
-- Docs: `docs/nucleu/scenarii/FCL.md` (SC-FCL-11…14), `FCT.md` (SC-FCT-11); `docs/nucleu/109-review-codex.md`; `docs/stare-curenta/politici-si-fiscalitate.md` („TVA la operare”); 107 (i); `docs/nucleu/tr-d8-tva-intervale-contract.md` (R6-B2); dovezile în `run-verificari/r3-ian/`, `r3-ian-final/`, `r3-motor/`
+- Docs: `docs/nucleu/scenarii/FCL.md` (SC-FCL-11…14), `FCT.md` (SC-FCT-11); `docs/nucleu/109-review-codex.md`; `docs/stare-curenta/motor.md` („TVA la operare”); 107 (i); `docs/nucleu/tr-d8-tva-intervale-contract.md` (R6-B2); dovezile în `run-verificari/r3-ian/`, `r3-ian-final/`, `r3-motor/`
 
 ## Regula durabilă
 

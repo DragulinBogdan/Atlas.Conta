@@ -3,7 +3,7 @@
 - Data: 2026-08-29
 - Stare: activă
 - Execuție: (amendează 31d/48b prin (f); închide 53i pe ASM, 75-r1, 46f parțial)
-- Arii: README, domeniu-si-operare
+- Arii: documente, partide, perioade, ecrane, README
 - Amendează: 31 (d), 48 (b)
 - Închide: 75-r1
 - Docs: `docs/api/p5-felia-ntc-asm-retururi-contract.md` (contractul, F19-D1…F19-D16 + §Anexa + §Închidere), `docs/api/lista-react.md`

@@ -4,6 +4,9 @@ Tip: analiza
 Data: 2026-10-14
 Alimentează: decizia următoare (121), care amendează 118 (l)
 
+Tranșat de owner 2026-10-15: varianta A, regula în
+[decizia 121](../decizii/121-ariile-pe-familiile-catalogului.md).
+
 Pregătirea pentru o sesiune pe context nou. Nu e decizie: lista ariilor,
 numele lor și ordinea pașilor le tranșează owner-ul.
 

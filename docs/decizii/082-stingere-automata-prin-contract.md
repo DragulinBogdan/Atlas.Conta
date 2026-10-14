@@ -2,7 +2,7 @@
 
 - Data: 2026-09-08
 - Stare: activă
-- Arii: domeniu-si-operare
+- Arii: partide, documente
 - Docs: `docs/invarianti.md` (II), `Module/BusinessObjects/Documente/Document.cs`, `Module/BusinessObjects/Documente/Trezorerie.cs`, `Module/Motor/ImperechereService.cs`, `Module/Motor/MotorOperare.cs`, `nou/tools/ModelCheck/Program.cs`
 
 ## Regula durabilă

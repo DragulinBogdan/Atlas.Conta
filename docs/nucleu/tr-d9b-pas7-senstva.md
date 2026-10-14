@@ -68,7 +68,7 @@ lor. Un refuz scris pe o mapare D300 sau D394 înaintea acestui pas poartă
 cheia `Sens` și nu mai potrivește rândul: seed-ul ar recrea rândul șters, iar
 `PerechiRefuzate` ar pica pe cheia lipsă. Migrația nu transformă date
 (102 e), deci baza care ține asemenea refuzuri se recreează (102 b). Regula
-e în [politici-si-fiscalitate](../stare-curenta/politici-si-fiscalitate.md).
+e în [tva](../stare-curenta/tva.md).
 
 ## Verificarea
 

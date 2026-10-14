@@ -3,7 +3,7 @@
 - Data: 2026-07-31
 - Stare: activă
 - Execuție: (d) CORECTATĂ 2026-08-24 — layout-ul e `.Layout(...)` în ContaUiBaseline (vezi corecția din text); (e) AuditTrail reactivat la DIM-3
-- Arii: api-si-client, limite-curente
+- Arii: stoc, api, limite-curente
 - Docs: docs/gate-xaf-contract.md, docs/api/lista-react.md
 
 ## Regula durabilă

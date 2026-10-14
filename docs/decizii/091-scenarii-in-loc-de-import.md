@@ -3,7 +3,7 @@
 - Data: 2026-09-22
 - Stare: amendată de 107, 118, 120
 - Execuție: (amendează 090 la TR-D10, la „Import1C ca probă supremă" și la pașii TR-D7b 3–7; depășește N-r1; închide ca gate `--declaratie-pe-baza` și `--reconciliere-cub`, care rămân unelte de diagnostic; dă stare fiecărei restanțe deschise)
-- Arii: README, dezvoltare-si-validare, limite-curente
+- Arii: verificare, import, dezvoltare, README, limite-curente
 - Amendează: 90 (i)
 - Docs: `docs/consultari/codex-2026-09-22-cub.md` (consultarea care a declanșat decizia), `docs/nucleu/scenarii/README.md` (catalogul: forma, cazurile obligatorii, lanțurile transversale), `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (amendamentul 091 pe pași și pe regula de oprire), `docs/decizii/restante.md` (triajul)
 
@@ -193,7 +193,7 @@ reconstruirea unui registru complet, întrebarea se pune atunci, cu cifre.
   scris în contract, sub pași, fără renumerotare.
 - **`nucleu-cub-design.md` §10/§11**: invariantul 7 al designului cade;
   notă de amendament, textul rămâne.
-- **`stare-curenta/dezvoltare-si-validare.md`**: rândul „Tip trecut pe
+- **`stare-curenta/dezvoltare.md`**: rândul „Tip trecut pe
   `PosteazaInCub`" și paragraful probei supreme trimit la catalog; uneltele
   de gate devin diagnostic.
 - **CLAUDE.md**: §Stare rescris ca stare, nu cronologie (litera (l));

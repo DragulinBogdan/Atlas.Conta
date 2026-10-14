@@ -319,9 +319,9 @@ Capitalizat, Scutit, Neimpozabil }`, `DirectieTva { Deductibil, Colectat }`
    cu rest sub un ban, `Storno` cu `Atribuit` spre postare din altă
    tranzacție, `Transfer` cu C3 satisfăcută dar C1 nu, `Deschidere` cu
    document; onestitate > liniște, fără cosmetice. Fix-urile le aplică main.
-6. **Docs (main)**: `stare-curenta/dezvoltare-si-validare.md` (proiectul,
+6. **Docs (main)**: `stare-curenta/verificare.md` (proiectul,
    comanda `dotnet test`, verificarea proporțională „Nucleu → `dotnet
-   test` + arhitectură"), `domeniu-si-operare.md` (secțiune „Nucleul pur",
+   test` + arhitectură"), `motor.md` (secțiune „Nucleul pur",
    fără implementare în motor încă), `restante.md` (invariantul 7 amânat +
    ce scoate review-ul), `istoric-plan-de-lucru.md`, `docs/nucleu/*.md`
    `Stare:`, CLAUDE.md §Stare/§Următorul pas (TR-D6b).

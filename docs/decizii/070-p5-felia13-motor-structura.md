@@ -2,7 +2,7 @@
 
 - Data: 2026-08-25
 - Stare: activă
-- Arii: api-si-client, dezvoltare-si-validare, politici-si-fiscalitate
+- Arii: tva, api, verificare
 - Docs: docs/api/p5-felia-motor-structura-contract.md (F13-D1…D6 + §Închidere)
 
 ## Regula durabilă

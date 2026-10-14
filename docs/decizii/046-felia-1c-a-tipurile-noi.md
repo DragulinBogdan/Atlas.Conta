@@ -3,7 +3,7 @@
 - Data: 2026-07-25
 - Stare: amendată de 113
 - Execuție: (a) amendată de 113: `RegulaContare.PastreazaSemn` a ieșit, semnul valorii e al liniei
-- Arii: domeniu-si-operare, limite-curente, politici-si-fiscalitate
+- Arii: documente, tva, partide, limite-curente
 - Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă

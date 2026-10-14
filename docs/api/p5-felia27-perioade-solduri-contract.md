@@ -677,7 +677,7 @@ Felia e închisă când, pe codul final:
    cheia anti-stale `Nepotriviri`; `Inverseaza` copia deja `-r.Luni`, deci
    stornoul n-a cerut nimic. Deductibilul se calculează pe SUMA lunii, cu regula
    de la sfârșitul ei: plafonul lunar se aplică O SINGURĂ dată pe suma
-   recuperată (decizie scrisă în `domeniu-si-operare.md`). `LinieAmoDto.Luni` pe
+   recuperată (decizie scrisă în `imobilizari.md`). `LinieAmoDto.Luni` pe
    API, coloana „Luni acoperite” în grila AMO din React și în ListView-ul XAF al
    liniilor. Probe `AMO-V0…V8` în blocul review-ului F26 (scena 2028, cu
    ianuarie–februarie închise prin `PerioadaService.Inchide` și desfăcute la

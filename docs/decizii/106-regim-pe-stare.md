@@ -3,10 +3,10 @@
 - Data: 2026-09-30
 - Stare: activă
 - Execuție: amendează 042(e) (affordance-urile pe resursă au acum o sursă comună) și precizează 104(c); (h) adăugat 2026-10-01 (axa 2 făcută, închide 106-r4); (i) și (j) adăugate 2026-10-04 (delimitarea față de 108; ștergerea pe stare, aplicată și pe lista de documente); (k) adăugat 2026-10-04 după review-ul advers C106-R1…R5 (gardienii citibili ai retragerii; amendează (b), precizează (f) și (i)), aprobat de owner 2026-10-04; review-ul e închis (RV2)
-- Arii: api-si-client, dezvoltare-si-validare, domeniu-si-operare, limite-curente
+- Arii: ecrane, documente, verificare, api, limite-curente
 - Amendează: 42 (e), 104 (c)
 - Închide: 106-r4
-- Docs: `docs/nucleu/scenarii/REGIM.md`; `design/format-xaf-documente.md`; `docs/stare-curenta/domeniu-si-operare.md`, `api-si-client.md`, `dezvoltare-si-validare.md`
+- Docs: `docs/nucleu/scenarii/REGIM.md`; `design/format-xaf-documente.md`; `docs/stare-curenta/documente.md`, `ecrane.md`, `verificare.md`
 
 ## Regula durabilă
 

@@ -3,7 +3,7 @@
 - Data: 2026-09-11
 - Stare: activă
 - Execuție: ÎNCHISĂ 2026-09-12 (tranșează riscul D4 din `docs/gate-xaf-contract.md` prin (g); modul `ServerView` pe `RegistruStoc` și `Server` pe `RegulaStoc`, puse ad-hoc la GATE XAF, capătă regulă; 85-r1 închisă la închidere — cele trei registre pe `ServerView`)
-- Arii: api-si-client, dezvoltare-si-validare, limite-curente
+- Arii: ecrane, verificare, limite-curente
 - Docs: `nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Blazor.Server/Model.xafml` (`Options`, registrele), `nou/.../Module/UI/ContaUiBaseline.cs` (grilele de culegere), `nou/.../Module/BusinessObjects/Nomenclatoare/ProdusLot.cs` (`Lot.Eticheta`, `Lot.ExpresieEticheta`), `nou/.../Blazor.Server/Controllers/PartenerSincronizareAnafController.cs`, `nou/tools/ModelCheck/Program.cs` (D85-M0/M1/M2/R1/R2/R3), `nou/tools/ModelCheck/ModelAplicatie.cs`, `NumaratorSql.cs`, `docs/api/p5-perf-masuratori.md` (§Decizia 85 — cifrele de pagină)
 
 ## Regula durabilă
@@ -275,7 +275,7 @@ traduc — de aceea `Iif` pe zi/lună; jumătatea se rotunjește la fel în PG �
 `Index = -1`: nu e regresie a deciziei, e cauza cifrei pe `RegistruTva` și
 motivul pentru care registrele merg pe `ServerView` (85-r6 pentru restul).
 (5) ModelCheck compilează Blazor.Server: capcana DLL-urilor blocate e în
-`dezvoltare-si-validare.md` și în CLAUDE.md. (6) Oglinda React a etichetei nu
+`verificare.md` și în CLAUDE.md. (6) Oglinda React a etichetei nu
 e aliniată la literal (format `ro-RO`) — declarat în (g), nu ascuns. Verdict:
 fără defecte de fond; nimic de refăcut.
 

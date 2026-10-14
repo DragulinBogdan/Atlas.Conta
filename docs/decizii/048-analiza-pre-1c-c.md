@@ -2,7 +2,7 @@
 
 - Data: 2026-07-25
 - Stare: amendată de 76
-- Arii: domeniu-si-operare
+- Arii: documente, import
 - Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă

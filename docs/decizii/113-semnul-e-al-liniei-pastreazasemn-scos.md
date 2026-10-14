@@ -3,10 +3,10 @@
 - Data: 2026-10-08
 - Stare: activă
 - Execuție: destinația restanței 110-r1 (se scoate) hotărâtă de owner 2026-10-08. Amendează 046 (a) și precizează 110 (i); închide 110-r1
-- Arii: politici-si-fiscalitate
+- Arii: politici
 - Amendează: 46 (a), 110 (i)
 - Închide: 110-r1
-- Docs: `docs/stare-curenta/politici-si-fiscalitate.md`, `limite-curente.md`, `dezvoltare-si-validare.md`; catalogul `docs/nucleu/scenarii/CITIRI.md` (SC-CIT-111).
+- Docs: `docs/stare-curenta/politici.md`, `limite-curente.md`, `dezvoltare.md`; catalogul `docs/nucleu/scenarii/CITIRI.md` (SC-CIT-111).
 
 ## Regula durabilă
 

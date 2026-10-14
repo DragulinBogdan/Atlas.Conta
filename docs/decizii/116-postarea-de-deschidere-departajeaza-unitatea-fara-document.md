@@ -3,10 +3,10 @@
 - Data: 2026-10-09
 - Stare: amendată de 117
 - Execuție: amendată de 117 ((a): ID-urile postărilor nu mai poartă ordine; (b), (c): departajează ordinalul postării de deschidere, nu ID-ul ei); hotărâtă de owner 2026-10-09. 116-r1 e închisă prin 117. Amendează 114 (a) și (d); închide 114-r1 și 107-r11
-- Arii: domeniu-si-operare, limite-curente
+- Arii: documente, import, limite-curente
 - Amendează: 114 (a)
 - Închide: 114-r1, 107-r11
-- Docs: `docs/stare-curenta/domeniu-si-operare.md`, `limite-curente.md`; catalogul `docs/nucleu/scenarii/CITIRI.md` (SC-CIT-113).
+- Docs: `docs/stare-curenta/partide.md`, `limite-curente.md`; catalogul `docs/nucleu/scenarii/CITIRI.md` (SC-CIT-113).
 
 ## Regula durabilă
 

@@ -2,7 +2,7 @@
 
 - Data: 2026-08-09
 - Stare: activă
-- Arii: api-si-client
+- Arii: api
 
 ## Regula durabilă
 

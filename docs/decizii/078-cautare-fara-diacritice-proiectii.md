@@ -3,7 +3,7 @@
 - Data: 2026-09-01
 - Stare: activă
 - Execuție: (perechea lui 77a: coloana generată rămâne a nomenclatoarelor pe OData; aici e ușa `DataSourceLoader` a proiecțiilor)
-- Arii:
+- Arii: ecrane
 - Docs: `nou/.../Module/Api/CautareFiltru.cs`, `nou/.../Module/BusinessObjects/Comun/Cautare.cs`, `BackOfficeDbContext.AplicaFunctiaFaraDiacritice`; probele în `nou/tools/ModelCheck/Program.cs` (blocul „78")
 
 ## Regula durabilă

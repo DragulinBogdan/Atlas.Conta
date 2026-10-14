@@ -1,6 +1,6 @@
 # Scopul Atlas.Conta
 
-**Actualizat: 2026-10-14.**
+**Actualizat: 2026-10-15.**
 
 Țintele și non-țintele de mai jos au fost propuse de agent și acceptate de
 owner la 2026-10-14 (kitul de guvernanță, §3.9.9). De acum, o schimbare de
@@ -60,15 +60,27 @@ valuta, comenzile de vânzare, e-Factura) rămân parcate; trecerea unuia
 
 ## Structura
 
-Ariile sunt paginile din `docs/docskit.json` (`arii`); descrierea a ce
-există e în [starea curentă](stare-curenta/README.md).
+Ariile sunt paginile din `docs/docskit.json` (`arii`), fixate prin 121;
+descrierea a ce există e în [starea curentă](stare-curenta/README.md).
 
 | Arie | Responsabilitatea | Ținte | Stare |
 |---|---|---|---|
-| `domeniu-si-operare` | documentele, motorul de postare, stocul pe lot și partidele | T1, T4, T5 | există |
-| `politici-si-fiscalitate` | configurarea profilului, TVA, închiderile, proiecțiile contabile, declarațiile și ANAF | T1, T2, T5 | există |
-| `api-si-client` | ușile HTTP, securitatea, ecranele XAF și React, explicația deciziei | T1, T3 | există |
-| `dezvoltare-si-validare` | persistența, seed-ul, verificările (ModelCheck, scenarii) și importul | T4, T5 | există |
+| `documente` | modelul comun și ciclul de viață al documentului: culegere, operare, anulare, storno, corecție, retragere | T1 | există |
+| `motor` | declarația fluxului, contarea, coordonatele postării, cubul persistat, scrierea serială | T1, T3, T5 | există |
+| `stoc` | loturi, FIFO, recepția și diferențele ei, transformarea, inventarul, corecția valorii lotului | T1 | există |
+| `partide` | partidele deschise, stingerea, împerecherea, nominalizarea, decontul | T1, T4 | există |
+| `imobilizari` | fișa, punerea în funcțiune, amortizarea contabilă și fiscală, ieșirea | T1, T2 | există |
+| `perioade` | perioada fiscală, închiderea ei, soldurile materializate | T1 | există |
+| `politici` | configurarea profilului, implicitele, proveniența, explicarea configurației | T1, T5 | există |
+| `tva` | TVA la operare, închiderea lunară, D300 și D394, citirea fiscală și depunerea | T2 | există |
+| `saft` | SAF-T (D406), profilurile L și S | T2 | există |
+| `raportare` | proiecțiile contabile și de stoc, soldul pe parteneri, explicația deciziei | T1, T3 | există |
+| `nomenclatoare` | societatea, partenerii, produsele, ANAF | T1 | există |
+| `api` | ușile HTTP, securitatea și refuzurile, OData, auditul, contractele generate | T1 | există |
+| `ecrane` | ecranele XAF Blazor și React | T1 | există |
+| `dezvoltare` | organizarea sursei, modelul și persistența, migrațiile, codegen, build | T5 | există |
+| `verificare` | ModelCheck, scenariile, probele, documentația | T1, T2, T5 | există |
+| `import` | Import1C și reconcilierea cu legacy | T4 | există |
 
 ## Etapa curentă
 

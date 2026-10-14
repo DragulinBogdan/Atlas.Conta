@@ -4,7 +4,7 @@
   "decizii": "docs/decizii",
   "stareCurenta": "docs/stare-curenta",
   "restante": "docs/decizii/restante.md",
-  "arii": ["domeniu-si-operare", "politici-si-fiscalitate", "api-si-client", "dezvoltare-si-validare"],
+  "arii": ["documente", "motor", "stoc", "partide", "imobilizari", "perioade", "politici", "tva", "saft", "raportare", "nomenclatoare", "api", "ecrane", "dezvoltare", "verificare", "import"],
   "indexDecizii": "docs/decizii/README.md",
   "stare": "docs/stare.md",
   "readmeDocs": "docs/README.md",

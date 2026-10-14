@@ -2,7 +2,7 @@
 
 - Data: 2026-08-09
 - Stare: activă
-- Arii: api-si-client
+- Arii: ecrane, partide, api
 - Docs: docs/api/p5-felia-trz-contract.md
 
 ## Regula durabilă

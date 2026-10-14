@@ -2,7 +2,7 @@
 
 - Data: 2026-08-17
 - Stare: activă
-- Arii:
+- Arii: raportare, ecrane
 - Docs: docs/api/p5-felia-balanta-plan-contract.md
 
 ## Regula durabilă

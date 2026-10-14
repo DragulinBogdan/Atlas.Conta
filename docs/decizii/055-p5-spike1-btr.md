@@ -2,7 +2,7 @@
 
 - Data: 2026-08-08
 - Stare: activă
-- Arii: api-si-client, domeniu-si-operare, limite-curente
+- Arii: documente, api, limite-curente
 - Docs: docs/api/p5-spike1-contract.md
 
 ## Regula durabilă

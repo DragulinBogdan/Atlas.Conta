@@ -3,7 +3,7 @@
 - Data: 2026-09-24
 - Stare: activă
 - Execuție: aprobată de owner, activă; amendează TR-D7b T-D5, precizează 097(b) și IMO-B3; (a) concretizată de 099.
-- Arii: domeniu-si-operare
+- Arii: stoc, documente, motor, imobilizari, api
 - Amendează: 97 (b)
 - Docs: `docs/nucleu/tr-d7b-tipuri-ramase-contract.md` (T-D5), `docs/nucleu/tr-d7c-imobilizari-contract.md` (IMO-B2/B3), `docs/nucleu/scenarii/NIR.md`, `docs/nucleu/scenarii/IMO.md`.
 

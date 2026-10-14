@@ -3,7 +3,7 @@
 - Data: 2026-09-02
 - Stare: activă
 - Execuție: (închide 77-r8 și familia ei: 70-r1, 72-r10, 76-r4, 76-r5, 77k, 79-r6; amendează 79b)
-- Arii: api-si-client, dezvoltare-si-validare, limite-curente, politici-si-fiscalitate
+- Arii: api, verificare, ecrane, dezvoltare, documente, tva, limite-curente
 - Amendează: 79 (b)
 - Închide: 77-r8, 70-r1, 72-r10, 76-r4, 76-r5, 79-r6
 - Docs: `docs/api/p5-felia-refuzuri-acces-contract.md` (F22-D1…D11 + §Închidere cu matricea HTTP), `nou/.../Module/Api/Refuzuri.cs`, `nou/.../Module/Api/Rezolva.cs`, `nou/.../Module/Motor/GardianEditare.cs` (pasul zero), `nou/.../WebApi/API/Conta/ContaApiController.cs` (gate-urile), `nou/.../WebApi/API/Odata/RefuzOdataFilter.cs`, `nou/Atlas.Conta.Client/src/nucleu/http.ts`, `nou/tools/ProbeHttp/refuzuri.ps1`

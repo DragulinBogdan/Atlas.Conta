@@ -2,7 +2,7 @@
 
 - Data: 2026-08-16
 - Stare: activă
-- Arii: domeniu-si-operare
+- Arii: documente
 - Docs: docs/api/p5-felia-dec-pereche-contract.md
 
 ## Regula durabilă
