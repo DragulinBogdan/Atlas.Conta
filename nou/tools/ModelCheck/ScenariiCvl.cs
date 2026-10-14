@@ -108,6 +108,11 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         .Where(p => p.Tranzactie.DocumentId == doc && p.Tranzactie.Fel == fel && p.FelUnitate == N.FelUnitate.Lot)
         .OrderBy(p => p.Tranzactie.ScrisLa).ThenBy(p => p.Ordinal).ToList());
 
+    ExplicatieTranzactieDto Dto(Guid doc, N.FelTranzactie fel) {
+        var citita = Explicatia(doc, fel);
+        return CuSpatiu(os => ExplicatieTranzactieDto.Din(citita, v => C.Citiri.VersiuniPolitica.Contor(os, v)));
+    }
+
     StareDocument StareaDocumentului(Guid doc) => CuSpatiu(os => os.GetObjectsQuery<Document>().Single(d => d.ID == doc).Stare);
 
     void OperareSiEvaluare() {
@@ -149,6 +154,14 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
             decizii.Select(d => (d.Pondere, d.Valoare)).SequenceEqual([(40m, 80m), (60m, 120m)])
             && decizii.Select(d => d.Beneficiar.Id).SequenceEqual(
                 [radacini.Single(p => p.Repartitor == Magazie).Atribuit!.Value, radacini.Single(p => p.Repartitor == Loc).Atribuit!.Value]));
+        var linieDto = Dto(b, N.FelTranzactie.Operare).Origini.Single().Linii.Single();
+        var stoc = linieDto.Alocari.FirstOrDefault()?.SoldCitit;
+        Verifica("SC-CVL-31", "DTO-ul liniei: alocările 40/80 și 60/120 cu beneficiarii lor, Σ 100/200, sold citit stoc 40/400, fără ieșiri",
+            linieDto.Alocari.Select(a => (a.Pondere, a.Valoare, a.Beneficiar.Id, a.Beneficiar.Spatiu))
+                .SequenceEqual(decizii.Select(d => (d.Pondere, d.Valoare, d.Beneficiar.Id, d.Beneficiar.Spatiu.ToString())))
+            && linieDto.Alocari.Sum(a => a.Pondere) == 100m && linieDto.Alocari.Sum(a => a.Valoare) == 200m
+            && stoc is { Cantitate: 40m } && stoc.Debit - stoc.Credit == 400m
+            && linieDto.Iesiri.Count == 0 && linieDto.Compensari.Count == 0);
         ValoriLinii("SC-CVL-02", "ieșirea nouă de 10", Bon(partial, 10m, 18), 120m);
         ValoriLinii("SC-CVL-02", "ultima ieșire de 30", Bon(partial, 30m, 18), 360m);
         Este("SC-CVL-02", "lot epuizat", partial, 0m, 0m, 1200m, 1200m);
@@ -295,6 +308,11 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
             explicata.Decizii.Count == 1 && explicata.Decizii[0] is N.CompensareValorica { Valoare: 120m } decizie
             && decizie.Radacina.Id == radacina.ID && decizie.Beneficiar.Id == radacina.Atribuit
             && explicata.Declarant == nameof(DeclarantFacturaIntrare));
+        var compensareDto = Dto(a, N.FelTranzactie.Operare).Origini.Single().Linii.Single().Compensari.SingleOrDefault();
+        Verifica("SC-CVL-31", "DTO-ul compensării: rădăcina, beneficiarul, consum → stoc, 120",
+            compensareDto is { Valoare: 120m } && compensareDto.Radacina.Id == radacina.ID && compensareDto.Beneficiar.Id == radacina.Atribuit
+            && compensareDto.Sursa.Id == caz.Lot && compensareDto.Destinatie.Id == caz.Lot
+            && compensareDto.Sursa.ContId != compensareDto.Destinatie.ContId);
         Refuza("SC-CVL-28", () => Anuleaza(a), CoduriRefuz.CvDependenti);
 
         Storneaza(a, Zi(25));
@@ -303,6 +321,9 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
             Valorice(a, N.FelTranzactie.Storno).Count == 4 && Tranzactii(a).Count(t => t.Fel == N.FelTranzactie.Storno) == 1
             && CuSpatiu(os => !os.GetObjectsQuery<C.Postare>().Any(p => p.Tranzactie.DocumentId == a && p.DocumentId != a))
             && Explicatia(a, N.FelTranzactie.Storno).Origini.Count == 2);
+        var stornoDto = Dto(a, N.FelTranzactie.Storno).Origini;
+        Verifica("SC-CVL-31", "DTO-ul stornoului corecției: alocările din prima Operare și compensarea din a doua",
+            stornoDto.Count == 2 && stornoDto[0].Linii.Single().Alocari.Count == 2 && stornoDto[1].Linii.Single().Compensari.Count == 1);
 
         var invers = Lot();
         var bon2 = Bon(invers, 60m);

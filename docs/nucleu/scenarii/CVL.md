@@ -1,7 +1,7 @@
 # CVL — corecția valorii lotului fără schimbarea cantității
 
 - Tip: catalog
-- Actualizat: 2026-10-14
+- Actualizat: 2026-10-15
 
 Catalogul fixează așteptările înainte de implementare, conform
 [contractului TR-D9b-CV](../tr-d9b-corectii-valorice-contract.md).
@@ -107,8 +107,8 @@ prin agregare înainte de stabilirea provenienței.
 
 | Stare | Scenarii |
 |---|---|
-| rulate | SC-CVL-01…17, 20…27, 29, 30, 32 |
-| rulate parțial | SC-CVL-18 (structura liniei; fără furnizor sau gestiune greșită, politică lipsă, precizie); SC-CVL-19 (transfer și cronologie; anul anterior e probat în nucleu); SC-CVL-28 (tranzacțiile, stările și explicația; fără fișă, jurnal și snapshot); SC-CVL-31 (deciziile persistate și invariantul de audit; fără DTO) |
+| rulate | SC-CVL-01…17, 20…27, 29…32 |
+| rulate parțial | SC-CVL-18 (structura liniei; fără furnizor sau gestiune greșită, politică lipsă, precizie); SC-CVL-19 (transfer și cronologie; anul anterior e probat în nucleu); SC-CVL-28 (tranzacțiile, stările și explicația; fără fișă, jurnal și snapshot) |
 
 SC-CVL-20 citește cazul parțial cu ianuarie închis și corecția în februarie:
 balanța și fișa pe stoc, consum și datorie, cu citirea din mișcări

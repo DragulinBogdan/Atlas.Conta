@@ -324154,6 +324154,51 @@
         },
         "additionalProperties": false
       },
+      "ExplicatieAlocareDto": {
+        "type": "object",
+        "properties": {
+          "Unitate": {
+            "$ref": "#/components/schemas/ExplicatieUnitateDto"
+          },
+          "Beneficiar": {
+            "$ref": "#/components/schemas/ExplicatieReferintaDto"
+          },
+          "Pondere": {
+            "type": "number",
+            "format": "double"
+          },
+          "Valoare": {
+            "type": "number",
+            "format": "double"
+          },
+          "SoldCitit": {
+            "$ref": "#/components/schemas/ExplicatieSoldDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExplicatieCompensareDto": {
+        "type": "object",
+        "properties": {
+          "Radacina": {
+            "$ref": "#/components/schemas/ExplicatieReferintaDto"
+          },
+          "Beneficiar": {
+            "$ref": "#/components/schemas/ExplicatieReferintaDto"
+          },
+          "Sursa": {
+            "$ref": "#/components/schemas/ExplicatieUnitateDto"
+          },
+          "Destinatie": {
+            "$ref": "#/components/schemas/ExplicatieUnitateDto"
+          },
+          "Valoare": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "ExplicatieContDto": {
         "type": "object",
         "properties": {
@@ -324375,6 +324420,20 @@
               "$ref": "#/components/schemas/ExplicatieUnitateDto"
             },
             "nullable": true
+          },
+          "Alocari": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExplicatieAlocareDto"
+            },
+            "nullable": true
+          },
+          "Compensari": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExplicatieCompensareDto"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -324401,6 +324460,20 @@
           },
           "Schimbata": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExplicatieReferintaDto": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "Spatiu": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

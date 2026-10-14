@@ -13,12 +13,17 @@ public sealed record IesireExplicata(N.UnitateSold Unitate, decimal Cantitate, d
 /// <summary>Stingerea FIFO a unei linii pe o partidă, cu soldul citit al partidei.</summary>
 public sealed record StingereExplicata(N.UnitateSold Unitate, decimal Masura, N.Sold? SoldCitit);
 
+/// <summary>Cota unui beneficiar al corecției valorice, cu soldul citit al unității la data corecției, dacă îl are.</summary>
+public sealed record AlocareExplicata(N.UnitateSold Unitate, N.ReferintaPostare Beneficiar, decimal Pondere, decimal Valoare, N.Sold? SoldCitit);
+
 public sealed record LinieExplicata(
     Guid Linie,
     IReadOnlyList<IesireExplicata> Iesiri,
     IReadOnlyList<StingereExplicata> Stingeri,
     IReadOnlyList<N.ContRezolvat> Conturi,
-    IReadOnlyList<N.PartidaDeschisa> PartideDeschise);
+    IReadOnlyList<N.PartidaDeschisa> PartideDeschise,
+    IReadOnlyList<AlocareExplicata> Alocari,
+    IReadOnlyList<N.CompensareValorica> Compensari);
 
 /// <summary>Explicația unui contract acceptat (090 j): deciziile și ipotezele lui, în ordinea declarației.</summary>
 public sealed record Explicatie(
@@ -72,7 +77,9 @@ public sealed record Explicatie(
                 }).OfType<IesireExplicata>()],
                 [.. ale.OfType<N.AlocareFifo>().Select(a => new StingereExplicata(a.Unitate, a.Masura, SoldCitit(a.Unitate)))],
                 [.. ale.OfType<N.ContRezolvat>()],
-                [.. ale.OfType<N.PartidaDeschisa>()]);
+                [.. ale.OfType<N.PartidaDeschisa>()],
+                [.. ale.OfType<N.AlocareValorica>().Select(a => new AlocareExplicata(a.Unitate, a.Beneficiar, a.Pondere, a.Valoare, SoldCitit(a.Unitate)))],
+                [.. ale.OfType<N.CompensareValorica>()]);
         })];
     }
 

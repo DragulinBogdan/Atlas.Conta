@@ -166,6 +166,13 @@ corecție, fără TVA; nu naște lot și nu generează NIR. (119, CV-D1)
   `CompensareValorica` pe fiecare pereche de compensare. Invariantul de audit
   (`CorectieValorica.Auditeaza`, în `INV-CUB`) reface repartizarea din
   ponderi și verifică postările și compensările față de decizii. (CV-D8)
+- `GET api/proiectii/explicatii/{tranzactie}` le întoarce pe linia explicată:
+  `Alocari` (unitatea, postarea beneficiară, ponderea, cota și, pe stoc,
+  soldul citit la data corecției) și `Compensari` (rădăcina, beneficiarul
+  stornat, poziția sursă și cea de destinație, valoarea mutată). Referințele
+  spre postările altor documente nu lărgesc accesul: ușa cere deja citirea
+  completă a postărilor și a documentelor (`EXPLICATIE_ACCES_INCOMPLET`).
+  La storno, explicațiile ambelor `Operare` ale corecției vin ca origini. (CV-D8)
 - Refuzuri: `CV_STRUCTURA`, `CV_LOT_NEELIGIBIL`, `CV_VALOARE_INSUFICIENTA`,
   `CV_CRONOLOGIE`, `CV_DEPENDENTI`, `CV_AN_INCHIS`, `CV_PROVENIENTA`, toate în
   `CoduriRefuz`. Nucleul emite motivul (`MotivCorectieValorica`), iar
