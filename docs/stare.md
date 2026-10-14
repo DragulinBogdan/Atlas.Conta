@@ -7,7 +7,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Ce | Cât |
 |---|---|
 | Decizii | 121: 87 active, 34 amendate parțial, 0 depășite, 0 propuse |
-| Restanțe | 386: 287 deschise, 99 închise |
+| Restanțe | 387: 285 deschise, 102 închise |
 | Pagini de stare curentă | 19 |
 | Contracte de felie (`Tip: contract`) | 3, deschise 2 |
 | Cataloage vii (`Tip: catalog`) | 5 |
@@ -46,16 +46,16 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 44 |
+| activă | 43 |
 | după PoC | 206 |
 | migrare | 24 |
 | depășită de 091 | 2 |
-| docs | 7 |
+| docs | 6 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (44, prag 45)
+### Lista `activă` (43, prag 45)
 
-**motor** (11)
+**motor** (10)
 
 - `51e` PoliticaEvaluare (CMP) — sub 90c devine parametrul „unitatea de evaluare” al unității nominalizate
 - `76-r1` netarea plafonului e per (repartitor × LATURĂ), nu per CONT (55 chei / 36 note amestecă conturi de c…
@@ -63,7 +63,6 @@ Niciuna.
 - `TR-r8` rulajul brut per partidă nu e sumă sub tranzacția de transfer…
 - `TR-r10` deschiderea generică fără document, cu loturi și partide…
 - `TR-r11` Numar, DataScadenta, Autogenerat, DocumentSursa rămân atribute ale documentului scrise la operare, s…
-- `N-r5` stornoul unei postări ATRIBUITE (reevaluare) intră în selecție (090i) și poartă cauza altui document…
 - `N-r6` amendamente de literă ale contractului TR-D6a consemnate în cod: cazurile Decizie poartă Linie…
 - `N-r7` ordinea FIFO a nucleului e Guid.CompareTo (componentă cu componentă) prin Fifo.Intai…
 - `B-r6` Valuta/Curs sunt câmpuri de frunză pe FacturaIntrare fără interfață declarată: operandul le lasă nul…

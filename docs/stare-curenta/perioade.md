@@ -2,7 +2,7 @@
 
 **Actualizat: 2026-10-15.** [Index](README.md)
 
-Perioada fiscală ca lanț, închiderea ei și soldurile materializate la închidere.
+Perioada fiscală ca lanț, închiderea ei cu verificarea și politica constatărilor, soldurile materializate la închidere și soldul citit.
 
 ## Perioada fiscală ca lanț
 
@@ -10,7 +10,7 @@ Perioada fiscală ca lanț, închiderea ei și soldurile materializate la închi
   vii. Anul și luna se culeg la creare și nu se mai schimbă. (F27-D1)
 - Starea perioadei — închisă, momentul închiderii curente și momentul primei
   închideri — aparține motorului. Pe calea securizată se refuză orice scriere
-  asupra ei, ca la registre. (F27-D1)
+  asupra ei, ca la postările cubului. (F27-D1)
 - Închiderea unei perioade cere perioada precedentă închisă. O perioadă
   precedentă absentă este închisă prin absență și dă capătul lanțului. (F27-D1)
 - Redeschiderea cere perioada următoare deschisă sau absentă și un motiv
@@ -19,6 +19,19 @@ Perioada fiscală ca lanț, închiderea ei și soldurile materializate la închi
 - Fiecare închidere și redeschidere scrie un rând în istoricul perioadei, cu
   felul, momentul, utilizatorul și motivul. Istoricul este append-only și
   aparține motorului. (F27-D1)
+- Fiecare comandă a motorului rulează într-o tranzacție explicită, deschisă pe
+  ObjectSpace-ul ei: operarea, anularea și stornarea prin adaptorul de
+  operare, generarea și regenerarea închiderii de TVA și a amortizării,
+  închiderea, redeschiderea și reconstrucția perioadei. Gardianul de perioadă
+  citește starea lunii blocând rândul în citire, iar comenzile perioadei îl
+  blochează în scriere înainte de orice calcul. (F27-D1) Tranzacția comenzii
+  începe cu blocajul scrierii, deci comenzile se serializează toate între
+  ele; vezi „Scrierea serială per bază”. (X-D6)
+
+## Închiderea de perioadă
+
+### Verificarea de închidere
+
 - Verificarea de închidere întoarce constatări tipizate, cu cheie stabilă,
   fel, severitate, text și obiectul la care se referă. Constatările
   STRUCTURALE stau în cod și nu se configurează: perioadă nedefinită, perioadă
@@ -51,14 +64,34 @@ Perioada fiscală ca lanț, închiderea ei și soldurile materializate la închi
 - Documentul în lucru rămas într-o perioadă închisă NU e document mort: se
   operează mai departe, cu o dată de înregistrare ulterioară, deci cade în altă
   perioadă decât cea a documentului fizic. Constatarea o spune. (F27-D2, F27-D4)
-- Fiecare comandă a motorului rulează într-o tranzacție explicită, deschisă pe
-  ObjectSpace-ul ei: operarea, anularea și stornarea prin adaptorul de
-  operare, generarea și regenerarea închiderii de TVA și a amortizării,
-  închiderea, redeschiderea și reconstrucția perioadei. Gardianul de perioadă
-  citește starea lunii blocând rândul în citire, iar comenzile perioadei îl
-  blochează în scriere înainte de orice calcul. (F27-D1) Tranzacția comenzii
-  începe cu blocajul scrierii, deci comenzile se serializează toate între
-  ele; vezi „Scrierea serială per bază”. (X-D6)
+
+### Politica severității constatărilor
+
+Severitatea constatărilor de CONȚINUT ale închiderii de perioadă este dată, nu
+cod: un rând per fel în politica de închidere de perioadă, cu trei valori.
+`Blocant` refuză închiderea și nu se poate accepta; `Avertisment` o lasă să
+treacă numai cu acceptare explicită pe constatarea concretă, scrisă în
+istoricul lunii; `Ignorat` nu emite constatarea deloc. Un fel fără rând se
+comportă ca avertisment și o SPUNE în textul constatării, ca o configurație pe
+jumătate să nu treacă tăcut. (F27-D2)
+
+Cele patru feluri și seed-ul lor:
+
+| Fel | Privat | Bugetar |
+|---|---|---|
+| Închiderea de TVA lipsește sau nu e operată | Blocant | Ignorat |
+| Amortizarea lunară lipsește sau nu e operată | Avertisment | Avertisment |
+| Document în lucru cu data înregistrării în perioadă | Avertisment | Avertisment |
+| Document operat cu rest scadent în perioadă | Ignorat | Ignorat |
+
+Diferența dintre profiluri este de CONȚINUT, nu de mecanism: bugetarul nu e
+plătitor de TVA, deci închiderea de TVA îi este tip inert, iar un blocant pe ea
+n-ar fi avut niciodată cum să se stingă. Constatarea de închidere de TVA nu se
+emite deloc când profilul n-are politica de conturi completă sau când luna nu
+are sold pe cele două conturi de TVA. (F27-D2)
+
+Blocantele STRUCTURALE ale lanțului nu sunt în această politică și nu se
+configurează: ele sunt regula lanțului. (F27-D2)
 
 ## Soldurile materializate la închidere
 
@@ -88,7 +121,7 @@ Perioada fiscală ca lanț, închiderea ei și soldurile materializate la închi
   comite după citirea referințelor ar fi rămas fără snapshot, iar soldurile ar
   fi pornit tăcut de la zero. (F27-D3, 35b, review advers F27, 1b)
 - Scrierea și ștergerea snapshot-urilor aparțin motorului: pe calea securizată
-  se refuză, ca la registre. Ștergerea lor este fizică, nu amânată. (F27-D3)
+  se refuză, ca la postările cubului. Ștergerea lor este fizică, nu amânată. (F27-D3)
 
 ## Soldul citit: referință plus rulaje
 
@@ -117,8 +150,7 @@ Perioada fiscală ca lanț, închiderea ei și soldurile materializate la închi
   această garanție, excluderea recitește integral postările. Gardul de sold
   intermediar pornește din cumulul de dinaintea primei date propuse și
   verifică prefixele zilnice de la ea încolo, în cub.
-  (F27-D3, X-D5)
-  (TR-D8 D8-B1/B5)
+  (F27-D3, X-D5; TR-D8 D8-B1/B5)
 - Soldurile conturilor de TVA ale închiderii lunare vin din aceeași sursă
   cumulată. (F27-D3)
 - Excluderea istorică generală recitește direct postările; excluderea în
@@ -147,33 +179,25 @@ Perioada fiscală ca lanț, închiderea ei și soldurile materializate la închi
   diferența: citește soldurile cu valoare implicită zero pe cheia absentă.
   (F27-D3, 74g)
 
-## Închiderea de perioadă
+## Limitele implementării
 
-Severitatea constatărilor de CONȚINUT ale închiderii de perioadă este dată, nu
-cod: un rând per fel în politica de închidere de perioadă, cu trei valori.
-`Blocant` refuză închiderea și nu se poate accepta; `Avertisment` o lasă să
-treacă numai cu acceptare explicită pe constatarea concretă, scrisă în
-istoricul lunii; `Ignorat` nu emite constatarea deloc. Un fel fără rând se
-comportă ca avertisment și o SPUNE în textul constatării, ca o configurație pe
-jumătate să nu treacă tăcut. (F27-D2)
-
-Cele patru feluri și seed-ul lor:
-
-| Fel | Privat | Bugetar |
-|---|---|---|
-| Închiderea de TVA lipsește sau nu e operată | Blocant | Ignorat |
-| Amortizarea lunară lipsește sau nu e operată | Avertisment | Avertisment |
-| Document în lucru cu data înregistrării în perioadă | Avertisment | Avertisment |
-| Document operat cu rest scadent în perioadă | Ignorat | Ignorat |
-
-Diferența dintre profiluri este de CONȚINUT, nu de mecanism: bugetarul nu e
-plătitor de TVA, deci închiderea de TVA îi este tip inert, iar un blocant pe ea
-n-ar fi avut niciodată cum să se stingă. Constatarea de închidere de TVA nu se
-emite deloc când profilul n-are politica de conturi completă sau când luna nu
-are sold pe cele două conturi de TVA. (F27-D2)
-
-Blocantele STRUCTURALE ale lanțului nu sunt în această politică și nu se
-configurează: ele sunt regula lanțului. (F27-D2)
+- Balanța, balanța pe plan, fișa de cont, soldul de stoc, soldurile pe
+  loturi, soldul unei chei, alocarea FIFO, gardianul de sold negativ și
+  soldurile de TVA ale închiderii lunare pornesc de la ultima perioadă de
+  referință. Două citiri nu folosesc snapshot: situația imobilizărilor citește
+  cubul integral al fișelor cerute (097); împerecherile și restul
+  documentelor.
+  (F27-D3)
+- Cheile cu debitul și creditul cumulate zero la referință nu au rând de
+  snapshot. (F27-D3)
+- Citirile cumulate iau snapshot-ul prin spațiul de obiecte al apelantului.
+  Un rol care ar putea citi perioada fiscală fără să poată citi tabelele de
+  solduri ar primi soldul inițial zero, fără avertisment. Rolurile livrate nu
+  au această formă: cine citește perioada citește și soldurile, iar un rol
+  care nu vede perioadele cade pe citirea integrală a cubului. (F27-D3)
+- Integritatea snapshot-ului nu e verificată la citire: un rând șters direct
+  din bază dă o balanță tăcut greșită. Singura detecție e reconstrucția la
+  cerere, care raportează diferența și repară. (F27-r12)
 
 <!-- gen:decizii -->
 ## Decizii

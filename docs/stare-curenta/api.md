@@ -2,7 +2,7 @@
 
 **Actualizat: 2026-10-15.** [Index](README.md)
 
-Ușile HTTP: salvarea și comenzile, securitatea și refuzurile, OData, auditul și contractele generate.
+Ușile HTTP: salvarea și comenzile, rutele de perioade, corecție și împerecheri, proiecțiile, securitatea și refuzurile, OData, auditul și contractele generate.
 
 ## Împărțirea responsabilităților
 
@@ -39,13 +39,15 @@ singură contextul motorului; `SubiectInvizibil` iese 404, `RefuzAcces` 403,
 `OperareException` 422. Niciun identificator furnizat de client nu
 autorizează singur accesul prin contextul nesecurizat. (42b, 55b, 80, 104b)
 
-Comenzile care scriu sunt seriale per bază (X-D6): o comandă trimisă cât
-timp alta scrie așteaptă. Dacă așteptarea depășește timpul de comandă al
-conexiunii, răspunsul e 422 cu `SCRIERE_OCUPATA`, fără nimic scris; cererea
-se poate retrimite. Același refuz îl poate da salvarea unui draft care
-adaugă linii. Citirile, dry-run-ul și salvarea fără linii noi nu așteaptă.
-Măsurat pe host viu, cu blocajul ținut de altă conexiune: 422 după 30 s,
-timpul de comandă implicit. (108f)
+Operarea, anularea și stornarea sunt comenzi, nu modificări directe ale
+stării prin DTO. Regulile și tranzacția lor sunt descrise în
+[documente](documente.md). (42b)
+
+Comenzile care scriu sunt seriale per bază: o comandă trimisă cât timp alta
+scrie așteaptă. Dacă așteptarea depășește timpul de comandă al conexiunii,
+răspunsul e 422 cu `SCRIERE_OCUPATA`, fără nimic scris; cererea se poate
+retrimite. Același refuz îl poate da salvarea unui draft care adaugă linii.
+Citirile, dry-run-ul și salvarea fără linii noi nu așteaptă. (X-D6, 108f)
 
 PUT reprezintă starea completă a formularului: liniile sunt reconciliate,
 iar câmpurile opționale absente se golesc conform contractului. PATCH OData
@@ -53,9 +55,31 @@ este parțial: absența unei proprietăți o păstrează. Enumerările sunt șir
 și sunt validate înainte de crearea obiectului. Filtrele selectoarelor
 ajută utilizatorul; validarea serverului rămâne obligatorie. (56, 57a, 77h)
 
-Operarea, anularea și stornarea sunt comenzi, nu modificări directe ale
-stării prin DTO. Regulile și tranzacția lor sunt descrise în
-[documente](documente.md). (42b)
+### Adaptorii de scriere
+
+`Api/*Apply` sunt adaptorii API ai culegerii (L3). Mapează DTO-ul, cheamă
+`CulegereDocument` pe fiecare linie și `InainteDeSalvare` înaintea commit-ului.
+Nu calculează valori, loturi sau implicite și nu poartă reguli proprii;
+refuzurile culegerii vin de la gardianul de commit, ca 422. (104c)
+
+- Pe liniile cu produs (FCT, FCL, NIR, LDI, ASM), `TipMaterialId` e opțional:
+  lipsa lui înseamnă tipul produsului, iar lipsa ambelor e refuzată. (104c)
+- `DataPrimire` absentă rămâne goală și înseamnă data înregistrării; DTO-ul
+  de citire o arată astfel. (104c)
+- `ValoareTva` prezentă pe linie e TVA-ul cules explicit; un 0 explicit e
+  refuzat cu 422 când cota tipului dă taxă (pe DVI, câmpul ne-nullable 0
+  înseamnă necules). (104c)
+- Refuzul CAS pe fișa fără politică de amortizare e al culegerii (L3);
+  `CasApply` îl cheamă înaintea creării documentului, numai pentru ordinea
+  mesajului. (104c)
+- Fiecare DTO de scriere al unui document poartă `DataInregistrare` ca dată
+  opțională: absentă înseamnă „data documentului”, nu „gol”. Adaptorul comun
+  (`Api/DocumentApply.AplicaDate`) aplică implicitul și refuză, de domeniu, o
+  dată a înregistrării anterioară datei documentului, pe toate ușile de
+  scriere. DTO-urile de citire ale documentelor o expun alături de `Data`.
+  (F27-D4)
+
+### Affordance-urile de citire
 
 Affordance-urile de pe DTO-urile de citire (`PoateEdita`, `PoateOpera`,
 `PoateAnula`, `PoateStorna`, `PoateSterge`, `PoateRegenera`, `PoateDistribui`,
@@ -64,45 +88,37 @@ Affordance-urile de pe DTO-urile de citire (`PoateEdita`, `PoateOpera`,
 din `Stare`. Singura excepție declarată e `DscApply.PoateEdita = false`,
 fapt al tierului (nu există cale de scriere pe DSC). (42e, 106d)
 
-Fiecare DTO de scriere al unui document poartă `DataInregistrare` ca dată
-opțională: absentă înseamnă „data documentului”, nu „gol”. Adaptorul comun
-(`Api/DocumentApply.AplicaDate`) aplică implicitul și refuză, de domeniu, o
-dată a înregistrării anterioară datei documentului — pe toate cele
-cincisprezece uși de scriere. DTO-urile de citire ale documentelor o expun
-alături de `Data`. (F27-D4)
+## Perioadele
 
-`Api/*Apply` sunt adaptorii API ai culegerii (L3). Mapează DTO-ul, cheamă
-`CulegereDocument` pe fiecare linie și `InainteDeSalvare` înaintea commit-ului.
-Nu calculează valori, loturi sau implicite și nu poartă reguli proprii;
-refuzurile culegerii vin de la gardianul de commit, ca 422. Pe liniile cu
-produs (FCT, FCL, NIR, LDI, ASM), `TipMaterialId` e opțional: lipsa lui
-înseamnă tipul produsului, iar lipsa ambelor e refuzată. `DataPrimire`
-absentă rămâne goală și înseamnă data înregistrării; DTO-ul de citire o
-arată astfel. `ValoareTva` prezentă pe linie e TVA-ul cules explicit; un 0
-explicit e refuzat cu 422 când cota tipului dă taxă (pe DVI, câmpul
-ne-nullable 0 înseamnă necules). Refuzul CAS pe fișa fără politică de
-amortizare e al culegerii (L3); `CasApply` îl cheamă înaintea creării
-documentului, numai pentru ordinea mesajului. (104c)
+Închiderea și redeschiderea perioadei sunt comenzi, pe `api/perioade`.
+Subiectul rutelor lunii este luna, nu un identificator: ea se rezolvă pe calea
+securizată, deci ordinea refuzurilor rămâne 400 pentru an sau lună în afara
+marginilor, 404 pentru lună nedefinită sau invizibilă, 403 pentru lipsa
+dreptului cerut și 422 pentru refuzul lanțului. (F27-D1, F27-D2, 80a)
 
-Închiderea și redeschiderea perioadei sunt tot comenzi, pe `api/perioade`:
-`GET api/perioade` întoarce lanțul și cere dreptul de citire pe tipul
-perioadei; `GET api/perioade/{an}/{luna}/verificare` întoarce constatările
-complete — cheie, fel, severitate, text, identificatorul și eticheta obiectului
-— și, fiindcă verdictul ÎNSUMEAZĂ pe ușa nesecurizată documente, închideri de
-TVA, amortizări, împerecheri și politica severităților, cere dreptul de citire
-pe toate acestea: un raport filtrat n-ar ieși gol, ar ieși FALS;
-`GET api/perioade/{an}/{luna}/istoric` întoarce rândurile de istoric ale lunii
-cu felul, momentul, utilizatorul, motivul și cheile acceptate;
-`POST api/perioade/{an}/{luna}/inchide` primește cheile acceptate în corp
-— corpul e opțional, fiindcă a închide fără constatări e cazul normal — și
-răspunde cu acceptările scrise, iar un avertisment neacceptat sau orice blocantă
-iese 422 cu lista întreagă, un rând pe linie;
-`POST api/perioade/{an}/{luna}/redeschide` primește motivul. Subiectul acestor rute
-este luna, nu un identificator: ea se rezolvă pe calea securizată, deci
-ordinea refuzurilor rămâne 400 pentru an sau lună în afara marginilor, 404
-pentru lună nedefinită sau invizibilă, 403 pentru lipsa dreptului cerut și
-422 pentru refuzul lanțului. Motivul absent la redeschidere este refuz de
-domeniu, nu de cerere. (F27-D1, F27-D2, 80a)
+- `GET api/perioade` întoarce lanțul și cere dreptul de citire pe tipul
+  perioadei. (F27-D1)
+- `GET api/perioade/{an}/{luna}/verificare` întoarce constatările complete —
+  cheie, fel, severitate, text, identificatorul și eticheta obiectului. Fiindcă
+  verdictul ÎNSUMEAZĂ pe ușa nesecurizată documente, închideri de TVA,
+  amortizări, împerecheri și politica severităților, cere dreptul de citire pe
+  toate acestea: un raport filtrat n-ar ieși gol, ar ieși FALS. (F27-D2, 80a)
+- `GET api/perioade/{an}/{luna}/istoric` întoarce rândurile de istoric ale
+  lunii cu felul, momentul, utilizatorul, motivul și cheile acceptate. (F27-D2)
+- `POST api/perioade/{an}/{luna}/inchide` primește cheile acceptate în corp —
+  corpul e opțional, fiindcă a închide fără constatări e cazul normal — și
+  răspunde cu acceptările scrise; un avertisment neacceptat sau orice blocantă
+  iese 422 cu lista întreagă, un rând pe linie. (F27-D2)
+- `POST api/perioade/{an}/{luna}/redeschide` primește motivul. Motivul absent
+  este refuz de domeniu, nu de cerere. (F27-D1)
+- `POST api/perioade/reconstruieste` recalculează integral soldurile
+  perioadelor de referință și întoarce, per referință, câte rânduri existau,
+  câte au ieșit din recalcul, câte diferă și suma absolută a diferențelor pe
+  debit, credit, cantitate și valoare. Comanda nu are subiect, deci gate-ul ei
+  este pe tip: dreptul de scriere pe perioada fiscală, același drept ca
+  închiderea. Ordinea refuzurilor este 401, apoi 403, apoi 422. (F27-D3)
+
+## Corecția
 
 `POST api/documente/{id}/corecteaza` corectează un document operat, pe orice
 tip: ruta e a BAZEI, iar documentul se rezolvă polimorf. Corpul poartă `Data`
@@ -118,46 +134,69 @@ lui și motivul) sau `null`. În client, comanda și banda „Corectează pe …
 o singură componentă a nucleului, montată de shell pe toate ecranele de
 document. (F27-D6, 80a)
 
-`POST api/perioade/reconstruieste` recalculează integral soldurile
-perioadelor de referință și întoarce, per referință, câte rânduri existau,
-câte au ieșit din recalcul, câte diferă și suma absolută a diferențelor pe
-debit, credit, cantitate și valoare. Comanda nu are subiect, deci gate-ul ei
-este pe tip: dreptul de scriere pe perioada fiscală, același drept ca
-închiderea. Ordinea refuzurilor este 401, apoi 403, apoi 422. (F27-D3)
+## Împerecheri
+
+`POST api/imperecheri` primește opțional `Data` (ziua faptului de stingere;
+absent = azi). Crearea trece prin gate-ul de drepturi și vizibilitatea ambelor
+documente, apoi prin comanda atomică în ObjectSpace non-secured, la fel ca
+desfacerea și ștergerea. (F27-D8, 101)
+
+`POST api/imperecheri/{id}/desfa` cu `{ Data }` scrie rândul invers al unei
+împerecheri dintr-o perioadă închisă: 400 pe corp malformat, 404 pe
+inexistentă sau invizibilă, 403 fără drept de **scriere** pe instanță
+(desfacerea scrie un rând, nu șterge), 422 pe domeniu (deja desfăcută, rând
+invers, dată sub cea a împerecherii, perioadă închisă a rândului nou). (F27-D8, 80a)
+
+`DELETE api/imperecheri/{id}` rămâne calea din fereastra deschisă; pe o
+împerechere dintr-o perioadă închisă dă 422, cu trimitere la desfacere.
+Ștergerea prin API și acțiunea XAF „Șterge împerecherea” folosesc aceeași
+comandă atomică: eliberează suma nominalizată în cub și șterg legătura.
+Gate-ul rămâne Delete pe instanța vizibilă, înaintea refuzurilor de domeniu.
+CRUD-ul generic este refuzat de gardian; în perioadă închisă se folosește
+„Desfă împerecherea”. (F27-D8, 101)
+
+Panoul de stingeri poartă pe fiecare rând `Data`, `InverseazaId`, `Desfacuta`
+și `PerioadaDeschisa` — verdictul „ce buton are dreptul să apară" e
+server-computed, nu dedus în client. (F27-D8)
+
+## Proiecțiile
+
+### Stocul și restul documentelor
 
 `GET api/proiectii/sold-stoc` primește opțional `laData`: fără el întoarce
 soldul de azi, cu el soldul la sfârșitul zilei cerute. Parametrul este al
 proiecției, ca perioada balanței, nu filtru de grilă; o valoare imposibilă
-cade pe 400-ul unic al tierului. Schimbare de comportament: un lot consumat
-integral, cu cantitate ȘI valoare zero, nu mai apare în listă; unul cu
-cantitatea zero și valoare nenulă rămâne, ca reziduul valoric să se vadă.
-(F27-D3)
-
-`POST api/imperecheri` primește opțional `Data` (ziua faptului de stingere;
-absent = azi). `POST api/imperecheri/{id}/desfa` cu `{ Data }` scrie rândul
-invers al unei împerecheri dintr-o perioadă închisă: 400 pe corp malformat,
-404 pe inexistentă sau invizibilă, 403 fără drept de **scriere** pe instanță
-(desfacerea scrie un rând, nu șterge), 422 pe domeniu (deja desfăcută, rând
-invers, dată sub cea a împerecherii, perioadă închisă a rândului nou).
-`DELETE api/imperecheri/{id}` rămâne calea din fereastra deschisă; pe o
-împerechere dintr-o perioadă închisă dă 422, cu trimitere la desfacere.
-Panoul de stingeri poartă pe fiecare rând `Data`, `InverseazaId`, `Desfacuta`
-și `PerioadaDeschisa` — verdictul „ce buton are dreptul să apară" e
-server-computed, nu dedus în client. (F27-D8, 80a)
+cade pe 400-ul unic al tierului. Un lot consumat integral, cu cantitate ȘI
+valoare zero, nu apare în listă; unul cu cantitatea zero și valoare nenulă
+rămâne, ca reziduul valoric să se vadă. (F27-D3)
 
 `GET api/proiectii/documente-cu-rest` primește opțional `laData`: restul se
 citește la ziua cerută, pornind de la partidele deschise ale ultimei perioade
-de referință. Absent = la zi. Proiecția include acum și `ReturClient`.
-(F27-D7)
+de referință. Absent = la zi. Proiecția include și `ReturClient`. (F27-D7)
+
+`documente-cu-rest` acceptă `documentCurentId` și `stinge` pentru candidați
+compatibili; `Disponibil` este limita exactă a perechii, iar panourile o
+consumă ca atare. (101)
+
+### Partidele
+
+`GET /api/proiectii/partide` și pagina `/partide` expun o partidă pe rând,
+cu cont, partener/angajat, document opțional, data nașterii, sens și rest.
+Filtrele sunt `laData`, `contrapartidaId`, `sensStingere`; cheia paginării este
+unitate × cont × partener. Eticheta documentului nu elimină soldul când
+lipsește sau nu este vizibilă. Postările sunt citite prin ObjectSpace secured.
+(101)
+
+### Proiecțiile contabile
 
 Proiecțiile contabile (`api/proiectii/balanta`, `balanta-plan`, `fisa-cont`,
 `sold-parteneri`) au o singură axă de repartitor, repartitorul de sold al
-postării (S1, C111-Q6). `repartitorId` îl filtrează, de orice fel: partener,
-angajat, gestiune, unitate internă sau cont propriu. Pe `fisa-cont`,
+postării. `repartitorId` îl filtrează, de orice fel: partener, angajat,
+gestiune, unitate internă sau cont propriu. Pe `fisa-cont`,
 `repartitorNul=true` înseamnă postările fără niciun repartitor și nu se
 combină cu `repartitorId`. Serverul nu are parametrul `gestiuneId`; locul
-(`Postare.Loc`) și partenerul fiscal nu sunt filtre. Clientul nu-l mai
-trimite, iar ecranele numesc axa „Repartitor”. (C111 pasul 7)
+(`Postare.Loc`) și partenerul fiscal nu sunt filtre. Clientul nu trimite
+`gestiuneId`, iar ecranele numesc axa „Repartitor”. (S1, C111-Q6)
 
 Pe `fisa-cont`, `faraTert=true` cere postările care nu stau pe un partener
 sau pe un angajat: fără repartitor, pe repartitor intern ori pe cont propriu.
@@ -208,17 +247,18 @@ Listele securizate pot răspunde 200 cu rezultate filtrate. Rapoartele care
 cer cifre complete verifică separat accesul necesar și refuză cererea dacă
 filtrarea ar produce un rezultat incomplet prezentat ca total. (70f, 80a, 80e)
 
+### Citirea completă și citirea filtrată a cubului
+
 Rutele care întorc cifre însumate din cub pe ușa de sistem cer citirea
 COMPLETĂ pe `Postare`: `itv/{id}`, `itv/previzualizare`, `amo/{id}`,
 `amo/previzualizare`, `imobilizari/{id}/fisa`, `imobilizari/registru` și
 `perioade/{an}/{luna}/verificare`. Un rol fără dreptul pe tip, ori cu un
 criteriu de rând sau de membru pe `Postare`, primește 403 înaintea citirii.
-Niciun tip de registru nu mai e cerut, deci separarea contabil / imobilizări
-a dispărut. Dreptul completează, nu înlocuiește: ruta cere mai întâi dreptul
-pe subiectul ei, iar verificarea închiderii pe toate tipurile pe care le
-însumează. `Postare` și `Tranzactie` n-au rută OData sau REST și nu intră în
-contractul clientului; `$metadata` le descrie ca `EntityType` fără
-`EntitySet`, ca pe orice tip neexpus. (F22-D5, 80e, 108 d, D9-D9; 2026-10-06)
+Dreptul completează, nu înlocuiește: ruta cere mai întâi dreptul pe subiectul
+ei, iar verificarea închiderii pe toate tipurile pe care le însumează.
+`Postare` și `Tranzactie` n-au rută OData sau REST și nu intră în contractul
+clientului; `$metadata` le descrie ca `EntityType` fără `EntitySet`, ca pe
+orice tip neexpus. (F22-D5, 80e, 108 d, D9-D9)
 
 Proiecțiile contabile de pe ușa securizată nu cer citirea completă:
 `balanta`, `balanta-plan`, `fisa-cont`, `fisa-cont/sold`, `registru-jurnal`,
@@ -226,7 +266,9 @@ Proiecțiile contabile de pe ușa securizată nu cer citirea completă:
 pe rând. Un rol cu criteriu de rând pe `Postare` primește 200 cu cifrele
 rândurilor pe care le vede; cine n-are dreptul pe tip și nu vede nicio
 postare primește rezultatul gol. Contul corespondent al unei postări ascunse
-rămâne nul. (110 (e) precizată, C111-Q22; 2026-10-11)
+rămâne nul. (110 (e), C111-Q22)
+
+### Drepturile și referințele
 
 Crearea cere drepturile de creare și scriere; modificarea cere scriere, iar
 ștergerea dreptul aferent. Verificările nu se amână până după execuția
@@ -240,6 +282,8 @@ descărcare) e refuzată cu 422 și o frază unică: „rândul ales (id) e X, n
 O referință inexistentă sau invizibilă e refuzată tot cu 422 („nu există sau
 nu e vizibil(ă)”). Răspunsul e determinist: nu depinde de ce a încărcat deja
 cererea. Același refuz îl dă gardianul de commit pe OData și în XAF. (89e, 89i)
+
+### Forma erorilor și sesiunea
 
 Erorile de aplicație REST/OData au forma `{"Erori":[...]}`. Erorile de
 model binding rămân erori de cerere. Constrângerile cunoscute sunt traduse
@@ -265,6 +309,24 @@ fiecărei entități. (42f, 56)
 ștergerea sau schimbarea ancorei de cod. Tabelele de bază pentru raportare
 nu devin editabile doar pentru că sunt utilizate de o politică editabilă. (81e)
 
+## Recepția cu diferențe (NIR)
+
+API-ul NIR citește proveniența recepției și marcajul liniilor acoperite;
+clientul culege cauza și imputatul, cu cantitate zero permisă pe linia
+acoperită. Legăturile cu sursa sunt stabilite de server, nu intră în
+WriteDto. Liniile-sursă nu se șterg și tipul/lotul lor nu se schimbă.
+Cauza implicită la operare este InClarificare pentru minus și Plus pentru
+plus; formularul explică aceste implicite. Cantitatea/valoarea constatată
+sunt distincte de delta economică postată de declarant. (098, 099)
+
+Politica diferențelor se editează prin OData și ecranul
+`/politici/diferente`, sub aceleași drepturi de Configurator ca celelalte
+politici. Contul pentru personal este opțional și separat de contul normal. (098, 099)
+
+La schimbarea cauzei NIR din Imputabila, editorul golește imediat imputatul.
+API-ul ignoră imputatul din payload pentru celelalte cauze și îl golește
+și la delta zero; un imputat ascuns nu rămâne atașat constatării. (098, 099)
+
 ## Audit
 
 Auditul EF Core este activ în ambele hosturi. Istoricul identifică obiectul
@@ -277,12 +339,6 @@ de test nu șterge auditul pentru a ascunde operațiile executate. (81d, 81h)
 
 ## Contracte generate
 
-Din 2026-09-25, ștergerea împerecherii prin API și acțiunea XAF
-„Șterge împerecherea” folosesc aceeași comandă atomică: eliberează suma
-nominalizată în cub și șterg legătura. Gate-ul rămâne Delete pe instanța
-vizibilă, înaintea refuzurilor de domeniu. CRUD-ul generic este refuzat
-de gardian; în perioadă închisă se folosește „Desfă împerecherea”.
-
 OpenAPI, tipurile TypeScript și metadata de model sunt generate și păstrate
 în repository. Clientul nu folosește un client API generic generat pentru
 toate operațiile. DTO-urile și atributele serverului rămân sursa contractului. (43d, 56)
@@ -291,38 +347,6 @@ Verificarea de drift trebuie să confirme că fișierele generate corespund
 sursei. Tipurile TypeScript nu înlocuiesc verificarea serverului, iar
 atributele de validare XAF și cele ale contractului HTTP au consumatori
 diferiți. (43b, 43d, 77k)
-
-### Diferențele NIR (098/099, 2026-09-24)
-
-API-ul NIR citește proveniența recepției și marcajul liniilor acoperite;
-clientul culege cauza și imputatul, cu cantitate zero permisă pe linia
-acoperită. Legăturile cu sursa sunt stabilite de server, nu intră în
-WriteDto. Liniile-sursă nu se șterg și tipul/lotul lor nu se schimbă.
-Cauza implicită la operare este InClarificare pentru minus și Plus pentru
-plus; formularul explică aceste implicite. Cantitatea/valoarea constatată
-sunt distincte de delta economică postată de declarant.
-
-Politica diferențelor se editează prin OData și ecranul
-`/politici/diferente`, sub aceleași drepturi de Configurator ca celelalte
-politici. Contul pentru personal este opțional și separat de contul normal.
-
-La schimbarea cauzei NIR din Imputabila, editorul golește imediat imputatul.
-API-ul ignoră imputatul din payload pentru celelalte cauze și îl golește
-și la delta zero; un imputat ascuns nu rămâne atașat constatării.
-
-### Raportul partidelor pe cub (101, 2026-09-25)
-
-`GET /api/proiectii/partide` și pagina `/partide` expun o partidă pe rând,
-cu cont, partener/angajat, document opțional, data nașterii, sens și rest.
-Filtrele sunt `laData`, `contrapartidaId`, `sensStingere`; cheia paginării este
-unitate × cont × partener. Eticheta documentului nu elimină soldul când
-lipsește sau nu este vizibilă. Postările sunt citite prin ObjectSpace secured.
-
-`documente-cu-rest` acceptă `documentCurentId` și `stinge` pentru candidați
-compatibili; `Disponibil` este limita exactă a perechii, iar panourile o
-consumă ca atare. Crearea trece
-prin gate-ul de drepturi și vizibilitatea ambelor documente, apoi prin
-comanda atomică în ObjectSpace non-secured, la fel ca desfacerea și ștergerea.
 
 <!-- gen:decizii -->
 ## Decizii

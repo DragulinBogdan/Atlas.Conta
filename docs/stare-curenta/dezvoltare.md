@@ -2,7 +2,7 @@
 
 **Actualizat: 2026-10-15.** [Index](README.md)
 
-Organizarea sursei, modelul și persistența, migrațiile, codegen-ul și build-ul.
+Organizarea sursei, modelul și persistența, serverele și bazele de dezvoltare, migrațiile, codegen-ul și build-ul.
 
 ## Organizarea sursei
 
@@ -32,13 +32,21 @@ e în `.git-blame-ignore-revs`.
 
 ## Model și persistență
 
+### Migrațiile
+
 EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
 automată a schemei prin XAF este dezactivată. Module este comun celor două
 hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
 
-Lanțul are migrația de bază `20261010151835_InitialCreate`
-(C111-D7; 102e, D9-D6) și `20261012114235_OriginiPartide` (TR-D9b pasul4),
-care adaugă proiecția provenienței fără backfill. Migrația de bază este
+Lanțul pornește din migrația de bază `20261010151835_InitialCreate`
+(C111-D7; 102e, D9-D6) și continuă incremental (120):
+`20261012114235_OriginiPartide` adaugă proiecția provenienței fără backfill
+(TR-D9b); `20261013073914_SensPePostare` redenumește coloana `Latura` a lui
+`Postare` și a view-ului `PostareVizual` în `Sens`;
+`20261013082803_SensTvaPeMapari` redenumește în `SensTva` coloanele de sens
+ale mapărilor D300, D394 și SAF-T (TR-D9b);
+`20261013214047_CorectieValoareLot` adaugă pe `DocumentDetalii` coloana
+nulabilă `CorectieValoareLot` (119). Migrația de bază este
 generată din model, plus SQL-ul brut pe care
 modelul nu-l declară: `Postare` partiționată pe `Spatiu` cu cheia
 `(Spatiu, ID)`, cele două partiții, FK-urile pe partiții — inclusiv cele trei
@@ -58,109 +66,11 @@ rămân pe schema veche și Import1C cere `--recreeaza`. Lanțul crește prin
 migrații până la „rotund”, unde se recomprimă într-o singură migrație de
 bază, cu proba că schema rezultată e identică; de la prima bază care trebuie
 păstrată nu se mai recomprimă. (120)
-Citirile cumulate au o probă pe două conexiuni și un contor de instrucțiuni
-SQL (SC-CIT-77). Scrierea globală prin ObjectSpace secured este refuzată
-înaintea accesului la date (SC-CIT-78). Accesul real pe rând și membru este
-verificat separat prin `nou/tools/ProbeHttp/stoc-snapshot-cub.py --baza
-NUMELE_BAZEI_IZOLATE` (SC-CIT-74), cu seed privat și utilizatori.
-Dovezile rulărilor și inventarul bazelor sunt în review și în
-`docs/decizii/istoric-plan-de-lucru.md`.
 
 Comanda `dotnet ef` primește mereu `--context BackOfficeEFCoreDbContext` și
 se rulează fără `--no-build`. (23a, 89g)
 
-Dezvoltarea folosește două servere Postgres 18, ambele cu
-`postgres`/`postgres`:
-
-| Server | Port | Cine îl folosește |
-|---|---|---|
-| containerul `contapal-postgres-1` | 5444 | hosturile (Blazor, WebApi), probele HTTP din `nou/tools/ProbeHttp`, implicitul `dotnet ef`, rețeta `perf-saft-container.ps1` |
-| instanța nativă de pe gazdă | 5446 | rulările grele: ModelCheck, Import1C, scara transversală și scara de volum |
-
-Rulările grele stau pe instanța nativă fiindcă un dus-întors din gazdă spre
-container trece prin proxy-ul Docker Desktop (0,27–0,5 ms față de 0,06–0,2
-ms), iar ele fac sute de mii de dus-întorsuri. Măsurat la 2026-10-09, câte o
-rulare, același binar: importul pe ianuarie 21:00 pe container și 11:29 pe
-nativ; ModelCheck integral 133 s bugetar / 231 s privat pe container și
-100 s / 180 s pe nativ, cu aceleași verificări. Pe mașina de dezvoltare
-instanța nativă e serviciul Windows `PostgreSQL`, cu pornire automată
-(2026-10-09). Ordonarea textelor e cea a Windows (`en-US`), nu glibc
-(`en_US.utf8`) ca în container; integrala a dat același rezultat pe amândouă.
-Citirile mari merg invers: pe baza de volum, balanța, stocul și partidele cu
-rest au aceleași planuri și aceleași rânduri atinse ca în container și durează
-de 1,4–2,1 ori mai mult pe nativ (2026-10-11,
-`docs/nucleu/c111-pas6-scriere-si-volum.md`). O cifră a scării de volum se
-compară numai cu una de pe aceeași instanță.
-
-Șabloanele de conexiune ale uneltelor numesc gazda `127.0.0.1`, nu
-`localhost`. După o trezire din hibernare, Npgsql 10 pe `Host=localhost` a
-rămas în negocierea GSS până la expirarea conexiunii (15 s), deși serverul
-răspundea, iar psql se conecta; cu `127.0.0.1` sau cu
-`GSS Encryption Mode=Disable` conexiunea se deschidea în 50 ms. ModelCheck
-bugetar raportează atunci „Baza nu există încă — doar validare de model” și
-iese cu cod 2, deși baza există. Șirurile hosturilor (`appsettings*.json`,
-șirul de design din `BackOfficeDbContext`) numesc aceeași gazdă, pe 5444.
-(2026-10-09)
-
-`Conexiunea` din `tools/ModelCheck/Program.cs` țintește 5446.
-`MODELCHECK_CONEXIUNE_EXTRA` înlocuiește cheile șablonului, nu le repetă
-(`Port=5432` din rețetele de container, de exemplu): o cheie repetată oprea
-construcția modelului XAF din proba D85.
-
-Bazele de dezvoltare se recreează, nu se repară: o bază care nu corespunde
-codului se șterge (`DROP DATABASE`) și se reface prin comenzi (102b). Rețeta,
-cu `CS = Host=127.0.0.1;Port=5444;Username=postgres;Password=postgres` pentru
-bazele hosturilor și același șir cu `Port=5446` pentru cele ale ModelCheck:
-
-| Bază | Recrearea |
-|---|---|
-| `Atlas.Conta.BackOffice` (bugetar, pe 5444; baza ModelCheck bugetar e cea cu același nume de pe 5446, cu aceeași rețetă) | din `Module`: `dotnet ef database update --context BackOfficeEFCoreDbContext --connection "$CS;Database=Atlas.Conta.BackOffice"`; apoi din `Blazor.Server`: `dotnet run --no-launch-profile -- --updateDatabase --forceUpdate --silent` cu `ProfilContabil=Bugetar` și `ConnectionStrings__ConnectionString=EFCoreProvider=Postgres;$CS;Database=Atlas.Conta.BackOffice` în mediu |
-| `Atlas.Conta.ModelCheck.Privat` | o recreează ModelCheck (`MigrateAsync` + seed) |
-| `Atlas.Conta.BackOffice.Privat` (baza hosturilor) | `dotnet ef database update … --connection "$CS;Database=Atlas.Conta.BackOffice.Privat"`, apoi updater-ul Blazor cu `appsettings.json` (Privat): seed plus utilizatorii `Admin`/`User`/`Cititor`/`Configurator`, fără documente |
-| `Atlas.Conta.Import1C.Flax` și clonele ei | nu se recreează implicit; Import1C `--recreeaza` la nevoie (091-r4) |
-
-Recrearea din 2026-09-25 (C102) a șters toate bazele Atlas.Conta de pe
-5444 (clonele de import, review, perf `Nucleu.Fizica.x1/x10`, CodexBCS,
-ClaudeRev) și a refăcut cele trei de mai sus. Pe baza Privat din seed,
-`partide-cub.py` își creează singur fixture-ul. (89g, 102b)
-Comenzile de document au proba HTTP proprie, cu fixture creat și șters de ea:
-`nou/tools/ProbeHttp/comenzi-coaja.py` (404/403/422 pe cele cinci comenzi,
-ușa altui tip, fără scriere la refuz). (104b)
-Matricea generală `refuzuri.ps1` rulează pe baza Privat din seed cu fixture
-propriu pe prima lună deschisă a lanțului: un furnizor NeinregistratRo, o FCT
-operată cu plata conex operată și împerecherea lor, un ITV draft pe aceeași
-lună și un angajat, desfăcute în ordine inversă în `finally`. Rămân auditul
-și cele două `RefuzSeed` ale rândurilor de politică de probă (104i, chei fixe:
-a doua rulare nu adaugă nimic). Plafonul de 500 al candidaților DVI e probat
-în ModelCheck, nu pe HTTP. Măsurat 2026-09-27 pe `c104-straturi`: 294/294
-PASS de două ori consecutiv, baza identică înainte și după. (104-r5)
-La 2026-10-11, cu rândurile fișei fără terț și ale sintezei ei: 327/327 de
-două ori. Matricea cere bază nouă: pe una pe care a rulat `explicatii.py`
-pică pe starea lăsată de acesta (documente din 2012, politici de probă), nu
-pe produs. (C111 pasul 7)
-Matricea conține și ușa explicației (X-D4): tranzacția facturii fixture-ului
-se află din jurnal, `Admin`, `Cititor` și `Configurator` primesc 200, iar
-`User` 404, la fel ca pe un id inexistent. 403
-`EXPLICATIE_ACCES_INCOMPLET` cere un rol cu citire restricționată și rămâne
-al probei `explicatii.py`. Măsurat 2026-10-04 pe `tr-d8-transversal`, pe o
-bază privată recreată din seed: 300/300 PASS de două ori consecutiv. (X-D8)
-Blocajul scrierii are proba HTTP proprie,
-`nou/tools/ProbeHttp/scriere-ocupata.py`: ține
-`pg_advisory_xact_lock(97000)` pe o a doua conexiune și cere, sub blocaj,
-200 imediat pe citire, pe dry-run și pe salvarea fără detalii noi, 422
-`SCRIERE_OCUPATA` fără nimic scris pe operare și pe salvarea cu o linie
-nouă, apoi 200 pe aceeași operare după eliberare. Fixture-ul e al probei și
-se desface în `finally`. Durează cât două timpuri de comandă (un minut).
-Rețeta care recreează baza din seed, pornește hostul pe 5089 și rulează
-matricea de două ori, `scriere-ocupata.py`, `comenzi-coaja.py` și
-`explicatii.py` (ultima, fiindcă lasă un bon stornat):
-`run-verificari/x6-http.ps1`. (X-D6, X-D8)
-Desfacerea facturii se înscrie imediat după crearea ei și redescoperă din
-ID-ul FCT plata conex și împerecherile; după `finally`, matricea verifică pe
-API absența identităților fixture-ului (cod 3 la rezidu). `-CadeDupa <punct>`
-injectează o cădere după o mutație a fixture-ului, iar
-`refuzuri-caderi.ps1` le parcurge pe toate și cere cod 2 și zero rezidu la
-fiecare. (104-r5, review C104 R2)
+### Maparea TPH
 
 Cele trei ierarhii (`Document`, `DocumentDetaliu`, `Repartitor`) sunt TPH:
 câte o tabelă pe rădăcină, discriminatorul `ClrType` cu valorile implicite
@@ -171,6 +81,8 @@ stocare sau facete diferite opresc construirea modelului, cu toate
 coliziunile într-un singur mesaj; se redenumește una dintre ele, nu se
 adaugă prefix. O clasă nouă cu nume mai lung decât coloana discriminatorului
 produce singură o migrație `ALTER COLUMN`. (89a, 89b, 89c)
+
+### Actualizarea bazei și seed-ul
 
 Actualizarea bazei se execută explicit prin hostul Blazor, cu opțiunile
 `--updateDatabase --forceUpdate --silent`. WebApi verifică compatibilitatea
@@ -195,6 +107,8 @@ autoritar; reseed-ul nu suprascrie datele societății. (69b, 73a, 83a–d, 84a,
 Profilurile nu se amestecă în aceeași bază. `SetareProfil` și rotunjirea sunt
 stabile după inițializare. (36c, 52a)
 
+### Integritatea în schemă
+
 Unicitatea politicilor și a codurilor de nomenclator este în schemă, prin
 indexuri unice nefiltrate: ștergerea e fizică, deci cheia unui rând șters se
 poate reface. Ancora `TipDocument.ClrType` este unică tot
@@ -203,7 +117,7 @@ spre ea, iar corespondența clase concrete ↔ seed o probează ModelCheck. (81c
 
 Curățenia de scenă din ModelCheck (`Purja`) șterge fizic, prin SQL, și
 emulează cascada pe FK-urile obligatorii: rândurile care nu pot exista fără
-părinte pleacă înaintea lui. Schema nu mai cascadează în afara compozițiilor
+părinte pleacă înaintea lui. Schema nu cascadează în afara compozițiilor
 (104g). Probele care cer o etichetă de nomenclator ascunsă (SC-CIT-29/40/80)
 șterg rândul într-o tranzacție rulată înapoi, cu FK-urile suspendate
 (`AscundereControlata`). (F13-D2, 104g)
@@ -211,20 +125,118 @@ părinte pleacă înaintea lui. Schema nu mai cascadează în afara compozițiil
 Absența FK-ului pentru `Lot.LinieIntrareId` este intenționată pentru ciclul de
 inserare; integritatea este verificată de mecanismele domeniului. (26e)
 
+### Versiunile pachetelor
+
 Versiunile backend sunt centralizate în `Directory.Packages.props`.
 Pachetele Atlas.DXF și DevExpress folosesc intervalul flotant al liniei de
 versiune (`26.1.*`); versiunea restaurată trebuie să fie coerentă între
 proiecte. (39a, 41e)
 Clientul folosește pnpm și versiunile declarate în `package.json` și lockfile.
 
+## Serverele și bazele de dezvoltare
+
+Dezvoltarea folosește două servere Postgres 18, ambele cu
+`postgres`/`postgres`:
+
+| Server | Port | Cine îl folosește |
+|---|---|---|
+| containerul `contapal-postgres-1` | 5444 | hosturile (Blazor, WebApi), probele HTTP din `nou/tools/ProbeHttp`, implicitul `dotnet ef`, rețeta `perf-saft-container.ps1` |
+| instanța nativă de pe gazdă | 5446 | rulările grele: ModelCheck, Import1C, scara transversală și scara de volum |
+
+Rulările grele stau pe instanța nativă fiindcă un dus-întors din gazdă spre
+container trece prin proxy-ul Docker Desktop, iar ele fac sute de mii de
+dus-întorsuri. Pe mașina de dezvoltare instanța nativă e serviciul Windows
+`PostgreSQL`, cu pornire automată. Ordonarea textelor e cea a Windows
+(`en-US`), nu glibc (`en_US.utf8`) ca în container. Citirile mari merg
+invers: pe baza de volum, balanța, stocul și partidele cu rest au aceleași
+planuri și aceleași rânduri atinse ca în container, dar durează mai mult pe
+nativ (`docs/nucleu/c111-pas6-scriere-si-volum.md`). O cifră a scării de
+volum se compară numai cu una de pe aceeași instanță.
+
+Șabloanele de conexiune ale uneltelor numesc gazda `127.0.0.1`, nu
+`localhost`. După o trezire din hibernare, Npgsql 10 pe `Host=localhost`
+poate rămâne în negocierea GSS până la expirarea conexiunii, deși serverul
+răspunde, iar psql se conectează; cu `127.0.0.1` sau cu
+`GSS Encryption Mode=Disable` conexiunea se deschide imediat. ModelCheck
+bugetar raportează atunci „Baza nu există încă — doar validare de model” și
+iese cu cod 2, deși baza există. Șirurile hosturilor (`appsettings*.json`,
+șirul de design din `BackOfficeDbContext`) numesc aceeași gazdă, pe 5444.
+
+`Conexiunea` din `tools/ModelCheck/Program.cs` țintește 5446.
+`MODELCHECK_CONEXIUNE_EXTRA` înlocuiește cheile șablonului, nu le repetă
+(`Port=5432` din rețetele de container, de exemplu): o cheie repetată oprește
+construcția modelului XAF din proba D85.
+
+Bazele de dezvoltare se recreează, nu se repară: o bază care nu corespunde
+codului se șterge (`DROP DATABASE`) și se reface prin comenzi (102b). Rețeta,
+cu `CS = Host=127.0.0.1;Port=5444;Username=postgres;Password=postgres` pentru
+bazele hosturilor și același șir cu `Port=5446` pentru cele ale ModelCheck:
+
+| Bază | Recrearea |
+|---|---|
+| `Atlas.Conta.BackOffice` (bugetar, pe 5444; baza ModelCheck bugetar e cea cu același nume de pe 5446, cu aceeași rețetă) | din `Module`: `dotnet ef database update --context BackOfficeEFCoreDbContext --connection "$CS;Database=Atlas.Conta.BackOffice"`; apoi din `Blazor.Server`: `dotnet run --no-launch-profile -- --updateDatabase --forceUpdate --silent` cu `ProfilContabil=Bugetar` și `ConnectionStrings__ConnectionString=EFCoreProvider=Postgres;$CS;Database=Atlas.Conta.BackOffice` în mediu |
+| `Atlas.Conta.ModelCheck.Privat` | o recreează ModelCheck (`MigrateAsync` + seed) |
+| `Atlas.Conta.BackOffice.Privat` (baza hosturilor) | `dotnet ef database update … --connection "$CS;Database=Atlas.Conta.BackOffice.Privat"`, apoi updater-ul Blazor cu `appsettings.json` (Privat): seed plus utilizatorii `Admin`/`User`/`Cititor`/`Configurator`, fără documente |
+| `Atlas.Conta.Import1C.Flax` și clonele ei | nu se recreează implicit; Import1C `--recreeaza` la nevoie (091-r4) |
+
+## Probele HTTP și fixture-urile lor
+
+Pe baza Privat din seed, `partide-cub.py` își creează singur fixture-ul. (89g, 102b)
+
+Citirile cumulate au o probă pe două conexiuni și un contor de instrucțiuni
+SQL (SC-CIT-77). Scrierea globală prin ObjectSpace secured este refuzată
+înaintea accesului la date (SC-CIT-78). Accesul real pe rând și membru este
+verificat separat prin `nou/tools/ProbeHttp/stoc-snapshot-cub.py --baza
+NUMELE_BAZEI_IZOLATE` (SC-CIT-74), cu seed privat și utilizatori.
+
+Comenzile de document au proba HTTP proprie, cu fixture creat și șters de ea:
+`nou/tools/ProbeHttp/comenzi-coaja.py` (404/403/422 pe cele cinci comenzi,
+ușa altui tip, fără scriere la refuz). (104b)
+
+Matricea generală `refuzuri.ps1` rulează pe baza Privat din seed cu fixture
+propriu pe prima lună deschisă a lanțului: un furnizor NeinregistratRo, o FCT
+operată cu plata conex operată și împerecherea lor, un ITV draft pe aceeași
+lună și un angajat, desfăcute în ordine inversă în `finally`. Rămân auditul
+și cele două `RefuzSeed` ale rândurilor de politică de probă (104i, chei fixe:
+a doua rulare nu adaugă nimic). Plafonul de 500 al candidaților DVI e probat
+în ModelCheck, nu pe HTTP. Baza e identică înainte și după. (104-r5)
+Matricea cere bază nouă: pe una pe care a rulat `explicatii.py` pică pe
+starea lăsată de acesta (documente din 2012, politici de probă), nu pe
+produs. (C111)
+
+Matricea conține și ușa explicației (X-D4): tranzacția facturii fixture-ului
+se află din jurnal, `Admin`, `Cititor` și `Configurator` primesc 200, iar
+`User` 404, la fel ca pe un id inexistent. 403
+`EXPLICATIE_ACCES_INCOMPLET` cere un rol cu citire restricționată și rămâne
+al probei `explicatii.py`. (X-D8)
+
+Blocajul scrierii are proba HTTP proprie,
+`nou/tools/ProbeHttp/scriere-ocupata.py`: ține
+`pg_advisory_xact_lock(97000)` pe o a doua conexiune și cere, sub blocaj,
+200 imediat pe citire, pe dry-run și pe salvarea fără detalii noi, 422
+`SCRIERE_OCUPATA` fără nimic scris pe operare și pe salvarea cu o linie
+nouă, apoi 200 pe aceeași operare după eliberare. Fixture-ul e al probei și
+se desface în `finally`. Durează cât două timpuri de comandă (un minut).
+Rețeta care recreează baza din seed, pornește hostul pe 5089 și rulează
+matricea de două ori, `scriere-ocupata.py`, `comenzi-coaja.py` și
+`explicatii.py` (ultima, fiindcă lasă un bon stornat):
+`run-verificari/x6-http.ps1`. (X-D6, X-D8)
+
+Desfacerea facturii se înscrie imediat după crearea ei și redescoperă din
+ID-ul FCT plata conex și împerecherile; după `finally`, matricea verifică pe
+API absența identităților fixture-ului (cod 3 la rezidu). `-CadeDupa <punct>`
+injectează o cădere după o mutație a fixture-ului, iar
+`refuzuri-caderi.ps1` le parcurge pe toate și cere cod 2 și zero rezidu la
+fiecare. (104-r5, review C104 R2)
+
 ## Contracte generate și build
 
 OpenAPI se extrage din configurația hostului, fără pornirea serviciilor
 găzduite, dar cu serverul bazei din șirul de conexiune al WebApi pornit: cu
 el oprit, `swagger tofile` pică pe verificarea de compatibilitate XAF.
-Schema bazei nu contează (a trecut pe o bază rămasă la `InitialCreate`).
+Schema bazei nu contează.
 Fără serverul hosturilor, `ConnectionStrings__ConnectionString` din mediu
-îndreaptă procesul spre altă bază (observat 2026-10-13). Metadata este derivată din model
+îndreaptă procesul spre altă bază. Metadata este derivată din model
 prin instrumentul dedicat; nu se extrage dintr-un model de ecran XAF.
 Artefactele generate sunt versionate împreună cu sursa care le definește. (43d, 56)
 
@@ -242,8 +254,8 @@ dotnet run --project nou/tools/ModelCheck --no-build -- --scenarii BCS,FCT priva
 `ModelCheck --scenarii <TIP>[,<TIP>…] [privat]` rulează doar scenele
 catalogului care probează tipurile cerute, pe baza profilului (migrare +
 seed pe privat, migrațiile aplicate pe bugetar), fără metadata, fără
-probele de model și fără celelalte scene: toate tipurile de pe cub în
-rulate selectiv pe privat; durata depinde de grupul ales. Codurile sunt ale catalogului (`docs/nucleu/scenarii/`,
+probele de model și fără celelalte scene; orice tip de pe cub se poate
+rula selectiv pe privat. Codurile sunt ale catalogului (`docs/nucleu/scenarii/`,
 inclusiv `DESCHIDERE`, `IMO`, `X`, `C111`); un cod necunoscut sau un tip fără nicio
 scenă pe profilul cerut iese cu exit 2, nu verde. Scenele și tipurile lor
 stau în `ScenelePeTip` (`Suita/ScenelePeTip.cs`), aceeași listă pe care suita
@@ -256,15 +268,18 @@ filtrul nu-l vede. Suita integrală pe ambele profiluri rămâne gate-ul de comm
 pe privat. Fiecare caz își asertează repartitorul, partenerul fiscal, locul,
 contraponderea și unitatea pe postare, plus soldurile filtrate, dinamic și
 din snapshot. Un caz căzut se raportează ca FAIL și nu oprește celelalte.
+(091 (e), 091-r1)
+
+### Structura ModelCheck
+
 `Program.cs` e numai dispecerul (argumente, conexiune, migrații, secvența
 apelurilor); fiecare scenă veche e o clasă în `Suita/` cu `Ruleaza(Suita s)`,
 iar contextul comun (`Check`, provider, profil, ajutoarele de perioadă) e
 instanța `Suita`, fără stare statică. O probă care emite aserții din rânduri
 citite din bază le ordonează pe o cheie a scenei, nu pe ordinea bazei; purja
-de scenă prinde codurile pe prefixul marcajului. (091 (e), 091-r1; TR-D9a
-pasul 6c, 2026-10-07)
+de scenă prinde codurile pe prefixul marcajului. (TR-D9a)
 
-### Îmbinările pe chei nulabile ale cubului
+## Îmbinările pe chei nulabile ale cubului
 
 Unitatea, repartitorul și documentul sunt nulabile pe `Postare`. O îmbinare
 LINQ cu ambele părți nulabile iese din EF cu
@@ -312,6 +327,30 @@ agregată sau, când cealaltă parte e `Postare` neagregată, pe partea mică, c
 indexul postărilor să rămână folosibil; ori `!= null` pe ambele părți ale
 unui `Contains`); se admite numai
 când ramura de nul e filtru lângă o cheie selectivă.
+
+## Limitele implementării
+
+- Baza nu verifică tipul unui rând: discriminatorul `ClrType` al documentelor
+  nu are FK spre `TipDocument.ClrType`, iar un FK spre o frunză (de exemplu
+  `Lot.GestiuneId`) acceptă în schemă id-ul oricărui repartitor. Pe ușa
+  securizată tipul îl verifică gardianul; pe ușa de sistem (Import1C, seed)
+  nimic nu-l verifică la scriere, iar abaterile le găsesc doar probele
+  ModelCheck și SQL-ul din `--dump-integritate-tph` rulat după import. (89a,
+  89e)
+- Cu pregătirea automată a comenzilor, citirile de sold pe o listă de loturi
+  (`Fapte.SolduriLoturi`, `Loturi.VerificaSoldIntermediar`) primesc un plan
+  generic mai lent: cu limitele de dată necunoscute, planificatorul alege
+  indexul pe dată în locul celui pe `(Unitate, Data)` și filtrează lotul după
+  citire. Import1C o folosește; hosturile nu.
+- `SursaCont` și mai mulți membri ai politicilor nu au `[XafDisplayName]`;
+  ecranele poartă caption-ul în cod. (84-r5)
+- Găzduirea clientului și a API-ului pe aceeași origine e contractul de
+  livrare. Hostul are `UseStaticFiles`, dar proiectul WebApi nu copiază
+  automat build-ul React și nu are fallback-ul rutelor SPA; publicarea cere și
+  configurarea JWT pentru mediul țintă. (43e, 55g)
+- Pe containerul Postgres de dezvoltare, cu `/dev/shm` de 64 MB, sortarea
+  paralelă a listei `PostareVizual` pică (`could not resize shared memory
+  segment`). (D9-A12)
 
 <!-- gen:decizii -->
 ## Decizii

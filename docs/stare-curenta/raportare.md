@@ -2,12 +2,12 @@
 
 **Actualizat: 2026-10-15.** [Index](README.md)
 
-Proiecțiile contabile și de stoc, soldul pe parteneri și explicația deciziei.
+Explicația deciziei persistată în cub, invarianții care o verifică și identitățile cititorilor cubului.
 
-## Explicația deciziei (X-D4, 2026-10-03)
+## Explicația deciziei
 
 Contractul acceptat își persistă deciziile și ipotezele: de ce a costat
-ieșirea atât, din ce sold, ce partide a stins.
+ieșirea atât, din ce sold, ce partide a stins. (X-D4)
 
 - **Unde**: `Tranzactie.Explicatie` (`jsonb`), pe prima tranzacție scrisă a
   contractului — `Operare` când există, altfel `Transfer` (BTR, ASM fără
@@ -15,11 +15,11 @@ ieșirea atât, din ce sold, ce partide a stins.
   `ExplicatieDinId`. Se scrie în același `INSERT` cu rândul și nu se mai
   modifică. `Storno`, `Deschidere`, transferul împerecherii, desfacerea și
   stingerea de deschidere nu au explicație; baza refuză prin
-  `CK_Tranzactie_Explicatie` și `CK_Tranzactie_ExplicatieDin`.
+  `CK_Tranzactie_Explicatie` și `CK_Tranzactie_ExplicatieDin`. (X-D4)
 - **Ce**: `Cub.Explicatie` — versiunea schemei (`v` = 2), numele
   declarantului, `JumatatiDeBan`, deciziile și ipotezele contractului în
   ordinea declarației, cu linia și unitatea lor. Un cititor refuză o versiune,
-  o decizie sau o ipoteză pe care nu o cunoaște; versiunea 1 nu are cititor.
+  o decizie sau o ipoteză pe care nu o cunoaște; versiunea 1 nu are cititor. (X-D4)
 - **Regula care a decis** (D9-A8): pentru fiecare rând de politică din care
   declarantul a luat un fapt folosit la o postare, ipoteza
   `VersiunePolitica(Fel, Rand, Versiune)` — clasa rândului, identificatorul
@@ -32,7 +32,7 @@ ieșirea atât, din ce sold, ce partide a stins.
   (tipul de material, tipul de TVA, steagurile contului) și nici conținutul
   regulii la operare (D9-r3). Un declarant care nu consumă reguli (ASM, BTR,
   NTC) nu scrie ipoteza. Lista nominală, declarant cu declarant:
-  `docs/nucleu/tr-d9-pas7c-versiunea-politicii.md`.
+  `docs/nucleu/tr-d9-pas7c-versiunea-politicii.md`. (D9-A8, D9-r3)
 - **Ieșirea pe lot** are exact o decizie de valoare: `ValoareIesire` când
   valoarea vine din soldul citit (BCS, DSC, BTR, LDI minus, consumul ASM),
   `ValoareDeclarata` când o dă altă sursă — linia documentului (RLF și RDC, la
@@ -42,18 +42,25 @@ ieșirea atât, din ce sold, ce partide a stins.
   declarantului, nu al explicației: `IDeclarant.SursaValoareDeclarata` e
   `null` pentru declaranții care evaluează din sold și numește sursa pentru
   cei trei care declară valoarea (NIR, RLF, RDC). Niciun declarant nu le
-  amestecă.
+  amestecă. (X-D4)
 - **Soldul citit** (`SoldUnitateCitit`) e soldul net al unității la data
   documentului, fără documentul curent, o dată per unitate. Soldul dinaintea
   fiecărei ieșiri următoare de pe aceeași unitate se derivă din deciziile
-  anterioare (`Explicatie.IesiriEvaluate`).
+  anterioare (`Explicatie.IesiriEvaluate`). (X-D4)
 - **Stingerea FIFO** are câte o `AlocareFifo` per linie și partidă stinsă,
   iar partida stinsă are soldul ei citit între ipoteze; partida proprie a
-  documentului are `PartidaDeschisa`.
+  documentului are `PartidaDeschisa`. (X-D4)
 - **Stornoul** se explică prin original: `Cub.Citiri.Explicatii.PeTranzactie`
   urmează `InversaDin` și întoarce explicațiile purtătorilor de origine.
-  **Anularea operării** șterge explicația odată cu tranzacția.
-- **Invariantul** (`Explicatii.VerificaAcoperire`, în `INV-CUB`):
+  **Anularea operării** șterge explicația odată cu tranzacția. (X-D4)
+Dry-run-ul nu persistă nimic. O declarație pe care nucleul nu o poate
+construi (`ArgumentException`) sau un declarant care nu întoarce nici
+declarație, nici refuz dau refuzul `DECLARATIE_INVALIDA`, pe dry-run și pe
+operare, în aceeași formă ca orice refuz al declarației. (S-r11)
+
+### Invarianții explicației și ai tranzacției
+
+- **Acoperirea explicației** (`Explicatii.VerificaAcoperire`, în `INV-CUB`):
   `CITIRE_EXPLICATIE_LIPSA` (o tranzacție `Operare` sau o ieșire pe lot fără
   explicație), `…_REFERINTA` (referință spre o tranzacție fără explicație sau
   a altui document), `…_STORNO` (inversa pe lot nu oglindește originalul),
@@ -65,13 +72,13 @@ ieșirea atât, din ce sold, ce partide a stins.
   citit), `…_MECANISM` (explicația numește alt declarant decât cel al
   documentului, poartă o valoare declarată la un declarant care evaluează
   din sold, sau o valoare evaluată ori altă sursă la unul care declară).
-  Declarantul se ia din document, nu din explicație.
+  Declarantul se ia din document, nu din explicație. (X-D4)
 - **Transferul persistat conservă pe cont** (`Invarianti.VerificaTransferuri`,
   `CITIRE_TRANSFER_NECONSERVAT`, în `INV-CUB`): în orice tranzacție `Transfer`
   valoarea se anulează pe (cont, latură) și cantitatea pe (cont, produs). E
   regula de la contractare (090f), reverificată pe ce s-a scris. Acoperă
   contul capătului de destinație, pe care nici acoperirea cantitativă a
-  stocului, nici reconcilierea (a) nu îl văd.
+  stocului, nici reconcilierea (a) nu îl văd. (090f)
 - **Perechea persistată e cea de la contractare** (`Invarianti.VerificaPerechi`,
   în `INV-CUB`): `CITIRE_PERECHE_INVALIDA` — pe (tranzacție, ordinal) nu stau
   exact două postări cu același document, aceeași linie, aceeași dată,
@@ -81,15 +88,10 @@ ieșirea atât, din ce sold, ce partide a stins.
   în `INV-CUB`): `CITIRE_ORDINAL_INVALID` — postările unei tranzacții nu sunt
   numărate de la 1, fără goluri și fără dubluri. (117)
 
-Dry-run-ul nu persistă nimic. O declarație pe care nucleul nu o poate
-construi (`ArgumentException`) sau un declarant care nu întoarce nici
-declarație, nici refuz dau refuzul `DECLARATIE_INVALIDA`, pe dry-run și pe
-operare, în aceeași formă ca orice refuz al declarației (S-r11).
-
-## Identitățile cititorilor (C111-D10)
+## Identitățile cititorilor
 
 Cititorii din `Cub/Citiri` expun fiecare identitate separat; nimeni nu
-alege între două coloane.
+alege între două coloane. (C111-D10)
 
 | Identitatea | Domeniul | Coloana |
 |---|---|---|
@@ -104,11 +106,41 @@ alege între două coloane.
 | axa analitică | atomul contabil (`Contabil.Analitice`) | `Repartitor` |
 
 „Extern” se judecă într-un singur loc, `Contabil.Externi`: repartitorii de
-fel partener sau angajat.
+fel partener sau angajat. (C111-D10)
 
 Regula terțului comercial în SAF-T (S11) și cea a partenerului fiscal în
-D394 (S13) sunt în [politici-si-fiscalitate](politici.md),
-§„SAF-T” și §„D300 și D394”.
+D394 (S13) sunt în [saft § Terțul comercial](saft.md#terțul-comercial) și
+[tva § D300 și D394](tva.md#d300-și-d394). (S11, S13)
+
+## Limitele implementării
+
+- Rapoartele cumulate ale API-ului (balanță, fișă, sold parteneri, partide cu
+  rest, stoc) citesc `Vizibila` și recitesc istoricul la fiecare cerere; nu
+  există un al doilea model de citire. (104b, FZ-r1, X-D5)
+- `PartideCuRest` caută documentul deschizător al fiecărei partide
+  parcurgând toate postările de partidă (`Partide.Origini`), și când
+  soldurile vin din snapshot: costul crește liniar cu istoricul. (F27-r16,
+  X-D5, D9-D10 b)
+- `documente-cu-rest` e proiecția scumpă: uniunea documentelor operate ale
+  celor opt tipuri, cu filtrul abia în `WHERE`-ul exterior, plus legăturile
+  ca tabele derivate. Corelarea legăturii scoate scanările secvențiale pe
+  panoul filtrat, dar mută costul pe calea nefiltrată, consumată de
+  constatarea de rest scadent la închidere; măsurătorile sunt în
+  [p5-perf-masuratori](../api/p5-perf-masuratori.md). (F27-r16)
+- Fișa de cont și balanța analitică depășesc ținta de timp a grilei: la fișă,
+  costul e cadrul cererii (securitatea pe ObjectSpace, hidratarea,
+  serializarea), nu proiecția; la balanța analitică, cardinalitatea cheii
+  `Cont × Repartitor`, pe care `work_mem` n-o ajută. (F27-r14, F27-r15)
+- Contrapartida domină costul registrului jurnal la volum: perechea fiecărui
+  rând se caută prin indexul `(TranzactieId, Pereche)`. (C111-Q20)
+- Fișa contului și registrul jurnal compun SQL-ul de mână în jurul surselor
+  din LINQ, fiindcă egalitatea pe `Pereche`, nulabilă, nu iese din LINQ fără
+  ramură de nul. `Pereche` nulă înseamnă „fără pereche”; valoarea 0 nu e
+  folosită. (C111-Q20)
+- Explicația repetă câte două `ContRezolvat` și unitatea întreagă pe fiecare
+  linie. Contorul rândului de politică e `OptimisticLockField`: nu-l mișcă o
+  scriere SQL directă sau restaurarea bazei, iar un rând șters și recreat
+  apare ca dispărut. (X-D5, D9-A8)
 
 <!-- gen:decizii -->
 ## Decizii

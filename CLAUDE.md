@@ -114,10 +114,11 @@ contrazise din neatenție.
 
 Pe guvernanță, stratul de scop ([scop](docs/scop.md),
 [catalogul funcționalităților](docs/functionalitati.md); PR #44) și cele 16
-arii ale stării curente (decizia 121, PR #45) sunt în main din 2026-10-15.
-Următorul pas, la cererea owner-ului, pe context nou: 121-r1 (rescrierea
-paginilor pe responsabilități), 121-r2 (limitele aduse la catalog), 121-r3
-(sondajul owner-ului pe aria rândurilor din registru). Tot pe guvernanță
+arii ale stării curente (decizia 121, PR #45) sunt în main din 2026-10-15;
+paginile sunt rescrise pe subiect, iar limitele aduse la catalog (121-r1,
+121-r2, 121 e). Rămân 121-r3 (sondajul owner-ului pe aria rândurilor din
+registru) și 121-r4 (mutarea între arii a pasajelor lăsate pe loc, la prima
+felie care atinge aria). Tot pe guvernanță
 rămân 118-r1 la `/docs-curatenie` și `build` din 118-r2. Pe motor, felia
 deschisă e [TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md)
 (decizia 119), adică etapa E1 (F-CVL-01…06): pasul 3, mecanismul pe FCT, e

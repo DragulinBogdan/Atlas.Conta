@@ -2,7 +2,7 @@
 
 **Actualizat: 2026-10-15.** [Index](README.md)
 
-Ecranele XAF Blazor (liste, grile, regim) și formularele React (selectoare, căutare, cache).
+Formularele React (selectoare, căutare, cache, ecranele fiscale) și ecranele XAF Blazor (regim, liste, grile de linii), plus harta ecranelor disponibile.
 
 ## Formulare React
 
@@ -21,37 +21,15 @@ selectează rândul, dublu-click-ul deschide documentul. Pagina dă titlul,
 crearea (lipsește la DSC), perioada opțională din URL și coloanele. Consolele
 ITV și AMO folosesc aceeași grilă sub previzualizare. (43a, 43c)
 
-Proiecțiile fiscale filtrează pe perioada de DECLARARE, nu pe data faptului:
-`jurnal-tva`, `decont-tva`, `d300`, `d394` și SAF-T. Perioada de declarare
-are granularitate de LUNĂ: `dataStart`/`dataEnd` se citesc ca luni, deci o
-fereastră sub-lunară întoarce luna întreagă. Rândul de jurnal poartă ambele
-coordonate — data faptului și perioada de declarare. (F27-D5)
-`GET api/proiectii/rectificativa-tva?an=&luna=` întoarce conținutul de
-rectificativă al unei perioade: rândurile declarate în ea și scrise după prima
-ei închidere, plus agregatul lor pe cheia decontului. Gate-ul este dublu:
-existența perioadei se rezolvă pe ușa securizată (404 pentru lună nedefinită
-sau invizibilă), iar cifrele cer dreptul de citire pe registrul fiscal (403);
-marginile lipsă sau în afara intervalului sunt 400. D300 și D394 poartă
-`Rectificativa` și `DiferenteDeclarat`, completate doar când perioada cerută
-acoperă exact o lună calendaristică. Toate trei poartă și `PerioadaDeschisa`:
-pe o lună redeschisă după prima declarare, conținutul e deja calculat, dar
-devine rectificativă abia la re-închidere, iar banda din client o spune.
-(F27-D5, 80a, review advers F27, 2')
-
 Formularul deține local întregul DTO de scriere. TanStack Query gestionează
 starea citită de pe server, iar URL-ul starea navigabilă. Nu se menține un
 al doilea magazin global care copiază aceleași documente. (43c)
 
-Jurnalele de TVA au coloana „Perioada” lângă „Data”, iar textul explicativ
-spune că însumarea e pe perioada de declarare. D300 și D394 arată banda
-„RECTIFICATIVĂ — diferențe față de declarat” cu agregatul, doar când serverul
-o raportează. (F27-D5)
-
 Formularele de culegere au „Data înregistrării” lângă „Dată”. Câmpul gol nu
 se trimite, deci serverul aplică implicitul; ecranele documentelor generate o
 arată doar. Conversia citire → scriere a fiecărei felii o poartă explicit: un
-câmp lipsă de acolo s-ar fi rescris tăcut la fiecare re-salvare. Coloana din
-listele de documente rămâne de adăugat. (F27-D4)
+câmp lipsă de acolo s-ar rescrie tăcut la fiecare re-salvare. Listele de
+documente nu au coloana „Data înregistrării”. (F27-D4)
 
 Liniile se editează într-un editor separat, apoi se afișează în grilă.
 Totalurile, resturile și disponibilitatea comenzilor sunt calculate de
@@ -68,6 +46,31 @@ Confirmările sunt inline. Verificarea conținutului unei confirmări ține
 cont de `false` și `null`, nu doar de existența unui obiect React.
 Comenzile dezactivează acțiunile incompatibile cât timp sunt în curs și
 respectă disponibilitatea întoarsă de server. (42e, 57f, 77d)
+
+## Ecranele fiscale
+
+Proiecțiile fiscale filtrează pe perioada de DECLARARE, nu pe data faptului:
+`jurnal-tva`, `decont-tva`, `d300`, `d394` și SAF-T. Perioada de declarare
+are granularitate de LUNĂ: `dataStart`/`dataEnd` se citesc ca luni, deci o
+fereastră sub-lunară întoarce luna întreagă. Rândul de jurnal poartă ambele
+coordonate — data faptului și perioada de declarare. (F27-D5)
+
+Jurnalele de TVA au coloana „Perioada” lângă „Data”, iar textul explicativ
+spune că însumarea e pe perioada de declarare. D300 și D394 arată banda
+„RECTIFICATIVĂ — diferențe față de declarat” cu agregatul, doar când serverul
+o raportează. (F27-D5)
+
+`GET api/proiectii/rectificativa-tva?an=&luna=` întoarce conținutul de
+rectificativă al unei perioade: rândurile declarate în ea și scrise după prima
+ei închidere, plus agregatul lor pe cheia decontului. Gate-ul este dublu:
+existența perioadei se rezolvă pe ușa securizată (404 pentru lună nedefinită
+sau invizibilă), iar cifrele cer dreptul de citire pe registrul fiscal (403);
+marginile lipsă sau în afara intervalului sunt 400. D300 și D394 poartă
+`Rectificativa` și `DiferenteDeclarat`, completate doar când perioada cerută
+acoperă exact o lună calendaristică. Toate trei poartă și `PerioadaDeschisa`:
+pe o lună redeschisă după prima declarare, conținutul e deja calculat, dar
+devine rectificativă abia la re-închidere, iar banda din client o spune.
+(F27-D5, 80a, review advers F27, 2')
 
 ## Selectoare, căutare și cache
 
@@ -107,23 +110,29 @@ comenzi din vocabular (`Document.Opereaza`, `FacturaIesire.GenereazaDescarcarea`
 Ștergerea standard XAF (`Delete`) e comanda `Sterge` a regimului pe
 DetailView-ul documentului. Motivul indisponibilității ajunge în tooltip-ul
 acțiunii, iar tooltip-ul propriu revine când comanda redevine disponibilă;
-în Blazor tooltip-ul se randează și pe acțiunea dezactivată (probat în
-browser, 2026-10-04). Pe lista de documente, `RegimListaController` aplică
-pe selecție componenta ieftină a ștergerii (`RegimDocument.MotivStergere`,
-fără interogări): o selecție care conține un document ne-Draft are
-ștergerea indisponibilă în întregime, cu motivul în tooltip. (106j) Regimul se re-evaluează la
-activare, la schimbarea obiectului curent, la `Committed` și la `Reloaded`
-(comanda comite în alt context și controllerul de operare face `Refresh`).
-La dezactivare, gardianul își retrage cheia „Regim” și tooltip-urile de pe
-acțiunile atinse, fiindcă un frame își refolosește controllerele și acțiunile
-între view-uri. În configurația curentă fiecare view rădăcină are tabul și
-frame-ul lui; în browser, după un document operat, nomenclatorul deschis din
-navigație sau din lookup are ștergerea disponibilă (probat 2026-10-04). (106k)
-Controllerele de comenzi nu mai poartă `Enabled["Stare"]`; ModelCheck
-probează structural că fiecare comandă din toolbar-ul DetailView-ului unui
-`Document` numește o comandă a regimului. (106d, 106e)
+în Blazor tooltip-ul se randează și pe acțiunea dezactivată. (106d, 106e)
+
+Pe lista de documente, `RegimListaController` aplică pe selecție componenta
+ieftină a ștergerii (`RegimDocument.MotivStergere`, fără interogări): o
+selecție care conține un document ne-Draft are ștergerea indisponibilă în
+întregime, cu motivul în tooltip. (106j)
+
+Regimul se re-evaluează la activare, la schimbarea obiectului curent, la
+`Committed` și la `Reloaded` (comanda comite în alt context și controllerul
+de operare face `Refresh`). La dezactivare, gardianul își retrage cheia
+„Regim” și tooltip-urile de pe acțiunile atinse, fiindcă un frame își
+refolosește controllerele și acțiunile între view-uri. În configurația
+curentă fiecare view rădăcină are tabul și frame-ul lui; în browser, după un
+document operat, nomenclatorul deschis din navigație sau din lookup are
+ștergerea disponibilă. (106k)
+
+Controllerele de comenzi nu poartă `Enabled["Stare"]`; ModelCheck probează
+structural că fiecare comandă din toolbar-ul DetailView-ului unui `Document`
+numește o comandă a regimului. (106d, 106e)
 
 ## Listele XAF Blazor
+
+### Modul de acces
 
 Modul de acces implicit al ListView-urilor root este `Server`, cu paginare
 (fără scroll virtual): o pagină este un query cu join-urile coloanelor de
@@ -131,48 +140,57 @@ referință din modelul view-ului plus un COUNT; rândul este entitatea, deci se
 detaliul din listă, acțiunile și editarea inline funcționează neschimbate.
 `Client` nu este implicit pe niciun ListView root. (85a)
 
-`ServerView` este opt-in per view, doar pe registre append-only citite:
-azi numai lista de evidență a cubului, `PostareVizual_ListView` de sub
-„Registre” (D9-A12). `Cub.PostareVizual` e o entitate de citire mapată
-`ToView("PostareVizual")`, fără `BaseObject`, cu cheia `ID`, toate coloanele
-postării și codurile nomenclatoarelor alături (`ContSimbol`, `RepartitorCod`,
-`PartenerFiscalCod`, `LocCod`, `ProdusCod`, `UnitateCod`, `DocumentNumar`,
-`TipTvaCod`, dimensiunile bugetare, `TranzactieFel`); view-ul SQL e creat în
-`InitialCreate`, odată cu tabela, cu `LEFT JOIN` pe nomenclatoare —
-`Repartitori` de trei ori, pentru repartitor, partener fiscal și loc — și o
-expresie pentru unitate (partida = codul repartitorului + data deschiderii;
-lotul = codul produsului + data lotului; fișa = numărul de inventar).
-Contraponderea e coloana postării, afișată cu numele enumului (`Tert`,
-`Consum`, `Inventar`, `Transformare`). Coloanele vizibile, în ordine: tranzacție, document,
-data, cont, latură, repartitor, partener fiscal, loc, contrapondere, produs,
-unitate, cantitate, valoare, valoare în valută (S5, C111-Q14); fără
-identificatori bruți, fără editare, fără
-totaluri; detaliul rândului se deschide în citire. La activarea listei,
-`PostareVizualController` cere `Cub.Citiri.Vizibilitate.AccesLista` (lipsurile
-de citire completă pe `Postare`, prin `AccesComplet.Lipsuri`): cu lipsuri,
-criteriul listei e fals și se arată fraza porților (108 d); nu există drept
-propriu pe `PostareVizual`. Gardianul refuză crearea, modificarea și ștergerea
-unei `PostareVizual` pe orice ușă securizată, ca pe `Postare`; tipul nu e expus
-pe OData, în OpenAPI și în metadata clientului (`neexpunere-cub.py`).
-`Postare` nu mai are intrare de navigare; lista imbricată a tranzacției
-(`Tranzactie_Postari`) rămâne pe `Postare`, `Client`, fără editare, cu
-aceleași patru coordonate (repartitor, partener fiscal, loc, contrapondere),
-ca identificatori. Listele
-vechi de registre au dispărut odată cu entitățile lor (2026-10-07, D9-D6).
-(D9-D9, D9-A12) Pagina proiectează doar
-coloanele vizibile; detaliul rândului se deschide normal. Precondițiile sunt
-verificate de ModelCheck: toate coloanele vizibile sunt mapate sau
-`[Calculated]`, orice coloană de referință are `DefaultProperty` pe clasa
-țintă, mapat sau calculat, niciun controller nu face cast pe selecție și
-nicio regulă Appearance nu atinge un membru nevizibil. `InstantFeedback` și
-`InstantFeedbackView` nu sunt implicite; se activează pe un singur view,
-după o măsurătoare de pagină peste prag și probe în browser. `DataView` nu
-se folosește pe EF Core. (85b, 85d, 85e)
+`ServerView` este opt-in per view, doar pe registre append-only citite;
+pagina proiectează doar coloanele vizibile, iar detaliul rândului se deschide
+normal. Precondițiile sunt verificate de ModelCheck: toate coloanele vizibile
+sunt mapate sau `[Calculated]`, orice coloană de referință are
+`DefaultProperty` pe clasa țintă, mapat sau calculat, niciun controller nu
+face cast pe selecție și nicio regulă Appearance nu atinge un membru
+nevizibil. `InstantFeedback` și `InstantFeedbackView` nu sunt implicite; se
+activează pe un singur view, după o măsurătoare de pagină peste prag și probe
+în browser. `DataView` nu se folosește pe EF Core. (85b, 85d, 85e)
 
 Grilele nested de culegere a liniilor (ListView-urile tipizate puse pe
 `Detalii`) sunt declarate `Client` explicit în `ContaUiBaseline`: o colecție
 server nu vede liniile nesalvate ale documentului și nu acceptă adăugare
 sub grupare. Lookup-urile rămân pe modul forțat de editor. (85c, 85i)
+
+### Lista de evidență a cubului
+
+Singurul view `ServerView` este lista de evidență a cubului,
+`PostareVizual_ListView` de sub „Registre”. `Cub.PostareVizual` e o entitate
+de citire mapată `ToView("PostareVizual")`, fără `BaseObject`, cu cheia `ID`,
+toate coloanele postării și codurile nomenclatoarelor alături (`ContSimbol`,
+`RepartitorCod`, `PartenerFiscalCod`, `LocCod`, `ProdusCod`, `UnitateCod`,
+`DocumentNumar`, `TipTvaCod`, dimensiunile bugetare, `TranzactieFel`);
+view-ul SQL e creat în `InitialCreate`, odată cu tabela, cu `LEFT JOIN` pe
+nomenclatoare — `Repartitori` de trei ori, pentru repartitor, partener fiscal
+și loc — și o expresie pentru unitate (partida = codul repartitorului + data
+deschiderii; lotul = codul produsului + data lotului; fișa = numărul de
+inventar). (D9-A12)
+
+Contraponderea e coloana postării, afișată cu numele enumului (`Tert`,
+`Consum`, `Inventar`, `Transformare`). Coloanele vizibile, în ordine:
+tranzacție, document, data, cont, latură, repartitor, partener fiscal, loc,
+contrapondere, produs, unitate, cantitate, valoare, valoare în valută; fără
+identificatori bruți, fără editare, fără totaluri; detaliul rândului se
+deschide în citire. (S5, C111-Q14)
+
+La activarea listei, `PostareVizualController` cere
+`Cub.Citiri.Vizibilitate.AccesLista` (lipsurile de citire completă pe
+`Postare`, prin `AccesComplet.Lipsuri`): cu lipsuri, criteriul listei e fals
+și se arată fraza porților; nu există drept propriu pe `PostareVizual`.
+Gardianul refuză crearea, modificarea și ștergerea unei `PostareVizual` pe
+orice ușă securizată, ca pe `Postare`; tipul nu e expus pe OData, în OpenAPI
+și în metadata clientului (`neexpunere-cub.py`). (108 d, D9-D9, D9-A12)
+
+`Postare` nu are intrare de navigare; lista imbricată a tranzacției
+(`Tranzactie_Postari`) rămâne pe `Postare`, `Client`, fără editare, cu
+aceleași patru coordonate (repartitor, partener fiscal, loc, contrapondere),
+ca identificatori. Listele de registre dinaintea cubului nu există. (D9-D6,
+D9-D9, D9-A12)
+
+### Selecția și proprietățile afișate
 
 Controllerele rezolvă selecția prin `ObjectSpace.GetObject`, nu prin cast
 pe obiectele selectate. O proprietate afișată într-o listă sau folosită ca
@@ -182,6 +200,8 @@ cu 4 zecimale, „(în culegere)" pe lotul fără dată și preț), deci
 proiectabilă, sortabilă și căutabilă în lookup-ul de lot; eticheta afișată
 de clientul React pe OData este o compunere separată, cu aceeași semantică.
 (85f, 85g)
+
+### Coloana „Tip”
 
 Tipul concret al unui document, al unei linii sau al unui repartitor este
 membrul mapat `ClrType` („Tip”), read-only. Ca orice coloană mapată, se
@@ -200,30 +220,33 @@ declară în `ContaUiBaseline.ColoanaTip`. (89a)
 
 ## Grilele de linii pe roluri în XAF Blazor
 
-Coloanele grilelor de linii nu se declară pe indici, ci pe roluri (106h).
+Coloanele grilelor de linii nu se declară pe indici, ci pe roluri.
 `ContaUiBaseline.LiniiPeRoluri` declară o dată, pe ierarhia `DocumentDetaliu`,
 vocabularul în ordinea de culegere: Directie, Identitate, Provenienta,
 Unitate, Cantitate, Pret, Tva, Valori, AtributeLot, Conturi, Parametri.
 Fiecare tip de linie umple sloturile pe care le poartă cu membrii lui și lasă
 goale (`Drop`) pe cele pe care nu le poartă; un rol al bazei nepurtat se
 ascunde pe grila tipului, iar un membru fără rol vine la coadă, în ordinea
-generată. Rezultatele motorului sunt `ReadOnly` printr-o singură declarație,
+generată. (106h)
+
+Rezultatele motorului sunt `ReadOnly` printr-o singură declarație,
 care blochează coloana grilei și itemul dialogului liniei deopotrivă:
 `Valoare` pe FCT, NIR, FCL, LDI, DEC, DSC și ASM; `Lot` pe FCT și NIR. NTC și
 DVI culeg `Valoare`. Excepțiile pe view (legenda `Valoare în vamă`, o coloană
 ascunsă pe o singură grilă, grila DVI) rămân view-scoped și câștigă în fața
 rolurilor. Lookup-urile nu sunt atinse. Primitiva e Atlas.DXF 26.1.4.10
-(`Columns`/`Slot`/`Drop`, `ReadOnly`; `Views/docs/COLUMN-SLOTS.md`).
-Limita: BCS, BTR și RLF (RDC culege `Valoare`) stau pe grila generică și pe dialogul comun cu
-DVI, deci `Valoare` nu e blocată acolo (106-r6). Tabloul rolurilor per tip:
-`design/format-xaf-documente.md`, axa 2. (106h)
+(`Columns`/`Slot`/`Drop`, `ReadOnly`; `Views/docs/COLUMN-SLOTS.md`). (106h)
+
+Limita: BCS, BTR și RLF (RDC culege `Valoare`) stau pe grila generică și pe
+dialogul comun cu DVI, deci `Valoare` nu e blocată acolo (106-r6). Tabloul
+rolurilor per tip: `design/format-xaf-documente.md`, axa 2. (106h)
 
 ## Ecranele disponibile
 
 | Arie | Conținut |
 |---|---|
 | Documente | Liste pentru FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC, DVI, PIF, CAS și AMO; paginile lor de detaliu și de culegere sunt înghețate, culegerea curentă e în XAF Blazor (104d) |
-| Imobilizări | Fișa ca ecran de nomenclator pe OData, cu panoul „Fișa" (situația la data din URL, parametrii curenți, rândurile registrului) din `GET api/imobilizari/{id}/fisa?laData=`; registrul imobilizărilor la `/imobilizari/registru` din `GET api/imobilizari/registru?laData=`, totaluri de pe server; ambele cer și citirea pe `RegistruImobilizari`. `api/pif`: agregat cules cu lookup de fișă filtrat pe locul primitorului și pe stare, dialogul liniilor de factură de clasă F din `linii-sursa` (plic `{ Candidati, MaiSunt }`, plafon 500, prefill cu restul), parametrii pre-completați pe revizuire din fișă. `api/cas`: antet plus fișele de pe locul predatorului; liniile produse de server. `api/amo`: previzualizare pe an, lună și unitate cu motiv, blocant și cele trei cifre, generare, regenerare cu confirmare, storno (87i, 87j) |
+| Imobilizări | Fișa ca ecran de nomenclator pe OData, cu panoul „Fișa" (situația la data din URL, parametrii curenți, rândurile registrului) din `GET api/imobilizari/{id}/fisa?laData=`; registrul imobilizărilor la `/imobilizari/registru` din `GET api/imobilizari/registru?laData=`, totaluri de pe server; ambele cer citirea completă pe `Postare` ([api](api.md#citirea-completă-și-citirea-filtrată-a-cubului)). `api/pif`: agregat cules cu lookup de fișă filtrat pe locul primitorului și pe stare, dialogul liniilor de factură de clasă F din `linii-sursa` (plic `{ Candidati, MaiSunt }`, plafon 500, prefill cu restul), parametrii pre-completați pe revizuire din fișă. `api/cas`: antet plus fișele de pe locul predatorului; liniile produse de server. `api/amo`: previzualizare pe an, lună și unitate cu motiv, blocant și cele trei cifre, generare, regenerare cu confirmare, storno (87i, 87j) |
 | Declarații vamale | `api/dvi`: agregat cules (antet, linii, `FacturiIds` ca agregat întreg), `facturi-candidate` cu perioadă obligatorie, filtru implicit pe clasa fiscală extra-UE, plicul `{ Candidati, MaiSunt }` cu plafon 500 decis pe interogare și `TipMaterialSugeratId`; cere și citirea pe FCT. Ecranul: lookup TVA filtrat pe `DeImport`, popup de candidați pe luna declarației, totaluri de pe server (86h, 86i) |
 | Trezorerie și relații | Stingere manuală în limitele contractelor, vizualizarea relațiilor și comenzile documentului (57d, 76g) |
 | TVA lunar | Previzualizare și generare ITV, detaliu și comenzile rezultatului (79e) |
@@ -242,6 +265,25 @@ se remontează și nu păstrează starea documentului anterior. Grilele de
 politici pot deschide un formular popup cu grupuri definite de ecran; rândul
 nou primește propuneri vizibile pentru câmpurile al căror gol ar fi refuzat
 de gardian. (58, 79a, 84d, 87g, 87j)
+
+## Limitele implementării
+
+- Cheia cache-ului `byKey` combină proiecțiile de selecție și expandare
+  într-o formă care nu distinge toate combinațiile; o proiecție nouă nu e
+  sigură fără verificarea cheii. (77b)
+- Niciun view XAF Blazor nu folosește `InstantFeedback`/`InstantFeedbackView`;
+  activarea cere o măsurătoare peste prag și probe în browser. (85-r2)
+- O proprietate nemapată care ar ajunge într-o listă XAF e refuzată de
+  ModelCheck. Mărimea paginii grilelor nu e calibrată; `RegulaStoc_ListView`
+  poartă un override `Server` redundant cu opțiunea aplicației. (85-r4, 85-r5)
+- În modul `Server`, navigațiile coloanelor ascunse rămân în interogarea
+  paginii; scoaterea lor din modelul view-ului nu e făcută. Gruparea încarcă
+  primele rânduri ale fiecărui grup, iar `Refresh` execută pagina de două
+  ori. (85-r6, 85-r7, 85-r8, 89)
+- Dialogul de închidere arată constatările ca listă imbricată cu bifă; bifa
+  pe o constatare blocantă e dezactivată prin regulă de aspect, iar
+  autoritatea rămâne serviciul, care refuză blocantele indiferent de ce s-a
+  trimis. (F27-D2)
 
 <!-- gen:decizii -->
 ## Decizii

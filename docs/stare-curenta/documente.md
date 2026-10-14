@@ -59,7 +59,7 @@ Entitățile de domeniu derivă din `EntitateConta` (contractele XAF și cheia
 pe el. Mecanismele tehnice vin din familie: `Editabila` (blocare optimistă),
 `Nomenclator` (`Editabila` + `Activ`), `Politica` (`Editabila`), `Document`
 (`Editabila`, rădăcina TPH) și `RandRegistru` (scris de motor, fără blocare).
-Clasificarea celor 49 de clase e în fișierul deciziei. `ICuCheie` e cheia
+Clasificarea claselor pe familii e în fișierul deciziei. `ICuCheie` e cheia
 comună a entităților proprii și a celor de securitate. (104e)
 
 Nu există ștergere amânată: modelul nu are `GCRecord` și nici filtru global
@@ -88,16 +88,18 @@ identitatea este exclusivă și schema diferă. (16)
 ## Registre și ciclu de viață
 
 Faptele operate stau numai în cub (`Tranzactie`, `Postare`); forma lor e la
-„Cubul persistat". Cele patru tabele de registru vechi nu mai există:
-entitățile, maparea, listele XAF și cazurile gardianului au dispărut atomic
-la 2026-10-07 (TR-D9a, pasul 7, D9-D6), iar numele lor sunt interzise în
-sursă (D9-D7 b). Cubul se scrie numai prin motor și nu se editează prin
-CRUD; o postare existentă nu se rescrie (`POSTARE_MODIFICATA`, la salvare, pe
-orice ușă). Efectele proprii ale unei frunze la comenzile de stare — starea
-fișei de imobilizare și refuzurile ei de dependență — trec prin
+„Cubul persistat". Tabelele de registru dinaintea cubului nu există în model
+(entități, mapare, liste XAF, cazuri de gardian), iar numele lor sunt
+interzise în sursă. (D9-D6, D9-D7 b)
+
+Cubul se scrie numai prin motor și nu se editează prin CRUD; o postare
+existentă nu se rescrie (`POSTARE_MODIFICATA`, la salvare, pe orice ușă).
+Efectele proprii ale unei frunze la comenzile de stare — starea fișei de
+imobilizare și refuzurile ei de dependență — trec prin
 `IDocumentCuEfecteProprii` (`LaOperare`, `LaAnulare`, `LaStornare`), chemat de
 motor prin interfață; dependențele dintre faptele aceleiași fișe le refuză
 tipul, nu motorul. (87c, D9-D2, D9-A5, D9-A6)
+
 Un fapt operat se citește cu valorile și coordonatele deja rezolvate.
 Excepția scrierii directe pentru migrare este deschiderea contabilă/de stoc,
 marcată prin `DocumentId = null`; rândurile ei sunt brute per (cont, latură),
@@ -108,7 +110,7 @@ Stările sunt `Draft`, `Operat` și `Stornat`. Documentul și liniile sale sunt
 editabile în Draft. Starea originală din persistență este autoritatea
 gardianului de editare; un formular vechi nu redeschide dreptul de scriere. (14, 55a)
 
-### Regimul pe stare (106)
+### Regimul pe stare
 
 Editabilitatea și comenzile disponibile ale unui document au o singură
 sursă: `Api/RegimDocument.Calculeaza`, în coaja comenzii. Regimul e onest:
@@ -152,7 +154,7 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
   păstrează data documentului; perioada în care faptul
   se declară este o coordonată separată pe rândul fiscal, decisă de politică
   atunci când perioada faptului e închisă. Regulile ei sunt în
-  [politici](politici.md). (F27-D4, F27-D5)
+  [tva](tva.md#perioada-de-declarare-și-corecțiile). (F27-D4, F27-D5)
 - Gardianul de perioadă întreabă despre perioada datei înregistrării, la
   operare și la anulare. Un document cu data fizică într-o perioadă închisă și
   data înregistrării în cea deschisă se operează: documentul întârziat este
@@ -206,7 +208,7 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
   plății ei, fiindcă împerecherea automată nu poate fi datată sub înregistrarea
   vreunuia dintre documente. (review advers F27, 3e)
 
-### Culegerea draftului (104c)
+### Culegerea draftului
 
 Culegerea are o singură sursă, `Culegere/CulegereDocument` (L3). Controllerul
 XAF (`CulegereDocumentController`, geamănul pe linie) și `Api/*Apply` sunt
@@ -352,7 +354,8 @@ Stornoul și anularea urmăresc postările existente ale documentului.
   nu se corectează deloc.
 - Perioada închisă nu se atinge: storno-ul și documentul nou trăiesc în
   fereastra deschisă, iar snapshot-ul perioadei rămâne cel de la închidere.
-  Efectul FISCAL al motivului e în `politici.md`.
+  Efectul FISCAL al motivului e în
+  [tva](tva.md#perioada-de-declarare-și-corecțiile).
 - Comanda: `Motor/CorectieService.cs`, prin `Api/ComenziDocument.Corecteaza`;
   ușile sunt `POST api/documente/{id}/corecteaza` și acțiunea XAF
   „Corectează" de pe orice DetailView de document.
@@ -370,7 +373,7 @@ Stornoul și anularea urmăresc postările existente ale documentului.
 | LDI — diferențe inventar | Direcție explicită Plus/Minus, culegere pozitivă, semn la materializare. Plusul naște lot pe gestiunea predatorului; minusul cere lot existent, străin de document. Primitorul are calitatea Comisie. Declarant pe cub pentru Magazie/Marfuri/Folosinta: plus contra Inventar, minus contra Consum, contraponderi fără unitate. Folosinta păstrează gestiunea reală pe lanțul FCT/NIR/BTR/BCS/LDI; Custodie explicit neacoperită. (093) (28a, 28d, 63, LDI-B1…B3) |
 | PLT / INC — plată / încasare | Valoarea se culege pe linii ca defalcare. Contarea se rezolvă din laturi. PLT: cont propriu → beneficiar; INC: plătitor → cont propriu. Pot exprima și picioarele unui virament intern. (31a, 31c, 64) |
 | DEC — decont | Angajat → repartitor intern, fără stoc. Contractul permite cont și repartitor explicite pe linie. Cantitatea pro-formă zero se normalizează la unu. (32a, 32b, 32d) |
-| NTC — notă contabilă | Postare explicită. Poate stinge manual pe contrapartidă și sens; nu se înscrie implicit în stingerea automată a sursei. ITV nu este editabil prin această felie. (46b, 79c, 82a) |
+| NTC — notă contabilă | Postare explicită. Poate stinge manual pe contrapartidă și sens; nu se înscrie implicit în stingerea automată a sursei. ITV nu trece prin ușa NTC (listă, citire, comenzi). (46b, 79c, 82a) |
 | ITV — închidere TVA | Rezultatul serviciului lunar, cu conturi din politică. Nu se culege ca agregat liber și nu închide perioada fiscală. (46c, 79a) |
 | DVI — declarație vamală de import | Linii pe detaliul de bază: valoarea în vamă ca bază, taxa declarată (0 = din cotă la operare). Nu postează valoarea și nu mișcă stocul; postează doar taxa din politica TVA (4426 contra contului implicit al predatorului — biroul vamal/comisionarul — sau 4426 = 4427 la amânarea plății). MRN cules, fără numerotare. Legătura n→m cu facturile de import este evidență, doar în Draft, prin agregat. Nu este document stins: taxa se plătește ca orice taxă, fără împerechere. (86a, 86b, 86e, 86g) |
 | ASM — asamblare/dezasamblare | Transformare n→m cu linii de produs și consum. Gardul valoric e ΣP = ΣC: produsele culese contra consumului evaluat pe cub (`ASAMBLARE_NEBALANSATA`, cu ambele sume). Grupurile pe cont cu P = C intră în Transfer, restul în Operare, cu contraponderi cantitative Transformare; nu există absorbție. `DistribuieValoarea` aduce produsele la consumul evaluat de declarant pe operandul draftului (D9-D3). Nu consumă un lot produs de același document. (46d, ASM-B2…B7) |
