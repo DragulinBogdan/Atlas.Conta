@@ -1,4 +1,8 @@
+using System.ComponentModel;
 using System.Reflection;
+using DevExpress.Data.Filtering;
+using DevExpress.Data.Filtering.Helpers;
+using DevExpress.ExpressApp.ConditionalAppearance;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.UI;
 using Atlas.DXF.Core.Views.Discovery;
@@ -67,7 +71,7 @@ static class ProbeLinii {
         }
         Console.WriteLine($"     MĂSURAT (106h-2/{eticheta}): blocate [{string.Join(", ", blocate)}]; abateri [{string.Join("; ", abateriBlocaj)}].");
         check($"106h-2 ({eticheta}) fiecare membru declarat `ReadOnly` e blocat pe grilă ȘI pe dialogul liniei",
-            blocate.Count >= 8 && abateriBlocaj.Count == 0);
+            blocate.Count >= 7 && abateriBlocaj.Count == 0);
 
         var abateriRezultat = new List<string>();
         var rezultate = new List<string>();
@@ -87,13 +91,25 @@ static class ProbeLinii {
             }
             if (registry.ReadOnlyMembersFor(det).Contains(nameof(DocumentDetaliu.Valoare)))
                 rezultate.Add($"{tip.Name}/{det.Name}");
+            else if (BlocataConditionat(document, det))
+                rezultate.Add($"{tip.Name}/{det.Name} (condiționat)");
             else
                 abateriRezultat.Add($"{tip.Name}/{det.Name}");
         }
         Console.WriteLine($"     MĂSURAT (106h-3/{eticheta}): `Valoare` calculată și blocată pe [{string.Join(", ", rezultate)}]; "
             + $"neblocată [{string.Join(", ", abateriRezultat)}]; pe grila generică, fără blocaj (106-r6): [{string.Join(", ", peGrilaGenerica)}].");
         check($"106h-3 ({eticheta}) pe fiecare tip cu detaliu propriu care calculează `Valoare` (BazaLinie suprascris, "
-            + "`Valoare` nu e intrare), `Valoare` e declarată `ReadOnly`",
+            + "`Valoare` nu e intrare), `Valoare` e declarată `ReadOnly` sau o regulă `[Appearance]` o blochează pe linia calculată",
             rezultate.Count >= 6 && abateriRezultat.Count == 0);
+    }
+
+    // CV-D1: valoarea liniei se culege numai pe felul de linie pe care `BazaLinie` nu o calculează.
+    static bool BlocataConditionat(Document document, Type det) {
+        var reguli = det.GetCustomAttributes<AppearanceAttribute>(inherit: true)
+            .Where(a => a.Enabled == false && (a.TargetItems ?? "").Split(';').Contains(nameof(DocumentDetaliu.Valoare)))
+            .ToList();
+        var linie = (DocumentDetaliu)Activator.CreateInstance(det)!;
+        return reguli.Count > 0 && document.BazaLinie(null, linie) != null
+            && reguli.Any(r => new ExpressionEvaluator(TypeDescriptor.GetProperties(det), CriteriaOperator.Parse(r.Criteria)).Fit(linie));
     }
 }

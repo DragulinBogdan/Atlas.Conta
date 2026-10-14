@@ -513,7 +513,9 @@ fiecare grilă tipizată de linii începe cu coloanele rolurilor în ordinea
 vocabularului și ascunde rolurile nepurtate; fiecare membru `ReadOnly` e
 blocat pe grilă și pe dialogul liniei; pe fiecare tip cu detaliu propriu care
 calculează `Valoare` (`BazaLinie` suprascris, `Valoare` nu e intrare),
-`Valoare` e `ReadOnly`. (106h-1…3)
+`Valoare` e `ReadOnly` sau o regulă `[Appearance]` o dezactivează pe linia
+pe care `BazaLinie` o calculează (FCT: linia obișnuită; linia de corecție o
+culege, CV-D1). (106h-1…3)
 
 ## Nucleul pur
 

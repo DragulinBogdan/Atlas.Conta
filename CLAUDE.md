@@ -122,8 +122,9 @@ felie care atinge aria). Tot pe guvernanță
 rămân 118-r1 la `/docs-curatenie` și `build` din 118-r2. Pe motor, felia
 deschisă e [TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md)
 (decizia 119), adică etapa E1 (F-CVL-01…06): pasul 3, mecanismul pe FCT, e
-în main (PR #41); urmează pasul 4 (cititorii, explicația, culegerea XAF,
-`WriteDto` și DTO), apoi pasul 5 (regresie și review advers). Unde suntem,
+în main (PR #41); pasul 4 (explicația în DTO, culegerea XAF și API,
+cititorii) e implementat pe branch-ul `tr-d9b-cv-pas4`; urmează pasul 5
+(regresie și review advers). Unde suntem,
 cu cifre: [docs/stare.md](docs/stare.md); cronologia:
 `docs/decizii/istoric-plan-de-lucru.md`.
 
