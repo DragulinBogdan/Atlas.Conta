@@ -286,7 +286,10 @@ Owner-ul a cerut închiderea delimitării: forma compensării (R1),
 predicatele (R3) și explicația (CV-D8). Verificarea este citire de cod pe
 `main` la `d0f7a2f3`, fără rulare. Textul normativ este în contract
 (CV-D1, CV-D8, CV-D10). Tranșările de mai jos schimbă propunerea și sunt
-ale reviziei; owner-ul le poate întoarce înaintea închiderii pasului 3.
+ale reviziei; owner-ul le-a acceptat pe toate la 2026-10-14, cu
+recomandările din raportul pasului 3: R8-4 decizie și pentru cota zero,
+R8-9 anul calendaristic ca gard provizoriu până la CV-r2, R8-10 ordinea
+scrierii, R8-12 eligibilitatea pe forma faptelor.
 
 Perimetrul, „punctul 3” al review-ului, a fost hotărât separat de owner în
 aceeași zi: corecția taxabilă refuzată, factura mixtă refuzată,

@@ -580,7 +580,7 @@ Comenzi executate din rădăcină:
   ambele profiluri; `run-verificari/20261014-005221-824/rezultat.json`.
   Prima rulare a picat pe SC-REGIM-13: oglinda gardurilor în regimul pe
   stare adaugă o citire. Plafoanele au crescut de la 10 și 12 la 11 și 13
-  instrucțiuni SQL, cost de confirmat de owner (106f).
+  instrucțiuni SQL, cost confirmat de owner la 2026-10-14 (106f).
 - Concurența și partidele (SC-CVL-21…24, 29), adăugate după integrală:
   `-Tip CVL` verde pe privat (`run-verificari/20261014-083922-101`) și pe
   bugetar (`run-verificari/20261014-084012-398`); `-Tip X` verde pe ambele
