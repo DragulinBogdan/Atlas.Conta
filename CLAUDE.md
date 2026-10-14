@@ -45,6 +45,7 @@ identificatorul între paranteze (`(42b)`, `(76-r1)`).
 | Întrebarea | Unde |
 |---|---|
 | Ce trebuie să rămână adevărat | `docs/invarianti.md` (6 invarianți, 2026-08-02) |
+| De ce există proiectul (ținte, etapa curentă); ce promite, rând cu rând | [docs/scop.md](docs/scop.md); [docs/functionalitati.md](docs/functionalitati.md) (2026-10-14) |
 | Unde suntem acum, cu cifre (generat) | [docs/stare.md](docs/stare.md); lista fișierelor în [docs/README.md](docs/README.md) |
 | Regulile și acoperirea curentă, pe responsabilități | [docs/stare-curenta/README.md](docs/stare-curenta/README.md) → domeniu-si-operare, politici-si-fiscalitate, api-si-client, dezvoltare-si-validare, limite-curente, termeni (glosarul) |
 | Regula durabilă a deciziei N („decizia 42c") | `docs/decizii/042-*.md`, secțiunea „Regula durabilă", sub-punctul (c); antetul spune dacă e activă/amendată/depășită; indexul cu stări în `docs/decizii/README.md` |

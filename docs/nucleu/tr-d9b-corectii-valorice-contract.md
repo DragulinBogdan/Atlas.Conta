@@ -3,6 +3,8 @@
 - Tip: contract
 - Data: 2026-10-12
 - Trigger: owner, continuarea după originea partidei; inventar și așteptări înainte de implementare
+- Livrează: F-CVL-01…06 (etapa E1 din [scop](../scop.md))
+- Arii: domeniu-si-operare, politici-si-fiscalitate, api-si-client, dezvoltare-si-validare
 - Decizii: 088 (h, amendată de 103), 090, 091, 103, 104, 110, 111, 118, 119
 - Stare: deschis
 

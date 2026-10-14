@@ -3,24 +3,29 @@
 Harta întrebare → unde stă în [CLAUDE.md](../CLAUDE.md), „Harta surselor de adevăr”.
 Stratul curent: invarianții, `stare-curenta/`, deciziile din afara `arhiva/`, registrul
 restanțelor, contractele deschise, cataloagele vii, `stare.md`. Restul e jurnal.
+Scopul (ținte, non-ținte, structura, etapa curentă) e în [scop.md](scop.md);
+ce promite produsul, rând cu rând, în [catalogul funcționalităților](functionalitati.md).
 Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a fiecărui fișier.
 
 <!-- gen:fisiere -->
-### `docs/` (5)
+### `docs/` (7)
 
 - [Documentația — lista fișierelor](README.md)
 - [Sesiune de arhitectură 28.07.2026 — fluxul comenzilor online (rezervare, picking, PO furnizori)](architecture-notes-2026-07-28.md)
+- [Catalogul funcționalităților](functionalitati.md)
 - [GATE XAF — contractul feliei (decizia 44.2)](gate-xaf-contract.md)
 - [Invarianții Atlas.Conta](invarianti.md)
+- [Scopul Atlas.Conta](scop.md)
 - [Unde suntem](stare.md)
 
-### `docs/analize/` (5)
+### `docs/analize/` (6)
 
 - [111(f) — contractele conceptuale ale operațiilor procedurale](analize/2026-10-11-111f-contracte-operatii.md)
 - [111(f) — reluarea discuției despre fapte tipizate și proiecții persistate](analize/2026-10-11-111f-registre-tipate-reluare.md)
 - [111(f) — scenariu numeric pentru atribuiri, limite și istoric procedural](analize/2026-10-11-111f-scenariu-numeric.md)
 - [111(f) — Q3: proveniența sumelor; Q4: limitele primei felii](analize/2026-10-12-111f-q3-q4-provenienta-si-limite.md)
 - [TR-D9b — reluarea pe privat și primul pas: originea partidei](analize/2026-10-12-tr-d9b-reluare-privat.md)
+- [Spargerea ariilor stării curente](analize/2026-10-14-spargerea-ariilor.md)
 
 ### `docs/api/` (38)
 
