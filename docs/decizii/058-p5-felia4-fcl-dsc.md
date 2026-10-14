@@ -2,7 +2,7 @@
 
 - Data: 2026-08-09
 - Stare: activă
-- Arii: api-si-client
+- Arii: documente, ecrane
 - Docs: docs/api/p5-felia-fcl-contract.md
 
 ## Regula durabilă

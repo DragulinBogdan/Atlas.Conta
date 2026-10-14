@@ -524,8 +524,8 @@ referință; (g) un `Check` existent al ModelCheck cade.
    instanțe de `Rotunjire`; `NumaratorSql` pe FCT cu 50 de linii; forma —
    e mai simplă decât hook-urile pe care le înlocuiește? (verdict explicit).
    Fix-urile le aplică main.
-7. **Docs (main)**: `stare-curenta/domeniu-si-operare.md` (secțiunea
-   nucleului: declaranții, operandul, ce probează), `dezvoltare-si-validare.md`
+7. **Docs (main)**: `stare-curenta/motor.md` (secțiunea
+   nucleului: declaranții, operandul, ce probează), `verificare.md`
    (probele NUC-*, cum se citește un diff), `restante.md` (N-r2/r3/r4
    închise sau amendate + ce scoate review-ul), `istoric-plan-de-lucru.md`,
    `nucleu-transfer.md` Stare, CLAUDE.md §Stare/§Următorul pas (TR-D7),

@@ -2,7 +2,7 @@
 
 - Data: 2026-07-22
 - Stare: activă
-- Arii: dezvoltare-si-validare, domeniu-si-operare
+- Arii: documente, verificare
 
 ## Regula durabilă
 

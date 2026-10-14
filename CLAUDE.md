@@ -47,7 +47,7 @@ identificatorul între paranteze (`(42b)`, `(76-r1)`).
 | Ce trebuie să rămână adevărat | `docs/invarianti.md` (6 invarianți, 2026-08-02) |
 | De ce există proiectul (ținte, etapa curentă); ce promite, rând cu rând | [docs/scop.md](docs/scop.md); [docs/functionalitati.md](docs/functionalitati.md) (2026-10-14) |
 | Unde suntem acum, cu cifre (generat) | [docs/stare.md](docs/stare.md); lista fișierelor în [docs/README.md](docs/README.md) |
-| Regulile și acoperirea curentă, pe responsabilități | [docs/stare-curenta/README.md](docs/stare-curenta/README.md) → domeniu-si-operare, politici-si-fiscalitate, api-si-client, dezvoltare-si-validare, limite-curente, termeni (glosarul) |
+| Regulile și acoperirea curentă, pe responsabilități | [docs/stare-curenta/README.md](docs/stare-curenta/README.md) → 16 arii (documente, motor, stoc, partide, imobilizari, perioade, politici, tva, saft, raportare, nomenclatoare, api, ecrane, dezvoltare, verificare, import; 121) + limite-curente, termeni (glosarul) |
 | Regula durabilă a deciziei N („decizia 42c") | `docs/decizii/042-*.md`, secțiunea „Regula durabilă", sub-punctul (c); antetul spune dacă e activă/amendată/depășită; indexul cu stări în `docs/decizii/README.md` |
 | De ce e așa (context, tranșări, review) | același fișier, sub „Regula durabilă" |
 | Restanțele și amânările cu nume (backlog) | `docs/decizii/restante.md` (id → decizie; starea deschisă/închisă) |
@@ -171,7 +171,7 @@ Postgres cer cast explicit (`partattrs` e `int2vector` de la 0, `conkey` e
 rularea. O bază care nu corespunde codului se recreează, nu se repară (102b).
 ModelCheck și Import1C rulează pe Postgres-ul nativ de pe gazdă (5446,
 serviciu Windows), cu gazda `127.0.0.1` în șirul de conexiune; hosturile rămân
-pe container (5444): `docs/stare-curenta/dezvoltare-si-validare.md`.
+pe container (5444): `docs/stare-curenta/dezvoltare.md`.
 
 ## Reguli de lucru comune (Claude Code și Codex)
 

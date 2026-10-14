@@ -1,6 +1,6 @@
 # Atlas.Conta — starea curentă și regulile aplicabile
 
-**Actualizat: 2026-10-14.** Referința este implementarea din workspace,
+**Actualizat: 2026-10-15.** Referința este implementarea din workspace,
 inclusiv modificările locale. Documentele descriu regulile în forma lor
 actuală, organizate pe responsabilități.
 
@@ -19,12 +19,24 @@ oprirea feliei, în contractul ei; acoperirea, în catalog.
 
 | Document | Conținut |
 |---|---|
-| [Domeniu și operare](domeniu-si-operare.md) | Modelul documentelor, registre, dimensiuni, stoc, corecții, relații și particularitățile tipurilor |
-| [Politici și fiscalitate](politici-si-fiscalitate.md) | Configurare, implicite, proveniență, TVA, închidere lunară, raportare, ANAF și SAF-T |
-| [API și client](api-si-client.md) | Contracte REST/OData, securitate, audit, formulare, cache, căutare și ecranele disponibile |
-| [Dezvoltare și validare](dezvoltare-si-validare.md) | Organizarea codului, persistență, seed, codegen, verificări și import |
-| [Limite curente](limite-curente.md) | Funcționalități neacoperite și limite ale mecanismelor implementate |
-| [Termeni](termeni.md) | Glosarul: termeni de domeniu, termeni tehnici, cum se citesc identificatorii |
+| [Documente](documente.md) | Modelul comun, ciclul de viață (culegere, operare, anulare, storno, corecție), data înregistrării, tipurile și documentele generate |
+| [Motorul de postare](motor.md) | Declarația fluxului, contarea și dimensiunile, coordonatele, cubul persistat, scrierea serială, precizia |
+| [Stoc](stoc.md) | Loturi, FIFO, recepția și diferențele ei, transformarea, inventarul, corecția valorii lotului |
+| [Partide și stingere](partide.md) | Partidele deschise, stingerea, împerecherea, nominalizarea, decontul |
+| [Imobilizări](imobilizari.md) | Fișa, punerea în funcțiune, amortizarea contabilă și fiscală, ieșirea |
+| [Perioade](perioade.md) | Perioada fiscală ca lanț, închiderea, soldurile materializate |
+| [Politici](politici.md) | Configurarea profilului, implicitele, proveniența, explicarea configurației |
+| [TVA și declarații](tva.md) | TVA la operare, implicitele TVA, închiderea lunară, D300 și D394, citirea fiscală |
+| [SAF-T](saft.md) | D406, profilurile L și S |
+| [Raportare](raportare.md) | Proiecțiile contabile și de stoc, soldul pe parteneri, explicația deciziei |
+| [Nomenclatoare și ANAF](nomenclatoare.md) | Societatea, partenerii, produsele, sincronizarea ANAF |
+| [API](api.md) | Salvare și comenzi, securitate și refuzuri, OData, audit, contracte generate |
+| [Ecrane](ecrane.md) | XAF Blazor (liste, grile, regim) și React (formulare, selectoare, cache) |
+| [Dezvoltare](dezvoltare.md) | Organizarea sursei, model și persistență, migrații, codegen, build |
+| [Verificare](verificare.md) | ModelCheck, scenariile, probele, documentația |
+| [Import și migrare](import.md) | Import1C, reconcilierea cu legacy |
+| [Limite curente](limite-curente.md) | Funcționalități neacoperite și limite ale mecanismelor implementate (transversală) |
+| [Termeni](termeni.md) | Glosarul: termeni de domeniu, termeni tehnici, cum se citesc identificatorii (transversală) |
 
 ## Produsul
 
@@ -80,7 +92,7 @@ stă în [catalogul funcționalităților](../functionalitati.md).
 
 Existența unei rute nu înseamnă CRUD complet: DSC se generează din factură,
 iar ITV și AMO din comanda lunară. Particularitățile fiecărui tip sunt descrise în
-[domeniu și operare](domeniu-si-operare.md). Acoperirea formularelor fiscale
+[documente](documente.md). Acoperirea formularelor fiscale
 și modulele absente sunt precizate în [limitele curente](limite-curente.md).
 
 ## Întreținerea acestor pagini

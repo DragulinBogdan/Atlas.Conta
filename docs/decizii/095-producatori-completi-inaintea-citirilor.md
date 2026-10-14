@@ -3,7 +3,7 @@
 - Data: 2026-09-24
 - Stare: activă
 - Execuție: aprobată de owner, activă
-- Arii: domeniu-si-operare, limite-curente
+- Arii: documente, partide, imobilizari, limite-curente
 - Docs: `docs/nucleu/tr-d8-citiri-contract.md`, D8-B2; 090(c/k/l), 091.
 
 ## Regula durabilă

@@ -3,7 +3,7 @@
 - Data: 2026-09-26
 - Stare: amendată de 106
 - Execuție: amendează 042(b)(e), 043 (aria React) și 083(a)(j) (mecanismul, prin (i)); depășește constatarea 60a și F13-D2 (070) privind ștergerea amânată
-- Arii: README, api-si-client, dezvoltare-si-validare, domeniu-si-operare, limite-curente
+- Arii: documente, dezvoltare, api, perioade, politici, ecrane, verificare, motor, raportare, README, limite-curente
 - Amendează: 42 (b, e), 43, 83 (a, j)
 - Docs: acest fișier (regula + pașii feliei C104); `docs/stare-curenta/` se actualizează la fiecare pas, odată cu codul
 
@@ -237,7 +237,7 @@ verificări, `run-verificari/20260927-172209-149`), cu probele structurale
 Blazor, operarea unui draft fără linii dă refuzul de domeniu, iar `Cititor`
 primește „Nu aveți dreptul de a modifica „NIR””. Driftul openapi: zero.
 Matricea generală `refuzuri.ps1` nu rulează pe bazele recreate la C102
-(nu are subiecte); limita e cea din `stare-curenta/dezvoltare-si-validare.md` (104-r5).
+(nu are subiecte); limita e cea din `stare-curenta/dezvoltare.md` (104-r5).
 
 **Pasul 3 — culegerea unică (c).**
 - Inventariezi căile de precompletare și recalcul din XAF față de cele din
@@ -331,7 +331,7 @@ Proba:
   `DataPrimire` goală. Un TVA manual pe o linie scutită e refuzat cu
   mesajul de domeniu.
 
-**Pasul 4 — aria React (d).** Actualizezi `stare-curenta/api-si-client.md`,
+**Pasul 4 — aria React (d).** Actualizezi `stare-curenta/ecrane.md`,
 `docs/api/lista-react.md` și principiile din `CLAUDE.md` (straturile,
 culegerea în XAF). Paginile de detaliu pentru documente se marchează înghețate.
 

@@ -2,7 +2,7 @@
 
 - Data: 2026-08-06
 - Stare: activă
-- Arii: domeniu-si-operare
+- Arii: documente, motor
 - Docs: docs/invarianti.md, docs/dim/dim-2-inventar.md
 
 ## Regula durabilă

@@ -3,7 +3,7 @@
 - Data: 2026-09-13
 - Stare: activă
 - Execuție: (închide 83-r4; amendează 83g — poarta spre DVI e deschisă; DVI-D4/D9 din contract amendate la pasul 1)
-- Arii: api-si-client, domeniu-si-operare, politici-si-fiscalitate
+- Arii: documente, tva, partide, ecrane
 - Amendează: 83 (g)
 - Închide: 83-r4
 - Docs: `docs/api/p5-felia25-dvi-contract.md` (DVI-D1…D10 + §Închidere), `nou/.../Module/BusinessObjects/Documente/Dvi.cs` (`Dvi`, `DviFactura`), `nou/.../Module/BusinessObjects/Comun/Interfete.cs` (`IVerificabilLaCommit`), `nou/.../Module/Motor/GardianEditare.cs` (dispecerul), `nou/.../Module/DatabaseUpdate/ProfilPrivat.cs` (tipurile de import, politica DVI), `nou/.../Module/Api/Dvi/`, `nou/.../WebApi/API/Conta/DviController.cs`, `nou/Atlas.Conta.Client/src/felii/dvi/`, `nou/tools/ModelCheck/Program.cs` (`E2E-DVI`, `E2E-API-DVI`), `nou/tools/ProbeHttp/refuzuri.ps1`, migrația `20260912193852_F25Dvi`

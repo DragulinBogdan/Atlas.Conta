@@ -3,7 +3,7 @@
 - Data: 2026-09-01
 - Stare: amendată de 80
 - Execuție: (b amendată de 80e: cifrele motorului cer și dreptul de citire pe `RegistruContabil`; c amendată de 80b: comenzile NTC pe un id ITV nu mai sunt permise — 404 pe toată ușa NTC; 79-r6 închisă de 80; 79-r1 închisă la 2026-09-02 — acțiunea XAF „Generează închiderea", vezi restanța)
-- Arii: api-si-client, politici-si-fiscalitate
+- Arii: tva, documente, ecrane
 - Docs: `docs/api/p5-felia-itv-contract.md` (F21-D1…D12 + §Închidere cu cifrele HTTP), `nou/.../Module/Motor/InchidereTvaService.cs`, `nou/.../Module/Api/Itv/`, `nou/.../WebApi/API/Conta/ItvController.cs`, `nou/Atlas.Conta.Client/src/felii/itv/`; probele în `nou/tools/ModelCheck/Program.cs` (blocul `E2E-API-ITV`)
 
 ## Regula durabilă

@@ -3,7 +3,7 @@
 - Data: 2026-09-25
 - Stare: amendată de 102
 - Execuție: aprobată de owner, activă; amendează 096(b); refuzul istoricului din (b) depășit de 102
-- Arii: domeniu-si-operare
+- Arii: partide
 - Amendează: 96 (b)
 - Docs: `docs/nucleu/tr-d8-citiri-contract.md` D8-B6; 090(d), 092, 096.
 

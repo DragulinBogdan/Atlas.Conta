@@ -111,7 +111,7 @@ restul PLT ajunge la 0. Scenariul acoperă și varianta cu NTC ca stingător.
 existente (`\l` pe Postgres): ModelCheck, clonele Privat, import, CodexBCS,
 clonele de perf. Owner-ul confirmă lista înaintea oricărui `DROP`. Rețeta
 (drop, `database update`, seed, import prin comenzi unde e cazul) se scrie
-în `stare-curenta/dezvoltare-si-validare.md` și se rulează.
+în `stare-curenta/dezvoltare.md` și se rulează.
 
 **C-D10. Documentele (102-r2).** În același commit cu codul pe care îl
 descriu se actualizează:
@@ -224,7 +224,7 @@ precizare editorială (DEFAULT-urile, corectate mai sus).
 **R1:** `INV-CUB` rula după purja scenelor, deci pe o bază goală. Acum
 rulează pe faptele fiecărei scene, înaintea purjei, cu mutanți care produc
 refuzul pe fiecare ramură fără probă proprie (detaliul în
-`stare-curenta/dezvoltare-si-validare.md`). Proba a scos trei totaluri de
+`stare-curenta/verificare.md`). Proba a scos trei totaluri de
 stins care nu corespundeau cubului, toate de dinainte de C102. Owner-ul a
 ales scrierea antetului din cub:
 

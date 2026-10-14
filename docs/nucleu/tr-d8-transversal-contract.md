@@ -107,7 +107,7 @@ prin apartenența la o clasă; `LoturiCulegereService` sau `CorectieService`
 intră cu metoda care scrie/culege din registru, iar orice altă citire a lor
 rămâne încălcare. Lista finală este „lista nominală a
 consumatorilor portați" cerută de D8-B5 și se copiază în
-`stare-curenta/dezvoltare-si-validare.md`. Regula N-r8 se probează pe fiecare
+`stare-curenta/verificare.md`. Regula N-r8 se probează pe fiecare
 cititor comun: `Contabil` exclude `Transfer` și inversa lui, `Loturi` și
 `Partide` le includ, niciun consumator nu refiltrează.
 
@@ -441,7 +441,7 @@ Livrat: `tools/ModelCheck/ProbeCititoriRegistre.cs` + `.Lista.cs` (proba
 `X-D2`), `ProbeTransferCititori.cs` (proba `N-r8`), `SursaProductie.cs`
 (arborii sintactici ai sursei de producție), SC-CIT-100…102 și modul
 `ModelCheck --probe-sursa [--lista]`. Regula, lista nominală și limitele
-probei stau în `stare-curenta/dezvoltare-si-validare.md` și
+probei stau în `stare-curenta/verificare.md` și
 `limite-curente.md`.
 
 Ce a arătat prima rulare (87 de utilizări fișier × membru × registru în 291
@@ -504,7 +504,7 @@ Livrat: `ValoareDeclarata` în nucleu; `Cub/Explicatie.cs` (forma versionată
 `Api/AccesComplet.cs`; `DECLARATIE_INVALIDA` în `Contractare`; scena
 `ScenariiExplicatii`, SC-CIT-96…99, șapte mutanți `INV-CUB-EXPLICATIE-*` și
 proba HTTP `ProbeHttp/explicatii.py`. Regula stă în
-`stare-curenta/domeniu-si-operare.md` și `api-si-client.md`, limitele în
+`stare-curenta/raportare.md`, limitele în
 `limite-curente.md`.
 
 Ce a arătat implementarea și cum amendează X-D4:
@@ -561,7 +561,7 @@ deschidere și pe stingerea ei; `Pozitie` atribuită sub blocaj, în tranzacția
 salvării (`BackOfficeEFCoreDbContext.SaveChanges`); proba pe sursă `X-D6`
 (`tools/ModelCheck/ProbeBlocajScriere.cs`) și scena `ScenariiConcurenta`
 (SC-X-15…SC-X-23, `--scenarii X`). Regula stă în
-`stare-curenta/domeniu-si-operare.md` („Scrierea serială per bază”),
+`stare-curenta/motor.md` („Scrierea serială per bază”),
 limitele în `limite-curente.md`. S-r9 și F27-r8 închise.
 
 Ce a arătat implementarea și cum amendează X-D6:
@@ -636,8 +636,8 @@ Livrat: `Loturi.VerificaAcoperire` (`CITIRE_ISTORIC_STOC_INCOMPLET`) în
 (`POSTEAZA_IN_CUB_IREVERSIBIL`) și de seed; refuzul `IMPERECHERE_FARA_EFECT`
 pe ramura negativă a desfacerii; `FaraContrapondere` în
 `Imobilizari.PozitiiFaraFisa`; mutanții `IMO-ORIGINE` și `IMO-SUPORT`;
-SC-CIT-103…109. Regulile stau în `stare-curenta/domeniu-si-operare.md` și
-`dezvoltare-si-validare.md`, limitele în `limite-curente.md`. T-r14, N-r8,
+SC-CIT-103…109. Regulile stau în `stare-curenta/motor.md` și
+`verificare.md`, limitele în `limite-curente.md`. T-r14, N-r8,
 097-r1 și 102-r4 sunt închise.
 
 Ce a arătat implementarea și cum amendează X-D7:

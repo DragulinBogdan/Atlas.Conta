@@ -2,7 +2,7 @@
 
 - Data: 2026-07-25
 - Stare: activă
-- Arii: dezvoltare-si-validare, domeniu-si-operare
+- Arii: import, motor, partide
 - Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă

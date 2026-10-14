@@ -38,7 +38,7 @@ rămân, ca linie de bază a pasului 1. Pe privat: `INV-CUB` pe 57 de scene,
 ## Amprentele
 
 `ModelCheck --amprente Atlas.Conta.Import1C.Flax.C111P0 2025 1 <director>`
-(`docs/stare-curenta/dezvoltare-si-validare.md`).
+(`docs/stare-curenta/verificare.md`).
 
 | Secțiune | Rânduri | SHA-256 |
 |---|---|---|

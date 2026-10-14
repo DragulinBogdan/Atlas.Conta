@@ -3,7 +3,7 @@
 - Data: 2026-08-27
 - Stare: amendată de 105
 - Execuție: amendată de 105 (2026-09-30) (închide 73-r1; amendează 73f/g cu faptele profilului `C`)
-- Arii: politici-si-fiscalitate
+- Arii: saft, perioade
 - Amendează: 73 (f)
 - Docs: docs/api/p5-felia-saft-s-contract.md (explorarea XSD/nomenclator/ ghid/validator, D17-D1…D4 + amendamentele pașilor 1 și 3, riscurile 1–10, V1–V5, §Închidere), docs/import/faza-1c-design.md (`--saft-s`), anaf/SAF_T_Ghidul_D406_v2.0_dec2021.pdf (gitignored, referință)
 

@@ -3,9 +3,9 @@
 - Data: 2026-10-13
 - Stare: activă
 - Execuție: hotărâtă de owner 2026-10-13, la discuția redenumirii coloanei `Latura` de pe `Postare`. Amendează 091 (g); precizează 102 (e) și 110 (i). Recomprimarea finală nu este făcută
-- Arii: dezvoltare-si-validare
+- Arii: dezvoltare, verificare
 - Amendează: 91 (g)
-- Docs: `docs/stare-curenta/dezvoltare-si-validare.md`; precedentele: 102-r1 (C102), D9-D6 din `docs/nucleu/tr-d9-taierea-contract.md`, C111-D7 din `docs/nucleu/c111-coordonate-contract.md`.
+- Docs: `docs/stare-curenta/dezvoltare.md`; precedentele: 102-r1 (C102), D9-D6 din `docs/nucleu/tr-d9-taierea-contract.md`, C111-D7 din `docs/nucleu/c111-coordonate-contract.md`.
 
 ## Regula durabilă
 

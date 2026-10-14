@@ -3,7 +3,7 @@
 - Data: 2026-07-22
 - Stare: activă
 - Execuție: forma de stocare amendată de 54c (owned → plat pe frunze/registru)
-- Arii: dezvoltare-si-validare, domeniu-si-operare
+- Arii: motor
 
 ## Regula durabilă
 

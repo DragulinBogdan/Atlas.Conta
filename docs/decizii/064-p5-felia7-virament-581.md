@@ -3,7 +3,7 @@
 - Data: 2026-08-15
 - Stare: amendată de 84
 - Execuție: (k) gaura „al doilea picior cules manual" închisă de 65b
-- Arii: domeniu-si-operare
+- Arii: documente, motor, partide
 - Docs: docs/api/p5-felia-vir-contract.md
 
 ## Regula durabilă

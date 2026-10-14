@@ -3,7 +3,7 @@
 - Data: 2026-10-06
 - Stare: activă
 - Execuție: aprobată de owner 2026-10-10 în forma precizată după pasul 0, cu (b) amendată în aceeași zi (locul fiscal se persistă); hotărârile aprobării sunt în §„Aprobarea". (a)–(e) și (i) sunt implementate în felia C111 (2026-10-11), înaintea TR-D9b (unitățile): contractul `docs/nucleu/c111-coordonate-contract.md`, cu tranșările C111-Q1…Q22 și cu review-ul advers Codex al închiderii închis (C111-F-R1 corectată, C111-F-R2 tranșată; reverificat 2026-10-11). (f), registrele tipate, rămâne fără implementare, cu decizie proprie. (g) și (h) sunt consumate, TR-D9a fiind închisă. Pasul 0 e măsurat (2026-10-08, `docs/nucleu/tr-d9b-pas0-masuratori.md`); ce s-a schimbat față de forma din 2026-10-06 e listat în §„Precizările de după pasul 0"
-- Arii: domeniu-si-operare, politici-si-fiscalitate, api-si-client
+- Arii: motor
 - Închide: 110-r3, D9-r4, 111-r1, 111-r2
 - Docs: `docs/nucleu/c111-coordonate-contract.md` (contractul feliei); `docs/consultations/2026-10-06-repartitor-pe-postare/` (consultare Fable + Codex, două runde, README cu verdictele); `docs/nucleu/tr-d9-taierea-amendament-2.md` (D9-A10, forma îngustă aprobată; pasul 6b, mutat de owner după tăiere); 090 (c), B-D8 pct. 4 și 9.
 

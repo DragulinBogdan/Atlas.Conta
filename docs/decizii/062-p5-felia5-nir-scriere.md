@@ -2,7 +2,7 @@
 
 - Data: 2026-08-12
 - Stare: activă
-- Arii: domeniu-si-operare
+- Arii: stoc
 - Docs: docs/api/p5-felia-nir-contract.md
 
 ## Regula durabilă

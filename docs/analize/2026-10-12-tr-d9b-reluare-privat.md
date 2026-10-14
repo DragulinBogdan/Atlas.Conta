@@ -120,7 +120,7 @@ implementării; nu se aleg după rezultatul B. Nu se închide F27-r16/F28-r1
 doar pentru că o pagină mică răspunde repede.
 
 Validările de produs vor folosi
-[rețeta comună](../stare-curenta/dezvoltare-si-validare.md), prin
+[rețeta comună](../stare-curenta/verificare.md), prin
 `nou/tools/ModelCheck/scripts/verifica.ps1`: scenariile afectate, nucleul
 dacă este atins, integrala pe ambele profiluri și infrastructura relevantă.
 Sufix propus: `.CodexD9bOrigine`; bazele și compatibilitatea schemei se

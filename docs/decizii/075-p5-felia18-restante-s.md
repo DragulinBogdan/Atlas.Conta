@@ -3,7 +3,7 @@
 - Data: 2026-08-29
 - Stare: activă
 - Execuție: (închide 74-r4, 74-r6, 74-r9; amendează 45e cu limitele declarate ale derivei rămase)
-- Arii: domeniu-si-operare, limite-curente
+- Arii: stoc, import, limite-curente
 - Amendează: 45 (e)
 - Docs: docs/api/p5-felia-restante-s-contract.md (D18-D1…D4, riscurile 1–10, D18-V1…V4, review-ul advers F1–F10, §Închidere pașii 1–4), docs/import/faza-1c-design.md §15
 

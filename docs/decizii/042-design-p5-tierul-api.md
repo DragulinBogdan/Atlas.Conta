@@ -3,7 +3,7 @@
 - Data: 2026-07-24
 - Stare: amendată de 104, 106
 - Execuție: (b) amendat de 104b (coaja comenzii își face singură contextul), (e) amendat de 104d (culegerea documentelor în XAF, React pe citiri)
-- Arii: README, api-si-client, dezvoltare-si-validare, domeniu-si-operare, limite-curente, politici-si-fiscalitate
+- Arii: api, dezvoltare, documente, ecrane, motor, raportare, README, limite-curente
 - Docs: docs/api/p5-api-design.md
 
 ## Regula durabilă

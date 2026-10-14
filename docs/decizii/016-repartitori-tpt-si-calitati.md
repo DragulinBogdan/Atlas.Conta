@@ -3,7 +3,7 @@
 - Data: 2026-07-22
 - Stare: amendată de 89
 - Execuție: (maparea TPT → TPH, 2026-09-18; regula moștenirii doar unde identitatea e exclusivă și calitățile ca flags rămân)
-- Arii: domeniu-si-operare
+- Arii: documente
 
 ## Regula durabilă
 

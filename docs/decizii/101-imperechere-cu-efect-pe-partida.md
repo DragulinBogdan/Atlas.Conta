@@ -3,7 +3,7 @@
 - Data: 2026-09-25
 - Stare: amendată de 102
 - Execuție: aprobată de owner, activă; restrânge delimitarea duală S-D13; (d) depășit de 102; 101-r1 redeschisă
-- Arii: domeniu-si-operare
+- Arii: partide, api
 - Docs: `docs/nucleu/tr-d8-citiri-contract.md` D8-B7; 090(d/e), 092, 100.
 
 ## Regula durabilă

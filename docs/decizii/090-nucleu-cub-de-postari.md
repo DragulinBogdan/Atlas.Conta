@@ -3,7 +3,7 @@
 - Data: 2026-09-20
 - Stare: amendată de 91, 92, 93, 95, 96, 110, 119
 - Execuție: amendată de 119 ((a) și (i): a doua `Operare` a corecției valorice; stornoul beneficiarului conține numai inversa lui), de 095 (producători compleți înainte de TR-D8), 096 (UrmarestePartide separat de RolTert), de 093 pentru Folosință (gestiune reală, nu virtuală) și de 091 (TR-D10 și „Import1C ca probă supremă" nu mai sunt regulă de oprire; proba supremă e catalogul `docs/nucleu/scenarii/`; amendează invarianții I, III și VI, întărește II; DEPĂȘEȘTE contractul IM `docs/api/p5-felia-izolare-motor-contract.md`; concretizează 51e ca parametru al unității; închide 76-r3, IM-r1, IM-r3, IM-r4 la TR-D9)
-- Arii: dezvoltare-si-validare, domeniu-si-operare
+- Arii: dezvoltare, motor, tva, raportare, verificare
 - Închide: IM-r1, IM-r3, IM-r4
 - Docs: `docs/nucleu/nucleu-cub-design.md` (designul, §1–§11), `docs/nucleu/nucleu-coordonate-rapoarte.md` (pasul 1: coordonatele contra rapoartelor reale, patru amendamente structurale), `docs/nucleu/nucleu-fizica.md` (pasul 2: forma fizică măsurată, FZ-D1…D9, FZ-r), `docs/nucleu/nucleu-transfer.md` (pasul 3: TR-D1…D10, §3 ce se transferă / se rescrie / dispare, §4.1 propunerea de execuție, TR-r), `docs/nucleu/nucleu-bilant.md` (sinteza câștig / pierdere pentru decizie); probele în `run-nucleu/{coordonate,fizica,transfer}/` (inventare cu `fișier:linie`, SQL, EXPLAIN-uri, review-urile adverse). Fără cod: decizia e pasul 0 (TR-D5), oprirea lui e textul de aici.
 

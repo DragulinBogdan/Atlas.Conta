@@ -3,7 +3,7 @@
 - Data: 2026-07-22
 - Stare: amendată de 76, 88
 - Execuție: 31d amendat de 76f (plafonul de stingere capătă latură și se netează) și de 88j (împerecherea e fapt DATAT: ștergerea liberă rămâne doar în perioadă deschisă, o împerechere dintr-o perioadă închisă se desface prin rând invers, iar stornoul le inversează în loc să le refuze)
-- Arii: domeniu-si-operare
+- Arii: documente, partide
 
 ## Regula durabilă
 

@@ -2,7 +2,7 @@
 
 - Data: 2026-08-19
 - Stare: activă
-- Arii: api-si-client
+- Arii: ecrane
 - Docs: docs/api/p5-felia-jurnale-tva-design.md
 
 ## Regula durabilă

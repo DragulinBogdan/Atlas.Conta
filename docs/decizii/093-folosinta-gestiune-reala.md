@@ -3,7 +3,7 @@
 - Data: 2026-09-24
 - Stare: activă
 - Execuție: aprobată de owner; amendează 090(g) și TR-D7b T-D9 numai pentru Folosință; Custodie rămâne explicit neacoperită
-- Arii: domeniu-si-operare
+- Arii: documente
 - Amendează: 90 (g)
 - Docs: `docs/nucleu/tr-d7b-ldi-contract.md` (LDI-B3), `docs/nucleu/scenarii/LDI.md`.
 

@@ -3,7 +3,7 @@
 - Data: 2026-07-22
 - Stare: amendată de 112
 - Execuție: (a) amendată de 112 (recepția se contează pe factură, pe regula `FCT/Stoc`), (c) precizată de 112 (pe tipurile care contează prin reguli, linia fără regulă e refuzată)
-- Arii: dezvoltare-si-validare, domeniu-si-operare
+- Arii: documente, motor, dezvoltare
 
 ## Regula durabilă
 

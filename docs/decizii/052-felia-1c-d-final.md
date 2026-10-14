@@ -2,7 +2,7 @@
 
 - Data: 2026-07-28
 - Stare: activă
-- Arii:
+- Arii: motor, politici, dezvoltare
 - Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă

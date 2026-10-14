@@ -12,7 +12,7 @@
   înțelege codul, cât timp există `.codegraph/`. Documentația și configurația
   se citesc direct. Nu inițializa și nu reindexa proiectul din proprie inițiativă.
 - Rulează verificările prin `nou/tools/ModelCheck/scripts/verifica.ps1`;
-  instrucțiunile sunt în `docs/stare-curenta/dezvoltare-si-validare.md`.
+  instrucțiunile sunt în `docs/stare-curenta/verificare.md`.
   Bazele sufixate aparțin verificărilor. Flax se citește doar pentru recensământ.
 - Așteptările scenariilor sunt numerice și independente de registrele vechi.
   Un refuz așteptat este rezultat al scenariului, nu stare de implementare.

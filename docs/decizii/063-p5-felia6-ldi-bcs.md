@@ -2,7 +2,7 @@
 
 - Data: 2026-08-13
 - Stare: activă
-- Arii:
+- Arii: documente
 - Docs: docs/api/p5-felia-ldi-bcs-contract.md
 
 ## Regula durabilă

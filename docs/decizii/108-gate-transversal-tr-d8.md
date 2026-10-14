@@ -3,7 +3,7 @@
 - Data: 2026-10-04
 - Stare: amendată de 110
 - Execuție: concretizează 090 (i)(j) și 091 (g)(4)(5); extinde 101 pe ramura negativă a desfacerii (102-r4)
-- Arii: api-si-client, dezvoltare-si-validare, limite-curente
+- Arii: documente, api, limite-curente
 - Docs: `docs/nucleu/tr-d8-transversal-contract.md` (X-D1…X-D8, X-Q1…X-Q4, X-RV1…X-RV7, „Execuție” pașii 1–6); `docs/nucleu/scenarii/CITIRI.md`; `docs/api/p5-perf-masuratori.md` („TR-D8 gate-ul transversal”)
 
 **Starea verificării, 2026-10-04:** pașii 1–6 din X-D8 sunt implementați și

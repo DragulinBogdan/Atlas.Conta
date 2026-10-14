@@ -3,7 +3,7 @@
 - Data: 2026-07-23
 - Stare: amendată de 81, 84
 - Execuție: (e) backlog-ul UI închis de 39–40
-- Arii:
+- Arii: documente, stoc
 - Docs: docs/privat/p2-descarcare-design.md
 
 ## Regula durabilă

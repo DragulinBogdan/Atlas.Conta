@@ -2,7 +2,7 @@
 
 - Data: 2026-07-25
 - Stare: amendată de 75
-- Arii: dezvoltare-si-validare
+- Arii: import, dezvoltare
 - Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă

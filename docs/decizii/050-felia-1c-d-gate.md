@@ -3,7 +3,7 @@
 - Data: 2026-07-27
 - Stare: activă
 - Execuție: (e)/(f) lotul de defecte închis de 52
-- Arii: dezvoltare-si-validare
+- Arii: import, verificare
 - Docs: docs/import/faza-1c-design.md
 
 ## Regula durabilă

@@ -2,7 +2,7 @@
 
 - Data: 2026-08-17
 - Stare: activă
-- Arii: api-si-client, dezvoltare-si-validare, politici-si-fiscalitate
+- Arii: raportare, perioade, ecrane, verificare
 - Docs: docs/api/p5-felia-raportare-contract.md
 
 ## Regula durabilă

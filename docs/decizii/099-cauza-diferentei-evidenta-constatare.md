@@ -3,7 +3,7 @@
 - Data: 2026-09-24
 - Stare: activă
 - Execuție: aprobată de owner, activă; concretizează 098(a) și 098-r1.
-- Arii:
+- Arii: documente, motor, stoc, api
 - Docs: `docs/nucleu/scenarii/NIR.md`, `docs/nucleu/scenarii/LDI.md`, 098, 093, T-D13 (felul permis per latură pe tip), 088 (motivul decide efectul).
 
 ## Regula durabilă

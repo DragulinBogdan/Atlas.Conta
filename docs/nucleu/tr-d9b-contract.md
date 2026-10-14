@@ -270,7 +270,7 @@ pwsh -NoProfile -File nou/tools/ModelCheck/scripts/verifica.ps1 -Suita Infrastru
 
 `-Tip D9B` verifică la pasul 4 și proiecția persistată, pe ambele
 profiluri. Pregătirea și rulările urmează
-[rețeta comună](../stare-curenta/dezvoltare-si-validare.md), succesiv, cu
+[rețeta comună](../stare-curenta/verificare.md), succesiv, cu
 sufix propriu. Probele HTTP afectate urmează `refuzuri.ps1`; fără expunere
 nouă în UI nu se cere un ecran nou. Import1C nu este gate; Flax nu se scrie.
 

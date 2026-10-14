@@ -3,7 +3,7 @@
 - Data: 2026-09-18
 - Stare: activă
 - Execuție: (amendează 3 și 16; amendează IM-D10 din contractul de izolare a motorului; închide 75-r2)
-- Arii: api-si-client, dezvoltare-si-validare, domeniu-si-operare, limite-curente
+- Arii: documente, dezvoltare, verificare, api, ecrane, import, motor, limite-curente
 - Amendează: 3, 16
 - Închide: 75-r2
 - Docs: `docs/api/p5-felia28-tph-contract.md` (F28-D1…D8, pașii 0–4, §„Ce NU intră"), `docs/api/p5-felia28-pas0-spike.md` (maparea rezultată, FK-ul discriminator, EXPLAIN-urile), `docs/api/p5-perf-masuratori.md` §Felia 28, `nou/.../Module/BusinessObjects/BackOfficeDbContext.cs` (`UseTphMappingStrategy`, `HasDiscriminator`, `AplicaColoanePartajate`, `TipStocare`), `nou/.../Module/BusinessObjects/Documente/Document.cs` (`Document.ClrType`, `DocumentDetaliu.ClrType`), `nou/.../Module/BusinessObjects/Nomenclatoare/Repartitori.cs` (`Repartitor.ClrType`), `nou/.../Module/BusinessObjects/Politici/Politici.cs` (`TipDocument.ClrType` read-only), `nou/.../Module/Api/CititorTipDocument.cs`, `nou/.../Module/Api/{ApiProiectii,OperareApi}.cs`, `nou/.../Module/Saft/SaftProiectii.cs`, `nou/.../Module/Motor/GardianEditare.cs` (regula (o), `FkSpreFrunze`), `nou/.../Module/Motor/RandDupaCheie.cs`, `nou/.../Module/Api/{Refuzuri,Rezolva}.cs` (`RandDeAltTip`), `nou/.../Module/Motor/{PerioadaService,CorectieService}.cs`, `nou/.../WebApi/API/Conta/CorectieController.cs`, `nou/tools/BackfillTva/Reconciliere.cs`, `nou/tools/ModelCheck/Program.cs` (`VerificaF28`, `F28-A…K`), `nou/tools/ModelCheck/IntegritateTph.cs` (`--dump-integritate-tph`), `nou/tools/ModelCheck/ScanareGetObjectByKey.cs` (F28-N); migrația `20260918113542_InitialCreate` (singura din lanț)

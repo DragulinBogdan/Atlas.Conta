@@ -3,7 +3,7 @@
 - Data: 2026-07-23
 - Stare: amendată de 71
 - Execuție: amendată de 71 la (d) — `CategorieD394` a murit (coloana scoasă din `TipTva` de migrația `AddD394`; categoria D394 e politica `MapareD394 (TipTva × Sens) → Tip`, 71c)
-- Arii: dezvoltare-si-validare, domeniu-si-operare, politici-si-fiscalitate
+- Arii: documente, tva, dezvoltare
 - Docs: docs/privat/p1-tva-design.md
 
 ## Regula durabilă
