@@ -79,11 +79,11 @@ sealed partial class ScenariiD9b(Func<IObjectSpace> deschide, Action<string, boo
         Titular("T1"); var t1 = Furnizor; Titular("T2"); var t2 = Furnizor;
         var n = Nota(Ianuarie, new(Serviciu, ContFurnizor, 100, RepartitorCredit: t1),
             new(Serviciu, ContFurnizor, 100, RepartitorCredit: t2)); Opereaza(n.Id);
-        Verifica("SC-D9B-03", "A: două origini pe același cont, titulari diferiți", CuSpatiu(os =>
+        Verifica("SC-D9B-03a", "A: două origini pe același cont, titulari diferiți", CuSpatiu(os =>
             P.Origini(os).Count(x => x.DocumentId == n.Id) == 2));
         var s = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 100, t1)); Opereaza(s.Id);
-        Furnizor = t1; Rest("SC-D9B-03", n.Id, 0);
-        Furnizor = t2; Rest("SC-D9B-03", n.Id, -100);
+        Furnizor = t1; Rest("SC-D9B-03a", n.Id, 0);
+        Furnizor = t2; Rest("SC-D9B-03a", n.Id, -100);
     }
 
     void Transfer() {

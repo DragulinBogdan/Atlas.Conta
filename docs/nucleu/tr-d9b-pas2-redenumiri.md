@@ -88,7 +88,7 @@ această redenumire de tipuri interne.
 ## Limite
 
 Pasul nu adaugă scenarii noi de domeniu: exercită catalogul existent și
-testele nucleului. SC-D9B-01…12 rămân în pachetul originii. Review-ul advers
+testele nucleului. SC-D9B-01…02, SC-D9B-03a/b, SC-D9B-04…12 rămân în pachetul originii. Review-ul advers
 și commit-ul nu sunt făcute; restanțele 118-r7/r8 nu se închid numai prin
 această predare. Redenumirea tuturor membrilor cu numele vechi ar implica
 altă schimbare decât cele două tipuri CLR și rămâne explicit separată.

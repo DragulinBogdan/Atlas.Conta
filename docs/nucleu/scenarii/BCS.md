@@ -69,7 +69,9 @@ jos este **verificat pe ambele profiluri** (rularea din secțiunea Validare).
 | SC-BCS-05 | L: 10/100; BCS 4 → sold 6/60; anulează operarea. Draft, zero tranzacții/postări/registre ale BCS, lotul inițial există, sold 10/100. | acceptat | excepția declarată de anulare, invariantul III |
 | SC-BCS-06 | L: 10/100; BCS 4 în ianuarie → 6/60; închide ianuarie. Corectează la 05.02, motiv EroareMateriala: original Stornat, invers −4/−40 și draft nou legat, fără postări proprii; sold curent 10/100. Schimbă cantitatea draftului la 3 și operează: consum(3,30,L). Sold 31.01 = 6/60; 05.02 = 7/70. | acceptat | 088, 090 (i) |
 | SC-BCS-07 | Recepție 3 × 0,333333, valoare rotunjită 1 leu. Ieșire 1 → 0,33, rest 2/0,67. Ieșire 2 la 11.01 → 0,67, rest 0/0. | acceptat | 090 (c), ultima ieșire ia restul |
-| SC-BCS-08a/b/c | Din L:10/100, BCS cu cantitate 0 / −1 / fără lot. Ușa declarației refuză cu codul stabil; dry-run și operarea refuză cu textul validării vechi. Draft și zero efecte proprii; sold 10/100. | refuzat: `CANTITATE_NEPOZITIVA` / `CANTITATE_NEPOZITIVA` / `LOT_LIPSA` pe declarație; text vechi pe entitate până la TR-D8 | regulă; cazuri absente din recensământ |
+| SC-BCS-08a | Din L:10/100, BCS cu cantitate 0. Ușa declarației refuză cu codul stabil; dry-run și operarea refuză cu textul validării vechi. Draft și zero efecte proprii; sold 10/100. | refuzat: `CANTITATE_NEPOZITIVA` pe declarație; text vechi pe entitate până la TR-D8 | regulă; cazuri absente din recensământ |
+| SC-BCS-08b | Ca SC-BCS-08a, cu cantitate −1. | refuzat: `CANTITATE_NEPOZITIVA` pe declarație; text vechi pe entitate până la TR-D8 | regulă; cazuri absente din recensământ |
+| SC-BCS-08c | Ca SC-BCS-08a, fără lot. | refuzat: `LOT_LIPSA` pe declarație; text vechi pe entitate până la TR-D8 | regulă; cazuri absente din recensământ |
 | SC-BCS-09 | L:10/100; două linii 6 + 5 din același lot. Dry-run și operarea refuză întregul document, fără consumul primei linii; sold 10/100. | refuzat: `STOC_INSUFICIENT`, evaluare și gardian pe cub la TR-D8 | review; lot repetat din recensământ |
 | SC-BCS-10 | După SC-BCS-03, repetă storno la 21.01. Rămân exact două tranzacții și sold 10/100. | refuzat: stare neeligibilă | 090 (i) |
 | SC-BCS-11 | După închiderea lui ianuarie, anularea BCS operat și operarea altui BCS în ianuarie sunt refuzate; originalul și soldul 6/60 rămân, draftul nou are zero efecte. | refuzat: perioadă închisă | invariantul III, 088 |
@@ -93,13 +95,16 @@ Contractul [TR-D9b-CV](../tr-d9b-corectii-valorice-contract.md) și
 compensarea valorică la storno BCS și refuzul retragerii cu alocări active.
 Sunt specificații înainte de implementare, fără schimbarea stării probelor BCS.
 
-| ID / cerință | Așteptare / pas | Stare |
+| ID | Cerință | Așteptare / pas | Stare |
+|---|---|---|---|
+| SC-BCS-12 | fișă, balanță, `Sold` | Pentru SC-BCS-06: ianuarie consum 40 și stoc 60; februarie rulaj net consum −10 și stoc +10; sold final 70. Reconstrucția trebuie să păstreze aceleași valori fără rerularea politicilor. | specificat; cititori comuni și snapshot cub la TR-D8 |
+| SC-BCS-13 | două sesiuni reale | L:10/100; două comenzi concurente de câte 6. Exact una reușește, cealaltă refuză; sold 4/40, fără dublă cheltuială. | verificat pe ambele profiluri ca SC-X-15 (X-D6, 2026-10-03) |
+| SC-BCS-14 | consum vs. închidere | Serializare: fie consumul de 4 intră în luna închisă și snapshot = 6/60, fie închiderea câștigă și consumul refuză. | verificat pe ambele profiluri ca SC-X-21, în ambele ordini (X-D6, 2026-10-03) |
+
+| Cerință | Așteptare / pas | Stare |
 |---|---|---|
-| SC-BCS-12: fișă, balanță, `Sold` | Pentru SC-BCS-06: ianuarie consum 40 și stoc 60; februarie rulaj net consum −10 și stoc +10; sold final 70. Reconstrucția trebuie să păstreze aceleași valori fără rerularea politicilor. | specificat; cititori comuni și snapshot cub la TR-D8 |
 | Explicația evaluării | SC-BCS-07 explică baza 3/1, alocarea 1/0,33 și restul 2/0,67 prin date persistate pe tranzacție. | amânat la TR-D8, 091 (j) |
 | Refuz din consum ulterior | SC-X-01, SC-X-08: refuzul stornării sursei cu consum ulterior, distinct de blocarea prin NIR conex. | specificat, de probat independent |
-| SC-BCS-13: două sesiuni reale | L:10/100; două comenzi concurente de câte 6. Exact una reușește, cealaltă refuză; sold 4/40, fără dublă cheltuială. | verificat pe ambele profiluri ca SC-X-15 (X-D6, 2026-10-03) |
-| SC-BCS-14: consum vs. închidere | Serializare: fie consumul de 4 intră în luna închisă și snapshot = 6/60, fie închiderea câștigă și consumul refuză. | verificat pe ambele profiluri ca SC-X-21, în ambele ordini (X-D6, 2026-10-03) |
 | Re-intrare / lot cu sold negativ | De completat numeric împreună cu tipul care recepționează/corectează; BCS negativ rămâne refuzat. | specificare restantă |
 
 ## Legătura cu probele existente

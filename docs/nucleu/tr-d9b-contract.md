@@ -235,7 +235,7 @@ noi; catalogul existent verifică regresia celorlalte forme.
 |---|---|
 | SC-D9B-01 | FCT 100, PLT nominalizată 40: rest 60, o origine FCT, nicio origine proprie PLT fără postări proprii. |
 | SC-D9B-02 | FCT A100/B70, plata40 pe A: A60/B70, două origini distincte. |
-| SC-D9B-03 | NTC două datorii100 pe același cont, titulari diferiți: două origini; stingerea100 a primei lasă0/100. Separat, două conturi cu partide în aceeași plată: ambele origini persistate, chiar dacă explicația declară una. |
+| SC-D9B-03a/b | NTC două datorii100 pe același cont, titulari diferiți: două origini; stingerea100 a primei lasă0/100. Separat, două conturi cu partide în aceeași plată: ambele origini persistate, chiar dacă explicația declară una. |
 | SC-D9B-04 | FCT100, PLT liberă40, împerechere40: rest FCT60, PLT0; două origini. Desfacerea reface100/40; zero rulaj suplimentar pe cont din transferuri. |
 | SC-D9B-05 | FCT100, plata nominalizată40 retrasă/reoperată:60 →100 →60. Retragerea separată a unei facturi fără dependenți elimină originea; reoperarea la altă dată reface același ID o dată și folosește data noii operări. |
 | SC-D9B-06 | FCT100 fără dependenți, storno integral: rest0, o origine păstrată; la data anterioară stornoului rest100. |
