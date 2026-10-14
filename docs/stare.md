@@ -7,12 +7,12 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Ce | Cât |
 |---|---|
 | Decizii | 120: 87 active, 33 amendate parțial, 0 depășite, 0 propuse |
-| Restanțe | 381: 282 deschise, 99 închise |
+| Restanțe | 382: 283 deschise, 99 închise |
 | Pagini de stare curentă | 7 |
 | Contracte de felie (`Tip: contract`) | 3, deschise 2 |
 | Cataloage vii (`Tip: catalog`) | 3 |
 | Fișiere Markdown în `docs/` | 317 |
-| Citări de decizii din cod (`// N`) | 126 |
+| Citări de decizii din cod (`// N`) | 71 |
 
 ## Decizii în vigoare pe arie
 
@@ -34,16 +34,16 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 42 |
+| activă | 43 |
 | după PoC | 206 |
 | migrare | 24 |
 | depășită de 091 | 2 |
 | docs | 4 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (42, prag 45)
+### Lista `activă` (43, prag 45)
 
-**domeniu-si-operare** (32)
+**domeniu-si-operare** (33)
 
 - `51e` PoliticaEvaluare (CMP) — sub 90c devine parametrul „unitatea de evaluare” al unității nominalizate
 - `75-r4` PretEvaluare 6 zecimale pe cantități mari vs invariantul 46d
@@ -77,6 +77,7 @@ Niciuna.
 - `X-r3` Raportul de stoc listează capătul de consum al BCS (postarea de debit poartă lotul ca unitate, pe co…
 - `NG-r1` Balanța și fișa contului filtrate pe gestiune sau pe material nu văd transferurile (BTR, ASM): valoa…
 - `NG-r2` Contul lotului vine din tipul curent de material al produsului…
+- `CV-r2` Închiderea exercițiului ca operație explicită (obligatorie pe bugetar, utilă pe privat)…
 
 **politici-si-fiscalitate** (5)
 
@@ -101,7 +102,7 @@ Niciuna.
 
 ## Decizii invocate din cod
 
-Decizia (numărul de citări `// N` din cod): 1 (3), 3 (2), 4 (1), 5 (1), 9 (1), 10 (2), 13 (1), 14 (2), 15 (2), 17 (1), 22 (1), 23 (2), 24 (1), 25 (1), 26 (4), 28 (1), 31 (1), 33 (1), 34 (1), 35 (1), 36 (1), 38 (3), 41 (2), 42 (3), 43 (1), 46 (2), 48 (2), 49 (1), 51 (1), 53 (1), 55 (1), 57 (6), 58 (1), 63 (1), 64 (1), 72 (1), 73 (1), 74 (1), 77 (4), 79 (4), 82 (3), 83 (4), 85 (4), 86 (1), 87 (2), 89 (4), 90 (4), 91 (3), 92 (1), 97 (1), 98 (2), 99 (2), 101 (1), 102 (1), 103 (2), 104 (7), 106 (1), 107 (7), 109 (1), 112 (1), 115 (5), 117 (1).
+Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33 (1), 42 (2), 43 (1), 46 (1), 48 (2), 49 (1), 53 (1), 55 (1), 57 (4), 77 (1), 79 (3), 82 (2), 83 (1), 85 (1), 86 (1), 87 (2), 89 (3), 90 (4), 91 (2), 92 (1), 97 (1), 98 (2), 99 (2), 101 (1), 102 (1), 103 (2), 104 (7), 106 (1), 107 (7), 109 (1), 112 (1), 115 (5), 119 (1).
 
 ## Paginile stării curente
 
@@ -109,8 +110,8 @@ Decizia (numărul de citări `// N` din cod): 1 (3), 3 (2), 4 (1), 5 (1), 9 (1),
 |---|---|
 | [README](stare-curenta/README.md) | 2026-10-10 |
 | [api-si-client](stare-curenta/api-si-client.md) | 2026-10-13 |
-| [dezvoltare-si-validare](stare-curenta/dezvoltare-si-validare.md) | 2026-10-13 |
-| [domeniu-si-operare](stare-curenta/domeniu-si-operare.md) | 2026-10-13 |
+| [dezvoltare-si-validare](stare-curenta/dezvoltare-si-validare.md) | 2026-10-14 |
+| [domeniu-si-operare](stare-curenta/domeniu-si-operare.md) | 2026-10-14 |
 | [limite-curente](stare-curenta/limite-curente.md) | 2026-10-14 |
 | [politici-si-fiscalitate](stare-curenta/politici-si-fiscalitate.md) | 2026-10-13 |
 | [termeni](stare-curenta/termeni.md) | 2026-10-13 |
@@ -120,7 +121,7 @@ Decizia (numărul de citări `// N` din cod): 1 (3), 3 (2), 4 (1), 5 (1), 9 (1),
 | Catalog | Actualizat |
 |---|---|
 | [C111 — coordonatele postării (transversal)](nucleu/scenarii/C111.md) | 2026-10-11 |
-| [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-13 |
+| [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-14 |
 | [D9B — originea partidei](nucleu/scenarii/D9B.md) | 2026-10-13 |
 
 ## Ce nu poate ști

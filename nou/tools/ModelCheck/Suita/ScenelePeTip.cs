@@ -156,6 +156,9 @@ static class ScenelePeTip {
             scene.Add(new(nameof(VerificaNucleuFct), ["FCT"], () => VerificaNucleuFct.Ruleaza(s, privat)));
         }
         scene.Add(new(nameof(VerificaNucleuFclDsc), ["FCL", "DSC"], () => VerificaNucleuFclDsc.Ruleaza(s, privat)));
+        scene.Add(new(nameof(ScenariiCvl), ["CVL"], () => new ScenariiCvl(
+            s.Deschide, s.Check, privat,
+            (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()));
         scene.Add(new(nameof(ScenariiC111), ["C111"], () => ScenariiC111.Ruleaza(
             s.Deschide, s.Check, privat,
             (os, an, luna) => s.InchideAcceptTot(os, an, luna))));

@@ -73,7 +73,9 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV, IDoc
     static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(FacturaIntrareDetaliu.PretUnitar));
 
     public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
-        linie is FacturaIntrareDetaliu d ? d.PretUnitar * d.Cantitate : null;
+        linie is FacturaIntrareDetaliu { CorectieValoareLot: false } d ? d.PretUnitar * d.Cantitate : null;
+
+    public override bool LinieFiscala(DocumentDetaliu linie) => linie is not ILinieCuCorectieValorica { CorectieValoareLot: true };
 
     // Plata automată (00 §7, decizia 31): grupul DECONT_* cules → draft Plata
     // autogenerat. Header din câmpurile culese; liniile clonează DEFALCAREA
@@ -134,7 +136,7 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV, IDoc
             .ToDictionary(t => t.ID, t => t.Natura);
         // Clasificația bugetară per linie a migrat în PoliticaValidare (29b →
         // 3d): regulă de profil, aplicată de motor înaintea acestui hook.
-        foreach (var d in Detalii) {
+        foreach (var d in Detalii.Where(d => d is not ILinieCuCorectieValorica { CorectieValoareLot: true })) {
             // Regula hardcodată legacy (00 §10), păstrată: fără cantități negative.
             if (d.Cantitate <= 0)
                 erori.Add("Cantitatea fiecărei linii de factură trebuie să fie pozitivă.");
@@ -165,7 +167,14 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV, IDoc
     }
 }
 
-public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCuPretUnitar, ILinieCareNasteLot, ILinieCuAvans {
+public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCuPretUnitar, ILinieCareNasteLot, ILinieCuAvans,
+        ILinieCuCorectieValorica {
+    [XafDisplayName("Corecție de valoare a lotului")]
+    public virtual bool CorectieValoareLot { get; set; }
+
+    [NotMapped, System.ComponentModel.Browsable(false)]
+    public bool NasteLot => !CorectieValoareLot;
+
     public virtual Guid? LinieAvansId { get; set; }
     [XafDisplayName("Linia avansului"), DataSourceProperty(nameof(AvansuriDisponibile))]
     public virtual DocumentDetaliu LinieAvans { get; set; }

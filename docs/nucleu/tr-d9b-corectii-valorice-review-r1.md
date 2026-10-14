@@ -14,6 +14,10 @@ A doua rundă (2026-10-13): owner-ul a fixat apartenența compensării la
 corecția A. R1, R3 și R4 sunt aduse la zi; comparația și obligațiile noi
 sunt în R6.
 
+A treia rundă (2026-10-14): delimitarea pasului 2 este închisă la cererea
+owner-ului, pe verificarea contra codului din R8. Afirmația de mai sus
+despre punctul 2 este istorică.
+
 ## R1 — forma compensării
 
 Prima matrice trecea `Conservare`, dar k1/k2 fără inversă și j1/j2 inverse
@@ -276,6 +280,130 @@ GL apare sub jurnalul FCT. Restanța este CV-r1, lângă SAFT-r2, care numea
 deja „primul producător pe lot” ca moment de intrare. SC-CVL-32 fixează
 refuzurile.
 
+## R8 — închiderea delimitării pasului 2 (2026-10-14)
+
+Owner-ul a cerut închiderea delimitării: forma compensării (R1),
+predicatele (R3) și explicația (CV-D8). Verificarea este citire de cod pe
+`main` la `d0f7a2f3`, fără rulare. Textul normativ este în contract
+(CV-D1, CV-D8, CV-D10). Tranșările de mai jos schimbă propunerea și sunt
+ale reviziei; owner-ul le-a acceptat pe toate la 2026-10-14, cu
+recomandările din raportul pasului 3: R8-4 decizie și pentru cota zero,
+R8-9 anul calendaristic ca gard provizoriu până la CV-r2, R8-10 ordinea
+scrierii, R8-12 eligibilitatea pe forma faptelor.
+
+Perimetrul, „punctul 3” al review-ului, a fost hotărât separat de owner în
+aceeași zi: corecția taxabilă refuzată, factura mixtă refuzată,
+eligibilitatea restrânsă la lanțul FCT → NIR fără diferențe → BCS,
+corecția neantedatată și refuzul retragerii sau stornării ei cât există o
+ieșire ulterioară activă.
+
+### Ce confirmă codul
+
+| Afirmație din R1, R3, R6, R7 | Loc verificat | Rezultat |
+|---|---|---|
+| Perechea K (D consum / C stoc, aceeași valoare negativă, q0) trece conservarea în `Operare` | `Conservare.VerificaPerechile:48–58`, `VerificaDocumentul:103`, `VerificaFormele:216–233` | confirmat: laturi opuse, valori egale, aceeași cauză; unitatea lotului poartă contul capătului |
+| K și inversa ei intră în contabil | `Citiri/Contabil.Postari:78–80` | confirmat: `Operare` și `Storno` cu original `Operare` |
+| Inversa lui K are origine verificabilă | `Citiri/Invarianti.VerificaProvenienta:161–164` | confirmat: originalul nu este `Storno` |
+| A doua `Operare` cere explicație proprie | `Citiri/Explicatii.VerificaAcoperire:58` | confirmat: referința `ExplicatieDinId` nu ajunge |
+| K nu este ieșire pe lot și nu cere decizie de valoare a ieșirii | `Citiri/Explicatii:81–88` | confirmat: filtrul este `Cantitate < 0` |
+| Partida proprie a corecției nu cere `AlocareFifo` | `Citiri/Explicatii:156–161` | confirmat: `IdentitatiPartide.EsteProprie` |
+| Stornoul corecției găsește K între postările proprii | `Materializare.Storneaza:101–105` | confirmat: filtrul este `DocumentId` și `Operare`, fără limită pe numărul tranzacțiilor |
+| Stornoul beneficiarului ar lua rădăcina și inversa ei | `Materializare.Storneaza:110–112` | confirmat: saltul pe `Atribuit` nu privește felul tranzacției |
+| Cititorul explicației compune mai multe origini la storno | `Citiri/Explicatii.PeTranzactie:37–49` | confirmat |
+| Comenzile sunt serializate pe bază | `TranzactieComanda.BlocajScriere` (97000) | confirmat; blocarea documentului de corecție se adaugă prin `Materializare.BlocheazaDocumente` |
+
+### Ce nu ținea și cum se tranșează
+
+**R8-1 — atribuirea pe mișcare.** `N.Miscare` nu poartă `Atribuit`, iar
+`Miscare.Postari` scrie postările fără el. Singura scriere de azi
+(`Materializare.Imperecheaza:201`) îl pune după contractare, pe toate
+postările transferului. Rădăcina cere atribuire numai pe piciorul intern,
+compensarea pe ambele. Mișcarea capătă atribuirea fiecărui capăt, ca
+postările verificate de `Conservare` și explicate să fie cele scrise.
+
+**R8-2 — forma fizică a selecției.** La stornare, saltul pe `Atribuit` nu
+mai urmează postările pe lot. Nominalizarea de partidă atribuie numai
+postări de partidă ale aceluiași document, deci calea ei rămâne cea din
+090 (i). La stornoul corecției, K sunt postări proprii. `Storno.Selecteaza`
+din nucleu nu se schimbă.
+
+**R8-3 — linia corectată se derivă din lot.** CV-D1 propunea o referință
+la linia FCT de recepție, lângă `LotId`. Lotul o are deja:
+`Lot.LinieIntrareId`, prezent în operand (`LotFapt`). O a doua referință ar
+cere un gard de egalitate fără să aducă informație în primul pachet.
+Rămâne numai felul explicit al liniei. Referința proprie intră când sursa
+comercială nu este linia de intrare a lotului (facturarea avizului).
+
+**R8-4 — bijecția din CV-D8 contrazicea SC-CVL-06.** Punctul 1 cerea o
+decizie pentru fiecare postare și invers. Punctele 2 și 3 cer suma
+ponderilor și reproducerea repartizării, deci și decizia beneficiarului
+căruia Hamilton îi dă zero: al doilea bon din SC-CVL-06 are pondere 1 și
+valoare 0, fără postare. Regula corectată: decizie pentru fiecare beneficiar
+cu pondere pozitivă; postare numai pentru decizia cu valoare nenulă.
+
+**R8-5 — referința inversei iese din decizia de compensare.** Inversa
+beneficiarului este unică și se găsește prin `InversaDin`; punctul 4 al
+invariantului o recitește oricum din cub. Decizia păstrează rădăcina și
+beneficiarul.
+
+**R8-6 — gruparea repartizării se recitește din cub.** Decizia poartă
+unitatea beneficiarului (lot × cont), nu cheia completă. Invariantul ia
+poziția din postarea beneficiară referită, apoi reface repartizarea.
+
+**R8-7 — proba de harness a operării.** `ProbeCub.ProbaOperare` cere
+„cel mult o `Operare`” și toate tranzacțiile la data înregistrării. Codifică
+litera veche a lui 090 (a). După 119 (a) rămâne valabilă numai până la prima
+compensare; textul probei se aduce la zi odată cu scenariile.
+
+**R8-8 — dependenții pe care codul nu-i oprește azi.**
+
+| Comandă | Comportament actual | Gard cerut |
+|---|---|---|
+| retragerea bonului cu alocări | nimic nu refuză; `Atribuit` ar rămâne spre o postare ștearsă | `CV_DEPENDENTI` |
+| retragerea corecției cu compensări | `Materializare.Anuleaza:252–265` șterge toate tranzacțiile `Operare` ale documentului, deci și compensările | `CV_DEPENDENTI` |
+| stornarea corecției datată înaintea unei compensări | `MotorOperare.Storneaza:234` compară numai cu data înregistrării | `CV_CRONOLOGIE` |
+| operarea facturii corective | `MotorOperare.GenereazaConex` filtrează liniile numai pe natură (`Potrivire.Conex`), deci ar clona linia cu cantitate zero într-un NIR | liniile de corecție nu intră în conex |
+| pregătirea valorii | `FacturaIntrare.BazaLinie` întoarce preț × cantitate, deci ar aduce valoarea la zero | valoarea liniei de corecție se culege |
+| ușa entității | `FacturaIntrare.ValideazaOperare:139` refuză cantitatea nepozitivă înaintea declarantului | excepție numai pe felul explicit |
+
+**R8-9 — anul închis.** Produsul nu are închidere de an. Refuzul
+`CV_AN_INCHIS` se aplică unui consum beneficiar datat într-un an anterior
+anului corecției. Stocul rămas este beneficiar curent, oricând a fost
+recepția.
+
+Owner-ul (2026-10-14): închiderea anului merită prinsă ca operație
+explicită; pe bugetar este obligatorie, iar pe privat poate ajuta. Anul
+calendaristic rămâne gardul primului pachet; când operația există, „an
+închis” înseamnă anul închis prin ea (CV-r2, activă: owner-ul a marcat-o
+pentru „rotund”).
+
+**R8-10 — ieșirea ulterioară.** Un bon cu cota zero nu are rădăcină, deci
+nu se deosebește prin postări de o ieșire făcută după corecție. Deosebirea
+este ordinea scrierii: ieșirea ulterioară este ieșirea activă a cărei
+tranzacție are `ScrisLa` după prima `Operare` a corecției. Comenzile sunt
+serializate, deci ordinea este totală; egalitatea se tratează ca ulterioară.
+
+**R8-11 — activul la stornarea beneficiarului.** Un document se stornează
+o singură dată, iar retragerea beneficiarului cu alocări este refuzată.
+Compensarea pentru perechea (rădăcină, beneficiar) nu poate preexista, deci
+la stornarea beneficiarului activul rădăcinii este valoarea ei, dacă nu are
+inversă, și zero altfel. Suma pe familie din matrice rămâne definiția
+auditată de invariant, nu calculul comenzii.
+
+**R8-12 — eligibilitatea se judecă pe forma faptelor.** Motorul nu
+numește tipurile de documente (25b, 32a). Lotul este corectabil după forma
+perechilor care îl ating, din CV-D10; BTR, retur, asamblare, inventar și
+recepția cu diferențe ies prin forma lor, fără listă de tipuri.
+
+### Ce rămâne neschimbat
+
+`Contrapondere.Tert` pe piciorul de terț al rădăcinii, chiar cu cantitate
+zero: conservarea și `VerificaCoordonate` cer marcajul numai la cantitate
+nenulă și niciun cititor nu filtrează pe această valoare. Gardul temporal
+din R2 și cele patru cazuri. Apartenența din R6. Storno recepției și SAF-T
+din R7. Limitele perimetrului din CV-D1 și CV-D5, aprobate de owner:
+corecția taxabilă, factura mixtă și ieșirea ulterioară activă sunt refuzuri.
+
 ## Scenarii și acceptare
 
 SC-CVL-26 exclude ordinalele numerice și include mutantul alocare→alocare.
@@ -287,8 +415,8 @@ refuz existent pentru a declara aceste probe verzi.
 
 Punctul 1 are recomandare confirmată de review. Punctul 2 are forma fizică
 revizuită și apartenența fixată prin decizia 119, care amendează 090 (a) și
-(i). Cere încă acceptarea explicației și a predicatului și probe de produs
-pe ambele profiluri. Exportul SAF-T nu mai este condiție: rămâne
+(i). Predicatele și explicația sunt închise prin R8 (2026-10-14). Cere încă
+probe de produs pe ambele profiluri. Exportul SAF-T nu mai este condiție: rămâne
 restanța CV-r1. Nu este cerută aprobarea pentru implementare în acest pas.
 
 ## Artefact și verificarea reviziei

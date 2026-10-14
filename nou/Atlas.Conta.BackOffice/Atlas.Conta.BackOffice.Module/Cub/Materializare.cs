@@ -49,6 +49,7 @@ public static partial class Materializare {
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
         VerificaAnaliza(os, doc, contract, miscari);
         Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
+        Citiri.CorectiiValorice.VerificaCronologia(os, contract.Tranzactii.SelectMany(t => t.Postari));
         VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: true);
         var explicatie = Explicatie.Din(contract, doc.Declarant().GetType().Name).Scrie();
         Guid? purtator = null;
@@ -71,6 +72,8 @@ public static partial class Materializare {
                 VerificaAnaliza(os, doc, contract, miscari);
             if (contract.EsteAcceptat)
                 Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
+            if (contract.EsteAcceptat)
+                Citiri.CorectiiValorice.VerificaCronologia(os, contract.Tranzactii.SelectMany(t => t.Postari));
             if (contract.EsteAcceptat)
                 VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: false);
         }
@@ -106,9 +109,11 @@ public static partial class Materializare {
         // Declarație goală (NIR conex fără diferență, 099): nimic de inversat.
         if (aleDocumentului.Count == 0)
             return;
+        var compensari = CompensariLaStornare(os, doc, aleDocumentului, dataStorno);
         var tinte = aleDocumentului.Select(p => p.ID).ToList();
+        // 119c
         var atribuite = os.GetObjectsQuery<Postare>()
-            .Where(p => p.Atribuit != null && tinte.Contains(p.Atribuit.Value))
+            .Where(p => p.Atribuit != null && tinte.Contains(p.Atribuit.Value) && p.FelUnitate != N.FelUnitate.Lot)
             .ToList();
         var deInversat = aleDocumentului.Concat(atribuite).DistinctBy(p => p.ID).ToList();
         var repartitoriInversati = Randuri.Repartitori(os, deInversat);
@@ -130,6 +135,7 @@ public static partial class Materializare {
         Citiri.Loturi.VerificaSoldIntermediar(os, tranzactie.Postari, ReceptiiConexe.CodRefuzStoc(doc));
         VerificaPozitiaFaraFisa(os, tranzactie.Postari, blocheaza: true);
         Scrie(os, doc.ID, tranzactie);
+        ScrieCompensari(os, compensari, dataStorno);
     }
 
     /// <summary>
@@ -249,6 +255,7 @@ public static partial class Materializare {
         VerificaPartideFaraDependenti(os, doc, doc.DataInregistrare);
         VerificaSuportFaraDependenti(os, doc, doc.DataInregistrare);
         MotorOperare.Refuza(MotivStingereDeschidere(os, doc));
+        MotorOperare.Refuza(MotiveCorectiiValorice(os, doc).Anulare);
         var tranzactii = os.GetObjectsQuery<Tranzactie>()
             .Where(t => t.DocumentId == doc.ID
                 && (t.Fel == N.FelTranzactie.Operare || t.Fel == N.FelTranzactie.Transfer))

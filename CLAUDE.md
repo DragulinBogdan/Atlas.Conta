@@ -130,7 +130,8 @@ are comparația A/B verde, review-ul independent Codex și reverificarea
 Claude, care a corectat recunoașterea ușii de sistem; pachetul e comis la
 cererea owner-ului (2026-10-13). Pachetul următor, corecțiile valorice pe
 lot, are [contractul TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md)
-și decizia 119; nu e implementat. [Pasul 6](docs/nucleu/tr-d9b-pas6-sens.md)
+și decizia 119; delimitarea pasului 2 e închisă și perimetrul aprobat de
+owner (2026-10-14), implementarea (pasul 3) e în lucru. [Pasul 6](docs/nucleu/tr-d9b-pas6-sens.md)
 al contractului TR-D9b este făcut: membrii care poartă debitul sau creditul
 și coloana de pe `Postare` se numesc `Sens`, printr-o migrație incrementală
 (120). [Pasul 7](docs/nucleu/tr-d9b-pas7-senstva.md) aduce membrii de tip

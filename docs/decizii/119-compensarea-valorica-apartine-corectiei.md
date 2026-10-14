@@ -2,7 +2,7 @@
 
 - Data: 2026-10-13
 - Stare: activă
-- Execuție: apartenența compensării hotărâtă de owner 2026-10-13, pe comparația celor două variante (R6 din `docs/nucleu/tr-d9b-corectii-valorice-review-r1.md`). Amendează 090 (a) și (i); precizează 091 (h). Neimplementată: intră cu pasul 3 al contractului TR-D9b-CV, după review-ul predicatelor și al explicației
+- Execuție: apartenența compensării hotărâtă de owner 2026-10-13, pe comparația celor două variante (R6 din `docs/nucleu/tr-d9b-corectii-valorice-review-r1.md`). Amendează 090 (a) și (i); precizează 091 (h). Predicatele și explicația verificate contra codului și fixate la 2026-10-14 (R8, CV-D10); tranșările R8 acceptate de owner în aceeași zi. Implementată în pasul 3 al contractului TR-D9b-CV (2026-10-14); culegerea și închiderea, pașii 4–5
 - Arii: domeniu-si-operare
 - Amendează: 90 (a, i)
 - Docs: contractul `docs/nucleu/tr-d9b-corectii-valorice-contract.md` (CV-D4, CV-D5, CV-D7, CV-D8); `docs/nucleu/tr-d9b-corectii-valorice-review-r1.md` (R1, R3, R6, R7); matricea `docs/nucleu/tr-d9b-corectii-valorice-producator-si-compensare.md`; catalogul `docs/nucleu/scenarii/CVL.md` (SC-CVL-26…30); simulatorul `docs/nucleu/probe/cvl_matrice.py`.
@@ -53,6 +53,7 @@ Fără probă de produs: mecanismul nu este implementat și catalogul CVL nu est
 ## Ce rămâne deschis
 
 - **Implementarea**, în pașii 3–5 ai contractului, cu SC-CVL-26…30 și SC-X-05/06/07 prin comenzile reale, pe ambele profiluri. Paginile de stare curentă descriu codul și se aduc la zi atunci.
-- **Predicatele** rădăcinii și ale perechii de compensare (R3) și **explicația** (CV-D8) se confirmă la review-ul dinaintea codului. Decizia fixează apartenența și numărul tranzacțiilor, nu forma lor fizică.
+- **Predicatele** rădăcinii și ale perechii de compensare (R3) și **explicația** (CV-D8): închise la 2026-10-14 prin R8 și CV-D10 din contract. Decizia fixează apartenența și numărul tranzacțiilor; forma lor fizică este în contract.
+- **CV-r2** — închiderea exercițiului ca operație explicită, cerută de owner la 2026-10-14: obligatorie pe bugetar, utilă pe privat. Până atunci `CV_AN_INCHIS` judecă anul calendaristic al consumului beneficiar (R8-9); după, anul închis prin operație. Operația nu e a acestui pachet: atinge perioadele, snapshot-ul și închiderea conturilor de rezultat pe ambele profiluri. Owner-ul a marcat-o pentru „rotund” (2026-10-14): restanța e activă.
 - **CV-r1** — reprezentarea SAF-T a corecției și despărțirea compensărilor de liniile comerciale; până atunci exportul refuză (CV-D9).
 - **Alți beneficiari și alte destinații.** Primul pachet acoperă recepția și consumul. FCL, BTR și ASM cer scenarii proprii pentru identificarea beneficiarului și destinația compensării. Cursul și fișa de imobilizare din 091 (h) își primesc destinația în pachetele lor; apartenența din (b) li se aplică.

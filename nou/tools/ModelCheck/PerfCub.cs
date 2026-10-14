@@ -111,6 +111,7 @@ sealed partial class PerfCub(Func<IObjectSpace> deschide, Action<string, bool> c
         Luna(anM, lunaM);
         var sfarsit = new DateOnly(anM, lunaM, 28);
         var bcsDraft = Consum(lung.Linii[0].Lot.Value, 1); Dateaza(bcsDraft, sfarsit);
+        var bcsAntedatat = Consum(lung.Linii[0].Lot.Value, 1); Dateaza(bcsAntedatat, new DateOnly(anM, lunaM, 2));
         var ntcDraft = Nota(sfarsit, new LinieNtcScena(ContFurnizor, Serviciu, 75, Furnizor)).Id;
         Console.WriteLine($"     PERFCUB istoric {istoric} luni × {unitatiIstoric} unități: {ceas.Elapsed.TotalSeconds:0} s");
         var facute = 0;
@@ -122,7 +123,7 @@ sealed partial class PerfCub(Func<IObjectSpace> deschide, Action<string, bool> c
             foreach (var op in Operatii.Where(o => (Privat || !o.NumaiPrivat) && (filtru == null || filtru.Contains(o.Cod.Split('-')[0]))
                          && (istoric > 0 || o.Ruta != Scriere))) {
                 var masuri = masoaraProces(new Punct(istoric, anM, lunaM, k, op.Cod, k == trepte[^1], Privat, Marcaj, bcsDraft, ntcDraft,
-                    Furnizor, Client, Cont(ContFurnizor), Cont(ContClient), Loc));
+                    Furnizor, Client, Cont(ContFurnizor), Cont(ContClient), Loc, bcsAntedatat));
                 Masuri.AddRange(masuri);
                 foreach (var m in masuri) Controleaza(op, m, k);
             }

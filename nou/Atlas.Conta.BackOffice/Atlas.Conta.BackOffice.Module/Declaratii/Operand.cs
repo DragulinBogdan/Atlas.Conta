@@ -37,6 +37,9 @@ public sealed record LotFapt(
     public Guid? GestiuneId { get; init; }
 }
 
+/// <summary>Lotul unei linii de corecție valorică și faptele lui; <paramref name="Reper"/> lipsește când lotul n-are linie de intrare sau cont de stoc.</summary>
+public sealed record CorectieValoricaFapt(N.ReperLot? Reper, IReadOnlyList<N.FaptPostat> Fapte);
+
 public sealed record TransformareFapt(N.RolTransformare? Rol, decimal? PretProdus);
 
 public sealed record DiferentaInventarFapt(DirectieDiferenta Directie, decimal? PretEvaluare);
@@ -89,6 +92,7 @@ public sealed record LinieOperand(
     public TransformareFapt? Transformare { get; init; }
     public DiferentaInventarFapt? DiferentaInventar { get; init; }
     public ImobilizareCuleasa? Imobilizare { get; init; }
+    public CorectieValoricaFapt? CorectieValorica { get; init; }
     public Guid? PartidaDebit { get; init; }
     public Guid? PartidaCredit { get; init; }
 

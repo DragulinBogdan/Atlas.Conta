@@ -7,24 +7,36 @@
 - Stare: deschis
 
 Contractul fixează ajustarea valorii lotului și compensările necesare fără
-rescrierea ieșirilor operate. Pasul curent este numai documentar.
+rescrierea ieșirilor operate. Pașii 1 și 2 sunt documentari; pasul 3 este
+implementarea.
 [Inventarul CodeGraph](tr-d9b-corectii-valorice-inventar.md) descrie codul;
 [catalogul CVL](scenarii/CVL.md) fixează cifrele. [Producătorul și matricea
 compensării](tr-d9b-corectii-valorice-producator-si-compensare.md) detaliază
 propunerea revizuită: FCT cu linie explicită de corecție. CVL denumește
-mecanismul și catalogul, nu un tip nou de document. Nu există încă o cale
-executabilă pentru aceste corecții și nici rezultate de validare ale scenariilor.
+mecanismul și catalogul, nu un tip nou de document. Calea executabilă există
+din pasul 3; rezultatele scenariilor sunt în secțiunea de verificare a pasului.
 Review-ul Claude a confirmat aritmetica și alegerea FCT, dar a respins
 forma inițială a compensării. [Revizia R1](tr-d9b-corectii-valorice-review-r1.md)
 introduce Operare separată și gard temporal; **punctul 2 nu este acceptat**.
 Owner-ul a fixat la 2026-10-13 apartenența compensării: documentul și linia
 corecției, nu beneficiarul stornat (R6 din același raport). Regula este
 [decizia 119](../decizii/119-compensarea-valorica-apartine-corectiei.md).
+Delimitarea pasului 2 este închisă la 2026-10-14, la cererea owner-ului:
+forma compensării, predicatele și explicația sunt verificate contra codului
+în R8 din raport, iar predicatele sunt fixate în CV-D10. Afirmația de mai
+sus despre punctul 2 este istorică.
 
 Regulile economice din 090 (j/k) și 091 (h) sunt ținta deja decisă.
 Extinderea FCT și limitele primului pachet de mai jos sunt
 **propunerea acestui contract**, de confirmat la review înainte de cod;
 nu sunt prezentate ca aprobări anterioare ale owner-ului.
+
+Owner-ul a aprobat perimetrul primului pachet la 2026-10-14, în patru
+puncte: corecția taxabilă se refuză; factura mixtă se refuză; lotul
+corectabil este numai cel din lanțul FCT → NIR fără diferențe → BCS;
+corecția nu se antedatează, iar retragerea sau stornarea ei se refuză cât
+există o ieșire activă făcută după ea. Textul lor este în CV-D1, CV-D5 și
+CV-D10.
 
 ## Scop
 
@@ -69,7 +81,9 @@ extensie separată; corecția cu beneficiar într-un an închis este refuzată
 ### CV-D1 — ușa documentului și semantica sumei
 
 Propunere revizuită: **FCT nouă**, cu fel explicit al liniei de corecție
-valorică și referință la linia FCT de recepție. `LotId` este lotul existent,
+valorică. Linia corectată este linia de intrare a lotului
+(`Lot.LinieIntrareId`); linia de corecție nu poartă o a doua referință în
+primul pachet (R8-3). `LotId` este lotul existent,
 `Valoare` este delta semnată în RON, `Cantitate = 0`. O linie pe lot per
 document; mai multe loturi se operează atomic. Predătorul este furnizorul
 căruia i se modifică datoria; primitorul este locul intern. Lotul are
@@ -91,9 +105,13 @@ Soldul furnizorului este 1.200, respectiv 800 datorie. Plata/compensarea
 acestei partide folosește mecanismul existent, cu gardurile lui.
 
 Cifrele pilotului sunt fără TVA. FCT își păstrează semantica fiscală;
-propunerea este refuzul explicit al corecției taxabile până la matricea
-fiscală, niciodată omiterea taxei. Acceptarea acestui perimetru și a
-restricției pentru FCT mixtă recepție/corecție rămâne la review înainte de cod.
+corecția taxabilă se refuză explicit până la matricea fiscală, niciodată
+prin omiterea taxei: linia de corecție cu tip de TVA primește
+`CV_STRUCTURA`, iar fără tip de TVA nu produce fapte fiscale. Factura mixtă
+se refuză la fel: un document cu o linie de corecție are numai linii de
+corecție. Liniile de corecție nu intră în documentul conex, deci factura
+corectivă nu generează NIR. Valoarea liniei se culege; nu se calculează din
+preț × cantitate.
 Culegerea XAF, metadata, politica și adaptorul de comandă intră în extensia
 FCT; pagina React de detaliu nu se extinde (104d). Proba numerică intră prin
 `OperareApi`, nu prin inserări de postări sau printr-un NTC folosit ca
@@ -287,9 +305,12 @@ Fără TVA în aceste probe: nu se inventează regularizări fiscale.
 
 ### CV-D7 — refuzuri și verificare atomică
 
-Coduri propuse, încă inexistente, de introdus în `CoduriRefuz`:
+Codurile stau în `CoduriRefuz`:
 `CV_STRUCTURA`, `CV_LOT_NEELIGIBIL`, `CV_VALOARE_INSUFICIENTA`,
 `CV_CRONOLOGIE`, `CV_DEPENDENTI`, `CV_AN_INCHIS`, `CV_PROVENIENTA`.
+Mecanismul pur din nucleu nu vede `CoduriRefuz`: emite motivul tipizat
+`MotivCorectieValorica`, iar `CoduriRefuz.Refuz` îl traduce la granița
+declarantului și a materializării (owner, 2026-10-14).
 Se refolosesc codurile existente pentru lot lipsă, delta zero și politică
 lipsă când semantica coincide. Refuzurile declarantului se asertă prin
 `Materializare.Refuzuri`; gardurile comenzii au propria probă de ușă,
@@ -311,12 +332,15 @@ lucru.
 
 | Decizie | Câmpuri | Postarea explicată |
 |---|---|---|
-| `AlocareValorica` | linia corecției; unitatea beneficiarului (lot × cont); referința postării beneficiare; ponderea; valoarea semnată alocată | rădăcina de pe lot cu aceeași linie, unitate și valoare, cu `Atribuit` = beneficiarul |
-| `CompensareValorica` | linia corecției; referința rădăcinii; referința beneficiarului și a inversei lui; unitatea sursă și unitatea destinație; valoarea semnată mutată | perechea de compensare, ambele picioare cu `Atribuit` = rădăcina |
+| `AlocareValorica` | linia corecției; unitatea beneficiarului (lot × cont); referința postării beneficiare; ponderea; valoarea semnată alocată | rădăcina de pe lot cu aceeași linie, unitate și valoare, cu `Atribuit` = beneficiarul; fără postare când valoarea este zero |
+| `CompensareValorica` | linia corecției; referința rădăcinii; referința beneficiarului; unitatea sursă și unitatea destinație; valoarea semnată mutată | perechea de compensare, ambele picioare cu `Atribuit` = rădăcina |
 
 Ponderea este stocul rămas pentru alocarea pe stoc și cantitatea postării
-de consum pentru alocarea pe consum. Deciziile de alocare stau în ordinea
-folosită la repartizare (CV-D3); explicația este sursa ordinii.
+de consum pentru alocarea pe consum. Fiecare beneficiar cu pondere pozitivă
+are decizie, inclusiv cel căruia repartizarea îi dă zero (R8-4). Deciziile
+de alocare stau în ordinea folosită la repartizare (CV-D3); explicația este
+sursa ordinii. Inversa beneficiarului nu se copiază în decizia de
+compensare: este unică și se recitește prin `InversaDin` (R8-5).
 
 Ipotezele existente ajung. Alocarea reține soldul citit al stocului la data
 corecției, perioada deschisă și versiunile de politică; contul contrapartidei
@@ -329,16 +353,32 @@ cantitate zero și nu se schimbă linia BCS.
 
 Invariantul de audit se extinde, fără relaxarea regulilor de azi:
 
-1. Bijecție: fiecare postare pe lot cu cantitate zero și valoare nenulă
-   dintr-o `Operare` are exact o decizie, și invers.
+1. Fiecare postare pe lot cu cantitate zero și valoare nenulă dintr-o
+   `Operare` este explicată de exact o decizie cu valoare nenulă: alocarea
+   explică rădăcina, compensarea explică ambele picioare ale perechii.
+   Fiecare decizie cu valoare nenulă are postarea ei. Decizia de alocare cu
+   valoare zero nu are postare.
 2. Pe linia corecției, suma valorilor alocate este valoarea liniei, iar suma
-   ponderilor este cantitatea recepționată a lotului.
+   ponderilor, toate pozitive, este cantitatea recepționată a lotului.
 3. Cotele rezultă din repartizarea ierarhică a valorii liniei pe ponderile
-   și ordinea persistate.
+   și ordinea persistate. Grupul fiecărei decizii este poziția postării
+   beneficiare referite, recitită din cub (R8-6).
 4. La compensare: nicio inversă a rădăcinii nu o precedă; valoarea este suma
    activă a rădăcinii pe poziția sursă; inversa beneficiarului are aceeași
    dată și indică exact beneficiarul.
 5. Oglinda inverselor pe lot rămâne neschimbată.
+
+Implementarea (2026-10-14): regula stă în `CorectieValorica.Auditeaza`,
+pură, peste faptele loturilor și deciziile explicate; `INV-CUB` o cheamă
+din `Explicatii.VerificaAcoperire` și refuză cu `CITIRE_EXPLICATIE_VALORICA`.
+Domeniul punctului 1 sunt postările pe lot fără cantitate și cu `Atribuit`,
+familia corecției: diferența valorică a NIR-ului (099) scrie pe lot o
+postare fără cantitate și fără atribuire, explicată de mecanismul ei, și
+rămâne în afara acestui invariant (prima integrală a picat pe SC-NIR, privat).
+Pe lângă punctele de mai sus, invariantul refuză postarea valorică fără
+valoare, compensarea cu valoare zero, aceeași rădăcină compensată de două
+ori și o postare cu mai multe inverse. Atribuirea spre o postare absentă
+de pe loturile corectate este proveniență străină.
 
 Forma persistată capătă cele două feluri. Versiunea explicației rămâne 2:
 formele existente nu se schimbă, iar un fel necunoscut este deja eroare la
@@ -365,6 +405,82 @@ compensarea se exportă în D406 lunar: compensarea este mișcare internă în
 GL, sub jurnalul FCT, și nu devine factură. Nu se introduce cantitatea 1 ca
 să treacă cititorul și nu se omit sume. SC-CVL-32 fixează refuzurile, ca
 restanța să nu devină pe tăcute export greșit.
+
+### CV-D10 — predicatele fixate la închiderea delimitării
+
+Fixate la 2026-10-14, pe verificarea din R8. Se judecă pe forma faptelor
+din cub, fără numele tipurilor de documente. „Activ” înseamnă fără inversă.
+
+**Lotul corectabil.** Poziția de stoc este contul lotului în gestiunea
+corecției. În afara familiei valorice, toate postările pe lot sunt:
+
+1. recepția: o singură pereche `Operare` activă, cauzată de linia de intrare
+   a lotului, cu debitul pe poziția de stoc, cantitate pozitivă, și cu
+   creditul în afara lotului, pe furnizorul corecției;
+2. consumuri: perechi `Operare` cu ambele picioare pe lot, creditul pe
+   poziția de stoc și debitul pe altă poziție;
+3. inversele exacte ale consumurilor.
+
+Orice altă postare pe lot dă `CV_LOT_NEELIGIBIL`: transfer, deschidere,
+transformare, pereche cu alt contrapicior, recepție inversată sau cu
+diferențe.
+
+**Beneficiarii.** Stocul rămas, ancorat în postarea de debit a recepției,
+cu ponderea cantității din poziția de stoc la data corecției; și fiecare
+consum activ, prin postarea lui de debit, cu ponderea cantității ei.
+Ordinea este cea din CV-D3. Un consum beneficiar datat într-un an anterior
+anului corecției dă `CV_AN_INCHIS`; stocul rămas nu (R8-9). Anul calendaristic
+ține locul închiderii exercițiului până la operația explicită (CV-r2).
+
+**Rădăcina.** Piciorul de debit al unei perechi `Operare` a corecției:
+cantitate zero, `Atribuit` = postarea beneficiară, poziția beneficiarului
+(cont, repartitor, lot, produs, carte, analiză), fără contrapondere.
+Creditul perechii este partida proprie a corecției pe contul furnizorului
+din regula de contare a liniei, cu `Contrapondere.Tert` și fără atribuire.
+Ținta este beneficiar, niciodată altă rădăcină.
+
+**Perechea de compensare.** Într-o `Operare` a corecției, datată la
+stornarea beneficiarului: debitul pe poziția rădăcinii de consum, creditul
+pe poziția de stoc a contrapiciorului beneficiarului, cantitate zero,
+aceeași linie, ambele cu `Atribuit` = rădăcina. Valoarea este opusul valorii
+rădăcinii active (R8-11). O rădăcină are cel mult o pereche. Rădăcina de
+stoc nu are niciodată.
+
+**Selecția la stornare.** Saltul pe `Atribuit` nu urmează postările pe lot
+(R8-2). Stornoul beneficiarului conține inversele postărilor lui; stornoul
+corecției, inversele tuturor postărilor ei `Operare`.
+
+**Familia și gardul temporal.** La stornarea unui document, pentru fiecare
+postare a lui pe lot: rădăcinile atribuite ei, inversele lor, perechile de
+compensare atribuite acelor rădăcini și inversele lor. La stornarea unei
+corecții se adaugă toate postările ei `Operare`. Familia se citește fără
+filtru de dată. Data stornării este cel puțin data maximă a acestor fapte;
+altfel `CV_CRONOLOGIE`.
+
+**Cronologia operării.** Data corecției este cel puțin data maximă a
+postărilor de pe lot. O operare nouă cu cantitate pe un lot cu rădăcină
+activă, datată înaintea acelei rădăcini, dă `CV_CRONOLOGIE`.
+
+**Dependenții**, toți cu `CV_DEPENDENTI`:
+
+| Comandă | Refuz când |
+|---|---|
+| retragerea oricărui document | o postare a lui este ținta unui `Atribuit` de pe lot, activ sau nu |
+| retragerea corecției | documentul are mai mult de o tranzacție `Operare` |
+| retragerea sau stornarea corecției | lotul are o ieșire activă scrisă după prima `Operare` a corecției (R8-10) |
+| stornarea recepției | lotul are o rădăcină activă |
+
+Stingerile active ale partidei proprii rămân pe gardul existent al
+partidelor.
+
+**Valoarea.** După operarea sau stornarea unei corecții, niciun beneficiar
+nu are valoare activă negativă: nici soldul valoric al poziției de stoc,
+nici valoarea unui consum activ împreună cu rădăcinile lui active. Altfel
+`CV_VALOARE_INSUFICIENTA`.
+
+**Structura liniei**, cu `CV_STRUCTURA`: cantitate nenulă pe linia de
+corecție, tip de TVA, lot repetat în document, linie obișnuită în același
+document. Lotul lipsă și valoarea zero păstrează codurile existente.
 
 ## Restanțe
 
@@ -393,8 +509,8 @@ Valuta și unitatea de evaluare nu sunt condiții de intrare în acel pachet.
 | Pas | Schimbare | Verificare | Risc | Stare |
 |---|---|---|---|---|
 | 1 | inventar, contract, catalog numeric | surse, decizii, invarianți, docskit | confundarea primitivei cu mecanismul complet | redactat, fără implementare |
-| 2 | producător FCT și proveniența compensării | matrice, cititori, explicație și cronologie; SC-CVL-25…32 | fapte omise de cititori, storno antedatat, export incompatibil | revizuit după R1; apartenența compensării fixată (R6, decizia 119); explicația și storno recepției contractate (CV-D8, CV-D5); SAF-T restanță cu refuz (CV-D9); predicatele și explicația neacceptate |
-| 3 | mecanism pur, extensie FCT, operand, materializare și garduri | nucleu + SC-CVL prin comenzile reale, după fixarea perimetrului | dependenți valorici ignorați de gardul cantitativ | de făcut |
+| 2 | producător FCT și proveniența compensării | matrice, cititori, explicație și cronologie; SC-CVL-25…32 | fapte omise de cititori, storno antedatat, export incompatibil | închis 2026-10-14: apartenența compensării (R6, decizia 119); explicația și storno recepției (CV-D8, CV-D5); SAF-T restanță cu refuz (CV-D9); predicatele verificate contra codului și fixate (R8, CV-D10) |
+| 3 | mecanism pur, extensie FCT, operand, materializare și garduri | nucleu + SC-CVL prin comenzile reale, după fixarea perimetrului | dependenți valorici ignorați de gardul cantitativ | implementat 2026-10-14; scenariile CVL și integrala verzi pe ambele profiluri; resturile sunt în secțiunea de verificare |
 | 4 | cititori, snapshot, explicație, XAF și securitate afectată | scenarii, metadata, HTTP/UI unde sunt atinse | afișarea unui cost recalculat ca fapt istoric | de făcut |
 | 5 | regresie și review de închidere | integrală pe ambele profiluri, docskit, review advers | extindere tacită la lanțuri neacoperite | de făcut |
 
@@ -431,13 +547,15 @@ review advers închis. Nu închide TR-D9b, SC-X-09/13 sau costul vamal.
 
 ## Review advers și ce rămâne deschis
 
-Review-ul pachetului originii rămâne separat. Pentru CV sunt de revizuit
-proveniența revizuită și explicația (CV-D8); exportul q0/multicont este
-restanță cu refuz (CV-D9), nu condiție a pachetului. Extensia FCT are
-recomandare confirmată de review. Eligibilitatea restrânsă,
-fiscalul, facturile mixte, cronologia și refuzul inversării CVL cu ieșire
-ulterioară activă rămân la următorul punct de delimitare. Nicio schemă sau
-limită de produs nu este aprobată implicit prin exemplele de aici.
+Review-ul pachetului originii rămâne separat. Pentru CV, proveniența și
+explicația sunt verificate contra codului și fixate la 2026-10-14 (R8,
+CV-D8, CV-D10); exportul q0/multicont este restanță cu refuz (CV-D9), nu
+condiție a pachetului. Extensia FCT are recomandare confirmată de review.
+Eligibilitatea, fiscalul, factura mixtă, cronologia și refuzul inversării
+CVL cu ieșire ulterioară activă sunt refuzuri aprobate de owner la
+2026-10-14 (CV-D1, CV-D5, CV-D10). Tranșările de formă din R8 sunt ale
+reviziei: owner-ul nu s-a pronunțat separat pe ele și le poate întoarce
+până la închiderea pasului 3. Review-ul advers de închidere este la pasul 5.
 
 Nu se atribuie acestei cereri o amânare generală a review-ului advers CV:
 owner-ul a cerut pregătirea contractului în timpul review-ului precedent.
@@ -447,6 +565,71 @@ owner-ului, la 2026-10-13.
 ## Închidere
 
 Deschis. Redactarea și verificarea documentației nu certifică mecanismul.
+
+### Verificarea pasului 3 — 2026-10-14
+
+Implementat: atribuirea pe mișcare și mecanismul pur în nucleu
+(`CorectieValorica`), felul liniei pe FCT cu migrația
+`CorectieValoareLot`, faptele lotului în operand, declarația corecției,
+compensarea la stornare, gardurile retragerii și ale cronologiei, explicația
+persistată a celor două feluri de decizie, oglinda gardurilor în regimul pe
+stare. Toate codurile `CV_*` stau în `CoduriRefuz`; nucleul emite
+`MotivCorectieValorica` (CV-D7).
+
+Comenzi executate din rădăcină:
+
+- `dotnet test nou/Atlas.Conta.Nucleu/Atlas.Conta.Nucleu.Teste`: 235 de
+  teste verzi, dintre care 36 în `CorectieValoricaTeste`.
+- `verifica.ps1 -Suita Scenarii -Tip CVL -Profil Privat -Sufix .ClaudeCVL`:
+  verde; `run-verificari/20261014-004610-087/rezultat.json`. Baza privată e
+  creată și seed-uită de unealtă.
+- aceeași comandă cu `-Profil Bugetar`, pe clona
+  `Atlas.Conta.BackOffice.ClaudeCVL` adusă la migrația nouă: verde;
+  `run-verificari/20261014-004657-481/rezultat.json`.
+- Invarianții cubului (`INV-CUB`) trec pe faptele scenei, pe ambele
+  profiluri, fără nicio relaxare.
+- `verifica.ps1 -Suita Integral -Profil Ambele -Sufix .ClaudeCVL`: verde pe
+  ambele profiluri; `run-verificari/20261014-005221-824/rezultat.json`.
+  Prima rulare a picat pe SC-REGIM-13: oglinda gardurilor în regimul pe
+  stare adaugă o citire. Plafoanele au crescut de la 10 și 12 la 11 și 13
+  instrucțiuni SQL, cost confirmat de owner la 2026-10-14 (106f).
+- Concurența și partidele (SC-CVL-21…24, 29), adăugate după integrală:
+  `-Tip CVL` verde pe privat (`run-verificari/20261014-083922-101`) și pe
+  bugetar (`run-verificari/20261014-084012-398`); `-Tip X` verde pe ambele
+  profiluri (`run-verificari/20261014-084106-627`), fiindcă serializarea
+  probei s-a mutat din `ScenariiConcurenta` în `ScenaDocumente`.
+- Mutarea codurilor `CV_*` în `CoduriRefuz`: nucleul 235 de teste verzi;
+  `-Tip CVL` verde pe privat (`run-verificari/20261014-085429-523`) și pe
+  bugetar (`run-verificari/20261014-085458-555`).
+- Invariantul de audit CV-D8: nucleul 247 de teste verzi, cu 12 mutanți ai
+  probei pure; `-Suita Integral -Profil Ambele -Sufix .ClaudeCVL` verde
+  (`run-verificari/20261014-095623-533`), fiecare ramură `INV-CUB` își
+  ucide mutantul, inclusiv cei cinci `VALORICA-*`. Prima integrală
+  (`run-verificari/20261014-095008-711`) a picat pe SC-NIR, privat: domeniul
+  punctului 1 cuprindea și diferența valorică a NIR-ului, neatribuită.
+- SC-CVL-20, cititorii de produs: `-Tip CVL` verde pe privat
+  (`run-verificari/20261014-101238-933`) și pe bugetar
+  (`run-verificari/20261014-101311-045`).
+- SC-CVL-32, refuzurile SAF-T: `-Tip CVL` verde pe privat
+  (`run-verificari/20261014-103824-417`) și pe bugetar, unde SAF-T nu se
+  aplică (`run-verificari/20261014-103854-125`).
+- După SC-CVL-20 și 32: `-Suita Integral -Profil Ambele -Sufix .ClaudeCVL`
+  verde, purja fără reziduu (`run-verificari/20261014-103945-779`).
+- Scara transversală pe `VerificaCronologia`, pe ambele profiluri, m = 0, 6,
+  12 și k = 1…64: `FIFO-N` (consumul la sfârșitul lunii) și `CRON-N`, nou,
+  un consum antedatat la ziua 2 a lunii măsurate, ca interogarea să caute pe
+  intervalul cu volum. Ambele citesc 61 de rânduri în 23 de comenzi pe toată
+  scara, iar criteriile X-D5 trec (`run-verificari/perf-cub-cvl-fifo-20261014-110640`,
+  `perf-cub-cvl-cron-A-20261014-111503`, `perf-cub-cvl-cron-20261014-111841`).
+  La consumul antedatat planificatorul pornește din indexul lotului
+  (`Postare_Stoc_Unitate_Data_idx`, 2 rânduri); indexul de dată îl alege
+  numai când intervalul de după dată e gol. Interogarea nu s-a schimbat.
+
+Ce nu e făcut și nu e certificat de aceste rulări:
+
+- părțile lipsă din SC-CVL-18, 19, 28 și 31, enumerate în catalog;
+- culegerea XAF, `WriteDto`, linia explicată și DTO-ul ei, driftul openapi:
+  pasul 4.
 
 ### Verificarea pasului documentar — 2026-10-12
 

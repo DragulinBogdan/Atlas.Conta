@@ -1,4 +1,6 @@
 #nullable enable
+using N = Atlas.Conta.Nucleu;
+
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
 /// <summary>
@@ -38,6 +40,12 @@ public static class CoduriRefuz {
     public const string DirectieTvaNepotrivita = "DIRECTIE_TVA_NEPOTRIVITA";
     public const string ContExplicitLipsa = "CONT_EXPLICIT_LIPSA";
     public const string ValoareZero = "VALOARE_ZERO";
+    public const string CvLotNeeligibil = "CV_LOT_NEELIGIBIL";
+    public const string CvValoareInsuficienta = "CV_VALOARE_INSUFICIENTA";
+    public const string CvCronologie = "CV_CRONOLOGIE";
+    public const string CvDependenti = "CV_DEPENDENTI";
+    public const string CvAnInchis = "CV_AN_INCHIS";
+    public const string CvProvenienta = "CV_PROVENIENTA";
     public const string RepartitorExplicitLipsa = "REPARTITOR_EXPLICIT_LIPSA";
     public const string RepartitorFaraFel = "REPARTITOR_FARA_FEL";
     public const string PartidaNumitaInvalida = "PARTIDA_NUMITA_INVALIDA";
@@ -53,6 +61,18 @@ public static class CoduriRefuz {
     public const string SuportInsuficient = "SUPORT_INSUFICIENT";
     public const string SuportCuDependenti = "SUPORT_CU_DEPENDENTI";
     public const string DeclaratieInvalida = "DECLARATIE_INVALIDA";
+    public const string CvStructura = "CV_STRUCTURA";
+
+    /// <summary>Refuzul mecanismului de corecție valorică, cu codul lui.</summary>
+    public static N.Refuz Refuz(N.CorectieValoricaRefuzata e, Guid? linie = null) => new(e.Motiv switch {
+        N.MotivCorectieValorica.LotNeeligibil => CvLotNeeligibil,
+        N.MotivCorectieValorica.ValoareInsuficienta => CvValoareInsuficienta,
+        N.MotivCorectieValorica.Cronologie => CvCronologie,
+        N.MotivCorectieValorica.Dependenti => CvDependenti,
+        N.MotivCorectieValorica.AnInchis => CvAnInchis,
+        N.MotivCorectieValorica.Provenienta => CvProvenienta,
+        _ => throw new ArgumentOutOfRangeException(nameof(e), e.Motiv, null),
+    }, e.Message, linie);
 }
 
 /// <summary>Sursele unei <c>ValoareDeclarata</c>: de unde vine valoarea ieșirii care nu se evaluează din sold.</summary>

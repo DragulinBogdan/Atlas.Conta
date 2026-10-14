@@ -1,6 +1,6 @@
 # REGIM — regimul pe stare (decizia 106)
 
-**Actualizat: 2026-10-04.** Proba: `ModelCheck --scenarii REGIM [privat]`
+**Actualizat: 2026-10-14.** Proba: `ModelCheck --scenarii REGIM [privat]`
 (`tools/ModelCheck/ScenariiRegim.cs`, anul 2013). Scenariul e transversal:
 folosește NTC, FCT, PLT și conexul NIR ca subiecți, iar așteptarea e regula
 comenzilor (106b), nu postările.
@@ -27,7 +27,7 @@ cu gestiune de descărcare și rest nedescărcat.
 | SC-REGIM-10 | PLT din 09 stornată în februarie; apoi FCT corectată | stornarea reușește și inversează împerecherea; pe FCT legătura inversată nu refuză Stornează și Corectează; corecția dă original Stornat și corecție Draft | `SC-REGIM-10` | regulă (088j, 106k) | acceptat | implementat |
 | SC-REGIM-11 | privat: FCT servicii 100 + TVA 21 în februarie; D300 februarie depus; luna deschisă | Anulează disponibilă înaintea depunerii, refuzată după, cu `TVA_DEJA_DECLARATA`; Stornează și Corectează disponibile; comanda refuză la fel | `SC-REGIM-11` | regulă (103, 106k) | acceptat | implementat |
 | SC-REGIM-12 | privat: aceeași factură în martie; numai D394 martie depus | ca 11, pe D394 | `SC-REGIM-12` | regulă (103, 106k) | acceptat | implementat |
-| SC-REGIM-13 | NTC și FCT operate, fără dependenți | regimul se citește în cel mult 10, respectiv 12 instrucțiuni SQL | `SC-REGIM-13` | cost asumat (106f, 106k) | acceptat | implementat |
+| SC-REGIM-13 | NTC și FCT operate, fără dependenți | regimul se citește în cel mult 11, respectiv 13 instrucțiuni SQL; din 2026-10-14 una este citirea loturilor cu corecții de valoare (CV-D10), plafon confirmat de owner | `SC-REGIM-13` | cost asumat (106f, 106k) | acceptat | implementat |
 | SC-REGIM-14 | furnizor propriu; FCT servicii 100; NTC de 40, debit contul de furnizor pe acel furnizor, credit cheltuiala, care nominalizează FIFO 40 pe partida facturii; legătură manuală NTC → FCT de exact 40, fără transfer în cub; ianuarie închisă | limita 106-r7: regimul oferă Stornează și Corectează; ambele comenzi refuză `PARTIDA_CU_DEPENDENTI` în februarie; postările facturii intacte, legătura neinversată; sold partidă −60 | `SC-REGIM-14` | limită acceptată (106k, 106-r7) | refuzat la comandă | implementat |
 | SC-REGIM-15 | aceeași pereche FCT 100 + NTC 40 pe alt furnizor, fără legătură | Anulează, Stornează și Corectează refuzate de regim cu `PARTIDA_CU_DEPENDENTI`; comanda refuză la fel; pentru SC-X-24 refuzul e abatere, nu refuz pe data cerută | `SC-REGIM-15` | regulă (106k) | acceptat | implementat |
 

@@ -41,11 +41,11 @@ sealed class ScenariiRegim(Func<IObjectSpace> deschide, Action<string, bool> che
             && Refuzata(r, CmdOpereaza, "deja operat") && Refuzata(r, CmdValideaza, "deja operat")
             && Refuzata(r, RegimDocument.Sterge, "stornează"));
 
-        Cost("NTC", nota.Id, 10);
+        Cost("NTC", nota.Id, 11);
 
         var factura = Factura(Ianuarie, new LinieFctScena(1, 100, Stoc: false));
         Opereaza(factura.Id);
-        Cost("FCT", factura.Id, 12);
+        Cost("FCT", factura.Id, 13);
         var plata = Trezorerie(incasare: false, 100);
         Opereaza(plata.Id);
         Imperecheaza(plata.Id, factura.Id, 100, Ianuarie);

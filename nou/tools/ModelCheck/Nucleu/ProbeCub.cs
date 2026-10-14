@@ -101,7 +101,7 @@ static class ProbeCub {
         var ale = Proprii(os, doc.ID);
         var operari = ale.Count(t => t.Fel == N.FelTranzactie.Operare);
         var mutari = ale.Count(t => t.Fel == N.FelTranzactie.Transfer);
-        check($"STR-OPERARE {prefix}: cel mult o `Operare`, cel mult un `Transfer` de stoc, cel puțin "
+        check($"STR-OPERARE {prefix}: la operare, cel mult o `Operare` (119a), cel mult un `Transfer` de stoc, cel puțin "
             + "una din ele, cu data înregistrării (T-D2)",
             operari <= 1 && mutari <= 1 && ale.Count >= 1
             && ale.All(t => t.Data == doc.DataInregistrare && t.ScrisLa != default));

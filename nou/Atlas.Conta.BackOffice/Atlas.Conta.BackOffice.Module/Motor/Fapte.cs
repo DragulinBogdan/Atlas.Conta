@@ -119,6 +119,14 @@ internal static class Fapte {
             ConturiAtinse(linii, claseTip, repartitori, reguliContare, politicaTva, tipuriTva, sursa.Partide));
 
         var solduriLoturi = SolduriLoturi(os, doc, idsLot);
+        var corectate = linii.Where(d => d is ILinieCuCorectieValorica { CorectieValoareLot: true } && d.LotId != null)
+            .Select(d => d.LotId.Value).Distinct().ToList();
+        var fapteCorectate = Cub.Citiri.CorectiiValorice.Fapte(os, corectate, doc.ID);
+        Declaratii.LinieOperand CuCorectie(DocumentDetaliu d, Declaratii.LinieOperand linie) =>
+            d is not ILinieCuCorectieValorica { CorectieValoareLot: true } ? linie : linie with {
+                CorectieValorica = new(linie.Lot is { LinieIntrareId: Guid intrare, ContImplicitId: Guid contStoc } lot
+                    ? new N.ReperLot(lot.Id, contStoc, doc.PrimitorId, intrare, doc.PredatorId) : null, fapteCorectate),
+            };
 
         var partideSursa = sursa.Partide
             .Where(p => conturi.GetValueOrDefault(p.Cont)?.UrmarestePartide == true)
@@ -129,7 +137,7 @@ internal static class Fapte {
 
         return Cub.ReceptiiConexe.Completeaza(os, doc, ImobilizariFapte.Completeaza(os, new Declaratii.Operand(
             Document(doc, tipDoc, repartitori),
-            [.. linii.Select(d => Linie(d, claseTip, loturi, tipPerProdus))],
+            [.. linii.Select(d => CuCorectie(d, Linie(d, claseTip, loturi, tipPerProdus)))],
             reguliContare,
             reguliStoc,
             politicaTva,

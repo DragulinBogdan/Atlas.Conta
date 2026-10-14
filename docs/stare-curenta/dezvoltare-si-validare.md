@@ -1,6 +1,6 @@
 # Dezvoltare și validare
 
-**Actualizat: 2026-10-13.** [Index](README.md)
+**Actualizat: 2026-10-14.** [Index](README.md)
 
 TR-D9b, pasul 2: tipurile CLR sunt `UnitateSold` și `Sens`; proprietățile,
 coloanele și forma JSON a explicației își păstrează numele. Nucleul a
@@ -811,7 +811,10 @@ este o rulare grea: nu se suprapune cu alta pe aceleași baze. O rulare
 întreruptă lasă scena în bază; următoarea o purjează la pornire, dar datele
 societății de pe profilul privat rămân cele ale scenei și se refac de mână.
 Un cititor nou care citește cumulat sau pe interval intră în `PerfCub.Operatii`
-cu ruta și cifrele lui de control. (X-D5, X-D3)
+cu ruta și cifrele lui de control. Cronologia corecțiilor de valoare are
+operația ei, `CRON-N`: dry-run-ul unui consum antedatat pe lotul lung, ca
+`CorectiiValorice.VerificaCronologia` să caute pe intervalul cu volum
+(CV-D5). (X-D5, X-D3)
 
 ### Scara de volum (`scripts/scara-volum.ps1`)
 
@@ -1000,7 +1003,10 @@ locul originalului (`CITIRE_FISCAL_INVERSA`) și explicația
 liniei = decizia ieșirii, cu semnul cantității (`CITIRE_EXPLICATIE_LINIE`,
 D9-D3). Mutanții `INV-CUB` îi probează pe BCS, BTR și ASM cu `Transfer`
 (`LINIE-*`, `LINIE-SEMN-*`, `IESIRE-SEMN-*`: o decizie cu semn opus sau o
-linie cu altă valoare e refuzată).
+linie cu altă valoare e refuzată). Explicația corecțiilor valorice pe lot
+(CV-D8) are invariantul ei, `CITIRE_EXPLICATIE_VALORICA`: fiecare postare pe
+lot fără cantitate și atribuită dintr-o `Operare` are exact o decizie, cotele rezultă din
+ponderi, compensarea urmează beneficiarul inversat; mutanții `VALORICA-*`.
 
 Rețeta istorică a verificării importului este `run-nucleu/tr-d7a/import/run.ps1`: Import1C integral
 (`--recreeaza --cititori --inchide-lunile`), apoi `--reclasifica`,

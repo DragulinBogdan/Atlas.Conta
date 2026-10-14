@@ -38,7 +38,7 @@ sealed partial class PerfCub {
                 ["stoc.cantitate"] = u * q + 1000 - consumLung + odataQ, ["stoc.valoare"] = u * q * 10 + 1000 - consumLung + odataV,
                 ["consum.cantitate"] = 2 * u + consumLung + (istoric > 0 ? 1 : 0), ["consum.valoare"] = 20 * u + consumLung + (istoric > 0 ? 10 : 0),
             },
-            "FIFO" or "PDISP" => new() { ["refuzuri"] = 0 },
+            "FIFO" or "CRON" or "PDISP" => new() { ["refuzuri"] = 0 },
             "RECON" => new() { ["referinte"] = istoric > 0 ? 1 : 0, ["diferite"] = 0 },
             "JTVA" => new() { ["achizitii.baza"] = k * 150, ["achizitii.tva"] = k * 31.50m, ["livrari.baza"] = k * 100, ["livrari.tva"] = k * 21 },
             "D300" => new() {

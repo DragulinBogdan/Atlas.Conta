@@ -7,6 +7,17 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
 
 ## Domeniu și operare
 
+- Corecția valorii lotului (TR-D9b-CV, pasul 3): acoperă numai lotul
+  recepționat prin FCT cu NIR conex fără diferențe și consumat prin bonuri.
+  Lotul cu transfer, retur, asamblare, inventar sau deschidere e refuzat.
+  Corecția cu TVA și factura mixtă sunt refuzate. Consumul dintr-un an
+  anterior anului corecției e refuzat; produsul nu are închidere de an
+  (CV-r2).
+  Corecția cu o ieșire ulterioară activă nu se retrage și nu se stornează
+  până la neutralizarea ieșirii. Linia de corecție se creează numai prin
+  model: culegerea XAF și `WriteDto` nu o expun încă. Linia explicată și
+  DTO-ul ei nu poartă încă deciziile valorice. Exportul SAF-T al lunii cu o corecție rămâne pe
+  refuz (CV-r1). (`docs/nucleu/tr-d9b-corectii-valorice-contract.md`)
 - Felurile de repartitor (C111-D4): numai seed-ul bugetar declară, pe cele
   20 de conturi cu defalcarea R; 14 dintre ele n-au mișcare în legacy 2026,
   deci felul lor e din natura contului, nu din date. Pe 461.01.09 angajatul

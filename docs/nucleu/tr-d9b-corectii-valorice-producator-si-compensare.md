@@ -335,8 +335,10 @@ Apartenența compensării la corecție este fixată de owner (R6). Storno
 recepției, explicația și exportul SAF-T lăsat pe refuz sunt în contract
 (CV-D5, CV-D8, CV-D9).
 Punctul 3 (perimetru, TVA, facturi
-mixte, cronologie, ieșiri ulterioare) rămâne deschis înainte de implementare.
-Nu s-a acordat implicit aprobare prin redactarea acestor exemple.
+mixte, cronologie, ieșiri ulterioare) a fost aprobat de owner la 2026-10-14,
+ca refuzuri. Predicatele și explicația sunt închise în aceeași zi prin R8 din
+raport și CV-D10 din contract; referința la linia FCT de recepție din
+secțiunea 1 este înlocuită de linia de intrare a lotului (R8-3).
 
 ## Verificarea redactării — 2026-10-12
 
