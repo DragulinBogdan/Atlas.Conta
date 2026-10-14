@@ -229,6 +229,16 @@ D9-D3). Explicația corecțiilor valorice pe lot are invariantul ei,
 atribuită dintr-o `Operare` are exact o decizie, cotele rezultă din ponderi,
 compensarea urmează beneficiarul inversat. (CV-D8)
 
+Scriitorul stornoului garantează proveniența inversei; `INV-CUB` verifică
+numai ce scrierea nu garantează prin construcție (schema ține deja, prin
+`CK_Postare_FelUnitate`, unitatea și nașterea partidei). Forma coordonatelor:
+partenerul fiscal numai cu fapt fiscal; locul numai cu fapt fiscal sau pe
+partidă; faptul fiscal cu loc; cantitatea nemarcată numai pe lot; lotul pe
+repartitor intern; partida pe repartitor extern; locul, repartitor intern;
+contraponderea transformării fără repartitor, unitate, valoare, valută sau
+fapt fiscal, pe orice postare marcată, cu sau fără pereche. O bază care nu
+corespunde codului se recreează, nu se repară. (098, 099, C111-D2, 102b, 102d)
+
 Fiecare ramură fără probă proprie are un mutant într-o tranzacție anulată,
 rulat o dată per profil pe prima scenă cu faptele potrivite
 (`AcoperireInvarianti.cs`): `PARTIDE` (partidă fără repartitor), `IMO-CAUZA`

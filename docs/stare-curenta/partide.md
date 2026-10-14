@@ -261,6 +261,11 @@ comercială. Sunt urmărite și conturile bugetare 401.01.00, 404.01.00 și
 411.01.01 DinSeed, fără schimbarea `RolTert`. Conturile devenite manuale sunt
 respectate la re-seed. (100)
 
+`UrmarestePartide` este activ și pe 461 privat, respectiv
+408.00.00/461.01.09/428.01.02 bugetar. Efectul aparține contului, nu NIR-ului:
+și FCT bugetar pe 408 deschide partida furnizorului (SC-NIR-36/FCT), iar
+INC/PLT pe 461 folosesc urmărirea partidelor prin mecanismul comun. (098, 099)
+
 Partida decontului este a titularului Angajat; Customers/Suppliers nu îl
 preiau numai pentru că are avans. (100)
 
@@ -282,6 +287,10 @@ acceptat: partida e a terțului liniei (C111-Q11). Baza cu repartitor intern
 pe linie are ca `Loc` locul documentului, nu repartitorul ei (S12). Capătul
 de taxă reconstruit pe titular își păstrează partenerul fiscal și locul.
 (095, 096, S10, S12, C111-Q7, C111-Q11)
+
+DEC are probă numerică independentă pentru inversare și corecție peste
+închidere: partidă −100 în ianuarie, zero după inversă, noua partidă −80.
+(098, 099)
 
 Catalog: [DEC](../nucleu/scenarii/DEC.md), inclusiv PLT 150 → DEC 100 →
 INC 50, storno/corecție după închidere și refuzuri atomice. PIF/AMO/CAS au declarant și
