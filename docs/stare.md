@@ -11,7 +11,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Pagini de stare curentă | 7 |
 | Contracte de felie (`Tip: contract`) | 3, deschise 2 |
 | Cataloage vii (`Tip: catalog`) | 5 |
-| Fișiere Markdown în `docs/` | 320 |
+| Fișiere Markdown în `docs/` | 321 |
 | Citări de decizii din cod (`// N`) | 71 |
 
 ## Decizii în vigoare pe arie
