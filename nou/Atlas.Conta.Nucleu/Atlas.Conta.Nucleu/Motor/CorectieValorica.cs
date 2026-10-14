@@ -12,7 +12,7 @@ public sealed record AlocareLot(BeneficiarValoric Beneficiar, decimal Valoare);
 public sealed record CompensareLot(FaptPostat Radacina, FaptPostat Beneficiar, FaptPostat Stoc);
 
 /// <summary>Corecția valorii unui lot fără schimbarea cantității, judecată pe forma faptelor (CV-D10).</summary>
-public static class CorectieValorica {
+public static partial class CorectieValorica {
     /// <summary>Beneficiarii lotului la data corecției, în ordinea repartizării.</summary>
     public static IReadOnlyList<BeneficiarValoric> Beneficiari(
             ReperLot reper, IReadOnlyList<FaptPostat> fapte, DateOnly data) {
@@ -74,16 +74,8 @@ public static class CorectieValorica {
     /// <summary>Hamilton pe poziții, apoi pe beneficiarii fiecărei poziții; alocările ies în ordinea repartizării.</summary>
     public static IReadOnlyList<AlocareLot> Aloca(IReadOnlyList<BeneficiarValoric> beneficiari, decimal delta) {
         ArgumentNullException.ThrowIfNull(beneficiari);
-        var grupuri = new List<List<BeneficiarValoric>>();
-        foreach (var beneficiar in beneficiari) {
-            var grup = grupuri.FirstOrDefault(g => Pozitie(g[0].Fapt) == Pozitie(beneficiar.Fapt));
-            if (grup is null)
-                grupuri.Add(grup = []);
-            grup.Add(beneficiar);
-        }
-        var cote = Repartizare.Hamilton(delta,
-            grupuri.Select(g => (IReadOnlyList<decimal>)[.. g.Select(b => b.Pondere)]).ToList(), Scara.Bani);
-        var alocari = grupuri.SelectMany((g, i) => g.Select((b, j) => new AlocareLot(b, cote[i][j]))).ToList();
+        var alocari = Repartizeaza([.. beneficiari.Select(b => (b.Fapt, b.Pondere))], delta)
+            .Select(c => new AlocareLot(beneficiari[c.Indice], c.Cota)).ToList();
         if (alocari.Any(a => a.Beneficiar.ValoareActiva + a.Valoare < 0m))
             throw Refuza(MotivCorectieValorica.ValoareInsuficienta,
                 $"Corecția de {delta} ar lăsa valoare negativă pe un beneficiar al lotului.");
@@ -204,6 +196,20 @@ public static class CorectieValorica {
     static Guid? Lot(FaptPostat fapt) =>
         fapt.Postare.Coordonate.Unitate is { Fel: FelUnitate.Lot } unitate ? unitate.Id : null;
 
+    /// <summary>Hamilton pe poziții, apoi pe beneficiarii fiecărei poziții; cotele ies în ordinea repartizării, cu indicele beneficiarului.</summary>
+    static List<(int Indice, decimal Cota)> Repartizeaza(IReadOnlyList<(FaptPostat Fapt, decimal Pondere)> beneficiari, decimal delta) {
+        var grupuri = new List<List<int>>();
+        for (var i = 0; i < beneficiari.Count; i++) {
+            var grup = grupuri.FirstOrDefault(g => Pozitie(beneficiari[g[0]].Fapt) == Pozitie(beneficiari[i].Fapt));
+            if (grup is null)
+                grupuri.Add(grup = []);
+            grup.Add(i);
+        }
+        var cote = Repartizare.Hamilton(delta,
+            grupuri.Select(g => (IReadOnlyList<decimal>)[.. g.Select(i => beneficiari[i].Pondere)]).ToList(), Scara.Bani);
+        return [.. grupuri.SelectMany((g, i) => g.Select((indice, j) => (indice, cote[i][j])))];
+    }
+
     static (Guid Cont, Repartitor? Repartitor, Analiza Analiza) Pozitie(FaptPostat fapt) =>
         (fapt.Postare.Coordonate.Cont, fapt.Postare.Coordonate.Repartitor, fapt.Postare.Coordonate.Analiza);
 
@@ -246,6 +252,8 @@ public static class CorectieValorica {
             fapt.Postare.Atribuit is Guid id
                 ? dupaId.GetValueOrDefault(id) ?? throw Refuza(MotivCorectieValorica.Provenienta, $"Postarea {fapt.Id} e atribuită unei postări absente.")
                 : null;
+
+        public FaptPostat? Dupa(Guid id) => dupaId.GetValueOrDefault(id);
 
         public FaptPostat? Sursa(FaptPostat fapt) =>
             fapt.Postare.InversaDin is { } sursa ? dupaId.GetValueOrDefault(sursa.Id) : null;

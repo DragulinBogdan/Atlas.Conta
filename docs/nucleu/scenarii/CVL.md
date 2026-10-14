@@ -107,8 +107,8 @@ prin agregare înainte de stabilirea provenienței.
 
 | Stare | Scenarii |
 |---|---|
-| rulate | SC-CVL-01…17, 21…25, 27, 29, 30 |
-| rulate parțial | SC-CVL-18 (structura liniei; fără furnizor sau gestiune greșită, politică lipsă, precizie); SC-CVL-19 (transfer și cronologie; anul anterior e probat în nucleu); SC-CVL-26 (forma rădăcinilor și a compensării; mutanții invariantului lipsesc); SC-CVL-28 (tranzacțiile, stările și explicația; fără fișă, jurnal și snapshot); SC-CVL-31 (deciziile persistate; fără invariantul de audit și fără DTO) |
+| rulate | SC-CVL-01…17, 21…27, 29, 30 |
+| rulate parțial | SC-CVL-18 (structura liniei; fără furnizor sau gestiune greșită, politică lipsă, precizie); SC-CVL-19 (transfer și cronologie; anul anterior e probat în nucleu); SC-CVL-28 (tranzacțiile, stările și explicația; fără fișă, jurnal și snapshot); SC-CVL-31 (deciziile persistate și invariantul de audit; fără DTO) |
 | neimplementate | SC-CVL-20, 32 |
 
 Concurența (SC-CVL-21, 22, 23, 29) rulează pe două conexiuni reale, în
@@ -121,7 +121,11 @@ se citesc din cub la sfârșitul lunii. Eșecul injectat vine din bază, printr-
 trigger temporar pe inserarea tranzacției de compensare, fără cârlig în cod.
 
 Proba pură `CorectieValoricaTeste` acoperă matricea, cele 16 ordini de
-stornare, cazurile temporale, storno recepției și refuzurile, fără bază. [Review-ul R1](../tr-d9b-corectii-valorice-review-r1.md)
+stornare, cazurile temporale, storno recepției și refuzurile, fără bază.
+Tot ea respinge cei 12 mutanți ai invariantului de audit din SC-CVL-26 și 31,
+fiecare pe motivul lui. Pe bază, `INV-CUB` ucide cinci mutanți
+`VALORICA-*`: decizie lipsă, ponderi schimbate, valoarea liniei, valoarea
+compensării și atribuirea străină. [Review-ul R1](../tr-d9b-corectii-valorice-review-r1.md)
 confirmă cifrele și FCT; review-ul originii
 partidei nu certifică acest catalog. SC-CVL-29…32 vin din a doua rundă
 (2026-10-13): apartenența compensării (decizia 119), storno recepției, explicația și

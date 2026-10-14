@@ -1654,7 +1654,9 @@ corecție, fără TVA; nu naște lot și nu generează NIR. (CV-D1)
   partide rămâne cel din 090 (i). (119 c)
 - Fiecare `Operare` a corecției are explicație proprie: `AlocareValorica` pe
   fiecare beneficiar cu pondere, inclusiv cel cu cota zero, respectiv
-  `CompensareValorica` pe fiecare pereche de compensare. (CV-D8)
+  `CompensareValorica` pe fiecare pereche de compensare. Invariantul de audit
+  (`CorectieValorica.Auditeaza`, în `INV-CUB`) reface repartizarea din
+  ponderi și verifică postările și compensările față de decizii. (CV-D8)
 - Refuzuri: `CV_STRUCTURA`, `CV_LOT_NEELIGIBIL`, `CV_VALOARE_INSUFICIENTA`,
   `CV_CRONOLOGIE`, `CV_DEPENDENTI`, `CV_AN_INCHIS`, `CV_PROVENIENTA`, toate în
   `CoduriRefuz`. Nucleul emite motivul (`MotivCorectieValorica`), iar

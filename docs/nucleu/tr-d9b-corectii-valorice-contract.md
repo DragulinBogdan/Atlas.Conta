@@ -368,6 +368,18 @@ Invariantul de audit se extinde, fără relaxarea regulilor de azi:
    dată și indică exact beneficiarul.
 5. Oglinda inverselor pe lot rămâne neschimbată.
 
+Implementarea (2026-10-14): regula stă în `CorectieValorica.Auditeaza`,
+pură, peste faptele loturilor și deciziile explicate; `INV-CUB` o cheamă
+din `Explicatii.VerificaAcoperire` și refuză cu `CITIRE_EXPLICATIE_VALORICA`.
+Domeniul punctului 1 sunt postările pe lot fără cantitate și cu `Atribuit`,
+familia corecției: diferența valorică a NIR-ului (099) scrie pe lot o
+postare fără cantitate și fără atribuire, explicată de mecanismul ei, și
+rămâne în afara acestui invariant (prima integrală a picat pe SC-NIR, privat).
+Pe lângă punctele de mai sus, invariantul refuză postarea valorică fără
+valoare, compensarea cu valoare zero, aceeași rădăcină compensată de două
+ori și o postare cu mai multe inverse. Atribuirea spre o postare absentă
+de pe loturile corectate este proveniență străină.
+
 Forma persistată capătă cele două feluri. Versiunea explicației rămâne 2:
 formele existente nu se schimbă, iar un fel necunoscut este deja eroare la
 citire. Bazele se recreează, nu se migrează (102b). Linia explicată și
@@ -589,12 +601,15 @@ Comenzi executate din rădăcină:
 - Mutarea codurilor `CV_*` în `CoduriRefuz`: nucleul 235 de teste verzi;
   `-Tip CVL` verde pe privat (`run-verificari/20261014-085429-523`) și pe
   bugetar (`run-verificari/20261014-085458-555`).
+- Invariantul de audit CV-D8: nucleul 247 de teste verzi, cu 12 mutanți ai
+  probei pure; `-Suita Integral -Profil Ambele -Sufix .ClaudeCVL` verde
+  (`run-verificari/20261014-095623-533`), fiecare ramură `INV-CUB` își
+  ucide mutantul, inclusiv cei cinci `VALORICA-*`. Prima integrală
+  (`run-verificari/20261014-095008-711`) a picat pe SC-NIR, privat: domeniul
+  punctului 1 cuprindea și diferența valorică a NIR-ului, neatribuită.
 
 Ce nu e făcut și nu e certificat de aceste rulări:
 
-- invariantul de audit din CV-D8 pe deciziile valorice, cu mutanții din
-  SC-CVL-26 și SC-CVL-31; `CV_PROVENIENTA` e emis numai la o atribuire spre
-  o postare absentă;
 - SC-CVL-20 și 32; părțile lipsă din SC-CVL-18, 19, 28 și 31 sunt
   enumerate în catalog;
 - culegerea XAF, `WriteDto`, linia explicată și DTO-ul ei, driftul openapi:

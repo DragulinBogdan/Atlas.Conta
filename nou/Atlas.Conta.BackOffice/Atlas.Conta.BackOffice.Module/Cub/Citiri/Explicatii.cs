@@ -24,6 +24,7 @@ public static class Explicatii {
     public const string Mecanism = "CITIRE_EXPLICATIE_MECANISM";
     public const string Stingere = "CITIRE_EXPLICATIE_STINGERE";
     public const string Storno = "CITIRE_EXPLICATIE_STORNO";
+    public const string Valorica = "CITIRE_EXPLICATIE_VALORICA";
 
     public static bool Vizibila(IObjectSpace os, Guid tranzactie) =>
         os.GetObjectsQuery<Tranzactie>().Any(t => t.ID == tranzactie);
@@ -100,9 +101,17 @@ public static class Explicatii {
             .Select(l => new { l.ID, l.Cantitate, l.Valoare }).ToList()
             .ToDictionary(l => l.ID, l => (l.Cantitate, l.Valoare));
 
+        var peLoturi = postari.Where(p => p.Spatiu == N.Spatiu.Stoc && p.FelUnitate == N.FelUnitate.Lot && p.Unitate != null
+                && p.Cantitate == 0m && p.Atribuit != null && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .Select(p => new { p.TranzactieId, Lot = p.Unitate!.Value }).Distinct().ToList();
+        var cuValorice = peLoturi.Select(p => p.TranzactieId).ToHashSet();
+        var valorice = new List<N.ExplicatieValorica>();
+
         var rotunjire = new N.Rotunjire(Scara.ConventieBani);
         foreach (var purtator in purtatori) {
             var explicatie = Explicatie.Citeste(purtator.Explicatie);
+            if (cuValorice.Contains(purtator.ID) || explicatie.Decizii.Any(d => d is N.AlocareValorica or N.CompensareValorica))
+                valorice.Add(new(purtator.ID, explicatie.Decizii));
 
             var declarant = declaranti.GetValueOrDefault(purtator.Document);
             if (declarant is null || declarant.GetType().Name != explicatie.Declarant)
@@ -161,6 +170,28 @@ public static class Explicatii {
                         + "nu are `AlocareFifo`.");
             }
         }
+        VerificaCorectiiValorice(os, [.. peLoturi.Select(p => p.Lot)], valorice,
+            linii.ToDictionary(l => l.Key, l => l.Value.Valoare));
+    }
+
+    // CV-D8: alocările și compensările corecțiilor, pe faptele loturilor lor.
+    static void VerificaCorectiiValorice(IObjectSpace os, List<Guid> loturi, List<N.ExplicatieValorica> valorice,
+            Dictionary<Guid, decimal> valoriLinii) {
+        loturi = [.. loturi.Concat(valorice.SelectMany(e => e.Decizii).Select(d => d switch {
+            N.AlocareValorica a => a.Unitate.Id,
+            N.CompensareValorica c => c.Sursa.Id,
+            _ => (Guid?)null,
+        }).OfType<Guid>()).Distinct()];
+        if (loturi.Count == 0 && valorice.Count == 0)
+            return;
+        var intrari = os.GetObjectsQuery<Lot>().Where(l => loturi.Contains(l.ID) && l.LinieIntrareId != null)
+            .Select(l => new { l.ID, Linie = l.LinieIntrareId!.Value }).ToList();
+        var liniiIntrare = intrari.Select(l => l.Linie).ToList();
+        var cantitati = os.GetObjectsQuery<DocumentDetaliu>().Where(d => liniiIntrare.Contains(d.ID))
+            .Select(d => new { d.ID, d.Cantitate }).ToDictionary(d => d.ID, d => d.Cantitate);
+        var receptionate = intrari.Where(l => cantitati.ContainsKey(l.Linie)).ToDictionary(l => l.ID, l => cantitati[l.Linie]);
+        if (N.CorectieValorica.Auditeaza(CorectiiValorice.Fapte(os, loturi), valorice, valoriLinii, receptionate) is { } incalcare)
+            throw new OperareException($"{Valorica}: {incalcare}");
     }
 
     static bool Evaluata(N.Sold inainte, N.ValoareIesire iesire, N.Rotunjire rotunjire) {

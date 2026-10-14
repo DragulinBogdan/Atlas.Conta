@@ -51,6 +51,7 @@ public class CorectieValoricaTeste {
         cub.Storneaza(a, Z25);
         Assert.Equal((100m, 1000m, 0m, 1000m), cub.Stare());
         Assert.All(cub.Fapte, f => Assert.Equal(cub.Proprietar(f), f.Postare.Cauza.Document));
+        Assert.Null(cub.Audit());
     }
 
     [Fact]
@@ -106,6 +107,7 @@ public class CorectieValoricaTeste {
         }
         Assert.Equal((100m, 1000m, 0m, 1000m), cub.Stare());
         Assert.All(cub.Fapte, f => Assert.Equal(cub.Proprietar(f), f.Postare.Cauza.Document));
+        Assert.Null(cub.Audit());
     }
 
     [Fact]
@@ -120,6 +122,7 @@ public class CorectieValoricaTeste {
         Assert.Equal(2, cub.Tranzactii(c, FelTranzactie.Operare));
         Assert.Equal([120m, 120m], cub.Operare(a).Where(f => f.Postare.Coordonate.Data == Z20).Select(f => -f.Postare.Valoare));
         Assert.Equal([60m, 60m], cub.Operare(c).Where(f => f.Postare.Coordonate.Data == Z20).Select(f => -f.Postare.Valoare));
+        Assert.Null(cub.Audit());
     }
 
     [Fact]
@@ -138,6 +141,7 @@ public class CorectieValoricaTeste {
         var a = cub.Corecteaza(0.02m, Z15);
         Assert.Equal((1m, 0.34m, 0.68m, 1.02m), cub.Stare());
         Assert.Equal(2, cub.Operare(a).Count(CorectieValorica.EsteValoric));
+        Assert.Null(cub.Audit());
         cub.Consuma(1m, Z18);
         Assert.Equal((0m, 0m, 1.02m, 1.02m), cub.Stare());
     }
@@ -297,6 +301,99 @@ public class CorectieValoricaTeste {
         Assert.Equal([(true, 100m, 1000m)], beneficiari.Select(b => (b.Stoc, b.Pondere, b.ValoareActiva)));
     }
 
+    static CubMic Compensat(out Guid corectie) {
+        var cub = Partial();
+        corectie = cub.Corecteaza(200m, Z15);
+        cub.Storneaza(cub.Bon, Z20);
+        Assert.Null(cub.Audit());
+        return cub;
+    }
+
+    static bool Radacina(FaptPostat f, Guid cont) => CorectieValorica.EsteValoric(f) && f.Fel == FelTranzactie.Operare
+        && f.Postare.Coordonate.Data == Z15 && f.Postare.Coordonate.Cont == cont;
+
+    public static TheoryData<string, string> Mutanti() => new() {
+        { "fără decizie", "nu are decizie" },
+        { "decizie fără postare", "nu are rădăcina ei" },
+        { "suma liniei", "suma alocărilor" },
+        { "cote din ponderi", "cotele nu rezultă" },
+        { "beneficiar greșit", "nu e o intrare" },
+        { "rădăcină greșită", "nu e alocarea corecției" },
+        { "după inversa rădăcinii", "după inversa ei" },
+        { "proveniență străină", "postări absente" },
+        { "ciclu", "nu e o intrare" },
+        { "compensare duplicată", "de mai multe ori" },
+        { "inversă duplicată", "inverse." },
+        { "alocare spre alocare", "nu e o intrare" },
+    };
+
+    [Theory]
+    [MemberData(nameof(Mutanti))]
+    public void AuditulRespingeMutantii(string mutant, string motiv) {
+        var cub = Compensat(out var a);
+        var peConsum = cub.Fapte.Single(f => Radacina(f, CubMic.Consum));
+        var peStoc = cub.Fapte.Single(f => Radacina(f, CubMic.Stoc));
+        var aleBonului = cub.Fapte.Where(f => f.Postare.Cauza.Document == cub.Bon && f.Fel == FelTranzactie.Operare).ToList();
+        var bon = aleBonului.Single(f => f.Postare.Coordonate.Sens == Sens.Debit);
+        var bonStoc = aleBonului.Single(f => f.Postare.Coordonate.Sens == Sens.Credit);
+        var compensare = cub.Explicatii.Single(e => e.Decizii.OfType<CompensareValorica>().Any());
+        void Atribuie(FaptPostat radacina, Guid tinta) =>
+            cub.Muta(f => f.Id == radacina.Id, f => f with { Postare = f.Postare with { Atribuit = tinta } });
+        void Beneficiar(Guid tinta) =>
+            cub.MutaDecizii(d => d is AlocareValorica { Valoare: 120m } v ? v with { Beneficiar = new(tinta, Spatiu.Stoc) } : d);
+        switch (mutant) {
+            case "fără decizie":
+                cub.Explicatii[0] = cub.Explicatii[0] with {
+                    Decizii = [.. cub.Explicatii[0].Decizii.Where(d => d is not AlocareValorica { Valoare: 120m })] };
+                break;
+            case "decizie fără postare":
+                cub.Explicatii[0] = cub.Explicatii[0] with { Decizii = [.. cub.Explicatii[0].Decizii,
+                    new AlocareValorica(peConsum.Postare.Cauza.Linie!.Value, peStoc.Postare.Coordonate.Unitate!,
+                        new(Guid.NewGuid(), Spatiu.Stoc), 1m, 5m)] };
+                break;
+            case "suma liniei":
+                cub.ValoriLinii[peConsum.Postare.Cauza.Linie!.Value] += 1m;
+                break;
+            case "cote din ponderi":
+                cub.MutaDecizii(d => d is AlocareValorica v ? v with { Pondere = 100m - v.Pondere } : d);
+                break;
+            case "beneficiar greșit":
+                Beneficiar(bonStoc.Id);
+                Atribuie(peConsum, bonStoc.Id);
+                break;
+            case "rădăcină greșită":
+                cub.MutaDecizii(d => d is CompensareValorica c ? c with { Radacina = new(peStoc.Id, Spatiu.Stoc) } : d);
+                cub.Muta(f => f.Postare.Atribuit == peConsum.Id, f => f with { Postare = f.Postare with { Atribuit = peStoc.Id } });
+                break;
+            case "după inversa rădăcinii":
+                cub.Storneaza(a, Z20);
+                Assert.Null(cub.Audit());
+                var scrisa = cub.Fapte.First(f => f.Tranzactie == compensare.Tranzactie).ScrisLa;
+                cub.Muta(f => f.Postare.InversaDin?.Id == peConsum.Id, f => f with { ScrisLa = scrisa.AddTicks(-1) });
+                break;
+            case "proveniență străină":
+                Atribuie(peConsum, Guid.NewGuid());
+                break;
+            case "ciclu":
+                var picior = cub.Fapte.First(f => f.Tranzactie == compensare.Tranzactie && CorectieValorica.EsteValoric(f));
+                Beneficiar(picior.Id);
+                Atribuie(peConsum, picior.Id);
+                break;
+            case "compensare duplicată":
+                var copie = cub.Adauga(a, [.. cub.Fapte.Where(f => f.Tranzactie == compensare.Tranzactie)]);
+                cub.Explicatii.Add(compensare with { Tranzactie = copie });
+                break;
+            case "inversă duplicată":
+                cub.Adauga(cub.Bon, [.. cub.Fapte.Where(f => f.Postare.InversaDin?.Id == bon.Id)]);
+                break;
+            case "alocare spre alocare":
+                Beneficiar(peStoc.Id);
+                Atribuie(peConsum, peStoc.Id);
+                break;
+        }
+        Assert.Contains(motiv, cub.Audit() ?? "");
+    }
+
     static CubMic Partial() {
         var cub = new CubMic();
         cub.Receptioneaza(100m, 1000m, Z05);
@@ -319,6 +416,9 @@ public class CorectieValoricaTeste {
         UnitateSold lot = null!;
 
         public List<FaptPostat> Fapte { get; } = [];
+        public List<ExplicatieValorica> Explicatii { get; } = [];
+        public Dictionary<Guid, decimal> ValoriLinii { get; } = [];
+        public Dictionary<Guid, decimal> Receptionate { get; } = [];
         public Guid Receptie { get; } = Guid.NewGuid();
         public Guid Bon { get; private set; }
         public ReperLot Reper => new(Lot, Stoc, Magazie.Id, LinieIntrare, Furnizor.Id);
@@ -333,6 +433,7 @@ public class CorectieValoricaTeste {
 
         public void Receptioneaza(decimal cantitate, decimal valoare, DateOnly data) {
             lot = new UnitateSold(Lot, FelUnitate.Lot, Stoc, null, Produs, data);
+            Receptionate[Lot] = cantitate;
             Opereaza(Receptie, data, new Miscare(Tert(Receptie, data), PeStoc, cantitate, 0m, valoare, new(Receptie, LinieIntrare)));
         }
 
@@ -367,8 +468,10 @@ public class CorectieValoricaTeste {
             var cauza = new Cauza(document, Guid.NewGuid());
             var alocari = CorectieValorica.Aloca(CorectieValorica.Beneficiari(reper ?? Reper, Fapte, data), delta);
             Assert.Equal(delta, alocari.Sum(a => a.Valoare));
-            Opereaza(document, data, [.. alocari.Where(a => a.Valoare != 0m)
+            var tranzactie = Opereaza(document, data, [.. alocari.Where(a => a.Valoare != 0m)
                 .Select(a => CorectieValorica.Miscarea(a, Tert(document, data), cauza))]);
+            Explicatii.Add(new(tranzactie, [.. alocari.Select(a => CorectieValorica.Decizia(a, cauza.Linie!.Value))]));
+            ValoriLinii[cauza.Linie!.Value] = delta;
             return document;
         }
 
@@ -381,11 +484,13 @@ public class CorectieValoricaTeste {
             Assert.Empty(Conservare.Verifica(inversa));
             Scrie(inversa);
             foreach (var aleCorectiei in compensari.GroupBy(c => c.Radacina.Postare.Cauza.Document))
-                Opereaza(aleCorectiei.Key, data, [.. aleCorectiei.Select(CorectieValorica.Miscarea)]);
+                Explicatii.Add(new(Opereaza(aleCorectiei.Key, data, [.. aleCorectiei.Select(CorectieValorica.Miscarea)]),
+                    [.. aleCorectiei.Select(CorectieValorica.Decizia)]));
         }
 
         public void Retrage(Guid document) {
             CorectieValorica.LaRetragere(Fapte, document);
+            Explicatii.RemoveAll(e => proprietari[e.Tranzactie] == document);
             Fapte.RemoveAll(f => f.Postare.Cauza.Document == document);
         }
 
@@ -404,17 +509,38 @@ public class CorectieValoricaTeste {
 
         decimal Pe(Guid cont) => Fapte.Where(f => f.Postare.Coordonate.Cont == cont).Sum(CorectieValorica.Masura);
 
-        void Opereaza(Guid document, DateOnly data, params Miscare[] miscari) {
-            var contract = Motor.Opereaza(new Declaratie(document, data, miscari, [], []), rotunjire);
-            Assert.True(contract.EsteAcceptat, string.Join("; ", contract.Refuzuri.Select(r => r.Mesaj)));
-            Scrie(contract.Tranzactii.Single());
+        public string? Audit() => CorectieValorica.Auditeaza(Fapte, Explicatii, ValoriLinii, Receptionate);
+
+        public void Muta(Func<FaptPostat, bool> care, Func<FaptPostat, FaptPostat> cum) {
+            for (var i = 0; i < Fapte.Count; i++)
+                if (care(Fapte[i])) Fapte[i] = cum(Fapte[i]);
         }
 
-        void Scrie(Tranzactie tranzactie) {
+        public void MutaDecizii(Func<Decizie, Decizie> cum) {
+            for (var i = 0; i < Explicatii.Count; i++)
+                Explicatii[i] = Explicatii[i] with { Decizii = [.. Explicatii[i].Decizii.Select(cum)] };
+        }
+
+        public Guid Adauga(Guid document, IEnumerable<FaptPostat> fapte) {
+            var id = Guid.NewGuid();
+            proprietari[id] = document;
+            ceas = ceas.AddSeconds(1);
+            Fapte.AddRange(fapte.Select(f => f with { Id = Guid.NewGuid(), Tranzactie = id, ScrisLa = ceas }));
+            return id;
+        }
+
+        Guid Opereaza(Guid document, DateOnly data, params Miscare[] miscari) {
+            var contract = Motor.Opereaza(new Declaratie(document, data, miscari, [], []), rotunjire);
+            Assert.True(contract.EsteAcceptat, string.Join("; ", contract.Refuzuri.Select(r => r.Mesaj)));
+            return Scrie(contract.Tranzactii.Single());
+        }
+
+        Guid Scrie(Tranzactie tranzactie) {
             var id = Guid.NewGuid();
             proprietari[id] = tranzactie.Document!.Value;
             ceas = ceas.AddSeconds(1);
             Fapte.AddRange(tranzactie.Postari.Select((p, i) => new FaptPostat(Guid.NewGuid(), id, tranzactie.Fel, ceas, i + 1, p)));
+            return id;
         }
     }
 }
