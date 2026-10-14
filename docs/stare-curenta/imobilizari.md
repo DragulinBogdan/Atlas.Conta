@@ -2,9 +2,9 @@
 
 **Actualizat: 2026-10-15.** [Index](README.md)
 
-Fișa imobilizării, punerea în funcțiune, amortizarea contabilă și fiscală și scoaterea din funcțiune.
+Fișa imobilizării, citirea ei din cub și poziția fără fișă, amortizarea lunară (formula, recuperarea, generarea și gardienii), stornoul și datele care parametrizează amortizarea.
 
-## Imobilizări
+## Fișa imobilizării
 
 Fișa `Imobilizare` este nomenclator subțire: număr de inventar unic,
 denumire, tip material de clasă F (contul implicit furnizează prima
@@ -24,6 +24,8 @@ starea și datele le scrie doar motorul. Transferul este schimbarea locului pe f
 document: următoarea amortizare postează pe noul loc, istoricul locului
 este pe rândurile lunare. (87a, 87h)
 
+## Citirea din cub și poziția fără fișă
+
 Situația fișei, AMO/CAS și API Imo citesc aceeași intrare
 `Cub/Citiri/Imobilizari`: sume pe fișă și carte, parametri din evenimentele
 vii identificate prin cauză. Amortizarea fiscală postează în Carte=Fiscal;
@@ -34,7 +36,8 @@ refuză fișa fără cauză, fără suport ori fără originea inversei. (095, 0
 Conturile nominalizate ale activului și amortizării se citesc pe set din
 cub, prin aceeași intrare pentru generatorul AMO, CAS și declarant. Politica
 furnizează numai prima nominalizare a fiecărui cont; cheltuielile rămân din
-politică. PIF fără linie FCT consumă exclusiv deschidere/NTC operată.
+politică. PIF fără linie FCT consumă exclusiv deschidere/NTC operată. (098b/c)
+
 Poziția fără fișă e cheia cont × repartitor × produs × valută × analiză;
 partenerul nu intră în ea, deci achizițiile de la furnizori diferiți pe
 același loc sunt o singură poziție (C111-Q12). Furnizorul se regăsește prin
@@ -45,7 +48,13 @@ nici la o dată viitoare, la operare, anulare, storno/corecție sau deschidere.
 Protecția include conturile istorice după schimbarea politicii și se
 serializează cu PIF. Documentele fără suport/fișă nu iau blocajul IMO.
 Stornoul PIF eliberează suportul de la data lui; nu permite anularea
-sursei dacă aceasta ar șterge suportul unui interval istoric. (098b/c)
+sursei dacă aceasta ar șterge suportul unui interval istoric. (098b/c, C111-Q12)
+
+## Amortizarea lunară
+
+AMO este documentul generat lunar pe unitate internă, pe tiparul ITV. (87d, 87g)
+
+### Formula și eligibilitatea
 
 Aritmetica este exclusiv în `AmortizareService`, ca funcție pură aplicată
 de trei ori pe lună. Cota liniară este valoarea de amortizat împărțită la
@@ -62,6 +71,8 @@ ieșit până la ultima zi, are cel puțin un eveniment de registru până la
 ultima zi și mai are rest contabil sau fiscal; linia cu contabil zero și
 fiscal pozitiv rămâne fără conturi. (87g)
 
+### Recuperarea lunilor
+
 Lunile pe care le acoperă amortizarea lunii M sunt cele DATORATE minus cele
 ACOPERITE: datorate = lunile întregi de la luna de după punerea în funcțiune
 până la M inclusiv (luna punerii nu se amortizează), acoperite = suma
@@ -72,16 +83,19 @@ funcțiune, fiindcă fișa se postează la data înregistrării. Cota lunii este
 atunci suma cotelor celor n luni, calculată iterativ — pragurile
 degresivului și ale acceleratului avansează la fiecare pas, iar restul scade
 după fiecare — nu cota lunii înmulțită cu n; recuperarea nu depășește restul
-de amortizat și nici durata rămasă. Deductibilul se calculează pe SUMA
-lunii, cu regulile valabile la sfârșitul ei: plafonul lunar este al lunii de
-declarare și se aplică o singură dată pe suma recuperată, nu o dată pe
-fiecare lună recuperată. Linia amortizării și rândul de registru poartă
-lunile acoperite; ele intră în cheia anti-stale a operării și se inversează
-la storno ca oricare altă coloană. Fișa fără niciun eveniment până la
-sfârșitul lunii precedente, dar cu rânduri în M, este punerea în funcțiune
-înregistrată întârziat: baza și parametrii i se citesc la sfârșitul lui M.
-Gardianul lunii precedente lipsă rămâne neatins: se recuperează doar ce
-n-a avut cum să fie amortizat, nu ce n-a fost amortizat. (F27-D4)
+de amortizat și nici durata rămasă. (F27-D4)
+
+Deductibilul se calculează pe SUMA lunii, cu regulile valabile la sfârșitul
+ei: plafonul lunar este al lunii de declarare și se aplică o singură dată pe
+suma recuperată, nu o dată pe fiecare lună recuperată. Linia amortizării și
+rândul de registru poartă lunile acoperite; ele intră în cheia anti-stale a
+operării și se inversează la storno ca oricare altă coloană. (F27-D4)
+
+Fișa fără niciun eveniment până la sfârșitul lunii precedente, dar cu
+rânduri în M, este punerea în funcțiune înregistrată întârziat: baza și
+parametrii i se citesc la sfârșitul lui M. Gardianul lunii precedente lipsă
+rămâne neatins: se recuperează doar ce n-a avut cum să fie amortizat, nu ce
+n-a fost amortizat. (F27-D4)
 
 Iterația celor n luni pleacă de la situația fișei la ultimul eveniment, nu de
 la situația fiecărei luni recuperate: o fișă reevaluată sau modernizată în
@@ -89,30 +103,30 @@ intervalul recuperat primește pe toate cele n luni cota de DUPĂ eveniment,
 inclusiv pe lunile dinaintea lui. Aproximare declarată — recuperarea e rară,
 iar un eveniment în interiorul ei și mai rar. (review advers F27, L5)
 
+### Generarea, operarea și gardienii
+
 Generarea lunară urmează ordinea gardienilor: fișă eligibilă fără politică,
 amortizare vie în lună, amortizare vie ulterioară, draft anterior, lună
 precedentă lipsă, perioadă închisă, nicio fișă. Motivul se raportează la
 previzualizare și refuză comanda. Operarea cere data ultimei zile a lunii
 și aceeași unitate internă pe ambele laturi, apoi recalculează și refuză
 dacă mulțimea liniilor diferă pe fișă, cele trei cifre, conturi, loc, centru
-de cost sau cod economic; același criteriu dă `Stale` pe API. Anularea sau
-stornarea unei amortizări este refuzată dacă există o amortizare operată
-ulterioară sau fapte ulterioare ale fișelor ei (ieșire, modernizare,
-revizuire); aceeași regulă refuză anularea sau stornarea unei puneri în
-funcțiune, iar anularea sau stornarea unei ieșiri este refuzată cât există
-amortizare operată pentru luna ieșirii sau una ulterioară. (87e, 87f, 87g)
+de cost sau cod economic; același criteriu dă `Stale` pe API. (87g)
+
+Anularea sau stornarea unei amortizări este refuzată dacă există o
+amortizare operată ulterioară sau fapte ulterioare ale fișelor ei (ieșire,
+modernizare, revizuire); aceeași regulă refuză anularea sau stornarea unei
+puneri în funcțiune, iar anularea sau stornarea unei ieșiri este refuzată
+cât există amortizare operată pentru luna ieșirii sau una ulterioară. (87e, 87f, 87g)
+
+## Stornoul documentelor de imobilizări
 
 Stornoul oricărui document de imobilizări se datează în luna documentului:
 rândul invers datat în altă lună ar lăsa situația fișelor falsă între cele
 două date. O fișă apare o singură dată pe o punere în funcțiune; duratele
 revizuite depășesc lunile deja amortizate. (87e, 87g)
 
-## Amortizarea imobilizărilor
-
-AMO este documentul generat lunar pe unitate internă, pe tiparul ITV;
-mecanica generării, eligibilitatea fișelor, formula și gardienii sunt
-descrise în [imobilizari](imobilizari.md#imobilizări). Aici
-stau datele care o parametrizează. (87d, 87g)
+## Datele amortizării
 
 `PoliticaAmortizare` dă, per tip material de clasă F, contul de amortizare,
 contul cheltuielii cu amortizarea și contul cheltuielii la cedare. Seed-ul

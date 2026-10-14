@@ -9,14 +9,16 @@ aria care o descrie, etapa și scenariile care o probează. Regula
 catalogului e în kitul de guvernanță, §3.9; țintele, structura și etapa
 curentă sunt în [scop](scop.md).
 
-Rândurile inițiale sunt derivate din
-[acoperirea funcțională](stare-curenta/README.md#acoperirea-funcțională),
-[limitele curente](stare-curenta/limite-curente.md) și
+Catalogul e singura listă a acoperirii funcționale: ce e livrat și ce nu.
+[Limitele curente](stare-curenta/limite-curente.md) țin numai ce nu face
+încă o funcționalitate livrată (121). Rândurile inițiale au fost derivate
+din acoperirea funcțională a stării curente, din limitele curente și din
 [familiile de scenarii](nucleu/scenarii/README.md), propuse de agent și
-acceptate de owner la 2026-10-14. Un rând `livrată` de dinaintea
+acceptate de owner la 2026-10-14; rândurile parcate adăugate la 2026-10-15
+vin din limitele aduse la catalog (121-r2). Un rând `livrată` de dinaintea
 catalogului poartă data adoptării (linia zero), nu data livrării. Rândurile
-`deschisă` fără etapă vin din limite și sunt parcate; unul care devine
-non-țintă trece în `retrasă prin N`.
+`deschisă` fără etapă sunt parcate; unul care devine non-țintă trece în
+`retrasă prin N`.
 
 | ID | Funcționalitate | Ținte | Arie | Etapă | Stare | Scenarii |
 |---|---|---|---|---|---|---|
@@ -32,6 +34,7 @@ non-țintă trece în `retrasă prin N`.
 | F-FCT-02 | Înregistrez factura furnizorului pe clasificația bugetară, cu angajament și cod economic | T5 | stoc | | livrată 2026-10-14 | SC-FCT-12…14 |
 | F-NIR-01 | Recepționez marfa facturată și înregistrez diferențele de recepție pe cauze: lipsă, plus, imputabilă, pe drum | T1 | stoc | | livrată 2026-10-14 | SC-NIR-09, SC-NIR-18…25, SC-NIR-28, SC-X-02 |
 | F-NIR-02 | Recepționez marfă fără factură și inversez recepția | T1 | stoc | | livrată 2026-10-14 | SC-NIR-01…07, SC-NIR-11 |
+| F-NIR-03 | Recepționez marfa pe aviz și primesc ulterior factura pe lotul deja recepționat | T1 | stoc | | deschisă | — |
 | F-BCS-01 | Dau în consum din stoc prin bon de consum, evaluat FIFO pe lot | T1 | stoc | | livrată 2026-10-14 | SC-BCS-01…07, SC-BCS-09…11 |
 | F-BTR-01 | Transfer stocul între gestiuni, cu lotul și prețul lui | T1 | stoc | | livrată 2026-10-14 | SC-BTR-01…08, SC-X-08 |
 | F-DSC-01 | Descarc gestiunea pentru marfa vândută, din factura de vânzare | T1 | stoc | | livrată 2026-10-14 | SC-DSC-01…08, SC-FCL-10 |
@@ -42,6 +45,7 @@ non-țintă trece în `retrasă prin N`.
 | F-RDC-01 | Primesc retur de la client, cu venitul și costul inversate | T1 | stoc | | livrată 2026-10-14 | SC-RDC-01…12, SC-RDC-14, SC-RDC-15 |
 | F-DVI-01 | Înregistrez declarația vamală de import, cu TVA-ul din vamă | T1, T2 | stoc | | livrată 2026-10-14 | SC-DVI-01…09, SC-DVI-11, SC-DVI-13…17 |
 | F-DVI-02 | Includ taxa vamală în costul loturilor din facturile legate | T1 | stoc | | deschisă | SC-X-13 |
+| F-DVI-03 | Înregistrez taxele vamale plătite și refacturate de comisionar | T1, T2 | stoc | | deschisă | — |
 | F-FCL-01 | Emit factura către client, cu TVA pe mai multe cote rotunjit pe document și cotă, și o anulez, o stornez sau o corectez | T1, T2 | partide | | livrată 2026-10-14 | SC-FCL-01…08, SC-FCL-11…14 |
 | F-PLT-01 | Plătesc furnizorii și alți creditori din casă sau bancă | T1 | partide | | livrată 2026-10-14 | SC-PLT-01…09 |
 | F-INC-01 | Încasez de la clienți în casă sau bancă | T1 | partide | | livrată 2026-10-14 | SC-INC-01…07, SC-INC-09 |
@@ -58,9 +62,16 @@ non-țintă trece în `retrasă prin N`.
 | F-IMO-02 | Generez amortizarea lunară contabilă și fiscală, liniară, accelerată sau degresivă, cu plafonul de deductibilitate | T1, T2 | imobilizari | | livrată 2026-10-14 | SC-IMO-07…09, SC-IMO-19, SC-IMO-23…25 |
 | F-IMO-03 | Scot din funcțiune o imobilizare, cu valoarea rămasă pe ambele cărți | T1 | imobilizari | | livrată 2026-10-14 | SC-IMO-12, SC-IMO-13 |
 | F-IMO-04 | Țin evidența investițiilor în curs, a reevaluării, a leasingului și a deprecierii imobilizărilor | T1 | imobilizari | | deschisă | — |
+| F-IMO-05 | Amortizez degresiv (AD2) sau pe unități de producție | T1, T2 | imobilizari | | deschisă | — |
+| F-IMO-06 | Repartizez cheltuiala cu amortizarea pe mai multe centre de cost | T1 | imobilizari | | deschisă | — |
+| F-IMO-07 | Vând o imobilizare cu ieșirea legată de factura de vânzare și cu deductibilitatea valorii rămase | T1, T2 | imobilizari | | deschisă | — |
+| F-IMO-08 | Transfer o imobilizare între locuri, cu rândul transferului în registru | T1 | imobilizari | | deschisă | — |
 | F-PER-01 | Închid luna cu constatările ei și soldurile fixate; un document întârziat intră în luna deschisă | T1 | perioade | | livrată 2026-10-14 | SC-X-21, SC-BCS-04, SC-CIT-12…14 |
 | F-PER-02 | Închid anul: rezultatul trece în 1174, iar anul nou se deschide din soldurile de la 31.12 | T1 | perioade | | deschisă | SC-X-12 |
 | F-ITV-01 | Închid lunar TVA-ul: generez, regenerez și inversez nota de regularizare | T1, T2 | tva | | livrată 2026-10-14 | SC-ITV-01…11 |
+| F-TVA-01 | Export D300 și D394 în XML, pentru depunere | T2 | tva | | deschisă | — |
+| F-TVA-02 | Calculez prorata și ajustările de TVA și completez secțiunile informative din D394 | T2 | tva | | deschisă | — |
+| F-TVA-03 | Aplic TVA la încasare, cu exigibilitatea amânată și conturile ei intermediare | T1, T2 | tva | | deschisă | — |
 | F-REGIM-01 | Văd pe fiecare document ce pot face cu el acum și de ce, după stare, stingeri și perioadă | T1 | documente | | livrată 2026-10-14 | SC-REGIM-01…15 |
 | F-X-01 | Lucrez în același timp cu alți operatori fără stoc negativ, dublă stingere sau lună închisă peste un document operat | T1 | motor | | livrată 2026-10-14 | SC-X-15…23 |
 | F-CIT-01 | Citesc balanța de verificare și balanța pe planul de conturi, la orice dată | T1 | raportare | | livrată 2026-10-14 | SC-CIT-11, SC-CIT-26…30 |
@@ -69,17 +80,21 @@ non-țintă trece în `retrasă prin N`.
 | F-CIT-04 | Citesc soldul pe parteneri și documentele cu rest | T1 | raportare | | livrată 2026-10-14 | SC-C111-10, SC-CIT-33 |
 | F-CIT-05 | Aflu de ce o postare are contul și suma ei: regula de politică care a decis | T3 | raportare | | livrată 2026-10-14 | SC-CIT-96…99 |
 | F-CIT-06 | Citesc jurnalele de TVA, decontul și D300, D394, cu corecțiile pe luna lor | T2 | tva | | livrată 2026-10-14 | SC-CIT-79…87 |
+| F-CIT-07 | Văd fișa unui lot sau a unei partide, cu toate mișcările ei | T1, T3 | raportare | | deschisă | — |
 | F-SAFT-01 | Generez SAF-T lunar (L): registrul general, facturi și plăți, cu sumar, avertismente și XML validat | T2 | saft | | livrată 2026-10-14 | SC-SAFT-01…06, SC-SAFT-16…35 |
 | F-SAFT-02 | Generez SAF-T de stocuri (S) pe luni, coerent cu L | T2 | saft | | livrată 2026-10-14 | SC-SAFT-38…51 |
 | F-SAFT-03 | Generez SAF-T pentru o lună cu corecție valorică pe lot | T2 | saft | | deschisă | — |
 | F-ANAF-01 | Completez și actualizez un partener din datele ANAF | T1 | nomenclatoare | | livrată 2026-10-14 | — |
+| F-NOM-01 | Țin nomenclatoarele: parteneri, produse și datele societății | T1 | nomenclatoare | | livrată 2026-10-14 | — |
 | F-ANAF-02 | Actualizez din ANAF mai mulți parteneri dintr-un ecran | T1 | ecrane | | deschisă | — |
 | F-ANAF-03 | Trimit și primesc facturi prin e-Factura | T2 | nomenclatoare | | deschisă | — |
 | F-CFG-01 | Schimb din aplicație, fără versiune nouă, politicile: TVA, numerotare, scadențe, implicitele documentelor, mișcările SAF-T, amortizarea | T1 | politici | | livrată 2026-10-14 | — |
 | F-CFG-02 | Verific configurația profilului și văd cine a schimbat ce | T1, T3 | politici | | livrată 2026-10-14 | — |
+| F-CFG-03 | Export și import configurația unui profil | T1 | politici | | deschisă | — |
 | F-SEC-01 | Văd și operez doar ce îmi permite rolul, cu refuzuri uniforme pe toate ușile | T1 | api | | livrată 2026-10-14 | SC-CIT-87, SC-SAFT-36, SC-D9B-10 |
 | F-IMP-01 | Aduc documentele dintr-un sistem 1C prin motor, cu diferențele raportate | T4 | import | | deschisă | — |
 | F-VAL-01 | Țin partide și solduri în valută, cu diferența de curs la stingere | T1 | partide | | deschisă | — |
+| F-BNK-01 | Import extrasele bancare și sting din ele partidele | T1 | partide | | deschisă | — |
 | F-CMD-01 | Rezerv stoc pe comenzi de vânzare și distribui o factură din mai multe gestiuni | T1 | stoc | | deschisă | — |
 | F-SAL-01 | Calculez și contez salariile | T1 | documente | | deschisă | — |
 | F-PRD-01 | Produc pe rețete, cu consumul normat | T1 | stoc | | deschisă | — |

@@ -17,7 +17,7 @@ controlate de server. Implicitul TVA al ancorei este editabil. (20, 81e)
 Politicile sunt editabile prin OData în limita permisiunilor și a gărzilor
 de domeniu. Rolul `Configurator` (seed-uit, și pe RELEASE) citește tot și
 scrie doar tipurile din `Politici.TipuriConfigurabile` — lista explicită a
-celor 22 de tipuri cu proveniență, consumată și de raportul de profil și de
+tipurilor cu proveniență, consumată și de raportul de profil și de
 gate-urile de citire; permisiunile rolului se reaplică la fiecare seed. Toate
 tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e, 81k, 84c, 84d)
 
@@ -58,10 +58,9 @@ scară, deci `21.0000` citit din bază și `21` din seed dau aceeași cheie). Se
 recreează un rând refuzat și îl numără la „șterse”; golurile de mapare
 D300/D394 citesc tot refuzurile. Cheia poartă numele coloanelor: un refuz
 scris înaintea redenumirii unei coloane din cheie nu mai potrivește rândul,
-iar baza care îl ține se recreează (102b). Așa e pe mapările de TVA de la
-TR-D9b pasul 7, unde `Sens` a devenit `SensTva`. Refuzul se șterge de rolul `Configurator`,
-iar rândul revine la următorul re-seed. Raportul de profil nu mai are
-categoria „referință spre un rând șters”: FK-ul refuză ștergerea rândului
+iar baza care îl ține se recreează (102b). Refuzul se șterge de rolul
+`Configurator`, iar rândul revine la următorul re-seed. Raportul de profil nu
+are categoria „referință spre un rând șters”: FK-ul refuză ștergerea rândului
 referit (valoarea 2 a lui `FelConstatare` e retrasă). Avertismentul D394
 pentru partenerul scos din uz e `PartenerInactiv`. (83a, 83j, 104f, 104i)
 
@@ -73,8 +72,8 @@ răspunde cu succes fără a constitui o scriere. (81d, 81-r3, 81-r5)
 Verificarea profilului citește configurația completă după verificarea
 dreptului de citire asupra tuturor tipurilor implicate, inclusiv partener și
 produs. Lipsa unui drept produce 403, nu un raport aparent complet din date
-filtrate. Raportul semnalează referințe șterse, implicite inactive, ancore
-lipsă, goluri de mapare și rânduri manuale. Listele de rânduri manuale sunt
+filtrate. Raportul semnalează rândurile manuale, tipurile de TVA inactive
+referite ca implicite, politicile lipsă și golurile de mapare. Listele de rânduri manuale sunt
 limitate la 200 per tabel. Verificarea nu repară datele. (81g)
 
 ## Explicarea configurației

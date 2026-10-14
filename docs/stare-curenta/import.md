@@ -2,7 +2,7 @@
 
 **Actualizat: 2026-10-15.** [Index](README.md)
 
-Importul din 1C și reconcilierea cu sistemul vechi.
+Importul din 1C, opțiunile rulării, reconcilierea cu sursa și deschiderea importată.
 
 ## Import operațional 1C
 
@@ -21,18 +21,14 @@ Conectorul păstrează nominalizarea sursei. La loturi, linia poartă lotul
 numit de 1C. La partide, rândul de compensare sau de operație care are un
 document în subconto-ul „Documente” numește pe linia de notă partida acelui
 document, fie ea deschisă de un document importat sau inițială; trecerea 2 nu
-mai mută o partidă inițială pe care stingătorul a numit-o la operare. Unde
+mută o partidă inițială pe care stingătorul a numit-o la operare. Unde
 sursa nu numește, conectorul dă cheia de ordonare: partida inițială primește
-data documentului 1C ca dată de naștere. Pe ianuarie 2025: 546 de laturi cu
-partida numită, niciuna absentă la data notei; 677 de date distincte pe cele
-3.967 de partide inițiale. (115)
+data documentului 1C ca dată de naștere. (115)
 
 Partidele inițiale intră în deschidere ordonate pe cheia sursei (simbol,
 partener, document 1C), iar la aceeași dată de naștere FIFO le consumă în
-această ordine. Două importuri ale aceluiași binar pe ianuarie 2025 dau
-același raport de reconciliere, aceleași legături și aceleași partide pe chei
-naturale (18.770 de tranzacții, 81.774 de postări, 10 verificări picate în
-ambele). (116; 2026-10-09)
+această ordine. Două importuri ale aceluiași binar dau același raport de
+reconciliere, aceleași legături și aceleași partide pe chei naturale. (116)
 
 Nomenclatoarele sunt create la nevoie. Identitatea materialului importat
 ține cont de catalog și cont; lotul, de document × produs × cont. Mapările
@@ -43,18 +39,25 @@ pentru documente nerecunoscute. Transformările și transferurile sunt
 clasificate în ASM, BTR sau NTC după faptul economic. FCL importată postează
 venitul; DSC folosește loturile identificate de sursă. (49a, 49d, 75b)
 
+Proba supremă a motorului e catalogul de scenarii, nu importul
+(`docs/nucleu/scenarii/README.md`): așteptări scrise de mână, ciclul complet
+per tip, lanțurile transversale, pe ambele profiluri. Clona Flax rămâne sursă
+de întrebări (recensământ, 091-r2); Import1C e felia de migrare (091-r4),
+după „rotund" (091 (g)). (091)
+
+### Opțiunile rulării
+
 Fără connection string dat, Import1C scrie în `Atlas.Conta.Import1C.Flax`
 pe instanța nativă (5446). Pe orice conexiune care nu spune altfel pornește
 pregătirea automată a comenzilor (`Max Auto Prepare=300`,
-`Auto Prepare Min Usages=2`): pe ianuarie, 11:29 → 9:55 pe același binar.
+`Auto Prepare Min Usages=2`).
 
 `--pana-la-ziua Z` taie ultima lună a ferestrei (`--pana-la`) la ziua Z,
 pentru rulări scurte de măsurare: sursa se citește numai până la acea zi,
 stingerile lunii se aplică, iar închiderea de TVA și contractul lunar nu
 rulează, fiindcă se compară cu sfârșitul de lună al sursei. Raportul spune că
 luna e tăiată, iar verdictul e „contract lunar nerulat”, nu „îndeplinit”. Nu
-se combină cu `--inchide-lunile`. Ianuarie până la ziua 5: 822 de documente,
-72 s cu tot cu deschidere.
+se combină cu `--inchide-lunile`.
 
 `--inchide-lunile` închide fiecare lună imediat după importul ei, prin
 `PerioadaService.Inchide` cu toate constatările curente acceptate (politica de
@@ -62,35 +65,12 @@ se combină cu `--inchide-lunile`. Ianuarie până la ziua 5: 822 de documente,
 ocolire). E proba supremă a soldurilor materializate: raportul de reconciliere
 trebuie să rămână IDENTIC cu baseline-ul rulării fără închideri, adică importul
 citește peste snapshot-uri, nu peste registrul integral, și scrie aceleași
-cifre. Verificat 2026-09-17 pe anul 2025: 12/12 luni închise, 0 constatări per
-lună, raport identic cu `reconciliere-20260914-164035.txt`, `Reconstruieste`
-0 diferențe pe contabil, stoc și partide. (F27-D1, F27-D3)
+cifre. (F27-D1, F27-D3)
 
-Verificarea istorică a trecerii pe TPH a cerut ca importul integral cu
-`--recreeaza --cititori --inchide-lunile` să dea un raport IDENTIC pe
-conținut sortat cu baseline-ul curent
-(`nou/tools/Import1C/reconciliere-20260917-121343.txt`), iar
-`Reconstruieste` 0 diferențe. După ea se rulează pe baza de import SQL-ul
-din `--dump-integritate-tph`: zero rânduri pe fiecare interogare. Verificat
-pe TPH la 2026-09-18: raportul `reconciliere-20260918-154628.txt` e identic pe
-conținut sortat cu baseline-ul; 12/12 luni închise fără constatări;
-`Reconstruieste` a dat 0 diferențe; integritatea TPH a dat 0 încălcări în 103
-interogări. 15 dintre ele sunt vacue pe import (tipuri și legături pe care
-importul nu le produce), iar pe acelea le acoperă ModelCheck. (89g, 89h)
-
-**Din 2026-09-22 (091) proba supremă nu mai e importul, ci catalogul de
-scenarii** (`docs/nucleu/scenarii/README.md`): așteptări scrise de mână,
-ciclul complet per tip, lanțurile transversale, pe ambele profiluri; clona
-Flax rămâne sursă de întrebări (recensământ, 091-r2), Import1C e felia de
-migrare (091-r4), după „rotund" (091 (g)). Paragraful de mai jos e
-istoricul probei până la felia 32, pasul 2b.
-
-Pe cubul persistat proba supremă avea aceeași formă: importul integral cu
-tipurile migrate marcate `PosteazaInCub` trebuie să dea exit 0, ZERO refuzuri
-ale declarației, raport identic pe conținut sortat cu baseline-ul, 12/12 luni
-închise, `Reconstruieste` 0 diferențe, `--dump-integritate-tph` 0 încălcări și
-`--reconciliere-cub` 0 rânduri Δ pe toate literele; `refuzuri.ps1` se reface pe
-clona privată a noului import. Măsurat la 2026-09-21: Import1C integral pe Flax (`--recreeaza --cititori --inchide-lunile`, 2026-09-21): exit 0, 1 h 57 min (3 h 21 min la felia 28), raportul `nou/tools/Import1C/reconciliere-20260921-035646.txt` IDENTIC pe conținut sortat cu baseline-ul feliei 28, ZERO refuzuri ale declarației, 12/12 luni închise cu 0 constatări, `--reconciliere-cub` 0 rânduri Δ pe (a)–(g) — (f) vacuă: cele 9 conturi cu rol de terț sunt atinse și de tipuri nemigrate —, integritatea TPH 0 încălcări în 107 interogări, cubul cu 70.373 tranzacții / 252.092 postări / 16.924 transferuri (PLT → FCT; INC → FCL fără transfer, FCL fiind nemigrat), `refuzuri.ps1` 294/294 PASS pe `Atlas.Conta.BackOffice.Privat` refăcută din import cu perioadele redeschise. (S-D10)
+După un import, SQL-ul din `--dump-integritate-tph` se rulează pe baza de
+import: zero rânduri pe fiecare interogare. Interogările pe tipuri și legături
+pe care importul nu le produce sunt vacue pe import; pe acelea le acoperă
+ModelCheck. (89g, 89h)
 
 ## Reconciliere și migrare legacy
 
@@ -104,16 +84,18 @@ Rulajele pe lot nu sunt țintă când identitatea lotului nu este comparabilă
 structural. Evaluarea exactă, excepția returului fiscal și efectele
 retroactivității se verifică separat. (45e, 47a, 75c)
 
-Import1C citește cubul prin `Cub/Citiri` și nu mai referă registrele
-(TR-D9a pasul 5, 2026-10-06). Contractul 1 citește `Contabil.Postari`, intrarea
-balanței. Contractul 2 reface perechea debit / credit a unei linii ITV din
-cele două postări ale ei; o linie de altă formă e eșec, nu se sare. Contractul
-3 citește `Loturi`; la deschidere, celulele sursei cu valoare fără cantitate,
-care nu intră în cub, sunt o categorie de justificare numită, pe exact
-cheile măsurate. Predicția de valoare a alocării cheamă `Nucleu.Evaluare.Iesire`
-pe soldul din cub, pe orice ieșire evaluată din sold. `--sabotaj`, oracolul
-golirii din raport și scrierea deschiderii în registre au ieșit. `Migrare` și
-`BackfillTva` sunt șterse. (D9-D11; `docs/import/faza-1c-design.md` §16)
+### Contractele reconcilierii pe cub
+
+Import1C citește cubul prin `Cub/Citiri` și nu referă registrele. Contractul
+1 citește `Contabil.Postari`, intrarea balanței. Contractul 2 reface perechea
+debit / credit a unei linii ITV din cele două postări ale ei; o linie de altă
+formă e eșec, nu se sare. Contractul 3 citește `Loturi`; la deschidere,
+celulele sursei cu valoare fără cantitate, care nu intră în cub, sunt o
+categorie de justificare numită, pe exact cheile măsurate. Predicția de
+valoare a alocării cheamă `Nucleu.Evaluare.Iesire` pe soldul din cub, pe
+orice ieșire evaluată din sold. (D9-D11; `docs/import/faza-1c-design.md` §16)
+
+### Amortizarea față de 1C
 
 Formula amortizării se reconciliază cu cifrele postate în 1C prin blocul
 `RECONCILIERE-MF` din ModelCheck, condiționat de fixture-ul gitignored
@@ -123,6 +105,8 @@ diferențele se raportează cu activ, lună, așteptat și postat; blocul nu pic
 pe diferențe, doar pe fixture malformat. Import1C nu generează documente de
 imobilizări; după orice atingere a motorului de operare, raportul integral
 trebuie să rămână identic cu baseline-ul. (87c, 87k)
+
+### Deschiderea importată
 
 Prototipul legacy migrează nomenclatoare și solduri de deschidere la granița
 aleasă. Istoricul rămâne în sursă. Deschiderile contabile folosesc convenția
@@ -145,6 +129,24 @@ cu sumă. O eroare tehnică a unei stingeri pică luna și nu explică nimic.
 `--probe-stingeri` injectează două erori pe prima stingere reală. Contractul
 și cifrele:
 `docs/import/m1-deschidere-terti-contract.md`. (107)
+
+## Limitele implementării
+
+- Conectorul 1C rulează prin motor numai pe deschidere și pe trecerea 2 a
+  lunii: deschiderea trece prin comanda de deschidere, iar stingerile anului
+  pe partide inițiale se scriu în cub; fără deschiderea în cub, Import1C nu
+  rulează. Stingerile prin facturi rămân în afara trecerii 2 (107-r1), iar
+  pozițiile în valută intră în lei, plafonate la rest (107-r4). (107, 107 j)
+- Reconcilierea Import1C nu e verde: contractul 1 are conturi fără explicație
+  (nota-punte a reclasificării dublează ASM-ul care postează, 110-r2), iar
+  contractul 5 are partide inițiale neexplicate. Sensibilitatea contractelor 1
+  și 3 n-are probă proprie, iar unealta n-are un mod de reconciliere fără
+  scriere. (D9-D11)
+- Reproductibilitatea importului e măsurată pe o singură lună, pe chei
+  naturale. (116)
+- Reluarea parțială cu `--continua` poate afecta interpretarea reconcilierii;
+  validarea completă cere o bază și un set de referință controlate, cu starea
+  reluării cunoscută. (75-r3)
 
 <!-- gen:decizii -->
 ## Decizii

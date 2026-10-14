@@ -5,6 +5,7 @@
 - Execuție: varianta A din analiza din 2026-10-14, aleasă de owner 2026-10-15; paginile sparte numai prin mutare, `Arii` pe decizii din citări, registrul reclasificat
 - Arii: verificare
 - Amendează: 118 (l)
+- Închide: 121-r1, 121-r2
 - Docs: [analiza spargerii ariilor](../analize/2026-10-14-spargerea-ariilor.md); [scop](../scop.md); [catalogul funcționalităților](../functionalitati.md); `docs/docskit.json` (`arii`)
 
 ## Regula durabilă
@@ -18,6 +19,8 @@
 (c) **`Arii:` pe o decizie = paginile care o citează.** O decizie numește în `Arii:` ariile ale căror pagini îi poartă identificatorul (`(42b)`), plus paginile transversale pe care le numea. O decizie necitată rămâne cu `Arii` gol până o citează o pagină.
 
 (d) **O arie nouă sau o graniță mutată cere decizie** (kit §3.9.3), cu pagina, configul, registrul și catalogul aduse în același PR.
+
+(e) **Limitele au trei locuri.** Ce nu e livrat e un rând `deschisă` în catalog. Ce nu face încă o funcționalitate livrată, în forma văzută de utilizator, stă în `limite-curente`, pe arii. Limita unui mecanism, fără efect direct pentru utilizator, stă la sfârșitul paginii ariei, sub `## Limitele implementării`. Cifrele de mediu, rulările și istoricul nu intră în niciuna: stau în jurnal (kit §3.3.3, §3.3.7).
 
 ## Context
 
@@ -44,12 +47,15 @@ Respinse: varianta B (9 arii; TR-D9b-CV ar fi declarat 6 din 9) și varianta C (
 
 ## Ce rămâne deschis
 
-**121-r1 — Rescrierea paginilor pe responsabilități.** Mutarea a păstrat secțiunile numite după felii („Declarația fluxului per tip (TR-D6b, felia 30)”, „FCL și DSC pe cub (T-D4, felia 32, pasul 2)”) și preambulul de stare al feliilor din `verificare` (`## Validarea feliilor`), contra kit §3.3.1 și §3.3.3. Se rescriu pe subiect, câte o arie o dată, fără mutare de conținut între arii. Triggerul: prima felie care atinge aria.
+**121-r1 — Rescrierea paginilor pe responsabilități** (închisă prin 121, 2026-10-15). Mutarea a păstrat secțiunile numite după felii („Declarația fluxului per tip (TR-D6b, felia 30)”, „FCL și DSC pe cub (T-D4, felia 32, pasul 2)”) și preambulul de stare al feliilor din `verificare` (`## Validarea feliilor`), contra kit §3.3.1 și §3.3.3. Se rescriu pe subiect, câte o arie o dată, fără mutare de conținut între arii. Triggerul: prima felie care atinge aria.
 
-**121-r2 — Limitele și acoperirea din README față de catalog.** `limite-curente.md` repetă funcționalități deschise din catalog (salariile, e-Factura, valuta…), iar `stare-curenta/README.md` ține acoperirea funcțională ca proză. Kit §3.3.7 le vrea în catalog. Triggerul: următoarea trecere `/docs-curatenie`.
+**121-r2 — Limitele și acoperirea din README față de catalog** (închisă prin 121, 2026-10-15). `limite-curente.md` repetă funcționalități deschise din catalog (salariile, e-Factura, valuta…), iar `stare-curenta/README.md` ține acoperirea funcțională ca proză. Kit §3.3.7 le vrea în catalog. Triggerul: următoarea trecere `/docs-curatenie`.
 
 **121-r3 — Sondajul clasificării registrului.** Owner-ul verifică prin sondaj aria rândurilor, întâi pe cele 38 clasificate de mână și pe cele 85 clasificate după titlu. O arie greșită se corectează pe rând, fără decizie nouă. Triggerul: prima sesiune pe o arie care citește registrul filtrat.
+
+**121-r4 — Mutarea între arii.** Rescrierea 121-r1 a lăsat pe loc pasajele care țin de altă arie (regula ei: fără mutare între arii). Candidații, pagină → arie: din `stoc`, invarianții cubului → `verificare`, citirile contabile ale cubului → `raportare`, urmărirea partidelor pe 461/408 și proba DEC → `partide`, declarantul FCL → `motor`; din `api`, recepția cu diferențe → `stoc`/`politici`, ușile perioadelor → `perioade`; din `tva`, exportul SAF-T → `saft`, raportul „Impact TVA” → `raportare`; din `partide`, `SoldParteneri` → `raportare`, `IVerificabilLaCommit` → `motor`, PIF/AMO/CAS → `imobilizari`; din `documente`, `DescarcareService` → `stoc`; din `ecrane`, ruta rectificativei → `tva`, lista `PostareVizual` → `raportare` (de cântărit); din `raportare`, invarianții explicației → `verificare`, dry-run-ul și `DECLARATIE_INVALIDA` → `motor`; din `dezvoltare`, probele HTTP și purja scenelor → `verificare`; din `verificare`, listarea N-r8 → `raportare`, identitățile cititorilor → `documente`, validarea D406 → `saft`; din `motor`, filtrul de carte al cititorilor → `raportare`, corecția ITV legată → `tva`; din `perioade`, cumulul raportului de stoc → `stoc` (opțional). Se mută câte o arie o dată, cu ancorele rescrise. Triggerul: prima felie care atinge una din cele două arii.
 
 ## Istoric
 
 - 2026-10-15: scrisă și executată pe branch-ul docs/arii-16, peste PR #44.
+- 2026-10-15: 121-r1 și 121-r2 executate pe branch-ul docs/121-r1-r2. Cele 16 pagini sunt rescrise pe subiect; jurnalul scos din ele (preambulul `## Validarea feliilor`, cifrele de mediu, starea feliilor) a intrat verbatim în `istoric-plan-de-lucru.md`. Regulile care descriau încă registrele, regimul dual sau oracolul ieșite la 110 sunt aduse la forma din cod. `limite-curente` ține numai limitele văzute de utilizator; limitele mecanismelor au trecut la `## Limitele implementării` din pagina ariei, cifrele în jurnal, iar ce nu e livrat a devenit 13 rânduri noi în catalog (12 parcate, F-NOM-01 livrată la linia zero). Două limite contrazise de regula curentă au ieșit: snapshot-ul citit fără filtrul pe rând (citirile securizate folosesc postările autorizate) și soldul pe partener al taxei vamale (86-r13 închisă la 110). Din README au ieșit „Tranziția în curs” și tabelul de acoperire. Intră (e) și 121-r4.

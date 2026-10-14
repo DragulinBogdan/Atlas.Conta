@@ -35,7 +35,7 @@ Una din cele două părți ale documentului, `Predator` sau `Primitor`, cu
 repartitorul ei și cu partea permisă de contractul laturilor; debitul și
 creditul postării nu sunt laturi, ci sensul ei, iar „latura pereche” a
 viramentului e documentul pereche (65). Regula:
-[motor § Laturile ca structură](motor.md#laturile-documentului-ca-structură-t-d13-felia-32-pasul-2b) (T-D13, 118).
+[motor § Laturile documentului ca structură](motor.md#laturile-documentului-ca-structură) (T-D13, 118).
 Înrudit: parte, capăt, sens. În cod: `Document.Laturi()`, `LaturaDocument`,
 `Declaratii.Latura`; debitul și creditul postării nu poartă numele ăsta
 nici ca tip, nici ca membru sau coloană (118-r7, TR-D9b pasul 6).
@@ -46,7 +46,7 @@ nici ca tip, nici ca membru sau coloană (118-r7, TR-D9b pasul 6).
 Debitul sau creditul postării, coordonată obligatorie a cubului; aceeași
 familie numește sensul taxei (`SensTva`) și al stingerii (`SensStingere`)
 și nu se confundă cu contarea, care e regula de atribuire a conturilor.
-Regula: [motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D2, 118).
+Regula: [motor § Nucleul pur](motor.md#nucleul-pur) (N-D2, 118).
 Înrudit: latură, postare, coordonată. În cod: `Sens` (nucleu, 118-r7),
 `SensTva`, `SensStingere`. Membrul care poartă debitul sau creditul se
 numește `Sens`, cu coloana `Sens` de pe `Postare` (TR-D9b pasul 6). Numele
@@ -63,7 +63,7 @@ de API ale partidelor, documentelor cu rest și contrapartidelor notei
 Poziția repartitorului față de patrimoniu: `Extern` (partener, angajat),
 `Intern` (gestiune, unitate internă), `Propriu` (cont propriu); contractul
 laturilor declară părțile permise pe fiecare latură a tipului. Regula:
-[motor § Laturile ca structură](motor.md#laturile-documentului-ca-structură-t-d13-felia-32-pasul-2b) (T-D13).
+[motor § Laturile documentului ca structură](motor.md#laturile-documentului-ca-structură) (T-D13).
 Înrudit: latură, repartitor. În cod: `Parte`.
 În sistemul vechi: intern/extern per tip în `GEST_DEFA_DOCUM`.
 
@@ -91,7 +91,7 @@ Regula: [motor § Contare și dimensiuni](motor.md#contare-și-dimensiuni) (111,
 Terțul extern, furnizor și client ca roluri ale aceluiași rând; pe
 postare, e repartitorul de sold al capătului de terț și titularul
 partidei.
-Regula: [motor § Declarația fluxului per tip](motor.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (16, B-D8, 111).
+Regula: [motor § Declarația fluxului per tip](motor.md#declarația-fluxului-per-tip) (16, B-D8, 111).
 Înrudit: repartitor, partidă, partener fiscal. În cod: `Partener`; pe
 postare, `Repartitor` cu felul `Partener`.
 
@@ -99,7 +99,7 @@ postare, `Repartitor` cu felul `Partener`.
 
 Partenerul din blocul fiscal al postării cu fapt fiscal: nu poartă
 partidă, nu e repartitorul de sold al postării și poate lipsi. Regula:
-[motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (B-D8 pct. 5, 111, C111-D2).
+[motor § Nucleul pur](motor.md#nucleul-pur) (B-D8 pct. 5, 111, C111-D2).
 Înrudit: partener, fapt fiscal, loc. În cod: `PartenerFiscal`.
 
 ### loc
@@ -107,14 +107,14 @@ partidă, nu e repartitorul de sold al postării și poate lipsi. Regula:
 Locul intern al postării când nu e repartitorul ei de sold: pe orice
 postare cu fapt fiscal („loc fiscal”) și pe capătul intern căruia
 titularul unei partide i-a luat locul; nu intră în nicio cheie de sold.
-Regula: [motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (111, C111-D2, C111-Q14).
+Regula: [motor § Nucleul pur](motor.md#nucleul-pur) (111, C111-D2, C111-Q14).
 Înrudit: repartitor, partener fiscal, fapt fiscal. În cod: `Loc`.
 
 ### contrapondere
 
 Marcajul postării care ține contracantitatea în afara evidenței: terț,
 consum, inventar sau transformare; postarea nemarcată e în evidență.
-Regula: [motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D4, 111, C111-D2).
+Regula: [motor § Nucleul pur](motor.md#nucleul-pur) (N-D4, 111, C111-D2).
 Înrudit: capăt, repartitor, lot. În cod: `Contrapondere`.
 
 ### capăt
@@ -125,7 +125,7 @@ contrapondere); „picior” e
 sinonimul de vorbire al paginilor, iar „proiecție” rămâne al citirilor
 (42c). Viramentul intern e perechea PLT/INC cu capetele pe conturi
 proprii. Regula:
-[motor § Declarația fluxului per tip](motor.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (B-D8, S-D7, T-D13, 64, 118).
+[motor § Declarația fluxului per tip](motor.md#declarația-fluxului-per-tip) (B-D8, S-D7, T-D13, 64, 118).
 Înrudit: latură, postare, contrapondere. În cod: `Capat`.
 
 ### unitate de sold
@@ -134,7 +134,7 @@ Obiectul nominalizat pe care se ține soldul: lotul, partida și fișa de
 imobilizare sub același concept, scurt „unitate” în pagini; FIFO consumă
 întâi unitatea numită pe linie. Nu e repartitorul `UnitateInterna`, nici
 dimensiunea bugetară `Unitate`, nici unitatea de măsură. Regula:
-[motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D6, N-D7, 118).
+[motor § Nucleul pur](motor.md#nucleul-pur) (N-D6, N-D7, 118).
 Înrudit: lot, partidă, imobilizare, document deschizător. În cod:
 `UnitateSold` (TR-D9b, 118-r8). Membrii existenți numiți `Unitate`, inclusiv
 identificatorul persistat pe postare, păstrează numele.
@@ -151,7 +151,7 @@ schimbă prețul. Regula: [stoc § Stoc și evaluare](stoc.md#stoc-și-evaluare)
 Unitatea de terț: cont cu `UrmarestePartide` × partener × document
 deschizător, cu identificator determinist; partida inițială vine din
 deschidere, iar restul ei e suma netă a postărilor. Regula:
-[partide § Partide: raport, snapshot și împerechere](partide.md#partide-raport-snapshot-și-împerechere-101-2026-09-25) (092, 100, 101).
+[partide § Intrarea comună a partidelor](partide.md#intrarea-comună-a-partidelor) (092, 100, 101).
 Înrudit: unitate de sold, stingere, partidă deschisă. În cod: `Cub.Citiri.Partide`.
 
 ### evaluare FIFO
@@ -168,7 +168,7 @@ Suma postărilor pe orice cheie, citită ca snapshot-ul ultimei perioade de
 referință plus rulajele de după ea; proiecțiile (balanță, fișă, stoc,
 partide, jurnale) sunt citiri agregate peste cub, iar clientul nu
 calculează niciodată sold, rest sau total. Regula:
-[perioade § Soldul citit](perioade.md#soldul-citit-referință-plus-rulaje) (F27-D3, 42c, 66).
+[perioade § Soldul citit: referință plus rulaje](perioade.md#soldul-citit-referință-plus-rulaje) (F27-D3, 42c, 66).
 Înrudit: snapshot, cub. În cod: `SolduriService`, `Proiectii/`.
 
 ### deschidere
@@ -176,7 +176,7 @@ calculează niciodată sold, rest sau total. Regula:
 Soldul inițial scris ca tranzacție `Deschidere` fără document, detaliat
 prin loturi și partide inițiale, o dată per bază; singura scriere directă
 a migrării; „soldul inițial” rămâne coloana balanței. Regula:
-[motor § Ce rămâne al feliilor următoare](motor.md#ce-rămâne-al-feliilor-următoare) (094, DES-B1…B4, 107, 118).
+[motor § Deschiderea generică](motor.md#deschiderea-generică) (094, DES-B1…B4, 107, 118).
 Înrudit: partidă, tranzacție, document deschizător, partidă deschisă.
 În cod: `Materializare.Deschide`.
 
@@ -185,7 +185,7 @@ a migrării; „soldul inițial” rămâne coloana balanței. Regula:
 Documentul operat care naște o unitate de sold și intră în identitatea și
 în ordinea ei FIFO (data deschiderii, documentul deschizător, id);
 unitățile din deschidere nu au document deschizător. Regula:
-[partide § Partide: raport, snapshot și împerechere](partide.md#partide-raport-snapshot-și-împerechere-101-2026-09-25) (092, 114).
+[partide § Intrarea comună a partidelor](partide.md#intrarea-comună-a-partidelor) (092, 114).
 Înrudit: unitate de sold, partidă, lot, deschidere.
 
 ### partidă deschisă
@@ -243,7 +243,7 @@ motivele citibile ale anulării, stornării și corecției. Regula:
 Singura sursă a editabilității și a comenzilor disponibile: pentru fiecare
 comandă din vocabularul închis întoarce motivul indisponibilității sau
 nimic, cu predicatele gardienilor motorului. Regula:
-[documente § Regimul pe stare](documente.md#regimul-pe-stare-106) (106b…k).
+[documente § Regimul pe stare](documente.md#regimul-pe-stare) (106b…k).
 „Regim” se califică întotdeauna: regimul pe stare e al documentului,
 regimul de TVA (Normal, TaxareInversa, Capitalizat, Scutit, Neimpozabil)
 e al taxei.
@@ -279,7 +279,7 @@ Regula: [partide § Împerechere și stingere automată](partide.md#împerechere
 Legătura datată, cu sumă, dintre două documente operate; creată după
 operare mută suma între partide printr-o tranzacție `Transfer`, iar
 dintr-o perioadă închisă se desface prin rând invers. Regula:
-[partide § Împerecherea ulterioară operării](partide.md#împerecherea-ulterioară-operării--tranzacție-transfer) (31d, F27-D8, S-D13).
+[partide § Efectul împerecherii pe partide](partide.md#efectul-împerecherii-pe-partide) (31d, F27-D8, S-D13).
 Înrudit: stingere, tranzacție. În cod: `Imperechere`.
 
 ### conex
@@ -363,7 +363,7 @@ cod economic) a cărei stare o materializează motorul și ale cărei valori
 se citesc din cub; PIF o pune în funcțiune, CAS o scoate, iar AMO, generat
 lunar pe unitate internă, îi postează amortizarea (contabilă, fiscală,
 deductibilă) din politică și regulile de deductibilitate. Regula:
-[imobilizari § Imobilizări](imobilizari.md#imobilizări) (87a, 87d, 87g, 095, 097).
+[imobilizari § Fișa imobilizării](imobilizari.md#fișa-imobilizării) (87a, 87d, 87g, 095, 097).
 Înrudit: unitate de sold, politică, reevaluare. În cod: `Imobilizare`, `AmortizareService`.
 
 ### golire valorică
@@ -371,14 +371,14 @@ deductibilă) din politică și regulile de deductibilitate. Regula:
 Eliminarea reziduului valoric rămas pe un lot fără cantitate, prin
 corecția de preț atribuită lotului (invarianți VI); nu e reevaluare,
 închidere sau regularizare. Regula:
-[limite § Domeniu și operare](limite-curente.md#domeniu-și-operare) (75a, D9-D3, 118).
+[limite § Stoc](limite-curente.md#stoc) (75a, D9-D3, 118).
 Înrudit: lot, evaluare FIFO. În cod: `Postare.Atribuit`.
 
 ### reevaluare
 
 Schimbarea valorii unei imobilizări, cu doar locul rezervat în registrul
-imobilizărilor. Regula:
-[limite § Domeniu și operare](limite-curente.md#domeniu-și-operare) (87).
+imobilizărilor; reevaluarea e funcționalitate deschisă (F-IMO-04 în
+[catalog](../functionalitati.md)). Regula: [imobilizări](imobilizari.md) (87).
 Înrudit: imobilizare, golire valorică.
 
 ## Termeni tehnici
@@ -397,7 +397,7 @@ date. Regula: [motor § Cubul persistat](motor.md#cubul-persistat) (S-D1, S-D2, 
 Gruparea postărilor scrise împreună, de fel `Operare`, `Storno`,
 `Transfer` sau `Deschidere`; un document operat are cel mult o `Operare`
 și cel mult un `Transfer`, iar prima poartă explicația. Regula:
-[motor § Felul mixt](motor.md#felul-mixt-transfer-pe-linia-care-nu-schimbă-contul-t-d2-felia-32) (S-D1, T-D2).
+[motor § Felul mixt: Transfer pe linia care nu schimbă contul](motor.md#felul-mixt-transfer-pe-linia-care-nu-schimbă-contul) (S-D1, T-D2).
 Înrudit: cub, postare. În cod: `Tranzactie`.
 
 ### postare
@@ -415,7 +415,7 @@ Axa postării, cheia pe care se grupează și se identifică: cont, sens
 (obligatoriu), dată, repartitor, contrapondere, produs, unitate, cod de
 TVA, perioadă de declarare, partener fiscal, loc, valută, carte
 (`Contabil` / `Fiscal`) și șase analize. Regula:
-[motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D2, N-D3, B-D8, 111, C111-D2).
+[motor § Nucleul pur](motor.md#nucleul-pur) (N-D2, N-D3, B-D8, 111, C111-D2).
 Înrudit: postare, dimensiune, sens, repartitor, contrapondere. În cod:
 `Coordonate`.
 
@@ -424,7 +424,7 @@ TVA, perioadă de declarare, partener fiscal, loc, valută, carte
 Deciziile și ipotezele contractului acceptat, persistate pe prima
 tranzacție scrisă: de ce a costat ieșirea atât, din ce sold citit, ce
 partide a stins, ce rând de politică a decis; nu se rescrie. Regula:
-[raportare § Explicația deciziei](raportare.md#explicația-deciziei-x-d4-2026-10-03) (X-D4, D9-A8).
+[raportare § Explicația deciziei](raportare.md#explicația-deciziei) (X-D4, D9-A8).
 Endpoint-ul `api/politici/explica` (84e–h) e „explicarea configurației”:
 configurația pe o linie ipotetică, fără persistare.
 Înrudit: tranzacție, INV-CUB. În cod: `Tranzactie.Explicatie`.
@@ -435,7 +435,7 @@ Funcția pură a tipului care transformă operandul (DTO-ul închis cu
 documentul, liniile, politica și starea citită) în declarație: mișcări
 debit ≠ credit, mutări pe același cont, transformări n→m, decizii,
 ipoteze; frunza îl numește prin `Document.Declarant()`. Regula:
-[motor § Declarația fluxului per tip](motor.md#declarația-fluxului-per-tip-tr-d6b-felia-30) (B-D1…B-D10, D9-D5).
+[motor § Declarația fluxului per tip](motor.md#declarația-fluxului-per-tip) (B-D1…B-D10, D9-D5).
 Înrudit: document, contract. În cod: `IDeclarant`, `Operand`.
 
 ### contract
@@ -447,7 +447,7 @@ determinist al nucleului la o declarație: acceptat (cu tranzacțiile și
 deciziile) sau refuzat, verificat de conservarea structurală (valoare per
 carte, cantitate per produs, Σ = 0 la transfer) și materializat în cub la
 operare. Regula:
-[motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (N-D3, N-D4, N-D11, 118).
+[motor § Nucleul pur](motor.md#nucleul-pur) (N-D3, N-D4, N-D11, 118).
 Înrudit: declarant, felie, latură. În cod: `Contract` e rezultatul
 motorului; `Conservare`.
 
@@ -485,7 +485,7 @@ Verificarea care refuză înaintea scrierii: gardianul de editare la commit
 pe orice ușă securizată, gardianul de perioadă sub blocaj, gardienii de
 retragere la anulare și stornare; „gardul” e verificarea pe postările
 contractului (analiza obligatorie, nivelul de contare, soldul
-intermediar). Regula: [documente § Culegerea draftului](documente.md#culegerea-draftului-104c) (42a, 104c, D9-D4).
+intermediar). Regula: [documente § Culegerea draftului](documente.md#culegerea-draftului) (42a, 104c, D9-D4).
 Înrudit: ușă, refuz. În cod: `GardianEditare`, `Cub/GardAnaliza`.
 
 ### ușă
@@ -502,7 +502,7 @@ Regula: [documente § Operarea](documente.md#operarea) (42b, 55b, 104b).
 Motorul pur `Atlas.Conta.Nucleu` (BCL, zero pachete, teste de
 proprietate): transformă declarația în rezultatul motorului, fără bază,
 fără XAF și fără plan de conturi. Regula:
-[motor § Nucleul pur](motor.md#nucleul-pur-și-declarația-fluxului-pilot-bcs-plt-fct) (090, N-D1…N-D12).
+[motor § Nucleul pur](motor.md#nucleul-pur) (090, N-D1…N-D12).
 Înrudit: declarant, contract, motor de operare. În cod:
 `Atlas.Conta.Nucleu`, `Motor.Opereaza`.
 
@@ -516,7 +516,7 @@ tranzacție explicită care începe cu blocajul scrierii
 per bază. Numele `Motor` e purtat și de clasa statică a nucleului, și de
 spațiul `Module.Motor` al scriitorului; defectul se rezolvă la atingere
 (118). Regula:
-[motor § Scrierea serială per bază](motor.md#scrierea-serială-per-bază-x-d6-2026-10-03) (33d, S-D4, X-D6).
+[motor § Scrierea serială per bază](motor.md#scrierea-serială-per-bază) (33d, S-D4, X-D6).
 Înrudit: cub, nucleu, declarant. În cod: `MotorOperare`, `TranzactieComanda`.
 
 ### straturi
@@ -535,7 +535,7 @@ Stratul L3, singura sursă a impliciților, recalculului și validării pe
 Draft; controllerul XAF și `Api/*Apply` sunt adaptori care traduc
 ecranul, respectiv PUT-ul agregatului (`WriteDto`), în aceleași apeluri,
 iar `InainteDeSalvare` rulează înaintea gardianului. Regula:
-[documente § Culegerea draftului](documente.md#culegerea-draftului-104c) (104c, 104d, 109 f).
+[documente § Culegerea draftului](documente.md#culegerea-draftului) (104c, 104d, 109 f).
 Înrudit: straturi, gardian. În cod: `CulegereDocument`, `WriteDto`.
 
 ### registru
@@ -581,7 +581,7 @@ Unealta care verifică modelul XAF/EF și rulează scenele de domeniu
 (fixture-uri create prin comenzi, asertate, purjate) pe PostgreSQL,
 scriind în bazele ei; o singură rulare o dată, pe instanța nativă, iar
 suita integrală pe ambele profiluri e gate-ul de commit. Regula:
-[verificare § Rulare reproductibilă](verificare.md#rulare-reproductibilă-scriptsverificaps1) (23, 84, 091 (e)).
+[verificare § Rulare reproductibilă (scripts/verifica.ps1)](verificare.md#rulare-reproductibilă-scriptsverificaps1) (23, 84, 091 (e)).
 Înrudit: probă, INV-CUB. În cod: `nou/tools/ModelCheck`, `MODELCHECK_BAZA_SUFIX`.
 
 ### INV-CUB
@@ -591,8 +591,8 @@ purjei ei (proveniența inverselor, echilibrul pe tranzacție și carte,
 conservarea transferului, taxa postată = taxa liniei, unitățile de
 partidă, perechea, ordinalul, explicația), fiecare ramură cu un mutant
 într-o tranzacție anulată. Regula:
-[stoc § NIR delta și citirile comune](stoc.md#nir-delta-și-citirile-comune-098099-2026-09-24) (102b, 102d, X-D4);
-[verificare § Validarea feliilor](verificare.md#validarea-feliilor).
+[stoc § Invarianții cubului](stoc.md#invarianții-cubului) (102b, 102d, X-D4);
+[verificare § Invarianții cubului (INV-CUB)](verificare.md#invarianții-cubului-inv-cub).
 Înrudit: cub, explicație. În cod: `Cub/Citiri/Invarianti`, `CITIRE_*`.
 
 ### scenariu

@@ -4,17 +4,6 @@
 inclusiv modificările locale. Documentele descriu regulile în forma lor
 actuală, organizate pe responsabilități.
 
-## Tranziția în curs
-
-**Implementat:** cubul e singurul scriitor și singura sursă contabilă;
-registrele, regimul dual și oracolul lor au ieșit (110). Citirile contabile,
-de stoc, de partide, fiscale și SAF-T sunt pe cub (103, 105, 108). Catalogul
-de scenarii e proba supremă a motorului (091).
-
-**În lucru:** felia C111 schimbă coordonatele postării (111), înaintea
-TR-D9b, felia unităților. Pasul curent e în `CLAUDE.md` §Stare; domeniul și
-oprirea feliei, în contractul ei; acoperirea, în catalog.
-
 ## Harta documentației
 
 | Document | Conținut |
@@ -35,7 +24,7 @@ oprirea feliei, în contractul ei; acoperirea, în catalog.
 | [Dezvoltare](dezvoltare.md) | Organizarea sursei, model și persistență, migrații, codegen, build |
 | [Verificare](verificare.md) | ModelCheck, scenariile, probele, documentația |
 | [Import și migrare](import.md) | Import1C, reconcilierea cu legacy |
-| [Limite curente](limite-curente.md) | Funcționalități neacoperite și limite ale mecanismelor implementate (transversală) |
+| [Limite curente](limite-curente.md) | Ce nu face încă o funcționalitate livrată, în forma văzută de utilizator (transversală) |
 | [Termeni](termeni.md) | Glosarul: termeni de domeniu, termeni tehnici, cum se citesc identificatorii (transversală) |
 
 ## Produsul
@@ -61,8 +50,9 @@ nomenclatoare. (104d)
    O relație de stingere nu este document; un raport este o proiecție.
 2. Identitatea și valorile comune aparțin bazei. Culegerea specifică aparține
    tipului concret. Motorul primește comportamentul specific prin contracte.
-3. Registrele sunt sursa soldurilor și a raportării. Rândurile sunt complet
-   rezolvate la operare; citirea nu reexecută politica de postare.
+3. Cubul de postări e singurul scriitor și singura sursă a soldurilor și a
+   raportării. Postările sunt complet rezolvate la operare; citirea nu
+   reexecută politica de postare. (110)
 4. Structura și mecanismele sunt cod. Politicile aleg parametrii unor
    mecanisme existente și nu descriu câmpuri, ecrane sau expresii executabile.
 5. Lotul are identitate și preț fixat la operare. Ieșirile folosesc loturi;
@@ -76,31 +66,23 @@ curente și precizează limitele implementării.
 
 ## Acoperirea funcțională
 
-Tabelul rezumă ariile; rând cu rând, cu ținta, etapa și scenariile, acoperirea
-stă în [catalogul funcționalităților](../functionalitati.md).
-
-| Arie | Disponibil în implementare |
-|---|---|
-| Documente | FCT, FCL, NIR, DSC, BTR, BCS, LDI, PLT, INC, DEC, NTC, ASM, RLF, RDC, DVI, PIF, CAS |
-| Închidere TVA | Previzualizare, generare, regenerare și comenzi asupra rezultatului ITV |
-| Imobilizări | Fișa cu situația la dată și registrul, punerea în funcțiune (intrare, modernizare, revizuire), ieșirea, amortizarea lunară generată cu cifra contabilă, fiscală și deductibilă, politica de amortizare, regulile de deductibilitate și catalogul HG 2139/2004 |
-| Raportare | Sold stoc, balanță, balanță pe plan, fișă de cont, registru-jurnal, jurnale TVA, decont TVA, D300 și D394 |
-| Fișiere fiscale | SAF-T L și S, cu sumar, avertismente, reconciliere și XML |
-| Nomenclatoare în React | Parteneri, produse, societate și sincronizarea individuală a partenerului cu ANAF |
-| Configurare în React | Implicite TVA, tipuri TVA, implicitul tipului de document, mișcări SAF-T, scadențe, numerotare, închidere TVA, politici de amortizare, reguli de deductibilitate, verificarea profilului și istoric de audit |
-| Import | Import1C prin motor, legături de migrare și reconciliere; conectorul legacy este prototip |
-
-Existența unei rute nu înseamnă CRUD complet: DSC se generează din factură,
-iar ITV și AMO din comanda lunară. Particularitățile fiecărui tip sunt descrise în
-[documente](documente.md). Acoperirea formularelor fiscale
-și modulele absente sunt precizate în [limitele curente](limite-curente.md).
+Ce e livrat și ce nu, rând cu rând, cu ținta, aria, etapa și scenariile, e
+în [catalogul funcționalităților](../functionalitati.md); ce nu face încă o
+funcționalitate livrată e în [limitele curente](limite-curente.md). Paginile
+de arie descriu regulile, nu acoperirea. (121)
 
 ## Întreținerea acestor pagini
 
 O regulă are o singură descriere detaliată, în pagina responsabilității sale;
 celelalte pagini trimit la ea. La modificarea comportamentului se actualizează
-direct regula, acoperirea și limitele afectate, precum și data documentului.
-O funcționalitate planificată nu se prezintă ca disponibilă.
+în același commit regula din pagina ariei, rândul din catalog, limitele
+afectate și data documentului. O funcționalitate planificată nu se prezintă
+ca disponibilă: rămâne rând `deschisă` în catalog.
+
+Secțiunile unei pagini sunt pe subiect, nu pe felii sau pe date. Limitele
+mecanismului, fără efect direct pentru utilizator, stau la sfârșitul paginii
+ariei, sub `## Limitele implementării`; cele văzute de utilizator, în
+[limitele curente](limite-curente.md). (121)
 
 Aceste pagini nu păstrează alternative respinse, succesiuni de implementare
 sau liste de modificări. Fiecare regulă poartă la sfârșit, între paranteze,

@@ -4,12 +4,14 @@
 
 Societatea, partenerii, produsele și sincronizarea cu ANAF.
 
-## Societate, nomenclatoare și ANAF
+## Societatea și nomenclatoarele de bază
 
 `Societate` este configurație singleton editabilă. Seed-ul creează forma
 goală și nu suprascrie datele completate. Adresa este structurată, ca la
 partener; județul se aplică adreselor din România. Județele și unitățile de
 măsură standard sunt nomenclatoare de bază, expuse pentru citire. (72b, 73a, 73b)
+
+## Produsul și unitatea lui
 
 Produsul poate avea cod NC de opt cifre și unitate standard. Referința la
 unitatea standard coexistă cu textul UM legacy. Normalizarea este explicită
@@ -18,6 +20,8 @@ unitatea standard coexistă cu textul UM legacy. Normalizarea este explicită
 poate completa oricând, dar nu se mai schimbă după ce produsul are postări
 în cub sau apare pe o linie operată: cantitățile istorice au sensul unității
 de la operare. Pentru altă unitate se creează alt produs. (S1-R5)
+
+## Sincronizarea cu ANAF
 
 Sincronizarea ANAF folosește clientul PlatitorTva v9 injectat de host.
 Candidații au CUI normalizabil la 2–10 cifre; persoanele fizice/CNP și
@@ -34,6 +38,11 @@ Endpoint-ul de lot acceptă până la 500 de identificatori și raportează și
 pozițiile omise. Clientul extern împarte cererile în loturi de cel mult 100,
 cu limitare de ritm în interiorul cererii. Erorile tranzitorii sunt 503,
 iar refuzurile de domeniu 422. (72c, 72e)
+
+## Limitele implementării
+
+- Limitarea ritmului ANAF e pe cerere; cererile simultane nu se coordonează.
+  (72-r1)
 
 <!-- gen:decizii -->
 ## Decizii

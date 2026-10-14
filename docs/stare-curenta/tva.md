@@ -2,7 +2,7 @@
 
 **Actualizat: 2026-10-15.** [Index](README.md)
 
-TVA la operare, implicitele TVA, închiderea lunară, D300 și D394, citirea fiscală și confirmarea depunerii.
+Implicitele TVA, taxa la operare și faptul fiscal din cub, intervalele și diagnosticul, perioada de declarare și corecțiile, confirmarea depunerii, închiderea lunară, D300 și D394, accesul la citirea fiscală și exportul SAF-T.
 
 Aceste reguli descriu comportamentul implementat. Acoperirea fiscală este
 delimitată în [limite curente](limite-curente.md).
@@ -15,20 +15,6 @@ existentă. Implicitele de sesiune aparțin clientului; cele de domeniu sunt
 rezolvate pe server. (56, 81a)
 
 `ImpliciteService` primește tipul documentului, partenerul, produsul și data.
-Seed-ul privat acoperă și achiziția de la un partener neînregistrat din
-România (`FCT`/`RLF` → `NIM`, fără fapt de TVA pe linie) și achiziția din
-afara UE (`FCT`/`RLF` → `IMP`, tip propriu cu cotă 0 sub regimul neimpozabil,
-fără cod SAF-T — codurile de import sunt ale DVI-ului — și nemapat deliberat
-pe D300 și D394). (83f–g, 84b)
-
-Tipurile de import sunt marcate prin `TipTva.DeImport`, nu prin coduri în cod.
-Seed-ul privat are `IMP21`/`IMP11` (regim normal, coduri SAF-T de achiziție
-301204/301205, D300 rd. 24/25) și `IMPTI21`/`IMPTI11` (taxare inversă la
-import, 300604/300605, rd. 7/22 din Autocolectare/Taxă); declarația
-vamală are politica TVA deductibilă cu contrapartida pe predator (fallback
-446), implicitul generic `IMP21` și nicio mapare D394. Bugetar are doar
-ancora tipului. (86c)
-
 Rezolvarea are doi pași:
 
 1. Candidatul de regim `R` se caută în ordinea: implicitul partenerului,
@@ -47,11 +33,6 @@ Clasele fiscale sunt `InregistratRo`, `NeinregistratRo`, `Ue` și `ExtraUe`.
 Clasificarea este comună cu raportarea: înregistrarea TVA din România are
 prioritate, apoi sunt evaluate persoana fizică și țara. (71b, 81b)
 
-Seed-ul privat configurează FCL/RDC pentru UE și extra-UE cu SDD, iar
-FCT/RLF pentru UE cu TI21. Cazurile fără politică folosesc regulile de
-fallback de mai sus. Aceste valori descriu seed-ul, nu o acoperire completă
-a tuturor situațiilor fiscale. Profilul bugetar nu primește aceste rânduri. (81b, 81-r1)
-
 `GET /api/implicite/tip-tva` întoarce valoarea, sursa și motivul rezolvării.
 Datele partenerului și produsului sunt citite securizat. Un obiect invizibil
 nu devine sursă de implicit și nu este deosebit public de unul inexistent.
@@ -62,12 +43,43 @@ referințelor. Tipurile inactive rămân valabile pentru istoricul documentelor;
 selectoarele React pentru culegere nouă oferă tipurile active. Filtrarea
 echivalentă a selectoarelor XAF este o limită curentă. (81c, 81e, 81-r7)
 
+### Seed-ul TVA
+
+Seed-ul privat configurează FCL/RDC pentru UE și extra-UE cu SDD, iar
+FCT/RLF pentru UE cu TI21. Cazurile fără politică folosesc regulile de
+fallback de mai sus. Aceste valori descriu seed-ul, nu o acoperire completă
+a tuturor situațiilor fiscale. Profilul bugetar nu primește aceste rânduri. (81b, 81-r1)
+
+Seed-ul privat acoperă și achiziția de la un partener neînregistrat din
+România (`FCT`/`RLF` → `NIM`, fără fapt de TVA pe linie) și achiziția din
+afara UE (`FCT`/`RLF` → `IMP`, tip propriu cu cotă 0 sub regimul neimpozabil,
+fără cod SAF-T — codurile de import sunt ale DVI-ului — și nemapat deliberat
+pe D300 și D394). (83f–g, 84b)
+
+Tipurile de import sunt marcate prin `TipTva.DeImport`, nu prin coduri în cod.
+Seed-ul privat are `IMP21`/`IMP11` (regim normal, coduri SAF-T de achiziție
+301204/301205, D300 rd. 24/25) și `IMPTI21`/`IMPTI11` (taxare inversă la
+import, 300604/300605, rd. 7/22 din Autocolectare/Taxă); declarația
+vamală are politica TVA deductibilă cu contrapartida pe predator (fallback
+446), implicitul generic `IMP21` și nicio mapare D394. Bugetar are doar
+ancora tipului. (86c)
+
 ## TVA la operare
 
 `TipTva` descrie cota și regimul; politicile stabilesc sensul și conturile.
 TVA cules explicit este păstrat la operare și validat, nu înlocuit automat
 cu rezultatul unei recalculări. Recalcularea din culegere și validarea la
 operare au responsabilități distincte. Totalul brut participă la stingere. (36a, 36b, 56)
+
+Taxarea inversă pe sens deductibil generează autolichidarea. Pe sens
+colectat, TVA trebuie să fie zero și nu se generează notă TVA; o valoare
+nenulă este refuzată înainte de materializare, inclusiv la salvarea REST. (70a, 70b)
+
+Linia declarației vamale poartă doar tipuri `DeImport` cu cotă (`IMP` cu cotă
+0 este refuzat la operare); taxa culeasă se păstrează, iar zero se completează
+din cotă la operare. (86d)
+
+### Repartizarea taxei pe linii
 
 Taxa nemarcată se decide pe document × cotă, din valorile rotunjite ale
 liniilor fiscale, și se repartizează pe linii (Hamilton peste |valoare|, pe
@@ -86,44 +98,7 @@ de salvare pentru atribuirea pozițiilor. Calculul nu atribuie poziții;
 acestea se scriu în continuare sub blocajul salvării.
 (090j, 109 a/b/g; SC-FCL-11…14, SC-FCT-11)
 
-Taxarea inversă pe sens deductibil generează autolichidarea. Pe sens
-colectat, TVA trebuie să fie zero și nu se generează notă TVA; o valoare
-nenulă este refuzată înainte de materializare, inclusiv la salvarea REST. (70a, 70b)
-
-Linia declarației vamale poartă doar tipuri `DeImport` cu cotă (`IMP` cu cotă
-0 este refuzat la operare); taxa culeasă se păstrează, iar zero se completează
-din cotă la operare. (86d)
-
-Cubul păstrează pe fiecare fapt fiscal regimul, cota, importul, valorile cu
-semn, identitatea documentului fiscal și reperele temporale. Intrarea comună
-`Cub.Citiri.Fiscale` citește ambele cărți; contul și cartea păstrează
-proveniența, fără să despartă baza fiscală DVI de taxa contabilă. Un fapt
-are cel mult o Bază și o Taxă; achiziția cu taxare inversă adaugă o
-Autocolectare pe contrapartea colectată, cu același sens Achiziție.
-Nomenclatorul curent oferă etichete, fără să recalculeze cota istorică. (103)
-
-Faptul fiscal poartă pe postare partenerul fiscal și locul, separat de
-repartitorul de sold. `PartenerFiscal` e latura numită de
-`PoliticaTva.SursaContrapartida`: predatorul sau primitorul documentului. O
-sursă care nu numește o latură (`Explicit`, `TipMaterial`) îl lasă nul, și
-nimic nu-l completează după aceea, nici pe capătul cu partidă, nici pe contul
-care cere repartitor (S13, C111-R16). Pe cele șase politici de TVA din seed
-latura numită e terțul documentului. `Loc` nu vine din politică: e singura
-latură internă a documentului, citită din laturile lui tipate (C111-Q10).
-Baza și taxa aceluiași document poartă același loc, iar capătul de taxă are
-locul ca repartitor de sold. Cine scrie fiecare coordonată:
-[domeniu-si-operare](documente.md), „Regula coordonatelor”.
-
-Faptele fiscale stau numai pe postări. Nu există snapshot fiscal cumulativ și
-nici compatibilizare a istoricului de dezvoltare. (102, 103, D9-D2)
-
-### Intervale și diagnostic TVA
-
-`TipTva.ValabilDeLa` / `ValabilPanaLa` sunt opționale și incluzive;
-intervalul inversat se refuză. Implicitul din culegere folosește
-exigibilitatea (fallback data documentului), exclude candidații din afara
-intervalului cu motiv în `Explica` și păstrează filtrele de acces/Activ.
-Intervalele seed sunt cele din R6-B8, aliniate numai pe `DinSeed`. (103h/i)
+### Taxa culeasă (`TvaCules`)
 
 `DocumentDetaliu.TvaCules` distinge taxa nenulă introdusă explicit de taxa
 calculată. L3 îl aprinde la culegere și îl stinge la schimbarea bazei/tipului,
@@ -138,6 +113,44 @@ curentă și repartizarea pe document. Toleranța configurată rămâne refuz.
 O cale care nu culege prin L3 și aduce taxa unui document real (conectorul
 1C) o marchează la scriere; nemarcată, taxa se recalculează. (103i, 109 c)
 
+## Faptul fiscal în cub
+
+Cubul păstrează pe fiecare fapt fiscal regimul, cota, importul, valorile cu
+semn, identitatea documentului fiscal și reperele temporale. Intrarea comună
+`Cub.Citiri.Fiscale` citește ambele cărți; contul și cartea păstrează
+proveniența, fără să despartă baza fiscală DVI de taxa contabilă. Un fapt
+are cel mult o Bază și o Taxă; achiziția cu taxare inversă adaugă o
+Autocolectare pe contrapartea colectată, cu același sens Achiziție.
+Nomenclatorul curent oferă etichete, fără să recalculeze cota istorică. (103)
+
+Faptul fiscal poartă pe postare partenerul fiscal și locul, separat de
+repartitorul de sold. `PartenerFiscal` e latura numită de
+`PoliticaTva.SursaContrapartida`: predatorul sau primitorul documentului. O
+sursă care nu numește o latură (`Explicit`, `TipMaterial`) îl lasă nul, și
+nimic nu-l completează după aceea, nici pe capătul cu partidă, nici pe contul
+care cere repartitor (S13, C111-R16). Pe politicile de TVA din seed latura
+numită e terțul documentului. `Loc` nu vine din politică: e singura latură
+internă a documentului, citită din laturile lui tipate (C111-Q10). Baza și
+taxa aceluiași document poartă același loc, iar capătul de taxă are locul ca
+repartitor de sold. Cine scrie fiecare coordonată: [motor](motor.md),
+„Regula coordonatelor”. (S13, C111-R16, C111-Q10)
+
+Faptele fiscale stau numai pe postări. Nu există snapshot fiscal cumulativ și
+nici compatibilizare a istoricului de dezvoltare. (102, 103, D9-D2)
+
+`CK_Postare_FiscalComplet` impune la scriere calificările și reperele
+obligatorii când `TipTvaId` este prezent, inclusiv primirea la achiziții.
+Nu există scanare de istoric la pornire. Invarianții între roluri și
+proveniența inversei rămân verificați în ModelCheck. (103)
+
+## Intervalele tipului de TVA și diagnosticul
+
+`TipTva.ValabilDeLa` / `ValabilPanaLa` sunt opționale și incluzive;
+intervalul inversat se refuză. Implicitul din culegere folosește
+exigibilitatea (fallback data documentului), exclude candidații din afara
+intervalului cu motiv în `Explica` și păstrează filtrele de acces/Activ.
+Intervalele seed sunt cele din R6-B8, aliniate numai pe `DinSeed`. (103h/i)
+
 Raportul „Impact TVA” (`/api/proiectii/diagnostic-tva`) citește faptele din
 cub și drafturile din agregat, prin ObjectSpace secured. Filtrează pe
 exigibilitate și tip, arată calificarea înghețată/actuală și avertizează la
@@ -150,6 +163,8 @@ avertismentele compensate apar numai la cerere. Operarea emite mesaje
 minimale pe poziția liniei proprii, fără GUID; raportul nu dezvăluie sursa
 inaccesibilă. (103h)
 
+### Regularizarea avansului
+
 `TipMaterial.RegularizareAvans` și baza negativă identifică regularizarea
 FCT/FCL. `LinieAvansId` nominalizează linia pozitivă din altă factură,
 operată, marcată, a aceluiași partener/sens. Sursa oferă calificarea și
@@ -159,7 +174,7 @@ redirecționează la corecție. Retururile și reducerile fără sursă fiscală
 verificabilă primesc avertisment de proveniență în locul verdictului de
 interval. Contract: `docs/nucleu/tr-d8-tva-intervale-contract.md`. (103h/i)
 
-### Perioada de declarare și corecțiile
+## Perioada de declarare și corecțiile
 
 Data documentului, exigibilitatea, primirea la achiziție și înregistrarea
 sunt distincte. Primirea se propune din înregistrare, rămâne editabilă în
@@ -168,26 +183,10 @@ perioada înregistrării la achiziție și cea a exigibilității la livrare.
 O livrare omisă dintr-o perioadă D300 deja declarată intră în regularizarea
 curentă. Nu există parametru `DeclarareIntarziata` în politica TVA. (103)
 
-Depunerea se confirmă explicit pe formular, an, lună și versiune exportată.
-Versiunea emisă în DTO-ul D300/D394 este SHA-256 peste faptele perioadei din
-citirea comună, formular și perioadă. Raportul și amprenta folosesc același
-snapshot tranzacțional. Confirmarea recalculează amprenta sub blocaj exclusiv;
-o versiune depășită primește `DEPUNERE_VERSIUNE_DEPASITA`. UI exportă JSON-ul
-cu amprentă și păstrează versiunea acelui export pentru confirmare, fără
-etichetă liberă. Aceasta verifică faptele cubului, nu parametrii manuali sau
-fișierul XML ANAF.
-`DepunereDeclaratie` păstrează momentul și utilizatorul, fără sume fiscale
-paralele; nu se editează prin CRUD generic. Aceeași confirmare este
-idempotentă. Confirmarea și scrierile fiscale se serializează tranzacțional.
-Închiderea sau redeschiderea contabilă nu confirmă și nu șterge depunerea.
-D394 compară `ScrisLa` cu ultima confirmare; D300 folosește regularizări și
-nu expune automat o rectificativă. Confirmarea din aplicație este evidența
-depunerii efectuate de utilizator, nu transmitere către ANAF. (103d)
-
-`CK_Postare_FiscalComplet` impune la scriere calificările și reperele
-obligatorii când `TipTvaId` este prezent, inclusiv primirea la achiziții.
-Nu există scanare de istoric la pornire. Invarianții între roluri și
-proveniența inversei rămân verificați în ModelCheck.
+DTO/Apply pentru FCT/FCL/DEC/DVI/RDC/RLF transmit exigibilitatea și, la
+achiziții, data primirii. Clientul propune primirea din înregistrare, fără
+să suprascrie o dată introdusă explicit. Jurnalul filtrează perioada D300
+și afișează separat perioada D394 și reperele istorice. (103)
 
 La eroarea de evidență 100/21 → 80/16,80, dacă D300 inițial a fost depus,
 inversa tehnică și versiunea corectată produc Δ −20/−4,20 în regularizarea
@@ -207,7 +206,34 @@ Reclasificarea semnificativă pe 1174 rămâne notă manuală. (103, F27-r1)
 Anularea operării unui fapt inclus într-o declarație confirmată este
 refuzată și după redeschiderea contabilă. Corecția tehnică începută trebuie
 încheiată: draftul nu poate fi șters, iar depunerea perioadei afectate este
-refuzată cât timp versiunea înlocuitoare nu este operată.
+refuzată cât timp versiunea înlocuitoare nu este operată. (103d)
+
+## Confirmarea depunerii
+
+Depunerea se confirmă explicit pe formular, an, lună și versiune exportată.
+Versiunea emisă în DTO-ul D300/D394 (`VersiuneExportata`) este SHA-256 peste
+faptele perioadei din citirea comună, formular și perioadă. Raportul și
+amprenta folosesc același snapshot tranzacțional. Confirmarea recalculează
+amprenta sub blocaj exclusiv; o versiune depășită (faptele s-au schimbat
+între export și confirmare) primește `DEPUNERE_VERSIUNE_DEPASITA`. UI
+descarcă exportul JSON cu amprentă și păstrează versiunea acelui export
+pentru confirmare, fără etichetă liberă. Aceasta verifică faptele cubului, nu
+parametrii manuali sau fișierul XML ANAF: JSON-ul nu este XML ANAF, iar
+parametrii externi D300 nu sunt certificați de amprenta faptelor. (103d)
+
+`DepunereDeclaratie` păstrează momentul și utilizatorul, fără sume fiscale
+paralele; nu se editează prin CRUD generic. Aceeași confirmare este
+idempotentă. Confirmarea și scrierile fiscale se serializează tranzacțional.
+Închiderea sau redeschiderea contabilă nu confirmă și nu șterge depunerea.
+D394 compară `ScrisLa` cu ultima confirmare; D300 folosește regularizări și
+nu expune automat o rectificativă. Confirmarea din aplicație este evidența
+depunerii efectuate de utilizator, nu transmitere către ANAF. (103d)
+
+`GET/POST /api/depuneri-declaratii/{formular}/{an}/{luna}` citește sau
+confirmă depunerea. POST cere versiunea exportată, drept de scriere și
+perioadă vizibilă; refuzurile au 400/403/404/422. Aceeași versiune este
+idempotentă. OData expune istoricul numai pentru citire. D300/D394 oferă
+confirmarea pentru o singură lună, cu versiunea și momentul afișate. (103d)
 
 ## Închiderea lunară TVA
 
@@ -238,6 +264,7 @@ rând. Rândul 31 scade nedeductibilul din rândul 30 folosind operanzii
 înregistrați. Limitarea la zero se aplică numai rândurilor care o cer.
 Valorile nemapate sunt raportate cu motiv, iar avertismentele nu trunchiază
 sumele. Coloanele neaplicabile sunt absente, nu zerouri fabricate. (69c, 69d, 69e)
+
 Importurile intră în decont din declarația vamală, nu din factura furnizorului
 extern: rd. 24/25 pentru taxa plătită în vamă, rd. 7 (și oglinda 22) pentru
 amânarea plății; SAF-T D406 emite codurile de import din aceleași fapte,
@@ -249,6 +276,7 @@ Partenerul e partenerul fiscal al faptului (`Postare.PartenerFiscal`, prin
 Faptul fără partener fiscal intră în `Neincluse` cu `FaraPartener`; cel al
 cărui partener fiscal nu e de fel partener (angajatul decontului, o latură
 internă), cu `RepartitorNePartener`. (S13)
+
 Clasificarea partenerului folosește aceeași funcție fiscală ca implicitele.
 CUI-ul este normalizat pentru agregare; partenerii multipli cu același CUI
 pot forma aceeași poziție. Înregistrarea TVA are prioritate în grup. (71b, 71d, 81b)
@@ -261,33 +289,19 @@ operațiile incluse și `Neincluse`. Ștergerea
 logică a partenerului nu elimină faptele fiscale. Secțiunile neacoperite
 produc limite și avertismente, nu date presupuse. (71c, 71d, 71e)
 
-## Citirea fiscală și confirmarea depunerii (103)
-
-DTO/Apply pentru FCT/FCL/DEC/DVI/RDC/RLF transmit exigibilitatea și, la
-achiziții, data primirii. Clientul propune primirea din înregistrare, fără
-să suprascrie o dată introdusă explicit. Jurnalul filtrează perioada D300
-și afișează separat perioada D394 și reperele istorice.
-
-`GET/POST /api/depuneri-declaratii/{formular}/{an}/{luna}` citește sau
-confirmă depunerea. POST cere versiunea exportată, drept de scriere și
-perioadă vizibilă; refuzurile au 400/403/404/422. Aceeași versiune este
-idempotentă. OData expune istoricul numai pentru citire. D300/D394 oferă
-confirmarea pentru o singură lună, cu versiunea și momentul afișate.
-DTO-urile D300/D394 emit `VersiuneExportata`, amprentă a faptelor lunii.
-UI descarcă exportul JSON și reține acea versiune pentru confirmare;
-nu acceptă etichetă liberă. POST refuză `DEPUNERE_VERSIUNE_DEPASITA`
-dacă s-au schimbat faptele între export și confirmare. JSON-ul nu este
-XML ANAF; parametrii externi D300 nu sunt certificați de amprenta faptelor.
+## Accesul la citirea fiscală
 
 `/politici/tva-saft` editează mapările versionate și calificarea istorică.
 Metadata include enumurile proprietăților persistente, inclusiv cele din
 nucleu. Rapoartele fiscale cer citire pe `Postare`; lipsa dreptului pe
 întregul tip este 403, iar filtrarea pe obiect/membru se aplică sursei comune.
-Această validare fiscală nu certifică toate câmpurile SourceDocuments SAF-T.
+Această validare fiscală nu certifică toate câmpurile SourceDocuments SAF-T. (103)
+
+## Exportul SAF-T (D406)
 
 D406 L (`GET api/proiectii/saft` și `…/saft/xml`) și S (`…/saft/stocuri` și
 `…/saft/stocuri/xml`) citesc cubul (`SaftProiectii.SaftPeCub`,
-`SaftStocuriPeCub`). Excepție de la filtrarea de mai sus: exportul
+`SaftStocuriPeCub`). Excepție de la filtrarea rapoartelor fiscale: exportul
 cere citire necondiționată. Orice criteriu de rând sau de membru pe tabelele
 citite de export (`SaftAcces.Citite` pe L, `SaftAcces.CititeStocuri` pe S, cu
 toate tipurile mapate în ele) dă 403
@@ -296,18 +310,29 @@ tipurile și membrii restricționați, fără rânduri ori sume: întâi tipuril
 citite de secțiune, fără frunzele TPH ale unei baze deja restricționate. Criteriile se
 citesc din `ISelectDataSecurity`, aceeași sursă din care EF Core filtrează.
 `CanRead(Type)` nu ajunge, fiindcă răspunde `true` sub restricții
-condiționale. Refuzurile proiecției (`SaftDto.Refuzuri`) apar în sumar
+condiționale. (SAF-D4, S2-D5, S3-D6)
+
+Refuzurile proiecției (`SaftDto.Refuzuri`) apar în sumar
 (`Refuzuri`, 200; ecranul le arată înaintea descărcării și ține butonul
 XML inactiv) și dau 422 pe fișier, înaintea primului byte. Fișa contului
-deschisă din S3 revine la SAF-T (`inapoi`, numai rută internă). Cusăturile ecranului L compară declarația
-cu cubul: rulajul balanței, faptele fiscale și baza lor pe sens. Cele ale
-ecranului S compară fiecare poziție cu postările pe lot ale lunii și stocul
-pe cont cu soldul contabil; diferența pe cont se sparge în „(sold inițial)”
-(din snapshot) și componentele lunii pe tipul documentului, fără a citi
-istoricul (B8-Q3). (SAF-D4, S2-D5, S3-D6)
+deschisă din S3 revine la SAF-T (`inapoi`, numai rută internă). (SAF-D4, S2-D5, S3-D6)
+
+Cusăturile ecranului L compară declarația cu cubul: rulajul balanței,
+faptele fiscale și baza lor pe sens. Cele ale ecranului S compară fiecare
+poziție cu postările pe lot ale lunii și stocul pe cont cu soldul contabil;
+diferența pe cont se sparge în „(sold inițial)” (din snapshot) și
+componentele lunii pe tipul documentului, fără a citi istoricul (B8-Q3).
+(SAF-D4, S2-D5, S3-D6)
+
 Soldurile de cont și ale terților din L și S pornesc din snapshot-ul contabil,
 deci accesul complet cerut include perioadele fiscale și soldurile de perioadă.
 (SAFT-r4, X-D5)
+
+## Limitele implementării
+
+- Reperele vechi `RegistruTva.ScrisLa` nu au compatibilizare: citirea fiscală
+  folosește cubul și confirmarea explicită a depunerii; bazele de dezvoltare
+  se recreează. (103, 102)
 
 <!-- gen:decizii -->
 ## Decizii
