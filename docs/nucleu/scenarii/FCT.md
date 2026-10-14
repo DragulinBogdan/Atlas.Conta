@@ -77,7 +77,7 @@ Probele TR-D8 SC-CIT-41…45 verifică separat politica și istoricul.
 
 ## TR-D9a, pasul 2 (2026-10-05): SC-X-01 și limita 098-r3
 
-Măsurat în SC-X-27 ([README](README.md#lanțurile-transversale-sc-x-)): după
+Măsurat în SC-X-27 ([X](X.md#concurență-și-transversale-de-comandă)): după
 stornarea NIR-ului acoperit cu consum, registrul lotului e −4, dar nicio
 operație ulterioară pe lot nu e refuzată. Garda de sold a registrului rulează
 numai pe tipurile din afara cubului, iar acestea nu au reguli de stoc.

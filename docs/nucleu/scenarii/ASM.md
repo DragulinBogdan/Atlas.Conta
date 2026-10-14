@@ -26,7 +26,7 @@ al contului lipsă pe operare este verificat în scena SAF-T S.
 SC-ASM-26 e fără obiect după tăiere. Proveniența este regula, dacă nu este indicată
 altfel. Contraponderile din Transformare au valoare 0 în toate exemplele.
 
-| ID / probă | Scenariu și așteptare după comandă | Rezultat așteptat | Proveniență |
+| ID | Scenariu și așteptare după comandă | Rezultat așteptat | Proveniență |
 |---|---|---|---|
 | SC-ASM-01 | LA: A 2/100 → LB: B 1/100 pe același cont. Transfer cu cele 4 postări din ASM-B2; LA 0/0, LB 1/100; rulaj contabil 0. | acceptat | regulă; 1.225 transformări de produs observate |
 | SC-ASM-02 | LA: A 2/60 și LB: B 3/40 → LC: C 1/100, același cont. 6 postări; LA/LB 0/0, LC 1/100; valoare totală 100. | acceptat | recensământ: 541 cu consumuri multiple |
