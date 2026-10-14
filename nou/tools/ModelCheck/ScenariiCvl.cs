@@ -480,7 +480,9 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         var c = Corectie(corectat, 200m);
         var castiga = Partial();
         var pierde = Partial();
+        var cititor = PregatesteCititori();
         CorectieInainteaInchiderii(castiga);
+        Cititori(cititor);
 
         Corectie(februarie, 200m, 5, 2);
         Este("SC-CVL-15", "corecție în februarie pe consum din ianuarie", februarie, 40m, 480m, 720m, 1200m);

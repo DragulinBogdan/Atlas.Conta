@@ -607,11 +607,14 @@ Comenzi executate din rădăcină:
   ucide mutantul, inclusiv cei cinci `VALORICA-*`. Prima integrală
   (`run-verificari/20261014-095008-711`) a picat pe SC-NIR, privat: domeniul
   punctului 1 cuprindea și diferența valorică a NIR-ului, neatribuită.
+- SC-CVL-20, cititorii de produs: `-Tip CVL` verde pe privat
+  (`run-verificari/20261014-101238-933`) și pe bugetar
+  (`run-verificari/20261014-101311-045`).
 
 Ce nu e făcut și nu e certificat de aceste rulări:
 
-- SC-CVL-20 și 32; părțile lipsă din SC-CVL-18, 19, 28 și 31 sunt
-  enumerate în catalog;
+- SC-CVL-32; părțile lipsă din SC-CVL-18, 19, 28 și 31 sunt enumerate în
+  catalog;
 - culegerea XAF, `WriteDto`, linia explicată și DTO-ul ei, driftul openapi:
   pasul 4;
 - măsurarea pe scara de volum a interogării noi de pe calea operării
