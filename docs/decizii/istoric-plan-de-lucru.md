@@ -1314,3 +1314,36 @@ Primele loturi
 independente pentru tipurile deja pe cub sunt verificate; ciclurile complete
 rămân deschise conform fișierelor tipurilor. Contractul feliei:
 `docs/nucleu/tr-d7b-tipuri-ramase-contract.md`, amendamentul 091 sub „Pașii”.
+
+## Starea din `CLAUDE.md` la 2026-10-14 (mutată prin 118 j)
+
+Felia curentă: adoptarea kitului de guvernanță (decizia 118, activă din
+2026-10-10). Unealta `docskit` (118-r2) are `gen`, `check` și `metrics`
+adoptate, cu linia zero a codului în `docs/docskit.baseline.json`; `build`
+e încă deschis; 118-r1 (curățenia antetelor normalizate)
+așteaptă `/docs-curatenie` (118-r4). Pe motor, felia C111 e închisă și
+mersă în main (PR #36, 2026-10-11): decizia 111 (a)–(e) și (i) e
+implementată, postarea are un singur repartitor de sold. Contractul
+[TR-D9b](../nucleu/tr-d9b-contract.md), felia unităților, este redactat pe
+forma nouă a postării; primul pachet este originea partidei. Redenumirea
+tipurilor din pasul 2 este implementată, cu validarea în
+[raportul pasului](../nucleu/tr-d9b-pas2-redenumiri.md). Persistența originii
+este implementată și verificată în [pasul 4](../nucleu/tr-d9b-pas4-origini.md).
+[Pasul 3](../nucleu/tr-d9b-pas3-referinta.md)
+are catalogul A verificat pe ambele profiluri și referința privată măsurată
+până la 5.001.179 postări. [Pasul 5](../nucleu/tr-d9b-pas5-comparatie.md)
+are comparația A/B verde, review-ul independent Codex și reverificarea
+Claude, care a corectat recunoașterea ușii de sistem; pachetul e comis la
+cererea owner-ului (2026-10-13). Pachetul următor, corecțiile valorice pe
+lot, are [contractul TR-D9b-CV](../nucleu/tr-d9b-corectii-valorice-contract.md)
+și decizia 119; delimitarea pasului 2 e închisă și perimetrul aprobat de
+owner (2026-10-14), implementarea (pasul 3) e în lucru. [Pasul 6](../nucleu/tr-d9b-pas6-sens.md)
+al contractului TR-D9b este făcut: membrii care poartă debitul sau creditul
+și coloana de pe `Postare` se numesc `Sens`, printr-o migrație incrementală
+(120). [Pasul 7](../nucleu/tr-d9b-pas7-senstva.md) aduce membrii de tip
+`SensTva` la numele întreg, cu trei coloane de mapări și șase câmpuri de
+API, iar [pasul 8](../nucleu/tr-d9b-pas8-sensstingere.md) face la fel
+pentru `SensStingere`, cu parametrii de interogare. Pachetul originii și
+pașii 6–8 sunt merse în main prin PR #38 (2026-10-13). Unde suntem, cu cifre, e
+generat în [docs/stare.md](../stare.md); cronologia feliilor e în
+`docs/decizii/istoric-plan-de-lucru.md`.
