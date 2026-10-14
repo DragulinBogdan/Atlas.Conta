@@ -3,15 +3,19 @@
 Harta întrebare → unde stă în [CLAUDE.md](../CLAUDE.md), „Harta surselor de adevăr”.
 Stratul curent: invarianții, `stare-curenta/`, deciziile din afara `arhiva/`, registrul
 restanțelor, contractele deschise, cataloagele vii, `stare.md`. Restul e jurnal.
+Scopul (ținte, non-ținte, structura, etapa curentă) e în [scop.md](scop.md);
+ce promite produsul, rând cu rând, în [catalogul funcționalităților](functionalitati.md).
 Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a fiecărui fișier.
 
 <!-- gen:fisiere -->
-### `docs/` (5)
+### `docs/` (7)
 
 - [Documentația — lista fișierelor](README.md)
 - [Sesiune de arhitectură 28.07.2026 — fluxul comenzilor online (rezervare, picking, PO furnizori)](architecture-notes-2026-07-28.md)
+- [Catalogul funcționalităților](functionalitati.md)
 - [GATE XAF — contractul feliei (decizia 44.2)](gate-xaf-contract.md)
 - [Invarianții Atlas.Conta](invarianti.md)
+- [Scopul Atlas.Conta](scop.md)
 - [Unde suntem](stare.md)
 
 ### `docs/analize/` (5)

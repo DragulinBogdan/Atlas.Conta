@@ -1,6 +1,6 @@
 # Atlas.Conta — starea curentă și regulile aplicabile
 
-**Actualizat: 2026-10-10.** Referința este implementarea din workspace,
+**Actualizat: 2026-10-14.** Referința este implementarea din workspace,
 inclusiv modificările locale. Documentele descriu regulile în forma lor
 actuală, organizate pe responsabilități.
 
@@ -63,6 +63,9 @@ oricărei extinderi. Paginile de aici aplică aceste reguli la mecanismele
 curente și precizează limitele implementării.
 
 ## Acoperirea funcțională
+
+Tabelul rezumă ariile; rând cu rând, cu ținta, etapa și scenariile, acoperirea
+stă în [catalogul funcționalităților](../functionalitati.md).
 
 | Arie | Disponibil în implementare |
 |---|---|

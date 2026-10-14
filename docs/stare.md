@@ -10,8 +10,8 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Restanțe | 383: 284 deschise, 99 închise |
 | Pagini de stare curentă | 7 |
 | Contracte de felie (`Tip: contract`) | 3, deschise 2 |
-| Cataloage vii (`Tip: catalog`) | 4 |
-| Fișiere Markdown în `docs/` | 318 |
+| Cataloage vii (`Tip: catalog`) | 5 |
+| Fișiere Markdown în `docs/` | 320 |
 | Citări de decizii din cod (`// N`) | 71 |
 
 ## Decizii în vigoare pe arie
@@ -109,7 +109,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 
 | Pagina | Actualizat |
 |---|---|
-| [README](stare-curenta/README.md) | 2026-10-10 |
+| [README](stare-curenta/README.md) | 2026-10-14 |
 | [api-si-client](stare-curenta/api-si-client.md) | 2026-10-13 |
 | [dezvoltare-si-validare](stare-curenta/dezvoltare-si-validare.md) | 2026-10-14 |
 | [domeniu-si-operare](stare-curenta/domeniu-si-operare.md) | 2026-10-14 |
@@ -121,6 +121,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 
 | Catalog | Actualizat |
 |---|---|
+| [Catalogul funcționalităților](functionalitati.md) | 2026-10-14 |
 | [C111 — coordonatele postării (transversal)](nucleu/scenarii/C111.md) | 2026-10-11 |
 | [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-14 |
 | [D9B — originea partidei](nucleu/scenarii/D9B.md) | 2026-10-14 |
