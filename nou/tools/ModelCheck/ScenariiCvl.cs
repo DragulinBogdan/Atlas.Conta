@@ -8,7 +8,7 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 // docs/nucleu/scenarii/CVL.md: corecția valorii lotului prin FCT cu linie de corecție (TR-D9b-CV).
-sealed class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, bool> check,
+sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, bool> check,
     bool privat, Action<IObjectSpace, int, int> inchide)
     : ScenaDocumente(deschide, check, privat, inchide, "CVL", 2042) {
     sealed record Caz(Guid Factura, Guid Nir, Guid Linie, Guid Lot, List<Guid> Documente);
@@ -33,6 +33,11 @@ sealed class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, bool> check
         Cronologie();
         Structura();
         Perimetru();
+        Partide();
+        CorectieContraConsum();
+        CorectieContraStorno();
+        StornoContraStorno();
+        EsecDupaCompensare();
         PerioadaInchisa();
     }
 
@@ -435,6 +440,33 @@ sealed class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, bool> check
         Refuza("SC-CVL-19", () => Opereaza(Draft(Zi(15), (transferat, 200m))), N.Coduri.CvLotNeeligibil);
     }
 
+    void Partide() {
+        var caz = Lot();
+        var a = Corectie(caz, 200m);
+        var (receptie, corectie) = (Partida(caz.Factura, ContFurnizor)!.Value, Partida(a, ContFurnizor)!.Value);
+        var stingere = Nota(Zi(16), new LinieNtcScena(ContFurnizor, Serviciu, 50m, Furnizor, PartidaDebit: corectie));
+        Opereaza(stingere.Id);
+        SoldPartida("SC-CVL-24", corectie, Zi(28), -150m);
+        SoldPartida("SC-CVL-24", receptie, Zi(28), -1000m);
+        Refuza("SC-CVL-24", () => Storneaza(a, Zi(20)), CoduriRefuz.PartidaCuDependenti);
+        Este("SC-CVL-24", "refuzul nu schimbă lotul", caz, 100m, 1200m, 0m, 1200m);
+        Storneaza(stingere.Id, Zi(18));
+        SoldPartida("SC-CVL-24", corectie, Zi(28), -200m);
+        Storneaza(a, Zi(20));
+        SoldPartida("SC-CVL-24", corectie, Zi(28), 0m);
+        Este("SC-CVL-24", "storno corecție după neutralizarea stingerii", caz, 100m, 1000m, 0m, 1000m);
+
+        var minus = Lot();
+        var b = Corectie(minus, -200m);
+        (receptie, corectie) = (Partida(minus.Factura, ContFurnizor)!.Value, Partida(b, ContFurnizor)!.Value);
+        SoldPartida("SC-CVL-24", receptie, Zi(28), -1000m);
+        SoldPartida("SC-CVL-24", corectie, Zi(28), 200m);
+        Opereaza(Nota(Zi(16), new LinieNtcScena(ContFurnizor, ContFurnizor, 200m, Furnizor, Furnizor,
+            PartidaDebit: receptie, PartidaCredit: corectie)).Id);
+        SoldPartida("SC-CVL-24", receptie, Zi(28), -800m);
+        SoldPartida("SC-CVL-24", corectie, Zi(28), 0m);
+    }
+
     void PerioadaInchisa() {
         var februarie = Partial();
         var ianuarie = Lot();
@@ -446,7 +478,9 @@ sealed class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, bool> check
         var corectat = Lot();
         Bon(corectat, 60m);
         var c = Corectie(corectat, 200m);
-        InchideIanuarie();
+        var castiga = Partial();
+        var pierde = Partial();
+        CorectieInainteaInchiderii(castiga);
 
         Corectie(februarie, 200m, 5, 2);
         Este("SC-CVL-15", "corecție în februarie pe consum din ianuarie", februarie, 40m, 480m, 720m, 1200m);
@@ -472,5 +506,6 @@ sealed class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, bool> check
         Opereaza(inlocuitor);
         Este("SC-CVL-17", "înlocuitorul +150: efect net +150", corectat, 40m, 460m, 690m, 1150m);
         Este("SC-CVL-17", "ianuarie neschimbat", corectat, 40m, 480m, 720m, 1200m, Zi(31));
+        InchidereaInainteaCorectiei(pierde);
     }
 }

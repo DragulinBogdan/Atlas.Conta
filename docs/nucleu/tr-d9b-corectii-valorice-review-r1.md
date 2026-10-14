@@ -368,6 +368,11 @@ compensare; textul probei se aduce la zi odată cu scenariile.
 anului corecției. Stocul rămas este beneficiar curent, oricând a fost
 recepția.
 
+Owner-ul (2026-10-14): închiderea anului merită prinsă ca operație
+explicită; pe bugetar este obligatorie, iar pe privat poate ajuta. Anul
+calendaristic rămâne gardul primului pachet; când operația există, „an
+închis” înseamnă anul închis prin ea (CV-r2).
+
 **R8-10 — ieșirea ulterioară.** Un bon cu cota zero nu are rădăcină, deci
 nu se deosebește prin postări de o ieșire făcută după corecție. Deosebirea
 este ordinea scrierii: ieșirea ulterioară este ieșirea activă a cărei

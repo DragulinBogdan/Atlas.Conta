@@ -54,5 +54,6 @@ Fără probă de produs: mecanismul nu este implementat și catalogul CVL nu est
 
 - **Implementarea**, în pașii 3–5 ai contractului, cu SC-CVL-26…30 și SC-X-05/06/07 prin comenzile reale, pe ambele profiluri. Paginile de stare curentă descriu codul și se aduc la zi atunci.
 - **Predicatele** rădăcinii și ale perechii de compensare (R3) și **explicația** (CV-D8): închise la 2026-10-14 prin R8 și CV-D10 din contract. Decizia fixează apartenența și numărul tranzacțiilor; forma lor fizică este în contract.
+- **CV-r2** — închiderea exercițiului ca operație explicită, cerută de owner la 2026-10-14: obligatorie pe bugetar, utilă pe privat. Până atunci `CV_AN_INCHIS` judecă anul calendaristic al consumului beneficiar (R8-9); după, anul închis prin operație. Operația nu e a acestui pachet: atinge perioadele, snapshot-ul și închiderea conturilor de rezultat pe ambele profiluri.
 - **CV-r1** — reprezentarea SAF-T a corecției și despărțirea compensărilor de liniile comerciale; până atunci exportul refuză (CV-D9).
 - **Alți beneficiari și alte destinații.** Primul pachet acoperă recepția și consumul. FCL, BTR și ASM cer scenarii proprii pentru identificarea beneficiarului și destinația compensării. Cursul și fișa de imobilizare din 091 (h) își primesc destinația în pachetele lor; apartenența din (b) li se aplică.

@@ -107,9 +107,18 @@ prin agregare înainte de stabilirea provenienței.
 
 | Stare | Scenarii |
 |---|---|
-| rulate | SC-CVL-01…17, 25, 27, 30 |
+| rulate | SC-CVL-01…17, 21…25, 27, 29, 30 |
 | rulate parțial | SC-CVL-18 (structura liniei; fără furnizor sau gestiune greșită, politică lipsă, precizie); SC-CVL-19 (transfer și cronologie; anul anterior e probat în nucleu); SC-CVL-26 (forma rădăcinilor și a compensării; mutanții invariantului lipsesc); SC-CVL-28 (tranzacțiile, stările și explicația; fără fișă, jurnal și snapshot); SC-CVL-31 (deciziile persistate; fără invariantul de audit și fără DTO) |
-| neimplementate | SC-CVL-20…24, 29, 32 |
+| neimplementate | SC-CVL-20, 32 |
+
+Concurența (SC-CVL-21, 22, 23, 29) rulează pe două conexiuni reale, în
+ambele ordini: scena ține blocajul scrierii, iar comenzile intră în coada
+lui (tiparul SC-X-15). În SC-CVL-23, cazul în care închiderea câștigă
+folosește februarie, fiindcă ianuarie se închide în cazul celălalt.
+Snapshot-ul de stoc se citește pe lot; cel contabil nu poartă lotul și
+partida, deci se compară cu suma faptelor pe repartitorii scenei, iar C și D
+se citesc din cub la sfârșitul lunii. Eșecul injectat vine din bază, printr-un
+trigger temporar pe inserarea tranzacției de compensare, fără cârlig în cod.
 
 Proba pură `CorectieValoricaTeste` acoperă matricea, cele 16 ordini de
 stornare, cazurile temporale, storno recepției și refuzurile, fără bază. [Review-ul R1](../tr-d9b-corectii-valorice-review-r1.md)

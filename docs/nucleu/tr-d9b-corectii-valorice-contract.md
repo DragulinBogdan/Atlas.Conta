@@ -414,7 +414,8 @@ diferențe.
 cu ponderea cantității din poziția de stoc la data corecției; și fiecare
 consum activ, prin postarea lui de debit, cu ponderea cantității ei.
 Ordinea este cea din CV-D3. Un consum beneficiar datat într-un an anterior
-anului corecției dă `CV_AN_INCHIS`; stocul rămas nu (R8-9).
+anului corecției dă `CV_AN_INCHIS`; stocul rămas nu (R8-9). Anul calendaristic
+ține locul închiderii exercițiului până la operația explicită (CV-r2).
 
 **Rădăcina.** Piciorul de debit al unei perechi `Operare` a corecției:
 cantitate zero, `Atribuit` = postarea beneficiară, poziția beneficiarului
@@ -577,13 +578,18 @@ Comenzi executate din rădăcină:
   Prima rulare a picat pe SC-REGIM-13: oglinda gardurilor în regimul pe
   stare adaugă o citire. Plafoanele au crescut de la 10 și 12 la 11 și 13
   instrucțiuni SQL, cost de confirmat de owner (106f).
+- Concurența și partidele (SC-CVL-21…24, 29), adăugate după integrală:
+  `-Tip CVL` verde pe privat (`run-verificari/20261014-083922-101`) și pe
+  bugetar (`run-verificari/20261014-084012-398`); `-Tip X` verde pe ambele
+  profiluri (`run-verificari/20261014-084106-627`), fiindcă serializarea
+  probei s-a mutat din `ScenariiConcurenta` în `ScenaDocumente`.
 
 Ce nu e făcut și nu e certificat de aceste rulări:
 
 - invariantul de audit din CV-D8 pe deciziile valorice, cu mutanții din
   SC-CVL-26 și SC-CVL-31; `CV_PROVENIENTA` e emis numai la o atribuire spre
   o postare absentă;
-- SC-CVL-20…24, 29 și 32; părțile lipsă din SC-CVL-18, 19, 28 și 31 sunt
+- SC-CVL-20 și 32; părțile lipsă din SC-CVL-18, 19, 28 și 31 sunt
   enumerate în catalog;
 - culegerea XAF, `WriteDto`, linia explicată și DTO-ul ei, driftul openapi:
   pasul 4;

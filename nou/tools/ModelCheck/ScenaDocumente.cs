@@ -2,9 +2,12 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
+using System.Diagnostics;
 using System.Text.Json;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using C = Atlas.Conta.BackOffice.Module.Cub;
 using N = Atlas.Conta.Nucleu;
 
@@ -455,6 +458,55 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         catch (OperareException e) {
             Verifica(id, $"refuz de domeniu: {e.Message}", e.Message.Contains(fragment, StringComparison.OrdinalIgnoreCase));
         }
+    }
+
+    protected const string Trecut = "";
+
+    protected static string Rezultat(Action comanda) {
+        try { comanda(); return Trecut; }
+        catch (OperareException e) { return "REFUZ " + e.Message.Split('\n')[0]; }
+        catch (Exception e) { return $"EXCEPȚIE {e.GetType().Name}: {e.Message.Split('\n')[0]}"; }
+    }
+
+    protected static bool Refuzat(string rezultat, string fragment) =>
+        rezultat.StartsWith("REFUZ ", StringComparison.Ordinal) && rezultat.Contains(fragment, StringComparison.OrdinalIgnoreCase);
+
+    // X-D6: scena ține blocajul scrierii; cele două comenzi intră pe rând în coada lui, iar eliberarea le rulează serial, în ordinea cozii.
+    protected (string Prima, string ADoua) Serial(string id, Action prima, Action aDoua) {
+        Task<string> a, b;
+        using (var os = Deschide()) using (var poarta = TranzactieComanda.Incepe(os)) {
+            a = Task.Run(() => Rezultat(prima));
+            var unu = InCoada(os, 1, a);
+            b = Task.Run(() => Rezultat(aDoua));
+            var doi = InCoada(os, 2, a, b);
+            Verifica(id, "două sesiuni pe conexiuni distincte așteaptă blocajul scrierii, în ordinea intrării",
+                unu.Count == 1 && doi.Count == 2 && doi.Contains(unu[0]));
+            poarta.Commit();
+        }
+        var r = (a.GetAwaiter().GetResult(), b.GetAwaiter().GetResult());
+        Console.WriteLine($"     MĂSURAT ({id}): prima → „{(r.Item1 == Trecut ? "<a trecut>" : r.Item1)}”, "
+            + $"a doua → „{(r.Item2 == Trecut ? "<a trecut>" : r.Item2)}”.");
+        Verifica(id, "nicio excepție în afara refuzului de domeniu",
+            !r.Item1.StartsWith("EXCEPȚIE", StringComparison.Ordinal) && !r.Item2.StartsWith("EXCEPȚIE", StringComparison.Ordinal));
+        return r;
+    }
+
+    static List<int> InCoada(IObjectSpace os, int cate, params Task[] comenzi) {
+        var db = ((EFCoreObjectSpace)os).DbContext;
+        var pid = ((NpgsqlConnection)db.Database.GetDbConnection()).ProcessID;
+        var ceas = Stopwatch.StartNew();
+        List<int> blocate = [];
+        while (ceas.Elapsed < TimeSpan.FromSeconds(10) && !comenzi.Any(c => c.IsCompleted)) {
+            db.Database.ExecuteSqlRaw("SELECT pg_stat_clear_snapshot()");
+            blocate = db.Database.SqlQuery<int>($"""
+                SELECT pid AS "Value" FROM pg_stat_activity
+                WHERE {pid} = ANY(pg_blocking_pids(pid)) AND query = {TranzactieComanda.BlocajScriere}
+                ORDER BY query_start
+                """).ToList();
+            if (blocate.Count >= cate) break;
+            Thread.Sleep(20);
+        }
+        return blocate;
     }
 
     protected void RefuzDeclaratie(string id, Guid doc, string codRefuz) => Verifica(id,

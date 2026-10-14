@@ -11,7 +11,8 @@ sunt angajamente de livrare și nu descriu o ordine de implementare.
   recepționat prin FCT cu NIR conex fără diferențe și consumat prin bonuri.
   Lotul cu transfer, retur, asamblare, inventar sau deschidere e refuzat.
   Corecția cu TVA și factura mixtă sunt refuzate. Consumul dintr-un an
-  anterior anului corecției e refuzat; produsul nu are închidere de an.
+  anterior anului corecției e refuzat; produsul nu are închidere de an
+  (CV-r2).
   Corecția cu o ieșire ulterioară activă nu se retrage și nu se stornează
   până la neutralizarea ieșirii. Linia de corecție se creează numai prin
   model: culegerea XAF și `WriteDto` nu o expun încă. Invariantul de audit

@@ -127,7 +127,7 @@ scena ține blocajul scrierii, cele două comenzi intră pe rând în coada lui
 | NIR | recepție manuală și conex | pas 5 | [NIR.md](NIR.md) | verificat pe ambele profiluri: ciclul complet, stingeri, dependenți, Folosinta/Marfuri; conexul sursei migrate nu dublează cubul |
 | — | `Deschidere` | pas 6 | [DESCHIDERE.md](DESCHIDERE.md) | detaliere fără dublare (094), refuz atomic, unicitate, stingere/anulare/storno sub blocare comună; analiza/valuta păstrate la intrare, stingerea în valută neacoperită; cititorii de producție rămân TR-D8 |
 | — | coordonatele postării (transversal) | C111 | [C111.md](C111.md) | 29 de rânduri pe formele din C111-D5 și pe S10–S14; verificate la pasul 2 pe ambele profiluri (`--scenarii C111`), în afară de SC-C111-21, care e a pasului 4 |
-| CVL (mecanism propus pe FCT) | corecție valorică pe lot | TR-D9b-CV | [CVL.md](CVL.md) | 32 de scenarii documentate; `--scenarii CVL` rulează SC-CVL-01…19, 25…28, 30 și 31 pe ambele profiluri (2026-10-14), unele parțial; 20…24, 29 și 32 nu sunt încă implementate; exportul SAF-T rămâne pe refuz (CV-r1) |
+| CVL (mecanism propus pe FCT) | corecție valorică pe lot | TR-D9b-CV | [CVL.md](CVL.md) | 32 de scenarii documentate; `--scenarii CVL` rulează SC-CVL-01…19 și 21…31 pe ambele profiluri (2026-10-14), unele parțial; 20 și 32 nu sunt încă implementate; exportul SAF-T rămâne pe refuz (CV-r1) |
 | DEC | decont | înainte de TR-D8 (095) | [DEC.md](DEC.md) | declarație contabilă/fiscală și partide pe angajat (096), verificări independente |
 | PIF/CAS/AMO | imobilizări | pe cub (095, 097) | [IMO.md](IMO.md) | SC-IMO-01…25 verzi pe ambele profiluri; fișa citită din cub; review advers restant |
 
