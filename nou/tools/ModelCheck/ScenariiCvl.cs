@@ -481,8 +481,10 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         var castiga = Partial();
         var pierde = Partial();
         var cititor = PregatesteCititori();
+        var saft = PregatesteSaft();
         CorectieInainteaInchiderii(castiga);
         Cititori(cititor);
+        StornoBonSaft(saft);
 
         Corectie(februarie, 200m, 5, 2);
         Este("SC-CVL-15", "corecție în februarie pe consum din ianuarie", februarie, 40m, 480m, 720m, 1200m);
@@ -509,5 +511,6 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         Este("SC-CVL-17", "înlocuitorul +150: efect net +150", corectat, 40m, 460m, 690m, 1150m);
         Este("SC-CVL-17", "ianuarie neschimbat", corectat, 40m, 480m, 720m, 1200m, Zi(31));
         InchidereaInainteaCorectiei(pierde);
+        Saft(saft);
     }
 }

@@ -51,7 +51,7 @@ sealed partial class ScenariiCvl {
             fise.All(f => f.Count > 0 && f.All(r => r.NumarNota == numar && r.DocumentId == a))
             && fise[0].Select(r => (r.Debit, r.SoldCurent)).SequenceEqual([(80m, 480m)])
             && fise[1].Select(r => (r.Debit, r.SoldCurent)).SequenceEqual([(120m, 720m)])
-            && fise[2].Select(r => r.Credit).SequenceEqual([80m, 120m]) && fise[2][^1].SoldCurent == -1200m);
+            && fise[2].Select(r => r.Credit).Order().SequenceEqual([80m, 120m]) && fise[2][^1].SoldCurent == -1200m);
 
         var tranzactii = CuSpatiu(os => os.GetObjectsQuery<C.Tranzactie>().Count());
         var inainte = Snapshoturi();

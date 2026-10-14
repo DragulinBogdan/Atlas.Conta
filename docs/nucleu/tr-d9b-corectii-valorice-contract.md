@@ -610,11 +610,15 @@ Comenzi executate din rădăcină:
 - SC-CVL-20, cititorii de produs: `-Tip CVL` verde pe privat
   (`run-verificari/20261014-101238-933`) și pe bugetar
   (`run-verificari/20261014-101311-045`).
+- SC-CVL-32, refuzurile SAF-T: `-Tip CVL` verde pe privat
+  (`run-verificari/20261014-103824-417`) și pe bugetar, unde SAF-T nu se
+  aplică (`run-verificari/20261014-103854-125`).
+- După SC-CVL-20 și 32: `-Suita Integral -Profil Ambele -Sufix .ClaudeCVL`
+  verde, purja fără reziduu (`run-verificari/20261014-103945-779`).
 
 Ce nu e făcut și nu e certificat de aceste rulări:
 
-- SC-CVL-32; părțile lipsă din SC-CVL-18, 19, 28 și 31 sunt enumerate în
-  catalog;
+- părțile lipsă din SC-CVL-18, 19, 28 și 31, enumerate în catalog;
 - culegerea XAF, `WriteDto`, linia explicată și DTO-ul ei, driftul openapi:
   pasul 4;
 - măsurarea pe scara de volum a interogării noi de pe calea operării

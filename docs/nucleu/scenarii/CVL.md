@@ -107,9 +107,8 @@ prin agregare înainte de stabilirea provenienței.
 
 | Stare | Scenarii |
 |---|---|
-| rulate | SC-CVL-01…17, 20…27, 29, 30 |
+| rulate | SC-CVL-01…17, 20…27, 29, 30, 32 |
 | rulate parțial | SC-CVL-18 (structura liniei; fără furnizor sau gestiune greșită, politică lipsă, precizie); SC-CVL-19 (transfer și cronologie; anul anterior e probat în nucleu); SC-CVL-28 (tranzacțiile, stările și explicația; fără fișă, jurnal și snapshot); SC-CVL-31 (deciziile persistate și invariantul de audit; fără DTO) |
-| neimplementate | SC-CVL-32 |
 
 SC-CVL-20 citește cazul parțial cu ianuarie închis și corecția în februarie:
 balanța și fișa pe stoc, consum și datorie, cu citirea din mișcări
@@ -118,6 +117,12 @@ cu suma faptelor. Datoria se citește pe un partener propriu cazului. Pe fișa
 furnizorului corecția are câte un credit pe alocare (80 și 120), nu un
 singur rând de 200. Reconstrucția snapshot-ului găsește zero diferențe și
 nu scrie tranzacții.
+
+SC-CVL-32 exportă ianuarie, februarie și martie pe privat; pe bugetar SAF-T
+nu se aplică, iar proba asertă că nu există proiecție. Factura corecției
+refuzate rămâne în proiecție cu antetul, fără nicio linie, și nu se scrie
+niciun fișier. Februarie, cu numai compensarea, nu are refuz pe documentele
+cazului; luna are însă refuzuri pe celelalte corecții ale scenei.
 
 Concurența (SC-CVL-21, 22, 23, 29) rulează pe două conexiuni reale, în
 ambele ordini: scena ține blocajul scrierii, iar comenzile intră în coada
