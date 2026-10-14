@@ -811,7 +811,10 @@ este o rulare grea: nu se suprapune cu alta pe aceleași baze. O rulare
 întreruptă lasă scena în bază; următoarea o purjează la pornire, dar datele
 societății de pe profilul privat rămân cele ale scenei și se refac de mână.
 Un cititor nou care citește cumulat sau pe interval intră în `PerfCub.Operatii`
-cu ruta și cifrele lui de control. (X-D5, X-D3)
+cu ruta și cifrele lui de control. Cronologia corecțiilor de valoare are
+operația ei, `CRON-N`: dry-run-ul unui consum antedatat pe lotul lung, ca
+`CorectiiValorice.VerificaCronologia` să caute pe intervalul cu volum
+(CV-D5). (X-D5, X-D3)
 
 ### Scara de volum (`scripts/scara-volum.ps1`)
 

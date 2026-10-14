@@ -22,7 +22,7 @@ sealed partial class PerfCub {
 
     public sealed record Punct(int Istoric, int An, int Luna, int Unitati, string Operatie, bool Planuri, bool Privat, string Marcaj,
         Guid BcsDraft, Guid NtcDraft, Guid Furnizor = default, Guid Client = default, Guid ContFurnizor = default, Guid ContClient = default,
-        Guid Loc = default);
+        Guid Loc = default, Guid BcsAntedatat = default);
 
     public sealed record Masura(int Istoric, int Unitati, string Operatie, string Faza, double Ms, int Comenzi, double MsSql, long Randuri,
         long Alocati, long VarfGestionat, long VarfSetLucru, long Cardinal, Dictionary<string, decimal> Control,
@@ -106,6 +106,11 @@ sealed partial class PerfCub {
         }),
         new("FIFO-N", "dry-run-ul unui consum nou pe lotul lung (disponibilul FIFO)", Snapshot, false, false, m => {
             var refuzuri = ComenziDocument.Sistem(m.Os).Valideaza(m.P.BcsDraft);
+            foreach (var r in refuzuri) Console.WriteLine("     PERFCUB REFUZ " + r);
+            return new(1, new() { ["refuzuri"] = refuzuri.Count });
+        }),
+        new("CRON-N", "dry-run-ul unui consum antedatat pe lotul lung (cronologia corecțiilor de valoare, CV-D5)", Snapshot, false, false, m => {
+            var refuzuri = ComenziDocument.Sistem(m.Os).Valideaza(m.P.BcsAntedatat);
             foreach (var r in refuzuri) Console.WriteLine("     PERFCUB REFUZ " + r);
             return new(1, new() { ["refuzuri"] = refuzuri.Count });
         }),

@@ -615,14 +615,21 @@ Comenzi executate din rădăcină:
   aplică (`run-verificari/20261014-103854-125`).
 - După SC-CVL-20 și 32: `-Suita Integral -Profil Ambele -Sufix .ClaudeCVL`
   verde, purja fără reziduu (`run-verificari/20261014-103945-779`).
+- Scara transversală pe `VerificaCronologia`, pe ambele profiluri, m = 0, 6,
+  12 și k = 1…64: `FIFO-N` (consumul la sfârșitul lunii) și `CRON-N`, nou,
+  un consum antedatat la ziua 2 a lunii măsurate, ca interogarea să caute pe
+  intervalul cu volum. Ambele citesc 61 de rânduri în 23 de comenzi pe toată
+  scara, iar criteriile X-D5 trec (`run-verificari/perf-cub-cvl-fifo-20261014-110640`,
+  `perf-cub-cvl-cron-A-20261014-111503`, `perf-cub-cvl-cron-20261014-111841`).
+  La consumul antedatat planificatorul pornește din indexul lotului
+  (`Postare_Stoc_Unitate_Data_idx`, 2 rânduri); indexul de dată îl alege
+  numai când intervalul de după dată e gol. Interogarea nu s-a schimbat.
 
 Ce nu e făcut și nu e certificat de aceste rulări:
 
 - părțile lipsă din SC-CVL-18, 19, 28 și 31, enumerate în catalog;
 - culegerea XAF, `WriteDto`, linia explicată și DTO-ul ei, driftul openapi:
-  pasul 4;
-- măsurarea pe scara de volum a interogării noi de pe calea operării
-  (`CorectiiValorice.VerificaCronologia`).
+  pasul 4.
 
 ### Verificarea pasului documentar — 2026-10-12
 
