@@ -112,35 +112,18 @@ contrazise din neatenție.
 
 ## Stare
 
-Felia curentă: adoptarea kitului de guvernanță (decizia 118, activă din
-2026-10-10). Unealta `docskit` (118-r2) are `gen`, `check` și `metrics`
-adoptate, cu linia zero a codului în `docs/docskit.baseline.json`; `build`
-e încă deschis; 118-r1 (curățenia antetelor normalizate)
-așteaptă `/docs-curatenie` (118-r4). Pe motor, felia C111 e închisă și
-mersă în main (PR #36, 2026-10-11): decizia 111 (a)–(e) și (i) e
-implementată, postarea are un singur repartitor de sold. Contractul
-[TR-D9b](docs/nucleu/tr-d9b-contract.md), felia unităților, este redactat pe
-forma nouă a postării; primul pachet este originea partidei. Redenumirea
-tipurilor din pasul 2 este implementată, cu validarea în
-[raportul pasului](docs/nucleu/tr-d9b-pas2-redenumiri.md). Persistența originii
-este implementată și verificată în [pasul 4](docs/nucleu/tr-d9b-pas4-origini.md).
-[Pasul 3](docs/nucleu/tr-d9b-pas3-referinta.md)
-are catalogul A verificat pe ambele profiluri și referința privată măsurată
-până la 5.001.179 postări. [Pasul 5](docs/nucleu/tr-d9b-pas5-comparatie.md)
-are comparația A/B verde, review-ul independent Codex și reverificarea
-Claude, care a corectat recunoașterea ușii de sistem; pachetul e comis la
-cererea owner-ului (2026-10-13). Pachetul următor, corecțiile valorice pe
-lot, are [contractul TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md)
-și decizia 119; delimitarea pasului 2 e închisă și perimetrul aprobat de
-owner (2026-10-14), implementarea (pasul 3) e în lucru. [Pasul 6](docs/nucleu/tr-d9b-pas6-sens.md)
-al contractului TR-D9b este făcut: membrii care poartă debitul sau creditul
-și coloana de pe `Postare` se numesc `Sens`, printr-o migrație incrementală
-(120). [Pasul 7](docs/nucleu/tr-d9b-pas7-senstva.md) aduce membrii de tip
-`SensTva` la numele întreg, cu trei coloane de mapări și șase câmpuri de
-API, iar [pasul 8](docs/nucleu/tr-d9b-pas8-sensstingere.md) face la fel
-pentru `SensStingere`, cu parametrii de interogare. Pachetul originii și
-pașii 6–8 sunt merse în main prin PR #38 (2026-10-13). Unde suntem, cu cifre, e
-generat în [docs/stare.md](docs/stare.md); cronologia feliilor e în
+Pe guvernanță, stratul de scop ([scop](docs/scop.md),
+[catalogul funcționalităților](docs/functionalitati.md); PR #44) și cele 16
+arii ale stării curente (decizia 121, PR #45) sunt în main din 2026-10-15.
+Următorul pas, la cererea owner-ului, pe context nou: 121-r1 (rescrierea
+paginilor pe responsabilități), 121-r2 (limitele aduse la catalog), 121-r3
+(sondajul owner-ului pe aria rândurilor din registru). Tot pe guvernanță
+rămân 118-r1 la `/docs-curatenie` și `build` din 118-r2. Pe motor, felia
+deschisă e [TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md)
+(decizia 119), adică etapa E1 (F-CVL-01…06): pasul 3, mecanismul pe FCT, e
+în main (PR #41); urmează pasul 4 (cititorii, explicația, culegerea XAF,
+`WriteDto` și DTO), apoi pasul 5 (regresie și review advers). Unde suntem,
+cu cifre: [docs/stare.md](docs/stare.md); cronologia:
 `docs/decizii/istoric-plan-de-lucru.md`.
 
 ## Capcane de probare
