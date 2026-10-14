@@ -7,7 +7,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Ce | Cât |
 |---|---|
 | Decizii | 120: 87 active, 33 amendate parțial, 0 depășite, 0 propuse |
-| Restanțe | 382: 283 deschise, 99 închise |
+| Restanțe | 383: 284 deschise, 99 închise |
 | Pagini de stare curentă | 7 |
 | Contracte de felie (`Tip: contract`) | 3, deschise 2 |
 | Cataloage vii (`Tip: catalog`) | 4 |
@@ -34,14 +34,14 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 43 |
+| activă | 44 |
 | după PoC | 206 |
 | migrare | 24 |
 | depășită de 091 | 2 |
 | docs | 4 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (43, prag 45)
+### Lista `activă` (44, prag 45)
 
 **domeniu-si-operare** (33)
 
@@ -87,11 +87,12 @@ Niciuna.
 - `103-r3` Validarea L3 a semnului taxei culese față de baza FCT/FCL și înlocuirea proxy-ului ILinieCuAvans pen…
 - `CV-r1` Reprezentarea SAF-T a corecției valorice pe lot: factura corectivă (tipul 380/381/384, cantitatea, d…
 
-**dezvoltare-si-validare** (5)
+**dezvoltare-si-validare** (6)
 
 - `S-r4` snapshot-ul EF declară cheia ID și FK_Postare_Tranzactie_TranzactieId pe părinte, baza are cheia (Sp…
 - `091-r2` recensământul pe clona Flax per tip rămas (NTC, ITV, RDC, RLF, ASM, LDI, NIR), o dată, înaintea scen…
 - `107-r6` performanța Import1C: 25 → 50 min/lună pe Flax față de 8–10 la baseline 2026-09-21 (~5×)…
+- `091-r6` lanțurile transversale fără realizare care să probeze definiția din X.md: SC-X-01 (refuz pe NIR cone…
 - `106-r5` StateMachine și ViewVariants scoase din Startup.cs și RequiredModuleTypes…
 - `118-r2` Unealta docskit (repo propriu, dotnet global tool): gen, check întâi, build, metrics după…
 

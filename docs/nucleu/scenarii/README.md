@@ -25,7 +25,7 @@ probează. Realizarea lui executabilă, cu cifre, probă și stare, stă cel
 mult într-un catalog de tip, ca rând cu id-ul `SC-X-NN` în prima celulă
 sau ca alias după id-ul local (`SC-CVL-10 / SC-X-05`). Tabelele de
 scenarii au prima coloană `ID`; un tabel de acoperire sau de stare
-folosește alt antet.
+folosește alt antet (118 m).
 
 Tabelul este indexul. Un scenariu complex are sub el starea inițială,
 profilul/politica, comenzile în ordine cu date explicite și așteptarea după

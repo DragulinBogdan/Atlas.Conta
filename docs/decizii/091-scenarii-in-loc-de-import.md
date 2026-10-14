@@ -228,3 +228,12 @@ evidență.
 - **091-r5** — un caz apărut la migrare care contrazice catalogul devine
   scenariu nou plus decizie; oracolul normalizat nu se mai extinde.
   Migrare.
+- **091-r6** — lanțurile transversale din `docs/nucleu/scenarii/X.md` fără
+  o realizare care să probeze definiția: SC-X-01 (realizarea din FCT.md
+  refuză stornoul FCT pe NIR conex operat, nu pe consumul din lot; de
+  judecat dacă SC-CVL-14/30, cu NIR retras înaintea probei, o acoperă),
+  SC-X-08 (refuzul vine din gardianul registrului, `STOC_INSUFICIENT`, nu
+  din dependența „lotul mutat are ieșiri”), SC-X-03 și SC-X-10…13 (nici
+  realizare, nici aserție în `nou/`). Activă: „rotund” cere lanțurile
+  transversale ((g) 2). Găsită la mutarea catalogului `SC-X` (118 (m)),
+  2026-10-14.
