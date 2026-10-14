@@ -5,7 +5,6 @@
 - Execuție: apartenența compensării hotărâtă de owner 2026-10-13, pe comparația celor două variante (R6 din `docs/nucleu/tr-d9b-corectii-valorice-review-r1.md`). Amendează 090 (a) și (i); precizează 091 (h). Predicatele și explicația verificate contra codului și fixate la 2026-10-14 (R8, CV-D10); tranșările R8 acceptate de owner în aceeași zi. Implementată în pasul 3 al contractului TR-D9b-CV (2026-10-14); culegerea și închiderea, pașii 4–5
 - Arii: stoc
 - Amendează: 90 (a, i)
-- Închide: N-r5
 - Docs: contractul `docs/nucleu/tr-d9b-corectii-valorice-contract.md` (CV-D4, CV-D5, CV-D7, CV-D8); `docs/nucleu/tr-d9b-corectii-valorice-review-r1.md` (R1, R3, R6, R7); matricea `docs/nucleu/tr-d9b-corectii-valorice-producator-si-compensare.md`; catalogul `docs/nucleu/scenarii/CVL.md` (SC-CVL-26…30); simulatorul `docs/nucleu/probe/cvl_matrice.py`.
 
 ## Regula durabilă
