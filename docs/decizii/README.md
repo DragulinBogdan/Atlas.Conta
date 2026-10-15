@@ -112,7 +112,7 @@
 | 119 | [Compensarea valorică aparține corecției: a doua Operare pe un document operat…](119-compensarea-valorica-apartine-corectiei.md) | 2026-10-13 | activă |
 | 120 | [Lanțul de migrații e de unică folosință până la „rotund”; recomprimarea lui este a șaptea condiție](120-lantul-de-migratii-se-recomprima-la-rotund.md) | 2026-10-13 | activă |
 | 121 | [Ariile stării curente sunt 16, pe responsabilitățile catalogului de funcționalități](121-ariile-pe-familiile-catalogului.md) | 2026-10-15 | activă |
-| 122 | [Declarațiile D300 și D394 se serializează din proiecția lor, în lei, cu refuz înaintea fișierului…](122-declaratiile-se-serializeaza-din-proiectie.md) | 2026-10-15 | propusă |
+| 122 | [Declarațiile D300 și D394 se serializează din proiecția lor, în lei, cu refuz înaintea fișierului…](122-declaratiile-se-serializeaza-din-proiectie.md) | 2026-10-15 | activă |
 
 ### Amendate parțial (34)
 

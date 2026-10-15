@@ -1,8 +1,8 @@
 # 122 — Declarațiile D300 și D394 se serializează din proiecția lor, în lei, cu refuz înaintea fișierului; corecția valorică intră în SAF-T fără cantitate inventată
 
 - Data: 2026-10-15
-- Stare: propusă
-- Execuție: etapa E2, contractul `docs/api/e2-depunere-xml-contract.md`, pașii 0–5 (2026-10-15). Owner-ul a hotărât antetul pe societate (E2-D4), categoria de bunuri pe produs (E2-D6), plajele ca nomenclator (E2-D7) și forma SAF-T a corecției (E2-D10: factura după regula comună, linia cu cantitate 0 și 000/000000, mișcarea 90/60). La discuția deciziei (2026-10-15), owner-ul a precizat (b), (c), (f) și (h) și a adăugat (i), implementat în aceeași zi pe branch-ul etapei. Restul D-urilor se confirmă la review-ul PR-ului
+- Stare: activă
+- Execuție: etapa E2, contractul `docs/api/e2-depunere-xml-contract.md`, pașii 0–5 (2026-10-15). Owner-ul a hotărât antetul pe societate (E2-D4), categoria de bunuri pe produs (E2-D6), plajele ca nomenclator (E2-D7) și forma SAF-T a corecției (E2-D10: factura după regula comună, linia cu cantitate 0 și 000/000000, mișcarea 90/60). La discuția deciziei (2026-10-15), owner-ul a precizat (b), (c), (f) și (h) și a adăugat (i), implementat în aceeași zi pe branch-ul etapei. Mersă în main prin PR #50 (31c29c8b); owner-ul a aprobat decizia la 2026-10-16
 - Arii: tva, saft, nomenclatoare, api, ecrane
 - Închide: 69-r6, D4-r13, D4-r5, CV-r1
 - Docs: contractul `docs/api/e2-depunere-xml-contract.md`; catalogul `docs/nucleu/scenarii/DECL.md` și SC-CVL-32 din `docs/nucleu/scenarii/CVL.md`; cercetarea formularelor `docs/api/d300-structura-2026.md`, `docs/api/d394-structura-2026.md`
@@ -60,3 +60,4 @@ E2-r1…E2-r6 în `restante.md`: amprenta și confirmarea pe trimestru, decontul
 - 2026-10-15: scrisă la închiderea etapei E2.
 - 2026-10-15: discuția cu owner-ul: (b) Hamilton pe bunuri și diferențele D394–D300 afișate, (c) 403 pe tip și 422 pe obiect, (f) pe numărul propriu, (h) delimitată la probă, (i) adăugat; SC-DECL-12…14.
 - 2026-10-15: (i) precizat: antetul în parametrii fișierului, înlocuirea confirmării aceleiași versiuni și retragerea cu motiv (gardă pe regularizările D300); SC-DECL-15, SC-CIT-84.
+- 2026-10-16: aprobată de owner după merge-ul PR #50; trece în `activă`.
