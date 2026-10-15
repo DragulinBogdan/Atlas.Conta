@@ -1,5 +1,5 @@
 import { DepunereDeclaratie } from './DepunereDeclaratie';
-import { DescarcaDeclaratie } from './DescarcaDeclaratie';
+import { DescarcaDeclaratie, type FisierExportat } from './DescarcaDeclaratie';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { NumberBox } from 'devextreme-react';
@@ -90,6 +90,7 @@ export function D300() {
   // `storeRemote`: n-avem ce cere unui `DataSourceLoader` pe un tablou de 55 de
   // rânduri pe care serverul îl întoarce întreg și în ordinea lui.
   const citit = useQuery({ queryKey: ['d300', cale], queryFn: () => ia<D300Dto>(cale) });
+  const [fisier, setFisier] = useState<{ perioada: string; f: FisierExportat }>();
 
   const randuri = useMemo(() => citit.data?.Randuri ?? [], [citit.data]);
   const nemapate = useMemo(() => citit.data?.Nemapate ?? [], [citit.data]);
@@ -137,8 +138,10 @@ export function D300() {
         bife={BIFE_D300}
         valori={stare}
         seteaza={seteaza}
+        descarcat={(f) => setFisier(f && { perioada: stare.dataStart + stare.dataEnd, f })}
       />
-      <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D300" exportat={citit.data} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
+      <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D300" exportat={citit.data}
+        fisier={fisier?.perioada === stare.dataStart + stare.dataEnd ? fisier.f : undefined} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
       <PanouErori erori={citit.error ? eroriDin(citit.error) : []} titlu="Cererea a fost refuzată" />
       {avertismente.length > 0 && (
         <PanouErori erori={avertismente} titlu="Avertismente" fel="atentie" />

@@ -1,7 +1,11 @@
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Xml;
 using System.Xml.Linq;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using DevExpress.ExpressApp;
+using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Proiectii;
 
@@ -22,6 +26,55 @@ public sealed class FisierDeclaratie {
     public byte[] Continut { get; set; }
     public string NumeFisier { get; set; }
     public string VersiuneExportata { get; set; }
+    /// <summary>Parametrii cererii, în forma din care `FisiereDeclaratii.Regenereaza` reface fișierul (122 i).</summary>
+    public string Parametri { get; set; }
+    public string Sha256 => Continut == null ? null : Convert.ToHexStringLower(SHA256.HashData(Continut));
+}
+
+/// <summary>Parametrii fișierului D300: externii decontului și datele de perioadă.</summary>
+public sealed record ParametriFisierD300(ParametriD300 Externi, ParametriXmlD300 Xml);
+
+/// <summary>Fișierul unei perioade refăcut din parametrii păstrați la export (122 i).</summary>
+public static class FisiereDeclaratii {
+    public static Type[] Citite(FormularFiscal formular) => formular == FormularFiscal.D394
+        ? [typeof(Cub.Postare), typeof(Societate), typeof(Document), typeof(PlajaFacturi)]
+        : [typeof(Cub.Postare), typeof(Societate)];
+
+    public static string Serializeaza<T>(T parametri) => JsonSerializer.Serialize(parametri);
+
+    public static bool Valizi(FormularFiscal formular, string parametri) {
+        try {
+            return formular == FormularFiscal.D394
+                ? JsonSerializer.Deserialize<ParametriXmlD394>(parametri) != null
+                : JsonSerializer.Deserialize<ParametriFisierD300>(parametri) is { Externi: not null, Xml: not null };
+        }
+        catch (JsonException) {
+            return false;
+        }
+    }
+
+    /// <exception cref="JsonException">Parametrii nu au forma formularului.</exception>
+    public static FisierDeclaratie Regenereaza(IObjectSpace os, FormularFiscal formular,
+            DateOnly inceput, DateOnly sfarsit, string parametri) {
+        if (formular == FormularFiscal.D394)
+            return D394Xml.Genereaza(os, inceput, sfarsit,
+                JsonSerializer.Deserialize<ParametriXmlD394>(parametri) ?? throw new JsonException("parametri nuli"));
+        var p = JsonSerializer.Deserialize<ParametriFisierD300>(parametri);
+        if (p?.Externi == null || p.Xml == null)
+            throw new JsonException("parametri D300 incompleți");
+        return D300Xml.Genereaza(os, inceput, sfarsit, p.Externi, p.Xml);
+    }
+
+    /// <summary>Refuzurile lunii refăcute din parametri; o altă amprentă înseamnă alt fișier decât cel exportat.</summary>
+    public static List<string> Verifica(IObjectSpace os, FormularFiscal formular, int an, int luna, string sha, string parametri) {
+        var inceput = new DateOnly(an, luna, 1);
+        var fisier = Regenereaza(os, formular, inceput, inceput.AddMonths(1).AddDays(-1), parametri);
+        if (fisier.Refuzuri.Count > 0)
+            return [.. fisier.Refuzuri.Select(r => $"{r.Cod}: {r.Mesaj}")];
+        return fisier.Sha256 == sha ? []
+            : ["DEPUNERE_FISIER_DIFERIT: fișierul refăcut din parametri diferă de cel exportat "
+                + "(antetul societății sau faptele s-au schimbat); exportați din nou înainte de confirmare."];
+    }
 }
 
 /// <summary>Versiunea de formular ANAF pe care se serializează o perioadă (E2-D1).</summary>
@@ -57,6 +110,27 @@ public sealed record PerioadaDeclarata(int An, int Luna, PeriodicitateTva Period
 public static class RotunjireDeclaratie {
     /// <summary>Lei întregi: sub 50 de bani se neglijează, de la 50 de bani se întregește (E2-D3).</summary>
     public static decimal Lei(decimal valoare) => Math.Round(valoare, 0, MidpointRounding.AwayFromZero);
+
+    /// <summary>
+    /// Părțile unui total rotunjit, în lei, cu suma egală cu totalul: latura negativă ia rotunjirea sumei ei,
+    /// cea pozitivă restul, iar fiecare latură se repartizează Hamilton pe valorile ei (122 b).
+    /// </summary>
+    public static decimal[] Lei(decimal total, IReadOnlyList<decimal> parti) {
+        var cote = new decimal[parti.Count];
+        var negativa = Lei(parti.Where(p => p < 0m).Sum());
+        Latura(1, total - negativa);
+        Latura(-1, negativa);
+        return cote;
+
+        void Latura(int semn, decimal suma) {
+            var indici = Enumerable.Range(0, parti.Count).Where(i => Math.Sign(parti[i]) == semn).ToList();
+            if (indici.Count == 0)
+                return;
+            var repartizate = N.Repartizare.Hamilton(suma, [.. indici.Select(i => Math.Abs(parti[i]))], 0);
+            for (var k = 0; k < indici.Count; k++)
+                cote[indici[k]] = repartizate[k];
+        }
+    }
 }
 
 public static class XmlDeclaratie {

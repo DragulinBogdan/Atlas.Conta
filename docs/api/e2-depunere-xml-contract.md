@@ -83,8 +83,11 @@ aceeași perioadă; răspunsul XML o poartă în antetul HTTP
 `X-Versiune-Exportata`, iar confirmarea depunerii o folosește neschimbată
 (103d). Amprenta și confirmarea există numai pe lună; trimestrul se exportă
 fără amprentă (E2-r1). Antetul și parametrii nu intră în amprentă: amprenta certifică
-faptele, nu fișierul (limita existentă din `tva.md`). Același snapshot,
-același antet și aceiași parametri dau un fișier identic byte cu byte.
+faptele, nu fișierul. Fișierul are amprenta lui (SHA-256, antetul
+`X-Sha256-Fisier`) și parametrii din care se reface (`X-Parametri-Fisier`);
+confirmarea care le primește reface fișierul și îl păstrează numai când
+amprenta coincide (122 i). Același snapshot, același antet și aceiași
+parametri dau un fișier identic byte cu byte.
 
 ### E2-D3 — rotunjirea la leu
 
@@ -98,11 +101,15 @@ recalculează din valorile rotunjite:
   totalurile (19, 30, 31, 35…45) ies din aceleași formule ale proiecției,
   aplicate pe rândurile rotunjite. Formula rămâne una singură: proiecția
   primește modul „lei” și nu are o a doua implementare a totalurilor.
-- D394: fiecare `op1` și `op11`; `rezumat1`, `rezumat2`, `nrCui*` și
-  `totalPlata_A` sunt sume peste valorile rotunjite emise.
+- D394: fiecare `op1`; `op11` își împarte `op1` rotunjit prin
+  `Repartizare.Hamilton` la scara leului, separat pe semne (122 b);
+  `rezumat1`, `rezumat2`, `nrCui*` și `totalPlata_A` sunt sume peste
+  valorile rotunjite emise.
 
 Diferența dintre suma în lei și suma în bani a cubului nu e eroare și nu se
-raportează pe rând; DTO-ul JSON rămâne în bani.
+raportează pe rând; DTO-ul JSON rămâne în bani. Diferența dintre rotunjirea pe
+partener (D394) și rotunjirea o dată a totalului (D300) se arată pe tip ×
+cotă în `D394Dto.DiferenteRotunjire`, ca informare (122 b).
 
 ### E2-D4 — antetul declarantului (owner, 2026-10-15)
 
@@ -171,7 +178,7 @@ deciziei, cu mai multe plaje pe serie și istoric. Două plaje active ale
 aceleiași serii nu se suprapun. Pentru o perioadă se declară plajele active
 cu decizia până la sfârșitul ei.
 
-Factura emisă e documentul fiscal cu fapte de livrare în perioadă. Numărul
+Factura emisă e documentul cu număr propriu și fapte de livrare în perioadă (122 f). Numărul
 ei se leagă de plajă prin prefix și cifrele finale: prefixul e seria, cifrele
 cad în interval. Tip 2 poartă, pe fiecare plajă, primul și ultimul număr
 emis; `nrFacturi` e numărul facturilor emise. O factură emisă care nu cade în
@@ -202,7 +209,9 @@ Două porți, ambele pe kit pin-uit, ca la D406 (`ManifestD406`):
    fișierului în manifest.
 2. DUKIntegrator cu validatorii Soft J din E2-D1, în același `dist` cu kitul
    D406, cu SHA-256 pe fiecare jar. Fișierul de erori trebuie să conțină
-   literal `ok`; atenționările se listează și nu blochează. Kit absent sau
+   literal `ok`; în catalog, fișierele de scenariu trec și fără atenționări
+   (N4), iar mutanții sunt respinși la poarta așteptată. În produs,
+   atenționările formularului nu opresc fișierul (E2-D5). Kit absent sau
    nepotrivit manifestului înseamnă respingere, nu trecere.
 
 Proba e un catalog nou de scenarii, `DECL` (`SC-DECL-NN`), scris la pasul 1,
@@ -297,6 +306,34 @@ Review-ul de închidere (agent nou, numai citire, 2026-10-15) a găsit 2 MAJOR,
 
 Restanțele noi sunt E2-r1…E2-r6 (decizia 122). Un review Codex se propune
 owner-ului într-o linie, la merge.
+
+## Discuția deciziei 122 — 2026-10-15
+
+Owner-ul a trecut prin decizie după pasul 5 și a hotărât:
+
+| Punct | Hotărârea | Unde |
+|---|---|---|
+| factura emisă | definită prin numărul propriu; stornoul rămâne afară cât modelul nu-i dă număr (E2-r4) | 122 f, E2-D7 |
+| D394 față de D300 | diferența de rotunjire pe tip × cotă se afișează pe ecranul D394, fără refuz | 122 b, `D394Dto.DiferenteRotunjire` |
+| restul pe bunuri | regula de repartizare a nucleului (`Repartizare.Hamilton`), nu restul pe bunul cel mai mare, care putea întoarce semnul unui bun | 122 b, SC-DECL-12 |
+| fișierul confirmat | amprenta și parametrii fișierului se păstrează la confirmare, în E2; serverul reface fișierul și refuză altă amprentă | 122 i, migrația `FisierDepunere`, SC-DECL-14 |
+| refuzul pe date invizibile | 403 pe tipul fără citire, 422 pe factura ascunsă pe obiect | 122 c |
+| oracolul | „fără atenționări” e regula catalogului, nu a exportului | 122 h, E2-D9 |
+
+Verificare: `--scenarii DECL` verde pe ambele profiluri
+(`run-verificari/20261015-200648-030`); calea HTTP pe baza E2P4
+(`run-verificari/e2-122-depunere.ps1`): pe D300 și D394, amprenta din antet
+e SHA-256 al corpului, amprenta fără parametri și parametrii stricați dau 400,
+antetul schimbat dă 422 `DEPUNERE_FISIER_DIFERIT`, confirmarea păstrează
+amprenta și parametrii, aceeași cerere e idempotentă, iar confirmarea fără
+fișier după cea cu fișier dă 422 `DEPUNERE_CONFIRMATA`.
+Integrala ModelCheck e verde pe ambele profiluri
+(`run-verificari/20261015-200934-057`). În browser (clientul pe baza E2P4,
+D394 mai 2026): după „Descarcă XML” ecranul arată începutul amprentei
+fișierului; confirmarea unui fișier cu alți parametri decât cel confirmat dă
+`DEPUNERE_CONFIRMATA`, iar fișierul cu aceeași bifă se confirmă idempotent.
+Tabelul diferențelor de rotunjire e probat pe DTO (SC-DECL-13); luna din
+E2P4 nu are diferențe, deci tabelul nu s-a randat în browser.
 
 ## Verificarea pasului 5 — 2026-10-15
 

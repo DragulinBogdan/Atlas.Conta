@@ -14,7 +14,7 @@ sealed partial class ScenariiDecl {
         if (!Privat)
             return;
         Comanda(os => {
-            foreach (var luna in new[] { 4, 5, 6, 7, 10, 11 }) {
+            foreach (var luna in new[] { 4, 5, 6, 7, 10, 11, 12 }) {
                 var p = os.CreateObject<PerioadaFiscala>(); p.An = An; p.Luna = luna;
             }
             var plaja = os.CreateObject<PlajaFacturi>();
@@ -25,6 +25,7 @@ sealed partial class ScenariiDecl {
         RefuzuriD394();
         TrimestruD394();
         StornoInAltaLuna();
+        DepunereaFisierului();
     }
 
     void StornoInAltaLuna() {
@@ -159,9 +160,10 @@ sealed partial class ScenariiDecl {
         os.CommitChanges(); return p.ID;
     });
 
-    Guid VanzareNumerotata(DateOnly data, decimal baza, string tva, Guid? produs = null, string numar = null) => CuSpatiu(os => {
+    Guid VanzareNumerotata(DateOnly data, decimal baza, string tva, Guid? produs = null, string numar = null,
+            Guid? primitor = null) => CuSpatiu(os => {
         var d = os.CreateObject<FacturaIesire>(); d.Data = data; d.Numar = numar ?? SeriePlaja + ++numarFactura;
-        d.PredatorId = Loc; d.PrimitorId = Client;
+        d.PredatorId = Loc; d.PrimitorId = primitor ?? Client;
         var l = os.CreateObject<FacturaIesireDetaliu>(); l.Document = d; l.Pozitie = 1;
         l.TipMaterialId = Tip(os, "704"); l.Cantitate = 1; l.PretUnitar = baza; l.TipTvaId = Tva(tva); l.ProdusId = produs;
         os.CommitChanges(); return d.ID;

@@ -101,6 +101,7 @@ public sealed class D394Dto {
     public int NrFacturi { get; set; }
     public List<D394SerieFacturi> SeriiFacturi { get; set; } = [];
     public List<RefuzDeclaratie> RefuzuriXml { get; set; } = [];
+    public List<D394DiferentaRotunjire> DiferenteRotunjire { get; set; } = [];
 }
 
 public static partial class D394Proiectii {
@@ -303,6 +304,7 @@ public static partial class D394Proiectii {
         }
 
         var (bunuri, faraCategorie) = Bunuri(os, dataStart, dataEnd, mapari, parteneri, castigatoare, randuri);
+        rezultat.DiferenteRotunjire = DiferenteRotunjire(randuri.Values);
         if (lei)
             Rotunjeste(randuri.Values, bunuri);
 

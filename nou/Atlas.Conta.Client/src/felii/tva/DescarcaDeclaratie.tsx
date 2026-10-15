@@ -5,8 +5,11 @@ import { PanouErori } from '../../nucleu/PanouErori';
 type Refuz = { Cod?: string | null; Mesaj?: string | null };
 type Bifa = { cheie: string; eticheta: string };
 
+/** Antetele exportului XML, păstrate la confirmarea depunerii (122 i). */
+export type FisierExportat = { VersiuneExportata: string; Sha256Fisier: string; ParametriFisier: string };
+
 // Fișierul de depus (E2-D8): butonul stă inactiv cât proiecția are refuzuri, iar refuzul cererii vine în același panou.
-export function DescarcaDeclaratie({ formular, cale, refuzuri, incarcat, bife, valori, seteaza }: {
+export function DescarcaDeclaratie({ formular, cale, refuzuri, incarcat, bife, valori, seteaza, descarcat }: {
   formular: 'D300' | 'D394';
   cale: string;
   refuzuri: Refuz[];
@@ -14,6 +17,7 @@ export function DescarcaDeclaratie({ formular, cale, refuzuri, incarcat, bife, v
   bife: readonly Bifa[];
   valori: Record<string, string>;
   seteaza: (v: Record<string, string>) => void;
+  descarcat?: (fisier: FisierExportat | undefined) => void;
 }) {
   const [descarcare, setDescarcare] = useState<{ activa: boolean; erori: string[]; cerere: string }>(
     { activa: false, erori: [], cerere: '' });
@@ -22,7 +26,11 @@ export function DescarcaDeclaratie({ formular, cale, refuzuri, incarcat, bife, v
   async function descarca() {
     setDescarcare({ activa: true, erori: [], cerere: cale });
     try {
-      await descarcaFisier(cale, `${formular}.xml`, 'application/xml, application/json');
+      const antete = await descarcaFisier(cale, `${formular}.xml`, 'application/xml, application/json');
+      const [versiune, sha, parametri] = ['X-Versiune-Exportata', 'X-Sha256-Fisier', 'X-Parametri-Fisier']
+        .map((a) => antete.get(a));
+      descarcat?.(versiune && sha && parametri
+        ? { VersiuneExportata: versiune, Sha256Fisier: sha, ParametriFisier: parametri } : undefined);
       setDescarcare({ activa: false, erori: [], cerere: cale });
     }
     catch (e) {

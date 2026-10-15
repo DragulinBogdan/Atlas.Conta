@@ -69,7 +69,7 @@ catalogului poartă data adoptării (linia zero), nu data livrării. Rândurile
 | F-PER-01 | Închid luna cu constatările ei și soldurile fixate; un document întârziat intră în luna deschisă | T1 | perioade | | livrată 2026-10-14 | SC-X-21, SC-BCS-04, SC-CIT-12…14 |
 | F-PER-02 | Închid anul: rezultatul trece în 1174, iar anul nou se deschide din soldurile de la 31.12 | T1 | perioade | | deschisă | SC-X-12 |
 | F-ITV-01 | Închid lunar TVA-ul: generez, regenerez și inversez nota de regularizare | T1, T2 | tva | | livrată 2026-10-14 | SC-ITV-01…11 |
-| F-TVA-01 | Export D300 și D394 în XML, pentru depunere, lunar sau trimestrial, cu datele declarantului completate o singură dată | T2 | tva | E2 | livrată 2026-10-15 | SC-DECL-01…11 |
+| F-TVA-01 | Export D300 și D394 în XML, pentru depunere, lunar sau trimestrial, cu datele declarantului completate o singură dată, iar confirmarea depunerii păstrează fișierul depus | T2 | tva | E2 | livrată 2026-10-15 | SC-DECL-01…14 |
 | F-TVA-02 | Calculez prorata și ajustările de TVA și completez secțiunile informative din D394 | T2 | tva | | deschisă | — |
 | F-TVA-03 | Aplic TVA la încasare, cu exigibilitatea amânată și conturile ei intermediare | T1, T2 | tva | | deschisă | — |
 | F-REGIM-01 | Văd pe fiecare document ce pot face cu el acum și de ce, după stare, stingeri și perioadă | T1 | documente | | livrată 2026-10-14 | SC-REGIM-01…15 |

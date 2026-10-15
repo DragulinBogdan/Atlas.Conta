@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Atlas.DXF.Core.Appearance.Attributes;
 using DevExpress.ExpressApp.DC;
 
@@ -19,4 +20,9 @@ public class DepunereDeclaratie : RandRegistru, IVerificabilLaCommit {
     public virtual DateTime ConfirmataLa { get; set; }
     [XafDisplayName("Confirmată de")]
     public virtual string ConfirmataDe { get; set; }
+    [XafDisplayName("SHA-256 fișier")]
+    [MaxLength(64)]
+    public virtual string Sha256Fisier { get; set; }
+    [XafDisplayName("Parametrii fișierului")]
+    public virtual string ParametriFisier { get; set; }
 }

@@ -2,7 +2,7 @@
 
 - Data: 2026-10-15
 - Stare: propusă
-- Execuție: etapa E2, contractul `docs/api/e2-depunere-xml-contract.md`, pașii 0–5 (2026-10-15). Owner-ul a hotărât antetul pe societate (E2-D4), categoria de bunuri pe produs (E2-D6), plajele ca nomenclator (E2-D7) și forma SAF-T a corecției (E2-D10: factura după regula comună, linia cu cantitate 0 și 000/000000, mișcarea 90/60). Restul D-urilor se confirmă la review-ul PR-ului
+- Execuție: etapa E2, contractul `docs/api/e2-depunere-xml-contract.md`, pașii 0–5 (2026-10-15). Owner-ul a hotărât antetul pe societate (E2-D4), categoria de bunuri pe produs (E2-D6), plajele ca nomenclator (E2-D7) și forma SAF-T a corecției (E2-D10: factura după regula comună, linia cu cantitate 0 și 000/000000, mișcarea 90/60). La discuția deciziei (2026-10-15), owner-ul a precizat (b), (c), (f) și (h) și a adăugat (i), implementat în aceeași zi pe branch-ul etapei. Restul D-urilor se confirmă la review-ul PR-ului
 - Arii: tva, saft, nomenclatoare, api, ecrane
 - Închide: 69-r6, D4-r13, D4-r5, CV-r1
 - Docs: contractul `docs/api/e2-depunere-xml-contract.md`; catalogul `docs/nucleu/scenarii/DECL.md` și SC-CVL-32 din `docs/nucleu/scenarii/CVL.md`; cercetarea formularelor `docs/api/d300-structura-2026.md`, `docs/api/d394-structura-2026.md`
@@ -13,19 +13,21 @@
 
 (a) **Sursa.** XML-ul D300 și D394 serializează proiecția existentă, pe același snapshot, plus antetul societății și datele de perioadă ale cererii. Nu recitește cubul. Aceeași perioadă, cu aceleași date și același antet, dă același fișier, byte cu byte.
 
-(b) **Rotunjirea.** Sumele sunt lei întregi: sub 50 de bani se neglijează, de la 50 de bani se întregește. Se rotunjește cea mai fină unitate emisă (rândul de operațiuni D300, rândul `op1` D394), iar totalurile, oglinzile și rezumatele se calculează din valorile rotunjite, cu aceleași formule ca proiecția în bani. Defalcarea pe bunuri a unui rând își păstrează suma prin restul pus pe bunul cel mai mare.
+(b) **Rotunjirea.** Sumele sunt lei întregi: sub 50 de bani se neglijează, de la 50 de bani se întregește. Se rotunjește cea mai fină unitate emisă (rândul de operațiuni D300, rândul `op1` D394), iar totalurile, oglinzile și rezumatele se calculează din valorile rotunjite, cu aceleași formule ca proiecția în bani. Defalcarea pe bunuri a unui rând își împarte rândul rotunjit prin regula de repartizare a nucleului (Hamilton la scara leului), separat pe semne: suma lor e rândul și niciun bun nu își schimbă semnul. Diferența dintre rotunjirea pe partener din D394 și rotunjirea o singură dată a totalului, ca în D300, se arată pe tip × cotă, ca informare, nu ca refuz.
 
-(c) **Refuzul.** Perioada în afara formularului suportat sau a periodicității societății, antetul cu câmpuri obligatorii lipsă sau peste lungimea schemei, sumele fără rând în formular, avertismentele care ar fi erori la validator, facturile emise în afara plajelor și datele invizibile utilizatorului dau 422 cu cod `DECLARATIE_*`, înaintea primului byte. Nu se completează valori de rezervă. Proiecția JSON poartă aceleași refuzuri.
+(c) **Refuzul.** Perioada în afara formularului suportat sau a periodicității societății, antetul cu câmpuri obligatorii lipsă sau peste lungimea schemei, sumele fără rând în formular, avertismentele care ar fi erori la validator, facturile emise în afara plajelor și facturile emise ascunse utilizatorului pe obiect dau 422 cu cod `DECLARATIE_*`, înaintea primului byte. Lipsa citirii pe un tip citit de formular (`Postare` și `Societate`; pe D394 și `Document` și `PlajaFacturi`) dă 403, după ordinea din 80. Nu se completează valori de rezervă. Proiecția JSON poartă aceleași refuzuri.
 
 (d) **Versiunea formularului e cod.** Registrul formularelor (versiune, spațiu de nume, data de la care se aplică) și harta rând → element sunt cod, fiindcă structura e a legii. O versiune nouă e un rând nou în registru.
 
 (e) **Datele de identificare sunt ale clientului.** Antetul stabil stă pe societate; plajele de facturi sunt un nomenclator; categoria de bunuri cu taxare inversă e pe produs. Datele de perioadă (temei, rambursare, bife, persoane afiliate) sunt parametri ai cererii. Nimic din acestea nu se deduce din conturi, tipuri de material sau coduri NC.
 
-(f) **Factura emisă** pentru I.2 e documentul cu fapte de livrare în perioadă, fără storno. Numărul ei se leagă de plajă prin seria normalizată și cifrele finale.
+(f) **Factura emisă** pentru I.2 e documentul cu număr propriu și fapte de livrare în perioadă. Numărul ei se leagă de plajă prin seria normalizată și cifrele finale.
 
 (g) **Corecția valorică în SAF-T.** Factura care o poartă urmează regula comună a tipului (380, 381 pe storno sau pe total negativ). Linia de corecție are cantitatea 0, prețul 0 și informația fiscală nefiscală, câte o linie pe fiecare cont de contrapartidă. Pe declarația de stocuri, linia numai valorică a corecției primește codul politicii de mișcare pe cauza `CorectieValorica` (90 pe plus, 60 pe minus, consumul exclus). Orice altă linie numai valorică rămâne refuz. Cantitatea fictivă e exclusă.
 
-(h) **Oracolul extern.** Fiecare formă de fișier se probează pe XSD-ul oficial și pe DUKIntegrator cu validatorul oficial, pe kit pin-uit prin SHA-256, fără erori și fără atenționări.
+(h) **Oracolul extern.** Fiecare formă de fișier din catalogul de scenarii se probează pe XSD-ul oficial și pe DUKIntegrator cu validatorul oficial, pe kit pin-uit prin SHA-256, fără erori și fără atenționări. În produs, atenționările formularului nu opresc fișierul; se arată lângă buton.
+
+(i) **Fișierul confirmat.** Exportul XML își dă amprenta (SHA-256) și parametrii din care se reface. Confirmarea care le primește reface fișierul pe ușa exportului și păstrează amprenta și parametrii numai când coincid; altfel refuză. O versiune de fapte se confirmă o singură dată, cu fișierul ei sau fără fișier, când declarația s-a depus din alt program.
 
 ## Context
 
@@ -38,6 +40,10 @@ T2 cere ca decontul, D394 și SAF-T să treacă validarea ANAF pe lunile de prob
 - Factura cu corecția rămâne pe tipul ei comun; validatorul primește și 384, dar exportul nu schimbă tipul după conținutul liniilor (owner, după cercetarea 3a).
 - 90/60 în loc de 100/101: „diferențele de preț” sunt ale prețului standard, pe care modelul FIFO nu-l folosește (owner).
 - Lista CAEN nu se verifică înaintea fișierului; o verifică validatorul ANAF (E2-r6).
+- Factura emisă se definește prin numărul propriu, nu prin excluderea stornoului. Stornoul e factură cu număr din plajă în practică; modelul nu i-l dă încă (E2-r4), iar regula nu se schimbă când îl primește (owner, la discuția deciziei).
+- Bunurile unui rând își împart rândul rotunjit prin Hamilton, regula de repartizare a nucleului, în locul restului pus pe bunul cel mai mare. Regula veche putea întoarce semnul: cinci bunuri de 0,60 pe un rând de 3 lei ieșeau −1, 1, 1, 1, 1 (SC-DECL-12) (owner).
+- Diferența de rotunjire dintre D394 și D300 se arată, nu se ascunde și nu blochează: validatorul nu compară cele două declarații, iar diferențele se raportează (principiul 21) (owner).
+- Confirmarea reface fișierul în loc să creadă amprenta trimisă de client: amprenta fără refacere ar certifica orice șir, iar refacerea prinde antetul schimbat între export și confirmare (owner a cerut amprenta și parametrii în E2, nu ca restanță).
 
 ## Review
 
@@ -50,3 +56,4 @@ E2-r1…E2-r6 în `restante.md`: amprenta și confirmarea pe trimestru, decontul
 ## Istoric
 
 - 2026-10-15: scrisă la închiderea etapei E2.
+- 2026-10-15: discuția cu owner-ul: (b) Hamilton pe bunuri și diferențele D394–D300 afișate, (c) 403 pe tip și 422 pe obiect, (f) pe numărul propriu, (h) delimitată la probă, (i) adăugat; SC-DECL-12…14.

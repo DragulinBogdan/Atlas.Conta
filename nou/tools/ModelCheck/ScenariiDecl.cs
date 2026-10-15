@@ -21,6 +21,7 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
             s.ContBancarId = null;
         os.CommitChanges();
         purja.Adauga(os.GetObjectsQuery<PlajaFacturi>().Where(p => p.Serie == SeriePlaja));
+        purja.Adauga(os.GetObjectsQuery<DepunereDeclaratie>().Where(d => d.Perioada >= An * 100 && d.Perioada < (An + 1) * 100));
     }
 
     protected override void Executa() {
@@ -37,6 +38,7 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
                 os.CommitChanges();
             });
             Antet();
+            RotunjireaPartilor();
             Refuzuri();
             LunaGoala();
             if (Privat) {

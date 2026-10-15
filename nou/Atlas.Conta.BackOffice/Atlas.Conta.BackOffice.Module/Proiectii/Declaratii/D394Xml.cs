@@ -20,7 +20,9 @@ public static class D394Xml {
     public static FisierDeclaratie Genereaza(IObjectSpace os, DateOnly inceput, DateOnly sfarsit, ParametriXmlD394 parametri) {
         parametri ??= new ParametriXmlD394();
         var dto = D394Proiectii.D394(os, inceput, sfarsit, lei: true);
-        var fisier = new FisierDeclaratie { VersiuneExportata = dto.VersiuneExportata };
+        var fisier = new FisierDeclaratie {
+            VersiuneExportata = dto.VersiuneExportata, Parametri = FisiereDeclaratii.Serializeaza(parametri),
+        };
         fisier.Refuzuri.AddRange(dto.RefuzuriXml);
         if (fisier.Refuzuri.Count > 0)
             return fisier;

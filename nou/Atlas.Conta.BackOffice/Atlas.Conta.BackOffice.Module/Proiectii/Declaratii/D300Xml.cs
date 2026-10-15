@@ -43,8 +43,12 @@ public static class D300Xml {
     public static FisierDeclaratie Genereaza(IObjectSpace os, DateOnly inceput, DateOnly sfarsit,
             ParametriD300 externi, ParametriXmlD300 parametri) {
         parametri ??= new ParametriXmlD300();
+        externi ??= new ParametriD300();
         var dto = D300Proiectii.D300(os, inceput, sfarsit, externi, lei: true);
-        var fisier = new FisierDeclaratie { VersiuneExportata = dto.VersiuneExportata };
+        var fisier = new FisierDeclaratie {
+            VersiuneExportata = dto.VersiuneExportata,
+            Parametri = FisiereDeclaratii.Serializeaza(new ParametriFisierD300(externi, parametri)),
+        };
         fisier.Refuzuri.AddRange(dto.RefuzuriXml);
         if (fisier.Refuzuri.Count > 0)
             return fisier;

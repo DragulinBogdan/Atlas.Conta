@@ -76,9 +76,12 @@ D300 și D394 au butonul „Descarcă XML”, cu bifele datelor de perioadă
 (D300: temeiul, rambursarea, cele patru bife de taxare inversă internă; D394:
 persoanele afiliate, schimbarea opțiunii), ținute în URL. Butonul stă inactiv
 cât `RefuzuriXml` are cauze, iar cauzele apar într-un panou; refuzul cererii
-(403, 422) apare în același loc. Pe lună, confirmarea depunerii folosește
-amprenta faptelor, aceeași în JSON și în fișier; pe trimestru nu există
-amprentă (E2-r1). Câmpurile antetului se culeg în XAF,
+(403, 422) apare în același loc. Pe lună, după descărcarea XML, confirmarea
+depunerii trimite amprenta fișierului și parametrii lui, iar ecranul arată
+începutul amprentei; fără XML, confirmarea folosește versiunea exportului
+JSON. Pe trimestru nu există amprentă (E2-r1). D394 arată lângă buton tabelul
+„Rotunjirea pe partener față de D300”, pe tip × cotă, când diferența nu e
+zero. (122 b, 122 i) Câmpurile antetului se culeg în XAF,
 pe societate, iar plajele de facturi și categoria de bunuri pe nomenclatoarele
 lor. (E2-D8)
 

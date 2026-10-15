@@ -248,8 +248,13 @@ Parametrii greșiți dau 400; lipsa citirii pe `Postare` sau `Societate` (și,
 pe D394, pe `Document` și `PlajaFacturi`) dă 403; refuzurile din
 `RefuzuriXml` dau 422 cu `COD: mesaj`, înaintea primului byte. Altfel
 răspunsul e `application/xml; charset=utf-8`, cu numele fișierului în
-`Content-Disposition` și, pe lună, amprenta faptelor în
-`X-Versiune-Exportata`. (E2-D8)
+`Content-Disposition`, pe lună amprenta faptelor în `X-Versiune-Exportata`,
+iar SHA-256 al fișierului și parametrii lui în `X-Sha256-Fisier` și
+`X-Parametri-Fisier`. Confirmarea depunerii
+(`POST /api/depuneri-declaratii/{formular}/{an}/{luna}`) le primește înapoi în
+`Sha256Fisier` și `ParametriFisier`, numai împreună; parametrii fără forma
+exportului dau 400, iar fișierul refăcut diferit dă 422
+`DEPUNERE_FISIER_DIFERIT`. (E2-D8, 122 i)
 
 ## Securitate și răspunsuri
 

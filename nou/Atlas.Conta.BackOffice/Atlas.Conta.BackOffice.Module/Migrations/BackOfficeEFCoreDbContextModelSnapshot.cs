@@ -353,8 +353,15 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("Formular")
                         .HasColumnType("integer");
 
+                    b.Property<string>("ParametriFisier")
+                        .HasColumnType("text");
+
                     b.Property<int>("Perioada")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Sha256Fisier")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("VersiuneExportata")
                         .HasColumnType("text");

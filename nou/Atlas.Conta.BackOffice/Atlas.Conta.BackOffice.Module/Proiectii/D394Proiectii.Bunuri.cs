@@ -12,6 +12,15 @@ public sealed class D394Bun {
     public decimal? Tva { get; set; }
 }
 
+/// <summary>Cât diferă suma rândurilor rotunjite pe partener de totalul rotunjit o dată, cum îl rotunjește D300.</summary>
+public sealed class D394DiferentaRotunjire {
+    public string Tip { get; set; }
+    public int Cota { get; set; }
+    public int Randuri { get; set; }
+    public decimal Baza { get; set; }
+    public decimal Tva { get; set; }
+}
+
 public static partial class D394Proiectii {
     sealed record LinieVc(TipOperatiuneD394 Tip, decimal Baza);
 
@@ -82,7 +91,7 @@ public static partial class D394Proiectii {
         return rezultat;
     }
 
-    /// <summary>Lei întregi pe rând; bunurile rândului se rotunjesc cu restul pe cel mai mare (E2-D3).</summary>
+    /// <summary>Lei întregi pe rând; bunurile rândului își împart rândul rotunjit (122 b).</summary>
     static void Rotunjeste(IEnumerable<Rand> randuri, Dictionary<Rand, List<D394Bun>> bunuri) {
         foreach (var rand in randuri) {
             rand.TvaInainteDeRotunjire = rand.Tva;
@@ -90,14 +99,23 @@ public static partial class D394Proiectii {
             rand.Tva = RotunjireDeclaratie.Lei(rand.Tva);
             if (!bunuri.TryGetValue(rand, out var lista) || lista.Count == 0)
                 continue;
-            var mare = lista.OrderByDescending(b => Math.Abs(b.Baza)).ThenBy(b => b.CodPR).First();
-            foreach (var b in lista) {
-                b.Baza = RotunjireDeclaratie.Lei(b.Baza);
-                b.Tva = b.Tva is decimal t ? RotunjireDeclaratie.Lei(t) : null;
+            var baze = RotunjireDeclaratie.Lei(rand.Baza, [.. lista.Select(b => b.Baza)]);
+            var tva = RotunjireDeclaratie.Lei(rand.Tva, [.. lista.Select(b => b.Tva ?? 0m)]);
+            for (var i = 0; i < lista.Count; i++) {
+                lista[i].Baza = baze[i];
+                lista[i].Tva = lista[i].Tva == null ? null : tva[i];
             }
-            mare.Baza += rand.Baza - lista.Sum(b => b.Baza);
-            if (mare.Tva != null)
-                mare.Tva += rand.Tva - lista.Sum(b => b.Tva ?? 0m);
         }
     }
+
+    /// <summary>Rotunjirea pe partener față de rotunjirea totalului, pe tip × cotă (122 b).</summary>
+    static List<D394DiferentaRotunjire> DiferenteRotunjire(IEnumerable<Rand> randuri) =>
+        [.. randuri.GroupBy(r => (r.Tip, r.Cota)).OrderBy(g => g.Key.Tip).ThenBy(g => g.Key.Cota)
+            .Select(g => new D394DiferentaRotunjire {
+                Tip = g.Key.Tip.ToString(), Cota = g.Key.Cota, Randuri = g.Count(),
+                Baza = g.Sum(r => RotunjireDeclaratie.Lei(r.Baza)) - RotunjireDeclaratie.Lei(g.Sum(r => r.Baza)),
+                Tva = AreTva(g.Key.Tip)
+                    ? g.Sum(r => RotunjireDeclaratie.Lei(r.Tva)) - RotunjireDeclaratie.Lei(g.Sum(r => r.Tva)) : 0m,
+            })
+            .Where(d => d.Baza != 0m || d.Tva != 0m)];
 }

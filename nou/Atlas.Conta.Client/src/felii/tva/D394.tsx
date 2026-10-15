@@ -1,6 +1,6 @@
 import { DepunereDeclaratie } from './DepunereDeclaratie';
-import { DescarcaDeclaratie } from './DescarcaDeclaratie';
-import { useMemo } from 'react';
+import { DescarcaDeclaratie, type FisierExportat } from './DescarcaDeclaratie';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Column, DataGrid, FilterRow, Grouping, GroupPanel, HeaderFilter, Paging, Scrolling, Search, Sorting,
@@ -32,6 +32,7 @@ type Rezumat = components['schemas']['D394Rezumat'];
 type RezumatCota = components['schemas']['D394RezumatCota'];
 type Neinclus = components['schemas']['D394Neinclus'];
 type Avertisment = components['schemas']['D394Avertisment'];
+type DiferentaRotunjire = components['schemas']['D394DiferentaRotunjire'];
 
 const camp = (n: keyof Operatiune & string) => n;
 const campNeinclus = (n: keyof Neinclus & string) => n;
@@ -69,6 +70,7 @@ export function D394() {
   // Aceeași cale de citire ca D300: `useQuery` + `ia` (JWT, 401 → sesiune
   // expirată, 400 `EroriDto` → mesaje de domeniu, afișate).
   const citit = useQuery({ queryKey: ['d394', cale], queryFn: () => ia<D394Dto>(cale) });
+  const [fisier, setFisier] = useState<{ perioada: string; f: FisierExportat }>();
 
   const operatiuni = useMemo(() => citit.data?.Operatiuni ?? [], [citit.data]);
   const rezumat = useMemo(() => citit.data?.Rezumat ?? [], [citit.data]);
@@ -105,9 +107,12 @@ export function D394() {
         bife={BIFE_D394}
         valori={stare}
         seteaza={seteaza}
+        descarcat={(f) => setFisier(f && { perioada: stare.dataStart + stare.dataEnd, f })}
       />
-      <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D394" exportat={citit.data} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
+      <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D394" exportat={citit.data}
+        fisier={fisier?.perioada === stare.dataStart + stare.dataEnd ? fisier.f : undefined} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
       <PanouErori erori={citit.error ? eroriDin(citit.error) : []} titlu="Cererea a fost refuzată" />
+      <DiferenteRotunjire lista={citit.data?.DiferenteRotunjire ?? []} />
       <Avertismente lista={avertismente} />
 
       {citit.isPending ? <p className="indiciu">Se încarcă…</p> : (
@@ -226,6 +231,37 @@ export function D394() {
         numărul de facturi 1/0 per document pe cota cu TVA-ul maxim. Sumele sunt exacte (în bani);
         fișierul XML se descarcă în lei întregi, pe schema ANAF v5, fără bonurile fiscale (AMEF).
       </p>
+    </div>
+  );
+}
+
+// Informare, nu refuz (122 b): fișierul rotunjește fiecare partener, D300 rotunjește o dată rândul.
+function DiferenteRotunjire({ lista }: { lista: DiferentaRotunjire[] }) {
+  if (lista.length === 0) return null;
+  const lei = (v?: number) => (v ?? 0) === 0 ? '' : `${v! > 0 ? '+' : ''}${v} lei`;
+  return (
+    <div className="d394__avertismente">
+      <h3>Rotunjirea pe partener față de D300</h3>
+      <p className="indiciu">
+        D394 rotunjește la leu fiecare partener, iar D300 rotunjește o dată totalul. Pe aceleași operațiuni,
+        sumele din fișier diferă de totalul rotunjit cu:
+      </p>
+      <table className="tabel-mic">
+        <thead>
+          <tr><th>Tip</th><th>Cotă</th><th>Parteneri</th><th>Bază</th><th>TVA</th></tr>
+        </thead>
+        <tbody>
+          {lista.map((d) => (
+            <tr key={`${d.Tip}|${d.Cota}`}>
+              <td>{d.Tip}</td>
+              <td className="num">{d.Cota}%</td>
+              <td className="num">{d.Randuri}</td>
+              <td className="num">{lei(d.Baza)}</td>
+              <td className="num">{lei(d.Tva)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

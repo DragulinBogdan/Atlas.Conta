@@ -41,8 +41,15 @@ primesc numerele DCLT101, DCLT102…
 | SC-DECL-09 | Luna fără operațiuni (martie, ambele profiluri): `op_efectuate` 0, `tip_D394` L, `luna` 3, `totalPlata_A` 0. Societate trimestrială, trimestrul III cu o FCL în iulie: `tip_D394` T, `luna` 9, `op_efectuate` 1. XSD și DUK fără erori. | acceptat |
 | SC-DECL-11 | Octombrie: FCL N21 100 (DCLT108); noiembrie: FCL N21 50 (DCLT109) și stornoul facturii din octombrie. Fișierul pe noiembrie: `nrFacturi` 1, `serieFacturi` tip 2 = 109–109; XSD și DUK fără erori și fără atenționări. Stornoul nu e factură emisă (122 f). | acceptat |
 | SC-DECL-10 | Mutanți pe fișierul din SC-DECL-07: baza `op1` L 21 + 1 fără rezumat → DUK; `totalPlata_A` + 1 → DUK; `codPR` 99 → XSD. | refuzat |
+| SC-DECL-12 | Bunurile unui rând își împart rândul rotunjit (122 b), ambele profiluri: cinci bunuri de 0,60 pe un rând de 3 lei → 1, 1, 1, 0, 0 (regula veche dădea −1, 1, 1, 1, 1); 2,60 și −2,40 pe un rând de 0 lei → 2 și −2; 500 de rânduri aleatoare (sămânța 122): lei întregi, suma egală cu rândul, semnul păstrat, abatere sub 2 lei. | acceptat |
+| SC-DECL-13 | Decembrie, privat: FCL N21 100,40 către client și FCL N21 200,40 către furnizor (amândoi tip 1). `DiferenteRotunjire` = [L 21%, 2 rânduri, bază −1, TVA 0]: fișierul are 100 + 200 = 300 de lei, totalul rotunjit o dată 301. XSD și DUK fără erori și fără atenționări. | acceptat |
+| SC-DECL-14 | Fișierul confirmat (122 i), privat: D394 decembrie cu persoane afiliate se reface din `Parametri` cu aceeași amprentă; alți parametri → `DEPUNERE_FISIER_DIFERIT`; telefonul societății schimbat după export → `DEPUNERE_FISIER_DIFERIT`; amprenta fără parametri → `DEPUNERE_DATE`; confirmarea păstrează amprenta și parametrii; aceeași versiune confirmată apoi fără fișier → `DEPUNERE_CONFIRMATA`. D300 ianuarie cu sold precedent 12,34, temei 2, pro-rata 50 și `bifaInterne` 0 se reface cu aceeași amprentă. | acceptat |
 
 ## Validare
+
+Discuția deciziei 122, 2026-10-15: SC-DECL-12…14 verzi pe ambele profiluri
+(`run-verificari/20261015-200648-030`); calea HTTP a confirmării cu fișier
+(D300 și D394, mai 2026, baza E2P4) e în `run-verificari/e2-122-depunere.ps1`.
 
 Pasul 5, 2026-10-15, după review-ul advers: harta rând → atribut e verificată
 pe o transcriere separată din `d300-structura-2026.md` §5, iar fiecare fișier

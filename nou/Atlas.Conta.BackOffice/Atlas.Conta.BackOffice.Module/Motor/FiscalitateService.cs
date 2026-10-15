@@ -81,17 +81,22 @@ public static class FiscalitateService {
         os.GetObjectsQuery<DepunereDeclaratie>().Any(d => d.Formular == formular && d.Perioada == perioada);
 
     public static Guid ConfirmaDepunerea(IObjectSpace os, FormularFiscal formular, int an, int luna,
-            string versiuneExportata, string utilizator) {
+            string versiuneExportata, string utilizator, string sha256Fisier = null, string parametriFisier = null) {
         if (!Enum.IsDefined(formular) || an < 1900 || an > 9999 || luna < 1 || luna > 12
                 || string.IsNullOrWhiteSpace(versiuneExportata))
             throw new OperareException("DEPUNERE_DATE: formularul, perioada și versiunea exportată sunt obligatorii.");
+        if ((sha256Fisier == null) != (parametriFisier == null))
+            throw new OperareException("DEPUNERE_DATE: amprenta fișierului și parametrii lui se confirmă împreună.");
         var perioada = an * 100 + luna;
         using var tx = TranzactieComanda.Incepe(os);
         ((EFCoreObjectSpace)os).DbContext.Database.ExecuteSqlRaw(
             "SELECT pg_advisory_xact_lock({0})", CheieDepuneri);
         var existenta = os.GetObjectsQuery<DepunereDeclaratie>().FirstOrDefault(d =>
             d.Formular == formular && d.Perioada == perioada && d.VersiuneExportata == versiuneExportata);
-        if (existenta != null) return existenta.ID;
+        if (existenta != null)
+            return existenta.Sha256Fisier == sha256Fisier ? existenta.ID
+                : throw new OperareException("DEPUNERE_CONFIRMATA: versiunea exportată e deja confirmată "
+                    + (existenta.Sha256Fisier == null ? "fără fișier XML." : "cu alt fișier XML."));
         var drafturi = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Draft
             && d.CorecteazaId != null && d.MotivCorectie == MotivCorectie.EroareMateriala);
         if (Cub.Citiri.Fiscale.Postari(os).Any(p => p.InversaTehnica
@@ -107,6 +112,8 @@ public static class FiscalitateService {
         depunere.VersiuneExportata = versiuneExportata;
         depunere.ConfirmataLa = DateTime.UtcNow;
         depunere.ConfirmataDe = utilizator;
+        depunere.Sha256Fisier = sha256Fisier;
+        depunere.ParametriFisier = parametriFisier;
         os.CommitChanges();
         tx.Commit();
         return depunere.ID;

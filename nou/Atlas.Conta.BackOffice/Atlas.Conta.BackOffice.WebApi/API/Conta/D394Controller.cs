@@ -71,9 +71,7 @@ public class D394Controller : ContaApiController {
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
         using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
-        foreach (var tip in new[] {
-            typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), typeof(Societate), typeof(Document), typeof(PlajaFacturi),
-        })
+        foreach (var tip in FisiereDeclaratii.Citite(FormularFiscal.D394))
             if (!PoateCiti(tip, os))
                 return RefuzCitire(tip);
         return Declaratie(D394Xml.Genereaza(os, dataStart.Value, dataEnd.Value,

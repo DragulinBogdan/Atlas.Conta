@@ -3,10 +3,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '../../generated/api-types';
 import { ia, posteaza, eroriDin } from '../../nucleu/http';
 import { PanouErori } from '../../nucleu/PanouErori';
+import type { FisierExportat } from './DescarcaDeclaratie';
 
-export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, reincarca }: {
+// Fișierul XML descărcat are întâietate la confirmare: serverul îl reface din parametri și păstrează amprenta lui (122 i).
+export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, fisier, reincarca }: {
   formular: 'D300' | 'D394'; dataStart: string; dataEnd: string;
   exportat?: { VersiuneExportata?: string | null };
+  fisier?: FisierExportat;
   reincarca: () => Promise<{ data?: { VersiuneExportata?: string | null }; error: Error | null }>;
 }) {
   const [versiune, setVersiune] = useState('');
@@ -17,7 +20,8 @@ export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, rei
   const ruta = `/api/depuneri-declaratii/${formular}/${dataStart.slice(0, 4)}/${Number(dataStart.slice(5, 7))}`;
   const citit = useQuery({ queryKey: ['depunere', ruta], enabled: lunaExacta,
     queryFn: () => ia<components['schemas']['DepunereDeclaratieDto']>(ruta), retry: false });
-  const confirma = useMutation({ mutationFn: () => posteaza(ruta, { VersiuneExportata: versiune }),
+  const deConfirmat = fisier ?? (versiune.trim() ? { VersiuneExportata: versiune } : undefined);
+  const confirma = useMutation({ mutationFn: () => posteaza(ruta, deConfirmat),
     onSuccess: async () => {
       setVersiune('');
       await cache.invalidateQueries({ queryKey: ['depunere'] });
@@ -38,15 +42,18 @@ export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, rei
   if (!lunaExacta || !citit.data) return null;
   return <div className="d300__neincluse">
     <p>{citit.data.ConfirmataLa
-      ? `Depunere confirmată: ${citit.data.VersiuneExportata}, ${new Date(citit.data.ConfirmataLa).toLocaleString('ro-RO')}.`
+      ? `Depunere confirmată: ${citit.data.VersiuneExportata}, ${new Date(citit.data.ConfirmataLa).toLocaleString('ro-RO')}`
+        + (citit.data.Sha256Fisier ? `, fișierul XML ${citit.data.Sha256Fisier.slice(0, 12)}….` : ', fără fișier XML.')
       : 'Depunerea nu este confirmată. Închiderea contabilă nu confirmă depunerea declarației.'}</p>
     {citit.data.PoateConfirma && <form onSubmit={e => { e.preventDefault(); confirma.mutate(); }}>
       <button type="button" className="buton" onClick={() => exporta.mutate()} disabled={exporta.isPending || !exportat?.VersiuneExportata}>
         Exportă datele {formular} (JSON)
       </button>{' '}
       <p>Export de date cu amprentă; nu este XML ANAF. Confirmați numai după depunerea declarației corespunzătoare.</p>
-      {versiune && <p>Versiunea exportată: <code>{versiune}</code></p>}
-      <button type="submit" className="buton" disabled={confirma.isPending || exporta.isPending || !versiune.trim()}>
+      {fisier
+        ? <p>Se confirmă fișierul XML descărcat: <code>{fisier.Sha256Fisier.slice(0, 12)}…</code>, versiunea <code>{fisier.VersiuneExportata}</code></p>
+        : versiune && <p>Versiunea exportată: <code>{versiune}</code></p>}
+      <button type="submit" className="buton" disabled={confirma.isPending || exporta.isPending || !deConfirmat}>
         Confirmă depunerea {formular}
       </button>
     </form>}

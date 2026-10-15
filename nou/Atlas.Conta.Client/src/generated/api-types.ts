@@ -9379,6 +9379,8 @@ export interface components {
         };
         ConfirmaDepunereDto: {
             VersiuneExportata?: string | null;
+            Sha256Fisier?: string | null;
+            ParametriFisier?: string | null;
         };
         ConstatareInchidereDto: {
             Cheie?: string | null;
@@ -9514,6 +9516,17 @@ export interface components {
             /** Format: double */
             Tva?: number | null;
         };
+        D394DiferentaRotunjire: {
+            Tip?: string | null;
+            /** Format: int32 */
+            Cota?: number;
+            /** Format: int32 */
+            Randuri?: number;
+            /** Format: double */
+            Baza?: number;
+            /** Format: double */
+            Tva?: number;
+        };
         D394Dto: {
             VersiuneExportata?: string | null;
             Rectificativa?: boolean;
@@ -9536,6 +9549,7 @@ export interface components {
             NrFacturi?: number;
             SeriiFacturi?: components["schemas"]["D394SerieFacturi"][] | null;
             RefuzuriXml?: components["schemas"]["RefuzDeclaratie"][] | null;
+            DiferenteRotunjire?: components["schemas"]["D394DiferentaRotunjire"][] | null;
         };
         D394Neinclus: {
             Cauza?: string | null;
@@ -9859,12 +9873,16 @@ export interface components {
             /** Format: date-time */
             ConfirmataLa?: string;
             ConfirmataDe?: string | null;
+            Sha256Fisier?: string | null;
+            ParametriFisier?: string | null;
         };
         DepunereDeclaratieDto: {
             VersiuneExportata?: string | null;
             /** Format: date-time */
             ConfirmataLa?: string | null;
             ConfirmataDe?: string | null;
+            Sha256Fisier?: string | null;
+            ParametriFisier?: string | null;
             PoateConfirma?: boolean;
         };
         DesfaImperechereRequestDto: {

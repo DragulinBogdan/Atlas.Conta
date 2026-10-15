@@ -323286,6 +323286,14 @@
           "VersiuneExportata": {
             "type": "string",
             "nullable": true
+          },
+          "Sha256Fisier": {
+            "type": "string",
+            "nullable": true
+          },
+          "ParametriFisier": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -323714,6 +323722,32 @@
         },
         "additionalProperties": false
       },
+      "D394DiferentaRotunjire": {
+        "type": "object",
+        "properties": {
+          "Tip": {
+            "type": "string",
+            "nullable": true
+          },
+          "Cota": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Randuri": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Baza": {
+            "type": "number",
+            "format": "double"
+          },
+          "Tva": {
+            "type": "number",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
       "D394Dto": {
         "type": "object",
         "properties": {
@@ -323800,6 +323834,13 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/RefuzDeclaratie"
+            },
+            "nullable": true
+          },
+          "DiferenteRotunjire": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/D394DiferentaRotunjire"
             },
             "nullable": true
           }
@@ -324705,6 +324746,15 @@
           "ConfirmataDe": {
             "type": "string",
             "nullable": true
+          },
+          "Sha256Fisier": {
+            "maxLength": 64,
+            "type": "string",
+            "nullable": true
+          },
+          "ParametriFisier": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -324722,6 +324772,14 @@
             "nullable": true
           },
           "ConfirmataDe": {
+            "type": "string",
+            "nullable": true
+          },
+          "Sha256Fisier": {
+            "type": "string",
+            "nullable": true
+          },
+          "ParametriFisier": {
             "type": "string",
             "nullable": true
           },
