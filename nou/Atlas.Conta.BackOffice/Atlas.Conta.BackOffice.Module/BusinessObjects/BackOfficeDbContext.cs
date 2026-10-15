@@ -435,14 +435,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // politicii de mișcare SAF-T — un rând de registru se potrivește pe
             // exact una, altfel codul de mișcare ar depinde de ordinea rândurilor.
             modelBuilder.Entity<PoliticaMiscareSaft>()
-                .HasIndex(p => new { p.TipDocumentId, p.TipStoc, p.Semn }).IsUnique();
+                .HasIndex(p => new { p.TipDocumentId, p.TipStoc, p.Semn, p.Cauza }).IsUnique();
             // A DOUA jumătate a unicității, cerută de semantica lui NULL în SQL:
             // în Postgres `NULL <> NULL`, deci indexul de mai sus NU oprește două
             // rânduri „orice semn" pe aceeași pereche (tip, TipStoc) — exact
             // dublura care ar face potrivirea nedeterministă. Indexul parțial de
             // aici o prinde: unic pe pereche, PRINTRE rândurile cu `Semn` null.
             modelBuilder.Entity<PoliticaMiscareSaft>()
-                .HasIndex(p => new { p.TipDocumentId, p.TipStoc }).IsUnique()
+                .HasIndex(p => new { p.TipDocumentId, p.TipStoc, p.Cauza }).IsUnique()
                 .HasFilter("\"Semn\" IS NULL");
 
             AplicaUnicitatiPolitici(modelBuilder);

@@ -205,9 +205,9 @@ public static partial class SaftProiectii {
             var tipuri = os.GetObjectsQuery<TipDocument>().Select(t => new { t.ID, t.Cod }).ToList()
                 .ToDictionary(t => t.ID, t => t.Cod);
             return os.GetObjectsQuery<PoliticaMiscareSaft>()
-                .Select(p => new { p.TipDocumentId, p.TipStoc, p.Semn, p.CodMiscare, p.RolTert, p.Motiv }).ToList()
+                .Select(p => new { p.TipDocumentId, p.TipStoc, p.Semn, p.Cauza, p.CodMiscare, p.RolTert, p.Motiv }).ToList()
                 .Select(p => new RegulaMiscare {
-                    TipDocumentId = p.TipDocumentId, TipStoc = p.TipStoc, Semn = p.Semn,
+                    TipDocumentId = p.TipDocumentId, TipStoc = p.TipStoc, Semn = p.Semn, Cauza = p.Cauza,
                     Cod = string.IsNullOrWhiteSpace(p.CodMiscare) ? null : p.CodMiscare.Trim(),
                     Rol = p.RolTert, Motiv = p.Motiv, CodTipDocument = tipuri.GetValueOrDefault(p.TipDocumentId),
                 }).ToList();
@@ -215,6 +215,9 @@ public static partial class SaftProiectii {
 
         List<Linie> Linii(IEnumerable<PostareLot> miscari, List<RegulaMiscare> politici) {
             var linii = new List<Linie>();
+            var idsLinie = miscari.Where(p => p.LinieId != null).Select(p => p.LinieId.Value).Distinct().ToList();
+            var corectii = os.GetObjectsQuery<FacturaIntrareDetaliu>()
+                .Where(d => idsLinie.Contains(d.ID) && d.CorectieValoareLot).Select(d => d.ID).ToHashSet();
             foreach (var g in miscari.GroupBy(p => (p.TranzactieId, p.LinieId, p.Pozitie))) {
                 var prima = g.First();
                 var linie = new Linie {
@@ -226,7 +229,9 @@ public static partial class SaftProiectii {
                 if (linie.Cantitate == 0m && linie.Valoare == 0m) continue;
                 linii.Add(linie);
                 var eticheta = Eticheta(linie.DocumentId);
-                if (linie.Cantitate == 0m) {
+                var cauza = linie.LinieId is Guid l && corectii.Contains(l)
+                    ? CauzaMiscareSaft.CorectieValorica : CauzaMiscareSaft.Comerciala;
+                if (linie.Cantitate == 0m && cauza == CauzaMiscareSaft.Comerciala) {
                     Refuza(RefuzMiscareValorica, $"{eticheta}: linia pe lotul {linie.Pozitie.Lot}, contul "
                         + $"{SimbolCont(linie.Pozitie.Cont)} are cantitatea 0 și valoarea {linie.Valoare} (SAFT-r2).",
                         linie.DocumentId, linie.TranzactieId);
@@ -235,9 +240,10 @@ public static partial class SaftProiectii {
                 if (Categorie(linie.Pozitie.Cont) is not TipStoc categorie
                         || CategoriiStoc.Rol(categorie) == RolCategorieStoc.Neacoperita)
                     continue;
-                var semn = Math.Sign(linie.Cantitate) * (linie.Fel == N.FelTranzactie.Storno ? -1 : 1);
+                var semn = Math.Sign(linie.Cantitate != 0m ? linie.Cantitate : linie.Valoare)
+                    * (linie.Fel == N.FelTranzactie.Storno ? -1 : 1);
                 var tip = linie.DocumentId is Guid d ? codPerDocument.GetValueOrDefault(d) : null;
-                var candidati = politici.Where(p => p.CodTipDocument == tip && p.TipStoc == categorie).ToList();
+                var candidati = politici.Where(p => p.CodTipDocument == tip && p.TipStoc == categorie && p.Cauza == cauza).ToList();
                 var regula = candidati.FirstOrDefault(p => p.Semn == semn) ?? candidati.FirstOrDefault(p => p.Semn == null);
                 if (regula == null) {
                     Refuza(RefuzMiscareFaraPolitica, $"{eticheta}: nicio politică de mișcare SAF-T pentru "

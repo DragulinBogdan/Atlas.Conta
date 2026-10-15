@@ -557,3 +557,9 @@ public enum CategorieTaxareInversa {
     [XafDisplayName("Alte bunuri (neînregistrați)")] AlteBunuri = 34,
     [XafDisplayName("Servicii (neînregistrați)")] Servicii = 35,
 }
+
+// Cauza mișcării de stoc în cheia politicii SAF-T (SAFT-r2, E2-D10).
+public enum CauzaMiscareSaft {
+    [XafDisplayName("Comercială")] Comerciala = 0,
+    [XafDisplayName("Corecție valorică a lotului")] CorectieValorica = 1,
+}

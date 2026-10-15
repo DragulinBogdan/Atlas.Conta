@@ -1264,6 +1264,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("Cauza")
+                        .HasColumnType("integer");
+
                     b.Property<string>("CodMiscare")
                         .HasMaxLength(9)
                         .HasColumnType("character varying(9)");
@@ -1295,11 +1298,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("TipDocumentId", "TipStoc")
+                    b.HasIndex("TipDocumentId", "TipStoc", "Cauza")
                         .IsUnique()
                         .HasFilter("\"Semn\" IS NULL");
 
-                    b.HasIndex("TipDocumentId", "TipStoc", "Semn")
+                    b.HasIndex("TipDocumentId", "TipStoc", "Semn", "Cauza")
                         .IsUnique();
 
                     b.ToTable("PoliticiMiscareSaft");

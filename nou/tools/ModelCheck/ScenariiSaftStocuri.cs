@@ -538,6 +538,7 @@ sealed class ScenariiSaftStocuri(Func<IObjectSpace> deschide, Action<string, boo
                 .ToDictionary(x => x.ID, x => tipuri.Single(t => t.ClrType == x.ClrType).Cod);
         });
         var politici = CuSpatiu(os => os.GetObjectsQuery<PoliticaMiscareSaft>()
+            .Where(x => x.Cauza == CauzaMiscareSaft.Comerciala)
             .Select(x => new { Tip = x.TipDocument.Cod, x.TipStoc, x.Semn, x.CodMiscare }).ToList());
         var categorii = CuSpatiu(os => {
             var cat = new CategoriiStoc(os);

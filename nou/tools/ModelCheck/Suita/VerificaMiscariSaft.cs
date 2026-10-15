@@ -91,18 +91,19 @@ static class VerificaMiscariSaft {
             var tripleta = indexuri.FirstOrDefault(i => i.IsUnique
                 && i.Properties.Select(p => p.Name).SequenceEqual(
                     [nameof(PoliticaMiscareSaft.TipDocumentId), nameof(PoliticaMiscareSaft.TipStoc),
-                     nameof(PoliticaMiscareSaft.Semn)]));
+                     nameof(PoliticaMiscareSaft.Semn), nameof(PoliticaMiscareSaft.Cauza)]));
             var perechea = indexuri.FirstOrDefault(i => i.IsUnique
                 && i.Properties.Select(p => p.Name).SequenceEqual(
-                    [nameof(PoliticaMiscareSaft.TipDocumentId), nameof(PoliticaMiscareSaft.TipStoc)]));
+                    [nameof(PoliticaMiscareSaft.TipDocumentId), nameof(PoliticaMiscareSaft.TipStoc),
+                     nameof(PoliticaMiscareSaft.Cauza)]));
             Console.WriteLine($"     MĂSURAT (D17-V1/model): {indexuri.Count} indexuri; "
                 + $"tripleta filtrată pe „{tripleta?.GetFilter() ?? "<LIPSĂ>"}”, "
                 + $"perechea filtrată pe „{perechea?.GetFilter() ?? "<LIPSĂ>"}”; "
                 + $"CodMiscare MaxLength={entitate?.FindProperty(nameof(PoliticaMiscareSaft.CodMiscare))?.GetMaxLength()}, "
                 + $"Motiv MaxLength={entitate?.FindProperty(nameof(PoliticaMiscareSaft.Motiv))?.GetMaxLength()}, "
                 + $"Semn nullabil={entitate?.FindProperty(nameof(PoliticaMiscareSaft.Semn))?.IsNullable}.");
-            s.Check("D17-V1 `PoliticaMiscareSaft`: DOUĂ indexuri unice — tripleta (TipDocumentId, "
-                + "TipStoc, Semn) nefiltrată și perechea (TipDocumentId, TipStoc) pe `Semn IS NULL`. "
+            s.Check("D17-V1 `PoliticaMiscareSaft`: DOUĂ indexuri unice — (TipDocumentId, TipStoc, Semn, Cauza) "
+                + "nefiltrat și (TipDocumentId, TipStoc, Cauza) pe `Semn IS NULL`. "
                 + "Al doilea NU e redundant: în Postgres `NULL <> NULL`, deci fără el două "
                 + "rânduri „orice semn” pe aceeași pereche ar fi trecut, iar potrivirea ar fi devenit "
                 + "nedeterministă",
@@ -120,7 +121,7 @@ static class VerificaMiscariSaft {
         // ---------------- Seed-ul per profil (D17-D1) ----------------
         using (var os = s.Provider.CreateObjectSpace()) {
             var randuri = os.GetObjectsQuery<PoliticaMiscareSaft>()
-                .Select(p => new { Tip = p.TipDocument.Cod, p.TipStoc, p.Semn, p.CodMiscare, p.RolTert, p.Motiv })
+                .Select(p => new { Tip = p.TipDocument.Cod, p.TipStoc, p.Semn, p.Cauza, p.CodMiscare, p.RolTert, p.Motiv })
                 .ToList();
             if (!privat) {
                 Console.WriteLine($"     MĂSURAT (D17-V1/bugetar): {randuri.Count} politici de mișcare SAF-T.");
@@ -132,11 +133,11 @@ static class VerificaMiscariSaft {
             }
 
             var asteptate = ContaSeeder.MiscariSaftPrivat;
-            string Cod(string tip, TipStoc stoc, int? semn) => randuri
-                .Where(r => r.Tip == tip && r.TipStoc == stoc && r.Semn == semn)
+            string Cod(string tip, TipStoc stoc, int? semn, CauzaMiscareSaft cauza = CauzaMiscareSaft.Comerciala) => randuri
+                .Where(r => r.Tip == tip && r.TipStoc == stoc && r.Semn == semn && r.Cauza == cauza)
                 .Select(r => r.CodMiscare ?? "<null>").SingleOrDefault() ?? "<LIPSĂ>";
             RolTertSaft? Rol(string tip, TipStoc stoc, int? semn) => randuri
-                .Where(r => r.Tip == tip && r.TipStoc == stoc && r.Semn == semn)
+                .Where(r => r.Tip == tip && r.TipStoc == stoc && r.Semn == semn && r.Cauza == CauzaMiscareSaft.Comerciala)
                 .Select(r => (RolTertSaft?)r.RolTert).SingleOrDefault();
             Console.WriteLine($"     MĂSURAT (D17-V1/privat): {randuri.Count} politici (tabel: {asteptate.Count}); "
                 + string.Join(", ", randuri
@@ -147,19 +148,28 @@ static class VerificaMiscariSaft {
             // Numărul NU e o constantă scrisă în probă: e cardinalitatea tabelului de
             // seed × „fiecare rând al lui există exact o dată în bază". O politică
             // adăugată în tabel fără rând în bază (sau invers) pică aici.
-            s.Check("D17-V1 (privat) seed-ul scrie EXACT tabelul S3-D3 — 23 de rânduri, câte unul pentru fiecare "
-                + "(tip × categorie × semn) pe care profilul chiar îl produce: 9 tipuri (FCT/NIR/BTR/BCS/LDI/DSC/ASM/"
-                + "RLF/RDC) × categoriile `Magazie`+`Marfuri`, plus `Consum` la BCS",
-                randuri.Count == 23 && asteptate.Count == 23
-                && randuri.Select(r => (r.Tip, r.TipStoc, r.Semn)).Distinct().Count() == 23
+            s.Check("D17-V1 (privat) seed-ul scrie EXACT tabelul S3-D3 — 29 de rânduri, câte unul pentru fiecare "
+                + "(tip × categorie × semn × cauză) pe care profilul chiar îl produce: 9 tipuri (FCT/NIR/BTR/BCS/LDI/DSC/ASM/"
+                + "RLF/RDC) × categoriile `Magazie`+`Marfuri`, plus `Consum` la BCS, plus corecția valorică pe FCT: 90/60 pe stoc, consumul exclus (E2-D10)",
+                randuri.Count == 29 && asteptate.Count == 29
+                && randuri.Select(r => (r.Tip, r.TipStoc, r.Semn, r.Cauza)).Distinct().Count() == 29
                 && asteptate.All(a => randuri.Any(r => r.Tip == a.Tip && r.TipStoc == a.TipStoc && r.Semn == a.Semn
-                    && r.CodMiscare == a.Cod && r.RolTert == a.Rol && r.Motiv == a.Motiv))
-                && randuri.All(r => asteptate.Any(a => a.Tip == r.Tip && a.TipStoc == r.TipStoc && a.Semn == r.Semn)));
+                    && r.Cauza == a.Cauza && r.CodMiscare == a.Cod && r.RolTert == a.Rol && r.Motiv == a.Motiv))
+                && randuri.All(r => asteptate.Any(a => a.Tip == r.Tip && a.TipStoc == r.TipStoc && a.Semn == r.Semn
+                    && a.Cauza == r.Cauza)));
+            s.Check("E2-D10 (privat) corecția valorică pe FCT: plus `90`, minus `60`, pe `Magazie` și `Marfuri`, cu furnizorul",
+                Cod("FCT", TipStoc.Magazie, +1, CauzaMiscareSaft.CorectieValorica) == "90"
+                && Cod("FCT", TipStoc.Marfuri, +1, CauzaMiscareSaft.CorectieValorica) == "90"
+                && Cod("FCT", TipStoc.Magazie, -1, CauzaMiscareSaft.CorectieValorica) == "60"
+                && Cod("FCT", TipStoc.Marfuri, -1, CauzaMiscareSaft.CorectieValorica) == "60"
+                && randuri.Where(r => r.Cauza == CauzaMiscareSaft.CorectieValorica && r.CodMiscare != null).All(r => r.RolTert == RolTertSaft.Furnizor)
+                && Cod("FCT", TipStoc.Consum, +1, CauzaMiscareSaft.CorectieValorica) == "<null>"
+                && Cod("FCT", TipStoc.Consum, -1, CauzaMiscareSaft.CorectieValorica) == "<null>");
 
-            s.Check("D17-V1 (privat) fiecare cod seed-uit e din nomenclator, iar singurul rând FĂRĂ cod are motiv "
+            s.Check("D17-V1 (privat) fiecare cod seed-uit e din nomenclator, iar cele trei rânduri FĂRĂ cod (BCS și corecția pe consum) au motiv "
                 + "scris — invariantul V („nimic nu se pierde”): excluderea se citește, nu se ghicește",
                 randuri.All(r => r.CodMiscare == null || SaftReguli.EsteCodMiscare(r.CodMiscare))
-                && randuri.Count(r => r.CodMiscare == null) == 1
+                && randuri.Count(r => r.CodMiscare == null) == 3
                 && randuri.Where(r => r.CodMiscare == null).All(r => !string.IsNullOrWhiteSpace(r.Motiv)));
 
             s.Check("D17-V1 (privat) intrările de marfă și ieșirile către terți poartă ROLUL: NIR ± → `10` "
@@ -209,10 +219,10 @@ static class VerificaMiscariSaft {
                 dupa = osCitire.GetObjectsQuery<PoliticaMiscareSaft>().Count();
             Console.WriteLine($"     MĂSURAT (D17-V1/re-seed): {inainte} → {dupa} politici după a doua rulare a "
                 + "seed-ului real.");
-            s.Check("D17-V1 (privat) `SeedPoliticiMiscareSaft` e IDEMPOTENT pe cheia (tip × registru × semn): "
+            s.Check("D17-V1 (privat) `SeedPoliticiMiscareSaft` e IDEMPOTENT pe cheia (tip × registru × semn × cauză): "
                 + "`--forceUpdate` pe o bază deja seed-uită nu adaugă un al doilea rând (care ar fi făcut "
                 + "potrivirea ambiguă)",
-                inainte == 23 && dupa == 23);
+                inainte == 29 && dupa == 29);
         }
 
         // ---------------- Gardianul (D17-D1), pe ușa comună ----------------
@@ -317,10 +327,10 @@ static class VerificaMiscariSaft {
             int dupaCuratenie;
             using (var osCitire = s.Provider.CreateObjectSpace())
                 dupaCuratenie = osCitire.GetObjectsQuery<PoliticaMiscareSaft>().Count();
-            s.Check("D17-V1 (privat) curățenie: baza rămâne cu cele 23 de politici seed-uite (rândul de probă "
+            s.Check("D17-V1 (privat) curățenie: baza rămâne cu cele 29 de politici seed-uite (rândul de probă "
                 + "purjat FIZIC — o ștergere logică ar fi fost citită de seed-ul următor ca decizie a "
                 + "utilizatorului)",
-                dupaCuratenie == 23);
+                dupaCuratenie == 29);
         }
     }
 }

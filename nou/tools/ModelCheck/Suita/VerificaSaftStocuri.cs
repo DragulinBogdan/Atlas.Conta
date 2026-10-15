@@ -879,13 +879,13 @@ static class VerificaSaftStocuri {
         FaraReziduu("rânduri de stoc în lună", CubScena.MiscariIntre(os, pStart, pEnd) == 0);
         FaraReziduu("antetul societății",
             os.GetObjectsQuery<Societate>().First().CodFiscal == socInainte.CodFiscal);
-        // Politica mutată de probe trebuie să fie EXACT cum a găsit-o scena: cele 23
+        // Politica mutată de probe trebuie să fie EXACT cum a găsit-o scena: cele 29
         // de rânduri seed-uite, cu BTR/Marfuri/orice-semn → 80, fără rol.
         var btrDupa = os.GetObjectsQuery<PoliticaMiscareSaft>()
             .Where(p => p.TipDocument.Cod == "BTR" && p.TipStoc == TipStoc.Marfuri)
             .Select(p => new { p.Semn, p.CodMiscare, p.RolTert }).ToList();
         FaraReziduu("politica BTR/Marfuri",
-            os.GetObjectsQuery<PoliticaMiscareSaft>().Count() == 23
+            os.GetObjectsQuery<PoliticaMiscareSaft>().Count() == 29
             && btrDupa.Count == 1 && btrDupa[0].Semn == null && btrDupa[0].CodMiscare == "80"
             && btrDupa[0].RolTert == RolTertSaft.Niciunul);
         Console.WriteLine($"     MĂSURAT (D17-V2 curățenie): {(reziduuri.Count == 0 ? "niciun reziduu"

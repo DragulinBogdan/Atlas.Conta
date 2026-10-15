@@ -54,6 +54,7 @@ public static partial class SaftProiectii {
         Dictionary<Guid, LinieInfo> linii;
         Dictionary<Guid, Guid> produsPeLinie;
         Dictionary<Guid, decimal> pretPeLinie;
+        HashSet<Guid> corectii;
         Dictionary<Guid, string> tipuriMaterial;
         Dictionary<Guid, (string Cod, string Denumire)> tipuriTva;
         Dictionary<(Guid Tranzactie, Guid Linie), List<FaptFiscal>> fapte;
@@ -147,9 +148,11 @@ public static partial class SaftProiectii {
                 .ToDictionary(d => d.ID, d => new LinieInfo(d.Pozitie, d.Cantitate, d.TipMaterialId, d.LotId));
             produsPeLinie = [];
             pretPeLinie = [];
+            corectii = [];
             foreach (var x in os.GetObjectsQuery<FacturaIntrareDetaliu>().Where(d => idsLinie.Contains(d.ID))
-                         .Select(d => new { d.ID, d.PretUnitar, d.ProdusId }).ToList()) {
+                         .Select(d => new { d.ID, d.PretUnitar, d.ProdusId, d.CorectieValoareLot }).ToList()) {
                 pretPeLinie[x.ID] = x.PretUnitar;
+                if (x.CorectieValoareLot) corectii.Add(x.ID);
                 if (x.ProdusId is Guid p) produsPeLinie[x.ID] = p;
             }
             foreach (var x in os.GetObjectsQuery<FacturaIesireDetaliu>().Where(d => idsLinie.Contains(d.ID))
@@ -471,7 +474,8 @@ public static partial class SaftProiectii {
                     Refuza(RefuzSursa, $"{eticheta}: linia {linieId} a cubului nu există în document.", docId, tranzactieId);
                     continue;
                 }
-                var subLinii = new List<(Guid Cont, decimal Net, SaftTaxInfo Taxa, DateOnly? Exigibil, PostareJurnal Sursa)>();
+                var corectie = corectii.Contains(linieId);
+                var subLinii = new List<(Guid Cont, decimal Net, SaftTaxInfo Taxa, DateOnly? Exigibil, PostareJurnal Sursa, bool FaraCantitate)>();
                 if (fapte.TryGetValue((tranzactieId, linieId), out var fapteLinie)) {
                     var baze = grup.Where(p => p.RolTva == N.RolTva.Baza).ToList();
                     var conturiBaza = baze.Select(p => p.Cont).Distinct().ToList();
@@ -485,36 +489,48 @@ public static partial class SaftProiectii {
                     conservat += fapt.Baza + fapt.Tva - fapt.Autocolectare;
                     subLinii.Add((conturiBaza[0], fapt.Baza,
                         Taxa(fapt, SectiuneTvaSaft.Facturi, N.RolTva.Taxa, fapt.Tva, docId, tranzactieId),
-                        fapt.DataExigibilitate, baze[0]));
+                        fapt.DataExigibilitate, baze[0], false));
+                    var rest = grup.Where(EsteTert).Sum(Comercial) - (fapt.Baza + fapt.Tva - fapt.Autocolectare);
+                    var cota = grup.Where(p => !EsteTert(p) && p.RolTva == null).ToList();
+                    if (rest != 0m && cota.Select(p => p.Cont).Distinct().Count() == 1 && cota.Sum(Contrapartida) == rest) {
+                        conservat += rest;
+                        subLinii.Add((cota[0].Cont, rest, Nefiscal(), fapt.DataExigibilitate, cota[0], true));
+                    }
                 } else {
                     var tertLinie = grup.Where(EsteTert).ToList();
                     if (tertLinie.Count == 0)
                         continue;
                     var net = tertLinie.Sum(Comercial);
                     var contrapartide = grup.Where(p => !EsteTert(p)).ToList();
-                    if (contrapartide.Select(p => p.Cont).Distinct().Count() != 1 || contrapartide.Sum(Contrapartida) != net) {
+                    var peCont = contrapartide.GroupBy(p => p.Cont).Select(g => (Cont: g.Key, Net: g.Sum(Contrapartida), Sursa: g.First()))
+                        .Where(c => c.Net != 0m).ToList();
+                    var unica = peCont.Count == 1 || corectie && peCont.Count > 1;
+                    if (!unica || peCont.Sum(c => c.Net) != net) {
                         Refuza(RefuzProvenienta, $"{eticheta}: linia nefiscală {info.Pozitie} are net {net} fără o contrapartidă "
                             + "unică și egală.", docId, tranzactieId);
                         continue;
                     }
                     conservat += net;
-                    subLinii.Add((contrapartide[0].Cont, net, Nefiscal(), null, contrapartide[0]));
+                    foreach (var c in peCont)
+                        subLinii.Add((c.Cont, c.Net, Nefiscal(), null, c.Sursa, corectie));
                 }
                 var cantitate = Math.Abs(info.Cantitate);
-                if (cantitate == 0m) {
+                if (cantitate == 0m && !corectie) {
                     Refuza(RefuzSursa, $"{eticheta}: linia {info.Pozitie} are cantitatea comercială 0.", docId, tranzactieId);
                     continue;
                 }
                 produsPeLinie.TryGetValue(linieId, out var produs);
                 if (produs != Guid.Empty) produseFolosite.Add(produs);
                 foreach (var s in subLinii) {
-                    var pret = pretPeLinie.TryGetValue(linieId, out var pu) && pu != 0m && subLinii.Count == 1
-                        ? pu : Scara.RotunjestePret(Math.Abs(s.Net) / cantitate);
+                    var q = s.FaraCantitate ? 0m : cantitate;
+                    var pret = q == 0m ? 0m
+                        : pretPeLinie.TryGetValue(linieId, out var pu) && pu != 0m && subLinii.Count(x => !x.FaraCantitate) == 1
+                        ? pu : Scara.RotunjestePret(Math.Abs(s.Net) / q);
                     liniiFactura.Add((info.Pozitie, new SaftLinieFactura {
                         DetaliuId = linieId,
                         AccountID = Simbol(s.Cont),
                         ProductCode = produs == Guid.Empty ? null : produs.ToString(),
-                        Quantity = cantitate,
+                        Quantity = q,
                         UnitPrice = pret,
                         TaxPointDate = s.Exigibil ?? default,
                         Description = descrieri.GetValueOrDefault(linieId)

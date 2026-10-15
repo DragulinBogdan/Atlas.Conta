@@ -235,7 +235,10 @@ documentar și se probează cu validatorul D406 existent, pe fișiere-mutant:
 - **Storno-ul**: perechile de compensare se separă de liniile comerciale,
   ca factura stornată să nu poarte compensarea ca linie de factură.
 
-Owner-ul alege codurile la închiderea pasului 3a; pasul 3b le implementează
+Owner-ul a ales la 2026-10-15, după pasul 3a: factura rămâne 380, ca orice
+FCT, cu linia de corecție la cantitate 0 și informație fiscală nefiscală
+(`000`/`000000`); mișcarea de stoc are codul 90 pentru corecția pozitivă și
+60 pentru cea negativă. Pasul 3b le implementează
 și ridică refuzurile `SAFT_SURSA_INCOMPLETA`, `SAFT_PROVENIENTA_AMBIGUA` și
 `SAFT_MISCARE_VALORICA` numai pentru formele acoperite. Rândurile SC-CVL-32
 și SC-SAFT corespunzătoare trec din refuz în export verificat.
@@ -253,8 +256,8 @@ formularele anterioare. Restanțele noi ale etapei se numesc `E2-rN`.
 | 0 | contractul, scopul E2, catalogul funcționalităților, sursele ANAF descărcate | docskit verde; owner pe E2-D4, E2-D6, E2-D10 | închis 2026-10-15 |
 | 1 | `Societate` (E2-D4) cu migrația și XAF; registrul formularelor; D300 XML cu rotunjirea (E2-D3); kitul D300 pin-uit; SC-DECL pentru D300 | ModelCheck ambele profiluri; XSD + DUK pe lunile de probă | închis 2026-10-15 |
 | 2 | D394 XML; `Produs.CategorieTaxareInversa` (E2-D6); I.2 (E2-D7); lista blocantă (E2-D5); kitul D394 | idem, cu mutanții D394 | închis 2026-10-15 |
-| 3a | SAF-T pe luna cu corecție: cercetarea formei pe validatorul D406 | fișiere-mutant DUK; hotărârea owner-ului | |
-| 3b | implementarea formei alese; refuzurile ridicate pentru formele acoperite | SC-CVL-32, SC-SAFT noi, DUK D406 L și S | |
+| 3a | SAF-T pe luna cu corecție: cercetarea formei pe validatorul D406 | fișiere-mutant DUK; hotărârea owner-ului | închis 2026-10-15 |
+| 3b | implementarea formei alese; refuzurile ridicate pentru formele acoperite | SC-CVL-32, DUK D406 L și S | închis 2026-10-15 |
 | 4 | ușile HTTP, `RefuzuriXml`, ecranele React, openapi | `refuzuri.ps1` pe host viu; browser | |
 | 5 | regresia integrală, review advers, închiderea | integrala ambele profiluri; nucleu; HTTP; docskit | |
 
@@ -277,6 +280,48 @@ Lucrul se oprește și revine la owner când:
 La închidere, un agent nou, numai citire, verifică fiecare D-uri contra
 codului și a fișierelor validate; constatările se repară înaintea PR-ului.
 Un review Codex se propune owner-ului într-o linie, la închidere.
+
+## Verificarea pasului 3b — 2026-10-15
+
+- `PoliticaMiscareSaft` primește cauza în cheie (migrația `CauzaMiscareSaft`,
+  ambele indexuri unice). Seed-ul privat adaugă FCT × Magazie/Mărfuri ×
+  ±1 → 90/60 și FCT × Consum × ±1 exclus cu motiv: 29 de rânduri.
+- Exportul L emite linia de corecție pe fiecare cont de contrapartidă, cu
+  cantitate 0 și `000`/`000000`; cota corecției din RLF devine a doua linie
+  nefiscală. Exportul S dă liniei de corecție codul politicii pe cauză.
+- SC-CVL-32, `--scenarii CVL` pe privat: toate verificările verzi; L și S pe
+  ianuarie, februarie și martie 2042 trec XSD-ul și DUK J2.2.18, fără
+  atenționări. Prima rulare a arătat două goluri, reparate în pas: partea pe
+  consum n-avea politică (`SAFT_MISCARE_FARA_POLITICA` pe FCT/Consum) și RLF-ul
+  pe lot corectat nu-și închidea brutul (−262 față de −222, cota de 40).
+- Restul liniilor numai valorice (NIR cu diferență, TVA capitalizat, DVI)
+  rămân refuz: SAFT-r2 se restrânge, nu se închide.
+- Integrala: bugetar verde în `run-verificari/20261015-175042-623` (4.088 de
+  verificări). Pe privat, prima rulare a picat pe patru verificări vechi
+  scrise pe cheia fără cauză (23 de politici, oracolul SC-SAFT-49). Oracolul
+  citește acum politica comercială, iar numărul e 29. A doua rulare e verde
+  în `run-verificari/20261015-175746-911` (5.566 de verificări).
+
+## Cercetarea pasului 3a — 2026-10-15
+
+Fișierele-mutant pornesc de la exporturile valide ale scenelor SAFT
+(L august 2026, S martie 2027) și trec prin DUKIntegrator AnLunaUI J2.2.18,
+kitul pin-uit al D406. Scriptul și rezultatele sunt în `run-verificari/e2-3a/`.
+
+| Mutant | Rezultat |
+|---|---|
+| L: linia de corecție 371, cantitate 0, preț 0, valoare 200, fără `TaxInformation`, factura 380 sau 384 | respins: `TaxInformation` e obligatoriu pe linie |
+| L: aceeași linie fără `Quantity` | respins: `Quantity` e obligatoriu |
+| L: cantitate 0, `TaxInformation` nefiscal (`000`/`000000`, TVA 0), factura 380 | acceptat, fără atenționări |
+| L: același, factura 384 | acceptat, fără atenționări |
+| S: mișcare cu cantitate 0 și valoare ±200 pe lot, codurile 90, 60, 100 sau 101 (în `MovementTypeTable`), poziția de stoc cu valoarea finală ajustată | acceptat pe toate patru |
+| S: aceeași mișcare fără `Quantity` | respins: `Quantity` e obligatoriu |
+
+Concluzii: cantitatea fictivă nu e necesară (regula de oprire 4 nu se
+aplică). Linia de corecție poartă cantitatea 0 și informația fiscală
+nefiscală, fiindcă corecția din E1 nu are TVA (CV-D1). Validatorul nu
+deosebește 380 de 384 și nici codurile de mișcare între ele: alegerea e de
+semantică, nu de validare.
 
 ## Verificarea pasului 2 — 2026-10-15
 

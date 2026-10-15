@@ -321727,6 +321727,13 @@
         ],
         "type": "string"
       },
+      "CauzaMiscareSaft": {
+        "enum": [
+          "Comerciala",
+          "CorectieValorica"
+        ],
+        "type": "string"
+      },
       "ClasaFiscalaPartener": {
         "enum": [
           "InregistratRo",
@@ -329855,6 +329862,9 @@
             "format": "int32",
             "nullable": true
           },
+          "Cauza": {
+            "$ref": "#/components/schemas/CauzaMiscareSaft"
+          },
           "CodMiscare": {
             "maxLength": 9,
             "type": "string",
@@ -329892,6 +329902,9 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "Cauza": {
+            "$ref": "#/components/schemas/CauzaMiscareSaft"
           },
           "CodMiscare": {
             "maxLength": 9,

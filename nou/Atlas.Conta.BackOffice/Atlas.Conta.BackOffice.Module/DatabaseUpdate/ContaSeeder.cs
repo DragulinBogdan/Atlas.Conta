@@ -699,7 +699,7 @@ public static class ContaSeeder {
     public static void SeedPoliticiMiscareSaftPrivat(IObjectSpace os) =>
         ProfilPrivat.SeedPoliticiMiscareSaft(os);
 
-    public static IReadOnlyCollection<(string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv)>
+    public static IReadOnlyCollection<(string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv, CauzaMiscareSaft Cauza)>
         MiscariSaftPrivat => ProfilPrivat.MiscariSaft;
 
     // Același seam pentru implicitele de TVA (felia 23, F23-D2): idempotența și

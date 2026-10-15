@@ -9303,6 +9303,8 @@ export interface components {
         /** @enum {string} */
         CauzaDiferentei: "Perisabilitate" | "Imputabila" | "Neimputabila" | "PeDrum" | "InClarificare" | "Plus";
         /** @enum {string} */
+        CauzaMiscareSaft: "Comerciala" | "CorectieValorica";
+        /** @enum {string} */
         ClasaFiscalaPartener: "InregistratRo" | "NeinregistratRo" | "Ue" | "ExtraUe";
         ClasaProdus: {
             /** Format: uuid */
@@ -12133,6 +12135,7 @@ export interface components {
             TipStoc?: components["schemas"]["TipStoc"];
             /** Format: int32 */
             Semn?: number | null;
+            Cauza?: components["schemas"]["CauzaMiscareSaft"];
             CodMiscare?: string | null;
             RolTert?: components["schemas"]["RolTertSaft"];
             Motiv?: string | null;
@@ -12146,6 +12149,7 @@ export interface components {
             TipStoc?: components["schemas"]["TipStoc"];
             /** Format: int32 */
             Semn?: number | null;
+            Cauza?: components["schemas"]["CauzaMiscareSaft"];
             CodMiscare?: string | null;
             RolTert?: components["schemas"]["RolTertSaft"];
             Motiv?: string | null;

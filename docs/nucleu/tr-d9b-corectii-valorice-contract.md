@@ -393,6 +393,11 @@ ambele `Operare` ale corecției. SC-CVL-31 fixează proba.
 
 ### CV-D9 — exportul SAF-T: restanță cu refuz explicit
 
+Refuzurile de mai jos au fost ridicate la 2026-10-15 de etapa E2
+([contractul E2](../api/e2-depunere-xml-contract.md), E2-D10): luna cu
+corecție se exportă, cu linia de corecție la cantitate 0 și mișcarea 90/60.
+Textul rămâne ca istoric al pachetului.
+
 Hotărârea owner-ului din 2026-10-13. Pachetul nu definește reprezentarea
 SAF-T a corecției. Refuzurile existente rămân, nu se relaxează și nu se
 adaugă un cod nou:

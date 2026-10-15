@@ -55,6 +55,10 @@
       "Vanzare": "Vânzare",
       "Lipsa": "Lipsă"
     },
+    "CauzaMiscareSaft": {
+      "Comerciala": "Comercială",
+      "CorectieValorica": "Corecție valorică a lotului"
+    },
     "CauzaNeincludere": {
       "FaraPartener": "Fără partener pe rândul de registru",
       "RepartitorNePartener": "Contrapartida nu e partener (angajat/intern)",
@@ -1779,6 +1783,7 @@
     "PoliticaMiscareSaft": {
       "DefaultProperty": null,
       "Membri": {
+        "Cauza": "Cauza",
         "CodMiscare": "Cod mișcare",
         "DinSeed": "Din seed",
         "ID": "ID",

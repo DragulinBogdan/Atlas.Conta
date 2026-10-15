@@ -171,6 +171,11 @@ repetă aici. Limitele mecanismelor, fără efect direct pentru utilizator, stau
 
 ## SAF-T
 
+- Pe declarația de stocuri, linia numai valorică se exportă doar pentru
+  corecția valorii lotului; NIR-ul cu diferență de valoare, TVA-ul capitalizat
+  pe lot și DVI-ul care adaugă valoare fără cantitate rămân refuz
+  (`SAFT_MISCARE_VALORICA`, SAFT-r2). (E2-D10)
+
 - SAF-T acoperă profilurile L și S pentru cazurile implementate: nu toate
   variantele de contribuabil, proprietarii terți ai stocului sau toate
   mișcările logistice. Validarea XML nu dovedește completitudinea datelor
