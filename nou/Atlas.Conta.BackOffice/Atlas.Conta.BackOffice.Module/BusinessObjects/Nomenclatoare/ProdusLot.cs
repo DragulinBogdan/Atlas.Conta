@@ -96,6 +96,13 @@ public class Lot : Editabila {
             ? (cantitate ?? linie.Cantitate) * lot.PretUnitar
             : 0m;
 
+    /// <summary>Cantitatea dată la prețul lotului plus cota ei din corecțiile de valoare active, nerotunjită (CV-D10).</summary>
+    public static decimal ValoareLaPretulAjustat(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie, decimal cantitate) {
+        var valoare = ValoareLaPretulLotului(os, linie, cantitate);
+        return linie.LotId is Guid id && Cub.Citiri.CorectiiValorice.Active(os, [id]).TryGetValue(id, out var corectie)
+            ? valoare + corectie.Cota(cantitate) : valoare;
+    }
+
     public static string EtichetaLot(string produs, DateOnly data, decimal pretUnitar) {
         var denumire = produs ?? "(produs nedefinit)";
         return data == default && pretUnitar == 0m

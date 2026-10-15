@@ -22,12 +22,12 @@ catalogului poartă data adoptării (linia zero), nu data livrării. Rândurile
 
 | ID | Funcționalitate | Ținte | Arie | Etapă | Stare | Scenarii |
 |---|---|---|---|---|---|---|
-| F-CVL-01 | Corectez valoarea unui lot recepționat prin factura furnizorului, cu o linie de corecție pe factură; diferența se împarte între stocul rămas și consumul deja făcut, iar ieșirile ulterioare se evaluează din soldul corectat | T1 | stoc | E1 | deschisă | SC-CVL-01…07, SC-CVL-18, SC-CVL-19, SC-CVL-21, SC-CVL-25 |
-| F-CVL-02 | Retrag, stornez sau corectez o corecție valorică; inversarea e refuzată cât există o ieșire activă făcută după ea | T1 | stoc | E1 | deschisă | SC-CVL-08, SC-CVL-09, SC-CVL-13, SC-CVL-14, SC-CVL-17, SC-CVL-27 |
-| F-CVL-03 | Stornez un consum făcut înaintea corecției, iar partea lui din corecție revine în stoc o singură dată | T1 | stoc | E1 | deschisă | SC-CVL-10…12, SC-CVL-22, SC-CVL-26, SC-CVL-28…30 |
-| F-CVL-04 | Corecția valorică intră în luna ei, iar soldurile unei luni închise rămân neschimbate | T1 | stoc | E1 | deschisă | SC-CVL-15, SC-CVL-16, SC-CVL-23 |
-| F-CVL-05 | Văd efectul corecției în fișa de cont, balanță și soldul stocului, cu explicația împărțirii pe stoc și consum | T1, T3 | stoc | E1 | deschisă | SC-CVL-20, SC-CVL-31 |
-| F-CVL-06 | Sting prin plată datoria născută din corecție, ca partidă proprie a corecției | T1 | stoc | E1 | deschisă | SC-CVL-24 |
+| F-CVL-01 | Corectez valoarea unui lot recepționat prin factura furnizorului, cu o linie de corecție pe factură; diferența se împarte între stocul rămas și consumul deja făcut, iar ieșirile ulterioare se evaluează din soldul corectat | T1 | stoc | E1 | livrată 2026-10-15 | SC-CVL-01…07, SC-CVL-18, SC-CVL-19, SC-CVL-21, SC-CVL-25 |
+| F-CVL-02 | Retrag, stornez sau corectez o corecție valorică; inversarea e refuzată cât există o ieșire activă făcută după ea | T1 | stoc | E1 | livrată 2026-10-15 | SC-CVL-08, SC-CVL-09, SC-CVL-13, SC-CVL-14, SC-CVL-17, SC-CVL-27 |
+| F-CVL-03 | Stornez un consum făcut înaintea corecției, iar partea lui din corecție revine în stoc o singură dată | T1 | stoc | E1 | livrată 2026-10-15 | SC-CVL-10…12, SC-CVL-22, SC-CVL-26, SC-CVL-28…30 |
+| F-CVL-04 | Corecția valorică intră în luna ei, iar soldurile unei luni închise rămân neschimbate | T1 | stoc | E1 | livrată 2026-10-15 | SC-CVL-15, SC-CVL-16, SC-CVL-23 |
+| F-CVL-05 | Văd efectul corecției în fișa de cont, balanță și soldul stocului, cu explicația împărțirii pe stoc și consum | T1, T3 | stoc | E1 | livrată 2026-10-15 | SC-CVL-20, SC-CVL-31 |
+| F-CVL-06 | Sting prin plată datoria născută din corecție, ca partidă proprie a corecției | T1 | stoc | E1 | livrată 2026-10-15 | SC-CVL-24 |
 | F-CVL-07 | Corectez valoarea unui lot care a trecut prin transfer, retur, asamblare, inventar sau deschidere | T1 | stoc | | deschisă | — |
 | F-CVL-08 | Corectez valoarea unui lot printr-o factură cu TVA sau printr-o factură mixtă | T1, T2 | stoc | | deschisă | — |
 | F-FCT-01 | Înregistrez factura furnizorului pentru stoc sau servicii, cu TVA pe mai multe cote, taxare inversă sau TVA capitalizat, și o anulez, o stornez sau o corectez | T1 | stoc | | livrată 2026-10-14 | SC-FCT-01…08, SC-FCT-10, SC-FCT-11, SC-X-01 |

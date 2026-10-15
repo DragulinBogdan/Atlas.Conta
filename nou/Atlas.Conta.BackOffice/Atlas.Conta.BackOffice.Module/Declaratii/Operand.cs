@@ -35,6 +35,16 @@ public sealed record LotFapt(
     decimal PretUnitar) {
     public Guid? LinieIntrareId { get; init; }
     public Guid? GestiuneId { get; init; }
+    public CorectieActivaFapt? Corectie { get; init; }
+
+    /// <summary>Cota cantității din corecțiile de valoare active ale lotului, rotunjită la bani, cu semnul cantității.</summary>
+    public decimal CotaCorectie(decimal cantitate) =>
+        Corectie is { } c ? Scara.RotunjesteBani(c.Cota(cantitate)) : 0m;
+}
+
+/// <summary>Valoarea încă activă a corecțiilor unui lot și cantitatea recepționată pe linia lui de intrare (CV-D10).</summary>
+public readonly record struct CorectieActivaFapt(decimal Valoare, decimal Receptionat) {
+    public decimal Cota(decimal cantitate) => Valoare * cantitate / Receptionat;
 }
 
 /// <summary>Lotul unei linii de corecție valorică și faptele lui; <paramref name="Reper"/> lipsește când lotul n-are linie de intrare sau cont de stoc.</summary>

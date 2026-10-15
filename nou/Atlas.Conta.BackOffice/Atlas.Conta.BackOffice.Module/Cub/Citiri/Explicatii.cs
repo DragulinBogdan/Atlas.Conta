@@ -87,6 +87,12 @@ public static class Explicatii {
                 -p.Cantitate, p.Sens == N.Sens.Credit ? p.Valoare : -p.Valoare));
         if (iesiri[null].Any())
             throw new OperareException($"{Lipsa}: {iesiri[null].Count()} ieșiri pe lot în tranzacții fără explicație.");
+        var faraCantitate = postari.Where(p => p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Lot && p.Cantitate == 0m
+                && p.Atribuit == null && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .Select(p => new { p.TranzactieId, p.LinieId, Unitate = p.Unitate!.Value, p.Cont, p.Sens, p.Valoare })
+            .ToList()
+            .ToLookup(p => Purtator(p.TranzactieId), p => new IesirePeLot(p.LinieId, p.Unitate, p.Cont,
+                0m, p.Sens == N.Sens.Credit ? p.Valoare : -p.Valoare));
 
         var pePartide = postari.Where(p => p.Carte == N.Carte.Contabil && p.FelUnitate == N.FelUnitate.Partida
                 && p.Repartitor != null && p.Tranzactie.Fel == N.FelTranzactie.Operare)
@@ -134,6 +140,14 @@ public static class Explicatii {
                     || decise.Select(d => (d.Linie, d.Unitate, d.Cont)).Distinct().Count() != decise.Count)
                 throw new OperareException($"{Iesire}: tranzacția {purtator.ID} are {postate.Count} ieșiri pe lot și "
                     + $"{decise.Count} decizii de valoare; fiecare ieșire cere exact o decizie cu linia, unitatea, cantitatea și valoarea ei.");
+            var faraCantitatePeLinie = faraCantitate[purtator.ID].ToList();
+            foreach (var declarata in explicatie.Decizii.OfType<N.ValoareDeclarata>()) {
+                var postata = faraCantitatePeLinie.Where(p => p.Linie == declarata.Linie && p.Unitate == declarata.Unitate.Id
+                    && p.Cont == declarata.Unitate.Cont).Sum(p => p.Valoare);
+                if (postata != declarata.Corectie)
+                    throw new OperareException($"{Iesire}: tranzacția {purtator.ID}, linia {declarata.Linie}: cota corecțiilor de valoare "
+                        + $"({declarata.Corectie}) nu e postarea fără cantitate de pe lot ({postata}).");
+            }
 
             foreach (var (iesire, inainte) in explicatie.IesiriEvaluate())
                 if (inainte is null || !Evaluata(inainte, iesire, rotunjire))

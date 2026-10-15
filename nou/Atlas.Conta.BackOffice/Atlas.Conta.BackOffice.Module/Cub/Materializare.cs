@@ -49,7 +49,7 @@ public static partial class Materializare {
             throw new OperareException(string.Join("\n", Mesaje(contract.Refuzuri)));
         VerificaAnaliza(os, doc, contract, miscari);
         Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
-        Citiri.CorectiiValorice.VerificaCronologia(os, contract.Tranzactii.SelectMany(t => t.Postari));
+        Citiri.CorectiiValorice.Verifica(os, contract, doc.Declarant().SursaValoareDeclarata == Declaratii.SurseValoare.Receptie);
         VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: true);
         var explicatie = Explicatie.Din(contract, doc.Declarant().GetType().Name).Scrie();
         Guid? purtator = null;
@@ -73,7 +73,7 @@ public static partial class Materializare {
             if (contract.EsteAcceptat)
                 Citiri.Loturi.VerificaSoldIntermediar(os, contract.Tranzactii.SelectMany(t => t.Postari), ReceptiiConexe.CodRefuzStoc(doc));
             if (contract.EsteAcceptat)
-                Citiri.CorectiiValorice.VerificaCronologia(os, contract.Tranzactii.SelectMany(t => t.Postari));
+                Citiri.CorectiiValorice.Verifica(os, contract, doc.Declarant().SursaValoareDeclarata == Declaratii.SurseValoare.Receptie);
             if (contract.EsteAcceptat)
                 VerificaPozitiaFaraFisa(os, contract.Tranzactii.SelectMany(t => t.Postari), blocheaza: false);
         }

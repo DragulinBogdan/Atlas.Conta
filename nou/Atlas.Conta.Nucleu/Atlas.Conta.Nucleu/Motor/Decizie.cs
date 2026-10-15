@@ -9,8 +9,10 @@ public sealed record AlocareFifo(Guid Linie, UnitateSold Unitate, decimal Masura
 
 public sealed record ValoareIesire(Guid Linie, UnitateSold Unitate, decimal Cantitate, decimal Valoare) : Decizie;
 
-/// <summary>Ieșirea a cărei valoare nu vine din soldul unității: o dă sursa numită.</summary>
-public sealed record ValoareDeclarata(Guid Linie, UnitateSold Unitate, decimal Cantitate, decimal Valoare, string Sursa) : Decizie;
+/// <summary>Ieșirea a cărei valoare nu vine din soldul unității: o dă sursa numită; <paramref name="Corectie"/> e cota
+/// corecțiilor de valoare ale unității, scoasă fără cantitate lângă ieșire (CV-D10).</summary>
+public sealed record ValoareDeclarata(Guid Linie, UnitateSold Unitate, decimal Cantitate, decimal Valoare, string Sursa,
+    decimal Corectie = 0m) : Decizie;
 
 public sealed record PartidaDeschisa(Guid Linie, UnitateSold Unitate) : Decizie;
 

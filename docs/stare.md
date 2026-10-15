@@ -7,9 +7,9 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Ce | Cât |
 |---|---|
 | Decizii | 121: 87 active, 34 amendate parțial, 0 depășite, 0 propuse |
-| Restanțe | 387: 286 deschise, 101 închise |
+| Restanțe | 387: 285 deschise, 102 închise |
 | Pagini de stare curentă | 19 |
-| Contracte de felie (`Tip: contract`) | 3, deschise 2 |
+| Contracte de felie (`Tip: contract`) | 3, deschise 1 |
 | Cataloage vii (`Tip: catalog`) | 5 |
 | Fișiere Markdown în `docs/` | 334 |
 | Citări de decizii din cod (`// N`) | 71 |
@@ -46,16 +46,16 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 44 |
+| activă | 43 |
 | după PoC | 206 |
 | migrare | 24 |
 | depășită de 091 | 2 |
 | docs | 6 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (44, prag 45)
+### Lista `activă` (43, prag 45)
 
-**motor** (11)
+**motor** (10)
 
 - `51e` PoliticaEvaluare (CMP) — sub 90c devine parametrul „unitatea de evaluare” al unității nominalizate
 - `76-r1` netarea plafonului e per (repartitor × LATURĂ), nu per CONT (55 chei / 36 note amestecă conturi de c…
@@ -63,7 +63,6 @@ Niciuna.
 - `TR-r8` rulajul brut per partidă nu e sumă sub tranzacția de transfer…
 - `TR-r10` deschiderea generică fără document, cu loturi și partide…
 - `TR-r11` Numar, DataScadenta, Autogenerat, DocumentSursa rămân atribute ale documentului scrise la operare, s…
-- `N-r5` stornoul unei postări ATRIBUITE (reevaluare) intră în selecție (090i) și poartă cauza altui document…
 - `N-r6` amendamente de literă ale contractului TR-D6a consemnate în cod: cazurile Decizie poartă Linie…
 - `N-r7` ordinea FIFO a nucleului e Guid.CompareTo (componentă cu componentă) prin Fifo.Intai…
 - `B-r6` Valuta/Curs sunt câmpuri de frunză pe FacturaIntrare fără interfață declarată: operandul le lasă nul…
@@ -135,7 +134,6 @@ Niciuna.
 ## Felii deschise
 
 - [TR-D9b — unitățile de sold: contract și primul pachet de execuție](nucleu/tr-d9b-contract.md) — pași livrați 0 din 0; decizii: 090, 092, 102, 110, 111, 114, 115, 116, 117, 118
-- [TR-D9b-CV — corecții valorice pe lot, fără schimbarea cantității](nucleu/tr-d9b-corectii-valorice-contract.md) — pași livrați 0 din 0; decizii: 088 (h, amendată de 103), 090, 091, 103, 104, 110, 111, 118, 119
 
 ## Decizii invocate din cod
 

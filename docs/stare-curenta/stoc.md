@@ -146,7 +146,22 @@ corecție, fără TVA; nu naște lot și nu generează NIR. (119, CV-D1)
   soldul ajustat. (CV-D2, CV-D3)
 - Lotul corectabil se judecă pe forma faptelor din cub: o recepție activă de
   la furnizorul corecției, consumuri din poziția de stoc și inversele lor.
-  Orice altă mișcare pe lot refuză corecția. (CV-D10)
+  Orice altă mișcare pe lot refuză corecția: transfer, descărcare, retur la
+  furnizor sau de la client, asamblare, inventar, NIR cu diferențe. (CV-D10)
+- Pe un lot cu alocare activă, returul ia prețul ajustat: q × prețul
+  lotului plus cota q / cantitatea recepționată din corecțiile încă active.
+  La returul la furnizor linia rămâne baza fiscală, cu TVA-ul ei. Cota iese
+  ca a doua mișcare, fără cantitate și fără TVA, în `ValoareDeclarata.Corectie`.
+  La returul de la client, linia de cost ia direct prețul ajustat. Cât un
+  retur e activ, corecția nu se stornează și nu se retrage (`CV_DEPENDENTI`).
+  NIR-ul conex re-operat cu diferență (`SursaValoareDeclarata` = `Receptie`)
+  se refuză cu `CV_DEPENDENTI` până la stornarea corecției. Celelalte ieșiri
+  se evaluează din soldul ajustat. Lotul cu stoc rămas zero și valoare pe
+  poziția de stoc nu se corectează. (CV-D10)
+- Linia de corecție are tipul produsului lotului (`CV_STRUCTURA`), ca regula
+  de contare să fie a lotului. Retragerea unei corecții e refuzată
+  (`CV_DEPENDENTI`) cât lotul are o corecție scrisă după ea, care i-a citit
+  soldul ajustat; stornarea rămâne permisă. (CV-D10)
 - Stornarea bonului scrie, în aceeași comandă, inversa lui și câte o
   tranzacție `Operare` pe fiecare corecție cu alocare activă pe el: perechea
   de compensare mută alocarea de pe consum pe stoc. Bonul stornat se închide
@@ -159,14 +174,20 @@ corecție, fără TVA; nu naște lot și nu generează NIR. (119, CV-D1)
   fiecare beneficiar cu pondere, inclusiv cel cu cota zero, respectiv
   `CompensareValorica` pe fiecare pereche de compensare. Invariantul de audit
   (`CorectieValorica.Auditeaza`, în `INV-CUB`) reface repartizarea din
-  ponderi și verifică postările și compensările față de decizii. (CV-D8)
+  ponderi și verifică postările și compensările față de decizii: ponderea
+  unui consum e cantitatea postării lui, compensarea are cauza rădăcinii.
+  (CV-D8)
 - `GET api/proiectii/explicatii/{tranzactie}` le întoarce pe linia explicată:
   `Alocari` (unitatea, postarea beneficiară, ponderea, cota și, pe stoc,
   soldul citit la data corecției) și `Compensari` (rădăcina, beneficiarul
   stornat, poziția sursă și cea de destinație, valoarea mutată). Referințele
   spre postările altor documente nu lărgesc accesul: ușa cere deja citirea
   completă a postărilor și a documentelor (`EXPLICATIE_ACCES_INCOMPLET`).
-  La storno, explicațiile ambelor `Operare` ale corecției vin ca origini. (CV-D8)
+  La storno, explicațiile ambelor `Operare` ale corecției vin ca origini.
+  Ieșirea returului la furnizor pe un lot corectat poartă în `Iesiri` și
+  `Corectie`, cota scoasă fără cantitate; auditul explicațiilor cere ca
+  postările fără cantitate ale liniei pe lot să fie exact ea
+  (`CITIRE_EXPLICATIE_IESIRE`). (CV-D8, CV-D10)
 - Refuzuri: `CV_STRUCTURA`, `CV_LOT_NEELIGIBIL`, `CV_VALOARE_INSUFICIENTA`,
   `CV_CRONOLOGIE`, `CV_DEPENDENTI`, `CV_AN_INCHIS`, `CV_PROVENIENTA`, toate în
   `CoduriRefuz`. Nucleul emite motivul (`MotivCorectieValorica`), iar

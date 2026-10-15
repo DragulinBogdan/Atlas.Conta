@@ -58,6 +58,8 @@ public static partial class CorectieValorica {
         var ramas = peStoc.Sum(f => f.Postare.Cantitate);
         if (ramas < 0m || ramas + consumuri.Sum(f => f.Postare.Cantitate) != receptie.Postare.Cantitate)
             throw Neeligibil("stocul rămas și consumurile active nu dau cantitatea recepționată");
+        if (ramas == 0m && peStoc.Sum(Masura) != 0m)
+            throw Neeligibil("valoare pe stocul fără cantitate");
         if (consumuri.FirstOrDefault(f => f.Postare.Coordonate.Data.Year < data.Year) is { } vechi)
             throw Refuza(MotivCorectieValorica.AnInchis,
                 $"Consumul din {vechi.Postare.Coordonate.Data:yyyy-MM-dd} este într-un an anterior corecției.");
@@ -92,7 +94,7 @@ public static partial class CorectieValorica {
             throw Refuza(MotivCorectieValorica.Cronologie, "Data stornării precedă un fapt al corecțiilor de valoare ale lotului.");
 
         var compensari = new List<CompensareLot>();
-        foreach (var fapt in proprii.Where(f => !EsteValoric(f) && f.Postare.Cantitate > 0m)) {
+        foreach (var fapt in proprii.Where(f => !EsteValoric(f) && f.Postare.Cantitate > 0m && f.Postare.Coordonate.Sens == Sens.Debit)) {
             if (citite.Partener(fapt) is not { } partener)
                 continue;
             if (Lot(partener) != Lot(fapt)) {
@@ -112,6 +114,14 @@ public static partial class CorectieValorica {
         var proprii = citite.Proprii(document, FelTranzactie.Operare, FelTranzactie.Transfer);
         if (proprii.Any(f => citite.Atribuite(f).Any()))
             throw Refuza(MotivCorectieValorica.Dependenti, "Documentul poartă corecții de valoare sau compensările lor; folosiți storno.");
+        var radacini = citite.Radacini.Where(r => r.Postare.Cauza.Document == document).ToList();
+        if (radacini.Count != 0) {
+            var prima = radacini.Min(r => r.ScrisLa);
+            var loturi = radacini.Select(Lot).ToHashSet();
+            if (citite.Radacini.Any(r => r.Postare.Cauza.Document != document && loturi.Contains(Lot(r)) && r.ScrisLa > prima))
+                throw Refuza(MotivCorectieValorica.Dependenti,
+                    "O corecție de valoare ulterioară a lotului a citit soldul ajustat de aceasta; folosiți storno.");
+        }
         VerificaInversareaCorectiei(citite, document);
     }
 
@@ -170,11 +180,12 @@ public static partial class CorectieValorica {
             return;
         var prima = radacini.Min(r => r.ScrisLa);
         var loturi = radacini.Select(Lot).ToHashSet();
-        if (citite.Toate.Any(f => loturi.Contains(Lot(f)) && f.Postare.Cantitate < 0m
+        if (citite.Toate.Any(f => loturi.Contains(Lot(f))
+                && (f.Postare.Cantitate < 0m || f.Postare.Cantitate > 0m && f.Postare.Coordonate.Sens == Sens.Credit)
                 && f.Fel is FelTranzactie.Operare or FelTranzactie.Transfer && !citite.EsteInversat(f)
                 && f.Postare.Cauza.Document != document && f.ScrisLa >= prima))
             throw Refuza(MotivCorectieValorica.Dependenti,
-                "Lotul are o ieșire activă făcută după corecție; neutralizați întâi ieșirea.");
+                "Lotul are o ieșire sau un retur activ făcut după corecție, la costul ajustat; neutralizați-l întâi.");
 
         var valorice = citite.Toate.Where(f => f.Fel == FelTranzactie.Operare && EsteValoric(f)
             && f.Postare.Cauza.Document == document).ToList();

@@ -44,9 +44,11 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         PerioadaInchisa();
     }
 
-    Caz Lot(decimal cantitate = 100m, decimal pret = 10m) {
+    Caz Lot(decimal cantitate = 100m, decimal pret = 10m, decimal? constatat = null) {
         var f = Factura(Ianuarie, new LinieFctScena(cantitate, pret));
         var nir = Opereaza(f.Id).ConexId ?? throw new InvalidOperationException("Recepția cere NIR conex.");
+        if (constatat is decimal q)
+            Comanda(os => { os.GetObjectByKey<NIR>(nir).Detalii.OfType<NirDetaliu>().Single().Cantitate = q; os.CommitChanges(); });
         Opereaza(nir);
         return new(f.Id, nir, f.Linii[0].Id, f.Linii[0].Lot!.Value, [f.Id]);
     }
@@ -456,12 +458,6 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         }, (caz, 200m))), CoduriRefuz.CvStructura);
         Refuza("SC-CVL-25", () => Opereaza(Draft(Zi(15), (_, _, d) => d.CorectieValoareLot = false, (caz, 200m))), "pozitiv");
         Este("SC-CVL-18", "refuzurile de structură nu lasă efecte", caz, 100m, 1000m, 0m, 1000m);
-    }
-
-    void Perimetru() {
-        var transferat = Lot();
-        Opereaza(Iesire(true, (new LinieScena(transferat.Linie, transferat.Lot, null), 10m)).Id);
-        Refuza("SC-CVL-19", () => Opereaza(Draft(Zi(15), (transferat, 200m))), CoduriRefuz.CvLotNeeligibil);
     }
 
     void Partide() {

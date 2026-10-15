@@ -15,6 +15,24 @@ public static class CorectiiValorice {
     public static bool Exista(IObjectSpace os, IReadOnlyCollection<Guid> loturi) =>
         loturi.Count != 0 && Valorice(os, loturi).Any();
 
+    /// <summary>Loturile cu corecții de valoare încă active, cu valoarea lor pe toate pozițiile lotului (CV-D10).</summary>
+    public static Dictionary<Guid, Declaratii.CorectieActivaFapt> Active(IObjectSpace os, IReadOnlyCollection<Guid> loturi) {
+        if (loturi.Count == 0) return [];
+        var valori = Valorice(os, loturi).Where(p => p.Carte == N.Carte.Contabil)
+            .GroupBy(p => p.Unitate!.Value)
+            .Select(g => new { Lot = g.Key, Valoare = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) })
+            .ToList().Where(g => g.Valoare != 0m).ToList();
+        if (valori.Count == 0) return [];
+        var corectate = valori.Select(v => v.Lot).ToList();
+        var receptionate = os.GetObjectsQuery<BusinessObjects.Lot>().Where(l => corectate.Contains(l.ID))
+            .Join(os.GetObjectsQuery<BusinessObjects.DocumentDetaliu>(), l => l.LinieIntrareId, d => (Guid?)d.ID,
+                (l, d) => new { l.ID, d.Cantitate })
+            .ToDictionary(l => l.ID, l => l.Cantitate);
+        return valori.ToDictionary(v => v.Lot, v => new Declaratii.CorectieActivaFapt(v.Valoare,
+            receptionate.TryGetValue(v.Lot, out var q) ? q
+                : throw new OperareException($"Lotul corectat {v.Lot} n-are linie de intrare.")));
+    }
+
     /// <summary>Loturile pe care documentul are postări și care poartă corecții de valoare, într-o singură citire.</summary>
     public static List<Guid> LoturiCorectate(IObjectSpace os, Guid document) {
         var proprii = os.GetObjectsQuery<Postare>()
@@ -45,19 +63,23 @@ public static class CorectiiValorice {
             r.Postare.Ordinal, Randuri.Citeste(r.Postare, repartitori)))];
     }
 
-    /// <summary>O mișcare cu cantitate nu se operează înaintea unei alocări active a lotului ei (CV-D5).</summary>
-    public static void VerificaCronologia(IObjectSpace os, IEnumerable<N.Postare> propuse) {
-        var miscari = propuse.Where(p => p.Cantitate != 0m && p.Coordonate.Unitate is { Fel: N.FelUnitate.Lot })
+    /// <summary>Pe un lot cu alocare activă, o mișcare cu cantitate nu e antedatată față de ea și nu poartă
+    /// valoarea recepției în locul costului ajustat (CV-D5, CV-D10).</summary>
+    public static void Verifica(IObjectSpace os, N.Contract contract, bool dinReceptie) {
+        var miscari = contract.Tranzactii.SelectMany(t => t.Postari)
+            .Where(p => p.Cantitate != 0m && p.Coordonate.Unitate is { Fel: N.FelUnitate.Lot })
             .Select(p => (Lot: p.Coordonate.Unitate!.Id, p.Coordonate.Data)).Distinct().ToList();
         if (miscari.Count == 0) return;
         var loturi = miscari.Select(m => m.Lot).Distinct().ToList();
-        var prima = miscari.Min(m => m.Data);
         var postari = os.GetObjectsQuery<Postare>();
         var active = Valorice(os, loturi)
-            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare && p.Data > prima
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare
                 && postari.Any(t => t.ID == p.Atribuit && t.Cantitate != 0m)
                 && !postari.Any(i => i.InversaDinId == p.ID && i.InversaDinSpatiu == p.Spatiu))
             .Select(p => new { Lot = p.Unitate!.Value, p.Data }).ToList();
+        if (dinReceptie && active.Count != 0)
+            throw new OperareException($"{Declaratii.CoduriRefuz.CvDependenti}: Lotul are o corecție de valoare activă; "
+                + "recepția nu se re-evaluează peste ea. Stornați întâi corecția.");
         if (miscari.Any(m => active.Any(a => a.Lot == m.Lot && a.Data > m.Data)))
             throw new OperareException($"{Declaratii.CoduriRefuz.CvCronologie}: Lotul are o corecție de valoare activă, "
                 + "datată după această mișcare.");
