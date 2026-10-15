@@ -337,6 +337,9 @@ Integrala ModelCheck e verde pe ambele profiluri (`run-verificari/20261015-21174
 Tabelul diferențelor de rotunjire e probat pe DTO (SC-DECL-13); luna din
 E2P4 nu are diferențe, deci tabelul nu s-a randat în browser.
 
+La 2026-10-16 owner-ul a aprobat decizia 122 și D-urile rămase de confirmat
+(E2-D1, E2-D2, E2-D3, E2-D5, E2-D8, E2-D9), așa cum sunt implementate.
+
 ## Verificarea pasului 5 — 2026-10-15
 
 - Înaintea review-ului: `verifica.ps1 -Suita Integral -Profil Ambele -Sufix
