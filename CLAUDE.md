@@ -117,12 +117,11 @@ Pe guvernanță, stratul de scop ([scop](docs/scop.md),
 arii ale stării curente (decizia 121, PR #45) sunt în main din 2026-10-15.
 Rămân 121-r3 (sondajul owner-ului pe aria rândurilor din registru), 121-r4
 (mutarea între arii a pasajelor lăsate pe loc, la prima felie care atinge
-aria), 118-r1 la `/docs-curatenie` și `build` din 118-r2. Pe motor,
-[TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md) (decizia
-119, etapa E1, F-CVL-01…06) e închis la pasul 5 pe branch-ul
-`tr-d9b-cv-pas5`: regresia, gardurile lanțurilor excluse și review-ul
-advers; amendamentele pasului 5 așteaptă confirmarea owner-ului, iar etapa
-următoare o fixează owner-ul. Unde suntem, cu cifre:
+aria), 118-r1 la `/docs-curatenie` și `build` din 118-r2. E1
+([TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md), decizia
+119) e mersă în main la 2026-10-15. Etapa curentă e E2, depunerea fiscală
+([contractul](docs/api/e2-depunere-xml-contract.md): D300 și D394 în XML,
+SAF-T pe luna cu corecție valorică), pe branch-ul `e2-depunere-fiscala`. Unde suntem, cu cifre:
 [docs/stare.md](docs/stare.md); cronologia:
 `docs/decizii/istoric-plan-de-lucru.md`.
 

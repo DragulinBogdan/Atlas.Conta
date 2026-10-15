@@ -9,9 +9,9 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Decizii | 121: 87 active, 34 amendate parțial, 0 depășite, 0 propuse |
 | Restanțe | 387: 285 deschise, 102 închise |
 | Pagini de stare curentă | 19 |
-| Contracte de felie (`Tip: contract`) | 3, deschise 1 |
+| Contracte de felie (`Tip: contract`) | 4, deschise 2 |
 | Cataloage vii (`Tip: catalog`) | 5 |
-| Fișiere Markdown în `docs/` | 334 |
+| Fișiere Markdown în `docs/` | 335 |
 | Citări de decizii din cod (`// N`) | 71 |
 
 ## Decizii în vigoare pe arie
@@ -133,6 +133,7 @@ Niciuna.
 
 ## Felii deschise
 
+- [E2 — depunerea fiscală: D300 și D394 în XML, SAF-T pe luna cu corecție valorică](api/e2-depunere-xml-contract.md) — pași livrați 0 din 0; decizii: 035 (c), 051 (c), 069, 071, 080, 103 (d), 104 (d), 119
 - [TR-D9b — unitățile de sold: contract și primul pachet de execuție](nucleu/tr-d9b-contract.md) — pași livrați 0 din 0; decizii: 090, 092, 102, 110, 111, 114, 115, 116, 117, 118
 
 ## Decizii invocate din cod

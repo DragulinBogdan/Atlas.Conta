@@ -27,11 +27,12 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [TR-D9b — reluarea pe privat și primul pas: originea partidei](analize/2026-10-12-tr-d9b-reluare-privat.md)
 - [Spargerea ariilor stării curente](analize/2026-10-14-spargerea-ariilor.md)
 
-### `docs/api/` (38)
+### `docs/api/` (39)
 
 - [D300 — Decont de TVA, structura oficială 2026 (OPANAF 174/2026)](api/d300-structura-2026.md)
 - [D394 — Declarația informativă 394, structura oficială 2026 (OPANAF 3769/2015, modificat prin OPANAF 2194/2025)](api/d394-structura-2026.md)
 - [D406 (SAF-T) — structura oficială, ancora 16.02.2026](api/d406-structura-2026.md)
+- [E2 — depunerea fiscală: D300 și D394 în XML, SAF-T pe luna cu corecție valorică](api/e2-depunere-xml-contract.md)
 - [Lista React — luptele structurale cu XAF Blazor](api/lista-react.md)
 - [Pasul 5 — API + React: designul tierului Web API (design)](api/p5-api-design.md)
 - [Pasul 5, felia 10 — balanța pliată pe planul de conturi (rollup)](api/p5-felia-balanta-plan-contract.md)
