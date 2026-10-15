@@ -238,6 +238,17 @@ prin dublu-click în fișa contului pe anul datei cerute, filtrată pe rând:
 pe repartitorul lui, sau cu `faraTert` pe rândul „fără terț”. (F27-D7,
 C111-Q18)
 
+### Fișierele declarațiilor
+
+`GET api/proiectii/d300/xml` și `GET api/proiectii/d394/xml` primesc
+parametrii proiecției JSON plus datele de perioadă: D300 `temei` (0 sau 2),
+`proRata` (0–100), `depusReprezentant`, `bifaInterne`, `solicitRambursare` și
+bifele de taxare inversă internă; D394 `persoaneAfiliate` și `schimbOptiune`.
+Parametrii greșiți dau 400, lipsa citirii pe `Postare` 403, iar refuzurile din
+`RefuzuriXml` 422 cu `COD: mesaj`, înaintea primului byte. Altfel răspunsul e
+`application/xml; charset=utf-8`, cu numele fișierului în
+`Content-Disposition` și amprenta faptelor în `X-Versiune-Exportata`. (E2-D8)
+
 ## Securitate și răspunsuri
 
 Ordinea gărzilor este autentificare, forma cererii, vizibilitatea obiectului,

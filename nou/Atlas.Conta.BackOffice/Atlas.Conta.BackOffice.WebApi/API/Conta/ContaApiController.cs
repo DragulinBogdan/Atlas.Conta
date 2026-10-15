@@ -355,6 +355,15 @@ public abstract class ContaApiController : ControllerBase {
     protected IActionResult RefuzCitire(Type tip) =>
         RefuzAccesRezultat(OperatieAcces.Citire, tip);
 
+    /// <summary>Fișierul declarației sau 422 cu refuzurile ei, înaintea primului byte; amprenta faptelor în `X-Versiune-Exportata` (E2-D8).</summary>
+    protected IActionResult Declaratie(FisierDeclaratie fisier) {
+        if (fisier.Refuzuri.Count > 0)
+            return StatusCode(StatusCodes.Status422UnprocessableEntity,
+                EroriDto.Din(fisier.Refuzuri.Select(r => $"{r.Cod}: {r.Mesaj}")));
+        Response.Headers["X-Versiune-Exportata"] = fisier.VersiuneExportata;
+        return File(fisier.Continut, "application/xml; charset=utf-8", fisier.NumeFisier);
+    }
+
     protected IActionResult RefuzCreare(Type tip) =>
         RefuzAccesRezultat(OperatieAcces.Creare, tip);
 

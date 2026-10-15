@@ -258,7 +258,7 @@ formularele anterioare. Restanțele noi ale etapei se numesc `E2-rN`.
 | 2 | D394 XML; `Produs.CategorieTaxareInversa` (E2-D6); I.2 (E2-D7); lista blocantă (E2-D5); kitul D394 | idem, cu mutanții D394 | închis 2026-10-15 |
 | 3a | SAF-T pe luna cu corecție: cercetarea formei pe validatorul D406 | fișiere-mutant DUK; hotărârea owner-ului | închis 2026-10-15 |
 | 3b | implementarea formei alese; refuzurile ridicate pentru formele acoperite | SC-CVL-32, DUK D406 L și S | închis 2026-10-15 |
-| 4 | ușile HTTP, `RefuzuriXml`, ecranele React, openapi | `refuzuri.ps1` pe host viu; browser | |
+| 4 | ușile HTTP, `RefuzuriXml`, ecranele React, openapi | `refuzuri.ps1` pe host viu; browser | închis 2026-10-15 |
 | 5 | regresia integrală, review advers, închiderea | integrala ambele profiluri; nucleu; HTTP; docskit | |
 
 ## Regula de oprire
@@ -280,6 +280,27 @@ Lucrul se oprește și revine la owner când:
 La închidere, un agent nou, numai citire, verifică fiecare D-uri contra
 codului și a fișierelor validate; constatările se repară înaintea PR-ului.
 Un review Codex se propune owner-ului într-o linie, la închidere.
+
+## Verificarea pasului 4 — 2026-10-15
+
+- `run-verificari/e2-pas4-http.ps1` (bază privată nouă din seed pe 5446,
+  WebApi pe 5089): `refuzuri.ps1` 334/334 PASS. Probele noi: 400 fără
+  perioadă și pe `temei` invalid, 403 pentru `User`, 422
+  `DECLARATIE_ANTET_INCOMPLET` pentru Admin pe societatea goală, pe ambele uși.
+- Calea de succes (`run-verificari/e2-pas4-succes.ps1`, antetul completat prin
+  SQL): ambele uși dau 200 `application/xml; charset=utf-8`, cu numele
+  `D300_4221306_202605.xml` / `D394_4221306_202605.xml`, iar
+  `X-Versiune-Exportata` e egal cu `VersiuneExportata` din JSON. Fișierele
+  descărcate trec DUK (`ok`) pe D300 și D394.
+- Browser (client Vite pe aceeași bază): butonul „Descarcă XML” produce
+  fișierul cu numele serverului; bifa „Temei” ajunge în fișier ca
+  `temei="2"`; cu CAEN-ul lipsă, D394 arată panoul
+  `DECLARATIE_ANTET_INCOMPLET` și butonul inactiv. Textele vechi de sub grile
+  („fișierul XML e altă unealtă”) sunt înlocuite.
+- Proba a găsit terminatorul de linie al sistemului (CRLF pe Windows) în
+  fișier; `XmlDeclaratie` scrie acum LF pe orice platformă.
+- `pnpm gen:openapi` și `gen:types`: driftul e cele două uși noi; `tsc -b`
+  verde.
 
 ## Verificarea pasului 3b — 2026-10-15
 

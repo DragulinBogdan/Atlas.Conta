@@ -60,10 +60,12 @@ public static class RotunjireDeclaratie {
 }
 
 public static class XmlDeclaratie {
-    /// <summary>Octeții fișierului: UTF-8 fără BOM, indentat.</summary>
+    /// <summary>Octeții fișierului: UTF-8 fără BOM, indentat, cu `\n` pe orice platformă.</summary>
     public static byte[] Octeti(XDocument document) {
         using var flux = new MemoryStream();
-        using (var scriitor = XmlWriter.Create(flux, new XmlWriterSettings { Encoding = new UTF8Encoding(false), Indent = true }))
+        using (var scriitor = XmlWriter.Create(flux, new XmlWriterSettings {
+            Encoding = new UTF8Encoding(false), Indent = true, NewLineChars = "\n",
+        }))
             document.Save(scriitor);
         return flux.ToArray();
     }

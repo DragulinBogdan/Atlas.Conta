@@ -522,6 +522,33 @@ try {
             CorpIntreg = $saftCititor.Corp
         })
 
+    # ── Fișierele D300 și D394 (E2-D8): 400 → 403 → 422 înaintea primului byte ──
+    foreach ($formular in 'd300', 'd394') {
+        $caleXml = "/api/proiectii/$formular/xml?dataStart=2026-05-01&dataEnd=2026-05-31"
+        Proba -Cerere "fișier $formular fără perioadă" -User 'Admin' -Asteptat 400 -Metoda GET -Cale "/api/proiectii/$formular/xml" -Contine 'dataStart' | Out-Null
+        Proba -Cerere "fișier $formular" -User 'User' -Asteptat 403 -Metoda GET -Cale $caleXml -Contine 'citi' | Out-Null
+        $xml = Invoke-Cerere -Metoda GET -Cale $caleXml -Token $script:Tokenuri['Admin']
+        $script:Numar++
+        $verdict = 'PASS'
+        $motiv = ''
+        if ($xml.Status -eq 422 -and $xml.Corp -notmatch 'DECLARATIE_') { $verdict = 'FAIL'; $motiv = '422 fără cod DECLARATIE_' }
+        elseif ($xml.Status -eq 200 -and $xml.ContentType -notmatch 'application/xml') { $verdict = 'FAIL'; $motiv = '200 fără application/xml' }
+        elseif ($xml.Status -notin 200, 422) { $verdict = 'FAIL'; $motiv = "așteptat 200 sau 422, primit $($xml.Status)" }
+        $script:Rezultate.Add([pscustomobject]@{
+                Nr         = $script:Numar
+                Cerere     = "``GET $caleXml``"
+                User       = 'Admin'
+                Asteptat   = '200 XML sau 422 DECLARATIE_* (raportat, nu impus)'
+                Primit     = "$($xml.Status) $(($xml.ContentType -split ';')[0])"
+                Corp       = Scurt $xml.Corp
+                Ms         = $xml.Ms
+                Verdict    = $verdict
+                Motive     = $motiv
+                CorpIntreg = $xml.Corp
+            })
+    }
+    Proba -Cerere 'fișier d300 cu temei invalid' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/proiectii/d300/xml?dataStart=2026-05-01&dataEnd=2026-05-31&temei=1' -Contine 'temei' | Out-Null
+
     # ── Ușa NTC pe un id de ITV (review 80 M1) ─────────────────────────────
     # Sub TPT `GetObjectByKey<NotaContabila>` găsește și închiderea; felia NTC o
     # EXCLUDE la citire (79c), deci gate-ul o exclude și el (`PeUsaNtc`): 404 pe

@@ -1,4 +1,5 @@
 import { DepunereDeclaratie } from './DepunereDeclaratie';
+import { DescarcaDeclaratie } from './DescarcaDeclaratie';
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -24,8 +25,7 @@ import { BandaRectificativa } from './BandaRectificativa';
 // control); (3) panoul „Neincluse în declarație" — nimic nu se pierde (D4-D4);
 // (4) avertismentele (D4-D5) — ce cere formularul și modelul nu are.
 //
-// Ce NU e: fișierul XML (35c). Cifrele sunt bani exacți; rotunjirea la leu e a
-// fișierului.
+// Cifrele sunt bani exacți; rotunjirea la leu e a fișierului XML, descărcat prin `DescarcaDeclaratie`.
 type D394Dto = components['schemas']['D394Dto'];
 type Operatiune = components['schemas']['D394Operatiune'];
 type Rezumat = components['schemas']['D394Rezumat'];
@@ -51,12 +51,19 @@ function cartus(tip: number): string {
   return c ? `${c.litera} — ${c.denumire}` : `Tip partener ${tip}`;
 }
 
+const BIFE_D394 = [
+  { cheie: 'persoaneAfiliate', eticheta: 'Operațiuni cu persoane afiliate' },
+  { cheie: 'schimbOptiune', eticheta: 'Schimb opțiunea de consultare (NU → DA)' },
+] as const;
+
 export function D394() {
   const luna = lunaCurenta();
   // Perioada e OBLIGATORIE pe server (400 fără ea): perioada E declarația.
   // Implicitul lunii curente e ca prima deschidere să arate ceva; se vede în
   // bară și în URL.
-  const [stare, seteaza] = useUrlStare({ dataStart: luna.start, dataEnd: luna.sfarsit });
+  const [stare, seteaza] = useUrlStare({
+    dataStart: luna.start, dataEnd: luna.sfarsit, persoaneAfiliate: '0', schimbOptiune: '0',
+  });
 
   const cale = urlCu('/api/proiectii/d394', { dataStart: stare.dataStart, dataEnd: stare.dataEnd });
   // Aceeași cale de citire ca D300: `useQuery` + `ia` (JWT, 401 → sesiune
@@ -85,6 +92,20 @@ export function D394() {
         )}
       </div>
 
+      <DescarcaDeclaratie
+        formular="D394"
+        cale={urlCu('/api/proiectii/d394/xml', {
+          dataStart: stare.dataStart,
+          dataEnd: stare.dataEnd,
+          persoaneAfiliate: String(stare.persoaneAfiliate === '1'),
+          schimbOptiune: String(stare.schimbOptiune === '1'),
+        })}
+        refuzuri={citit.data?.RefuzuriXml ?? []}
+        incarcat={!!citit.data}
+        bife={BIFE_D394}
+        valori={stare}
+        seteaza={seteaza}
+      />
       <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D394" exportat={citit.data} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
       <PanouErori erori={citit.error ? eroriDin(citit.error) : []} titlu="Cererea a fost refuzată" />
       <Avertismente lista={avertismente} />
@@ -203,8 +224,7 @@ export function D394() {
         formularului 394 (OPANAF 3769/2015, modificat prin OPANAF 2194/2025): tipul de operațiune
         din politica <em>MapareD394</em>, tipul de partener din identitatea fiscală a partenerului,
         numărul de facturi 1/0 per document pe cota cu TVA-ul maxim. Sumele sunt exacte (în bani);
-        rotunjirea la leu întreg, detaliul pe categorii de bunuri, bonurile fiscale și fișierul XML
-        sunt altă unealtă.
+        fișierul XML se descarcă în lei întregi, pe schema ANAF v5, fără bonurile fiscale (AMEF).
       </p>
     </div>
   );

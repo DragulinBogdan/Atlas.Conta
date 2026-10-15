@@ -72,6 +72,15 @@ pe o lună redeschisă după prima declarare, conținutul e deja calculat, dar
 devine rectificativă abia la re-închidere, iar banda din client o spune.
 (F27-D5, 80a, review advers F27, 2')
 
+D300 și D394 au butonul „Descarcă XML”, cu bifele datelor de perioadă
+(D300: temeiul, rambursarea, cele patru bife de taxare inversă internă; D394:
+persoanele afiliate, schimbarea opțiunii), ținute în URL. Butonul stă inactiv
+cât `RefuzuriXml` are cauze, iar cauzele apar într-un panou; refuzul cererii
+(403, 422) apare în același loc. Confirmarea depunerii folosește amprenta
+faptelor, aceeași în JSON și în fișier. Câmpurile antetului se culeg în XAF,
+pe societate, iar plajele de facturi și categoria de bunuri pe nomenclatoarele
+lor. (E2-D8)
+
 ## Selectoare, căutare și cache
 
 Căutarea uzuală folosește o coloană calculată și stocată în PostgreSQL,
