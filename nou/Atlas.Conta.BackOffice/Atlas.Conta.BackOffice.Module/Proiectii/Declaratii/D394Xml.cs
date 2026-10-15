@@ -17,16 +17,18 @@ public static class D394Xml {
 
     static readonly int[] CoteInformatii = [24, 21, 11, 20, 19, 9, 5];
 
-    public static FisierDeclaratie Genereaza(IObjectSpace os, DateOnly inceput, DateOnly sfarsit, ParametriXmlD394 parametri) {
+    public static FisierDeclaratie Genereaza(IObjectSpace os, DateOnly inceput, DateOnly sfarsit, ParametriXmlD394 parametri,
+            AntetDeclaratie antet = null) {
         parametri ??= new ParametriXmlD394();
-        var dto = D394Proiectii.D394(os, inceput, sfarsit, lei: true);
+        antet ??= AntetDeclaratie.Citeste(os);
+        var dto = D394Proiectii.D394(os, inceput, sfarsit, lei: true, antet);
         var fisier = new FisierDeclaratie {
-            VersiuneExportata = dto.VersiuneExportata, Parametri = FisiereDeclaratii.Serializeaza(parametri),
+            VersiuneExportata = dto.VersiuneExportata,
+            Parametri = FisiereDeclaratii.Serializeaza(new ParametriFisierD394(parametri, antet)),
         };
         fisier.Refuzuri.AddRange(dto.RefuzuriXml);
         if (fisier.Refuzuri.Count > 0)
             return fisier;
-        var antet = AntetDeclaratie.Citeste(os);
         var perioada = PerioadaDeclarata.Din(inceput, sfarsit, antet.Periodicitate, out _);
         XNamespace ns = FormulareAnaf.D394v5.SpatiuNume;
         var efectuate = dto.Operatiuni.Count > 0;

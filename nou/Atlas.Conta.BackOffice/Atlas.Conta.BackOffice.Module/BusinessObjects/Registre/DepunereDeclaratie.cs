@@ -25,4 +25,12 @@ public class DepunereDeclaratie : RandRegistru, IVerificabilLaCommit {
     public virtual string Sha256Fisier { get; set; }
     [XafDisplayName("Parametrii fișierului")]
     public virtual string ParametriFisier { get; set; }
+    [XafDisplayName("Înlocuiește")]
+    public virtual Guid? Inlocuieste { get; set; }
+    [XafDisplayName("Retrasă la")]
+    public virtual DateTime? RetrasaLa { get; set; }
+    [XafDisplayName("Retrasă de")]
+    public virtual string RetrasaDe { get; set; }
+    [XafDisplayName("Motivul retragerii")]
+    public virtual string MotivRetragere { get; set; }
 }

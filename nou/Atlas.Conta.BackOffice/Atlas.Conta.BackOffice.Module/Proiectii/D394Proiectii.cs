@@ -159,7 +159,8 @@ public static partial class D394Proiectii {
     }
 
     /// <summary>Declarația perioadei; `lei` rotunjește rândurile înaintea rezumatelor (E2-D3).</summary>
-    public static D394Dto D394(IObjectSpace os, DateOnly dataStart, DateOnly dataEnd, bool lei = false) {
+    public static D394Dto D394(IObjectSpace os, DateOnly dataStart, DateOnly dataEnd, bool lei = false,
+            AntetDeclaratie antet = null) {
         using var citire = Fiscale.DeschideCitirea(os);
         var rezultat = new D394Dto { VersiuneExportata = Fiscale.Versiune(os, FormularFiscal.D394, dataStart, dataEnd) };
 
@@ -478,7 +479,7 @@ public static partial class D394Proiectii {
             rezultat.DiferenteDeclarat = rectificativa.Agregat;
         }
         Facturi(os, rezultat, dataStart, dataEnd);
-        rezultat.RefuzuriXml.AddRange(D394Xml.Refuzuri(AntetDeclaratie.Citeste(os), dataStart, dataEnd, rezultat));
+        rezultat.RefuzuriXml.AddRange(D394Xml.Refuzuri(antet ?? AntetDeclaratie.Citeste(os), dataStart, dataEnd, rezultat));
         return rezultat;
     }
 }

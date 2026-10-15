@@ -13,6 +13,7 @@ export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, fis
   reincarca: () => Promise<{ data?: { VersiuneExportata?: string | null }; error: Error | null }>;
 }) {
   const [versiune, setVersiune] = useState('');
+  const [motiv, setMotiv] = useState('');
   const cache = useQueryClient();
   const luna = dataStart.slice(0, 7);
   const lunaExacta = dataStart.endsWith('-01') && dataEnd.slice(0, 7) === luna
@@ -24,6 +25,13 @@ export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, fis
   const confirma = useMutation({ mutationFn: () => posteaza(ruta, deConfirmat),
     onSuccess: async () => {
       setVersiune('');
+      await cache.invalidateQueries({ queryKey: ['depunere'] });
+      await cache.invalidateQueries({ queryKey: [formular.toLowerCase()] });
+    } });
+  const retrage = useMutation({
+    mutationFn: () => posteaza(`${ruta}/retragere`, { VersiuneExportata: citit.data?.VersiuneExportata, Motiv: motiv }),
+    onSuccess: async () => {
+      setMotiv('');
       await cache.invalidateQueries({ queryKey: ['depunere'] });
       await cache.invalidateQueries({ queryKey: [formular.toLowerCase()] });
     } });
@@ -45,6 +53,15 @@ export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, fis
       ? `Depunere confirmată: ${citit.data.VersiuneExportata}, ${new Date(citit.data.ConfirmataLa).toLocaleString('ro-RO')}`
         + (citit.data.Sha256Fisier ? `, fișierul XML ${citit.data.Sha256Fisier.slice(0, 12)}….` : ', fără fișier XML.')
       : 'Depunerea nu este confirmată. Închiderea contabilă nu confirmă depunerea declarației.'}</p>
+    {citit.data.PoateConfirma && citit.data.ConfirmataLa && <form onSubmit={e => { e.preventDefault(); retrage.mutate(); }}>
+      <label className="bara-raport__camp">
+        <span className="camp__eticheta">Motivul retragerii</span>
+        <input value={motiv} onChange={e => setMotiv(e.target.value)} />
+      </label>{' '}
+      <button type="submit" className="buton" disabled={retrage.isPending || !motiv.trim()}>
+        Retrage confirmarea {formular}
+      </button>
+    </form>}
     {citit.data.PoateConfirma && <form onSubmit={e => { e.preventDefault(); confirma.mutate(); }}>
       <button type="button" className="buton" onClick={() => exporta.mutate()} disabled={exporta.isPending || !exportat?.VersiuneExportata}>
         Exportă datele {formular} (JSON)
@@ -59,5 +76,6 @@ export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, fis
     </form>}
     <PanouErori erori={exporta.error ? eroriDin(exporta.error) : []} />
     <PanouErori erori={confirma.error ? eroriDin(confirma.error) : []} />
+    <PanouErori erori={retrage.error ? eroriDin(retrage.error) : []} />
   </div>;
 }

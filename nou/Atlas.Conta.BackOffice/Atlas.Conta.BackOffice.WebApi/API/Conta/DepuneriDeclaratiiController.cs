@@ -16,6 +16,11 @@ public sealed class ConfirmaDepunereDto {
     public string ParametriFisier { get; set; }
 }
 
+public sealed class RetrageDepunereDto {
+    public string VersiuneExportata { get; set; }
+    public string Motiv { get; set; }
+}
+
 public sealed class DepunereDeclaratieDto {
     public string VersiuneExportata { get; set; }
     public DateTime? ConfirmataLa { get; set; }
@@ -42,7 +47,7 @@ public class DepuneriDeclaratiiController(IObjectSpaceFactory secured,
             .Select(p => (Guid?)p.ID).SingleOrDefault();
         if (id == null) return Invizibil();
         var perioada = an * 100 + luna;
-        var dto = os.GetObjectsQuery<DepunereDeclaratie>().Where(d => d.Formular == tip && d.Perioada == perioada)
+        var dto = FiscalitateService.Active(os).Where(d => d.Formular == tip && d.Perioada == perioada)
             .OrderByDescending(d => d.ConfirmataLa).Select(d => new DepunereDeclaratieDto {
                 VersiuneExportata = d.VersiuneExportata, ConfirmataLa = d.ConfirmataLa, ConfirmataDe = d.ConfirmataDe,
                 Sha256Fisier = d.Sha256Fisier, ParametriFisier = d.ParametriFisier,
@@ -81,6 +86,31 @@ public class DepuneriDeclaratiiController(IObjectSpaceFactory secured,
             using var os = NonSecured(typeof(DepunereDeclaratie));
             return Ok(FiscalitateService.ConfirmaDepunerea(os, tip, an, luna,
                 cerere.VersiuneExportata.Trim(), utilizator, sha, parametri));
+        });
+    }
+
+    [HttpPost("{formular}/{an:int}/{luna:int}/retragere")]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult Retrage(string formular, int an, int luna, [FromBody] RetrageDepunereDto cerere) {
+        if (!Enum.TryParse<FormularFiscal>(formular, out var tip) || !Enum.IsDefined(tip)
+                || an < 2000 || an > 2100 || luna < 1 || luna > 12
+                || string.IsNullOrWhiteSpace(cerere?.VersiuneExportata) || string.IsNullOrWhiteSpace(cerere.Motiv))
+            return BadRequest(EroriDto.Din(["Formularul, perioada, versiunea și motivul retragerii sunt obligatorii."]));
+        Guid? id;
+        using (var os = Secured(typeof(PerioadaFiscala)))
+            id = os.GetObjectsQuery<PerioadaFiscala>()
+                .Where(p => p.An == an && p.Luna == luna).Select(p => (Guid?)p.ID).SingleOrDefault();
+        if (id == null) return Invizibil();
+        var refuz = Autorizeaza<PerioadaFiscala>(id.Value, OperatieAcces.Modificare);
+        if (refuz != null) return refuz;
+        return Domeniu(() => {
+            using var os = NonSecured(typeof(DepunereDeclaratie));
+            return Ok(FiscalitateService.RetrageDepunerea(os, tip, an, luna,
+                cerere.VersiuneExportata.Trim(), cerere.Motiv, utilizator));
         });
     }
 

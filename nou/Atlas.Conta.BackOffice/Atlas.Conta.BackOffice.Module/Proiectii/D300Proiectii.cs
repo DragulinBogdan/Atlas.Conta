@@ -75,7 +75,7 @@ public static class D300Proiectii {
 
     /// <summary>Decontul perioadei; `lei` rotunjește rândurile de operațiuni înaintea totalurilor (E2-D3).</summary>
     public static D300Dto D300(IObjectSpace os, DateOnly dataStart, DateOnly dataEnd,
-        ParametriD300 externi, bool lei = false) {
+        ParametriD300 externi, bool lei = false, AntetDeclaratie antet = null) {
         externi ??= new ParametriD300();
         using var citire = Fiscale.DeschideCitirea(os);
         var rezultat = new D300Dto { VersiuneExportata = Fiscale.Versiune(os, FormularFiscal.D300, dataStart, dataEnd) };
@@ -291,7 +291,7 @@ public static class D300Proiectii {
         if (TvaProiectii.LunaExacta(dataStart, dataEnd) is (int anDeclarat, int lunaDeclarata))
             rezultat.PerioadaDeschisa = os.GetObjectsQuery<PerioadaFiscala>()
                 .Any(p => p.An == anDeclarat && p.Luna == lunaDeclarata && !p.Inchisa);
-        rezultat.RefuzuriXml.AddRange(D300Xml.Refuzuri(AntetDeclaratie.Citeste(os), dataStart, dataEnd, rezultat));
+        rezultat.RefuzuriXml.AddRange(D300Xml.Refuzuri(antet ?? AntetDeclaratie.Citeste(os), dataStart, dataEnd, rezultat));
         return rezultat;
     }
 

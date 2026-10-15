@@ -42,11 +42,11 @@ sealed partial class ScenariiDecl {
             CuSpatiu(os => FisiereDeclaratii.Verifica(os, FormularFiscal.D394, An, 12, fisier.Sha256, fisier.Parametri)).Count == 0);
         Verifica("SC-DECL-14", "alți parametri dau alt fișier",
             CuSpatiu(os => FisiereDeclaratii.Verifica(os, FormularFiscal.D394, An, 12, fisier.Sha256,
-                FisiereDeclaratii.Serializeaza(new ParametriXmlD394()))) is [var diferit] && diferit.StartsWith("DEPUNERE_FISIER_DIFERIT"));
+                FisiereDeclaratii.Serializeaza(new ParametriFisierD394(new ParametriXmlD394(), Antet0())))) is [var diferit]
+                && diferit.StartsWith("DEPUNERE_FISIER_DIFERIT"));
         Antet(s => s.Telefon = "0268111111");
-        Verifica("SC-DECL-14", "antetul schimbat după export: fișierul refăcut diferă",
-            CuSpatiu(os => FisiereDeclaratii.Verifica(os, FormularFiscal.D394, An, 12, fisier.Sha256, fisier.Parametri))
-                is [var antet] && antet.StartsWith("DEPUNERE_FISIER_DIFERIT"));
+        Verifica("SC-DECL-14", "antetul schimbat după export: fișierul se reface din antetul exportului, cu aceeași amprentă",
+            CuSpatiu(os => FisiereDeclaratii.Verifica(os, FormularFiscal.D394, An, 12, fisier.Sha256, fisier.Parametri)).Count == 0);
         Antet();
         Verifica("SC-DECL-14", "amprenta fără parametri e refuzată la confirmare",
             Refuzat(() => Comanda(os => FiscalitateService.ConfirmaDepunerea(os, FormularFiscal.D394, An, 12,
@@ -58,9 +58,32 @@ sealed partial class ScenariiDecl {
                 .Where(d => d.Formular == FormularFiscal.D394 && d.Perioada == An * 100 + 12)
                 .Select(d => new { d.Sha256Fisier, d.ParametriFisier }).ToList())
                 is [var d] && d.Sha256Fisier == fisier.Sha256 && d.ParametriFisier == fisier.Parametri);
-        Verifica("SC-DECL-14", "aceeași versiune confirmată fără fișier după confirmarea cu fișier: refuz explicit",
-            Refuzat(() => Comanda(os => FiscalitateService.ConfirmaDepunerea(os, FormularFiscal.D394, An, 12,
-                fisier.VersiuneExportata, Marcaj)), "DEPUNERE_CONFIRMATA"));
+        var cuFisier = CuSpatiu(os => FiscalitateService.Active(os).Single(d => d.Perioada == An * 100 + 12).ID);
+        Verifica("SC-DECL-14", "aceeași cerere confirmată din nou e idempotentă",
+            CuSpatiu(os => FiscalitateService.ConfirmaDepunerea(os, FormularFiscal.D394, An, 12,
+                fisier.VersiuneExportata, Marcaj, fisier.Sha256, fisier.Parametri)) == cuFisier);
+        var faraFisier = CuSpatiu(os => FiscalitateService.ConfirmaDepunerea(os, FormularFiscal.D394, An, 12,
+            fisier.VersiuneExportata, Marcaj));
+        Verifica("SC-DECL-15", "reconfirmarea aceleiași versiuni fără fișier o înlocuiește pe cea cu fișier, care rămâne retrasă în istoric",
+            CuSpatiu(os => os.GetObjectsQuery<DepunereDeclaratie>().Where(d => d.Perioada == An * 100 + 12)
+                .Select(d => new { d.ID, d.RetrasaLa, d.Inlocuieste, d.Sha256Fisier }).ToList()) is var toate
+            && toate.Count == 2
+            && toate.Single(d => d.ID == cuFisier) is { RetrasaLa: not null }
+            && toate.Single(d => d.ID == faraFisier) is { RetrasaLa: null, Sha256Fisier: null } nou && nou.Inlocuieste == cuFisier);
+        var atasat = CuSpatiu(os => FiscalitateService.ConfirmaDepunerea(os, FormularFiscal.D394, An, 12,
+            fisier.VersiuneExportata, Marcaj, fisier.Sha256, fisier.Parametri));
+        Verifica("SC-DECL-15", "fișierul se atașează ulterior prin reconfirmare", atasat != faraFisier
+            && CuSpatiu(os => FiscalitateService.Active(os).Where(d => d.Perioada == An * 100 + 12)
+                .Select(d => d.Sha256Fisier).ToList()) is [var sha] && sha == fisier.Sha256);
+        Verifica("SC-DECL-15", "retragerea fără motiv e refuzată",
+            Refuzat(() => Comanda(os => FiscalitateService.RetrageDepunerea(os, FormularFiscal.D394, An, 12,
+                fisier.VersiuneExportata, " ", Marcaj)), "DEPUNERE_DATE"));
+        Comanda(os => FiscalitateService.RetrageDepunerea(os, FormularFiscal.D394, An, 12,
+            fisier.VersiuneExportata, "confirmată din greșeală", Marcaj));
+        Verifica("SC-DECL-15", "D394 retrasă: luna nu mai e depusă, iar retragerea a doua oară e refuzată",
+            !CuSpatiu(os => FiscalitateService.EsteDepusa(os, FormularFiscal.D394, An * 100 + 12))
+            && Refuzat(() => Comanda(os => FiscalitateService.RetrageDepunerea(os, FormularFiscal.D394, An, 12,
+                fisier.VersiuneExportata, "din nou", Marcaj)), "DEPUNERE_NECONFIRMATA"));
 
         var (ianuarie, ianuarieSfarsit) = Perioada(1);
         var d300 = CuSpatiu(os => D300Xml.Genereaza(os, ianuarie, ianuarieSfarsit,
@@ -69,6 +92,8 @@ sealed partial class ScenariiDecl {
             d300.Continut != null
             && CuSpatiu(os => FisiereDeclaratii.Verifica(os, FormularFiscal.D300, An, 1, d300.Sha256, d300.Parametri)).Count == 0);
     }
+
+    AntetDeclaratie Antet0() => CuSpatiu(AntetDeclaratie.Citeste);
 
     static bool Refuzat(Action actiune, string cod) {
         try { actiune(); return false; }

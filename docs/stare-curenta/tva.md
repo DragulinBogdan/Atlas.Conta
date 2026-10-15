@@ -220,17 +220,27 @@ certifică faptele cubului, nu antetul sau parametrii. (103d)
 
 Fișierul XML se identifică separat. Exportul lui întoarce, lângă
 `X-Versiune-Exportata`, SHA-256 al fișierului (`X-Sha256-Fisier`) și
-parametrii din care se reface (`X-Parametri-Fisier`: externii și datele de
-perioadă D300, datele de perioadă D394). Confirmarea primește amprenta și
-parametrii împreună (altfel 400), reface fișierul lunii pe ușa exportului, cu
-aceleași citiri, și îl compară byte cu byte prin amprentă. Un antet schimbat
-sau alți parametri dau `DEPUNERE_FISIER_DIFERIT` (422); potrivirea păstrează
-amprenta și parametrii pe `DepunereDeclaratie`. Fără fișier (declarația
-depusă din alt program), confirmarea rămâne pe versiunea exportului JSON. O
-versiune se confirmă o singură dată: aceeași cerere e idempotentă, iar o
-cerere cu alt fișier ori fără fișier după una cu fișier primește
-`DEPUNERE_CONFIRMATA`. Trimestrul nu are amprentă, deci nici confirmare
-(E2-r1). (122 i)
+parametrii din care se reface (`X-Parametri-Fisier`: externii D300, datele de
+perioadă și antetul societății de la export). Confirmarea primește amprenta și
+parametrii împreună (altfel 400), reface fișierul lunii din faptele cubului și
+din acești parametri, pe ușa exportului și cu aceleași citiri, și îl compară
+prin amprentă. Antetul schimbat după export nu contează; alți parametri dau
+`DEPUNERE_FISIER_DIFERIT` (422). Potrivirea păstrează amprenta și parametrii
+pe `DepunereDeclaratie`. Fără fișier (declarația depusă din alt program),
+confirmarea rămâne pe versiunea exportului JSON. Trimestrul nu are amprentă,
+deci nici confirmare (E2-r1). (122 i)
+
+O versiune are cel mult o confirmare activă (indexul unic e parțial, pe
+`RetrasaLa` nul). Aceeași cerere e idempotentă; reconfirmarea versiunii cu
+alt fișier sau fără fișier retrage confirmarea activă cu motivul înlocuirii
+și o leagă de cea nouă (`Inlocuieste`). Confirmarea se retrage cu motiv
+obligatoriu (`RetrasaLa`, `RetrasaDe`, `MotivRetragere`), fără ștergere. Pe
+D300, retragerea e refuzată cu `DEPUNERE_REGULARIZARI` cât luna nu mai are
+altă confirmare activă și are fapte cu `RegularizareD300` a căror
+exigibilitate sau înregistrare cade în ea: regularizarea s-a decis pe
+confirmare, deci se corectează întâi ea, prin inversă. Pe D394 retragerea e
+liberă. Regularizarea, refuzul anulării faptelor declarate și reperul
+rectificativei D394 citesc numai confirmările active. (122 i)
 
 `DepunereDeclaratie` păstrează momentul, utilizatorul și, când există, fișierul, fără sume fiscale
 paralele; nu se editează prin CRUD generic. Aceeași confirmare este
@@ -242,11 +252,13 @@ depunerii efectuate de utilizator, nu transmitere către ANAF. (103d)
 
 `GET/POST /api/depuneri-declaratii/{formular}/{an}/{luna}` citește sau
 confirmă depunerea. POST cere versiunea exportată, drept de scriere și
-perioadă vizibilă; cu fișier cere și citirile ușii XML. Refuzurile au
-400/403/404/422. OData expune istoricul numai pentru citire. D300/D394 oferă
+perioadă vizibilă; cu fișier cere și citirile ușii XML.
+`POST …/{luna}/retragere` cere versiunea și motivul, cu aceleași drepturi.
+Refuzurile au 400/403/404/422. OData expune istoricul numai pentru citire. D300/D394 oferă
 confirmarea pentru o singură lună: după descărcarea XML confirmă fișierul
 descărcat, altfel versiunea exportului JSON; ecranul arată versiunea,
-momentul și începutul amprentei fișierului. (103d, 122 i)
+momentul și începutul amprentei fișierului, iar confirmarea activă se
+retrage cu motiv din același loc. (103d, 122 i)
 
 ## Închiderea lunară TVA
 

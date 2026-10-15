@@ -451,7 +451,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.HasDbFunction(typeof(Cub.Citiri.Partide).GetMethod(nameof(Cub.Citiri.Partide.Identitate)))
                 .HasName("cub_partida_id");
             modelBuilder.Entity<DepunereDeclaratie>()
-                .HasIndex(d => new { d.Formular, d.Perioada, d.VersiuneExportata }).IsUnique();
+                .HasIndex(d => new { d.Formular, d.Perioada, d.VersiuneExportata }).IsUnique()
+                .HasFilter("\"RetrasaLa\" IS NULL");
             AplicaCub(modelBuilder);
             AplicaScaraNumerica(modelBuilder);
             AplicaColoanePartajate(modelBuilder);

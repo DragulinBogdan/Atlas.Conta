@@ -79,7 +79,8 @@ cât `RefuzuriXml` are cauze, iar cauzele apar într-un panou; refuzul cererii
 (403, 422) apare în același loc. Pe lună, după descărcarea XML, confirmarea
 depunerii trimite amprenta fișierului și parametrii lui, iar ecranul arată
 începutul amprentei; fără XML, confirmarea folosește versiunea exportului
-JSON. Pe trimestru nu există amprentă (E2-r1). D394 arată lângă buton tabelul
+JSON. Confirmarea activă se retrage cu motiv, din același panou. Pe
+trimestru nu există amprentă (E2-r1). D394 arată lângă buton tabelul
 „Rotunjirea pe partener față de D300”, pe tip × cotă, când diferența nu e
 zero. (122 b, 122 i) Câmpurile antetului se culeg în XAF,
 pe societate, iar plajele de facturi și categoria de bunuri pe nomenclatoarele

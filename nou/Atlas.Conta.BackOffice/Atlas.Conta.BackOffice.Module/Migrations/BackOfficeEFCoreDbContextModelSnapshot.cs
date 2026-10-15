@@ -353,11 +353,23 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("Formular")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("Inlocuieste")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MotivRetragere")
+                        .HasColumnType("text");
+
                     b.Property<string>("ParametriFisier")
                         .HasColumnType("text");
 
                     b.Property<int>("Perioada")
                         .HasColumnType("integer");
+
+                    b.Property<string>("RetrasaDe")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("RetrasaLa")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Sha256Fisier")
                         .HasMaxLength(64)
@@ -369,7 +381,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasKey("ID");
 
                     b.HasIndex("Formular", "Perioada", "VersiuneExportata")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"RetrasaLa\" IS NULL");
 
                     b.ToTable("DepuneriDeclaratii");
                 });

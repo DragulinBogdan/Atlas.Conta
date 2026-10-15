@@ -319,19 +319,21 @@ Owner-ul a trecut prin decizie după pasul 5 și a hotărât:
 | fișierul confirmat | amprenta și parametrii fișierului se păstrează la confirmare, în E2; serverul reface fișierul și refuză altă amprentă | 122 i, migrația `FisierDepunere`, SC-DECL-14 |
 | refuzul pe date invizibile | 403 pe tipul fără citire, 422 pe factura ascunsă pe obiect | 122 c |
 | oracolul | „fără atenționări” e regula catalogului, nu a exportului | 122 h, E2-D9 |
+| antetul fișierului | intră în parametri, ca fișierul depus să rămână reproductibil după schimbarea datelor societății | 122 i |
+| confirmarea greșită | reconfirmarea aceleiași versiuni înlocuiește confirmarea activă; retragerea cu motiv, refuzată pe D300 cât regularizările se sprijină pe ea | 122 i, migrația `RetragereDepunere`, SC-DECL-15, SC-CIT-84 |
 
-Verificare: `--scenarii DECL` verde pe ambele profiluri
-(`run-verificari/20261015-200648-030`); calea HTTP pe baza E2P4
+Verificare: `--scenarii DECL,FISCALE` verde pe ambele profiluri
+(`run-verificari/20261015-211428-473`); calea HTTP pe baza E2P4
 (`run-verificari/e2-122-depunere.ps1`): pe D300 și D394, amprenta din antet
-e SHA-256 al corpului, amprenta fără parametri și parametrii stricați dau 400,
-antetul schimbat dă 422 `DEPUNERE_FISIER_DIFERIT`, confirmarea păstrează
-amprenta și parametrii, aceeași cerere e idempotentă, iar confirmarea fără
-fișier după cea cu fișier dă 422 `DEPUNERE_CONFIRMATA`.
-Integrala ModelCheck e verde pe ambele profiluri
-(`run-verificari/20261015-200934-057`). În browser (clientul pe baza E2P4,
-D394 mai 2026): după „Descarcă XML” ecranul arată începutul amprentei
-fișierului; confirmarea unui fișier cu alți parametri decât cel confirmat dă
-`DEPUNERE_CONFIRMATA`, iar fișierul cu aceeași bifă se confirmă idempotent.
+e SHA-256 al corpului, amprenta fără parametri, parametrii stricați și
+retragerea fără motiv dau 400, confirmarea după schimbarea telefonului
+societății trece, confirmarea păstrează amprenta și parametrii, reconfirmarea
+fără fișier înlocuiește confirmarea, retragerea scoate luna din „confirmată”,
+iar reconfirmarea cu fișier o readuce. În browser (clientul pe baza E2P4):
+după „Descarcă XML” ecranul arată începutul amprentei fișierului; pe D300 mai
+2026 butonul de retragere stă inactiv fără motiv, retragerea cu motiv lasă
+luna neconfirmată, iar descărcarea și confirmarea XML o confirmă din nou.
+Integrala ModelCheck e verde pe ambele profiluri (`run-verificari/20261015-211740-457`).
 Tabelul diferențelor de rotunjire e probat pe DTO (SC-DECL-13); luna din
 E2P4 nu are diferențe, deci tabelul nu s-a randat în browser.
 

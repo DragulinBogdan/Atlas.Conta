@@ -27,7 +27,7 @@
 
 (h) **Oracolul extern.** Fiecare formă de fișier din catalogul de scenarii se probează pe XSD-ul oficial și pe DUKIntegrator cu validatorul oficial, pe kit pin-uit prin SHA-256, fără erori și fără atenționări. În produs, atenționările formularului nu opresc fișierul; se arată lângă buton.
 
-(i) **Fișierul confirmat.** Exportul XML își dă amprenta (SHA-256) și parametrii din care se reface. Confirmarea care le primește reface fișierul pe ușa exportului și păstrează amprenta și parametrii numai când coincid; altfel refuză. O versiune de fapte se confirmă o singură dată, cu fișierul ei sau fără fișier, când declarația s-a depus din alt program.
+(i) **Fișierul confirmat.** Exportul XML își dă amprenta (SHA-256) și parametrii din care se reface: datele de perioadă și antetul societății de la export. Confirmarea care le primește reface fișierul din faptele cubului și din acești parametri și păstrează amprenta și parametrii numai când coincid; altfel refuză. Fără fișier, când declarația s-a depus din alt program, confirmarea rămâne pe amprenta faptelor. O versiune de fapte are cel mult o confirmare activă: reconfirmarea ei cu alt fișier sau fără fișier o înlocuiește, iar cea veche rămâne în istoric, retrasă. O confirmare se retrage cu motiv, fără ștergere; pe D300, retragerea e refuzată cât luna nu mai are altă confirmare activă și are fapte atribuite ca regularizare fiindcă era depusă.
 
 ## Context
 
@@ -43,7 +43,9 @@ T2 cere ca decontul, D394 și SAF-T să treacă validarea ANAF pe lunile de prob
 - Factura emisă se definește prin numărul propriu, nu prin excluderea stornoului. Stornoul e factură cu număr din plajă în practică; modelul nu i-l dă încă (E2-r4), iar regula nu se schimbă când îl primește (owner, la discuția deciziei).
 - Bunurile unui rând își împart rândul rotunjit prin Hamilton, regula de repartizare a nucleului, în locul restului pus pe bunul cel mai mare. Regula veche putea întoarce semnul: cinci bunuri de 0,60 pe un rând de 3 lei ieșeau −1, 1, 1, 1, 1 (SC-DECL-12) (owner).
 - Diferența de rotunjire dintre D394 și D300 se arată, nu se ascunde și nu blochează: validatorul nu compară cele două declarații, iar diferențele se raportează (principiul 21) (owner).
-- Confirmarea reface fișierul în loc să creadă amprenta trimisă de client: amprenta fără refacere ar certifica orice șir, iar refacerea prinde antetul schimbat între export și confirmare (owner a cerut amprenta și parametrii în E2, nu ca restanță).
+- Confirmarea reface fișierul în loc să creadă amprenta trimisă de client: amprenta fără refacere ar certifica orice șir (owner a cerut amprenta și parametrii în E2, nu ca restanță).
+- Antetul intră în parametrii fișierului, nu se recitește la confirmare: datele societății se pot schimba după depunere, iar fișierul depus trebuie să rămână reproductibil. Faptele rămân verificate prin amprentă. Jurnalul exporturilor, cu fișierul arhivat pe server, a fost respins: tabel nou și scriere la fiecare descărcare (owner).
+- Confirmarea greșită se corectează prin retragere cu motiv sau prin înlocuire, nu prin ștergere: rândul e evidență, ca orice registru. Garda pe D300 urmează regula corecției directe fără dependenți (14, 33d): regularizările s-au decis pe confirmare, deci se corectează întâi ele (owner, după semnalarea că regula „o confirmare, fără revenire” bloca tratarea erorilor).
 
 ## Review
 
@@ -57,3 +59,4 @@ E2-r1…E2-r6 în `restante.md`: amprenta și confirmarea pe trimestru, decontul
 
 - 2026-10-15: scrisă la închiderea etapei E2.
 - 2026-10-15: discuția cu owner-ul: (b) Hamilton pe bunuri și diferențele D394–D300 afișate, (c) 403 pe tip și 422 pe obiect, (f) pe numărul propriu, (h) delimitată la probă, (i) adăugat; SC-DECL-12…14.
+- 2026-10-15: (i) precizat: antetul în parametrii fișierului, înlocuirea confirmării aceleiași versiuni și retragerea cu motiv (gardă pe regularizările D300); SC-DECL-15, SC-CIT-84.

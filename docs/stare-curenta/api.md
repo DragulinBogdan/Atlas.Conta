@@ -254,7 +254,10 @@ iar SHA-256 al fișierului și parametrii lui în `X-Sha256-Fisier` și
 (`POST /api/depuneri-declaratii/{formular}/{an}/{luna}`) le primește înapoi în
 `Sha256Fisier` și `ParametriFisier`, numai împreună; parametrii fără forma
 exportului dau 400, iar fișierul refăcut diferit dă 422
-`DEPUNERE_FISIER_DIFERIT`. (E2-D8, 122 i)
+`DEPUNERE_FISIER_DIFERIT`. `POST …/{luna}/retragere` (`VersiuneExportata`,
+`Motiv`) retrage confirmarea activă; versiunea fără confirmare activă dă 422
+`DEPUNERE_NECONFIRMATA`, iar D300 cu regularizări sprijinite pe ea dă 422
+`DEPUNERE_REGULARIZARI`. (E2-D8, 122 i)
 
 ## Securitate și răspunsuri
 

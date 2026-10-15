@@ -220,7 +220,7 @@ public static class TvaProiectii {
             .Any(p => p.An == an && p.Luna == luna && !p.Inchisa);
         var codPerioada = an * 100 + luna;
         var reper = os.GetObjectsQuery<DepunereDeclaratie>()
-            .Where(d => d.Formular == FormularFiscal.D394 && d.Perioada == codPerioada)
+            .Where(d => d.Formular == FormularFiscal.D394 && d.Perioada == codPerioada && d.RetrasaLa == null)
             .Select(d => (DateTime?)d.ConfirmataLa).Max();
         rezultat.ConfirmataLa = reper;
         if (reper == null) return rezultat;

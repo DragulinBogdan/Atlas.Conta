@@ -41,18 +41,18 @@ public static class D300Xml {
         ["1", "2", "3", "3.1", "4", "5", "5.1", "6", "7", "7.1", "8", "20", "20.1", "21", "22", "22.1", "23", "29.1"];
 
     public static FisierDeclaratie Genereaza(IObjectSpace os, DateOnly inceput, DateOnly sfarsit,
-            ParametriD300 externi, ParametriXmlD300 parametri) {
+            ParametriD300 externi, ParametriXmlD300 parametri, AntetDeclaratie antet = null) {
         parametri ??= new ParametriXmlD300();
         externi ??= new ParametriD300();
-        var dto = D300Proiectii.D300(os, inceput, sfarsit, externi, lei: true);
+        antet ??= AntetDeclaratie.Citeste(os);
+        var dto = D300Proiectii.D300(os, inceput, sfarsit, externi, lei: true, antet);
         var fisier = new FisierDeclaratie {
             VersiuneExportata = dto.VersiuneExportata,
-            Parametri = FisiereDeclaratii.Serializeaza(new ParametriFisierD300(externi, parametri)),
+            Parametri = FisiereDeclaratii.Serializeaza(new ParametriFisierD300(externi, parametri, antet)),
         };
         fisier.Refuzuri.AddRange(dto.RefuzuriXml);
         if (fisier.Refuzuri.Count > 0)
             return fisier;
-        var antet = AntetDeclaratie.Citeste(os);
 
         var perioada = PerioadaDeclarata.Din(inceput, sfarsit, antet.Periodicitate, out _);
         var randuri = dto.Randuri.ToDictionary(r => r.Cod);

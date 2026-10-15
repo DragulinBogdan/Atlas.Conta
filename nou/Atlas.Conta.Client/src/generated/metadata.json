@@ -807,8 +807,12 @@
         "ConfirmataLa": "Confirmată la",
         "Formular": "Formular",
         "ID": "ID",
+        "Inlocuieste": "Înlocuiește",
+        "MotivRetragere": "Motivul retragerii",
         "ParametriFisier": "Parametrii fișierului",
         "Perioada": "Perioada",
+        "RetrasaDe": "Retrasă de",
+        "RetrasaLa": "Retrasă la",
         "Sha256Fisier": "SHA-256 fișier",
         "VersiuneExportata": "Versiune exportată"
       }

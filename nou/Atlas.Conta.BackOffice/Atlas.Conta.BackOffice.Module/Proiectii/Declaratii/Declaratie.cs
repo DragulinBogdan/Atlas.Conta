@@ -31,38 +31,42 @@ public sealed class FisierDeclaratie {
     public string Sha256 => Continut == null ? null : Convert.ToHexStringLower(SHA256.HashData(Continut));
 }
 
-/// <summary>Parametrii fișierului D300: externii decontului și datele de perioadă.</summary>
-public sealed record ParametriFisierD300(ParametriD300 Externi, ParametriXmlD300 Xml);
+/// <summary>Parametrii fișierului D300: externii decontului, datele de perioadă și antetul de la export.</summary>
+public sealed record ParametriFisierD300(ParametriD300 Externi, ParametriXmlD300 Xml, AntetDeclaratie Antet);
 
-/// <summary>Fișierul unei perioade refăcut din parametrii păstrați la export (122 i).</summary>
+/// <summary>Parametrii fișierului D394: datele de perioadă și antetul de la export.</summary>
+public sealed record ParametriFisierD394(ParametriXmlD394 Xml, AntetDeclaratie Antet);
+
+/// <summary>Fișierul unei perioade refăcut din faptele cubului și din parametrii păstrați la export (122 i).</summary>
 public static class FisiereDeclaratii {
+    static readonly JsonSerializerOptions Optiuni = new() { IncludeFields = true };
+
     public static Type[] Citite(FormularFiscal formular) => formular == FormularFiscal.D394
         ? [typeof(Cub.Postare), typeof(Societate), typeof(Document), typeof(PlajaFacturi)]
         : [typeof(Cub.Postare), typeof(Societate)];
 
-    public static string Serializeaza<T>(T parametri) => JsonSerializer.Serialize(parametri);
+    public static string Serializeaza<T>(T parametri) => JsonSerializer.Serialize(parametri, Optiuni);
 
     public static bool Valizi(FormularFiscal formular, string parametri) {
         try {
             return formular == FormularFiscal.D394
-                ? JsonSerializer.Deserialize<ParametriXmlD394>(parametri) != null
-                : JsonSerializer.Deserialize<ParametriFisierD300>(parametri) is { Externi: not null, Xml: not null };
+                ? JsonSerializer.Deserialize<ParametriFisierD394>(parametri, Optiuni) is { Xml: not null, Antet: not null }
+                : JsonSerializer.Deserialize<ParametriFisierD300>(parametri, Optiuni) is { Externi: not null, Xml: not null, Antet: not null };
         }
         catch (JsonException) {
             return false;
         }
     }
 
-    /// <exception cref="JsonException">Parametrii nu au forma formularului.</exception>
+    /// <summary>Parametrii trebuie să fi trecut de `Valizi`.</summary>
     public static FisierDeclaratie Regenereaza(IObjectSpace os, FormularFiscal formular,
             DateOnly inceput, DateOnly sfarsit, string parametri) {
-        if (formular == FormularFiscal.D394)
-            return D394Xml.Genereaza(os, inceput, sfarsit,
-                JsonSerializer.Deserialize<ParametriXmlD394>(parametri) ?? throw new JsonException("parametri nuli"));
-        var p = JsonSerializer.Deserialize<ParametriFisierD300>(parametri);
-        if (p?.Externi == null || p.Xml == null)
-            throw new JsonException("parametri D300 incompleți");
-        return D300Xml.Genereaza(os, inceput, sfarsit, p.Externi, p.Xml);
+        if (formular == FormularFiscal.D394) {
+            var d394 = JsonSerializer.Deserialize<ParametriFisierD394>(parametri, Optiuni);
+            return D394Xml.Genereaza(os, inceput, sfarsit, d394.Xml, d394.Antet);
+        }
+        var d300 = JsonSerializer.Deserialize<ParametriFisierD300>(parametri, Optiuni);
+        return D300Xml.Genereaza(os, inceput, sfarsit, d300.Externi, d300.Xml, d300.Antet);
     }
 
     /// <summary>Refuzurile lunii refăcute din parametri; o altă amprentă înseamnă alt fișier decât cel exportat.</summary>
@@ -72,8 +76,8 @@ public static class FisiereDeclaratii {
         if (fisier.Refuzuri.Count > 0)
             return [.. fisier.Refuzuri.Select(r => $"{r.Cod}: {r.Mesaj}")];
         return fisier.Sha256 == sha ? []
-            : ["DEPUNERE_FISIER_DIFERIT: fișierul refăcut din parametri diferă de cel exportat "
-                + "(antetul societății sau faptele s-au schimbat); exportați din nou înainte de confirmare."];
+            : ["DEPUNERE_FISIER_DIFERIT: fișierul refăcut din fapte și parametri diferă de cel exportat; "
+                + "exportați din nou înainte de confirmare."];
     }
 }
 
