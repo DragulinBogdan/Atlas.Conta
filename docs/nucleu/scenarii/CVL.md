@@ -116,10 +116,13 @@ cu diferență de cantitate pe privat, unde există politicile lor. Vânzarea
 către terț, recepția stornată și anul anterior sunt probate în nucleu.
 Reziduul preexistent nu are formă proprie: NIR-ul cu diferență și reziduul
 lăsat de retur la golire (SC-RLF-05) sunt postări pe lot în afara
-predicatului, deci același refuz. Pe lotul corectat activ, returul la
-furnizor (100 bucăți) și cel de la client dau `CV_DEPENDENTI` și lasă
-100/1.200; după stornarea corecției, returul a 20 trece la prețul lotului:
-80/800. NIR-ul conex retras după corecție și re-operat cu 98 sau 102 dă
+predicatului, deci același refuz. Pe lotul corectat activ, returul ia prețul
+ajustat. La furnizor, 20 de bucăți lasă 80/960, iar restul golește lotul la
+0/0. Cu TVA, linia și baza fiscală rămân 200, iar cota de 40 iese fără TVA,
+cu decizia ei auditată. De la client, 10 bucăți pe lotul parțial consumat
+dau 50/600. Cât returul e activ, storno-ul corecției dă `CV_DEPENDENTI`.
+După storno-ul returului și al corecției, returul a 20 trece la prețul
+lotului: 80/800. NIR-ul conex retras după corecție și re-operat cu 98 sau 102 dă
 `CV_DEPENDENTI`; cu 100 trece, 100/1.200 (privat). Linia de corecție cu alt
 tip decât produsul lotului dă `CV_STRUCTURA` (SC-CVL-18). Retragerea primei
 corecții cu a doua scrisă după ea dă `CV_DEPENDENTI`; retrase în ordine

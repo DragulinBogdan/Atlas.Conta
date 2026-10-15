@@ -472,10 +472,24 @@ activă, datată înaintea acelei rădăcini, dă `CV_CRONOLOGIE`.
 |---|---|
 | retragerea oricărui document | o postare a lui este ținta unui `Atribuit` de pe lot, activ sau nu |
 | retragerea corecției | documentul are mai mult de o tranzacție `Operare` |
-| retragerea sau stornarea corecției | lotul are o ieșire activă scrisă după prima `Operare` a corecției (R8-10) |
+| retragerea sau stornarea corecției | lotul are o ieșire activă scrisă după prima `Operare` a corecției (R8-10), ori un retur activ care a intrat pe lot la costul ajustat (pasul 5) |
 | stornarea recepției | lotul are o rădăcină activă |
 | retragerea corecției | lotul are o rădăcină a altei corecții, scrisă după prima `Operare` a acesteia (pasul 5) |
-| operarea unui document care valorizează mișcarea pe lot din linie sau din recepție, nu din sold (`IDeclarant.SursaValoareDeclarata`: retururile, NIR-ul) | lotul are o rădăcină activă (pasul 5) |
+| operarea unui document care valorizează mișcarea pe lot din recepție (`IDeclarant.SursaValoareDeclarata` = `Receptie`: NIR-ul conex re-operat cu diferență) | lotul are o rădăcină activă (pasul 5) |
+
+**Retururile** (owner, 2026-10-15). Pe un lot cu corecții active, returul
+ia prețul ajustat: q × prețul lotului plus cota q / cantitatea recepționată
+din valoarea încă activă a corecțiilor lotului, pe toate pozițiile lui,
+rotunjită la bani. La returul la furnizor linia rămâne baza fiscală
+(q × prețul lotului, cu TVA-ul ei), fiindcă corecția din acest pachet nu
+poartă TVA (CV-D1). Cota iese ca a doua mișcare a liniei, fără cantitate și
+fără fapt fiscal, pe aceeași partidă a furnizorului. `ValoareDeclarata`
+poartă cota în câmpul `Corectie`, iar explicația o arată lângă ieșire.
+Auditul cere ca postările fără cantitate ale liniei pe lot să fie exact
+cota. La returul de la client, linia de cost n-are identitate fiscală, deci
+ia direct prețul ajustat. Reziduul de rotunjire al returului parțial rămâne
+explicit, ca fără corecție (T-D6). Returul nu e beneficiar: după el lotul
+nu se mai corectează.
 
 Stingerile active ale partidei proprii rămân pe gardul existent al
 partidelor.
@@ -520,7 +534,7 @@ Valuta și unitatea de evaluare nu sunt condiții de intrare în acel pachet.
 | 2 | producător FCT și proveniența compensării | matrice, cititori, explicație și cronologie; SC-CVL-25…32 | fapte omise de cititori, storno antedatat, export incompatibil | închis 2026-10-14: apartenența compensării (R6, decizia 119); explicația și storno recepției (CV-D8, CV-D5); SAF-T restanță cu refuz (CV-D9); predicatele verificate contra codului și fixate (R8, CV-D10) |
 | 3 | mecanism pur, extensie FCT, operand, materializare și garduri | nucleu + SC-CVL prin comenzile reale, după fixarea perimetrului | dependenți valorici ignorați de gardul cantitativ | implementat 2026-10-14; scenariile CVL și integrala verzi pe ambele profiluri; resturile sunt în secțiunea de verificare |
 | 4 | cititori, snapshot, explicație, XAF și securitate afectată | scenarii, metadata, HTTP/UI unde sunt atinse | afișarea unui cost recalculat ca fapt istoric | implementat 2026-10-15; SC-CVL-01…18, 20…32 și integrala verzi pe ambele profiluri, proba XAF în browser; resturile sunt în secțiunea de verificare |
-| 5 | regresie și review de închidere | integrală pe ambele profiluri, docskit, review advers | extindere tacită la lanțuri neacoperite | închis 2026-10-15: SC-CVL-19 pe bază, refuzul mișcării valorizate de document pe lotul corectat, review advers fără MAJOR, constatările reparate; resturile sunt în secțiunea de verificare |
+| 5 | regresie și review de închidere | integrală pe ambele profiluri, docskit, review advers | extindere tacită la lanțuri neacoperite | închis 2026-10-15: SC-CVL-19 pe bază, returul la prețul ajustat pe lotul corectat, review advers fără MAJOR, constatările reparate; resturile sunt în secțiunea de verificare |
 
 Înaintea implementării se fixează un an liber propriu și sufixul bazelor.
 Rețeta de fixture este [BCS](scenarii/BCS.md): documente reale,
@@ -576,20 +590,27 @@ owner-ului, la 2026-10-13.
 SC-CVL-10…12) verzi pe ambele profiluri, integrala verde, gardurile
 cazurilor excluse probate pe bază, review advers închis. Pachetul nu închide
 TR-D9b, SC-X-09/13 sau costul vamal. Amendamentele pasului 5 (rândurile noi
-din CV-D10 și invariantul întărit din CV-D8) sunt refuzuri adăugate, nu
-relaxări; așteaptă confirmarea owner-ului la review-ul PR-ului.
+din CV-D10 și invariantul întărit din CV-D8) sunt refuzuri adăugate, cu o
+excepție: retururile pe lotul corectat nu se refuză, ci iau prețul ajustat
+(hotărârea owner-ului din 2026-10-15, cu TVA pe prețul facturii). Restul
+amendamentelor așteaptă confirmarea owner-ului la review-ul PR-ului.
 
 ### Verificarea pasului 5 — 2026-10-15
 
 Golul găsit înaintea review-ului: returul la furnizor și cel de la client
 își iau valoarea din linie, la prețul lotului, nu din sold. Pe lotul
 100/1.200 după CVL +200, returul celor 100 scotea 1.000 și lăsa 0/200 pe
-stocul gol, adică regula de oprire. Gardul e acum pe declarant
-(`IDeclarant.SursaValoareDeclarata`), nu pe numele tipului: pe un lot cu
-rădăcină activă, operarea unui document care valorizează mișcarea pe lot
-din linie sau din recepție dă `CV_DEPENDENTI` (rând nou în CV-D10). Același
-gard prinde NIR-ul conex retras după corecție și re-operat cu diferență
-(constatarea 1 a review-ului): 98 și 102 sunt refuzate, 100 trece.
+stocul gol, adică regula de oprire. Prima reparație a fost refuzul
+(`CV_DEPENDENTI`). Owner-ul a ales apoi returul la prețul ajustat, cu TVA pe
+prețul facturii (paragraful „Retururile” din CV-D10). Returul integral
+golește acum lotul la 0/0. Storno-ul corecției se refuză cât returul e
+activ, inclusiv returul de la client, care intră pe lot. Pentru acesta,
+stornarea lui nu mai trece prin ramura recepției din `LaStornare`, care l-ar
+fi refuzat: altfel nici returul, nici corecția nu s-ar mai fi putut storna.
+Refuzul a rămas pe declarantul care valorizează din recepție
+(`SursaValoareDeclarata` = `Receptie`). El prinde NIR-ul conex retras după
+corecție și re-operat cu diferență (constatarea 1 a review-ului): 98 și 102
+sunt refuzate, 100 trece.
 
 Review-ul advers (agent independent, numai citire, pe diff-ul pașilor 3–4
 contra CV-D1…CV-D10) n-a găsit nicio constatare MAJOR. Constatările și
@@ -597,7 +618,7 @@ dispoziția lor:
 
 | # | Severitate | Constatare | Dispoziție |
 |---|---|---|---|
-| 1 | MEDIU | NIR-ul conex retras după corecție se re-operează cu diferență, la costul neajustat | prins de gardul declarantului de mai sus; SC-CVL-19 pe privat |
+| 1 | MEDIU | NIR-ul conex retras după corecție se re-operează cu diferență, la costul neajustat | prins de gardul pe declarantul care valorizează din recepție; SC-CVL-19 pe privat |
 | 2 | MEDIU | tipul liniei de corecție nu e legat de produsul lotului: regula de contare a altui tip dă creditul | `CV_STRUCTURA` (CV-D10, structura); SC-CVL-18 pe ambele profiluri |
 | 3 | MINOR | auditul CV-D8 nu verifică cauza compensării și nici ponderea consumului față de cub | invariant întărit; doi mutanți noi în `CorectieValoricaTeste` |
 | 4 | MINOR | retragerea unei corecții e permisă cu o corecție ulterioară, care i-a citit soldul ajustat | `CV_DEPENDENTI` (rând nou în CV-D10); stornarea rămâne permisă; SC-CVL-08 pe ambele profiluri și testul din nucleu |
@@ -615,14 +636,25 @@ corecție negativă.
 Comenzi executate din rădăcină:
 
 - `verifica.ps1 -Suita Scenarii -Tip CVL -Profil Ambele -Sufix .ClaudeCVL`:
-  verde, `run-verificari/20261015-132020-089`. SC-CVL-19 rulează pe bază:
+  verde, `run-verificari/20261015-145731-171`. SC-CVL-19 rulează pe bază:
   transferul, asamblarea (lotul consumat și lotul produs), lipsa la
   inventar, tipul greșit și cronologia pe ambele profiluri; descărcarea,
   returul la furnizor, returul de la client și NIR-ul cu diferență pe privat,
-  unde există politicile lor.
+  unde există politicile lor. Retururile pe lotul corectat, tot pe privat:
+  - RLF 20 → 80/960, D960;
+  - RLF integral → 0/0;
+  - RLF cu TVA: linia −200 și baza fiscală −200, TVA −22 pe 200, cota de 40
+    în explicație, stocul 80/960;
+  - auditul refuză explicația fără cotă și pe cea cu altă cotă;
+  - RDC 10 pe lotul parțial consumat → 50/600;
+  - storno-ul corecției e refuzat cât returul e activ și trece după
+    storno-ul returului.
 - `verifica.ps1 -Suita Integral -Profil Ambele -Sufix .ClaudeCVL`: verde,
-  `run-verificari/20261015-132140-505`.
-- `verifica.ps1 -Suita Nucleu`: 251 de teste verzi.
+  `run-verificari/20261015-145929-045`.
+- `verifica.ps1 -Suita Nucleu`: 252 de teste verzi; testul nou al returului
+  care intră pe lot pică pe mutantul fără filtrul de sens din `LaStornare`.
+- `pnpm gen:openapi` și `pnpm gen:types`: driftul e doar câmpul
+  `ExplicatieIesireDto.Corectie`; `tsc -b` verde.
 - Matricea HTTP `refuzuri.ps1` pe o bază privată nouă din seed
   (`Atlas.Conta.BackOffice.Privat.CVLP5`, 5446; `run-verificari/cvl-pas5-http.ps1`):
   327 de probe, 327 PASS.
@@ -634,6 +666,8 @@ Ce nu e făcut și nu e certificat de aceste rulări:
   `Contari.Rezolva`;
 - NIR-ul cu diferență nu are probă pe bugetar (cere analiza funcțională);
 - plata automată pe o corecție negativă nu are scenariu;
+- culegerea RDC în browser nu a fost probată: valoarea ajustată vine din
+  `BazaLinie`, pe aceeași cale ca operarea din ModelCheck;
 - exportul SAF-T rămâne pe refuz (CV-r1); închiderea exercițiului, CV-r2.
 
 ### Verificarea pasului 4 — 2026-10-15

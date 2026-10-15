@@ -55,12 +55,16 @@ public sealed class DeclarantReturFurnizor : IDeclarant {
                 Cont = contare.ContCredit, Contrapondere = N.Contrapondere.Tert, Produs = lot.ProdusId,
                 Analiza = Contari.Analiza(l.Analiza, contare.Regula.OverrideCredit, contare.Regula.Comun),
             };
+            var stoc = intern;
             if (fiscale[i] is { } tip) intern = Fiscal.CuFapt(operand, intern, tip, N.RolTva.Baza);
             // T-D6: nota fiscală păstrează q × prețul lotului, inclusiv la golire.
             // Nu se aplică Evaluare.Iesire; eventualul reziduu rămâne explicit.
             miscari.Add(new(tert, intern, l.Cantitate, 0m, l.Valoare, new(doc.Id, l.Id)));
+            var corectie = lot.CotaCorectie(l.Cantitate);
+            if (corectie != 0m)
+                miscari.Add(new(tert, stoc, 0m, 0m, corectie, new(doc.Id, l.Id)));
             if (l.Cantitate < 0m)
-                decizii.Add(new N.ValoareDeclarata(l.Id, intern.Unitate!, -l.Cantitate, -l.Valoare, SurseValoare.Linie));
+                decizii.Add(new N.ValoareDeclarata(l.Id, intern.Unitate!, -l.Cantitate, -l.Valoare, SurseValoare.Linie, -corectie));
             Partide.Numeste(operand, intern.Cont, doc.Primitor.Id, l.Id, partide, decizii);
             Partide.Numeste(operand, tert.Cont, doc.Primitor.Id, l.Id, partide, decizii);
             var impozit = Fiscal.Impozitul(operand, l, fiscale[i], taxa, DirectieTva.Deductibil, refuzuri);

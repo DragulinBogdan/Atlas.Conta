@@ -1,6 +1,11 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Declaratii;
+using Atlas.Conta.BackOffice.Module.Motor;
 using DevExpress.ExpressApp;
+using DevExpress.ExpressApp.EFCore;
+using Microsoft.EntityFrameworkCore;
+using C = Atlas.Conta.BackOffice.Module.Cub;
+using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
@@ -61,13 +66,67 @@ sealed partial class ScenariiCvl {
 
         var corectat = Lot();
         var a = Corectie(corectat, 200m);
-        Refuza("SC-CVL-19", () => Opereaza(Retur(corectat, 100m, Zi(20))), CoduriRefuz.CvDependenti);
-        Refuza("SC-CVL-19", () => Opereaza(ReturClient(corectat, 1m, Zi(20))), CoduriRefuz.CvDependenti);
-        Este("SC-CVL-19", "returul la prețul lotului nu lasă 200 pe stocul gol", corectat, 100m, 1200m, 0m, 1200m);
-        Storneaza(a, Zi(20));
+        var partial = Retur(corectat, 20m, Zi(20));
+        Opereaza(partial);
+        Este("SC-CVL-19", "returul la furnizor ia prețul ajustat", corectat, 80m, 960m, 0m, 960m);
+        Refuza("SC-CVL-19", () => Storneaza(a, Zi(25)), CoduriRefuz.CvDependenti);
+        var integral = Retur(corectat, 80m, Zi(20));
+        Opereaza(integral);
+        Este("SC-CVL-19", "returul integral golește lotul fără reziduu", corectat, 0m, 0m, 0m, 0m);
+        Storneaza(integral, Zi(25));
+        Storneaza(partial, Zi(25));
+        Storneaza(a, Zi(25));
         Opereaza(Retur(corectat, 20m, Zi(25)));
-        Este("SC-CVL-19", "după storno corecției, returul trece la prețul lotului", corectat, 80m, 800m, 0m, 1000m);
+        Este("SC-CVL-19", "după storno corecției, returul trece la prețul lotului", corectat, 80m, 800m, 0m, 800m);
+
+        var cuTva = Lot();
+        Corectie(cuTva, 200m);
+        var tva = CuSpatiu(os => os.GetObjectsQuery<TipTva>().First(t => t.Regim == RegimTva.Normal && t.Cota > 0m).ID);
+        var fiscal = Retur(cuTva, 20m, Zi(20), tva);
+        Opereaza(fiscal);
+        var (valoare, taxa) = CuSpatiu(os => os.GetObjectsQuery<DocumentDetaliu>().Where(d => d.DocumentId == fiscal)
+            .Select(d => new { d.Valoare, d.ValoareTva }).ToList().Select(d => (d.Valoare, d.ValoareTva)).Single());
+        var baza = CuSpatiu(os => os.GetObjectsQuery<C.Postare>()
+            .Where(p => p.DocumentId == fiscal && p.RolTva == N.RolTva.Baza).ToList().Sum(p => p.Valoare));
+        var iesire = Dto(fiscal, N.FelTranzactie.Operare).Origini.Single().Linii.Single().Iesiri.Single();
+        Verifica("SC-CVL-19", $"returul cu TVA: baza fiscală e prețul facturii, cota corecției iese fără TVA (linie {valoare}, "
+                + $"TVA {taxa}, baza {baza}, ieșire {iesire.Valoare} + cota {iesire.Corectie})",
+            valoare == -200m && taxa < 0m && baza == -200m && iesire.Valoare == 200m && iesire.Corectie == 40m);
+        Este("SC-CVL-19", "returul cu TVA scoate din stoc prețul ajustat", cuTva, 80m, 960m, 0m, 960m + taxa);
+        foreach (var (cum, schimba) in new (string, Func<decimal, decimal>)[] { ("fără cotă", _ => 0m), ("cu altă cotă", c => c + 1m) })
+            Verifica("SC-CVL-19", $"auditul refuză explicația returului {cum}", CotaMutata(fiscal, schimba));
+
+        var vandut = Partial();
+        var b = Corectie(vandut, 200m);
+        var rdc = ReturClient(vandut, 10m, Zi(20));
+        Opereaza(rdc);
+        Este("SC-CVL-19", "returul de la client revine la prețul ajustat", vandut, 50m, 600m, 720m, 1200m);
+        Refuza("SC-CVL-19", () => Storneaza(b, Zi(25)), CoduriRefuz.CvDependenti);
+        Refuza("SC-CVL-19", () => Anuleaza(b), CoduriRefuz.CvDependenti);
+        Storneaza(rdc, Zi(25));
+        Storneaza(b, Zi(25));
+        Este("SC-CVL-19", "returul de la client se stornează înaintea corecției", vandut, 40m, 400m, 600m, 1000m);
     }
+
+    bool CotaMutata(Guid retur, Func<decimal, decimal> schimba) => CuSpatiu(os => {
+        var db = ((EFCoreObjectSpace)os).DbContext;
+        using var tx = db.Database.BeginTransaction();
+        try {
+            var t = os.GetObjectsQuery<C.Tranzactie>().Single(t => t.DocumentId == retur && t.Explicatie != null);
+            var e = C.Explicatie.Citeste(t.Explicatie);
+            var json = (e with { Decizii = [.. e.Decizii.Select(d => d is N.ValoareDeclarata v ? v with { Corectie = schimba(v.Corectie) } : d)] }).Scrie();
+            db.Set<C.Tranzactie>().Where(x => x.ID == t.ID).ExecuteUpdate(s => s.SetProperty(x => x.Explicatie, json));
+            C.Citiri.Invarianti.Verifica(os);
+            return false;
+        }
+        catch (OperareException eroare) {
+            return eroare.Message.Contains(C.Citiri.Explicatii.Iesire);
+        }
+        finally {
+            tx.Rollback();
+            db.ChangeTracker.Clear();
+        }
+    });
 
     void ConstatNir(Caz caz, decimal cantitate) => Comanda(os => {
         os.GetObjectByKey<NIR>(caz.Nir).Detalii.OfType<NirDetaliu>().Single().Cantitate = cantitate; os.CommitChanges();
@@ -102,17 +161,19 @@ sealed partial class ScenariiCvl {
         os.CommitChanges(); return d.ID;
     });
 
-    Guid Retur(Caz caz, decimal cantitate, DateOnly data) => CuSpatiu(os => {
+    Guid Retur(Caz caz, decimal cantitate, DateOnly data, Guid? tva = null) => Adauga(caz, CuSpatiu(os => {
         var d = os.CreateObject<ReturFurnizor>(); d.Data = data; d.PredatorId = Magazie; d.PrimitorId = Furnizor;
         var l = os.CreateObject<DocumentDetaliu>(); l.Document = d; l.Pozitie = 1;
-        l.TipMaterialId = Tip(os, Stoc); l.LotId = caz.Lot; l.Cantitate = cantitate;
+        l.TipMaterialId = Tip(os, Stoc); l.LotId = caz.Lot; l.Cantitate = cantitate; l.TipTvaId = tva;
         os.CommitChanges(); return d.ID;
-    });
+    }));
 
-    Guid ReturClient(Caz caz, decimal cantitate, DateOnly data) => CuSpatiu(os => {
+    Guid ReturClient(Caz caz, decimal cantitate, DateOnly data) => Adauga(caz, CuSpatiu(os => {
         var d = os.CreateObject<ReturClient>(); d.Data = data; d.PredatorId = Client; d.PrimitorId = Magazie;
         var l = os.CreateObject<DocumentDetaliu>(); l.Document = d; l.Pozitie = 1;
         l.TipMaterialId = Tip(os, Stoc); l.LotId = caz.Lot; l.Cantitate = cantitate;
         os.CommitChanges(); return d.ID;
-    });
+    }));
+
+    static Guid Adauga(Caz caz, Guid id) { caz.Documente.Add(id); return id; }
 }

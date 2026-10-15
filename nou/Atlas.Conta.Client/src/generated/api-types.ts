@@ -10199,6 +10199,8 @@ export interface components {
             Valoare?: number;
             SoldInainte?: components["schemas"]["ExplicatieSoldDto"];
             Sursa?: string | null;
+            /** Format: double */
+            Corectie?: number;
         };
         ExplicatieLinieDto: {
             /** Format: uuid */

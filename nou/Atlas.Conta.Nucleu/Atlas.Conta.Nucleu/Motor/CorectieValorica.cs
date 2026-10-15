@@ -94,7 +94,7 @@ public static partial class CorectieValorica {
             throw Refuza(MotivCorectieValorica.Cronologie, "Data stornării precedă un fapt al corecțiilor de valoare ale lotului.");
 
         var compensari = new List<CompensareLot>();
-        foreach (var fapt in proprii.Where(f => !EsteValoric(f) && f.Postare.Cantitate > 0m)) {
+        foreach (var fapt in proprii.Where(f => !EsteValoric(f) && f.Postare.Cantitate > 0m && f.Postare.Coordonate.Sens == Sens.Debit)) {
             if (citite.Partener(fapt) is not { } partener)
                 continue;
             if (Lot(partener) != Lot(fapt)) {
@@ -180,11 +180,12 @@ public static partial class CorectieValorica {
             return;
         var prima = radacini.Min(r => r.ScrisLa);
         var loturi = radacini.Select(Lot).ToHashSet();
-        if (citite.Toate.Any(f => loturi.Contains(Lot(f)) && f.Postare.Cantitate < 0m
+        if (citite.Toate.Any(f => loturi.Contains(Lot(f))
+                && (f.Postare.Cantitate < 0m || f.Postare.Cantitate > 0m && f.Postare.Coordonate.Sens == Sens.Credit)
                 && f.Fel is FelTranzactie.Operare or FelTranzactie.Transfer && !citite.EsteInversat(f)
                 && f.Postare.Cauza.Document != document && f.ScrisLa >= prima))
             throw Refuza(MotivCorectieValorica.Dependenti,
-                "Lotul are o ieșire activă făcută după corecție; neutralizați întâi ieșirea.");
+                "Lotul are o ieșire sau un retur activ făcut după corecție, la costul ajustat; neutralizați-l întâi.");
 
         var valorice = citite.Toate.Where(f => f.Fel == FelTranzactie.Operare && EsteValoric(f)
             && f.Postare.Cauza.Document == document).ToList();

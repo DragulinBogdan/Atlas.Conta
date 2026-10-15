@@ -324382,6 +324382,10 @@
           "Sursa": {
             "type": "string",
             "nullable": true
+          },
+          "Corectie": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false

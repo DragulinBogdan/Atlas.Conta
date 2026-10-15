@@ -93,6 +93,8 @@ internal static class Fapte {
         var claseTip = ClaseTip(os, linii.Select(d => d.TipMaterialId)
             .Concat(tipPerProdus.Values.Where(t => t != null).Select(t => t.Value)));
 
+        var corectii = doc.Declarant().SursaValoareDeclarata == Declaratii.SurseValoare.Linie
+            ? Cub.Citiri.CorectiiValorice.Active(os, idsLot) : [];
         var loturi = dateLot.ToDictionary(l => l.Id, l => {
             var tipProdus = tipPerProdus.GetValueOrDefault(l.ProdusId);
             Guid? contImplicit = null;
@@ -100,6 +102,7 @@ internal static class Fapte {
                 contImplicit = info.ContImplicitId;
             return new Declaratii.LotFapt(l.Id, l.ProdusId, tipProdus, contImplicit, l.Data, l.PretUnitar) {
                 LinieIntrareId = l.LinieIntrareId, GestiuneId = l.GestiuneId,
+                Corectie = corectii.TryGetValue(l.Id, out var corectie) ? corectie : null,
             };
         });
 

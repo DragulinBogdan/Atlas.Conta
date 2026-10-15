@@ -58,6 +58,7 @@ public class ReturFurnizor : Document, IDocumentFiscalPrimit {
     public override bool SemnulEAlOperarii() => true;
 
     // F18: returul care golește lotul nu preia soldul valoric rămas; valoarea e declarată din linie.
+    // Linia e baza fiscală; cota corecțiilor active o scoate declarantul, fără TVA (CV-D10).
     public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
         Lot.ValoareLaPretulLotului(os, linie, Math.Abs(linie.Cantitate));
 
@@ -147,9 +148,9 @@ public class ReturClient : Document, IDocumentFiscal {
     public override IReadOnlySet<string> IntrariBaza() => intrariBaza;
     static readonly IReadOnlySet<string> intrariBaza = IntrariBazaCu(nameof(DocumentDetaliu.Valoare));
 
-    // Venitul (fără lot) are baza culeasă; marfa returnată revine la prețul lotului original.
+    // Venitul (fără lot) are baza culeasă; marfa returnată revine la prețul ajustat al lotului original (CV-D10).
     public override decimal? BazaLinie(DevExpress.ExpressApp.IObjectSpace os, DocumentDetaliu linie) =>
-        linie.LotId == null ? Math.Abs(linie.Valoare) : Lot.ValoareLaPretulLotului(os, linie, Math.Abs(linie.Cantitate));
+        linie.LotId == null ? Math.Abs(linie.Valoare) : Lot.ValoareLaPretulAjustat(os, linie, Math.Abs(linie.Cantitate));
 
     // Forma culegerii e pozitivă. Cantitatea venitului e pro-formă; linia de cost
     // e mișcare internă venit↔stoc, fără identitate fiscală (felia 11).
