@@ -353,8 +353,27 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("Formular")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("Inlocuieste")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MotivRetragere")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ParametriFisier")
+                        .HasColumnType("text");
+
                     b.Property<int>("Perioada")
                         .HasColumnType("integer");
+
+                    b.Property<string>("RetrasaDe")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("RetrasaLa")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Sha256Fisier")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<string>("VersiuneExportata")
                         .HasColumnType("text");
@@ -362,7 +381,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasKey("ID");
 
                     b.HasIndex("Formular", "Perioada", "VersiuneExportata")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"RetrasaLa\" IS NULL");
 
                     b.ToTable("DepuneriDeclaratii");
                 });
@@ -1028,6 +1048,39 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.ToTable("PerioadeFiscale");
                 });
 
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PlajaFacturi", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Activ")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateOnly>("DataDecizie")
+                        .HasColumnType("date");
+
+                    b.Property<long>("NumarFinal")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("NumarInitial")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("OptimisticLockField")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Serie")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("PlajeFacturi");
+                });
+
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaAmortizare", b =>
                 {
                     b.Property<Guid>("ID")
@@ -1231,6 +1284,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("Cauza")
+                        .HasColumnType("integer");
+
                     b.Property<string>("CodMiscare")
                         .HasMaxLength(9)
                         .HasColumnType("character varying(9)");
@@ -1262,11 +1318,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasKey("ID");
 
-                    b.HasIndex("TipDocumentId", "TipStoc")
+                    b.HasIndex("TipDocumentId", "TipStoc", "Cauza")
                         .IsUnique()
                         .HasFilter("\"Semn\" IS NULL");
 
-                    b.HasIndex("TipDocumentId", "TipStoc", "Semn")
+                    b.HasIndex("TipDocumentId", "TipStoc", "Semn", "Cauza")
                         .IsUnique();
 
                     b.ToTable("PoliticiMiscareSaft");
@@ -1456,6 +1512,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<bool>("Activ")
                         .HasColumnType("boolean");
+
+                    b.Property<int?>("CategorieTaxareInversa")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Cautare")
                         .ValueGeneratedOnAddOrUpdate()
@@ -2005,6 +2064,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasMaxLength(18)
                         .HasColumnType("character varying(18)");
 
+                    b.Property<string>("Caen")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
+
                     b.Property<string>("CodFiscal")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
@@ -2024,6 +2087,22 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasMaxLength(35)
                         .HasColumnType("character varying(35)");
 
+                    b.Property<string>("DeclarantAdresa")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("DeclarantFunctie")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("DeclarantNume")
+                        .HasMaxLength(75)
+                        .HasColumnType("character varying(75)");
+
+                    b.Property<string>("DeclarantPrenume")
+                        .HasMaxLength(75)
+                        .HasColumnType("character varying(75)");
+
                     b.Property<string>("Denumire")
                         .HasMaxLength(70)
                         .HasColumnType("character varying(70)");
@@ -2038,6 +2117,21 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<bool>("InregistratTva")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("IntocmitCalitate")
+                        .HasMaxLength(75)
+                        .HasColumnType("character varying(75)");
+
+                    b.Property<string>("IntocmitCif")
+                        .HasMaxLength(13)
+                        .HasColumnType("character varying(13)");
+
+                    b.Property<int>("IntocmitDe")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("IntocmitDenumire")
+                        .HasMaxLength(75)
+                        .HasColumnType("character varying(75)");
 
                     b.Property<Guid?>("JudetId")
                         .HasColumnType("uuid");
@@ -2055,6 +2149,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
+
+                    b.Property<bool>("OptiuneConsultareD394")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("PeriodicitateTva")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("RaporteazaCnp")
                         .HasColumnType("boolean");

@@ -890,37 +890,45 @@ internal static class ProfilPrivat {
     }
 
     // S3-D3: (tip, categoria contului, semn) → cod D406; codul null exclude, cu motiv.
-    static readonly (string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv)[]
+    static readonly (string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv, CauzaMiscareSaft Cauza)[]
         PoliticiMiscareSaft = [
-            ("FCT", TipStoc.Magazie, null, "10", RolTertSaft.Furnizor, null),
-            ("FCT", TipStoc.Marfuri, null, "10", RolTertSaft.Furnizor, null),
-            ("NIR", TipStoc.Magazie, null, "10", RolTertSaft.Furnizor, null),
-            ("NIR", TipStoc.Marfuri, null, "10", RolTertSaft.Furnizor, null),
-            ("BTR", TipStoc.Magazie, null, "80", RolTertSaft.Niciunul, null),
-            ("BTR", TipStoc.Marfuri, null, "80", RolTertSaft.Niciunul, null),
-            ("BCS", TipStoc.Magazie, -1, "70", RolTertSaft.Niciunul, null),
-            ("BCS", TipStoc.Marfuri, -1, "70", RolTertSaft.Niciunul, null),
+            ("FCT", TipStoc.Magazie, null, "10", RolTertSaft.Furnizor, null, CauzaMiscareSaft.Comerciala),
+            ("FCT", TipStoc.Marfuri, null, "10", RolTertSaft.Furnizor, null, CauzaMiscareSaft.Comerciala),
+            ("NIR", TipStoc.Magazie, null, "10", RolTertSaft.Furnizor, null, CauzaMiscareSaft.Comerciala),
+            ("NIR", TipStoc.Marfuri, null, "10", RolTertSaft.Furnizor, null, CauzaMiscareSaft.Comerciala),
+            ("BTR", TipStoc.Magazie, null, "80", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("BTR", TipStoc.Marfuri, null, "80", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("BCS", TipStoc.Magazie, -1, "70", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("BCS", TipStoc.Marfuri, -1, "70", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
             ("BCS", TipStoc.Consum, +1, null, RolTertSaft.Niciunul,
-                "Consumul pe responsabil nu e stoc în magazie (27a)"),
-            ("LDI", TipStoc.Magazie, +1, "110", RolTertSaft.Niciunul, null),
-            ("LDI", TipStoc.Marfuri, +1, "110", RolTertSaft.Niciunul, null),
-            ("LDI", TipStoc.Magazie, -1, "120", RolTertSaft.Niciunul, null),
-            ("LDI", TipStoc.Marfuri, -1, "120", RolTertSaft.Niciunul, null),
-            ("DSC", TipStoc.Magazie, -1, "30", RolTertSaft.Client, null),
-            ("DSC", TipStoc.Marfuri, -1, "30", RolTertSaft.Client, null),
-            ("ASM", TipStoc.Magazie, +1, "20", RolTertSaft.Niciunul, null),
-            ("ASM", TipStoc.Marfuri, +1, "20", RolTertSaft.Niciunul, null),
-            ("ASM", TipStoc.Magazie, -1, "70", RolTertSaft.Niciunul, null),
-            ("ASM", TipStoc.Marfuri, -1, "70", RolTertSaft.Niciunul, null),
-            ("RLF", TipStoc.Magazie, -1, "50", RolTertSaft.Furnizor, null),
-            ("RLF", TipStoc.Marfuri, -1, "50", RolTertSaft.Furnizor, null),
-            ("RDC", TipStoc.Magazie, +1, "40", RolTertSaft.Client, null),
-            ("RDC", TipStoc.Marfuri, +1, "40", RolTertSaft.Client, null),
+                "Consumul pe responsabil nu e stoc în magazie (27a)", CauzaMiscareSaft.Comerciala),
+            ("LDI", TipStoc.Magazie, +1, "110", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("LDI", TipStoc.Marfuri, +1, "110", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("LDI", TipStoc.Magazie, -1, "120", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("LDI", TipStoc.Marfuri, -1, "120", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("DSC", TipStoc.Magazie, -1, "30", RolTertSaft.Client, null, CauzaMiscareSaft.Comerciala),
+            ("DSC", TipStoc.Marfuri, -1, "30", RolTertSaft.Client, null, CauzaMiscareSaft.Comerciala),
+            ("ASM", TipStoc.Magazie, +1, "20", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("ASM", TipStoc.Marfuri, +1, "20", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("ASM", TipStoc.Magazie, -1, "70", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("ASM", TipStoc.Marfuri, -1, "70", RolTertSaft.Niciunul, null, CauzaMiscareSaft.Comerciala),
+            ("RLF", TipStoc.Magazie, -1, "50", RolTertSaft.Furnizor, null, CauzaMiscareSaft.Comerciala),
+            ("RLF", TipStoc.Marfuri, -1, "50", RolTertSaft.Furnizor, null, CauzaMiscareSaft.Comerciala),
+            ("RDC", TipStoc.Magazie, +1, "40", RolTertSaft.Client, null, CauzaMiscareSaft.Comerciala),
+            ("RDC", TipStoc.Marfuri, +1, "40", RolTertSaft.Client, null, CauzaMiscareSaft.Comerciala),
+            ("FCT", TipStoc.Magazie, +1, "90", RolTertSaft.Furnizor, null, CauzaMiscareSaft.CorectieValorica),
+            ("FCT", TipStoc.Marfuri, +1, "90", RolTertSaft.Furnizor, null, CauzaMiscareSaft.CorectieValorica),
+            ("FCT", TipStoc.Magazie, -1, "60", RolTertSaft.Furnizor, null, CauzaMiscareSaft.CorectieValorica),
+            ("FCT", TipStoc.Marfuri, -1, "60", RolTertSaft.Furnizor, null, CauzaMiscareSaft.CorectieValorica),
+            ("FCT", TipStoc.Consum, +1, null, RolTertSaft.Niciunul,
+                "Partea corecției pe consum rămâne în GL, nu e stoc în magazie (CV-D9)", CauzaMiscareSaft.CorectieValorica),
+            ("FCT", TipStoc.Consum, -1, null, RolTertSaft.Niciunul,
+                "Partea corecției pe consum rămâne în GL, nu e stoc în magazie (CV-D9)", CauzaMiscareSaft.CorectieValorica),
         ];
 
     // Tabelul e parte din contract (D17-D1): ModelCheck îl citește prin nucleu
     // (`ContaSeeder`), ca să nu-și scrie propria copie a cifrelor.
-    public static IReadOnlyCollection<(string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv)>
+    public static IReadOnlyCollection<(string Tip, TipStoc TipStoc, int? Semn, string Cod, RolTertSaft Rol, string Motiv, CauzaMiscareSaft Cauza)>
         MiscariSaft => PoliticiMiscareSaft;
 
     // Idempotent pe CHEIE (tip × TipStoc × Semn) și cu respectarea ștergerii
@@ -944,12 +952,14 @@ internal static class ProfilPrivat {
                     + $"lipsește din bază tipul de document {p.Tip}.");
             var tipStoc = p.TipStoc;
             var semn = p.Semn;
+            var cauza = p.Cauza;
             ContaSeeder.Aliniaza<PoliticaMiscareSaft>(os,
-                $"{p.Tip}/{p.TipStoc}/{p.Semn?.ToString() ?? "orice"}",
-                x => x.TipDocumentId == tip.ID && x.TipStoc == tipStoc && x.Semn == semn, politica => {
+                $"{p.Tip}/{p.TipStoc}/{p.Semn?.ToString() ?? "orice"}{(cauza == CauzaMiscareSaft.Comerciala ? "" : "/" + cauza)}",
+                x => x.TipDocumentId == tip.ID && x.TipStoc == tipStoc && x.Semn == semn && x.Cauza == cauza, politica => {
                     politica.TipDocumentId = tip.ID;
                     politica.TipStoc = tipStoc;
                     politica.Semn = semn;
+                    politica.Cauza = cauza;
                     politica.CodMiscare = p.Cod;
                     politica.RolTert = p.Rol;
                     politica.Motiv = p.Motiv;

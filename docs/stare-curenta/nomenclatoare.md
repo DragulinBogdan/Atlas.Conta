@@ -11,6 +11,23 @@ goală și nu suprascrie datele completate. Adresa este structurată, ca la
 partener; județul se aplică adreselor din România. Județele și unitățile de
 măsură standard sunt nomenclatoare de bază, expuse pentru citire. (72b, 73a, 73b)
 
+Antetul declarațiilor fiscale stă tot pe societate și se culege o singură
+dată în XAF: codul CAEN (patru cifre), periodicitatea TVA (lunar, implicit,
+sau trimestrial), declarantul (nume, prenume, funcție, adresă), cine întocmește
+D394 (persoană juridică sau fizică, denumire, CUI sau CNP, calitate; gol
+înseamnă societatea însăși) și acordul de consultare D394. Banca din antetul
+D300 e denumirea contului bancar al societății, iar contul e IBAN-ul lui.
+(E2-D4)
+
+`PlajaFacturi` ține plajele de facturi alocate prin decizie internă: seria
+(poate lipsi), numărul inițial și final și data deciziei, culese în XAF. Pe
+aceeași serie, două plaje active nu se suprapun, iar intervalul începe de la
+1 și nu e inversat (gardianul de editare). D394 le declară la I.2. (E2-D7)
+
+Produsul are categoria de bunuri pentru taxarea inversă internă, lista
+`codPR` a D394: pozițiile NC ale cerealelor și categoriile 22–35. Fără ea,
+o linie V sau C blochează fișierul D394. (E2-D6)
+
 ## Produsul și unitatea lui
 
 Produsul poate avea cod NC de opt cifre și unitate standard. Referința la
@@ -47,5 +64,5 @@ iar refuzurile de domeniu 422. (72c, 72e)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (2; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 72, 73 (amendată de 74, 105).
+Deciziile care numesc pagina în `Arii:` (3; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 72, 73 (amendată de 74, 105), 122 (propusă).
 <!-- /gen:decizii -->

@@ -616,6 +616,9 @@ public class PoliticaMiscareSaft : Politica, ICuProvenienta {
     // iar `RegulaContare.SemnFiltru` are deja exact forma asta).
     public virtual int? Semn { get; set; }
 
+    [XafDisplayName("Cauza")]
+    public virtual CauzaMiscareSaft Cauza { get; set; }
+
     // 9 = lungimea maximă a lui `MovementType`/`MovementSubType` în XSD;
     // nomenclatorul real n-are cod mai lung de 3 caractere, dar coloana urmează
     // schema, nu datele de azi.

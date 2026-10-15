@@ -6,12 +6,12 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 
 | Ce | Cât |
 |---|---|
-| Decizii | 121: 87 active, 34 amendate parțial, 0 depășite, 0 propuse |
-| Restanțe | 387: 285 deschise, 102 închise |
+| Decizii | 122: 87 active, 34 amendate parțial, 0 depășite, 1 propuse |
+| Restanțe | 393: 287 deschise, 106 închise |
 | Pagini de stare curentă | 19 |
-| Contracte de felie (`Tip: contract`) | 3, deschise 1 |
-| Cataloage vii (`Tip: catalog`) | 5 |
-| Fișiere Markdown în `docs/` | 334 |
+| Contracte de felie (`Tip: contract`) | 4, deschise 1 |
+| Cataloage vii (`Tip: catalog`) | 6 |
+| Fișiere Markdown în `docs/` | 337 |
 | Citări de decizii din cod (`// N`) | 71 |
 
 ## Decizii în vigoare pe arie
@@ -23,12 +23,12 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 - **imobilizari** (5): 87 (amendată de 97), 95, 97 (amendată de 98), 98, 102
 - **perioade** (7): 1, 35, 66, 74 (amendată de 105), 76, 77, 104 (amendată de 106)
 - **politici** (14): 4, 20, 51, 52, 69, 71 (amendată de 72), 81, 83 (amendată de 84, 86, 104), 84, 87 (amendată de 97), 102, 104 (amendată de 106), 112, 113
-- **tva** (15): 25, 36 (amendată de 71), 46 (amendată de 113), 56 (amendată de 77, 81), 69, 70, 71 (amendată de 72), 79 (amendată de 80), 80, 81, 84, 86, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 102, 103
-- **saft** (4): 34, 73 (amendată de 74, 105), 74 (amendată de 105), 103
+- **tva** (16): 25, 36 (amendată de 71), 46 (amendată de 113), 56 (amendată de 77, 81), 69, 70, 71 (amendată de 72), 79 (amendată de 80), 80, 81, 84, 86, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 102, 103, 122 (propusă)
+- **saft** (5): 34, 73 (amendată de 74, 105), 74 (amendată de 105), 103, 122 (propusă)
 - **raportare** (6): 42 (amendată de 104, 106), 66, 67, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 104 (amendată de 106), 117
-- **nomenclatoare** (2): 72, 73 (amendată de 74, 105)
-- **api** (23): 5, 6, 7, 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 60, 70, 77, 80, 81, 87 (amendată de 97), 89, 98, 99, 101 (amendată de 102), 104 (amendată de 106), 106, 108 (amendată de 110)
-- **ecrane** (24): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106
+- **nomenclatoare** (3): 72, 73 (amendată de 74, 105), 122 (propusă)
+- **api** (24): 5, 6, 7, 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 60, 70, 77, 80, 81, 87 (amendată de 97), 89, 98, 99, 101 (amendată de 102), 104 (amendată de 106), 106, 108 (amendată de 110), 122 (propusă)
+- **ecrane** (25): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106, 122 (propusă)
 - **dezvoltare** (24): 21, 23, 26 (amendată de 112), 35, 36 (amendată de 71), 39, 40, 41, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 52, 56 (amendată de 77, 81), 69, 73 (amendată de 74, 105), 80, 81, 84, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 120
 - **verificare** (32): 1, 2, 3 (amendată de 89), 4, 6, 7, 8, 14, 17, 23, 24, 28, 30, 43 (amendată de 104), 50, 56 (amendată de 77, 81), 66, 70, 73 (amendată de 74, 105), 80, 81, 84, 85, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 106, 118 (amendată de 121), 120, 121
 - **import** (14): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117)
@@ -46,14 +46,14 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 43 |
-| după PoC | 206 |
+| activă | 42 |
+| după PoC | 209 |
 | migrare | 24 |
 | depășită de 091 | 2 |
 | docs | 6 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (43, prag 45)
+### Lista `activă` (42, prag 45)
 
 **motor** (10)
 
@@ -112,10 +112,6 @@ Niciuna.
 - `103-r2` Intervale TVA și avertismente/raport de impact, cu referință la linia avansului (103h)…
 - `103-r3` Validarea L3 a semnului taxei culese față de baza FCT/FCL și înlocuirea proxy-ului ILinieCuAvans pen…
 
-**saft** (1)
-
-- `CV-r1` Reprezentarea SAF-T a corecției valorice pe lot: factura corectivă (tipul 380/381/384, cantitatea, d…
-
 **dezvoltare** (1)
 
 - `S-r4` snapshot-ul EF declară cheia ID și FK_Postare_Tranzactie_TranzactieId pe părinte, baza are cheia (Sp…
@@ -171,6 +167,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | [C111 — coordonatele postării (transversal)](nucleu/scenarii/C111.md) | 2026-10-11 |
 | [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-15 |
 | [D9B — originea partidei](nucleu/scenarii/D9B.md) | 2026-10-14 |
+| [DECL — declarațiile D300 și D394 în XML](nucleu/scenarii/DECL.md) | 2026-10-15 |
 | [X — scenarii transversale](nucleu/scenarii/X.md) | 2026-10-14 |
 
 ## Ce nu poate ști

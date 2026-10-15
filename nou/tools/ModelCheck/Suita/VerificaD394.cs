@@ -596,14 +596,11 @@ static class VerificaD394 {
             && d4s.Avertismente.Count == 6
             && CusaturaS(SensTva.Achizitie) && CusaturaS(SensTva.Livrare));
 
-        // ══════════ D4-r14 (felia 16): `FaraOp11` tace acolo unde codul NC EXISTĂ ══════════
-        // Jumătate din `op11` (codul NC) a intrat în model odată cu `Produs.CodNc`
-        // (D16-D2), deci avertismentul se restrânge la LINIILE fără produs codificat.
-        // Proba: o achiziție în taxare inversă pe un produs CU cod NC — baza ei intră
-        // normal în `op1` (rândul C urcă), dar NU se mai adaugă la avertisment.
+        // E2-D6: `FaraOp11` tace pe liniile al căror produs are categoria de bunuri.
         var produsNc = os.CreateObject<Produs>();
         produsNc.Cod = MarcajD4 + "-PNC"; produsNc.Denumire = "Serviciu codificat NC";
         produsNc.TipMaterial = tip628; produsNc.CodNc = "87654321"; produsNc.UM = "BUC";
+        produsNc.CategorieTaxareInversa = CategorieTaxareInversa.Deseuri;
         os.CommitChanges();
         var fctNc = Cumparare("-CNC", f1, d10);
         var linNc = os.CreateObject<FacturaIntrareDetaliu>();
@@ -615,16 +612,15 @@ static class VerificaD394 {
         var cuNc = D394Proiectii.D394(os, pStart, pEnd);
         var op11Nou = cuNc.Avertismente.SingleOrDefault(a => a.Cod == "FaraOp11");
         var cNou = cuNc.Operatiuni.Single(o => o.CuiP == "12345678" && o.Tip == "C" && o.Cota == 21);
-        Console.WriteLine($"     MĂSURAT (D4-r14): C urcă la {cNou.Baza:N2}, iar `FaraOp11` rămâne "
+        Console.WriteLine($"     MĂSURAT (E2-D6): C urcă la {cNou.Baza:N2}, iar `FaraOp11` rămâne "
             + $"Σ {op11Nou?.Suma:N2} [{string.Join(" | ", op11Nou?.Exemple ?? [])}].");
-        s.Check("D4-r14 `FaraOp11` se restrânge la liniile FĂRĂ cod NC: achiziția în taxare inversă pe un produs cu "
-            + "`CodNc` urcă rândul C de la 400 la 600, dar avertismentul rămâne pe 400 (V 700 + C 400 = 1.100) — "
-            + "jumătatea de detaliu pe care modelul o are nu se mai reclamă; categoria de bunuri rămâne restanța D4-r5",
+        s.Check("E2-D6 `FaraOp11` se restrânge la liniile fără categorie de bunuri: achiziția în taxare inversă pe un "
+            + "produs cu categorie urcă rândul C de la 400 la 600, dar avertismentul rămâne pe 400 (V 700 + C 400 = 1.100)",
             cNou.Baza == 600m
             && op11Nou is { Numar: 2, Suma: 1100m }
-            && op11Nou.Exemple.Any(e => e.StartsWith("V: bază 700,00") && e.Contains("fără cod NC"))
+            && op11Nou.Exemple.Any(e => e.StartsWith("V: bază 700,00") && e.Contains("fără categorie"))
             && op11Nou.Exemple.Any(e => e.StartsWith("C: bază 400,00"))
-            && op11Nou.Mesaj.Contains("cod NC"));
+            && op11Nou.Mesaj.Contains("categoria de bunuri"));
 
         // ---------------- Curățenie ----------------
         CurataD4();

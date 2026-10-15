@@ -45,20 +45,46 @@ public static class Duk {
             .Concat(ManifestD406.Abateri(anaf, [ManifestD406.Nomenclator])).ToList();
         if (abateri.Count > 0)
             return new DukRezultat { Motiv = "kit nepotrivit manifestului: " + string.Join("; ", abateri) };
-        var java = Directory.EnumerateDirectories(dist, "jre*").OrderByDescending(d => d)
-            .Select(jre => Path.Combine(jre, "bin", "java.exe")).FirstOrDefault(File.Exists);
+        var java = Java(dist);
         if (java == null)
             return new DukRezultat { Motiv = $"java lipsește din kit ({dist}\\jre*\\bin\\java.exe)" };
 
         var caleErori = caleXml + ".err.txt";
         var caleAvertismente = caleXml + ".wrn.txt";
-        foreach (var f in new[] { caleErori, caleAvertismente })
-            File.Delete(f);
         // `!` pune atenționările în `.wrn.txt`, altfel se pierd; `-d` agață procesul în CLI (doc/Instructiuni.txt, 73-r8).
         string[] argumente = [
             "-jar", Path.Combine(dist, "DUKIntegrator_AnLunaUI.jar"), "-v", TipDeclaratie, caleXml, "!" + caleErori,
             "$", $"an={an}", $"luna={luna:00}",
         ];
+        var rulare = Ruleaza(java, dist, argumente, [caleErori, caleAvertismente], timeoutSecunde, caleXml);
+        if (rulare.Esec != null)
+            return rulare.Esec;
+        var erori = CitesteLinii(caleErori);
+        var avertismente = CitesteLinii(caleAvertismente);
+        var ok = erori is [var unic] && unic.Trim().Equals("ok", StringComparison.OrdinalIgnoreCase);
+        if (ok)
+            erori.Clear();
+        else if (erori.Count == 0)
+            erori.Add($"(fișierul de erori lipsește sau e gol) ieșire: {Scurt(rulare.Iesire)}");
+        var dupa = ManifestD406.Abateri(dist, ManifestD406.Kit);
+        erori.AddRange(dupa.Select(a => $"kitul s-a schimbat în timpul rulării: {a}"));
+        return new DukRezultat {
+            Disponibil = true,
+            Perioada = perioada,
+            Valid = ok && dupa.Count == 0,
+            Erori = erori,
+            Avertismente = avertismente,
+            Comanda = rulare.Comanda,
+            CaleXml = caleXml,
+        };
+    }
+
+    internal sealed record Rulare(string Iesire, string Comanda, DukRezultat Esec);
+
+    internal static Rulare Ruleaza(string java, string dist, string[] argumente, string[] rezultate,
+            int timeoutSecunde, string caleXml) {
+        foreach (var f in rezultate)
+            File.Delete(f);
         var psi = new ProcessStartInfo(java) {
             WorkingDirectory = dist,
             RedirectStandardOutput = true,
@@ -69,39 +95,22 @@ public static class Duk {
         foreach (var a in argumente)
             psi.ArgumentList.Add(a);
         var comanda = $"\"{java}\" {string.Join(" ", argumente.Select(a => a.Contains(' ') ? $"\"{a}\"" : a))}";
-
-        string iesire;
-        using (var proces = Process.Start(psi)) {
-            if (proces == null)
-                return new DukRezultat { Motiv = "procesul java n-a pornit", Comanda = comanda };
-            var stdout = proces.StandardOutput.ReadToEndAsync();
-            var stderr = proces.StandardError.ReadToEndAsync();
-            if (!proces.WaitForExit(timeoutSecunde * 1000)) {
-                try { proces.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
-                return new DukRezultat { Motiv = $"validatorul n-a terminat în {timeoutSecunde} s", Comanda = comanda, CaleXml = caleXml };
-            }
-            iesire = (stdout.Result + "\n" + stderr.Result).Trim();
+        using var proces = Process.Start(psi);
+        if (proces == null)
+            return new(null, comanda, new DukRezultat { Motiv = "procesul java n-a pornit", Comanda = comanda });
+        var stdout = proces.StandardOutput.ReadToEndAsync();
+        var stderr = proces.StandardError.ReadToEndAsync();
+        if (!proces.WaitForExit(timeoutSecunde * 1000)) {
+            try { proces.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
+            return new(null, comanda, new DukRezultat {
+                Motiv = $"validatorul n-a terminat în {timeoutSecunde} s", Comanda = comanda, CaleXml = caleXml,
+            });
         }
-
-        var erori = CitesteLinii(caleErori);
-        var avertismente = CitesteLinii(caleAvertismente);
-        var ok = erori is [var unic] && unic.Trim().Equals("ok", StringComparison.OrdinalIgnoreCase);
-        if (ok)
-            erori.Clear();
-        else if (erori.Count == 0)
-            erori.Add($"(fișierul de erori lipsește sau e gol) ieșire: {Scurt(iesire)}");
-        var dupa = ManifestD406.Abateri(dist, ManifestD406.Kit);
-        erori.AddRange(dupa.Select(a => $"kitul s-a schimbat în timpul rulării: {a}"));
-        return new DukRezultat {
-            Disponibil = true,
-            Perioada = perioada,
-            Valid = ok && dupa.Count == 0,
-            Erori = erori,
-            Avertismente = avertismente,
-            Comanda = comanda,
-            CaleXml = caleXml,
-        };
+        return new((stdout.Result + "\n" + stderr.Result).Trim(), comanda, null);
     }
+
+    internal static string Java(string dist) => Directory.EnumerateDirectories(dist, "jre*").OrderByDescending(d => d)
+        .Select(jre => Path.Combine(jre, "bin", "java.exe")).FirstOrDefault(File.Exists);
 
     static (int, int)? PerioadaDinAntet(string caleXml) {
         static XElement Copil(XElement e, string nume) => e?.Elements().FirstOrDefault(x => x.Name.LocalName == nume);
@@ -117,15 +126,15 @@ public static class Duk {
         return cale;
     }
 
-    static List<string> CitesteLinii(string cale) =>
+    internal static List<string> CitesteLinii(string cale) =>
         !File.Exists(cale) ? [] : File.ReadAllLines(cale).Select(l => l.TrimEnd()).Where(l => l.Length > 0).ToList();
 
-    static string Scurt(string text) =>
+    internal static string Scurt(string text) =>
         string.IsNullOrWhiteSpace(text) ? "(goală)"
         : text.Length <= 400 ? text.ReplaceLineEndings(" ")
         : text[..400].ReplaceLineEndings(" ") + "…";
 
-    static string GasesteAnaf() {
+    internal static string GasesteAnaf() {
         var dinMediu = Environment.GetEnvironmentVariable("ATLAS_ANAF");
         if (!string.IsNullOrWhiteSpace(dinMediu) && Directory.Exists(dinMediu))
             return dinMediu;

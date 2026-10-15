@@ -1,4 +1,5 @@
 import { DepunereDeclaratie } from './DepunereDeclaratie';
+import { DescarcaDeclaratie, type FisierExportat } from './DescarcaDeclaratie';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { NumberBox } from 'devextreme-react';
@@ -22,11 +23,7 @@ import { BandaRectificativa } from './BandaRectificativa';
 // un FORMULAR — tabloul întreg, în ordinea legii, cu totaluri care sunt RÂNDURI
 // ale lui, nu sume de grilă. Un `if` între cele două căi de date ar fi fost o
 // componentă cu două personalități.
-//
-// Ce NU e, la fel de apăsat ca pe scheletul de alături: fișierul declarației.
-// Felia garantează CIFRELE și dovada că nu pierde nimic din registru (panoul
-// „Neincluse"); XML-ul pe schema v12.0.0, validarea DUKIntegrator și depunerea
-// sunt proiect izolat (35c).
+// Cifrele sunt în bani; fișierul XML (lei, E2-D3) îl descarcă `DescarcaDeclaratie`.
 type D300Dto = components['schemas']['D300Dto'];
 type Rand = components['schemas']['D300Rand'];
 type Nemapat = components['schemas']['D300Nemapat'];
@@ -51,6 +48,15 @@ const EXTERNI = [
   { cheie: 'diferenteNegative', eticheta: 'rd. 42 — Diferențe negative (organ fiscal)' },
 ] as const;
 
+const BIFE_D300 = [
+  { cheie: 'temei', eticheta: 'Temei art. 105 alin. (6) lit. b) CPF' },
+  { cheie: 'solicitRambursare', eticheta: 'Solicit rambursarea' },
+  { cheie: 'cereale', eticheta: 'Livrări de cereale (TI)' },
+  { cheie: 'mobile', eticheta: 'Telefoane mobile (TI)' },
+  { cheie: 'dispozitive', eticheta: 'Circuite integrate (TI)' },
+  { cheie: 'console', eticheta: 'Console, tablete, laptopuri (TI)' },
+] as const;
+
 export function D300() {
   const luna = lunaCurenta();
   // Perioada e OBLIGATORIE pe server (400 fără ea): aici perioada E declarația,
@@ -63,6 +69,12 @@ export function D300() {
     diferentePlata: '0',
     soldNegativPrecedent: '0',
     diferenteNegative: '0',
+    temei: '0',
+    solicitRambursare: '0',
+    cereale: '0',
+    mobile: '0',
+    dispozitive: '0',
+    console: '0',
   });
 
   const cale = urlCu('/api/proiectii/d300', {
@@ -78,6 +90,7 @@ export function D300() {
   // `storeRemote`: n-avem ce cere unui `DataSourceLoader` pe un tablou de 55 de
   // rânduri pe care serverul îl întoarce întreg și în ordinea lui.
   const citit = useQuery({ queryKey: ['d300', cale], queryFn: () => ia<D300Dto>(cale) });
+  const [fisier, setFisier] = useState<{ perioada: string; f: FisierExportat }>();
 
   const randuri = useMemo(() => citit.data?.Randuri ?? [], [citit.data]);
   const nemapate = useMemo(() => citit.data?.Nemapate ?? [], [citit.data]);
@@ -104,7 +117,31 @@ export function D300() {
 
       {/* Refuzurile serverului (perioadă inversată, extern negativ, 38 ∧ 41) sunt
           DATE, nu excepții de transport: se citesc în bară, nu în consolă. */}
-      <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D300" exportat={citit.data} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
+      <DescarcaDeclaratie
+        formular="D300"
+        cale={urlCu('/api/proiectii/d300/xml', {
+          dataStart: stare.dataStart,
+          dataEnd: stare.dataEnd,
+          soldPlataPrecedent: stare.soldPlataPrecedent,
+          diferentePlata: stare.diferentePlata,
+          soldNegativPrecedent: stare.soldNegativPrecedent,
+          diferenteNegative: stare.diferenteNegative,
+          temei: stare.temei === '1' ? '2' : '0',
+          solicitRambursare: String(stare.solicitRambursare === '1'),
+          cereale: String(stare.cereale === '1'),
+          mobile: String(stare.mobile === '1'),
+          dispozitive: String(stare.dispozitive === '1'),
+          console: String(stare.console === '1'),
+        })}
+        refuzuri={citit.data?.RefuzuriXml ?? []}
+        incarcat={!!citit.data}
+        bife={BIFE_D300}
+        valori={stare}
+        seteaza={seteaza}
+        descarcat={(f) => setFisier(f && { perioada: stare.dataStart + stare.dataEnd, f })}
+      />
+      <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D300" exportat={citit.data}
+        fisier={fisier?.perioada === stare.dataStart + stare.dataEnd ? fisier.f : undefined} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
       <PanouErori erori={citit.error ? eroriDin(citit.error) : []} titlu="Cererea a fost refuzată" />
       {avertismente.length > 0 && (
         <PanouErori erori={avertismente} titlu="Avertismente" fel="atentie" />
@@ -227,8 +264,8 @@ export function D300() {
         OPANAF 174/2026. Rândurile în <em>italic</em> prezintă componenta deductibilă a
         taxării inverse, cele îngroșate sunt totaluri calculate după formulele
         ordinului, iar cele marcate „extern" nu au sursă în model (se culeg în bară sau rămân 0).
-        Ecranul <strong>nu</strong> produce declarația: fișierul XML, validările ANAF și depunerea
-        sunt altă unealtă.
+        Cifrele sunt în bani; fișierul XML se descarcă în lei întregi, pe schema ANAF v12. Depunerea
+        și semnarea se fac în afara aplicației.
       </p>
     </div>
   );

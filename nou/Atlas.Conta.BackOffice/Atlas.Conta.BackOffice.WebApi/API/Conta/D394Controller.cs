@@ -52,4 +52,29 @@ public class D394Controller : ContaApiController {
             return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
         return Ok(D394Proiectii.D394(os, dataStart.Value, dataEnd.Value));
     }
+
+    /// <summary>Fișierul D394 pe schema v5; 422 cu refuzurile din `D394Dto.RefuzuriXml` (E2-D8).</summary>
+    [HttpGet("xml")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult Xml([FromQuery] DateOnly? dataStart = null, [FromQuery] DateOnly? dataEnd = null,
+            [FromQuery] bool persoaneAfiliate = false, [FromQuery] bool schimbOptiune = false) {
+        var erori = new List<string>();
+        if (dataStart == null)
+            erori.Add("Parametrul „dataStart” este obligatoriu (începutul perioadei de raportare).");
+        if (dataEnd == null)
+            erori.Add("Parametrul „dataEnd” este obligatoriu (sfârșitul perioadei de raportare).");
+        if (dataStart is DateOnly ds && dataEnd is DateOnly de && ds > de)
+            erori.Add("„dataStart” nu poate fi după „dataEnd”.");
+        if (erori.Count > 0)
+            return BadRequest(EroriDto.Din(erori));
+        using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        foreach (var tip in FisiereDeclaratii.Citite(FormularFiscal.D394))
+            if (!PoateCiti(tip, os))
+                return RefuzCitire(tip);
+        return Declaratie(D394Xml.Genereaza(os, dataStart.Value, dataEnd.Value,
+            new ParametriXmlD394(persoaneAfiliate, schimbOptiune)));
+    }
 }

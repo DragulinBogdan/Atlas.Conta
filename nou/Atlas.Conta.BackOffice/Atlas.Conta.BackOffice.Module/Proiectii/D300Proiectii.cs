@@ -45,6 +45,7 @@ public sealed class D300Dto {
     public bool Rectificativa { get; set; }
     public bool PerioadaDeschisa { get; set; }
     public List<DecontTvaRand> DiferenteDeclarat { get; set; } = [];
+    public List<RefuzDeclaratie> RefuzuriXml { get; set; } = [];
 }
 
 public static class D300Proiectii {
@@ -72,8 +73,9 @@ public static class D300Proiectii {
         public readonly SortedSet<string> Surse = new(StringComparer.Ordinal);
     }
 
+    /// <summary>Decontul perioadei; `lei` rotunjește rândurile de operațiuni înaintea totalurilor (E2-D3).</summary>
     public static D300Dto D300(IObjectSpace os, DateOnly dataStart, DateOnly dataEnd,
-        ParametriD300 externi) {
+        ParametriD300 externi, bool lei = false, AntetDeclaratie antet = null) {
         externi ??= new ParametriD300();
         using var citire = Fiscale.DeschideCitirea(os);
         var rezultat = new D300Dto { VersiuneExportata = Fiscale.Versiune(os, FormularFiscal.D300, dataStart, dataEnd) };
@@ -191,6 +193,17 @@ public static class D300Proiectii {
             }
         }
 
+        if (lei) {
+            foreach (var nod in noduri) {
+                nod.Baza = RotunjireDeclaratie.Lei(nod.Baza);
+                nod.Tva = RotunjireDeclaratie.Lei(nod.Tva);
+            }
+            nedeductibil = RotunjireDeclaratie.Lei(nedeductibil);
+            externi = new ParametriD300(RotunjireDeclaratie.Lei(externi.SoldPlataPrecedent),
+                RotunjireDeclaratie.Lei(externi.DiferentePlata), RotunjireDeclaratie.Lei(externi.SoldNegativPrecedent),
+                RotunjireDeclaratie.Lei(externi.DiferenteNegative));
+        }
+
         foreach (var nod in noduri.OrderByDescending(n => n.Nivel)) {
             if (nod.ParinteId is not Guid pid || !dupaId.TryGetValue(pid, out var parinte))
                 continue;
@@ -249,13 +262,16 @@ public static class D300Proiectii {
                 + "de atunci. Cifrele sunt corecte; așezarea e a formularului de azi.");
 
         foreach (var (id, suma) in pierdutTva.OrderBy(p => dupaId[p.Key].Ordine))
-            rezultat.Avertismente.Add(
-                $"rd. {dupaId[id].Cod} a primit TVA {suma.ToString("N2", Ro)} pe care nu-l poate purta — "
+            Pierdut($"rd. {dupaId[id].Cod} a primit TVA {suma.ToString("N2", Ro)} pe care nu-l poate purta — "
                 + "rândul n-are coloană de TVA în formular. Verificați maparea tipurilor de TVA.");
         foreach (var (id, suma) in pierdutBaza.OrderBy(p => dupaId[p.Key].Ordine))
-            rezultat.Avertismente.Add(
-                $"rd. {dupaId[id].Cod} a primit bază impozabilă {suma.ToString("N2", Ro)} pe care nu o poate "
+            Pierdut($"rd. {dupaId[id].Cod} a primit bază impozabilă {suma.ToString("N2", Ro)} pe care nu o poate "
                 + "purta — rândul n-are coloană de valoare în formular. Verificați maparea tipurilor de TVA.");
+
+        void Pierdut(string mesaj) {
+            rezultat.Avertismente.Add(mesaj);
+            rezultat.RefuzuriXml.Add(new RefuzDeclaratie { Cod = CoduriDeclaratie.DateNeincluse, Mesaj = mesaj });
+        }
 
         rezultat.Randuri = noduri
             .OrderBy(n => n.Ordine)
@@ -275,6 +291,7 @@ public static class D300Proiectii {
         if (TvaProiectii.LunaExacta(dataStart, dataEnd) is (int anDeclarat, int lunaDeclarata))
             rezultat.PerioadaDeschisa = os.GetObjectsQuery<PerioadaFiscala>()
                 .Any(p => p.An == anDeclarat && p.Luna == lunaDeclarata && !p.Inchisa);
+        rezultat.RefuzuriXml.AddRange(D300Xml.Refuzuri(antet ?? AntetDeclaratie.Citeste(os), dataStart, dataEnd, rezultat));
         return rezultat;
     }
 

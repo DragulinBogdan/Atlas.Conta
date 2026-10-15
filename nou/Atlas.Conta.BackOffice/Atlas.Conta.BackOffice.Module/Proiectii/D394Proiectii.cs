@@ -21,6 +21,7 @@ public sealed class D394Operatiune {
     public decimal TvaNedeclarat { get; set; }
     public int Randuri { get; set; }
     public int Documente { get; set; }
+    public List<D394Bun> Bunuri { get; set; } = [];
 }
 
 public sealed class D394Rezumat {
@@ -97,9 +98,13 @@ public sealed class D394Dto {
     public int NrCui2 { get; set; }
     public int NrCui3 { get; set; }
     public int NrCui4 { get; set; }
+    public int NrFacturi { get; set; }
+    public List<D394SerieFacturi> SeriiFacturi { get; set; } = [];
+    public List<RefuzDeclaratie> RefuzuriXml { get; set; } = [];
+    public List<D394DiferentaRotunjire> DiferenteRotunjire { get; set; } = [];
 }
 
-public static class D394Proiectii {
+public static partial class D394Proiectii {
     static readonly CultureInfo Ro = CultureInfo.GetCultureInfo("ro-RO");
 
 
@@ -144,6 +149,7 @@ public static class D394Proiectii {
         public int Cota;
         public int NrFact, Randuri;
         public decimal Baza, Tva;
+        public decimal? TvaInainteDeRotunjire;
         public readonly Dictionary<Guid, InfoPartener> Parteneri = [];
         public readonly HashSet<Guid> Documente = [];
         public readonly HashSet<(Guid, bool)> Facturi = []; // (Document × Storno) = o factură la ANAF
@@ -152,7 +158,9 @@ public static class D394Proiectii {
         public bool PersoanaFizica => Parteneri.Values.Any(p => p.PersoanaFizica);
     }
 
-    public static D394Dto D394(IObjectSpace os, DateOnly dataStart, DateOnly dataEnd) {
+    /// <summary>Declarația perioadei; `lei` rotunjește rândurile înaintea rezumatelor (E2-D3).</summary>
+    public static D394Dto D394(IObjectSpace os, DateOnly dataStart, DateOnly dataEnd, bool lei = false,
+            AntetDeclaratie antet = null) {
         using var citire = Fiscale.DeschideCitirea(os);
         var rezultat = new D394Dto { VersiuneExportata = Fiscale.Versiune(os, FormularFiscal.D394, dataStart, dataEnd) };
 
@@ -296,6 +304,11 @@ public static class D394Proiectii {
                 rand.NrFact++;
         }
 
+        var (bunuri, faraCategorie) = Bunuri(os, dataStart, dataEnd, mapari, parteneri, castigatoare, randuri);
+        rezultat.DiferenteRotunjire = DiferenteRotunjire(randuri.Values);
+        if (lei)
+            Rotunjeste(randuri.Values, bunuri);
+
         var ordonate = randuri.Values
             .OrderBy(r => r.TipPartener).ThenBy(r => r.CuiP ?? "￿", StringComparer.Ordinal)
             .ThenBy(r => r.Denumire, StringComparer.Ordinal)
@@ -315,7 +328,8 @@ public static class D394Proiectii {
                 Tva = areTva ? r.Tva : null,
                 TvaNedeclarat = areTva ? 0m : r.Tva,
                 Randuri = r.Randuri,
-                Documente = r.Documente.Count
+                Documente = r.Documente.Count,
+                Bunuri = bunuri.GetValueOrDefault(r) ?? [],
             });
         }
 
@@ -429,52 +443,19 @@ public static class D394Proiectii {
             "Rânduri pe un tip FĂRĂ coloană de TVA în formular (V/LS/AS) poartă TVA în registru — cifra e a datelor de "
             + "dinaintea regulii 70a (taxarea inversă pe livrare nu produce taxă) și rămâne în afara declarației, nu se "
             + "trunchiază tăcut (`TvaNedeclarat` pe rând).",
-            ordonate.Where(r => !AreTva(r.Tip) && r.Tva != 0m)
-                .Select(r => ($"{r.Tip} „{r.Denumire}” (CUI {r.CuiP ?? "—"}): TVA {N2(r.Tva)}", (decimal?)r.Tva)).ToList());
+            ordonate.Where(r => !AreTva(r.Tip) && (r.TvaInainteDeRotunjire ?? r.Tva) != 0m)
+                .Select(r => ($"{r.Tip} „{r.Denumire}” (CUI {r.CuiP ?? "—"}): TVA {N2(r.TvaInainteDeRotunjire ?? r.Tva)}",
+                    (decimal?)(r.TvaInainteDeRotunjire ?? r.Tva))).ToList());
         Avert(CodAvertismentD394.CotaNeintreaga,
             "Cote din registru care nu sunt întregi — formularul acceptă doar cote întregi; rândurile lor se declară pe "
             + "cota trunchiată, cu sumele exacte.",
             coteTrunchiate.Select(c => ($"{c.ToString("0.####", Ro)}% ⇒ {decimal.Truncate(c).ToString("0", Ro)}%", (decimal?)null)).ToList());
-        var perechiVc = mapari
-            .Where(m => m.Value is TipOperatiuneD394.V or TipOperatiuneD394.C)
-            .Select(m => m.Key).ToHashSet();
-        var idsDetaliuVc = new List<(TipOperatiuneD394 Tip, Guid DetaliuId, decimal Baza)>();
-        if (perechiVc.Count > 0)
-            idsDetaliuVc = Fiscale.IntreLuni(Fiscale.Fapte(os), dataStart, dataEnd, FormularFiscal.D394)
-                .Select(r => new { r.DetaliuId, r.TipTvaId, r.SensTva, r.Baza })
-                .ToList()
-                .Where(r => perechiVc.Contains((r.TipTvaId, r.SensTva)))
-                .Select(r => (Tip: mapari[(r.TipTvaId, r.SensTva)], r.DetaliuId, r.Baza))
-                .ToList();
-        var codNcPeLinie = new HashSet<Guid>();
-        if (idsDetaliuVc.Count > 0) {
-            var ids = idsDetaliuVc.Select(x => x.DetaliuId).Distinct().ToList();
-            var idsLot = os.GetObjectsQuery<DocumentDetaliu>().Where(d => ids.Contains(d.ID))
-                .Select(d => new { d.ID, d.LotId }).ToList();
-            var loturi = idsLot.Where(x => x.LotId != null).Select(x => x.LotId.Value).Distinct().ToList();
-            var ncPeLot = os.GetObjectsQuery<Lot>()
-                .Where(l => loturi.Contains(l.ID))
-                .Select(l => new { l.ID, l.Produs.CodNc }).ToList()
-                .ToDictionary(l => l.ID, l => l.CodNc);
-            foreach (var x in idsLot)
-                if (x.LotId is Guid lot && ncPeLot.TryGetValue(lot, out var nc) && !string.IsNullOrWhiteSpace(nc))
-                    codNcPeLinie.Add(x.ID);
-            foreach (var x in os.GetObjectsQuery<FacturaIntrareDetaliu>().Where(d => ids.Contains(d.ID))
-                         .Select(d => new { d.ID, CodNc = d.Produs.CodNc }).ToList())
-                if (!string.IsNullOrWhiteSpace(x.CodNc)) codNcPeLinie.Add(x.ID);
-            foreach (var x in os.GetObjectsQuery<FacturaIesireDetaliu>().Where(d => ids.Contains(d.ID))
-                         .Select(d => new { d.ID, CodNc = d.Produs.CodNc }).ToList())
-                if (!string.IsNullOrWhiteSpace(x.CodNc)) codNcPeLinie.Add(x.ID);
-        }
         Avert(CodAvertismentD394.FaraOp11,
-            "Operațiunile V și C cer în formular detaliul pe categorii de bunuri (`op11`: categorie + cod NC). "
-            + "Codul NC există pe `Produs` (felia 16), deci se strigă DOAR liniile care n-au produs codificat; "
-            + "categoria de bunuri și structura `op11` rămân de completat manual (D4-r5).",
-            idsDetaliuVc.Where(x => !codNcPeLinie.Contains(x.DetaliuId))
-                .GroupBy(x => x.Tip)
-                .OrderBy(g => g.Key)
+            "Operațiunile V și C cer în formular categoria de bunuri (`op11`), luată din produsul liniei; "
+            + "completați „Categorie taxare inversă” pe produs (E2-D6).",
+            faraCategorie.GroupBy(x => x.Tip).OrderBy(g => g.Key)
                 .Select(g => ($"{g.Key}: bază {N2(g.Sum(x => x.Baza))} ({g.Count()} "
-                        + $"{(g.Count() == 1 ? "linie" : "linii")} fără cod NC)", (decimal?)g.Sum(x => x.Baza)))
+                        + $"{(g.Count() == 1 ? "linie" : "linii")} fără categorie)", (decimal?)g.Sum(x => x.Baza)))
                 .ToList());
         Avert(CodAvertismentD394.CombinatieRefuzata,
             "Combinații partener × tip de operațiune pe care formularul le refuză — pentru neînregistrați achizițiile "
@@ -497,6 +478,8 @@ public static class D394Proiectii {
             rezultat.PerioadaDeschisa = rectificativa.PerioadaDeschisa;
             rezultat.DiferenteDeclarat = rectificativa.Agregat;
         }
+        Facturi(os, rezultat, dataStart, dataEnd);
+        rezultat.RefuzuriXml.AddRange(D394Xml.Refuzuri(antet ?? AntetDeclaratie.Citeste(os), dataStart, dataEnd, rezultat));
         return rezultat;
     }
 }

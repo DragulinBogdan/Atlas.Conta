@@ -27,11 +27,12 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [TR-D9b — reluarea pe privat și primul pas: originea partidei](analize/2026-10-12-tr-d9b-reluare-privat.md)
 - [Spargerea ariilor stării curente](analize/2026-10-14-spargerea-ariilor.md)
 
-### `docs/api/` (38)
+### `docs/api/` (39)
 
 - [D300 — Decont de TVA, structura oficială 2026 (OPANAF 174/2026)](api/d300-structura-2026.md)
 - [D394 — Declarația informativă 394, structura oficială 2026 (OPANAF 3769/2015, modificat prin OPANAF 2194/2025)](api/d394-structura-2026.md)
 - [D406 (SAF-T) — structura oficială, ancora 16.02.2026](api/d406-structura-2026.md)
+- [E2 — depunerea fiscală: D300 și D394 în XML, SAF-T pe luna cu corecție valorică](api/e2-depunere-xml-contract.md)
 - [Lista React — luptele structurale cu XAF Blazor](api/lista-react.md)
 - [Pasul 5 — API + React: designul tierului Web API (design)](api/p5-api-design.md)
 - [Pasul 5, felia 10 — balanța pliată pe planul de conturi (rollup)](api/p5-felia-balanta-plan-contract.md)
@@ -117,7 +118,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-astra.md)
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-fable.md)
 
-### `docs/decizii/` (124)
+### `docs/decizii/` (125)
 
 - [1 — Nucleu generic + moștenire, nu tabele complet separate](decizii/001-nucleu-generic-mostenire.md)
 - [2 — Testul de apartenență a unui câmp](decizii/002-testul-apartenentei-campului.md)
@@ -240,6 +241,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [119 — Compensarea valorică aparține corecției: a doua Operare pe un document operat…](decizii/119-compensarea-valorica-apartine-corectiei.md)
 - [120 — Lanțul de migrații e de unică folosință până la „rotund”; recomprimarea lui este a șaptea condiție](decizii/120-lantul-de-migratii-se-recomprima-la-rotund.md)
 - [121 — Ariile stării curente sunt 16, pe responsabilitățile catalogului de funcționalități](decizii/121-ariile-pe-familiile-catalogului.md)
+- [122 — Declarațiile D300 și D394 se serializează din proiecția lor, în lei, cu refuz înaintea fișierului…](decizii/122-declaratiile-se-serializeaza-din-proiectie.md)
 - [Jurnalul de decizii — index (un fișier per decizie)](decizii/README.md)
 - [Istoricul de execuție al planului de lucru (snapshot 2026-08-24)](decizii/istoric-plan-de-lucru.md)
 - [Restanțele și amânările cu nume](decizii/restante.md)
@@ -337,7 +339,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [TR-D9b, pasul 7 — membrii de tip SensTva își iau numele întreg](nucleu/tr-d9b-pas7-senstva.md)
 - [TR-D9b, pasul 8 — sensul stingerii și parametrii de interogare își iau numele întreg](nucleu/tr-d9b-pas8-sensstingere.md)
 
-### `docs/nucleu/scenarii/` (26)
+### `docs/nucleu/scenarii/` (27)
 
 - [ASM — asamblare](nucleu/scenarii/ASM.md)
 - [BCS — bon de consum](nucleu/scenarii/BCS.md)
@@ -347,6 +349,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md)
 - [D9B — originea partidei](nucleu/scenarii/D9B.md)
 - [DEC — decontul titularului](nucleu/scenarii/DEC.md)
+- [DECL — declarațiile D300 și D394 în XML](nucleu/scenarii/DECL.md)
 - [DESCHIDERE — solduri inițiale detaliate](nucleu/scenarii/DESCHIDERE.md)
 - [DSC — descărcare de gestiune](nucleu/scenarii/DSC.md)
 - [DVI — declarație vamală](nucleu/scenarii/DVI.md)

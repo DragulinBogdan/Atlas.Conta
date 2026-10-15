@@ -159,6 +159,9 @@ static class ScenelePeTip {
         scene.Add(new(nameof(ScenariiCvl), ["CVL"], () => new ScenariiCvl(
             s.Deschide, s.Check, privat,
             (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()));
+        scene.Add(new(nameof(ScenariiDecl), ["DECL"], () => new ScenariiDecl(
+            s.Deschide, s.Check, privat,
+            (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()));
         scene.Add(new(nameof(ScenariiC111), ["C111"], () => ScenariiC111.Ruleaza(
             s.Deschide, s.Check, privat,
             (os, an, luna) => s.InchideAcceptTot(os, an, luna))));

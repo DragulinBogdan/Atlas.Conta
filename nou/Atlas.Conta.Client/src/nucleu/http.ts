@@ -184,7 +184,7 @@ export async function sterge(cale: string): Promise<void> {
 // TOTUL în memoria paginii — costul asumat al autentificării prin antet;
 // fișierul unei luni e de ordinul MB) și se salvează printr-un `<a download>`
 // sintetic peste un `blob:` URL.
-export async function descarcaFisier(cale: string, numeImplicit: string, accept?: string): Promise<void> {
+export async function descarcaFisier(cale: string, numeImplicit: string, accept?: string): Promise<Headers> {
   const raspuns = await trimite(cale, { method: 'GET', headers: accept ? { Accept: accept } : {} }, false);
   const blob = await raspuns.blob();
   const nume = numeDinDispozitie(raspuns.headers.get('Content-Disposition')) ?? numeImplicit;
@@ -198,6 +198,7 @@ export async function descarcaFisier(cale: string, numeImplicit: string, accept?
   // Revocarea imediată taie descărcarea în unele browsere (salvarea începe după
   // click, asincron); un minut e mult peste orice fereastră reală.
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  return raspuns.headers;
 }
 
 // `attachment; filename="SAF-T_12345674_2025-09.xml"` → numele. Serverul e

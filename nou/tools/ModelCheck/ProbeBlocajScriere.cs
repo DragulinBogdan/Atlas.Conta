@@ -28,6 +28,7 @@ static class ProbeBlocajScriere {
         (Modul + "Api/Itv/InchidereTvaApply.cs", "InchidereTvaApply.Genereaza", "generarea închiderii de TVA"),
         (Modul + "Api/Itv/InchidereTvaApply.cs", "InchidereTvaApply.Regenereaza", "regenerarea închiderii de TVA"),
         (Modul + "Motor/FiscalitateService.cs", "FiscalitateService.ConfirmaDepunerea", "confirmarea depunerii"),
+        (Modul + "Motor/FiscalitateService.cs", "FiscalitateService.RetrageDepunerea", "retragerea confirmării depunerii"),
         (Modul + "Cub/Materializare.Deschidere.cs", "Materializare.CereScriere", "deschiderea și stingerea ei, în tranzacția apelantului"),
         (Modul + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.SaveChanges", "poziția detaliilor noi (S-r9)"),
         (Modul + "BusinessObjects/BackOfficeDbContext.cs", "BackOfficeEFCoreDbContext.SaveChangesAsync", "poziția detaliilor noi (S-r9)"),

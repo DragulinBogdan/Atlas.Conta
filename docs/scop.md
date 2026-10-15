@@ -84,11 +84,18 @@ descrierea a ce există e în [starea curentă](stare-curenta/README.md).
 
 ## Etapa curentă
 
-**E1 — Corecția valorii lotului.** Deschisă 2026-10-14, aliniată cu
-contractul [TR-D9b-CV](nucleu/tr-d9b-corectii-valorice-contract.md).
-Gata când: fiecare rând `E1` din catalog e `livrată`, adică TR-D9b-CV e
-închis cu review-ul advers (pasul 5).
-Stare: rândurile E1 sunt `livrată` din 2026-10-15 (pasul 5, branch-ul
-`tr-d9b-cv-pas5`); etapa se închide la merge, iar etapa următoare o fixează
-owner-ul.
-Funcționalitățile: rândurile `E1` din [catalog](functionalitati.md).
+**E2 — Depunerea fiscală.** Deschisă 2026-10-15 de owner, aliniată cu
+contractul [E2 — depunerea fiscală](api/e2-depunere-xml-contract.md):
+D300 și D394 în XML, validate de validatorii oficiali, și SAF-T pe luna cu
+corecție valorică pe lot.
+Gata când: fiecare rând `E2` din catalog e `livrată`, adică fișierele trec
+XSD-ul și DUKIntegrator pe lunile de probă ale catalogului `DECL`, iar
+contractul e închis cu review-ul advers (pasul 5).
+Stare: rândurile E2 sunt `livrată` din 2026-10-15 (pasul 5, review advers
+reparat; regula în decizia 122, propusă); etapa se închide la merge, iar
+etapa următoare o fixează owner-ul.
+Funcționalitățile: rândurile `E2` din [catalog](functionalitati.md).
+
+E1 (corecția valorii lotului, contractul
+[TR-D9b-CV](nucleu/tr-d9b-corectii-valorice-contract.md)) s-a închis la
+2026-10-15, la merge-ul pasului 5; rândurile ei sunt `livrată`.

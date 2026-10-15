@@ -70,6 +70,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Societatea raportoare (felia 16, D16-D1): UN SINGUR rând per bază
         // (gardianul îl apără; nu există „index unic pe nimic").
         public DbSet<Societate> Societati { get; set; }
+        public DbSet<PlajaFacturi> PlajeFacturi { get; set; }
         // Nomenclatorul rândurilor decontului de TVA (felia 12, D3-D1) — corpul
         // formularului 300 din OPANAF 174/2026, seed-uit în NUCLEU (e lege, nu profil).
         public DbSet<RandD300> RanduriD300 { get; set; }
@@ -434,14 +435,14 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             // politicii de mișcare SAF-T — un rând de registru se potrivește pe
             // exact una, altfel codul de mișcare ar depinde de ordinea rândurilor.
             modelBuilder.Entity<PoliticaMiscareSaft>()
-                .HasIndex(p => new { p.TipDocumentId, p.TipStoc, p.Semn }).IsUnique();
+                .HasIndex(p => new { p.TipDocumentId, p.TipStoc, p.Semn, p.Cauza }).IsUnique();
             // A DOUA jumătate a unicității, cerută de semantica lui NULL în SQL:
             // în Postgres `NULL <> NULL`, deci indexul de mai sus NU oprește două
             // rânduri „orice semn" pe aceeași pereche (tip, TipStoc) — exact
             // dublura care ar face potrivirea nedeterministă. Indexul parțial de
             // aici o prinde: unic pe pereche, PRINTRE rândurile cu `Semn` null.
             modelBuilder.Entity<PoliticaMiscareSaft>()
-                .HasIndex(p => new { p.TipDocumentId, p.TipStoc }).IsUnique()
+                .HasIndex(p => new { p.TipDocumentId, p.TipStoc, p.Cauza }).IsUnique()
                 .HasFilter("\"Semn\" IS NULL");
 
             AplicaUnicitatiPolitici(modelBuilder);
@@ -450,7 +451,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
             modelBuilder.HasDbFunction(typeof(Cub.Citiri.Partide).GetMethod(nameof(Cub.Citiri.Partide.Identitate)))
                 .HasName("cub_partida_id");
             modelBuilder.Entity<DepunereDeclaratie>()
-                .HasIndex(d => new { d.Formular, d.Perioada, d.VersiuneExportata }).IsUnique();
+                .HasIndex(d => new { d.Formular, d.Perioada, d.VersiuneExportata }).IsUnique()
+                .HasFilter("\"RetrasaLa\" IS NULL");
             AplicaCub(modelBuilder);
             AplicaScaraNumerica(modelBuilder);
             AplicaColoanePartajate(modelBuilder);

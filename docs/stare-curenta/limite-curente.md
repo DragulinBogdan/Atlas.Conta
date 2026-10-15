@@ -150,6 +150,19 @@ repetă aici. Limitele mecanismelor, fără efect direct pentru utilizator, stau
   neacoperite apar în avertismente și în sumele neincluse. Indicatorul de
   rectificativă D394 e disponibil pentru exact o lună; D300 se corectează
   prin regularizări. (36f, 69-r2, 69-r6, D4-r7, D4-r13)
+- Fișierul XML D300 există numai pe formularul din 2026 (v12), lunar sau
+  trimestrial. Perioada de două luni a plătitorului trimestrial cu achiziții
+  intracomunitare se refuză, iar trimestrul se exportă fără avertisment
+  (E2-r2). Amprenta și confirmarea depunerii există numai pe lună (E2-r1).
+  Rândurile fără sursă în model (agricultori, restituiri, pro-rata,
+  secțiunile informative) ies cu zero sau din parametri. Lista CAEN o verifică
+  validatorul ANAF, nu exportul (E2-r6). (E2-D1, E2-D5)
+- Fișierul D394 nu declară încasările AMEF (cartușul G), facturile
+  simplificate, TVA-ul la încasare, regimurile speciale, lista CAEN (I.7),
+  facturile anulate și autofacturile; ies cu zero sau lipsesc (E2-r3, E2-r4).
+  Stornoul comercial nu e factură emisă în I.2. Partenerul
+  persoană fizică fără CNP și achizițiile de la neînregistrați (N) blochează
+  fișierul, fiindcă adresa structurată din `op1` nu există (E2-r5). (E2-D5, E2-D7)
 - Confirmarea depunerii păstrează formularul, perioada, amprenta faptelor
   exportate și momentul confirmării; nu transmite declarația la ANAF și nu
   verifică recipisa. (103)
@@ -159,6 +172,11 @@ repetă aici. Limitele mecanismelor, fără efect direct pentru utilizator, stau
   data faptului. (109, 36f, D4-r1)
 
 ## SAF-T
+
+- Pe declarația de stocuri, linia numai valorică se exportă doar pentru
+  corecția valorii lotului; NIR-ul cu diferență de valoare, TVA-ul capitalizat
+  pe lot și DVI-ul care adaugă valoare fără cantitate rămân refuz
+  (`SAFT_MISCARE_VALORICA`, SAFT-r2). (E2-D10)
 
 - SAF-T acoperă profilurile L și S pentru cazurile implementate: nu toate
   variantele de contribuabil, proprietarii terți ai stocului sau toate

@@ -72,6 +72,20 @@ pe o lună redeschisă după prima declarare, conținutul e deja calculat, dar
 devine rectificativă abia la re-închidere, iar banda din client o spune.
 (F27-D5, 80a, review advers F27, 2')
 
+D300 și D394 au butonul „Descarcă XML”, cu bifele datelor de perioadă
+(D300: temeiul, rambursarea, cele patru bife de taxare inversă internă; D394:
+persoanele afiliate, schimbarea opțiunii), ținute în URL. Butonul stă inactiv
+cât `RefuzuriXml` are cauze, iar cauzele apar într-un panou; refuzul cererii
+(403, 422) apare în același loc. Pe lună, după descărcarea XML, confirmarea
+depunerii trimite amprenta fișierului și parametrii lui, iar ecranul arată
+începutul amprentei; fără XML, confirmarea folosește versiunea exportului
+JSON. Confirmarea activă se retrage cu motiv, din același panou. Pe
+trimestru nu există amprentă (E2-r1). D394 arată lângă buton tabelul
+„Rotunjirea pe partener față de D300”, pe tip × cotă, când diferența nu e
+zero. (122 b, 122 i) Câmpurile antetului se culeg în XAF,
+pe societate, iar plajele de facturi și categoria de bunuri pe nomenclatoarele
+lor. (E2-D8)
+
 ## Selectoare, căutare și cache
 
 Căutarea uzuală folosește o coloană calculată și stocată în PostgreSQL,
@@ -296,5 +310,5 @@ de gardian. (58, 79a, 84d, 87g, 87j)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (24; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106.
+Deciziile care numesc pagina în `Arii:` (25; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106, 122 (propusă).
 <!-- /gen:decizii -->

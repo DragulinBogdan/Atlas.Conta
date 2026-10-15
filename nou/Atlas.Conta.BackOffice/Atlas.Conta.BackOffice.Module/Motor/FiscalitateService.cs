@@ -20,7 +20,7 @@ public static class FiscalitateService {
     /// <summary>Faptele fiscale deja declarate nu se șterg prin anulare; null = liber.</summary>
     public static string MotivAnulare(IObjectSpace os, Document doc) {
         if (doc is not IDocumentFiscal) return null;
-        var depuneri = os.GetObjectsQuery<DepunereDeclaratie>();
+        var depuneri = Active(os);
         return Cub.Citiri.Fiscale.Postari(os).Any(p => p.DocumentId == doc.ID
                 && depuneri.Any(d => d.Formular == FormularFiscal.D300 && d.Perioada == p.PerioadaDeclarare
                     || d.Formular == FormularFiscal.D394 && d.Perioada == p.PerioadaD394))
@@ -78,20 +78,26 @@ public static class FiscalitateService {
     }
 
     public static bool EsteDepusa(IObjectSpace os, FormularFiscal formular, int perioada) =>
-        os.GetObjectsQuery<DepunereDeclaratie>().Any(d => d.Formular == formular && d.Perioada == perioada);
+        Active(os).Any(d => d.Formular == formular && d.Perioada == perioada);
+
+    public static IQueryable<DepunereDeclaratie> Active(IObjectSpace os) =>
+        os.GetObjectsQuery<DepunereDeclaratie>().Where(d => d.RetrasaLa == null);
 
     public static Guid ConfirmaDepunerea(IObjectSpace os, FormularFiscal formular, int an, int luna,
-            string versiuneExportata, string utilizator) {
+            string versiuneExportata, string utilizator, string sha256Fisier = null, string parametriFisier = null) {
         if (!Enum.IsDefined(formular) || an < 1900 || an > 9999 || luna < 1 || luna > 12
                 || string.IsNullOrWhiteSpace(versiuneExportata))
             throw new OperareException("DEPUNERE_DATE: formularul, perioada și versiunea exportată sunt obligatorii.");
+        if ((sha256Fisier == null) != (parametriFisier == null))
+            throw new OperareException("DEPUNERE_DATE: amprenta fișierului și parametrii lui se confirmă împreună.");
         var perioada = an * 100 + luna;
         using var tx = TranzactieComanda.Incepe(os);
         ((EFCoreObjectSpace)os).DbContext.Database.ExecuteSqlRaw(
             "SELECT pg_advisory_xact_lock({0})", CheieDepuneri);
-        var existenta = os.GetObjectsQuery<DepunereDeclaratie>().FirstOrDefault(d =>
+        var existenta = Active(os).FirstOrDefault(d =>
             d.Formular == formular && d.Perioada == perioada && d.VersiuneExportata == versiuneExportata);
-        if (existenta != null) return existenta.ID;
+        if (existenta != null && existenta.Sha256Fisier == sha256Fisier)
+            return existenta.ID;
         var drafturi = os.GetObjectsQuery<Document>().Where(d => d.Stare == StareDocument.Draft
             && d.CorecteazaId != null && d.MotivCorectie == MotivCorectie.EroareMateriala);
         if (Cub.Citiri.Fiscale.Postari(os).Any(p => p.InversaTehnica
@@ -101,14 +107,56 @@ public static class FiscalitateService {
         var inceput = new DateOnly(an, luna, 1);
         if (versiuneExportata != Cub.Citiri.Fiscale.Versiune(os, formular, inceput, inceput.AddMonths(1).AddDays(-1)))
             throw new OperareException("DEPUNERE_VERSIUNE_DEPASITA: faptele perioadei diferă de export; exportați din nou înainte de confirmare.");
+        if (existenta != null) {
+            Retrage(existenta, utilizator, "Înlocuită de confirmarea aceleiași versiuni "
+                + (sha256Fisier == null ? "fără fișier XML." : $"cu fișierul {sha256Fisier[..12]}…."));
+            os.CommitChanges();
+        }
         var depunere = os.CreateObject<DepunereDeclaratie>();
+        depunere.Inlocuieste = existenta?.ID;
         depunere.Formular = formular;
         depunere.Perioada = perioada;
         depunere.VersiuneExportata = versiuneExportata;
         depunere.ConfirmataLa = DateTime.UtcNow;
         depunere.ConfirmataDe = utilizator;
+        depunere.Sha256Fisier = sha256Fisier;
+        depunere.ParametriFisier = parametriFisier;
         os.CommitChanges();
         tx.Commit();
         return depunere.ID;
+    }
+
+    /// <summary>Retrage confirmarea activă a versiunii; pe D300, refuzată cât există regularizări care se sprijină pe ea (122 i).</summary>
+    public static Guid RetrageDepunerea(IObjectSpace os, FormularFiscal formular, int an, int luna,
+            string versiuneExportata, string motiv, string utilizator) {
+        if (!Enum.IsDefined(formular) || an < 1900 || an > 9999 || luna < 1 || luna > 12
+                || string.IsNullOrWhiteSpace(versiuneExportata) || string.IsNullOrWhiteSpace(motiv))
+            throw new OperareException("DEPUNERE_DATE: formularul, perioada, versiunea și motivul retragerii sunt obligatorii.");
+        var perioada = an * 100 + luna;
+        using var tx = TranzactieComanda.Incepe(os);
+        ((EFCoreObjectSpace)os).DbContext.Database.ExecuteSqlRaw(
+            "SELECT pg_advisory_xact_lock({0})", CheieDepuneri);
+        var depunere = Active(os).FirstOrDefault(d =>
+            d.Formular == formular && d.Perioada == perioada && d.VersiuneExportata == versiuneExportata)
+            ?? throw new OperareException("DEPUNERE_NECONFIRMATA: versiunea nu are o confirmare activă.");
+        var inceput = new DateOnly(an, luna, 1);
+        var sfarsit = inceput.AddMonths(1).AddDays(-1);
+        if (formular == FormularFiscal.D300
+                && !Active(os).Any(d => d.Formular == formular && d.Perioada == perioada && d.ID != depunere.ID)
+                && Cub.Citiri.Fiscale.Postari(os).Any(p => p.RegularizareD300 && p.PerioadaDeclarare != perioada
+                    && (p.DataExigibilitate >= inceput && p.DataExigibilitate <= sfarsit
+                        || p.DataInregistrare >= inceput && p.DataInregistrare <= sfarsit)))
+            throw new OperareException("DEPUNERE_REGULARIZARI: faptele întârziate ale lunii au intrat ca regularizare "
+                + "fiindcă luna era depusă; corectați-le întâi prin inversă.");
+        Retrage(depunere, utilizator, motiv.Trim());
+        os.CommitChanges();
+        tx.Commit();
+        return depunere.ID;
+    }
+
+    static void Retrage(DepunereDeclaratie depunere, string utilizator, string motiv) {
+        depunere.RetrasaLa = DateTime.UtcNow;
+        depunere.RetrasaDe = utilizator;
+        depunere.MotivRetragere = motiv;
     }
 }

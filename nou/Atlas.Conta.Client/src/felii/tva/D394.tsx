@@ -1,5 +1,6 @@
 import { DepunereDeclaratie } from './DepunereDeclaratie';
-import { useMemo } from 'react';
+import { DescarcaDeclaratie, type FisierExportat } from './DescarcaDeclaratie';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Column, DataGrid, FilterRow, Grouping, GroupPanel, HeaderFilter, Paging, Scrolling, Search, Sorting,
@@ -24,14 +25,14 @@ import { BandaRectificativa } from './BandaRectificativa';
 // control); (3) panoul „Neincluse în declarație" — nimic nu se pierde (D4-D4);
 // (4) avertismentele (D4-D5) — ce cere formularul și modelul nu are.
 //
-// Ce NU e: fișierul XML (35c). Cifrele sunt bani exacți; rotunjirea la leu e a
-// fișierului.
+// Cifrele sunt bani exacți; rotunjirea la leu e a fișierului XML, descărcat prin `DescarcaDeclaratie`.
 type D394Dto = components['schemas']['D394Dto'];
 type Operatiune = components['schemas']['D394Operatiune'];
 type Rezumat = components['schemas']['D394Rezumat'];
 type RezumatCota = components['schemas']['D394RezumatCota'];
 type Neinclus = components['schemas']['D394Neinclus'];
 type Avertisment = components['schemas']['D394Avertisment'];
+type DiferentaRotunjire = components['schemas']['D394DiferentaRotunjire'];
 
 const camp = (n: keyof Operatiune & string) => n;
 const campNeinclus = (n: keyof Neinclus & string) => n;
@@ -51,17 +52,25 @@ function cartus(tip: number): string {
   return c ? `${c.litera} — ${c.denumire}` : `Tip partener ${tip}`;
 }
 
+const BIFE_D394 = [
+  { cheie: 'persoaneAfiliate', eticheta: 'Operațiuni cu persoane afiliate' },
+  { cheie: 'schimbOptiune', eticheta: 'Schimb opțiunea de consultare (NU → DA)' },
+] as const;
+
 export function D394() {
   const luna = lunaCurenta();
   // Perioada e OBLIGATORIE pe server (400 fără ea): perioada E declarația.
   // Implicitul lunii curente e ca prima deschidere să arate ceva; se vede în
   // bară și în URL.
-  const [stare, seteaza] = useUrlStare({ dataStart: luna.start, dataEnd: luna.sfarsit });
+  const [stare, seteaza] = useUrlStare({
+    dataStart: luna.start, dataEnd: luna.sfarsit, persoaneAfiliate: '0', schimbOptiune: '0',
+  });
 
   const cale = urlCu('/api/proiectii/d394', { dataStart: stare.dataStart, dataEnd: stare.dataEnd });
   // Aceeași cale de citire ca D300: `useQuery` + `ia` (JWT, 401 → sesiune
   // expirată, 400 `EroriDto` → mesaje de domeniu, afișate).
   const citit = useQuery({ queryKey: ['d394', cale], queryFn: () => ia<D394Dto>(cale) });
+  const [fisier, setFisier] = useState<{ perioada: string; f: FisierExportat }>();
 
   const operatiuni = useMemo(() => citit.data?.Operatiuni ?? [], [citit.data]);
   const rezumat = useMemo(() => citit.data?.Rezumat ?? [], [citit.data]);
@@ -85,8 +94,25 @@ export function D394() {
         )}
       </div>
 
-      <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D394" exportat={citit.data} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
+      <DescarcaDeclaratie
+        formular="D394"
+        cale={urlCu('/api/proiectii/d394/xml', {
+          dataStart: stare.dataStart,
+          dataEnd: stare.dataEnd,
+          persoaneAfiliate: String(stare.persoaneAfiliate === '1'),
+          schimbOptiune: String(stare.schimbOptiune === '1'),
+        })}
+        refuzuri={citit.data?.RefuzuriXml ?? []}
+        incarcat={!!citit.data}
+        bife={BIFE_D394}
+        valori={stare}
+        seteaza={seteaza}
+        descarcat={(f) => setFisier(f && { perioada: stare.dataStart + stare.dataEnd, f })}
+      />
+      <DepunereDeclaratie key={stare.dataStart + stare.dataEnd} formular="D394" exportat={citit.data}
+        fisier={fisier?.perioada === stare.dataStart + stare.dataEnd ? fisier.f : undefined} reincarca={() => citit.refetch()} dataStart={stare.dataStart} dataEnd={stare.dataEnd} />
       <PanouErori erori={citit.error ? eroriDin(citit.error) : []} titlu="Cererea a fost refuzată" />
+      <DiferenteRotunjire lista={citit.data?.DiferenteRotunjire ?? []} />
       <Avertismente lista={avertismente} />
 
       {citit.isPending ? <p className="indiciu">Se încarcă…</p> : (
@@ -203,9 +229,39 @@ export function D394() {
         formularului 394 (OPANAF 3769/2015, modificat prin OPANAF 2194/2025): tipul de operațiune
         din politica <em>MapareD394</em>, tipul de partener din identitatea fiscală a partenerului,
         numărul de facturi 1/0 per document pe cota cu TVA-ul maxim. Sumele sunt exacte (în bani);
-        rotunjirea la leu întreg, detaliul pe categorii de bunuri, bonurile fiscale și fișierul XML
-        sunt altă unealtă.
+        fișierul XML se descarcă în lei întregi, pe schema ANAF v5, fără bonurile fiscale (AMEF).
       </p>
+    </div>
+  );
+}
+
+// Informare, nu refuz (122 b): fișierul rotunjește fiecare partener, D300 rotunjește o dată rândul.
+function DiferenteRotunjire({ lista }: { lista: DiferentaRotunjire[] }) {
+  if (lista.length === 0) return null;
+  const lei = (v?: number) => (v ?? 0) === 0 ? '' : `${v! > 0 ? '+' : ''}${v} lei`;
+  return (
+    <div className="d394__avertismente">
+      <h3>Rotunjirea pe partener față de D300</h3>
+      <p className="indiciu">
+        D394 rotunjește la leu fiecare partener, iar D300 rotunjește o dată totalul. Pe aceleași operațiuni,
+        sumele din fișier diferă de totalul rotunjit cu:
+      </p>
+      <table className="tabel-mic">
+        <thead>
+          <tr><th>Tip</th><th>Cotă</th><th>Parteneri</th><th>Bază</th><th>TVA</th></tr>
+        </thead>
+        <tbody>
+          {lista.map((d) => (
+            <tr key={`${d.Tip}|${d.Cota}`}>
+              <td>{d.Tip}</td>
+              <td className="num">{d.Cota}%</td>
+              <td className="num">{d.Randuri}</td>
+              <td className="num">{lei(d.Baza)}</td>
+              <td className="num">{lei(d.Tva)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

@@ -238,6 +238,27 @@ prin dublu-click în fișa contului pe anul datei cerute, filtrată pe rând:
 pe repartitorul lui, sau cu `faraTert` pe rândul „fără terț”. (F27-D7,
 C111-Q18)
 
+### Fișierele declarațiilor
+
+`GET api/proiectii/d300/xml` și `GET api/proiectii/d394/xml` primesc
+parametrii proiecției JSON plus datele de perioadă: D300 `temei` (0 sau 2),
+`proRata` (0–100), `depusReprezentant`, `bifaInterne`, `solicitRambursare` și
+bifele de taxare inversă internă; D394 `persoaneAfiliate` și `schimbOptiune`.
+Parametrii greșiți dau 400; lipsa citirii pe `Postare` sau `Societate` (și,
+pe D394, pe `Document` și `PlajaFacturi`) dă 403; refuzurile din
+`RefuzuriXml` dau 422 cu `COD: mesaj`, înaintea primului byte. Altfel
+răspunsul e `application/xml; charset=utf-8`, cu numele fișierului în
+`Content-Disposition`, pe lună amprenta faptelor în `X-Versiune-Exportata`,
+iar SHA-256 al fișierului și parametrii lui în `X-Sha256-Fisier` și
+`X-Parametri-Fisier`. Confirmarea depunerii
+(`POST /api/depuneri-declaratii/{formular}/{an}/{luna}`) le primește înapoi în
+`Sha256Fisier` și `ParametriFisier`, numai împreună; parametrii fără forma
+exportului dau 400, iar fișierul refăcut diferit dă 422
+`DEPUNERE_FISIER_DIFERIT`. `POST …/{luna}/retragere` (`VersiuneExportata`,
+`Motiv`) retrage confirmarea activă; versiunea fără confirmare activă dă 422
+`DEPUNERE_NECONFIRMATA`, iar D300 cu regularizări sprijinite pe ea dă 422
+`DEPUNERE_REGULARIZARI`. (E2-D8, 122 i)
+
 ## Securitate și răspunsuri
 
 Ordinea gărzilor este autentificare, forma cererii, vizibilitatea obiectului,
@@ -360,5 +381,5 @@ diferiți. (43b, 43d, 77k)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (23; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 5, 6, 7, 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 60, 70, 77, 80, 81, 87 (amendată de 97), 89, 98, 99, 101 (amendată de 102), 104 (amendată de 106), 106, 108 (amendată de 110).
+Deciziile care numesc pagina în `Arii:` (24; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 5, 6, 7, 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 60, 70, 77, 80, 81, 87 (amendată de 97), 89, 98, 99, 101 (amendată de 102), 104 (amendată de 106), 106, 108 (amendată de 110), 122 (propusă).
 <!-- /gen:decizii -->

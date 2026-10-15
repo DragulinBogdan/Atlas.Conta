@@ -127,6 +127,7 @@ public static partial class SaftProiectii {
         public string CodTipDocument;
         public TipStoc TipStoc;
         public int? Semn;
+        public CauzaMiscareSaft Cauza;
         public string Cod;
         public RolTertSaft Rol;
         public string Motiv;

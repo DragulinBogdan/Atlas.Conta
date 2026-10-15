@@ -215,13 +215,34 @@ Versiunea emisă în DTO-ul D300/D394 (`VersiuneExportata`) este SHA-256 peste
 faptele perioadei din citirea comună, formular și perioadă. Raportul și
 amprenta folosesc același snapshot tranzacțional. Confirmarea recalculează
 amprenta sub blocaj exclusiv; o versiune depășită (faptele s-au schimbat
-între export și confirmare) primește `DEPUNERE_VERSIUNE_DEPASITA`. UI
-descarcă exportul JSON cu amprentă și păstrează versiunea acelui export
-pentru confirmare, fără etichetă liberă. Aceasta verifică faptele cubului, nu
-parametrii manuali sau fișierul XML ANAF: JSON-ul nu este XML ANAF, iar
-parametrii externi D300 nu sunt certificați de amprenta faptelor. (103d)
+între export și confirmare) primește `DEPUNERE_VERSIUNE_DEPASITA`. Amprenta
+certifică faptele cubului, nu antetul sau parametrii. (103d)
 
-`DepunereDeclaratie` păstrează momentul și utilizatorul, fără sume fiscale
+Fișierul XML se identifică separat. Exportul lui întoarce, lângă
+`X-Versiune-Exportata`, SHA-256 al fișierului (`X-Sha256-Fisier`) și
+parametrii din care se reface (`X-Parametri-Fisier`: externii D300, datele de
+perioadă și antetul societății de la export). Confirmarea primește amprenta și
+parametrii împreună (altfel 400), reface fișierul lunii din faptele cubului și
+din acești parametri, pe ușa exportului și cu aceleași citiri, și îl compară
+prin amprentă. Antetul schimbat după export nu contează; alți parametri dau
+`DEPUNERE_FISIER_DIFERIT` (422). Potrivirea păstrează amprenta și parametrii
+pe `DepunereDeclaratie`. Fără fișier (declarația depusă din alt program),
+confirmarea rămâne pe versiunea exportului JSON. Trimestrul nu are amprentă,
+deci nici confirmare (E2-r1). (122 i)
+
+O versiune are cel mult o confirmare activă (indexul unic e parțial, pe
+`RetrasaLa` nul). Aceeași cerere e idempotentă; reconfirmarea versiunii cu
+alt fișier sau fără fișier retrage confirmarea activă cu motivul înlocuirii
+și o leagă de cea nouă (`Inlocuieste`). Confirmarea se retrage cu motiv
+obligatoriu (`RetrasaLa`, `RetrasaDe`, `MotivRetragere`), fără ștergere. Pe
+D300, retragerea e refuzată cu `DEPUNERE_REGULARIZARI` cât luna nu mai are
+altă confirmare activă și are fapte cu `RegularizareD300` a căror
+exigibilitate sau înregistrare cade în ea: regularizarea s-a decis pe
+confirmare, deci se corectează întâi ea, prin inversă. Pe D394 retragerea e
+liberă. Regularizarea, refuzul anulării faptelor declarate și reperul
+rectificativei D394 citesc numai confirmările active. (122 i)
+
+`DepunereDeclaratie` păstrează momentul, utilizatorul și, când există, fișierul, fără sume fiscale
 paralele; nu se editează prin CRUD generic. Aceeași confirmare este
 idempotentă. Confirmarea și scrierile fiscale se serializează tranzacțional.
 Închiderea sau redeschiderea contabilă nu confirmă și nu șterge depunerea.
@@ -231,9 +252,13 @@ depunerii efectuate de utilizator, nu transmitere către ANAF. (103d)
 
 `GET/POST /api/depuneri-declaratii/{formular}/{an}/{luna}` citește sau
 confirmă depunerea. POST cere versiunea exportată, drept de scriere și
-perioadă vizibilă; refuzurile au 400/403/404/422. Aceeași versiune este
-idempotentă. OData expune istoricul numai pentru citire. D300/D394 oferă
-confirmarea pentru o singură lună, cu versiunea și momentul afișate. (103d)
+perioadă vizibilă; cu fișier cere și citirile ușii XML.
+`POST …/{luna}/retragere` cere versiunea și motivul, cu aceleași drepturi.
+Refuzurile au 400/403/404/422. OData expune istoricul numai pentru citire. D300/D394 oferă
+confirmarea pentru o singură lună: după descărcarea XML confirmă fișierul
+descărcat, altfel versiunea exportului JSON; ecranul arată versiunea,
+momentul și începutul amprentei fișierului, iar confirmarea activă se
+retrage cu motiv din același loc. (103d, 122 i)
 
 ## Închiderea lunară TVA
 
@@ -289,6 +314,69 @@ operațiile incluse și `Neincluse`. Ștergerea
 logică a partenerului nu elimină faptele fiscale. Secțiunile neacoperite
 produc limite și avertismente, nu date presupuse. (71c, 71d, 71e)
 
+## Fișierul D300
+
+`D300Xml.Genereaza` serializează decontul pe schema v12
+(`mfp:anaf:dgti:d300:declaratie:v12`), pentru perioade de la 2026-01. Nu
+recitește cubul: proiecția D300 rulează în modul `lei`, care rotunjește
+fiecare rând de operațiuni la leu (sub 50 de bani se neglijează), separat bază
+și TVA, înaintea însumării pe rândurile „din care” și a formulelor; oglinzile
+și totalurile ies din aceleași formule. Rândul tipărit trece în atributul
+schemei după harta fixă din cod (rd. 17 → `R64`, rd. 19 → `R17`, rd. 24 →
+`R22`…). `totalPlata_A` e suma atributelor R. `nr_evid` e numărul de
+evidență al plății: obligația (301 lunar, 302 trimestrial), perioada, scadența
+la 25 a lunii următoare și cifra de control. `bifa_interne` se propune 1 când
+rândurile intracomunitare (1–8, 20–23, 29.1) sunt nule. Antetul vine din
+societate; datele de perioadă (temeiul, rambursarea, pro-rata, bifele de
+taxare inversă) sunt parametri cu implicitele formularului. Aceeași perioadă,
+cu aceleași date și același antet, dă același fișier. (E2-D1…D4)
+
+Fișierul lipsește și `D300Dto.RefuzuriXml` numește cauza când: perioada nu e
+luna sau trimestrul întreg al periodicității societății ori e dinaintea
+formularului (`DECLARATIE_PERIOADA_NESUPORTATA`); antetul are câmpuri
+obligatorii lipsă, cu lista lor (`DECLARATIE_ANTET_INCOMPLET`); un tip de TVA
+cu sume nenule nu are rând, un rând primește o coloană pe care n-o are sau
+nomenclatorul n-are un rând al hărții (`DECLARATIE_DATE_NEINCLUSE`). Proiecția
+JSON și fișierul poartă aceleași refuzuri. (E2-D5)
+
+## Fișierul D394
+
+`D394Xml.Genereaza` serializează declarația pe schema v5
+(`mfp:anaf:dgti:d394:declaratie:v5`), pentru operațiunile de la 2025-08-01,
+din proiecția D394 în modul `lei`: fiecare rând `op1` se rotunjește la leu,
+iar rezumatele, `nrCui*` și `totalPlata_A` (numărul partenerilor plus bazele
+L, A și AI din `rezumat2`) ies din rândurile rotunjite. Operațiunile V și C
+poartă defalcarea `op11` pe categoria de bunuri a produsului liniei: factura
+cu mai multe categorii numără 1 la categoria cu baza (V) sau TVA-ul (C) cel
+mai mare. Categoriile își împart rândul rotunjit prin regula de repartizare a
+nucleului (`Repartizare.Hamilton` la scara leului), separat pe semne: latura
+negativă ia rotunjirea sumei ei, cea pozitivă restul; suma lor e rândul, iar
+nicio categorie nu schimbă semnul. (122 b)
+`rezumat1` agregă categoriile în `detaliu`, cerealele pe bunul 21. Încasările
+AMEF, facturile simplificate și TVA-ul la încasare ies cu zero. (E2-D3, E2-D6)
+
+`D394Dto.DiferenteRotunjire` arată, pe tip × cotă, cât diferă suma rândurilor
+rotunjite pe partener de totalul acelorași rânduri rotunjit o dată, cum îl
+rotunjește D300. E informare, nu refuz: ecranul D394 o afișează lângă
+butonul XML. (122 b)
+
+`serieFacturi` declară plajele de facturi active cu decizia până la sfârșitul
+perioadei (tip 1) și, pe fiecare, primul și ultimul număr emis în perioadă
+(tip 2). Factura emisă e documentul cu număr propriu și fapte de livrare în
+perioadă; stornoul nu are număr propriu în model, deci nu intră (E2-r4). Numărul ei se leagă de plajă prin seria normalizată (fără spații,
+separatori finali și diferențe de majuscule) și cifrele finale. `nrFacturi`
+e numărul facturilor emise. O factură emisă invizibilă utilizatorului oprește
+fișierul. (E2-D7, 122 f)
+
+Fișierul lipsește și `D394Dto.RefuzuriXml` numește cauza pentru perioadă,
+antet (telefonul, reprezentantul, întocmitorul și calitatea lui), sume
+neincluse, avertismentele care ar fi erori la validator (`Tip1FaraCui`,
+`PfFaraCnp`, `TvaPeTipFaraColoana`, `CotaNeintreaga`, `FaraOp11`,
+`CombinatieRefuzata`, judecate pe sumele dinaintea rotunjirii), orice rând
+neinclus (chiar cu net zero), o factură emisă în afara oricărei plaje active
+sau mai mult de cinci cote. Telefonul are cel mult 15 caractere, iar banca din
+D300 cel mult 50. (E2-D5, E2-D7)
+
 ## Accesul la citirea fiscală
 
 `/politici/tva-saft` editează mapările versionate și calificarea istorică.
@@ -337,5 +425,5 @@ deci accesul complet cerut include perioadele fiscale și soldurile de perioadă
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (15; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 25, 36 (amendată de 71), 46 (amendată de 113), 56 (amendată de 77, 81), 69, 70, 71 (amendată de 72), 79 (amendată de 80), 80, 81, 84, 86, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 102, 103.
+Deciziile care numesc pagina în `Arii:` (16; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 25, 36 (amendată de 71), 46 (amendată de 113), 56 (amendată de 77, 81), 69, 70, 71 (amendată de 72), 79 (amendată de 80), 80, 81, 84, 86, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 102, 103, 122 (propusă).
 <!-- /gen:decizii -->

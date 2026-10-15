@@ -77,6 +77,15 @@ storno 381, reemisă după corecție 384, total comercial negativ 381, altfel
 Brutul vine din postările de terț, iar netul, taxa și autocolectarea din
 faptele fiscale ale liniei. Brutul trebuie să fie Σ(net + taxă −
 autocolectare); cantitatea comercială vine din linia operată.
+
+Linia de corecție a valorii lotului (FCT, `CorectieValoareLot`) iese cu
+cantitatea 0, prețul 0 și informația fiscală nefiscală (`000`/`000000`),
+câte o linie pe fiecare cont de contrapartidă: stocul rămas și consumul
+compensat. Factura urmează regula comună a tipului (380; 381 pe storno sau pe
+total negativ, deci și pe diminuare). Pe o linie fiscală a unui lot care are o
+corecție de valoare (returul la furnizor pe lot corectat), cota corecției din
+linie, fără fapt fiscal, iese ca a doua linie nefiscală cu cantitatea 0,
+lângă baza fiscală; pe orice alt lot, diferența rămâne refuz. (E2-D10, 122 g)
 Ambiguitatea, sursa lipsă, maparea lipsă și corecția cu înlocuitor Draft
 sunt refuzuri (`SaftDto.Refuzuri`), iar XML-ul nu se scrie. Citirea cere
 RepeatableRead și refuză o tranzacție ambiantă mai slabă. Regulile complete:
@@ -125,9 +134,13 @@ neacoperite. Contul fără categorie pe tot lanțul refuză fișierul. (TR-D8 S3
 
 Mișcarea este evenimentul cubului (`Operare`/`Transfer`/`Storno`) × cod.
 Linia agregă postările pe (linie, lot, cont, gestiune). Codul vine din
-politica pe tip × categorie × semn, cu semnul originii pe storno. NIR delta
+politica pe tip × categorie × semn × cauză, cu semnul originii pe storno;
+pe linia fără cantitate, semnul e al valorii. NIR delta
 este 10 cu cantitatea semnată (S3-R1). ASM raportează producția la valoarea
-finală a cubului (ΣC, S3-R2). Linia numai valorică este refuz (SAFT-r2).
+finală a cubului (ΣC, S3-R2). Linia numai valorică e acceptată doar pentru
+corecția valorii lotului: cauza `CorectieValorica` din cheia politicii dă 90
+pe plus și 60 pe minus, iar partea pe consum e exclusă cu motiv. Orice altă
+linie numai valorică rămâne refuz (SAFT-r2). (E2-D10)
 Poziția este lot × cont × produs × gestiune; `Opening` include deschiderea
 din lună. Cheile: WarehouseID = codul gestiunii, `StockAccountNo` = lotul,
 `MovementReference` lizibilă sau rezerva `{TranzactieId:N}{cod}`. Pe o
@@ -174,5 +187,5 @@ funcțională declarată în [limitele curente](limite-curente.md). (74d, 74e)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (4; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 73 (amendată de 74, 105), 74 (amendată de 105), 103.
+Deciziile care numesc pagina în `Arii:` (5; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 73 (amendată de 74, 105), 74 (amendată de 105), 103, 122 (propusă).
 <!-- /gen:decizii -->

@@ -3,13 +3,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '../../generated/api-types';
 import { ia, posteaza, eroriDin } from '../../nucleu/http';
 import { PanouErori } from '../../nucleu/PanouErori';
+import type { FisierExportat } from './DescarcaDeclaratie';
 
-export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, reincarca }: {
+// Fișierul XML descărcat are întâietate la confirmare: serverul îl reface din parametri și păstrează amprenta lui (122 i).
+export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, fisier, reincarca }: {
   formular: 'D300' | 'D394'; dataStart: string; dataEnd: string;
   exportat?: { VersiuneExportata?: string | null };
+  fisier?: FisierExportat;
   reincarca: () => Promise<{ data?: { VersiuneExportata?: string | null }; error: Error | null }>;
 }) {
   const [versiune, setVersiune] = useState('');
+  const [motiv, setMotiv] = useState('');
   const cache = useQueryClient();
   const luna = dataStart.slice(0, 7);
   const lunaExacta = dataStart.endsWith('-01') && dataEnd.slice(0, 7) === luna
@@ -17,9 +21,17 @@ export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, rei
   const ruta = `/api/depuneri-declaratii/${formular}/${dataStart.slice(0, 4)}/${Number(dataStart.slice(5, 7))}`;
   const citit = useQuery({ queryKey: ['depunere', ruta], enabled: lunaExacta,
     queryFn: () => ia<components['schemas']['DepunereDeclaratieDto']>(ruta), retry: false });
-  const confirma = useMutation({ mutationFn: () => posteaza(ruta, { VersiuneExportata: versiune }),
+  const deConfirmat = fisier ?? (versiune.trim() ? { VersiuneExportata: versiune } : undefined);
+  const confirma = useMutation({ mutationFn: () => posteaza(ruta, deConfirmat),
     onSuccess: async () => {
       setVersiune('');
+      await cache.invalidateQueries({ queryKey: ['depunere'] });
+      await cache.invalidateQueries({ queryKey: [formular.toLowerCase()] });
+    } });
+  const retrage = useMutation({
+    mutationFn: () => posteaza(`${ruta}/retragere`, { VersiuneExportata: citit.data?.VersiuneExportata, Motiv: motiv }),
+    onSuccess: async () => {
+      setMotiv('');
       await cache.invalidateQueries({ queryKey: ['depunere'] });
       await cache.invalidateQueries({ queryKey: [formular.toLowerCase()] });
     } });
@@ -38,19 +50,32 @@ export function DepunereDeclaratie({ formular, dataStart, dataEnd, exportat, rei
   if (!lunaExacta || !citit.data) return null;
   return <div className="d300__neincluse">
     <p>{citit.data.ConfirmataLa
-      ? `Depunere confirmată: ${citit.data.VersiuneExportata}, ${new Date(citit.data.ConfirmataLa).toLocaleString('ro-RO')}.`
+      ? `Depunere confirmată: ${citit.data.VersiuneExportata}, ${new Date(citit.data.ConfirmataLa).toLocaleString('ro-RO')}`
+        + (citit.data.Sha256Fisier ? `, fișierul XML ${citit.data.Sha256Fisier.slice(0, 12)}….` : ', fără fișier XML.')
       : 'Depunerea nu este confirmată. Închiderea contabilă nu confirmă depunerea declarației.'}</p>
+    {citit.data.PoateConfirma && citit.data.ConfirmataLa && <form onSubmit={e => { e.preventDefault(); retrage.mutate(); }}>
+      <label className="bara-raport__camp">
+        <span className="camp__eticheta">Motivul retragerii</span>
+        <input value={motiv} onChange={e => setMotiv(e.target.value)} />
+      </label>{' '}
+      <button type="submit" className="buton" disabled={retrage.isPending || !motiv.trim()}>
+        Retrage confirmarea {formular}
+      </button>
+    </form>}
     {citit.data.PoateConfirma && <form onSubmit={e => { e.preventDefault(); confirma.mutate(); }}>
       <button type="button" className="buton" onClick={() => exporta.mutate()} disabled={exporta.isPending || !exportat?.VersiuneExportata}>
         Exportă datele {formular} (JSON)
       </button>{' '}
       <p>Export de date cu amprentă; nu este XML ANAF. Confirmați numai după depunerea declarației corespunzătoare.</p>
-      {versiune && <p>Versiunea exportată: <code>{versiune}</code></p>}
-      <button type="submit" className="buton" disabled={confirma.isPending || exporta.isPending || !versiune.trim()}>
+      {fisier
+        ? <p>Se confirmă fișierul XML descărcat: <code>{fisier.Sha256Fisier.slice(0, 12)}…</code>, versiunea <code>{fisier.VersiuneExportata}</code></p>
+        : versiune && <p>Versiunea exportată: <code>{versiune}</code></p>}
+      <button type="submit" className="buton" disabled={confirma.isPending || exporta.isPending || !deConfirmat}>
         Confirmă depunerea {formular}
       </button>
     </form>}
     <PanouErori erori={exporta.error ? eroriDin(exporta.error) : []} />
     <PanouErori erori={confirma.error ? eroriDin(confirma.error) : []} />
+    <PanouErori erori={retrage.error ? eroriDin(retrage.error) : []} />
   </div>;
 }

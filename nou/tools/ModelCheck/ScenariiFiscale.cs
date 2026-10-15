@@ -147,6 +147,9 @@ sealed class ScenariiFiscale(Func<IObjectSpace> deschide, Action<string, bool> c
                 && f.Sum(f => f.Tva) == 16.80m && d.Rectificativa
                 && d.Operatiuni.Single(r => r.Tip == "A").NrFact == 4;
         }));
+        Refuza("SC-CIT-84", () => Comanda(os => FiscalitateService.RetrageDepunerea(os, FormularFiscal.D300, An, 1,
+            os.GetObjectsQuery<DepunereDeclaratie>().Single(d => d.Formular == FormularFiscal.D300 && d.Perioada == An * 100 + 1)
+                .VersiuneExportata, "probă", "ModelCheck")), "DEPUNERE_REGULARIZARI");
         var corectieCapitalizata = Corecteaza(capitalizat.Id);
         Comanda(os => {
             var f = os.GetObjectByKey<FacturaIntrare>(corectieCapitalizata);

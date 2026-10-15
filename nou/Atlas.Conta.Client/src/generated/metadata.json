@@ -15,6 +15,33 @@
       "VehiculPersoaneMax9Locuri": "Vehicul de persoane, maximum 9 locuri",
       "SediuSocialInLocuinta": "Sediu social în locuință"
     },
+    "CategorieTaxareInversa": {
+      "Deseuri": "Deșeuri feroase și neferoase",
+      "MasaLemnoasa": "Masă lemnoasă",
+      "CertificateEmisii": "Certificate de emisii de gaze cu efect de seră",
+      "EnergieElectrica": "Energie electrică",
+      "CertificateVerzi": "Certificate verzi",
+      "ConstructiiTerenuri": "Construcții, terenuri",
+      "AurDeInvestitii": "Aur de investiții",
+      "TelefoaneMobile": "Telefoane mobile",
+      "Microprocesoare": "Microprocesoare",
+      "ConsoleTableteLaptopuri": "Console de jocuri, tablete PC și laptopuri",
+      "Terenuri": "Terenuri (neînregistrați)",
+      "Constructii": "Construcții (neînregistrați)",
+      "AlteBunuri": "Alte bunuri (neînregistrați)",
+      "Servicii": "Servicii (neînregistrați)",
+      "GrauMeslin": "Grâu și meslin (1001)",
+      "Secara": "Secară (1002)",
+      "Orz": "Orz (1003)",
+      "Ovaz": "Ovăz (1004)",
+      "Porumb": "Porumb (1005)",
+      "Soia": "Boabe de soia (1201)",
+      "Rapita": "Semințe de rapiță (1205)",
+      "In": "Semințe de in (120400)",
+      "FloareaSoarelui": "Semințe de floarea-soarelui (120600)",
+      "SfeclaDeZahar": "Sfeclă de zahăr (121291)",
+      "Triticale": "Triticale (10086000)"
+    },
     "CauzaDiferentei": {
       "Perisabilitate": "Perisabilitate",
       "Imputabila": "Imputabilă",
@@ -27,6 +54,10 @@
       "Casare": "Casare",
       "Vanzare": "Vânzare",
       "Lipsa": "Lipsă"
+    },
+    "CauzaMiscareSaft": {
+      "Comerciala": "Comercială",
+      "CorectieValorica": "Corecție valorică a lotului"
     },
     "CauzaNeincludere": {
       "FaraPartener": "Fără partener pe rândul de registru",
@@ -213,6 +244,10 @@
       "Generic": "Regula generică a laturii",
       "ClasaExacta": "Clasă exactă"
     },
+    "PeriodicitateTva": {
+      "Lunar": "Lunar",
+      "Trimestrial": "Trimestrial"
+    },
     "ProfilContabil": {
       "Bugetar": "Bugetar",
       "Privat": "Privat"
@@ -297,6 +332,10 @@
       "Cec": "Cec",
       "DispozitieCasa": "Dispoziție de casă",
       "Chitanta": "Chitanță"
+    },
+    "TipIntocmitor": {
+      "PersoanaJuridica": "Persoană juridică",
+      "PersoanaFizica": "Persoană fizică"
     },
     "TipOperatiuneD394": {
       "L": "L — livrări de bunuri/prestări de servicii",
@@ -768,7 +807,13 @@
         "ConfirmataLa": "Confirmată la",
         "Formular": "Formular",
         "ID": "ID",
+        "Inlocuieste": "Înlocuiește",
+        "MotivRetragere": "Motivul retragerii",
+        "ParametriFisier": "Parametrii fișierului",
         "Perioada": "Perioada",
+        "RetrasaDe": "Retrasă de",
+        "RetrasaLa": "Retrasă la",
+        "Sha256Fisier": "SHA-256 fișier",
         "VersiuneExportata": "Versiune exportată"
       }
     },
@@ -1632,6 +1677,17 @@
         "Luna": "Luna"
       }
     },
+    "PlajaFacturi": {
+      "DefaultProperty": "Serie",
+      "Membri": {
+        "Activ": "Activ",
+        "DataDecizie": "Data deciziei",
+        "ID": "ID",
+        "NumarFinal": "Număr final",
+        "NumarInitial": "Număr inițial",
+        "Serie": "Serie"
+      }
+    },
     "Plata": {
       "DefaultProperty": "Numar",
       "Membri": {
@@ -1733,6 +1789,7 @@
     "PoliticaMiscareSaft": {
       "DefaultProperty": null,
       "Membri": {
+        "Cauza": "Cauza",
         "CodMiscare": "Cod mișcare",
         "DinSeed": "Din seed",
         "ID": "ID",
@@ -1808,6 +1865,7 @@
       "DefaultProperty": "Denumire",
       "Membri": {
         "Activ": "Activ",
+        "CategorieTaxareInversa": "Categorie taxare inversă (D394)",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "CodNc": "Cod NC",
@@ -2113,21 +2171,32 @@
       "DefaultProperty": "Denumire",
       "Membri": {
         "BazaContabila": "Bază contabilă (SAF-T)",
+        "Caen": "Cod CAEN",
         "CodFiscal": "Cod fiscal",
         "CodPostal": "Cod poștal",
         "ContBancar": "Cont bancar",
         "ContBancarId": "Cont bancar",
         "ContactNume": "Contact — nume",
         "ContactPrenume": "Contact — prenume",
+        "DeclarantAdresa": "Declarant — adresă",
+        "DeclarantFunctie": "Declarant — funcție",
+        "DeclarantNume": "Declarant — nume",
+        "DeclarantPrenume": "Declarant — prenume",
         "Denumire": "Denumire",
         "DetaliiAdresa": "Bloc, scară, etaj, ap.",
         "Email": "Email",
         "ID": "ID",
         "InregistratTva": "Înregistrat în scopuri de TVA",
+        "IntocmitCalitate": "Întocmitor — calitate",
+        "IntocmitCif": "Întocmitor — CUI sau CNP",
+        "IntocmitDe": "D394 întocmită de",
+        "IntocmitDenumire": "Întocmitor — denumire",
         "Judet": "Județ",
         "JudetId": "Județ",
         "Localitate": "Localitate",
         "Numar": "Număr",
+        "OptiuneConsultareD394": "Acord de consultare D394",
+        "PeriodicitateTva": "Periodicitatea TVA",
         "RaporteazaCnp": "Raportează CNP-ul persoanelor fizice",
         "RegistruComert": "Nr. registrul comerțului",
         "Strada": "Stradă",
