@@ -91,7 +91,7 @@ corecție valorică pe lot.
 Gata când: fiecare rând `E2` din catalog e `livrată`, adică fișierele trec
 XSD-ul și DUKIntegrator pe lunile de probă ale catalogului `DECL`, iar
 contractul e închis cu review-ul advers (pasul 5).
-Stare: pasul 0 (contractul) în lucru pe branch-ul `e2-depunere-fiscala`.
+Stare: pașii 0 (contractul) și 1 (antetul și D300 XML) închiși 2026-10-15; pasul 2 (D394 XML) urmează, pe branch-ul `e2-depunere-fiscala`.
 Funcționalitățile: rândurile `E2` din [catalog](functionalitati.md).
 
 E1 (corecția valorii lotului, contractul

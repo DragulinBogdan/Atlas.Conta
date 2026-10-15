@@ -11,6 +11,14 @@ goală și nu suprascrie datele completate. Adresa este structurată, ca la
 partener; județul se aplică adreselor din România. Județele și unitățile de
 măsură standard sunt nomenclatoare de bază, expuse pentru citire. (72b, 73a, 73b)
 
+Antetul declarațiilor fiscale stă tot pe societate și se culege o singură
+dată în XAF: codul CAEN (patru cifre), periodicitatea TVA (lunar, implicit,
+sau trimestrial), declarantul (nume, prenume, funcție, adresă), cine întocmește
+D394 (persoană juridică sau fizică, denumire, CUI sau CNP, calitate; gol
+înseamnă societatea însăși) și acordul de consultare D394. Banca din antetul
+D300 e denumirea contului bancar al societății, iar contul e IBAN-ul lui.
+(E2-D4)
+
 ## Produsul și unitatea lui
 
 Produsul poate avea cod NC de opt cifre și unitate standard. Referința la

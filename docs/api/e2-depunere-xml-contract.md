@@ -8,8 +8,9 @@
 - Decizii: 035 (c), 051 (c), 069, 071, 080, 103 (d), 104 (d), 119
 - Stare: deschis
 
-D-urile marcate „propunere” se confirmă de owner la review-ul pasului 0,
-înaintea codului.
+Owner-ul a aprobat la 2026-10-15 antetul pe societate (E2-D4), categoria
+de bunuri pe produs (E2-D6) și includerea SAF-T pe luna cu corecție, cu
+pasul de cercetare 3a înaintea codului (E2-D10).
 
 Ținta T2 cere ca decontul, D394 și SAF-T să treacă validarea ANAF pe lunile
 de probă. Azi D300 și D394 există numai ca proiecții JSON (decizia 69, 71):
@@ -102,7 +103,7 @@ recalculează din valorile rotunjite:
 Diferența dintre suma în lei și suma în bani a cubului nu e eroare și nu se
 raportează pe rând; DTO-ul JSON rămâne în bani.
 
-### E2-D4 — antetul declarantului (propunere)
+### E2-D4 — antetul declarantului (owner, 2026-10-15)
 
 Datele stabile ale societății intră în `Societate`, nomenclator cules în XAF:
 
@@ -110,7 +111,7 @@ Datele stabile ale societății intră în `Societate`, nomenclator cules în XA
 |---|---|---|
 | `Caen` | D300 `caen`, D394 `caen` | cod CAEN rev. 3, validat pe lista din XSD-ul D300 |
 | `PeriodicitateTva` (`Lunar`, `Trimestrial`) | `tip_decont`, `tip_D394`, E2-D1 | implicit `Lunar` |
-| `DeclarantNume`, `DeclarantPrenume`, `DeclarantFunctie` | D300 `nume_declar`, `prenume_declar`, `functie_declar`; D394 `denR`, `functie_reprez` | reprezentantul legal care semnează |
+| `DeclarantNume`, `DeclarantPrenume`, `DeclarantFunctie`, `DeclarantAdresa` | D300 `nume_declar`, `prenume_declar`, `functie_declar`; D394 `denR`, `functie_reprez`, `adresaR` | reprezentantul legal care semnează; adresa goală ia adresa societății |
 | `IntocmitDe` (persoană juridică sau fizică), `IntocmitDenumire`, `IntocmitCif`, `IntocmitCalitate` | D394 `tip_intocmit`, `den_intocmit`, `cif_intocmit`, `calitate_intocmit`/`functie_intocmit` | implicit societatea însăși |
 | `OptiuneConsultareD394` | D394 `optiune` | opțiunea anuală a societății |
 
@@ -148,7 +149,7 @@ apar ca limită permanentă a exportului, în ecran și în `limite-curente.md`.
 O societate cu asemenea operațiuni nu poate folosi exportul ca declarație
 completă; produsul spune asta, nu o ascunde.
 
-### E2-D6 — categoria de bunuri pentru taxarea inversă internă (propunere)
+### E2-D6 — categoria de bunuri pentru taxarea inversă internă (owner, 2026-10-15)
 
 `op11` cere, pe livrările și achizițiile cu taxare inversă internă
 (tipurile `V`/`C`), categoria de bunuri (`codPR`, lista
@@ -206,7 +207,7 @@ rulat prin `verifica.ps1 -Suita Scenarii -Tip DECL` pe ambele profiluri:
 Pe profilul bugetar proba rulează pe datele de TVA ale profilului, dacă
 există, altfel pe calea fără operațiuni; nu există ramură de profil.
 
-### E2-D10 — SAF-T pe luna cu corecție valorică (propunere de cercetat)
+### E2-D10 — SAF-T pe luna cu corecție valorică (owner, 2026-10-15: cercetare, apoi alegere)
 
 Luna cu corecție rămâne refuzată până la închiderea pasului 3a. Pasul 3a e
 documentar și se probează cu validatorul D406 existent, pe fișiere-mutant:
@@ -240,8 +241,8 @@ formularele anterioare. Restanțele noi ale etapei se numesc `E2-rN`.
 
 | Pas | Conținut | Probă | Stare |
 |---|---|---|---|
-| 0 | contractul, scopul E2, catalogul funcționalităților, sursele ANAF descărcate | docskit verde; review owner pe D-urile „propunere” | în lucru |
-| 1 | `Societate` (E2-D4) cu migrația și XAF; registrul formularelor; D300 XML cu rotunjirea (E2-D3); kitul D300 pin-uit; SC-DECL pentru D300 | ModelCheck ambele profiluri; XSD + DUK pe lunile de probă | |
+| 0 | contractul, scopul E2, catalogul funcționalităților, sursele ANAF descărcate | docskit verde; owner pe E2-D4, E2-D6, E2-D10 | închis 2026-10-15 |
+| 1 | `Societate` (E2-D4) cu migrația și XAF; registrul formularelor; D300 XML cu rotunjirea (E2-D3); kitul D300 pin-uit; SC-DECL pentru D300 | ModelCheck ambele profiluri; XSD + DUK pe lunile de probă | închis 2026-10-15 |
 | 2 | D394 XML; `Produs.CategorieTaxareInversa` (E2-D6); I.2 (E2-D7); lista blocantă (E2-D5); kitul D394 | idem, cu mutanții D394 | |
 | 3a | SAF-T pe luna cu corecție: cercetarea formei pe validatorul D406 | fișiere-mutant DUK; hotărârea owner-ului | |
 | 3b | implementarea formei alese; refuzurile ridicate pentru formele acoperite | SC-CVL-32, SC-SAFT noi, DUK D406 L și S | |
@@ -267,3 +268,24 @@ Lucrul se oprește și revine la owner când:
 La închidere, un agent nou, numai citire, verifică fiecare D-uri contra
 codului și a fișierelor validate; constatările se repară înaintea PR-ului.
 Un review Codex se propune owner-ului într-o linie, la închidere.
+
+## Verificarea pasului 1 — 2026-10-15
+
+- `verifica.ps1 -Suita Scenarii -Tip DECL -Profil Ambele -Sufix .ClaudeCVL`:
+  verde, `run-verificari/20261015-163901-958`. Fișierele SC-DECL-01, 03 și 04
+  trec XSD-ul v12 și DUKIntegrator cu D300Validator J12.0.1, fără
+  atenționări. Validatorul recalculează totalurile și `totalPlata_A` și dă
+  aceleași cifre ca fișierul.
+- Mutanții SC-DECL-05 pică pe regula așteptată: rd. 9 TVA + 1 pe R66 (rd. 19)
+  și pe R26 (suma de control), CUI-ul cu cifra de control greșită pe „CUI
+  invalid”, `tip_decont` X pe XSD.
+- `verifica.ps1 -Suita Integral -Profil Ambele -Sufix .ClaudeCVL`: verde,
+  `run-verificari/20261015-164226-472` (4.083 de verificări pe bugetar,
+  5.536 pe privat, zero eșecuri).
+- `verifica.ps1 -Suita Nucleu`: 252 de teste verzi.
+- `pnpm gen:openapi` și `pnpm gen:types`: driftul e `D300Dto.RefuzuriXml`,
+  `RefuzDeclaratie` și câmpurile noi ale `Societate`; `tsc -b` verde.
+- `totalPlata_A` e suma atributelor R; anexa numerotează câmpurile 27…124 pe
+  numerotarea istorică, iar validatorul confirmă regula.
+- XSD-ul D394 și validatorul D394 J8.0.2 sunt pin-uite; folosirea lor e a
+  pasului 2.

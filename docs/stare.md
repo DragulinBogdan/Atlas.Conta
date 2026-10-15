@@ -10,8 +10,8 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Restanțe | 387: 285 deschise, 102 închise |
 | Pagini de stare curentă | 19 |
 | Contracte de felie (`Tip: contract`) | 4, deschise 2 |
-| Cataloage vii (`Tip: catalog`) | 5 |
-| Fișiere Markdown în `docs/` | 335 |
+| Cataloage vii (`Tip: catalog`) | 6 |
+| Fișiere Markdown în `docs/` | 336 |
 | Citări de decizii din cod (`// N`) | 71 |
 
 ## Decizii în vigoare pe arie
@@ -172,6 +172,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | [C111 — coordonatele postării (transversal)](nucleu/scenarii/C111.md) | 2026-10-11 |
 | [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-15 |
 | [D9B — originea partidei](nucleu/scenarii/D9B.md) | 2026-10-14 |
+| [DECL — declarațiile D300 și D394 în XML](nucleu/scenarii/DECL.md) | 2026-10-15 |
 | [X — scenarii transversale](nucleu/scenarii/X.md) | 2026-10-14 |
 
 ## Ce nu poate ști

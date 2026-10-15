@@ -161,6 +161,50 @@ public class Societate : Editabila {
     [XafDisplayName("Raportează CNP-ul persoanelor fizice")]
     public virtual bool RaporteazaCnp { get; set; }
 
+    [MaxLength(4)]
+    [XafDisplayName("Cod CAEN")]
+    [RuleRegularExpression("Societate_Caen", DefaultContexts.Save, "^[0-9]{4}$",
+        CustomMessageTemplate = "Codul CAEN are patru cifre.")]
+    public virtual string Caen { get; set; }
+
+    [XafDisplayName("Periodicitatea TVA")]
+    public virtual PeriodicitateTva PeriodicitateTva { get; set; } = PeriodicitateTva.Lunar;
+
+    [MaxLength(75)]
+    [XafDisplayName("Declarant — nume")]
+    public virtual string DeclarantNume { get; set; }
+
+    [MaxLength(75)]
+    [XafDisplayName("Declarant — prenume")]
+    public virtual string DeclarantPrenume { get; set; }
+
+    [MaxLength(50)]
+    [XafDisplayName("Declarant — funcție")]
+    public virtual string DeclarantFunctie { get; set; }
+
+    [MaxLength(200)]
+    [XafDisplayName("Declarant — adresă")]
+    public virtual string DeclarantAdresa { get; set; }
+
+    [XafDisplayName("D394 întocmită de")]
+    public virtual TipIntocmitor IntocmitDe { get; set; }
+
+    // Gol = societatea însăși (E2-D4).
+    [MaxLength(75)]
+    [XafDisplayName("Întocmitor — denumire")]
+    public virtual string IntocmitDenumire { get; set; }
+
+    [MaxLength(13)]
+    [XafDisplayName("Întocmitor — CUI sau CNP")]
+    public virtual string IntocmitCif { get; set; }
+
+    [MaxLength(75)]
+    [XafDisplayName("Întocmitor — calitate")]
+    public virtual string IntocmitCalitate { get; set; }
+
+    [XafDisplayName("Acord de consultare D394")]
+    public virtual bool OptiuneConsultareD394 { get; set; }
+
     // Cele 12 valori admise de `TaxAccountingBasis` (xlsx 16.02.2026, foaia
     // „1. Header", H.2 — DESCRIEREA). Publică: gardianul o verifică, D16-V1 o
     // probează, iar generatorul o va scrie ca atare în fișier.

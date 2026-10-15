@@ -9424,6 +9424,7 @@ export interface components {
             Rectificativa?: boolean;
             PerioadaDeschisa?: boolean;
             DiferenteDeclarat?: components["schemas"]["DecontTvaRand"][] | null;
+            RefuzuriXml?: components["schemas"]["RefuzDeclaratie"][] | null;
         };
         D300Nemapat: {
             SensTva?: string | null;
@@ -11835,6 +11836,8 @@ export interface components {
             /** Format: date-time */
             InchisaPrimaOara?: string | null;
         };
+        /** @enum {string} */
+        PeriodicitateTva: "Lunar" | "Trimestrial";
         PifLinieReadDto: {
             /** Format: uuid */
             Id?: string;
@@ -12624,6 +12627,10 @@ export interface components {
         };
         RedeschidePerioadaRequestDto: {
             Motiv?: string | null;
+        };
+        RefuzDeclaratie: {
+            Cod?: string | null;
+            Mesaj?: string | null;
         };
         /** @enum {string} */
         RegimTva: "Normal" | "Capitalizat" | "TaxareInversa" | "Scutit" | "Neimpozabil";
@@ -13446,6 +13453,17 @@ export interface components {
             ContBancar?: components["schemas"]["ContPropriu"];
             BazaContabila?: string | null;
             RaporteazaCnp?: boolean;
+            Caen?: string | null;
+            PeriodicitateTva?: components["schemas"]["PeriodicitateTva"];
+            DeclarantNume?: string | null;
+            DeclarantPrenume?: string | null;
+            DeclarantFunctie?: string | null;
+            DeclarantAdresa?: string | null;
+            IntocmitDe?: components["schemas"]["TipIntocmitor"];
+            IntocmitDenumire?: string | null;
+            IntocmitCif?: string | null;
+            IntocmitCalitate?: string | null;
+            OptiuneConsultareD394?: boolean;
         };
         SocietateResourceDelta: {
             /** Format: uuid */
@@ -13470,6 +13488,17 @@ export interface components {
             ContBancarId?: string | null;
             BazaContabila?: string | null;
             RaporteazaCnp?: boolean;
+            Caen?: string | null;
+            PeriodicitateTva?: components["schemas"]["PeriodicitateTva"];
+            DeclarantNume?: string | null;
+            DeclarantPrenume?: string | null;
+            DeclarantFunctie?: string | null;
+            DeclarantAdresa?: string | null;
+            IntocmitDe?: components["schemas"]["TipIntocmitor"];
+            IntocmitDenumire?: string | null;
+            IntocmitCif?: string | null;
+            IntocmitCalitate?: string | null;
+            OptiuneConsultareD394?: boolean;
         };
         SoldPartenerRand: {
             /** Format: uuid */
@@ -13604,6 +13633,8 @@ export interface components {
             TipTvaImplicitId?: string | null;
             Cautare?: string | null;
         };
+        /** @enum {string} */
+        TipIntocmitor: "PersoanaJuridica" | "PersoanaFizica";
         TipMaterial: {
             /** Format: uuid */
             ID?: string;

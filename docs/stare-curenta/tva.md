@@ -289,6 +289,31 @@ operațiile incluse și `Neincluse`. Ștergerea
 logică a partenerului nu elimină faptele fiscale. Secțiunile neacoperite
 produc limite și avertismente, nu date presupuse. (71c, 71d, 71e)
 
+## Fișierul D300
+
+`D300Xml.Genereaza` serializează decontul pe schema v12
+(`mfp:anaf:dgti:d300:declaratie:v12`), pentru perioade de la 2026-01. Nu
+recitește cubul: proiecția D300 rulează în modul `lei`, care rotunjește
+fiecare rând de operațiuni la leu (sub 50 de bani se neglijează), separat bază
+și TVA, înaintea însumării pe rândurile „din care” și a formulelor; oglinzile
+și totalurile ies din aceleași formule. Rândul tipărit trece în atributul
+schemei după harta fixă din cod (rd. 17 → `R64`, rd. 19 → `R17`, rd. 24 →
+`R22`…). `totalPlata_A` e suma atributelor R. `nr_evid` e numărul de
+evidență al plății: obligația (301 lunar, 302 trimestrial), perioada, scadența
+la 25 a lunii următoare și cifra de control. `bifa_interne` se propune 1 când
+rândurile intracomunitare (1–8, 20–23, 29.1) sunt nule. Antetul vine din
+societate; datele de perioadă (temeiul, rambursarea, pro-rata, bifele de
+taxare inversă) sunt parametri cu implicitele formularului. Aceeași perioadă,
+cu aceleași date și același antet, dă același fișier. (E2-D1…D4)
+
+Fișierul lipsește și `D300Dto.RefuzuriXml` numește cauza când: perioada nu e
+luna sau trimestrul întreg al periodicității societății ori e dinaintea
+formularului (`DECLARATIE_PERIOADA_NESUPORTATA`); antetul are câmpuri
+obligatorii lipsă, cu lista lor (`DECLARATIE_ANTET_INCOMPLET`); un tip de TVA
+cu sume nenule nu are rând, un rând primește o coloană pe care n-o are sau
+nomenclatorul n-are un rând al hărții (`DECLARATIE_DATE_NEINCLUSE`). Proiecția
+JSON și fișierul poartă aceleași refuzuri. (E2-D5)
+
 ## Accesul la citirea fiscală
 
 `/politici/tva-saft` editează mapările versionate și calificarea istorică.

@@ -338,7 +338,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [TR-D9b, pasul 7 — membrii de tip SensTva își iau numele întreg](nucleu/tr-d9b-pas7-senstva.md)
 - [TR-D9b, pasul 8 — sensul stingerii și parametrii de interogare își iau numele întreg](nucleu/tr-d9b-pas8-sensstingere.md)
 
-### `docs/nucleu/scenarii/` (26)
+### `docs/nucleu/scenarii/` (27)
 
 - [ASM — asamblare](nucleu/scenarii/ASM.md)
 - [BCS — bon de consum](nucleu/scenarii/BCS.md)
@@ -348,6 +348,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md)
 - [D9B — originea partidei](nucleu/scenarii/D9B.md)
 - [DEC — decontul titularului](nucleu/scenarii/DEC.md)
+- [DECL — declarațiile D300 și D394 în XML](nucleu/scenarii/DECL.md)
 - [DESCHIDERE — solduri inițiale detaliate](nucleu/scenarii/DESCHIDERE.md)
 - [DSC — descărcare de gestiune](nucleu/scenarii/DSC.md)
 - [DVI — declarație vamală](nucleu/scenarii/DVI.md)

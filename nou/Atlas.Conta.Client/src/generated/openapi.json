@@ -322106,6 +322106,13 @@
               "$ref": "#/components/schemas/DecontTvaRand"
             },
             "nullable": true
+          },
+          "RefuzuriXml": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefuzDeclaratie"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -329035,6 +329042,13 @@
         },
         "additionalProperties": false
       },
+      "PeriodicitateTva": {
+        "enum": [
+          "Lunar",
+          "Trimestrial"
+        ],
+        "type": "string"
+      },
       "PifLinieReadDto": {
         "type": "object",
         "properties": {
@@ -331148,6 +331162,20 @@
         "type": "object",
         "properties": {
           "Motiv": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "RefuzDeclaratie": {
+        "type": "object",
+        "properties": {
+          "Cod": {
+            "type": "string",
+            "nullable": true
+          },
+          "Mesaj": {
             "type": "string",
             "nullable": true
           }
@@ -333373,6 +333401,55 @@
           },
           "RaporteazaCnp": {
             "type": "boolean"
+          },
+          "Caen": {
+            "maxLength": 4,
+            "type": "string",
+            "nullable": true
+          },
+          "PeriodicitateTva": {
+            "$ref": "#/components/schemas/PeriodicitateTva"
+          },
+          "DeclarantNume": {
+            "maxLength": 75,
+            "type": "string",
+            "nullable": true
+          },
+          "DeclarantPrenume": {
+            "maxLength": 75,
+            "type": "string",
+            "nullable": true
+          },
+          "DeclarantFunctie": {
+            "maxLength": 50,
+            "type": "string",
+            "nullable": true
+          },
+          "DeclarantAdresa": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          },
+          "IntocmitDe": {
+            "$ref": "#/components/schemas/TipIntocmitor"
+          },
+          "IntocmitDenumire": {
+            "maxLength": 75,
+            "type": "string",
+            "nullable": true
+          },
+          "IntocmitCif": {
+            "maxLength": 13,
+            "type": "string",
+            "nullable": true
+          },
+          "IntocmitCalitate": {
+            "maxLength": 75,
+            "type": "string",
+            "nullable": true
+          },
+          "OptiuneConsultareD394": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -333468,6 +333545,55 @@
             "nullable": true
           },
           "RaporteazaCnp": {
+            "type": "boolean"
+          },
+          "Caen": {
+            "maxLength": 4,
+            "type": "string",
+            "nullable": true
+          },
+          "PeriodicitateTva": {
+            "$ref": "#/components/schemas/PeriodicitateTva"
+          },
+          "DeclarantNume": {
+            "maxLength": 75,
+            "type": "string",
+            "nullable": true
+          },
+          "DeclarantPrenume": {
+            "maxLength": 75,
+            "type": "string",
+            "nullable": true
+          },
+          "DeclarantFunctie": {
+            "maxLength": 50,
+            "type": "string",
+            "nullable": true
+          },
+          "DeclarantAdresa": {
+            "maxLength": 200,
+            "type": "string",
+            "nullable": true
+          },
+          "IntocmitDe": {
+            "$ref": "#/components/schemas/TipIntocmitor"
+          },
+          "IntocmitDenumire": {
+            "maxLength": 75,
+            "type": "string",
+            "nullable": true
+          },
+          "IntocmitCif": {
+            "maxLength": 13,
+            "type": "string",
+            "nullable": true
+          },
+          "IntocmitCalitate": {
+            "maxLength": 75,
+            "type": "string",
+            "nullable": true
+          },
+          "OptiuneConsultareD394": {
             "type": "boolean"
           }
         },
@@ -333855,6 +333981,13 @@
           }
         },
         "additionalProperties": false
+      },
+      "TipIntocmitor": {
+        "enum": [
+          "PersoanaJuridica",
+          "PersoanaFizica"
+        ],
+        "type": "string"
       },
       "TipMaterial": {
         "type": "object",

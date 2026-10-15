@@ -150,6 +150,12 @@ repetă aici. Limitele mecanismelor, fără efect direct pentru utilizator, stau
   neacoperite apar în avertismente și în sumele neincluse. Indicatorul de
   rectificativă D394 e disponibil pentru exact o lună; D300 se corectează
   prin regularizări. (36f, 69-r2, 69-r6, D4-r7, D4-r13)
+- Fișierul XML D300 există numai pe formularul din 2026 (v12), lunar sau
+  trimestrial; trimestrialul cumulat pe două luni pentru achizițiile
+  intracomunitare, semestrialul și anualul se refuză. Rândurile fără sursă în
+  model (agricultori, restituiri, pro-rata, secțiunile informative) ies cu zero
+  sau din parametri. Fișierul nu are încă ușă HTTP și ecran (pasul 4 al E2),
+  iar D394 nu are încă fișier XML. (E2-D1, E2-D5)
 - Confirmarea depunerii păstrează formularul, perioada, amprenta faptelor
   exportate și momentul confirmării; nu transmite declarația la ANAF și nu
   verifică recipisa. (103)

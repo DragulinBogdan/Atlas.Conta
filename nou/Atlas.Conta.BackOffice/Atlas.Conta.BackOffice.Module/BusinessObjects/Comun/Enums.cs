@@ -518,3 +518,13 @@ public enum CauzaIesire {
     [XafDisplayName("Vânzare")] Vanzare = 2,
     [XafDisplayName("Lipsă")] Lipsa = 3,
 }
+
+public enum PeriodicitateTva {
+    [XafDisplayName("Lunar")] Lunar = 1,
+    [XafDisplayName("Trimestrial")] Trimestrial = 2,
+}
+
+public enum TipIntocmitor {
+    [XafDisplayName("Persoană juridică")] PersoanaJuridica = 0,
+    [XafDisplayName("Persoană fizică")] PersoanaFizica = 1,
+}

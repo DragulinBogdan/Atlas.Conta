@@ -213,6 +213,10 @@
       "Generic": "Regula generică a laturii",
       "ClasaExacta": "Clasă exactă"
     },
+    "PeriodicitateTva": {
+      "Lunar": "Lunar",
+      "Trimestrial": "Trimestrial"
+    },
     "ProfilContabil": {
       "Bugetar": "Bugetar",
       "Privat": "Privat"
@@ -297,6 +301,10 @@
       "Cec": "Cec",
       "DispozitieCasa": "Dispoziție de casă",
       "Chitanta": "Chitanță"
+    },
+    "TipIntocmitor": {
+      "PersoanaJuridica": "Persoană juridică",
+      "PersoanaFizica": "Persoană fizică"
     },
     "TipOperatiuneD394": {
       "L": "L — livrări de bunuri/prestări de servicii",
@@ -2113,21 +2121,32 @@
       "DefaultProperty": "Denumire",
       "Membri": {
         "BazaContabila": "Bază contabilă (SAF-T)",
+        "Caen": "Cod CAEN",
         "CodFiscal": "Cod fiscal",
         "CodPostal": "Cod poștal",
         "ContBancar": "Cont bancar",
         "ContBancarId": "Cont bancar",
         "ContactNume": "Contact — nume",
         "ContactPrenume": "Contact — prenume",
+        "DeclarantAdresa": "Declarant — adresă",
+        "DeclarantFunctie": "Declarant — funcție",
+        "DeclarantNume": "Declarant — nume",
+        "DeclarantPrenume": "Declarant — prenume",
         "Denumire": "Denumire",
         "DetaliiAdresa": "Bloc, scară, etaj, ap.",
         "Email": "Email",
         "ID": "ID",
         "InregistratTva": "Înregistrat în scopuri de TVA",
+        "IntocmitCalitate": "Întocmitor — calitate",
+        "IntocmitCif": "Întocmitor — CUI sau CNP",
+        "IntocmitDe": "D394 întocmită de",
+        "IntocmitDenumire": "Întocmitor — denumire",
         "Judet": "Județ",
         "JudetId": "Județ",
         "Localitate": "Localitate",
         "Numar": "Număr",
+        "OptiuneConsultareD394": "Acord de consultare D394",
+        "PeriodicitateTva": "Periodicitatea TVA",
         "RaporteazaCnp": "Raportează CNP-ul persoanelor fizice",
         "RegistruComert": "Nr. registrul comerțului",
         "Strada": "Stradă",
