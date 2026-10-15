@@ -231,8 +231,16 @@ generată. (106h)
 
 Rezultatele motorului sunt `ReadOnly` printr-o singură declarație,
 care blochează coloana grilei și itemul dialogului liniei deopotrivă:
-`Valoare` pe FCT, NIR, FCL, LDI, DEC, DSC și ASM; `Lot` pe FCT și NIR. NTC și
-DVI culeg `Valoare`. Excepțiile pe view (legenda `Valoare în vamă`, o coloană
+`Valoare` pe NIR, FCL, LDI, DEC, DSC și ASM; `Lot` pe NIR. NTC și
+DVI culeg `Valoare`. Pe FCT felul liniei decide: linia obișnuită are `Lot` și
+`Valoare` blocate, iar linia de corecție a valorii lotului (prima coloană,
+„Corecție de valoare a lotului”) le culege și blochează produsul, cantitatea,
+prețul, valoarea TVA, avansul și atributele de lot (`[Appearance]` pe
+`FacturaIntrareDetaliu`). Tipul de TVA rămâne editabil: corecția declarată
+taxabilă se refuză la operare cu `CV_STRUCTURA`. Lookup-ul lotului oferă loturile recepționate în
+gestiunea facturii pe o factură operată a aceluiași furnizor
+(`Culegere/LoturiCorectabile`). Comutarea felului golește linia, iar tipul se
+completează din produsul lotului la salvare. (CV-D1) Excepțiile pe view (legenda `Valoare în vamă`, o coloană
 ascunsă pe o singură grilă, grila DVI) rămân view-scoped și câștigă în fața
 rolurilor. Lookup-urile nu sunt atinse. Primitiva e Atlas.DXF 26.1.4.10
 (`Columns`/`Slot`/`Drop`, `ReadOnly`; `Views/docs/COLUMN-SLOTS.md`). (106h)

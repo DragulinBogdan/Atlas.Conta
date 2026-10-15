@@ -513,7 +513,7 @@ Valuta și unitatea de evaluare nu sunt condiții de intrare în acel pachet.
 | 1 | inventar, contract, catalog numeric | surse, decizii, invarianți, docskit | confundarea primitivei cu mecanismul complet | redactat, fără implementare |
 | 2 | producător FCT și proveniența compensării | matrice, cititori, explicație și cronologie; SC-CVL-25…32 | fapte omise de cititori, storno antedatat, export incompatibil | închis 2026-10-14: apartenența compensării (R6, decizia 119); explicația și storno recepției (CV-D8, CV-D5); SAF-T restanță cu refuz (CV-D9); predicatele verificate contra codului și fixate (R8, CV-D10) |
 | 3 | mecanism pur, extensie FCT, operand, materializare și garduri | nucleu + SC-CVL prin comenzile reale, după fixarea perimetrului | dependenți valorici ignorați de gardul cantitativ | implementat 2026-10-14; scenariile CVL și integrala verzi pe ambele profiluri; resturile sunt în secțiunea de verificare |
-| 4 | cititori, snapshot, explicație, XAF și securitate afectată | scenarii, metadata, HTTP/UI unde sunt atinse | afișarea unui cost recalculat ca fapt istoric | de făcut |
+| 4 | cititori, snapshot, explicație, XAF și securitate afectată | scenarii, metadata, HTTP/UI unde sunt atinse | afișarea unui cost recalculat ca fapt istoric | implementat 2026-10-15; SC-CVL-01…18, 20…32 și integrala verzi pe ambele profiluri, proba XAF în browser; resturile sunt în secțiunea de verificare |
 | 5 | regresie și review de închidere | integrală pe ambele profiluri, docskit, review advers | extindere tacită la lanțuri neacoperite | de făcut |
 
 Înaintea implementării se fixează un an liber propriu și sufixul bazelor.
@@ -567,6 +567,70 @@ owner-ului, la 2026-10-13.
 ## Închidere
 
 Deschis. Redactarea și verificarea documentației nu certifică mecanismul.
+
+### Verificarea pasului 4 — 2026-10-15
+
+Implementat: linia explicată și `ExplicatieLinieDto` poartă `Alocari`
+(unitatea, beneficiarul, ponderea, cota, soldul citit pe stoc) și
+`Compensari` (rădăcina, beneficiarul, sursa, destinația, valoarea); culegerea
+liniei de corecție în L3 (`NormalizariTip`, `CulegereDocument.CorectieComutata`),
+în XAF (`[Appearance]` pe felul liniei, lookup-ul `LoturiCorectabile`) și pe
+API (`CorectieValoareLot`, `LotId`, `Valoare` în `WriteDto`/`ReadDto`, refuzul
+amestecului de câmpuri în adaptor). Implicitul de TVA nu se mai aplică pe o
+linie nefiscală (`Document.LinieFiscala`). Tipul de TVA ales pe linia de
+corecție nu se golește la salvare și rămâne editabil în XAF, iar pe API nu e
+refuzat de adaptor: corecția taxabilă ajunge la declarant și primește
+`CV_STRUCTURA` la operare, pe ambele uși (SC-CVL-25), cum cere CV-D1
+(„niciodată prin omiterea taxei”).
+
+Comenzi executate din rădăcină:
+
+- `verifica.ps1 -Suita Scenarii -Tip CVL -Profil Ambele -Sufix .ClaudeCVL`:
+  verde după fiecare sub-pas; ultima rulare
+  `run-verificari/20261015-013916-906`. SC-CVL-31 probează DTO-ul pe alocare,
+  compensare și storno; SC-CVL-25 și 18 rulează pe ușile culegerii (API și
+  evenimentele XAF); SC-CVL-28 citește jurnalul, fișa, stocul pe lot și
+  snapshot-ul lunii închise.
+- `verifica.ps1 -Suita Integral -Profil Ambele -Sufix .ClaudeCVL`: verde,
+  `run-verificari/20261015-014337-516`. Prima rulare
+  (`run-verificari/20261015-014046-886`) a picat pe 106h-2 și 106h-3: FCT nu mai
+  declară `Lot` și `Valoare` `ReadOnly`. Proba 106h-3 acceptă acum și blocajul
+  printr-o regulă `[Appearance]`, numai dacă criteriul ei e adevărat pe linia
+  pe care `BazaLinie` o calculează; pragul 106h-2 a coborât de la 8 la 7
+  membri declarați.
+- `pnpm gen:openapi` și `pnpm gen:types`: driftul conține numai câmpurile noi;
+  `tsc --noEmit` verde pe client. `ModelCheck --dump-metadata` nu schimbă
+  `metadata.json`.
+- Proba XAF în browser, pe baza de unică folosință
+  `Atlas.Conta.BackOffice.Privat.CVLP4` (`run-verificari/cvl-pas4-ui.ps1`,
+  fixture-ul HTTP `cvl-pas4-ui-fixture.py`: FCT 100 × 10 operată, NIR, BCS 60):
+  linia obișnuită are `Lot` și `Valoare` dezactivate; bifa corecției le
+  activează și dezactivează produsul, cantitatea, prețul, TVA-ul, avansul și
+  atributele de lot; lookup-ul oferă numai lotul furnizorului; după salvare
+  tipul vine din produsul lotului; operarea dă pe lot 40/480 și consum 720.
+- Corecția cu TVA, după schimbarea de mai sus: SC-CVL-25 verde pe ambele
+  profiluri (`run-verificari/20261015-084901-964`), integrala verde
+  (`run-verificari/20261015-085024-393`). Pe aceeași bază din browser, tipul
+  „TVA 21% (standard)” se alege pe linia de corecție (valoarea TVA și
+  cantitatea rămân dezactivate), se păstrează la salvare, iar „Operează” arată
+  `CV_STRUCTURA: Corecția de valoare cu TVA nu este acoperită.` și lasă
+  documentul Draft. Pe HTTP, `POST /api/fct` cu `TipTvaId` pe linia de
+  corecție dă 201, iar `opereaza` dă 422 cu același cod.
+
+Tranșare de confirmat la review: 106 (h) blochează rezultatele motorului
+„printr-o singură declarație”. Pe FCT, valoarea liniei de corecție nu e
+rezultat al motorului, ci se culege, deci blocajul liniei obișnuite trece pe
+regula `[Appearance]` a felului liniei.
+
+Ce nu e făcut și nu e certificat de aceste rulări:
+
+- matricea HTTP `refuzuri.ps1` nu a rulat: ușile de securitate nu s-au
+  schimbat, iar lotul se rezolvă pe ObjectSpace-ul securizat ca orice
+  referință (404 pe invizibil);
+- „politica lipsă” din SC-CVL-18 rămâne probată de SC-FCT-16, pe același
+  `Contari.Rezolva`; returul, ASM, LDI și reziduul preexistent din SC-CVL-19
+  nu au scenariu propriu;
+- pasul 5: regresia și review-ul advers de închidere.
 
 ### Verificarea pasului 3 — 2026-10-14
 

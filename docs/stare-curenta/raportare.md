@@ -2,7 +2,7 @@
 
 **Actualizat: 2026-10-15.** [Index](README.md)
 
-Explicația deciziei persistată în cub, invarianții care o verifică și identitățile cititorilor cubului.
+Explicația deciziei persistată în cub, invarianții care o verifică, citirile contabile ale cubului și identitățile cititorilor lui.
 
 ## Explicația deciziei
 
@@ -111,6 +111,27 @@ fel partener sau angajat. (C111-D10)
 Regula terțului comercial în SAF-T (S11) și cea a partenerului fiscal în
 D394 (S13) sunt în [saft § Terțul comercial](saft.md#terțul-comercial) și
 [tva § D300 și D394](tva.md#d300-și-d394). (S11, S13)
+
+## Citirile contabile ale cubului
+
+`Postari` compune interogarea fără diagnostic global per apel;
+inversele Operare/Deschidere se clasifică prin ID și spațiul originii.
+Balanța, fișa, jurnalul și soldul pe partener citesc cubul, împreună cu
+snapshot-ul contabil. Fișa afișează toate conturile corespondente, fără să
+inventeze o pereche; jurnalul are identitatea postare × spațiu. (098, 099)
+
+Axa analitică e una: repartitorul de sold al postării. Capătul intern apare
+pe repartitorul lui intern, cu sau fără fapt fiscal; contul propriu apare ca
+repartitor; partenerul numai fiscal și locul nu sunt pe axă. `repartitorId`
+filtrează repartitorul de sold, de orice fel; `repartitorNul`, pe fișă,
+înseamnă fără niciun repartitor. Capătul intern cu partidă (419, 408, 4091)
+apare pe titular, nu pe locul intern. (S1, S2, C111-Q6)
+
+Snapshot-ul contabil (`SoldPerioadaContabil`) are aceeași axă, `RepartitorId`,
+fără coloană de gestiune; citirea dinamică și cea din snapshot dau aceleași
+cifre. Snapshot-ul se scrie numai din cub și se reconstruiește din postări.
+Citirile securizate folosesc postările autorizate, nu snapshot-ul global,
+pentru a păstra permisiunile pe rând și membru. (S1, C111-Q6, 098, 099)
 
 ## Limitele implementării
 

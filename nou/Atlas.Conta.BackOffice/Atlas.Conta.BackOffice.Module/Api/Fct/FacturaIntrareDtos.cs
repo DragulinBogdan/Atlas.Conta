@@ -68,6 +68,11 @@ public sealed class FacturaIntrareWriteDto {
 // agregatul întreg (43c).
 public sealed class FacturaIntrareLinieWriteDto {
     public Guid? Id { get; set; }
+    // CV-D1: linia corectează valoarea lotului `LotId` cu `Valoare` semnată, fără produs, cantitate, preț sau TVA.
+    public bool CorectieValoareLot { get; set; }
+    // Numai pe linia de corecție; pe linia obișnuită lotul îl naște culegerea.
+    public Guid? LotId { get; set; }
+    public decimal? Valoare { get; set; }
     // Lipsă = tipul produsului, completat de culegere (104c).
     public Guid? TipMaterialId { get; set; }
     // Obligatoriu pe liniile de STOC (validat la operare): fără el lotul nu se
@@ -144,13 +149,14 @@ public sealed class FacturaIntrareReadDto {
 
 public sealed class FacturaIntrareLinieReadDto {
     public Guid Id { get; set; }
+    public bool CorectieValoareLot { get; set; }
     public Guid TipMaterialId { get; set; }
     public string TipMaterialCod { get; set; }
     public string TipMaterialDenumire { get; set; }
     public Guid? ProdusId { get; set; }
     public string ProdusCod { get; set; }
     public string ProdusDenumire { get; set; }
-    // Server-owned pe FCT (53a): lotul se naște/sincronizează la `Aplica`.
+    // Server-owned pe linia obișnuită (53a): lotul se naște/sincronizează la `Aplica`; pe corecție, lotul corectat.
     public Guid? LotId { get; set; }
     // Compusă ca `Lot.Eticheta` din câmpuri PROIECTATE PLAT — inclusiv starea
     // „(în culegere)" a lotului încă nefinalizat de motor.

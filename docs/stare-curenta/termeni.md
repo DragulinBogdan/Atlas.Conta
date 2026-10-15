@@ -591,7 +591,7 @@ purjei ei (proveniența inverselor, echilibrul pe tranzacție și carte,
 conservarea transferului, taxa postată = taxa liniei, unitățile de
 partidă, perechea, ordinalul, explicația), fiecare ramură cu un mutant
 într-o tranzacție anulată. Regula:
-[stoc § Invarianții cubului](stoc.md#invarianții-cubului) (102b, 102d, X-D4);
+[verificare § Invarianții cubului](verificare.md#invarianții-cubului-inv-cub) (102b, 102d, X-D4);
 [verificare § Invarianții cubului (INV-CUB)](verificare.md#invarianții-cubului-inv-cub).
 Înrudit: cub, explicație. În cod: `Cub/Citiri/Invarianti`, `CITIRE_*`.
 

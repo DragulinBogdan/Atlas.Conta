@@ -64,6 +64,15 @@ public sealed class ExplicatieContractDto {
                 })],
                 Conturi = [.. l.Conturi.Select(c => new ExplicatieContDto { ContId = c.Cont, Sursa = c.Sursa, RegulaId = c.Regula })],
                 PartideDeschise = [.. l.PartideDeschise.Select(p => ExplicatieUnitateDto.Din(p.Unitate))],
+                Alocari = [.. l.Alocari.Select(a => new ExplicatieAlocareDto {
+                    Unitate = ExplicatieUnitateDto.Din(a.Unitate), Beneficiar = ExplicatieReferintaDto.Din(a.Beneficiar),
+                    Pondere = a.Pondere, Valoare = a.Valoare, SoldCitit = ExplicatieSoldDto.Din(a.SoldCitit),
+                })],
+                Compensari = [.. l.Compensari.Select(c => new ExplicatieCompensareDto {
+                    Radacina = ExplicatieReferintaDto.Din(c.Radacina), Beneficiar = ExplicatieReferintaDto.Din(c.Beneficiar),
+                    Sursa = ExplicatieUnitateDto.Din(c.Sursa), Destinatie = ExplicatieUnitateDto.Din(c.Destinatie),
+                    Valoare = c.Valoare,
+                })],
             })],
         };
     }
@@ -75,6 +84,34 @@ public sealed class ExplicatieLinieDto {
     public List<ExplicatieStingereDto> Stingeri { get; set; } = [];
     public List<ExplicatieContDto> Conturi { get; set; } = [];
     public List<ExplicatieUnitateDto> PartideDeschise { get; set; } = [];
+    /// <summary>Corecția valorică: cota fiecărui beneficiar, în ordinea repartizării (CV-D8).</summary>
+    public List<ExplicatieAlocareDto> Alocari { get; set; } = [];
+    public List<ExplicatieCompensareDto> Compensari { get; set; } = [];
+}
+
+public sealed class ExplicatieReferintaDto {
+    public Guid Id { get; set; }
+    public string Spatiu { get; set; } = "";
+
+    public static ExplicatieReferintaDto Din(N.ReferintaPostare r) => new() { Id = r.Id, Spatiu = r.Spatiu.ToString() };
+}
+
+/// <summary>Cota beneficiarului; valoarea zero nu are postare.</summary>
+public sealed class ExplicatieAlocareDto {
+    public ExplicatieUnitateDto Unitate { get; set; } = new();
+    public ExplicatieReferintaDto Beneficiar { get; set; } = new();
+    public decimal Pondere { get; set; }
+    public decimal Valoare { get; set; }
+    public ExplicatieSoldDto? SoldCitit { get; set; }
+}
+
+/// <summary>Valoarea rădăcinii mutată de pe consumul beneficiarului stornat înapoi pe stoc.</summary>
+public sealed class ExplicatieCompensareDto {
+    public ExplicatieReferintaDto Radacina { get; set; } = new();
+    public ExplicatieReferintaDto Beneficiar { get; set; } = new();
+    public ExplicatieUnitateDto Sursa { get; set; } = new();
+    public ExplicatieUnitateDto Destinatie { get; set; } = new();
+    public decimal Valoare { get; set; }
 }
 
 public sealed class ExplicatieUnitateDto {

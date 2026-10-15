@@ -171,7 +171,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 |---|---|
 | [Catalogul funcționalităților](functionalitati.md) | 2026-10-15 |
 | [C111 — coordonatele postării (transversal)](nucleu/scenarii/C111.md) | 2026-10-11 |
-| [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-14 |
+| [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-15 |
 | [D9B — originea partidei](nucleu/scenarii/D9B.md) | 2026-10-14 |
 | [X — scenarii transversale](nucleu/scenarii/X.md) | 2026-10-14 |
 

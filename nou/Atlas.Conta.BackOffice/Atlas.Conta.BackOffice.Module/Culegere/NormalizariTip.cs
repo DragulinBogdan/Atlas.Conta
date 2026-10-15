@@ -33,6 +33,10 @@ public static class NormalizariTip {
                     }
                 }
                 break;
+            case FacturaIntrare fct:
+                foreach (var linie in Vii(os, fct).OfType<FacturaIntrareDetaliu>().Where(l => l.CorectieValoareLot))
+                    GolesteIntrarea(os, linie);
+                break;
             case IesireImobilizare cas:
                 RegenereazaCas(os, cas, Vii(os, cas).OfType<IesireImobilizareDetaliu>()
                     .Select(l => l.ImobilizareId).Where(id => id != Guid.Empty).Distinct().ToList());
@@ -115,8 +119,43 @@ public static class NormalizariTip {
         linie.LotFabricatie = null;
     }
 
+    /// <summary>
+    /// Felul liniei FCT s-a schimbat: linia de corecție pornește fără valoare și fără tipul de TVA al produsului,
+    /// cea obișnuită pierde lotul ales și își recalculează valoarea din preț × cantitate.
+    /// </summary>
+    public static void CorectieComutata(IObjectSpace os, FacturaIntrareDetaliu linie) {
+        if (linie.CorectieValoareLot) {
+            GolesteIntrarea(os, linie);
+            linie.TipTva = null;
+            linie.TipTvaId = null;
+            linie.Valoare = 0m;
+        }
+        else
+            RupePinulStrain(os, linie);
+    }
+
+    // CV-D1: tipul de TVA ales rămâne, ca operarea să refuze corecția taxabilă (CV_STRUCTURA).
+    static void GolesteIntrarea(IObjectSpace os, FacturaIntrareDetaliu linie) {
+        linie.Produs = null;
+        linie.ProdusId = null;
+        linie.PretUnitar = 0m;
+        linie.Cantitate = 0m;
+        linie.DataExpirare = null;
+        linie.LotFabricatie = null;
+        linie.ValoareTva = 0m;
+        linie.TvaCules = false;
+        linie.LinieAvans = null;
+        linie.LinieAvansId = null;
+        if (linie.TipMaterialId == Guid.Empty && linie.LotId is Guid lotId
+                && os.GetObjectsQuery<Lot>().Where(l => l.ID == lotId).Select(l => l.Produs.TipMaterialId).FirstOrDefault() is Guid tipId
+                && os.GetObjectByKey<TipMaterial>(tipId) is TipMaterial tip) {
+            linie.TipMaterial = tip;
+            linie.TipMaterialId = tipId;
+        }
+    }
+
     // Linia de produs își deține lotul; pinul rămas dintr-un consum anterior o face ne-operabilă (E2E-API-ASM).
-    static void RupePinulStrain(IObjectSpace os, AsamblareDetaliu linie) {
+    static void RupePinulStrain(IObjectSpace os, DocumentDetaliu linie) {
         if (linie.LotId is not Guid pin)
             return;
         var lot = os.GetObjectByKey<Lot>(pin);

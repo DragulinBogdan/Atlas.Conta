@@ -77,10 +77,6 @@ Factura de avans 4091 privat / 409.01.01 bugetar nu produce recepție.
 Seed-ul bugetar clasifică 409.01.01 fără stoc (clasa S); postările istorice
 nu se reclasifică prin această corecție de seed. (099d)
 
-`UrmarestePartide` este activ și pe 461 privat, respectiv
-408.00.00/461.01.09/428.01.02 bugetar. Efectul aparține contului, nu NIR-ului:
-și FCT bugetar pe 408 deschide partida furnizorului (SC-NIR-36/FCT), iar
-INC/PLT pe 461 folosesc urmărirea partidelor prin mecanismul comun. (098, 099)
 
 ## Transformarea n→m
 
@@ -107,19 +103,8 @@ probe/diagnostic. (ASM-B2…B7)
 
 ## Factura de ieșire și descărcarea de gestiune
 
-- **FCL** (`DeclarantFacturaIesire`): FCT în oglindă — per linie venitul pe
-  regula de vânzare a Tipului (creditul = internul, cu emitentul ca
-  repartitor; debitul 4111 = terțul, cu partidă), taxa colectată per linie
-  prin `Fiscal.Impozitul` pe direcția `Colectat` (creditul pe 4427, cu locul
-  documentului ca repartitor, `Fiscal.Locul`; debitul pe contrapartidă),
-  taxa culeasă autoritară, taxarea inversă pe
-  livrare fără postare de taxă. Zero postări de stoc: linia de natură `Stoc` e
-  linie de venit, fără lot și fără produs. Partidă pe fiecare cont cu `UrmarestePartide`
-  al liniilor (S-D16): FCL cu regularizare de avans (`4111 = 419`) deschide
-  DOUĂ partide, iar soldul partidei de creanță e netul ei (debitul de −100 al
-  liniei de avans intră pe 4111). Valorile negative (prețuri negative) se
-  declară semnate, pe aceeași latură. Refuzuri: laturile prin contractul
-  clasei (T-D13), fără linii, cantitate ≤ 0, `PRODUS_ALT_TIP`, regulă lipsă, TVA. (T-D4)
+Declarantul FCL e în [motor § Declaranții pe tip](motor.md#declaranții-pe-tip).
+
 - **DSC** (`DeclarantDescarcareGestiune`): o mișcare per linie — lotul iese
   din gestiunea predatoare pe contul de stoc al regulii (`6xx = 3xx` per
   Tip), evaluat cu `Evaluare.Iesire` pe raportul curent în secvența liniilor
@@ -143,6 +128,15 @@ semnată culeasă, lotul corectat pe linie. Linia corectată este linia de
 intrare a lotului. Un document cu o linie de corecție are numai linii de
 corecție, fără TVA; nu naște lot și nu generează NIR. (119, CV-D1)
 
+- Culegerea (L3, `NormalizariTip`) golește pe linia de corecție produsul,
+  cantitatea, prețul, valoarea TVA, avansul și atributele de lot, nu aplică
+  implicitul de TVA (linia nu e fiscală) și ia tipul din produsul lotului.
+  Tipul de TVA ales rămâne pe draft, iar operarea refuză corecția taxabilă cu
+  `CV_STRUCTURA`; taxa nu se omite tacit. Comutarea pe corecție pornește
+  valoarea de la zero și golește tipul de TVA adus de produs; comutarea înapoi
+  rupe lotul ales și recalculează valoarea. Lotul propriu nefinalizat al unei linii
+  obișnuite comutate dispare la salvare. Ecranul XAF și `FacturaIntrareApply`
+  dau aceeași linie (SC-CVL-25). (104c, CV-D1)
 - Valoarea liniei se împarte pe stocul rămas și pe consumurile active ale
   lotului, după cantitate: Hamilton pe poziții, apoi pe postările fiecărei
   poziții. Fiecare cotă nenulă e o pereche `Operare` cu debitul pe poziția
@@ -166,6 +160,13 @@ corecție, fără TVA; nu naște lot și nu generează NIR. (119, CV-D1)
   `CompensareValorica` pe fiecare pereche de compensare. Invariantul de audit
   (`CorectieValorica.Auditeaza`, în `INV-CUB`) reface repartizarea din
   ponderi și verifică postările și compensările față de decizii. (CV-D8)
+- `GET api/proiectii/explicatii/{tranzactie}` le întoarce pe linia explicată:
+  `Alocari` (unitatea, postarea beneficiară, ponderea, cota și, pe stoc,
+  soldul citit la data corecției) și `Compensari` (rădăcina, beneficiarul
+  stornat, poziția sursă și cea de destinație, valoarea mutată). Referințele
+  spre postările altor documente nu lărgesc accesul: ușa cere deja citirea
+  completă a postărilor și a documentelor (`EXPLICATIE_ACCES_INCOMPLET`).
+  La storno, explicațiile ambelor `Operare` ale corecției vin ca origini. (CV-D8)
 - Refuzuri: `CV_STRUCTURA`, `CV_LOT_NEELIGIBIL`, `CV_VALOARE_INSUFICIENTA`,
   `CV_CRONOLOGIE`, `CV_DEPENDENTI`, `CV_AN_INCHIS`, `CV_PROVENIENTA`, toate în
   `CoduriRefuz`. Nucleul emite motivul (`MotivCorectieValorica`), iar
@@ -177,54 +178,6 @@ Regula stă în `Nucleu/Motor/CorectieValorica.cs`; declarația în
 `Cub/Citiri/CorectiiValorice.cs`; compensarea în
 `Cub/Materializare.CorectiiValorice.cs`. Proba: `--scenarii CVL` și
 `CorectieValoricaTeste`. (119)
-
-## Invarianții cubului
-
-Scriitorul stornoului garantează proveniența inversei. `Citiri/Invarianti`
-verifică în ModelCheck (`INV-CUB`), pe faptele fiecărei scene a catalogului,
-înaintea purjei ei, invarianții pe care scrierea nu-i garantează prin
-construcție (schema garantează deja, prin `CK_Postare_FelUnitate`, unitatea și
-nașterea partidei): proveniența
-(`CITIRE_PROVENIENTA_LIPSA`), echilibrul pe tranzacție și carte, conservarea
-transferului, taxa postată = taxa liniei, unitățile de partidă, proveniența
-fișelor și explicația, inclusiv valoarea liniei = decizia ieșirii, cu semn
-(`CITIRE_EXPLICATIE_LINIE`, D9-D3), și forma coordonatelor
-(`VerificaCoordonate`, `CITIRE_COORDONATE_INVALIDE`, C111-D2): partenerul
-fiscal numai cu fapt fiscal; locul numai cu fapt fiscal sau pe partidă; faptul
-fiscal cu loc; cantitatea nemarcată numai pe lot; lotul pe repartitor intern;
-partida pe repartitor extern; locul, repartitor intern; contraponderea
-transformării fără repartitor, unitate, valoare, valută sau fapt fiscal, pe
-orice postare marcată, cu sau fără pereche. Inversa fiscală se
-compară cu originalul și pe `PartenerFiscal` și `Loc`
-(`CITIRE_FISCAL_INVERSA`). (098, 099, D9-D3, C111-D2)
-
-Hosturile nu scanează istoria la pornire; o bază care nu corespunde codului
-se recreează. (102b, 102d)
-
-## Citirile contabile ale cubului
-
-`Postari` compune interogarea fără diagnostic global per apel;
-inversele Operare/Deschidere se clasifică prin ID și spațiul originii.
-Balanța, fișa, jurnalul și soldul pe partener citesc cubul, împreună cu
-snapshot-ul contabil. Fișa afișează toate conturile corespondente, fără să
-inventeze o pereche; jurnalul are identitatea postare × spațiu. (098, 099)
-
-Axa analitică e una: repartitorul de sold al postării. Capătul intern apare
-pe repartitorul lui intern, cu sau fără fapt fiscal; contul propriu apare ca
-repartitor; partenerul numai fiscal și locul nu sunt pe axă. `repartitorId`
-filtrează repartitorul de sold, de orice fel; `repartitorNul`, pe fișă,
-înseamnă fără niciun repartitor. Capătul intern cu partidă (419, 408, 4091)
-apare pe titular, nu pe locul intern. (S1, S2, C111-Q6)
-
-Snapshot-ul contabil (`SoldPerioadaContabil`) are aceeași axă, `RepartitorId`,
-fără coloană de gestiune; citirea dinamică și cea din snapshot dau aceleași
-cifre. Snapshot-ul se scrie numai din cub și se reconstruiește din postări.
-Citirile securizate folosesc postările autorizate, nu snapshot-ul global,
-pentru a păstra permisiunile pe rând și membru. (S1, C111-Q6, 098, 099)
-
-DEC are probă numerică independentă pentru inversare și corecție peste
-închidere: partidă −100 în ianuarie, zero după inversă, noua partidă −80.
-(098, 099)
 
 <!-- gen:decizii -->
 ## Decizii

@@ -10124,6 +10124,23 @@ export interface components {
             NaturaInterzisa?: string | null;
             DinSeed?: boolean;
         };
+        ExplicatieAlocareDto: {
+            Unitate?: components["schemas"]["ExplicatieUnitateDto"];
+            Beneficiar?: components["schemas"]["ExplicatieReferintaDto"];
+            /** Format: double */
+            Pondere?: number;
+            /** Format: double */
+            Valoare?: number;
+            SoldCitit?: components["schemas"]["ExplicatieSoldDto"];
+        };
+        ExplicatieCompensareDto: {
+            Radacina?: components["schemas"]["ExplicatieReferintaDto"];
+            Beneficiar?: components["schemas"]["ExplicatieReferintaDto"];
+            Sursa?: components["schemas"]["ExplicatieUnitateDto"];
+            Destinatie?: components["schemas"]["ExplicatieUnitateDto"];
+            /** Format: double */
+            Valoare?: number;
+        };
         ExplicatieContDto: {
             /** Format: uuid */
             ContId?: string;
@@ -10190,6 +10207,8 @@ export interface components {
             Stingeri?: components["schemas"]["ExplicatieStingereDto"][] | null;
             Conturi?: components["schemas"]["ExplicatieContDto"][] | null;
             PartideDeschise?: components["schemas"]["ExplicatieUnitateDto"][] | null;
+            Alocari?: components["schemas"]["ExplicatieAlocareDto"][] | null;
+            Compensari?: components["schemas"]["ExplicatieCompensareDto"][] | null;
         };
         ExplicatiePoliticaDto: {
             Fel?: string | null;
@@ -10200,6 +10219,11 @@ export interface components {
             /** Format: int32 */
             VersiuneCurenta?: number | null;
             Schimbata?: boolean;
+        };
+        ExplicatieReferintaDto: {
+            /** Format: uuid */
+            Id?: string;
+            Spatiu?: string | null;
         };
         ExplicatieSoldDto: {
             /** Format: double */
@@ -10395,6 +10419,7 @@ export interface components {
         FacturaIntrareLinieReadDto: {
             /** Format: uuid */
             Id?: string;
+            CorectieValoareLot?: boolean;
             /** Format: uuid */
             TipMaterialId?: string;
             TipMaterialCod?: string | null;
@@ -10446,6 +10471,11 @@ export interface components {
         FacturaIntrareLinieWriteDto: {
             /** Format: uuid */
             Id?: string | null;
+            CorectieValoareLot?: boolean;
+            /** Format: uuid */
+            LotId?: string | null;
+            /** Format: double */
+            Valoare?: number | null;
             /** Format: uuid */
             TipMaterialId?: string | null;
             /** Format: uuid */

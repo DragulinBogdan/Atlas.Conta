@@ -298,6 +298,19 @@ partide care cere repartitor și e atins de catalog.
   doar bază; o singură partidă per cont de terț. NIR-ul conex postează numai
   diferența față de recepția deja reprezentată în cubul FCT (098, 099). Plata
   autogenerată are document și postări proprii.
+- **FCL** (`DeclarantFacturaIesire`): FCT în oglindă — per linie venitul pe
+  regula de vânzare a Tipului (creditul = internul, cu emitentul ca
+  repartitor; debitul 4111 = terțul, cu partidă), taxa colectată per linie
+  prin `Fiscal.Impozitul` pe direcția `Colectat` (creditul pe 4427, cu locul
+  documentului ca repartitor, `Fiscal.Locul`; debitul pe contrapartidă),
+  taxa culeasă autoritară, taxarea inversă pe
+  livrare fără postare de taxă. Zero postări de stoc: linia de natură `Stoc` e
+  linie de venit, fără lot și fără produs. Partidă pe fiecare cont cu `UrmarestePartide`
+  al liniilor (S-D16): FCL cu regularizare de avans (`4111 = 419`) deschide
+  DOUĂ partide, iar soldul partidei de creanță e netul ei (debitul de −100 al
+  liniei de avans intră pe 4111). Valorile negative (prețuri negative) se
+  declară semnate, pe aceeași latură. Refuzuri: laturile prin contractul
+  clasei (T-D13), fără linii, cantitate ≤ 0, `PRODUS_ALT_TIP`, regulă lipsă, TVA. (T-D4)
 - **RDC** (`DeclarantReturClient`), activat numai pe profilul privat. Linia
   fără lot inversează venitul și TVA-ul, deschizând partida proprie negativă;
   linia cu lot readuce cantitatea și valoarea pe lotul original, fără fapt

@@ -28,6 +28,9 @@ public static class FacturaIntrareApply {
         // de CREARE un refuz de după `CreateObject` ar lăsa o factură orfană în
         // OS-ul viu al apelantului, pe care un commit ulterior ar persista-o.
         var plataTipInstrument = ApiEnum.TipInstrumentOptional(dto.PlataTipInstrument);
+        foreach (var linie in dto.Linii ?? [])
+            if (FelulLiniei(linie) is string refuz)
+                throw new OperareException(refuz);
 
         FacturaIntrare doc;
         if (id is Guid existentId) {
@@ -132,7 +135,17 @@ public static class FacturaIntrareApply {
             }
 
             var inainte = CulegereDocument.Urmareste(os, doc, detaliu);
+            if (detaliu.CorectieValoareLot != l.CorectieValoareLot) {
+                detaliu.CorectieValoareLot = l.CorectieValoareLot;
+                if (!os.IsNewObject(detaliu))
+                    CulegereDocument.CorectieComutata(os, doc, detaliu);
+            }
             ApiLinie.TipMaterial(os, detaliu, l.TipMaterialId);
+            if (l.CorectieValoareLot) {
+                detaliu.Lot = l.LotId is Guid lotId ? Rezolva.Cere<Lot>(os, lotId, "Lotul corectat") : null;
+                if (l.LotId == null) detaliu.LotId = null;
+                detaliu.Valoare = l.Valoare ?? 0m;
+            }
 
             // Produsul e mecanismul lotului (GATE XAF D1): îl consumă
             // `LoturiCulegereService` după reconciliere. `LotId` NU se atinge —
@@ -189,6 +202,19 @@ public static class FacturaIntrareApply {
             os.Delete(sterse);
     }
 
+    // CV-D1: câmpurile celuilalt fel de linie se refuză, nu se golesc tăcut.
+    static string FelulLiniei(FacturaIntrareLinieWriteDto l) =>
+        l.CorectieValoareLot
+            ? l.ProdusId != null || l.Cantitate != 0m || l.PretUnitar != 0m || l.ValoareTva is not (null or 0m)
+                || l.LinieAvansId != null || l.DataExpirare != null || !string.IsNullOrEmpty(l.LotFabricatie)
+                ? "Linia de corecție a valorii lotului nu poartă produs, cantitate, preț, valoare TVA, avans sau atribute de lot: "
+                    + "alegeți lotul corectat și culegeți diferența de valoare."
+                : null
+            : l.LotId != null || l.Valoare != null
+                ? "Lotul și valoarea se culeg numai pe linia de corecție a valorii lotului; pe linia obișnuită lotul îl naște "
+                    + "produsul, iar valoarea rezultă din preț × cantitate."
+                : null;
+
     static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)
             where T : class => Rezolva.Optional<T>(os, id, rol);
 
@@ -233,7 +259,7 @@ public static class FacturaIntrareApply {
             .Where(l => l.DocumentId == id)
             .OrderBy(l => l.ID)
             .Select(l => new {
-                l.ID, l.TipMaterialId,
+                l.ID, l.CorectieValoareLot, l.TipMaterialId,
                 TipMaterialCod = l.TipMaterial.Cod,
                 TipMaterialDenumire = l.TipMaterial.Denumire,
                 l.ProdusId, ProdusCod = l.Produs.Cod, ProdusDenumire = l.Produs.Denumire,
@@ -289,7 +315,7 @@ public static class FacturaIntrareApply {
             PoateStorna = regim.Poate(ComandaDocument.Storneaza),
             Copii = copii,
             Linii = linii.Select(l => new FacturaIntrareLinieReadDto {
-                Id = l.ID, TipMaterialId = l.TipMaterialId,
+                Id = l.ID, CorectieValoareLot = l.CorectieValoareLot, TipMaterialId = l.TipMaterialId,
                 TipMaterialCod = l.TipMaterialCod, TipMaterialDenumire = l.TipMaterialDenumire,
                 ProdusId = l.ProdusId, ProdusCod = l.ProdusCod, ProdusDenumire = l.ProdusDenumire,
                 LotId = l.LotId,
