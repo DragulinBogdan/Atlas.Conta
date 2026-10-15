@@ -205,9 +205,9 @@ public static class FacturaIntrareApply {
     // CV-D1: câmpurile celuilalt fel de linie se refuză, nu se golesc tăcut.
     static string FelulLiniei(FacturaIntrareLinieWriteDto l) =>
         l.CorectieValoareLot
-            ? l.ProdusId != null || l.Cantitate != 0m || l.PretUnitar != 0m || l.TipTvaId != null || l.ValoareTva is not (null or 0m)
+            ? l.ProdusId != null || l.Cantitate != 0m || l.PretUnitar != 0m || l.ValoareTva is not (null or 0m)
                 || l.LinieAvansId != null || l.DataExpirare != null || !string.IsNullOrEmpty(l.LotFabricatie)
-                ? "Linia de corecție a valorii lotului nu poartă produs, cantitate, preț, TVA, avans sau atribute de lot: "
+                ? "Linia de corecție a valorii lotului nu poartă produs, cantitate, preț, valoare TVA, avans sau atribute de lot: "
                     + "alegeți lotul corectat și culegeți diferența de valoare."
                 : null
             : l.LotId != null || l.Valoare != null

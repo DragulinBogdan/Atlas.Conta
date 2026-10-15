@@ -235,8 +235,9 @@ care blochează coloana grilei și itemul dialogului liniei deopotrivă:
 DVI culeg `Valoare`. Pe FCT felul liniei decide: linia obișnuită are `Lot` și
 `Valoare` blocate, iar linia de corecție a valorii lotului (prima coloană,
 „Corecție de valoare a lotului”) le culege și blochează produsul, cantitatea,
-prețul, TVA-ul, avansul și atributele de lot (`[Appearance]` pe
-`FacturaIntrareDetaliu`). Lookup-ul lotului oferă loturile recepționate în
+prețul, valoarea TVA, avansul și atributele de lot (`[Appearance]` pe
+`FacturaIntrareDetaliu`). Tipul de TVA rămâne editabil: corecția declarată
+taxabilă se refuză la operare cu `CV_STRUCTURA`. Lookup-ul lotului oferă loturile recepționate în
 gestiunea facturii pe o factură operată a aceluiași furnizor
 (`Culegere/LoturiCorectabile`). Comutarea felului golește linia, iar tipul se
 completează din produsul lotului la salvare. (CV-D1) Excepțiile pe view (legenda `Valoare în vamă`, o coloană

@@ -120,19 +120,21 @@ public static class NormalizariTip {
     }
 
     /// <summary>
-    /// Felul liniei FCT s-a schimbat: linia de corecție pornește fără valoare, cea obișnuită pierde lotul ales
-    /// și își recalculează valoarea din preț × cantitate.
+    /// Felul liniei FCT s-a schimbat: linia de corecție pornește fără valoare și fără tipul de TVA al produsului,
+    /// cea obișnuită pierde lotul ales și își recalculează valoarea din preț × cantitate.
     /// </summary>
     public static void CorectieComutata(IObjectSpace os, FacturaIntrareDetaliu linie) {
         if (linie.CorectieValoareLot) {
             GolesteIntrarea(os, linie);
+            linie.TipTva = null;
+            linie.TipTvaId = null;
             linie.Valoare = 0m;
         }
         else
             RupePinulStrain(os, linie);
     }
 
-    // CV-D1: linia de corecție nu poartă intrarea, cantitatea sau TVA-ul; tipul vine din produsul lotului ales.
+    // CV-D1: tipul de TVA ales rămâne, ca operarea să refuze corecția taxabilă (CV_STRUCTURA).
     static void GolesteIntrarea(IObjectSpace os, FacturaIntrareDetaliu linie) {
         linie.Produs = null;
         linie.ProdusId = null;
@@ -140,8 +142,6 @@ public static class NormalizariTip {
         linie.Cantitate = 0m;
         linie.DataExpirare = null;
         linie.LotFabricatie = null;
-        linie.TipTva = null;
-        linie.TipTvaId = null;
         linie.ValoareTva = 0m;
         linie.TvaCules = false;
         linie.LinieAvans = null;

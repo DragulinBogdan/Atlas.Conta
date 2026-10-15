@@ -3,11 +3,12 @@ using Atlas.Conta.BackOffice.Module.Api.Fct;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Declaratii;
+using DevExpress.ExpressApp;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 // SC-CVL-25 și 18 pe ușile culegerii: linia de corecție culeasă prin `FacturaIntrareApply` și prin evenimentele
-// ecranului XAF (`CulegereDocument`), apoi operată; refuzurile de structură pe care declarantul nu le vede.
+// ecranului XAF (`CulegereDocument`), apoi operată; corecția cu TVA ajunge la declarant (CV_STRUCTURA).
 sealed partial class ScenariiCvl {
     FacturaIntrareWriteDto CorectieApi(DateOnly data, FacturaIntrareLinieWriteDto linie) {
         linie.CodEconomicId ??= Economic;
@@ -43,8 +44,12 @@ sealed partial class ScenariiCvl {
 
         Refuza("SC-CVL-25", () => CuSpatiu(os => FacturaIntrareApply.Aplica(os, null,
             CorectieApi(Zi(16), new() { CorectieValoareLot = true, LotId = caz.Lot, Valoare = 50m, Cantitate = 1m }))), "nu poartă produs");
-        Refuza("SC-CVL-25", () => CuSpatiu(os => FacturaIntrareApply.Aplica(os, null,
-            CorectieApi(Zi(16), new() { CorectieValoareLot = true, LotId = caz.Lot, Valoare = 50m, TipTvaId = CuSpatiu(o => o.GetObjectsQuery<TipTva>().First().ID) }))), "nu poartă produs");
+        var tva = CuSpatiu(os => os.GetObjectsQuery<TipTva>().First().ID);
+        var cuTva = CuSpatiu(os => FacturaIntrareApply.Aplica(os, null,
+            CorectieApi(Zi(16), new() { CorectieValoareLot = true, LotId = caz.Lot, Valoare = 50m, TipTvaId = tva })));
+        Verifica("SC-CVL-25", "API: tipul de TVA cerut pe linia de corecție rămâne pe draft",
+            CuSpatiu(os => FacturaIntrareApply.Citeste(os, cuTva)).Linii.Single().TipTvaId == tva);
+        Refuza("SC-CVL-25", () => Opereaza(cuTva), CoduriRefuz.CvStructura);
         Refuza("SC-CVL-25", () => CuSpatiu(os => FacturaIntrareApply.Aplica(os, null,
             CorectieApi(Zi(16), new() { TipMaterialId = tipLot, Cantitate = 1m, PretUnitar = 10m, LotId = caz.Lot }))), "numai pe linia de corecție");
         Refuza("SC-CVL-18", () => CuSpatiu(os => FacturaIntrareApply.Aplica(os, null,
@@ -52,22 +57,27 @@ sealed partial class ScenariiCvl {
         Este("SC-CVL-25", "refuzurile culegerii nu lasă efecte", caz, 40m, 480m, 720m, 1200m);
     }
 
+    (FacturaIntrare, FacturaIntrareDetaliu) DocumentXaf(IObjectSpace os) {
+        var doc = os.CreateObject<FacturaIntrare>();
+        CulegereDocument.Nou(doc);
+        var azi = doc.Data;
+        doc.Data = Zi(15);
+        CulegereDocument.DataMutata(doc, azi);
+        doc.Numar = $"{Marcaj}-C{++numar}";
+        doc.Predator = os.GetObjectByKey<Partener>(Furnizor);
+        doc.Primitor = os.GetObjectByKey<Gestiune>(Magazie);
+        var linie = os.CreateObject<FacturaIntrareDetaliu>();
+        linie.Document = doc;
+        doc.Detalii.Add(linie);
+        if (Economic is Guid economic) linie.CodEconomicId = economic;
+        return (doc, linie);
+    }
+
     void CulegereXaf() {
         var caz = Partial();
         var (idXaf, obisnuita, golita) = CuSpatiu(os => {
             var lot = os.GetObjectByKey<Lot>(caz.Lot);
-            var doc = os.CreateObject<FacturaIntrare>();
-            CulegereDocument.Nou(doc);
-            var azi = doc.Data;
-            doc.Data = Zi(15);
-            CulegereDocument.DataMutata(doc, azi);
-            doc.Numar = $"{Marcaj}-C{++numar}";
-            doc.Predator = os.GetObjectByKey<Partener>(Furnizor);
-            doc.Primitor = os.GetObjectByKey<Gestiune>(Magazie);
-            var linie = os.CreateObject<FacturaIntrareDetaliu>();
-            linie.Document = doc;
-            doc.Detalii.Add(linie);
-            if (Economic is Guid economic) linie.CodEconomicId = economic;
+            var (doc, linie) = DocumentXaf(os);
             void Schimba(string proprietate) => CulegereDocument.LinieSchimbata(os, doc, linie, proprietate);
             linie.Produs = os.GetObjectByKey<Produs>(lot.ProdusId); Schimba(nameof(FacturaIntrareDetaliu.Produs));
             linie.Cantitate = 5m; Schimba(nameof(DocumentDetaliu.Cantitate));
@@ -90,6 +100,23 @@ sealed partial class ScenariiCvl {
             && CuSpatiu(os => !os.GetObjectsQuery<Lot>().Any(l => l.LinieIntrareId == salvata.Id)));
         Opereaza(idXaf);
         Este("SC-CVL-25", "XAF: corecția culeasă și operată", caz, 40m, 480m, 720m, 1200m);
+
+        var (idTva, tvaAles) = CuSpatiu(os => {
+            var (doc, linie) = DocumentXaf(os);
+            void Schimba(string proprietate) => CulegereDocument.LinieSchimbata(os, doc, linie, proprietate);
+            linie.CorectieValoareLot = true; Schimba(nameof(FacturaIntrareDetaliu.CorectieValoareLot));
+            linie.Lot = os.GetObjectByKey<Lot>(caz.Lot); Schimba(nameof(DocumentDetaliu.Lot));
+            linie.Valoare = 50m; Schimba(nameof(DocumentDetaliu.Valoare));
+            var tva = os.GetObjectsQuery<TipTva>().First();
+            linie.TipTva = tva; linie.TipTvaId = tva.ID; Schimba(nameof(DocumentDetaliu.TipTva));
+            CulegereDocument.InainteDeSalvare(os);
+            os.CommitChanges();
+            return (doc.ID, tva.ID);
+        });
+        Verifica("SC-CVL-25", "XAF: tipul de TVA ales pe linia de corecție rămâne la salvare",
+            CuSpatiu(os => FacturaIntrareApply.Citeste(os, idTva)).Linii.Single().TipTvaId == tvaAles);
+        Refuza("SC-CVL-25", () => Opereaza(idTva), CoduriRefuz.CvStructura);
+        Este("SC-CVL-25", "XAF: corecția cu TVA refuzată nu lasă efecte", caz, 40m, 480m, 720m, 1200m);
 
         // Linia salvată obișnuită și-a născut lotul; comutată pe corecție, lotul ei nefinalizat dispare.
         var produs = CuSpatiu(os => os.GetObjectsQuery<Lot>().Where(l => l.ID == caz.Lot)

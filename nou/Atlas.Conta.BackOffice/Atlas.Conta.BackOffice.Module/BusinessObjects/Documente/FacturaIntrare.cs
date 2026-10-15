@@ -171,7 +171,7 @@ public class FacturaIntrare : Document, IDocumentCuScadenta, IDocumentCuPV, IDoc
     "CorectieValoareLot = False", TargetItems = nameof(Lot) + ";" + nameof(Valoare), Enabled = false)]
 [DevExpress.ExpressApp.ConditionalAppearance.Appearance("FCT_Linie_Corectie", DevExpress.ExpressApp.ConditionalAppearance.AppearanceItemType.ViewItem,
     "CorectieValoareLot = True", TargetItems = nameof(Produs) + ";" + nameof(Cantitate) + ";" + nameof(PretUnitar) + ";"
-        + nameof(TipTva) + ";" + nameof(ValoareTva) + ";" + nameof(DataExpirare) + ";" + nameof(LotFabricatie) + ";" + nameof(LinieAvans),
+        + nameof(ValoareTva) + ";" + nameof(DataExpirare) + ";" + nameof(LotFabricatie) + ";" + nameof(LinieAvans),
     Enabled = false)]
 public class FacturaIntrareDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCuPretUnitar, ILinieCareNasteLot, ILinieCuAvans,
         ILinieCuCorectieValorica {

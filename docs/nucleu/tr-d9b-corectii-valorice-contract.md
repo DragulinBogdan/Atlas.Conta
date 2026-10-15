@@ -577,7 +577,11 @@ liniei de corecție în L3 (`NormalizariTip`, `CulegereDocument.CorectieComutata
 în XAF (`[Appearance]` pe felul liniei, lookup-ul `LoturiCorectabile`) și pe
 API (`CorectieValoareLot`, `LotId`, `Valoare` în `WriteDto`/`ReadDto`, refuzul
 amestecului de câmpuri în adaptor). Implicitul de TVA nu se mai aplică pe o
-linie nefiscală (`Document.LinieFiscala`).
+linie nefiscală (`Document.LinieFiscala`). Tipul de TVA ales pe linia de
+corecție nu se golește la salvare și rămâne editabil în XAF, iar pe API nu e
+refuzat de adaptor: corecția taxabilă ajunge la declarant și primește
+`CV_STRUCTURA` la operare, pe ambele uși (SC-CVL-25), cum cere CV-D1
+(„niciodată prin omiterea taxei”).
 
 Comenzi executate din rădăcină:
 
@@ -604,6 +608,14 @@ Comenzi executate din rădăcină:
   activează și dezactivează produsul, cantitatea, prețul, TVA-ul, avansul și
   atributele de lot; lookup-ul oferă numai lotul furnizorului; după salvare
   tipul vine din produsul lotului; operarea dă pe lot 40/480 și consum 720.
+- Corecția cu TVA, după schimbarea de mai sus: SC-CVL-25 verde pe ambele
+  profiluri (`run-verificari/20261015-084901-964`), integrala verde
+  (`run-verificari/20261015-085024-393`). Pe aceeași bază din browser, tipul
+  „TVA 21% (standard)” se alege pe linia de corecție (valoarea TVA și
+  cantitatea rămân dezactivate), se păstrează la salvare, iar „Operează” arată
+  `CV_STRUCTURA: Corecția de valoare cu TVA nu este acoperită.` și lasă
+  documentul Draft. Pe HTTP, `POST /api/fct` cu `TipTvaId` pe linia de
+  corecție dă 201, iar `opereaza` dă 422 cu același cod.
 
 Tranșare de confirmat la review: 106 (h) blochează rezultatele motorului
 „printr-o singură declarație”. Pe FCT, valoarea liniei de corecție nu e

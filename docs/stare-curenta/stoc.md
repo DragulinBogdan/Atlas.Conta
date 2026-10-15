@@ -129,10 +129,12 @@ intrare a lotului. Un document cu o linie de corecție are numai linii de
 corecție, fără TVA; nu naște lot și nu generează NIR. (119, CV-D1)
 
 - Culegerea (L3, `NormalizariTip`) golește pe linia de corecție produsul,
-  cantitatea, prețul, TVA-ul, avansul și atributele de lot, nu aplică
+  cantitatea, prețul, valoarea TVA, avansul și atributele de lot, nu aplică
   implicitul de TVA (linia nu e fiscală) și ia tipul din produsul lotului.
-  Comutarea pe corecție pornește valoarea de la zero; comutarea înapoi rupe
-  lotul ales și recalculează valoarea. Lotul propriu nefinalizat al unei linii
+  Tipul de TVA ales rămâne pe draft, iar operarea refuză corecția taxabilă cu
+  `CV_STRUCTURA`; taxa nu se omite tacit. Comutarea pe corecție pornește
+  valoarea de la zero și golește tipul de TVA adus de produs; comutarea înapoi
+  rupe lotul ales și recalculează valoarea. Lotul propriu nefinalizat al unei linii
   obișnuite comutate dispare la salvare. Ecranul XAF și `FacturaIntrareApply`
   dau aceeași linie (SC-CVL-25). (104c, CV-D1)
 - Valoarea liniei se împarte pe stocul rămas și pe consumurile active ale
