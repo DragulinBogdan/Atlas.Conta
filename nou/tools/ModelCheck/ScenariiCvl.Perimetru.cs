@@ -18,6 +18,18 @@ sealed partial class ScenariiCvl {
         Refuza("SC-CVL-19", () => Opereaza(Draft(Zi(15), (os, _, d) => d.TipMaterialId = Tip(os, Fabricat), (produs, 50m))),
             CoduriRefuz.CvLotNeeligibil);
 
+        var tipGresit = Lot();
+        Refuza("SC-CVL-18", () => Opereaza(Draft(Zi(15), (os, _, d) => d.TipMaterialId = Tip(os, Serviciu), (tipGresit, 200m))),
+            CoduriRefuz.CvStructura);
+
+        var dubla = Partial();
+        var prima = Corectie(dubla, 200m);
+        var aDoua = Corectie(dubla, 100m, 16);
+        Refuza("SC-CVL-08", () => Anuleaza(prima), CoduriRefuz.CvDependenti);
+        Anuleaza(aDoua);
+        Anuleaza(prima);
+        Este("SC-CVL-08", "corecția ulterioară se retrage întâi, apoi prima", dubla, 40m, 400m, 600m, 1000m);
+
         var inventariat = Lot();
         Opereaza(Inventar(inventariat, 5m));
         Refuza("SC-CVL-19", () => Opereaza(Draft(Zi(15), (inventariat, 200m))), CoduriRefuz.CvLotNeeligibil);
@@ -36,6 +48,17 @@ sealed partial class ScenariiCvl {
         var constatat = Lot(constatat: 99m);
         Refuza("SC-CVL-19", () => Opereaza(Draft(Zi(15), (constatat, 200m))), CoduriRefuz.CvLotNeeligibil);
 
+        var reNir = Lot();
+        Corectie(reNir, 200m);
+        Anuleaza(reNir.Nir);
+        foreach (var q in new[] { 98m, 102m }) {
+            ConstatNir(reNir, q);
+            Refuza("SC-CVL-19", () => Opereaza(reNir.Nir), CoduriRefuz.CvDependenti);
+        }
+        ConstatNir(reNir, 100m);
+        Opereaza(reNir.Nir);
+        Este("SC-CVL-19", "NIR-ul conex re-operat fără diferență după corecție", reNir, 100m, 1200m, 0m, 1200m);
+
         var corectat = Lot();
         var a = Corectie(corectat, 200m);
         Refuza("SC-CVL-19", () => Opereaza(Retur(corectat, 100m, Zi(20))), CoduriRefuz.CvDependenti);
@@ -45,6 +68,10 @@ sealed partial class ScenariiCvl {
         Opereaza(Retur(corectat, 20m, Zi(25)));
         Este("SC-CVL-19", "după storno corecției, returul trece la prețul lotului", corectat, 80m, 800m, 0m, 1000m);
     }
+
+    void ConstatNir(Caz caz, decimal cantitate) => Comanda(os => {
+        os.GetObjectByKey<NIR>(caz.Nir).Detalii.OfType<NirDetaliu>().Single().Cantitate = cantitate; os.CommitChanges();
+    });
 
     Caz Asambleaza(Caz caz, decimal cantitate, decimal valoare) {
         var (id, linie, lot) = CuSpatiu(os => {

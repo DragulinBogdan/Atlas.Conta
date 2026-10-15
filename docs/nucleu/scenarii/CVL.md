@@ -119,7 +119,13 @@ lăsat de retur la golire (SC-RLF-05) sunt postări pe lot în afara
 predicatului, deci același refuz. Pe lotul corectat activ, returul la
 furnizor (100 bucăți) și cel de la client dau `CV_DEPENDENTI` și lasă
 100/1.200; după stornarea corecției, returul a 20 trece la prețul lotului:
-80/800.
+80/800. NIR-ul conex retras după corecție și re-operat cu 98 sau 102 dă
+`CV_DEPENDENTI`; cu 100 trece, 100/1.200 (privat). Linia de corecție cu alt
+tip decât produsul lotului dă `CV_STRUCTURA` (SC-CVL-18). Retragerea primei
+corecții cu a doua scrisă după ea dă `CV_DEPENDENTI`; retrase în ordine
+inversă, lotul revine la 40/400, C600, D1.000 (SC-CVL-08). Reziduul pe stoc
+fără cantitate, auditul ponderii consumului și cauza compensării sunt
+probate în nucleu (`CorectieValoricaTeste`).
 
 SC-CVL-18 și 25 rulează și pe ușile culegerii (pasul 4): linia culeasă prin
 `FacturaIntrareApply` și prin evenimentele ecranului XAF (`CulegereDocument`),

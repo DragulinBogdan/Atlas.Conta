@@ -1348,6 +1348,24 @@ pașii 6–8 sunt merse în main prin PR #38 (2026-10-13). Unde suntem, cu cifre
 generat în [docs/stare.md](../stare.md); cronologia feliilor e în
 `docs/decizii/istoric-plan-de-lucru.md`.
 
+## Starea din `CLAUDE.md` la 2026-10-15 (mutată prin 118 j)
+
+Pe guvernanță, stratul de scop ([scop](../scop.md),
+[catalogul funcționalităților](../functionalitati.md); PR #44) și cele 16
+arii ale stării curente (decizia 121, PR #45) sunt în main din 2026-10-15;
+paginile sunt rescrise pe subiect, iar limitele aduse la catalog (121-r1,
+121-r2, 121 e). Rămân 121-r3 (sondajul owner-ului pe aria rândurilor din
+registru) și 121-r4 (mutarea între arii a pasajelor lăsate pe loc, la prima
+felie care atinge aria). Tot pe guvernanță
+rămân 118-r1 la `/docs-curatenie` și `build` din 118-r2. Pe motor, felia
+deschisă e [TR-D9b-CV](../nucleu/tr-d9b-corectii-valorice-contract.md)
+(decizia 119), adică etapa E1 (F-CVL-01…06): pasul 3, mecanismul pe FCT, e
+în main (PR #41); pasul 4 (explicația în DTO, culegerea XAF și API,
+cititorii) e implementat pe branch-ul `tr-d9b-cv-pas4`; urmează pasul 5
+(regresie și review advers). Unde suntem,
+cu cifre: [docs/stare.md](../stare.md); cronologia:
+`docs/decizii/istoric-plan-de-lucru.md`.
+
 ## Textul scos din stare-curenta la 2026-10-15 (mutat prin 121-r1 și 121-r2)
 
 Pasajele scoase verbatim din paginile de stare curentă când au fost rescrise pe

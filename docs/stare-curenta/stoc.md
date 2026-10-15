@@ -149,11 +149,17 @@ corecție, fără TVA; nu naște lot și nu generează NIR. (119, CV-D1)
   Orice altă mișcare pe lot refuză corecția: transfer, descărcare, retur la
   furnizor sau de la client, asamblare, inventar, NIR cu diferențe. (CV-D10)
 - Pe un lot cu alocare activă, documentul al cărui declarant valorizează
-  mișcarea pe lot din linie, nu din sold (`IDeclarant.SursaValoareDeclarata`:
-  returul la furnizor și cel de la client), se refuză cu `CV_DEPENDENTI` până
-  la stornarea corecției; altfel returul integral la prețul lotului ar lăsa
+  mișcarea pe lot din linie sau din recepție, nu din sold
+  (`IDeclarant.SursaValoareDeclarata`: returul la furnizor, cel de la client,
+  NIR-ul conex re-operat cu diferență), se refuză cu `CV_DEPENDENTI` până la
+  stornarea corecției; altfel returul integral la prețul lotului ar lăsa
   valoare pe stocul gol. Celelalte ieșiri se evaluează din soldul ajustat.
+  Lotul cu stoc rămas zero și valoare pe poziția de stoc nu se corectează.
   (CV-D10)
+- Linia de corecție are tipul produsului lotului (`CV_STRUCTURA`), ca regula
+  de contare să fie a lotului. Retragerea unei corecții e refuzată
+  (`CV_DEPENDENTI`) cât lotul are o corecție scrisă după ea, care i-a citit
+  soldul ajustat; stornarea rămâne permisă. (CV-D10)
 - Stornarea bonului scrie, în aceeași comandă, inversa lui și câte o
   tranzacție `Operare` pe fiecare corecție cu alocare activă pe el: perechea
   de compensare mută alocarea de pe consum pe stoc. Bonul stornat se închide
@@ -166,7 +172,9 @@ corecție, fără TVA; nu naște lot și nu generează NIR. (119, CV-D1)
   fiecare beneficiar cu pondere, inclusiv cel cu cota zero, respectiv
   `CompensareValorica` pe fiecare pereche de compensare. Invariantul de audit
   (`CorectieValorica.Auditeaza`, în `INV-CUB`) reface repartizarea din
-  ponderi și verifică postările și compensările față de decizii. (CV-D8)
+  ponderi și verifică postările și compensările față de decizii: ponderea
+  unui consum e cantitatea postării lui, compensarea are cauza rădăcinii.
+  (CV-D8)
 - `GET api/proiectii/explicatii/{tranzactie}` le întoarce pe linia explicată:
   `Alocari` (unitatea, postarea beneficiară, ponderea, cota și, pe stoc,
   soldul citit la data corecției) și `Compensari` (rădăcina, beneficiarul

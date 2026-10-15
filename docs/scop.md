@@ -88,4 +88,7 @@ descrierea a ce există e în [starea curentă](stare-curenta/README.md).
 contractul [TR-D9b-CV](nucleu/tr-d9b-corectii-valorice-contract.md).
 Gata când: fiecare rând `E1` din catalog e `livrată`, adică TR-D9b-CV e
 închis cu review-ul advers (pasul 5).
+Stare: rândurile E1 sunt `livrată` din 2026-10-15 (pasul 5, branch-ul
+`tr-d9b-cv-pas5`); etapa se închide la merge, iar etapa următoare o fixează
+owner-ul.
 Funcționalitățile: rândurile `E1` din [catalog](functionalitati.md).

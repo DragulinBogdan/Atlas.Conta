@@ -97,6 +97,8 @@ public static partial class CorectieValorica {
                     || fapt.Postare.Coordonate.Sens != Sens.Debit || fapt.Postare.Cantitate <= 0m
                     || fapt.Postare.Coordonate.Unitate?.Id != a.Unitate.Id || fapt.Postare.Coordonate.Cont != a.Unitate.Cont)
                 return $"beneficiarul {a.Beneficiar.Id} nu e o intrare pe poziția alocării.";
+            if (citite.Partener(fapt) is { } partener && Lot(partener) == a.Unitate.Id && a.Pondere != fapt.Postare.Cantitate)
+                return $"ponderea consumului {a.Beneficiar.Id} nu e cantitatea lui.";
             beneficiari.Add((fapt, a.Pondere));
         }
         var cote = Repartizeaza(beneficiari, valoare);
@@ -121,6 +123,8 @@ public static partial class CorectieValorica {
         var scrisa = postate.Where(f => f.Postare.Atribuit == c.Radacina.Id).ToList();
         if (scrisa.Count == 0)
             return null;
+        if (scrisa.Any(f => f.Postare.Cauza != radacina.Postare.Cauza))
+            return $"compensarea rădăcinii {c.Radacina.Id} nu aparține corecției ei.";
         if (citite.Inverse(radacina).Any(i => i.ScrisLa <= scrisa[0].ScrisLa))
             return $"compensarea rădăcinii {c.Radacina.Id} vine după inversa ei.";
         var inverse = citite.Inverse(beneficiar).ToList();

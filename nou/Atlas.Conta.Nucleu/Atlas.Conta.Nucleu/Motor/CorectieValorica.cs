@@ -58,6 +58,8 @@ public static partial class CorectieValorica {
         var ramas = peStoc.Sum(f => f.Postare.Cantitate);
         if (ramas < 0m || ramas + consumuri.Sum(f => f.Postare.Cantitate) != receptie.Postare.Cantitate)
             throw Neeligibil("stocul rămas și consumurile active nu dau cantitatea recepționată");
+        if (ramas == 0m && peStoc.Sum(Masura) != 0m)
+            throw Neeligibil("valoare pe stocul fără cantitate");
         if (consumuri.FirstOrDefault(f => f.Postare.Coordonate.Data.Year < data.Year) is { } vechi)
             throw Refuza(MotivCorectieValorica.AnInchis,
                 $"Consumul din {vechi.Postare.Coordonate.Data:yyyy-MM-dd} este într-un an anterior corecției.");
@@ -112,6 +114,14 @@ public static partial class CorectieValorica {
         var proprii = citite.Proprii(document, FelTranzactie.Operare, FelTranzactie.Transfer);
         if (proprii.Any(f => citite.Atribuite(f).Any()))
             throw Refuza(MotivCorectieValorica.Dependenti, "Documentul poartă corecții de valoare sau compensările lor; folosiți storno.");
+        var radacini = citite.Radacini.Where(r => r.Postare.Cauza.Document == document).ToList();
+        if (radacini.Count != 0) {
+            var prima = radacini.Min(r => r.ScrisLa);
+            var loturi = radacini.Select(Lot).ToHashSet();
+            if (citite.Radacini.Any(r => r.Postare.Cauza.Document != document && loturi.Contains(Lot(r)) && r.ScrisLa > prima))
+                throw Refuza(MotivCorectieValorica.Dependenti,
+                    "O corecție de valoare ulterioară a lotului a citit soldul ajustat de aceasta; folosiți storno.");
+        }
         VerificaInversareaCorectiei(citite, document);
     }
 

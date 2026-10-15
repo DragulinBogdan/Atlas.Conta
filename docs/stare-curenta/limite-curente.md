@@ -48,8 +48,9 @@ repetă aici. Limitele mecanismelor, fără efect direct pentru utilizator, stau
 
 - O ieșire retroactivă nu reevaluează ieșirile deja operate, iar un retur la
   furnizor poate lăsa valoare pe un lot rămas fără cantitate. (75a, D9-D3)
-- Pe un lot cu corecție valorică activă, returul la furnizor și returul de la
-  client sunt refuzate (`CV_DEPENDENTI`) până la stornarea corecției; lotul
+- Pe un lot cu corecție valorică activă, returul la furnizor, returul de la
+  client și NIR-ul conex re-operat cu diferență sunt refuzate
+  (`CV_DEPENDENTI`) până la stornarea corecției; lotul
   care a trecut prin retur, transfer, asamblare, inventar sau deschidere nu
   se corectează (F-CVL-07). (CV-D10)
 - O asamblare culeasă înaintea altei ieșiri din același lot poate fi refuzată

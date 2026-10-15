@@ -73,5 +73,6 @@ public sealed partial class DeclarantFacturaIntrare {
         : linie.Cantitate != 0m ? "Linia de corecție nu poartă cantitate."
         : linie.TipTvaId is not null || linie.ValoareTva != 0m ? "Corecția de valoare cu TVA nu este acoperită."
         : linie.LotId is Guid lot && !loturi.Add(lot) ? "Lotul apare pe mai multe linii de corecție ale documentului."
+        : linie.Lot?.TipMaterialId is Guid tip && tip != linie.TipMaterialId ? "Linia de corecție are tipul produsului lotului."
         : null;
 }

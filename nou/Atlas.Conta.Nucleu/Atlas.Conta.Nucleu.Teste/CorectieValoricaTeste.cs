@@ -172,7 +172,7 @@ public class CorectieValoricaTeste {
         var a = cub.Corecteaza(200m, Z15);
         cub.Corecteaza(-1100m, Z15);
         Assert.Equal(MotivCorectieValorica.ValoareInsuficienta, Refuz(() => cub.Storneaza(a, Z20)));
-        Assert.Equal(MotivCorectieValorica.ValoareInsuficienta, Refuz(() => cub.Retrage(a)));
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => cub.Retrage(a)));
     }
 
     [Fact]
@@ -301,6 +301,35 @@ public class CorectieValoricaTeste {
         Assert.Equal([(true, 100m, 1000m)], beneficiari.Select(b => (b.Stoc, b.Pondere, b.ValoareActiva)));
     }
 
+    [Fact]
+    public void CorectiaUlterioaraOpresteRetragereaCeleiDinainte() {
+        var cub = Partial();
+        var a = cub.Corecteaza(200m, Z15);
+        var b = cub.Corecteaza(100m, Z18);
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => cub.Retrage(a)));
+        cub.Storneaza(b, Z20);
+        Assert.Equal(MotivCorectieValorica.Dependenti, Refuz(() => cub.Retrage(a)));
+        cub.Storneaza(a, Z20);
+        Assert.Equal((40m, 400m, 600m, 1000m), cub.Stare());
+
+        var retras = Partial();
+        var c = retras.Corecteaza(200m, Z15);
+        retras.Retrage(retras.Corecteaza(100m, Z18));
+        retras.Retrage(c);
+        Assert.Equal((40m, 400m, 600m, 1000m), retras.Stare());
+    }
+
+    [Fact]
+    public void ValoareaPeStoculFaraCantitateNuSeCorecteaza() {
+        var cub = new CubMic();
+        cub.Receptioneaza(100m, 1000m, Z05);
+        cub.Corecteaza(200m, Z10);
+        cub.Consuma(100m, Z11);
+        Assert.Equal((0m, 0m, 1200m, 1200m), cub.Stare());
+        cub.Muta(f => Radacina(f, CubMic.Stoc, Z10), f => f with { Postare = f.Postare with { Valoare = f.Postare.Valoare + 0.01m } });
+        Assert.Equal(MotivCorectieValorica.LotNeeligibil, Refuz(() => cub.Corecteaza(50m, Z15)));
+    }
+
     static CubMic Compensat(out Guid corectie) {
         var cub = Partial();
         corectie = cub.Corecteaza(200m, Z15);
@@ -309,8 +338,8 @@ public class CorectieValoricaTeste {
         return cub;
     }
 
-    static bool Radacina(FaptPostat f, Guid cont) => CorectieValorica.EsteValoric(f) && f.Fel == FelTranzactie.Operare
-        && f.Postare.Coordonate.Data == Z15 && f.Postare.Coordonate.Cont == cont;
+    static bool Radacina(FaptPostat f, Guid cont, DateOnly? data = null) => CorectieValorica.EsteValoric(f)
+        && f.Fel == FelTranzactie.Operare && f.Postare.Coordonate.Data == (data ?? Z15) && f.Postare.Coordonate.Cont == cont;
 
     public static TheoryData<string, string> Mutanti() => new() {
         { "fără decizie", "nu are decizie" },
@@ -325,6 +354,8 @@ public class CorectieValoricaTeste {
         { "compensare duplicată", "de mai multe ori" },
         { "inversă duplicată", "inverse." },
         { "alocare spre alocare", "nu e o intrare" },
+        { "ponderi altele decât cantitățile", "nu e cantitatea lui" },
+        { "compensare sub beneficiar", "nu aparține corecției" },
     };
 
     [Theory]
@@ -355,7 +386,10 @@ public class CorectieValoricaTeste {
                 cub.ValoriLinii[peConsum.Postare.Cauza.Linie!.Value] += 1m;
                 break;
             case "cote din ponderi":
-                cub.MutaDecizii(d => d is AlocareValorica v ? v with { Pondere = 100m - v.Pondere } : d);
+                static decimal Cota(decimal v) => v == 80m ? 81m : v == 120m ? 119m : v;
+                cub.MutaDecizii(d => d is AlocareValorica v ? v with { Valoare = Cota(v.Valoare) } : d);
+                cub.Muta(f => f.Id == peStoc.Id || f.Id == peConsum.Id,
+                    f => f with { Postare = f.Postare with { Valoare = Cota(f.Postare.Valoare) } });
                 break;
             case "beneficiar greșit":
                 Beneficiar(bonStoc.Id);
@@ -389,6 +423,13 @@ public class CorectieValoricaTeste {
             case "alocare spre alocare":
                 Beneficiar(peStoc.Id);
                 Atribuie(peConsum, peStoc.Id);
+                break;
+            case "ponderi altele decât cantitățile":
+                cub.MutaDecizii(d => d is AlocareValorica v ? v with { Pondere = 50m } : d);
+                break;
+            case "compensare sub beneficiar":
+                cub.Muta(f => f.Tranzactie == compensare.Tranzactie,
+                    f => f with { Postare = f.Postare with { Cauza = bon.Postare.Cauza } });
                 break;
         }
         Assert.Contains(motiv, cub.Audit() ?? "");
