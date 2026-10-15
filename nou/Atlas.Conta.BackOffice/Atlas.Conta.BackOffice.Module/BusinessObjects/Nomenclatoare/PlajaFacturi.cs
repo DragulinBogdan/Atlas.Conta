@@ -20,4 +20,7 @@ public class PlajaFacturi : Nomenclator {
 
     [XafDisplayName("Data deciziei")]
     public virtual DateOnly DataDecizie { get; set; }
+
+    /// <summary>Seria fără spații, separatori finali și diferențe de majuscule; cheia de potrivire și de suprapunere.</summary>
+    public static string SerieNormalizata(string serie) => (serie ?? "").Trim().TrimEnd(' ', '-', '/', '.', '_').ToUpperInvariant();
 }

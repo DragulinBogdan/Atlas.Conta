@@ -54,8 +54,9 @@ public class D300Controller : ContaApiController {
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
         using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
-        if (!PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os))
-            return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        foreach (var tip in new[] { typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), typeof(Societate) })
+            if (!PoateCiti(tip, os))
+                return RefuzCitire(tip);
         return Declaratie(D300Xml.Genereaza(os, dataStart.Value, dataEnd.Value, externi,
             new ParametriXmlD300(temei, depusReprezentant, bifaInterne, proRata, solicitRambursare,
                 cereale, mobile, dispozitive, console)));

@@ -85,6 +85,7 @@ public static partial class D394Proiectii {
     /// <summary>Lei întregi pe rând; bunurile rândului se rotunjesc cu restul pe cel mai mare (E2-D3).</summary>
     static void Rotunjeste(IEnumerable<Rand> randuri, Dictionary<Rand, List<D394Bun>> bunuri) {
         foreach (var rand in randuri) {
+            rand.TvaInainteDeRotunjire = rand.Tva;
             rand.Baza = RotunjireDeclaratie.Lei(rand.Baza);
             rand.Tva = RotunjireDeclaratie.Lei(rand.Tva);
             if (!bunuri.TryGetValue(rand, out var lista) || lista.Count == 0)

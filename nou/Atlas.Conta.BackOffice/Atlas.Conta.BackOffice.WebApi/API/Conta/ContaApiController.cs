@@ -360,7 +360,8 @@ public abstract class ContaApiController : ControllerBase {
         if (fisier.Refuzuri.Count > 0)
             return StatusCode(StatusCodes.Status422UnprocessableEntity,
                 EroriDto.Din(fisier.Refuzuri.Select(r => $"{r.Cod}: {r.Mesaj}")));
-        Response.Headers["X-Versiune-Exportata"] = fisier.VersiuneExportata;
+        if (fisier.VersiuneExportata != null)
+            Response.Headers["X-Versiune-Exportata"] = fisier.VersiuneExportata;
         return File(fisier.Continut, "application/xml; charset=utf-8", fisier.NumeFisier);
     }
 

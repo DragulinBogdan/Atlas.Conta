@@ -16,10 +16,15 @@ public static partial class D394Proiectii {
     /// <summary>Plajele active, facturile emise din ele și facturile emise în afara oricărei plaje (E2-D7).</summary>
     static void Facturi(IObjectSpace os, D394Dto rezultat, DateOnly dataStart, DateOnly dataEnd) {
         var emise = Fiscale.IntreLuni(Fiscale.Fapte(os), dataStart, dataEnd, FormularFiscal.D394)
-            .Where(r => r.SensTva == SensTva.Livrare && !r.InversaTehnica)
+            .Where(r => r.SensTva == SensTva.Livrare && !r.Storno)
             .Select(r => r.DocumentFiscalId).Distinct().ToList();
         var numere = os.GetObjectsQuery<Document>().Where(d => emise.Contains(d.ID))
             .Select(d => new { d.ID, d.Numar }).ToList();
+        if (numere.Count != emise.Count)
+            rezultat.RefuzuriXml.Add(new RefuzDeclaratie {
+                Cod = CoduriDeclaratie.DateNeincluse,
+                Mesaj = $"{emise.Count - numere.Count} facturi emise în perioadă nu sunt vizibile utilizatorului; plaja nu se poate declara.",
+            });
         var plaje = os.GetObjectsQuery<PlajaFacturi>().Where(p => p.Activ && p.DataDecizie <= dataEnd)
             .OrderBy(p => p.Serie).ThenBy(p => p.NumarInitial).ToList();
         rezultat.NrFacturi = numere.Count;
@@ -27,7 +32,7 @@ public static partial class D394Proiectii {
         foreach (var f in numere.OrderBy(f => f.Numar, StringComparer.Ordinal)) {
             var (serie, numar) = Descompune(f.Numar);
             var plaja = numar is long n
-                ? plaje.FirstOrDefault(p => Serie(p.Serie) == serie && p.NumarInitial <= n && n <= p.NumarFinal)
+                ? plaje.FirstOrDefault(p => PlajaFacturi.SerieNormalizata(p.Serie) == serie && p.NumarInitial <= n && n <= p.NumarFinal)
                 : null;
             if (plaja == null)
                 rezultat.RefuzuriXml.Add(new RefuzDeclaratie {
@@ -52,10 +57,8 @@ public static partial class D394Proiectii {
         var i = t.Length;
         while (i > 0 && char.IsAsciiDigit(t[i - 1]))
             i--;
-        return (Serie(t[..i]), i < t.Length && t.Length - i <= 18 ? long.Parse(t[i..]) : null);
+        return (PlajaFacturi.SerieNormalizata(t[..i]), i < t.Length && t.Length - i <= 18 ? long.Parse(t[i..]) : null);
     }
-
-    static string Serie(string serie) => (serie ?? "").Trim().TrimEnd(' ', '-', '/', '.', '_').ToUpperInvariant();
 
     static string Curat(string text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

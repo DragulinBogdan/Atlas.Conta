@@ -842,11 +842,12 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         }
         if (!plaja.Activ)
             return;
-        var serie = (plaja.Serie ?? "").Trim().ToUpperInvariant();
-        var alte = os.GetObjectsQuery<PlajaFacturi>().Where(p => p.ID != plaja.ID && p.Activ).ToList()
-            .Concat(os.ModifiedObjects.OfType<PlajaFacturi>().Where(p => p.ID != plaja.ID && p.Activ && !EsteSters(os, p)))
-            .DistinctBy(p => p.ID);
-        if (alte.FirstOrDefault(p => (p.Serie ?? "").Trim().ToUpperInvariant() == serie
+        var serie = PlajaFacturi.SerieNormalizata(plaja.Serie);
+        var alte = os.ModifiedObjects.OfType<PlajaFacturi>()
+            .Concat(os.GetObjectsQuery<PlajaFacturi>().Where(p => p.ID != plaja.ID).ToList())
+            .DistinctBy(p => p.ID)
+            .Where(p => p.ID != plaja.ID && p.Activ && !EsteSters(os, p));
+        if (alte.FirstOrDefault(p => PlajaFacturi.SerieNormalizata(p.Serie) == serie
                 && p.NumarInitial <= plaja.NumarFinal && plaja.NumarInitial <= p.NumarFinal) is { } suprapusa)
             erori.Add($"Plaja {plaja.Serie} {plaja.NumarInitial}–{plaja.NumarFinal} se suprapune cu plaja activă "
                 + $"{suprapusa.Serie} {suprapusa.NumarInitial}–{suprapusa.NumarFinal}.");

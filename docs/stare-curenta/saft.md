@@ -81,9 +81,11 @@ autocolectare); cantitatea comercială vine din linia operată.
 Linia de corecție a valorii lotului (FCT, `CorectieValoareLot`) iese cu
 cantitatea 0, prețul 0 și informația fiscală nefiscală (`000`/`000000`),
 câte o linie pe fiecare cont de contrapartidă: stocul rămas și consumul
-compensat. Factura își păstrează tipul (380, storno 381). Pe returul la
-furnizor pe lot corectat, cota corecției din linie, fără fapt fiscal, iese
-ca a doua linie nefiscală cu cantitatea 0, lângă baza fiscală. (E2-D10)
+compensat. Factura urmează regula comună a tipului (380; 381 pe storno sau pe
+total negativ, deci și pe diminuare). Pe o linie fiscală a unui lot care are o
+corecție de valoare (returul la furnizor pe lot corectat), cota corecției din
+linie, fără fapt fiscal, iese ca a doua linie nefiscală cu cantitatea 0,
+lângă baza fiscală; pe orice alt lot, diferența rămâne refuz. (E2-D10, 122 g)
 Ambiguitatea, sursa lipsă, maparea lipsă și corecția cu înlocuitor Draft
 sunt refuzuri (`SaftDto.Refuzuri`), iar XML-ul nu se scrie. Citirea cere
 RepeatableRead și refuză o tranzacție ambiantă mai slabă. Regulile complete:
@@ -185,5 +187,5 @@ funcțională declarată în [limitele curente](limite-curente.md). (74d, 74e)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (4; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 73 (amendată de 74, 105), 74 (amendată de 105), 103.
+Deciziile care numesc pagina în `Arii:` (5; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 73 (amendată de 74, 105), 74 (amendată de 105), 103, 122 (propusă).
 <!-- /gen:decizii -->

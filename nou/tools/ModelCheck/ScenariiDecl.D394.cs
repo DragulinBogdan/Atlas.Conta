@@ -14,7 +14,7 @@ sealed partial class ScenariiDecl {
         if (!Privat)
             return;
         Comanda(os => {
-            foreach (var luna in new[] { 4, 5, 6, 7 }) {
+            foreach (var luna in new[] { 4, 5, 6, 7, 10, 11 }) {
                 var p = os.CreateObject<PerioadaFiscala>(); p.An = An; p.Luna = luna;
             }
             var plaja = os.CreateObject<PlajaFacturi>();
@@ -24,6 +24,23 @@ sealed partial class ScenariiDecl {
         LunaCuOperatiuniD394();
         RefuzuriD394();
         TrimestruD394();
+        StornoInAltaLuna();
+    }
+
+    void StornoInAltaLuna() {
+        var octombrie = VanzareNumerotata(Luna(10), 100, "N21");
+        Opereaza(octombrie);
+        Opereaza(VanzareNumerotata(Luna(11), 50, "N21"));
+        var numarNoiembrie = numarFactura;
+        Storneaza(octombrie, Luna(11, 20));
+        var (inceput, sfarsit) = Perioada(11);
+        var doc = XDocument.Load(ExportaD394("SC-DECL-11", inceput, sfarsit));
+        XNamespace ns = FormulareAnaf.D394v5.SpatiuNume;
+        var tip2 = doc.Root.Elements(ns + "serieFacturi").Where(x => (string)x.Attribute("tip") == "2")
+            .Select(x => $"{x.Attribute("nrI").Value}-{x.Attribute("nrF").Value}").ToList();
+        Verifica("SC-DECL-11", $"stornoul unei facturi din octombrie nu e factură emisă în noiembrie: nrFacturi 1, emise {numarNoiembrie}–{numarNoiembrie}",
+            (string)doc.Root.Element(ns + "informatii").Attribute("nrFacturi") == "1"
+            && tip2.SequenceEqual([$"{numarNoiembrie}-{numarNoiembrie}"]));
     }
 
     void LunaGoalaD394() {
@@ -131,7 +148,8 @@ sealed partial class ScenariiDecl {
         var xsd = f.Continut == null ? ["fără conținut"] : ValidareDeclaratii.Xsd(ValidareDeclaratii.D394, cale);
         Verifica(id, $"XSD D394 v5: {(xsd.Count == 0 ? "valid" : string.Join("; ", xsd.Take(3)))}", xsd.Count == 0);
         var duk = ValidareDeclaratii.Duk(ValidareDeclaratii.D394, cale);
-        Verifica(id, $"DUKIntegrator {duk.Versiune}: {duk.Rezumat}{(duk.Valid ? "" : " — " + string.Join("; ", duk.Erori.Take(4)))}", duk.Valid);
+        Verifica(id, $"DUKIntegrator {duk.Versiune}: {duk.Rezumat}{(duk.Valid ? "" : " — " + string.Join("; ", duk.Erori.Take(4)))}"
+            + string.Concat(duk.Avertismente.Take(2).Select(a => " | " + a)), duk.Valid && duk.Avertismente.Count == 0);
         return cale;
     }
 

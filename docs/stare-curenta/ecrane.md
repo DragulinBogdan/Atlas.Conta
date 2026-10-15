@@ -76,8 +76,9 @@ D300 și D394 au butonul „Descarcă XML”, cu bifele datelor de perioadă
 (D300: temeiul, rambursarea, cele patru bife de taxare inversă internă; D394:
 persoanele afiliate, schimbarea opțiunii), ținute în URL. Butonul stă inactiv
 cât `RefuzuriXml` are cauze, iar cauzele apar într-un panou; refuzul cererii
-(403, 422) apare în același loc. Confirmarea depunerii folosește amprenta
-faptelor, aceeași în JSON și în fișier. Câmpurile antetului se culeg în XAF,
+(403, 422) apare în același loc. Pe lună, confirmarea depunerii folosește
+amprenta faptelor, aceeași în JSON și în fișier; pe trimestru nu există
+amprentă (E2-r1). Câmpurile antetului se culeg în XAF,
 pe societate, iar plajele de facturi și categoria de bunuri pe nomenclatoarele
 lor. (E2-D8)
 
@@ -305,5 +306,5 @@ de gardian. (58, 79a, 84d, 87g, 87j)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (24; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106.
+Deciziile care numesc pagina în `Arii:` (25; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106, 122 (propusă).
 <!-- /gen:decizii -->

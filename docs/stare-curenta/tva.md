@@ -329,16 +329,20 @@ AMEF, facturile simplificate și TVA-ul la încasare ies cu zero. (E2-D3, E2-D6)
 
 `serieFacturi` declară plajele de facturi active cu decizia până la sfârșitul
 perioadei (tip 1) și, pe fiecare, primul și ultimul număr emis în perioadă
-(tip 2). Factura emisă e documentul fiscal cu fapte de livrare; numărul ei se
-leagă de plajă prin prefixul seriei și cifrele finale. `nrFacturi` e numărul
-facturilor emise. (E2-D7)
+(tip 2). Factura emisă e documentul fiscal cu fapte de livrare în perioadă,
+fără storno; numărul ei se leagă de plajă prin seria normalizată (fără spații,
+separatori finali și diferențe de majuscule) și cifrele finale. `nrFacturi`
+e numărul facturilor emise. O factură emisă invizibilă utilizatorului oprește
+fișierul. (E2-D7, 122 f)
 
 Fișierul lipsește și `D394Dto.RefuzuriXml` numește cauza pentru perioadă,
 antet (telefonul, reprezentantul, întocmitorul și calitatea lui), sume
 neincluse, avertismentele care ar fi erori la validator (`Tip1FaraCui`,
 `PfFaraCnp`, `TvaPeTipFaraColoana`, `CotaNeintreaga`, `FaraOp11`,
-`CombinatieRefuzata`), o factură emisă în afara oricărei plaje active sau mai
-mult de cinci cote. (E2-D5, E2-D7)
+`CombinatieRefuzata`, judecate pe sumele dinaintea rotunjirii), orice rând
+neinclus (chiar cu net zero), o factură emisă în afara oricărei plaje active
+sau mai mult de cinci cote. Telefonul are cel mult 15 caractere, iar banca din
+D300 cel mult 50. (E2-D5, E2-D7)
 
 ## Accesul la citirea fiscală
 
@@ -388,5 +392,5 @@ deci accesul complet cerut include perioadele fiscale și soldurile de perioadă
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (15; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 25, 36 (amendată de 71), 46 (amendată de 113), 56 (amendată de 77, 81), 69, 70, 71 (amendată de 72), 79 (amendată de 80), 80, 81, 84, 86, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 102, 103.
+Deciziile care numesc pagina în `Arii:` (16; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 25, 36 (amendată de 71), 46 (amendată de 113), 56 (amendată de 77, 81), 69, 70, 71 (amendată de 72), 79 (amendată de 80), 80, 81, 84, 86, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 102, 103, 122 (propusă).
 <!-- /gen:decizii -->

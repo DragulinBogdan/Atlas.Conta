@@ -49,7 +49,7 @@ public sealed class AntetDeclaratie {
         if (DeclarantPrenume == null) lipsa.Add("prenumele declarantului");
         if (DeclarantFunctie == null) lipsa.Add("funcția declarantului");
         if (Banca == null) lipsa.Add("banca (contul bancar al societății)");
-        else if (Banca.IndexOfAny([',', '#']) >= 0) lipsa.Add("banca fără caracterele „,” și „#”");
+        else if (Banca.IndexOfAny([',', '#']) >= 0 || Banca.Length > 50) lipsa.Add("banca de cel mult 50 de caractere, fără „,” și „#”");
         if (Cont == null) lipsa.Add("IBAN-ul contului bancar");
         else if (Cont.IndexOfAny([',', '#']) >= 0) lipsa.Add("IBAN-ul fără caracterele „,” și „#”");
         return lipsa;
@@ -73,6 +73,7 @@ public sealed class AntetDeclaratie {
         if (Denumire == null) lipsa.Add("denumirea societății");
         if (Adresa == null) lipsa.Add("adresa societății");
         if (Caen == null) lipsa.Add("codul CAEN");
+        if (Telefon is { Length: > 15 }) lipsa.Add("telefonul de cel mult 15 caractere");
         return lipsa;
     }
 

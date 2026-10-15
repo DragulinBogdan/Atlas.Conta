@@ -244,10 +244,12 @@ C111-Q18)
 parametrii proiecției JSON plus datele de perioadă: D300 `temei` (0 sau 2),
 `proRata` (0–100), `depusReprezentant`, `bifaInterne`, `solicitRambursare` și
 bifele de taxare inversă internă; D394 `persoaneAfiliate` și `schimbOptiune`.
-Parametrii greșiți dau 400, lipsa citirii pe `Postare` 403, iar refuzurile din
-`RefuzuriXml` 422 cu `COD: mesaj`, înaintea primului byte. Altfel răspunsul e
-`application/xml; charset=utf-8`, cu numele fișierului în
-`Content-Disposition` și amprenta faptelor în `X-Versiune-Exportata`. (E2-D8)
+Parametrii greșiți dau 400; lipsa citirii pe `Postare` sau `Societate` (și,
+pe D394, pe `Document` și `PlajaFacturi`) dă 403; refuzurile din
+`RefuzuriXml` dau 422 cu `COD: mesaj`, înaintea primului byte. Altfel
+răspunsul e `application/xml; charset=utf-8`, cu numele fișierului în
+`Content-Disposition` și, pe lună, amprenta faptelor în
+`X-Versiune-Exportata`. (E2-D8)
 
 ## Securitate și răspunsuri
 
@@ -371,5 +373,5 @@ diferiți. (43b, 43d, 77k)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (23; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 5, 6, 7, 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 60, 70, 77, 80, 81, 87 (amendată de 97), 89, 98, 99, 101 (amendată de 102), 104 (amendată de 106), 106, 108 (amendată de 110).
+Deciziile care numesc pagina în `Arii:` (24; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 5, 6, 7, 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 60, 70, 77, 80, 81, 87 (amendată de 97), 89, 98, 99, 101 (amendată de 102), 104 (amendată de 106), 106, 108 (amendată de 110), 122 (propusă).
 <!-- /gen:decizii -->

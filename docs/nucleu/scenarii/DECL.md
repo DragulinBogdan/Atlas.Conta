@@ -39,9 +39,15 @@ primesc numerele DCLT101, DCLT102…
 | SC-DECL-07 | Aprilie, privat: FCL N21 1.000,50 (DCLT101), FCL N11 200 (DCLT102), FCL TI21 500 pe un produs „deșeuri” (DCLT103), FCT N21 100,40, FCT TI21 300 pe un produs „deșeuri”. `op1`: L 21 = 1/1.001/210, L 11 = 1/200/22, V 0 = 1/500 cu `op11` 22 = 1/500, A 21 = 1/100/21, C 21 = 1/300/63 cu `op11` 22 = 1/300/63. `rezumat2`: cota 21 = L 1/1.001/210 și A+C 2/400/84; cota 11 = L 1/200/22. `rezumat1` are detaliul bunului 22 pe V (cota 0) și pe C (cota 21). `serieFacturi`: tip 1 DCLT 1–1.000, tip 2 DCLT 101–103; `nrFacturi` 3, `nrCui1` 2, `totalPlata_A` = 2 + 1.401 + 200 = 1.603. XSD v5 și DUK J8.0.2 fără erori și fără atenționări; reexportul e identic. | acceptat |
 | SC-DECL-08 | Refuzuri D394, fără fișier: telefonul societății lipsă → `DECLARATIE_ANTET_INCOMPLET`; mai, FCL DCLT2000 (în afara plajei) → `DECLARATIE_DATE_NEINCLUSE` cu numărul facturii; iunie, FCL TI21 pe un produs fără categorie → `DECLARATIE_DATE_NEINCLUSE` cu `FaraOp11`. | refuzat |
 | SC-DECL-09 | Luna fără operațiuni (martie, ambele profiluri): `op_efectuate` 0, `tip_D394` L, `luna` 3, `totalPlata_A` 0. Societate trimestrială, trimestrul III cu o FCL în iulie: `tip_D394` T, `luna` 9, `op_efectuate` 1. XSD și DUK fără erori. | acceptat |
+| SC-DECL-11 | Octombrie: FCL N21 100 (DCLT108); noiembrie: FCL N21 50 (DCLT109) și stornoul facturii din octombrie. Fișierul pe noiembrie: `nrFacturi` 1, `serieFacturi` tip 2 = 109–109; XSD și DUK fără erori și fără atenționări. Stornoul nu e factură emisă (122 f). | acceptat |
 | SC-DECL-10 | Mutanți pe fișierul din SC-DECL-07: baza `op1` L 21 + 1 fără rezumat → DUK; `totalPlata_A` + 1 → DUK; `codPR` 99 → XSD. | refuzat |
 
 ## Validare
+
+Pasul 5, 2026-10-15, după review-ul advers: harta rând → atribut e verificată
+pe o transcriere separată din `d300-structura-2026.md` §5, iar fiecare fișier
+cere DUK fără erori și fără atenționări. SC-DECL-11 probează stornoul în altă
+lună. `--scenarii DECL,CVL` verde pe ambele profiluri.
 
 Pasul 2, 2026-10-15: SC-DECL-07…10 verzi pe privat, SC-DECL-08 (antetul) și
 09 (luna goală) și pe bugetar; DUK D394Validator J8.0.2 acceptă fișierele

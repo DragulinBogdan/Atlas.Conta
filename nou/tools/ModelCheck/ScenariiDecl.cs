@@ -117,16 +117,41 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
             == ("295", "84", "84", "84", "211", "211", "211", "0"));
         Verifica("SC-DECL-01", "numai operațiuni interne, inclusiv taxarea inversă: bifa_interne 1", V("bifa_interne") == "1");
         var lei = CuSpatiu(os => D300Proiectii.D300(os, inceput, sfarsit, null, lei: true));
-        Verifica("SC-DECL-01", "fiecare atribut R e rândul proiecției în lei, iar totalPlata_A e suma lor",
+        Verifica("SC-DECL-01", "fiecare atribut R e rândul proiecției în lei pe harta oficială transcrisă în probă, iar totalPlata_A e suma lor",
             RecalculIndependent(lei, d));
         Mutanti(xml);
     }
 
+    // d300-structura-2026.md §5, transcris separat de harta din D300Xml: rândul tipărit → (bază, TVA).
+    static readonly Dictionary<string, (string Baza, string Tva)> HartaV12 = new() {
+        ["1"] = ("R1_1", null), ["2"] = ("R2_1", null), ["3"] = ("R3_1", null), ["3.1"] = ("R3_1_1", null),
+        ["4"] = ("R4_1", null), ["5"] = ("R5_1", "R5_2"), ["5.1"] = ("R5_1_1", "R5_1_2"), ["6"] = ("R6_1", "R6_2"),
+        ["7"] = ("R7_1", "R7_2"), ["7.1"] = ("R7_1_1", "R7_1_2"), ["8"] = ("R8_1", "R8_2"), ["9"] = ("R9_1", "R9_2"),
+        ["10"] = ("R10_1", "R10_2"), ["11"] = ("R11_1", "R11_2"), ["12"] = ("R12_1", "R12_2"),
+        ["12.1"] = ("R12_1_1", "R12_1_2"), ["12.2"] = ("R12_2_1", "R12_2_2"), ["13"] = ("R13_1", null),
+        ["14"] = ("R14_1", null), ["15"] = ("R15_1", null), ["16"] = ("R16_1", "R16_2"), ["17"] = ("R64_1", "R64_2"),
+        ["18"] = ("R65_1", "R65_2"), ["19"] = ("R17_1", "R17_2"), ["20"] = ("R18_1", "R18_2"),
+        ["20.1"] = ("R18_1_1", "R18_1_2"), ["21"] = ("R19_1", "R19_2"), ["22"] = ("R20_1", "R20_2"),
+        ["22.1"] = ("R20_1_1", "R20_1_2"), ["23"] = ("R21_1", "R21_2"), ["24"] = ("R22_1", "R22_2"),
+        ["25"] = ("R23_1", "R23_2"), ["26"] = ("R25_1", "R25_2"), ["26.1"] = ("R25_1_1", "R25_1_2"),
+        ["26.2"] = ("R25_2_1", "R25_2_2"), ["27"] = (null, "R43_2"), ["28"] = (null, "R44_2"), ["29"] = ("R26_1", null),
+        ["29.1"] = ("R26_1_1", null), ["30"] = ("R27_1", "R27_2"), ["31"] = (null, "R28_2"), ["32"] = (null, "R29_2"),
+        ["33"] = ("R30_1", "R30_2"), ["34"] = (null, "R31_2"), ["35"] = (null, "R32_2"), ["36"] = (null, "R33_2"),
+        ["37"] = (null, "R34_2"), ["38"] = (null, "R35_2"), ["39"] = (null, "R36_2"), ["40"] = (null, "R37_2"),
+        ["41"] = (null, "R38_2"), ["42"] = (null, "R39_2"), ["43"] = (null, "R40_2"), ["44"] = (null, "R41_2"),
+        ["45"] = (null, "R42_2"),
+    };
+
     static bool RecalculIndependent(D300Dto lei, Dictionary<string, string> xml) {
-        var r = xml.Where(a => a.Key.StartsWith('R') && char.IsAsciiDigit(a.Key[1])).Select(a => long.Parse(a.Value)).ToList();
-        var coloane = lei.Randuri.SelectMany(x => new[] { x.Baza, x.Tva }).Where(v => v != null).Select(v => v.Value).ToList();
-        return coloane.All(v => v == decimal.Truncate(v)) && r.Count == coloane.Count
-            && r.Sum() == coloane.Sum() && long.Parse(xml["totalPlata_A"]) == r.Sum();
+        var r = xml.Where(a => a.Key.StartsWith('R') && char.IsAsciiDigit(a.Key[1])).ToDictionary(a => a.Key, a => long.Parse(a.Value));
+        var asteptate = new Dictionary<string, long>();
+        foreach (var rand in lei.Randuri) {
+            if (!HartaV12.TryGetValue(rand.Cod, out var h)) return false;
+            if (h.Baza != null && rand.Baza is decimal b) asteptate[h.Baza] = (long)b;
+            if (h.Tva != null && rand.Tva is decimal t) asteptate[h.Tva] = (long)t;
+        }
+        return asteptate.Count == r.Count && asteptate.All(a => r.TryGetValue(a.Key, out var v) && v == a.Value)
+            && long.Parse(xml["totalPlata_A"]) == r.Values.Sum();
     }
 
     void Mutanti(string xml) {
@@ -181,7 +206,8 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
         var xsd = f.Continut == null ? ["fără conținut"] : ValidareDeclaratii.Xsd(ValidareDeclaratii.D300, cale);
         Verifica(id, $"XSD v12: {(xsd.Count == 0 ? "valid" : string.Join("; ", xsd.Take(3)))}", xsd.Count == 0);
         var duk = ValidareDeclaratii.Duk(ValidareDeclaratii.D300, cale);
-        Verifica(id, $"DUKIntegrator {duk.Versiune}: {duk.Rezumat}{(duk.Valid ? "" : " — " + string.Join("; ", duk.Erori.Take(4)))}", duk.Valid);
+        Verifica(id, $"DUKIntegrator {duk.Versiune}: {duk.Rezumat}{(duk.Valid ? "" : " — " + string.Join("; ", duk.Erori.Take(4)))}"
+            + string.Concat(duk.Avertismente.Take(2).Select(a => " | " + a)), duk.Valid && duk.Avertismente.Count == 0);
         return cale;
     }
 

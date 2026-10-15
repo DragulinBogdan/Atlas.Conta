@@ -148,6 +148,7 @@ public static partial class D394Proiectii {
         public int Cota;
         public int NrFact, Randuri;
         public decimal Baza, Tva;
+        public decimal? TvaInainteDeRotunjire;
         public readonly Dictionary<Guid, InfoPartener> Parteneri = [];
         public readonly HashSet<Guid> Documente = [];
         public readonly HashSet<(Guid, bool)> Facturi = []; // (Document × Storno) = o factură la ANAF
@@ -439,8 +440,9 @@ public static partial class D394Proiectii {
             "Rânduri pe un tip FĂRĂ coloană de TVA în formular (V/LS/AS) poartă TVA în registru — cifra e a datelor de "
             + "dinaintea regulii 70a (taxarea inversă pe livrare nu produce taxă) și rămâne în afara declarației, nu se "
             + "trunchiază tăcut (`TvaNedeclarat` pe rând).",
-            ordonate.Where(r => !AreTva(r.Tip) && r.Tva != 0m)
-                .Select(r => ($"{r.Tip} „{r.Denumire}” (CUI {r.CuiP ?? "—"}): TVA {N2(r.Tva)}", (decimal?)r.Tva)).ToList());
+            ordonate.Where(r => !AreTva(r.Tip) && (r.TvaInainteDeRotunjire ?? r.Tva) != 0m)
+                .Select(r => ($"{r.Tip} „{r.Denumire}” (CUI {r.CuiP ?? "—"}): TVA {N2(r.TvaInainteDeRotunjire ?? r.Tva)}",
+                    (decimal?)(r.TvaInainteDeRotunjire ?? r.Tva))).ToList());
         Avert(CodAvertismentD394.CotaNeintreaga,
             "Cote din registru care nu sunt întregi — formularul acceptă doar cote întregi; rândurile lor se declară pe "
             + "cota trunchiată, cu sumele exacte.",

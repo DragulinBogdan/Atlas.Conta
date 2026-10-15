@@ -5,12 +5,13 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 
 // SC-CVL-32 (CV-r1, E2-D10): luna în care o corecție e operată, compensată sau stornată se exportă în D406 L și S.
 sealed partial class ScenariiCvl {
-    sealed record CazSaft(Caz Partial, Guid CorectiePartiala, Caz Intact, Guid CorectieIntacta);
+    sealed record CazSaft(Caz Partial, Guid CorectiePartiala, Caz Intact, Guid CorectieIntacta, Caz Diminuat, Guid Diminuare);
 
     CazSaft PregatesteSaft() {
         var partial = Partial();
         var intact = Lot();
-        return new(partial, Corectie(partial, 200m), intact, Corectie(intact, 200m));
+        var diminuat = Lot();
+        return new(partial, Corectie(partial, 200m), intact, Corectie(intact, 200m), diminuat, Corectie(diminuat, -200m));
     }
 
     void StornoBonSaft(CazSaft caz) => Storneaza(BonulLui(caz.Partial), Zi(5, 2));
@@ -28,7 +29,7 @@ sealed partial class ScenariiCvl {
             return;
         }
         var (a, b) = (caz.CorectiePartiala, caz.CorectieIntacta);
-        var aleCazului = caz.Partial.Documente.Concat(caz.Intact.Documente).ToHashSet();
+        var aleCazului = caz.Partial.Documente.Concat(caz.Intact.Documente).Concat(caz.Diminuat.Documente).ToHashSet();
         List<SaftRefuz> Pe(SaftDto d, params Guid[] documente) =>
             [.. d.Refuzuri.Where(r => r.DocumentId is Guid doc && documente.Contains(doc))];
         foreach (var (luna, facturi, stocuri) in luni)
@@ -49,6 +50,11 @@ sealed partial class ScenariiCvl {
             Corectie(fa) && Linii(fa) == $"{Stoc}:80/0,602:120/0");
         Verifica(id, "D406 ianuarie: corecția lotului intact e factura 380 cu linia 302 = 200, cantitate 0, fără TVA",
             Corectie(fb) && Linii(fb) == $"{Stoc}:200/0");
+        var fd = ianuarie.FacturiPrimite.SingleOrDefault(f => f.DocumentId == caz.Diminuare && !f.Storno);
+        Console.WriteLine($"     MĂSURAT ({id}): ianuarie, diminuarea {Linii(fd)} ({fd?.InvoiceType})");
+        Verifica(id, "D406 ianuarie: diminuarea cu 200 urmează regula comună a tipului (total negativ ⇒ 381), cu linia 302 = −200, cantitate 0, fără TVA",
+            fd is { InvoiceType: "381" } && Linii(fd) == $"{Stoc}:-200/0"
+            && fd.Linii.All(l => l.Quantity == 0m && l.TaxInformation.TaxCode == SaftReguli.TaxCodeNefiscal));
         var compensare = februarie.Jurnale.Where(j => j.Tranzactii.Any(t => t.DocumentId == a)).ToList();
         Verifica(id, "D406 februarie: numai compensarea, în GL sub jurnalul FCT și fără factură",
             compensare.Count == 1 && compensare[0].JournalID == "FCT"
@@ -65,6 +71,8 @@ sealed partial class ScenariiCvl {
             Console.WriteLine($"     MĂSURAT ({id}): stocuri luna {luna:00}, parțială [{Miscari(stocuri, a)}], intactă [{Miscari(stocuri, b)}]");
         Verifica(id, "stocuri ianuarie: mișcarea 90 numai valorică pe lot, 302 +80 (parțială) și +200 (intactă), fără capătul de consum",
             Miscari(luni[0].Stocuri, a) == $"90:{Stoc}:80/0" && Miscari(luni[0].Stocuri, b) == $"90:{Stoc}:200/0");
+        Verifica(id, "stocuri ianuarie: diminuarea iese cu codul 60 și −200 pe lot",
+            Miscari(luni[0].Stocuri, caz.Diminuare) == $"60:{Stoc}:-200/0");
         Verifica(id, "stocuri februarie: compensarea la stornoul consumului revine pe lot, 90 cu +120",
             Miscari(luni[1].Stocuri, a) == $"90:{Stoc}:120/0");
         Verifica(id, "stocuri martie: stornoul corecției, 90 cu −200", Miscari(luni[2].Stocuri, a) == $"90:{Stoc}:-200/0");

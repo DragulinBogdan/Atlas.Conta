@@ -71,8 +71,11 @@ public class D394Controller : ContaApiController {
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
         using var os = Secured(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
-        if (!PoateCiti(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), os))
-            return RefuzCitire(typeof(Atlas.Conta.BackOffice.Module.Cub.Postare));
+        foreach (var tip in new[] {
+            typeof(Atlas.Conta.BackOffice.Module.Cub.Postare), typeof(Societate), typeof(Document), typeof(PlajaFacturi),
+        })
+            if (!PoateCiti(tip, os))
+                return RefuzCitire(tip);
         return Declaratie(D394Xml.Genereaza(os, dataStart.Value, dataEnd.Value,
             new ParametriXmlD394(persoaneAfiliate, schimbOptiune)));
     }

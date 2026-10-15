@@ -5,8 +5,8 @@
 - Trigger: owner, deschiderea etapei E2 după merge-ul TR-D9b-CV (2026-10-15)
 - Livrează: F-TVA-01, F-SAFT-03 (etapa E2 din [scop](../scop.md))
 - Arii: tva, saft, nomenclatoare, api, ecrane, verificare
-- Decizii: 035 (c), 051 (c), 069, 071, 080, 103 (d), 104 (d), 119
-- Stare: deschis
+- Decizii: 035 (c), 051 (c), 069, 071, 080, 103 (d), 104 (d), 119, 122
+- Stare: închis 2026-10-15
 
 Owner-ul a aprobat la 2026-10-15 antetul pe societate (E2-D4), categoria
 de bunuri pe produs (E2-D6) și includerea SAF-T pe luna cu corecție, cu
@@ -81,7 +81,8 @@ Fișierul nu recitește cubul. Serializatorul primește `D300Dto` sau
 parametrii cererii. Amprenta `VersiuneExportata` e aceeași ca la JSON pentru
 aceeași perioadă; răspunsul XML o poartă în antetul HTTP
 `X-Versiune-Exportata`, iar confirmarea depunerii o folosește neschimbată
-(103d). Antetul și parametrii nu intră în amprentă: amprenta certifică
+(103d). Amprenta și confirmarea există numai pe lună; trimestrul se exportă
+fără amprentă (E2-r1). Antetul și parametrii nu intră în amprentă: amprenta certifică
 faptele, nu fișierul (limita existentă din `tva.md`). Același snapshot,
 același antet și aceiași parametri dau un fișier identic byte cu byte.
 
@@ -109,7 +110,7 @@ Datele stabile ale societății intră în `Societate`, nomenclator cules în XA
 
 | Câmp nou | Folosit de | Notă |
 |---|---|---|
-| `Caen` | D300 `caen`, D394 `caen` | cod CAEN rev. 3, validat pe lista din XSD-ul D300 |
+| `Caen` | D300 `caen`, D394 `caen` | patru cifre; lista CAEN din XSD o verifică validatorul ANAF (E2-r6) |
 | `PeriodicitateTva` (`Lunar`, `Trimestrial`) | `tip_decont`, `tip_D394`, E2-D1 | implicit `Lunar` |
 | `DeclarantNume`, `DeclarantPrenume`, `DeclarantFunctie`, `DeclarantAdresa` | D300 `nume_declar`, `prenume_declar`, `functie_declar`; D394 `denR`, `functie_reprez`, `adresaR` | reprezentantul legal care semnează; adresa goală ia adresa societății |
 | `IntocmitDe` (persoană juridică sau fizică), `IntocmitDenumire`, `IntocmitCif`, `IntocmitCalitate` | D394 `tip_intocmit`, `den_intocmit`, `cif_intocmit`, `calitate_intocmit`/`functie_intocmit` | implicit societatea însăși |
@@ -127,8 +128,9 @@ D394 are categoria de bunuri), parametrii `Extern` de azi; D394
 calculează din regula anexei: codul obligației, perioada, scadența (ziua
 25 a lunii următoare perioadei) și cifra de control.
 
-Un câmp obligatoriu lipsă dă 422 `DECLARATIE_ANTET_INCOMPLET`, cu lista
-câmpurilor, înaintea primului byte. Nu se emite valoare de rezervă: SAF-T
+Un câmp obligatoriu lipsă sau peste lungimea schemei (telefonul 15, banca 50)
+dă 422 `DECLARATIE_ANTET_INCOMPLET`, cu lista câmpurilor, înaintea primului
+byte. Nu se emite valoare de rezervă: SAF-T
 avertizează și completează orașul, declarația nu.
 
 ### E2-D5 — completitudinea: ce blochează fișierul
@@ -235,8 +237,8 @@ documentar și se probează cu validatorul D406 existent, pe fișiere-mutant:
 - **Storno-ul**: perechile de compensare se separă de liniile comerciale,
   ca factura stornată să nu poarte compensarea ca linie de factură.
 
-Owner-ul a ales la 2026-10-15, după pasul 3a: factura rămâne 380, ca orice
-FCT, cu linia de corecție la cantitate 0 și informație fiscală nefiscală
+Owner-ul a ales la 2026-10-15, după pasul 3a: factura urmează regula comună a
+tipului, ca orice FCT (380; 381 pe storno sau pe total negativ), cu linia de corecție la cantitate 0 și informație fiscală nefiscală
 (`000`/`000000`); mișcarea de stoc are codul 90 pentru corecția pozitivă și
 60 pentru cea negativă. Pasul 3b le implementează
 și ridică refuzurile `SAFT_SURSA_INCOMPLETA`, `SAFT_PROVENIENTA_AMBIGUA` și
@@ -259,7 +261,7 @@ formularele anterioare. Restanțele noi ale etapei se numesc `E2-rN`.
 | 3a | SAF-T pe luna cu corecție: cercetarea formei pe validatorul D406 | fișiere-mutant DUK; hotărârea owner-ului | închis 2026-10-15 |
 | 3b | implementarea formei alese; refuzurile ridicate pentru formele acoperite | SC-CVL-32, DUK D406 L și S | închis 2026-10-15 |
 | 4 | ușile HTTP, `RefuzuriXml`, ecranele React, openapi | `refuzuri.ps1` pe host viu; browser | închis 2026-10-15 |
-| 5 | regresia integrală, review advers, închiderea | integrala ambele profiluri; nucleu; HTTP; docskit | |
+| 5 | regresia integrală, review advers, închiderea | integrala ambele profiluri; nucleu; HTTP; docskit | închis 2026-10-15 |
 
 ## Regula de oprire
 
@@ -277,9 +279,35 @@ Lucrul se oprește și revine la owner când:
 
 ## Review advers și ce rămâne deschis
 
-La închidere, un agent nou, numai citire, verifică fiecare D-uri contra
-codului și a fișierelor validate; constatările se repară înaintea PR-ului.
-Un review Codex se propune owner-ului într-o linie, la închidere.
+Review-ul de închidere (agent nou, numai citire, 2026-10-15) a găsit 2 MAJOR,
+4 MEDIU și 4 MINOR. Toate sunt tratate:
+
+| # | Grad | Constatare | Rezolvare |
+|---|---|---|---|
+| M1 | MAJOR | stornoul comercial era numărat ca factură emisă: `nrFacturi` și plaja tip 2 greșite, refuz fals pe plaja dezactivată | facturile emise exclud stornoul (122 f); SC-DECL-11; anulatele și autofacturile rămân E2-r4 |
+| M2 | MAJOR | un rol fără citire pe `Document`, `PlajaFacturi` sau `Societate` pierdea I.2 tăcut sau primea 422 în loc de 403 | ușile cer citirea acestor tipuri (403); factura emisă invizibilă dă refuz |
+| D1 | MEDIU | trimestrul n-are amprentă, deci nici confirmare | limită scrisă (E2-r1); antetul `X-Versiune-Exportata` lipsește când amprenta e nulă |
+| D2 | MEDIU | telefonul (15) și banca (50) peste schemă treceau; CAEN-ul nu era verificat pe listă, deși E2-D4 o spunea | lungimile intră în refuzul de antet; textul E2-D4 corectat, lista rămâne E2-r6 |
+| D3 | MEDIU | sub-linia cotei din SAF-T se aplica pe orice linie fiscală | restrânsă la loturile cu o corecție de valoare |
+| D4 | MEDIU | limitele spuneau „fără ușă HTTP” după pasul 4 și sugerau o detecție a trimestrului cumulat | textul corectat; E2-r2 |
+| N1 | MINOR | gardianul plajelor și potrivirea normalizau seria diferit; o plajă dezactivată în același commit era citită activă | `PlajaFacturi.SerieNormalizata`, comună; gardianul citește întâi obiectele modificate |
+| N2 | MINOR | `RefuzuriXml` din JSON (bani) și din XML (lei) puteau diferi pe `TvaPeTipFaraColoana` | avertismentul se judecă pe TVA-ul dinaintea rotunjirii |
+| N3 | MINOR | `Neincluse` D394 cu net zero nu refuza | orice rând neinclus refuză |
+| N4 | MINOR | oracolul: harta comparată cu ea însăși, atenționările DUK neasertate, corecția negativă neprobată | harta transcrisă separat în probă; „fără atenționări” asertat; diminuarea în SC-CVL-32 (381, cod 60) |
+
+Restanțele noi sunt E2-r1…E2-r6 (decizia 122). Un review Codex se propune
+owner-ului într-o linie, la merge.
+
+## Verificarea pasului 5 — 2026-10-15
+
+- Înaintea review-ului: `verifica.ps1 -Suita Integral -Profil Ambele -Sufix
+  .ClaudeCVL` verde, `run-verificari/20261015-181028-346` (4.088 bugetar,
+  5.566 privat).
+- După reparații: `--scenarii DECL,CVL` verde pe ambele profiluri; integrala
+  verde în `run-verificari/20261015-182816-530` (4.088 bugetar, 5.573
+  privat); `refuzuri.ps1` 334/334 PASS pe o bază nouă din seed; calea de
+  succes reluată (200 pe ambele uși, amprenta egală cu JSON-ul); nucleu
+  252/252; docskit `check` și `metrics --check` verzi.
 
 ## Verificarea pasului 4 — 2026-10-15
 

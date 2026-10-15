@@ -131,7 +131,7 @@ public static class D394Xml {
             if (antet.LipsaD394() is { Count: > 0 } lipsa)
                 Refuz(CoduriDeclaratie.AntetIncomplet, "Completați la societate: " + string.Join(", ", lipsa) + ".");
         }
-        foreach (var n in dto.Neincluse.Where(n => n.Baza != 0m || n.Tva != 0m))
+        foreach (var n in dto.Neincluse.Where(n => n.Randuri > 0))
             Refuz(CoduriDeclaratie.DateNeincluse,
                 $"{n.Cauza}: tipul de TVA {n.TipTvaCod ?? n.TipTvaId.ToString()} ({n.SensTva}) cu baza {n.Baza:0.00} nu intră în declarație.");
         foreach (var a in dto.Avertismente.Where(a => Blocante.Contains(a.Cod)))

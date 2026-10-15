@@ -69,7 +69,7 @@ catalogului poartă data adoptării (linia zero), nu data livrării. Rândurile
 | F-PER-01 | Închid luna cu constatările ei și soldurile fixate; un document întârziat intră în luna deschisă | T1 | perioade | | livrată 2026-10-14 | SC-X-21, SC-BCS-04, SC-CIT-12…14 |
 | F-PER-02 | Închid anul: rezultatul trece în 1174, iar anul nou se deschide din soldurile de la 31.12 | T1 | perioade | | deschisă | SC-X-12 |
 | F-ITV-01 | Închid lunar TVA-ul: generez, regenerez și inversez nota de regularizare | T1, T2 | tva | | livrată 2026-10-14 | SC-ITV-01…11 |
-| F-TVA-01 | Export D300 și D394 în XML, pentru depunere, lunar sau trimestrial, cu datele declarantului completate o singură dată | T2 | tva | E2 | deschisă | — |
+| F-TVA-01 | Export D300 și D394 în XML, pentru depunere, lunar sau trimestrial, cu datele declarantului completate o singură dată | T2 | tva | E2 | livrată 2026-10-15 | SC-DECL-01…11 |
 | F-TVA-02 | Calculez prorata și ajustările de TVA și completez secțiunile informative din D394 | T2 | tva | | deschisă | — |
 | F-TVA-03 | Aplic TVA la încasare, cu exigibilitatea amânată și conturile ei intermediare | T1, T2 | tva | | deschisă | — |
 | F-REGIM-01 | Văd pe fiecare document ce pot face cu el acum și de ce, după stare, stingeri și perioadă | T1 | documente | | livrată 2026-10-14 | SC-REGIM-01…15 |
@@ -83,7 +83,7 @@ catalogului poartă data adoptării (linia zero), nu data livrării. Rândurile
 | F-CIT-07 | Văd fișa unui lot sau a unei partide, cu toate mișcările ei | T1, T3 | raportare | | deschisă | — |
 | F-SAFT-01 | Generez SAF-T lunar (L): registrul general, facturi și plăți, cu sumar, avertismente și XML validat | T2 | saft | | livrată 2026-10-14 | SC-SAFT-01…06, SC-SAFT-16…35 |
 | F-SAFT-02 | Generez SAF-T de stocuri (S) pe luni, coerent cu L | T2 | saft | | livrată 2026-10-14 | SC-SAFT-38…51 |
-| F-SAFT-03 | Generez SAF-T pentru o lună cu corecție valorică pe lot | T2 | saft | E2 | deschisă | — |
+| F-SAFT-03 | Generez SAF-T pentru o lună cu corecție valorică pe lot | T2 | saft | E2 | livrată 2026-10-15 | SC-CVL-32 |
 | F-ANAF-01 | Completez și actualizez un partener din datele ANAF | T1 | nomenclatoare | | livrată 2026-10-14 | — |
 | F-NOM-01 | Țin nomenclatoarele: parteneri, produse și datele societății | T1 | nomenclatoare | | livrată 2026-10-14 | — |
 | F-ANAF-02 | Actualizez din ANAF mai mulți parteneri dintr-un ecran | T1 | ecrane | | deschisă | — |

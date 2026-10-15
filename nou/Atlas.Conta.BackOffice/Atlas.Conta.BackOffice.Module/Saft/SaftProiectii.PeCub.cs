@@ -54,7 +54,7 @@ public static partial class SaftProiectii {
         Dictionary<Guid, LinieInfo> linii;
         Dictionary<Guid, Guid> produsPeLinie;
         Dictionary<Guid, decimal> pretPeLinie;
-        HashSet<Guid> corectii;
+        HashSet<Guid> corectii, loturiCorectate;
         Dictionary<Guid, string> tipuriMaterial;
         Dictionary<Guid, (string Cod, string Denumire)> tipuriTva;
         Dictionary<(Guid Tranzactie, Guid Linie), List<FaptFiscal>> fapte;
@@ -161,6 +161,9 @@ public static partial class SaftProiectii {
                 if (x.ProdusId is Guid p) produsPeLinie[x.ID] = p;
             }
             var idsLot = linii.Values.Where(l => l.LotId != null).Select(l => l.LotId.Value).Distinct().ToList();
+            loturiCorectate = os.GetObjectsQuery<FacturaIntrareDetaliu>()
+                .Where(d => d.CorectieValoareLot && d.LotId != null && idsLot.Contains(d.LotId.Value))
+                .Select(d => d.LotId.Value).ToHashSet();
             var produsPeLot = os.GetObjectsQuery<Lot>().Where(l => idsLot.Contains(l.ID))
                 .Select(l => new { l.ID, l.ProdusId }).ToList().ToDictionary(l => l.ID, l => l.ProdusId);
             foreach (var (id, l) in linii)
@@ -492,7 +495,8 @@ public static partial class SaftProiectii {
                         fapt.DataExigibilitate, baze[0], false));
                     var rest = grup.Where(EsteTert).Sum(Comercial) - (fapt.Baza + fapt.Tva - fapt.Autocolectare);
                     var cota = grup.Where(p => !EsteTert(p) && p.RolTva == null).ToList();
-                    if (rest != 0m && cota.Select(p => p.Cont).Distinct().Count() == 1 && cota.Sum(Contrapartida) == rest) {
+                    if (rest != 0m && info.LotId is Guid lotCorectat && loturiCorectate.Contains(lotCorectat)
+                            && cota.Select(p => p.Cont).Distinct().Count() == 1 && cota.Sum(Contrapartida) == rest) {
                         conservat += rest;
                         subLinii.Add((cota[0].Cont, rest, Nefiscal(), fapt.DataExigibilitate, cota[0], true));
                     }
