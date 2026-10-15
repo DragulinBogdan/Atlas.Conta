@@ -321686,6 +321686,36 @@
         ],
         "type": "string"
       },
+      "CategorieTaxareInversa": {
+        "enum": [
+          "Deseuri",
+          "MasaLemnoasa",
+          "CertificateEmisii",
+          "EnergieElectrica",
+          "CertificateVerzi",
+          "ConstructiiTerenuri",
+          "AurDeInvestitii",
+          "TelefoaneMobile",
+          "Microprocesoare",
+          "ConsoleTableteLaptopuri",
+          "Terenuri",
+          "Constructii",
+          "AlteBunuri",
+          "Servicii",
+          "GrauMeslin",
+          "Secara",
+          "Orz",
+          "Ovaz",
+          "Porumb",
+          "Soia",
+          "Rapita",
+          "In",
+          "FloareaSoarelui",
+          "SfeclaDeZahar",
+          "Triticale"
+        ],
+        "type": "string"
+      },
       "CauzaDiferentei": {
         "enum": [
           "Perisabilitate",
@@ -322237,6 +322267,29 @@
         },
         "additionalProperties": false
       },
+      "D394Bun": {
+        "type": "object",
+        "properties": {
+          "CodPR": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "NrFact": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Baza": {
+            "type": "number",
+            "format": "double"
+          },
+          "Tva": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "D394Dto": {
         "type": "object",
         "properties": {
@@ -322307,6 +322360,24 @@
           "NrCui4": {
             "type": "integer",
             "format": "int32"
+          },
+          "NrFacturi": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "SeriiFacturi": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/D394SerieFacturi"
+            },
+            "nullable": true
+          },
+          "RefuzuriXml": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefuzDeclaratie"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -322413,6 +322484,13 @@
           "Documente": {
             "type": "integer",
             "format": "int32"
+          },
+          "Bunuri": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/D394Bun"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -322573,6 +322651,28 @@
           "TvaAI": {
             "type": "number",
             "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "D394SerieFacturi": {
+        "type": "object",
+        "properties": {
+          "Tip": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Serie": {
+            "type": "string",
+            "nullable": true
+          },
+          "NrI": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "NrF": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "additionalProperties": false
@@ -330274,6 +330374,9 @@
             "type": "string",
             "nullable": true
           },
+          "CategorieTaxareInversa": {
+            "$ref": "#/components/schemas/CategorieTaxareInversa"
+          },
           "TipTvaImplicitId": {
             "type": "string",
             "format": "uuid",
@@ -330325,6 +330428,9 @@
             "maxLength": 8,
             "type": "string",
             "nullable": true
+          },
+          "CategorieTaxareInversa": {
+            "$ref": "#/components/schemas/CategorieTaxareInversa"
           },
           "TipTvaImplicitId": {
             "type": "string",

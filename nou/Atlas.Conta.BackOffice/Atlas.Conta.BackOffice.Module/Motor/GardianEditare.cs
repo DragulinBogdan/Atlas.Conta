@@ -276,6 +276,9 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 case Societate societate:
                     VerificaSocietate(os, societate, erori);
                     break;
+                case PlajaFacturi plaja:
+                    VerificaPlajaFacturi(os, plaja, erori);
+                    break;
                 // (g) Produsul (felia 16, D16-D2): `CodNc` are exact 8 cifre.
                 case Produs produs:
                     VerificaProdus(produs, erori);
@@ -826,6 +829,27 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (!string.IsNullOrWhiteSpace(cod) && !FormatCodNc.IsMatch(cod))
             erori.Add($"Produsul {produs.Denumire ?? produs.Cod} are codul NC „{cod}” — "
                 + "codul NC are exact 8 cifre (sau rămâne gol).");
+    }
+
+    // E2-D7: plaja are interval valid și nu se suprapune cu altă plajă activă a aceleiași serii.
+    static void VerificaPlajaFacturi(IObjectSpace os, PlajaFacturi plaja, ICollection<string> erori) {
+        if (EsteSters(os, plaja))
+            return;
+        if (plaja.NumarInitial < 1 || plaja.NumarFinal < plaja.NumarInitial) {
+            erori.Add($"Plaja de facturi {plaja.Serie} are intervalul {plaja.NumarInitial}–{plaja.NumarFinal}: "
+                + "numărul inițial e cel puțin 1, iar cel final nu e sub el.");
+            return;
+        }
+        if (!plaja.Activ)
+            return;
+        var serie = (plaja.Serie ?? "").Trim().ToUpperInvariant();
+        var alte = os.GetObjectsQuery<PlajaFacturi>().Where(p => p.ID != plaja.ID && p.Activ).ToList()
+            .Concat(os.ModifiedObjects.OfType<PlajaFacturi>().Where(p => p.ID != plaja.ID && p.Activ && !EsteSters(os, p)))
+            .DistinctBy(p => p.ID);
+        if (alte.FirstOrDefault(p => (p.Serie ?? "").Trim().ToUpperInvariant() == serie
+                && p.NumarInitial <= plaja.NumarFinal && plaja.NumarInitial <= p.NumarFinal) is { } suprapusa)
+            erori.Add($"Plaja {plaja.Serie} {plaja.NumarInitial}–{plaja.NumarFinal} se suprapune cu plaja activă "
+                + $"{suprapusa.Serie} {suprapusa.NumarInitial}–{suprapusa.NumarFinal}.");
     }
 
     // S1-R5: cantitatea declarată are sensul unității de la operare; completarea unei unități lipsă rămâne permisă.

@@ -1028,6 +1028,39 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.ToTable("PerioadeFiscale");
                 });
 
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PlajaFacturi", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Activ")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateOnly>("DataDecizie")
+                        .HasColumnType("date");
+
+                    b.Property<long>("NumarFinal")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("NumarInitial")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("OptimisticLockField")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Serie")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("PlajeFacturi");
+                });
+
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaAmortizare", b =>
                 {
                     b.Property<Guid>("ID")
@@ -1456,6 +1489,9 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.Property<bool>("Activ")
                         .HasColumnType("boolean");
+
+                    b.Property<int?>("CategorieTaxareInversa")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Cautare")
                         .ValueGeneratedOnAddOrUpdate()

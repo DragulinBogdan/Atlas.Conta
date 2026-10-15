@@ -314,6 +314,32 @@ cu sume nenule nu are rând, un rând primește o coloană pe care n-o are sau
 nomenclatorul n-are un rând al hărții (`DECLARATIE_DATE_NEINCLUSE`). Proiecția
 JSON și fișierul poartă aceleași refuzuri. (E2-D5)
 
+## Fișierul D394
+
+`D394Xml.Genereaza` serializează declarația pe schema v5
+(`mfp:anaf:dgti:d394:declaratie:v5`), pentru operațiunile de la 2025-08-01,
+din proiecția D394 în modul `lei`: fiecare rând `op1` se rotunjește la leu,
+iar rezumatele, `nrCui*` și `totalPlata_A` (numărul partenerilor plus bazele
+L, A și AI din `rezumat2`) ies din rândurile rotunjite. Operațiunile V și C
+poartă defalcarea `op11` pe categoria de bunuri a produsului liniei: factura
+cu mai multe categorii numără 1 la categoria cu baza (V) sau TVA-ul (C) cel
+mai mare, iar restul de rotunjire al bazelor merge pe cea mai mare.
+`rezumat1` agregă categoriile în `detaliu`, cerealele pe bunul 21. Încasările
+AMEF, facturile simplificate și TVA-ul la încasare ies cu zero. (E2-D3, E2-D6)
+
+`serieFacturi` declară plajele de facturi active cu decizia până la sfârșitul
+perioadei (tip 1) și, pe fiecare, primul și ultimul număr emis în perioadă
+(tip 2). Factura emisă e documentul fiscal cu fapte de livrare; numărul ei se
+leagă de plajă prin prefixul seriei și cifrele finale. `nrFacturi` e numărul
+facturilor emise. (E2-D7)
+
+Fișierul lipsește și `D394Dto.RefuzuriXml` numește cauza pentru perioadă,
+antet (telefonul, reprezentantul, întocmitorul și calitatea lui), sume
+neincluse, avertismentele care ar fi erori la validator (`Tip1FaraCui`,
+`PfFaraCnp`, `TvaPeTipFaraColoana`, `CotaNeintreaga`, `FaraOp11`,
+`CombinatieRefuzata`), o factură emisă în afara oricărei plaje active sau mai
+mult de cinci cote. (E2-D5, E2-D7)
+
 ## Accesul la citirea fiscală
 
 `/politici/tva-saft` editează mapările versionate și calificarea istorică.

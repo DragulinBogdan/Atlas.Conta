@@ -528,3 +528,32 @@ public enum TipIntocmitor {
     [XafDisplayName("Persoană juridică")] PersoanaJuridica = 0,
     [XafDisplayName("Persoană fizică")] PersoanaFizica = 1,
 }
+
+// Categoria de bunuri cu taxare inversă internă (D394 `op11@codPR`, E2-D6): cerealele poartă poziția NC.
+public enum CategorieTaxareInversa {
+    [XafDisplayName("Grâu și meslin (1001)")] GrauMeslin = 1001,
+    [XafDisplayName("Secară (1002)")] Secara = 1002,
+    [XafDisplayName("Orz (1003)")] Orz = 1003,
+    [XafDisplayName("Ovăz (1004)")] Ovaz = 1004,
+    [XafDisplayName("Porumb (1005)")] Porumb = 1005,
+    [XafDisplayName("Boabe de soia (1201)")] Soia = 1201,
+    [XafDisplayName("Semințe de rapiță (1205)")] Rapita = 1205,
+    [XafDisplayName("Semințe de floarea-soarelui (120600)")] FloareaSoarelui = 120600,
+    [XafDisplayName("Sfeclă de zahăr (121291)")] SfeclaDeZahar = 121291,
+    [XafDisplayName("Triticale (10086000)")] Triticale = 10086000,
+    [XafDisplayName("Semințe de in (120400)")] In = 120400,
+    [XafDisplayName("Deșeuri feroase și neferoase")] Deseuri = 22,
+    [XafDisplayName("Masă lemnoasă")] MasaLemnoasa = 23,
+    [XafDisplayName("Certificate de emisii de gaze cu efect de seră")] CertificateEmisii = 24,
+    [XafDisplayName("Energie electrică")] EnergieElectrica = 25,
+    [XafDisplayName("Certificate verzi")] CertificateVerzi = 26,
+    [XafDisplayName("Construcții, terenuri")] ConstructiiTerenuri = 27,
+    [XafDisplayName("Aur de investiții")] AurDeInvestitii = 28,
+    [XafDisplayName("Telefoane mobile")] TelefoaneMobile = 29,
+    [XafDisplayName("Microprocesoare")] Microprocesoare = 30,
+    [XafDisplayName("Console de jocuri, tablete PC și laptopuri")] ConsoleTableteLaptopuri = 31,
+    [XafDisplayName("Terenuri (neînregistrați)")] Terenuri = 32,
+    [XafDisplayName("Construcții (neînregistrați)")] Constructii = 33,
+    [XafDisplayName("Alte bunuri (neînregistrați)")] AlteBunuri = 34,
+    [XafDisplayName("Servicii (neînregistrați)")] Servicii = 35,
+}

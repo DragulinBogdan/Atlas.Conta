@@ -55,6 +55,18 @@ public sealed class AntetDeclaratie {
         return lipsa;
     }
 
+    /// <summary>Câmpurile obligatorii lipsă sau invalide pentru D394.</summary>
+    public List<string> LipsaD394() {
+        var lipsa = Comune();
+        if (Telefon == null) lipsa.Add("telefonul societății");
+        if (DeclarantNume == null || DeclarantPrenume == null) lipsa.Add("numele și prenumele reprezentantului");
+        if (DeclarantFunctie == null) lipsa.Add("funcția reprezentantului");
+        if (IntocmitCif == null || IntocmitCif.Length > 13) lipsa.Add("CUI-ul sau CNP-ul celui care întocmește");
+        if (IntocmitDe == TipIntocmitor.PersoanaJuridica && IntocmitCalitate == null)
+            lipsa.Add("calitatea celui care întocmește");
+        return lipsa;
+    }
+
     List<string> Comune() {
         var lipsa = new List<string>();
         if (Cui == null || !SaftReguli.CuiValid(Cui)) lipsa.Add("codul fiscal valid al societății");

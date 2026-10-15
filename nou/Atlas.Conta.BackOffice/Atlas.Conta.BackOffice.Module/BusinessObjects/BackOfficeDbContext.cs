@@ -70,6 +70,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // Societatea raportoare (felia 16, D16-D1): UN SINGUR rând per bază
         // (gardianul îl apără; nu există „index unic pe nimic").
         public DbSet<Societate> Societati { get; set; }
+        public DbSet<PlajaFacturi> PlajeFacturi { get; set; }
         // Nomenclatorul rândurilor decontului de TVA (felia 12, D3-D1) — corpul
         // formularului 300 din OPANAF 174/2026, seed-uit în NUCLEU (e lege, nu profil).
         public DbSet<RandD300> RanduriD300 { get; set; }

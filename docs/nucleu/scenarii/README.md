@@ -94,7 +94,7 @@ unde tipul există:
 | — | `Deschidere` | pas 6 | [DESCHIDERE.md](DESCHIDERE.md) | detaliere fără dublare (094), refuz atomic, unicitate, stingere/anulare/storno sub blocare comună; analiza/valuta păstrate la intrare, stingerea în valută neacoperită; cititorii de producție rămân TR-D8 |
 | — | coordonatele postării (transversal) | C111 | [C111.md](C111.md) | 29 de rânduri pe formele din C111-D5 și pe S10–S14; verificate la pasul 2 pe ambele profiluri (`--scenarii C111`), în afară de SC-C111-21, care e a pasului 4 |
 | CVL (mecanism propus pe FCT) | corecție valorică pe lot | TR-D9b-CV | [CVL.md](CVL.md) | 32 de scenarii documentate; `--scenarii CVL` rulează toate cele 32 de scenarii pe ambele profiluri; pachetul închis la 2026-10-15 (pasul 5); exportul SAF-T rămâne pe refuz (CV-r1) |
-| DECL | declarațiile D300 și D394 în XML | E2 | [DECL.md](DECL.md) | D300: SC-DECL-01…06 verificate pe ambele profiluri (`--scenarii DECL`), cu XSD v12 și DUK J12.0.1; D394 la pasul 2 al contractului E2 |
+| DECL | declarațiile D300 și D394 în XML | E2 | [DECL.md](DECL.md) | D300: SC-DECL-01…06, D394: SC-DECL-07…10, verificate pe ambele profiluri (`--scenarii DECL`), cu XSD-urile oficiale și DUK J12.0.1 / J8.0.2 |
 | DEC | decont | înainte de TR-D8 (095) | [DEC.md](DEC.md) | declarație contabilă/fiscală și partide pe angajat (096), verificări independente |
 | PIF/CAS/AMO | imobilizări | pe cub (095, 097) | [IMO.md](IMO.md) | SC-IMO-01…25 verzi pe ambele profiluri; fișa citită din cub; review advers restant |
 

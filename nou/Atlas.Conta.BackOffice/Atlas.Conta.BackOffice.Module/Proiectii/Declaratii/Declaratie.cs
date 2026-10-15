@@ -1,3 +1,6 @@
+using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 
 namespace Atlas.Conta.BackOffice.Module.Proiectii;
@@ -54,4 +57,14 @@ public sealed record PerioadaDeclarata(int An, int Luna, PeriodicitateTva Period
 public static class RotunjireDeclaratie {
     /// <summary>Lei întregi: sub 50 de bani se neglijează, de la 50 de bani se întregește (E2-D3).</summary>
     public static decimal Lei(decimal valoare) => Math.Round(valoare, 0, MidpointRounding.AwayFromZero);
+}
+
+public static class XmlDeclaratie {
+    /// <summary>Octeții fișierului: UTF-8 fără BOM, indentat.</summary>
+    public static byte[] Octeti(XDocument document) {
+        using var flux = new MemoryStream();
+        using (var scriitor = XmlWriter.Create(flux, new XmlWriterSettings { Encoding = new UTF8Encoding(false), Indent = true }))
+            document.Save(scriitor);
+        return flux.ToArray();
+    }
 }

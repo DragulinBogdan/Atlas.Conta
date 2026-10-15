@@ -153,20 +153,29 @@ completă; produsul spune asta, nu o ascunde.
 
 `op11` cere, pe livrările și achizițiile cu taxare inversă internă
 (tipurile `V`/`C`), categoria de bunuri (`codPR`, lista
-`Str_listaCodPRSType` din XSD) și codul NC al produsului (D4-r5).
-`Produs` are deja `CodNc` și primește câmpul `CategorieTaxareInversa`, cu
-lista schemei ca enum. Linia V/C pe un produs fără categorie sau fără cod NC
-e refuzată la export (`FaraOp11` devine blocant, E2-D5). Categoria nu se
-deduce din tipul de material sau din cont.
+`Str_listaCodPRSType` din XSD). Pentru cereale și plante tehnice codul e
+chiar poziția NC (1001…10086000), agregată în rezumat la bunul 21; restul
+sunt categoriile 22–35. `Produs` primește câmpul `CategorieTaxareInversa`, cu
+lista schemei ca enum (D4-r5). Linia V/C pe un produs fără categorie e
+refuzată la export (`FaraOp11` devine blocant, E2-D5). Categoria nu se
+deduce din tipul de material, din cont sau din codul NC.
 
-### E2-D7 — D394 I.2, plaja de facturi (de fixat la pasul 2)
+### E2-D7 — D394 I.2, plaja de facturi (owner, 2026-10-15)
 
-`serieFacturi` și `facturi` descriu plajele alocate și facturile emise,
-anulate sau stornate (D4-r7). Sursa propusă e `PoliticaNumerotare` a
-facturii de vânzare (seria) și facturile FCL operate în perioadă (primul și
-ultimul număr pe serie). Pasul 2 citește instrucțiunile și XSD-ul pe
-fiecare atribut, înaintea codului. Dacă modelul nu are sursa pentru un
-atribut obligatoriu, regula de oprire se aplică, nu se inventează plaja.
+`serieFacturi` tip 1 e plaja alocată prin decizie internă, iar tip 2 sunt
+facturile emise în perioadă din plajă (D4-r7). Plaja e un nomenclator nou,
+`PlajaFacturi`: seria (poate lipsi), numărul inițial, numărul final și data
+deciziei, cu mai multe plaje pe serie și istoric. Două plaje active ale
+aceleiași serii nu se suprapun. Pentru o perioadă se declară plajele active
+cu decizia până la sfârșitul ei.
+
+Factura emisă e documentul fiscal cu fapte de livrare în perioadă. Numărul
+ei se leagă de plajă prin prefix și cifrele finale: prefixul e seria, cifrele
+cad în interval. Tip 2 poartă, pe fiecare plajă, primul și ultimul număr
+emis; `nrFacturi` e numărul facturilor emise. O factură emisă care nu cade în
+nicio plajă activă blochează fișierul (`DECLARATIE_DATE_NEINCLUSE`, cu
+numărul ei). Facturile anulate și autofacturile (`facturi`) nu au sursă în
+model și rămân limită.
 
 ### E2-D8 — ușile și ecranele
 
@@ -243,7 +252,7 @@ formularele anterioare. Restanțele noi ale etapei se numesc `E2-rN`.
 |---|---|---|---|
 | 0 | contractul, scopul E2, catalogul funcționalităților, sursele ANAF descărcate | docskit verde; owner pe E2-D4, E2-D6, E2-D10 | închis 2026-10-15 |
 | 1 | `Societate` (E2-D4) cu migrația și XAF; registrul formularelor; D300 XML cu rotunjirea (E2-D3); kitul D300 pin-uit; SC-DECL pentru D300 | ModelCheck ambele profiluri; XSD + DUK pe lunile de probă | închis 2026-10-15 |
-| 2 | D394 XML; `Produs.CategorieTaxareInversa` (E2-D6); I.2 (E2-D7); lista blocantă (E2-D5); kitul D394 | idem, cu mutanții D394 | |
+| 2 | D394 XML; `Produs.CategorieTaxareInversa` (E2-D6); I.2 (E2-D7); lista blocantă (E2-D5); kitul D394 | idem, cu mutanții D394 | închis 2026-10-15 |
 | 3a | SAF-T pe luna cu corecție: cercetarea formei pe validatorul D406 | fișiere-mutant DUK; hotărârea owner-ului | |
 | 3b | implementarea formei alese; refuzurile ridicate pentru formele acoperite | SC-CVL-32, SC-SAFT noi, DUK D406 L și S | |
 | 4 | ușile HTTP, `RefuzuriXml`, ecranele React, openapi | `refuzuri.ps1` pe host viu; browser | |
@@ -268,6 +277,23 @@ Lucrul se oprește și revine la owner când:
 La închidere, un agent nou, numai citire, verifică fiecare D-uri contra
 codului și a fișierelor validate; constatările se repară înaintea PR-ului.
 Un review Codex se propune owner-ului într-o linie, la închidere.
+
+## Verificarea pasului 2 — 2026-10-15
+
+- `verifica.ps1 -Suita Scenarii -Tip DECL`: SC-DECL-07…10 verzi pe privat;
+  SC-DECL-08 și 09 și pe bugetar. Fișierele D394 trec XSD-ul v5 și
+  DUKIntegrator cu D394Validator J8.0.2, fără atenționări; mutanții
+  SC-DECL-10 pică la poarta așteptată.
+- Validatorul a cerut `baza_incasari_i1`/`i2` și TVA-ul lor pe fiecare
+  `rezumat2` cu cotă diferită de 24 (regulile R105.1…R108.1); ies cu zero.
+- Integrala: bugetar verde în `run-verificari/20261015-170404-118` (4.088 de
+  verificări). Pe privat, prima rulare a picat pe verificarea veche D4-r14:
+  `FaraOp11` excludea linia cu cod NC. Verificarea cere acum categoria de
+  bunuri (E2-D6). A doua rulare e verde în `run-verificari/20261015-171050-379`
+  (5.557 de verificări).
+- `pnpm gen:openapi`, `gen:types` și `--dump-metadata`: driftul e
+  `PlajaFacturi`, `Produs.CategorieTaxareInversa`, `D394Dto.SeriiFacturi`,
+  `NrFacturi`, `RefuzuriXml` și `D394Operatiune.Bunuri`; `tsc -b` verde.
 
 ## Verificarea pasului 1 — 2026-10-15
 

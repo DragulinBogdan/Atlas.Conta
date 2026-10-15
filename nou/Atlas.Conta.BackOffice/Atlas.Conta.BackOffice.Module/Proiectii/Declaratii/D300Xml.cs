@@ -1,6 +1,4 @@
 using System.Globalization;
-using System.Text;
-using System.Xml;
 using System.Xml.Linq;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using DevExpress.ExpressApp;
@@ -92,7 +90,7 @@ public static class D300Xml {
             new XAttribute("totalPlata_A", sume.Sum(s => s.Valoare)),
             sume.Select(s => new XAttribute(s.Nume, s.Valoare)));
 
-        fisier.Continut = Serializeaza(new XDocument(new XDeclaration("1.0", "UTF-8", null), radacina));
+        fisier.Continut = XmlDeclaratie.Octeti(new XDocument(new XDeclaration("1.0", "UTF-8", null), radacina));
         fisier.NumeFisier = $"D300_{antet.Cui}_{perioada.An:0000}{perioada.Luna:00}.xml";
         return fisier;
     }
@@ -134,14 +132,5 @@ public static class D300Xml {
         var cod = perioada.Periodicitate == PeriodicitateTva.Trimestrial ? "302" : "301";
         var corp = $"10{cod}01{perioada.Luna:00}{perioada.An % 100:00}{scadenta:ddMMyy}0000";
         return corp + (corp.Sum(c => c - '0') % 100).ToString("00");
-    }
-
-    static byte[] Serializeaza(XDocument document) {
-        using var flux = new MemoryStream();
-        using (var scriitor = XmlWriter.Create(flux, new XmlWriterSettings {
-            Encoding = new UTF8Encoding(false), Indent = true,
-        }))
-            document.Save(scriitor);
-        return flux.ToArray();
     }
 }

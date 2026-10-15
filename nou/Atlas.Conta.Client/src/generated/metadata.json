@@ -15,6 +15,33 @@
       "VehiculPersoaneMax9Locuri": "Vehicul de persoane, maximum 9 locuri",
       "SediuSocialInLocuinta": "Sediu social în locuință"
     },
+    "CategorieTaxareInversa": {
+      "Deseuri": "Deșeuri feroase și neferoase",
+      "MasaLemnoasa": "Masă lemnoasă",
+      "CertificateEmisii": "Certificate de emisii de gaze cu efect de seră",
+      "EnergieElectrica": "Energie electrică",
+      "CertificateVerzi": "Certificate verzi",
+      "ConstructiiTerenuri": "Construcții, terenuri",
+      "AurDeInvestitii": "Aur de investiții",
+      "TelefoaneMobile": "Telefoane mobile",
+      "Microprocesoare": "Microprocesoare",
+      "ConsoleTableteLaptopuri": "Console de jocuri, tablete PC și laptopuri",
+      "Terenuri": "Terenuri (neînregistrați)",
+      "Constructii": "Construcții (neînregistrați)",
+      "AlteBunuri": "Alte bunuri (neînregistrați)",
+      "Servicii": "Servicii (neînregistrați)",
+      "GrauMeslin": "Grâu și meslin (1001)",
+      "Secara": "Secară (1002)",
+      "Orz": "Orz (1003)",
+      "Ovaz": "Ovăz (1004)",
+      "Porumb": "Porumb (1005)",
+      "Soia": "Boabe de soia (1201)",
+      "Rapita": "Semințe de rapiță (1205)",
+      "In": "Semințe de in (120400)",
+      "FloareaSoarelui": "Semințe de floarea-soarelui (120600)",
+      "SfeclaDeZahar": "Sfeclă de zahăr (121291)",
+      "Triticale": "Triticale (10086000)"
+    },
     "CauzaDiferentei": {
       "Perisabilitate": "Perisabilitate",
       "Imputabila": "Imputabilă",
@@ -1640,6 +1667,17 @@
         "Luna": "Luna"
       }
     },
+    "PlajaFacturi": {
+      "DefaultProperty": "Serie",
+      "Membri": {
+        "Activ": "Activ",
+        "DataDecizie": "Data deciziei",
+        "ID": "ID",
+        "NumarFinal": "Număr final",
+        "NumarInitial": "Număr inițial",
+        "Serie": "Serie"
+      }
+    },
     "Plata": {
       "DefaultProperty": "Numar",
       "Membri": {
@@ -1816,6 +1854,7 @@
       "DefaultProperty": "Denumire",
       "Membri": {
         "Activ": "Activ",
+        "CategorieTaxareInversa": "Categorie taxare inversă (D394)",
         "Cautare": "Căutare",
         "Cod": "Cod",
         "CodNc": "Cod NC",

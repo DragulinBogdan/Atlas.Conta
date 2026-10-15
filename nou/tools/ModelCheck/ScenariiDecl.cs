@@ -20,6 +20,7 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
         foreach (var s in os.GetObjectsQuery<Societate>().Where(s => s.ContBancarId != null && reps.Contains(s.ContBancarId.Value)).ToList())
             s.ContBancarId = null;
         os.CommitChanges();
+        purja.Adauga(os.GetObjectsQuery<PlajaFacturi>().Where(p => p.Serie == SeriePlaja));
     }
 
     protected override void Executa() {
@@ -43,6 +44,7 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
                 Nemapate();
                 Trimestru();
             }
+            D394();
         }
         finally {
             Comanda(os => { original.Restaureaza(os); os.CommitChanges(); });
@@ -55,6 +57,7 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
         s.Strada = "Lungă"; s.Numar = "1"; s.Localitate = "Brașov"; s.Telefon = "0268000000"; s.Email = "proba@example.ro";
         s.ContBancarId = banca; s.Caen = "4690"; s.PeriodicitateTva = PeriodicitateTva.Lunar;
         s.DeclarantNume = "Popescu"; s.DeclarantPrenume = "Ion"; s.DeclarantFunctie = "Administrator";
+        s.IntocmitDe = TipIntocmitor.PersoanaJuridica; s.IntocmitCalitate = "Contabil";
         modifica?.Invoke(s);
         os.CommitChanges();
     });
@@ -187,11 +190,11 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
 
     sealed record Instantaneu(Guid Id, string Denumire, string CodFiscal, bool InregistratTva, string Strada, string Numar,
         string Localitate, string Telefon, string Email, Guid? ContBancarId, string Caen, PeriodicitateTva Periodicitate,
-        string DeclarantNume, string DeclarantPrenume, string DeclarantFunctie) {
+        string DeclarantNume, string DeclarantPrenume, string DeclarantFunctie, TipIntocmitor IntocmitDe, string IntocmitCalitate) {
         public static Instantaneu Din(IObjectSpace os) => os.GetObjectsQuery<Societate>().ToList()
             .Select(s => new Instantaneu(s.ID, s.Denumire, s.CodFiscal, s.InregistratTva, s.Strada, s.Numar, s.Localitate,
                 s.Telefon, s.Email, s.ContBancarId, s.Caen, s.PeriodicitateTva, s.DeclarantNume, s.DeclarantPrenume,
-                s.DeclarantFunctie)).Single();
+                s.DeclarantFunctie, s.IntocmitDe, s.IntocmitCalitate)).Single();
 
         public void Restaureaza(IObjectSpace os) {
             var s = os.GetObjectByKey<Societate>(Id);
@@ -199,6 +202,7 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
                 (Denumire, CodFiscal, InregistratTva, Strada, Numar, Localitate, Telefon, Email);
             (s.ContBancarId, s.Caen, s.PeriodicitateTva, s.DeclarantNume, s.DeclarantPrenume, s.DeclarantFunctie) =
                 (ContBancarId, Caen, Periodicitate, DeclarantNume, DeclarantPrenume, DeclarantFunctie);
+            (s.IntocmitDe, s.IntocmitCalitate) = (IntocmitDe, IntocmitCalitate);
         }
     }
 }

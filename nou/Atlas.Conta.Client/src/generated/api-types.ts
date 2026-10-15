@@ -9299,6 +9299,8 @@ export interface components {
         /** @enum {string} */
         CategorieFiscala: "Standard" | "VehiculPersoaneMax9Locuri" | "SediuSocialInLocuinta";
         /** @enum {string} */
+        CategorieTaxareInversa: "Deseuri" | "MasaLemnoasa" | "CertificateEmisii" | "EnergieElectrica" | "CertificateVerzi" | "ConstructiiTerenuri" | "AurDeInvestitii" | "TelefoaneMobile" | "Microprocesoare" | "ConsoleTableteLaptopuri" | "Terenuri" | "Constructii" | "AlteBunuri" | "Servicii" | "GrauMeslin" | "Secara" | "Orz" | "Ovaz" | "Porumb" | "Soia" | "Rapita" | "In" | "FloareaSoarelui" | "SfeclaDeZahar" | "Triticale";
+        /** @enum {string} */
         CauzaDiferentei: "Perisabilitate" | "Imputabila" | "Neimputabila" | "PeDrum" | "InClarificare" | "Plus";
         /** @enum {string} */
         ClasaFiscalaPartener: "InregistratRo" | "NeinregistratRo" | "Ue" | "ExtraUe";
@@ -9468,6 +9470,16 @@ export interface components {
             Suma?: number | null;
             Exemple?: string[] | null;
         };
+        D394Bun: {
+            /** Format: int32 */
+            CodPR?: number;
+            /** Format: int32 */
+            NrFact?: number;
+            /** Format: double */
+            Baza?: number;
+            /** Format: double */
+            Tva?: number | null;
+        };
         D394Dto: {
             VersiuneExportata?: string | null;
             Rectificativa?: boolean;
@@ -9486,6 +9498,10 @@ export interface components {
             NrCui3?: number;
             /** Format: int32 */
             NrCui4?: number;
+            /** Format: int32 */
+            NrFacturi?: number;
+            SeriiFacturi?: components["schemas"]["D394SerieFacturi"][] | null;
+            RefuzuriXml?: components["schemas"]["RefuzDeclaratie"][] | null;
         };
         D394Neinclus: {
             Cauza?: string | null;
@@ -9527,6 +9543,7 @@ export interface components {
             Randuri?: number;
             /** Format: int32 */
             Documente?: number;
+            Bunuri?: components["schemas"]["D394Bun"][] | null;
         };
         D394Rezumat: {
             /** Format: int32 */
@@ -9595,6 +9612,15 @@ export interface components {
             BazaAI?: number;
             /** Format: double */
             TvaAI?: number;
+        };
+        D394SerieFacturi: {
+            /** Format: int32 */
+            Tip?: number;
+            Serie?: string | null;
+            /** Format: int64 */
+            NrI?: number;
+            /** Format: int64 */
+            NrF?: number;
         };
         DataSourceLoadOptions: {
             RequireTotalCount?: boolean;
@@ -12298,6 +12324,7 @@ export interface components {
             UnitateMasuraId?: string | null;
             UnitateMasura?: components["schemas"]["UnitateMasura"];
             CodNc?: string | null;
+            CategorieTaxareInversa?: components["schemas"]["CategorieTaxareInversa"];
             /** Format: uuid */
             TipTvaImplicitId?: string | null;
             TipTvaImplicit?: components["schemas"]["TipTva"];
@@ -12315,6 +12342,7 @@ export interface components {
             /** Format: uuid */
             UnitateMasuraId?: string | null;
             CodNc?: string | null;
+            CategorieTaxareInversa?: components["schemas"]["CategorieTaxareInversa"];
             /** Format: uuid */
             TipTvaImplicitId?: string | null;
             Cautare?: string | null;

@@ -154,8 +154,13 @@ repetă aici. Limitele mecanismelor, fără efect direct pentru utilizator, stau
   trimestrial; trimestrialul cumulat pe două luni pentru achizițiile
   intracomunitare, semestrialul și anualul se refuză. Rândurile fără sursă în
   model (agricultori, restituiri, pro-rata, secțiunile informative) ies cu zero
-  sau din parametri. Fișierul nu are încă ușă HTTP și ecran (pasul 4 al E2),
-  iar D394 nu are încă fișier XML. (E2-D1, E2-D5)
+  sau din parametri. Fișierele D300 și D394 nu au încă ușă HTTP și ecran
+  (pasul 4 al E2). (E2-D1, E2-D5)
+- Fișierul D394 nu declară încasările AMEF (cartușul G), facturile
+  simplificate, TVA-ul la încasare, regimurile speciale, lista CAEN (I.7),
+  facturile anulate și autofacturile; ies cu zero sau lipsesc. Partenerul
+  persoană fizică fără CNP și achizițiile de la neînregistrați (N) blochează
+  fișierul, fiindcă adresa structurată din `op1` nu există. (E2-D5, E2-D7)
 - Confirmarea depunerii păstrează formularul, perioada, amprenta faptelor
   exportate și momentul confirmării; nu transmite declarația la ANAF și nu
   verifică recipisa. (103)

@@ -55,6 +55,9 @@ public class Produs : Nomenclator, ICuCautare {
         CustomMessageTemplate = "Codul NC are exact 8 cifre (sau rămâne gol).")]
     public virtual string CodNc { get; set; }
 
+    [XafDisplayName("Categorie taxare inversă (D394)")]
+    public virtual CategorieTaxareInversa? CategorieTaxareInversa { get; set; }
+
     // Implicitul de TVA de SUBIECT (felia 23, F23-D1) — perechea celui de pe
     // `Partener`, cu rol OPUS: aici e purtătorul de COTĂ, nu de regim. Pâinea
     // rămâne 11% de la orice furnizor înregistrat, dar o livrare
