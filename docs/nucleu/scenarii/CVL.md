@@ -107,8 +107,19 @@ prin agregare înainte de stabilirea provenienței.
 
 | Stare | Scenarii |
 |---|---|
-| rulate | SC-CVL-01…18, 20…32 |
-| rulate parțial | SC-CVL-19 (transfer, descărcare de gestiune și cronologie; vânzarea către terț, recepția stornată și anul anterior sunt probate în nucleu; returul, ASM, LDI și reziduul preexistent cad pe același predicat, „orice altă postare pe lot”, fără scenariu propriu) |
+| rulate | SC-CVL-01…32 |
+
+SC-CVL-19 rulează pe bază (pasul 5): transferul, asamblarea (lotul consumat
+și lotul produs), lipsa la inventar și cronologia pe ambele profiluri;
+descărcarea de gestiune, returul la furnizor, returul de la client și NIR-ul
+cu diferență de cantitate pe privat, unde există politicile lor. Vânzarea
+către terț, recepția stornată și anul anterior sunt probate în nucleu.
+Reziduul preexistent nu are formă proprie: NIR-ul cu diferență și reziduul
+lăsat de retur la golire (SC-RLF-05) sunt postări pe lot în afara
+predicatului, deci același refuz. Pe lotul corectat activ, returul la
+furnizor (100 bucăți) și cel de la client dau `CV_DEPENDENTI` și lasă
+100/1.200; după stornarea corecției, returul a 20 trece la prețul lotului:
+80/800.
 
 SC-CVL-18 și 25 rulează și pe ușile culegerii (pasul 4): linia culeasă prin
 `FacturaIntrareApply` și prin evenimentele ecranului XAF (`CulegereDocument`),

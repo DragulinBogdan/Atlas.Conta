@@ -45,19 +45,23 @@ public static class CorectiiValorice {
             r.Postare.Ordinal, Randuri.Citeste(r.Postare, repartitori)))];
     }
 
-    /// <summary>O mișcare cu cantitate nu se operează înaintea unei alocări active a lotului ei (CV-D5).</summary>
-    public static void VerificaCronologia(IObjectSpace os, IEnumerable<N.Postare> propuse) {
-        var miscari = propuse.Where(p => p.Cantitate != 0m && p.Coordonate.Unitate is { Fel: N.FelUnitate.Lot })
+    /// <summary>Pe un lot cu alocare activă, o mișcare cu cantitate nu e antedatată față de ea și nu poartă
+    /// valoarea declarată de document în locul soldului (CV-D5, CV-D10).</summary>
+    public static void Verifica(IObjectSpace os, N.Contract contract, bool valoareDeclarata) {
+        var miscari = contract.Tranzactii.SelectMany(t => t.Postari)
+            .Where(p => p.Cantitate != 0m && p.Coordonate.Unitate is { Fel: N.FelUnitate.Lot })
             .Select(p => (Lot: p.Coordonate.Unitate!.Id, p.Coordonate.Data)).Distinct().ToList();
         if (miscari.Count == 0) return;
         var loturi = miscari.Select(m => m.Lot).Distinct().ToList();
-        var prima = miscari.Min(m => m.Data);
         var postari = os.GetObjectsQuery<Postare>();
         var active = Valorice(os, loturi)
-            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare && p.Data > prima
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare
                 && postari.Any(t => t.ID == p.Atribuit && t.Cantitate != 0m)
                 && !postari.Any(i => i.InversaDinId == p.ID && i.InversaDinSpatiu == p.Spatiu))
             .Select(p => new { Lot = p.Unitate!.Value, p.Data }).ToList();
+        if (valoareDeclarata && active.Count != 0)
+            throw new OperareException($"{Declaratii.CoduriRefuz.CvDependenti}: Lotul are o corecție de valoare activă; "
+                + "o mișcare valorizată de document, nu din sold, nu este acoperită. Stornați întâi corecția.");
         if (miscari.Any(m => active.Any(a => a.Lot == m.Lot && a.Data > m.Data)))
             throw new OperareException($"{Declaratii.CoduriRefuz.CvCronologie}: Lotul are o corecție de valoare activă, "
                 + "datată după această mișcare.");

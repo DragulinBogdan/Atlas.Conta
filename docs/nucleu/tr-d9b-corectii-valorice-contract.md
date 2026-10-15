@@ -471,6 +471,7 @@ activă, datată înaintea acelei rădăcini, dă `CV_CRONOLOGIE`.
 | retragerea corecției | documentul are mai mult de o tranzacție `Operare` |
 | retragerea sau stornarea corecției | lotul are o ieșire activă scrisă după prima `Operare` a corecției (R8-10) |
 | stornarea recepției | lotul are o rădăcină activă |
+| operarea unui document care valorizează mișcarea pe lot din linie, nu din sold (`IDeclarant.SursaValoareDeclarata`) | lotul are o rădăcină activă (pasul 5) |
 
 Stingerile active ale partidei proprii rămân pe gardul existent al
 partidelor.
