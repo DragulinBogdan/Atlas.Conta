@@ -53,7 +53,9 @@ exercițiu închis (F27-r4).
 - Situațiile financiare anuale (bilanțul, contul de profit și pierdere,
   formularele bugetare): E3 le dă balanța corectă, nu formularele.
 - Import1C: conectorul nu se atinge. Pe baza de import, o lună închisă
-  deja de 1C trebuie să genereze închiderea fără linii (proba din pasul 1).
+  deja de 1C generează închiderea numai cu reclasificări între cheile
+  aceluiași cont, iar netul pe cont e divergența explicată a importului
+  (owner, 2026-10-16; proba din pasul 1).
 
 ## D-uri pin-uite
 
@@ -226,7 +228,7 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
 | Pas | Conținut | Probă | Stare |
 |---|---|---|---|
 | 0 | contractul, scopul E3, rândurile din catalog, textele „1174” corectate; owner pe E3-D7 (31.12) și E3-D9 (seed-ul de pornire) | docskit verde | închis 2026-10-16 |
-| 1 | `PoliticaInchidereConturi` cu seed-ul; `InchidereRezultat` cu generare, previzualizare, regenerare; `REZ-NEINCHIS`; migrația | familia de scenarii `EX`, definită în acest pas; ModelCheck pe ambele profiluri; generare fără linii pe o lună închisă de 1C | implementat 2026-10-16 |
+| 1 | `PoliticaInchidereConturi` cu seed-ul; `InchidereRezultat` cu generare, previzualizare, regenerare; `REZ-NEINCHIS`; migrația | familia de scenarii `EX`, definită în acest pas; ModelCheck pe ambele profiluri; pe o lună închisă de 1C, netul pe cont al liniilor = divergența explicată | implementat 2026-10-16 |
 | 2 | exercițiul pe decembrie: comenzile, constatările, istoricul; rândurile `Anual`; `CV_AN_INCHIS` pe exercițiu | familia `EX`; SC-X-12; teste de nucleu; ModelCheck pe ambele profiluri | — |
 | 3 | balanța pe an (E3-D8): proiecția, DTO-ul, openapi, coloana în React | SC-CIT pe doi ani; drift openapi; SAF-T neschimbat pe lunile de probă | — |
 | 4 | XAF: comenzile pe perioadă și exercițiu, lista închiderilor; ușile HTTP cu refuzurile (80) | `refuzuri.ps1` pe host viu; browser | — |
@@ -250,6 +252,16 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
   deschidere (repartitorul, unitatea, proiectul, codurile funcțional și
   economic) plus sursa de finanțare; pe 521.03.00, codurile și sursa (E3-D9).
   Owner-ul confirmă coordonatele; o schimbare e numai seed.
+- Cheia rămâne atomul complet (owner, 2026-10-16), deși 1C închide pe cont:
+  nota lui de închidere (121 = 6xx) nu poartă materialul și repartitorul
+  postărilor originale. Pe `Atlas.Conta.Import1C.Flax`, ianuarie 2025,
+  `ModelCheck --irz` dă 4.601 linii (607: 4.451 chei material × repartitor,
+  restul pe repartitor), cu netul pe cont zero, în afară de 607 (−504,03) și
+  6028 (−9,84), exact divergențele explicate de registrul reconcilierii.
+  Pe baza de import `REZ-NEINCHIS` se coboară la avertisment prin
+  `--inchide-lunile`, ca orice blocantă de conținut (F27-D10). Alternativa
+  respinsă: cheia pe cont plus coordonatele obligatorii ale sursei, care ar fi
+  lăsat reziduuri analitice pe 6 și 7, ca în 1C.
 - Ușa OData a politicii, ecranul de generare și ușile HTTP ale IRZ sunt ale
   pasului 4; în pasul 1 politica se editează din XAF, iar comenzile au
   stratul `InchidereRezultatApply`.

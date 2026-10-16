@@ -1,6 +1,6 @@
 # Import și migrare
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 Importul din 1C, opțiunile rulării, reconcilierea cu sursa și deschiderea importată.
 
@@ -61,8 +61,11 @@ se combină cu `--inchide-lunile`.
 
 `--inchide-lunile` închide fiecare lună imediat după importul ei, prin
 `PerioadaService.Inchide` cu toate constatările curente acceptate (politica de
-închidere a bazei de import coboară `ItvLipsa` la avertisment — politică, nu
-ocolire). E proba supremă a soldurilor materializate: raportul de reconciliere
+închidere a bazei de import coboară blocantele de conținut, ca `ItvLipsa` și
+`RezNeinchis`, la avertisment — politică, nu ocolire). O lună închisă de 1C
+lasă sold pe cheile fine ale lui 6 și 7, fiindcă nota 1C de închidere închide
+pe cont: IRZ ar reclasifica între chei, cu netul pe cont egal cu divergența
+explicată a importului (`ModelCheck --irz <bază> <an> <lună>`). (E3-D3) E proba supremă a soldurilor materializate: raportul de reconciliere
 trebuie să rămână IDENTIC cu baseline-ul rulării fără închideri, adică importul
 citește peste snapshot-uri, nu peste registrul integral, și scrie aceleași
 cifre. (F27-D1, F27-D3)

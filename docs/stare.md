@@ -137,7 +137,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | [documente](stare-curenta/documente.md) | 2026-10-16 |
 | [ecrane](stare-curenta/ecrane.md) | 2026-10-16 |
 | [imobilizari](stare-curenta/imobilizari.md) | 2026-10-15 |
-| [import](stare-curenta/import.md) | 2026-10-15 |
+| [import](stare-curenta/import.md) | 2026-10-16 |
 | [limite-curente](stare-curenta/limite-curente.md) | 2026-10-16 |
 | [motor](stare-curenta/motor.md) | 2026-10-16 |
 | [nomenclatoare](stare-curenta/nomenclatoare.md) | 2026-10-15 |

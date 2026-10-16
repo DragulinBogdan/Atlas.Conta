@@ -28,5 +28,9 @@ sold de închis.
 
 Gardianul politicii (destinația în sursă, unicitatea sursei × moment,
 coordonatele obligatorii ale destinației) e probat în suita F23, ca `E3-G1`.
-Constatarea pe baza de import e probată prin `Import1C --inchide-lunile` pe
-ianuarie 2025: luna închisă de 1C nu mai lasă sold de închis.
+Pe baza de import (`Atlas.Conta.Import1C.Flax`, ianuarie 2025, rulat la
+2026-10-16), `ModelCheck --irz Atlas.Conta.Import1C.Flax 2025 1` dă 4.601
+linii: 1C închide pe cont, iar postările originale stau pe material ×
+repartitor. Netul pe cont e zero, în afară de 607 (−504,03) și 6028 (−9,84),
+divergențele explicate ale importului. Cheia completă e hotărârea owner-ului
+(contractul E3, tranșările pasului 1).
