@@ -48,7 +48,8 @@ numărul N poartă acum, tipic, N−2 în zona deductibilă. Vezi maparea comple
 
 **Cotele rămase în formular**: 21% (standard), 11% (redusă), **9% doar tranzitoriu**
 pe rd. 11 — livrări de bunuri conform art. III din Legea nr. 141/2025 (livrarea de
-locuinţe către persoane fizice, aplicabil până la 31.07.2026 în condiţiile legii).
+locuinţe către persoane fizice şi de clădiri către primării; termenul a fost
+prelungit până la 30.09.2026 prin art. I din Legea nr. 161/2026, sursa 5).
 Cotele 24/20/19/9/5% **nu mai au rânduri proprii**; ele intră exclusiv prin
 rândurile de regularizare 16 (colectată) şi 33 (dedusă) — vezi §4.
 
@@ -364,10 +365,10 @@ art. 314 alin. (12), art. 315 alin. (14) sau art. 315^2 alin. (24) (OSS/IOSS).
 taxa aferentă importurilor din afara art. 326 alin. (4)–(5), ajustările art. 287
 pentru cota 11%, şi achiziţiile beneficiarilor de regim special.
 
-> Observaţie de structură: **nu există rând de achiziţii cu cota 9% tranzitorie**
-> în zona deductibilă. Simetria rd. 11 (colectat 9%) nu are pereche deductibilă —
-> rd. 25.1, care exista în forma august–decembrie 2025, a fost eliminat.
-> Vezi §6, punctul deschis (1).
+> Observaţie de structură: **nu există rând de achiziţii cu cota 9%** în zona
+> deductibilă — rd. 25.1, care exista în forma august–decembrie 2025, a fost
+> eliminat. Achiziţia taxată cu 9% se declară la **rd. 33** (vezi mai jos şi §6,
+> punctul (1), închis prin decizia 123 (e)).
 
 **Rd. 26** — bază + taxă **deductibilă** pentru achiziţiile cu **măsuri de
 simplificare art. 331**; plus ajustările art. 287 pentru cotele 21% sau 11%.
@@ -674,6 +675,7 @@ decizie proprie (decizia 51c: convenţia de rotunjire e dată de profil şi
 | 2 | `https://static.anaf.ro/static/10/Anaf/Declaratii_R/AplicatiiDec/structura_D300_v12.0.0_10022026.pdf` — Structura fişierului XML pentru declaraţia 300, v12.0.0 din **10.02.2026** (28 pag.) | §1 (lista rândurilor eliminate), §2 (maparea coloanelor B/T per rând), §5 (nume elemente, validări, marje de cotă) | **Oficial, primar.** Versiunea e datată la o zi după publicarea ordinului în M.Of. şi conţine explicit modificările marcate `01.01.26`. |
 | 3 | `https://static.anaf.ro/static/3/Cluj/20260220114126_cj_d300_20feb2026.pdf` — comunicat DGRFP Cluj-Napoca, nr. CJR_DEC_3226/19.02.2026 | Confirmarea datei M.Of. (105/09.02.2026), termenele de depunere, cota 9% pentru locuinţe până la 31.07.2026 | **Oficial, secundar** (comunicat de presă ANAF, nu act normativ). Folosit doar ca confirmare. |
 | 4 | `https://legislatie.just.ro/Public/DetaliiDocument/307258` — Portal Legislativ, ORDIN 174 05/02/2026 | Existenţa şi identificarea actului | **Oficial**; conţinutul nu a fost extras de aici (sursa 1 l-a acoperit integral). |
+| 5 | `https://static.anaf.ro/static/10/Anaf/legislatie/L_141_2025.pdf` (art. III) şi Monitorul Oficial nr. 642/04.08.2026 (Legea nr. 161/2026, art. I) | Cumpărătorul cotei de 9% pentru locuinţe (persoana fizică, alin. (1); primăria, alin. (4)) şi termenul prelungit la 30.09.2026 | **Oficial, primar.** Citite la 2026-10-16, pentru decizia 123 (e). |
 
 Surse secundare identificate dar **neutilizate** pentru conţinut (infotva.manager.ro,
 universuljuridic.ro, startupcafe.ro, smarttax.ro, permisdeantreprenor.ro,
@@ -693,16 +695,17 @@ evz.ro): sursele primare au acoperit totul. `universuljuridic.ro` a răspuns HTT
 | §4.2 — ruta stornărilor | **Ridicată** | Partajul art. 287 vs. non-287 e explicit în instrucţiuni pentru fiecare rând. Observaţiile despre semn şi implementare sunt inferenţe proprii, marcate ca atare. |
 | §5 — maparea XML | **Ridicată, cu o rezervă** | Extrasă din tabelul oficial; documentul afişează istoric numerele de rând (vechi tăiate, noi adăugate) şi extragerea a cerut interpretare. Recomand verificarea pe un XML generat de programul de asistenţă ANAF înainte de a o considera contract. |
 
-### Ce a rămas incert — 3 puncte deschise
+### Ce a rămas incert — 3 puncte (primul închis)
 
-1. **Nu există rând de achiziţii cu cota 9% tranzitorie.** Formularul are rd. 11
-   pentru livrări cu 9% (art. III din Legea 141/2025), dar zona deductibilă nu are
-   pereche — rd. 25.1 (`R75_*`, „Achiziţii de bunuri, taxabile cu cota 9%") a fost
-   eliminat de la 01.01.2026. Instrucţiunile nu spun unde declară cumpărătorul o
-   achiziţie de locuinţă cu 9% în 2026. Lecturi posibile: (a) intenţionat — cota 9%
-   tranzitorie vizează livrări către **persoane fizice**, care nu depun D300, deci
-   cazul nu apare; (b) se declară la rd. 24 sau 25. **Interpretarea (a) e cea mai
-   probabilă şi coerentă cu art. III**, dar nu e confirmată de un text oficial.
+1. **Închis (decizia 123 e, 2026-10-16): achiziţia cu 9% intră pe rd. 33.** Zona
+   deductibilă n-are rând cu 9% (rd. 25.1, `R75_*`, eliminat de la 01.01.2026), dar
+   instrucţiunile rd. 33 (sursa 1, Anexa 2) cuprind literal „operaţiuni pentru care
+   exigibilitatea taxei intervine în perioada de raportare, dar pentru care se aplică
+   cota de 24%, 20%, 19%, 9% sau 5%". Cota tranzitorie pentru locuinţe nu ajunge în
+   decontul cumpărătorului: art. III din Legea 141/2025 o dă persoanei fizice
+   (alin. (1)) şi primăriei (alin. (4)), sursa 5. Ce ajunge pe rd. 33 e cota de 9%
+   de până la 31.07.2025, prin ajustări art. 287, regularizări art. 291 alin. (6) şi
+   facturi primite târziu.
 2. **Marja de cotă la rd. 26.1 pare o eroare în documentaţia ANAF.** Limita
    superioară e `Round(21% × bază)`, în timp ce rândurile omoloage (9, 12.1, 24)
    au `Round(22% × bază)`. Fiind o validare **ATT** (avertizare), nu blochează

@@ -379,7 +379,7 @@ internal static class ProfilPrivat {
     }
 
     // Nomenclatorul TipTva (design §2): cotele Legii 141/2025 (21 standard,
-    // 11 redusă, 9 tranzitoriu locuințe până la 31.07.2026) + regimurile.
+    // 11 redusă, 9 = cota redusă istorică și cea tranzitorie pentru locuințe, 123 e) + regimurile.
     // Conturile de TVA sunt DATE per profil; codurile SAF-T (D406) vin din
     // nomenclatorul ANAF (RO_SAFT_SchemaDefCod 16.02.2026), direcționale:
     // livrare (seria 310xxx) / achiziție deductibilă integral (301xxx) /
@@ -389,7 +389,7 @@ internal static class ProfilPrivat {
             bool Conturi, string SafTLivrare, string SafTAchizitie, bool DeImport)[] TipuriTva = [
             ("N21", "TVA 21% (standard)", 21m, RegimTva.Normal, true, "310344", "301104", false),
             ("N11", "TVA 11% (redusă)", 11m, RegimTva.Normal, true, "310351", "301105", false),
-            ("N9", "TVA 9% (tranzitoriu locuințe, până la 31.07.2026)", 9m, RegimTva.Normal, true, "310310", "301102", false),
+            ("N9", "TVA 9% (redusă până la 31.07.2025; locuințe, tranzitoriu, până la 30.09.2026)", 9m, RegimTva.Normal, true, "310310", "301102", false),
             ("TI21", "Taxare inversă 21%", 21m, RegimTva.TaxareInversa, true, "310312", "300906", false),
             // Cotele ISTORICE (standard 19% până la 31.07.2025) — necesare
             // importului 1C, care aduce un an fiscal complet dinaintea Legii
@@ -484,7 +484,7 @@ internal static class ProfilPrivat {
                 tip.ValabilDeLa = t.Cod is "N21" or "N11" or "TI21" or "NED21"
                     or "IMP21" or "IMP11" or "IMPTI21" or "IMPTI11" ? new DateOnly(2025, 8, 1) : null;
                 tip.ValabilPanaLa = t.Cod is "N19" or "TI19" ? new DateOnly(2025, 7, 31)
-                    : t.Cod == "N9" ? new DateOnly(2026, 7, 31) : null;
+                    : t.Cod == "N9" ? new DateOnly(2026, 9, 30) : null;
                 if (t.Conturi) {
                     tip.ContTvaDeductibilId = tva4426.ID;
                     tip.ContTvaColectatId = tva4427.ID;
@@ -634,6 +634,7 @@ internal static class ProfilPrivat {
     //     forma 2026, deci taxarea inversă de 19% se declară integral prin
     //     regularizări, pe ambele laturi (exact cazul „n rânduri");
     //   N19 → 16 (colectat) / 33 (dedus), din același motiv;
+    //   N9/achiziție → 33: zona deductibilă n-are rând cu 9% (123 e);
     //   NED21/achiziție → 24: nedeductibilul intră în rd. 30 (taxă
     //     DEDUCTIBILĂ), dar nu în rd. 31 (taxă DEDUSĂ) — scăderea o face
     //     proiecția pe `Regim = Capitalizat`, nu o mapare lipsă.
@@ -643,6 +644,7 @@ internal static class ProfilPrivat {
         ("N11", SensTva.Livrare, "10"),
         ("N11", SensTva.Achizitie, "25"),
         ("N9", SensTva.Livrare, "11"),
+        ("N9", SensTva.Achizitie, "33"),
         ("TI21", SensTva.Livrare, "13"),
         ("TI21", SensTva.Achizitie, "12.1"),
         ("N19", SensTva.Livrare, "16"),
@@ -667,20 +669,18 @@ internal static class ProfilPrivat {
         ("IMPTI11", SensTva.Achizitie, "7"),
     ];
 
-    // Perechile lăsate DELIBERAT nemapate (D3-D2), cu motivul lângă ele — o
-    // gaură fără nume e o gaură pe care nimeni n-o mai găsește (decizia 21:
-    // fiecare gaură de profil = decizie explicită, nu omisiune).
+    // Operațiunile reale pe care decontul nu le cere (123 d): mapare fără rând, cu motiv.
+    static readonly (string TipTva, SensTva SensTva, string Motiv)[] ExcluseD300 = [
+        ("NIM", SensTva.Livrare, "operațiunea e în afara sferei TVA — nu se declară în decont"),
+        // 83g
+        ("IMP", SensTva.Achizitie, "baza și taxa importului se declară din DVI, nu din factura furnizorului extern"),
+    ];
+
+    public static IReadOnlyCollection<(string TipTva, SensTva SensTva, string Motiv)> TabelExcluseD300 => ExcluseD300;
+
+    // Combinațiile care nu pot exista (123 d): rămân nemapate, iar un fapt al lor oprește fișierul (E2-D5).
     static readonly (string TipTva, SensTva SensTva, string Motiv)[] NemapateDeliberat = [
-        // Formularul 2026 n-are rând de achiziție cu cota 9% (cea tranzitorie
-        // e doar pentru livrări de locuințe, art. III din Legea 141/2025).
-        ("N9", SensTva.Achizitie, "formularul n-are rând de achiziție cu cota 9%"),
-        // Fără drept de deducere ⇒ nu există latură de livrare cu acest regim.
         ("NED21", SensTva.Livrare, "regimul e exclusiv de achiziție"),
-        // În afara sferei TVA: nu se declară pe latura de livrare.
-        ("NIM", SensTva.Livrare, "operațiunea e în afara sferei TVA"),
-        // 83g — importul: baza și taxa intră în decont din DVI (rd. 7/22 sau
-        // 24), nu din factura furnizorului extern, care n-are TVA.
-        ("IMP", SensTva.Achizitie, "baza și taxa se declară din DVI"),
         ("IMP", SensTva.Livrare, "tip de achiziție"),
         // DVI-D2 — importul nu are latură de livrare.
         ("IMP21", SensTva.Livrare, "importul e exclusiv de achiziție"),
@@ -718,6 +718,21 @@ internal static class ProfilPrivat {
                     mapare.RandId = rand.ID;
                 });
         }
+        foreach (var e in ExcluseD300) {
+            var tip = os.FirstOrDefault<TipTva>(t => t.Cod == e.TipTva)
+                ?? throw new InvalidOperationException(
+                    $"Excluderea D300 {e.TipTva}/{e.SensTva} nu se poate seed-ui: lipsește din bază tipul de TVA {e.TipTva}.");
+            var sensTva = e.SensTva;
+            if (os.GetObjectsQuery<MapareD300>().Any(x => x.TipTvaId == tip.ID && x.SensTva == sensTva && x.RandId != null))
+                continue;
+            ContaSeeder.Aliniaza<MapareD300>(os, $"{e.TipTva}/{e.SensTva} exclusă",
+                x => x.TipTvaId == tip.ID && x.SensTva == sensTva && x.RandId == null, mapare => {
+                    mapare.TipTvaId = tip.ID;
+                    mapare.SensTva = sensTva;
+                    mapare.RandId = null;
+                    mapare.Motiv = e.Motiv;
+                });
+        }
     }
 
     // Jumătatea de profil a gardianului D300 (`ContaSeeder.VerificaD300`):
@@ -739,6 +754,7 @@ internal static class ProfilPrivat {
             IObjectSpace os, IReadOnlyCollection<MapareD300> mapari) {
         var goluri = new List<string>();
         var coduri = MapariD300.Select(m => m.TipTva)
+            .Concat(ExcluseD300.Select(e => e.TipTva))
             .Concat(NemapateDeliberat.Select(n => n.TipTva)).Distinct().ToList();
         // Perechile a căror mapare a fost ȘTEARSĂ de utilizator (fix F5): a
         // treia categorie, lângă „mapată" și „nemapată deliberat". Gardianul

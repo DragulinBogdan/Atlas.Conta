@@ -305,7 +305,8 @@ sealed class ScenariiTvaIntervale(Func<IObjectSpace> deschide, Action<string, bo
         Verifica("SC-CIT-93a", "seed-ul aliniază capetele inclusiv, fără activarea cotelor istorice",
             tipuri.Where(t => istoric.Contains(t.Cod)).All(t => t.ValabilDeLa == null
                 && t.ValabilPanaLa == new DateOnly(2025, 7, 31) && !t.Activ)
-            && tipuri.Where(t => actual.Contains(t.Cod)).All(t => t.ValabilDeLa == new DateOnly(2025, 8, 1) && t.ValabilPanaLa == null));
+            && tipuri.Where(t => actual.Contains(t.Cod)).All(t => t.ValabilDeLa == new DateOnly(2025, 8, 1) && t.ValabilPanaLa == null)
+            && (!Privat || tipuri.Single(t => t.Cod == "N9") is { ValabilDeLa: null } n9 && n9.ValabilPanaLa == new DateOnly(2026, 9, 30)));
         var db = ((EFCoreObjectSpace)os).DbContext;
         var tabela = db.Model.GetRelationalModel().Tables.Single(t => t.Name == "DocumentDetalii");
         Verifica("SC-CIT-94a", "TPH: o coloană și un singur FK NO ACTION pentru ambele frunze",

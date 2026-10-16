@@ -155,6 +155,7 @@ static class Amprente {
         return [
             .. Linii("rand", d300.Randuri),
             .. Linii("nemapat", d300.Nemapate.Select(n => new { n.SensTva, n.TipTvaCod, n.Regim, n.Cota, n.Baza, n.Tva, n.Randuri })),
+            .. Linii("exclus", d300.Excluse.Select(x => new { x.SensTva, x.TipTvaCod, x.Cota, x.Motiv, x.Baza, x.Tva, x.Randuri })),
             .. Linii("avertisment", d300.Avertismente),
         ];
     }

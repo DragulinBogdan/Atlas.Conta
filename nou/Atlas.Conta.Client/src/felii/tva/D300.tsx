@@ -27,9 +27,11 @@ import { BandaRectificativa } from './BandaRectificativa';
 type D300Dto = components['schemas']['D300Dto'];
 type Rand = components['schemas']['D300Rand'];
 type Nemapat = components['schemas']['D300Nemapat'];
+type Exclus = components['schemas']['D300Exclus'];
 
 const camp = (n: keyof Rand & string) => n;
 const campNemapat = (n: keyof Nemapat & string) => n;
+const campExclus = (n: keyof Exclus & string) => n;
 
 // Ordinea secțiunilor e cea a FORMULARULUI, nu cea alfabetică a numelor de enum
 // (care azi coincide — „Colectata" < „Deductibila" < „Regularizari" — și tocmai
@@ -94,6 +96,7 @@ export function D300() {
 
   const randuri = useMemo(() => citit.data?.Randuri ?? [], [citit.data]);
   const nemapate = useMemo(() => citit.data?.Nemapate ?? [], [citit.data]);
+  const excluse = useMemo(() => citit.data?.Excluse ?? [], [citit.data]);
   const avertismente = citit.data?.Avertismente ?? [];
   // Cheia de remontare: parametrii cererii. Gruparea și expandarea nu se
   // reevaluează pe o instanță vie (lecția `BalantaPlan`).
@@ -234,9 +237,8 @@ export function D300() {
           <p className="indiciu">
             Operațiuni fiscale din perioada aleasă a căror calificare istorică nu are
             mapare către un rând al formularului — deci cifrele de mai jos <strong>nu</strong> se
-            regăsesc în tabloul de sus. Cauze legitime: un tip de TVA propriu, încă nemapat, sau o
-            gaură deliberată a formularului (achiziția cu cota tranzitorie de 9% n-are rând în
-            forma 2026). Maparea se face în BackOffice, pe politica <em>MapareD300</em>.
+            regăsesc în tabloul de sus și opresc fișierul XML. Cauza tipică: un tip de TVA propriu,
+            încă nemapat. Maparea se face în BackOffice, pe politica <em>MapareD300</em>.
           </p>
           <DataGrid
             key={`neincluse|${cheie}`}
@@ -255,6 +257,33 @@ export function D300() {
             <Column dataField={campNemapat('Baza')} caption="Bază" {...BANI} />
             <Column dataField={campNemapat('Tva')} caption="TVA" {...BANI} />
             <Column dataField={campNemapat('Randuri')} caption="Rânduri" dataType="number" format="#,##0" alignment="right" width={90} />
+          </DataGrid>
+        </div>
+      )}
+
+      {excluse.length > 0 && (
+        <div className="d300__neincluse">
+          <h3>Excluse din decont</h3>
+          <p className="indiciu">
+            Operațiuni pe care politica <em>MapareD300</em> le lasă <strong>intenționat</strong> în afara
+            decontului, cu motivul ei: legea nu le cere în formular. Nu opresc fișierul XML.
+          </p>
+          <DataGrid
+            key={`excluse|${cheie}`}
+            dataSource={excluse}
+            showBorders
+            columnAutoWidth
+            height={Math.min(60 + excluse.length * 34, 300)}
+          >
+            <Sorting mode="none" />
+            <Paging enabled={false} />
+            <Column dataField={campExclus('SensTva')} caption="Sens" width={110} cellRender={celulaSens} />
+            <Column dataField={campExclus('TipTvaCod')} caption="Tip TVA" width={90} cellRender={celulaTipTva} />
+            <Column dataField={campExclus('Cota')} caption="Cotă %" dataType="number" format="#0.##" alignment="right" width={80} />
+            <Column dataField={campExclus('Motiv')} caption="Motiv" />
+            <Column dataField={campExclus('Baza')} caption="Bază" {...BANI} />
+            <Column dataField={campExclus('Tva')} caption="TVA" {...BANI} />
+            <Column dataField={campExclus('Randuri')} caption="Rânduri" dataType="number" format="#,##0" alignment="right" width={90} />
           </DataGrid>
         </div>
       )}
@@ -332,7 +361,7 @@ function celulaDenumire({ data }: { data: Rand }) {
   );
 }
 
-function celulaSens({ data }: { data: Nemapat }) {
+function celulaSens({ data }: { data: Nemapat | Exclus }) {
   return <span>{labelEnum('SensTva', data.SensTva)}</span>;
 }
 
@@ -342,7 +371,7 @@ function celulaRegim({ data }: { data: Nemapat }) {
 
 // LEFT join pe nomenclator: un `TipTva` șters logic nu face grupul să dispară din
 // panou — cifra rămâne, eticheta se marchează (review D4 al feliei 9).
-function celulaTipTva({ data }: { data: Nemapat }) {
+function celulaTipTva({ data }: { data: Nemapat | Exclus }) {
   if (data.TipTvaCod) return <span>{data.TipTvaCod}</span>;
   return <span className="indiciu" title={data.TipTvaId ?? ''}>(tip TVA indisponibil)</span>;
 }

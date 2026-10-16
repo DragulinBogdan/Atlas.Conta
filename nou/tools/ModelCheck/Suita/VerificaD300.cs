@@ -65,14 +65,10 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // cu decontul.
 //
 // Scena stă pe DOUĂ luni, și asta e o decizie, nu o comoditate:
-//   • MAI — numai operațiuni MAPATE. E luna pe care o închide ITV-ul, iar o
-//     operațiune nemapată care POSTEAZĂ (achiziția cu cota tranzitorie de 9%,
-//     care alimentează 4426 dar n-are rând în forma 2026) ar rupe egalitatea
-//     rd. 37 == ITV — corect, dar dintr-un motiv care e chiar constatarea, nu
-//     defectul: ce nu încape în formular rămâne în contabilitate.
-//   • IUNIE — cele două perechi nemapate deliberat (N9/Achiziție, NIM/Livrare)
-//     și perechea operare+storno. Peste ele se citește perioada COMBINATĂ, unde
-//     `Nemapate` are ce arăta.
+//   • MAI — numai operațiuni pe rândurile tabelului D3-D2; e luna pe care o
+//     închide ITV-ul (D3-D5).
+//   • IUNIE — N9 pe achiziție (rd. 33, 123 e), NIM pe livrare (exclusă, 123 d)
+//     și perechea operare+storno; peste ele se citește perioada COMBINATĂ.
 //
 // Local function, apelată din AMBELE căi de profil, ca `VerificaD300Seed`.
 static class VerificaD300 {
@@ -296,9 +292,9 @@ static class VerificaD300 {
 
         // --- IUNIE: nemapatele deliberate + perechea operare/storno ---
         var fctIunie = Cumparare("-C2", new DateOnly(2026, 6, 10));
-        LinieC(fctIunie, n9, 90m);     // NEMAPAT: formularul 2026 n-are achiziție cu 9%
+        LinieC(fctIunie, n9, 90m);     // → rd. 33 (  90 / 8,10)
         var fclIunie = Vanzare("-V2", new DateOnly(2026, 6, 11));
-        LinieV(fclIunie, nim, 110m);   // NEMAPAT: în afara sferei TVA, nu se declară
+        LinieV(fclIunie, nim, 110m);   // exclusă: în afara sferei TVA
         // TAXARE INVERSĂ PE LIVRARE, acum cu regula F13-D1 în motor: rândul de
         // registru poartă baza și TVA ZERO, fiindcă furnizorul emite fără taxă
         // (art. 331). Rd. 13 („livrări supuse măsurilor de simplificare") are o
@@ -333,6 +329,8 @@ static class VerificaD300 {
         foreach (var n in d3.Nemapate)
             Console.WriteLine($"         NEMAPAT {n.TipTvaCod ?? "(fără cod)"}/{n.SensTva} {n.Regim} {n.Cota}% "
                 + $"bază {n.Baza:N2} TVA {n.Tva:N2} n={n.Randuri}");
+        foreach (var e in d3.Excluse)
+            Console.WriteLine($"         EXCLUS {e.TipTvaCod}/{e.SensTva} {e.Cota}% bază {e.Baza:N2} TVA {e.Tva:N2} n={e.Randuri} — {e.Motiv}");
         foreach (var a in d3.Avertismente)
             Console.WriteLine($"         AVERTISMENT: {a}");
         s.Check("D3-V2 forma răspunsului: formularul întreg (55 de poziții), în ordinea `Ordine`, cu sub-rândurile la "
@@ -362,12 +360,12 @@ static class VerificaD300 {
             // dar moștenește identitatea care a produs cifra.
             && R("26.1").Randuri == 0 && R("26.1").Surse == "TI21"
             && R("12.1").Randuri == 1);
-        s.Check("D3-V2 cotele ISTORICE, cazul care a cerut nomenclatorul în loc de o coloană: rd. 16 = 600/114 "
-            + "(N19 livrare 400/76 + TI19 achiziție 200/38) și rd. 33 = 500/95 (N19 achiziție 300/57 + ACELAȘI "
-            + "TI19 200/38) — o pereche (TipTva × Sens) așezată pe DOUĂ rânduri deodată",
+        s.Check("D3-V2 cotele fără rând propriu: rd. 16 = 600/114 (N19 livrare 400/76 + TI19 achiziție 200/38) și "
+            + "rd. 33 = 590/103,10 (N19 achiziție 300/57 + ACELAȘI TI19 200/38 + N9 achiziție 90/8,10, 123 e) — "
+            + "o pereche (TipTva × Sens) așezată pe DOUĂ rânduri deodată",
             R("16").Baza == 600m && R("16").Tva == 114m
-            && R("33").Baza == 500m && R("33").Tva == 95m
-            && R("16").Surse == "N19, TI19" && R("33").Surse == "N19, TI19");
+            && R("33").Baza == 590m && R("33").Tva == 103.10m
+            && R("16").Surse == "N19, TI19" && R("33").Surse == "N19, N9, TI19");
         s.Check("D3-V2 rândurile FĂRĂ coloană de TVA: rd. 14 = 150 (SDD livrare), rd. 15 = 120 (SFD livrare), "
             + "rd. 29 = 180 (SDD 70 + SFD 60 + NIM 50 pe achiziție) — cu `Tva` NULL, nu 0",
             R("14").Baza == 150m && R("14").Tva == null
@@ -381,15 +379,11 @@ static class VerificaD300 {
             && R("25").Baza == 500m && R("25").Tva == 55m
             && R("30").Tva == 370m && R("31").Tva == 349m
             && R("31").Tva == R("30").Tva - 21m);
-        s.Check("D3-V2 nemapatele, cu cifrele lor (D3-D4): exact două perechi — N9 pe ACHIZIȚIE (formularul 2026 "
-            + "n-are rând de achiziție cu 9%) și NIM pe LIVRARE (în afara sferei) — cu regim și cotă SNAPSHOT, "
-            + "etichetele join-uite la citire și numărul de rânduri de registru din spate",
-            d3.Nemapate.Count == 2
-            && d3.Nemapate.Single(n => n.TipTvaCod == "N9") is
-                { SensTva: "Achizitie", Regim: "Normal", Cota: 9m, Baza: 90m, Tva: 8.1m, Randuri: 1 }
-            && d3.Nemapate.Single(n => n.TipTvaCod == "NIM") is
-                { SensTva: "Livrare", Regim: "Neimpozabil", Cota: 0m, Baza: 110m, Tva: 0m, Randuri: 1 }
-            && d3.Nemapate.All(n => n.TipTvaDenumire != null));
+        s.Check("D3-V2 excluderea (123 d): NIM pe LIVRARE iese în `Excluse` cu motivul seed-ului, cotă SNAPSHOT și "
+            + "numărul de rânduri de registru; nicio pereche a profilului nu rămâne nemapată",
+            d3.Nemapate.Count == 0
+            && d3.Excluse.SingleOrDefault() is { TipTvaCod: "NIM", SensTva: "Livrare", Cota: 0m, Baza: 110m, Tva: 0m, Randuri: 1 } x
+            && x.Motiv == ContaSeeder.ExcluseD300Privat.Single(e => e.TipTva == "NIM").Motiv && x.TipTvaDenumire != null);
 
         // ══════════ D3-V3 (D3-D4): nimic nu se pierde ══════════
         // Identitatea se scrie la nivel de GRUP, fiindcă la nivel de rând nu poate fi
@@ -403,21 +397,27 @@ static class VerificaD300 {
         // „Multiplicitatea" și „pierdutul" se recalculează aici din agregatul brut și
         // din tabelul de mapare citit din bază — independent de proiecție, altfel
         // proba ar fi doar proiecția comparată cu ea însăși.
-        var mapariD3 = os.GetObjectsQuery<MapareD300>().ToList()
+        var toateMaparileD3 = os.GetObjectsQuery<MapareD300>().ToList();
+        var excluseD3 = toateMaparileD3.Where(m => m.Rand == null).Select(m => (m.TipTvaId, m.SensTva)).ToHashSet();
+        var mapariD3 = toateMaparileD3.Where(m => m.Rand != null)
             .Select(m => new { m.TipTvaId, m.SensTva, m.Rand.Cod, m.Rand.AreBaza, m.Rand.AreTva }).ToList();
         var coduriDirecte = mapariD3.Select(m => m.Cod).Distinct().ToHashSet();
         var sumaRanduriBaza = d3.Randuri.Where(r => coduriDirecte.Contains(r.Cod)).Sum(r => r.Baza ?? 0m);
         var sumaRanduriTva = d3.Randuri.Where(r => coduriDirecte.Contains(r.Cod)).Sum(r => r.Tva ?? 0m);
-        var sumaNemapateBaza = d3.Nemapate.Sum(n => n.Baza);
-        var sumaNemapateTva = d3.Nemapate.Sum(n => n.Tva);
+        var sumaNemapateBaza = d3.Nemapate.Sum(n => n.Baza) + d3.Excluse.Sum(x => x.Baza);
+        var sumaNemapateTva = d3.Nemapate.Sum(n => n.Tva) + d3.Excluse.Sum(x => x.Tva);
         var brutCub = CubScena.FapteIntre(os, pStart, pEnd);
         var grupuriCub = brutCub
             .GroupBy(f => new { f.SensTva, f.TipTvaId, f.Regim, f.Cota })
             .Select(g => new { g.Key.SensTva, g.Key.TipTvaId, Baza = g.Sum(x => x.Baza), Tva = g.Sum(x => x.Tva) })
             .ToList();
         decimal multiplicitateBazaCub = 0m, multiplicitateTvaCub = 0m, pierdutBazaCub = 0m, pierdutTvaCub = 0m;
-        var grupuriNemapateCub = 0;
+        int grupuriNemapateCub = 0, grupuriExcluseCub = 0;
         foreach (var g in grupuriCub) {
+            if (excluseD3.Contains((g.TipTvaId, g.SensTva))) {
+                grupuriExcluseCub++;
+                continue;
+            }
             var tinte = mapariD3.Where(m => m.TipTvaId == g.TipTvaId && m.SensTva == g.SensTva).ToList();
             if (tinte.Count == 0) {
                 grupuriNemapateCub++;
@@ -431,10 +431,10 @@ static class VerificaD300 {
             if (cuTvaTinta == 0) pierdutTvaCub += g.Tva;
         }
         Console.WriteLine($"     MĂSURAT (D3-V3): cub {brutCub.Count} fapte / {grupuriCub.Count} grupuri "
-            + $"({grupuriNemapateCub} nemapate); Σ bază {brutCub.Sum(f => f.Baza):N2}, Σ TVA {brutCub.Sum(f => f.Tva):N2}; "
+            + $"({grupuriNemapateCub} nemapate, {grupuriExcluseCub} excluse); Σ bază {brutCub.Sum(f => f.Baza):N2}, Σ TVA {brutCub.Sum(f => f.Tva):N2}; "
             + $"multiplicitate {multiplicitateBazaCub:N2}/{multiplicitateTvaCub:N2}; "
             + $"pierdut pe coloane absente {pierdutBazaCub:N2}/{pierdutTvaCub:N2}.");
-        s.Check("D3-V3 (D3-D4) — NIMIC nu se pierde: Σ rândurilor cu mapări directe + Σ nemapate, minus "
+        s.Check("D3-V3 (D3-D4) — NIMIC nu se pierde: Σ rândurilor cu mapări directe + Σ nemapate + Σ excluse, minus "
             + "multiplicitatea așezării pe mai multe rânduri, plus ce n-a încăput pe coloane absente, == Σ "
             + "registrului pe perioadă, pe AMBELE coloane. Baza nu pierde nimic, multiplicitatea e exact "
             + "TI19/achiziție (numărat o dată la rd. 16 și o dată la rd. 33), iar pierderea pe coloana TVA e "
@@ -443,7 +443,8 @@ static class VerificaD300 {
             && sumaRanduriTva + sumaNemapateTva - multiplicitateTvaCub + pierdutTvaCub == brutCub.Sum(f => f.Tva)
             && pierdutBazaCub == 0m && pierdutTvaCub == 0m
             && multiplicitateBazaCub == 200m && multiplicitateTvaCub == 38m
-            && grupuriNemapateCub == d3.Nemapate.Count && grupuriNemapateCub == 2
+            && grupuriNemapateCub == d3.Nemapate.Count && grupuriNemapateCub == 0
+            && grupuriExcluseCub == d3.Excluse.Count && grupuriExcluseCub == 1
             && d3.Avertismente.Count == 0);
 
         // ══════ F13-D1: pe rd. 13 nu mai e nimic de ocolit ══════
@@ -587,9 +588,9 @@ static class VerificaD300 {
             + $"rd. 31 {A("31").Tva:N2}, rd. 33 {A("33").Tva:N2}, rd. 35 {A("35").Tva:N2}.");
         s.Check("D3-V5 (F3a) o țintă din secțiunea Deductibilă care NU e operand al rd. 30 (rd. 33 — regularizări "
             + "taxă dedusă) nu produce nicio scădere în plus: rd. 30 rămâne 370,00, rd. 31 rămâne 349,00 = 370 − "
-            + "21, iar cei 21,00 se văd în rd. 33 (95 → 116) și de acolo în rd. 35",
+            + "21, iar cei 21,00 se văd în rd. 33 (103,10 → 124,10) și de acolo în rd. 35",
             A("30").Tva == 370m && A("31").Tva == 349m
-            && A("33").Baza == 600m && A("33").Tva == 116m
+            && A("33").Baza == 690m && A("33").Tva == 124.10m
             && A("35").Tva == A("31").Tva + A("33").Tva);
 
         // (b) Două ținte care sunt AMÂNDOUĂ operanzi ai rd. 30 (rd. 24 și rd. 25):
@@ -612,11 +613,11 @@ static class VerificaD300 {
         // …și după ambele probe formularul revine EXACT la cifrele dinainte.
         var dupaProbeNed = D300Proiectii.D300(os, pStart, pEnd, null);
         s.Check("D3-V5 (F3) după ștergerea celor două mapări de probă, formularul revine bit cu bit la cifrele "
-            + "profilului — politica de seed a rămas neatinsă (22 mapări vii)",
+            + "profilului — politica de seed a rămas neatinsă (23 mapări pe rânduri și două excluderi)",
             dupaProbeNed.Randuri.Select(r => (r.Cod, r.Baza, r.Tva))
                 .SequenceEqual(d3.Randuri.Select(r => (r.Cod, r.Baza, r.Tva)))
             && dupaProbeNed.Avertismente.Count == 0
-            && os.GetObjectsQuery<MapareD300>().Count() == 22);
+            && os.GetObjectsQuery<MapareD300>().Count() == 25);
 
         // ══════════ D3-V6: storno în aceeași perioadă ══════════
         var iunie = D300Proiectii.D300(os, iunieStart, iunieEnd, null);
@@ -628,9 +629,9 @@ static class VerificaD300 {
             I("16").Baza == 0m && I("16").Tva == 0m && I("16").Randuri == 2 && I("16").Surse == "N19"
             // …iar peste perioada combinată netarea nu schimbă nimic: mai rămâne mai.
             && R("16").Baza == 600m && R("16").Tva == 114m
-            // Iunie n-are decât nemapatele și perechea stornată ⇒ toate totalurile 0.
-            && I("19").Tva == 0m && I("35").Tva == 0m && I("36").Tva == 0m && I("37").Tva == 0m
-            && iunie.Nemapate.Count == 2);
+            // Iunie: colectata netă 0, dedusă doar N9 pe rd. 33 ⇒ suma negativă 8,10.
+            && I("19").Tva == 0m && I("33").Tva == 8.10m && I("35").Tva == 8.10m && I("36").Tva == 8.10m
+            && I("37").Tva == 0m && iunie.Nemapate.Count == 0 && iunie.Excluse.Count == 1);
 
         // ══════ F1: validările BLOCANTE ale formularului, ca avertismente ══════
         //
@@ -692,6 +693,6 @@ static class VerificaD300 {
             && !os.GetObjectsQuery<Document>().Any(d => d.Numar.StartsWith(MarcajD3))
             && !os.GetObjectsQuery<InchidereTva>().Any(d => d.ID == idItv)
             && CubScena.FapteIntre(os, pStart, new DateOnly(2026, 7, 31)).Count == 0
-            && os.GetObjectsQuery<MapareD300>().Count() == 22);
+            && os.GetObjectsQuery<MapareD300>().Count() == 25);
     }
 }

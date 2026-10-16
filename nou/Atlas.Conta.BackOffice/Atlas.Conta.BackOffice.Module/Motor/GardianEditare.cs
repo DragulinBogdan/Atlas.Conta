@@ -1293,10 +1293,14 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
         if (EsteSters(os, mapare))
             return;
         var rand = mapare.Rand
-            ?? (mapare.RandId != Guid.Empty ? os.GetObjectByKey<RandD300>(mapare.RandId) : null);
+            ?? (mapare.RandId is Guid randId && randId != Guid.Empty ? os.GetObjectByKey<RandD300>(randId) : null);
         if (!MapareD300.EsteDeOperatiuni(rand))
             erori.Add($"Maparea D300 țintește rd. {rand.Cod}, de fel „{rand.Fel}” — rândurile de total, "
                 + "oglindă și extern se calculează, nu se alimentează din mapări.");
+        if (!MapareD300.AreRandSauMotiv(mapare))
+            erori.Add(MapareD300.MesajMotiv);
+        if (!MapareD300.ExcludereaESingura(os, mapare))
+            erori.Add(MapareD300.MesajExcludere);
         if (!MapareD300.FaraAscendentMapat(os, mapare))
             erori.Add("Aceeași pereche (tip de TVA × sens) țintește deja un rând aflat pe aceeași "
                 + "verticală „din care” cu cel ales — cifra ar intra de două ori în rândul-părinte și "

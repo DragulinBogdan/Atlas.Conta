@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 Ce nu face încă o funcționalitate livrată, în forma în care o vede
 utilizatorul, pe ariile catalogului. Ce nu e livrat deloc e un rând
@@ -187,7 +187,8 @@ repetă aici. Limitele mecanismelor, fără efect direct pentru utilizator, stau
   RON, cu avertismentul `FacturaInValuta`. (SAFT-r1, B-r6)
 - Exportul și validatorul rulează pe lună întreagă; trimestrul e exclus. (S0-R4)
 - `SDD` și `SFD` nu au cod SAF-T de achiziție; `N9` poartă codul de livrare
-  al rândului 10.1, iar maparea D300 îl pune pe rândul 11. (84-r1, 84-r2)
+  al rândului 10.1, iar maparea D300 îl pune pe rândul 11 la livrare și pe
+  rândul 33 la achiziție. (84-r1, 84-r2, 123 e)
 - Nu există catalog NC complet și nici conversie sigură a oricărui text de
   unitate de măsură din legacy. Precizia prețului exportat e distinctă de
   precizia internă a prețului și a cantității. (73-r4, 73-r5, 73-r11)

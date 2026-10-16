@@ -37,10 +37,24 @@ public sealed class D300Nemapat {
     public int Randuri { get; set; }
 }
 
+/// <summary>Faptele unei perechi excluse din decont prin mapare, cu motivul (123 d).</summary>
+public sealed class D300Exclus {
+    public string SensTva { get; set; }
+    public Guid TipTvaId { get; set; }
+    public string TipTvaCod { get; set; }
+    public string TipTvaDenumire { get; set; }
+    public decimal Cota { get; set; }
+    public string Motiv { get; set; }
+    public decimal Baza { get; set; }
+    public decimal Tva { get; set; }
+    public int Randuri { get; set; }
+}
+
 public sealed class D300Dto {
     public string VersiuneExportata { get; set; }
     public List<D300Rand> Randuri { get; set; } = [];
     public List<D300Nemapat> Nemapate { get; set; } = [];
+    public List<D300Exclus> Excluse { get; set; } = [];
     public List<string> Avertismente { get; set; } = [];
     public bool Rectificativa { get; set; }
     public bool PerioadaDeschisa { get; set; }
@@ -127,7 +141,7 @@ public static class D300Proiectii {
             .ToDictionary(t => t.ID, t => (t.Cod, t.Denumire));
 
         var mapari = os.GetObjectsQuery<MapareD300>()
-            .Select(m => new { m.TipTvaId, m.SensTva, m.RandId, m.TipTva.Regim, m.TipTva.Cota, m.TipTva.DeImport })
+            .Select(m => new { m.TipTvaId, m.SensTva, m.RandId, m.Motiv, m.TipTva.Regim, m.TipTva.Cota, m.TipTva.DeImport })
             .ToList();
 
         var pierdutTva = new Dictionary<Guid, decimal>();
@@ -136,10 +150,27 @@ public static class D300Proiectii {
 
         foreach (var a in agregate) {
             var eticheta = etichete.TryGetValue(a.TipTvaId, out var e) ? e : (Cod: null, Denumire: null);
-            var tinte = mapari
+            var aleGrupului = mapari
                 .Where(m => m.TipTvaId == a.TipTvaId && m.SensTva == a.SensTva
                     && m.Regim == a.Regim && m.Cota == a.Cota && m.DeImport == a.DeImport)
-                .Select(m => m.RandId).Distinct()
+                .ToList();
+            if (aleGrupului.FirstOrDefault(m => m.RandId == null) is { } excludere) {
+                rezultat.Excluse.Add(new D300Exclus {
+                    SensTva = a.SensTva.ToString(),
+                    TipTvaId = a.TipTvaId,
+                    TipTvaCod = eticheta.Cod,
+                    TipTvaDenumire = eticheta.Denumire,
+                    Cota = a.Cota,
+                    Motiv = excludere.Motiv,
+                    Baza = a.Baza,
+                    Tva = a.Tva,
+                    Randuri = a.Randuri
+                });
+                continue;
+            }
+            var tinte = aleGrupului
+                .Where(m => m.RandId != null)
+                .Select(m => m.RandId.Value).Distinct()
                 .Select(id => dupaId.GetValueOrDefault(id))
                 .Where(n => n != null)
                 .ToList();
@@ -273,6 +304,16 @@ public static class D300Proiectii {
             rezultat.RefuzuriXml.Add(new RefuzDeclaratie { Cod = CoduriDeclaratie.DateNeincluse, Mesaj = mesaj });
         }
 
+        rezultat.Excluse = rezultat.Excluse
+            .GroupBy(x => (x.SensTva, x.TipTvaId, x.Cota, x.Motiv))
+            .Select(g => new D300Exclus {
+                SensTva = g.Key.SensTva, TipTvaId = g.Key.TipTvaId, TipTvaCod = g.First().TipTvaCod,
+                TipTvaDenumire = g.First().TipTvaDenumire, Cota = g.Key.Cota, Motiv = g.Key.Motiv,
+                Baza = g.Sum(x => x.Baza), Tva = g.Sum(x => x.Tva), Randuri = g.Sum(x => x.Randuri)
+            })
+            .OrderBy(x => x.SensTva, StringComparer.Ordinal).ThenBy(x => x.TipTvaCod ?? "", StringComparer.Ordinal)
+            .ThenBy(x => x.Cota)
+            .ToList();
         rezultat.Randuri = noduri
             .OrderBy(n => n.Ordine)
             .Select(n => new D300Rand {

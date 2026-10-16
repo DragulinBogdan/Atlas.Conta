@@ -4,10 +4,8 @@ import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
 import { afisareNav, captionPolitica, codSiDenumire, etichetaTipTva, optiuniEnum } from './comune';
 
-// Așezarea unei operațiuni pe rândul decontului (69b): `(TipTva × Sens) → rând`,
-// cu n rânduri per pereche. Lookup-ul rândurilor e filtrat pe „Operațiuni” —
-// AFORDANȚĂ, nu garanție: refuzul unui rând de total/oglindă/extern rămâne al
-// gardianului, ca și gardul contra dublei numărări pe aceeași verticală.
+// `(TipTva × Sens) → rând`, cu n rânduri per pereche, sau excludere fără rând, cu motiv (69b, 123 d).
+// Lookup-ul rândurilor e filtrat pe „Operațiuni”; refuzurile rămân ale gardianului.
 
 const TIP = 'MapareD300';
 const cap = (m: string) => captionPolitica(TIP, m);
@@ -27,8 +25,9 @@ export function MapariD300() {
       indiciu={(
         <>
           Perechea e DIRECȚIONALĂ: același tip de TVA cade pe alt rând la achiziție decât la livrare.
-          Lista oferă doar rândurile de operațiuni — totalurile și oglinzile se calculează. O pereche
-          nemapată nu e eroare: cifrele ei apar în panoul „neincluse” al decontului.
+          Lista oferă doar rândurile de operațiuni — totalurile și oglinzile se calculează. Fără rând și
+          cu motiv, perechea e exclusă din decont; o pereche nemapată apare în panoul „neincluse” și
+          oprește fișierul XML.
         </>
       )}
     >
@@ -51,8 +50,9 @@ export function MapariD300() {
         calculateDisplayValue={afisareNav('Rand', codSiDenumire)}
         calculateSortValue="Rand.Ordine"
       >
-        <Lookup dataSource={randuri} valueExpr="ID" displayExpr={codSiDenumire} />
+        <Lookup dataSource={randuri} valueExpr="ID" displayExpr={codSiDenumire} allowClearing />
       </Column>
+      <Column dataField="Motiv" caption={cap('Motiv')} minWidth={240} />
     </GrilaPolitica>
   );
 }

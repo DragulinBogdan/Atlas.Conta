@@ -7,12 +7,12 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Ce | Cât |
 |---|---|
 | Decizii | 123: 88 active, 35 amendate parțial, 0 depășite, 0 propuse |
-| Restanțe | 394: 288 deschise, 106 închise |
+| Restanțe | 394: 287 deschise, 107 închise |
 | Pagini de stare curentă | 19 |
 | Contracte de felie (`Tip: contract`) | 4, deschise 1 |
 | Cataloage vii (`Tip: catalog`) | 6 |
 | Fișiere Markdown în `docs/` | 338 |
-| Citări de decizii din cod (`// N`) | 73 |
+| Citări de decizii din cod (`// N`) | 75 |
 
 ## Decizii în vigoare pe arie
 
@@ -46,14 +46,14 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 43 |
+| activă | 42 |
 | după PoC | 209 |
 | migrare | 24 |
 | depășită de 091 | 2 |
 | docs | 6 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (43, prag 45)
+### Lista `activă` (42, prag 45)
 
 **motor** (10)
 
@@ -107,11 +107,10 @@ Niciuna.
 
 - `T-r6` Custodie pe bugetar: explicit neacoperită la LDI…
 
-**tva** (3)
+**tva** (2)
 
 - `103-r2` Intervale TVA și avertismente/raport de impact, cu referință la linia avansului (103h)…
 - `103-r3` Validarea L3 a semnului taxei culese față de baza FCT/FCL și înlocuirea proxy-ului ILinieCuAvans pen…
-- `123-r1` N9 pe achiziție: D394 îl mapează pe A, iar D300 îl lasă deliberat fără rând („formularul n-are rând…
 
 **dezvoltare** (1)
 
@@ -134,7 +133,7 @@ Niciuna.
 
 ## Decizii invocate din cod
 
-Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33 (1), 42 (2), 43 (1), 46 (2), 48 (2), 49 (1), 53 (1), 55 (1), 57 (4), 77 (1), 79 (4), 82 (2), 83 (1), 85 (1), 86 (1), 87 (2), 89 (3), 90 (4), 91 (2), 92 (1), 97 (1), 98 (2), 99 (2), 101 (1), 102 (1), 103 (2), 104 (7), 106 (1), 107 (7), 109 (1), 112 (1), 115 (5), 119 (1).
+Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33 (1), 40 (1), 42 (2), 43 (1), 46 (2), 48 (2), 49 (1), 53 (1), 55 (1), 57 (4), 77 (1), 79 (4), 82 (2), 83 (2), 85 (1), 86 (1), 87 (2), 89 (3), 90 (4), 91 (2), 92 (1), 97 (1), 98 (2), 99 (2), 101 (1), 102 (1), 103 (2), 104 (7), 106 (1), 107 (7), 109 (1), 112 (1), 115 (5), 119 (1).
 
 ## Paginile stării curente
 
@@ -147,7 +146,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | [ecrane](stare-curenta/ecrane.md) | 2026-10-16 |
 | [imobilizari](stare-curenta/imobilizari.md) | 2026-10-15 |
 | [import](stare-curenta/import.md) | 2026-10-15 |
-| [limite-curente](stare-curenta/limite-curente.md) | 2026-10-15 |
+| [limite-curente](stare-curenta/limite-curente.md) | 2026-10-16 |
 | [motor](stare-curenta/motor.md) | 2026-10-15 |
 | [nomenclatoare](stare-curenta/nomenclatoare.md) | 2026-10-15 |
 | [partide](stare-curenta/partide.md) | 2026-10-15 |

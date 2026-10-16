@@ -237,18 +237,23 @@ static class VerificaD300Seed {
         }
 
         string[] Randuri(string codTip, SensTva sensTva) => mapari
-            .Where(m => m.TipTva.Cod == codTip && m.SensTva == sensTva)
+            .Where(m => m.TipTva.Cod == codTip && m.SensTva == sensTva && m.Rand != null)
             .Select(m => m.Rand.Cod).OrderBy(c => c, StringComparer.Ordinal).ToArray();
+        bool Exclusa(string codTip, SensTva sensTva) => mapari
+            .Where(m => m.TipTva.Cod == codTip && m.SensTva == sensTva).ToList() is [{ Rand: null } m]
+            && !string.IsNullOrWhiteSpace(m.Motiv);
 
-        s.Check("D3-V1 (privat) tabelul D3-D2 e seed-uit integral: 22 mapări, toate către rânduri de operațiuni",
-            mapari.Count == 22 && mapari.All(m => m.Rand.Fel == FelRandD300.Operatiuni));
-        s.Check("D3-V1 (privat) cotele în vigoare: N21 → 9/24, N11 → 10/25, N9 doar pe livrare → 11",
+        s.Check("D3-V1 (privat) tabelul D3-D2 e seed-uit integral: 23 mapări pe rânduri de operațiuni și două excluderi cu motiv (123 d)",
+            mapari.Count(m => m.Rand != null) == 23 && mapari.Where(m => m.Rand != null).All(m => m.Rand.Fel == FelRandD300.Operatiuni)
+            && mapari.Count(m => m.Rand == null) == ContaSeeder.ExcluseD300Privat.Count
+            && Exclusa("NIM", SensTva.Livrare) && Exclusa("IMP", SensTva.Achizitie));
+        s.Check("D3-V1 (privat) cotele în vigoare: N21 → 9/24, N11 → 10/25, N9 → 11 pe livrare și 33 pe achiziție (123 e)",
             Randuri("N21", SensTva.Livrare).SequenceEqual(["9"])
             && Randuri("N21", SensTva.Achizitie).SequenceEqual(["24"])
             && Randuri("N11", SensTva.Livrare).SequenceEqual(["10"])
             && Randuri("N11", SensTva.Achizitie).SequenceEqual(["25"])
             && Randuri("N9", SensTva.Livrare).SequenceEqual(["11"])
-            && Randuri("N9", SensTva.Achizitie).Length == 0);
+            && Randuri("N9", SensTva.Achizitie).SequenceEqual(["33"]));
         // TI21 pe achiziție are O SINGURĂ mapare (12.1); rd. 26.1 e OGLINDĂ, o pune
         // proiecția — a doua mapare ar fi dublat cifra, nu ar fi completat-o.
         s.Check("D3-V1 (privat) taxarea inversă 21%: livrare → 13, achiziție → 12.1 SINGUR (26.1 e oglindă, vine din cod)",
@@ -274,16 +279,12 @@ static class VerificaD300Seed {
             && Randuri("NIM", SensTva.Achizitie).SequenceEqual(["29"])
             && Randuri("NED21", SensTva.Livrare).Length == 0
             && Randuri("NED21", SensTva.Achizitie).SequenceEqual(["24"]));
-        // Ce NU e mapat e mapat DELIBERAT: cele trei perechi din D3-D2 sunt singurele
-        // găuri admise printre tipurile seed-uite (gardianul din seeder aruncă altfel).
-        s.Check("D3-V1 (privat) perechile (TipTva × Sens) nemapate sunt EXACT cele declarate deliberat în seed, "
-            + "fiecare cu motivul ei (N9/Achiziție, NED21/Livrare, NIM/Livrare, IMP pe ambele sensuri — 83g: baza "
-            + "și taxa importului se declară din DVI — și tipurile de import pe livrare). Mulțimea se citește din "
-            + "LISTA seed-ului, nu se scrie în probă",
-            os.GetObjectsQuery<TipTva>().ToList()
+        s.Check("D3-V1 (privat) perechile seed-uite fără nicio mapare sunt EXACT combinațiile imposibile din lista seed-ului "
+            + "(NED21, IMP și tipurile de import pe livrare, 123 d)",
+            os.GetObjectsQuery<TipTva>().Where(t => t.DinSeed).ToList()
                 .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, SensTva: s)))
-                .Count(p => Randuri(p.Cod, p.SensTva).Length == 0)
-                == ContaSeeder.NemapateD300Privat.Count);
+                .Where(p => !mapari.Any(m => m.TipTva.Cod == p.Cod && m.SensTva == p.SensTva))
+                .Order().SequenceEqual(ContaSeeder.NemapateD300Privat.Select(n => (n.TipTva, n.SensTva)).Order()));
 
         // ══════ F4: gardul de ASCENDENT — dubla numărare pe verticala „din care" ══════
         //
@@ -323,6 +324,7 @@ static class VerificaD300Seed {
             using var osNum = s.Provider.CreateObjectSpace();
             return osNum.GetObjectsQuery<RefuzSeed>().Count(r => r.Tip == nameof(MapareD300));
         }
+        var totalMapari = MapariVii();
         bool ExistaFizic(Guid id) {
             using var osSql = s.Provider.CreateObjectSpace();
             return ((DevExpress.ExpressApp.EFCore.EFCoreObjectSpace)osSql).DbContext.Database
@@ -355,7 +357,7 @@ static class VerificaD300Seed {
                 && mesajGard.Contains("ascendent")
                 // …iar gardul TACE de îndată ce proba dispare: nu e un refuz permanent
                 // al mapării legitime pe rd. 12.1.
-                && mesajDupa == null && MapariVii() == 22);
+                && mesajDupa == null && MapariVii() == totalMapari);
         }
 
         // ══════ F5 (104i): ștergerea unei mapări e o decizie, nu o gaură ══════
@@ -396,16 +398,16 @@ static class VerificaD300Seed {
             }
             var dupaRestaurare = MapariVii();
             var mesajFinal = RuleazaGardianul();
-            Console.WriteLine($"     MĂSURAT (D3-V1/F5): mapări vii 22 → {dupaStergere} după ștergere "
+            Console.WriteLine($"     MĂSURAT (D3-V1/F5): mapări vii {totalMapari} → {dupaStergere} după ștergere "
                 + $"(fizic: {existaDupaDelete}, refuzuri: {refuzuri}) → {dupaReseed} după re-seed → "
                 + $"{dupaRestaurare} după restaurare; gardian după re-seed: „{mesajVerificare ?? "tace"}”.");
             s.Check("D3-V1 (F5, 104i) ștergerea unei mapări din XAF e FIZICĂ și lasă un `RefuzSeed`; re-seed-ul "
-                + "NU o recreează (21 mapări vii, nu 22 — decizia utilizatorului bate tabelul de profil), iar "
+                + "NU o recreează (o mapare vie mai puțin — decizia utilizatorului bate tabelul de profil), iar "
                 + "gardianul o citește ca „nemapată de utilizator”, nu ca gaură de profil. După ștergerea "
-                + "refuzului, re-seed-ul o readuce la 22",
+                + "refuzului, re-seed-ul o readuce",
                 !existaDupaDelete && refuzuri == 1
-                && dupaStergere == 21 && dupaReseed == 21 && mesajVerificare == null
-                && dupaRestaurare == 22 && mesajFinal == null);
+                && dupaStergere == totalMapari - 1 && dupaReseed == totalMapari - 1 && mesajVerificare == null
+                && dupaRestaurare == totalMapari && mesajFinal == null);
         }
 
     }

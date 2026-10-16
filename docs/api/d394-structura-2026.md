@@ -58,7 +58,7 @@ Elemente XML **adăugate** la 01.09.2025 (marcate `01.09.25` în anexa de valid�
 „Gaze naturale", v. A6.0.0/10.05.2022), lista CAEN de la I.7, regulile de
 unicitate și sumele de control.
 
-**Cota 9% tranzitorie** (locuințe, art. III din Legea 141/2025, până la 31.07.2026):
+**Cota 9% tranzitorie** (locuințe, art. III din Legea 141/2025, până la 30.09.2026 prin Legea 161/2026):
 formularul n-are un rând distinct — 9% e pur și simplu una din cotele enumerate,
 folosită ca atare pe `op1@cota`, `rezumat1@cota`, `rezumat2@cota`. Nu e nevoie de
 nicio distincție „9% vechi / 9% tranzitoriu" în D394.

@@ -650,12 +650,16 @@ public static class ContaSeeder {
                     $"Profilul bugetar are {mapari.Count} mapări D300, deși nu produce rânduri de registru fiscal.");
             return;
         }
-        foreach (var m in mapari)
-            if (m.Rand.Fel != FelRandD300.Operatiuni)
+        foreach (var m in mapari) {
+            if (m.Rand is { Fel: not FelRandD300.Operatiuni })
                 throw new InvalidOperationException(
                     $"Maparea D300 {m.TipTva.Cod}/{m.SensTva} țintește rd. {m.Rand.Cod}, de fel {m.Rand.Fel} — "
                     + "doar rândurile de operațiuni se alimentează din mapări (D3-D2).");
-        VerificaMapariFaraAscendent(mapari, randuri);
+            if (!MapareD300.AreRandSauMotiv(m) || !MapareD300.ExcludereaESingura(os, m))
+                throw new InvalidOperationException($"Maparea D300 {m.TipTva.Cod}/{m.SensTva}: "
+                    + (MapareD300.AreRandSauMotiv(m) ? MapareD300.MesajExcludere : MapareD300.MesajMotiv));
+        }
+        VerificaMapariFaraAscendent([.. mapari.Where(m => m.RandId != null)], randuri);
         ProfilPrivat.VerificaMapariD300(os, mapari);
     }
 
@@ -740,6 +744,9 @@ public static class ContaSeeder {
     public static IReadOnlyCollection<(string TipTva, SensTva SensTva, string Motiv)> NemapateD300Privat =>
         ProfilPrivat.NemapateD300;
 
+    public static IReadOnlyCollection<(string TipTva, SensTva SensTva, string Motiv)> ExcluseD300Privat =>
+        ProfilPrivat.TabelExcluseD300;
+
     // DUBLA NUMĂRARE pe verticala „din care" (fix F4 al review-ului advers) —
     // riscul 1 al designului, rămas cu un singur gard din două.
     //
@@ -771,7 +778,7 @@ public static class ContaSeeder {
             return sus;
         }
         foreach (var pereche in mapari.GroupBy(m => new { m.TipTvaId, m.SensTva })) {
-            var tinte = pereche.Select(m => m.RandId).Distinct().ToList();
+            var tinte = pereche.Select(m => m.RandId.Value).Distinct().ToList();
             if (tinte.Count < 2)
                 continue;
             foreach (var tinta in tinte) {
