@@ -9,9 +9,9 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Decizii | 123: 88 active, 35 amendate parțial, 0 depășite, 0 propuse |
 | Restanțe | 394: 287 deschise, 107 închise |
 | Pagini de stare curentă | 19 |
-| Contracte de felie (`Tip: contract`) | 4, deschise 0 |
+| Contracte de felie (`Tip: contract`) | 5, deschise 1 |
 | Cataloage vii (`Tip: catalog`) | 6 |
-| Fișiere Markdown în `docs/` | 338 |
+| Fișiere Markdown în `docs/` | 339 |
 | Citări de decizii din cod (`// N`) | 75 |
 
 ## Decizii în vigoare pe arie
@@ -94,7 +94,7 @@ Niciuna.
 
 **perioade** (2)
 
-- `F27-r4` închiderea de an ca operație distinctă (121 → 1174/117, soldurile de deschidere ale anului nou) (88)
+- `F27-r4` închiderea de an ca operație distinctă (121 → 1171 pe privat după aprobare, 121 → 117 pe bugetar…
 - `F27-r16` forma proiecției DocumenteCuRest: candidații de la 59 (uniunea tuturor documentelor operate) și form…
 
 **politici** (1)
@@ -121,7 +121,7 @@ Niciuna.
 
 ## Felii deschise
 
-Niciun contract deschis declarat cu `Tip: contract`.
+- [E3 — închiderea exercițiului: rezultatul lunar în 121, exercițiul ca stare, anul nou din soldurile de la 31.12](nucleu/e3-inchiderea-exercitiului-contract.md) — pași livrați 0 din 0; decizii: 004, 014, 015, 029, 035, 088, 104, 119
 
 ## Decizii invocate din cod
 
@@ -160,7 +160,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-15 |
 | [D9B — originea partidei](nucleu/scenarii/D9B.md) | 2026-10-14 |
 | [DECL — declarațiile D300 și D394 în XML](nucleu/scenarii/DECL.md) | 2026-10-16 |
-| [X — scenarii transversale](nucleu/scenarii/X.md) | 2026-10-14 |
+| [X — scenarii transversale](nucleu/scenarii/X.md) | 2026-10-16 |
 
 ## Ce nu poate ști
 

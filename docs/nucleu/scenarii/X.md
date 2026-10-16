@@ -1,7 +1,7 @@
 # X — scenarii transversale
 
 - Tip: catalog
-- Actualizat: 2026-10-14
+- Actualizat: 2026-10-16
 
 Definițiile lanțurilor transversale. Regulile comune, forma unui rând și
 starea tipurilor sunt în [README](README.md).
@@ -24,7 +24,7 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 | SC-X-09 | ASM din două loturi → DSC din produsul rezultat → RLF pe unul din componente | circuit numeric și inversări în [ASM.md](ASM.md); reevaluarea cu nepropagare rămâne TR-D9 (design §11) |
 | SC-X-10 | închidere de lună cu documente operate → document întârziat în luna închisă → corecție | perioada închisă ca graniță absolută; storno legat + document nou |
 | SC-X-11 | `Deschidere` (contabil bloc + stoc pe lot + terți pe partidă) → PLT pe partida de deschidere → FCL nouă | partida fără document se stinge prin aceeași cheie ca una cu document |
-| SC-X-12 | închidere de an: 121 → 1174, `Deschidere` a anului nou = `Sold` la 31.12 | F27-r4; snapshot-ul de referință egal cu suma postărilor |
+| SC-X-12 | închiderile lunare 6/7 → 121 pe tot anul → decembrie închis → exercițiul închis → balanța lui ianuarie din anul nou | E3-D8: `SoldInceputAn` = soldul final la 31.12 pe fiecare cheie, 6 și 7 la zero, fără nicio tranzacție `Deschidere`; snapshot-ul de referință egal cu suma postărilor; pe bugetar 121 și 489 în 117 |
 | SC-X-13 | DVI legată la FCT → ajustarea costului pe lot cu taxa vamală → BCS din lot | 86-r1: `Atribuit` pe lot, costul ieșirii după ajustare |
 | SC-X-14 | Faptele fiscale din fiecare scenă, înainte de curățenie: operare → storno/corecție | unicitate Bază/Taxă independent de Carte, absență explicită pe liniile fără TVA; FCT/FCL 100/21, RDC −100/−21, RLF −20/−4,20, DVI 100/21; matricea completă în [DVI-B7](../tr-d7b-dvi-baza-fiscala-contract.md#dvi-b7--probe-obligatorii-înainte-de-activare); implementat în `UnicitateFiscala` și scenele catalogului |
 

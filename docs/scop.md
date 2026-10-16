@@ -1,6 +1,6 @@
 # Scopul Atlas.Conta
 
-**Actualizat: 2026-10-15.**
+**Actualizat: 2026-10-16.**
 
 Țintele și non-țintele de mai jos au fost propuse de agent și acceptate de
 owner la 2026-10-14 (kitul de guvernanță, §3.9.9). De acum, o schimbare de
@@ -84,18 +84,21 @@ descrierea a ce există e în [starea curentă](stare-curenta/README.md).
 
 ## Etapa curentă
 
-**E2 — Depunerea fiscală.** Deschisă 2026-10-15 de owner, aliniată cu
-contractul [E2 — depunerea fiscală](api/e2-depunere-xml-contract.md):
-D300 și D394 în XML, validate de validatorii oficiali, și SAF-T pe luna cu
-corecție valorică pe lot.
-Gata când: fiecare rând `E2` din catalog e `livrată`, adică fișierele trec
-XSD-ul și DUKIntegrator pe lunile de probă ale catalogului `DECL`, iar
-contractul e închis cu review-ul advers (pasul 5).
-Stare: rândurile E2 sunt `livrată` din 2026-10-15 (pasul 5, review advers
-reparat; regula în decizia 122, activă); etapa e mersă în main la 2026-10-15
-(PR #50), iar etapa următoare o fixează owner-ul.
-Funcționalitățile: rândurile `E2` din [catalog](functionalitati.md).
+**E3 — Închiderea exercițiului.** Deschisă 2026-10-16 de owner, aliniată
+cu contractul [E3 — închiderea exercițiului](nucleu/e3-inchiderea-exercitiului-contract.md):
+conturile de venituri și cheltuieli se închid lunar în 121 printr-un
+document generat, exercițiul închis devine stare a motorului, bugetarul își
+reportează rezultatul și închide execuția bugetară, iar balanța are graniță
+de an.
+Gata când: fiecare rând `E3` din catalog e `livrată`, adică scenariile
+etapei și SC-X-12 sunt verificate pe ambele profiluri, iar contractul e
+închis cu review-ul advers (pasul 5).
+Stare: pasul 0 (contractul), 2026-10-16.
+Funcționalitățile: rândurile `E3` din [catalog](functionalitati.md).
 
+E2 (depunerea fiscală, contractul
+[E2](api/e2-depunere-xml-contract.md), decizia 122) s-a închis la
+2026-10-15 și e mersă în main (PR #50); rândurile ei sunt `livrată`.
 E1 (corecția valorii lotului, contractul
 [TR-D9b-CV](nucleu/tr-d9b-corectii-valorice-contract.md)) s-a închis la
 2026-10-15, la merge-ul pasului 5; rândurile ei sunt `livrată`.

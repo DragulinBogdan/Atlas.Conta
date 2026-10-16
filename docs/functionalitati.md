@@ -67,7 +67,11 @@ catalogului poartă data adoptării (linia zero), nu data livrării. Rândurile
 | F-IMO-07 | Vând o imobilizare cu ieșirea legată de factura de vânzare și cu deductibilitatea valorii rămase | T1, T2 | imobilizari | | deschisă | — |
 | F-IMO-08 | Transfer o imobilizare între locuri, cu rândul transferului în registru | T1 | imobilizari | | deschisă | — |
 | F-PER-01 | Închid luna cu constatările ei și soldurile fixate; un document întârziat intră în luna deschisă | T1 | perioade | | livrată 2026-10-14 | SC-X-21, SC-BCS-04, SC-CIT-12…14 |
-| F-PER-02 | Închid anul: rezultatul trece în 1174, iar anul nou se deschide din soldurile de la 31.12 | T1 | perioade | | deschisă | SC-X-12 |
+| F-PER-02 | Închid anul: soldurile de la 31.12 devin soldurile inițiale ale anului nou; pe privat 121 rămâne până la repartizare, care se face prin notă în anul următor | T1 | perioade | E3 | deschisă | SC-X-12 |
+| F-PER-03 | Închid lunar conturile de venituri și cheltuieli în 121 printr-un document generat; luna nu se închide cât 6 sau 7 au sold | T1 | perioade | E3 | deschisă | — |
+| F-PER-04 | Închid și redeschid exercițiul, cu motiv; cât e închis, decembrie nu se redeschide, iar corecția valorică refuză consumurile anului închis | T1 | perioade | E3 | deschisă | — |
+| F-PER-05 | Pe bugetar, închiderea anului reportează 121 și 489 în 117 și închide execuția bugetară, cu dimensiunile bugetare păstrate | T1 | perioade | E3 | deschisă | — |
+| F-PER-06 | Citesc balanța cu soldul inițial al anului și sumele precedente de la 1 ianuarie | T1 | raportare | E3 | deschisă | — |
 | F-ITV-01 | Închid lunar TVA-ul: generez, regenerez și inversez nota de regularizare | T1, T2 | tva | | livrată 2026-10-14 | SC-ITV-01…11 |
 | F-TVA-01 | Export D300 și D394 în XML, pentru depunere, lunar sau trimestrial, cu datele declarantului completate o singură dată, iar confirmarea depunerii păstrează fișierul depus | T2 | tva | E2 | livrată 2026-10-15 | SC-DECL-01…15 |
 | F-TVA-02 | Calculez prorata și ajustările de TVA și completez secțiunile informative din D394 | T2 | tva | | deschisă | — |
