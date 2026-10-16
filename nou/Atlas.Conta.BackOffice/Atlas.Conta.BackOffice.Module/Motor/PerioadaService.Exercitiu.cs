@@ -56,8 +56,8 @@ public static partial class PerioadaService {
         var lista = string.Join(", ", simboluri.Take(10)) + (simboluri.Count > 10 ? $" și încă {simboluri.Count - 10}" : "");
         constatari.Add(new ConstatareInchidere(Cheie(fel), fel.ToString(),
             politica?.Severitate ?? SeveritateConstatare.Avertisment,
-            $"Conturile din politica închiderii au sold la 31.12.{an} ({lista}) — redeschideți decembrie, generați "
-                + "și operați închiderea lui, cu rândurile anuale."
+            $"Conturile din politica închiderii au sold la 31.12.{an} ({lista}) — redeschideți decembrie, stornați "
+                + "închiderea lui operată, apoi generați-o și operați-o din nou, cu rândurile anuale."
                 + (politica == null ? " (fără politică — avertisment implicit)" : ""),
             null, Eticheta(an, 12)));
     }

@@ -91,7 +91,7 @@ public class PerioadeController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult Inchide(int an, int luna,
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] InchidePerioadaRequestDto cerere) =>
-        Comanda(an, luna, os => PerioadeApply.Inchide(os, an, luna, cerere, UserId(), securitate?.UserName));
+        Comanda(an, luna, os => PerioadeApply.Inchide(os, an, luna, cerere, UserId(), securitate?.UserName), verdict: true);
 
     [HttpPost("{an:int}/{luna:int}/redeschide")]
     [ProducesResponseType(typeof(InchiderePerioadaRezultatDto), StatusCodes.Status200OK)]
@@ -129,7 +129,7 @@ public class PerioadeController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
     public IActionResult InchideExercitiul(int an,
             [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] InchidePerioadaRequestDto cerere) =>
-        Comanda(an, 12, os => PerioadeApply.InchideExercitiul(os, an, cerere, UserId(), securitate?.UserName));
+        Comanda(an, 12, os => PerioadeApply.InchideExercitiul(os, an, cerere, UserId(), securitate?.UserName), verdict: true);
 
     [HttpPost("{an:int}/exercitiu/redeschide")]
     [ProducesResponseType(typeof(InchiderePerioadaRezultatDto), StatusCodes.Status200OK)]
@@ -174,11 +174,12 @@ public class PerioadeController : ContaApiController {
         return PostariCitibile();
     }
 
-    IActionResult Comanda(int an, int luna, Func<IObjectSpace, InchiderePerioadaRezultatDto> comanda) {
+    // Închiderea refuzată întoarce constatările verificării, deci cere drepturile ei de citire (80e).
+    IActionResult Comanda(int an, int luna, Func<IObjectSpace, InchiderePerioadaRezultatDto> comanda, bool verdict = false) {
         var erori = Perioada(an, luna);
         if (erori.Count > 0)
             return BadRequest(EroriDto.Din(erori));
-        var refuz = Subiect(an, luna, OperatieAcces.Modificare);
+        var refuz = Subiect(an, luna, OperatieAcces.Modificare) ?? (verdict ? CititeIntegral() : null);
         if (refuz != null)
             return refuz;
         return Domeniu(() => {

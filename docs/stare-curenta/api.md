@@ -117,7 +117,9 @@ dreptului cerut și 422 pentru refuzul lanțului. (F27-D1, F27-D2, 80a)
 - `POST api/perioade/{an}/{luna}/inchide` primește cheile acceptate în corp —
   corpul e opțional, fiindcă a închide fără constatări e cazul normal — și
   răspunde cu acceptările scrise; un avertisment neacceptat sau orice blocantă
-  iese 422 cu lista întreagă, un rând pe linie. (F27-D2)
+  iese 422 cu lista întreagă, un rând pe linie. Fiindcă refuzul arată
+  constatările, comanda cere și drepturile de citire ale verificării. (F27-D2,
+  80e)
 - `POST api/perioade/{an}/{luna}/redeschide` primește motivul. Motivul absent
   este refuz de domeniu, nu de cerere. (F27-D1)
 - `POST api/perioade/reconstruieste` recalculează integral soldurile
@@ -140,7 +142,8 @@ dreptului cerut și 422 pentru refuzul lanțului. (F27-D1, F27-D2, 80a)
 pe draft, `GET previzualizare?an=&luna=`, `POST genereaza`,
 `POST {id}/regenereaza`, `DELETE {id}` și comenzile documentului. Generarea
 cere crearea pe tip, regenerarea și dreptul de scriere pe instanță; citirea
-și previzualizarea cer citirea completă pe `Postare`. Generarea care nu
+și previzualizarea cer citirea politicii închiderii, a conturilor și citirea
+completă pe `Postare`. Generarea care nu
 produce document întoarce 200 cu motivul. (E3-D3, F21-D3, F22-D5)
 
 ## Corecția
@@ -398,5 +401,5 @@ diferiți. (43b, 43d, 77k)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (24; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 5, 6, 7, 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 60, 70, 77, 80, 81, 87 (amendată de 97), 89, 98, 99, 101 (amendată de 102), 104 (amendată de 106), 106, 108 (amendată de 110), 122 (amendată de 123).
+Deciziile care numesc pagina în `Arii:` (25; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 5, 6, 7, 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 60, 70, 77, 80, 81, 87 (amendată de 97), 89, 98, 99, 101 (amendată de 102), 104 (amendată de 106), 106, 108 (amendată de 110), 122 (amendată de 123), 124 (propusă).
 <!-- /gen:decizii -->
