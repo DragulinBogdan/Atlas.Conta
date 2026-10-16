@@ -4,21 +4,20 @@
 - Data: 2026-10-12
 - Trigger: owner, „pornește primul pas”, după acceptarea revenirii la privat și a notei de reluare
 - Decizii: 090, 092, 102, 110, 111, 114, 115, 116, 117, 118
-- Stare: deschis
+- Stare: închis 2026-10-13 (pachetul originii partidei, pașii 1–5, și redenumirile 6–8); TR-D9b continuă prin contracte distincte
 
-**Starea execuției:** contract redactat, cu inventarul de sursă pe
-`96ccc5acbb4048d7ba41f60924863d631e83daca`. Pasul 1 documentar este făcut;
-pasul 2 este implementat, cu verificarea în
-[raportul redenumirilor](tr-d9b-pas2-redenumiri.md). Pasul 3 are catalogul A
-verificat și referința măsurată până la 5.001.179 postări; condițiile și
-limita montajului sintetic sunt în [raport](tr-d9b-pas3-referinta.md).
-Pasul 4 are persistența, scriitorul și cititorii implementați; verificarea
-și limitele sunt în [raportul originii](tr-d9b-pas4-origini.md). Direcția privat-first și
-originea scrisă sunt aprobate; forma fizică și pragurile de mai jos sunt
-propunerea concretă a acestui contract, fără a atribui owner-ului o aprobare
-anterioară a detaliilor. Comparația A/B și review-ul independent Codex sunt
-urmărite în [pasul 5](tr-d9b-pas5-comparatie.md); reverificarea owner/Claude
-și commit-ul rămân separate.
+**Starea execuției:** pachetul e închis și în `main`. Pașii 1–5 s-au
+încheiat cu review-ul advers Codex și reverificarea Claude, consemnate în
+[pasul 5](tr-d9b-pas5-comparatie.md), și au fost comiși la cererea
+owner-ului la 2026-10-13 (`2abff313`). Redenumirile 6–8 sunt comise în
+aceeași zi (`e473c9ed`, `eefaa6fc`, `d2e91c72`), verificate prin integrala
+ambelor profiluri și HTTP, fără review advers propriu. Pachetul următor,
+[TR-D9b-CV](tr-d9b-corectii-valorice-contract.md), are contract separat,
+închis la 2026-10-15. Inventarul de sursă a fost făcut pe
+`96ccc5acbb4048d7ba41f60924863d631e83daca`; rapoartele pașilor:
+[redenumiri](tr-d9b-pas2-redenumiri.md),
+[referința A](tr-d9b-pas3-referinta.md),
+[originea](tr-d9b-pas4-origini.md).
 
 Primul pachet livrează **originea explicită a partidei**, citită fără
 redescoperirea documentului deschizător în postările cubului. Soldul rămâne

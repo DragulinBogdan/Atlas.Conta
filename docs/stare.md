@@ -9,7 +9,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Decizii | 123: 88 active, 35 amendate parțial, 0 depășite, 0 propuse |
 | Restanțe | 394: 287 deschise, 107 închise |
 | Pagini de stare curentă | 19 |
-| Contracte de felie (`Tip: contract`) | 4, deschise 1 |
+| Contracte de felie (`Tip: contract`) | 4, deschise 0 |
 | Cataloage vii (`Tip: catalog`) | 6 |
 | Fișiere Markdown în `docs/` | 338 |
 | Citări de decizii din cod (`// N`) | 75 |
@@ -46,35 +46,30 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 42 |
-| după PoC | 209 |
+| activă | 34 |
+| după PoC | 215 |
 | migrare | 24 |
 | depășită de 091 | 2 |
-| docs | 6 |
+| docs | 8 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (42, prag 45)
+### Lista `activă` (34, prag 45)
 
-**motor** (10)
+**motor** (6)
 
-- `51e` PoliticaEvaluare (CMP) — sub 90c devine parametrul „unitatea de evaluare” al unității nominalizate
 - `76-r1` netarea plafonului e per (repartitor × LATURĂ), nu per CONT (55 chei / 36 note amestecă conturi de c…
 - `TR-r7` sink-urile bugetare Gratuit/Custodie și injectivitatea SAF-T rămân deschise…
 - `TR-r8` rulajul brut per partidă nu e sumă sub tranzacția de transfer…
 - `TR-r10` deschiderea generică fără document, cu loturi și partide…
 - `TR-r11` Numar, DataScadenta, Autogenerat, DocumentSursa rămân atribute ale documentului scrise la operare, s…
-- `N-r6` amendamente de literă ale contractului TR-D6a consemnate în cod: cazurile Decizie poartă Linie…
 - `N-r7` ordinea FIFO a nucleului e Guid.CompareTo (componentă cu componentă) prin Fifo.Intai…
-- `B-r6` Valuta/Curs sunt câmpuri de frunză pe FacturaIntrare fără interfață declarată: operandul le lasă nul…
-- `B-r8` gestiunile virtuale (GestiuniVirtuale.Furnizor/Client/Consum) sunt constante deterministe fără rând…
 
-**stoc** (13)
+**stoc** (12)
 
 - `75-r4` PretEvaluare 6 zecimale pe cantități mari vs invariantul 46d
 - `86-r1` taxele vamale și accizele în costul de achiziție (ajustare de cost pe lot)
 - `86-r2` anularea/stornarea unei FCT legate la o DVI operată nu se refuză
 - `86-r11` DVI ca document stins: restul polimorf în ImperechereService.Total + ramura în DocumenteCuRest
-- `S-r3` gestiunile virtuale n-au FK pe Postare (id-uri fără rând de nomenclator)…
 - `S-r7` un lot născut de o linie „în roșu” (valoare negativă, cantitate pozitivă) se evaluează negativ tăcut…
 - `S-r8` dry-run-ul nu fixează prețul și data lotului născut de document, deci contractul lui diferă de cel r…
 - `T-r2` reziduul valoric lăsat de RLF pe lotul golit (valoare fiscală ≠ raportul lotului) contrazice 090 (j)…
@@ -84,13 +79,12 @@ Niciuna.
 - `NG-r2` Contul lotului vine din tipul curent de material al produsului…
 - `CV-r2` Închiderea exercițiului ca operație explicită (obligatorie pe bugetar, utilă pe privat)…
 
-**partide** (5)
+**partide** (4)
 
 - `76-r2` caStins se scade din AMBELE sensuri — inatacabil azi, **devine real când un tip cu partener pe latur…
 - `76-r3` perf AsignatFataDe (entități polimorfe, chemat de 2 × nr. contrapartide)…
 - `F28-r1` simplificarea CandidatiPereche<T, TOpus> și a uniunii per tip din ImperecheriProiectii (jumătatea „t…
 - `T-r5` DVI deschide partidă pe contrapartida cu RolTert (401 probat…
-- `107-r4` valuta: partidele inițiale în valută cu curs propriu (azi în lei, plafonate la rest la stingere) (10…
 
 **imobilizari** (3)
 
@@ -116,12 +110,10 @@ Niciuna.
 
 - `S-r4` snapshot-ul EF declară cheia ID și FK_Postare_Tranzactie_TranzactieId pe părinte, baza are cheia (Sp…
 
-**verificare** (4)
+**verificare** (2)
 
 - `091-r2` recensământul pe clona Flax per tip rămas (NTC, ITV, RDC, RLF, ASM, LDI, NIR), o dată, înaintea scen…
 - `091-r6` lanțurile transversale fără realizare care să probeze definiția din X.md: SC-X-01 (refuz pe NIR cone…
-- `106-r5` StateMachine și ViewVariants scoase din Startup.cs și RequiredModuleTypes…
-- `118-r2` Unealta docskit (repo propriu, dotnet global tool): gen, check întâi, build, metrics după…
 
 **import** (1)
 
@@ -129,7 +121,7 @@ Niciuna.
 
 ## Felii deschise
 
-- [TR-D9b — unitățile de sold: contract și primul pachet de execuție](nucleu/tr-d9b-contract.md) — pași livrați 0 din 0; decizii: 090, 092, 102, 110, 111, 114, 115, 116, 117, 118
+Niciun contract deschis declarat cu `Tip: contract`.
 
 ## Decizii invocate din cod
 
