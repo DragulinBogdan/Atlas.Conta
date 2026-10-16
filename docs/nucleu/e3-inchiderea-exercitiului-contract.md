@@ -12,7 +12,9 @@ Owner-ul a tranșat la 2026-10-16, pe întrebările pasului 0: pe privat 121
 trece în anul nou, iar transferul în 1171 se face după aprobarea
 situațiilor (E3-D2); 6/7 se închid lunar, prin document generat (E3-D3);
 lanțul perioadelor rămâne strict (E3-D6); bugetarul intră cu execuția
-bugetară (E3-D9).
+bugetară (E3-D9). Tot în aceeași zi, rândurile anuale se datează 31.12
+(E3-D7), iar execuția bugetară pornește cu 520.02 / 521.02 → 521.03, cu
+modelul deschis pentru rândurile care se adaugă ulterior (E3-D9).
 
 Azi nimic nu închide conturile de venituri și cheltuieli: 6 și 7 cumulează
 de la începutul bazei, iar 121 nu primește rezultatul decât prin notă
@@ -114,7 +116,9 @@ Un rând are:
   capătul exercițiului, E3-D7);
 - ordinea: rândurile se aplică în ordine, pe soldul curent, ca 121 → 117
   să vadă rezultatul lunii închise înaintea lui;
-- coordonatele păstrate pe destinație (flag-uri pe coordonate). Gardianul
+- coordonatele păstrate pe destinație (flag-uri pe coordonate, inclusiv
+  componentele `Analiza`: `CodFunctional`, `CodEconomic`,
+  `SursaFinantare`). Gardianul
   refuză un rând care nu păstrează coordonatele obligatorii ale
   destinației (decizia 15).
 
@@ -125,7 +129,7 @@ Seed-ul:
 | Privat | 6 → 121, 7 → 121 | Lunar |
 | Bugetar | 6 → 121, 7 → 121 | Lunar |
 | Bugetar | 121 → 117, 489 → 117 | Anual |
-| Bugetar | execuția bugetară (E3-D9) | Anual |
+| Bugetar | 520.02 → 521.03, 521.02 → 521.03 (E3-D9) | Anual |
 
 Politica alege conturile, nu comportamentul (4): mecanismul este același
 pe ambele profiluri.
@@ -164,12 +168,9 @@ un caz real.
   Redeschiderea exercițiului cere un motiv scris și se poate face numai pe
   ultimul exercițiu închis.
 - Rândurile `Anual` intră în închiderea lunară a lui decembrie, după
-  rândurile `Lunar`. Data lor e 31.12, deci nu se postează nimic în anul
-  nou, iar redeschiderea exercițiului nu are nimic de stornat.
-  **De confirmat de owner:** pe bugetar, data lui 121 → 117 (31.12 sau
-  01.01, pe care o sugerează numele notei legacy). Dacă răspunsul e 01.01,
-  rândurile anuale devin document propriu, generat de închiderea
-  exercițiului, iar redeschiderea lui le stornează.
+  rândurile `Lunar`. Data lor e 31.12 (owner, 2026-10-16), deci nu se
+  postează nimic în anul nou, iar redeschiderea exercițiului nu are nimic
+  de stornat. Numele notei legacy („deschidere an”) nu se preia.
 
 ### E3-D8 — deschiderea anului nu postează; balanța are graniță de an
 
@@ -191,13 +192,20 @@ un caz real.
 ### E3-D9 — execuția bugetară intră în E3 (owner, 2026-10-16)
 
 Închiderile execuției bugetare sunt rânduri `Anual` în seed-ul bugetar,
-pe același mecanism; nu se adaugă cod specific bugetarului. **De
-confirmat de owner înaintea pasului 2:** lista exactă a rândurilor (de
-exemplu 520.02 / 521.02 → 521.03, rezultatul execuției anului curent în
-cel al anilor precedenți; închiderea finanțării 770 se face deja prin
-7 → 121) și coordonatele păstrate pe fiecare (cod funcțional, cod
-economic, sursă). Procedurile legacy `spNotaInchidere*` nu sunt în
-`db/export/proc/`. Dacă owner-ul le are, ele sunt evidența.
+pe același mecanism; nu se adaugă cod specific bugetarului. Seed-ul de
+pornire (owner, 2026-10-16):
+
+| Sursă → destinație | Coordonate păstrate |
+|---|---|
+| 520.02 → 521.03 | cod funcțional, cod economic, sursa de finanțare |
+| 521.02 → 521.03 | cod funcțional, cod economic, sursa de finanțare |
+
+Lista se completează după informațiile pe care le adună owner-ul. Un rând
+nou e numai seed: niciun rând adăugat nu are voie să ceară cod. Proba
+pasului 2 adaugă în scenariu un rând `Anual` care nu e în seed și verifică
+faptul că se aplică fără schimbare de cod. Închiderea finanțării (770) se
+face deja prin 7 → 121. Planul bugetar nu are 520.03, de aceea și
+520.02 merge în 521.03, cum a dat owner-ul.
 
 ### E3-D10 — `CV_AN_INCHIS` pe exercițiul închis (CV-r2)
 
@@ -217,7 +225,7 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
 
 | Pas | Conținut | Probă | Stare |
 |---|---|---|---|
-| 0 | contractul, scopul E3, rândurile din catalog, textele „1174” corectate; owner pe E3-D7 (data bugetară) și E3-D9 (rândurile) | docskit verde | în lucru |
+| 0 | contractul, scopul E3, rândurile din catalog, textele „1174” corectate; owner pe E3-D7 (31.12) și E3-D9 (seed-ul de pornire) | docskit verde | închis 2026-10-16 |
 | 1 | `PoliticaInchidereConturi` cu seed-ul; `InchidereRezultat` cu generare, previzualizare, regenerare; `REZ-NEINCHIS`; migrația | familia de scenarii `EX`, definită în acest pas; ModelCheck pe ambele profiluri; generare fără linii pe o lună închisă de 1C | — |
 | 2 | exercițiul pe decembrie: comenzile, constatările, istoricul; rândurile `Anual`; `CV_AN_INCHIS` pe exercițiu | familia `EX`; SC-X-12; teste de nucleu; ModelCheck pe ambele profiluri | — |
 | 3 | balanța pe an (E3-D8): proiecția, DTO-ul, openapi, coloana în React | SC-CIT pe doi ani; drift openapi; SAF-T neschimbat pe lunile de probă | — |
@@ -232,8 +240,8 @@ Lucrul se oprește și revine la owner când:
    politică și ar cere un simbol de cont sau o ramură pe profil în cod;
 2. plierea coordonatelor pe destinație (E3-D3) intră în conflict cu un
    cititor existent (D300, D394, SAF-T, partide);
-3. rândurile execuției bugetare (E3-D9) nu sunt confirmate la începutul
-   pasului 2;
+3. un rând de execuție bugetară adăugat de owner (E3-D9) nu se poate
+   exprima ca sursă → destinație cu coordonate păstrate;
 4. granița de an din balanță (E3-D8) schimbă o cifră deja probată în afara
    coloanelor `Initial` (soldurile, SAF-T, D300);
 5. un pas consumă de două ori estimarea lui fără probă verde.
