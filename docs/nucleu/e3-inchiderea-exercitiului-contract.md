@@ -230,7 +230,7 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
 | 0 | contractul, scopul E3, rândurile din catalog, textele „1174” corectate; owner pe E3-D7 (31.12) și E3-D9 (seed-ul de pornire) | docskit verde | închis 2026-10-16 |
 | 1 | `PoliticaInchidereConturi` cu seed-ul; `InchidereRezultat` cu generare, previzualizare, regenerare; `REZ-NEINCHIS`; migrația | familia de scenarii `EX`, definită în acest pas; ModelCheck pe ambele profiluri; pe o lună închisă de 1C, netul pe cont al liniilor = divergența explicată | închis 2026-10-16 (PR #54) |
 | 2 | exercițiul pe decembrie: comenzile, constatările, istoricul; rândurile `Anual`; `CV_AN_INCHIS` pe exercițiu | familia `EX`; SC-X-12; teste de nucleu; ModelCheck pe ambele profiluri | implementat 2026-10-16 |
-| 3 | balanța pe an (E3-D8): proiecția, DTO-ul, openapi, coloana în React | SC-CIT pe doi ani; drift openapi; SAF-T neschimbat pe lunile de probă | — |
+| 3 | balanța pe an (E3-D8): proiecția, DTO-ul, openapi, coloana în React | SC-CIT pe doi ani; drift openapi; SAF-T neschimbat pe lunile de probă | implementat 2026-10-16 |
 | 4 | XAF: comenzile pe perioadă și exercițiu, lista închiderilor; ușile HTTP cu refuzurile (80) | `refuzuri.ps1` pe host viu; browser | — |
 | 5 | regresia integrală, review advers, decizia, închiderea | integrala pe ambele profiluri; nucleu; HTTP; docskit | — |
 
@@ -285,7 +285,24 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
   520.01 → 521.01.00. Rândul privat e numai al scenei: E3-D2 rămâne, seed-ul
   privat n-are rânduri anuale.
 - Ușile HTTP, comenzile XAF și coloanele noi din DTO-ul perioadei sunt ale
-  pasului 4; openapi nu se schimbă în pasul 2.
+  pasului 4. Enum-ul `FelConstatareInchidere` e expus în openapi, iar
+  regenerarea lui a intrat abia în pasul 3, odată cu balanța.
+
+## Tranșări la pasul 3 (2026-10-16)
+
+- `SoldInceputAn` se netează pe cheia rândului (cont, respectiv cont ×
+  repartitor). Pe planul de conturi se netează la nod, ca soldul inițial și
+  cel final de pe același ecran; sumele precedente rămân suma frunzelor.
+- Cu startul în afara lui 1 ianuarie, balanța citește a doua oară cumulul,
+  până la 31.12 al anului precedent (din snapshot-ul lui decembrie, dacă e
+  închis). Rulajele precedente sunt diferența brută dintre cele două
+  cumuluri; prima citire își păstrează referința de lângă start.
+- Rândul cu toate cifrele zero rămâne cum era: citirea pe snapshot îl omite,
+  cea pe postări îl arată (F27-D3).
+- Rezumatul S3 al SAF-T alegea conturile de stoc după sumele brute
+  dinaintea startului. Acum le alege după soldul inițial net sau rulaj, ca
+  filtrul să nu depindă de definiția coloanei `Initial`. SAF-T citește
+  numai soldurile nete, iar suita SAFT rămâne verde pe ambele profiluri.
 
 ## Regula de oprire
 

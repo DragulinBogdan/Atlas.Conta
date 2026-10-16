@@ -144,7 +144,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | [partide](stare-curenta/partide.md) | 2026-10-15 |
 | [perioade](stare-curenta/perioade.md) | 2026-10-16 |
 | [politici](stare-curenta/politici.md) | 2026-10-16 |
-| [raportare](stare-curenta/raportare.md) | 2026-10-15 |
+| [raportare](stare-curenta/raportare.md) | 2026-10-16 |
 | [saft](stare-curenta/saft.md) | 2026-10-15 |
 | [stoc](stare-curenta/stoc.md) | 2026-10-16 |
 | [termeni](stare-curenta/termeni.md) | 2026-10-15 |

@@ -451,7 +451,7 @@ public static partial class SaftProiectii {
             });
             var raportabile = linii.Where(l => Raportabila(l.Pozitie.Cont)).ToList();
             // S3-RV1: și contul raportabil cu sold sau rulaj contabil fără nicio poziție fizică.
-            var conturiGl = balanta.Where(b => b.InitialDebit != 0m || b.InitialCredit != 0m
+            var conturiGl = balanta.Where(b => b.SoldInitialDebit != 0m || b.SoldInitialCredit != 0m
                     || b.RulajDebit != 0m || b.RulajCredit != 0m)
                 .Where(b => categorii.Rezolva(b.ContId) is TipStoc c && CategoriiStoc.Rol(c) == RolCategorieStoc.Raportabila)
                 .Select(b => b.ContId);

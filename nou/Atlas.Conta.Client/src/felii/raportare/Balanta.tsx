@@ -130,6 +130,10 @@ export function Balanta() {
           cellRender={celulaRepartitor}
         />
 
+        <Column caption="Sold inițial an">
+          <Column dataField={camp('SoldInceputAnDebit')} caption="Debitor" {...BANI} />
+          <Column dataField={camp('SoldInceputAnCredit')} caption="Creditor" {...BANI} />
+        </Column>
         <Column caption="Sold inițial">
           <Column dataField={camp('SoldInitialDebit')} caption="Debitor" {...BANI} />
           <Column dataField={camp('SoldInitialCredit')} caption="Creditor" {...BANI} />
@@ -142,11 +146,9 @@ export function Balanta() {
           <Column dataField={camp('SoldFinalDebit')} caption="Debitor" {...BANI} />
           <Column dataField={camp('SoldFinalCredit')} caption="Creditor" {...BANI} />
         </Column>
-        {/* Sumele brute cumulate până la `dataStart`, ascunse implicit: intră în
-            balanța de verificare doar la nevoie, dar SUNT aditive — spre
-            deosebire de solduri — deci pot purta totaluri. */}
-        <Column dataField={camp('InitialDebit')} caption="Cumulat debit (până la start)" visible={false} {...BANI} />
-        <Column dataField={camp('InitialCredit')} caption="Cumulat credit (până la start)" visible={false} {...BANI} />
+        {/* E3-D8: soldul inițial al anului plus rulajele de la 1 ianuarie până la start. */}
+        <Column dataField={camp('InitialDebit')} caption="Sume precedente debit" visible={false} {...BANI} />
+        <Column dataField={camp('InitialCredit')} caption="Sume precedente credit" visible={false} {...BANI} />
 
         {/* ═══ R-D5, impus, nu doar afirmat ═══
             Sumele — de grup ȘI de total — stau EXCLUSIV pe coloanele de rulaj și

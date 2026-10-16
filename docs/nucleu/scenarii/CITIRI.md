@@ -347,6 +347,7 @@ din invarianți.
 | ID | Scenariu | Așteptare |
 |---|---|---|
 | SC-CIT-26 | NTC: inițial D 100/C 300 pe contul A; februarie D 50/C 90; postare după perioadă 999 | inițial C 200, final C 240; la partenerii diferiți D 100 și C 340; contul cu numai inițial 70 rămâne; contul cu D/C 50 rămâne cu sold zero |
+| SC-CIT-114 | E3-D8, fără închideri: anul 2022 al scenei, apoi în 2023 contul A D25 (ianuarie), grupul D8 (ianuarie), A D5 (martie). Balanța lui martie 2023, sintetică și analitică | `SoldInceputAn` = soldul final la 31.12.2022 pe fiecare cheie; sumele precedente = `SoldInceputAn` + rulajele ianuarie–februarie; soldul inițial și final rămân nete; pe 1 ianuarie sumele precedente = `SoldInceputAn`; egalitățile balanței pe ambele perechi; contul A: D759 / D784 / final D789; pe plan, nodul netează `SoldInceputAn` și adună sumele precedente |
 | SC-CIT-27 | Același cont: inițial fără partener 200, rulaj fără partener 30, cu partener 11 | fișa fără partener 230, cu partener 11, sintetic 241; paginile de 2 reproduc întreaga balanță în ambele moduri; filtrele se aplică înaintea agregării |
 | SC-CIT-28 | Arbore: copil D 12, nepot D 4, alt copil C 30, mișcare proprie grupă D 1 | grupa D 17/C 30, net C 13; copil intermediar D 16; rădăcinile reproduc balanța plată; limitarea adâncimii nu schimbă sumele; un ciclu nu blochează citirea |
 | SC-CIT-29 | Eticheta unui cont cu debit 17 ascunsă controlat, cu un copil debitor 5 | valoarea 17 rămâne în balanță și fișă cu etichetă goală; copilul devine rădăcină; tranzacția probei restaurează nomenclatorul |
