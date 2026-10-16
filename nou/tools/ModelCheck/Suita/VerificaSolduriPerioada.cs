@@ -52,6 +52,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // A.0/A.2). Scena stă în 2031–2032, în afara tuturor celorlalte scene ale suitei.
 static class VerificaSolduriPerioada {
     public static void Ruleaza(Suita s, bool privat) {
+        using var faraRez = s.FaraRezNeinchis();
         const string Marcaj = "E2E-SOL";
         const int An = 2031;
         var eticheta = privat ? "privat" : "bugetar";

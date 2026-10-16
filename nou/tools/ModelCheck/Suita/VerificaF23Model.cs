@@ -165,8 +165,8 @@ static class VerificaF23Model {
             + $"({string.Join(", ", tipuriProvenienta.Select(t => t.Name))})"
             + (faraColoana.Count > 0 ? $"; FĂRĂ coloană: {string.Join(", ", faraColoana)}" : "; toate au coloană")
             + ".");
-        s.Check("F23-V1 `DinSeed` există ca proprietate MAPATĂ pe toate cele 22 de tipuri `ICuProvenienta`, "
+        s.Check("F23-V1 `DinSeed` există ca proprietate MAPATĂ pe toate cele 23 de tipuri `ICuProvenienta`, "
             + "inclusiv maparea fiscală SAF-T — lista se descoperă prin reflecție",
-            tipuriProvenienta.Count == 22 && faraColoana.Count == 0);
+            tipuriProvenienta.Count == 23 && faraColoana.Count == 0);
     }
 }

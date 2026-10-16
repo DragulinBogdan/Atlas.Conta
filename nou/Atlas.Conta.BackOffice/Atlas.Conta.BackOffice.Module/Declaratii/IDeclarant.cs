@@ -8,7 +8,7 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// <c>IObjectSpace</c>, entități sau ceas. Întoarce <c>null</c> DOAR după ce a
 /// adăugat cel puțin un refuz sau a validat explicit o constatare fără mișcări.
 /// </summary>
-public enum PoliticaProfil { Niciuna, Contare, Tva, InchidereTva }
+public enum PoliticaProfil { Niciuna, Contare, Tva, InchidereTva, InchidereConturi }
 
 public interface IDeclarant {
     /// <summary>Declarantul contează liniile prin <c>RegulaContare</c> (D9-A4).</summary>

@@ -59,6 +59,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // faptului nedefinită, ștergerea originalului desfăcut).
 static class VerificaReviewF27 {
     public static void Ruleaza(Suita s, bool privat) {
+        using var faraRez = s.FaraRezNeinchis();
         const string Marcaj = "E2E-R27";
         const int An = 2036;
         var eticheta = privat ? "privat" : "bugetar";

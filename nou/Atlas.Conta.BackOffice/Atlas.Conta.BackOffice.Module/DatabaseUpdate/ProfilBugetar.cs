@@ -39,6 +39,7 @@ internal static class ProfilBugetar {
         SeedPoliticiNotaContabila(os);
         SeedPoliticiValidare(os);
         SeedPoliticiInchiderePerioada(os);
+        SeedInchidereConturi(os);
         SeedPoliticiImobilizari(os);
         SeedTipTvaImplicit(os);
         // Implicitele de POLITICĂ (felia 23, F23-D2): bugetarul nu primește
@@ -117,7 +118,23 @@ internal static class ProfilBugetar {
             [FelConstatareInchidere.AmoLipsa] = SeveritateConstatare.Avertisment,
             [FelConstatareInchidere.DraftInPerioada] = SeveritateConstatare.Avertisment,
             [FelConstatareInchidere.RestScadent] = SeveritateConstatare.Ignorat,
+            [FelConstatareInchidere.RezNeinchis] = SeveritateConstatare.Blocant,
         });
+
+    // E3-D4, E3-D9: rezultatul patrimonial păstrează coordonatele notei legacy de deschidere; execuția doar clasificația și sursa.
+    static void SeedInchidereConturi(IObjectSpace os) {
+        const DimensiuneFlags patrimonial = DimensiuneFlags.CodFunctional | DimensiuneFlags.CodEconomic
+            | DimensiuneFlags.SursaFinantare | DimensiuneFlags.Unitate | DimensiuneFlags.Proiect;
+        const DimensiuneFlags executie = DimensiuneFlags.CodFunctional | DimensiuneFlags.CodEconomic
+            | DimensiuneFlags.SursaFinantare;
+        SeedInchideri.Conturi(os,
+            new(1, "6", "121.00.00", MomentInchidere.Lunar, true, patrimonial),
+            new(2, "7", "121.00.00", MomentInchidere.Lunar, true, patrimonial),
+            new(1, "121", "117.00.00", MomentInchidere.Anual, true, patrimonial),
+            new(2, "489", "117.00.00", MomentInchidere.Anual, true, patrimonial),
+            new(3, "520.02", "521.03.00", MomentInchidere.Anual, false, executie),
+            new(4, "521.02", "521.03.00", MomentInchidere.Anual, false, executie));
+    }
 
     // Planul CPLAN e pe trei niveluri: perechea de amortizare e FRUNZA categoriei (F26-D4).
     static void SeedPoliticiImobilizari(IObjectSpace os) {

@@ -768,3 +768,35 @@ public class PoliticaInchidere : Politica, ICuProvenienta {
     [XafDisplayName("Severitate")]
     public virtual SeveritateConstatare Severitate { get; set; }
 }
+
+/// <summary>Un rând al închiderii conturilor de rezultat: soldul descendenților sursei trece pe destinație (E3-D4).</summary>
+[NavigationItem("Politici")]
+[XafDisplayName("Politică de închidere a conturilor")]
+[XafDefaultProperty(nameof(Ordine))]
+public class PoliticaInchidereConturi : Politica, ICuProvenienta {
+    [XafDisplayName("Din seed")]
+    [ModelDefault("AllowEdit", "False")]
+    public virtual bool DinSeed { get; set; }
+
+    [XafDisplayName("Ordine")]
+    public virtual int Ordine { get; set; }
+
+    [XafDisplayName("Moment")]
+    public virtual MomentInchidere Moment { get; set; }
+
+    public virtual Guid ContSursaId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cont sursă")]
+    public virtual Cont ContSursa { get; set; }
+
+    public virtual Guid ContDestinatieId { get; set; }
+    [EditorAlias(EditorAliases.LookupPropertyEditor)]
+    [XafDisplayName("Cont destinație")]
+    public virtual Cont ContDestinatie { get; set; }
+
+    [XafDisplayName("Păstrează repartitorul")]
+    public virtual bool PastreazaRepartitor { get; set; }
+
+    [XafDisplayName("Coordonate păstrate")]
+    public virtual DimensiuneFlags CoordonatePastrate { get; set; }
+}

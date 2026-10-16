@@ -118,6 +118,17 @@ if (args.Contains("--amprente")) {
     return;
 }
 
+if (args.Contains("--irz")) {
+    var i = Array.IndexOf(args, "--irz");
+    if (args.Length <= i + 3 || !int.TryParse(args[i + 2], out var anIrz) || !int.TryParse(args[i + 3], out var lunaIrz)) {
+        Console.WriteLine("Folosire: ModelCheck --irz <bază> <an> <lună>");
+        Environment.ExitCode = 2;
+        return;
+    }
+    Environment.ExitCode = IrzDiagnostic.Scrie(Conexiunea(args[i + 1]), anIrz, lunaIrz);
+    return;
+}
+
 if (args.Contains("--perf-fisa")) {
     var i = Array.IndexOf(args, "--perf-fisa");
     if (args.Length <= i + 5 || !int.TryParse(args[i + 3], out var anFisa) || !int.TryParse(args[i + 4], out var lunaFisa)) {

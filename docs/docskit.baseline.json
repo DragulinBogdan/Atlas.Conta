@@ -2,16 +2,16 @@
   "cs": {
     "pestePlafon": {
       "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Imobilizari.cs": 654,
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Trezorerie.cs": 663,
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Politici/Politici.cs": 774,
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/DatabaseUpdate/ContaSeeder.cs": 1031,
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/DatabaseUpdate/ProfilPrivat.cs": 1278,
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/GardianEditare.cs": 1374,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Documente/Trezorerie.cs": 657,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/BusinessObjects/Politici/Politici.cs": 802,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/DatabaseUpdate/ContaSeeder.cs": 1046,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/DatabaseUpdate/ProfilPrivat.cs": 1293,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Motor/GardianEditare.cs": 1115,
       "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Proiectii/ContabilProiectii.cs": 670,
       "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftDto.cs": 823,
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftProiectii.PeCub.cs": 703,
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftProiectii.PeCub.cs": 723,
       "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/Saft/SaftXml.cs": 702,
-      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/UI/ContaUiBaseline.cs": 670
+      "nou/Atlas.Conta.BackOffice/Atlas.Conta.BackOffice.Module/UI/ContaUiBaseline.cs": 679
     },
     "narativ": 44
   },

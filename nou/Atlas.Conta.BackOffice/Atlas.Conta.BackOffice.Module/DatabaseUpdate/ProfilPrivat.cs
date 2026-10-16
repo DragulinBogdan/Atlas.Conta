@@ -49,6 +49,7 @@ internal static class ProfilPrivat {
         SeedPoliticiNotaContabila(os);
         SeedPoliticiInchidereTva(os);
         SeedPoliticiInchiderePerioada(os);
+        SeedInchidereConturi(os);
         SeedPoliticiImobilizari(os);
         SeedPoliticiAsamblare(os);
         SeedPoliticiDescarcare(os);
@@ -1188,7 +1189,14 @@ internal static class ProfilPrivat {
             [FelConstatareInchidere.AmoLipsa] = SeveritateConstatare.Avertisment,
             [FelConstatareInchidere.DraftInPerioada] = SeveritateConstatare.Avertisment,
             [FelConstatareInchidere.RestScadent] = SeveritateConstatare.Ignorat,
+            [FelConstatareInchidere.RezNeinchis] = SeveritateConstatare.Blocant,
         });
+
+    // E3-D2, E3-D4: 6 și 7 se închid lunar în 121, fără coordonate; 121 trece în anul nou.
+    static void SeedInchidereConturi(IObjectSpace os) =>
+        SeedInchideri.Conturi(os,
+            new(1, "6", "121", MomentInchidere.Lunar),
+            new(2, "7", "121", MomentInchidere.Lunar));
 
     // Perechea 20x/21x → 280x/281x; terenurile (211) NU primesc rând (F26-D4).
     static void SeedPoliticiImobilizari(IObjectSpace os) {

@@ -283,6 +283,7 @@ internal static class Fapte {
             d.AngajamentId) {
                 Transformare = d is ILinieCuTransformare transformare ? transformare.TransformareCuleasa() : null,
                 DiferentaInventar = d is ILinieCuDiferentaInventar inventar ? inventar.DiferentaCuleasa() : null,
+                Inchidere = (d as ILinieCuInchidere)?.InchidereCuleasa(),
                 Imobilizare = d is ILinieCuImobilizare imobilizare ? imobilizare.ImobilizareCuleasa() : null,
                 PartidaDebit = (d as ILinieCuPartidaNumita)?.PartidaDebitId,
                 PartidaCredit = (d as ILinieCuPartidaNumita)?.PartidaCreditId,

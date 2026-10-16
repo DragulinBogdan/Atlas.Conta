@@ -392,6 +392,30 @@ static class VerificaF23Gardian {
             + "inert care ARATĂ configurat; ori toate, ori niciunul",
             inchTrei != null && inchTrei.Contains("3 din 4") && inchPatru == null && inchZero == null);
 
+        // ---- `PoliticaInchidereConturi` (E3-D4): destinația în afara sursei, coordonatele ei obligatorii (15), un rând per sursă × moment ----
+        string InchidereConturi(string sursa, string destinatie, MomentInchidere moment, DimensiuneFlags pastrate) =>
+            RefuzF23(os => {
+                var p = os.CreateObject<PoliticaInchidereConturi>();
+                p.ContSursa = os.FirstOrDefault<Cont>(c => c.Simbol == sursa);
+                p.ContDestinatie = os.FirstOrDefault<Cont>(c => c.Simbol == destinatie);
+                p.Moment = moment;
+                p.CoordonatePastrate = pastrate;
+            });
+        var rezultatPlan = privat ? "121" : "121.00.00";
+        var icInSursa = InchidereConturi("6", privat ? "60" : "6", MomentInchidere.Anual, DimensiuneFlags.Niciuna);
+        var icDublura = InchidereConturi("6", rezultatPlan, MomentInchidere.Lunar, DimensiuneFlags.Niciuna);
+        var icBuna = InchidereConturi("6", rezultatPlan, MomentInchidere.Anual, DimensiuneFlags.Niciuna);
+        var icObligatorii = privat ? null : InchidereConturi("520.02", "521.03.00", MomentInchidere.Lunar, DimensiuneFlags.CodFunctional);
+        Console.WriteLine($"     MĂSURAT (E3-G1/{eticheta}): destinația în sursă → „{icInSursa ?? "acceptat"}”; a doua sursă × moment → "
+            + $"„{icDublura ?? "acceptat"}”; rând bun → „{icBuna ?? "acceptat"}”"
+            + (privat ? "." : $"; destinația cu cod economic obligatoriu nepăstrat → „{icObligatorii ?? "acceptat"}”."));
+        s.Check($"E3-G1 ({eticheta}) `PoliticaInchidereConturi`: destinația nu stă în sursă, un rând per sursă × moment, "
+            + (privat ? "" : "destinația își păstrează coordonatele obligatorii (15), ") + "iar rândul corect trece",
+            icInSursa != null && icInSursa.Contains("în contul-sursă")
+            && icDublura != null && icDublura.Contains("Există deja")
+            && icBuna == null
+            && (privat || icObligatorii != null && icObligatorii.Contains("CodEconomic")));
+
         // ---- `MapareD300` / `MapareD394`: o regulă, două uși ----
         // Pe privat (N19 × Livrare) e pe rd. 16 și L în D394: rd. 9 e coerent (123 b) și nu e pe verticala lui 16.
         var codTvaMapare = privat ? "N19" : "CAP0";

@@ -123,8 +123,9 @@ public class PerioadeController : ContaApiController {
 
     // Tipurile pe care verificarea le ÎNSUMEAZĂ pe ușa non-secured (80e).
     static readonly Type[] TipuriInsumate = [
-        typeof(Document), typeof(InchidereTva), typeof(AmortizareLunara),
-        typeof(Imperechere), typeof(PoliticaInchidere), typeof(Module.Cub.Postare),
+        typeof(Document), typeof(InchidereTva), typeof(InchidereRezultat), typeof(AmortizareLunara),
+        typeof(Imperechere), typeof(PoliticaInchidere), typeof(PoliticaInchidereConturi), typeof(Cont),
+        typeof(Module.Cub.Postare),
     ];
 
     IActionResult CititeIntegral() {

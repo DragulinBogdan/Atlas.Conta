@@ -259,7 +259,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [M1 — reverificarea corecturilor R1–R4](import/m1-rv1-review-codex.md)
 - [M1 — reverificare finală M1-R3a](import/m1-rv2-review-codex.md)
 
-### `docs/nucleu/` (78)
+### `docs/nucleu/` (79)
 
 - [Decizia 109 — review advers Codex](nucleu/109-review-codex.md)
 - [C102 — Felia de curățenie: fără compatibilitate cu bazele de dezvoltare](nucleu/c102-curatenie-contract.md)
@@ -277,6 +277,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [C111, pasul 6 — importul pe forma nouă](nucleu/c111-pas6-import.md)
 - [C111, pasul 6 — uneltele de volum, costul scrierii și scara pe forma nouă](nucleu/c111-pas6-scriere-si-volum.md)
 - [C111, pasul 7 — clientul, contractul HTTP și închiderea](nucleu/c111-pas7-client-si-inchidere.md)
+- [E3 — închiderea exercițiului: rezultatul lunar în 121, exercițiul ca stare, anul nou din soldurile de la 31.12](nucleu/e3-inchiderea-exercitiului-contract.md)
 - [Bilanțul noii forme: ce câștigăm, ce pierdem (sinteza pașilor 1–3, pentru TR-D5)](nucleu/nucleu-bilant.md)
 - [Coordonatele cubului contra rapoartelor reale (pasul 1 din §11)](nucleu/nucleu-coordonate-rapoarte.md)
 - [Nucleul ca ledger n-dimensional (design greenfield)](nucleu/nucleu-cub-design.md)
@@ -340,7 +341,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [TR-D9b, pasul 7 — membrii de tip SensTva își iau numele întreg](nucleu/tr-d9b-pas7-senstva.md)
 - [TR-D9b, pasul 8 — sensul stingerii și parametrii de interogare își iau numele întreg](nucleu/tr-d9b-pas8-sensstingere.md)
 
-### `docs/nucleu/scenarii/` (27)
+### `docs/nucleu/scenarii/` (28)
 
 - [ASM — asamblare](nucleu/scenarii/ASM.md)
 - [BCS — bon de consum](nucleu/scenarii/BCS.md)
@@ -354,6 +355,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [DESCHIDERE — solduri inițiale detaliate](nucleu/scenarii/DESCHIDERE.md)
 - [DSC — descărcare de gestiune](nucleu/scenarii/DSC.md)
 - [DVI — declarație vamală](nucleu/scenarii/DVI.md)
+- [EX — închiderea exercițiului](nucleu/scenarii/EX.md)
 - [FCL — factură de ieșire](nucleu/scenarii/FCL.md)
 - [FCT — factură de intrare](nucleu/scenarii/FCT.md)
 - [IMO — PIF, AMO, CAS complete pe cub](nucleu/scenarii/IMO.md)

@@ -27,6 +27,8 @@ static class ProbeBlocajScriere {
         (Modul + "Api/Amo/AmoApply.cs", "AmoApply.Regenereaza", "regenerarea amortizării lunare"),
         (Modul + "Api/Itv/InchidereTvaApply.cs", "InchidereTvaApply.Genereaza", "generarea închiderii de TVA"),
         (Modul + "Api/Itv/InchidereTvaApply.cs", "InchidereTvaApply.Regenereaza", "regenerarea închiderii de TVA"),
+        (Modul + "Api/Irz/InchidereRezultatApply.cs", "InchidereRezultatApply.Genereaza", "generarea închiderii conturilor de rezultat"),
+        (Modul + "Api/Irz/InchidereRezultatApply.cs", "InchidereRezultatApply.Regenereaza", "regenerarea închiderii conturilor de rezultat"),
         (Modul + "Motor/FiscalitateService.cs", "FiscalitateService.ConfirmaDepunerea", "confirmarea depunerii"),
         (Modul + "Motor/FiscalitateService.cs", "FiscalitateService.RetrageDepunerea", "retragerea confirmării depunerii"),
         (Modul + "Cub/Materializare.Deschidere.cs", "Materializare.CereScriere", "deschiderea și stingerea ei, în tranzacția apelantului"),

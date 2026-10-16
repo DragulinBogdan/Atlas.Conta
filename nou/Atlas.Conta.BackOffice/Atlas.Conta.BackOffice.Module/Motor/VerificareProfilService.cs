@@ -136,6 +136,8 @@ public static class VerificareProfilService {
             r => $"{r.Categorie} de la {r.DeLa:dd.MM.yyyy}"),
         [typeof(PoliticaInchidere)] = Tabel<PoliticaInchidere>("Politici de închidere de perioadă",
             p => p.Fel.ToString()),
+        [typeof(PoliticaInchidereConturi)] = Tabel<PoliticaInchidereConturi>("Politici de închidere a conturilor",
+            p => $"{p.ContSursa?.Simbol ?? p.ContSursaId.ToString()} / {p.Moment}"),
     };
 
     static string Cheia(Func<Guid, string> codTip, PoliticaTvaImplicit p) =>

@@ -166,16 +166,20 @@ static class VerificaAcceptare {
             Console.WriteLine($"     MĂSURAT (ACC-V1/{eticheta}): "
                 + string.Join(", ", randuri.Select(r => $"{r.Key}={r.Value.Severitate}"
                     + (r.Value.DinSeed ? "" : " (fără timbru)"))) + ".");
-            s.Check($"ACC-V1 ({eticheta}) seed-ul aliniază cele patru feluri, toate cu timbrul `DinSeed`: `ItvLipsa` "
+            s.Check($"ACC-V1 ({eticheta}) seed-ul aliniază cele cinci feluri, toate cu timbrul `DinSeed`: `ItvLipsa` "
                 + $"= {itvAsteptat} (privatul e plătitor de TVA, bugetarul are ITV inert), `AmoLipsa` și "
-                + "`DraftInPerioada` = Avertisment, `RestScadent` = Ignorat — severitatea e DATE, iar cele două "
-                + "profiluri diferă de CONȚINUT, nu de mecanism",
-                randuri.Count == 4
+                + "`DraftInPerioada` = Avertisment, `RestScadent` = Ignorat, `RezNeinchis` = Blocant — severitatea e "
+                + "DATE, iar cele două profiluri diferă de CONȚINUT, nu de mecanism",
+                randuri.Count == 5
+                && randuri[FelConstatareInchidere.RezNeinchis] == (SeveritateConstatare.Blocant, true)
                 && randuri[FelConstatareInchidere.ItvLipsa] == (itvAsteptat, true)
                 && randuri[FelConstatareInchidere.AmoLipsa] == (SeveritateConstatare.Avertisment, true)
                 && randuri[FelConstatareInchidere.DraftInPerioada] == (SeveritateConstatare.Avertisment, true)
                 && randuri[FelConstatareInchidere.RestScadent] == (SeveritateConstatare.Ignorat, true));
         }
+
+        // Scena probează acceptarea, nu închiderea conturilor de rezultat (familia EX).
+        Politica(FelConstatareInchidere.RezNeinchis, SeveritateConstatare.Ignorat);
 
         // ── scena: fișa pusă în funcțiune în 12/2035 (lună închisă) + factura lui ianuarie ──
         Guid idClient, idUnitate, idFcl, idCodEc;
@@ -499,6 +503,7 @@ static class VerificaAcceptare {
         // ── ACC-V18: curățenia ──
         using (var os = s.Provider.CreateObjectSpace())
             CurataAcc(os);
+        Politica(FelConstatareInchidere.RezNeinchis, SeveritateConstatare.Blocant);
         using (var os = s.Provider.CreateObjectSpace()) {
             var perioade = os.GetObjectsQuery<PerioadaFiscala>()
                 .Count(p => p.An == An || (p.An == An - 1 && p.Luna == 12));
@@ -512,7 +517,7 @@ static class VerificaAcceptare {
             s.Check($"ACC-V18 ({eticheta}) fără reziduu: nicio perioadă, niciun document și nicio fișă rămase, iar "
                 + "politica e din nou exact cea de seed — scena e re-rulabilă identic",
                 perioade == 0 && documente == 0 && fise == 0
-                && politici.Count == 4 && politici.All(p => p.DinSeed)
+                && politici.Count == 5 && politici.All(p => p.DinSeed)
                 && politici.Single(p => p.Fel == FelConstatareInchidere.ItvLipsa).Severitate == itvAsteptat
                 && politici.Single(p => p.Fel == FelConstatareInchidere.AmoLipsa).Severitate
                     == SeveritateConstatare.Avertisment

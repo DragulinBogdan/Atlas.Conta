@@ -93,6 +93,9 @@ static class ScenelePeTip {
             new(nameof(ScenariiItv), ["ITV"], () => new ScenariiItv(
                 s.Deschide, s.Check, privat,
                 (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()),
+            new(nameof(ScenariiEx), ["EX"], () => new ScenariiEx(
+                s.Deschide, s.Check, privat,
+                (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()),
             new(nameof(ScenariiFct), ["FCT"], () => new ScenariiFct(
                 s.Deschide, s.Check, privat,
                 (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()),
@@ -133,9 +136,11 @@ static class ScenelePeTip {
             new(nameof(ScenariiExplicatii), ["CITIRI"], () => new ScenariiExplicatii(
                 s.Deschide, s.Check, privat,
                 (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()),
-            new(nameof(ScenariiConcurenta), ["X"], () => new ScenariiConcurenta(
-                s.Deschide, s.Check, privat,
-                (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()),
+            new(nameof(ScenariiConcurenta), ["X"], () => {
+                using var faraRez = s.FaraRezNeinchis();
+                new ScenariiConcurenta(s.Deschide, s.Check, privat,
+                    (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza();
+            }),
             new(nameof(ScenariiCitiri), ["CITIRI"], () => new ScenariiCitiri(
                 s.Deschide, s.Check, privat,
                 (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()),

@@ -131,16 +131,48 @@ sealed class Suita {
     // vrea să închidă o lună fără decontul ei: COBOARĂ severitatea în politică,
     // închide, o pune la loc — deci mecanismul rămâne cel probat, nu unul ocolit.
     // Valoarea de SEED e subiectul blocului `ACC-V*`, care o citește neatinsă.
-    public InchiderePerioada InchideAcceptTot(IObjectSpace os, int an, int luna, string de = "ModelCheck") {
-        var severitate = SeveritateItvLipsa();
+    public InchiderePerioada InchideAcceptTot(IObjectSpace os, int an, int luna, string de = "ModelCheck") =>
+        CuBlocanteAcceptabile(() => PerioadaService.Inchide(os, an, luna,
+            PerioadaService.Verifica(os, an, luna).Select(c => c.Cheie).ToArray(), null, de));
+
+    // Scenele care nu probează închiderile generate (ITV, IRZ) le cer acceptabile.
+    public T CuBlocanteAcceptabile<T>(Func<T> actiune) {
+        var itv = SeveritateItvLipsa();
+        var rez = Severitate(FelConstatareInchidere.RezNeinchis);
         SeteazaSeveritateItvLipsa(SeveritateConstatare.Avertisment);
+        SeteazaSeveritate(FelConstatareInchidere.RezNeinchis, SeveritateConstatare.Avertisment);
         try {
-            return PerioadaService.Inchide(os, an, luna,
-                PerioadaService.Verifica(os, an, luna).Select(c => c.Cheie).ToArray(), null, de);
+            return actiune();
         }
         finally {
-            SeteazaSeveritateItvLipsa(severitate);
+            SeteazaSeveritateItvLipsa(itv);
+            SeteazaSeveritate(FelConstatareInchidere.RezNeinchis, rez);
         }
+    }
+
+    /// <summary>REZ-NEINCHIS pe `Ignorat` cât rulează o probă care nu e despre închiderea conturilor; se restaurează la ieșire.</summary>
+    public IDisposable FaraRezNeinchis() {
+        var vechi = Severitate(FelConstatareInchidere.RezNeinchis);
+        SeteazaSeveritate(FelConstatareInchidere.RezNeinchis, SeveritateConstatare.Ignorat);
+        return new Restaurare(() => SeteazaSeveritate(FelConstatareInchidere.RezNeinchis, vechi));
+    }
+
+    sealed class Restaurare(Action restaureaza) : IDisposable {
+        public void Dispose() => restaureaza();
+    }
+
+    SeveritateConstatare Severitate(FelConstatareInchidere fel) {
+        using var os = Provider.CreateObjectSpace();
+        return os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == fel)?.Severitate ?? SeveritateConstatare.Avertisment;
+    }
+
+    void SeteazaSeveritate(FelConstatareInchidere fel, SeveritateConstatare severitate) {
+        using var os = Provider.CreateObjectSpace();
+        var rand = os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == fel);
+        if (rand == null || rand.Severitate == severitate)
+            return;
+        rand.Severitate = severitate;
+        os.CommitChanges();
     }
 
     // Severitatea unui fel de constatare, pe ObjectSpace PROPRIU: scena care închide

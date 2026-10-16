@@ -62,6 +62,7 @@ public static class CoduriRefuz {
     public const string SuportCuDependenti = "SUPORT_CU_DEPENDENTI";
     public const string DeclaratieInvalida = "DECLARATIE_INVALIDA";
     public const string CvStructura = "CV_STRUCTURA";
+    public const string InchidereStructuraInvalida = "INCHIDERE_STRUCTURA_INVALIDA";
 
     /// <summary>Refuzul mecanismului de corecție valorică, cu codul lui.</summary>
     public static N.Refuz Refuz(N.CorectieValoricaRefuzata e, Guid? linie = null) => new(e.Motiv switch {
