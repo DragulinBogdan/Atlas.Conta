@@ -203,7 +203,10 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   poartă contorul rândului (`OptimisticLockField`, D9-A8).
   Îl construiește `Motor/Fapte.Operand(os, doc)` PE SETURI (o interogare
   per tabelă, probat `≤ 16` cu `NumaratorSql`). Câmpurile de frunză fără
-  interfață declarată (`Valuta`/`Curs` pe FCT) NU intră.
+  interfață declarată (`Valuta`/`Curs` pe FCT) NU intră. Politicile pe tip
+  (validare, numerotare, scadență, conex, TVA) se citesc din bază, fără
+  căutarea XAF în obiectele necomise: motorul operează în ObjectSpace
+  propriu (58c), iar căutarea compila criteriul la fiecare politică lipsă. (125c)
 - **Declarantul** (`IDeclarant.Declara(Operand, Rotunjire, refuzuri) →
   Declaratie?`): pur, fără `IObjectSpace`, fără entități; frunza îl numește
   printr-o singură METODĂ polimorfă `Document.Declarant()` (`null` = tipul nu

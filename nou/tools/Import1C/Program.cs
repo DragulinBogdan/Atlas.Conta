@@ -208,6 +208,7 @@ if (conexiunePg.MaxAutoPrepare == 0) {
     conexiunePg.MaxAutoPrepare = 300;
     conexiunePg.AutoPrepareMinUsages = 2;
 }
+conexiunePg.NoResetOnClose = true;
 var pgCs = conexiunePg.ConnectionString;
 
 // Anul fiscal importat: deschiderea = soldurile la 01.01 (design §3).

@@ -133,7 +133,7 @@ public static class MotorOperare {
     static void ValideazaDeclarativ(IObjectSpace os, Document doc, TipDocument tipDoc,
         Dictionary<Guid, (Guid ClasaId, NaturaClasa Natura, string Denumire, Guid? ContImplicitId)> claseTip,
         ICollection<string> erori) {
-        var politica = os.FirstOrDefault<PoliticaValidare>(p => p.TipDocumentId == tipDoc.ID);
+        var politica = os.FirstOrDefault<PoliticaValidare>(p => p.TipDocumentId == tipDoc.ID, false);
         if (politica == null)
             return;
         foreach (var d in doc.Detalii) {
@@ -372,7 +372,7 @@ public static class MotorOperare {
     static void AsignaNumar(IObjectSpace os, Document doc, TipDocument tipDoc) {
         if (!string.IsNullOrWhiteSpace(doc.Numar))
             return;
-        var politica = os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipDoc.ID);
+        var politica = os.FirstOrDefault<PoliticaNumerotare>(p => p.TipDocumentId == tipDoc.ID, false);
         if (politica == null)
             throw new OperareException(
                 $"Documentul nu are număr și tipul {tipDoc.Cod} nu are politică de numerotare.");
@@ -389,7 +389,7 @@ public static class MotorOperare {
     static void AplicaScadenta(IObjectSpace os, Document doc, TipDocument tipDoc) {
         if (doc is not IDocumentCuScadenta scadenta || scadenta.DataScadenta != null)
             return;
-        var politica = os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocumentId == tipDoc.ID);
+        var politica = os.FirstOrDefault<PoliticaScadenta>(p => p.TipDocumentId == tipDoc.ID, false);
         if (politica != null)
             scadenta.DataScadenta = doc.Data.AddDays(politica.ZileDefault);
     }
