@@ -50,7 +50,10 @@ după „rotund" (091 (g)). (091)
 Fără connection string dat, Import1C scrie în `Atlas.Conta.Import1C.Flax`
 pe instanța nativă (5446). Pe orice conexiune care nu spune altfel pornește
 pregătirea automată a comenzilor (`Max Auto Prepare=300`,
-`Auto Prepare Min Usages=2`).
+`Auto Prepare Min Usages=2`). Cu ea, o citire cu parametri de care depinde
+selectivitatea poate trece pe planul generic; citirile pe loturi sunt scrise
+să nu depindă de asta (125). Pe ianuarie–martie 2025, pe 5446, importul
+costă ~20 ms pe document, constant de la o lună la alta (17:43 pe trei luni).
 
 `--pana-la-ziua Z` taie ultima lună a ferestrei (`--pana-la`) la ziua Z,
 pentru rulări scurte de măsurare: sursa se citește numai până la acea zi,
@@ -154,5 +157,5 @@ cu sumă. O eroare tehnică a unei stingeri pică luna și nu explică nimic.
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (14; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117).
+Deciziile care numesc pagina în `Arii:` (15; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117), 125 (propusă).
 <!-- /gen:decizii -->

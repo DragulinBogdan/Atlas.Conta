@@ -61,10 +61,12 @@ public static class Loturi {
     public static bool AreMiscari(IObjectSpace os, Guid lot) =>
         os.GetObjectsQuery<Postare>().Any(p => p.FelUnitate == N.FelUnitate.Lot && p.Unitate == lot);
 
-    public static IQueryable<RandDatat<SoldLot>> Miscari(IObjectSpace os, Guid? faraDocumentId = null) {
+    public static IQueryable<RandDatat<SoldLot>> Miscari(IObjectSpace os, Guid? faraDocumentId = null,
+            IReadOnlyCollection<Guid> loturi = null) {
         var postari = Postari(os);
         if (faraDocumentId is { } document) postari = postari.Where(p => p.DocumentId != document);
-        return postari.Select(p => new RandDatat<SoldLot> {
+        if (loturi != null) postari = postari.Where(p => loturi.Contains(p.Unitate.Value));
+        var miscari = postari.Select(p => new RandDatat<SoldLot> {
             Data = p.Data,
             Rand = new SoldLot {
                 LotId = p.Unitate.Value, ContId = p.Cont, ProdusId = p.Produs.Value, GestiuneId = p.Repartitor.Value,
@@ -72,6 +74,8 @@ public static class Loturi {
                 Valoare = p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare
             }
         });
+        // 125a: pe o listă de loturi data nu e cale de acces, ca planul generic să citească pe lot.
+        return loturi == null ? miscari : miscari.Select(m => new RandDatat<SoldLot> { Data = m.Data.AddDays(0), Rand = m.Rand });
     }
 
     static IQueryable<SoldLot> Grupeaza(IQueryable<SoldLot> miscari) => miscari
@@ -82,8 +86,8 @@ public static class Loturi {
         .Where(s => s.Cantitate != 0m || s.Valoare != 0m);
 
     public static IQueryable<SoldLot> Solduri(IObjectSpace os, DateOnly? laData = null,
-            Guid? faraDocumentId = null) =>
-        Grupeaza(Miscari(os, faraDocumentId).Where(m => m.Data <= (laData ?? DateOnly.MaxValue)).Select(m => m.Rand));
+            Guid? faraDocumentId = null, IReadOnlyCollection<Guid> loturi = null) =>
+        Grupeaza(Miscari(os, faraDocumentId, loturi).Where(m => m.Data <= (laData ?? DateOnly.MaxValue)).Select(m => m.Rand));
 
     public static IQueryable<SoldLot> Disponibile(IObjectSpace os, CitireCumul citire, DateOnly laData,
             Guid produsId, Guid gestiuneId, Guid contId) =>
@@ -111,17 +115,19 @@ public static class Loturi {
 
     /// <summary>Excluderea poate folosi snapshot-ul numai cu o graniță anterioară tuturor postărilor documentului exclus.</summary>
     public static IQueryable<SoldLot> Cumulate(IObjectSpace os, CitireCumul citire, DateOnly? laData = null,
-            Guid? faraDocumentId = null, DateOnly? granita = null) {
+            Guid? faraDocumentId = null, DateOnly? granita = null, IReadOnlyCollection<Guid> loturi = null) {
         var zi = laData ?? DateOnly.MaxValue;
         if (faraDocumentId != null && granita == null)
-            return Solduri(os, laData, faraDocumentId);
-        var snapshot = os.GetObjectsQuery<SoldPerioadaStoc>().Select(s => new SoldLunar<SoldLot> {
+            return Solduri(os, laData, faraDocumentId, loturi);
+        var solduri = os.GetObjectsQuery<SoldPerioadaStoc>();
+        if (loturi != null) solduri = solduri.Where(s => loturi.Contains(s.LotId));
+        var snapshot = solduri.Select(s => new SoldLunar<SoldLot> {
             An = s.An, Luna = s.Luna, Rand = new SoldLot {
                 LotId = s.LotId, ContId = s.ContId, ProdusId = s.ProdusId, GestiuneId = s.GestiuneId,
                 Deschisa = s.Deschisa, Cantitate = s.Cantitate, Valoare = s.Valoare
             }
         });
-        return Grupeaza(CumulPerioade.Citeste(os, citire, Miscari(os, faraDocumentId), snapshot, zi, granita));
+        return Grupeaza(CumulPerioade.Citeste(os, citire, Miscari(os, faraDocumentId, loturi), snapshot, zi, granita));
     }
 
     // Gardul verifică fiecare prefix zilnic, inclusiv zilele ulterioare unei
@@ -138,7 +144,7 @@ public static class Loturi {
         var chei = delta.Select(p => p.Cheie).ToHashSet();
         var loturi = chei.Select(c => c.Lot).Distinct().ToArray();
         var primaData = delta.Min(p => p.Data);
-        var initial = Cumulate(os, CitireCumul.Integrala, primaData.AddDays(-1)).Where(s => loturi.Contains(s.LotId)).ToList()
+        var initial = Cumulate(os, CitireCumul.Integrala, primaData.AddDays(-1), loturi: loturi).ToList()
             .Select(s => (Cheie: new CheieLotFapt(s.LotId, s.ContId, s.ProdusId, s.GestiuneId), Data: DateOnly.MinValue, s.Cantitate));
         var istoric = initial.Concat(Postari(os).Where(p => loturi.Contains(p.Unitate.Value) && p.Data >= primaData)
             .GroupBy(p => new { p.Unitate, p.Cont, p.Produs, p.Repartitor, p.Data })
