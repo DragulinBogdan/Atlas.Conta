@@ -13,10 +13,7 @@ public static class PerioadeApply {
         PerioadaService.Lant(os).Select(Din).ToArray();
 
     public static ConstatareInchidereDto[] Verifica(IObjectSpace os, int an, int luna) =>
-        PerioadaService.Verifica(os, an, luna)
-            .Select(c => new ConstatareInchidereDto(c.Cheie, c.Fel, c.Severitate.ToString(), c.Text,
-                c.ObiectId, c.ObiectEticheta))
-            .ToArray();
+        Din(PerioadaService.Verifica(os, an, luna));
 
     public static InchiderePerioadaRezultatDto Inchide(IObjectSpace os, int an, int luna,
             InchidePerioadaRequestDto cerere, Guid? deId, string de) =>
@@ -25,6 +22,17 @@ public static class PerioadeApply {
     public static InchiderePerioadaRezultatDto Redeschide(IObjectSpace os, int an, int luna,
             RedeschidePerioadaRequestDto cerere, Guid? deId, string de) =>
         Din(os, PerioadaService.Redeschide(os, an, luna, cerere?.Motiv, deId, de));
+
+    public static ConstatareInchidereDto[] VerificaExercitiul(IObjectSpace os, int an) =>
+        Din(PerioadaService.VerificaExercitiul(os, an));
+
+    public static InchiderePerioadaRezultatDto InchideExercitiul(IObjectSpace os, int an,
+            InchidePerioadaRequestDto cerere, Guid? deId, string de) =>
+        Din(os, PerioadaService.InchideExercitiul(os, an, cerere?.Acceptate ?? [], deId, de));
+
+    public static InchiderePerioadaRezultatDto RedeschideExercitiul(IObjectSpace os, int an,
+            RedeschidePerioadaRequestDto cerere, Guid? deId, string de) =>
+        Din(os, PerioadaService.RedeschideExercitiul(os, an, cerere?.Motiv, deId, de));
 
     // Raportul se ia pe starea dinaintea rescrierii, iar rescrierea e în ACEEAȘI
     // tranzacție: un eșec la jumătate n-are voie să lase referințe pe jumătate
@@ -73,5 +81,9 @@ public static class PerioadeApply {
             Chei(rand.Acceptari));
 
     static PerioadaDto Din(PerioadaFiscala p) =>
-        new(p.An, p.Luna, p.Inchisa, p.InchisaLa, p.InchisaPrimaOara);
+        new(p.An, p.Luna, p.Inchisa, p.InchisaLa, p.InchisaPrimaOara, p.ExercitiuInchis, p.ExercitiuInchisLa);
+
+    static ConstatareInchidereDto[] Din(IEnumerable<PerioadaService.ConstatareInchidere> constatari) =>
+        constatari.Select(c => new ConstatareInchidereDto(c.Cheie, c.Fel, c.Severitate.ToString(), c.Text,
+            c.ObiectId, c.ObiectEticheta)).ToArray();
 }

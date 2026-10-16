@@ -29,7 +29,7 @@ namespace Atlas.Conta.BackOffice.Module.UI;
 // (`ViewSummaryController` din Atlas.DXF e o acțiune interactivă, gated pe
 // extenderul `AutoSummary` din assembly-ul Blazor, la care Module-ul nu are
 // acces). Nevoia operatorului e acoperită de `Total` pe DetailView (D5).
-public sealed class ContaUiBaseline : IUiBaselineProvider {
+public sealed partial class ContaUiBaseline : IUiBaselineProvider {
     // Sufixul id-ului ListView-ului implicit generat de XAF per clasă.
     const string ListView = "_ListView";
     // 85c — grila de culegere nested nu se face peste o colecție server.
@@ -398,7 +398,8 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
 
         registry.For<DocumentTrezorerieDetaliu>()
             .HideForeignKeys()
-            .Columns(c => c.Drop(Rol.Unitate).Drop(Rol.Cantitate));
+            .Columns(c => c.Drop(Rol.Unitate).Drop(Rol.Cantitate))
+            .ListView(nameof(DocumentTrezorerieDetaliu) + ListView, Culegere);
     }
 
     static void FacturaIntrare(UiBaselineRegistry registry) {
@@ -534,16 +535,6 @@ public sealed class ContaUiBaseline : IUiBaselineProvider {
             .ReadOnly(d => d.Valoare)
             .ListView(nameof(DescarcareGestiuneDetaliu) + ListView, Culegere)
             .Column(d => d.LinieSursa, c => c.Caption = "Linie sursă");
-    }
-
-    // Nota contabilă: linia E postarea, deci perechea de conturi o identifică (FAZA 1C §5).
-    static void NotaContabila(UiBaselineRegistry registry) {
-        registry.For<NotaContabilaDetaliu>()
-            .Columns(c => c
-                .Slot(Rol.Identitate, d => d.Descriere, d => d.ContDebit, d => d.ContCredit,
-                    d => d.RepartitorDebit, d => d.RepartitorCredit)
-                .Drop(Rol.Unitate).Drop(Rol.Cantitate).Drop(Rol.Tva))
-            .ListView(nameof(NotaContabilaDetaliu) + ListView, Culegere);
     }
 
     static void Asamblare(UiBaselineRegistry registry) {

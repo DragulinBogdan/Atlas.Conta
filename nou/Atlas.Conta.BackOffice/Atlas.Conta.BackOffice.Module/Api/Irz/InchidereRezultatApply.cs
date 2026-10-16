@@ -9,6 +9,52 @@ namespace Atlas.Conta.BackOffice.Module.Api.Irz;
 /// generarea și regenerarea rulează pe ușa NON-SECURED (58c); ștergerea, pe cea securizată.
 /// </summary>
 public static class InchidereRezultatApply {
+    public static IQueryable<IrzListDto> Lista(IObjectSpace os) {
+        var totaluri = os.GetObjectsQuery<DocumentDetaliu>()
+            .GroupBy(l => l.DocumentId)
+            .Select(g => new { DocumentId = g.Key, Numar = g.Count(), Total = g.Sum(x => x.Valoare) });
+        return from d in os.GetObjectsQuery<InchidereRezultat>()
+               join t in totaluri on d.ID equals t.DocumentId into agregat
+               from t in agregat.DefaultIfEmpty()
+               select new IrzListDto {
+                   Id = d.ID, Numar = d.Numar, Data = d.Data, An = d.Data.Year, Luna = d.Data.Month,
+                   Stare = d.Stare == StareDocument.Draft ? "Draft"
+                       : d.Stare == StareDocument.Operat ? "Operat"
+                       : "Stornat",
+                   DataOperare = d.DataOperare, UnitateDenumire = d.Predator.Denumire,
+                   NumarLinii = (int?)t.Numar ?? 0, Total = (decimal?)t.Total ?? 0m,
+               };
+    }
+
+    /// <summary>Null când documentul nu există, nu e vizibil sau nu e o închidere de rezultat.</summary>
+    public static IrzReadDto Citeste(IObjectSpace os, Guid id) {
+        var doc = RandDupaCheie.Ca<InchidereRezultat>(os, id);
+        if (doc == null)
+            return null;
+        var linii = os.GetObjectsQuery<InchidereRezultatDetaliu>()
+            .Where(l => l.DocumentId == id)
+            .OrderBy(l => l.ID)
+            .Select(l => new IrzLinieReadDto {
+                Id = l.ID, ContDebitSimbol = l.ContDebit.Simbol, ContCreditSimbol = l.ContCredit.Simbol,
+                SursaPeDebit = l.SursaPeDebit, Valoare = l.Valoare,
+            })
+            .ToList();
+        var regim = RegimDocument.Calculeaza(os, doc);
+        return new IrzReadDto {
+            Id = doc.ID, Numar = doc.Numar, Data = doc.Data, An = doc.Data.Year, Luna = doc.Data.Month,
+            Stare = doc.Stare.ToString(), DataOperare = doc.DataOperare,
+            UnitateId = doc.PredatorId, UnitateDenumire = doc.Predator?.Denumire,
+            Total = linii.Sum(l => l.Valoare),
+            Stale = doc.Stare == StareDocument.Draft ? InchidereRezultatService.Stale(os, doc) : null,
+            PoateOpera = regim.Poate(ComandaDocument.Opereaza),
+            PoateAnula = regim.Poate(ComandaDocument.AnuleazaOperarea),
+            PoateStorna = regim.Poate(ComandaDocument.Storneaza),
+            PoateSterge = regim.Poate(RegimDocument.Sterge),
+            PoateRegenera = regim.Poate(RegimDocument.Regenereaza),
+            Linii = linii,
+        };
+    }
+
     public static PrevizualizareIrzDto Previzualizeaza(IObjectSpace os, int an, int luna) {
         var r = InchidereRezultatService.Previzualizeaza(os, an, luna);
         var ids = r.Linii.SelectMany(l => new[] { l.Sursa.Cont, l.ContDestinatie }).Distinct().ToList();

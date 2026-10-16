@@ -25,7 +25,7 @@ namespace Atlas.Conta.BackOffice.Module.Controllers;
 //     ușa securizată.
 //   * MOTIVUL redeschiderii se culege într-un dialog pe obiect NON-PERSISTENT
 //     (tiparul 79-r1); fără lookup, deci fără spațiu compus.
-public class PerioadaFiscalaController : ObjectViewController<ObjectView, PerioadaFiscala> {
+public partial class PerioadaFiscalaController : ObjectViewController<ObjectView, PerioadaFiscala> {
     const string CheieStare = "StarePerioada";
 
     readonly PopupWindowShowAction inchide;
@@ -65,6 +65,7 @@ public class PerioadaFiscalaController : ObjectViewController<ObjectView, Perioa
                 + "istoricul registrelor și rescrie snapshot-urile; diferențele se raportează întâi.",
         };
         reconstruieste.Execute += Reconstruieste_Execute;
+        CreeazaExercitiul();
     }
 
     protected override void OnActivated() {
@@ -83,7 +84,8 @@ public class PerioadaFiscalaController : ObjectViewController<ObjectView, Perioa
     void ActualizeazaStarea() {
         var perioada = View?.CurrentObject as PerioadaFiscala;
         inchide.Enabled[CheieStare] = perioada is { Inchisa: false };
-        redeschide.Enabled[CheieStare] = perioada is { Inchisa: true };
+        redeschide.Enabled[CheieStare] = perioada is { Inchisa: true, ExercitiuInchis: false };
+        ActualizeazaExercitiul(perioada);
     }
 
     void Reconstruieste_Execute(object sender, SimpleActionExecuteEventArgs e) {
@@ -121,13 +123,19 @@ public class PerioadaFiscalaController : ObjectViewController<ObjectView, Perioa
     // răspuns FALS, nu unul gol (73g/80e).
     void Inchide_CustomizePopupWindowParams(object sender, CustomizePopupWindowParamsEventArgs e) {
         var perioada = (PerioadaFiscala)View.CurrentObject;
+        e.View = DialogInchidere(perioada, os => PerioadeApply.Verifica(os, perioada.An, perioada.Luna),
+            $"Închide perioada {perioada.Luna:00}/{perioada.An}");
+    }
+
+    DetailView DialogInchidere(PerioadaFiscala perioada, Func<IObjectSpace, ConstatareInchidereDto[]> verifica,
+            string titlu) {
         var os = Application.CreateObjectSpace(typeof(InchiderePerioadaParametri));
         var parametri = os.CreateObject<InchiderePerioadaParametri>();
         parametri.An = perioada.An;
         parametri.Luna = perioada.Luna;
         var fabrica = Application.ServiceProvider.GetRequiredService<INonSecuredObjectSpaceFactory>();
         using (var osMotor = fabrica.CreateNonSecuredObjectSpace(typeof(PerioadaFiscala)))
-            foreach (var dto in PerioadeApply.Verifica(osMotor, perioada.An, perioada.Luna)) {
+            foreach (var dto in verifica(osMotor)) {
                 var rand = os.CreateObject<ConstatareAcceptabila>();
                 rand.Cheie = dto.Cheie;
                 rand.Severitate = dto.Severitate;
@@ -136,8 +144,9 @@ public class PerioadaFiscalaController : ObjectViewController<ObjectView, Perioa
                 rand.Obiect = dto.ObiectEticheta;
                 parametri.Constatari.Add(rand);
             }
-        e.View = Application.CreateDetailView(os, parametri);
-        e.View.Caption = $"Închide perioada {perioada.Luna:00}/{perioada.An}";
+        var view = Application.CreateDetailView(os, parametri);
+        view.Caption = titlu;
+        return view;
     }
 
     void Inchide_Execute(object sender, PopupWindowShowActionExecuteEventArgs e) {

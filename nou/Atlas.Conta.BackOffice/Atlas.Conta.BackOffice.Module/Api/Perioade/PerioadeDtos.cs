@@ -5,7 +5,8 @@ namespace Atlas.Conta.BackOffice.Module.Api.Perioade;
 // `metadata.json`.
 
 /// <summary>O verigă a lanțului de perioade.</summary>
-public sealed record PerioadaDto(int An, int Luna, bool Inchisa, DateTime? InchisaLa, DateTime? InchisaPrimaOara);
+public sealed record PerioadaDto(int An, int Luna, bool Inchisa, DateTime? InchisaLa, DateTime? InchisaPrimaOara,
+    bool ExercitiuInchis, DateTime? ExercitiuInchisLa);
 
 /// <summary>O constatare a verificării de închidere, plată.</summary>
 public sealed record ConstatareInchidereDto(string Cheie, string Fel, string Severitate, string Text,

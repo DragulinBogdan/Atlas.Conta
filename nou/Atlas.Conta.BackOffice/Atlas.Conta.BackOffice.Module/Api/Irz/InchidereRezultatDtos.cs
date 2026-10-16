@@ -32,3 +32,45 @@ public sealed class GenerareIrzRezultatDto {
     public Guid? InchidereVieId { get; set; }
     public int NumarLinii { get; set; }
 }
+
+public sealed class IrzListDto {
+    public Guid Id { get; set; }
+    public string Numar { get; set; }
+    public DateOnly Data { get; set; }
+    public int An { get; set; }
+    public int Luna { get; set; }
+    public string Stare { get; set; }
+    public DateTime? DataOperare { get; set; }
+    public string UnitateDenumire { get; set; }
+    public int NumarLinii { get; set; }
+    public decimal Total { get; set; }
+}
+
+public sealed class IrzLinieReadDto {
+    public Guid Id { get; set; }
+    public string ContDebitSimbol { get; set; }
+    public string ContCreditSimbol { get; set; }
+    public bool SursaPeDebit { get; set; }
+    public decimal Valoare { get; set; }
+}
+
+/// <summary>Închiderea citită: <c>Stale</c> e verdictul anti-stale, numai pe Draft.</summary>
+public sealed class IrzReadDto {
+    public Guid Id { get; set; }
+    public string Numar { get; set; }
+    public DateOnly Data { get; set; }
+    public int An { get; set; }
+    public int Luna { get; set; }
+    public string Stare { get; set; }
+    public DateTime? DataOperare { get; set; }
+    public Guid UnitateId { get; set; }
+    public string UnitateDenumire { get; set; }
+    public decimal Total { get; set; }
+    public bool? Stale { get; set; }
+    public bool PoateOpera { get; set; }
+    public bool PoateAnula { get; set; }
+    public bool PoateStorna { get; set; }
+    public bool PoateSterge { get; set; }
+    public bool PoateRegenera { get; set; }
+    public List<IrzLinieReadDto> Linii { get; set; } = new();
+}

@@ -235,6 +235,7 @@ namespace Atlas.Conta.BackOffice.WebApi {
                     // deja în `Politici.TipuriConfigurabile`, deci fără seed nou de
                     // permisiuni. Unicitatea pe `Fel` are gardian ÎNAINTEA indexului.
                     options.BusinessObject<PoliticaInchidere>();
+                    options.BusinessObject<PoliticaInchidereConturi>();
                     // `ClasaProdus` — lookup pentru `TipMaterial` și pentru coloana
                     // de clasă a regulilor de stoc. `ReadOnly`: `Natura` decide
                     // dacă o linie intră în regulile de stoc (23b), iar clasele se

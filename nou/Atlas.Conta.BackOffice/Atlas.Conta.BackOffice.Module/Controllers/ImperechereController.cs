@@ -229,7 +229,7 @@ public sealed class ImperechereController : ViewController {
 }
 
 // Parametrii dialogului de împerechere (review F27, 1c), tiparul
-// `GenerareInchidereTvaParametri`: non-persistent, `SetPropertyValue` ca
+// `GenerareInchidereLunaParametri`: non-persistent, `SetPropertyValue` ca
 // precompletarea să se vadă; lookup-urile trăiesc pe OS-urile adiționale.
 [DomainComponent]
 [XafDisplayName("Împerechează")]

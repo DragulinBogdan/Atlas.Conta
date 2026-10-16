@@ -1,6 +1,6 @@
 # API
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 Ușile HTTP: salvarea și comenzile, rutele de perioade, corecție și împerecheri, proiecțiile, securitatea și refuzurile, OData, auditul și contractele generate.
 
@@ -126,6 +126,22 @@ dreptului cerut și 422 pentru refuzul lanțului. (F27-D1, F27-D2, 80a)
   debit, credit, cantitate și valoare. Comanda nu are subiect, deci gate-ul ei
   este pe tip: dreptul de scriere pe perioada fiscală, același drept ca
   închiderea. Ordinea refuzurilor este 401, apoi 403, apoi 422. (F27-D3)
+- Exercițiul are rutele lui sub `api/perioade/{an}/exercitiu`, cu subiectul
+  decembrie anului: `GET verificare`, `POST inchide` (corp opțional, cheile
+  acceptate) și `POST redeschide` (motivul). Ordinea refuzurilor e cea a
+  lunii: 400 pe an, 404 pe decembrie nedefinit sau invizibil, 403 pe dreptul
+  cerut, 422 pe constatări. Verificarea cere aceleași drepturi de citire ca
+  verificarea lunii. `PerioadaDto` poartă `ExercitiuInchis` și
+  `ExercitiuInchisLa`. (E3-D7, 80a)
+
+## Închiderea conturilor de rezultat
+
+`api/irz` are ușile ITV: lista filtrată, `GET {id}` cu verdictul anti-stale
+pe draft, `GET previzualizare?an=&luna=`, `POST genereaza`,
+`POST {id}/regenereaza`, `DELETE {id}` și comenzile documentului. Generarea
+cere crearea pe tip, regenerarea și dreptul de scriere pe instanță; citirea
+și previzualizarea cer citirea completă pe `Postare`. Generarea care nu
+produce document întoarce 200 cu motivul. (E3-D3, F21-D3, F22-D5)
 
 ## Corecția
 
@@ -280,9 +296,10 @@ filtrarea ar produce un rezultat incomplet prezentat ca total. (70f, 80a, 80e)
 ### Citirea completă și citirea filtrată a cubului
 
 Rutele care întorc cifre însumate din cub pe ușa de sistem cer citirea
-COMPLETĂ pe `Postare`: `itv/{id}`, `itv/previzualizare`, `amo/{id}`,
-`amo/previzualizare`, `imobilizari/{id}/fisa`, `imobilizari/registru` și
-`perioade/{an}/{luna}/verificare`. Un rol fără dreptul pe tip, ori cu un
+COMPLETĂ pe `Postare`: `itv/{id}`, `itv/previzualizare`, `irz/{id}`,
+`irz/previzualizare`, `amo/{id}`, `amo/previzualizare`,
+`imobilizari/{id}/fisa`, `imobilizari/registru`,
+`perioade/{an}/{luna}/verificare` și `perioade/{an}/exercitiu/verificare`. Un rol fără dreptul pe tip, ori cu un
 criteriu de rând sau de membru pe `Postare`, primește 403 înaintea citirii.
 Dreptul completează, nu înlocuiește: ruta cere mai întâi dreptul pe subiectul
 ei, iar verificarea închiderii pe toate tipurile pe care le însumează.
@@ -331,7 +348,7 @@ fiecărei entități. (42f, 56)
 | Grup | Entități |
 |---|---|
 | Nomenclatoare cu scriere | Gestiune, TipMaterial, Partener, Produs, Angajat, TipTva, Societate, Imobilizare (regulile fișei la gardianul de commit; starea și datele le scrie doar motorul) (56, 77h, 81e, 87i) |
-| Politici cu scriere controlată | MapareD300, MapareD394, PoliticaMiscareSaft, TipDocument, RegulaStoc, RegulaContare, PoliticaConex, PoliticaScadenta, PoliticaValidare, PoliticaTva, PoliticaInchidereTva, PoliticaNumerotare, PoliticaTvaImplicit, PoliticaAmortizare, RegulaDeductibilitate (81e, 87i) |
+| Politici cu scriere controlată | MapareD300, MapareD394, PoliticaMiscareSaft, TipDocument, RegulaStoc, RegulaContare, PoliticaConex, PoliticaScadenta, PoliticaValidare, PoliticaTva, PoliticaInchidereTva, PoliticaNumerotare, PoliticaTvaImplicit, PoliticaAmortizare, RegulaDeductibilitate, PoliticaInchidere, PoliticaInchidereConturi (81e, 87i, F27-D2, E3-D4) |
 | Nomenclatoare pentru citire | Judet, UnitateMasura, CodEconomic, SursaFinantare, CodFunctional, Proiect, ContPropriu, UnitateInterna, Lot, Cont, Angajament, Repartitor, RandD300, ClasaProdus, ClasificareImobilizari (56, 81e, 87i) |
 | Audit pentru citire | AuditDataItemPersistent, AuditEFCoreWeakReference (81e, 81h) |
 
