@@ -30,7 +30,7 @@ public class IrzController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult GetById(Guid id) {
-        var refuz = AutorizeazaCitire<InchidereRezultat>(id) ?? PostariCitibile();
+        var refuz = AutorizeazaCitire<InchidereRezultat>(id) ?? CalculCitibil();
         if (refuz != null)
             return refuz;
         using var os = NonSecured(typeof(InchidereRezultat));
@@ -49,7 +49,7 @@ public class IrzController : ContaApiController {
         using (var osSecured = Secured(typeof(InchidereRezultat)))
             if (!PoateCiti(typeof(InchidereRezultat), osSecured))
                 return RefuzCitire(typeof(InchidereRezultat));
-        return PostariCitibile() ?? Domeniu(() => {
+        return CalculCitibil() ?? Domeniu(() => {
             using var os = NonSecured(typeof(InchidereRezultat));
             return Ok(InchidereRezultatApply.Previzualizeaza(os, an.Value, luna.Value));
         });
@@ -115,6 +115,15 @@ public class IrzController : ContaApiController {
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
     public IActionResult Valideaza(Guid id) => ComandaDocument<InchidereRezultat>(c => EroriDto.Din(c.Valideaza(id)));
+
+    // Cifrele vin din politică, conturi și postări pe ușa non-secured (80e).
+    IActionResult CalculCitibil() {
+        using (var os = Secured(typeof(PoliticaInchidereConturi)))
+            foreach (var tip in new[] { typeof(PoliticaInchidereConturi), typeof(Cont) })
+                if (!PoateCiti(tip, os))
+                    return RefuzCitire(tip);
+        return PostariCitibile();
+    }
 
     IActionResult Comanda(Func<ComenziDocument, OperareRezultat> comanda) =>
         ComandaDocument<InchidereRezultat>(c => OperareRezultatDto.Din(comanda(c)));

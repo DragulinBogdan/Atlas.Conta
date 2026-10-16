@@ -7,7 +7,10 @@ Perioada fiscală ca lanț, închiderea ei cu verificarea și politica constată
 ## Perioada fiscală ca lanț
 
 - Perioada este o verigă identificată prin an și lună, unică între rândurile
-  vii. Anul și luna se culeg la creare și nu se mai schimbă. (F27-D1)
+  vii. Anul și luna se culeg la creare și nu se mai schimbă. O perioadă nouă
+  nu se poate crea înaintea unei perioade închise: lanțul se închide în
+  ordine, deci nici anul unui exercițiu închis nu primește luni deschise.
+  (F27-D1, E3-D7)
 - Starea perioadei — închisă, momentul închiderii curente și momentul primei
   închideri — aparține motorului. Pe calea securizată se refuză orice scriere
   asupra ei, ca la postările cubului. (F27-D1)
@@ -48,7 +51,8 @@ Perioada fiscală ca lanț, închiderea ei cu verificarea și politica constată
   `DRAFT-IN-PERIOADA:{id}` și `REST-SCADENT:{id}`; primele trei n-au sufix
   fiindcă sunt ale societății, nu ale unei unități interne. (F27-D2, E3-D5)
 - `REZ-NEINCHIS` judecă soldul, nu documentul: se emite cât timp vreo cheie a
-  conturilor-sursă cu moment `Lunar` are sold la ultima zi a lunii, deci și
+  conturilor-sursă cu moment `Lunar` are sold la ultima zi a lunii (în
+  decembrie și cele cu moment `Anual`, ca închiderea lui), deci și
   când închiderea e operată, dar un document operat după ea în aceeași lună a
   lăsat sold. Textul spune care din cele trei cazuri e: închiderea lipsește,
   există ca draft sau există operată. (E3-D5)
@@ -247,5 +251,5 @@ configurează: ele sunt regula lanțului. (F27-D2)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (7; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 35, 66, 74 (amendată de 105), 76, 77, 104 (amendată de 106).
+Deciziile care numesc pagina în `Arii:` (8; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 35, 66, 74 (amendată de 105), 76, 77, 104 (amendată de 106), 124 (propusă).
 <!-- /gen:decizii -->

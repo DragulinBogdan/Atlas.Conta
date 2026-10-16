@@ -96,6 +96,9 @@ static class ScenelePeTip {
             new(nameof(ScenariiEx), ["EX"], () => new ScenariiEx(
                 s.Deschide, s.Check, privat,
                 (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()),
+            new(nameof(ScenariiExCv), ["EX"], () => new ScenariiExCv(
+                s.Deschide, s.Check, privat,
+                (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()),
             new(nameof(ScenariiFct), ["FCT"], () => new ScenariiFct(
                 s.Deschide, s.Check, privat,
                 (os, an, luna) => s.InchideAcceptTot(os, an, luna)).Ruleaza()),

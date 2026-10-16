@@ -87,9 +87,9 @@ public static class InchidereRezultatService {
         return linii;
     }
 
-    /// <summary>Conturile-sursă cu moment <c>Lunar</c> au sold la sfârșitul lunii (REZ-NEINCHIS).</summary>
+    /// <summary>Conturile pe care le închide luna au sold la sfârșitul ei (REZ-NEINCHIS); în decembrie, și cele anuale.</summary>
     public static bool AreRezidual(IObjectSpace os, int an, int luna) =>
-        CalculeazaLinii(os, UltimaZi(an, luna), cuAnuale: false).Count > 0;
+        CalculeazaLinii(os, UltimaZi(an, luna), cuAnuale: luna == 12).Count > 0;
 
     /// <summary>Comanda: draftul lunii pe unitatea internă dată. NU comite.</summary>
     public static RezultatInchidere Incearca(IObjectSpace os, int an, int luna, Guid unitateId, Guid? inlocuieste = null) {

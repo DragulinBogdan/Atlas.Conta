@@ -93,7 +93,7 @@ de an.
 Gata când: fiecare rând `E3` din catalog e `livrată`, adică scenariile
 etapei și SC-X-12 sunt verificate pe ambele profiluri, iar contractul e
 închis cu review-ul advers (pasul 5).
-Stare: pasul 0 (contractul), 2026-10-16.
+Stare: închisă 2026-10-16 (decizia 124, PR #54–#58); rândurile `E3` sunt `livrată`. Etapa următoare o fixează owner-ul.
 Funcționalitățile: rândurile `E3` din [catalog](functionalitati.md).
 
 E2 (depunerea fiscală, contractul

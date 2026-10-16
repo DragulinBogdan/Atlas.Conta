@@ -233,12 +233,24 @@ static class VerificaPerioade {
                 + "să o refuze de bază",
                 RefuzGardianPer(os)?.Contains("există deja") == true);
         }
-        using (var os = s.Provider.CreateObjectSpace()) {
-            var x = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
-            x.ExercitiuInchis = true;
-            s.Check($"PER-V8e ({eticheta}) starea exercițiului e a motorului, ca starea lunii (E3-D7)",
-                RefuzGardianPer(os)?.Contains("doar motorul") == true);
+        string RefuzExercitiu(Action<PerioadaFiscala> schimba) {
+            using var os = s.Provider.CreateObjectSpace();
+            schimba(os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5));
+            return RefuzGardianPer(os);
         }
+        s.Check($"PER-V8e ({eticheta}) starea exercițiului e a motorului, ca starea lunii, pe fiecare câmp (E3-D7)",
+            RefuzExercitiu(x => x.ExercitiuInchis = true)?.Contains("doar motorul") == true
+            && RefuzExercitiu(x => x.ExercitiuInchisLa = DateTime.UtcNow)?.Contains("doar motorul") == true);
+        string RefuzLunaNoua(int luna) {
+            using var os = s.Provider.CreateObjectSpace();
+            var x = os.CreateObject<PerioadaFiscala>();
+            x.An = An;
+            x.Luna = luna;
+            return RefuzGardianPer(os);
+        }
+        s.Check($"PER-V8j ({eticheta}) o lună nouă înaintea unei luni închise (02/{An}, cu 03/{An} închisă) e refuzată, "
+            + $"deci nici anul unui exercițiu închis nu primește luni deschise; după ultima închisă (06/{An}) e acceptată",
+            RefuzLunaNoua(2)?.Contains("înaintea unei perioade închise") == true && RefuzLunaNoua(6) == null);
         using (var os = s.Provider.CreateObjectSpace()) {
             var p5 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
             var rand = os.CreateObject<InchiderePerioada>();

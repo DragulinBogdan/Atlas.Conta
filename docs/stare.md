@@ -6,31 +6,31 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 
 | Ce | Cât |
 |---|---|
-| Decizii | 123: 88 active, 35 amendate parțial, 0 depășite, 0 propuse |
-| Restanțe | 394: 287 deschise, 107 închise |
+| Decizii | 124: 88 active, 35 amendate parțial, 0 depășite, 1 propuse |
+| Restanțe | 400: 291 deschise, 109 închise |
 | Pagini de stare curentă | 19 |
-| Contracte de felie (`Tip: contract`) | 5, deschise 1 |
+| Contracte de felie (`Tip: contract`) | 5, deschise 0 |
 | Cataloage vii (`Tip: catalog`) | 6 |
-| Fișiere Markdown în `docs/` | 340 |
+| Fișiere Markdown în `docs/` | 341 |
 | Citări de decizii din cod (`// N`) | 75 |
 
 ## Decizii în vigoare pe arie
 
-- **documente** (52): 2, 3 (amendată de 89), 13, 14, 16 (amendată de 89), 17, 20, 22, 23, 25, 26 (amendată de 112), 27, 28, 30, 31 (amendată de 76, 88), 32, 33, 36 (amendată de 71), 37, 38 (amendată de 81, 84), 40, 42 (amendată de 104, 106), 46 (amendată de 113), 48 (amendată de 76), 54, 55, 56 (amendată de 77, 81), 58, 63, 64 (amendată de 84), 65, 76, 79 (amendată de 80), 80, 81, 82, 86, 87 (amendată de 97), 89, 93, 95, 97 (amendată de 98), 98, 99, 104 (amendată de 106), 106, 108 (amendată de 110), 109, 114 (amendată de 116), 115, 116 (amendată de 117), 117
-- **motor** (31): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115
-- **stoc** (15): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119
+- **documente** (53): 2, 3 (amendată de 89), 13, 14, 16 (amendată de 89), 17, 20, 22, 23, 25, 26 (amendată de 112), 27, 28, 30, 31 (amendată de 76, 88), 32, 33, 36 (amendată de 71), 37, 38 (amendată de 81, 84), 40, 42 (amendată de 104, 106), 46 (amendată de 113), 48 (amendată de 76), 54, 55, 56 (amendată de 77, 81), 58, 63, 64 (amendată de 84), 65, 76, 79 (amendată de 80), 80, 81, 82, 86, 87 (amendată de 97), 89, 93, 95, 97 (amendată de 98), 98, 99, 104 (amendată de 106), 106, 108 (amendată de 110), 109, 114 (amendată de 116), 115, 116 (amendată de 117), 117, 124 (propusă)
+- **motor** (32): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124 (propusă)
+- **stoc** (16): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124 (propusă)
 - **partide** (15): 1, 31 (amendată de 76, 88), 41, 46 (amendată de 113), 49, 57, 64 (amendată de 84), 76, 82, 86, 95, 96 (amendată de 100, 102), 100 (amendată de 102), 101 (amendată de 102), 102
 - **imobilizari** (5): 87 (amendată de 97), 95, 97 (amendată de 98), 98, 102
-- **perioade** (7): 1, 35, 66, 74 (amendată de 105), 76, 77, 104 (amendată de 106)
-- **politici** (15): 4, 20, 51, 52, 69, 71 (amendată de 72), 81, 83 (amendată de 84, 86, 104), 84, 87 (amendată de 97), 102, 104 (amendată de 106), 112, 113, 123
+- **perioade** (8): 1, 35, 66, 74 (amendată de 105), 76, 77, 104 (amendată de 106), 124 (propusă)
+- **politici** (16): 4, 20, 51, 52, 69, 71 (amendată de 72), 81, 83 (amendată de 84, 86, 104), 84, 87 (amendată de 97), 102, 104 (amendată de 106), 112, 113, 123, 124 (propusă)
 - **tva** (17): 25, 36 (amendată de 71), 46 (amendată de 113), 56 (amendată de 77, 81), 69, 70, 71 (amendată de 72), 79 (amendată de 80), 80, 81, 84, 86, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 102, 103, 122 (amendată de 123), 123
 - **saft** (5): 34, 73 (amendată de 74, 105), 74 (amendată de 105), 103, 122 (amendată de 123)
-- **raportare** (6): 42 (amendată de 104, 106), 66, 67, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 104 (amendată de 106), 117
+- **raportare** (7): 42 (amendată de 104, 106), 66, 67, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 104 (amendată de 106), 117, 124 (propusă)
 - **nomenclatoare** (3): 72, 73 (amendată de 74, 105), 122 (amendată de 123)
-- **api** (24): 5, 6, 7, 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 60, 70, 77, 80, 81, 87 (amendată de 97), 89, 98, 99, 101 (amendată de 102), 104 (amendată de 106), 106, 108 (amendată de 110), 122 (amendată de 123)
-- **ecrane** (26): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106, 122 (amendată de 123), 123
+- **api** (25): 5, 6, 7, 39, 42 (amendată de 104, 106), 43 (amendată de 104), 53, 55, 56 (amendată de 77, 81), 57, 60, 70, 77, 80, 81, 87 (amendată de 97), 89, 98, 99, 101 (amendată de 102), 104 (amendată de 106), 106, 108 (amendată de 110), 122 (amendată de 123), 124 (propusă)
+- **ecrane** (27): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106, 122 (amendată de 123), 123, 124 (propusă)
 - **dezvoltare** (24): 21, 23, 26 (amendată de 112), 35, 36 (amendată de 71), 39, 40, 41, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 52, 56 (amendată de 77, 81), 69, 73 (amendată de 74, 105), 80, 81, 84, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 120
-- **verificare** (32): 1, 2, 3 (amendată de 89), 4, 6, 7, 8, 14, 17, 23, 24, 28, 30, 43 (amendată de 104), 50, 56 (amendată de 77, 81), 66, 70, 73 (amendată de 74, 105), 80, 81, 84, 85, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 106, 118 (amendată de 121), 120, 121
+- **verificare** (33): 1, 2, 3 (amendată de 89), 4, 6, 7, 8, 14, 17, 23, 24, 28, 30, 43 (amendată de 104), 50, 56 (amendată de 77, 81), 66, 70, 73 (amendată de 74, 105), 80, 81, 84, 85, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 106, 118 (amendată de 121), 120, 121, 124 (propusă)
 - **import** (14): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117)
 - **README** (6): 42 (amendată de 104, 106), 76, 91 (amendată de 107, 118, 120), 103, 104 (amendată de 106), 110 (amendată de 113)
 - **limite-curente** (29): 37, 41, 42 (amendată de 104, 106), 43 (amendată de 104), 46 (amendată de 113), 53, 55, 72, 75, 77, 80, 81, 84, 85, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 94, 95, 97 (amendată de 98), 102, 103, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 109, 115, 116 (amendată de 117)
@@ -46,14 +46,14 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 34 |
-| după PoC | 215 |
-| migrare | 24 |
+| activă | 32 |
+| după PoC | 220 |
+| migrare | 25 |
 | depășită de 091 | 2 |
 | docs | 8 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (34, prag 45)
+### Lista `activă` (32, prag 45)
 
 **motor** (6)
 
@@ -64,7 +64,7 @@ Niciuna.
 - `TR-r11` Numar, DataScadenta, Autogenerat, DocumentSursa rămân atribute ale documentului scrise la operare, s…
 - `N-r7` ordinea FIFO a nucleului e Guid.CompareTo (componentă cu componentă) prin Fifo.Intai…
 
-**stoc** (12)
+**stoc** (11)
 
 - `75-r4` PretEvaluare 6 zecimale pe cantități mari vs invariantul 46d
 - `86-r1` taxele vamale și accizele în costul de achiziție (ajustare de cost pe lot)
@@ -77,7 +77,6 @@ Niciuna.
 - `X-r3` Raportul de stoc listează capătul de consum al BCS (postarea de debit poartă lotul ca unitate, pe co…
 - `NG-r1` Balanța și fișa contului filtrate pe gestiune sau pe material nu văd transferurile (BTR, ASM): valoa…
 - `NG-r2` Contul lotului vine din tipul curent de material al produsului…
-- `CV-r2` Închiderea exercițiului ca operație explicită (obligatorie pe bugetar, utilă pe privat)…
 
 **partide** (4)
 
@@ -92,9 +91,8 @@ Niciuna.
 - `095-r1` DEC → contract IMO → PIF/AMO/CAS complete pe cub, inclusiv cartea fiscală și istoricul fișei, înaint…
 - `097-r2` auditul anulării fizice a suportului eliberat; proveniența fără FK restrictiv (097, 091j)
 
-**perioade** (2)
+**perioade** (1)
 
-- `F27-r4` închiderea de an ca operație distinctă (121 → 1171 pe privat după aprobare, 121 → 117 pe bugetar…
 - `F27-r16` forma proiecției DocumenteCuRest: candidații de la 59 (uniunea tuturor documentelor operate) și form…
 
 **politici** (1)
@@ -121,7 +119,7 @@ Niciuna.
 
 ## Felii deschise
 
-- [E3 — închiderea exercițiului: rezultatul lunar în 121, exercițiul ca stare, anul nou din soldurile de la 31.12](nucleu/e3-inchiderea-exercitiului-contract.md) — pași livrați 0 din 0; decizii: 004, 014, 015, 029, 035, 088, 104, 119
+Niciun contract deschis declarat cu `Tip: contract`.
 
 ## Decizii invocate din cod
 

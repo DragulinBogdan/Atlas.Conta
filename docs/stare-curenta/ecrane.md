@@ -317,5 +317,5 @@ de gardian. (58, 79a, 84d, 87g, 87j)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (26; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106, 122 (amendată de 123), 123.
+Deciziile care numesc pagina în `Arii:` (27; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106, 122 (amendată de 123), 123, 124 (propusă).
 <!-- /gen:decizii -->

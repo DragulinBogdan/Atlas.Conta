@@ -6,7 +6,7 @@
 - Livrează: F-PER-02…F-PER-06 (etapa E3 din [scop](../scop.md))
 - Arii: perioade, politici, documente, motor, stoc, raportare, api, ecrane, verificare
 - Decizii: 004, 014, 015, 029, 035, 088, 104, 119
-- Stare: deschis
+- Stare: închis (2026-10-16, decizia 124)
 
 Owner-ul a tranșat la 2026-10-16, pe întrebările pasului 0: pe privat 121
 trece în anul nou, iar transferul în 1171 se face după aprobarea
@@ -231,8 +231,8 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
 | 1 | `PoliticaInchidereConturi` cu seed-ul; `InchidereRezultat` cu generare, previzualizare, regenerare; `REZ-NEINCHIS`; migrația | familia de scenarii `EX`, definită în acest pas; ModelCheck pe ambele profiluri; pe o lună închisă de 1C, netul pe cont al liniilor = divergența explicată | închis 2026-10-16 (PR #54) |
 | 2 | exercițiul pe decembrie: comenzile, constatările, istoricul; rândurile `Anual`; `CV_AN_INCHIS` pe exercițiu | familia `EX`; SC-X-12; teste de nucleu; ModelCheck pe ambele profiluri | implementat 2026-10-16 |
 | 3 | balanța pe an (E3-D8): proiecția, DTO-ul, openapi, coloana în React | SC-CIT pe doi ani; drift openapi; SAF-T neschimbat pe lunile de probă | implementat 2026-10-16 |
-| 4 | XAF: comenzile pe perioadă și exercițiu, lista închiderilor; ușile HTTP cu refuzurile (80) | `refuzuri.ps1` pe host viu; browser | implementat 2026-10-16 |
-| 5 | regresia integrală, review advers, decizia, închiderea | integrala pe ambele profiluri; nucleu; HTTP; docskit | — |
+| 4 | XAF: comenzile pe perioadă și exercițiu, lista închiderilor; ușile HTTP cu refuzurile (80) | `refuzuri.ps1` pe host viu; browser | închis 2026-10-16 (PR #57) |
+| 5 | regresia integrală, review advers, decizia, închiderea | integrala pe ambele profiluri; nucleu; HTTP; docskit | închis 2026-10-16 |
 
 ## Tranșări la pasul 1 (2026-10-16)
 
@@ -325,6 +325,30 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
   încasărilor, rămasă `Server`; e aliniată la 85c.
 - React primește numai coloana „Exercițiu” pe `/perioade`; comenzile
   exercițiului și închiderea conturilor de rezultat se fac din XAF (104d).
+
+## Review advers (pasul 5, 2026-10-16)
+
+Agent nou, numai citire, pe diff-ul PR #54–#57: niciun MAJOR, 3 MEDIU, 6
+MINOR.
+
+- M1: o perioadă nouă se putea crea în anul unui exercițiu închis sau în
+  fața unei luni închise. Golul vine din F27, iar E3 îi mărea efectul.
+  Gardianul refuză acum perioada nouă înaintea oricărei perioade închise
+  (PER-V8j).
+- M2: E3-D10 era probată numai în nucleu. SC-EX-26 o probează din bază,
+  prin `Fapte`, pe ambele ramuri.
+- M3: cheia-sursă cu material nu era operată în nicio probă. SC-EX-04 o
+  operează acum în `ScenariiExCv`, cu plierea materialului pe 121.
+- m1: în decembrie, `REZ-NEINCHIS` judecă și rândurile `Anual` (E3-D5
+  precizat), iar textul `EX-SOLD-REZIDUAL` cere stornarea închiderii operate.
+- m2, m3: previzualizarea și citirea IRZ cer citirea politicii și a
+  conturilor. Închiderea lunii și a exercițiului cere drepturile de citire
+  ale verificării, fiindcă refuzul ei arată constatările.
+- m4, m5: rămân restanțe (E3-r4, E3-r5). Ordinea închiderilor e apărată
+  numai la operare, iar IRZ poate posta la o dată de înregistrare din luna
+  următoare. Ambele sunt la paritate cu ITV și se prind ca `REZ-NEINCHIS`,
+  fără să corupă date.
+- m6: PER-V8e probează fiecare câmp al exercițiului separat.
 
 ## Regula de oprire
 

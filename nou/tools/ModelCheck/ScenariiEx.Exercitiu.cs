@@ -57,12 +57,15 @@ sealed partial class ScenariiEx {
             VerificaExercitiul(Urmator).Select(c => c.Cheie).Order()
                 .SequenceEqual(["DECEMBRIE-DESCHIS", $"EXERCITIU-PRECEDENT-DESCHIS:{An}"]));
 
-        NotaOperata(An, Serviciu, ContPartideLiber, 100);
-        NotaOperata(An, ContPartideLiber, Venit, 40);
         if (!Privat) {
             NotaOperata(An, ContPartideLiber, "489.01.01", 30);
             NotaOperata(An, "520.02.00", ContPartideLiber, 25);
+            Verifica("SC-EX-21", "decembrie cu sold numai pe sursele anuale dă REZ-NEINCHIS, ca închiderea lui",
+                CuSpatiu(os => InchidereRezultatService.CalculeazaLinii(os, Capat(An), cuAnuale: false).Count == 0
+                    && InchidereRezultatService.AreRezidual(os, An, 12)));
         }
+        NotaOperata(An, Serviciu, ContPartideLiber, 100);
+        NotaOperata(An, ContPartideLiber, Venit, 40);
         SoldRezidual();
         Anuale();
         Inchis();
