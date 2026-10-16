@@ -1,8 +1,8 @@
 # 124 — Rezultatul se închide lunar printr-un document generat, exercițiul închis e starea lui decembrie, iar balanța are graniță de an fără tranzacție de deschidere
 
 - Data: 2026-10-16
-- Stare: propusă
-- Execuție: etapa E3, contractul `docs/nucleu/e3-inchiderea-exercitiului-contract.md`, pașii 0–5 (2026-10-16), PR #54–#57 și PR-ul pasului 5. Owner-ul a tranșat la 2026-10-16: 121 pe privat trece în anul nou (E3-D2), închiderea lunară prin document generat (E3-D3), lanțul strict (E3-D6), rândurile anuale datate 31.12 (E3-D7), execuția bugetară în etapă, cu seed-ul ei de pornire (E3-D9), și cheia închiderii = atomul complet al soldului
+- Stare: activă
+- Execuție: etapa E3, contractul `docs/nucleu/e3-inchiderea-exercitiului-contract.md`, pașii 0–5 (2026-10-16), PR #54–#57 și PR-ul pasului 5. Owner-ul a tranșat la 2026-10-16: 121 pe privat trece în anul nou (E3-D2), închiderea lunară prin document generat (E3-D3), lanțul strict (E3-D6), rândurile anuale datate 31.12 (E3-D7), execuția bugetară în etapă, cu seed-ul ei de pornire (E3-D9), și cheia închiderii = atomul complet al soldului. Mersă în main prin PR #54–#58 (0984d0fa); owner-ul a aprobat decizia la 2026-10-16
 - Arii: perioade, politici, documente, motor, stoc, raportare, api, ecrane, verificare
 - Amendează: —
 - Închide: F27-r4, CV-r2
@@ -51,3 +51,4 @@ E3-r1…E3-r6 în `restante.md`: repartizarea profitului ca document generat, pe
 ## Istoric
 
 - 2026-10-16: scrisă la închiderea etapei E3; propusă owner-ului.
+- 2026-10-16: aprobată de owner după merge-ul PR #58; trece în `activă`.

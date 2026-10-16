@@ -124,7 +124,7 @@ aria), 118-r1 la `/docs-curatenie` și `build` din 118-r2. E1
 D300 și D394 în XML, SAF-T pe luna cu corecție valorică), e mersă în
 main la 2026-10-15 (PR #50). E3, închiderea exercițiului
 ([contractul](docs/nucleu/e3-inchiderea-exercitiului-contract.md), decizia
-124 propusă), e închisă la 2026-10-16 (PR #54–#58); etapa următoare o
+124 activă), e închisă la 2026-10-16 (PR #54–#58); etapa următoare o
 fixează owner-ul. Unde suntem, cu cifre:
 [docs/stare.md](docs/stare.md); cronologia:
 `docs/decizii/istoric-plan-de-lucru.md`.

@@ -251,5 +251,5 @@ configurează: ele sunt regula lanțului. (F27-D2)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (8; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 35, 66, 74 (amendată de 105), 76, 77, 104 (amendată de 106), 124 (propusă).
+Deciziile care numesc pagina în `Arii:` (8; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 35, 66, 74 (amendată de 105), 76, 77, 104 (amendată de 106), 124.
 <!-- /gen:decizii -->
