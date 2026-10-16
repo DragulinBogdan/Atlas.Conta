@@ -72,7 +72,7 @@ public static class TvaService {
         DirectiePentruTip(os, MotorOperare.GasesteTipDocument(os, doc).ID);
 
     public static DirectieTva? DirectiePentruTip(IObjectSpace os, Guid tipDocumentId) =>
-        os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipDocumentId)?.Directie;
+        os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipDocumentId, false)?.Directie;
 
     // F13-D1, partea care STRIGĂ (62f: „un gard care tace devine capcană"):
     // pe un document de LIVRARE, o linie cu regim de taxare inversă și

@@ -27,7 +27,7 @@ internal static class Fapte {
             .ToList();
 
     public static PoliticaConexFapt? Conex(IObjectSpace os, Guid tipDocumentId) {
-        var politica = os.FirstOrDefault<PoliticaConex>(p => p.TipDocumentSursaId == tipDocumentId);
+        var politica = os.FirstOrDefault<PoliticaConex>(p => p.TipDocumentSursaId == tipDocumentId, false);
         return politica == null
             ? null
             : new PoliticaConexFapt(politica.ID, politica.TipDocumentTintaId,
@@ -108,7 +108,7 @@ internal static class Fapte {
 
         var reguliContare = ReguliContare(os, tipDoc.ID);
         var reguliStoc = ReguliStoc(os, tipDoc.ID);
-        var politicaTvaEntitate = os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipDoc.ID);
+        var politicaTvaEntitate = os.FirstOrDefault<PoliticaTva>(p => p.TipDocumentId == tipDoc.ID, false);
         var politicaTva = Tva(politicaTvaEntitate);
         var tipuriTva = TipuriTva(os,
             linii.Where(d => d.TipTvaId != null).Select(d => d.TipTvaId.Value).Distinct().ToList());

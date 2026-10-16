@@ -53,7 +53,12 @@ pregătirea automată a comenzilor (`Max Auto Prepare=300`,
 `Auto Prepare Min Usages=2`). Cu ea, o citire cu parametri de care depinde
 selectivitatea poate trece pe planul generic; citirile pe loturi sunt scrise
 să nu depindă de asta (125). Pe ianuarie–martie 2025, pe 5446, importul
-costă ~20 ms pe document, constant de la o lună la alta (17:43 pe trei luni).
+costă ~18–21 ms pe document pe ianuarie–iunie 2025, pe 5446 (31:13 pe șase
+luni); creșterea rămasă e ~2% pe lună, plus contractul lunar (7 → 27 s).
+Conexiunile importului nu se resetează la întoarcerea în pool
+(`No Reset On Close=true`, pe orice conexiune): importul nu lasă stare de
+sesiune (fără `SET`, advisory lock de sesiune sau tabele temporare), iar
+resetarea era jumătate din instrucțiunile trimise pe document. (125d)
 
 `--pana-la-ziua Z` taie ultima lună a ferestrei (`--pana-la`) la ziua Z,
 pentru rulări scurte de măsurare: sursa se citește numai până la acea zi,
