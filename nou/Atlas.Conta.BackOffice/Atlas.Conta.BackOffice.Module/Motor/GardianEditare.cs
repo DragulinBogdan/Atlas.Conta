@@ -328,7 +328,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                     VerificaMapareD300(os, mapareD300, erori);
                     break;
                 case MapareD394 mapareD394:
-                    VerificaMapareD394(mapareD394, erori);
+                    VerificaMapareD394(os, mapareD394, erori);
                     break;
             }
         }
@@ -1259,10 +1259,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + $"{politica.ZileDefault} zile — scadența implicită nu poate fi în trecut față de document.");
     }
 
-    // `PoliticaInchidereTva`: cele patru conturi sunt un SET. Serviciul cere
-    // setul complet ca să genereze ceva (46c), deci o politică pe jumătate
-    // culeasă nu e „în lucru", e un tip inert care arată configurat — exact
-    // ambiguitatea pe care ecranul ITV o traduce azi în „ProfilInert" (79a).
+    // 46c, 79a: cele patru conturi sunt complete sau goale.
     static void VerificaPoliticaInchidereTva(PoliticaInchidereTva politica, ICollection<string> erori) {
         var conturi = new[] {
             politica.ContDeductibilaId ?? politica.ContDeductibila?.ID,
@@ -1277,9 +1274,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "de plată, de recuperat). Completați-le pe toate sau goliți-le pe toate (tip inert).");
     }
 
-    // `PoliticaInchidere`: un singur rând per fel. Al doilea ar face severitatea
-    // nedeterministă, iar constatarea ar fi când blocantă, când ignorată, după
-    // ce rând întoarce baza prima (F27-D2).
+    // F27-D2: un singur rând per fel.
     static void VerificaPoliticaInchidere(IObjectSpace os, PoliticaInchidere politica,
             ICollection<string> erori) {
         if (EsteSters(os, politica))
@@ -1293,8 +1288,7 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
                 + "un fel are o singură severitate. Editați rândul existent.");
     }
 
-    // `MapareD300`: aceleași două reguli ca atributele XAF de pe clasă, chemate
-    // prin funcțiile lor statice — o regulă, două uși (F23-D5).
+    // F23-D5, 123 b: aceleași reguli ca atributele XAF ale mapărilor.
     static void VerificaMapareD300(IObjectSpace os, MapareD300 mapare, ICollection<string> erori) {
         if (EsteSters(os, mapare))
             return;
@@ -1307,13 +1301,19 @@ public sealed class GardianEditare : IObjectSpaceCustomizer {
             erori.Add("Aceeași pereche (tip de TVA × sens) țintește deja un rând aflat pe aceeași "
                 + "verticală „din care” cu cel ales — cifra ar intra de două ori în rândul-părinte și "
                 + "în totalul lui. Păstrați o singură mapare pe verticală.");
+        foreach (var e in CoerentaMapariTva.Incoerente(os, mapare.TipTva?.ID ?? mapare.TipTvaId, mapare.SensTva))
+            erori.Add(e);
     }
 
-    static void VerificaMapareD394(MapareD394 mapare, ICollection<string> erori) {
+    static void VerificaMapareD394(IObjectSpace os, MapareD394 mapare, ICollection<string> erori) {
+        if (EsteSters(os, mapare))
+            return;
         if (!MapareD394.TintaPermisa(mapare.Tip, mapare.SensTva))
-            erori.Add($"Maparea D394 țintește {mapare.Tip} pe {mapare.SensTva} — pe livrare se mapează doar "
-                + "L, V, LS, pe achiziție doar A, C, AS. AÎ se derivă din partener (TVA la încasare), "
-                + "iar N n-are sursă în registrul de TVA.");
+            erori.Add($"Maparea D394 țintește {mapare.Tip} pe {mapare.SensTva}. " + MapareD394.MesajTinta);
+        if (!MapareD394.AreMotiv(mapare))
+            erori.Add(MapareD394.MesajMotiv);
+        foreach (var e in CoerentaMapariTva.Incoerente(os, mapare.TipTva?.ID ?? mapare.TipTvaId, mapare.SensTva))
+            erori.Add(e);
     }
 
     // Numele CLASEI de domeniu al unui rând, nu al proxy-ului de change tracking

@@ -4,11 +4,7 @@ import { storeOData } from '../../nucleu/odata';
 import { GrilaPolitica } from './GrilaPolitica';
 import { afisareNav, captionPolitica, etichetaTipTva, optiuniEnum } from './comune';
 
-// Așezarea unei operațiuni pe tipul de operațiune din secțiunea 2 a D394 (71c):
-// `(TipTva × Sens) → tip`, o singură mapare per pereche. Lista de tipuri e
-// ÎNTREAGĂ, iar potrivirea cu sensul rămâne a gardianului — pe livrare doar
-// L/V/LS, pe achiziție doar A/C/AS; AÎ se derivă din partener, N n-are sursă în
-// registrul de TVA.
+// `(TipTva × Sens) → tip D394` sau excludere cu motiv (71c, 123 a); potrivirea cu sensul și cu D300 o judecă gardianul.
 
 const TIP = 'MapareD394';
 const cap = (m: string) => captionPolitica(TIP, m);
@@ -27,8 +23,8 @@ export function MapariD394() {
       indiciu={(
         <>
           O singură mapare per pereche (tip de TVA × sens). Ținta trebuie să se potrivească cu sensul —
-          pe livrare L, V sau LS, pe achiziție A, C sau AS. Perechea nemapată apare în panoul
-          „neincluse”, cu cifrele ei.
+          pe livrare L, V sau LS, pe achiziție A, C sau AS — și cu rândul D300 al aceleiași perechi.
+          Fără tip, perechea e exclusă din D394 și cere motivul. Perechea nemapată oprește fișierul D394.
         </>
       )}
     >
@@ -46,8 +42,9 @@ export function MapariD394() {
         <Lookup dataSource={sensuri} valueExpr="valoare" displayExpr="label" />
       </Column>
       <Column dataField="Tip" caption={cap('Tip')}>
-        <Lookup dataSource={tipuriOperatiune} valueExpr="valoare" displayExpr="label" />
+        <Lookup dataSource={tipuriOperatiune} valueExpr="valoare" displayExpr="label" allowClearing />
       </Column>
+      <Column dataField="Motiv" caption={cap('Motiv')} minWidth={240} />
     </GrilaPolitica>
   );
 }

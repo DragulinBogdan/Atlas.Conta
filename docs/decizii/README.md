@@ -112,9 +112,9 @@
 | 119 | [Compensarea valorică aparține corecției: a doua Operare pe un document operat…](119-compensarea-valorica-apartine-corectiei.md) | 2026-10-13 | activă |
 | 120 | [Lanțul de migrații e de unică folosință până la „rotund”; recomprimarea lui este a șaptea condiție](120-lantul-de-migratii-se-recomprima-la-rotund.md) | 2026-10-13 | activă |
 | 121 | [Ariile stării curente sunt 16, pe responsabilitățile catalogului de funcționalități](121-ariile-pe-familiile-catalogului.md) | 2026-10-15 | activă |
-| 122 | [Declarațiile D300 și D394 se serializează din proiecția lor, în lei, cu refuz înaintea fișierului…](122-declaratiile-se-serializeaza-din-proiectie.md) | 2026-10-15 | activă |
+| 123 | [D300 și D394 se verifică încrucișat pe aceleași fapte: maparea D394 e completă și coerentă cu decontul, iar diferențele…](123-d300-d394-verificare-incrucisata.md) | 2026-10-16 | activă |
 
-### Amendate parțial (34)
+### Amendate parțial (35)
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -152,6 +152,7 @@
 | 114 | [Departajarea FIFO: data, documentul deschizător, apoi identificatorul](114-departajarea-fifo-pe-documentul-deschizator.md) | 2026-10-09 | amendată de 116 |
 | 116 | [Unitatea fără document se departajează pe postarea ei de deschidere; ID-urile postărilor urmează ordinea tranzacției](116-postarea-de-deschidere-departajeaza-unitatea-fara-document.md) | 2026-10-09 | amendată de 117 |
 | 118 | [Guvernanța documentației: kitul unificat dă forma, Atlas.Conta îl aplică pe structura lui, cu gardieni care intră pe rân…](118-guvernanta-documentatiei.md) | 2026-10-10 | amendată de 121 |
+| 122 | [Declarațiile D300 și D394 se serializează din proiecția lor, în lei, cu refuz înaintea fișierului…](122-declaratiile-se-serializeaza-din-proiectie.md) | 2026-10-15 | amendată de 123 |
 
 ### Depășite integral (0)
 

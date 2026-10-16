@@ -1420,6 +1420,7 @@
     "MapareD300": {
       "DefaultProperty": null,
       "Membri": {
+        "CoerentaCuD394": "CoerentaCuD394",
         "CriteriuRandOperatiuni": "CriteriuRandOperatiuni",
         "DinSeed": "Din seed",
         "ID": "ID",
@@ -1435,8 +1436,11 @@
     "MapareD394": {
       "DefaultProperty": null,
       "Membri": {
+        "CoerentaCuD300": "CoerentaCuD300",
         "DinSeed": "Din seed",
+        "ExcludereaAreMotiv": "ExcludereaAreMotiv",
         "ID": "ID",
+        "Motiv": "Motivul excluderii",
         "SensTva": "Sens TVA",
         "TintaEstePermisa": "TintaEstePermisa",
         "Tip": "Tip operațiune D394",

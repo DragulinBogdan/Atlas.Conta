@@ -464,6 +464,13 @@ public class MapareD300 : Politica, ICuProvenienta {
     public bool RandFaraAscendentMapat =>
         FaraAscendentMapat(((IObjectSpaceLink)this).ObjectSpace, this);
 
+    [NotMapped]
+    [Browsable(false)]
+    [RuleFromBoolProperty("MapareD300_CoerentaD394", DefaultContexts.Save,
+        CustomMessageTemplate = "Rândul D300 nu se potrivește cu maparea D394 a aceleiași perechi (123 b).")]
+    public bool CoerentaCuD394 =>
+        CoerentaMapariTva.Incoerente(((IObjectSpaceLink)this).ObjectSpace, TipTva?.ID ?? TipTvaId, SensTva).Count == 0;
+
     // F23-D5, ca mai sus: un corp, două uși (atributul XAF + `GardianEditare`).
     // `os` explicit — pe ușa API obiectul poate să nu fie legat de un
     // ObjectSpace prin `IObjectSpaceLink`, iar gardianul îl are oricum în mână.
@@ -498,24 +505,10 @@ public class MapareD300 : Politica, ICuProvenienta {
     }
 }
 
-// Așezarea unei operațiuni taxabile pe tipul de operațiune din secțiunea 2 a
-// D394 (felia 14, D4-D2): politica `(TipTva × Sens) → TipOperatiuneD394`,
-// aceeași logică de la D300 — perechea e DIRECȚIONALĂ (N21 pe livrare = L, pe
-// achiziție = A), deci nu încape într-o coloană pe `TipTva` (fosta
-// `CategorieD394`, moartă odată cu felia). Ținta e enum, nu nomenclator:
-// `Int_tipOpSType` e stabil din 2016.
-//
-// O SINGURĂ mapare per pereche (index unic filtrat pe `GCRecord = 0`): un grup
-// de registru nu poate fi pe două tipuri de operațiune — ar intra de două ori
-// în sumele de control ale formularului. Perechea NEMAPATĂ nu e eroare: apare
-// în panoul `Neincluse` cu cifrele ei (D4-D4). Ce se REFUZĂ e ținta `AI`/`N`:
-// `AI` se DERIVĂ în cod (A × furnizor cu `TvaLaIncasare`) — mapată explicit,
-// ar clasifica un furnizor cu sistem normal ca fiind la încasare —, iar `N`
-// n-are sursă în registru (D4-r3) — mapată, ar promite o coloană goală.
+// Pereche tip de TVA × sens → tip de operațiune D394, sau excludere cu motiv (123 a).
+// O singură mapare per pereche; perechea nemapată iese în `Neincluse` (D4-D4).
 [NavigationItem("Politici")]
 public class MapareD394 : Politica, ICuProvenienta {
-    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
-    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
     [ModelDefault("AllowEdit", "False")]
     public virtual bool DinSeed { get; set; }
@@ -527,37 +520,49 @@ public class MapareD394 : Politica, ICuProvenienta {
         CustomMessageTemplate = "Tipul de TVA este obligatoriu.")]
     public virtual TipTva TipTva { get; set; }
 
-    // Aceeași axă ca `Postare.SensTva` și `MapareD300.SensTva`.
     [XafDisplayName("Sens TVA")]
     public virtual SensTva SensTva { get; set; }
 
+    /// <summary>Gol = perechea e exclusă din D394, cu `Motiv` (123 a).</summary>
     [XafDisplayName("Tip operațiune D394")]
-    public virtual TipOperatiuneD394 Tip { get; set; }
+    public virtual TipOperatiuneD394? Tip { get; set; }
 
-    // Gardianul D4-D2 ca regulă de fond (`RuleFromBoolProperty`, nu
-    // `RuleCriteria`: limbajul de criterii nu acceptă numele unui membru de
-    // enum — vezi comentariul de pe `MapareD300.Rand`). Ascuns din UI — e
-    // purtătorul regulii, nu un câmp de cules. Geamănul lui la seed:
-    // `ContaSeeder.VerificaD394`.
-    //
-    // Regula are DOUĂ axe (fix 5 al review-ului advers, precedentul 64: „un gard
-    // care oglindește o potrivire oglindește TOATE axele ei"): ținta e permisă
-    // (nu AI/N) ȘI coerentă cu sensul — L/V/LS sunt tipuri de LIVRARE, A/C/AS de
-    // ACHIZIȚIE. `(N21, Achiziție) → L` ar așeza achiziții în `facturiL` și ar
-    // rupe tăcut cusătura per sens a proiecției.
+    [MaxLength(256)]
+    [XafDisplayName("Motivul excluderii")]
+    public virtual string Motiv { get; set; }
+
     [NotMapped]
     [Browsable(false)]
     [RuleFromBoolProperty("MapareD394_TintaPermisa", DefaultContexts.Save,
-        CustomMessageTemplate = "Tipul de operațiune nu se potrivește cu sensul: pe livrare se mapează doar L, V, LS, "
-            + "pe achiziție doar A, C, AS. AÎ se derivă din partener (TVA la încasare), iar N n-are sursă în "
-            + "registrul de TVA.")]
+        CustomMessageTemplate = MesajTinta)]
     public bool TintaEstePermisa => TintaPermisa(Tip, SensTva);
 
-    public static bool TintaPermisa(TipOperatiuneD394 tip, SensTva sensTva) => sensTva switch {
+    [NotMapped]
+    [Browsable(false)]
+    [RuleFromBoolProperty("MapareD394_ExcludereCuMotiv", DefaultContexts.Save,
+        CustomMessageTemplate = MesajMotiv)]
+    public bool ExcludereaAreMotiv => AreMotiv(this);
+
+    [NotMapped]
+    [Browsable(false)]
+    [RuleFromBoolProperty("MapareD394_CoerentaD300", DefaultContexts.Save,
+        CustomMessageTemplate = "Maparea D394 nu se potrivește cu rândurile D300 ale aceleiași perechi (123 b).")]
+    public bool CoerentaCuD300 =>
+        CoerentaMapariTva.Incoerente(((IObjectSpaceLink)this).ObjectSpace, TipTva?.ID ?? TipTvaId, SensTva).Count == 0;
+
+    public const string MesajTinta = "Tipul de operațiune nu se potrivește cu sensul: pe livrare se mapează doar L, V, LS, "
+        + "pe achiziție doar A, C, AS. AÎ se derivă din partener (TVA la încasare), iar N n-are sursă în "
+        + "registrul de TVA.";
+
+    public const string MesajMotiv = "Perechea exclusă din D394 (fără tip de operațiune) cere motivul excluderii.";
+
+    public static bool TintaPermisa(TipOperatiuneD394? tip, SensTva sensTva) => tip == null || sensTva switch {
         SensTva.Livrare => tip is TipOperatiuneD394.L or TipOperatiuneD394.V or TipOperatiuneD394.LS,
         SensTva.Achizitie => tip is TipOperatiuneD394.A or TipOperatiuneD394.C or TipOperatiuneD394.AS,
         _ => false,
     };
+
+    public static bool AreMotiv(MapareD394 mapare) => mapare.Tip != null || !string.IsNullOrWhiteSpace(mapare.Motiv);
 }
 
 // Tipul de mișcare SAF-T al unui rând de registru de stoc (felia 17, D17-D1):

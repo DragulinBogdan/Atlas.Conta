@@ -121,29 +121,27 @@ static class VerificaD394Seed {
 
         TipOperatiuneD394? Tip(string codTip, SensTva sensTva) => mapari
             .Where(m => m.TipTva.Cod == codTip && m.SensTva == sensTva)
-            .Select(m => (TipOperatiuneD394?)m.Tip).SingleOrDefault();
+            .Select(m => m.Tip).SingleOrDefault();
+        bool Exclusa(string codTip, SensTva sensTva) => mapari
+            .Any(m => m.TipTva.Cod == codTip && m.SensTva == sensTva && m.Tip == null && !string.IsNullOrWhiteSpace(m.Motiv));
+        var tabel = ContaSeeder.MapariD394Privat;
+        var total = tabel.Count;
 
-        s.Check("D4-V1 (privat) tabelul D4-D2 e seed-uit integral: 13 mapări, toate cu ținte permise (niciun AÎ/N), o singură mapare per pereche",
-            mapari.Count == 13 && mapari.All(m => MapareD394.TintaPermisa(m.Tip, m.SensTva))
-            && mapari.Select(m => (m.TipTvaId, m.SensTva)).Distinct().Count() == 13);
+        s.Check($"D4-V1 (privat, 123 a) tabelul D4-D2 e seed-uit integral: {total} mapări (13 tipuri, restul excluderi cu motiv), "
+            + "toate cu ținte permise, o singură mapare per pereche",
+            mapari.Count == total && tabel.Count(t => t.Tip != null) == 13
+            && mapari.All(m => MapareD394.TintaPermisa(m.Tip, m.SensTva) && MapareD394.AreMotiv(m))
+            && mapari.Select(m => (m.TipTvaId, m.SensTva)).Distinct().Count() == total);
         s.Check("D4-V1 (privat) cotele normale N21/N11/N9/N19: livrare → L, achiziție → A",
             new[] { "N21", "N11", "N9", "N19" }.All(c =>
                 Tip(c, SensTva.Livrare) == TipOperatiuneD394.L && Tip(c, SensTva.Achizitie) == TipOperatiuneD394.A));
         s.Check("D4-V1 (privat) taxarea inversă TI21/TI19: livrare → V, achiziție → C",
             new[] { "TI21", "TI19" }.All(c =>
                 Tip(c, SensTva.Livrare) == TipOperatiuneD394.V && Tip(c, SensTva.Achizitie) == TipOperatiuneD394.C));
-        s.Check("D4-V1 (privat) NED21 doar pe achiziție → A; SDD/SFD/NIM nemapate pe ambele sensuri",
-            Tip("NED21", SensTva.Achizitie) == TipOperatiuneD394.A && Tip("NED21", SensTva.Livrare) == null
-            && new[] { "SDD", "SFD", "NIM" }.All(c =>
-                Tip(c, SensTva.Livrare) == null && Tip(c, SensTva.Achizitie) == null));
-        s.Check("D4-V1 (privat) perechile (TipTva × Sens) nemapate sunt EXACT cele din `ContaSeeder.NemapateD394Privat`, toate cu motiv",
-            os.GetObjectsQuery<TipTva>().ToList()
-                .SelectMany(t => new[] { SensTva.Achizitie, SensTva.Livrare }.Select(s => (t.Cod, SensTva: s)))
-                .Where(p => Tip(p.Cod, p.SensTva) == null)
-                .OrderBy(p => p.Cod).ThenBy(p => p.SensTva)
-                .SequenceEqual(ContaSeeder.NemapateD394Privat.Select(n => (n.TipTva, n.SensTva))
-                    .OrderBy(p => p.Item1).ThenBy(p => p.Item2))
-            && ContaSeeder.NemapateD394Privat.All(n => !string.IsNullOrWhiteSpace(n.Motiv)));
+        s.Check("D4-V1 (privat, 123 a) NED21 pe achiziție → A, pe livrare exclusă; SDD/SFD/NIM și importul excluse pe ambele sensuri, cu motiv",
+            Tip("NED21", SensTva.Achizitie) == TipOperatiuneD394.A && Exclusa("NED21", SensTva.Livrare)
+            && new[] { "SDD", "SFD", "NIM", "IMP", "IMP21", "IMP11", "IMPTI21", "IMPTI11" }.All(c =>
+                Exclusa(c, SensTva.Livrare) && Exclusa(c, SensTva.Achizitie)));
 
         string RuleazaGardianul() {
             using var osGard = s.Provider.CreateObjectSpace();
@@ -161,59 +159,46 @@ static class VerificaD394Seed {
             using var osSql = s.Provider.CreateObjectSpace();
             ((EFCoreObjectSpace)osSql).DbContext.Database.ExecuteSql(sql);
         }
+        // Rescrie ținta unei mapări seed-uite pe ușa de sistem, cheamă gardianul de seed și restaurează rândul.
+        (string Gard, string Dupa) CuTinta(string cod, SensTva sens, TipOperatiuneD394? tip, string motivNou = null) {
+            Guid id; TipOperatiuneD394? vechi; string motiv;
+            using (var osScrie = s.Provider.CreateObjectSpace()) {
+                var tipTva = osScrie.FirstOrDefault<TipTva>(t => t.Cod == cod);
+                var m = osScrie.FirstOrDefault<MapareD394>(x => x.TipTvaId == tipTva.ID && x.SensTva == sens);
+                (id, vechi, motiv) = (m.ID, m.Tip, m.Motiv);
+                m.Tip = tip; m.Motiv = motivNou;
+                osScrie.CommitChanges();
+            }
+            var gard = RuleazaGardianul();
+            using (var osRestaurare = s.Provider.CreateObjectSpace()) {
+                var m = osRestaurare.GetObjectByKey<MapareD394>(id);
+                m.Tip = vechi; m.Motiv = motiv;
+                osRestaurare.CommitChanges();
+            }
+            return (gard, RuleazaGardianul());
+        }
         s.Check("D4-V1 (privat) gardianul de seed `ContaSeeder.VerificaD394` tace pe profilul seed-uit",
             RuleazaGardianul() == null);
 
         // ══════ Ținta interzisă: AÎ/N nu se mapează (D4-D2) ══════
-        // Regula XAF apără culegerea; gardianul de seed apără `--updateDatabase`.
-        // Proba trece prin funcția reală, pe o pereche liberă (SDD/Livrare — fără
-        // conflict cu indexul unic), și șterge FIZIC în urma ei.
         {
-            Guid idProba;
-            using (var osScrie = s.Provider.CreateObjectSpace()) {
-                var proba = osScrie.CreateObject<MapareD394>();
-                proba.TipTva = osScrie.FirstOrDefault<TipTva>(t => t.Cod == "SDD");
-                proba.SensTva = SensTva.Livrare;
-                proba.Tip = TipOperatiuneD394.AI;
-                osScrie.CommitChanges();
-                idProba = proba.ID;
-            }
-            var mesajGard = RuleazaGardianul();
-            SqlBrut($"DELETE FROM \"MapariD394\" WHERE \"ID\" = {idProba}");
-            var mesajDupa = RuleazaGardianul();
+            var (mesajGard, mesajDupa) = CuTinta("SDD", SensTva.Livrare, TipOperatiuneD394.AI);
             Console.WriteLine($"     MĂSURAT (D4-V1/țintă): gardian pe (SDD, Livrare) → AÎ: „{mesajGard ?? "<NU A ARUNCAT>"}”; "
-                + $"după curățare → „{mesajDupa ?? "tace"}”.");
+                + $"după restaurare → „{mesajDupa ?? "tace"}”.");
             s.Check("D4-V1 (privat) o mapare cu ținta AÎ e REFUZATĂ de `ContaSeeder.VerificaD394` (AÎ se derivă din "
-                + "partener, nu se mapează) și gardul tace după ce proba dispare; `MapareD394.TintaPermisa` refuză și N",
+                + "partener, nu se mapează) și gardul tace după restaurare; `MapareD394.TintaPermisa` refuză și N",
                 mesajGard != null && mesajGard.Contains("SDD") && mesajGard.Contains("AI")
-                && mesajDupa == null && MapariVii() == 13
+                && mesajDupa == null && MapariVii() == total
                 && !MapareD394.TintaPermisa(TipOperatiuneD394.N, SensTva.Achizitie) && !MapareD394.TintaPermisa(TipOperatiuneD394.AI, SensTva.Achizitie)
                 && MapareD394.TintaPermisa(TipOperatiuneD394.LS, SensTva.Livrare));
-            // Fix 5 al review-ului advers: a doua axă a gardului — tipul trebuie să
-            // fie COERENT cu sensul. `(SDD, Achiziție) → L` (pereche liberă, tip de
-            // livrare pe achiziție) e refuzată de aceeași funcție reală, ca o mapare
-            // incoerentă să nu așeze achiziții în `facturiL` și să rupă tăcut
-            // cusătura per sens.
-            Guid idProbaSens;
-            using (var osScrie = s.Provider.CreateObjectSpace()) {
-                var proba = osScrie.CreateObject<MapareD394>();
-                proba.TipTva = osScrie.FirstOrDefault<TipTva>(t => t.Cod == "SDD");
-                proba.SensTva = SensTva.Achizitie;
-                proba.Tip = TipOperatiuneD394.L;
-                osScrie.CommitChanges();
-                idProbaSens = proba.ID;
-            }
-            var mesajSens = RuleazaGardianul();
-            SqlBrut($"DELETE FROM \"MapariD394\" WHERE \"ID\" = {idProbaSens}");
-            var mesajSensDupa = RuleazaGardianul();
+            var (mesajSens, mesajSensDupa) = CuTinta("SDD", SensTva.Achizitie, TipOperatiuneD394.L);
             Console.WriteLine($"     MĂSURAT (D4-V1/sens): gardian pe (SDD, Achiziție) → L: „{mesajSens ?? "<NU A ARUNCAT>"}”; "
-                + $"după curățare → „{mesajSensDupa ?? "tace"}”.");
+                + $"după restaurare → „{mesajSensDupa ?? "tace"}”.");
             s.Check("D4-V1 (privat, fix 5) `TintaPermisa(tip, sens)` are DOUĂ axe: L/V/LS doar pe livrare, A/C/AS doar pe "
                 + "achiziție — (SDD, Achiziție) → L e REFUZATĂ de `ContaSeeder.VerificaD394` cu mesajul care numește "
-                + "perechea, gardul tace după curățare, iar funcția refuză și în unitate (L/Achiziție, A/Livrare, "
-                + "LS/Achiziție, AS/Livrare) și acceptă perechile coerente",
+                + "perechea, gardul tace după restaurare, iar funcția refuză și în unitate și acceptă perechile coerente și excluderea",
                 mesajSens != null && mesajSens.Contains("SDD") && mesajSens.Contains("Achizitie") && mesajSens.Contains("L")
-                && mesajSensDupa == null && MapariVii() == 13
+                && mesajSensDupa == null && MapariVii() == total
                 && !MapareD394.TintaPermisa(TipOperatiuneD394.L, SensTva.Achizitie)
                 && !MapareD394.TintaPermisa(TipOperatiuneD394.A, SensTva.Livrare)
                 && !MapareD394.TintaPermisa(TipOperatiuneD394.LS, SensTva.Achizitie)
@@ -225,8 +210,64 @@ static class VerificaD394Seed {
                 && MapareD394.TintaPermisa(TipOperatiuneD394.V, SensTva.Livrare)
                 && MapareD394.TintaPermisa(TipOperatiuneD394.C, SensTva.Achizitie)
                 && MapareD394.TintaPermisa(TipOperatiuneD394.AS, SensTva.Achizitie)
+                && MapareD394.TintaPermisa(null, SensTva.Livrare)
                 && !MapareD394.TintaPermisa(TipOperatiuneD394.N, SensTva.Livrare)
                 && !MapareD394.TintaPermisa(TipOperatiuneD394.AI, SensTva.Livrare));
+            var (mesajMotiv, _) = CuTinta("NED21", SensTva.Livrare, null);
+            var (mesajExclusa, _) = CuTinta("NED21", SensTva.Livrare, null, "probă");
+            var (mesajCoerenta, mesajCoerentaDupa) = CuTinta("N21", SensTva.Livrare, TipOperatiuneD394.V);
+            var (mesajImport, _) = CuTinta("IMP21", SensTva.Achizitie, TipOperatiuneD394.A);
+            Console.WriteLine($"     MĂSURAT (123 b): fără motiv: „{mesajMotiv ?? "<NU A ARUNCAT>"}”; N21/Livrare → V: „{mesajCoerenta ?? "<NU A ARUNCAT>"}”; "
+                + $"IMP21/Achiziție → A: „{mesajImport ?? "<NU A ARUNCAT>"}”.");
+            s.Check("SC-DECL-16 (seed, 123 a/b) gardianul de seed refuză excluderea fără motiv, perechea incoerentă cu D300 "
+                + "(N21/Livrare → V, iar D300 o pune pe rd. 9) și importul mapat pe un tip (IMP21/Achiziție → A); "
+                + "excluderea cu motiv trece",
+                mesajMotiv != null && mesajMotiv.Contains("motiv")
+                && mesajCoerenta != null && mesajCoerenta.Contains("N21") && mesajCoerenta.Contains("rd. 9")
+                && mesajImport != null && mesajImport.Contains("IMP21") && mesajImport.Contains("import")
+                && mesajExclusa == null && mesajCoerentaDupa == null && MapariVii() == total);
+        }
+
+        // ══════ 123 b pe ușa de editare: refuz la salvare, oricare mapare s-ar salva ══════
+        {
+            string PrinGardian(Action<IObjectSpace> scrie) {
+                using var osG = s.Provider.CreateObjectSpace();
+                try {
+                    scrie(osG);
+                    GardianEditare.Verifica(osG);
+                    return null;
+                }
+                catch (OperareException e) { return e.Message; }
+                finally { osG.Rollback(); }
+            }
+            MapareD394 D394(IObjectSpace o, string cod, SensTva sens) {
+                var t = o.FirstOrDefault<TipTva>(x => x.Cod == cod);
+                return o.FirstOrDefault<MapareD394>(x => x.TipTvaId == t.ID && x.SensTva == sens);
+            }
+            var peD394 = PrinGardian(o => D394(o, "N21", SensTva.Livrare).Tip = TipOperatiuneD394.V);
+            var peD300 = PrinGardian(o => {
+                var m = o.CreateObject<MapareD300>();
+                m.TipTva = o.FirstOrDefault<TipTva>(x => x.Cod == "N21");
+                m.SensTva = SensTva.Livrare;
+                m.Rand = o.FirstOrDefault<RandD300>(r => r.Cod == "13");
+            });
+            var faraMotiv = PrinGardian(o => D394(o, "SDD", SensTva.Livrare).Motiv = null);
+            var import = PrinGardian(o => {
+                var m = D394(o, "IMPTI21", SensTva.Achizitie);
+                m.Tip = TipOperatiuneD394.C; m.Motiv = null;
+            });
+            var coerenta = PrinGardian(o => D394(o, "SDD", SensTva.Livrare).Motiv = "probă de excludere coerentă");
+            Console.WriteLine($"     MĂSURAT (SC-DECL-16, gardian): D394 N21/Livrare → V: „{peD394 ?? "<ACCEPTAT>"}”; "
+                + $"D300 N21/Livrare → rd. 13: „{peD300 ?? "<ACCEPTAT>"}”; fără motiv: „{faraMotiv ?? "<ACCEPTAT>"}”; "
+                + $"IMPTI21 → C: „{import ?? "<ACCEPTAT>"}”.");
+            s.Check("SC-DECL-16 (gardianul de editare, 123 b) maparea incoerentă se refuză la salvare pe oricare formular: "
+                + "D394 N21/Livrare → V (D300 rd. 9), D300 N21/Livrare → rd. 13 (D394 L), excluderea fără motiv și importul "
+                + "mapat pe un tip; o excludere coerentă cu motiv se salvează, iar mapările rămân neatinse",
+                peD394 != null && peD394.Contains("rd. 9")
+                && peD300 != null && peD300.Contains("rd. 13")
+                && faraMotiv != null && faraMotiv.Contains("motiv")
+                && import != null && import.Contains("import")
+                && coerenta == null && MapariVii() == total && RuleazaGardianul() == null);
         }
 
         // ══════ F5 (104i): ștergerea e o decizie, nu o gaură ══════
@@ -256,14 +297,14 @@ static class VerificaD394Seed {
             Reseed();
             var dupaRestaurare = MapariVii();
             var mesajFinal = RuleazaGardianul();
-            Console.WriteLine($"     MĂSURAT (D4-V1/F5): mapări vii 13 → {dupaStergere} după ștergere pe NED21/Achiziție "
+            Console.WriteLine($"     MĂSURAT (D4-V1/F5): mapări vii {total} → {dupaStergere} după ștergere pe NED21/Achiziție "
                 + $"(refuzuri: {refuzuri}) → {dupaReseed} după re-seed → "
                 + $"{dupaRestaurare} după restaurare; gardian după re-seed: „{mesajVerificare ?? "tace"}”.");
             s.Check("D4-V1 (F5, 104i) ștergerea unei mapări D394 lasă un `RefuzSeed` și rămâne ștearsă la re-seed "
-                + "(12 vii, nu 13), gardianul o citește ca „nemapată de utilizator”; după ștergerea refuzului revin la 13",
+                + "(una mai puțin), gardianul o citește ca „nemapată de utilizator”; după ștergerea refuzului revin toate",
                 refuzuri == 1
-                && dupaStergere == 12 && dupaReseed == 12 && mesajVerificare == null
-                && dupaRestaurare == 13 && mesajFinal == null);
+                && dupaStergere == total - 1 && dupaReseed == total - 1 && mesajVerificare == null
+                && dupaRestaurare == total && mesajFinal == null);
         }
     }
 }

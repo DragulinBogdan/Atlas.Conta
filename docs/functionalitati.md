@@ -1,7 +1,7 @@
 # Catalogul funcționalităților
 
 - Tip: catalog
-- Actualizat: 2026-10-15
+- Actualizat: 2026-10-16
 
 Ce promite produsul, în unitatea în care se măsoară scopul: o
 funcționalitate e ce ar numi utilizatorul, cu ținta pe care o servește,
@@ -72,6 +72,7 @@ catalogului poartă data adoptării (linia zero), nu data livrării. Rândurile
 | F-TVA-01 | Export D300 și D394 în XML, pentru depunere, lunar sau trimestrial, cu datele declarantului completate o singură dată, iar confirmarea depunerii păstrează fișierul depus | T2 | tva | E2 | livrată 2026-10-15 | SC-DECL-01…15 |
 | F-TVA-02 | Calculez prorata și ajustările de TVA și completez secțiunile informative din D394 | T2 | tva | | deschisă | — |
 | F-TVA-03 | Aplic TVA la încasare, cu exigibilitatea amânată și conturile ei intermediare | T1, T2 | tva | | deschisă | — |
+| F-TVA-04 | Văd înaintea depunerii cum se leagă D394 de D300 pe aceleași fapte (decalaj de perioadă, excluderi, neincluse), iar o mapare D394 incoerentă cu decontul se refuză la salvare | T2 | tva | | livrată 2026-10-16 | SC-DECL-16…18 |
 | F-REGIM-01 | Văd pe fiecare document ce pot face cu el acum și de ce, după stare, stingeri și perioadă | T1 | documente | | livrată 2026-10-14 | SC-REGIM-01…15 |
 | F-X-01 | Lucrez în același timp cu alți operatori fără stoc negativ, dublă stingere sau lună închisă peste un document operat | T1 | motor | | livrată 2026-10-14 | SC-X-15…23 |
 | F-CIT-01 | Citesc balanța de verificare și balanța pe planul de conturi, la orice dată | T1 | raportare | | livrată 2026-10-14 | SC-CIT-11, SC-CIT-26…30 |

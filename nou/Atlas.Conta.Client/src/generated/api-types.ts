@@ -9552,6 +9552,7 @@ export interface components {
             Rezumat?: components["schemas"]["D394Rezumat"][] | null;
             RezumatCote?: components["schemas"]["D394RezumatCota"][] | null;
             Neincluse?: components["schemas"]["D394Neinclus"][] | null;
+            Excluse?: components["schemas"]["D394Exclus"][] | null;
             Avertismente?: components["schemas"]["D394Avertisment"][] | null;
             /** Format: int32 */
             NrCui1?: number;
@@ -9566,6 +9567,23 @@ export interface components {
             SeriiFacturi?: components["schemas"]["D394SerieFacturi"][] | null;
             RefuzuriXml?: components["schemas"]["RefuzDeclaratie"][] | null;
             DiferenteRotunjire?: components["schemas"]["D394DiferentaRotunjire"][] | null;
+            Punte?: components["schemas"]["D394Punte"][] | null;
+        };
+        D394Exclus: {
+            SensTva?: string | null;
+            /** Format: uuid */
+            TipTvaId?: string;
+            TipTvaCod?: string | null;
+            TipTvaDenumire?: string | null;
+            /** Format: double */
+            Cota?: number;
+            Motiv?: string | null;
+            /** Format: double */
+            Baza?: number;
+            /** Format: double */
+            Tva?: number;
+            /** Format: int32 */
+            Randuri?: number;
         };
         D394Neinclus: {
             Cauza?: string | null;
@@ -9608,6 +9626,46 @@ export interface components {
             /** Format: int32 */
             Documente?: number;
             Bunuri?: components["schemas"]["D394Bun"][] | null;
+        };
+        D394Punte: {
+            SensTva?: string | null;
+            /** Format: uuid */
+            TipTvaId?: string;
+            TipTvaCod?: string | null;
+            TipTvaDenumire?: string | null;
+            /** Format: double */
+            Cota?: number;
+            /** Format: double */
+            BazaD300?: number;
+            /** Format: double */
+            TvaD300?: number;
+            /** Format: double */
+            BazaDoarD300?: number;
+            /** Format: double */
+            TvaDoarD300?: number;
+            /** Format: double */
+            BazaDoarD394?: number;
+            /** Format: double */
+            TvaDoarD394?: number;
+            /** Format: double */
+            BazaExclusa?: number;
+            /** Format: double */
+            TvaExclusa?: number;
+            /** Format: double */
+            BazaNeinclusa?: number;
+            /** Format: double */
+            TvaNeinclusa?: number;
+            /** Format: double */
+            BazaDeclarata?: number;
+            /** Format: double */
+            TvaDeclarata?: number;
+            /** Format: double */
+            BazaDiferenta?: number;
+            /** Format: double */
+            TvaDiferenta?: number;
+            DocumenteDecalate?: string[] | null;
+            /** Format: int32 */
+            NrDocumenteDecalate?: number;
         };
         D394Rezumat: {
             /** Format: int32 */
@@ -11399,6 +11457,7 @@ export interface components {
             TipTva?: components["schemas"]["TipTva"];
             SensTva?: components["schemas"]["SensTva"];
             Tip?: components["schemas"]["TipOperatiuneD394"];
+            Motiv?: string | null;
         };
         MapareD394ResourceDelta: {
             /** Format: uuid */
@@ -11408,6 +11467,7 @@ export interface components {
             TipTvaId?: string;
             SensTva?: components["schemas"]["SensTva"];
             Tip?: components["schemas"]["TipOperatiuneD394"];
+            Motiv?: string | null;
         };
         MapareTvaSaft: {
             /** Format: uuid */

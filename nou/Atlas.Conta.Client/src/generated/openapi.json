@@ -325103,6 +325103,13 @@
             },
             "nullable": true
           },
+          "Excluse": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/D394Exclus"
+            },
+            "nullable": true
+          },
           "Avertismente": {
             "type": "array",
             "items": {
@@ -325150,6 +325157,55 @@
               "$ref": "#/components/schemas/D394DiferentaRotunjire"
             },
             "nullable": true
+          },
+          "Punte": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/D394Punte"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "D394Exclus": {
+        "type": "object",
+        "properties": {
+          "SensTva": {
+            "type": "string",
+            "nullable": true
+          },
+          "TipTvaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "TipTvaCod": {
+            "type": "string",
+            "nullable": true
+          },
+          "TipTvaDenumire": {
+            "type": "string",
+            "nullable": true
+          },
+          "Cota": {
+            "type": "number",
+            "format": "double"
+          },
+          "Motiv": {
+            "type": "string",
+            "nullable": true
+          },
+          "Baza": {
+            "type": "number",
+            "format": "double"
+          },
+          "Tva": {
+            "type": "number",
+            "format": "double"
+          },
+          "Randuri": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -325263,6 +325319,99 @@
               "$ref": "#/components/schemas/D394Bun"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "D394Punte": {
+        "type": "object",
+        "properties": {
+          "SensTva": {
+            "type": "string",
+            "nullable": true
+          },
+          "TipTvaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "TipTvaCod": {
+            "type": "string",
+            "nullable": true
+          },
+          "TipTvaDenumire": {
+            "type": "string",
+            "nullable": true
+          },
+          "Cota": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaD300": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaD300": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaDoarD300": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaDoarD300": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaDoarD394": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaDoarD394": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaExclusa": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaExclusa": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaNeinclusa": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaNeinclusa": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaDeclarata": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaDeclarata": {
+            "type": "number",
+            "format": "double"
+          },
+          "BazaDiferenta": {
+            "type": "number",
+            "format": "double"
+          },
+          "TvaDiferenta": {
+            "type": "number",
+            "format": "double"
+          },
+          "DocumenteDecalate": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "NrDocumenteDecalate": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -330392,6 +330541,11 @@
           },
           "Tip": {
             "$ref": "#/components/schemas/TipOperatiuneD394"
+          },
+          "Motiv": {
+            "maxLength": 256,
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -330415,6 +330569,11 @@
           },
           "Tip": {
             "$ref": "#/components/schemas/TipOperatiuneD394"
+          },
+          "Motiv": {
+            "maxLength": 256,
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

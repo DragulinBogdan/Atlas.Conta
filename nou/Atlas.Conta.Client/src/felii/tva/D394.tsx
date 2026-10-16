@@ -12,6 +12,7 @@ import { PanouErori } from '../../nucleu/PanouErori';
 import { urlCu, useUrlStare } from '../../nucleu/urlStare';
 import { CasetaPerioada, lunaCurenta } from '../raportare/comune';
 import { BandaRectificativa } from './BandaRectificativa';
+import { PunteD300D394 } from './PunteD300D394';
 
 // D394 — declarația informativă (felia 14, D4-D7): aceleași cifre ca în D300,
 // așezate PER PARTENER (OPANAF 3769/2015, mod. 2194/2025). Ecran separat de
@@ -197,10 +198,9 @@ export function D394() {
           <h3>Neincluse în declarație</h3>
           <p className="indiciu">
             Rânduri de registru pe perioada aleasă care nu au unde să cadă în declarație — deci
-            cifrele de mai jos <strong>nu</strong> se regăsesc în listele de sus. Cauze legitime: un
-            tip de TVA scutit/neimpozabil (nemapat deliberat), un tip de TVA propriu încă nemapat
-            (politica <em>MapareD394</em> din BackOffice), un rând fără partener (contrapartidă
-            explicită) sau o contrapartidă care nu e partener (angajatul de pe decont).
+            cifrele de mai jos <strong>nu</strong> se regăsesc în listele de sus și opresc fișierul. Cauze:
+            un tip de TVA fără mapare și fără excludere în politica <em>MapareD394</em>, un rând fără
+            partener (contrapartidă explicită) sau o contrapartidă care nu e partener (angajatul de pe decont).
           </p>
           <DataGrid
             key={`neincluse|${cheie}`}
@@ -224,6 +224,8 @@ export function D394() {
         </div>
       )}
 
+      <PunteD300D394 punte={citit.data?.Punte ?? []} excluse={citit.data?.Excluse ?? []} />
+
       <p className="indiciu">
         Cifrele operațiunilor fiscale sunt agregate per partener după regulile
         formularului 394 (OPANAF 3769/2015, modificat prin OPANAF 2194/2025): tipul de operațiune
@@ -235,16 +237,16 @@ export function D394() {
   );
 }
 
-// Informare, nu refuz (122 b): fișierul rotunjește fiecare partener, D300 rotunjește o dată rândul.
+// Informare, nu refuz (122 b, 123 c): rotunjirea internă a D394, nu comparația cu D300.
 function DiferenteRotunjire({ lista }: { lista: DiferentaRotunjire[] }) {
   if (lista.length === 0) return null;
   const lei = (v?: number) => (v ?? 0) === 0 ? '' : `${v! > 0 ? '+' : ''}${v} lei`;
   return (
     <div className="d394__avertismente">
-      <h3>Rotunjirea pe partener față de D300</h3>
+      <h3>Rotunjirea pe partener</h3>
       <p className="indiciu">
-        D394 rotunjește la leu fiecare partener, iar D300 rotunjește o dată totalul. Pe aceleași operațiuni,
-        sumele din fișier diferă de totalul rotunjit cu:
+        Fișierul D394 rotunjește la leu fiecare partener. Suma rândurilor rotunjite diferă de totalul
+        acelorași operațiuni rotunjit o singură dată cu:
       </p>
       <table className="tabel-mic">
         <thead>

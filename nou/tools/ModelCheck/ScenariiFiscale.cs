@@ -112,7 +112,8 @@ sealed class ScenariiFiscale(Func<IObjectSpace> deschide, Action<string, bool> c
             var d394 = D394Proiectii.D394(os, new(An, 1, 1), new(An, 1, 31));
             return f.Baza == 100 && f.Tva == 21 && f.DeImport
                 && C.Citiri.Contabil.Postari(os).Where(p => p.DocumentId == vama && p.Sens == N.Sens.Credit).Sum(p => p.Valoare) == 21
-                && d394.Neincluse.Any(r => r.Baza == 100 && r.Tva == 21 && r.TipTvaCod == "IMP21");
+                && d394.Excluse.Any(r => r.Baza == 100 && r.Tva == 21 && r.TipTvaCod == "IMP21")
+                && !d394.RefuzuriXml.Any(r => r.Mesaj.Contains("IMP21"));
         }));
         Comanda(os => {
             FiscalitateService.ConfirmaDepunerea(os, FormularFiscal.D300, An, 1,

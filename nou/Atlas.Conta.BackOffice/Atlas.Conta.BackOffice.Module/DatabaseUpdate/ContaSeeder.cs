@@ -670,10 +670,8 @@ public static class ContaSeeder {
     // poate proba altfel decât rulând FUNCȚIA REALĂ peste un cont adăugat pe bază.
     public static void SeedRolTertPrivat(IObjectSpace os) => ProfilPrivat.SeedRolTert(os);
 
-    // Gardianul D394 (felia 14, D4-D2), geamănul lui `VerificaD300`: bugetarul
-    // n-are registru fiscal ⇒ 0 mapări; la privat ținta nu e niciodată AI/N
-    // (AI se derivă, N n-are sursă) și fiecare tip seed-uit e mapat sau declarat
-    // nemapat (jumătatea de profil, `ProfilPrivat.VerificaMapariD394`).
+    // Gardianul D394 (D4-D2, 123): bugetarul n-are registru fiscal; la privat ținta e coerentă cu sensul,
+    // excluderea are motiv, perechea e coerentă cu D300 și fiecare tip seed-uit e mapat sau exclus.
     public static void VerificaD394(IObjectSpace os, ProfilContabil profil) {
         var mapari = os.GetObjectsQuery<MapareD394>().ToList();
         if (profil == ProfilContabil.Bugetar) {
@@ -682,11 +680,20 @@ public static class ContaSeeder {
                     $"Profilul bugetar are {mapari.Count} mapări D394, deși nu produce rânduri de registru fiscal.");
             return;
         }
-        foreach (var m in mapari)
+        foreach (var m in mapari) {
             if (!MapareD394.TintaPermisa(m.Tip, m.SensTva))
-                throw new InvalidOperationException(
-                    $"Maparea D394 {m.TipTva.Cod}/{m.SensTva} țintește {m.Tip} — pe livrare se mapează doar L/V/LS, "
-                    + "pe achiziție doar A/C/AS; AÎ se derivă din partener, iar N n-are sursă în registru (D4-D2).");
+                throw new InvalidOperationException($"Maparea D394 {m.TipTva.Cod}/{m.SensTva} țintește {m.Tip}. "
+                    + MapareD394.MesajTinta);
+            if (!MapareD394.AreMotiv(m))
+                throw new InvalidOperationException($"Maparea D394 {m.TipTva.Cod}/{m.SensTva}: " + MapareD394.MesajMotiv);
+        }
+        var randuri = os.GetObjectsQuery<RandD300>().Where(r => r.Fel == FelRandD300.Operatiuni).Select(r => r.Cod).ToList();
+        if (randuri.FirstOrDefault(c => !CoerentaMapariTva.Matrice.ContainsKey(c)) is { } faraMatrice)
+            throw new InvalidOperationException(
+                $"Rândul D300 {faraMatrice} nu are țintele D394 permise în matricea de coerență (123 b).");
+        foreach (var m in mapari)
+            if (CoerentaMapariTva.Incoerente(os, m.TipTvaId, m.SensTva) is [var prima, ..])
+                throw new InvalidOperationException(prima);
         ProfilPrivat.VerificaMapariD394(os, mapari);
     }
 
@@ -727,8 +734,8 @@ public static class ContaSeeder {
 
     // Lista nemapatelor deliberate e parte din contract (D4-D2): proiecția și
     // ModelCheck o citesc prin nucleu (pachetul de profil rămâne internal).
-    public static IReadOnlyCollection<(string TipTva, SensTva SensTva, string Motiv)> NemapateD394Privat =>
-        ProfilPrivat.NemapateD394;
+    public static IReadOnlyCollection<(string TipTva, SensTva SensTva, TipOperatiuneD394? Tip, string Motiv)> MapariD394Privat =>
+        ProfilPrivat.TabelD394;
 
     public static IReadOnlyCollection<(string TipTva, SensTva SensTva, string Motiv)> NemapateD300Privat =>
         ProfilPrivat.NemapateD300;

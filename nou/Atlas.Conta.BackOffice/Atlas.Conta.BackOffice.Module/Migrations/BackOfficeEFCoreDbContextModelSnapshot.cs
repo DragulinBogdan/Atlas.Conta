@@ -18,7 +18,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("IOptimisticLock", true)
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Proxies:ChangeTracking", true)
                 .HasAnnotation("Proxies:CheckEquality", true)
                 .HasAnnotation("Proxies:LazyLoading", true)
@@ -860,6 +860,10 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<bool>("DinSeed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Motiv")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<int>("OptimisticLockField")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
@@ -869,7 +873,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("SensTva")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Tip")
+                    b.Property<int?>("Tip")
                         .HasColumnType("integer");
 
                     b.Property<Guid>("TipTvaId")

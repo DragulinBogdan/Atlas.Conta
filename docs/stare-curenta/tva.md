@@ -1,6 +1,6 @@
 # TVA și declarații
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 Implicitele TVA, taxa la operare și faptul fiscal din cub, intervalele și diagnosticul, perioada de declarare și corecțiile, confirmarea depunerii, închiderea lunară, D300 și D394, accesul la citirea fiscală și exportul SAF-T.
 
@@ -308,11 +308,38 @@ pot forma aceeași poziție. Înregistrarea TVA are prioritate în grup. (71b, 7
 
 `MapareD394` permite operațiile de vânzare L/V/LS și de cumpărare A/C/AS pe
 sensul corespunzător. AI este derivată și nu se configurează ca mapare.
+Fără tip de operațiune, perechea e exclusă din D394 și cere motivul: faptele
+ei ies în `Excluse`, cu motivul, nu opresc fișierul și nu cer partener.
+Perechea nemapată iese în `Neincluse`, cu cauza `TipTvaNemapat`. Importul nu
+are ramură proprie în proiecție; profilul privat îl exclude prin mapare,
+alături de scutite și neimpozabile. (71c, 123 a)
+
 Numărul de facturi distinge documentul fiscal și storno-ul comercial, fără
 inverse tehnice. Totalurile pe sens se reconciliază cu faptele cubului prin
-operațiile incluse și `Neincluse`. Ștergerea
+operațiile incluse, `Excluse` și `Neincluse`. Ștergerea
 logică a partenerului nu elimină faptele fiscale. Secțiunile neacoperite
 produc limite și avertismente, nu date presupuse. (71c, 71d, 71e)
+
+### Coerența D300 ↔ D394
+
+Pentru aceeași pereche tip de TVA × sens, ținta D394 trebuie să fie permisă
+pentru fiecare rând D300 al perechii, după matricea din
+`CoerentaMapariTva.Matrice` (cod, fiindcă decurge din formulare): rândurile
+intracomunitare, scutite și OSS cer excluderea, 9–11 L sau LS, 12–12.2 C,
+13 V, 16 L, LS sau C, 24–25 A sau AS, 29 AS sau excludere, 33 A, AS sau C.
+Tipul de TVA de import se mapează în D394 numai ca excludere. Maparea
+incoerentă se refuză la salvarea oricăreia dintre cele două mapări, în XAF și
+pe API (`GardianEditare`), iar gardianul de seed aplică aceeași regulă și
+cere ca fiecare rând de operațiuni D300 să aibă ținte în matrice. Perechea
+mapată pe un singur formular nu se refuză la salvare; faptele ei opresc
+exportul formularului care nu o are. (123 b)
+
+`D394Dto.Punte` leagă cele două declarații pe sens × tip de TVA × cotă, din
+faptele perioadei D300 și ale perioadei D394: D300 − doar în perioada D300 +
+doar în perioada D394 = declarat + exclus + neinclus, pe bază și pe TVA.
+Rândul cu decalaj de perioadă numește primele cinci documente. Puntea e
+informare, nu refuz; restul nenul ar fi defect de cod și îl prinde
+SC-DECL-18. (123 c)
 
 ## Fișierul D300
 
@@ -356,9 +383,9 @@ nicio categorie nu schimbă semnul. (122 b)
 AMEF, facturile simplificate și TVA-ul la încasare ies cu zero. (E2-D3, E2-D6)
 
 `D394Dto.DiferenteRotunjire` arată, pe tip × cotă, cât diferă suma rândurilor
-rotunjite pe partener de totalul acelorași rânduri rotunjit o dată, cum îl
-rotunjește D300. E informare, nu refuz: ecranul D394 o afișează lângă
-butonul XML. (122 b)
+rotunjite pe partener de totalul acelorași rânduri rotunjit o dată. E
+rotunjirea internă a D394, nu comparația cu D300 (aceea e puntea). E
+informare, nu refuz: ecranul D394 o afișează lângă butonul XML. (122 b, 123 c)
 
 `serieFacturi` declară plajele de facturi active cu decizia până la sfârșitul
 perioadei (tip 1) și, pe fiecare, primul și ultimul număr emis în perioadă
@@ -370,7 +397,7 @@ fișierul. (E2-D7, 122 f)
 
 Fișierul lipsește și `D394Dto.RefuzuriXml` numește cauza pentru perioadă,
 antet (telefonul, reprezentantul, întocmitorul și calitatea lui), sume
-neincluse, avertismentele care ar fi erori la validator (`Tip1FaraCui`,
+neincluse (nu și cele excluse prin mapare, 123 a), avertismentele care ar fi erori la validator (`Tip1FaraCui`,
 `PfFaraCnp`, `TvaPeTipFaraColoana`, `CotaNeintreaga`, `FaraOp11`,
 `CombinatieRefuzata`, judecate pe sumele dinaintea rotunjirii), orice rând
 neinclus (chiar cu net zero), o factură emisă în afara oricărei plaje active
@@ -425,5 +452,5 @@ deci accesul complet cerut include perioadele fiscale și soldurile de perioadă
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (16; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 25, 36 (amendată de 71), 46 (amendată de 113), 56 (amendată de 77, 81), 69, 70, 71 (amendată de 72), 79 (amendată de 80), 80, 81, 84, 86, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 102, 103, 122.
+Deciziile care numesc pagina în `Arii:` (17; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 25, 36 (amendată de 71), 46 (amendată de 113), 56 (amendată de 77, 81), 69, 70, 71 (amendată de 72), 79 (amendată de 80), 80, 81, 84, 86, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 102, 103, 122 (amendată de 123), 123.
 <!-- /gen:decizii -->

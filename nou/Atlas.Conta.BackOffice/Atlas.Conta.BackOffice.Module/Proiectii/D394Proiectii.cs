@@ -76,6 +76,18 @@ public sealed class D394Neinclus {
     public int Randuri { get; set; }
 }
 
+public sealed class D394Exclus {
+    public string SensTva { get; set; }
+    public Guid TipTvaId { get; set; }
+    public string TipTvaCod { get; set; }
+    public string TipTvaDenumire { get; set; }
+    public decimal Cota { get; set; }
+    public string Motiv { get; set; }
+    public decimal Baza { get; set; }
+    public decimal Tva { get; set; }
+    public int Randuri { get; set; }
+}
+
 public sealed class D394Avertisment {
     public string Cod { get; set; }
     public string Mesaj { get; set; }
@@ -93,6 +105,7 @@ public sealed class D394Dto {
     public List<D394Rezumat> Rezumat { get; set; } = [];
     public List<D394RezumatCota> RezumatCote { get; set; } = [];
     public List<D394Neinclus> Neincluse { get; set; } = [];
+    public List<D394Exclus> Excluse { get; set; } = [];
     public List<D394Avertisment> Avertismente { get; set; } = [];
     public int NrCui1 { get; set; }
     public int NrCui2 { get; set; }
@@ -102,6 +115,7 @@ public sealed class D394Dto {
     public List<D394SerieFacturi> SeriiFacturi { get; set; } = [];
     public List<RefuzDeclaratie> RefuzuriXml { get; set; } = [];
     public List<D394DiferentaRotunjire> DiferenteRotunjire { get; set; } = [];
+    public List<D394Punte> Punte { get; set; } = [];
 }
 
 public static partial class D394Proiectii {
@@ -219,11 +233,14 @@ public static partial class D394Proiectii {
             .ToList()
             .ToDictionary(t => t.ID, t => (t.Cod, t.Denumire));
 
-        var mapari = os.GetObjectsQuery<MapareD394>()
-            .Select(m => new { m.TipTvaId, m.SensTva, m.Tip })
+        var politica = os.GetObjectsQuery<MapareD394>()
+            .Select(m => new { m.TipTvaId, m.SensTva, m.Tip, m.Motiv })
             .ToList()
             .GroupBy(m => (m.TipTvaId, m.SensTva))
-            .ToDictionary(g => g.Key, g => g.First().Tip);
+            .ToDictionary(g => g.Key, g => g.First());
+        var mapari = politica.Where(p => p.Value.Tip != null).ToDictionary(p => p.Key, p => p.Value.Tip.Value);
+        var excluse = new Dictionary<(SensTva, Guid, decimal, string), D394Exclus>();
+        var punte = new Punte();
 
         var neincluse = new Dictionary<(CauzaNeincludere, SensTva, Guid, decimal, Guid?), D394Neinclus>();
         void Neinclus(CauzaNeincludere cauza, SensTva sensTva, Guid tipTvaId, decimal cota, Guid? repId,
@@ -252,21 +269,34 @@ public static partial class D394Proiectii {
         var coteTrunchiate = new SortedSet<decimal>();
 
         foreach (var a in agregate.Where(a => a.Baza != 0m || a.Tva != 0m)) {
-            if (a.DeImport) {
-                Neinclus(CauzaNeincludere.TipTvaNemapat, a.SensTva, a.TipTvaId, a.Cota,
-                    a.PartenerId, a.Baza, a.Tva, a.Randuri);
-                continue;
-            }
-            if (a.PartenerId is not Guid pid) {
-                Neinclus(CauzaNeincludere.FaraPartener, a.SensTva, a.TipTvaId, a.Cota, null, a.Baza, a.Tva, a.Randuri);
-                continue;
-            }
-            if (!parteneri.TryGetValue(pid, out var partener)) {
-                Neinclus(CauzaNeincludere.RepartitorNePartener, a.SensTva, a.TipTvaId, a.Cota, pid, a.Baza, a.Tva, a.Randuri);
+            if (politica.TryGetValue((a.TipTvaId, a.SensTva), out var p) && p.Tip == null) {
+                var cheie = (a.SensTva, a.TipTvaId, a.Cota, p.Motiv);
+                if (!excluse.TryGetValue(cheie, out var x)) {
+                    var eticheta = etichete.TryGetValue(a.TipTvaId, out var e) ? e : (Cod: null, Denumire: null);
+                    x = excluse[cheie] = new D394Exclus {
+                        SensTva = a.SensTva.ToString(), TipTvaId = a.TipTvaId, TipTvaCod = eticheta.Cod,
+                        TipTvaDenumire = eticheta.Denumire, Cota = a.Cota, Motiv = p.Motiv,
+                    };
+                }
+                x.Baza += a.Baza;
+                x.Tva += a.Tva;
+                x.Randuri += a.Randuri;
+                punte.Adauga(a.SensTva, a.TipTvaId, a.Cota, Punte.Ramura.Exclus, a.Baza, a.Tva);
                 continue;
             }
             if (!mapari.TryGetValue((a.TipTvaId, a.SensTva), out var tip)) {
                 Neinclus(CauzaNeincludere.TipTvaNemapat, a.SensTva, a.TipTvaId, a.Cota, null, a.Baza, a.Tva, a.Randuri);
+                punte.Adauga(a.SensTva, a.TipTvaId, a.Cota, Punte.Ramura.Neinclus, a.Baza, a.Tva);
+                continue;
+            }
+            if (a.PartenerId is not Guid pid) {
+                Neinclus(CauzaNeincludere.FaraPartener, a.SensTva, a.TipTvaId, a.Cota, null, a.Baza, a.Tva, a.Randuri);
+                punte.Adauga(a.SensTva, a.TipTvaId, a.Cota, Punte.Ramura.Neinclus, a.Baza, a.Tva);
+                continue;
+            }
+            if (!parteneri.TryGetValue(pid, out var partener)) {
+                Neinclus(CauzaNeincludere.RepartitorNePartener, a.SensTva, a.TipTvaId, a.Cota, pid, a.Baza, a.Tva, a.Randuri);
+                punte.Adauga(a.SensTva, a.TipTvaId, a.Cota, Punte.Ramura.Neinclus, a.Baza, a.Tva);
                 continue;
             }
             if (tip == TipOperatiuneD394.A && partener.TvaLaIncasare)
@@ -275,6 +305,7 @@ public static partial class D394Proiectii {
             if (trunchiat)
                 coteTrunchiate.Add(a.Cota);
             clasificate.Add((a.DocumentId, a.Storno, partener, tip, a.SensTva, cota, a.Baza, a.Tva, a.Randuri));
+            punte.Adauga(a.SensTva, a.TipTvaId, a.Cota, Punte.Ramura.Declarat, a.Baza, a.Tva);
         }
 
         var castigatoare = new HashSet<(Guid, bool, string, TipOperatiuneD394, int)>();
@@ -390,6 +421,10 @@ public static partial class D394Proiectii {
         rezultat.NrCui3 = ordonate.Where(r => r.TipPartener == 3).Select(r => r.CheieCui).Distinct().Count();
         rezultat.NrCui4 = ordonate.Where(r => r.TipPartener == 4).Select(r => r.CheieCui).Distinct().Count();
 
+        rezultat.Excluse = excluse.Values
+            .OrderBy(x => x.SensTva).ThenBy(x => x.TipTvaCod ?? "", StringComparer.Ordinal).ThenBy(x => x.Cota)
+            .ToList();
+        rezultat.Punte = punte.Inchide(os, dataStart, dataEnd, etichete);
         rezultat.Neincluse = neincluse.Values
             .OrderBy(n => n.Cauza).ThenBy(n => n.SensTva).ThenBy(n => n.TipTvaCod ?? "", StringComparer.Ordinal)
             .ThenBy(n => n.RepartitorDenumire ?? "", StringComparer.Ordinal)

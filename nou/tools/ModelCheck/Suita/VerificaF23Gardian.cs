@@ -393,10 +393,8 @@ static class VerificaF23Gardian {
             inchTrei != null && inchTrei.Contains("3 din 4") && inchPatru == null && inchZero == null);
 
         // ---- `MapareD300` / `MapareD394`: o regulă, două uși ----
-        // Pe privat perechea (NED21 × Livrare) e NEMAPATĂ deliberat (regimul e
-        // exclusiv de achiziție), deci proba negativă nu lovește gardul de dublă
-        // numărare; pe bugetar niciun tip n-are mapări.
-        var codTvaMapare = privat ? "NED21" : "CAP0";
+        // Pe privat (N19 × Livrare) e pe rd. 16 și L în D394: rd. 9 e coerent (123 b) și nu e pe verticala lui 16.
+        var codTvaMapare = privat ? "N19" : "CAP0";
         Guid idTvaMapare;
         using (var osM = s.Provider.CreateObjectSpace())
             idTvaMapare = osM.GetObjectsQuery<TipTva>().Where(t => t.Cod == codTvaMapare).Select(t => t.ID)

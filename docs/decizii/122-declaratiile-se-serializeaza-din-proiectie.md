@@ -1,7 +1,7 @@
 # 122 — Declarațiile D300 și D394 se serializează din proiecția lor, în lei, cu refuz înaintea fișierului; corecția valorică intră în SAF-T fără cantitate inventată
 
 - Data: 2026-10-15
-- Stare: activă
+- Stare: amendată de 123
 - Execuție: etapa E2, contractul `docs/api/e2-depunere-xml-contract.md`, pașii 0–5 (2026-10-15). Owner-ul a hotărât antetul pe societate (E2-D4), categoria de bunuri pe produs (E2-D6), plajele ca nomenclator (E2-D7) și forma SAF-T a corecției (E2-D10: factura după regula comună, linia cu cantitate 0 și 000/000000, mișcarea 90/60). La discuția deciziei (2026-10-15), owner-ul a precizat (b), (c), (f) și (h) și a adăugat (i), implementat în aceeași zi pe branch-ul etapei. Mersă în main prin PR #50 (31c29c8b); owner-ul a aprobat decizia la 2026-10-16, cu E2-D1, D2, D3, D5, D8 și D9 ale contractului
 - Arii: tva, saft, nomenclatoare, api, ecrane
 - Închide: 69-r6, D4-r13, D4-r5, CV-r1
@@ -13,7 +13,7 @@
 
 (a) **Sursa.** XML-ul D300 și D394 serializează proiecția existentă, pe același snapshot, plus antetul societății și datele de perioadă ale cererii. Nu recitește cubul. Aceeași perioadă, cu aceleași date și același antet, dă același fișier, byte cu byte.
 
-(b) **Rotunjirea.** Sumele sunt lei întregi: sub 50 de bani se neglijează, de la 50 de bani se întregește. Se rotunjește cea mai fină unitate emisă (rândul de operațiuni D300, rândul `op1` D394), iar totalurile, oglinzile și rezumatele se calculează din valorile rotunjite, cu aceleași formule ca proiecția în bani. Defalcarea pe bunuri a unui rând își împarte rândul rotunjit prin regula de repartizare a nucleului (Hamilton la scara leului), separat pe semne: suma lor e rândul și niciun bun nu își schimbă semnul. Diferența dintre rotunjirea pe partener din D394 și rotunjirea o singură dată a totalului, ca în D300, se arată pe tip × cotă, ca informare, nu ca refuz.
+(b) [amendat de 123] **Rotunjirea.** Sumele sunt lei întregi: sub 50 de bani se neglijează, de la 50 de bani se întregește. Se rotunjește cea mai fină unitate emisă (rândul de operațiuni D300, rândul `op1` D394), iar totalurile, oglinzile și rezumatele se calculează din valorile rotunjite, cu aceleași formule ca proiecția în bani. Defalcarea pe bunuri a unui rând își împarte rândul rotunjit prin regula de repartizare a nucleului (Hamilton la scara leului), separat pe semne: suma lor e rândul și niciun bun nu își schimbă semnul. Diferența dintre rotunjirea pe partener din D394 și rotunjirea o singură dată a totalului, ca în D300, se arată pe tip × cotă, ca informare, nu ca refuz.
 
 (c) **Refuzul.** Perioada în afara formularului suportat sau a periodicității societății, antetul cu câmpuri obligatorii lipsă sau peste lungimea schemei, sumele fără rând în formular, avertismentele care ar fi erori la validator, facturile emise în afara plajelor și facturile emise ascunse utilizatorului pe obiect dau 422 cu cod `DECLARATIE_*`, înaintea primului byte. Lipsa citirii pe un tip citit de formular (`Postare` și `Societate`; pe D394 și `Document` și `PlajaFacturi`) dă 403, după ordinea din 80. Nu se completează valori de rezervă. Proiecția JSON poartă aceleași refuzuri.
 
@@ -61,3 +61,4 @@ E2-r1…E2-r6 în `restante.md`: amprenta și confirmarea pe trimestru, decontul
 - 2026-10-15: discuția cu owner-ul: (b) Hamilton pe bunuri și diferențele D394–D300 afișate, (c) 403 pe tip și 422 pe obiect, (f) pe numărul propriu, (h) delimitată la probă, (i) adăugat; SC-DECL-12…14.
 - 2026-10-15: (i) precizat: antetul în parametrii fișierului, înlocuirea confirmării aceleiași versiuni și retragerea cu motiv (gardă pe regularizările D300); SC-DECL-15, SC-CIT-84.
 - 2026-10-16: aprobată de owner după merge-ul PR #50, cu D-urile contractului nediscutate la 2026-10-15 (E2-D1, D2, D3, D5, D8, D9); trece în `activă`.
+- 2026-10-16: (b) amendat de 123: diferența de rotunjire afișată e internă D394 și nu compară cu D300; comparația D300 ↔ D394 e puntea din 123 (c).
