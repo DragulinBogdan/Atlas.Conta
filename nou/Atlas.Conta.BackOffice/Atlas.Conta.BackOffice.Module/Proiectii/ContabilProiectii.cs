@@ -28,38 +28,6 @@ public struct AtomContabil {
     public Guid? CentruCostId { get; set; }
 }
 
-sealed class AgregatBalanta {
-    public Guid ContId { get; set; }
-    public string ContSimbol { get; set; }
-    public string ContDenumire { get; set; }
-    public Guid? RepartitorId { get; set; }
-    public string RepartitorDenumire { get; set; }
-
-    public decimal InitialDebit { get; set; }
-    public decimal InitialCredit { get; set; }
-    public decimal RulajDebit { get; set; }
-    public decimal RulajCredit { get; set; }
-}
-
-public sealed class BalantaRand {
-    public Guid ContId { get; set; }
-    public string ContSimbol { get; set; }
-    public string ContDenumire { get; set; }
-    public Guid? RepartitorId { get; set; }
-    public string RepartitorDenumire { get; set; }
-
-    public decimal InitialDebit { get; set; }
-    public decimal InitialCredit { get; set; }
-    public decimal SoldInitialDebit { get; set; }
-    public decimal SoldInitialCredit { get; set; }
-
-    public decimal RulajDebit { get; set; }
-    public decimal RulajCredit { get; set; }
-
-    public decimal SoldFinalDebit { get; set; }
-    public decimal SoldFinalCredit { get; set; }
-}
-
 public sealed class FisaContSold {
     public decimal SoldInitialDebit { get; set; }
     public decimal SoldInitialCredit { get; set; }
@@ -80,27 +48,6 @@ public sealed class SoldPartenerRand {
     public decimal Credit { get; set; }
     public decimal SoldDebitor { get; set; }
     public decimal SoldCreditor { get; set; }
-}
-
-public sealed class BalantaPlanRand {
-    public Guid ContId { get; set; }
-    public Guid? ParinteId { get; set; }
-    public string ContSimbol { get; set; }
-    public string ContDenumire { get; set; }
-    public int Nivel { get; set; }
-    public bool AreCopii { get; set; }
-    public bool AreMiscareProprie { get; set; }
-
-    public decimal InitialDebit { get; set; }
-    public decimal InitialCredit { get; set; }
-    public decimal SoldInitialDebit { get; set; }
-    public decimal SoldInitialCredit { get; set; }
-
-    public decimal RulajDebit { get; set; }
-    public decimal RulajCredit { get; set; }
-
-    public decimal SoldFinalDebit { get; set; }
-    public decimal SoldFinalCredit { get; set; }
 }
 
 public interface IRandCuDocument {
@@ -235,7 +182,7 @@ struct SursaFisa {
     public string RepartitorDenumire { get; set; }
 }
 
-public static class ContabilProiectii {
+public static partial class ContabilProiectii {
 
     public static IQueryable<AtomContabil> Atomi(IObjectSpace os) =>
         Cub.Citiri.Contabil.Analitice(os).Select(p => new AtomContabil {
@@ -265,103 +212,6 @@ public static class ContabilProiectii {
         if (centruCostId is Guid vCc) atomi = atomi.Where(a => a.CentruCostId == vCc);
         return atomi;
     }
-
-    public static IQueryable<BalantaRand> Balanta(
-        IObjectSpace os, DateOnly dataStart, DateOnly dataEnd, bool analitic = false,
-        Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
-        Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
-        Guid? proiectId = null, Guid? centruCostId = null,
-        CitireCumul citire = CitireCumul.Vizibila) {
-
-        var atomi = AtomiPerioada(os, dataStart, dataEnd, citire);
-        atomi = PeDimensiuni(atomi, repartitorId, materialId, codFunctionalId, codEconomicId,
-            sursaFinantareId, unitateId, proiectId, centruCostId);
-
-        var conturi = os.GetObjectsQuery<Cont>();
-        IQueryable<AgregatBalanta> etichetate;
-
-        if (analitic) {
-            var agregate = atomi
-                .GroupBy(a => new { a.ContId, a.RepartitorId })
-                .Select(g => new {
-                    g.Key.ContId,
-                    g.Key.RepartitorId,
-                    InitialDebit = g.Sum(a => a.Data < dataStart ? a.Debit : 0m),
-                    InitialCredit = g.Sum(a => a.Data < dataStart ? a.Credit : 0m),
-                    RulajDebit = g.Sum(a => a.Data >= dataStart ? a.Debit : 0m),
-                    RulajCredit = g.Sum(a => a.Data >= dataStart ? a.Credit : 0m)
-                });
-            etichetate =
-                from a in agregate
-                join c in conturi on a.ContId equals c.ID into grupCont
-                from c in grupCont.DefaultIfEmpty()
-                join r in os.GetObjectsQuery<Repartitor>()
-                    on a.RepartitorId equals (Guid?)r.ID into grupRep
-                from r in grupRep.DefaultIfEmpty()
-                select new AgregatBalanta {
-                    ContId = a.ContId,
-                    ContSimbol = c == null ? null : c.Simbol,
-                    ContDenumire = c == null ? null : c.Denumire,
-                    RepartitorId = a.RepartitorId,
-                    RepartitorDenumire = r == null ? null : r.Denumire,
-                    InitialDebit = a.InitialDebit, InitialCredit = a.InitialCredit,
-                    RulajDebit = a.RulajDebit, RulajCredit = a.RulajCredit
-                };
-        }
-        else {
-            var agregate = atomi
-                .GroupBy(a => a.ContId)
-                .Select(g => new {
-                    ContId = g.Key,
-                    InitialDebit = g.Sum(a => a.Data < dataStart ? a.Debit : 0m),
-                    InitialCredit = g.Sum(a => a.Data < dataStart ? a.Credit : 0m),
-                    RulajDebit = g.Sum(a => a.Data >= dataStart ? a.Debit : 0m),
-                    RulajCredit = g.Sum(a => a.Data >= dataStart ? a.Credit : 0m)
-                });
-            etichetate =
-                from a in agregate
-                join c in conturi on a.ContId equals c.ID into grupCont
-                from c in grupCont.DefaultIfEmpty()
-                select new AgregatBalanta {
-                    ContId = a.ContId,
-                    ContSimbol = c == null ? null : c.Simbol,
-                    ContDenumire = c == null ? null : c.Denumire,
-                    RepartitorId = null, RepartitorDenumire = null,
-                    InitialDebit = a.InitialDebit, InitialCredit = a.InitialCredit,
-                    RulajDebit = a.RulajDebit, RulajCredit = a.RulajCredit
-                };
-        }
-
-        return from a in etichetate
-               let netInitial = a.InitialDebit - a.InitialCredit
-               let netFinal = a.InitialDebit - a.InitialCredit + a.RulajDebit - a.RulajCredit
-               select new BalantaRand {
-                   ContId = a.ContId,
-                   ContSimbol = a.ContSimbol,
-                   ContDenumire = a.ContDenumire,
-                   RepartitorId = a.RepartitorId,
-                   RepartitorDenumire = a.RepartitorDenumire,
-                   InitialDebit = a.InitialDebit,
-                   InitialCredit = a.InitialCredit,
-                   SoldInitialDebit = netInitial > 0m ? netInitial : 0m,
-                   SoldInitialCredit = netInitial < 0m ? -netInitial : 0m,
-                   RulajDebit = a.RulajDebit,
-                   RulajCredit = a.RulajCredit,
-                   SoldFinalDebit = netFinal > 0m ? netFinal : 0m,
-                   SoldFinalCredit = netFinal < 0m ? -netFinal : 0m
-               };
-    }
-
-    public static SortingInfo[] OrdineBalanta(bool analitic) => analitic
-        ? new[] {
-            OrdineLista.Crescator(nameof(BalantaRand.ContSimbol)),
-            OrdineLista.Crescator(nameof(BalantaRand.ContId)),
-            OrdineLista.Crescator(nameof(BalantaRand.RepartitorId))
-        }
-        : new[] {
-            OrdineLista.Crescator(nameof(BalantaRand.ContSimbol)),
-            OrdineLista.Crescator(nameof(BalantaRand.ContId))
-        };
 
     public static IQueryable<SoldPartenerRand> SoldParteneri(
         IObjectSpace os, DateOnly laData, Guid? contId = null,
@@ -417,87 +267,6 @@ public static class ContabilProiectii {
         OrdineLista.Crescator(nameof(SoldPartenerRand.ContId)),
         OrdineLista.Crescator(nameof(SoldPartenerRand.RepartitorId))
     };
-
-    public static List<BalantaPlanRand> BalantaPlan(
-        IObjectSpace os, DateOnly dataStart, DateOnly dataEnd, int? nivelMaxim = null,
-        Guid? repartitorId = null, Guid? materialId = null, Guid? codFunctionalId = null,
-        Guid? codEconomicId = null, Guid? sursaFinantareId = null, Guid? unitateId = null,
-        Guid? proiectId = null, Guid? centruCostId = null,
-        CitireCumul citire = CitireCumul.Vizibila) {
-
-        var frunze = Balanta(os, dataStart, dataEnd, analitic: false,
-            repartitorId, materialId, codFunctionalId, codEconomicId,
-            sursaFinantareId, unitateId, proiectId, centruCostId, citire).ToList();
-
-        var plan = os.GetObjectsQuery<Cont>()
-            .Select(c => new { c.ID, c.Simbol, c.Denumire, c.ParinteId })
-            .ToDictionary(c => c.ID, c => (c.Simbol, c.Denumire, c.ParinteId));
-
-        var noduri = new Dictionary<Guid, BalantaPlanRand>();
-
-        BalantaPlanRand Nod(Guid contId) {
-            if (noduri.TryGetValue(contId, out var existent))
-                return existent;
-            var gasit = plan.TryGetValue(contId, out var info);
-            var nod = new BalantaPlanRand {
-                ContId = contId,
-                ContSimbol = gasit ? info.Simbol : null,
-                ContDenumire = gasit ? info.Denumire : null,
-                ParinteId = gasit && info.ParinteId is Guid parinte && plan.ContainsKey(parinte)
-                    ? parinte : null
-            };
-            noduri.Add(contId, nod);
-            return nod;
-        }
-
-        foreach (var frunza in frunze) {
-            Nod(frunza.ContId).AreMiscareProprie = true;
-            var vizitate = new HashSet<Guid>();
-            for (Guid? id = frunza.ContId; id is Guid contId && vizitate.Add(contId); id = Nod(contId).ParinteId) {
-                var nod = Nod(contId);
-                nod.InitialDebit += frunza.InitialDebit;
-                nod.InitialCredit += frunza.InitialCredit;
-                nod.RulajDebit += frunza.RulajDebit;
-                nod.RulajCredit += frunza.RulajCredit;
-            }
-        }
-
-        foreach (var nod in noduri.Values) {
-            var nivel = 0;
-            var vizitate = new HashSet<Guid> { nod.ContId };
-            var parinte = nod.ParinteId;
-            while (parinte is Guid pid && noduri.TryGetValue(pid, out var sus) && vizitate.Add(pid)) {
-                nivel++;
-                parinte = sus.ParinteId;
-            }
-            nod.Nivel = nivel;
-        }
-
-        foreach (var nod in noduri.Values) {
-            var netInitial = nod.InitialDebit - nod.InitialCredit;
-            var netFinal = netInitial + nod.RulajDebit - nod.RulajCredit;
-            nod.SoldInitialDebit = netInitial > 0m ? netInitial : 0m;
-            nod.SoldInitialCredit = netInitial < 0m ? -netInitial : 0m;
-            nod.SoldFinalDebit = netFinal > 0m ? netFinal : 0m;
-            nod.SoldFinalCredit = netFinal < 0m ? -netFinal : 0m;
-        }
-
-        var pastrate = nivelMaxim is int max
-            ? noduri.Values.Where(n => n.Nivel < max).ToList()
-            : noduri.Values.ToList();
-        var ramase = pastrate.Select(n => n.ContId).ToHashSet();
-
-        foreach (var nod in pastrate)
-            nod.AreCopii = false;
-        foreach (var nod in pastrate)
-            if (nod.ParinteId is Guid pid && ramase.Contains(pid))
-                noduri[pid].AreCopii = true;
-
-        return pastrate
-            .OrderBy(n => n.ContSimbol ?? string.Empty, StringComparer.Ordinal)
-            .ThenBy(n => n.ContId)
-            .ToList();
-    }
 
     public static IQueryable<FisaContRand> FisaCont(
         IObjectSpace os, Guid contId, DateOnly dataStart, DateOnly dataEnd,

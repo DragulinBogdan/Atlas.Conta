@@ -11,6 +11,8 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 sealed class ScenariiBalanta(Func<IObjectSpace> deschide, Action<string, bool> check,
     bool privat, Action<IObjectSpace, int, int> inchide)
     : ScenaDocumente(deschide, check, privat, inchide, "BALANTA", 2022) {
+    protected override int UltimulAn => An + 1;
+
     protected override void CurataNomenclatoare(IObjectSpace os, Purja purja) {
         var db = ((EFCoreObjectSpace)os).DbContext;
         db.Database.ExecuteSql($"UPDATE \"Conturi\" SET \"ParinteId\" = NULL WHERE \"Simbol\" LIKE {Marcaj + "%"}");
@@ -31,9 +33,9 @@ sealed class ScenariiBalanta(Func<IObjectSpace> deschide, Action<string, bool> c
         economic.Cod = Marcaj; economic.Denumire = Marcaj;
         os.CommitChanges();
         Guid N(int luna, int zi, Cont debit, Cont credit, decimal valoare,
-                Guid? pd = null, Guid? pc = null, bool analiza = false) {
+                Guid? pd = null, Guid? pc = null, bool analiza = false, int? an = null) {
             var id = CuSpatiu(o => {
-                var doc = o.CreateObject<NotaContabila>(); doc.Data = new(An, luna, zi);
+                var doc = o.CreateObject<NotaContabila>(); doc.Data = new(an ?? An, luna, zi);
                 doc.PredatorId = Loc; doc.PrimitorId = Loc;
                 var l = o.CreateObject<NotaContabilaDetaliu>(); l.Document = doc;
                 l.TipMaterialId = Tip(o, "TRZ"); l.ContDebitId = debit.ID; l.ContCreditId = credit.ID;
@@ -108,6 +110,8 @@ sealed class ScenariiBalanta(Func<IObjectSpace> deschide, Action<string, bool> c
                 tot.Select(r => (r.ContId, r.RepartitorId)).SequenceEqual(pagini.Select(r => (r.ContId, r.RepartitorId))));
         }
 
+        DoiAni(os, a, b, grup);
+
         var db = ((EFCoreObjectSpace)os).DbContext;
         using var tx = db.Database.BeginTransaction();
         AscundereControlata.Ascunde(db, "Conturi", ascuns.ID);
@@ -133,5 +137,59 @@ sealed class ScenariiBalanta(Func<IObjectSpace> deschide, Action<string, bool> c
         Verifica("SC-CIT-28", "ciclul din nomenclator nu blochează citirea",
             ContabilProiectii.BalantaPlan(os, start, end).Single(r => r.ContId == creditor.ID).RulajCredit == 30);
         tx.Rollback();
+
+        // E3-D8: anul următor, fără închideri; soldul inițial al anului e soldul final de la 31.12 pe fiecare cheie.
+        void DoiAni(IObjectSpace os, Cont a, Cont b, Cont grup) {
+            var urmator = An + 1;
+            Comanda(o => {
+                foreach (var luna in new[] { 1, 3 }) { var p = o.CreateObject<PerioadaFiscala>(); p.An = urmator; p.Luna = luna; }
+                o.CommitChanges();
+            });
+            N(1, 10, a, b, 25, Furnizor, Furnizor, an: urmator);
+            N(1, 12, grup, b, 8, an: urmator);
+            N(3, 5, a, b, 5, Furnizor, Furnizor, an: urmator);
+            var capat = new DateOnly(An, 12, 31);
+            foreach (var analitic in new[] { false, true }) {
+                (Guid, Guid?) K(BalantaRand r) => (r.ContId, r.RepartitorId);
+                var final = ContabilProiectii.Balanta(os, new(An, 12, 1), capat, analitic).ToList().ToDictionary(K);
+                var precedent = ContabilProiectii.Balanta(os, new(urmator, 1, 1), new(urmator, 2, 28), analitic).ToList().ToDictionary(K);
+                var ianuarie = ContabilProiectii.Balanta(os, new(urmator, 1, 1), new(urmator, 1, 31), analitic).ToList();
+                var martie = ContabilProiectii.Balanta(os, new(urmator, 3, 1), new(urmator, 3, 31), analitic).ToList();
+                var eticheta = analitic ? "analitic" : "sintetic";
+                Verifica("SC-CIT-114", $"{eticheta}: soldul inițial al anului = soldul final la 31.12 pe fiecare cheie",
+                    martie.Count > 0 && martie.All(r => final.TryGetValue(K(r), out var f)
+                        ? r.SoldInceputAnDebit == f.SoldFinalDebit && r.SoldInceputAnCredit == f.SoldFinalCredit
+                        : r.SoldInceputAnDebit == 0 && r.SoldInceputAnCredit == 0)
+                    && final.Values.Where(f => f.SoldFinalDebit != 0 || f.SoldFinalCredit != 0).All(f => martie.Any(r => K(r) == K(f))));
+                Verifica("SC-CIT-114", $"{eticheta}: sumele precedente = soldul inițial al anului + rulajele din ianuarie și februarie",
+                    martie.All(r => r.InitialDebit == r.SoldInceputAnDebit + (precedent.TryGetValue(K(r), out var p) ? p.RulajDebit : 0)
+                        && r.InitialCredit == r.SoldInceputAnCredit + (precedent.TryGetValue(K(r), out var q) ? q.RulajCredit : 0)));
+                Verifica("SC-CIT-114", $"{eticheta}: soldul inițial și cel final rămân nete pe sumele precedente; 1 ianuarie n-are rulaje precedente",
+                    martie.All(r => r.SoldInitialDebit - r.SoldInitialCredit == r.InitialDebit - r.InitialCredit
+                        && r.SoldFinalDebit - r.SoldFinalCredit == r.InitialDebit - r.InitialCredit + r.RulajDebit - r.RulajCredit)
+                    && ianuarie.All(r => r.InitialDebit == r.SoldInceputAnDebit && r.InitialCredit == r.SoldInceputAnCredit));
+                Verifica("SC-CIT-114", $"{eticheta}: egalitățile balanței pe soldul inițial al anului și pe sumele precedente",
+                    martie.Sum(r => r.SoldInceputAnDebit) == martie.Sum(r => r.SoldInceputAnCredit)
+                    && martie.Sum(r => r.InitialDebit) == martie.Sum(r => r.InitialCredit));
+            }
+            var contA = ContabilProiectii.Balanta(os, new(urmator, 3, 1), new(urmator, 3, 31)).ToList().Single(r => r.ContId == a.ID);
+            Verifica("SC-CIT-114", "contul A: sold inițial an D 759, sume precedente D 784, final D 789",
+                contA is { SoldInceputAnDebit: 759, InitialDebit: 784, InitialCredit: 0, RulajDebit: 5, SoldFinalDebit: 789 });
+            var plan = ContabilProiectii.BalantaPlan(os, new(urmator, 3, 1), new(urmator, 3, 31));
+            var nodGrup = plan.Single(r => r.ContId == grup.ID);
+            var frunze = SubArbore(grup);
+            Verifica("SC-CIT-114", "pe planul de conturi soldul inițial al anului se netează la nod, iar sumele precedente se adună",
+                nodGrup.SoldInceputAnDebit - nodGrup.SoldInceputAnCredit == frunze.Sum(r => r.SoldInceputAnDebit - r.SoldInceputAnCredit)
+                && (nodGrup.SoldInceputAnDebit == 0 || nodGrup.SoldInceputAnCredit == 0)
+                && nodGrup.InitialDebit == frunze.Sum(r => r.InitialDebit) && nodGrup.InitialCredit == frunze.Sum(r => r.InitialCredit));
+
+            List<BalantaRand> SubArbore(Cont radacina) {
+                var plat = ContabilProiectii.Balanta(os, new(urmator, 3, 1), new(urmator, 3, 31)).ToList();
+                var parinti = os.GetObjectsQuery<Cont>().Where(c => c.Simbol.StartsWith(Marcaj))
+                    .Select(c => new { c.ID, c.ParinteId }).ToList().ToDictionary(c => c.ID, c => c.ParinteId);
+                bool Sub(Guid id) { for (Guid? x = id; x is Guid v; x = parinti.GetValueOrDefault(v)) if (v == radacina.ID) return true; return false; }
+                return plat.Where(r => parinti.ContainsKey(r.ContId) && Sub(r.ContId)).ToList();
+            }
+        }
     }
 }

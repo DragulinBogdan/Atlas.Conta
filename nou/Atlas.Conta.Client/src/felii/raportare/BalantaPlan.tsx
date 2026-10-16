@@ -139,6 +139,10 @@ export function BalantaPlan() {
         <Column dataField={camp('ContSimbol')} caption="Cont" fixed width={220} cellRender={celulaCont} />
         <Column dataField={camp('ContDenumire')} caption="Denumire" />
 
+        <Column caption="Sold inițial an">
+          <Column dataField={camp('SoldInceputAnDebit')} caption="Debitor" {...BANI} />
+          <Column dataField={camp('SoldInceputAnCredit')} caption="Creditor" {...BANI} />
+        </Column>
         <Column caption="Sold inițial">
           <Column dataField={camp('SoldInitialDebit')} caption="Debitor" {...BANI} />
           <Column dataField={camp('SoldInitialCredit')} caption="Creditor" {...BANI} />

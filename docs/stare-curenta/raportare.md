@@ -1,6 +1,6 @@
 # Raportare
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 Explicația deciziei persistată în cub, invarianții care o verifică, citirile contabile ale cubului și identitățile cititorilor lui.
 
@@ -132,6 +132,27 @@ fără coloană de gestiune; citirea dinamică și cea din snapshot dau aceleaș
 cifre. Snapshot-ul se scrie numai din cub și se reconstruiește din postări.
 Citirile securizate folosesc postările autorizate, nu snapshot-ul global,
 pentru a păstra permisiunile pe rând și membru. (S1, C111-Q6, 098, 099)
+
+### Balanța pe an
+
+- Balanța are graniță de an calendaristic, independentă de închiderea
+  exercițiului. `SoldInceputAn` (debit și credit) e soldul net al rândului la
+  1 ianuarie al anului `dataStart`, deci soldul final de la 31.12 pe aceeași
+  cheie. `Initial*` sunt sumele precedente: `SoldInceputAn` plus rulajele de
+  la 1 ianuarie până înaintea startului. Soldul inițial și cel final rămân
+  nete și neschimbate. Nu se scrie nicio tranzacție de deschidere. (E3-D8)
+- Netarea se face pe cheia rândului: contul pe balanța sintetică, contul și
+  repartitorul pe cea analitică. Pe planul de conturi, `SoldInceputAn` se
+  netează la nod, ca soldurile, iar sumele precedente se adună din frunze.
+  (E3-D8)
+- Cu startul pe 1 ianuarie, balanța citește cumulul o singură dată. Altfel
+  adaugă cumulul până la 31.12 al anului precedent, care pornește din
+  snapshot-ul lui decembrie închis, dacă există. Rulajele dintre 1 ianuarie
+  și start sunt diferența brută dintre cele două cumuluri, fiindcă debitul și
+  creditul se cumulează separat. (E3-D8, F27-D3)
+- SAF-T citește din balanță numai soldurile nete; filtrul conturilor de stoc
+  raportabile din rezumatul S3 cere sold inițial net sau rulaj, nu sume
+  brute. (E3-D8)
 
 ## Limitele implementării
 

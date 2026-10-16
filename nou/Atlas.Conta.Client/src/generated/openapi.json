@@ -323736,6 +323736,14 @@
           "AreMiscareProprie": {
             "type": "boolean"
           },
+          "SoldInceputAnDebit": {
+            "type": "number",
+            "format": "double"
+          },
+          "SoldInceputAnCredit": {
+            "type": "number",
+            "format": "double"
+          },
           "InitialDebit": {
             "type": "number",
             "format": "double"
@@ -323794,6 +323802,14 @@
           "RepartitorDenumire": {
             "type": "string",
             "nullable": true
+          },
+          "SoldInceputAnDebit": {
+            "type": "number",
+            "format": "double"
+          },
+          "SoldInceputAnCredit": {
+            "type": "number",
+            "format": "double"
           },
           "InitialDebit": {
             "type": "number",
@@ -328709,7 +328725,9 @@
           "ItvLipsa",
           "AmoLipsa",
           "DraftInPerioada",
-          "RestScadent"
+          "RestScadent",
+          "RezNeinchis",
+          "ExSoldRezidual"
         ],
         "type": "string"
       },

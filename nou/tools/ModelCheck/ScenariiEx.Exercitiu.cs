@@ -1,5 +1,7 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.Motor;
+using Atlas.Conta.BackOffice.Module.Proiectii;
+using Atlas.Conta.BackOffice.Module.Cub.Citiri;
 using DevExpress.ExpressApp;
 using N = Atlas.Conta.Nucleu;
 using C = Atlas.Conta.BackOffice.Module.Cub;
@@ -66,6 +68,7 @@ sealed partial class ScenariiEx {
         Inchis();
         RandNeseed();
         Redeschidere();
+        BalantaPeAn();
     }
 
     void SoldRezidual() {
@@ -155,5 +158,40 @@ sealed partial class ScenariiEx {
         Verifica("SC-EX-24", "redeschiderea, de la ultimul exercițiu: decembrie rămâne închis, istoricul poartă motivul",
             stari.All(s => s is (true, false, null, FelInchiderePerioada.RedeschidereExercitiu, "SC-EX-24: ajustare")));
         Refuza("SC-EX-24", () => RedeschideExercitiul(An, "probă"), "nu e închis");
+    }
+
+    // E3-D8: decembrie 1975 și 1976 rămân închise, deci citirea integrală pornește din snapshot-urile lor.
+    void BalantaPeAn() {
+        // Cheia cu toate cifrele zero lipsește din citirea pe snapshot (F27-D3), deci nu intră în comparație.
+        static string Amprenta(BalantaRand r) {
+            decimal[] cifre = [r.SoldInceputAnDebit, r.SoldInceputAnCredit, r.InitialDebit, r.InitialCredit, r.SoldInitialDebit,
+                r.SoldInitialCredit, r.RulajDebit, r.RulajCredit, r.SoldFinalDebit, r.SoldFinalCredit];
+            return cifre.All(c => c == 0m) ? null
+                : string.Join('|', [r.ContId.ToString(), r.RepartitorId.ToString(), .. cifre.Select(c => c.ToString("0.00"))]);
+        }
+        foreach (var analitic in new[] { false, true })
+            foreach (var (start, end) in new[] { (new DateOnly(Urmator, 1, 1), new DateOnly(Urmator, 1, 31)),
+                    (Decembrie(Urmator), Capat(Urmator)) }) {
+                var (integrala, vizibila) = CuSpatiu(os => (
+                    ContabilProiectii.Balanta(os, start, end, analitic, citire: CitireCumul.Integrala).ToList(),
+                    ContabilProiectii.Balanta(os, start, end, analitic, citire: CitireCumul.Vizibila).ToList()));
+                var (i, v) = (integrala.Select(Amprenta).OfType<string>().ToList(), vizibila.Select(Amprenta).OfType<string>().ToList());
+                var diferite = i.Except(v).Concat(v.Except(i).Select(x => "V " + x)).Take(6).ToList();
+                if (diferite.Count > 0)
+                    Console.WriteLine($"     MĂSURAT (SC-X-12): {string.Join(" ; ", diferite)}");
+                Verifica("SC-X-12", $"balanța {start:MM.yyyy}, analitic={analitic}: din snapshot-ul lui decembrie = din postări",
+                    diferite.Count == 0 && i.Count == v.Count && i.Count > 0);
+            }
+        var (final, ianuarie) = CuSpatiu(os => (
+            ContabilProiectii.Balanta(os, new DateOnly(An, 12, 1), Capat(An), analitic: true, citire: CitireCumul.Integrala).ToList(),
+            ContabilProiectii.Balanta(os, new DateOnly(Urmator, 1, 1), new DateOnly(Urmator, 1, 31), analitic: true,
+                citire: CitireCumul.Integrala).ToList()));
+        Verifica("SC-X-12", "soldul inițial al anului 1976 = soldul final la 31.12.1975 pe fiecare cheie, fără tranzacție de deschidere",
+            final.All(f => ianuarie.SingleOrDefault(r => r.ContId == f.ContId && r.RepartitorId == f.RepartitorId) is { } r
+                ? r.SoldInceputAnDebit == f.SoldFinalDebit && r.SoldInceputAnCredit == f.SoldFinalCredit
+                : f.SoldFinalDebit == 0 && f.SoldFinalCredit == 0));
+        Verifica("SC-X-12", "6 și 7 intră în anul nou fără sold",
+            ianuarie.Where(r => r.ContId == Cont(Serviciu) || r.ContId == Cont(Venit))
+                .All(r => r.SoldInceputAnDebit == 0 && r.SoldInceputAnCredit == 0));
     }
 }

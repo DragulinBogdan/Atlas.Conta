@@ -9106,6 +9106,10 @@ export interface components {
             AreCopii?: boolean;
             AreMiscareProprie?: boolean;
             /** Format: double */
+            SoldInceputAnDebit?: number;
+            /** Format: double */
+            SoldInceputAnCredit?: number;
+            /** Format: double */
             InitialDebit?: number;
             /** Format: double */
             InitialCredit?: number;
@@ -9130,6 +9134,10 @@ export interface components {
             /** Format: uuid */
             RepartitorId?: string | null;
             RepartitorDenumire?: string | null;
+            /** Format: double */
+            SoldInceputAnDebit?: number;
+            /** Format: double */
+            SoldInceputAnCredit?: number;
             /** Format: double */
             InitialDebit?: number;
             /** Format: double */
@@ -10798,7 +10806,7 @@ export interface components {
             MaiSunt?: boolean;
         };
         /** @enum {string} */
-        FelConstatareInchidere: "ItvLipsa" | "AmoLipsa" | "DraftInPerioada" | "RestScadent";
+        FelConstatareInchidere: "ItvLipsa" | "AmoLipsa" | "DraftInPerioada" | "RestScadent" | "RezNeinchis" | "ExSoldRezidual";
         /** @enum {string} */
         FelDeductibilitate: "PlafonLunar" | "Procent";
         /** @enum {string} */
